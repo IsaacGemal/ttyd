@@ -2209,7 +2209,7 @@ void _fbatFirstAttackAnnouceDisp(CameraId camId, void* param) {
 }
 
 // 100%: control flow and the `mode == 3` test match. The two `regularEvtId` reads go through a fresh
-// `*(NpcEntry**)(fbatData->field_2 + 2)` load (as in the original), which also fixes `entry`/`mario` to r30/r29.
+// `fbatData->talkNpc` load (as in the original), which also fixes `entry`/`mario` to r30/r29.
 
 // Same 57 calls and immediates, no structural difference. The three decision trees match (the first switch carries the empty case 0x10000 the
 // original probes; the side scan is a `switch` on `blocked`), `wk` is the ternary form, the OffChk pair is one
@@ -2266,7 +2266,7 @@ void fbatEncountCheck(void) {
         return;
     }
     fb = gp->fbatData;
-    fbatOut = (s32*)((u8*)fb + 0x10);
+    fbatOut = &fb->field_10;
     hit = (NpcEntry*)fbatHitCheck(0x13F1, (s32)fbatOut);
     if (hit != NULL && fb->mode == 1) {
         FieldBattleData* fb2 = gp->fbatData;
@@ -2277,8 +2277,8 @@ void fbatEncountCheck(void) {
         } else {
             fb2->mode = 5;
             ok = 1;
-            *(s8*)((u8*)fb2 + 2) = 0;
-            *(NpcEntry**)((u8*)fb2 + 4) = hit;
+            fb2->state = 0;
+            fb2->talkNpc = hit;
             fb2->target = hit;
         }
         if (ok != 0) {
@@ -2476,8 +2476,8 @@ void fbatEncountCheck(void) {
 
             if (fb3->mode == 1) {
                 fb3->mode = 2;
-                *(s8*)((u8*)fb3 + 2) = 0;
-                *(NpcEntry**)((u8*)fb3 + 4) = tgt;
+                fb3->state = 0;
+                fb3->talkNpc = tgt;
                 ENC(tgt, s32, 0x318) = 0;
             }
             return;
@@ -2485,7 +2485,7 @@ void fbatEncountCheck(void) {
     }
     fb = gp->fbatData;
     if (fb->mode == 1) {
-        s32* fbatOut2 = (s32*)((u8*)fb + 0x10);
+        s32* fbatOut2 = &fb->field_10;
 
         hit = (NpcEntry*)fbatHitCheck(0x2361, (s32)fbatOut2);
         if (hit != NULL && fb->mode == 1) {
@@ -2496,8 +2496,8 @@ void fbatEncountCheck(void) {
             fb2 = gp->fbatData;
             if (fb2->mode == 1) {
                 fb2->mode = 3;
-                *(s8*)((u8*)fb2 + 2) = 0;
-                *(NpcEntry**)((u8*)fb2 + 4) = hit;
+                fb2->state = 0;
+                fb2->talkNpc = hit;
                 ENC(hit, s32, 0x318) = fval;
             }
             switch (*fbatOut2) {
@@ -2516,14 +2516,14 @@ void fbatEncountCheck(void) {
 
 void fbatTalkMode(void) {
     FieldBattleData* fbatData = gp->fbatData;
-    NpcEntry* entry = *(NpcEntry**)(fbatData->field_2 + 2);
+    NpcEntry* entry = fbatData->talkNpc;
     MarioWork* mario = marioGetPtr();
     NpcWork* wp;
     EventEntry* evt;
 
-    switch (fbatData->field_2[0]) {
+    switch (fbatData->state) {
         case 0:
-            evtStopID((*(NpcEntry**)(fbatData->field_2 + 2))->regularEvtId);
+            evtStopID(fbatData->talkNpc->regularEvtId);
             if (!(entry->flags & 0x1000000)) {
                 entry->direction = reviseAngle(angleABf(entry->position.x, entry->position.z, mario->position.x,
                                                           mario->position.z));
@@ -2542,13 +2542,13 @@ void fbatTalkMode(void) {
                     break;
             }
             evt->ownerNPC = entry;
-            *(s32*)fbatData->field_C = evt->eventId;
-            fbatData->field_2[0]++;
+            fbatData->talkEvtId = evt->eventId;
+            fbatData->state++;
             break;
         case 1:
-            if (!evtCheckID(*(s32*)fbatData->field_C)) {
+            if (!evtCheckID(fbatData->talkEvtId)) {
                 if (!(entry->jumpFlags & 0x20000000)) {
-                    evtStartID((*(NpcEntry**)(fbatData->field_2 + 2))->regularEvtId);
+                    evtStartID(fbatData->talkNpc->regularEvtId);
                     entry->direction = *(f32*)entry->field_148;
                 }
                 if (entry->flags & 0x400) {
@@ -2591,7 +2591,7 @@ void fbatBattleMode(void) {
     mario = marioGetPtr();
     entry->rotation.y = 0.0f;
 
-    switch (fbatData->field_2[0]) {
+    switch (fbatData->state) {
         case 0:
             if (dbg_battleskip == 1) {
                 fbatData->mode = 1;
@@ -2617,7 +2617,7 @@ void fbatBattleMode(void) {
                         goto afterStrike;
                     }
                     if (pouchEquipCheckBadge(ITEM_FIRST_ATTACK) &&
-                        (*(s32*)((u8*)fbatData + 0x10) & 0x01FE0000) &&
+                        (fbatData->field_10 & 0x01FE0000) &&
                         entry->battleInfo.groupSetup->enemyData->mUnitKindParams->mLevel < pouch->level) {
                         flagA = TRUE;
                         flagB = TRUE;
@@ -2638,23 +2638,23 @@ void fbatBattleMode(void) {
                     }
                     marioFBattlePrepare();
                     seqSetSeq(SEQ_BATTLE, NULL, NULL);
-                    if (*(s32*)((u8*)fbatData + 0x10) == 0x10000000) {
+                    if (fbatData->field_10 == 0x10000000) {
                         unk_80058374();
                     }
-                    fbatData->field_2[0] = 1;
+                    fbatData->state = 1;
                 } else {
                     if (flagB) {
                         BattleInformationSetResult(info0, 2);
                     } else {
                         BattleInformationSetResult(info0, 5);
                     }
-                    fbatData->field_2[0] = 4;
+                    fbatData->state = 4;
                 }
             }
             break;
         case 1:
             if (gp->inBattle) {
-                fbatData->field_2[0]++;
+                fbatData->state++;
             }
             break;
         case 2:
@@ -2668,10 +2668,10 @@ void fbatBattleMode(void) {
                 info2 = (FieldBattleInfo*)((u8*)fbatData + 0x20);
                 result = BattleInformationGetResult(info2);
                 if (pouch->mMerleeNextCurseType == 4 && result == 1) {
-                    fbatData->field_2[0] = 3;
+                    fbatData->state = 3;
                     fbatData->field_54C[0] = 1;
                     evt = evtEntry(_evt_majinai_coin_up_effect, 0, 0);
-                    *(s32*)((u8*)fbatData + 0x48) = evt->eventId;
+                    fbatData->majinaiEvtId = evt->eventId;
                     BattleMajinaiDone();
                     marioKeyOff();
                     wp2 = gp->inBattle ? &work.battle : &work.field;
@@ -2685,20 +2685,20 @@ void fbatBattleMode(void) {
                     }
                 } else {
                     marioFBattlePost();
-                    fbatData->field_2[0] = 4;
+                    fbatData->state = 4;
                 }
             }
             break;
         case 3:
-            if (!evtCheckID(*(s32*)((u8*)fbatData + 0x48))) {
+            if (!evtCheckID(fbatData->majinaiEvtId)) {
                 NpcWork* wp3;
                 NpcEntry* npc3;
                 s32 total3;
                 s32 i3;
                 marioKeyOn();
                 marioFBattlePost();
-                *(s32*)((u8*)fbatData + 0x48) = 0;
-                fbatData->field_2[0] = 4;
+                fbatData->majinaiEvtId = 0;
+                fbatData->state = 4;
                 wp3 = gp->inBattle ? &work.battle : &work.field;
                 total3 = wp3->total;
                 for (i3 = 0, npc3 = wp3->entries; i3 < total3; i3++, npc3++) {

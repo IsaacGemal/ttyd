@@ -221,9 +221,19 @@ typedef struct FirstStrikeInfo {
 
 typedef struct FieldBattleData {
     s16 mode;                    // 0x0
-    u8 field_2[0x8 - 0x2];       // 0x2
+    u8 state;                    // 0x2, step of the talk sequence in npcdrv's field battle state machine
+    u8 field_3[0x4 - 0x3];       // 0x3
+    NpcEntry* talkNpc;           // 0x4
     NpcEntry* target;            // 0x8
-    u8 field_C[0x4C - 0xC];      // 0xC
+    s32 talkEvtId;               // 0xC, event started for talkNpc, waited on in state 1
+    s32 field_10;                // 0x10, out-param of fbatHitCheck
+    u8 field_14[0x39 - 0x14];    // 0x14
+    u8 ruleKeepResult;           // 0x39, read by evt_npc_get_battle_rule_keep_result
+    u8 field_3A[0x3C - 0x3A];    // 0x3A
+    void* endEvt;                // 0x3C, script started by battle_seq_end case 0x07000003
+    s32 endEvtId;                // 0x40, waited on by case 0x07000004
+    s32 field_44;                // 0x44
+    s32 majinaiEvtId;            // 0x48, event waited on in state 3 (the Merlee curse coin-up effect)
     NpcDeadInfo deadInfo[64];    // 0x4C
     u8 field_54C[0x550 - 0x54C]; // 0x54C
     FirstStrikeInfo firstStrike; // 0x550

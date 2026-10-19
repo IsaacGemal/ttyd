@@ -1979,7 +1979,7 @@ USER_FUNC(evt_npc_check_escape_battle) {
 USER_FUNC(evt_npc_get_battle_rule_keep_result) {
     s32 index = event->args[0];
     FieldBattleData* fbat = fbatGetPointer();
-    evtSetValue(event, index, fbat->field_C[0x39 - 0xC]);
+    evtSetValue(event, index, fbat->ruleKeepResult);
     return EVT_RETURN_DONE;
 }
 

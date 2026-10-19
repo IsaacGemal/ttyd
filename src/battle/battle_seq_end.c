@@ -558,7 +558,7 @@ void btlseqEnd(BattleWork* wp) {
         }
         switch ((s32)BattleInformationGetResult(info)) {
         case 1:
-            if (*(u32*)((u8*)fbatGetPointer() + 0x3C) != 0) {
+            if (fbatGetPointer()->endEvt != 0) {
                 BattleSetSeq(wp, SEQ_END, 0x07000003);
                 return;
             }
@@ -590,8 +590,8 @@ void btlseqEnd(BattleWork* wp) {
         {
             FieldBattleData* fbat = fbatGetPointer();
 
-            event = evtEntry(*(void**)((u8*)fbat + 0x3C), 0xA, 0);
-            *(s32*)((u8*)fbat + 0x40) = event->eventId;
+            event = evtEntry(fbat->endEvt, 0xA, 0);
+            fbat->endEvtId = event->eventId;
         }
         BattleSetSeq(wp, SEQ_END, 0x07000004);
         return;
@@ -600,13 +600,13 @@ void btlseqEnd(BattleWork* wp) {
         {
             FieldBattleData* fbat = fbatGetPointer();
 
-            if (evtCheckID(*(s32*)((u8*)fbat + 0x40))) {
+            if (evtCheckID(fbat->endEvtId)) {
                 break;
             }
             if (!BattleWaitAllActiveEvtEnd(wp)) {
                 break;
             }
-            if (*(s32*)((u8*)fbat + 0x44) != 0) {
+            if (fbat->field_44 != 0) {
                 BattleSetSeq(wp, SEQ_TURN, 0x03000001);
                 BattleSetSeq(wp, SEQ_UNKNOWN, 2);
                 return;
