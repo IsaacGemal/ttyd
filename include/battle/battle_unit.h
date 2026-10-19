@@ -553,11 +553,13 @@ typedef struct BattleUnit {
     Vec mMoveStartPos;                           // 0x144
     Vec mMoveCurrentPos;                         // 0x150
     Vec mMoveTargetPos;                          // 0x15C
-    u8 field_0x168[0x16C - 0x168];               // 0x168
+    s32 moveFrames;                              // 0x168, frames left in the current move; counts down to 0
     f32 mMoveSpeedXZ;                            // 0x16C
     f32 mFallAccel;                              // 0x170
     f32 mMoveSpeedY;                             // 0x174
-    u8 field_0x178[0x184 - 0x178];               // 0x178
+    f32 moveAngle;                               // 0x178, heading of the move (angleABf of start to target)
+    f32 moveDist;                                // 0x17C, total length of the move, the sine ease divisor
+    f32 moveElapsed;                             // 0x180, frames run so far, compared against moveFrames
     s8 moveDirection;                            // 0x184
     s8 faceDirection;                            // 0x185
     u8 field_0x186[0x1F8 - 0x186];               // 0x186
