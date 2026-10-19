@@ -174,7 +174,7 @@ HitEntry* _hitEnt(MapFileJoint* joint, HitEntry* parent, Mtx parentMtx, s32 mapI
 
         if (numVectors > 0) {
             hit->vectors = _mapAlloc(sizeof(HitVector) * numVectors);
-            hit->unkA8 = hitCalcVtxPosition(hit);
+            hit->vectorCount = hitCalcVtxPosition(hit);
         }
     }
     return hit;
@@ -230,14 +230,14 @@ static inline void hitUpdateActiveList(void) {
                     lbl_80418408 = hit;
                     prev = hit;
                 } else {
-                    prev->siblingActive = hit;
+                    prev->nextActive = hit;
                     prev = hit;
                 }
             }
         }
     }
     if (prev != NULL) {
-        prev->siblingActive = NULL;
+        prev->nextActive = NULL;
     }
 }
 
@@ -265,14 +265,14 @@ static inline void hitDeleteUpdateActiveList(void) {
                     lbl_80418408 = hit;
                     prev = hit;
                 } else {
-                    prev->siblingActive = hit;
+                    prev->nextActive = hit;
                     prev = hit;
                 }
             }
         }
     }
     if (prev != NULL) {
-        prev->siblingActive = NULL;
+        prev->nextActive = NULL;
     }
 }
 #endif
@@ -366,7 +366,7 @@ void hitMain(void) {
                     found = hitNameToPtr(*(char**)(*(void**)(p + 4)));
 #endif
                     if (found != NULL) {
-                        mapCalcAnimMatrix(found->unk6C, found->localMtx, (MapEntryAnimData*)anim, *(void**)(p + 4));
+                        mapCalcAnimMatrix(found->animMtx, found->localMtx, (MapEntryAnimData*)anim, *(void**)(p + 4));
                         anyScale = 1;
                         found->flags |= 0x10;
                         found->flags |= 0x40;
@@ -532,7 +532,7 @@ void hitReCalcMatrix2(HitEntry* hit, Mtx mtx, BOOL recursion) {
     }
     if (var_r3_3 != 0) {
         if (hit->flags & 0x10) {
-            PSMTXConcat(mtx, hit->unk6C, hit->worldMtx);
+            PSMTXConcat(mtx, hit->animMtx, hit->worldMtx);
         } else {
             PSMTXConcat(mtx, hit->localMtx, hit->worldMtx);
         }
@@ -933,7 +933,7 @@ HitEntry* hitCheckVecFilter(HitCheckQuery* query, HitFilterCallback callback) { 
                         query->singleSided = 0;
                     }
                     var_r31 = var_r29->vectors;
-                    for (i = 0; i < var_r29->unkA8; i++, var_r31++) {
+                    for (i = 0; i < var_r29->vectorCount; i++, var_r31++) {
                         if ((query->singleSided == 0) ||
                             !(PSVECDotProduct(&var_r31->normal, &query->targetDir) >= 0.0f)) {
                             if (checkTriVec_xz(query, var_r31) && (var_f29 < 0.0f || var_f29 > query->targetDistance)) {
@@ -947,7 +947,7 @@ HitEntry* hitCheckVecFilter(HitCheckQuery* query, HitFilterCallback callback) { 
                     }
                 }
             }
-            var_r29 = var_r29->siblingActive;
+            var_r29 = var_r29->nextActive;
         }
     } else if (query->targetDir.x == 0.0f && query->targetDir.z == 0.0f) {
         if (query->targetDir.y == -1.0f) {
@@ -960,7 +960,7 @@ HitEntry* hitCheckVecFilter(HitCheckQuery* query, HitFilterCallback callback) { 
                             query->singleSided = 0;
                         }
                         vector = var_r29->vectors;
-                        for (i = 0; i < var_r29->unkA8; i++, vector++) {
+                        for (i = 0; i < var_r29->vectorCount; i++, vector++) {
                             if (query->singleSided == 0 || !(vector->normal.y <= 0.0f)) {
                                 if (tempfunc(query, vector) && (var_f29 < 0.0f || var_f29 > query->targetDistance)) {
                                     var_f29 = query->targetDistance;
@@ -973,7 +973,7 @@ HitEntry* hitCheckVecFilter(HitCheckQuery* query, HitFilterCallback callback) { 
                         }
                     }
                 }
-                var_r29 = var_r29->siblingActive;
+                var_r29 = var_r29->nextActive;
             }
         } else if (query->targetDir.y == 1.0f) {
             while (var_r29 != NULL) {
@@ -985,7 +985,7 @@ HitEntry* hitCheckVecFilter(HitCheckQuery* query, HitFilterCallback callback) { 
                             query->singleSided = 0;
                         }
                         vector = var_r29->vectors;
-                        for (i = 0; i < var_r29->unkA8; i++, vector++) {
+                        for (i = 0; i < var_r29->vectorCount; i++, vector++) {
                             if (query->singleSided == 0 || !(vector->normal.y >= 0.0f)) {
                                 if (tempfunc2(query, vector) && (var_f29 < 0.0f || var_f29 > query->targetDistance)) {
                                     var_f29 = query->targetDistance;
@@ -998,7 +998,7 @@ HitEntry* hitCheckVecFilter(HitCheckQuery* query, HitFilterCallback callback) { 
                         }
                     }
                 }
-                var_r29 = var_r29->siblingActive;
+                var_r29 = var_r29->nextActive;
             }
         } else {
             goto label_235;
@@ -1014,7 +1014,7 @@ HitEntry* hitCheckVecFilter(HitCheckQuery* query, HitFilterCallback callback) { 
                         query->singleSided = 0;
                     }
                     vector = var_r29->vectors;
-                    for (i = 0; i < var_r29->unkA8; i++, vector++) {
+                    for (i = 0; i < var_r29->vectorCount; i++, vector++) {
                         if (query->singleSided == 0 || !(PSVECDotProduct(&vector->normal, &query->targetDir) >= 0.0f)) {
                             if (tempfunc3(query, vector) && (var_f29 < 0.0f || var_f29 > query->targetDistance)) {
                                 var_f29 = query->targetDistance;
@@ -1027,7 +1027,7 @@ HitEntry* hitCheckVecFilter(HitCheckQuery* query, HitFilterCallback callback) { 
                     }
                 }
             }
-            var_r29 = var_r29->siblingActive;
+            var_r29 = var_r29->nextActive;
         }
     }
     if (var_r28 == NULL) {
@@ -1149,7 +1149,7 @@ BOOL hitCheckVecHitObjXZ(HitCheckQuery* query, HitEntry* entry) { // 1:1
         query->singleSided = 0;
     }
     vector = entry->vectors;
-    for (i = 0; i < entry->unkA8; i++, vector++) {
+    for (i = 0; i < entry->vectorCount; i++, vector++) {
         if ((query->singleSided == 0 || !(PSVECDotProduct(&vector->normal, &query->targetDir) >= 0.0f)) &&
             checkTriVec_xz(query, vector)) {
             return 1;
@@ -1264,7 +1264,7 @@ HitEntry* hitCheckSphereFilter(HitFilterCallback callback, f32 x, f32 y, f32 z,
         query->singleSided = 0;
     }
     vector = temp_r27->vectors;
-    for (i = 0; i < temp_r27->unkA8; i++, vector++) {
+    for (i = 0; i < temp_r27->vectorCount; i++, vector++) {
         if ((query->singleSided == 0) || !(PSVECDotProduct(&vector->normal, &query->targetDir) >= 0.0f)) {
             if (tempfunc3(query, vector) && ((var_f30 < 0.0f) || (var_f30 > query->targetDistance))) {
                 var_f30 = query->targetDistance;

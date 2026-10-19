@@ -40,9 +40,9 @@ struct HitEntry {
     MapFileJoint* joint;            // 0x8
     Mtx worldMtx;                   // 0xC
     Mtx localMtx;                   // 0x3C
-    Mtx unk6C;                      // 0x6C
+    Mtx animMtx;                    // 0x6C, mapCalcAnimMatrix output; used in place of localMtx when HIT_FLAG_ANIMATED
     Vec centerLocal;                // 0x9C
-    s16 unkA8;                      // 0xA8
+    s16 vectorCount;                // 0xA8, hitCalcVtxPosition's return: length of `vectors`
     s16 mapIndex;                   // 0xAA
     HitVector* vectors;             // 0xAC
     HitDamageReturn* damage;        // 0xB0
@@ -53,7 +53,7 @@ struct HitEntry {
     struct HitEntry* parent;        // 0xD4
     struct HitEntry* child;         // 0xD8
     struct HitEntry* sibling;       // 0xDC
-    struct HitEntry* siblingActive; // 0xE0, TODO: next or sibling
+    struct HitEntry* nextActive;    // 0xE0, next in the active list (hitUpdateActiveList)
 };
 
 void hitInit(void);
