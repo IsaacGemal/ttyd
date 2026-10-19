@@ -273,8 +273,14 @@ s32 battleAcMain_Repeatedly(BattleWork* work) {
             if (stateChanged) {
                 dec->field_0x18 += float_0p01_8041c7c0 * (_power_table[difficulty] * (f32)dec->field_0x24);
             }
+#ifdef MUST_MATCH
+            // Volatile reads: retail reloads both fields here after the store above.
             target = *(volatile f32*)&dec->field_0x18;
             v = *(volatile f32*)&dec->field_0x1C;
+#else
+            target = dec->field_0x18;
+            v = dec->field_0x1C;
+#endif
             v = target - v;
             dec->field_0x18 = v;
 #ifdef MUST_MATCH

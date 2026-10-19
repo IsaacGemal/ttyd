@@ -1054,7 +1054,12 @@ void select_disp_party(WinMgrEntry* entry) {
             rowY = (f32)(entry->field_0x1C - 0x2c - i * 0x18);
             tmpIcon.y = select->field_0x1C + (zero + rowY);
             posIcon = tmpIcon;
+#ifdef MUST_MATCH
+            // anti-hoist: retail reloads the Vec in the loop (see the note above select_disp_party)
             scaleIcon = *(const volatile Vec*)&vec3_802ffb7c;
+#else
+            scaleIcon = vec3_802ffb7c;
+#endif
 
             color = colorWhite;
             icon = party_icon_table[((WinMgrSelectItem*)select->field_0x30)[i].field_0x2];
@@ -1101,8 +1106,14 @@ void select_disp_party(WinMgrEntry* entry) {
                     GXColor c = colorWhite;
                     f32 rowY;
 
+#ifdef MUST_MATCH
+                    // anti-hoist: as above
                     scaleArrow = *(const volatile Vec*)&vec3_802ffb94;
                     tmpArrow = *(const volatile Vec*)&vec3_802ffb88;
+#else
+                    scaleArrow = vec3_802ffb94;
+                    tmpArrow = vec3_802ffb88;
+#endif
                     tmpArrow.x = (f32)(entry->field_0x18 + 0xfd + off);
                     rowY = (f32)(entry->field_0x1C - 0x2c - i * 0x18);
                     tmpArrow.y = select->field_0x1C + (zero + rowY);

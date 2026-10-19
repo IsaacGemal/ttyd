@@ -454,7 +454,12 @@ static void actionCommandDisp(f32 x, f32 y) {
 			else {
 				icon = 0x91;
 			}
+#ifdef MUST_MATCH
+			// Volatile copy: retail reloads the template Vec here.
 			t = *(volatile Vec*)&vec3_802fffe0;
+#else
+			t = vec3_802fffe0;
+#endif
 			t.x = f31 + (f32)dec->total * v / 100.f;
 			t.y = iy;
 			ICON_DISP(&t, 0x10, icon, 0.75f);

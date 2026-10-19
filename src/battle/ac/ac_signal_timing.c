@@ -503,7 +503,12 @@ static void actionCommandDisp(f32 x, f32 y) {
             ICON_DISP(&t, 0x10, 0x8F, 1.0f);
         }
         for (i = 1; i < limit; i++) {
+#ifdef MUST_MATCH
+            // Volatile copy: retail reloads the template Vec every iteration instead of hoisting it.
             Vec t = *(volatile Vec*)&vec3_802fedec;
+#else
+            Vec t = vec3_802fedec;
+#endif
             t.x = x + (f32)(i * 0x10 - 0x120);
             t.y = f31;
             ICON_DISP(&t, 0x10, 0x8E, 1.0f);

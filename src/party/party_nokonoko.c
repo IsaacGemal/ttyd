@@ -572,7 +572,12 @@ L_800CC620:
         NKF(0x10C) = revise360(50.0f * f2 + NKF(0x10C));
         f3 = -2.0f - NKF(0x104);
         f2 = (NKS16(0x17c) != 0) ? 0.2f : 0.1f;
+#ifdef MUST_MATCH
+        // Volatile re-read of the speed, as retail reloads it after the f3/f2 setup.
         NKF(0x104) = f3 * f2 + *(volatile f32*)((u8*)party + 0x104);
+#else
+        NKF(0x104) = f3 * f2 + NKF(0x104);
+#endif
         NKF(0x128) -= NKF(0x104);
         if (!(NKF(0x104) <= 0.0f)) {
             goto L_800CCD8C;
@@ -646,7 +651,12 @@ L_800CC620:
         }
         f3 = -2.0f - NKF(0x104);
         f2 = (NKS16(0x17c) != 0) ? 0.2f : 0.1f;
+#ifdef MUST_MATCH
+        // Volatile re-read of the speed, as retail reloads it after the f3/f2 setup.
         NKF(0x104) = f3 * f2 + *(volatile f32*)((u8*)party + 0x104);
+#else
+        NKF(0x104) = f3 * f2 + NKF(0x104);
+#endif
         if (NKF(0x104) <= 0.0f) {
             party->useMotionId = 0x46;
             NKF(0x104) = 0.0f;

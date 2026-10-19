@@ -1069,9 +1069,17 @@ void loadDraw(void) {
         wd = &win_dt[i];
 
         FontDrawStart();
-        loadDrawColor(*(volatile GXColor*)&dat_8041bd98);
+#ifdef MUST_MATCH
+        loadDrawColor(*(volatile GXColor*)&dat_8041bd98); // volatile read: retail reloads the colour at each call
+#else
+        loadDrawColor(dat_8041bd98);
+#endif
         if (i == wp->field_0x20) {
-            loadDrawColor(*(volatile GXColor*)&dat_8041bd9c);
+#ifdef MUST_MATCH
+            loadDrawColor(*(volatile GXColor*)&dat_8041bd9c); // volatile read: retail reloads the colour at each call
+#else
+            loadDrawColor(dat_8041bd9c);
+#endif
         }
         FontDrawScale(0.6f);
         FontDrawEdge();
@@ -1079,9 +1087,17 @@ void loadDraw(void) {
         FontDrawString(nameBuf, wd->x - 100.0f, 84.0f + wd->y);
         FontDrawEdgeOff();
         FontDrawScale(1.0f);
-        loadDrawColor(*(volatile GXColor*)&dat_8041bda0);
+#ifdef MUST_MATCH
+        loadDrawColor(*(volatile GXColor*)&dat_8041bda0); // volatile read: retail reloads the colour at each call
+#else
+        loadDrawColor(dat_8041bda0);
+#endif
         if (i == wp->field_0x20) {
-            loadDrawColor(*(volatile GXColor*)&dat_8041bda4);
+#ifdef MUST_MATCH
+            loadDrawColor(*(volatile GXColor*)&dat_8041bda4); // volatile read: retail reloads the colour at each call
+#else
+            loadDrawColor(dat_8041bda4);
+#endif
         }
 
         if (flags & 2) {
