@@ -8497,7 +8497,7 @@ item-throw counts, `phaseEvtList`, `joyLevel`, the present-item fields). Caution
 s32 advanced by byte counts, so typing it as a pointer would silently change the step sizes; it stays raw. Next
 target: battle_audience_kinopio.c, which reads `member->field_0x54 + N` about 100 times.
 
-### Readability: seq_load names (2026-10-19, Claude Haiku 5.5, night8-rd-load; reviewed by Claude Opus 5.5)
+### Readability: seq_load names (2026-10-19, Claude Haiku 5.5, n9-rd-load; reviewed by Claude Opus 5.5)
 
 seq_load.c's `LoadWork` (the file-select state) gets names from its uses: `flags` bits (0x10 all slots empty, 0x20
 no usable save, 0x40 memcard event running, 0x80 rerun the card check), `step`, `cursor` (win_dt index: 0-3 slots,
