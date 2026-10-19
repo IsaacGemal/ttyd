@@ -187,7 +187,7 @@ void seq_mapChangeMain(SequenceWork* work) {
         return;
     case 2:
         if (strcmp(_next_map, "title") == 0) {
-            strcpy((char*)gp + 0x14C, gp->currentMapName);
+            strcpy(gp->currentAreaName + 0x10, gp->currentMapName);
             strcpy(gp->currentAreaName, "");
             strcpy(gp->currentMapName, "");
             seqSetSeq(1, 0, 0);
