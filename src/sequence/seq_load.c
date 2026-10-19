@@ -58,7 +58,7 @@ typedef struct LoadWork {
     f32 optionsFade; //0x2C
     s32 copySrc; //0x30
     s32 copyDst; //0x34
-    s32 message; //0x38
+    const char* message; //0x38
     EventEntry* menuEvt; //0x3C
     s32 soundSaved; //0x40
     s32 rumbleSaved; //0x44
@@ -93,6 +93,8 @@ struct LoadAngleTable
 #define ANGLES_AT(a, w) ((a).v[(w)->copySrc * 4 + (w)->copyDst])
 #endif
 
+
+#define LOAD_TEX_PALETTE() ((TEXPalette*)*wp->file->data)
 
 static LoadWork work;
 static LoadWork* wp = &work;
@@ -401,7 +403,7 @@ void loadMain(SequenceWork* workArg) {
             wp->step++;
             /* fallthrough */
         case 1:
-            wp->message = (s32)msgSearch("msg_savefile_select");
+            wp->message = msgSearch("msg_savefile_select");
             sel = wp->cursor;
 
             if (dir & 0x1000) {
@@ -621,7 +623,7 @@ void loadMain(SequenceWork* workArg) {
             break;
 
         case 0x28:
-            wp->message = (s32)msgSearch("msg_savefile_delete_select");
+            wp->message = msgSearch("msg_savefile_delete_select");
             sel = wp->cursor;
 
             if (dir & 0x1000) {
@@ -683,7 +685,7 @@ void loadMain(SequenceWork* workArg) {
             break;
 
         case 0x32:
-            wp->message = (s32)msgSearch("msg_savefile_copy_select");
+            wp->message = msgSearch("msg_savefile_copy_select");
             sel = wp->cursor;
 
             if (dir & 0x1000) {
@@ -725,7 +727,7 @@ void loadMain(SequenceWork* workArg) {
             break;
 
         case 0x33:
-            wp->message = (s32)msgSearch("msg_savefile_copy_point");
+            wp->message = msgSearch("msg_savefile_copy_point");
             sel = wp->cursor;
 
             if (dir & 0x1000) {
@@ -912,7 +914,7 @@ static inline void loadDrawQuad(s32 texId, f32 x, f32 y, f32 w, f32 h, const f64
     f64 sx;
     f32 syf;
 
-    TEXGetGXTexObjFromPalette(**(TEXPalette***)((u8*)wp->file + 0xA0), &texObj, texId);
+    TEXGetGXTexObjFromPalette(LOAD_TEX_PALETTE(), &texObj, texId);
     GXInitTexObjLOD(&texObj, 1, 1, 0.0f, 0.0f, 0.0f, 0, 0, 0);
     GXLoadTexObj(&texObj, 0);
     GXSetNumTexGens(1);
@@ -962,7 +964,7 @@ void loadDraw(void) {
     s32 j;
     WinDt* wd;
     CardData* card;
-    u8* slot;
+    CardSaveSlot* slot;
     GXColor grey80 = *(GXColor*)&dat_8041bd8c;
     f32 viewport[6];
     f32 projection[7];
@@ -1027,13 +1029,13 @@ void loadDraw(void) {
         case 0xc:
         case 0xd:
             color.a = 0xFE;
-            winTexInit(**(TEXPalette***)((u8*)wp->file + 0xA0));
+            winTexInit(LOAD_TEX_PALETTE());
             winTexSet(0xe, loadDrawVec(wd->x, wd->y, vec3_802ed670), vec3_802ed67c, color);
-            winTexInit(**(TEXPalette***)((u8*)wp->file + 0xA0));
+            winTexInit(LOAD_TEX_PALETTE());
             winTexSet(wd->texId, loadDrawVec(wd->x, wd->y + 60.0f, vec3_802ed688), vec3_802ed694, color);
             break;
         default:
-            winTexInit_x2(**(TEXPalette***)((u8*)wp->file + 0xA0));
+            winTexInit_x2(LOAD_TEX_PALETTE());
             winTexSet_x2(wd->texId, wd->texId2, loadDrawVec(wd->x, wd->y, vec3_802ed6a0), vec3_802ed6ac, color);
             break;
         }
@@ -1042,7 +1044,7 @@ void loadDraw(void) {
     windowDispGX_Waku_col(0, *(GXColor*)&dat_8041bd94, -250.0f, 200.0f, 500.0f, 40.0f, 20.0f);
     FontDrawStart();
     {
-        const char* msg = (const char*)wp->message;
+        const char* msg = wp->message;
 
         FontDrawMessage(-((s32)FontGetMessageWidth(msg)) / 2, 0xc0, msg);
     }
@@ -1058,14 +1060,14 @@ void loadDraw(void) {
         const char* name;
 
         card = cardGetFilePtr();
-        slot = (u8*)card + i * 0x4000 + 0x2000;
-        flags = *(u16*)(slot + 0x0);
-        level = *(s16*)(slot + 0x146a);
-        field28 = *(u32*)(slot + 0x28);
-        field2c = *(u32*)(slot + 0x2c);
-        mask = *(u16*)(slot + 0x146c);
-        field17c = *(u32*)(slot + 0x17c);
-        name = (const char*)(slot + 0x11c4);
+        slot = &card->saves[i];
+        flags = slot->data.flags;
+        level = *(s16*)((u8*)slot + 0x146a);
+        field28 = *(u32*)((u8*)slot + 0x28);
+        field2c = *(u32*)((u8*)slot + 0x2c);
+        mask = *(u16*)((u8*)slot + 0x146c);
+        field17c = *(u32*)((u8*)slot + 0x17c);
+        name = slot->data.global.playerName;
         wd = &win_dt[i];
 
         FontDrawStart();
@@ -1189,38 +1191,38 @@ void loadDraw(void) {
     nameMaskGX(wp->optionsFade);
 
     if (wp->step >= 0x64 && wp->step < 0xc8) {
-        winTexInit(**(TEXPalette***)((u8*)wp->file + 0xA0));
+        winTexInit(LOAD_TEX_PALETTE());
         winTexSet(0xf, vec3_802ed6b8, vec3_802ed6c4, *(GXColor*)&dat_8041bdac);
-        winTexInit_x2(**(TEXPalette***)((u8*)wp->file + 0xA0));
+        winTexInit_x2(LOAD_TEX_PALETTE());
         winTexSet_x2(0x13, 0x1f, vec3_802ed6d0, vec3_802ed6dc, *(GXColor*)&dat_8041bdb0);
 
         for (j = 0; j < 3; j++) {
             if (j == wp->soundCursor) {
-                winTexInit(**(TEXPalette***)((u8*)wp->file + 0xA0));
+                winTexInit(LOAD_TEX_PALETTE());
                 winTexSet(0x33, loadDrawVecY((f32)(0x32 - j * 0x32), vec3_802ed6e8), vec3_802ed6f4, *(GXColor*)&dat_8041bdb4);
-                winTexInit_x2(**(TEXPalette***)((u8*)wp->file + 0xA0));
+                winTexInit_x2(LOAD_TEX_PALETTE());
                 winTexSet_x2(j + 0x15, 0x33, loadDrawVecY((f32)(0x36 - j * 0x32), vec3_802ed700), vec3_802ed70c, *(GXColor*)&dat_8041bdb8);
             } else {
-                winTexInit_x2(**(TEXPalette***)((u8*)wp->file + 0xA0));
+                winTexInit_x2(LOAD_TEX_PALETTE());
                 winTexSet_x2(j + 0x15, 0x33, loadDrawVecY((f32)(0x32 - j * 0x32), vec3_802ed718), vec3_802ed724, *(GXColor*)&dat_8041bdbc);
             }
         }
     }
 
     if (wp->step >= 0xc8 && wp->step < 0x12c) {
-        winTexInit(**(TEXPalette***)((u8*)wp->file + 0xA0));
+        winTexInit(LOAD_TEX_PALETTE());
         winTexSet(0xf, vec3_802ed730, vec3_802ed73c, *(GXColor*)&dat_8041bdc0);
-        winTexInit_x2(**(TEXPalette***)((u8*)wp->file + 0xA0));
+        winTexInit_x2(LOAD_TEX_PALETTE());
         winTexSet_x2(0x14, 0x1f, vec3_802ed748, vec3_802ed754, *(GXColor*)&dat_8041bdc4);
 
         for (j = 0; j < 2; j++) {
             if (j == wp->rumbleCursor) {
-                winTexInit(**(TEXPalette***)((u8*)wp->file + 0xA0));
+                winTexInit(LOAD_TEX_PALETTE());
                 winTexSet(0x33, loadDrawVecY((f32)(0x1e - j * 0x32), vec3_802ed760), vec3_802ed76c, *(GXColor*)&dat_8041bdc8);
-                winTexInit_x2(**(TEXPalette***)((u8*)wp->file + 0xA0));
+                winTexInit_x2(LOAD_TEX_PALETTE());
                 winTexSet_x2(j + 0x18, 0x33, loadDrawVecY((f32)(0x22 - j * 0x32), vec3_802ed778), vec3_802ed784, *(GXColor*)&dat_8041bdcc);
             } else {
-                winTexInit_x2(**(TEXPalette***)((u8*)wp->file + 0xA0));
+                winTexInit_x2(LOAD_TEX_PALETTE());
                 winTexSet_x2(j + 0x18, 0x33, loadDrawVecY((f32)(0x1e - j * 0x32), vec3_802ed790), vec3_802ed79c, *(GXColor*)&dat_8041bdd0);
             }
         }
@@ -1251,7 +1253,7 @@ void loadDraw(void) {
         {
             Mtx mtx;
 
-            winTexInit(**(TEXPalette***)((u8*)wp->file + 0xA0));
+            winTexInit(LOAD_TEX_PALETTE());
             winTexSetRot(0x1d, loadDrawVec(2.0f + f29, f30 - 2.0f, vec3_802ed7e8), vec3_802ed7f4, ANGLES_AT(angles, wp), *(GXColor*)&dat_8041bdd4);
             winTexSetRot(0x1d, loadDrawVec(f29, f30, vec3_802ed800), vec3_802ed80c, ANGLES_AT(angles, wp), white);
             (void)mtx;
@@ -1259,7 +1261,7 @@ void loadDraw(void) {
     }
 
     if (!(wp->flags & 0x40)) {
-        winTexInit(**(TEXPalette***)((u8*)wp->file + 0xA0));
+        winTexInit(LOAD_TEX_PALETTE());
         winTexSet(0, loadDrawVec(wp->cursorX + 2.0f, wp->cursorY - 2.0f, vec3_802ed818), vec3_802ed824, *(GXColor*)&dat_8041bdd8);
         winTexSet(0, loadDrawVec(wp->cursorX, wp->cursorY, vec3_802ed830), vec3_802ed83c, white);
     }
