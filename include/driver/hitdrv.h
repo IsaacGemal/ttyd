@@ -33,6 +33,11 @@ typedef struct HitDamageReturn {
     Vec position;           // 0x4
 } HitDamageReturn;
 
+// hitEntry allocates this many HitEntry slots past hitNumJoints; hitGetName's range check uses the same slack
+#define HIT_SPARE_ENTRIES 0x80
+// MapJointDrawMode::cullMode is an index into mapdrv's culling[] ({FRONT, BACK, ALL, NONE}); BACK makes the hit single-sided
+#define HIT_CULL_BACK 1
+
 // HitEntry::flags bits (0x1 is also tested by hitCheckSphereFilter; its meaning is not known yet)
 enum HitFlag {
     HIT_FLAG_MAPOBJ = 0x20,     // hitBindMapObj sets; hitReCalcMatrix2 multiplies in mapObj->unkAC

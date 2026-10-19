@@ -196,7 +196,7 @@ HitEntry* hitEntry(MapFileJoint* root, Mtx rootMtx, s32 mapIndex) {
     u32 size;
 
     wp->entries[mapIndex].hitNumJoints = mapGetJoints(root);
-    size = OSRoundUp32B(((wp->entries[mapIndex].hitNumJoints + 128) * sizeof(HitEntry)));
+    size = OSRoundUp32B(((wp->entries[mapIndex].hitNumJoints + HIT_SPARE_ENTRIES) * sizeof(HitEntry)));
     wp->entries[mapIndex].hitEntries = _mapAlloc(size);
     memset(wp->entries[mapIndex].hitEntries, 0, size);
     return hitEntrySub(root, NULL, rootMtx, TRUE, mapIndex);
@@ -927,7 +927,7 @@ HitEntry* hitCheckVecFilter(HitCheckQuery* query, HitFilterCallback callback) { 
         while (var_r29 != NULL) {
             if (callback == NULL || callback(query, var_r29)) {
                 if (!(PSVECDistance(&spA4, &var_r29->centerWorld) > temp_f28 + var_r29->radius)) {
-                    if (var_r29->joint->drawMode->cullMode == 1) {
+                    if (var_r29->joint->drawMode->cullMode == HIT_CULL_BACK) {
                         query->singleSided = 1;
                     } else {
                         query->singleSided = 0;
@@ -954,7 +954,7 @@ HitEntry* hitCheckVecFilter(HitCheckQuery* query, HitFilterCallback callback) { 
             while (var_r29 != NULL) {
                 if (callback == NULL || callback(query, var_r29)) {
                     if (!(PSVECDistance(&spA4, &var_r29->centerWorld) > temp_f28 + var_r29->radius)) {
-                        if (var_r29->joint->drawMode->cullMode == 1) {
+                        if (var_r29->joint->drawMode->cullMode == HIT_CULL_BACK) {
                             query->singleSided = 1;
                         } else {
                             query->singleSided = 0;
@@ -979,7 +979,7 @@ HitEntry* hitCheckVecFilter(HitCheckQuery* query, HitFilterCallback callback) { 
             while (var_r29 != NULL) {
                 if (callback == NULL || callback(query, var_r29)) {
                     if (!(PSVECDistance(&spA4, &var_r29->centerWorld) > temp_f28 + var_r29->radius)) {
-                        if (var_r29->joint->drawMode->cullMode == 1) {
+                        if (var_r29->joint->drawMode->cullMode == HIT_CULL_BACK) {
                             query->singleSided = 1;
                         } else {
                             query->singleSided = 0;
@@ -1008,7 +1008,7 @@ HitEntry* hitCheckVecFilter(HitCheckQuery* query, HitFilterCallback callback) { 
         while (var_r29 != NULL) {
             if (callback == NULL || callback(query, var_r29)) {
                 if (!(PSVECDistance(&spA4, &var_r29->centerWorld) > (temp_f28 + var_r29->radius))) {
-                    if (var_r29->joint->drawMode->cullMode == 1) {
+                    if (var_r29->joint->drawMode->cullMode == HIT_CULL_BACK) {
                         query->singleSided = 1;
                     } else {
                         query->singleSided = 0;
@@ -1143,7 +1143,7 @@ BOOL hitCheckVecHitObjXZ(HitCheckQuery* query, HitEntry* entry) { // 1:1
     int i;
     HitVector* vector;
 
-    if (entry->joint->drawMode->cullMode == 1) {
+    if (entry->joint->drawMode->cullMode == HIT_CULL_BACK) {
         query->singleSided = 1;
     } else {
         query->singleSided = 0;
@@ -1258,7 +1258,7 @@ HitEntry* hitCheckSphereFilter(HitFilterCallback callback, f32 x, f32 y, f32 z,
     var_r29 = -1;
     query->targetPos = sp68;
     query->targetDistance = distance;
-    if (temp_r27->joint->drawMode->cullMode == 1) {
+    if (temp_r27->joint->drawMode->cullMode == HIT_CULL_BACK) {
         query->singleSided = 1;
     } else {
         query->singleSided = 0;
@@ -1367,7 +1367,7 @@ const char* hitGetName(HitEntry* hit) { // 1:1
     count = map->count;
     for (i = 0; i < count; map++, i++) {
         start = (u32)map->hitEntries;
-        size = OSRoundUp32B((map->hitNumJoints + 0x80) * sizeof(HitEntry));
+        size = OSRoundUp32B((map->hitNumJoints + HIT_SPARE_ENTRIES) * sizeof(HitEntry));
         if ((u32)hit >= start && (u32)hit < start + size) {
             break;
         }
