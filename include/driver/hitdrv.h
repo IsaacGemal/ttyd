@@ -33,6 +33,22 @@ typedef struct HitDamageReturn {
     Vec position;           // 0x4
 } HitDamageReturn;
 
+// hitEntry allocates this many HitEntry slots past hitNumJoints; hitGetName's range check uses the same slack
+#define HIT_SPARE_ENTRIES 0x80
+// MapJointDrawMode::cullMode is an index into mapdrv's culling[] ({FRONT, BACK, ALL, NONE}); BACK makes the hit single-sided
+#define HIT_CULL_BACK 1
+
+// HitEntry::attributes bit set by hitDamageReturnSet, which also stores the entry's HitDamageReturn
+#define HIT_ATTR_DAMAGE_RETURN 0x40000000
+
+// HitEntry::flags bits (0x1 is also tested by hitCheckSphereFilter; its meaning is not known yet)
+enum HitFlag {
+    HIT_FLAG_MAPOBJ = 0x20,     // hitBindMapObj sets; hitReCalcMatrix2 multiplies in mapObj->unkAC
+    HIT_FLAG_ANIMATED = 0x10,   // hitMain sets; hitReCalcMatrix2 uses animMtx instead of localMtx
+    HIT_FLAG_MTX_DIRTY = 0x40,  // hitReCalcMatrix and hitMain set; hitReCalcMatrix2 recomputes and clears
+    HIT_FLAG_DELETED = 0x80,    // hitDelete sets; name lookups and the active list skip it
+};
+
 struct HitEntry {
     u16 flags;                      // 0x0
     u8 unk2[0x4 - 0x2];             // 0x2
@@ -40,9 +56,9 @@ struct HitEntry {
     MapFileJoint* joint;            // 0x8
     Mtx worldMtx;                   // 0xC
     Mtx localMtx;                   // 0x3C
-    Mtx unk6C;                      // 0x6C
+    Mtx animMtx;                    // 0x6C, mapCalcAnimMatrix output; used in place of localMtx when HIT_FLAG_ANIMATED
     Vec centerLocal;                // 0x9C
-    s16 unkA8;                      // 0xA8
+    s16 vectorCount;                // 0xA8, hitCalcVtxPosition's return: length of `vectors`
     s16 mapIndex;                   // 0xAA
     HitVector* vectors;             // 0xAC
     HitDamageReturn* damage;        // 0xB0
@@ -53,7 +69,7 @@ struct HitEntry {
     struct HitEntry* parent;        // 0xD4
     struct HitEntry* child;         // 0xD8
     struct HitEntry* sibling;       // 0xDC
-    struct HitEntry* siblingActive; // 0xE0, TODO: next or sibling
+    struct HitEntry* nextActive;    // 0xE0, next in the active list (hitUpdateActiveList)
 };
 
 void hitInit(void);

@@ -59,7 +59,7 @@
     0000dd7c 005e1c 8001335c  1 .text 	hitdrv.o
 */
 
-HitEntry* lbl_80418408; // TODO: proper name
+HitEntry* hitActiveHead; // first entry of the active list, built by hitUpdateActiveList and walked by hitCheckVecFilter
 
 // local prototypes
 
@@ -174,7 +174,7 @@ HitEntry* _hitEnt(MapFileJoint* joint, HitEntry* parent, Mtx parentMtx, s32 mapI
 
         if (numVectors > 0) {
             hit->vectors = _mapAlloc(sizeof(HitVector) * numVectors);
-            hit->unkA8 = hitCalcVtxPosition(hit);
+            hit->vectorCount = hitCalcVtxPosition(hit);
         }
     }
     return hit;
@@ -196,7 +196,7 @@ HitEntry* hitEntry(MapFileJoint* root, Mtx rootMtx, s32 mapIndex) {
     u32 size;
 
     wp->entries[mapIndex].hitNumJoints = mapGetJoints(root);
-    size = OSRoundUp32B(((wp->entries[mapIndex].hitNumJoints + 128) * sizeof(HitEntry)));
+    size = OSRoundUp32B(((wp->entries[mapIndex].hitNumJoints + HIT_SPARE_ENTRIES) * sizeof(HitEntry)));
     wp->entries[mapIndex].hitEntries = _mapAlloc(size);
     memset(wp->entries[mapIndex].hitEntries, 0, size);
     return hitEntrySub(root, NULL, rootMtx, TRUE, mapIndex);
@@ -217,7 +217,7 @@ static inline void hitUpdateActiveList(void) {
     HitEntry* hit;
     HitEntry* prev;
 
-    prev = lbl_80418408 = NULL;
+    prev = hitActiveHead = NULL;
     i = 0;
     map = wp->entries;
     for (; i < wp->entries->count; map++, i++) {
@@ -227,23 +227,23 @@ static inline void hitUpdateActiveList(void) {
                 // `prev = hit` is written in both arms: retail tail-duplicates the update into each
                 // branch, and a single update after the if/else costs the extra `mr r5, r6`.
                 if (prev == NULL) {
-                    lbl_80418408 = hit;
+                    hitActiveHead = hit;
                     prev = hit;
                 } else {
-                    prev->siblingActive = hit;
+                    prev->nextActive = hit;
                     prev = hit;
                 }
             }
         }
     }
     if (prev != NULL) {
-        prev->siblingActive = NULL;
+        prev->nextActive = NULL;
     }
 }
 
 // Same active-list rebuild as hitUpdateActiveList. Both pool the two zero initialisations
 // separately (`li r5, 0` for prev instead of coalescing prev onto i's zero `mr r5, r8`);
-// chaining `prev = lbl_80418408 = NULL;` and letting i follow keeps them apart and schedules
+// chaining `prev = hitActiveHead = NULL;` and letting i follow keeps them apart and schedules
 // both `li`s before the store, as retail does in both hitMain and hitDelete.
 #ifdef MUST_MATCH
 static inline void hitDeleteUpdateActiveList(void) {
@@ -254,7 +254,7 @@ static inline void hitDeleteUpdateActiveList(void) {
     HitEntry* hit;
     HitEntry* prev;
 
-    prev = lbl_80418408 = NULL;
+    prev = hitActiveHead = NULL;
     i = 0;
     map = wp->entries;
     for (; i < wp->entries->count; map++, i++) {
@@ -262,17 +262,17 @@ static inline void hitDeleteUpdateActiveList(void) {
         for (j = 0; j < map->hitNumJoints; j++, hit++) {
             if (hit->joint->partCount != 0 && !(hit->flags & 0x81)) {
                 if (prev == NULL) {
-                    lbl_80418408 = hit;
+                    hitActiveHead = hit;
                     prev = hit;
                 } else {
-                    prev->siblingActive = hit;
+                    prev->nextActive = hit;
                     prev = hit;
                 }
             }
         }
     }
     if (prev != NULL) {
-        prev->siblingActive = NULL;
+        prev->nextActive = NULL;
     }
 }
 #endif
@@ -287,8 +287,8 @@ void hitDelete(const char* name) {
     for (i = 0; i < wp->entries->count; map++, i++) {
         hit = map->hitEntries;
         for (j = 0; j < map->hitNumJoints; j++, hit++) {
-            if (!(hit->flags & 0x80) && !strcmp(name, hit->joint->name)) {
-                hit->flags |= 0x80;
+            if (!(hit->flags & HIT_FLAG_DELETED) && !strcmp(name, hit->joint->name)) {
+                hit->flags |= HIT_FLAG_DELETED;
 #ifdef MUST_MATCH
                 hitDeleteUpdateActiveList();
 #else
@@ -324,7 +324,7 @@ static inline HitEntry* hitFindElem(void* elem) {
     for (i = 0; i < new_var2->count; map++, i++) {
         hit = map->hitEntries;
         for (j = 0; j < map->hitNumJoints; j++, hit++) {
-            if (!(hit->flags & 0x80) && !strcmp(hit->joint->name, name)) {
+            if (!(hit->flags & HIT_FLAG_DELETED) && !strcmp(hit->joint->name, name)) {
                 return hit;
             }
         }
@@ -341,7 +341,7 @@ void hitMain(void) {
     MapEntry* map;
     MapWork* wp = mapGetWork();
     s32 j, k, i;
-    u8* anim;
+    MapEntryAnimData* anim;
     s32 anyScale;
     HitEntry* found;
     Mtx mtx;
@@ -350,11 +350,11 @@ void hitMain(void) {
 
     map = wp->entries;
     for (i = 0; i < wp->entries->count; map++, i++) {
-        anim = (u8*)map->animData;
+        anim = map->animData;
         anyScale = 0;
-        for (j = 0; j < map->animCount; j++, anim += 0x20) {
-            u16 animFlags = *(u16*)anim;
-            u8* list = *(u8**)(anim + 0x18);
+        for (j = 0; j < map->animCount; j++, anim++) {
+            u16 animFlags = anim->flags;
+            u8* list = anim->data;
             u8* childList = *(u8**)(list + 0xC);
 
             if ((animFlags & 1) && !((animFlags & 2) && (animFlags & 0x1000)) && childList != NULL) {
@@ -366,11 +366,11 @@ void hitMain(void) {
                     found = hitNameToPtr(*(char**)(*(void**)(p + 4)));
 #endif
                     if (found != NULL) {
-                        mapCalcAnimMatrix(found->unk6C, found->localMtx, (MapEntryAnimData*)anim, *(void**)(p + 4));
+                        mapCalcAnimMatrix(found->animMtx, found->localMtx, anim, *(void**)(p + 4));
                         anyScale = 1;
-                        found->flags |= 0x10;
-                        found->flags |= 0x40;
-                        *(u16*)anim |= 0x1000;
+                        found->flags |= HIT_FLAG_ANIMATED;
+                        found->flags |= HIT_FLAG_MTX_DIRTY;
+                        anim->flags |= 0x1000;
                     }
                 }
             }
@@ -514,7 +514,7 @@ void hitGrpAttrOff(const char* name, s32 attr) {
 void hitReCalcMatrix(HitEntry* hit, Mtx mtx) {
     Vec world;
 
-    hit->flags |= 0x40;
+    hit->flags |= HIT_FLAG_MTX_DIRTY;
     hitReCalcMatrix2(hit, mtx, FALSE);
     MTXMultVec(hit->worldMtx, &hit->joint->bboxMax, &world);
     hit->radius = PSVECDistance(&world, &hit->centerWorld);
@@ -524,24 +524,24 @@ void hitReCalcMatrix2(HitEntry* hit, Mtx mtx, BOOL recursion) {
     int var_r3_3;
 
     var_r3_3 = 0;
-    if (hit->flags & 0x40) {
+    if (hit->flags & HIT_FLAG_MTX_DIRTY) {
         var_r3_3 = 1;
     }
     if (recursion != 0) {
         var_r3_3 = 1;
     }
     if (var_r3_3 != 0) {
-        if (hit->flags & 0x10) {
-            PSMTXConcat(mtx, hit->unk6C, hit->worldMtx);
+        if (hit->flags & HIT_FLAG_ANIMATED) {
+            PSMTXConcat(mtx, hit->animMtx, hit->worldMtx);
         } else {
             PSMTXConcat(mtx, hit->localMtx, hit->worldMtx);
         }
-        if (hit->flags & 0x20) {
+        if (hit->flags & HIT_FLAG_MAPOBJ) {
             PSMTXConcat(hit->worldMtx, hit->mapObj->unkAC, hit->worldMtx);
         }
         PSMTXMultVec(hit->worldMtx, &hit->centerLocal, &hit->centerWorld);
         hitCalcVtxPosition(hit);
-        hit->flags &= ~0x40;
+        hit->flags &= ~HIT_FLAG_MTX_DIRTY;
         if (hit->child != NULL) {
             hitReCalcMatrix2(hit->child, hit->worldMtx, TRUE);
         }
@@ -922,18 +922,18 @@ HitEntry* hitCheckVecFilter(HitCheckQuery* query, HitFilterCallback callback) { 
     temp_f28 = query->targetDistance * temp;
     PSVECScale(&query->targetDir, &spA4, temp_f28);
     PSVECAdd(&query->targetPos, &spA4, &spA4);
-    var_r29 = lbl_80418408;
+    var_r29 = hitActiveHead;
     if (query->targetDir.y == 0.0f) {
         while (var_r29 != NULL) {
             if (callback == NULL || callback(query, var_r29)) {
                 if (!(PSVECDistance(&spA4, &var_r29->centerWorld) > temp_f28 + var_r29->radius)) {
-                    if (var_r29->joint->drawMode->cullMode == 1) {
+                    if (var_r29->joint->drawMode->cullMode == HIT_CULL_BACK) {
                         query->singleSided = 1;
                     } else {
                         query->singleSided = 0;
                     }
                     var_r31 = var_r29->vectors;
-                    for (i = 0; i < var_r29->unkA8; i++, var_r31++) {
+                    for (i = 0; i < var_r29->vectorCount; i++, var_r31++) {
                         if ((query->singleSided == 0) ||
                             !(PSVECDotProduct(&var_r31->normal, &query->targetDir) >= 0.0f)) {
                             if (checkTriVec_xz(query, var_r31) && (var_f29 < 0.0f || var_f29 > query->targetDistance)) {
@@ -947,20 +947,20 @@ HitEntry* hitCheckVecFilter(HitCheckQuery* query, HitFilterCallback callback) { 
                     }
                 }
             }
-            var_r29 = var_r29->siblingActive;
+            var_r29 = var_r29->nextActive;
         }
     } else if (query->targetDir.x == 0.0f && query->targetDir.z == 0.0f) {
         if (query->targetDir.y == -1.0f) {
             while (var_r29 != NULL) {
                 if (callback == NULL || callback(query, var_r29)) {
                     if (!(PSVECDistance(&spA4, &var_r29->centerWorld) > temp_f28 + var_r29->radius)) {
-                        if (var_r29->joint->drawMode->cullMode == 1) {
+                        if (var_r29->joint->drawMode->cullMode == HIT_CULL_BACK) {
                             query->singleSided = 1;
                         } else {
                             query->singleSided = 0;
                         }
                         vector = var_r29->vectors;
-                        for (i = 0; i < var_r29->unkA8; i++, vector++) {
+                        for (i = 0; i < var_r29->vectorCount; i++, vector++) {
                             if (query->singleSided == 0 || !(vector->normal.y <= 0.0f)) {
                                 if (tempfunc(query, vector) && (var_f29 < 0.0f || var_f29 > query->targetDistance)) {
                                     var_f29 = query->targetDistance;
@@ -973,19 +973,19 @@ HitEntry* hitCheckVecFilter(HitCheckQuery* query, HitFilterCallback callback) { 
                         }
                     }
                 }
-                var_r29 = var_r29->siblingActive;
+                var_r29 = var_r29->nextActive;
             }
         } else if (query->targetDir.y == 1.0f) {
             while (var_r29 != NULL) {
                 if (callback == NULL || callback(query, var_r29)) {
                     if (!(PSVECDistance(&spA4, &var_r29->centerWorld) > temp_f28 + var_r29->radius)) {
-                        if (var_r29->joint->drawMode->cullMode == 1) {
+                        if (var_r29->joint->drawMode->cullMode == HIT_CULL_BACK) {
                             query->singleSided = 1;
                         } else {
                             query->singleSided = 0;
                         }
                         vector = var_r29->vectors;
-                        for (i = 0; i < var_r29->unkA8; i++, vector++) {
+                        for (i = 0; i < var_r29->vectorCount; i++, vector++) {
                             if (query->singleSided == 0 || !(vector->normal.y >= 0.0f)) {
                                 if (tempfunc2(query, vector) && (var_f29 < 0.0f || var_f29 > query->targetDistance)) {
                                     var_f29 = query->targetDistance;
@@ -998,7 +998,7 @@ HitEntry* hitCheckVecFilter(HitCheckQuery* query, HitFilterCallback callback) { 
                         }
                     }
                 }
-                var_r29 = var_r29->siblingActive;
+                var_r29 = var_r29->nextActive;
             }
         } else {
             goto label_235;
@@ -1008,13 +1008,13 @@ HitEntry* hitCheckVecFilter(HitCheckQuery* query, HitFilterCallback callback) { 
         while (var_r29 != NULL) {
             if (callback == NULL || callback(query, var_r29)) {
                 if (!(PSVECDistance(&spA4, &var_r29->centerWorld) > (temp_f28 + var_r29->radius))) {
-                    if (var_r29->joint->drawMode->cullMode == 1) {
+                    if (var_r29->joint->drawMode->cullMode == HIT_CULL_BACK) {
                         query->singleSided = 1;
                     } else {
                         query->singleSided = 0;
                     }
                     vector = var_r29->vectors;
-                    for (i = 0; i < var_r29->unkA8; i++, vector++) {
+                    for (i = 0; i < var_r29->vectorCount; i++, vector++) {
                         if (query->singleSided == 0 || !(PSVECDotProduct(&vector->normal, &query->targetDir) >= 0.0f)) {
                             if (tempfunc3(query, vector) && (var_f29 < 0.0f || var_f29 > query->targetDistance)) {
                                 var_f29 = query->targetDistance;
@@ -1027,7 +1027,7 @@ HitEntry* hitCheckVecFilter(HitCheckQuery* query, HitFilterCallback callback) { 
                     }
                 }
             }
-            var_r29 = var_r29->siblingActive;
+            var_r29 = var_r29->nextActive;
         }
     }
     if (var_r28 == NULL) {
@@ -1143,13 +1143,13 @@ BOOL hitCheckVecHitObjXZ(HitCheckQuery* query, HitEntry* entry) { // 1:1
     int i;
     HitVector* vector;
 
-    if (entry->joint->drawMode->cullMode == 1) {
+    if (entry->joint->drawMode->cullMode == HIT_CULL_BACK) {
         query->singleSided = 1;
     } else {
         query->singleSided = 0;
     }
     vector = entry->vectors;
-    for (i = 0; i < entry->unkA8; i++, vector++) {
+    for (i = 0; i < entry->vectorCount; i++, vector++) {
         if ((query->singleSided == 0 || !(PSVECDotProduct(&vector->normal, &query->targetDir) >= 0.0f)) &&
             checkTriVec_xz(query, vector)) {
             return 1;
@@ -1222,7 +1222,7 @@ HitEntry* hitCheckSphereFilter(HitFilterCallback callback, f32 x, f32 y, f32 z,
         for (j = 0; j < var_r31->hitNumJoints; j++, var_r23++) {
             if ((var_r23->attributes & 0x80000000) && (var_r23->joint->partCount != 0)) {
                 flags = var_r23->flags;
-                if (!(flags & 1) && !(flags & 0x80)) {
+                if (!(flags & 1) && !(flags & HIT_FLAG_DELETED)) {
                     temp_f1 = PSVECDistance(&sp68, &var_r23->centerWorld);
                     if (!(temp_f1 > (distance + var_r23->radius))) {
                         if (callback == NULL || callback(query, var_r23)) {
@@ -1258,13 +1258,13 @@ HitEntry* hitCheckSphereFilter(HitFilterCallback callback, f32 x, f32 y, f32 z,
     var_r29 = -1;
     query->targetPos = sp68;
     query->targetDistance = distance;
-    if (temp_r27->joint->drawMode->cullMode == 1) {
+    if (temp_r27->joint->drawMode->cullMode == HIT_CULL_BACK) {
         query->singleSided = 1;
     } else {
         query->singleSided = 0;
     }
     vector = temp_r27->vectors;
-    for (i = 0; i < temp_r27->unkA8; i++, vector++) {
+    for (i = 0; i < temp_r27->vectorCount; i++, vector++) {
         if ((query->singleSided == 0) || !(PSVECDotProduct(&vector->normal, &query->targetDir) >= 0.0f)) {
             if (tempfunc3(query, vector) && ((var_f30 < 0.0f) || (var_f30 > query->targetDistance))) {
                 var_f30 = query->targetDistance;
@@ -1303,7 +1303,7 @@ HitEntry* hitNameToPtr(const char* name) { // 1:1
     for (i = 0; i < new_var2->count; map++, i++) {
         hit = map->hitEntries;
         for (j = 0; j < map->hitNumJoints; j++, hit++) {
-            if (!(hit->flags & 0x80) && !strcmp(hit->joint->name, name)) {
+            if (!(hit->flags & HIT_FLAG_DELETED) && !strcmp(hit->joint->name, name)) {
                 return hit;
             }
         }
@@ -1367,7 +1367,7 @@ const char* hitGetName(HitEntry* hit) { // 1:1
     count = map->count;
     for (i = 0; i < count; map++, i++) {
         start = (u32)map->hitEntries;
-        size = OSRoundUp32B((map->hitNumJoints + 0x80) * sizeof(HitEntry));
+        size = OSRoundUp32B((map->hitNumJoints + HIT_SPARE_ENTRIES) * sizeof(HitEntry));
         if ((u32)hit >= start && (u32)hit < start + size) {
             break;
         }
@@ -1383,7 +1383,7 @@ s32 hitGetAttr(HitEntry* hit) { // 1:1
 }
 
 void hitDamageReturnSet(HitEntry* hit, HitDamageReturn* damage, BOOL recursion) { // 1:1
-    hit->attributes |= 0x40000000;
+    hit->attributes |= HIT_ATTR_DAMAGE_RETURN;
     hit->damage = damage;
     if (hit->child != NULL) {
         hitDamageReturnSet(hit->child, damage, TRUE);
@@ -1423,7 +1423,7 @@ void hitBindMapObj(const char* hitName, const char* mapobjName) {
         return;
     }
     hit->mapObj = mapObj;
-    hit->flags |= 0x20;
+    hit->flags |= HIT_FLAG_MAPOBJ;
 }
 
 void hitBindUpdate(const char* name) {
@@ -1436,7 +1436,7 @@ void hitBindUpdate(const char* name) {
         mapErrorEntry(1, name);
         return;
     }
-    if (hit->flags & 0x20) {
+    if (hit->flags & HIT_FLAG_MAPOBJ) {
         parent = hit->parent;
         if (parent != NULL) {
             hitReCalcMatrix(hit, parent->worldMtx);

@@ -8435,3 +8435,13 @@ All 11 raw `(u8*)gp + 0x..` casts are gone; mot_walk's `extern s32 gp` is now `G
 `lastMapName` (0x14C) out of what had been a 0x20-byte `currentAreaName`: seq_mapchange and seq_gameover copy the
 current map there before leaving for the title screen or game over. Unnamed `gp->` field uses 75 → 2 (`unk8`, only ever
 written 0). `field_C` (a game-over/debug-battle gate nothing sets) stays unnamed.
+
+### Readability: hitdrv names (2026-10-19, Claude Haiku 5.5, night8-rd-hit; reviewed by Claude Opus 5.5)
+
+HitEntry `unk6C` → `animMtx` (mapCalcAnimMatrix output, used instead of localMtx when animated), `unkA8` →
+`vectorCount` (length of `vectors`), `siblingActive` → `nextActive` (the active list), and `lbl_80418408` →
+`hitActiveHead` (its head; config symbol unchanged). `HitFlag` names flags 0x10/0x20/0x40/0x80 (animated, map-object
+bound, matrix dirty, deleted); `HIT_SPARE_ENTRIES`, `HIT_CULL_BACK`, `HIT_ATTR_DAMAGE_RETURN` replace literals, and
+hitMain's animation walk uses `MapEntryAnimData*` instead of raw offsets. Still open: the 0x1 flag, hitMain's
+animation child list (a count then `MapFileJoint*`s, typed in mapdrv's animation_table), and raw `hitGetAttr` bits in
+party/item code. The debug-overlay branch still says `lbl_80418408`/`unkA8` and needs the new names when rebased.
