@@ -8536,3 +8536,16 @@ gets the same move fields, `partFlags` (0x204), and `poseSound`/`poseSoundEventI
 Set/GetPartsPos use `mPosition` directly. Raw unit/part casts 411 → 225; battle_event_cmd.c 800 → 318 weighted.
 Still local or unnamed: BtlUnitSeMode, battle_unit.c's HpGaugeLocal (duplicates BattleWorkHpGauge; codegen-sensitive),
 the part's pose-anim block at 0x1C0, and BattleUnit 0x29C-0x2CC.
+
+### Readability: mri_puni names (2026-10-19, Claude Haiku 5.5, n9-rd-puni; reviewed by Claude Opus 5.5)
+
+mri_puni.c was the worst file in the tree (286 per kLOC); it's now 108. PuniWork gets `systemMode`, `area` (from
+evt_puni_setup, mirrored in SW 0x299), `flags`, `levelY[4]`, `yMode`/`mapKind`, `respawnPos`, the two y-bands,
+`switchPuni[4]`, `targets[10]` (a new `PuniTarget`), `phase`/`prevPhase`, the random seeds, the swarm sound state,
+`arrivePos`/`arriveDistSq` pairs and the fight-sound counters. PuniData (one Puni, 0x5A8 bytes) gets `flags`, `mode`,
+`state`, anim indices, `angle`, `pos`, `vel`, `accel`, the `parentPuni`/`leftPuni`/`rightPuni` links,
+`target`, timers, `effect`, `direction`, `scale`, and the jump fields (`height`, `vertVel`, `jumpVelStart`,
+`gravity`). Array bounds use `PUNI_DATA_MAX` and `sizeof(PuniData)`. Kept raw: five functions (`puniModePoint`,
+`puniModeExit`, `puniModeEnter`, `puniModeMass`, `unk_mri_00012d58`) whose `u8* p` base can't be retyped without
+changing register allocation, and `((PuniData*)p)->` accesses elsewhere for the same reason. `flags` stays s32
+(u32 changes evt_puni_flag_onoff).

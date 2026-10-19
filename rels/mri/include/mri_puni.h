@@ -9,92 +9,98 @@
 #define PUNI_DATA_MAX 211
 #define PUNI_TEX_INFO_MAX 200
 
+// One entry of PuniWork's target table at 0x374.
+typedef struct PuniTarget {
+    s32 flags;                          // 0x0
+    Vec position;            // 0x4
+    struct HitEntry* hit;    // 0x10
+} PuniTarget; // 0x14
+
+typedef struct MriPuniAnimSet {
+    s16* unk0[10]; // 0x00
+    s16 unk28[10]; // 0x28
+    s16 unk3C[10]; // 0x3C
+} MriPuniAnimSet; // 0x50
+
 typedef struct PuniWork {
-    s32 field_0x0;                      // 0x0
-    u8 unk4[0x324 - 0x4];               // 0x4
-    s32 field_0x324;                    // 0x324
-    s32 unk328;                         // 0x328
-    f32 field_0x32C;                    // 0x32C
-    f32 field_0x330;                    // 0x330
-    f32 field_0x334;                    // 0x334
-    f32 field_0x338;                    // 0x338
-    s32 field_0x33C;                    // 0x33C
-    s32 field_0x340;                    // 0x340
-    Vec field_0x344;                    // 0x344
-    f32 field_0x350;                    // 0x350
-    f32 field_0x354;                    // 0x354
-    f32 field_0x358;                    // 0x358
-    f32 field_0x35C;                    // 0x35C
+    s32 systemMode;                     // 0x0, evt_puni_get/set_systemmode
+    MriPuniAnimSet animSet[2];          // 0x4
+    char puniNames[4][10][16];          // 0xA4, four 10-entry name tables
+    u32 flags;                          // 0x324
+    s32 area;                           // 0x328, set by evt_puni_setup (args[0] + 1), also written to SW 0x299
+    f32 levelY[4];                      // 0x32C, the four heights puniSetYPosition chooses between
+    s32 yMode;                          // 0x33C, switch in puniSetYPosition
+    s32 mapKind;                        // 0x340, 0 none, 1 MRI_06 grid, 2 table-driven grid
+    Vec respawnPos;                     // 0x344
+    f32 bandTop0;                       // 0x350
+    f32 bandBottom0;                    // 0x354
+    f32 bandTop1;                       // 0x358
+    f32 bandBottom1;                    // 0x35C
     s32 field_0x360;                    // 0x360
-    struct PuniData* field_0x364;       // 0x364
-    struct PuniData* field_0x368;       // 0x368
-    struct PuniData* field_0x36C;       // 0x36C
-    struct PuniData* field_0x370;       // 0x370
-    s32 field_0x374;                    // 0x374
-    Vec field_0x378;                    // 0x378
-    s32 field_0x384;                    // 0x384
-    u8 unk388[0x43C - 0x388];           // 0x388
-    s32 field_0x43C;                    // 0x43C
-    s32 field_0x440;                    // 0x440
+    struct PuniData* switchPuni[4];     // 0x364, the puni bound to SW 0xB3C..0xB3F
+    PuniTarget targets[10];             // 0x374
+    s32 phase;                          // 0x43C, set to 2/3/5 by mode changes, 0 when idle
+    s32 prevPhase;                      // 0x440
     BOOL showPuniCounter;               // 0x444
     BOOL unk448;                        // 0x448
     s32 puniCounterAlpha;               // 0x44C
-    s32 field_0x450;                    // 0x450
-    s32 field_0x454;                    // 0x454
-    s32 field_0x458;                    // 0x458
-    s32 field_0x45C;                    // 0x45C
-    s32 field_0x460;                    // 0x460
+    s32 randSeedA;                      // 0x450, puni_rnd / puniQrnd state
+    s32 randSeedB;                      // 0x454
+    u32 field_0x458;                    // 0x458
+    s32 soundNum;                       // 0x45C, puniSound's count
+    s32 soundLevel;                     // 0x460, 0..6 bucket of soundNum
     u8 unk464[0x468 - 0x464];           // 0x464
-    s32 field_0x468;                    // 0x468
-    s32 field_0x46C;                    // 0x46C
-    s32 field_0x470;                    // 0x470
-    s32 field_0x474;                    // 0x474
-    s32 field_0x478;                    // 0x478
+    u32 moveSfx;                        // 0x468, SFX_STG2_TOGE_MOVE handle
+    s32 moveCount;                      // 0x46C
+    s32 moveLevel;                      // 0x470, 0..3 bucket of moveCount
+    s32 prevMoveLevel;                  // 0x474
+    u32 togettiSfx;                     // 0x478, SFX_STG2_TOGETTI_MOVE1 handle
     s32 field_0x47C;                    // 0x47C
-    Vec field_0x480;                    // 0x480
-    Vec field_0x48C;                    // 0x48C
+    Vec arrivePos;                      // 0x480
+    Vec arrivePos2;                     // 0x48C
     u8 unk498[0x4B0 - 0x498];           // 0x498
-    f32 field_0x4B0;                    // 0x4B0
-    f32 field_0x4B4;                    // 0x4B4
+    f32 arriveDistSq;                   // 0x4B0, squared radius around arrivePos
+    f32 arriveDistSq2;                  // 0x4B4, squared radius around arrivePos2
     u8 unk4B8[0x4C0 - 0x4B8];           // 0x4B8
-    s32 field_0x4C0;                    // 0x4C0
-    s32 field_0x4C4;                    // 0x4C4
+    s32 fightSfxCount0;                 // 0x4C0, SFX_STG2_FIGHT_TOGE1 plays
+    s32 fightSfxCount1;                 // 0x4C4, SFX_STG2_FIGHT_TOGE2 plays
     u8 unk4C8[0x4CC - 0x4C8];           // 0x4C8
     s32 field_0x4CC;                    // 0x4CC
 } PuniWork;  // 0x4D0
 
 typedef struct PuniData {
     s32 field_0x0;                      // 0x0
-    s32 unk4;                           // 0x4
+    s32 flags;                          // 0x4
     s32 field_0x8;                      // 0x8
-    u16 unkC;                           // 0xC
+    u16 mode;                           // 0xC
     s16 field_0xE;                      // 0xE
     u8 unk10[0x114 - 0x10];             // 0x10
-    u16 field_0x114;                    // 0x114
-    s16 field_0x116;                    // 0x116
+    u16 state;                          // 0x114
+    s16 angle;                          // 0x116
     s16 field_0x118;                    // 0x118
     s16 field_0x11A;                    // 0x11A
-    u16 field_0x11C;                    // 0x11C
-    s16 field_0x11E;                    // 0x11E
+    u16 animIdx;                        // 0x11C
+    u16 prevAnimIdx;                    // 0x11E
     u8 unk120[0x121 - 0x120];           // 0x120
     u8 field_0x121;                     // 0x121
     u8 unk122[0x124 - 0x122];           // 0x122
-    s32 field_0x124;                    // 0x124
-    s32 field_0x128;                    // 0x128
-    Vec field_0x12C;                    // 0x12C
+    s32 animTime;                       // 0x124
+    s32 timer;                          // 0x128
+    Vec pos;                            // 0x12C
     Vec field_0x138;                    // 0x138
     f32 field_0x144;                    // 0x144
     f32 field_0x148;                    // 0x148
     f32 field_0x14C;                    // 0x14C
     u8 unk150[0x15C - 0x150];           // 0x150
-    Vec field_0x15C;                    // 0x15C
+    Vec vel;                            // 0x15C
     u8 unk168[0x174 - 0x168];           // 0x168
     f32 field_0x174;                    // 0x174
-    u8 unk178[0x180 - 0x178];           // 0x178
-    f32 field_0x180;                    // 0x180
+    f32 gravity;                        // 0x178
+    u8 unk17C[0x180 - 0x17C];           // 0x17C
+    f32 direction;                      // 0x180
     f32 field_0x184;                    // 0x184
     f32 field_0x188;                    // 0x188
-    f32 field_0x18C;                    // 0x18C
+    f32 scale;                          // 0x18C
     f32 field_0x190;                    // 0x190
     f32 field_0x194;                    // 0x194
     f32 field_0x198;                    // 0x198
@@ -110,21 +116,21 @@ typedef struct PuniData {
     f32 field_0x1C0;                    // 0x1C0
     u8 unk1C4[0x1C8 - 0x1C4];           // 0x1C4
     OSTime modeStartTime;               // 0x1C8
-    s32 field_0x1D0;                    // 0x1D0
-    s32 field_0x1D4;                    // 0x1D4
-    s32 field_0x1D8;                    // 0x1D8
-    s32 field_0x1DC;                    // 0x1DC
-    u8 unk1E0[0x1E4 - 0x1E0];           // 0x1E0
+    s32 parentPuni;                     // 0x1D0
+    s32 leftPuni;                       // 0x1D4
+    s32 rightPuni;                      // 0x1D8
+    s32 target;                         // 0x1DC
+    s32 subState;                       // 0x1E0
     s32 field_0x1E4;                    // 0x1E4
     u8 unk1E8[0x1EC - 0x1E8];           // 0x1E8
-    f32 field_0x1EC;                    // 0x1EC
-    f32 field_0x1F0;                    // 0x1F0
-    u8 unk1F4[0x1F8 - 0x1F4];           // 0x1F4
-    Vec field_0x1F8;                    // 0x1F8
+    f32 height;                         // 0x1EC
+    f32 vertVel;                        // 0x1F0
+    f32 jumpVelStart;                   // 0x1F4
+    Vec accel;                          // 0x1F8
     Vec field_0x204;                    // 0x204
     struct HitEntry* field_0x210;       // 0x210
     struct HitEntry* field_0x214;       // 0x214
-    s32 field_0x218;                    // 0x218
+    s32 effect;                         // 0x218
     u8 unk21C[0x560 - 0x21C];           // 0x21C
     Vec field_0x560;                    // 0x560
     s32 field_0x56C;                    // 0x56C
@@ -161,13 +167,6 @@ typedef struct PuniMap {
     s32 field_0x1C;      // 0x1C
     u16* field_0x20;     // 0x20
 } PuniMap; // 0x24
-
-// One entry of PuniWork's target table at 0x374.
-typedef struct PuniTarget {
-    s32 flags;               // 0x0
-    Vec position;            // 0x4
-    struct HitEntry* hit;    // 0x10
-} PuniTarget; // 0x14
 
 typedef struct PuniTexInfo {
     char* unk0; // 0x0
