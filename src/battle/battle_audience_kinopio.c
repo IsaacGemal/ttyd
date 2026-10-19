@@ -1253,7 +1253,12 @@ void BattleAudienceCtrlProcessKinopioIntrude(s32 index) {
 	}
 	case 0xf:
 		member->mRotation.y = *(f32*)((u8*)camGetPtr(4) + 0x114);
-		if (__fabs(member->position.x) >= *(volatile f64*)&double_450_802f8d88) {
+#ifdef MUST_MATCH
+		// Read through a pointer cast, as retail loads it; the plain read scores 99.995%.
+		if (__fabs(member->position.x) >= *(const f64*)&double_450_802f8d88) {
+#else
+		if (__fabs(member->position.x) >= double_450_802f8d88) {
+#endif
 			member->field_0x4 = 0x10;
 			*(s32*)member->field_0x8 = 0x23;
 			*(Vec*)(member->field_0x8 + 0x70) = vec3_802f8c84;
@@ -1393,7 +1398,12 @@ void BattleAudienceCtrlProcessKinopioIntrude(s32 index) {
 	}
 		break;
 	case 0x4b:
-		if (__fabs(member->position.x) >= *(volatile f64*)&double_300_802f8d90) {
+#ifdef MUST_MATCH
+		// Read through a pointer cast, as retail loads it; the plain read scores 99.995%.
+		if (__fabs(member->position.x) >= *(const f64*)&double_300_802f8d90) {
+#else
+		if (__fabs(member->position.x) >= double_300_802f8d90) {
+#endif
 			member->field_0x4 = 0x50;
 			*(Vec*)(member->field_0x8 + 0x70) = vec3_802f8c90;
 			psndSFXOff(intrudeSound);

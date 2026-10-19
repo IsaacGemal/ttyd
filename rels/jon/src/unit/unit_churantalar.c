@@ -418,7 +418,7 @@ static BattleWeapon weapon_piders_renzoku_attack = {
 };
 
 // Colour word (opaque white; the alpha byte is filled in per frame by piders_draw_yarn_sub).
-const u32 dat_jon_0000e7a8 = 0xFFFFFF00;
+const GXColor dat_jon_0000e7a8 = {0xFF, 0xFF, 0xFF, 0x00};
 
 static USER_FUNC(piders_yarn_init) {
     s32 id = BattleTransID(event, -2);
@@ -454,7 +454,7 @@ static EVT_BEGIN(dmg_first_attack_pos)
 EVT_END()
 
 static inline GXColor piders_getMatColor(PidersYarnWork* yarn) {
-    GXColor color = *(volatile const GXColor*)&dat_jon_0000e7a8;
+    GXColor color = dat_jon_0000e7a8;
     color.a = yarn->field_0x18;
     return color;
 }
