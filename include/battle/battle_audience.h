@@ -45,13 +45,28 @@ typedef struct BattleAudienceMember {
     s16 itemId;                    // 0x1C, -1 is invalid
     u8 field_0x1E[0x20 - 0x1E];    // 0x1E
     s32** animTable;               // 0x20, set in BattleAudience_Entry_Sub
-    u8 field_0x24[0x48 - 0x24];    // 0x24
+    s32* animCur;                  // 0x24, animation in use (BattleAudience_SetAnim)
+    s32* animPos;                  // 0x28, cursor in the command list of animCur
+    s32 animWait;                  // 0x2C, frames left before the next command runs
+    u8 field_0x30[0x40 - 0x30];    // 0x30
+    u8 animDepth;                  // 0x40, index into the 0x34 table of the animation script
+    u8 colorR;                     // 0x41
+    u8 colorG;                     // 0x42
+    u8 colorB;                     // 0x43
+    u8 colorA;                     // 0x44, 0xFF after a reset
+    u8 field_0x45[0x48 - 0x45];    // 0x45
     Vec position;                  // 0x48
-    u8 field_0x54[0x9C - 0x54];    // 0x54
+    u8 field_0x54[0x90 - 0x54];    // 0x54
+    Vec normal;                    // 0x90, rotated by the member's matrix in the draw code (0,0,-1) after a reset
     Vec mRotation;                 // 0x9C
     Vec mRotationOffset;           // 0xA8
     Vec mHomePosition;             // 0xB4
-    u8 field_0xC0[0xE8 - 0xC0];    // 0xC0
+    u8 field_0xC0[0xCC - 0xC0];    // 0xC0
+    Vec jumpOffset;                // 0xCC, y is the hop height (clamped to 0 at the bottom)
+    u8 field_0xD8[0xDC - 0xD8];    // 0xD8
+    f32 jumpVelY;                  // 0xDC, added to jumpOffset.y each frame
+    u8 field_0xE0[0xE4 - 0xE0];    // 0xE0
+    f32 jumpAccelY;                // 0xE4, added to jumpVelY each frame
     f32 field_0xE8;                // 0xE8
     u8 field_0xEC[0xF8 - 0xEC];    // 0xEC
     s32 interpFramesLeft;          // 0xF8

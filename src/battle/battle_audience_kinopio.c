@@ -355,90 +355,90 @@ void BattleAudienceCtrlProcessKinopioWait(s32 index, s32 kind) {
 	}
 	switch (member->type) {
 	case 4:
-		if (*(s32*)(member->field_0x24 + 0xc) > 0xb4) {
-			if (*(s32*)(member->field_0x24 + 0xc) <= 0xbc) {
+		if (*(s32*)(member->field_0x30) > 0xb4) {
+			if (*(s32*)(member->field_0x30) <= 0xbc) {
 				*(f32*)(member->field_0x54 + 0x10) += 0.005f * step;
 			}
-			else if ((f32)(*(s32*)(member->field_0x24 + 0xc)) <=
+			else if ((f32)(*(s32*)(member->field_0x30)) <=
 			         8.0f * level + 188.0f) {
 				*(f32*)(member->field_0x54 + 0x10) -= 0.005f * step;
 			}
-			else if ((f32)(*(s32*)(member->field_0x24 + 0xc)) <=
+			else if ((f32)(*(s32*)(member->field_0x30)) <=
 			         16.0f * level + 188.0f) {
 				*(f32*)(member->field_0x54 + 0x10) += 0.005f * step;
 			}
-			else if ((f32)(*(s32*)(member->field_0x24 + 0xc)) <=
+			else if ((f32)(*(s32*)(member->field_0x30)) <=
 			         24.0f * level + 188.0f) {
 				*(f32*)(member->field_0x54 + 0x10) -= 0.005f * step;
 			}
-			else if ((f32)(*(s32*)(member->field_0x24 + 0xc)) <=
+			else if ((f32)(*(s32*)(member->field_0x30)) <=
 			         32.0f * level + 188.0f) {
 				*(f32*)(member->field_0x54 + 0x10) += 0.005f * step;
 			}
-			else if ((f32)(*(s32*)(member->field_0x24 + 0xc)) <=
+			else if ((f32)(*(s32*)(member->field_0x30)) <=
 			         40.0f * level + 188.0f) {
 				*(f32*)(member->field_0x54 + 0x10) -= 0.005f * step;
 			}
 			else {
 				*(f32*)(member->field_0x54 + 0x10) = 1.0f;
-				*(s32*)(member->field_0x24 + 0xc) = 0;
+				*(s32*)(member->field_0x30) = 0;
 			}
 		}
-		(*(s32*)(member->field_0x24 + 0xc))++;
+		(*(s32*)(member->field_0x30))++;
 		break;
 	case 6:
-		if ((f32)(*(s32*)(member->field_0x24 + 0xc)) >= 36.0f * level) {
+		if ((f32)(*(s32*)(member->field_0x30)) >= 36.0f * level) {
 			*(f32*)(member->field_0x54 + 0x10) = 1.0f;
-			*(s32*)(member->field_0x24 + 0xc) = 0;
+			*(s32*)(member->field_0x30) = 0;
 		}
-		if ((f32)(*(s32*)(member->field_0x24 + 0xc)) <= 17.0f * level) {
+		if ((f32)(*(s32*)(member->field_0x30)) <= 17.0f * level) {
 			*(f32*)(member->field_0x54 + 0x10) += 0.00175f * step;
 		}
 		else {
 			*(f32*)(member->field_0x54 + 0x10) -= 0.00175f * step;
 		}
-		(*(s32*)(member->field_0x24 + 0xc))++;
+		(*(s32*)(member->field_0x30))++;
 		break;
 	case 7:
-		if ((f32)(*(s32*)(member->field_0x24 + 0xc)) >= 22.0f * level) {
+		if ((f32)(*(s32*)(member->field_0x30)) >= 22.0f * level) {
 			*(f32*)(member->field_0x54 + 0x10) = 1.0f;
-			*(s32*)(member->field_0x24 + 0xc) = 0;
+			*(s32*)(member->field_0x30) = 0;
 		}
-		if ((f32)(*(s32*)(member->field_0x24 + 0xc)) <= 10.0f * level) {
+		if ((f32)(*(s32*)(member->field_0x30)) <= 10.0f * level) {
 			*(f32*)(member->field_0x54 + 0x10) += 0.00375f * step;
 		}
 		else {
 			*(f32*)(member->field_0x54 + 0x10) -= 0.00375f * step;
 		}
-		(*(s32*)(member->field_0x24 + 0xc))++;
+		(*(s32*)(member->field_0x30))++;
 		break;
 	case 9:
-		if ((f32)(*(s32*)(member->field_0x24 + 0xc)) >= 64.0f * level) {
+		if ((f32)(*(s32*)(member->field_0x30)) >= 64.0f * level) {
 			*(f32*)(member->field_0x54 + 0x10) = 1.0f;
-			*(s32*)(member->field_0x24 + 0xc) = 0;
+			*(s32*)(member->field_0x30) = 0;
 		}
-		if ((f32)(*(s32*)(member->field_0x24 + 0xc)) <= 31.0f * level) {
+		if ((f32)(*(s32*)(member->field_0x30)) <= 31.0f * level) {
 			*(f32*)(member->field_0x54 + 0x10) += 0.00125f * step;
 		}
 		else {
 			*(f32*)(member->field_0x54 + 0x10) -= 0.00125f * step;
 		}
-		(*(s32*)(member->field_0x24 + 0xc))++;
+		(*(s32*)(member->field_0x30))++;
 		break;
 	case 2:
 		break;
 	default:
-		if ((f32)(*(s32*)(member->field_0x24 + 0xc)) >= 32.0f * level) {
+		if ((f32)(*(s32*)(member->field_0x30)) >= 32.0f * level) {
 			*(f32*)(member->field_0x54 + 0x10) = 1.0f;
-			*(s32*)(member->field_0x24 + 0xc) = 0;
+			*(s32*)(member->field_0x30) = 0;
 		}
-		if ((f32)(*(s32*)(member->field_0x24 + 0xc)) <= 15.0f * level) {
+		if ((f32)(*(s32*)(member->field_0x30)) <= 15.0f * level) {
 			*(f32*)(member->field_0x54 + 0x10) += 0.0025f * step;
 		}
 		else {
 			*(f32*)(member->field_0x54 + 0x10) -= 0.0025f * step;
 		}
-		(*(s32*)(member->field_0x24 + 0xc))++;
+		(*(s32*)(member->field_0x30))++;
 		break;
 	}
 	if (member->flags & 0x40) {
@@ -516,19 +516,19 @@ void BattleAudienceCtrlProcessKinopioWaitHurimuki(s32 index, s32 kind) {
 	else {
 		BattleAudience_SetAnim(index, 1, 0);
 	}
-	if (*(s32*)(member->field_0x24 + 0xc) <= 0xf) {
+	if (*(s32*)(member->field_0x30) <= 0xf) {
 		member->mRotation.y =
-		    12.0f * (f32)(*(s32*)(member->field_0x24 + 0xc));
+		    12.0f * (f32)(*(s32*)(member->field_0x30));
 	}
-	if (*(s32*)(member->field_0x24 + 0xc) >= 0x1e) {
+	if (*(s32*)(member->field_0x30) >= 0x1e) {
 		member->mRotation.y =
-		    12.0f * (f32)(0x2d - *(s32*)(member->field_0x24 + 0xc));
+		    12.0f * (f32)(0x2d - *(s32*)(member->field_0x30));
 	}
-	if (*(s32*)(member->field_0x24 + 0xc) > 0x2d) {
+	if (*(s32*)(member->field_0x30) > 0x2d) {
 		BattleAudience_ChangeStatus(index, 0);
 	}
 	else {
-		(*(s32*)(member->field_0x24 + 0xc))++;
+		(*(s32*)(member->field_0x30))++;
 	}
 }
 
@@ -541,21 +541,21 @@ void BattleAudienceCtrlProcessKinopioWaitKubiKatamuke(s32 index, s32 kind) {
 	else {
 		BattleAudience_SetAnim(index, 1, 0);
 	}
-	if (*(s32*)(member->field_0x24 + 0xc) >= 0 && *(s32*)(member->field_0x24 + 0xc) <= 0xa) {
+	if (*(s32*)(member->field_0x30) >= 0 && *(s32*)(member->field_0x30) <= 0xa) {
 		*(f32*)(member->field_0x54 + 0x18) =
-		    1.5f * (f32)(*(s32*)(member->field_0x24 + 0xc));
+		    1.5f * (f32)(*(s32*)(member->field_0x30));
 	}
-	if (*(s32*)(member->field_0x24 + 0xc) >= 0x14 && *(s32*)(member->field_0x24 + 0xc) <= 0x28) {
+	if (*(s32*)(member->field_0x30) >= 0x14 && *(s32*)(member->field_0x30) <= 0x28) {
 		*(f32*)(member->field_0x54 + 0x18) -= 1.5f;
 	}
-	if (*(s32*)(member->field_0x24 + 0xc) >= 0x32 && *(s32*)(member->field_0x24 + 0xc) <= 0x3c) {
+	if (*(s32*)(member->field_0x30) >= 0x32 && *(s32*)(member->field_0x30) <= 0x3c) {
 		*(f32*)(member->field_0x54 + 0x18) += 1.5f;
 	}
-	if (*(s32*)(member->field_0x24 + 0xc) > 0x3c) {
+	if (*(s32*)(member->field_0x30) > 0x3c) {
 		BattleAudience_ChangeStatus(index, 0);
 	}
 	else {
-		(*(s32*)(member->field_0x24 + 0xc))++;
+		(*(s32*)(member->field_0x30))++;
 	}
 }
 
@@ -828,31 +828,31 @@ void BattleAudienceCtrlProcessKinopioDamage(s32 index) {
 		*(f32*)(member->field_0xC0 + 0x1c) = v;
 		a = 270.0f;
 		*(f32*)(member->field_0xC0 + 0x24) = w;
-		*(s32*)(member->field_0x24 + 0xc) = 0;
+		*(s32*)(member->field_0x30) = 0;
 		member->field_0xE8 = a;
 #else
 		*(f32*)(member->field_0xC0 + 0x1c) = 8.0f;
 		*(f32*)(member->field_0xC0 + 0x24) = -1.0f;
-		*(s32*)(member->field_0x24 + 0xc) = 0;
+		*(s32*)(member->field_0x30) = 0;
 		member->field_0xE8 = 270.0f;
 #endif
 		member->field_0x4++;
 		// fallthrough
 	case 1:
-		if (*(s32*)(member->field_0x24 + 0xc) >= 8) {
+		if (*(s32*)(member->field_0x30) >= 8) {
 			*(f32*)(member->field_0x54 + 0x10) = 1.0f;
-			*(s32*)(member->field_0x24 + 0xc) = 0;
+			*(s32*)(member->field_0x30) = 0;
 		}
-		if (*(s32*)(member->field_0x24 + 0xc) <= 4) {
+		if (*(s32*)(member->field_0x30) <= 4) {
 			*(f32*)(member->field_0x54 + 0x10) -= 0.1f;
 		}
 		else {
 			*(f32*)(member->field_0x54 + 0x10) += 0.1f;
 		}
-		(*(s32*)(member->field_0x24 + 0xc))++;
+		(*(s32*)(member->field_0x30))++;
 		if (BattleAudience_GetAnimEnd(index) == 1) {
 			*(f32*)(member->field_0x54 + 0x10) = 1.0f;
-			*(s32*)(member->field_0x24 + 0xc) = 0;
+			*(s32*)(member->field_0x30) = 0;
 			if ((u8)BattleAudience_GetEscapeChangeOK(index) == 1) {
 				BattleAudience_ChangeStatus(index, 0xc);
 				psndSFXOn_3D(str_802F8DE8, &member->position);
@@ -1037,22 +1037,22 @@ void BattleAudienceCtrlProcessKinopioSleep(s32 index, s32 kind) {
 		else {
 			BattleAudience_SetAnim(index, 0xb, 0);
 		}
-		if (*(s32*)(member->field_0x24 + 0xc) >= 0x140) {
+		if (*(s32*)(member->field_0x30) >= 0x140) {
 			*(f32*)(member->field_0x54 + 0x10) = 1.0f;
-			*(s32*)(member->field_0x24 + 0xc) = 0;
+			*(s32*)(member->field_0x30) = 0;
 		}
-		if (*(s32*)(member->field_0x24 + 0xc) <= 0xa0) {
+		if (*(s32*)(member->field_0x30) <= 0xa0) {
 			*(f32*)(member->field_0x54 + 0x10) -= 0.0025f;
 		}
 		else {
 			*(f32*)(member->field_0x54 + 0x10) += 0.0025f;
 		}
-		(*(s32*)(member->field_0x24 + 0xc))++;
-		*(u8*)(member->field_0x24 + 0x1f) = *(u8*)(member->field_0x24 + 0x1f) + *(u8*)(member->field_0x8 + 0x10);
-		if (*(u8*)(member->field_0x24 + 0x1f) >= 0xc8) {
+		(*(s32*)(member->field_0x30))++;
+		member->colorB = member->colorB + *(u8*)(member->field_0x8 + 0x10);
+		if (member->colorB >= 0xc8) {
 			*(s8*)(member->field_0x8 + 0x10) = -4;
 		}
-		else if (*(u8*)(member->field_0x24 + 0x1f) <= 5) {
+		else if (member->colorB <= 5) {
 			*(u8*)(member->field_0x8 + 0x10) = 4;
 		}
 	}
@@ -1079,7 +1079,7 @@ void BattleAudienceCtrlProcessKinopioSleep(s32 index, s32 kind) {
 			BattleAudience_SetAnim(index, 1, 0);
 		}
 		*(f32*)(member->field_0x54 + 0x10) = 1.0f;
-		*(u8*)(member->field_0x24 + 0x1f) = 0;
+		member->colorB = 0;
 		member->field_0x4++;
 		// fallthrough
 	case 3:

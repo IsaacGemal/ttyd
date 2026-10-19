@@ -1568,12 +1568,12 @@ void BattleAudienceCtrlProcess(void) {
 		if (member->flags & 0x10) {
 			f32 zero = 0.0f;
 
-			*(f32*)((u8*)member + 0xD0) += *(f32*)((u8*)member + 0xDC);
-			*(f32*)((u8*)member + 0xDC) += *(f32*)((u8*)member + 0xE4);
-			if (*(f32*)((u8*)member + 0xD0) <= zero) {
-				*(f32*)((u8*)member + 0xD0) = zero;
-				*(f32*)((u8*)member + 0xDC) = zero;
-				*(f32*)((u8*)member + 0xE4) = zero;
+			member->jumpOffset.y += member->jumpVelY;
+			member->jumpVelY += member->jumpAccelY;
+			if (member->jumpOffset.y <= zero) {
+				member->jumpOffset.y = zero;
+				member->jumpVelY = zero;
+				member->jumpAccelY = zero;
 			}
 		}
 		else if ((u8)BattleAudience_GetExist(i) != 0) {
@@ -2550,38 +2550,38 @@ void BattleAudienceAnimProcess(void) {
 			continue;
 		}
 		anim = *(s32**)((u8*)member + 0x28);
-		if (*(s32*)((u8*)member + 0x2C) > 0) {
-			*(s32*)((u8*)member + 0x2C) -= 1;
+		if (member->animWait > 0) {
+			member->animWait -= 1;
 			continue;
 		}
 		switch (*anim) {
 		case -2:
 			member->field_0x1A = anim[1];
-			*(s32*)((u8*)member + 0x2C) = anim[2];
+			member->animWait = anim[2];
 			*(s32*)((u8*)member + 0x28) += 0xC;
 			break;
 		case -3:
-			*(s32*)((u8*)member + 0x28) = *(s32*)((u8*)member + 0x24);
+			*(s32**)((u8*)member + 0x28) = member->animCur;
 			break;
 		case -4:
 			*(s32*)((u8*)member + 0x28) += 8;
 			break;
 		case -5:
 			target = anim[1];
-			*(s32*)((u8*)member + 0x28) = *(s32*)((u8*)member + 0x24);
+			*(s32**)((u8*)member + 0x28) = member->animCur;
 			while (!((*(s32**)((u8*)member + 0x28))[0] == -4 && (*(s32**)((u8*)member + 0x28))[1] == target)) {
 				*(s32*)((u8*)member + 0x28) += 4;
 			}
 			break;
 		case -6:
-			*(s32*)((u8*)member + 0x34 + *(u8*)((u8*)member + 0x40) * 4) = anim[1];
-			*(u8*)((u8*)member + 0x40) += 1;
+			*(s32*)((u8*)member + 0x34 + member->animDepth * 4) = anim[1];
+			member->animDepth += 1;
 			*(s32*)((u8*)member + 0x28) += 8;
 			break;
 		case -7:
-			*(s32*)((u8*)member + 0x30 + *(u8*)((u8*)member + 0x40) * 4) -= 1;
-			if (*(s32*)((u8*)member + 0x30 + *(u8*)((u8*)member + 0x40) * 4) <= 0) {
-				*(u8*)((u8*)member + 0x40) -= 1;
+			*(s32*)((u8*)member + 0x30 + member->animDepth * 4) -= 1;
+			if (*(s32*)((u8*)member + 0x30 + member->animDepth * 4) <= 0) {
+				member->animDepth -= 1;
 				*(s32*)((u8*)member + 0x28) += 4;
 			} else {
 				depth = 1;
@@ -2599,7 +2599,7 @@ void BattleAudienceAnimProcess(void) {
 			}
 			break;
 		case -8:
-			*(s32*)((u8*)member + 0x2C) = anim[1];
+			member->animWait = anim[1];
 			*(s32*)((u8*)member + 0x28) += 8;
 			break;
 		case -1:
@@ -2689,11 +2689,11 @@ void BattleAudienceDispAudience(CameraId camId, void* param) {
 
 	for (; i < 0xC8; i++, member++) {
 		if (dispGetCurWork()->renderMode != 2) {
-			if (*(u8*)((u8*)member + 0x44) != 0xFF) {
+			if (member->colorA != 0xFF) {
 				continue;
 			}
 		}
-		else if (*(u8*)((u8*)member + 0x44) == 0xFF) {
+		else if (member->colorA == 0xFF) {
 			continue;
 		}
 		if (!(member->flags & 1)) {
@@ -2780,23 +2780,22 @@ void BattleAudienceDispAudience(CameraId camId, void* param) {
 			mtxRot[2][3] = 0.0f;
 		}
 
-		// The member normal occupies the vector at offset 0x90.
-		*(Vec*)(member->field_0x54 + 0x3C) = vec3_802f9768;
-		PSMTXMultVec(mtxRot, (Vec*)(member->field_0x54 + 0x3C), (Vec*)(member->field_0x54 + 0x3C));
+		member->normal = vec3_802f9768;
+		PSMTXMultVec(mtxRot, &member->normal, &member->normal);
 
 		mtxScale[0][3] += offsetX;
 		mtxScale[1][3] += offsetY;
 		mtxScale[2][3] += offsetZ;
 		PSMTXConcat(mtxRot, mtxScale, mtxScale);
 
-		mtxScale[0][3] = mtxScale[0][3] + (*(f32*)((u8*)member + 0xCC) + (-offsetX + member->position.x));
-		mtxScale[2][3] = mtxScale[2][3] + (*(f32*)((u8*)member + 0xD4) + (-offsetZ + member->position.z));
+		mtxScale[0][3] = mtxScale[0][3] + (member->jumpOffset.x + (-offsetX + member->position.x));
+		mtxScale[2][3] = mtxScale[2][3] + (member->jumpOffset.z + (-offsetZ + member->position.z));
 		if (member->type != AUDIENCE_BOO) {
-			mtxScale[1][3] = mtxScale[1][3] + (*(f32*)((u8*)member + 0xD0) + (-offsetY + member->position.y));
+			mtxScale[1][3] = mtxScale[1][3] + (member->jumpOffset.y + (-offsetY + member->position.y));
 		}
 		else {
 			mtxScale[1][3] = mtxScale[1][3] + (*(f32*)((u8*)member + 0x130) +
-			                                      (*(f32*)((u8*)member + 0xD0) + (-offsetY + member->position.y)));
+			                                      (member->jumpOffset.y + (-offsetY + member->position.y)));
 		}
 
 		PSMTXConcat(cam->view, mtxScale, mtxDraw);
@@ -2806,11 +2805,11 @@ void BattleAudienceDispAudience(CameraId camId, void* param) {
 
 		texBase = 0;
 		front = BattleAudience_GetFront(i);
-		cr = *(u8*)((u8*)member + 0x41);
-		cg = *(u8*)((u8*)member + 0x42);
-		cb = *(u8*)((u8*)member + 0x43);
-		ca = *(u8*)((u8*)member + 0x44);
-		if (*(s32**)((u8*)member + 0x24) == member->animTable[9]) {
+		cr = member->colorR;
+		cg = member->colorG;
+		cb = member->colorB;
+		ca = member->colorA;
+		if (member->animCur == member->animTable[9]) {
 			texBase = 8;
 		}
 
@@ -2830,9 +2829,9 @@ void BattleAudienceDispAudience(CameraId camId, void* param) {
 			flip = 0;
 		}
 		if ((u8)front == 1) {
-			if (*(s32**)((u8*)member + 0x24) != member->animTable[9] &&
-			    *(s32**)((u8*)member + 0x24) != member->animTable[8] &&
-			    *(s32**)((u8*)member + 0x24) != member->animTable[7]) {
+			if (member->animCur != member->animTable[9] &&
+			    member->animCur != member->animTable[8] &&
+			    member->animCur != member->animTable[7]) {
 				flip ^= 1;
 			}
 		}
@@ -3053,11 +3052,11 @@ void BattleAudience_Entry_Sub(s32 index, s32 type, u8 status) {
 
 	col = index / 20;
 	row = index % 20;
-	*(u8*)((u8*)member + 0x40) = 0;
-	*(u8*)((u8*)member + 0x43) = 0;
-	*(u8*)((u8*)member + 0x42) = 0;
-	*(u8*)((u8*)member + 0x41) = 0;
-	*(u8*)((u8*)member + 0x44) = 0xff;
+	member->animDepth = 0;
+	member->colorB = 0;
+	member->colorG = 0;
+	member->colorR = 0;
+	member->colorA = 0xff;
 
 	y = *(f32*)((u8*)stage + 0xB34);
 	z = 0.1f * (f32)row + (f32)(col * 0x1e + 0x73);
@@ -3119,16 +3118,16 @@ void BattleAudience_SetAnim(s32 id, s32 animId, BOOL force) {
 		return;
 	}
 	anim = member->animTable[animId];
-	if (*(s32**)((u8*)member + 0x24) != NULL && *(s32**)((u8*)member + 0x24) == anim && !force) {
+	if (member->animCur != NULL && member->animCur == anim && !force) {
 		return;
 	}
-	*(s32**)((u8*)member + 0x24) = anim;
+	member->animCur = anim;
 	*(s32**)((u8*)member + 0x28) = anim;
-	*(s32*)((u8*)member + 0x2c) = 0;
+	member->animWait = 0;
 	for (i = 0; i < 3; i++) {
 		*(s32*)((u8*)member + 0x34 + i * 4) = 0;
 	}
-	*(u8*)((u8*)member + 0x40) = 0;
+	member->animDepth = 0;
 }
 #pragma dont_inline reset
 
@@ -3137,7 +3136,7 @@ BOOL BattleAudience_GetAnimEnd(s32 index) {
 	if (**(s32**)((u8*)member + 0x28) != -1) {
 		return FALSE;
 	}
-	return *(s32*)((u8*)member + 0x2c) <= 0;
+	return member->animWait <= 0;
 }
 
 void BattleAudience_GetPosition(s32 index, f32* x, f32* y, f32* z) {
@@ -3311,9 +3310,9 @@ BOOL BattleAudience_GetFront(s32 index) {
 	dx = cam->cameraAt.x - cam->cameraPos.x;
 	dy = cam->cameraAt.y - cam->cameraPos.y;
 	dz = cam->cameraAt.z - cam->cameraPos.z;
-	return !(dx * *(f32*)((u8*)member + 0x90) +
-	         dy * *(f32*)((u8*)member + 0x94) +
-	         dz * *(f32*)((u8*)member + 0x98) >=
+	return !(dx * member->normal.x +
+	         dy * member->normal.y +
+	         dz * member->normal.z >=
 	         0.0f);
 }
 #pragma dont_inline reset
@@ -3333,12 +3332,12 @@ void BattleAudience_ChangeStatus(s32 index, s32 status) {
 				BattleAudience_ChangeStatus(index - 1, status);
 			}
 		} else {
-			*(u8*)((u8*)member + 0x43) = zero;
+			member->colorB = zero;
 			// Match-only statement order: the original loads the zero float between these two stores.
 			zeroF = 0.0f;
-			*(u8*)((u8*)member + 0x42) = zero;
-			*(u8*)((u8*)member + 0x41) = zero;
-			*(u8*)((u8*)member + 0x44) = 0xFF;
+			member->colorG = zero;
+			member->colorR = zero;
+			member->colorA = 0xFF;
 			member->mRotation = (Vec){ 0.0f, 0.0f, 0.0f };
 			*(Vec*)((u8*)member + 0x6C) = (Vec){ 0.0f, 0.0f, 0.0f };
 			*(Vec*)((u8*)member + 0x60) = (Vec){ 1.0f, 1.0f, 1.0f };
