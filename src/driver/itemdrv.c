@@ -220,7 +220,7 @@ s32 itemGetCheck(ItemEntry* entry) {
         }
     }
 
-    if ((s32)gp->field_0x164 != 0) {
+    if ((s32)gp->mapInitEvtId != 0) {
         return 0;
     }
     if (seqGetSeq() != 2) {
@@ -297,7 +297,7 @@ s32 itemGetNokoCheck(ItemEntry* entry) {
     if (itemStatus(entry, 0x2000000)) {
         return 0;
     }
-    if ((s32)gp->field_0x164 != 0) {
+    if ((s32)gp->mapInitEvtId != 0) {
         return 0;
     }
     if (seqGetSeq() != 2) {

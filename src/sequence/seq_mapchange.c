@@ -264,23 +264,23 @@ void seq_mapChangeMain(SequenceWork* work) {
             psndMapChange();
             ev = mapDataPtr(_next_map)->eventAddr;
             if (ev != NULL) {
-                gp->field_0x164 = (u32)evtEntry(ev, 0, 0)->eventId;
+                gp->mapInitEvtId = (u32)evtEntry(ev, 0, 0)->eventId;
             } else {
-                gp->field_0x164 = 0;
+                gp->mapInitEvtId = 0;
             }
             work->state++;
             return;
         }
         break;
     case 4:
-        if ((s32)gp->field_0x164 == 0) {
+        if ((s32)gp->mapInitEvtId == 0) {
             camCtrlOn(4);
             work->state++;
             return;
         }
-        if (evtCheckID(gp->field_0x164) == 0) {
+        if (evtCheckID(gp->mapInitEvtId) == 0) {
             camCtrlOn(4);
-            gp->field_0x164 = 0;
+            gp->mapInitEvtId = 0;
             work->state++;
             return;
         }
