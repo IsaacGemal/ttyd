@@ -39,11 +39,6 @@
 #include "manager/evtmgr_cmd.h"
 #include <stdio.h>
 #include "evt/evt_shop.h"
-typedef struct MriPuniAnimSet {
-    s16* unk0[10]; // 0x00
-    s16 unk28[10]; // 0x28
-    s16 unk3C[10]; // 0x3C
-} MriPuniAnimSet;
 
 typedef struct PuniFallTarget {
     s32 unk0;    // 0x0
@@ -103,9 +98,9 @@ static inline s32 puni_rnd(s32 range) {
     s32 s;
     s32 v;
 
-    Punigp->field_0x450 += Punigp->field_0x454 + 0x17340000 - 0x506F;
-    Punigp->field_0x454 += Punigp->field_0x450 + 0x21270000 + 0x3F9C;
-    s = Punigp->field_0x454;
+    Punigp->randSeedA += Punigp->randSeedB + 0x17340000 - 0x506F;
+    Punigp->randSeedB += Punigp->randSeedA + 0x21270000 + 0x3F9C;
+    s = Punigp->randSeedB;
     v = s;
     if (v < 0) {
         v = -v;
@@ -118,11 +113,11 @@ static inline s32 puniQrnd(s32 range) {
     s32 v;
 
 
-    Punigp->field_0x450 =
-        Punigp->field_0x454 + 0x17340000 + Punigp->field_0x450 - 0x506f;
-    Punigp->field_0x454 =
-        Punigp->field_0x450 + 0x21270000 + Punigp->field_0x454 + 0x3f9c;
-    s = Punigp->field_0x454;
+    Punigp->randSeedA =
+        Punigp->randSeedB + 0x17340000 + Punigp->randSeedA - 0x506f;
+    Punigp->randSeedB =
+        Punigp->randSeedA + 0x21270000 + Punigp->randSeedB + 0x3f9c;
+    s = Punigp->randSeedB;
     v = s;
     if (v < 0) {
         v = -v;
@@ -131,7 +126,7 @@ static inline s32 puniQrnd(s32 range) {
 }
 
 static inline void puniModeSearch_sub(s32 xx, s32 yy, f32* pc, f32* pd) {
-    switch (Punigp->field_0x340) {
+    switch (Punigp->mapKind) {
     case 0:
         break;
     case 1:
@@ -393,7 +388,7 @@ void evt_icon_disp_func(CameraId camId, void* param) {
     PuniData* dat;
     s32 i;
 
-    if (work->unk328 != 9 && work->unk328 != 12) {
+    if (work->area != 9 && work->area != 12) {
         return;
     }
 
@@ -451,7 +446,7 @@ USER_FUNC(evt_make_texbuf) {
     texbuf = _make_texbuf(texbuf, 10, "c_puni", "D_2", 0.0f);
     texbuf = _make_texbuf(texbuf, 1, "c_puni", "F_1", 0.0f);
 
-    if (Punigp->unk328 == 9 || Punigp->unk328 == 12) {
+    if (Punigp->area == 9 || Punigp->area == 12) {
         texbuf = _make_texbuf(texbuf, 24, "c_toge", "S_1", 0.0f);
         texbuf = _make_texbuf(texbuf, 12, "c_toge", "W_1", 0.0f);
         texbuf = _make_texbuf(texbuf, 1, "c_toge", "D_1", 0.0f);
@@ -515,8 +510,8 @@ static inline s32 puniAnimCountInline(s16** arr, s32 idx, s16* term, s32 count) 
 // and loads the table into r9 with the value in r10; the second loop is manual.
 void puniAnimationInit(s16** a, s16** b) {
     PuniWork* work = Punigp;
-    MriPuniAnimSet* set0 = (MriPuniAnimSet*)((u8*)work + 0x4);
-    MriPuniAnimSet* set1 = (MriPuniAnimSet*)((u8*)work + 0x54);
+    MriPuniAnimSet* set0 = &work->animSet[0];
+    MriPuniAnimSet* set1 = &work->animSet[1];
     s32 i;
 
     for (i = 0; i < 10; i++) {
@@ -553,7 +548,7 @@ void puniAnimationInit(s16** a, s16** b) {
 void puniAnimationInit2(void) {
     char* p;
 
-    p = (char*)Punigp + 0xA4;
+    p = (char*)Punigp->puniNames[0];
     strcpy(p + 0x0, "S_1");
     strcpy(p + 0x10, "W_1");
     strcpy(p + 0x20, "R_1");
@@ -564,7 +559,7 @@ void puniAnimationInit2(void) {
     strcpy(p + 0x70, "J_1A");
     strcpy(p + 0x80, "J_1B");
     strcpy(p + 0x90, "B_1");
-    p = (char*)Punigp + 0x144;
+    p = (char*)Punigp->puniNames[1];
     strcpy(p + 0x0, "S_1");
     strcpy(p + 0x10, "W_1");
     strcpy(p + 0x20, "R_1");
@@ -575,7 +570,7 @@ void puniAnimationInit2(void) {
     strcpy(p + 0x70, "J_1A");
     strcpy(p + 0x80, "J_1B");
     strcpy(p + 0x90, "B_1");
-    p = (char*)Punigp + 0x1E4;
+    p = (char*)Punigp->puniNames[2];
     strcpy(p + 0x0, "S_1");
     strcpy(p + 0x10, "W_1");
     strcpy(p + 0x20, "R_1");
@@ -586,7 +581,7 @@ void puniAnimationInit2(void) {
     strcpy(p + 0x70, "J_1A");
     strcpy(p + 0x80, "J_1B");
     strcpy(p + 0x90, "B_1");
-    p = (char*)Punigp + 0x284;
+    p = (char*)Punigp->puniNames[3];
     strcpy(p + 0x0, "S_1");
     strcpy(p + 0x10, "W_1");
     strcpy(p + 0x20, "R_1");
@@ -613,19 +608,19 @@ void puniAnimation(PuniData* dat, PuniPose* pose) {
 
         if (dat->unk4 & 0x20) {
             npc = npcNameToPtr("ガイドsp");
-            names = (char(*)[16])((u8*)Punigp + 0xA4);
+            names = Punigp->puniNames[0];
         } else if (dat->unk4 & 0x40) {
             npc = npcNameToPtr("ガイド妹sp");
-            names = (char(*)[16])((u8*)Punigp + 0x144);
+            names = Punigp->puniNames[1];
         } else if (dat->unk4 & 0x80) {
             npc = npcNameToPtr("ちびトゲsp");
-            names = (char(*)[16])((u8*)Punigp + 0x1E4);
+            names = Punigp->puniNames[2];
         } else if (dat->unk4 & 0x100) {
             npc = npcNameToPtr("ライバルsp");
-            names = (char(*)[16])((u8*)Punigp + 0x284);
+            names = Punigp->puniNames[3];
         } else {
             npc = npcNameToPtr("ライバルsp");
-            names = (char(*)[16])((u8*)Punigp + 0x284);
+            names = Punigp->puniNames[3];
         }
 
         frame = (s32)dat->field_0x1A4;
@@ -680,12 +675,12 @@ void puniAnimation(PuniData* dat, PuniPose* pose) {
         s16 term;
         s32 idx;
 
-        set = (MriPuniAnimSet*)((u8*)Punigp + 0x4);
+        set = &Punigp->animSet[0];
         if (dat->unk4 & 0x8) {
-            set = (MriPuniAnimSet*)((u8*)Punigp + 0x4);
+            set = &Punigp->animSet[0];
         }
         if (dat->unk4 & 0x10) {
-            set = (MriPuniAnimSet*)((u8*)Punigp + 0x54);
+            set = &Punigp->animSet[1];
         }
         anim = set->unk0[dat->field_0x11C];
         count = set->unk28[dat->field_0x11C];
@@ -944,7 +939,7 @@ void puniSetYPosition(PuniData* puni) {
         return;
     }
 
-    switch (Punigp->field_0x33C) {
+    switch (Punigp->yMode) {
     case 0:
         break;
     case 1: {
@@ -1054,7 +1049,7 @@ void puniSetYPosition(PuniData* puni) {
         break;
     }
 
-    switch (Punigp->field_0x33C) {
+    switch (Punigp->yMode) {
     case 2:
     case 3:
     case 4:
@@ -1397,7 +1392,7 @@ void puniMapdata_MRI_16_getpos(s32 a, s32 b, f32* outX, f32* outZ) {
 }
 
 void puniMapPos2Blk(s32* out1, s32* out2, f32 x, f32 z) {
-    switch (Punigp->field_0x340) {
+    switch (Punigp->mapKind) {
     case 0:
         break;
     case 1:
@@ -1413,7 +1408,7 @@ void puniMapPos2Blk(s32* out1, s32* out2, f32 x, f32 z) {
 }
 
 void puniMapBlk2Pos(s32 a, s32 b, f32* outX, f32* outZ) {
-    switch (Punigp->field_0x340) {
+    switch (Punigp->mapKind) {
     case 0:
         break;
     case 1:
@@ -1525,7 +1520,7 @@ void puniMapFindbuff(Vec* __restrict pos) {
         f32 z = pos->z;
         f32 x = pos->x;
 
-        switch (Punigp->field_0x340) {
+        switch (Punigp->mapKind) {
         case 0:
             break;
         case 1:
@@ -1606,7 +1601,7 @@ void puniMapFindbuff(Vec* __restrict pos) {
 
 void puniTargetSearch(PuniData* punidat) {
     s32 i;
-    PuniTarget* target = (PuniTarget*)((u8*)Punigp + 0x374); // PuniWork 0x374, 10 entries of 0x14
+    PuniTarget* target = Punigp->targets; // PuniWork 0x374, 10 entries of 0x14
 
 
     punidat->field_0x1B4 = -1;
@@ -1744,16 +1739,16 @@ s32 randi(s32 min, s32 max) {
 }
 
 void qrndseed(s32 seed) {
-    Punigp->field_0x450 = seed + 0x3A3B01F9;
-    Punigp->field_0x454 = 0x21708331;
+    Punigp->randSeedA = seed + 0x3A3B01F9;
+    Punigp->randSeedB = 0x21708331;
 }
 
 s32 qrnd(s32 max) {
     s32 v;
 
-    Punigp->field_0x450 += Punigp->field_0x454 + 0x17340000 - 0x506F;
-    Punigp->field_0x454 += Punigp->field_0x450 + 0x21270000 + 0x3F9C;
-    v = Punigp->field_0x454;
+    Punigp->randSeedA += Punigp->randSeedB + 0x17340000 - 0x506F;
+    Punigp->randSeedB += Punigp->randSeedA + 0x21270000 + 0x3F9C;
+    v = Punigp->randSeedB;
 #ifdef MUST_MATCH
     // the cast keeps MWCC from folding this into its branchless abs idiom
     if (v < 0) {
@@ -1922,13 +1917,13 @@ s32 puniPositionCheck(PuniData* puni) {
     s32 inBand = 0;
     PuniWork* gp = Punigp;
 
-    top = gp->field_0x350;
-    bottom = gp->field_0x354;
+    top = gp->bandTop0;
+    bottom = gp->bandBottom0;
     if (-1000.0f != top && puni->field_0x12C.y < top && puni->field_0x12C.y > bottom) {
         inBand = 1;
     }
-    top = gp->field_0x358;
-    bottom = gp->field_0x35C;
+    top = gp->bandTop1;
+    bottom = gp->bandBottom1;
     if (-1000.0f != top && puni->field_0x12C.y < top && puni->field_0x12C.y > bottom) {
         inBand = 1;
     }
@@ -1947,7 +1942,7 @@ s32 puniPositionCheck(PuniData* puni) {
 }
 
 void puniPositionRecover(PuniData* puni) {
-    puni->field_0x12C = *(Vec*)&Punigp->field_0x344;
+    puni->field_0x12C = *&Punigp->respawnPos;
 
     puni->field_0x12C.x += randf(0.0f, 2.0f) - 1.0f;
     puni->field_0x12C.z += randf(0.0f, 2.0f) - 1.0f;
@@ -2034,7 +2029,7 @@ void unk_mri_000095f0(PuniData* puni, Vec pos, Vec vel, f32 mag) {
         PSVECAdd(&puni->field_0x12C, &puni->field_0x15C, &puni->field_0x12C);
         return;
     }
-    if (Punigp->unk328 == 0x12) {
+    if (Punigp->area == 0x12) {
         return;
     }
     start = puni->field_0x12C;
@@ -2257,7 +2252,7 @@ void puniMoveLimitedNormal(PuniData* puni) {
                             &dist, &hitN.x, &hitN.y, &hitN.z);
     if (puni->field_0x210 == 0) {
         PSVECAdd(&puni->field_0x12C, &puni->field_0x15C, &puni->field_0x12C);
-    } else if (Punigp->unk328 != 0x12) {
+    } else if (Punigp->area != 0x12) {
         saved = puni->field_0x12C;
         puni->field_0x560 = hitN;
         PSVECAdd(&puni->field_0x12C, &puni->field_0x15C, &puni->field_0x12C);
@@ -2520,9 +2515,9 @@ s32 puniParaRecoverCheck(PuniData* puni) {
 static inline s32 puniQrnd2(s32 range) {
     s32 v;
 
-    Punigp->field_0x450 += Punigp->field_0x454 + 0x17340000 - 0x506F;
-    Punigp->field_0x454 += Punigp->field_0x450 + 0x21270000 + 0x3F9C;
-    v = Punigp->field_0x454;
+    Punigp->randSeedA += Punigp->randSeedB + 0x17340000 - 0x506F;
+    Punigp->randSeedB += Punigp->randSeedA + 0x21270000 + 0x3F9C;
+    v = Punigp->randSeedB;
     if ((s32)(v ^ 0) < 0) {
         v = -v;
     }
@@ -2537,9 +2532,9 @@ PuniData* puniSearchRandom(s32 start, s32 count) {
     PuniData* puni;
     s32 v;
 
-    Punigp->field_0x450 += Punigp->field_0x454 + 0x17340000 - 0x506F;
-    Punigp->field_0x454 += Punigp->field_0x450 + 0x21270000 + 0x3F9C;
-    v = Punigp->field_0x454;
+    Punigp->randSeedA += Punigp->randSeedB + 0x17340000 - 0x506F;
+    Punigp->randSeedB += Punigp->randSeedA + 0x21270000 + 0x3F9C;
+    v = Punigp->randSeedB;
     if ((s32)(v ^ 0) < 0) {
         v = -v;
     }
@@ -2570,9 +2565,9 @@ PuniData* puniSearchRandom_Mikata(void) {
     PuniData* puni;
 
     range = 101;
-    Punigp->field_0x450 += Punigp->field_0x454 + 0x17340000 - 0x506F;
-    Punigp->field_0x454 += Punigp->field_0x450 + 0x21270000 + 0x3F9C;
-    r = Punigp->field_0x454;
+    Punigp->randSeedA += Punigp->randSeedB + 0x17340000 - 0x506F;
+    Punigp->randSeedB += Punigp->randSeedA + 0x21270000 + 0x3F9C;
+    r = Punigp->randSeedB;
     if ((s32)(r ^ 0) < 0) {
         r = -r;
     }
@@ -2608,9 +2603,9 @@ PuniData* puniSearchRandom_Teki(void) {
     PuniData* puni;
 
     range = 99;
-    Punigp->field_0x450 += Punigp->field_0x454 + 0x17340000 - 0x506F;
-    Punigp->field_0x454 += Punigp->field_0x450 + 0x21270000 + 0x3F9C;
-    r = Punigp->field_0x454;
+    Punigp->randSeedA += Punigp->randSeedB + 0x17340000 - 0x506F;
+    Punigp->randSeedB += Punigp->randSeedA + 0x21270000 + 0x3F9C;
+    r = Punigp->randSeedB;
     if ((s32)(r ^ 0) < 0) {
         r = -r;
     }
@@ -3001,7 +2996,7 @@ void puniFukki(PuniData* puni) {
 }
 
 void puniModeALLCheck(void) {
-    switch (Punigp->field_0x43C) {
+    switch (Punigp->phase) {
     case 4:
         break;
     case 2:
@@ -3014,20 +3009,20 @@ void puniModeALLCheck(void) {
 }
 
 void puniModeALLEndCheck(PuniData* punidat) {
-    switch (Punigp->field_0x43C) {
+    switch (Punigp->phase) {
     case 0:
         break;
     case 1:
         break;
     case 2:
-        if (Punigp->field_0x440 == 2) {
-            Punigp->field_0x43C = 0;
+        if (Punigp->prevPhase == 2) {
+            Punigp->phase = 0;
         }
         break;
     case 3:
         break;
     }
-    Punigp->field_0x440 = Punigp->field_0x43C;
+    Punigp->prevPhase = Punigp->phase;
 }
 
 void puniModeNormal(PuniData* punidat) {
@@ -3185,7 +3180,7 @@ void puniModeParent(PuniData* punidat) {
             return;
         }
         if (punidat->field_0x1BC != -1 && punidat->field_0x1C0 < 10000.0f) {
-            Punigp->field_0x43C = 2;
+            Punigp->phase = 2;
             return;
         }
         if (punidat->field_0x1B4 != -1) {
@@ -3198,7 +3193,7 @@ void puniModeParent(PuniData* punidat) {
             f32 z = punidat->field_0x12C.z;
             f32 x = punidat->field_0x12C.x;
 
-            switch (Punigp->field_0x340) {
+            switch (Punigp->mapKind) {
             case 1:
                 puniMapdata_MRI_06_getidx(&a, &b, x, z);
                 break;
@@ -3281,7 +3276,7 @@ void puniModeSearch(PuniData* puni) {
         f32 pz = puni->field_0x12C.z;
         f32 px = puni->field_0x12C.x;
 
-        switch (Punigp->field_0x340) {
+        switch (Punigp->mapKind) {
         case 0:
             break;
         case 1:
@@ -3470,7 +3465,7 @@ void puniModeMass(PuniData* punidat) {
     }
 
     if (*(s32*)(p + 0x1BC) != -1 && *(f32*)(p + 0x1C0) < 10000.0f) {
-        Punigp->field_0x43C = 2;
+        Punigp->phase = 2;
         return;
     }
 
@@ -3478,7 +3473,7 @@ void puniModeMass(PuniData* punidat) {
         s32 a = gp->retraceCount & 0xF;
         s32 b = punidat->field_0x116 & 0xF;
 
-        if (Punigp->unk328 == 0x12)
+        if (Punigp->area == 0x12)
             a = b;
         if (a == b && *(f32*)(p + 0x1A0) > 10.0f) {
             PuniDokuritsu(punidat);
@@ -3521,9 +3516,9 @@ void puniModeMass(PuniData* punidat) {
             else
                 punidat->field_0x180 = 90.0f;
             punidat->field_0x114 = 1;
-            if (Punigp->unk328 == 0xD)
+            if (Punigp->area == 0xD)
                 punidat->field_0x114 = 0xA;
-            if (Punigp->unk328 == 0x12)
+            if (Punigp->area == 0x12)
                 punidat->field_0x114 = 0xA;
             *(s32*)(p + 0x1E0) = 0;
             punidat->field_0x1E4 = 0;
@@ -3653,7 +3648,7 @@ void puniModeAway(PuniData* punidat) {
     PuniTarget* target;
 
     idx = punidat->field_0x1BC;
-    target = (PuniTarget*)((u8*)Punigp + 0x374 + idx * 0x14);
+    target = &Punigp->targets[idx];
     if (idx == -1) {
         punidat->field_0x15C = (Vec){0.0f, 0.0f, 0.0f};
         punidat->unkC = 1;
@@ -3818,13 +3813,13 @@ void puniModeDamage(PuniData* punidat) {
 
     switch (punidat->field_0x114) {
     case 0:
-        if (Punigp->field_0x4C0++ < 6) {
+        if (Punigp->fightSfxCount0++ < 6) {
             psndSFXOn_3D("SFX_STG2_FIGHT_TOGE1\000\000\000", &punidat->field_0x12C);
         }
         punidat->field_0x114 = 1;
         break;
     case 1:
-        if (Punigp->field_0x4C4++ < 6) {
+        if (Punigp->fightSfxCount1++ < 6) {
             psndSFXOn_3D("SFX_STG2_FIGHT_TOGE2\000\000\000", &punidat->field_0x12C);
         }
         punidat->field_0x114 = 2;
@@ -4092,7 +4087,7 @@ s32 puniModeWind_sub(PuniData* punidat) {
         vel = (Vec){0.0f, 0.0f, 0.0f};
     }
     puniMoveAtari(punidat, pos, vel, 0, mag);
-    if (Punigp->field_0x43C == 3) {
+    if (Punigp->phase == 3) {
         if (punidat->field_0x210 != NULL || punidat->field_0x214 != NULL) {
             punidat->field_0x114 = 10;
             return 2;
@@ -4250,7 +4245,7 @@ void puniModeWind(PuniData* punidat) {
     case 10:
         puniModeWind_kaiten(punidat);
         if (!(punidat->field_0x1A0 > 0.0f)) {
-            if (Punigp->field_0x43C == 3) {
+            if (Punigp->phase == 3) {
                 punidat->unkC = 0xa;
                 punidat->field_0x188 = 0.0f;
                 punidat->field_0x184 = 0.0f;
@@ -4276,7 +4271,7 @@ static inline f32 puniRandf2(f32 a, f32 b) {
 
 
 void puniModeFall(PuniData* punidat) {
-    PuniFallTarget* targets = (PuniFallTarget*)((u8*)Punigp + 0x374);
+    PuniFallTarget* targets = (PuniFallTarget*)Punigp->targets;
     PuniFallActor* actor210;
     PuniFallActor* actor214;
 
@@ -4367,7 +4362,7 @@ void puniModeFall(PuniData* punidat) {
                     *(s32*)((u8*)punidat + 0x1E0) = 0xF;
                 }
 
-                if (Punigp->unk328 == 0x12 && punidat->field_0x12C.y < -300.0f) {
+                if (Punigp->area == 0x12 && punidat->field_0x12C.y < -300.0f) {
                     kind = punidat->field_0x116;
                     if (kind < 0x67) {
                         u32 v;
@@ -4591,7 +4586,7 @@ void puniModeWonder(PuniData* punidat) {
 void puniModeFunbari(PuniData* punidat) {
     switch (punidat->field_0x114) {
         case 0: {
-            PuniFallTarget* entry = (PuniFallTarget*)((u8*)Punigp + 0x374);
+            PuniFallTarget* entry = (PuniFallTarget*)Punigp->targets;
             s32 i;
             for (i = 0; i < 10; i++, entry++) {
                 if ((entry->unk0 & 1) && (entry->unk0 & 2)) {
@@ -4799,7 +4794,7 @@ void puniModeHagure(PuniData* puni) {
     }
 
     if (*(s32*)(p + 0x1BC) != -1 && *(f32*)(p + 0x1C0) < 10000.0f) {
-        Punigp->field_0x43C = 2;
+        Punigp->phase = 2;
         *(u16*)(p + 0x114) = 0;
         if (*(u32*)(p + 0x218) != 0) {
             effDelete((EffectEntry*)*(s32*)(p + 0x218));
@@ -4996,7 +4991,7 @@ void puniModeTrap(PuniData* puni) {
 void puniModeEnterSubInit(PuniData* puni) {
     u8* p = (u8*)puni;
 
-    if ((*(u32*)((u8*)Punigp + 0x324) & 3) == 0) {
+    if ((Punigp->flags & 3) == 0) {
         return;
     }
     *(s32*)(p + 0x1E0) = 0;
@@ -5007,7 +5002,7 @@ void puniModeEnterSubInit(PuniData* puni) {
 void puniModeEnterSub(PuniData* puni) {
     u8* p = (u8*)puni;
 
-    if ((*(u32*)((u8*)Punigp + 0x324) & 3) == 0) {
+    if ((Punigp->flags & 3) == 0) {
         return;
     }
     *(s32*)(p + 0x1E0) += 1;
@@ -5038,12 +5033,12 @@ void puniModeEnter(PuniData* puni) {
         case 0:
             puni->modeStartTime = gp->renderTime;
             *(s32*)(p + 0x128) = 200;
-            if ((*(u32*)((u8*)Punigp + 0x324) & 8) && !(*(u32*)((u8*)Punigp + 0x324) & 0x10)) {
+            if ((Punigp->flags & 8) && !(Punigp->flags & 0x10)) {
                 *(s32*)(p + 0x128) = 700;
             }
             // qrnd(500), inlined
             *(s32*)(p + 0x128) += qrnd(500);
-            if (*(u32*)((u8*)Punigp + 0x324) & 3) {
+            if (Punigp->flags & 3) {
                 *(s32*)(p + 0x1E0) = 0;
                 *(f32*)(p + 0x18C) = 0.0f;
                 *(u32*)(*(u8**)(p + 0x0)) |= 4;
@@ -5059,7 +5054,7 @@ void puniModeEnter(PuniData* puni) {
             }
             break;
         case 2:
-            if (*(u32*)((u8*)Punigp + 0x324) & 3) {
+            if (Punigp->flags & 3) {
                 *(s32*)(p + 0x1E0) += 1;
                 if (*(s32*)(p + 0x1E0) >= 10) {
                     *(f32*)(p + 0x18C) += 0.1f;
@@ -5129,7 +5124,7 @@ void puniModeEnter(PuniData* puni) {
 void puniModeExitSubInit(PuniData* puni) {
     u8* p = (u8*)puni;
 
-    if ((*(u32*)((u8*)Punigp + 0x324) & 3) == 0) {
+    if ((Punigp->flags & 3) == 0) {
         return;
     }
     *(s32*)(p + 0x1E0) = 0;
@@ -5139,7 +5134,7 @@ void puniModeExitSubInit(PuniData* puni) {
 void puniModeExitSub(PuniData* puni) {
     u8* p = (u8*)puni;
 
-    if ((*(u32*)((u8*)Punigp + 0x324) & 3) == 0) {
+    if ((Punigp->flags & 3) == 0) {
         return;
     }
     *(s32*)(p + 0x1E0) += 1;
@@ -5158,9 +5153,9 @@ void puniModeExit(PuniData* punidat) {
 
     switch (*(u16*)(p + 0x114)) {
         case 0:
-            if (PSVECSquareDistance((Vec*)((u8*)Punigp + 0x480), (Vec*)(p + 0x12C)) >
-                Punigp->field_0x4B0) {
-                PSVECSubtract((Vec*)((u8*)Punigp + 0x480), (Vec*)(p + 0x12C), &v);
+            if (PSVECSquareDistance(&Punigp->arrivePos, (Vec*)(p + 0x12C)) >
+                Punigp->arriveDistSq) {
+                PSVECSubtract(&Punigp->arrivePos, (Vec*)(p + 0x12C), &v);
                 PSVECNormalize(&v, &v);
                 v.y = 0.0f;
                 PSVECScale(&v, &v, 1.5f);
@@ -5168,7 +5163,7 @@ void puniModeExit(PuniData* punidat) {
             } else {
                 *(Vec*)(p + 0x15C) = (Vec){0.0f, 0.0f, 0.0f};
                 *(u32*)(p + 0x4) &= 0xFFEFEFFF;
-                if (*(u32*)((u8*)Punigp + 0x324) & 3) {
+                if (Punigp->flags & 3) {
                     *(s32*)(p + 0x1E0) = 0;
                     *(u32*)(*(u32**)(p + 0x0)) |= 4;
                 }
@@ -5176,7 +5171,7 @@ void puniModeExit(PuniData* punidat) {
             }
             break;
         case 1:
-            if (*(u32*)((u8*)Punigp + 0x324) & 3) {
+            if (Punigp->flags & 3) {
                 (*(s32*)(p + 0x1E0))++;
                 if (*(s32*)(p + 0x1E0) >= 10) {
                     *(f32*)(p + 0x18C) -= 0.3f;
@@ -5185,9 +5180,9 @@ void puniModeExit(PuniData* punidat) {
                     }
                 }
             }
-            if (PSVECSquareDistance((Vec*)((u8*)Punigp + 0x48C), (Vec*)(p + 0x12C)) >
-                Punigp->field_0x4B4) {
-                PSVECSubtract((Vec*)((u8*)Punigp + 0x48C), (Vec*)(p + 0x12C), &v);
+            if (PSVECSquareDistance(&Punigp->arrivePos2, (Vec*)(p + 0x12C)) >
+                Punigp->arriveDistSq2) {
+                PSVECSubtract(&Punigp->arrivePos2, (Vec*)(p + 0x12C), &v);
                 PSVECNormalize(&v, &v);
                 v.y = 0.0f;
                 PSVECScale(&v, &v, 2.0f);
@@ -5212,9 +5207,9 @@ void puniModePoint(PuniData* punidat) {
 
     switch (*(u16*)(p + 0x114)) {
         case 0:
-            if (PSVECSquareDistance((Vec*)((u8*)Punigp + 0x480), (Vec*)(p + 0x12C)) >
-                Punigp->field_0x4B0) {
-                PSVECSubtract((Vec*)((u8*)Punigp + 0x480), (Vec*)(p + 0x12C), &v);
+            if (PSVECSquareDistance(&Punigp->arrivePos, (Vec*)(p + 0x12C)) >
+                Punigp->arriveDistSq) {
+                PSVECSubtract(&Punigp->arrivePos, (Vec*)(p + 0x12C), &v);
                 PSVECNormalize(&v, &v);
                 v.y = 0.0f;
                 PSVECScale(&v, &v, 1.5f);
@@ -5226,9 +5221,9 @@ void puniModePoint(PuniData* punidat) {
             }
             break;
         case 1:
-            if (PSVECSquareDistance((Vec*)((u8*)Punigp + 0x48C), (Vec*)(p + 0x12C)) >
-                Punigp->field_0x4B4) {
-                PSVECSubtract((Vec*)((u8*)Punigp + 0x48C), (Vec*)(p + 0x12C), &v);
+            if (PSVECSquareDistance(&Punigp->arrivePos2, (Vec*)(p + 0x12C)) >
+                Punigp->arriveDistSq2) {
+                PSVECSubtract(&Punigp->arrivePos2, (Vec*)(p + 0x12C), &v);
                 PSVECNormalize(&v, &v);
                 v.y = 0.0f;
                 PSVECScale(&v, &v, 2.0f);
@@ -5370,10 +5365,10 @@ void puni_puni_init(void) {
     PuniData* pd;
     u8* puni;
 
-    Punigp->field_0x450 = (s32)gp->renderTime + rnd + 0x3A3B01F9;
-    Punigp->field_0x454 = 0x21708331;
+    Punigp->randSeedA = (s32)gp->renderTime + rnd + 0x3A3B01F9;
+    Punigp->randSeedB = 0x21708331;
     pd = Punidat;
-    *(PuniData**)((u8*)Punigp + 0x360) = pd;
+    *(PuniData**)&Punigp->field_0x360 = pd;
     pd->unk4 |= 0x180404;
     pd->field_0x12C = mario->position;
     *(Vec*)&pd->field_0x138 = pd->field_0x12C;
@@ -5763,7 +5758,7 @@ void fn_19_13A90(PuniData* puni) {
                             &hitNB.x, &hitNB.y, &hitNB.z);
     if (puni->field_0x210 == 0) {
         PSVECAdd(&puni->field_0x12C, (Vec*)&puni->field_0x15C, &puni->field_0x12C);
-    } else if (Punigp->unk328 != 0x12) {
+    } else if (Punigp->area != 0x12) {
         svB = puni->field_0x12C;
         *(Vec*)(puni->unk21C + 0x344) = hitNB;
         PSVECAdd(&puni->field_0x12C, (Vec*)&puni->field_0x15C, &puni->field_0x12C);
@@ -6136,32 +6131,32 @@ void puniSound(void) {
         }
     }
 
-    Punigp->field_0x45C = num;
+    Punigp->soundNum = num;
     if (num == 0) {
-        Punigp->field_0x460 = 0;
+        Punigp->soundLevel = 0;
         divisor = 5;
     } else if (num <= 2) {
-        Punigp->field_0x460 = 1;
+        Punigp->soundLevel = 1;
         divisor = 5;
     } else if (num <= 0xB) {
-        Punigp->field_0x460 = 2;
+        Punigp->soundLevel = 2;
         divisor = 4;
     } else if (num <= 0x1E) {
-        Punigp->field_0x460 = 3;
+        Punigp->soundLevel = 3;
         divisor = 3;
     } else if (num <= 0x32) {
-        Punigp->field_0x460 = 4;
+        Punigp->soundLevel = 4;
         divisor = 2;
     } else if (num <= 0x46) {
-        Punigp->field_0x460 = 5;
+        Punigp->soundLevel = 5;
         divisor = 2;
     } else {
-        Punigp->field_0x460 = 6;
+        Punigp->soundLevel = 6;
         divisor = 2;
     }
 
-    if (Punigp->field_0x460 != 0 && (gp->retraceCount % divisor) == 0) {
-        count = Punigp->field_0x45C;
+    if (Punigp->soundLevel != 0 && (gp->retraceCount % divisor) == 0) {
+        count = Punigp->soundNum;
         target = rand() % count + 1;
         k = 0;
         for (i = 1; i <= 0x66; i++) {
@@ -6175,7 +6170,7 @@ void puniSound(void) {
         }
         pos = p->field_0x12C;
 
-        count = Punigp->field_0x460;
+        count = Punigp->soundLevel;
         switch (rand() % count + 1) {
         case 1:
             psndSFXOn_3D("SFX_STG2_PUNI_MOVE2_1\000\000", &pos);
@@ -6200,15 +6195,15 @@ void puniSound(void) {
 
     pd = Punidat;
     if (special != 0) {
-        if (*(u32*)((u8*)Punigp + 0x478) == 0) {
-            *(u32*)((u8*)Punigp + 0x478) = psndSFXOn_3D("SFX_STG2_TOGETTI_MOVE1\000", &pd[3].field_0x12C);
+        if (Punigp->togettiSfx == 0) {
+            Punigp->togettiSfx = psndSFXOn_3D("SFX_STG2_TOGETTI_MOVE1\000", &pd[3].field_0x12C);
         }
-    } else if (*(u32*)((u8*)Punigp + 0x478) != 0) {
-        psndSFXOff(*(u32*)((u8*)Punigp + 0x478));
-        *(u32*)((u8*)Punigp + 0x478) = 0;
+    } else if (Punigp->togettiSfx != 0) {
+        psndSFXOff(Punigp->togettiSfx);
+        Punigp->togettiSfx = 0;
     }
-    if (*(u32*)((u8*)Punigp + 0x478) != 0) {
-        psndSFX_pos(*(u32*)((u8*)Punigp + 0x478), &pd[3].field_0x12C);
+    if (Punigp->togettiSfx != 0) {
+        psndSFX_pos(Punigp->togettiSfx, &pd[3].field_0x12C);
     }
 
     num2 = 0;
@@ -6218,36 +6213,36 @@ void puniSound(void) {
             num2++;
         }
     }
-    Punigp->field_0x46C = num2;
+    Punigp->moveCount = num2;
     if (num2 == 0) {
-        Punigp->field_0x470 = 0;
+        Punigp->moveLevel = 0;
     } else if (num2 <= 2) {
-        Punigp->field_0x470 = 1;
+        Punigp->moveLevel = 1;
     } else if (num2 <= 0xB) {
-        Punigp->field_0x470 = 2;
+        Punigp->moveLevel = 2;
     } else {
-        Punigp->field_0x470 = 3;
+        Punigp->moveLevel = 3;
     }
 
-    if (Punigp->field_0x470 != Punigp->field_0x474) {
-        if ((u32)Punigp->field_0x468 != 0) {
-            psndSFXOff(Punigp->field_0x468);
+    if (Punigp->moveLevel != Punigp->prevMoveLevel) {
+        if ((u32)Punigp->moveSfx != 0) {
+            psndSFXOff(Punigp->moveSfx);
         }
-        switch (Punigp->field_0x470) {
+        switch (Punigp->moveLevel) {
         case 1:
-            Punigp->field_0x468 = psndSFXOn("SFX_STG2_TOGE_MOVE1");
+            Punigp->moveSfx = psndSFXOn("SFX_STG2_TOGE_MOVE1");
             break;
         case 2:
-            Punigp->field_0x468 = psndSFXOn("SFX_STG2_TOGE_MOVE2");
+            Punigp->moveSfx = psndSFXOn("SFX_STG2_TOGE_MOVE2");
             break;
         case 3:
-            Punigp->field_0x468 = psndSFXOn("SFX_STG2_TOGE_MOVE3");
+            Punigp->moveSfx = psndSFXOn("SFX_STG2_TOGE_MOVE3");
             break;
         }
     }
-    Punigp->field_0x474 = Punigp->field_0x470;
-    Punigp->field_0x4C0 = 0;
-    Punigp->field_0x4C4 = 0;
+    Punigp->prevMoveLevel = Punigp->moveLevel;
+    Punigp->fightSfxCount0 = 0;
+    Punigp->fightSfxCount1 = 0;
 }
 
 void puni_puni_main(void) {
@@ -6264,13 +6259,13 @@ void puni_puni_main(void) {
     Vec tmp3;
 
     mario = marioGetPtr();
-    p0 = *(PuniData**)((u8*)Punigp + 0x360);
+    p0 = *(PuniData**)&Punigp->field_0x360;
     p0->field_0x12C = mario->position;
     tmp = p0->field_0x12C;
     puniMapFindbuff(&tmp);
     puniModeALLCheck();
 
-    if ((Punigp->field_0x324 & 0x20) != 0) {
+    if ((Punigp->flags & 0x20) != 0) {
         PuniData* pd = &Punidat[1];
         s32 i;
         for (i = 1; i < 0xD3; i++, pd++) {
@@ -6285,7 +6280,7 @@ void puni_puni_main(void) {
         }
     }
 
-    if ((Punigp->field_0x324 & 0x20) != 0) {
+    if ((Punigp->flags & 0x20) != 0) {
         PartyEntry* party;
         PuniSearchEntry* sei;
         s32 k;
@@ -6322,7 +6317,7 @@ void puni_puni_main(void) {
                     } else {
                         pd2->field_0x1A4 = PSVECDistance(&pd2->field_0x12C, &mario->position);
                     }
-                    sei = (PuniSearchEntry*)((u8*)Punigp + 0x374);
+                    sei = (PuniSearchEntry*)Punigp->targets;
                     pd2->field_0x1B4 = -1;
                     pd2->field_0x1B8 = 1e+06f;
                     pd2->field_0x1BC = -1;
@@ -6369,7 +6364,7 @@ void puni_puni_main(void) {
                 } else {
                     pd->field_0x1A4 = PSVECDistance(&pd->field_0x12C, &mario->position);
                 }
-                sei = (PuniSearchEntry*)((u8*)Punigp + 0x374);
+                sei = (PuniSearchEntry*)Punigp->targets;
                 pd->field_0x1B4 = -1;
                 pd->field_0x1B8 = 1e+06f;
                 pd->field_0x1BC = -1;
@@ -6398,7 +6393,7 @@ void puni_puni_main(void) {
         unk_mri_00014ad4();
     }
 
-    if ((Punigp->field_0x324 & 0x20) != 0) {
+    if ((Punigp->flags & 0x20) != 0) {
         s32 i;
         PuniData* pd;
         PuniPose* pose;
@@ -6433,10 +6428,10 @@ void puni_puni_main(void) {
     }
 
     puniSound();
-    switch (Punigp->field_0x43C) {
+    switch (Punigp->phase) {
     case 2:
-        if (Punigp->field_0x440 == 2) {
-            Punigp->field_0x43C = 0;
+        if (Punigp->prevPhase == 2) {
+            Punigp->phase = 0;
         }
         break;
     case 0:
@@ -6446,7 +6441,7 @@ void puni_puni_main(void) {
     case 3:
         break;
     }
-    Punigp->field_0x440 = Punigp->field_0x43C;
+    Punigp->prevPhase = Punigp->phase;
 }
 
 static inline Vec puniMakeVecZero(f32 x, f32 y, f32 z) {
@@ -6490,8 +6485,8 @@ static inline void puniPaternInitAll(void) {
     s16* ep2;
     s32 j2;
     s16 v2;
-    PuniPaternData* pp = (PuniPaternData*)((u8*)Punigp + 0x4);
-    PuniPaternData* tp = (PuniPaternData*)((u8*)Punigp + 0x54);
+    PuniPaternData* pp = (PuniPaternData*)&Punigp->animSet[0];
+    PuniPaternData* tp = (PuniPaternData*)&Punigp->animSet[1];
 
     for (i = 0; i < 10; i++) {
         pp->pat[i] = puni_patern_table[i];
@@ -6559,32 +6554,32 @@ USER_FUNC(evt_puni_init) {
 USER_FUNC(evt_puni_set_yuka) {
     s32* args = event->args;
 
-    Punigp->unk328 = evtGetValue(event, args[0]) + 1;
-    Punigp->field_0x32C = (f32)evtGetValue(event, args[1]);
-    Punigp->field_0x330 = (f32)evtGetValue(event, args[2]);
-    Punigp->field_0x334 = (f32)evtGetValue(event, args[3]);
-    Punigp->field_0x338 = (f32)evtGetValue(event, args[4]);
-    Punigp->field_0x33C = evtGetValue(event, args[5]);
-    Punigp->field_0x340 = evtGetValue(event, args[6]);
-    swByteSet(0x299, Punigp->unk328);
+    Punigp->area = evtGetValue(event, args[0]) + 1;
+    Punigp->levelY[0] = (f32)evtGetValue(event, args[1]);
+    Punigp->levelY[1] = (f32)evtGetValue(event, args[2]);
+    Punigp->levelY[2] = (f32)evtGetValue(event, args[3]);
+    Punigp->levelY[3] = (f32)evtGetValue(event, args[4]);
+    Punigp->yMode = evtGetValue(event, args[5]);
+    Punigp->mapKind = evtGetValue(event, args[6]);
+    swByteSet(0x299, Punigp->area);
     return EVT_RETURN_DONE;
 }
 
 USER_FUNC(evt_puni_set_hamari) {
     s32* args = event->args;
 
-    Punigp->field_0x344.x = (f32)evtGetValue(event, args[0]);
-    Punigp->field_0x344.y = (f32)evtGetValue(event, args[1]);
-    Punigp->field_0x344.z = (f32)evtGetValue(event, args[2]);
-    Punigp->field_0x350 = (f32)evtGetValue(event, args[3]);
-    Punigp->field_0x354 = (f32)evtGetValue(event, args[4]);
-    Punigp->field_0x358 = (f32)evtGetValue(event, args[5]);
-    Punigp->field_0x35C = (f32)evtGetValue(event, args[6]);
+    Punigp->respawnPos.x = (f32)evtGetValue(event, args[0]);
+    Punigp->respawnPos.y = (f32)evtGetValue(event, args[1]);
+    Punigp->respawnPos.z = (f32)evtGetValue(event, args[2]);
+    Punigp->bandTop0 = (f32)evtGetValue(event, args[3]);
+    Punigp->bandBottom0 = (f32)evtGetValue(event, args[4]);
+    Punigp->bandTop1 = (f32)evtGetValue(event, args[5]);
+    Punigp->bandBottom1 = (f32)evtGetValue(event, args[6]);
     return EVT_RETURN_DONE;
 }
 
 USER_FUNC(evt_puni_set_maze) {
-    switch (Punigp->field_0x340) {
+    switch (Punigp->mapKind) {
     case 0:
         break;
     case 1:
@@ -6612,23 +6607,23 @@ USER_FUNC(evt_puni_main) {
 }
 
 f32 puni_init_posy(f32 y) {
-    f32 d = __fabs(y - Punigp->field_0x32C);
-    f32 r = Punigp->field_0x32C;
+    f32 d = __fabs(y - Punigp->levelY[0]);
+    f32 r = Punigp->levelY[0];
     f32 t;
 
-    t = __fabs(y - Punigp->field_0x330);
+    t = __fabs(y - Punigp->levelY[1]);
     if (d > t) {
         d = t;
-        r = Punigp->field_0x330;
+        r = Punigp->levelY[1];
     }
-    t = __fabs(y - Punigp->field_0x334);
+    t = __fabs(y - Punigp->levelY[2]);
     if (d > t) {
         d = t;
-        r = Punigp->field_0x334;
+        r = Punigp->levelY[2];
     }
-    t = __fabs(y - Punigp->field_0x338);
+    t = __fabs(y - Punigp->levelY[3]);
     if (d > t) {
-        r = Punigp->field_0x338;
+        r = Punigp->levelY[3];
     }
     return r;
 }
@@ -6727,19 +6722,19 @@ USER_FUNC(evt_puni_rnd_pos) {
 }
 
 USER_FUNC(evt_puni_get_systemmode) {
-    evtSetValue(event, event->args[0], Punigp->field_0x0);
+    evtSetValue(event, event->args[0], Punigp->systemMode);
     return EVT_RETURN_DONE;
 }
 
 USER_FUNC(evt_puni_set_systemmode) {
-    Punigp->field_0x0 = evtGetValue(event, event->args[0]);
+    Punigp->systemMode = evtGetValue(event, event->args[0]);
     return EVT_RETURN_DONE;
 }
 
 USER_FUNC(evt_puni_wait_systemmode) {
     s32 mode = evtGetValue(event, event->args[0]);
 
-    if (Punigp->field_0x0 != mode) {
+    if (Punigp->systemMode != mode) {
         return EVT_RETURN_BLOCK;
     }
     return EVT_RETURN_DONE;
@@ -6820,26 +6815,26 @@ USER_FUNC(evt_puni_setup) {
     evtGetValue(event, args[1]);
     b = evtGetValue(event, args[2]);
 
-    Punigp->field_0x43C = 0;
+    Punigp->phase = 0;
     if (a == 2) {
-        Punigp->field_0x324 &= ~0xf;
+        Punigp->flags &= ~0xf;
         switch (b) {
         case 6:
-            Punigp->field_0x324 |= 1;
+            Punigp->flags |= 1;
             break;
         case 2:
-            Punigp->field_0x324 |= 2;
+            Punigp->flags |= 2;
             break;
         case 8:
-            Punigp->field_0x324 |= 4;
+            Punigp->flags |= 4;
             break;
         case 9:
-            Punigp->field_0x324 |= 8;
+            Punigp->flags |= 8;
             break;
         }
     }
-    if (Punigp->unk328 == 9 || Punigp->unk328 == 0xc)
-        Punigp->field_0x324 |= 0x20;
+    if (Punigp->area == 9 || Punigp->area == 0xc)
+        Punigp->flags |= 0x20;
     if (swByteGet(0x299) == 1)
         return 2;
 
@@ -6857,7 +6852,7 @@ USER_FUNC(evt_puni_setup) {
             continue;
         }
         puniswGetindex(0xF70F2E80, i - 1, &c0, &pos);
-        if (c0 != 0 && c0 != Punigp->unk328)
+        if (c0 != 0 && c0 != Punigp->area)
             continue;
         {
             s32 bit;
@@ -6870,22 +6865,22 @@ USER_FUNC(evt_puni_setup) {
                 continue;
             if (swGet(0xb14) != 0)
                 continue;
-            Punigp->field_0x364 = p;
+            Punigp->switchPuni[0] = p;
             p->unk4 |= 0x20;
         } else if (i == 2) {
             if (swGet(0xb3d) == 0)
                 continue;
-            Punigp->field_0x368 = p;
+            Punigp->switchPuni[1] = p;
             p->unk4 |= 0x40;
         } else if (i == 4) {
             if (swGet(0xb3f) == 0)
                 continue;
-            Punigp->field_0x370 = p;
+            Punigp->switchPuni[3] = p;
             p->unk4 |= 0x100;
         } else if (i == 3) {
             if (swGet(0xb3e) == 0)
                 continue;
-            Punigp->field_0x36C = p;
+            Punigp->switchPuni[2] = p;
             p->unk4 |= 0x80;
         } else {
             if (swByteGet(0x28b) + 5 <= i)
@@ -6906,7 +6901,7 @@ USER_FUNC(evt_puni_setup) {
                 ex = bero_get_BeroEX();
                 ey = puni_init_posy(bero_get_BeroEY());
                 ez = bero_get_BeroEZ();
-                if ((Punigp->field_0x324 & 8) == 0) {
+                if ((Punigp->flags & 8) == 0) {
                     sx = puniRandfSetup(sx - 10.0f, sx + 10.0f);
                     sz = puniRandfSetup(sz - 10.0f, sz + 10.0f);
                 } else {
@@ -7174,30 +7169,30 @@ USER_FUNC(evt_puni_exit) {
     arg2 = evtGetValue(event, args[2]);
     name = (const char*)evtGetValue(event, args[3]);
 
-    Punigp->field_0x43C = 5;
+    Punigp->phase = 5;
     if (mode == 2) {
-        Punigp->field_0x324 &= ~0xF;
+        Punigp->flags &= ~0xF;
         switch (arg2) {
             case 6:
-                Punigp->field_0x324 |= 0x1;
+                Punigp->flags |= 0x1;
                 break;
             case 2:
-                Punigp->field_0x324 |= 0x2;
+                Punigp->flags |= 0x2;
                 break;
             case 8:
-                Punigp->field_0x324 |= 0x4;
+                Punigp->flags |= 0x4;
                 break;
             case 9:
-                Punigp->field_0x324 |= 0x8;
+                Punigp->flags |= 0x8;
                 break;
         }
     }
     if (name == NULL) {
-        Punigp->field_0x324 |= 0x10;
+        Punigp->flags |= 0x10;
     } else {
-        Punigp->field_0x324 &= ~0x10;
+        Punigp->flags &= ~0x10;
     }
-    if (!(Punigp->field_0x324 & 0x8)) {
+    if (!(Punigp->flags & 0x8)) {
         f31 = bero_get_BeroSX();
         f30 = puni_init_posy(bero_get_BeroSY());
         f29 = bero_get_BeroSZ();
@@ -7214,14 +7209,14 @@ USER_FUNC(evt_puni_exit) {
         f29 += 60.0f;
     }
     Punigp->field_0x47C = 2;
-    Punigp->field_0x480.x = f31;
-    Punigp->field_0x480.y = f30;
-    Punigp->field_0x480.z = f29;
-    Punigp->field_0x4B0 = 100.0f;
-    Punigp->field_0x48C.x = f28;
-    Punigp->field_0x48C.y = f27;
-    Punigp->field_0x48C.z = f1;
-    Punigp->field_0x4B4 = 100.0f;
+    Punigp->arrivePos.x = f31;
+    Punigp->arrivePos.y = f30;
+    Punigp->arrivePos.z = f29;
+    Punigp->arriveDistSq = 100.0f;
+    Punigp->arrivePos2.x = f28;
+    Punigp->arrivePos2.y = f27;
+    Punigp->arrivePos2.z = f1;
+    Punigp->arriveDistSq2 = 100.0f;
 
     if (name != NULL) {
         cmp = strcmp(name, "mri_00");
@@ -7244,7 +7239,7 @@ USER_FUNC(evt_puni_exit) {
                 continue;
             }
             puniHagurePos(punidat);
-            area = Punigp->unk328;
+            area = Punigp->area;
             pos = punidat->field_0x12C;
             puniswSetindex(0xF70F2E80, punidat->field_0x116 - 1, &area, &pos);
         } else {
@@ -7293,25 +7288,25 @@ USER_FUNC(evt_puni_init_puni) {
         if (flag != 0 && swGet(0xB14) != 0) {
             return 2;
         }
-        *(PuniData**)((u8*)Punigp + 0x364) = punidat;   // PuniWork 0x364
+        Punigp->switchPuni[0] = punidat;   // PuniWork 0x364
         punidat->unk4 |= 0x20;
     } else if (type == 2) {
         if (flag != 0 && swGet(0xB3D) == 0) {
             return 2;
         }
-        *(PuniData**)((u8*)Punigp + 0x368) = punidat;   // PuniWork 0x368
+        Punigp->switchPuni[1] = punidat;   // PuniWork 0x368
         punidat->unk4 |= 0x40;
     } else if (type == 4) {
         if (flag != 0 && swGet(0xB3F) == 0) {
             return 2;
         }
-        *(PuniData**)((u8*)Punigp + 0x370) = punidat;   // PuniWork 0x370
+        Punigp->switchPuni[3] = punidat;   // PuniWork 0x370
         punidat->unk4 |= 0x100;
     } else if (type == 3) {
         if (flag != 0 && swGet(0xB3E) == 0) {
             return 2;
         }
-        *(PuniData**)((u8*)Punigp + 0x36C) = punidat;   // PuniWork 0x36C
+        Punigp->switchPuni[2] = punidat;   // PuniWork 0x36C
         punidat->unk4 |= 0x80;
     } else {
         if (flag != 0 && swByteGet(0x28B) + 5 <= type) {
@@ -7733,7 +7728,7 @@ USER_FUNC(evt_puni_set_trap_index) {
 }
 
 USER_FUNC(evt_puni_set_ymode) {
-    Punigp->field_0x33C = evtGetValue(event, event->args[0]);
+    Punigp->yMode = evtGetValue(event, event->args[0]);
     return EVT_RETURN_DONE;
 }
 
@@ -7907,7 +7902,7 @@ USER_FUNC(evt_puni_fade_onoff) {
 }
 
 USER_FUNC(evt_puni_attack_on) {
-    Punigp->field_0x43C = 3;
+    Punigp->phase = 3;
     return EVT_RETURN_DONE;
 }
 
@@ -7927,12 +7922,12 @@ USER_FUNC(evt_puni_winddisable_onoff) {
 }
 
 USER_FUNC(evt_puni_force_se_off) {
-    u32 se = *(u32*)((u8*)Punigp + 0x458); // PuniWork 0x458
+    u32 se = Punigp->field_0x458; // PuniWork 0x458
 
     if (se != 0) {
         psndSFXOff(se);
     }
-    se = Punigp->field_0x468;
+    se = Punigp->moveSfx;
     if (se != 0) {
         psndSFXOff(se);
     }
@@ -7957,7 +7952,7 @@ USER_FUNC(evt_puni_all_save) {
         }
         if ((puni->unk4 & 0x8000) != 0) {
             puniHagurePos(puni);
-            area = Punigp->unk328;
+            area = Punigp->area;
             pos = puni->field_0x12C;
             puniswSetindex(0xF70F2E80, puni->field_0x116 - 1, &area, &pos);
         } else {
@@ -7975,7 +7970,7 @@ USER_FUNC(evt_target_flag_onoff) {
     s32 index = evtGetValue(event, args[0]);
     s32 on = evtGetValue(event, args[1]);
     s32 mask = evtGetValue(event, args[2]);
-    s32* flag = (s32*)((u8*)Punigp + 0x374 + index * 0x14); // PuniWork target table
+    s32* flag = &Punigp->targets[index].flags; // PuniWork target table
 
     if (on != 0) {
         *flag &= ~mask;
@@ -7988,7 +7983,7 @@ USER_FUNC(evt_target_flag_onoff) {
 USER_FUNC(evt_target_set_position) {
     s32* args = event->args;
     s32 index = evtGetValue(event, args[0]);
-    PuniTarget* target = (PuniTarget*)((u8*)Punigp + 0x374 + index * 0x14); // PuniWork target table
+    PuniTarget* target = &Punigp->targets[index]; // PuniWork target table
 
     target->position.x = (f32)evtGetValue(event, args[1]);
     target->position.y = (f32)evtGetValue(event, args[2]);
@@ -7999,7 +7994,7 @@ USER_FUNC(evt_target_set_position) {
 USER_FUNC(evt_target_set_soko) {
     s32* args = event->args;
     s32 index = evtGetValue(event, args[0]);
-    PuniTarget* target = (PuniTarget*)((u8*)Punigp + 0x374 + index * 0x14); // PuniWork target table
+    PuniTarget* target = &Punigp->targets[index]; // PuniWork target table
 
     target->hit = hitNameToPtr((const char*)evtGetValue(event, args[1]));
     return EVT_RETURN_DONE;
@@ -8019,7 +8014,7 @@ USER_FUNC(puni_piders_check_func) {
     s32 offset;
 
     for (i = 2; i < 10; i++) {
-        *(s32*)((u8*)Punigp + 0x374 + i * 0x14) &= ~5; // PuniWork 0x374 target table
+        Punigp->targets[i].flags &= ~5; // PuniWork 0x374 target table
     }
 
     offset = 0x28;
@@ -8041,21 +8036,21 @@ USER_FUNC(puni_piders_check_func) {
         }
         pos = npc->position;
         hit = 0;
-        if (50.0 >= __fabs(pos.y - Punigp->field_0x32C)) {
+        if (50.0 >= __fabs(pos.y - Punigp->levelY[0])) {
             hit = 1;
-            pos.y = Punigp->field_0x32C;
+            pos.y = Punigp->levelY[0];
         }
-        if (50.0 >= __fabs(pos.y - Punigp->field_0x330)) {
+        if (50.0 >= __fabs(pos.y - Punigp->levelY[1])) {
             hit = 1;
-            pos.y = Punigp->field_0x330;
+            pos.y = Punigp->levelY[1];
         }
-        if (50.0 >= __fabs(pos.y - Punigp->field_0x334)) {
+        if (50.0 >= __fabs(pos.y - Punigp->levelY[2])) {
             hit = 1;
-            pos.y = Punigp->field_0x334;
+            pos.y = Punigp->levelY[2];
         }
-        if (50.0 >= __fabs(pos.y - Punigp->field_0x338)) {
+        if (50.0 >= __fabs(pos.y - Punigp->levelY[3])) {
             hit = 1;
-            pos.y = Punigp->field_0x338;
+            pos.y = Punigp->levelY[3];
         }
         if (hit != 0) {
             PuniTarget* target = (PuniTarget*)((u8*)Punigp + 0x374 + offset); // PuniWork target table
@@ -8072,7 +8067,7 @@ USER_FUNC(puni_disp_info_kassencheck) {
     s32* args = event->args;
     s32 result = 0;
 
-    if (Punigp->unk328 == 9 || Punigp->unk328 == 12) {
+    if (Punigp->area == 9 || Punigp->area == 12) {
         result = 1;
     }
     evtSetValue(event, args[0], result);
@@ -8147,12 +8142,12 @@ USER_FUNC(puni_disp_info_sub) {
     total += swByteGet(0x28B);
 
     isKassen = 0;
-    if (Punigp->unk328 == 9) {
+    if (Punigp->area == 9) {
         if (swGet(0xB21) == 0) {
             isKassen = 1;
         }
     }
-    if (Punigp->unk328 == 12) {
+    if (Punigp->area == 12) {
         if (swGet(0xB29) == 0) {
             isKassen = 1;
         }
@@ -8172,7 +8167,7 @@ USER_FUNC(puni_disp_info_sub) {
         }
     }
 
-    if ((Punigp->field_0x0 & 2) == 0) {
+    if ((Punigp->systemMode & 2) == 0) {
         count = swByteGet(0x29B);
         total = swByteGet(0x29C);
         Punigp->unk448 = 0;

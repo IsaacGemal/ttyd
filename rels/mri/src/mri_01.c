@@ -289,7 +289,7 @@ USER_FUNC(elder_talk_sub_punicheck) {
             puniswTrapGetindex(i, &trap);
             if (trap != 0) {
                 trapCount++;
-            } else if (lswIndex != 0 && lswIndex != punigp->unk328) {
+            } else if (lswIndex != 0 && lswIndex != punigp->area) {
                 modeCount++;
             }
         }
