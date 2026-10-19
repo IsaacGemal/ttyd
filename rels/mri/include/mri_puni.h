@@ -80,7 +80,7 @@ typedef struct PuniData {
     s16 field_0x118;                    // 0x118
     s16 field_0x11A;                    // 0x11A
     u16 animIdx;                        // 0x11C
-    s16 field_0x11E;                    // 0x11E
+    u16 prevAnimIdx;                    // 0x11E
     u8 unk120[0x121 - 0x120];           // 0x120
     u8 field_0x121;                     // 0x121
     u8 unk122[0x124 - 0x122];           // 0x122
@@ -95,7 +95,8 @@ typedef struct PuniData {
     Vec vel;                            // 0x15C
     u8 unk168[0x174 - 0x168];           // 0x168
     f32 field_0x174;                    // 0x174
-    u8 unk178[0x180 - 0x178];           // 0x178
+    f32 gravity;                        // 0x178
+    u8 unk17C[0x180 - 0x17C];           // 0x17C
     f32 direction;                      // 0x180
     f32 field_0x184;                    // 0x184
     f32 field_0x188;                    // 0x188
@@ -119,12 +120,12 @@ typedef struct PuniData {
     s32 leftPuni;                       // 0x1D4
     s32 rightPuni;                      // 0x1D8
     s32 target;                         // 0x1DC
-    u8 unk1E0[0x1E4 - 0x1E0];           // 0x1E0
+    s32 subState;                       // 0x1E0
     s32 field_0x1E4;                    // 0x1E4
     u8 unk1E8[0x1EC - 0x1E8];           // 0x1E8
-    f32 field_0x1EC;                    // 0x1EC
-    f32 field_0x1F0;                    // 0x1F0
-    u8 unk1F4[0x1F8 - 0x1F4];           // 0x1F4
+    f32 height;                         // 0x1EC
+    f32 vertVel;                        // 0x1F0
+    f32 jumpVelStart;                   // 0x1F4
     Vec accel;                          // 0x1F8
     Vec field_0x204;                    // 0x204
     struct HitEntry* field_0x210;       // 0x210

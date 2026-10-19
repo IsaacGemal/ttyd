@@ -729,7 +729,7 @@ void puniAnimation(PuniData* dat, PuniPose* pose) {
         pose->field_0xC = dat->field_0x188;
     }
 
-    dat->field_0x11E = dat->animIdx;
+    dat->prevAnimIdx = dat->animIdx;
 }
 
 f32 _chukanhosei(f32 a, f32 b, f32 c) {
@@ -3107,7 +3107,7 @@ void puniModeParent(PuniData* punidat) {
     u16 v;
     u8 c;
 
-    switch (*(u16*)((u8*)punidat + 0x11E)) {
+    switch (punidat->prevAnimIdx) {
     case 0:
     case 1:
         if (punidat->field_0x1AC < 1.5f) {
@@ -3123,14 +3123,14 @@ void puniModeParent(PuniData* punidat) {
         } else {
             punidat->animIdx = 1;
         }
-        if (*(u16*)((u8*)punidat + 0x11E) == punidat->animIdx) {
+        if (punidat->prevAnimIdx == punidat->animIdx) {
             *(u8*)((u8*)punidat + 0x120) = 0;
         } else {
             c = *(u8*)((u8*)punidat + 0x120);
             c++;
             *(u8*)((u8*)punidat + 0x120) = c;
             if (c <= 8) {
-                punidat->animIdx = *(u16*)((u8*)punidat + 0x11E);
+                punidat->animIdx = punidat->prevAnimIdx;
             } else {
                 *(u8*)((u8*)punidat + 0x120) = 0;
             }
@@ -3558,9 +3558,9 @@ void puniModeAwayjump(PuniData* punidat) {
     case 0:
         punidat->modeStartTime = gp->renderTime;
         punidat->field_0x1E4 = 0;
-        punidat->field_0x1EC = punidat->pos.y;
-        punidat->field_0x1F0 = -72.0f;
-        *(f32*)((u8*)punidat + 0x1F4) = -punidat->field_0x1F0;  // PuniData 0x1F4
+        punidat->height = punidat->pos.y;
+        punidat->vertVel = -72.0f;
+        punidat->jumpVelStart = -punidat->vertVel;  // PuniData 0x1F4
         punidat->state = 1;
         punidat->animIdx = 7;
         punidat->animTime = 0;
@@ -3582,9 +3582,9 @@ void puniModeAwayjump(PuniData* punidat) {
             f32 t = (f32)elapsed / 200.0f;
 
             punidat->pos.y =
-                t * (punidat->field_0x1F0 * t + *(f32*)((u8*)punidat + 0x1F4)) + punidat->field_0x1EC;
+                t * (punidat->vertVel * t + punidat->jumpVelStart) + punidat->height;
         } else {
-            punidat->pos.y = punidat->field_0x1EC;
+            punidat->pos.y = punidat->height;
             punidat->mode = 6;
             punidat->animIdx = 2;
             punidat->flags &= ~0x1000000;
@@ -3836,17 +3836,17 @@ void puniModeDamage(PuniData* punidat) {
         vec.y = 0.0f;
         PSVECScale(&vec, &vec, 3.0f);
         punidat->vel = vec;
-        *(f32*)&punidat->unk178[0] = 5.0f;
+        punidat->gravity = 5.0f;
         punidat->animIdx = 3;
         punidat->state = 3;
         break;
     case 3:
-        punidat->pos.y += *(f32*)&punidat->unk178[0];
-        *(f32*)&punidat->unk178[0] -= 0.5f;
+        punidat->pos.y += punidat->gravity;
+        punidat->gravity -= 0.5f;
         if (punidat->pos.y <= 0.001f) {
             punidat->flags &= ~0x2000;
             punidat->pos.y = 0.0f;
-            *(f32*)&punidat->unk178[0] = 0.0f;
+            punidat->gravity = 0.0f;
             punidat->field_0x138 = punidat->pos;
             punidat->field_0x574 -= punidat->field_0x584;
             if (punidat->field_0x574 <= 0) {
@@ -4120,9 +4120,9 @@ void puniModeWind_kaiten(PuniData* punidat) {
     s32 dir;
 
     if (punidat->direction < 180.0f) {
-        dir = *(s32*)((u8*)punidat + 0x1E0);  // PuniData 0x1E0
+        dir = punidat->subState;  // PuniData 0x1E0
     } else {
-        dir = *(s32*)((u8*)punidat + 0x1E0) ^ 1;  // PuniData 0x1E0
+        dir = punidat->subState ^ 1;  // PuniData 0x1E0
     }
     if (dir != 0) {
         punidat->field_0x184 += 10.0f;
@@ -4155,9 +4155,9 @@ void puniModeWind(PuniData* punidat) {
         punidat->flags &= ~0x100000;
         PSVECSubtract(&punidat->pos, &mario->position, &vec);
         if (vec.x < 0.0f) {
-            *(s32*)((u8*)punidat + 0x1E0) = 0;  // PuniData 0x1E0
+            punidat->subState = 0;  // PuniData 0x1E0
         } else {
-            *(s32*)((u8*)punidat + 0x1E0) = 1;  // PuniData 0x1E0
+            punidat->subState = 1;  // PuniData 0x1E0
         }
         vec.x *= 1.5f;
         vec.z *= 0.5f;
@@ -4169,51 +4169,51 @@ void puniModeWind(PuniData* punidat) {
             vec = (Vec){0.0f, 0.0f, 0.0f};
         }
         vec.y = 0.0f;
-        *(f32*)((u8*)punidat + 0x1F4) =  // PuniData 0x1F4
+        punidat->jumpVelStart =  // PuniData 0x1F4
             6.0f * (punidat->field_0x1A0 / 100.0f) + 2.0f;
         punidat->accel = vec;
-        punidat->field_0x1EC = 0.0f;
-        punidat->field_0x1F0 = 0.0f;
+        punidat->height = 0.0f;
+        punidat->vertVel = 0.0f;
         if (punidat->flags & 1) {
-            *(f32*)((u8*)punidat + 0x178) = 0.06f;  // PuniData 0x178
+            punidat->gravity = 0.06f;  // PuniData 0x178
         } else {
-            *(f32*)((u8*)punidat + 0x178) = 0.6f;  // PuniData 0x178
+            punidat->gravity = 0.6f;  // PuniData 0x178
         }
         punidat->animIdx = 5;
         punidat->state = 1;
         // fallthrough
     case 1:
-        PSVECScale(&punidat->accel, &vec, punidat->field_0x1EC);
+        PSVECScale(&punidat->accel, &vec, punidat->height);
         vec.z = 0.0f;
         *(Vec*)&punidat->vel = vec;
         puniModeWind_kaiten(punidat);
-        punidat->field_0x1EC += punidat->field_0x1F0;
-        punidat->field_0x1F0 += *(f32*)((u8*)punidat + 0x178);  // PuniData 0x1F0, 0x178
+        punidat->height += punidat->vertVel;
+        punidat->vertVel += punidat->gravity;  // PuniData 0x1F0, 0x178
         if (puniModeWind_sub(punidat) != 0) {
             break;
         }
-        if (!(punidat->field_0x1EC >= *(f32*)((u8*)punidat + 0x1F4))) {  // PuniData 0x1F4
+        if (!(punidat->height >= punidat->jumpVelStart)) {  // PuniData 0x1F4
             break;
         }
         if (punidat->flags & 1) {
-            *(f32*)((u8*)punidat + 0x178) = 0.03f;  // PuniData 0x178
+            punidat->gravity = 0.03f;  // PuniData 0x178
         } else {
-            *(f32*)((u8*)punidat + 0x178) = 0.003f;  // PuniData 0x178
+            punidat->gravity = 0.003f;  // PuniData 0x178
         }
-        punidat->field_0x1F0 = 0.0f;
+        punidat->vertVel = 0.0f;
         punidat->state = 2;
         break;
     case 2:
-        PSVECScale(&punidat->accel, &vec, punidat->field_0x1EC);
+        PSVECScale(&punidat->accel, &vec, punidat->height);
         vec.z = 0.0f;
         *(Vec*)&punidat->vel = vec;
         puniModeWind_kaiten(punidat);
-        punidat->field_0x1EC -= punidat->field_0x1F0;
-        punidat->field_0x1F0 += *(f32*)((u8*)punidat + 0x178);  // PuniData 0x1F0, 0x178
+        punidat->height -= punidat->vertVel;
+        punidat->vertVel += punidat->gravity;  // PuniData 0x1F0, 0x178
         if (puniModeWind_sub(punidat) != 0) {
             break;
         }
-        if (punidat->field_0x1EC < 0.0f) {
+        if (punidat->height < 0.0f) {
             punidat->state = 10;
         }
         break;
@@ -4309,25 +4309,25 @@ void puniModeFall(PuniData* punidat) {
                     break;
                 }
                 if (actor210 != NULL && (actor210->flags & 0x100)) {
-                    *(s32*)((u8*)punidat + 0x1E0) = 0x12;
+                    punidat->subState = 0x12;
                     punidat->animIdx = 0;
                     punidat->state = 2;
                     break;
                 }
                 if (actor214 != NULL && (actor214->flags & 0x100)) {
-                    *(s32*)((u8*)punidat + 0x1E0) = 0x12;
+                    punidat->subState = 0x12;
                     punidat->animIdx = 0;
                     punidat->state = 2;
                     break;
                 }
                 if (actor210 != NULL && (actor210->flags & 0x200)) {
-                    *(s32*)((u8*)punidat + 0x1E0) = 0x16;
+                    punidat->subState = 0x16;
                     punidat->animIdx = 3;
                     punidat->state = 2;
                     break;
                 }
                 if (actor214 != NULL && (actor214->flags & 0x200)) {
-                    *(s32*)((u8*)punidat + 0x1E0) = 0x16;
+                    punidat->subState = 0x16;
                     punidat->animIdx = 3;
                     punidat->state = 2;
                     break;
@@ -4357,9 +4357,9 @@ void puniModeFall(PuniData* punidat) {
                     }
                 }
                 if (found) {
-                    *(s32*)((u8*)punidat + 0x1E0) = 0x17;
+                    punidat->subState = 0x17;
                 } else {
-                    *(s32*)((u8*)punidat + 0x1E0) = 0xF;
+                    punidat->subState = 0xF;
                 }
 
                 if (Punigp->area == 0x12 && punidat->pos.y < -300.0f) {
@@ -4383,14 +4383,14 @@ void puniModeFall(PuniData* punidat) {
                 *(Vec*)((u8*)punidat + 0x590) = punidat->pos;
                 puniPositionRecover(punidat);
                 *(Vec*)((u8*)punidat + 0x59C) = punidat->pos;
-                *(s32*)((u8*)punidat + 0x1E0) = 0x10;
+                punidat->subState = 0x10;
                 *(Vec*)&punidat->vel = (Vec){0.0f, 0.0f, 0.0f};
                 punidat->state = 2;
             }
             break;
         }
         case 2:
-            punidat->mode = *(s32*)((u8*)punidat + 0x1E0);
+            punidat->mode = punidat->subState;
             *(Vec*)&punidat->vel = (Vec){0.0f, 0.0f, 0.0f};
             punidat->state = 0;
             break;
@@ -4454,45 +4454,45 @@ void puniModeUpdraft(PuniData* punidat) {
                 }
                 dir.y = 0.0f;
                 dir.z = 0.0f;
-                *(f32*)((u8*)punidat + 0x1F4) =
+                punidat->jumpVelStart =
                     1.2f + punidat->field_0x1A0 / 100.0f;
                 punidat->accel = dir;
-                punidat->field_0x1EC = 0.0f;
-                punidat->field_0x1F0 = 0.0f;
+                punidat->height = 0.0f;
+                punidat->vertVel = 0.0f;
                 punidat->state = 1;
             }
             break;
         case 1:
-            PSVECScale(&punidat->accel, &dir, punidat->field_0x1EC);
+            PSVECScale(&punidat->accel, &dir, punidat->height);
             PSVECAdd((Vec*)&punidat->vel, &dir, (Vec*)&punidat->vel);
 #ifdef MUST_MATCH
             {
                 f32 inc = 0.06f;
-                punidat->field_0x1EC = punidat->field_0x1EC + punidat->field_0x1F0;
-                punidat->field_0x1F0 = punidat->field_0x1F0 + inc;
+                punidat->height = punidat->height + punidat->vertVel;
+                punidat->vertVel = punidat->vertVel + inc;
             }
 #else
-            punidat->field_0x1EC = punidat->field_0x1EC + punidat->field_0x1F0;
-            punidat->field_0x1F0 = punidat->field_0x1F0 + 0.06f;
+            punidat->height = punidat->height + punidat->vertVel;
+            punidat->vertVel = punidat->vertVel + 0.06f;
 #endif
-            if (punidat->field_0x1EC >= *(f32*)((u8*)punidat + 0x1F4)) {
-                punidat->field_0x1EC = *(f32*)((u8*)punidat + 0x1F4);
+            if (punidat->height >= punidat->jumpVelStart) {
+                punidat->height = punidat->jumpVelStart;
             }
             break;
         case 2:
-            PSVECScale(&punidat->accel, &dir, punidat->field_0x1EC);
+            PSVECScale(&punidat->accel, &dir, punidat->height);
             PSVECAdd((Vec*)&punidat->vel, &dir, (Vec*)&punidat->vel);
 #ifdef MUST_MATCH
             {
                 f32 inc = 0.03f;
-                punidat->field_0x1EC = punidat->field_0x1EC - punidat->field_0x1F0;
-                punidat->field_0x1F0 = punidat->field_0x1F0 + inc;
+                punidat->height = punidat->height - punidat->vertVel;
+                punidat->vertVel = punidat->vertVel + inc;
             }
 #else
-            punidat->field_0x1EC = punidat->field_0x1EC - punidat->field_0x1F0;
-            punidat->field_0x1F0 = punidat->field_0x1F0 + 0.03f;
+            punidat->height = punidat->height - punidat->vertVel;
+            punidat->vertVel = punidat->vertVel + 0.03f;
 #endif
-            if (punidat->field_0x1EC < 0.0f) {
+            if (punidat->height < 0.0f) {
                 punidat->state = 0;
             }
             break;
@@ -4598,15 +4598,15 @@ void puniModeFunbari(PuniData* punidat) {
                 break;
             }
             if (punidat->pos.x > entry->vec.x) {
-                *(f32*)((u8*)punidat + 0x1F4) = -1.0f;
+                punidat->jumpVelStart = -1.0f;
                 punidat->direction = 270.0f;
             } else {
-                *(f32*)((u8*)punidat + 0x1F4) = 1.0f;
+                punidat->jumpVelStart = 1.0f;
                 punidat->direction = 90.0f;
             }
             punidat->vel.x = 0.5f;
             punidat->timer = 0x44;
-            punidat->field_0x1EC = 1.0f;
+            punidat->height = 1.0f;
             {
                 u32* p = *(u32**)((u8*)punidat + 0x0);
                 *p |= 4;
@@ -4616,18 +4616,18 @@ void puniModeFunbari(PuniData* punidat) {
         }
         case 1:
         case 2: {
-            f32 s = (f32)sin(3.1415927f * punidat->field_0x1EC / 180.0f);
-            if (punidat->field_0x1EC <= 180.0f) {
-                punidat->field_0x1F0 = 0.5f * s;
+            f32 s = (f32)sin(3.1415927f * punidat->height / 180.0f);
+            if (punidat->height <= 180.0f) {
+                punidat->vertVel = 0.5f * s;
             } else {
-                punidat->field_0x1F0 = 0.45f * s;
+                punidat->vertVel = 0.45f * s;
             }
-            punidat->field_0x1EC += 7.0f;
-            if (punidat->field_0x1EC >= 360.0f) {
-                punidat->field_0x1EC = 360.0f;
+            punidat->height += 7.0f;
+            if (punidat->height >= 360.0f) {
+                punidat->height = 360.0f;
             }
-            punidat->pos.y = punidat->pos.y + punidat->field_0x1F0;
-            punidat->pos.x = punidat->vel.x * *(f32*)((u8*)punidat + 0x1F4) +
+            punidat->pos.y = punidat->pos.y + punidat->vertVel;
+            punidat->pos.x = punidat->vel.x * punidat->jumpVelStart +
                                      punidat->pos.x;
             if ((punidat->timer)-- == 0) {
                 punidat->state = 10;
@@ -4664,9 +4664,9 @@ void puniModeWater(PuniData* punidat) {
             f32 t;
             punidat->modeStartTime = gp->renderTime;
             punidat->accel = punidat->pos;
-            punidat->field_0x1EC = -80.0f;
+            punidat->height = -80.0f;
             t = *(f32*)((u8*)punidat + 0x154) - punidat->accel.y;  // PuniData 0x154
-            punidat->field_0x1F0 = t - punidat->field_0x1EC;
+            punidat->vertVel = t - punidat->height;
             PSVECNormalize((Vec*)((u8*)punidat + 0x168), &dir);
             PSVECScale(&dir, &dir, -20.0f);
             {
@@ -4687,7 +4687,7 @@ void puniModeWater(PuniData* punidat) {
                     intplGetValue(0, step, 0x12C, punidat->accel.x, *(f32*)((u8*)punidat + 0x150));
                 punidat->pos.z =
                     intplGetValue(0, step, 0x12C, punidat->accel.z, *(f32*)((u8*)punidat + 0x158));
-                y = punidat->field_0x1EC * t + punidat->field_0x1F0;
+                y = punidat->height * t + punidat->vertVel;
                 punidat->pos.y = t * y + punidat->accel.y;
                 *(Vec*)&punidat->field_0x138 = punidat->pos;
             } else {
@@ -6633,7 +6633,7 @@ void puni_init_para(PuniData* punidat, f32 x, f32 y, f32 z) {
 
     pd->state = 0;
     pd->animIdx = 0;
-    pd->field_0x11E = 1000;
+    pd->prevAnimIdx = 1000;
     pd->pos.x = x;
     pd->pos.y = y;
     pd->pos.z = z;
@@ -6665,7 +6665,7 @@ void toge_init_para(PuniData* punidat, f32 x, f32 y, f32 z) {
 
     pd->animIdx = 0;
     pd->state = 0;
-    pd->field_0x11E = 1000;
+    pd->prevAnimIdx = 1000;
     pd->pos.x = x;
     pd->pos.y = y;
     pd->pos.z = z;
@@ -6922,7 +6922,7 @@ USER_FUNC(evt_puni_setup) {
         }
         p->state = 0;
         p->animIdx = 0;
-        p->field_0x11E = 1000;
+        p->prevAnimIdx = 1000;
         p->pos.x = sx;
         p->pos.y = sy;
         p->pos.z = sz;
@@ -7005,7 +7005,7 @@ USER_FUNC(evt_toge_setup) {
         p->angle = i;
         p->animIdx = 0;
         p->state = 0;
-        p->field_0x11E = 1000;
+        p->prevAnimIdx = 1000;
         p->pos.x = (x - 50.0f) + rx * ((x + 50.0f) - (x - 50.0f));
         p->pos.y = y;
         zhi = z + 120.0f;
@@ -7318,7 +7318,7 @@ USER_FUNC(evt_puni_init_puni) {
     punidat->mode = unkC;
     punidat->state = 0;
     punidat->animIdx = 0;
-    punidat->field_0x11E = 1000;
+    punidat->prevAnimIdx = 1000;
     punidat->pos.x = x;
     punidat->pos.y = y;
     punidat->pos.z = z;
@@ -7359,7 +7359,7 @@ USER_FUNC(evt_puni_init_teki) {
     punidat->mode = unkC;
     punidat->animIdx = 0;
     punidat->state = 0;
-    punidat->field_0x11E = 1000;
+    punidat->prevAnimIdx = 1000;
     punidat->pos.x = x;
     punidat->pos.y = y;
     punidat->pos.z = z;
@@ -7435,7 +7435,7 @@ USER_FUNC(evt_puni_set_anim) {
     PuniData* punidat = &Punidat[evtGetValue(event, args[0])];
 
     punidat->animIdx = evtGetValue(event, args[1]);
-    punidat->field_0x11E = 1000;
+    punidat->prevAnimIdx = 1000;
     return EVT_RETURN_DONE;
 }
 
@@ -7560,8 +7560,8 @@ USER_FUNC(evt_puni_jump_position) {
 
         punidat->modeStartTime = gp->renderTime;
         punidat->accel = punidat->pos;
-        punidat->field_0x1EC = a;
-        punidat->field_0x1F0 = (ty - punidat->accel.y) - punidat->field_0x1EC;
+        punidat->height = a;
+        punidat->vertVel = (ty - punidat->accel.y) - punidat->height;
         psndSFXOn_3D("SFX_STG2_PUNI_JUMP1", &punidat->pos);
     }
 #ifdef MUST_MATCH
@@ -7574,7 +7574,7 @@ USER_FUNC(evt_puni_jump_position) {
         punidat->pos.z =
             intplGetValue(0, elapsed, duration, punidat->accel.z, tz);
         punidat->pos.y =
-            ratio * (punidat->field_0x1EC * ratio + punidat->field_0x1F0) + punidat->accel.y;
+            ratio * (punidat->height * ratio + punidat->vertVel) + punidat->accel.y;
         return EVT_RETURN_BLOCK;
     }
 #else
@@ -7587,7 +7587,7 @@ USER_FUNC(evt_puni_jump_position) {
         punidat->pos.z =
             intplGetValue(0, elapsed, duration, punidat->accel.z, tz);
         punidat->pos.y =
-            ratio * (punidat->field_0x1EC * ratio + punidat->field_0x1F0) + punidat->accel.y;
+            ratio * (punidat->height * ratio + punidat->vertVel) + punidat->accel.y;
         return EVT_RETURN_BLOCK;
     }
 #endif
@@ -7617,7 +7617,7 @@ USER_FUNC(evt_puni_set_mode) {
     punidat->mode = mode;
     punidat->field_0xE = mode;
     punidat->state = 0;
-    punidat->field_0x11E = 1000;
+    punidat->prevAnimIdx = 1000;
     PuniDokuritsu(punidat);
     if ((EffectEntry*)punidat->effect != NULL) {
         effDelete((EffectEntry*)punidat->effect);
