@@ -1229,12 +1229,12 @@ void npcMain(void) {
                 evt = evtGetPtrID(entry->regularEvtId);
                 if (evt != NULL && !(evt->flags & 2)) {
                     state = evt->wNpcEventType;
-                    if (entry->blowEvent != NULL && state != 5 && state != 8 && npcCheckBlow(entry)) {
+                    if (entry->blowEvent != NULL && state != NPC_EVENT_TYPE_BLOW && state != NPC_EVENT_TYPE_DEAD && npcCheckBlow(entry)) {
                         entry->interruptFlags |= 8;
                         goto interrupt;
                     }
 
-                    if (entry->territoryType != NPC_TERRITORY_TYPE_NOTHING && (state == 1 || state == 2)) {
+                    if (entry->territoryType != NPC_TERRITORY_TYPE_NOTHING && (state == NPC_EVENT_TYPE_MOVE || state == NPC_EVENT_TYPE_FIND)) {
                         hit = FALSE;
                         if (entry->territoryType == NPC_TERRITORY_TYPE_CIRCLE) {
                             f32 dx;
@@ -1243,11 +1243,11 @@ void npcMain(void) {
                             dx = entry->territoryBase.x - entry->position.x;
                             dz = entry->territoryBase.z - entry->position.z;
                             dist = sqrtf(dx * dx + dz * dz);
-                            if (dist > (state == 2 ? entry->territoryHoming.x : entry->territoryHoming.x)) {
+                            if (dist > (state == NPC_EVENT_TYPE_FIND ? entry->territoryHoming.x : entry->territoryHoming.x)) {
                                 hit = TRUE;
                             }
                         } else if (entry->territoryType == NPC_TERRITORY_TYPE_SQUARE) {
-                            if (state == 2) {
+                            if (state == NPC_EVENT_TYPE_FIND) {
                                 if (entry->position.x < entry->territoryBase.x - entry->territoryHoming.x ||
                                     entry->position.x > entry->territoryBase.x + entry->territoryHoming.x ||
                                     entry->position.z < entry->territoryBase.z - entry->territoryHoming.z ||
@@ -1267,7 +1267,7 @@ void npcMain(void) {
                         }
                     }
 
-                    if (state == 2) {
+                    if (state == NPC_EVENT_TYPE_FIND) {
                         f32 dx;
                         f32 dy;
                         f32 dz;
@@ -1306,7 +1306,7 @@ void npcMain(void) {
                         }
                     }
 
-                    if (state == 1 || state == 4) {
+                    if (state == NPC_EVENT_TYPE_MOVE || state == NPC_EVENT_TYPE_RETURN) {
                         f32 dx;
                         f32 dist;
                         f32 dy;
@@ -1341,7 +1341,7 @@ void npcMain(void) {
                                 hit = FALSE;
                             } else if (-dy > entry->territoryHoming.y) {
                                 hit = FALSE;
-                            } else if (state == 4) {
+                            } else if (state == NPC_EVENT_TYPE_RETURN) {
                                 if (entry->territoryType == NPC_TERRITORY_TYPE_CIRCLE) {
                                     dx = entry->territoryBase.x - entry->position.x;
                                     dz = entry->territoryBase.z - entry->position.z;
@@ -2533,11 +2533,11 @@ void fbatTalkMode(void) {
             switch (fbatData->mode) {
                 case 3:
                     evt = evtEntry(entry->deadEvent, 0, 0);
-                    evt->wNpcEventType = 6;
+                    evt->wNpcEventType = NPC_EVENT_TYPE_TALK;
                     break;
                 default:
                     evt = evtEntry(entry->talkEvt, 0, 0);
-                    evt->wNpcEventType = 6;
+                    evt->wNpcEventType = NPC_EVENT_TYPE_TALK;
                     marioChgTalkMotion();
                     break;
             }
@@ -2872,7 +2872,7 @@ static inline BOOL fbatAttackEnabled(NpcEntry* npc) {
 // The npc's own event has reached state 5.
 static inline BOOL fbatNpcEventDone(NpcEntry* npc) {
     if (evtGetPtrID(npc->regularEvtId) != NULL) {
-        return evtGetPtrID(npc->regularEvtId)->wNpcEventType == 5;
+        return evtGetPtrID(npc->regularEvtId)->wNpcEventType == NPC_EVENT_TYPE_BLOW;
     }
     return FALSE;
 }
@@ -3463,30 +3463,30 @@ BOOL npcCheckInterrupt(NpcEntry* npc) {
         evt = NULL;
         if ((npc->interruptFlags & 0x10) && npc->deadEvent) {
             evt = evtEntry(npc->deadEvent, 0, 0x20);
-            evt->wNpcEventType = 8;
+            evt->wNpcEventType = NPC_EVENT_TYPE_DEAD;
             evt->ownerNPC = npc;
         } else if ((npc->interruptFlags & 0x10000000) && npc->moveEvent) {
             evt = evtEntry(npc->moveEvent, 0, 0x20);
-            evt->wNpcEventType = 1;
+            evt->wNpcEventType = NPC_EVENT_TYPE_MOVE;
             evt->ownerNPC = npc;
         } else if ((npc->interruptFlags & 0x8) && npc->blowEvent) {
             evt = evtEntry(npc->blowEvent, 0, 0x20);
-            evt->wNpcEventType = 5;
+            evt->wNpcEventType = NPC_EVENT_TYPE_BLOW;
             evt->ownerNPC = npc;
         } else if ((npc->interruptFlags & 1) && npc->findEvent && !(npc->jumpFlags & 0x1000) &&
                    !(npc->flags & 0x200000) && !(npc->interruptFlags & 0x100)) {
             evt = evtEntry(npc->findEvent, 0, 0x20);
-            evt->wNpcEventType = 2;
+            evt->wNpcEventType = NPC_EVENT_TYPE_FIND;
             evt->ownerNPC = npc;
         } else if ((npc->interruptFlags & 2) && npc->lostEvent && !(npc->jumpFlags & 0x1000) &&
                    !(npc->flags & 0x200000)) {
             evt = evtEntry(npc->lostEvent, 0, 0x20);
-            evt->wNpcEventType = 3;
+            evt->wNpcEventType = NPC_EVENT_TYPE_LOST;
             evt->ownerNPC = npc;
         } else if ((npc->interruptFlags & 4) && npc->returnEvent && !(npc->jumpFlags & 0x1000) &&
                    !(npc->flags & 0x200000)) {
             evt = evtEntry(npc->returnEvent, 0, 0x20);
-            evt->wNpcEventType = 4;
+            evt->wNpcEventType = NPC_EVENT_TYPE_RETURN;
             evt->ownerNPC = npc;
         }
         if (evt != NULL) {
@@ -3798,7 +3798,7 @@ void npcExecAllInitEvt(void) {
                     evtDeleteID(entry->initEvtId);
                 }
                 evt = evtEntry(entry->initEvent, 0, 0);
-                evt->wNpcEventType = 0;
+                evt->wNpcEventType = NPC_EVENT_TYPE_INIT;
                 evt->ownerNPC = entry;
                 entry->initEvtId = evt->eventId;
             } else {
@@ -3847,7 +3847,7 @@ void npcExecAllReglEvt(void) {
                 evtDeleteID(entry->regularEvtId);
             }
             evt = evtEntry(entry->moveEvent, 0, 0x20);
-            evt->wNpcEventType = 1;
+            evt->wNpcEventType = NPC_EVENT_TYPE_MOVE;
             evt->ownerNPC = entry;
             entry->regularEvtId = evt->eventId;
         }

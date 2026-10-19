@@ -15,6 +15,17 @@ typedef enum NpcTerritoryType {
     NPC_TERRITORY_TYPE_SQUARE = 2
 } NpcTerritoryType;
 
+typedef enum NpcEventType {
+    NPC_EVENT_TYPE_INIT = 0,   // initEvent
+    NPC_EVENT_TYPE_MOVE = 1,   // moveEvent
+    NPC_EVENT_TYPE_FIND = 2,   // findEvent
+    NPC_EVENT_TYPE_LOST = 3,   // lostEvent
+    NPC_EVENT_TYPE_RETURN = 4, // returnEvent
+    NPC_EVENT_TYPE_BLOW = 5,   // blowEvent
+    NPC_EVENT_TYPE_TALK = 6,   // talkEvt, fbat talk
+    NPC_EVENT_TYPE_DEAD = 8    // deadEvent
+} NpcEventType;
+
 typedef struct NpcTerritoryInfo {
     const char* description; // 0x0
     NpcTerritoryType type;   // 0x4
