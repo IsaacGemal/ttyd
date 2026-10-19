@@ -8459,3 +8459,16 @@ winmgr.c/.h 664 → 17; overall index 77.44 → about 76.4.
 
 Left: `WinMgrDesc.field_0x10` (y; read by `get10` under MUST_MATCH), `WinMgrSelect.field_0x38` (a cancel gate, gauge
 gate and leading item id at once), and five `unk_8023....` functions whose names live in symbols.txt and REL callers.
+
+### Readability: battle_event_cmd (2026-10-19, Claude Haiku 5.5, night8-rd-bec; reviewed by Claude Opus 5.5)
+
+Small, header-free pass: raw casts that already had fields (`mMoveSpeedY` at BattleUnit 0x174, `mOwner` at
+BattleWorkUnitPart 0x4EC, `commandMenu` at BattleWork 0x171C), `kInactive`, `UNIT_MARIO` and
+`TYPE_PARTNER_MIN/MAX`. About 290 raw casts remain because they land in unnamed padding of shared battle structs.
+**Backlog for a BattleUnit/BattleWork naming pass** (use counts from battle_event_cmd.c): BattleUnit 0x168 (s32
+move-frame countdown, 61 uses; BattleWorkUnitPart 0xA0 is its pair), 0x17C/0x180 (f32 remaining distance), 0x178,
+0x188, 0x1B0, 0x1B8, 0x1C0; BattleWorkUnitPart 0xB0-0xB8 (f32), 0xC0 (sound work), 0x204 (flags), 0x4D0 (a
+`BtlUnitPartPoseSound` documented only in a comment); `PartsAttribute_Flags` lacks 0x10000000; BattleWork's
+`actionCommands` size looks wrong (accesses at 0x1CC8-0x1D14 and 0x2744/0x2748 land inside it); BattleStage
+0xB24-0xB38 looks like two Vecs. Two sites near battle_event_cmd.c:4514 compute `-(a - a)` from 0x1B8: a match trick
+that belongs under MUST_MATCH.

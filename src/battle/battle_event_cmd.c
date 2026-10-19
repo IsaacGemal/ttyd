@@ -312,7 +312,7 @@ USER_FUNC(btlevtcmd_KillUnit) {
     unit->currentHp = 0;
     BtlUnit_ClearStatus(unit);
     if (flags & 2) {
-        unit->mAttributeFlags |= 0x20000;
+        unit->mAttributeFlags |= kInactive;
         return EVT_RETURN_DONE;
     }
     else {
@@ -3692,7 +3692,7 @@ USER_FUNC(btlevtcmd_GetConsumeItem) {
     s32* args = event->args;
     BattleWork* wp = _battleWorkPointer;
     s32 idx = *(s32*)((u8*)wp + 0x1C38);
-    u8* tbl = (u8*)wp + 0x171C;
+    u8* tbl = (u8*)&wp->commandMenu;
     s32 index;
     u8* base;
     s32 value;
@@ -3748,7 +3748,7 @@ USER_FUNC(btlevtcmd_CommandFlyItem) {
     btlId = BattleTransID(event, rawId);
     if (isFirstCall) {
         wp = _battleWorkPointer;
-        tbl = (u8*)wp + 0x171C;
+        tbl = (u8*)&wp->commandMenu;
         unit = BattleGetUnitPtr(wp, btlId);
         kind = unit->currentKind;
         if (kind == 0xDE || (kind >= 0xE0 && kind < 0xE7)) {
@@ -3797,7 +3797,7 @@ USER_FUNC(btlevtcmd_ConsumeItem) {
 
     btlId = evtGetValue(event, event->args[0]);
     unit = BattleGetUnitPtr(wp, BattleTransID(event, btlId));
-    if (unit->currentKind == 0xDE || (unit->currentKind >= 0xE0 && unit->currentKind < 0xE7)) {
+    if (unit->currentKind == UNIT_MARIO || (unit->currentKind >= TYPE_PARTNER_MIN && unit->currentKind < TYPE_PARTNER_MAX)) {
         BattleCommand* cm = &wp->commandMenu;
         s32* cmd = (s32*)((u8*)cm + cm->cursor[11].field_0 * 0x1C);
         itemId = cmd[0x94 / 4];
@@ -3833,7 +3833,7 @@ USER_FUNC(btlevtcmd_ConsumeItemReserve) {
     btlId = evtGetValue(event, args[0]);
     itemId = evtGetValue(event, args[1]);
     unit = BattleGetUnitPtr(wp, BattleTransID(event, btlId));
-    if (unit->currentKind == 0xDE || (unit->currentKind >= 0xE0 && unit->currentKind < 0xE7)) {
+    if (unit->currentKind == UNIT_MARIO || (unit->currentKind >= TYPE_PARTNER_MIN && unit->currentKind < TYPE_PARTNER_MAX)) {
         if (itemDataTable[itemId].usable_locations & 1) {
             for (i = 0; i < 4; i++) {
                 if ((s32)wp->reserveItems[i] == itemId) {
@@ -4511,7 +4511,7 @@ USER_FUNC(btlevtcmd_MarioJumpPosition) {
         if (*(s32*)((u8*)unit + 0x168) == 0) {
             y = unit->mMoveTargetPos.y;
             BtlUnit_SetPos(unit, x, y, z);
-            *(f32*)((u8*)unit + 0x174) = -(*(f32*)((u8*)unit + 0x1B8) - *(f32*)((u8*)unit + 0x1B8));
+            unit->mMoveSpeedY = -(*(f32*)((u8*)unit + 0x1B8) - *(f32*)((u8*)unit + 0x1B8));
             unit->mFallAccel = 1.8f;
             return 1;
         }
@@ -4520,7 +4520,7 @@ USER_FUNC(btlevtcmd_MarioJumpPosition) {
         if (!BtlUnit_GetACPossibility(unit)) {
             return 2;
         }
-        *(f32*)((u8*)unit + 0x174) = -(*(f32*)((u8*)unit + 0x1B8) - *(f32*)((u8*)unit + 0x1B8));
+        unit->mMoveSpeedY = -(*(f32*)((u8*)unit + 0x1B8) - *(f32*)((u8*)unit + 0x1B8));
         unit->mFallAccel = 1.8f;
         *(s32*)((u8*)unit + 0x168) = 1;
         *(f32*)((u8*)unit + 0x1B0) = 90.f;
@@ -6625,7 +6625,7 @@ void _PartsMoveSoundControl(BattleUnitPart* part) {
     f32 x, y, z;
 
     BtlUnit_GetPartsPos(part, &x, &y, &z);
-    _MoveSoundControlCore(*(BattleUnit**)((u8*)part + 0x4EC), (u8*)part + 0xC0, part, x, y, z);
+    _MoveSoundControlCore(part->mOwner, (u8*)part + 0xC0, part, x, y, z);
 }
 #pragma dont_inline reset
 
@@ -6690,7 +6690,7 @@ void _UnitMoveSoundControlEnd(BattleUnit* unit) {
 #pragma dont_inline on
 void _PartsMoveSoundControlEnd(BattleUnitPart* part) {
     u32* work = (u32*)((u8*)part + 0xC0);
-    _MoveSoundControlEndCore(*(void**)((u8*)part + 0x4EC), work);
+    _MoveSoundControlEndCore(part->mOwner, work);
 }
 #pragma dont_inline reset
 
