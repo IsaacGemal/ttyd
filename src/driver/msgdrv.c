@@ -622,7 +622,7 @@ BOOL msgDisp(smartEntry* smart, u8 alpha, f32 x, f32 y) {
 				GXColor color = FontGetDrawColor();
 				Vec pos;
 				pos.x = 20.f + (x + (f32)entry->x);
-				pos.y = (f32)entry->field_0xA + (((f32)entry->y + (y + (f32)data->scrollY)) - float_40_8041a51c);
+				pos.y = (f32)entry->iconOffsetY + (((f32)entry->y + (y + (f32)data->scrollY)) - float_40_8041a51c);
 				pos.z = float_0_8041a514;
 				// MUST_MATCH: retail converts iconId as u16 (clrlwi, no extsh); cast the callee at the call site.
 #ifdef MUST_MATCH
@@ -1196,7 +1196,7 @@ loop:
 				ex += 40;
 				entry->x = (s16)((f32)icon3 + (0.5f * (f32)w * iconScale + (f32)oldEx));
 				entry->y = (s16)((f32)ey - (f32)h * iconScale);
-				entry->field_0xA = (s16)icon4;
+				entry->iconOffsetY = (s16)icon4;
 				entry->scale = iconScale;
 				entry->field_0xC = r24;
 				r24 += var54;

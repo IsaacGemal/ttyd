@@ -12,7 +12,7 @@ typedef struct MsgDataEntry {
 	u16 glyph; //0x4
 	s16 x; //0x6
 	s16 y; //0x8
-	s16 field_0xA; //0xA: icon y offset (0xFFF8)
+	s16 iconOffsetY; //0xA: the icon tag's fourth value, added to the icon's y (0xFFF8)
 	s32 field_0xC; //0xC: start time in ms (compared with textTime); index into paperPoseTbl for 0xFFF3
 	f32 scale; //0x10
 	f32 field_0x14; //0x14: pop-in scale that decays to 1 (flag 0x1), or a paper pose's Y rotation
@@ -29,7 +29,7 @@ typedef struct MessageData {
 	u16 choiceMade; //0xC: set to 1 when a choice is confirmed
 	u8 pad_0x0E[0x10 - 0xE]; //0xE
 	s32 entryPos; //0x10: index of the next entry msgMain reads
-	s32 field_0x14; //0x14
+	u8 pad_0x14[0x18 - 0x14]; //0x14
 	OSTime effectStart; //0x18: render time the wave and rotate effects count from
 	s32 textTime; //0x20: ms of text shown so far, compared with each entry's start time
 	s32 scrollTarget; //0x24: scroll offset the text moves toward
