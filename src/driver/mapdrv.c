@@ -2820,7 +2820,9 @@ void mapSetMaterialTev(s32 texCount, s32 drawMode, s32 flags, Mtx mtx) {
 
 			case 8:
 #ifdef MUST_MATCH
-				// match-only: the sine in its own comma step pools 2pi and 360 ahead of 127, as retail's .sdata2 has them
+				// match-only: the sine in its own comma step pools 2pi and 360 ahead of 127, as retail's .sdata2 has them.
+				// The plain expression (any operand order, or with the angle in a statement before it) pools 127 first,
+				// and `wave = sin(...);` as its own statement moves the GXColor template load after the call.
 				GXSetTevColor(GX_TEVREG0, (GXColor){0, (wave = sin((TWO_PI * (f32)(2 * gp->retraceCount)) / 360.0f), (u8)((127.0f * wave) + 127.0f)), 0, 0});
 #else
 				GXSetTevColor(GX_TEVREG0, (GXColor){0, (u8)((127.0f * (f32)sin((TWO_PI * (f32)(2 * gp->retraceCount)) / 360.0f)) + 127.0f), 0, 0});
