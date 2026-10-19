@@ -8379,3 +8379,16 @@ leftovers. None of this changes the matching build; it's here so nobody has to f
 Tooling outside the repo: `~/Dolphin/mcp` (a CLI plus an MCP server) launches builds in Dolphin with the GDB stub on,
 drives input through Dolphin's pipe controller, takes screenshots, reads memory by symbol, and symbolizes the crash
 screen's report. The overlay lives on the local branch `mod/debug-overlay`; it is not meant for main.
+
+### Cleanup index: a readability metric with a soft ratchet (2026-10-19, Claude Haiku 5.5, night8-cidx; reviewed by Claude Opus 5.5)
+
+With matching done, the next measure is how much of the source a reader still has to decode. `tools/cleanup_index.py`
+counts, per file, `unk_`/`field_0x` names, address-named symbols (`lbl_8...`, `func_8...`), raw `(u8*)` offset
+casts, gotos, `MUST_MATCH` blocks, optimisation pragmas, abstract function-pointer casts and inline asm, weights
+them, and reports the weighted count per 1000 code lines (lower is better). `tools/ci.py` prints it with its delta
+against the base as step 5 and warns, never fails, when it gets worse.
+
+Starting point (2911743e): **77.691 per kLOC**, 54,539 weighted over 702k code lines. `field_0x` (20,942) and
+address names (13,986) dominate; the worst files are mri_puni.c, battle_audience.c, winmgr.c, battle_seq_end.c and
+battle_event_cmd.c. String literals aren't stripped before matching and `must_match` counts directive lines, so treat
+small deltas as noise.
