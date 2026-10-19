@@ -1224,9 +1224,8 @@ void partyGetReturnPos(Vec* pos) {
     pos->z = pz;
 }
 
-// Raw offsets used (no named field): PartyEntry 0x24 frame counter, 0x94/0x98/0x9C target
-// position, 0xF0 f32, 0x130 HitEntry*, 0x178/0x17A/0x17B motion scratch, 0x180/0x184 SFX ids;
-// MarioWork 0x246.  Field_12C/0x138/0x140 are HitEntry* stored in void* fields.
+// Raw offsets used (no named field): PartyEntry 0x178/0x17A/0x17B motion scratch, 0x180/0x184 SFX ids;
+// MarioWork 0x246.  field_12C is a HitEntry* stored in a void* field.
 
 // 100%. Requires the unit's data described above: the jump-stand strings are inline literals (pooled
 // after the compiler's own int->float magic double at .rodata+0x58), and the functions are listed in

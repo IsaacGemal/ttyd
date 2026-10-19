@@ -1099,7 +1099,7 @@ void partyMain(void) {
 void driveParty(PartyEntry* party) {
     MarioWork* player = party->playerPtr;
 
-    party->playerTargetYaw = player->targetYaw; // 0xF8: inside PartyEntry field_F8
+    party->playerTargetYaw = player->targetYaw;
     if (party->field_2A > 0) {
         party->field_2A--;
     }

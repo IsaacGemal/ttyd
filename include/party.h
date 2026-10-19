@@ -108,11 +108,11 @@ typedef struct PartyEntry {
     u8 field_A0[0xB8 - 0xA0];    // 0xA0
     Vec field_B8;                // 0xB8
     u8 field_C4[0xE4 - 0xC4];    // 0xC4
-    f32 groundY;                 // 0xE4, floor height saved by partySearchGround (was field_E4)
+    f32 groundY;                 // 0xE4, floor height saved by partySearchGround
     u8 field_E8[0xEC - 0xE8];    // 0xE8
     f32 field_EC;                // 0xEC
     f32 height;                  // 0xF0, height above position.y (partyGetHeight, Yoshi's head offset)
-    f32 radius;                  // 0xF4, collision radius (was field_F4)
+    f32 radius;                  // 0xF4, collision radius
     f32 playerTargetYaw;         // 0xF8, copied from player->targetYaw in driveParty
     f32 field_FC;                // 0xFC
     f32 dir;                     // 0x100
