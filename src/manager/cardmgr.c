@@ -265,7 +265,7 @@ void cardCopy2Main(s32 slot) {
     backup2 = gp->mapAlloc;
     backup3 = (u32)(gp->flags & 8);
     backup4 = gp->unk1274;
-    backup5 = gp->unk1294;
+    backup5 = gp->rumbleEnabled;
     backup6 = gp->unk11B8;
     memcpy(gp, &save->data.global, sizeof(GlobalWork));
     gp->fbatData = backup1;
@@ -281,7 +281,7 @@ void cardCopy2Main(s32 slot) {
     strcpy(gp->currentAreaName, "123");
     gp->relocationBase = NULL;
     gp->unk1274 = backup4;
-    gp->unk1294 = backup5;
+    gp->rumbleEnabled = backup5;
     gp->unk11B8 = backup6;
     gp->mapAlloc = backup2;
     gp->unk8 = 0;
@@ -658,7 +658,7 @@ void read_all_main(void) {
                     wp->flags |= 0x400;
                 }
                 gp->unk1274 = wp->data->metadata.data.unk1E42;
-                gp->unk1294 = wp->data->metadata.data.unk1E40;
+                gp->rumbleEnabled = wp->data->metadata.data.unk1E40;
                 gp->unk11B8 = wp->data->metadata.data.unk1E44;
                 break;
             case 6:
@@ -1006,7 +1006,7 @@ void make_header(void) {
 	memcpy(metadata->data.bannerTex, _mariost_banner_tex, sizeof(metadata->data.bannerTex));
 	memcpy(metadata->data.iconTex, _mariost_icon_tex, sizeof(metadata->data.iconTex));
 	memcpy(metadata->data.iconTlut, _mariost_icon_tlut, sizeof(metadata->data.iconTlut));
-	metadata->data.unk1E40 = (gp->unk1294 != 0);
+	metadata->data.unk1E40 = (gp->rumbleEnabled != 0);
 	metadata->data.unk1E42 = (u16)gp->unk1274;
 	metadata->data.unk1E44 = (u16)gp->unk11B8;
 	metadata->checksum1 = (checksum = 0u);

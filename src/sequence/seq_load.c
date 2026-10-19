@@ -313,7 +313,7 @@ void seq_loadMain(SequenceWork* workArg) {
                         wp->field_0x40 = 2;
                     }
                 }
-                wp->field_0x44 = (gp->unk1294 == 0);
+                wp->field_0x44 = (gp->rumbleEnabled == 0);
                 wp->field_0x24 = wp->field_0x40;
                 wp->field_0x28 = wp->field_0x44;
                 wp->field_0x20 = gp->unk11B8;
@@ -869,12 +869,12 @@ void loadMain(SequenceWork* workArg) {
                 wp->field_0x28++;
                 psndSFXOn((const char*)5);
             } else if (btn & 0x100) {
-                gp->unk1294 = (wp->field_0x28 == 0);
+                gp->rumbleEnabled = (wp->field_0x28 == 0);
                 psndSFXOn((const char*)0x12);
                 wp->field_0x44 = wp->field_0x28;
                 wp->field_0x0 &= ~1;
                 wp->field_0x18 = 1;
-                if (gp->unk1294) {
+                if (gp->rumbleEnabled) {
                     evtEntryType(evt_shake, 0, 0, 0);
                 }
             } else if (btn & 0x200) {

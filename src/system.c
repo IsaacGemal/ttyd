@@ -606,9 +606,9 @@ void makeKey(void) {
         gp->triggerRight[i] = GET_DEMO_PAD_STATUS(i)->pst.triggerRight;
     }
 
-    if (gp->unk1294) {
+    if (gp->rumbleEnabled) {
         for (i = 0; i < 4; i++) {
-            if (gp->unk1310[i]) {
+            if (gp->rumbleSuppressed[i]) {
                 PADControlMotor(i, 2);
             } else {
                 if (gp->prevRumbleStatus[i] != gp->rumbleStatus[i]) {

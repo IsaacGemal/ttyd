@@ -185,7 +185,7 @@ void marioStInit(void) {
 	memset(gp, 0, sizeof(GlobalWork));
 	gp->fbWidth = DEMOGetRenderModeObj()->fbWidth;
 	gp->efbHeight = DEMOGetRenderModeObj()->efbHeight;
-	gp->unk1294 = 1;
+	gp->rumbleEnabled = 1;
 	gp->unk1274 = 0;
 
 	gp->retraceLocalTime = 0;
@@ -533,22 +533,22 @@ void gcRumbleCheck(void) {
 
 	start = OSGetTime();
 	for (i = 0; i < 4; i++) {
-		if (gp->field_0x12E8[i] == 0) {
+		if (gp->rumbleLocked[i] == 0) {
 			if (padGetRumbleStatus(i) == 1) {
-				if (gp->field_0x12C0[i] == 0) {
-					gp->field_0x12C0[i] = 1;
-					gp->field_0x12C8[i] = start;
+				if (gp->rumbleHeld[i] == 0) {
+					gp->rumbleHeld[i] = 1;
+					gp->rumbleHeldSince[i] = start;
 				}
-				if (RUMBLE_MS(start, gp->field_0x12C8[i]) > 30000) {
-					if (gp->field_0x12EC[i] == 0) {
-						gp->field_0x12EC[i] = 1;
-						gp->field_0x12E8[i] = 1;
-						gp->field_0x12F0[i] = start;
+				if (RUMBLE_MS(start, gp->rumbleHeldSince[i]) > 30000) {
+					if (gp->rumbleLockStarted[i] == 0) {
+						gp->rumbleLockStarted[i] = 1;
+						gp->rumbleLocked[i] = 1;
+						gp->rumbleLockedSince[i] = start;
 					}
 				}
 				off_trg[i] = 0;
 			}
-			else if (gp->field_0x12C0[i] != 0) {
+			else if (gp->rumbleHeld[i] != 0) {
 				if (off_trg[i] == 0) {
 					off_trg[i] = 1;
 					off_time[i] = start;
@@ -556,16 +556,16 @@ void gcRumbleCheck(void) {
 				if (off_trg[i]) {
 					if (RUMBLE_MS(start, off_time[i]) > 100) {
 						off_trg[i] = 0;
-						gp->field_0x12C0[i] = 0;
+						gp->rumbleHeld[i] = 0;
 					}
 				}
 			}
 		}
 		else {
-			if (RUMBLE_MS(start, gp->field_0x12F0[i]) > 30000) {
-				gp->field_0x12EC[i] = 0;
-				gp->field_0x12E8[i] = 0;
-				gp->field_0x12C0[i] = 0;
+			if (RUMBLE_MS(start, gp->rumbleLockedSince[i]) > 30000) {
+				gp->rumbleLockStarted[i] = 0;
+				gp->rumbleLocked[i] = 0;
+				gp->rumbleHeld[i] = 0;
 			}
 			array[i] = TRUE;
 		}
@@ -576,10 +576,10 @@ void gcRumbleCheck(void) {
 			array[i] = TRUE;
 		}
 		if (array[i]) {
-			gp->unk1310[i] = 1;
+			gp->rumbleSuppressed[i] = 1;
 		}
 		else {
-			gp->unk1310[i] = 0;
+			gp->rumbleSuppressed[i] = 0;
 		}
 	}
 }

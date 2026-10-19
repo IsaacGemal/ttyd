@@ -66,15 +66,15 @@ typedef struct GlobalWork {
 	u8 field_0x1284[0x1288 - 0x1284]; //0x1284
 	OSTime softResetTimeout; //0x1288
 	BOOL field_0x1290; //0x1290
-	BOOL unk1294; //0x1294
+	BOOL rumbleEnabled; //0x1294, vibration option (default on, set in marioStInit; seq_load prompt; kept in the save)
 	u8 field_0x1298[0x12C0 - 0x1298]; //0x1298
-	u8 field_0x12C0[4]; //0x12C0
-	OSTime field_0x12C8[4]; //0x12C8
-	u8 field_0x12E8[4]; //0x12E8
-	u8 field_0x12EC[4]; //0x12EC
-	OSTime field_0x12F0[4];
+	u8 rumbleHeld[4]; //0x12C0, pad is rumbling (cleared 100 ms after it stops), gcRumbleCheck
+	OSTime rumbleHeldSince[4]; //0x12C8
+	u8 rumbleLocked[4]; //0x12E8, rumble ran 30 s straight, so the pad is locked out for 30 s
+	u8 rumbleLockStarted[4]; //0x12EC
+	OSTime rumbleLockedSince[4]; //0x12F0
 	//u8 field_0x1300[0x1310 - 0x1300]; //0x1300
-	u8 unk1310[4]; //0x1310
+	u8 rumbleSuppressed[4]; //0x1310, motor forced off while set (system.c makeKey), set by gcRumbleCheck
 	OSTick mDeltaGame; //0x1314
 	OSTick mDeltaRender; //0x1318
 	u8 field_0x131C[0x1324 - 0x131C]; //0x131C
