@@ -5351,37 +5351,37 @@ void BattleAudience_Case_FirstAttack_Bad(void) {
 
 #pragma dont_inline on
 void BattleAudience_SetPresentItemNo(s32 value) {
-	*(s32*)((u8*)BattleAudienceBaseGetPtr() + 0x137E4) = value;
+	BattleAudienceBaseGetPtr()->presentItemNo = value;
 }
 #pragma dont_inline reset
 
 // Keep these accessors out of line: BattleAudienceItemCtrlProcess emits a bl to each.
 #pragma dont_inline on
 s32 BattleAudience_GetPresentItemNo(void) {
-	return *(s32*)((u8*)BattleAudienceBaseGetPtr() + 0x137E4);
+	return BattleAudienceBaseGetPtr()->presentItemNo;
 }
 #pragma dont_inline reset
 
 #pragma dont_inline on
 void BattleAudience_SetPresentTargetUnitId(s32 value) {
-	*(s32*)((u8*)BattleAudienceBaseGetPtr() + 0x137EC) = value;
+	BattleAudienceBaseGetPtr()->presentTargetUnitId = value;
 }
 #pragma dont_inline reset
 
 #pragma dont_inline on
 s32 BattleAudience_GetPresentTargetUnitId(void) {
-	return *(s32*)((u8*)BattleAudienceBaseGetPtr() + 0x137EC);
+	return BattleAudienceBaseGetPtr()->presentTargetUnitId;
 }
 #pragma dont_inline reset
 
 #pragma dont_inline on
 void BattleAudience_SetPresentItemType(s32 value) {
-	*(s32*)((u8*)BattleAudienceBaseGetPtr() + 0x137E8) = value;
+	BattleAudienceBaseGetPtr()->presentItemType = value;
 }
 #pragma dont_inline reset
 
 #pragma dont_inline on
 s32 BattleAudience_GetPresentItemType(void) {
-	return *(s32*)((u8*)BattleAudienceBaseGetPtr() + 0x137E8);
+	return BattleAudienceBaseGetPtr()->presentItemType;
 }
 #pragma dont_inline reset

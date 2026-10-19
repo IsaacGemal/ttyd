@@ -206,7 +206,10 @@ typedef struct BattleAudience {
     s32 mNumStylishCommandsThisAttack; // 0x137D4
     u8 field_137D8[0x137DC - 0x137D8]; // 0x137D8
     s32 mCheckPhaseReactionState;      // 0x137DC, TODO: rename
-    u8 field_137E0[0x137F0 - 0x137E0]; // 0x137E0
+    u8 field_137E0[0x137E4 - 0x137E0]; // 0x137E0
+    s32 presentItemNo;                 // 0x137E4, item being used (BattleAudience_SetPresentItemNo)
+    s32 presentItemType;               // 0x137E8
+    s32 presentTargetUnitId;           // 0x137EC
     s32 itemThrowCount;                // 0x137F0, items thrown so far by BattleAudienceCtrlProcess
     s32 itemThrowMax;                  // 0x137F4, set by BattleAudienceSetThrowItemMax (0-3, or 10000)
     s32 itemCombo;                     // 0x137F8, caught items in a row (capped at 3)
