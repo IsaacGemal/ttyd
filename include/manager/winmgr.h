@@ -11,7 +11,7 @@ typedef struct WinMgrDesc WinMgrDesc;
 typedef struct WinMgrEntry WinMgrEntry;
 
 struct WinMgrDesc {
-	s32 openStyle; //0x0, winMgrSeq: 0 zoom with rotation, 1 fade in alpha, 2 instant
+	s32 openStyle; //0x0, winMgrSeq: 0 zoom with rotation, 1 scale and alpha fade, 2 instant
 	s32 frameStyle; //0x4, winMgrDisp: which frame drawn (1, 3, 4/5)
 	s32 camId; //0x8, CameraId
 	s32 x; //0xC, copied to entry->x
@@ -39,7 +39,7 @@ struct WinMgrEntry {
 	s32 priority; //0x30, gets cast to float for dispEntry
 	const char* message; //0x34
 	s32 scrollPos; //0x38, help text scroll, 2 rows per step
-	s32 scrollRows; //0x3C, lines + 1 of the help text; the scroll arrows show while > 2
+	s32 scrollRows; //0x3C, FontGetMessageWidthLine result + 1; scroll arrows show while > 2
 	u8 field_0x40[0x44 - 0x40]; //0x40
 };
 
@@ -49,7 +49,7 @@ typedef struct WinMgrWork {
 } WinMgrWork;
 
 typedef struct WinMgrSelectItem {
-	u16 flags; //0x0, bit 0: drawn grey, bit 1: row has no second column (winMgrSelectDisp)
+	u16 flags; //0x0, bit 0: drawn grey, bit 1: the extra column is skipped (select_disp)
 	u16 id; //0x2
 } WinMgrSelectItem;
 
