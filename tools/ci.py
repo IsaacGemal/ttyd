@@ -21,11 +21,14 @@ Steps, stopping at the first failure:
    of the original object; --allow-data-mismatch NAME excuses one.
 4. Summary: code fuzzy / matched / linked and data matched / linked, with deltas, and a note if any unit is
    fully matched but not yet linked.
+5. Cleanup index (tools/cleanup_index.py): reported with its delta against the base. Soft: it warns when the index
+   got worse and never fails the run.
 """
 import argparse
 import os
 import local_prototypes
 import data_check
+import cleanup_index
 import json
 import re
 import shutil
@@ -323,6 +326,19 @@ def tests():
     print("ok   [tests] tools/tests pass")
 
 
+def cleanup(base):
+    """Soft ratchet: the cleanup index and its delta against base. Warns when it got worse; never fails."""
+    try:
+        now, before = cleanup_index.index(), cleanup_index.index(base)
+    except subprocess.CalledProcessError as e:
+        print(f"warn [cleanup] could not measure against {base}: {(e.stderr or b'').decode(errors='replace')[-200:]}")
+        return
+    delta = now["index"] - before["index"]
+    print(f"ok   [cleanup] index {now['index']:.3f} per kLOC ({delta:+.3f} vs {base}; lower is better)")
+    if delta > 0.0005:
+        print(f"warn [cleanup] the cleanup index got worse vs {base}; worst files: python3 tools/cleanup_index.py --top 10")
+
+
 def unlinked():
     """Fully matched units still marked NonMatching: tools/autolink.py would try to link them."""
     r = run([sys.executable, str(ROOT / "tools" / "autolink.py"), "--list"])
@@ -377,6 +393,7 @@ def main():
     data_objects(a.base, a.allow_data_mismatch)
     ratchet(set(a.allow_regress))
     summary()
+    cleanup(a.base)
     unlinked()
     if a.accept:
         shutil.copy(BUILD / "report.json", ACCEPTED)
