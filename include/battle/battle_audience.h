@@ -40,18 +40,33 @@ typedef struct BattleAudienceMember {
     s32 field_0x4;                 // 0x4
     u8 field_0x8[0x19 - 0x8];      // 0x8
     u8 status;                     // 0x19
-    u8 field_0x1A;                 // 0x1A
+    u8 texIndex;                   // 0x1A, texture index for the current animation frame (TEXGetGXTexObjFromPalette)
     u8 type;                       // 0x1B, AudienceMemberType
     s16 itemId;                    // 0x1C, -1 is invalid
     u8 field_0x1E[0x20 - 0x1E];    // 0x1E
     s32** animTable;               // 0x20, set in BattleAudience_Entry_Sub
-    u8 field_0x24[0x48 - 0x24];    // 0x24
+    s32* animCur;                  // 0x24, animation in use (BattleAudience_SetAnim)
+    s32* animPos;                  // 0x28, cursor in the command list of animCur
+    s32 animWait;                  // 0x2C, frames left before the next command runs
+    u8 field_0x30[0x40 - 0x30];    // 0x30
+    u8 animDepth;                  // 0x40, index into the 0x34 table of the animation script
+    u8 colorR;                     // 0x41
+    u8 colorG;                     // 0x42
+    u8 colorB;                     // 0x43
+    u8 colorA;                     // 0x44, 0xFF after a reset
+    u8 field_0x45[0x48 - 0x45];    // 0x45
     Vec position;                  // 0x48
-    u8 field_0x54[0x9C - 0x54];    // 0x54
+    u8 field_0x54[0x90 - 0x54];    // 0x54
+    Vec normal;                    // 0x90, rotated by the member's matrix in the draw code (0,0,-1) after a reset
     Vec mRotation;                 // 0x9C
     Vec mRotationOffset;           // 0xA8
     Vec mHomePosition;             // 0xB4
-    u8 field_0xC0[0xE8 - 0xC0];    // 0xC0
+    u8 field_0xC0[0xCC - 0xC0];    // 0xC0
+    Vec jumpOffset;                // 0xCC, y is the hop height (clamped to 0 at the bottom)
+    u8 field_0xD8[0xDC - 0xD8];    // 0xD8
+    f32 jumpVelY;                  // 0xDC, added to jumpOffset.y each frame
+    u8 field_0xE0[0xE4 - 0xE0];    // 0xE0
+    f32 jumpAccelY;                // 0xE4, added to jumpVelY each frame
     f32 field_0xE8;                // 0xE8
     u8 field_0xEC[0xF8 - 0xEC];    // 0xEC
     s32 interpFramesLeft;          // 0xF8
@@ -70,20 +85,45 @@ typedef struct BattleAudienceMember {
 } BattleAudienceMember;
 
 typedef struct BattleAudienceItem {
-    u32 flags;                  // 0x0
-    s32 state;                  // 0x4
-    u8 field_0x8[0x10 - 0x8];   // 0x8
-    ItemType mItemType;         // 0x10
-    u8 field_0x14[0x48 - 0x14]; // 0x14
+    u32 flags;               // 0x0, bit 0 active, bit 1 drawn
+    s32 state;               // 0x4, step of BattleAudienceItemCtrlProcess's switch
+    s32 timer;               // 0x8, frames left in the current state (set to the flight length on launch)
+    s32 memberId;            // 0xC, audience member it was thrown at, -1 invalid
+    ItemType mItemType;      // 0x10
+    Vec pos;                 // 0x14
+    f32 scale;               // 0x20, x and y scale of the icon
+    f32 angleZ;              // 0x24, z rotation in degrees
+    Vec vel;                 // 0x28, per-frame velocity, accel is added to it
+    Vec accel;               // 0x34
+    BattleUnit* target;      // 0x40, the unit the item is thrown toward
+    s32 hitResult;           // 0x44, nonzero enters the outcome branch of case 3 (2 goes straight to case 4)
 } BattleAudienceItem;
 
 typedef struct BattleAudienceStar {
-    u8 field_0x0[0x60 - 0x0]; // 0x0
+    u32 flags;                  // 0x0, bit 0 set while the star slot is in use
+    s32 state;                  // 0x4, step of the switch in BattleAudienceApSrcCtrlProcess
+    Vec pos;                    // 0x8, drawn at pos.x/pos.y in BattleAudienceDispApSrc
+    Vec randOffset;             // 0x14, random values set by BattleAudienceApSrcEntry
+    Vec startPos;               // 0x20
+    Vec endPos;                 // 0x2C
+    Vec scale;                  // 0x38, used by PSMTXScale in BattleAudienceDispApSrc
+    s32 frame;                  // 0x44
+    s32 duration;               // 0x48, frames for the current state
+    f32 radius;                 // 0x4C
+    f32 radiusStart;            // 0x50
+    f32 angle;                  // 0x54, radians
+    f32 angleStep;              // 0x58, radians per frame
+    u8 alpha;                   // 0x5C
+    u8 field_0x5D[0x60 - 0x5D]; // 0x5D
 } BattleAudienceStar;
 
 // TODO: verify variable names
 typedef struct BattleAudienceSound {
-    u8 field_0x0[0x10 - 0x0];      // 0x0
+    s32 flags;                     // 0x0, bit 0 set while the sound is in use
+    s32 sfxId;                     // 0x4, from BattleAudienceSound1/2, -1 when it failed to start
+    u8 variant;                    // 0x8, 1-8, chosen by the caller before the sound starts
+    u8 field_0x9[0xC - 0x9];       // 0x9
+    s32 timeLeft;                  // 0xC, frames left, -1 when untimed; fades over the last mFadeoutTime frames
     s32 mFadeoutTime;              // 0x10
     s32 mForceFadeTimer;           // 0x14
     s32 mForceFadeLength;          // 0x18
@@ -96,9 +136,13 @@ typedef struct BattleAudienceSound {
 } BattleAudienceSound;
 
 typedef struct BattleAudienceWindow {
-    u8 mActive;               // 0x0, TODO "bool"?
-    u8 field_0x1[0x18 - 0x1]; // 0x1
-    f32 count;                // 0x18, number to display for audience count
+    u8 mActive;                 // 0x0, TODO "bool"?
+    u8 field_0x1[0x8 - 0x1];    // 0x1
+    f32 posX;                   // 0x8, from slide: -500 closed, -280 open
+    f32 posY;                   // 0xC, -160 each frame
+    u8 field_0x10[0x14 - 0x10]; // 0x10
+    s32 slide;                  // 0x14, 0-15, moves toward open while mActive
+    f32 count;                  // 0x18, number to display for audience count
 } BattleAudienceWindow;
 
 /*
@@ -141,7 +185,7 @@ typedef struct BattleAudience {
 typedef struct BattleAudience {
     s32 flags;                         // 0x0
     EventEntry* event;                 // 0x4
-    u8 field_8[0xC - 0x8];             // 0x8
+    s32 apStarSfxId;                  // 0x8, psnd id of the AP star loop
     FileEntry* normalTex;              // 0xC
     FileEntry* guestTex[2];            // 0x10
     AudienceMemberType guestType[2];   // 0x18
@@ -158,16 +202,28 @@ typedef struct BattleAudience {
     s32 mCurrentAudienceIntCountRight; // 0x13788, TODO verify name
     s32 mCurrentAudienceIntCountLeft;  // 0x1378C, TODO verify name
     s32 mMaxAudience;                  // 0x13790
-    u8 field_13794[0x137D4 - 0x13794]; // 0x13794
+    s32 typeWeights[12];               // 0x13794, per-type weights for picking members (BattleAudienceSettingAudience)
+    s32 apGauge;                       // 0x137C4, AP meter: BattleAudienceCheer clamps it to 800 (0x320), the AP star drains it
+    StarPowerInfo* impendingBonuses;   // 0x137C8
+    s32 crowdPleasedStreak;            // 0x137CC, capped at 2
+    s32 crowdDispleasedStreak;         // 0x137D0, capped at 5
     s32 mNumStylishCommandsThisAttack; // 0x137D4
     u8 field_137D8[0x137DC - 0x137D8]; // 0x137D8
     s32 mCheckPhaseReactionState;      // 0x137DC, TODO: rename
-    u8 field_137E0[0x138BC - 0x137E0]; // 0x137E0
+    s32 phaseStep;                     // 0x137E0, 0, 5, 10 or 15 through the phase event steps
+    s32 presentItemNo;                 // 0x137E4, item being used (BattleAudience_SetPresentItemNo)
+    s32 presentItemType;               // 0x137E8
+    s32 presentTargetUnitId;           // 0x137EC
+    s32 itemThrowCount;                // 0x137F0, items thrown so far by BattleAudienceCtrlProcess
+    s32 itemThrowMax;                  // 0x137F4, set by BattleAudienceSetThrowItemMax (0-3, or 10000)
+    s32 itemCombo;                     // 0x137F8, caught items in a row (capped at 3)
+    u8 field_137FC[0x138BC - 0x137FC]; // 0x137FC, weapon table (BattleWeapon*, see battle_attack_audience.c)
     s32 mItemOnMemberId;               // 0x138BC, TODO better name
     Vec mItemOnMemberPos;              // 0x138C0, TODO better name?
-    u8 field_138CC[0x13908 - 0x138CC]; // 0x138CC
+    s32 phaseEvtList[14];              // 0x138CC
+    s32 phaseEvtCount;                 // 0x13904, entries in phaseEvtList
     s32 mTurnEndPhaseEventChance;      // 0x13908, TODO verify name
-    u8 field_1390C[0x13910 - 0x1390C]; // 0x1390C
+    s32 joyLevel;                      // 0x1390C, 0-4, picks the BattleAudienceJoy_Sub numbers for case 3
     BOOL excited;                      // 0x13910, if toads are cheering
 } BattleAudience;
 

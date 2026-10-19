@@ -8485,3 +8485,14 @@ Found on the way: `_audience_Whistle_control` switches on `unk0` with case label
 states), but `unk0` is only ever zeroed, so the switch never takes a case: apparently dead in retail. Shared-struct
 leftovers: BattleWork byte at 0x180DC (`|= 0x20` in `_disable_enemy_unit_disp`), unnamed BattleWork.flags bits
 0x40/0x100/0x400000, `EventEntry` 0x88/0x8C used as scratch s32s, and the `0x07000000` step values (no enum yet).
+
+### Readability: battle_audience names (2026-10-19, Claude Haiku 5.5, night8-rd-aud; reviewed by Claude Opus 5.5)
+
+battle_audience.c was the second-worst file by the cleanup index (215 per kLOC); it's now 101. Named:
+BattleAudienceItem (thrown items: `timer`, `memberId`, `pos`, `scale`, `angleZ`, `vel`/`accel`, `target`,
+`hitResult`), the AP-star particles (`BattleAudienceStar`, now typed and stepped with `++` instead of `+= 0x60`),
+members (`animCur`/`animWait`, colour bytes, jump offset/velocity/acceleration, `normal`, `texIndex`), sounds and the
+audience window, and the audience totals (`typeWeights[12]`, `apGauge` (cap 0x320), pleased/displeased streaks,
+item-throw counts, `phaseEvtList`, `joyLevel`, the present-item fields). Caution kept: the member cursor at 0x28 is an
+s32 advanced by byte counts, so typing it as a pointer would silently change the step sizes; it stays raw. Next
+target: battle_audience_kinopio.c, which reads `member->field_0x54 + N` about 100 times.
