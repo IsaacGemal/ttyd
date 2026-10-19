@@ -2885,7 +2885,7 @@ void puniModeChangeAttack(void) {
     PuniData* puni;
     PuniData* best;
 
-    for (puni = &Punidat[1], i = 1; i < 211; i++, puni++) {
+    for (puni = &Punidat[1], i = 1; i < PUNI_DATA_MAX; i++, puni++) {
         if (!(puni->flags & 0x400)) {
             continue;
         }
@@ -5081,7 +5081,7 @@ void puniModeEnter(PuniData* puni) {
             PuniData* data;
             data = Punidat;
             best = 10000;
-            for (i = 0; i < 211; i++) {
+            for (i = 0; i < PUNI_DATA_MAX; i++) {
                 if ((data->flags & 0x80000) && (u32)data->rightPuni == 0 &&
                     ((u32)data->leftPuni == 0 || data->field_0x11A < 2) && (u8*)data != p) {
 #ifdef MUST_MATCH
@@ -5377,7 +5377,7 @@ void puni_puni_init(void) {
     pd->angle = 0;
     pd->field_0x118 = 0;
     puni = (u8*)&Punidat[1];
-    for (i = 1; i < 211; i++, puni += 0x5A8) {
+    for (i = 1; i < PUNI_DATA_MAX; i++, puni += sizeof(PuniData)) {
         pose->flags = 1;
         pose->flags |= 2;
         pose->field_0x4 = 0.0f;
@@ -6268,7 +6268,7 @@ void puni_puni_main(void) {
     if ((Punigp->flags & 0x20) != 0) {
         PuniData* pd = &Punidat[1];
         s32 i;
-        for (i = 1; i < 0xD3; i++, pd++) {
+        for (i = 1; i < PUNI_DATA_MAX; i++, pd++) {
             PSVECSubtract(&pd->pos, (Vec*)&pd->field_0x138, &v);
             pd->field_0x1AC = PSVECMag(&v);
             if ((pd->flags & 0x400) != 0) {
@@ -6399,7 +6399,7 @@ void puni_puni_main(void) {
         PuniPose* pose;
         pose = puniGetPosePtr();
         pd = &Punidat[1];
-        for (i = 1; i < 0xD3; i++, pd++) {
+        for (i = 1; i < PUNI_DATA_MAX; i++, pd++) {
             if ((pd->flags & 0x400) != 0) {
                 if ((pd->flags & 0x200) == 0) {
                     *(Vec*)&pd->field_0x138 = pd->pos;
