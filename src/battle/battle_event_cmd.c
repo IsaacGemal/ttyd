@@ -5793,7 +5793,7 @@ USER_FUNC(btlevtcmd_AnimeSetPoseSoundTable) {
     id = BattleTransID(event, btlId);
     partId = evtGetValue(event, args[1]);
     part = BattleGetUnitPartsPtr(id, partId);
-    *(s32*)((u8*)part + 0x4D0) = args[2];
+    part->poseSound.table = (void*)args[2];
     BtlUnit_PoseSoundInit(part);
     return EVT_RETURN_DONE;
 }

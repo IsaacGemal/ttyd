@@ -49,23 +49,6 @@ typedef struct UnitStatusBlock {
 
 //local prototypes
 
-typedef struct BattleUnitPartFields {
-    u8 pad_0[0x208];
-    u8 pad_1[0x4D0 - 0x208];
-    void* mPoseSoundTable; // 0x4D0
-    s32 mPoseSoundFrame;   // 0x4D4
-    f32 mPoseSoundPrev;    // 0x4D8
-    f32 mPoseSoundCur;     // 0x4DC
-    s32 mPoseSoundCount;   // 0x4E0
-    u8 mPoseSoundFlag;     // 0x4E4
-    u8 pad_2[3];
-    s32 mPoseSoundEventId; // 0x4E8
-    BattleUnit* mOwner;    // 0x4EC
-    GXColor color;         // 0x4F0
-    u8 pad_3[0x500 - 0x4F4];
-} BattleUnitPartFields;
-
-// BtlUnitPoseSound / BtlUnitPartPoseSound live in include/battle/battle_unit.h.
 
 typedef struct HpGaugeLocal {
     u16 field_0;  // 0x0
@@ -284,7 +267,7 @@ BattleUnit* BtlUnit_Entry(BattleUnitSetup* setup) {
         *(f32*)((u8*)part + 0x20C) = 1.0f;
         *(u8*)((u8*)part + 0x215) = 0;
         *(u8*)((u8*)part + 0x214) = 0;
-        ((BattleUnitPartFields*)part)->mPoseSoundEventId = -1;
+        part->poseSoundEventId = -1;
         part->partName = part->mKindPartParams->partName;
 
         if (--n > 0) {
@@ -389,8 +372,8 @@ BOOL BtlUnit_Delete(BattleUnit* unit) {
     }
     part = unit->mParts;
     for (; part; part = part->mNextPart) {
-        if (((BattleUnitPartFields*)part)->mPoseSoundEventId != -1) {
-            ((BattleUnitPartFields*)part)->mPoseSoundEventId = -1;
+        if (part->poseSoundEventId != -1) {
+            part->poseSoundEventId = -1;
         }
         if (*(s32*)((u8*)part + 0x1C0) != -1) {
             animPoseSetEffect(*(s32*)((u8*)part + 0x1C0), NULL, FALSE);
@@ -2277,10 +2260,9 @@ void BtlUnit_SetCommandAnimPose(BattleUnit* unit) {
 }
 
 void BtlUnit_PoseSoundInit(BattleUnitPart* part) {
-    BattleUnitPartFields* fields = (BattleUnitPartFields*)part;
-    fields->mPoseSoundFrame = 0;
-    fields->mPoseSoundPrev = 0.0f;
-    fields->mPoseSoundCur = 0.0f;
+    part->poseSound.frame = 0;
+    part->poseSound.prev = 0.0f;
+    part->poseSound.cur = 0.0f;
 }
 
 
@@ -2294,7 +2276,6 @@ void BtlUnit_ControlPoseSoundMain(BattleUnitPart* part) {
     static const f64 double_0p7_802efac0 = 0.7;
 #endif
     BattleWork* wp = _battleWorkPointer;
-    BattleUnitPartFields* fields;
     BtlUnitPartPoseSound* ps;
     const char* anim;
     BtlUnitPoseSound* entry;
@@ -2306,8 +2287,7 @@ void BtlUnit_ControlPoseSoundMain(BattleUnitPart* part) {
     if (!part) {
         return;
     }
-    fields = (BattleUnitPartFields*)part;
-    ps = (BtlUnitPartPoseSound*)&fields->mPoseSoundTable;
+    ps = &part->poseSound;
     entry = ps->table;
     if (!entry) {
         return;
@@ -2352,13 +2332,13 @@ void BtlUnit_ControlPoseSoundMain(BattleUnitPart* part) {
         if (entry->volume <= ps->prev && entry->volume > ps->cur) {
             if (entry->flags & 1) {
                 if (entry->callback) {
-                    soundId = entry->callback(fields->mOwner, entry, ps);
+                    soundId = entry->callback(part->mOwner, entry, ps);
                 } else {
-                    soundId = BtlUnit_snd_se(fields->mOwner, entry->soundName, 0xF1194D80, entry->pitch);
+                    soundId = BtlUnit_snd_se(part->mOwner, entry->soundName, 0xF1194D80, entry->pitch);
                 }
                 psndSFX_vol(soundId, 0x7F);
                 ps->count++;
-                if (*(s32*)((u8*)fields->mOwner + 0x2C) != BattleGetSeq(wp, SEQ_PHASE)) {
+                if (*(s32*)((u8*)part->mOwner + 0x2C) != BattleGetSeq(wp, SEQ_PHASE)) {
                     u32 vol = 0x7F;
 #ifdef MUST_MATCH
                     // The address read preserves retail's load and multiply order.
@@ -2371,9 +2351,9 @@ void BtlUnit_ControlPoseSoundMain(BattleUnitPart* part) {
                 }
             } else {
                 if (entry->callback) {
-                    entry->callback(fields->mOwner, entry, ps);
+                    entry->callback(part->mOwner, entry, ps);
                 } else {
-                    BtlUnit_snd_se(fields->mOwner, entry->soundName, 0xF1194D80, entry->pitch);
+                    BtlUnit_snd_se(part->mOwner, entry->soundName, 0xF1194D80, entry->pitch);
                 }
                 ps->count++;
             }

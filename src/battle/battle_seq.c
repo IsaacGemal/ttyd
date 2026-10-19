@@ -2545,7 +2545,7 @@ void btlseqPhaseFirstProcess(BattleWork* wp) { //1:1
 			part = unit->mParts;
 			while (part) {
 				if (*(s32*)((u8*)part + 0x1C0) != -1) {
-					*(u8*)((u8*)part + 0x4E4) = 1;
+					part->poseSound.flag = 1;
 				}
 				part = part->mNextPart;
 			}

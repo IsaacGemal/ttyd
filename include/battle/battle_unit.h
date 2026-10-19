@@ -358,6 +358,16 @@ typedef struct BattleWorkUnitPartBlur {
     BattleWorkUnitPartBlurEntry work[10]; // 0xC
 } BattleWorkUnitPartBlur;
 
+// The pose-sound playback state that follows the table pointer in BattleUnitPart (part+0x4D0).
+typedef struct BtlUnitPartPoseSound {
+    void* table;       // 0x0 (0x4D0)
+    s32 frame;         // 0x4
+    f32 prev;          // 0x8
+    f32 cur;           // 0xC
+    s32 count;         // 0x10
+    u8 flag;           // 0x14
+} BtlUnitPartPoseSound;
+
 typedef struct BattleWorkUnitPart {
     struct BattleWorkUnitPart* mNextPart;          // 0x0
     BattleUnitKindPart* mKindPartParams;           // 0x4
@@ -401,7 +411,8 @@ typedef struct BattleWorkUnitPart {
     u32 partFlags;                                 // 0x204, bit 0x10 and 0x80 are set and cleared by battle_unit.c
     u8 field_0x208[0x21C - 0x208];                 // 0x208
     BattleWorkUnitPartBlur blurWork;               // 0x21C
-    u8 field_0x4D0[0x4EC - 0x4D0];                 // 0x4D0
+    BtlUnitPartPoseSound poseSound;                // 0x4D0
+    s32 poseSoundEventId;                          // 0x4E8, -1 when no pose sound event is queued
     struct BattleUnit* mOwner;                     // 0x4EC
     GXColor color;                                 // 0x4F0
     u8 field_0x4F4[0x500 - 0x4F4];                 // 0x4F4
@@ -635,16 +646,6 @@ typedef struct BtlUnitPoseSound {
     s16 pitch;                                                     // 0x10
     u16 flags;                                                     // 0x12
 } BtlUnitPoseSound;
-
-// The pose-sound playback state that follows the table pointer in BattleUnitPart (part+0x4D0).
-typedef struct BtlUnitPartPoseSound {
-    void* table;       // 0x0 (0x4D0)
-    s32 frame;         // 0x4
-    f32 prev;          // 0x8
-    f32 cur;           // 0xC
-    s32 count;         // 0x10
-    u8 flag;           // 0x14
-} BtlUnitPartPoseSound;
 
 typedef struct BattleUnitKind {
     BattleUnitType mUnitType;          // 0x0
