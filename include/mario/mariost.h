@@ -38,7 +38,8 @@ typedef struct GlobalWork {
 	BOOL didAreaChange; //0x118
 	char beroEnterName[0x10]; //0x11C
 	char currentMapName[0x10]; //0x12C
-	char currentAreaName[0x20]; //0x13C
+	char currentAreaName[0x10]; //0x13C
+	char lastMapName[0x10]; //0x14C, the map left for the title screen or game over (seq_mapchange, seq_gameover)
 	void* relocationBase; //0x15C
 	void* mapAlloc; //0x160
 	u32 mapInitEvtId; //0x164, event id of the map init script (seq_mapchange waits on it; item and npc drivers skip while set)
