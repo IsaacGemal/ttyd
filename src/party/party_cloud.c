@@ -312,12 +312,12 @@ static inline void cloudMoveToMarioStep(PartyEntry* party) {
     MarioWork* pm = party->playerPtr;
     f32 pa;
     s32 pf;
-    party->targetPos = pm->position;
+    *(Vec*)((u8*)party + 0x94) = pm->position;
     pa = *(f32*)pm->unk1AC;
     pf = (pa < 90.0f || pa >= 270.0f);
     pa = toMovedir(pa + (pf != 0 ? -90.0f : 90.0f));
     movePos((f32*)((u8*)party + 0x94), (f32*)((u8*)party + 0x9C), 3.3f, pa);
-    party->targetPos.y += 10.0f;
+    *(f32*)((u8*)party + 0x98) += 10.0f;
 }
 #define MOVE_TO_MARIO() cloudMoveToMarioStep(party)
 #else

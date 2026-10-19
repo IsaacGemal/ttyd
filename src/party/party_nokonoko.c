@@ -574,7 +574,7 @@ L_800CC620:
         f2 = (NKS16(0x17c) != 0) ? 0.2f : 0.1f;
 #ifdef MUST_MATCH
         // Volatile re-read of the speed, as retail reloads it after the f3/f2 setup.
-        party->speed = f3 * f2 + *(volatile f32*)((u8*)party + 0x104);
+        NKF(0x104) = f3 * f2 + *(volatile f32*)((u8*)party + 0x104);
 #else
         party->speed = f3 * f2 + party->speed;
 #endif
@@ -653,7 +653,7 @@ L_800CC620:
         f2 = (NKS16(0x17c) != 0) ? 0.2f : 0.1f;
 #ifdef MUST_MATCH
         // Volatile re-read of the speed, as retail reloads it after the f3/f2 setup.
-        party->speed = f3 * f2 + *(volatile f32*)((u8*)party + 0x104);
+        NKF(0x104) = f3 * f2 + *(volatile f32*)((u8*)party + 0x104);
 #else
         party->speed = f3 * f2 + party->speed;
 #endif

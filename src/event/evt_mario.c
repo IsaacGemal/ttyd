@@ -2333,9 +2333,9 @@ USER_FUNC(evt_mario_set_prev_party_dokan) {
 #ifdef MUST_MATCH
             // MUST_MATCH: volatile on both sides of the Vec copy (and on the flags updates that
             // surround it) reproduces the original's unscheduled load/store pair without hoisting.
-            *(volatile u32*)&party->flags = *(volatile u32*)&party->flags | PARTY_FLAG_DISABLE_FLOORS;
-            *(volatile u32*)&party->flags = *(volatile u32*)&party->flags | PARTY_FLAG_FORCE_FALL;
-            pos = &party->field_70;
+            *(volatile u32*)&party->flags = *(volatile u32*)&party->flags | 0x04000000;
+            *(volatile u32*)&party->flags = *(volatile u32*)&party->flags | 0x02000000;
+            pos = (Vec*)((u8*)party + 0x70);
             *(volatile Vec*)pos = *(volatile Vec*)&vec3_802e58e8;
 #else
             party->flags |= PARTY_FLAG_DISABLE_FLOORS;

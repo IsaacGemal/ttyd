@@ -1788,7 +1788,7 @@ void party_motion_behind_mario(PartyEntry* party) {
             }
 #ifdef MUST_MATCH
             angle += 180.0f;
-            party->moveAngle = revise360(angle);
+            *(f32*)((u8*)party + 0x54) = revise360(angle);
 #else
             party->moveAngle = revise360(angle + 180.0f);
 #endif
@@ -1877,9 +1877,9 @@ void party_motion_behind_mario(PartyEntry* party) {
                 hitGetAttr(hit);
             }
             if (fabsf(party->position.y - w) > 1.0f) {
-                party->targetPos.x = x;
-                party->targetPos.y = w;
-                party->targetPos.z = z;
+                *(f32*)((u8*)party + 0x94) = x;
+                *(f32*)((u8*)party + 0x98) = w;
+                *(f32*)((u8*)party + 0x9C) = z;
                 partyChgMot(party, 2);
                 return;
             }
@@ -2160,7 +2160,7 @@ void party_motion_behind_mario_fly(PartyEntry* party) {
             }
 #ifdef MUST_MATCH
             dir += 180.0f;
-            party->moveAngle = revise360(dir);
+            *(f32*)((u8*)party + 0x54) = revise360(dir);
 #else
             party->moveAngle = revise360(dir + 180.0f);
 #endif
@@ -2201,7 +2201,7 @@ void party_motion_behind_mario_fly(PartyEntry* party) {
             party->position.z = pos.z;
 #ifdef MUST_MATCH
             k = 0.05f;
-            party->position.y = k * (party->targetPos.y - party->position.y) + party->position.y;
+            party->position.y = k * (*(f32*)((u8*)party + 0x98) - party->position.y) + party->position.y;
 #else
             party->position.y = 0.05f * (party->targetPos.y - party->position.y) + party->position.y;
 #endif
@@ -2292,7 +2292,7 @@ void party_motion_beside_mario(PartyEntry* party) {
         }
 #ifdef MUST_MATCH
         dir += 90.0f;
-        party->moveAngle = revise360(dir);
+        *(f32*)((u8*)party + 0x54) = revise360(dir);
 #else
         party->moveAngle = revise360(dir + 90.0f);
 #endif
@@ -2319,7 +2319,7 @@ void party_motion_beside_mario(PartyEntry* party) {
         }
 #ifdef MUST_MATCH
         dir += 90.0f;
-        party->moveAngle = revise360(dir);
+        *(f32*)((u8*)party + 0x54) = revise360(dir);
 #else
         party->moveAngle = revise360(dir + 90.0f);
 #endif
@@ -2466,7 +2466,7 @@ void party_motion_jump(PartyEntry* party) {
             {
                 Vec pos = FV(vec3_802f3e58, ((Vec){0.0f, 0.0f, 0.0f}));
                 pos.x = tx; pos.y = ty; pos.z = tz;
-                party->targetPos = pos;
+                *(Vec*)((u8*)party + 0x94) = pos;
             }
 #else
             party->targetPos.x = tx;
@@ -2496,7 +2496,7 @@ void party_motion_jump(PartyEntry* party) {
                 {
                     Vec pos = FV(vec3_802f3e64, ((Vec){0.0f, 0.0f, 0.0f}));
                     pos.x = tx; pos.y = ty; pos.z = tz;
-                    party->targetPos = pos;
+                    *(Vec*)((u8*)party + 0x94) = pos;
                 }
 #else
                 party->targetPos.x = tx;
@@ -2536,7 +2536,7 @@ void party_motion_jump(PartyEntry* party) {
                     {
                         Vec pos = FV(vec3_802f3e70, ((Vec){0.0f, 0.0f, 0.0f}));
                         pos.x = tx; pos.y = ty; pos.z = tz;
-                        party->targetPos = pos;
+                        *(Vec*)((u8*)party + 0x94) = pos;
                     }
 #else
                     party->targetPos.x = tx;
@@ -2557,7 +2557,7 @@ void party_motion_jump(PartyEntry* party) {
                     {
                         Vec pos = FV(vec3_802f3e7c, ((Vec){0.0f, 0.0f, 0.0f}));
                         pos.x = tx; pos.y = ty; pos.z = tz;
-                        party->targetPos = pos;
+                        *(Vec*)((u8*)party + 0x94) = pos;
                     }
 #else
                     party->targetPos.x = tx;
@@ -2577,8 +2577,8 @@ void party_motion_jump(PartyEntry* party) {
         }
 #ifdef MUST_MATCH
         // Nested assignments preserve the distance web until allocation, yielding retail's f5 load.
-        f0 = (10.0f * (f1 = 0.9f * ((f6 = party->targetDist) / party->speed)) + 0.5f) / 10.0f;
-        party->targetDist = f6;
+        f0 = (10.0f * (f1 = 0.9f * ((f6 = *(f32*)((u8*)party + 0x128)) / party->speed)) + 0.5f) / 10.0f;
+        *(f32*)((u8*)party + 0x128) = f6;
 #else
         f6 = party->targetDist;
         f1 = 0.9f * (f6 / party->speed);
@@ -2595,7 +2595,7 @@ void party_motion_jump(PartyEntry* party) {
         h = party->targetPos.y - party->position.y;
         if (fabsf(h) < 1.0f) {
 #ifdef MUST_MATCH
-            party->targetDist = (f6 = party->targetDist);
+            *(f32*)((u8*)party + 0x128) = (f6 = *(f32*)((u8*)party + 0x128));
 #endif
             h = 25.0f;
         } else {
@@ -2973,8 +2973,8 @@ void party_motion_damage(PartyEntry* party) {
                     hitFlag = 0;
                 }
                 if (hitFlag == 0) {
-                    party->motionStep = 0xC;
-                    party->timer = 0x1E;
+                    *(u8*)((u8*)party + 0x38) = 0xC;
+                    *(s32*)((u8*)party + 0x24) = 0x1E;
                 }
             }
 #else
