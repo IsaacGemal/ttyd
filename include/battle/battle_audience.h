@@ -70,11 +70,18 @@ typedef struct BattleAudienceMember {
 } BattleAudienceMember;
 
 typedef struct BattleAudienceItem {
-    u32 flags;                  // 0x0
-    s32 state;                  // 0x4
-    u8 field_0x8[0x10 - 0x8];   // 0x8
-    ItemType mItemType;         // 0x10
-    u8 field_0x14[0x48 - 0x14]; // 0x14
+    u32 flags;               // 0x0, bit 0 active, bit 1 drawn
+    s32 state;               // 0x4, step of BattleAudienceItemCtrlProcess's switch
+    s32 timer;               // 0x8, frames left in the current state (set to the flight length on launch)
+    s32 memberId;            // 0xC, audience member it was thrown at, -1 invalid
+    ItemType mItemType;      // 0x10
+    Vec pos;                 // 0x14
+    f32 scale;               // 0x20, x and y scale of the icon
+    f32 angleZ;              // 0x24, z rotation in degrees
+    Vec vel;                 // 0x28, per-frame velocity, accel is added to it
+    Vec accel;               // 0x34
+    BattleUnit* target;      // 0x40, the unit the item is thrown toward
+    s32 hitResult;           // 0x44, nonzero enters the outcome branch of case 3 (2 goes straight to case 4)
 } BattleAudienceItem;
 
 typedef struct BattleAudienceStar {
