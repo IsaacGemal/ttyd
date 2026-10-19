@@ -317,7 +317,7 @@ s32 msgMain(smartEntry* smart) {
 	entry = &data->entries[data->entryPos];
 	i = data->entryPos;
 	while (i < 0x500) {
-		if ((u32)entry->field_0xC > (u32)data->textTime) {
+		if ((u32)entry->startTime > (u32)data->textTime) {
 			break;
 		}
 		switch (entry->glyph) {
@@ -332,7 +332,7 @@ s32 msgMain(smartEntry* smart) {
 				break;
 			}
 			data->choiceState = 1;
-			data->textTime = entry->field_0xC;
+			data->textTime = entry->startTime;
 			data->flags &= ~4;
 			if (data->callback) {
 				data->callback(2, smart);
@@ -340,7 +340,7 @@ s32 msgMain(smartEntry* smart) {
 			break;
 		case 0xFFFD:
 			data->scrollTarget -= entry->y;
-			data->textTime = entry->field_0xC;
+			data->textTime = entry->startTime;
 #ifdef MUST_MATCH
 			// The original does this append with byte-offset arithmetic (addi/lwzx/stwx); the
 			// array form used in msgHistory comes out as add/displacement here.
@@ -359,7 +359,7 @@ s32 msgMain(smartEntry* smart) {
 			break;
 		case 0xFFFC:
 			data->entryPos = i + 1;
-			data->textTime = entry->field_0xC;
+			data->textTime = entry->startTime;
 			data->flags &= ~4;
 			return 1;
 		case 0xFFFB:
@@ -377,7 +377,7 @@ s32 msgMain(smartEntry* smart) {
 			if (entry->arg) {
 				data->flags |= 0x80;
 				data->flags &= ~4;
-				data->textTime = entry->field_0xC;
+				data->textTime = entry->startTime;
 			}
 			else {
 				data->flags &= ~0x80;
@@ -394,7 +394,7 @@ s32 msgMain(smartEntry* smart) {
 				}
 				animPoseSetPaperAnimGroup(npc->poseId, "p_b_st", TRUE);
 				animPosePaperPeraOn(npc->poseId);
-				((void (*)(s32, const char*, BOOL))animPoseSetPaperAnim)(npc->poseId, paperPoseTbl[entry->field_0xC], TRUE);
+				((void (*)(s32, const char*, BOOL))animPoseSetPaperAnim)(npc->poseId, paperPoseTbl[entry->startTime], TRUE);
 			}
 			break;
 		case 0xFFF2:
@@ -853,7 +853,7 @@ void msgAnalize(smartEntry* smart, const char* msg) {
 			break;
 		}
 		entry->glyph = 0xFFF7;
-		entry->field_0xC = r24;
+		entry->startTime = r24;
 		entry++;
 		data->entryId++;
 		break;
@@ -885,7 +885,7 @@ loop:
 		if (maxScale < scale) {
 			maxScale = scale;
 		}
-		entry->field_0xC = r24;
+		entry->startTime = r24;
 		ex = (s16)((s32)ex + exinc);
 		}
 		r24 += var54;
@@ -898,7 +898,7 @@ loop:
 	switch ((s8)check) {
 	case 0:
 		entry->glyph = 0xFFFF;
-		entry->field_0xC = r24;
+		entry->startTime = r24;
 		data->timeCursor = r24;
 		data->penX = ex;
 		data->penY = ey;
@@ -909,7 +909,7 @@ loop:
 	case '\n':
 		entry->glyph = 0xFFFB;
 		ex = 0;
-		entry->field_0xC = r24;
+		entry->startTime = r24;
 		if (float_0_8041a514 == maxScale) {
 			maxScale = 1.0f;
 		}
@@ -976,7 +976,7 @@ loop:
 		if (strcmp(tagName, "k") == 0 || strcmp(tagName, "key") == 0) {
 			entry->glyph = 0xFFFE;
 			entry->x = var[1];
-			entry->field_0xC = r24;
+			entry->startTime = r24;
 			r24 += 100;
 			entry++;
 			data->entryId++;
@@ -990,7 +990,7 @@ loop:
 				entry->glyph = 0xFFFD;
 				entry->y = (s16)(var[0] - 3);
 				ey -= 3;
-				entry->field_0xC = r24;
+				entry->startTime = r24;
 				r24 += 50;
 				entry++;
 				data->entryId++;
@@ -1000,7 +1000,7 @@ loop:
 		}
 		else if (strcmp(tagName, "o") == 0 || strcmp(tagName, "once_stop") == 0) {
 			entry->glyph = 0xFFFC;
-			entry->field_0xC = r24;
+			entry->startTime = r24;
 			r24 += 50;
 			entry++;
 			data->entryId++;
@@ -1055,21 +1055,21 @@ loop:
 		else if (strcmp(tagName, "col") == 0) {
 			sscanf(tagArg, "%x", &entry->arg);
 			entry->glyph = 0xFFF7;
-			entry->field_0xC = r24;
+			entry->startTime = r24;
 			entry++;
 			data->entryId++;
 		}
 		else if (strcmp(tagName, "/col") == 0) {
 			entry->arg = 0xFF;
 			entry->glyph = 0xFFF7;
-			entry->field_0xC = r24;
+			entry->startTime = r24;
 			entry++;
 			data->entryId++;
 		}
 		else if (strcmp(tagName, "noise") == 0) {
 			entry->arg = 1;
 			entry->glyph = 0xFFF6;
-			entry->field_0xC = r24;
+			entry->startTime = r24;
 			entry++;
 			data->entryId++;
 		}
@@ -1082,14 +1082,14 @@ loop:
 		else if (strcmp(tagName, "dkey") == 0) {
 			entry->arg = 1;
 			entry->glyph = 0xFFF5;
-			entry->field_0xC = r24;
+			entry->startTime = r24;
 			entry++;
 			data->entryId++;
 		}
 		else if (strcmp(tagName, "/dkey") == 0) {
 			entry->arg = 0;
 			entry->glyph = 0xFFF5;
-			entry->field_0xC = r24;
+			entry->startTime = r24;
 			entry++;
 			data->entryId++;
 		}
@@ -1102,7 +1102,7 @@ loop:
 			window->type = 3;
 			entry->arg = dat_8041a508;
 			entry->glyph = 0xFFF7;
-			entry->field_0xC = r24;
+			entry->startTime = r24;
 			entry++;
 			data->entryId++;
 		}
@@ -1110,7 +1110,7 @@ loop:
 			window->type = 8;
 			entry->arg = dat_8041a50c;
 			entry->glyph = 0xFFF7;
-			entry->field_0xC = r24;
+			entry->startTime = r24;
 			entry++;
 			data->entryId++;
 		}
@@ -1198,7 +1198,7 @@ loop:
 				entry->y = (s16)((f32)ey - (f32)h * iconScale);
 				entry->iconOffsetY = (s16)icon4;
 				entry->scale = iconScale;
-				entry->field_0xC = r24;
+				entry->startTime = r24;
 				r24 += var54;
 				entry++;
 				data->entryId++;
@@ -1218,7 +1218,7 @@ loop:
 				if (maxScale < scale) {
 					maxScale = scale;
 				}
-				entry->field_0xC = r24;
+				entry->startTime = r24;
 				ex = (s16)(ex + w);
 				r24 += var54;
 				entry++;
@@ -1251,7 +1251,7 @@ loop:
 			}
 			entry->arg = (u32)npc;
 			entry->glyph = 0xFFF3;
-			entry->field_0xC = paperId;
+			entry->startTime = paperId;
 			entry++;
 			data->entryId++;
 		}
@@ -1307,7 +1307,7 @@ loop:
 				if (flags & 1) {
 					entry->field_0x14 = dyn;
 				}
-				entry->field_0xC = 0;
+				entry->startTime = 0;
 				r25 += rinc;
 				entry++;
 				data->entryId++;
@@ -1349,7 +1349,7 @@ defaultchar:
 	if (maxScale < scale) {
 		maxScale = scale;
 	}
-	entry->field_0xC = r24;
+	entry->startTime = r24;
 	ex = (s16)((s32)ex + exinc);
 	}
 	r24 += var54;

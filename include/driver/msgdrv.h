@@ -13,7 +13,7 @@ typedef struct MsgDataEntry {
 	s16 x; //0x6
 	s16 y; //0x8
 	s16 iconOffsetY; //0xA: the icon tag's fourth value, added to the icon's y (0xFFF8)
-	s32 field_0xC; //0xC: start time in ms (compared with textTime); index into paperPoseTbl for 0xFFF3
+	s32 startTime; //0xC: ms at which the entry is reached (compared with textTime); an index into paperPoseTbl for 0xFFF3
 	f32 scale; //0x10
 	f32 field_0x14; //0x14: pop-in scale that decays to 1 (flag 0x1), or a paper pose's Y rotation
 } MsgDataEntry;
