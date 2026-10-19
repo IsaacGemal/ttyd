@@ -157,7 +157,7 @@ HitEntry* partyHitCheck(PartyEntry* party, Vec* pos, Vec* dir, Vec* hitPos, Vec*
 
     if (yoshiGetStatus() != 0) {
         hit = hitCheckVecFilter(&query, chkfilterYoshi);
-    } else if (party->currentMemberId == PARTY_MEMBER_KOOPS && (party->flags & 0x100)) {
+    } else if (party->currentMemberId == PARTY_MEMBER_KOOPS && (party->flags & PARTY_FLAG_IS_BEING_USED)) {
         hit = hitCheckVecFilter(&query, chkfilterNokotaro);
     } else {
         hit = hitCheckVecFilter(&query, chkfilter);
@@ -196,7 +196,7 @@ void partyChkGnd(PartyEntry* party) {
     HitEntry* hit;
     f32 a, b, c;
 
-    if (party->flags & 0x02000000) {
+    if (party->flags & PARTY_FLAG_FORCE_FALL) {
         return;
     }
     attr = 0;
@@ -208,17 +208,17 @@ void partyChkGnd(PartyEntry* party) {
         }
     }
     party->groundHit = hit;
-    party->flags = (party->flags & ~0x80);
+    party->flags = (party->flags & ~PARTY_FLAG_IN_SHALLOW_WATER);
     if (hit == NULL) {
-        party->flags = (party->flags & ~0x2);
+        party->flags = (party->flags & ~PARTY_FLAG_IS_GROUNDED);
         partyChgMot(party, 3);
         party->jumpPara3 = -1.0f;
     } else {
-        party->flags = (party->flags | 0x2);
+        party->flags = (party->flags | PARTY_FLAG_IS_GROUNDED);
         if (attr & 0x100) {
-            party->flags = (party->flags | 0x80);
+            party->flags = (party->flags | PARTY_FLAG_IN_SHALLOW_WATER);
         } else {
-            party->flags = (party->flags & ~0x80);
+            party->flags = (party->flags & ~PARTY_FLAG_IN_SHALLOW_WATER);
         }
     }
     party->position.y = party->groundY;
@@ -240,7 +240,7 @@ static inline HitEntry* partyGroundHit(PartyEntry* party, HitCheckQuery* query, 
 
     if (yoshiGetStatus() != 0) {
         h = hitCheckVecFilter(query, chkfilterYoshi);
-    } else if (party->currentMemberId == PARTY_MEMBER_KOOPS && (party->flags & 0x100)) {
+    } else if (party->currentMemberId == PARTY_MEMBER_KOOPS && (party->flags & PARTY_FLAG_IS_BEING_USED)) {
         h = hitCheckVecFilter(query, chkfilterNokotaro);
     } else {
         h = hitCheckVecFilter(query, chkfilter);
@@ -289,7 +289,7 @@ HitEntry* partySearchGround(PartyEntry* party, f32 up, f32 down) {
     f32 pz;
     s32 i;
 
-    if (party->flags & 0x02000000) {
+    if (party->flags & PARTY_FLAG_FORCE_FALL) {
         return NULL;
     }
     *(Vec*)party->field_C4 = (Vec){0.0f, 0.0f, 0.0f};
@@ -385,7 +385,7 @@ static inline HitEntry* partyFrontStepHit(PartyEntry* party, HitCheckQuery* quer
 
     if (yoshiGetStatus() != 0) {
         h = hitCheckVecFilter(query, chkfilterYoshi);
-    } else if (party->currentMemberId == PARTY_MEMBER_KOOPS && (party->flags & 0x100)) {
+    } else if (party->currentMemberId == PARTY_MEMBER_KOOPS && (party->flags & PARTY_FLAG_IS_BEING_USED)) {
         h = hitCheckVecFilter(query, chkfilterNokotaro);
     } else {
         h = hitCheckVecFilter(query, chkfilter);
@@ -585,7 +585,7 @@ HitEntry* partySearchFrontWall(PartyEntry* party, Vec* pos, f32 dist, f32 dir) {
 
     if (yoshiGetStatus() != 0) {
         h1 = hitCheckVecFilter(&query1, chkfilterYoshi);
-    } else if (party->currentMemberId == PARTY_MEMBER_KOOPS && (party->flags & 0x100)) {
+    } else if (party->currentMemberId == PARTY_MEMBER_KOOPS && (party->flags & PARTY_FLAG_IS_BEING_USED)) {
         h1 = hitCheckVecFilter(&query1, chkfilterNokotaro);
     } else {
         h1 = hitCheckVecFilter(&query1, chkfilter);
@@ -609,7 +609,7 @@ HitEntry* partySearchFrontWall(PartyEntry* party, Vec* pos, f32 dist, f32 dir) {
     }
 
     h = 11.0f;
-    if (party->currentMemberId == PARTY_MEMBER_BOBBERY && (party->flags & 0x100)) {
+    if (party->currentMemberId == PARTY_MEMBER_BOBBERY && (party->flags & PARTY_FLAG_IS_BEING_USED)) {
         h = 1.0f;
     }
     p = party->position;
@@ -621,7 +621,7 @@ HitEntry* partySearchFrontWall(PartyEntry* party, Vec* pos, f32 dist, f32 dir) {
 
     if (yoshiGetStatus() != 0) {
         h2 = hitCheckVecFilter(&query2, chkfilterYoshi);
-    } else if (party->currentMemberId == PARTY_MEMBER_KOOPS && (party->flags & 0x100)) {
+    } else if (party->currentMemberId == PARTY_MEMBER_KOOPS && (party->flags & PARTY_FLAG_IS_BEING_USED)) {
         h2 = hitCheckVecFilter(&query2, chkfilterNokotaro);
     } else {
         h2 = hitCheckVecFilter(&query2, chkfilter);

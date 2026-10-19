@@ -207,7 +207,7 @@ void nokonoko_use(PartyEntry* party) {
     f32 a, b;
     f32 f0, f1, f2, f3, f4, f5, f6, f31;
 
-    if (!(party->flags & 0x80000000)) {
+    if (!(party->flags & PARTY_FLAG_IS_EVT_USE)) {
         if (marioKeyOffChk()) {
             scr = party->position;
 
@@ -237,7 +237,7 @@ void nokonoko_use(PartyEntry* party) {
         NKS(0x178) = 0;
         NKS(0x17c) = 0;
         NKS(0x180) = 0;
-        if (party->flags & 0x80000000) {
+        if (party->flags & PARTY_FLAG_IS_EVT_USE) {
             if (party->unk16C > 0) {
                 NKS16(0x17e) |= 0x1;
             }
@@ -254,7 +254,7 @@ void nokonoko_use(PartyEntry* party) {
             goto L_800CC620;
         }
         partyClearJumpPara(party);
-        party->flags |= 0x04000000;
+        party->flags |= PARTY_FLAG_DISABLE_FLOORS;
         party->flags2 |= 0x10;
         partyChgPose(party, NK_STR(0x18, "PNK_K_2"));
         party->height = 18.5f;
@@ -325,8 +325,8 @@ void nokonoko_use(PartyEntry* party) {
         f4 = (f32)sin(6.2831855f * party->dir / 360.0f);
         effSmallStarN64Entry(3, 3, party->position.x, party->position.y + party->height, party->position.z,
                              f4, -1.0f, -f31);
-        party->flags |= 0x04000000;
-        party->flags |= 0x01000000;
+        party->flags |= PARTY_FLAG_DISABLE_FLOORS;
+        party->flags |= PARTY_FLAG_DISABLE_FRONT_WALL_CHK;
         party->useMotionId = 11;
         /* fallthrough */
     case 11:
@@ -378,7 +378,7 @@ void nokonoko_use(PartyEntry* party) {
             goto L_800CC620;
         }
         party->speed = 0.0f;
-        if (!(party->flags & 0x80000000)) {
+        if (!(party->flags & PARTY_FLAG_IS_EVT_USE)) {
             if (*(u16*)(mario->field_0x245 + 1) & 0x400) {
                 party->useMotionId = 0xD;
                 party->timer = 0;
@@ -450,7 +450,7 @@ void nokonoko_use(PartyEntry* party) {
                 goto L_800CC620;
             }
         }
-        if (!(party->flags & 0x80000000)) {
+        if (!(party->flags & PARTY_FLAG_IS_EVT_USE)) {
             u16 mot = *(u16*)&mario->currMotionId;
             if (mot == 0x19) { goto L_800CC4E8; }
             if (mot == 0x14) { goto L_800CC4E8; }
@@ -915,7 +915,7 @@ L_800CCD8C:
         if (--party->timer > 0) {
             goto L_800CD8A8;
         }
-        if (!(party->flags & 0x80000000)) {
+        if (!(party->flags & PARTY_FLAG_IS_EVT_USE)) {
             partyGetReturnPos(&v);
         } else {
             *(Vec*)&v = *(Vec*)((u8*)mario + 0x8c);
@@ -934,10 +934,10 @@ L_800CCD8C:
         party->jumpPara1 = 0.0f;
         party->jumpPara2 = -1.0f;
         party->speed = 0.0f;
-        party->flags |= 0x20;
-        party->flags |= 0x02000000;
-        party->flags &= ~0x04000000;
-        party->flags &= ~0x01000000;
+        party->flags |= PARTY_FLAG_IS_FALLING;
+        party->flags |= PARTY_FLAG_FORCE_FALL;
+        party->flags &= ~PARTY_FLAG_DISABLE_FLOORS;
+        party->flags &= ~PARTY_FLAG_DISABLE_FRONT_WALL_CHK;
         party->flags2 &= ~0x20;
         party->flags2 &= ~0x10;
         party->height = 37.0f;
@@ -950,7 +950,7 @@ L_800CCD8C:
             f32 wsx, wsy, wsz;
             marioGetScreenPos(wscr, &wsx, &wsy, &wsz);
             if (wsy > 240.0f) {
-                party->flags &= ~0x02000000;
+                party->flags &= ~PARTY_FLAG_FORCE_FALL;
             }
             (void)wsx;
             (void)wsz;

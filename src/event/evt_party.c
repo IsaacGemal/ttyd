@@ -810,8 +810,8 @@ USER_FUNC(evt_party_thunders_use) {
         if (bomheiGetStatus() != 0) {
             return EVT_RETURN_DONE;
         }
-        party->flags |= 0x80000000;
-        party->flags |= 0x100;
+        party->flags |= PARTY_FLAG_IS_EVT_USE;
+        party->flags |= PARTY_FLAG_IS_BEING_USED;
         partyChgRunMode(party, 3);
     }
     if (bomheiGetStatus() != 0) {
@@ -832,8 +832,8 @@ USER_FUNC(evt_party_vivian_hold) {
         if (vivianGetStatus() != 0) {
             return EVT_RETURN_DONE;
         }
-        party->flags |= 0x80000000;
-        party->flags |= 0x100;
+        party->flags |= PARTY_FLAG_IS_EVT_USE;
+        party->flags |= PARTY_FLAG_IS_BEING_USED;
         partyChgRunMode(party, 3);
     }
     if (vivianGetStatus() != 2) {
@@ -887,8 +887,8 @@ USER_FUNC(evt_party_yoshi_ride) {
             if (yoshiGetStatus() != 0) {
                 return EVT_RETURN_DONE;
             }
-            party->flags |= 0x80000000;
-            party->flags |= 0x100;
+            party->flags |= PARTY_FLAG_IS_EVT_USE;
+            party->flags |= PARTY_FLAG_IS_BEING_USED;
             partyChgRunMode(party, 3);
         } else {
             marioGetoffYoshi();
@@ -896,12 +896,12 @@ USER_FUNC(evt_party_yoshi_ride) {
     }
     if (flag != 0) {
         if (yoshiGetStatus() == 1) {
-            party->flags &= ~0x80000000;
+            party->flags &= ~PARTY_FLAG_IS_EVT_USE;
             return EVT_RETURN_DONE;
         }
     } else {
         if (yoshiGetStatus() == 0) {
-            party->flags &= ~0x80000000;
+            party->flags &= ~PARTY_FLAG_IS_EVT_USE;
             return EVT_RETURN_DONE;
         }
     }
@@ -920,14 +920,14 @@ USER_FUNC(evt_party_yoshi_fly) {
         if (yoshiGetStatus() != 1) {
             return EVT_RETURN_DONE;
         }
-        party->flags |= 0x80000000;
+        party->flags |= PARTY_FLAG_IS_EVT_USE;
         evt_set_yoshi_spd(evtGetFloat(event, args[1]));
         evt_set_yoshi_frm(sysMsec2Frame(evtGetValue(event, args[2])));
     }
     if (evt_get_yoshi_frm() >= 0) {
         return 0;
     }
-    party->flags &= ~0x80000000;
+    party->flags &= ~PARTY_FLAG_IS_EVT_USE;
     return EVT_RETURN_DONE;
 }
 
@@ -943,16 +943,16 @@ USER_FUNC(evt_party_nokotaro_kick) {
         if (party->currentMemberId != PARTY_MEMBER_KOOPS) {
             return EVT_RETURN_DONE;
         }
-        if (party->flags & 0x100) {
+        if (party->flags & PARTY_FLAG_IS_BEING_USED) {
             return EVT_RETURN_DONE;
         }
         party->unk16C = 0;
-        party->flags |= 0x80000000;
-        party->flags |= 0x100;
+        party->flags |= PARTY_FLAG_IS_EVT_USE;
+        party->flags |= PARTY_FLAG_IS_BEING_USED;
         partyChgRunMode(party, 3);
     }
     if (nokonokoGetStatus(party) == 0) {
-        party->flags &= ~0x80000000;
+        party->flags &= ~PARTY_FLAG_IS_EVT_USE;
         return EVT_RETURN_DONE;
     }
     return 0;
@@ -970,16 +970,16 @@ USER_FUNC(evt_party_nokotaro_kick_hold) {
         if (party->currentMemberId != PARTY_MEMBER_KOOPS) {
             return EVT_RETURN_DONE;
         }
-        if (party->flags & 0x100) {
+        if (party->flags & PARTY_FLAG_IS_BEING_USED) {
             return EVT_RETURN_DONE;
         }
         party->unk16C = 5000;
-        party->flags |= 0x80000000;
-        party->flags |= 0x100;
+        party->flags |= PARTY_FLAG_IS_EVT_USE;
+        party->flags |= PARTY_FLAG_IS_BEING_USED;
         partyChgRunMode(party, 3);
     }
     if (nokonokoGetStatus(party) == 0) {
-        party->flags &= ~0x80000000;
+        party->flags &= ~PARTY_FLAG_IS_EVT_USE;
         return EVT_RETURN_DONE;
     }
     return (nokonokoGetStatus(party) == 3) ? EVT_RETURN_DONE : 0;
@@ -1017,7 +1017,7 @@ USER_FUNC(evt_party_nokotaro_hold_cancel) {
                 ret = 0;
                 break;
             }
-            party->flags &= ~0x80000000;
+            party->flags &= ~PARTY_FLAG_IS_EVT_USE;
             ret = EVT_RETURN_DONE;
             break;
     }
@@ -1057,12 +1057,12 @@ USER_FUNC(evt_party_cloud_breathout) {
             return EVT_RETURN_DONE;
         }
         party->unk16C = args[1];
-        party->flags |= 0x80000000;
-        party->flags |= 0x100;
+        party->flags |= PARTY_FLAG_IS_EVT_USE;
+        party->flags |= PARTY_FLAG_IS_BEING_USED;
         partyChgRunMode(party, 3);
     }
     if (cloudGetStatus() == 0) {
-        party->flags &= ~0x80000000;
+        party->flags &= ~PARTY_FLAG_IS_EVT_USE;
         return EVT_RETURN_DONE;
     }
     return 0;

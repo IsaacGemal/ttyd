@@ -369,7 +369,7 @@ void N__cloud_use(PartyEntry* party) {
         if (party->useStruct != NULL) {
             *(u32*)((u8*)party->useStruct + 0x34) = 0xFFFFFFFFu;
         }
-        if ((party->flags & 0x80000000) != 0) {
+        if ((party->flags & PARTY_FLAG_IS_EVT_USE) != 0) {
             *(s32*)((u8*)party->useStruct + 0x30) = sysMsec2Frame(party->unk16C);
         }
     }
@@ -415,7 +415,7 @@ void N__cloud_use(PartyEntry* party) {
         party->flags2 |= 0x10;
         *(f32*)((u8*)cloud + 0x8) = 0.0f;
         *(f32*)((u8*)cloud + 0x4) = mario->unk1A8;
-        if ((party->flags & 0x80000000) == 0) {
+        if ((party->flags & PARTY_FLAG_IS_EVT_USE) == 0) {
             mario->unk150.x = 0.03f;
             mario->unk138 = 70.0f * ((revise360(270.0f - *(f32*)((u8*)mario + 0x1AC)) <= 180.0f) ? -1.0f : 1.0f);
         }
@@ -484,7 +484,7 @@ void N__cloud_use(PartyEntry* party) {
         if (++*(s16*)(cloud->field_0x30 + 8) > 2) {
             *(s16*)(cloud->field_0x30 + 8) = 0;
         }
-        if ((party->flags & 0x80000000) == 0) {
+        if ((party->flags & PARTY_FLAG_IS_EVT_USE) == 0) {
             if ((*(u16*)((u8*)party + 0x150) & 0x400) != 0 && marioKeyOffChk() == 0) {
                 break;
             }
@@ -499,7 +499,7 @@ void N__cloud_use(PartyEntry* party) {
         cloud->unk2C = 0;
         party->timer = sysMsec2Frame(200);
         party->useMotionId = 0xD;
-        if ((party->flags & 0x80000000) != 0) {
+        if ((party->flags & PARTY_FLAG_IS_EVT_USE) != 0) {
             party->useMotionId = 0x14;
         }
         if (party->useStruct != NULL && *(u32*)((u8*)party->useStruct + 0x34) != 0xFFFFFFFFu) {
@@ -550,7 +550,7 @@ void N__cloud_use(PartyEntry* party) {
         *(u8*)((u8*)party + 0x3D) = 0;
         partyChgMoveMode(party, 2);
         partyChgMot(party, 1);
-        if ((party->flags & 0x80000000) == 0) {
+        if ((party->flags & PARTY_FLAG_IS_EVT_USE) == 0) {
             mario->unk150.x = 0.01f;
             mario->unk138 = 0.0f;
         }

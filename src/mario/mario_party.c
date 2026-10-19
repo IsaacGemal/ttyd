@@ -222,14 +222,14 @@ s32 marioGetPartyId(void) {
     partyId = wp->currPartySlotId[0];
     if (partyId >= 0) {
         party = partyGetPtr(partyId);
-        if ((party != NULL) && !(party->flags & 8)) {
+        if ((party != NULL) && !(party->flags & PARTY_FLAG_IS_PARTNER)) {
             return partyId;
         }
     }
     partyId = wp->currPartySlotId[1];
     if (partyId >= 0) {
         party = partyGetPtr(partyId);
-        if ((party != NULL) && !(party->flags & 8)) {
+        if ((party != NULL) && !(party->flags & PARTY_FLAG_IS_PARTNER)) {
             return partyId;
         }
     }
@@ -244,7 +244,7 @@ s32 marioGetExtraPartyId(void) {
     partyId = wp->currPartySlotId[0];
     if (partyId >= 0) {
         party = partyGetPtr(partyId);
-        if ((party != NULL) && (party->flags & 8)) {
+        if ((party != NULL) && (party->flags & PARTY_FLAG_IS_PARTNER)) {
             return partyId;
         }
     }
@@ -252,7 +252,7 @@ s32 marioGetExtraPartyId(void) {
     partyId = wp->currPartySlotId[1];
     if (partyId >= 0) {
         party = partyGetPtr(partyId);
-        if ((party != NULL) && (party->flags & 8)) {
+        if ((party != NULL) && (party->flags & PARTY_FLAG_IS_PARTNER)) {
             return partyId;
         }
     }

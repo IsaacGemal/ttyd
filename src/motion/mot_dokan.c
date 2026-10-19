@@ -112,8 +112,8 @@ void _partyEntry(s32 arg) {
                     if (arg == 0) {
                         M_VEC(party, 0x70) = vec3_802f3d60[0];
                     }
-                    party->flags |= 0x04000000;
-                    party->flags |= 0x02000000;
+                    party->flags |= PARTY_FLAG_DISABLE_FLOORS;
+                    party->flags |= PARTY_FLAG_FORCE_FALL;
                     if (count == 1) {
                         angle = float_180_8041cdb4;
                     } else {
@@ -131,8 +131,8 @@ void _partyEntry(s32 arg) {
             if (arg == 0) {
                 M_VEC(party, 0x70) = vec3_802f3d6c[0];
             }
-            party->flags |= 0x04000000;
-            party->flags |= 0x02000000;
+            party->flags |= PARTY_FLAG_DISABLE_FLOORS;
+            party->flags |= PARTY_FLAG_FORCE_FALL;
             if (count == 1) {
                 angle = float_180_8041cdb4;
             } else {

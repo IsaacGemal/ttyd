@@ -65,8 +65,8 @@ void mot_vivian_post(void) {
         mario->flags &= ~0x400;
         if (party != NULL) {
             partyPaperOff(party);
-            party->flags &= ~0x100;
-            party->flags &= ~0x80000000;
+            party->flags &= ~PARTY_FLAG_IS_BEING_USED;
+            party->flags &= ~PARTY_FLAG_IS_EVT_USE;
             party->flags2 &= ~0x200000;
 #ifdef MUST_MATCH
             *(volatile f32*)&party->field_174[0] = 10.0f;
@@ -82,7 +82,7 @@ void mot_vivian_post(void) {
             }
         }
     } else {
-        if (party == NULL || party->currentMemberId != 6 || !(party->flags & 0x100)) {
+        if (party == NULL || party->currentMemberId != 6 || !(party->flags & PARTY_FLAG_IS_BEING_USED)) {
             return;
         }
         vivian_cancel_req = 1;
@@ -108,7 +108,7 @@ s32 vivianGetStatus(void) {
     if (party == NULL) {
         return 0;
     }
-    if (party->currentMemberId != 6 || !(party->flags & 0x100)) {
+    if (party->currentMemberId != 6 || !(party->flags & PARTY_FLAG_IS_BEING_USED)) {
         return 0;
     }
     if (party->useMotionId < 0xa) {
@@ -125,7 +125,7 @@ s32 vivianGetStatus(void) {
 
 // 60 B
 void vivianUnhold(PartyEntry* party) {
-    if (party == NULL || party->currentMemberId != 6 || !(party->flags & 0x100)) {
+    if (party == NULL || party->currentMemberId != 6 || !(party->flags & PARTY_FLAG_IS_BEING_USED)) {
         return;
     }
     if (party->useMotionId != 0xa) {
@@ -369,7 +369,7 @@ void vivian_use(PartyEntry* party) {
         if (vivian_cancel_req) {
             party->useMotionId = 0x14;
         }
-        if (!(party->flags & 0x80000000) && (*(u16*)&party->field_144[0xE] & 0x600)) {
+        if (!(party->flags & PARTY_FLAG_IS_EVT_USE) && (*(u16*)&party->field_144[0xE] & 0x600)) {
             party->useMotionId = 0x14;
         }
         break;
@@ -521,14 +521,14 @@ void vivian_use(PartyEntry* party) {
         }
         *(f32*)&party->field_174[0] = 10.0f;
         partyPaperOff(party);
-        party->flags &= ~0x100;
+        party->flags &= ~PARTY_FLAG_IS_BEING_USED;
         party->flags2 &= ~0x200000;
         *(f32*)&party->field_174[0] = 10.0f;
         *(f32*)&party->field_7C[4] = 0.0f;
         partyChgRunMode(party, 2);
         party->field_3B = 0;
         partyChgPoseId(party, 1);
-        party->flags &= ~0x80000000;
+        party->flags &= ~PARTY_FLAG_IS_EVT_USE;
         break;
     }
 }

@@ -530,7 +530,7 @@ void mobjMain(void) {
     mode = fbat->mode;
     v24 = NULL;
     v25 = 0;
-    if (party != NULL && (party->flags & 0x100)) {
+    if (party != NULL && (party->flags & PARTY_FLAG_IS_BEING_USED)) {
         v25 = 1;
     }
 

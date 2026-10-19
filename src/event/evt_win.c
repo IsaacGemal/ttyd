@@ -608,7 +608,7 @@ USER_FUNC(unk_80174e98) {
 	}
 #endif
 
-	if (party != NULL && (party->flags & 0x100)) {
+	if (party != NULL && (party->flags & PARTY_FLAG_IS_BEING_USED)) {
 		if (wp->field_0xE0 != -1) {
 			wp->field_0xE0 = -1;
 			winMgrClose(wp->field_0x60[0]);

@@ -3263,7 +3263,7 @@ void* fbatHitCheck(s32 flags, s32 out) {
             if (attack) {
                 s32 status;
 
-                if (party == NULL || party->field_33 != 2 || !(party->flags & 0x100)) {
+                if (party == NULL || party->field_33 != 2 || !(party->flags & PARTY_FLAG_IS_BEING_USED)) {
                     break;
                 }
                 status = nokonokoGetStatus(party);

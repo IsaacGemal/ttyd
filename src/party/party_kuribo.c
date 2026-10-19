@@ -39,7 +39,7 @@ typedef struct PartyAppearPos {
 
 BOOL christineGetStatus(void) {
     PartyEntry* party = partyGetPtr(marioGetPartyId());
-    if (!party || party->currentMemberId != PARTY_MEMBER_GOOMBELLA || !(party->flags & 0x100)) {
+    if (!party || party->currentMemberId != PARTY_MEMBER_GOOMBELLA || !(party->flags & PARTY_FLAG_IS_BEING_USED)) {
         return FALSE;
     }
     return TRUE;
@@ -68,8 +68,8 @@ USER_FUNC(pre_kurio_use) {
     }
 
     psndSetFlag(0x80);
-    party->flags |= 0x04000000;
-    party->flags |= 0x02000000;
+    party->flags |= PARTY_FLAG_DISABLE_FLOORS;
+    party->flags |= PARTY_FLAG_FORCE_FALL;
 
     mario = party->playerPtr;
 
@@ -263,8 +263,8 @@ USER_FUNC(post_kurio_use) {
     party->useMotionId = 0x14;
     marioStSystemLevel(0);
     psndClearFlag(0x80);
-    party->flags &= ~0x04000000;
-    party->flags &= ~0x02000000;
+    party->flags &= ~PARTY_FLAG_DISABLE_FLOORS;
+    party->flags &= ~PARTY_FLAG_FORCE_FALL;
     return EVT_RETURN_DONE;
 }
 
@@ -281,8 +281,8 @@ void kuribo_init_800C23B4(PartyEntry* party) {
 
 
 void kuribo_use_post(PartyEntry* party) {
-    party->flags &= ~0x04000000;
-    party->flags &= ~0x02000000;
+    party->flags &= ~PARTY_FLAG_DISABLE_FLOORS;
+    party->flags &= ~PARTY_FLAG_FORCE_FALL;
 }
 
 
@@ -322,8 +322,8 @@ void kuribo_use(PartyEntry* party) {
     switch (party->useMotionId) {
     case 0:
         if (!partyGetAppearPos3(party, &party->targetPos)) {
-            party->flags |= 0x04000000;
-            party->flags |= 0x02000000;
+            party->flags |= PARTY_FLAG_DISABLE_FLOORS;
+            party->flags |= PARTY_FLAG_FORCE_FALL;
         }
         party->timer = 4;
         party->field_FC = angleABf(party->position.x, party->position.z, ((PartyAppearPos*)party)->position.x,
@@ -339,8 +339,8 @@ void kuribo_use(PartyEntry* party) {
         break;
     case 1: {
         if (!partyGetAppearPos3(party, &party->targetPos)) {
-            party->flags |= 0x04000000;
-            party->flags |= 0x02000000;
+            party->flags |= PARTY_FLAG_DISABLE_FLOORS;
+            party->flags |= PARTY_FLAG_FORCE_FALL;
         }
         party->position.x += (((PartyAppearPos*)party)->position.x - party->position.x) /
                                  (f32)party->timer;
@@ -375,9 +375,9 @@ void kuribo_use(PartyEntry* party) {
             partyChgMoveMode(party, 0);
             partyChgMot(party, 0);
             partyChgPoseId(party, 1);
-            party->flags &= ~0x100;
-            party->flags &= ~0x04000000;
-            party->flags &= ~0x02000000;
+            party->flags &= ~PARTY_FLAG_IS_BEING_USED;
+            party->flags &= ~PARTY_FLAG_DISABLE_FLOORS;
+            party->flags &= ~PARTY_FLAG_FORCE_FALL;
         }
         break;
     }

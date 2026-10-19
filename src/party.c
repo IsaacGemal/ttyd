@@ -577,7 +577,7 @@ s32 partyEntryMain(s32 memberId) {
         player->prevPartyMemberId[0] = party->currentMemberId;
     }
     if (slotId == 1) {
-        party->flags |= 4;
+        party->flags |= PARTY_FLAG_IS_FOLLOWER;
     }
     party_dp = &partyDataTbl[memberId];
     if (player->flags & 0x80000000) {
@@ -619,7 +619,7 @@ s32 partyEntry2(s32 memberId) {
     party->playerPtr = player;
     party->currentMemberId = memberId;
     if (slotId == 1) {
-        party->flags |= 4;
+        party->flags |= PARTY_FLAG_IS_FOLLOWER;
     }
     party_dp = &partyDataTbl[memberId];
     partyPoseEntry(party);
@@ -664,7 +664,7 @@ s32 partyEntry2Hello(s32 memberId) {
     party->playerPtr = player;
     party->currentMemberId = memberId;
     if (slotId == 1) {
-        party->flags |= 4;
+        party->flags |= PARTY_FLAG_IS_FOLLOWER;
     }
     party_dp = &partyDataTbl[memberId];
     partyPoseEntry(party);
@@ -704,7 +704,7 @@ s32 partyEntry2Pos(s32 memberId, f32 x, f32 y, f32 z) {
     party->playerPtr = player;
     party->currentMemberId = memberId;
     if (slotId == 1) {
-        party->flags |= 4;
+        party->flags |= PARTY_FLAG_IS_FOLLOWER;
     }
     party_dp = &partyDataTbl[memberId];
     partyPoseEntry(party);
@@ -1052,7 +1052,7 @@ s32 partyGetNum(void) {
     for (i = 0; i < 2; i++) {
         PartyEntry* party = partyGetPtr(i);
 
-        if (party && (party->flags & 1)) {
+        if (party && (party->flags & PARTY_FLAG_IS_ACTIVE)) {
             num++;
         }
     }
@@ -1086,7 +1086,7 @@ void partyMain(void) {
         for (i = 0; i < 2; i++) {
             PartyEntry* party = partyPtrTbl[i];
 
-            if (party && (party->flags & 1) && marioBgmodeChk() != 1) {
+            if (party && (party->flags & PARTY_FLAG_IS_ACTIVE) && marioBgmodeChk() != 1) {
                 driveParty(party);
             }
         }
@@ -1112,7 +1112,7 @@ void driveParty(PartyEntry* party) {
         case 0xe:
             break;
         default:
-            if (party->flags & 0x20000000) {
+            if (party->flags & PARTY_FLAG_CTRL_OFF) {
                 if (vivianGetStatus() != 2) {
                     vivianShadow(party);
                 }
@@ -1122,9 +1122,9 @@ void driveParty(PartyEntry* party) {
             break;
     }
     if (player->flags & 0x02000000) {
-        party->flags |= 0x00800000;
+        party->flags |= PARTY_FLAG_BG_MODE;
     } else {
-        party->flags &= ~0x00800000;
+        party->flags &= ~PARTY_FLAG_BG_MODE;
     }
     party->groundHit = NULL;
     party->field_12C = NULL;
@@ -1133,12 +1133,12 @@ void driveParty(PartyEntry* party) {
     P32(party, 0x130) = 0;
     switch (P8(party, 0x34)) {
         case 0:
-            if (!(party->flags & 0x20000000) || (party->flags & 0x10000000)) {
+            if (!(party->flags & PARTY_FLAG_CTRL_OFF) || (party->flags & PARTY_FLAG_RUN_OFF)) {
                 if (party->field_8 & 8) {
                     party->field_8 &= ~8;
                     partyChgPoseId(party, 1);
                     party->speed = 0.0f;
-                    party->flags &= ~0x100;
+                    party->flags &= ~PARTY_FLAG_IS_BEING_USED;
                     partyChgMot(party, 0);
                 }
                 party_dp = &partyDataTbl[party->currentMemberId];
@@ -1146,28 +1146,28 @@ void driveParty(PartyEntry* party) {
             }
             break;
         case 1:
-            if (!(party->flags & 0x20000000) || (party->flags & 0x10000000)) {
+            if (!(party->flags & PARTY_FLAG_CTRL_OFF) || (party->flags & PARTY_FLAG_RUN_OFF)) {
                 unk_800c7c98(party);
             }
             break;
         case 2:
-            if (!(party->flags & 0x20000000) || (party->flags & 0x10000000)) {
+            if (!(party->flags & PARTY_FLAG_CTRL_OFF) || (party->flags & PARTY_FLAG_RUN_OFF)) {
                 party_dp = &partyDataTbl[party->currentMemberId];
                 ((void (*)(PartyEntry*))party_dp->move_func)(party);
             }
             break;
         case 9:
-            if (!(party->flags & 0x20000000) || (party->flags & 0x10000000)) {
+            if (!(party->flags & PARTY_FLAG_CTRL_OFF) || (party->flags & PARTY_FLAG_RUN_OFF)) {
                 partyForceWalk(party);
             }
             break;
         case 3:
-            if (!(party->flags & 0x20000000) || (party->flags & 0x10000000)) {
+            if (!(party->flags & PARTY_FLAG_CTRL_OFF) || (party->flags & PARTY_FLAG_RUN_OFF)) {
                 void* fn;
 
                 party_dp = &partyDataTbl[party->currentMemberId];
                 fn = party_dp->use_func;
-                party->flags |= 0x100;
+                party->flags |= PARTY_FLAG_IS_BEING_USED;
                 ((void (*)(PartyEntry*))fn)(party);
             }
             break;
@@ -1185,33 +1185,33 @@ void driveParty(PartyEntry* party) {
             if (party->field_8 & 8) {
                 party->field_8 &= ~8;
                 partyDokanInit(party);
-                party->flags &= ~0x100;
+                party->flags &= ~PARTY_FLAG_IS_BEING_USED;
             }
             partyDokanMain(party);
             break;
         case 11:
-            if (!(party->flags & 0x20000000) || (party->flags & 0x10000000)) {
+            if (!(party->flags & PARTY_FLAG_CTRL_OFF) || (party->flags & PARTY_FLAG_RUN_OFF)) {
                 if (party->field_8 & 8) {
                     party->field_8 &= ~8;
                     party->motionStep = 0;
-                    party->flags &= ~0x100;
+                    party->flags &= ~PARTY_FLAG_IS_BEING_USED;
                     L_partyForceSlitOff(party);
                 }
                 partyRideMain(party);
             }
             break;
         case 12:
-            if (!(party->flags & 0x20000000) || (party->flags & 0x10000000)) {
+            if (!(party->flags & PARTY_FLAG_CTRL_OFF) || (party->flags & PARTY_FLAG_RUN_OFF)) {
                 if (party->field_8 & 8) {
                     party->field_8 &= ~8;
                     party->motionStep = 0;
-                    party->flags &= ~0x100;
+                    party->flags &= ~PARTY_FLAG_IS_BEING_USED;
                 }
                 partyRideYoshiMain(party);
             }
             break;
         case 13:
-            if (!(party->flags & 0x20000000) || (party->flags & 0x10000000)) {
+            if (!(party->flags & PARTY_FLAG_CTRL_OFF) || (party->flags & PARTY_FLAG_RUN_OFF)) {
                 party_damage_return(party);
             }
             break;
@@ -1268,7 +1268,7 @@ void partyHello(PartyEntry* party) {
     if (party->field_8 & 8) {
         party->field_8 &= ~8;
         partyHelloInit(party);
-        party->flags &= ~0x100;
+        party->flags &= ~PARTY_FLAG_IS_BEING_USED;
     }
     partyHelloMain(party);
 }
@@ -1340,13 +1340,13 @@ s32 partyHelloMain(PartyEntry* party) {
                 party->jumpPara1 = q * half;
                 party->jumpPara2 = -q;
             }
-            party->flags |= 0x10;
+            party->flags |= PARTY_FLAG_IS_JUMPING;
             party->motionStep = 1;
             break;
         case 1:
             partyMoveNoHosei(party);
             if (party->jumpPara1 <= 0.0f) {
-                party->flags &= ~0x10;
+                party->flags &= ~PARTY_FLAG_IS_JUMPING;
                 party->jumpPara2 = -1.6f;
             }
             if (party->position.y < -2000.0f) {
@@ -1786,8 +1786,8 @@ s32 partyDokanMain(PartyEntry* party) {
             animPoseSetMaterialLightFlagOn(party->paperAnimGroup, 1);
             party->flags2 &= ~8;
             party->flags2 &= ~0x10;
-            party->flags &= ~0x4000000;
-            party->flags &= ~0x2000000;
+            party->flags &= ~PARTY_FLAG_DISABLE_FLOORS;
+            party->flags &= ~PARTY_FLAG_FORCE_FALL;
             if (party) {
                 party->flags2 &= ~0x100000;
             }
@@ -1804,7 +1804,7 @@ s32 partyDokanMain(PartyEntry* party) {
             if ((s8)party->field_2E == 4) {
                 if (count == 1) {
                     party->position.z += -4.0f;
-                } else if (!(party->flags & 8)) {
+                } else if (!(party->flags & PARTY_FLAG_IS_PARTNER)) {
                     party->position.z += -4.0f;
                     party->position.x += 1.5f;
                 } else {
@@ -1815,7 +1815,7 @@ s32 partyDokanMain(PartyEntry* party) {
             if ((s8)party->field_2E == 1) {
                 if (count == 1) {
                     party->position.z += -4.0f;
-                } else if (!(party->flags & 8)) {
+                } else if (!(party->flags & PARTY_FLAG_IS_PARTNER)) {
                     party->position.z += -4.0f;
                     party->position.x += 1.5f;
                 } else {
@@ -1837,8 +1837,8 @@ void partyDokanEnd(s32 index, s32 unk) {
         party->flags2 &= ~8;
         party->flags2 &= ~0x10;
         party->flags2 &= ~0xC0;
-        party->flags &= ~0x04000000;
-        party->flags &= ~0x02000000;
+        party->flags &= ~PARTY_FLAG_DISABLE_FLOORS;
+        party->flags &= ~PARTY_FLAG_FORCE_FALL;
         if (party) {
             party->flags2 &= ~0x100000;
         }
@@ -1852,12 +1852,12 @@ void allPartyRidePlane(void) {
 
     if (party) {
         bomhei_use_cancel();
-        party->flags |= 0x10000;
+        party->flags |= PARTY_FLAG_IS_RIDING_PLANE;
         partyChgRunMode(party, 0xb);
     }
     party = partyPtrTbl[1];
     if (party) {
-        party->flags |= 0x10000;
+        party->flags |= PARTY_FLAG_IS_RIDING_PLANE;
         partyChgRunMode(party, 0xb);
     }
 }
@@ -1867,12 +1867,12 @@ void allPartyRideShip(void) {
 
     if (party) {
         bomhei_use_cancel();
-        party->flags |= 0x20000;
+        party->flags |= PARTY_FLAG_IS_RIDING_SHIP;
         partyChgRunMode(party, 0xb);
     }
     party = partyPtrTbl[1];
     if (party) {
-        party->flags |= 0x20000;
+        party->flags |= PARTY_FLAG_IS_RIDING_SHIP;
         partyChgRunMode(party, 0xb);
     }
 }
@@ -2111,7 +2111,7 @@ void partyRideMain(PartyEntry* party) {
             party->jumpPara1 = party->jumpPara1 + PF32(party, 0x174);
             if ((party->timer = party->timer - 1) <= 0) {
                 party->motionStep = 22;
-                party->flags |= 0x02000000;
+                party->flags |= PARTY_FLAG_FORCE_FALL;
             }
             break;
         case 200:
@@ -2158,7 +2158,7 @@ void partyRideMain(PartyEntry* party) {
             t = (dy + dy) / ((tmp * tmp) - tmp);
             party->jumpPara1 = t * tmp;
             party->jumpPara2 = -t;
-            party->flags |= 0x10;
+            party->flags |= PARTY_FLAG_IS_JUMPING;
             party->flags2 &= ~1;
             if (party != NULL) {
                 party->flags2 &= ~0x100000;
@@ -2168,7 +2168,7 @@ void partyRideMain(PartyEntry* party) {
         case 110:
             partyMoveNoHosei(party);
             if (party->jumpPara1 <= 0.0f) {
-                party->flags &= ~0x10;
+                party->flags &= ~PARTY_FLAG_IS_JUMPING;
                 party->jumpPara2 = -1.6f;
             }
             if (party->position.y < -2000.0f) {
@@ -2246,7 +2246,7 @@ void party_force_ride_yoshi(PartyEntry* party) {
     Vec pos;
 
     N_partyForceChgRunMode(party, 0xc, 0xa);
-    party->flags &= ~0x100;
+    party->flags &= ~PARTY_FLAG_IS_BEING_USED;
     getRidePos(party, &pos);
     party->position = pos;
     partyChgPoseId(party, 1);
@@ -2390,7 +2390,7 @@ void party_damage_return(PartyEntry* party) {
 
     if (party->field_8 & 8) {
         party->field_8 &= ~8;
-        party->flags &= ~0x100;
+        party->flags &= ~PARTY_FLAG_IS_BEING_USED;
         if (!(party->field_8 & 0x1000000)) {
             party->motionStep = 10;
         } else {
@@ -2477,8 +2477,8 @@ void party_damage_return(PartyEntry* party) {
                 party->jumpPara1 = 0.0f;
                 party->jumpPara2 = -1.0f;
                 party->speed = 0.0f;
-                party->flags |= 0x20;
-                party->flags |= 0x2000000;
+                party->flags |= PARTY_FLAG_IS_FALLING;
+                party->flags |= PARTY_FLAG_FORCE_FALL;
                 party->motionStep = 0x16;
             }
             break;
@@ -2486,7 +2486,7 @@ void party_damage_return(PartyEntry* party) {
         case 22: {
             marioGetScreenPos(party->position, &partyX, &partyY, &partyZ);
             if (partyY > 240.0f) {
-                party->flags &= ~0x2000000;
+                party->flags &= ~PARTY_FLAG_FORCE_FALL;
             }
             partyMove(party);
             if (party->jumpPara1 <= -6.0f) {
@@ -2732,7 +2732,7 @@ s32 partyEntry2(s32 memberId) {
         entry->flags = 9;
         entry->currentSlotId = (s8)slotId; //TODO: re-type?
         entry->currentMemberId = (PartyMember)memberId;
-        entry->flags |= 4;
+        entry->flags |= PARTY_FLAG_IS_FOLLOWER;
         party_dp = &partyDataTbl[memberId];
         if (entry->currentMemberId == PARTY_YOSHI) {
                 animName = yoshigroup[pouchGetPartyColor(PARTNER_YOSHI)];
@@ -2951,12 +2951,12 @@ void partyPreDisp(PartyEntry* party) {
         if (party->currentMemberId != PARTY_MEMBER_VIVIAN) {
             party->field_B8 = party->position;
         } else {
-            if (party->field_34 == 4 || (party->field_34 == 8 && !(party->flags & 0x100))) {
+            if (party->field_34 == 4 || (party->field_34 == 8 && !(party->flags & PARTY_FLAG_IS_BEING_USED))) {
                 party->field_B8 = party->position;
             }
-            if (party->flags & 0x100) {
+            if (party->flags & PARTY_FLAG_IS_BEING_USED) {
                 size = PF32(party, 0x174);
-                if (party->flags & 0x80000000) {
+                if (party->flags & PARTY_FLAG_IS_EVT_USE) {
                     shadowMode = 1;
                 }
             }
@@ -3003,7 +3003,7 @@ void partyDisp(CameraId cameraId, void* param) {
             PF32(party, 0x8C) = 6.8f;
         }
 
-        scale = (party->flags & 0x800000) ? 1.2f : 2.0f;
+        scale = (party->flags & PARTY_FLAG_BG_MODE) ? 1.2f : 2.0f;
         PSMTXScale(scaleMtx, party->field_70.x * scale, party->field_70.y * scale, party->field_70.z * scale);
 
         if (!(party->flags2 & 8)) {
@@ -3071,7 +3071,7 @@ void partyDisp(CameraId cameraId, void* param) {
         animPoseDrawMtx(party->paperAnimGroup, scaleMtx, 2, 0.0f, 1.0f);
         animPoseDrawMtx(party->paperAnimGroup, scaleMtx, 1, 0.0f, 1.0f);
         animPoseSetLocalTimeRate(party->paperAnimGroup,
-                                 (party->flags & 0x80) ? 0.75f : 1.0f);
+                                 (party->flags & PARTY_FLAG_IN_SHALLOW_WATER) ? 0.75f : 1.0f);
     }
 }
 

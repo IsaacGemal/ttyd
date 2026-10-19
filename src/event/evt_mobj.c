@@ -2693,7 +2693,7 @@ s32 mobj_recovery_blk(MapObjectEntry* obj) {
                 pouch->currentHP = pouch->maximumHP;
                 pouch->currentFP = pouch->maximumFP;
                 for (i = 0; i < 8; i++) {
-                    if ((party->flags & 1) && !(party->flags & 2)) {
+                    if ((party->flags & PARTY_FLAG_IS_ACTIVE) && !(party->flags & PARTY_FLAG_IS_GROUNDED)) {
                         party->currentHP = party->maximumHP;
                     }
                     party++;
@@ -2724,7 +2724,7 @@ s32 mobj_recovery_blk(MapObjectEntry* obj) {
                 pouch->currentHP = pouch->maximumHP;
                 pouch->currentFP = pouch->maximumFP;
                 for (i = 0; i < 8; i++) {
-                    if ((party->flags & 1) && !(party->flags & 2)) {
+                    if ((party->flags & PARTY_FLAG_IS_ACTIVE) && !(party->flags & PARTY_FLAG_IS_GROUNDED)) {
                         party->currentHP = party->maximumHP;
                     }
                     party++;
