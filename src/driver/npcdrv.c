@@ -1121,8 +1121,8 @@ void npcMain(void) {
         if (entry->jumpFlags & 0x10000) {
             entry->jumpFlags &= ~0x10;
         }
-        if (*(u16*)&entry->wFbatHitCheckRelated) {
-            (*(u16*)&entry->wFbatHitCheckRelated)--;
+        if (entry->wFbatHitCheckRelated) {
+            entry->wFbatHitCheckRelated--;
         }
 
         if (entry->jumpFlags & 0x10) {
@@ -1390,7 +1390,7 @@ void npcMain(void) {
                     z *= (-1.0f);
 
                     if (!(entry->flags & 0x80) &&
-                        (!(*(u16*)&entry->wFbatHitCheckRelated & 2) || (entry->jumpFlags & 0x10000))) {
+                        (!(entry->wFbatHitCheckRelated & 2) || (entry->jumpFlags & 0x10000))) {
                         if (entry->color.a != 0xFF) {
                             dispEntry(entry->cameraId, z, 2, npcDisp_xlu, entry);
                         } else {
@@ -2861,7 +2861,7 @@ static inline BOOL fbatAttackEnabled(NpcEntry* npc) {
     if (mario->currMotionId == 0x1F || mario->currMotionId == 0x20) {
         return FALSE;
     }
-    if (*(u16*)&npc->wFbatHitCheckRelated != 0) {
+    if (npc->wFbatHitCheckRelated != 0) {
         return FALSE;
     }
     return TRUE;
