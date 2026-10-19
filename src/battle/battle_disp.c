@@ -728,7 +728,7 @@ void btlUnitPartsDisp(CameraId camId, void* param) {
 
 
 	f27 = 270.0f;
-	if (parts->attributes & 0x10000000) {
+	if (parts->attributes & kAbsolutePosition) {
 		if (parts->faceDirection >= 0) {
 			f27 = 90.0f;
 		}

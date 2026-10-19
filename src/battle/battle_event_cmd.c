@@ -472,7 +472,7 @@ USER_FUNC(btlevtcmd_SetPartsPos) {
     z = (f32)evtGetValue(event, args[4]);
     unit = BattleGetUnitPtr(_battleWorkPointer, id);
     part = BattleGetUnitPartsPtr(id, partId);
-    if (part->attributes & 0x10000000) {
+    if (part->attributes & kAbsolutePosition) {
         BtlUnit_SetPartsPos(part, x, y, z);
     }
     else {
@@ -499,7 +499,7 @@ USER_FUNC(btlevtcmd_AddPartsPos) {
     y = (f32)evtGetValue(event, args[3]);
     z = (f32)evtGetValue(event, args[4]);
     part = BattleGetUnitPartsPtr(id, partId);
-    if (part->attributes & 0x10000000) {
+    if (part->attributes & kAbsolutePosition) {
         BtlUnit_AddPartsPos(part, x, y, z);
     }
     else {
@@ -2301,7 +2301,7 @@ USER_FUNC(btlevtcmd_CalculateFaceDirection) {
     if (flags & 0x10) {
         BtlUnit_GetPos(thisUnit, &thisX, &thisY, &thisZ);
         if (thisPart) {
-            if (thisPart->attributes & 0x10000000) {
+            if (thisPart->attributes & kAbsolutePosition) {
                 BtlUnit_GetPartsPos(thisPart, &thisX, &thisY, &thisZ);
             }
             else {
@@ -2312,7 +2312,7 @@ USER_FUNC(btlevtcmd_CalculateFaceDirection) {
 
         BtlUnit_GetPos(targetUnit, &targetX, &targetY, &targetZ);
         if (targetPart) {
-            if (targetPart->attributes & 0x10000000) {
+            if (targetPart->attributes & kAbsolutePosition) {
                 BtlUnit_GetPartsPos(targetPart, &targetX, &targetY, &targetZ);
             }
             else {
@@ -2333,7 +2333,7 @@ USER_FUNC(btlevtcmd_CalculateFaceDirection) {
     if (flags & 1) {
         BtlUnit_GetPos(thisUnit, &localX, &localY, &localZ);
         if (thisPart) {
-            if (thisPart->attributes & 0x10000000) {
+            if (thisPart->attributes & kAbsolutePosition) {
                 BtlUnit_GetPartsPos(thisPart, &localX, &localY, &localZ);
             }
             else {

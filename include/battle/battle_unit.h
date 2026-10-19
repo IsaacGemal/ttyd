@@ -35,6 +35,7 @@ typedef enum PartsAttribute_Flags {          // 32-bit size
     kUnknown_0x4000 = (1 << 14),             // 0x4000
     kNotTargetable = (1 << 16),              // 0x10000
     kUnknown_0x40000 = (1 << 18),            // 0x40000
+    kAbsolutePosition = (1 << 28),           // 0x10000000, part position is absolute (mPosition), not owner-relative
     kUntattleable = (1 << 19),               // 0x80000
     kJumplikeCannotTarget = (1 << 20),       // 0x100000
     kHammerlikeCannotTarget = (1 << 21),     // 0x200000

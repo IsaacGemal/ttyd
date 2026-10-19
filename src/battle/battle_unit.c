@@ -562,7 +562,7 @@ void BtlUnit_GetPartsWorldPos(BattleUnitPart* part, f32* x, f32* y, f32* z) {
     BattleUnit* owner = part->mOwner;
     f32 ownerX, offsetX, ownerY, offsetY, ownerZ, offsetZ;
 
-    if (part->attributes & 0x10000000) {
+    if (part->attributes & kAbsolutePosition) {
         *x = part->mPosition.x;
         *y = part->mPosition.y;
         *z = part->mPosition.z;
