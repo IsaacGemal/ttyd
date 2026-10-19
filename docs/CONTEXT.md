@@ -8472,3 +8472,16 @@ move-frame countdown, 61 uses; BattleWorkUnitPart 0xA0 is its pair), 0x17C/0x180
 `actionCommands` size looks wrong (accesses at 0x1CC8-0x1D14 and 0x2744/0x2748 land inside it); BattleStage
 0xB24-0xB38 looks like two Vecs. Two sites near battle_event_cmd.c:4514 compute `-(a - a)` from 0x1B8: a match trick
 that belongs under MUST_MATCH.
+
+### Readability: battle_seq_end work struct (2026-10-19, Claude Haiku 5.5, night8-rd-bse; reviewed by Claude Opus 5.5)
+
+`BattleSeqEndWork` was a 0x2AC-byte blob read through raw offsets; it's now a real struct (same size): `timer`,
+`stockExp`, `expRemaining`, `lvupPending`, `lvupSelect`, `confirmSel`, `dispFlags` (the new `BattleSeqEndDisp`
+bits), the 19 exp-star icon arrays, `waitEvtId`, `objs[3]` (the HP/FP/BP choices, `LvupSelectObj`, moved from the
+.c), `effect`, `whistleTimer`, `confettiEvtId`, `rankUpEvtId`. Unit-kind literals use `UNIT_*`/`TYPE_PARTNER_*`,
+the guard check uses `kShellShielded`. Raw casts in battle_seq_end.c 217 → 8; file index 445 → 239 per kLOC.
+
+Found on the way: `_audience_Whistle_control` switches on `unk0` with case labels 0x07000007-0x0700001B (sequence
+states), but `unk0` is only ever zeroed, so the switch never takes a case: apparently dead in retail. Shared-struct
+leftovers: BattleWork byte at 0x180DC (`|= 0x20` in `_disable_enemy_unit_disp`), unnamed BattleWork.flags bits
+0x40/0x100/0x400000, `EventEntry` 0x88/0x8C used as scratch s32s, and the `0x07000000` step values (no enum yet).
