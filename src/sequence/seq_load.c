@@ -42,6 +42,15 @@ void FontDrawColor(GXColor* color);
 // First object of this unit's .data (the float pair that used to end the previous unit's .data).
 __declspec(section ".data") f32 lbl_80349DE8[2] = { -1.0f, 1.0f };
 
+// File-select state. Bits of `flags`: 0x01 option menu open (optionsFade ramps toward 1 while set);
+// 0x10 all four slots empty (delete row disabled); 0x20 no slot holds a usable save (copy row disabled);
+// 0x40 a memcard event is running (menuEvt); 0x80 delete/copy failed, so state 1 reruns the card check.
+// `step` is the menu state; `cursor` is an index into win_dt: 0-3 save slots, 4 delete, 5 copy, 6 title,
+// 7 sound option, 8 rumble option. The sound and rumble menus keep a cursor and the committed setting:
+// soundCursor 0 mono, 1 stereo, 2 surround; rumbleCursor 0 on, 1 off.
+// prevCardCode is last frame's cardGetCode(); button input is ignored when it changes (card inserted or removed).
+// copySrc/copyDst are the copy event's source and destination (lwData[0], [1]). cursorX/Y ease toward
+// cursorTargetX/Y. printWindowId is the window id copied into the card-check event (unk_800f2398 sets it).
 typedef struct LoadWork {
     u16 flags; //0x0
     u8 field_0x2[0x4 - 0x2];
@@ -65,6 +74,9 @@ typedef struct LoadWork {
     s32 printWindowId; //0x48
 } LoadWork;
 
+// One entry per box. texId is the picture (10-13 the save boxes, 16-20 the buttons); texId2 the second
+// picture on the button rows (30/31). navUp/Down/Left/Right are the next box for the 0x1000/0x2000/0x4000/
+// 0x8000 direction bits (slot 2 is below slot 0, so 0x2000 is down). The cursor sits at (x + cursorOffX, y + cursorOffY).
 typedef struct WinDt {
     f32 x; //0x0
     f32 y; //0x4
@@ -304,11 +316,11 @@ void seq_loadMain(SequenceWork* workArg) {
                 wp->prevCardCode = cardGetCode();
                 wp->flags &= ~0x40;
                 if (OSGetSoundMode() == 0) {
-                    SoundSetOutputMode(0);
+                    SoundSetOutputMode(SND_OUTPUTMODE_MONO);
                     gp->soundSurround = 0;
                     wp->soundSaved = 0;
                 } else {
-                    SoundSetOutputMode(1);
+                    SoundSetOutputMode(SND_OUTPUTMODE_STEREO);
                     if (gp->soundSurround == 0) {
                         wp->soundSaved = 1;
                     } else {
@@ -812,9 +824,9 @@ void loadMain(SequenceWork* workArg) {
                         break;
                 }
                 if (OSGetSoundMode() == 0) {
-                    SoundSetOutputMode(0);
+                    SoundSetOutputMode(SND_OUTPUTMODE_MONO);
                 } else {
-                    SoundSetOutputMode(1);
+                    SoundSetOutputMode(SND_OUTPUTMODE_STEREO);
                 }
                 psndSFXOn((const char*)0x12);
                 psndBGMOn(0xa0, NULL);
@@ -829,9 +841,9 @@ void loadMain(SequenceWork* workArg) {
                 psndENVOff(0x200);
                 wp->soundCursor = wp->soundSaved;
                 if (OSGetSoundMode() == 0) {
-                    SoundSetOutputMode(0);
+                    SoundSetOutputMode(SND_OUTPUTMODE_MONO);
                 } else {
-                    SoundSetOutputMode(1);
+                    SoundSetOutputMode(SND_OUTPUTMODE_STEREO);
                 }
                 wp->flags &= ~1;
                 wp->step = 1;
@@ -847,13 +859,13 @@ void loadMain(SequenceWork* workArg) {
             if (mode != off) {
                 switch (mode) {
                     case 0:
-                        SoundSetOutputMode(0);
+                        SoundSetOutputMode(SND_OUTPUTMODE_MONO);
                         break;
                     case 1:
-                        SoundSetOutputMode(1);
+                        SoundSetOutputMode(SND_OUTPUTMODE_STEREO);
                         break;
                     case 2:
-                        SoundSetOutputMode(2);
+                        SoundSetOutputMode(SND_OUTPUTMODE_SURROUND);
                         break;
                 }
                 psndENVOn(0x110, 0x75);
