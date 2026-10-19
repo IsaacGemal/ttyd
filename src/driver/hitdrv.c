@@ -59,7 +59,7 @@
     0000dd7c 005e1c 8001335c  1 .text 	hitdrv.o
 */
 
-HitEntry* lbl_80418408; // TODO: proper name
+HitEntry* hitActiveHead; // first entry of the active list, built by hitUpdateActiveList and walked by hitCheckVecFilter
 
 // local prototypes
 
@@ -217,7 +217,7 @@ static inline void hitUpdateActiveList(void) {
     HitEntry* hit;
     HitEntry* prev;
 
-    prev = lbl_80418408 = NULL;
+    prev = hitActiveHead = NULL;
     i = 0;
     map = wp->entries;
     for (; i < wp->entries->count; map++, i++) {
@@ -227,7 +227,7 @@ static inline void hitUpdateActiveList(void) {
                 // `prev = hit` is written in both arms: retail tail-duplicates the update into each
                 // branch, and a single update after the if/else costs the extra `mr r5, r6`.
                 if (prev == NULL) {
-                    lbl_80418408 = hit;
+                    hitActiveHead = hit;
                     prev = hit;
                 } else {
                     prev->nextActive = hit;
@@ -243,7 +243,7 @@ static inline void hitUpdateActiveList(void) {
 
 // Same active-list rebuild as hitUpdateActiveList. Both pool the two zero initialisations
 // separately (`li r5, 0` for prev instead of coalescing prev onto i's zero `mr r5, r8`);
-// chaining `prev = lbl_80418408 = NULL;` and letting i follow keeps them apart and schedules
+// chaining `prev = hitActiveHead = NULL;` and letting i follow keeps them apart and schedules
 // both `li`s before the store, as retail does in both hitMain and hitDelete.
 #ifdef MUST_MATCH
 static inline void hitDeleteUpdateActiveList(void) {
@@ -254,7 +254,7 @@ static inline void hitDeleteUpdateActiveList(void) {
     HitEntry* hit;
     HitEntry* prev;
 
-    prev = lbl_80418408 = NULL;
+    prev = hitActiveHead = NULL;
     i = 0;
     map = wp->entries;
     for (; i < wp->entries->count; map++, i++) {
@@ -262,7 +262,7 @@ static inline void hitDeleteUpdateActiveList(void) {
         for (j = 0; j < map->hitNumJoints; j++, hit++) {
             if (hit->joint->partCount != 0 && !(hit->flags & 0x81)) {
                 if (prev == NULL) {
-                    lbl_80418408 = hit;
+                    hitActiveHead = hit;
                     prev = hit;
                 } else {
                     prev->nextActive = hit;
@@ -922,7 +922,7 @@ HitEntry* hitCheckVecFilter(HitCheckQuery* query, HitFilterCallback callback) { 
     temp_f28 = query->targetDistance * temp;
     PSVECScale(&query->targetDir, &spA4, temp_f28);
     PSVECAdd(&query->targetPos, &spA4, &spA4);
-    var_r29 = lbl_80418408;
+    var_r29 = hitActiveHead;
     if (query->targetDir.y == 0.0f) {
         while (var_r29 != NULL) {
             if (callback == NULL || callback(query, var_r29)) {
