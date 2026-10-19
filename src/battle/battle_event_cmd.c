@@ -4684,41 +4684,41 @@ USER_FUNC(btlevtcmd_JumpPartsPosition) {
     if (isFirstCall) {
         event->blocked = 1;
         if (frame != 0) {
-            *(s32*)((u8*)part + 0xA0) = frame;
+            part->moveFrames = frame;
         }
         BtlUnit_SetPartsMoveTargetPos(part, tx, ty, tz);
         BtlUnit_GetPartsPos(part, &x, &y, &z);
         BtlUnit_SetPartsMoveCurrentPos(part, x, y, z);
-        *(f32*)((u8*)part + 0xB0) = angleABf(x, z, tx, tz);
-        *(f32*)((u8*)part + 0xB4) = distABf(x, z, tx, tz);
+        part->moveAngle = angleABf(x, z, tx, tz);
+        part->moveDist = distABf(x, z, tx, tz);
         if (tx - x > 0.0f) {
             part->moveDirection = 1;
         } else if (tx - x < 0.0f) {
             part->moveDirection = -1;
         }
         y = ty - y;
-        if (*(s32*)((u8*)part + 0xA0) == 0) {
-            *(s32*)((u8*)part + 0xA0) =
-                (s32)(*(f32*)((u8*)part + 0xB4) / part->mMoveSpeedXZ);
-            *(f32*)((u8*)part + 0xB4) -=
-                (f32)*(s32*)((u8*)part + 0xA0) * part->mMoveSpeedXZ;
+        if (part->moveFrames == 0) {
+            part->moveFrames =
+                (s32)(part->moveDist / part->mMoveSpeedXZ);
+            part->moveDist -=
+                (f32)part->moveFrames * part->mMoveSpeedXZ;
         } else {
             part->mMoveSpeedXZ =
-                *(f32*)((u8*)part + 0xB4) / (f32)*(s32*)((u8*)part + 0xA0);
-            *(f32*)((u8*)part + 0xB4) -=
-                (f32)*(s32*)((u8*)part + 0xA0) * part->mMoveSpeedXZ;
+                part->moveDist / (f32)part->moveFrames;
+            part->moveDist -=
+                (f32)part->moveFrames * part->mMoveSpeedXZ;
         }
-        if (*(s32*)((u8*)part + 0xA0) == 0) {
+        if (part->moveFrames == 0) {
             return 2;
         }
         {
-            f32 t = part->mFallAccel * (f32)*(s32*)&part->field_0xA0[0];
-            *(f32*)&part->field_0xAC[0] = y / (f32)*(s32*)&part->field_0xA0[0] +
+            f32 t = part->mFallAccel * (f32)part->moveFrames;
+            part->mMoveSpeedY = y / (f32)part->moveFrames +
                                           t / 2.0f;
         }
         part->mMoveSpeedXZ =
             part->mMoveSpeedXZ +
-            *(f32*)((u8*)part + 0xB4) / (f32)*(s32*)((u8*)part + 0xA0);
+            part->moveDist / (f32)part->moveFrames;
         BtlUnit_LoadSeMode(2, a, (u8*)part + 0xF8, (u8*)part + 0xC0);
         if (*(s32*)((u8*)part + 0xC0) != 0) {
             pos = vec3_802edeac;
@@ -4729,9 +4729,9 @@ USER_FUNC(btlevtcmd_JumpPartsPosition) {
             psndSFXOn_3D((const char*)*(s32*)((u8*)part + 0xC0), &posb);
         }
     }
-    part->mMoveCurrentPos.y += *(f32*)((u8*)part + 0xAC);
-    *(f32*)((u8*)part + 0xAC) -= part->mFallAccel;
-    if (*(f32*)&part->field_0xAC[0] < 0.0f) {
+    part->mMoveCurrentPos.y += part->mMoveSpeedY;
+    part->mMoveSpeedY -= part->mFallAccel;
+    if (part->mMoveSpeedY < 0.0f) {
 #ifdef MUST_MATCH
         // The volatile pins the current.y load before the target.y load; a plain read lets the
         // scheduler emit target.y first, which is the only remaining difference.
@@ -4745,11 +4745,11 @@ USER_FUNC(btlevtcmd_JumpPartsPosition) {
         }
     }
     btlMovePos(&part->mMoveCurrentPos.x, &part->mMoveCurrentPos.z, part->mMoveSpeedXZ,
-               *(f32*)((u8*)part + 0xB0));
+               part->moveAngle);
     BtlUnit_SetPartsPos(part, part->mMoveCurrentPos.x, part->mMoveCurrentPos.y,
                         part->mMoveCurrentPos.z);
-    (*((s32*)((u8*)part + 0xA0)))--;
-    if (*(s32*)((u8*)part + 0xA0) <= 0) {
+    part->moveFrames--;
+    if (part->moveFrames <= 0) {
         BtlUnit_SetPartsPos(part, part->mMoveTargetPos.x, part->mMoveTargetPos.y,
                             part->mMoveTargetPos.z);
         if (*(s32*)((u8*)part + 0xC4) != 0) {
@@ -4782,7 +4782,7 @@ USER_FUNC(btlevtcmd_JumpPartsSetting) {
     c = evtGetFloat(event, args[4]);
     unit = BattleGetUnitPtr(_battleWorkPointer, id);
     part = BtlUnit_GetPartsPtr(unit, partId);
-    *(s32*)((u8*)part + 0xA0) = a;
+    part->moveFrames = a;
     part->mMoveSpeedXZ = b;
     part->mFallAccel = c;
     return EVT_RETURN_DONE;
@@ -4804,9 +4804,9 @@ USER_FUNC(btlevtcmd_JumpPartsContinue) {
         BtlUnit_GetPartsPos(part, &x, &y, &z);
         BtlUnit_SetPartsMoveCurrentPos(part, x, y, z);
     }
-    part->mMoveCurrentPos.y += *(f32*)((u8*)part + 0xAC);
-    *(f32*)((u8*)part + 0xAC) -= part->mFallAccel;
-    btlMovePos(&part->mMoveCurrentPos.x, &part->mMoveCurrentPos.z, part->mMoveSpeedXZ, *(f32*)((u8*)part + 0xB0));
+    part->mMoveCurrentPos.y += part->mMoveSpeedY;
+    part->mMoveSpeedY -= part->mFallAccel;
+    btlMovePos(&part->mMoveCurrentPos.x, &part->mMoveCurrentPos.z, part->mMoveSpeedXZ, part->moveAngle);
     BtlUnit_SetPartsPos(part, part->mMoveCurrentPos.x, part->mMoveCurrentPos.y, part->mMoveCurrentPos.z);
     floor = BattleGetFloorHeight(_battleWorkPointer, part->mMoveCurrentPos.x, part->mMoveCurrentPos.y, part->mMoveCurrentPos.z);
     if (part->mMoveCurrentPos.y < floor) {
@@ -4841,44 +4841,44 @@ USER_FUNC(btlevtcmd_FallPartsPosition) {
     part = BtlUnit_GetPartsPtr(unit, partId);
     if (isFirstCall) {
         event->blocked = 1;
-        *(s32*)((u8*)part + 0xA0) = frame;
+        part->moveFrames = frame;
         BtlUnit_GetPartsPos(part, &x, &y, &z);
         BtlUnit_SetPartsMoveCurrentPos(part, x, y, z);
         BtlUnit_SetPartsMoveTargetPos(part, tx, ty, tz);
-        *(f32*)((u8*)part + 0xB0) = angleABf(x, z, tx, tz);
-        *(f32*)((u8*)part + 0xB4) = distABf(x, z, tx, tz);
+        part->moveAngle = angleABf(x, z, tx, tz);
+        part->moveDist = distABf(x, z, tx, tz);
         if (tx - x > 0.0f) {
             part->moveDirection = 1;
         } else if (tx - x < 0.0f) {
             part->moveDirection = -1;
         }
         y = ty - y;
-        if (*(s32*)((u8*)part + 0xA0) == 0) {
+        if (part->moveFrames == 0) {
             if (0.0f == part->mMoveSpeedXZ) {
                 part->mMoveSpeedXZ = 1.0f;
             }
-            *(s32*)((u8*)part + 0xA0) =
-                (s32)(*(f32*)((u8*)part + 0xB4) / part->mMoveSpeedXZ);
-            if (*(s32*)((u8*)part + 0xA0) == 0) {
-                *(s32*)((u8*)part + 0xA0) = 1;
+            part->moveFrames =
+                (s32)(part->moveDist / part->mMoveSpeedXZ);
+            if (part->moveFrames == 0) {
+                part->moveFrames = 1;
             }
         } else {
             part->mMoveSpeedXZ =
-                *(f32*)((u8*)part + 0xB4) / (f32)*(s32*)((u8*)part + 0xA0);
+                part->moveDist / (f32)part->moveFrames;
         }
-        *(f32*)((u8*)part + 0xAC) = 0.0f;
-        part->mFallAccel = (y / (f32)*(s32*)((u8*)part + 0xA0) -
-                            *(f32*)((u8*)part + 0xAC)) /
-                           ((f32)(-*(s32*)((u8*)part + 0xA0)) / 2.0f);
+        part->mMoveSpeedY = 0.0f;
+        part->mFallAccel = (y / (f32)part->moveFrames -
+                            part->mMoveSpeedY) /
+                           ((f32)(-part->moveFrames) / 2.0f);
     }
-    part->mMoveCurrentPos.y += *(f32*)((u8*)part + 0xAC);
-    *(f32*)((u8*)part + 0xAC) -= part->mFallAccel;
+    part->mMoveCurrentPos.y += part->mMoveSpeedY;
+    part->mMoveSpeedY -= part->mFallAccel;
     btlMovePos(&part->mMoveCurrentPos.x, &part->mMoveCurrentPos.z, part->mMoveSpeedXZ,
-               *(f32*)((u8*)part + 0xB0));
+               part->moveAngle);
     BtlUnit_SetPartsPos(part, part->mMoveCurrentPos.x, part->mMoveCurrentPos.y,
                         part->mMoveCurrentPos.z);
-    (*((s32*)((u8*)part + 0xA0)))--;
-    if (*(s32*)((u8*)part + 0xA0) <= 0) {
+    part->moveFrames--;
+    if (part->moveFrames <= 0) {
         BtlUnit_SetPartsPos(part, part->mMoveTargetPos.x, part->mMoveTargetPos.y,
                             part->mMoveTargetPos.z);
         return 1;
@@ -4932,7 +4932,7 @@ USER_FUNC(btlevtcmd_DivePartsPosition) {
     }
     if (isFirstCall) {
         event->blocked = 1;
-        *(s32*)((u8*)part + 0xA0) = frame;
+        part->moveFrames = frame;
         BtlUnit_GetPartsPos(part, &x, &y, &z);
         BtlUnit_SetPartsMoveStartPos(part, x, y, z);
         BtlUnit_SetPartsMoveCurrentPos(part, x, y, z);
@@ -4941,17 +4941,17 @@ USER_FUNC(btlevtcmd_DivePartsPosition) {
         dy = y - ty;
         dz = z - tz;
         dist = sqrtf((dx * dx) + (dy * dy) + (dz * dz));
-        *(f32*)((u8*)part + 0xB4) = dist;
-        if (*(s32*)((u8*)part + 0xA0) == 0) {
-            *(s32*)((u8*)part + 0xA0) = (s32)(*(f32*)((u8*)part + 0xB4) / part->mMoveSpeedXZ);
+        part->moveDist = dist;
+        if (part->moveFrames == 0) {
+            part->moveFrames = (s32)(part->moveDist / part->mMoveSpeedXZ);
         } else {
-            part->mMoveSpeedXZ = *(f32*)((u8*)part + 0xB4) / (f32)*(s32*)((u8*)part + 0xA0);
+            part->mMoveSpeedXZ = part->moveDist / (f32)part->moveFrames;
         }
-        if (*(s32*)((u8*)part + 0xA0) == 0) {
+        if (part->moveFrames == 0) {
             return 2;
         }
-        *(f32*)((u8*)part + 0xB8) = 0.0f;
-        *(f32*)((u8*)part + 0xB0) = 0.0f;
+        part->moveProgress = 0.0f;
+        part->moveAngle = 0.0f;
         if (tx - x > 0.0f) {
             part->moveDirection = 1;
         } else if (tx - x < 0.0f) {
@@ -4964,32 +4964,32 @@ USER_FUNC(btlevtcmd_DivePartsPosition) {
     // so mwcc evaluates start before the currStep fctiwz and end before steps, as the target does. The header
     // keeps the natural (mode, currStep, steps, start, end).
     part->mMoveCurrentPos.x = ((f32 (*)(s32, f32, s32, f32, s32))intpl_sub)(
-        interp, part->mMoveStartPos.x, (s32)*(f32*)(part->field_0xAC + 0x0C), part->mMoveTargetPos.x,
-        *(s32*)part->field_0xA0);
+        interp, part->mMoveStartPos.x, (s32)part->moveProgress, part->mMoveTargetPos.x,
+        part->moveFrames);
     part->mMoveCurrentPos.y = ((f32 (*)(s32, f32, s32, f32, s32))intpl_sub)(
-        interp, part->mMoveStartPos.y, (s32)*(f32*)(part->field_0xAC + 0x0C), part->mMoveTargetPos.y,
-        *(s32*)part->field_0xA0);
+        interp, part->mMoveStartPos.y, (s32)part->moveProgress, part->mMoveTargetPos.y,
+        part->moveFrames);
     part->mMoveCurrentPos.z = ((f32 (*)(s32, f32, s32, f32, s32))intpl_sub)(
-        interp, part->mMoveStartPos.z, (s32)*(f32*)(part->field_0xAC + 0x0C), part->mMoveTargetPos.z,
-        *(s32*)part->field_0xA0);
+        interp, part->mMoveStartPos.z, (s32)part->moveProgress, part->mMoveTargetPos.z,
+        part->moveFrames);
 #else
-    part->mMoveCurrentPos.x = intpl_sub(interp, (s32)*(f32*)((u8*)part + 0xB8), *(s32*)((u8*)part + 0xA0),
+    part->mMoveCurrentPos.x = intpl_sub(interp, (s32)part->moveProgress, part->moveFrames,
                                         part->mMoveStartPos.x, part->mMoveTargetPos.x);
-    part->mMoveCurrentPos.y = intpl_sub(interp, (s32)*(f32*)((u8*)part + 0xB8), *(s32*)((u8*)part + 0xA0),
+    part->mMoveCurrentPos.y = intpl_sub(interp, (s32)part->moveProgress, part->moveFrames,
                                         part->mMoveStartPos.y, part->mMoveTargetPos.y);
-    part->mMoveCurrentPos.z = intpl_sub(interp, (s32)*(f32*)((u8*)part + 0xB8), *(s32*)((u8*)part + 0xA0),
+    part->mMoveCurrentPos.z = intpl_sub(interp, (s32)part->moveProgress, part->moveFrames,
                                         part->mMoveStartPos.z, part->mMoveTargetPos.z);
 #endif
     if (aboveFloor) {
         floor = BattleGetFloorHeight(_battleWorkPointer, part->mMoveCurrentPos.x, part->mMoveCurrentPos.y,
                                      part->mMoveCurrentPos.z);
         if (part->mMoveCurrentPos.y < floor) {
-            *(f32*)((u8*)part + 0xB8) = (f32)*(s32*)((u8*)part + 0xA0);
+            part->moveProgress = (f32)part->moveFrames;
             BtlUnit_SetPartsMoveTargetPos(part, part->mMoveCurrentPos.x, floor, part->mMoveCurrentPos.z);
         }
     }
-    *(f32*)((u8*)part + 0xB8) += 1.0f;
-    if (*(f32*)((u8*)part + 0xB8) > (f32)*(s32*)((u8*)part + 0xA0)) {
+    part->moveProgress += 1.0f;
+    if (part->moveProgress > (f32)part->moveFrames) {
         BtlUnit_SetPartsPos(part, part->mMoveTargetPos.x, part->mMoveTargetPos.y, part->mMoveTargetPos.z);
         _PartsMoveSoundControlEnd(part);
         return 2;
@@ -5002,10 +5002,10 @@ USER_FUNC(btlevtcmd_DivePartsPosition) {
         if (0.0f == dist2) {
             dist2 = 1.0f;
         }
-        if (0.0f == *(f32*)((u8*)part + 0xB4)) {
-            *(f32*)((u8*)part + 0xB4) = 1.0f;
+        if (0.0f == part->moveDist) {
+            part->moveDist = 1.0f;
         }
-        h = sinfd(180.f * (1.0f - dist2 / *(f32*)((u8*)part + 0xB4)));
+        h = sinfd(180.f * (1.0f - dist2 / part->moveDist));
         if (height == 0) {
             h = 0.0f;
         }
@@ -5036,10 +5036,10 @@ USER_FUNC(btlevtcmd_DivePartsPosition) {
         if (0.0f == dist2) {
             dist2 = 1.0f;
         }
-        if (0.0f == *(f32*)(part->field_0xAC + 0x08)) {
-            *(f32*)((u8*)part + 0xB4) = 1.0f;
+        if (0.0f == part->moveDist) {
+            part->moveDist = 1.0f;
         }
-        h = sinfd(180.f * (1.0f - dist2 / *(f32*)((u8*)part + 0xB4)));
+        h = sinfd(180.f * (1.0f - dist2 / part->moveDist));
         if (left) {
             ang = 360.f * atan2f_safety(part->mMoveTargetPos.x - part->mMoveStartPos.x,
                                                      part->mMoveTargetPos.y - part->mMoveStartPos.y) /

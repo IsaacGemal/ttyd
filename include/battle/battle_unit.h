@@ -374,10 +374,13 @@ typedef struct BattleWorkUnitPart {
     Vec mMoveStartPos;                             // 0x7C
     Vec mMoveCurrentPos;                           // 0x88
     Vec mMoveTargetPos;                            // 0x94
-    u8 field_0xA0[0xA4 - 0xA0];                    // 0xA0
+    s32 moveFrames;                                // 0xA0, frames left in the current move (BattleUnit.moveFrames)
     f32 mMoveSpeedXZ;                              // 0xA4
     f32 mFallAccel;                                // 0xA8
-    u8 field_0xAC[0xBC - 0xAC];                    // 0xAC
+    f32 mMoveSpeedY;                               // 0xAC
+    f32 moveAngle;                                 // 0xB0
+    f32 moveDist;                                  // 0xB4
+    f32 moveProgress;                              // 0xB8
     s8 moveDirection;                              // 0xBC
     s8 faceDirection;                              // 0xBD
     u8 field_0xBE[0x130 - 0xBE];                   // 0xBE
