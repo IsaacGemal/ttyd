@@ -5671,7 +5671,7 @@ USER_FUNC(btlevtcmd_SetTalkBodyId) {
     id = evtGetValue(event, args[0]);
     value = evtGetValue(event, args[1]);
     unit = BattleGetUnitPtr(wp, BattleTransID(event, id));
-    *(s32*)BTLW_OFF(unit, 0x2D0) = value;
+    unit->mBodyPartsId = value;
     return EVT_RETURN_DONE;
 }
 
@@ -5710,7 +5710,7 @@ USER_FUNC(btlevtcmd_SetTalkPoseType) {
     unit = BattleGetUnitPtr(_battleWorkPointer, id);
     bodyPartsId = BtlUnit_GetBodyPartsId(unit);
     part = BattleGetUnitPartsPtr(id, bodyPartsId);
-    *(char**)((u8*)unit + 0x2D4) = BtlUnit_GetPoseNameFromType(part, poseType);
+    unit->mTalkPoseName = BtlUnit_GetPoseNameFromType(part, poseType);
     return EVT_RETURN_DONE;
 }
 
@@ -5727,7 +5727,7 @@ USER_FUNC(btlevtcmd_SetStayPoseType) {
     unit = BattleGetUnitPtr(_battleWorkPointer, id);
     bodyPartsId = BtlUnit_GetBodyPartsId(unit);
     part = BattleGetUnitPartsPtr(id, bodyPartsId);
-    *(char**)((u8*)unit + 0x2D8) = BtlUnit_GetPoseNameFromType(part, poseType);
+    unit->mStayPoseName = BtlUnit_GetPoseNameFromType(part, poseType);
     return EVT_RETURN_DONE;
 }
 

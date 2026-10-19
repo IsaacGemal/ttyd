@@ -49,14 +49,6 @@ typedef struct UnitStatusBlock {
 
 //local prototypes
 
-// Local field overlays for regions the shared header leaves unnamed.
-typedef struct BattleUnitAnimFields {
-    u8 pad_0[0x2D0];
-    s32 mBodyPartsId;    // 0x2D0
-    char* mTalkPoseName; // 0x2D4
-    char* mStayPoseName; // 0x2D8
-} BattleUnitAnimFields;
-
 typedef struct BattleUnitPartFields {
     u8 pad_0[0x204];
     u32 mFlags; // 0x204
@@ -252,7 +244,7 @@ BattleUnit* BtlUnit_Entry(BattleUnitSetup* setup) {
         part->attributes = part->mKindPartParams->attributes;
         part->counterAttributes = part->mKindPartParams->counterAttributes;
         if (part->attributes & kMainPart) {
-            ((BattleUnitAnimFields*)unit)->mBodyPartsId = part->mKindPartParams->partNum;
+            unit->mBodyPartsId = part->mKindPartParams->partNum;
         }
         part->defense = part->mKindPartParams->defense;
         part->defenseAttr = part->mKindPartParams->defenseAttr;
@@ -308,8 +300,8 @@ BattleUnit* BtlUnit_Entry(BattleUnitSetup* setup) {
     }
 
     part = BtlUnit_GetPartsPtr(unit, BtlUnit_GetBodyPartsId(unit));
-    ((BattleUnitAnimFields*)unit)->mTalkPoseName = BtlUnit_GetPoseNameFromType(part, 0x41);
-    ((BattleUnitAnimFields*)unit)->mStayPoseName = BtlUnit_GetPoseNameFromType(part, 0x2B);
+    unit->mTalkPoseName = BtlUnit_GetPoseNameFromType(part, 0x41);
+    unit->mStayPoseName = BtlUnit_GetPoseNameFromType(part, 0x2B);
 
     unit->mMoveColorLv = 0xFF;
     *(u8*)((u8*)unit + 0x30E) = 0xFF;
@@ -1674,15 +1666,15 @@ void BtlUnit_SetBodyAnim(BattleUnit* unit, const char* animName) {
 void BtlUnit_ChangeTalkAnim(s32 unitId) {
     BattleUnit* unit = BattleGetUnitPtr(_battleWorkPointer, unitId);
 
-    btlDispChangeAnime(BtlUnit_GetPartsPtr(unit, ((BattleUnitAnimFields*)unit)->mBodyPartsId),
-                       ((BattleUnitAnimFields*)unit)->mTalkPoseName, FALSE);
+    btlDispChangeAnime(BtlUnit_GetPartsPtr(unit, unit->mBodyPartsId),
+                       unit->mTalkPoseName, FALSE);
 }
 
 void BtlUnit_ChangeStayAnim(s32 unitId) {
     BattleUnit* unit = BattleGetUnitPtr(_battleWorkPointer, unitId);
 
-    btlDispChangeAnime(BtlUnit_GetPartsPtr(unit, ((BattleUnitAnimFields*)unit)->mBodyPartsId),
-                       ((BattleUnitAnimFields*)unit)->mStayPoseName, FALSE);
+    btlDispChangeAnime(BtlUnit_GetPartsPtr(unit, unit->mBodyPartsId),
+                       unit->mStayPoseName, FALSE);
 }
 
 void BtlUnit_GetTalkTogePos(s32 unitId, f32* x, f32* y, f32* z) {

@@ -600,7 +600,10 @@ typedef struct BattleUnit {
     u8 field_0x2A8[0x2AC - 0x2A8];               // 0x2A8
     void* damageEventCode;                       // 0x2AC
     s32 damageEventId;                           // 0x2B0
-    u8 field_0x2B4[0x2DC - 0x2B4];               // 0x2B4
+    u8 field_0x2B4[0x2D0 - 0x2B4];               // 0x2B4
+    s32 mBodyPartsId;                            // 0x2D0
+    char* mTalkPoseName;                         // 0x2D4, BtlUnit_GetPoseNameFromType of the talk pose
+    char* mStayPoseName;                         // 0x2D8, BtlUnit_GetPoseNameFromType of the stay pose
     BattleWorkUnitBadgesEquipped badgesEquipped; // 0x2DC
     ItemType heldItem;                           // 0x304, 4 bytes
     ItemDropData* dropTable;                     // 0x308
