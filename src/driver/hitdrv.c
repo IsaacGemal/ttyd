@@ -287,8 +287,8 @@ void hitDelete(const char* name) {
     for (i = 0; i < wp->entries->count; map++, i++) {
         hit = map->hitEntries;
         for (j = 0; j < map->hitNumJoints; j++, hit++) {
-            if (!(hit->flags & 0x80) && !strcmp(name, hit->joint->name)) {
-                hit->flags |= 0x80;
+            if (!(hit->flags & HIT_FLAG_DELETED) && !strcmp(name, hit->joint->name)) {
+                hit->flags |= HIT_FLAG_DELETED;
 #ifdef MUST_MATCH
                 hitDeleteUpdateActiveList();
 #else
@@ -324,7 +324,7 @@ static inline HitEntry* hitFindElem(void* elem) {
     for (i = 0; i < new_var2->count; map++, i++) {
         hit = map->hitEntries;
         for (j = 0; j < map->hitNumJoints; j++, hit++) {
-            if (!(hit->flags & 0x80) && !strcmp(hit->joint->name, name)) {
+            if (!(hit->flags & HIT_FLAG_DELETED) && !strcmp(hit->joint->name, name)) {
                 return hit;
             }
         }
@@ -368,8 +368,8 @@ void hitMain(void) {
                     if (found != NULL) {
                         mapCalcAnimMatrix(found->animMtx, found->localMtx, (MapEntryAnimData*)anim, *(void**)(p + 4));
                         anyScale = 1;
-                        found->flags |= 0x10;
-                        found->flags |= 0x40;
+                        found->flags |= HIT_FLAG_ANIMATED;
+                        found->flags |= HIT_FLAG_MTX_DIRTY;
                         *(u16*)anim |= 0x1000;
                     }
                 }
@@ -514,7 +514,7 @@ void hitGrpAttrOff(const char* name, s32 attr) {
 void hitReCalcMatrix(HitEntry* hit, Mtx mtx) {
     Vec world;
 
-    hit->flags |= 0x40;
+    hit->flags |= HIT_FLAG_MTX_DIRTY;
     hitReCalcMatrix2(hit, mtx, FALSE);
     MTXMultVec(hit->worldMtx, &hit->joint->bboxMax, &world);
     hit->radius = PSVECDistance(&world, &hit->centerWorld);
@@ -524,24 +524,24 @@ void hitReCalcMatrix2(HitEntry* hit, Mtx mtx, BOOL recursion) {
     int var_r3_3;
 
     var_r3_3 = 0;
-    if (hit->flags & 0x40) {
+    if (hit->flags & HIT_FLAG_MTX_DIRTY) {
         var_r3_3 = 1;
     }
     if (recursion != 0) {
         var_r3_3 = 1;
     }
     if (var_r3_3 != 0) {
-        if (hit->flags & 0x10) {
+        if (hit->flags & HIT_FLAG_ANIMATED) {
             PSMTXConcat(mtx, hit->animMtx, hit->worldMtx);
         } else {
             PSMTXConcat(mtx, hit->localMtx, hit->worldMtx);
         }
-        if (hit->flags & 0x20) {
+        if (hit->flags & HIT_FLAG_MAPOBJ) {
             PSMTXConcat(hit->worldMtx, hit->mapObj->unkAC, hit->worldMtx);
         }
         PSMTXMultVec(hit->worldMtx, &hit->centerLocal, &hit->centerWorld);
         hitCalcVtxPosition(hit);
-        hit->flags &= ~0x40;
+        hit->flags &= ~HIT_FLAG_MTX_DIRTY;
         if (hit->child != NULL) {
             hitReCalcMatrix2(hit->child, hit->worldMtx, TRUE);
         }
@@ -1222,7 +1222,7 @@ HitEntry* hitCheckSphereFilter(HitFilterCallback callback, f32 x, f32 y, f32 z,
         for (j = 0; j < var_r31->hitNumJoints; j++, var_r23++) {
             if ((var_r23->attributes & 0x80000000) && (var_r23->joint->partCount != 0)) {
                 flags = var_r23->flags;
-                if (!(flags & 1) && !(flags & 0x80)) {
+                if (!(flags & 1) && !(flags & HIT_FLAG_DELETED)) {
                     temp_f1 = PSVECDistance(&sp68, &var_r23->centerWorld);
                     if (!(temp_f1 > (distance + var_r23->radius))) {
                         if (callback == NULL || callback(query, var_r23)) {
@@ -1303,7 +1303,7 @@ HitEntry* hitNameToPtr(const char* name) { // 1:1
     for (i = 0; i < new_var2->count; map++, i++) {
         hit = map->hitEntries;
         for (j = 0; j < map->hitNumJoints; j++, hit++) {
-            if (!(hit->flags & 0x80) && !strcmp(hit->joint->name, name)) {
+            if (!(hit->flags & HIT_FLAG_DELETED) && !strcmp(hit->joint->name, name)) {
                 return hit;
             }
         }
@@ -1423,7 +1423,7 @@ void hitBindMapObj(const char* hitName, const char* mapobjName) {
         return;
     }
     hit->mapObj = mapObj;
-    hit->flags |= 0x20;
+    hit->flags |= HIT_FLAG_MAPOBJ;
 }
 
 void hitBindUpdate(const char* name) {
@@ -1436,7 +1436,7 @@ void hitBindUpdate(const char* name) {
         mapErrorEntry(1, name);
         return;
     }
-    if (hit->flags & 0x20) {
+    if (hit->flags & HIT_FLAG_MAPOBJ) {
         parent = hit->parent;
         if (parent != NULL) {
             hitReCalcMatrix(hit, parent->worldMtx);

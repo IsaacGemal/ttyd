@@ -33,6 +33,14 @@ typedef struct HitDamageReturn {
     Vec position;           // 0x4
 } HitDamageReturn;
 
+// HitEntry::flags bits (0x1 is also tested by hitCheckSphereFilter; its meaning is not known yet)
+enum HitFlag {
+    HIT_FLAG_MAPOBJ = 0x20,     // hitBindMapObj sets; hitReCalcMatrix2 multiplies in mapObj->unkAC
+    HIT_FLAG_ANIMATED = 0x10,   // hitMain sets; hitReCalcMatrix2 uses animMtx instead of localMtx
+    HIT_FLAG_MTX_DIRTY = 0x40,  // hitReCalcMatrix and hitMain set; hitReCalcMatrix2 recomputes and clears
+    HIT_FLAG_DELETED = 0x80,    // hitDelete sets; name lookups and the active list skip it
+};
+
 struct HitEntry {
     u16 flags;                      // 0x0
     u8 unk2[0x4 - 0x2];             // 0x2
