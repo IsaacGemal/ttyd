@@ -127,7 +127,7 @@
   },
   {
     "file": "src/driver/msgdrv.c",
-    "context": "((void (*)(s32, const char*, BOOL))animPoseSetPaperAnim)(npc->poseId, paperPoseTbl[entry->field_0xC], TRUE);",
+    "context": "((void (*)(s32, const char*, BOOL))animPoseSetPaperAnim)(npc->poseId, paperPoseTbl[entry->startTime], TRUE);",
     "reason": "Prototype disagreement with the header declaration of animPoseSetPaperAnim: fix the header, or guard under MUST_MATCH.",
     "date": "2026-10-05"
   },
