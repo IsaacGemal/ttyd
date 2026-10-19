@@ -1383,7 +1383,7 @@ s32 hitGetAttr(HitEntry* hit) { // 1:1
 }
 
 void hitDamageReturnSet(HitEntry* hit, HitDamageReturn* damage, BOOL recursion) { // 1:1
-    hit->attributes |= 0x40000000;
+    hit->attributes |= HIT_ATTR_DAMAGE_RETURN;
     hit->damage = damage;
     if (hit->child != NULL) {
         hitDamageReturnSet(hit->child, damage, TRUE);

@@ -38,6 +38,9 @@ typedef struct HitDamageReturn {
 // MapJointDrawMode::cullMode is an index into mapdrv's culling[] ({FRONT, BACK, ALL, NONE}); BACK makes the hit single-sided
 #define HIT_CULL_BACK 1
 
+// HitEntry::attributes bit set by hitDamageReturnSet, which also stores the entry's HitDamageReturn
+#define HIT_ATTR_DAMAGE_RETURN 0x40000000
+
 // HitEntry::flags bits (0x1 is also tested by hitCheckSphereFilter; its meaning is not known yet)
 enum HitFlag {
     HIT_FLAG_MAPOBJ = 0x20,     // hitBindMapObj sets; hitReCalcMatrix2 multiplies in mapObj->unkAC
