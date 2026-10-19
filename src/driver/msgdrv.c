@@ -556,28 +556,28 @@ BOOL msgDisp(smartEntry* smart, u8 alpha, f32 x, f32 y) {
 				s32 cur = data->scrollY;
 				s32 idx = data->historyCursor;
 				s32 e8 = entry->y;
-				// Window queue: cursor at data+0x783C, count at data+0x7840, three parallel arrays at
-				// data+0x7844/0x7848/0x784C, all indexed by the cursor.
+				// Window queue: historyCursor indexes history[], historyCount is its length; history[idx],
+				// history[idx + 1] and history[idx + 2] are the entries the fade checks.
 				GXColor color;
 
-				if (cur == ((s32*)((u8*)data + idx * 4))[0x7844 / 4]) {
-					if (e8 + ((s32*)((u8*)data + idx * 4))[0x7848 / 4] <= 0) {
+				if (cur == data->history[idx]) {
+					if (e8 + data->history[idx + 1] <= 0) {
 						break;
 					}
 					tev = TRUE;
 				}
-				else if (cur < ((s32*)((u8*)data + idx * 4))[0x7844 / 4]) {
-					if (e8 + ((s32*)((u8*)data + idx * 4))[0x7844 / 4] > 0) {
+				else if (cur < data->history[idx]) {
+					if (e8 + data->history[idx] > 0) {
 						tev = TRUE;
 					}
 					else {
-						s32 t = ((s32*)((u8*)data + idx * 4))[0x7844 / 4] - cur;
+						s32 t = data->history[idx] - cur;
 						if (t > 100) {
 							t = 100;
 						}
 						fade = (u32)((100 - t) * 255 / 100);
 						if (idx != data->historyCount - 1) {
-							if (e8 + ((s32*)((u8*)data + idx * 4))[0x7848 / 4] > 0) {
+							if (e8 + data->history[idx + 1] > 0) {
 								tev = TRUE;
 							}
 							else {
@@ -592,17 +592,17 @@ BOOL msgDisp(smartEntry* smart, u8 alpha, f32 x, f32 y) {
 					}
 				}
 				else {
-					if (e8 + ((s32*)((u8*)data + idx * 4))[0x7848 / 4] > 0) {
+					if (e8 + data->history[idx + 1] > 0) {
 						tev = TRUE;
 					}
 					else {
-						s32 t = cur - ((s32*)((u8*)data + idx * 4))[0x7844 / 4];
+						s32 t = cur - data->history[idx];
 						if (t > 100) {
 							t = 100;
 						}
 						fade = (u32)(t * 255 / 100);
 						if (idx != data->historyCount - 2) {
-							if (e8 + ((s32*)((u8*)data + idx * 4))[0x784C / 4] > 0) {
+							if (e8 + data->history[idx + 2] > 0) {
 								tev = TRUE;
 							}
 							else {
@@ -1785,7 +1785,7 @@ void msgWindow_Main(WindowEntry* window) {
 		}
 		break;
 	}
-	// The (MessageData*) cast here is a no-op that stops the compiler CSE-ing field_0x28 across the
+	// The (MessageData*) cast here is a no-op that stops the compiler CSE-ing scrollY across the
 	// OSTicksToMilliseconds call; the original reloads it.
 	case 9: {
 #ifdef MUST_MATCH
@@ -1805,7 +1805,7 @@ void msgWindow_Main(WindowEntry* window) {
 		*(u16*)window->field_0x0 = 0xb;
 		break;
 	}
-	// Same no-op cast as case 9, on the field_0x28 update below.
+	// Same no-op cast as case 9, on the scrollY update below.
 	case 10: {
 #ifdef MUST_MATCH
 		value = data->history[data->historyCursor];
@@ -1846,9 +1846,9 @@ void msgWindow_Main(WindowEntry* window) {
 			*(OSTime*)(window->field_0x1C + 4) = gp->renderTime;
 			{
 				MessageData* d = window->userdata->address;
-				(*(s32*)((u8*)d + 0x783C))++;
-				if (*(s32*)((u8*)d + 0x783C) > d->historyCount - 1) {
-					*(s32*)((u8*)d + 0x783C) = d->historyCount - 1;
+				d->historyCursor++;
+				if (d->historyCursor > d->historyCount - 1) {
+					d->historyCursor = d->historyCount - 1;
 				}
 			}
 			psndSFXOn((const char*)0x20041);
