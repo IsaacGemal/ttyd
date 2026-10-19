@@ -47,20 +47,25 @@ typedef struct WinMgrWork {
 	WinMgrEntry* mEntries;
 } WinMgrWork;
 
+typedef struct WinMgrSelectItem {
+	u16 flags; //0x0, bit 0: drawn grey, bit 1: row has no second column (winMgrSelectDisp)
+	u16 id; //0x2
+} WinMgrSelectItem;
+
 typedef struct WinMgrSelect {
 	s16 flags; //0x0
 	s16 pad_2; //0x2, TODO: not pad?
-	s32 field_0x4; //0x4
-	u8 field_0x8[0xC - 0x8]; //0x8
-	s32 field_0xC; //0xC
-	s32 field_0x10; //0x10
-	f32 field_0x14; //0x14, TODO: Vec?
-	f32 field_0x18; //0x18
-	f32 field_0x1C; //0x1C
+	s32 kind; //0x4, winMgrSelectEntry's a1: picks the item list and the callbacks
+	s32 state; //0x8, select_main's step (0 while the menu is running)
+	s32 cursor; //0xC, index into items
+	s32 scrollTop; //0x10, first item shown while the list scrolls
+	f32 iconX; //0x14, icon 0x1F0 is drawn at (iconX, iconY) every frame
+	f32 iconY; //0x18
+	f32 baseY; //0x1C, added to every row's y
 	s32 numDescriptors; //0x20
 	s32 descriptorId[3]; //0x24
-	s32 field_0x30; //0x30
-	s32 field_0x34; //0x34
+	WinMgrSelectItem* items; //0x30
+	s32 numItems; //0x34
 	s32 field_0x38; //0x38
 } WinMgrSelect;
 

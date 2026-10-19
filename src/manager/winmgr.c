@@ -37,11 +37,6 @@ typedef struct WinMgrSelectTbl {
     WinMgrDesc* descriptors;
 } WinMgrSelectTbl;
 
-typedef struct WinMgrSelectItem {
-    u16 field_0x0;
-    u16 field_0x2;
-} WinMgrSelectItem;
-
 #define PI 3.14159265358979323846264338327950288419716939937510
 
 // Retain the descriptor tables and constants referenced by other units.
@@ -300,12 +295,12 @@ void select_disp3_mario(WinMgrEntry* entry) {
 
     pouchGetPtr();
     if (!(wp->mEntries[select->descriptorId[2]].flags & 4)) {
-        WinMgrSelectItem* items = (WinMgrSelectItem*)select->field_0x30;
+        WinMgrSelectItem* items = select->items;
         const char* help;
         char buf[0x48];
 
-        if (items[select->field_0xC].field_0x0 & 2) {
-            if (items[select->field_0xC].field_0x0 & 4) {
+        if (items[select->cursor].flags & 2) {
+            if (items[select->cursor].flags & 4) {
                 help = str_802FFD80;
             } else {
                 help = str_802FFD8C;
@@ -313,13 +308,13 @@ void select_disp3_mario(WinMgrEntry* entry) {
         } else {
             help = str_80421A78;
         }
-        switch (select->field_0x4) {
+        switch (select->kind) {
         case 9:
-            sprintf(buf, str_802FFD94, help, mario_status_labelname_table[items[select->field_0xC].field_0x2]);
+            sprintf(buf, str_802FFD94, help, mario_status_labelname_table[items[select->cursor].id]);
             break;
         case 10:
         default:
-            sprintf(buf, str_802FFDA4, help, mario_status_labelname_table[items[select->field_0xC].field_0x2]);
+            sprintf(buf, str_802FFDA4, help, mario_status_labelname_table[items[select->cursor].id]);
             break;
         }
         entry->field_0x34 = (s32)msgSearch(buf);
@@ -333,22 +328,22 @@ void select_disp3_party(WinMgrEntry* entry) {
     u16 id;
 
     if (!(wp->mEntries[select->descriptorId[2]].flags & 4)) {
-        WinMgrSelectItem* items = (WinMgrSelectItem*)select->field_0x30;
+        WinMgrSelectItem* items = select->items;
         const char* help;
         const char* lank;
         char buf[0x48];
 
-        if (items[select->field_0xC].field_0x0 & 2) {
+        if (items[select->cursor].flags & 2) {
             help = str_802FFD8C;
         } else {
             help = str_80421A78;
         }
-        if (select->field_0x4 == 6 || select->field_0x4 == 7) {
+        if (select->kind == 6 || select->kind == 7) {
             lank = str_802FFDB4;
         } else {
             lank = str_802FFDBC;
         }
-        id = items[select->field_0xC].field_0x2;
+        id = items[select->cursor].id;
         sprintf(buf, str_802FFDC8, help, lank,
                 pouch->partyData[party_id_table[id]].techLevel + 1, party_labelname_table[id]);
         entry->field_0x34 = (s32)msgSearch(buf);
@@ -360,8 +355,8 @@ void select_disp3(WinMgrEntry* entry) {
     WinMgrSelect* select = (WinMgrSelect*)entry->param;
 
     if (!(wp->mEntries[select->descriptorId[2]].flags & 4)) {
-        WinMgrSelectItem* items = (WinMgrSelectItem*)select->field_0x30;
-        u16 id = items[select->field_0xC].field_0x2;
+        WinMgrSelectItem* items = select->items;
+        u16 id = items[select->cursor].id;
         ItemData* item = &itemDataTable[id];
 
         entry->field_0x34 = (s32)msgSearch(item->description);
@@ -399,7 +394,7 @@ void select_disp2(WinMgrEntry* entry) {
     u16 x;
 
     msg = msgSearch(str_802FFDD8);
-    switch (select->field_0x4) {
+    switch (select->kind) {
     case 3:
     case 12:
         msg = msgSearch(str_802FFDEC);
@@ -502,10 +497,10 @@ void select_disp_luigi(WinMgrEntry* entry) {
 
     zero = 0.0f;
     info = jdt->info;
-    for (i = 0; i < select->field_0x34; i++, info++) {
+    for (i = 0; i < select->numItems; i++, info++) {
         char saved;
         f32 row = (f32)(entry->field_0x1C - 0x2c - i * 0x18);
-        f32 bound = select->field_0x1C + (zero + row);
+        f32 bound = select->baseY + (zero + row);
 
         if ((f32)entry->field_0x1C < bound - 32.0f) {
             continue;
@@ -518,31 +513,31 @@ void select_disp_luigi(WinMgrEntry* entry) {
         saved = ((char*)info->initEndPos)[info->tagEndPos];
         ((char*)info->initEndPos)[info->tagEndPos] = 0;
         {
-            GXColor color = (((WinMgrSelectItem*)select->field_0x30)[i].field_0x0 & 1) ? colorGray : colorBlack;
+            GXColor color = (select->items[i].flags & 1) ? colorGray : colorBlack;
             f32 rowY;
 
             tmpRow = vec3_802ffcc0;
             scaleRow = vec3_802ffccc;
             tmpRow.x = (f32)(entry->field_0x18 + 0x19);
             rowY = (f32)(entry->field_0x1C - 0x20 - i * 0x18);
-            tmpRow.y = select->field_0x1C + (zero + rowY);
+            tmpRow.y = select->baseY + (zero + rowY);
             posRow = tmpRow;
             winFontSet(&posRow, &scaleRow, &color, (const char*)info->initEndPos);
         }
         ((char*)info->initEndPos)[info->tagEndPos] = saved;
 
-        if (select->field_0x4 == 0x11 && !(((WinMgrSelectItem*)select->field_0x30)[i].field_0x0 & 1)) {
+        if (select->kind == 0x11 && !(select->items[i].flags & 1)) {
             GXColor color;
             f32 edgeY;
 
             sprintf(buf, "%3d", info->unkA);
             winFontInit();
-            color = (((WinMgrSelectItem*)select->field_0x30)[i].field_0x0 & 1) ? colorGray : colorBlack;
+            color = (select->items[i].flags & 1) ? colorGray : colorBlack;
             tmpEdge = vec3_802ffcd8;
             scaleEdge = vec3_802ffce4;
             tmpEdge.x = (f32)(entry->field_0x18 + 0xf5);
             edgeY = (f32)(entry->field_0x1C - 0x20 - i * 0x18);
-            tmpEdge.y = select->field_0x1C + (zero + edgeY);
+            tmpEdge.y = select->baseY + (zero + edgeY);
             posEdge = tmpEdge;
             winFontSet(&posEdge, &scaleEdge, &color, buf);
         }
@@ -550,7 +545,7 @@ void select_disp_luigi(WinMgrEntry* entry) {
 
     GXSetScissor(scissorLeft, scissorTop, scissorWidth, scissorHeight);
 
-    switch (select->field_0x4) {
+    switch (select->kind) {
     case 0x11:
         msg = msgSearch(str_802FFED8);
         break;
@@ -573,7 +568,7 @@ void select_disp_luigi(WinMgrEntry* entry) {
         winFontSetEdge(&posTitle, &scaleTitle, &color, msg);
     }
 
-    switch (select->field_0x4) {
+    switch (select->kind) {
     case 0x11:
         PSMTXTrans(mtx1, (f32)(entry->field_0x18 + 0x10c), (f32)(entry->field_0x1C - 0x12), 0.0f);
         PSMTXScale(mtx2, 0.6f, 0.6f, 0.6f);
@@ -587,19 +582,19 @@ void select_disp_luigi(WinMgrEntry* entry) {
     }
 
     posMain = vec3_802ffd14;
-    posMain.x = select->field_0x14;
-    posMain.y = select->field_0x18;
+    posMain.x = select->iconX;
+    posMain.y = select->iconY;
     iconDispGx(1.0f, &posMain, 0x14, 0x1f0);
 
-    if (select->field_0x34 > 8 && (gp->retraceCount & 0x1F) < 20) {
-        if (select->field_0x10 != 0) {
+    if (select->numItems > 8 && (gp->retraceCount & 0x1F) < 20) {
+        if (select->scrollTop != 0) {
             posUp = vec3_802ffd20;
             // Division by two pools 0.5f while preserving retail multiplication operand order.
             posUp.x = (f32)entry->field_0x18 + (f32)entry->field_0x20 / 2.0f;
             posUp.y = (f32)(entry->field_0x1C - 0x24);
             iconDispGx(0.6f, &posUp, 0x10, 0x1b5);
         }
-        if (select->field_0x10 != select->field_0x34 - 8) {
+        if (select->scrollTop != select->numItems - 8) {
             posDown = vec3_802ffd2c;
             posDown.x = (f32)entry->field_0x18 + (f32)entry->field_0x20 / 2.0f;
             posDown.y = (f32)(entry->field_0x1C - entry->field_0x24 - 0xc);
@@ -672,13 +667,13 @@ void select_disp_mario(WinMgrEntry* entry) {
     GXSetScissor(entry->field_0x18 + 0x130, 0x112 - entry->field_0x1C, entry->field_0x20, entry->field_0x24 - 0x32);
 
     zero = 0.0f;
-    for (i = 0; i < select->field_0x34; i++) {
+    for (i = 0; i < select->numItems; i++) {
         f32 row;
         f32 bound;
 
         row = (f32)(entry->field_0x1C - 0x2c - i * 0x18);
-        bound = select->field_0x1C + (zero + row);
-        status = ((WinMgrSelectItem*)select->field_0x30)[i].field_0x2;
+        bound = select->baseY + (zero + row);
+        status = select->items[i].id;
         if ((f32)entry->field_0x1C < bound - 32.0f) {
             continue;
         }
@@ -695,19 +690,19 @@ void select_disp_mario(WinMgrEntry* entry) {
 #endif
         winFontInit();
         {
-            GXColor color = (((WinMgrSelectItem*)select->field_0x30)[i].field_0x0 & 1) ? colorGray : colorBlack;
+            GXColor color = (select->items[i].flags & 1) ? colorGray : colorBlack;
             f32 rowY;
 
             tmpName = vec3_802ffbf4;
             scaleName = vec3_802ffc00;
             tmpName.x = (f32)(entry->field_0x18 + 0x3c);
             rowY = (f32)(entry->field_0x1C - 0x20 - i * 0x18);
-            tmpName.y = select->field_0x1C + (zero + rowY);
+            tmpName.y = select->baseY + (zero + rowY);
             posName = tmpName;
             winFontSet(&posName, &scaleName, &color, mario_status_name_table[status]);
         }
 
-        if (((WinMgrSelectItem*)select->field_0x30)[i].field_0x0 & 1) {
+        if (select->items[i].flags & 1) {
             winIconGrayInit();
         } else {
             winIconInit();
@@ -720,7 +715,7 @@ void select_disp_mario(WinMgrEntry* entry) {
             scaleIcon = vec3_802ffc18;
             tmpIcon.x = (f32)(entry->field_0x18 + 0x23);
             rowY = (f32)(entry->field_0x1C - 0x2c - i * 0x18);
-            tmpIcon.y = select->field_0x1C + (zero + rowY);
+            tmpIcon.y = select->baseY + (zero + rowY);
             posIcon = tmpIcon;
             winIconSet(mario_status_icon_table[status], &posIcon, &scaleIcon, &color);
         }
@@ -729,20 +724,20 @@ void select_disp_mario(WinMgrEntry* entry) {
 
         winFontInit();
         {
-            GXColor color = (((WinMgrSelectItem*)select->field_0x30)[i].field_0x0 & 1) ? colorGray : colorBlack;
+            GXColor color = (select->items[i].flags & 1) ? colorGray : colorBlack;
             f32 rowY;
 
             tmpPoint = vec3_802ffc24;
             scalePoint = vec3_802ffc30;
             tmpPoint.x = (f32)(entry->field_0x18 + 0xa0);
             rowY = (f32)(entry->field_0x1C - 0x20 - i * 0x18);
-            tmpPoint.y = select->field_0x1C + (zero + rowY);
+            tmpPoint.y = select->baseY + (zero + rowY);
             posPoint = tmpPoint;
             winFontSet(&posPoint, &scalePoint, &color, buf);
         }
 
-        if (!(((WinMgrSelectItem*)select->field_0x30)[i].field_0x0 & 2)) {
-            switch (select->field_0x4) {
+        if (!(select->items[i].flags & 2)) {
+            switch (select->kind) {
             case 9:
                 sprintf(buf, "%3d", mario_status_point_table[status][0] + mario_status_henka_table[status]);
                 break;
@@ -754,14 +749,14 @@ void select_disp_mario(WinMgrEntry* entry) {
 
             winFontInit();
             {
-                GXColor color = (((WinMgrSelectItem*)select->field_0x30)[i].field_0x0 & 1) ? colorGray : colorBlack;
+                GXColor color = (select->items[i].flags & 1) ? colorGray : colorBlack;
                 f32 rowY;
 
                 tmpHenka = vec3_802ffc3c;
                 scaleHenka = vec3_802ffc48;
                 tmpHenka.x = (f32)(entry->field_0x18 + 0xf0);
                 rowY = (f32)(entry->field_0x1C - 0x20 - i * 0x18);
-                tmpHenka.y = select->field_0x1C + (zero + rowY);
+                tmpHenka.y = select->baseY + (zero + rowY);
                 posHenka = tmpHenka;
                 winFontSet(&posHenka, &scaleHenka, &color, buf);
             }
@@ -775,7 +770,7 @@ void select_disp_mario(WinMgrEntry* entry) {
                 scaleIcon2 = vec3_802ffc60;
                 tmpIcon2.x = (f32)(entry->field_0x18 + 0xdc);
                 rowY = (f32)(entry->field_0x1C - 0x2c - i * 0x18);
-                tmpIcon2.y = select->field_0x1C + (zero + rowY);
+                tmpIcon2.y = select->baseY + (zero + rowY);
                 posIcon2 = tmpIcon2;
                 winIconSet(0x163, &posIcon2, &scaleIcon2, &color);
             }
@@ -829,18 +824,18 @@ void select_disp_mario(WinMgrEntry* entry) {
     }
 
     posMain = vec3_802ffc9c;
-    posMain.x = select->field_0x14;
-    posMain.y = select->field_0x18;
+    posMain.x = select->iconX;
+    posMain.y = select->iconY;
     iconDispGx(1.0f, &posMain, 0x14, 0x1f0);
 
-    if (select->field_0x34 > 8 && (gp->retraceCount & 0x1F) < 20) {
-        if (select->field_0x10 != 0) {
+    if (select->numItems > 8 && (gp->retraceCount & 0x1F) < 20) {
+        if (select->scrollTop != 0) {
             posUp = vec3_802ffca8;
             posUp.x = (f32)entry->field_0x18 + (f32)entry->field_0x20 / 2.0f;
             posUp.y = (f32)(entry->field_0x1C - 0x24);
             iconDispGx(0.6f, &posUp, 0x10, 0x1b5);
         }
-        if (select->field_0x10 != select->field_0x34 - 8) {
+        if (select->scrollTop != select->numItems - 8) {
             posDown = vec3_802ffcb4;
             posDown.x = (f32)entry->field_0x18 + (f32)entry->field_0x20 / 2.0f;
             posDown.y = (f32)(entry->field_0x1C - entry->field_0x24 - 0xc);
@@ -919,13 +914,13 @@ void select_disp_party(WinMgrEntry* entry) {
     GXSetScissor(entry->field_0x18 + 0x130, 0x112 - entry->field_0x1C, entry->field_0x20, entry->field_0x24 - 0x32);
 
     zero = 0.0f;
-    for (i = 0; i < select->field_0x34; i++) {
+    for (i = 0; i < select->numItems; i++) {
         f32 row;
         f32 bound;
         u16 w;
 
         row = (f32)(entry->field_0x1C - 0x2c - i * 0x18);
-        bound = select->field_0x1C + (zero + row);
+        bound = select->baseY + (zero + row);
         if ((f32)entry->field_0x1C < bound - 32.0f) {
             continue;
         }
@@ -951,11 +946,11 @@ void select_disp_party(WinMgrEntry* entry) {
             tmpName = vec3_802ffb58;
             tmpName.x = (f32)(entry->field_0x18 + 0x3c);
             rowY = (f32)(entry->field_0x1C - 0x20 - i * 0x18);
-            tmpName.y = select->field_0x1C + (zero + rowY);
+            tmpName.y = select->baseY + (zero + rowY);
             posName = tmpName;
             scaleTmp = vec3_802ffb64;
 
-            switch (((WinMgrSelectItem*)select->field_0x30)[i].field_0x2) {
+            switch (select->items[i].id) {
             case 0:
                 n1 = msgSearch(str_802FFD38);
                 break;
@@ -981,7 +976,7 @@ void select_disp_party(WinMgrEntry* entry) {
 
             w = FontGetMessageWidth(n1);
             if (w > 0xaa) {
-                switch (((WinMgrSelectItem*)select->field_0x30)[i].field_0x2) {
+                switch (select->items[i].id) {
                 case 0:
                     n2 = msgSearch(str_802FFD38);
                     break;
@@ -1011,9 +1006,9 @@ void select_disp_party(WinMgrEntry* entry) {
             scaleTmp.x = scale;
             scaleName = scaleTmp;
 
-            color = (((WinMgrSelectItem*)select->field_0x30)[i].field_0x0 & 1) ? colorGray : colorBlack;
+            color = (select->items[i].flags & 1) ? colorGray : colorBlack;
 
-            switch (((WinMgrSelectItem*)select->field_0x30)[i].field_0x2) {
+            switch (select->items[i].id) {
             case 0:
                 n3 = msgSearch(str_802FFD38);
                 break;
@@ -1039,7 +1034,7 @@ void select_disp_party(WinMgrEntry* entry) {
             winFontSet(&posName, &scaleName, &color, n3);
         }
 
-        if (((WinMgrSelectItem*)select->field_0x30)[i].field_0x0 & 1) {
+        if (select->items[i].flags & 1) {
             winIconGrayInit();
         } else {
             winIconInit();
@@ -1052,7 +1047,7 @@ void select_disp_party(WinMgrEntry* entry) {
             tmpIcon = vec3_802ffb70;
             tmpIcon.x = (f32)(entry->field_0x18 + 0x23);
             rowY = (f32)(entry->field_0x1C - 0x2c - i * 0x18);
-            tmpIcon.y = select->field_0x1C + (zero + rowY);
+            tmpIcon.y = select->baseY + (zero + rowY);
             posIcon = tmpIcon;
 #ifdef MUST_MATCH
             // anti-hoist: retail reloads the Vec in the loop (see the note above select_disp_party)
@@ -1062,7 +1057,7 @@ void select_disp_party(WinMgrEntry* entry) {
 #endif
 
             color = colorWhite;
-            icon = party_icon_table[((WinMgrSelectItem*)select->field_0x30)[i].field_0x2];
+            icon = party_icon_table[select->items[i].id];
             if (icon == 0x158) {
                 switch (pouchGetPartyColor(PARTNER_YOSHI)) {
                 case 0:
@@ -1096,8 +1091,8 @@ void select_disp_party(WinMgrEntry* entry) {
             s32 off;
             s32 k;
 
-            for (k = 0, off = 0; k < pouch->partyData[party_id_table[((WinMgrSelectItem*)select->field_0x30)[i].field_0x2]].techLevel; off += 0x1b, k++) {
-                if (((WinMgrSelectItem*)select->field_0x30)[i].field_0x0 & 1) {
+            for (k = 0, off = 0; k < pouch->partyData[party_id_table[select->items[i].id]].techLevel; off += 0x1b, k++) {
+                if (select->items[i].flags & 1) {
                     winIconGrayInit();
                 } else {
                     winIconInit();
@@ -1116,7 +1111,7 @@ void select_disp_party(WinMgrEntry* entry) {
 #endif
                     tmpArrow.x = (f32)(entry->field_0x18 + 0xfd + off);
                     rowY = (f32)(entry->field_0x1C - 0x2c - i * 0x18);
-                    tmpArrow.y = select->field_0x1C + (zero + rowY);
+                    tmpArrow.y = select->baseY + (zero + rowY);
                     posArrow = tmpArrow;
                     winIconSet(0x102, &posArrow, &scaleArrow, &c);
                 }
@@ -1171,18 +1166,18 @@ void select_disp_party(WinMgrEntry* entry) {
     }
 
     posMain = vec3_802ffbd0;
-    posMain.x = select->field_0x14;
-    posMain.y = select->field_0x18;
+    posMain.x = select->iconX;
+    posMain.y = select->iconY;
     iconDispGx(1.0f, &posMain, 0x14, 0x1f0);
 
-    if (select->field_0x34 > 8 && (gp->retraceCount & 0x1F) < 20) {
-        if (select->field_0x10 != 0) {
+    if (select->numItems > 8 && (gp->retraceCount & 0x1F) < 20) {
+        if (select->scrollTop != 0) {
             posUp = vec3_802ffbdc;
             posUp.x = (f32)entry->field_0x18 + (f32)entry->field_0x20 / 2.0f;
             posUp.y = (f32)(entry->field_0x1C - 0x24);
             iconDispGx(0.6f, &posUp, 0x10, 0x1b5);
         }
-        if (select->field_0x10 != select->field_0x34 - 8) {
+        if (select->scrollTop != select->numItems - 8) {
             posDown = vec3_802ffbe8;
             posDown.x = (f32)entry->field_0x18 + (f32)entry->field_0x20 / 2.0f;
             posDown.y = (f32)(entry->field_0x1C - entry->field_0x24 - 0xc);
@@ -1274,12 +1269,12 @@ void select_disp(WinMgrEntry* entry) {
     GXSetScissor(entry->field_0x18 + 0x130, 0x112 - entry->field_0x1C, entry->field_0x20, entry->field_0x24 - 0x32);
 
     zero = 0.0f;
-    for (i = 0; i < select->field_0x34; i++) {
+    for (i = 0; i < select->numItems; i++) {
         f32 row;
         f32 bound;
-        item = &itemDataTable[((WinMgrSelectItem*)select->field_0x30)[i].field_0x2];
+        item = &itemDataTable[select->items[i].id];
         row = (f32)(entry->field_0x1C - 0x2c - i * 0x18);
-        bound = select->field_0x1C + (zero + row);
+        bound = select->baseY + (zero + row);
         if ((f32)entry->field_0x1C < bound - 32.0f) {
             continue;
         }
@@ -1293,7 +1288,7 @@ void select_disp(WinMgrEntry* entry) {
             zero = zero;
         }
 #endif
-        if (((WinMgrSelectItem*)select->field_0x30)[i].field_0x0 & 1) {
+        if (select->items[i].flags & 1) {
             winIconGrayInit();
         } else {
             winIconInit();
@@ -1306,26 +1301,26 @@ void select_disp(WinMgrEntry* entry) {
             scaleRow = vec3_802ffaa4;
             tmpRow.x = (f32)(entry->field_0x18 + 0x23);
             rowY = (f32)(entry->field_0x1C - 0x2c - i * 0x18);
-            tmpRow.y = select->field_0x1C + (zero + rowY);
+            tmpRow.y = select->baseY + (zero + rowY);
             posRow = tmpRow;
             winIconSet(*(u16*)&item->icon_id, &posRow, &scaleRow, &color);
         }
         winFontInit();
         {
-            GXColor color = (((WinMgrSelectItem*)select->field_0x30)[i].field_0x0 & 1) ? colorGray : colorBlack;
+            GXColor color = (select->items[i].flags & 1) ? colorGray : colorBlack;
             f32 nameY;
 
             tmpName = vec3_802ffab0;
             scaleName = vec3_802ffabc;
             tmpName.x = (f32)(entry->field_0x18 + 0x3c);
             nameY = (f32)(entry->field_0x1C - 0x20 - i * 0x18);
-            tmpName.y = select->field_0x1C + (zero + nameY);
+            tmpName.y = select->baseY + (zero + nameY);
             posName = tmpName;
             winFontSet(&posName, &scaleName, &color, msgSearch(item->name));
         }
 
         hasValue = 0;
-        switch (select->field_0x4) {
+        switch (select->kind) {
         case 11:
             value = ((ItemDataView*)item)->buy_price;
             hasValue = 1;
@@ -1360,13 +1355,13 @@ void select_disp(WinMgrEntry* entry) {
             sprintf(buf, str_80421A9C, value);
             textWidth = (f32)FontGetMessageWidth(buf);
             winFontInit();
-            color = (((WinMgrSelectItem*)select->field_0x30)[i].field_0x0 & 1) ? colorGray : colorBlack;
+            color = (select->items[i].flags & 1) ? colorGray : colorBlack;
             scaleEdge = vec3_802ffad4;
             tmpEdge = vec3_802ffac8;
             edgeX = (f32)(entry->field_0x18 + entry->field_0x20 - 0xa) - textWidth;
             edgeY = (f32)(entry->field_0x1C - 0x20 - i * 0x18);
             tmpEdge.x = edgeX;
-            tmpEdge.y = select->field_0x1C + (zero + edgeY);
+            tmpEdge.y = select->baseY + (zero + edgeY);
             posEdge = tmpEdge;
             winFontSet(&posEdge, &scaleEdge, &color, buf);
         }
@@ -1383,7 +1378,7 @@ void select_disp(WinMgrEntry* entry) {
             scaleDot = vec3_802ffaec;
             tmpDot = vec3_802ffae0;
             dotX = (f32)(entry->field_0x18 + (i * entry->field_0x20) / 31);
-            dotY = (f32)(entry->field_0x1C - 0x38) + select->field_0x1C;
+            dotY = (f32)(entry->field_0x1C - 0x38) + select->baseY;
             tmpDot.x = dotX;
             tmpDot.y = dotY;
             posDot = tmpDot;
@@ -1393,7 +1388,7 @@ void select_disp(WinMgrEntry* entry) {
 
     GXSetScissor(scissorLeft, scissorTop, scissorWidth, scissorHeight);
 
-    switch (select->field_0x4) {
+    switch (select->kind) {
     case 2:
     case 11:
     case 12:
@@ -1428,7 +1423,7 @@ void select_disp(WinMgrEntry* entry) {
         winFontSetEdge(&posTitle, &scaleTitle, &color, msg);
     }
 
-        switch (select->field_0x4) {
+        switch (select->kind) {
         case 3:
         case 11:
         case 12:
@@ -1466,18 +1461,18 @@ void select_disp(WinMgrEntry* entry) {
         }
 
     posMain = vec3_802ffb34;
-    posMain.x = select->field_0x14;
-    posMain.y = select->field_0x18;
+    posMain.x = select->iconX;
+    posMain.y = select->iconY;
     iconDispGx(1.0f, &posMain, 0x14, 0x1f0);
 
-    if (select->field_0x34 > 8 && (gp->retraceCount & 0x1F) < 20) {
-        if (select->field_0x10 != 0) {
+    if (select->numItems > 8 && (gp->retraceCount & 0x1F) < 20) {
+        if (select->scrollTop != 0) {
             posUp = vec3_802ffb40;
             posUp.x = (f32)entry->field_0x18 + (f32)entry->field_0x20 / 2.0f;
             posUp.y = (f32)(entry->field_0x1C - 0x24);
             iconDispGx(0.6f, &posUp, 0x10, 0x1b5);
         }
-        if (select->field_0x10 != select->field_0x34 - 8) {
+        if (select->scrollTop != select->numItems - 8) {
             posDown = vec3_802ffb4c;
             posDown.x = (f32)entry->field_0x18 + (f32)entry->field_0x20 / 2.0f;
             posDown.y = (f32)(entry->field_0x1C - entry->field_0x24 - 0xc);
@@ -1860,13 +1855,13 @@ WinMgrSelect* winMgrSelectEntry(s32 a1, s32 a2, BOOL a3) {
     select = (WinMgrSelect*)__memAlloc(HEAP_DEFAULT, 0x3c);
     memset(select, 0, 0x3c);
 
-    select->field_0x4 = a1;
+    select->kind = a1;
     descId = a1;
-    select->field_0xC = 0;
-    select->field_0x10 = 0;
-    select->field_0x18 = 0.0f;
-    select->field_0x14 = 0.0f;
-    select->field_0x1C = 0.0f;
+    select->cursor = 0;
+    select->scrollTop = 0;
+    select->iconY = 0.0f;
+    select->iconX = 0.0f;
+    select->baseY = 0.0f;
     select->field_0x38 = a2;
 
     if (a3) {
@@ -1884,19 +1879,19 @@ WinMgrSelect* winMgrSelectEntry(s32 a1, s32 a2, BOOL a3) {
     }
 
     desc = select_desc_tbl[descId].descriptors;
-    select->field_0x14 = (f32)desc->field_0xC;
-    select->field_0x18 = (f32)(desc->field_0x10 - 54);
+    select->iconX = (f32)desc->field_0xC;
+    select->iconY = (f32)(desc->field_0x10 - 54);
 
-    type = select->field_0x4;
+    type = select->kind;
     switch (type) {
     case 0:
-        select->field_0x30 = (s32)__memAlloc(HEAP_DEFAULT, 0x1e8);
-        memset((void*)select->field_0x30, 0, 0x1e8);
-        select->field_0x34 = 0;
+        select->items = (WinMgrSelectItem*)__memAlloc(HEAP_DEFAULT, 0x1e8);
+        memset(select->items, 0, 0x1e8);
+        select->numItems = 0;
         if (a2 != 0) {
             {
-                WinMgrSelectItem* it = &((WinMgrSelectItem*)select->field_0x30)[select->field_0x34++];
-                it->field_0x2 = a2;
+                WinMgrSelectItem* it = &select->items[select->numItems++];
+                it->id = a2;
             }
         }
         for (i = 0; i < 0x79; i++) {
@@ -1908,7 +1903,7 @@ WinMgrSelect* winMgrSelectEntry(s32 a1, s32 a2, BOOL a3) {
                     }
                 }
                 if (j >= 0x13) {
-                    ((WinMgrSelectItem*)select->field_0x30)[select->field_0x34++].field_0x2 = item;
+                    select->items[select->numItems++].id = item;
                 }
             }
         }
@@ -1916,92 +1911,92 @@ WinMgrSelect* winMgrSelectEntry(s32 a1, s32 a2, BOOL a3) {
     case 1:
     case 3:
     case 4:
-        select->field_0x30 = (s32)__memAlloc(HEAP_DEFAULT, 0x54);
-        memset((void*)select->field_0x30, 0, 0x54);
-        select->field_0x34 = 0;
+        select->items = (WinMgrSelectItem*)__memAlloc(HEAP_DEFAULT, 0x54);
+        memset(select->items, 0, 0x54);
+        select->numItems = 0;
         if (a2 != 0) {
             {
-                WinMgrSelectItem* it = &((WinMgrSelectItem*)select->field_0x30)[select->field_0x34++];
-                it->field_0x2 = a2;
+                WinMgrSelectItem* it = &select->items[select->numItems++];
+                it->id = a2;
             }
         }
         for (i = 0; i < 0x14; i++) {
             item = pouchHaveItem(i);
             if (item != 0) {
-                ((WinMgrSelectItem*)select->field_0x30)[select->field_0x34++].field_0x2 = item;
+                select->items[select->numItems++].id = item;
             }
         }
         break;
     case 2:
     case 12:
-        select->field_0x30 = (s32)__memAlloc(HEAP_DEFAULT, 0x324);
-        memset((void*)select->field_0x30, 0, 0x324);
-        select->field_0x34 = 0;
+        select->items = (WinMgrSelectItem*)__memAlloc(HEAP_DEFAULT, 0x324);
+        memset(select->items, 0, 0x324);
+        select->numItems = 0;
         if (a2 != 0) {
             {
-                WinMgrSelectItem* it = &((WinMgrSelectItem*)select->field_0x30)[select->field_0x34++];
-                it->field_0x2 = a2;
+                WinMgrSelectItem* it = &select->items[select->numItems++];
+                it->id = a2;
             }
         }
         for (i = 0; i < 0xc8; i++) {
             item = pouchHaveBadge(i);
             if (item != 0) {
-                ((WinMgrSelectItem*)select->field_0x30)[select->field_0x34++].field_0x2 = item;
+                select->items[select->numItems++].id = item;
             }
         }
         break;
     case 5:
-        select->field_0x30 = (s32)__memAlloc(HEAP_DEFAULT, 0x84);
-        memset((void*)select->field_0x30, 0, 0x84);
-        select->field_0x34 = 0;
+        select->items = (WinMgrSelectItem*)__memAlloc(HEAP_DEFAULT, 0x84);
+        memset(select->items, 0, 0x84);
+        select->numItems = 0;
         if (a2 != 0) {
             {
-                WinMgrSelectItem* it = &((WinMgrSelectItem*)select->field_0x30)[select->field_0x34++];
-                it->field_0x2 = a2;
+                WinMgrSelectItem* it = &select->items[select->numItems++];
+                it->id = a2;
             }
         }
         for (i = 0; i < 0x20; i++) {
             item = pouchKeepItem(i);
             if (item != 0) {
-                ((WinMgrSelectItem*)select->field_0x30)[select->field_0x34++].field_0x2 = item;
+                select->items[select->numItems++].id = item;
             }
         }
         break;
     case 6:
     case 7:
-        select->field_0x30 = (s32)__memAlloc(HEAP_DEFAULT, 0x1c);
-        memset((void*)select->field_0x30, 0, 0x1c);
-        select->field_0x34 = 0;
+        select->items = (WinMgrSelectItem*)__memAlloc(HEAP_DEFAULT, 0x1c);
+        memset(select->items, 0, 0x1c);
+        select->numItems = 0;
         for (i = 0; party_id_table[i] != 0; i++) {
             if (partyChkJoin(party_id_table[i])) {
-                ((WinMgrSelectItem*)select->field_0x30)[select->field_0x34].field_0x2 = i;
+                select->items[select->numItems].id = i;
                 if (evtGetValue(0, 0xF8406022) == 0) {
                     if (pouch->partyData[party_id_table[i]].techLevel >= 1) {
-                        ((WinMgrSelectItem*)select->field_0x30)[select->field_0x34].field_0x0 |= 3;
+                        select->items[select->numItems].flags |= 3;
                     }
                 } else {
                     if (pouch->partyData[party_id_table[i]].techLevel >= 2) {
-                        ((WinMgrSelectItem*)select->field_0x30)[select->field_0x34].field_0x0 |= 3;
+                        select->items[select->numItems].flags |= 3;
                     }
                 }
-                select->field_0x34++;
+                select->numItems++;
             }
         }
         break;
     case 8:
-        select->field_0x30 = (s32)__memAlloc(HEAP_DEFAULT, 0x1c);
-        memset((void*)select->field_0x30, 0, 0x1c);
-        select->field_0x34 = 0;
+        select->items = (WinMgrSelectItem*)__memAlloc(HEAP_DEFAULT, 0x1c);
+        memset(select->items, 0, 0x1c);
+        select->numItems = 0;
         for (i = 0; party_id_table[i] != 0; i++) {
             if (partyChkJoin(party_id_table[i])) {
                 if (party_id_table[i] == evtGetValue(0, 0xFD050F81)) {
                     continue;
                 }
-                ((WinMgrSelectItem*)select->field_0x30)[select->field_0x34].field_0x2 = i;
+                select->items[select->numItems].id = i;
                 if (pouch->partyData[party_id_table[i]].techLevel == 0) {
-                    ((WinMgrSelectItem*)select->field_0x30)[select->field_0x34].field_0x0 |= 3;
+                    select->items[select->numItems].flags |= 3;
                 }
-                select->field_0x34++;
+                select->numItems++;
             }
         }
         break;
@@ -2009,15 +2004,15 @@ WinMgrSelect* winMgrSelectEntry(s32 a1, s32 a2, BOOL a3) {
         mario_status_point_table[0] = &pouchGetPtr()->baseMaxHP;
         mario_status_point_table[1] = &pouchGetPtr()->baseMaxFP;
         mario_status_point_table[2] = &pouchGetPtr()->maximumBP;
-        select->field_0x30 = (s32)__memAlloc(HEAP_DEFAULT, 0xc);
-        memset((void*)select->field_0x30, 0, 0xc);
+        select->items = (WinMgrSelectItem*)__memAlloc(HEAP_DEFAULT, 0xc);
+        memset(select->items, 0, 0xc);
         for (i = 0; i < 3; i++) {
             s32 canDown = 0;
             s32 canUp = 0;
 
-            ((WinMgrSelectItem*)select->field_0x30)[i].field_0x2 = i;
+            select->items[i].id = i;
             for (j = 0; j < 3; j++) {
-                if (((WinMgrSelectItem*)select->field_0x30)[i].field_0x2 != j) {
+                if (select->items[i].id != j) {
                     if (*mario_status_point_table[j] - mario_status_henka_table[j] <= 0) {
                         canDown++;
                     }
@@ -2027,75 +2022,75 @@ WinMgrSelect* winMgrSelectEntry(s32 a1, s32 a2, BOOL a3) {
             }
             if (canDown == 2 || canUp != 0) {
                 if (canUp != 0) {
-                    ((WinMgrSelectItem*)select->field_0x30)[i].field_0x0 |= 7;
+                    select->items[i].flags |= 7;
                 } else {
-                    ((WinMgrSelectItem*)select->field_0x30)[i].field_0x0 |= 3;
+                    select->items[i].flags |= 3;
                 }
             }
         }
-        select->field_0x34 = 3;
+        select->numItems = 3;
         break;
     case 10:
         mario_status_point_table[0] = &pouchGetPtr()->baseMaxHP;
         mario_status_point_table[1] = &pouchGetPtr()->baseMaxFP;
         mario_status_point_table[2] = &pouchGetPtr()->maximumBP;
-        select->field_0x30 = (s32)__memAlloc(HEAP_DEFAULT, 8);
-        memset((void*)select->field_0x30, 0, 8);
-        select->field_0x34 = 0;
+        select->items = (WinMgrSelectItem*)__memAlloc(HEAP_DEFAULT, 8);
+        memset(select->items, 0, 8);
+        select->numItems = 0;
         for (i = 0; i < 3; i++) {
             if (i == evtGetValue(0, 0xFD050F81)) {
                 continue;
             }
-            ((WinMgrSelectItem*)select->field_0x30)[select->field_0x34].field_0x2 = i;
+            select->items[select->numItems].id = i;
             if (*mario_status_point_table[i] - mario_status_henka_table[i] <= 0) {
-                ((WinMgrSelectItem*)select->field_0x30)[select->field_0x34].field_0x0 |= 3;
+                select->items[select->numItems].flags |= 3;
             }
-            select->field_0x34++;
+            select->numItems++;
         }
         break;
     case 11:
-        select->field_0x30 = (s32)__memAlloc(HEAP_DEFAULT, 0x18c);
-        memset((void*)select->field_0x30, 0, 0x18c);
-        select->field_0x34 = 0;
+        select->items = (WinMgrSelectItem*)__memAlloc(HEAP_DEFAULT, 0x18c);
+        memset(select->items, 0, 0x18c);
+        select->numItems = 0;
         for (i = 0; i < 0x63; i++) {
             s16 v = (s16)badgeShop_get(bdsw->bargain_table, (s16)(i + 0xf0));
 
             if (v - badgeShop_ThrowCheck(i + 0xf0) > 0) {
-                ((WinMgrSelectItem*)select->field_0x30)[select->field_0x34++].field_0x2 = i + 0xf0;
+                select->items[select->numItems++].id = i + 0xf0;
             }
         }
-        qqsort((void*)select->field_0x30, select->field_0x34, 4, (int (*)(void*, void*))unk_802379e4);
+        qqsort(select->items, select->numItems, 4, (int (*)(void*, void*))unk_802379e4);
         break;
     case 13:
         {
             s32 max = getBadgeStarmaniacTableMaxCount();
 
-            select->field_0x30 = (s32)__memAlloc(HEAP_DEFAULT, max * 4);
-            memset((void*)select->field_0x30, 0, max * 4);
-            select->field_0x34 = 0;
+            select->items = (WinMgrSelectItem*)__memAlloc(HEAP_DEFAULT, max * 4);
+            memset(select->items, 0, max * 4);
+            select->numItems = 0;
             for (i = 0; i < 0x63; i++) {
                 s32 v = (s16)badgeShop_get(bdsw->starmaniac_table, (s16)(i + 0xf0));
 
                 if (v - badgeShop_ThrowCheck(i + 0xf0) > 0) {
-                    ((WinMgrSelectItem*)select->field_0x30)[select->field_0x34].field_0x2 = i + 0xf0;
+                    select->items[select->numItems].id = i + 0xf0;
                     if (itemDataTable[0xf0 + i].star_piece_price > pouchGetStarPiece()) {
-                        ((WinMgrSelectItem*)select->field_0x30)[select->field_0x34].field_0x0 |= 3;
+                        select->items[select->numItems].flags |= 3;
                     }
-                    select->field_0x34++;
+                    select->numItems++;
                 }
             }
-            qqsort((void*)select->field_0x30, select->field_0x34, 4, (int (*)(void*, void*))unk_80237a2c);
+            qqsort(select->items, select->numItems, 4, (int (*)(void*, void*))unk_80237a2c);
         }
         break;
     case 14:
-        select->field_0x30 = (s32)__memAlloc(HEAP_DEFAULT, 0x10);
-        memset((void*)select->field_0x30, 0, 0x10);
-        select->field_0x34 = 0;
+        select->items = (WinMgrSelectItem*)__memAlloc(HEAP_DEFAULT, 0x10);
+        memset(select->items, 0, 0x10);
+        select->numItems = 0;
         for (i = 0; i < 4; i++) {
             s32 v = evtGetValue(0, 0xF5DE01F6 + i);
 
             if (badge_bottakuru_table[v] != 0) {
-                ((WinMgrSelectItem*)select->field_0x30)[select->field_0x34++].field_0x2 = badge_bottakuru_table[v];
+                select->items[select->numItems++].id = badge_bottakuru_table[v];
             }
         }
         break;
@@ -2103,11 +2098,11 @@ WinMgrSelect* winMgrSelectEntry(s32 a1, s32 a2, BOOL a3) {
         {
             s32 max = getBadgeBottakuru100TableMaxCount();
 
-            select->field_0x30 = (s32)__memAlloc(HEAP_DEFAULT, max * 4);
-            memset((void*)select->field_0x30, 0, max * 4);
-            select->field_0x34 = 0;
+            select->items = (WinMgrSelectItem*)__memAlloc(HEAP_DEFAULT, max * 4);
+            memset(select->items, 0, max * 4);
+            select->numItems = 0;
             for (i = 0; i < max; i++) {
-                ((WinMgrSelectItem*)select->field_0x30)[select->field_0x34++].field_0x2 = badge_bottakuru100_table[i];
+                select->items[select->numItems++].id = badge_bottakuru100_table[i];
             }
         }
         break;
@@ -2115,12 +2110,12 @@ WinMgrSelect* winMgrSelectEntry(s32 a1, s32 a2, BOOL a3) {
         {
             s32 max = getBadgeBteresaTableMaxCount();
 
-            select->field_0x30 = (s32)__memAlloc(HEAP_DEFAULT, max * 4);
-            memset((void*)select->field_0x30, 0, max * 4);
-            select->field_0x34 = 0;
+            select->items = (WinMgrSelectItem*)__memAlloc(HEAP_DEFAULT, max * 4);
+            memset(select->items, 0, max * 4);
+            select->numItems = 0;
             for (i = 0; i < 0x152; i++) {
                 if ((s16)badgeShop_get(bdsw->bteresa_table, (s16)(i + 1)) > 0) {
-                    ((WinMgrSelectItem*)select->field_0x30)[select->field_0x34++].field_0x2 = i + 1;
+                    select->items[select->numItems++].id = i + 1;
                 }
             }
         }
@@ -2130,13 +2125,13 @@ WinMgrSelect* winMgrSelectEntry(s32 a1, s32 a2, BOOL a3) {
         {
             u8* unk = (type == 0x11) ? jdt->unk14.unkD : jdt->unk14.unk1A;
 
-            select->field_0x34 = jdt->count;
-            select->field_0x30 = (s32)__memAlloc(HEAP_DEFAULT, (select->field_0x34 + 1) * 4);
-            memset((void*)select->field_0x30, 0, (select->field_0x34 + 1) * 4);
-            for (i = 0; i < select->field_0x34; i++) {
-                ((WinMgrSelectItem*)select->field_0x30)[i].field_0x2 = i;
+            select->numItems = jdt->count;
+            select->items = (WinMgrSelectItem*)__memAlloc(HEAP_DEFAULT, (select->numItems + 1) * 4);
+            memset(select->items, 0, (select->numItems + 1) * 4);
+            for (i = 0; i < select->numItems; i++) {
+                select->items[i].id = i;
                 if (johoya_get(unk, jdt->info[i].storyId) != 0) {
-                    ((WinMgrSelectItem*)select->field_0x30)[i].field_0x0 |= 1;
+                    select->items[i].flags |= 1;
                 }
             }
         }
@@ -2148,22 +2143,22 @@ WinMgrSelect* winMgrSelectEntry(s32 a1, s32 a2, BOOL a3) {
 
             while (list[n++] != -1)
                 ;
-            select->field_0x30 = (s32)__memAlloc(HEAP_DEFAULT, (n + 1) * 4);
-            memset((void*)select->field_0x30, 0, (n + 1) * 4);
-            select->field_0x34 = 0;
+            select->items = (WinMgrSelectItem*)__memAlloc(HEAP_DEFAULT, (n + 1) * 4);
+            memset(select->items, 0, (n + 1) * 4);
+            select->numItems = 0;
             if (a2 != 0) {
-                WinMgrSelectItem* it = &((WinMgrSelectItem*)select->field_0x30)[select->field_0x34++];
+                WinMgrSelectItem* it = &select->items[select->numItems++];
 
-                it->field_0x2 = a2;
+                it->id = a2;
             }
             for (i = 0; list[i] != -1; ) {
-                ((WinMgrSelectItem*)select->field_0x30)[select->field_0x34++].field_0x2 = list[i++];
+                select->items[select->numItems++].id = list[i++];
             }
         }
         break;
     }
 
-    if (select->field_0x34 < 8) {
+    if (select->numItems < 8) {
         s32 f20 = desc->field_0x14;
 #ifdef MUST_MATCH
         s32 f1C = get10(desc);
@@ -2171,7 +2166,7 @@ WinMgrSelect* winMgrSelectEntry(s32 a1, s32 a2, BOOL a3) {
         s32 f1C = desc->field_0x10;
 #endif
         s32 f18 = desc->field_0xC;
-        s32 f24 = desc->field_0x18 - (8 - select->field_0x34) * 0x18;
+        s32 f24 = desc->field_0x18 - (8 - select->numItems) * 0x18;
         WinMgrEntry* e = &wp->mEntries[select->descriptorId[0]];
 
         if (e->flags & 1) {
@@ -2185,8 +2180,8 @@ WinMgrSelect* winMgrSelectEntry(s32 a1, s32 a2, BOOL a3) {
 }
 
 s32 unk_80237a2c(void* a, void* b) {
-    u32 va = itemDataTable[((WinMgrSelectItem*)a)->field_0x2].star_piece_price;
-    u32 vb = itemDataTable[((WinMgrSelectItem*)b)->field_0x2].star_piece_price;
+    u32 va = itemDataTable[((WinMgrSelectItem*)a)->id].star_piece_price;
+    u32 vb = itemDataTable[((WinMgrSelectItem*)b)->id].star_piece_price;
 
     if (va > vb) {
         return 1;
@@ -2195,8 +2190,8 @@ s32 unk_80237a2c(void* a, void* b) {
 }
 
 s32 unk_802379e4(void* a, void* b) {
-    s32 va = itemDataTable[((WinMgrSelectItem*)a)->field_0x2].type_sort_order;
-    s32 vb = itemDataTable[((WinMgrSelectItem*)b)->field_0x2].type_sort_order;
+    s32 va = itemDataTable[((WinMgrSelectItem*)a)->id].type_sort_order;
+    s32 vb = itemDataTable[((WinMgrSelectItem*)b)->id].type_sort_order;
 
     if (va > vb) {
         return 1;
@@ -2211,12 +2206,12 @@ s32 winMgrSelect(WinMgrSelect* select) {
         if (flags & 0x2000) {
             return -1;
         }
-        if (select->field_0x38 != 0 && select->field_0xC == 0 && (flags & 0x100)) {
+        if (select->field_0x38 != 0 && select->cursor == 0 && (flags & 0x100)) {
             return -1;
         }
         {
-            WinMgrSelectItem* items = (WinMgrSelectItem*)select->field_0x30;
-            return items[select->field_0xC].field_0x2;
+            WinMgrSelectItem* items = select->items;
+            return items[select->cursor].id;
         }
     }
     return 0;
@@ -2235,10 +2230,10 @@ s32 winMgrSelectOther(WinMgrSelect* select, EventEntry* event) {
             return -1;
         }
 
-        items = (WinMgrSelectItem*)select->field_0x30;
-        itemId = items[select->field_0xC].field_0x2;
+        items = select->items;
+        itemId = items[select->cursor].id;
 
-        switch (select->field_0x4) {
+        switch (select->kind) {
         case 6:
         case 7:
             event->lwData[1] = party_id_table[itemId];
@@ -2317,7 +2312,7 @@ s32 winMgrSelectOther(WinMgrSelect* select, EventEntry* event) {
             event->lwData[1] = itemId;
             event->lwData[2] = (s32)itemDataTable[itemId].id;
             event->lwData[3] = (u16)itemDataTable[itemId].sell_price;
-            event->lwData[4] = select->field_0xC;
+            event->lwData[4] = select->cursor;
             break;
         case 13:
             event->lwData[1] = itemId;
@@ -2384,12 +2379,12 @@ void winMgrSelectDelete(WinMgrSelect* select) {
 #else
     WinMgrSelect* s = select;
 #endif
-    __memFree(HEAP_DEFAULT, (void*)s->field_0x30);
+    __memFree(HEAP_DEFAULT, s->items);
     __memFree(HEAP_DEFAULT, s);
 }
 
 s32 unk_80237448(WinMgrSelect* select) {
-    return select->field_0xC;
+    return select->cursor;
 }
 
 // select_main emits first, then MWCC flushes the deferred group immediately after it.
@@ -2405,7 +2400,7 @@ void select_main(WinMgrEntry* entry) {
     s32 off;
     s32 i;
 
-    switch ((*(s32*)select->field_0x8)) {
+    switch (select->state) {
     case 0:
         for (i = 0; i < (count = select->numDescriptors); i++) {
             WinMgrEntry* e = &wp->mEntries[select->descriptorId[i]];
@@ -2427,69 +2422,69 @@ void select_main(WinMgrEntry* entry) {
         }
         psndSFXOn((const char*)0x2002A);
         statusWinForceOpen();
-        (*(s32*)select->field_0x8)++;
+        select->state++;
         break;
     case 1:
         if (wp->mEntries[select->descriptorId[0]].flags & 4) {
             break;
         }
-        newIndex = select->field_0xC;
+        newIndex = select->cursor;
         if (keyGetDirRep(0) & 0x2000) {
-            select->field_0xC++;
+            select->cursor++;
         }
         if (keyGetDirRep(0) & 0x1000) {
-            select->field_0xC--;
+            select->cursor--;
         }
-        if (select->field_0xC >= select->field_0x34) {
+        if (select->cursor >= select->numItems) {
             if (keyGetDirTrg(0) & 0x2000) {
-                select->field_0xC = 0;
-                select->field_0x10 = 0;
+                select->cursor = 0;
+                select->scrollTop = 0;
             } else {
-                select->field_0xC--;
+                select->cursor--;
             }
         }
-        if (select->field_0xC < 0) {
+        if (select->cursor < 0) {
             if (keyGetDirTrg(0) & 0x1000) {
-                select->field_0xC = select->field_0x34 - 1;
-                off = select->field_0x34 - 8;
+                select->cursor = select->numItems - 1;
+                off = select->numItems - 8;
                 if (off > 0) {
-                    select->field_0x10 = off;
+                    select->scrollTop = off;
                 }
             } else {
-                select->field_0xC++;
+                select->cursor++;
             }
         }
-        if (newIndex < select->field_0xC) {
-            if (select->field_0xC > 5 && select->field_0x10 < select->field_0x34 - 8) {
-                select->field_0x10++;
+        if (newIndex < select->cursor) {
+            if (select->cursor > 5 && select->scrollTop < select->numItems - 8) {
+                select->scrollTop++;
             }
-        } else if (newIndex > select->field_0xC) {
-            if (select->field_0xC - select->field_0x10 < 3 && select->field_0x10 > 0) {
-                select->field_0x10--;
+        } else if (newIndex > select->cursor) {
+            if (select->cursor - select->scrollTop < 3 && select->scrollTop > 0) {
+                select->scrollTop--;
             }
         }
-        if (newIndex != select->field_0xC) {
+        if (newIndex != select->cursor) {
             psndSFXOn((const char*)0x20005);
         }
         if (keyGetButtonTrg(0) & 0x100) {
-            if (((WinMgrSelectItem*)select->field_0x30)[select->field_0xC].field_0x0 & 2) {
+            if (select->items[select->cursor].flags & 2) {
                 psndSFXOn((const char*)0x20014);
             } else {
                 psndSFXOn((const char*)0x20012);
-                (*(s32*)select->field_0x8)++;
+                select->state++;
             }
         } else if (keyGetButtonTrg(0) & 0x200) {
             if (*(u16*)&select->flags & 0x100) {
                 psndSFXOn((const char*)0x20013);
                 *(u16*)&select->flags |= 0x2000;
-                (*(s32*)select->field_0x8)++;
+                select->state++;
             }
         }
-        select->field_0x1C = select->field_0x1C + (WINMGR_F32(float_24_80421aa0) * select->field_0x10 - select->field_0x1C) / WINMGR_F32(float_6_80421aa4);
-        select->field_0x14 = select->field_0x14 + ((f32)entry->field_0x18 - select->field_0x14) / WINMGR_F32(float_6_80421aa4);
-        select->field_0x18 = select->field_0x18 +
-            ((f32)(entry->field_0x1C - 54) - WINMGR_F32(float_24_80421aa0) * (f32)(select->field_0xC - select->field_0x10) -
-             select->field_0x18) / WINMGR_F32(float_6_80421aa4);
+        select->baseY = select->baseY + (WINMGR_F32(float_24_80421aa0) * select->scrollTop - select->baseY) / WINMGR_F32(float_6_80421aa4);
+        select->iconX = select->iconX + ((f32)entry->field_0x18 - select->iconX) / WINMGR_F32(float_6_80421aa4);
+        select->iconY = select->iconY +
+            ((f32)(entry->field_0x1C - 54) - WINMGR_F32(float_24_80421aa0) * (f32)(select->cursor - select->scrollTop) -
+             select->iconY) / WINMGR_F32(float_6_80421aa4);
         break;
     case 2:
         for (i = 0; i < select->numDescriptors; i++) {
@@ -2502,7 +2497,7 @@ void select_main(WinMgrEntry* entry) {
         }
         psndSFXOn((const char*)0x2002B);
         statusWinForceOff();
-        (*(s32*)select->field_0x8)++;
+        select->state++;
         break;
     case 3:
         if (wp->mEntries[select->descriptorId[0]].flags & 4) {
@@ -2514,7 +2509,7 @@ void select_main(WinMgrEntry* entry) {
             e->flags &= ~1;
         }
         *(u16*)&select->flags |= 0x1000;
-        (*(s32*)select->field_0x8)++;
+        select->state++;
         break;
     case 4:
         break;
