@@ -70,29 +70,29 @@ typedef struct PuniWork {
 
 typedef struct PuniData {
     s32 field_0x0;                      // 0x0
-    s32 unk4;                           // 0x4
+    s32 flags;                          // 0x4
     s32 field_0x8;                      // 0x8
-    u16 unkC;                           // 0xC
+    u16 mode;                           // 0xC
     s16 field_0xE;                      // 0xE
     u8 unk10[0x114 - 0x10];             // 0x10
-    u16 field_0x114;                    // 0x114
-    s16 field_0x116;                    // 0x116
+    u16 state;                          // 0x114
+    s16 angle;                          // 0x116
     s16 field_0x118;                    // 0x118
     s16 field_0x11A;                    // 0x11A
-    u16 field_0x11C;                    // 0x11C
+    u16 animIdx;                        // 0x11C
     s16 field_0x11E;                    // 0x11E
     u8 unk120[0x121 - 0x120];           // 0x120
     u8 field_0x121;                     // 0x121
     u8 unk122[0x124 - 0x122];           // 0x122
     s32 field_0x124;                    // 0x124
     s32 field_0x128;                    // 0x128
-    Vec field_0x12C;                    // 0x12C
+    Vec pos;                            // 0x12C
     Vec field_0x138;                    // 0x138
     f32 field_0x144;                    // 0x144
     f32 field_0x148;                    // 0x148
     f32 field_0x14C;                    // 0x14C
     u8 unk150[0x15C - 0x150];           // 0x150
-    Vec field_0x15C;                    // 0x15C
+    Vec vel;                            // 0x15C
     u8 unk168[0x174 - 0x168];           // 0x168
     f32 field_0x174;                    // 0x174
     u8 unk178[0x180 - 0x178];           // 0x178
@@ -115,17 +115,17 @@ typedef struct PuniData {
     f32 field_0x1C0;                    // 0x1C0
     u8 unk1C4[0x1C8 - 0x1C4];           // 0x1C4
     OSTime modeStartTime;               // 0x1C8
-    s32 field_0x1D0;                    // 0x1D0
-    s32 field_0x1D4;                    // 0x1D4
-    s32 field_0x1D8;                    // 0x1D8
-    s32 field_0x1DC;                    // 0x1DC
+    s32 parentPuni;                     // 0x1D0
+    s32 leftPuni;                       // 0x1D4
+    s32 rightPuni;                      // 0x1D8
+    s32 target;                         // 0x1DC
     u8 unk1E0[0x1E4 - 0x1E0];           // 0x1E0
     s32 field_0x1E4;                    // 0x1E4
     u8 unk1E8[0x1EC - 0x1E8];           // 0x1E8
     f32 field_0x1EC;                    // 0x1EC
     f32 field_0x1F0;                    // 0x1F0
     u8 unk1F4[0x1F8 - 0x1F4];           // 0x1F4
-    Vec field_0x1F8;                    // 0x1F8
+    Vec accel;                          // 0x1F8
     Vec field_0x204;                    // 0x204
     struct HitEntry* field_0x210;       // 0x210
     struct HitEntry* field_0x214;       // 0x214
