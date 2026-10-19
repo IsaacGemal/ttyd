@@ -11,7 +11,7 @@
 
 // One entry of PuniWork's target table at 0x374.
 typedef struct PuniTarget {
-    s32 flags;               // 0x0
+    s32 flags;                          // 0x0
     Vec position;            // 0x4
     struct HitEntry* hit;    // 0x10
 } PuniTarget; // 0x14
@@ -84,8 +84,8 @@ typedef struct PuniData {
     u8 unk120[0x121 - 0x120];           // 0x120
     u8 field_0x121;                     // 0x121
     u8 unk122[0x124 - 0x122];           // 0x122
-    s32 field_0x124;                    // 0x124
-    s32 field_0x128;                    // 0x128
+    s32 animTime;                       // 0x124
+    s32 timer;                          // 0x128
     Vec pos;                            // 0x12C
     Vec field_0x138;                    // 0x138
     f32 field_0x144;                    // 0x144
@@ -96,10 +96,10 @@ typedef struct PuniData {
     u8 unk168[0x174 - 0x168];           // 0x168
     f32 field_0x174;                    // 0x174
     u8 unk178[0x180 - 0x178];           // 0x178
-    f32 field_0x180;                    // 0x180
+    f32 direction;                      // 0x180
     f32 field_0x184;                    // 0x184
     f32 field_0x188;                    // 0x188
-    f32 field_0x18C;                    // 0x18C
+    f32 scale;                          // 0x18C
     f32 field_0x190;                    // 0x190
     f32 field_0x194;                    // 0x194
     f32 field_0x198;                    // 0x198
@@ -129,7 +129,7 @@ typedef struct PuniData {
     Vec field_0x204;                    // 0x204
     struct HitEntry* field_0x210;       // 0x210
     struct HitEntry* field_0x214;       // 0x214
-    s32 field_0x218;                    // 0x218
+    s32 effect;                         // 0x218
     u8 unk21C[0x560 - 0x21C];           // 0x21C
     Vec field_0x560;                    // 0x560
     s32 field_0x56C;                    // 0x56C
