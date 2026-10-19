@@ -106,7 +106,11 @@ typedef struct BattleAudienceStar {
 
 // TODO: verify variable names
 typedef struct BattleAudienceSound {
-    u8 field_0x0[0x10 - 0x0];      // 0x0
+    s32 flags;                     // 0x0, bit 0 set while the sound is in use
+    s32 sfxId;                     // 0x4, from BattleAudienceSound1/2, -1 when it failed to start
+    u8 variant;                    // 0x8, 1-8, chosen by the caller before the sound starts
+    u8 field_0x9[0xC - 0x9];       // 0x9
+    s32 field_0xC;                 // 0xC, -1 on start (a + b for the timed variant)
     s32 mFadeoutTime;              // 0x10
     s32 mForceFadeTimer;           // 0x14
     s32 mForceFadeLength;          // 0x18
