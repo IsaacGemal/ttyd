@@ -670,14 +670,14 @@ void mobjMain(void) {
                             entry->unk1E0 = 0x800000;
                             goto apply;
                         }
-                        if (*(void**)((u8*)party + 0x130) != NULL && party->currentMemberId == 3 &&
+                        if (*(void**)((u8*)party + 0x130) != NULL && party->currentMemberId == PARTY_MEMBER_BOBBERY &&
                             PSVECDistance(&party->position, &entry->position) < entry->hitObj[0].hitObject->radius + party->radius) {
                             v22 = 1;
                             entry->unk1E0 = 0x800000;
                             goto apply;
                         }
                     }
-                    if ((entry->flags & 0x2000000) && party != NULL && party->currentMemberId == 3) {
+                    if ((entry->flags & 0x2000000) && party != NULL && party->currentMemberId == PARTY_MEMBER_BOBBERY) {
                         if (*(void**)((u8*)party + 0x130) == (void*)hitObj) {
                             v22 = 1;
                             entry->unk1E0 = 0x2000000;

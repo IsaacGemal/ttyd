@@ -381,13 +381,13 @@ void party_motion_stay(PartyEntry* party) {
         if (!marioKeyOffChk()) {
             if (party->field_32 == 0) {
                 f30 = 18.0f;
-            } else if ((s8)party->currentMemberId == 5) {
+            } else if ((s8)party->currentMemberId == PARTY_MEMBER_FLURRIE) {
                 if (party->field_8 & 0x200000) {
                     f30 = 8.0f;
                 } else {
                     f30 = 30.0f;
                 }
-            } else if ((s8)party->currentMemberId == 6) {
+            } else if ((s8)party->currentMemberId == PARTY_MEMBER_VIVIAN) {
                 if (party->field_8 & 0x200000) {
                     f30 = 8.0f;
                 } else {
@@ -401,13 +401,13 @@ void party_motion_stay(PartyEntry* party) {
     if ((party->field_8 >> 17) & 1) {
         if (party->field_32 == 0) {
             f29 = 18.0f;
-        } else if ((s8)party->currentMemberId == 5) {
+        } else if ((s8)party->currentMemberId == PARTY_MEMBER_FLURRIE) {
             if (party->field_8 & 0x200000) {
                 f29 = 8.0f;
             } else {
                 f29 = 30.0f;
             }
-        } else if ((s8)party->currentMemberId == 6) {
+        } else if ((s8)party->currentMemberId == PARTY_MEMBER_VIVIAN) {
             if (party->field_8 & 0x200000) {
                 f29 = 8.0f;
             } else {
@@ -462,13 +462,13 @@ void party_motion_stay(PartyEntry* party) {
                         partyChgMot(party, 1);
                         partyClearFootmark2();
                     }
-                } else if (other->currentMemberId == 3 && other->field_34 == 3) {
+                } else if (other->currentMemberId == PARTY_MEMBER_BOBBERY && other->field_34 == 3) {
                     if (mario->currMotionId != 0x1f && mario->currMotionId != 0x10 && mario->currMotionId != 0x11) {
                         if (distABf(party->position.x, party->position.z, mario->position.x, mario->position.z) >= f31) {
                             partyChgMot(party, 1);
                         }
                     }
-                } else if (!(other->flags & PARTY_FLAG_IS_BEING_USED) || (s8)other->currentMemberId == 4) {
+                } else if (!(other->flags & PARTY_FLAG_IS_BEING_USED) || (s8)other->currentMemberId == PARTY_MEMBER_YOSHI) {
                     if (distABf(party->position.x, party->position.z, other->position.x, other->position.z) >= f31) {
                         partyChgMot(party, 1);
                     }
@@ -501,7 +501,7 @@ skip_target:
     }
     unk_8014ba3c(party);
     party_force_reset_outofscreen(party);
-    if ((s8)party->currentMemberId == 7 && !(party->flags2 & 0x8000) && !marioKeyOffChk() && marioChkDeepSleep() != 1 && chuchu_searchObject()) {
+    if ((s8)party->currentMemberId == PARTY_MEMBER_MS_MOWZ && !(party->flags2 & 0x8000) && !marioKeyOffChk() && marioChkDeepSleep() != 1 && chuchu_searchObject()) {
         switch (party->useMotionId) {
         case 1:
             if (--party->timer <= 0) {
@@ -558,7 +558,7 @@ void unk_8014bbc8(PartyEntry* party) {
         unk_8014b824(party);
     } else {
         unk_8014ba3c(party);
-        if (party->currentMemberId == 7 && !(party->flags2 & 0x8000)) {
+        if (party->currentMemberId == PARTY_MEMBER_MS_MOWZ && !(party->flags2 & 0x8000)) {
             if (!marioKeyOffChk() && marioChkDeepSleep() != 1 && chuchu_searchObject() != 0) {
                 switch (party->useMotionId) {
                 case 1:
@@ -833,9 +833,9 @@ void party_motion_homing_walk(PartyEntry* party) {
         if (marioKeyOffChk() == 0) {
             if (party->field_32 == 0) {
                 f24 = 18.0f;
-            } else if (party->currentMemberId == 5) {
+            } else if (party->currentMemberId == PARTY_MEMBER_FLURRIE) {
                 f24 = (party->field_8 & 0x200000) ? 8.0f : 30.0f;
-            } else if (party->currentMemberId == 6) {
+            } else if (party->currentMemberId == PARTY_MEMBER_VIVIAN) {
                 f24 = (party->field_8 & 0x200000) ? 8.0f : 30.0f;
             }
             f31 = f24;
@@ -853,9 +853,9 @@ void party_motion_homing_walk(PartyEntry* party) {
     if ((party->field_8 >> 17) & 1) {
         if (party->field_32 == 0) {
             f25 = 18.0f;
-        } else if (party->currentMemberId == 5) {
+        } else if (party->currentMemberId == PARTY_MEMBER_FLURRIE) {
             f25 = (party->field_8 & 0x200000) ? 8.0f : 30.0f;
-        } else if (party->currentMemberId == 6) {
+        } else if (party->currentMemberId == PARTY_MEMBER_VIVIAN) {
             f25 = (party->field_8 & 0x200000) ? 8.0f : 30.0f;
         }
         f30 = f25;
@@ -1355,13 +1355,13 @@ void party_motion_homing_fly(PartyEntry* party) {
         if (!marioKeyOffChk()) {
             if (party->field_32 == 0) {
                 f25 = 18.0f;
-            } else if ((s8)party->currentMemberId == 5) {
+            } else if ((s8)party->currentMemberId == PARTY_MEMBER_FLURRIE) {
                 if (party->field_8 & 0x200000) {
                     f25 = 8.0f;
                 } else {
                     f25 = 30.0f;
                 }
-            } else if ((s8)party->currentMemberId == 6) {
+            } else if ((s8)party->currentMemberId == PARTY_MEMBER_VIVIAN) {
                 if (party->field_8 & 0x200000) {
                     f25 = 8.0f;
                 } else {
@@ -1380,13 +1380,13 @@ void party_motion_homing_fly(PartyEntry* party) {
     if ((party->field_8 >> 17) & 1) {
         if (party->field_32 == 0) {
             f26 = 18.0f;
-        } else if ((s8)party->currentMemberId == 5) {
+        } else if ((s8)party->currentMemberId == PARTY_MEMBER_FLURRIE) {
             if (party->field_8 & 0x200000) {
                 f26 = 8.0f;
             } else {
                 f26 = 30.0f;
             }
-        } else if ((s8)party->currentMemberId == 6) {
+        } else if ((s8)party->currentMemberId == PARTY_MEMBER_VIVIAN) {
             if (party->field_8 & 0x200000) {
                 f26 = 8.0f;
             } else {
@@ -3377,13 +3377,13 @@ f32 partyGetAjiSpeed(PartyEntry* party) {
 
     if (party->field_32 == 0) {
         speed = 18.0f;
-    } else if ((s8)party->currentMemberId == 5) {
+    } else if ((s8)party->currentMemberId == PARTY_MEMBER_FLURRIE) {
         if (party->field_8 & 0x200000) {
             speed = 8.0f;
         } else {
             speed = 30.0f;
         }
-    } else if ((s8)party->currentMemberId == 6) {
+    } else if ((s8)party->currentMemberId == PARTY_MEMBER_VIVIAN) {
         if (party->field_8 & 0x200000) {
             speed = 8.0f;
         } else {
@@ -3577,7 +3577,7 @@ void party_force_reset_outofscreen(PartyEntry* party) {
     cur = party->position;
     if (party->field_32 == 0) {
         up = party->radius;
-    } else if (party->currentMemberId == 5) {
+    } else if (party->currentMemberId == PARTY_MEMBER_FLURRIE) {
         up = 10.0f;
         limit = 70;
     } else {

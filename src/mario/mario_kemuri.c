@@ -310,7 +310,7 @@ void party_kemuri(PartyEntry* party) {
         return;
     }
 
-    if (party->field_34 == 3 && party->currentMemberId == 4) {
+    if (party->field_34 == 3 && party->currentMemberId == PARTY_MEMBER_YOSHI) {
         f32 cos;
         f32 sin;
         s8 count;

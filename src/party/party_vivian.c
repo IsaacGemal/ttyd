@@ -77,12 +77,12 @@ void mot_vivian_post(void) {
             partyChgRunMode(party, 2);
             party->field_3B = 0;
             partyChgPoseId(party, 1);
-            if (party->currentMemberId == 6) {
+            if (party->currentMemberId == PARTY_MEMBER_VIVIAN) {
                 *(s8*)&party->field_4D[2] &= ~1;
             }
         }
     } else {
-        if (party == NULL || party->currentMemberId != 6 || !(party->flags & PARTY_FLAG_IS_BEING_USED)) {
+        if (party == NULL || party->currentMemberId != PARTY_MEMBER_VIVIAN || !(party->flags & PARTY_FLAG_IS_BEING_USED)) {
             return;
         }
         vivian_cancel_req = 1;
@@ -108,7 +108,7 @@ s32 vivianGetStatus(void) {
     if (party == NULL) {
         return 0;
     }
-    if (party->currentMemberId != 6 || !(party->flags & PARTY_FLAG_IS_BEING_USED)) {
+    if (party->currentMemberId != PARTY_MEMBER_VIVIAN || !(party->flags & PARTY_FLAG_IS_BEING_USED)) {
         return 0;
     }
     if (party->useMotionId < 0xa) {
@@ -125,7 +125,7 @@ s32 vivianGetStatus(void) {
 
 // 60 B
 void vivianUnhold(PartyEntry* party) {
-    if (party == NULL || party->currentMemberId != 6 || !(party->flags & PARTY_FLAG_IS_BEING_USED)) {
+    if (party == NULL || party->currentMemberId != PARTY_MEMBER_VIVIAN || !(party->flags & PARTY_FLAG_IS_BEING_USED)) {
         return;
     }
     if (party->useMotionId != 0xa) {
@@ -136,21 +136,21 @@ void vivianUnhold(PartyEntry* party) {
 
 // 28 B
 void L_partyVivianTailStop(PartyEntry* party) {
-    if (party->currentMemberId == 6) {
+    if (party->currentMemberId == PARTY_MEMBER_VIVIAN) {
         party->field_4D[2] |= 1;
     }
 }
 
 // 28 B
 void L_partyVivianTailStart(PartyEntry* party) {
-    if (party->currentMemberId == 6) {
+    if (party->currentMemberId == PARTY_MEMBER_VIVIAN) {
         *(s8*)&party->field_4D[2] &= ~1;
     }
 }
 
 // 156 B
 s32 N_vivianDisplayTailCheck(PartyEntry* party) {
-    if (party->currentMemberId != 6) {
+    if (party->currentMemberId != PARTY_MEMBER_VIVIAN) {
         return 0;
     }
     if (party->field_4D[2] & 1) {
@@ -169,7 +169,7 @@ s32 N_vivianDisplayTailCheck(PartyEntry* party) {
 #pragma opt_common_subs off
 // 240 B
 void vivianShadow(PartyEntry* party) {
-    if (party != NULL && party->currentMemberId == 6) {
+    if (party != NULL && party->currentMemberId == PARTY_MEMBER_VIVIAN) {
         f32 dx = party->position.x - party->field_B8.x;
         f32 dy = party->position.y - party->field_B8.y;
         f32 dz = party->position.z - party->field_B8.z;
@@ -195,7 +195,7 @@ void vivian_move(PartyEntry* party) {
         partyMoveFlyInit(party, 1);
     }
     partyFlyMain(party);
-    if (party != NULL && party->currentMemberId == 6) {
+    if (party != NULL && party->currentMemberId == PARTY_MEMBER_VIVIAN) {
         // The temps are declared mz, my, mx (reverse use order): that colouring is what puts the
         // target's `my` in f3 and `mz` in f1. Assignments stay in mx, my, mz order.
         f32 dx, dy, dz, mz, my, mx;
@@ -349,7 +349,7 @@ void vivian_use(PartyEntry* party) {
             }
         }
         psndSFXOn_3D((const char*)0x935, &party->position);
-        if (party->currentMemberId == 6) {
+        if (party->currentMemberId == PARTY_MEMBER_VIVIAN) {
             party->field_4D[2] |= 1;
         }
         party->useMotionId = 5;
@@ -420,7 +420,7 @@ void vivian_use(PartyEntry* party) {
         marioAdjustMoveDir();
         partyChgPose(party, "PTR_A2_4");
         party->field_20 = 0x18;
-        if (party->currentMemberId == 6) {
+        if (party->currentMemberId == PARTY_MEMBER_VIVIAN) {
             *(s8*)&party->field_4D[2] &= ~1;
         }
         party->useMotionId = 0x17;

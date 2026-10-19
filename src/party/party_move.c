@@ -728,7 +728,7 @@ void unk_800c90d4(PartyEntry* party, s32 value) {
     s32 hi;
 
     work->field_2D++;
-    if (party->currentMemberId == 9) {
+    if (party->currentMemberId == PARTY_MEMBER_FLAVIO) {
         if (value == 0) {
             lo = 0x14;
             hi = 0x28;
@@ -742,12 +742,12 @@ void unk_800c90d4(PartyEntry* party, s32 value) {
         } else if (work->field_2D == lo) {
             psndSFXOn_3D((const char*)0x60C, &party->position);
         }
-    } else if (party->currentMemberId == 8) {
+    } else if (party->currentMemberId == PARTY_MEMBER_EGG) {
         if (work->field_2D >= 0x0F) {
             work->field_2D = 0;
             psndSFXOn_3D((const char*)0x942, &party->position);
         }
-    } else if (party->currentMemberId == 10) {
+    } else if (party->currentMemberId == PARTY_MEMBER_PUNIO) {
         if (value == 0) {
             lo = 5;
             hi = 10;
@@ -791,7 +791,7 @@ void unk_800c9044(PartyEntry* party) {
     }
     if (marioChkDeepSleep() == 1 || (party->flags & PARTY_FLAG_SLEEP_ON)) {
         partyChgPoseId(party, 6);
-    } else if (party->currentMemberId != 7) {
+    } else if (party->currentMemberId != PARTY_MEMBER_MS_MOWZ) {
         partyChgPoseId(party, 1);
     } else if (chuchu_searchObject() == 0) {
         partyChgPoseId(party, 1);
@@ -1083,7 +1083,7 @@ void partySetDir(PartyEntry* party, f32 x, f32 z) {
 }
 
 void partyMoveBehindMario(PartyEntry* party, s32 mode) {
-    if (party->currentMemberId == 4 && party->field_34 == 3) {
+    if (party->currentMemberId == PARTY_MEMBER_YOSHI && party->field_34 == 3) {
         return;
     }
     party->field_3C[1] = mode;
@@ -1094,7 +1094,7 @@ void partyMoveBehindMario(PartyEntry* party, s32 mode) {
 // The field_3B switch is partyChgMoveMode's; calling it (inlined) keeps the original's
 // `cmpwi 6; beq; bge; cmpwi 4; bge` range test that a hand-written 4/5/6 switch folds away.
 void partyMoveBehindMario3(PartyEntry* party, s32 mode, f32 dir) {
-    if (party->currentMemberId == 4 && party->field_34 == 3) {
+    if (party->currentMemberId == PARTY_MEMBER_YOSHI && party->field_34 == 3) {
         return;
     }
     party->field_8 |= 0x100000;
@@ -1112,7 +1112,7 @@ void partyMoveBehindMario3(PartyEntry* party, s32 mode, f32 dir) {
 }
 
 void partyMoveBesideMario(PartyEntry* party, s32 mode) {
-    if (party->currentMemberId == 4 && party->field_34 == 3) {
+    if (party->currentMemberId == PARTY_MEMBER_YOSHI && party->field_34 == 3) {
         return;
     }
     party->field_3C[1] = mode;
@@ -1273,7 +1273,7 @@ void partyGetMoveDirSpd(PartyEntry* party, f32* angle, f32* speed) {
     }
     if (hosei >= 0x1E) {
         *(s16*)((u8*)work + 0x52) = 0;
-        if (!(work->currentMemberId == 4 && work->field_34 == 3)) {
+        if (!(work->currentMemberId == PARTY_MEMBER_YOSHI && work->field_34 == 3)) {
             work->field_3C[1] = 0;
             partyChgMoveMode(work, 2);
             if (work->field_36 == 3) {
@@ -1388,7 +1388,7 @@ void unk_800c7c98(PartyEntry* party) {
         work->field_8 &= ~0x4;
         partyChgPoseId(party, 1);
         party->flags &= ~PARTY_FLAG_IS_BEING_USED;
-        if (party->currentMemberId == 5) {
+        if (party->currentMemberId == PARTY_MEMBER_FLURRIE) {
             unk_801820d0(party);
         }
     }
@@ -1396,7 +1396,7 @@ void unk_800c7c98(PartyEntry* party) {
     switch (mot) {
     case 0:
         unk_8014bbc8(party);
-        if (party->currentMemberId == 5) {
+        if (party->currentMemberId == PARTY_MEMBER_FLURRIE) {
             unk_8018206c(party);
         }
         break;
@@ -1689,7 +1689,7 @@ void partyWalkMain(PartyEntry* party) {
     } else {
         target = anotherPartyGetPtr(party->currentSlotId);
         if (target != NULL) {
-            if ((target->currentMemberId == 3 && target->field_34 == 3)
+            if ((target->currentMemberId == PARTY_MEMBER_BOBBERY && target->field_34 == 3)
                 || nokonokoGetStatus(target) == 3
                 || PSVECDistance(&player->position, &target->position) >= float_150_8041b46c) {
                 s32 marioFlags = marioGetPtr()->flags;
@@ -1729,14 +1729,14 @@ void party_move_mode_stay(PartyEntry* party) {
     if (work->field_8 & 0x4) {
         work->field_8 &= ~0x4;
         partyChgPoseId(party, 1);
-        if (work->currentMemberId == 5) {
+        if (work->currentMemberId == PARTY_MEMBER_FLURRIE) {
             unk_801820d0(party);
         }
     }
     switch (work->field_36) {
     case 0:
         party_motion_stay(party);
-        if (work->currentMemberId == 5) {
+        if (work->currentMemberId == PARTY_MEMBER_FLURRIE) {
             unk_8018206c(party);
         }
         break;
@@ -1908,10 +1908,10 @@ void partyForceWalk(PartyEntry* party) {
     if (work->field_8 & 0x8) {
         work->field_8 &= ~0x8;
         if (work->flags & PARTY_FLAG_IS_BEING_USED) {
-            if (work->currentMemberId == 3) {
+            if (work->currentMemberId == PARTY_MEMBER_BOBBERY) {
                 bomhei_use_cancel();
             }
-            if (work->currentMemberId == 2) {
+            if (work->currentMemberId == PARTY_MEMBER_KOOPS) {
                 nokonoko_finish(work);
             }
             work->flags &= ~PARTY_FLAG_IS_BEING_USED;
@@ -2022,7 +2022,7 @@ void partyForceWalk(PartyEntry* party) {
         break;
     }
     work->field_FC = work->dir;
-    if (work->currentMemberId == 6) {
+    if (work->currentMemberId == PARTY_MEMBER_VIVIAN) {
         vivianShadow(work);
     }
 }
@@ -2221,14 +2221,14 @@ void walkMain(PartyEntry* party) {
         if (work->field_8 & 0x4) {
             work->field_8 &= ~0x4;
             partyChgPoseId(party, 1);
-            if (work->currentMemberId == 5) {
+            if (work->currentMemberId == PARTY_MEMBER_FLURRIE) {
                 unk_801820d0(party);
             }
         }
         switch (work->field_36) {
         case 0:
             party_motion_stay(party);
-            if (work->currentMemberId == 5) {
+            if (work->currentMemberId == PARTY_MEMBER_FLURRIE) {
                 unk_8018206c(party);
             }
             break;
@@ -2420,14 +2420,14 @@ static void flyMain(PartyEntry* party) {
         if (work->field_8 & 0x4) {
             work->field_8 &= ~0x4;
             partyChgPoseId(party, 1);
-            if (work->currentMemberId == 5) {
+            if (work->currentMemberId == PARTY_MEMBER_FLURRIE) {
                 unk_801820d0(party);
             }
         }
         switch (work->field_36) {
         case 0:
             party_motion_stay(party);
-            if (work->currentMemberId == 5) {
+            if (work->currentMemberId == PARTY_MEMBER_FLURRIE) {
                 unk_8018206c(party);
             }
             break;
