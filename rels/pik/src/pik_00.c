@@ -1138,7 +1138,7 @@ s32 iri_29_item_tbl[2] = {
 void irai_29_15_cb(s32 type, smartEntry* smart) {
     MessageData* data = smart->address;
 
-    if (type == 3 && *(u16*)data->pad_0x08 == 1) {
+    if (type == 3 && data->choiceIndex == 1) {
         psndBGMOn(0x200, "BGM_EVT_NOKO_SAIKAI1");
     }
 }

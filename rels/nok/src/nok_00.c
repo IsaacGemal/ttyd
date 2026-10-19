@@ -572,7 +572,7 @@ void nok_stg2_013_cb(s32 type, smartEntry* smart) {
 
     switch (type) {
     case 5:
-        if (data->field_0x10 > 0x31) {
+        if (data->entryPos > 0x31) {
             evtSetValue(NULL, LSWF(2), 1);
         }
         break;

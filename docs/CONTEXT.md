@@ -8511,3 +8511,16 @@ for the file; overall 74.98 → 74.52.
 Left: `card->saves[wp->cursor].data.flags` breaks the checksum (the array index codegen differs from the raw
 `(wp->cursor << 14)`), so those reads stay raw; the byte-stepped scans in loadMain stay raw too (they're tuned to
 retail's registers). The GlobalWork-internal slot reads (level, play time, mask, field17c) have no names yet.
+
+### Readability: msgdrv names (2026-10-19, Claude Haiku 5.5, n9-rd-msg; reviewed by Claude Opus 5.5)
+
+MessageData (one text box's state, 0x7A58 bytes) and MsgDataEntry (one parsed glyph or command) get names from
+msgMain, msgAnalize, msgDisp and evt_msg: `flags` (callback-once, key advances, drive the talk anim of
+`battleUnitId`, history queue drawn, text held, no history), the choice counters (`choiceIndex`, `choiceState`,
+`choiceMade`), `entryPos`, `textTime`/`effectStart`/`lastFrameTime`, the scroll state, `history[0x6E]` with its
+count and cursor, `callback`, `sfxVolume`, msgAnalize's running pen/cursor state, the select-window fields, the talk
+animation toggle; entries get `arg` (glyph flags 0x1 pop-in, 0x2 shake, 0x4 wave, 0x8 talk, 0x10 SE, or a command's
+payload), `x`/`y`, `iconOffsetY`, `startTime`, `scale`. `window->type` uses `WINDOW_TYPE_*`. Users in evt_msg and the
+kpa_01/kpa_07/nok_00/nok_01/pik_00 RELs updated. msgdrv.c index 323 → 102 per kLOC; most of the remaining `field_0x`
+are WindowEntry's (windowdrv.h). Kept raw: msgMain's repeated `((MessageData*)smart->address)->` (caching it isn't
+byte-identical) and the match-trick casts under comments.

@@ -288,7 +288,7 @@ void kpa_stg1_034_cb(s32 type, smartEntry* smart) {
 
     switch (type) {
     case 5:
-        if (msg->field_0x10 > 0x75) {
+        if (msg->entryPos > 0x75) {
             evtSetValue(NULL, LSWF(1), TRUE);
         }
         break;

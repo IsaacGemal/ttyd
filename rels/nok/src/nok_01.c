@@ -359,8 +359,8 @@ static u32 iri_17_item_tbl[2] = {
     0x00000062, 0xFFFFFFFF,
 };
 
-// iri_08_msg checks the message type and a u16 at offset 0x8 of the message data; that field is still
-// the pad_0x08 in MessageData in driver/msgdrv.h (msgMain uses it as a u16 counter).
+// iri_08_msg checks the message type and a u16 at offset 0x8 of the message data; that field is
+// the choiceIndex in MessageData in driver/msgdrv.h (msgMain uses it as a u16 counter).
 void iri_08_msg(s32 type, void* param) {
     u32 data = *(u32*)param;
 

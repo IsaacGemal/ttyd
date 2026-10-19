@@ -124,9 +124,9 @@ s32 _evt_msg_print(EventEntry* event, BOOL isFirstCall, s32 flags, const char* m
             }
         }
         else {
-            MSGWORK(window)->field_0x4 |= 8;
-            MSGWORK(window)->field_0x7A24 = BattleTransID(event, (s32)npcName);
-            BtlUnit_GetTalkTogePos(MSGWORK(window)->field_0x7A24, &((WindowVec*)window)->position.x,
+            MSGWORK(window)->flags |= 8;
+            MSGWORK(window)->battleUnitId = BattleTransID(event, (s32)npcName);
+            BtlUnit_GetTalkTogePos(MSGWORK(window)->battleUnitId, &((WindowVec*)window)->position.x,
                                    &((WindowVec*)window)->position.y, &((WindowVec*)window)->position.z);
             window->field_0x2C = 3;
         }
@@ -392,7 +392,7 @@ USER_FUNC(evt_msg_select) {
     if (windowCheckID(event->selectWindowId)) {
         return EVT_RETURN_BLOCK;
     }
-    event->lwData[0] = ((MessageData*)windowGetPointer(event->selectWindowId)->userdata->address)->field_0x7A43;
+    event->lwData[0] = ((MessageData*)windowGetPointer(event->selectWindowId)->userdata->address)->selectCursor;
     windowDeleteID(event->selectWindowId);
     return EVT_RETURN_DONE;
 }
