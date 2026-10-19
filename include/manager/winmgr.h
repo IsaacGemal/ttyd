@@ -54,8 +54,8 @@ typedef struct WinMgrSelectItem {
 } WinMgrSelectItem;
 
 typedef struct WinMgrSelect {
-	s16 flags; //0x0
-	s16 pad_2; //0x2, TODO: not pad?
+	u16 flags; //0x0, 0x100: winMgrSelectEntry's a3, 0x1000: result ready, 0x2000: cancelled
+	u16 pad_2; //0x2, TODO: not pad?
 	s32 kind; //0x4, winMgrSelectEntry's a1: picks the item list and the callbacks
 	s32 state; //0x8, select_main's step (0 while the menu is running)
 	s32 cursor; //0xC, index into items

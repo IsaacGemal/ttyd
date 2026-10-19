@@ -86,7 +86,7 @@ const char str_80421A78[] = "help";
 static WinMgrWork work;
 static s16* mario_status_point_table[3];
 static WinMgrWork* wp = &work;
-u16 party_id_table[8] = { 1, 2, 5, 4, 6, 3, 7, 0 };
+u16 party_id_table[8] = { PARTNER_GOOMBELLA, PARTNER_KOOPS, PARTNER_FLURRIE, PARTNER_YOSHI, PARTNER_VIVIAN, PARTNER_BOBBERY, PARTNER_MSMOWZ, PARTNER_NONE };
 static u16 party_icon_table[8] = { 0x155, 0x156, 0x15F, 0x158, 0x160, 0x157, 0x161, 0 };
 static const char* party_labelname_table[7] = { str_804219B8, str_804219C0, str_804219C8, str_804219D0, str_804219D8, str_804219E0, str_804219E8 };
 static s32 mario_status_icon_table[3] = { 0x19F, 0x1A0, 0x1A1 };
@@ -1865,7 +1865,7 @@ WinMgrSelect* winMgrSelectEntry(s32 a1, s32 a2, BOOL a3) {
     select->field_0x38 = a2;
 
     if (a3) {
-        *(u16*)&select->flags |= 0x100;
+        select->flags |= 0x100;
     }
 
     if (descId < 0) {
@@ -2052,11 +2052,11 @@ WinMgrSelect* winMgrSelectEntry(s32 a1, s32 a2, BOOL a3) {
         select->items = (WinMgrSelectItem*)__memAlloc(HEAP_DEFAULT, 0x18c);
         memset(select->items, 0, 0x18c);
         select->numItems = 0;
-        for (i = 0; i < 0x63; i++) {
-            s16 v = (s16)badgeShop_get(bdsw->bargain_table, (s16)(i + 0xf0));
+        for (i = 0; i < BADGE_COUNT; i++) {
+            s16 v = (s16)badgeShop_get(bdsw->bargain_table, (s16)(i + BADGE_MIN));
 
-            if (v - badgeShop_ThrowCheck(i + 0xf0) > 0) {
-                select->items[select->numItems++].id = i + 0xf0;
+            if (v - badgeShop_ThrowCheck(i + BADGE_MIN) > 0) {
+                select->items[select->numItems++].id = i + BADGE_MIN;
             }
         }
         qqsort(select->items, select->numItems, 4, (int (*)(void*, void*))unk_802379e4);
@@ -2068,12 +2068,12 @@ WinMgrSelect* winMgrSelectEntry(s32 a1, s32 a2, BOOL a3) {
             select->items = (WinMgrSelectItem*)__memAlloc(HEAP_DEFAULT, max * 4);
             memset(select->items, 0, max * 4);
             select->numItems = 0;
-            for (i = 0; i < 0x63; i++) {
-                s32 v = (s16)badgeShop_get(bdsw->starmaniac_table, (s16)(i + 0xf0));
+            for (i = 0; i < BADGE_COUNT; i++) {
+                s32 v = (s16)badgeShop_get(bdsw->starmaniac_table, (s16)(i + BADGE_MIN));
 
-                if (v - badgeShop_ThrowCheck(i + 0xf0) > 0) {
-                    select->items[select->numItems].id = i + 0xf0;
-                    if (itemDataTable[0xf0 + i].star_piece_price > pouchGetStarPiece()) {
+                if (v - badgeShop_ThrowCheck(i + BADGE_MIN) > 0) {
+                    select->items[select->numItems].id = i + BADGE_MIN;
+                    if (itemDataTable[BADGE_MIN + i].star_piece_price > pouchGetStarPiece()) {
                         select->items[select->numItems].flags |= 3;
                     }
                     select->numItems++;
@@ -2200,7 +2200,7 @@ s32 unk_802379e4(void* a, void* b) {
 }
 
 s32 winMgrSelect(WinMgrSelect* select) {
-    u16 flags = *(u16*)&select->flags;
+    u16 flags = select->flags;
 
     if (flags & 0x1000) {
         if (flags & 0x2000) {
@@ -2218,7 +2218,7 @@ s32 winMgrSelect(WinMgrSelect* select) {
 }
 
 s32 winMgrSelectOther(WinMgrSelect* select, EventEntry* event) {
-    u16 flags = *(u16*)&select->flags;
+    u16 flags = select->flags;
     WinMgrSelectItem* items;
     InformantWork* jdt = &_jdt;
     s32 itemId;
@@ -2474,9 +2474,9 @@ void select_main(WinMgrEntry* entry) {
                 select->state++;
             }
         } else if (keyGetButtonTrg(0) & 0x200) {
-            if (*(u16*)&select->flags & 0x100) {
+            if (select->flags & 0x100) {
                 psndSFXOn((const char*)0x20013);
-                *(u16*)&select->flags |= 0x2000;
+                select->flags |= 0x2000;
                 select->state++;
             }
         }
@@ -2508,7 +2508,7 @@ void select_main(WinMgrEntry* entry) {
 
             e->flags &= ~1;
         }
-        *(u16*)&select->flags |= 0x1000;
+        select->flags |= 0x1000;
         select->state++;
         break;
     case 4:
