@@ -8496,3 +8496,18 @@ audience window, and the audience totals (`typeWeights[12]`, `apGauge` (cap 0x32
 item-throw counts, `phaseEvtList`, `joyLevel`, the present-item fields). Caution kept: the member cursor at 0x28 is an
 s32 advanced by byte counts, so typing it as a pointer would silently change the step sizes; it stays raw. Next
 target: battle_audience_kinopio.c, which reads `member->field_0x54 + N` about 100 times.
+
+### Readability: seq_load names (2026-10-19, Claude Haiku 5.5, n9-rd-load; reviewed by Claude Opus 5.5)
+
+seq_load.c's `LoadWork` (the file-select state) gets names from its uses: `flags` bits (0x10 all slots empty, 0x20
+no usable save, 0x40 memcard event running, 0x80 rerun the card check), `step`, `cursor` (win_dt index: 0-3 slots,
+4 delete, 5 copy, 6 title, 7 sound, 8 rumble), `prevCardCode`, the sound and rumble cursors and committed values,
+the cursor's animated and target position, `copySrc`/`copyDst`, `message`, `menuEvt`, `printWindowId`. `WinDt` gets
+`texId`/`texId2`, `navUp`/`Down`/`Left`/`Right` (0x1000/0x2000/0x4000/0x8000) and `cursorOffX`/`Y`. The save slot
+reads in loadDraw go through `CardSaveSlot` (`data.flags`, `data.global.playerName`), the palette through
+`FileEntry.data` (`LOAD_TEX_PALETTE()`), and the sound mode through `SND_OUTPUTMODE_*`. Index 563 → 242 weighted
+for the file; overall 74.98 → 74.52.
+
+Left: `card->saves[wp->cursor].data.flags` breaks the checksum (the array index codegen differs from the raw
+`(wp->cursor << 14)`), so those reads stay raw; the byte-stepped scans in loadMain stay raw too (they're tuned to
+retail's registers). The GlobalWork-internal slot reads (level, play time, mask, field17c) have no names yet.
