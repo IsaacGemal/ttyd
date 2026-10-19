@@ -397,7 +397,9 @@ typedef struct BattleWorkUnitPart {
     BattleUnitDefense* defense;                    // 0x1B4
     BattleUnitDefenseAttr* defenseAttr;            // 0x1B8
     void* poseTable;                               // 0x1BC
-    u8 field_0x1C0[0x21C - 0x1C0];                 // 0x1C0
+    u8 field_0x1C0[0x204 - 0x1C0];                 // 0x1C0, pose-anim block: handle at +0, flags at +0x44
+    u32 partFlags;                                 // 0x204, bit 0x10 and 0x80 are set and cleared by battle_unit.c
+    u8 field_0x208[0x21C - 0x208];                 // 0x208
     BattleWorkUnitPartBlur blurWork;               // 0x21C
     u8 field_0x4D0[0x4EC - 0x4D0];                 // 0x4D0
     struct BattleUnit* mOwner;                     // 0x4EC

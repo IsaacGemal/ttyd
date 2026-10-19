@@ -50,8 +50,7 @@ typedef struct UnitStatusBlock {
 //local prototypes
 
 typedef struct BattleUnitPartFields {
-    u8 pad_0[0x204];
-    u32 mFlags; // 0x204
+    u8 pad_0[0x208];
     u8 pad_1[0x4D0 - 0x208];
     void* mPoseSoundTable; // 0x4D0
     s32 mPoseSoundFrame;   // 0x4D4
@@ -1640,7 +1639,7 @@ void BtlUnit_SetAnimType(BattleUnitPart* part, s32 type) {
     switch (type) {
     case 0x1D:
     case 0x1E:
-        ((BattleUnitPartFields*)part)->mFlags |= 0x10;
+        part->partFlags |= 0x10;
         break;
     }
 }
@@ -2271,7 +2270,7 @@ void BtlUnit_SetCommandAnimPose(BattleUnit* unit) {
     }
     if (flag) {
         BtlUnit_SetAnimType(part, 0x43);
-        ((BattleUnitPartFields*)part)->mFlags |= 0x80;
+        part->partFlags |= 0x80;
     } else {
         btlDispPoseAnime(part);
     }

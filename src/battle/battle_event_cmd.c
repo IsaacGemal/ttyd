@@ -5526,16 +5526,16 @@ USER_FUNC(btlevtcmd_AnimeChangeGroup) {
     part = BattleGetUnitPartsPtr(id, partId);
     group = evtGetValue(event, args[2]);
     if (isFirstCall) {
-        if (*(s32*)BTLW_OFF(part, 0x1C0) != -1) {
-            animPoseRelease(*(s32*)BTLW_OFF(part, 0x1C0));
-            *(s32*)BTLW_OFF(part, 0x1C0) = -1;
+        if (*(s32*)((u8*)part + 0x1C0) != -1) {
+            animPoseRelease(*(s32*)((u8*)part + 0x1C0));
+            *(s32*)((u8*)part + 0x1C0) = -1;
         }
         animEffectAsync((const char*)group, 1);
     }
     if (animEffectAsync((const char*)group, 1) == 0) {
         return EVT_RETURN_BLOCK;
     }
-    *(s32*)BTLW_OFF(part, 0x1C0) = animPoseEntry((const char*)group, 1);
+    *(s32*)((u8*)part + 0x1C0) = animPoseEntry((const char*)group, 1);
     return EVT_RETURN_DONE;
 }
 
@@ -5589,8 +5589,8 @@ USER_FUNC(btlevtcmd_AnimeChangePoseDirect) {
     name = evtGetValue(event, args[2]);
 
     strcpy((char*)part + 0x1C4, (const char*)name);
-    *(u32*)((u8*)part + 0x204) &= ~0x80;
-    *(u32*)((u8*)part + 0x204) &= ~0x10;
+    part->partFlags &= ~0x80;
+    part->partFlags &= ~0x10;
     animPoseSetAnim(*(s32*)((u8*)part + 0x1C0), (const char*)name, 1);
     *(u8*)((u8*)part + 0x215) = 1;
     if (BtlUnit_CheckStatus(unit, 0x12)) {
@@ -5619,7 +5619,7 @@ USER_FUNC(btlevtcmd_AnimeWaitPlayComplete) {
         event->userdata[0]--;
         return EVT_RETURN_BLOCK;
     }
-    loopTimes = animPoseGetLoopTimes(*(s32*)BTLW_OFF(part, 0x1C0));
+    loopTimes = animPoseGetLoopTimes(*(s32*)((u8*)part + 0x1C0));
     if (loopTimes < 1.0f) {
         return EVT_RETURN_BLOCK;
     }
@@ -5643,10 +5643,10 @@ USER_FUNC(btlevtcmd_AnimeWaitPlayLoopTiming) {
         event->userdata[2] = 0;
     }
     // The original threshold double is (double)0.01f (3f847ae140000000), not the exact 0.01 double.
-    if (__fabs(*(f32*)((u8*)animPoseGetAnimPosePtr(*(s32*)BTLW_OFF(part, 0x1C0)) + 0x44)) < (f64)0.01f) {
+    if (__fabs(*(f32*)((u8*)animPoseGetAnimPosePtr(*(s32*)((u8*)part + 0x1C0)) + 0x44)) < (f64)0.01f) {
         return 2;
     }
-    loopTimes = animPoseGetLoopTimes(*(s32*)BTLW_OFF(part, 0x1C0));
+    loopTimes = animPoseGetLoopTimes(*(s32*)((u8*)part + 0x1C0));
     if (event->userdata[0] > 0) {
         event->userdata[0]--;
         return 0;
@@ -5871,7 +5871,7 @@ USER_FUNC(btlevtcmd_AnimeChangePaperGroup) {
     part = BattleGetUnitPartsPtr(id, partId);
     group = evtGetValue(event, args[2]);
     flag = evtGetValue(event, args[3]);
-    animPoseSetEffect(*(s32*)BTLW_OFF(part, 0x1C0), (const char*)group, flag);
+    animPoseSetEffect(*(s32*)((u8*)part + 0x1C0), (const char*)group, flag);
     return EVT_RETURN_DONE;
 }
 
@@ -5906,10 +5906,10 @@ USER_FUNC(btlevtcmd_AnimeFlagOnOff) {
     flags = args[2];
     onoff = evtGetValue(event, args[3]);
     if (onoff) {
-        *(u32*)((u8*)part + 0x204) = *(u32*)((u8*)part + 0x204) | (u32)flags;
+        part->partFlags = part->partFlags | (u32)flags;
     }
     else {
-        *(u32*)((u8*)part + 0x204) = *(u32*)((u8*)part + 0x204) & ~(u32)flags;
+        part->partFlags = part->partFlags & ~(u32)flags;
     }
     return EVT_RETURN_DONE;
 }
