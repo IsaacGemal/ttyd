@@ -297,7 +297,7 @@ void effFunemizuMain(EffectEntry* effect) {
 // NONMATCHING (99.94%): the map-lookup's two walks match except the second walk's pointer, which the
 // original keeps in r24 while MWCC reuses r26 for both (the first walk is r26). Everything else - the
 // .data base+offset addressing, the .sdata (r13) addressing and the display-list loop registers - matches.
-#pragma opt_lifetimes off
+#pragma opt_lifetimes off // needed: without it effFunemizuDisp 94.93%
 void effFunemizuDisp(CameraId camId, void* param) {
 	EffectEntry* effect;
 	EffFunemizuData* data;

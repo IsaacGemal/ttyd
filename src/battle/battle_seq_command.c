@@ -2984,7 +2984,7 @@ BOOL BattleCommandAttackAudienceCheck(void) {
 
 
 
-#pragma opt_dead_assignments off
+#pragma opt_dead_assignments off // needed: without it _get_msg 98.59%
 // `opt_dead_assignments off` keeps the overwritten first `msg` assignment so the pooled string
 // base stays in r5. The `args` local (instead of a `wp` local) is what colours wp r4 / args r6.
 s32 _get_msg(EventEntry* event) {

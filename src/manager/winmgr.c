@@ -2362,7 +2362,7 @@ s32 unk_80237448(WinMgrSelect* select) {
 #pragma defer_codegen off
 #endif
 
-#pragma opt_common_subs off
+#pragma opt_common_subs off // needed: without it select_main 99.74%
 void select_main(WinMgrEntry* entry) {
     s32 count;
     WinMgrSelect* select = (WinMgrSelect*)entry->param;

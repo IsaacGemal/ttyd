@@ -669,8 +669,8 @@ void coingetDisp(WinMgrEntry* entry) {
 
 extern WinMgrDesc coinget_window_desc;
 
-#pragma opt_propagation off
-#pragma opt_lifetimes off
+#pragma opt_propagation off // needed: without it evt_sub_get_coin 87.63%
+#pragma opt_lifetimes off // needed: without it evt_sub_get_coin 98.48%
 // The polynomial is written inline in evt_sub_get_coin with explicit f0-f5 locals (the
 // evt_item_get_important_item technique) so MWCC colours the scratch in f0 and the 1.5708
 // pivot/wrapped angle in f1, as the target does. opt_propagation off stops MWCC rematerialising the

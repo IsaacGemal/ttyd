@@ -754,7 +754,7 @@ void BattleStageLightSetTargetByUnit(s32 idx, s32 unitId, f32 x, f32 y, f32 z, s
 #pragma dont_inline reset
 
 // ------------------------------------------------------------ light setters
-#pragma opt_propagation off
+#pragma opt_propagation off // needed: without it BattleStageLightSetUpVec 92.12%
 void BattleStageLightSetUpVec(s32 idx, s32 frames, f32 x, f32 y, f32 z, u8 ease) {
 	BattleStageWork* stage = (BattleStageWork*)&_battleWorkPointer->stage;
 	BattleStageLight* light = &stage->lights[idx];

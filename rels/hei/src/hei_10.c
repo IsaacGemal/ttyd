@@ -233,7 +233,7 @@ static inline f32 heiCos2(f32 angle) {
 }
 
 #pragma opt_propagation off // stop MWCC rematerialising the heiSin2/heiCos2 coefficients per branch
-#pragma opt_lifetimes off
+#pragma opt_lifetimes off // needed: without it ext_main 98.31%
 static void ext_main(void) {
 #ifdef MUST_MATCH
     union { const char* p; u32 u; } sfx;
@@ -395,7 +395,7 @@ const Vec vec3_hei_00007a64 = {0.0f, 0.0f, 0.0f};
 const Vec vec3_hei_00007a70 = {0.0f, 0.0f, 0.0f};
 
 // Hops an npc to (x, y, z) over a frame count: userdata holds the frames left, the vertical velocity and the speed.
-#pragma opt_lifetimes off
+#pragma opt_lifetimes off // needed: without it npc_jump 96.92%
 #pragma opt_propagation off // stop MWCC rematerialising the heiSin2/heiCos2 coefficients per branch
 static USER_FUNC(npc_jump) {
     s32* args = event->args;

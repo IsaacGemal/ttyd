@@ -1157,7 +1157,7 @@ USER_FUNC(evt_npc_homing_target) {
     return EVT_RETURN_BLOCK;
 }
 #pragma dont_inline reset
-#pragma opt_propagation off
+#pragma opt_propagation off // needed: without it _intplGetFloat 98.29%
 
 // The file's MWCC keeps `1.0f - tt` live in f31 and hoists it across the cos() calls in cases
 // 7/8/10; the original keeps `tt` in f31 and computes `1.0f - tt` after the call. Cases 4/5/6 use
@@ -1835,7 +1835,7 @@ USER_FUNC(evt_npc_set_offscreen) {
     }
     return EVT_RETURN_DONE;
 }
-#pragma opt_propagation off
+#pragma opt_propagation off // needed: without it evt_npc_set_color 99.51%
 
 // needed: with it on MWCC emits &color (r4) before npc->description (r3); the original sets up the name argument first
 USER_FUNC(evt_npc_set_color) {

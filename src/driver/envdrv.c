@@ -1524,7 +1524,7 @@ void envAddTev(s32 type, void* param) {
 // `((MapObject*)yami->unk0)` rather than `obj`; that makes MWCC spill `yami` first (`mr r17, r3`)
 // and load obj with `lwz r3, 0x0(r3)` as the target does.
 #pragma opt_propagation off // stops MWCC re-evaluating yami->unk0, so obj/flags colour as the target
-#pragma opt_lifetimes off
+#pragma opt_lifetimes off // needed: without it envSetWater 99.58%
 // `texMap` is an `int` so its enum-typed `texMap + 1` arguments are not merged into one temporary; the
 // water texel offset is built in two steps from `i / 4` and `i % 4`; the frustum's near distance is an
 // argument expression, so its int->float temporary is created after the four edge conversions.
