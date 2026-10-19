@@ -1171,7 +1171,7 @@ void npcMain(void) {
                 runScale = 1.0f;
             }
             if (entry->jumpFlags & 0x100000) {
-                *(u16*)entry->field_31E |= 1;
+                entry->hazardImmuneFlags |= 1;
             }
 
             if (entry->jumpFlags & 0x10) {
@@ -3997,17 +3997,17 @@ void npcKoopaModeEncountCheck(void) {
             switch (kpaEnemyHitChk(entry->position.x, entry->position.y, entry->position.z, entry->height,
                                    entry->width)) {
                 case 1:
-                    if (!(*(u16*)entry->field_31E & 1)) {
+                    if (!(entry->hazardImmuneFlags & 1)) {
                         npcGroupDead(entry, 1);
                     }
                     break;
                 case 2:
-                    if (!(*(u16*)entry->field_31E & 2)) {
+                    if (!(entry->hazardImmuneFlags & 2)) {
                         npcGroupDead(entry, 2);
                     }
                     break;
                 case 3:
-                    if (!(*(u16*)entry->field_31E & 4)) {
+                    if (!(entry->hazardImmuneFlags & 4)) {
                         npcGroupDead(entry, 4);
                     }
                     break;
@@ -4015,7 +4015,7 @@ void npcKoopaModeEncountCheck(void) {
                     kpaPowDown();
                     break;
                 default:
-                    if (!(*(u16*)entry->field_31E & 0x10) && *(u32*)entry->field_300 != 0 &&
+                    if (!(entry->hazardImmuneFlags & 0x10) && *(u32*)entry->field_300 != 0 &&
                         !strcmp(hitGetName((HitEntry*)(*(u32*)entry->field_300)), "a_magu")) {
                         npcGroupDead(entry, 0x10);
                     }
@@ -4037,7 +4037,7 @@ s32 npcKoopaModeMobjBoundDeadCheck(HitEntry* mobj) {
     }
     for (i = 0, entry = wp->entries; i < total; i++, entry++) {
         if (entry != NULL && (entry->flags & 1) && (entry->flags & 0x8000000) && !(entry->jumpFlags & 4) &&
-            !(*(u16*)entry->field_31E & 8) && *(u32*)entry->field_300 == (u32)mobj) {
+            !(entry->hazardImmuneFlags & 8) && *(u32*)entry->field_300 == (u32)mobj) {
             npcGroupDead(entry, 8);
             count++;
         }

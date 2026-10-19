@@ -5105,7 +5105,7 @@ USER_FUNC(unk_800ece0c) {
 USER_FUNC(set_bottle_flag_init) {
     NpcEntry* npc = evtNpcNameToPtr(event, "slave_0");
     npc->flags |= 0x28020020;
-    *(u16*)npc->field_31E |= 0x1F;
+    npc->hazardImmuneFlags |= 0x1F;
     return EVT_RETURN_DONE;
 }
 

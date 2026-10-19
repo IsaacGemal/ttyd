@@ -181,7 +181,7 @@ typedef struct NpcEntry {
     s8 balloonType;                 // 0x317, s8: mario_balloon loads it with lbz; extsb
     u8 field_318[0x31C - 0x318];    // 0x318
     u16 koopaEncounterType;         // 0x31C
-    u8 field_31E[0x320 - 0x31E];    // 0x31E
+    u16 hazardImmuneFlags;          // 0x31E, bits 1/2/4/8/0x10 skip the npcGroupDead of that hazard class; set to 0x1F by set_bottle_flag_init
     s16 wFbatHitCheckRelated;       // 0x320
     u8 pad_322[2];                  // 0x322
     struct NpcEntry* prev;          // 0x324
