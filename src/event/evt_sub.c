@@ -662,7 +662,7 @@ void coingetDisp(WinMgrEntry* entry) {
 		FontDrawStart();
 		color = (GXColor){ 0x00, 0x00, 0x00, 0xFF };
 		FontDrawColor(&color);
-		FontDrawMessage(-FontGetMessageWidth(buf) / 2, entry->field_0x1C - 8, buf);
+		FontDrawMessage(-FontGetMessageWidth(buf) / 2, entry->y - 8, buf);
 	}
 }
 
@@ -2022,7 +2022,7 @@ static u32 kusa_data[12] = {
 };
 
 WinMgrDesc coinget_window_desc = {
-    { 0, 0, 0, 0, 0, 0, 0, 0 }, 8, -175, 120, 350, 42, { 0xE1, 0xD7, 0x9B, 0xFF }, NULL, coingetDisp,
+    0, 0, 8, -175, 120, 350, 42, { 0xE1, 0xD7, 0x9B, 0xFF }, NULL, coingetDisp,
 };
 // clang-format on
 

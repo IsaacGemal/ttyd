@@ -748,7 +748,7 @@ void list_disp(WinMgrEntry* entry) {
 	FontDrawEdge();
 	*(u32*)&color0 = dat_8041bbf0;
 	FontDrawColor(&color0);
-	FontDrawMessage((100 - FontGetMessageWidth(msg)) / 2 + (10 + entry->field_0x18), entry->field_0x1C + 13, msg);
+	FontDrawMessage((100 - FontGetMessageWidth(msg)) / 2 + (10 + entry->x), entry->y + 13, msg);
 	FontDrawEdgeOff();
 
 	msg = msgSearch(str_802ECE10);
@@ -756,7 +756,7 @@ void list_disp(WinMgrEntry* entry) {
 	FontDrawEdge();
 	*(u32*)&color1 = dat_8041bbf4;
 	FontDrawColor(&color1);
-	FontDrawMessage(entry->field_0x18 + entry->field_0x20 / 2 - 10 + (100 - FontGetMessageWidth(msg)) / 2, entry->field_0x1C + 13, msg);
+	FontDrawMessage(entry->x + entry->width / 2 - 10 + (100 - FontGetMessageWidth(msg)) / 2, entry->y + 13, msg);
 	FontDrawEdgeOff();
 
 	FontDrawStart();
@@ -772,7 +772,7 @@ void list_disp(WinMgrEntry* entry) {
 			FontDrawColor(&color3);
 		}
 		sprintf(buf, str_8041BC28, winZenkakuStr(shopPointList[i].price));
-		FontDrawMessage(entry->field_0x20 / 2 - FontGetMessageWidth(buf) + entry->field_0x18 - 90, entry->field_0x1C - 20 - i * 26, buf);
+		FontDrawMessage(entry->width / 2 - FontGetMessageWidth(buf) + entry->x - 90, entry->y - 20 - i * 26, buf);
 
 		FontDrawStart();
 		if (pouch->field_0x5B4 & (1 << i)) {
@@ -786,10 +786,10 @@ void list_disp(WinMgrEntry* entry) {
 		sprintf(buf, str_8041BC28, msgSearch(str_802ECDF8));
 		{
 			f32 w = FontGetMessageWidth(buf);
-			f32 x = (f32)(entry->field_0x20 / 2) - SHOP_F32(float_0p6_8041bc2c) * w;
-			x = (f32)entry->field_0x18 + x;
+			f32 x = (f32)(entry->width / 2) - SHOP_F32(float_0p6_8041bc2c) * w;
+			x = (f32)entry->x + x;
 			x -= SHOP_F32(float_40_8041bc30);
-			PSMTXTrans(mtx, x, entry->field_0x1C - 28 - i * 26, SHOP_F32(float_0_8041bc34));
+			PSMTXTrans(mtx, x, entry->y - 28 - i * 26, SHOP_F32(float_0_8041bc34));
 		}
 		s = MATCH_F32(float_0p64_8041bc38);
 		PSMTXScale(scale, s, s, s);
@@ -806,7 +806,7 @@ void list_disp(WinMgrEntry* entry) {
 			*(u32*)&color7 = dat_8041bc0c;
 			FontDrawColor(&color7);
 		}
-		FontDrawMessage(entry->field_0x18 + entry->field_0x20 / 2 - 10, entry->field_0x1C - 20 - i * 26, msg);
+		FontDrawMessage(entry->x + entry->width / 2 - 10, entry->y - 20 - i * 26, msg);
 	}
 }
 
@@ -819,7 +819,7 @@ void title_disp(WinMgrEntry* entry) {
 		FontDrawEdge();
 		*(u32*)&color = dat_8041bbec;
 		FontDrawColor(&color);
-		FontDrawMessage(entry->field_0x18 + (entry->field_0x20 - FontGetMessageWidth(msg)) / 2, entry->field_0x1C - 12, msg);
+		FontDrawMessage(entry->x + (entry->width - FontGetMessageWidth(msg)) / 2, entry->y - 12, msg);
 		FontDrawEdgeOff();
 	}
 }
@@ -833,7 +833,7 @@ void point_disp(WinMgrEntry* entry) {
 		Mtx scale;
 		s32 delta;
 
-		PSMTXTrans(mtx, SHOP_F32(float_10_8041bc3c) + (SHOP_F32(float_30_8041bc40) + (f32)entry->field_0x18), (f32)entry->field_0x1C - SHOP_F32(float_36_8041bc44), SHOP_F32(float_0_8041bc34));
+		PSMTXTrans(mtx, SHOP_F32(float_10_8041bc3c) + (SHOP_F32(float_30_8041bc40) + (f32)entry->x), (f32)entry->y - SHOP_F32(float_36_8041bc44), SHOP_F32(float_0_8041bc34));
 		if ((u32)gp->language == 0) {
 			PSMTXScale(scale, SHOP_F32(float_1p1_8041bc48), SHOP_F32(float_1p1_8041bc48), SHOP_F32(float_1p1_8041bc48));
 			PSMTXConcat(mtx, scale, mtx);
@@ -844,7 +844,7 @@ void point_disp(WinMgrEntry* entry) {
 			PSMTXConcat(mtx, scale, mtx);
 			iconDispGx2(mtx, 0x10, 0x20A);
 		}
-		PSMTXTrans(mtx, SHOP_F32(float_124_8041bc50) + (f32)entry->field_0x18, (f32)entry->field_0x1C - SHOP_F32(float_38_8041bc54), SHOP_F32(float_0_8041bc34));
+		PSMTXTrans(mtx, SHOP_F32(float_124_8041bc50) + (f32)entry->x, (f32)entry->y - SHOP_F32(float_38_8041bc54), SHOP_F32(float_0_8041bc34));
 		iconNumberDispGx(mtx, wp->field_0x38, 0, *(GXColor*)&dat_8041bbe8);
 		delta = pouch->mShopPoints - wp->field_0x38;
 		if (delta != 0) {
@@ -864,7 +864,7 @@ void help_disp(WinMgrEntry* entry) {
 
 	if (!winMgrAction(wp->field_0x54)) {
 		s32 item = *(s32*)((u8*)items + offset);
-		entry->field_0x34 = (s32)msgSearch(itemDataTable[item].description);
+		entry->message = msgSearch(itemDataTable[item].description);
 		winMgrHelpDraw(entry);
 	}
 }
@@ -924,9 +924,9 @@ void name_disp(WinMgrEntry* entry) {
 
 // .data
 WinMgrDesc window_desc[3] = {
-    { {0, 0, 0, 0, 0, 0, 0, 0}, 8, 0xFFFFFF6A, 0x78, 0x12C, 0x32, {0x2B, 0xA4, 0xFF, 0xFF}, NULL, (void*)name_disp },
-    { {0, 0, 0, 0, 0, 0, 0, 0}, 8, 0xFFFFFF10, 0xFFFFFF7E, 0x1F4, 0x50, {0xF0, 0xF0, 0xF0, 0xFF}, (void*)help_main, (void*)help_disp },
-    { {0, 0, 0, 2, 0, 0, 0, 0}, 8, 0xFFFFFF06, 0xFFFFFF7E, 0x96, 0x2D, {0xF0, 0xF0, 0xF0, 0xFF}, NULL, (void*)point_disp },
+    { 0, 0, 8, 0xFFFFFF6A, 0x78, 0x12C, 0x32, {0x2B, 0xA4, 0xFF, 0xFF}, NULL, (void*)name_disp },
+    { 0, 0, 8, 0xFFFFFF10, 0xFFFFFF7E, 0x1F4, 0x50, {0xF0, 0xF0, 0xF0, 0xFF}, (void*)help_main, (void*)help_disp },
+    { 2, 0, 8, 0xFFFFFF06, 0xFFFFFF7E, 0x96, 0x2D, {0xF0, 0xF0, 0xF0, 0xFF}, NULL, (void*)point_disp },
 };
 
 ShopPointEntry shopPointList[11] = {
@@ -935,9 +935,9 @@ ShopPointEntry shopPointList[11] = {
 };
 
 WinMgrDesc list_desc[3] = {
-    { {0, 0, 0, 0, 0, 0, 0, 0}, 8, 0xFFFFFEE8, 0xA0, 0xD2, 0x50, {0x2B, 0xA4, 0xFF, 0xFF}, NULL, (void*)title_disp },
-    { {0, 0, 0, 0, 0, 0, 0, 3}, 8, 0xFFFFFFC4, 0xA0, 0x154, 0x12C, {0xF0, 0xF0, 0xF0, 0xFF}, NULL, (void*)list_disp },
-    { {0, 0, 0, 2, 0, 0, 0, 0}, 8, 0xFFFFFF06, 0xFFFFFF7E, 0x96, 0x2D, {0xF0, 0xF0, 0xF0, 0xFF}, NULL, (void*)point_disp },
+    { 0, 0, 8, 0xFFFFFEE8, 0xA0, 0xD2, 0x50, {0x2B, 0xA4, 0xFF, 0xFF}, NULL, (void*)title_disp },
+    { 0, 3, 8, 0xFFFFFFC4, 0xA0, 0x154, 0x12C, {0xF0, 0xF0, 0xF0, 0xFF}, NULL, (void*)list_disp },
+    { 2, 0, 8, 0xFFFFFF06, 0xFFFFFF7E, 0x96, 0x2D, {0xF0, 0xF0, 0xF0, 0xFF}, NULL, (void*)point_disp },
 };
 
 u32 buy_evt[326] = {

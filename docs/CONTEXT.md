@@ -8445,3 +8445,17 @@ bound, matrix dirty, deleted); `HIT_SPARE_ENTRIES`, `HIT_CULL_BACK`, `HIT_ATTR_D
 hitMain's animation walk uses `MapEntryAnimData*` instead of raw offsets. Still open: the 0x1 flag, hitMain's
 animation child list (a count then `MapFileJoint*`s, typed in mapdrv's animation_table), and raw `hitGetAttr` bits in
 party/item code. The debug-overlay branch still says `lbl_80418408`/`unkA8` and needs the new names when rebased.
+
+### Readability: winmgr names (2026-10-19, Claude Haiku 5.5, night8-rd-win; reviewed by Claude Opus 5.5)
+
+The window manager was the third-worst file by the cleanup index (429 per kLOC); it's now 164. WinMgrEntry gets
+`state` (idle/opening/closing), `animStep` (0..8 through winMgrSeq's ramps), `alpha`, `x`/`y`/`width`/`height`
+(users in win_item, evt_shop, evt_win, evt_sub, evt_window and itemdrv updated), `message`, `scrollPos`,
+`scrollRows`. WinMgrDesc's first eight bytes are `openStyle` (zoom+rotate, scale+fade, instant) and `frameStyle`,
+then `x`, `width`, `height`, `color`; every WinMgrDesc initializer is rewritten to match. WinMgrSelect gets `kind`,
+`state`, `cursor`, `scrollTop`, `iconX`/`iconY`, `baseY`, `items` (the new `WinMgrSelectItem`: grey/skip flags and
+an id), `numItems`; party and badge loops use `PARTNER_*`, `BADGE_MIN`/`BADGE_COUNT`. `field_0x` uses in
+winmgr.c/.h 664 → 17; overall index 77.44 → about 76.4.
+
+Left: `WinMgrDesc.field_0x10` (y; read by `get10` under MUST_MATCH), `WinMgrSelect.field_0x38` (a cancel gate, gauge
+gate and leading item id at once), and five `unk_8023....` functions whose names live in symbols.txt and REL callers.

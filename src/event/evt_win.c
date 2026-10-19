@@ -215,9 +215,9 @@ extern const char str_8041DB3C[];
 static u32 main_evt[] = { 0x0001005B, (u32)evt_unitwin_main_func, 0x2, 0x1 };
 u32 select_evt[] = { 0x0001005B, (u32)unk_80174e98, 0x2, 0x1 };
 WinMgrDesc unk_80375478[3] = {
-	{ { 0 }, 8, -150, 120, 300, 50, { 0x2B, 0xA4, 0xFF, 0xFF }, NULL, unk_8017599c },
-	{ { 0 }, 8, -240, -130, 500, 80, { 0xF0, 0xF0, 0xF0, 0xFF }, unk_8017597c, unk_801758fc },
-	{ { 0, 0, 0, 2 }, 8, -250, -130, 150, 45, { 0xF0, 0xF0, 0xF0, 0xFF }, NULL, unk_80175710 },
+	{ 0, 0, 8, -150, 120, 300, 50, { 0x2B, 0xA4, 0xFF, 0xFF }, NULL, unk_8017599c },
+	{ 0, 0, 8, -240, -130, 500, 80, { 0xF0, 0xF0, 0xF0, 0xFF }, unk_8017597c, unk_801758fc },
+	{ 2, 0, 8, -250, -130, 150, 45, { 0xF0, 0xF0, 0xF0, 0xFF }, NULL, unk_80175710 },
 };
 #pragma force_active on
 u32 gap_08_80418A0C_sbss;
@@ -391,7 +391,7 @@ void unk_801758fc(WinMgrEntry* entry) {
 	s32* list = wp->field_0x8;
 
 	if (!winMgrAction(wp->field_0x60[1])) {
-		entry->field_0x34 = (s32)msgSearch(itemDataTable[*(s32*)((u8*)list + offset)].description);
+		entry->message = msgSearch(itemDataTable[*(s32*)((u8*)list + offset)].description);
 		winMgrHelpDraw(entry);
 	}
 }
@@ -404,7 +404,7 @@ void unk_80175710(WinMgrEntry* entry) {
 		Mtx mtx;
 		Mtx scale;
 
-		PSMTXTrans(mtx, 10.0f + (30.0f + (f32)entry->field_0x18), (f32)entry->field_0x1C - 36.0f, float_0_8041db00[0]);
+		PSMTXTrans(mtx, 10.0f + (30.0f + (f32)entry->x), (f32)entry->y - 36.0f, float_0_8041db00[0]);
 		if ((u32)gp->language == 0) {
 			PSMTXScale(scale, float_1p1_8041db30[0], float_1p1_8041db30[0], float_1p1_8041db30[0]);
 			PSMTXConcat(mtx, scale, mtx);
@@ -414,7 +414,7 @@ void unk_80175710(WinMgrEntry* entry) {
 			PSMTXConcat(mtx, scale, mtx);
 			iconDispGx2(mtx, 0x10, 0x20A);
 		}
-		PSMTXTrans(mtx, 124.0f + (f32)entry->field_0x18, (f32)entry->field_0x1C - 38.0f, float_0_8041db00[0]);
+		PSMTXTrans(mtx, 124.0f + (f32)entry->x, (f32)entry->y - 38.0f, float_0_8041db00[0]);
 		iconNumberDispGx(mtx, wp->field_0x30, 0, *(GXColor*)&dat_8041d9bc);
 		{
 			s32 delta = pouch->mShopPoints - wp->field_0x30;
