@@ -525,7 +525,7 @@ void yoshi_use(PartyEntry* party) {
         } else {
             party->useMotionId = 4;
         }
-        P_S(0x24) = 3;
+        party->timer = 3;
         mario->baseSpeed = 0.0f;
         M_F(0x2A4) = 0.0f;
         M_F(0x2A0) = 0.0f;
@@ -536,7 +536,7 @@ void yoshi_use(PartyEntry* party) {
 
     switch (party->useMotionId) {
     case 0:
-        if (--P_S(0x24) > 0) {
+        if (--party->timer > 0) {
             if (marioKeyOffChk() == 0 && mario->hitobjStandOn != NULL) {
                 return;
             }
@@ -567,22 +567,22 @@ void yoshi_use(PartyEntry* party) {
         }
         M_F(0x19C) = mario->directionView;
         party->targetPos = mario->position;
-        P_S(0x24) = 4;
+        party->timer = 4;
         party->jumpPara1 = 0.0f;
         party->jumpPara3 = 0.0f;
         P_F(0x174) = 0.0f;
         P_F(0x178) = 0.0f;
         party->jumpPara2 = 0.0f;
-        party->dir = angleABf(party->position.x, party->position.z, P_F(0x94), P_F(0x9C));
-        party->speed = distABf(party->position.x, party->position.z, P_F(0x94), P_F(0x9C)) / (f32)P_S(0x24);
+        party->dir = angleABf(party->position.x, party->position.z, party->targetPos.x, party->targetPos.z);
+        party->speed = distABf(party->position.x, party->position.z, party->targetPos.x, party->targetPos.z) / (f32)party->timer;
         party->useMotionId = 5;
         /* fallthrough */
     case 5:
         party->targetPos = mario->position;
-        party->position.x += (P_F(0x94) - party->position.x) / (f32)P_S(0x24);
-        party->position.y += (P_F(0x98) - party->position.y) / (f32)P_S(0x24);
-        party->position.z += (P_F(0x9C) - party->position.z) / (f32)P_S(0x24);
-        if (--P_S(0x24) != 0) {
+        party->position.x += (party->targetPos.x - party->position.x) / (f32)party->timer;
+        party->position.y += (party->targetPos.y - party->position.y) / (f32)party->timer;
+        party->position.z += (party->targetPos.z - party->position.z) / (f32)party->timer;
+        if (--party->timer != 0) {
             searchGround(party);
             if (party->groundHit == NULL) {
                 return;
@@ -649,7 +649,7 @@ L_312C:
         partyChgPose(party, YOSHI_H_1);
         marioChgPose("M_Y_1");
         party->speed = 0.0f;
-        P_F(0x128) = 0.0f;
+        party->targetDist = 0.0f;
         party->position.x = mario->position.x;
         party->position.y = mario->position.y;
         party->position.z = mario->position.z;
@@ -840,13 +840,13 @@ L_3754:
         party->jumpPara1 = 0.0f;
         party->jumpPara2 = 0.0f;
         party->jumpPara3 = 0.0f;
-        P_S(0x24) = 3;
-        party->jumpPara1 = (P_F(0x120) - party->position.y) / (f32)P_S(0x24);
+        party->timer = 3;
+        party->jumpPara1 = (party->field_120 - party->position.y) / (f32)party->timer;
         party->useMotionId = 0x29;
         /* fallthrough */
     case 0x29:
         party->position.y += party->jumpPara1;
-        if (--P_S(0x24) <= 0) {
+        if (--party->timer <= 0) {
             party->flags &= ~0x40;
             party->useMotionId = 0xD;
         }
@@ -1026,7 +1026,7 @@ L_3800:
             jumpheight = 100.0f;
             M_F(0x128) = 0.0f;
             party->useMotionId = 0x3D;
-            P_S(0x24) = 0;
+            party->timer = 0;
             party->jumpPara3 = marioJumpStandData[0];
             P_F(0x174) = marioJumpStandData[1];
             P_F(0x178) = marioJumpStandData[2];
@@ -1088,7 +1088,7 @@ L_3800:
             party->position.y += party->jumpPara3;
             goto L_4188;
         case 0x41:
-            if (--P_S(0x24) <= 0) {
+            if (--party->timer <= 0) {
                 party->speed = 0.0f;
                 party->jumpPara1 = 0.0f;
                 party->jumpPara3 = -1.0f;
