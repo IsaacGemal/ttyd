@@ -8524,3 +8524,15 @@ payload), `x`/`y`, `iconOffsetY`, `startTime`, `scale`. `window->type` uses `WIN
 kpa_01/kpa_07/nok_00/nok_01/pik_00 RELs updated. msgdrv.c index 323 → 102 per kLOC; most of the remaining `field_0x`
 are WindowEntry's (windowdrv.h). Kept raw: msgMain's repeated `((MessageData*)smart->address)->` (caching it isn't
 byte-identical) and the match-trick casts under comments.
+
+### Readability: BattleUnit / BattleWorkUnitPart padding (2026-10-19, Claude Haiku 5.5, n9-rd-bunit; reviewed by Claude Opus 5.5)
+
+Works through the backlog from the battle_event_cmd entry. BattleUnit gets the move state the btlevtcmd movers use
+(`moveFrames` 0x168, `moveAngle` 0x178, `moveDist` 0x17C, `moveProgress` 0x180, which the hop code also reuses as a
+height scale), the hop state (`moveStep`, `hopAngle`, `hopAngleStep`, `hopY`), and `mBodyPartsId`/`mTalkPoseName`/
+`mStayPoseName` (0x2D0-0x2D8, replacing battle_unit.c's local `BattleUnitAnimFields` overlay). BattleWorkUnitPart
+gets the same move fields, `partFlags` (0x204), and `poseSound`/`poseSoundEventId` (replacing the local
+`BattleUnitPartFields` overlay). `PartsAttribute_Flags.kAbsolutePosition` (1 << 28) names the bit that makes
+Set/GetPartsPos use `mPosition` directly. Raw unit/part casts 411 → 225; battle_event_cmd.c 800 → 318 weighted.
+Still local or unnamed: BtlUnitSeMode, battle_unit.c's HpGaugeLocal (duplicates BattleWorkHpGauge; codegen-sensitive),
+the part's pose-anim block at 0x1C0, and BattleUnit 0x29C-0x2CC.
