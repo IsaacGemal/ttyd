@@ -35,6 +35,7 @@ typedef enum PartsAttribute_Flags {          // 32-bit size
     kUnknown_0x4000 = (1 << 14),             // 0x4000
     kNotTargetable = (1 << 16),              // 0x10000
     kUnknown_0x40000 = (1 << 18),            // 0x40000
+    kAbsolutePosition = (1 << 28),           // 0x10000000, part position is absolute (mPosition), not owner-relative
     kUntattleable = (1 << 19),               // 0x80000
     kJumplikeCannotTarget = (1 << 20),       // 0x100000
     kHammerlikeCannotTarget = (1 << 21),     // 0x200000
@@ -357,6 +358,16 @@ typedef struct BattleWorkUnitPartBlur {
     BattleWorkUnitPartBlurEntry work[10]; // 0xC
 } BattleWorkUnitPartBlur;
 
+// The pose-sound playback state that follows the table pointer in BattleUnitPart (part+0x4D0).
+typedef struct BtlUnitPartPoseSound {
+    void* table;       // 0x0 (0x4D0)
+    s32 frame;         // 0x4
+    f32 prev;          // 0x8
+    f32 cur;           // 0xC
+    s32 count;         // 0x10
+    u8 flag;           // 0x14
+} BtlUnitPartPoseSound;
+
 typedef struct BattleWorkUnitPart {
     struct BattleWorkUnitPart* mNextPart;          // 0x0
     BattleUnitKindPart* mKindPartParams;           // 0x4
@@ -374,10 +385,13 @@ typedef struct BattleWorkUnitPart {
     Vec mMoveStartPos;                             // 0x7C
     Vec mMoveCurrentPos;                           // 0x88
     Vec mMoveTargetPos;                            // 0x94
-    u8 field_0xA0[0xA4 - 0xA0];                    // 0xA0
+    s32 moveFrames;                                // 0xA0, frames left in the current move (BattleUnit.moveFrames)
     f32 mMoveSpeedXZ;                              // 0xA4
     f32 mFallAccel;                                // 0xA8
-    u8 field_0xAC[0xBC - 0xAC];                    // 0xAC
+    f32 mMoveSpeedY;                               // 0xAC
+    f32 moveAngle;                                 // 0xB0
+    f32 moveDist;                                  // 0xB4
+    f32 moveProgress;                              // 0xB8
     s8 moveDirection;                              // 0xBC
     s8 faceDirection;                              // 0xBD
     u8 field_0xBE[0x130 - 0xBE];                   // 0xBE
@@ -393,9 +407,12 @@ typedef struct BattleWorkUnitPart {
     BattleUnitDefense* defense;                    // 0x1B4
     BattleUnitDefenseAttr* defenseAttr;            // 0x1B8
     void* poseTable;                               // 0x1BC
-    u8 field_0x1C0[0x21C - 0x1C0];                 // 0x1C0
+    u8 field_0x1C0[0x204 - 0x1C0];                 // 0x1C0, pose-anim block: handle at +0, flags at +0x44
+    u32 partFlags;                                 // 0x204, bit 0x10 and 0x80 are set and cleared by battle_unit.c
+    u8 field_0x208[0x21C - 0x208];                 // 0x208
     BattleWorkUnitPartBlur blurWork;               // 0x21C
-    u8 field_0x4D0[0x4EC - 0x4D0];                 // 0x4D0
+    BtlUnitPartPoseSound poseSound;                // 0x4D0
+    s32 poseSoundEventId;                          // 0x4E8, -1 when no pose sound event is queued
     struct BattleUnit* mOwner;                     // 0x4EC
     GXColor color;                                 // 0x4F0
     u8 field_0x4F4[0x500 - 0x4F4];                 // 0x4F4
@@ -553,14 +570,23 @@ typedef struct BattleUnit {
     Vec mMoveStartPos;                           // 0x144
     Vec mMoveCurrentPos;                         // 0x150
     Vec mMoveTargetPos;                          // 0x15C
-    u8 field_0x168[0x16C - 0x168];               // 0x168
+    s32 moveFrames;                              // 0x168, frames left in the current move; counts down to 0
     f32 mMoveSpeedXZ;                            // 0x16C
     f32 mFallAccel;                              // 0x170
     f32 mMoveSpeedY;                             // 0x174
-    u8 field_0x178[0x184 - 0x178];               // 0x178
+    f32 moveAngle;                               // 0x178, heading of the move (angleABf of start to target)
+    f32 moveDist;                                // 0x17C, total length of the move, the sine ease divisor
+    f32 moveProgress;                            // 0x180, frames run in an interpolated move; the hop routine reuses it as height
     s8 moveDirection;                            // 0x184
     s8 faceDirection;                            // 0x185
-    u8 field_0x186[0x1F8 - 0x186];               // 0x186
+    u8 field_0x186[0x188 - 0x186];               // 0x186
+    u8 field_0x188[0x1A4 - 0x188];               // 0x188, BtlUnitSeMode (battle_unit.c), then the 0x1C0 source
+    Vec moveStep;                                // 0x1A4, added to mMoveCurrentPos each frame of a hop
+    f32 hopAngle;                                // 0x1B0, degrees; sin(hopAngle) scales the hop's vertical speed
+    f32 hopAngleStep;                            // 0x1B4, degrees added to hopAngle each frame
+    f32 hopY;                                    // 0x1B8, height recorded at the start and after each move step
+    u8 field_0x1BC[0x1C0 - 0x1BC];               // 0x1BC
+    u8 field_0x1C0[0x1F8 - 0x1C0];               // 0x1C0
     BattleWorkHpGauge hpGauge;                   // 0x1F8
     s32 work[16];                                // 0x214
     BattleUnitPart* currentTarget;           // 0x254
@@ -587,7 +613,10 @@ typedef struct BattleUnit {
     u8 field_0x2A8[0x2AC - 0x2A8];               // 0x2A8
     void* damageEventCode;                       // 0x2AC
     s32 damageEventId;                           // 0x2B0
-    u8 field_0x2B4[0x2DC - 0x2B4];               // 0x2B4
+    u8 field_0x2B4[0x2D0 - 0x2B4];               // 0x2B4
+    s32 mBodyPartsId;                            // 0x2D0
+    char* mTalkPoseName;                         // 0x2D4, BtlUnit_GetPoseNameFromType of the talk pose
+    char* mStayPoseName;                         // 0x2D8, BtlUnit_GetPoseNameFromType of the stay pose
     BattleWorkUnitBadgesEquipped badgesEquipped; // 0x2DC
     ItemType heldItem;                           // 0x304, 4 bytes
     ItemDropData* dropTable;                     // 0x308
@@ -617,16 +646,6 @@ typedef struct BtlUnitPoseSound {
     s16 pitch;                                                     // 0x10
     u16 flags;                                                     // 0x12
 } BtlUnitPoseSound;
-
-// The pose-sound playback state that follows the table pointer in BattleUnitPart (part+0x4D0).
-typedef struct BtlUnitPartPoseSound {
-    void* table;       // 0x0 (0x4D0)
-    s32 frame;         // 0x4
-    f32 prev;          // 0x8
-    f32 cur;           // 0xC
-    s32 count;         // 0x10
-    u8 flag;           // 0x14
-} BtlUnitPartPoseSound;
 
 typedef struct BattleUnitKind {
     BattleUnitType mUnitType;          // 0x0
