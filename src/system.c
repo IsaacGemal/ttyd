@@ -628,7 +628,7 @@ void makeKey(void) {
             }
         }
     }
-    gp->unk1324 = 1;
+    gp->keyDataReady = 1;
 }
 
 u32 keyGetDir(u32 chan) {

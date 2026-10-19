@@ -175,7 +175,7 @@ void seq_mapChangeMain(SequenceWork* work) {
             if (strcmp(_next_map, SMC_STR(0x50, "dmo_00")) != 0 && strcmp(_next_map, "title") != 0) {
                 if (OSGetSoundMode() == 0) {
                     SoundSetOutputMode(0);
-                } else if (gp->unk1274 == 0) {
+                } else if (gp->soundSurround == 0) {
                     SoundSetOutputMode(1);
                 } else {
                     SoundSetOutputMode(2);

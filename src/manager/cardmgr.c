@@ -264,9 +264,9 @@ void cardCopy2Main(s32 slot) {
     backup1 = gp->fbatData;
     backup2 = gp->mapAlloc;
     backup3 = (u32)(gp->flags & 8);
-    backup4 = gp->unk1274;
+    backup4 = gp->soundSurround;
     backup5 = gp->rumbleEnabled;
-    backup6 = gp->unk11B8;
+    backup6 = gp->lastFileSlot;
     memcpy(gp, &save->data.global, sizeof(GlobalWork));
     gp->fbatData = backup1;
     memcpy(pouchGetPtr(), &save->data.pouch, sizeof(PouchData));
@@ -275,14 +275,14 @@ void cardCopy2Main(s32 slot) {
     memcpy(yuwp, &save->data.parlor, sizeof(PiantaParlorWork));
     memcpy(&_jdt.unk14, &save->data.informant, sizeof(InformantUnknown));
     gp->resetType = 0;
-    gp->unk127C = 0;
+    gp->resetButtonDown = 0;
     gp->dvdError = 0;
     gp->retraceTime = OSGetTime();
     strcpy(gp->currentAreaName, "123");
     gp->relocationBase = NULL;
-    gp->unk1274 = backup4;
+    gp->soundSurround = backup4;
     gp->rumbleEnabled = backup5;
-    gp->unk11B8 = backup6;
+    gp->lastFileSlot = backup6;
     gp->mapAlloc = backup2;
     gp->unk8 = 0;
     gp->field_C = 0;
@@ -657,9 +657,9 @@ void read_all_main(void) {
                     make_header();
                     wp->flags |= 0x400;
                 }
-                gp->unk1274 = wp->data->metadata.data.unk1E42;
+                gp->soundSurround = wp->data->metadata.data.unk1E42;
                 gp->rumbleEnabled = wp->data->metadata.data.unk1E40;
-                gp->unk11B8 = wp->data->metadata.data.unk1E44;
+                gp->lastFileSlot = wp->data->metadata.data.unk1E44;
                 break;
             case 6:
                 memcard_read(wp->unkAC, 0x4000, (wp->unkA4 << 0xE) + 0x2000);
@@ -1007,8 +1007,8 @@ void make_header(void) {
 	memcpy(metadata->data.iconTex, _mariost_icon_tex, sizeof(metadata->data.iconTex));
 	memcpy(metadata->data.iconTlut, _mariost_icon_tlut, sizeof(metadata->data.iconTlut));
 	metadata->data.unk1E40 = (gp->rumbleEnabled != 0);
-	metadata->data.unk1E42 = (u16)gp->unk1274;
-	metadata->data.unk1E44 = (u16)gp->unk11B8;
+	metadata->data.unk1E42 = (u16)gp->soundSurround;
+	metadata->data.unk1E44 = (u16)gp->lastFileSlot;
 	metadata->checksum1 = (checksum = 0u);
 	metadata->checksum2 = ~0u;
 

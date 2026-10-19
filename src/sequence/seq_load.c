@@ -303,11 +303,11 @@ void seq_loadMain(SequenceWork* workArg) {
                 wp->field_0x0 &= ~0x40;
                 if (OSGetSoundMode() == 0) {
                     SoundSetOutputMode(0);
-                    gp->unk1274 = 0;
+                    gp->soundSurround = 0;
                     wp->field_0x40 = 0;
                 } else {
                     SoundSetOutputMode(1);
-                    if (gp->unk1274 == 0) {
+                    if (gp->soundSurround == 0) {
                         wp->field_0x40 = 1;
                     } else {
                         wp->field_0x40 = 2;
@@ -316,7 +316,7 @@ void seq_loadMain(SequenceWork* workArg) {
                 wp->field_0x44 = (gp->rumbleEnabled == 0);
                 wp->field_0x24 = wp->field_0x40;
                 wp->field_0x28 = wp->field_0x44;
-                wp->field_0x20 = gp->unk11B8;
+                wp->field_0x20 = gp->lastFileSlot;
                 wp->field_0x8 = win_dt[wp->field_0x20].x;
                 wp->field_0xC = win_dt[wp->field_0x20].y;
             }
@@ -591,7 +591,7 @@ void loadMain(SequenceWork* workArg) {
                     wp->field_0x18 = 1;
                 } else {
                     strcpy(gp->playerName, nameEntGetName());
-                    gp->unk11B8 = wp->field_0x20;
+                    gp->lastFileSlot = wp->field_0x20;
                     stg0_00_init();
                     gp->saveSlot = wp->field_0x20;
                     marioPartyKill();
@@ -798,15 +798,15 @@ void loadMain(SequenceWork* workArg) {
                 switch (off) {
                     case 0:
                         OSSetSoundMode(0);
-                        gp->unk1274 = 0;
+                        gp->soundSurround = 0;
                         break;
                     case 1:
                         OSSetSoundMode(1);
-                        gp->unk1274 = 0;
+                        gp->soundSurround = 0;
                         break;
                     case 2:
                         OSSetSoundMode(1);
-                        gp->unk1274 = 1;
+                        gp->soundSurround = 1;
                         break;
                 }
                 if (OSGetSoundMode() == 0) {
@@ -1274,7 +1274,7 @@ void continueGame(void) {
 
     cardCopy2Main(wp->field_0x20);
     gp->saveSlot = wp->field_0x20;
-    gp->unk11B8 = wp->field_0x20;
+    gp->lastFileSlot = wp->field_0x20;
     marioPartyKill();
     mario = marioGetPtr();
     mario->prevPartyMemberId[0] = 0;

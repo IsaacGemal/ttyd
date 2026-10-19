@@ -51,7 +51,7 @@ typedef struct GlobalWork {
 	u8 mGSW[0x800]; //0x578
 	u32 mLSWF[0x10]; //0xD78
 	u8 mLSW[0x400]; //0xDB8
-	s32 unk11B8; //0x11B8
+	s32 lastFileSlot; //0x11B8, slot last picked on the file menu; the file menu cursor starts here (seq_load)
 	char playerName[0x14]; //0x11BC, copied from nameEntGetName (up to 8 two-byte characters)
 	s32 saveSlot; //0x11D0, card slot cardWrite saves to (memcard_write); also set on file select and continue
 	Vec savePlayerPos; //0x11D4
@@ -59,13 +59,13 @@ typedef struct GlobalWork {
     OSTime saveTime; //0x11E8
     s32 saveCount; //0x11F0
 	u8 field_0x11F4[0x1274 - 0x11F4]; //0x11F4
-	s32 unk1274; //0x1274
+	s32 soundSurround; //0x1274, 1 = SND_OUTPUTMODE_SURROUND when the console is in stereo (seq_load sound menu, seq_mapchange)
 	s32 resetType; //0x1278, 0 = no reset, 1 = soft reset, 2 = menu
-	BOOL unk127C; //0x127C
+	BOOL resetButtonDown; //0x127C, reset button held (gcResetCheck)
 	BOOL softResetWait; //0x1280
 	u8 field_0x1284[0x1288 - 0x1284]; //0x1284
 	OSTime softResetTimeout; //0x1288
-	BOOL field_0x1290; //0x1290
+	BOOL restartChecked; //0x1290, set once the restart reset check has run (gcResetCheck)
 	BOOL rumbleEnabled; //0x1294, vibration option (default on, set in marioStInit; seq_load prompt; kept in the save)
 	u8 field_0x1298[0x12C0 - 0x1298]; //0x1298
 	u8 rumbleHeld[4]; //0x12C0, pad is rumbling (cleared 100 ms after it stops), gcRumbleCheck
@@ -79,7 +79,7 @@ typedef struct GlobalWork {
 	OSTick mDeltaRender; //0x1318
 	u8 field_0x131C[0x1324 - 0x131C]; //0x131C
 // system.c "key" controller data, TODO sub-struct?
-	BOOL unk1324; //0x1324
+	BOOL keyDataReady; //0x1324, set at the end of makeKey (system.c); gcResetCheck waits for it
 	u32 button[4]; //0x1328
 	u32 buttonNew[4]; //0x1338
 	u32 buttonRepeat[4]; //0x1348

@@ -186,7 +186,7 @@ void marioStInit(void) {
 	gp->fbWidth = DEMOGetRenderModeObj()->fbWidth;
 	gp->efbHeight = DEMOGetRenderModeObj()->efbHeight;
 	gp->rumbleEnabled = 1;
-	gp->unk1274 = 0;
+	gp->soundSurround = 0;
 
 	gp->retraceLocalTime = 0;
 	gp->retraceDeltaTime = 0;
@@ -262,7 +262,7 @@ void marioStInit(void) {
 	winMgrInit();
 	seqInit_MARIOSTORY();
 	seqSetSeq(0, NULL, NULL);
-	gp->unk1274 = 0;
+	gp->soundSurround = 0;
 	if (OSGetSoundMode() == OS_SOUND_MODE_MONO) {
 		SoundSetOutputMode(SND_OUTPUTMODE_MONO);
 	}
@@ -405,12 +405,12 @@ void viPostCallback(u32 retraceCount) {
 	gp->retraceTime = time;
 	gp->retraceCount = retraceCount;
 	if (battleDisableHResetCheck()) {
-		gp->unk127C = FALSE;
+		gp->resetButtonDown = FALSE;
 	}
 	else {
-		if (!gp->unk127C) {
+		if (!gp->resetButtonDown) {
 			if (OSGetResetButtonState()) {
-				gp->unk127C = TRUE;
+				gp->resetButtonDown = TRUE;
 			}
 		}
 		else {
@@ -418,14 +418,14 @@ void viPostCallback(u32 retraceCount) {
 				gp->resetType = 1;
 			}
 		}
-		if (gp->unk1324) {
-			if (OSIsRestart() && !gp->field_0x1290) {
+		if (gp->keyDataReady) {
+			if (OSIsRestart() && !gp->restartChecked) {
 				if ((keyGetButton(0) & reset) == reset) {
 					gp->resetType = 0;
 					goto exitcheck;
 				}
 				else {
-					gp->field_0x1290 = TRUE;
+					gp->restartChecked = TRUE;
 				}
 			}
 			if ((keyGetButton(0) & reset) == reset) {
