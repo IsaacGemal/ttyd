@@ -34,7 +34,7 @@ extern const f32 float_5Eneg05_8041f3a0;
 extern const f32 float_neg3p9_8041f3a4;
 
 // .sdata2 GXColor: r=0x70, g=0x60, b=0x18, a=0x00.
-extern const volatile u32 dat_8041f358;
+extern const GXColor dat_8041f358;
 
 // .data quad vertex array for effSetVtxDescN64 (kmr_a_1_v).
 static u32 kmr_a_1_v[14] = {
@@ -169,7 +169,7 @@ void effKemuri5Main(EffectEntry* effect) {
 #pragma opt_common_subs reset
 
 static inline void kemuri5SetColor(u8 a) {
-    GXColor color = *(GXColor*)&dat_8041f358;
+    GXColor color = dat_8041f358;
     color.a = a;
     GXSetTevColor(1, color);
 }
@@ -218,7 +218,7 @@ void effKemuri5Disp(CameraId camId, void* param) {
 }
 
 // The pool constants the code above loads by name, defined after it (defined first, the compiler folds them).
-const volatile u32 dat_8041f358 = 0x70601800;
+const GXColor dat_8041f358 = {0x70, 0x60, 0x18, 0x00};
 const f32 float_0p0625_8041f35c = 0.0625f;
 const f32 float_0_8041f360 = 0.0f;
 const f32 float_deg2rad_8041f364 = 0.017453292f;

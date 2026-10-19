@@ -1095,9 +1095,16 @@ ExtFanData ext_fan_data[28] = {
     { 0x00000000, 0x00000000, 0.0f },
 };
 
+#ifdef MUST_MATCH
+// volatile so ext_fan_init copies these by value from .rodata instead of folding the known zeros (92.9% without).
 const volatile Vec vec3_tou_0000d028 = { 0.0f, 0.0f, 0.0f };
 const volatile Vec vec3_tou_0000d034 = { 0.0f, 0.0f, 0.0f };
 const volatile Vec vec3_tou_0000d040 = { 0.0f, 0.0f, 0.0f };
+#else
+const Vec vec3_tou_0000d028 = { 0.0f, 0.0f, 0.0f };
+const Vec vec3_tou_0000d034 = { 0.0f, 0.0f, 0.0f };
+const Vec vec3_tou_0000d040 = { 0.0f, 0.0f, 0.0f };
+#endif
 const Vec vec3_tou_0000d04c = { 0.0f, 0.0f, 0.0f };
 const Vec vec3_tou_0000d058 = { 0.0f, 0.0f, 0.0f };
 __declspec(section ".rodata") Vec vec3_tou_0000d064 = { 0.0f, 0.0f, 0.0f };
