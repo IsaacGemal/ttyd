@@ -100,8 +100,21 @@ typedef struct BattleAudienceItem {
 } BattleAudienceItem;
 
 typedef struct BattleAudienceStar {
-    u32 flags;                // 0x0, bit 0 set while the star slot is in use
-    u8 field_0x4[0x60 - 0x4]; // 0x4
+    u32 flags;                  // 0x0, bit 0 set while the star slot is in use
+    s32 state;                  // 0x4, step of the switch in BattleAudienceApSrcCtrlProcess
+    Vec pos;                    // 0x8, drawn at pos.x/pos.y in BattleAudienceDispApSrc
+    Vec randOffset;             // 0x14, random values set by BattleAudienceApSrcEntry
+    Vec startPos;               // 0x20
+    Vec endPos;                 // 0x2C
+    Vec scale;                  // 0x38, used by PSMTXScale in BattleAudienceDispApSrc
+    s32 frame;                  // 0x44
+    s32 duration;               // 0x48, frames for the current state
+    f32 radius;                 // 0x4C
+    f32 radiusStart;            // 0x50
+    f32 angle;                  // 0x54, radians
+    f32 angleStep;              // 0x58, radians per frame
+    u8 alpha;                   // 0x5C
+    u8 field_0x5D[0x60 - 0x5D]; // 0x5D
 } BattleAudienceStar;
 
 // TODO: verify variable names

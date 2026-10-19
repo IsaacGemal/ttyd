@@ -2190,7 +2190,7 @@ void BattleAudienceItemCtrlProcess(void) {
 #pragma dont_inline on
 void BattleAudienceApSrcCtrlProcess(void) {
 	BattleAudience* audience = BattleAudienceBaseGetPtr();
-	u8* star;
+	BattleAudienceStar* star;
 	Vec pos;
 	Vec pos2;
 	s32 active;
@@ -2243,91 +2243,91 @@ void BattleAudienceApSrcCtrlProcess(void) {
 		}
 	}
 	for (i = 0; i < 100; i++) {
-		star = (u8*)audience + 0x10E7C + i * 0x60;
+		star = &audience->starpower[i];
 		pouchGetPtr();
-		if (!(*(s32*)star & 1)) {
+		if (!(star->flags & 1)) {
 			continue;
 		}
-		switch (*(s32*)(star + 4)) {
+		switch (star->state) {
 		case 0:
-			*(s32*)(star + 4) = 5;
-			*(Vec*)(star + 0x2C) = *(Vec*)(star + 8);
-			*(Vec*)(star + 0x20) = *(Vec*)(star + 0x2C);
-			*(f32*)(star + 0x2C) += 50.0f * (f32)rand() / 32767.0f - 25.0f;
-			*(f32*)(star + 0x30) += 25.0f;
-			*(s32*)(star + 0x44) = 0;
-			*(s32*)(star + 0x48) = 0x1E;
+			star->state = 5;
+			star->endPos = star->pos;
+			star->startPos = star->endPos;
+			star->endPos.x += 50.0f * (f32)rand() / 32767.0f - 25.0f;
+			star->endPos.y += 25.0f;
+			star->frame = 0;
+			star->duration = 0x1E;
 			// fall through
 		case 5:
-			*(s32*)(star + 0x44) = *(s32*)(star + 0x44) + 1;
-			start = *(f32*)(star + 0x20);
-			end = *(f32*)(star + 0x2C);
-			*(f32*)(star + 8) = intplGetValue(5, *(s32*)(star + 0x44), *(s32*)(star + 0x48), start, end);
-			start = *(f32*)(star + 0x24);
-			end = *(f32*)(star + 0x30);
-			*(f32*)(star + 0xC) = intplGetValue(5, *(s32*)(star + 0x44), *(s32*)(star + 0x48), start, end);
-			if (*(s32*)(star + 0x44) >= *(s32*)(star + 0x48) - 0x14) {
-				*(f32*)(star + 0x3C) = intplGetValue(4, *(s32*)(star + 0x44) - (*(s32*)(star + 0x48) - 0x14), 0xA,
+			star->frame = star->frame + 1;
+			start = star->startPos.x;
+			end = star->endPos.x;
+			star->pos.x = intplGetValue(5, star->frame, star->duration, start, end);
+			start = star->startPos.y;
+			end = star->endPos.y;
+			star->pos.y = intplGetValue(5, star->frame, star->duration, start, end);
+			if (star->frame >= star->duration - 0x14) {
+				star->scale.y = intplGetValue(4, star->frame - (star->duration - 0x14), 0xA,
 				                                     0.9f, 0.8f);
 			}
-			if (*(s32*)(star + 0x44) < *(s32*)(star + 0x48)) {
+			if (star->frame < star->duration) {
 				continue;
 			}
-			*(s32*)(star + 4) = 0xA;
-			*(s32*)(star + 0x44) = 0;
-			*(s32*)(star + 0x48) = irand(0xA) + 0xF;
+			star->state = 0xA;
+			star->frame = 0;
+			star->duration = irand(0xA) + 0xF;
 #ifdef MUST_MATCH
-			*(Vec*)(star + 0x38) = vec3_802f9744;
+			star->scale = vec3_802f9744;
 #else
-			*(Vec*)(star + 0x38) = *p_vec3_802f9744;
+			star->scale = *p_vec3_802f9744;
 #endif
 			break;
 		case 10:
-			*(s32*)(star + 0x44) = *(s32*)(star + 0x44) + 1;
-			if (*(s32*)(star + 0x44) < *(s32*)(star + 0x48)) {
+			star->frame = star->frame + 1;
+			if (star->frame < star->duration) {
 				continue;
 			}
-			*(s32*)(star + 4) = 0xF;
-			*(s32*)(star + 0x44) = 0;
-			*(s32*)(star + 0x48) = irand(0x14) + 0x14;
-			*(Vec*)(star + 0x20) = *(Vec*)(star + 8);
+			star->state = 0xF;
+			star->frame = 0;
+			star->duration = irand(0x14) + 0x14;
+			star->startPos = star->pos;
 			pos = statusGetApPos();
-			*(Vec*)(star + 0x2C) = pos;
-			dx = *(f32*)(star + 0x20) - *(f32*)(star + 0x2C);
-			radius = *(f32*)(star + 0x24) - *(f32*)(star + 0x30);
-			*(f32*)(star + 0x4C) = (*(f32*)(star + 0x50) = sqrt(dx * dx + radius * radius));
-			*(f32*)(star + 0x54) = asin(radius / *(f32*)(star + 0x4C));
-			*(f32*)(star + 0x58) = 0.05f +
+			star->endPos = pos;
+			dx = star->startPos.x - star->endPos.x;
+			radius = star->startPos.y - star->endPos.y;
+			star->radius = (star->radiusStart = sqrt(dx * dx + radius * radius));
+			star->angle = asin(radius / star->radius);
+			star->angleStep = 0.05f +
 			                        0.2f * (f32)rand() / 32767.0f;
 			break;
 		case 15:
 			end = 0.0f;
-			*(s32*)(star + 0x44) = *(s32*)(star + 0x44) + 1;
-			start = *(f32*)(star + 0x50);
-			*(f32*)(star + 0x4C) = intplGetValue(4, *(s32*)(star + 0x44), *(s32*)(star + 0x48), start, end);
+			star->frame = star->frame + 1;
+			start = star->radiusStart;
+			star->radius = intplGetValue(4, star->frame, star->duration, start, end);
 			zero = 0.0f;
-			start = *(f32*)(star + 0x54) + *(f32*)(star + 0x58);
-			*(f32*)(star + 0x54) = start;
-			if (*(f32*)(star + 0x54) < zero) {
-				*(f32*)(star + 0x54) += 6.283184f;
+			start = star->angle + star->angleStep;
+			star->angle = start;
+			if (star->angle < zero) {
+				star->angle += 6.283184f;
 			}
-			*(f32*)(star + 8) = *(f32*)(star + 0x4C) * (f32)cos(*(f32*)(star + 0x54)) + *(f32*)(star + 0x2C);
-			*(f32*)(star + 0xC) = *(f32*)(star + 0x4C) * (f32)sin(*(f32*)(star + 0x54)) + *(f32*)(star + 0x30);
-			if (*(s32*)(star + 0x44) >= *(s32*)(star + 0x48)) {
-				*(s32*)(star + 4) = 0x14;
-				*(s32*)(star + 0x44) = 0;
-				*(s32*)(star + 0x48) = 0xF;
+			star->pos.x = star->radius * (f32)cos(star->angle) + star->endPos.x;
+			star->pos.y = star->radius * (f32)sin(star->angle) + star->endPos.y;
+			if (star->frame >= star->duration) {
+				star->state = 0x14;
+				star->frame = 0;
+				star->duration = 0xF;
 				pos2 = statusGetApPos();
-				*(Vec*)(star + 8) = pos2;
+				star->pos = pos2;
 			}
 			break;
 		case 20:
 			start = 128.0f;
 			end = 0.0f;
-			*(s32*)(star + 0x44) = *(s32*)(star + 0x44) + 1;
-			*(u8*)(star + 0x5C) = (u8)intplGetValue(4, *(s32*)(star + 0x44), *(s32*)(star + 0x48), start, end);
-			if (*(s32*)(star + 0x44) >= *(s32*)(star + 0x48)) {
-				*(s32*)star = 0;
+			star->frame = star->frame + 1;
+			star->alpha = (u8)intplGetValue(4, star->frame, star->duration, start, end);
+			if (star->frame >= star->duration) {
+				star->flags = 0;
 				pouchAddAP(1);
 			}
 			break;
@@ -2348,16 +2348,16 @@ BOOL BattleAudienceApSrcEntry(void) {
 	BattleAudience* audience;
 	BattleAudienceMember* member;
 	CameraEntry* cam;
-	u8* star;
+	BattleAudienceStar* star;
 	s32 ids[200];
 	s32 count;
 	s32 i;
 
 	audience = BattleAudienceBaseGetPtr();
 	i = 0;
-	star = (u8*)audience->starpower;
-	for (; i < 100; i++, star += 0x60) {
-		if (!(*(s32*)star & 1)) {
+	star = audience->starpower;
+	for (; i < 100; i++, star++) {
+		if (!(star->flags & 1)) {
 			break;
 		}
 	}
@@ -2375,42 +2375,42 @@ BOOL BattleAudienceApSrcEntry(void) {
 	if (count == 0) {
 		return TRUE;
 	}
-	*(s32*)star = 1;
-	*(s32*)(star + 4) = 0;
+	star->flags = 1;
+	star->state = 0;
 #ifdef MUST_MATCH
 	// Match-only: the original stores star+0x44 before the constant Vec copy and serialises that copy's
 	// loads/stores (lwz/lwz/stw/stw/lwz/stw); the named-global form lets MWCC software-pipeline it.
-	*(volatile s32*)(star + 0x44) = 0;
-	*(volatile Vec*)(star + 0x38) = *(const volatile Vec*)&vec3_802f9750;
+	*(volatile s32*)&star->frame = 0;
+	*(volatile Vec*)&star->scale = *(const volatile Vec*)&vec3_802f9750;
 #else
-	*(Vec*)(star + 0x38) = vec3_802f9750;
-	*(s32*)(star + 0x44) = 0;
+	star->scale = vec3_802f9750;
+	star->frame = 0;
 #endif
-	*(u8*)(star + 0x5c) = 0x80;
+	star->alpha = 0x80;
 	member = BattleAudienceGetPtr(ids[irand(count)]);
-	*(f32*)(star + 8) = member->position.x;
-	*(f32*)(star + 0xc) = 20.0f + member->position.y;
-	*(f32*)(star + 0x10) = 1.0f + member->position.z;
+	star->pos.x = member->position.x;
+	star->pos.y = 20.0f + member->position.y;
+	star->pos.z = 1.0f + member->position.z;
 	cam = camGetPtr(CAMERA_3D);
-	PSMTXMultVec(cam->view, (Vec*)(star + 8), (Vec*)(star + 8));
-	PSMTX44MultVec(cam->projection, (Vec*)(star + 8), (Vec*)(star + 8));
-	*(f32*)(star + 8) *= 304.0f;
-	*(f32*)(star + 0xc) *= 240.0f;
-	*(f32*)(star + 0x10) = 0.0f;
-	*(f32*)(star + 0x14) = 40.0f * (f32)rand() / 32767.0f - 20.0f;
-	*(f32*)(star + 0x18) = 10.0f * (f32)rand() / 32767.0f;
-	*(f32*)(star + 0x1c) = 0.0f;
+	PSMTXMultVec(cam->view, &star->pos, &star->pos);
+	PSMTX44MultVec(cam->projection, &star->pos, &star->pos);
+	star->pos.x *= 304.0f;
+	star->pos.y *= 240.0f;
+	star->pos.z = 0.0f;
+	star->randOffset.x = 40.0f * (f32)rand() / 32767.0f - 20.0f;
+	star->randOffset.y = 10.0f * (f32)rand() / 32767.0f;
+	star->randOffset.z = 0.0f;
 #ifdef MUST_MATCH
 	// Match-only: the volatile store stops the scheduler hoisting the constant-Vec copy's loads up
 	// into the two preceding rand blocks; the plain store is the natural form.
-	*(volatile Vec*)(star + 0x20) = *(Vec*)(star + 8);
+	*(volatile Vec*)&star->startPos = star->pos;
 #else
-	*(Vec*)(star + 0x20) = *(Vec*)(star + 8);
+	star->startPos = star->pos;
 #endif
 #ifdef MUST_MATCH
-	*(volatile Vec*)(star + 0x2c) = *(const volatile Vec*)&vec3_802f975c;
+	*(volatile Vec*)&star->endPos = *(const volatile Vec*)&vec3_802f975c;
 #else
-	*(Vec*)(star + 0x2c) = vec3_802f975c;
+	star->endPos = vec3_802f975c;
 #endif
 	return TRUE;
 }
@@ -2914,7 +2914,7 @@ static inline GXColor BattleAudienceDispApSrc_color(u8 alpha) {
 #pragma dont_inline on
 void BattleAudienceDispApSrc(CameraId camId, void* param) {
 	BattleAudience* audience;
-	u8* star;
+	BattleAudienceStar* star;
 	Mtx rot;
 	Mtx scale;
 	Mtx trans;
@@ -2929,23 +2929,23 @@ void BattleAudienceDispApSrc(CameraId camId, void* param) {
 	GXSetZCompLoc(1);
 	GXSetAlphaCompare(7, 0, 0, 7, 0);
 	GXSetZMode(1, 3, 0);
-	star = (u8*)audience->starpower;
+	star = audience->starpower;
 	for (i = 0; i < 100; i++) {
-		if (*(s32*)star & 1) {
-			PSMTXScale(scale, *(f32*)(star + 0x38), *(f32*)(star + 0x3C), *(f32*)(star + 0x40));
+		if (star->flags & 1) {
+			PSMTXScale(scale, star->scale.x, star->scale.y, star->scale.z);
 			PSMTXRotRad(rot, 'z', 0.0f);
-			PSMTXTrans(trans, *(f32*)(star + 8), *(f32*)(star + 0xC), 0.0f);
+			PSMTXTrans(trans, star->pos.x, star->pos.y, 0.0f);
 			PSMTXConcat(scale, rot, mtx);
 			PSMTXConcat(trans, mtx, mtx);
 #ifdef MUST_MATCH
-			color = BattleAudienceDispApSrc_color(*(u8*)(star + 0x5C));
+			color = BattleAudienceDispApSrc_color(star->alpha);
 #else
 			color = *(GXColor*)&dat_8041e608;
-			color.a = *(u8*)(star + 0x5C);
+			color.a = star->alpha;
 #endif
 			iconDispGxCol(mtx, 0x10, 0x1B2, color);
 		}
-		star += 0x60;
+		star++;
 	}
 }
 #pragma dont_inline reset
