@@ -81,7 +81,6 @@ extern const GXColor dat_8041fef0;
 // ordering, and the int->float pool double (objdiff resolves the local @NNN alias by section offset).
 // opt_lifetimes off // needed: with lifetimes on the randA/randB temps coalesce into the wrong caller-saved
 // FPRs and the scale/scaleB homes swap (f26/f27); off restores the original colouring.
-#pragma opt_common_subs off // required for the type-0 randA constant colouring (`360` in f3, `6.2832` in f4); with CSE on they swap
 #pragma opt_lifetimes off // randA/randB temps coalesce into the wrong caller-saved FPRs and scale/scaleB swap (f26/f27) otherwise
 EffectEntry* effStardustN64Entry(s32 type, f32 x, f32 y, f32 z, f32 scale) {
     f32 angle;
@@ -237,7 +236,6 @@ EffectEntry* effStardustN64Entry(s32 type, f32 x, f32 y, f32 z, f32 scale) {
     return effect;
 }
 #pragma opt_lifetimes reset
-#pragma opt_common_subs reset
 
 // opt_common_subs on breaks the two fmadds contractions in the particle update; the original still
 // has them, so keep common subexpression merging off for this function.

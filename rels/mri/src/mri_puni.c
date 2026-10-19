@@ -1672,23 +1672,30 @@ void puniswGetindex(u32 base, s32 index, s32* out, Vec* pos) {
     }
 }
 
-// Writes the record puniswGetindex reads, through the same u8 b[7]. Lifetime splitting is off here and in the two
-// callers that inline it (evt_puni_exit, evt_puni_all_save): with it on, the second stores to b[2]/b[4] become
-// renames numbered after the offset's common subexpression, and the original colours the high bytes ahead of it.
+// Writes the record puniswGetindex reads, through the same u8 b[7]. Lifetime splitting is off here and in the three
+// callers that inline it (evt_puni_exit, evt_puni_all_save, evt_puni_set_lsw_index): with it on, the second stores to
+// b[2]/b[4] become renames numbered after the offset's common subexpression, and the original colours the high bytes ahead of it.
 #pragma opt_lifetimes off
 void puniswSetindex(u32 base, s32 index, s32* out, Vec* pos) {
     u8 b[7];
-    u32 x = (s32)pos->x;
-    u32 y = (s32)pos->y;
-    u32 z = (s32)pos->z;
+    s32 x = pos->x;
+    s32 y = pos->y;
+    s32 z = pos->z;
 
     b[0] = *out;
     b[1] = x & 0xFF;
     b[2] = (x >> 8) & 0xFF;
+#ifdef MUST_MATCH
+    // Redundant re-masks: the second definitions of b[2]/b[4] make MWCC compute the x and y high bytes up front in
+    // callee-saved registers (z's stays at its call), as the original does. Without them every byte is computed at
+    // its _swByteSet (88.5%; s16/u16 locals, implicit u8 truncation and `& 0xFF00` forms score lower).
     b[2] = b[2] & 0xFF;
+#endif
     b[3] = y & 0xFF;
     b[4] = (y >> 8) & 0xFF;
+#ifdef MUST_MATCH
     b[4] = b[4] & 0xFF;
+#endif
     b[5] = z & 0xFF;
     b[6] = (z >> 8) & 0xFF;
     _swByteSet(base + index * 7 + 0x8F0D180, b[0]);
@@ -7689,49 +7696,22 @@ USER_FUNC(evt_puni_get_lsw_index) {
     return EVT_RETURN_DONE;
 }
 
-// opt_propagation off stops MWCC rematerialising the named high bytes (h1/h2) at each
-// _swByteSet, so they stay in callee-saved registers like the original.
-#pragma opt_propagation off
+#pragma opt_lifetimes off // as in puniswSetindex, which inlines here: with it on, the high bytes colour behind the offset
 USER_FUNC(evt_puni_set_lsw_index) {
-    s32 b0;
-    s32 s3;
-    s32 i;
-    s32 s2;
-    s32 s1;
-    s32 h1;
-    s32 h2;
-    s32 index;
-    s32 base;
-    s32* args;
-    f32 v1;
-    f32 v2;
-    f32 v3;
+    s32* args = event->args;
+    s32 out;
+    Vec pos;
+    s32 index = args[0];
+    s32 i = evtGetValue(event, args[1]);
 
-    args = event->args;
-    index = args[0];
-    i = evtGetValue(event, args[1]);
-    b0 = evtGetValue(event, args[2]);
-    v1 = (f32)evtGetValue(event, args[3]);
-    v2 = (f32)evtGetValue(event, args[4]);
-    v3 = (f32)evtGetValue(event, args[5]);
-    s1 = (s32)v1;
-    s2 = (s32)v2;
-    s3 = (s32)v3;
-
-    h1 = (s1 >> 8) & 0xFF;
-    h2 = (s2 >> 8) & 0xFF;
-
-    base = index + i * 7;
-    _swByteSet(base + EVTDAT_LSW_BASE + 0, b0);
-    _swByteSet(base + EVTDAT_LSW_BASE + 1, s1 & 0xFF);
-    _swByteSet(base + EVTDAT_LSW_BASE + 2, h1);
-    _swByteSet(base + EVTDAT_LSW_BASE + 3, s2 & 0xFF);
-    _swByteSet(base + EVTDAT_LSW_BASE + 4, h2);
-    _swByteSet(base + EVTDAT_LSW_BASE + 5, s3 & 0xFF);
-    _swByteSet(base + EVTDAT_LSW_BASE + 6, (s3 >> 8) & 0xFF);
+    out = evtGetValue(event, args[2]);
+    pos.x = (f32)evtGetValue(event, args[3]);
+    pos.y = (f32)evtGetValue(event, args[4]);
+    pos.z = (f32)evtGetValue(event, args[5]);
+    puniswSetindex(index, i, &out, &pos);
     return EVT_RETURN_DONE;
 }
-#pragma opt_propagation reset
+#pragma opt_lifetimes reset
 
 USER_FUNC(evt_puni_get_trap_index) {
     s32* args = event->args;

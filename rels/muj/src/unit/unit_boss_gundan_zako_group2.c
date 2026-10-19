@@ -402,9 +402,9 @@ s32 shake_ceil(EventEntry* event, BOOL isFirstCall) {
         WORK_VEC(0x54) = vec3_muj_00013278;
         WORK_S32(0x60) = 0;
     }
-    start = *(volatile f32*)((u8*)work_20_bss_6C + 0x4C);
-    end = *(volatile f32*)((u8*)work_20_bss_6C + 0x58);
-    step = *(volatile s32*)((u8*)work_20_bss_6C + 0x60);
+    start = WORK_F32(0x4C);
+    end = WORK_F32(0x58);
+    step = WORK_S32(0x60);
 
     value = intplGetValue(4, step, 9, start, end);
     obj2->mPosition.y = value;

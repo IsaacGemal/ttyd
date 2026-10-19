@@ -1441,8 +1441,6 @@ static inline void moaPlayHit(ExtPose* ep) {
 #endif
 #pragma inline_max_total_size(60000)
 #pragma inline_max_size(1000)
-#pragma opt_propagation off
-#pragma opt_lifetimes off
 // Per-frame update of every moamoa (the ordinary variant, no follower).
 static void ext_moamoa_main(void) {
 #ifdef MUST_MATCH
@@ -2014,8 +2012,6 @@ static void ext_moamoa_main(void) {
         mario->riderDelta.z = 2.0f * b.z;
     }
 }
-#pragma opt_lifetimes reset
-#pragma opt_propagation reset
 #pragma inline_max_size reset
 #pragma inline_max_total_size reset
 static void ext_moamoa_dispent(void) {

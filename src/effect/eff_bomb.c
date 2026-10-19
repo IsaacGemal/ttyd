@@ -127,7 +127,7 @@ static void effBombMain(EffectEntry* effect) {
 #endif
 }
 
-#pragma opt_loop_invariants off
+#pragma opt_loop_invariants off // needed: without it effBombDisp 99.71%
 static void effBombDisp(CameraId camId, void* param) {
 	EffectEntry* effect = param;
 	effBombData* data;

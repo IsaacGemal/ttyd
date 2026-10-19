@@ -38,14 +38,8 @@ typedef struct AirGaugeDecWork {
 	s32 field_0x14;   // 0x14
 } AirGaugeDecWork;
 
-// 100%. The `opt_common_subs`/`difficulty`/`dat_80420a70` shapes are match-only (comments at their uses);
+// 100%. The `difficulty`/`dat_80420a70` shapes are match-only (comments at their uses);
 // the natural forms are under #else.
-#ifdef MUST_MATCH
-// Match-only: with common-subexpression elimination on, MWCC colours the gauge clamp's field/constant
-// the other way round (field in f0) than the original (field in f1).
-#pragma opt_common_subs off
-#endif
-#pragma optimize_for_size on
 s32 battleAcMain_AirGauge(BattleWork* work) {
 #ifdef MUST_MATCH
 	// Match-only: addressing the gauge work through the header's named field keeps `dec` in its own
@@ -238,8 +232,6 @@ s32 battleAcMain_AirGauge(BattleWork* work) {
 	}
 	return 1;
 }
-#pragma optimize_for_size reset
-#pragma opt_common_subs reset
 
 // Table record used by _GetGaugeDecValue; laid out in the original as 5 records of 0xC bytes.
 typedef struct GaugeTableEntry {

@@ -3687,7 +3687,7 @@ USER_FUNC(btlevtcmd_GetFirstAttackTarget) {
     return EVT_RETURN_DONE;
 }
 
-#pragma opt_dead_assignments off
+#pragma opt_dead_assignments off // needed: without it btlevtcmd_GetConsumeItem 97.94%
 USER_FUNC(btlevtcmd_GetConsumeItem) {
     s32* args = event->args;
     BattleWork* wp = _battleWorkPointer;

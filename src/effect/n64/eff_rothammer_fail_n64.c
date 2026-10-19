@@ -1,6 +1,3 @@
-// MWCC rematerializes the shared 0.0f constant without this pragma, which drops one saved FPR
-// (3 instead of 4) and shifts the whole prologue; keeping propagation off pins f31.
-#pragma opt_propagation off
 
 #include "eff/n64/eff_rothammer_fail_n64.h"
 #include "eff/eff_n64.h"

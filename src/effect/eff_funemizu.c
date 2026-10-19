@@ -297,7 +297,7 @@ void effFunemizuMain(EffectEntry* effect) {
 // NONMATCHING (99.94%): the map-lookup's two walks match except the second walk's pointer, which the
 // original keeps in r24 while MWCC reuses r26 for both (the first walk is r26). Everything else - the
 // .data base+offset addressing, the .sdata (r13) addressing and the display-list loop registers - matches.
-#pragma opt_lifetimes off
+#pragma opt_lifetimes off // needed: without it effFunemizuDisp 94.93%
 void effFunemizuDisp(CameraId camId, void* param) {
 	EffectEntry* effect;
 	EffFunemizuData* data;
@@ -401,7 +401,12 @@ found:
 		oneR = float_0_80421478;
 		PSMTXTrans(mtxC0, oneR, oneR, scale);
 		PSMTXConcat(mtx30, mtxC0, mtxC0);
+#ifdef MUST_MATCH
+		// Volatile read: retail reloads 1.0 here rather than reusing a register.
 		oneR = *(volatile f32*)&float_1_80421484;
+#else
+		oneR = float_1_80421484;
+#endif
 		PSMTXScale(mtx90, oneR, oneR, scale);
 		PSMTXConcat(mtxC0, mtx90, mtxC0);
 		PSMTXScale(mtx90, data->field_0x18, data->field_0x20, data->field_0x18);
@@ -491,8 +496,8 @@ found:
 #pragma opt_lifetimes reset
 
 // 100%: `data++` before the loop (rather than a separate `ptr`) and the GX colour helper below put the
-// pointer init and the by-value GXColor in the original's slots.  The 0.0f/1.0f arguments are literals
-// (not the named externs) so each GX write reloads them, as the original does.
+// pointer init and the by-value GXColor in the original's slots. The 0.0/1.0 vertex writes go through
+// FUNE_RELOAD so each GX write reloads them, as the original does.
 #ifdef MUST_MATCH
 // Match-only: building the colour through a helper lands the by-value GXColor in the original's stack
 // slot; the in-place build under #else lands it one word lower.
@@ -501,6 +506,12 @@ static inline GXColor funemizuShibukiColor(u8 a) {
 	c.a = a;
 	return c;
 }
+#endif
+#ifdef MUST_MATCH
+// Volatile reads: retail reloads 0.0/1.0 from .sdata2 for every vertex component.
+#define FUNE_RELOAD(x) (*(volatile f32*)&(x))
+#else
+#define FUNE_RELOAD(x) (x)
 #endif
 
 void effFunemizuShibukiDisp(CameraId camId, void* param) {
@@ -574,24 +585,24 @@ void effFunemizuShibukiDisp(CameraId camId, void* param) {
 
 			GXWGFifo.f32 = half;
 			GXWGFifo.f32 = one5;
-			GXWGFifo.f32 = *(volatile f32*)&float_0_80421478;
-			GXWGFifo.f32 = *(volatile f32*)&float_0_80421478;
-			GXWGFifo.f32 = *(volatile f32*)&float_0_80421478;
+			GXWGFifo.f32 = FUNE_RELOAD(float_0_80421478);
+			GXWGFifo.f32 = FUNE_RELOAD(float_0_80421478);
+			GXWGFifo.f32 = FUNE_RELOAD(float_0_80421478);
 			GXWGFifo.f32 = one5;
 			GXWGFifo.f32 = one5;
-			GXWGFifo.f32 = *(volatile f32*)&float_0_80421478;
-			GXWGFifo.f32 = *(volatile f32*)&float_1_80421484;
-			GXWGFifo.f32 = *(volatile f32*)&float_0_80421478;
+			GXWGFifo.f32 = FUNE_RELOAD(float_0_80421478);
+			GXWGFifo.f32 = FUNE_RELOAD(float_1_80421484);
+			GXWGFifo.f32 = FUNE_RELOAD(float_0_80421478);
 			GXWGFifo.f32 = one5;
 			GXWGFifo.f32 = half;
-			GXWGFifo.f32 = *(volatile f32*)&float_0_80421478;
-			GXWGFifo.f32 = *(volatile f32*)&float_1_80421484;
-			GXWGFifo.f32 = *(volatile f32*)&float_1_80421484;
+			GXWGFifo.f32 = FUNE_RELOAD(float_0_80421478);
+			GXWGFifo.f32 = FUNE_RELOAD(float_1_80421484);
+			GXWGFifo.f32 = FUNE_RELOAD(float_1_80421484);
 			GXWGFifo.f32 = half;
 			GXWGFifo.f32 = half;
-			GXWGFifo.f32 = *(volatile f32*)&float_0_80421478;
-			GXWGFifo.f32 = *(volatile f32*)&float_0_80421478;
-			GXWGFifo.f32 = *(volatile f32*)&float_1_80421484;
+			GXWGFifo.f32 = FUNE_RELOAD(float_0_80421478);
+			GXWGFifo.f32 = FUNE_RELOAD(float_0_80421478);
+			GXWGFifo.f32 = FUNE_RELOAD(float_1_80421484);
 		}
 		GXEnd();
 	}

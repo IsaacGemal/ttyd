@@ -331,11 +331,7 @@ static USER_FUNC(shadow_scale_memory) {
     return EVT_RETURN_DONE;
 }
 
-// `#pragma opt_propagation off`: with propagation on MWCC folds the int->float magic
-// double and rematerialises the 0.0f constant, changing the instruction order.
-#pragma opt_propagation off
-// The `#pragma opt_propagation off` above is required by `shadow_scale_return`; with it the
-// natural form of this function still schedules the pooled constants in the wrong slots. Casting
+// The natural form of this function schedules the pooled constants in the wrong slots. Casting
 // `intplGetValue` to an ABI-identical float-first signature `(s32, f32, f32, s32, s32)` (= r3,
 // f1, f2, r4, r5 on PowerPC) makes MWCC evaluate the integer arguments right-to-left and
 // materialise the pooled constants before the int->float conversion, reproducing the retail
@@ -386,7 +382,6 @@ static USER_FUNC(shadow_scale_return) {
     unit->work[1]++;
     return EVT_RETURN_BLOCK;
 }
-#pragma opt_propagation reset
 
 static EVT_BEGIN(init_event)
     CALL(btlevtcmd_SetEventWait, -2, PTR(wait_event))

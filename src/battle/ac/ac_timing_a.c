@@ -244,9 +244,7 @@ void battleAcDelete_TimingA(BattleWork* work) {
 }
 
 
-// optimize_for_size: the original actionCommandDisp prologue uses stmw/lmw.
 // dont_inline: the original keeps actionCommandDisp as its own local function (callers emit `bl`).
-#pragma optimize_for_size on
 #pragma dont_inline on
 static void actionCommandDisp(f32 x, f32 y) {
 	BattleWork* work = _battleWorkPointer;
@@ -342,7 +340,6 @@ AcTimingAEntry* _ac_timing_a_timing_tbl[7] = {
 // clang-format on
 
 #pragma dont_inline reset
-#pragma optimize_for_size reset
 
 // The pool constants the code above loads by name, defined after it (defined first, the compiler folds them).
 const Vec vec3_802efbc8 = { 0.0f, 0.0f, 0.0f };

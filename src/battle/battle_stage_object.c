@@ -1501,7 +1501,7 @@ void BattleStage_DestroyB(void) {
 }
 
 #pragma dont_inline on
-#pragma opt_propagation off
+#pragma opt_propagation off // needed: without it _set_mobj_rotate_x 99.88%
 USER_FUNC(_set_mobj_rotate_x) {
 	s32 layer;
 	u8* base;
@@ -1710,7 +1710,7 @@ USER_FUNC(_get_bgset_attack_data) {
 }
 
 #pragma dont_inline on
-#pragma opt_propagation off
+#pragma opt_propagation off // needed: without it _bgset_kemuri_effect 99.80%
 // Copy propagation off is required: it keeps the `vec3_802f3ac8` base in a callee-saved register loaded
 // before the `evtGetValue` call and the three string offsets computed after it, as the target does.
 USER_FUNC(_bgset_kemuri_effect) {

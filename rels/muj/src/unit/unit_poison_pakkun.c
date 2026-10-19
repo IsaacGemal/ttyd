@@ -842,10 +842,6 @@ USER_FUNC(shadow_scale_memory) {
     return EVT_RETURN_DONE;
 }
 
-// `#pragma opt_propagation off`: with propagation on MWCC folds the int->float magic
-// double and rematerialises the 0.0f load, so shadow_scale_return loses the original's
-// fp register allocation and store order; off keeps both as separate .rodata loads.
-#pragma opt_propagation off
 // intplGetValue's real prototype is (s32, s32, s32, f32, f32), which is ABI-identical to this
 // float-first form (r3, f1, f2, r4, r5). The cast makes MWCC materialise the pooled constants
 // and load the int arguments right-to-left, reproducing the retail bytes; the natural argument
@@ -895,5 +891,4 @@ USER_FUNC(shadow_scale_return) {
     unit->work[1]++;
     return EVT_RETURN_BLOCK;
 }
-#pragma opt_propagation reset
 

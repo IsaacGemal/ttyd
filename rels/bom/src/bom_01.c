@@ -856,7 +856,7 @@ void jump(s32 index, s32 a, f32 x, f32 y, f32 z, f32 p, f32 q) {
     }
 }
 
-// opt_lifetimes/opt_propagation off (as in rsh_05): hoists the sin/cos coefficients as retail does.
+// opt_lifetimes/opt_propagation off: hoists the sin/cos coefficients as retail does.
 #pragma opt_lifetimes off
 #pragma opt_propagation off
 static void ext_main(void) {
@@ -2166,7 +2166,6 @@ static void ext_dispent(void) {
     }
 }
 
-#pragma opt_common_subs off // required: CSE otherwise reorders the float address temps (87.49% without it)
 USER_FUNC(taihou_r) {
     f32 c;
     f32 s;
@@ -2182,7 +2181,6 @@ USER_FUNC(taihou_r) {
     effRippleN64SetRxRz(effNameToPtr("ripple"), rx, rz);
     return EVT_RETURN_DONE;
 }
-#pragma opt_common_subs reset
 
 // The sin/cos polynomials live in one `static inline` helper each
 // (see pik_02.c's hoshi_sin_approx) so the angle^2 scratch / wrapped-angle pivot colour as

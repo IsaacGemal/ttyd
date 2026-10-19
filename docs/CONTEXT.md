@@ -8407,3 +8407,20 @@ removes the raw `+0x..` casts in npcdrv.c, seq_battle.c, battle_seq_end.c and ev
 Blocked: splitting NpcBattleInfo's tail (0x9C-0xC8) into fields wasn't byte-identical (the roll loop indexes the
 `field_9C` array), and FieldBattleData's `FieldBattleInfo` at 0x20 keeps its cast because battle_information.h
 includes npcdrv.h.
+
+### Matching-hack review (2026-10-19, Claude Opus 5.5, night8-hacks)
+
+Every commit builds to 32 files OK, and every touched file also compiles without `-DMUST_MATCH`.
+- **Replaced with natural code:** `evt_puni_set_lsw_index` now calls `puniswSetindex` instead of a hand-copied body
+  (under `opt_lifetimes off`, as its other inlining callers); mario_balloon's `ret = ret;`; unneeded volatile reads in
+  unit_piders, unit_churantalar, unit_boss_gundan_zako_group2, eff_ice_n64 and eff_kemuri5_n64 (colour words typed
+  GXColor); an unused volatile extern in eff_akari_pose_n64.h.
+- **Optimisation pragmas:** 61 of the 341 regions were unneeded and are gone (mostly `optimize_for_size` in files already
+  built -O4,s); 21 needed ones got a `// needed: without it FN X%` reason (rule 8).
+- **Labelled under MUST_MATCH with a reason and an `#else`:** puniswSetindex's `b[2]`/`b[4]` re-masks (plain: 88.5%);
+  winmgr's `x = x` / `zero = zero` guards (plain: 92-94%); the remaining match-only volatile reads (party_nokonoko,
+  seq_load, the action commands, eki_06, muj_01, eff_funemizu, battle_audience_kinopio, eff_blow_n64, tou_02).
+  mapSetMaterialTev's sine comma stays guarded; six natural forms were tried and are listed in its comment.
+- **Open (Isaac's call):** unit_barriern.c:1978 and unit_boss_batten_leader.c:3080 carry reshaped, unguarded copies of
+  Init helpers taking the same table twice through a volatile parameter, only to steer registers. Rule 7 refuses
+  these; their comments say a plain call leaves both functions 80 bytes short.

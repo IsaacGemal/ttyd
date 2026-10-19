@@ -71,7 +71,7 @@ s32 _get_ok_frame_range(s32 idx) {
 // `unique = 1` after the `irand` call, the `switch`es for the range and in-window tests, the
 // `field_34[4] + field_34[0x1C]` association, and reading `bd->field_0x08` directly at each
 // `bd->states[...]` index (a cached `idx` makes MWCC keep it in a register and miss).
-#pragma optimize_for_size on
+#pragma optimize_for_size on // needed: without it battleAcMain_SignalTiming 95.49%
 #ifdef MUST_MATCH
 // The target's string pool is PI,PONE,OK,NG while its four address loads in the entry block run
 // NG,PI,PONE,OK. Reassigning after the initializers gives that emission order; the initializers
@@ -503,7 +503,12 @@ static void actionCommandDisp(f32 x, f32 y) {
             ICON_DISP(&t, 0x10, 0x8F, 1.0f);
         }
         for (i = 1; i < limit; i++) {
+#ifdef MUST_MATCH
+            // Volatile copy: retail reloads the template Vec every iteration instead of hoisting it.
             Vec t = *(volatile Vec*)&vec3_802fedec;
+#else
+            Vec t = vec3_802fedec;
+#endif
             t.x = x + (f32)(i * 0x10 - 0x120);
             t.y = f31;
             ICON_DISP(&t, 0x10, 0x8E, 1.0f);

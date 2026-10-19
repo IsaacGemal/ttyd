@@ -79,7 +79,6 @@ const char gap_09_804203B4_sdata2[4] = {0, 0, 0, 0};
 
 
 
-#pragma opt_propagation off // keep named .sdata2 float refs (no duplicate literals) + exact scheduling
 void peachSetStsNormal(void) {
     MarioWork* mp = marioGetPtr();
     if (mp->peachFlags & 0x2000) {
@@ -102,7 +101,6 @@ void peachSetStsNormal(void) {
         peachChgPose(str_8042026C);
     }
 }
-#pragma opt_propagation on
 
 void peachSetStsAftershower(void) {
     MarioWork* mp = marioGetPtr();
@@ -263,7 +261,6 @@ void peachChgPose(const char* pose) {
     }
 }
 
-#pragma opt_propagation off // keep named .sdata2 float refs (no duplicate literals) + exact scheduling
 void peachTransformOn(void) {
     MarioWork* mp = marioGetPtr();
     if (mp->characterId != 1) {
@@ -283,9 +280,7 @@ void peachTransformOn(void) {
         }
     }
 }
-#pragma opt_propagation on
 
-#pragma opt_propagation off // keep named .sdata2 float refs (no duplicate literals) + exact scheduling
 void peachTransformOff(void) {
     MarioWork* mp = marioGetPtr();
     if (mp->characterId != 1) {
@@ -302,12 +297,10 @@ void peachTransformOff(void) {
         mp->wPlayerCollisionBox.x = MATCH_F32(float_20_80420288);
     }
 }
-#pragma opt_propagation on
 
 void peachPreInit(void) {
 }
 
-#pragma opt_propagation off // keep named .sdata2 float refs (no duplicate literals) + exact scheduling
 s32 peachMain(void) {
     MarioWork* mp = marioGetPtr();
     if (mp->currMotionId == MARIO_MOTION_JUMP_3) {
@@ -377,9 +370,7 @@ s32 peachMain(void) {
     }
     return 1;
 }
-#pragma opt_propagation on
 
-#pragma opt_propagation off // keep named .sdata2 float refs (no duplicate literals) + exact scheduling
 void peach_stay(void) {
     MarioWork* mp = marioGetPtr();
     if (mp->trigFlags & 1) {
@@ -441,7 +432,6 @@ void peach_stay(void) {
             break;
     }
 }
-#pragma opt_propagation on
 
 void peach_walk(void) {
     MarioWork* mp = marioGetPtr();
@@ -499,7 +489,6 @@ void peach_walk(void) {
     }
 }
 
-#pragma opt_propagation off // keep named .sdata2 float refs (no duplicate literals) + exact scheduling
 void peach_dash(void) {
     MarioWork* mp = marioGetPtr();
     if (mp->trigFlags & 1) {
@@ -581,7 +570,6 @@ void peach_dash(void) {
         }
     }
 }
-#pragma opt_propagation on
 
 void peach_talk(void) {
     MarioWork* mp = marioGetPtr();

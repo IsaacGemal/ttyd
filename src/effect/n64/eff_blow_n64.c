@@ -8,8 +8,13 @@
 #include <dolphin/gx.h>
 #include <dolphin/mtx.h>
 
-// .sdata2 word constant of this unit (volatile: forces the per-element reload the original does).
+// .sdata2 colour of this unit.
+#ifdef MUST_MATCH
+// volatile: forces the per-element reload the original does (effBlowDisp 93.5% without it).
 const volatile u32 dat_8041e980 = 0xC8FFFF00;
+#else
+const GXColor dat_8041e980 = {0xC8, 0xFF, 0xFF, 0x00};
+#endif
 
 // .data: retail 16x16 quad vertex array.
 static u32 size16x16_tex32x32_vtx[14] = {
@@ -20,7 +25,11 @@ static u32 size16x16_tex32x32_vtx[14] = {
 };
 
 static inline void blowSetColor(u8 a) {
+#ifdef MUST_MATCH
     GXColor color = *(GXColor*)&dat_8041e980;
+#else
+    GXColor color = dat_8041e980;
+#endif
     color.a = a;
     GXSetTevColor(1, color);
 }

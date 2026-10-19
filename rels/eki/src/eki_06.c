@@ -377,10 +377,15 @@ USER_FUNC(sw_entry) {
     }
     mobjEntry(name, name);
     obj = mobjNameToPtr(name);
+#ifdef MUST_MATCH
     /* MUST_MATCH: volatile makes the flags store stay ahead of the vec3 copy, as in the original;
        the objects themselves are not volatile, but this reproduces MWCC's exact schedule. */
     *(volatile s32*)&obj->flags |= 6;
     pos = *(volatile Vec*)&vec3_eki_00009504;
+#else
+    obj->flags |= 6;
+    pos = vec3_eki_00009504;
+#endif
     pos.x = x;
     pos.y = y;
     pos.z = z;

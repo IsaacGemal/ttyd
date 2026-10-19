@@ -67,8 +67,6 @@ typedef struct AcRepeatedlyWork {
     s32 field_0x30; // 0x30
 } AcRepeatedlyWork;
 
-// optimize_for_size: the original _init_param saves its three callee-saved registers with stmw/lmw.
-#pragma optimize_for_size on
 static void _init_param(BattleWork* work) {
     BattleActions* ac = &work->actionCommands;
     AcRepeatedlyWork* dec = (AcRepeatedlyWork*)&ac->field_0x2BC[0];
@@ -158,7 +156,6 @@ static void _init_param(BattleWork* work) {
     }
     ac->outputParams[0] = 0;
 }
-#pragma optimize_for_size reset
 s32 battleAcMain_Repeatedly(BattleWork* work) {
     BattleActions* ac = &work->actionCommands;
     AcRepeatedlyWork* dec = (AcRepeatedlyWork*)&ac->field_0x2BC[0];
@@ -276,8 +273,14 @@ s32 battleAcMain_Repeatedly(BattleWork* work) {
             if (stateChanged) {
                 dec->field_0x18 += float_0p01_8041c7c0 * (_power_table[difficulty] * (f32)dec->field_0x24);
             }
+#ifdef MUST_MATCH
+            // Volatile reads: retail reloads both fields here after the store above.
             target = *(volatile f32*)&dec->field_0x18;
             v = *(volatile f32*)&dec->field_0x1C;
+#else
+            target = dec->field_0x18;
+            v = dec->field_0x1C;
+#endif
             v = target - v;
             dec->field_0x18 = v;
 #ifdef MUST_MATCH
@@ -416,9 +419,6 @@ void battleAcDelete_Repeatedly(BattleWork* work) {
 }
 #pragma dont_inline reset
 
-// optimize_for_size: the original saves f28-f31 with stmw/psq_st and uses `divw` for /7, both
-// -O4s hallmarks; the rest of this unit matches either way.
-#pragma optimize_for_size on
 // 100% matched.
 static void actionCommandDisp(f32 x, f32 y) {
     BattleWork* work = _battleWorkPointer;
@@ -577,7 +577,6 @@ static void actionCommandDisp(f32 x, f32 y) {
     (*(s32*)&disp->field_0x0[0])++;
     (*(s32*)&disp->field_0x0[4])++;
 }
-#pragma optimize_for_size reset
 
 // The pool constants the code above loads by name, defined after it (defined first, the compiler folds them).
 const f32 float_neg200_8041c7ac = -200.0f;

@@ -8,10 +8,6 @@
 #include "mario/mariost.h"
 #include "system.h"
 
-// The polynomial helpers only colour the angle^2 scratch into f0 and the pivot into f1 with
-// propagation off; lifetimes off holds retail's FPR colouring across the first-call block.
-#pragma opt_propagation off
-#pragma opt_lifetimes off
 #include "evt/evt_item.h"
 
 #ifdef MUST_MATCH
@@ -90,8 +86,6 @@ static inline f32 item_cos_approx(f32 angle) {
 	}
 	return v;
 }
-#pragma opt_lifetimes reset
-#pragma opt_propagation reset
 
 // itemEntry's third parameter is u16 (retail stores it with `sth` and masks it with `clrlwi`).
 USER_FUNC(evt_item_entry) {
@@ -340,7 +334,7 @@ USER_FUNC(evt_item_set_alpha) {
 }
 
 
-#pragma opt_propagation off
+#pragma opt_propagation off // needed: without it evt_item_move_3d_position 99.85%
 // needed: with propagation on the step value is coalesced into r27 instead of dividing into r4
 USER_FUNC(evt_item_move_3d_position) {
 	s32* args = event->args;
@@ -387,8 +381,8 @@ USER_FUNC(evt_item_move_3d_position) {
 }
 #pragma opt_propagation reset
 
-#pragma opt_propagation off
-#pragma opt_lifetimes off
+#pragma opt_propagation off // needed: without it evt_item_get_important_item 80.00%
+#pragma opt_lifetimes off // needed: without it evt_item_get_important_item 96.10%
 USER_FUNC(evt_item_get_important_item) {
 	s32* args = event->args;
 	ItemEntry* item = itemNameToPtr((char*)evtGetValue(event, args[0]));

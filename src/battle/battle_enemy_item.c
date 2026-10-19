@@ -12,8 +12,6 @@ extern ItemData itemDataTable[];
 // Keep the local _check_* helpers out of line: the original calls them with `bl` instead of
 // inlining their bodies into BattleEnemyUseItemCheck.
 #pragma dont_inline on
-// The original saves r30/r31 with stmw/lmw (size-oriented prologue) and lays the switch out the same way.
-#pragma optimize_for_size on
 void* BattleEnemyUseItemCheck(BattleUnit* unit) {
     s32 item = unit->heldItem;
     BattleWeapon* weapon;
@@ -74,7 +72,6 @@ void* BattleEnemyUseItemCheck(BattleUnit* unit) {
         return 0;
     }
 }
-#pragma optimize_for_size off
 
 void* _check_hp_recover_item(BattleUnit* unit) {
     BattleWork* wp = _battleWorkPointer;

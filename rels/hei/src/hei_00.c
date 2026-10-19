@@ -1120,9 +1120,6 @@ USER_FUNC(shake_reset) {
     return EVT_RETURN_DONE;
 }
 
-// `#pragma opt_common_subs off` required: with common-subexpression elimination on, the compiler
-// reorders the camRoadMain midpoint setup and the two functions no longer match.
-#pragma opt_common_subs off
 USER_FUNC(cam_test) {
     MarioWork* mario = marioGetPtr();
     PartyEntry* party = partyGetPtr(marioGetPartyId());
@@ -1205,7 +1202,6 @@ USER_FUNC(cam_test2) {
     return EVT_RETURN_DONE;
 }
 
-#pragma opt_common_subs reset
 USER_FUNC(dist_check) {
     PartyEntry* party;
     Vec pos;

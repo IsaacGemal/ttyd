@@ -235,10 +235,8 @@ void marioBalloonMain(void) {
         }
     }
 
-    if (mario->airTimer == 0 && !(mario->flags & 0x00100000) && !(mario->dispFlags & 0x01000000) &&
-        (mario->currMotionId == 0 || mario->currMotionId == 1 || mario->currMotionId == 2)) {
-        ret = ret;
-    } else {
+    if (!(mario->airTimer == 0 && !(mario->flags & 0x00100000) && !(mario->dispFlags & 0x01000000) &&
+          (mario->currMotionId == 0 || mario->currMotionId == 1 || mario->currMotionId == 2))) {
         ret = FALSE;
     }
 

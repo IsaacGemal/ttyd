@@ -451,10 +451,10 @@ static EVT_BEGIN(dmg_first_attack_pos)
 EVT_END()
 
 // Colour word (opaque white; the alpha byte is filled in per frame by piders_draw_yarn_sub).
-const u32 dat_mri_00026be0 = 0xFFFFFF00;
+const GXColor dat_mri_00026be0 = {0xFF, 0xFF, 0xFF, 0x00};
 
 static inline GXColor piders_getMatColor(PidersYarnWork* yarn) {
-    GXColor color = *(volatile const GXColor*)&dat_mri_00026be0;
+    GXColor color = dat_mri_00026be0;
     color.a = yarn->field_0x18;
     return color;
 }

@@ -282,7 +282,7 @@ USER_FUNC(hoshi_r) {
 // Keeping each polynomial in one helper (rather than inlining it twice) is what puts the angle^2
 // scratch in f0 and the wrapped-angle pivot in f1; with the coefficients as helper locals the seed
 // lands in f4/f3/f2 exactly as retail. See evt_sub_get_coin for the same helper structure.
-#pragma opt_propagation off
+#pragma opt_propagation off // needed: without it hoshi_jump 61.42%
 // opt_lifetimes off keeps retail's FPR colouring across the first-call block and the angle wrap.
 #pragma opt_lifetimes off
 // MUST_MATCH-only: retail keeps the first-call 0.5 and 50.0 in the constant pool and reads them back

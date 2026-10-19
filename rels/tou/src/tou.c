@@ -2940,9 +2940,6 @@ USER_FUNC(make_monitor) {
     return EVT_RETURN_BLOCK;
 }
 
-// The original materialises float_1 before float_25; with common-subexpression elimination on, MWCC
-// folds the repeated float_1 and lands the two constant addresses in r4/r5 swapped. Off matches.
-#pragma opt_common_subs off
 void gans_tex(CameraId cameraId, void* param) {
     GansWork* work = (GansWork*)param;
     NpcEntry* npc;
@@ -3001,7 +2998,6 @@ void gans_tex(CameraId cameraId, void* param) {
     work->field_2C = 1;
 }
 
-#pragma opt_common_subs reset
 const f32 float_0p125_tou_0000a888 = 0.125f;
 const f32 float_300_tou_0000a88c = 300.0f;
 

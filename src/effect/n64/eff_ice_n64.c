@@ -23,8 +23,8 @@ u32 ice_s_vtx[14] = {
     0x00000800, 0x000000FF,
 };
 
-// .sdata2 colour the original copies and then overwrites the alpha byte of (volatile: per-element reload).
-extern const volatile u32 dat_8041f198;
+// .sdata2 colour the original copies and then overwrites the alpha byte of.
+extern const GXColor dat_8041f198;
 // .sdata2 angle/packing constants (named after their original addresses).
 extern const f32 float_deg2rad_8041f19c;
 extern const f32 float_0p015625_8041f1a0;
@@ -150,7 +150,7 @@ static void effIceMain(EffectEntry* effect) {
 }
 
 static inline void iceSetColor(u8 a) {
-    GXColor color = *(GXColor*)&dat_8041f198;
+    GXColor color = dat_8041f198;
     color.a = a;
     GXSetTevColor(GX_TEVREG0, color);
 }
@@ -222,7 +222,7 @@ static void effIceDisp(CameraId camId, void* param) {
 
 // The pool constants the code above loads by name, defined after it (defined first, the compiler folds them).
 const Vec vec3_802fa820 = { 0.0f, 0.0f, 0.0f };
-const volatile u32 dat_8041f198 = 0x14641400;
+const GXColor dat_8041f198 = {0x14, 0x64, 0x14, 0x00};
 const f32 float_deg2rad_8041f19c = 0.017453292f;
 const f32 float_0p015625_8041f1a0 = 0.015625f;
 const f32 float_0_8041f1a4 = 0.0f;

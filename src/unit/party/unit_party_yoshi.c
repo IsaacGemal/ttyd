@@ -1789,7 +1789,6 @@ static void __makeTechMenuFunc(BattleWorkCommand* cmd, s32* count) {
     }
 #endif
 }
-#pragma opt_propagation off
 
 
 // One of the 256 particles drawn by _gundan_yoshi_run_effect: a 0x30-byte entry whose

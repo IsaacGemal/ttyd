@@ -583,7 +583,6 @@ void BattleAudience_PerPhase(u32 value) {
 	}
 }
 
-#pragma opt_common_subs off // needed: with CSE on MWCC keeps audience+0x10000 in a callee-saved register
 BOOL BattleAudience_CheckReactionPerPhase(void) {
 	BattleAudience* audience;
 	BattleAudienceMember* member;
@@ -1104,7 +1103,6 @@ BOOL BattleAudience_CheckReactionPerPhase(void) {
 	}
 	return TRUE;
 }
-#pragma opt_common_subs reset
 
 void BattleAudience_Disp(void) {
 	BattleAudienceBaseGetPtr();
@@ -2431,9 +2429,6 @@ BOOL BattleAudienceApSrcEntry(void) {
 #else
 #define BA_ZERO 0.0f
 #endif
-// opt_common_subs off keeps the negative clamp's 0.1 constant and step result in the target's
-// f2/f1 order instead of swapping them.
-#pragma opt_common_subs off
 #pragma dont_inline on
 // The zero test is constant-first for the target's `(f0, diff)` operand order, the branches use
 // literal 0.0f so the target's four separate `lfs` reloads reappear, and `step` is a function-scope
@@ -2507,7 +2502,6 @@ void BattleAudienceWinCtrlProcess(void) {
 	}
 #endif
 }
-#pragma opt_common_subs reset
 #pragma dont_inline reset
 #undef BA_ZERO
 

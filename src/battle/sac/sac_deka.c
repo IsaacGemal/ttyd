@@ -53,10 +53,6 @@ static void yuka_init(void);  // local to this file in the original
 void psndSFX_pit(s32 id, s32 pitch);
 
 
-// The original sac_deka unit was compiled with -O4,s (optimize for size): the
-// prologues/epilogues use stmw/lmw, which -O4,p never emits. There is no
-// per-Object flag for this unit, so set it here.
-#pragma optimize_for_size on
 
 // ---- local declarations (no header yet) ----
 
@@ -910,10 +906,8 @@ void main_enemy(void) {
 // .text:0x11A0 | 0x80244198 | size: 0x404
 // The int->float magic this function loads is the compiler's own pool entry (an anonymous
 // @NNN local), not double_to_int_80300630; objdiff ignores that relocation, so the only real
-// differences were FPR allocation. Two pragmas fix them: with ordinary CSE the opening
-// velocity/clamp constants land swapped in f0/f1/f2, and with propagation on the final
-// mPosition.y/mHomePosition.y loads are scheduled in the other order.
-#pragma opt_common_subs off
+// differences were FPR allocation. With propagation on, the final mPosition.y/mHomePosition.y
+// loads are scheduled in the other order.
 #pragma opt_propagation off
 void main_enemy_sub(BattleUnit* unit, s32* count) {
     DekaWork* p = get_ptr();
@@ -1045,7 +1039,6 @@ void main_enemy_sub(BattleUnit* unit, s32* count) {
     (*count)++;
 }
 #pragma opt_propagation reset
-#pragma opt_common_subs reset
 #pragma dont_inline reset
 
 // .text:0x1158 | 0x80244150 | size: 0x48

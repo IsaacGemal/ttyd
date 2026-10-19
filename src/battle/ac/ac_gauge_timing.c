@@ -478,8 +478,6 @@ void battleAcDelete_GaugeTiming(BattleWork* work) {
 #define ICON_DISP(v, f, id, s) iconDispGx((s), (v), (f), (id))
 #endif
 
-// optimize_for_size: the original saves r25-r31 with `stmw` and keeps the 2D camera in r27.
-#pragma optimize_for_size on
 // 100%. The int->float magic must be MWCC's own anonymous pool entry: do not define
 // `double_to_int_802ff930` in the source, or the compiler emits a second anonymous copy after the
 // named one and the loads move to `0xe0(r28)`. The 17 zero Vecs must be separate objects (the
@@ -748,4 +746,3 @@ static void actionCommandDisp(f32 x, f32 y) {
         break;
     }
 }
-#pragma optimize_for_size reset
