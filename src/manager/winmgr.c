@@ -241,48 +241,48 @@ static inline s32 get10(WinMgrDesc* d) { return d->field_0x10; }
 
 static inline void winMgrDispWaku1(Mtx mtx, WinMgrEntry* entry, const GXColor* base) {
     GXColor color = *base;
-    color.a = *(s32*)&entry->field_0xC;
-    windowDispGX2_Waku_col(mtx, 0, color, (f32)(entry->field_0x18 + (entry->field_0x20 - 150) / 2),
-                           (f32)(entry->field_0x1C + 14), 150.0f, 28.0f, 8.0f);
+    color.a = entry->alpha;
+    windowDispGX2_Waku_col(mtx, 0, color, (f32)(entry->x + (entry->width - 150) / 2),
+                           (f32)(entry->y + 14), 150.0f, 28.0f, 8.0f);
 }
 
 static inline void winMgrDispWaku3a(Mtx mtx, WinMgrEntry* entry, const GXColor* base) {
     GXColor color = *base;
-    color.a = *(s32*)&entry->field_0xC;
-    windowDispGX2_Waku_col(mtx, 0, color, (f32)(entry->field_0x18 + 10), (f32)(entry->field_0x1C + 14),
+    color.a = entry->alpha;
+    windowDispGX2_Waku_col(mtx, 0, color, (f32)(entry->x + 10), (f32)(entry->y + 14),
                            100.0f, 28.0f, 8.0f);
 }
 
 static inline void winMgrDispWaku3b(Mtx mtx, WinMgrEntry* entry, const GXColor* base) {
     GXColor color = *base;
-    color.a = *(s32*)&entry->field_0xC;
-    windowDispGX2_Waku_col(mtx, 0, color, (f32)(entry->field_0x18 + entry->field_0x20 / 2 - 10),
-                           (f32)(entry->field_0x1C + 14), 100.0f, 28.0f, 8.0f);
+    color.a = entry->alpha;
+    windowDispGX2_Waku_col(mtx, 0, color, (f32)(entry->x + entry->width / 2 - 10),
+                           (f32)(entry->y + 14), 100.0f, 28.0f, 8.0f);
 }
 
 static inline void winMgrDispWaku4(Mtx mtx, WinMgrEntry* entry, const GXColor* base) {
     GXColor color = *base;
-    color.a = *(s32*)&entry->field_0xC;
-    windowDispGX2_Waku_col(mtx, 0, color, (f32)(entry->field_0x18 + (entry->field_0x20 * 3 / 5 - 120) * 2 / 3),
-                           (f32)(entry->field_0x1C + 14), 120.0f, 28.0f, 8.0f);
+    color.a = entry->alpha;
+    windowDispGX2_Waku_col(mtx, 0, color, (f32)(entry->x + (entry->width * 3 / 5 - 120) * 2 / 3),
+                           (f32)(entry->y + 14), 120.0f, 28.0f, 8.0f);
 }
 
 static inline void winMgrDispWaku5(Mtx mtx, WinMgrEntry* entry, const GXColor* base) {
     GXColor color = *base;
-    color.a = *(s32*)&entry->field_0xC;
+    color.a = entry->alpha;
     windowDispGX2_Waku_col(mtx, 0, color,
-                           (f32)(entry->field_0x18 + entry->field_0x20 * 3 / 5 + (entry->field_0x20 * 2 / 5 - 85) / 3),
-                           (f32)(entry->field_0x1C + 14), 85.0f, 28.0f, 8.0f);
+                           (f32)(entry->x + entry->width * 3 / 5 + (entry->width * 2 / 5 - 85) / 3),
+                           (f32)(entry->y + 14), 85.0f, 28.0f, 8.0f);
 }
 
 static inline void winMgrDispWaku0(Mtx mtx, WinMgrEntry* entry) {
     GXColor color = { 0, 0, 0, 0 };
-    color.r = entry->description->field_0x1C[0];
-    color.g = entry->description->field_0x1C[1];
-    color.b = entry->description->field_0x1C[2];
-    color.a = *(s32*)&entry->field_0xC;
-    windowDispGX2_Waku_col(mtx, 0, color, (f32)entry->field_0x18, (f32)entry->field_0x1C,
-                           (f32)entry->field_0x20, (f32)entry->field_0x24, 20.0f);
+    color.r = entry->description->color[0];
+    color.g = entry->description->color[1];
+    color.b = entry->description->color[2];
+    color.a = entry->alpha;
+    windowDispGX2_Waku_col(mtx, 0, color, (f32)entry->x, (f32)entry->y,
+                           (f32)entry->width, (f32)entry->height, 20.0f);
 }
 
 // Emit the display prefix immediately so its conversions and literals pool in retail order.
@@ -317,7 +317,7 @@ void select_disp3_mario(WinMgrEntry* entry) {
             sprintf(buf, str_802FFDA4, help, mario_status_labelname_table[items[select->cursor].id]);
             break;
         }
-        entry->field_0x34 = (s32)msgSearch(buf);
+        entry->message = msgSearch(buf);
         winMgrHelpDraw(entry);
     }
 }
@@ -346,7 +346,7 @@ void select_disp3_party(WinMgrEntry* entry) {
         id = items[select->cursor].id;
         sprintf(buf, str_802FFDC8, help, lank,
                 pouch->partyData[party_id_table[id]].techLevel + 1, party_labelname_table[id]);
-        entry->field_0x34 = (s32)msgSearch(buf);
+        entry->message = msgSearch(buf);
         winMgrHelpDraw(entry);
     }
 }
@@ -359,7 +359,7 @@ void select_disp3(WinMgrEntry* entry) {
         u16 id = items[select->cursor].id;
         ItemData* item = &itemDataTable[id];
 
-        entry->field_0x34 = (s32)msgSearch(item->description);
+        entry->message = msgSearch(item->description);
         winMgrHelpDraw(entry);
     }
 }
@@ -368,19 +368,19 @@ void select_main3(WinMgrEntry* entry) {
     u16 width = 0;
 
     if (!(entry->flags & 4)) {
-        if ((const char*)entry->field_0x34 != NULL) {
-            FontGetMessageWidthLine((const char*)entry->field_0x34, &width);
-            entry->field_0x3C = width + 1;
+        if (entry->message != NULL) {
+            FontGetMessageWidthLine(entry->message, &width);
+            entry->scrollRows = width + 1;
         }
-        if (entry->field_0x3C > 2) {
+        if (entry->scrollRows > 2) {
             if (keyGetDirTrg(0) & 0x100) {
-                entry->field_0x38 -= 2;
-                if (entry->field_0x38 < 0) {
-                    entry->field_0x38 = 0;
+                entry->scrollPos -= 2;
+                if (entry->scrollPos < 0) {
+                    entry->scrollPos = 0;
                 }
             } else if (keyGetDirTrg(0) & 0x200) {
-                if ((entry->field_0x3C + 1) / 2 - 1 > (entry->field_0x38 + 1) / 2) {
-                    entry->field_0x38 += 2;
+                if ((entry->scrollRows + 1) / 2 - 1 > (entry->scrollPos + 1) / 2) {
+                    entry->scrollPos += 2;
                 }
             }
         }
@@ -435,11 +435,11 @@ void select_disp2(WinMgrEntry* entry) {
         break;
     }
     if (!(wp->mEntries[select->descriptorId[1]].flags & 4)) {
-        x = (entry->field_0x20 - FontGetMessageWidthLine(msg, &width)) / 2;
+        x = (entry->width - FontGetMessageWidthLine(msg, &width)) / 2;
 
         FontDrawStart();
-        FontDrawMessage(entry->field_0x18 + x,
-                        entry->field_0x1C - (entry->field_0x24 - (width + 1) * 24) / 2, msg);
+        FontDrawMessage(entry->x + x,
+                        entry->y - (entry->height - (width + 1) * 24) / 2, msg);
     }
 }
 
@@ -493,19 +493,19 @@ void select_disp_luigi(WinMgrEntry* entry) {
     GXSetFog(0, 0.0f, 0.0f, 0.0f, 0.0f, fogColor);
 #endif
     GXGetScissor(&scissorLeft, &scissorTop, &scissorWidth, &scissorHeight);
-    GXSetScissor(entry->field_0x18 + 0x130, 0x112 - entry->field_0x1C, entry->field_0x20, entry->field_0x24 - 0x32);
+    GXSetScissor(entry->x + 0x130, 0x112 - entry->y, entry->width, entry->height - 0x32);
 
     zero = 0.0f;
     info = jdt->info;
     for (i = 0; i < select->numItems; i++, info++) {
         char saved;
-        f32 row = (f32)(entry->field_0x1C - 0x2c - i * 0x18);
+        f32 row = (f32)(entry->y - 0x2c - i * 0x18);
         f32 bound = select->baseY + (zero + row);
 
-        if ((f32)entry->field_0x1C < bound - 32.0f) {
+        if ((f32)entry->y < bound - 32.0f) {
             continue;
         }
-        if ((f32)(entry->field_0x1C - entry->field_0x24) > bound + 32.0f) {
+        if ((f32)(entry->y - entry->height) > bound + 32.0f) {
             continue;
         }
 
@@ -518,8 +518,8 @@ void select_disp_luigi(WinMgrEntry* entry) {
 
             tmpRow = vec3_802ffcc0;
             scaleRow = vec3_802ffccc;
-            tmpRow.x = (f32)(entry->field_0x18 + 0x19);
-            rowY = (f32)(entry->field_0x1C - 0x20 - i * 0x18);
+            tmpRow.x = (f32)(entry->x + 0x19);
+            rowY = (f32)(entry->y - 0x20 - i * 0x18);
             tmpRow.y = select->baseY + (zero + rowY);
             posRow = tmpRow;
             winFontSet(&posRow, &scaleRow, &color, (const char*)info->initEndPos);
@@ -535,8 +535,8 @@ void select_disp_luigi(WinMgrEntry* entry) {
             color = (select->items[i].flags & 1) ? colorGray : colorBlack;
             tmpEdge = vec3_802ffcd8;
             scaleEdge = vec3_802ffce4;
-            tmpEdge.x = (f32)(entry->field_0x18 + 0xf5);
-            edgeY = (f32)(entry->field_0x1C - 0x20 - i * 0x18);
+            tmpEdge.x = (f32)(entry->x + 0xf5);
+            edgeY = (f32)(entry->y - 0x20 - i * 0x18);
             tmpEdge.y = select->baseY + (zero + edgeY);
             posEdge = tmpEdge;
             winFontSet(&posEdge, &scaleEdge, &color, buf);
@@ -556,27 +556,27 @@ void select_disp_luigi(WinMgrEntry* entry) {
     }
 
     width = FontGetMessageWidth(msg);
-    x = (entry->field_0x20 - width) / 2;
+    x = (entry->width - width) / 2;
     winFontInit();
     {
         GXColor color = colorWhite;
         tmpTitle = vec3_802ffcf0;
         scaleTitle = vec3_802ffcfc;
-        tmpTitle.x = (f32)(entry->field_0x18 + x);
-        tmpTitle.y = (f32)(entry->field_0x1C + 0xe);
+        tmpTitle.x = (f32)(entry->x + x);
+        tmpTitle.y = (f32)(entry->y + 0xe);
         posTitle = tmpTitle;
         winFontSetEdge(&posTitle, &scaleTitle, &color, msg);
     }
 
     switch (select->kind) {
     case 0x11:
-        PSMTXTrans(mtx1, (f32)(entry->field_0x18 + 0x10c), (f32)(entry->field_0x1C - 0x12), 0.0f);
+        PSMTXTrans(mtx1, (f32)(entry->x + 0x10c), (f32)(entry->y - 0x12), 0.0f);
         PSMTXScale(mtx2, 0.6f, 0.6f, 0.6f);
         PSMTXConcat(mtx1, mtx2, mtx1);
         iconDispGxCol(mtx1, 0x10, 0x211, dat_80421a74);
         posLuigi = vec3_802ffd08;
-        posLuigi.x = (f32)(entry->field_0x18 + 0x10c);
-        posLuigi.y = (f32)(entry->field_0x1C - 0xc);
+        posLuigi.x = (f32)(entry->x + 0x10c);
+        posLuigi.y = (f32)(entry->y - 0xc);
         iconDispGx(0.6f, &posLuigi, 0x10, 0x18b);
         break;
     }
@@ -590,14 +590,14 @@ void select_disp_luigi(WinMgrEntry* entry) {
         if (select->scrollTop != 0) {
             posUp = vec3_802ffd20;
             // Division by two pools 0.5f while preserving retail multiplication operand order.
-            posUp.x = (f32)entry->field_0x18 + (f32)entry->field_0x20 / 2.0f;
-            posUp.y = (f32)(entry->field_0x1C - 0x24);
+            posUp.x = (f32)entry->x + (f32)entry->width / 2.0f;
+            posUp.y = (f32)(entry->y - 0x24);
             iconDispGx(0.6f, &posUp, 0x10, 0x1b5);
         }
         if (select->scrollTop != select->numItems - 8) {
             posDown = vec3_802ffd2c;
-            posDown.x = (f32)entry->field_0x18 + (f32)entry->field_0x20 / 2.0f;
-            posDown.y = (f32)(entry->field_0x1C - entry->field_0x24 - 0xc);
+            posDown.x = (f32)entry->x + (f32)entry->width / 2.0f;
+            posDown.y = (f32)(entry->y - entry->height - 0xc);
             iconDispGx(0.6f, &posDown, 0x10, 0x1b6);
         }
     }
@@ -664,20 +664,20 @@ void select_disp_mario(WinMgrEntry* entry) {
     GXSetFog(0, 0.0f, 0.0f, 0.0f, 0.0f, fogColor);
 #endif
     GXGetScissor(&scissorLeft, &scissorTop, &scissorWidth, &scissorHeight);
-    GXSetScissor(entry->field_0x18 + 0x130, 0x112 - entry->field_0x1C, entry->field_0x20, entry->field_0x24 - 0x32);
+    GXSetScissor(entry->x + 0x130, 0x112 - entry->y, entry->width, entry->height - 0x32);
 
     zero = 0.0f;
     for (i = 0; i < select->numItems; i++) {
         f32 row;
         f32 bound;
 
-        row = (f32)(entry->field_0x1C - 0x2c - i * 0x18);
+        row = (f32)(entry->y - 0x2c - i * 0x18);
         bound = select->baseY + (zero + row);
         status = select->items[i].id;
-        if ((f32)entry->field_0x1C < bound - 32.0f) {
+        if ((f32)entry->y < bound - 32.0f) {
             continue;
         }
-        if ((f32)(entry->field_0x1C - entry->field_0x24) > bound + 32.0f) {
+        if ((f32)(entry->y - entry->height) > bound + 32.0f) {
             continue;
         }
 
@@ -695,8 +695,8 @@ void select_disp_mario(WinMgrEntry* entry) {
 
             tmpName = vec3_802ffbf4;
             scaleName = vec3_802ffc00;
-            tmpName.x = (f32)(entry->field_0x18 + 0x3c);
-            rowY = (f32)(entry->field_0x1C - 0x20 - i * 0x18);
+            tmpName.x = (f32)(entry->x + 0x3c);
+            rowY = (f32)(entry->y - 0x20 - i * 0x18);
             tmpName.y = select->baseY + (zero + rowY);
             posName = tmpName;
             winFontSet(&posName, &scaleName, &color, mario_status_name_table[status]);
@@ -713,8 +713,8 @@ void select_disp_mario(WinMgrEntry* entry) {
 
             tmpIcon = vec3_802ffc0c;
             scaleIcon = vec3_802ffc18;
-            tmpIcon.x = (f32)(entry->field_0x18 + 0x23);
-            rowY = (f32)(entry->field_0x1C - 0x2c - i * 0x18);
+            tmpIcon.x = (f32)(entry->x + 0x23);
+            rowY = (f32)(entry->y - 0x2c - i * 0x18);
             tmpIcon.y = select->baseY + (zero + rowY);
             posIcon = tmpIcon;
             winIconSet(mario_status_icon_table[status], &posIcon, &scaleIcon, &color);
@@ -729,8 +729,8 @@ void select_disp_mario(WinMgrEntry* entry) {
 
             tmpPoint = vec3_802ffc24;
             scalePoint = vec3_802ffc30;
-            tmpPoint.x = (f32)(entry->field_0x18 + 0xa0);
-            rowY = (f32)(entry->field_0x1C - 0x20 - i * 0x18);
+            tmpPoint.x = (f32)(entry->x + 0xa0);
+            rowY = (f32)(entry->y - 0x20 - i * 0x18);
             tmpPoint.y = select->baseY + (zero + rowY);
             posPoint = tmpPoint;
             winFontSet(&posPoint, &scalePoint, &color, buf);
@@ -754,8 +754,8 @@ void select_disp_mario(WinMgrEntry* entry) {
 
                 tmpHenka = vec3_802ffc3c;
                 scaleHenka = vec3_802ffc48;
-                tmpHenka.x = (f32)(entry->field_0x18 + 0xf0);
-                rowY = (f32)(entry->field_0x1C - 0x20 - i * 0x18);
+                tmpHenka.x = (f32)(entry->x + 0xf0);
+                rowY = (f32)(entry->y - 0x20 - i * 0x18);
                 tmpHenka.y = select->baseY + (zero + rowY);
                 posHenka = tmpHenka;
                 winFontSet(&posHenka, &scaleHenka, &color, buf);
@@ -768,8 +768,8 @@ void select_disp_mario(WinMgrEntry* entry) {
 
                 tmpIcon2 = vec3_802ffc54;
                 scaleIcon2 = vec3_802ffc60;
-                tmpIcon2.x = (f32)(entry->field_0x18 + 0xdc);
-                rowY = (f32)(entry->field_0x1C - 0x2c - i * 0x18);
+                tmpIcon2.x = (f32)(entry->x + 0xdc);
+                rowY = (f32)(entry->y - 0x2c - i * 0x18);
                 tmpIcon2.y = select->baseY + (zero + rowY);
                 posIcon2 = tmpIcon2;
                 winIconSet(0x163, &posIcon2, &scaleIcon2, &color);
@@ -795,8 +795,8 @@ void select_disp_mario(WinMgrEntry* entry) {
 
         tmpTitle = vec3_802ffc6c;
         scaleTitle = vec3_802ffc78;
-        tmpTitle.x = (f32)(entry->field_0x18 + (entry->field_0x20 * 3 / 5 - 0x78) * 2 / 3 + x);
-        tmpTitle.y = (f32)(entry->field_0x1C + 0xe);
+        tmpTitle.x = (f32)(entry->x + (entry->width * 3 / 5 - 0x78) * 2 / 3 + x);
+        tmpTitle.y = (f32)(entry->y + 0xe);
         posTitle = tmpTitle;
         winFontSetEdge(&posTitle, &scaleTitle, &color, msg);
     }
@@ -817,8 +817,8 @@ void select_disp_mario(WinMgrEntry* entry) {
 
         tmpTitle2 = vec3_802ffc84;
         scaleTitle2 = vec3_802ffc90;
-        tmpTitle2.x = (f32)(entry->field_0x18 + entry->field_0x20 * 3 / 5 + (entry->field_0x20 * 2 / 5 - 0x55) / 3 + x);
-        tmpTitle2.y = (f32)(entry->field_0x1C + 0xe);
+        tmpTitle2.x = (f32)(entry->x + entry->width * 3 / 5 + (entry->width * 2 / 5 - 0x55) / 3 + x);
+        tmpTitle2.y = (f32)(entry->y + 0xe);
         posTitle2 = tmpTitle2;
         winFontSetEdge(&posTitle2, &scaleTitle2, &color, msg);
     }
@@ -831,14 +831,14 @@ void select_disp_mario(WinMgrEntry* entry) {
     if (select->numItems > 8 && (gp->retraceCount & 0x1F) < 20) {
         if (select->scrollTop != 0) {
             posUp = vec3_802ffca8;
-            posUp.x = (f32)entry->field_0x18 + (f32)entry->field_0x20 / 2.0f;
-            posUp.y = (f32)(entry->field_0x1C - 0x24);
+            posUp.x = (f32)entry->x + (f32)entry->width / 2.0f;
+            posUp.y = (f32)(entry->y - 0x24);
             iconDispGx(0.6f, &posUp, 0x10, 0x1b5);
         }
         if (select->scrollTop != select->numItems - 8) {
             posDown = vec3_802ffcb4;
-            posDown.x = (f32)entry->field_0x18 + (f32)entry->field_0x20 / 2.0f;
-            posDown.y = (f32)(entry->field_0x1C - entry->field_0x24 - 0xc);
+            posDown.x = (f32)entry->x + (f32)entry->width / 2.0f;
+            posDown.y = (f32)(entry->y - entry->height - 0xc);
             iconDispGx(0.6f, &posDown, 0x10, 0x1b6);
         }
     }
@@ -911,7 +911,7 @@ void select_disp_party(WinMgrEntry* entry) {
     GXSetFog(0, 0.0f, 0.0f, 0.0f, 0.0f, fogColor);
 #endif
     GXGetScissor(&scissorLeft, &scissorTop, &scissorWidth, &scissorHeight);
-    GXSetScissor(entry->field_0x18 + 0x130, 0x112 - entry->field_0x1C, entry->field_0x20, entry->field_0x24 - 0x32);
+    GXSetScissor(entry->x + 0x130, 0x112 - entry->y, entry->width, entry->height - 0x32);
 
     zero = 0.0f;
     for (i = 0; i < select->numItems; i++) {
@@ -919,12 +919,12 @@ void select_disp_party(WinMgrEntry* entry) {
         f32 bound;
         u16 w;
 
-        row = (f32)(entry->field_0x1C - 0x2c - i * 0x18);
+        row = (f32)(entry->y - 0x2c - i * 0x18);
         bound = select->baseY + (zero + row);
-        if ((f32)entry->field_0x1C < bound - 32.0f) {
+        if ((f32)entry->y < bound - 32.0f) {
             continue;
         }
-        if ((f32)(entry->field_0x1C - entry->field_0x24) > bound + 32.0f) {
+        if ((f32)(entry->y - entry->height) > bound + 32.0f) {
             continue;
         }
 
@@ -944,8 +944,8 @@ void select_disp_party(WinMgrEntry* entry) {
             const char* n3;
 
             tmpName = vec3_802ffb58;
-            tmpName.x = (f32)(entry->field_0x18 + 0x3c);
-            rowY = (f32)(entry->field_0x1C - 0x20 - i * 0x18);
+            tmpName.x = (f32)(entry->x + 0x3c);
+            rowY = (f32)(entry->y - 0x20 - i * 0x18);
             tmpName.y = select->baseY + (zero + rowY);
             posName = tmpName;
             scaleTmp = vec3_802ffb64;
@@ -1045,8 +1045,8 @@ void select_disp_party(WinMgrEntry* entry) {
             GXColor color;
 
             tmpIcon = vec3_802ffb70;
-            tmpIcon.x = (f32)(entry->field_0x18 + 0x23);
-            rowY = (f32)(entry->field_0x1C - 0x2c - i * 0x18);
+            tmpIcon.x = (f32)(entry->x + 0x23);
+            rowY = (f32)(entry->y - 0x2c - i * 0x18);
             tmpIcon.y = select->baseY + (zero + rowY);
             posIcon = tmpIcon;
 #ifdef MUST_MATCH
@@ -1109,8 +1109,8 @@ void select_disp_party(WinMgrEntry* entry) {
                     scaleArrow = vec3_802ffb94;
                     tmpArrow = vec3_802ffb88;
 #endif
-                    tmpArrow.x = (f32)(entry->field_0x18 + 0xfd + off);
-                    rowY = (f32)(entry->field_0x1C - 0x2c - i * 0x18);
+                    tmpArrow.x = (f32)(entry->x + 0xfd + off);
+                    rowY = (f32)(entry->y - 0x2c - i * 0x18);
                     tmpArrow.y = select->baseY + (zero + rowY);
                     posArrow = tmpArrow;
                     winIconSet(0x102, &posArrow, &scaleArrow, &c);
@@ -1137,8 +1137,8 @@ void select_disp_party(WinMgrEntry* entry) {
 
         tmpTitle = vec3_802ffba0;
         scaleTitle = vec3_802ffbac;
-        tmpTitle.x = (f32)(entry->field_0x18 + (entry->field_0x20 * 3 / 5 - 0x78) * 2 / 3 + x);
-        tmpTitle.y = (f32)(entry->field_0x1C + 0xe);
+        tmpTitle.x = (f32)(entry->x + (entry->width * 3 / 5 - 0x78) * 2 / 3 + x);
+        tmpTitle.y = (f32)(entry->y + 0xe);
         posTitle = tmpTitle;
         winFontSetEdge(&posTitle, &scaleTitle, &color, msg);
     }
@@ -1159,8 +1159,8 @@ void select_disp_party(WinMgrEntry* entry) {
 
         tmpTitle2 = vec3_802ffbb8;
         scaleTitle2 = vec3_802ffbc4;
-        tmpTitle2.x = (f32)(entry->field_0x18 + entry->field_0x20 * 3 / 5 + (entry->field_0x20 * 2 / 5 - 0x55) / 3 + x);
-        tmpTitle2.y = (f32)(entry->field_0x1C + 0xe);
+        tmpTitle2.x = (f32)(entry->x + entry->width * 3 / 5 + (entry->width * 2 / 5 - 0x55) / 3 + x);
+        tmpTitle2.y = (f32)(entry->y + 0xe);
         posTitle2 = tmpTitle2;
         winFontSetEdge(&posTitle2, &scaleTitle2, &color, msg);
     }
@@ -1173,14 +1173,14 @@ void select_disp_party(WinMgrEntry* entry) {
     if (select->numItems > 8 && (gp->retraceCount & 0x1F) < 20) {
         if (select->scrollTop != 0) {
             posUp = vec3_802ffbdc;
-            posUp.x = (f32)entry->field_0x18 + (f32)entry->field_0x20 / 2.0f;
-            posUp.y = (f32)(entry->field_0x1C - 0x24);
+            posUp.x = (f32)entry->x + (f32)entry->width / 2.0f;
+            posUp.y = (f32)(entry->y - 0x24);
             iconDispGx(0.6f, &posUp, 0x10, 0x1b5);
         }
         if (select->scrollTop != select->numItems - 8) {
             posDown = vec3_802ffbe8;
-            posDown.x = (f32)entry->field_0x18 + (f32)entry->field_0x20 / 2.0f;
-            posDown.y = (f32)(entry->field_0x1C - entry->field_0x24 - 0xc);
+            posDown.x = (f32)entry->x + (f32)entry->width / 2.0f;
+            posDown.y = (f32)(entry->y - entry->height - 0xc);
             iconDispGx(0.6f, &posDown, 0x10, 0x1b6);
         }
     }
@@ -1266,19 +1266,19 @@ void select_disp(WinMgrEntry* entry) {
     GXSetFog(0, 0.0f, 0.0f, 0.0f, 0.0f, fogColor);
 #endif
     GXGetScissor(&scissorLeft, &scissorTop, &scissorWidth, &scissorHeight);
-    GXSetScissor(entry->field_0x18 + 0x130, 0x112 - entry->field_0x1C, entry->field_0x20, entry->field_0x24 - 0x32);
+    GXSetScissor(entry->x + 0x130, 0x112 - entry->y, entry->width, entry->height - 0x32);
 
     zero = 0.0f;
     for (i = 0; i < select->numItems; i++) {
         f32 row;
         f32 bound;
         item = &itemDataTable[select->items[i].id];
-        row = (f32)(entry->field_0x1C - 0x2c - i * 0x18);
+        row = (f32)(entry->y - 0x2c - i * 0x18);
         bound = select->baseY + (zero + row);
-        if ((f32)entry->field_0x1C < bound - 32.0f) {
+        if ((f32)entry->y < bound - 32.0f) {
             continue;
         }
-        if ((f32)(entry->field_0x1C - entry->field_0x24) > bound + 32.0f) {
+        if ((f32)(entry->y - entry->height) > bound + 32.0f) {
             continue;
         }
 #ifdef MUST_MATCH
@@ -1299,8 +1299,8 @@ void select_disp(WinMgrEntry* entry) {
 
             tmpRow = vec3_802ffa98;
             scaleRow = vec3_802ffaa4;
-            tmpRow.x = (f32)(entry->field_0x18 + 0x23);
-            rowY = (f32)(entry->field_0x1C - 0x2c - i * 0x18);
+            tmpRow.x = (f32)(entry->x + 0x23);
+            rowY = (f32)(entry->y - 0x2c - i * 0x18);
             tmpRow.y = select->baseY + (zero + rowY);
             posRow = tmpRow;
             winIconSet(*(u16*)&item->icon_id, &posRow, &scaleRow, &color);
@@ -1312,8 +1312,8 @@ void select_disp(WinMgrEntry* entry) {
 
             tmpName = vec3_802ffab0;
             scaleName = vec3_802ffabc;
-            tmpName.x = (f32)(entry->field_0x18 + 0x3c);
-            nameY = (f32)(entry->field_0x1C - 0x20 - i * 0x18);
+            tmpName.x = (f32)(entry->x + 0x3c);
+            nameY = (f32)(entry->y - 0x20 - i * 0x18);
             tmpName.y = select->baseY + (zero + nameY);
             posName = tmpName;
             winFontSet(&posName, &scaleName, &color, msgSearch(item->name));
@@ -1358,8 +1358,8 @@ void select_disp(WinMgrEntry* entry) {
             color = (select->items[i].flags & 1) ? colorGray : colorBlack;
             scaleEdge = vec3_802ffad4;
             tmpEdge = vec3_802ffac8;
-            edgeX = (f32)(entry->field_0x18 + entry->field_0x20 - 0xa) - textWidth;
-            edgeY = (f32)(entry->field_0x1C - 0x20 - i * 0x18);
+            edgeX = (f32)(entry->x + entry->width - 0xa) - textWidth;
+            edgeY = (f32)(entry->y - 0x20 - i * 0x18);
             tmpEdge.x = edgeX;
             tmpEdge.y = select->baseY + (zero + edgeY);
             posEdge = tmpEdge;
@@ -1377,8 +1377,8 @@ void select_disp(WinMgrEntry* entry) {
 
             scaleDot = vec3_802ffaec;
             tmpDot = vec3_802ffae0;
-            dotX = (f32)(entry->field_0x18 + (i * entry->field_0x20) / 31);
-            dotY = (f32)(entry->field_0x1C - 0x38) + select->baseY;
+            dotX = (f32)(entry->x + (i * entry->width) / 31);
+            dotY = (f32)(entry->y - 0x38) + select->baseY;
             tmpDot.x = dotX;
             tmpDot.y = dotY;
             posDot = tmpDot;
@@ -1410,15 +1410,15 @@ void select_disp(WinMgrEntry* entry) {
     }
 
     width = FontGetMessageWidth(msg);
-    x = (entry->field_0x20 - width) / 2;
+    x = (entry->width - width) / 2;
     winFontInit();
     {
         GXColor color = colorWhite2;
 
         tmpTitle = vec3_802ffaf8;
         scaleTitle = vec3_802ffb04;
-        tmpTitle.x = (f32)(entry->field_0x18 + x);
-        tmpTitle.y = (f32)(entry->field_0x1C + 0xe);
+        tmpTitle.x = (f32)(entry->x + x);
+        tmpTitle.y = (f32)(entry->y + 0xe);
         posTitle = tmpTitle;
         winFontSetEdge(&posTitle, &scaleTitle, &color, msg);
     }
@@ -1429,33 +1429,33 @@ void select_disp(WinMgrEntry* entry) {
         case 12:
         case 14:
         case 15:
-            PSMTXTrans(mtx1, (f32)(entry->field_0x18 + 0x10c), (f32)(entry->field_0x1C - 0x12), 0.0f);
+            PSMTXTrans(mtx1, (f32)(entry->x + 0x10c), (f32)(entry->y - 0x12), 0.0f);
             PSMTXScale(mtx2, 0.6f, 0.6f, 0.6f);
             PSMTXConcat(mtx1, mtx2, mtx1);
             iconDispGxCol(mtx1, 0x10, 0x211, dat_80421a38);
             posIcon3 = vec3_802ffb10;
-            posIcon3.x = (f32)(entry->field_0x18 + 0x10c);
-            posIcon3.y = (f32)(entry->field_0x1C - 0xc);
+            posIcon3.x = (f32)(entry->x + 0x10c);
+            posIcon3.y = (f32)(entry->y - 0xc);
             iconDispGx(0.6f, &posIcon3, 0x10, 0x18b);
             break;
         case 13:
-            PSMTXTrans(mtx1, (f32)(entry->field_0x18 + 0x10c), (f32)(entry->field_0x1C - 0x12), 0.0f);
+            PSMTXTrans(mtx1, (f32)(entry->x + 0x10c), (f32)(entry->y - 0x12), 0.0f);
             PSMTXScale(mtx2, 0.6f, 0.6f, 0.6f);
             PSMTXConcat(mtx1, mtx2, mtx1);
             iconDispGxCol(mtx1, 0x10, 0x211, dat_80421a3c);
             posIcon13 = vec3_802ffb1c;
-            posIcon13.x = (f32)(entry->field_0x18 + 0x10c);
-            posIcon13.y = (f32)(entry->field_0x1C - 0xc);
+            posIcon13.x = (f32)(entry->x + 0x10c);
+            posIcon13.y = (f32)(entry->y - 0xc);
             iconDispGx(0.6f, &posIcon13, 0x10, 0x18d);
             break;
         case 16:
-            PSMTXTrans(mtx1, (f32)(entry->field_0x18 + 0x10c), (f32)(entry->field_0x1C - 0x12), 0.0f);
+            PSMTXTrans(mtx1, (f32)(entry->x + 0x10c), (f32)(entry->y - 0x12), 0.0f);
             PSMTXScale(mtx2, 0.6f, 0.6f, 0.6f);
             PSMTXConcat(mtx1, mtx2, mtx1);
             iconDispGxCol(mtx1, 0x10, 0x211, dat_80421a40);
             posIcon16 = vec3_802ffb28;
-            posIcon16.x = (f32)(entry->field_0x18 + 0x10c);
-            posIcon16.y = (f32)(entry->field_0x1C - 0xc);
+            posIcon16.x = (f32)(entry->x + 0x10c);
+            posIcon16.y = (f32)(entry->y - 0xc);
             iconDispGx(0.6f, &posIcon16, 0x10, 0x13f);
             break;
         }
@@ -1468,14 +1468,14 @@ void select_disp(WinMgrEntry* entry) {
     if (select->numItems > 8 && (gp->retraceCount & 0x1F) < 20) {
         if (select->scrollTop != 0) {
             posUp = vec3_802ffb40;
-            posUp.x = (f32)entry->field_0x18 + (f32)entry->field_0x20 / 2.0f;
-            posUp.y = (f32)(entry->field_0x1C - 0x24);
+            posUp.x = (f32)entry->x + (f32)entry->width / 2.0f;
+            posUp.y = (f32)(entry->y - 0x24);
             iconDispGx(0.6f, &posUp, 0x10, 0x1b5);
         }
         if (select->scrollTop != select->numItems - 8) {
             posDown = vec3_802ffb4c;
-            posDown.x = (f32)entry->field_0x18 + (f32)entry->field_0x20 / 2.0f;
-            posDown.y = (f32)(entry->field_0x1C - entry->field_0x24 - 0xc);
+            posDown.x = (f32)entry->x + (f32)entry->width / 2.0f;
+            posDown.y = (f32)(entry->y - entry->height - 0xc);
             iconDispGx(0.6f, &posDown, 0x10, 0x1b6);
         }
     }
@@ -1555,27 +1555,27 @@ void winMgrSeq(WinMgrEntry* entry) {
 
     switch (*(s32*)entry->description->field_0x0) {
     case 0:
-        switch (entry->field_0x4) {
+        switch (entry->state) {
         case 0:
             entry->flags &= ~4;
             break;
         case 1:
             entry->flags |= 2;
-            entry->rotation = intplGetValue(0xc, entry->field_0x8, 8, 30.0f, 0.0f);
-            entry->scale = intplGetValue(0xc, entry->field_0x8, 8, 0.0f, 1.0f);
-            *(s32*)&entry->field_0xC = 0xff;
-            entry->field_0x8++;
-            if (entry->field_0x8 > 8) {
-                entry->field_0x4 = 0;
+            entry->rotation = intplGetValue(0xc, entry->animStep, 8, 30.0f, 0.0f);
+            entry->scale = intplGetValue(0xc, entry->animStep, 8, 0.0f, 1.0f);
+            entry->alpha = 0xff;
+            entry->animStep++;
+            if (entry->animStep > 8) {
+                entry->state = 0;
             }
             break;
         case 2:
-            entry->rotation = intplGetValue(0xc, entry->field_0x8, 8, 0.0f, 30.0f);
-            entry->scale = intplGetValue(0xc, entry->field_0x8, 8, 1.0f, 0.0f);
-            *(s32*)&entry->field_0xC = 0xff;
-            entry->field_0x8++;
-            if (entry->field_0x8 > 8) {
-                entry->field_0x4 = 0;
+            entry->rotation = intplGetValue(0xc, entry->animStep, 8, 0.0f, 30.0f);
+            entry->scale = intplGetValue(0xc, entry->animStep, 8, 1.0f, 0.0f);
+            entry->alpha = 0xff;
+            entry->animStep++;
+            if (entry->animStep > 8) {
+                entry->state = 0;
                 entry->flags &= ~2;
                 if (entry->flags & 8) {
                     entry->flags &= ~1;
@@ -1585,27 +1585,27 @@ void winMgrSeq(WinMgrEntry* entry) {
         }
         break;
     case 1:
-        switch (entry->field_0x4) {
+        switch (entry->state) {
         case 0:
             entry->flags &= ~4;
             break;
         case 1:
             entry->flags |= 2;
             entry->rotation = 0.0f;
-            entry->scale = intplGetValue(0xc, entry->field_0x8, 8, 0.0f, 1.0f);
-            *(s32*)&entry->field_0xC = (s32)intplGetValue(0xc, entry->field_0x8, 8, 0.0f, 255.0f);
-            entry->field_0x8++;
-            if (entry->field_0x8 > 8) {
-                entry->field_0x4 = 0;
+            entry->scale = intplGetValue(0xc, entry->animStep, 8, 0.0f, 1.0f);
+            entry->alpha = (s32)intplGetValue(0xc, entry->animStep, 8, 0.0f, 255.0f);
+            entry->animStep++;
+            if (entry->animStep > 8) {
+                entry->state = 0;
             }
             break;
         case 2:
             entry->rotation = 0.0f;
             entry->scale = 1.0f;
-            *(s32*)&entry->field_0xC = (s32)intplGetValue(0xc, entry->field_0x8, 8, 255.0f, 0.0f);
-            entry->field_0x8++;
-            if (entry->field_0x8 > 8) {
-                entry->field_0x4 = 0;
+            entry->alpha = (s32)intplGetValue(0xc, entry->animStep, 8, 255.0f, 0.0f);
+            entry->animStep++;
+            if (entry->animStep > 8) {
+                entry->state = 0;
                 entry->flags &= ~2;
                 if (entry->flags & 8) {
                     entry->flags &= ~1;
@@ -1615,7 +1615,7 @@ void winMgrSeq(WinMgrEntry* entry) {
         }
         break;
     case 2:
-        switch (entry->field_0x4) {
+        switch (entry->state) {
         case 0:
             entry->flags &= ~4;
             break;
@@ -1623,15 +1623,15 @@ void winMgrSeq(WinMgrEntry* entry) {
             entry->flags |= 2;
             entry->rotation = 0.0f;
             entry->scale = 1.0f;
-            *(s32*)&entry->field_0xC = 0xff;
-            entry->field_0x4 = 0;
+            entry->alpha = 0xff;
+            entry->state = 0;
             break;
         case 2:
             entry->flags &= ~2;
             entry->rotation = 0.0f;
             entry->scale = 1.0f;
-            *(s32*)&entry->field_0xC = 0xff;
-            entry->field_0x4 = 0;
+            entry->alpha = 0xff;
+            entry->state = 0;
             if (entry->flags & 8) {
                 entry->flags &= ~1;
             }
@@ -1653,20 +1653,20 @@ s32 winMgrEntry(WinMgrDesc* desc) {
     entry->flags = 0;
     entry->flags |= 1;
 
-    entry->field_0x4 = 0;
-    entry->field_0x8 = 0;
+    entry->state = 0;
+    entry->animStep = 0;
     entry->description = desc;
-    entry->field_0x18 = entry->description->field_0xC;
-    entry->field_0x1C = entry->description->field_0x10;
-    entry->field_0x20 = entry->description->field_0x14;
-    entry->field_0x24 = entry->description->field_0x18;
+    entry->x = entry->description->x;
+    entry->y = entry->description->field_0x10;
+    entry->width = entry->description->width;
+    entry->height = entry->description->height;
 
     entry->priority = 0;
 
     entry->param = NULL;
 
-    entry->field_0x38 = 0;
-    entry->field_0x3C = 0;
+    entry->scrollPos = 0;
+    entry->scrollRows = 0;
 
     return i; // only return the entry id
 }
@@ -1685,11 +1685,11 @@ void winMgrOpen(s32 id) {
 
     entry = &wp->mEntries[id];
     if (entry->flags & 1) {
-        entry->field_0x4 = 1;
-        entry->field_0x8 = 0;
-        entry->field_0x38 = 0;
-        entry->field_0x3C = 0;
-        entry->field_0x34 = 0;
+        entry->state = 1;
+        entry->animStep = 0;
+        entry->scrollPos = 0;
+        entry->scrollRows = 0;
+        entry->message = 0;
     }
 }
 
@@ -1698,8 +1698,8 @@ void winMgrClose(s32 id) {
 
     entry = &wp->mEntries[id];
     if (entry->flags & 1) {
-        entry->field_0x4 = 2;
-        entry->field_0x8 = 0;
+        entry->state = 2;
+        entry->animStep = 0;
     }
 }
 
@@ -1708,8 +1708,8 @@ void winMgrCloseAutoDelete(s32 id) {
 
     entry = &wp->mEntries[id];
     if (entry->flags & 1) {
-        entry->field_0x4 = 2;
-        entry->field_0x8 = 0;
+        entry->state = 2;
+        entry->animStep = 0;
         entry->flags |= 8;
     }
 }
@@ -1727,10 +1727,10 @@ void winMgrSetSize(s32 id, s32 a2, s32 a3, s32 a4, s32 a5) {
 
     entry = &wp->mEntries[id];
     if (entry->flags & 1) {
-        entry->field_0x18 = a2;
-        entry->field_0x1C = a3;
-        entry->field_0x20 = a4;
-        entry->field_0x24 = a5;
+        entry->x = a2;
+        entry->y = a3;
+        entry->width = a4;
+        entry->height = a5;
     }
 }
 
@@ -1748,28 +1748,28 @@ WinMgrEntry* winMgrGetPtr(s32 id) {
 }
 
 void winMgrHelpInit(WinMgrEntry* entry) {
-    entry->field_0x38 = 0;
-    entry->field_0x3C = 0;
-    entry->field_0x34 = 0;
+    entry->scrollPos = 0;
+    entry->scrollRows = 0;
+    entry->message = 0;
 }
 
 void winMgrHelpMain(WinMgrEntry* entry) {
     u16 width = 0;
 
     if (!(entry->flags & 4)) {
-        if ((const char*)entry->field_0x34 != NULL) {
-            FontGetMessageWidthLine((const char*)entry->field_0x34, &width);
-            entry->field_0x3C = width + 1;
+        if (entry->message != NULL) {
+            FontGetMessageWidthLine(entry->message, &width);
+            entry->scrollRows = width + 1;
         }
-        if (entry->field_0x3C > 2) {
+        if (entry->scrollRows > 2) {
             if (keyGetDirTrg(0) & 0x100) {
-                entry->field_0x38 -= 2;
-                if (entry->field_0x38 < 0) {
-                    entry->field_0x38 = 0;
+                entry->scrollPos -= 2;
+                if (entry->scrollPos < 0) {
+                    entry->scrollPos = 0;
                 }
             } else if (keyGetDirTrg(0) & 0x200) {
-                if ((entry->field_0x3C + 1) / 2 - 1 > (entry->field_0x38 + 1) / 2) {
-                    entry->field_0x38 += 2;
+                if ((entry->scrollRows + 1) / 2 - 1 > (entry->scrollPos + 1) / 2) {
+                    entry->scrollPos += 2;
                 }
             }
         }
@@ -1788,51 +1788,51 @@ void winMgrHelpDraw(WinMgrEntry* entry) {
         return;
     }
     GXSetScissor(0, 0x180, 0x260, 0x38);
-    if (strcmp((const char*)entry->field_0x34, msgSearch(str_802FFFCC)) == 0) {
+    if (strcmp(entry->message, msgSearch(str_802FFFCC)) == 0) {
         lottery = lotteryGetPtr();
         n = *(s16*)&lottery->field_0x2[0x20 - 0x2];
-        sprintf(buf, (const char*)entry->field_0x34, n);
+        sprintf(buf, entry->message, n);
         FontDrawStart();
-        FontDrawMessage(-0xd2, (s32)(28.0f * entry->field_0x38 + WINMGR_F32(float_neg144_80421aa8)), buf);
+        FontDrawMessage(-0xd2, (s32)(28.0f * entry->scrollPos + WINMGR_F32(float_neg144_80421aa8)), buf);
     } else {
         FontDrawStart();
-        FontDrawMessage(-0xd2, (s32)(28.0f * entry->field_0x38 + WINMGR_F32(float_neg144_80421aa8)), (const char*)entry->field_0x34);
+        FontDrawMessage(-0xd2, (s32)(28.0f * entry->scrollPos + WINMGR_F32(float_neg144_80421aa8)), entry->message);
     }
     GXSetScissor(0, 0, 0x260, 0x1e0);
-    if (entry->field_0x3C > 2) {
-        s32 row = entry->field_0x38;
+    if (entry->scrollRows > 2) {
+        s32 row = entry->scrollPos;
         if (row == 0) {
             if ((gp->retraceCount & 0x1F) < 20) {
-                PSMTXTrans(mtx1, (f32)(entry->field_0x18 + entry->field_0x20 - 0xC),
-                           (f32)(entry->field_0x1C - entry->field_0x24 - 4), 0.0f);
+                PSMTXTrans(mtx1, (f32)(entry->x + entry->width - 0xC),
+                           (f32)(entry->y - entry->height - 4), 0.0f);
                 PSMTXScale(mtx2, 0.6f, 0.6f, 0.6f);
                 PSMTXConcat(mtx1, mtx2, mtx1);
                 iconDispGx2(mtx1, 0x10, 0x1B6);
             }
-        } else if (row + 2 == entry->field_0x3C) {
+        } else if (row + 2 == entry->scrollRows) {
             if ((gp->retraceCount & 0x1F) < 20) {
-                PSMTXTrans(mtx1, (f32)(entry->field_0x18 + entry->field_0x20 - 0xC),
-                           (f32)(entry->field_0x1C - entry->field_0x24 + 0x2C), 0.0f);
+                PSMTXTrans(mtx1, (f32)(entry->x + entry->width - 0xC),
+                           (f32)(entry->y - entry->height + 0x2C), 0.0f);
                 PSMTXScale(mtx2, 0.6f, 0.6f, 0.6f);
                 PSMTXConcat(mtx1, mtx2, mtx1);
                 iconDispGx2(mtx1, 0x10, 0x1B5);
             }
         } else {
             if ((gp->retraceCount & 0x1F) < 20) {
-                PSMTXTrans(mtx1, (f32)(entry->field_0x18 + entry->field_0x20 - 0xC),
-                           (f32)(entry->field_0x1C - entry->field_0x24 + 0x2C), 0.0f);
+                PSMTXTrans(mtx1, (f32)(entry->x + entry->width - 0xC),
+                           (f32)(entry->y - entry->height + 0x2C), 0.0f);
                 PSMTXScale(mtx2, 0.6f, 0.6f, 0.6f);
                 PSMTXConcat(mtx1, mtx2, mtx1);
                 iconDispGx2(mtx1, 0x10, 0x1B5);
-                PSMTXTrans(mtx1, (f32)(entry->field_0x18 + entry->field_0x20 - 0xC),
-                           (f32)(entry->field_0x1C - entry->field_0x24 - 4), 0.0f);
+                PSMTXTrans(mtx1, (f32)(entry->x + entry->width - 0xC),
+                           (f32)(entry->y - entry->height - 4), 0.0f);
                 PSMTXScale(mtx2, 0.6f, 0.6f, 0.6f);
                 PSMTXConcat(mtx1, mtx2, mtx1);
                 iconDispGx2(mtx1, 0x10, 0x1B6);
             }
         }
-        PSMTXTrans(mtx1, (f32)(entry->field_0x18 + entry->field_0x20 - 0xC),
-                   (f32)(entry->field_0x1C - entry->field_0x24 + 0xA), 0.0f);
+        PSMTXTrans(mtx1, (f32)(entry->x + entry->width - 0xC),
+                   (f32)(entry->y - entry->height + 0xA), 0.0f);
         PSMTXScale(mtx2, 0.6f, 0.6f, 0.6f);
         PSMTXConcat(mtx1, mtx2, mtx1);
         iconDispGx2(mtx1, 0x10, 0x70);
@@ -1879,7 +1879,7 @@ WinMgrSelect* winMgrSelectEntry(s32 a1, s32 a2, BOOL a3) {
     }
 
     desc = select_desc_tbl[descId].descriptors;
-    select->iconX = (f32)desc->field_0xC;
+    select->iconX = (f32)desc->x;
     select->iconY = (f32)(desc->field_0x10 - 54);
 
     type = select->kind;
@@ -2159,21 +2159,21 @@ WinMgrSelect* winMgrSelectEntry(s32 a1, s32 a2, BOOL a3) {
     }
 
     if (select->numItems < 8) {
-        s32 f20 = desc->field_0x14;
+        s32 f20 = desc->width;
 #ifdef MUST_MATCH
         s32 f1C = get10(desc);
 #else
         s32 f1C = desc->field_0x10;
 #endif
-        s32 f18 = desc->field_0xC;
-        s32 f24 = desc->field_0x18 - (8 - select->numItems) * 0x18;
+        s32 f18 = desc->x;
+        s32 f24 = desc->height - (8 - select->numItems) * 0x18;
         WinMgrEntry* e = &wp->mEntries[select->descriptorId[0]];
 
         if (e->flags & 1) {
-            e->field_0x18 = f18;
-            e->field_0x1C = f1C;
-            e->field_0x20 = f20;
-            e->field_0x24 = f24;
+            e->x = f18;
+            e->y = f1C;
+            e->width = f20;
+            e->height = f24;
         }
     }
     return select;
@@ -2406,19 +2406,19 @@ void select_main(WinMgrEntry* entry) {
             WinMgrEntry* e = &wp->mEntries[select->descriptorId[i]];
 
             if (e->flags & 1) {
-                e->field_0x4 = 1;
-                e->field_0x8 = 0;
-                e->field_0x38 = 0;
-                e->field_0x3C = 0;
-                e->field_0x34 = 0;
+                e->state = 1;
+                e->animStep = 0;
+                e->scrollPos = 0;
+                e->scrollRows = 0;
+                e->message = 0;
             }
         }
         if (count >= 3) {
             WinMgrEntry* e = &wp->mEntries[select->descriptorId[2]];
 
-            e->field_0x38 = 0;
-            e->field_0x3C = 0;
-            e->field_0x34 = 0;
+            e->scrollPos = 0;
+            e->scrollRows = 0;
+            e->message = 0;
         }
         psndSFXOn((const char*)0x2002A);
         statusWinForceOpen();
@@ -2481,9 +2481,9 @@ void select_main(WinMgrEntry* entry) {
             }
         }
         select->baseY = select->baseY + (WINMGR_F32(float_24_80421aa0) * select->scrollTop - select->baseY) / WINMGR_F32(float_6_80421aa4);
-        select->iconX = select->iconX + ((f32)entry->field_0x18 - select->iconX) / WINMGR_F32(float_6_80421aa4);
+        select->iconX = select->iconX + ((f32)entry->x - select->iconX) / WINMGR_F32(float_6_80421aa4);
         select->iconY = select->iconY +
-            ((f32)(entry->field_0x1C - 54) - WINMGR_F32(float_24_80421aa0) * (f32)(select->cursor - select->scrollTop) -
+            ((f32)(entry->y - 54) - WINMGR_F32(float_24_80421aa0) * (f32)(select->cursor - select->scrollTop) -
              select->iconY) / WINMGR_F32(float_6_80421aa4);
         break;
     case 2:
@@ -2491,8 +2491,8 @@ void select_main(WinMgrEntry* entry) {
             WinMgrEntry* e = &wp->mEntries[select->descriptorId[i]];
 
             if (e->flags & 1) {
-                e->field_0x4 = 2;
-                e->field_0x8 = 0;
+                e->state = 2;
+                e->animStep = 0;
             }
         }
         psndSFXOn((const char*)0x2002B);

@@ -221,7 +221,7 @@ void oneMessageDisp(WinMgrEntry* entry) {
         color = dat_80420958;
         FontDrawColor(&color);
         width = FontGetMessageWidth(msg);
-        FontDrawMessage(-width / 2, entry->field_0x1C - 8, msg);
+        FontDrawMessage(-width / 2, entry->y - 8, msg);
     }
 }
 

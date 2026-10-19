@@ -391,7 +391,7 @@ void unk_801758fc(WinMgrEntry* entry) {
 	s32* list = wp->field_0x8;
 
 	if (!winMgrAction(wp->field_0x60[1])) {
-		entry->field_0x34 = (s32)msgSearch(itemDataTable[*(s32*)((u8*)list + offset)].description);
+		entry->message = msgSearch(itemDataTable[*(s32*)((u8*)list + offset)].description);
 		winMgrHelpDraw(entry);
 	}
 }
@@ -404,7 +404,7 @@ void unk_80175710(WinMgrEntry* entry) {
 		Mtx mtx;
 		Mtx scale;
 
-		PSMTXTrans(mtx, 10.0f + (30.0f + (f32)entry->field_0x18), (f32)entry->field_0x1C - 36.0f, float_0_8041db00[0]);
+		PSMTXTrans(mtx, 10.0f + (30.0f + (f32)entry->x), (f32)entry->y - 36.0f, float_0_8041db00[0]);
 		if ((u32)gp->language == 0) {
 			PSMTXScale(scale, float_1p1_8041db30[0], float_1p1_8041db30[0], float_1p1_8041db30[0]);
 			PSMTXConcat(mtx, scale, mtx);
@@ -414,7 +414,7 @@ void unk_80175710(WinMgrEntry* entry) {
 			PSMTXConcat(mtx, scale, mtx);
 			iconDispGx2(mtx, 0x10, 0x20A);
 		}
-		PSMTXTrans(mtx, 124.0f + (f32)entry->field_0x18, (f32)entry->field_0x1C - 38.0f, float_0_8041db00[0]);
+		PSMTXTrans(mtx, 124.0f + (f32)entry->x, (f32)entry->y - 38.0f, float_0_8041db00[0]);
 		iconNumberDispGx(mtx, wp->field_0x30, 0, *(GXColor*)&dat_8041d9bc);
 		{
 			s32 delta = pouch->mShopPoints - wp->field_0x30;

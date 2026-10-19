@@ -13,32 +13,32 @@ typedef struct WinMgrEntry WinMgrEntry;
 struct WinMgrDesc {
 	u8 field_0x0[0x8 - 0x0]; //0x0
 	s32 camId; //0x8, CameraId
-	s32 field_0xC; //0xC, entry->field_0x18
-	s32 field_0x10; //0x10, entry->field_0x1C
-	s32 field_0x14; //0x14, entry->field_0x20
-	s32 field_0x18; //0x18, entry->field_0x24
-	u8 field_0x1C[0x20 - 0x1C]; //0x1C
+	s32 x; //0xC, copied to entry->x
+	s32 field_0x10; //0x10, entry->y (read by get10 under MUST_MATCH)
+	s32 width; //0x14, copied to entry->width
+	s32 height; //0x18, copied to entry->height
+	u8 color[0x20 - 0x1C]; //0x1C, frame RGB (winMgrDispWaku0); alpha is entry->alpha
 	void (*main)(WinMgrEntry* entry); //0x20
 	void* disp; //0x24
 };
 
 struct WinMgrEntry {
 	s32 flags; //0x0
-	s32 field_0x4; //0x4
-	s32 field_0x8; //0x8
-	u8 field_0xC[0x10 - 0xC]; //0xC
+	s32 state; //0x4, 0 idle, 1 opening (winMgrOpen), 2 closing (winMgrClose)
+	s32 animStep; //0x8, 0..8 through the intplGetValue ramps in winMgrSeq
+	s32 alpha; //0xC, frame colour alpha: 0..255
 	f32 scale; //0x10
 	f32 rotation; //0x14
-	s32 field_0x18; //0x18, desc->field_0xC
-	s32 field_0x1C; //0x1C, desc->field_0x10
-	s32 field_0x20; //0x20, desc->field_0x14
-	s32 field_0x24; //0x24, desc->field_0x18
+	s32 x; //0x18
+	s32 y; //0x1C
+	s32 width; //0x20
+	s32 height; //0x24
 	WinMgrDesc* description; //0x28
 	void* param; //0x2C
 	s32 priority; //0x30, gets cast to float for dispEntry
-	s32 field_0x34; //0x34
-	s32 field_0x38; //0x38
-	s32 field_0x3C; //0x3C
+	const char* message; //0x34
+	s32 scrollPos; //0x38, help text scroll, 2 rows per step
+	s32 scrollRows; //0x3C, lines + 1 of the help text; the scroll arrows show while > 2
 	u8 field_0x40[0x44 - 0x40]; //0x40
 };
 

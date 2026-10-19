@@ -662,7 +662,7 @@ void coingetDisp(WinMgrEntry* entry) {
 		FontDrawStart();
 		color = (GXColor){ 0x00, 0x00, 0x00, 0xFF };
 		FontDrawColor(&color);
-		FontDrawMessage(-FontGetMessageWidth(buf) / 2, entry->field_0x1C - 8, buf);
+		FontDrawMessage(-FontGetMessageWidth(buf) / 2, entry->y - 8, buf);
 	}
 }
 

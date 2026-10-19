@@ -983,9 +983,9 @@ void winNameDisp(WinMgrEntry* entry) {
     }
 
     width = FontGetMessageWidth(buf);
-    if (width + 0x14 > entry->field_0x20) {
-        entry->field_0x20 = width + 0x14;
-        entry->field_0x18 = -entry->field_0x20 / 2;
+    if (width + 0x14 > entry->width) {
+        entry->width = width + 0x14;
+        entry->x = -entry->width / 2;
     }
 
     if (!winMgrAction(*(s32*)((u8*)item + 0x28))) {
@@ -994,7 +994,7 @@ void winNameDisp(WinMgrEntry* entry) {
         FontDrawStart();
         *(u32*)&color = dat_8041af90;
         FontDrawColor(&color);
-        FontDrawMessage(-width / 2, entry->field_0x1C - 8, buf);
+        FontDrawMessage(-width / 2, entry->y - 8, buf);
     }
 }
 
@@ -1010,9 +1010,9 @@ void winNameDisp2(WinMgrEntry* entry) {
     sprintf(buf, msg, name);
 
     width = FontGetMessageWidth(buf);
-    if (width + 0x14 > entry->field_0x20) {
-        entry->field_0x20 = width + 0x14;
-        entry->field_0x18 = -entry->field_0x20 / 2;
+    if (width + 0x14 > entry->width) {
+        entry->width = width + 0x14;
+        entry->x = -entry->width / 2;
     }
 
     if (!winMgrAction(*(s32*)((u8*)item + 0x28))) {
@@ -1021,7 +1021,7 @@ void winNameDisp2(WinMgrEntry* entry) {
         FontDrawStart();
         *(u32*)&color = dat_8041af94;
         FontDrawColor(&color);
-        FontDrawMessage(-width / 2, entry->field_0x1C - 8, buf);
+        FontDrawMessage(-width / 2, entry->y - 8, buf);
     }
 }
 
@@ -1033,7 +1033,7 @@ void winHelpDisp(WinMgrEntry* entry) {
     ItemEntry* item = entry->param;
 
     if (!winMgrAction(*(s32*)((u8*)item + 0x2c))) {
-        entry->field_0x34 = (s32)msgSearch(itemDataTable[item->itemId].description);
+        entry->message = msgSearch(itemDataTable[item->itemId].description);
         winMgrHelpDraw(entry);
     }
 }
@@ -1046,9 +1046,9 @@ void winFullDisp(WinMgrEntry* entry) {
     msg = (item->itemId >= 0xf0 && item->itemId < 0x153) ? msgSearch("msg_window_badge_full") : msgSearch("msg_window_item_full");
 
     width = FontGetMessageWidth(msg);
-    if (width + 0x14 > entry->field_0x20) {
-        entry->field_0x20 = width + 0x14;
-        entry->field_0x18 = -entry->field_0x20 / 2;
+    if (width + 0x14 > entry->width) {
+        entry->width = width + 0x14;
+        entry->x = -entry->width / 2;
     }
 
     if (!winMgrAction(*(s32*)((u8*)item + 0x30))) {
@@ -1058,7 +1058,7 @@ void winFullDisp(WinMgrEntry* entry) {
         FontDrawEdge();
         *(u32*)&color = dat_8041af98;
         FontDrawColor(&color);
-        FontDrawMessage(-width / 2, entry->field_0x1C - 0xa, msg);
+        FontDrawMessage(-width / 2, entry->y - 0xa, msg);
         FontDrawEdgeOff();
     }
 }
