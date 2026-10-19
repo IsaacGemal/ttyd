@@ -129,9 +129,9 @@ USER_FUNC(party_kirimomi) {
     party->field_70.z = 1.0f;
     party->field_70.y = 1.0f;
     party->field_70.x = 1.0f;
-    *(f32*)((u8*)party + 0x8C) = *(f32*)((u8*)party + 0xF0) / 2.0f * party->field_70.y;
-    *(f32*)((u8*)party + 0x6C) = angle;
-    *(f32*)((u8*)party + 0x6C) = (f32)fmod(*(f32*)((u8*)party + 0x6C), 360.0);
+    *(f32*)((u8*)party + 0x8C) = party->height / 2.0f * party->field_70.y;
+    party->spinAngle = angle;
+    party->spinAngle = (f32)fmod(party->spinAngle, 360.0);
     return EVT_RETURN_DONE;
 }
 
@@ -151,7 +151,7 @@ USER_FUNC(party_reset) {
     party->field_70.y = 1.0f;
     party->field_70.x = 1.0f;
     *(f32*)((u8*)party + 0x8C) = 0.0f;
-    *(f32*)((u8*)party + 0x6C) = 0.0f;
+    party->spinAngle = 0.0f;
     return EVT_RETURN_DONE;
 }
 

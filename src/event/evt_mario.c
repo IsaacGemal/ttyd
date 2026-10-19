@@ -213,11 +213,11 @@ USER_FUNC(evt_mario_dokan_prepare) {
 #ifdef MUST_MATCH
             *(volatile Vec*)((u8*)party + 0x70) = *(volatile Vec*)&vecs[1];
 #else
-            *(Vec*)((u8*)party + 0x70) = vec3_802e573c;
+            party->field_70 = vec3_802e573c;
 #endif
             party->flags2 |= 1;
-            party->flags |= 0x04000000;
-            party->flags |= 0x02000000;
+            party->flags |= PARTY_FLAG_DISABLE_FLOORS;
+            party->flags |= PARTY_FLAG_FORCE_FALL;
         }
         party = partyGetPtr(marioGetExtraPartyId());
         if (party != NULL) {
@@ -225,11 +225,11 @@ USER_FUNC(evt_mario_dokan_prepare) {
 #ifdef MUST_MATCH
             *(volatile Vec*)((u8*)party + 0x70) = *(volatile Vec*)&vecs[2];
 #else
-            *(Vec*)((u8*)party + 0x70) = vec3_802e5748;
+            party->field_70 = vec3_802e5748;
 #endif
             party->flags2 |= 1;
-            party->flags |= 0x04000000;
-            party->flags |= 0x02000000;
+            party->flags |= PARTY_FLAG_DISABLE_FLOORS;
+            party->flags |= PARTY_FLAG_FORCE_FALL;
         }
     } else if (type == 5) {
         mario->dispFlags |= 0x1000;
@@ -364,8 +364,8 @@ USER_FUNC(evt_mario_paper_pose_dokan) {
         }
         party = partyGetPtr(marioGetPartyId());
         if (party != NULL) {
-            *(Vec*)((u8*)party + 0x58) = mario->position;
-            *(Vec*)((u8*)party + 0x70) = mario->scale;
+            party->position = mario->position;
+            party->field_70 = mario->scale;
             *(Vec*)((u8*)party + 0x7C) = EM_VEC(0xF0, vec3_802e5820);
             *(Vec*)((u8*)party + 0x64) = EM_VEC(0xFC, vec3_802e582c);
             *(Vec*)((u8*)party + 0x88) = EM_VEC(0x108, vec3_802e5838);
@@ -375,8 +375,8 @@ USER_FUNC(evt_mario_paper_pose_dokan) {
         }
         party = partyGetPtr(marioGetExtraPartyId());
         if (party != NULL) {
-            *(Vec*)((u8*)party + 0x58) = mario->position;
-            *(Vec*)((u8*)party + 0x70) = mario->scale;
+            party->position = mario->position;
+            party->field_70 = mario->scale;
             *(Vec*)((u8*)party + 0x7C) = EM_VEC(0x114, vec3_802e5844);
             *(Vec*)((u8*)party + 0x64) = EM_VEC(0x120, vec3_802e5850);
             *(Vec*)((u8*)party + 0x88) = EM_VEC(0x12C, vec3_802e585c);
@@ -875,11 +875,11 @@ USER_FUNC(evt_mario_normalize) {
     if (isFirstCall) {
         party = partyGetPtr(marioGetPartyId());
         if (party != NULL) {
-            party->field_37[0] = 0;
+            party->field_37 = 0;
         }
         party = partyGetPtr(marioGetExtraPartyId());
         if (party != NULL) {
-            party->field_37[0] = 0;
+            party->field_37 = 0;
         }
         mario->trigFlags |= 0x80000000;
         event->userdata[1] = 0;
@@ -1182,7 +1182,7 @@ USER_FUNC(evt_mario_party_door_move) {
             }
             party->field_8 |= 0x00040000;
             N_partyFollowCloseOn(party);
-            party->flags |= 0x01000000;
+            party->flags |= PARTY_FLAG_DISABLE_FRONT_WALL_CHK;
             party->field_8 |= 0x00200000;
         }
         party = partyGetPtr(marioGetExtraPartyId());
@@ -1196,7 +1196,7 @@ USER_FUNC(evt_mario_party_door_move) {
             }
             party->field_8 |= 0x00040000;
             N_partyFollowCloseOn(party);
-            party->flags |= 0x01000000;
+            party->flags |= PARTY_FLAG_DISABLE_FRONT_WALL_CHK;
             party->field_8 |= 0x00200000;
         }
         event->userdata[0] = 0;
@@ -1299,7 +1299,7 @@ USER_FUNC(evt_mario_party_door_move) {
                 party->flags2 |= 0x10;
             }
             N_partyFollowCloseOff(party);
-            party->flags &= ~0x01000000;
+            party->flags &= ~PARTY_FLAG_DISABLE_FRONT_WALL_CHK;
             party->field_8 &= ~0x00040000;
         }
         party = partyGetPtr(marioGetExtraPartyId());
@@ -1316,7 +1316,7 @@ USER_FUNC(evt_mario_party_door_move) {
                 party->flags2 |= 0x10;
             }
             N_partyFollowCloseOff(party);
-            party->flags &= ~0x01000000;
+            party->flags &= ~PARTY_FLAG_DISABLE_FRONT_WALL_CHK;
             party->field_8 &= ~0x00040000;
         }
         ret = 2;
@@ -1350,7 +1350,7 @@ USER_FUNC(evt_mario_party_bero_move) {
                 party->position = mario->position;
             }
             N_partyFollowCloseOn(party);
-            party->flags |= 0x01000000;
+            party->flags |= PARTY_FLAG_DISABLE_FRONT_WALL_CHK;
             party->field_8 |= 0x00200000;
         }
         party = partyGetPtr(marioGetExtraPartyId());
@@ -1363,7 +1363,7 @@ USER_FUNC(evt_mario_party_bero_move) {
                 party->position = mario->position;
             }
             N_partyFollowCloseOn(party);
-            party->flags |= 0x01000000;
+            party->flags |= PARTY_FLAG_DISABLE_FRONT_WALL_CHK;
             party->field_8 |= 0x00200000;
         }
         event->userdata[0] = 0;
@@ -1442,11 +1442,11 @@ USER_FUNC(evt_mario_party_bero_move) {
         break;
     case 6:
         party = partyGetPtr(marioGetPartyId());
-        if (party != NULL && (party->flags & 0x00080000)) {
+        if (party != NULL && (party->flags & PARTY_FLAG_IS_BEHIND_MARIO)) {
             event->userdata[1] = 0;
         }
         party = partyGetPtr(marioGetExtraPartyId());
-        if (party != NULL && (party->flags & 0x00080000)) {
+        if (party != NULL && (party->flags & PARTY_FLAG_IS_BEHIND_MARIO)) {
             event->userdata[1] = 0;
         }
         if (--event->userdata[1] > 0) {
@@ -1455,7 +1455,7 @@ USER_FUNC(evt_mario_party_bero_move) {
         party = partyGetPtr(marioGetPartyId());
         if (party != NULL) {
             N_partyFollowCloseOff(party);
-            party->flags &= ~0x01000000;
+            party->flags &= ~PARTY_FLAG_DISABLE_FRONT_WALL_CHK;
             party->field_8 &= ~0x00200000;
             if (party->field_32 == 1) {
                 unk_800c8e74(party);
@@ -1465,7 +1465,7 @@ USER_FUNC(evt_mario_party_bero_move) {
         party = partyGetPtr(marioGetExtraPartyId());
         if (party != NULL) {
             N_partyFollowCloseOff(party);
-            party->flags &= ~0x01000000;
+            party->flags &= ~PARTY_FLAG_DISABLE_FRONT_WALL_CHK;
             party->field_8 &= ~0x00200000;
             if (party->field_32 == 1) {
                 unk_800c8e74(party);
@@ -2338,9 +2338,9 @@ USER_FUNC(evt_mario_set_prev_party_dokan) {
             pos = (Vec*)((u8*)party + 0x70);
             *(volatile Vec*)pos = *(volatile Vec*)&vec3_802e58e8;
 #else
-            party->flags |= 0x04000000;
-            party->flags |= 0x02000000;
-            pos = (Vec*)((u8*)party + 0x70);
+            party->flags |= PARTY_FLAG_DISABLE_FLOORS;
+            party->flags |= PARTY_FLAG_FORCE_FALL;
+            pos = &party->field_70;
             *pos = vec3_802e58e8;
 #endif
         }

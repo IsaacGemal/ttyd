@@ -88,7 +88,7 @@ s32 _evt_msg_print(EventEntry* event, BOOL isFirstCall, s32 flags, const char* m
                     }
                     else {
                         ((WindowVec*)window)->position = party->position;
-                        ((WindowVec*)window)->position.y += *(f32*)((u8*)party + 0xF0);
+                        ((WindowVec*)window)->position.y += party->height;
                     }
                 }
                 strcpy(MSGWORK(window)->text, npcName);
@@ -103,7 +103,7 @@ s32 _evt_msg_print(EventEntry* event, BOOL isFirstCall, s32 flags, const char* m
                     }
                     else {
                         ((WindowVec*)window)->position = party->position;
-                        ((WindowVec*)window)->position.y += *(f32*)((u8*)party + 0xF0);
+                        ((WindowVec*)window)->position.y += party->height;
                     }
                 }
                 strcpy(MSGWORK(window)->text, npcName);

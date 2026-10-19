@@ -187,7 +187,7 @@ USER_FUNC(set_msg) {
                 f32 d = PSVECDistance(&itemPos, &player->position);
                 minDist = d;
                 direction = revise360(angleABf(party->position.x, party->position.z, item->position.x, item->position.z)
-                                      - *(f32*)((u8*)party + 0xF8));
+                                      - party->playerTargetYaw);
                 result = 0;
             }
         }
@@ -197,7 +197,7 @@ USER_FUNC(set_msg) {
                 minDist = d;
                 direction = revise360(angleABf(party->position.x, party->position.z, mobj->position.x,
                                                mobj->position.z)
-                                      - *(f32*)((u8*)party + 0xF8));
+                                      - party->playerTargetYaw);
                 result = 1;
             }
         }
@@ -210,7 +210,7 @@ USER_FUNC(set_msg) {
                 minDist = PSVECDistance(&closestPos, &player->position);
                 direction = revise360(angleABf(party->position.x, party->position.z, closestPos.x,
                                                closestPos.z)
-                                      - *(f32*)((u8*)party + 0xF8));
+                                      - party->playerTargetYaw);
                 result = 2;
             }
         }
@@ -348,8 +348,8 @@ BOOL chuchu_searchObject(void) {
 void chuchu_init(PartyEntry* party) {
     party->field_33 = 7;
     party->field_32 = 0;
-    *(f32*)((u8*)party + 0xF0) = 20.0f;
-    *(f32*)((u8*)party + 0xF4) = 24.0f;
+    party->height = 20.0f;
+    party->radius = 24.0f;
 }
 
 void chuchu_reinit(PartyEntry* party) {
@@ -381,16 +381,16 @@ void chuchu_use(PartyEntry* party) {
     case 0: {
         Vec appear;
         partyGetAppearPos3(party, &appear);
-        *(Vec*)((u8*)party + 0x94) = appear;
-        *(s32*)((u8*)party + 0x24) = 4;
+        party->targetPos = appear;
+        party->timer = 4;
         party->field_FC = angleABf(party->position.x, party->position.z,
-                                   *(f32*)((u8*)party + 0x94), *(f32*)((u8*)party + 0x9C));
+                                   party->targetPos.x, party->targetPos.z);
         party->dir = party->field_FC;
         party->field_10C = player->unk1A8;
         party->field_110 = player->unk1A8;
         party->speed = distABf(party->position.x, party->position.z,
-                               *(f32*)((u8*)party + 0x94), *(f32*)((u8*)party + 0x9C))
-                       / (f32)*(s32*)((u8*)party + 0x24);
+                               party->targetPos.x, party->targetPos.z)
+                       / (f32)party->timer;
         party->jumpPara1 = 0.0f;
         party->useMotionId = 1;
         break;
@@ -398,11 +398,11 @@ void chuchu_use(PartyEntry* party) {
     case 1: {
         Vec appear;
         partyGetAppearPos3(party, &appear);
-        *(Vec*)((u8*)party + 0x94) = appear;
-        party->position.x += (((Vec*)((u8*)party + 0x94))->x - party->position.x) / (f32)*(s32*)((u8*)party + 0x24);
-        party->position.y += (((Vec*)((u8*)party + 0x94))->y - party->position.y) / (f32)*(s32*)((u8*)party + 0x24);
-        party->position.z += (((Vec*)((u8*)party + 0x94))->z - party->position.z) / (f32)*(s32*)((u8*)party + 0x24);
-        if (--*(s32*)((u8*)party + 0x24) > 0) {
+        party->targetPos = appear;
+        party->position.x += ((&party->targetPos)->x - party->position.x) / (f32)party->timer;
+        party->position.y += ((&party->targetPos)->y - party->position.y) / (f32)party->timer;
+        party->position.z += ((&party->targetPos)->z - party->position.z) / (f32)party->timer;
+        if (--party->timer > 0) {
             return;
         }
         partyChgPoseId(party, 1);
@@ -415,19 +415,19 @@ void chuchu_use(PartyEntry* party) {
         party->field_FC = toMovedir(party->field_110);
         party->dir = party->field_FC;
         party->useMotionId = 20;
-        *(s32*)((u8*)party + 0x24) = 25;
+        party->timer = 25;
         break;
     case 20:
-        if (--*(s32*)((u8*)party + 0x24) > 0) {
+        if (--party->timer > 0) {
             break;
         }
         psndSFXOn_3D((const char*)0x944, &party->position);
         partyChgPose(party, "PCH_A2_1");
         party->useMotionId = 21;
-        *(s32*)((u8*)party + 0x24) = 30;
+        party->timer = 30;
         // fallthrough
     case 21:
-        if (--*(s32*)((u8*)party + 0x24) > 0) {
+        if (--party->timer > 0) {
             break;
         }
         partyChgPoseId(party, 1);

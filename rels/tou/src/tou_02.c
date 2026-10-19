@@ -2132,7 +2132,7 @@ s32 check_hammer(FanPose* pose) {
         }
     }
     party = partyGetPtr(0);
-    if (party != NULL && party->currentMemberId == 5 && (party->flags & 0x100)) {
+    if (party != NULL && party->currentMemberId == 5 && (party->flags & PARTY_FLAG_IS_BEING_USED)) {
         Vec local;
         f32 dist;
 

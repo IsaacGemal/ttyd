@@ -578,7 +578,7 @@ USER_FUNC(itemUseFunc) {
                 cnt = 0x12C;
                 break;
             }
-            target = (f32*)(*(u8**)((u8*)effRecoveryEntry(0, item->hp_restored, party->position.x, party->position.y + *(f32*)((u8*)party + 0xF0), party->position.z) + 0xC) + 0x40);
+            target = (f32*)(*(u8**)((u8*)effRecoveryEntry(0, item->hp_restored, party->position.x, party->position.y + party->height, party->position.z) + 0xC) + 0x40);
             *target = (-(*(f32*)&party->field_E8[8])) * MATCH_F32(float_0p5_8041dc98);
             cnt++;
             break;
@@ -597,7 +597,7 @@ USER_FUNC(itemUseFunc) {
                 cnt = 0x3E7;
                 break;
             }
-            effRecoveryEntry(1, item->fp_restored, party->position.x, party->position.y + *(f32*)((u8*)party + 0xF0), party->position.z);
+            effRecoveryEntry(1, item->fp_restored, party->position.x, party->position.y + party->height, party->position.z);
             cnt++;
             break;
 

@@ -94,13 +94,13 @@ static USER_FUNC(mario_kirimomi) {
         *(f32*)((u8*)party + 0x74) = scale;
         *(f32*)((u8*)party + 0x70) = scale;
         if (party->currentMemberId != PARTY_MEMBER_YOSHI) {
-            *(f32*)((u8*)party + 0x8C) = *(f32*)((u8*)party + 0xF0) / 2.0f;
+            *(f32*)((u8*)party + 0x8C) = party->height / 2.0f;
         } else {
-            *(f32*)((u8*)party + 0x8C) = (*(f32*)((u8*)party + 0xF0) - 10.0f) / 2.0f;
+            *(f32*)((u8*)party + 0x8C) = (party->height - 10.0f) / 2.0f;
         }
         *(f32*)((u8*)party + 0x8C) *= *(f32*)((u8*)party + 0x74);
-        *(f32*)((u8*)party + 0x6C) -= 10.0f;
-        *(f32*)((u8*)party + 0x6C) = (f32)fmod(*(f32*)((u8*)party + 0x6C), 360.0);
+        party->spinAngle -= 10.0f;
+        party->spinAngle = (f32)fmod(party->spinAngle, 360.0);
     }
     return EVT_RETURN_DONE;
 }

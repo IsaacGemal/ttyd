@@ -74,8 +74,8 @@ void bomhei_bye(PartyEntry* party) {
 void bomhei_init_800BFBB0(PartyEntry* party) {
     party->field_33 = 3;
     party->field_32 = 0;
-    *(f32*)((u8*)party + 0xF0) = 28.0f;
-    *(f32*)((u8*)party + 0xF4) = 28.0f;
+    party->height = 28.0f;
+    party->radius = 28.0f;
     *(u8*)((u8*)party + 0x17A) = 100;
     *(s32*)((u8*)party + 0x17C) = -1;
     *(s32*)((u8*)party + 0x180) = -1;
@@ -116,9 +116,9 @@ void bomhei_exit(PartyEntry* party) {
         party->field_3B = 0;
     }
     party->flags2 &= ~0x10;
-    party->flags &= ~0x02000000;
-    party->flags &= ~0x80000000;
-    party->flags &= ~0x100;
+    party->flags &= ~PARTY_FLAG_FORCE_FALL;
+    party->flags &= ~PARTY_FLAG_IS_EVT_USE;
+    party->flags &= ~PARTY_FLAG_IS_BEING_USED;
     if (*(u32*)((u8*)party + 0x180) != 0xFFFFFFFF) {
         psndSFXOff(*(s32*)((u8*)party + 0x180));
         *(s32*)((u8*)party + 0x180) = -1;
@@ -152,9 +152,9 @@ void bomhei_use_cancel(void) {
         party->field_3B = 0;
     }
     party->flags2 &= ~0x10;
-    party->flags &= ~0x02000000;
-    party->flags &= ~0x80000000;
-    party->flags &= ~0x100;
+    party->flags &= ~PARTY_FLAG_FORCE_FALL;
+    party->flags &= ~PARTY_FLAG_IS_EVT_USE;
+    party->flags &= ~PARTY_FLAG_IS_BEING_USED;
     if (*(u32*)((u8*)party + 0x180) != 0xFFFFFFFF) {
         psndSFXOff(*(s32*)((u8*)party + 0x180));
         *(s32*)((u8*)party + 0x180) = -1;
@@ -175,10 +175,10 @@ void bomhei_use_cancel(void) {
 static inline void bomhei_checkHit(PartyEntry* party) {
     if (party->field_12C != NULL && (hitGetAttr((HitEntry*)party->field_12C) & 0xC00) != 0) {
         party->useMotionId = 0x3C;
-    } else if (party->field_140 != NULL && (hitGetAttr((HitEntry*)party->field_140) & 0xC00) != 0) {
+    } else if (party->headHit != NULL && (hitGetAttr((HitEntry*)party->headHit) & 0xC00) != 0) {
         party->useMotionId = 0x3C;
-    } else if (party->field_138 != NULL) {
-        s32 attr = hitGetAttr((HitEntry*)party->field_138);
+    } else if (party->groundHit != NULL) {
+        s32 attr = hitGetAttr((HitEntry*)party->groundHit);
         if ((attr & 0xC00) != 0) {
             party->useMotionId = 0x3C;
         } else if ((attr & 0x200) != 0) {
@@ -210,9 +210,9 @@ void bomhei_use_cancel2(void) {
         party->field_3B = 0;
     }
     party->flags2 &= ~0x10;
-    party->flags &= ~0x02000000;
-    party->flags &= ~0x80000000;
-    party->flags &= ~0x100;
+    party->flags &= ~PARTY_FLAG_FORCE_FALL;
+    party->flags &= ~PARTY_FLAG_IS_EVT_USE;
+    party->flags &= ~PARTY_FLAG_IS_BEING_USED;
     if (*(u32*)((u8*)party + 0x180) != 0xFFFFFFFF) {
         psndSFXOff(*(s32*)((u8*)party + 0x180));
         *(s32*)((u8*)party + 0x180) = -1;
@@ -253,9 +253,9 @@ void bomhei_use_post(PartyEntry* party) {
         marioChgPose(pose);
     }
     party->flags2 &= ~0x10;
-    party->flags &= ~0x02000000;
-    party->flags &= ~0x80000000;
-    party->flags &= ~0x100;
+    party->flags &= ~PARTY_FLAG_FORCE_FALL;
+    party->flags &= ~PARTY_FLAG_IS_EVT_USE;
+    party->flags &= ~PARTY_FLAG_IS_BEING_USED;
     if (party->field_34 != 9) {
         party->field_3B = 0;
         party->field_8 |= 8;
@@ -293,7 +293,7 @@ void bomhei_use(PartyEntry* party) {
                 party->jumpPara1 = 0.0f;
             }
             if (strcmp(gp->currentMapName, "muj_05") == 0) {
-                if (party->field_138 != NULL && strcmp(hitGetName(party->field_138), "A_dokuro_bero") == 0) {
+                if (party->groundHit != NULL && strcmp(hitGetName(party->groundHit), "A_dokuro_bero") == 0) {
                     party->dir = angleABf(party->position.x, party->position.z, 638.0f, 12.5f);
                     party->field_FC = party->dir;
                 }
@@ -327,9 +327,9 @@ void bomhei_use(PartyEntry* party) {
                     p2->field_3B = 0;
                 }
                 p2->flags2 &= ~0x10;
-                p2->flags &= ~0x02000000;
-                p2->flags &= ~0x80000000;
-                p2->flags &= ~0x100;
+                p2->flags &= ~PARTY_FLAG_FORCE_FALL;
+                p2->flags &= ~PARTY_FLAG_IS_EVT_USE;
+                p2->flags &= ~PARTY_FLAG_IS_BEING_USED;
                 if (*(u32*)((u8*)p2 + 0x180) != 0xFFFFFFFF) {
                     psndSFXOff(*(s32*)((u8*)p2 + 0x180));
                     *(s32*)((u8*)p2 + 0x180) = -1;
@@ -362,9 +362,9 @@ void bomhei_use(PartyEntry* party) {
                 p2->field_3B = 0;
             }
             p2->flags2 &= ~0x10;
-            p2->flags &= ~0x02000000;
-            p2->flags &= ~0x80000000;
-            p2->flags &= ~0x100;
+            p2->flags &= ~PARTY_FLAG_FORCE_FALL;
+            p2->flags &= ~PARTY_FLAG_IS_EVT_USE;
+            p2->flags &= ~PARTY_FLAG_IS_BEING_USED;
             if (*(u32*)((u8*)p2 + 0x180) != 0xFFFFFFFF) {
                 psndSFXOff(*(s32*)((u8*)p2 + 0x180));
                 *(s32*)((u8*)p2 + 0x180) = -1;
@@ -396,9 +396,9 @@ void bomhei_use(PartyEntry* party) {
                 p2->field_3B = 0;
             }
             p2->flags2 &= ~0x10;
-            p2->flags &= ~0x02000000;
-            p2->flags &= ~0x80000000;
-            p2->flags &= ~0x100;
+            p2->flags &= ~PARTY_FLAG_FORCE_FALL;
+            p2->flags &= ~PARTY_FLAG_IS_EVT_USE;
+            p2->flags &= ~PARTY_FLAG_IS_BEING_USED;
             if (*(u32*)((u8*)p2 + 0x180) != 0xFFFFFFFF) {
                 psndSFXOff(*(s32*)((u8*)p2 + 0x180));
                 *(s32*)((u8*)p2 + 0x180) = -1;
@@ -430,9 +430,9 @@ void bomhei_use(PartyEntry* party) {
                 p2->field_3B = 0;
             }
             p2->flags2 &= ~0x10;
-            p2->flags &= ~0x02000000;
-            p2->flags &= ~0x80000000;
-            p2->flags &= ~0x100;
+            p2->flags &= ~PARTY_FLAG_FORCE_FALL;
+            p2->flags &= ~PARTY_FLAG_IS_EVT_USE;
+            p2->flags &= ~PARTY_FLAG_IS_BEING_USED;
             if (*(u32*)((u8*)p2 + 0x180) != 0xFFFFFFFF) {
                 psndSFXOff(*(s32*)((u8*)p2 + 0x180));
                 *(s32*)((u8*)p2 + 0x180) = -1;
@@ -466,7 +466,7 @@ void bomhei_use_main(PartyEntry* party) {
         party->field_8 &= ~0x8;
         party->flags &= ~(PARTY_FLAG_IS_JUMPING | PARTY_FLAG_IS_FALLING | PARTY_FLAG_IS_STEPPING);
         party->flags &= ~0x03000000;
-        party->flags &= ~0x04000000;
+        party->flags &= ~PARTY_FLAG_DISABLE_FLOORS;
         party->useStruct = __memAlloc(HEAP_DEFAULT, 8);
         memset(party->useStruct, 0, 8);
         party->useMotionId = 0;
@@ -477,21 +477,21 @@ void bomhei_use_main(PartyEntry* party) {
         party->useMotionId = 1;
         *(u8*)((u8*)party + 0x17A) = 100;
         *(s16*)((u8*)party + 0x178) = 0;
-        *(s32*)((u8*)party + 0x24) = 4;
+        party->timer = 4;
         ((BomheiWork*)party->useStruct)->timer = 0;
         ((BomheiWork*)party->useStruct)->flags = 0;
         partyChgPose(party, (char*)"R_1");
         /* fallthrough */
     case 1: {
-        *(Vec*)((u8*)party + 0x94) = mario->position;
+        party->targetPos = mario->position;
         movePos((f32*)((u8*)party + 0x94), (f32*)((u8*)party + 0x9C), -6.0f, toMovedirSimple(*(f32*)((u8*)mario + 0x1AC)));
-        party->position.x += (*(f32*)((u8*)party + 0x94) - party->position.x) / (f32)*(s32*)((u8*)party + 0x24);
-        party->position.y += (*(f32*)((u8*)party + 0x98) - party->position.y) / (f32)*(s32*)((u8*)party + 0x24);
-        party->position.z += (*(f32*)((u8*)party + 0x9C) - party->position.z) / (f32)*(s32*)((u8*)party + 0x24);
-        if (--*(s32*)((u8*)party + 0x24) > 0) {
+        party->position.x += (party->targetPos.x - party->position.x) / (f32)party->timer;
+        party->position.y += (party->targetPos.y - party->position.y) / (f32)party->timer;
+        party->position.z += (party->targetPos.z - party->position.z) / (f32)party->timer;
+        if (--party->timer > 0) {
             break;
         }
-        *(s32*)((u8*)party + 0x24) = 9;
+        party->timer = 9;
         targetX = mario->position.x;
         targetZ = mario->position.z;
         movePos(&targetX, &targetZ, -6.0f, toMovedirSimple(*(f32*)((u8*)mario + 0x1AC)));
@@ -516,7 +516,7 @@ void bomhei_use_main(PartyEntry* party) {
     case 2:
         party->position.y += party->jumpPara1;
         party->jumpPara1 += party->jumpPara2;
-        if (--*(s32*)((u8*)party + 0x24) <= 0) {
+        if (--party->timer <= 0) {
             party->flags2 |= 0x10;
             partyChgPose(party, (char*)"L_1");
             ((BomheiWork*)party->useStruct)->timer = (s16)sysMsec2Frame(3000);
@@ -551,7 +551,7 @@ void bomhei_use_main(PartyEntry* party) {
             party->field_10C = pm->unk1A8;
         }
         bomhei_checkHit(party);
-        if ((party->flags & 0x80000000) != 0 ||
+        if ((party->flags & PARTY_FLAG_IS_EVT_USE) != 0 ||
             (mario->hitobjStandOn != NULL && mario->airTimer == 0 &&
              (*(u16*)((u8*)mario + 0x246) & 0x400) == 0)) {
             party->useMotionId = 0x14;
@@ -592,13 +592,13 @@ void bomhei_use_main(PartyEntry* party) {
         *(s32*)&party->field_22[2] = (s16)10.5f;
 #endif
         party->flags2 &= ~0x10;
-        party->flags |= 0x10;
+        party->flags |= PARTY_FLAG_IS_JUMPING;
         bomhei_checkHit(party);
         break;
     }
     case 0x15:
         partyMoveNoHosei(party);
-        if (--*(s32*)((u8*)party + 0x24) > 0) {
+        if (--party->timer > 0) {
             bomhei_checkHit(party);
             break;
         }
@@ -614,7 +614,7 @@ void bomhei_use_main(PartyEntry* party) {
         *(s32*)&party->field_22[2] = (s16)10.5f;
 #endif
         party->flags &= ~PARTY_FLAG_IS_JUMPING;
-        if (party->field_138 != NULL) {
+        if (party->groundHit != NULL) {
             party->useMotionId = 0x1E;
         } else {
             party->useMotionId = 0x16;
@@ -625,15 +625,15 @@ void bomhei_use_main(PartyEntry* party) {
         s32 found;
 
         partyMoveNoHosei(party);
-        if (party->field_138 != NULL) {
+        if (party->groundHit != NULL) {
             if (party->field_12C != NULL && (hitGetAttr((HitEntry*)party->field_12C) & 0xC00) != 0) {
                 party->useMotionId = 0x3C;
                 found = TRUE;
-            } else if (party->field_140 != NULL && (hitGetAttr((HitEntry*)party->field_140) & 0xC00) != 0) {
+            } else if (party->headHit != NULL && (hitGetAttr((HitEntry*)party->headHit) & 0xC00) != 0) {
                 party->useMotionId = 0x3C;
                 found = TRUE;
-            } else if (party->field_138 != NULL) {
-                s32 attr = hitGetAttr((HitEntry*)party->field_138);
+            } else if (party->groundHit != NULL) {
+                s32 attr = hitGetAttr((HitEntry*)party->groundHit);
 
                 if ((attr & 0xC00) != 0) {
                     party->useMotionId = 0x3C;
@@ -659,23 +659,23 @@ void bomhei_use_main(PartyEntry* party) {
         break;
     }
     case 0x1E:
-        *(s32*)((u8*)party + 0x24) = sysMsec2Frame(200);
+        party->timer = sysMsec2Frame(200);
         party->useMotionId = 0x1F;
         /* fallthrough */
     case 0x1F:
-        if ((party->flags & 0x80000000) == 0 && (gp->buttonNew[0] & 0x400) != 0) {
+        if ((party->flags & PARTY_FLAG_IS_EVT_USE) == 0 && (gp->buttonNew[0] & 0x400) != 0) {
             ((BomheiWork*)party->useStruct)->timer = (s16)(sysMsec2Frame(500) + 1);
             party->useMotionId = 0x32;
         }
         partyChgPose(party, (char*)"S_1");
-        if (--*(s32*)((u8*)party + 0x24) > 0) {
+        if (--party->timer > 0) {
             bomhei_checkHit(party);
             break;
         }
         party->useMotionId = 0x20;
         /* fallthrough */
     case 0x20:
-        if ((party->flags & 0x80000000) == 0 && (gp->buttonNew[0] & 0x400) != 0) {
+        if ((party->flags & PARTY_FLAG_IS_EVT_USE) == 0 && (gp->buttonNew[0] & 0x400) != 0) {
             ((BomheiWork*)party->useStruct)->timer = (s16)(sysMsec2Frame(500) + 1);
         }
         partyChgPose(party, (!(((BomheiWork*)party->useStruct)->flags & 2)) ? (char*)"W_1" : (char*)"W_2");
@@ -720,15 +720,15 @@ void bomhei_use_main(PartyEntry* party) {
         ((BomheiWork*)party->useStruct)->flags |= 8;
         ((BomheiWork*)party->useStruct)->timer = (s16)(sysMsec2Frame(500) + 0x1E);
         ((BomheiWork*)party->useStruct)->flags |= 2;
-        party->flags |= 0x02000000;
+        party->flags |= PARTY_FLAG_FORCE_FALL;
         party->useMotionId = 0x29;
-        *(s32*)((u8*)party + 0x24) = 6;
+        party->timer = 6;
         break;
     }
     case 0x29:
         party->position.y += party->jumpPara1;
         party->jumpPara1 += party->jumpPara2;
-        if (--*(s32*)((u8*)party + 0x24) <= 0) {
+        if (--party->timer <= 0) {
             party->useMotionId = 0x2A;
             party->jumpPara1 = 0.0f;
             party->jumpPara2 = 0.0f;
@@ -758,11 +758,11 @@ void bomhei_use_main(PartyEntry* party) {
         }
         partyChgPose(party, (char*)"A_3");
         party->useMotionId = 0x33;
-        *(s32*)((u8*)party + 0x24) = 0x28;
+        party->timer = 0x28;
         /* fallthrough */
     case 0x33:
         if ((mario->flags & 0x2000) == 0) {
-            if ((party->flags & 2) != 0) {
+            if ((party->flags & PARTY_FLAG_IS_GROUNDED) != 0) {
                 party->speed = 0.0f;
             }
             partyMove(party);
@@ -788,7 +788,7 @@ void bomhei_use_main(PartyEntry* party) {
             party->field_110 = *(f32*)((u8*)pm + 0x1AC);
             party->field_10C = pm->unk1A8;
         }
-        if (--*(s32*)((u8*)party + 0x24) > 0) {
+        if (--party->timer > 0) {
             bomhei_checkHit(party);
             break;
         }
@@ -797,11 +797,11 @@ void bomhei_use_main(PartyEntry* party) {
             *(s32*)((u8*)party + 0x184) = -1;
         }
         ((BomheiWork*)party->useStruct)->flags &= ~0x2;
-        *(HitEntry**)((u8*)party + 0x130) = check_front(party);
+        party->frontHit = check_front(party);
         if ((mario->flags & 0x2000) != 0) {
             mario->flags &= ~0x2000;
         }
-        party->flags &= ~0x20;
+        party->flags &= ~PARTY_FLAG_IS_FALLING;
         ((BomheiWork*)party->useStruct)->flags &= ~0x8;
         party->useMotionId = 0x3C;
         break;
@@ -825,7 +825,7 @@ void bomhei_use_main(PartyEntry* party) {
         ((BomheiWork*)party->useStruct)->timer = 0;
         party->speed = 0.0f;
         partyMove(party);
-        hit = *(HitEntry**)((u8*)party + 0x130);
+        hit = party->frontHit;
         if (hit == NULL) {
             found = FALSE;
         } else if ((hitGetAttr(hit) & 0x80000000) != 0) {
@@ -851,7 +851,7 @@ void bomhei_use_main(PartyEntry* party) {
         }
         {
             EffectEntry* eff = effSandarsEntry(pouchGetPartyAttackLv(3), party->position.x,
-                                               party->position.y + *(f32*)((u8*)party + 0xF0),
+                                               party->position.y + party->height,
                                                party->position.z, 0.0f);
             *(s32*)((u8*)eff->userdata + 0x40) = party->camId;
         }
@@ -863,7 +863,7 @@ void bomhei_use_main(PartyEntry* party) {
         party->speed = 0.0f;
         party->jumpPara1 = 8.0f;
         party->jumpPara2 = 0.0f;
-        *(s32*)((u8*)party + 0x24) = 0x3C;
+        party->timer = 0x3C;
         party->useMotionId = 0x47;
         /* fallthrough */
     case 0x47: {
@@ -871,13 +871,13 @@ void bomhei_use_main(PartyEntry* party) {
         pos47 = party->position;
         marioGetScreenPos(pos47, &sx47, &sy47, &sz47);
         if (sy47 <= -300.0f) {
-            *(s32*)((u8*)party + 0x24) = sysMsec2Frame(800);
+            party->timer = sysMsec2Frame(800);
             party->useMotionId = 0x50;
         }
         break;
     }
     case 0x50:
-        if (--*(s32*)((u8*)party + 0x24) <= 0) {
+        if (--party->timer <= 0) {
             partyGetAppearPos(party, &pos50);
             party->position.x = pos50.x;
             party->position.y = 200.0f + pos50.y;
@@ -885,33 +885,33 @@ void bomhei_use_main(PartyEntry* party) {
             party->jumpPara1 = 0.0f;
             party->jumpPara2 = -1.0f;
             party->speed = 0.0f;
-            party->flags &= ~0x10;
-            party->flags |= 0x20;
-            party->flags |= 0x02000000;
+            party->flags &= ~PARTY_FLAG_IS_JUMPING;
+            party->flags |= PARTY_FLAG_IS_FALLING;
+            party->flags |= PARTY_FLAG_FORCE_FALL;
             partyChgPose(party, (char*)"J_1B");
             party->useMotionId = 0x51;
         }
         break;
     case 0x51: {
         if (mario->position.y + 37.0f > party->position.y) {
-            party->flags &= ~0x02000000;
+            party->flags &= ~PARTY_FLAG_FORCE_FALL;
         }
         hit = partySearchGround(party, 11.0f, party->jumpPara1);
         f31 = (f32)mario->unk16C - 25.0f;
         pos51 = party->position;
         marioGetScreenPos(pos51, &sx51, &sy51, &sz51);
         if (sy51 > f31) {
-            party->flags &= ~0x02000000;
+            party->flags &= ~PARTY_FLAG_FORCE_FALL;
         } else if (hit != NULL) {
-            party->field_138 = hit;
-            party->flags &= ~0x02000000;
+            party->groundHit = hit;
+            party->flags &= ~PARTY_FLAG_FORCE_FALL;
         }
         partyMove(party);
         if (party->jumpPara1 <= -6.0f) {
             party->jumpPara2 = 0.0f;
             party->jumpPara1 = -6.0f;
         }
-        if ((party->flags & 0x02000000) != 0) {
+        if ((party->flags & PARTY_FLAG_FORCE_FALL) != 0) {
             break;
         }
         if (party->position.y < -2000.0f) {
@@ -919,18 +919,18 @@ void bomhei_use_main(PartyEntry* party) {
             party->position.y += 200.0f;
             party->flags &= ~(PARTY_FLAG_IS_JUMPING | PARTY_FLAG_IS_FALLING | PARTY_FLAG_IS_STEPPING);
         }
-        if (party->field_138 != NULL) {
-            if ((((u32)hitGetAttr((HitEntry*)party->field_138) >> 9) & 1) == 0) {
+        if (party->groundHit != NULL) {
+            if ((((u32)hitGetAttr((HitEntry*)party->groundHit) >> 9) & 1) == 0) {
                 partyChgPose(party, (char*)"F_1");
                 party->useMotionId = 0x52;
-                *(s32*)((u8*)party + 0x24) = 0x1E;
+                party->timer = 0x1E;
                 psndSFXOn_3D((char*)0x93A, &party->position);
             }
         }
         break;
     }
     case 0x52:
-        if (--*(s32*)((u8*)party + 0x24) <= 0) {
+        if (--party->timer <= 0) {
             party->useMotionId = 0x64;
         }
         partyMove(party);
@@ -939,8 +939,8 @@ void bomhei_use_main(PartyEntry* party) {
         partyChgRunMode(party, 2);
         party->field_3B = 0;
         party->flags2 &= ~0x10;
-        party->flags &= ~0x80000000;
-        party->flags &= ~0x100;
+        party->flags &= ~PARTY_FLAG_IS_EVT_USE;
+        party->flags &= ~PARTY_FLAG_IS_BEING_USED;
         if (party->useStruct != NULL) {
             __memFree(HEAP_DEFAULT, party->useStruct);
             party->useStruct = NULL;
@@ -1224,9 +1224,8 @@ void partyGetReturnPos(Vec* pos) {
     pos->z = pz;
 }
 
-// Raw offsets used (no named field): PartyEntry 0x24 frame counter, 0x94/0x98/0x9C target
-// position, 0xF0 f32, 0x130 HitEntry*, 0x178/0x17A/0x17B motion scratch, 0x180/0x184 SFX ids;
-// MarioWork 0x246.  Field_12C/0x138/0x140 are HitEntry* stored in void* fields.
+// Raw offsets used (no named field): PartyEntry 0x178/0x17A/0x17B motion scratch, 0x180/0x184 SFX ids;
+// MarioWork 0x246.  field_12C is a HitEntry* stored in a void* field.
 
 // 100%. Requires the unit's data described above: the jump-stand strings are inline literals (pooled
 // after the compiler's own int->float magic double at .rodata+0x58), and the functions are listed in
@@ -1388,7 +1387,7 @@ HitEntry* check_front(PartyEntry* party) {
         }
         ret2 = hit2;
     }
-    field138 = party->field_138;
+    field138 = party->groundHit;
     if (field138 != NULL) {
 #ifdef MUST_MATCH
         s32 accepted;

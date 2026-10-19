@@ -244,7 +244,7 @@ USER_FUNC(evt_shop_main_func) {
 		}
 	}
 
-	if (party != NULL && (party->flags & 0x100)) {
+	if (party != NULL && (party->flags & PARTY_FLAG_IS_BEING_USED)) {
 		if (wp->field_0xD0 != -1) {
 			wp->field_0xD0 = -1;
 			winMgrClose(wp->field_0x50);

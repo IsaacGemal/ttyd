@@ -530,7 +530,7 @@ void mobjMain(void) {
     mode = fbat->mode;
     v24 = NULL;
     v25 = 0;
-    if (party != NULL && (party->flags & 0x100)) {
+    if (party != NULL && (party->flags & PARTY_FLAG_IS_BEING_USED)) {
         v25 = 1;
     }
 
@@ -576,10 +576,10 @@ void mobjMain(void) {
             hp[5] = NULL;
         }
 
-        if (party != NULL && *(HitEntry**)((u8*)party + 0x130) != NULL) {
+        if (party != NULL && party->frontHit != NULL) {
             if (hp[6] == NULL ||
-                strcmp(hitGetName(hp[6]), hitGetName(*(HitEntry**)((u8*)party + 0x130))) != 0) {
-                hp[6] = *(HitEntry**)((u8*)party + 0x130);
+                strcmp(hitGetName(hp[6]), hitGetName(party->frontHit)) != 0) {
+                hp[6] = party->frontHit;
             }
         } else {
             hp[6] = NULL;
@@ -670,21 +670,21 @@ void mobjMain(void) {
                             entry->unk1E0 = 0x800000;
                             goto apply;
                         }
-                        if (*(void**)((u8*)party + 0x130) != NULL && party->currentMemberId == 3 &&
-                            PSVECDistance(&party->position, &entry->position) < entry->hitObj[0].hitObject->radius + party->field_F4) {
+                        if (*(void**)((u8*)party + 0x130) != NULL && party->currentMemberId == PARTY_MEMBER_BOBBERY &&
+                            PSVECDistance(&party->position, &entry->position) < entry->hitObj[0].hitObject->radius + party->radius) {
                             v22 = 1;
                             entry->unk1E0 = 0x800000;
                             goto apply;
                         }
                     }
-                    if ((entry->flags & 0x2000000) && party != NULL && party->currentMemberId == 3) {
+                    if ((entry->flags & 0x2000000) && party != NULL && party->currentMemberId == PARTY_MEMBER_BOBBERY) {
                         if (*(void**)((u8*)party + 0x130) == (void*)hitObj) {
                             v22 = 1;
                             entry->unk1E0 = 0x2000000;
                             goto apply;
                         }
                         if (*(void**)((u8*)party + 0x130) != NULL &&
-                            PSVECDistance(&party->position, &entry->position) < entry->hitObj[0].hitObject->radius + party->field_F4) {
+                            PSVECDistance(&party->position, &entry->position) < entry->hitObj[0].hitObject->radius + party->radius) {
                             v22 = 1;
                             entry->unk1E0 = 0x800000;
                             goto apply;

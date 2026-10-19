@@ -477,7 +477,7 @@ USER_FUNC(lect_itemget_kesan) {
     }
     pos = party->position;
     half = 0.5f;
-    v = *(f32*)((u8*)party + 0xF0);
+    v = party->height;
     pos.y += v * half;
     PSVECSubtract(&pos, &cam->cameraPos, &dir);
     PSVECNormalize(&dir, &dir);

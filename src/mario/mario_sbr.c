@@ -314,7 +314,7 @@ f32 partyToMovedir(PartyEntry* party, f32 dir) {
     f32 a;
     MarioWork* player = party->playerPtr;
 
-    if (party->flags & 0x1000) {
+    if (party->flags & PARTY_FLAG_PAPER_MODE) {
 #ifdef MUST_MATCH
         // Fusing the field load into the first comparison makes mwcc emit the 280 constant load
         // before the field load, which the original does (plain `a = ...; if (280.0f == a)` emits them swapped).

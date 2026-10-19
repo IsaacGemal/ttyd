@@ -1833,14 +1833,14 @@ static void ext_moamoa_main(void) {
     } else {
         wp->field_0x42 = 0;
     }
-    if (party->flags & 0x100) {
+    if (party->flags & PARTY_FLAG_IS_BEING_USED) {
         wp->field_0x00 |= 0x10;
     } else {
         wp->field_0x00 &= ~0x10;
     }
     wp->field_0x55C = -1.0f;
     wp->field_0x560 = -1.0f;
-    if (party->currentMemberId == 5 && (party->flags & 0x100)) {
+    if (party->currentMemberId == 5 && (party->flags & PARTY_FLAG_IS_BEING_USED)) {
         wp->field_0x55C = cloudGetBreathDir();
         wp->field_0x560 = cloudGetBreathDist();
         wp->field_0x564.x =

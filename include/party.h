@@ -75,7 +75,8 @@ typedef struct PartyEntry {
     char* field_18;              // 0x18
     u32 field_1C;                // 0x1C, unsigned
     u16 field_20;                // 0x20
-    u8 field_22[0x28 - 0x22];    // 0x22
+    u8 field_22[0x24 - 0x22];    // 0x22
+    s32 timer;                   // 0x24, frame countdown: `--timer <= 0` checks, reset to 0x14/0x1E/0x3C/0x41
     s16 field_28;                // 0x28
     s16 field_2A;                // 0x2A
     u8 field_2C;                 // 0x2C
@@ -89,23 +90,30 @@ typedef struct PartyEntry {
     u8 field_34;                 // 0x34
     u8 field_35;                 // 0x35
     u8 field_36;                 // 0x36
-    u8 field_37[0x39 - 0x37];    // 0x37
+    u8 field_37;                 // 0x37
+    u8 motionStep;               // 0x38, switch selector of the party_motion_* routines
     u8 useMotionId;              // 0x39
     u8 field_3A;                 // 0x3A
     u8 field_3B;                 // 0x3B
     u8 field_3C[0x4C - 0x3C];    // 0x3C
     s8 field_4C;                 // 0x4C
-    u8 field_4D[0x58 - 0x4D];    // 0x4D
+    u8 field_4D[0x54 - 0x4D];    // 0x4D
+    f32 moveAngle;               // 0x54, heading passed to movePos
     Vec position;                // 0x58
-    u8 field_64[0x70 - 0x64];    // 0x64
+    u8 field_64[0x6C - 0x64];    // 0x64
+    f32 spinAngle;               // 0x6C, revise360'd every frame while rolling (p_roll)
     Vec field_70;                // 0x70
-    u8 field_7C[0xB8 - 0x7C];    // 0x7C
+    u8 field_7C[0x94 - 0x7C];    // 0x7C
+    Vec targetPos;               // 0x94, destination of the appear/jump/fly routines; distABf'd against position
+    u8 field_A0[0xB8 - 0xA0];    // 0xA0
     Vec field_B8;                // 0xB8
     u8 field_C4[0xE4 - 0xC4];    // 0xC4
-    f32 field_E4;                // 0xE4
-    u8 field_E8[0xF4 - 0xE8];    // 0xE8
-    f32 field_F4;                // 0xF4
-    u8 field_F8[0xFC - 0xF8];    // 0xF8
+    f32 groundY;                 // 0xE4, floor height saved by partySearchGround
+    u8 field_E8[0xEC - 0xE8];    // 0xE8
+    f32 field_EC;                // 0xEC
+    f32 height;                  // 0xF0, height above position.y (partyGetHeight, Yoshi's head offset)
+    f32 radius;                  // 0xF4, collision radius
+    f32 playerTargetYaw;         // 0xF8, copied from player->targetYaw in driveParty
     f32 field_FC;                // 0xFC
     f32 dir;                     // 0x100
     f32 speed;                   // 0x104
@@ -115,13 +123,15 @@ typedef struct PartyEntry {
     f32 jumpPara1;               // 0x114
     f32 jumpPara2;               // 0x118
     f32 jumpPara3;               // 0x11C
-    u8 field_120[0x12C - 0x120]; // 0x120
+    f32 field_120;               // 0x120
+    u8 field_124[0x128 - 0x124]; // 0x124
+    f32 targetDist;              // 0x128, distance to targetPos, set before the fly/jump step count
     void* field_12C;             // 0x12C
-    u8 field_130[0x134 - 0x130]; // 0x130
+    struct HitEntry* frontHit;   // 0x130, check_front result
     void* field_134;             // 0x134
-    void* field_138;             // 0x138
+    struct HitEntry* groundHit;  // 0x138, partySearchGround result
     u8 field_13C[0x140 - 0x13C]; // 0x13C
-    void* field_140;             // 0x140
+    struct HitEntry* headHit;    // 0x140, partySearchHead result
     u8 field_144[0x160 - 0x144]; // 0x144
     MarioWork* playerPtr;        // 0x160
     s32 camId;                   // 0x164

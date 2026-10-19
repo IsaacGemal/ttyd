@@ -525,16 +525,16 @@ USER_FUNC(evt_eff_fukidashi) {
 		case 3: {
 			PartyEntry* party = partyGetPtr(marioGetPartyId());
 			if (party) {
-				f2 = (2.0f * *(f32*)((u8*)party + 0xF0)) / 3.0f;
-				entry = effFukidashiEntry(int3, int4, -2, int10, 0.0f, f2, 0.0f, *(f32*)((u8*)party + 0xF0) / 3.0f, float9);
+				f2 = (2.0f * party->height) / 3.0f;
+				entry = effFukidashiEntry(int3, int4, -2, int10, 0.0f, f2, 0.0f, party->height / 3.0f, float9);
 			}
 			break;
 		}
 		case 4: {
 			PartyEntry* party = partyGetPtr(marioGetExtraPartyId());
 			if (party) {
-				f2 = (2.0f * *(f32*)((u8*)party + 0xF0)) / 3.0f;
-				entry = effFukidashiEntry(int3, int4, -3, int10, 0.0f, f2, 0.0f, *(f32*)((u8*)party + 0xF0) / 3.0f, float9);
+				f2 = (2.0f * party->height) / 3.0f;
+				entry = effFukidashiEntry(int3, int4, -3, int10, 0.0f, f2, 0.0f, party->height / 3.0f, float9);
 			}
 			break;
 		}
