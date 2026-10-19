@@ -686,9 +686,13 @@ void select_disp_mario(WinMgrEntry* entry) {
             continue;
         }
 
+#ifdef MUST_MATCH
+        // Reproduces the target's dead `lwz r0,0x38; cmpwi r0,0` before winFontInit: the self-store is
+        // removed but the compare stays. The natural code has no such compare.
         if (*(volatile s32*)&select->field_0x38) {
             zero = zero;
         }
+#endif
         winFontInit();
         {
             GXColor color = (((WinMgrSelectItem*)select->field_0x30)[i].field_0x0 & 1) ? colorGray : colorBlack;
@@ -783,10 +787,13 @@ void select_disp_mario(WinMgrEntry* entry) {
     msg = msgSearch(str_802FFF08);
     width = FontGetMessageWidth(msg);
     x = (0x78 - width) / 2;
-    // Dead guard (x is unchanged); it keeps this division scheduled before winFontInit, as the target has it.
+#ifdef MUST_MATCH
+    // Dead guard (x is unchanged): it keeps this division scheduled before winFontInit, as the
+    // target has it; without it select_disp_mario/select_disp_party drop to ~92-94%.
     if (x == width) {
         x = x;
     }
+#endif
     winFontInit();
     {
         GXColor color = colorTitle;
@@ -802,10 +809,13 @@ void select_disp_mario(WinMgrEntry* entry) {
     msg = msgSearch(str_802FFF1C);
     width = FontGetMessageWidth(msg);
     x = (0x55 - width) / 2;
-    // Dead guard (x is unchanged); it keeps this division scheduled before winFontInit, as the target has it.
+#ifdef MUST_MATCH
+    // Dead guard (x is unchanged): it keeps this division scheduled before winFontInit, as the
+    // target has it; without it select_disp_mario/select_disp_party drop to ~92-94%.
     if (x == width) {
         x = x;
     }
+#endif
     winFontInit();
     {
         GXColor color = colorTitle;
@@ -923,9 +933,13 @@ void select_disp_party(WinMgrEntry* entry) {
             continue;
         }
 
+#ifdef MUST_MATCH
+        // Reproduces the target's dead `lwz r0,0x38; cmpwi r0,0` before winFontInit: the self-store is
+        // removed but the compare stays. The natural code has no such compare.
         if (*(volatile s32*)&select->field_0x38) {
             zero = zero;
         }
+#endif
         winFontInit();
         {
             GXColor color;
@@ -1104,10 +1118,13 @@ void select_disp_party(WinMgrEntry* entry) {
     msg = msgSearch(str_802FFF30);
     width = FontGetMessageWidth(msg);
     x = (0x78 - width) / 2;
-    // Dead guard (x is unchanged); it keeps this division scheduled before winFontInit, as the target has it.
+#ifdef MUST_MATCH
+    // Dead guard (x is unchanged): it keeps this division scheduled before winFontInit, as the
+    // target has it; without it select_disp_mario/select_disp_party drop to ~92-94%.
     if (x == width) {
         x = x;
     }
+#endif
     winFontInit();
     {
         GXColor color = colorWhite2;
@@ -1123,10 +1140,13 @@ void select_disp_party(WinMgrEntry* entry) {
     msg = msgSearch(str_802FFF44);
     width = FontGetMessageWidth(msg);
     x = (0x55 - width) / 2;
-    // Dead guard (x is unchanged); it keeps this division scheduled before winFontInit, as the target has it.
+#ifdef MUST_MATCH
+    // Dead guard (x is unchanged): it keeps this division scheduled before winFontInit, as the
+    // target has it; without it select_disp_mario/select_disp_party drop to ~92-94%.
     if (x == width) {
         x = x;
     }
+#endif
     winFontInit();
     {
         GXColor color = colorWhite2;
@@ -1255,9 +1275,13 @@ void select_disp(WinMgrEntry* entry) {
         if ((f32)(entry->field_0x1C - entry->field_0x24) > bound + 32.0f) {
             continue;
         }
+#ifdef MUST_MATCH
+        // Reproduces the target's dead `lwz r0,0x38; cmpwi r0,0` before winFontInit: the self-store is
+        // removed but the compare stays. The natural code has no such compare.
         if (*(volatile s32*)&select->field_0x38) {
             zero = zero;
         }
+#endif
         if (((WinMgrSelectItem*)select->field_0x30)[i].field_0x0 & 1) {
             winIconGrayInit();
         } else {
