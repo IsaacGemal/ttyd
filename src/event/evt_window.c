@@ -43,25 +43,25 @@ const char str_802FDB8C[] = "msg_you_gotta_mail\0";
 
 // .sdata
 WinMgrDesc one_msg_desc = {
-    {0, 0, 0, 0, 0, 0, 0, 0},   // field_0x0
+    0, 0,                     // openStyle, frameStyle
     8,                          // camId
-    0xFFFFFF51,                 // field_0xC
+    0xFFFFFF51,                 // x
     0x78,                       // field_0x10
-    0x15E,                      // field_0x14
-    0x2A,                       // field_0x18
-    {0xD7, 0xD0, 0x88, 0xFF},   // field_0x1C
+    0x15E,                      // width
+    0x2A,                       // height
+    {0xD7, 0xD0, 0x88, 0xFF},   // color
     NULL,                       // main
     (void*)oneMessageDisp,      // disp
 };
 
 WinMgrDesc coin_desc = {
-    {0, 0, 0, 2, 0, 0, 0, 0},   // field_0x0
+    2, 0,                     // openStyle, frameStyle
     8,                          // camId
-    0xFFFFFF06,                 // field_0xC
+    0xFFFFFF06,                 // x
     0xFFFFFFB5,                 // field_0x10
-    0x96,                       // field_0x14
-    0x2D,                       // field_0x18
-    {0xF0, 0xF0, 0xF0, 0xFF},   // field_0x1C
+    0x96,                       // width
+    0x2D,                       // height
+    {0xF0, 0xF0, 0xF0, 0xFF},   // color
     NULL,                       // main
     (void*)coin_disp,           // disp
 };

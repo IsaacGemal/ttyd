@@ -1263,7 +1263,7 @@ const char* luigi_book_5[13] = {
 
 static WinMgrDesc window_desc[2] = {
     {
-        {0},
+        0, 0,
         8, // camId
         -0x46,
         0x96,
@@ -1274,7 +1274,7 @@ static WinMgrDesc window_desc[2] = {
         (void*)itemUseDisp,
     },
     {
-        {0, 0, 0, 2},
+        2, 0,
         8, // camId
         -0x118,
         0x91,

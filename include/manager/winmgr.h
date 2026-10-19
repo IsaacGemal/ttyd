@@ -11,7 +11,8 @@ typedef struct WinMgrDesc WinMgrDesc;
 typedef struct WinMgrEntry WinMgrEntry;
 
 struct WinMgrDesc {
-	u8 field_0x0[0x8 - 0x0]; //0x0
+	s32 openStyle; //0x0, winMgrSeq: 0 zoom with rotation, 1 fade in alpha, 2 instant
+	s32 frameStyle; //0x4, winMgrDisp: which frame drawn (1, 3, 4/5)
 	s32 camId; //0x8, CameraId
 	s32 x; //0xC, copied to entry->x
 	s32 field_0x10; //0x10, entry->y (read by get10 under MUST_MATCH)

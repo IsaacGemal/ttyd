@@ -96,34 +96,34 @@ static s32 mario_status_henka_table[3] = { 5, 5, 3 };
 s32 mario_status_max_table[3] = { 200, 200, 99 };
 
 WinMgrDesc select_desc[] = {
-    { { 0, 0, 0, 0, 0, 0, 0, 1 }, 8, -24, 116, 300, 240, { 255, 255, 255, 255 }, select_main, select_disp },
-    { { 0, 0, 0, 2, 0, 0, 0, 0 }, 8, -280, 120, 240, 45, { 255, 255, 255, 255 }, NULL, select_disp2 },
-    { { 0, 0, 0, 0, 0, 0, 0, 0 }, 8, -240, -130, 500, 80, { 255, 255, 255, 255 }, select_main3, select_disp3 },
-    { { 0, 0, 0, 0, 0, 0, 0, 1 }, 8, -24, 116, 300, 240, { 255, 255, 255, 255 }, select_main, select_disp },
-    { { 0, 0, 0, 2, 0, 0, 0, 0 }, 8, -280, 120, 240, 69, { 255, 255, 255, 255 }, NULL, select_disp2 },
-    { { 0, 0, 0, 0, 0, 0, 0, 0 }, 8, -240, -130, 500, 80, { 255, 255, 255, 255 }, select_main3, select_disp3 },
+    { 0, 1, 8, -24, 116, 300, 240, { 255, 255, 255, 255 }, select_main, select_disp },
+    { 2, 0, 8, -280, 120, 240, 45, { 255, 255, 255, 255 }, NULL, select_disp2 },
+    { 0, 0, 8, -240, -130, 500, 80, { 255, 255, 255, 255 }, select_main3, select_disp3 },
+    { 0, 1, 8, -24, 116, 300, 240, { 255, 255, 255, 255 }, select_main, select_disp },
+    { 2, 0, 8, -280, 120, 240, 69, { 255, 255, 255, 255 }, NULL, select_disp2 },
+    { 0, 0, 8, -240, -130, 500, 80, { 255, 255, 255, 255 }, select_main3, select_disp3 },
 };
 
 WinMgrDesc select_party_desc[] = {
-    { { 0, 0, 0, 0, 0, 0, 0, 4 }, 8, -24, 116, 300, 240, { 255, 255, 255, 255 }, select_main, select_disp_party },
-    { { 0, 0, 0, 2, 0, 0, 0, 0 }, 8, -280, 120, 240, 69, { 255, 255, 255, 255 }, NULL, select_disp2 },
-    { { 0, 0, 0, 0, 0, 0, 0, 0 }, 8, -240, -130, 500, 80, { 255, 255, 255, 255 }, select_main3, select_disp3_party },
+    { 0, 4, 8, -24, 116, 300, 240, { 255, 255, 255, 255 }, select_main, select_disp_party },
+    { 2, 0, 8, -280, 120, 240, 69, { 255, 255, 255, 255 }, NULL, select_disp2 },
+    { 0, 0, 8, -240, -130, 500, 80, { 255, 255, 255, 255 }, select_main3, select_disp3_party },
 };
 
 WinMgrDesc select_mario_desc[] = {
-    { { 0, 0, 0, 0, 0, 0, 0, 5 }, 8, -24, 116, 300, 240, { 255, 255, 255, 255 }, select_main, select_disp_mario },
-    { { 0, 0, 0, 2, 0, 0, 0, 0 }, 8, -280, 120, 240, 69, { 255, 255, 255, 255 }, NULL, select_disp2 },
-    { { 0, 0, 0, 0, 0, 0, 0, 0 }, 8, -240, -130, 500, 80, { 255, 255, 255, 255 }, select_main3, select_disp3_mario },
+    { 0, 5, 8, -24, 116, 300, 240, { 255, 255, 255, 255 }, select_main, select_disp_mario },
+    { 2, 0, 8, -280, 120, 240, 69, { 255, 255, 255, 255 }, NULL, select_disp2 },
+    { 0, 0, 8, -240, -130, 500, 80, { 255, 255, 255, 255 }, select_main3, select_disp3_mario },
 };
 
 WinMgrDesc select_luigi_desc[] = {
-    { { 0, 0, 0, 0, 0, 0, 0, 1 }, 8, -24, 116, 300, 240, { 255, 255, 255, 255 }, select_main, select_disp_luigi },
-    { { 0, 0, 0, 2, 0, 0, 0, 0 }, 8, -280, 120, 240, 45, { 255, 255, 255, 255 }, NULL, select_disp2 },
+    { 0, 1, 8, -24, 116, 300, 240, { 255, 255, 255, 255 }, select_main, select_disp_luigi },
+    { 2, 0, 8, -280, 120, 240, 45, { 255, 255, 255, 255 }, NULL, select_disp2 },
 };
 
 WinMgrDesc select_johoya_perfect_desc[] = {
-    { { 0, 0, 0, 0, 0, 0, 0, 1 }, 8, -24, 116, 300, 240, { 255, 255, 255, 255 }, select_main, select_disp_luigi },
-    { { 0, 0, 0, 2, 0, 0, 0, 0 }, 8, -280, 120, 240, 45, { 255, 255, 255, 255 }, NULL, select_disp2 },
+    { 0, 1, 8, -24, 116, 300, 240, { 255, 255, 255, 255 }, select_main, select_disp_luigi },
+    { 2, 0, 8, -280, 120, 240, 45, { 255, 255, 255, 255 }, NULL, select_disp2 },
 };
 
 static WinMgrSelectTbl select_desc_tbl[] = {
@@ -1510,7 +1510,7 @@ void winMgrDisp(CameraId camId, void* param) {
 
     winMgrDispWaku0(scalemtx, entry);
 
-    switch (*(s32*)(entry->description->field_0x0 + 4)) {
+    switch (entry->description->frameStyle) {
     case 0:
     case 2:
         break;
@@ -1553,7 +1553,7 @@ void winMgrMain(void) {
 void winMgrSeq(WinMgrEntry* entry) {
     entry->flags |= 4;
 
-    switch (*(s32*)entry->description->field_0x0) {
+    switch (entry->description->openStyle) {
     case 0:
         switch (entry->state) {
         case 0:

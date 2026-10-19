@@ -2022,7 +2022,7 @@ static u32 kusa_data[12] = {
 };
 
 WinMgrDesc coinget_window_desc = {
-    { 0, 0, 0, 0, 0, 0, 0, 0 }, 8, -175, 120, 350, 42, { 0xE1, 0xD7, 0x9B, 0xFF }, NULL, coingetDisp,
+    0, 0, 8, -175, 120, 350, 42, { 0xE1, 0xD7, 0x9B, 0xFF }, NULL, coingetDisp,
 };
 // clang-format on
 
