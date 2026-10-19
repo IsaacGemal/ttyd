@@ -133,10 +133,8 @@ s32 memcard_file_existance(EventEntry* event, BOOL isFirstCall) {
 }
 
 s32 memcard_write(EventEntry* event, BOOL isFirstCall) {
-    // The save slot sits in GlobalWork's padding at 0x11D0; the header names the
-    // enclosing hole as field_0x11BC but not the field itself.
     if (isFirstCall) {
-        cardWrite(*(s32*)(gp->field_0x11BC + (0x11D0 - 0x11BC)));
+        cardWrite(gp->saveSlot);
     }
     if (cardIsExec()) {
         return EVT_RETURN_BLOCK;

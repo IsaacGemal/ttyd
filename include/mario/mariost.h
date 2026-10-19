@@ -52,7 +52,8 @@ typedef struct GlobalWork {
 	u32 mLSWF[0x10]; //0xD78
 	u8 mLSW[0x400]; //0xDB8
 	s32 unk11B8; //0x11B8
-	u8 field_0x11BC[0x11D4 - 0x11BC]; //0x11BC
+	char playerName[0x14]; //0x11BC, copied from nameEntGetName (up to 8 two-byte characters)
+	s32 saveSlot; //0x11D0, card slot cardWrite saves to (memcard_write); also set on file select and continue
 	Vec savePlayerPos; //0x11D4
     s32 savePartyId[2]; //0x11E0
     OSTime saveTime; //0x11E8

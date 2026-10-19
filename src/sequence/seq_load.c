@@ -590,10 +590,10 @@ void loadMain(SequenceWork* workArg) {
                     fadeEntry(0x1c, 0, *(GXColor*)&dat_8041bd80);
                     wp->field_0x18 = 1;
                 } else {
-                    strcpy((char*)gp->field_0x11BC, nameEntGetName());
+                    strcpy(gp->playerName, nameEntGetName());
                     gp->unk11B8 = wp->field_0x20;
                     stg0_00_init();
-                    *(s32*)(gp->field_0x11BC + 0x14) = wp->field_0x20;
+                    gp->saveSlot = wp->field_0x20;
                     marioPartyKill();
                     mario = marioGetPtr();
                     mario->prevPartyMemberId[0] = 0;
@@ -603,7 +603,7 @@ void loadMain(SequenceWork* workArg) {
                     swInit();
                     swByteSet(0, 0);
                     if (code == 0) {
-                        *(s32*)(gp->field_0x11BC + 0x14) = wp->field_0x20;
+                        gp->saveSlot = wp->field_0x20;
                         wp->field_0x3C = evtEntryType(evt_memcard_save, 0, 0, 0);
                         wp->field_0x3C->lwData[0] = 0x17;
                         wp->field_0x18++;
@@ -1273,7 +1273,7 @@ void continueGame(void) {
     MarioWork* mario;
 
     cardCopy2Main(wp->field_0x20);
-    *(s32*)(gp->field_0x11BC + 0x14) = wp->field_0x20;
+    gp->saveSlot = wp->field_0x20;
     gp->unk11B8 = wp->field_0x20;
     marioPartyKill();
     mario = marioGetPtr();
@@ -1405,7 +1405,7 @@ void continueGame(void) {
             break;
         case 23:
             stg0_00_init();
-            *(s32*)(gp->field_0x11BC + 0x14) = wp->field_0x20;
+            gp->saveSlot = wp->field_0x20;
             marioPartyKill();
             mario = marioGetPtr();
             mario->prevPartyMemberId[0] = 0;
