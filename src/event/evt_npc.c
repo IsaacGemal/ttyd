@@ -514,7 +514,7 @@ USER_FUNC(evt_npc_move_position) {
 
     if (isFirstCall) {
         npc->field_188 = 0;
-        npc->field_108 = 0;
+        npc->gait = 0;
 
         npc->jumpTargetPos.x = targetX;
         npc->jumpTargetPos.y = npc->position.y;
@@ -650,7 +650,7 @@ USER_FUNC(evt_npc_jump_position) {
     if (isFirstCall) {
         npc->field_188 = 0;
         npc->field_178 = 0;
-        npc->field_108 = 0;
+        npc->gait = 0;
 
         npc->jumpTargetPos.x = targetX;
         npc->jumpTargetPos.y = targetY;
@@ -899,7 +899,7 @@ USER_FUNC(evt_npc_glide_position) {
 
     if (isFirstCall) {
         npc->field_188 = 0;
-        npc->field_108 = 0;
+        npc->gait = 0;
         npc->jumpTargetPos.x = targetX;
         npc->jumpTargetPos.y = targetY;
         npc->jumpTargetPos.z = targetZ;
@@ -1005,7 +1005,7 @@ USER_FUNC(evt_npc_glide_position) {
 USER_FUNC(evt_npc_return_interrupt) {
     const char* name = (const char*)evtGetValue(event, event->args[0]);
     NpcEntry* npc = evtNpcNameToPtr(event, name);
-    *(u32*)npc->field_140 |= 0x10000000;
+    npc->interruptFlags |= 0x10000000;
     return EVT_RETURN_YIELD;
 }
 #pragma dont_inline on
@@ -1035,7 +1035,7 @@ USER_FUNC(evt_npc_homing_target) {
 
     if (isFirstCall) {
         npc->field_188 = 0;
-        npc->field_108 = 0;
+        npc->gait = 0;
 
         if (strcmp(targetName, "mario") == 0) {
             event->userdata[0] = 0;
@@ -1691,7 +1691,7 @@ USER_FUNC(evt_npc_get_reglid) {
 USER_FUNC(evt_npc_restart_regular_event) {
     const char* name = (const char*)evtGetValue(event, event->args[0]);
     NpcEntry* npc = evtNpcNameToPtr(event, name);
-    *(u32*)npc->field_140 |= 0x10000000;
+    npc->interruptFlags |= 0x10000000;
     npcCheckInterrupt(npc);
     return EVT_RETURN_DONE;
 }
@@ -1979,7 +1979,7 @@ USER_FUNC(evt_npc_check_escape_battle) {
 USER_FUNC(evt_npc_get_battle_rule_keep_result) {
     s32 index = event->args[0];
     FieldBattleData* fbat = fbatGetPointer();
-    evtSetValue(event, index, fbat->field_C[0x39 - 0xC]);
+    evtSetValue(event, index, fbat->ruleKeepResult);
     return EVT_RETURN_DONE;
 }
 
@@ -2469,7 +2469,7 @@ USER_FUNC(evt_npc_kamek_move_position) {
 
     if (isFirstCall) {
         npc->field_188 = 0;
-        npc->field_108 = 0;
+        npc->gait = 0;
 
         npc->jumpTargetPos.x = targetX;
         npc->jumpTargetPos.y = npc->position.y;
@@ -2552,7 +2552,7 @@ USER_FUNC(evt_npc_kamek_move_position) {
     }
 
     if ((moveFlags & 8) == 0) {
-        _kamek_houki_kemuri(npc, npc->field_108);
+        _kamek_houki_kemuri(npc, npc->gait);
     }
 
     return EVT_RETURN_BLOCK;
@@ -2568,14 +2568,14 @@ USER_FUNC(evt_npc_kamek_kemuri1) {
 
     if (npc->moveTime) {
         if (npc->moveTime > npc->field_1A0) {
-            _kamek_houki_kemuri(npc, npc->field_108);
+            _kamek_houki_kemuri(npc, npc->gait);
             return EVT_RETURN_BLOCK;
         }
         goto block_7; // TODO: ???
     }
 
     if (npc->moveSpeed > 0.0f) {
-        _kamek_houki_kemuri(npc, npc->field_108);
+        _kamek_houki_kemuri(npc, npc->gait);
         return EVT_RETURN_BLOCK;
     }
 block_7:

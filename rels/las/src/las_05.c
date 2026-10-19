@@ -470,7 +470,7 @@ USER_FUNC(kurokaron_move_position) {
     npc->jumpFlags |= 0x10;
     if (isFirstCall != 0) {
         npc->field_188 = 0;
-        npc->field_108 = 0;
+        npc->gait = 0;
         npc->jumpTargetPos.x = x;
         npc->jumpTargetPos.y = npc->position.y;
         npc->jumpTargetPos.z = y;

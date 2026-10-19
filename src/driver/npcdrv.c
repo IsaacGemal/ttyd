@@ -917,7 +917,7 @@ s32 npcEntry(const char* a1, const char* animName) {
     entry->height = animPoseGetRadius(entry->poseId);
     entry->scale = (Vec){ 1.0f, 1.0f, 1.0f };
     entry->field_154 = 1.0f;
-    entry->field_108 = 0;
+    entry->gait = 0;
     entry->field_10C = "M_I_2";
     entry->field_198 = gp->renderTime;
     entry->field_188 = 0;
@@ -1121,8 +1121,8 @@ void npcMain(void) {
         if (entry->jumpFlags & 0x10000) {
             entry->jumpFlags &= ~0x10;
         }
-        if (*(u16*)&entry->wFbatHitCheckRelated) {
-            (*(u16*)&entry->wFbatHitCheckRelated)--;
+        if (entry->wFbatHitCheckRelated) {
+            entry->wFbatHitCheckRelated--;
         }
 
         if (entry->jumpFlags & 0x10) {
@@ -1171,7 +1171,7 @@ void npcMain(void) {
                 runScale = 1.0f;
             }
             if (entry->jumpFlags & 0x100000) {
-                *(u16*)entry->field_31E |= 1;
+                entry->hazardImmuneFlags |= 1;
             }
 
             if (entry->jumpFlags & 0x10) {
@@ -1207,18 +1207,18 @@ void npcMain(void) {
                     f32 speed = sqrtf(v.x * v.x + v.z * v.z) / entry->moveDt;
 
                     if (speed < 0.1f) {
-                        if (entry->field_108 != 1) {
+                        if (entry->gait != 1) {
                             animPoseSetAnim(entry->poseId, entry->tribe->stayAnim, 1);
-                            entry->field_108 = 1;
+                            entry->gait = 1;
                         }
                     } else if (speed < entry->tribe->runStartSpeed * runScale) {
-                        if (entry->field_108 != 2) {
+                        if (entry->gait != 2) {
                             animPoseSetAnim(entry->poseId, entry->tribe->walkAnimation, 1);
-                            entry->field_108 = 2;
+                            entry->gait = 2;
                         }
-                    } else if (entry->field_108 != 3) {
+                    } else if (entry->gait != 3) {
                         animPoseSetAnim(entry->poseId, entry->tribe->runAnimation, 1);
-                        entry->field_108 = 3;
+                        entry->gait = 3;
                     }
                 }
             }
@@ -1229,12 +1229,12 @@ void npcMain(void) {
                 evt = evtGetPtrID(entry->regularEvtId);
                 if (evt != NULL && !(evt->flags & 2)) {
                     state = evt->wNpcEventType;
-                    if (entry->blowEvent != NULL && state != 5 && state != 8 && npcCheckBlow(entry)) {
-                        *(s32*)entry->field_140 |= 8;
+                    if (entry->blowEvent != NULL && state != NPC_EVENT_TYPE_BLOW && state != NPC_EVENT_TYPE_DEAD && npcCheckBlow(entry)) {
+                        entry->interruptFlags |= 8;
                         goto interrupt;
                     }
 
-                    if (entry->territoryType != NPC_TERRITORY_TYPE_NOTHING && (state == 1 || state == 2)) {
+                    if (entry->territoryType != NPC_TERRITORY_TYPE_NOTHING && (state == NPC_EVENT_TYPE_MOVE || state == NPC_EVENT_TYPE_FIND)) {
                         hit = FALSE;
                         if (entry->territoryType == NPC_TERRITORY_TYPE_CIRCLE) {
                             f32 dx;
@@ -1243,11 +1243,11 @@ void npcMain(void) {
                             dx = entry->territoryBase.x - entry->position.x;
                             dz = entry->territoryBase.z - entry->position.z;
                             dist = sqrtf(dx * dx + dz * dz);
-                            if (dist > (state == 2 ? entry->territoryHoming.x : entry->territoryHoming.x)) {
+                            if (dist > (state == NPC_EVENT_TYPE_FIND ? entry->territoryHoming.x : entry->territoryHoming.x)) {
                                 hit = TRUE;
                             }
                         } else if (entry->territoryType == NPC_TERRITORY_TYPE_SQUARE) {
-                            if (state == 2) {
+                            if (state == NPC_EVENT_TYPE_FIND) {
                                 if (entry->position.x < entry->territoryBase.x - entry->territoryHoming.x ||
                                     entry->position.x > entry->territoryBase.x + entry->territoryHoming.x ||
                                     entry->position.z < entry->territoryBase.z - entry->territoryHoming.z ||
@@ -1262,12 +1262,12 @@ void npcMain(void) {
                             }
                         }
                         if (hit) {
-                            *(s32*)entry->field_140 |= 4;
+                            entry->interruptFlags |= 4;
                             goto interrupt;
                         }
                     }
 
-                    if (state == 2) {
+                    if (state == NPC_EVENT_TYPE_FIND) {
                         f32 dx;
                         f32 dy;
                         f32 dz;
@@ -1301,12 +1301,12 @@ void npcMain(void) {
                             }
                         }
                         if (hit) {
-                            *(s32*)entry->field_140 |= 2;
+                            entry->interruptFlags |= 2;
                             goto interrupt;
                         }
                     }
 
-                    if (state == 1 || state == 4) {
+                    if (state == NPC_EVENT_TYPE_MOVE || state == NPC_EVENT_TYPE_RETURN) {
                         f32 dx;
                         f32 dist;
                         f32 dy;
@@ -1341,7 +1341,7 @@ void npcMain(void) {
                                 hit = FALSE;
                             } else if (-dy > entry->territoryHoming.y) {
                                 hit = FALSE;
-                            } else if (state == 4) {
+                            } else if (state == NPC_EVENT_TYPE_RETURN) {
                                 if (entry->territoryType == NPC_TERRITORY_TYPE_CIRCLE) {
                                     dx = entry->territoryBase.x - entry->position.x;
                                     dz = entry->territoryBase.z - entry->position.z;
@@ -1358,7 +1358,7 @@ void npcMain(void) {
                         }
                     found:
                         if (hit) {
-                            *(s32*)entry->field_140 |= 1;
+                            entry->interruptFlags |= 1;
                         }
                     }
                 }
@@ -1390,7 +1390,7 @@ void npcMain(void) {
                     z *= (-1.0f);
 
                     if (!(entry->flags & 0x80) &&
-                        (!(*(u16*)&entry->wFbatHitCheckRelated & 2) || (entry->jumpFlags & 0x10000))) {
+                        (!(entry->wFbatHitCheckRelated & 2) || (entry->jumpFlags & 0x10000))) {
                         if (entry->color.a != 0xFF) {
                             dispEntry(entry->cameraId, z, 2, npcDisp_xlu, entry);
                         } else {
@@ -2209,7 +2209,7 @@ void _fbatFirstAttackAnnouceDisp(CameraId camId, void* param) {
 }
 
 // 100%: control flow and the `mode == 3` test match. The two `regularEvtId` reads go through a fresh
-// `*(NpcEntry**)(fbatData->field_2 + 2)` load (as in the original), which also fixes `entry`/`mario` to r30/r29.
+// `fbatData->talkNpc` load (as in the original), which also fixes `entry`/`mario` to r30/r29.
 
 // Same 57 calls and immediates, no structural difference. The three decision trees match (the first switch carries the empty case 0x10000 the
 // original probes; the side scan is a `switch` on `blocked`), `wk` is the ternary form, the OffChk pair is one
@@ -2266,7 +2266,7 @@ void fbatEncountCheck(void) {
         return;
     }
     fb = gp->fbatData;
-    fbatOut = (s32*)((u8*)fb + 0x10);
+    fbatOut = &fb->field_10;
     hit = (NpcEntry*)fbatHitCheck(0x13F1, (s32)fbatOut);
     if (hit != NULL && fb->mode == 1) {
         FieldBattleData* fb2 = gp->fbatData;
@@ -2277,8 +2277,8 @@ void fbatEncountCheck(void) {
         } else {
             fb2->mode = 5;
             ok = 1;
-            *(s8*)((u8*)fb2 + 2) = 0;
-            *(NpcEntry**)((u8*)fb2 + 4) = hit;
+            fb2->state = 0;
+            fb2->talkNpc = hit;
             fb2->target = hit;
         }
         if (ok != 0) {
@@ -2476,8 +2476,8 @@ void fbatEncountCheck(void) {
 
             if (fb3->mode == 1) {
                 fb3->mode = 2;
-                *(s8*)((u8*)fb3 + 2) = 0;
-                *(NpcEntry**)((u8*)fb3 + 4) = tgt;
+                fb3->state = 0;
+                fb3->talkNpc = tgt;
                 ENC(tgt, s32, 0x318) = 0;
             }
             return;
@@ -2485,7 +2485,7 @@ void fbatEncountCheck(void) {
     }
     fb = gp->fbatData;
     if (fb->mode == 1) {
-        s32* fbatOut2 = (s32*)((u8*)fb + 0x10);
+        s32* fbatOut2 = &fb->field_10;
 
         hit = (NpcEntry*)fbatHitCheck(0x2361, (s32)fbatOut2);
         if (hit != NULL && fb->mode == 1) {
@@ -2496,8 +2496,8 @@ void fbatEncountCheck(void) {
             fb2 = gp->fbatData;
             if (fb2->mode == 1) {
                 fb2->mode = 3;
-                *(s8*)((u8*)fb2 + 2) = 0;
-                *(NpcEntry**)((u8*)fb2 + 4) = hit;
+                fb2->state = 0;
+                fb2->talkNpc = hit;
                 ENC(hit, s32, 0x318) = fval;
             }
             switch (*fbatOut2) {
@@ -2516,14 +2516,14 @@ void fbatEncountCheck(void) {
 
 void fbatTalkMode(void) {
     FieldBattleData* fbatData = gp->fbatData;
-    NpcEntry* entry = *(NpcEntry**)(fbatData->field_2 + 2);
+    NpcEntry* entry = fbatData->talkNpc;
     MarioWork* mario = marioGetPtr();
     NpcWork* wp;
     EventEntry* evt;
 
-    switch (fbatData->field_2[0]) {
+    switch (fbatData->state) {
         case 0:
-            evtStopID((*(NpcEntry**)(fbatData->field_2 + 2))->regularEvtId);
+            evtStopID(fbatData->talkNpc->regularEvtId);
             if (!(entry->flags & 0x1000000)) {
                 entry->direction = reviseAngle(angleABf(entry->position.x, entry->position.z, mario->position.x,
                                                           mario->position.z));
@@ -2533,26 +2533,26 @@ void fbatTalkMode(void) {
             switch (fbatData->mode) {
                 case 3:
                     evt = evtEntry(entry->deadEvent, 0, 0);
-                    evt->wNpcEventType = 6;
+                    evt->wNpcEventType = NPC_EVENT_TYPE_TALK;
                     break;
                 default:
                     evt = evtEntry(entry->talkEvt, 0, 0);
-                    evt->wNpcEventType = 6;
+                    evt->wNpcEventType = NPC_EVENT_TYPE_TALK;
                     marioChgTalkMotion();
                     break;
             }
             evt->ownerNPC = entry;
-            *(s32*)fbatData->field_C = evt->eventId;
-            fbatData->field_2[0]++;
+            fbatData->talkEvtId = evt->eventId;
+            fbatData->state++;
             break;
         case 1:
-            if (!evtCheckID(*(s32*)fbatData->field_C)) {
+            if (!evtCheckID(fbatData->talkEvtId)) {
                 if (!(entry->jumpFlags & 0x20000000)) {
-                    evtStartID((*(NpcEntry**)(fbatData->field_2 + 2))->regularEvtId);
+                    evtStartID(fbatData->talkNpc->regularEvtId);
                     entry->direction = *(f32*)entry->field_148;
                 }
                 if (entry->flags & 0x400) {
-                    entry->field_108 = 0;
+                    entry->gait = 0;
                 }
                 if (entry->flags & 0x200) {
                     animPoseSetAnim(entry->poseId, entry->currentAnim, 1);
@@ -2591,7 +2591,7 @@ void fbatBattleMode(void) {
     mario = marioGetPtr();
     entry->rotation.y = 0.0f;
 
-    switch (fbatData->field_2[0]) {
+    switch (fbatData->state) {
         case 0:
             if (dbg_battleskip == 1) {
                 fbatData->mode = 1;
@@ -2606,7 +2606,7 @@ void fbatBattleMode(void) {
                 s32 flagB;
                 FieldBattleInfo* info0;
 
-                *(s32*)fbatData->target->field_140 &= 0xF00;
+                fbatData->target->interruptFlags &= 0xF00;
                 evtStopID(fbatData->target->regularEvtId);
                 info0 = (FieldBattleInfo*)((u8*)fbatData + 0x20);
                 if (!(entry->battleInfo.field_4 & 0x10000000)) {
@@ -2617,7 +2617,7 @@ void fbatBattleMode(void) {
                         goto afterStrike;
                     }
                     if (pouchEquipCheckBadge(ITEM_FIRST_ATTACK) &&
-                        (*(s32*)((u8*)fbatData + 0x10) & 0x01FE0000) &&
+                        (fbatData->field_10 & 0x01FE0000) &&
                         entry->battleInfo.groupSetup->enemyData->mUnitKindParams->mLevel < pouch->level) {
                         flagA = TRUE;
                         flagB = TRUE;
@@ -2638,23 +2638,23 @@ void fbatBattleMode(void) {
                     }
                     marioFBattlePrepare();
                     seqSetSeq(SEQ_BATTLE, NULL, NULL);
-                    if (*(s32*)((u8*)fbatData + 0x10) == 0x10000000) {
+                    if (fbatData->field_10 == 0x10000000) {
                         unk_80058374();
                     }
-                    fbatData->field_2[0] = 1;
+                    fbatData->state = 1;
                 } else {
                     if (flagB) {
                         BattleInformationSetResult(info0, 2);
                     } else {
                         BattleInformationSetResult(info0, 5);
                     }
-                    fbatData->field_2[0] = 4;
+                    fbatData->state = 4;
                 }
             }
             break;
         case 1:
             if (gp->inBattle) {
-                fbatData->field_2[0]++;
+                fbatData->state++;
             }
             break;
         case 2:
@@ -2668,10 +2668,10 @@ void fbatBattleMode(void) {
                 info2 = (FieldBattleInfo*)((u8*)fbatData + 0x20);
                 result = BattleInformationGetResult(info2);
                 if (pouch->mMerleeNextCurseType == 4 && result == 1) {
-                    fbatData->field_2[0] = 3;
+                    fbatData->state = 3;
                     fbatData->field_54C[0] = 1;
                     evt = evtEntry(_evt_majinai_coin_up_effect, 0, 0);
-                    *(s32*)((u8*)fbatData + 0x48) = evt->eventId;
+                    fbatData->majinaiEvtId = evt->eventId;
                     BattleMajinaiDone();
                     marioKeyOff();
                     wp2 = gp->inBattle ? &work.battle : &work.field;
@@ -2685,20 +2685,20 @@ void fbatBattleMode(void) {
                     }
                 } else {
                     marioFBattlePost();
-                    fbatData->field_2[0] = 4;
+                    fbatData->state = 4;
                 }
             }
             break;
         case 3:
-            if (!evtCheckID(*(s32*)((u8*)fbatData + 0x48))) {
+            if (!evtCheckID(fbatData->majinaiEvtId)) {
                 NpcWork* wp3;
                 NpcEntry* npc3;
                 s32 total3;
                 s32 i3;
                 marioKeyOn();
                 marioFBattlePost();
-                *(s32*)((u8*)fbatData + 0x48) = 0;
-                fbatData->field_2[0] = 4;
+                fbatData->majinaiEvtId = 0;
+                fbatData->state = 4;
                 wp3 = gp->inBattle ? &work.battle : &work.field;
                 total3 = wp3->total;
                 for (i3 = 0, npc3 = wp3->entries; i3 < total3; i3++, npc3++) {
@@ -2753,11 +2753,11 @@ void fbatBattleMode(void) {
                         npcGroupDead(entry, 0);
                     } else {
                         if (entry->flags & 0x400) {
-                            entry->field_108 = 0;
+                            entry->gait = 0;
                         }
                         entry->wFbatHitCheckRelated = 0x5A;
-                        *(s32*)entry->field_140 &= ~0x100;
-                        *(s32*)entry->field_140 |= 0x10000000;
+                        entry->interruptFlags &= ~0x100;
+                        entry->interruptFlags |= 0x10000000;
                         if (entry->flags & 0x200) {
                             animPoseSetAnim(entry->poseId, entry->currentAnim, TRUE);
                         }
@@ -2765,9 +2765,9 @@ void fbatBattleMode(void) {
                     }
                 } else if (result == 4) {
                     if (entry->flags & 0x400) {
-                        entry->field_108 = 0;
+                        entry->gait = 0;
                     }
-                    *(s32*)entry->field_140 |= 0x10000000;
+                    entry->interruptFlags |= 0x10000000;
                     marioSetMutekiTime(3000);
                     *(s16*)((u8*)mario + 0x2C0) = sysMsec2Frame(3000);
                     if (entry->flags & 0x200) {
@@ -2780,7 +2780,7 @@ void fbatBattleMode(void) {
 }
 
 void _npcDead(NpcEntry* entry, u16 koopaEncounterType) {
-    *(s32*)entry->field_140 |= 0x10;
+    entry->interruptFlags |= 0x10;
     entry->jumpFlags |= 4;
     entry->koopaEncounterType = koopaEncounterType;
     if (entry->flags & 4) {
@@ -2861,7 +2861,7 @@ static inline BOOL fbatAttackEnabled(NpcEntry* npc) {
     if (mario->currMotionId == 0x1F || mario->currMotionId == 0x20) {
         return FALSE;
     }
-    if (*(u16*)&npc->wFbatHitCheckRelated != 0) {
+    if (npc->wFbatHitCheckRelated != 0) {
         return FALSE;
     }
     return TRUE;
@@ -2872,7 +2872,7 @@ static inline BOOL fbatAttackEnabled(NpcEntry* npc) {
 // The npc's own event has reached state 5.
 static inline BOOL fbatNpcEventDone(NpcEntry* npc) {
     if (evtGetPtrID(npc->regularEvtId) != NULL) {
-        return evtGetPtrID(npc->regularEvtId)->wNpcEventType == 5;
+        return evtGetPtrID(npc->regularEvtId)->wNpcEventType == NPC_EVENT_TYPE_BLOW;
     }
     return FALSE;
 }
@@ -3459,47 +3459,47 @@ BOOL npcCheckInterrupt(NpcEntry* npc) {
     EventEntry* evt;
 
     evtGetPtrID(npc->regularEvtId);
-    if (*(s32*)npc->field_140 & ~0xF00) {
+    if (npc->interruptFlags & ~0xF00) {
         evt = NULL;
-        if ((*(s32*)npc->field_140 & 0x10) && npc->deadEvent) {
+        if ((npc->interruptFlags & 0x10) && npc->deadEvent) {
             evt = evtEntry(npc->deadEvent, 0, 0x20);
-            evt->wNpcEventType = 8;
+            evt->wNpcEventType = NPC_EVENT_TYPE_DEAD;
             evt->ownerNPC = npc;
-        } else if ((*(s32*)npc->field_140 & 0x10000000) && npc->moveEvent) {
+        } else if ((npc->interruptFlags & 0x10000000) && npc->moveEvent) {
             evt = evtEntry(npc->moveEvent, 0, 0x20);
-            evt->wNpcEventType = 1;
+            evt->wNpcEventType = NPC_EVENT_TYPE_MOVE;
             evt->ownerNPC = npc;
-        } else if ((*(s32*)npc->field_140 & 0x8) && npc->blowEvent) {
+        } else if ((npc->interruptFlags & 0x8) && npc->blowEvent) {
             evt = evtEntry(npc->blowEvent, 0, 0x20);
-            evt->wNpcEventType = 5;
+            evt->wNpcEventType = NPC_EVENT_TYPE_BLOW;
             evt->ownerNPC = npc;
-        } else if ((*(s32*)npc->field_140 & 1) && npc->findEvent && !(npc->jumpFlags & 0x1000) &&
-                   !(npc->flags & 0x200000) && !(*(s32*)npc->field_140 & 0x100)) {
+        } else if ((npc->interruptFlags & 1) && npc->findEvent && !(npc->jumpFlags & 0x1000) &&
+                   !(npc->flags & 0x200000) && !(npc->interruptFlags & 0x100)) {
             evt = evtEntry(npc->findEvent, 0, 0x20);
-            evt->wNpcEventType = 2;
+            evt->wNpcEventType = NPC_EVENT_TYPE_FIND;
             evt->ownerNPC = npc;
-        } else if ((*(s32*)npc->field_140 & 2) && npc->lostEvent && !(npc->jumpFlags & 0x1000) &&
+        } else if ((npc->interruptFlags & 2) && npc->lostEvent && !(npc->jumpFlags & 0x1000) &&
                    !(npc->flags & 0x200000)) {
             evt = evtEntry(npc->lostEvent, 0, 0x20);
-            evt->wNpcEventType = 3;
+            evt->wNpcEventType = NPC_EVENT_TYPE_LOST;
             evt->ownerNPC = npc;
-        } else if ((*(s32*)npc->field_140 & 4) && npc->returnEvent && !(npc->jumpFlags & 0x1000) &&
+        } else if ((npc->interruptFlags & 4) && npc->returnEvent && !(npc->jumpFlags & 0x1000) &&
                    !(npc->flags & 0x200000)) {
             evt = evtEntry(npc->returnEvent, 0, 0x20);
-            evt->wNpcEventType = 4;
+            evt->wNpcEventType = NPC_EVENT_TYPE_RETURN;
             evt->ownerNPC = npc;
         }
         if (evt != NULL) {
             evtDeleteID(npc->regularEvtId);
             npc->regularEvtId = evt->eventId;
-            *(s32*)npc->field_140 &= 0xF00;
+            npc->interruptFlags &= 0xF00;
             npc->jumpFlags &= ~0x1000;
             npc->field_188 = 0;
             npc->moveSpeed = 0.0f;
             return TRUE;
         }
     }
-    *(s32*)npc->field_140 &= 0xF00;
+    npc->interruptFlags &= 0xF00;
     npc->jumpFlags &= ~0x1000;
     return FALSE;
 }
@@ -3798,7 +3798,7 @@ void npcExecAllInitEvt(void) {
                     evtDeleteID(entry->initEvtId);
                 }
                 evt = evtEntry(entry->initEvent, 0, 0);
-                evt->wNpcEventType = 0;
+                evt->wNpcEventType = NPC_EVENT_TYPE_INIT;
                 evt->ownerNPC = entry;
                 entry->initEvtId = evt->eventId;
             } else {
@@ -3847,7 +3847,7 @@ void npcExecAllReglEvt(void) {
                 evtDeleteID(entry->regularEvtId);
             }
             evt = evtEntry(entry->moveEvent, 0, 0x20);
-            evt->wNpcEventType = 1;
+            evt->wNpcEventType = NPC_EVENT_TYPE_MOVE;
             evt->ownerNPC = entry;
             entry->regularEvtId = evt->eventId;
         }
@@ -3997,17 +3997,17 @@ void npcKoopaModeEncountCheck(void) {
             switch (kpaEnemyHitChk(entry->position.x, entry->position.y, entry->position.z, entry->height,
                                    entry->width)) {
                 case 1:
-                    if (!(*(u16*)entry->field_31E & 1)) {
+                    if (!(entry->hazardImmuneFlags & 1)) {
                         npcGroupDead(entry, 1);
                     }
                     break;
                 case 2:
-                    if (!(*(u16*)entry->field_31E & 2)) {
+                    if (!(entry->hazardImmuneFlags & 2)) {
                         npcGroupDead(entry, 2);
                     }
                     break;
                 case 3:
-                    if (!(*(u16*)entry->field_31E & 4)) {
+                    if (!(entry->hazardImmuneFlags & 4)) {
                         npcGroupDead(entry, 4);
                     }
                     break;
@@ -4015,7 +4015,7 @@ void npcKoopaModeEncountCheck(void) {
                     kpaPowDown();
                     break;
                 default:
-                    if (!(*(u16*)entry->field_31E & 0x10) && *(u32*)entry->field_300 != 0 &&
+                    if (!(entry->hazardImmuneFlags & 0x10) && *(u32*)entry->field_300 != 0 &&
                         !strcmp(hitGetName((HitEntry*)(*(u32*)entry->field_300)), "a_magu")) {
                         npcGroupDead(entry, 0x10);
                     }
@@ -4037,7 +4037,7 @@ s32 npcKoopaModeMobjBoundDeadCheck(HitEntry* mobj) {
     }
     for (i = 0, entry = wp->entries; i < total; i++, entry++) {
         if (entry != NULL && (entry->flags & 1) && (entry->flags & 0x8000000) && !(entry->jumpFlags & 4) &&
-            !(*(u16*)entry->field_31E & 8) && *(u32*)entry->field_300 == (u32)mobj) {
+            !(entry->hazardImmuneFlags & 8) && *(u32*)entry->field_300 == (u32)mobj) {
             npcGroupDead(entry, 8);
             count++;
         }

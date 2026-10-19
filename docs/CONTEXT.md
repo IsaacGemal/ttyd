@@ -8392,3 +8392,18 @@ Starting point (2911743e): **77.691 per kLOC**, 54,539 weighted over 702k code l
 address names (13,986) dominate; the worst files are mri_puni.c, battle_audience.c, winmgr.c, battle_seq_end.c and
 battle_event_cmd.c. String literals aren't stripped before matching and `must_match` counts directive lines, so treat
 small deltas as noise.
+
+### Readability pilot: npcdrv names (2026-10-19, Claude Haiku 5.5, night8-read1; reviewed by Claude Opus 5.5)
+
+First pass at naming instead of matching; every commit was checked byte-identical ("32 files OK"), which proves the
+renames changed nothing. NpcEntry: `field_108` → `gait` (1 stay, 2 walk, 3 run: the speed-picked animation in
+npcdrv's move update), `field_140` → `interruptFlags` (pending found/lost/return/blow/dead reactions consumed by
+`npcCheckInterrupt`), `field_31E` → `hazardImmuneFlags` (one bit per hazard class before `npcGroupDead`; 0x1F from
+`set_bottle_flag_init`; one write of bit 1 is unexplained), `wFbatHitCheckRelated` typed u16 (drops four casts).
+FieldBattleData gets `state`, `talkNpc`, `talkEvtId`, `ruleKeepResult`, `endEvt`, `endEvtId`, `majinaiEvtId`, which
+removes the raw `+0x..` casts in npcdrv.c, seq_battle.c, battle_seq_end.c and evt_npc.c. `NpcEventType` names
+`wNpcEventType`'s values. npcdrv.c: unnamed-field uses 184 → 138, typed raw casts 69 → 23.
+
+Blocked: splitting NpcBattleInfo's tail (0x9C-0xC8) into fields wasn't byte-identical (the roll loop indexes the
+`field_9C` array), and FieldBattleData's `FieldBattleInfo` at 0x20 keeps its cast because battle_information.h
+includes npcdrv.h.

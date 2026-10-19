@@ -53,7 +53,7 @@ void seq_battleInit(SequenceWork* work) {
     evtStopAll(4);
     psndSetFlag(0x80);
 
-    mode = *(s32*)((u8*)fbatGetPointer() + 0x10);
+    mode = fbatGetPointer()->field_10;
     switch (mode) {
         case 0x800000:
         case 0x1000000:
@@ -110,7 +110,7 @@ void seq_battleMain(SequenceWork* work) {
 
         case 2:
             pouchGetPtr();
-            mode = *(s32*)((u8*)fbatGetPointer() + 0x10);
+            mode = fbatGetPointer()->field_10;
             switch (mode) {
                 case 0x800000:
                 case 0x1000000:

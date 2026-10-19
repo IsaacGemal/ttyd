@@ -15,6 +15,17 @@ typedef enum NpcTerritoryType {
     NPC_TERRITORY_TYPE_SQUARE = 2
 } NpcTerritoryType;
 
+typedef enum NpcEventType {
+    NPC_EVENT_TYPE_INIT = 0,   // initEvent
+    NPC_EVENT_TYPE_MOVE = 1,   // moveEvent
+    NPC_EVENT_TYPE_FIND = 2,   // findEvent
+    NPC_EVENT_TYPE_LOST = 3,   // lostEvent
+    NPC_EVENT_TYPE_RETURN = 4, // returnEvent
+    NPC_EVENT_TYPE_BLOW = 5,   // blowEvent
+    NPC_EVENT_TYPE_TALK = 6,   // talkEvt, fbat talk
+    NPC_EVENT_TYPE_DEAD = 8    // deadEvent
+} NpcEventType;
+
 typedef struct NpcTerritoryInfo {
     const char* description; // 0x0
     NpcTerritoryType type;   // 0x4
@@ -113,7 +124,7 @@ typedef struct NpcEntry {
     Vec rotation;                   // 0xEC
     Vec rotationOffset;             // 0xF8
     s32 poseId;                     // 0x104
-    s32 field_108;                  // 0x108
+    s32 gait;                       // 0x108, 0 unset, 1 stay, 2 walk, 3 run (picks the dust effect in _kamek_houki_kemuri)
     const char* field_10C;          // 0x10C
     s32 field_110;                  // 0x110
     GXColor color;                  // 0x114
@@ -127,7 +138,7 @@ typedef struct NpcEntry {
     void* lostEvent;                // 0x134, verified
     void* returnEvent;              // 0x138, verified
     void* blowEvent;                // 0x13C, verified
-    u8 field_140[0x144 - 0x140];    // 0x140
+    u32 interruptFlags;             // 0x140, pending reactions: 1 found Mario, 2 lost, 4 returned, 8 blown, 0x10 dead, 0x10000000 move
     f32 direction;                  // 0x144, angle we're facing at, verified
     u8 field_148[0x14C - 0x148];    // 0x148
     f32 width;                      // 0x14C
@@ -181,8 +192,8 @@ typedef struct NpcEntry {
     s8 balloonType;                 // 0x317, s8: mario_balloon loads it with lbz; extsb
     u8 field_318[0x31C - 0x318];    // 0x318
     u16 koopaEncounterType;         // 0x31C
-    u8 field_31E[0x320 - 0x31E];    // 0x31E
-    s16 wFbatHitCheckRelated;       // 0x320
+    u16 hazardImmuneFlags;          // 0x31E, bits 1/2/4/8/0x10 skip the npcGroupDead of that hazard class; set to 0x1F by set_bottle_flag_init
+    u16 wFbatHitCheckRelated;       // 0x320
     u8 pad_322[2];                  // 0x322
     struct NpcEntry* prev;          // 0x324
     struct NpcEntry* next;          // 0x328
@@ -221,9 +232,19 @@ typedef struct FirstStrikeInfo {
 
 typedef struct FieldBattleData {
     s16 mode;                    // 0x0
-    u8 field_2[0x8 - 0x2];       // 0x2
+    u8 state;                    // 0x2, step of the talk sequence in npcdrv's field battle state machine
+    u8 field_3[0x4 - 0x3];       // 0x3
+    NpcEntry* talkNpc;           // 0x4
     NpcEntry* target;            // 0x8
-    u8 field_C[0x4C - 0xC];      // 0xC
+    s32 talkEvtId;               // 0xC, event started for talkNpc, waited on in state 1
+    s32 field_10;                // 0x10, out-param of fbatHitCheck
+    u8 field_14[0x39 - 0x14];    // 0x14
+    u8 ruleKeepResult;           // 0x39, read by evt_npc_get_battle_rule_keep_result
+    u8 field_3A[0x3C - 0x3A];    // 0x3A
+    void* endEvt;                // 0x3C, script started by battle_seq_end case 0x07000003
+    s32 endEvtId;                // 0x40, waited on by case 0x07000004
+    s32 field_44;                // 0x44
+    s32 majinaiEvtId;            // 0x48, event waited on in state 3 (the Merlee curse coin-up effect)
     NpcDeadInfo deadInfo[64];    // 0x4C
     u8 field_54C[0x550 - 0x54C]; // 0x54C
     FirstStrikeInfo firstStrike; // 0x550
