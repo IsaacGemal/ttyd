@@ -341,7 +341,7 @@ void hitMain(void) {
     MapEntry* map;
     MapWork* wp = mapGetWork();
     s32 j, k, i;
-    u8* anim;
+    MapEntryAnimData* anim;
     s32 anyScale;
     HitEntry* found;
     Mtx mtx;
@@ -350,11 +350,11 @@ void hitMain(void) {
 
     map = wp->entries;
     for (i = 0; i < wp->entries->count; map++, i++) {
-        anim = (u8*)map->animData;
+        anim = map->animData;
         anyScale = 0;
-        for (j = 0; j < map->animCount; j++, anim += 0x20) {
-            u16 animFlags = *(u16*)anim;
-            u8* list = *(u8**)(anim + 0x18);
+        for (j = 0; j < map->animCount; j++, anim++) {
+            u16 animFlags = anim->flags;
+            u8* list = anim->data;
             u8* childList = *(u8**)(list + 0xC);
 
             if ((animFlags & 1) && !((animFlags & 2) && (animFlags & 0x1000)) && childList != NULL) {
@@ -366,11 +366,11 @@ void hitMain(void) {
                     found = hitNameToPtr(*(char**)(*(void**)(p + 4)));
 #endif
                     if (found != NULL) {
-                        mapCalcAnimMatrix(found->animMtx, found->localMtx, (MapEntryAnimData*)anim, *(void**)(p + 4));
+                        mapCalcAnimMatrix(found->animMtx, found->localMtx, anim, *(void**)(p + 4));
                         anyScale = 1;
                         found->flags |= HIT_FLAG_ANIMATED;
                         found->flags |= HIT_FLAG_MTX_DIRTY;
-                        *(u16*)anim |= 0x1000;
+                        anim->flags |= 0x1000;
                     }
                 }
             }
