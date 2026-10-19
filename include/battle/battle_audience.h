@@ -136,9 +136,13 @@ typedef struct BattleAudienceSound {
 } BattleAudienceSound;
 
 typedef struct BattleAudienceWindow {
-    u8 mActive;               // 0x0, TODO "bool"?
-    u8 field_0x1[0x18 - 0x1]; // 0x1
-    f32 count;                // 0x18, number to display for audience count
+    u8 mActive;                 // 0x0, TODO "bool"?
+    u8 field_0x1[0x8 - 0x1];    // 0x1
+    f32 posX;                   // 0x8, from slide: -500 closed, -280 open
+    f32 posY;                   // 0xC, -160 each frame
+    u8 field_0x10[0x14 - 0x10]; // 0x10
+    s32 slide;                  // 0x14, 0-15, moves toward open while mActive
+    f32 count;                  // 0x18, number to display for audience count
 } BattleAudienceWindow;
 
 /*
@@ -181,7 +185,7 @@ typedef struct BattleAudience {
 typedef struct BattleAudience {
     s32 flags;                         // 0x0
     EventEntry* event;                 // 0x4
-    u8 field_8[0xC - 0x8];             // 0x8
+    s32 apStarSfxId;                  // 0x8, psnd id of the AP star loop
     FileEntry* normalTex;              // 0xC
     FileEntry* guestTex[2];            // 0x10
     AudienceMemberType guestType[2];   // 0x18
@@ -206,7 +210,7 @@ typedef struct BattleAudience {
     s32 mNumStylishCommandsThisAttack; // 0x137D4
     u8 field_137D8[0x137DC - 0x137D8]; // 0x137D8
     s32 mCheckPhaseReactionState;      // 0x137DC, TODO: rename
-    u8 field_137E0[0x137E4 - 0x137E0]; // 0x137E0
+    s32 phaseStep;                     // 0x137E0, 0, 5, 10 or 15 through the phase event steps
     s32 presentItemNo;                 // 0x137E4, item being used (BattleAudience_SetPresentItemNo)
     s32 presentItemType;               // 0x137E8
     s32 presentTargetUnitId;           // 0x137EC

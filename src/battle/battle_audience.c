@@ -816,7 +816,7 @@ BOOL BattleAudience_CheckReactionPerPhase(void) {
 			audience->phaseEvtCount = 0;
 		}
 		audience->mCheckPhaseReactionState = 12;
-		*(s32*)(aud + 0x137E0) = 0;
+		audience->phaseStep = 0;
 		// fall through
 	case 12:
 		if (audience->phaseEvtCount == 1) {
@@ -851,10 +851,10 @@ BOOL BattleAudience_CheckReactionPerPhase(void) {
 			audience->phaseEvtCount = 0;
 			break;
 		case 3:
-			switch (*(s32*)(aud + 0x137E0)) {
+			switch (audience->phaseStep) {
 			case 0:
 				BattleAudienceAddPuni(0xC8);
-				*(s32*)(aud + 0x137E0) = 5;
+				audience->phaseStep = 5;
 				break;
 			case 5:
 				for (i = 0; i < 200; i++) {
@@ -863,11 +863,11 @@ BOOL BattleAudience_CheckReactionPerPhase(void) {
 					}
 				}
 				if (i == 200) {
-					*(s32*)(aud + 0x137E0) = 0xA;
+					audience->phaseStep = 0xA;
 				}
 				break;
 			case 10:
-				*(s32*)(aud + 0x137E0) = 0xF;
+				audience->phaseStep = 0xF;
 				audience->event = evtEntry(msg_puni_all_enter, 0, 0x20);
 				break;
 			case 15:
@@ -879,7 +879,7 @@ BOOL BattleAudience_CheckReactionPerPhase(void) {
 			}
 			break;
 		case 4:
-			switch (*(s32*)(aud + 0x137E0)) {
+			switch (audience->phaseStep) {
 			case 5:
 				goto scan4;
 			case 0:
@@ -890,10 +890,10 @@ BOOL BattleAudience_CheckReactionPerPhase(void) {
 					}
 				}
 				BattleAudience_ChangeStatus(evtList[irand(count)], 0xE);
-				*(s32*)(aud + 0x137E0) = 5;
+				audience->phaseStep = 5;
 				goto scan4;
 			default:
-				if (*(s32*)(aud + 0x137E0) >= 5) {
+				if (audience->phaseStep >= 5) {
 					break;
 				}
 				break;
@@ -948,7 +948,7 @@ BOOL BattleAudience_CheckReactionPerPhase(void) {
 			audience->phaseEvtCount = 0;
 			break;
 		case 9:
-			switch (*(s32*)(aud + 0x137E0)) {
+			switch (audience->phaseStep) {
 			case 5:
 				goto scan9;
 			case 0:
@@ -959,10 +959,10 @@ BOOL BattleAudience_CheckReactionPerPhase(void) {
 					}
 				}
 				BattleAudience_ChangeStatus(evtList[irand(count)], 0xF);
-				*(s32*)(aud + 0x137E0) = 5;
+				audience->phaseStep = 5;
 				goto scan9;
 			default:
-				if (*(s32*)(aud + 0x137E0) >= 5) {
+				if (audience->phaseStep >= 5) {
 					break;
 				}
 				break;
@@ -979,7 +979,7 @@ BOOL BattleAudience_CheckReactionPerPhase(void) {
 			}
 			break;
 		case 10:
-			switch (*(s32*)(aud + 0x137E0)) {
+			switch (audience->phaseStep) {
 			case 0:
 				count = 0;
 				for (i = 0; i <= 59; i++) {
@@ -988,7 +988,7 @@ BOOL BattleAudience_CheckReactionPerPhase(void) {
 					}
 				}
 				BattleAudience_ChangeStatus(evtList[irand(count)], 0x10);
-				*(s32*)(aud + 0x137E0) = 5;
+				audience->phaseStep = 5;
 				// fall through
 			case 5:
 				for (i = 0; i <= 59; i++) {
@@ -997,11 +997,11 @@ BOOL BattleAudience_CheckReactionPerPhase(void) {
 					}
 				}
 				if (i == 0x3C) {
-					*(s32*)(aud + 0x137E0) = 0xA;
+					audience->phaseStep = 0xA;
 				}
 				break;
 			case 10:
-				*(s32*)(aud + 0x137E0) = 0xF;
+				audience->phaseStep = 0xF;
 				audience->event = evtEntry(msg_pansy_sing, 0, 0x20);
 				break;
 			case 15:
@@ -1027,7 +1027,7 @@ BOOL BattleAudience_CheckReactionPerPhase(void) {
 			audience->phaseEvtCount = 0;
 			break;
 		case 12:
-			switch (*(s32*)(aud + 0x137E0)) {
+			switch (audience->phaseStep) {
 			case 5:
 				goto scan12;
 			case 0:
@@ -1039,10 +1039,10 @@ BOOL BattleAudience_CheckReactionPerPhase(void) {
 					}
 				}
 				BattleAudience_ChangeStatus(evtList[irand(count)], 0x14);
-				*(s32*)(aud + 0x137E0) = 5;
+				audience->phaseStep = 5;
 				goto scan12;
 			default:
-				if (*(s32*)(aud + 0x137E0) >= 5) {
+				if (audience->phaseStep >= 5) {
 					break;
 				}
 				break;
@@ -2211,8 +2211,8 @@ void BattleAudienceApSrcCtrlProcess(void) {
 			active++;
 		}
 	}
-	if (psndSFXChk(*(s32*)((u8*)audience + 8)) != -1) {
-		psndSFX_vol(*(s32*)((u8*)audience + 8),
+	if (psndSFXChk(audience->apStarSfxId) != -1) {
+		psndSFX_vol(audience->apStarSfxId,
 		            (s32)(64.0f + 63.0f * (f32)active / 100.0f));
 	}
 	if (audience->apGauge > 0) {
@@ -2220,8 +2220,8 @@ void BattleAudienceApSrcCtrlProcess(void) {
 			audience->apGauge = audience->apGauge - 1;
 		}
 		if (active == 0) {
-			if (psndSFXChk(*(s32*)((u8*)audience + 8)) == -1) {
-				*(s32*)((u8*)audience + 8) = psndSFXOn("SFX_BTL_SYS_AP_STAR1");
+			if (psndSFXChk(audience->apStarSfxId) == -1) {
+				audience->apStarSfxId = psndSFXOn("SFX_BTL_SYS_AP_STAR1");
 			}
 		}
 	}
@@ -2235,8 +2235,8 @@ void BattleAudienceApSrcCtrlProcess(void) {
 		}
 		if (inactive == 100) {
 			audience->flags &= ~2;
-			psndSFXOff(*(s32*)((u8*)audience + 8));
-			*(s32*)((u8*)audience + 8) = 0;
+			psndSFXOff(audience->apStarSfxId);
+			audience->apStarSfxId = 0;
 			audience->apGauge = 0;
 			BattleStatusWindowAPRecoveryOff();
 			return;
@@ -2436,7 +2436,6 @@ BOOL BattleAudienceApSrcEntry(void) {
 void BattleAudienceWinCtrlProcess(void) {
 	BattleAudience* audience;
 	BattleAudienceWindow* window;
-	u8* win;
 	f32 diff;
 	f32 step;
 
@@ -2467,22 +2466,21 @@ void BattleAudienceWinCtrlProcess(void) {
 		}
 	}
 
-	win = (u8*)window;
 	if (window->mActive) {
-		*(s32*)(win + 0x14) += 1;
-		if (*(s32*)(win + 0x14) > 0xF) {
-			*(s32*)(win + 0x14) = 0xF;
+		window->slide += 1;
+		if (window->slide > 0xF) {
+			window->slide = 0xF;
 		}
 	}
 	else {
-		*(s32*)(win + 0x14) -= 1;
-		if (*(s32*)(win + 0x14) < 0) {
-			*(s32*)(win + 0x14) = 0;
+		window->slide -= 1;
+		if (window->slide < 0) {
+			window->slide = 0;
 		}
 	}
 
-	*(f32*)(win + 0x8) =
-	    intplGetValue(4, *(s32*)(win + 0x14), 0xF, -500.0f, -280.0f);
+	window->posX =
+	    intplGetValue(4, window->slide, 0xF, -500.0f, -280.0f);
 #ifdef MUST_MATCH
 	// Match-only: the volatile read pins the -160 load ahead of the 0.0f one in the scheduled block,
 	// which is the target's order; the #else form is the natural pair of copies.
@@ -2490,15 +2488,15 @@ void BattleAudienceWinCtrlProcess(void) {
 		f32 b;
 		f32 a = -160.0f;
 		b = 0.0f;
-		*(f32*)(win + 0xC) = a;
-		*(f32*)(win + 0x10) = b;
+		window->posY = a;
+		*(f32*)((u8*)window + 0x10) = b;
 	}
 #else
 	{
 		f32 a = -160.0f;
 		f32 b = 0.0f;
-		*(f32*)(win + 0xC) = a;
-		*(f32*)(win + 0x10) = b;
+		window->posY = a;
+		*(f32*)((u8*)window + 0x10) = b;
 	}
 #endif
 }
@@ -2964,16 +2962,16 @@ void BattleAudienceDispWin(CameraId camId, void* param) {
 	BattleAudienceBaseGetPtr();
 	win = BattleAudienceWinGetPtr();
 	color = *(GXColor*)&dat_8041e60c;
-	windowDispGX_Waku_col(0, color, *(f32*)((u8*)win + 0x8), *(f32*)((u8*)win + 0xc), 90.0f,
+	windowDispGX_Waku_col(0, color, win->posX, win->posY, 90.0f,
 	                      40.0f, 10.0f);
 
 	pos = vec3_802f97f4;
-	pos.x = 17.0f + *(f32*)((u8*)win + 0x8);
-	pos.y = *(f32*)((u8*)win + 0xc) - 40.0f;
+	pos.x = 17.0f + win->posX;
+	pos.y = win->posY - 40.0f;
 	iconDispGx(0.8f, &pos, 0x10, 0x209);
 
-	PSMTXTrans(mtx, 75.0f + *(f32*)((u8*)win + 0x8),
-	           *(f32*)((u8*)win + 0xc) - 40.0f, 0.0f);
+	PSMTXTrans(mtx, 75.0f + win->posX,
+	           win->posY - 40.0f, 0.0f);
 	numberColor = *(GXColor*)&dat_8041e610;
 	iconNumberDispGx(mtx, (s32)win->count, FALSE, numberColor);
 }
