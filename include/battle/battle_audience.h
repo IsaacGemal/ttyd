@@ -40,7 +40,7 @@ typedef struct BattleAudienceMember {
     s32 field_0x4;                 // 0x4
     u8 field_0x8[0x19 - 0x8];      // 0x8
     u8 status;                     // 0x19
-    u8 field_0x1A;                 // 0x1A
+    u8 texIndex;                   // 0x1A, texture index for the current animation frame (TEXGetGXTexObjFromPalette)
     u8 type;                       // 0x1B, AudienceMemberType
     s16 itemId;                    // 0x1C, -1 is invalid
     u8 field_0x1E[0x20 - 0x1E];    // 0x1E
@@ -110,7 +110,7 @@ typedef struct BattleAudienceSound {
     s32 sfxId;                     // 0x4, from BattleAudienceSound1/2, -1 when it failed to start
     u8 variant;                    // 0x8, 1-8, chosen by the caller before the sound starts
     u8 field_0x9[0xC - 0x9];       // 0x9
-    s32 field_0xC;                 // 0xC, -1 on start (a + b for the timed variant)
+    s32 timeLeft;                  // 0xC, frames left, -1 when untimed; fades over the last mFadeoutTime frames
     s32 mFadeoutTime;              // 0x10
     s32 mForceFadeTimer;           // 0x14
     s32 mForceFadeLength;          // 0x18

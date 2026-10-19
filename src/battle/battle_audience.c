@@ -231,7 +231,7 @@ typedef struct BattleAudienceTexCoords {
 } BattleAudienceTexCoords;
 #define AUD_SOUND_HEAD(sound) \
 	(sound)->flags |= 1; \
-	(sound)->field_0xC = -1; \
+	(sound)->timeLeft = -1; \
 	(sound)->mFadeoutTime = 0
 #define AUD_SOUND_TAIL(sound, vol) \
 	(sound)->mCurrentBaseSfxVolume = (vol); \
@@ -2556,7 +2556,7 @@ void BattleAudienceAnimProcess(void) {
 		}
 		switch (*anim) {
 		case -2:
-			member->field_0x1A = anim[1];
+			member->texIndex = anim[1];
 			member->animWait = anim[2];
 			*(s32*)((u8*)member + 0x28) += 0xC;
 			break;
@@ -2704,7 +2704,7 @@ void BattleAudienceDispAudience(CameraId camId, void* param) {
 		}
 
 		if (member->type <= AUDIENCE_PIRANHA_PLANT) {
-			TEXGetGXTexObjFromPalette((TEXPalette*)audience->normalTex->data[0], &texObj, member->field_0x1A);
+			TEXGetGXTexObjFromPalette((TEXPalette*)audience->normalTex->data[0], &texObj, member->texIndex);
 			GXLoadTexObj(&texObj, GX_TEXMAP0);
 			{
 				f32 w = (f32)GXGetTexObjWidth(&texObj);
@@ -2723,7 +2723,7 @@ void BattleAudienceDispAudience(CameraId camId, void* param) {
 			for (j = 0; j < 2; j++) {
 				if (member->type == audience->guestType[j]) {
 					TEXGetGXTexObjFromPalette((TEXPalette*)audience->guestTex[j]->data[0], &texObj,
-					                          member->field_0x1A);
+					                          member->texIndex);
 					GXLoadTexObj(&texObj, GX_TEXMAP0);
 					{
 						f32 w = (f32)GXGetTexObjWidth(&texObj);
@@ -4324,7 +4324,7 @@ void BattleAudienceSoundClap(s32 a, s32 b) {
 	AUD_SOUND_ID(sound) = BattleAudienceSound1(name, r, l);
 	if (AUD_SOUND_ID(sound) != -1) {
 		*(s32*)((u8*)sound) |= 1;
-		sound->field_0xC = a + b;
+		sound->timeLeft = a + b;
 		sound->mFadeoutTime = b;
 		vol = psndSFX_get_vol(AUD_SOUND_ID(sound));
 		AUD_SOUND_TAIL(sound, vol);
@@ -4370,7 +4370,7 @@ void BattleAudienceSoundNoiseAlways(void) {
 		sound->sfxId = BattleAudienceSound1(name, r, l);
 		if (sound->sfxId != -1) {
 			sound->flags |= 1;
-			sound->field_0xC = -1;
+			sound->timeLeft = -1;
 			sound->mFadeoutTime = 0;
 			vol = psndSFX_get_vol(sound->sfxId);
 			sound->mCurrentBaseSfxVolume = vol;
@@ -4473,7 +4473,7 @@ void BattleAudienceSoundCheerKind(s32 kind, s32 a, s32 b) {
 	}
 	if (sound->sfxId != -1) {
 		*(s32*)sound |= 1;
-		sound->field_0xC = a + b;
+		sound->timeLeft = a + b;
 		sound->mFadeoutTime = b;
 		vol = psndSFX_get_vol(sound->sfxId);
 		sound->mCurrentBaseSfxVolume = vol;
@@ -4529,7 +4529,7 @@ void BattleAudienceSoundWhistleKind(s32 kind) {
 	}
 	if (sound->sfxId != -1) {
 		*(s32*)sound |= 1;
-		sound->field_0xC = -1;
+		sound->timeLeft = -1;
 		sound->mFadeoutTime = 0;
 		vol = psndSFX_get_vol(sound->sfxId);
 		sound->mCurrentBaseSfxVolume = vol;
@@ -4583,7 +4583,7 @@ void BattleAudienceSoundHandBeat(void) {
 	AUD_SOUND_ID(sound) = BattleAudienceSound1("SFX_AUDIENCE_HANDBEAT1", r, l);
 	if (AUD_SOUND_ID(sound) != -1) {
 		*(s32*)((u8*)sound) |= 1;
-		sound->field_0xC = -1;
+		sound->timeLeft = -1;
 		sound->mFadeoutTime = 0;
 		sound->mForceFadeLength = 0;
 		sound->mForceFadeTimer = 0;
@@ -4762,7 +4762,7 @@ void BattleAudienceSoundBombIgnite(s32 index, s32 a, s32 b) {
 	AUD_SOUND_ID(sound) = BattleAudienceSound2("SFX_AUDIENCE_BOMB_READY1", index);
 	if (AUD_SOUND_ID(sound) != -1) {
 		*(s32*)((u8*)sound) |= 1;
-		sound->field_0xC = a + b;
+		sound->timeLeft = a + b;
 		sound->mFadeoutTime = b;
 		vol = psndSFX_get_vol(AUD_SOUND_ID(sound));
 		AUD_SOUND_TAIL(sound, vol);
@@ -4916,7 +4916,7 @@ void BattleAudienceSoundMain(void) {
 		if (psndSFXChk(sound->sfxId) == -1) {
 			*(s32*)sound &= ~1;
 		}
-		else if (sound->field_0xC == 0) {
+		else if (sound->timeLeft == 0) {
 			psndSFXOff(sound->sfxId);
 			*(s32*)sound &= ~1;
 		}
@@ -4929,16 +4929,16 @@ void BattleAudienceSoundMain(void) {
 					sound->mForceFadeLength = 0;
 				}
 			}
-			if (sound->field_0xC > 0) {
-				if (sound->field_0xC == sound->mFadeoutTime) {
+			if (sound->timeLeft > 0) {
+				if (sound->timeLeft == sound->mFadeoutTime) {
 					sound->mFadeStartVolumeMultiplier = sound->mVolumeMultiplier;
 					sound->mFadeEndVolumeMultiplier = 0;
 				}
-				if (sound->field_0xC <= sound->mFadeoutTime) {
-					sound->mVolumeMultiplier = (u8)intplGetValue(0, sound->mFadeoutTime - sound->field_0xC, sound->mFadeoutTime, (f32)sound->mFadeStartVolumeMultiplier, (f32)sound->mFadeEndVolumeMultiplier);
+				if (sound->timeLeft <= sound->mFadeoutTime) {
+					sound->mVolumeMultiplier = (u8)intplGetValue(0, sound->mFadeoutTime - sound->timeLeft, sound->mFadeoutTime, (f32)sound->mFadeStartVolumeMultiplier, (f32)sound->mFadeEndVolumeMultiplier);
 					psndSFX_vol(sound->sfxId, (u8)((sound->mCurrentBaseSfxVolume * sound->mVolumeMultiplier) / 100));
 				}
-				sound->field_0xC -= 1;
+				sound->timeLeft -= 1;
 			}
 		}
 	}
