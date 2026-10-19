@@ -8354,3 +8354,28 @@ guarded, at the right slot) and keeps refusing dead functions that steer real co
 
 **Review backlog:** if another TTYD release (US/JP, or a debug/demo build) ever shows the real function, replace the
 placeholder with the reconstruction.
+
+## Leftovers found while playing the matched build (2026-10-18, Isaac + Claude Opus 5.5)
+
+Running the byte-identical build in Dolphin, plus a mod branch that draws a debug overlay, turned up some developer
+leftovers. None of this changes the matching build; it's here so nobody has to find it again.
+
+- **A second language mode.** `GlobalWork.language` (0x16C) indexes `language_dir[] = {"msg", "emsg"}` in msgdrv.c.
+  JP retail always uses 0; the `emsg/` folder is empty on the JP disc. A US save converted to JP carries `language = 1`:
+  every message box then reads "No messages." in red, and the pause menu's Mario page crashes in `winBgGX`
+  (from `winMarioDisp`). Setting it to 0 (and fixing the slot checksum) makes the save load cleanly.
+- **The crash screen.** `N_systemErrorHandler` (src/unk_0x8025de70.c) formats a full report (exception type,
+  registers, back chain) and draws it, but first returns into `psndExit(); while (1) {}` whenever
+  `N_getDebugMode() >= 0`, which is the retail case. Removing that check on a mod build brings back the developers' crash
+  screen.
+- **The E3 demo's stage table.** `event_dt` in src/event.c lists story checkpoints per chapter
+  ("ステージ０" to "エンディング", story values up to 406); `eventStgDtPtr`/`eventStgNum` serve it to seq_e3.c's
+  stage-select menu.
+- **`dbg_hitObjDisp`** (hitdrv) is in the linker map as UNUSED: a collision-drawing debug function the linker stripped.
+- **Save layout, JP vs US.** Each 0x4000 card slot holds GlobalWork at +0x8, PouchData at +0x13E0 and deadInfo at
+  +0x19B4; JP's data size is 0x2140 with version "009", US's 0x2260 with "010". The first 0x1EB4 bytes have the same
+  layout, which is what made the conversion work.
+
+Tooling outside the repo: `~/Dolphin/mcp` (a CLI plus an MCP server) launches builds in Dolphin with the GDB stub on,
+drives input through Dolphin's pipe controller, takes screenshots, reads memory by symbol, and symbolizes the crash
+screen's report. The overlay lives on the local branch `mod/debug-overlay`; it is not meant for main.

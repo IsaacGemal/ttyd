@@ -109,7 +109,7 @@ Building
   python configure.py
   ```
 
-  To use a version other than `G8MJ01` (USA), specify it with `--version`.
+  To use a version other than `G8MJ01` (JP Rev 0), specify it with `--version`.
 
 - Build:
 
