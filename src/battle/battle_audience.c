@@ -399,24 +399,24 @@ void BattleAudience_PerAct(void) {
 		delta -= 5.0f;
 		BattleAudienceAddPhaseEvtList(5);
 	}
-	if (*(StarPowerInfo**)((u8*)audience + 0x137C8) != NULL && ((flag0 = (flags = audience->flags) & 0x10) || (flags & 0x20))) {
+	if (audience->impendingBonuses != NULL && ((flag0 = (flags = audience->flags) & 0x10) || (flags & 0x20))) {
 		if (flag0) {
 			positive = TRUE;
-			*(s32*)((u8*)audience + 0x137CC) = *(s32*)((u8*)audience + 0x137CC) + 1;
-			if (*(s32*)((u8*)audience + 0x137CC) > 2) {
-				*(s32*)((u8*)audience + 0x137CC) = 2;
+			audience->crowdPleasedStreak = audience->crowdPleasedStreak + 1;
+			if (audience->crowdPleasedStreak > 2) {
+				audience->crowdPleasedStreak = 2;
 			}
-			value = (f32)*(s32*)((u8*)audience + 0x137CC) * (*(StarPowerInfo**)((u8*)audience + 0x137C8))->mSpAcSuccessMultiplier;
-			*(s32*)((u8*)audience + 0x137D0) = 0;
+			value = (f32)audience->crowdPleasedStreak * (audience->impendingBonuses)->mSpAcSuccessMultiplier;
+			audience->crowdDispleasedStreak = 0;
 			delta += value;
 		}
 		else {
 			if (!(flags & 0x1000)) {
-				*(s32*)((u8*)audience + 0x137CC) = 0;
+				audience->crowdPleasedStreak = 0;
 				positive = FALSE;
-				*(s32*)((u8*)audience + 0x137D0) = *(s32*)((u8*)audience + 0x137D0) + 1;
-				if (*(s32*)((u8*)audience + 0x137D0) > 5) {
-					*(s32*)((u8*)audience + 0x137D0) = 5;
+				audience->crowdDispleasedStreak = audience->crowdDispleasedStreak + 1;
+				if (audience->crowdDispleasedStreak > 5) {
+					audience->crowdDispleasedStreak = 5;
 				}
 				value = -5.0f;
 				delta += value;
@@ -426,16 +426,16 @@ void BattleAudience_PerAct(void) {
 	if ((flag1 = audience->flags & 0x40) || (audience->flags & 0x80)) {
 		if (flag1) {
 			positive = TRUE;
-			*(s32*)((u8*)audience + 0x137CC) = *(s32*)((u8*)audience + 0x137CC) + 1;
-			if (*(s32*)((u8*)audience + 0x137CC) > 2) {
-				*(s32*)((u8*)audience + 0x137CC) = 2;
+			audience->crowdPleasedStreak = audience->crowdPleasedStreak + 1;
+			if (audience->crowdPleasedStreak > 2) {
+				audience->crowdPleasedStreak = 2;
 			}
-			value = (f32)*(s32*)((u8*)audience + 0x137CC);
-			*(s32*)((u8*)audience + 0x137D0) = 0;
+			value = (f32)audience->crowdPleasedStreak;
+			audience->crowdDispleasedStreak = 0;
 			delta += value;
 		}
 		else {
-			*(s32*)((u8*)audience + 0x137CC) = 0;
+			audience->crowdPleasedStreak = 0;
 			positive = FALSE;
 		}
 	}
@@ -473,10 +473,10 @@ void BattleAudience_PerAct(void) {
 			BattleAudienceAddPhaseEvtList(13);
 		}
 	}
-	info = *(StarPowerInfo**)((u8*)audience + 0x137C8);
+	info = audience->impendingBonuses;
 	if (info != NULL && ((flag2 = audience->flags & 0x100) || (audience->flags & 0x200))) {
 		if (flag2) {
-			value = (f32)(*(u8*)((u8*)info + 8) * (*(s32*)((u8*)audience + 0x137D4) * 2));
+			value = (f32)(*(u8*)((u8*)info + 8) * (audience->mNumStylishCommandsThisAttack * 2));
 			delta += value;
 			if (value >= 30.0f) {
 				BattleAudienceAddPhaseEvtList(0);
@@ -670,9 +670,9 @@ BOOL BattleAudience_CheckReactionPerPhase(void) {
 		}
 		break;
 	case 13:
-		memcpy(phaseList, aud + 0x138CC, *(s32*)(aud + 0x13904) * 4);
-		n = *(s32*)(aud + 0x13904);
-		*(s32*)(aud + 0x13904) = 0;
+		memcpy(phaseList, audience->phaseEvtList, audience->phaseEvtCount * 4);
+		n = audience->phaseEvtCount;
+		audience->phaseEvtCount = 0;
 		for (i = 0; i < n; i++) {
 			switch (phaseList[i]) {
 			case 0:
@@ -808,19 +808,19 @@ BOOL BattleAudience_CheckReactionPerPhase(void) {
 				break;
 			}
 		}
-		if (*(s32*)(aud + 0x13904) >= 1) {
-			*(s32*)(aud + 0x138CC) = ((s32*)(aud + 0x138CC))[irand(*(s32*)(aud + 0x13904))];
-			*(s32*)(aud + 0x13904) = 1;
+		if (audience->phaseEvtCount >= 1) {
+			audience->phaseEvtList[0] = audience->phaseEvtList[irand(audience->phaseEvtCount)];
+			audience->phaseEvtCount = 1;
 		}
 		else {
-			*(s32*)(aud + 0x13904) = 0;
+			audience->phaseEvtCount = 0;
 		}
 		audience->mCheckPhaseReactionState = 12;
 		*(s32*)(aud + 0x137E0) = 0;
 		// fall through
 	case 12:
-		if (*(s32*)(aud + 0x13904) == 1) {
-		switch (*(s32*)(aud + 0x138CC)) {
+		if (audience->phaseEvtCount == 1) {
+		switch (audience->phaseEvtList[0]) {
 		case 0:
 			k = 0;
 			for (i = 0; i <= 59; i++) {
@@ -829,7 +829,7 @@ BOOL BattleAudience_CheckReactionPerPhase(void) {
 				}
 			}
 			BattleAudienceItemOn(evtList[irand(k)], 0, 1);
-			*(s32*)(aud + 0x13904) = 0;
+			audience->phaseEvtCount = 0;
 			break;
 		case 1:
 			for (i = 0; i < 200; i++) {
@@ -840,7 +840,7 @@ BOOL BattleAudience_CheckReactionPerPhase(void) {
 					}
 				}
 			}
-			*(s32*)(aud + 0x13904) = 0;
+			audience->phaseEvtCount = 0;
 			break;
 		case 2:
 			for (i = 0; i <= 59; i++) {
@@ -848,7 +848,7 @@ BOOL BattleAudience_CheckReactionPerPhase(void) {
 					BattleAudienceItemOn(i, 0xEE, 0x64);
 				}
 			}
-			*(s32*)(aud + 0x13904) = 0;
+			audience->phaseEvtCount = 0;
 			break;
 		case 3:
 			switch (*(s32*)(aud + 0x137E0)) {
@@ -873,7 +873,7 @@ BOOL BattleAudience_CheckReactionPerPhase(void) {
 			case 15:
 				if (!evtCheckID(audience->event->eventId)) {
 					audience->event = NULL;
-					*(s32*)(aud + 0x13904) = 0;
+					audience->phaseEvtCount = 0;
 				}
 				break;
 			}
@@ -906,7 +906,7 @@ BOOL BattleAudience_CheckReactionPerPhase(void) {
 				}
 			}
 			if (i == 0x3C) {
-				*(s32*)(aud + 0x13904) = 0;
+				audience->phaseEvtCount = 0;
 			}
 			break;
 		case 5:
@@ -915,7 +915,7 @@ BOOL BattleAudience_CheckReactionPerPhase(void) {
 					BattleAudienceItemOn(i, 0xED, 0x64);
 				}
 			}
-			*(s32*)(aud + 0x13904) = 0;
+			audience->phaseEvtCount = 0;
 			break;
 		case 6:
 			count = 0;
@@ -925,7 +925,7 @@ BOOL BattleAudience_CheckReactionPerPhase(void) {
 				}
 			}
 			BattleAudienceItemOn(evtList[irand(count)], 0, 1);
-			*(s32*)(aud + 0x13904) = 0;
+			audience->phaseEvtCount = 0;
 			break;
 		case 7:
 			count = 0;
@@ -935,7 +935,7 @@ BOOL BattleAudience_CheckReactionPerPhase(void) {
 				}
 			}
 			BattleAudienceItemOn(evtList[irand(count)], 0xEF, 1);
-			*(s32*)(aud + 0x13904) = 0;
+			audience->phaseEvtCount = 0;
 			break;
 		case 8:
 			count = 0;
@@ -945,7 +945,7 @@ BOOL BattleAudience_CheckReactionPerPhase(void) {
 				}
 			}
 			BattleAudienceItemOn(evtList[irand(count)], 0, 1);
-			*(s32*)(aud + 0x13904) = 0;
+			audience->phaseEvtCount = 0;
 			break;
 		case 9:
 			switch (*(s32*)(aud + 0x137E0)) {
@@ -975,7 +975,7 @@ BOOL BattleAudience_CheckReactionPerPhase(void) {
 				}
 			}
 			if (i == 0x3C) {
-				*(s32*)(aud + 0x13904) = 0;
+				audience->phaseEvtCount = 0;
 			}
 			break;
 		case 10:
@@ -1007,7 +1007,7 @@ BOOL BattleAudience_CheckReactionPerPhase(void) {
 			case 15:
 				if (!evtCheckID(audience->event->eventId)) {
 					audience->event = NULL;
-					*(s32*)(aud + 0x13904) = 0;
+					audience->phaseEvtCount = 0;
 				}
 				break;
 			}
@@ -1024,7 +1024,7 @@ BOOL BattleAudience_CheckReactionPerPhase(void) {
 			member = BattleAudienceGetPtr(idx);
 			BattleAudience_ChangeStatus(idx, 0x12);
 			member->field_0x12C = 5;
-			*(s32*)(aud + 0x13904) = 0;
+			audience->phaseEvtCount = 0;
 			break;
 		case 12:
 			switch (*(s32*)(aud + 0x137E0)) {
@@ -1055,7 +1055,7 @@ BOOL BattleAudience_CheckReactionPerPhase(void) {
 				}
 			}
 			if (i == 0x3C) {
-				*(s32*)(aud + 0x13904) = 0;
+				audience->phaseEvtCount = 0;
 			}
 			break;
 		case 13:
@@ -1065,7 +1065,7 @@ BOOL BattleAudience_CheckReactionPerPhase(void) {
 					break;
 				}
 			}
-			*(s32*)(aud + 0x13904) = 0;
+			audience->phaseEvtCount = 0;
 			break;
 		}
 		}
@@ -1098,7 +1098,7 @@ BOOL BattleAudience_CheckReactionPerPhase(void) {
 		// fall through
 	case 20:
 		audience->flags &= ~8;
-		*(s32*)(aud + 0x13904) = 0;
+		audience->phaseEvtCount = 0;
 		return FALSE;
 	}
 	return TRUE;
@@ -1493,7 +1493,7 @@ void BattleAudienceSettingAudience(void) {
 	}
 	}
 
-	memcpy((u8*)audience + 0x13794, weights, 0x30);
+	memcpy(audience->typeWeights, weights, 0x30);
 }
 
 // needs dont_inline: BattleAudience_Init must emit a call to this function, not inline it
@@ -1622,12 +1622,12 @@ void BattleAudienceCtrlProcess(void) {
 	}
 
 	if (*(u32*)(wpHigh - 0x6f98) & 0x20000) {
-		*(s32*)((u8*)audience + 0x137F4) = 0x2710;
+		audience->itemThrowMax = 0x2710;
 	}
 
 	if (wp->flags & 0x80) {
-		if (*(s32*)((u8*)audience + 0x137F0) < *(s32*)((u8*)audience + 0x137F4)) {
-			switch (*(s32*)((u8*)audience + 0x137F0)) {
+		if (audience->itemThrowCount < audience->itemThrowMax) {
+			switch (audience->itemThrowCount) {
 			case 0:
 				r = 0x708;
 				break;
@@ -1660,7 +1660,7 @@ void BattleAudienceCtrlProcess(void) {
 						// (retail recomputes it in a caller-saved temp). 0x137F0 - 0x1375C == 0x94.
 						(*(s32*)((unsigned char*)&audience->window + 0x94))++;
 #else
-						(*(s32*)((u8*)audience + 0x137F0))++;
+						(audience->itemThrowCount)++;
 #endif
 						break;
 					}
@@ -1744,19 +1744,19 @@ void BattleAudienceSetThrowItemMax(void) {
 	BattleAudience* audience = BattleAudienceBaseGetPtr();
 	s32 r = irand(100);
 	if (r < 0x50) {
-		*(s32*)((u8*)audience + 0x137F4) = 0;
+		audience->itemThrowMax = 0;
 	}
 	else if (r < 0x5a) {
-		*(s32*)((u8*)audience + 0x137F4) = 1;
+		audience->itemThrowMax = 1;
 	}
 	else if (r < 0x5f) {
-		*(s32*)((u8*)audience + 0x137F4) = 2;
+		audience->itemThrowMax = 2;
 	}
 	else if (r < 0x64) {
-		*(s32*)((u8*)audience + 0x137F4) = 3;
+		audience->itemThrowMax = 3;
 	}
-	*(s32*)((u8*)audience + 0x137F0) = 0;
-	*(s32*)((u8*)audience + 0x137F8) = 0;
+	audience->itemThrowCount = 0;
+	audience->itemCombo = 0;
 }
 #pragma dont_inline reset
 
@@ -2028,9 +2028,9 @@ void BattleAudienceItemCtrlProcess(void) {
 				item->hitResult = 0;
 			}
 			if (item->hitResult != 0) {
-				*(s32*)(aud + 0x137f8) += 1;
-				if (*(s32*)(aud + 0x137f8) > 3) {
-					*(s32*)(aud + 0x137f8) = 3;
+				audience->itemCombo += 1;
+				if (audience->itemCombo > 3) {
+					audience->itemCombo = 3;
 				}
 				if (item->hitResult == 2) {
 					item->state = 4;
@@ -2049,35 +2049,35 @@ void BattleAudienceItemCtrlProcess(void) {
 					switch (item->mItemType) {
 					case 0xec:
 						#ifdef MUST_MATCH
-						memcpy(aud + 0x137fc, tbl + 0x40, 0xc0);
+						memcpy(audience->field_137FC, tbl + 0x40, 0xc0);
 #else
-						memcpy(aud + 0x137fc, weapon_data_akikan, 0xc0);
+						memcpy(audience->field_137FC, weapon_data_akikan, 0xc0);
 #endif
-						*(s32*)(aud + 0x1381c) = *(s32*)(aud + 0x1381c) + *(s32*)(aud + 0x137f8) - 1;
+						*(s32*)(aud + 0x1381c) = *(s32*)(aud + 0x1381c) + audience->itemCombo - 1;
 						break;
 					case 0xed:
 						#ifdef MUST_MATCH
-						memcpy(aud + 0x137fc, tbl + 0x100, 0xc0);
+						memcpy(audience->field_137FC, tbl + 0x100, 0xc0);
 #else
-						memcpy(aud + 0x137fc, weapon_data_brick, 0xc0);
+						memcpy(audience->field_137FC, weapon_data_brick, 0xc0);
 #endif
-						*(s32*)(aud + 0x1381c) = *(s32*)(aud + 0x1381c) + *(s32*)(aud + 0x137f8) - 1;
+						*(s32*)(aud + 0x1381c) = *(s32*)(aud + 0x1381c) + audience->itemCombo - 1;
 						break;
 					case 0xee:
 						#ifdef MUST_MATCH
-						memcpy(aud + 0x137fc, tbl + 0x1c0, 0xc0);
+						memcpy(audience->field_137FC, tbl + 0x1c0, 0xc0);
 #else
-						memcpy(aud + 0x137fc, weapon_data_bone, 0xc0);
+						memcpy(audience->field_137FC, weapon_data_bone, 0xc0);
 #endif
-						*(s32*)(aud + 0x1381c) = *(s32*)(aud + 0x1381c) + *(s32*)(aud + 0x137f8) - 1;
+						*(s32*)(aud + 0x1381c) = *(s32*)(aud + 0x1381c) + audience->itemCombo - 1;
 						break;
 					case 0xef:
 						#ifdef MUST_MATCH
-						memcpy(aud + 0x137fc, tbl + 0x280, 0xc0);
+						memcpy(audience->field_137FC, tbl + 0x280, 0xc0);
 #else
-						memcpy(aud + 0x137fc, weapon_data_hammer, 0xc0);
+						memcpy(audience->field_137FC, weapon_data_hammer, 0xc0);
 #endif
-						*(s32*)(aud + 0x1381c) = *(s32*)(aud + 0x1381c) + *(s32*)(aud + 0x137f8) - 1;
+						*(s32*)(aud + 0x1381c) = *(s32*)(aud + 0x1381c) + audience->itemCombo - 1;
 						break;
 					}
 					BattleAudience_SetPresentItemNo(item->mItemType);
@@ -2098,7 +2098,7 @@ void BattleAudienceItemCtrlProcess(void) {
 						item->state = 4;
 						break;
 					}
-					*(s32*)(aud + 0x137f8) = 0;
+					audience->itemCombo = 0;
 				}
 			}
 			else {
@@ -2207,7 +2207,7 @@ void BattleAudienceApSrcCtrlProcess(void) {
 	}
 	active = 0;
 	for (i = 0; i < 100; i++) {
-		if (*(s32*)((u8*)audience + 0x10E7C + i * 0x60) & 1) {
+		if (audience->starpower[i].flags & 1) {
 			active++;
 		}
 	}
@@ -2215,9 +2215,9 @@ void BattleAudienceApSrcCtrlProcess(void) {
 		psndSFX_vol(*(s32*)((u8*)audience + 8),
 		            (s32)(64.0f + 63.0f * (f32)active / 100.0f));
 	}
-	if (*(s32*)((u8*)audience + 0x137C4) > 0) {
+	if (audience->apGauge > 0) {
 		if (BattleAudienceApSrcEntry() == 1) {
-			*(s32*)((u8*)audience + 0x137C4) = *(s32*)((u8*)audience + 0x137C4) - 1;
+			audience->apGauge = audience->apGauge - 1;
 		}
 		if (active == 0) {
 			if (psndSFXChk(*(s32*)((u8*)audience + 8)) == -1) {
@@ -2228,7 +2228,7 @@ void BattleAudienceApSrcCtrlProcess(void) {
 	else {
 		inactive = 0;
 		for (i = 0; i < 100; i++) {
-			if (*(s32*)((u8*)audience + 0x10E7C + i * 0x60) & 1) {
+			if (audience->starpower[i].flags & 1) {
 				break;
 			}
 			inactive++;
@@ -2237,7 +2237,7 @@ void BattleAudienceApSrcCtrlProcess(void) {
 			audience->flags &= ~2;
 			psndSFXOff(*(s32*)((u8*)audience + 8));
 			*(s32*)((u8*)audience + 8) = 0;
-			*(s32*)((u8*)audience + 0x137C4) = 0;
+			audience->apGauge = 0;
 			BattleStatusWindowAPRecoveryOff();
 			return;
 		}
@@ -3766,10 +3766,10 @@ void BattleAudience_ApRecoveryBuild(StarPowerInfo* info) {
 		delta += (s32)(rate * sqrtWeight * (spAcMultiplier + stylishMultiplier) *
 		               crowdKindSum * marioMultiplier * partyMultiplier *
 		               *(f32*)((u8*)BattleBreakSlotGetPtr() + 0x14));
-		*(s32*)((u8*)audience + 0x137C4) += delta;
+		audience->apGauge += delta;
 	}
 	else {
-		*(s32*)((u8*)audience + 0x137C4) += (s32)(rate * sqrtWeight * (spAcMultiplier + stylishMultiplier) *
+		audience->apGauge += (s32)(rate * sqrtWeight * (spAcMultiplier + stylishMultiplier) *
 		                                            crowdKindSum * marioMultiplier * partyMultiplier);
 	}
 	if (irand(100) < (u8)info->mBingoSlotChance) {
@@ -3931,13 +3931,13 @@ s32 BattleAudienceAddAudienceNum(s32 num) {
 	}
 	if (num > 0) {
 		for (i = 0; i < 12; i++) {
-			total += *(s32*)((u8*)audience + 0x13794 + i * 4);
+			total += audience->typeWeights[i];
 		}
 		for (i = 0; i < num; i++) {
 			sum = 0;
 			pick = irand(total);
 			for (j = 0; j < 12; j++) {
-				sum += *(s32*)((u8*)audience + 0x13794 + j * 4);
+				sum += audience->typeWeights[j];
 				if (pick < sum) {
 					type = (u8)j;
 					break;
@@ -4018,33 +4018,33 @@ void BattleAudienceAddPuni(s32 num) {
 #pragma dont_inline on
 void BattleAudienceAddPhaseEvtList(s32 evtId) {
 	BattleAudience* audience = BattleAudienceBaseGetPtr();
-	s32 count = *(s32*)((u8*)audience + 0x13904);
+	s32 count = audience->phaseEvtCount;
 	s32 i = 0;
 	for (; i < count; i++) {
-		if (*(s32*)((u8*)audience + 0x138CC + i * 4) == evtId) {
+		if (audience->phaseEvtList[i] == evtId) {
 			return;
 		}
 	}
-	*((s32*)((u8*)audience + 0x138CC) + count) = evtId;
-	*(s32*)(audience->field_138CC + 0x38) = *(s32*)(audience->field_138CC + 0x38) + 1;
+	audience->phaseEvtList[count] = evtId;
+	audience->phaseEvtCount++;
 }
 #pragma dont_inline reset
 
 #pragma dont_inline on
 void BattleAudienceCheer(s32 a) {
 	BattleAudience* audience = BattleAudienceBaseGetPtr();
-	if (*(s32*)(audience->field_13794 + 0x30) > 0x320) {
-		*(s32*)(audience->field_13794 + 0x30) = 0x320;
+	if (audience->apGauge > 0x320) {
+		audience->apGauge = 0x320;
 	}
-	if (*(s32*)(audience->field_13794 + 0x30) > 0) {
+	if (audience->apGauge > 0) {
 		if (pouchGetPtr()->maximumSP == 0) {
-			*(s32*)(audience->field_13794 + 0x30) = 0;
+			audience->apGauge = 0;
 		}
 		else {
 			audience->flags |= 2;
 		}
 		BattleAudienceJoy(a);
-		if (*(s32*)(audience->field_13794 + 0x30) != 0) {
+		if (audience->apGauge != 0) {
 			BattleStatusWindowAPRecoveryOn();
 		}
 	}
@@ -4065,7 +4065,7 @@ void BattleAudienceJoy(s32 a) {
 			BattleAudienceJoy_Sub(0x46, 0x1e, 0, a);
 			break;
 		case 3:
-		switch (*(s32*)audience->field_1390C) {
+		switch (audience->joyLevel) {
 			case 0:
 				BattleAudienceJoy_Sub(0x32, 0x28, 0xa, a);
 				break;
@@ -4085,9 +4085,9 @@ void BattleAudienceJoy(s32 a) {
 				BattleAudienceJoy_Sub(0x32, 0x28, 0xa, a);
 				break;
 		}
-		(*(s32*)audience->field_1390C)++;
-		if (*(s32*)audience->field_1390C > 4) {
-			*(s32*)audience->field_1390C = 4;
+		audience->joyLevel++;
+		if (audience->joyLevel > 4) {
+			audience->joyLevel = 4;
 		}
 			break;
 	}
@@ -5174,9 +5174,9 @@ void BattleAudience_Case_Appeal(BattleUnit* unit) {
 	BattleAudience* audience = BattleAudienceBaseGetPtr();
 
 	if ((f32)BattleAudience_GetPPAudienceNum() > 0.0f) {
-		*(s32*)((u8*)audience + 0x137C4) += (s32)((f32)BattleAudience_GetPPAudienceNum() / 4.0f) + 0x19;
+		audience->apGauge += (s32)((f32)BattleAudience_GetPPAudienceNum() / 4.0f) + 0x19;
 		if (unit->badgesEquipped.SuperAppeal != 0) {
-			*(s32*)((u8*)audience + 0x137C4) += unit->badgesEquipped.SuperAppeal * 0x19;
+			audience->apGauge += unit->badgesEquipped.SuperAppeal * 0x19;
 		}
 		BattleAudienceSoundCheer(0xB4, 0x3C);
 		BattleAudienceSoundClap(0xB4, 0x3C);

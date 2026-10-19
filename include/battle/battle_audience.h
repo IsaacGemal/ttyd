@@ -85,7 +85,8 @@ typedef struct BattleAudienceItem {
 } BattleAudienceItem;
 
 typedef struct BattleAudienceStar {
-    u8 field_0x0[0x60 - 0x0]; // 0x0
+    u32 flags;                // 0x0, bit 0 set while the star slot is in use
+    u8 field_0x4[0x60 - 0x4]; // 0x4
 } BattleAudienceStar;
 
 // TODO: verify variable names
@@ -165,16 +166,25 @@ typedef struct BattleAudience {
     s32 mCurrentAudienceIntCountRight; // 0x13788, TODO verify name
     s32 mCurrentAudienceIntCountLeft;  // 0x1378C, TODO verify name
     s32 mMaxAudience;                  // 0x13790
-    u8 field_13794[0x137D4 - 0x13794]; // 0x13794
+    s32 typeWeights[12];               // 0x13794, per-type weights for picking members (BattleAudienceSettingAudience)
+    s32 apGauge;                       // 0x137C4, AP meter: BattleAudienceCheer clamps it to 800 (0x320), the AP star drains it
+    StarPowerInfo* impendingBonuses;   // 0x137C8
+    s32 crowdPleasedStreak;            // 0x137CC, capped at 2
+    s32 crowdDispleasedStreak;         // 0x137D0, capped at 5
     s32 mNumStylishCommandsThisAttack; // 0x137D4
     u8 field_137D8[0x137DC - 0x137D8]; // 0x137D8
     s32 mCheckPhaseReactionState;      // 0x137DC, TODO: rename
-    u8 field_137E0[0x138BC - 0x137E0]; // 0x137E0
+    u8 field_137E0[0x137F0 - 0x137E0]; // 0x137E0
+    s32 itemThrowCount;                // 0x137F0, items thrown so far by BattleAudienceCtrlProcess
+    s32 itemThrowMax;                  // 0x137F4, set by BattleAudienceSetThrowItemMax (0-3, or 10000)
+    s32 itemCombo;                     // 0x137F8, caught items in a row (capped at 3)
+    u8 field_137FC[0x138BC - 0x137FC]; // 0x137FC, weapon table (BattleWeapon*, see battle_attack_audience.c)
     s32 mItemOnMemberId;               // 0x138BC, TODO better name
     Vec mItemOnMemberPos;              // 0x138C0, TODO better name?
-    u8 field_138CC[0x13908 - 0x138CC]; // 0x138CC
+    s32 phaseEvtList[14];              // 0x138CC
+    s32 phaseEvtCount;                 // 0x13904, entries in phaseEvtList
     s32 mTurnEndPhaseEventChance;      // 0x13908, TODO verify name
-    u8 field_1390C[0x13910 - 0x1390C]; // 0x1390C
+    s32 joyLevel;                      // 0x1390C, 0-4, picks the BattleAudienceJoy_Sub numbers for case 3
     BOOL excited;                      // 0x13910, if toads are cheering
 } BattleAudience;
 
