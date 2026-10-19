@@ -446,23 +446,6 @@ extern const GXColor dat_80420c00;
 extern const GXColor dat_80420c04;
 extern s32 marioAttackEvent_MajinaiExpUp[];
 extern BattleDispPose pose_table_nokotarou_stay[];
-typedef struct LvupSelectObj {
-    Vec pos;      // 0x00
-    Vec scale;    // 0x0C
-    Vec rot;      // 0x18
-    u16 value;    // 0x24
-    u16 max;      // 0x26
-    u8 state;     // 0x28
-    u8 counter;   // 0x29
-    u8 pad[2];    // 0x2A
-    s32 flag;     // 0x2C
-    GXColor color;// 0x30
-} LvupSelectObj;
-typedef struct BattleSeqEndWorkLvup {
-    u8 unk0[0x200];
-    LvupSelectObj objs[3]; // 0x200..0x29C
-    u8 unk1[0x10];         // 0x29C..0x2AC
-} BattleSeqEndWorkLvup;
 
 #pragma dont_inline on
 
@@ -580,10 +563,10 @@ void btlseqEnd(BattleWork* wp) {
         newWork = BattleAlloc(0x2AC);
         wp->seqEndWork = newWork;
         btlseqEnd_DispInit(wp);
-        *(s32*)((u8*)newWork + 0x0) = 0;
-        *(s32*)((u8*)newWork + 0x29C) = 0;
-        *(s32*)((u8*)newWork + 0x2A0) = irand(0x78) + 0x3C;
-        *(s32*)((u8*)newWork + 0x2A4) = 0;
+        newWork->unk0 = 0;
+        newWork->effect = NULL;
+        newWork->whistleTimer = irand(0x78) + 0x3C;
+        newWork->confettiEvtId = 0;
         break;
 
     case 0x07000003:
@@ -617,7 +600,7 @@ void btlseqEnd(BattleWork* wp) {
         newWork = BattleAlloc(0x2AC);
         wp->seqEndWork = newWork;
         btlseqEnd_DispInit(wp);
-        *(s32*)((u8*)newWork + 0x0) = 0;
+        newWork->unk0 = 0;
         return;
 
     case 0x07000001:
@@ -647,8 +630,7 @@ void btlseqEnd(BattleWork* wp) {
         if (party != NULL && BtlUnit_CheckStatusFlag(party, 1)) {
             party->flippedTurns = 0;
             BtlUnit_OffStatusFlag(party, 1);
-            *(void**)((u8*)BtlUnit_GetPartsPtr(party, BtlUnit_GetBodyPartsId(party)) + 0x1BC) =
-                pose_table_nokotarou_stay;
+            BtlUnit_GetPartsPtr(party, BtlUnit_GetBodyPartsId(party))->poseTable = pose_table_nokotarou_stay;
         }
         BattleConsumeReserveItem();
 #ifdef MUST_MATCH
@@ -707,23 +689,23 @@ void btlseqEnd(BattleWork* wp) {
 
     case 0x07000008:
         BattleFogForceStop();
-        *(s32*)((u8*)work + 0xC) = 0;
-        *(s16*)((u8*)work + 0x8) = BattleGetStockExp(wp);
+        work->lvupPending = 0;
+        work->stockExp = BattleGetStockExp(wp);
         if (wp->field_18FE1[0] == 3) {
-            *(s16*)((u8*)work + 0x8) *= 2;
+            work->stockExp *= 2;
         }
         if (pouch->level >= 0x63) {
-            *(s16*)((u8*)work + 0x8) = 0;
+            work->stockExp = 0;
         }
-        if (*(s16*)((u8*)work + 0x8) > 0x64) {
-            *(s16*)((u8*)work + 0x8) = 0x64;
+        if (work->stockExp > 0x64) {
+            work->stockExp = 0x64;
         }
-        *(s16*)((u8*)work + 0xA) = *(s16*)((u8*)work + 0x8);
+        work->expRemaining = work->stockExp;
         wp->dispFlags &= ~2;
-        if (*(s16*)((u8*)work + 0x8) > 0) {
+        if (work->stockExp > 0) {
             _GetExpIcon_Init(work);
         }
-        *(s32*)((u8*)work + 0x4) = 0x78;
+        work->timer = 0x78;
         btl_camera_set_moveSpeedLv(0, 2);
         if (!(wp->flags & 0x100)) {
             btl_camera_set_mode(0, 0x11);
@@ -749,15 +731,15 @@ void btlseqEnd(BattleWork* wp) {
         }
         /* fallthrough */
     case 0x07000009:
-        (*(s32*)((u8*)work + 0x4))--;
-        if (*(s32*)((u8*)work + 0x4) > 0) {
+        work->timer--;
+        if (work->timer > 0) {
             break;
         }
         BattleSetSeq(wp, SEQ_END, 0x0700000A);
         break;
 
     case 0x0700000A:
-        if (*(s16*)((u8*)work + 0x8) > 0) {
+        if (work->stockExp > 0) {
             BattleUnit* u = BattleGetMarioPtr(wp);
             BattleUnit* p = BattleGetPartyPtr(wp);
             event = evtEntry(BtlUnit_GetData(u, 0x40), 0xA, 0);
@@ -772,14 +754,14 @@ void btlseqEnd(BattleWork* wp) {
                     p->attackEventId = event->eventId;
                 }
             }
-            if (*(void**)((u8*)work + 0x29C) == NULL) {
+            if (work->effect == NULL) {
 #ifdef MUST_MATCH
                 // MUST_MATCH: source-order of the arguments is what decides which load MWCC schedules last
                 // (it emits `lfs f2` before `lha r4` here, the original's order). The prototype's register
                 // mapping is unchanged, so the natural call below still links to the same function.
-                *(void**)((u8*)work + 0x29C) = ((EffectEntry* (*)(s32, f32, f32, s32, s32, f32))effPointGetEntry)(0, float_0_80420c7c, float_90_80420ca0, *(s16*)((u8*)work + 0x8), 0, float_0_80420c7c);
+                work->effect = ((EffectEntry* (*)(s32, f32, f32, s32, s32, f32))effPointGetEntry)(0, float_0_80420c7c, float_90_80420ca0, work->stockExp, 0, float_0_80420c7c);
 #else
-                *(void**)((u8*)work + 0x29C) = effPointGetEntry(0, *(s16*)((u8*)work + 0x8), 0, float_0_80420c7c, float_90_80420ca0, float_0_80420c7c);
+                work->effect = effPointGetEntry(0, work->stockExp, 0, float_0_80420c7c, float_90_80420ca0, float_0_80420c7c);
 #endif
             }
             BattleSetSeq(wp, SEQ_END, 0x0700000B);
@@ -793,59 +775,59 @@ void btlseqEnd(BattleWork* wp) {
         break;
 
     case 0x0700000B:
-        if (*(s16*)((u8*)work + 0xA) > 0) {
-            (*(s32*)((u8*)work + 0x4))++;
-            if (BattlePadCheckNow(0x300) && *(s32*)((u8*)work + 0x4) < 0x3E8) {
-                *(s32*)((u8*)work + 0x4) += 0x3E8;
+        if (work->expRemaining > 0) {
+            work->timer++;
+            if (BattlePadCheckNow(0x300) && work->timer < 0x3E8) {
+                work->timer += 0x3E8;
             }
-            if ((*(s32*)((u8*)work + 0x4) & 3) == 0 || *(s32*)((u8*)work + 0x4) >= 0x3E8) {
-                (*(s16*)((u8*)work + 0xA))--;
+            if ((work->timer & 3) == 0 || work->timer >= 0x3E8) {
+                work->expRemaining--;
                 pouch->mStarPoints++;
-                if ((*(s32*)((u8*)work + 0x4) & 7) == 0) {
+                if ((work->timer & 7) == 0) {
                     psndSFXOn("SFX_STAR_POINT_GET1");
                 }
             }
             if (pouch->mStarPoints >= 0x64) {
                 pouch->mStarPoints = 0;
-                *(s32*)((u8*)work + 0xC) = 1;
+                work->lvupPending = 1;
                 if (pouch->level + 1 >= 0x63) {
-                    *(s16*)((u8*)work + 0xA) = 0;
+                    work->expRemaining = 0;
                 }
             }
             break;
         }
-        if (*(s32*)((u8*)work + 0x4) >= 0x3E8) {
-            *(s32*)((u8*)work + 0x4) = 0xA;
-        } else if (*(s32*)((u8*)work + 0x4) < 0x78) {
-            *(s32*)((u8*)work + 0x4) = 0x8C - *(s32*)((u8*)work + 0x4);
+        if (work->timer >= 0x3E8) {
+            work->timer = 0xA;
+        } else if (work->timer < 0x78) {
+            work->timer = 0x8C - work->timer;
         } else {
-            *(s32*)((u8*)work + 0x4) = 0x14;
+            work->timer = 0x14;
         }
         BattleSetSeq(wp, SEQ_END, 0x0700000C);
         break;
 
     case 0x0700000C:
-        (*(s32*)((u8*)work + 0x4))--;
-        if (*(s32*)((u8*)work + 0x4) > 0) {
+        work->timer--;
+        if (work->timer > 0) {
             break;
         }
-        *(s32*)((u8*)work + 0x4) = 0x3C;
+        work->timer = 0x3C;
         _GetExpIcon_End(work);
         BattleSetSeq(wp, SEQ_END, 0x0700000D);
-        effSoftDelete(*(EffectEntry**)((u8*)work + 0x29C));
-        if (*(s32*)((u8*)work + 0xC) != 0) {
-            *(s32*)((u8*)work + 0x4) = 0x3C;
+        effSoftDelete(work->effect);
+        if (work->lvupPending != 0) {
+            work->timer = 0x3C;
             break;
         }
-        *(s32*)((u8*)work + 0x4) = 5;
+        work->timer = 5;
         break;
 
     case 0x0700000D:
-        (*(s32*)((u8*)work + 0x4))--;
-        if (*(s32*)((u8*)work + 0x4) > 0) {
+        work->timer--;
+        if (work->timer > 0) {
             break;
         }
-        *(s32*)((u8*)work + 0x29C) = 0;
+        work->effect = NULL;
         BattleSetSeq(wp, SEQ_END, 0x0700000E);
         break;
 
@@ -865,7 +847,7 @@ void btlseqEnd(BattleWork* wp) {
         if (!BattleWaitAllActiveEvtEnd(wp)) {
             break;
         }
-        if (*(s16*)((u8*)work + 0x8) > 0) {
+        if (work->stockExp > 0) {
             BattleSetSeq(wp, SEQ_END, 0x07000010);
             break;
         }
@@ -873,12 +855,12 @@ void btlseqEnd(BattleWork* wp) {
         break;
 
     case 0x07000010:
-        *(u32*)((u8*)work + 0x30) &= ~1;
-        if (*(s32*)((u8*)work + 0xC) != 0) {
-            *(s32*)((u8*)work + 0x10) = 1;
-            *(s32*)((u8*)work + 0x14) = 0;
-            *(s32*)((u8*)work + 0x18) = 3;
-            *(s32*)((u8*)work + 0x4) = 0;
+        work->dispFlags &= ~1;
+        if (work->lvupPending != 0) {
+            work->lvupSelect = 1;
+            work->unk14 = 0;
+            work->lvupCount = 3;
+            work->timer = 0;
             BattleAudience_WinSetActive(0);
             BattleBreakSlot_HideReel();
             BattleSetSeq(wp, SEQ_END, 0x07000011);
@@ -888,110 +870,110 @@ void btlseqEnd(BattleWork* wp) {
         break;
 
     case 0x07000011:
-        if (*(s32*)((u8*)work + 0x4) == 0) {
+        if (work->timer == 0) {
             event = evtEntry(_curtain_close_event, 0xA, 0);
-            *(s32*)((u8*)work + 0x1FC) = event->eventId;
+            work->waitEvtId = event->eventId;
             BattleStatusWindowSystemOff();
             psndBGMOff(0x400);
             psndBGMOn(1, "BGM_BATTLE_WIN3");
         }
-        (*(s32*)((u8*)work + 0x4))++;
-        if (evtCheckID(*(s32*)((u8*)work + 0x1FC))) {
+        work->timer++;
+        if (evtCheckID(work->waitEvtId)) {
             break;
         }
-        *(s32*)((u8*)work + 0x1FC) = 0;
+        work->waitEvtId = 0;
         BattleStatusWindowSystemOn();
         BattleStatusWindowEventOn();
         BattleSetSeq(wp, SEQ_END, 0x07000012);
         break;
 
     case 0x07000012:
-        flag = *(s32*)((u8*)work + 0x10);
-        if (*(s32*)((u8*)work + 0x1FC) != 0) {
-            if (evtCheckID(*(s32*)((u8*)work + 0x1FC))) {
+        flag = work->lvupSelect;
+        if (work->waitEvtId != 0) {
+            if (evtCheckID(work->waitEvtId)) {
                 break;
             }
-            *(s32*)((u8*)work + 0x1FC) = 0;
+            work->waitEvtId = 0;
         }
         if (BattlePadCheckTrigger(0x80000)) {
-            if (*(s32*)((u8*)work + 0x10) < *(s32*)((u8*)work + 0x18) - 1) {
-                (*(s32*)((u8*)work + 0x10))++;
+            if (work->lvupSelect < work->lvupCount - 1) {
+                work->lvupSelect++;
             }
         }
         if (BattlePadCheckTrigger(0x40000)) {
-            if (*(s32*)((u8*)work + 0x10) > 0) {
-                (*(s32*)((u8*)work + 0x10))--;
+            if (work->lvupSelect > 0) {
+                work->lvupSelect--;
             }
         }
-        if (*(s32*)((u8*)work + 0x10) != flag) {
+        if (work->lvupSelect != flag) {
             event = NULL;
-            switch (*(s32*)((u8*)work + 0x10)) {
+            switch (work->lvupSelect) {
             case 0: event = evtEntry(_move_to_heart_event, 0xA, 0); break;
             case 1: event = evtEntry(_move_to_flower_event, 0xA, 0); break;
             case 2: event = evtEntry(_move_to_badge_point_event, 0xA, 0); break;
             }
             if (event != NULL) {
-                *(s32*)((u8*)work + 0x1FC) = event->eventId;
+                work->waitEvtId = event->eventId;
                 break;
             }
         }
         if (BattlePadCheckTrigger(0x100)) {
             s32 f2 = 0;
-            switch (*(s32*)((u8*)work + 0x10)) {
+            switch (work->lvupSelect) {
             case 0: if (pouch->baseMaxHP < 0xC8) f2 = 1; break;
             case 1: if (pouch->baseMaxFP < 0xC8) f2 = 1; break;
             case 2: if (pouch->maximumBP < 0x63) f2 = 1; break;
             }
             if (f2 != 0) {
-                *(s32*)((u8*)work + 0x24) = 0;
-                *(s32*)((u8*)work + 0x28) = 0;
-                *(s32*)((u8*)work + 0x2C) = 2;
-                *(u32*)((u8*)work + 0x30) &= ~0x20;
+                work->confirmSel = 0;
+                work->unk28 = 0;
+                work->confirmCount = 2;
+                work->dispFlags &= ~SEQEND_DISP_LVUP_HELP;
                 BattleSetSeq(wp, SEQ_END, 0x07000014);
                 event = evtEntry(_jump_event, 0xA, 0);
-                *(s32*)((u8*)work + 0x1FC) = event->eventId;
+                work->waitEvtId = event->eventId;
             }
         }
         break;
 
     case 0x07000013:
         if (BattlePadCheckTrigger(0x20000)) {
-            (*(s32*)((u8*)work + 0x24))++;
-            if (*(s32*)((u8*)work + 0x24) >= *(s32*)((u8*)work + 0x2C)) {
-                *(s32*)((u8*)work + 0x24) = 0;
+            work->confirmSel++;
+            if (work->confirmSel >= work->confirmCount) {
+                work->confirmSel = 0;
             }
         }
         if (BattlePadCheckTrigger(0x10000)) {
-            (*(s32*)((u8*)work + 0x24))--;
-            if (*(s32*)((u8*)work + 0x24) < 0) {
-                *(s32*)((u8*)work + 0x24) = *(s32*)((u8*)work + 0x2C) - 1;
+            work->confirmSel--;
+            if (work->confirmSel < 0) {
+                work->confirmSel = work->confirmCount - 1;
             }
         }
         if (BattlePadCheckTrigger(0x200)) {
-            *(u32*)((u8*)work + 0x30) &= ~0x10;
+            work->dispFlags &= ~SEQEND_DISP_LVUP_CONFIRM;
             BattleSetSeq(wp, SEQ_END, 0x07000012);
         }
         if (BattlePadCheckTrigger(0x100)) {
-            if (*(s32*)((u8*)work + 0x24) == 0) {
-                *(u32*)((u8*)work + 0x30) &= ~0x18;
+            if (work->confirmSel == 0) {
+                work->dispFlags &= ~(SEQEND_DISP_LVUP_CONFIRM | SEQEND_DISP_LVUP_OBJECTS);
                 BattleSetSeq(wp, SEQ_END, 0x07000015);
                 break;
             }
-            *(u32*)((u8*)work + 0x30) &= ~0x10;
+            work->dispFlags &= ~SEQEND_DISP_LVUP_CONFIRM;
             BattleSetSeq(wp, SEQ_END, 0x07000012);
         }
         break;
 
     case 0x07000014:
-        if (!evtCheckID(*(s32*)((u8*)work + 0x1FC))) {
-            *(s32*)((u8*)work + 0x1FC) = 0;
+        if (!evtCheckID(work->waitEvtId)) {
+            work->waitEvtId = 0;
             BattleSetSeq(wp, SEQ_END, 0x07000015);
         }
         break;
 
     case 0x07000015:
         pouch->level++;
-        switch (*(s32*)((u8*)work + 0x10)) {
+        switch (work->lvupSelect) {
         case 0: pouch->baseMaxHP += 5; break;
         case 1: pouch->baseMaxFP += 5; break;
         case 2: pouch->maximumBP += 3; break;
@@ -1039,7 +1021,7 @@ void btlseqEnd(BattleWork* wp) {
         }
         BtlUnit_SetBodyAnim(BattleGetMarioPtr(wp), str_80420C20);
         BattleAudienceSoundCheer(0xB4, 0x28);
-        *(s32*)((u8*)work + 0x4) = 0xB4;
+        work->timer = 0xB4;
         BattleSetSeq(wp, SEQ_END, 0x07000016);
         unit = BattleGetMarioPtr(wp);
         party = BattleGetPartyPtr(wp);
@@ -1052,18 +1034,18 @@ void btlseqEnd(BattleWork* wp) {
         break;
 
     case 0x07000016:
-        (*(s32*)((u8*)work + 0x4))--;
-        if (*(s32*)((u8*)work + 0x4) == 0x78) {
+        work->timer--;
+        if (work->timer == 0x78) {
             unit = BattleGetMarioPtr(wp);
             if (unit != NULL) {
                 effRecoveryEntry(5, 0, unit->mPosition.x, float_40_80420d50 + unit->mPosition.y, unit->mPosition.z);
             }
         }
-        if (*(s32*)((u8*)work + 0x4) > 0) {
+        if (work->timer > 0) {
             break;
         }
-        if (*(s32*)((u8*)work + 0x2A4) != 0) {
-            evtDeleteID(*(s32*)((u8*)work + 0x2A4));
+        if (work->confettiEvtId != 0) {
+            evtDeleteID(work->confettiEvtId);
         }
         BattleSetSeq(wp, SEQ_END, 0x07000017);
         break;
@@ -1075,11 +1057,11 @@ void btlseqEnd(BattleWork* wp) {
         }
         pouch->rank = _get_rank_data(pouch->level)->rankId;
         event = evtEntry(_rank_up_event, 0xA, 0);
-        *(s32*)((u8*)work + 0x2A8) = event->eventId;
+        work->rankUpEvtId = event->eventId;
         BattleSetSeq(wp, SEQ_END, 0x07000018);
         /* fallthrough */
     case 0x07000018:
-        if (!evtCheckID(*(s32*)((u8*)work + 0x2A8))) {
+        if (!evtCheckID(work->rankUpEvtId)) {
             BattleSetSeq(wp, SEQ_END, 0x0700001C);
         }
         break;
@@ -1113,12 +1095,12 @@ void btlseqEnd(BattleWork* wp) {
             }
         }
         BtlUnit_SetBodyAnim(BattleGetMarioPtr(wp), str_80420D54);
-        *(s32*)((u8*)work + 0x4) = 0x3C;
+        work->timer = 0x3C;
         BattleSetSeq(wp, SEQ_END, 0x0700001A);
         break;
 
     case 0x0700001A:
-        if (--(*(s32*)((u8*)work + 0x4)) > 0) {
+        if (--work->timer > 0) {
             break;
         }
         BtlUnit_SetBodyAnimType(BattleGetMarioPtr(wp), 0x2A);
@@ -1142,7 +1124,7 @@ void btlseqEnd(BattleWork* wp) {
             NpcEntry* target = fbatGetPointer()->target;
 
             if (target != NULL) {
-                *(u32*)((u8*)target + 0x140) |= 0x100;
+                target->interruptFlags |= 0x100;
             }
         }
         break;
@@ -1184,10 +1166,10 @@ void btlseqEnd(BattleWork* wp) {
             }
         }
         {
-            void* p = partyGetPtr(marioGetPartyId());
+            PartyEntry* p = partyGetPtr(marioGetPartyId());
 
             if (p != NULL) {
-                *(u32*)((u8*)p + 0x4) &= ~1;
+                p->flags2 &= ~1;
             }
         }
         BtlActRec_JudgeRuleKeep();
@@ -1220,7 +1202,7 @@ void _ExecAllUnitBattleEndEvent(void) {
 }
 
 void btlseqEnd_DispInit(BattleWork* wp) {
-    *(u32*)((u8*)wp->seqEndWork + 0x30) = 0;
+    wp->seqEndWork->dispFlags = 0;
 }
 
 // The parameter copy keeps its own web only with propagation off; it then colours ahead of `work` (r31/r30), as in
@@ -1233,21 +1215,21 @@ void btlseqEnd_DispMain(CameraId camId, BattleWork* wp) {
     if (work == NULL) {
         return;
     }
-    if (*(u32*)((u8*)work + 0x30) & 2) {
+    if (work->dispFlags & SEQEND_DISP_EXP_ICONS) {
         _GetExpIcon_Main(param);
         dispEntry(camId, float_900_80420d4c, 1, _GetExpIcon_Disp, param);
     }
-    if (*(u32*)((u8*)work + 0x30) & 4) {
+    if (work->dispFlags & SEQEND_DISP_MARIO_EXP) {
         dispEntry(camId, float_900_80420d4c, 1, _MarioExpDisp, param);
     }
-    if (*(u32*)((u8*)work + 0x30) & 8) {
+    if (work->dispFlags & SEQEND_DISP_LVUP_OBJECTS) {
         Vec pos = vec3_802fde84;
         dispEntry(4, dispCalcZ(&pos), 2, _lvup_select_object_disp, param);
     }
-    if (*(u32*)((u8*)work + 0x30) & 0x10) {
+    if (work->dispFlags & SEQEND_DISP_LVUP_CONFIRM) {
         dispEntry(camId, float_900_80420d4c, 1, _LvupParamConfirmDisp, param);
     }
-    if (*(u32*)((u8*)work + 0x30) & 0x20) {
+    if (work->dispFlags & SEQEND_DISP_LVUP_HELP) {
         dispEntry(camId, float_900_80420d4c, 1, L__LvupParamHelpMsgDisp, param);
     }
 }
@@ -1265,7 +1247,7 @@ void _MarioExpDisp(CameraId camId, void* param) {
     pos.y = float_neg200_80420d38;
     pos.z = float_0_80420c7c;
     if (work != NULL) {
-        sprintf(buf, str_80420D3C, *(s16*)((u8*)work + 0xA));
+        sprintf(buf, str_80420D3C, work->expRemaining);
         len = strlen(buf);
 #ifdef MUST_MATCH
         // Retail builds the white colour after the width (float args first, as in battle_message.c's cast call).
@@ -1284,7 +1266,7 @@ void _MarioExpDisp(CameraId camId, void* param) {
 
 void _LvupParamConfirmDisp(CameraId camId, void* param) {
     BattleWork* wp = param;
-    const s32* selection = (const s32*)((u8*)wp->seqEndWork + 0x24);
+    const s32* selection = &wp->seqEndWork->confirmSel;
     Vec pos;
     char buf[0x14];
     u32 len;
@@ -1332,7 +1314,7 @@ void L__LvupParamHelpMsgDisp(CameraId camId, void* param) {
     f32 zero;
 
     pouch = pouchGetPtr();
-    switch (*(s32*)((u8*)work + 0x10)) {
+    switch (work->lvupSelect) {
     case 0:
         msg = msgSearch("help_btl_levelup_hp");
         if (pouch->baseMaxHP >= 0xC8) {
@@ -1369,82 +1351,82 @@ void _GetExpIcon_Init(BattleSeqEndWork* arg) {
     for (i = 0; i < 10; i++) {
         sprintf(name, "_Bgsp%d", i);
         iconEntry2D(name, 0x18C);
-        *(u32*)((u8*)work + 0x34 + i * 4) = (u32)iconNameToPtr(name);
+        work->iconPtr[i] = (u32)iconNameToPtr(name);
         iconSetScale(name, float_0p9_80420ce8);
         iconFlagOn(name, 2);
-        *(s32*)((u8*)work + 0xCC + i * 4) = 0;
-        *(f32*)((u8*)work + 0x118 + i * 0xC) =
-            float_36_80420ce4 * (f32)i + (float_24_80420cdc - float_18_80420ce0 * (f32)(*(s16*)((u8*)work + 0xA) / 10));
-        *(f32*)((u8*)work + 0x11C + i * 0xC) = float_25_80420c9c;
-        *(f32*)((u8*)work + 0x120 + i * 0xC) = float_0_80420c7c;
-        iconSetPos(name, *(f32*)((u8*)work + 0x118 + i * 0xC),
-                   *(f32*)((u8*)work + 0x11C + i * 0xC), *(f32*)((u8*)work + 0x120 + i * 0xC));
+        work->iconFrames[i] = 0;
+        work->iconPos[i].x =
+            float_36_80420ce4 * (f32)i + (float_24_80420cdc - float_18_80420ce0 * (f32)(work->expRemaining / 10));
+        work->iconPos[i].y = float_25_80420c9c;
+        work->iconPos[i].z = float_0_80420c7c;
+        iconSetPos(name, work->iconPos[i].x,
+                   work->iconPos[i].y, work->iconPos[i].z);
     }
     for (i = 10; i < 0x13; i++) {
         sprintf(name, "_Bgsp%d", i);
         iconEntry2D(name, 0x18C);
-        *(u32*)((u8*)work + 0x34 + i * 4) = (u32)iconNameToPtr(name);
+        work->iconPtr[i] = (u32)iconNameToPtr(name);
         iconSetScale(name, float_0p45_80420cec);
         iconFlagOn(name, 2);
-        *(s32*)((u8*)work + 0xCC + i * 4) = 0;
-        *(f32*)((u8*)work + 0x118 + i * 0xC) = float_86p9_80420cf0 - float_16p2_80420cf4 * (f32)(i - 9);
-        *(f32*)((u8*)work + 0x11C + i * 0xC) = float_0_80420c7c;
-        *(f32*)((u8*)work + 0x120 + i * 0xC) = float_0_80420c7c;
-        iconSetPos(name, *(f32*)((u8*)work + 0x118 + i * 0xC),
-                   *(f32*)((u8*)work + 0x11C + i * 0xC), *(f32*)((u8*)work + 0x120 + i * 0xC));
+        work->iconFrames[i] = 0;
+        work->iconPos[i].x = float_86p9_80420cf0 - float_16p2_80420cf4 * (f32)(i - 9);
+        work->iconPos[i].y = float_0_80420c7c;
+        work->iconPos[i].z = float_0_80420c7c;
+        iconSetPos(name, work->iconPos[i].x,
+                   work->iconPos[i].y, work->iconPos[i].z);
     }
-    *(u32*)((u8*)work + 0x30) |= 2;
+    work->dispFlags |= SEQEND_DISP_EXP_ICONS;
 }
 
 void _GetExpIcon_Main(BattleWork* wp) {
     BattleSeqEndWork* work = wp->seqEndWork;
-    s32 exp = *(s16*)((u8*)work + 0xA);
+    s32 exp = work->expRemaining;
     s32 j;
 
     for (j = 0; j < exp / 10; j++) {
-        iconFlagOff((const char*)(*(u32*)((u8*)work + 0x34 + j * 4) + 0x18), 2);
-        if (*(s32*)((u8*)work + 0x80 + j * 4) <= 0) {
-            *(s32*)((u8*)work + 0x80 + j * 4) = 0x40;
+        iconFlagOff((const char*)(work->iconPtr[j] + 0x18), 2);
+        if (work->iconAlpha[j] <= 0) {
+            work->iconAlpha[j] = 0x40;
         } else {
-            *(s32*)((u8*)work + 0x80 + j * 4) += 0x40;
-            if (*(s32*)((u8*)work + 0x80 + j * 4) > 0xFF) {
-                *(s32*)((u8*)work + 0x80 + j * 4) = 0xFF;
+            work->iconAlpha[j] += 0x40;
+            if (work->iconAlpha[j] > 0xFF) {
+                work->iconAlpha[j] = 0xFF;
             }
         }
-        if (*(s32*)((u8*)work + 0xCC + j * 4) < 0x10) {
-            *(s32*)((u8*)work + 0xCC + j * 4) += 1;
+        if (work->iconFrames[j] < 0x10) {
+            work->iconFrames[j] += 1;
         }
-        *(f32*)((u8*)work + 0x118 + j * 0xC) =
-            float_36_80420ce4 * (f32)j + (float_24_80420cdc - float_18_80420ce0 * (f32)(*(s16*)((u8*)work + 0xA) / 10));
+        work->iconPos[j].x =
+            float_36_80420ce4 * (f32)j + (float_24_80420cdc - float_18_80420ce0 * (f32)(work->expRemaining / 10));
     }
     for (; j < 10; j++) {
-        iconFlagOn((const char*)(*(u32*)((u8*)work + 0x34 + j * 4) + 0x18), 2);
-        *(s32*)((u8*)work + 0x80 + j * 4) = 0;
-        *(s32*)((u8*)work + 0xCC + j * 4) = 0;
+        iconFlagOn((const char*)(work->iconPtr[j] + 0x18), 2);
+        work->iconAlpha[j] = 0;
+        work->iconFrames[j] = 0;
     }
     {
         for (j = 10; j - 10 < exp % 10; j++) {
-            iconFlagOff((const char*)(*(u32*)((u8*)work + 0x34 + j * 4) + 0x18), 2);
-            if (*(s32*)((u8*)work + 0x80 + j * 4) <= 0) {
-                *(s32*)((u8*)work + 0x80 + j * 4) = 0x40;
+            iconFlagOff((const char*)(work->iconPtr[j] + 0x18), 2);
+            if (work->iconAlpha[j] <= 0) {
+                work->iconAlpha[j] = 0x40;
             } else {
-                *(s32*)((u8*)work + 0x80 + j * 4) += 0x40;
-                if (*(s32*)((u8*)work + 0x80 + j * 4) > 0xFF) {
-                    *(s32*)((u8*)work + 0x80 + j * 4) = 0xFF;
+                work->iconAlpha[j] += 0x40;
+                if (work->iconAlpha[j] > 0xFF) {
+                    work->iconAlpha[j] = 0xFF;
                 }
             }
         }
         for (; j < 0x13; j++) {
-            iconFlagOn((const char*)(*(u32*)((u8*)work + 0x34 + j * 4) + 0x18), 2);
-            *(s32*)((u8*)work + 0x80 + j * 4) = 0;
+            iconFlagOn((const char*)(work->iconPtr[j] + 0x18), 2);
+            work->iconAlpha[j] = 0;
         }
     }
     for (j = 0; j < 0x13; j++) {
-        iconSetAlpha((const char*)(*(u32*)((u8*)work + 0x34 + j * 4) + 0x18),
-                     (u8)*(s32*)((u8*)work + 0x80 + j * 4));
-        iconSetPos((const char*)(*(u32*)((u8*)work + 0x34 + j * 4) + 0x18),
-                   ((f32*)((u8*)work + 0x118 + j * 0xC))[0], ((f32*)((u8*)work + 0x11C + j * 0xC))[0] + float_0_80420c7c,
-                   ((f32*)((u8*)work + 0x120 + j * 0xC))[0]);
+        iconSetAlpha((const char*)(work->iconPtr[j] + 0x18),
+                     (u8)work->iconAlpha[j]);
+        iconSetPos((const char*)(work->iconPtr[j] + 0x18),
+                   work->iconPos[j].x, work->iconPos[j].y + float_0_80420c7c,
+                   work->iconPos[j].z);
     }
 }
 
@@ -1461,9 +1443,9 @@ __declspec(section ".sdata2") const char str_80420C20[8] = "M_V_2";
 void _GetExpIcon_End(BattleSeqEndWork* work) {
     s32 i;
 
-    *(u32*)((u8*)work + 0x30) &= ~2;
+    work->dispFlags &= ~SEQEND_DISP_EXP_ICONS;
     for (i = 0; i < 0x13; i++) {
-        iconDelete((const char*)(*(u32*)((u8*)work + 0x34 + i * 4) + 0x18));
+        iconDelete((const char*)(work->iconPtr[i] + 0x18));
     }
 }
 
@@ -1542,7 +1524,7 @@ s32 _set_confetti_control_evtid(EventEntry* event, BOOL isFirstCall) {
     BattleSeqEndWork* work = _battleWorkPointer->seqEndWork;
     s32 val = args[0];
 
-    *(s32*)((u8*)work + 0x2A4) = evtGetValue(event, val);
+    work->confettiEvtId = evtGetValue(event, val);
     return 2;
 }
 #pragma opt_propagation reset
@@ -1550,7 +1532,7 @@ s32 _set_confetti_control_evtid(EventEntry* event, BOOL isFirstCall) {
 s32 _lvup_select_obj_disp_on(EventEntry* event, BOOL isFirstCall) {
     BattleSeqEndWork* work = _battleWorkPointer->seqEndWork;
 
-    *(u32*)((u8*)work + 0x30) |= 8;
+    work->dispFlags |= SEQEND_DISP_LVUP_OBJECTS;
     return 2;
 }
 
@@ -1559,7 +1541,7 @@ s32 _lvup_select_obj_lvup_param_disp(EventEntry* event, BOOL isFirstCall) {
     s32 i;
 
     for (i = 0; i < 3; i++) {
-        ((u8*)work)[i * 0x34 + 0x228] = 1;
+        work->objs[i].state = 1;
     }
     return 2;
 }
@@ -1567,12 +1549,12 @@ s32 _lvup_select_obj_lvup_param_disp(EventEntry* event, BOOL isFirstCall) {
 s32 _lvup_obj_set_color(EventEntry* event, BOOL isFirstCall) {
     s32* args = event->args;
     BattleSeqEndWork* work = _battleWorkPointer->seqEndWork;
-    u8* obj = (u8*)work + 0x200 + evtGetValue(event, args[0]) * 0x34;
+    LvupSelectObj* obj = &work->objs[evtGetValue(event, args[0])];
 
-    obj[0x30] = evtGetValue(event, args[1]);
-    obj[0x31] = evtGetValue(event, args[2]);
-    obj[0x32] = evtGetValue(event, args[3]);
-    obj[0x33] = evtGetValue(event, args[4]);
+    obj->color.r = evtGetValue(event, args[1]);
+    obj->color.g = evtGetValue(event, args[2]);
+    obj->color.b = evtGetValue(event, args[3]);
+    obj->color.a = evtGetValue(event, args[4]);
     return 2;
 }
 
@@ -1583,9 +1565,9 @@ s32 _lvup_disp_flag_onoff(EventEntry* event, BOOL isFirstCall) {
     u32 mask = args[1];
 
     if (flags != 0) {
-        *(u32*)((u8*)work + 0x30) = *(u32*)((u8*)work + 0x30) | mask;
+        work->dispFlags = work->dispFlags | mask;
     } else {
-        *(u32*)((u8*)work + 0x30) = *(u32*)((u8*)work + 0x30) & ~mask;
+        work->dispFlags = work->dispFlags & ~mask;
     }
     return 2;
 }
@@ -1733,30 +1715,30 @@ s32 _lvup_spot_off(EventEntry* event, BOOL isFirstCall) {
 
 s32 _lvup_object_noselect_delete(EventEntry* event, BOOL isFirstCall) {
     BattleSeqEndWork* work = _battleWorkPointer->seqEndWork;
-    s32 selected = *(s32*)((u8*)work + 0x10);
+    s32 selected = work->lvupSelect;
     s32 i;
 
     if (isFirstCall) {
         event->userdata[0] = 0;
         event->userdata[2] = 0x1E;
-        for (i = 0; i < *(s32*)((u8*)work + 0x18); i++) {
+        for (i = 0; i < work->lvupCount; i++) {
             if (i != selected) {
-                ((u8*)work)[i * 0x34 + 0x228] = 3;
+                work->objs[i].state = 3;
             }
         }
     }
     event->userdata[0]++;
     if (event->userdata[0] < event->userdata[2]) {
-        for (i = 0; i < *(s32*)((u8*)work + 0x18); i++) {
+        for (i = 0; i < work->lvupCount; i++) {
             if (i != selected) {
-                ((u8*)work)[i * 0x34 + 0x233] = (u8)(s32)intplGetValue(5, event->userdata[0], event->userdata[2], float_255_80420c88, float_0_80420c7c);
+                work->objs[i].color.a = (u8)(s32)intplGetValue(5, event->userdata[0], event->userdata[2], float_255_80420c88, float_0_80420c7c);
             }
         }
         return 0;
     }
-    for (i = 0; i < *(s32*)((u8*)work + 0x18); i++) {
+    for (i = 0; i < work->lvupCount; i++) {
         if (i != selected) {
-            ((u8*)work)[i * 0x34 + 0x233] = 0;
+            work->objs[i].color.a = 0;
         }
     }
     return 2;
@@ -1765,57 +1747,57 @@ s32 _lvup_object_noselect_delete(EventEntry* event, BOOL isFirstCall) {
 s32 _lvup_object_select_move(EventEntry* event, BOOL isFirstCall) {
     BattleWork* wp = _battleWorkPointer;
     BattleSeqEndWork* work = wp->seqEndWork;
-    s32 selected = *(s32*)((u8*)work + 0x10);
+    s32 selected = work->lvupSelect;
     BattleUnit* mario = BattleGetMarioPtr(wp);
-    u8* entry = (u8*)work + 0x200 + selected * 0x34;
+    LvupSelectObj* entry = &work->objs[selected];
 
     if (isFirstCall) {
         event->userdata[0] = 0;
         event->userdata[1] = 0x3C;
-        event->userdata[2] = (s32)*(f32*)(entry + 0x0);
-        event->field_84 = (s32)*(f32*)(entry + 0x8);
+        event->userdata[2] = (s32)entry->pos.x;
+        event->field_84 = (s32)entry->pos.z;
         *(s32*)((u8*)event + 0x88) = (s32)mario->mPosition.x;
         *(s32*)((u8*)event + 0x8C) = (s32)mario->mPosition.z;
     }
     event->userdata[0]++;
     if (event->userdata[0] < event->userdata[1]) {
-        *(f32*)(entry + 0x0) = intplGetValue(5, event->userdata[0], event->userdata[1], (f32)(s32)event->userdata[2], (f32)*(s32*)((u8*)event + 0x88));
-        *(f32*)(entry + 0x8) = intplGetValue(5, event->userdata[0], event->userdata[1], (f32)(s32)event->field_84, (f32)*(s32*)((u8*)event + 0x8C));
-        *(f32*)(entry + 0x1C) = reviseAngle(intplGetValue(5, event->userdata[0], event->userdata[1], float_0_80420c7c, float_2160_80420c84));
+        entry->pos.x = intplGetValue(5, event->userdata[0], event->userdata[1], (f32)(s32)event->userdata[2], (f32)*(s32*)((u8*)event + 0x88));
+        entry->pos.z = intplGetValue(5, event->userdata[0], event->userdata[1], (f32)(s32)event->field_84, (f32)*(s32*)((u8*)event + 0x8C));
+        entry->rot.y = reviseAngle(intplGetValue(5, event->userdata[0], event->userdata[1], float_0_80420c7c, float_2160_80420c84));
         return 0;
     }
-    *(f32*)(entry + 0x0) = (f32)*(s32*)((u8*)event + 0x88);
-    *(f32*)(entry + 0x8) = (f32)*(s32*)((u8*)event + 0x8C);
+    entry->pos.x = (f32)*(s32*)((u8*)event + 0x88);
+    entry->pos.z = (f32)*(s32*)((u8*)event + 0x8C);
     return 2;
 }
 
 s32 _lvup_object_decide_bound(EventEntry* event, BOOL isFirstCall) {
     BattleWork* wp = _battleWorkPointer;
     BattleSeqEndWork* work = wp->seqEndWork;
-    s32 selected = *(s32*)((u8*)work + 0x10);
-    u8* entry = (u8*)work + 0x200 + selected * 0x34;
+    s32 selected = work->lvupSelect;
+    LvupSelectObj* entry = &work->objs[selected];
     s32 half;
 
     if (isFirstCall) {
         event->userdata[0] = 0;
-        event->userdata[1] = (s32)*(f32*)(entry + 0x4);
+        event->userdata[1] = (s32)entry->pos.y;
         event->userdata[2] = 0x10;
         event->field_84 = 0x1E;
-        entry[0x28] = 2;
+        entry->state = 2;
     }
     event->userdata[0]++;
     if (event->userdata[0] < event->userdata[2]) {
         half = event->userdata[2] / 2;
         if (event->userdata[0] < half) {
-            *(f32*)(entry + 0x4) = (f32)event->userdata[1] + intplGetValue(5, event->userdata[0], half, float_0_80420c7c, (f32)(s32)event->field_84);
+            entry->pos.y = (f32)event->userdata[1] + intplGetValue(5, event->userdata[0], half, float_0_80420c7c, (f32)(s32)event->field_84);
         } else {
-            *(f32*)(entry + 0x4) = (f32)event->userdata[1] + intplGetValue(5, event->userdata[0] - half, half, (f32)(s32)event->field_84, float_0_80420c7c);
+            entry->pos.y = (f32)event->userdata[1] + intplGetValue(5, event->userdata[0] - half, half, (f32)(s32)event->field_84, float_0_80420c7c);
         }
         return 0;
     }
-    *(f32*)(entry + 0x4) = (f32)event->userdata[1];
-    entry[0x28] = 4;
-    effPokopiPchargeN64Entry(*(f32*)(entry + 0x0), *(f32*)(entry + 0x4), *(f32*)(entry + 0x8), float_1p5_80420c80, 3, 0x78);
+    entry->pos.y = (f32)event->userdata[1];
+    entry->state = 4;
+    effPokopiPchargeN64Entry(entry->pos.x, entry->pos.y, entry->pos.z, float_1p5_80420c80, 3, 0x78);
     return 2;
 }
 
@@ -1823,44 +1805,44 @@ s32 _lvup_select_object_init(EventEntry* event, BOOL isFirstCall) {
     BattleSeqEndWork* work = _battleWorkPointer->seqEndWork;
     PouchData* pouch = pouchGetPtr();
 
-    *(Vec*)((u8*)work + 0x200) = (Vec){-80.0f, 105.0f, 0.0f};
-    *(Vec*)((u8*)work + 0x20C) = (Vec){0.5f, 0.5f, 1.0f};
-    *(Vec*)((u8*)work + 0x234) = (Vec){0.0f, 105.0f, 0.0f};
-    *(Vec*)((u8*)work + 0x240) = (Vec){0.5f, 0.5f, 1.0f};
-    *(Vec*)((u8*)work + 0x268) = (Vec){80.0f, 105.0f, 0.0f};
-    *(Vec*)((u8*)work + 0x274) = (Vec){0.5f, 0.5f, 1.0f};
+    work->objs[0].pos = (Vec){-80.0f, 105.0f, 0.0f};
+    work->objs[0].scale = (Vec){0.5f, 0.5f, 1.0f};
+    work->objs[1].pos = (Vec){0.0f, 105.0f, 0.0f};
+    work->objs[1].scale = (Vec){0.5f, 0.5f, 1.0f};
+    work->objs[2].pos = (Vec){80.0f, 105.0f, 0.0f};
+    work->objs[2].scale = (Vec){0.5f, 0.5f, 1.0f};
 
-    ((u8*)work)[0x228] = 0;
-    *(GXColor*)((u8*)work + 0x230) = (GXColor){0xC8, 0xFF, 0xFF, 0xFF};
-    *(s16*)((u8*)work + 0x224) = pouch->baseMaxHP;
-    *(Vec*)((u8*)work + 0x218) = (Vec){0.0f, 0.0f, 0.0f};
-    if (*(u16*)((u8*)work + 0x224) >= 0xC8) {
-        *(u16*)((u8*)work + 0x226) = *(u16*)((u8*)work + 0x224);
+    work->objs[0].state = 0;
+    work->objs[0].color = (GXColor){0xC8, 0xFF, 0xFF, 0xFF};
+    work->objs[0].value = pouch->baseMaxHP;
+    work->objs[0].rot = (Vec){0.0f, 0.0f, 0.0f};
+    if (work->objs[0].value >= 0xC8) {
+        work->objs[0].max = work->objs[0].value;
     } else {
-        *(u16*)((u8*)work + 0x226) = *(u16*)((u8*)work + 0x224) + 5;
+        work->objs[0].max = work->objs[0].value + 5;
     }
 
-    ((u8*)work)[0x25C] = 0;
-    *(GXColor*)((u8*)work + 0x264) = (GXColor){0xC8, 0xFF, 0xFF, 0xFF};
-    *(s16*)((u8*)work + 0x258) = pouch->baseMaxFP;
-    *(Vec*)((u8*)work + 0x24C) = (Vec){0.0f, 0.0f, 0.0f};
-    if (*(u16*)((u8*)work + 0x258) >= 0xC8) {
-        *(u16*)((u8*)work + 0x25A) = *(u16*)((u8*)work + 0x258);
+    work->objs[1].state = 0;
+    work->objs[1].color = (GXColor){0xC8, 0xFF, 0xFF, 0xFF};
+    work->objs[1].value = pouch->baseMaxFP;
+    work->objs[1].rot = (Vec){0.0f, 0.0f, 0.0f};
+    if (work->objs[1].value >= 0xC8) {
+        work->objs[1].max = work->objs[1].value;
     } else {
-        *(u16*)((u8*)work + 0x25A) = *(u16*)((u8*)work + 0x258) + 5;
+        work->objs[1].max = work->objs[1].value + 5;
     }
 
-    ((u8*)work)[0x290] = 0;
-    *(GXColor*)((u8*)work + 0x298) = (GXColor){0xC8, 0xFF, 0xFF, 0xFF};
-    *(s16*)((u8*)work + 0x28C) = pouch->maximumBP;
-    *(Vec*)((u8*)work + 0x280) = (Vec){0.0f, 0.0f, 0.0f};
-    if (*(u16*)((u8*)work + 0x28C) >= 99) {
-        *(u16*)((u8*)work + 0x28E) = *(u16*)((u8*)work + 0x28C);
+    work->objs[2].state = 0;
+    work->objs[2].color = (GXColor){0xC8, 0xFF, 0xFF, 0xFF};
+    work->objs[2].value = pouch->maximumBP;
+    work->objs[2].rot = (Vec){0.0f, 0.0f, 0.0f};
+    if (work->objs[2].value >= 99) {
+        work->objs[2].max = work->objs[2].value;
     } else {
-        *(u16*)((u8*)work + 0x28E) = *(u16*)((u8*)work + 0x28C) + 3;
+        work->objs[2].max = work->objs[2].value + 3;
     }
 
-    *(u32*)((u8*)work + 0x30) |= 8;
+    work->dispFlags |= SEQEND_DISP_LVUP_OBJECTS;
     return 2;
 }
 
@@ -1891,7 +1873,7 @@ s32 _keta_get(s32 value) {
 // late, as in retail.
 #pragma opt_common_subs off
 void _lvup_select_object_disp(CameraId camId, void* param) {
-    BattleSeqEndWorkLvup* work = (BattleSeqEndWorkLvup*)_battleWorkPointer->seqEndWork;
+    BattleSeqEndWork* work = _battleWorkPointer->seqEndWork;
     Mtx mtxMain;
     Mtx mtxTrans;
     Mtx mtxScale;
@@ -2091,15 +2073,15 @@ void _audience_Whistle_control(void) {
     if (work == NULL) {
         return;
     }
-    switch (*(s32*)((u8*)work + 0x0)) {
+    switch (work->unk0) {
     case 0x07000007: case 0x07000008: case 0x07000009: case 0x0700000A:
     case 0x0700000B: case 0x0700000C: case 0x0700000D: case 0x0700000E:
     case 0x0700000F: case 0x07000010: case 0x07000011: case 0x07000012:
     case 0x07000013: case 0x07000014: case 0x07000015: case 0x07000016:
     case 0x07000017: case 0x07000018: case 0x07000019: case 0x0700001A:
     case 0x0700001B:
-        if (--*(s32*)((u8*)work + 0x2A0) < 0) {
-            *(s32*)((u8*)work + 0x2A0) = irand(0x78) + 0x3C;
+        if (--work->whistleTimer < 0) {
+            work->whistleTimer = irand(0x78) + 0x3C;
             BattleAudienceSoundWhistle();
         }
         break;
