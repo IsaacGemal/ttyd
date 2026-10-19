@@ -3236,7 +3236,7 @@ USER_FUNC(btlevtcmd_DivePosition) {
         if (unit->moveFrames == 0) {
             return 2;
         }
-        unit->moveElapsed = 0.0f;
+        unit->moveProgress = 0.0f;
         unit->moveAngle = 0.0f;
         if (tx - x > 0.0f) {
             unit->moveDirection = 1;
@@ -3249,32 +3249,32 @@ USER_FUNC(btlevtcmd_DivePosition) {
     // intpl_sub is ABI-identical declared floats-first; this order makes mwcc evaluate the floats before
     // `steps`, matching the target (see src/battle/battle_stage_object.c _fall_frame).
     unit->mMoveCurrentPos.x = ((f32 (*)(s32, s32, f32, f32, s32))intpl_sub)(
-        interp, (s32)unit->moveElapsed, unit->mMoveStartPos.x, unit->mMoveTargetPos.x,
+        interp, (s32)unit->moveProgress, unit->mMoveStartPos.x, unit->mMoveTargetPos.x,
         unit->moveFrames);
     unit->mMoveCurrentPos.y = ((f32 (*)(s32, s32, f32, f32, s32))intpl_sub)(
-        interp, (s32)unit->moveElapsed, unit->mMoveStartPos.y, unit->mMoveTargetPos.y,
+        interp, (s32)unit->moveProgress, unit->mMoveStartPos.y, unit->mMoveTargetPos.y,
         unit->moveFrames);
     unit->mMoveCurrentPos.z = ((f32 (*)(s32, s32, f32, f32, s32))intpl_sub)(
-        interp, (s32)unit->moveElapsed, unit->mMoveStartPos.z, unit->mMoveTargetPos.z,
+        interp, (s32)unit->moveProgress, unit->mMoveStartPos.z, unit->mMoveTargetPos.z,
         unit->moveFrames);
 #else
-    unit->mMoveCurrentPos.x = intpl_sub(interp, (s32)unit->moveElapsed, unit->moveFrames,
+    unit->mMoveCurrentPos.x = intpl_sub(interp, (s32)unit->moveProgress, unit->moveFrames,
                                         unit->mMoveStartPos.x, unit->mMoveTargetPos.x);
-    unit->mMoveCurrentPos.y = intpl_sub(interp, (s32)unit->moveElapsed, unit->moveFrames,
+    unit->mMoveCurrentPos.y = intpl_sub(interp, (s32)unit->moveProgress, unit->moveFrames,
                                         unit->mMoveStartPos.y, unit->mMoveTargetPos.y);
-    unit->mMoveCurrentPos.z = intpl_sub(interp, (s32)unit->moveElapsed, unit->moveFrames,
+    unit->mMoveCurrentPos.z = intpl_sub(interp, (s32)unit->moveProgress, unit->moveFrames,
                                         unit->mMoveStartPos.z, unit->mMoveTargetPos.z);
 #endif
     if (aboveFloor) {
         floor = BattleGetFloorHeight(_battleWorkPointer, unit->mMoveCurrentPos.x, unit->mMoveCurrentPos.y,
                                      unit->mMoveCurrentPos.z);
         if (unit->mMoveCurrentPos.y < floor) {
-            unit->moveElapsed = (f32)unit->moveFrames;
+            unit->moveProgress = (f32)unit->moveFrames;
             BtlUnit_SetMoveTargetPos(unit, unit->mMoveCurrentPos.x, floor, unit->mMoveCurrentPos.z);
         }
     }
-    unit->moveElapsed += 1.0f;
-    if (unit->moveElapsed > (f32)unit->moveFrames) {
+    unit->moveProgress += 1.0f;
+    if (unit->moveProgress > (f32)unit->moveFrames) {
         BtlUnit_SetPos(unit, unit->mMoveTargetPos.x, unit->mMoveTargetPos.y, unit->mMoveTargetPos.z);
         _UnitMoveSoundControlEnd(unit);
         return 2;
@@ -3449,7 +3449,7 @@ USER_FUNC(btlevtcmd_EllipseMovePosition) {
         if (unit->moveFrames == 0) {
             return 2;
         }
-        unit->moveElapsed = 0.0f;
+        unit->moveProgress = 0.0f;
         unit->moveAngle = 0.0f;
         if (tx - x > 0.0f) {
             unit->moveDirection = 1;
@@ -3464,15 +3464,15 @@ USER_FUNC(btlevtcmd_EllipseMovePosition) {
     radius = 0.5f * sqrtf(dx * dx + dz * dz);
     e = (f32)eRaw;
     angle = angleABf(cx, cz, unit->mMoveStartPos.x, unit->mMoveStartPos.z);
-    t = intpl_sub(mode, (s32)unit->moveElapsed, unit->moveFrames,
+    t = intpl_sub(mode, (s32)unit->moveProgress, unit->moveFrames,
                   180.f, 0.0f);
     unit->mMoveCurrentPos.x =
         cx - (radius * sinfd(angle) * cosfd(t) + e * cosfd(angle) * sinfd(t));
     unit->mMoveCurrentPos.z =
         cz + radius * cosfd(angle) * cosfd(t) - e * sinfd(angle) * sinfd(t);
     BtlUnit_SetPos(unit, unit->mMoveCurrentPos.x, unit->mMoveCurrentPos.y, unit->mMoveCurrentPos.z);
-    unit->moveElapsed += 1.0f;
-    if (unit->moveElapsed > (f32)unit->moveFrames) {
+    unit->moveProgress += 1.0f;
+    if (unit->moveProgress > (f32)unit->moveFrames) {
         BtlUnit_SetPos(unit, unit->mMoveTargetPos.x, unit->mMoveTargetPos.y, unit->mMoveTargetPos.z);
         return 2;
     }
@@ -4430,44 +4430,44 @@ USER_FUNC(btlevtcmd_MarioJumpPosition) {
             if (unit->moveFrames == 0) {
                 return 2;
             }
-            *(f32*)((u8*)unit + 0x1A4) =
+            unit->moveStep.x =
                 (unit->mMoveTargetPos.x - unit->mMoveCurrentPos.x) / (f32)unit->moveFrames;
-            *(f32*)((u8*)unit + 0x1A8) =
+            unit->moveStep.y =
                 (unit->mMoveTargetPos.y - unit->mMoveCurrentPos.y) / (f32)unit->moveFrames;
-            *(f32*)((u8*)unit + 0x1AC) =
+            unit->moveStep.z =
                 (unit->mMoveTargetPos.z - unit->mMoveCurrentPos.z) / (f32)unit->moveFrames;
             unit->mMoveSpeedY = 0.0f;
             unit->mFallAccel = 3.1415927f / (f32)unit->moveFrames;
             unit->mMoveSpeedXZ = unit->mMoveSpeedXZ + remain / (f32)unit->moveFrames;
             if (type < 3) {
-                *(f32*)((u8*)unit + 0x1B0) = 90.f;
-                *(f32*)((u8*)unit + 0x1B4) = 360.f / (f32)unit->moveFrames;
+                unit->hopAngle = 90.f;
+                unit->hopAngleStep = 360.f / (f32)unit->moveFrames;
                 h = unit->moveDist;
                 h -= 20.0;
                 h /= 6.0;
                 h += 47.0;
-                unit->moveElapsed = h;
+                unit->moveProgress = h;
                 if (type == 2) {
-                    unit->moveElapsed *= 1.12;
+                    unit->moveProgress *= 1.12;
                 }
-                *(f32*)((u8*)unit + 0x1B8) = 0.0f;
-                *(f32*)((u8*)unit + 0x1B8) = 0.0f;
-                h = (f32)sin(6.2831855f * *(f32*)((u8*)unit + 0x1B0) / 360.f);
+                unit->hopY = 0.0f;
+                unit->hopY = 0.0f;
+                h = (f32)sin(6.2831855f * unit->hopAngle / 360.f);
                 unit->mMoveSpeedY = unit->mFallAccel * (0.53 * h + 1.0) + unit->mMoveSpeedY;
             } else {
-                *(f32*)((u8*)unit + 0x1B0) = 90.f;
-                *(f32*)((u8*)unit + 0x1B4) = (f32)(360 / unit->moveFrames);
+                unit->hopAngle = 90.f;
+                unit->hopAngleStep = (f32)(360 / unit->moveFrames);
                 h = unit->moveDist;
                 h -= 20.0;
                 h /= 6.0;
                 h += 47.0;
-                unit->moveElapsed = h;
+                unit->moveProgress = h;
                 if (type == 4) {
-                    unit->moveElapsed *= 1.25;
+                    unit->moveProgress *= 1.25;
                 }
-                *(f32*)((u8*)unit + 0x1B8) = 0.0f;
-                *(f32*)((u8*)unit + 0x1B8) = 0.0f;
-                h = (f32)sin(6.2831855f * *(f32*)((u8*)unit + 0x1B0) / 360.f);
+                unit->hopY = 0.0f;
+                unit->hopY = 0.0f;
+                h = (f32)sin(6.2831855f * unit->hopAngle / 360.f);
                 unit->mMoveSpeedY = unit->mFallAccel * (0.8 * h + 1.0) + unit->mMoveSpeedY;
             }
             BtlUnit_LoadSeMode(2, a, (u8*)unit + 0x1C0, (u8*)unit + 0x188);
@@ -4483,34 +4483,34 @@ USER_FUNC(btlevtcmd_MarioJumpPosition) {
     }
     switch ((s8)event->blocked) {
     case 1:
-        unit->mMoveCurrentPos.x += *(f32*)((u8*)unit + 0x1A4);
-        unit->mMoveCurrentPos.y += *(f32*)((u8*)unit + 0x1A8);
-        unit->mMoveCurrentPos.z += *(f32*)((u8*)unit + 0x1AC);
+        unit->mMoveCurrentPos.x += unit->moveStep.x;
+        unit->mMoveCurrentPos.y += unit->moveStep.y;
+        unit->mMoveCurrentPos.z += unit->moveStep.z;
         BtlUnit_GetPos(unit, &x, &y, &z);
-        *(f32*)((u8*)unit + 0x1B8) = y;
+        unit->hopY = y;
         x = unit->mMoveCurrentPos.x;
-        y = unit->moveElapsed * (f32)sin(unit->mMoveSpeedY) + unit->mMoveCurrentPos.y;
+        y = unit->moveProgress * (f32)sin(unit->mMoveSpeedY) + unit->mMoveCurrentPos.y;
         z = unit->mMoveCurrentPos.z;
         BtlUnit_SetPos(unit, x, y, z);
         if (unit->mMoveTargetPos.y > y && unit->moveFrames < 3) {
             y = unit->mMoveTargetPos.y;
             BtlUnit_SetPos(unit, x, y, z);
         }
-        *(f32*)((u8*)unit + 0x1B8) = y;
+        unit->hopY = y;
         if (type < 3) {
-            h = (f32)sin(6.2831855f * *(f32*)((u8*)unit + 0x1B0) / 360.f);
+            h = (f32)sin(6.2831855f * unit->hopAngle / 360.f);
             unit->mMoveSpeedY = unit->mFallAccel * (0.53 * h + 1.0) + unit->mMoveSpeedY;
         } else {
-            h = (f32)sin(6.2831855f * *(f32*)((u8*)unit + 0x1B0) / 360.f);
+            h = (f32)sin(6.2831855f * unit->hopAngle / 360.f);
             unit->mMoveSpeedY = unit->mFallAccel * (0.8 * h + 1.0) + unit->mMoveSpeedY;
         }
-        *(f32*)((u8*)unit + 0x1B0) += *(f32*)((u8*)unit + 0x1B4);
-        *(f32*)((u8*)unit + 0x1B0) = reviseAngle(*(f32*)((u8*)unit + 0x1B0));
+        unit->hopAngle += unit->hopAngleStep;
+        unit->hopAngle = reviseAngle(unit->hopAngle);
         (unit->moveFrames)--;
         if (unit->moveFrames == 0) {
             y = unit->mMoveTargetPos.y;
             BtlUnit_SetPos(unit, x, y, z);
-            unit->mMoveSpeedY = -(*(f32*)((u8*)unit + 0x1B8) - *(f32*)((u8*)unit + 0x1B8));
+            unit->mMoveSpeedY = -(unit->hopY - unit->hopY);
             unit->mFallAccel = 1.8f;
             return 1;
         }
@@ -4519,23 +4519,23 @@ USER_FUNC(btlevtcmd_MarioJumpPosition) {
         if (!BtlUnit_GetACPossibility(unit)) {
             return 2;
         }
-        unit->mMoveSpeedY = -(*(f32*)((u8*)unit + 0x1B8) - *(f32*)((u8*)unit + 0x1B8));
+        unit->mMoveSpeedY = -(unit->hopY - unit->hopY);
         unit->mFallAccel = 1.8f;
         unit->moveFrames = 1;
-        *(f32*)((u8*)unit + 0x1B0) = 90.f;
-        *(f32*)((u8*)unit + 0x1B4) = (f32)(360 / unit->moveFrames);
-        unit->moveElapsed = (f32)(__fabs(*(f32*)((u8*)unit + 0x1B8) - *(f32*)((u8*)unit + 0x1B8)) / 16.5);
+        unit->hopAngle = 90.f;
+        unit->hopAngleStep = (f32)(360 / unit->moveFrames);
+        unit->moveProgress = (f32)(__fabs(unit->hopY - unit->hopY) / 16.5);
         BtlUnit_GetPos(unit, &unit->mMoveCurrentPos.x, &unit->mMoveCurrentPos.y, &unit->mMoveCurrentPos.z);
         event->blocked = 3;
         break;
     case 3:
-        h = (f32)sin(6.2831855f * *(f32*)((u8*)unit + 0x1B0) / 360.f);
+        h = (f32)sin(6.2831855f * unit->hopAngle / 360.f);
         unit->mMoveCurrentPos.x = (f32)(unit->mMoveCurrentPos.x +
-                                        (unit->moveElapsed * h) / 33.0);
-        unit->mMoveCurrentPos.y -= unit->moveElapsed *
-                                   (f32)sin(6.2831855f * *(f32*)((u8*)unit + 0x1B0) / 360.f);
-        *(f32*)((u8*)unit + 0x1B0) += *(f32*)((u8*)unit + 0x1B4);
-        *(f32*)((u8*)unit + 0x1B0) = reviseAngle(*(f32*)((u8*)unit + 0x1B0));
+                                        (unit->moveProgress * h) / 33.0);
+        unit->mMoveCurrentPos.y -= unit->moveProgress *
+                                   (f32)sin(6.2831855f * unit->hopAngle / 360.f);
+        unit->hopAngle += unit->hopAngleStep;
+        unit->hopAngle = reviseAngle(unit->hopAngle);
         BtlUnit_SetPos(unit, unit->mMoveCurrentPos.x, unit->mMoveCurrentPos.y, unit->mMoveCurrentPos.z);
         (unit->moveFrames)--;
         if (unit->moveFrames == 0) {

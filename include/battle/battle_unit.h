@@ -559,10 +559,17 @@ typedef struct BattleUnit {
     f32 mMoveSpeedY;                             // 0x174
     f32 moveAngle;                               // 0x178, heading of the move (angleABf of start to target)
     f32 moveDist;                                // 0x17C, total length of the move, the sine ease divisor
-    f32 moveElapsed;                             // 0x180, frames run so far, compared against moveFrames
+    f32 moveProgress;                            // 0x180, frames run in an interpolated move; the hop routine reuses it as height
     s8 moveDirection;                            // 0x184
     s8 faceDirection;                            // 0x185
-    u8 field_0x186[0x1F8 - 0x186];               // 0x186
+    u8 field_0x186[0x188 - 0x186];               // 0x186
+    u8 field_0x188[0x1A4 - 0x188];               // 0x188, BtlUnitSeMode (battle_unit.c), then the 0x1C0 source
+    Vec moveStep;                                // 0x1A4, added to mMoveCurrentPos each frame of a hop
+    f32 hopAngle;                                // 0x1B0, degrees; sin(hopAngle) scales the hop's vertical speed
+    f32 hopAngleStep;                            // 0x1B4, degrees added to hopAngle each frame
+    f32 hopY;                                    // 0x1B8, height recorded at the start and after each move step
+    u8 field_0x1BC[0x1C0 - 0x1BC];               // 0x1BC
+    u8 field_0x1C0[0x1F8 - 0x1C0];               // 0x1C0
     BattleWorkHpGauge hpGauge;                   // 0x1F8
     s32 work[16];                                // 0x214
     BattleUnitPart* currentTarget;           // 0x254
