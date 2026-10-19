@@ -1106,7 +1106,7 @@ void btlseqEnd(BattleWork* wp) {
         BtlUnit_SetBodyAnimType(BattleGetMarioPtr(wp), 0x2A);
         if (BattleGetPartyPtr(wp) != NULL) {
             party = BattleGetPartyPtr(wp);
-            if (!(party->currentKind == 0xE1 && party->flippedTurns >= 1)) {
+            if (!(party->currentKind == UNIT_KOOPS && party->flippedTurns >= 1)) {
                 BtlUnit_SetBodyAnimType(BattleGetPartyPtr(wp), 0x2A);
             }
         }
@@ -1484,13 +1484,13 @@ s32 _disable_enemy_unit_disp(EventEntry* event, BOOL isFirstCall) {
             continue;
         }
         type = unit->currentKind;
-        if (type == 0xDC) {
+        if (type == UNIT_SYSTEM) {
             continue;
         }
-        if (type == 0xDE) {
+        if (type == UNIT_MARIO) {
             continue;
         }
-        if (type >= 0xE0 && type < 0xE7 && unit->mAlliance == 0 && type != 0xE5) {
+        if (type >= TYPE_PARTNER_MIN && type < TYPE_PARTNER_MAX && unit->mAlliance == 0 && type != UNIT_BOBBERY) {
             continue;
         }
         {
@@ -1499,7 +1499,7 @@ s32 _disable_enemy_unit_disp(EventEntry* event, BOOL isFirstCall) {
             if (data != NULL) {
                 EventEntry* e = evtEntry(data, 0xA, 0);
                 e->unitId = unit->unitId;
-            } else if (unit->currentKind != 0xE5) {
+            } else if (unit->currentKind != UNIT_BOBBERY) {
                 unit->mAttributeFlags |= 0x21000000;
             }
         }
@@ -1896,26 +1896,26 @@ void _lvup_select_object_disp(CameraId camId, void* param) {
         switch (obj->state) {
         case 4:
             obj->state = 5;
-            obj->counter = 1;
+            obj->blinkTimer = 1;
             /* fallthrough */
         case 5:
-            obj->counter--;
-            if (obj->counter == 0) {
-                obj->counter = 8;
-                if (obj->flag != 0) {
-                    obj->flag = 0;
+            obj->blinkTimer--;
+            if (obj->blinkTimer == 0) {
+                obj->blinkTimer = 8;
+                if (obj->visible != 0) {
+                    obj->visible = 0;
                 } else {
-                    obj->flag = 1;
+                    obj->visible = 1;
                 }
             }
             break;
         default:
-            obj->flag = 1;
+            obj->visible = 1;
             break;
         }
     }
 
-    if (work->objs[0].flag != 0) {
+    if (work->objs[0].visible != 0) {
         PSMTXIdentity(mtxMain);
         PSMTXTrans(mtxTrans, work->objs[0].pos.x, work->objs[0].pos.y, work->objs[0].pos.z);
         PSMTXScale(mtxScale, work->objs[0].scale.x, work->objs[0].scale.y, work->objs[0].scale.z);
@@ -1940,7 +1940,7 @@ void _lvup_select_object_disp(CameraId camId, void* param) {
 #endif
     }
 
-    if (work->objs[1].flag != 0) {
+    if (work->objs[1].visible != 0) {
         PSMTXIdentity(mtxMain);
         PSMTXTrans(mtxTrans, work->objs[1].pos.x, work->objs[1].pos.y, work->objs[1].pos.z);
         PSMTXScale(mtxScale, work->objs[1].scale.x, work->objs[1].scale.y, work->objs[1].scale.z);
@@ -1965,7 +1965,7 @@ void _lvup_select_object_disp(CameraId camId, void* param) {
 #endif
     }
 
-    if (work->objs[2].flag != 0) {
+    if (work->objs[2].visible != 0) {
         PSMTXIdentity(mtxMain);
         PSMTXTrans(mtxTrans, work->objs[2].pos.x, work->objs[2].pos.y, work->objs[2].pos.z);
         PSMTXScale(mtxScale, work->objs[2].scale.x, work->objs[2].scale.y, work->objs[2].scale.z);
@@ -1993,7 +1993,7 @@ void _lvup_select_object_disp(CameraId camId, void* param) {
     for (i = 0; i < 3; i++) {
         obj = &work->objs[i];
 
-        if (obj->flag == 0) {
+        if (obj->visible == 0) {
             continue;
         }
         if (obj->state == 1) {
@@ -2103,7 +2103,7 @@ static s32 _check_guard_koura(EventEntry* event, BOOL isFirstCall) {
     s32 outIdx = args[1];
     BattleUnit* unit = BattleGetUnitPtr(wp, BattleTransID(e, type));
 
-    if (!(unit->mAttributeFlags & 0x20)) {
+    if (!(unit->mAttributeFlags & kShellShielded)) {
         evtSetValue(e, outIdx, -1);
         return 2;
     }

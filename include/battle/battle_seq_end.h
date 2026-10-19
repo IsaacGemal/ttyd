@@ -37,16 +37,16 @@ typedef struct LvupSelectObj {
     u16 value;     // 0x24, current stat (baseMaxHP, baseMaxFP or maximumBP)
     u16 max;       // 0x26, the stat after this level-up (+5, +3, or unchanged past the cap)
     u8 state;      // 0x28, 1 shown, 2 bouncing, 3 dimmed, 4 chosen, 5 chosen and blinking
-    u8 counter;    // 0x29
+    u8 blinkTimer; // 0x29, frames until visible toggles (state 5)
     u8 pad[2];     // 0x2A
-    s32 flag;      // 0x2C, draw this frame
+    s32 visible;   // 0x2C, drawn when nonzero; state 4 starts blinking it off and on
     GXColor color; // 0x30
 } LvupSelectObj;
 
 typedef struct BattleSeqEndWork {
     s32 unk0;                // 0x0, zeroed when created; _audience_Whistle_control's switch reads it, nothing sets it
     s32 timer;               // 0x4, frame counter for the current end-of-battle step
-    s16 stockExp;            // 0x8, exp earned this battle (BattleGetStockExp, doubled for a 3-party win, capped at 100)
+    s16 stockExp;            // 0x8, exp earned this battle (BattleGetStockExp; doubled when field_18FE1[0] == 3, capped at 100)
     s16 expRemaining;        // 0xA, exp not yet turned into star points; the exp icons show this
     s32 lvupPending;         // 0xC, set when 100 star points were earned (a level-up is due)
     s32 lvupSelect;          // 0x10, highlighted level-up choice: 0 HP, 1 FP, 2 BP
@@ -64,7 +64,7 @@ typedef struct BattleSeqEndWork {
     Vec iconPos[0x13];       // 0x118, star positions
     s32 waitEvtId;           // 0x1FC, event the sequence waits on before its next step
     LvupSelectObj objs[3];   // 0x200
-    EffectEntry* effect;     // 0x29C, the effect that follows the exp counter
+    EffectEntry* effect;     // 0x29C, point effect started from stockExp, deleted when the exp count ends
     s32 whistleTimer;        // 0x2A0, frames until the next audience whistle
     s32 confettiEvtId;       // 0x2A4, event id set by _set_confetti_control_evtid
     s32 rankUpEvtId;         // 0x2A8, event id of the rank-up event
