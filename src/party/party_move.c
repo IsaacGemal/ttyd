@@ -963,7 +963,7 @@ s32 partyMoveMain(PartyEntry* party, s32 hosei) {
             party->position.x = pos.x;
             party->position.z = pos.z;
         } else {
-            marioChkWallAround(&pos, 1, speed, angle, *(f32*)((u8*)work + 0xF4), *(f32*)((u8*)work + 0xF0));
+            marioChkWallAround(&pos, 1, speed, angle, work->radius, work->height);
             party->position.x = pos.x;
             party->position.z = pos.z;
         }
@@ -972,15 +972,15 @@ s32 partyMoveMain(PartyEntry* party, s32 hosei) {
     }
     if (!(party->flags & 0x02000000)) {
         Vec headPos = party->position;
-        f32 headOut = *(f32*)((u8*)work + 0xF0);
+        f32 headOut = work->height;
         hit = partySearchHead(party, &headPos, &headOut, work->field_10C);
         if (hit != NULL) {
-            work->field_140 = hit;
+            work->headHit = hit;
         }
     }
     if (party->flags & PARTY_FLAG_IS_JUMPING) {
         angle = toMovedirSimple(work->field_110);
-        if (work->field_140 == NULL) {
+        if (work->headHit == NULL) {
             work->position.y += work->jumpPara1;
         }
         work->jumpPara1 += work->jumpPara2;
@@ -991,11 +991,11 @@ s32 partyMoveMain(PartyEntry* party, s32 hosei) {
     if (!(party->flags & 0x02000000) && work->jumpPara1 <= 0.0f) {
         f32 d = fabsf(work->jumpPara1);
         hit = partySearchGround(party, d, d);
-        pos.y = work->field_E4;
+        pos.y = work->groundY;
         if (hit != NULL) {
             s32 attr = hitGetAttr(hit);
             if (attr & 0x200) {
-                work->field_138 = hit;
+                work->groundHit = hit;
                 party->flags &= ~PARTY_FLAG_IS_GROUNDED;
                 if (!(party->flags & PARTY_FLAG_IS_FALLING)) {
                     party->flags |= PARTY_FLAG_IS_FALLING;
@@ -1014,7 +1014,7 @@ s32 partyMoveMain(PartyEntry* party, s32 hosei) {
             }
         }
     }
-    work->field_138 = hit;
+    work->groundHit = hit;
     if (hit == NULL) {
         if (!(party->flags & 0x04000000)) {
             party->flags &= ~PARTY_FLAG_IS_GROUNDED;
@@ -1139,13 +1139,13 @@ void partyMoveCheckWall(PartyEntry* party) {
     party->position.x = pos.x;
     party->position.z = pos.z;
     ground = partySearchGround(party, 10.0f, 10.0f);
-    pos.y = work->field_E4;
+    pos.y = work->groundY;
     if (ground != NULL) {
         if (hitGetAttr(ground) & 0x200) {
             ground = NULL;
         }
     }
-    work->field_138 = ground;
+    work->groundHit = ground;
     if (ground == NULL) {
         party->position.y = party->position.y + work->jumpPara1;
         if (work->jumpPara2 == 0.0f) {
@@ -1321,8 +1321,8 @@ s32 partyMarioHosei(PartyEntry* party) {
         f5 = 0.15f;
         f6 = f4;
     }
-    f3 = *(f32*)((u8*)work + 0xF4) + mario->wPlayerCollisionBox.x;
-    f1 = mario->wPlayerCollisionBox.y + *(f32*)((u8*)work + 0xF0);
+    f3 = work->radius + mario->wPlayerCollisionBox.x;
+    f1 = mario->wPlayerCollisionBox.y + work->height;
     *(f32*)((u8*)work + 0xA0) = 0.0f;
     f4 = f4 * f3;
     f5 = f5 * f3;
@@ -1428,11 +1428,11 @@ void unk_800c7c98(PartyEntry* party) {
         work->field_4C = 0;
     }
     if (work->field_34 != 0x0D) {
-        if (work->field_138 != NULL && (hitGetAttr((HitEntry*)work->field_138) & 0x800)) {
+        if (work->groundHit != NULL && (hitGetAttr((HitEntry*)work->groundHit) & 0x800)) {
             partyChgRunMode(party, 0x0D);
         } else if (work->field_12C != NULL && (hitGetAttr((HitEntry*)work->field_12C) & 0x800)) {
             partyChgRunMode(party, 0x0D);
-        } else if (work->field_140 != NULL && (hitGetAttr((HitEntry*)work->field_140) & 0x800)) {
+        } else if (work->headHit != NULL && (hitGetAttr((HitEntry*)work->headHit) & 0x800)) {
             partyChgRunMode(party, 0x0D);
         }
     }
@@ -1768,11 +1768,11 @@ void party_move_mode_stay(PartyEntry* party) {
         work->field_4C = 0;
     }
     if (work->field_34 != 0x0D) {
-        if (work->field_138 != NULL && (hitGetAttr((HitEntry*)work->field_138) & 0x800)) {
+        if (work->groundHit != NULL && (hitGetAttr((HitEntry*)work->groundHit) & 0x800)) {
             partyChgRunMode(party, 0x0D);
         } else if (work->field_12C != NULL && (hitGetAttr((HitEntry*)work->field_12C) & 0x800)) {
             partyChgRunMode(party, 0x0D);
-        } else if (work->field_140 != NULL && (hitGetAttr((HitEntry*)work->field_140) & 0x800)) {
+        } else if (work->headHit != NULL && (hitGetAttr((HitEntry*)work->headHit) & 0x800)) {
             partyChgRunMode(party, 0x0D);
         }
     }
@@ -1823,11 +1823,11 @@ void party_move_mode_walk(PartyEntry* party) {
         work->field_4C = 0;
     }
     if (work->field_34 != 0x0D) {
-        if (work->field_138 != NULL && (hitGetAttr((HitEntry*)work->field_138) & 0x800)) {
+        if (work->groundHit != NULL && (hitGetAttr((HitEntry*)work->groundHit) & 0x800)) {
             partyChgRunMode(party, 0x0D);
         } else if (work->field_12C != NULL && (hitGetAttr((HitEntry*)work->field_12C) & 0x800)) {
             partyChgRunMode(party, 0x0D);
-        } else if (work->field_140 != NULL && (hitGetAttr((HitEntry*)work->field_140) & 0x800)) {
+        } else if (work->headHit != NULL && (hitGetAttr((HitEntry*)work->headHit) & 0x800)) {
             partyChgRunMode(party, 0x0D);
         }
     }
@@ -1985,7 +1985,7 @@ void partyForceWalk(PartyEntry* party) {
                         ground = NULL;
                     }
                 }
-                work->field_138 = ground;
+                work->groundHit = ground;
                 if (ground == NULL) {
                     if (work->field_36 == 3) {
                         work->flags &= ~(PARTY_FLAG_IS_JUMPING | PARTY_FLAG_IS_FALLING | PARTY_FLAG_IS_STEPPING);
@@ -2002,7 +2002,7 @@ void partyForceWalk(PartyEntry* party) {
                         work->flags &= ~0x80;
                     }
                 }
-                work->position.y = work->field_E4;
+                work->position.y = work->groundY;
             }
         }
         break;
@@ -2260,11 +2260,11 @@ void walkMain(PartyEntry* party) {
             work->field_4C = 0;
         }
         if (work->field_34 != 0x0D) {
-            if (work->field_138 != NULL && (hitGetAttr((HitEntry*)work->field_138) & 0x800)) {
+            if (work->groundHit != NULL && (hitGetAttr((HitEntry*)work->groundHit) & 0x800)) {
                 partyChgRunMode(party, 0x0D);
             } else if (work->field_12C != NULL && (hitGetAttr((HitEntry*)work->field_12C) & 0x800)) {
                 partyChgRunMode(party, 0x0D);
-            } else if (work->field_140 != NULL && (hitGetAttr((HitEntry*)work->field_140) & 0x800)) {
+            } else if (work->headHit != NULL && (hitGetAttr((HitEntry*)work->headHit) & 0x800)) {
                 partyChgRunMode(party, 0x0D);
             }
         }
@@ -2312,11 +2312,11 @@ void walkMain(PartyEntry* party) {
             work->field_4C = 0;
         }
         if (work->field_34 != 0x0D) {
-            if (work->field_138 != NULL && (hitGetAttr((HitEntry*)work->field_138) & 0x800)) {
+            if (work->groundHit != NULL && (hitGetAttr((HitEntry*)work->groundHit) & 0x800)) {
                 partyChgRunMode(party, 0x0D);
             } else if (work->field_12C != NULL && (hitGetAttr((HitEntry*)work->field_12C) & 0x800)) {
                 partyChgRunMode(party, 0x0D);
-            } else if (work->field_140 != NULL && (hitGetAttr((HitEntry*)work->field_140) & 0x800)) {
+            } else if (work->headHit != NULL && (hitGetAttr((HitEntry*)work->headHit) & 0x800)) {
                 partyChgRunMode(party, 0x0D);
             }
         }
@@ -2459,11 +2459,11 @@ static void flyMain(PartyEntry* party) {
             work->field_4C = 0;
         }
         if (work->field_34 != 0x0D) {
-            if (work->field_138 != NULL && (hitGetAttr((HitEntry*)work->field_138) & 0x800)) {
+            if (work->groundHit != NULL && (hitGetAttr((HitEntry*)work->groundHit) & 0x800)) {
                 partyChgRunMode(party, 0x0D);
             } else if (work->field_12C != NULL && (hitGetAttr((HitEntry*)work->field_12C) & 0x800)) {
                 partyChgRunMode(party, 0x0D);
-            } else if (work->field_140 != NULL && (hitGetAttr((HitEntry*)work->field_140) & 0x800)) {
+            } else if (work->headHit != NULL && (hitGetAttr((HitEntry*)work->headHit) & 0x800)) {
                 partyChgRunMode(party, 0x0D);
             }
         }
@@ -2511,11 +2511,11 @@ static void flyMain(PartyEntry* party) {
             work->field_4C = 0;
         }
         if (work->field_34 != 0x0D) {
-            if (work->field_138 != NULL && (hitGetAttr((HitEntry*)work->field_138) & 0x800)) {
+            if (work->groundHit != NULL && (hitGetAttr((HitEntry*)work->groundHit) & 0x800)) {
                 partyChgRunMode(party, 0x0D);
             } else if (work->field_12C != NULL && (hitGetAttr((HitEntry*)work->field_12C) & 0x800)) {
                 partyChgRunMode(party, 0x0D);
-            } else if (work->field_140 != NULL && (hitGetAttr((HitEntry*)work->field_140) & 0x800)) {
+            } else if (work->headHit != NULL && (hitGetAttr((HitEntry*)work->headHit) & 0x800)) {
                 partyChgRunMode(party, 0x0D);
             }
         }
@@ -2635,7 +2635,7 @@ BOOL partyGetAppearPos(PartyEntry* party, Vec* position) {
     HitEntry* hit;
 
     moveDist = 30.0f;
-    targetDist = 30.0f + party->field_F4;
+    targetDist = 30.0f + party->radius;
     if (player->currMotionId == 0x18) {
         if (marioPlaneGetFlyingDir() == 1) {
             moveAngle = 0.0f;
@@ -2966,7 +2966,7 @@ BOOL partyGetAppearPos2(PartyEntry* party, Vec* position) {
     MarioWork* player = party->playerPtr;
     HitCheckQuery query;
     f32 unk1A8;
-    f32 targetDist = 30.0f + party->field_F4;
+    f32 targetDist = 30.0f + party->radius;
     f32 moveDist = 30.0f;
     f32 angle;
     f32 sinv;
@@ -3086,7 +3086,7 @@ BOOL partyGetAppearPos3(PartyEntry* party, Vec* position) {
     f32 cosv;
     f32 angle;
 
-    targetDist = 30.0f + party->field_F4;
+    targetDist = 30.0f + party->radius;
     bestDist = -1.0f;
     unk1AC = *(f32*)player->unk1AC;
     position->x = player->position.x;
@@ -3138,7 +3138,7 @@ BOOL partyGetAppearPos3(PartyEntry* party, Vec* position) {
             }
         }
 
-        npc = npcNearDistCheck(position->x, position->y, position->z, *(f32*)((u8*)party + 0xF4));
+        npc = npcNearDistCheck(position->x, position->y, position->z, party->radius);
         if (npc != NULL) {
             if (bestDist < PSVECDistance(&npc->position, position)) {
                 bestDist = PSVECDistance(&npc->position, position);
@@ -3148,8 +3148,8 @@ BOOL partyGetAppearPos3(PartyEntry* party, Vec* position) {
             }
         } else {
             position->y = query.hitPos.y;
-            marioChkWallAround(position, 1, 2.0f, 0.0f, *(f32*)((u8*)party + 0xF4),
-                               *(f32*)((u8*)party + 0xF0));
+            marioChkWallAround(position, 1, 2.0f, 0.0f, party->radius,
+                               party->height);
             return TRUE;
         }
     }
@@ -3217,7 +3217,7 @@ BOOL partyGetAppearPos4(PartyEntry* party, Vec* position) {
     } else {
         dist = 26.0f;
     }
-    targetDist = dist + party->field_F4;
+    targetDist = dist + party->radius;
     baseAngle = revise360(180.0f + *(f32*)(party->field_4D + 7));
 
     if (!(party->flags & PARTY_FLAG_IS_PARTNER)) {
@@ -3303,7 +3303,7 @@ BOOL partyGetAppearPos4(PartyEntry* party, Vec* position) {
             }
         }
 
-        npc = npcNearDistCheck(position->x, position->y, position->z, party->field_F4);
+        npc = npcNearDistCheck(position->x, position->y, position->z, party->radius);
         if (npc != NULL) {
             continue;
         }

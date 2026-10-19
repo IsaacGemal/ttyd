@@ -223,8 +223,8 @@ void cloud_move(PartyEntry* party) {
 void cloud_init(PartyEntry* party) {
     party->field_33 = 5;
     party->field_32 = 1;
-    *(f32*)((u8*)party + 0xF0) = 38.0f;
-    *(f32*)((u8*)party + 0xF4) = 24.0f;
+    party->height = 38.0f;
+    party->radius = 24.0f;
     *(s32*)((u8*)party + 0x174) = 0;
     *(s32*)((u8*)party + 0x178) = 0;
     *(s32*)((u8*)party + 0x17C) = 0;
@@ -241,13 +241,13 @@ static inline void cloudMoveToMario(PartyEntry* party) {
     MarioWork* pm = party->playerPtr;
     f32 pa;
     s32 pf;
-    *(Vec*)((u8*)party + 0x94) = pm->position;
+    party->targetPos = pm->position;
     pa = *(f32*)pm->unk1AC;
     pf = (pa < 90.0f || pa >= 270.0f);
     pa = toMovedir(pa + (pf != 0 ? -90.0f : 90.0f));
     movePos((f32*)((u8*)party + 0x94), (f32*)((u8*)party + 0x9C), 3.3f, pa);
-    *(f32*)((u8*)party + 0x98) += 10.0f;
-    party->position = *(Vec*)((u8*)party + 0x94);
+    party->targetPos.y += 10.0f;
+    party->position = party->targetPos;
 }
 
 // The original spells the last two guards as one `mot <= 1 || mot == 2` condition; MWCC then
@@ -312,12 +312,12 @@ static inline void cloudMoveToMarioStep(PartyEntry* party) {
     MarioWork* pm = party->playerPtr;
     f32 pa;
     s32 pf;
-    *(Vec*)((u8*)party + 0x94) = pm->position;
+    party->targetPos = pm->position;
     pa = *(f32*)pm->unk1AC;
     pf = (pa < 90.0f || pa >= 270.0f);
     pa = toMovedir(pa + (pf != 0 ? -90.0f : 90.0f));
     movePos((f32*)((u8*)party + 0x94), (f32*)((u8*)party + 0x9C), 3.3f, pa);
-    *(f32*)((u8*)party + 0x98) += 10.0f;
+    party->targetPos.y += 10.0f;
 }
 #define MOVE_TO_MARIO() cloudMoveToMarioStep(party)
 #else
@@ -325,12 +325,12 @@ static inline void cloudMoveToMarioStep(PartyEntry* party) {
     MarioWork* pm = party->playerPtr; \
     f32 pa; \
     s32 pf = 0; \
-    *(Vec*)((u8*)party + 0x94) = pm->position; \
+    party->targetPos = pm->position; \
     pa = *(f32*)((u8*)pm + 0x1AC); \
     if (pa < 90.0f || pa >= 270.0f) { pf = 1; } \
     pa = toMovedir(pa + (pf ? -90.0f : 90.0f)); \
     movePos((f32*)((u8*)party + 0x94), (f32*)((u8*)party + 0x9C), 3.3f, pa); \
-    *(f32*)((u8*)party + 0x98) += 10.0f; \
+    party->targetPos.y += 10.0f; \
 } while (0)
 #endif
 
@@ -377,24 +377,24 @@ void N__cloud_use(PartyEntry* party) {
     switch (party->useMotionId) {
     case 0:
         mario->dispFlags |= 0x100;
-        *(s32*)((u8*)party + 0x24) = 4;
+        party->timer = 4;
         party->useMotionId = 1;
         /* fallthrough */
     case 1:
         MOVE_TO_MARIO();
-        *(f32*)((u8*)party + 0x10C) = mario->unk1A8;
-        *(f32*)((u8*)party + 0x110) = *(f32*)((u8*)mario + 0x1AC);
-        party->position.x += (*(f32*)((u8*)party + 0x94) - party->position.x) / (f32)*(s32*)((u8*)party + 0x24);
-        party->position.y += (*(f32*)((u8*)party + 0x98) - party->position.y) / (f32)*(s32*)((u8*)party + 0x24);
-        party->position.z += (*(f32*)((u8*)party + 0x9C) - party->position.z) / (f32)*(s32*)((u8*)party + 0x24);
-        if (--*(s32*)((u8*)party + 0x24) > 0) {
+        party->field_10C = mario->unk1A8;
+        party->field_110 = *(f32*)((u8*)mario + 0x1AC);
+        party->position.x += (party->targetPos.x - party->position.x) / (f32)party->timer;
+        party->position.y += (party->targetPos.y - party->position.y) / (f32)party->timer;
+        party->position.z += (party->targetPos.z - party->position.z) / (f32)party->timer;
+        if (--party->timer > 0) {
             break;
         }
         party->useMotionId = 0xA;
         /* fallthrough */
     case 0xA:
         MOVE_TO_MARIO();
-        party->position = *(Vec*)((u8*)party + 0x94);
+        party->position = party->targetPos;
         if (*(void**)((u8*)party + 0x178) == NULL) {
             *(void**)((u8*)party + 0x178) = effKumokumoN64Entry(0, 0, 0.0f, 0.0f, 0.0f, 0.0f, -2.0f, 0.0f);
             *(s32*)((u8*)((EffectEntry*)*(void**)((u8*)party + 0x178))->userdata + 0x60) = party->camId;
@@ -408,7 +408,7 @@ void N__cloud_use(PartyEntry* party) {
         marioChgMot(0x1B);
         marioChgPose("M_A_2A");
         partyChgPose(party, (char*)"PWD_A_5");
-        *(s32*)((u8*)party + 0x24) = 0x10;
+        party->timer = 0x10;
         party->useMotionId = 0xB;
         mario->dispFlags |= 0x4;
         mario->dispFlags |= 0x100;
@@ -425,8 +425,8 @@ void N__cloud_use(PartyEntry* party) {
         /* fallthrough */
     case 0xB:
         MOVE_TO_MARIO();
-        party->position = *(Vec*)((u8*)party + 0x94);
-        if (--*(s32*)((u8*)party + 0x24) > 0) {
+        party->position = party->targetPos;
+        if (--party->timer > 0) {
             break;
         }
         partyChgPose(party, (char*)"PWD_A_6");
@@ -435,12 +435,12 @@ void N__cloud_use(PartyEntry* party) {
         /* fallthrough */
     case 0xC:
         MOVE_TO_MARIO();
-        party->position = *(Vec*)((u8*)party + 0x94);
+        party->position = party->targetPos;
         partyUpdateKeyData(party);
         *(f32*)((u8*)mario + 0x1A8) = *(f32*)((u8*)cloud + 0x4);
         *(f32*)((u8*)mario + 0x1AC) = *(f32*)((u8*)cloud + 0x4);
-        *(f32*)((u8*)party + 0x10C) = *(f32*)((u8*)cloud + 0x4);
-        *(f32*)((u8*)party + 0x110) = *(f32*)((u8*)cloud + 0x4);
+        party->field_10C = *(f32*)((u8*)cloud + 0x4);
+        party->field_110 = *(f32*)((u8*)cloud + 0x4);
         sx = mario->position.x;
         sz = mario->position.z;
         f31 = *(f32*)((u8*)mario + 0x1A8);
@@ -497,7 +497,7 @@ void N__cloud_use(PartyEntry* party) {
         cloud->unk24 = 0;
         cloud->unk28 = 0;
         cloud->unk2C = 0;
-        *(s32*)((u8*)party + 0x24) = sysMsec2Frame(200);
+        party->timer = sysMsec2Frame(200);
         party->useMotionId = 0xD;
         if ((party->flags & 0x80000000) != 0) {
             party->useMotionId = 0x14;
@@ -509,12 +509,12 @@ void N__cloud_use(PartyEntry* party) {
         break;
     case 0xD:
         MOVE_TO_MARIO();
-        party->position = *(Vec*)((u8*)party + 0x94);
+        party->position = party->targetPos;
         partyUpdateKeyData(party);
         if ((*(u16*)((u8*)party + 0x152) & 0x400) != 0) {
             party->useMotionId = 0xA;
         }
-        if (--*(s32*)((u8*)party + 0x24) <= 0) {
+        if (--party->timer <= 0) {
             party->useMotionId = 0x14;
             break;
         }
@@ -535,7 +535,7 @@ void N__cloud_use(PartyEntry* party) {
             *(void**)((u8*)party + 0x178) = NULL;
         }
         MOVE_TO_MARIO();
-        party->position = *(Vec*)((u8*)party + 0x94);
+        party->position = party->targetPos;
         party->flags2 &= ~0x10;
         if (*(u16*)((u8*)mario + 0x2E) == 0x1B) {
             mario->dispFlags &= ~(1 << 8);

@@ -497,7 +497,7 @@ static USER_FUNC(lect_itemget_kesan) {
         return EVT_RETURN_DONE;
     }
     pos = party->position;
-    speed = *(f32*)((u8*)party + 0xF0);
+    speed = party->height;
     pos.y += speed / 2.0f;
     PSVECSubtract(&pos, &cam->cameraPos, &dir);
     PSVECNormalize(&dir, &dir);

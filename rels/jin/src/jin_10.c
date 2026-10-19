@@ -149,7 +149,7 @@ USER_FUNC(get_width)
 {
     s32* args = event->args;
     PartyEntry* party = partyGetPtr(evtGetValue(event, args[0]));
-    evtSetFloat(event, args[1], 0.8f * *(f32*)((u8*)party + 0xF4));
+    evtSetFloat(event, args[1], 0.8f * party->radius);
     return EVT_RETURN_DONE;
 }
 

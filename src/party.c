@@ -1126,9 +1126,9 @@ void driveParty(PartyEntry* party) {
     } else {
         party->flags &= ~0x00800000;
     }
-    party->field_138 = NULL;
+    party->groundHit = NULL;
     party->field_12C = NULL;
-    party->field_140 = NULL;
+    party->headHit = NULL;
     party->field_134 = NULL;
     P32(party, 0x130) = 0;
     switch (P8(party, 0x34)) {
@@ -1354,7 +1354,7 @@ s32 partyHelloMain(PartyEntry* party) {
                 P8(party, 0x38) = 2;
                 break;
             }
-            if (party->field_138 == NULL) {
+            if (party->groundHit == NULL) {
                 f32 t = (f32)(0x10 - PS32(party, 0x24)) / 16.0f;
                 Vec v = {0.0f, 0.0f, 0.0f};
 
@@ -2029,7 +2029,7 @@ void partyRideMain(PartyEntry* party) {
     switch (P8(party, 0x38)) {
         case 0:
             getRidePos(party, &ridePos);
-            *(Vec*)(party->field_7C + (0x94 - 0x7C)) = ridePos;
+            party->targetPos = ridePos;
             PF32(party, 0x128) =
                 distABf(party->position.x, party->position.z, PF32(party, 0x94), PF32(party, 0x9C));
             party->dir =
@@ -2137,9 +2137,9 @@ void partyRideMain(PartyEntry* party) {
             party->position.y = 0.5f * PF32(player, 0x1B8) + dy;
             party->position.z = pz;
             if (P8(party, 0x38) == 100) {
-                partyGetAppearPos(party, (Vec*)(party->field_7C + (0x94 - 0x7C)));
+                partyGetAppearPos(party, &party->targetPos);
             } else {
-                partyGetAppearPos2(party, (Vec*)(party->field_7C + (0x94 - 0x7C)));
+                partyGetAppearPos2(party, &party->targetPos);
             }
             party->field_110 = PF32(player, 0x1AC);
             PS32(party, 0x24) = 16;
@@ -2175,7 +2175,7 @@ void partyRideMain(PartyEntry* party) {
                 PS32(party, 0x24) = 0;
                 P8(party, 0x38) = 111;
                 break;
-            } else if (party->field_138 == 0) {
+            } else if (party->groundHit == 0) {
                 Vec vec;
                 t = (f32)(16 - PS32(party, 0x24)) / 16.0f;
                 vec = (Vec){0.0f,0.0f,0.0f};
@@ -2498,8 +2498,8 @@ void party_damage_return(PartyEntry* party) {
                 party->position.y += 200.0f;
                 party->flags &= ~0x70;
             }
-            if (party->field_138 != NULL) {
-                if ((hitGetAttr((HitEntry*)party->field_138) >> 9 & 1) == 0) {
+            if (party->groundHit != NULL) {
+                if ((hitGetAttr((HitEntry*)party->groundHit) >> 9 & 1) == 0) {
                     if (!(party->flags2 & 2)) {
                         if (party->currentMemberId < 8) {
                             partyGetHp(party->currentMemberId);

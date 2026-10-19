@@ -464,7 +464,7 @@ static USER_FUNC(lect_itemget_kesan) {
     {
         Vec pos = party->position;
         Vec out;
-        pos.y += *(f32*)((u8*)party + 0xF0) / 2.0f;  // TODO: unnamed field, padding in party.h
+        pos.y += party->height / 2.0f;  // TODO: unnamed field, padding in party.h
         PSVECSubtract(&pos, &cam->cameraPos, &out);
         PSVECNormalize(&out, &out);
         PSVECScale(&out, &out, dist);

@@ -93,8 +93,8 @@ void mot_vivian_post(void) {
 void vivian_init_801809C0(PartyEntry* party) {
     party->field_33 = 6;
     party->field_32 = 1;
-    *(f32*)&party->field_E8[8] = 35.0f;
-    party->field_F4 = 24.0f;
+    party->height = 35.0f;
+    party->radius = 24.0f;
     *(f32*)&party->field_174[0] = 10.0f;
     party->field_4D[2] = 0;
     party->field_B8 = party->position;
@@ -236,11 +236,11 @@ static inline void vivianUseStep(PartyEntry* party) {
         if (*(f32*)&party->field_174[8] < -13.0f) {
             *(f32*)&party->field_174[8] = -13.0f;
         }
-        *(Vec*)&party->field_7C[0x18] = mario->position;
-        movePos((f32*)&party->field_7C[0x18], (f32*)&party->field_7C[0x20], *(f32*)&party->field_174[8],
+        party->targetPos = mario->position;
+        movePos(&party->targetPos.x, &party->targetPos.z, *(f32*)&party->field_174[8],
                 toMovedirSimple(mario->unk1A8));
-        movePos((f32*)&party->field_7C[0x18], (f32*)&party->field_7C[0x20], 0.0f, toMovedirSimple(mario->unk1A8));
-        movePos((f32*)&party->field_7C[0x18], (f32*)&party->field_7C[0x20],
+        movePos(&party->targetPos.x, &party->targetPos.z, 0.0f, toMovedirSimple(mario->unk1A8));
+        movePos(&party->targetPos.x, &party->targetPos.z,
                 (*(f32*)&mario->unk1AC[0] == 0.0f) ? -2.5f : 2.5f,
                 toMovedir(270.0f + mario->unk1A8));
     } else {
@@ -250,10 +250,10 @@ static inline void vivianUseStep(PartyEntry* party) {
                 *(f32*)&party->field_174[8] = 0.0f;
             }
         }
-        *(Vec*)&party->field_7C[0x18] = mario->position;
-        movePos((f32*)&party->field_7C[0x18], (f32*)&party->field_7C[0x20], *(f32*)&party->field_174[8],
+        party->targetPos = mario->position;
+        movePos(&party->targetPos.x, &party->targetPos.z, *(f32*)&party->field_174[8],
                 toMovedirSimple(mario->unk1A8));
-        movePos((f32*)&party->field_7C[0x18], (f32*)&party->field_7C[0x20],
+        movePos(&party->targetPos.x, &party->targetPos.z,
                 (*(f32*)&mario->unk1AC[0] == 0.0f) ? -2.5f : 2.5f,
                 toMovedir(270.0f + mario->unk1A8));
     }
@@ -285,7 +285,7 @@ void vivian_use(PartyEntry* party) {
         marioChgMot(0x1c);
         *(f32*)&party->field_174[8] = -13.0f;
         vivianUseStep(party);
-        party->dir = angleABf(party->position.x, party->position.z, *(f32*)&party->field_7C[0x18], *(f32*)&party->field_7C[0x20]);
+        party->dir = angleABf(party->position.x, party->position.z, party->targetPos.x, party->targetPos.z);
         party->field_10C = mario->unk1A8;
         party->field_110 = *(f32*)&mario->unk1AC[0];
         party->speed = 0.0f;
@@ -296,9 +296,9 @@ void vivian_use(PartyEntry* party) {
         // fallthrough
     case 1:
         vivianUseStep(party);
-        party->position.x += (*(f32*)&party->field_7C[0x18] - party->position.x) / (f32)*(s32*)&party->field_22[2];
+        party->position.x += (party->targetPos.x - party->position.x) / (f32)*(s32*)&party->field_22[2];
         party->position.y += (*(f32*)&party->field_7C[0x1C] - party->position.y) / (f32)*(s32*)&party->field_22[2];
-        party->position.z += (*(f32*)&party->field_7C[0x20] - party->position.z) / (f32)*(s32*)&party->field_22[2];
+        party->position.z += (party->targetPos.z - party->position.z) / (f32)*(s32*)&party->field_22[2];
         party->field_B8 = party->position;
         if (--*(s32*)&party->field_22[2] > 0) {
             break;
@@ -379,7 +379,7 @@ void vivian_use(PartyEntry* party) {
     mario->position.z += mario->riderDelta.z;
     mario->position.y += mario->riderDelta.y;
     if (party->useMotionId >= 2) {
-        party->position = *(Vec*)&party->field_7C[0x18];
+        party->position = party->targetPos;
         party->field_B8 = mario->position;
     } else {
         party->field_B8 = party->position;

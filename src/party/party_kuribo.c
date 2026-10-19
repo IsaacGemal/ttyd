@@ -274,8 +274,8 @@ USER_FUNC(post_kurio_use) {
 void kuribo_init_800C23B4(PartyEntry* party) {
     party->field_33 = 1;
     party->field_32 = 0;
-    *(f32*)((u8*)party + 0xF0) = 24.0f;
-    *(f32*)((u8*)party + 0xF4) = 26.0f;
+    party->height = 24.0f;
+    party->radius = 26.0f;
     msg_ep = 0;
 }
 
@@ -303,7 +303,7 @@ void kuribo_use(PartyEntry* party) {
                                        angleABf(party->position.x, party->position.z, mario->position.x,
                                                 mario->position.z));
             if (hit != NULL) {
-                if (*(f32*)((u8*)party + 0xEC) < distABf(party->position.x, party->position.z, mario->position.x,
+                if (party->field_EC < distABf(party->position.x, party->position.z, mario->position.x,
                                                          mario->position.z)) {
                     party->useMotionId = 0;
                 } else {
@@ -313,7 +313,7 @@ void kuribo_use(PartyEntry* party) {
             if (hit == NULL) {
                 partyChgPoseId(party, 1);
                 party->speed = 0.0f;
-                *(s32*)((u8*)party + 0x24) = 100;
+                party->timer = 100;
                 party->useMotionId = 0xA;
             }
         }
@@ -321,11 +321,11 @@ void kuribo_use(PartyEntry* party) {
 
     switch (party->useMotionId) {
     case 0:
-        if (!partyGetAppearPos3(party, (Vec*)((u8*)party + 0x94))) {
+        if (!partyGetAppearPos3(party, &party->targetPos)) {
             party->flags |= 0x04000000;
             party->flags |= 0x02000000;
         }
-        *(s32*)((u8*)party + 0x24) = 4;
+        party->timer = 4;
         party->field_FC = angleABf(party->position.x, party->position.z, ((PartyAppearPos*)party)->position.x,
                                    ((PartyAppearPos*)party)->position.z);
         party->dir = party->field_FC;
@@ -333,27 +333,27 @@ void kuribo_use(PartyEntry* party) {
         party->field_110 = mario->unk1A8;
         party->speed = distABf(party->position.x, party->position.z, ((PartyAppearPos*)party)->position.x,
                                ((PartyAppearPos*)party)->position.z) /
-                       (f32)*(s32*)((u8*)party + 0x24);
+                       (f32)party->timer;
         party->jumpPara1 = 0.0f;
         party->useMotionId = 1;
         break;
     case 1: {
-        if (!partyGetAppearPos3(party, (Vec*)((u8*)party + 0x94))) {
+        if (!partyGetAppearPos3(party, &party->targetPos)) {
             party->flags |= 0x04000000;
             party->flags |= 0x02000000;
         }
         party->position.x += (((PartyAppearPos*)party)->position.x - party->position.x) /
-                                 (f32)*(s32*)((u8*)party + 0x24);
+                                 (f32)party->timer;
         party->position.y += (((PartyAppearPos*)party)->position.y - party->position.y) /
-                                 (f32)*(s32*)((u8*)party + 0x24);
+                                 (f32)party->timer;
         party->position.z += (((PartyAppearPos*)party)->position.z - party->position.z) /
-                                 (f32)*(s32*)((u8*)party + 0x24);
-        if (--*(s32*)((u8*)party + 0x24) > 0) {
+                                 (f32)party->timer;
+        if (--party->timer > 0) {
             return;
         }
         partyChgPoseId(party, 1);
         party->speed = 0.0f;
-        *(s32*)((u8*)party + 0x24) = 100;
+        party->timer = 100;
         party->useMotionId = 0xA;
         break;
     }
@@ -366,11 +366,11 @@ void kuribo_use(PartyEntry* party) {
         break;
     }
     case 0x14:
-        *(s32*)((u8*)party + 0x24) = 5;
+        party->timer = 5;
         party->useMotionId = 0x15;
         // fallthrough
     case 0x15:
-        if (--*(s32*)((u8*)party + 0x24) <= 0) {
+        if (--party->timer <= 0) {
             partyChgRunMode(party, 2);
             partyChgMoveMode(party, 0);
             partyChgMot(party, 0);

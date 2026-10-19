@@ -601,10 +601,10 @@ USER_FUNC(evt_party_jump_pos) {
             grounded = 0;
             hit = partySearchGround(party, __fabsf(frames), __fabsf(frames));
             if (hit) {
-                if (party->position.y + frames <= party->field_E4) {
+                if (party->position.y + frames <= party->groundY) {
                     P32(party, 0x138) = (u32)hit;
                     grounded = 1;
-                    party->position.y = party->field_E4;
+                    party->position.y = party->groundY;
                     party->flags &= ~(PARTY_FLAG_IS_JUMPING | PARTY_FLAG_IS_FALLING | PARTY_FLAG_IS_STEPPING);
                 }
             }

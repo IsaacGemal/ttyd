@@ -718,7 +718,7 @@ s32 party_hit_check(f32 x, f32 z, f32* out) {
                 break;
             }
         }
-        if (isNokonoko && dx < party->field_F4 && dz < party->field_F4) {
+        if (isNokonoko && dx < party->radius && dz < party->radius) {
             result = 1;
             if (x < party->position.x) {
                 *out = 1.0f;

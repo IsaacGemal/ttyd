@@ -315,42 +315,42 @@ void party_kemuri(PartyEntry* party) {
         f32 sin;
         s8 count;
 
-        if (party->field_138 != NULL) {
+        if (party->groundHit != NULL) {
             if (party->speed < 2.0f) {
-                *(u8*)((u8*)party + 0x2C) = 7;
+                party->field_2C = 7;
             } else {
                 count = *(s8*)((u8*)party + 0x2C);
-                *(u8*)((u8*)party + 0x2C) = count + 1;
+                party->field_2C = count + 1;
                 if (count > 6) {
-                    *(u8*)((u8*)party + 0x2C) = 0;
+                    party->field_2C = 0;
                     sincosf(&sin, &cos, 6.2831855f * reviseAngle(-party->dir) / 360.0f);
-                    effKemuri2Entry(0, party->position.x + 0.2f * ((*(f32*)((u8*)party + 0xF4)) * sin), party->position.y + 1.5f,
-                                    party->position.z + 0.2f * ((*(f32*)((u8*)party + 0xF4)) * cos), sin, cos);
+                    effKemuri2Entry(0, party->position.x + 0.2f * ((party->radius) * sin), party->position.y + 1.5f,
+                                    party->position.z + 0.2f * ((party->radius) * cos), sin, cos);
                 }
             }
         } else {
-            *(u8*)((u8*)party + 0x2C) = 4;
+            party->field_2C = 4;
         }
     } else if (party->field_36 == 1) {
         f32 cos;
         f32 sin;
         s8 count;
 
-        if (party->field_138 != NULL) {
+        if (party->groundHit != NULL) {
             if (party->speed < 2.0f) {
-                *(u8*)((u8*)party + 0x2C) = 7;
+                party->field_2C = 7;
             } else {
                 count = *(s8*)((u8*)party + 0x2C);
-                *(u8*)((u8*)party + 0x2C) = count + 1;
+                party->field_2C = count + 1;
                 if (count > 6) {
-                    *(u8*)((u8*)party + 0x2C) = 0;
+                    party->field_2C = 0;
                     sincosf(&sin, &cos, 6.2831855f * reviseAngle(-party->dir) / 360.0f);
-                    effKemuri2Entry(0, party->position.x + 0.2f * ((*(f32*)((u8*)party + 0xF4)) * sin), party->position.y + 1.5f,
-                                    party->position.z + 0.2f * ((*(f32*)((u8*)party + 0xF4)) * cos), sin, cos);
+                    effKemuri2Entry(0, party->position.x + 0.2f * ((party->radius) * sin), party->position.y + 1.5f,
+                                    party->position.z + 0.2f * ((party->radius) * cos), sin, cos);
                 }
             }
         } else {
-            *(u8*)((u8*)party + 0x2C) = 4;
+            party->field_2C = 4;
         }
     }
 }

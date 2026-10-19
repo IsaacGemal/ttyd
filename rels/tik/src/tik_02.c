@@ -628,10 +628,10 @@ USER_FUNC(mario_hosei_all) {
     if (mario != NULL && hitIsGroup(mario->hitobjStandOn, hit)) {
         mario->riderDelta.x = value;
     }
-    if (party != NULL && hitIsGroup(party->field_138, hit)) {
+    if (party != NULL && hitIsGroup(party->groundHit, hit)) {
         *(f32*)((u8*)party + 0xAC) = value;
     }
-    if (party2 != NULL && hitIsGroup(party2->field_138, hit)) {
+    if (party2 != NULL && hitIsGroup(party2->groundHit, hit)) {
         *(f32*)((u8*)party2 + 0xAC) = value;
     }
     return EVT_RETURN_DONE;

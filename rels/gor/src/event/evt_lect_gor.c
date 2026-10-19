@@ -472,7 +472,7 @@ static USER_FUNC(lect_itemget_kesan) {
     {
         f32 scale = 0.5f;
 
-        pos.y += *(f32*)((u8*)party + 0xF0) * scale;
+        pos.y += party->height * scale;
     }
     PSVECSubtract(&pos, &cam->cameraPos, &out);
     PSVECNormalize(&out, &out);

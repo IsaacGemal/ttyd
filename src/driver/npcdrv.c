@@ -3275,9 +3275,9 @@ void* fbatHitCheck(s32 flags, s32 out) {
                 f32 x;
                 f32 y;
                 f32 z;
-                f32 radius = 0.5f * party->field_F4;
+                f32 radius = 0.5f * party->radius;
                 x = party->position.x;
-                y = 0.5f * *(f32*)((u8*)party + 0xF0) + party->position.y; // 0xF0: the shell's height
+                y = 0.5f * party->height + party->position.y; // 0xF0: the shell's height
                 z = party->position.z;
                 flag8 = flags & 0x1000;
 
@@ -3352,7 +3352,7 @@ void* fbatHitCheck(s32 flags, s32 out) {
                     continue;
                 }
                 if (_npcHitCheckSphere(npc, &dist, party->position.x,
-                                       0.5f * *(f32*)((u8*)party + 0xF0) + party->position.y, party->position.z,
+                                       0.5f * party->height + party->position.y, party->position.z,
                                        30.0f) == NULL
                     || dist >= info.dist) {
                     continue;

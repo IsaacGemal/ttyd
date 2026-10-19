@@ -207,7 +207,7 @@ void partyChkGnd(PartyEntry* party) {
             hit = NULL;
         }
     }
-    party->field_138 = hit;
+    party->groundHit = hit;
     party->flags = (party->flags & ~0x80);
     if (hit == NULL) {
         party->flags = (party->flags & ~0x2);
@@ -221,13 +221,13 @@ void partyChkGnd(PartyEntry* party) {
             party->flags = (party->flags & ~0x80);
         }
     }
-    party->position.y = party->field_E4;
+    party->position.y = party->groundY;
     if (party->flags & 0x30) {
         return;
     }
     partyChkFrontStep(party, 11.0f, &a, &b, &c);
     if (a - party->position.y >= 5.0f && *(f32*)((u8*)party + 0xE0) <= 30.0f) {
-        *(f32*)party->field_120 = a;
+        party->field_120 = a;
         if (party->speed) {
             partyChgMot(party, 6);
         }
@@ -301,7 +301,7 @@ HitEntry* partySearchGround(PartyEntry* party, f32 up, f32 down) {
     } else {
         h = 0.75f * partyGetHeight(party);
     }
-    party->field_E4 = party->position.y;
+    party->groundY = party->position.y;
     *(f32*)party->field_E8 = -1.0f;
     if (party->speed) {
         rad = party->dir;
@@ -310,13 +310,13 @@ HitEntry* partySearchGround(PartyEntry* party, f32 up, f32 down) {
     }
     rad = (3.1415927f * rad) / 180.0f;
     s = (f32)sin((f64)rad);
-    offSin = 0.375f * (party->field_F4 * s);
+    offSin = 0.375f * (party->radius * s);
     c = (f32)cos((f64)rad);
     py = party->position.y;
     noSin = -offSin;
     y = py + h;
     px = party->position.x;
-    offCos = 0.375f * (party->field_F4 * -c);
+    offCos = 0.375f * (party->radius * -c);
     targetDist = h + off;
     pz = party->position.z;
     noCos = -offCos;
@@ -373,7 +373,7 @@ HitEntry* partySearchGround(PartyEntry* party, f32 up, f32 down) {
         }
     }
     if (best != NULL) {
-        party->field_E4 = bestY;
+        party->groundY = bestY;
         *(f32*)party->field_E8 = 0.0f;
         return best;
     }
@@ -429,7 +429,7 @@ u32 partyChkFrontStep(PartyEntry* party, f32 a, f32* out1, f32* out2, f32* out3)
         angle = toMovedir(party->field_10C);
     }
     angle = revise360((f32)(s32)(0.5f + angle));
-    off = 0.265f * party->field_F4;
+    off = 0.265f * party->radius;
     rad = (3.1415927f * angle) / 180.0f;
     s = (f32)sin((f64)rad);
     c = (f32)cos((f64)rad);
@@ -496,7 +496,7 @@ HitEntry* partySearchWallFront(PartyEntry* party, Vec* pos, f32 a, f32 b) {
     } else {
         height[2] = 11.0f;
     }
-    len = 0.5f * *(f32*)((u8*)party + 0xF4);
+    len = 0.5f * party->radius;
     dist = len + a;
     p = *pos;
     dir = (Vec){sin, 0.0f, cos};
@@ -573,7 +573,7 @@ HitEntry* partySearchFrontWall(PartyEntry* party, Vec* pos, f32 dist, f32 dir) {
     f32 h;
 
     sincosf(&sin, &cos, dir);
-    f31 = 0.5f * *(f32*)((u8*)party + 0xF4) + dist;
+    f31 = 0.5f * party->radius + dist;
 
     h = 0.75f * partyGetHeight(party);
     p = party->position;
@@ -603,7 +603,7 @@ HitEntry* partySearchFrontWall(PartyEntry* party, Vec* pos, f32 dist, f32 dir) {
         hit = h1;
     }
     if (hit != NULL) {
-        *(f32*)((u8*)party + 0xEC) = f31;
+        party->field_EC = f31;
         partyWallSlide(pos, n, sin * dist, cos * dist);
         return hit;
     }
@@ -613,7 +613,7 @@ HitEntry* partySearchFrontWall(PartyEntry* party, Vec* pos, f32 dist, f32 dir) {
         h = 1.0f;
     }
     p = party->position;
-    f31 = 0.5f * *(f32*)((u8*)party + 0xF4) + dist;
+    f31 = 0.5f * party->radius + dist;
     p.y += h;
     query2.targetPos = p;
     query2.targetDir = d;
@@ -640,12 +640,12 @@ HitEntry* partySearchFrontWall(PartyEntry* party, Vec* pos, f32 dist, f32 dir) {
     }
     if (hit2 != NULL) {
         if (angleABf(0.0f, 0.0f, sqrtf(n.x * n.x + n.z * n.z), -n.y) >= 45.0f) {
-            *(f32*)((u8*)party + 0xEC) = f31;
+            party->field_EC = f31;
             partyWallSlide(pos, n, sin * dist, cos * dist);
             return hit2;
         }
     }
-    *(f32*)((u8*)party + 0xEC) = -1.0f;
+    party->field_EC = -1.0f;
     pos->x += dist * sin;
     pos->z += dist * cos;
     return NULL;
@@ -689,7 +689,7 @@ HitEntry* partySearchHead(PartyEntry* party, Vec* position, f32* out, f32 angle)
     f32 dist;
     f32 offSin, offCos;
 
-    h = 0.3f * party->field_F4;
+    h = 0.3f * party->radius;
     sincosf(&sin, &cos, angle);
     dist = *out;
     offCos = -h * cos;
