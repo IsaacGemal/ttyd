@@ -917,7 +917,7 @@ s32 npcEntry(const char* a1, const char* animName) {
     entry->height = animPoseGetRadius(entry->poseId);
     entry->scale = (Vec){ 1.0f, 1.0f, 1.0f };
     entry->field_154 = 1.0f;
-    entry->field_108 = 0;
+    entry->gait = 0;
     entry->field_10C = "M_I_2";
     entry->field_198 = gp->renderTime;
     entry->field_188 = 0;
@@ -1207,18 +1207,18 @@ void npcMain(void) {
                     f32 speed = sqrtf(v.x * v.x + v.z * v.z) / entry->moveDt;
 
                     if (speed < 0.1f) {
-                        if (entry->field_108 != 1) {
+                        if (entry->gait != 1) {
                             animPoseSetAnim(entry->poseId, entry->tribe->stayAnim, 1);
-                            entry->field_108 = 1;
+                            entry->gait = 1;
                         }
                     } else if (speed < entry->tribe->runStartSpeed * runScale) {
-                        if (entry->field_108 != 2) {
+                        if (entry->gait != 2) {
                             animPoseSetAnim(entry->poseId, entry->tribe->walkAnimation, 1);
-                            entry->field_108 = 2;
+                            entry->gait = 2;
                         }
-                    } else if (entry->field_108 != 3) {
+                    } else if (entry->gait != 3) {
                         animPoseSetAnim(entry->poseId, entry->tribe->runAnimation, 1);
-                        entry->field_108 = 3;
+                        entry->gait = 3;
                     }
                 }
             }
@@ -2552,7 +2552,7 @@ void fbatTalkMode(void) {
                     entry->direction = *(f32*)entry->field_148;
                 }
                 if (entry->flags & 0x400) {
-                    entry->field_108 = 0;
+                    entry->gait = 0;
                 }
                 if (entry->flags & 0x200) {
                     animPoseSetAnim(entry->poseId, entry->currentAnim, 1);
@@ -2753,7 +2753,7 @@ void fbatBattleMode(void) {
                         npcGroupDead(entry, 0);
                     } else {
                         if (entry->flags & 0x400) {
-                            entry->field_108 = 0;
+                            entry->gait = 0;
                         }
                         entry->wFbatHitCheckRelated = 0x5A;
                         entry->interruptFlags &= ~0x100;
@@ -2765,7 +2765,7 @@ void fbatBattleMode(void) {
                     }
                 } else if (result == 4) {
                     if (entry->flags & 0x400) {
-                        entry->field_108 = 0;
+                        entry->gait = 0;
                     }
                     entry->interruptFlags |= 0x10000000;
                     marioSetMutekiTime(3000);

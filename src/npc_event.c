@@ -322,7 +322,7 @@ USER_FUNC(_2d_dead_jump) {
         npc->flags &= 0xBFFFFFEF;
         npc->field_188 = 0;
         npc->field_178 = 0;
-        npc->field_108 = 0;
+        npc->gait = 0;
         npc->jumpTargetPos.x = f31;
         npc->jumpTargetPos.y = f24;
         npc->jumpTargetPos.z = f25;

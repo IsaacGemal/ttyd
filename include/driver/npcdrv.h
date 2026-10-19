@@ -113,7 +113,7 @@ typedef struct NpcEntry {
     Vec rotation;                   // 0xEC
     Vec rotationOffset;             // 0xF8
     s32 poseId;                     // 0x104
-    s32 field_108;                  // 0x108
+    s32 gait;                       // 0x108, 0 unset, 1 stay, 2 walk, 3 run (picks the dust effect in _kamek_houki_kemuri)
     const char* field_10C;          // 0x10C
     s32 field_110;                  // 0x110
     GXColor color;                  // 0x114
