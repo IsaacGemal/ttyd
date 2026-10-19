@@ -4483,9 +4483,6 @@ s32 evt_mobj_koopa_blk(EventEntry* event, BOOL isFirstCall) {
     return 2;
 }
 
-// opt_common_subs off: with CSE on, MWCC hoists the pooled 25.0f load above the position.x load in
-// the final effMObjBrokenEntry call; off keeps the original load order.
-#pragma opt_common_subs off
 s32 mobj_koopa_dokan_evt(MapObjectEntry* obj) {
     BOOL flag = FALSE;
 
@@ -4544,7 +4541,6 @@ s32 mobj_koopa_dokan_evt(MapObjectEntry* obj) {
     }
     return 0;
 }
-#pragma opt_common_subs reset
 
 // Pipe model names are literals; the position retains its prefix Vec template.
 s32 evt_mobj_koopa_dokan(EventEntry* event, BOOL isFirstCall) {

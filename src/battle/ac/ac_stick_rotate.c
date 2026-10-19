@@ -136,10 +136,6 @@ s32 _CalcRollDir(void) {
 }
 #pragma dont_inline reset
 
-// optimization_level 2: at the default -O4,s MWCC folds the work-area pointer (work+0x1F4C)
-// into the BattleWork base and never materialises it; the level-2 colouring keeps sr in r31
-// and disp in r30, as the original does. Reset after the function.
-#pragma optimization_level 2
 s32 battleAcMain_StickRotate(BattleWork* work) {
 #ifdef MUST_MATCH
     // Match-only: addressing the work area through the header's named field (via the `ac`
@@ -415,7 +411,6 @@ s32 battleAcMain_StickRotate(BattleWork* work) {
 
     return 1;
 }
-#pragma optimization_level reset
 
 
 s32 battleAcResult_StickRotate(BattleWork* work) {

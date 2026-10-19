@@ -67,8 +67,6 @@ typedef struct PowerGaugeDecWork {
 #define intplGetValueFM(mode, start, end, currStep, steps) intplGetValue(mode, currStep, steps, start, end)
 #endif
 
-// optimize_for_size: the original saves r28-r31 with `stmw`; the default model uses individual saves.
-#pragma optimize_for_size on
 // The two near-misses this function had: MWCC hoists `lwz dat_80421588` above the disp stores
 // (fixed by the mutable dat declaration above) and schedules `lwz dec->counter` before
 // intplGetValue's `lfs` pair (fixed by intplGetValueFM above).
@@ -277,7 +275,6 @@ s32 battleAcMain_PowerGauge(BattleWork* work) {
     }
     return 1;
 }
-#pragma optimize_for_size reset
 
 s32 battleAcResult_PowerGauge(BattleWork* work) {
     return work->actionCommands.result;

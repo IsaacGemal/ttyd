@@ -57,9 +57,6 @@ typedef struct PowerGaugeLvDecWork {
 
 static void actionCommandDisp(f32, f32);
 
-// optimize_for_size: the original main saves r29-r31 with `stmw`; the size model reproduces its
-// prologue/register choice for the state machine. The rest of the file does not need it.
-#pragma optimize_for_size on
 // MWCC folds dec (and disp) into the BattleWork base when both are derived directly from
 // `work`; the MUST_MATCH `ac` intermediate below keeps work=r30, dec=r31 and disp=r29 as the original.
 s32 battleAcMain_PowerGaugeLv(BattleWork* work) {
@@ -189,7 +186,6 @@ s32 battleAcMain_PowerGaugeLv(BattleWork* work) {
     }
     return 1;
 }
-#pragma optimize_for_size reset
 s32 battleAcResult_PowerGaugeLv(BattleWork* work) {
     return work->actionCommands.result;
 }

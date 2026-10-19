@@ -2166,7 +2166,6 @@ static void ext_dispent(void) {
     }
 }
 
-#pragma opt_common_subs off // required: CSE otherwise reorders the float address temps (87.49% without it)
 USER_FUNC(taihou_r) {
     f32 c;
     f32 s;
@@ -2182,7 +2181,6 @@ USER_FUNC(taihou_r) {
     effRippleN64SetRxRz(effNameToPtr("ripple"), rx, rz);
     return EVT_RETURN_DONE;
 }
-#pragma opt_common_subs reset
 
 // The sin/cos polynomials live in one `static inline` helper each
 // (see pik_02.c's hoshi_sin_approx) so the angle^2 scratch / wrapped-angle pivot colour as

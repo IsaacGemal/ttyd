@@ -1,5 +1,5 @@
 /* "cardmgr" - Memory Card Manager
-* Status: almost 1:1, some functions don't work right with memcard_probe's opt_propagation it seems
+* Status: matched
 *
 * Function: handles all communication with save data and writing to memory cards
 *
@@ -130,7 +130,6 @@ s32 cardGetCode(void) {
 	return wp->result;
 }
 
-#pragma opt_propagation off //needed for memcard_probe
 void cardMain(void) {
 	s32 temp_r4;
 
@@ -251,7 +250,6 @@ void cardMain(void) {
 			break;
 	}
 }
-#pragma opt_propagation on
 
 void cardCopy2Main(s32 slot) {
     void* backup2;
@@ -377,7 +375,6 @@ void cardWrite(s32 slot) {
     }
 }
 
-#pragma opt_propagation on //needed for memcard_probe? TODO fix
 void write_main(void) {
     if (wp->result) {
         wp->unkE0 = 8;
@@ -467,7 +464,6 @@ void write_main(void) {
         wp->flags &= ~1;
     }
 }
-#pragma opt_propagation on
 
 void cardWriteHeader(void) {
     if (!(wp->flags & 2)) {
@@ -482,7 +478,6 @@ void cardWriteHeader(void) {
     }
 }
 
-#pragma opt_propagation off
 void write_header_main(void) {
     if (wp->result) {
         wp->unkE0 = 8;
@@ -529,9 +524,7 @@ void write_header_main(void) {
         wp->flags &= ~1;
     }
 }
-#pragma opt_propagation on
 
-#pragma opt_propagation on //needed for memcard_probe? TODO fix
 void read_main(void) {
     s32 saveType; //invalid = -1, main = 0, backup = 1
 
@@ -620,7 +613,6 @@ void read_main(void) {
         wp->flags &= ~1;
     }
 }
-#pragma opt_propagation on
 
 void cardReadAll(void) {
     if (!(wp->flags & 2)) {
@@ -634,7 +626,6 @@ void cardReadAll(void) {
     }
 }
 
-#pragma opt_propagation on //needed for memcard_probe? TODO fix
 void read_all_main(void) {
     s32 saveType; //invalid = -1, main = 0, backup = 1
 
@@ -732,7 +723,6 @@ void read_all_main(void) {
         wp->flags &= ~1;
     }
 }
-#pragma opt_propagation on
 
 void cardCreate(void) {
     if (!(wp->flags & 2)) {
@@ -746,7 +736,6 @@ void cardCreate(void) {
     }
 }
 
-#pragma opt_propagation on //needed for memcard_probe? TODO fix
 void create_main(void) {
     if (wp->result) {
         wp->unkE0 = 8;
@@ -817,7 +806,6 @@ void create_main(void) {
         wp->flags &= ~1;
     }
 }
-#pragma opt_propagation on
 
 void cardFormat(void) {
     if (!(wp->flags & 2)) {
@@ -1049,7 +1037,6 @@ void make_data(void) {
     }
 }
 
-#pragma opt_propagation off
 void memcard_probe(void) {
     s32 memSize, sectorSize;
     s32 result;
@@ -1094,7 +1081,6 @@ void memcard_probe(void) {
     }
     wp->flags &= ~1;
 }
-#pragma opt_propagation on
 
 void mountDetachCallback(s32 chan, s32 result) {
 	; //stubbed in retail

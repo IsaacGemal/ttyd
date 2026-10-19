@@ -41,9 +41,6 @@ typedef struct CraneTimingWork {
 	s32 delay;     // 0x2C, end-of-command delay
 } CraneTimingWork;
 
-// optimize_for_size: the original battleAcMain saves r27-r31 with `stmw`; the size model reproduces
-// its prologue. Scope the pragma to that one function.
-#pragma optimize_for_size on
 s32 battleAcMain_CraneTiming(BattleWork* work) {
 #ifdef MUST_MATCH
 	// MWCC 2.6 folds two of the three base pointers (dec into disp) when both are derived directly
@@ -159,7 +156,6 @@ s32 battleAcMain_CraneTiming(BattleWork* work) {
 	}
 	return 1;
 }
-#pragma optimize_for_size reset
 
 s32 battleAcResult_CraneTiming(BattleWork* work) {
 	return work->actionCommands.result;

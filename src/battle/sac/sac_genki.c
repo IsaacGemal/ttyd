@@ -249,9 +249,6 @@ typedef struct GenkiWork {
     GenkiStar stars[7];         // 0x510
 } GenkiWork;
 
-// The whole file was compiled with -O4,s (optimize for size); without this every constant-trip
-// loop is unrolled and nothing matches. configure.py should carry extra_cflags=["-O4,s"] for it.
-#pragma optimize_for_size on
 // `auto_inline off` (not `dont_inline`) is what the original needs: MWCC must not auto-inline
 // plain helpers such as get_ptr (every call is a real `bl`, and inlining get_ptr wrecks the
 // callers), but `_drawGenkiTex`/`_drawGenkiTex2` are declared `inline` and DO inline at their

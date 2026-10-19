@@ -19,9 +19,6 @@ extern const f32 float_1_8041e7ac;
 
 // dont_inline keeps BtlIconGetPtr a real `bl` from the evt commands as in retail.
 #pragma dont_inline on
-// The original keeps this 16-iteration loop rolled; at -O4,p the compiler unrolls it 4x.
-#pragma optimize_for_size on
-
 BattleIcon* BtlIconGetPtr(s32 index) {
 	BattleIcon* icon;
 	int i;
@@ -40,7 +37,6 @@ BattleIcon* BtlIconGetPtr(s32 index) {
 	}
 	return NULL;
 }
-#pragma optimize_for_size reset
 #pragma dont_inline reset
 
 void BattleIconInit(void) {
@@ -160,10 +156,6 @@ void BtlIcon_Delete(BattleIcon* icon) {
 }
 #pragma dont_inline reset
 
-// This unit's original is built for size: at -O4,p mwcc emits individual stw in the
-// prologue where retail has stmw, so use the size pragma for this function.
-#pragma optimize_for_size on
-
 //s32 iconId, f32 x, f32 y, f32 z, s32 evtIndex
 USER_FUNC(btlevtcmd_BtlIconEntry) {
 	s32* args = event->args;
@@ -187,7 +179,6 @@ USER_FUNC(btlevtcmd_BtlIconEntry) {
 	evtSetValue(event, index, icon->index);
 	return EVT_RETURN_DONE;
 }
-#pragma optimize_for_size reset
 
 //s32 itemId (index for itemDataTable) , f32 x, f32 y, f32 z, s32 evtIndex
 USER_FUNC(btlevtcmd_BtlIconEntryItemId) {

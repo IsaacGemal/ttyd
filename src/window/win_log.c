@@ -1905,9 +1905,6 @@ void* monosiriInit(BattleUnitType kind, f32 x, f32 y) {
 // `inBattle` is computed before the two table reads and as `!(x == 0)` so the
 // boolean lands in r3 and is copied to r28 exactly as the original does
 // (semantically identical to `x != 0`, just different MWCC colouring).
-// `opt_common_subs off` stops MWCC hoisting `base+0x438`/`base+0x448` into
-// registers once, which the original rematerialises per use.
-#pragma opt_common_subs off
 void monosiriMain(void* work) {
     MonosiriWork* w = work;
     TattleEntry* tattle;
@@ -1974,7 +1971,6 @@ void monosiriMain(void* work) {
         dispEntry(8, 0.0f, 0, monosiri_disp, w);
     }
 }
-#pragma opt_common_subs reset
 
 void monosiriClose(void* work) {
     MonosiriWork* w = work;

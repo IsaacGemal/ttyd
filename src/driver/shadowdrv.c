@@ -926,9 +926,6 @@ static inline void shadowTexMatColor(void) {
 }
 #endif
 
-#ifdef MUST_MATCH
-#pragma opt_loop_invariants off // Retail recomputes the negative half-size inside the entry loop.
-#endif
 void shadowCharShadowDisp_Texture(CameraId camId, void* param) {
     ShadowEntry* entry = cswp->entries;
     f32 (*view)[4];
@@ -1048,9 +1045,6 @@ void shadowCharShadowDisp_Texture(CameraId camId, void* param) {
         }
     }
 }
-#ifdef MUST_MATCH
-#pragma opt_loop_invariants reset
-#endif
 
 #pragma opt_common_subs off // needed: keeps the fade clamp and alpha ramp in separate FP temporaries
 void cylinder(ShadowEntry* entry) {

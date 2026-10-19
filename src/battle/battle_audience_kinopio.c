@@ -809,7 +809,6 @@ void BattleAudienceCtrlProcessKinopioBooing(s32 index) {
 	}
 }
 
-#pragma opt_propagation off // keep the constant loads after the anim call in the original's order
 void BattleAudienceCtrlProcessKinopioDamage(s32 index) {
 	BattleAudienceMember* member;
 #ifdef MUST_MATCH
@@ -865,7 +864,6 @@ void BattleAudienceCtrlProcessKinopioDamage(s32 index) {
 		break;
 	}
 }
-#pragma opt_propagation reset
 
 void BattleAudienceCtrlProcessKinopioEnter(s32 index) {
 	BattleAudienceMember* member;

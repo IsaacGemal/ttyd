@@ -163,7 +163,6 @@ EffectEntry* effNiceEntry(s32 type, f32 x, f32 y, f32 z) {
 // current time from AnimationPose+0x24; both offsets fall in header padding, so raw
 // offsets are used. The four fade cases use distinct locals (time/end/base and time2...)
 // because a single shared set makes MWCC put `end` in f3 instead of the original f4.
-#pragma opt_common_subs off // without it MWCC CSEs the per-case `end` loads and puts `end` in f3 instead of f4
 #ifdef MUST_MATCH
 // MUST_MATCH: the plain `color = ...; color.a = ...; call(color);` puts the colour scratch
 // and its outgoing argument copy in the opposite stack slots; returning the colour by value
@@ -304,7 +303,6 @@ void effNiceMain(EffectEntry* effect) {
 		dispEntry(4, dispCalcZ(&position), 8, effNiceDisp, effect);
 	}
 }
-#pragma opt_common_subs reset
 
 void effNiceDisp(CameraId camId, void* param) {
 	EffectEntry* effect = param;
@@ -454,10 +452,6 @@ void acrobatMain(EffectEntry* effect) {
 	}
 }
 
-#pragma opt_common_subs off // without it MWCC CSEs the repeated float_0/float_1 pool loads in the GX vertex block
-#ifdef MUST_MATCH
-#pragma opt_dead_assignments off // needed with texIdx below: without it MWCC folds the redundant index into i's induction and the loop latch order flips (data++ before the i-1 texid increment)
-#endif
 // The `i - 1` texid index makes the compiler synthesise a second induction (r29). With the natural
 // `[i - 1]` its latch increment is scheduled after data++ (99.91%); an explicit texIdx gives the
 // original's order.
@@ -559,10 +553,6 @@ void effAcrobatDisp(CameraId camId, void* param) {
 		GXTexCoord2f32(0.0f, 1.0f);
 	}
 }
-#pragma opt_common_subs on
-#ifdef MUST_MATCH
-#pragma opt_dead_assignments reset
-#endif
 
 // The unit's named .sdata2 objects, in the original's order, defined after the code so a
 // const object is not folded into a literal at its uses.

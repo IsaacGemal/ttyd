@@ -181,7 +181,6 @@ EffectEntry* effFireEntry(s32 type, s32 lifetime, f32 x, f32 y, f32 z, f32 scale
 	return entry;
 }
 
-#pragma opt_common_subs off // without it MWCC CSEs data->position across the calls in the default branch into different registers
 void effFireMain(EffectEntry* effect) {
 	effFireData* data;
 	s32 type;
@@ -355,7 +354,6 @@ void effFireMain(EffectEntry* effect) {
 		break;
 	}
 }
-#pragma opt_common_subs reset
 
 void effFireDisp(CameraId camId, void* param) {
 	EffectEntry* effect = param;
@@ -517,7 +515,6 @@ void effFireDisp(CameraId camId, void* param) {
 	}
 }
 
-#pragma opt_common_subs off // keeps the two GX quads' constant loads out of CSE, which gives the original's FP colouring
 #ifdef MUST_MATCH
 static inline GXColor effFireDisp2Color(GXColor c, u8 a) {
 	c.r = a;
@@ -737,7 +734,6 @@ void effFireDisp2(CameraId camId, void* param) {
 		GXTexCoord2f32(0.0f, f4);
 	}
 }
-#pragma opt_common_subs reset
 
 // effFireDisp3 source-shape notes (all needed for the byte match):
 //  - `data` is declared after `type` and assigned just before `camGetPtr`, with `type = data->type` after

@@ -366,10 +366,6 @@ static USER_FUNC(shadow_scale_small) {
     return EVT_RETURN_BLOCK;
 }
 
-// `#pragma opt_propagation off`: with propagation on MWCC folds the int->float magic
-// double and rematerialises the 0.0f load, so shadow_scale_return's argument setup is not
-// the original's.
-#pragma opt_propagation off
 static USER_FUNC(shadow_scale_return) {
     BattleUnit* unit;
     BattleUnitPart* part;
@@ -392,7 +388,6 @@ static USER_FUNC(shadow_scale_return) {
     unit->work[1]++;
     return EVT_RETURN_BLOCK;
 }
-#pragma opt_propagation reset
 
 static EVT_BEGIN(init_event)
     CALL(btlevtcmd_SetEventWait, -2, PTR(wait_event))

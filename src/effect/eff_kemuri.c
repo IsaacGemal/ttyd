@@ -535,8 +535,6 @@ static inline GXColor kemuriTevColor(u8 alpha, GXColor c) {
 // 100% matched: the p8/p12/n12p8 preheader locals (declared p8,p12,n12p8 and assigned
 // n12p8,p12,p8) and the quad's x6/y4/px/py locals reproduce retail's volatile-FPR colouring.
 #ifdef MUST_MATCH
-// Preserve the retail load and temporary order.
-#pragma opt_loop_invariants off
 // MUST_MATCH: reading 6.4 through a cast keeps the front end from merging its uses.
 #define KEMURI_SIXP4 (*(f32*)&float_6p4_8041c6d4)
 #endif
@@ -792,9 +790,6 @@ static void effKemuri2Disp(CameraId cameraId, void* param) {
 #endif
 	}
 }
-#ifdef MUST_MATCH
-#pragma opt_loop_invariants reset
-#endif
 
 
 const GXColor dat_8041c670 = { 0xff, 0xff, 0xff, 0xff };
