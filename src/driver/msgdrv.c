@@ -416,16 +416,16 @@ s32 msgMain(smartEntry* smart) {
 				data->callback(5, smart);
 			}
 			if (entry->arg & 0x10) {
-				if (((MessageData*)smart->address)->window->type != 1 && !msgSEflag) {
+				if (((MessageData*)smart->address)->window->type != WINDOW_TYPE_SMALL && !msgSEflag) {
 					psndSFXOnVol(0x20044, ((MessageData*)smart->address)->sfxVolume);
 					msgSEflag = 1;
 				}
 			}
 			else if (entry->arg & 0x8) {
-				if (((MessageData*)smart->address)->window->type != 3) {
+				if (((MessageData*)smart->address)->window->type != WINDOW_TYPE_SYSTEM) {
 					((MessageData*)smart->address)->talkAnimTimer = 0xf;
 				}
-				if (((MessageData*)smart->address)->window->type != 1 && !msgSEflag) {
+				if (((MessageData*)smart->address)->window->type != WINDOW_TYPE_SMALL && !msgSEflag) {
 					psndSFXOnVol(0x20044, ((MessageData*)smart->address)->sfxVolume);
 					msgSEflag = 1;
 				}
@@ -648,9 +648,9 @@ BOOL msgDisp(smartEntry* smart, u8 alpha, f32 x, f32 y) {
 			if (tev) {
 				GXColor color = *(GXColor*)&dat_8041a4f0;
 				switch (data->window->type) {
-				case 3:
-				case 8:
-				case 9:
+				case WINDOW_TYPE_SYSTEM:
+				case WINDOW_TYPE_TEC:
+				case WINDOW_TYPE_MAJO:
 					color = *(GXColor*)&dat_8041a4f4;
 					break;
 				}
@@ -831,7 +831,7 @@ void msgAnalize(smartEntry* smart, const char* msg) {
 	maxScale = float_0_8041a514;
 	scale = 1.0f;
 	if (window->type < 0) {
-		window->type = 0;
+		window->type = WINDOW_TYPE_NORMAL;
 	}
 	var[2] = 0;
 	r24 = data->timeCursor;
@@ -842,13 +842,13 @@ void msgAnalize(smartEntry* smart, const char* msg) {
 	var54 = data->charDelay;
 
 	switch (window->type) {
-	case 3:
-	case 8:
+	case WINDOW_TYPE_SYSTEM:
+	case WINDOW_TYPE_TEC:
 		switch (window->type) {
-		case 3:
+		case WINDOW_TYPE_SYSTEM:
 			entry->arg = dat_8041a500;
 			break;
-		case 8:
+		case WINDOW_TYPE_TEC:
 			entry->arg = dat_8041a504;
 			break;
 		}
@@ -1094,12 +1094,12 @@ loop:
 			data->entryId++;
 		}
 		else if (strcmp(tagName, "plate") == 0) {
-			window->type = 2;
+			window->type = WINDOW_TYPE_PLATE;
 			var54 = 0;
 			data->charDelay = 0;
 		}
 		else if (strcmp(tagName, "system") == 0) {
-			window->type = 3;
+			window->type = WINDOW_TYPE_SYSTEM;
 			entry->arg = dat_8041a508;
 			entry->glyph = 0xFFF7;
 			entry->startTime = r24;
@@ -1107,7 +1107,7 @@ loop:
 			data->entryId++;
 		}
 		else if (strcmp(tagName, "tec") == 0) {
-			window->type = 8;
+			window->type = WINDOW_TYPE_TEC;
 			entry->arg = dat_8041a50c;
 			entry->glyph = 0xFFF7;
 			entry->startTime = r24;
@@ -1115,28 +1115,28 @@ loop:
 			data->entryId++;
 		}
 		else if (strcmp(tagName, "majo") == 0) {
-			window->type = 9;
+			window->type = WINDOW_TYPE_MAJO;
 		}
 		else if (strcmp(tagName, "diary") == 0) {
-			window->type = 7;
+			window->type = WINDOW_TYPE_DIARY;
 		}
 		else if (strcmp(tagName, "housou") == 0) {
-			window->type = 10;
+			window->type = WINDOW_TYPE_HOUSOU;
 		}
 		else if (strcmp(tagName, "boss") == 0) {
-			window->type = 6;
+			window->type = WINDOW_TYPE_BOSS;
 		}
 		else if (strcmp(tagName, "kanban") == 0) {
-			window->type = 4;
+			window->type = WINDOW_TYPE_KANBAN;
 			var54 = 0;
 			data->charDelay = 0;
 		}
 		else if (strcmp(tagName, "small") == 0) {
-			window->type = 1;
+			window->type = WINDOW_TYPE_SMALL;
 			data->flags |= 0x10;
 		}
 		else if (strcmp(tagName, "clear") == 0) {
-			window->type = 11;
+			window->type = WINDOW_TYPE_CLEAR;
 		}
 		else if (strcmp(tagName, "wpos") == 0) {
 			sscanf(tagArg, "%hd%hd%hd%hd", &wposX, &wposY, &wposH, &wposW);
@@ -1147,7 +1147,7 @@ loop:
 			window->width = (f32)wposW;
 		}
 		else if (strcmp(tagName, "select") == 0) {
-			window->type = 5;
+			window->type = WINDOW_TYPE_SELECT;
 			data->flags |= 0x20;
 			sscanf(tagArg, "%hd%hd%hd%hd%hd", &sel2, &sel1, &data->selectWidth, &data->selectY);
 			data->selectInit = (s8)sel2;
@@ -1269,7 +1269,7 @@ loop:
 			data->entryId++;
 		}
 		else if (strcmp(tagName, "r") == 0) {
-			if (data->window->type != 1) {
+			if (data->window->type != WINDOW_TYPE_SMALL) {
 				r25 = ex;
 			}
 		}
@@ -1278,7 +1278,7 @@ loop:
 			if (*(s8*)tagName != 'R') {
 				skip = 2;
 			}
-			if (data->window->type == 1) {
+			if (data->window->type == WINDOW_TYPE_SMALL) {
 				goto loop;
 			}
 			len = strlen(tagName + skip);
@@ -1517,7 +1517,7 @@ s32 msgWindow_Entry(const char* msg, s32 a, s32 b) {
 	data->charDelay = 0x19;
 	data->historyCount = 0;
 	msgAnalize(smart, buf);
-	if (window->type == 1) {
+	if (window->type == WINDOW_TYPE_SMALL) {
 		data->flags |= 0x200;
 	}
 	__memFree(HEAP_DEFAULT, buf);
@@ -1526,18 +1526,18 @@ s32 msgWindow_Entry(const char* msg, s32 a, s32 b) {
 	data->talkAnimTimer = 0;
 	data->talkAnimOn = 0;
 	switch (window->type) {
-	case 11:
+	case WINDOW_TYPE_CLEAR:
 		window->main = msgWindow_Clear_Main;
 		/* fallthrough */
-	case 0:
-	case 2:
-	case 3:
-	case 4:
-	case 6:
-	case 7:
-	case 8:
-	case 9:
-	case 10:
+	case WINDOW_TYPE_NORMAL:
+	case WINDOW_TYPE_PLATE:
+	case WINDOW_TYPE_SYSTEM:
+	case WINDOW_TYPE_KANBAN:
+	case WINDOW_TYPE_BOSS:
+	case WINDOW_TYPE_DIARY:
+	case WINDOW_TYPE_TEC:
+	case WINDOW_TYPE_MAJO:
+	case WINDOW_TYPE_HOUSOU:
 		if (!(window->flags & 4)) {
 			window->x = -280.0f;
 			window->y = 225.0f;
@@ -1545,7 +1545,7 @@ s32 msgWindow_Entry(const char* msg, s32 a, s32 b) {
 			window->width = 176.0f;
 		}
 		break;
-	case 5:
+	case WINDOW_TYPE_SELECT:
 		window->main = selectWindow_Main;
 		window->x = (s16)((-((MessageData*)window->userdata->address)->selectWidth) / 2);
 		window->y = ((MessageData*)window->userdata->address)->selectY;
@@ -1554,7 +1554,7 @@ s32 msgWindow_Entry(const char* msg, s32 a, s32 b) {
 		((MessageData*)window->userdata->address)->selectCursor = ((MessageData*)window->userdata->address)->selectInit;
 		data->selectTopY = window->y - (f32)(data->selectCursor * 0x1F + 0x3A);
 		break;
-	case 1:
+	case WINDOW_TYPE_SMALL:
 		window->field_0x4 = 10;
 		window->height = 0.7f * (f32)GXGetTexObjWidth(getWakuTexObj(3));
 		window->width = 0.7f * (f32)GXGetTexObjHeight(getWakuTexObj(3));
@@ -1960,11 +1960,11 @@ void msgWindow_Disp(CameraId camId, void* param) {
 	GXSetFog(GX_FOG_NONE, float_0_8041a514, float_0_8041a514, float_0_8041a514, float_0_8041a514, unk_80422fe0);
 
 	switch (window->type) {
-	case 0:
-	case 1:
-	case 6:
-	case 8:
-	case 9: {
+	case WINDOW_TYPE_NORMAL:
+	case WINDOW_TYPE_SMALL:
+	case WINDOW_TYPE_BOSS:
+	case WINDOW_TYPE_TEC:
+	case WINDOW_TYPE_MAJO: {
 		f32 half = 0.5f;
 
 		if (window->field_0x2C != 0) {
@@ -1976,10 +1976,10 @@ void msgWindow_Disp(CameraId camId, void* param) {
 				getScreenPoint(&window->anchor, &pos);
 			}
 			switch (window->type) {
-			case 0:
-			case 6:
-			case 8:
-			case 9:
+			case WINDOW_TYPE_NORMAL:
+			case WINDOW_TYPE_BOSS:
+			case WINDOW_TYPE_TEC:
+			case WINDOW_TYPE_MAJO:
 				px = intplGetValue(0, window->alpha, 0xFF, pos.x, window->x + window->height * half);
 				py = intplGetValue(0, window->alpha, 0xFF, pos.y, window->y - window->width * half);
 				h = intplGetValue(0, window->alpha, 0xFF, 10.f, window->height);
@@ -1990,7 +1990,7 @@ void msgWindow_Disp(CameraId camId, void* param) {
 					drawn = msgDisp(window->userdata, (u8)window->alpha, 62.0f + window->x, window->y - 36.0f);
 				}
 				break;
-			case 1: {
+			case WINDOW_TYPE_SMALL: {
 				s32 top;
 
 				window->x = pos.x - window->height * half;
@@ -2025,25 +2025,25 @@ void msgWindow_Disp(CameraId camId, void* param) {
 		}
 		break;
 	}
-	case 2:
-	case 4:
-	case 10:
+	case WINDOW_TYPE_PLATE:
+	case WINDOW_TYPE_KANBAN:
+	case WINDOW_TYPE_HOUSOU:
 		windowDispGX_Kanban(window->type, (u8)window->alpha, window->x, window->y, window->height, window->width);
 		GXSetScissor(camera->scissor[0], (u32)(240.f - (window->y - 36.0f) - float_2_8041a524), camera->scissor[2], 0x68);
 		drawn = msgDisp(window->userdata, (u8)window->alpha, 62.0f + window->x, window->y - 36.0f);
 		break;
-	case 7:
+	case WINDOW_TYPE_DIARY:
 		windowDispGX_Kanban(window->type, (u8)window->alpha, window->x, window->y, window->height, window->width);
 		GXSetScissor(camera->scissor[0], (u32)(240.f - (window->y - 36.0f) - 8.0f), camera->scissor[2], 0x7E);
 		drawn = msgDisp(window->userdata, (u8)window->alpha, 62.0f + window->x, window->y - 36.0f);
 		break;
-	case 3:
+	case WINDOW_TYPE_SYSTEM:
 		windowDispGX_System(window->type, (u8)window->alpha, window->x, window->y, window->height, window->width);
 		drawn = (u32)(window->width - 50.f);
 		GXSetScissor(camera->scissor[0], (u32)(240.f - (window->y - 36.0f) - 8.0f), camera->scissor[2], drawn);
 		drawn = msgDisp(window->userdata, (u8)window->alpha, 62.0f + window->x, window->y - 36.0f);
 		break;
-	case 11:
+	case WINDOW_TYPE_CLEAR:
 		drawn = (u32)(window->width - 50.f);
 		GXSetScissor(camera->scissor[0], (u32)(240.f - (window->y - 36.0f) - 8.0f), camera->scissor[2], drawn);
 		drawn = msgDisp(window->userdata, (u8)window->alpha, 62.0f + window->x, window->y - 36.0f);
