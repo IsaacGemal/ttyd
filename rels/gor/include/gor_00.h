@@ -18,24 +18,24 @@ struct NanNpcEntry {
     u8 pad_0x00[0x18];              // 0x0
     Vec position;                   // 0x18
     Vec hoseiPosition;              // 0x24
-    Vec field_0x30;                 // 0x30
+    Vec basePos;                    // 0x30, origin of the current move
     u8 pad_0x3C[0x50 - 0x3C];       // 0x3C
-    OSTime field_0x50;              // 0x50
+    OSTime startTime;              // 0x50, renderTime when the current state began
     u8 pad_0x58[0x60 - 0x58];       // 0x58
-    f32 field_0x60;                 // 0x60
+    f32 facingAngle;               // 0x60, 90 or 270
     void (*callback)(NanNpcEntry*); // 0x64
-    s32 field_0x68;                 // 0x68
-    s32 field_0x6C;                 // 0x6C
+    s32 state;                     // 0x68, switch selector of the seq functions
+    s32 timer;                     // 0x6C, wait in ms, or the step count of a move
     s32 field_0x70;                 // 0x70
-    s32 field_0x74;                 // 0x74
+    s32 index;                     // 0x74, the entry number from gundan1000tai_init
     f32 field_0x78;                 // 0x78
     f32 field_0x7C;                 // 0x7C
-    f32 field_0x80;                 // 0x80
+    f32 stepX;                     // 0x80, +1 or -1 per frame in the sway state
     f32 field_0x84;                 // 0x84
-    Vec field_0x88;                 // 0x88
+    Vec targetPos;                  // 0x88
     u8 pad_0x94[0xA4 - 0x94];       // 0x94
     s32 field_0xA4;                 // 0xA4
-    s32 field_0xA8;                 // 0xA8
+    s32 endFlag;                   // 0xA8, set by gundan1000tai_totsuend; nonzero moves to state 100
     u8 pad_0xAC[0xC0 - 0xAC];       // 0xAC
 };
 

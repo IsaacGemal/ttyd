@@ -5022,10 +5022,10 @@ USER_FUNC(gundan1000tai_init) {
         entry->hoseiPosition.z = 0.5f * (radius * c) - 300.0f;
         if (entry->hoseiPosition.x < 30.0f) {
             base = -280.0f;
-            entry->field_0x60 = 90.0f;
+            entry->facingAngle = 90.0f;
         } else {
             base = 340.0f;
-            entry->field_0x60 = 270.0f;
+            entry->facingAngle = 270.0f;
         }
         radius = (f32)irand(0x64);
 #ifdef MUST_MATCH
@@ -5042,8 +5042,8 @@ USER_FUNC(gundan1000tai_init) {
         entry->position.y = 15.0f;
         entry->position.z = radius * c2 - 300.0f;
         entry->callback = gundan1000tai_seq00;
-        entry->field_0x68 = 0;
-        entry->field_0x74 = i;
+        entry->state = 0;
+        entry->index = i;
     }
     return EVT_RETURN_DONE;
 }
@@ -5058,7 +5058,7 @@ USER_FUNC(gundan1000tai_totsugeki) {
     for (i = 0; i < work->count; i++) {
         entry = &work->entries[i];
         entry->callback = gundan1000tai_seq01;
-        entry->field_0x68 = 0;
+        entry->state = 0;
     }
     return EVT_RETURN_DONE;
 }
@@ -5106,28 +5106,28 @@ USER_FUNC(gundan1000tai_totsuend) {
     NanNpcWork* work = nanNPCWork;
 
     for (i = 0; i < work->count; i++) {
-        work->entries[i].field_0xA8 = 1;
+        work->entries[i].endFlag = 1;
     }
     return EVT_RETURN_DONE;
 }
 
 void gundan1000tai_seq00(NanNpcEntry* entry) {
     marioGetPtr();
-    switch (entry->field_0x68) {
+    switch (entry->state) {
     case 0: {
         s32 tmp;
 
-        entry->field_0x50 = gp->renderTime;
-        tmp = (entry->field_0x74 % 6) * 500;
-        entry->field_0x6C = tmp + irand(500);
-        entry->field_0x68++;
+        entry->startTime = gp->renderTime;
+        tmp = (entry->index % 6) * 500;
+        entry->timer = tmp + irand(500);
+        entry->state++;
         // fallthrough
     }
     case 1: {
-        s32 elapsed = ((s32)gp->renderTime - (s32)entry->field_0x50) / (OS_TIMER_CLOCK / 1000);
+        s32 elapsed = ((s32)gp->renderTime - (s32)entry->startTime) / (OS_TIMER_CLOCK / 1000);
 
-        if (elapsed > entry->field_0x6C) {
-            entry->field_0x68++;
+        if (elapsed > entry->timer) {
+            entry->state++;
         }
         break;
     }
@@ -5141,25 +5141,25 @@ void gundan1000tai_seq00(NanNpcEntry* entry) {
         entry->field_0x78 = duration;
         entry->field_0x7C = angle;
         entry->field_0x70 = (s32)(dist / duration);
-        entry->field_0x6C = 0;
+        entry->timer = 0;
         entry->field_0xA4 = 0;
         evt_nannpc_set_animtbl_sub(entry, (s16*)dai3_run_animtbl);
-        entry->field_0x68++;
+        entry->state++;
         // fallthrough
     }
     case 3:
         movePos(&entry->position.x, &entry->position.z, entry->field_0x78, entry->field_0x7C);
-        entry->field_0x6C++;
-        if (entry->field_0x6C >= entry->field_0x70) {
+        entry->timer++;
+        if (entry->timer >= entry->field_0x70) {
             entry->position.x = entry->hoseiPosition.x;
             entry->position.z = entry->hoseiPosition.z;
             entry->field_0xA4 = 1;
             evt_nannpc_set_animtbl_sub(entry, (s16*)dai3_animtbl);
-            entry->field_0x68++;
+            entry->state++;
         }
         break;
     case 4:
-        entry->field_0x30 = entry->position;
+        entry->basePos = entry->position;
         break;
     }
 }
@@ -5178,40 +5178,40 @@ static inline f32 intpl_f(s32 mode, f32 start, f32 end, s32 step, s32 steps) {
 #endif
 void gundan1000tai_seq01(NanNpcEntry* entry) {
     marioGetPtr();
-    switch (entry->field_0x68) {
+    switch (entry->state) {
     case 0: {
         s32 r;
 
-        entry->field_0x30 = entry->position;
+        entry->basePos = entry->position;
         entry->field_0xA4 = 0;
-        entry->field_0xA8 = 0;
+        entry->endFlag = 0;
         r = irand(0x3E8);
         if (r < 0x32) {
-            entry->field_0x68 = 10;
+            entry->state = 10;
             break;
         }
         if (r < 0x96) {
-            entry->field_0x68 = 1;
-            entry->field_0x6C = irand(0x1F4) + 0x12C;
-            entry->field_0x50 = gp->renderTime;
+            entry->state = 1;
+            entry->timer = irand(0x1F4) + 0x12C;
+            entry->startTime = gp->renderTime;
         } else {
-            entry->field_0x68 = 1;
-            entry->field_0x6C = irand(0x9C4) + 0x1F4;
-            entry->field_0x50 = gp->renderTime;
+            entry->state = 1;
+            entry->timer = irand(0x9C4) + 0x1F4;
+            entry->startTime = gp->renderTime;
         }
         break;
     }
     case 1: {
         s32 elapsed;
 
-        if (entry->field_0xA8 != 0) {
-            entry->field_0x68 = 100;
+        if (entry->endFlag != 0) {
+            entry->state = 100;
             break;
         }
-        elapsed = ((s32)gp->renderTime - (s32)entry->field_0x50) / (OS_TIMER_CLOCK / 1000);
-        if (elapsed > entry->field_0x6C) {
+        elapsed = ((s32)gp->renderTime - (s32)entry->startTime) / (OS_TIMER_CLOCK / 1000);
+        if (elapsed > entry->timer) {
             evt_nannpc_set_animtbl_sub(entry, (s16*)dai3_run_animtbl);
-            entry->field_0x68 = 10;
+            entry->state = 10;
         }
         break;
     }
@@ -5222,9 +5222,9 @@ void gundan1000tai_seq01(NanNpcEntry* entry) {
         f32 angle;
         f32 c;
 
-        entry->field_0x50 = gp->renderTime;
+        entry->startTime = gp->renderTime;
         entry->hoseiPosition = entry->position;
-        if (entry->field_0x68 == 10) {
+        if (entry->state == 10) {
             radius = (f32)(irand(0x19) + 0x19);
         } else {
             radius = (f32)(irand(0xB4) + 0x78);
@@ -5232,101 +5232,101 @@ void gundan1000tai_seq01(NanNpcEntry* entry) {
         angle = 6.2831855f * (f32)irand(0x168) / 360.0f;
         s = sin(angle);
         c = cos(angle);
-        entry->field_0x88.x = 0.9f * (radius * s) + 30.0f;
-        entry->field_0x88.y = 15.0f;
-        entry->field_0x88.z = 0.5f * (radius * c) - 300.0f;
+        entry->targetPos.x = 0.9f * (radius * s) + 30.0f;
+        entry->targetPos.y = 15.0f;
+        entry->targetPos.z = 0.5f * (radius * c) - 300.0f;
         entry->field_0x78 = -4.0f * (f32)(irand(0x3C) + 0x32);
-        entry->field_0x7C = (entry->field_0x88.y - entry->hoseiPosition.y) - entry->field_0x78;
-        entry->field_0x6C = irand(0x1F4) + 0x258;
-        if (entry->field_0x68 == 10) {
+        entry->field_0x7C = (entry->targetPos.y - entry->hoseiPosition.y) - entry->field_0x78;
+        entry->timer = irand(0x1F4) + 0x258;
+        if (entry->state == 10) {
             entry->field_0x70 = 0x15;
-            if (entry->hoseiPosition.x < entry->field_0x88.x) {
-                entry->field_0x60 = 90.0f;
+            if (entry->hoseiPosition.x < entry->targetPos.x) {
+                entry->facingAngle = 90.0f;
             } else {
-                entry->field_0x60 = 270.0f;
+                entry->facingAngle = 270.0f;
             }
         } else {
             entry->field_0x70 = 0x16;
-            if (entry->hoseiPosition.x < entry->field_0x88.x) {
-                entry->field_0x60 = 270.0f;
+            if (entry->hoseiPosition.x < entry->targetPos.x) {
+                entry->facingAngle = 270.0f;
             } else {
-                entry->field_0x60 = 90.0f;
+                entry->facingAngle = 90.0f;
             }
         }
-        entry->field_0x68 = 20;
+        entry->state = 20;
         evt_nannpc_set_animtbl_sub(entry, (s16*)dai3_run_animtbl);
         break;
     }
     case 20: {
-        s32 elapsed = ((s32)gp->renderTime - (s32)entry->field_0x50) / (OS_TIMER_CLOCK / 1000);
+        s32 elapsed = ((s32)gp->renderTime - (s32)entry->startTime) / (OS_TIMER_CLOCK / 1000);
 
-        if (elapsed < entry->field_0x6C) {
-            f32 t = (f32)elapsed / (f32)entry->field_0x6C;
+        if (elapsed < entry->timer) {
+            f32 t = (f32)elapsed / (f32)entry->timer;
 
-            entry->position.x = intplGetValue(0, elapsed, entry->field_0x6C, entry->hoseiPosition.x, entry->field_0x88.x);
-            entry->position.z = intpl_f(0, entry->hoseiPosition.z, entry->field_0x88.z, elapsed, entry->field_0x6C);
+            entry->position.x = intplGetValue(0, elapsed, entry->timer, entry->hoseiPosition.x, entry->targetPos.x);
+            entry->position.z = intpl_f(0, entry->hoseiPosition.z, entry->targetPos.z, elapsed, entry->timer);
             entry->position.y = entry->hoseiPosition.y + t * (entry->field_0x7C + entry->field_0x78 * t);
         } else {
-            entry->position = entry->field_0x88;
-            entry->field_0x68 = entry->field_0x70;
-            entry->field_0x50 = gp->renderTime;
-            entry->field_0x6C = irand(0x7D0) + 0x1F4;
+            entry->position = entry->targetPos;
+            entry->state = entry->field_0x70;
+            entry->startTime = gp->renderTime;
+            entry->timer = irand(0x7D0) + 0x1F4;
         }
         break;
     }
     case 21: {
         s32 elapsed;
 
-        if (entry->field_0xA8 != 0) {
-            entry->field_0x68 = 100;
+        if (entry->endFlag != 0) {
+            entry->state = 100;
             break;
         }
-        elapsed = ((s32)gp->renderTime - (s32)entry->field_0x50) / (OS_TIMER_CLOCK / 1000);
-        if (elapsed > entry->field_0x6C) {
-            entry->field_0x68 = 11;
+        elapsed = ((s32)gp->renderTime - (s32)entry->startTime) / (OS_TIMER_CLOCK / 1000);
+        if (elapsed > entry->timer) {
+            entry->state = 11;
         }
         break;
     }
     case 22:
-        if (entry->field_0xA8 != 0) {
-            entry->field_0x68 = 102;
+        if (entry->endFlag != 0) {
+            entry->state = 102;
             break;
         }
-        entry->field_0x6C = irand(0x7D0) + 0x1F4;
-        entry->field_0x50 = gp->renderTime;
-        entry->field_0x30 = entry->position;
-        entry->field_0x78 = 15.0f + entry->field_0x30.x;
-        entry->field_0x7C = entry->field_0x30.x - 15.0f;
+        entry->timer = irand(0x7D0) + 0x1F4;
+        entry->startTime = gp->renderTime;
+        entry->basePos = entry->position;
+        entry->field_0x78 = 15.0f + entry->basePos.x;
+        entry->field_0x7C = entry->basePos.x - 15.0f;
         if (irand(1) != 0) {
-            entry->field_0x80 = 1.0f;
-            entry->field_0x60 = 90.0f;
+            entry->stepX = 1.0f;
+            entry->facingAngle = 90.0f;
         } else {
-            entry->field_0x80 = -1.0f;
-            entry->field_0x60 = 270.0f;
+            entry->stepX = -1.0f;
+            entry->facingAngle = 270.0f;
         }
-        entry->field_0x68 = 30;
+        entry->state = 30;
         break;
     case 30: {
         s32 elapsed;
 
-        if (entry->field_0xA8 != 0) {
-            entry->field_0x68 = 102;
+        if (entry->endFlag != 0) {
+            entry->state = 102;
             break;
         }
-        elapsed = ((s32)gp->renderTime - (s32)entry->field_0x50) / (OS_TIMER_CLOCK / 1000);
-        if (elapsed > entry->field_0x6C) {
-            entry->field_0x68 = 10;
+        elapsed = ((s32)gp->renderTime - (s32)entry->startTime) / (OS_TIMER_CLOCK / 1000);
+        if (elapsed > entry->timer) {
+            entry->state = 10;
             break;
         }
         if (entry->field_0x78 < entry->position.x) {
-            entry->field_0x80 = -1.0f;
-            entry->field_0x60 = 270.0f;
+            entry->stepX = -1.0f;
+            entry->facingAngle = 270.0f;
         }
         if (entry->field_0x7C > entry->position.x) {
-            entry->field_0x80 = 1.0f;
-            entry->field_0x60 = 90.0f;
+            entry->stepX = 1.0f;
+            entry->facingAngle = 90.0f;
         }
-        entry->position.x += entry->field_0x80;
+        entry->position.x += entry->stepX;
         break;
     }
     case 100: {
@@ -5341,8 +5341,8 @@ void gundan1000tai_seq01(NanNpcEntry* entry) {
         angle = 6.2831855f * (f32)irand(0x168) / 360.0f;
         s = sin(angle);
         c = cos(angle);
-        entry->field_0x88.x = 0.9f * (radius * s) + 30.0f;
-        entry->field_0x88.z = 0.5f * (radius * c) - 300.0f;
+        entry->targetPos.x = 0.9f * (radius * s) + 30.0f;
+        entry->targetPos.z = 0.5f * (radius * c) - 300.0f;
         dist = distABf(entry->position.x, entry->position.z, entry->hoseiPosition.x, entry->hoseiPosition.z);
         a = angleABf(entry->position.x, entry->position.z, entry->hoseiPosition.x, entry->hoseiPosition.z);
         {
@@ -5353,17 +5353,17 @@ void gundan1000tai_seq01(NanNpcEntry* entry) {
             entry->field_0x7C = a;
             entry->field_0x70 = (s32)(dist / duration);
         }
-        entry->field_0x6C = 0;
-        entry->field_0x68 = 101;
+        entry->timer = 0;
+        entry->state = 101;
         // fallthrough
     }
     case 101:
         movePos(&entry->position.x, &entry->position.z, entry->field_0x78, entry->field_0x7C);
-        entry->field_0x6C++;
-        if (entry->field_0x6C >= entry->field_0x70) {
+        entry->timer++;
+        if (entry->timer >= entry->field_0x70) {
             entry->position.x = entry->hoseiPosition.x;
             entry->position.z = entry->hoseiPosition.z;
-            entry->field_0x68 = 102;
+            entry->state = 102;
         }
         break;
     case 102:
@@ -5545,7 +5545,7 @@ USER_FUNC(suifu100taikikan_init) {
     for (i = 0; i < work->count; i++) {
         entry = &work->entries[i];
 
-        entry->field_0x60 = 90.0f;
+        entry->facingAngle = 90.0f;
         entry->position.x = (f32)(irand(0x87) - 100);
         entry->position.y = 15.0f;
         entry->position.z = (f32)(irand(0x32) + 190);
@@ -5563,77 +5563,77 @@ USER_FUNC(suifu100taikikan_away) {
     for (i = 0; i < work->count; i++) {
         entry = &work->entries[i];
 
-        entry->field_0x60 = 90.0f;
+        entry->facingAngle = 90.0f;
         entry->callback = suifu100taikikan_seq01;
-        entry->field_0x68 = 0;
+        entry->state = 0;
     }
     return EVT_RETURN_DONE;
 }
 
 void suifu100taikikan_seq00(NanNpcEntry* entry) {
-    entry->field_0x68 = 0;
+    entry->state = 0;
 }
 
 void suifu100taikikan_seq01(NanNpcEntry* entry) {
-    switch (entry->field_0x68) {
+    switch (entry->state) {
     case 0:
         entry->hoseiPosition = entry->position;
         entry->hoseiPosition.x = -180.0f + (f32)irand(0x32);
         entry->field_0x78 = 140.0f + (f32)irand(0x78);
-        entry->field_0x60 = 270.0f;
+        entry->facingAngle = 270.0f;
         entry->field_0x70 = 1;
-        entry->field_0x68 = 100;
+        entry->state = 100;
         break;
     case 1:
         entry->hoseiPosition = entry->position;
         entry->hoseiPosition.x = -255.0f + (f32)irand(0x1E);
         entry->hoseiPosition.z = -230.0f + (f32)irand(0x1E);
         entry->field_0x70 = 10;
-        entry->field_0x68 = 100;
+        entry->state = 100;
         break;
     case 10:
         entry->hoseiPosition = entry->position;
         entry->hoseiPosition.z = -350.0f + (f32)irand(0x32);
         entry->field_0x70 = 20;
-        entry->field_0x68 = 100;
+        entry->state = 100;
         break;
     case 20:
         entry->hoseiPosition = entry->position;
         entry->hoseiPosition.x += 520.0f + (f32)irand(0x32);
-        entry->field_0x60 = 90.0f;
+        entry->facingAngle = 90.0f;
         entry->field_0x70 = 30;
-        entry->field_0x68 = 100;
+        entry->state = 100;
         break;
     case 30:
         entry->hoseiPosition = *(Vec*)&suifu100kaidanDOWN[irand(3) * 3];
         entry->field_0x70 = 40;
-        entry->field_0x68 = 100;
+        entry->state = 100;
         break;
     case 40:
         entry->hoseiPosition = *(Vec*)&suifu100kaidanUP[irand(3) * 3];
-        entry->field_0x60 = 270.0f;
+        entry->facingAngle = 270.0f;
         entry->field_0x70 = 50;
-        entry->field_0x68 = 100;
+        entry->state = 100;
         break;
     case 50:
         entry->hoseiPosition = entry->position;
         entry->hoseiPosition.x = -30.0f + (f32)irand(0x3C);
         entry->field_0x70 = 60;
-        entry->field_0x68 = 100;
+        entry->state = 100;
         break;
     case 60:
         entry->hoseiPosition = entry->position;
         entry->hoseiPosition.z -= 100.0f;
         entry->field_0x70 = 99;
-        entry->field_0x68 = 100;
+        entry->state = 100;
         break;
     case 99:
         entry->position = vec3_gor_00013858;
         break;
     case 100:
-        entry->field_0x50 = gp->renderTime;
-        entry->field_0x30 = entry->position;
-        entry->field_0x68 = 101;
+        entry->startTime = gp->renderTime;
+        entry->basePos = entry->position;
+        entry->state = 101;
         // fallthrough
     case 101: {
         Vec v;
@@ -5642,16 +5642,16 @@ void suifu100taikikan_seq01(NanNpcEntry* entry) {
         s32 elapsed;
         s32 total;
 
-        PSVECSubtract(&entry->hoseiPosition, &entry->field_0x30, &v);
+        PSVECSubtract(&entry->hoseiPosition, &entry->basePos, &v);
         mag = PSVECMag(&v);
         total = (s32)(1000.0f * mag / entry->field_0x78);
-        elapsed = ((s32)gp->renderTime - (s32)entry->field_0x50) / (OS_TIMER_CLOCK / 1000);
+        elapsed = ((s32)gp->renderTime - (s32)entry->startTime) / (OS_TIMER_CLOCK / 1000);
         PSVECScale(&v, &out, (f32)elapsed / (f32)total);
         if (elapsed < total) {
-            PSVECAdd(&entry->field_0x30, &out, &entry->position);
+            PSVECAdd(&entry->basePos, &out, &entry->position);
         } else {
             entry->position = entry->hoseiPosition;
-            entry->field_0x68 = entry->field_0x70;
+            entry->state = entry->field_0x70;
         }
         break;
     }
