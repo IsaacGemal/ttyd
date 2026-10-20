@@ -182,15 +182,13 @@ const GXColor dat_80421e40 = { 0xFF, 0xFF, 0xFF, 0x00 };
 __declspec(section ".sdata2") GXColor dat_80421e44 = { 0xFF, 0xFF, 0xFF, 0x00 };
 const GXColor dat_80421e48 = { 0xFF, 0xFF, 0xFF, 0x00 };
 
-#ifdef MUST_MATCH
 // The original builds each GXColor in a helper that returns it by value: the
 // helper's result lands in one stack slot and the assignment copies it to the
-// variable the call then passes. The plain form under #else is equivalent.
+// variable the call then passes.
 static inline GXColor disp2D_color(GXColor base, u8 alpha) {
     base.a = alpha;
     return base;
 }
-#endif
 
 
 
@@ -333,19 +331,9 @@ static void yuka_main(void) {
     memcpy_as4(mesh->prev, mesh->pos, 0xC18);
 
     {
-#ifdef MUST_MATCH
-        // Register allocation: the original assigns the callee-saved FP registers
-        // in reverse declaration order, so declare two/zero/one and initialise
-        // one/zero/two to get f29=one, f30=zero, f31=two.
-        f32 two, zero, one;
-        one = 1.0f;
-        zero = 0.0f;
-        two = 2.0f;
-#else
         const f32 one = 1.0f;
         const f32 zero = 0.0f;
         const f32 two = 2.0f;
-#endif
 
     for (i = 0; i < 2; i++) {
         for (j = 0; j < 0x81; j++) {
@@ -381,25 +369,11 @@ static void yuka_main(void) {
     }
     }
 
-#ifdef MUST_MATCH
-    {
-        // 0.5f is not const in this file, so copy it to a local to
-        // keep its load out of the inner loop, as the original does.
-        f32 half = 0.5f;
-
-        for (i = 0; i < 2; i++) {
-            for (j = 1; j < 0x80; j++) {
-                mesh->pos[i][j].y = half * (mesh->pos[i][j - 1].y + mesh->pos[i][j + 1].y);
-            }
-        }
-    }
-#else
     for (i = 0; i < 2; i++) {
         for (j = 1; j < 0x80; j++) {
             mesh->pos[i][j].y = 0.5f * (mesh->pos[i][j - 1].y + mesh->pos[i][j + 1].y);
         }
     }
-#endif
     for (i = 0; i < 2; i++) {
         for (j = 0; j < 0x81; j++) {
             mesh->disp[i][j].x = mesh->pos[i][j].x;
@@ -789,13 +763,8 @@ static void main_star(void) {
             tblA = dat_803005b0;
             tblB = dat_803005c8;
             p->starCounter++;
-#ifdef MUST_MATCH
             btl_camera_shake_h(0, 20, 0, (f32)p->starCounter * tblA.v[p->combo], 0.0f);
             psndSFXOn("SFX_BTL_SAC_DOKKAN5");
-#else
-            btl_camera_shake_h(0, 20, 0, (f32)p->starCounter * tblA.v[p->combo], 0.0f);
-            psndSFXOn("SFX_BTL_SAC_DOKKAN5");
-#endif
             for (j = 0; j < 2; j++) {
                 s32 i;
                 for (i = 0; i < 6; i++) {
@@ -825,18 +794,11 @@ static void main_star(void) {
             } else {
                 f32 x = 4.0f * (f32)p->starCounter + 20.f;
                 f32 half = 0.5f;
-#ifdef MUST_MATCH
-                // Match shape: naming the half*x product keeps MWCC's multiply order as the
-                // original's; the natural form below is the same arithmetic.
+                // The half*x product is its own local so MWCC keeps the original's multiply order.
                 f32 hx = half * x;
-#endif
 
                 p->starPos.y = p->starTarget.y;
-#ifdef MUST_MATCH
                 p->starVel = hx * x / (2.0f * x);
-#else
-                p->starVel = half * x * x / (2.0f * x);
-#endif
             }
         }
         break;
@@ -931,28 +893,13 @@ void main_enemy_sub(BattleUnit* unit, s32* count) {
 
         if (cx >= xj) {
             if (cx < xj + step) {
-#ifdef MUST_MATCH
-                // Match trick: the original factors the row base mesh + j*sizeof(Vec) once and
-                // reads disp/normal through fixed offsets. Under opt_common_subs off the named
-                // field form rematerialises both addresses into separate registers, so spell
-                // the base out. The #else form below is the natural one.
-                u8* row = (u8*)mesh + j * 12;
-                f32 d0y = *(f32*)(row + 0xC1C);
-                f32 d1y = *(f32*)(row + 0xC28);
-                f32 groundY = d0y + (cx - xj) / step * (d1y - d0y);
-#else
                 f32 groundY = mesh->disp[0][j].y + (cx - xj) / step * (mesh->disp[0][j + 1].y - mesh->disp[0][j].y);
-#endif
 
                 if (unit->mPosition.y < groundY) {
                     if ((unit->mAttributeFlags & kCeiling) && groundY < 120.f) {
                         break;
                     }
-#ifdef MUST_MATCH
-                    if (*(f32*)(row + 0x1834) > 0.0f) {
-#else
                     if (mesh->normal[0][j].y > 0.0f) {
-#endif
                         BattleUnitPart* part;
                         s32 partId;
 
@@ -960,21 +907,9 @@ void main_enemy_sub(BattleUnit* unit, s32* count) {
                             p->enemyVel[*count].y = 0.0f;
                         }
                         unit->mPosition.y = groundY;
-#ifdef MUST_MATCH
-                        // Loading 0.5f into a local here makes MWCC issue the lfs before
-                        // the two stores, as the original does; the natural form below
-                        // schedules it after them.
-                        {
-                            f32 half = 0.5f;
-                            unit->mRotation.z = 0.0f;
-                            p->enemyUnk[*count] = 0.0f;
-                            p->enemyVel[*count].y += half * *(f32*)(row + 0x1834);
-                        }
-#else
                         unit->mRotation.z = 0.0f;
                         p->enemyUnk[*count] = 0.0f;
                         p->enemyVel[*count].y += 0.5f * mesh->normal[0][j].y;
-#endif
 
                         partId = BtlUnit_GetBodyPartsId(unit);
                         part = BtlUnit_GetPartsPtr(unit, partId);
@@ -1003,23 +938,6 @@ void main_enemy_sub(BattleUnit* unit, s32* count) {
     unit->mPosition.z += p->enemyVel[*count].z;
     unit->mRotation.z += p->enemyUnk[*count];
 
-#ifdef MUST_MATCH
-    // Match trick: separate locals make MWCC load mPosition.y before mHomePosition.y; the
-    // natural form below loads them in the other order. The body is otherwise identical.
-    {
-        f32 py = unit->mPosition.y;
-        f32 hy = unit->mHomePosition.y;
-
-        if (py < hy) {
-            unit->mPosition.y = hy;
-            p->enemyVel[*count].y = 0.0f;
-            if (!(unit->mAttributeFlags & kInactive) && !BtlUnit_CheckStatus(unit, STATUS_INSTANT_KILL)) {
-                unit->mRotation.z = 0.0f;
-                p->enemyUnk[*count] = 0.0f;
-            }
-        }
-    }
-#else
     if (unit->mPosition.y < unit->mHomePosition.y) {
         unit->mPosition.y = unit->mHomePosition.y;
         p->enemyVel[*count].y = 0.0f;
@@ -1028,7 +946,6 @@ void main_enemy_sub(BattleUnit* unit, s32* count) {
             p->enemyUnk[*count] = 0.0f;
         }
     }
-#endif
 
     p->unitIds[*count] = BtlUnit_GetUnitId(unit);
     (*count)++;
@@ -1050,16 +967,15 @@ s32 end_deka(EventEntry* event) {
 // right;` declaration order, the (deliberately kept) `s32 id;` local, and declaring the loop
 // cursor `DekaTiming* t;` *before* `s32 i;` (each loop then assigns it after a leading `f32 x;`
 // declaration) all steer MWCC's GPR/FPR colouring and constant hoisting; dropping any of them
-// regresses the score. The MUST_MATCH shapes that recover the original's FPR colouring are: the
-// `ratio` temp in each loop, the
-// `volatile` GXColor `color` (own stack slot), the `y = gaugePos.y - 18.0f` temp in each note
-// transform, and the `y = gaugePos.y` temp at the beat bar. The natural forms are under #else.
+// regresses the score. The shapes that recover the original's FPR colouring are: the
+// `ratio` temp in each loop, the recomputed `left`/`right` at the plane transforms, and the
+// `volatile` GXColor `color` (own stack slot, MUST_MATCH only).
 // .text:0xAA8 | 0x80243AA0 | size: 0x6B0
 static void disp_2D(CameraId cameraId, void* param) {
     DekaWork* p = get_ptr();
 #ifdef MUST_MATCH
-    // Match shape: `volatile` gives `color` its own stack slot (0x38) separate from the
-    // disp2D_color return temp (0x34); without it MWCC coalesces them. Plain local under #else.
+    // `volatile` gives `color` its own stack slot (0x38) separate from the
+    // disp2D_color return temp (0x34); without it MWCC coalesces them.
     volatile GXColor color;
 #else
     GXColor color;
@@ -1081,19 +997,9 @@ static void disp_2D(CameraId cameraId, void* param) {
     right = mid + hw + e8;
 
     if (p->gaugeState >= 2 && p->gaugeState <= 5) {
-#ifdef MUST_MATCH
         color = disp2D_color(dat_80421e40, p->gaugeAlpha);
-#else
-        color = dat_80421e40;
-        color.a = p->gaugeAlpha;
-#endif
-#ifdef MUST_MATCH
-        // Match trick: spell the expression out so MWCC rematerialises left here instead of
-        // `fmr`ing f28; the original recomputes it at this call. Natural form under #else.
+        // `left` is recomputed at this call rather than copied out of its register, as in the original.
         PSMTXTrans(mtx, p->gaugePos.x - 0.5f * p->gaugeWidth - e8, p->gaugePos.y, p->gaugePos.z);
-#else
-        PSMTXTrans(mtx, left, p->gaugePos.y, p->gaugePos.z);
-#endif
         btlDispTexPlane2(mtx, 0x43, color, 0);
 
         PSMTXScale(scale, p->gaugeWidth / 4.0f, 1.0f, 1.0f);
@@ -1102,13 +1008,8 @@ static void disp_2D(CameraId cameraId, void* param) {
         btlDispTexPlane2(mtx, 0x44, color, 0);
 
         PSMTXScale(scale, -1.0f, 1.0f, 1.0f);
-#ifdef MUST_MATCH
-        // Same trick as the first plane: spell `right` out so it is rematerialised here rather than
-        // reusing the live register (worth ~40 instructions of colouring drift).
+        // Likewise `right` is recomputed here.
         PSMTXTrans(trans, 0.5f * p->gaugeWidth + p->gaugePos.x + 8.0f, p->gaugePos.y, p->gaugePos.z);
-#else
-        PSMTXTrans(trans, right, p->gaugePos.y, p->gaugePos.z);
-#endif
         PSMTXConcat(trans, scale, mtx);
         btlDispTexPlane2(mtx, 0x43, color, 0);
     }
@@ -1119,19 +1020,9 @@ static void disp_2D(CameraId cameraId, void* param) {
         if (ratio >= 0.0f && ratio <= 1.0f) {
             btlDispGXInit2DRasta();
             GXLoadPosMtxImm(camGetPtr(CAMERA_2D)->view, 0);
-#ifdef MUST_MATCH
-            // Match shape: the `y` temp reproduces the target's load order (f5=y, f4=8.0f).
-            {
-                f32 y = p->gaugePos.y;
-                btlDispGXQuads2DRasta(left, 8.0f + y,
-                    ratio * (right - left) + left, y - 8.0f,
-                    0xFF, 0, 0, p->gaugeAlpha);
-            }
-#else
             btlDispGXQuads2DRasta(left, 8.0f + p->gaugePos.y,
                 ratio * (right - left) + left, p->gaugePos.y - 8.0f,
                 0xFF, 0, 0, p->gaugeAlpha);
-#endif
         }
     }
 
@@ -1143,41 +1034,20 @@ static void disp_2D(CameraId cameraId, void* param) {
         for (i = 0; i < 8; i++) {
             f32 x;
             t = &p->timingCopy[i];
-#ifdef MUST_MATCH
-            // Match shape: the explicit ratio temp makes MWCC emit the target's
-            // `fmadds f2,f2,f29,f28` operand order; the natural form under #else is the same math.
+            // The ratio is its own local so the multiply-add takes the original's operand order.
             {
                 f32 ratio = t->time / p->beatPeriod;
                 x = ratio * width + left + t->offset.x;
             }
-#else
-            x = t->time / p->beatPeriod * width + left + t->offset.x;
-#endif
 
-#ifdef MUST_MATCH
             color = disp2D_color(dat_80421e44, p->gaugeAlpha);
-#else
-            color = dat_80421e44;
-            color.a = p->gaugeAlpha;
-#endif
             color.a = color.a * (t->alpha / 255.0f);
 
             if (t->kind == 1) {
                 PSMTXScale(scale, 0.75f, 0.75f, 0.75f);
-#ifdef MUST_MATCH
-                // Match shape: the explicit `y` temp makes MWCC emit the target's
-                // `fsubs f3,f3,f2` / `fadds f4,f3,f0` operand order.
-                {
-                    f32 y = p->gaugePos.y - 18.0f;
-                    PSMTXTrans(trans, x,
-                        40.f + (p->timingSlideY + (y + t->offset.y)),
-                        p->gaugePos.z + t->offset.z);
-                }
-#else
                 PSMTXTrans(trans, x,
                     40.f + (p->timingSlideY + (p->gaugePos.y - 18.0f + t->offset.y)),
                     p->gaugePos.z + t->offset.z);
-#endif
                 PSMTXConcat(trans, scale, mtx);
                 iconDispGxCol(mtx, 0x10, 0x95, color);
             }
@@ -1194,41 +1064,21 @@ static void disp_2D(CameraId cameraId, void* param) {
         for (i = 0; i < 8; i++) {
             f32 x;
             t = &p->timing[i];
-#ifdef MUST_MATCH
-            // Match shape: the explicit ratio temp makes MWCC emit the target's
-            // `fmadds f2,f2,f29,f28` operand order; the natural form under #else is the same math.
+            // The ratio is its own local so the multiply-add takes the original's operand order.
             {
                 f32 ratio = t->time / p->beatPeriod;
                 x = ratio * width + left + t->offset.x;
             }
-#else
-            x = t->time / p->beatPeriod * width + left + t->offset.x;
-#endif
 
             if (t->state >= 2 && t->state <= 5) {
-#ifdef MUST_MATCH
                 color = disp2D_color(dat_80421e48, p->gaugeAlpha);
-#else
-                color = dat_80421e48;
-                color.a = p->gaugeAlpha;
-#endif
                 color.a = color.a * (t->alpha / 255.0f);
 
                 if (t->kind == 1) {
                     PSMTXScale(scale, 0.75f, 0.75f, 0.75f);
-#ifdef MUST_MATCH
-                    // Match shape: same `y` temp as the first-loop note.
-                    {
-                        f32 y = p->gaugePos.y - 18.0f;
-                        PSMTXTrans(trans, x,
-                            p->timingSlideY + (y + t->offset.y),
-                            p->gaugePos.z + t->offset.z);
-                    }
-#else
                     PSMTXTrans(trans, x,
                         p->timingSlideY + (p->gaugePos.y - 18.0f + t->offset.y),
                         p->gaugePos.z + t->offset.z);
-#endif
                     PSMTXConcat(trans, scale, mtx);
                     id = p->beatPos >= t->time - 7.0f ? 0x95 : 0x91;
                     iconDispGxCol(mtx, 0x10, id, color);
@@ -1380,17 +1230,13 @@ static DekaWork* get_ptr(void) {
 #pragma dont_inline reset
 
 // .text:0x4BC | 0x8024327C | size: 0x354
-// The MUST_MATCH block hoists the scan loop's two clamp bounds as callee-saved
-// locals (30 in f30, 20 in f31) and gives tm/tj function scope, which reproduces the
-// original's registers.
+// tm/tj have function scope and are declared before ti, which reproduces the original's registers.
 void create_timing(void) {
     DekaWork* p = get_ptr();
     s32 idx[8];
-#ifdef MUST_MATCH
     // These take r29/r6 like the original; declared before ti so the allocator agrees.
     DekaTiming* tm;
     DekaTiming* tj;
-#endif
     DekaTiming* ti;
     f32 times[8];
     f32 tf;
@@ -1399,45 +1245,20 @@ void create_timing(void) {
     s32 tries;
     f32 f;
     f32 w = 64.0f;
-#ifdef MUST_MATCH
-    // Declared in this order and initialised 30-then-20 they land in f30/f31.
-    f32 c20;
-    f32 c30;
-#endif
 
     memcpy(p->timingCopy, p->timing, 0x1C0);
 
 restart:
     n = p->beatCount + 3;
-#ifdef MUST_MATCH
-    c30 = 30.f;
-    c20 = 20.f;
-#endif
     for (i = 0; i < 8; i++) {
         ti = &p->timing[i];
         ti->flag = 0;
         if (i < n) {
-#ifdef MUST_MATCH
-            f32 fr;
-            f32 d;
-#endif
             ti->kind = 1;
-#ifdef MUST_MATCH
-            fr = (f32)rand();
-            d = (p->beatPeriod - 40.f);
-            f = d * fr / 32767.0f;
-#else
             f = (p->beatPeriod - 40.f) * (f32)rand() / 32767.0f;
-#endif
-#ifdef MUST_MATCH
-            if (f <= 30.0f) {
-                f = 30.0f;
-            }
-#else
             if (f <= 30.f) {
                 f = 30.f;
             }
-#endif
             if (f >= p->beatPeriod - 20.f) {
                 f = p->beatPeriod - 20.f;
             }
@@ -1451,15 +1272,8 @@ restart:
     tries = 0;
 scan:
     for (i = 0; i < n; i++) {
-#ifdef MUST_MATCH
         tm = &p->timing[i];
-#else
-        DekaTiming* tm = &p->timing[i];
-#endif
         for (j = 0; j < n; j++) {
-#ifndef MUST_MATCH
-            DekaTiming* tj;
-#endif
             if (i == j) {
                 continue;
             }
@@ -1469,21 +1283,12 @@ scan:
             }
             if (__fabs(tj->time - tm->time) <= 15.75) {
                 f = p->beatPeriod * (f32)rand() / 32767.0f;
-#ifdef MUST_MATCH
-                if (f <= c30) {
-                    f = c30;
-                }
-                if (f >= p->beatPeriod - c20) {
-                    f = p->beatPeriod - c20;
-                }
-#else
                 if (f <= 30.f) {
                     f = 30.f;
                 }
                 if (f >= p->beatPeriod - 20.f) {
                     f = p->beatPeriod - 20.f;
                 }
-#endif
                 tm->time = f;
                 if (++tries == 100) {
                     tm->state = 0;
@@ -1513,22 +1318,11 @@ scan:
         }
     }
 
-#ifdef MUST_MATCH
     f = p->beatPeriod - 7.0f - 2.0f;
-#else
-    f = p->beatPeriod - 7.0f;
-    f = f - 2.0f;
-#endif
     p->timing[idx[n - 1]].time = f;
-#ifdef MUST_MATCH
-    if (p->timing[idx[0]].time > 70.0f) {
-        p->timing[idx[0]].time = 70.0f;
-    }
-#else
     if (p->timing[idx[0]].time > 70.f) {
         p->timing[idx[0]].time = 70.f;
     }
-#endif
 }
 
 // .text:0x25C | 0x80243254 | size: 0x28
