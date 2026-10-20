@@ -93,9 +93,7 @@ EffectEntry* effMahornEntry(BOOL unused, s32 count, f32 posX, f32 posY, f32 posZ
 
 void effMahornMain(EffectEntry* effect) {
     effMahornData* data = effect->userdata;
-#ifdef MUST_MATCH
     Vec position;
-#endif
     Vec disp = { 0 };
     f32 scale;
     s32 i;
@@ -103,9 +101,7 @@ void effMahornMain(EffectEntry* effect) {
     disp.x = data->position.x;
     disp.y = data->position.y;
     disp.z = data->position.z;
-#ifdef MUST_MATCH
     position = disp;
-#endif
 
     if (data->timer < 1000) {
         data->timer--;
@@ -133,33 +129,23 @@ void effMahornMain(EffectEntry* effect) {
                 scale = (f32)scale_dt2[(u32)data->counter % 21] / float_100_80422260;
             }
             data->scale = scale;
-#ifdef MUST_MATCH
             {
                 f32 t = float_20_80422264 - data->growth;
                 data->growth = t * float_0p125_80422268 + data->growth;
             }
-#else
-            data->growth = (float_20_80422264 - data->growth) * float_0p125_80422268 + data->growth;
-#endif
             data->alpha += -data->alpha / 64;
         }
     }
-#ifdef MUST_MATCH
     dispEntry(4, dispCalcZ(&position), 2, effMahornDisp, effect);
-#else
-    dispEntry(4, dispCalcZ(&disp), 2, effMahornDisp, effect);
-#endif
 }
 
-#ifdef MUST_MATCH
-// MUST_MATCH: retail builds the GXColor in a temp then copies it to the outgoing slot; inlining the whole
-// build+call reproduces that. The natural form (one build, one call) is under #else.
+// Retail builds the GXColor in a temp then copies it to the outgoing slot; inlining the whole
+// build+call reproduces that.
 static inline void mahornColorCall(const u32* base, s32 alpha) {
     GXColor c = *(GXColor*)base;
     c.a = alpha;
     GXSetChanMatColor(GX_COLOR0A0, c);
 }
-#endif
 
 void effMahornDisp(CameraId camId, void* param) {
     EffectEntry* effect = param;
@@ -169,11 +155,8 @@ void effMahornDisp(CameraId camId, void* param) {
     Mtx mtxRot;
     Mtx mtxScale;
     Mtx mtxFinal;
-    GXColor color;
     s32 headerAlpha;
-#ifdef MUST_MATCH
     f32 negEight;
-#endif
     s32 i;
 
     headerAlpha = data->alpha;
@@ -202,9 +185,7 @@ void effMahornDisp(CameraId camId, void* param) {
     GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_POS_XYZ, GX_F32, 0);
     GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, GX_TEX_ST, GX_F32, 0);
 
-#ifdef MUST_MATCH
     negEight = -float_8_8042224c;
-#endif
 
     data++;
     for (i = 1; i < effect->count; i++, data++) {
@@ -212,17 +193,11 @@ void effMahornDisp(CameraId camId, void* param) {
             continue;
         }
 
-#ifdef MUST_MATCH
         if (i & 1) {
             mahornColorCall(&mahornColorOdd, (data->alpha * headerAlpha) / 255);
         } else {
             mahornColorCall(&mahornColorEven, (data->alpha * headerAlpha) / 255);
         }
-#else
-        color = *(GXColor*)((i & 1) ? &mahornColorOdd : &mahornColorEven);
-        color.a = (data->alpha * headerAlpha) / 255;
-        GXSetChanMatColor(GX_COLOR0A0, color);
-#endif
 
         PSMTXTrans(mtxBase, data->position.x, data->position.y, data->position.z);
         if (i & 1) {
@@ -239,27 +214,14 @@ void effMahornDisp(CameraId camId, void* param) {
         GXSetCurrentMtx(GX_PNMTX0);
 
         GXBegin(GX_QUADS, GX_VTXFMT0, 4);
-#ifdef MUST_MATCH
         GXPosition3f32(negEight * float_0p5_80422250, float_4_80422254, float_0_80422258);
-#else
-        GXPosition3f32(-float_8_8042224c * float_0p5_80422250, float_4_80422254, float_0_80422258);
-#endif
         GXTexCoord2f32(float_0_80422258, float_0_80422258);
         GXPosition3f32(float_4_80422254, float_4_80422254, float_0_80422258);
         GXTexCoord2f32(float_1_8042225c, float_0_80422258);
-#ifdef MUST_MATCH
         GXPosition3f32(float_4_80422254, negEight * float_0p5_80422250, float_0_80422258);
-#else
-        GXPosition3f32(float_4_80422254, -float_8_8042224c * float_0p5_80422250, float_0_80422258);
-#endif
         GXTexCoord2f32(float_1_8042225c, float_1_8042225c);
-#ifdef MUST_MATCH
         GXPosition3f32(negEight * float_0p5_80422250, negEight * float_0p5_80422250,
                       float_0_80422258);
-#else
-        GXPosition3f32(-float_8_8042224c * float_0p5_80422250, -float_8_8042224c * float_0p5_80422250,
-                      float_0_80422258);
-#endif
         GXTexCoord2f32(float_0_80422258, float_1_8042225c);
     }
 }
