@@ -11,7 +11,8 @@ typedef struct WindowWork {
     u32 buttonRep;              // 0x8
     u32 dirTrg;                 // 0xC
     u32 dirRep;                 // 0x10
-    u8 field_0x14[0x20 - 0x14]; // 0x14
+    s32 lectureStep;           // 0x14, win_main winLecture*: step counter
+    u8 field_0x18[0x20 - 0x18]; // 0x18
     s32 menuState;              // 0x20, TODO: rename?
     u8 field_0x24[0x3C - 0x24]; // 0x24
     EventEntry* currentEvent;   // 0x3C

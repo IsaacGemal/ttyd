@@ -98,7 +98,7 @@ TEXPalette* winTexTpl = NULL;
 #define POUCH_SETPARTYHP(id, v) (*(void(*)(s32, s32))pouchSetPartyHP)(id, v)
 
 // WindowWork.currentEvent is actually at 0x18; the header wrongly places it
-// at 0x3C (0x14 is a s32 counter used by winLecture*). Use a raw offset.
+// at 0x3C. Use a raw offset.
 #define WP_CURRENT_EVENT(w) (*(EventEntry**)((u8*)(w) + 0x18))
 
 static s32 cam_r(void);
@@ -1137,7 +1137,7 @@ s32 unk_80175eb0(EventEntry* event, BOOL isFirstCall) {
     if (isFirstCall) {
         wp->flags &= ~0x800;
     }
-    if (*(s32*)wp->field_0x14 < value) {
+    if (wp->lectureStep < value) {
         return 0;
     }
     wp->flags |= 0x800;
@@ -1160,7 +1160,7 @@ void winLectureKeyMask(void) {
         wp->dirRep = 0;
         return;
     }
-    switch (*(s32*)wp->field_0x14) {
+    switch (wp->lectureStep) {
         case 0:
         case 1:
             wp->buttonTrg = 0;
@@ -1168,7 +1168,7 @@ void winLectureKeyMask(void) {
             wp->dirTrg = 0;
             wp->dirRep = 0;
             if (keyGetButtonTrg(0) & PAD_BUTTON_A) {
-                (*(s32*)wp->field_0x14)++;
+                (wp->lectureStep)++;
             }
             break;
 
@@ -1180,7 +1180,7 @@ void winLectureKeyMask(void) {
             wp->dirTrg &= DEMO_STICK_RIGHT;
             wp->dirRep &= DEMO_STICK_RIGHT;
             if ((s32)wp->dirTrg != 0 || (s32)wp->dirRep != 0) {
-                (*(s32*)wp->field_0x14)++;
+                (wp->lectureStep)++;
             }
             break;
 
@@ -1193,7 +1193,7 @@ void winLectureKeyMask(void) {
             wp->dirTrg = 0;
             wp->dirRep = 0;
             if ((s32)wp->buttonTrg != 0 || (s32)wp->buttonRep != 0) {
-                (*(s32*)wp->field_0x14)++;
+                (wp->lectureStep)++;
             }
             break;
 
@@ -1203,7 +1203,7 @@ void winLectureKeyMask(void) {
             wp->dirTrg = 0;
             wp->dirRep = 0;
             if ((s32)wp->buttonTrg != 0 || (s32)wp->buttonRep != 0) {
-                (*(s32*)wp->field_0x14)++;
+                (wp->lectureStep)++;
             }
             break;
     }
@@ -1212,7 +1212,7 @@ void winLectureKeyMask(void) {
 void winLectureOn(void) {
     wp->flags |= 0x1000;
     wp->flags |= 0x800;
-    *(s32*)wp->field_0x14 = 0;
+    wp->lectureStep = 0;
     WP_CURRENT_EVENT(wp) = evtEntry(evt_lecture_msg, 0, 0);
 }
 
