@@ -12,11 +12,11 @@
 // LstRcKeep action-command work area at _battleWorkPointer + 0x1F4C. No header declares it.
 // It begins where BattleACDispParams ends (the header stops at 0x2BC in BattleActions).
 typedef struct LstRcKeepWork {
-    s32 field_0x00; // 0x00, countdown timer / current timing window
-    s32 field_0x04; // 0x04, index into the acParams array
-    s16 field_0x08; // 0x08, A-button (0x4) hold counter
-    s16 field_0x0A; // 0x0A, B-button (0x80) hold counter
-    s32 field_0x0C; // 0x0C, post-command timer
+    s32 countdown;  // 0x00, frames left in the current timing window; reloaded from acParams[stage] when it runs out
+    s32 stage;      // 0x04, index into the acParams timing array (0..4)
+    s16 leftHold;   // 0x08, frames the stick has been held left (pad bit 0x40000), 0 when released
+    s16 cRightHold; // 0x0A, frames the C-stick has been held right (pad bit 0x800000), 0 when released
+    s32 endTimer;   // 0x0C, post-command timer
 } LstRcKeepWork;
 
 // rodata strings, one per icon. They are the first objects of the unit's .rodata, so the compiler
@@ -80,7 +80,7 @@ s32 battleAcMain_LstRcKeep(BattleWork* work) {
         switch (ac->mAcState) {
         case 0:
             ac->result = 1;
-            dec->field_0x04 = 0;
+            dec->stage = 0;
             memset(disp, 0, 0x2C);
             disp->iconX = float_neg300_8041e5f8;
             disp->iconY = float_0_8041e600;
@@ -90,10 +90,10 @@ s32 battleAcMain_LstRcKeep(BattleWork* work) {
         case 0x63:
             break;
         case 0x64:
-            dec->field_0x00 = 0x78;
+            dec->countdown = 0x78;
             ac->mAcState = 0x3E8;
-            dec->field_0x08 = 0;
-            dec->field_0x0A = 0;
+            dec->leftHold = 0;
+            dec->cRightHold = 0;
             // fall through
         case 0x3E8:
             if ((ac->field_0x4 & 1) &&
@@ -113,39 +113,39 @@ s32 battleAcMain_LstRcKeep(BattleWork* work) {
                 }
                 return 0;
             }
-            if (dec->field_0x08 == 0) {
+            if (dec->leftHold == 0) {
                 if (BattlePadCheckTrigger(0x40000) != 0) {
-                    dec->field_0x08 = 1;
+                    dec->leftHold = 1;
                 }
             }
             else {
-                dec->field_0x08++;
+                dec->leftHold++;
                 if ((s32)BattlePadCheckNow(0x40000) == 0) {
-                    dec->field_0x08 = 0;
+                    dec->leftHold = 0;
                 }
             }
-            if (dec->field_0x0A == 0) {
+            if (dec->cRightHold == 0) {
                 if (BattlePadCheckTrigger(0x800000) != 0) {
-                    dec->field_0x0A = 1;
+                    dec->cRightHold = 1;
                 }
             }
             else {
-                dec->field_0x0A++;
+                dec->cRightHold++;
                 if ((s32)BattlePadCheckNow(0x800000) == 0) {
-                    dec->field_0x0A = 0;
+                    dec->cRightHold = 0;
                 }
             }
-            if ((dec->field_0x08 != 0 && dec->field_0x0A != 0) ||
+            if ((dec->leftHold != 0 && dec->cRightHold != 0) ||
                 ac->guardFrames > 0 || autoCommand) {
                 ac->mAcState = 0x3E9;
-                dec->field_0x00 = ac->acParams[0];
-                dec->field_0x04 = 0;
-                dec->field_0x08 = 0;
-                dec->field_0x0A = 0;
+                dec->countdown = ac->acParams[0];
+                dec->stage = 0;
+                dec->leftHold = 0;
+                dec->cRightHold = 0;
             }
             else {
-                dec->field_0x00--;
-                if (dec->field_0x00 <= 0) {
+                dec->countdown--;
+                if (dec->countdown <= 0) {
                     ac->result = 0;
                     stateChanged = 1;
                     ac->mAcState = 0x3EB;
@@ -159,40 +159,40 @@ s32 battleAcMain_LstRcKeep(BattleWork* work) {
                 stateChanged = 1;
                 ac->mAcState = 0x3EB;
             }
-            dec->field_0x00--;
-            if (dec->field_0x08 > 0) {
-                dec->field_0x08++;
+            dec->countdown--;
+            if (dec->leftHold > 0) {
+                dec->leftHold++;
             }
             else if ((s32)BattlePadCheckNow(0x40000) == 0) {
-                dec->field_0x08 = 1;
+                dec->leftHold = 1;
             }
-            if (dec->field_0x0A > 0) {
-                dec->field_0x0A++;
+            if (dec->cRightHold > 0) {
+                dec->cRightHold++;
             }
             else if ((s32)BattlePadCheckNow(0x800000) == 0) {
-                dec->field_0x0A = 1;
+                dec->cRightHold = 1;
             }
-            if (!autoCommand && (dec->field_0x08 > 5 || dec->field_0x0A > 5)) {
+            if (!autoCommand && (dec->leftHold > 5 || dec->cRightHold > 5)) {
                 ac->result &= ~1;
                 stateChanged = 1;
                 ac->mAcState = 0x3EB;
                 break;
             }
-            cur = dec->field_0x00;
+            cur = dec->countdown;
             if (cur < 0) {
-                dec->field_0x04++;
-                if (dec->field_0x04 >= 5) {
+                dec->stage++;
+                if (dec->stage >= 5) {
                     ac->result &= ~1;
                     stateChanged = 1;
                     ac->mAcState = 0x3EB;
                 }
                 else {
-                    dec->field_0x00 = ac->acParams[dec->field_0x04];
+                    dec->countdown = ac->acParams[dec->stage];
                 }
             }
-            else if ((dec->field_0x08 != 0 && dec->field_0x0A != 0) || autoCommand) {
+            else if ((dec->leftHold != 0 && dec->cRightHold != 0) || autoCommand) {
                 s32 flag = 0;
-                if (dec->field_0x04 == 4) {
+                if (dec->stage == 4) {
                     s32 remaining = ac->acParams[4] - cur;
 #ifdef MUST_MATCH
                     // Match-only: the header says `s8` but the callee returns a zero-extended 4-byte value.
@@ -225,7 +225,7 @@ s32 battleAcMain_LstRcKeep(BattleWork* work) {
             }
             break;
         case 0x3EB: {
-            s32 n = dec->field_0x04 - 1;
+            s32 n = dec->stage - 1;
             if (n >= 0) {
                 s32 i;
                 for (i = 0; i <= n; i++) {
@@ -238,12 +238,12 @@ s32 battleAcMain_LstRcKeep(BattleWork* work) {
         // fall through
         case 0x3EC:
         case 0x3ED:
-            dec->field_0x0C = 0x3C;
+            dec->endTimer = 0x3C;
             ac->mAcState = 0x3EE;
             break;
         case 0x3EE:
-            dec->field_0x0C--;
-            if (dec->field_0x0C <= 0) {
+            dec->endTimer--;
+            if (dec->endTimer <= 0) {
                 ac->mAcState = 0x3EF;
             }
             break;
@@ -292,7 +292,7 @@ void battleAcDisp_LstRcKeep(CameraId camId, void* param) {
         }
         break;
     case 0x3E9:
-        *(s32*)&disp->field_0x24[0] = dec->field_0x04 - 1;
+        *(s32*)&disp->field_0x24[0] = dec->stage - 1;
         disp->iconX = intplGetValue(4, 0x14 - disp->counter, 0x14, float_neg300_8041e5f8,
                                     float_30_8041e5fc);
         actionCommandDisp(disp->iconX, disp->iconY, *(s32*)&disp->field_0x24[0]);

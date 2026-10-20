@@ -50,7 +50,7 @@ s32 battleAcMain_CraneTiming(BattleWork* work) {
 	CraneTimingWork* dec = (CraneTimingWork*)&ac->field_0x2BC[0];
 	BattleACDispParams* disp = &ac->dispParams;
 #else
-	CraneTimingWork* dec = (CraneTimingWork*)((u8*)work + 0x1F4C);
+	CraneTimingWork* dec = (CraneTimingWork*)&work->actionCommands.field_0x2BC[0];
 	BattleACDispParams* disp = &work->actionCommands.dispParams;
 #endif
 	BattleUnit* unit;

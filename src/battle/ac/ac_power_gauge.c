@@ -183,7 +183,7 @@ s32 battleAcMain_PowerGauge(BattleWork* work) {
             }
             break;
         }
-        if ((work->actionCommands.acFlag & 1) == 0) {
+        if ((*(u32*)&work->actionCommands.acFlag & 1) == 0) {
             dec->counter++;
         }
         else if (dec->state == 1) {
@@ -360,7 +360,7 @@ static void actionCommandDisp(f32 x, f32 y) {
 #ifdef MUST_MATCH
     dec = (PowerGaugeDecWork*)&ac->field_0x2BC[0];
 #else
-    dec = (PowerGaugeDecWork*)((u8*)work + 0x1f4c);
+    dec = (PowerGaugeDecWork*)&work->actionCommands.field_0x2BC[0];
 #endif
 
     ratio = dec->gaugePercent / 100.f;

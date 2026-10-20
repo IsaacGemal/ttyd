@@ -109,7 +109,7 @@ s32 battleAcMain_MonosiriTarget(BattleWork* work) {
 	MonosiriTargetWork* mt = (MonosiriTargetWork*)&ac->field_0x2BC[0];
 	BattleACDispParams* disp = &ac->dispParams;
 #else
-	MonosiriTargetWork* mt = (MonosiriTargetWork*)((u8*)work + 0x1F4C);
+	MonosiriTargetWork* mt = (MonosiriTargetWork*)&work->actionCommands.field_0x2BC[0];
 	BattleACDispParams* disp = &work->actionCommands.dispParams;
 #endif
 	BattleUnit* unit;
@@ -228,7 +228,7 @@ static void actionCommandDisp(f32 x, f32 y) {
 	Vec* vecs = (Vec*)vec3_80300880;
 #endif
 	BattleWork* work = _battleWorkPointer;
-	MonosiriTargetWork* mt = (MonosiriTargetWork*)((u8*)work + 0x1F4C);
+	MonosiriTargetWork* mt = (MonosiriTargetWork*)&work->actionCommands.field_0x2BC[0];
 	Vec screen;
 	Vec screen2;
 	f32 alpha = float_0_8042206c;

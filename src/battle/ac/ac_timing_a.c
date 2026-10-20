@@ -23,9 +23,9 @@ extern const f32 float_1_8041c430;
 
 // TimingA's action-command work area at BattleWork+0x1F4C. No header declares it.
 typedef struct AcTimingADecWork {
-	s32 field_0x00; // 0x0
+	s32 pad_0x00;   // 0x0, never accessed
 	u32 flags;      // 0x4
-	s32 field_0x08; // 0x8
+	s32 endTimer;   // 0x8, frames the result display waits (0x3C)
 } AcTimingADecWork;
 
 // A timing window: the frame threshold and the success frame it maps to.
@@ -71,12 +71,12 @@ s32 battleAcMain_TimingA(BattleWork* work) {
 	case 0x64:
 		break;
 	case 0x3E8:
-		dec->field_0x08 = 0x3C;
+		dec->endTimer = 0x3C;
 		ac->mAcState = 0x3E9;
 		// fallthrough
 	case 0x3E9:
-		dec->field_0x08--;
-		if (dec->field_0x08 <= 0) {
+		dec->endTimer--;
+		if (dec->endTimer <= 0) {
 			ac->mAcState = 0x3EA;
 		}
 		break;
@@ -99,7 +99,7 @@ s32 battleAcMain_TimingA(BattleWork* work) {
 // dont_inline: battleAcResult_TimingA calls this with `bl`; without it MWCC inlines the body.
 #pragma dont_inline on
 s32 battleAcTimingA_GetSuccessFrame(BattleWork* work) {
-	AcTimingADecWork* dec = (AcTimingADecWork*)((u8*)work + 0x1F4C);
+	AcTimingADecWork* dec = (AcTimingADecWork*)&work->actionCommands.field_0x2BC[0];
 	AcTimingAEntry* entry = _ac_timing_a_timing_tbl[
 #ifdef MUST_MATCH
 	    // Match-only: the header says `s8`, but the callee returns a zero-extended 4-byte value;

@@ -32,10 +32,10 @@ static void actionCommandDisp(f32, f32);
 typedef struct AirGaugeDecWork {
 	s32 frame;        // 0x0
 	f32 gaugePercent; // 0x4
-	u32 field_0x8;    // 0x8
-	u32 value;        // 0xC
+	u32 presses;      // 0x8, button presses; 0 at the end means the gauge was never pressed (no result)
+	u32 heldFrames;   // 0xC, frames the button has been held since the last press
 	s32 flag;         // 0x10
-	s32 field_0x14;   // 0x14
+	s32 endTimer;     // 0x14
 } AirGaugeDecWork;
 
 // 100%. The `difficulty`/`dat_80420a70` shapes are match-only (comments at their uses);
@@ -48,7 +48,7 @@ s32 battleAcMain_AirGauge(BattleWork* work) {
 	AirGaugeDecWork* dec = (AirGaugeDecWork*)&ac->field_0x2BC[0];
 	BattleACDispParams* disp = &ac->dispParams;
 #else
-	AirGaugeDecWork* dec = (AirGaugeDecWork*)((u8*)work + 0x1f4c);
+	AirGaugeDecWork* dec = (AirGaugeDecWork*)&work->actionCommands.field_0x2BC[0];
 	BattleACDispParams* disp = &work->actionCommands.dispParams;
 #endif
 
@@ -69,8 +69,8 @@ s32 battleAcMain_AirGauge(BattleWork* work) {
 		work->actionCommands.mAcState = 0x63;
 		work->actionCommands.result = 1;
 		dec->gaugePercent = 0.0f;
-		dec->field_0x8 = 0;
-		dec->value = 0;
+		dec->presses = 0;
+		dec->heldFrames = 0;
 		dec->flag = 0;
 		break;
 	case 0x64:
@@ -116,18 +116,18 @@ s32 battleAcMain_AirGauge(BattleWork* work) {
 		if ((s32)BattlePadCheckNow(0x100) != 0) {
 			work->actionCommands.outputParams[1] = 1;
 			if (BattlePadCheckTrigger(0x100)) {
-				dec->field_0x8++;
-				dec->value = 0;
+				dec->presses++;
+				dec->heldFrames = 0;
 			}
-			dec->value++;
+			dec->heldFrames++;
 		}
 		else {
 			work->actionCommands.outputParams[1] = 0;
-			dec->value = 0;
+			dec->heldFrames = 0;
 		}
 		dec->gaugePercent -= _GetGaugeDecValue();
 		if (work->actionCommands.mAcUnit->badgesEquipped.AutoCommand) {
-			dec->field_0x8 = 1;
+			dec->presses = 1;
 			dec->gaugePercent = 100.0f;
 		}
 		if (dec->gaugePercent < 0.0f) {
@@ -141,10 +141,10 @@ s32 battleAcMain_AirGauge(BattleWork* work) {
 			break;
 		}
 		if (work->actionCommands.mAcUnit->badgesEquipped.AutoCommand) {
-			dec->field_0x8 = 1;
+			dec->presses = 1;
 			dec->gaugePercent = 100.0f;
 		}
-		if (dec->field_0x8 == 0) {
+		if (dec->presses == 0) {
 			work->actionCommands.outputParams[0] = 0;
 			work->actionCommands.outputParams[2] = 0;
 			work->actionCommands.result = 0;
@@ -163,9 +163,9 @@ s32 battleAcMain_AirGauge(BattleWork* work) {
 				work->actionCommands.outputParams[0] = 1;
 			}
 #ifdef MUST_MATCH
-			else if ((difficulty = *(s32*)((u8*)work + 0x1cd0)) <= 2) {
+			else if ((difficulty = work->actionCommands.acParams[2]) <= 2) {
 #else
-			else if (*(s32*)((u8*)work + 0x1cd0) <= 2) {
+			else if (work->actionCommands.acParams[2] <= 2) {
 #endif
 				work->actionCommands.outputParams[0] = 2;
 			}
@@ -175,7 +175,7 @@ s32 battleAcMain_AirGauge(BattleWork* work) {
 #ifdef MUST_MATCH
 			else if (difficulty <= 3) {
 #else
-			else if (*(s32*)((u8*)work + 0x1cd0) <= 3) {
+			else if (work->actionCommands.acParams[2] <= 3) {
 #endif
 				work->actionCommands.outputParams[0] = 3;
 			}
@@ -185,7 +185,7 @@ s32 battleAcMain_AirGauge(BattleWork* work) {
 #ifdef MUST_MATCH
 			else if (difficulty <= 4) {
 #else
-			else if (*(s32*)((u8*)work + 0x1cd0) <= 4) {
+			else if (work->actionCommands.acParams[2] <= 4) {
 #endif
 				work->actionCommands.outputParams[0] = 4;
 			}
@@ -214,12 +214,12 @@ s32 battleAcMain_AirGauge(BattleWork* work) {
 		break;
 	case 0x3EA:
 		BattleAcGaugeSeDelete();
-		dec->field_0x14 = 0x3C;
+		dec->endTimer = 0x3C;
 		work->actionCommands.mAcState = 0x3EB;
 		// fallthrough
 	case 0x3EB:
-		dec->field_0x14 = dec->field_0x14 - 1;
-		if (dec->field_0x14 <= 0) {
+		dec->endTimer = dec->endTimer - 1;
+		if (dec->endTimer <= 0) {
 			work->actionCommands.mAcState = 0x3EC;
 		}
 		break;
@@ -254,7 +254,7 @@ f32 _GetGaugeDecValue(void) {
 	s32 type;
 #else
 	BattleWork* work = _battleWorkPointer;
-	AirGaugeDecWork* dec = (AirGaugeDecWork*)((u8*)work + 0x1f4c);
+	AirGaugeDecWork* dec = (AirGaugeDecWork*)&work->actionCommands.field_0x2BC[0];
 	s32 type;
 	u8* base = lbl_803ABCE0;
 #endif
@@ -299,7 +299,7 @@ f32 _GetGaugeDecValue(void) {
 		break;
 	}
 
-	while (dec->value > (u32)table->threshold) {
+	while (dec->heldFrames > (u32)table->threshold) {
 		table++;
 		if (table->threshold < 0) {
 			break;
@@ -312,7 +312,7 @@ f32 _GetGaugeDecValue(void) {
 	}
 
 	dec->flag = table->unk8;
-	max = max - intplGetValue(0, dec->value - (table - 1)->threshold, table->threshold - (table - 1)->threshold,
+	max = max - intplGetValue(0, dec->heldFrames - (table - 1)->threshold, table->threshold - (table - 1)->threshold,
 	                          (table - 1)->value, table->value);
 	return max;
 }
@@ -387,7 +387,7 @@ static void actionCommandDisp(f32 f1, f32 f2) {
 #ifdef MUST_MATCH
 	dec = (AirGaugeDecWork*)&ac->field_0x2BC[0];
 #else
-	dec = (AirGaugeDecWork*)((u8*)work + 0x1f4c);
+	dec = (AirGaugeDecWork*)&work->actionCommands.field_0x2BC[0];
 #endif
 
 	target = dec->gaugePercent;

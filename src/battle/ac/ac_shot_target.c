@@ -15,19 +15,19 @@
 // Per-action-command work area at BattleWork + 0x1F4C (inside BattleActions.field_0x2BC).
 // No header declares it: the exact fields are only used by this file.
 typedef struct ShotTargetWork {
-    s32 field_0x00; // 0x00, countdown (loaded from acParams[2])
-    s32 field_0x04; // 0x04, end-of-AC countdown
-    Vec target;     // 0x08, target hit position
-    Vec pos;        // 0x14, animated cursor position
-    s32 field_0x20; // 0x20, within-28-units flag
-    f32 field_0x24; // 0x24, rotation animation value
-    s16 field_0x28; // 0x28, rumble period 1
-    s16 field_0x2a; // 0x2A, rumble timer 1
-    f32 field_0x2C; // 0x2C, rumble amplitude 1
-    s16 field_0x30; // 0x30, rumble period 2
-    s16 field_0x32; // 0x32, rumble timer 2
-    f32 field_0x34; // 0x34, rumble amplitude 2
-    s32 field_0x38; // 0x38, sound handle
+    s32 countdown;      // 0x00, frames left in the shot, loaded from acParams[2]
+    s32 endTimer;       // 0x04, end-of-AC countdown
+    Vec target;         // 0x08, target hit position
+    Vec pos;            // 0x14, animated cursor position
+    s32 inRange;        // 0x20, cursor within 28 units of the target
+    f32 spin;           // 0x24, cursor rotation, advanced by 2 per frame in the active state
+    s16 rumbleXPeriod;  // 0x28, period of the X wobble (frames), set by _ac_rumble_param_set
+    s16 rumbleXTimer;   // 0x2A, frames left in the current X wobble half-cycle
+    f32 rumbleXAmp;     // 0x2C, X wobble amplitude
+    s16 rumbleYPeriod;  // 0x30, period of the Y wobble (frames)
+    s16 rumbleYTimer;   // 0x32, frames left in the current Y wobble half-cycle
+    f32 rumbleYAmp;     // 0x34, Y wobble amplitude
+    s32 sfxId;          // 0x38, sound handle from psndSFXOn, -1 when none
 } ShotTargetWork;
 
 // The cursor is drawn as four screenspace quads; the original unit emitted these .rodata vectors.
@@ -123,28 +123,28 @@ s32 battleAcMain_ShotTarget(BattleWork* work) {
                 BtlUnit_GetHitPos(unit, part, &hit.x, &hit.y, &hit.z);
 #ifdef MUST_MATCH
                 // Match-only: volatile keeps MWCC from reordering these four stores, which the
-                // original issues in exactly this order (target stores, field_0x20, pos, field_0x24).
+                // original issues in exactly this order (target stores, inRange, pos, spin).
                 *(volatile Vec*)&st->target = hit;
-                *(volatile u32*)&st->field_0x20 = 0;
+                *(volatile u32*)&st->inRange = 0;
                 *(volatile Vec*)&st->pos = *(volatile Vec*)&vec3_802ff950[0];
-                *(volatile f32*)&st->field_0x24 = float_0_80421918;
+                *(volatile f32*)&st->spin = float_0_80421918;
 #else
                 st->target = hit;
-                st->field_0x20 = 0;
+                st->inRange = 0;
                 st->pos = vec3_802ff950[0];
-                st->field_0x24 = float_0_80421918;
+                st->spin = float_0_80421918;
 #endif
-                _ac_rumble_param_set(rumbleType, &st->field_0x28, &st->field_0x2a, &st->field_0x2C);
-                _ac_rumble_param_set(rumbleType, &st->field_0x30, &st->field_0x32, &st->field_0x34);
-                st->field_0x38 = -1;
+                _ac_rumble_param_set(rumbleType, &st->rumbleXPeriod, &st->rumbleXTimer, &st->rumbleXAmp);
+                _ac_rumble_param_set(rumbleType, &st->rumbleYPeriod, &st->rumbleYTimer, &st->rumbleYAmp);
+                st->sfxId = -1;
                 ac->mAcState = 0x63;
                 break;
             case 99:
                 break;
             case 100:
-                st->field_0x00 = ac->acParams[2];
+                st->countdown = ac->acParams[2];
                 ac->mAcState = 1000;
-                st->field_0x38 = psndSFXOn(sfx);
+                st->sfxId = psndSFXOn(sfx);
                 // fallthrough
             case 1000:
                 if (ac->guardFrames > 0) {
@@ -155,21 +155,21 @@ s32 battleAcMain_ShotTarget(BattleWork* work) {
                     cont = 1;
                     break;
                 }
-                st->field_0x2a--;
-                if (st->field_0x2a < 0) {
-                    _ac_rumble_param_set(rumbleType, &st->field_0x28, &st->field_0x2a, &st->field_0x2C);
+                st->rumbleXTimer--;
+                if (st->rumbleXTimer < 0) {
+                    _ac_rumble_param_set(rumbleType, &st->rumbleXPeriod, &st->rumbleXTimer, &st->rumbleXAmp);
                 }
                 {
-                    f32 t = sinfd((f32)((st->field_0x2a + 1) * 180 / st->field_0x28)) * st->field_0x2C;
-                    st->pos.x += st->field_0x2C * sinfd((f32)(st->field_0x2a * 180 / st->field_0x28)) - t;
+                    f32 t = sinfd((f32)((st->rumbleXTimer + 1) * 180 / st->rumbleXPeriod)) * st->rumbleXAmp;
+                    st->pos.x += st->rumbleXAmp * sinfd((f32)(st->rumbleXTimer * 180 / st->rumbleXPeriod)) - t;
                 }
-                st->field_0x32--;
-                if (st->field_0x32 < 0) {
-                    _ac_rumble_param_set(rumbleType, &st->field_0x30, &st->field_0x32, &st->field_0x34);
+                st->rumbleYTimer--;
+                if (st->rumbleYTimer < 0) {
+                    _ac_rumble_param_set(rumbleType, &st->rumbleYPeriod, &st->rumbleYTimer, &st->rumbleYAmp);
                 }
                 {
-                    f32 t = sinfd((f32)((st->field_0x32 + 1) * 180 / st->field_0x30)) * st->field_0x34;
-                    st->pos.y += st->field_0x34 * sinfd((f32)(st->field_0x32 * 180 / st->field_0x30)) - t;
+                    f32 t = sinfd((f32)((st->rumbleYTimer + 1) * 180 / st->rumbleYPeriod)) * st->rumbleYAmp;
+                    st->pos.y += st->rumbleYAmp * sinfd((f32)(st->rumbleYTimer * 180 / st->rumbleYPeriod)) - t;
                 }
                 st->pos.x += (f32)work->padWork[0].mPadData[0].stickX / float_10_80421940;
                 st->pos.y += (f32)work->padWork[0].mPadData[0].stickY / float_10_80421940;
@@ -191,11 +191,11 @@ s32 battleAcMain_ShotTarget(BattleWork* work) {
                     }
                 }
                 if (fabsf(distABf(st->pos.x, st->pos.y, st->target.x, st->target.y)) <= double_28_802ff9d8) {
-                    st->field_0x20 = 1;
+                    st->inRange = 1;
                 } else {
-                    st->field_0x20 = 0;
+                    st->inRange = 0;
                 }
-                st->field_0x00--;
+                st->countdown--;
                 if ((ac->field_0x4 & 1) &&
                     (ac->mAcUnit->mTokenFlags & kConfusedAction)) {
                     if (irand(100) >= 0) {
@@ -205,8 +205,8 @@ s32 battleAcMain_ShotTarget(BattleWork* work) {
                         ac->mResultCount++;
                     }
                     ac->mAcState = 1001;
-                } else if (st->field_0x00 < 0) {
-                    if (st->field_0x20 != 0) {
+                } else if (st->countdown < 0) {
+                    if (st->inRange != 0) {
                         ac->result = 2;
                         ac->mResultCount++;
                     } else {
@@ -221,15 +221,15 @@ s32 battleAcMain_ShotTarget(BattleWork* work) {
             case 1002:
                 break;
             case 1003:
-                st->field_0x04 = 0x3C;
+                st->endTimer = 0x3C;
                 ac->mAcState = 1004;
-                if ((u32)st->field_0x38 != 0xFFFFFFFFu) {
-                    psndSFXOff(st->field_0x38);
+                if ((u32)st->sfxId != 0xFFFFFFFFu) {
+                    psndSFXOff(st->sfxId);
                 }
                 break;
             case 1004:
-                st->field_0x04--;
-                if (st->field_0x04 <= 0) {
+                st->endTimer--;
+                if (st->endTimer <= 0) {
                     ac->mAcState = 1005;
                 }
                 break;
@@ -381,7 +381,7 @@ static void actionCommandDisp(f32 x, f32 y) {
         }
     }
     {
-        st->field_0x24 += float_2_8042190c;
+        st->spin += float_2_8042190c;
         btlGetScreenPoint(&st->pos, &screen);
         {
             Vec trans;
@@ -417,7 +417,7 @@ static void actionCommandDisp(f32 x, f32 y) {
             GXColor color;
             color = *(const GXColor*)&dat_80421904;
             tmp = RODATA_VEC(6, vec3_802ff950[6]);
-            tmp.z = st->field_0x24;
+            tmp.z = st->spin;
             rot = tmp;
             scale = RODATA_VEC(5, vec3_802ff950[5]);
             trans = screen2;
@@ -434,7 +434,7 @@ static void actionCommandDisp(f32 x, f32 y) {
             GXColor color;
             color = *(const GXColor*)&dat_80421908;
             tmp = RODATA_VEC(8, vec3_802ff950[8]);
-            tmp.z = st->field_0x24;
+            tmp.z = st->spin;
             rot = tmp;
             scale = RODATA_VEC(7, vec3_802ff950[7]);
             trans = screen2;

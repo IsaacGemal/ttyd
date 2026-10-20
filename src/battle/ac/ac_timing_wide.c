@@ -11,12 +11,12 @@
 
 // Action-command work area for TimingWide, at _battleWorkPointer + 0x1F4C. No header declares it.
 typedef struct TimingWideDecWork {
-	s32 field_0x00;   // 0x00, icon type
-	s8 field_0x04;    // 0x04, press state (-1, 0, 1)
+	s32 buttonMask;   // 0x00, BattlePad mask of the button (0x100, 0x40000 or 0x80000)
+	s8 pressMode;     // 0x04, 1 checks the trigger, -1 checks the release (CheckUp), 0 checks the button is not held
 	u8 pad_0x05[3];   // 0x05
-	s32 field_0x08;   // 0x08, timing counter
-	s32 field_0x0C;   // 0x0C, display sub-state
-	s32 field_0x10;   // 0x10, end timer
+	s32 frame;        // 0x08, timing counter, compared with acParams[1] (limit) and acParams[2..3] (ok window)
+	s32 phase;        // 0x0C, display sub-state (0..6)
+	s32 endTimer;     // 0x10, end timer
 } TimingWideDecWork;
 
 // rodata vectors, one array (the target uses one base register and offsets).
@@ -50,32 +50,32 @@ s32 battleAcMain_TimingWide(BattleWork* work) {
 		disp->iconX = -300.f;
 		disp->iconY = 0.0f;
 		disp->counter = 0x14;
-		dec->field_0x0C = 0;
-		dec->field_0x08 = 0;
+		dec->phase = 0;
+		dec->frame = 0;
 		switch (ac->acParams[0]) {
 		case 5:
-			dec->field_0x00 = 0x100;
-			dec->field_0x04 = 1;
+			dec->buttonMask = 0x100;
+			dec->pressMode = 1;
 			break;
 		case 0:
-			dec->field_0x00 = 0x40000;
-			dec->field_0x04 = 0;
+			dec->buttonMask = 0x40000;
+			dec->pressMode = 0;
 			break;
 		case 1:
-			dec->field_0x00 = 0x80000;
-			dec->field_0x04 = 0;
+			dec->buttonMask = 0x80000;
+			dec->pressMode = 0;
 			break;
 		case 2:
-			dec->field_0x00 = 0x40000;
-			dec->field_0x04 = -1;
+			dec->buttonMask = 0x40000;
+			dec->pressMode = -1;
 			break;
 		case 3:
-			dec->field_0x00 = 0x80000;
-			dec->field_0x04 = -1;
+			dec->buttonMask = 0x80000;
+			dec->pressMode = -1;
 			break;
 		default:
-			dec->field_0x00 = 0x40000;
-			dec->field_0x04 = 0;
+			dec->buttonMask = 0x40000;
+			dec->pressMode = 0;
 			break;
 		}
 		ac->outputParams[0] = 0;
@@ -102,7 +102,7 @@ s32 battleAcMain_TimingWide(BattleWork* work) {
 				ac->field_0x8 = ac->acParams[2] + r;
 			}
 			ac->mAcState = 0x3EA;
-			dec->field_0x0C = 2;
+			dec->phase = 2;
 		}
 		else {
 			if (ac->acParams[0] == 4) {
@@ -111,56 +111,56 @@ s32 battleAcMain_TimingWide(BattleWork* work) {
 			else {
 				ac->mAcState = 0x3E9;
 			}
-			dec->field_0x0C = 1;
+			dec->phase = 1;
 		}
 		break;
 	case 0x3E8:
-		if (BattlePadCheckTrigger(dec->field_0x00)) {
+		if (BattlePadCheckTrigger(dec->buttonMask)) {
 			ac->outputParams[1] = 1;
 			ac->mAcState = 0x3E9;
 		}
 		break;
 	case 0x3E9:
-		dec->field_0x08++;
-		if (dec->field_0x08 > ac->acParams[1]) {
+		dec->frame++;
+		if (dec->frame > ac->acParams[1]) {
 			ac->result = 0;
 			ac->mAcState = 0x3EC;
-			dec->field_0x0C = 4;
+			dec->phase = 4;
 			if (ac->acFlag & 8) {
 				ac->mAcState = 0x3EB;
-				dec->field_0x0C = 3;
+				dec->phase = 3;
 			}
 			break;
 		}
 		cond = 0;
-		switch (dec->field_0x04) {
+		switch (dec->pressMode) {
 		case 1:
-			if (BattlePadCheckTrigger(dec->field_0x00)) {
+			if (BattlePadCheckTrigger(dec->buttonMask)) {
 				cond = 1;
 			}
 			break;
 		case -1:
 #ifdef MUST_MATCH
 			// battle_pad.h declares these u32, but the original tests the result signed (cmpwi r3,0).
-			if ((s32)BattlePadCheckUp(dec->field_0x00) != 0) {
+			if ((s32)BattlePadCheckUp(dec->buttonMask) != 0) {
 #else
-			if (BattlePadCheckUp(dec->field_0x00)) {
+			if (BattlePadCheckUp(dec->buttonMask)) {
 #endif
 				cond = 1;
 			}
 			break;
 		default:
 #ifdef MUST_MATCH
-			if ((s32)BattlePadCheckNow(dec->field_0x00) == 0) {
+			if ((s32)BattlePadCheckNow(dec->buttonMask) == 0) {
 #else
-			if (!BattlePadCheckNow(dec->field_0x00)) {
+			if (!BattlePadCheckNow(dec->buttonMask)) {
 #endif
 				cond = 1;
 			}
 			break;
 		}
-		if (dec->field_0x08 >= ac->acParams[2] &&
-		    dec->field_0x08 < ac->acParams[3]) {
+		if (dec->frame >= ac->acParams[2] &&
+		    dec->frame < ac->acParams[3]) {
 			ac->outputParams[2] = 1;
 		}
 		else {
@@ -185,23 +185,23 @@ s32 battleAcMain_TimingWide(BattleWork* work) {
 				ac->outputParams[0] = -1;
 			}
 			ac->mAcState = 0x3EC;
-			dec->field_0x0C = 4;
+			dec->phase = 4;
 			if (ac->acFlag & 8) {
 				ac->mAcState = 0x3EB;
-				dec->field_0x0C = 3;
+				dec->phase = 3;
 			}
 		}
 		break;
 	case 0x3EA:
-		dec->field_0x08++;
+		dec->frame++;
 		ac->field_0x8--;
-		if (dec->field_0x08 > ac->acParams[1]) {
+		if (dec->frame > ac->acParams[1]) {
 			ac->result = 0;
 			return 0;
 		}
 		if (ac->field_0x8 < 0) {
-			if (dec->field_0x08 >= ac->acParams[2] &&
-			    dec->field_0x08 < ac->acParams[3]) {
+			if (dec->frame >= ac->acParams[2] &&
+			    dec->frame < ac->acParams[3]) {
 				ac->result = 2;
 				ac->mResultCount++;
 				ac->outputParams[0] = 1;
@@ -214,15 +214,15 @@ s32 battleAcMain_TimingWide(BattleWork* work) {
 		}
 		break;
 	case 0x3EC:
-		dec->field_0x10 = 0x3C;
+		dec->endTimer = 0x3C;
 		ac->mAcState = 0x3ED;
-		dec->field_0x0C = 5;
+		dec->phase = 5;
 		// fallthrough
 	case 0x3ED:
-		dec->field_0x10--;
-		if (dec->field_0x10 <= 0) {
+		dec->endTimer--;
+		if (dec->endTimer <= 0) {
 			ac->mAcState = 0x3EE;
-			dec->field_0x0C = 6;
+			dec->phase = 6;
 		}
 		break;
 	case 0x3EE:
@@ -255,7 +255,7 @@ void battleAcDisp_TimingWide(CameraId camId, void* param) {
 	TimingWideDecWork* dec = (TimingWideDecWork*)&ac->field_0x2BC[0];
 	s32 flag;
 
-	switch (dec->field_0x0C) {
+	switch (dec->phase) {
 	case 0:
 	case 1:
 	case 2:
@@ -322,7 +322,7 @@ static void actionCommandDisp(f32 x, f32 y) {
 	camGetPtr(CAMERA_2D);
 	dec = (TimingWideDecWork*)&ac->field_0x2BC[0];
 
-	switch (dec->field_0x00) {
+	switch (dec->buttonMask) {
 	case 0x100:
 		up = 0x65;
 		down = 0x64;
@@ -353,9 +353,9 @@ static void actionCommandDisp(f32 x, f32 y) {
 		break;
 	}
 
-	switch (dec->field_0x0C) {
+	switch (dec->phase) {
 	case 0:
-		if (dec->field_0x04 > 0) {
+		if (dec->pressMode > 0) {
 			Vec v = vecs[0];
 			v.x = -200.f + x;
 			v.y = 50.f + y;
@@ -374,7 +374,7 @@ static void actionCommandDisp(f32 x, f32 y) {
 	case 5:
 	case 6:
 		if (!(ac->acFlag & 0x10)) {
-			if (dec->field_0x04 > 0) {
+			if (dec->pressMode > 0) {
 				Vec v = vecs[2];
 				v.x = -200.f + x;
 				v.y = 50.f + y;
@@ -388,7 +388,7 @@ static void actionCommandDisp(f32 x, f32 y) {
 			}
 		}
 		else {
-			if (dec->field_0x04 > 0) {
+			if (dec->pressMode > 0) {
 				Vec v = vecs[4];
 				v.x = -200.f + x;
 				v.y = 50.f + y;
@@ -403,10 +403,10 @@ static void actionCommandDisp(f32 x, f32 y) {
 		}
 		break;
 	case 1:
-		if (dec->field_0x04 != -1) {
-			if (dec->field_0x08 >= ac->acParams[2] &&
-			    dec->field_0x08 < ac->acParams[3]) {
-				if (dec->field_0x04 > 0) {
+		if (dec->pressMode != -1) {
+			if (dec->frame >= ac->acParams[2] &&
+			    dec->frame < ac->acParams[3]) {
+				if (dec->pressMode > 0) {
 					Vec v = vecs[6];
 					v.x = -200.f + x;
 					v.y = 50.f + y;
@@ -420,7 +420,7 @@ static void actionCommandDisp(f32 x, f32 y) {
 				}
 			}
 			else {
-				if (dec->field_0x04 > 0) {
+				if (dec->pressMode > 0) {
 					Vec v = vecs[8];
 					v.x = -200.f + x;
 					v.y = 50.f + y;
@@ -435,7 +435,7 @@ static void actionCommandDisp(f32 x, f32 y) {
 			}
 		}
 		else {
-			if (dec->field_0x08 >= ac->acParams[2]) {
+			if (dec->frame >= ac->acParams[2]) {
 				Vec v = vecs[10];
 				v.x = -200.f + x;
 				v.y = 50.f + y;

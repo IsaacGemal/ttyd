@@ -9499,3 +9499,23 @@ the map draw loop skips objects with that flag; set by _mobj_destroy and the if_
 mSpawnSpecialUnitType). _mapobj_data_touch_scale reads `obj->data->mLayer` instead of a raw +6. Open:
 `field_0x72` (only zeroed, in battle_stage_object.c), and btlevtcmd_BtlStageObjFlagOnOff takes its flag from the
 script.
+
+### Readability: battle action-command minigames (2026-10-19, Claude Haiku 5.5, n9-q-ac; reviewed by Claude Opus 5.5)
+
+Each src/battle/ac file's work area at BattleWork+0x1F4C (`BattleActions.field_0x2BC`) has field names taken
+from its uses: GaugeTimingWork (`gauge`, `sweep`, `timeLimit`, `inZone`, `phase`, `tapMode` (1: a press stops
+the needle, 0: hold and release), `buttonMask`, `flashTimer`, `laps`, `sfxId`), AcRepeatedlyWork (`curMask`/
+`maskA`/`maskB`, `holdMask`, `goal`/`goalStep` (the bouncing mark `power` must reach), `power`, `decay`,
+`presses`, `full`, `probeHeld`), RepeatedlyLvWork (`gauge`, `level`, `segmentSize`, `fillState`, `releaseMode`),
+AcSignalTimingWork in ac_signal_timing.h (`hits`/`misses`, `curSignal`, ok-window bounds, `latched`, `expected`),
+StickRotateWork (`inputDir`, `expectDir`, `rollDir`, `steps`, `fastSteps`), ShotTargetWork (cursor `spin`,
+`inRange`, X/Y wobble period/timer/amplitude), AcShotWork/TargetMarkWork (`minValue`/`maxValue`, sweep bounds,
+`rotSpeed`, `rollAngle`), TimingWideDecWork (`buttonMask`: field 0x00 is a BattlePad mask, not an icon type;
+`pressMode`, `frame`, `phase`), LstRcKeepWork (`leftHold` for pad bit 0x40000 (stick left), `cRightHold` for
+0x800000 (C-stick right)), plus the end timers and token-roll bytes in the rest. Words no code touches are
+`pad_0x..`. The 51 raw `(u8*)work + 0x1Cxx/0x1Fxx` reads in the ac files go through `actionCommands` (acParams,
+acFlag, guardFrames, dispParams, field_0x2BC). ac_signal_timing's one remaining `acParams[9]` store (past the
+array, BattleActions 0x5C) is `outputParams[1]` like its siblings. MUST_MATCH blocks changed only identifiers.
+field_0x uses in src/battle/ac + include/battle/ac 1138 → 217; what is left is BattleActions' own `field_0x4`,
+`field_0x8`, `field_0x30`, `field_0x2BC` and BattleACDispParams' `field_0x0`/`field_0xC`/`field_0x10`/
+`field_0x24`, which need evidence from battle_ac.c and the other ac users before naming.

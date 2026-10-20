@@ -69,7 +69,7 @@ s32 _get_ok_frame_range(s32 idx) {
 // r31-r28 to r25-r28) and the function falls to ~95%. The rest of the shape is load-bearing too: the
 // `cont`/`pressed` resets at the top of the do/while, the selection `while (!found)` loop with
 // `unique = 1` after the `irand` call, the `switch`es for the range and in-window tests, the
-// `acParams[0] + acParams[6]` association, and reading `bd->field_0x08` directly at each
+// `acParams[0] + acParams[6]` association, and reading `bd->curSignal` directly at each
 // `bd->states[...]` index (a cached `idx` makes MWCC keep it in a register and miss).
 #pragma optimize_for_size on // needed: without it battleAcMain_SignalTiming 95.49%
 #ifdef MUST_MATCH
@@ -124,14 +124,14 @@ s32 battleAcMain_SignalTiming(BattleWork* work) {
             disp->iconX = -300.f;
             disp->iconY = 0.0f;
             disp->counter = 0x14;
-            bd->field_0x00 = 0;
-            bd->field_0x04 = 0;
-            bd->field_0x10 = 0;
-            bd->field_0x08 = 0;
-            bd->field_0x0C = 0;
-            bd->field_0x2C = ((s32 (*)(BattleWork*))BattleActionCommandGetDifficulty)(work);
-            bd->field_0x30 = 0;
-            ac->acParams[9] = 0;
+            bd->hits = 0;
+            bd->misses = 0;
+            bd->frame = 0;
+            bd->curSignal = 0;
+            bd->signalCount = 0;
+            bd->difficulty = ((s32 (*)(BattleWork*))BattleActionCommandGetDifficulty)(work);
+            bd->inWindow = 0;
+            ac->outputParams[1] = 0;
             for (k = 0; k < 5; k++) {
                 bd->states[k] = 0;
             }
@@ -162,14 +162,14 @@ s32 battleAcMain_SignalTiming(BattleWork* work) {
                     bd->buttons[i] = pick;
                     i++;
                 }
-                bd->field_0x34 = bd->buttons[0];
+                bd->expected = bd->buttons[0];
                 break;
             default:
-                bd->field_0x34 = 0x100;
+                bd->expected = 0x100;
                 for (i = 0; i < ac->acParams[0]; i++) {
                     bd->buttons[i] = 0x100;
                 }
-                bd->field_0x34 = bd->buttons[0];
+                bd->expected = bd->buttons[0];
                 break;
             }
             ac->mAcState = 0x63;
@@ -185,16 +185,16 @@ s32 battleAcMain_SignalTiming(BattleWork* work) {
                 ac->mAcState = 0x3ea;
                 break;
             }
-            bd->field_0x14 = bd->field_0x08 * ac->acParams[2];
-            bd->field_0x18 = (bd->field_0x08 + 1) * ac->acParams[2] - 1;
-            bd->field_0x1C = bd->field_0x14;
-            bd->field_0x20 = bd->field_0x1C + _get_ok_frame_range(bd->field_0x2C) - 1;
+            bd->windowStart = bd->curSignal * ac->acParams[2];
+            bd->windowEnd = (bd->curSignal + 1) * ac->acParams[2] - 1;
+            bd->okStart = bd->windowStart;
+            bd->okEnd = bd->okStart + _get_ok_frame_range(bd->difficulty) - 1;
             ac->mAcState = 0x3e8;
             // fallthrough
         case 0x3e8:
-            bd->field_0x28 = (bd->field_0x0C + 1) * ac->acParams[2] - 1;
-            bd->field_0x0C = bd->field_0x0C + 1;
-            if (bd->field_0x0C < ac->acParams[6] + 1) {
+            bd->signalEnd = (bd->signalCount + 1) * ac->acParams[2] - 1;
+            bd->signalCount = bd->signalCount + 1;
+            if (bd->signalCount < ac->acParams[6] + 1) {
                 if (!(ac->field_0x4 & 1) || !(ac->mAcUnit->mTokenFlags & 0x10)) {
                     psndSFXOn(sfxPi1);
                 }
@@ -203,31 +203,31 @@ s32 battleAcMain_SignalTiming(BattleWork* work) {
                     psndSFXOn(sfxPone1);
                 }
             }
-            bd->field_0x24 = 0;
+            bd->latched = 0;
             ac->mAcState = 0x3e9;
             // fallthrough
         case 0x3e9: {
             s32 inWindow;
-            bd->field_0x10 = bd->field_0x10 + 1;
-            if (bd->field_0x24 != 0) {
-                bd->field_0x30 = 0;
-            } else if (bd->field_0x08 >= ac->acParams[6]) {
-                if (bd->field_0x10 >= bd->field_0x1C && bd->field_0x10 <= bd->field_0x20) {
-                    bd->field_0x30 = 1;
+            bd->frame = bd->frame + 1;
+            if (bd->latched != 0) {
+                bd->inWindow = 0;
+            } else if (bd->curSignal >= ac->acParams[6]) {
+                if (bd->frame >= bd->okStart && bd->frame <= bd->okEnd) {
+                    bd->inWindow = 1;
                 } else {
-                    bd->field_0x30 = 0;
+                    bd->inWindow = 0;
                 }
             } else {
-                bd->field_0x30 = 0;
+                bd->inWindow = 0;
             }
             inWindow = 0;
-            if (BattlePadCheckTrigger(bd->field_0x34) != 0) {
+            if (BattlePadCheckTrigger(bd->expected) != 0) {
                 pressed = 1;
             }
             if (pressed != 0) {
                 switch (ac->acParams[4]) {
                 case 2:
-                    if (bd->field_0x34 == BattlePadGetTrigger()) {
+                    if (bd->expected == BattlePadGetTrigger()) {
                         inWindow = 1;
                     } else {
                         inWindow = 0;
@@ -238,20 +238,20 @@ s32 battleAcMain_SignalTiming(BattleWork* work) {
                     break;
                 }
             }
-            if (autoCommand != 0 && bd->field_0x30 != 0) {
+            if (autoCommand != 0 && bd->inWindow != 0) {
                 pressed = 1;
                 inWindow = 1;
             }
-            if (bd->field_0x00 + bd->field_0x04 >= ac->acParams[0]) {
+            if (bd->hits + bd->misses >= ac->acParams[0]) {
                 pressed = 0;
             }
-            if (bd->field_0x08 >= ac->acParams[6] && pressed != 0 && bd->field_0x24 == 0) {
-                bd->field_0x24 = 1;
-                if (bd->field_0x10 >= bd->field_0x1C && bd->field_0x10 <= bd->field_0x20 && inWindow != 0) {
+            if (bd->curSignal >= ac->acParams[6] && pressed != 0 && bd->latched == 0) {
+                bd->latched = 1;
+                if (bd->frame >= bd->okStart && bd->frame <= bd->okEnd && inWindow != 0) {
                     s32 idx;
-                    bd->field_0x00 = bd->field_0x00 + 1;
-                    ac->acParams[9] = 1;
-                    idx = bd->field_0x08;
+                    bd->hits = bd->hits + 1;
+                    ac->outputParams[1] = 1;
+                    idx = bd->curSignal;
                     if (idx >= ac->acParams[6] &&
                         idx < ac->acParams[0] + ac->acParams[6]) {
                         bd->states[idx - ac->acParams[6]] = 1;
@@ -260,65 +260,65 @@ s32 battleAcMain_SignalTiming(BattleWork* work) {
                         }
                     }
                     if (ac->acFlag & 0x10) {
-                        ac->acParams[8] = bd->field_0x00;
+                        ac->outputParams[0] = bd->hits;
                         ac->result &= ~1;
-                        if (bd->field_0x00 >= ac->acParams[3]) {
+                        if (bd->hits >= ac->acParams[3]) {
                             ac->result |= 2;
                         }
                         cont = 1;
                         ac->mAcState = 0x3ea;
                     }
                 } else {
-                    if (bd->field_0x08 >= ac->acParams[6] &&
-                        bd->field_0x08 < ac->acParams[0] + ac->acParams[6]) {
-                        bd->field_0x04 = bd->field_0x04 + 1;
-                        if (bd->field_0x10 >= bd->field_0x14) {
-                            bd->states[bd->field_0x08 - ac->acParams[6]] = -1;
+                    if (bd->curSignal >= ac->acParams[6] &&
+                        bd->curSignal < ac->acParams[0] + ac->acParams[6]) {
+                        bd->misses = bd->misses + 1;
+                        if (bd->frame >= bd->windowStart) {
+                            bd->states[bd->curSignal - ac->acParams[6]] = -1;
                             if (!(ac->field_0x4 & 1) || !(ac->mAcUnit->mTokenFlags & 0x10)) {
                                 psndSFXOn(sfxNg);
                             }
-                            ac->acParams[9] = -1;
+                            ac->outputParams[1] = -1;
                         } else {
-                            bd->field_0x24 = 0;
+                            bd->latched = 0;
                         }
                     }
                 }
             }
-            if (bd->field_0x24 == 0 && bd->field_0x10 > bd->field_0x20) {
-                bd->field_0x24 = 1;
-                ac->acParams[9] = -1;
-                if (bd->field_0x08 >= ac->acParams[6] &&
-                    bd->field_0x08 < ac->acParams[0] + ac->acParams[6]) {
-                    bd->field_0x04 = bd->field_0x04 + 1;
-                    bd->states[bd->field_0x08 - ac->acParams[6]] = -1;
+            if (bd->latched == 0 && bd->frame > bd->okEnd) {
+                bd->latched = 1;
+                ac->outputParams[1] = -1;
+                if (bd->curSignal >= ac->acParams[6] &&
+                    bd->curSignal < ac->acParams[0] + ac->acParams[6]) {
+                    bd->misses = bd->misses + 1;
+                    bd->states[bd->curSignal - ac->acParams[6]] = -1;
                     if (!(ac->field_0x4 & 1) || !(ac->mAcUnit->mTokenFlags & 0x10)) {
                         psndSFXOn(sfxNg);
                     }
                 }
             }
-            if (bd->field_0x24 != 0) {
-                if (bd->field_0x08 < ac->acParams[0] + ac->acParams[6]) {
-                    bd->field_0x08 = bd->field_0x08 + 1;
-                    if (bd->field_0x08 < ac->acParams[0] + ac->acParams[6]) {
-                        bd->field_0x14 = bd->field_0x08 * ac->acParams[2] - 0xa;
-                        bd->field_0x18 = (bd->field_0x08 + 1) * ac->acParams[2] - 1;
-                        bd->field_0x1C = bd->field_0x08 * ac->acParams[2];
-                        bd->field_0x20 = bd->field_0x1C + _get_ok_frame_range(bd->field_0x2C) - 1;
-                        bd->field_0x24 = 0;
-                        if (bd->field_0x08 >= ac->acParams[6] &&
-                            bd->field_0x08 < ac->acParams[0] + ac->acParams[6]) {
-                            bd->field_0x34 = bd->buttons[bd->field_0x08 - ac->acParams[6]];
+            if (bd->latched != 0) {
+                if (bd->curSignal < ac->acParams[0] + ac->acParams[6]) {
+                    bd->curSignal = bd->curSignal + 1;
+                    if (bd->curSignal < ac->acParams[0] + ac->acParams[6]) {
+                        bd->windowStart = bd->curSignal * ac->acParams[2] - 0xa;
+                        bd->windowEnd = (bd->curSignal + 1) * ac->acParams[2] - 1;
+                        bd->okStart = bd->curSignal * ac->acParams[2];
+                        bd->okEnd = bd->okStart + _get_ok_frame_range(bd->difficulty) - 1;
+                        bd->latched = 0;
+                        if (bd->curSignal >= ac->acParams[6] &&
+                            bd->curSignal < ac->acParams[0] + ac->acParams[6]) {
+                            bd->expected = bd->buttons[bd->curSignal - ac->acParams[6]];
                         }
                     }
                 }
             }
-            if (bd->field_0x10 >= bd->field_0x0C * ac->acParams[2]) {
-                if (bd->field_0x0C < ac->acParams[0] + ac->acParams[6]) {
+            if (bd->frame >= bd->signalCount * ac->acParams[2]) {
+                if (bd->signalCount < ac->acParams[0] + ac->acParams[6]) {
                     ac->mAcState = 0x3e8;
                 } else {
-                    ac->acParams[8] = bd->field_0x00;
+                    ac->outputParams[0] = bd->hits;
                     ac->result &= ~1;
-                    if (bd->field_0x00 >= ac->acParams[3]) {
+                    if (bd->hits >= ac->acParams[3]) {
                         ac->result |= 2;
                     }
                     cont = 1;
@@ -334,13 +334,13 @@ s32 battleAcMain_SignalTiming(BattleWork* work) {
             break;
         case 0x3ec:
             ac->field_0x30 |= 1;
-            bd->field_0x30 = 0;
-            bd->field_0x54 = 0x3c;
+            bd->inWindow = 0;
+            bd->endTimer = 0x3c;
             ac->mAcState = 0x3ed;
             break;
         case 0x3ed:
-            bd->field_0x54 = bd->field_0x54 - 1;
-            if (bd->field_0x54 <= 0) {
+            bd->endTimer = bd->endTimer - 1;
+            if (bd->endTimer <= 0) {
                 ac->mAcState = 0x3ee;
             }
             break;
@@ -460,10 +460,10 @@ static void actionCommandDisp(f32 x, f32 y) {
     camGetPtr(CAMERA_2D);
     num = ac->acParams[0];
     bd = (AcSignalTimingWork*)&ac->field_0x2BC[0];
-    count = bd->field_0x0C;
+    count = bd->signalCount;
 
     if (!(ac->acFlag & 1)) {
-        if (bd->field_0x30 != 0) {
+        if (bd->inWindow != 0) {
             Vec t = vec3_802fedc8;
             t.x = -200.f + x;
             t.y = 70.f + y;
@@ -525,7 +525,7 @@ static void actionCommandDisp(f32 x, f32 y) {
         Mtx mtx2;
         Mtx mtx;
         Mtx scale;
-        s32 number = bd->field_0x00 + ac->acParams[5];
+        s32 number = bd->hits + ac->acParams[5];
         {
             s32 ioff;
             if (ac->acFlag & 1) {
@@ -548,7 +548,7 @@ static void actionCommandDisp(f32 x, f32 y) {
     }
 
     for (i = 0; i < ac->acParams[6]; i++) {
-        if (i < bd->field_0x0C) {
+        if (i < bd->signalCount) {
             if (i < ac->acParams[6]) {
                 Vec t = vec3_802fee04;
                 u16 id = (u16)(0x92 + i);
@@ -594,8 +594,8 @@ static void actionCommandDisp(f32 x, f32 y) {
 #else
             s32 t0 = i + ac->acParams[6];
 #endif
-            if (bd->field_0x0C == t0 && bd->field_0x10 >= ac->acParams[2] * t0 - 5 &&
-                bd->field_0x10 < ac->acParams[2] * t0) {
+            if (bd->signalCount == t0 && bd->frame >= ac->acParams[2] * t0 - 5 &&
+                bd->frame < ac->acParams[2] * t0) {
                 Vec t = vec3_802fee40;
                 t.y = f28;
                 t.x = x + (f32)((i * 0x30 + (ac->acParams[6] * 0x21 - 0xfa)));
@@ -603,7 +603,7 @@ static void actionCommandDisp(f32 x, f32 y) {
             } else {
                 s32 delta;
                 Vec t;
-                if (bd->field_0x0C <= t0) {
+                if (bd->signalCount <= t0) {
                     delta = -2;
                     scale = 0.6f;
                 } else {
@@ -623,13 +623,13 @@ static void actionCommandDisp(f32 x, f32 y) {
 #else
             s32 t0 = i + ac->acParams[6];
 #endif
-            if (bd->field_0x0C == t0 && bd->field_0x10 >= ac->acParams[2] * t0 - 0x14 &&
-                bd->field_0x10 <= ac->acParams[2] * t0) {
+            if (bd->signalCount == t0 && bd->frame >= ac->acParams[2] * t0 - 0x14 &&
+                bd->frame <= ac->acParams[2] * t0) {
                 Vec t = vec3_802fee58;
                 t.x = x + (f32)((i * 0x30 + (ac->acParams[6] * 0x21 - 0xfa)));
                 t.y = f31;
                 ICON_DISP(&t, 0x10, BattleACGetButtonIcon(bd->buttons[i], 0), 0.8f);
-            } else if (bd->field_0x0C <= t0) {
+            } else if (bd->signalCount <= t0) {
                 if (i >= num - 1) {
                     // Match-only: the original sets r5=0 before every btlDispTexPlane call (the
                     // callee's GXColor is the 2nd GPR); the extra trailing s32 reproduces it, as in

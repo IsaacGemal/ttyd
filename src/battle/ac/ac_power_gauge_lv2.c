@@ -45,13 +45,13 @@ typedef struct PowerGaugeLv2DecWork {
     s32 frameLimit;   // 0x04
     f32 gaugePercent; // 0x08
     s32 button;       // 0x0C, passed to BattlePadCheckNow
-    f32 field_0x10;   // 0x10
-    f32 field_0x14;   // 0x14
+    f32 rate;         // 0x10, 0.01 * acParams[1]: the gain (outside a timing window) or loss (inside) per frame, times the power table
+    f32 drain;        // 0x14, 0.01 * acParams[2]: lost per frame
     s32 flag;         // 0x18
     s32 flag2;        // 0x1C
     s16 timing[3];    // 0x20
     s16 pad_0x26;     // 0x26
-    s32 field_0x28;   // 0x28
+    s32 endTimer;     // 0x28
 } PowerGaugeLv2DecWork;
 
 static void actionCommandDisp(f32, f32);
@@ -65,7 +65,7 @@ s32 battleAcMain_PowerGaugeLv2(BattleWork* work) {
     s32 window;
     s32 i;
 
-    dec = (PowerGaugeLv2DecWork*)((u8*)work + 0x1F4C);
+    dec = (PowerGaugeLv2DecWork*)&work->actionCommands.field_0x2BC[0];
     disp = &work->actionCommands.dispParams;
 #ifdef MUST_MATCH
     // Match-only: the callee really returns 4 bytes (no extsb in the original); the `s8` header
@@ -100,11 +100,11 @@ s32 battleAcMain_PowerGaugeLv2(BattleWork* work) {
 #ifdef MUST_MATCH
             // Match-only: the constant-first form is what makes the magic double land in f1
             // and 0.01f in f2 (the natural value-first form swaps them).
-            dec->field_0x10 = 0.01f * (f32)work->actionCommands.acParams[1];
-            dec->field_0x14 = 0.01f * (f32)work->actionCommands.acParams[2];
+            dec->rate = 0.01f * (f32)work->actionCommands.acParams[1];
+            dec->drain = 0.01f * (f32)work->actionCommands.acParams[2];
 #else
-            dec->field_0x10 = (f32)work->actionCommands.acParams[1] * 0.01f;
-            dec->field_0x14 = (f32)work->actionCommands.acParams[2] * 0.01f;
+            dec->rate = (f32)work->actionCommands.acParams[1] * 0.01f;
+            dec->drain = (f32)work->actionCommands.acParams[2] * 0.01f;
 #endif
             dec->flag = 0;
             dec->flag2 = 0;
@@ -169,11 +169,11 @@ s32 battleAcMain_PowerGaugeLv2(BattleWork* work) {
                 if (smooth) {
                     if (dec->flag2 != 0) {
                         dec->gaugePercent += 0.01f *
-                                             (dec->field_0x10 * (f32)_power_table[difficulty]);
+                                             (dec->rate * (f32)_power_table[difficulty]);
                     }
                     else {
                         dec->gaugePercent -= 0.01f *
-                                             (dec->field_0x10 * (f32)_power_table2[difficulty]);
+                                             (dec->rate * (f32)_power_table2[difficulty]);
                     }
                 }
                 if (dec->gaugePercent >= 100.0f) {
@@ -181,7 +181,7 @@ s32 battleAcMain_PowerGaugeLv2(BattleWork* work) {
                     dec->flag = 1;
                 }
                 else {
-                    dec->gaugePercent -= dec->field_0x14;
+                    dec->gaugePercent -= dec->drain;
                 }
 #ifdef MUST_MATCH
                 {
@@ -227,12 +227,12 @@ s32 battleAcMain_PowerGaugeLv2(BattleWork* work) {
         case 0x3EB:
             work->actionCommands.field_0x30 |= 1;
             BattleAcGaugeSeDelete();
-            dec->field_0x28 = 0x3C;
+            dec->endTimer = 0x3C;
             work->actionCommands.mAcState = 0x3EC;
             // fallthrough
         case 0x3EC:
-            dec->field_0x28--;
-            if (dec->field_0x28 <= 0) {
+            dec->endTimer--;
+            if (dec->endTimer <= 0) {
                 work->actionCommands.mAcState = 0x3ED;
             }
             break;

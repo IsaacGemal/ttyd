@@ -49,10 +49,10 @@ extern const f32 float_101_804215fc;
 typedef struct PowerGaugeLvDecWork {
     s32 frame;        // 0x0
     f32 gaugePercent; // 0x4
-    u32 field_0x8;    // 0x8
+    u32 pad_0x8;      // 0x8, never accessed
     s32 value;        // 0xC
     s32 flag;         // 0x10
-    s32 field_0x14;   // 0x14
+    s32 pad_0x14;     // 0x14, never accessed
 } PowerGaugeLvDecWork;
 
 static void actionCommandDisp(f32, f32);
@@ -68,7 +68,7 @@ s32 battleAcMain_PowerGaugeLv(BattleWork* work) {
     PowerGaugeLvDecWork* dec = (PowerGaugeLvDecWork*)&ac->field_0x2BC[0];
     BattleACDispParams* disp = &ac->dispParams;
 #else
-    PowerGaugeLvDecWork* dec = (PowerGaugeLvDecWork*)((u8*)work + 0x1f4c);
+    PowerGaugeLvDecWork* dec = (PowerGaugeLvDecWork*)&work->actionCommands.field_0x2BC[0];
     BattleACDispParams* disp = &work->actionCommands.dispParams;
 #endif
 
@@ -259,7 +259,7 @@ static void actionCommandDisp(f32 f1, f32 f2) {
 #ifdef MUST_MATCH
     dec = (PowerGaugeLvDecWork*)&ac->field_0x2BC[0];
 #else
-    dec = (PowerGaugeLvDecWork*)((u8*)work + 0x1f4c);
+    dec = (PowerGaugeLvDecWork*)&work->actionCommands.field_0x2BC[0];
 #endif
 
     {
