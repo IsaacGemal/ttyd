@@ -13,7 +13,6 @@
 // but no included header declares them). See REPORT.md.
 
 // Raw-offset accessors for MarioWork fields that are still padding in mario/mario.h:
-//   0x1DC, 0x1E0: two unnamed HitEntry* fields before hitobjStandOn (0x1E4).
 //   0x260: EffectEntry* for the balloon effect.
 //   0x264: NpcEntry* the balloon is attached to.
 #define MW_U32(m, off) (*(u32*)((u8*)(m) + (off)))
@@ -85,7 +84,7 @@ void marioBalloonMain(void) {
         }
     }
 
-    hit1 = (void*)MW_U32(mario, 0x1DC);
+    hit1 = mario->actionHitObj;
     valid = 0;
     if (hit1 != NULL) {
         attr = hitGetAttr((HitEntry*)hit1);
@@ -111,7 +110,7 @@ void marioBalloonMain(void) {
         ret = TRUE;
     }
 
-    hit2 = (void*)MW_U32(mario, 0x1E0);
+    hit2 = mario->hitobjFront;
     valid = 0;
     if (hit2 != NULL) {
         attr = hitGetAttr((HitEntry*)hit2);
@@ -173,7 +172,7 @@ void marioBalloonMain(void) {
         ret = TRUE;
     }
 
-    hit4 = (void*)MW_U32(mario, 0x1E0);
+    hit4 = mario->hitobjFront;
     if (hit4 != NULL) {
         valid = -1;
 #ifdef MUST_MATCH
@@ -192,7 +191,7 @@ void marioBalloonMain(void) {
             }
         }
         if (valid >= 0) {
-            hit4 = (void*)MW_U32(mario, 0x1E0);
+            hit4 = mario->hitobjFront;
             valid = -1;
 #ifdef MUST_MATCH
             // Second copy: the original again calls marioGetPtr() and discards the result.

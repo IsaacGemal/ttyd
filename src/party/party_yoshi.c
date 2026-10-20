@@ -1732,10 +1732,10 @@ void checkWall(PartyEntry* party, f32 a, f32 b) {
                 h = partySearchWallFront(party, &pos, a, party->dir);
                 if (h == NULL) {
                     party->frontHit = h;
-                    *(HitEntry**)((u8*)mario + 0x1DC) = h;
+                    mario->actionHitObj = h;
                 } else {
                     party->frontHit = party->field_12C;
-                    *(HitEntry**)((u8*)mario + 0x1DC) = party->field_12C;
+                    mario->actionHitObj = party->field_12C;
                 }
             }
 

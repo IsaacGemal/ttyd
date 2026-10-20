@@ -27,7 +27,6 @@ extern f32 marioJumpData[];
 
 #define MW_U8(m, off)  (*(u8*)((u8*)(m) + (off)))
 #define MW_U16(m, off) (*(u16*)((u8*)(m) + (off)))
-#define MW_S16(m, off) (*(s16*)((u8*)(m) + (off)))
 #define MW_U32(m, off) (*(u32*)((u8*)(m) + (off)))
 #define MW_S32(m, off) (*(s32*)((u8*)(m) + (off)))
 #define MW_F32(m, off) (*(f32*)((u8*)(m) + (off)))
@@ -212,7 +211,7 @@ void* getKoopaFireEfp(void) {
 }
 
 s32 kpaNoHitEnemyCheck(void) {
-    return MW_S16(marioGetPtr(), 0x78);
+    return marioGetPtr()->noHitEnemyCt;
 }
 
 s32 kpaMutekiCheck(void) {
@@ -234,7 +233,7 @@ void kpaMutekiOff(void) {
 void kpaMSetMutekiTimer(void) {
     MarioWork* mp = marioGetPtr();
     KPA(mp)->mutekiTimer = sysMsec2Frame(0x2EE0);
-    MW_S16(mp, 0x78) = 0;
+    mp->noHitEnemyCt = 0;
 }
 
 void kpaChgPose(const char* a, const char* b) {
@@ -365,12 +364,12 @@ void kpa2DMain(void) {
     Vec pos;
 
     kpaHitCheck();
-    if (MW_S16(mp, 0x78) != 0) {
-        MW_S16(mp, 0x78)--;
+    if (mp->noHitEnemyCt != 0) {
+        mp->noHitEnemyCt--;
     }
     MW_U32(mp, 0x1F4) = 0;
     MW_U32(mp, 0x1E0) = 0;
-    MW_U32(mp, 0x1DC) = 0;
+    mp->actionHitObj = NULL;
     mp->hitobjPush = NULL;
     MW_U32(mp, 0x1F0) = 0;
     marioItemGetChk();
@@ -477,8 +476,8 @@ void kpa3DMain(void) {
     if (hit != NULL) {
         MW_U32(mp, 0x1F4) = (u32)hit;
     }
-    if (MW_S16(mp, 0x78) != 0) {
-        MW_S16(mp, 0x78)--;
+    if (mp->noHitEnemyCt != 0) {
+        mp->noHitEnemyCt--;
     }
     if (mp->currMotionId == MARIO_MOTION_PLANE || mp->currMotionId == MARIO_MOTION_DAMAGE ||
         mp->currMotionId == MARIO_MOTION_DAMAGE_TOGE) {
@@ -489,7 +488,7 @@ void kpa3DMain(void) {
         marioCamMain();
         MW_U32(mp, 0x1F4) = 0;
         MW_U32(mp, 0x1E0) = 0;
-        MW_U32(mp, 0x1DC) = 0;
+        mp->actionHitObj = NULL;
         mp->hitobjPush = NULL;
         MW_U32(mp, 0x1F0) = 0;
         return;

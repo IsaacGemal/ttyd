@@ -47,7 +47,7 @@ void mot_vivian(void) {
         mario->currSubMotionId = 0;
         mario->baseSpeed = 0.0f;
         mario->hitobjFront = NULL;
-        *(u32*)&mario->field_0x1DC[0] = 0;
+        mario->actionHitObj = NULL;
         mario->hitobjPush = NULL;
         *(u32*)&mario->field_0x1F0[0] = 0;
     }

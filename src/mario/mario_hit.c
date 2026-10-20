@@ -453,7 +453,7 @@ static inline void marioChkGndRollProbe(MarioWork* wp) {
     f32 grx;
 
     dist = 47.0f;
-    GND_PTR(wp, f32, 0x164) = GND_PTR(wp, f32, 0x114) - wp->position.y;
+    GND_PTR(wp, f32, 0x164) = wp->prevPosition.y - wp->position.y;
     p = wp->position;
     p.y += 10.0f;
     dir = (Vec){ 0.0f, -1.0f, 0.0f };
@@ -2004,11 +2004,11 @@ void marioSearchFrontWall_staying(f32 a) {
     }
 
     if (wp->buttonNew & 0x100) {
-        *(void**)wp->field_0x1DC = NULL;
+        wp->actionHitObj = NULL;
         v = wp->position;
         hit = searchFrontWall(&v, &f8, halfx, wp->directionView, wp->wPlayerCollisionBox.z);
         if (hit != NULL) {
-            *(void**)wp->field_0x1DC = wp->hitobjFront;
+            wp->actionHitObj = wp->hitobjFront;
         }
     }
 

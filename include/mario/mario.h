@@ -123,6 +123,8 @@ typedef enum PeachFlags {
 #pragma enumsalwaysint on
 
 // TODO: US struct is bigger, 0x2F8 vs 0x2E0
+struct KpaWork;
+
 typedef struct MarioWork {
     u32 flags;                     // 0x0
     s32 dispFlags;                 // 0x4
@@ -161,7 +163,7 @@ typedef struct MarioWork {
     f32 field_64;                  // 0x64
     f32 field_68;                  // 0x68
     Vec field_6C;                  // 0x6C
-    u8 unk78[0x7A - 0x78];         // 0x78
+    s16 noHitEnemyCt;              // 0x78, koopa frames left without enemy hits: kpaPowDown sets sysMsec2Frame(3000), kpaNoHitEnemyCheck returns it, kpa_nohitenemy_ct_clear zeroes it
     s16 field_0x7A;                // 0x7A
     f32 jumpVelY;                  // 0x7C, per-frame Y step added to position.y (evt_mario, mot_roll, mot_ship)
     f32 jumpAccelY;                // 0x80, added to jumpVelY each frame
@@ -218,7 +220,7 @@ typedef struct MarioWork {
     s32 wallHoldTimer;             // 0x1D0, counts down from 14 before wallDist can drop (marioCheckWall)
     void* touchNpc;                // 0x1D4, returned by marioGetTouchNpcPtr
     s32 field_0x1D8;               // 0x1D8
-    u8 field_0x1DC[0x1E0 - 0x1DC]; // 0x1DC
+    void* actionHitObj;            // 0x1DC, front hit for an A press: mario_hit sets it on the press frame, mario_motion's action check reads it (mario_balloon, party_yoshi and mot_ship touch it raw)
     void* hitobjFront;             // 0x1E0, front-wall HitEntry from searchFrontWall (marioCheckWall, mot_roll)
 	void* hitobjStandOn;           // 0x1E4, 0x1E8 US HitEntry
 	void* hitobjJumpFrom;          // 0x1E8, 0x1EC US HitEntry
@@ -261,7 +263,7 @@ typedef struct MarioWork {
     s32 sfxIds[3];                 // 0x278, sound handles, 0xFFFFFFFF when none (mot_jump, mot_stay, peach, marioSoundInit)
     u32 inputMask;                 // 0x284, button mask set from evt_mario; 0 means unmasked (marioUpdateKeyData)
     void* motStruct;               // 0x288, motion userdata, TODO rename?
-    u8 field_0x28C[4];             // 0x28C, pointer to the koopa work (evt_koopa_*)
+    struct KpaWork* koopaWork;     // 0x28C, the koopa character's work (koopa.h, KPA); marioReInit keeps it across its memset
     f32 dirEventStart;             // 0x290, start yaw of marioSetDirEventMain
     f32 dirEventTarget;            // 0x294, target yaw is 270 minus this
     s32 dirEventMsec;              // 0x298
