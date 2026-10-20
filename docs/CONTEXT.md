@@ -11023,3 +11023,6 @@ battle_seq_command.c: 14 of 37 `goto` removed, no names changed (37 -> 23 in the
 - Left: WeaponMultiItemCancelCheckMain, OperationMenuMain, MultiItemMenuMain, ChangePartySelectMenuMain. Their gotos
   only go away inside a `do { ... } while (0)` wrapper (a goto in disguise, not kept); `while (key) { ...; break; }`
   changes the object (95.4-96.0% for the last three).
+### Readability: mot_jabara goto removal (2026-10-20, Claude Haiku 5.5, n9-q-gotojabara)
+- `src/motion/mot_jabara.c`: 19 gotos -> 0, no names changed. `swingMain`'s `goto end` is an early `return`. In `mot_jabara`, the jumps to `block_72`, `block_121` and `block_177` are `break`s out of the switch each one followed (the labels sat directly after those switches). `goto do_32` became a fallthrough into `case 0x32`. The `goto block_37` into the else branch of the `hit != NULL` test became a `break` when `var_r28 == 0`, with the body hoisted under `if (var_r28 != 0 || ...)`. Labels `end`, `block_37`, `block_72`, `block_121`, `block_177` and `do_32` are gone.
+- Verified: tower `ninja` recreates build/G8MJ01/ok (MUST_MATCH build); natural compile without MUST_MATCH prints only the existing no-prototype warnings. Index (tools/cleanup_index.py): 23.183 -> 23.130 per kLOC (16496 -> 16458 weighted); mot_jabara 311 -> 273 weighted.
