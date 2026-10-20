@@ -397,13 +397,13 @@ void N__cloud_use(PartyEntry* party) {
         party->position = party->targetPos;
         if (party->tail.flurrie.breathFx == NULL) {
             party->tail.flurrie.breathFx = effKumokumoN64Entry(0, 0, 0.0f, 0.0f, 0.0f, 0.0f, -2.0f, 0.0f);
-            *(s32*)((u8*)((EffectEntry*)party->tail.flurrie.breathFx)->userdata + 0x60) = party->camId;
-            *(s32*)((u8*)((EffectEntry*)party->tail.flurrie.breathFx)->userdata + 0x18) = 0x4C;
-            *(s32*)((u8*)((EffectEntry*)party->tail.flurrie.breathFx)->userdata + 0x1C) = 0xA7;
-            *(s32*)((u8*)((EffectEntry*)party->tail.flurrie.breathFx)->userdata + 0x20) = 0xCA;
-            *(s32*)((u8*)((EffectEntry*)party->tail.flurrie.breathFx)->userdata + 0x28) = 0x7D;
-            *(s32*)((u8*)((EffectEntry*)party->tail.flurrie.breathFx)->userdata + 0x2C) = 0x1B;
-            *(s32*)((u8*)((EffectEntry*)party->tail.flurrie.breathFx)->userdata + 0x30) = 0xF5;
+            ((effKumokumoData*)((EffectEntry*)party->tail.flurrie.breathFx)->userdata)->camera = party->camId;
+            ((effKumokumoData*)((EffectEntry*)party->tail.flurrie.breathFx)->userdata)->color1R = 0x4C;
+            ((effKumokumoData*)((EffectEntry*)party->tail.flurrie.breathFx)->userdata)->color1G = 0xA7;
+            ((effKumokumoData*)((EffectEntry*)party->tail.flurrie.breathFx)->userdata)->color1B = 0xCA;
+            ((effKumokumoData*)((EffectEntry*)party->tail.flurrie.breathFx)->userdata)->color2R = 0x7D;
+            ((effKumokumoData*)((EffectEntry*)party->tail.flurrie.breathFx)->userdata)->color2G = 0x1B;
+            ((effKumokumoData*)((EffectEntry*)party->tail.flurrie.breathFx)->userdata)->color2B = 0xF5;
         }
         marioChgMot(0x1B);
         marioChgPose("M_A_2A");
@@ -655,16 +655,16 @@ void getHitBreatheout2(PartyEntry* party, f32 angle) {
     dz = 0.0f;
     if (party->tail.flurrie.breathFx != NULL) {
         movePos(&dx, &dz, 24.0f, f31);
-        *(f32*)((u8*)((EffectEntry*)party->tail.flurrie.breathFx)->userdata + 0x4) = party->position.x + dx;
-        *(f32*)((u8*)((EffectEntry*)party->tail.flurrie.breathFx)->userdata + 0x8) = 18.0f + party->position.y;
-        *(f32*)((u8*)((EffectEntry*)party->tail.flurrie.breathFx)->userdata + 0xC) = party->position.z + dz;
-        *(f32*)((u8*)((EffectEntry*)party->tail.flurrie.breathFx)->userdata + 0x5C) =
+        ((effKumokumoData*)((EffectEntry*)party->tail.flurrie.breathFx)->userdata)->x = party->position.x + dx;
+        ((effKumokumoData*)((EffectEntry*)party->tail.flurrie.breathFx)->userdata)->y = 18.0f + party->position.y;
+        ((effKumokumoData*)((EffectEntry*)party->tail.flurrie.breathFx)->userdata)->z = party->position.z + dz;
+        ((effKumokumoData*)((EffectEntry*)party->tail.flurrie.breathFx)->userdata)->scale =
             0.6f * (cloud->unk8 / cloud->maxDist);
 
         if (cloud->unk4 >= 90.0f && cloud->unk4 <= 270.0f) {
-            *(f32*)((u8*)((EffectEntry*)party->tail.flurrie.breathFx)->userdata + 0x58) = -25.0f;
+            ((effKumokumoData*)((EffectEntry*)party->tail.flurrie.breathFx)->userdata)->rotation = -25.0f;
         } else {
-            *(f32*)((u8*)((EffectEntry*)party->tail.flurrie.breathFx)->userdata + 0x58) = 205.0f;
+            ((effKumokumoData*)((EffectEntry*)party->tail.flurrie.breathFx)->userdata)->rotation = 205.0f;
         }
     }
 
