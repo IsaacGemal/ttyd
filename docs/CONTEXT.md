@@ -10053,3 +10053,33 @@ match the original's call shape), the goto blocks (control flow), and battle_sta
 (addr_literals reports 0 of 21 convertible in battle_stage.c and battle_seq_command.c) and its six pooled `unk_8042301x`
 zero words (kept as address names; the comment at the declaration says why). Matching build OK (tower ninja, ok marker
 recreated); CI ratchet not run because the tower copy has no accepted baseline.
+
+### Readability: party_motion, party_move and party_yoshi leftovers (2026-10-20, Claude Haiku 5.5, n9-q-party4)
+
+PartyEntry gains four names. `noFloorCount` (u8, 0x4E) counts frames a partner has walked with no floor under it:
+party_motion's walk routine increments it when partySearch finds no floor, clears it on the other paths, and the
+`> 0xa` test in the stay routine turns the partner toward Mario. `touchCount` (s16, 0x52) is the contact counter
+partyMarioHosei returns (up to 100 while touching Mario, decays by 1 after). `tiltX` (f32, 0x64) is the x-axis tilt in
+degrees: party.c's draw matrix does PSMTXRotRad 'x' by it, and party.c's dokan branch writes it from dispRot.x + 180.
+`spinPivot` (Vec, 0x88) is the pivot party.c translates by -spinPivot before the z (spinAngle) and x (tiltX) rotations
+and +spinPivot after; party_roll sets it to (-6, 6) at the start of a roll and zeroes it at the end. party_move's
+0x3D/0x3E/0x3F bytes are `field_3C[1]`, `field_3C[2]`, `field_3C[3]` (the code already indexed field_3C[1]); the
+signed read of 0x3F stays `(s8)` so the load is unchanged.
+
+party_yoshi uses the MarioWork names that now exist: `airTimerPeak` (0x52, cleared at takeoff), `moveDir` (0x19C,
+set beside directionView and read back into party->field_FC). The flutter words 0x2A4 are an f32 accumulator
+(`0x2A4 += 0x2A0` each frame, position.y = 0x2A8 + 0x2A4), so they use the union's f32 member `field_0x2A4`, not the
+motionSfxId0 handle view. party_yoshi's MUST_MATCH arms (YoshiZeroVec6 copies of 0x98/0xA4) are left raw.
+
+Open, PartyEntry: 0x14C (HitEntry* stored when a ground hit has attr 0x40000000; no reader in party code); 0x44 (u32,
+set to 0x10 beside followDist; no reader in these files); 0xE8 (f32, tested against 0.0f in party_move's
+partyMoveMain; no name yet); party_nokonoko's 0x178-0x180 s32 zero stores, which span koops union members of other
+types (f32, s16), and its twelve 0x10C NKF updates (the named form compiles differently, per n9-q-party3).
+Open, MarioWork (mario.h not edited here): 0x2A0 is party_yoshi's flutter velocity but also the spinSpeed/damageRootY
+union; 0x2A8 is an f32 flutter base y in party_yoshi (wCamVal1's slot, whose doc says step); 0x2B4 is the f32 z twin of
+field_0x2B0; 0x18C is the f32 fly speed in party_yoshi; 0x39 is an s8 flag; 0x1DC and 0x1F0 are HitEntry pointers.
+
+Verification: `configure.py && ninja` (matched build) recreates build/G8MJ01/ok, 32 files OK, 100% matched. Natural
+compiles (no -DMUST_MATCH) of the four files from HEAD and from this branch are equivalent under tools/obj_equiv.py.
+Index (tools/cleanup_index.py): 25394 -> 25341 weighted (36.223 -> 36.147 per kLOC); raw_offset 1653 -> 1623; field_0x
+4513 -> 4520 (the seven field_0x2A4 uses are the existing union member, not new placeholders).
