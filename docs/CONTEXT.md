@@ -10327,3 +10327,25 @@ Left: `field_0x0` in both structs (the `type` argument is stored and never read)
 Left: eff_thunderflare's `field_0x00` (written in the reset loop, never read; the rule for never-read fields). eff_rappa's `field_0x1C`/`field_0x20` (effRappaData) are never referenced by eff_rappa_n64.c or any other user, so they stay. The `unk_804232xx`/`unk_8042328x`/`unk_804230a0` GXColor templates in thunderflare, timestamp, vapor, stone_smoke, rappa and akari_sflush are address-named data that is not a struct field, so they are not renamed here. Vapor's `timer` and timestamp's effTimestampVtx were already named.
 
 Matching build 32 files OK, and the tower build recreates build/G8MJ01/ok. The natural (no MUST_MATCH) and MUST_MATCH compiles with -maxerrors 50 of the four files that include the two headers (eff_stone_smoke_n64.c, eff_akari_sflush_n64.c, eff_dogabon_attack_n64.c, evt_eff.c) each exit 0 with no errors. Cleanup index 34.727 -> 34.614 per kLOC (field_0x 4,075 -> 3,996).
+### Readability: eff_cool_leaf_n64 and eff_stamp_n64 (2026-10-20, Claude Haiku 5.5, n9-q-leaf)
+
+eff_cool_leaf_n64's Main takes its sway locals from what they feed: `sway` is sin(2 x rotZ), which the type 0/1 loops
+turn into `swayPush` (0.2 x sway) added to velX, and type 1 adds `doublePush` (2 x swayPush); `tiltSin` is sin(rotZ),
+the factor on velY's damping; `randIndex` is the effTblRandN64 index (age + 20 per leaf); `age` is the frame count
+the old `counter` held. The type-2 MUST_MATCH temp (the sin/cos results that pin the FPRs) is `trig`, separate from
+`sway`, so no local changes meaning between cases. Entry's `rnd01`/`rnd11`/`rnd361`/`rnd101` are `randX` (x = 75 +),
+`randY` (y = 70 +), `randAngle` (rotZ, and rotY = 360 - it) and `randSpin` (spin = 0.1 x it); `ptr` is `leaf`. Disp's
+`work` is the view matrix times the base transform (`viewMtx`, the same name effStampDisp uses) and `scale` is the
+texture matrix (`texMtx`). The param of effCoolLeafSetColor is `alpha`. `dat_8041ec50` is `coolLeafTevColor`: the
+u32 0x14641400 read as the GXColor base of GX_TEVREG0, whose alpha is then overwritten; renamed with rename_symbol.py
+(symbols.txt updated). The two GX_PNMTX0 literals are enums.
+
+eff_stamp_n64: effStampData `scale` (0x30) is `radius`, the petal ring radius: Main eases it toward 10 for the first 10
+frames and then toward 100, and Disp places each petal at radius x cos/sin(angle). Main's `count` (a copy of
+data->counter) is `counter`, Entry's ring pointer `p` is `petal`, and the GX_LIGHT_NULL literal is the enum. The
+header's `field_0x10`/`0x14`/`0x18` stay unnamed: Entry writes 0 to them on every petal and nothing reads them.
+unk_80423270/unk_80423274 stay (`.sbss2` GXColor seeds): the TEVREG0 seed is fully overwritten, and only the
+alpha of the TEVREG1 seed reaches the register, so nothing shows what the seed is meant to be. The sstar
+`.sdata2` float constants keep their names. Index 34.727 -> 34.723 total; eff_cool_leaf_n64.c 391.5 -> 383.1, eff_stamp_n64.c unchanged. Verified: both
+objects are `same` under tools/obj_equiv.py against the pre-change build (only the renamed data symbol differs),
+the tower build recreates build/G8MJ01/ok, and both files natural-compile without MUST_MATCH.
