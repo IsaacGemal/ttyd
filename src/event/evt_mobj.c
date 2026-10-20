@@ -67,12 +67,10 @@ extern Vec vec3_802c4038[];
 extern Vec vec3_802c4044[];
 extern const char mobj_offscreen_prefix[];
 extern const char mobj_image_prefix[];
-#ifdef MUST_MATCH
 // A typed aggregate copy emits the original four word loads and stores.
 typedef struct MobjNameTemplate {
     u32 words[4];
 } MobjNameTemplate;
-#endif
 extern Vec lv_block_position[];
 
 // Data objects defined later in this file or in other units, declared before their first use.
@@ -139,12 +137,7 @@ static u32 evt_shake[] = {
 extern s32 mobj_save_blk_sysevt[];
 extern Vec vec3_802c40a0[];
 extern Vec vec3_802c3ef4[];
-#ifdef MUST_MATCH
-// Copy all 16 template bytes; strcpy is sufficient in the natural build.
 #define LVB_TEMPLATE(dst, src) (*(MobjNameTemplate*)(dst) = *(const MobjNameTemplate*)(src))
-#else
-#define LVB_TEMPLATE(dst, src) strcpy((dst), (src))
-#endif
 s32 psndSFXOnEx_3D(const char* name, Vec* position, u8 vol, u8 pan, u16 pitch, u16 flags);
 
 const char* _switch_anim[6] = {
