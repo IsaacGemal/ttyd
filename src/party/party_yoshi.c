@@ -455,9 +455,6 @@ void yoshi_init(PartyEntry* party) {
     party->radius = float_20;
     party->yoshiPsndSFXId = -1;
 }
-#define P_F(off) (*(f32*)((u8*)party + (off)))
-#define P_S(off) (*(s32*)((u8*)party + (off)))
-#define P_U16(off) (*(u16*)((u8*)party + (off)))
 #define P_P(off) (*(void**)((u8*)party + (off)))
 #define M_F(off) (*(f32*)((u8*)mario + (off)))
 #define M_S(off) (*(s32*)((u8*)mario + (off)))
@@ -1007,7 +1004,7 @@ L_3800:
             M_F(0xA8) = 8.0f + yoshiRideHeight(party);
             extra = partyGetPtr(marioGetExtraPartyId());
             if (extra != NULL) {
-                *(f32*)((u8*)extra + 0x80) = yoshiRideHeight(party);
+                extra->dispOffset.y = yoshiRideHeight(party);
             }
         }
 
@@ -1239,9 +1236,6 @@ L_3800:
 }
 
 #undef VEC_S2
-#undef P_F
-#undef P_S
-#undef P_U16
 #undef P_P
 #undef M_F
 #undef M_S

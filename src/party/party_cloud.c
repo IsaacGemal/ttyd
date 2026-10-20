@@ -229,7 +229,7 @@ void cloud_init(PartyEntry* party) {
     party->tail.flurrie.breathFx = NULL;
     *(s32*)((u8*)party + 0x17C) = 0;
     *(s32*)((u8*)party + 0x180) = 0;
-    *(s32*)((u8*)party + 0x170) = 0;
+    party->useStruct = NULL;
     party->tail.flurrie.breathFx = NULL;
 }
 
