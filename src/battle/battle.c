@@ -53,9 +53,9 @@ BOOL BattleStatusWindowCheck(void) {
     BattleWork* wp = _battleWorkPointer;
     BOOL result;
 
-    if (wp->statusWinField0) {
+    if (wp->statusWinScriptOff) {
         result = FALSE;
-    } else if (wp->statusWinField1) {
+    } else if (wp->statusWinLectureOff) {
         result = FALSE;
     } else if (wp->statusWinAPRecovery) {
         result = TRUE;

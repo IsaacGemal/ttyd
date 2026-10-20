@@ -68,7 +68,6 @@ typedef struct BattleNozzleWork {
 // The original keeps (u8*)wp in its own register (`base`); without it these two functions score 94.51%.
 
 // BattleWork fields past stageObjects (inside field_180C0, no names yet) and the stage data's tail.
-#define BSO_WP_U8(wp, off) (*(u8*)((u8*)(wp) + (off)))
 #define BSO_WP_S8(wp, off) (*(s8*)((u8*)(wp) + (off)))
 #define BSO_WP_S32(wp, off) (*(s32*)((u8*)(wp) + (off)))
 #define BSO_WP_PTR(wp, off) (*(void**)((u8*)(wp) + (off)))

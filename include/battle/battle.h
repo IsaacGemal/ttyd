@@ -186,8 +186,8 @@ struct BattleWork {
     s32 mStylishResult;                 // 0x2730
     s32 mStylishEarlyFrames;            // 0xA2734
     FieldBattleInfo* fbatInfo;          // 0x2738
-    s32 statusWinField0;                // 0x273C, BattleStatusWindowCheck hides the window when set
-    s32 statusWinField1;                // 0x2740, BattleStatusWindowCheck hides the window when set
+    s32 statusWinScriptOff;             // 0x273C, set by nok unit_act_mario _status_window_off; hides the window
+    s32 statusWinLectureOff;            // 0x2740, set by gor _set_lecture_mode (tutorial battle); hides the window
     s32 statusWinSystem;                // 0x2744, BattleStatusWindowSystemOn/Off, StatusWindowOnOff mode 2
     s32 statusWinEvent;                 // 0x2748, BattleStatusWindowEventOn/Off, StatusWindowOnOff mode 0/1
     s32 statusWinAPRecovery;            // 0x274C, BattleStatusWindowAPRecoveryOn/Off

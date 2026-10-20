@@ -471,7 +471,7 @@ EVT_BEGIN(_act_clauda_press_attack)
 EVT_END()
 
 s32 _status_window_off(EventEntry* event, BOOL isFirstCall) {
-    _battleWorkPointer->statusWinField0 = 1;
+    _battleWorkPointer->statusWinScriptOff = 1;
     return EVT_RETURN_DONE;
 }
 

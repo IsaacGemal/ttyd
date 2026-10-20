@@ -45,8 +45,6 @@ extern BattleWeapon ItemWeaponData_Naniga_Okorukana;
 
 //TODO: move into battle/seq/?
 
-
-
 void BattleCommandInit(BattleWork* wp) {
 	wp->commandMenu.unk0 = 0;
 	wp->flags |= 0x80;

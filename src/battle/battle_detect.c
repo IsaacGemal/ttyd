@@ -26,8 +26,6 @@ static const f32 float_1_8041bf1c = 1.0f;
 static const f32 float_0p05_8041bf20 = 0.05f;
 static const f32 float_5_8041bf24 = 5.0f;
 
-
-
 // The ac4 keep-loop is written as a chain of `if (cond) { keep = 0; goto ac4_keep_done; }`
 // followed by `keep = 1;` (the ac0 chain keeps its plain if/else-if form, which already
 // matches). Writing the first ac4 condition as `(ac4 & 1) && (A || B || C)` made MWCC tail-

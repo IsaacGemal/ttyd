@@ -64,7 +64,6 @@ extern const Vec vec3_802edeac;
 extern const Vec vec3_802edeb8;
 extern s32 psndSFX_pit(s32 id, s32 pit);
 
-#define BTLW_OFF(wp, off) ((u8*)(wp) + (off))
 extern s32 subsetevt_confuse_flustered[];
 #define NAN (*(f32*)__float_nan)
 #define FP_NAN 1

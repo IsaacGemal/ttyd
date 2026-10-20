@@ -160,7 +160,7 @@ USER_FUNC(_set_lecture_mode) {
     BattleUnit* unit = BattleGetUnitPtr(work, id);
 
     unit->mAttributeFlags |= 0x40000000;
-    work->statusWinField1 = 1;
+    work->statusWinLectureOff = 1;
     return EVT_RETURN_DONE;
 }
 
