@@ -2071,12 +2071,12 @@ USER_FUNC(_fall_frame_wait_unit_ready) {
 			unit = BattleGetUnitPtr(wp, i);
 			if (unit != NULL && (unit->flags & 0x80000000) == 0
 			    && !BtlUnit_CheckStatus(unit, 0x1B)) {
-				if (unit->fallWaitEventCode != NULL) {
-					EventEntry* e = evtEntry(unit->fallWaitEventCode, 10, 0);
+				if (unit->ceilFallEventCode != NULL) {
+					EventEntry* e = evtEntry(unit->ceilFallEventCode, 10, 0);
 					if (e != NULL) {
 						e->unitId = unit->unitId;
 					}
-					unit->fallWaitEventId = e->eventId;
+					unit->ceilFallEventId = e->eventId;
 				}
 			}
 		}
@@ -2084,10 +2084,10 @@ USER_FUNC(_fall_frame_wait_unit_ready) {
 	for (i = 0; i < 64; i++) {
 		unit = BattleGetUnitPtr(wp, i);
 		if (unit != NULL && (unit->flags & 0x80000000) == 0) {
-			if (unit->fallWaitEventId != 0 && !evtCheckID(unit->fallWaitEventId)) {
-				unit->fallWaitEventId = 0;
+			if (unit->ceilFallEventId != 0 && !evtCheckID(unit->ceilFallEventId)) {
+				unit->ceilFallEventId = 0;
 			}
-			if (unit->fallWaitEventId != 0) {
+			if (unit->ceilFallEventId != 0) {
 				return EVT_RETURN_BLOCK;
 			}
 		}
@@ -2295,7 +2295,7 @@ USER_FUNC(_nozzle_work_effect) {
 			case 1:
 			case 2:
 			case 3:
-				NOZZLE_WORK_BODY(0, "nozzle_l", -0x7D7C, *(s32*)((u8*)event + 0x8C), event->userdata[1])
+				NOZZLE_WORK_BODY(0, "nozzle_l", -0x7D7C, event->userdataEx[1], event->userdata[1])
 				NOZZLE_WORK_BODY(1, "nozzle_c", -0x7D7B, event->field_0x90[0], event->userdata[2])
 				NOZZLE_WORK_BODY(2, "nozzle_r", -0x7D7A, event->field_0x90[1], event->field_84)
 				done = 1;

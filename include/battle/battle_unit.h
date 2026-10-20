@@ -673,8 +673,8 @@ typedef struct BattleUnit {
     s32 damageEventId;                           // 0x2B0
     void* entryEventCode;                        // 0x2B4, btlevtcmd_SetEventEntry; battle_seq runs it at battle start
     s32 entryEventId;                            // 0x2B8, its event id, 0 once it has finished
-    void* fallWaitEventCode;                     // 0x2BC, event fall_frame_wait starts for the unit (evtEntry)
-    s32 fallWaitEventId;                         // 0x2C0, its event id; fall_frame_wait blocks while it is alive
+    void* ceilFallEventCode;                     // 0x2BC, btlevtcmd_SetEventCeilFall; _fall_frame_wait_unit_ready starts it
+    s32 ceilFallEventId;                         // 0x2C0, its event id; _fall_frame_wait_unit_ready blocks while it runs
     u8 field_0x2C4[0x2D0 - 0x2C4];               // 0x2C4
     s32 mBodyPartsId;                            // 0x2D0
     char* mTalkPoseName;                         // 0x2D4, BtlUnit_GetPoseNameFromType of the talk pose

@@ -4160,7 +4160,7 @@ USER_FUNC(btlevtcmd_SetEventCeilFall) {
     s32 btlId = evtGetValue(event, args[0]);
     BattleUnit* unit = BattleGetUnitPtr(_battleWorkPointer, BattleTransID(event, btlId));
 
-    *(s32*)((u8*)unit + 0x2BC) = args[1];
+    unit->ceilFallEventCode = (void*)args[1];
     return EVT_RETURN_DONE;
 }
 
