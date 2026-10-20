@@ -91,7 +91,7 @@ void _btlcmd_MakeActClassTable(BattleWork* wp) {
 			wcmd->mActionTable[0].mEnabled = 0;
 			wcmd->mActionTable[0].field_0x10 = 3;
 		}
-		if (setup->field_4 & 0x01000000) {
+		if (setup->flags & 0x01000000) {
 			wcmd->mActionTable[0].mEnabled = 0;
 			wcmd->mActionTable[0].field_0x10 = 3;
 		}
@@ -153,7 +153,7 @@ void _btlcmd_MakeActClassTable(BattleWork* wp) {
 			wcmd->mActionTable[count].mEnabled = 0;
 			wcmd->mActionTable[count].field_0x10 = 3;
 		}
-		if (setup->field_4 & 0x02000000) {
+		if (setup->flags & 0x02000000) {
 			wcmd->mActionTable[count].mEnabled = 0;
 			wcmd->mActionTable[count].field_0x10 = 3;
 		}
@@ -721,7 +721,7 @@ void _btlcmd_MakeOperationTable(BattleWork* wp) {
 			wcmd->mOperationTable[0].mEnabled = 0;
 			wcmd->mOperationTable[0].field_0x8 = 3;
 		}
-		if (setup->field_4 & 0x04000000) {
+		if (setup->flags & 0x04000000) {
 			wcmd->mOperationTable[0].mEnabled = 0;
 			wcmd->mOperationTable[0].field_0x8 = 3;
 		}
@@ -803,7 +803,7 @@ void _btlcmd_MakeOperationTable(BattleWork* wp) {
 		wcmd->mOperationTable[escapeIdx].mEnabled = 0;
 		wcmd->mOperationTable[escapeIdx].field_0x8 = 3;
 	}
-	if (wp->fbatInfo->setup->field_4 & 0x10) {
+	if (wp->fbatInfo->setup->flags & 0x10) {
 		wcmd->mOperationTable[escapeIdx].mEnabled = 0;
 		wcmd->mOperationTable[escapeIdx].field_0x8 = 3;
 	}

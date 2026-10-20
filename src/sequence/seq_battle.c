@@ -139,7 +139,7 @@ void seq_battleMain(SequenceWork* work) {
                 BOOL skip;
 
                 fbat = fbatGetPointer();
-                setup = *(u8**)((u8*)fbat->target + 0x230);
+                setup = (u8*)fbat->target->battleInfo.stageData;
                 pouch = pouchGetPtr();
 
                 do {

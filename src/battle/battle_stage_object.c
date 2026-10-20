@@ -1448,7 +1448,7 @@ void BattleObjectConfig(void) {
 void BattleStage_DestroyA1(void) {
 	BattleWork* wp = _battleWorkPointer;
 	u8* base = (u8*)wp;
-	void* evt = *(void**)(*(u8**)((u8*)wp->fbatInfo->setup) + 0x194);
+	void* evt = *(void**)((u8*)wp->fbatInfo->setup->stageData + 0x194);
 
 	evtDeleteID(*(s32*)(base + 0x20000 - 0x7F1C));
 	*(s32*)(base + 0x20000 - 0x7F1C) = 0;
@@ -1468,7 +1468,7 @@ void BattleStage_DestroyA1(void) {
 
 void BattleStage_DestroyA2(void) {
 	BattleWork* wp = _battleWorkPointer;
-	void* evt = *(void**)(*(u8**)((u8*)wp->fbatInfo->setup) + 0x198);
+	void* evt = *(void**)((u8*)wp->fbatInfo->setup->stageData + 0x198);
 
 	evtDeleteID(*(s32*)((u8*)wp + 0x20000 - 0x7F18));
 	*(s32*)((u8*)wp + 0x20000 - 0x7F18) = 0;
@@ -1481,7 +1481,7 @@ void BattleStage_DestroyA2(void) {
 void BattleStage_DestroyB(void) {
 	BattleWork* wp = _battleWorkPointer;
 	u8* base = (u8*)wp;
-	void* evt = *(void**)(*(u8**)((u8*)wp->fbatInfo->setup) + 0x19C);
+	void* evt = *(void**)((u8*)wp->fbatInfo->setup->stageData + 0x19C);
 
 	evtDeleteID(*(s32*)(base + 0x20000 - 0x7F14));
 	*(s32*)(base + 0x20000 - 0x7F14) = 0;
@@ -1692,10 +1692,10 @@ USER_FUNC(_get_bgset_attack_data) {
 
 	switch (kind) {
 		case 0:
-			r5 = *(u8**)((u8*)wp->fbatInfo->setup) + 0x10;
+			r5 = (u8*)wp->fbatInfo->setup->stageData + 0x10;
 			break;
 		case 2:
-			r5 = *(u8**)((u8*)wp->fbatInfo->setup) + 0xD0;
+			r5 = (u8*)wp->fbatInfo->setup->stageData + 0xD0;
 			break;
 		default:
 			r5 = NULL;

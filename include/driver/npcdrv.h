@@ -52,30 +52,35 @@ typedef struct BattleGroupSetup {
 // npcSetupBattleInfo.
 typedef struct BattleSetupData {
     const char* name;                         // 0x0
-    const char* field_0x4;                    // 0x4, a map name where set (aji_14 for the Magnum Battender fight)
-    s32 field_0x8;                            // 0x8, copied to NpcBattleInfo+0x8
+    const char* mapName;                      // 0x4, a map name where set (aji_14 for the Magnum Battender fight)
+    s32 fixDropItem;                          // 0x8, copied to NpcBattleInfo.fixDropItem
     s32 flag;                                 // 0xC, a GSWF: while it is set, onLoadouts is used
     struct NpcBattleSetupEntry* onLoadouts;   // 0x10, btlgrpsel_*_on
     struct NpcBattleSetupEntry* offLoadouts;  // 0x14, btlgrpsel_*_off
-    s32 field_0x18;                           // 0x18, copied to NpcBattleInfo.field_4
-    s32 field_0x1C;                           // 0x1C, copied to NpcBattleInfo+0xAC; outside 1-2, field_0x20 is rolled
-    s8 field_0x20[16][2];                     // 0x20, min/max pairs, each rolled into NpcBattleInfo+0xB0
-    const char* music;                        // 0x40, copied to NpcBattleInfo+0xC0
+    s32 flags;                                // 0x18, copied to NpcBattleInfo.flags
+    s32 audienceMode;                         // 0x1C, copied to NpcBattleInfo.audienceMode; outside 1-2, audienceRanges is rolled
+    s8 audienceRanges[16][2];                 // 0x20, min/max pairs, each rolled into NpcBattleInfo.audienceWeights
+    const char* music;                        // 0x40, copied to NpcBattleInfo.music
 } BattleSetupData;
 
 typedef struct NpcBattleInfo {
-    u8 field_0[0x4 - 0x0];          // 0x0
-    s32 field_4;                    // 0x4
-    u8 field_8[0xC - 0x8];          // 0x8
-    ItemType itemDropped;           // 0xC
-    s32 heartsDropped;              // 0x10
-    s32 flowersDropped;             // 0x14
-    BattleGroupSetup* groupSetup;   // 0x18
-    ItemType heldItems[8];          // 0x1C
-    ItemDropData* itemDropLists[8]; // 0x3C
-    ItemType stolenItems[8];        // 0x5C
-    ItemType recoveredItems[8];     // 0x7C
-    u8 field_9C[0xC8 - 0x9C];       // 0x9C
+    struct BattleStageData* stageData; // 0x0
+    s32 flags;                         // 0x4, copied from BattleSetupData.flags; drop-disable bits 1 coin, 2 heart, 4 flower, 8 item
+    s32 fixDropItem;                   // 0x8, copied from BattleSetupData.fixDropItem; read by evt_npc_get_drop_fixitem
+    ItemType itemDropped;              // 0xC
+    s32 heartsDropped;                 // 0x10
+    s32 flowersDropped;                // 0x14
+    BattleGroupSetup* groupSetup;      // 0x18
+    ItemType heldItems[8];             // 0x1C
+    ItemDropData* itemDropLists[8];    // 0x3C
+    ItemType stolenItems[8];           // 0x5C
+    ItemType recoveredItems[8];        // 0x7C
+    u8 field_9C[0xAC - 0x9C];          // 0x9C
+    s32 audienceMode;                  // 0xAC, copied from BattleSetupData.audienceMode; battle_audience switches on it
+    s8 audienceWeights[16];            // 0xB0, rolled from BattleSetupData.audienceRanges; battle_audience reads kinds 0-11
+    const char* music;                 // 0xC0, copied from BattleSetupData.music
+    u8 battleRules[3];                 // 0xC4, set by evt_npc_set_battle_rule
+    u8 field_C7[0xC8 - 0xC7];          // 0xC7
 } NpcBattleInfo;
 
 // The 0xC-byte entries of the weighted battle setup list selected by npcSetupBattleInfo.

@@ -1920,9 +1920,9 @@ USER_FUNC(evt_npc_set_battle_rule) {
     s32 a = evtGetValue(event, args[1]);
     s32 b = evtGetValue(event, args[2]);
     s32 c = evtGetValue(event, args[3]);
-    npc->battleInfo.field_9C[0x28] = a;
-    npc->battleInfo.field_9C[0x29] = b;
-    npc->battleInfo.field_9C[0x2A] = c;
+    npc->battleInfo.battleRules[0] = a;
+    npc->battleInfo.battleRules[1] = b;
+    npc->battleInfo.battleRules[2] = c;
     return EVT_RETURN_DONE;
 }
 USER_FUNC(evt_npc_battle_start) {
@@ -2017,7 +2017,7 @@ USER_FUNC(evt_npc_get_drop_fixitem) {
     s32* args = event->args;
     const char* name = (const char*)evtGetValue(event, args[0]);
     NpcEntry* npc = evtNpcNameToPtr(event, name);
-    evtSetValue(event, args[1], *(s32*)npc->battleInfo.field_8);
+    evtSetValue(event, args[1], npc->battleInfo.fixDropItem);
     return EVT_RETURN_DONE;
 }
 
@@ -2027,7 +2027,7 @@ USER_FUNC(evt_npc_get_drop_item) {
     NpcEntry* npc = evtNpcNameToPtr(event, npcName);
     s32 index = *args++;
 
-    if (npc->battleInfo.field_4 & 8) {
+    if (npc->battleInfo.flags & 8) {
         evtSetValue(event, index, 0);
     } else {
         evtSetValue(event, index, npc->battleInfo.itemDropped);
@@ -2041,7 +2041,7 @@ USER_FUNC(evt_npc_get_drop_heart) {
     NpcEntry* npc = evtNpcNameToPtr(event, npcName);
     s32 index = *args++;
 
-    if (npc->battleInfo.field_4 & 2) {
+    if (npc->battleInfo.flags & 2) {
         evtSetValue(event, index, 0);
     } else {
         s32 count = pouchEquipCheckBadge(ITEM_HEART_FINDER);
@@ -2066,7 +2066,7 @@ USER_FUNC(evt_npc_get_drop_flower) {
     NpcEntry* npc = evtNpcNameToPtr(event, npcName);
     s32 index = *args++;
 
-    if (npc->battleInfo.field_4 & 4) {
+    if (npc->battleInfo.flags & 4) {
         evtSetValue(event, index, 0);
     } else {
         s32 count = pouchEquipCheckBadge(ITEM_FLOWER_FINDER);
@@ -2115,7 +2115,7 @@ USER_FUNC(evt_npc_get_drop_coin) {
     NpcEntry* npc = evtNpcNameToPtr(event, npcName);
     s32 index = *args++;
     s32 value = 0;
-    if (npc->battleInfo.field_4 & 1) {
+    if (npc->battleInfo.flags & 1) {
         evtSetValue(event, index, 0);
         return EVT_RETURN_DONE;
     } else {
