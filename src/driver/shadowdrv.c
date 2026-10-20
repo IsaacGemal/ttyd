@@ -351,13 +351,6 @@ void shadowInit(void) { //almost 1:1, minor regalloc
     (var = (col),                                                                                                                                                        \
      ((void (*)(s32, f32, f32, f32, f32, GXColor*))GXSetFog)(0, float_0_804198f4, float_0_804198f4, float_0_804198f4, float_0_804198f4, &(var)))
 #endif
-#ifdef MUST_MATCH
-#define SHADOW_DISP_PROJ(w) shadowDispProjMtx(w)
-#define SHADOW_DISP_GX_PROJ(w) (*(Mtx44*)&(w)->projection)
-#else
-#define SHADOW_DISP_PROJ(w) ((Mtx44*)&(w)->projection)
-#define SHADOW_DISP_GX_PROJ(w) ((w)->projection)
-#endif
 #define SHADOW_DISP_PROJ_SETUP(w, extra)                                                                                                   \
     do {                                                                                                                                   \
         ShadowConfigFields* cfg;                                                                                                           \
@@ -371,7 +364,7 @@ void shadowInit(void) { //almost 1:1, minor regalloc
         GXSetViewport(float_0_804198f4, float_0_804198f4, (f32)size, (f32)size, float_0_804198f4, float_1_80419904);                                                                        \
         GXSetScissor(1, 1, size - 2, size - 2);                                                                                            \
         cfg = (ShadowConfigFields*)(shadowConfig + (w)->configIdx * 0x48);                                                                       \
-        proj = SHADOW_DISP_PROJ(w);                                                                                                   \
+        proj = shadowDispProjMtx(w);                                                                                                   \
         camPos = cfg->camPos;                                                                                                              \
         C_MTXLookAt(w->lookAt, &camPos, &cfg->up, &cfg->target);                                                              \
         if (cfg->isOrtho == 0) {                                                                                                             \
@@ -380,7 +373,7 @@ void shadowInit(void) { //almost 1:1, minor regalloc
         else {                                                                                                                             \
             C_MTXOrtho(*proj, cfg->halfHeight, -cfg->halfHeight, cfg->halfWidth, -cfg->halfWidth, cfg->nearZ, cfg->farZ);                                   \
         }                                                                                                                                  \
-        GXSetProjection(SHADOW_DISP_GX_PROJ(w), ((ShadowConfigFields*)(shadowConfig + (w)->configIdx * 0x48))->isOrtho);                                                                                                \
+        GXSetProjection((w)->projection, ((ShadowConfigFields*)(shadowConfig + (w)->configIdx * 0x48))->isOrtho);                                                                                                \
         PSMTXCopy(camGetCurPtr()->view, tmp_view);                                                                                         \
         PSMTXCopy(w->lookAt, camGetCurPtr()->view);                                                                          \
     } while (0)
@@ -411,18 +404,16 @@ static inline void shadowMatColor(GXColor c) {
 
 // The viewport/scissor/look-at/projection block the original expands identically for the
 // proj, proj+depth and char shadow draw paths; it was a macro in the source.
-// MUST_MATCH: retail spells the projection matrix two ways -- w->lookAt + 0x30 for `proj` and a fresh
-// w + 0x3C for the GXSetProjection argument -- so the two are not CSE'd and the block's registers
-// come out as retail's. The natural code reads both through the helper (#else).
+// The projection matrix is spelled two ways -- w->lookAt + 0x30 for `proj` (shadowDispProjMtx) and
+// w->projection for the GXSetProjection argument -- so the two are not CSE'd and the block's registers
+// come out as retail's.
 // `size` is declared at function scope (not in the macro) so all three expansions share one temp,
 // which is what keeps it in retail's r27 in every branch.
 
 
-#ifdef MUST_MATCH
-// The projection matrix as a fresh base+0x3C expression (writing it through the `proj`
-// local CSEs and the original recomputes it for GXSetProjection).
+// The projection matrix as the end of lookAt (writing it through w->projection CSEs with the
+// GXSetProjection argument, and the original recomputes it).
 static inline Mtx44* shadowDispProjMtx(ProjShadowWork* w) { return (Mtx44*)((u8*)w->lookAt + 0x30); }
-#endif
 
 // The instruction stream, calls and branches all match. shadowConfig (+0x40), testKagePosArray (+0xE0)
 // and vertex_tbl (+0x2C0) are defined in this unit's .data, so MWCC reaches them through the shared
@@ -604,9 +595,6 @@ void shadowCharShadowDisp_Projection(CameraId camId, void* param) {
     ShadowConfigFields* config;
     void* work;
     ShadowEntry* entry;
-#ifdef MUST_MATCH
-    const u8* vecs;
-#endif
     f32 (*view)[4];
     u8 alpha;
     Mtx mtx;
@@ -621,15 +609,12 @@ void shadowCharShadowDisp_Projection(CameraId camId, void* param) {
     f32 de;
     s32 i;
 #ifdef MUST_MATCH
-    GXColor pBattleColor, pArgColor, pProjColor, pFogColor, pMatColor;
+    GXColor pBattleColor, pArgColor, pProjColor, pFogColor;
 #endif
 
     (void)camId;
     (void)param;
     work = cswp;
-#ifdef MUST_MATCH
-    vecs = (const u8*)&vec3_802c1a90;
-#endif
     config = (ShadowConfigFields*)(shadowConfig + ((CharShadowWork*)work)->configIdx * 0x48);
     entry = ((CharShadowWork*)work)->entries;
     view = camGetCurPtr()->view;
@@ -637,11 +622,7 @@ void shadowCharShadowDisp_Projection(CameraId camId, void* param) {
 
     GXSetNumChans(1);
     GXSetChanCtrl(GX_COLOR0A0, GX_FALSE, GX_SRC_REG, GX_SRC_REG, GX_LIGHT_NULL, GX_DF_CLAMP, GX_AF_NONE);
-#ifdef MUST_MATCH
-    SHADOW_MAT_COLOR(GX_COLOR0A0, pMatColor, cswp->color);
-#else
     GXSetChanMatColor(GX_COLOR0A0, cswp->color);
-#endif
     GXSetNumTexGens(0);
     GXSetNumTevStages(1);
     GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD_NULL, GX_TEXMAP_NULL, GX_COLOR0A0);
@@ -719,27 +700,9 @@ void shadowCharShadowDisp_Projection(CameraId camId, void* param) {
         GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_POS_XYZ, GX_F32, 0);
         GXSetVtxDesc(GX_VA_CLR0, GX_DIRECT);
         GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_CLR0, GX_CLR_RGBA, GX_RGBA8, 0);
-#ifdef MUST_MATCH
-        {
-            /* Read the three camera basis vectors through explicit ascending word temps to force
-               MWCC's "nine loads, then nine stores" shape; the volatile source keeps the loads in
-               retail's v0..v8 order. */
-            const volatile u32* vp = (const volatile u32*)(vecs + 0xC);
-            s32 t0, t1, t2, t3, t4, t5, t6, t7, t8;
-
-            t8 = vp[0]; t7 = vp[1]; t6 = vp[2];
-            t5 = vp[3]; t4 = vp[4]; t3 = vp[5];
-            t2 = vp[6]; t1 = vp[7]; t0 = vp[8];
-
-            ((u32*)&camPos)[0] = t8; ((u32*)&camPos)[1] = t7; ((u32*)&camPos)[2] = t6;
-            ((u32*)&camUp)[0] = t5; ((u32*)&camUp)[1] = t4; ((u32*)&camUp)[2] = t3;
-            ((u32*)&camTarget)[0] = t2; ((u32*)&camTarget)[1] = t1; ((u32*)&camTarget)[2] = t0;
-        }
-#else
         camPos = vec3_802c1a9c;
         camUp = vec3_802c1aa8;
         camTarget = vec3_802c1ab4;
-#endif
         C_MTXLookAt(lookAt, &camPos, &camUp, &camTarget);
         GXLoadPosMtxImm(lookAt, GX_PNMTX0);
         w = -config->halfWidth;
