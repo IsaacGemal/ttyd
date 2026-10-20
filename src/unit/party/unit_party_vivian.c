@@ -193,8 +193,6 @@ USER_FUNC(battle_evt_majo_disp_on) {
     f32 f2;
     f32 f3;
     f32 f4;
-#ifdef MUST_MATCH
-#endif
 
     id = BattleTransID(event, evtGetValue(event, args[0]));
     v1 = evtGetValue(event, args[1]);
@@ -207,18 +205,6 @@ USER_FUNC(battle_evt_majo_disp_on) {
     pose = parts->poseId;
 
     if (isFirstCall) {
-#ifdef MUST_MATCH
-        // MUST_MATCH: the volatile accesses pin the two zero stores before the zero-Vec copy.
-        *(volatile s32*)&event->userdata[0] = 0;
-        *(volatile s32*)&event->userdata[1] = 0;
-        {
-            Vec pos = VEC_POS1;
-            pos.x = f2;
-            pos.y = f3 - 200.f;
-            pos.z = f4;
-            unit->mPosition = pos;
-        }
-#else
         event->userdata[0] = 0;
         event->userdata[1] = 0;
         {
@@ -228,7 +214,6 @@ USER_FUNC(battle_evt_majo_disp_on) {
             pos.z = f4;
             unit->mPosition = pos;
         }
-#endif
         animEffectAsync(STR_P_BIBI, 1);
     }
 
@@ -1148,8 +1133,6 @@ __declspec(section ".data") u32 gap_05_8038BA04_data = 0;
 #pragma explicit_zero_data reset
 
 #pragma force_active reset
-// Matched. The two intplGetValue calls take a MUST_MATCH comma expression (volatile float casts)
-// so the float constants load before event->userdata[1]; base is declared last so MWCC gives it r31.
 USER_FUNC(battle_evt_majo_disp_off) {
     s32* args = event->args;
     BattleUnit* unit;
@@ -1159,8 +1142,6 @@ USER_FUNC(battle_evt_majo_disp_off) {
     s32 id;
     s32 v2;
     s32 v3;
-#ifdef MUST_MATCH
-#endif
 
     id = BattleTransID(event, evtGetValue(event, args[0]));
     v1 = evtGetValue(event, args[1]);
@@ -1255,27 +1236,10 @@ USER_FUNC(_vivian_make_extra_work_area) {
         (char*)msgSearch(*(char**)((u8*)cmd->mWeaponTable[*count].mWeaponParams + 0));     \
     (*count)++;
 
-// The original addresses the four weapons from one base register (addi r30, r5, lbl_80388868@l, then
-// +0x830/+0x8F0/+0x9B0/+0xA70); naming each weapon scores 89%.
 static void __makeTechMenuFunc(BattleWorkCommand* cmd, s32* count) {
-#ifdef MUST_MATCH
-    u8* const weaponBase = (u8*)lbl_80388868;
-#endif
     s32 techLv = partyGetTechLv(
         BattleTransPartyId(BattleGetPartyPtr(_battleWorkPointer)->currentKind));
 
-#ifdef MUST_MATCH
-    TECH_MENU_ENTRY(weaponBase + 0x830); // partyWeapon_VivianNormalAttack
-    if (techLv >= 0) {
-        TECH_MENU_ENTRY(weaponBase + 0x8F0); // partyWeapon_VivianShadowGuard
-    }
-    if (techLv >= 1) {
-        TECH_MENU_ENTRY(weaponBase + 0x9B0); // partyWeapon_VivianMagicalPowder
-    }
-    if (techLv >= 2) {
-        TECH_MENU_ENTRY(weaponBase + 0xA70); // partyWeapon_VivianCharmKissAttack
-    }
-#else
     TECH_MENU_ENTRY(&partyWeapon_VivianNormalAttack);
     if (techLv >= 0) {
         TECH_MENU_ENTRY(&partyWeapon_VivianShadowGuard);
@@ -1286,7 +1250,6 @@ static void __makeTechMenuFunc(BattleWorkCommand* cmd, s32* count) {
     if (techLv >= 2) {
         TECH_MENU_ENTRY(&partyWeapon_VivianCharmKissAttack);
     }
-#endif
 }
 
 
@@ -1322,18 +1285,15 @@ s32 _get_move_frame(EventEntry* event, BOOL isFirstCall) {
 }
 
 
-// The original keeps the three setValue arg indices live in callee-saved registers, uses one `base`
-// temp for `float_neg30 * unit1->mSizeMultiplier`, and evaluates outZ between outX and outY. The
-// #else form is the natural order and scores 93%. (The pooled int->float conversion double also
-// prints as an anonymous @NNN@ instead of double_to_int_802f8010; objdiff still scores it 100%.)
+// The three setValue arg indices stay live in callee-saved registers, one `base` temp holds
+// `-30.f * unit1->mSizeMultiplier`, and outZ is computed between outX and outY.
+// (The pooled int->float conversion double prints as an anonymous @NNN@ instead of double_to_int_802f8010.)
 USER_FUNC(unk_8017d03c) {
     BattleWork* work = _battleWorkPointer;
     s32* args = event->args;
-#ifdef MUST_MATCH
     s32 a1;
     s32 a2;
     s32 a3;
-#endif
     BattleUnit* unit1;
     BattleUnit* unit2;
     f32 sx;
@@ -1343,11 +1303,7 @@ USER_FUNC(unk_8017d03c) {
     f32 k58;
     f32 d1;
     f32 d2;
-#ifdef MUST_MATCH
     f32 base;
-#else
-    f32 scale1;
-#endif
     s32 t;
     s32 u;
     s32 v0;
@@ -1360,24 +1316,17 @@ USER_FUNC(unk_8017d03c) {
     f32 floor;
 
     v0 = evtGetValue(event, args[0]);
-#ifdef MUST_MATCH
     a1 = args[1];
     v1 = evtGetValue(event, a1);
     a2 = args[2];
     v2 = evtGetValue(event, a2);
     a3 = args[3];
     v3 = evtGetValue(event, a3);
-#else
-    v1 = evtGetValue(event, args[1]);
-    v2 = evtGetValue(event, args[2]);
-    v3 = evtGetValue(event, args[3]);
-#endif
 
     unit1 = BattleGetUnitPtr(work, BattleTransID(event, -2));
     unit2 = BattleGetUnitPtr(work, BattleTransID(event, v0));
     BtlUnit_GetScale(unit2, &sx, &sy, &sz);
 
-#ifdef MUST_MATCH
     k54 = unit2->mKindParams->field_0x54;
     k58 = unit2->mKindParams->field_0x58;
     d1 = (f32)unit1->faceDirection;
@@ -1388,31 +1337,13 @@ USER_FUNC(unk_8017d03c) {
     outX = (s32)((f32)v1 + (base * d1 + (f32)t));
     outZ = v3 + u;
     outY = (s32)((f32)v2 - 20.f * unit1->mSizeMultiplier);
-#else
-    scale1 = unit1->mSizeMultiplier;
-    k54 = unit2->mKindParams->field_0x54;
-    k58 = unit2->mKindParams->field_0x58;
-    d1 = (f32)unit1->faceDirection;
-    d2 = (f32)unit2->faceDirection;
-    t = (s32)(d2 * (k54 * sx));
-    u = (s32)(k58 * sz);
-    outX = (s32)((f32)v1 + ((-30.f * scale1) * d1 + (f32)t));
-    outY = (s32)((f32)v2 - 20.f * scale1);
-    outZ = v3 + u;
-#endif
     floor = BattleGetFloorHeight(work, (f32)outX, (f32)outY, (f32)outZ);
     if (floor > (f32)outY) {
         outY = (s32)floor;
     }
-#ifdef MUST_MATCH
     evtSetValue(event, a1, outX);
     evtSetValue(event, a2, outY);
     evtSetValue(event, a3, outZ);
-#else
-    evtSetValue(event, args[1], outX);
-    evtSetValue(event, args[2], outY);
-    evtSetValue(event, args[3], outZ);
-#endif
     return EVT_RETURN_DONE;
 }
 

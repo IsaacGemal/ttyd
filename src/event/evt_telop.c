@@ -53,8 +53,7 @@ static const char* msg_tbl[] = {
 // .rodata objects this translation unit owns, after the message strings.
 const GXColorS10 zero_802fa0c4 = { 0, 0, 0, 0 };
 
-#ifdef MUST_MATCH
-// Reproduce the original's by-value struct temporaries (local below, copy above).
+// By-value struct temporaries: a local below, a copy above.
 static inline GXColor telopMakeColor(u8 a) {
     GXColor c = dat_8041e7c0;
     c.a = a;
@@ -68,12 +67,11 @@ static inline GXColorS10 telopMakeColorS10(s16 a) {
 }
 
 static inline void telopSetFontColor(u8 alpha) {
-    // Match-only: keeping this in one inline (rather than a function-scope `color`) puts the
-    // colour copy in the original's 0xc slot.
+    // Building the colour inside one inline (rather than a function-scope `color`) puts the
+    // colour copy in the 0xc slot.
     GXColor c = telopMakeColor(alpha);
     FontDrawColor(&c);
 }
-#endif
 
 USER_FUNC(evt_telop_entry) {
     s32* args = event->args;
@@ -140,19 +138,17 @@ USER_FUNC(evt_telop_entry) {
     return EVT_RETURN_BLOCK;
 }
 
-// Match-only shapes in this function (all reproduce the original's scheduling):
+// Scheduling shapes in this function:
 // - the font colour is built and passed to FontDrawColor inside an inline helper; that keeps the
 //   loop's by-value GXSetTevColor arg temps at 0x10/0x14 and the font colour's copy at 0xc, where
 //   building it with a plain function-scope `color` local put the loop temps at 0x10/0xc instead;
 // - the font PSMTXTrans x/y are built into locals `a`/`b` so `0.5` and `(f32)msgWidth` get f5/f6
-//   the original's way round;
-// - the ratio test's empty then-block makes MWCC lay the assignment out of line, giving the
-//   original's `bge body; b join` pair (see below).
+//   the right way round;
+// - the ratio test's empty then-block (kept under MUST_MATCH) makes MWCC lay the assignment out of
+//   line, giving `bge body; b join` (see below).
 #pragma opt_common_subs off // needed: without it the ratio's int->float mask lands in f1, not f2
 void telop(CameraId cameraId, void* param) {
     CameraEntry* cam = camGetPtr(cameraId);
-    GXColor color;
-    GXColorS10 colorS10;
     GXTexObj texObj;
     Mtx texTrans;
     Mtx texScale;
@@ -213,13 +209,7 @@ void telop(CameraId cameraId, void* param) {
     GXSetTevColorIn(GX_TEVSTAGE2, GX_CC_ZERO, GX_CC_CPREV, GX_CC_C1, GX_CC_ZERO);
     GXSetTevAlphaIn(GX_TEVSTAGE2, GX_CA_ZERO, GX_CA_APREV, GX_CA_A1, GX_CA_ZERO);
 
-#ifdef MUST_MATCH
     GXSetTevColorS10(GX_TEVREG0, telopMakeColorS10(wp->alpha));
-#else
-    colorS10 = zero_802fa0c4;
-    colorS10.a = wp->alpha;
-    GXSetTevColorS10(GX_TEVREG0, colorS10);
-#endif
 
     effGetTexObj(0x81, &texObj);
     GXLoadTexObj(&texObj, GX_TEXMAP0);
@@ -305,16 +295,9 @@ void telop(CameraId cameraId, void* param) {
             alpha = alpha > 0xFF ? 0xFF : alpha;
         }
         FontDrawStart();
-#ifdef MUST_MATCH
         telopSetFontColor(alpha);
-#else
-        color = dat_8041e7c0;
-        color.a = alpha;
-        FontDrawColor(&color);
-#endif
 
         msgWidth = FontGetMessageWidth(msg);
-#ifdef MUST_MATCH
         {
             f32 a = width - scale * (f32)msgWidth;
             f32 b = height - float_24_8041e7e0;
@@ -323,12 +306,6 @@ void telop(CameraId cameraId, void* param) {
                        float_neg105_8041e7d4 - b * float_0p5_8041e7dc,
                        float_0_8041e7c4);
         }
-#else
-        PSMTXTrans(fontTrans,
-                   (width - scale * (f32)msgWidth) * float_0p5_8041e7dc + float_neg15_8041e7d0,
-                   float_neg105_8041e7d4 - (height - float_24_8041e7e0) * float_0p5_8041e7dc,
-                   float_0_8041e7c4);
-#endif
 #ifdef MUST_MATCH
         {
             f32 one = float_1_8041e7cc;
