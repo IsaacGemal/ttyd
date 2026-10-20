@@ -130,11 +130,7 @@ USER_FUNC(evt_mario_dokan_prepare) {
         party = partyGetPtr(marioGetPartyId());
         if (party != NULL) {
             partyShadowOff(party);
-#ifdef MUST_MATCH
-            *(volatile Vec*)((u8*)party + 0x70) = *(volatile Vec*)&vecs[1];
-#else
-            party->field_70 = vec3_802e573c;
-#endif
+            party->field_70 = vecs[1];
             party->flags2 |= 1;
             party->flags |= PARTY_FLAG_DISABLE_FLOORS;
             party->flags |= PARTY_FLAG_FORCE_FALL;
@@ -142,11 +138,7 @@ USER_FUNC(evt_mario_dokan_prepare) {
         party = partyGetPtr(marioGetExtraPartyId());
         if (party != NULL) {
             partyShadowOff(party);
-#ifdef MUST_MATCH
-            *(volatile Vec*)((u8*)party + 0x70) = *(volatile Vec*)&vecs[2];
-#else
-            party->field_70 = vec3_802e5748;
-#endif
+            party->field_70 = vecs[2];
             party->flags2 |= 1;
             party->flags |= PARTY_FLAG_DISABLE_FLOORS;
             party->flags |= PARTY_FLAG_FORCE_FALL;
@@ -160,7 +152,7 @@ USER_FUNC(evt_mario_dokan_prepare) {
 }
 
 #ifdef MUST_MATCH
-// MUST_MATCH: retail reaches these Vecs and the two pose strings through the vec3_802e5730 base register.
+// Retail reaches these Vecs and the two pose strings through the vec3_802e5730 base register.
 #define EM_VEC(off, sym) (*(Vec*)(base + (off)))
 #define EM_STR(off, lit) ((const char*)(base + (off)))
 #else
@@ -1431,7 +1423,7 @@ USER_FUNC(evt_mario_jump_pos) {
                 }
             } else {
 #ifdef MUST_MATCH
-                // MUST_MATCH: the original's `Vec vec` (12 bytes at 0x14) overlaps MWCC's
+                // The original's `Vec vec` (12 bytes at 0x14) overlaps MWCC's
                 // int<->float conversion temporary, which then lives at 0x18; a full Vec pushes
                 // that temp to 0x20 (frame 0xa0 instead of 0x90). searchUnder2 only writes
                 // out->x, so a one-float home reproduces the frame (same idiom as evt_party.c).
@@ -1441,7 +1433,7 @@ USER_FUNC(evt_mario_jump_pos) {
 #endif
 
 #ifdef MUST_MATCH
-                // MUST_MATCH: the header declares searchUnder2 as s32 but it returns a pointer;
+                // The header declares searchUnder2 as s32 but it returns a pointer;
                 // the cast restores the original's unsigned (cmplwi) null test.
                 if ((void*)searchUnder2((Vec*)&vec, x, y, z)) {
 #else
@@ -1957,35 +1949,17 @@ USER_FUNC(evt_koopa_hip_attack) {
         MarioWork* mario2;
         void* ground;
         s32 landed;
-#ifdef MUST_MATCH
-        // MUST_MATCH: the original reuses the `y` argument's callee-saved register (f31) for the
-        // vertical speed; a separate local lands in f27 instead.
-#else
-        f32 vy;
-#endif
 
         movePos(&mario->position.x, &mario->position.z, mario->baseSpeed, mario->directionView);
         marioMakeJumpPara();
-#ifdef MUST_MATCH
-        y = *(f32*)((u8*)mario + 0x7C);
-#else
-        vy = mario->jumpVelY;
-#endif
+        y = mario->jumpVelY;
         mario2 = marioGetPtr();
         if (mario2->flags & MARIO_FLAG_TUBE_MODE) {
             ground = (void*)marioSearchGroundRoll(&v0, &v1, &v2, 11.0f, mario2->jumpVelY);
         } else {
-#ifdef MUST_MATCH
             ground = (void*)marioSearchGround(&v0, &v1, &v2, y, y);
-#else
-            ground = (void*)marioSearchGround(&v0, &v1, &v2, vy, vy);
-#endif
         }
-#ifdef MUST_MATCH
         if (ground != NULL && mario2->position.y + y <= v0) {
-#else
-        if (ground != NULL && mario2->position.y + vy <= v0) {
-#endif
             marioClearJumpPara();
             mario2->hitobjStandOn = ground;
             mario2->position.y = v0;
@@ -2228,7 +2202,7 @@ USER_FUNC(evt_mario_set_prev_party_dokan) {
             party = partyGetPtr(ret);
             partyChgRunMode(party, 0);
 #ifdef MUST_MATCH
-            // MUST_MATCH: volatile on both sides of the Vec copy (and on the flags updates that
+            // Volatile on both sides of the Vec copy (and on the flags updates that
             // surround it) reproduces the original's unscheduled load/store pair without hoisting.
             *(volatile u32*)&party->flags = *(volatile u32*)&party->flags | 0x04000000;
             *(volatile u32*)&party->flags = *(volatile u32*)&party->flags | 0x02000000;
