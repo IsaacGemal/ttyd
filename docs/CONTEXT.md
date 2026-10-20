@@ -11321,5 +11321,5 @@ Renamed `str_XXXXXXXX` to `str_` plus the literal's text (non-identifier charact
 - `src/battle/battle_event_cmd.c`: 11 renamed (dol externs, read from the dol's .rodata). `str_802EE048` is `str_SFX_SYSTEM_NICE_25PERCENT1`.
 - Skipped: `str_000026BC` in pik (`"S_1"`): the name `str_S_1` already exists (`src/driver/mobjdrv.c`, dol symbol), so the rename would clash.
 - Non-ASCII skipped: `str_802ECE64`, `str_802ECE84`. No other skips: all candidate names were unique tree-wide, and none was over 40 characters.
-- Index: 20.675 -> 20.556 per kLOC (14709 -> 14624 weighted), address_name is the only category these renames touch.
+- Index: 20.675 -> 20.556 per kLOC (14709 -> 14624 weighted).
 - Build: `build/G8MJ01/ok` recreated after each file group. The battle, eff and evt files also compile without `-DMUST_MATCH` (extern branch of the ACSE macros in battle).
