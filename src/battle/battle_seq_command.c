@@ -2338,47 +2338,47 @@ void _btlcmd_SetAttackEvent(BattleUnit* unit, BattleCommand* cmd) {
 			unit->attackEventCode = btldefaultevt_Appeal;
 			unit->field_0x2A8 = 1;
 			if (unit->currentKind == 0xDE) {
-				BtlActRec_AddCount(wp->field_16F1C + 0x11);
+				BtlActRec_AddCount((u8*)wp + 0x16F2D);
 			} else {
-				BtlActRec_AddCount(wp->field_16F1C + 0x12);
+				BtlActRec_AddCount((u8*)wp + 0x16F2E);
 			}
 			break;
 		case 7:
 			unit->attackEventCode = btldefaultevt_Wait;
 			unit->field_0x2A8 = 1;
 			if (unit->currentKind == 0xDE) {
-				BtlActRec_AddCount(wp->field_16F1C + 0x11);
+				BtlActRec_AddCount((u8*)wp + 0x16F2D);
 			} else {
-				BtlActRec_AddCount(wp->field_16F1C + 0x12);
+				BtlActRec_AddCount((u8*)wp + 0x16F2E);
 			}
 			break;
 		case 3:
 			unit->attackEventCode = btldefaultevt_Escape;
 			unit->field_0x2A8 = 1;
 			if (unit->currentKind == 0xDE) {
-				BtlActRec_AddCount(wp->field_16F1C + 0x1B);
+				BtlActRec_AddCount((u8*)wp + 0x16F37);
 			} else {
-				BtlActRec_AddCount(wp->field_16F1C + 0x1C);
+				BtlActRec_AddCount((u8*)wp + 0x16F38);
 			}
 			break;
 		case 1:
 			unit->field_0x2A8 = 0;
 			if (unit->currentKind == 0xDE) {
 				unit->attackEventCode = badgeWeapon_Charge.mAttackEvtScript;
-				BtlActRec_AddCount(wp->field_16F1C + 0x17);
+				BtlActRec_AddCount((u8*)wp + 0x16F33);
 			} else {
 				unit->attackEventCode = badgeWeapon_ChargeP.mAttackEvtScript;
-				BtlActRec_AddCount(wp->field_16F1C + 0x18);
+				BtlActRec_AddCount((u8*)wp + 0x16F34);
 			}
 			break;
 		case 2:
 			unit->field_0x2A8 = 0;
 			if (unit->currentKind == 0xDE) {
 				unit->attackEventCode = badgeWeapon_SuperCharge.mAttackEvtScript;
-				BtlActRec_AddCount(wp->field_16F1C + 0x19);
+				BtlActRec_AddCount((u8*)wp + 0x16F35);
 			} else {
 				unit->attackEventCode = badgeWeapon_SuperChargeP.mAttackEvtScript;
-				BtlActRec_AddCount(wp->field_16F1C + 0x1A);
+				BtlActRec_AddCount((u8*)wp + 0x16F36);
 			}
 			break;
 		case 0:
@@ -2389,9 +2389,9 @@ void _btlcmd_SetAttackEvent(BattleUnit* unit, BattleCommand* cmd) {
 				unit->moveState = 3;
 			}
 			if (unit->currentKind == 0xDE) {
-				BtlActRec_AddCount(wp->field_16F1C + 0xD);
+				BtlActRec_AddCount((u8*)wp + 0x16F29);
 			} else {
-				BtlActRec_AddCount(wp->field_16F1C + 0xE);
+				BtlActRec_AddCount((u8*)wp + 0x16F2A);
 			}
 			break;
 		case 4:
@@ -2426,40 +2426,40 @@ void _btlcmd_SetAttackEvent(BattleUnit* unit, BattleCommand* cmd) {
 
 		switch (command) {
 		case 0:
-			BtlActRec_AddCount(wp->field_16F1C + 0x0);
+			BtlActRec_AddCount((u8*)wp + 0x16F1C);
 			break;
 		case 1:
-			BtlActRec_AddCount(wp->field_16F1C + 0x1);
+			BtlActRec_AddCount((u8*)wp + 0x16F1D);
 			break;
 		case 4:
 			if (_check_weapon_type_attack(weapon)) {
-				BtlActRec_AddCount(wp->field_16F1C + 0x2);
+				BtlActRec_AddCount((u8*)wp + 0x16F1E);
 			} else {
-				BtlActRec_AddCount(wp->field_16F1C + 0x3);
+				BtlActRec_AddCount((u8*)wp + 0x16F1F);
 			}
 			break;
 		case 2:
 			if ((s32)weapon != (s32)&ItemWeaponData_Naniga_Okorukana) {
 				if (unit->currentKind == 0xDE) {
 					if (_check_weapon_type_attack(weapon)) {
-						BtlActRec_AddCount(wp->field_16F1C + 0x9);
+						BtlActRec_AddCount((u8*)wp + 0x16F25);
 					} else {
-						BtlActRec_AddCount(wp->field_16F1C + 0xA);
+						BtlActRec_AddCount((u8*)wp + 0x16F26);
 					}
 				} else {
 					if (_check_weapon_type_attack(weapon)) {
-						BtlActRec_AddCount(wp->field_16F1C + 0xB);
+						BtlActRec_AddCount((u8*)wp + 0x16F27);
 					} else {
-						BtlActRec_AddCount(wp->field_16F1C + 0xC);
+						BtlActRec_AddCount((u8*)wp + 0x16F28);
 					}
 				}
 			}
 			break;
 		case 6:
 			if (_check_weapon_type_attack(weapon)) {
-				BtlActRec_AddCount(wp->field_16F1C + 0x1D);
+				BtlActRec_AddCount((u8*)wp + 0x16F39);
 			} else {
-				BtlActRec_AddCount(wp->field_16F1C + 0x1E);
+				BtlActRec_AddCount((u8*)wp + 0x16F3A);
 			}
 			break;
 		}
@@ -2488,9 +2488,9 @@ void _btlcmd_SetAttackEvent(BattleUnit* unit, BattleCommand* cmd) {
 		unit->attackEventCode = btlataudGetAttackEventPtr(unit->unitId);
 		unit->field_0x2A8 = 3;
 		if (unit->currentKind == 0xDE) {
-			BtlActRec_AddCount(wp->field_16F1C + 0xF);
+			BtlActRec_AddCount((u8*)wp + 0x16F2B);
 		} else {
-			BtlActRec_AddCount(wp->field_16F1C + 0x10);
+			BtlActRec_AddCount((u8*)wp + 0x16F2C);
 		}
 		if (*(u32*)&wp->field_19080[0] & 1) {
 			msgWindow_Continue(*(s32*)&wp->field_19080[4]);

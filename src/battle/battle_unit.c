@@ -2036,11 +2036,11 @@ void BtlUnit_PayWeaponCost(BattleUnit* unit, BattleWeapon* weapon) {
     cost = BtlUnit_GetWeaponCost(unit, weapon);
     BtlUnit_SetFp(unit, fp - cost);
     if (unit->currentKind == UNIT_MARIO) {
-        BtlActRec_AddPoint(wp->field_16F1C + 0x13, cost);
-        BtlActRec_AddCount(wp->field_16F1C + 0x14);
+        BtlActRec_AddPoint((u8*)wp + 0x16F2F, cost);
+        BtlActRec_AddCount((u8*)wp + 0x16F30);
     } else if (unit->currentKind >= TYPE_PARTNER_MIN && unit->currentKind < TYPE_PARTNER_MAX) {
-        BtlActRec_AddPoint(wp->field_16F1C + 0x15, cost);
-        BtlActRec_AddCount(wp->field_16F1C + 0x16);
+        BtlActRec_AddPoint((u8*)wp + 0x16F31, cost);
+        BtlActRec_AddCount((u8*)wp + 0x16F32);
     }
 #ifdef MUST_MATCH
     /* Match-only: the header declares pouchAddAP as taking `s16`, but the target passed the full
