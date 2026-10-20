@@ -100,7 +100,7 @@ EffectEntry* effRadiationN64Entry(s32 type, f32 x, f32 y, f32 z, f32 a5) {
 	data->z = z;
 	data->field_0x20 = a5;
 	data->field_0x1C = a5;
-	data->additive = flag;
+	data->noDepth = flag;
 	data->camId = CAMERA_3D;
 
 	switch (type) {
@@ -170,7 +170,7 @@ void effRadiationMain(EffectEntry* effect) {
 	s32 counter;
 
 	data = effect->userdata;
-	position = initializeVec(&data->sortPos);
+	position = initializeVec(&data->unsetPos);
 
 	type = data->type;
 	if (data->life <= 10) {
@@ -304,7 +304,7 @@ void effRadiationMain(EffectEntry* effect) {
 	{
 		EffRadiationData* data2 = effect->userdata;
 
-		if (data2->additive == 0) {
+		if (data2->noDepth == 0) {
 			dispEntry(data2->camId, dispCalcZ(&position), 2, effRadiationDisp, effect);
 		} else {
 			dispEntry(data2->camId, dispCalcZ(&position), 8, effRadiationDisp, effect);
@@ -359,7 +359,7 @@ void effRadiationDisp(CameraId camId, void* param) {
 	data = effect->userdata;
 	type = data->type;
 
-	if (data->additive != 0) {
+	if (data->noDepth != 0) {
 		GXSetBlendMode(GX_BM_BLEND, GX_BL_SRCALPHA, GX_BL_INVSRCALPHA, GX_LO_CLEAR);
 		GXSetZCompLoc(GX_TRUE);
 		GXSetAlphaCompare(GX_ALWAYS, 0, GX_AOP_AND, GX_ALWAYS, 0);
@@ -379,7 +379,7 @@ void effRadiationDisp(CameraId camId, void* param) {
 		effGetTexObjN64(0x2c, &texObj);
 		GXLoadTexObj(&texObj, GX_TEXMAP0);
 		GXSetNumTexGens(1);
-		GXSetTexCoordGen2(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_TEXMTX0, GX_FALSE, 0x7d);
+		GXSetTexCoordGen2(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_TEXMTX0, GX_FALSE, GX_PTIDENTITY);
 		PSMTXScale(scale, 0.03125f, 0.03125f, 0.0f);
 		GXLoadTexMtxImm(scale, GX_TEXMTX0, GX_MTX2x4);
 		break;
@@ -435,7 +435,7 @@ void effRadiationDisp(CameraId camId, void* param) {
 			PSMTXScale(scale, scaleX, scaleY, scaleZ);
 			PSMTXConcat(work, scale, work);
 #ifdef MUST_MATCH
-			GXSetTevColor(1, radiationSetColor(data->alpha, dat_8041fa90));
+			GXSetTevColor(GX_TEVREG0, radiationSetColor(data->alpha, dat_8041fa90));
 #else
 			{
 				GXColor color = dat_8041fa90;
@@ -451,7 +451,7 @@ void effRadiationDisp(CameraId camId, void* param) {
 			PSMTXTrans(trans2, data->offset, 0.0f, 0.0f);
 			PSMTXConcat(work, trans2, work);
 #ifdef MUST_MATCH
-			GXSetTevColor(1, radiationSetColor(data->alpha, dat_8041fa94));
+			GXSetTevColor(GX_TEVREG0, radiationSetColor(data->alpha, dat_8041fa94));
 #else
 			{
 				GXColor color = dat_8041fa94;

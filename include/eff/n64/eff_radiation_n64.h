@@ -6,13 +6,14 @@
 
 typedef struct EffRadiationData {
 	s32 type;         // 0x00
-	Vec sortPos;      // 0x04, Main's dispCalcZ key (the entry never writes it)
+	Vec unsetPos;     // 0x04, nothing writes it; Main still copies it as its dispCalcZ position (heap garbage)
 	f32 x;            // 0x10
 	f32 y;            // 0x14
 	f32 z;            // 0x18
 	f32 field_0x1C;   // 0x1C
 	f32 field_0x20;   // 0x20
-	s32 alpha;        // 0x24, vertex colour alpha (over 255)
+	s32 alpha;        // 0x24, 0..255, GX_TEVREG0 alpha (types 0/1 multiply the texture alpha by it); types >= 2
+	                  //       scale the piece by alpha / 255 and take their alpha from the vertices
 	s32 life;         // 0x28, frames left (head: 100 or 10 when flagged)
 	s32 age;          // 0x2C, frames since spawn
 	u8 pad_0x30[0x4]; // 0x30
@@ -39,8 +40,8 @@ typedef struct EffRadiationData {
 	f32 rotYVel;      // 0x84
 	f32 rotZVel;      // 0x88
 	f32 offsetVel;    // 0x8C
-	s32 holdTimer;    // 0x90
-	s32 additive;     // 0x94, nonzero: blend and no-z-write draw state
+	s32 holdTimer;    // 0x90, while > 0 the piece skips its rotation; only ever set to 0
+	s32 noDepth;      // 0x94, nonzero (type >= 10): alpha blend, z test and z write off, drawn in disp layer 8
 	CameraId camId;   // 0x98
 } EffRadiationData;
 extern s32 r_data[];

@@ -19,11 +19,11 @@ typedef struct effKamekiTornadeData {
 	f32 z;               // 0x0C
 	s32 life;            // 0x10, frames left (1000 = no limit; the entry's flag sets 0x10)
 	s32 timer;           // 0x14, frames since spawn
-	s32 colorR;          // 0x18, TEVREG1 colour
+	s32 colorR;          // 0x18, GX_TEVREG0 colour (C0); its alpha is `alpha` / 2 * alphaScale (A0)
 	s32 colorG;          // 0x1C
 	s32 colorB;          // 0x20
 	s32 alpha;           // 0x24, fades in while timer < 16 and out while life < 16
-	s32 color2R;         // 0x28, TEVREG2 colour
+	s32 color2R;         // 0x28, GX_TEVREG1 colour (C1)
 	s32 color2G;         // 0x2C
 	s32 color2B;         // 0x30
 	f32 scale;           // 0x34
@@ -36,8 +36,8 @@ typedef struct effKamekiTornadeData {
 	f32 nodeRadius[8];   // 0xF8, ring radius (x 10)
 	f32 nodeTilt[8];     // 0x118, degrees, clamped to +-90
 	f32 spinAngle;       // 0x138, degrees, added per frame
-	f32 texScrollU;      // 0x13C, wraps at 64
-	f32 texScrollV;      // 0x140, wraps at 64
+	f32 texScroll0;      // 0x13C, GX_TEXMTX0 S offset, wraps at 64
+	f32 texScroll1;      // 0x140, GX_TEXMTX1 S offset, wraps at 64
 	f32 baseRotZ;        // 0x144, degrees
 	f32 alphaScale;      // 0x148, multiplies alpha in the colour
 } effKamekiTornadeData;
@@ -90,8 +90,8 @@ EffectEntry* effKamekiTornadeN64Entry(s32 a, s32 b, f32 x, f32 y, f32 z, f32 sca
 	}
 	data->spinAngle = 0.0f;
 	data->baseRotZ = 0.0f;
-	data->texScrollU = 0.0f;
-	data->texScrollV = 0.0f;
+	data->texScroll0 = 0.0f;
+	data->texScroll1 = 0.0f;
 	data->alphaScale = 1.0f;
 	return effect;
 }
@@ -147,13 +147,13 @@ void effKamekiTornadeMain(EffectEntry* effect) {
 		}
 	}
 	data->spinAngle += 10.f;
-	data->texScrollU += 12.959999f;
-	data->texScrollV += 17.28f;
-	if (data->texScrollU > 64.0f) {
-		data->texScrollU -= 64.0f;
+	data->texScroll0 += 12.959999f;
+	data->texScroll1 += 17.28f;
+	if (data->texScroll0 > 64.0f) {
+		data->texScroll0 -= 64.0f;
 	}
-	if (data->texScrollV > 64.0f) {
-		data->texScrollV -= 64.0f;
+	if (data->texScroll1 > 64.0f) {
+		data->texScroll1 -= 64.0f;
 	}
 	for (i = 0; i < 8; i++) {
 		data->nodeAngle[i] += data->nodeSpin[i];
@@ -173,7 +173,7 @@ static inline void kamekiTornadeSetColor(effKamekiTornadeData* data, s32 field24
 	color.g = data->colorG;
 	color.b = data->colorB;
 	color.a = (u8)(s32)((f32)field24 * data->alphaScale);
-	GXSetTevColor(1, color);
+	GXSetTevColor(GX_TEVREG0, color);
 }
 static inline void kamekiTornadeSetColor2(effKamekiTornadeData* data) {
 	GXColor color = *(GXColor*)&dat_8041f1d8;
@@ -181,7 +181,7 @@ static inline void kamekiTornadeSetColor2(effKamekiTornadeData* data) {
 	color.r = data->color2R;
 	color.g = data->color2G;
 	color.b = data->color2B;
-	GXSetTevColor(2, color);
+	GXSetTevColor(GX_TEVREG1, color);
 }
 #else
 static inline GXColor kamekiTornadeSetColor(effKamekiTornadeData* data, s32 field24) {
@@ -280,8 +280,8 @@ void effKamekiTornadeDisp(CameraId camId, void* param) {
 	GXSetTevColorIn(GX_TEVSTAGE2, GX_CC_C0, GX_CC_C1, GX_CC_CPREV, GX_CC_ZERO);
 	GXSetTevAlphaIn(GX_TEVSTAGE2, GX_CA_ZERO, GX_CA_APREV, GX_CA_A0, GX_CA_ZERO);
 	GXSetNumTexGens(2);
-	GXSetTexCoordGen2(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_TEXMTX0, GX_FALSE, 0x7D);
-	GXSetTexCoordGen2(GX_TEXCOORD1, GX_TG_MTX2x4, GX_TG_TEX0, GX_TEXMTX1, GX_FALSE, 0x7D);
+	GXSetTexCoordGen2(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_TEXMTX0, GX_FALSE, GX_PTIDENTITY);
+	GXSetTexCoordGen2(GX_TEXCOORD1, GX_TG_MTX2x4, GX_TG_TEX0, GX_TEXMTX1, GX_FALSE, GX_PTIDENTITY);
 	effGetTexObjN64(0x6C, &texObj);
 	GXLoadTexObj(&texObj, GX_TEXMAP0);
 	GXLoadTexObj(&texObj, GX_TEXMAP1);
@@ -398,7 +398,7 @@ void effKamekiTornadeDisp(CameraId camId, void* param) {
 		{
 			f32 z = 0.0f;
 
-			PSMTXTrans(work, data->texScrollU + (f32)(i * 4), z, z);
+			PSMTXTrans(work, data->texScroll0 + (f32)(i * 4), z, z);
 		}
 		PSMTXConcat(scaleMtx, work, scaleMtx);
 		GXLoadTexMtxImm(scaleMtx, GX_TEXMTX0, GX_MTX2x4);
@@ -407,7 +407,7 @@ void effKamekiTornadeDisp(CameraId camId, void* param) {
 		{
 			f32 z = 0.0f;
 
-			PSMTXTrans(work, data->texScrollV + (f32)(i * 2), z, z);
+			PSMTXTrans(work, data->texScroll1 + (f32)(i * 2), z, z);
 		}
 		PSMTXConcat(scaleMtx, work, scaleMtx);
 		GXLoadTexMtxImm(scaleMtx, GX_TEXMTX1, GX_MTX2x4);

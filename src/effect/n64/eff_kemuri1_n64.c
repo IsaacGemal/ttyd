@@ -34,7 +34,8 @@ typedef struct effKemuri1Data {
 	f32 dirZ; //0x34, cos of the heading
 	s32 field_0x38; //0x38
 	s32 frame; //0x3C, frames since spawn
-	s32 sheetU0; //0x40, texture column of this frame (16 over the lifetime)
+	s32 sheetU0; //0x40, head: texture column of this frame (16 over the lifetime); Disp also skips any entry whose own
+	             //       sheetU0 > 15, which nothing writes
 	u8 colorR; //0x44
 	u8 colorG; //0x45
 	u8 colorB; //0x46
@@ -46,7 +47,7 @@ typedef struct effKemuri1Data {
 //local prototypes
 
 // The case-4-7 loop and its preheader are instruction-for-instruction identical to the original only with the
-// two match shapes below: the sin/cos results for field_0x30/0x34 run through loop-local temps, and the 0.94
+// two match shapes below: the sin/cos results for dirX/dirZ run through loop-local temps, and the 0.94
 // constant is written straight into both fields instead of a function-scope `k94` temp. Without them the
 // allocator colours the ten-value loop-invariant clique (nine constants + the a5 parameter) with a5 in f24 and
 // the constants rotated (99.69%); with them a5 lands in f31 and neg3..10 in f22..f30 as the original. Scoping
@@ -375,7 +376,7 @@ void effKemuri1Main(EffectEntry* effect) {
 // original's does (the plain `GXColor color` local would take 0x14 instead). Same shape as eff_kemuri8.
 static inline void kemuri1SetChanMatColorA(void) {
 	GXColor c = dat_8041f234;
-	GXSetChanMatColor(4, c);
+	GXSetChanMatColor(GX_COLOR0A0, c);
 }
 
 static inline void kemuri1SetChanMatColorB(u8 r, u8 g, u8 b) {
@@ -384,7 +385,7 @@ static inline void kemuri1SetChanMatColorB(u8 r, u8 g, u8 b) {
 	c.g = g;
 	c.b = b;
 	c.a = 0xFF;
-	GXSetChanMatColor(4, c);
+	GXSetChanMatColor(GX_COLOR0A0, c);
 }
 #endif
 
@@ -400,8 +401,8 @@ void effKemuri1Disp(CameraId camId, void* param) {
 	Mtx mtxBase;
 	s32 field1;
 	s32 field0;
-	f32 scrollX;
-	f32 scrollY;
+	f32 scroll0;
+	f32 scroll1;
 	f32 scale;
 	f32 size;
 	f32 size2;
@@ -438,8 +439,8 @@ void effKemuri1Disp(CameraId camId, void* param) {
 	GXSetNumChans(1);
 	GXSetChanCtrl(GX_COLOR0A0, GX_FALSE, GX_SRC_REG, GX_SRC_REG, GX_LIGHT_NULL, GX_DF_NONE, GX_AF_NONE);
 	GXSetNumTexGens(2);
-	GXSetTexCoordGen2(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_TEXMTX0, GX_FALSE, 0x7D);
-	GXSetTexCoordGen2(GX_TEXCOORD1, GX_TG_MTX2x4, GX_TG_TEX0, GX_TEXMTX1, GX_FALSE, 0x7D);
+	GXSetTexCoordGen2(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_TEXMTX0, GX_FALSE, GX_PTIDENTITY);
+	GXSetTexCoordGen2(GX_TEXCOORD1, GX_TG_MTX2x4, GX_TG_TEX0, GX_TEXMTX1, GX_FALSE, GX_PTIDENTITY);
 	GXSetNumTevStages(3);
 	GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR_NULL);
 	GXSetTevColorOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
@@ -464,8 +465,8 @@ void effKemuri1Disp(CameraId camId, void* param) {
 	GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_POS_XYZ, GX_F32, 0);
 	GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, GX_TEX_ST, GX_F32, 0);
 
-	scrollX = 0.0625f * (f32)field0;
-	scrollY = 0.0625f * (f32)field1;
+	scroll0 = 0.0625f * (f32)field0;
+	scroll1 = 0.0625f * (f32)field1;
 
 	data++;
 	for (i = 1; i < effect->count; i++, data++) {
@@ -473,12 +474,12 @@ void effKemuri1Disp(CameraId camId, void* param) {
 			continue;
 		}
 
-		PSMTXTrans(mtxTmp, scrollX, 0.0f, 0.0f);
+		PSMTXTrans(mtxTmp, scroll0, 0.0f, 0.0f);
 		PSMTXScale(mtxScale, 0.0625f, 1.0f, 1.0f);
 		PSMTXConcat(mtxTmp, mtxScale, mtxTmp);
 		GXLoadTexMtxImm(mtxTmp, GX_TEXMTX0, GX_MTX2x4);
 
-		PSMTXTrans(mtxTmp, scrollY, 0.0f, 0.0f);
+		PSMTXTrans(mtxTmp, scroll1, 0.0f, 0.0f);
 		PSMTXScale(mtxScale, 0.0625f, 1.0f, 1.0f);
 		PSMTXConcat(mtxTmp, mtxScale, mtxTmp);
 		GXLoadTexMtxImm(mtxTmp, GX_TEXMTX1, GX_MTX2x4);
