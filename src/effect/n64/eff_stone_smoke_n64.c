@@ -61,21 +61,16 @@ static u8 scale_data2[8] = { 0x5E, 0x5C, 0x64, 0x69, 0x6B, 0x69, 0x64, 0x00 };
 
 void effStoneSmokeMain(EffectEntry* effect) {
 	effStoneSmokeN64Data* data = effect->userdata;
-#ifdef MUST_MATCH
-	/* MUST_MATCH: retail builds the Vec in a scratch slot and copies it into a second
-	   local before dispCalcZ; a single local folds the copy away (same idiom as
-	   effGlassMain). */
+	// Retail builds the Vec in a scratch slot and copies it into a second local before
+	// dispCalcZ; a single local folds the copy away (same idiom as effGlassMain).
 	Vec position;
-#endif
 	Vec disp = { 0.0f, 0.0f, 0.0f };
 	s32 frame;
 
 	disp.x = data->x;
 	disp.y = data->y;
 	disp.z = data->z;
-#ifdef MUST_MATCH
 	position = disp;
-#endif
 
 	if (effect->flags & 4) {
 		effect->flags &= ~4;
@@ -106,14 +101,9 @@ void effStoneSmokeMain(EffectEntry* effect) {
 		data->scaleKey = 0.01f * (f32)scale_data2[(frame - 7) % 7];
 	}
 
-#ifdef MUST_MATCH
 	dispEntry(CAMERA_3D, dispCalcZ(&position), 2, effStoneSmokeDisp, effect);
-#else
-	dispEntry(CAMERA_3D, dispCalcZ(&disp), 2, effStoneSmokeDisp, effect);
-#endif
 }
 
-#ifdef MUST_MATCH
 static inline void effStoneSmokeSetColor0(effStoneSmokeN64Data* data, s32 alpha) {
 	GXColor c = unk_80423288;
 	c.r = data->color1R;
@@ -129,7 +119,6 @@ static inline void effStoneSmokeSetColor1(effStoneSmokeN64Data* data) {
 	c.b = data->color2B;
 	GXSetTevColor(GX_TEVREG1, c);
 }
-#endif
 
 // Building each TEV colour and calling GXSetTevColor inside the same inline makes mwcc
 // allocate that colour's build slot and its by-value argument copy together
@@ -141,10 +130,6 @@ void effStoneSmokeDisp(CameraId camId, void* param) {
 	effStoneSmokeN64Data* data;
 	CameraEntry* cam;
 	GXTexObj texObj;
-#ifndef MUST_MATCH
-	GXColor color0;
-	GXColor color1;
-#endif
 	Mtx mtx;
 	Mtx scaleMtx;
 	s32 alpha;
@@ -160,22 +145,8 @@ void effStoneSmokeDisp(CameraId camId, void* param) {
 	PSMTXConcat(cam->view, mtx, mtx);
 	GXLoadPosMtxImm(mtx, GX_PNMTX0);
 	GXSetCurrentMtx(GX_PNMTX0);
-#ifdef MUST_MATCH
 	effStoneSmokeSetColor0(data, alpha);
 	effStoneSmokeSetColor1(data);
-#else
-	color0 = unk_80423288;
-	color0.r = data->color1R;
-	color0.g = data->color1G;
-	color0.b = data->color1B;
-	color0.a = alpha;
-	GXSetTevColor(GX_TEVREG0, color0);
-	color1 = unk_8042328c;
-	color1.r = data->color2R;
-	color1.g = data->color2G;
-	color1.b = data->color2B;
-	GXSetTevColor(GX_TEVREG1, color1);
-#endif
 	GXSetNumChans(0);
 	GXSetNumTexGens(1);
 	GXSetTexCoordGen2(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_TEXMTX0, GX_FALSE, 0x7D);

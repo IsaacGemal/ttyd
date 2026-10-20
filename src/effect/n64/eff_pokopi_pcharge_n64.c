@@ -199,26 +199,20 @@ EffectEntry* effPokopiPchargeN64Entry(f32 x, f32 y, f32 z, f32 scale, s32 a, s32
 }
 
 void effPokopiPchargeMain(EffectEntry* effect) {
-#ifdef MUST_MATCH
-	/* MUST_MATCH: retail builds the Vec in a scratch and copies it to a second local before
-	   dispCalcZ; a single local folds the copy away. */
+	// Retail builds the Vec in a scratch and copies it to a second local before
+	// dispCalcZ; a single local folds the copy away.
 	Vec position;
-#endif
 	Vec disp = { 0.0f, 0.0f, 0.0f };
 	effPokopiPchargeData* data = effect->userdata;
 	s32 i;
-#ifdef MUST_MATCH
-	/* MUST_MATCH: caching data->timer in a local makes the compiler load it before the first
-	   branch, matching retail's scheduling. */
+	// Caching data->timer in a local makes the compiler load it before the first
+	// branch, matching retail's scheduling.
 	s32 timer;
-#endif
 
 	disp.x = data->x;
 	disp.y = data->y;
 	disp.z = data->z;
-#ifdef MUST_MATCH
 	position = disp;
-#endif
 
 	if (effect->flags & 4) {
 		effect->flags &= ~4;
@@ -232,7 +226,6 @@ void effPokopiPchargeMain(EffectEntry* effect) {
 		effDelete(effect);
 		return;
 	}
-#ifdef MUST_MATCH
 	timer = data->timer;
 	if (data->lifetime < 16) {
 		data->a = data->lifetime << 4;
@@ -240,14 +233,6 @@ void effPokopiPchargeMain(EffectEntry* effect) {
 	if (timer < 16) {
 		data->a = (timer << 4) + 0xf;
 	}
-#else
-	if (data->lifetime < 16) {
-		data->a = data->lifetime << 4;
-	}
-	if (data->timer < 16) {
-		data->a = (data->timer << 4) + 0xf;
-	}
-#endif
 
 	data++;
 	for (i = 1; i < effect->count; i++, data++) {
@@ -274,11 +259,7 @@ void effPokopiPchargeMain(EffectEntry* effect) {
 			}
 		}
 	}
-#ifdef MUST_MATCH
 	dispEntry(CAMERA_3D, dispCalcZ(&position), 2, effPokopiPchargeDisp, effect);
-#else
-	dispEntry(CAMERA_3D, dispCalcZ(&disp), 2, effPokopiPchargeDisp, effect);
-#endif
 }
 
 static inline void effPokopiPchargeSetColor1(u32 r, u32 g, u32 b) {

@@ -85,11 +85,9 @@ EffectEntry* effCrystalN64Entry(s32 type, s32 time, f32 x, f32 y, f32 z, f32 sca
 
 void effCrystalMain(EffectEntry* effect) {
 	EffCrystalData* data = effect->userdata;
-#ifdef MUST_MATCH
-	/* MUST_MATCH: retail builds the Vec in a scratch slot and copies it into a second local
-	   before dispCalcZ; a single local folds the copy away (same idiom as effGlassMain). */
+	// Retail builds the Vec in a scratch slot and copies it into a second local
+	// before dispCalcZ; a single local folds the copy away (same idiom as effGlassMain).
 	Vec position;
-#endif
 	Vec disp = { 0 };
 	s32 alpha;
 	s32 fade;
@@ -100,9 +98,7 @@ void effCrystalMain(EffectEntry* effect) {
 	disp.x = data->x;
 	disp.y = data->y;
 	disp.z = data->z;
-#ifdef MUST_MATCH
 	position = disp;
-#endif
 
 	if (effect->flags & 4) {
 		effect->flags &= ~4;
@@ -139,14 +135,10 @@ void effCrystalMain(EffectEntry* effect) {
 		data->tev0R = 70;
 		data->tev0G = 180;
 		data->tev0B = 120;
-#ifdef MUST_MATCH
 		{
 			f32 t = (f32)sin(6.2831855f * (f32)(timer * 2) / 360.0f);
 			data->alpha = 190 + (s32)(10.0f * t);
 		}
-#else
-		data->alpha = 190 + (s32)(10.0f * (f32)sin(6.2831855f * (f32)(timer * 2) / 360.0f));
-#endif
 		data->alpha = data->alpha * alpha / 255;
 		break;
 	case 1:
@@ -160,14 +152,10 @@ void effCrystalMain(EffectEntry* effect) {
 		data->tev0R = 170;
 		data->tev0G = 40;
 		data->tev0B = 110;
-#ifdef MUST_MATCH
 		{
 			f32 t = (f32)sin(6.2831855f * (f32)(timer * 2) / 360.0f);
 			data->alpha = 190 + (s32)(10.0f * t);
 		}
-#else
-		data->alpha = 190 + (s32)(10.0f * (f32)sin(6.2831855f * (f32)(timer * 2) / 360.0f));
-#endif
 		data->alpha = data->alpha * alpha / 255;
 		break;
 	case 3:
@@ -181,14 +169,10 @@ void effCrystalMain(EffectEntry* effect) {
 		data->tev0R = 235;
 		data->tev0G = 235;
 		data->tev0B = 200;
-#ifdef MUST_MATCH
 		{
 			f32 t = (f32)sin(6.2831855f * (f32)(timer * 2) / 360.0f);
 			data->alpha = 215 + (s32)(15.0f * t);
 		}
-#else
-		data->alpha = 215 + (s32)(15.0f * (f32)sin(6.2831855f * (f32)(timer * 2) / 360.0f));
-#endif
 		data->alpha = data->alpha * alpha / 255;
 		break;
 	case 5:
@@ -240,11 +224,7 @@ void effCrystalMain(EffectEntry* effect) {
 		break;
 	}
 
-#ifdef MUST_MATCH
 	dispEntry(data->camId, dispCalcZ(&position), 2, effCrystalDisp, effect);
-#else
-	dispEntry(data->camId, dispCalcZ(&disp), 2, effCrystalDisp, effect);
-#endif
 }
 
 // Helper keeps the GXColor build in a separate local (r1+0x8 → arg r1+0xc), as the original does.
