@@ -38,7 +38,7 @@ typedef struct ProjShadowWork {
     GXColor color; //0x100
 } ProjShadowWork;
 
-// One caster. kind (0x2): 0 polygon blob, 1 texture blob (effGetTexObjN64), 2 cylinder, 3 projected onto
+// One caster. kind (0x2): 0 polygon, 1 texture (effGetTexObjN64 image), 2 cylinder, 3 projected onto
 // the collision surface. flags (0x0): 0x1 collision (follow the hit normal), 0x2 matrix computed, 0x4 no decay.
 typedef struct ShadowEntry {
     u16 flags;               // 0x0
