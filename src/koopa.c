@@ -386,12 +386,12 @@ void kpa2DMain(void) {
             KPA(m2)->flags &= ~KPA_FLAG_MUTEKI;
         }
     }
-    if (mp->currMotionId == 8) {
+    if (mp->currMotionId == MARIO_MOTION_JUMP_3) {
         prevPos = (Vec*)((u8*)mp + 0x110);
     *prevPos = mp->position;
-        MW_F32(mp, 0x174) = 0.0f;
-        MW_F32(mp, 0x178) = 0.0f;
-        MW_F32(mp, 0x17C) = 0.0f;
+        mp->riderDelta.x = 0.0f;
+        mp->riderDelta.y = 0.0f;
+        mp->riderDelta.z = 0.0f;
         marioBottomless();
         marioPreDisp();
         mario_kemuri_80130474();
@@ -426,7 +426,7 @@ void kpa2DMain(void) {
         }
         marioCheckWall(f31, angle);
     }
-    mp->position.y += MW_F32(mp, 0x178);
+    mp->position.y += mp->riderDelta.y;
     PSVECSubtract(&mp->position, &pos, &delta);
     {
         f32 mag = PSVECMag(&delta);
@@ -460,9 +460,9 @@ void kpa2DMain(void) {
     MW_U32(mp, 0x34)++;
     prevPos = (Vec*)((u8*)mp + 0x110);
     *prevPos = mp->position;
-    MW_F32(mp, 0x174) = 0.0f;
-    MW_F32(mp, 0x178) = 0.0f;
-    MW_F32(mp, 0x17C) = 0.0f;
+    mp->riderDelta.x = 0.0f;
+    mp->riderDelta.y = 0.0f;
+    mp->riderDelta.z = 0.0f;
 }
 
 void kpa3DMain(void) {
@@ -480,7 +480,8 @@ void kpa3DMain(void) {
     if (MW_S16(mp, 0x78) != 0) {
         MW_S16(mp, 0x78)--;
     }
-    if (mp->currMotionId == 0x18 || mp->currMotionId == 0x1F || mp->currMotionId == 0x20) {
+    if (mp->currMotionId == MARIO_MOTION_PLANE || mp->currMotionId == MARIO_MOTION_DAMAGE ||
+        mp->currMotionId == MARIO_MOTION_DAMAGE_TOGE) {
         marioPreDisp();
         marioBottomless();
         MW_U32(mp, 0x34)++;
@@ -506,12 +507,12 @@ void kpa3DMain(void) {
             KPA(m2)->flags &= ~KPA_FLAG_MUTEKI;
         }
     }
-    if (mp->currMotionId == 8) {
+    if (mp->currMotionId == MARIO_MOTION_JUMP_3) {
         prevPos = (Vec*)((u8*)mp + 0x110);
     *prevPos = mp->position;
-        MW_F32(mp, 0x174) = 0.0f;
-        MW_F32(mp, 0x178) = 0.0f;
-        MW_F32(mp, 0x17C) = 0.0f;
+        mp->riderDelta.x = 0.0f;
+        mp->riderDelta.y = 0.0f;
+        mp->riderDelta.z = 0.0f;
         marioBottomless();
         marioPreDisp();
         marioBalloonMain();
@@ -559,9 +560,9 @@ void kpa3DMain(void) {
     MW_U32(mp, 0x34)++;
     prevPos = (Vec*)((u8*)mp + 0x110);
     *prevPos = mp->position;
-    MW_F32(mp, 0x174) = 0.0f;
-    MW_F32(mp, 0x178) = 0.0f;
-    MW_F32(mp, 0x17C) = 0.0f;
+    mp->riderDelta.x = 0.0f;
+    mp->riderDelta.y = 0.0f;
+    mp->riderDelta.z = 0.0f;
 }
 
 f32 kpaSetJumpPara(void) {
@@ -837,7 +838,7 @@ void kpaFireAttack(void) {
             kpaFireBreath2(m, &pos217);
         }
         if (--KPA(mp)->attackTimer <= 0) {
-            if (!(MW_U16(mp, 0x246) & 0x200) && KPA(mp)->unk144 == 0) {
+            if (!(MW_U16(mp, 0x246) & 0x200) && KPA(mp)->field_0x144 == 0) {
                 MarioWork* m;
                 kpaChgPose("KPA_A_1D", "KPA2_A_1D");
                 KPA(mp)->attackMode = 0x18;
@@ -917,7 +918,7 @@ void kpaFireAttack(void) {
             kpaFireBreath2(m, &pos22B);
         }
         if (--KPA(mp)->attackTimer <= 0) {
-            if (!(MW_U16(mp, 0x246) & 0x200) && KPA(mp)->unk144 == 0) {
+            if (!(MW_U16(mp, 0x246) & 0x200) && KPA(mp)->field_0x144 == 0) {
                 MarioWork* m;
                 kpaChgPose("KPA_A_1D", "KPA2_A_1D");
                 KPA(mp)->attackMode = 0x2C;
@@ -935,13 +936,13 @@ void kpaFireAttack(void) {
         if (--KPA(mp)->attackTimer <= 0) {
             KPA(mp)->attackMode = 0;
             switch (mp->currMotionId) {
-            case 0:
+            case MARIO_MOTION_STAY:
                 kpaChgPose("KPA_S_1", "KPA2_S_1");
                 break;
-            case 1:
+            case MARIO_MOTION_WALK:
                 kpaChgPose("KPA_W_1", "KPA2_W_1");
                 break;
-            case 2:
+            case MARIO_MOTION_DASH:
                 kpaChgPose("KPA_R_1", "KPA2_R_1");
                 break;
             case MARIO_MOTION_KPA_SWIM:

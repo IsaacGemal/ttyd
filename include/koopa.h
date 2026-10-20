@@ -8,8 +8,8 @@ typedef struct KpaWork {
     u32 flags;              // 0x0 (KpaFlags)
     s32 level;              // 0x4
     u8 unk08[0x10 - 0x08];  // 0x8
-    f32 unk10;              // 0x10 (set to +0.02 by kpa_walk)
-    f32 unk14;              // 0x14 (set to -0.02 by kpa_walk)
+    f32 field_0x10;         // 0x10 (kpa_walk sets +0.02; no reader in the koopa files)
+    f32 field_0x14;         // 0x14 (kpa_walk sets -0.02; no reader in the koopa files)
     void* hitFlame;         // 0x18 (kpaGetHitFlame, kpaFireMain)
     void* hitobj;           // 0x1C (kpaGetHitobj, kpaHitCheck)
     void* head[10];         // 0x20
@@ -29,7 +29,7 @@ typedef struct KpaWork {
     s32 mutekiTimer;        // 0x138
     s32 attackMode;         // 0x13C
     s32 attackTimer;        // 0x140 (counts down each attack step)
-    s32 unk144;             // 0x144
+    s32 field_0x144;        // 0x144 (nonzero keeps attack mode 0x17's breath going; writer not found)
     u8 unk148[0x14C - 0x148];
     u32 sfxId;              // 0x14C (KPA_SFX_NONE when silent)
     s32 bubbleTimer;        // 0x150 (kpa_swim frames until the next bubble)
@@ -38,8 +38,10 @@ typedef struct KpaWork {
 #define KPA(m) (*(KpaWork**)((u8*)(m) + 0x28C))
 
 typedef enum KpaFlags {
-    KPA_FLAG_MUTEKI = 0x10000,      // kpaMutekiOn/Off; kpaMutekiCheck reads it
-    KPA_FLAG_ALT_POSE = 0x01000000, // kpa_stay/kpa_walk switch to the KPA_*_2 pose when set
+    KPA_FLAG_NO_HIP = 0x10,                // set on kpa_swim entry; kpaHipAttackOk returns 0 while set
+    KPA_FLAG_SPLASH_PENDING = 0x100,       // set by kpa_fall over water / kpa_swim's surface jump; cleared when kpa_swim plays the landing SFX
+    KPA_FLAG_MUTEKI = 0x10000,             // kpaMutekiOn/Off; kpaMutekiCheck reads it
+    KPA_FLAG_ALT_POSE = 0x01000000,        // kpa_stay/kpa_walk switch to the KPA_*_2 pose when set
 } KpaFlags;
 
 #define KPA_SFX_NONE 0xFFFFFFFFu

@@ -108,7 +108,7 @@ s32 kpaHipAttackOk(void) {
     if (mario->currMotionId == MARIO_MOTION_HIP) {
         return 0;
     }
-    return ((KPA(mario)->flags >> 4) & 1) ^ 1;
+    return ((KPA(mario)->flags & KPA_FLAG_NO_HIP) >> 4) ^ 1;
 }
 
 // The folded int->float magic pools as the original's first .rodata double (+0x60); MWCC would
@@ -259,8 +259,8 @@ void kpa_walk(void) {
         }
         MW_U16(mario, 0x2A0) = 0;
         MW_U16(mario, 0x2A2) = 0;
-        KPA(mario)->unk10 = float_0p02_80420dd4;
-        KPA(mario)->unk14 = float_neg0p02_80420e4c;
+        KPA(mario)->field_0x10 = float_0p02_80420dd4;
+        KPA(mario)->field_0x14 = float_neg0p02_80420e4c;
     }
     m2 = marioGetPtr();
     flag = 0;
@@ -449,7 +449,7 @@ void kpa_jump(void) {
         mario->multiTimer = 2;
         mario->currSubMotionId = 0;
         marioPreJump();
-        if (mario->currMotionId != 8) {
+        if (mario->currMotionId != MARIO_MOTION_JUMP_3) {
             camFollowYOff();
         }
         kpaChgPose("KPA_J_1A", "KPA2_J_1A");
@@ -460,7 +460,7 @@ void kpa_jump(void) {
         MW_U16(mario, 0x2A0) = 0;
     }
     mario->airTimer++;
-    if (mario->currMotionId != 8) {
+    if (mario->currMotionId != MARIO_MOTION_JUMP_3) {
         f31 = MW_F32(mario, 0x7C);
         marioMakeJumpPara();
         f1 = MW_F32(mario, 0x7C);
@@ -520,7 +520,7 @@ void kpa_fall_80213C38(void) {
     }
     mario->airTimer++;
     if (kpaGetStageType() == 1 && kpaGetBodyStatus() <= 1) {
-        KPA(mario)->flags |= 0x100;
+        KPA(mario)->flags |= KPA_FLAG_SPLASH_PENDING;
     }
     if (kpaGetBodyStatus() == 2) {
         mario = marioGetPtr();
@@ -868,7 +868,7 @@ void kpa_swim(void) {
         mario->currSubMotionId = 0;
         mario->baseSpeed = float_0_80420da0;
         MW_F32(mario, 0x2C4) = float_0_80420da0;
-        KPA(marioGetPtr())->flags |= 0x10;
+        KPA(marioGetPtr())->flags |= KPA_FLAG_NO_HIP;
     }
     if (MW_U16(mario, 0x248) & (1 << 9)) {
         kpaAttackStart2();
@@ -986,7 +986,7 @@ void kpa_swim(void) {
             }
             break;
         case 0x14:
-            KPA(mario)->flags |= 0x100;
+            KPA(mario)->flags |= KPA_FLAG_SPLASH_PENDING;
             mario->flags &= ~0x00020000;
             mario->flags |= 0x00010000;
             kpaChgPose("KPA_J_1A", "KPA2_J_1A");
@@ -1014,8 +1014,8 @@ void kpa_swim(void) {
         }
     switch (mario->currSubMotionId) {
     case 0x1E:
-        if (KPA(mario)->flags & 0x100) {
-            KPA(mario)->flags &= ~0x100;
+        if (KPA(mario)->flags & KPA_FLAG_SPLASH_PENDING) {
+            KPA(mario)->flags &= ~KPA_FLAG_SPLASH_PENDING;
             psndSFXOn_3D((char*)0x827, &mario->position);
         }
         if (kpaGetAttackMode() == 0) {
