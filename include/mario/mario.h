@@ -118,7 +118,8 @@ typedef struct MarioWork {
     u8 field_0x14[0x18 - 0x14];    // 0x14
     const char* animName;          // 0x18
     const char* paperAnimName;     // 0x1C
-    u8 field_0x20[0x28 - 0x20];    // 0x20
+    u8 field_0x20[4];              // 0x20
+    u8 field_0x24[0x28 - 0x24];    // 0x24
     s16 poseTime;                  // 0x28
     u8 field_0x2A[0x2E - 0x2A];    // 0x2A
     MarioMotion currMotionId;      // 0x2E
@@ -136,7 +137,9 @@ typedef struct MarioWork {
 	s16 unk4C;                     // 0x4C
 	s16 forceMoveTimer;            // 0x4E
     s16 airTimer;                  // 0x50
-    u8 field_0x52[0x5C - 0x52];    // 0x52
+    u8 field_0x52[2];              // 0x52
+    s16 airTimerPrev;              // 0x54, airTimer copied at the end of the frame (mario.c, read by mario_kemuri)
+    u8 field_0x56[0x5C - 0x56];    // 0x56
     s16 unk5C;                     // 0x5C
     s16 unk5E;                     // 0x5E
     s16 unk60;                     // 0x60
@@ -157,7 +160,11 @@ typedef struct MarioWork {
     Vec field_0xE0;                // 0xE0, bgTmp source in mot_damage
     Vec field_EC;                  // 0xEC
     Vec field_F8;                  // 0xF8
-    u8 unk104[0x134 - 0x104];      // 0x104
+    u8 unk104[0x11C - 0x104];      // 0x104
+    Vec field_0x11C;               // 0x11C, reference point for the landing distance (evt_mario), y is a floor clamp (mario_hit)
+    f32 field_0x128;               // 0x128, distance from field_0x11C at landing (evt_mario)
+    f32 peakYpos;                  // 0x12C, marioSetPeakYpos
+    u8 field_0x130[0x134 - 0x130]; // 0x130
     CameraId camId;                // 0x134
     f32 unk138;                    // 0x138
     f32 unk13C;                    // 0x13C
@@ -186,20 +193,26 @@ typedef struct MarioWork {
     f32 dispReqDir;                // 0x1AC, requested display direction (get_mario_dispReqDir; party moves aim by it)
     u8 field_0x1B0[0x1B4 - 0x1B0]; // 0x1B0
     Vec wPlayerCollisionBox;       // 0x1B4 JP, 0x1B8 US
-    u8 field_0x1C0[0x1C8 - 0x1C0]; // 0x1C0
+    f32 floorY;                    // 0x1C0, floor height under Mario from searchUnder (-3000 when none; shadows)
+    f32 field_0x1C4;               // 0x1C4
     f32 wallDist;                  // 0x1C8, largest front-wall distance held for wallHoldTimer frames (marioCheckWall)
     f32 wallYaw;                   // 0x1CC, the wall angle that goes with wallDist (marioCheckWall)
     s32 wallHoldTimer;             // 0x1D0, counts down from 14 before wallDist can drop (marioCheckWall)
-    u8 field_0x1D4[0x1D8 - 0x1D4]; // 0x1D4
+    void* touchNpc;                // 0x1D4, returned by marioGetTouchNpcPtr
     s32 field_0x1D8;               // 0x1D8
     u8 field_0x1DC[0x1E0 - 0x1DC]; // 0x1DC
     void* hitobjFront;             // 0x1E0, front-wall HitEntry from searchFrontWall (marioCheckWall, mot_roll)
 	void* hitobjStandOn;           // 0x1E4, 0x1E8 US HitEntry
 	void* hitobjJumpFrom;          // 0x1E8, 0x1EC US HitEntry
 	void* hitobjPush;              // 0x1EC JP, 0x1F0 US HitEntry
-    u8 field_0x1F0[0x1F8 - 0x1F0]; // 0x1F0
+    u8 field_0x1F0[4];             // 0x1F0
+    void* hitobjHead;              // 0x1F4, marioSearchHead result
     void* hitobjUnder;             // 0x1F8, marioSearchUnder result (mario_hit)
-    u8 field_0x1FC[0x210 - 0x1FC]; // 0x1FC
+    void* field_0x1FC;             // 0x1FC
+    u8 field_0x200[4];             // 0x200
+    void* hitobjDamageReturn;      // 0x204, hit whose damage return position mot_damage uses
+    void* hitobjStandOnPrev;       // 0x208, hitobjStandOn copied at the end of the frame (mario.c)
+    void* hitobjBalloon;           // 0x20C, balloon hit from the front-wall search
     f32 frontWallDist;             // 0x210, searchFrontWall distance, reset to 1000 each check (marioCheckWall, dou10_yoko_yari)
     f32 slopeAngle;                // 0x214, angle of the ground normal from vertical (mario_hit, mot_roll)
     f32 slopeTiltX;                // 0x218, tilt about X: gndCentiPlain of the normal's z/y (mario_hit, mot_roll)
@@ -230,11 +243,23 @@ typedef struct MarioWork {
     s32 sfxIds[3];                 // 0x278, sound handles, 0xFFFFFFFF when none (mot_jump, mot_stay, peach, marioSoundInit)
     u32 inputMask;                 // 0x284, button mask set from evt_mario; 0 means unmasked (marioUpdateKeyData)
     void* motStruct;               // 0x288, motion userdata, TODO rename?
-    u8 field_0x28C[0x2A0 - 0x28C]; // 0x28C
-    f32 spinSpeed;                 // 0x2A0, added to unk1A8 each frame (mario_motion spin, mot_hip, evt_mario)
+    u8 field_0x28C[4];             // 0x28C, pointer to the koopa work (evt_koopa_*)
+    f32 dirEventStart;             // 0x290, start yaw of marioSetDirEventMain
+    f32 dirEventTarget;            // 0x294, target yaw is 270 minus this
+    s32 dirEventMsec;              // 0x298
+    s32 dirEventFrame;             // 0x29C, frames elapsed
+    union {
+        f32 spinSpeed;             // 0x2A0, added to unk1A8 each frame (mario_motion spin, mot_hip, evt_mario)
+        f32 damageRootY;           // 0x2A0, surface height of the damage floor fallen into: splash height, start of the return arc (set_damage_root_ypos, mot_damage)
+    };
     u8 field_0x2A4[0x2A8 - 0x2A4]; // 0x2A4
     f32 wCamVal1;                  // 0x2A8, TODO: double check. mot_hip keeps an s32 SFX id here (per-motion scratch?)
-    u8 field_0x2AC[0x2CC - 0x2AC]; // 0x2AC
+    u8 field_0x2AC[4];             // 0x2AC
+    f32 field_0x2B0;               // 0x2B0
+    u8 field_0x2B4[0x2B8 - 0x2B4]; // 0x2B4
+    f32 field_0x2B8;               // 0x2B8
+    u8 field_0x2BC[0x2C8 - 0x2BC]; // 0x2BC
+    u32 reloadMapOnBottomless;     // 0x2C8, set by N_marioReloadMapOnBottomlessOn/Off
     Vec bottomlessResetPosition;   // 0x2CC JP, 0x2E4 US
     u8 field_0x2D8[0x2E0 - 0x2D8]; // 0x2D8
 } MarioWork;                       // size 0x2E0 on Japan

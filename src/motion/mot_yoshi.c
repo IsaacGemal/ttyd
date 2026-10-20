@@ -17,12 +17,12 @@ void mot_yoshi(void) {
         mario->currSubMotionId = 0;
         mario->baseSpeed = 0.0f;
         *(u32*)mario->field_0x1DC = 0;
-        *(u32*)(mario->field_0x1DC + 4) = 0;
+        mario->hitobjFront = NULL;
         mario->hitobjStandOn = NULL;
         mario->hitobjPush = NULL;
         *(u32*)mario->field_0x1F0 = 0;
-        *(u32*)(mario->field_0x1F0 + 4) = 0;
-        *(u32*)(mario->field_0x1F0 + 8) = 0;
+        mario->hitobjHead = NULL;
+        mario->hitobjUnder = NULL;
     }
 }
 

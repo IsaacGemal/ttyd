@@ -236,7 +236,7 @@ void kemuri(void) {
     f32 y;
     f32 z;
 
-    if (*(s16*)((u8*)mario + 0x54) != 0 && *(void**)((u8*)mario + 0x208) == NULL && mario->hitobjStandOn != NULL) {
+    if (mario->airTimerPrev != 0 && mario->hitobjStandOnPrev == NULL && mario->hitobjStandOn != NULL) {
         if (mario->trigFlags & 0x20000) {
             mario->trigFlags &= ~0x20000;
             return;

@@ -64,7 +64,7 @@ USER_FUNC(gazigazi) {
 	MarioWork* mario = marioGetPtr();
 
 	event->lwData[0] = (s32)mario->position.x;
-	event->lwData[1] = (s32)(*(f32*)(mario->field_0x28C + 0x14));
+	event->lwData[1] = (s32)(mario->damageRootY);
 	event->lwData[2] = (s32)mario->position.z;
 	return EVT_RETURN_DONE;
 }
@@ -85,7 +85,7 @@ s32 marioChkDamageSink(void) {
 
 // set_damage_root_ypos
 void set_damage_root_ypos(f32 y) {
-	*(f32*)(marioGetPtr()->field_0x28C + 0x14) = y;
+	marioGetPtr()->damageRootY = y;
 }
 // The 0x98/0xA4 Vec copies below are copied through double-volatile casts to keep the original
 // unscheduled per-component load/store order (the plain copy hoists `lwz 0x8(r30)` and `lwz 0xC(r30)`
@@ -146,7 +146,7 @@ void mot_damage(void) {
 
 	switch (mario->currSubMotionId) {
 	case 0:
-		if (mario->position.y >= *(f32*)(mario->field_0x28C + 0x14) - 160.0f) {
+		if (mario->position.y >= mario->damageRootY - 160.0f) {
 			marioMakeJumpPara();
 			if (mario->jumpVelY <= -6.0f) {
 				mario->jumpVelY = -6.0f;
@@ -173,7 +173,7 @@ void mot_damage(void) {
 		if ((s32)(++mario->multiTimer) == 2) {
 			mario->currSubMotionId = 0xB;
 			psndSFXOn_3D((const char*)0x195, &mario->position);
-			if (*(HitEntry**)(mario->field_0x1F0 + 0x14) != NULL) {
+			if ((HitEntry*)mario->hitobjDamageReturn != NULL) {
 				evtEntry(evt_gazigazi, 0, 0);
 			}
 		}
@@ -189,7 +189,7 @@ void mot_damage(void) {
 				spd = 10.0f;
 			}
 			*(f32*)mario->field_0x2AC = spd;
-			if (mario->position.y >= *(f32*)(mario->field_0x28C + 0x14) && *(f32*)(mario->field_0x28C + 0x14) > oldY) {
+			if (mario->position.y >= mario->damageRootY && mario->damageRootY > oldY) {
 				Vec splashPos = mario->position;
 
 				if (marioBgmodeChk() != 1) {
@@ -197,11 +197,11 @@ void mot_damage(void) {
 				}
 				psndSFXOn_3D((const char*)0xba, &splashPos);
 			}
-			if (mario->position.y < *(f32*)(mario->field_0x28C + 0x14) + 500.0f) {
+			if (mario->position.y < mario->damageRootY + 500.0f) {
 				break;
 			}
 		}
-		hit = *(HitEntry**)(mario->field_0x1F0 + 0x14);
+		hit = (HitEntry*)mario->hitobjDamageReturn;
 		if (hit != NULL) {
 			Vec* p = hitGetDamageReturnPos(hit);
 			Vec tmp = vec3_802f3250;
@@ -234,12 +234,12 @@ void mot_damage(void) {
 		mario->baseSpeed = 8.0f;
 		mario->multiTimer = (s16)(distABf(target.x, target.z, mario->position.x, mario->position.z) / 8.0f);
 		mario->directionView = angleABf(mario->position.x, mario->position.z, target.x, target.z);
-		mario->wCamVal1 = (target.y - *(f32*)(mario->field_0x28C + 0x14)) / (f32)(s32)mario->multiTimer;
+		mario->wCamVal1 = (target.y - mario->damageRootY) / (f32)(s32)mario->multiTimer;
 		mario->currSubMotionId = 0xC;
 		mario->dispFlags |= 1;
 		if ((s32)mario->multiTimer == 0) {
 			mario->multiTimer = 0xA;
-			mario->wCamVal1 = (target.y - *(f32*)(mario->field_0x28C + 0x14)) / (f32)(s32)mario->multiTimer;
+			mario->wCamVal1 = (target.y - mario->damageRootY) / (f32)(s32)mario->multiTimer;
 			mario->currSubMotionId = 0xE;
 		}
 		break;
@@ -278,8 +278,8 @@ void mot_damage(void) {
 		if (spd <= -10.0f) {
 			spd = -10.0f;
 		}
-		if (*(HitEntry**)(mario->field_0x1F0 + 0x14) != NULL) {
-			rp = hitGetDamageReturnPos(*(HitEntry**)(mario->field_0x1F0 + 0x14));
+		if ((HitEntry*)mario->hitobjDamageReturn != NULL) {
+			rp = hitGetDamageReturnPos((HitEntry*)mario->hitobjDamageReturn);
 			floorY = rp->y;
 		} else {
 			floorY = mario->position.y;
@@ -381,7 +381,7 @@ void mot_damageToge(void) {
 		mario->currSubMotionId = 0;
 		mario->airTimer = 0;
 		mario->baseSpeed = 0.0f;
-		*(f32*)(mario->field_0x28C + 0x14) = mario->position.y;
+		mario->damageRootY = mario->position.y;
 		mario->multiTimer = 5;
 		*(f32*)mario->field_0x2AC = 4.0f;
 	}
@@ -408,10 +408,10 @@ void mot_damageToge(void) {
 			spd = 10.0f;
 		}
 		*(f32*)mario->field_0x2AC = spd;
-		if (mario->position.y < *(f32*)(mario->field_0x28C + 0x14) + 500.0f) {
+		if (mario->position.y < mario->damageRootY + 500.0f) {
 			break;
 		}
-		hit = *(HitEntry**)(mario->field_0x1F0 + 0x14);
+		hit = (HitEntry*)mario->hitobjDamageReturn;
 		if (hit != NULL) {
 			Vec* p = hitGetDamageReturnPos(hit);
 			Vec tmp = vec3_802f3298;
@@ -425,7 +425,7 @@ void mot_damageToge(void) {
 		mario->baseSpeed = 8.0f;
 		mario->multiTimer = (s16)(distABf(position.x, position.z, mario->position.x, mario->position.z) / 8.0f);
 		mario->directionView = angleABf(mario->position.x, mario->position.z, position.x, position.z);
-		mario->wCamVal1 = (position.y - *(f32*)(mario->field_0x28C + 0x14)) / (f32)(s32)mario->multiTimer;
+		mario->wCamVal1 = (position.y - mario->damageRootY) / (f32)(s32)mario->multiTimer;
 		mario->currSubMotionId = 0xC;
 		break;
 	case 0xC:
