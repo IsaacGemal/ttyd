@@ -448,13 +448,13 @@ void btlDispMain(void) {
 				if (unit->currentKind >= UNIT_GOOMBA && unit->currentKind < UNIT_UNUSED_TREE) {
 					animName = searchPoseTbl((BattleDispPose*)part->poseTable, statusPose);
 				} else {
-					if (statusPose == STATUS_INVALID && !BtlUnit_CheckStatus(unit, 0x16) &&
+					if (statusPose == STATUS_INVALID && !BtlUnit_CheckStatus(unit, STATUS_HOLD_FAST) &&
 					    (unit->mStatusFlags & 0x20000000)) {
 						animName = BtlUnit_GetPoseNameFromType(part, 0x39);
 						if (animName == NULL) {
 							animName = searchPoseTbl((BattleDispPose*)part->poseTable, 0x1C);
 						}
-					} else if (statusPose == STATUS_INVALID && !BtlUnit_CheckStatus(unit, 0x16) &&
+					} else if (statusPose == STATUS_INVALID && !BtlUnit_CheckStatus(unit, STATUS_HOLD_FAST) &&
 					           (unit->mStatusFlags & 0x10000000)) {
 						animName = BtlUnit_GetPoseNameFromType(part, 0x38);
 						if (animName == NULL) {
@@ -611,9 +611,12 @@ void btlDispMain(void) {
 				}
 			}
 
-			if (unit->currentKind == UNIT_VIVIAN || unit->currentKind == 0x8D ||
-			    unit->currentKind == 0x86 || (u32)(unit->currentKind - 0x1F) <= 2 ||
-			    (u32)(unit->currentKind - 0xBD) <= 4 || unit->currentKind == 0x85) {
+			// Shadow Sirens (and Doopliss as Vivian) run the Vivian model animation.
+			if (unit->currentKind == UNIT_VIVIAN || unit->currentKind == UNIT_DOOPLISS_CHAPTER8_VIVIAN ||
+			    unit->currentKind == UNIT_MARILYN_CHAPTER8 ||
+			    (u32)(unit->currentKind - UNIT_BELDAM_CHAPTER2) <= 2 ||
+			    (u32)(unit->currentKind - UNIT_UNUSED_BELDAM2) <= 4 ||
+			    unit->currentKind == UNIT_BELDAM_CHAPTER8) {
 				vivian.x = (f32)unit->work[0];
 				vivian.y = (f32)unit->work[1];
 				vivian.z = (f32)unit->work[2];
@@ -921,12 +924,12 @@ void btlUnitPartsDisp(CameraId camId, void* param) {
 	}
 
 	*(u32*)((char*)parts + 0x218) = *(u32*)((char*)parts + 0x4F4);
-	if (*(s32*)((char*)parts + 0x204) & 0x10) {
+	if (parts->partFlags & 0x10) {
 		*(u8*)((char*)parts + 0x218) = 0;
 		*(u8*)((char*)parts + 0x219) = 0;
 		*(u8*)((char*)parts + 0x21A) = 0;
 	}
-	if (*(s32*)((char*)parts + 0x204) & 0x20) {
+	if (parts->partFlags & 0x20) {
 		*(u8*)((char*)parts + 0x218) = 0;
 		*(u8*)((char*)parts + 0x219) = 0;
 		*(u8*)((char*)parts + 0x21A) = 0;
@@ -1098,10 +1101,10 @@ void btlDispEntAnime(BattleUnit* unit) {
 }
 
 void btlDispChangeAnime(BattleUnitPart* part, const char* animName, BOOL reset) {
-	s32* flags;
+	u32* flags;
 
 	strcpy((char*)part + 0x1c4, animName);
-	flags = (s32*)((char*)part + 0x204);
+	flags = &part->partFlags;
 	*flags |= 2;
 	*flags |= 1;
 	*flags &= ~0x80;
@@ -1115,13 +1118,13 @@ void btlDispChangeAnime(BattleUnitPart* part, const char* animName, BOOL reset) 
 }
 
 void btlDispChangePeraAnime(BattleUnitPart* part, const char* animName) {
-	*(s32*)((char*)part + 0x204) |= 4;
+	part->partFlags |= 4;
 	*(u8*)((char*)part + 0x215) = 0;
 	animPoseSetEffectAnim(*(s32*)((char*)part + 0x1c0), animName, 1);
 }
 
 void btlDispPoseAnime(BattleUnitPart* part) {
-	s32* flags = (s32*)((char*)part + 0x204);
+	u32* flags = &part->partFlags;
 
 	*flags &= ~0x12;
 	*flags |= 1;
