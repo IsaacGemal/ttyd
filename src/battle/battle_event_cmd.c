@@ -47,7 +47,7 @@ s32 BattleCheckCounter(void* work, BattleUnit* attacker, BattleUnit* target, Bat
 
 extern BattleWork* _battleWorkPointer;
 extern ItemData itemDataTable[];
-extern const char str_802EE0EC[];
+extern const char str_SFX_BTL_ACROBAT_MISS1[];
 extern const double double_0p01_802ee040;
 extern const double double_to_int_802ee038;
 extern const f64 double_to_int_mask_802ee170;
@@ -67,8 +67,8 @@ extern s32 subsetevt_confuse_flustered[];
 #define ACSE_STR(off, sym) (base + (off))
 #define ACSE_SYSSFX(sym, lit) (lit)
 #else
-extern const char str_802EE048[], str_802EE064[], str_802EE080[], str_802EE094[], str_802EE0A8[], str_802EE0BC[],
-    str_802EE0D4[], str_802EE178[], str_802EE18C[], str_802EE1A0[];
+extern const char str_SFX_SYSTEM_NICE_25PERCENT1[], str_SFX_SYSTEM_NICE_50PERCENT1[], str_SFX_SYSTEM_NICE1[], str_SFX_SYSTEM_GOOD1[], str_SFX_SYSTEM_GREAT1[], str_SFX_SYSTEM_WONDERFUL1[],
+    str_SFX_SYSTEM_EXCELLENT1[], str_SFX_ITEM_MARIO_USE1[], str_SFX_ITEM_PARTY_USE1[], str_SFX_ENM_ITEM_USE1[];
 #define ACSE_STR(off, sym) (sym)
 #define ACSE_SYSSFX(sym, lit) (sym)
 #endif
@@ -5332,7 +5332,7 @@ USER_FUNC(btlevtcmd_AudienceDeclareAcrobatResult) {
 #ifdef MUST_MATCH
         psndSFXOn_3D("SFX_BTL_ACROBAT_MISS1", &pos);
 #else
-        psndSFXOn_3D(str_802EE0EC, &pos);
+        psndSFXOn_3D(str_SFX_BTL_ACROBAT_MISS1, &pos);
 #endif
     }
     return 2;
@@ -5363,42 +5363,42 @@ USER_FUNC(btlevtcmd_ACSuccessEffect) {
     switch (type) {
     case 0:
         id = 0;
-        sfx = ACSE_SYSSFX(str_802EE048, "SFX_SYSTEM_NICE_25PERCENT1");
+        sfx = ACSE_SYSSFX(str_SFX_SYSTEM_NICE_25PERCENT1, "SFX_SYSTEM_NICE_25PERCENT1");
         scale *= 0.3f;
         angle = 90.f;
         break;
     case 1:
         id = 0;
-        sfx = ACSE_SYSSFX(str_802EE064, "SFX_SYSTEM_NICE_50PERCENT1");
+        sfx = ACSE_SYSSFX(str_SFX_SYSTEM_NICE_50PERCENT1, "SFX_SYSTEM_NICE_50PERCENT1");
         scale *= 0.6f;
         angle = 90.f;
         break;
     case 2:
         id = 0;
-        sfx = ACSE_SYSSFX(str_802EE080, "SFX_SYSTEM_NICE1");
+        sfx = ACSE_SYSSFX(str_SFX_SYSTEM_NICE1, "SFX_SYSTEM_NICE1");
         scale *= 1.2f;
         angle = 90.f;
         break;
     case 3:
         id = 1;
-        sfx = ACSE_SYSSFX(str_802EE094, "SFX_SYSTEM_GOOD1");
+        sfx = ACSE_SYSSFX(str_SFX_SYSTEM_GOOD1, "SFX_SYSTEM_GOOD1");
         scale *= 1.2f;
         angle = 90.f;
         break;
     case 4:
         id = 2;
-        sfx = ACSE_SYSSFX(str_802EE0A8, "SFX_SYSTEM_GREAT1");
+        sfx = ACSE_SYSSFX(str_SFX_SYSTEM_GREAT1, "SFX_SYSTEM_GREAT1");
         scale *= 1.2f;
         angle = 120.f;
         break;
     case 5:
         id = 3;
-        sfx = ACSE_SYSSFX(str_802EE0BC, "SFX_SYSTEM_WONDERFUL1");
+        sfx = ACSE_SYSSFX(str_SFX_SYSTEM_WONDERFUL1, "SFX_SYSTEM_WONDERFUL1");
         angle = 150.0f;
         break;
     case 6:
         id = 4;
-        sfx = ACSE_SYSSFX(str_802EE0D4, "SFX_SYSTEM_EXCELLENT1");
+        sfx = ACSE_SYSSFX(str_SFX_SYSTEM_EXCELLENT1, "SFX_SYSTEM_EXCELLENT1");
         angle = 180.f;
         break;
     default:
