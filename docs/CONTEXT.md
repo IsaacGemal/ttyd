@@ -9541,3 +9541,28 @@ the wall yaw copy; several Vec blocks (0x98-0xC8, 0xE0, 0x104-0x134) are still u
 to the raw `flags` literals yet. The worker held back because it thought two names contradicted the code, but both
 hold: 0x08000000 (`IS_TOUCHING_CEILING`) is set by marioChkOverhead when marioSearchHead hits, and 0x01000000
 (`TUBE_MODE`) is the roll state, which is Tube Mode. Applying the enum is the next pass.
+
+### Readability: evt_mobj and mobjdrv (2026-10-19, Claude Haiku 5.5, n9-q-mobj2; reviewed by Claude Opus 5.5)
+
+Raw offsets replaced with existing names: MarioWork `hitobjStandOn` (0x1E4, also in mobjMain's per-frame hit cache),
+PartyEntry `frontHit` (0x130), NpcEntry `hazardImmuneFlags` (0x31E), and MapObjectEntry `unk1A0`/`unk1A0[4]`/`unk1B4`/
+`childName` (0x1A0/0x1A4/0x1B4/0x1B8). `unk1A0` and `unk1B4` stay neutral: each object type gives them its own meaning
+(item id, coin or part count, switch anim index | state bits; sound handle or timer reload). New
+`MapObjectEntryFlags` in mobjdrv.h, each bit proven by mobjMain/mobjDisp*/mobjEntry/mobjDelete: `MOBJ_FLAG_ACTIVE`
+(0x1), `RECALC_MTX` (0x4), `TRIGGERED` (0x8, set when a hit test fires; the tests skip while it is set),
+`GRAVITY` (0x40), `NO_CULL` (0x80), `RETRIGGER` (0x100, clears TRIGGERED every frame), `PAPER_TEX` (0x400), `BLINK`
+(0x2000), `NO_DISP` (0x4000) and the hit tests `TRIGGER_HEAD` (0x400000, MarioWork 0x1F4 = marioSearchHead's result;
+also picks shadow type 1), `TRIGGER_STAND_ON` (0x200000), `TRIGGER_HIP_DROP` (0x1000000), `TRIGGER_PARTY`
+(0x800000), `TRIGGER_BOBBERY` (0x2000000, its in-range case reports TRIGGER_PARTY), `TRIGGER_KPA_HEAD` (0x4000000),
+`TRIGGER_KPA_LV3` (0x8000000), `TRIGGER_KPA_HIP` (0x10000000) and `TRIGGER_KPA_FLAME` (0x20000000). Applied in
+mobjdrv.c and to every MapObjectEntry `flags`/`triggerFlag` literal in evt_mobj.c; unnamed bits stay hex inside
+the OR (`MOBJ_FLAG_TRIGGER_PARTY | 0x10000`). Byte-identical. Index 64.833 (origin/main) -> 64.700; evt_mobj
+raw_offset 49 -> 13, mobjdrv 32 -> 22.
+Open: trigger bits 0x10000, 0x40000 and 0x80000 test MarioWork HitEntry pointers at 0x1FC and 0x1E0, which are
+unnamed on main (0x1E0 is also read by mario.c, mario_hit.c, mario_motion.c and mario_balloon.c); 0x2 and 0x800
+both suppress the shadow and 0x10/0x20/0x200/0x1000 have no reader in mobjdrv, so they stay hex. MapObjectHitEntry's
+`unk4[0x88 - 0x14]` tail looks like an embedded MapFileJoint (hitEntryMOBJ takes a joint) and wants typing against
+mapdrv.h. Untyped effect userdata: fire_func writes `eff->userdata + 0x78/0x7C` (eff_fire work, no struct yet).
+Also still raw: MarioWork 0xD8 (f32 compared with position.y in evt_mobj), the rideswitch Vec template reads at
++0x7C/+0x88/+0x94, ImageEntry 0x110 (an OSTime inside `field_0x10C`), and mobjMain's `(HitEntry**)wp` cache over
+MapObjectWork `field_0x8`.
