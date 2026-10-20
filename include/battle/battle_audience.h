@@ -84,8 +84,13 @@ typedef struct BattleAudienceMember {
     Vec interpDelta;               // 0x118
     f32 interpGravity;             // 0x124
     s32 interpType;                // 0x128
-    s32 field_0x12C;               // 0x12C, some counter
-    u8 field_0x130[0x134 - 0x130]; // 0x130
+    union {
+        s32 timer;                 // 0x12C, countdown: BULKY_BOBOMB fuse and KOOPA (battle_audience.c sets 5); kinopio shell clears it
+        s32 targetId;              // 0x12C, member index a Pakkun eats (kinopio)
+        s32 evtId;                 // 0x12C, evt id polled with evtCheckID (fall objects, nozzle work; kinopio)
+        f32 bobAngle;              // 0x12C, radians, AUDIENCE_BOO bob phase (kinopio)
+    };
+    f32 bobOffsetY;                // 0x130, 5 * sin(bobAngle) for AUDIENCE_BOO; added to the quad's y in the draw code
 } BattleAudienceMember;
 
 typedef struct BattleAudienceItem {

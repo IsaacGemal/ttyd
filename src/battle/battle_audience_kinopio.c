@@ -265,20 +265,19 @@ void BattleAudienceCtrlProcessKinopio(s32 index) {
 	}
 	}
 	if (member->type == 2) {
-		f32 c = 0.05f;
-		f32 tau = 6.283184f;
-		f32 angle = *(f32*)&member->field_0x12C;
-		*(f32*)&member->field_0x12C = angle + c;
-		if (*(f32*)&member->field_0x12C >= tau) {
-			*(f32*)&member->field_0x12C = *(f32*)&member->field_0x12C - tau;
+		f32 step = 0.05f;
+		f32 twoPi = 6.283184f;
+		f32 angle = member->bobAngle;
+		member->bobAngle = angle + step;
+		if (member->bobAngle >= twoPi) {
+			member->bobAngle = member->bobAngle - twoPi;
 		}
-		*(f32*)((u8*)member + 0x130) =
-		    5.0f * (f32)sin(*(f32*)(&member->field_0x12C));
+		member->bobOffsetY = 5.0f * (f32)sin(member->bobAngle);
 		*(f32*)(member->field_0xC0 + 0x0) =
 		    member->position.x + *(f32*)(member->field_0xC0 + 0xc);
 		*(f32*)(member->field_0xC0 + 0x4) = member->position.y +
 		                              *(f32*)(member->field_0xC0 + 0x10) +
-		                              *(f32*)((u8*)member + 0x130);
+		                              member->bobOffsetY;
 		*(f32*)(member->field_0xC0 + 0x8) =
 		    member->position.z + *(f32*)(member->field_0xC0 + 0x14);
 	}
@@ -1290,11 +1289,11 @@ void BattleAudienceCtrlProcessKinopioIntrude(s32 index) {
 		}
 		// fallthrough
 	case 0x14:
-		member->field_0x12C = BattleStage_ObjectFallCheck();
+		member->evtId = BattleStage_ObjectFallCheck();
 		member->field_0x4 = 0x19;
 		break;
 	case 0x19:
-		if (!evtCheckID(member->field_0x12C)) {
+		if (!evtCheckID(member->evtId)) {
 			member->field_0x4 = 0x1e;
 			member->mRotation.y = 0.0f;
 		}
@@ -1380,7 +1379,7 @@ void BattleAudienceCtrlProcessKinopioIntrude(s32 index) {
 		f32 dz;
 		f32 dx;
 		BattleStage_NozzleWorkCheck(1);
-		member->field_0x12C = *(s32*)((u8*)work + 0x18298);
+		member->evtId = *(s32*)((u8*)work + 0x18298);
 		member->field_0x4 = 0x4b;
 		dir = *(f32*)(member->field_0x8 + 4);
 		t = 300.0f * dir;
@@ -1407,7 +1406,7 @@ void BattleAudienceCtrlProcessKinopioIntrude(s32 index) {
 		}
 		break;
 	case 0x50:
-		if (!evtCheckID(member->field_0x12C)) {
+		if (!evtCheckID(member->evtId)) {
 			member->field_0x4 = 0x55;
 		}
 		break;
@@ -1544,7 +1543,7 @@ void BattleAudienceCtrlProcessKinopioShell(s32 index) {
 		if (*(s32*)member->field_0x8 <= 0) {
 			BattleAudience_ChangeStatus(index, 0);
 		}
-		member->field_0x12C = 0;
+		member->timer = 0;
 		break;
 	}
 }
@@ -1780,7 +1779,7 @@ void BattleAudienceCtrlProcessKinopioEat(s32 index) {
 		}
 		if (count >= 1) {
 			member->field_0x4 = 8;
-			member->field_0x12C = candidates[irand(count)];
+			member->targetId = candidates[irand(count)];
 		}
 		else if (i == 0x3c) {
 			member->field_0x4 = 0x63;
@@ -1804,7 +1803,7 @@ void BattleAudienceCtrlProcessKinopioEat(s32 index) {
 			f32 x;
 			f32 z;
 
-			id = member->field_0x12C;
+			id = member->targetId;
 			r = rand() * 10 / 0x7fff;
 			col = id / 0x14;
 			row = id % 0x14;
@@ -1835,7 +1834,7 @@ void BattleAudienceCtrlProcessKinopioEat(s32 index) {
 			member->velocity.y = 0.0f;
 			member->field_0x4 = 0x63;
 			*(s32*)member->field_0x8 = 0xa;
-			target = BattleAudienceGetPtr(member->field_0x12C);
+			target = BattleAudienceGetPtr(member->targetId);
 			memcpy(target, member, 0x134);
 			BattleAudience_Delete(index);
 		}

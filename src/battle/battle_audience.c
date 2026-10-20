@@ -611,8 +611,8 @@ BOOL BattleAudience_CheckReactionPerPhase(void) {
 			member = BattleAudienceGetPtr(i);
 			if ((u8)BattleAudience_GetSysCtrl(i) == 1 && member->type == AUDIENCE_BULKY_BOBOMB &&
 					member->status == 18) {
-				member->field_0x12C--;
-				if (member->field_0x12C <= 0) {
+				member->timer--;
+				if (member->timer <= 0) {
 					BattleAudience_ChangeStatus(i, 19);
 					count++;
 				}
@@ -836,7 +836,7 @@ BOOL BattleAudience_CheckReactionPerPhase(void) {
 				if ((u8)check_exe_phase_evt_status(i, 8)) {
 					if (BattleAudienceGetPtr(i)->status != 0x11) {
 						BattleAudience_ChangeStatus(i, 0x11);
-						BattleAudienceGetPtr(i)->field_0x12C = 5;
+						BattleAudienceGetPtr(i)->timer = 5;
 					}
 				}
 			}
@@ -1023,7 +1023,7 @@ BOOL BattleAudience_CheckReactionPerPhase(void) {
 			idx = evtList[irand(count)];
 			member = BattleAudienceGetPtr(idx);
 			BattleAudience_ChangeStatus(idx, 0x12);
-			member->field_0x12C = 5;
+			member->timer = 5;
 			audience->phaseEvtCount = 0;
 			break;
 		case 12:
@@ -1088,8 +1088,8 @@ BOOL BattleAudience_CheckReactionPerPhase(void) {
 			member = BattleAudienceGetPtr(i);
 			if ((u8)BattleAudience_GetSysCtrl(i) == 1 && member->type == 8 &&
 					member->status == 0x11) {
-				member->field_0x12C--;
-				if (member->field_0x12C <= 0) {
+				member->timer--;
+				if (member->timer <= 0) {
 					member->field_0x4 = 4;
 				}
 			}
@@ -2792,7 +2792,7 @@ void BattleAudienceDispAudience(CameraId camId, void* param) {
 			mtxScale[1][3] = mtxScale[1][3] + (member->jumpOffset.y + (-offsetY + member->position.y));
 		}
 		else {
-			mtxScale[1][3] = mtxScale[1][3] + (*(f32*)((u8*)member + 0x130) +
+			mtxScale[1][3] = mtxScale[1][3] + (member->bobOffsetY +
 			                                      (member->jumpOffset.y + (-offsetY + member->position.y)));
 		}
 
