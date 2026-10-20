@@ -186,6 +186,8 @@ void nokonoko_use_post(PartyEntry* party) {
     *(s32*)((u8*)party + 0x180) = 0;
 }
 
+// The `NKF(0x10C) = revise360(50.0f * f2 + NKF(0x10C))` updates stay raw: `party->field_10C` there
+// schedules the add differently.
 #define NKF(off) (*(f32*)((u8*)party + (off)))
 #define NKS(off) (*(s32*)((u8*)party + (off)))
 #define NKM(off) (*(f32*)((u8*)mario + (off)))
@@ -263,15 +265,14 @@ void nokonoko_use(PartyEntry* party) {
         mario->baseSpeed = 0.0f;
         party->targetPos = mario->position;
         {
-            u8* base = (u8*)party;
-            movePos((f32*)(base + 0x94), (f32*)(base + 0x9c), 2.0f,
+            movePos(&party->targetPos.x, &party->targetPos.z, 2.0f,
                     toMovedirSimple(mario->dispReqDir));
         }
         party->timer = 4;
         party->jumpPara1 = 0.0f;
         party->dir = angleABf(party->position.x, party->position.z, party->targetPos.x, party->targetPos.z);
         party->speed = distABf(party->position.x, party->position.z, party->targetPos.x, party->targetPos.z) / (f32)party->timer;
-        NKF(0x10C) = revise360(45.0f + NKF(0x10C));
+        party->field_10C = revise360(45.0f + party->field_10C);
         party->useMotionId = 1;
         marioChgSmallJumpMotion();
         mario->trigFlags |= 0x20000;
@@ -283,7 +284,7 @@ void nokonoko_use(PartyEntry* party) {
             party->useMotionId = 0x46;
             goto L_800CC620;
         }
-        NKF(0x10C) = revise360(45.0f + NKF(0x10C));
+        party->field_10C = revise360(45.0f + party->field_10C);
         party->position.x += (party->targetPos.x - party->position.x) / (f32)party->timer;
         party->position.y += (party->targetPos.y - party->position.y) / (f32)party->timer;
         party->position.z += (party->targetPos.z - party->position.z) / (f32)party->timer;
@@ -293,7 +294,7 @@ void nokonoko_use(PartyEntry* party) {
         party->position = party->targetPos;
         party->speed = 0.0f;
         party->field_110 = mario->dispReqDir;
-        NKF(0x10C) = mario->dispReqDir;
+        party->field_10C = mario->dispReqDir;
         party->useMotionId = 2;
         partyChgPose(party, NK_STR(0x20, "PNK_A_1"));
         /* fallthrough */
@@ -571,7 +572,7 @@ L_800CC620:
         f2 = (party->tail.koops.dashing != 0) ? 0.2f : 0.1f;
 #ifdef MUST_MATCH
         // Volatile re-read of the speed, as retail reloads it after the f3/f2 setup.
-        NKF(0x104) = f3 * f2 + *(volatile f32*)((u8*)party + 0x104);
+        party->speed = f3 * f2 + *(volatile f32*)&party->speed;
 #else
         party->speed = f3 * f2 + party->speed;
 #endif
@@ -650,7 +651,7 @@ L_800CC620:
         f2 = (party->tail.koops.dashing != 0) ? 0.2f : 0.1f;
 #ifdef MUST_MATCH
         // Volatile re-read of the speed, as retail reloads it after the f3/f2 setup.
-        NKF(0x104) = f3 * f2 + *(volatile f32*)((u8*)party + 0x104);
+        party->speed = f3 * f2 + *(volatile f32*)&party->speed;
 #else
         party->speed = f3 * f2 + party->speed;
 #endif
@@ -963,7 +964,7 @@ L_800CCD8C:
         }
         if (party->groundHit != NULL) {
             party->field_110 = mario->dispReqDir;
-            NKF(0x10C) = NKF(0x110);
+            party->field_10C = party->field_110;
             if (((hitGetAttr((HitEntry*)party->groundHit) >> 9) & 1) == 0) {
                 party->useMotionId = 0x72;
                 party->timer = 30;
@@ -1056,7 +1057,6 @@ static void ccfloor(PartyEntry* party, s32 flag, f32 step, f32* hitX, f32* hitY,
 
 // Four floor/wall probes: straight ahead, then dir-90, dir+90 and the f31 sweeps.
 HitEntry* ccwall(PartyEntry* party, s32 flag) {
-    u8* p = (u8*)party;
     HitEntry* hit;
     f32 sinV, cosV;
     f32 distance;
@@ -1083,13 +1083,13 @@ HitEntry* ccwall(PartyEntry* party, s32 flag) {
     x = party->position.x;
     z = party->position.z;
     oy = party->position.y + y;
-    distance = float_0p5 * *(f32*)(p + 0xF4) + party->speed;
+    distance = float_0p5 * party->radius + party->speed;
     sincosf(&sinV, &cosV, party->dir);
     hit = hitCheckFilter(NULL, x, oy, z, sinV, float_0, cosV, &hitX, &hitY, &hitZ, &distance, &hitNX, &hitNY, &hitNZ);
     if (hit != NULL && (hitGetAttr(hit) & 5) == 0) {
         sincosf(&sin2, &cos2, party->dir + float_180);
-        party->position.x = hitX + float_0p5 * (sin2 * *(f32*)(p + 0xF4));
-        party->position.z = hitZ + float_0p5 * (cos2 * *(f32*)(p + 0xF4));
+        party->position.x = hitX + float_0p5 * (sin2 * party->radius);
+        party->position.z = hitZ + float_0p5 * (cos2 * party->radius);
         spd = party->speed;
         ssin = sinV * spd;
         scos = cosV * spd;
@@ -1103,17 +1103,17 @@ HitEntry* ccwall(PartyEntry* party, s32 flag) {
         return hit;
     }
 
-    f31 = float_0p4 * *(f32*)(p + 0xF4);
+    f31 = float_0p4 * party->radius;
     z = party->position.z + f31 * (f32)cos((f64)(float_3p1416 * (party->dir - float_90) / float_180));
     x = party->position.x + f31 * (f32)sin((f64)(float_3p1416 * (party->dir - float_90) / float_180));
     oy = party->position.y + y;
-    distance = float_0p4 * *(f32*)(p + 0xF4) + party->speed;
+    distance = float_0p4 * party->radius + party->speed;
     sincosf(&sinV, &cosV, party->dir);
     hit = hitCheckFilter(NULL, x, oy, z, sinV, float_0, cosV, &hitX, &hitY, &hitZ, &distance, &hitNX, &hitNY, &hitNZ);
     if (hit != NULL && (hitGetAttr(hit) & 5) == 0) {
         sincosf(&sin3, &cos3, party->dir + float_180);
-        party->position.x = hitX + float_0p5 * (sin3 * *(f32*)(p + 0xF4));
-        party->position.z = hitZ + float_0p5 * (cos3 * *(f32*)(p + 0xF4));
+        party->position.x = hitX + float_0p5 * (sin3 * party->radius);
+        party->position.z = hitZ + float_0p5 * (cos3 * party->radius);
         party->position.z -= f31 * (f32)cos((f64)(float_3p1416 * (party->dir - float_90) / float_180));
         party->position.x -= f31 * (f32)sin((f64)(float_3p1416 * (party->dir - float_90) / float_180));
         spd = party->speed;
@@ -1130,23 +1130,23 @@ HitEntry* ccwall(PartyEntry* party, s32 flag) {
         return hit;
     }
 
-    f31 = float_0p4 * *(f32*)(p + 0xF4);
+    f31 = float_0p4 * party->radius;
     z = party->position.z + f31 * (f32)cos((f64)(float_3p1416 * (party->dir + float_90) / float_180));
     x = party->position.x + f31 * (f32)sin((f64)(float_3p1416 * (party->dir + float_90) / float_180));
     oy = party->position.y + y;
 #ifdef MUST_MATCH
     // The original evaluates and stores this probe's distance twice; the first is dead.
-    distance = float_0p4 * *(f32*)(p + 0xF4) + party->speed;
-    distance = float_0p4 * *(f32*)(p + 0xF4) + party->speed;
+    distance = float_0p4 * party->radius + party->speed;
+    distance = float_0p4 * party->radius + party->speed;
 #else
-    distance = float_0p4 * *(f32*)(p + 0xF4) + party->speed;
+    distance = float_0p4 * party->radius + party->speed;
 #endif
     sincosf(&sinV, &cosV, party->dir);
     hit = hitCheckFilter(NULL, x, oy, z, sinV, float_0, cosV, &hitX, &hitY, &hitZ, &distance, &hitNX, &hitNY, &hitNZ);
     if (hit != NULL && (hitGetAttr(hit) & 5) == 0) {
         sincosf(&sin4, &cos4, party->dir + float_180);
-        party->position.x = hitX + float_0p5 * (sin4 * *(f32*)(p + 0xF4));
-        party->position.z = hitZ + float_0p5 * (cos4 * *(f32*)(p + 0xF4));
+        party->position.x = hitX + float_0p5 * (sin4 * party->radius);
+        party->position.z = hitZ + float_0p5 * (cos4 * party->radius);
         party->position.z -= f31 * (f32)cos((f64)(float_3p1416 * (party->dir + float_90) / float_180));
         party->position.x -= f31 * (f32)sin((f64)(float_3p1416 * (party->dir + float_90) / float_180));
         spd = party->speed;
@@ -1168,18 +1168,17 @@ HitEntry* ccwall(PartyEntry* party, s32 flag) {
 // Floor probe under the party: snaps position.y onto ground within 11 units and flags steps of at least `step`.
 static void ccfloor(PartyEntry* party, s32 flag, f32 step, f32* hitX, f32* hitY, f32* hitZ, f32* distance,
                     f32* hitNX, f32* hitNY, f32* hitNZ) {
-    u8* p = (u8*)party;
     HitEntry* hit;
     f32 oy;
     f32 x, z;
 
     x = party->position.x;
     z = party->position.z;
-    oy = party->position.y + *(f32*)(p + 0xF0) + float_10;
+    oy = party->position.y + party->height + float_10;
 #ifdef MUST_MATCH
-    *distance = fadd32(*(f32*)(p + 0xF0), float_30);
+    *distance = fadd32(party->height, float_30);
 #else
-    *distance = *(f32*)(p + 0xF0) + float_30;
+    *distance = party->height + float_30;
 #endif
     hit = hitCheckFilter(NULL, x, oy, z, float_0, float_neg1, float_0, hitX, hitY, hitZ,
                          distance, hitNX, hitNY, hitNZ);

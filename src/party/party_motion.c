@@ -366,7 +366,7 @@ void party_motion_stay(PartyEntry* party) {
     if (mario->currMotionId != 0xe && (party->flags & PARTY_FLAG_IS_BEHIND_MARIO)) {
         party->flags = (party->flags & ~PARTY_FLAG_IS_BEHIND_MARIO);
     }
-    f31 = *(f32*)((u8*)party + 0x40);
+    f31 = party->followDist;
     if (!mario->controlStickSensitivity) {
         if (mario->baseSpeed < 1.0f) {
             f31 = 100.0f;
@@ -1025,7 +1025,7 @@ void party_motion_homing_walk(PartyEntry* party) {
                     unk_800c93d0(party, f);
                     break;
                 }
-                if ((*(f32*)((u8*)party + 0xA0)) == 0.0f && (*(f32*)((u8*)party + 0xA8)) == 0.0f) {
+                if (party->velX == 0.0f && party->velZ == 0.0f) {
                     unk_800c93d0(party, party->playerPtr->baseSpeed);
                 } else {
                     unk_800c9398(party, 0.0f);
@@ -1041,7 +1041,7 @@ void party_motion_homing_walk(PartyEntry* party) {
             if (writeId == partyGetFootmarkReadId(id)) {
 #endif
                 unk_800c93d0(party, party->playerPtr->baseSpeed);
-                if (!(party->playerPtr->baseSpeed != 0.0f && (*(f32*)((u8*)party + 0xA0)) == 0.0f && (*(f32*)((u8*)party + 0xA8)) == 0.0f)) {
+                if (!(party->playerPtr->baseSpeed != 0.0f && party->velX == 0.0f && party->velZ == 0.0f)) {
                     angle = party->dir;
                     unk_800c93d0(party, 0.0f);
                     party->jumpPara3 = 0.0f;
@@ -1520,7 +1520,7 @@ void party_motion_homing_fly(PartyEntry* party) {
                     unk_800c93d0(party, v);
                     break;
                 }
-            } else if (*(f32*)((u8*)party + 0xA0) == 0.0f && *(f32*)((u8*)party + 0xA8) == 0.0f) {
+            } else if (party->velX == 0.0f && party->velZ == 0.0f) {
                 unk_800c93d0(party, party->playerPtr->baseSpeed);
             } else {
                 unk_800c9398(party, zero);
@@ -1531,8 +1531,8 @@ void party_motion_homing_fly(PartyEntry* party) {
         if (partyGetFootmarkReadId(id) == partyGetFootmarkWriteId(id)) {
             unk_800c93d0(party, party->playerPtr->baseSpeed);
             if (party->playerPtr->baseSpeed == 0.0f ||
-                *(f32*)((u8*)party + 0xA0) != 0.0f ||
-                *(f32*)((u8*)party + 0xA8) != 0.0f) {
+                party->velX != 0.0f ||
+                party->velZ != 0.0f) {
                 angle = party->dir;
                 unk_800c93d0(party, 0.0f);
                 party->jumpPara3 = 0.0f;
@@ -1788,7 +1788,7 @@ void party_motion_behind_mario(PartyEntry* party) {
             }
 #ifdef MUST_MATCH
             angle += 180.0f;
-            *(f32*)((u8*)party + 0x54) = revise360(angle);
+            party->moveAngle = revise360(angle);
 #else
             party->moveAngle = revise360(angle + 180.0f);
 #endif
@@ -1877,9 +1877,9 @@ void party_motion_behind_mario(PartyEntry* party) {
                 hitGetAttr(hit);
             }
             if (fabsf(party->position.y - w) > 1.0f) {
-                *(f32*)((u8*)party + 0x94) = x;
-                *(f32*)((u8*)party + 0x98) = w;
-                *(f32*)((u8*)party + 0x9C) = z;
+                party->targetPos.x = x;
+                party->targetPos.y = w;
+                party->targetPos.z = z;
                 partyChgMot(party, 2);
                 return;
             }
@@ -1925,7 +1925,7 @@ void party_motion_behind_mario(PartyEntry* party) {
         partyChgMoveMode(party, 1);
         partyChgMot(party, 0);
         partySetDir(party, mario->position.x, mario->position.z);
-        *(f32*)((u8*)party + 0x40) = 50.0f;
+        party->followDist = 50.0f;
         party->flags2 = (party->flags2 & ~0x10);
         party->flags = (party->flags | PARTY_FLAG_IS_BEHIND_MARIO);
         party->field_8 = (party->field_8 & ~0x100000);
@@ -1936,7 +1936,7 @@ void party_motion_behind_mario(PartyEntry* party) {
         partyChgMoveMode(party, 1);
         partyChgMot(party, 0);
         partySetDir(party, x, z);
-        *(f32*)((u8*)party + 0x40) = 50.0f;
+        party->followDist = 50.0f;
         party->flags2 = (party->flags2 & ~0x10);
         party->field_8 = (party->field_8 & ~0x40000);
     }
@@ -2079,7 +2079,7 @@ void party_motion_behind_mario_continue(PartyEntry* party) {
             partyChgMoveMode(party, 1);
             partyChgMot(party, 0);
             partySetDir(party, mario->position.x, mario->position.z);
-            *(f32*)((u8*)party + 0x40) = 50.0f;
+            party->followDist = 50.0f;
             party->flags2 = (party->flags2 & ~0x10);
         }
     }
@@ -2087,7 +2087,7 @@ void party_motion_behind_mario_continue(PartyEntry* party) {
         partyChgMoveMode(party, 1);
         partyChgMot(party, 0);
         partySetDir(party, x, z);
-        *(f32*)((u8*)party + 0x40) = 50.0f;
+        party->followDist = 50.0f;
         party->flags2 = (party->flags2 & ~0x10);
     }
 }
@@ -2160,7 +2160,7 @@ void party_motion_behind_mario_fly(PartyEntry* party) {
             }
 #ifdef MUST_MATCH
             dir += 180.0f;
-            *(f32*)((u8*)party + 0x54) = revise360(dir);
+            party->moveAngle = revise360(dir);
 #else
             party->moveAngle = revise360(dir + 180.0f);
 #endif
@@ -2201,7 +2201,7 @@ void party_motion_behind_mario_fly(PartyEntry* party) {
             party->position.z = pos.z;
 #ifdef MUST_MATCH
             k = 0.05f;
-            party->position.y = k * (*(f32*)((u8*)party + 0x98) - party->position.y) + party->position.y;
+            party->position.y = k * (party->targetPos.y - party->position.y) + party->position.y;
 #else
             party->position.y = 0.05f * (party->targetPos.y - party->position.y) + party->position.y;
 #endif
@@ -2221,7 +2221,7 @@ void party_motion_behind_mario_fly(PartyEntry* party) {
         partyChgMoveMode(party, 1);
         partyChgMot(party, 0);
         partySetDir(party, mario->position.x, mario->position.z);
-        *(f32*)((u8*)party + 0x40) = 50.0f;
+        party->followDist = 50.0f;
         party->flags2 = (party->flags2 & ~0x10);
         unk_800c9398(party, 0.0f);
         party->flags = (party->flags | PARTY_FLAG_IS_BEHIND_MARIO);
@@ -2233,7 +2233,7 @@ void party_motion_behind_mario_fly(PartyEntry* party) {
             partyChgMoveMode(party, 1);
             partyChgMot(party, 0);
             partySetDir(party, mario->position.x, mario->position.z);
-            *(f32*)((u8*)party + 0x40) = 50.0f;
+            party->followDist = 50.0f;
             party->flags2 = (party->flags2 & ~0x10);
             party->field_8 = (party->field_8 & ~0x40000);
         }
@@ -2292,7 +2292,7 @@ void party_motion_beside_mario(PartyEntry* party) {
         }
 #ifdef MUST_MATCH
         dir += 90.0f;
-        *(f32*)((u8*)party + 0x54) = revise360(dir);
+        party->moveAngle = revise360(dir);
 #else
         party->moveAngle = revise360(dir + 90.0f);
 #endif
@@ -2319,7 +2319,7 @@ void party_motion_beside_mario(PartyEntry* party) {
         }
 #ifdef MUST_MATCH
         dir += 90.0f;
-        *(f32*)((u8*)party + 0x54) = revise360(dir);
+        party->moveAngle = revise360(dir);
 #else
         party->moveAngle = revise360(dir + 90.0f);
 #endif
@@ -2389,7 +2389,7 @@ void party_motion_beside_mario(PartyEntry* party) {
         partyChgMoveMode(party, 1);
         partyChgMot(party, 0);
         partySetDir(party, mario->position.x, mario->position.z);
-        *(f32*)((u8*)party + 0x40) = 50.0f;
+        party->followDist = 50.0f;
         party->flags2 = (party->flags2 & ~0x10);
         party->flags = (party->flags | PARTY_FLAG_IS_BEHIND_MARIO);
     }
@@ -2397,7 +2397,7 @@ void party_motion_beside_mario(PartyEntry* party) {
         partyChgMoveMode(party, 1);
         partyChgMot(party, 0);
         partySetDir(party, mario->position.x, mario->position.z);
-        *(f32*)((u8*)party + 0x40) = 50.0f;
+        party->followDist = 50.0f;
         party->flags2 = (party->flags2 & ~0x10);
     }
 }
@@ -2466,7 +2466,7 @@ void party_motion_jump(PartyEntry* party) {
             {
                 Vec pos = FV(vec3_802f3e58, ((Vec){0.0f, 0.0f, 0.0f}));
                 pos.x = tx; pos.y = ty; pos.z = tz;
-                *(Vec*)((u8*)party + 0x94) = pos;
+                party->targetPos = pos;
             }
 #else
             party->targetPos.x = tx;
@@ -2496,7 +2496,7 @@ void party_motion_jump(PartyEntry* party) {
                 {
                     Vec pos = FV(vec3_802f3e64, ((Vec){0.0f, 0.0f, 0.0f}));
                     pos.x = tx; pos.y = ty; pos.z = tz;
-                    *(Vec*)((u8*)party + 0x94) = pos;
+                    party->targetPos = pos;
                 }
 #else
                 party->targetPos.x = tx;
@@ -2536,7 +2536,7 @@ void party_motion_jump(PartyEntry* party) {
                     {
                         Vec pos = FV(vec3_802f3e70, ((Vec){0.0f, 0.0f, 0.0f}));
                         pos.x = tx; pos.y = ty; pos.z = tz;
-                        *(Vec*)((u8*)party + 0x94) = pos;
+                        party->targetPos = pos;
                     }
 #else
                     party->targetPos.x = tx;
@@ -2557,7 +2557,7 @@ void party_motion_jump(PartyEntry* party) {
                     {
                         Vec pos = FV(vec3_802f3e7c, ((Vec){0.0f, 0.0f, 0.0f}));
                         pos.x = tx; pos.y = ty; pos.z = tz;
-                        *(Vec*)((u8*)party + 0x94) = pos;
+                        party->targetPos = pos;
                     }
 #else
                     party->targetPos.x = tx;
@@ -2577,8 +2577,8 @@ void party_motion_jump(PartyEntry* party) {
         }
 #ifdef MUST_MATCH
         // Nested assignments preserve the distance web until allocation, yielding retail's f5 load.
-        f0 = (10.0f * (f1 = 0.9f * ((f6 = *(f32*)((u8*)party + 0x128)) / party->speed)) + 0.5f) / 10.0f;
-        *(f32*)((u8*)party + 0x128) = f6;
+        f0 = (10.0f * (f1 = 0.9f * ((f6 = party->targetDist) / party->speed)) + 0.5f) / 10.0f;
+        party->targetDist = f6;
 #else
         f6 = party->targetDist;
         f1 = 0.9f * (f6 / party->speed);
@@ -2595,7 +2595,7 @@ void party_motion_jump(PartyEntry* party) {
         h = party->targetPos.y - party->position.y;
         if (fabsf(h) < 1.0f) {
 #ifdef MUST_MATCH
-            *(f32*)((u8*)party + 0x128) = (f6 = *(f32*)((u8*)party + 0x128));
+            party->targetDist = (f6 = party->targetDist);
 #endif
             h = 25.0f;
         } else {
@@ -2973,8 +2973,8 @@ void party_motion_damage(PartyEntry* party) {
                     hitFlag = 0;
                 }
                 if (hitFlag == 0) {
-                    *(u8*)((u8*)party + 0x38) = 0xC;
-                    *(s32*)((u8*)party + 0x24) = 0x1E;
+                    party->motionStep = 0xC;
+                    party->timer = 0x1E;
                 }
             }
 #else

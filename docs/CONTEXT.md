@@ -9826,3 +9826,25 @@ and _MoveSoundControlCore's owner is a BattleUnitPart*. Both handle checks keep 
 (attack flags: bits 1/2/8/0x10 steer battle_seq's action dispatch) stay unnamed. Matching build 32 files OK; all 19
 changed C files compile with and without MUST_MATCH, and the natural objects are equivalent to the pre-branch ones
 (tools/obj_equiv.py). Cleanup index 43.102 -> 42.632 (field_0x 5554 -> 5434, raw_offset 1981 -> 1876).
+### Readability: party_motion, party_move, party_nokonoko and party_yoshi offsets (2026-10-19, Claude Haiku 5.5, n9-q-party3; reviewed by Claude Opus 5.5)
+
+PartyEntry gains `followDist` (0x40, the distance from Mario at which party_motion_stay starts the partner walking;
+the behind/beside routines and partyWalkInit/partyMoveFlyInit reset it to 50) and `velX`/`velZ` (0xA0/0xA8, the
+push velocity partyMarioHosei sets from Mario's speed and partyGetMoveDirSpd adds to moveDelta; 0xA4 is never
+touched). With those and the existing `targetPos`, `moveAngle`, `targetDist`, `motionStep`, `timer`, `radius`,
+`height`, `speed`, MarioWork `field_0x2B0`, `field_0x11C`, `field_0x128`, `dispReqDir`, `hitobjHead` and
+`hitobjDamageReturn`, the four files' byte-offset accesses (raw casts plus the M_F/NKF macros) drop from 236 to 149,
+MUST_MATCH arms included where the named form is the same expression. Kept raw because the named form compiles
+differently: party_nokonoko's twelve `NKF(0x10C) = revise360(50.0f * f2 + NKF(0x10C))` updates (`party->field_10C`
+reschedules each add; the other 0x10C/0x110 uses are named), and its `u16 mot = *(u16*)&mario->currMotionId`
+(the plain enum read is 4 bytes longer). MarioMotion is a u16 enum (`enumsalwaysint off`, max 0xFFFF) at 0x2E, so
+that cast reads the field itself; party_yoshi's `mario->currMotionId != 0x1A` compiles the same as the cast and is
+plain. Matching build 32 files OK; the four C files natural-compile to objects equivalent to the pre-branch ones
+(tools/obj_equiv.py, old tree with old headers). Open, MarioWork (mario.h was owned by q-mot2 during this branch):
+0x2B4, the f32 z twin of `field_0x2B0` (party_yoshi's stick inertia; L_yoshiFlyMove negates it); 0x2A0/0x2A4/0x2A8
+in party_yoshi are Yoshi's flutter y velocity (the `spinSpeed`/`damageRootY` union, clamped at -10), an f32 the
+velocity and it add into each other (position.y = 0x2A8 + 0x2A4), and the flutter base y (`wCamVal1`'s slot, f32
+here), so 0x2A4 wants an f32 and the union another member; 0x39 an s8 flag; 0x52 an s16 (airTimer at the jump peak); 0x18C an f32 fly speed (L_yoshiFlyMove,
+0.1 * the inertia length); 0x1DC and 0x1F0 HitEntry pointers checkWall stores; the 0x98/0xA4 Vec pair party_yoshi
+copies as one YoshiZeroVec6 (party_vivian and mot_damage index `field_0x98` by byte too). PartyEntry still raw in party_move: 0x3D, 0x3E
+(u8), 0x44 (u32, set to 0x10 beside followDist) and 0x52 (s16 contact counter partyMarioHosei returns: up to 100 while touching Mario, decays after).

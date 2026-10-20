@@ -1286,9 +1286,8 @@ void partyGetMoveDirSpd(PartyEntry* party, f32* angle, f32* speed) {
         }
     }
     sincosf(&sinv, &cosv, work->dir);
-    // 0xA0 and 0xA8 are not named in PartyEntry yet; raw offsets kept.
-    f31 = work->speed * sinv + (work->moveDelta.x + *(f32*)((u8*)work + 0xA0));
-    f30 = work->speed * cosv + (work->moveDelta.z + *(f32*)((u8*)work + 0xA8));
+    f31 = work->speed * sinv + (work->moveDelta.x + work->velX);
+    f30 = work->speed * cosv + (work->moveDelta.z + work->velZ);
     *angle = angleABf(0.0f, 0.0f, f31, f30);
     scale = (work->flags & PARTY_FLAG_IN_SHALLOW_WATER) ? 0.75f : 1.0f;
     len = partySqrtf(f31 * f31 + f30 * f30);
@@ -1323,10 +1322,10 @@ s32 partyMarioHosei(PartyEntry* party) {
     }
     f3 = work->radius + mario->wPlayerCollisionBox.x;
     f1 = mario->wPlayerCollisionBox.y + work->height;
-    *(f32*)((u8*)work + 0xA0) = 0.0f;
+    work->velX = 0.0f;
     f4 = f4 * f3;
     f5 = f5 * f3;
-    *(f32*)((u8*)work + 0xA8) = 0.0f;
+    work->velZ = 0.0f;
     f6 = f6 * f1;
     if (fabsf(work->position.x - mario->position.x) <= f4
         && fabsf(work->position.z - mario->position.z) <= f5
@@ -1352,8 +1351,8 @@ s32 partyMarioHosei(PartyEntry* party) {
             f30 = 0.8f * mario->baseSpeed;
         }
         f31 = 3.1415927f * angle / 180.0f;
-        *(f32*)((u8*)work + 0xA0) = f30 * (f32)sin(f31);
-        *(f32*)((u8*)work + 0xA8) = f30 * -(f32)cos(f31);
+        work->velX = f30 * (f32)sin(f31);
+        work->velZ = f30 * -(f32)cos(f31);
     } else if (*(s16*)((u8*)work + 0x52) > 0) {
         *(s16*)((u8*)work + 0x52) -= 1;
     }
@@ -1490,7 +1489,7 @@ void partyWalkInit(PartyEntry* party, s32 mode) {
     }
     *(u8*)((u8*)work + 0x3D) = 0;
     *(u32*)((u8*)work + 0x44) = 0x10;
-    *(f32*)((u8*)work + 0x40) = float_50_8041b468;
+    work->followDist = float_50_8041b468;
     *(u8*)((u8*)work + 0x3E) = 0;
     work->jumpPara2 = 1.8f;
     work->jumpPara1 = 0.0f;
@@ -1557,7 +1556,7 @@ void partyMoveWalk(PartyEntry* party) {
         }
         *(u8*)((u8*)work + 0x3D) = 0;
         *(u32*)((u8*)work + 0x44) = 0x10;
-        *(f32*)((u8*)work + 0x40) = float_50_8041b468;
+        work->followDist = float_50_8041b468;
         *(u8*)((u8*)work + 0x3E) = 0;
         work->jumpPara2 = 1.8f;
         work->jumpPara1 = 0.0f;
@@ -2080,7 +2079,7 @@ void partyMoveFlyInit(PartyEntry* party, s32 mode) {
         readId[1] = 0;
     }
     if (work->field_3B == 2) {
-        *(f32*)((u8*)work + 0x40) = float_50_8041b468;
+        work->followDist = float_50_8041b468;
     } else {
         *(u8*)((u8*)work + 0x3D) = (mode == 0) ? 0 : 2;
         partyChgMoveMode(party, 0);
@@ -2093,7 +2092,7 @@ void partyMoveFlyInit(PartyEntry* party, s32 mode) {
             partyChgMoveMode(party, 0x3C);
         }
         *(u32*)((u8*)work + 0x44) = 0x10;
-        *(f32*)((u8*)work + 0x40) = float_50_8041b468;
+        work->followDist = float_50_8041b468;
         *(u8*)((u8*)work + 0x3E) = 0;
         partyChgPoseId(party, 1);
         partyChgMoveMode(party, 1);
