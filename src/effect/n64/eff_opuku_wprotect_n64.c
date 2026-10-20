@@ -16,10 +16,26 @@ __declspec(section ".sdata") GXColor unk_804231f0;
 #include "math_ext.h"
 #include <stdlib.h>
 
+extern const f32 float_0_8041f890;
+extern const f32 float_100_8041f894;
+extern const f32 float_10_8041f898;
+extern const f32 float_20_8041f89c;
+extern const f32 float_0p03125_8041f8a0;
+extern const f32 float_0p0625_8041f8a8;
+extern const f32 float_0p3_8041f8ac;
+extern const f32 float_0p1_8041f8a4;
+extern const f32 float_24_8041f8b0;
+extern const f32 float_2_8041f8b4;
+extern const f32 float_6p2832_8041f8b8;
+extern const f32 float_360_8041f8bc;
+
 // The compiler's int->float magic double (0x4330000080000000) is intentionally not
 // defined here: defining it duplicates the pool. Left out, the single pooled entry is
 // emitted at the original's .rodata+0x10 offset and resolves to the original address.
 
+// .sdata2 scratch/default tev colours (loaded whole, one channel overwritten).
+const GXColor dat_8041f888 = { 0xFF, 0xFF, 0xFF, 0x00 };
+const GXColor dat_8041f88c = { 0x00, 0x00, 0xFF, 0x00 };
 // .sbss2 scratch colour the second pass fills in; the reference reads it before writing.
 
 // The 40-point ring the display pass renders: signed 1-byte XYZ (times 10),
@@ -161,8 +177,8 @@ EffectEntry* effOpukuWprotectN64Entry(s32 type, s32 duration, f32 x, f32 y, f32 
 	data->field_0x18 = 0x2F;
 	data->field_0x1C = 0x7F;
 	data->field_0x20 = 0xFF;
-	data->field_0x30 = 0.0f;
-	data->field_0x34 = 0.0f;
+	data->field_0x30 = float_0_8041f890;
+	data->field_0x34 = float_0_8041f890;
 	data->field_0x88 = -1;
 	data->field_0x8C = -5;
 	data->field_0x90 = -9;
@@ -204,8 +220,8 @@ void effOpukuWprotectMain(EffectEntry* effect) {
 
 	if (data->field_0x10 < 0) {
 		if (type == 1) {
-			effWaterDamageN64Entry(0, 30, data->x, 24.0f + data->y, data->z, 2.0f);
-			effWaterDamageN64Entry(1, 30, data->x, 24.0f + data->y, data->z, 2.0f);
+			effWaterDamageN64Entry(0, 30, data->x, float_24_8041f8b0 + data->y, data->z, float_2_8041f8b4);
+			effWaterDamageN64Entry(1, 30, data->x, float_24_8041f8b0 + data->y, data->z, float_2_8041f8b4);
 		}
 		effDelete(effect);
 		return;
@@ -231,16 +247,16 @@ void effOpukuWprotectMain(EffectEntry* effect) {
 
 #ifdef MUST_MATCH
 	// Original emits the multiply as `f14*6 + f14` (mulli 6; add) instead of a single *7.
-	s = (f32)sin(6.2831855f * (f32)(f14 * 6 + f14) / 360.0f);
+	s = (f32)sin(float_6p2832_8041f8b8 * (f32)(f14 * 6 + f14) / float_360_8041f8bc);
 #else
-	s = (f32)sin(6.2831855f * (f32)(f14 * 7) / 360.0f);
+	s = (f32)sin(float_6p2832_8041f8b8 * (f32)(f14 * 7) / float_360_8041f8bc);
 #endif
 	data->field_0x1C = (u8)(s32)(32.0f * s + 127.0f);
 	t = 0.01f * (f32)f14;
-	a1 = 6.2831855f * t / 360.0f;
+	a1 = float_6p2832_8041f8b8 * t / float_360_8041f8bc;
 	sin1 = (f32)sin(a1);
-	sin2 = (f32)sin(6.2831855f * (6.0f * t) / 360.0f);
-	cos1 = (f32)cos(6.2831855f * (2.0f * t) / 360.0f);
+	sin2 = (f32)sin(float_6p2832_8041f8b8 * (6.0f * t) / float_360_8041f8bc);
+	cos1 = (f32)cos(float_6p2832_8041f8b8 * (float_2_8041f8b4 * t) / float_360_8041f8bc);
 	cos2 = (f32)cos(a1);
 	{
 		f32 sin2s = 32.0f * sin2;
@@ -251,7 +267,7 @@ void effOpukuWprotectMain(EffectEntry* effect) {
 	}
 	data->field_0x34 += 0.2f;
 	if (data->field_0x34 >= 128.0f) {
-		data->field_0x34 = 0.0f;
+		data->field_0x34 = float_0_8041f890;
 	}
 
 	for (i = 0; i < 4; i++) {
@@ -260,7 +276,7 @@ void effOpukuWprotectMain(EffectEntry* effect) {
 			continue;
 		}
 		if (data->field_0x88[i] == 0) {
-			data->field_0x38[i] = 0.0f;
+			data->field_0x38[i] = float_0_8041f890;
 			data->field_0x48[i] = 240.0f;
 			data->field_0x58[i] = 0.2f * (f32)(rand() % 11 - 5);
 			data->field_0x68[i] = (f32)(rand() % 11 + 2);
@@ -269,7 +285,7 @@ void effOpukuWprotectMain(EffectEntry* effect) {
 		data->field_0x38[i] += data->field_0x58[i];
 		data->field_0x48[i] += data->field_0x68[i];
 		data->field_0x58[i] *= 0.97f;
-		data->field_0x68[i] += 0.1f * (10.0f - data->field_0x68[i]);
+		data->field_0x68[i] += float_0p1_8041f8a4 * (float_10_8041f898 - data->field_0x68[i]);
 		if (data->field_0x48[i] > 480.0f) {
 			data->field_0x88[i] = -(rand() % 11) - 1;
 		}
@@ -286,13 +302,13 @@ void effOpukuWprotectMain(EffectEntry* effect) {
 // each colour local and its by-value copy in the original's stack slots. Returning the
 // GXColor and calling outside packs all locals together instead.
 static inline void wprotectColor1(s32 a) {
-	GXColor c = (GXColor){ 0xFF, 0xFF, 0xFF, 0x00 };
+	GXColor c = dat_8041f888;
 	c.a = a;
 	GXSetTevColor(GX_TEVREG0, c);
 }
 
 static inline void wprotectColor2(s32 a) {
-	GXColor c = (GXColor){ 0x00, 0x00, 0xFF, 0x00 };
+	GXColor c = dat_8041f88c;
 	c.a = a;
 	GXSetTevColor(GX_TEVREG1, c);
 }
@@ -350,14 +366,14 @@ void effOpukuWprotectDisp(CameraId camId, void* param) {
 		px = (f32)(point->x * 10);
 		py = (f32)(point->y * 10);
 		pz = (f32)(point->z * 10);
-		if (0.0f != py) {
-			s1 = (f32)sin((f32)(counter + (s32)effTblRandN64(1000, (s32)(100.0f * pz + (10.0f * py + px)))));
-			t2 = 100.0f * py;
-			s2 = (f32)sin((f32)(counter + (s32)effTblRandN64(1000, (s32)(t2 + 10.0f * px + pz))));
-			s3 = (f32)sin((f32)(counter + (s32)effTblRandN64(1000, (s32)(10.0f * pz + (100.0f * px + py)))));
-			d1 = 20.0f * s1;
-			d2 = 20.0f * s2;
-			d3 = 20.0f * s3;
+		if (float_0_8041f890 != py) {
+			s1 = (f32)sin((f32)(counter + (s32)effTblRandN64(1000, (s32)(float_100_8041f894 * pz + (float_10_8041f898 * py + px)))));
+			t2 = float_100_8041f894 * py;
+			s2 = (f32)sin((f32)(counter + (s32)effTblRandN64(1000, (s32)(t2 + float_10_8041f898 * px + pz))));
+			s3 = (f32)sin((f32)(counter + (s32)effTblRandN64(1000, (s32)(float_10_8041f898 * pz + (float_100_8041f894 * px + py)))));
+			d1 = float_20_8041f89c * s1;
+			d2 = float_20_8041f89c * s2;
+			d3 = float_20_8041f89c * s3;
 			px += d1;
 			py += d2;
 			pz += d3;
@@ -378,14 +394,14 @@ void effOpukuWprotectDisp(CameraId camId, void* param) {
 #ifdef MUST_MATCH
 	wprotectColor1(alpha);
 #else
-	color1 = (GXColor){ 0xFF, 0xFF, 0xFF, 0x00 };
+	color1 = dat_8041f888;
 	color1.a = alpha;
 	GXSetTevColor(GX_TEVREG0, color1);
 #endif
 #ifdef MUST_MATCH
 	wprotectColor2(data->field_0x28);
 #else
-	color2 = (GXColor){ 0x00, 0x00, 0xFF, 0x00 };
+	color2 = dat_8041f88c;
 	color2.a = data->field_0x28;
 	GXSetTevColor(GX_TEVREG1, color2);
 #endif
@@ -400,14 +416,14 @@ void effOpukuWprotectDisp(CameraId camId, void* param) {
 	GXLoadTexObj(&texObj, GX_TEXMAP0);
 	GXSetNumTexGens(1);
 	GXSetTexCoordGen2(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_TEXMTX0, GX_FALSE, GX_PTIDENTITY);
-	PSMTXScale(scale, 0.03125f, 0.03125f, 0.0f);
+	PSMTXScale(scale, float_0p03125_8041f8a0, float_0p03125_8041f8a0, float_0_8041f890);
 	GXLoadTexMtxImm(scale, GX_TEXMTX0, GX_MTX2x4);
 	GXSetCullMode(GX_CULL_NONE);
 
 	for (i = 0; i < 4; i++) {
 		if (data->field_0x88[i] >= 0) {
-			PSMTXScale(scale, 0.1f, 0.1f, 0.1f);
-			PSMTXTrans(drop, data->field_0x38[i], data->field_0x48[i], 0.0f);
+			PSMTXScale(scale, float_0p1_8041f8a4, float_0p1_8041f8a4, float_0p1_8041f8a4);
+			PSMTXTrans(drop, data->field_0x38[i], data->field_0x48[i], float_0_8041f890);
 			PSMTXConcat(scale, drop, drop);
 			PSMTXScale(scale, data->field_0x78[i], data->field_0x78[i], data->field_0x78[i]);
 			PSMTXConcat(drop, scale, drop);
@@ -437,23 +453,23 @@ void effOpukuWprotectDisp(CameraId camId, void* param) {
 	GXLoadTexObj(&texObj, GX_TEXMAP0);
 	GXSetNumTexGens(1);
 	GXSetTexCoordGen2(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_TEXMTX0, GX_FALSE, GX_PTIDENTITY);
-	PSMTXScale(scale, 0.0625f, 0.03125f, 0.0f);
+	PSMTXScale(scale, float_0p0625_8041f8a8, float_0p03125_8041f8a0, float_0_8041f890);
 	GXLoadTexMtxImm(scale, GX_TEXMTX0, GX_MTX2x4);
 #ifdef MUST_MATCH
-	wprotectColor3(data, (s32)(0.3f * (f32)alpha));
+	wprotectColor3(data, (s32)(float_0p3_8041f8ac * (f32)alpha));
 #else
 	color3 = unk_804231f0;
 	color3.r = data->field_0x18;
 	color3.g = data->field_0x1C;
 	color3.b = data->field_0x20;
-	color3.a = (s32)(0.3f * (f32)alpha);
+	color3.a = (s32)(float_0p3_8041f8ac * (f32)alpha);
 	GXSetTevColor(GX_TEVREG0, color3);
 #endif
 	GXSetCullMode(GX_CULL_FRONT);
 
 	DCFlushRange(vtx, 0x460);
 	GXInvalidateVtxCache();
-	PSMTXScale(scale, 0.1f, 0.1f, 0.1f);
+	PSMTXScale(scale, float_0p1_8041f8a4, float_0p1_8041f8a4, float_0p1_8041f8a4);
 	PSMTXConcat(trans, scale, scale);
 	GXLoadPosMtxImm(scale, 0);
 	GXSetCurrentMtx(0);
@@ -477,3 +493,16 @@ void effOpukuWprotectDisp(CameraId camId, void* param) {
 	tri2(5, 10, 11, 0, 5, 11, 9, 0);
 }
 
+// The pool constants the code above loads by name, defined after it (defined first, the compiler folds them).
+const f32 float_0_8041f890 = 0.0f;
+const f32 float_100_8041f894 = 100.0f;
+const f32 float_10_8041f898 = 10.0f;
+const f32 float_20_8041f89c = 20.0f;
+const f32 float_0p03125_8041f8a0 = 0.03125f;
+const f32 float_0p1_8041f8a4 = 0.1f;
+const f32 float_0p0625_8041f8a8 = 0.0625f;
+const f32 float_0p3_8041f8ac = 0.3f;
+const f32 float_24_8041f8b0 = 24.0f;
+const f32 float_2_8041f8b4 = 2.0f;
+const f32 float_6p2832_8041f8b8 = 6.2831855f;
+const f32 float_360_8041f8bc = 360.0f;

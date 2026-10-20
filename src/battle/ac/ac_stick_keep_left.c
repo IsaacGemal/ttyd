@@ -12,6 +12,15 @@
 #include "system.h"
 #include <string.h>
 
+// sdata2 float constants used by actionCommandDisp.
+extern const f32 float_neg200_8041c3e8;
+extern const f32 float_70_8041c3ec;
+extern const f32 float_1_8041c3f0;
+extern const f32 float_16_8041c3f4;
+extern const f32 float_12_8041c3f8;
+extern const f32 float_neg288_8041c3fc;
+extern const f32 float_25_8041c400;
+
 // actionCommandDisp's .rodata: the five "_AcSklN" name strings are the compiler's zero-vector
 // literal pool anchor, so they must be .rodata (not the default small-data .sdata).
 __declspec(section ".rodata") const char str_802EFAD8[] = "_AcSkl1";
@@ -338,9 +347,9 @@ void battleAcDelete_StickKeepLeft(BattleWork* work) {
 // The original emits this last (the asm lists it first, and game code is compiled with
 // -inline auto,deferred, which emits functions in reverse source order).
 #ifdef MUST_MATCH
-// match-only: going through an inline keeps the 25.0f in its own FPR (f31), where the plain
-// `yy = 25.0f + y` reuses y's register (f30) and the whole loop body shifts one FPR down.
-static inline f32 stickLeftAdd25(f32 v) { return 25.0f + v; }
+// match-only: going through an inline keeps the named 25.0f in its own FPR (f31), where the plain
+// `yy = float_25 + y` reuses y's register (f30) and the whole loop body shifts one FPR down.
+static inline f32 stickLeftAdd25(f32 v) { return float_25_8041c400 + v; }
 #endif
 
 // The `ac` intermediate (`BattleActions*`, rather than spelling `work->actionCommands.` at every use)
@@ -367,37 +376,37 @@ static void actionCommandDisp(f32 x, f32 y, s32 type) {
     case 0x63:
     case 0x64: {
         Vec v = ((Vec){0.0f, 0.0f, 0.0f});
-        v.x = -200.0f + x;
-        v.y = 70.0f + y;
-        iconDispGx(1.0f, &v, 0x10, 0x79);
+        v.x = float_neg200_8041c3e8 + x;
+        v.y = float_70_8041c3ec + y;
+        iconDispGx(float_1_8041c3f0, &v, 0x10, 0x79);
         break;
     }
     case 0x3E8:
         if (gp->retraceCount & 8) {
             Vec v = ((Vec){0.0f, 0.0f, 0.0f});
-            v.x = -200.0f + x;
-            v.y = 70.0f + y;
-            iconDispGx(1.0f, &v, 0x10, 0x78);
+            v.x = float_neg200_8041c3e8 + x;
+            v.y = float_70_8041c3ec + y;
+            iconDispGx(float_1_8041c3f0, &v, 0x10, 0x78);
         }
         else {
             Vec v = ((Vec){0.0f, 0.0f, 0.0f});
-            v.x = -200.0f + x;
-            v.y = 70.0f + y;
-            iconDispGx(1.0f, &v, 0x10, 0x79);
+            v.x = float_neg200_8041c3e8 + x;
+            v.y = float_70_8041c3ec + y;
+            iconDispGx(float_1_8041c3f0, &v, 0x10, 0x79);
         }
         break;
     default:
         if (idx < count) {
             Vec v = ((Vec){0.0f, 0.0f, 0.0f});
-            v.x = -200.0f + x;
-            v.y = 70.0f + y;
-            iconDispGx(1.0f, &v, 0x10, 0x78);
+            v.x = float_neg200_8041c3e8 + x;
+            v.y = float_70_8041c3ec + y;
+            iconDispGx(float_1_8041c3f0, &v, 0x10, 0x78);
         }
         else {
             Vec v = ((Vec){0.0f, 0.0f, 0.0f});
-            v.x = -200.0f + x;
-            v.y = 70.0f + y;
-            iconDispGx(1.0f, &v, 0x10, 0x79);
+            v.x = float_neg200_8041c3e8 + x;
+            v.y = float_70_8041c3ec + y;
+            iconDispGx(float_1_8041c3f0, &v, 0x10, 0x79);
         }
         break;
     }
@@ -410,34 +419,34 @@ static void actionCommandDisp(f32 x, f32 y, s32 type) {
         }
     }
 
-    step = 16.0f;
+    step = float_16_8041c3f4;
     if (ac->acFlag & 1) {
-        step = 12.0f;
+        step = float_12_8041c3f8;
     }
 
     {
         Vec v = ((Vec){0.0f, 0.0f, 0.0f});
-        v.x = -288.0f + x;
+        v.x = float_neg288_8041c3fc + x;
 #ifdef MUST_MATCH
         v.y = yy = stickLeftAdd25(y);
 #else
-        v.y = yy = 25.0f + y;
+        v.y = yy = float_25_8041c400 + y;
 #endif
-        iconDispGx(1.0f, &v, 0x10, 0x8F);
+        iconDispGx(float_1_8041c3f0, &v, 0x10, 0x8F);
     }
 
     for (i = 1; i < n; i++) {
         Vec v = ((Vec){0.0f, 0.0f, 0.0f});
-        v.x = x + (step * i + (-288.0f));
+        v.x = x + (step * i + float_neg288_8041c3fc);
         v.y = yy;
-        iconDispGx(1.0f, &v, 0x10, 0x8E);
+        iconDispGx(float_1_8041c3f0, &v, 0x10, 0x8E);
     }
 
     {
         Vec v = ((Vec){0.0f, 0.0f, 0.0f});
-        v.x = x + (step * i + (-288.0f));
+        v.x = x + (step * i + float_neg288_8041c3fc);
         v.y = yy;
-        iconDispGx(1.0f, &v, 0x10, 0x90);
+        iconDispGx(float_1_8041c3f0, &v, 0x10, 0x90);
     }
 
     step = 33.0f;
@@ -453,16 +462,16 @@ static void actionCommandDisp(f32 x, f32 y, s32 type) {
                 v.y = yy;
 #ifdef MUST_MATCH
                 // iconDispGx's header says s16 but the original passes a zero-extended u16 (clrlwi, no extsh).
-                ((void (*)(Vec*, s16, u16, f32))iconDispGx)(&v, 0x10, (u16)(i + 0x92), 1.0f);
+                ((void (*)(Vec*, s16, u16, f32))iconDispGx)(&v, 0x10, (u16)(i + 0x92), float_1_8041c3f0);
 #else
-                iconDispGx(1.0f, &v, 0x10, (s16)(i + 0x92));
+                iconDispGx(float_1_8041c3f0, &v, 0x10, (s16)(i + 0x92));
 #endif
             }
             else {
                 Vec v = ((Vec){0.0f, 0.0f, 0.0f});
                 v.x = x + (step * i + (-258.0f));
                 v.y = yy;
-                iconDispGx(1.0f, &v, 0x10, 0x94);
+                iconDispGx(float_1_8041c3f0, &v, 0x10, 0x94);
             }
         }
         else {
@@ -477,13 +486,21 @@ static void actionCommandDisp(f32 x, f32 y, s32 type) {
         Vec v = ((Vec){0.0f, 0.0f, 0.0f});
         v.x = x + (step * (count - 1) + (-250.0f));
         v.y = yy;
-        iconDispGx(1.0f, &v, 0x10, 0x91);
+        iconDispGx(float_1_8041c3f0, &v, 0x10, 0x91);
     }
     else {
         Vec v = ((Vec){0.0f, 0.0f, 0.0f});
         v.x = x + (step * (count - 1) + (-250.0f));
         v.y = yy;
-        iconDispGx(1.0f, &v, 0x10, 0x95);
+        iconDispGx(float_1_8041c3f0, &v, 0x10, 0x95);
     }
 }
 
+// The pool constants the code above loads by name, defined after it (defined first, the compiler folds them).
+const f32 float_neg200_8041c3e8 = -200.0f;
+const f32 float_70_8041c3ec = 70.0f;
+const f32 float_1_8041c3f0 = 1.0f;
+const f32 float_16_8041c3f4 = 16.0f;
+const f32 float_12_8041c3f8 = 12.0f;
+const f32 float_neg288_8041c3fc = -288.0f;
+const f32 float_25_8041c400 = 25.0f;
