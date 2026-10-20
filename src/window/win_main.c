@@ -88,12 +88,8 @@ TEXPalette* winTexTpl = NULL;
 // original win_main.c treated them as s32 (the callees sign-extend their own
 // s16 returns). Call through the wider signature so MWCC does not insert
 // spurious extsh conversions.
-#define POUCH_GETHP() (*(s32(*)(void))pouchGetHP)()
-#define POUCH_SETHP(v) (*(void(*)(s32))pouchSetHP)(v)
 #define POUCH_GETFP() (*(s32(*)(void))pouchGetFP)()
-#define POUCH_SETFP(v) (*(void(*)(s32))pouchSetFP)(v)
 #define POUCH_GETAP() (*(s32(*)(void))pouchGetAP)()
-#define POUCH_SETAP(v) (*(void(*)(s32))pouchSetAP)(v)
 #define POUCH_GETPARTYHP(id) (*(s32(*)(s32))pouchGetPartyHP)(id)
 #define POUCH_SETPARTYHP(id, v) (*(void(*)(s32, s32))pouchSetPartyHP)(id, v)
 
@@ -525,13 +521,13 @@ USER_FUNC(itemUseFunc) {
         case 0:
             statusWinForceOpen();
             if (event->lwData[11] == 0) {
-                POUCH_SETHP(POUCH_GETHP() + item->hp_restored);
-                POUCH_SETFP(POUCH_GETFP() + item->fp_restored);
-                POUCH_SETAP(POUCH_GETAP() + (u8)item->sp_restored);
+                pouchSetHP(pouchGetHP() + item->hp_restored);
+                pouchSetFP(POUCH_GETFP() + item->fp_restored);
+                pouchSetAP(POUCH_GETAP() + (u8)item->sp_restored);
             } else {
                 POUCH_SETPARTYHP(event->lwData[11], POUCH_GETPARTYHP(event->lwData[11]) + item->hp_restored);
-                POUCH_SETFP(POUCH_GETFP() + item->fp_restored);
-                POUCH_SETAP(POUCH_GETAP() + (u8)item->sp_restored);
+                pouchSetFP(POUCH_GETFP() + item->fp_restored);
+                pouchSetAP(POUCH_GETAP() + (u8)item->sp_restored);
             }
             cnt++;
             break;
@@ -1063,7 +1059,7 @@ void winIconSet(s32 iconId, Vec* translate, Vec* scale, GXColor* color) {
     if (iconId == 0x115) {
         iconId = 0x114;
     }
-    (*(void(*)(GXTexObj*, u16))iconGetTexObj)(&texObj, iconId);
+    iconGetTexObj(&texObj, iconId);
     GXInitTexObjLOD(&texObj, GX_LINEAR, GX_LINEAR, 0.0f, 0.0f, 0.0f, GX_FALSE, GX_FALSE, GX_ANISO_1);
     GXLoadTexObj(&texObj, GX_TEXMAP0);
 
