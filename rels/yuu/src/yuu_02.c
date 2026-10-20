@@ -86,8 +86,8 @@ f32 fukkipoint[45] = {
 };
 
 
-EVT_BEGIN(unk_evt_yuu_000152bc)
-    CALL(unk_yuu_00000f1c)
+EVT_BEGIN(evt_yuu_monte_single)
+    CALL(yuu_monte_single_init)
     RETURN
 EVT_END()
 
@@ -121,10 +121,10 @@ const Vec vec3_yuu_00014008 = { 0.0f, 0.0f, 0.0f };
 #endif
 u32 gap_05_0000000C_bss;
 static void* yuunpc_wp;
-MonteEntry* unk_yuu_bss00000004;
+MonteEntry* monte_entries;
 static MonteEntry* monte_p;
 
-USER_FUNC(unk_yuu_00001210) {
+USER_FUNC(minigame03_cam_reset) {
     camShiftReset();
     return EVT_RETURN_DONE;
 }
@@ -152,7 +152,7 @@ USER_FUNC(unk_yuu_00001160) {
     return EVT_RETURN_DONE;
 }
 
-void unk_yuu_00001054(CameraId cameraId, void* param) {
+void monte_single_disp(CameraId cameraId, void* param) {
     MonteEntry* entries = (MonteEntry*)param;
     MarioWork* mario;
     s32 i;
@@ -197,7 +197,7 @@ static inline void monte_fill(void) {
 // `#pragma opt_propagation off` above is required: with propagation on MWCC folds
 // count*sizeof(MonteEntry) (count==1) to li 0x44 and drops the target's li r28,1 /
 // mulli r29,r28,0x44 / mr r3,r29 sequence and the r28 save.
-USER_FUNC(unk_yuu_00000f1c) {
+USER_FUNC(yuu_monte_single_init) {
     s32 wasAllocated = 0;
     s32 entryCount;
     YuuminigameWork* work = (YuuminigameWork*)event->lwData[0];
@@ -227,7 +227,7 @@ USER_FUNC(unk_yuu_00000f1c) {
     for (i = 0; i < monte_p->count; i++) {
     }
     if (wasAllocated == 0) {
-        dispEntry(8, 0.0f, 0, unk_yuu_00001054, monte_p);
+        dispEntry(8, 0.0f, 0, monte_single_disp, monte_p);
     }
     return EVT_RETURN_BLOCK;
 }
@@ -269,7 +269,7 @@ USER_FUNC(fall_rtn) {
     s32 allocSize;
 
     if (isFirstCall) {
-        if (unk_yuu_bss00000004 != NULL) {
+        if (monte_entries != NULL) {
             wasAllocated = 1;
         }
         total = 0;
@@ -279,19 +279,19 @@ USER_FUNC(fall_rtn) {
             i++;
         }
         allocSize = total * 0x44;
-        unk_yuu_bss00000004 = (MonteEntry*)_mapAlloc(allocSize);
-        memset(unk_yuu_bss00000004, 0, allocSize);
-        unk_yuu_bss00000004->count = total;
-        unk_yuu_bss00000004->work = work;
+        monte_entries = (MonteEntry*)_mapAlloc(allocSize);
+        memset(monte_entries, 0, allocSize);
+        monte_entries->count = total;
+        monte_entries->work = work;
         data->field_24 = 0;
 
         tableIdx = 0;
         pointIdx = 0;
         placedThisTable = 0;
-        for (i = 0; i < unk_yuu_bss00000004->count; i++) {
+        for (i = 0; i < monte_entries->count; i++) {
             s32 k;
             s32 j;
-            f32* base = (f32*)((u8*)&unk_yuu_bss00000004[i] + 8);
+            f32* base = (f32*)((u8*)&monte_entries[i] + 8);
             f32 min;
             f32 max;
             Vec delta;
@@ -367,16 +367,16 @@ USER_FUNC(fall_rtn) {
                     s32 n;
                     s32 r;
                     for (n = 0; n < placedThisTable; n++) {
-                        unk_yuu_bss00000004[i - n].active = 1;
-                        unk_yuu_bss00000004[i - n].hit = 1;
+                        monte_entries[i - n].active = 1;
+                        monte_entries[i - n].hit = 1;
                     }
                     n = 0;
                     while (n < montetable[tableIdx].count) {
                         do {
                             r = irand(placedThisTable);
-                        } while (unk_yuu_bss00000004[i - r].active == 0);
-                        unk_yuu_bss00000004[i - r].active = 0;
-                        unk_yuu_bss00000004[i - r].hit = 0;
+                        } while (monte_entries[i - r].active == 0);
+                        monte_entries[i - r].active = 0;
+                        monte_entries[i - r].hit = 0;
                         n++;
                     }
                     placedThisTable = 0;
@@ -397,8 +397,8 @@ USER_FUNC(fall_rtn) {
 #else
         const char* sfx = "SFX_EVT_GAME_MONTE_COUNT1";
 #endif
-        for (i = 0; i < unk_yuu_bss00000004->count; i++) {
-            MonteEntry* p = &unk_yuu_bss00000004[i];
+        for (i = 0; i < monte_entries->count; i++) {
+            MonteEntry* p = &monte_entries[i];
             switch (p->hit) {
             case 0:
                 if (get_monte_check(&p->pos, &marioGetPtr()->position) == 1) {
@@ -420,21 +420,21 @@ USER_FUNC(fall_rtn) {
         }
     }
     if (wasAllocated == 0) {
-        dispEntry(4, 0.0f, 1, monte_disp, unk_yuu_bss00000004);
+        dispEntry(4, 0.0f, 1, monte_disp, monte_entries);
     }
     return EVT_RETURN_BLOCK;
 }
 
 USER_FUNC(re_fall_rtn) {
-    if (unk_yuu_bss00000004 != NULL) {
+    if (monte_entries != NULL) {
         YuuMinigame3Data* data =
-            (YuuMinigame3Data*)((YuuminigameWork*)unk_yuu_bss00000004->work)->data;
+            (YuuMinigame3Data*)((YuuminigameWork*)monte_entries->work)->data;
         if (data->viewEvent != NULL) {
             evtDeleteID(data->viewEvent->eventId);
             data->viewEvent = NULL;
-            _mapFree(unk_yuu_bss00000004);
+            _mapFree(monte_entries);
             data->viewEvent = evtEntryType(minigame_view_monte, 0, 0, 0);
-            data->viewEvent->lwData[0] = (s32)unk_yuu_bss00000004->work;
+            data->viewEvent->lwData[0] = (s32)monte_entries->work;
         }
     }
     return EVT_RETURN_DONE;
@@ -488,7 +488,7 @@ void yuuminigame_init_3roll(EventEntry* event, BOOL isFirstCall) {
     YuuMinigame3Data* data = ((YuuminigameWork*)event->lwData[0])->data;
     EventEntry* e;
 
-    e = evtEntryType(unk_evt_yuu_000152bc, 0, 0, 0xEF);
+    e = evtEntryType(evt_yuu_monte_single, 0, 0, 0xEF);
     e->lwData[0] = (s32)event->lwData[0];
     data->viewEvent = evtEntryType(minigame_view_monte, 0, 0, 0);
     data->viewEvent->lwData[0] = (s32)event->lwData[0];
@@ -853,7 +853,7 @@ EVT_BEGIN(minigame03_end)
     CALL(re_fall_rtn)
     SET_VALUE(GF(0), 0)
     CALL_CHILD(yuu_02_kaijo_init2)
-    CALL(unk_yuu_00001210)
+    CALL(minigame03_cam_reset)
     WAIT_MS(500)
     CALL(evt_snd_sfxon, STRING("SFX_EVT_GAME_AUDIENCE1"), GW(10))
     CALL(evt_fade_in, 1000)

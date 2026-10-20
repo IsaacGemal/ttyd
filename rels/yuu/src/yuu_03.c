@@ -57,11 +57,11 @@ static Vec makeVecB(f32 x, f32 y, f32 z);
 static s32 evt_nomal_cange(EventEntry* event, BOOL isFirstCall);
 
 // .bss emission order is the reverse of declaration order; reverse the four globals so the
-// emitted layout matches the original: unk_yuu_bss00000010@0, xwp@4, ryuwp@8, yuunpc_wp@0xC.
+// emitted layout matches the original: yuu4_entries@0, xwp@4, ryuwp@8, yuunpc_wp@0xC.
 static void* yuunpc_wp;
 s32 ryuwp;
 RyushiEntry* xwp;
-Yuuminigame4Work* unk_yuu_bss00000010;
+Yuuminigame4Work* yuu4_entries;
 
 // clang-format off
 extend_data(4,
@@ -81,16 +81,16 @@ extend_data(5,
      u64, one_negone, 0x3F800000BF800000,
      f32, __local_PIO2, 1.57079632679489661923132169163975f,
      f32, one, 1.0f)
-USER_FUNC(unk_yuu_0000371c) {
+USER_FUNC(minigame04_cam_reset) {
     camShiftReset();
     return EVT_RETURN_DONE;
 }
 
-EVT_BEGIN(unk_evt_yuu_00015fe0)
-    CALL(unk_yuu_000034bc)
+EVT_BEGIN(evt_yuu4_entry)
+    CALL(yuu4_entry_init)
     RETURN
 EVT_END()
-void unk_yuu_0000365c(CameraId cameraId, void* param) {
+void yuu4_entry_disp(CameraId cameraId, void* param) {
     Yuuminigame4Work* entries = param;
     s32 i;
     if (entries != NULL) {
@@ -116,7 +116,7 @@ static inline void yuu4_init_work(MarioWork* mario) {
     Yuuminigame4Work* entries;
     MarioWork* marioData;
     marioData = mario;
-    for (i = 0; i < (entries = unk_yuu_bss00000010)->count; i++) {
+    for (i = 0; i < (entries = yuu4_entries)->count; i++) {
         entryFields = (f32*)((u8*)&entries[i] + 8);
         *(Vec*)&entryFields[1] = marioData->position;
         entryFields[2] += 40.0f;
@@ -125,26 +125,26 @@ static inline void yuu4_init_work(MarioWork* mario) {
 }
 #endif
 #pragma opt_propagation off // keep count*sizeof as the target's li/mulli sequence
-USER_FUNC(unk_yuu_000034bc) {
+USER_FUNC(yuu4_entry_init) {
     s32 wasAllocated = 0;
     s32 entryCount;
     YuuminigameWork* work2 = (YuuminigameWork*)event->lwData[0];
     MarioWork* mario = marioGetPtr();
     if (isFirstCall) {
         s32 i;
-        if (unk_yuu_bss00000010 != NULL) {
+        if (yuu4_entries != NULL) {
             wasAllocated = 1;
         }
         entryCount = 1;
-        unk_yuu_bss00000010 = _mapAlloc(entryCount * sizeof(Yuuminigame4Work));
-        memset(unk_yuu_bss00000010, 0, entryCount * sizeof(Yuuminigame4Work));
-        unk_yuu_bss00000010->count = entryCount;
-        unk_yuu_bss00000010->work = work2;
+        yuu4_entries = _mapAlloc(entryCount * sizeof(Yuuminigame4Work));
+        memset(yuu4_entries, 0, entryCount * sizeof(Yuuminigame4Work));
+        yuu4_entries->count = entryCount;
+        yuu4_entries->work = work2;
 #ifdef MUST_MATCH
         yuu4_init_work(mario);
 #else
-        for (i = 0; i < unk_yuu_bss00000010->count; i++) {
-            Yuuminigame4Work* entry = &unk_yuu_bss00000010[i];
+        for (i = 0; i < yuu4_entries->count; i++) {
+            Yuuminigame4Work* entry = &yuu4_entries[i];
             entry->position = mario->position;
             entry->position.y += 40.0f;
             entry->unk18 = 1.0f;
@@ -153,8 +153,8 @@ USER_FUNC(unk_yuu_000034bc) {
     }
     {
         s32 i;
-        for (i = 0; i < unk_yuu_bss00000010->count; i++) {
-            Yuuminigame4Work* entry = &unk_yuu_bss00000010[i];
+        for (i = 0; i < yuu4_entries->count; i++) {
+            Yuuminigame4Work* entry = &yuu4_entries[i];
             switch (entry->unk4) {
             case 0:
                 entry->position = mario->position;
@@ -166,7 +166,7 @@ USER_FUNC(unk_yuu_000034bc) {
         }
     }
     if (wasAllocated == 0) {
-        dispEntry(4, 0.0f, 1, unk_yuu_0000365c, unk_yuu_bss00000010);
+        dispEntry(4, 0.0f, 1, yuu4_entry_disp, yuu4_entries);
     }
     return EVT_RETURN_BLOCK;
 }
@@ -244,16 +244,16 @@ EVT_BEGIN(yuu_03_kaijo_init2)
     RETURN
 EVT_END()
 USER_FUNC(unk_yuu_0000341c) {
-    Yuuminigame4Work* entries = unk_yuu_bss00000010;
+    Yuuminigame4Work* entries = yuu4_entries;
     if (entries != NULL) {
         YuuminigameWork* work2 = entries->work;
         Yuuminigame4Data* data = work2->data;
         if (data->subEvent != NULL) {
             evtDeleteID(data->subEvent->eventId);
             data->subEvent = NULL;
-            _mapFree(unk_yuu_bss00000010);
-            data->subEvent = evtEntryType(unk_evt_yuu_00015fe0, 0, 0, 0);
-            data->subEvent->lwData[0] = (s32)unk_yuu_bss00000010->work;
+            _mapFree(yuu4_entries);
+            data->subEvent = evtEntryType(evt_yuu4_entry, 0, 0, 0);
+            data->subEvent->lwData[0] = (s32)yuu4_entries->work;
         }
     }
     return EVT_RETURN_DONE;
@@ -460,7 +460,7 @@ EVT_BEGIN(minigame04_end)
     CALL(evt_mario_set_pose, STRING("M_S_1"))
     CALL_CHILD(yuu_03_kaijo_init2)
     CALL(evt_cam_road_reset)
-    CALL(unk_yuu_0000371c)
+    CALL(minigame04_cam_reset)
     WAIT_MS(500)
     CALL(re_init_yuunpc)
     CALL(evt_snd_sfxon, STRING("SFX_EVT_GAME_AUDIENCE1"), GW(10))
@@ -950,7 +950,7 @@ void yuuminigame_init_4slit(EventEntry* event, BOOL isFirstCall) {
     RyushiEntry* entry;
     s32 i;
 
-    data->subEvent = evtEntryType(unk_evt_yuu_00015fe0, 0, 0, 0);
+    data->subEvent = evtEntryType(evt_yuu4_entry, 0, 0, 0);
     data->subEvent->lwData[0] = event->lwData[0];
     data->flags |= 1;
 
