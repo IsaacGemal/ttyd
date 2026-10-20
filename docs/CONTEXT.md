@@ -11613,3 +11613,19 @@ the buttons do/while(0) tail and unitwin_icon_delete. Build MATCH.
 - The MUST_MATCH shape became the only version (comments reworded): machinegun's `Vec position` copy and `f`/`h` split of `x0` (plus an empty guard); battle_disp's switch in btlDispTexPlainGX and the one-case switches in `_pose_def` and `_pose_one_pattern` (the unused `str_*` externs went with the dead #else); stick_keep_left's `sfxName[2]` array and `stickLeftAdd25` inline; monosiri_target's `ac` local.
 - The plain `BattleActionCommandGetDifficulty(work)` call now matches (the header already says `s32`), so the function-pointer casts in `_getmaxcount` and stick_keep_left's ok_frame index are gone.
 - Left under MUST_MATCH: battle_disp's `BtlUnit_CheckStatus` cast (the prototype is shared by 139 callers); stick_keep_left's `case 0x3EB` dead `n >= 0` compare and `iconDispGx` cast; monosiri_target's `vec3_80300880[11]` rodata array and `iconDispGx` cast; toge_flush's non-const `.rodata` Vec, the `*(GXColor*)&unk_80423070` colour inlines and their switches; windowdrv's `gap_` dummy, GXWGFifo writes and `goto ret` (a plain `return` changes the code).
+## s-mmmix23: MUST_MATCH reduction (win_badge, sound, romfont, himo, evt_party, evt_item)
+
+No names added. MUST_MATCH line counts before -> after: win_badge.c 6 -> 6, sound.c 6 -> 4, romfont.c 6 -> 1,
+himo.c 6 -> 6, evt_party.c 6 -> 4, evt_item.c 6 -> 6. Objects are obj_equiv-equivalent to the pre-change ones and
+build/G8MJ01/ok is recreated; romfont, sound and evt_party also compile without -DMUST_MATCH.
+- romfont.h `RomFontChar::width` is now u16 (the asm loads it with lhz). That removed both `*(u16*)&glyph->width`
+  reads, and `curX`/`curY` are plain s32 with the s16 `x`/`y` copies for the GXPosition3s16 calls as the only form.
+  Only the second-load `cur` in romFontFindCharW stays guarded.
+- sound.c: `sdd_eff`/`sdd_dvd` are the pointer-returning inlines unconditionally (the macro form scores lower).
+- evt_party.c: the `fr`/`spd`/`frames` order in evt_party_move_pos2 is the only form (the one-expression form swaps
+  the int->float and fctiwz slots).
+- Stayed guarded: win_badge `arg0` copies (a typed copy also fails) and the winFont*/winIcon* function-pointer casts;
+  sound SoundDVDChan (u32 cast) and the SoundSSPlayChEx path helper; himo's constant locals (including the unused c15
+  store), the s32 pointer locals and spline_getvalue int-pointer calls; evt_party's `f32 pos` for a Vec and the
+  searchUnder2 pointer cast (header returns s32; fixing it touches mario_hit.c and evt_mario.c); evt_item's pool
+  constant and `rawStep` shape.
