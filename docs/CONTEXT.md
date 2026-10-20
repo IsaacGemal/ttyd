@@ -10851,3 +10851,27 @@ no diagnostics. Index (tools/cleanup_index.py): 30.279 -> 30.197 per kLOC (21545
 Verified: tower `ninja` recreates `build/G8MJ01/ok` (32 files OK); natural (no MUST_MATCH) compiles of both changed C files
 return 0. Index (tools/cleanup_index.py): 30.279 -> 30.139 per kLOC (21545 -> 21445 weighted over 711538 code lines);
 field_0x 3208 -> 3108.
+### Readability: aji_04 statue mouth and battender scream fade names (2026-10-20, Claude Haiku 5.5, n9-q-mkii)
+
+aji_04.c: `unk_aji_00000ed0` is the msg callback every kuizu_sekizou message passes as PTR. On state 5 (a glyph is
+shown) it starts the mouth script when it isn't running, so it is `sekizou_mouth_callback` (declared in aji_04.h).
+That script (`UNK_0x00022c3c`, spawned by the callback) rotates the kuti and kuti2 mapobjs and is `sekizou_mouth_anim`.
+
+unit_boss_magnum_battender_mkII.c: `unk_aji_00007668` is the USER_FUNC run as a sibling of aud_suikomi. Its first call
+sets the countdown to 120 and reads the scream volume; each frame it ramps screamId's volume from `screamStartVol` to 0
+and stops when the countdown ends, so it is `aud_suikomi_fade`, with `screamFadeTimer`, `screamStartVol` and
+`screamVol` (the bss slots 0x168, 0x165 and 0x164).
+
+ArmWork fields (the arm `work` entries): `prevPos` (0x00) and `pos` (0x0C), the previous and current unit positions
+(`w->prevPos = w->pos` before BtlUnit_GetPos fills pos); `rotZ` (0x18) and `targetRotZ` (0x1C), the eased and the
+target z angle (rotZ moves a third of the way to atan(dy/dx) each frame and is passed to BtlUnit_SetRotate).
+TargetWork fields (wp_target): `state` (0x0, the 0/5/10/15 phase switch in aud_target_mark) and `timer` (0x4, the frame
+counter compared with 60, 40, 20 and 90).
+
+Left: the field_0x slots in the BattleUnitKind and BattleWeapon initialisers (battender's own unit kind and weapon
+tables, field_0x13/14/30/32/3C/54/58/8C and field_0x14/19/1B/6D/6F), which are fields of the shared battle structs in
+include/battle/battle_unit.h and need their own pass across every unit that uses them.
+
+Verified: tower `ninja` recreates `build/G8MJ01/ok` (32 files OK); natural (no MUST_MATCH) compiles of aji_04.c and
+unit_boss_magnum_battender_mkII.c return 0. Index (tools/cleanup_index.py): 30.279 per kLOC (21545 over 711538) ->
+30.183 (21476 over 711538); unk_name 846 -> 820, field_0x 3208 -> 3165.
