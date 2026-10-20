@@ -47,10 +47,8 @@ USER_FUNC(evt_lottery) {
 	}
 
 	if (info->mFlags & 2) {
-		u8* p = (u8*)info + arg1 * 8;
-
-		if (*(OSTime*)(p + 0x30) < start) {
-			OSTicksToCalendarTime(*(OSTime*)(p + 0x30), &ct[6]);
+		if (info->mSlotTime[arg1] < start) {
+			OSTicksToCalendarTime(info->mSlotTime[arg1], &ct[6]);
 			OSTicksToCalendarTime(start, &ct[5]);
 			if (ct[6].year == ct[5].year && ct[6].mon == ct[5].mon && ct[6].mday == ct[5].mday) {
 				info->mFlags &= ~0x10;
@@ -58,16 +56,16 @@ USER_FUNC(evt_lottery) {
 				if (!(info->mFlags & 8)) {
 					info->mFlags |= 0x10;
 				}
-				*(OSTime*)(p + 0x30) = start;
+				info->mSlotTime[arg1] = start;
 			}
 		} else {
-			OSTicksToCalendarTime(*(OSTime*)(p + 0x30), &ct[4]);
+			OSTicksToCalendarTime(info->mSlotTime[arg1], &ct[4]);
 			OSTicksToCalendarTime(start, &ct[3]);
 			if (ct[4].year == ct[3].year && ct[4].mon == ct[3].mon && ct[4].mday == ct[3].mday) {
 				info->mFlags &= ~0x10;
 			} else {
 				info->mFlags |= 0x10;
-				*(OSTime*)(p + 0x30) = start;
+				info->mSlotTime[arg1] = start;
 			}
 			info->mFlags |= 4;
 		}
@@ -83,7 +81,7 @@ USER_FUNC(evt_lottery) {
 		q[13] = z;
 		q[12] = z;
 #else
-		*(OSTime*)((u8*)info + arg1 * 8 + 0x30) = 0;
+		info->mSlotTime[arg1] = 0;
 #endif
 	}
 
@@ -106,58 +104,58 @@ USER_FUNC(evt_lottery) {
 
 				days = (s32)((start - *(OSTime*)((u8*)info + 0x18)) / OS_TIMER_CLOCK / 60 / 60 / 24);
 
-				limit = *(s16*)((u8*)info + 0x22);
+				limit = info->mTierDays[0];
 				if (days > limit) {
 					while (days > limit) {
 						limit += 0x18b - rand() % 60;
 					}
-					*(s16*)((u8*)info + 0x22) = limit - days;
+					info->mTierDays[0] = limit - days;
 				}
 
-				limit = *(s16*)((u8*)info + 0x24);
+				limit = info->mTierDays[1];
 				if (days > limit) {
 					while (days > limit) {
 						limit += 0x73 - rand() % 30;
 					}
-					*(s16*)((u8*)info + 0x24) = limit - days;
+					info->mTierDays[1] = limit - days;
 				}
 
-				limit = *(s16*)((u8*)info + 0x26);
+				limit = info->mTierDays[2];
 				if (days > limit) {
 					while (days > limit) {
 						limit += 0x23 - rand() % 10;
 					}
-					*(s16*)((u8*)info + 0x26) = limit - days;
+					info->mTierDays[2] = limit - days;
 				}
 
-				limit = *(s16*)((u8*)info + 0x28);
+				limit = info->mTierDays[3];
 				if (days > limit) {
 					while (days > limit) {
 						limit += 0xa - rand() % 6;
 					}
-					*(s16*)((u8*)info + 0x28) = limit - days;
+					info->mTierDays[3] = limit - days;
 				}
 
-				if (days == *(s16*)((u8*)info + 0x22)) {
-					*(s16*)((u8*)info + 0x10) = *(s16*)((u8*)info + 0x20);
+				if (days == info->mTierDays[0]) {
+					*(s16*)((u8*)info + 0x10) = info->mTicketNum;
 					info->mFlags |= 0x1000;
-				} else if (days == *(s16*)((u8*)info + 0x24)) {
+				} else if (days == info->mTierDays[1]) {
 					do {
-						*(s16*)((u8*)info + 0x10) = (rand() % 10) * 1000 + *(s16*)((u8*)info + 0x20) % 1000;
-					} while (*(s16*)((u8*)info + 0x10) == *(s16*)((u8*)info + 0x20));
+						*(s16*)((u8*)info + 0x10) = (rand() % 10) * 1000 + info->mTicketNum % 1000;
+					} while (*(s16*)((u8*)info + 0x10) == info->mTicketNum);
 					info->mFlags |= 0x2000;
-				} else if (days == *(s16*)((u8*)info + 0x26)) {
+				} else if (days == info->mTierDays[2]) {
 					do {
-						*(s16*)((u8*)info + 0x10) = (rand() % 100) * 100 + *(s16*)((u8*)info + 0x20) % 100;
-					} while (*(s16*)((u8*)info + 0x10) == *(s16*)((u8*)info + 0x20)
-						|| *(s16*)((u8*)info + 0x10) % 1000 == *(s16*)((u8*)info + 0x20) % 1000);
+						*(s16*)((u8*)info + 0x10) = (rand() % 100) * 100 + info->mTicketNum % 100;
+					} while (*(s16*)((u8*)info + 0x10) == info->mTicketNum
+						|| *(s16*)((u8*)info + 0x10) % 1000 == info->mTicketNum % 1000);
 					info->mFlags |= 0x4000;
-				} else if (days == *(s16*)((u8*)info + 0x28)) {
+				} else if (days == info->mTierDays[3]) {
 					do {
-						*(s16*)((u8*)info + 0x10) = (rand() % 1000) * 10 + *(s16*)((u8*)info + 0x20) % 10;
-					} while (*(s16*)((u8*)info + 0x10) == *(s16*)((u8*)info + 0x20)
-						|| *(s16*)((u8*)info + 0x10) % 1000 == *(s16*)((u8*)info + 0x20) % 1000
-						|| *(s16*)((u8*)info + 0x10) % 100 == *(s16*)((u8*)info + 0x20) % 100);
+						*(s16*)((u8*)info + 0x10) = (rand() % 1000) * 10 + info->mTicketNum % 10;
+					} while (*(s16*)((u8*)info + 0x10) == info->mTicketNum
+						|| *(s16*)((u8*)info + 0x10) % 1000 == info->mTicketNum % 1000
+						|| *(s16*)((u8*)info + 0x10) % 100 == info->mTicketNum % 100);
 					info->mFlags |= 0x8000;
 				} else {
 					do {
@@ -169,10 +167,10 @@ USER_FUNC(evt_lottery) {
 						|| *(s16*)((u8*)info + 0x20) % 100 == *(s16*)((u8*)info + 0x10) % 100
 						|| *(s16*)((u8*)info + 0x20) % 10 == *(s16*)((u8*)info + 0x10) % 10);
 #else
-					} while (*(s16*)((u8*)info + 0x10) == *(s16*)((u8*)info + 0x20)
-						|| *(s16*)((u8*)info + 0x10) % 1000 == *(s16*)((u8*)info + 0x20) % 1000
-						|| *(s16*)((u8*)info + 0x10) % 100 == *(s16*)((u8*)info + 0x20) % 100
-						|| *(s16*)((u8*)info + 0x10) % 10 == *(s16*)((u8*)info + 0x20) % 10);
+					} while (*(s16*)((u8*)info + 0x10) == info->mTicketNum
+						|| *(s16*)((u8*)info + 0x10) % 1000 == info->mTicketNum % 1000
+						|| *(s16*)((u8*)info + 0x10) % 100 == info->mTicketNum % 100
+						|| *(s16*)((u8*)info + 0x10) % 10 == info->mTicketNum % 10);
 #endif
 				}
 			} else {
@@ -197,19 +195,19 @@ USER_FUNC(evt_lottery) {
 
 		OSTicksToCalendarTime(*(OSTime*)((u8*)info + 0x18), &ct[0]);
 		t = *(OSTime*)((u8*)info + 0x18);
-		OSTicksToCalendarTime(t + OSSecondsToTicks((OSTime)86400) * *(s16*)((u8*)info + 0x22), &ct[0]);
+		OSTicksToCalendarTime(t + OSSecondsToTicks((OSTime)86400) * info->mTierDays[0], &ct[0]);
 		t = *(OSTime*)((u8*)info + 0x18);
-		OSTicksToCalendarTime(t + OSSecondsToTicks((OSTime)86400) * *(s16*)((u8*)info + 0x24), &ct[0]);
+		OSTicksToCalendarTime(t + OSSecondsToTicks((OSTime)86400) * info->mTierDays[1], &ct[0]);
 		t = *(OSTime*)((u8*)info + 0x18);
-		OSTicksToCalendarTime(t + OSSecondsToTicks((OSTime)86400) * *(s16*)((u8*)info + 0x26), &ct[0]);
+		OSTicksToCalendarTime(t + OSSecondsToTicks((OSTime)86400) * info->mTierDays[2], &ct[0]);
 		t = *(OSTime*)((u8*)info + 0x18);
-		OSTicksToCalendarTime(t + OSSecondsToTicks((OSTime)86400) * *(s16*)((u8*)info + 0x28), &ct[0]);
+		OSTicksToCalendarTime(t + OSSecondsToTicks((OSTime)86400) * info->mTierDays[3], &ct[0]);
 #else
 		OSTicksToCalendarTime(*(OSTime*)((u8*)info + 0x18), &ct[0]);
-		OSTicksToCalendarTime(*(OSTime*)((u8*)info + 0x18) + OSSecondsToTicks((OSTime)86400) * *(s16*)((u8*)info + 0x22), &ct[0]);
-		OSTicksToCalendarTime(*(OSTime*)((u8*)info + 0x18) + OSSecondsToTicks((OSTime)86400) * *(s16*)((u8*)info + 0x24), &ct[0]);
-		OSTicksToCalendarTime(*(OSTime*)((u8*)info + 0x18) + OSSecondsToTicks((OSTime)86400) * *(s16*)((u8*)info + 0x26), &ct[0]);
-		OSTicksToCalendarTime(*(OSTime*)((u8*)info + 0x18) + OSSecondsToTicks((OSTime)86400) * *(s16*)((u8*)info + 0x28), &ct[0]);
+		OSTicksToCalendarTime(*(OSTime*)((u8*)info + 0x18) + OSSecondsToTicks((OSTime)86400) * info->mTierDays[0], &ct[0]);
+		OSTicksToCalendarTime(*(OSTime*)((u8*)info + 0x18) + OSSecondsToTicks((OSTime)86400) * info->mTierDays[1], &ct[0]);
+		OSTicksToCalendarTime(*(OSTime*)((u8*)info + 0x18) + OSSecondsToTicks((OSTime)86400) * info->mTierDays[2], &ct[0]);
+		OSTicksToCalendarTime(*(OSTime*)((u8*)info + 0x18) + OSSecondsToTicks((OSTime)86400) * info->mTierDays[3], &ct[0]);
 #endif
 	}
 	return EVT_RETURN_DONE;
@@ -221,32 +219,32 @@ USER_FUNC(evt_lottery_buy) {
 	lottery_info* info = &gp->mLotteryInfo;
 
 	do {
-		*(s16*)((u8*)info + 0x20) = rand() % 10000;
-	} while (*(s16*)((u8*)info + 0x20) == *(s16*)((u8*)info + 0x10)
-		|| *(s16*)((u8*)info + 0x20) % 1000 == *(s16*)((u8*)info + 0x10) % 1000
-		|| *(s16*)((u8*)info + 0x20) % 100 == *(s16*)((u8*)info + 0x10) % 100
-		|| *(s16*)((u8*)info + 0x20) % 10 == *(s16*)((u8*)info + 0x10) % 10);
+		info->mTicketNum = rand() % 10000;
+	} while (info->mTicketNum == *(s16*)((u8*)info + 0x10)
+		|| info->mTicketNum % 1000 == *(s16*)((u8*)info + 0x10) % 1000
+		|| info->mTicketNum % 100 == *(s16*)((u8*)info + 0x10) % 100
+		|| info->mTicketNum % 10 == *(s16*)((u8*)info + 0x10) % 10);
 
 	*(OSTime*)((u8*)info + 0x18) = time;
-	*(s16*)((u8*)info + 0x22) = 0x18b - rand() % 60;
-	*(s16*)((u8*)info + 0x24) = 0x73 - rand() % 30;
-	*(s16*)((u8*)info + 0x26) = 0x23 - rand() % 10;
-	*(s16*)((u8*)info + 0x28) = 0xa - rand() % 6;
+	info->mTierDays[0] = 0x18b - rand() % 60;
+	info->mTierDays[1] = 0x73 - rand() % 30;
+	info->mTierDays[2] = 0x23 - rand() % 10;
+	info->mTierDays[3] = 0xa - rand() % 6;
 
 	if (info->mFlags & 4) {
 		info->mFlags |= 8;
 		*(OSTime*)((u8*)info + 0x08) = time;
-		*(OSTime*)((u8*)info + 0x30) = time;
-		*(OSTime*)((u8*)info + 0x38) = time;
+		info->mSlotTime[0] = time;
+		info->mSlotTime[1] = time;
 	}
 	if (info->mFlags & 2) {
 		info->mFlags |= 8;
 		*(OSTime*)((u8*)info + 0x08) = time;
-		*(OSTime*)((u8*)info + 0x30) = time;
-		*(OSTime*)((u8*)info + 0x38) = time;
+		info->mSlotTime[0] = time;
+		info->mSlotTime[1] = time;
 	}
 	info->mFlags |= 2;
-	evtSetValue(event, args[0], *(s16*)((u8*)info + 0x20));
+	evtSetValue(event, args[0], info->mTicketNum);
 	return EVT_RETURN_DONE;
 }
 USER_FUNC(evt_lottery_flag) {
@@ -275,10 +273,10 @@ USER_FUNC(evt_lottery_error_check) {
 	if ((flags & 2) && (time < *(OSTime*)((u8*)info + 0x18))) {
 		error = TRUE;
 	}
-	if (time < *(OSTime*)((u8*)info + 0x30)) {
+	if (time < info->mSlotTime[0]) {
 		error = TRUE;
 	}
-	if (time < *(OSTime*)((u8*)info + 0x38)) {
+	if (time < info->mSlotTime[1]) {
 		error = TRUE;
 	}
 	if (time < *(OSTime*)((u8*)info + 0x08)) {
