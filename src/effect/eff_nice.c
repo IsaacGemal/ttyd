@@ -160,15 +160,12 @@ EffectEntry* effNiceEntry(s32 type, f32 x, f32 y, f32 z) {
 // current time from AnimationPose+0x24; both offsets fall in header padding, so raw
 // offsets are used. The four fade cases use distinct locals (time/end/base and time2...)
 // because a single shared set makes MWCC put `end` in f3 instead of the original f4.
-#ifdef MUST_MATCH
-// MUST_MATCH: the plain `color = ...; color.a = ...; call(color);` puts the colour scratch
-// and its outgoing argument copy in the opposite stack slots; returning the colour by value
-// from this helper reproduces retail's slots.
+// Returning the colour by value from this helper puts the colour scratch and its outgoing argument copy
+// in retail's stack slots; the plain `color = ...; color.a = ...; call(color);` swaps them.
 static inline GXColor niceEvtColor(GXColor color, u8 alpha) {
 	color.a = alpha;
 	return color;
 }
-#endif
 void effNiceMain(EffectEntry* effect) {
 	NiceEffectWork* data = effect->userdata;
 	AnimationPose* pose;
@@ -210,15 +207,7 @@ void effNiceMain(EffectEntry* effect) {
 					alpha = 0.0f;
 				}
 				animPoseSetMaterialFlagOn(data->poseId, 0x40);
-#ifdef MUST_MATCH
 				animPoseSetMaterialEvtColor(data->poseId, niceEvtColor(*(GXColor*)&dat_8041cb90, (u8)(s32)(255.0f * alpha)));
-#else
-				{
-					GXColor color = *(GXColor*)&dat_8041cb90;
-					color.a = (u8)(s32)(255.0f * alpha);
-					animPoseSetMaterialEvtColor(data->poseId, color);
-				}
-#endif
 			}
 			break;
 		case 2:
@@ -231,15 +220,7 @@ void effNiceMain(EffectEntry* effect) {
 					alpha = 0.0f;
 				}
 				animPoseSetMaterialFlagOn(data->poseId, 0x40);
-#ifdef MUST_MATCH
 				animPoseSetMaterialEvtColor(data->poseId, niceEvtColor(*(GXColor*)&dat_8041cb94, (u8)(s32)(255.0f * alpha)));
-#else
-				{
-					GXColor color = *(GXColor*)&dat_8041cb94;
-					color.a = (u8)(s32)(255.0f * alpha);
-					animPoseSetMaterialEvtColor(data->poseId, color);
-				}
-#endif
 			}
 			break;
 		case 3:
@@ -252,15 +233,7 @@ void effNiceMain(EffectEntry* effect) {
 					alpha = 0.0f;
 				}
 				animPoseSetMaterialFlagOn(data->poseId, 0x40);
-#ifdef MUST_MATCH
 				animPoseSetMaterialEvtColor(data->poseId, niceEvtColor(*(GXColor*)&dat_8041cb98, (u8)(s32)(255.0f * alpha)));
-#else
-				{
-					GXColor color = *(GXColor*)&dat_8041cb98;
-					color.a = (u8)(s32)(255.0f * alpha);
-					animPoseSetMaterialEvtColor(data->poseId, color);
-				}
-#endif
 			}
 			break;
 		case 4:
@@ -273,15 +246,7 @@ void effNiceMain(EffectEntry* effect) {
 					alpha = 0.0f;
 				}
 				animPoseSetMaterialFlagOn(data->poseId, 0x40);
-#ifdef MUST_MATCH
 				animPoseSetMaterialEvtColor(data->poseId, niceEvtColor(*(GXColor*)&dat_8041cb9c, (u8)(s32)(255.0f * alpha)));
-#else
-				{
-					GXColor color = *(GXColor*)&dat_8041cb9c;
-					color.a = (u8)(s32)(255.0f * alpha);
-					animPoseSetMaterialEvtColor(data->poseId, color);
-				}
-#endif
 			}
 			break;
 		case 6:
