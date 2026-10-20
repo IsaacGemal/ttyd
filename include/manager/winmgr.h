@@ -15,16 +15,16 @@ struct WinMgrDesc {
 	s32 frameStyle; //0x4, winMgrDisp: which frame drawn (1, 3, 4/5)
 	s32 camId; //0x8, CameraId
 	s32 x; //0xC, copied to entry->x
-	s32 field_0x10; //0x10, entry->y (read by get10 under MUST_MATCH)
+	s32 y; //0x10, copied to entry->y (read by get10 under MUST_MATCH)
 	s32 width; //0x14, copied to entry->width
 	s32 height; //0x18, copied to entry->height
 	u8 color[0x20 - 0x1C]; //0x1C, frame RGB (winMgrDispWaku0); alpha is entry->alpha
 	void (*main)(WinMgrEntry* entry); //0x20
-	void* disp; //0x24
+	void (*disp)(WinMgrEntry* entry); //0x24, called from winMgrDisp after the frame
 };
 
 struct WinMgrEntry {
-	s32 flags; //0x0
+	s32 flags; //0x0, 1: in use, 2: drawn (dispEntry), 4: busy, cleared once state is back to 0 (winMgrAction), 8: free the entry when the close finishes
 	s32 state; //0x4, 0 idle, 1 opening (winMgrOpen), 2 closing (winMgrClose)
 	s32 animStep; //0x8, 0..8 through the intplGetValue ramps in winMgrSeq
 	s32 alpha; //0xC, frame colour alpha: 0..255
@@ -54,9 +54,9 @@ typedef struct WinMgrSelectItem {
 } WinMgrSelectItem;
 
 typedef struct WinMgrSelect {
-	u16 flags; //0x0, 0x100: winMgrSelectEntry's a3, 0x1000: result ready, 0x2000: cancelled
+	u16 flags; //0x0, 0x100: cancellable (winMgrSelectEntry's canCancel; B cancels), 0x1000: result ready, 0x2000: cancelled
 	u16 pad_2; //0x2, TODO: not pad?
-	s32 kind; //0x4, winMgrSelectEntry's a1: picks the item list and the callbacks
+	s32 kind; //0x4, winMgrSelectEntry's kind (or a -1 terminated s32 id list when negative): picks the item list and the callbacks
 	s32 state; //0x8, select_main's step (0 while the menu is running)
 	s32 cursor; //0xC, index into items
 	s32 scrollTop; //0x10, first item shown while the list scrolls
@@ -67,7 +67,7 @@ typedef struct WinMgrSelect {
 	s32 descriptorId[3]; //0x24
 	WinMgrSelectItem* items; //0x30
 	s32 numItems; //0x34
-	s32 field_0x38; //0x38
+	s32 firstItem; //0x38, item id put in front of the list (kinds 0-5, 12 and id lists) with a dotted line under it in select_disp; itemdrv passes the item just picked up, event menus pass 0. When nonzero, choosing row 0 of a cancellable menu returns -1 from winMgrSelect
 } WinMgrSelect;
 
 void winMgrInit(void);
@@ -80,14 +80,14 @@ void winMgrClose(s32 id);
 void winMgrCloseAutoDelete(s32 id);
 void winMgrDelete(s32 id);
 BOOL winMgrAction(s32 id);
-void winMgrSetSize(s32 id, s32 a2, s32 a3, s32 a4, s32 a5); //TODO: x0, y0, x1, y1?
+void winMgrSetSize(s32 id, s32 x, s32 y, s32 width, s32 height);
 void winMgrSetPriority(s32 id, s32 priority);
 WinMgrEntry* winMgrGetPtr(s32 id);
 void winMgrHelpInit(WinMgrEntry* entry);
 void winMgrHelpMain(WinMgrEntry* entry);
 void winMgrHelpDraw(WinMgrEntry* entry);
 void winMgrSelectDelete(WinMgrSelect* select);
-WinMgrSelect* winMgrSelectEntry(s32 a1, s32 a2, BOOL a3);
+WinMgrSelect* winMgrSelectEntry(s32 kind, s32 firstItem, BOOL canCancel);
 s32 winMgrSelect(WinMgrSelect* select);
 s32 winMgrSelectOther(WinMgrSelect* select, EventEntry* event);
 s32 unk_80237448(WinMgrSelect* select);

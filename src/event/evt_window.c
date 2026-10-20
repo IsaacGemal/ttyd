@@ -46,7 +46,7 @@ WinMgrDesc one_msg_desc = {
     0, 0,                     // openStyle, frameStyle
     8,                          // camId
     0xFFFFFF51,                 // x
-    0x78,                       // field_0x10
+    0x78,                       // y
     0x15E,                      // width
     0x2A,                       // height
     {0xD7, 0xD0, 0x88, 0xFF},   // color
@@ -58,7 +58,7 @@ WinMgrDesc coin_desc = {
     2, 0,                     // openStyle, frameStyle
     8,                          // camId
     0xFFFFFF06,                 // x
-    0xFFFFFFB5,                 // field_0x10
+    0xFFFFFFB5,                 // y
     0x96,                       // width
     0x2D,                       // height
     {0xF0, 0xF0, 0xF0, 0xFF},   // color

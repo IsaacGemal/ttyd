@@ -9104,3 +9104,18 @@ and `partyBtnAngle`. Entry tables get `enabled`, `label`, `iconId`, `helpMsg`, `
 `UNIT_MARIO`. Weighted score 472 → 171. Open: the four tables (wp+0x1724, 0x19e8, 0x1aac, 0x1b6c) still sit
 inside BattleCommand.unk8 in the shared battle_seq_command.h, the main-icon table (stride 0x14) reuses
 BattleMenuDispEntry's leading fields, and `field_0x10`, `field_0xF8`, `field_0x114` stay unnamed.
+### Readability: winmgr (2026-10-19, Claude Haiku 5.5, n9-q-winmgr; reviewed by Claude Opus 5.5)
+
+WinMgrDesc `y` (0x10, copied to entry->y; evt_window's one_msg_desc comments follow) and `disp` is now typed
+`void (*)(WinMgrEntry*)`, so winMgrDisp calls it without a function-pointer cast. WinMgrSelect `firstItem` (0x38):
+winMgrSelectEntry's second argument, put in front of the list for kinds 0-5, 12 and the negative-pointer id lists,
+with a dotted line under it in select_disp; itemdrv passes the item just picked up when the pouch is full, event
+menus pass 0, and choosing row 0 of a cancellable menu then returns -1. winMgrSelectEntry's parameters are
+`kind`/`firstItem`/`canCancel` (canCancel sets select flag 0x100, which lets B cancel), winMgrSetSize's are
+`x`/`y`/`width`/`height`, and select_main's A/B checks use PAD_BUTTON_A/PAD_BUTTON_B. WinMgrEntry.flags bits are
+documented in the header (1 in use, 2 drawn, 4 busy for winMgrAction, 8 free after close); `field_0x40` stays: the
+struct is all 4-byte members, so those 4 bytes are a real field nothing in the repo reads, not compiler padding.
+GXSetFog's type is GX_FOG_NONE. Overall 69.701 -> 69.681. Open: rename unk_80237448 (select cursor getter),
+unk_802379e4/unk_80237a2c (qqsort comparators by type_sort_order / star_piece_price) and unk_802399f8/unk_80239b2c
+(party tech-level checks) once rename_symbol.py lands; the keyGetDir* stick bits (0x100/0x200/0x1000/0x2000) and the
+psndSFXOn / icon ids have no repo names yet; WinMgrSelect `pad_2`.

@@ -21,6 +21,7 @@
 #include "pmario_sound.h"
 #include "statuswindow.h"
 #include "window/win_main.h"
+#include <dolphin/pad.h>
 
 // MUST_MATCH: preserve named scalar loads after their definitions instead of folding them to literals.
 #ifdef MUST_MATCH
@@ -236,7 +237,7 @@ const char str_802FFEEC[] = "msg_window_title_6\000";
 
 #ifdef MUST_MATCH
 // MUST_MATCH: this inline keeps the descriptor 0x14 load before 0x10 with retail registers.
-static inline s32 get10(WinMgrDesc* d) { return d->field_0x10; }
+static inline s32 get10(WinMgrDesc* d) { return d->y; }
 #endif
 
 static inline void winMgrDispWaku1(Mtx mtx, WinMgrEntry* entry, const GXColor* base) {
@@ -488,9 +489,9 @@ void select_disp_luigi(WinMgrEntry* entry) {
     // pointer to it; with the by-value GXSetFog prototype MWCC copies it to a call temp at 0xc and
     // the loop/edge/title colour locals move to 0x18/0x14/0x10. The cast only changes the calling
     // convention (GXSetFog reads the colour, never writes it) and reproduces the original slots.
-    ((void (*)(s32, f32, f32, f32, f32, GXColor*))GXSetFog)(0, 0.0f, 0.0f, 0.0f, 0.0f, &fogColor);
+    ((void (*)(s32, f32, f32, f32, f32, GXColor*))GXSetFog)(GX_FOG_NONE, 0.0f, 0.0f, 0.0f, 0.0f, &fogColor);
 #else
-    GXSetFog(0, 0.0f, 0.0f, 0.0f, 0.0f, fogColor);
+    GXSetFog(GX_FOG_NONE, 0.0f, 0.0f, 0.0f, 0.0f, fogColor);
 #endif
     GXGetScissor(&scissorLeft, &scissorTop, &scissorWidth, &scissorHeight);
     GXSetScissor(entry->x + 0x130, 0x112 - entry->y, entry->width, entry->height - 0x32);
@@ -615,7 +616,7 @@ const char str_802FFF44[] = "msg_window_title_8\000";
 // `if (x == width) { x = x; }` guards after the two title x computations are dead (x is not
 // changed) but keep those divisions scheduled before the following winFontInit, as in the target.
 // The target's dead `lwz r0,0x38(r24); cmpwi r0,0` before the first winFontInit is reproduced by
-// `if (select->field_0x38) { zero = zero; }` (the dead store is removed, the compare stays).
+// `if (select->firstItem) { zero = zero; }` (the dead store is removed, the compare stays).
 void select_disp_mario(WinMgrEntry* entry) {
     WinMgrSelect* select = (WinMgrSelect*)entry->param;
     s32 i;
@@ -659,9 +660,9 @@ void select_disp_mario(WinMgrEntry* entry) {
 
     fogColor = dat_80421a60;
 #ifdef MUST_MATCH
-    ((void (*)(s32, f32, f32, f32, f32, GXColor*))GXSetFog)(0, 0.0f, 0.0f, 0.0f, 0.0f, &fogColor);
+    ((void (*)(s32, f32, f32, f32, f32, GXColor*))GXSetFog)(GX_FOG_NONE, 0.0f, 0.0f, 0.0f, 0.0f, &fogColor);
 #else
-    GXSetFog(0, 0.0f, 0.0f, 0.0f, 0.0f, fogColor);
+    GXSetFog(GX_FOG_NONE, 0.0f, 0.0f, 0.0f, 0.0f, fogColor);
 #endif
     GXGetScissor(&scissorLeft, &scissorTop, &scissorWidth, &scissorHeight);
     GXSetScissor(entry->x + 0x130, 0x112 - entry->y, entry->width, entry->height - 0x32);
@@ -684,7 +685,7 @@ void select_disp_mario(WinMgrEntry* entry) {
 #ifdef MUST_MATCH
         // Reproduces the target's dead `lwz r0,0x38; cmpwi r0,0` before winFontInit: the self-store is
         // removed but the compare stays. The natural code has no such compare.
-        if (*(volatile s32*)&select->field_0x38) {
+        if (*(volatile s32*)&select->firstItem) {
             zero = zero;
         }
 #endif
@@ -867,7 +868,7 @@ void select_disp_mario(WinMgrEntry* entry) {
 // offset with a copy (`mr r28,r27`) instead of a shift. The `if (x == width) { x = x; }` guards
 // after the two title x computations are dead (x is not changed) but keep those divisions scheduled
 // before the following winFontInit, as in the target. The target's dead `lwz r0,0x38(r30); cmpwi
-// r0,0x0` before the first winFontInit is reproduced by `if (select->field_0x38) { zero = zero; }`
+// r0,0x0` before the first winFontInit is reproduced by `if (select->firstItem) { zero = zero; }`
 // (the dead store is removed, the compare stays).
 void select_disp_party(WinMgrEntry* entry) {
     WinMgrSelect* select = (WinMgrSelect*)entry->param;
@@ -906,9 +907,9 @@ void select_disp_party(WinMgrEntry* entry) {
 #ifdef MUST_MATCH
     // MUST_MATCH: the original stores the fog colour in fogColor's own slot and passes a pointer
     // to it; with the by-value GXSetFog prototype MWCC copies it to a call temp. Same as select_disp.
-    ((void (*)(s32, f32, f32, f32, f32, GXColor*))GXSetFog)(0, 0.0f, 0.0f, 0.0f, 0.0f, &fogColor);
+    ((void (*)(s32, f32, f32, f32, f32, GXColor*))GXSetFog)(GX_FOG_NONE, 0.0f, 0.0f, 0.0f, 0.0f, &fogColor);
 #else
-    GXSetFog(0, 0.0f, 0.0f, 0.0f, 0.0f, fogColor);
+    GXSetFog(GX_FOG_NONE, 0.0f, 0.0f, 0.0f, 0.0f, fogColor);
 #endif
     GXGetScissor(&scissorLeft, &scissorTop, &scissorWidth, &scissorHeight);
     GXSetScissor(entry->x + 0x130, 0x112 - entry->y, entry->width, entry->height - 0x32);
@@ -931,7 +932,7 @@ void select_disp_party(WinMgrEntry* entry) {
 #ifdef MUST_MATCH
         // Reproduces the target's dead `lwz r0,0x38; cmpwi r0,0` before winFontInit: the self-store is
         // removed but the compare stays. The natural code has no such compare.
-        if (*(volatile s32*)&select->field_0x38) {
+        if (*(volatile s32*)&select->firstItem) {
             zero = zero;
         }
 #endif
@@ -1205,7 +1206,7 @@ const char str_80421A9C[] = "%d";
 // to reproduce the original schedule.
 // Native conversions in select_disp_luigi and select_disp_party pool the signed/unsigned doubles
 // at .rodata+0x468/+0x4c0. The dead `lwz r0, 0x38(r25); cmpwi r0, 0x0` pair at the top of the
-// item loop is reproduced by `if (*(volatile s32*)&select->field_0x38) { zero = zero; }`.
+// item loop is reproduced by `if (*(volatile s32*)&select->firstItem) { zero = zero; }`.
 void select_disp(WinMgrEntry* entry) {
     WinMgrSelect* select = (WinMgrSelect*)entry->param;
     s32 i;
@@ -1261,9 +1262,9 @@ void select_disp(WinMgrEntry* entry) {
 #ifdef MUST_MATCH
     // MUST_MATCH: the original stores the fog colour in fogColor's own slot and passes a pointer
     // to it; with the by-value GXSetFog prototype MWCC copies it to a call temp. Same as select_disp_luigi.
-    ((void (*)(s32, f32, f32, f32, f32, GXColor*))GXSetFog)(0, 0.0f, 0.0f, 0.0f, 0.0f, &fogColor);
+    ((void (*)(s32, f32, f32, f32, f32, GXColor*))GXSetFog)(GX_FOG_NONE, 0.0f, 0.0f, 0.0f, 0.0f, &fogColor);
 #else
-    GXSetFog(0, 0.0f, 0.0f, 0.0f, 0.0f, fogColor);
+    GXSetFog(GX_FOG_NONE, 0.0f, 0.0f, 0.0f, 0.0f, fogColor);
 #endif
     GXGetScissor(&scissorLeft, &scissorTop, &scissorWidth, &scissorHeight);
     GXSetScissor(entry->x + 0x130, 0x112 - entry->y, entry->width, entry->height - 0x32);
@@ -1284,7 +1285,7 @@ void select_disp(WinMgrEntry* entry) {
 #ifdef MUST_MATCH
         // Reproduces the target's dead `lwz r0,0x38; cmpwi r0,0` before winFontInit: the self-store is
         // removed but the compare stays. The natural code has no such compare.
-        if (*(volatile s32*)&select->field_0x38) {
+        if (*(volatile s32*)&select->firstItem) {
             zero = zero;
         }
 #endif
@@ -1368,7 +1369,7 @@ void select_disp(WinMgrEntry* entry) {
 
     }
 
-    if (select->field_0x38) {
+    if (select->firstItem) {
         winIconInit();
         for (i = 2; i < 0x1e; i++) {
             GXColor color = colorBlack;
@@ -1529,7 +1530,7 @@ void winMgrDisp(CameraId camId, void* param) {
     }
 
     if (entry->description->disp) {
-        ((void (*)(WinMgrEntry*))entry->description->disp)(entry);
+        entry->description->disp(entry);
     }
 }
 
@@ -1657,7 +1658,7 @@ s32 winMgrEntry(WinMgrDesc* desc) {
     entry->animStep = 0;
     entry->description = desc;
     entry->x = entry->description->x;
-    entry->y = entry->description->field_0x10;
+    entry->y = entry->description->y;
     entry->width = entry->description->width;
     entry->height = entry->description->height;
 
@@ -1722,15 +1723,15 @@ BOOL winMgrAction(s32 id) {
     return (wp->mEntries[id].flags >> 2) & 1;
 }
 
-void winMgrSetSize(s32 id, s32 a2, s32 a3, s32 a4, s32 a5) {
+void winMgrSetSize(s32 id, s32 x, s32 y, s32 width, s32 height) {
     WinMgrEntry* entry;
 
     entry = &wp->mEntries[id];
     if (entry->flags & 1) {
-        entry->x = a2;
-        entry->y = a3;
-        entry->width = a4;
-        entry->height = a5;
+        entry->x = x;
+        entry->y = y;
+        entry->width = width;
+        entry->height = height;
     }
 }
 
@@ -1840,7 +1841,7 @@ void winMgrHelpDraw(WinMgrEntry* entry) {
 }
 
 #pragma dont_inline reset
-WinMgrSelect* winMgrSelectEntry(s32 a1, s32 a2, BOOL a3) {
+WinMgrSelect* winMgrSelectEntry(s32 kind, s32 firstItem, BOOL canCancel) {
     PouchData* pouch = pouchGetPtr();
     InformantWork* jdt = &_jdt;
     WinMgrSelect* select;
@@ -1855,16 +1856,16 @@ WinMgrSelect* winMgrSelectEntry(s32 a1, s32 a2, BOOL a3) {
     select = (WinMgrSelect*)__memAlloc(HEAP_DEFAULT, 0x3c);
     memset(select, 0, 0x3c);
 
-    select->kind = a1;
-    descId = a1;
+    select->kind = kind;
+    descId = kind;
     select->cursor = 0;
     select->scrollTop = 0;
     select->iconY = 0.0f;
     select->iconX = 0.0f;
     select->baseY = 0.0f;
-    select->field_0x38 = a2;
+    select->firstItem = firstItem;
 
-    if (a3) {
+    if (canCancel) {
         select->flags |= 0x100;
     }
 
@@ -1880,7 +1881,7 @@ WinMgrSelect* winMgrSelectEntry(s32 a1, s32 a2, BOOL a3) {
 
     desc = select_desc_tbl[descId].descriptors;
     select->iconX = (f32)desc->x;
-    select->iconY = (f32)(desc->field_0x10 - 54);
+    select->iconY = (f32)(desc->y - 54);
 
     type = select->kind;
     switch (type) {
@@ -1888,10 +1889,10 @@ WinMgrSelect* winMgrSelectEntry(s32 a1, s32 a2, BOOL a3) {
         select->items = (WinMgrSelectItem*)__memAlloc(HEAP_DEFAULT, 0x1e8);
         memset(select->items, 0, 0x1e8);
         select->numItems = 0;
-        if (a2 != 0) {
+        if (firstItem != 0) {
             {
                 WinMgrSelectItem* it = &select->items[select->numItems++];
-                it->id = a2;
+                it->id = firstItem;
             }
         }
         for (i = 0; i < 0x79; i++) {
@@ -1914,10 +1915,10 @@ WinMgrSelect* winMgrSelectEntry(s32 a1, s32 a2, BOOL a3) {
         select->items = (WinMgrSelectItem*)__memAlloc(HEAP_DEFAULT, 0x54);
         memset(select->items, 0, 0x54);
         select->numItems = 0;
-        if (a2 != 0) {
+        if (firstItem != 0) {
             {
                 WinMgrSelectItem* it = &select->items[select->numItems++];
-                it->id = a2;
+                it->id = firstItem;
             }
         }
         for (i = 0; i < 0x14; i++) {
@@ -1932,10 +1933,10 @@ WinMgrSelect* winMgrSelectEntry(s32 a1, s32 a2, BOOL a3) {
         select->items = (WinMgrSelectItem*)__memAlloc(HEAP_DEFAULT, 0x324);
         memset(select->items, 0, 0x324);
         select->numItems = 0;
-        if (a2 != 0) {
+        if (firstItem != 0) {
             {
                 WinMgrSelectItem* it = &select->items[select->numItems++];
-                it->id = a2;
+                it->id = firstItem;
             }
         }
         for (i = 0; i < 0xc8; i++) {
@@ -1949,10 +1950,10 @@ WinMgrSelect* winMgrSelectEntry(s32 a1, s32 a2, BOOL a3) {
         select->items = (WinMgrSelectItem*)__memAlloc(HEAP_DEFAULT, 0x84);
         memset(select->items, 0, 0x84);
         select->numItems = 0;
-        if (a2 != 0) {
+        if (firstItem != 0) {
             {
                 WinMgrSelectItem* it = &select->items[select->numItems++];
-                it->id = a2;
+                it->id = firstItem;
             }
         }
         for (i = 0; i < 0x20; i++) {
@@ -2137,8 +2138,8 @@ WinMgrSelect* winMgrSelectEntry(s32 a1, s32 a2, BOOL a3) {
         }
         break;
     default:
-        if (a1 < 0) {
-            s32* list = (s32*)a1;
+        if (kind < 0) {
+            s32* list = (s32*)kind;
             s32 n = 0;
 
             while (list[n++] != -1)
@@ -2146,10 +2147,10 @@ WinMgrSelect* winMgrSelectEntry(s32 a1, s32 a2, BOOL a3) {
             select->items = (WinMgrSelectItem*)__memAlloc(HEAP_DEFAULT, (n + 1) * 4);
             memset(select->items, 0, (n + 1) * 4);
             select->numItems = 0;
-            if (a2 != 0) {
+            if (firstItem != 0) {
                 WinMgrSelectItem* it = &select->items[select->numItems++];
 
-                it->id = a2;
+                it->id = firstItem;
             }
             for (i = 0; list[i] != -1; ) {
                 select->items[select->numItems++].id = list[i++];
@@ -2163,7 +2164,7 @@ WinMgrSelect* winMgrSelectEntry(s32 a1, s32 a2, BOOL a3) {
 #ifdef MUST_MATCH
         s32 f1C = get10(desc);
 #else
-        s32 f1C = desc->field_0x10;
+        s32 f1C = desc->y;
 #endif
         s32 f18 = desc->x;
         s32 f24 = desc->height - (8 - select->numItems) * 0x18;
@@ -2206,7 +2207,7 @@ s32 winMgrSelect(WinMgrSelect* select) {
         if (flags & 0x2000) {
             return -1;
         }
-        if (select->field_0x38 != 0 && select->cursor == 0 && (flags & 0x100)) {
+        if (select->firstItem != 0 && select->cursor == 0 && (flags & 0x100)) {
             return -1;
         }
         {
@@ -2466,14 +2467,14 @@ void select_main(WinMgrEntry* entry) {
         if (newIndex != select->cursor) {
             psndSFXOn((const char*)0x20005);
         }
-        if (keyGetButtonTrg(0) & 0x100) {
+        if (keyGetButtonTrg(0) & PAD_BUTTON_A) {
             if (select->items[select->cursor].flags & 2) {
                 psndSFXOn((const char*)0x20014);
             } else {
                 psndSFXOn((const char*)0x20012);
                 select->state++;
             }
-        } else if (keyGetButtonTrg(0) & 0x200) {
+        } else if (keyGetButtonTrg(0) & PAD_BUTTON_B) {
             if (select->flags & 0x100) {
                 psndSFXOn((const char*)0x20013);
                 select->flags |= 0x2000;
