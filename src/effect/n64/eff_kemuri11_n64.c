@@ -50,23 +50,23 @@ extern const f32 float_128_8041f544;
 typedef struct effKemuri11Data {
     u16 type;        // 0x0
     u8 pad_2[2];     // 0x2
-    Vec position;    // 0x4
-    f32 field_0x10;  // 0x10
-    f32 field_0x14;  // 0x14
+    Vec position;    // 0x4: the puff's offset (the main puff is at the effect origin)
+    f32 dirX;        // 0x10: 0.5 * -sin(rotZ), set when a child spawns; never read
+    f32 dirZ;        // 0x14: 0.5 * cos(rotZ), same
     f32 field_0x18;  // 0x18
-    f32 field_0x1C;  // 0x1C
-    f32 field_0x20;  // 0x20
-    f32 field_0x24;  // 0x24
-    s32 field_0x28;  // 0x28
-    s32 field_0x2C;  // 0x2C
-    f32 field_0x30;  // 0x30
-    f32 field_0x34;  // 0x34
-    s32 field_0x38;  // 0x38
-    f32 field_0x3C;  // 0x3C
-    f32 field_0x40;  // 0x40
-    f32 field_0x44;  // 0x44
-    f32 field_0x48;  // 0x48
-    s32 field_0x4C;  // 0x4C
+    f32 scaleX;      // 0x1C: puff scale, times 0.3 in the draw
+    f32 scaleY;      // 0x20
+    f32 scaleZ;      // 0x24
+    s32 life;        // 0x28: frames left; deleted below 0
+    s32 age;         // 0x2C: frames elapsed
+    f32 rotY;        // 0x30: yaw (degrees)
+    f32 rotZ;        // 0x34: tilt (degrees), starts at 0
+    s32 alpha;       // 0x38: TEVREG0 alpha, decays every frame after 8
+    f32 texScrollA;  // 0x3C: texture 0 scroll (grows by texSpeedA)
+    f32 texSpeedA;   // 0x40: decays by 0.75..0.9 per frame
+    f32 texScrollB;  // 0x44: texture 1 scroll (grows by texSpeedB)
+    f32 texSpeedB;   // 0x48
+    s32 delay;       // 0x4C: child frames before it appears (counts up to 0, then shows)
     u8 color[6];     // 0x50
     u8 pad_56[2];    // 0x56
 } effKemuri11Data;
@@ -138,13 +138,13 @@ EffectEntry* effKemuri11N64Entry(s32 type, f32 x, f32 y, f32 z) {
     data = __memAlloc(HEAP_EFFECT, sizeof(effKemuri11Data) * (count + 1));
     effect->userdata = data;
     effect->callback = effKemuri11Main;
-    data->field_0x28 = type >= 2 ? 60 : 30;
-    data->field_0x2C = 0;
+    data->life = type >= 2 ? 60 : 30;
+    data->age = 0;
     data->type = type;
     data->position.x = x;
     data->position.y = y;
     data->position.z = z;
-    data->field_0x38 = 0xff;
+    data->alpha = 0xff;
 
     switch (type) {
     case 0:
@@ -181,7 +181,7 @@ EffectEntry* effKemuri11N64Entry(s32 type, f32 x, f32 y, f32 z) {
         data->color[5] = 0xab;
         break;
     case 6:
-        data->field_0x28 = 50;
+        data->life = 50;
         data->color[0] = 0xd4;
         data->color[1] = 0xb7;
         data->color[2] = 0x05;
@@ -190,7 +190,7 @@ EffectEntry* effKemuri11N64Entry(s32 type, f32 x, f32 y, f32 z) {
         data->color[5] = 0x09;
         break;
     case 7:
-        data->field_0x28 = 50;
+        data->life = 50;
         data->color[0] = 0x21;
         data->color[1] = 0x8c;
         data->color[2] = 0x8d;
@@ -200,7 +200,7 @@ EffectEntry* effKemuri11N64Entry(s32 type, f32 x, f32 y, f32 z) {
         break;
     case 4:
     default:
-        data->field_0x28 = 50;
+        data->life = 50;
         data->color[0] = 0xd0;
         data->color[1] = 0x88;
         data->color[2] = 0x28;
@@ -214,14 +214,14 @@ EffectEntry* effKemuri11N64Entry(s32 type, f32 x, f32 y, f32 z) {
         switch (type) {
         case 0:
         case 1:
-            data->field_0x4C = -1 - (i - 1) * 2;
+            data->delay = -1 - (i - 1) * 2;
             break;
         default:
-            data->field_0x4C = -1 - (i - 1) * 3;
+            data->delay = -1 - (i - 1) * 3;
             break;
         }
-        data->field_0x34 = float_0_8041f4fc;
-        data->field_0x30 = (f32)(i * 30);
+        data->rotZ = float_0_8041f4fc;
+        data->rotY = (f32)(i * 30);
     }
 
     if (type == 6) {
@@ -297,114 +297,114 @@ void effKemuri11Main(EffectEntry* effect) {
     e = effect;
     data = e->userdata;
     position = kemuri11MakeVec(data);
-    data->field_0x2C++;
-    data->field_0x28--;
-    if (data->field_0x28 < 0) {
+    data->age++;
+    data->life--;
+    if (data->life < 0) {
         effDelete(e);
         return;
     }
 
     type = data->type;
-    t = data->field_0x2C;
+    t = data->age;
     switch (type) {
     case 0:
     case 1:
         if (t >= 8) {
-            data->field_0x38 = (f32)data->field_0x38 * float_0p8_8041f508;
+            data->alpha = (f32)data->alpha * float_0p8_8041f508;
         }
         break;
     default:
         if (t >= 8) {
-            data->field_0x38 = (f32)data->field_0x38 * float_0p94_8041f50c;
+            data->alpha = (f32)data->alpha * float_0p94_8041f50c;
         }
         break;
     }
 
     data++;
     for (i = 1; i < e->count; i++, data++) {
-        data->field_0x4C++;
-        if (data->field_0x4C < 0) {
+        data->delay++;
+        if (data->delay < 0) {
             continue;
         }
-        if (data->field_0x4C == 0) {
+        if (data->delay == 0) {
             data->position.x = float_0_8041f4fc;
             data->position.y = float_0_8041f4fc;
             data->position.z = float_0_8041f4fc;
-            v = (f32)sin(float_6p2832_8041f510 * data->field_0x34 / float_360_8041f514);
-            data->field_0x10 = float_0p5_8041f518 * -v;
-            v = (f32)cos(float_6p2832_8041f510 * data->field_0x34 / float_360_8041f514);
-            data->field_0x14 = float_0p5_8041f518 * v;
+            v = (f32)sin(float_6p2832_8041f510 * data->rotZ / float_360_8041f514);
+            data->dirX = float_0p5_8041f518 * -v;
+            v = (f32)cos(float_6p2832_8041f510 * data->rotZ / float_360_8041f514);
+            data->dirZ = float_0p5_8041f518 * v;
             data->field_0x18 = float_0_8041f4fc;
-            data->field_0x3C = float_32_8041f51c;
-            data->field_0x40 = float_32_8041f51c;
-            data->field_0x48 = float_32_8041f51c;
-            data->field_0x20 = float_8_8041f520 - (f32)i;
+            data->texScrollA = float_32_8041f51c;
+            data->texSpeedA = float_32_8041f51c;
+            data->texSpeedB = float_32_8041f51c;
+            data->scaleY = float_8_8041f520 - (f32)i;
             switch (type) {
             case 0:
             case 1:
                 v = float_0p5_8041f518 + (f32)i;
-                data->field_0x1C = v;
-                data->field_0x24 = float_0p5_8041f518 * v;
+                data->scaleX = v;
+                data->scaleZ = float_0p5_8041f518 * v;
                 break;
             case 2:
             case 5:
-                data->field_0x1C = (f32)(i + 2);
-                data->field_0x24 = float_0p5_8041f518 * (f32)(i + 2);
+                data->scaleX = (f32)(i + 2);
+                data->scaleZ = float_0p5_8041f518 * (f32)(i + 2);
                 break;
             case 3:
-                data->field_0x1C = (f32)(i + 3);
-                data->field_0x24 = float_0p5_8041f518 * (f32)(i + 3);
-                data->field_0x3C = float_16_8041f524;
-                data->field_0x40 = float_16_8041f524;
-                data->field_0x48 = float_16_8041f524;
+                data->scaleX = (f32)(i + 3);
+                data->scaleZ = float_0p5_8041f518 * (f32)(i + 3);
+                data->texScrollA = float_16_8041f524;
+                data->texSpeedA = float_16_8041f524;
+                data->texSpeedB = float_16_8041f524;
                 break;
             default:
                 v = float_0p5_8041f518 * (f32)(i + 3);
-                data->field_0x1C = v;
-                data->field_0x24 = float_0p5_8041f518 * v;
-                data->field_0x20 *= float_0p8_8041f508;
-                data->field_0x3C = float_16_8041f524;
+                data->scaleX = v;
+                data->scaleZ = float_0p5_8041f518 * v;
+                data->scaleY *= float_0p8_8041f508;
+                data->texScrollA = float_16_8041f524;
                 if (type == 6 || type == 7) {
-                    data->field_0x40 = float_8_8041f520;
-                    data->field_0x48 = float_8_8041f520;
+                    data->texSpeedA = float_8_8041f520;
+                    data->texSpeedB = float_8_8041f520;
                 }
                 else {
-                    data->field_0x40 = float_16_8041f524;
-                    data->field_0x48 = float_16_8041f524;
+                    data->texSpeedA = float_16_8041f524;
+                    data->texSpeedB = float_16_8041f524;
                 }
                 break;
             }
-            data->field_0x44 = float_32_8041f51c;
+            data->texScrollB = float_32_8041f51c;
         }
-        data->field_0x3C += data->field_0x40;
-        data->field_0x44 += data->field_0x48;
+        data->texScrollA += data->texSpeedA;
+        data->texScrollB += data->texSpeedB;
         switch (type) {
         case 0:
         case 1:
-            data->field_0x40 *= float_0p9_8041f528;
+            data->texSpeedA *= float_0p9_8041f528;
             break;
         case 2:
         case 5:
-            data->field_0x40 *= float_0p75_8041f52c;
-            data->field_0x48 *= float_0p99_8041f530;
+            data->texSpeedA *= float_0p75_8041f52c;
+            data->texSpeedB *= float_0p99_8041f530;
             break;
         default:
             if (type == 6 || type == 7) {
-                data->field_0x40 *= float_0p88_8041f534;
-                data->field_0x48 *= float_0p98_8041f538;
+                data->texSpeedA *= float_0p88_8041f534;
+                data->texSpeedB *= float_0p98_8041f538;
             }
             else {
-                data->field_0x40 *= float_0p75_8041f52c;
-                data->field_0x48 *= float_0p95_8041f53c;
+                data->texSpeedA *= float_0p75_8041f52c;
+                data->texSpeedB *= float_0p95_8041f53c;
             }
             break;
         }
         // Literal pool constants (not the named float_1p002/float_128 externs):
         // this is the form that gives the original's f1/f2/f0 register split.
-        data->field_0x1C *= 1.002f;
-        data->field_0x24 *= 1.002f;
-        if (data->field_0x3C > 128.0f) {
-            data->field_0x3C = 128.0f;
+        data->scaleX *= 1.002f;
+        data->scaleZ *= 1.002f;
+        if (data->texScrollA > 128.0f) {
+            data->texScrollA = 128.0f;
         }
     }
 
@@ -453,8 +453,8 @@ void effKemuri11Disp(CameraId camId, void* param) {
 
     GXSetNumChans(0);
     GXSetNumTexGens(2);
-    GXSetTexCoordGen2(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_TEXMTX0, GX_FALSE, 125);
-    GXSetTexCoordGen2(GX_TEXCOORD1, GX_TG_MTX2x4, GX_TG_TEX0, GX_TEXMTX1, GX_FALSE, 125);
+    GXSetTexCoordGen2(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_TEXMTX0, GX_FALSE, GX_PTIDENTITY);
+    GXSetTexCoordGen2(GX_TEXCOORD1, GX_TG_MTX2x4, GX_TG_TEX0, GX_TEXMTX1, GX_FALSE, GX_PTIDENTITY);
 
     switch (type) {
     case 0:
@@ -506,7 +506,7 @@ void effKemuri11Disp(CameraId camId, void* param) {
     PSMTXConcat(cam->view, m2, m2);
 
 #ifdef MUST_MATCH
-    alpha = data->field_0x38;
+    alpha = data->alpha;
     kemuri11SetColor0(d0, d1, d2, alpha);
     kemuri11SetColor1(d3, d4, d5);
 #else
@@ -515,7 +515,7 @@ void effKemuri11Disp(CameraId camId, void* param) {
         color.r = d0;
         color.g = d1;
         color.b = d2;
-        color.a = data->field_0x38;
+        color.a = data->alpha;
         GXSetTevColor(GX_TEVREG0, color);
     }
     {
@@ -537,7 +537,7 @@ void effKemuri11Disp(CameraId camId, void* param) {
         color.r = c0;
         color.g = c1;
         color.b = c2;
-        color.a = data->field_0x38;
+        color.a = data->alpha;
         GXSetTevColor(GX_TEVREG0, color);
     }
     {
@@ -560,25 +560,25 @@ static void main_dl(EffectEntry* effect, Mtx matrix) {
     data = effect->userdata;
     data++;
     for (i = 1; i < effect->count; i++, data++) {
-        if (data->field_0x4C < 0) {
+        if (data->delay < 0) {
             continue;
         }
         PSMTXTrans(m0, data->position.x, data->position.y, data->position.z);
-        PSMTXRotRad(m1, 'z', float_deg2rad_8041f4e8 * data->field_0x34);
+        PSMTXRotRad(m1, 'z', float_deg2rad_8041f4e8 * data->rotZ);
         PSMTXConcat(m0, m1, m0);
-        PSMTXScale(m2, float_0p3_8041f4ec * data->field_0x1C, float_0p3_8041f4ec * data->field_0x20, float_0p3_8041f4ec * data->field_0x24);
+        PSMTXScale(m2, float_0p3_8041f4ec * data->scaleX, float_0p3_8041f4ec * data->scaleY, float_0p3_8041f4ec * data->scaleZ);
         PSMTXConcat(m0, m2, m0);
-        PSMTXRotRad(m1, 'y', float_deg2rad_8041f4e8 * data->field_0x30);
+        PSMTXRotRad(m1, 'y', float_deg2rad_8041f4e8 * data->rotY);
         PSMTXConcat(m0, m1, m0);
         PSMTXConcat(matrix, m0, m0);
         GXLoadPosMtxImm(m0, GX_PNMTX0);
         GXSetCurrentMtx(GX_PNMTX0);
         PSMTXScale(m2, float_0p015625_8041f4f0, float_0p03125_8041f4f4, float_1_8041f4f8);
-        PSMTXTrans(m0, float_0_8041f4fc, -data->field_0x3C * float_0p25_8041f500, float_0_8041f4fc);
+        PSMTXTrans(m0, float_0_8041f4fc, -data->texScrollA * float_0p25_8041f500, float_0_8041f4fc);
         PSMTXConcat(m2, m0, m2);
         GXLoadTexMtxImm(m2, GX_TEXMTX0, GX_MTX2x4);
         PSMTXScale(m2, float_0p125_8041f504, float_0p125_8041f504, float_1_8041f4f8);
-        PSMTXTrans(m0, float_0_8041f4fc, -data->field_0x44, float_0_8041f4fc);
+        PSMTXTrans(m0, float_0_8041f4fc, -data->texScrollB, float_0_8041f4fc);
         PSMTXConcat(m2, m0, m2);
         GXLoadTexMtxImm(m2, GX_TEXMTX1, GX_MTX2x4);
         GXBegin(GX_TRIANGLES, GX_VTXFMT0, 0x36);
