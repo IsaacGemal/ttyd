@@ -167,7 +167,7 @@ typedef struct MarioWork {
     Vec field_0x11C;               // 0x11C, reference point for the landing distance (evt_mario), y is a floor clamp (mario_hit)
     f32 field_0x128;               // 0x128, distance from field_0x11C at landing (evt_mario)
     f32 peakYpos;                  // 0x12C, marioSetPeakYpos
-    u8 field_0x130[0x134 - 0x130]; // 0x130
+    f32 rollScaleY;                // 0x130, Y scale of the roll squash/stretch state machine (mot_roll, mario.c PSMTXScale)
     CameraId camId;                // 0x134
     f32 unk138;                    // 0x138
     f32 unk13C;                    // 0x13C
@@ -208,7 +208,7 @@ typedef struct MarioWork {
 	void* hitobjStandOn;           // 0x1E4, 0x1E8 US HitEntry
 	void* hitobjJumpFrom;          // 0x1E8, 0x1EC US HitEntry
 	void* hitobjPush;              // 0x1EC JP, 0x1F0 US HitEntry
-    u8 field_0x1F0[4];             // 0x1F0
+    u8 field_0x1F0[4];             // 0x1F0, HitEntry of the wall searchFrontWall touched (mario_hit), set even when hitobjPush is not
     void* hitobjHead;              // 0x1F4, marioSearchHead result
     void* hitobjUnder;             // 0x1F8, marioSearchUnder result (mario_hit)
     void* field_0x1FC;             // 0x1FC
@@ -255,21 +255,30 @@ typedef struct MarioWork {
         f32 spinSpeed;             // 0x2A0, added to unk1A8 each frame (mario_motion spin, mot_hip, evt_mario)
         f32 damageRootY;           // 0x2A0, surface height of the damage floor fallen into: splash height, start of the return arc (set_damage_root_ypos, mot_damage)
     };
-    // 0x2A4-0x2AC: per-motion scratch words; each motion gives them its own type (mot_slit's s32 counter,
-    // mot_ship's anime frame, mot_roll's flag word, mot_hammer's s16, mot_jabara's s32 y) through raw offsets.
+    // 0x2A4-0x2B4: per-motion scratch words; each motion gives them its own type (mot_slit's s32 counter,
+    // mot_ship's anime frame, mot_hammer's s16 through raw offsets; the union members below for the rest).
     union {
-        f32 field_0x2A4;           // 0x2A4, f32 in mot_plane (eased turn rate added to unk1A8), mot_hammer, mot_dokan
+        f32 field_0x2A4;           // 0x2A4, f32 in mot_plane (eased turn rate added to unk1A8), mot_hammer, mot_dokan, mot_jabara
         s32 motionSfxId0;          // 0x2A4, sound handle in mot_hip (-1 when none)
+        u32 rollFlags;             // 0x2A4, mot_roll flag word (0x10, 0x20, 0x100, 0x200, 0x1000, 0x4000, 0x10000)
     };
     union {
         f32 wCamVal1;              // 0x2A8, f32 step in mot_plane, mot_slit, mot_dokan, mot_hammer, mot_damage
         s32 motionSfxId1;          // 0x2A8, sound handle in mot_hip and mot_roll (-1 when none)
+        s32 jabaraHitY;            // 0x2A8, y of the hit mot_jabara lands on (the hit-depth jump)
     };
     f32 field_0x2AC;               // 0x2AC, f32 in mot_plane, mot_damage, mot_slit and mot_bottomless (s32 0 in mot_roll/mot_jabara resets)
-    f32 field_0x2B0;               // 0x2B0
-    u8 field_0x2B4[0x2B8 - 0x2B4]; // 0x2B4
+    union {
+        f32 field_0x2B0;           // 0x2B0, f32 in party_yoshi, mot_jump and mario_motion
+        f32 jabaraSpeed;           // 0x2B0, mot_jabara: angle step added to dispRot.x (its state machine raises and lowers it)
+    };
+    union {
+        u8 field_0x2B4[4];         // 0x2B4, f32 in party_yoshi, s32 in peach
+        f32 jabaraAccel;           // 0x2B4, mot_jabara: step added to jabaraSpeed each frame
+    };
     f32 field_0x2B8;               // 0x2B8
-    u8 field_0x2BC[0x2C8 - 0x2BC]; // 0x2BC
+    u8 field_0x2BC[0x2C4 - 0x2BC]; // 0x2BC
+    f32 kpaSpeed;                  // 0x2C4, signed walk/swim speed (koopa_motion, koopa.c reset)
     u32 reloadMapOnBottomless;     // 0x2C8, set by N_marioReloadMapOnBottomlessOn/Off
     Vec bottomlessResetPosition;   // 0x2CC JP, 0x2E4 US
     u8 field_0x2D8[0x2E0 - 0x2D8]; // 0x2D8

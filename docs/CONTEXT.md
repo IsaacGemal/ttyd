@@ -10091,3 +10091,34 @@ NameEntryWork (include/nameent.h) fields are named by their use in nameent.c: `f
 seq_load.c: the strings passed as seqSetSeq's second argument are map names (`map_aji_10`, `map_nok_01`, ...); the third argument (named `bero` in include/driver/seqdrv.h) is `bero_nokotarou`, `bero_resha_return`, `bero_e_bero`, `bero_prologue`. The OFF_f_in_out strings are `animgroup_OFF_f_in_out_{mario,kuppa,peach}`, passed to evt_sub_animgroup_async in evt_continue. `copy_angles` is the 4x4 table indexed `copySrc * 4 + copyDst` (the copy-arrow rotation). `fade_color_*` are the seven black GXColors passed to fadeEntry, named for the state that uses each. `unk_800f2398` is `seqLoadPrepCardRecheck`: the last call in evt_memcard_delete/copy once the write was tried (success or miss), it clears fade slot 4 and copies the event's `printWindowId` into the work; the event then sets result 1, loadMain sets flags 0x80 and state 1 reruns evt_memcard_check with that window (the worker's `seqLoadCardCheckFade` read as a card-check fade, and the flags comment's "0x80 delete/copy failed" was wrong: result 0 is the declined yes/no, 1 the carried-out write). Left as they were: `unk_8016af5c` (win_mario.c, the zero-padded zenkaku number formatter; another unit's file), `gap_80349DF0` (14 unused +/-1.0 floats), the `vec3_*` and `dat_8041bd84..bdd8` colour objects (roles not proven for each), `double_*` pool objects, and the card-flag raw offsets (`+ 0x2000`, `<< 14`) that CardData does not name yet.
 
 Matching build OK (ok file recreated on the tower); seq_load.c, nameent.c and evt_memcard.c natural-compile without MUST_MATCH. Index: 36.223 -> 35.818 per kLOC.
+
+### Readability: MarioWork names for koopa_motion, mot_jabara and mot_roll (2026-10-20, Claude Haiku 5.5, n9-q-koopam)
+
+New names in `include/mario/mario.h`, each traced to its readers and writers: `rollScaleY` (0x130, f32; mot_roll's
+squash/stretch state machine writes 1.0, 1.4 and 0.4, mario.c's two `PSMTXScale` calls read it, both updated);
+`kpaSpeed` (0x2C4, f32, the signed walk/swim speed read and written by koopa_motion's kpaStickSpd and kpaSwimMove; koopa.c's
+two resets converted too); `rollFlags` (0x2A4 union member, u32; mot_roll's bits 0x10, 0x20, 0x100, 0x200, 0x1000,
+0x4000, 0x10000); `jabaraHitY` (0x2A8 union member, s32; mot_jabara stores `(s32)(sp3C + wPlayerCollisionBox.y)`,
+truncating the hit top to whole units, and converts it back with `(f32)` for position.y); `jabaraSpeed` and
+`jabaraAccel` (0x2B0 and 0x2B4 union members beside `field_0x2B0` and `field_0x2B4`, so party_yoshi and peach.c are unchanged: each frame accel is added to speed, and speed to dispRot.x).
+Existing fields now used: dispOfs/dispPivot/dispRot x/y/z (0x98-0xC4 in mot_roll and mot_jabara), moveDir (0x19C),
+airTimerPeak (0x52, koopa_motion and mot_jabara), hitobjHead (0x1F4, mot_roll), field_0x11C.y (0x120), field_0x1C4,
+motionSfxId1 (mot_roll).
+
+Left, and why:
+- mot_roll's 0x2A8 reads stay unsigned (`(u32)m->motionSfxId1`): the original tests them against 0xFFFFFFFF. Stores of
+  integer 0 to 0x2AC, 0x2B0 and 0x2B4 stay raw, since an f32 field would change the store from an integer to an `lfs`.
+- 0x1F0 (a `void*` HitEntry in koopa_motion and mot_roll) is not hitobjPush on G8MJ01: hitobjPush is 0x1EC JP (the
+  4-byte JP/US shift that also moves hitobjStandOn and hitobjJumpFrom; casedrv and mot_walk read it there). mario_hit
+  sets 0x1F0 to every wall searchFrontWall touches, but hitobjPush only for bero walls or after 20 frames of pushing.
+  No name yet beyond the header comment; it has readers in mario_hit, party_yoshi, mot_ship and koopa.c too.
+- koopa_motion's 0x2A0 is a u16 counter over the spinSpeed/damageRootY union; no member added. 0x18C (a speed copied
+  from baseSpeed), 0x78 and 0x7A have no proven name.
+- mot_jabara's 0x41, 0x42, 0x2BA and 0x2BB are per-motion state bytes with no proven names. 0x114 and 0x1F4 keep their
+  types (s32 reads and `void*` reads would change the expression type).
+- `field_0x11C` (Vec), `field_0x1C4` and `field_0x2A4` are still placeholders; renaming the first needs evt_mario and
+  mario_hit updated too. Those uses are why koopa_motion and mot_jabara show a few more field_0x sites in the index.
+- `float_*_80xxxxxx` constants are address-named but pooled; value-only names collide across addresses, so left.
+
+Build: `ninja` recreates build/G8MJ01/ok and the 32 modules pass; changed C files natural-compile (without MUST_MATCH).
+Index 36.223 -> 36.006 (koopa_motion 287 -> 288, mot_jabara 245 -> 252, mot_roll 200 -> 43 weighted).
