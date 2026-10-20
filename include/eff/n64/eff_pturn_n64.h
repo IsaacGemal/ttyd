@@ -3,58 +3,27 @@
 #include <dolphin/types.h>
 #include "driver/camdrv.h"
 #include "driver/effdrv.h"
-// Only the fields effPturnDisp reads are named so far; the real block extends to at least 0x88.
-typedef struct effPturnN64Data {
-    s32 field_0x0; // 0x00
-    s32 field_0x4; // 0x04
-    f32 x;         // 0x08
-    f32 y;         // 0x0C
-    f32 z;         // 0x10
-    u8 pad_14[0x14]; // 0x14
-    s32 life;      // 0x28
-    s32 field_0x2C; // 0x2C
-    u8 pad_30[4];  // 0x30
-    f32 field_0x34; // 0x34
-    s32 field_0x38; // 0x38
-    s32 field_0x3C; // 0x3C
-    u8 pad_40[4];  // 0x40
-    s32 field_0x44; // 0x44
-    u8 pad_48[8];  // 0x48
-    f32 field_0x50; // 0x50
-    f32 field_0x54; // 0x54
-    f32 field_0x58; // 0x58
-    f32 field_0x5C; // 0x5C
-    f32 field_0x60; // 0x60
-    f32 field_0x64; // 0x64
-    f32 field_0x68; // 0x68
-    s32 field_0x6C; // 0x6C
-    s32 field_0x70; // 0x70
-    u8 pad_74[0x14]; // 0x74
-    f32 field_0x88; // 0x88
-    u8 pad_8C[4];  // 0x8C
-} effPturnN64Data;
-
-// One pturn particle; effPturnN64Entry allocates two of these (0x48 bytes each).
-// effPturnN64Data above is a flat view of the same 0x90-byte block.
+// Element 0 is the head (type, counter, the number being counted up or down); elements 1 and up are
+// the number particles. effPturnN64Entry allocates two of these (0x48 bytes each).
 typedef struct PturnN64Elem {
-    s32 field_0x0;   // 0x00
-    s32 field_0x4;   // 0x04
+    s32 type;        // 0x00, head only
+    s32 active;      // 0x04, head only; Disp draws nothing while 0
     f32 x;           // 0x08
     f32 y;           // 0x0C
     f32 z;           // 0x10
-    f32 field_0x14;  // 0x14
-    f32 field_0x18;  // 0x18
-    f32 field_0x1C;  // 0x1C
-    f32 field_0x20;  // 0x20
-    s32 field_0x24;  // 0x24
+    f32 velX;        // 0x14
+    f32 velY;        // 0x18
+    f32 velZ;        // 0x1C
+    f32 bobY;        // 0x20, cos wobble added to the Y offset of the quad
+    s32 alpha;       // 0x24, TEVREG0 alpha
     s32 life;        // 0x28
-    s32 field_0x2C;  // 0x2C
-    f32 field_0x30;  // 0x30
-    f32 field_0x34;  // 0x34
-    s32 field_0x38;  // 0x38
-    s32 field_0x3C;  // 0x3C
-    f32 field_0x40;  // 0x40
-    s32 field_0x44;  // 0x44
+    s32 counter;     // 0x2C, head only; frame counter
+    f32 scale;       // 0x30
+    f32 scaleFactor; // 0x34, head only; multiplies every particle scale
+    s32 displayNum;  // 0x38, head only; number shown
+    s32 targetNum;   // 0x3C, head only; number the head counts towards
+    f32 angle;       // 0x40, degrees, Z rotation of the quad
+    s32 stepDelay;   // 0x44, head only; frames to wait between steps
 } PturnN64Elem;
 // .sdata2 constants defined in this unit (see config/G8MJ01/symbols.txt).
 extern const f32 float_deg2rad_8041fa60;
