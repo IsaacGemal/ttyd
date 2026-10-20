@@ -2108,8 +2108,8 @@ USER_FUNC(aud_suikomi) {
             aud->position.z = intplGetValue(4, aud->interpFramesLeft, aud->interpFramesTotal, aud->mHomePosition.z, pz);
             v = intplGetValue(4, aud->interpFramesLeft, aud->interpFramesTotal, 1.0f, 0.65f);
 #endif
-            *(f32*)(aud->field_0x54 + 0x10) = v;
-            *(f32*)(aud->field_0x54 + 0xC) = v;
+            aud->baseSize.y = v;
+            aud->baseSize.x = v;
             break;
         }
     }
@@ -2200,8 +2200,8 @@ USER_FUNC(aud_fire_hit) {
         aud->interpFramesTotal = 0;
         *(s32*)aud->field_0x8 = 0;
         aud->mRotation.y = 0.0f;
-        *(f32*)(aud->field_0x54 + 0x10) = 1.0f;
-        *(f32*)(aud->field_0x54 + 0xC) = 1.0f;
+        aud->baseSize.y = 1.0f;
+        aud->baseSize.x = 1.0f;
         aud->flags |= 4;
         ev = evtEntry(aud_hit_event, 0, 0x20);
         ev->lwData[0] = ((s32*)list[0])[i];
@@ -2264,8 +2264,8 @@ USER_FUNC(aud_fire_no_hit) {
         aud->interpFramesTotal = 0;
         *(s32*)aud->field_0x8 = 0;
         aud->mRotation.y = 0.0f;
-        *(f32*)(aud->field_0x54 + 0x10) = 1.0f;
-        *(f32*)(aud->field_0x54 + 0xC) = 1.0f;
+        aud->baseSize.y = 1.0f;
+        aud->baseSize.x = 1.0f;
         aud->flags |= 4;
         ev = evtEntry(aud_hit_event, 0, 0x20);
         ev->lwData[0] = ((s32*)list[0])[i];

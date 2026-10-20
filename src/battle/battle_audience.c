@@ -2708,13 +2708,13 @@ void BattleAudienceDispAudience(CameraId camId, void* param) {
 				f32 w = (f32)GXGetTexObjWidth(&texObj);
 				f32 k = audience_kind[member->type].field_0x18;
 				w = k * w / 64.0f;
-				*(f32*)member->field_0x54 = *(f32*)(member->field_0x54 + 0xC) * w;
+				member->scale.x = member->baseSize.x * w;
 			}
 			{
 				f32 h = (f32)GXGetTexObjHeight(&texObj);
 				f32 k = audience_kind[member->type].field_0x1C;
 				h = k * h / 64.0f;
-				*(f32*)(member->field_0x54 + 4) = *(f32*)(member->field_0x54 + 0x10) * h;
+				member->scale.y = member->baseSize.y * h;
 			}
 		}
 		else {
@@ -2727,13 +2727,13 @@ void BattleAudienceDispAudience(CameraId camId, void* param) {
 						f32 w = (f32)GXGetTexObjWidth(&texObj);
 						f32 k = audience_kind[member->type].field_0x18;
 						w = k * w / 64.0f;
-						*(f32*)member->field_0x54 = *(f32*)(member->field_0x54 + 0xC) * w;
+						member->scale.x = member->baseSize.x * w;
 					}
 					{
 						f32 h = (f32)GXGetTexObjHeight(&texObj);
 						f32 k = audience_kind[member->type].field_0x1C;
 						h = k * h / 64.0f;
-						*(f32*)(member->field_0x54 + 4) = *(f32*)(member->field_0x54 + 0x10) * h;
+						member->scale.y = member->baseSize.y * h;
 					}
 					break;
 				}
@@ -2849,11 +2849,11 @@ void BattleAudienceDispAudience(CameraId camId, void* param) {
 		GXSetChanMatColor(GX_COLOR0A0, color);
 
 		GXBegin(GX_QUADS, GX_VTXFMT0, 4);
-		GXPosition3f32(neg20 + *(f32*)(member->field_0x54 + 0x18), 40.0f + *(f32*)(member->field_0x54 + 0x1C),
-		               *(f32*)(member->field_0x54 + 0x20));
+		GXPosition3f32(neg20 + member->drawOffset.x, 40.0f + member->drawOffset.y,
+		               member->drawOffset.z);
 		GXTexCoord2f32(texCoords.v[texBase * 2], texCoords.v[texBase * 2 + 1]);
-		GXPosition3f32(w + *(f32*)(member->field_0x54 + 0x18), 40.0f + *(f32*)(member->field_0x54 + 0x1C),
-		               *(f32*)(member->field_0x54 + 0x20));
+		GXPosition3f32(w + member->drawOffset.x, 40.0f + member->drawOffset.y,
+		               member->drawOffset.z);
 		GXTexCoord2f32(texCoords.v[(texBase + 1) * 2], texCoords.v[(texBase + 1) * 2 + 1]);
 		GXPosition3f32(w, 0.0f, 0.0f);
 		GXTexCoord2f32(texCoords.v[(texBase + 2) * 2], texCoords.v[(texBase + 2) * 2 + 1]);
