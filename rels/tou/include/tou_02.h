@@ -20,7 +20,7 @@ struct PoseGroup {
 
 struct FanPose {
     u16 flags;      // 0x0
-    s16 field_0x2;  // 0x2
+    s16 state;      // 0x2, 0 = wandering, 10 = hop to target, 20 = drift to target, 100 = settled
     s16 groupIndex; // 0x4
     s16 field_0x6;  // 0x6
     OSTime time;    // 0x8
@@ -31,7 +31,7 @@ struct FanPose {
     f32 field_0x38; // 0x38
     f32 field_0x3C; // 0x3C
     f32 field_0x40; // 0x40
-    s16 field_0x44; // 0x44
+    s16 timer;      // 0x44, frames left in states 10 and 20
     s16 field_0x46; // 0x46
 };
 
@@ -47,8 +47,8 @@ struct ExtFanWork {
     s32 groupCount;               // 0x8
     PoseGroup groups[3];          // 0xC
     u8 field_0x84[0x50C - 0x84];  // 0x84
-    s32 field_0x50C;              // 0x50C
-    s32 field_0x510;              // 0x510
+    s32 hammerFrames;             // 0x50C, frames Mario has been in MARIO_MOTION_HAMMER
+    s32 idleCount;                // 0x510, fans in state 0 not pinned to Mario or the champion (flags bit 0)
     s32 sfxId;                    // 0x514
     u8 volume;                    // 0x518
     u8 field_0x519[3];            // 0x519

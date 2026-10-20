@@ -9462,3 +9462,25 @@ sort key is whatever the heap held (retail bug or a field set elsewhere that is 
 only `x`/`y`/`z`). Radiation `holdTimer` is only ever set to 0, and 0x1C/0x20 (`a5`) and the 0x34-0x54 scroll
 group are written but never read by the draw. Kemuri1's Disp skips entries whose own `sheetU0` > 15, a field only
 the head writes. kemuri1 0x14-0x2C (the case 0/1 jerk chain and the 0.94 dampers) and 0x38 are still field_0x.
+### Readability: REL group 3 — demo, Glitz Pit, gon_03 (2026-10-19, Claude Haiku 5.5, n9-q-rels3; reviewed by Claude Opus 5.5)
+
+dmo_00 DemoWork gets `bookAngle` (book_r), `page` (-1 = none, next() counts up, demo_cap captures at page 4),
+`captured`, `fade` (adjust's argument; picture alpha is 255 * (1 - fade)), `scale` (demo_scale ramps 0.6 -> 1.5),
+`posX`/`posY`, `captureBuf`, `tplFile` (demo.tpl), `winOpen`/`winAlpha` (demo_winonoff; alpha 0..0xCC in steps of
+10). The draw callbacks use `CAMERA_2D`/`CAMERA_3D`/`CAMERA_3D_IMAGE` and GX enums for blend, alpha compare, z mode,
+texgen, cull, vertex descriptor/format and `GX_QUADS`; every swap was checked by value and enum type against
+GXEnum.h and camdrv.h. gon_03 SenkaronEntry: `timer`, `velX/Y/Z`, `flags` bit 0 (face away from Mario, set 1 time in
+50 when a wander leg starts). tou_02 FanPose `state` (0 wandering, 10 hop, 20 drift, 100/101 settled) and `timer`;
+ExtFanWork `hammerFrames` and `idleCount` (read back by evt_end_count and scaling the crowd volume); check_hammer
+and ext_fan_main use `MARIO_MOTION_HAMMER`/`HAMMER_2` (0x12/0x13) and `PARTY_MEMBER_FLURRIE`. tou_03 ScreenWork
+(`texBuf`, `captured`, eased `scale`/`offsetX`/`offsetY` with their targets, `frame`, `useNoise`, `noiseBuf`);
+KyakuEntry follows rsh_05's MoamoaGroup (#885): `enabled` (always 1 here), `cycleFrames`, `firstPose`, `numPoses`;
+KyakuState `cycleStart`. starstone_sound_onoff/evt_boss_stone_r and eff_pos go through `effStarStoneData` and
+`effPokopiPchargeData` instead of byte offsets (effStarStoneData `flags` bit 4, `rotY`); _firstattack_setting
+writes FieldBattleData `firstAttackKind` and `field_14` instead of `(u8*)fbat + 0x10/0x14/0x1C`. evt_yuunpc and evt_yuuranking unchanged. Review: removed two
+committed `.c-e` sed backups, renamed KyakuEntry `poseCount` -> `numPoses` and named `enabled` to match MoamoaGroup,
+tightened the gon_03 flag and idleCount comments. Natural compile of all four files is clean. Index 54.714 -> 54.363.
+Open: FieldBattleData 0x14/0x1C (`field_14`, `field_14[8]`),
+DemoWork `field_0x00`, ScreenWork `field_0x28` (set to -1, otherwise unread), FanPose `field_0x6`/`0x38`-`0x40`/
+`0x46`. The next shared-struct target is ExtPose `field_0x4` (yaw) and `field_0x10` (pose/frame index), which
+gon_03, tou_02, tou_03, rsh_05 and the other ext users write (about 20 REL sources).
