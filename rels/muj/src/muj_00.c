@@ -54,11 +54,17 @@ static s32 dai3_shurai_after[68];
 s32 dai3_beat_back[194];
 s32 muj_gor_ship_start[245];
 
+// One per tobikakari entry, in the Tobidat block tobikakaru_init allocates; entries jump between these spots.
+struct TobikakariSpot {
+    Vec home;  // 0x0, the entry's starting position
+    s32 group; // 0xC, 0 (suifu run anims), 1, or 2 (dai3 run anims); groups 0 and 1 jump at 2, and 2 at 0 or 1
+};
+
 // .bss is laid out last-declared-first: the original has Tobidat, _op, _ap and four trailing bytes.
 static u32 gap_05_0000000C_bss;
 static u8* _ap;
 OpField* _op;
-void* Tobidat;
+TobikakariSpot* Tobidat;
 
 // clang-format off
 extend_data(4,
@@ -547,7 +553,7 @@ USER_FUNC(koburon_get_encount_info) {
     s32 id = args[0];
     FieldBattleData* fbat = fbatGetPointer();
 
-    evtSetValue(event, id, fbat->field_10);
+    evtSetValue(event, id, fbat->firstAttackKind);
     return EVT_RETURN_DONE;
 }
 
@@ -556,47 +562,47 @@ void suifu_kyorokyoro(NanNpcEntry* entry) {
 
     switch (entry->state) {
     case 0:
-        entry->stateStart = gp->renderTime;
+        entry->startTime = gp->renderTime;
         entry->state = 1;
-        entry->stateDuration = irand(1000) + 100;
-        if (entry->direction == 90.0f) {
-            entry->direction = 270.0f;
+        entry->timer = irand(1000) + 100;
+        if (entry->facingAngle == 90.0f) {
+            entry->facingAngle = 270.0f;
         } else {
-            entry->direction = 90.0f;
+            entry->facingAngle = 90.0f;
         }
         break;
     case 1:
-        elapsed = ((s32)gp->renderTime - (s32)entry->stateStart) / (OS_TIMER_CLOCK / 1000);
-        if (elapsed > entry->stateDuration) {
-            entry->stateStart = gp->renderTime;
+        elapsed = ((s32)gp->renderTime - (s32)entry->startTime) / (OS_TIMER_CLOCK / 1000);
+        if (elapsed > entry->timer) {
+            entry->startTime = gp->renderTime;
             entry->state = 2;
-            entry->stateDuration = irand(350) + 350;
-            if (entry->direction == 90.0f) {
-                entry->direction = 270.0f;
+            entry->timer = irand(350) + 350;
+            if (entry->facingAngle == 90.0f) {
+                entry->facingAngle = 270.0f;
             } else {
-                entry->direction = 90.0f;
+                entry->facingAngle = 90.0f;
             }
         }
         break;
     case 2:
-        elapsed = ((s32)gp->renderTime - (s32)entry->stateStart) / (OS_TIMER_CLOCK / 1000);
-        if (elapsed > entry->stateDuration) {
-            entry->stateStart = gp->renderTime;
+        elapsed = ((s32)gp->renderTime - (s32)entry->startTime) / (OS_TIMER_CLOCK / 1000);
+        if (elapsed > entry->timer) {
+            entry->startTime = gp->renderTime;
             entry->state = 3;
-            entry->stateDuration = irand(350) + 350;
-            if (entry->direction == 90.0f) {
-                entry->direction = 270.0f;
+            entry->timer = irand(350) + 350;
+            if (entry->facingAngle == 90.0f) {
+                entry->facingAngle = 270.0f;
             } else {
-                entry->direction = 90.0f;
+                entry->facingAngle = 90.0f;
             }
         }
         break;
     case 3:
-        elapsed = ((s32)gp->renderTime - (s32)entry->stateStart) / (OS_TIMER_CLOCK / 1000);
-        if (elapsed > entry->stateDuration) {
+        elapsed = ((s32)gp->renderTime - (s32)entry->startTime) / (OS_TIMER_CLOCK / 1000);
+        if (elapsed > entry->timer) {
             entry->callback = NULL;
-            if (entry->direction == 90.0f) {
-                entry->direction = 270.0f;
+            if (entry->facingAngle == 90.0f) {
+                entry->facingAngle = 270.0f;
             }
         }
         break;
@@ -895,7 +901,7 @@ NanNpcEntry* random_choice_target(s32 type) {
 }
 
 void tobikakari_seq00(NanNpcEntry* entry) {
-    void* dat = entry->data;
+    TobikakariSpot* spot = entry->spot;
     s32 elapsed;
 
     switch (entry->state) {
@@ -904,84 +910,82 @@ void tobikakari_seq00(NanNpcEntry* entry) {
         if (r < 100) {
             entry->state = 10;
         } else if (r < 200) {
-            entry->stateStart = (s32)gp->renderTime;
-            entry->stateDuration = irand(500) + 1;
+            entry->startTime = (s32)gp->renderTime;
+            entry->timer = irand(500) + 1;
             entry->state = 0x15;
         } else {
-            entry->stateStart = (s32)gp->renderTime;
-            entry->stateDuration = irand(2000) + 500;
+            entry->startTime = (s32)gp->renderTime;
+            entry->timer = irand(2000) + 500;
             entry->state = 0x16;
         }
         break;
     }
     case 10: {
         NanNpcEntry* target;
-        Vec* pos;
-        entry->stateStart = (s32)gp->renderTime;
+        entry->startTime = (s32)gp->renderTime;
         entry->hoseiPosition = entry->position;
-        target = random_choice_target(*(s32*)((u8*)dat + 0xC));
-        pos = (Vec*)target->data;
-        entry->homePosition = *pos;
+        target = random_choice_target(spot->group);
+        entry->homePosition = target->spot->home;
         entry->homePosition.z += 2.0f;
-        entry->jumpCurveA = -4.0f * (f32)(irand(30) + 100);
-        entry->jumpCurveB = entry->homePosition.y - entry->hoseiPosition.y - entry->jumpCurveA;
-        entry->stateDuration = irand(500) + 400;
+        entry->jumpQuad = -4.0f * (f32)(irand(30) + 100);
+        entry->jumpLinear = entry->homePosition.y - entry->hoseiPosition.y - entry->jumpQuad;
+        entry->timer = irand(500) + 400;
         if (entry->hoseiPosition.x < entry->homePosition.x) {
-            entry->direction = 90.0f;
+            entry->facingAngle = 90.0f;
         } else {
-            entry->direction = 270.0f;
+            entry->facingAngle = 270.0f;
         }
         entry->state = 0x14;
         entry->field_0x70 = 0x15;
         break;
     }
     case 11:
-        entry->stateStart = (s32)gp->renderTime;
+        entry->startTime = (s32)gp->renderTime;
         entry->hoseiPosition = entry->position;
-        entry->homePosition = *(Vec*)dat;
-        entry->jumpCurveA = -4.0f * (f32)(irand(30) + 100);
-        entry->jumpCurveB = entry->homePosition.y - entry->hoseiPosition.y - entry->jumpCurveA;
-        entry->stateDuration = irand(500) + 400;
+        entry->homePosition = spot->home;
+        entry->jumpQuad = -4.0f * (f32)(irand(30) + 100);
+        entry->jumpLinear = entry->homePosition.y - entry->hoseiPosition.y - entry->jumpQuad;
+        entry->timer = irand(500) + 400;
         entry->state = 0x14;
         entry->field_0x70 = 0x16;
         break;
     case 20:
-        elapsed = ((s32)gp->renderTime - (s32)entry->stateStart) / (OS_TIMER_CLOCK / 1000);
-        if (elapsed < entry->stateDuration) {
+        elapsed = ((s32)gp->renderTime - (s32)entry->startTime) / (OS_TIMER_CLOCK / 1000);
+        if (elapsed < entry->timer) {
             f32 sz, ez;
             s32 steps;
-            f32 t = (f32)elapsed / (f32)entry->stateDuration;
-            entry->position.x = intplGetValue(0, elapsed, entry->stateDuration, entry->hoseiPosition.x, entry->homePosition.x);
+            f32 t = (f32)elapsed / (f32)entry->timer;
+            entry->position.x = intplGetValue(0, elapsed, entry->timer, entry->hoseiPosition.x, entry->homePosition.x);
 #ifdef MUST_MATCH
             // MUST_MATCH: reading the second call's arguments into locals through volatile pointers stops the
             // compiler hoisting the step-count lwz ahead of the two lfs, matching the original's schedule. The
             // plain form (below) scores 99.34%.
             sz = *(volatile f32*)&entry->hoseiPosition.z;
             ez = *(volatile f32*)&entry->homePosition.z;
-            steps = *(volatile s32*)&entry->stateDuration;
+            steps = *(volatile s32*)&entry->timer;
 #else
             sz = entry->hoseiPosition.z;
             ez = entry->homePosition.z;
-            steps = entry->stateDuration;
+            steps = entry->timer;
 #endif
             entry->position.z = intplGetValue(0, elapsed, steps, sz, ez);
-            entry->position.y = t * (entry->jumpCurveA * t + entry->jumpCurveB) + entry->hoseiPosition.y;
+            entry->position.y = t * (entry->jumpQuad * t + entry->jumpLinear) + entry->hoseiPosition.y;
         } else {
             entry->position = entry->homePosition;
-            entry->stateStart = (s32)gp->renderTime;
-            entry->stateDuration = irand(2000) + 500;
+            entry->startTime = (s32)gp->renderTime;
+            entry->timer = irand(2000) + 500;
             entry->state = entry->field_0x70;
         }
         break;
     case 21:
-        elapsed = ((s32)gp->renderTime - (s32)entry->stateStart) / (OS_TIMER_CLOCK / 1000);
-        if (elapsed > entry->stateDuration) {
+        elapsed = ((s32)gp->renderTime - (s32)entry->startTime) / (OS_TIMER_CLOCK / 1000);
+        if (elapsed > entry->timer) {
             entry->state = 11;
         }
         break;
     case 22:
-        elapsed = ((s32)gp->renderTime - (s32)entry->stateStart) / (OS_TIMER_CLOCK / 1000);
-        if (elapsed > entry->stateDuration) {
+        elapsed = ((s32)gp->renderTime - (s32)entry->startTime) / (OS_TIMER_CLOCK / 1000);
+        if (elapsed > entry->timer) {
             entry->state = 10;
         }
         break;
@@ -990,40 +994,40 @@ void tobikakari_seq00(NanNpcEntry* entry) {
 
 USER_FUNC(tobikakaru_init) {
     NanNpcWork* work = nanNPCWork;
-    u8* dat;
+    TobikakariSpot* spot;
     s32 i;
     NanNpcEntry* entry;
 
-    dat = _mapAlloc(0x1310);
-    Tobidat = dat;
+    spot = _mapAlloc(0x1310);
+    Tobidat = spot;
     for (i = 0; i < 0x5F; i++) {
         entry = &work->entries[i + 10];
         entry->callback = tobikakari_seq00;
         entry->state = 0;
-        entry->data = dat;
+        entry->spot = spot;
         evt_nannpc_set_animtbl_sub(entry, (s16*)suifu_animtbl_run);
-        *(Vec*)dat = entry->position;
-        *(s32*)(dat + 0xC) = 0;
-        dat += 0x10;
+        spot->home = entry->position;
+        spot->group = 0;
+        spot++;
     }
     for (i = 0; i < 100; i++) {
         entry = &work->entries[i + 0x69];
         entry->callback = tobikakari_seq00;
         entry->state = 0;
-        entry->data = dat;
-        *(Vec*)dat = entry->position;
-        *(s32*)(dat + 0xC) = 1;
-        dat += 0x10;
+        entry->spot = spot;
+        spot->home = entry->position;
+        spot->group = 1;
+        spot++;
     }
     for (i = 0; i < 100; i++) {
         entry = &work->entries[i + 0xCD];
         entry->callback = tobikakari_seq00;
         entry->state = 0;
-        entry->data = dat;
+        entry->spot = spot;
         evt_nannpc_set_animtbl_sub(entry, (s16*)dai3_animtbl_run);
-        *(Vec*)dat = entry->position;
-        *(s32*)(dat + 0xC) = 2;
-        dat += 0x10;
+        spot->home = entry->position;
+        spot->group = 2;
+        spot++;
     }
     return EVT_RETURN_DONE;
 }

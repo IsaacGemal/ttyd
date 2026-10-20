@@ -41,22 +41,22 @@
 
 // marcoship work, private to this unit (layout read from the original's asm).
 typedef struct MarcoShip {
-    f32 angle;        // 0x0, swing angle, read by marcoship_yure_func
+    f32 angle;        // 0x0, swing angle; marcoship_yure_func hands it to the script each frame
     f32 angleStep;    // 0x4, per-frame change of angle, sign flips at each end
     f32 angleLimit;   // 0x8, swing amplitude
-    s32 settled;      // 0xC, set once the swing has returned to rest
-    s32 state;        // 0x10
+    s32 settled;      // 0xC, set once the swing has returned to rest; marcoship_stop_wait_func waits on it
+    s32 state;        // 0x10, 0 swing, 1 pause at an end, 2 swing back to zero (marcoship_stop_func), 3 at rest
     u8 pad_0x14[4];   // 0x14
     OSTime stateTime; // 0x18, renderTime when the current state began
 } MarcoShip;
 
 // logo work, private to this unit (layout read from the original's asm).
 typedef struct LogoWork {
-    void* data;      // 0x0
-    f32 alpha;       // 0x4
-    s32 fadeAlpha;   // 0x8, 0-255, drawn as the logo's vertex alpha
+    FileEntry* tpl;  // 0x0, mariost.tpl
+    f32 offsetY;     // 0x4, added to the logo's y: -50 to 0 while fading in, 0 to 100 while fading out
+    s32 alpha;       // 0x8, 0-255, the logo's vertex alpha
     s32 state;       // 0xC
-    s32 timer;       // 0x10, frames counted in the fade states
+    s32 timer;       // 0x10, fade step counter; advanced twice per frame, once per intplGetValue call
 } LogoWork;
 
 #pragma pool_data off
@@ -324,7 +324,7 @@ USER_FUNC(marcoship_yure_func) {
 }
 
 USER_FUNC(marcoship_stop_func) {
-    marcoship->state = EVT_RETURN_DONE;
+    marcoship->state = 2;
     return EVT_RETURN_DONE;
 }
 
@@ -589,7 +589,7 @@ USER_FUNC(elmos1000tai_init) {
         entry = (NanNpcEntry*)((u8*)work->entries + offset);
         *(s32*)entry->pose |= 4;
         entry->color.a = 0;
-        entry->direction = c90;
+        entry->facingAngle = c90;
         entry->field_0x70 = i;
         if (i % 3 != 0) {
             r = irand(140) + 110;
@@ -634,22 +634,22 @@ void elmos1000tai_seq00(struct NanNpcEntry* entry) {
 
     switch (entry->state) {
     case 0:
-        entry->stateStart = gp->renderTime;
-        entry->stateDuration = irand(1000) + entry->radius * 3;
+        entry->startTime = gp->renderTime;
+        entry->timer = irand(1000) + entry->radius * 3;
         entry->state = 1;
         // fallthrough
     case 1:
-        elapsed = ((s32)gp->renderTime - (s32)entry->stateStart) / (OS_TIMER_CLOCK / 1000);
-        if (elapsed >= entry->stateDuration) {
-            entry->stateStart = gp->renderTime;
-            entry->stateDuration = 500;
+        elapsed = ((s32)gp->renderTime - (s32)entry->startTime) / (OS_TIMER_CLOCK / 1000);
+        if (elapsed >= entry->timer) {
+            entry->startTime = gp->renderTime;
+            entry->timer = 500;
             entry->state = 2;
         }
         break;
     case 2:
-        elapsed = ((s32)gp->renderTime - (s32)entry->stateStart) / (OS_TIMER_CLOCK / 1000);
-        if (elapsed < entry->stateDuration) {
-            entry->color.a = (u8)intplGetValue(0, elapsed, entry->stateDuration, 0.0f, 255.0f);
+        elapsed = ((s32)gp->renderTime - (s32)entry->startTime) / (OS_TIMER_CLOCK / 1000);
+        if (elapsed < entry->timer) {
+            entry->color.a = (u8)intplGetValue(0, elapsed, entry->timer, 0.0f, 255.0f);
         } else {
             entry->state = 3;
         }
@@ -1932,9 +1932,9 @@ static void pressStartGX(LogoWork* work, s32 alpha, f32 x, f32 y) {
     GXTexObj startText, gradient;
     Mtx v17, v16;
 
-    TEXGetGXTexObjFromPalette(**(TEXPalette***)((u8*)work->data + 0xA0), &startText, 8);
+    TEXGetGXTexObjFromPalette((TEXPalette*)*work->tpl->data, &startText, 8);
     GXLoadTexObj(&startText, GX_TEXMAP0);
-    TEXGetGXTexObjFromPalette(**(TEXPalette***)((u8*)work->data + 0xA0), &gradient, 9);
+    TEXGetGXTexObjFromPalette((TEXPalette*)*work->tpl->data, &gradient, 9);
     GXLoadTexObj(&gradient, GX_TEXMAP1);
     GXSetNumTevStages(2);
     GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR_NULL);
@@ -1997,9 +1997,9 @@ static void draw(CameraId cameraId, void* param) {
     GXSetProjection(camGetPtr(CAMERA_2D)->projection, camera->projType);
     camBackup = *camGetCurPtr();
     *camGetCurPtr() = *camGetPtr(CAMERA_2D);
-    winTexInit(**(TEXPalette***)((u8*)work->data + 0xA0));
-    unk_80177008(5, (Vec){ 0.0f, 100.0f + work->alpha, 0.0f }, (Vec){ 1.0f, 1.0f, 1.0f },
-                 (GXColor){ 0xFF, 0xFF, 0xFF, work->fadeAlpha });
+    winTexInit((TEXPalette*)*work->tpl->data);
+    unk_80177008(5, (Vec){ 0.0f, 100.0f + work->offsetY, 0.0f }, (Vec){ 1.0f, 1.0f, 1.0f },
+                 (GXColor){ 0xFF, 0xFF, 0xFF, work->alpha });
     *camGetCurPtr() = camBackup;
     GXSetViewport(viewport[0], viewport[1], viewport[2], viewport[3], viewport[4], viewport[5]);
     GXSetProjectionv(projection);
@@ -2019,16 +2019,16 @@ USER_FUNC(logo) {
     }
     switch (work->state) {
     case 0:
-        work->data = fileAllocf(FILE_TYPE_TPL, "%s/mariost.tpl", getMarioStDvdRoot());
-        work->fadeAlpha = 0;
-        work->alpha = 0.0f;
+        work->tpl = fileAllocf(FILE_TYPE_TPL, "%s/mariost.tpl", getMarioStDvdRoot());
+        work->alpha = 0;
+        work->offsetY = 0.0f;
         work->timer = 0;
         work->state++;
         break;
     case 1:
         if (work->timer < 180) {
-            work->fadeAlpha = (s32)intplGetValue(11, ++work->timer, 180, 0.0f, 255.0f);
-            work->alpha = intplGetValue(11, ++work->timer, 180, -50.0f, 0.0f);
+            work->alpha = (s32)intplGetValue(11, ++work->timer, 180, 0.0f, 255.0f);
+            work->offsetY = intplGetValue(11, ++work->timer, 180, -50.0f, 0.0f);
         } else if (gp->retraceCount % 15 == 0) {
             work->state++;
         }
@@ -2044,20 +2044,20 @@ USER_FUNC(logo) {
         break;
     case 3:
         if (work->timer < 120) {
-            work->fadeAlpha = (s32)intplGetValue(11, ++work->timer, 120, 255.0f, 0.0f);
-            work->alpha = intplGetValue(11, ++work->timer, 120, 0.0f, 100.0f);
+            work->alpha = (s32)intplGetValue(11, ++work->timer, 120, 255.0f, 0.0f);
+            work->offsetY = intplGetValue(11, ++work->timer, 120, 0.0f, 100.0f);
         } else {
             work->state++;
         }
         break;
     case 4:
-        fileFree(work->data);
-        work->data = NULL;
+        fileFree(work->tpl);
+        work->tpl = NULL;
         _mapFree(work);
         evtSetValue(event, GF(2), 1);
         return EVT_RETURN_DONE;
     }
-    if (work->data != NULL) {
+    if (work->tpl != NULL) {
         dispEntry(8, 1000.0f, 0, draw, work);
     }
     return EVT_RETURN_BLOCK;

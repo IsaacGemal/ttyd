@@ -432,22 +432,22 @@ void elmosalpha_func(NanNpcEntry* entry) {
 
     switch (entry->state) {
     case 0:
-        entry->stateStart = gp->renderTime;
-        entry->stateDuration = irand(1000);
+        entry->startTime = gp->renderTime;
+        entry->timer = irand(1000);
         entry->state = 1;
         // fallthrough
     case 1:
-        elapsed = ((s32)gp->renderTime - (s32)entry->stateStart) / (OS_TIMER_CLOCK / 1000);
-        if (elapsed >= entry->stateDuration) {
-            entry->stateStart = gp->renderTime;
-            entry->stateDuration = 500;
+        elapsed = ((s32)gp->renderTime - (s32)entry->startTime) / (OS_TIMER_CLOCK / 1000);
+        if (elapsed >= entry->timer) {
+            entry->startTime = gp->renderTime;
+            entry->timer = 500;
             entry->state = 2;
         }
         break;
     case 2:
-        elapsed = ((s32)gp->renderTime - (s32)entry->stateStart) / (OS_TIMER_CLOCK / 1000);
-        if (elapsed < entry->stateDuration) {
-            entry->color.a = (u8)intplGetValue(0, elapsed, entry->stateDuration, 0.0f, 255.0f);
+        elapsed = ((s32)gp->renderTime - (s32)entry->startTime) / (OS_TIMER_CLOCK / 1000);
+        if (elapsed < entry->timer) {
+            entry->color.a = (u8)intplGetValue(0, elapsed, entry->timer, 0.0f, 255.0f);
         } else {
             entry->state = 3;
         }

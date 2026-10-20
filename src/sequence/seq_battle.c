@@ -53,7 +53,7 @@ void seq_battleInit(SequenceWork* work) {
     evtStopAll(4);
     psndSetFlag(0x80);
 
-    mode = fbatGetPointer()->field_10;
+    mode = fbatGetPointer()->firstAttackKind;
     switch (mode) {
         case 0x800000:
         case 0x1000000:
@@ -110,7 +110,7 @@ void seq_battleMain(SequenceWork* work) {
 
         case 2:
             pouchGetPtr();
-            mode = fbatGetPointer()->field_10;
+            mode = fbatGetPointer()->firstAttackKind;
             switch (mode) {
                 case 0x800000:
                 case 0x1000000:
@@ -301,7 +301,7 @@ BOOL battle_init(void) {
     if (*(u32*)((u8*)fbat + 0x1C) & 1) {
         BattleInformationSetFirstAttack(info, 0);
     } else {
-        switch (*(s32*)((u8*)fbat + 0x10)) {
+        switch (fbat->firstAttackKind) {
             case 0x20000:
                 BattleInformationSetFirstAttack(info, 1);
                 break;

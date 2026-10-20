@@ -9326,3 +9326,24 @@ never names fields itself, and it leaves pointer arithmetic, non-literal offsets
 alone. Open: the 108 convertible casts are in files that open branches were editing at the time:
 battle_event_cmd (48), evt_mario (19), win_root (15), mario, mario_hit, mario_motion, evt_mobj, battle_seq and
 evt_lect_win. Check those files' claims before running `--apply` on them.
+### Readability: muj map RELs (2026-10-19, Claude Haiku 5.5, n9-q-muj; reviewed by Claude Opus 5.5)
+
+muj_10.h's NanNpcEntry mirror of src/event/evt_nannpc.c now uses the names evt_nannpc.c and gor_00.h use for the
+same offsets (`homePosition`, `startTime` 0x50, `facingAngle` 0x60, `state` 0x68, `timer` 0x6C, `field_0x88`,
+`work[6]`); bytes muj doesn't read stay `field_0x80[8]`/`field_0x94[0xC]`. The free slots carry muj's uses:
+`field_0x70` (state after a tobikakari jump, or elmos1000tai's entry number), `radius` (0x74, elmos1000tai's
+distance from the formation centre, also scaling its fade-in delay), `jumpQuad`/`jumpLinear` (0x78/0x7C, the
+tobikakari arc y = hoseiPosition.y + t * (jumpQuad * t + jumpLinear), which lands on homePosition at t = 1) and
+`spot` (0xA0, a `TobikakariSpot {Vec home; s32 group;}` in muj_00's Tobidat block, replacing `void* data` and
+its `+ 0xC` reads). muj_20: MarcoShip (`angle`, `angleStep`, `angleLimit`, `settled`, `state` 0-3, `stateTime`;
+marcoship_stop_func writes state 2, not `EVT_RETURN_DONE`); LogoWork's 0x4 was misnamed `alpha` and is the y
+offset (`offsetY`, -50 to 0 fading in, 0 to 100 fading out), 0x8 is `alpha`, 0x0 is `FileEntry* tpl` (mariost.tpl,
+read as `*tpl->data` instead of `+ 0xA0`). FieldBattleData 0x10 is `firstAttackKind` (written by fbatHitCheck:
+jump kinds 0x20000-0x80000, hammer 0x100000-0x400000, 0x800000, 0x1000000; tou_03 forces 0x10000000; seq_battle
+maps it to BattleInformationSetFirstAttack 1-7); npcdrv, seq_battle, tou_03 and koburon_get_encount_info read it
+by name. Index 57.167 -> 56.915 (worker) -> 56.898 (review), on main at dc327ded. Open: no shared NanNpcEntry header yet; evt_nannpc.c,
+gor_00.h and muj_10.h each declare the layout, and a shared one in include/evt/evt_nannpc.h would need gor's and
+muj's per-REL slot names (0x70-0x84, 0xA0) folded into generic ones. gor_00.h calls 0x88 `targetPos`, but
+evt_nannpc_move_position2 stores the move's start position there. FirstStrikeInfo and the 0x800000/0x1000000/
+0x10000000 attack kinds are unnamed; npcdrv.c has an orphaned comment above fbatAttackEnabled about fbatHitCheck's
+second argument.
