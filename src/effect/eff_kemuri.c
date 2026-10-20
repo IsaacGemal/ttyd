@@ -9,7 +9,7 @@
 #include <dolphin/gx.h>
 
 typedef struct effKemuriData {
-	s32 kind; //0x0 the int2 from effKemuriEntry: selects the scale table and tint
+	s32 kind; //0x0 the int2 from effKemuriEntry: selects the scale table and texture
 	f32 x; //0x4
 	f32 y; //0x8
 	f32 z; //0xC
