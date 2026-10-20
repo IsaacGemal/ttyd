@@ -8657,3 +8657,22 @@ semantics as the explicit `(s64)((f32)lifeTime - elapsed)`) stops MWCC reusing t
 plain s64 compare matches. Left: itemBoundHitFloor's existing volatile 0x38 guard, the lecture event's 0xBC/0xC0
 and the get-effect's userdata 0x38 stores, the never-read pads at 0x34/0x4D/0x5C, and unnamed mode, subMode and
 status values.
+### Readability: eff_kemuri and eff_starstone (2026-10-19, Claude Haiku 5.5, n9-q-eff; reviewed by Claude Opus 5.5)
+
+effKemuriData (eff_kemuri.c) gets `kind` (int2: picks the scale table and texture), `x`/`y`/`z`, `frame` (indexes
+touchdown_scale/heavy_scale), `scaleX`/`scaleY`, `velX` (damped by 0.85) and `offX`, `scale`, `sheetU0`/`sheetU1`
+(texture-matrix column of this frame and the next, 16 over the lifetime) and `lifetime` (32 or 64 frames).
+effKemuri2Data gets `speed`, `velY`, `dirX`/`dirZ` (sin/cos of the drift angle), `spinVel`/`spin`, `pulseScale`,
+`scale` and `heading` (camera-relative yaw that picks the facing quad). effStarStoneData gets the fields only
+eff_starstone.c names: `spreadAX`/`spreadAZ`/`spreadBX`/`spreadBZ` (0x48-0x54, the two tip pairs swung by camera
+yaw once state passes 2), `tintR`/`tintG`/`tintB` (0x5C-0x5E, TEVREG0 colour) and `sfxHandle` (0x60). GX literals
+in both files use their enums (GXSetTevColor's 1 is `GX_TEVREG0`, GXSetTevOp's 4 `GX_PASSCLR`, 0 `GX_MODULATE`).
+Weighted cleanup: eff_kemuri.c 505 → 385, eff_starstone.c 441 → 398.
+Open: effStarStoneData's other fields. sac_suki, sac_zubastar and sac_genki write 0x8-0x20, 0x38 and 0x5F through
+the struct; win_log, itemdrv, sac_muki and sac_bakugame poke 0x4, 0x8-0x20, 0x34, 0x38 and 0x5C-0x5F by raw offset;
+sac_deka has its own DekaStarEffectData overlay. Naming them is a pass over those files too. Candidate names:
+0x4 `flags` (1 falling, 2 no dust/shadow for idx >= 7, 4/8 shine sound wanted/playing, 0x10, 0x20 skip draw),
+0x14 `scale`, 0x18/0x1C/0x20 `rotY2`/`yaw`/`rotZ` (y, z, y rotations in degrees; the callers' `scale2` source
+fields are misnamed), 0x24/0x28 `scrollU`/`scrollV` (texture-matrix translation, U cycling by 0.01), 0x2C `timer`
+(mod 60; a sparkle every 10), 0x30 `edgeColor` (from edge_color[], the channel material colour), 0x34
+`dustEffect` (effSnowDustN64Entry), 0x38 `camId`, 0x3C `state`, 0x40 `gravity`, 0x44 `velY`, 0x5F `alpha`.

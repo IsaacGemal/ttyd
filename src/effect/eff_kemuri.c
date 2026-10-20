@@ -9,24 +9,24 @@
 #include <dolphin/gx.h>
 
 typedef struct effKemuriData {
-	s32 field_0x0; //0x0
-	f32 field_0x4; //0x4
-	f32 field_0x8; //0x8
-	f32 field_0xC; //0xC
+	s32 kind; //0x0 the int2 from effKemuriEntry: selects the scale table and texture
+	f32 x; //0x4
+	f32 y; //0x8
+	f32 z; //0xC
 	u8 field_0x10[0x40 - 0x10]; //0x10
-	s32 field_0x40; //0x40
-	f32 field_0x44; //0x44
-	f32 field_0x48; //0x48
-	f32 field_0x4C; //0x4C
+	s32 frame; //0x40 advanced once per main tick; indexes the scale tables
+	f32 scaleX; //0x44 puff size from touchdown_scale/heavy_scale
+	f32 scaleY; //0x48
+	f32 velX; //0x4C sideways speed, damped by 0.85 per tick (type 0)
 	u8 field_0x50[0x58 - 0x50]; //0x50
-	f32 field_0x58; //0x58
+	f32 offX; //0x58 x offset, accumulates velX
 	f32 field_0x5C; //0x5C
 	u8 field_0x60[0x74 - 0x60]; //0x60
-	f32 field_0x74; //0x74
+	f32 scale; //0x74 uniform scale of the whole puff, starts at 1
 	u8 field_0x78[0x80 - 0x78]; //0x78
-	s32 field_0x80; //0x80
-	s32 field_0x84; //0x84
-	s32 field_0x88; //0x88
+	s32 sheetU0; //0x80 texture column of this frame (16 columns over lifetime)
+	s32 sheetU1; //0x84 texture column of the next frame, clamped to 15
+	s32 lifetime; //0x88 frames before effDelete (32 or 64)
 } effKemuriData;
 
 // Small-data constants owned by this effect unit; definitions follow the functions.
@@ -109,45 +109,45 @@ EffectEntry* effKemuriEntry(s32 int2, f32 float3, f32 float4, f32 float5, f32 fl
 	entry->userdata = data;
 	entry->callback = effKemuriMain;
 
-	data->field_0x0 = int2;
-	data->field_0x4 = float3;
-	data->field_0x8 = float4;
-	data->field_0xC = float5;
+	data->kind = int2;
+	data->x = float3;
+	data->y = float4;
+	data->z = float5;
 
-	data->field_0x40 = 0;
+	data->frame = 0;
 
-	data->field_0x44 = float_1_8041c6b0;
-	data->field_0x48 = float_1_8041c6b0;
-	data->field_0x74 = float_1_8041c6b0;
+	data->scaleX = float_1_8041c6b0;
+	data->scaleY = float_1_8041c6b0;
+	data->scale = float_1_8041c6b0;
 	data++;
 	for (i = 1; i < entry->count; i++, data++) {
-		data->field_0x4 = float_0_8041c6bc;
-		data->field_0x8 = float_0_8041c6bc;
-		data->field_0xC = float_0_8041c6bc;
+		data->x = float_0_8041c6bc;
+		data->y = float_0_8041c6bc;
+		data->z = float_0_8041c6bc;
 
-		data->field_0x44 = float_1_8041c6b0;
-		data->field_0x48 = float_1_8041c6b0;
-		data->field_0x74 = float_1_8041c6b0;
+		data->scaleX = float_1_8041c6b0;
+		data->scaleY = float_1_8041c6b0;
+		data->scale = float_1_8041c6b0;
 
-		data->field_0x58 = float_0_8041c6bc;
+		data->offX = float_0_8041c6bc;
 		data->field_0x5C = float_0_8041c6bc;
 
-		data->field_0x40 = 0;
-		data->field_0x80 = 0;
-		data->field_0x84 = 0;
+		data->frame = 0;
+		data->sheetU0 = 0;
+		data->sheetU1 = 0;
 
 		switch (int2) {
 			case 0:
-				data->field_0x4C = i & 1 ? float_3_8041c724 : float_neg3_8041c728;
-				data->field_0x88 = 32;
+				data->velX = i & 1 ? float_3_8041c724 : float_neg3_8041c728;
+				data->lifetime = 32;
 				break;
 			case 1:
-				data->field_0x4C = float_0_8041c6bc;
-				data->field_0x88 = 32;
+				data->velX = float_0_8041c6bc;
+				data->lifetime = 32;
 				break;
 			case 2:
-				data->field_0x4C = float_0_8041c6bc;
-				data->field_0x88 = 64;
+				data->velX = float_0_8041c6bc;
+				data->lifetime = 64;
 				break;
 		}
 	}
@@ -184,7 +184,7 @@ EffectEntry* effKemuri2Entry(s32 int2, f32 float3, f32 float4, f32 float5, f32 f
 	angle = float_360_8041c70c * angleABf(float_0_8041c6bc, float_0_8041c6bc, sinVal, cosVal) / float_6p2832_8041c714;
 	viewYaw = camGetPtr(CAMERA_3D)->viewYaw;
 	a2 = float_360_8041c70c * angleABf(float_0_8041c6bc, float_0_8041c6bc, sinVal, cosVal) / float_6p2832_8041c714;
-	data->field_0x78 = reviseAngle(a2 + viewYaw);
+	data->heading = reviseAngle(a2 + viewYaw);
 	angle2 = float_6p2832_8041c714 * (f32)(s32)angle / float_360_8041c70c;
 	z = float_5_8041c718 + float5;
 	data->counter = 0;
@@ -192,18 +192,18 @@ EffectEntry* effKemuri2Entry(s32 int2, f32 float3, f32 float4, f32 float5, f32 f
 	p7 = float_0p7_8041c71c;
 	neg20 = float_neg20_8041c720;
 	zero = float_0_8041c6bc;
-	data->field_0x30 = sin(angle2);
-	data->field_0x34 = cos(angle2);
+	data->dirX = sin(angle2);
+	data->dirZ = cos(angle2);
 	data->x = float3;
 	data->y = float4;
 	data->z = z;
-	data->field_0x10 = one;
-	data->field_0x20 = p7;
-	data->field_0x64 = neg20;
-	data->field_0x68 = zero;
+	data->speed = one;
+	data->velY = p7;
+	data->spinVel = neg20;
+	data->spin = zero;
 	data->alpha = 0xFF;
-	data->field_0x70 = one;
-	data->field_0x74 = one;
+	data->pulseScale = one;
+	data->scale = one;
 	return entry;
 }
 
@@ -221,57 +221,57 @@ void effKemuriMain(EffectEntry* effect) {
 #endif
 	Vec disp = { 0.0f, 0.0f, 0.0f };
 
-	disp.x = data->field_0x4;
-	disp.y = data->field_0x8;
-	disp.z = data->field_0xC;
+	disp.x = data->x;
+	disp.y = data->y;
+	disp.z = data->z;
 #ifdef MUST_MATCH
 	position = disp;
 #endif
 
-	type = data->field_0x0;
+	type = data->kind;
 	data++;
 	for (; i < effect->count; i++, data++) {
-		data->field_0x80 = (s32)(float_16_8041c6f4 * (f32)data->field_0x40 / (f32)data->field_0x88);
-		data->field_0x84 = (s32)(float_16_8041c6f4 * (f32)(data->field_0x40 + 1) / (f32)data->field_0x88);
-		if (data->field_0x84 > 15) {
-			data->field_0x84 = 15;
+		data->sheetU0 = (s32)(float_16_8041c6f4 * (f32)data->frame / (f32)data->lifetime);
+		data->sheetU1 = (s32)(float_16_8041c6f4 * (f32)(data->frame + 1) / (f32)data->lifetime);
+		if (data->sheetU1 > 15) {
+			data->sheetU1 = 15;
 		}
 		switch (type) {
 		case 0:
-			if ((u32)data->field_0x40 < 30U) {
+			if ((u32)data->frame < 30U) {
 				f32 scale;
 
-				scale = touchdown_scale[data->field_0x40 * 2];
-				data->field_0x44 = scale * float_0p0078125_8041c6f8;
-				scale = touchdown_scale[data->field_0x40 * 2 + 1];
-				data->field_0x48 = scale * float_0p0078125_8041c6f8;
+				scale = touchdown_scale[data->frame * 2];
+				data->scaleX = scale * float_0p0078125_8041c6f8;
+				scale = touchdown_scale[data->frame * 2 + 1];
+				data->scaleY = scale * float_0p0078125_8041c6f8;
 			} else {
-				data->field_0x44 = float_1p5_8041c6fc;
-				data->field_0x48 = float_0p8_8041c6f0;
+				data->scaleX = float_1p5_8041c6fc;
+				data->scaleY = float_0p8_8041c6f0;
 			}
-			data->field_0x4C *= float_0p85_8041c700;
-			data->field_0x58 += data->field_0x4C;
-			data->field_0x40++;
+			data->velX *= float_0p85_8041c700;
+			data->offX += data->velX;
+			data->frame++;
 			break;
 		case 1:
-			data->field_0x40++;
+			data->frame++;
 			break;
 		case 2:
-			if ((u32)data->field_0x40 < 30U) {
+			if ((u32)data->frame < 30U) {
 				f32 scale;
 
-				scale = heavy_scale[data->field_0x40 * 2];
-				data->field_0x44 = scale * float_0p0078125_8041c6f8;
-				scale = heavy_scale[data->field_0x40 * 2 + 1];
-				data->field_0x48 = scale * float_0p0078125_8041c6f8;
+				scale = heavy_scale[data->frame * 2];
+				data->scaleX = scale * float_0p0078125_8041c6f8;
+				scale = heavy_scale[data->frame * 2 + 1];
+				data->scaleY = scale * float_0p0078125_8041c6f8;
 			} else {
-				data->field_0x44 = float_2_8041c704;
-				data->field_0x48 = float_1p2_8041c708;
+				data->scaleX = float_2_8041c704;
+				data->scaleY = float_1p2_8041c708;
 			}
-			data->field_0x40++;
+			data->frame++;
 			break;
 		}
-		if (data->field_0x40 >= data->field_0x88) {
+		if (data->frame >= data->lifetime) {
 			effDelete(effect);
 			return;
 		}
@@ -314,13 +314,13 @@ static void effKemuri2Main(EffectEntry* effect) {
 	}
 
 	for (i = 0; i < effect->count; i++, data++) {
-		data->x += data->field_0x10 * data->field_0x30;
-		data->z += data->field_0x10 * data->field_0x34;
-		data->field_0x20 *= float_0p9_8041c6e8;
-		data->y += data->field_0x20;
-		data->field_0x64 *= float_0p95_8041c6ec;
-		data->field_0x68 += data->field_0x64;
-		data->field_0x70 = angle;
+		data->x += data->speed * data->dirX;
+		data->z += data->speed * data->dirZ;
+		data->velY *= float_0p9_8041c6e8;
+		data->y += data->velY;
+		data->spinVel *= float_0p95_8041c6ec;
+		data->spin += data->spinVel;
+		data->pulseScale = angle;
 		if (data->counter > 15) {
 #ifdef MUST_MATCH
 			/* MUST_MATCH: a local keeps the conversion in retail's f1/f2/f0 order. */
@@ -355,7 +355,7 @@ void effKemuriDisp(CameraId camId, void* param) {
 	effKemuriData* data = effect->userdata;
 	s32 i;
 	s32 j;
-	s32 type = data->field_0x0;
+	s32 type = data->kind;
 	CameraEntry* camera;
 	GXTexObj texobj;
 	Mtx transMtx;
@@ -369,54 +369,54 @@ void effKemuriDisp(CameraId camId, void* param) {
 	switch (type) {
 	case 0:
 		effGetTexObj(0x23, &texobj);
-		GXLoadTexObj(&texobj, 0);
+		GXLoadTexObj(&texobj, GX_TEXMAP0);
 		break;
 	case 1:
 		effGetTexObj(0x24, &texobj);
-		GXLoadTexObj(&texobj, 0);
+		GXLoadTexObj(&texobj, GX_TEXMAP0);
 		break;
 	case 2:
 		effGetTexObj(0x23, &texobj);
-		GXLoadTexObj(&texobj, 0);
+		GXLoadTexObj(&texobj, GX_TEXMAP0);
 		break;
 	}
 
-	PSMTXTrans(transMtx, data->field_0x4, data->field_0x8, data->field_0xC);
+	PSMTXTrans(transMtx, data->x, data->y, data->z);
 	PSMTXRotRad(rotMtx, 'y', float_deg2rad_8041c6a4 * -camGetPtr(camId)->viewYaw);
-	PSMTXScale(scaleMtx, data->field_0x74, data->field_0x74, float_1_8041c6b0);
+	PSMTXScale(scaleMtx, data->scale, data->scale, float_1_8041c6b0);
 	PSMTXConcat(transMtx, rotMtx, outMtx);
 	PSMTXConcat(outMtx, scaleMtx, outMtx);
 	PSMTXConcat(camera->view, outMtx, outMtx);
 
-	GXSetCurrentMtx(0);
+	GXSetCurrentMtx(GX_PNMTX0);
 	GXSetNumChans(1);
-	GXSetChanCtrl(4, 0, 0, 0, 0, 0, 2);
-	GXSetChanMatColor(4, dat_8041c670);
+	GXSetChanCtrl(GX_COLOR0A0, GX_DISABLE, GX_SRC_REG, GX_SRC_REG, 0, GX_DF_NONE, GX_AF_NONE);
+	GXSetChanMatColor(GX_COLOR0A0, dat_8041c670);
 	GXSetNumTevStages(3);
-	GXSetTevOrder(0, 0, 0, 0xFF);
-	GXSetTevColorOp(0, 0, 0, 0, 1, 0);
-	GXSetTevAlphaOp(0, 0, 0, 0, 1, 0);
-	GXSetTevColorIn(0, 0xF, 0xF, 0xF, 8);
-	GXSetTevAlphaIn(0, 7, 7, 7, 4);
-	GXSetTevOrder(1, 1, 0, 0xFF);
-	GXSetTevColorOp(1, 0, 0, 0, 1, 0);
-	GXSetTevAlphaOp(1, 0, 0, 0, 1, 0);
-	GXSetTevColorIn(1, 0, 8, 2, 0xF);
-	GXSetTevAlphaIn(1, 0, 4, 1, 7);
-	GXSetTevColor(1, dat_8041c674);
-	GXSetTevOrder(2, 0xFF, 0xFF, 4);
-	GXSetTevColorOp(2, 0, 0, 0, 1, 0);
-	GXSetTevAlphaOp(2, 0, 0, 0, 1, 0);
-	GXSetTevColorIn(2, 0xF, 0, 0xA, 0xF);
-	GXSetTevAlphaIn(2, 7, 0, 5, 7);
+	GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR_NULL);
+	GXSetTevColorOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+	GXSetTevAlphaOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+	GXSetTevColorIn(GX_TEVSTAGE0, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ZERO, GX_CC_TEXC);
+	GXSetTevAlphaIn(GX_TEVSTAGE0, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_TEXA);
+	GXSetTevOrder(GX_TEVSTAGE1, GX_TEXCOORD1, GX_TEXMAP0, GX_COLOR_NULL);
+	GXSetTevColorOp(GX_TEVSTAGE1, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+	GXSetTevAlphaOp(GX_TEVSTAGE1, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+	GXSetTevColorIn(GX_TEVSTAGE1, GX_CC_CPREV, GX_CC_TEXC, GX_CC_C0, GX_CC_ZERO);
+	GXSetTevAlphaIn(GX_TEVSTAGE1, GX_CA_APREV, GX_CA_TEXA, GX_CA_A0, GX_CA_ZERO);
+	GXSetTevColor(GX_TEVREG0, dat_8041c674);
+	GXSetTevOrder(GX_TEVSTAGE2, GX_TEXCOORD_NULL, GX_TEXMAP_NULL, GX_COLOR0A0);
+	GXSetTevColorOp(GX_TEVSTAGE2, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+	GXSetTevAlphaOp(GX_TEVSTAGE2, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+	GXSetTevColorIn(GX_TEVSTAGE2, GX_CC_ZERO, GX_CC_CPREV, GX_CC_RASC, GX_CC_ZERO);
+	GXSetTevAlphaIn(GX_TEVSTAGE2, GX_CA_ZERO, GX_CA_APREV, GX_CA_RASA, GX_CA_ZERO);
 	GXSetNumTexGens(2);
-	GXSetTexCoordGen2(0, 1, 4, 0x1E, 0, 0x7D);
-	GXSetTexCoordGen2(1, 1, 4, 0x21, 0, 0x7D);
+	GXSetTexCoordGen2(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_TEXMTX0, GX_FALSE, GX_PTIDENTITY);
+	GXSetTexCoordGen2(GX_TEXCOORD1, GX_TG_MTX2x4, GX_TG_TEX0, GX_TEXMTX1, GX_FALSE, GX_PTIDENTITY);
 	GXClearVtxDesc();
-	GXSetVtxDesc(9, 1);
-	GXSetVtxDesc(0xD, 1);
-	GXSetVtxAttrFmt(0, 9, 1, 4, 0);
-	GXSetVtxAttrFmt(0, 0xD, 1, 4, 0);
+	GXSetVtxDesc(GX_VA_POS, GX_DIRECT);
+	GXSetVtxDesc(GX_VA_TEX0, GX_DIRECT);
+	GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_POS_XYZ, GX_F32, 0);
+	GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, GX_TEX_ST, GX_F32, 0);
 
 #ifdef MUST_MATCH
 	one = float_1_8041c6b0;
@@ -427,42 +427,42 @@ void effKemuriDisp(CameraId camId, void* param) {
 			if (j == 0) {
 				GXColor color = dat_8041c678;
 
-				GXSetChanMatColor(4, color);
+				GXSetChanMatColor(GX_COLOR0A0, color);
 			} else {
 				GXColor color = dat_8041c67c;
 
-				GXSetChanMatColor(4, color);
+				GXSetChanMatColor(GX_COLOR0A0, color);
 			}
 
 			{
 				s32 t = 1 - j;
 
-				PSMTXTrans(transMtx, data->field_0x58 + (f32)t, (f32)-t, float_0_8041c6bc);
+				PSMTXTrans(transMtx, data->offX + (f32)t, (f32)-t, float_0_8041c6bc);
 			}
-			PSMTXScale(scaleMtx, float_20_8041c694 * data->field_0x44, float_20_8041c694 * data->field_0x48, float_20_8041c694);
+			PSMTXScale(scaleMtx, float_20_8041c694 * data->scaleX, float_20_8041c694 * data->scaleY, float_20_8041c694);
 			PSMTXConcat(outMtx, transMtx, tmpMtx);
 			PSMTXConcat(tmpMtx, scaleMtx, tmpMtx);
-			GXLoadPosMtxImm(tmpMtx, 0);
+			GXLoadPosMtxImm(tmpMtx, GX_PNMTX0);
 
 #ifdef MUST_MATCH
 			{ f32 unity = MATCH_F32(float_1_8041c6b0); PSMTXScale(scaleMtx, float_0p0625_8041c6d8, unity, unity); }
 #else
 			PSMTXScale(scaleMtx, float_0p0625_8041c6d8, float_1_8041c6b0, float_1_8041c6b0);
 #endif
-			PSMTXTrans(transMtx, (f32)data->field_0x80, float_neg0p2_8041c6dc, float_0_8041c6bc);
+			PSMTXTrans(transMtx, (f32)data->sheetU0, float_neg0p2_8041c6dc, float_0_8041c6bc);
 			PSMTXConcat(scaleMtx, transMtx, transMtx);
-			GXLoadTexMtxImm(transMtx, 0x1E, 1);
+			GXLoadTexMtxImm(transMtx, GX_TEXMTX0, GX_MTX2x4);
 
 #ifdef MUST_MATCH
 			{ f32 unity = MATCH_F32(float_1_8041c6b0); PSMTXScale(scaleMtx, float_0p0625_8041c6d8, unity, unity); }
 #else
 			PSMTXScale(scaleMtx, float_0p0625_8041c6d8, float_1_8041c6b0, float_1_8041c6b0);
 #endif
-			PSMTXTrans(transMtx, (f32)data->field_0x84, float_neg0p2_8041c6dc, float_0_8041c6bc);
+			PSMTXTrans(transMtx, (f32)data->sheetU1, float_neg0p2_8041c6dc, float_0_8041c6bc);
 			PSMTXConcat(scaleMtx, transMtx, transMtx);
-			GXLoadTexMtxImm(transMtx, 0x21, 1);
+			GXLoadTexMtxImm(transMtx, GX_TEXMTX1, GX_MTX2x4);
 
-			GXBegin(0x80, 0, 4);
+			GXBegin(GX_QUADS, GX_VTXFMT0, 4);
 #ifdef MUST_MATCH
 			left = -one * float_0p5_8041c6cc;
 			GXParam1f32(left);
@@ -560,26 +560,26 @@ static void effKemuri2Disp(CameraId cameraId, void* param) {
 	camera = camGetPtr(cameraId);
 
 	GXSetNumChans(0);
-	GXSetChanCtrl(4, 0, 0, 0, 0, 0, 2);
-	GXSetBlendMode(1, 4, 5, 0);
-	GXSetZCompLoc(1);
-	GXSetAlphaCompare(7, 0, 0, 7, 0);
-	GXSetZMode(1, 3, 0);
+	GXSetChanCtrl(GX_COLOR0A0, GX_DISABLE, GX_SRC_REG, GX_SRC_REG, 0, GX_DF_NONE, GX_AF_NONE);
+	GXSetBlendMode(GX_BM_BLEND, GX_BL_SRCALPHA, GX_BL_INVSRCALPHA, GX_LO_CLEAR);
+	GXSetZCompLoc(GX_TRUE);
+	GXSetAlphaCompare(GX_ALWAYS, 0, GX_AOP_AND, GX_ALWAYS, 0);
+	GXSetZMode(GX_TRUE, GX_LEQUAL, GX_FALSE);
 	GXSetNumTevStages(1);
-	GXSetTevOrder(0, 0, 0, 0xFF);
-	GXSetTevColorOp(0, 0, 0, 0, 1, 0);
-	GXSetTevAlphaOp(0, 0, 0, 0, 1, 0);
-	GXSetTevColorIn(0, 0xF, 2, 8, 0xF);
-	GXSetTevAlphaIn(0, 7, 1, 4, 7);
+	GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR_NULL);
+	GXSetTevColorOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+	GXSetTevAlphaOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+	GXSetTevColorIn(GX_TEVSTAGE0, GX_CC_ZERO, GX_CC_C0, GX_CC_TEXC, GX_CC_ZERO);
+	GXSetTevAlphaIn(GX_TEVSTAGE0, GX_CA_ZERO, GX_CA_A0, GX_CA_TEXA, GX_CA_ZERO);
 	GXSetNumTexGens(1);
-	GXSetTexCoordGen2(0, 1, 4, 0x3C, 0, 0x7D);
-	GXSetCullMode(0);
+	GXSetTexCoordGen2(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_IDENTITY, GX_FALSE, GX_PTIDENTITY);
+	GXSetCullMode(GX_CULL_NONE);
 	mapSetMaterialFog();
 	GXClearVtxDesc();
-	GXSetVtxDesc(9, 1);
-	GXSetVtxDesc(0xD, 1);
-	GXSetVtxAttrFmt(0, 9, 1, 4, 0);
-	GXSetVtxAttrFmt(0, 0xD, 1, 4, 0);
+	GXSetVtxDesc(GX_VA_POS, GX_DIRECT);
+	GXSetVtxDesc(GX_VA_TEX0, GX_DIRECT);
+	GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_POS_XYZ, GX_F32, 0);
+	GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, GX_TEX_ST, GX_F32, 0);
 
 #ifdef MUST_MATCH
 	n12p8 = -float_12p8_8041c690;
@@ -598,8 +598,8 @@ static void effKemuri2Disp(CameraId cameraId, void* param) {
 		const f32 negSize2 = -float_12p8_8041c690 * float_0p5_8041c6cc;
 #endif
 
-		if ((data->field_0x78 > float_20_8041c694 && data->field_0x78 < float_160_8041c698) ||
-		    (data->field_0x78 > float_180_8041c69c && data->field_0x78 < float_340_8041c6a0)) {
+		if ((data->heading > float_20_8041c694 && data->heading < float_160_8041c698) ||
+		    (data->heading > float_180_8041c69c && data->heading < float_340_8041c6a0)) {
 #ifdef MUST_MATCH
 			/* MUST_MATCH: named quad temps reproduce retail's volatile-FPR colouring. */
 			f32 x6;
@@ -610,15 +610,15 @@ static void effKemuri2Disp(CameraId cameraId, void* param) {
 			PSMTXTrans(transMtx, data->x + (f32)(1 - i), data->y - (f32)(1 - i), data->z);
 			PSMTXRotRad(rotMtx, 'y', float_deg2rad_8041c6a4 * -camGetPtr(cameraId)->viewYaw);
 			PSMTXRotRad(rotMtx2, 'z', float_0p17453_8041c6a8);
-			PSMTXScale(scaleMtx, data->field_0x70, data->field_0x70, data->field_0x70);
+			PSMTXScale(scaleMtx, data->pulseScale, data->pulseScale, data->pulseScale);
 			PSMTXConcat(transMtx, rotMtx, outMtx);
-			if (data->field_0x78 < float_180_8041c69c) {
+			if (data->heading < float_180_8041c69c) {
 				PSMTXScale(tmpMtx, float_neg1_8041c6ac, float_1_8041c6b0, float_neg1_8041c6ac);
 				PSMTXConcat(outMtx, tmpMtx, outMtx);
 			}
 			PSMTXTrans(tmpMtx, float_10_8041c6b4, float_neg6_8041c6b8, float_0_8041c6bc);
 			PSMTXConcat(outMtx, tmpMtx, outMtx);
-			PSMTXScale(tmpMtx, data->field_0x74, data->field_0x74, data->field_0x74);
+			PSMTXScale(tmpMtx, data->scale, data->scale, data->scale);
 			PSMTXConcat(outMtx, tmpMtx, outMtx);
 			PSMTXTrans(tmpMtx, float_neg10_8041c6c0, float_6_8041c6c4, float_0_8041c6bc);
 			PSMTXConcat(outMtx, tmpMtx, outMtx);
@@ -627,10 +627,10 @@ static void effKemuri2Disp(CameraId cameraId, void* param) {
 			PSMTXConcat(camera->view, outMtx, outMtx);
 			PSMTXTrans(transMtx, float_6_8041c6c4, float_neg4_8041c6c8, float_0_8041c6bc);
 			PSMTXConcat(outMtx, transMtx, outMtx);
-			GXLoadPosMtxImm(outMtx, 0);
-			GXSetCurrentMtx(0);
+			GXLoadPosMtxImm(outMtx, GX_PNMTX0);
+			GXSetCurrentMtx(GX_PNMTX0);
 			effGetTexObj(0xD, &texobj);
-			GXLoadTexObj(&texobj, 0);
+			GXLoadTexObj(&texobj, GX_TEXMAP0);
 			if (i == 0) {
 #ifdef MUST_MATCH
 				GXSetTevColor(GX_TEVREG0, kemuriTevColor(data->alpha, unk_80423010));
@@ -650,7 +650,7 @@ static void effKemuri2Disp(CameraId cameraId, void* param) {
 				GXSetTevColor(GX_TEVREG0, color);
 #endif
 			}
-			GXBegin(0x80, 0, 4);
+			GXBegin(GX_QUADS, GX_VTXFMT0, 4);
 #ifdef MUST_MATCH
 			px = negSizeX * float_0p5_8041c6cc;
 			py = negSizeY * float_0p5_8041c6cc;
@@ -690,27 +690,27 @@ static void effKemuri2Disp(CameraId cameraId, void* param) {
 
 		PSMTXTrans(transMtx, data->x + (f32)(1 - i), data->y - (f32)(1 - i), data->z);
 		PSMTXRotRad(rotMtx, 'y', float_deg2rad_8041c6a4 * -camGetPtr(cameraId)->viewYaw);
-		PSMTXRotRad(rotMtx2, 'z', float_deg2rad_8041c6a4 * data->field_0x68);
-		PSMTXScale(scaleMtx, data->field_0x70, data->field_0x70, data->field_0x70);
+		PSMTXRotRad(rotMtx2, 'z', float_deg2rad_8041c6a4 * data->spin);
+		PSMTXScale(scaleMtx, data->pulseScale, data->pulseScale, data->pulseScale);
 		PSMTXConcat(transMtx, rotMtx, outMtx);
-		if (data->field_0x78 < float_180_8041c69c) {
+		if (data->heading < float_180_8041c69c) {
 			PSMTXScale(tmpMtx, float_neg1_8041c6ac, float_1_8041c6b0, float_neg1_8041c6ac);
 			PSMTXConcat(outMtx, tmpMtx, outMtx);
 		}
 		PSMTXTrans(tmpMtx, float_10_8041c6b4, float_neg6_8041c6b8, float_0_8041c6bc);
 		PSMTXConcat(outMtx, tmpMtx, outMtx);
-		PSMTXScale(tmpMtx, data->field_0x74, data->field_0x74, data->field_0x74);
+		PSMTXScale(tmpMtx, data->scale, data->scale, data->scale);
 		PSMTXConcat(outMtx, tmpMtx, outMtx);
 		PSMTXTrans(tmpMtx, float_neg10_8041c6c0, float_6_8041c6c4, float_0_8041c6bc);
 		PSMTXConcat(outMtx, tmpMtx, outMtx);
 		PSMTXConcat(outMtx, rotMtx2, outMtx);
 		PSMTXConcat(outMtx, scaleMtx, outMtx);
 		PSMTXConcat(camera->view, outMtx, outMtx);
-		GXLoadPosMtxImm(outMtx, 0);
-		GXSetCurrentMtx(0);
+		GXLoadPosMtxImm(outMtx, GX_PNMTX0);
+		GXSetCurrentMtx(GX_PNMTX0);
 		if (i == 0) {
 			effGetTexObj(0xC, &texobj);
-			GXLoadTexObj(&texobj, 0);
+			GXLoadTexObj(&texobj, GX_TEXMAP0);
 #ifdef MUST_MATCH
 			GXSetTevColor(GX_TEVREG0, kemuriTevColor(data->alpha, unk_80423014));
 #else
@@ -723,7 +723,7 @@ static void effKemuri2Disp(CameraId cameraId, void* param) {
 #endif
 		} else {
 			effGetTexObj(0xB, &texobj);
-			GXLoadTexObj(&texobj, 0);
+			GXLoadTexObj(&texobj, GX_TEXMAP0);
 #ifdef MUST_MATCH
 			GXSetTevColor(GX_TEVREG0, kemuriTevColor(data->alpha, dat_8041c684));
 #else
@@ -735,7 +735,7 @@ static void effKemuri2Disp(CameraId cameraId, void* param) {
 			}
 #endif
 		}
-		GXBegin(0x80, 0, 4);
+		GXBegin(GX_QUADS, GX_VTXFMT0, 4);
 #ifdef MUST_MATCH
 		GXWGFifo.f32 = negSize2;
 		GXWGFifo.f32 = KEMURI_SIXP4;

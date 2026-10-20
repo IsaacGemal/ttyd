@@ -26,16 +26,16 @@ typedef struct effStarStoneData {
 	s32 field_0x3C;  // 0x3C
 	f32 field_0x40;  // 0x40
 	f32 field_0x44;  // 0x44
-	f32 field_0x48;  // 0x48
-	f32 field_0x4C;  // 0x4C
-	f32 field_0x50;  // 0x50
-	f32 field_0x54;  // 0x54
+	f32 spreadAX;    // 0x48 x offset of tip pair A, swung by camera yaw each tick
+	f32 spreadAZ;    // 0x4C z offset of tip pair A
+	f32 spreadBX;    // 0x50 x offset of tip pair B (opposite swing to A)
+	f32 spreadBZ;    // 0x54 z offset of tip pair B
 	f32 field_0x58;  // 0x58
-	u8 field_0x5C;   // 0x5C
-	u8 field_0x5D;   // 0x5D
-	u8 field_0x5E;   // 0x5E
+	u8 tintR;        // 0x5C tint, applied to the TEV register colour
+	u8 tintG;        // 0x5D
+	u8 tintB;        // 0x5E
 	u8 field_0x5F;   // 0x5F
-	s32 field_0x60;  // 0x60
+	s32 sfxHandle;   // 0x60 handle from psndSFXOn_3D for the shine loop
 } effStarStoneData;
 void effStarStoneDraw(CameraId camId, EffectEntry* entry);
 void effStarStoneDisp_1(CameraId camId, void* param);
