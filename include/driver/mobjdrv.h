@@ -1,6 +1,7 @@
 #pragma once
 
 typedef struct EventEntry EventEntry;
+typedef struct EffectEntry EffectEntry;
 
 #include "dolphin/gx/GXStruct.h"
 #include "driver/camdrv.h"
@@ -31,7 +32,13 @@ typedef struct MapObjectEntry {
     Vec scale2;                  // 0x184
     Vec translation;             // 0x190
     s32 offscreenId;             // 0x19C
-    u8 unk1A0[0x1CC - 0x1A0];    // 0x1A0
+    u8 unk1A0[0x1A8 - 0x1A0];    // 0x1A0, per-type data; 0x1A4 coin count (read as unk1A0[4])
+    s32 msgWindowId;             // 0x1A8
+    u8 unk1AC[0x1B0 - 0x1AC];    // 0x1AC
+    s32 timer;                   // 0x1B0, countdown decremented each frame by the timed object types
+    u8 unk1B4[0x1B8 - 0x1B4];    // 0x1B4, sound handle or reload value, depending on the type
+    char childName[0x10];        // 0x1B8, name of the child object this one spawns (strcpy'd in evt_mobj)
+    EffectEntry* effect;         // 0x1C8
     s32 eventId;                 // 0x1CC
     s32 (*update)(struct MapObjectEntry*); // 0x1D0, per-type update callback
     s32* eventCode;              // 0x1D4, event script run by mobjRunEvent
