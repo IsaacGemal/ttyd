@@ -57,16 +57,32 @@ typedef struct BattleSetupData {
     s32 flag;                                 // 0xC, a GSWF: while it is set, onLoadouts is used
     struct NpcBattleSetupEntry* onLoadouts;   // 0x10, btlgrpsel_*_on
     struct NpcBattleSetupEntry* offLoadouts;  // 0x14, btlgrpsel_*_off
-    s32 flags;                                // 0x18, copied to NpcBattleInfo.flags
+    s32 flags;                                // 0x18, NpcBattleFlags, copied to NpcBattleInfo.flags
     s32 audienceMode;                         // 0x1C, copied to NpcBattleInfo.audienceMode; outside 1-2, audienceRanges is rolled
     s8 audienceRanges[16][2];                 // 0x20, min/max pairs, each rolled into NpcBattleInfo.audienceWeights
     const char* music;                        // 0x40, copied to NpcBattleInfo.music
 } BattleSetupData;
 
+// NpcBattleInfo.flags bits (copied from BattleSetupData.flags; jon's trap events add the Jump, Hammer and
+// partner-switch bits). Bits 0x20, 0x100000 and 0x20000000 are still unnamed.
+typedef enum NpcBattleFlags {
+    NPC_BATTLE_NO_DROP_COIN = 0x1,               // evt_npc_get_drop_coin returns 0
+    NPC_BATTLE_NO_DROP_HEART = 0x2,              // evt_npc_get_drop_heart returns 0
+    NPC_BATTLE_NO_DROP_FLOWER = 0x4,             // evt_npc_get_drop_flower returns 0
+    NPC_BATTLE_NO_DROP_ITEM = 0x8,               // evt_npc_get_drop_item returns 0
+    NPC_BATTLE_NO_ESCAPE = 0x10,                 // the Run Away operation is disabled; btlseqFirstAct also runs the wall-close check
+    NPC_BATTLE_LOSS_RETURNS_TO_FIELD = 0x40,     // a loss leaves Mario at 1 HP in the field instead of game over
+    NPC_BATTLE_COIN_BONUS = 0x100,               // fbatBattleMode adds 1 to the coin multiplier
+    NPC_BATTLE_NO_JUMP = 0x01000000,             // the Jump action is disabled
+    NPC_BATTLE_NO_HAMMER = 0x02000000,           // the Hammer action is disabled
+    NPC_BATTLE_NO_PARTY_CHANGE = 0x04000000,     // the change-partner operation is disabled
+    NPC_BATTLE_NO_FIRST_STRIKE_WIN = 0x10000000, // Bump Attack and First Attack don't win the battle outright
+} NpcBattleFlags;
+
 typedef struct NpcBattleInfo {
     struct BattleStageData* stageData; // 0x0
-    s32 flags;                         // 0x4, copied from BattleSetupData.flags; drop-disable bits 1 coin, 2 heart, 4 flower, 8 item; 0x10 disables the escape operation
-    s32 fixDropItem;                   // 0x8, copied from BattleSetupData.fixDropItem; read by evt_npc_get_drop_fixitem
+    s32 flags;                         // 0x4, NpcBattleFlags, copied from BattleSetupData.flags
+    s32 fixDropItem;                   // 0x8, copied from BattleSetupData.fixDropItem; an item the dead event always drops when nonzero (evt_npc_get_drop_fixitem)
     ItemType itemDropped;              // 0xC
     s32 heartsDropped;                 // 0x10
     s32 flowersDropped;                // 0x14
@@ -79,7 +95,8 @@ typedef struct NpcBattleInfo {
     s32 audienceMode;                  // 0xAC, copied from BattleSetupData.audienceMode; battle_audience switches on it
     s8 audienceWeights[16];            // 0xB0, rolled from BattleSetupData.audienceRanges; battle_audience reads kinds 0-11
     const char* music;                 // 0xC0, copied from BattleSetupData.music
-    u8 battleRules[3];                 // 0xC4, set by evt_npc_set_battle_rule
+    u8 battleRules[3];                 // 0xC4, set by evt_npc_set_battle_rule (Glitz Pit): rule kind (the _rule_msg_table index),
+                                       // its parameter (printed by _rule_disp), a third byte; seq_battle copies them to FieldBattleInfo
     u8 field_C7[0xC8 - 0xC7];          // 0xC7
 } NpcBattleInfo;
 

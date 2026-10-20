@@ -617,7 +617,7 @@ void btlseqEnd(BattleWork* wp) {
         if (!fadeIsFinish()) {
             break;
         }
-        if (!(wp->fbatInfo->setup->flags & 0x40)) {
+        if (!(wp->fbatInfo->setup->flags & NPC_BATTLE_LOSS_RETURNS_TO_FIELD)) {
             seqSetSeq(SEQ_MOVE, (char*)1, NULL);
         } else {
             BattleSetSeq(wp, SEQ_END, 0x0700001F);
@@ -1151,7 +1151,7 @@ void btlseqEnd(BattleWork* wp) {
             id = BattleTransPartyId((BattleUnitType)flag);
             su = wp->fbatInfo->setup;
             uu = BattleGetMarioPtr(wp);
-            if ((su->flags & 0x40) && uu->currentHp <= 0) {
+            if ((su->flags & NPC_BATTLE_LOSS_RETURNS_TO_FIELD) && uu->currentHp <= 0) {
                 uu->currentHp = 1;
             }
             BattleSetMarioParamToFieldBattle(wp);

@@ -44,7 +44,7 @@ void seq_battleInit(SequenceWork* work) {
     if (!(evtGetValue(NULL, 0xF5DE0180) >= 0x6D && evtGetValue(NULL, 0xF5DE0180) < 0x6F)) {
         if (evtGetValue(NULL, 0xF5DE0180) != 0x192) {
             psndBGMOff(0x400);
-            psndBGMOn(1, *(char**)((u8*)target + 0x2F0));
+            psndBGMOn(1, (char*)target->battleInfo.music);
         }
     }
 
@@ -336,9 +336,9 @@ BOOL battle_init(void) {
     }
 
     BattleInfomationSetBattleSetupInfo(info, &target->battleInfo);
-    info->field_0x14[4] = *(u8*)((u8*)target + 0x2F4);
-    info->field_0x14[6] = *(u8*)((u8*)target + 0x2F5);
-    info->field_0x14[7] = *(u8*)((u8*)target + 0x2F6);
+    info->field_0x14[4] = target->battleInfo.battleRules[0];
+    info->field_0x14[6] = target->battleInfo.battleRules[1];
+    info->field_0x14[7] = target->battleInfo.battleRules[2];
     BattleInit(info);
     return 0;
 }

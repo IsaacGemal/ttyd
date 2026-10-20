@@ -2609,7 +2609,7 @@ void fbatBattleMode(void) {
                 fbatData->target->interruptFlags &= 0xF00;
                 evtStopID(fbatData->target->regularEvtId);
                 info0 = (FieldBattleInfo*)((u8*)fbatData + 0x20);
-                if (!(entry->battleInfo.flags & 0x10000000)) {
+                if (!(entry->battleInfo.flags & NPC_BATTLE_NO_FIRST_STRIKE_WIN)) {
                     if (pouchEquipCheckBadge(ITEM_BUMP_ATTACK) &&
                         entry->battleInfo.groupSetup->enemyData->mUnitKindParams->mLevel < pouch->level) {
                         flagA = TRUE;
@@ -2744,7 +2744,7 @@ void fbatBattleMode(void) {
                     if (pouchEquipCheckBadge(ITEM_MONEY_MONEY)) {
                         mult += pouchEquipCheckBadge(ITEM_MONEY_MONEY);
                     }
-                    if (entry->battleInfo.flags & 0x100) {
+                    if (entry->battleInfo.flags & NPC_BATTLE_COIN_BONUS) {
                         mult++;
                     }
                 after:
@@ -3515,9 +3515,8 @@ static inline void npcRollBattleParams(NpcBattleInfo* info, BattleSetupData* set
     }
 }
 
-// The level test is a
-// switch (levels 1 and 2 skip the roll; 0 and everything else roll), whose lowering is retail's
-// `beq/blt; cmpwi 3; bge roll; b body`. The held-item pick stores and breaks inside its `for (;;)` (retail's
+// The audience-mode test is a switch (modes 1 and 2 skip the roll; 0 and everything else roll), whose lowering
+// is retail's `beq/blt; cmpwi 3; bge roll; b body`. The held-item pick stores and breaks inside its `for (;;)` (retail's
 // bcc->b shape). The loadout weight sum keeps the weight it tests in `weight` (retail adds the loaded value, no
 // reload). The roll loop is its own inline (its i/p are inliner locals, which number above the held-items loop's
 // induction pointer and leave num, i and that pointer in retail's r30/r28/r27).

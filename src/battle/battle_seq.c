@@ -538,7 +538,7 @@ void btlseqFirstAct(BattleWork* wp) {
 		if (!BattleWaitAllActiveEvtEnd(wp)) {
 			break;
 		}
-		if (wp->fbatInfo->setup->flags & 0x10) {
+		if (wp->fbatInfo->setup->flags & NPC_BATTLE_NO_ESCAPE) {
 			BattleSetSeq(wp, 2, 0x2000009);
 			BattleStage_WallCloseCheck();
 			break;

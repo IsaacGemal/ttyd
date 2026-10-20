@@ -7,6 +7,7 @@
 #include "mario/mario_pouch.h"
 #include "math_ext.h"
 #include "system.h"
+#include <stddef.h>
 #include <string.h>
 #include "pmario_sound.h"
 #include "statuswindow.h"
@@ -1177,7 +1178,7 @@ void BattleAudienceSettingAudience(void) {
 
 	base = (u8*)_battleWorkPointer + 0x20000;
 	audience = BattleAudienceBaseGetPtr();
-	setupBase = (u8*)_battleWorkPointer->fbatInfo->setup + 0xAC;
+	setupBase = (u8*)_battleWorkPointer->fbatInfo->setup + offsetof(NpcBattleInfo, audienceMode);
 	pouch = pouchGetPtr();
 
 #ifdef MUST_MATCH
