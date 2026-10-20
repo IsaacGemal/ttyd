@@ -41,15 +41,15 @@ typedef struct WindowWork {
 } WindowWork;
 
 typedef struct WindowPartyDt {
-    s32 field_0x0;          // 0x0
-    s32 field_0x4;          // 0x4
-    const char* field_0x8;  // 0x8
-    const char* field_0xC;  // 0xC
-    const char* field_0x10; // 0x10
-    const char* field_0x14; // 0x14
+    s32 partnerId;          // 0x0, PARTNER_* id (win_party, win_item)
+    s32 iconId;             // 0x4, icon drawn beside the partner (win_item winIconSetV)
+    const char* nameMsg;    // 0x8, msg key for the partner's name
+    const char* descMsg;    // 0xC, msg key for the partner's description
+    const char* effModel;   // 0x10, effect model played with the partner
+    const char* waitAnim;   // 0x14, idle animation ("W_1" for every partner)
     const char* field_0x18; // 0x18
     const char* field_0x1C; // 0x1C
-    const char* field_0x20; // 0x20
+    const char* waza;       // 0x20, the partner's four moves (u32 partyWeapon pointers)
 } WindowPartyDt;            // TODO: rename
 
 WindowWork* winGetPtr(void);

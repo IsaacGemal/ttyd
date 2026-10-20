@@ -810,12 +810,12 @@ s32 winItemMain(WindowWork* work) {
             }
             n = 0;
             for (i = 0; i < 7; i++) {
-                if (leader == winPartyDt[i].field_0x0) {
+                if (leader == winPartyDt[i].partnerId) {
                     list[n++] = &winPartyDt[i];
                 }
             }
             for (i = 0; i < 7; i++) {
-                if (leader != winPartyDt[i].field_0x0) {
+                if (leader != winPartyDt[i].partnerId) {
                     list[n++] = &winPartyDt[i];
                 }
             }
@@ -824,7 +824,7 @@ s32 winItemMain(WindowWork* work) {
                 pouchSetFP((*(s32(*)(void))pouchGetFP)() + itemDataTable[WW_S32(work, 0x2D4)].fp_restored);
                 pouchSetAP((*(s32(*)(void))pouchGetAP)() + itemDataTable[WW_S32(work, 0x2D4)].sp_restored);
             } else {
-                PartyId pid = list[WW_S32(work, 0x2DC) - 1]->field_0x0;
+                PartyId pid = list[WW_S32(work, 0x2DC) - 1]->partnerId;
 
                 (*(void(*)(PartyId, s32))pouchSetPartyHP)(pid, (*(s32(*)(PartyId))pouchGetPartyHP)(pid) + itemDataTable[WW_S32(work, 0x2D4)].hp_restored);
                 pouchSetFP((*(s32(*)(void))pouchGetFP)() + itemDataTable[WW_S32(work, 0x2D4)].fp_restored);
@@ -1089,12 +1089,12 @@ void itemUseDisp(WinMgrEntry* entry) {
         party = winPartyDt;
         n = 0;
         for (i = 0; i < 7; i++) {
-            if (party[i].field_0x0 == partyId) {
+            if (party[i].partnerId == partyId) {
                 list[n++] = &party[i];
             }
         }
         for (i = 0; i < 7; i++) {
-            if (party[i].field_0x0 != partyId) {
+            if (party[i].partnerId != partyId) {
                 list[n++] = &party[i];
             }
         }
@@ -1168,7 +1168,7 @@ void itemUseDisp(WinMgrEntry* entry) {
                 winFontSetV((Vec){(f32)(entry->x + 0x136), (f32)(entry->y - 0xA - (i + 1) * 0x16), 0.0f},
                             (Vec){0.8f, 0.8f, 0.8f}, color, "%d", pouchGetMaxFP());
             } else {
-                name = list[i - 1]->field_0x0 != 4 ? msgSearch(list[i - 1]->field_0x8) : pouchGetYoshiName();
+                name = list[i - 1]->partnerId != 4 ? msgSearch(list[i - 1]->nameMsg) : pouchGetYoshiName();
                 if (WW_S32(work, 0x2E0) % 20 > 15 && i == WW_S32(work, 0x2DC)) {
                     continue;
                 }
@@ -1184,7 +1184,7 @@ void itemUseDisp(WinMgrEntry* entry) {
                 } else {
                     winIconInit();
                 }
-                winIconSetV(list[i - 1]->field_0x4,
+                winIconSetV(list[i - 1]->iconId,
                             (Vec){(f32)(entry->x + 0x1E), f31 + (f32)(entry->y - 0x14 - i * 0x1C), 0.0f},
                             (Vec){0.65f, 0.65f, 0.65f}, iconColor);
                 winFontInit();
@@ -1195,11 +1195,11 @@ void itemUseDisp(WinMgrEntry* entry) {
                 winFontSetV((Vec){(f32)(entry->x + 0xDC), f31 + (f32)(entry->y - 8 - i * 0x1C), 0.0f},
                             (Vec){0.9f, 0.9f, 0.9f}, color, "\202g\202o");
                 winFontSetRV((Vec){(f32)(entry->x + 0xF5), f31 + (f32)(entry->y - 8 - i * 0x1C), 0.0f},
-                             (Vec){0.9f, 0.9f, 0.9f}, color, "%d", pouchGetPtr()->partyData[list[i - 1]->field_0x0].currentHP);
+                             (Vec){0.9f, 0.9f, 0.9f}, color, "%d", pouchGetPtr()->partyData[list[i - 1]->partnerId].currentHP);
                 winFontSetRV((Vec){(f32)(entry->x + 0x10B), f31 + (f32)(entry->y - 8 - i * 0x1C), 0.0f},
                              (Vec){0.8f, 0.8f, 0.8f}, color, "\201^");
                 winFontSetV((Vec){(f32)(entry->x + 0x136), f31 + (f32)(entry->y - 8 - i * 0x1C) - 2.0f, 0.0f},
-                            (Vec){0.8f, 0.8f, 0.8f}, color, "%d", pouchGetPtr()->partyData[list[i - 1]->field_0x0].maximumHP);
+                            (Vec){0.8f, 0.8f, 0.8f}, color, "%d", pouchGetPtr()->partyData[list[i - 1]->partnerId].maximumHP);
             }
         }
 

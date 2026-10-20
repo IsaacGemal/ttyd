@@ -85,7 +85,7 @@ void winPartyInit(WindowWork* work) {
 
     for (i = 0; i < 7; i++) {
         for (j = 0; j < 8; j++) {
-            if (j != winPartyDt[i].field_0x0)
+            if (j != winPartyDt[i].partnerId)
                 continue;
             if (!(pouch->partyData[j].flags & 1))
                 continue;
@@ -117,8 +117,8 @@ void winPartyInit(WindowWork* work) {
                 }
                 anim = "W_1";
             } else {
-                model = winPartyDt[i].field_0x10;
-                anim = winPartyDt[i].field_0x14;
+                model = winPartyDt[i].effModel;
+                anim = winPartyDt[i].waitAnim;
             }
 
             pose = animPoseEntry(model, 0);
@@ -151,7 +151,7 @@ void winPartyInit(WindowWork* work) {
     }
 
     for (k = 0; k < 8; k++) {
-        if (((s32*)work)[WW_S32(work, 0x1DC) + 0x6F] == winPartyDt[k].field_0x0) {
+        if (((s32*)work)[WW_S32(work, 0x1DC) + 0x6F] == winPartyDt[k].partnerId) {
             WW_S32(work, 0x1D8) = k;
             break;
         }
@@ -165,17 +165,17 @@ void winPartyInit(WindowWork* work) {
         WW_F32(work, 0x1E4) = time;
     }
     WW_S32(work, 0x200) = 0;
-    WW_S32(work, 0x204) = pouchGetPartyAttackLv(winPartyDt[WW_S32(work, 0x1D8)].field_0x0) + 2;
+    WW_S32(work, 0x204) = pouchGetPartyAttackLv(winPartyDt[WW_S32(work, 0x1D8)].partnerId) + 2;
 
     switch (pouchGetPartyColor(PARTNER_YOSHI)) {
-    case 0: winPartyDt[3].field_0x4 = 0x158; break;
-    case 1: winPartyDt[3].field_0x4 = 0x159; break;
-    case 2: winPartyDt[3].field_0x4 = 0x15A; break;
-    case 3: winPartyDt[3].field_0x4 = 0x15B; break;
-    case 4: winPartyDt[3].field_0x4 = 0x15C; break;
-    case 5: winPartyDt[3].field_0x4 = 0x15D; break;
+    case 0: winPartyDt[3].iconId = 0x158; break;
+    case 1: winPartyDt[3].iconId = 0x159; break;
+    case 2: winPartyDt[3].iconId = 0x15A; break;
+    case 3: winPartyDt[3].iconId = 0x15B; break;
+    case 4: winPartyDt[3].iconId = 0x15C; break;
+    case 5: winPartyDt[3].iconId = 0x15D; break;
     case 6:
-    default: winPartyDt[3].field_0x4 = 0x15E; break;
+    default: winPartyDt[3].iconId = 0x15E; break;
     }
 }
 
@@ -187,7 +187,7 @@ void winPartyInit2(WindowWork* work) {
     WW_S32(work, 0x200) = 0;
     work->targetX = -200.0f;
     work->targetY = 20.0f;
-    winMsgEntry(work, 0, winPartyDt[WW_S32(work, 0x1D8)].field_0xC, 0);
+    winMsgEntry(work, 0, winPartyDt[WW_S32(work, 0x1D8)].descMsg, 0);
 }
 
 void winPartyExit(WindowWork* work) {
@@ -250,7 +250,7 @@ s32 winPartyMain(WindowWork* work) {
                 psndSFXOn((const char*)0x209D6);
             }
             for (k = 0; k < 8; k++) {
-                if (((s32*)work)[WW_S32(work, 0x1DC) + 0x6F] == winPartyDt[k].field_0x0) {
+                if (((s32*)work)[WW_S32(work, 0x1DC) + 0x6F] == winPartyDt[k].partnerId) {
                     WW_S32(work, 0x1D8) = k;
                     break;
                 }
@@ -272,7 +272,7 @@ s32 winPartyMain(WindowWork* work) {
                 psndSFXOn((const char*)0x209D6);
             }
             for (k = 0; k < 8; k++) {
-                if (((s32*)work)[WW_S32(work, 0x1DC) + 0x6F] == winPartyDt[k].field_0x0) {
+                if (((s32*)work)[WW_S32(work, 0x1DC) + 0x6F] == winPartyDt[k].partnerId) {
                     WW_S32(work, 0x1D8) = k;
                     break;
                 }
@@ -282,8 +282,8 @@ s32 winPartyMain(WindowWork* work) {
     apply:
         work->targetX = -200.0f;
         work->targetY = 20.0f;
-        WW_S32(work, 0x204) = pouchGetPartyAttackLv(winPartyDt[WW_S32(work, 0x1D8)].field_0x0) + 2;
-        winMsgEntry(work, 0, winPartyDt[WW_S32(work, 0x1D8)].field_0xC, 0);
+        WW_S32(work, 0x204) = pouchGetPartyAttackLv(winPartyDt[WW_S32(work, 0x1D8)].partnerId) + 2;
+        winMsgEntry(work, 0, winPartyDt[WW_S32(work, 0x1D8)].descMsg, 0);
         break;
     }
     case 1: {
@@ -315,7 +315,7 @@ s32 winPartyMain(WindowWork* work) {
 
         work->targetX = -10.0f;
         work->targetY = -26.0f * (f32)WW_S32(work, 0x208) + 5.0f;
-        winMsgEntry(work, 0, *(const char**)((u8*)((void**)winPartyDt[WW_S32(work, 0x1D8)].field_0x20)[WW_S32(work, 0x208)] + 0xC), 0);
+        winMsgEntry(work, 0, *(const char**)((u8*)((void**)winPartyDt[WW_S32(work, 0x1D8)].waza)[WW_S32(work, 0x208)] + 0xC), 0);
         break;
     }
     default:
@@ -418,7 +418,7 @@ void winPartyDisp(CameraId camId, void* param, s32 partyIdx) {
     if (WW_S32(work, 0x1E0) == 0) {
         return;
     }
-    party = &pouchGetPtr()->partyData[winPartyDt[WW_S32(work, 0x1D8)].field_0x0];
+    party = &pouchGetPtr()->partyData[winPartyDt[WW_S32(work, 0x1D8)].partnerId];
 
     // HP and rank bars
     winKirinukiGX(work, 0, x - 10.0f, 20.0f + (116.0f + y), 240.0f, 76.0f);
@@ -512,13 +512,13 @@ void winPartyDisp(CameraId camId, void* param, s32 partyIdx) {
             PSMTXConcat(mtx, turn, mtx);
             animPoseSetMaterialFlagOff(pose, 0x40);
             for (n = 0; n < 7; n++) {
-                if (WIN_PARTY_ID(work, i) == winPartyDt[n].field_0x0) {
+                if (WIN_PARTY_ID(work, i) == winPartyDt[n].partnerId) {
                     break;
                 }
             }
             if (work->flags & 0x2000) {
                 animName = winPartyDt[n].field_0x1C;
-                if (winPartyDt[n].field_0x0 == 4) {
+                if (winPartyDt[n].partnerId == 4) {
                     switch (pouchGetPartyColor(PARTNER_YOSHI)) {
                     case 0: animName = "R_5"; break;
                     case 1: animName = "R_6"; break;
@@ -531,7 +531,7 @@ void winPartyDisp(CameraId camId, void* param, s32 partyIdx) {
                     }
                 }
             } else {
-                animName = winPartyDt[n].field_0x14;
+                animName = winPartyDt[n].waitAnim;
             }
             animPoseSetAnim(pose, animName, 0);
             animPoseSetLocalTime(pose,
@@ -546,13 +546,13 @@ void winPartyDisp(CameraId camId, void* param, s32 partyIdx) {
             animPoseSetMaterialFlagOn(pose, 0x40);
             animPoseSetMaterialEvtColor(pose, (GXColor){0x80, 0x80, 0x80, 0xFF});
             for (n = 0; n < 7; n++) {
-                if (WIN_PARTY_ID(work, i) == winPartyDt[n].field_0x0) {
+                if (WIN_PARTY_ID(work, i) == winPartyDt[n].partnerId) {
                     break;
                 }
             }
             if (work->flags & 0x2000) {
                 animName = winPartyDt[n].field_0x1C;
-                if (winPartyDt[n].field_0x0 == 4) {
+                if (winPartyDt[n].partnerId == 4) {
                     switch (pouchGetPartyColor(PARTNER_YOSHI)) {
                     case 0: animName = "Z_5"; break;
                     case 1: animName = "Z_6"; break;
@@ -565,7 +565,7 @@ void winPartyDisp(CameraId camId, void* param, s32 partyIdx) {
                     }
                 }
             } else {
-                animName = winPartyDt[n].field_0x14;
+                animName = winPartyDt[n].waitAnim;
             }
             animPoseSetAnim(pose, animName, 0);
             animPoseSetLocalTime(pose, 0.0f);
@@ -585,15 +585,15 @@ void winPartyDisp(CameraId camId, void* param, s32 partyIdx) {
         winFontInit();
         y2 = (20.0f + ((y - 50.0f) - 4.0f)) - 10.0f;
         for (n = 0; n < 7; n++) {
-            if (WIN_PARTY_ID(work, WW_S32(work, 0x1DC)) == winPartyDt[n].field_0x0) {
+            if (WIN_PARTY_ID(work, WW_S32(work, 0x1DC)) == winPartyDt[n].partnerId) {
                 const char* name;
 
 #ifdef MUST_MATCH
-                if ((4) != (winPartyDt[n].field_0x0)) {
+                if ((4) != (winPartyDt[n].partnerId)) {
 #else
-                if (winPartyDt[n].field_0x0 != 4) {
+                if (winPartyDt[n].partnerId != 4) {
 #endif
-                    name = msgSearch(winPartyDt[n].field_0x8);
+                    name = msgSearch(winPartyDt[n].nameMsg);
                 } else {
                     name = pouchGetYoshiName();
                 }
@@ -645,8 +645,8 @@ void winPartyDisp(CameraId camId, void* param, s32 partyIdx) {
             char buf[64];
 
             winFontSetLabelV((Vec){y, listY = (listTop - (f32)(i * 26)) - 30.0f, 0.0f}, (Vec){1.0f, 1.0f, 1.0f},
-                             loopBlack, ((BattleWeapon**)winPartyDt[WW_S32(work, 0x1D8)].field_0x20)[i]->name);
-            weapon = ((BattleWeapon**)winPartyDt[WW_S32(work, 0x1D8)].field_0x20)[i];
+                             loopBlack, ((BattleWeapon**)winPartyDt[WW_S32(work, 0x1D8)].waza)[i]->name);
+            weapon = ((BattleWeapon**)winPartyDt[WW_S32(work, 0x1D8)].waza)[i];
             sprintf(buf, "%s", winZenkakuStr(weapon->baseFpCost));
             winFontSetV((Vec){(costX - (f32)(FontGetMessageWidth(buf) >> 1)) - 2.0f, listY, 0.0f},
                         (Vec){1.0f, 1.0f, 1.0f}, loopBlack, buf);

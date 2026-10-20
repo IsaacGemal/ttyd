@@ -403,18 +403,18 @@ void winMain(void) {
                 }
                 cnt = 0;
                 for (i = 0; i < 7; i++) {
-                    if (party == winPartyDt[i].field_0x0) {
+                    if (party == winPartyDt[i].partnerId) {
                         list[cnt++] = &winPartyDt[i];
                     }
                 }
                 for (i = 0; i < 7; i++) {
-                    if (party != winPartyDt[i].field_0x0) {
+                    if (party != winPartyDt[i].partnerId) {
                         list[cnt++] = &winPartyDt[i];
                     }
                 }
                 wp->currentEvent = evtEntryType(&evt_item_use, 0, 0, 0);
                 *(s32*)((u8*)wp->currentEvent + 0xC4) = WM_S32(0x2D4);
-                *(s32*)((u8*)wp->currentEvent + 0xC8) = (WM_S32(0x2DC) == 0) ? 0 : (list - 1)[WM_S32(0x2DC)]->field_0x0;
+                *(s32*)((u8*)wp->currentEvent + 0xC8) = (WM_S32(0x2DC) == 0) ? 0 : (list - 1)[WM_S32(0x2DC)]->partnerId;
                 psndClearFlag(0x80);
                 wp->menuState += 1;
                 pouchRemoveItemIndex(WM_S32(0x2D4), WM_S32(0x2D8));
