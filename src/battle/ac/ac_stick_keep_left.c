@@ -43,9 +43,9 @@ static void actionCommandDisp(f32 x, f32 y, s32 type);
 
 // StickKeepLeft action-command work area at BattleWork + 0x1F4C. No header declares it.
 typedef struct StickKeepLeftWork {
-    s32 field_0x00; // 0x00, countdown to the next note
-    s32 field_0x04; // 0x04, current note index
-    s32 field_0x08; // 0x08, post-command timer
+    s32 countdown;  // 0x00, frames until the next note (acParams[1] between notes)
+    s32 note;       // 0x04, current note index; the notes start at 1
+    s32 endTimer;   // 0x08, post-command timer
     u32 sfx[12];    // 0x0C, psndSFXOn handles for the notes (u32 so `== -1` compares unsigned)
 } StickKeepLeftWork;
 
@@ -68,8 +68,8 @@ s32 battleAcMain_StickKeepLeft(BattleWork* work) {
 #define STICK_PI_NAME piName
 #define STICK_PONE_NAME poneName
 #endif
-    StickKeepLeftWork* dec = (StickKeepLeftWork*)((u8*)work + 0x1F4C);
-    BattleACDispParams* disp = (BattleACDispParams*)((u8*)work + 0x1F20);
+    StickKeepLeftWork* dec = (StickKeepLeftWork*)&work->actionCommands.field_0x2BC[0];
+    BattleACDispParams* disp = &work->actionCommands.dispParams;
     s32 stateChanged;
     s32 autoCommand = 0;
     s32 i;
@@ -100,7 +100,7 @@ s32 battleAcMain_StickKeepLeft(BattleWork* work) {
         switch (work->actionCommands.mAcState) {
         case 0:
             work->actionCommands.result = 1;
-            dec->field_0x04 = 0;
+            dec->note = 0;
             memset(disp, 0, 0x2C);
             disp->iconX = -300.0f;
             disp->iconY = 0.0f;
@@ -118,7 +118,7 @@ s32 battleAcMain_StickKeepLeft(BattleWork* work) {
         case 0x63:
             break;
         case 0x64:
-            dec->field_0x00 = 0x78;
+            dec->countdown = 0x78;
             work->actionCommands.mAcState = 0x3E8;
             // fall through
         case 0x3E8:
@@ -139,7 +139,7 @@ s32 battleAcMain_StickKeepLeft(BattleWork* work) {
                 return 0;
             }
             if ((s32)BattlePadCheckNow(0x40000) == 0 && work->actionCommands.guardFrames <= 0 && !autoCommand) {
-                if (--dec->field_0x00 <= 0) {
+                if (--dec->countdown <= 0) {
                     work->actionCommands.result = 0;
                     stateChanged = 1;
                     work->actionCommands.mAcState = 0x3EB;
@@ -148,8 +148,8 @@ s32 battleAcMain_StickKeepLeft(BattleWork* work) {
             }
             work->actionCommands.outputParams[0] = 1;
             work->actionCommands.mAcState = 0x3E9;
-            dec->field_0x00 = 1;
-            dec->field_0x04 = 1;
+            dec->countdown = 1;
+            dec->note = 1;
             work->actionCommands.outputParams[1] = 0;
             break;
         case 0x3E9:
@@ -159,11 +159,11 @@ s32 battleAcMain_StickKeepLeft(BattleWork* work) {
                 stateChanged = 1;
                 work->actionCommands.mAcState = 0x3EB;
             }
-            dec->field_0x00--;
-            if (dec->field_0x00 < 0) {
-                dec->field_0x04++;
+            dec->countdown--;
+            if (dec->countdown < 0) {
+                dec->note++;
                 work->actionCommands.outputParams[1]++;
-                if (dec->field_0x04 >= work->actionCommands.acParams[0] + 2) {
+                if (dec->note >= work->actionCommands.acParams[0] + 2) {
                     work->actionCommands.result &= ~1;
                     work->actionCommands.mAcState = 0x3EB;
                     work->actionCommands.outputParams[2] = 2;
@@ -174,7 +174,7 @@ s32 battleAcMain_StickKeepLeft(BattleWork* work) {
                     stateChanged = 1;
                 }
                 else {
-                    s32 idx = dec->field_0x04 - 2;
+                    s32 idx = dec->note - 2;
                     if (idx < work->actionCommands.acParams[0] - 1) {
                         if (dec->sfx[idx] == -1) {
                             dec->sfx[idx] = psndSFXOn(STICK_PI_NAME);
@@ -186,7 +186,7 @@ s32 battleAcMain_StickKeepLeft(BattleWork* work) {
                             work->actionCommands.acParams[4] = 1;
                         }
                     }
-                    dec->field_0x00 = work->actionCommands.acParams[1];
+                    dec->countdown = work->actionCommands.acParams[1];
                 }
                 break;
             }
@@ -195,13 +195,13 @@ s32 battleAcMain_StickKeepLeft(BattleWork* work) {
             }
             {
                 s32 hit = 0;
-                if (dec->field_0x04 != work->actionCommands.acParams[0] + 1) {
+                if (dec->note != work->actionCommands.acParams[0] + 1) {
                     if (!(work->actionCommands.acFlag & 2)) {
                         work->actionCommands.outputParams[2] = 1;
                     }
                 }
                 else {
-                    s32 remain = work->actionCommands.acParams[1] - dec->field_0x00;
+                    s32 remain = work->actionCommands.acParams[1] - dec->countdown;
 #ifdef MUST_MATCH
                     // Match-only: the callee really returns 4 bytes; the `s8` header would emit `extsb`.
                     if (remain > ac_stickkeepleft_ok_frame[((s32 (*)(BattleWork*))BattleActionCommandGetDifficulty)(work)]) {
@@ -241,7 +241,7 @@ s32 battleAcMain_StickKeepLeft(BattleWork* work) {
 #ifdef MUST_MATCH
         case 0x3EB: {
             // Match-only: the extra `n >= 0` test reproduces the original's first `blt` before `mtctr`.
-            s32 n = dec->field_0x04 - 2;
+            s32 n = dec->note - 2;
             if (n >= 0) {
                 for (i = 0; i <= n; i++) {
                 }
@@ -251,18 +251,18 @@ s32 battleAcMain_StickKeepLeft(BattleWork* work) {
         }
 #else
         case 0x3EB:
-            for (i = 0; i <= dec->field_0x04 - 2; i++) {
+            for (i = 0; i <= dec->note - 2; i++) {
             }
             work->actionCommands.mAcState = 0x3EC;
             break;
 #endif
         case 0x3ED:
-            dec->field_0x08 = 0x3C;
+            dec->endTimer = 0x3C;
             work->actionCommands.mAcState = 0x3EE;
             break;
         case 0x3EE:
-            dec->field_0x08--;
-            if (dec->field_0x08 <= 0) {
+            dec->endTimer--;
+            if (dec->endTimer <= 0) {
                 work->actionCommands.mAcState = 0x3EF;
             }
             break;
@@ -309,7 +309,7 @@ void battleAcDisp_StickKeepLeft(CameraId camId, void* param) {
         }
         break;
     case 0x3E9:
-        *(s32*)&disp->field_0x24[0] = dec->field_0x04 - 1;
+        *(s32*)&disp->field_0x24[0] = dec->note - 1;
         disp->iconX = intplGetValue(4, 0x14 - disp->counter, 0x14, -300.0f,
                                     30.0f);
         actionCommandDisp(disp->iconX, disp->iconY, *(s32*)&disp->field_0x24[0]);
@@ -369,7 +369,7 @@ static void actionCommandDisp(f32 x, f32 y, s32 type) {
     camGetPtr(CAMERA_2D);
 
     count = ac->acParams[0];
-    idx = ((StickKeepLeftWork*)&ac->field_0x2BC[0])->field_0x04 - 1;
+    idx = ((StickKeepLeftWork*)&ac->field_0x2BC[0])->note - 1;
 
     switch (ac->mAcState) {
     case 0:
