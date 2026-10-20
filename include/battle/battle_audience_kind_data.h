@@ -35,11 +35,11 @@ typedef struct BattleAudienceKind {
     u8 field_0x0;                      // 0x0, some flag in BattleAudienceSettingAudience
     s32** animTable;                   // 0x4
     BattleAudienceItemKind* itemTable; // 0x8
-    f32 field_0xC;                     // 0xC, offsetX?
-    f32 field_0x10;                    // 0x10, offsetY?
-    f32 field_0x14;                    // 0x14, itemChance?
-    f32 field_0x18;                    // 0x18, scaleX?
-    f32 field_0x1C;                    // 0x1C, scaleY?
+    f32 offsetX;                       // 0xC, added to the member's x for the thrown item's position
+    f32 offsetY;                       // 0x10, added to the member's y for the thrown item's position
+    f32 apWeight;                      // 0x14, per-member weight summed into the AP gauge gain (ApRecoveryBuild)
+    f32 scaleX;                        // 0x18, times the texture width for the drawn scale.x
+    f32 scaleY;                        // 0x1C, times the texture height for the drawn scale.y
 } BattleAudienceKind;
 
 extern BattleAudienceKind audience_kind[];

@@ -6,6 +6,7 @@
 #include "manager/evtmgr.h"
 #include "manager/filemgr.h"
 #include "mario/mario_pouch.h"
+#include "battle/battle_database_common.h"
 
 #pragma enumsalwaysint off
 typedef enum AudienceMemberType {
@@ -232,7 +233,7 @@ typedef struct BattleAudience {
     s32 itemThrowCount;                // 0x137F0, items thrown so far by BattleAudienceCtrlProcess
     s32 itemThrowMax;                  // 0x137F4, set by BattleAudienceSetThrowItemMax (0-3, or 10000)
     s32 itemCombo;                     // 0x137F8, caught items in a row (capped at 3)
-    u8 field_137FC[0x138BC - 0x137FC]; // 0x137FC, weapon table (BattleWeapon*, see battle_attack_audience.c)
+    BattleWeapon itemWeapon;           // 0x137FC, weapon of the thrown item (copied per item type); BattleCheckDamage reads it
     s32 mItemOnMemberId;               // 0x138BC, TODO better name
     Vec mItemOnMemberPos;              // 0x138C0, TODO better name?
     s32 phaseEvtList[14];              // 0x138CC
@@ -404,7 +405,7 @@ s32 BattleAudience_GetPresentItemType(void);
 void BattleAudience_Case_AcrobatGood(void);
 void BattleAudience_Case_AcrobatBad(void);
 void BattleAudience_Case_ActionCommandGood(void);
-void BattleAudience_Case_ActionCommandBad(void* arg);
+void BattleAudience_Case_ActionCommandBad(BattleWeapon* weapon);
 void BattleAudience_Case_TurnEnd(void);
 void BattleAudience_Case_Countered(void);
 void BattleAudience_Case_EnemyDamage(void);
