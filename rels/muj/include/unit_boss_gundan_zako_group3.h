@@ -18,17 +18,13 @@ typedef struct ZakogunEntry {
     s32 poseCount;        // 0x28
     s32 poseDiv;          // 0x2C
     s32 poseIndex;        // 0x30
-    f32 field_0x34;       // 0x34
-    f32 field_0x38;       // 0x38
-    f32 field_0x3c;       // 0x3C
-    f32 field_0x40;       // 0x40
-    f32 field_0x44;       // 0x44
-    f32 field_0x48;       // 0x48
-    u8 pad_4c[4];         // 0x4C
-    f32 field_0x50;       // 0x50
-    u8 pad_54[4];         // 0x54
-    f32 field_0x58;       // 0x58
-    f32 field_0x5c;       // 0x5C
+    Vec from;               // 0x34, interpolation start
+    Vec to;                 // 0x40, interpolation end
+    f32 velX;               // 0x4C, per-frame x drift
+    f32 velY;               // 0x50, vertical velocity (gravity added per frame)
+    f32 velZ;               // 0x54, per-frame z drift
+    f32 offsetX;            // 0x58, x offset from the controller position
+    f32 offsetY;            // 0x5C, y offset from the controller position
     u8 pad_60[4];         // 0x60
     f32 rotX;             // 0x64
     f32 rotY;             // 0x68
@@ -37,17 +33,17 @@ typedef struct ZakogunEntry {
 
 // The 0x74-byte control block group1 allocates; its 0x70 field points at the ZakogunEntry array.
 typedef struct ZakogunWork {
-    s32 field_0x0;        // 0x0
+    s32 phase;              // 0x0, 0 group1, 1 group2, 2 group3
     s32 targetId;         // 0x4
     s32 state;            // 0x8
     s32 timer;            // 0xC
     Vec pos;              // 0x10
     u8 pad_1c[0x34 - 0x1C]; // 0x1C
-    f32 field_0x34;       // 0x34
-    f32 field_0x38;       // 0x38
-    f32 field_0x3c;       // 0x3C
+    f32 radius;             // 0x34
+    f32 angle;              // 0x38
+    f32 speed;              // 0x3C
     u8 pad_40[0x68 - 0x40]; // 0x40
-    s32 field_0x68;       // 0x68
+    s32 landedCount;        // 0x68
     u8 pad_6c[4];         // 0x6C
     ZakogunEntry* entries; // 0x70
 } ZakogunWork;

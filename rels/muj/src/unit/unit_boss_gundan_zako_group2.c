@@ -424,7 +424,7 @@ s32 zakogun_ext_init2(EventEntry* event, BOOL isFirstCall) {
     s32 i;
     ExtPose* pose = extGetPosePtr();
 
-    work_20_bss_6C->field_0x0 = 1;
+    work_20_bss_6C->phase = 1;
     for (i = 0; i < 25; i++, pose++) {
         zakogun_ext_init123_common(pose, i);
     }
@@ -496,23 +496,23 @@ void zakogun_ext_main2(void) {
             BattleUnit* u = BattleGetUnitPtr(wp, work_20_bss_6C->targetId);
 
             BtlUnit_GetPos(u, &x, &y, &z);
-            *(Vec*)&entry->field_0x34 = entry->pos;
+            entry->from = entry->pos;
             if (entry->pos.x >= x) {
-                entry->field_0x40 = entry->pos.x - 30.0f;
+                entry->to.x = entry->pos.x - 30.0f;
                 entry->rotY = 0.0f;
             } else {
-                entry->field_0x40 = entry->pos.x + 15.0f;
+                entry->to.x = entry->pos.x + 15.0f;
                 entry->rotY = 180.0f;
             }
-            entry->field_0x44 = entry->field_0x38 - 2.0f;
+            entry->to.y = entry->from.y - 2.0f;
             entry->state = 0x19;
             entry->timerMax = 8;
             entry->timer = 8;
         }
             // fallthrough
         case 0x19:
-            entry->pos.x = intplGetValue(4, entry->timerMax - entry->timer, entry->timerMax, entry->field_0x34, entry->field_0x40);
-            entry->pos.y = intplGetValue(4, (entry->timerMax - entry->timer) * 2, entry->timerMax, entry->field_0x38, entry->field_0x44);
+            entry->pos.x = intplGetValue(4, entry->timerMax - entry->timer, entry->timerMax, entry->from.x, entry->to.x);
+            entry->pos.y = intplGetValue(4, (entry->timerMax - entry->timer) * 2, entry->timerMax, entry->from.y, entry->to.y);
             entry->timer--;
             if (entry->timer < 0) {
                 BattleUnit* u = BattleGetUnitPtr(wp, work_20_bss_6C->targetId);
@@ -529,31 +529,31 @@ void zakogun_ext_main2(void) {
             BattleUnit* u = BattleGetUnitPtr(wp, work_20_bss_6C->targetId);
 
             BtlUnit_GetPos(u, &x, &y, &z);
-            *(f32*)entry->pad_4c = (f32)rand() / 32767.0f - 0.5f;
-            entry->field_0x50 = 0.0f;
-            *(f32*)entry->pad_54 = 1.5f;
-            entry->field_0x44 = 2.0f * (f32)work_20_bss_6C->field_0x68 + y;
+            entry->velX = (f32)rand() / 32767.0f - 0.5f;
+            entry->velY = 0.0f;
+            entry->velZ = 1.5f;
+            entry->to.y = 2.0f * (f32)work_20_bss_6C->landedCount + y;
             entry->state = 0x23;
             zakogun_set_pose(entry, 0x2C, 1, 1);
             psndSFXOn(sa);
         }
             // fallthrough
         case 0x23:
-            entry->pos.x += *(f32*)entry->pad_4c;
-            entry->pos.y += entry->field_0x50;
-            entry->pos.z += *(f32*)entry->pad_54;
-            entry->field_0x50 += -0.5f;
-            if (entry->pos.y < entry->field_0x44) {
-                entry->pos.y = entry->field_0x44;
+            entry->pos.x += entry->velX;
+            entry->pos.y += entry->velY;
+            entry->pos.z += entry->velZ;
+            entry->velY += -0.5f;
+            if (entry->pos.y < entry->to.y) {
+                entry->pos.y = entry->to.y;
                 entry->state = 0x28;
-                work_20_bss_6C->field_0x68++;
-                if (work_20_bss_6C->field_0x68 == 0x19) {
+                work_20_bss_6C->landedCount++;
+                if (work_20_bss_6C->landedCount == 0x19) {
                     unit->work[0] = 1;
                 }
             }
             break;
         case 0x28:
-            if (work_20_bss_6C->field_0x68 == 0x19) {
+            if (work_20_bss_6C->landedCount == 0x19) {
                 entry->state = 0x2D;
                 entry->timer = irand(0x3C);
             }
@@ -561,17 +561,17 @@ void zakogun_ext_main2(void) {
         case 0x2D:
             entry->timer--;
             if (entry->timer <= 0) {
-                *(f32*)entry->pad_4c = -5.0f;
-                entry->field_0x50 = 3.0f;
+                entry->velX = -5.0f;
+                entry->velY = 3.0f;
                 entry->state = 0x30;
                 zakogun_set_pose(entry, 0x22, 1, 1);
                 entry->rotY = 0.0f;
             }
             break;
         case 0x30:
-            entry->pos.x += *(f32*)entry->pad_4c;
-            entry->pos.y += entry->field_0x50;
-            entry->field_0x50 += -0.5f;
+            entry->pos.x += entry->velX;
+            entry->pos.y += entry->velY;
+            entry->velY += -0.5f;
             if (entry->pos.y < 0.0f) {
                 entry->pos.y = 0.0f;
                 zakogun_set_pose(entry, 0x16, 0xA, 1);
@@ -579,7 +579,7 @@ void zakogun_ext_main2(void) {
             }
             break;
         case 0x31:
-            entry->pos.x += *(f32*)entry->pad_4c;
+            entry->pos.x += entry->velX;
             if (entry->pos.x <= -300.0f) {
                 entry->state = 0x32;
                 entry->pos.x = 300.0f;
@@ -596,12 +596,12 @@ void zakogun_ext_main2(void) {
 
             BtlUnit_GetPos(u, &x, &y, &z);
             entry->rotY = 0.0f;
-            *(Vec*)&entry->field_0x34 = entry->pos;
-            entry->field_0x40 = entry->pos.x - 30.0f;
-            if (entry->field_0x40 < entry->target.x) {
-                entry->field_0x40 = entry->target.x;
+            entry->from = entry->pos;
+            entry->to.x = entry->pos.x - 30.0f;
+            if (entry->to.x < entry->target.x) {
+                entry->to.x = entry->target.x;
             }
-            entry->field_0x44 = entry->field_0x38 - 2.0f;
+            entry->to.y = entry->from.y - 2.0f;
             entry->state = 0x37;
             entry->timerMax = 8;
             entry->timer = 8;
@@ -609,8 +609,8 @@ void zakogun_ext_main2(void) {
         }
             // fallthrough
         case 0x37:
-            entry->pos.x = intplGetValue(4, entry->timerMax - entry->timer, entry->timerMax, entry->field_0x34, entry->field_0x40);
-            entry->pos.y = intplGetValue(4, (entry->timerMax - entry->timer) * 2, entry->timerMax, entry->field_0x38, entry->field_0x44);
+            entry->pos.x = intplGetValue(4, entry->timerMax - entry->timer, entry->timerMax, entry->from.x, entry->to.x);
+            entry->pos.y = intplGetValue(4, (entry->timerMax - entry->timer) * 2, entry->timerMax, entry->from.y, entry->to.y);
             entry->timer--;
             if (entry->timer < 0) {
                 if (entry->pos.x <= entry->target.x) {
@@ -644,13 +644,13 @@ void zakogun_ext_main2(void) {
             entry->timer--;
             if (entry->timer <= 0) {
                 entry->state = 0x53;
-                entry->field_0x50 = 0.0f;
+                entry->velY = 0.0f;
                 psndSFXOn(sa2);
             }
             break;
         case 0x53:
-            entry->field_0x50 += -0.5f;
-            entry->pos.y += entry->field_0x50;
+            entry->velY += -0.5f;
+            entry->pos.y += entry->velY;
             if (entry->pos.y <= 0.0f) {
                 entry->pos.y = 0.0f;
                 entry->state = 0x54;
@@ -658,40 +658,40 @@ void zakogun_ext_main2(void) {
             }
             break;
         case 0x54:
-            *(Vec*)&entry->field_0x34 = entry->pos;
-            entry->field_0x40 = entry->field_0x34 + (f32)irand(100) - 50.0f;
-            entry->field_0x44 = 0.0f;
-            entry->field_0x48 = entry->field_0x3c + (f32)irand(20) - 10.0f;
+            entry->from = entry->pos;
+            entry->to.x = entry->from.x + (f32)irand(100) - 50.0f;
+            entry->to.y = 0.0f;
+            entry->to.z = entry->from.z + (f32)irand(20) - 10.0f;
             entry->state = 0x55;
             entry->timerMax = 0x14;
             entry->timer = 0x14;
-            entry->field_0x50 = (2.0f * (entry->field_0x44 - entry->field_0x38) - -200.0f) / 40.0f;
+            entry->velY = (2.0f * (entry->to.y - entry->from.y) - -200.0f) / 40.0f;
             // fallthrough
         case 0x55:
-            entry->pos.x = intplGetValue(0, entry->timerMax - entry->timer, entry->timerMax, entry->field_0x34, entry->field_0x40);
-            entry->pos.z = intplGetValue(0, entry->timerMax - entry->timer, entry->timerMax, entry->field_0x3c, entry->field_0x48);
-            entry->pos.y += entry->field_0x50;
-            entry->field_0x50 += -0.5f;
+            entry->pos.x = intplGetValue(0, entry->timerMax - entry->timer, entry->timerMax, entry->from.x, entry->to.x);
+            entry->pos.z = intplGetValue(0, entry->timerMax - entry->timer, entry->timerMax, entry->from.z, entry->to.z);
+            entry->pos.y += entry->velY;
+            entry->velY += -0.5f;
             entry->timer--;
             if (entry->timer < 0) {
                 entry->state = 0x56;
             }
             break;
         case 0x56:
-            *(Vec*)&entry->field_0x34 = entry->pos;
-            entry->field_0x40 = entry->field_0x34 + (f32)irand(50) - 25.0f;
-            entry->field_0x44 = 0.0f;
-            entry->field_0x48 = entry->field_0x3c + (f32)irand(10) - 5.0f;
+            entry->from = entry->pos;
+            entry->to.x = entry->from.x + (f32)irand(50) - 25.0f;
+            entry->to.y = 0.0f;
+            entry->to.z = entry->from.z + (f32)irand(10) - 5.0f;
             entry->state = 0x57;
             entry->timerMax = 0xA;
             entry->timer = 0xA;
-            entry->field_0x50 = (2.0f * (entry->field_0x44 - entry->field_0x38) - -50.0f) / 20.0f;
+            entry->velY = (2.0f * (entry->to.y - entry->from.y) - -50.0f) / 20.0f;
             // fallthrough
         case 0x57:
-            entry->pos.x = intplGetValue(0, entry->timerMax - entry->timer, entry->timerMax, entry->field_0x34, entry->field_0x40);
-            entry->pos.z = intplGetValue(0, entry->timerMax - entry->timer, entry->timerMax, entry->field_0x3c, entry->field_0x48);
-            entry->pos.y += entry->field_0x50;
-            entry->field_0x50 += -0.5f;
+            entry->pos.x = intplGetValue(0, entry->timerMax - entry->timer, entry->timerMax, entry->from.x, entry->to.x);
+            entry->pos.z = intplGetValue(0, entry->timerMax - entry->timer, entry->timerMax, entry->from.z, entry->to.z);
+            entry->pos.y += entry->velY;
+            entry->velY += -0.5f;
             entry->timer--;
             if (entry->timer < 0) {
                 entry->state = 0x58;
@@ -739,7 +739,7 @@ s32 zakogun_attack2(EventEntry* event, BOOL isFirstCall) {
     s32 count;
 
     if (isFirstCall) {
-        work_20_bss_6C->field_0x68 = 0;
+        work_20_bss_6C->landedCount = 0;
         for (i = 0; i < 25; i++) {
             zakogun[i].state = 0x14;
         }

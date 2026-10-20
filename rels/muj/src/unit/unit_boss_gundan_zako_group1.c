@@ -507,7 +507,7 @@ s32 zakogun_damage_pose(EventEntry* event, BOOL isFirstCall) {
             ZakogunEntry* entry = &zakogun[i];
 
             if (entry != NULL) {
-                switch (work_20_bss_6C->field_0x0) {
+                switch (work_20_bss_6C->phase) {
                     case 0:
                     case 2:
                         entry->poseStart = 0x21;
@@ -536,7 +536,7 @@ s32 zakogun_damage_pose_cancel(EventEntry* event, BOOL isFirstCall) {
             ZakogunEntry* entry = &zakogun[i];
 
             if (entry != NULL) {
-                switch (work_20_bss_6C->field_0x0) {
+                switch (work_20_bss_6C->phase) {
                     case 0:
                         entry->poseStart = 0x15;
                         entry->poseCount = 1;
@@ -588,7 +588,7 @@ void zakogun_ext_init(void) {
     work_20_bss_6C = BattleAlloc(0x74);
     work_20_bss_6C->entries = BattleAlloc(0xDAC0);
     zakogun = work_20_bss_6C->entries;
-    work_20_bss_6C->field_0x0 = 0;
+    work_20_bss_6C->phase = 0;
     obj = BattleSearchObjectPtr("if_body");
     obj2 = BattleSearchObjectPtr("if_wire");
     obj2->mPosition = (Vec){0.0f, 250.0f, 0.0f};
@@ -597,7 +597,7 @@ void zakogun_ext_init(void) {
 }
 
 void zakogun_ext_main(void) {
-    switch (work_20_bss_6C->field_0x0) {
+    switch (work_20_bss_6C->phase) {
         case 0:
             zakogun_ext_main1();
             break;
@@ -660,7 +660,7 @@ s32 zakogun_ext_init1(EventEntry* event, BOOL isFirstCall) {
     s32 i;
     ExtPose* pose = extGetPosePtr();
 
-    work_20_bss_6C->field_0x0 = 0;
+    work_20_bss_6C->phase = 0;
     for (i = 0; i < 6; i++, pose++) {
         zakogun_ext_init123_common(pose, i);
     }
@@ -733,10 +733,10 @@ void zakogun_ext_main1(void) {
                 }
                 break;
             case 0xA:
-                entry->pos.x = entry->field_0x34 = 300.0f + (f32)irand(100);
-                entry->field_0x38 = 0.0f;
+                entry->pos.x = entry->from.x = 300.0f + (f32)irand(100);
+                entry->from.y = 0.0f;
                 entry->pos.y = 0.0f;
-                entry->pos.z = entry->field_0x3c = (f32)irand(100) - 50.0f;
+                entry->pos.z = entry->from.z = (f32)irand(100) - 50.0f;
                 entry->state = 0xC;
                 entry->rotY = 0.0f;
                 // fallthrough
@@ -746,34 +746,34 @@ void zakogun_ext_main1(void) {
                 z = unit->mHomePosition.z;
                 switch (i) {
                     case 0:
-                        entry->field_0x40 = x - 10.0f;
-                        entry->field_0x44 = y;
-                        entry->field_0x48 = z - 10.0f;
+                        entry->to.x = x - 10.0f;
+                        entry->to.y = y;
+                        entry->to.z = z - 10.0f;
                         break;
                     case 1:
-                        entry->field_0x40 = x;
-                        entry->field_0x44 = y;
-                        entry->field_0x48 = z;
+                        entry->to.x = x;
+                        entry->to.y = y;
+                        entry->to.z = z;
                         break;
                     case 2:
-                        entry->field_0x40 = x + 10.0f;
-                        entry->field_0x44 = y;
-                        entry->field_0x48 = z + 10.0f;
+                        entry->to.x = x + 10.0f;
+                        entry->to.y = y;
+                        entry->to.z = z + 10.0f;
                         break;
                     case 3:
-                        entry->field_0x40 = 45.0f + x;
-                        entry->field_0x44 = y;
-                        entry->field_0x48 = z - 5.0f;
+                        entry->to.x = 45.0f + x;
+                        entry->to.y = y;
+                        entry->to.z = z - 5.0f;
                         break;
                     case 4:
-                        entry->field_0x40 = 55.0f + x;
-                        entry->field_0x44 = y;
-                        entry->field_0x48 = z + 5.0f;
+                        entry->to.x = 55.0f + x;
+                        entry->to.y = y;
+                        entry->to.z = z + 5.0f;
                         break;
                     case 5:
-                        entry->field_0x40 = 75.0f + x;
-                        entry->field_0x44 = y;
-                        entry->field_0x48 = z;
+                        entry->to.x = 75.0f + x;
+                        entry->to.y = y;
+                        entry->to.z = z;
                         break;
                 }
                 entry->state = 0xF;
@@ -785,11 +785,11 @@ void zakogun_ext_main1(void) {
                 break;
             case 0xF:
                 entry->pos.x = intplGetValue(0, entry->timerMax - entry->timer, entry->timerMax,
-                                             entry->field_0x34, entry->field_0x40);
+                                             entry->from.x, entry->to.x);
                 entry->pos.y = intplGetValue(0, entry->timerMax - entry->timer, entry->timerMax,
-                                             entry->field_0x38, entry->field_0x44);
+                                             entry->from.y, entry->to.y);
                 entry->pos.z = intplGetValue(0, entry->timerMax - entry->timer, entry->timerMax,
-                                             entry->field_0x3c, entry->field_0x48);
+                                             entry->from.z, entry->to.z);
                 if (i == 5) {
                     if (entry->timer % 12 == 0) {
                         BtlUnit_snd_se_pos(unit, "SFX_BOSS_TEAM_3RD_MOVE1L", 0x7F, 0, &entry->pos);
@@ -843,30 +843,30 @@ void zakogun_ext_main1(void) {
                 x = unit->mHomePosition.x;
                 y = unit->mHomePosition.y;
                 z = unit->mHomePosition.z;
-                entry->field_0x34 = entry->pos.x;
-                entry->field_0x38 = entry->pos.y;
-                entry->field_0x3c = entry->pos.z;
+                entry->from.x = entry->pos.x;
+                entry->from.y = entry->pos.y;
+                entry->from.z = entry->pos.z;
                 switch (i) {
                     case 3:
-                        entry->field_0x40 = x - 5.0f;
-                        entry->field_0x44 = y + 10.0f;
-                        entry->field_0x48 = z - 5.0f;
+                        entry->to.x = x - 5.0f;
+                        entry->to.y = y + 10.0f;
+                        entry->to.z = z - 5.0f;
                         break;
                     case 4:
-                        entry->field_0x40 = x + 5.0f;
-                        entry->field_0x44 = y + 10.0f;
-                        entry->field_0x48 = z + 5.0f;
+                        entry->to.x = x + 5.0f;
+                        entry->to.y = y + 10.0f;
+                        entry->to.z = z + 5.0f;
                         break;
                     case 5:
-                        entry->field_0x40 = x;
-                        entry->field_0x44 = y + 20.0f;
-                        entry->field_0x48 = z;
+                        entry->to.x = x;
+                        entry->to.y = y + 20.0f;
+                        entry->to.z = z;
                         break;
                 }
                 entry->state = 0x11;
                 entry->timerMax = 0x14;
                 entry->timer = 0x14;
-                entry->field_0x50 = ((2.0f * (entry->field_0x44 - entry->field_0x38)) - -200.0f) / 40.0f;
+                entry->velY = ((2.0f * (entry->to.y - entry->from.y)) - -200.0f) / 40.0f;
                 entry->poseStart = 0x22;
                 entry->poseCount = 1;
                 entry->poseDiv = 1;
@@ -874,16 +874,16 @@ void zakogun_ext_main1(void) {
                 break;
             case 0x11:
                 entry->pos.x = intplGetValue(0, entry->timerMax - entry->timer, entry->timerMax,
-                                             entry->field_0x34, entry->field_0x40);
+                                             entry->from.x, entry->to.x);
                 entry->pos.z = intplGetValue(0, entry->timerMax - entry->timer, entry->timerMax,
-                                             entry->field_0x3c, entry->field_0x48);
-                entry->pos.y += entry->field_0x50;
-                entry->field_0x50 += -0.5f;
+                                             entry->from.z, entry->to.z);
+                entry->pos.y += entry->velY;
+                entry->velY += -0.5f;
                 entry->timer--;
                 if (entry->timer < 0) {
                     entry->state = 0x14;
                     entry->timer = 0;
-                    entry->pos.y = entry->field_0x44;
+                    entry->pos.y = entry->to.y;
                     entry->poseStart = 0x15;
                     entry->poseCount = 1;
                     entry->poseDiv = 1;
@@ -1001,12 +1001,12 @@ void zakogun_ext_main1(void) {
 
                 BtlUnit_GetPos(target, &x, &y, &z);
                 x += 100.0f;
-                entry->field_0x34 = entry->pos.x;
-                entry->field_0x38 = entry->pos.y;
-                entry->field_0x3c = entry->pos.z;
-                entry->field_0x40 = x;
-                entry->field_0x44 = entry->pos.y;
-                entry->field_0x48 = entry->pos.z;
+                entry->from.x = entry->pos.x;
+                entry->from.y = entry->pos.y;
+                entry->from.z = entry->pos.z;
+                entry->to.x = x;
+                entry->to.y = entry->pos.y;
+                entry->to.z = entry->pos.z;
                 entry->state = 0x2D;
                 entry->timerMax = 0x28;
                 entry->timer = 0x28;
@@ -1014,7 +1014,7 @@ void zakogun_ext_main1(void) {
                 // fallthrough
             case 0x2D:
                 entry->pos.x = intplGetValue(0, entry->timerMax - entry->timer, entry->timerMax,
-                                             entry->field_0x34, entry->field_0x40);
+                                             entry->from.x, entry->to.x);
                 if (entry->timer % 12 == 0) {
                     BtlUnit_snd_se_pos(unit, "SFX_BOSS_TEAM_3RD_MOVE1L", 0x7F, 0, &entry->pos);
                 }
@@ -1033,16 +1033,16 @@ void zakogun_ext_main1(void) {
                 arr = dat_muj_00012fdc;
                 target = BattleGetUnitPtr(wp, work_20_bss_6C->targetId);
                 BtlUnit_GetPos(target, &x, &y, &z);
-                entry->field_0x34 = entry->pos.x;
-                entry->field_0x38 = entry->pos.y;
-                entry->field_0x3c = entry->pos.z;
-                entry->field_0x40 = x - arr.v[i];
-                entry->field_0x44 = 0.0f;
-                entry->field_0x48 = entry->field_0x3c;
+                entry->from.x = entry->pos.x;
+                entry->from.y = entry->pos.y;
+                entry->from.z = entry->pos.z;
+                entry->to.x = x - arr.v[i];
+                entry->to.y = 0.0f;
+                entry->to.z = entry->from.z;
                 entry->state = 0x37;
                 entry->timerMax = 0x28;
                 entry->timer = 0x28;
-                entry->field_0x50 = ((2.0f * (entry->field_0x44 - entry->field_0x38)) - -320.0f) / 80.0f;
+                entry->velY = ((2.0f * (entry->to.y - entry->from.y)) - -320.0f) / 80.0f;
                 entry->poseStart = 0x20;
                 entry->poseCount = 1;
                 entry->poseDiv = 1;
@@ -1057,11 +1057,11 @@ void zakogun_ext_main1(void) {
 
                 BtlUnit_GetPos(target, &x, &y, &z);
                 entry->pos.x = intplGetValue(0, entry->timerMax - entry->timer, entry->timerMax,
-                                             entry->field_0x34, entry->field_0x40);
+                                             entry->from.x, entry->to.x);
                 entry->pos.z = intplGetValue(0, entry->timerMax - entry->timer, entry->timerMax,
-                                             entry->field_0x3c, entry->field_0x48);
-                entry->pos.y += entry->field_0x50;
-                entry->field_0x50 += -0.2f;
+                                             entry->from.z, entry->to.z);
+                entry->pos.y += entry->velY;
+                entry->velY += -0.2f;
                 entry->timer--;
                 if (entry->timer <= 0xA) {
                     entry->state = 0x3A;
@@ -1077,16 +1077,16 @@ void zakogun_ext_main1(void) {
             }
             case 0x3A:
                 entry->pos.x = intplGetValue(0, entry->timerMax - entry->timer, entry->timerMax,
-                                             entry->field_0x34, entry->field_0x40);
+                                             entry->from.x, entry->to.x);
                 entry->pos.z = intplGetValue(0, entry->timerMax - entry->timer, entry->timerMax,
-                                             entry->field_0x3c, entry->field_0x48);
-                entry->pos.y += entry->field_0x50;
-                entry->field_0x50 += -0.2f;
+                                             entry->from.z, entry->to.z);
+                entry->pos.y += entry->velY;
+                entry->velY += -0.2f;
                 entry->timer--;
                 if (entry->timer < 0) {
                     entry->state = 0x3C;
                     entry->timer = 0x1E;
-                    entry->pos.y = entry->field_0x44;
+                    entry->pos.y = entry->to.y;
                     entry->poseStart = 0x15;
                     entry->poseCount = 1;
                     entry->poseDiv = 1;
@@ -1109,7 +1109,7 @@ void zakogun_ext_main1(void) {
             case 0x3E:
                 entry->state = 0xC;
                 entry->rotY = 180.0f;
-                *(Vec*)&entry->field_0x34 = entry->pos;
+                entry->from = entry->pos;
                 unit->mPosition = unit->mHomePosition;
                 btl_camera_set_mode(0, 0);
                 break;
@@ -1129,7 +1129,7 @@ void zakogun_ext_main1(void) {
                 if (entry->timer <= 0) {
                     entry->state = 0x52;
                     entry->timer = 0xA;
-                    entry->field_0x50 = 0.0f;
+                    entry->velY = 0.0f;
                     if (i >= 0 && i <= 2) {
                         entry->rotZ = 45.0f;
                     }
@@ -1141,8 +1141,8 @@ void zakogun_ext_main1(void) {
                     if (entry->rotZ >= 45.0f) {
                         entry->rotZ = 45.0f;
                     }
-                    entry->pos.y += entry->field_0x50;
-                    entry->field_0x50 += -0.5f;
+                    entry->pos.y += entry->velY;
+                    entry->velY += -0.5f;
                     if (entry->pos.y < 0.0f) {
                         entry->pos.y = 0.0f;
                     }
@@ -1151,7 +1151,7 @@ void zakogun_ext_main1(void) {
                 if (entry->timer <= 0) {
                     entry->state = 0x53;
                     entry->timer = 0x14;
-                    entry->field_0x50 = 0.0f;
+                    entry->velY = 0.0f;
                     if (i >= 3 && i <= 4) {
                         entry->rotZ = 45.0f;
                         entry->pos.y = 0.0f;
@@ -1164,8 +1164,8 @@ void zakogun_ext_main1(void) {
                     if (entry->rotZ >= 45.0f) {
                         entry->rotZ = 45.0f;
                     }
-                    entry->pos.y += entry->field_0x50;
-                    entry->field_0x50 += -0.5f;
+                    entry->pos.y += entry->velY;
+                    entry->velY += -0.5f;
                     if (entry->pos.y < 0.0f) {
                         entry->pos.y = 0.0f;
                     }
