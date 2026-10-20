@@ -10216,3 +10216,23 @@ pre-branch ones (tools/obj_equiv.py). Landing needs `--allow-protected` (config/
 `FILE_ENTRY_COUNT` (0x400) is the `FileEntry` pool size in `fileInit`. It is not the 0x400 `_filename` vsprintf buffer, which stays a literal. `file->entry->status = 8` is `DVDMGR_CLOSED` (bit 3 in dvdmgr.h, the close flag `DVDMgrClose` sets). `_fileAlloc`'s callback parameter is `FileCallback`, the same type.
 
 Left: the raw-offset relocation lines for types 1-3 and 6-10 (no struct and no caller for them), the AnimData words at 0x24-0x40 inside ANIMPOSE walks, `FileEntry` 0x8-0x20 and 0x60-0xA0 (unknown), `data[1]` (read as the length in `fileGarbageMoveMem`; it lives at the handle's +4 word for arcOpen and in the smart block for DVD reads, and neither is typed), the `_fileGarbage(int)` argument (both modes are visible, but the names would be guesses), and `archiveType` 0/1/2 (no archive-type enum is proven; animdrv only passes them).
+## koopa_hit.c and mario_motion.c raw offsets (2026-10-20, Claude Haiku 5.5)
+
+mario_motion.c: `mot_talk` reads `fbatGetPointer()->talkNpc` (FieldBattleData, npcdrv.h, pointer at 0x4) and then its
+`field_10C` (NpcEntry, `const char*` at 0x10C, the pose name passed to marioChgPose); both are now typed. `mot_shadow`
+writes the display rotation `mario->dispRot.x/y/z` (Vec at 0xBC, mario.h; the y store is kept, as in the original).
+`offset_to_field.py --apply` converted these seven stores. koopa_hit.c: the unused MW_F32/MW_U32/MW_U16 macros are
+removed; `MW_S16` stays for the one 0x78 read in kpaEnemyHitChk (`== 0` returns 4). Left for the mario.h owner:
+- 0x78 is `u8 unk78[2]`; kpaEnemyHitChk and the MARIO_FLAG checks read it as s16 (koopa_hit.c, `MW_S16(mp, 0x78) == 0`).
+  Needs an `s16` at 0x78.
+- 0x1DC is `u8 field_0x1DC[4]`; mario_motion.c reads it as a `void*` hit-object pointer
+  (`*(void**)mario->field_0x1DC` in mot_* around lines 1199-1205, passed to hitGetAttr/mobjGetHint/caseCheckHitObj).
+  Needs a `void*` at 0x1DC.
+- 0x1FC is already `void* field_0x1FC`, assigned 0 in mario_motion.c (~line 489); no name yet.
+- 0x2B8 is `f32 field_0x2B8`, written with marioChgJumpStandMotion's `arg` and with 100.0f on the blue jump stand, red switch
+  and Yoshi cases (mario_motion.c ~lines 292-315, 1017-1028). Needs a name.
+- 0x2AC/0x2B0 already have header names (`field_0x2AC`, `field_0x2B0`/`jabaraSpeed`) but mario_motion.c still spells them
+  `field_0x`; naming the header field `jabaraSpeed` or a new name is a header change.
+Not touched: the `float_*_80420eXX` constants in koopa_hit.c. A bare-value rename (`float_0`) clashes with the same
+name already used in nameent.c, battle_stage.c, battle_icon.c, party_yoshi.c and party_nokonoko.c, so the address
+suffix stays. `unk_800a4e40` (mot_slit.c, paper-mode reset that sets motion 0x15 and a 0x2D8 s16) has no proven name.
