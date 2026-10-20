@@ -175,12 +175,22 @@ void BattleStatusIconDisp(CameraId camId, void* param) {
 		// btlDispTexPlane is called through a pointer type with an extra trailing s32 argument (0).
 		if (!(entry->flags & 1)) {
 			if (!(icon->mFlags & 1)) {
+#ifdef MUST_MATCH
 				((void (*)(u32, GXColor, f32, f32, f32, f32, f32, s32))btlDispTexPlane)(
 				    0x23, color, pos.x, pos.y, pos.z, 0.8f, 0.8f, 0);
+#else
+				btlDispTexPlane(
+				    0x23, color, pos.x, pos.y, pos.z, 0.8f, 0.8f);
+#endif
 			}
 			else {
+#ifdef MUST_MATCH
 				((void (*)(u32, GXColor, f32, f32, f32, f32, f32, s32))btlDispTexPlane)(
 				    0x23, color, pos.x, pos.y, pos.z, 0.8f, -0.8f, 0);
+#else
+				btlDispTexPlane(
+				    0x23, color, pos.x, pos.y, pos.z, 0.8f, -0.8f);
+#endif
 			}
 		}
 
@@ -241,7 +251,11 @@ BOOL _bsi_default_turn(BattleUnit* unit, IconDispTableEntry* disp, BattleWorkSta
 
 	if (_battleWorkPointer->flags & 0x10000) {
 		if (type != 1) {
+#ifdef MUST_MATCH
 			if (!((BOOL(*)(BattleUnit*, s8))BtlUnit_CheckStatus)(unit, type)) {
+#else
+			if (!BtlUnit_CheckStatus(unit, type)) {
+#endif
 				return FALSE;
 			}
 		}
@@ -252,12 +266,20 @@ BOOL _bsi_default_turn(BattleUnit* unit, IconDispTableEntry* disp, BattleWorkSta
 		}
 	}
 	else {
+#ifdef MUST_MATCH
 		if (!((BOOL(*)(BattleUnit*, s8))BtlUnit_CheckStatus)(unit, type)) {
+#else
+		if (!BtlUnit_CheckStatus(unit, type)) {
+#endif
 			return FALSE;
 		}
 	}
 
+#ifdef MUST_MATCH
 	((void(*)(BattleUnit*, s8, s8*, s8*))BtlUnit_GetStatus)(unit, type, &turns, &strength);
+#else
+	BtlUnit_GetStatus(unit, type, &turns, &strength);
+#endif
 	entry->type = type;
 	turnCount = turns >= 0 ? turns : -turns;
 	entry->turnCount = turnCount;
@@ -280,13 +302,21 @@ BOOL _bsi_guruguru(BattleUnit* unit, IconDispTableEntry* disp, BattleWorkStatusI
 	Vec tmp;
 	f32* counter = &unit->mStatusIconWork.mGuruguruAngle;
 
+#ifdef MUST_MATCH
 	if (!((BOOL(*)(BattleUnit*, s8))BtlUnit_CheckStatus)(unit, type)) {
+#else
+	if (!BtlUnit_CheckStatus(unit, type)) {
+#endif
 		*counter = 0.0f;
 		return FALSE;
 	}
 
 	*counter += 4.0f;
+#ifdef MUST_MATCH
 	((void(*)(BattleUnit*, s8, s8*, s8*))BtlUnit_GetStatus)(unit, type, &turns, &strength);
+#else
+	BtlUnit_GetStatus(unit, type, &turns, &strength);
+#endif
 	entry->type = type;
 	turnCount = turns >= 0 ? turns : -turns;
 	entry->turnCount = turnCount;
@@ -312,17 +342,25 @@ BOOL _bsi_allergy(BattleUnit* unit, IconDispTableEntry* disp, BattleWorkStatusIc
 	s8 strength;
 	s16* counter = &unit->mStatusIconWork.mAllergyCounter;
 
+#ifdef MUST_MATCH
 	// The header's BtlUnit_CheckStatus/BtlUnit_GetStatus take StatusEffectType (int), but the
 	// callee sign-extends it (battle_status_effect.h says it "should be an s8"). Calling through
 	// an s8-typed function pointer makes MWCC coerce the argument at each call like the original;
 	// an (s8) cast on the argument is hoisted into its own register and does not match.
 	// The same casts are used in every _bsi_* function below.
 	if (!((BOOL(*)(BattleUnit*, s8))BtlUnit_CheckStatus)(unit, type)) {
+#else
+	if (!BtlUnit_CheckStatus(unit, type)) {
+#endif
 		*counter = 0;
 		return FALSE;
 	}
 
+#ifdef MUST_MATCH
 	((void(*)(BattleUnit*, s8, s8*, s8*))BtlUnit_GetStatus)(unit, type, &turns, &strength);
+#else
+	BtlUnit_GetStatus(unit, type, &turns, &strength);
+#endif
 	entry->type = type;
 	turnCount = turns >= 0 ? turns : -turns;
 	entry->turnCount = turnCount;
@@ -350,7 +388,11 @@ BOOL _bsi_biribiri(BattleUnit* unit, IconDispTableEntry* disp, BattleWorkStatusI
 	s16* counter = &unit->mStatusIconWork.mBiribiriState;
 	s16* duration = &unit->mStatusIconWork.mBiribiriDuration;
 
+#ifdef MUST_MATCH
 	if (!((BOOL(*)(BattleUnit*, s8))BtlUnit_CheckStatus)(unit, type)) {
+#else
+	if (!BtlUnit_CheckStatus(unit, type)) {
+#endif
 		*counter = 0;
 		*duration = 0;
 		return FALSE;
@@ -381,7 +423,11 @@ BOOL _bsi_biribiri(BattleUnit* unit, IconDispTableEntry* disp, BattleWorkStatusI
 		break;
 	}
 
+#ifdef MUST_MATCH
 	((void(*)(BattleUnit*, s8, s8*, s8*))BtlUnit_GetStatus)(unit, type, &turns, &strength);
+#else
+	BtlUnit_GetStatus(unit, type, &turns, &strength);
+#endif
 	entry->type = type;
 	turnCount = turns >= 0 ? turns : -turns;
 	entry->turnCount = turnCount;
@@ -427,7 +473,11 @@ BOOL _bsi_regeneration(BattleUnit* unit, IconDispTableEntry* disp, BattleWorkSta
 		return FALSE;
 	}
 
+#ifdef MUST_MATCH
 	if (!((BOOL(*)(BattleUnit*, s8))BtlUnit_CheckStatus)(unit, type)) {
+#else
+	if (!BtlUnit_CheckStatus(unit, type)) {
+#endif
 		*counter = 0;
 		return FALSE;
 	}
@@ -437,7 +487,11 @@ BOOL _bsi_regeneration(BattleUnit* unit, IconDispTableEntry* disp, BattleWorkSta
 	if (offset >= 0x168) {
 		offset = 0x2d0 - offset;
 	}
+#ifdef MUST_MATCH
 	((void(*)(BattleUnit*, s8, s8*, s8*))BtlUnit_GetStatus)(unit, type, &turns, &strength);
+#else
+	BtlUnit_GetStatus(unit, type, &turns, &strength);
+#endif
 	entry->type = type;
 	turnCount = turns >= 0 ? turns : -turns;
 	entry->turnCount = turnCount;
