@@ -16,26 +16,26 @@ typedef struct effBombN64Data {
 	f32 y;             // 0x08
 	f32 z;             // 0x0C
 	u8 pad_0x10[0x20]; // 0x10
-	s32 field_0x30;    // 0x30
-	s32 field_0x34;    // 0x34
+	s32 life;          // 0x30: frames left before the effect deletes itself
+	s32 counter;       // 0x34: frame counter
 	u8 pad_0x38[0x4];  // 0x38
-	s32 field_0x3C;    // 0x3C
+	s32 typeHigh;      // 0x3C: caller's type was >= 3 (selects the kemuri8 type + 3)
 	s32 camId;         // 0x40
-	s32 field_0x44;    // 0x44
+	s32 texType;       // 0x44: -1 when type 0 has no bomb texture
 	u8 pad_0x48[0x1C]; // 0x48
-	f32 field_0x64;    // 0x64
-	f32 field_0x68;    // 0x68
+	f32 scale;         // 0x64
+	f32 scaleStep;     // 0x68
 	u8 pad_0x6C[0x10]; // 0x6C
-	s32 field_0x7C;    // 0x7C
+	s32 alpha;         // 0x7C: alpha of the bomb texture colour
 	u8 pad_0x80[0x8];  // 0x80
 	s32 field_0x88;    // 0x88
 	u8 pad_0x8C[0x1C]; // 0x8C
-	f32 field_0xA8;    // 0xA8
-	f32 field_0xAC;    // 0xAC
-	f32 field_0xB0;    // 0xB0
-	f32 field_0xB4;    // 0xB4
+	f32 animScale;     // 0xA8
+	f32 animScaleStep; // 0xAC
+	f32 animRotZ;      // 0xB0
+	f32 animRotSpeed;  // 0xB4
 	u8 pad_0xB8[0x8];  // 0xB8
-	s32 field_0xC0;    // 0xC0
+	s32 animAlpha;     // 0xC0
 	u8 pad_0xC4[0x8];  // 0xC4
 } effBombN64Data;
 
@@ -66,12 +66,12 @@ void effBombN64SetCamId(EffectEntry* entry, s32 camId) {
 EffectEntry* effBombN64Entry(s32 type, f32 x, f32 y, f32 z) {
 	EffectEntry* effect;
 	effBombN64Data* data;
-	s32 flag;
+	s32 typeHigh;
 
 	effect = effEntry();
-	flag = 0;
+	typeHigh = 0;
 	if (type >= 3) {
-		flag = 1;
+		typeHigh = 1;
 		type -= 3;
 	}
 	effect->type = "BombN64";
@@ -82,33 +82,33 @@ EffectEntry* effBombN64Entry(s32 type, f32 x, f32 y, f32 z) {
 	data->x = x;
 	data->y = y;
 	data->z = z;
-	data->field_0x34 = 0;
-	data->field_0x30 = 60;
+	data->counter = 0;
+	data->life = 60;
 	data->type = type;
-	data->field_0x3C = flag;
+	data->typeHigh = typeHigh;
 	data->camId = 4;
-	data->field_0x44 = (type == 0) ? -1 : type;
-	data->field_0x7C = 0;
-	data->field_0x64 = (type == 1) ? 1.0f : 3.0f;
-	data->field_0x68 = (type == 1) ? 1.0f : 3.0f;
+	data->texType = (type == 0) ? -1 : type;
+	data->alpha = 0;
+	data->scale = (type == 1) ? 1.0f : 3.0f;
+	data->scaleStep = (type == 1) ? 1.0f : 3.0f;
 	data->field_0x88 = type;
-	data->field_0xC0 = 0xFF;
+	data->animAlpha = 0xFF;
 	switch (type) {
 	case 0:
-		data->field_0xA8 = 9.9f;
-		data->field_0xAC = 1.6f;
+		data->animScale = 9.9f;
+		data->animScaleStep = 1.6f;
 		break;
 	case 1:
-		data->field_0xA8 = 13.9f;
-		data->field_0xAC = 2.4f;
+		data->animScale = 13.9f;
+		data->animScaleStep = 2.4f;
 		break;
 	case 2:
-		data->field_0xA8 = 17.8f;
-		data->field_0xAC = 3.2f;
+		data->animScale = 17.8f;
+		data->animScaleStep = 3.2f;
 		break;
 	}
-	data->field_0xB0 = 0.0f;
-	data->field_0xB4 = 30.f;
+	data->animRotZ = 0.0f;
+	data->animRotSpeed = 30.f;
 	return effect;
 }
 
@@ -129,18 +129,18 @@ static void effBombMain(EffectEntry* effect) {
 	s32 timer;
 	s32 camId = data->camId;
 
-	data->field_0x30--;
-	if (data->field_0x30 < 0) {
+	data->life--;
+	if (data->life < 0) {
 		effDelete(effect);
 		return;
 	}
 
-	data->field_0x34++;
-	timer = data->field_0x34;
+	data->counter++;
+	timer = data->counter;
 	type = data->type;
 
 	if (timer == 7) {
-		if (data->field_0x3C == 0) {
+		if (data->typeHigh == 0) {
 			effKemuri8N64SetCamId(effKemuri8N64Entry(type, data->x, data->y, data->z), camId);
 		} else {
 			effKemuri8N64SetCamId(effKemuri8N64Entry(type + 3, data->x, data->y, data->z), camId);
@@ -149,36 +149,36 @@ static void effBombMain(EffectEntry* effect) {
 		effConfettiN64SetCamId(effConfettiN64Entry(type + 4, 50, data->x, data->y, data->z, 1.0f), camId);
 	}
 
-	data->field_0x64 += data->field_0x68;
+	data->scale += data->scaleStep;
 	if (timer < 8) {
-		data->field_0x68 += (type == 2) ? 1.0f : 0.4f;
-		data->field_0x7C = 0.6f * (255.0f - (f32)data->field_0x7C);
+		data->scaleStep += (type == 2) ? 1.0f : 0.4f;
+		data->alpha = 0.6f * (255.0f - (f32)data->alpha);
 	} else {
 		f32 k6 = 0.6f;
 		f32 k9 = 0.9f;
-		data->field_0x68 *= k6;
-		data->field_0x7C = (f32)data->field_0x7C * k9;
+		data->scaleStep *= k6;
+		data->alpha = (f32)data->alpha * k9;
 	}
 
 	if (timer >= 3) {
 		if (timer == 3) {
-			data->field_0xA8 = 1.0f;
+			data->animScale = 1.0f;
 		}
-		data->field_0xA8 += data->field_0xAC;
+		data->animScale += data->animScaleStep;
 	}
 
 	if (timer >= 3) {
 		if (timer < 6) {
-			data->field_0xAC += 0.1f;
+			data->animScaleStep += 0.1f;
 		} else {
 			f32 half = 0.5f;
 			f32 k9 = 0.9f;
-			data->field_0xAC *= half;
-			data->field_0xC0 = (f32)data->field_0xC0 * k9;
+			data->animScaleStep *= half;
+			data->animAlpha = (f32)data->animAlpha * k9;
 		}
 	}
 
-	data->field_0xB0 += data->field_0xB4;
+	data->animRotZ += data->animRotSpeed;
 	dispEntry(camId, dispCalcZ(&position), 2, effBombDisp, effect);
 }
 
@@ -217,7 +217,7 @@ static void effBombDisp(CameraId camId, void* param) {
 
 	camera = camGetPtr(camId);
 	data = ((EffectEntry*)param)->userdata;
-	timer = data->field_0x34;
+	timer = data->counter;
 
 	PSMTXTrans(mtx, data->x, data->y, data->z);
 	PSMTXRotRad(rotMtx, 'y', 0.017453292f * -camGetPtr(CAMERA_3D)->viewYaw);
@@ -238,19 +238,19 @@ static void effBombDisp(CameraId camId, void* param) {
 	GXSetCullMode(GX_CULL_NONE);
 	effSetVtxDescN64((effVtxArray*)size8x8_tex32x32_vtx);
 
-	if (data->field_0x44 != -1) {
+	if (data->texType != -1) {
 		effGetTexObjN64(0x18, &texObj);
 		GXLoadTexObj(&texObj, GX_TEXMAP0);
 #ifdef MUST_MATCH
-		bombSetColor1(data->field_0x7C);
+		bombSetColor1(data->alpha);
 #else
 		{
 			GXColor color1 = dat_8041e9d0;
-			color1.a = data->field_0x7C;
+			color1.a = data->alpha;
 			GXSetTevColor(GX_TEVREG0, color1);
 		}
 #endif
-		PSMTXScale(scaleMtx, data->field_0x64, data->field_0x64, 1.0f);
+		PSMTXScale(scaleMtx, data->scale, data->scale, 1.0f);
 		PSMTXConcat(outMtx, scaleMtx, scaleMtx);
 		GXLoadPosMtxImm(scaleMtx, GX_PNMTX0);
 		GXSetCurrentMtx(GX_PNMTX0);
@@ -263,7 +263,7 @@ static void effBombDisp(CameraId camId, void* param) {
 	} else if (timer == 2) {
 		alpha = 0xFF;
 	} else {
-		alpha = data->field_0xC0;
+		alpha = data->animAlpha;
 	}
 	if (timer > 2) {
 		tmp = 0x7F;
@@ -283,8 +283,8 @@ static void effBombDisp(CameraId camId, void* param) {
 	GXSetTevColor(GX_TEVREG0, color2);
 #endif
 
-	PSMTXScale(scaleMtx, data->field_0xA8, data->field_0xA8, data->field_0xA8);
-	PSMTXRotRad(rotMtx, 'z', 0.017453292f * data->field_0xB0);
+	PSMTXScale(scaleMtx, data->animScale, data->animScale, data->animScale);
+	PSMTXRotRad(rotMtx, 'z', 0.017453292f * data->animRotZ);
 	PSMTXConcat(rotMtx, scaleMtx, scaleMtx);
 	PSMTXConcat(outMtx, scaleMtx, scaleMtx);
 	GXLoadPosMtxImm(scaleMtx, GX_PNMTX0);

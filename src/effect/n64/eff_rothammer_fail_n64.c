@@ -25,14 +25,20 @@ u32 size24x24_tex32x32_vtx[14] = {
 extern const GXColor dat_8041fbc8;
 
 typedef struct effRotHammerFailParticle {
-	u8 field_0x00[4];    // 0x00
-	f32 x;               // 0x04
-	f32 y;               // 0x08
-	f32 z;               // 0x0C
-	f32 field_0x10;      // 0x10
-	f32 field_0x14;      // 0x14
-	f32 field_0x18;      // 0x18
-	u8 field_0x1C[0x18]; // 0x1C
+	u16 type;        // 0x00
+	u8 pad_0x02[2];  // 0x02
+	f32 x;           // 0x04
+	f32 y;           // 0x08
+	f32 z;           // 0x0C
+	f32 dirX;        // 0x10
+	f32 velY;        // 0x14
+	f32 dirZ;        // 0x18
+	f32 scale;       // 0x1C
+	f32 scaleTarget; // 0x20
+	s32 life;        // 0x24
+	s32 frame;       // 0x28
+	s32 lifeMax;     // 0x2C
+	f32 animFrame;   // 0x30
 } effRotHammerFailParticle; // 0x34
 
 typedef struct effRotHammerFailData {
@@ -41,13 +47,15 @@ typedef struct effRotHammerFailData {
 	f32 x;                             // 0x04
 	f32 y;                             // 0x08
 	f32 z;                             // 0x0C
-	u8 field_0x10[0xC];                // 0x10
-	f32 field_0x1C;                    // 0x1C
-	f32 field_0x20;                    // 0x20
-	s32 field_0x24;                    // 0x24
-	s32 field_0x28;                    // 0x28
-	s32 field_0x2C;                    // 0x2C
-	f32 field_0x30;                    // 0x30
+	f32 dirX;                          // 0x10, header copy is unused
+	f32 velY;                          // 0x14
+	f32 dirZ;                          // 0x18
+	f32 scale;                         // 0x1C, eased toward scaleTarget
+	f32 scaleTarget;                   // 0x20
+	s32 life;                          // 0x24, counts down
+	s32 frame;                         // 0x28, counts up
+	s32 lifeMax;                       // 0x2C, initial life
+	f32 animFrame;                     // 0x30, 7 * frame / lifeMax
 	effRotHammerFailParticle particle; // 0x34
 } effRotHammerFailData;
 
@@ -59,15 +67,15 @@ typedef struct effRotHammerFailRecord {
 	f32 x;           // 0x04
 	f32 y;           // 0x08
 	f32 z;           // 0x0C
-	f32 field_0x10;  // 0x10
-	f32 field_0x14;  // 0x14
-	f32 field_0x18;  // 0x18
-	f32 field_0x1C;  // 0x1C
-	f32 field_0x20;  // 0x20
-	s32 field_0x24;  // 0x24
-	s32 field_0x28;  // 0x28
-	s32 field_0x2C;  // 0x2C
-	f32 field_0x30;  // 0x30
+	f32 dirX;        // 0x10, horizontal direction component
+	f32 velY;        // 0x14
+	f32 dirZ;        // 0x18, horizontal direction component
+	f32 scale;       // 0x1C, eased toward scaleTarget
+	f32 scaleTarget; // 0x20
+	s32 life;        // 0x24, counts down
+	s32 frame;       // 0x28, counts up
+	s32 lifeMax;     // 0x2C, initial life
+	f32 animFrame;   // 0x30, 7 * frame / lifeMax
 } effRotHammerFailRecord; // 0x34
 
 // The two 0x34-byte records are the header (index 0) and the particle (index 1). The original
@@ -87,21 +95,21 @@ EffectEntry* effRotHammerFailN64Entry(s32 type, s32 life, f32 x, f32 y, f32 z, f
 	effect->userdata = data;
 	effect->callback = effRotHammerFailMain;
 	zero = 0.0f;
-	data->field_0x24 = life;
-	data->field_0x28 = 0;
-	data->field_0x2C = life;
-	data->field_0x30 = zero;
+	data->life = life;
+	data->frame = 0;
+	data->lifeMax = life;
+	data->animFrame = zero;
 	data->type = type;
 	data->x = x;
 	data->y = y;
 	data->z = z;
-	data->field_0x1C = 10.0f;
-	data->field_0x20 = 30.0f;
+	data->scale = 10.0f;
+	data->scaleTarget = 30.0f;
 	for (j = 1, data++; j < 2; j++, data++) {
 		data->z = data->y = data->x = zero;
-		data->field_0x10 = sin(zero);
-		data->field_0x14 = zero;
-		data->field_0x18 = cos(zero);
+		data->dirX = sin(zero);
+		data->velY = zero;
+		data->dirZ = cos(zero);
 	}
 	return effect;
 }
@@ -125,22 +133,22 @@ void effRotHammerFailMain(EffectEntry* effect) {
 	position = disp;
 #endif
 
-	data->field_0x30 = 7.0f * data->field_0x28 / data->field_0x2C;
-	data->field_0x28 += 1;
-	data->field_0x24 -= 1;
-	if (data->field_0x24 < 0) {
+	data->animFrame = 7.0f * data->frame / data->lifeMax;
+	data->frame += 1;
+	data->life -= 1;
+	if (data->life < 0) {
 		effDelete(effect);
 		return;
 	}
 
-	data->field_0x1C += 0.1f * (data->field_0x20 - data->field_0x1C);
-	scale = data->field_0x1C;
+	data->scale += 0.1f * (data->scaleTarget - data->scale);
+	scale = data->scale;
 	for (i = 1, data++; i < effect->count; i++, data++) {
-		data->field_0x14 += 0.04f;
-		data->field_0x14 *= 0.9f;
-		data->x = scale * data->field_0x10;
-		data->y += data->field_0x14;
-		data->z = scale * data->field_0x18;
+		data->velY += 0.04f;
+		data->velY *= 0.9f;
+		data->x = scale * data->dirX;
+		data->y += data->velY;
+		data->z = scale * data->dirZ;
 	}
 
 #ifdef MUST_MATCH
@@ -150,9 +158,9 @@ void effRotHammerFailMain(EffectEntry* effect) {
 #endif
 }
 
-static inline void hammerSetColor(u8 a) {
+static inline void hammerSetColor(u8 alpha) {
 	GXColor color = unk_80423250;
-	color.a = a;
+	color.a = alpha;
 	GXSetTevColor(GX_TEVREG1, color);
 }
 
@@ -168,18 +176,18 @@ void effRotHammerFailDisp(CameraId cameraId, void* param) {
 	Mtx scale;
 	Mtx rot;
 	Mtx work;
-	s32 flag;
+	s32 isLastFrame;
 	s32 i;
-	s32 whole;
-	s32 offset;
-	s32 frac;
+	s32 frameIndex;
+	s32 frameOffset;
+	s32 frameFrac;
 
 	cam = camGetPtr(cameraId);
 	data = effect->userdata;
 
-	whole = (s32)data->field_0x30;
-	frac = (s32)(256.0f * (data->field_0x30 - (f32)whole));
-	flag = (whole == 6);
+	frameIndex = (s32)data->animFrame;
+	frameFrac = (s32)(256.0f * (data->animFrame - (f32)frameIndex));
+	isLastFrame = (frameIndex == 6);
 
 	GXSetNumChans(0);
 	GXSetNumTexGens(2);
@@ -213,22 +221,22 @@ void effRotHammerFailDisp(CameraId cameraId, void* param) {
 	PSMTXConcat(cam->view, trans, work);
 
 	GXSetTevColor(GX_TEVREG0, dat_8041fbc8);
-	hammerSetColor(frac);
+	hammerSetColor(frameFrac);
 
-	offset = whole * 32;
+	frameOffset = frameIndex * 32;
 	PSMTXScale(scale, 0.004464286f, 0.03125f, 0.0f);
-	PSMTXTrans(trans, (f32)offset, 0.0f, 0.0f);
+	PSMTXTrans(trans, (f32)frameOffset, 0.0f, 0.0f);
 	PSMTXConcat(scale, trans, trans);
 	GXLoadTexMtxImm(trans, GX_TEXMTX0, GX_MTX2x4);
 
-	if (flag != 0) {
+	if (isLastFrame != 0) {
 		PSMTXScale(scale, 0.004464286f, 0.03125f, 0.0f);
-		PSMTXTrans(trans, (f32)(offset + 32), 32.0f, 0.0f);
+		PSMTXTrans(trans, (f32)(frameOffset + 32), 32.0f, 0.0f);
 		PSMTXConcat(scale, trans, trans);
 		GXLoadTexMtxImm(trans, GX_TEXMTX1, GX_MTX2x4);
 	} else {
 		PSMTXScale(scale, 0.004464286f, 0.03125f, 0.0f);
-		PSMTXTrans(trans, (f32)(offset + 32), 0.0f, 0.0f);
+		PSMTXTrans(trans, (f32)(frameOffset + 32), 0.0f, 0.0f);
 		PSMTXConcat(scale, trans, trans);
 		GXLoadTexMtxImm(trans, GX_TEXMTX1, GX_MTX2x4);
 	}

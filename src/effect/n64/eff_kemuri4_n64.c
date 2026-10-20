@@ -48,6 +48,13 @@ u8 flowers_v[576] = {
     0xFF, 0xF5, 0xFF, 0xFB, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x64, 0xA0, 0x3C, 0xFF, 0x00, 0x00,
 };
 
+// N64 vertex layout of the shared flowers_v array (14-byte stride).
+typedef struct Kemuri4Vertex {
+	s16 pos[3];
+	s16 tex0[2];
+	u8 color[4];
+} Kemuri4Vertex;
+
 
 extern const f32 float_0p0625_8041f32c;
 extern const f32 float_0_8041f330;
@@ -63,46 +70,73 @@ extern const f32 float_deg2rad_8041f334;
 extern const u32 dat_8041f328;
 // .data vertex array of this unit (named after its original symbol).
 
-EffectEntry* effKemuri4N64Entry(s32 type, f32 x, f32 y, f32 z, f32 a4, f32 a5) {
+typedef struct Kemuri4Particle {
+	s32 active;          // 0x00: 0 once the puff has expired
+	u16 type;            // 0x04
+	s16 lifetime;        // 0x06: frames left; also extended while Mario idles
+	u8 field_0x08;       // 0x08: 255, reduced by 12 per frame (never read)
+	u8 textureIndex;     // 0x09: picks texture 0x4C or 0x4D
+	u8 pad_0A[2];        // 0x0A
+	Vec position;        // 0x0C
+	f32 scaleX;          // 0x18
+	f32 scaleY;          // 0x1C
+	f32 scaleZ;          // 0x20
+	f32 rotX;            // 0x24: degrees
+	f32 rotY;            // 0x28: degrees
+	f32 rotZ;            // 0x2C: degrees, driven by swirl
+	Mtx matrix;          // 0x30: world matrix built each frame
+	f32 spin;            // 0x60: rotZ delta per swirl unit, sign from direction
+	f32 driftScale;      // 0x64: horizontal drift per swirl unit
+	f32 floating;        // 0x68: cleared once swirl drops below zero
+	f32 field_0x6C;      // 0x6C: set to zero, never read
+	f32 swirl;           // 0x70: accumulated drift/rotation amount
+	f32 swirlVelocity;   // 0x74
+	f32 swirlAccel;      // 0x78
+	f32 swirlJerk;       // 0x7C
+	f32 sinAngle;        // 0x80
+	f32 cosAngle;        // 0x84
+} Kemuri4Particle;       // 0x88
+
+EffectEntry* effKemuri4N64Entry(s32 type, f32 x, f32 y, f32 z, f32 angleDeg, f32 direction) {
 	EffectEntry* effect;
-	effKemuri4Data* data;
+	Kemuri4Particle* data;
 	f32 angle;
 	s32 i;
 
 	effect = effEntry();
 	effect->type = "Kemuri4N64";
 	effect->count = 1;
-	data = __memAlloc(HEAP_EFFECT, sizeof(effKemuri4Data));
+	data = __memAlloc(HEAP_EFFECT, sizeof(Kemuri4Particle));
 	effect->userdata = data;
 	effect->callback = effKemuri4Main;
 
 	for (i = 0; i < 1; i++) {
-		data->field_0x00 = 1;
+		data->active = 1;
 		data->type = type;
 		data->field_0x6C = float_0_8041f330;
 		data->position.x = x;
 		data->position.y = y;
 		data->position.z = z;
-		data->field_0x18 = float_1_8041f338;
-		data->field_0x1C = float_1_8041f338;
-		data->field_0x20 = float_1_8041f338;
+		data->scaleX = float_1_8041f338;
+		data->scaleY = float_1_8041f338;
+		data->scaleZ = float_1_8041f338;
 		data->field_0x08 = 0xFF;
-		data->field_0x68 = float_1_8041f338;
-		data->field_0x64 = float_5p4_8041f33c;
-		data->field_0x60 = (f32)(a5 != float_0_8041f330 ? -10 : 10);
-		data->field_0x70 = float_0p5_8041f340;
-		data->field_0x74 = float_neg0p07_8041f344;
-		data->field_0x78 = float_0p003_8041f348;
-		data->field_0x7C = float_0_8041f330;
-		data->field_0x06 = 15;
-		data->field_0x28 = a4;
-		data->field_0x24 = float_0_8041f330;
-		data->field_0x2C = float_0_8041f330;
-		data->field_0x09 = ((rand() % 100) >> 4) & 1;
-		angle = reviseAngle(a4 + (f32)(a5 != float_0_8041f330 ? -90 : 90));
+		data->floating = float_1_8041f338;
+		data->driftScale = float_5p4_8041f33c;
+		data->spin = (f32)(direction != float_0_8041f330 ? -10 : 10);
+		data->swirl = float_0p5_8041f340;
+		data->swirlVelocity = float_neg0p07_8041f344;
+		data->swirlAccel = float_0p003_8041f348;
+		data->swirlJerk = float_0_8041f330;
+		data->lifetime = 15;
+		data->rotY = angleDeg;
+		data->rotX = float_0_8041f330;
+		data->rotZ = float_0_8041f330;
+		data->textureIndex = ((rand() % 100) >> 4) & 1;
+		angle = reviseAngle(angleDeg + (f32)(direction != float_0_8041f330 ? -90 : 90));
 		angle = float_6p2832_8041f34c * angle / float_360_8041f350;
-		data->field_0x80 = (f32)sin(angle);
-		data->field_0x84 = (f32)cos(angle);
+		data->sinAngle = (f32)sin(angle);
+		data->cosAngle = (f32)cos(angle);
 	}
 	return effect;
 }
@@ -118,7 +152,7 @@ inline Vec initializeVec(Vec* input) {
 
 #pragma opt_common_subs off // without it MWCC reuses the compare's float_0 load across the marioGetPtr call, changing FPR allocation
 void effKemuri4Main(EffectEntry* effect) {
-	effKemuri4Data* data;
+	Kemuri4Particle* data;
 	Vec position;
 	Mtx rotZ;
 	Mtx rotY;
@@ -133,41 +167,41 @@ void effKemuri4Main(EffectEntry* effect) {
 	active = 0;
 
 	for (i = 0; i < effect->count; i++, data++) {
-		if (data->field_0x00 == 0) {
+		if (data->active == 0) {
 			continue;
 		}
-		if (--data->field_0x06 <= 0) {
-			data->field_0x00 = 0;
+		if (--data->lifetime <= 0) {
+			data->active = 0;
 			continue;
 		}
 		active = 1;
 
-		if (data->type == 0 && data->field_0x68 != float_0_8041f330
+		if (data->type == 0 && data->floating != float_0_8041f330
 		    && marioGetPtr()->currMotionId == MARIO_MOTION_STAY) {
-			data->field_0x06++;
+			data->lifetime++;
 		}
 		else {
-			data->field_0x78 += data->field_0x7C;
-			data->field_0x74 += data->field_0x78;
-			data->field_0x70 += data->field_0x74;
-			data->field_0x2C = data->field_0x70 * data->field_0x60 + data->field_0x2C;
-			data->position.x -= data->field_0x80 * (data->field_0x70 * data->field_0x64);
-			data->position.z -= data->field_0x84 * (data->field_0x70 * data->field_0x64);
+			data->swirlAccel += data->swirlJerk;
+			data->swirlVelocity += data->swirlAccel;
+			data->swirl += data->swirlVelocity;
+			data->rotZ = data->swirl * data->spin + data->rotZ;
+			data->position.x -= data->sinAngle * (data->swirl * data->driftScale);
+			data->position.z -= data->cosAngle * (data->swirl * data->driftScale);
 			data->field_0x08 -= 12;
-			if (data->field_0x70 < float_0_8041f330) {
-				data->field_0x68 = float_0_8041f330;
+			if (data->swirl < float_0_8041f330) {
+				data->floating = float_0_8041f330;
 			}
 		}
 
-		PSMTXRotRad(rotX, 'x', float_deg2rad_8041f334 * data->field_0x24);
-		PSMTXRotRad(rotY, 'y', float_deg2rad_8041f334 * data->field_0x28);
-		PSMTXRotRad(rotZ, 'z', float_deg2rad_8041f334 * data->field_0x2C);
+		PSMTXRotRad(rotX, 'x', float_deg2rad_8041f334 * data->rotX);
+		PSMTXRotRad(rotY, 'y', float_deg2rad_8041f334 * data->rotY);
+		PSMTXRotRad(rotZ, 'z', float_deg2rad_8041f334 * data->rotZ);
 		PSMTXTrans(trans, data->position.x, data->position.y, data->position.z);
-		PSMTXScale(scale, data->field_0x18, data->field_0x1C, data->field_0x20);
+		PSMTXScale(scale, data->scaleX, data->scaleY, data->scaleZ);
 		PSMTXConcat(rotX, rotZ, rotZ);
 		PSMTXConcat(rotY, rotZ, rotZ);
 		PSMTXConcat(rotZ, scale, scale);
-		PSMTXConcat(trans, scale, data->field_0x30);
+		PSMTXConcat(trans, scale, data->matrix);
 	}
 
 	if (active == 0) {
@@ -188,21 +222,21 @@ void effKemuri4Disp(CameraId camId, void* param) {
 	Mtx texMtx;
 	effVtxArray* vtx0;
 	effVtxArray* vtx1;
-	effKemuri4Data* data;
+	Kemuri4Particle* data;
 	s32 i;
 
 	effect = param;
 	cam = camGetPtr(camId);
 	data = effect->userdata;
 	GXSetCullMode(0);
-	vtx0 = (effVtxArray*)((u8*)flowers_v + 0x15E);
-	vtx1 = (effVtxArray*)((u8*)flowers_v + 0x1EA);
+	vtx0 = (effVtxArray*)&((Kemuri4Vertex*)flowers_v)[25];
+	vtx1 = (effVtxArray*)&((Kemuri4Vertex*)flowers_v)[35];
 
 	for (i = 0; i < effect->count; i++, data++) {
-		if (data->field_0x00 == 0) {
+		if (data->active == 0) {
 			continue;
 		}
-		if ((s8)data->field_0x09 != 0) {
+		if ((s8)data->textureIndex != 0) {
 			effGetTexObjN64(0x4C, &texObj);
 		}
 		else {
@@ -220,7 +254,7 @@ void effKemuri4Disp(CameraId camId, void* param) {
 		GXSetTevAlphaOp(0, 0, 0, 0, 1, 0);
 		GXSetTevColorIn(0, 0xF, 8, 2, 0xF);
 		GXSetTevAlphaIn(0, 7, 4, 1, 7);
-		PSMTXConcat(cam->view, data->field_0x30, mtx);
+		PSMTXConcat(cam->view, data->matrix, mtx);
 		GXLoadPosMtxImm(mtx, 0);
 		color = *(GXColor*)&dat_8041f328;
 		GXSetTevColor(1, color);

@@ -84,13 +84,13 @@ typedef struct effAkariPosePart {
     u8 pad_0x0C[0x4];  // 0x0C
     f32 vx;            // 0x10
     f32 vy;            // 0x14
-    f32 field_0x18;    // 0x18
-    f32 field_0x1c;    // 0x1C
-    s32 field_0x20;    // 0x20
-    f32 field_0x24;    // 0x24
+    f32 targetVx;    // 0x18
+    f32 targetVy;    // 0x1C
+    s32 seqIndex;    // 0x20
+    f32 angle;    // 0x24
     u8 pad_0x28[0x8];  // 0x28
-    s32 field_0x30;    // 0x30
-    f32 field_0x34;    // 0x34
+    s32 alpha;    // 0x30
+    f32 scale;    // 0x34
 } effAkariPosePart;
 
 typedef struct effAkariPoseData {
@@ -99,10 +99,10 @@ typedef struct effAkariPoseData {
     f32 y;                   // 0x08
     f32 z;                   // 0x0C
     u8 pad_0x10[0x18];       // 0x10
-    s32 field_0x28;          // 0x28
-    s32 field_0x2c;          // 0x2C
-    s32 field_0x30;          // 0x30
-    f32 field_0x34;          // 0x34
+    s32 life;          // 0x28
+    s32 frame;          // 0x2C
+    s32 alpha;          // 0x30
+    f32 scale;          // 0x34
     effAkariPosePart part[]; // 0x38
 } effAkariPoseData;
 
@@ -127,17 +127,17 @@ EffectEntry* effAkariPoseN64Entry(s32 type, s32 count, s32 lifetime, f32 x, f32 
     effect->flags |= 2;
 
     data->type = type;
-    data->field_0x2c = 0;
+    data->frame = 0;
     if (lifetime <= 0) {
-        data->field_0x28 = 1000;
+        data->life = 1000;
     } else {
-        data->field_0x28 = lifetime;
+        data->life = lifetime;
     }
-    data->field_0x30 = 0xff;
+    data->alpha = 0xff;
     data->x = x;
     data->y = y;
     data->z = z;
-    data->field_0x34 = scale;
+    data->scale = scale;
 
 #ifdef MUST_MATCH
     seqF = (f32)max_seq_num[type];
@@ -146,7 +146,7 @@ EffectEntry* effAkariPoseN64Entry(s32 type, s32 count, s32 lifetime, f32 x, f32 
     seqStep = (f32)max_seq_num[type] * float_0p5_8041e8f8;
 #endif
     for (i = 1, part = data->part; i < count + 1; i++, part++) {
-        part->field_0x20 = (s32)(float_neg1_8041e8fc - seqStep * (f32)(i & 1));
+        part->seqIndex = (s32)(float_neg1_8041e8fc - seqStep * (f32)(i & 1));
     }
     return effect;
 }
@@ -164,7 +164,7 @@ void effAkariPoseMain(EffectEntry* effect) {
     Vec position2;
     s32 i;
     s32 type;
-    s32 unk2c;
+    s32 frame;
     f32 velScale;
     f32 lerpScale;
     f32 rad;
@@ -176,19 +176,19 @@ void effAkariPoseMain(EffectEntry* effect) {
     type = data->type;
     if (effect->flags & 4) {
         effect->flags &= ~4;
-        data->field_0x28 = 0x10;
+        data->life = 0x10;
     }
-    if (data->field_0x28 < 1000) {
-        data->field_0x28--;
+    if (data->life < 1000) {
+        data->life--;
     }
-    data->field_0x2c++;
-    if (data->field_0x28 < 0) {
+    data->frame++;
+    if (data->life < 0) {
         effDelete(effect);
         return;
     }
-    unk2c = data->field_0x2c;
-    if (data->field_0x28 < 0x10) {
-        data->field_0x30 = data->field_0x28 << 4;
+    frame = data->frame;
+    if (data->life < 0x10) {
+        data->alpha = data->life << 4;
     }
     data++;
     switch (type) {
@@ -203,44 +203,44 @@ void effAkariPoseMain(EffectEntry* effect) {
     }
     for (i = 1; i < effect->count; i++, data++) {
         effAkariPosePart* part = (effAkariPosePart*)data;
-        part->field_0x20++;
-        if (part->field_0x20 >= max_seq_num[type]) {
-            part->field_0x20 = 0;
+        part->seqIndex++;
+        if (part->seqIndex >= max_seq_num[type]) {
+            part->seqIndex = 0;
         }
-        if (part->field_0x20 < 0) {
+        if (part->seqIndex < 0) {
             continue;
         }
-        if (part->field_0x20 == 0) {
+        if (part->seqIndex == 0) {
             angle = float_360_8041e8e4 * (f32)i / (f32)(effect->count - 1);
             rad = float_6p2832_8041e8e8 * angle / float_360_8041e8e4;
             part->x = float_16_8041e8ec * (f32)sin(rad);
             part->y = float_16_8041e8ec * (f32)cos(rad);
             part->vx = part->x * velScale;
             part->vy = part->y * velScale;
-            part->field_0x18 = float_0_8041e8d8;
-            part->field_0x1c = float_0_8041e8d8;
-            part->field_0x24 = -angle - float_45_8041e8f0;
-            part->field_0x34 = float_1_8041e8f4;
+            part->targetVx = float_0_8041e8d8;
+            part->targetVy = float_0_8041e8d8;
+            part->angle = -angle - float_45_8041e8f0;
+            part->scale = float_1_8041e8f4;
         }
         switch (type) {
         case 0:
-            part->field_0x30 = a_data[part->field_0x20];
-            part->field_0x34 = scale_data[part->field_0x20];
+            part->alpha = a_data[part->seqIndex];
+            part->scale = scale_data[part->seqIndex];
             break;
         default:
-            part->field_0x30 = a_data2[part->field_0x20];
-            part->field_0x34 = scale_data2[part->field_0x20];
+            part->alpha = a_data2[part->seqIndex];
+            part->scale = scale_data2[part->seqIndex];
             break;
         }
-        if ((unk2c & 1) == (i & 1)) {
+        if ((frame & 1) == (i & 1)) {
             part->x += part->vx;
             part->y += part->vy;
         } else {
             part->x += float_0p2_8041e8e0 * part->vx;
             part->y += float_0p2_8041e8e0 * part->vy;
         }
-        part->vx += lerpScale * (part->field_0x18 - part->vx);
-        part->vy += lerpScale * (part->field_0x1c - part->vy);
+        part->vx += lerpScale * (part->targetVx - part->vx);
+        part->vy += lerpScale * (part->targetVy - part->vy);
     }
     dispEntry(CAMERA_3D, dispCalcZ(&position2), 2, effAkariPoseDisp, effect);
 }
@@ -274,10 +274,10 @@ void effAkariPoseDisp(CameraId camId, void* param) {
 
     cam = camGetPtr(camId);
     data = effect->userdata;
-    alpha = data->field_0x30;
+    alpha = data->alpha;
     PSMTXTrans(mtx, data->x, data->y, data->z);
     PSMTXRotRad(rotMtx, 'y', -camGetPtr(CAMERA_3D)->viewYaw * float_deg2rad_8041e8d0);
-    PSMTXScale(scaleMtx, data->field_0x34, data->field_0x34, data->field_0x34);
+    PSMTXScale(scaleMtx, data->scale, data->scale, data->scale);
     PSMTXConcat(mtx, rotMtx, mtx);
     PSMTXConcat(mtx, scaleMtx, mtx);
     PSMTXConcat(cam->view, mtx, viewMtx);
@@ -296,22 +296,22 @@ void effAkariPoseDisp(CameraId camId, void* param) {
     data++;
     for (i = 1; i < effect->count; i++, data++) {
         effAkariPosePart* part = (effAkariPosePart*)data;
-        if (part->field_0x20 < 0) {
+        if (part->seqIndex < 0) {
             continue;
         }
         PSMTXTrans(mtx, part->x, part->y, float_0_8041e8d8);
-        PSMTXRotRad(rotMtx, 'z', float_deg2rad_8041e8d0 * part->field_0x24);
-        PSMTXScale(scaleMtx, part->field_0x34, part->field_0x34, part->field_0x34);
+        PSMTXRotRad(rotMtx, 'z', float_deg2rad_8041e8d0 * part->angle);
+        PSMTXScale(scaleMtx, part->scale, part->scale, part->scale);
         PSMTXConcat(mtx, rotMtx, mtx);
         PSMTXConcat(mtx, scaleMtx, mtx);
         PSMTXConcat(viewMtx, mtx, mtx);
         GXLoadPosMtxImm(mtx, 0);
         GXSetCurrentMtx(0);
 #ifdef MUST_MATCH
-        color = akariColor((alpha * part->field_0x30) >> 8);
+        color = akariColor((alpha * part->alpha) >> 8);
 #else
         color = unk_80423098;
-        color.a = (alpha * part->field_0x30) >> 8;
+        color.a = (alpha * part->alpha) >> 8;
 #endif
         GXSetTevColor(1, color);
         GXBegin(0x90, 0, 6);

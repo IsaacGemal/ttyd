@@ -6,6 +6,26 @@
 #include <dolphin/mtx.h>
 #include <stdlib.h>
 
+// Work data for one FlowerN64 effect; same layout as effFlowerData in the header.
+typedef struct effFlowerWork {
+    s32 type;        // 0x00
+    Vec position;    // 0x04
+    f32 velX;        // 0x10
+    f32 velY;        // 0x14
+    f32 velZ;        // 0x18
+    f32 accelY;      // 0x1C
+    f32 accelYDelta; // 0x20
+    f32 angleX;      // 0x24
+    f32 angleY;      // 0x28
+    f32 angleXVel;   // 0x2C
+    f32 angleYVel;   // 0x30
+    s32 life;        // 0x34
+    s32 age;         // 0x38
+    s32 field_0x3C;  // 0x3C
+    s32 field_0x40;  // 0x40
+    s32 field_0x44;  // 0x44
+} effFlowerWork;
+
 // .sdata2: effFlowerDisp's TEV colour, first in the original unit's .sdata2.
 const u32 dat_8041efc8 = 0x000000FF;
 
@@ -21,12 +41,12 @@ static inline Vec initializeVec(Vec* input) {
 EffectEntry* effFlowerN64Entry(s32 type, s32 lifetime, f32 x, f32 y, f32 z) {
     static s32 kaiten;
     EffectEntry* effect;
-    effFlowerData* data;
+    effFlowerWork* data;
 
     effect = effEntry();
     effect->type = "FlowerN64";
     effect->count = 1;
-    data = __memAlloc(HEAP_EFFECT, sizeof(effFlowerData));
+    data = __memAlloc(HEAP_EFFECT, sizeof(effFlowerWork));
     effect->userdata = data;
     effect->callback = effFlowerMain;
 
@@ -34,28 +54,28 @@ EffectEntry* effFlowerN64Entry(s32 type, s32 lifetime, f32 x, f32 y, f32 z) {
     data->position.x = x;
     data->position.y = y + 10.0f;
     data->position.z = z;
-    data->field_0x10 = 0.0f;
-    data->field_0x14 = 0.0f;
-    data->field_0x18 = 0.0f;
+    data->velX = 0.0f;
+    data->velY = 0.0f;
+    data->velZ = 0.0f;
 
     if (type == 0) {
-        data->field_0x1C = 0.12f;
-        data->field_0x20 = -0.0152f;
-        data->field_0x18 = 0.0f;
-        data->field_0x24 = 0.0f;
-        data->field_0x28 = 0.0f;
-        data->field_0x2C = 3.0f;
-        data->field_0x30 = kaiten != 0 ? -10 : 10;
-        data->field_0x34 = lifetime;
+        data->accelY = 0.12f;
+        data->accelYDelta = -0.0152f;
+        data->velZ = 0.0f;
+        data->angleX = 0.0f;
+        data->angleY = 0.0f;
+        data->angleXVel = 3.0f;
+        data->angleYVel = kaiten != 0 ? -10 : 10;
+        data->life = lifetime;
     } else {
-        data->field_0x1C = 0.12f;
-        data->field_0x20 = -0.0152f;
-        data->field_0x24 = (rand() % 2) * 30 - 15;
-        data->field_0x28 = rand() % 361;
-        data->field_0x2C = 0.0f;
-        data->field_0x30 = (rand() % 2) * 8 - 4;
-        data->field_0x34 = lifetime;
-        data->field_0x38 = 0;
+        data->accelY = 0.12f;
+        data->accelYDelta = -0.0152f;
+        data->angleX = (rand() % 2) * 30 - 15;
+        data->angleY = rand() % 361;
+        data->angleXVel = 0.0f;
+        data->angleYVel = (rand() % 2) * 8 - 4;
+        data->life = lifetime;
+        data->age = 0;
         data->field_0x44 = rand() % 11;
         data->field_0x40 = rand() % 21;
         data->field_0x3C = (rand() % 2) * 2 - 1;
@@ -69,43 +89,45 @@ EffectEntry* effFlowerN64Entry(s32 type, s32 lifetime, f32 x, f32 y, f32 z) {
 }
 
 void effFlowerMain(EffectEntry* effect) {
-    effFlowerData* data;
+    effFlowerWork* data;
     Vec position;
     s32 type;
 
     data = effect->userdata;
     position = initializeVec(&data->position);
     type = data->type;
-    if (data->field_0x34 < 150) {
-        data->field_0x10 -= 0.001f;
-        data->position.x += data->field_0x10;
-        data->position.z += data->field_0x18;
-        data->field_0x24 += data->field_0x2C;
+    // With fewer than 150 frames left, drift sideways and spin; before that, ramp the rise speed up to 1.0.
+    if (data->life < 150) {
+        data->velX -= 0.001f;
+        data->position.x += data->velX;
+        data->position.z += data->velZ;
+        data->angleX += data->angleXVel;
         if (type == 0) {
-            if (data->field_0x24 < 10.0f) {
-                data->field_0x24 = 10.0f;
-                data->field_0x2C = -data->field_0x2C;
+            if (data->angleX < 10.0f) {
+                data->angleX = 10.0f;
+                data->angleXVel = -data->angleXVel;
             }
-            if (data->field_0x24 > 45.0f) {
-                data->field_0x24 = 45.0f;
-                data->field_0x2C = -data->field_0x2C;
+            if (data->angleX > 45.0f) {
+                data->angleX = 45.0f;
+                data->angleXVel = -data->angleXVel;
             }
         }
-        data->field_0x28 += data->field_0x30;
+        data->angleY += data->angleYVel;
         if (type == 0) {
-            data->field_0x14 = 1.4f;
+            data->velY = 1.4f;
         } else {
-            data->field_0x14 = 1.0f;
+            data->velY = 1.0f;
         }
     } else {
-        data->field_0x20 += 0.0007f;
-        data->field_0x1C += data->field_0x20;
-        data->field_0x14 += data->field_0x1C;
-        if (data->field_0x14 > 1.0f) {
-            data->field_0x14 = 1.0f;
+        data->accelYDelta += 0.0007f;
+        data->accelY += data->accelYDelta;
+        data->velY += data->accelY;
+        if (data->velY > 1.0f) {
+            data->velY = 1.0f;
         }
     }
 
+    // Type 1 oscillates field_0x40 between 0 and 20.
     if (type == 1) {
         data->field_0x40 += data->field_0x3C;
         if (data->field_0x40 >= 20) {
@@ -117,10 +139,10 @@ void effFlowerMain(EffectEntry* effect) {
         }
     }
 
-    data->position.y += data->field_0x14;
-    data->field_0x34--;
-    data->field_0x38++;
-    if (data->field_0x34 < 0) {
+    data->position.y += data->velY;
+    data->life--;
+    data->age++;
+    if (data->life < 0) {
         effDelete(effect);
         return;
     }
@@ -130,7 +152,7 @@ void effFlowerMain(EffectEntry* effect) {
 void effFlowerDisp(CameraId camId, void* param) {
     EffectEntry* effect;
     CameraEntry* cam;
-    effFlowerData* data;
+    effFlowerWork* data;
     GXTexObj texObj;
     GXColor color;
     Mtx trans;
@@ -142,45 +164,46 @@ void effFlowerDisp(CameraId camId, void* param) {
     data = effect->userdata;
 
     PSMTXTrans(trans, data->position.x, data->position.y, data->position.z);
-    PSMTXRotRad(rot, 'y', 0.017453292f * data->field_0x28);
+    PSMTXRotRad(rot, 'y', 0.017453292f * data->angleY);
     PSMTXConcat(trans, rot, trans);
-    PSMTXRotRad(rot, 'x', 0.017453292f * data->field_0x24);
+    PSMTXRotRad(rot, 'x', 0.017453292f * data->angleX);
     PSMTXConcat(trans, rot, trans);
     PSMTXConcat(cam->view, trans, trans);
-    GXLoadPosMtxImm(trans, 0);
+    GXLoadPosMtxImm(trans, GX_PNMTX0);
 
     color = *(GXColor*)&dat_8041efc8;
-    GXSetTevColor(1, color);
-    GXSetCullMode(0);
+    GXSetTevColor(GX_TEVREG0, color);
+    GXSetCullMode(GX_CULL_NONE);
     effGetTexObjN64(0x4c, &texObj);
-    GXLoadTexObj(&texObj, 0);
+    GXLoadTexObj(&texObj, GX_TEXMAP0);
     GXSetNumTexGens(1);
-    GXSetTexCoordGen2(0, 1, 4, 0x1e, 0, 0x7d);
+    GXSetTexCoordGen2(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_TEXMTX0, GX_FALSE, GX_PTIDENTITY);
     PSMTXScale(scale, 0.0625f, 0.0625f, 0.0f);
-    GXLoadTexMtxImm(scale, 0x1e, 1);
+    GXLoadTexMtxImm(scale, GX_TEXMTX0, GX_MTX2x4);
     GXSetNumChans(0);
     GXSetNumTevStages(1);
-    GXSetTevOrder(0, 0, 0, 0xff);
-    GXSetTevColorOp(0, 0, 0, 0, 1, 0);
-    GXSetTevAlphaOp(0, 0, 0, 0, 1, 0);
-    GXSetTevColorIn(0, 0xf, 8, 3, 0xf);
-    GXSetTevAlphaIn(0, 7, 4, 1, 7);
+    GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR_NULL);
+    GXSetTevColorOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+    GXSetTevAlphaOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+    GXSetTevColorIn(GX_TEVSTAGE0, GX_CC_ZERO, GX_CC_TEXC, GX_CC_A0, GX_CC_ZERO);
+    GXSetTevAlphaIn(GX_TEVSTAGE0, GX_CA_ZERO, GX_CA_TEXA, GX_CA_A0, GX_CA_ZERO);
     effSetVtxDescN64((effVtxArray*)flowers_v);
-    GXBegin(0x90, 0, 0x18);
+    GXBegin(GX_TRIANGLES, GX_VTXFMT0, 0x18);
     tri2(0, 1, 2, 0, 0, 2, 3, 0);
     tri2(4, 2, 5, 0, 4, 5, 6, 0);
     tri2(7, 8, 2, 0, 7, 2, 9, 0);
     tri2(10, 2, 11, 0, 10, 11, 12, 0);
     GXSetNumChans(1);
-    GXSetChanCtrl(4, 0, 0, 1, 0, 0, 2);
+    GXSetChanCtrl(GX_COLOR0A0, GX_FALSE, GX_SRC_REG, GX_SRC_VTX, GX_LIGHT_NULL, GX_DF_NONE, GX_AF_NONE);
     GXSetNumTevStages(1);
-    GXSetTevOrder(0, 0xff, 0xff, 4);
-    GXSetTevColorOp(0, 0, 0, 0, 1, 0);
-    GXSetTevAlphaOp(0, 0, 0, 0, 1, 0);
-    GXSetTevColorIn(0, 0xf, 0xa, 3, 0xf);
-    GXSetTevAlphaIn(0, 7, 5, 1, 7);
-    effSetVtxDescN64((effVtxArray*)((u8*)flowers_v + 0xb6));
-    GXBegin(0x90, 0, 0x18);
+    GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD_NULL, GX_TEXMAP_NULL, GX_COLOR0A0);
+    GXSetTevColorOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+    GXSetTevAlphaOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+    GXSetTevColorIn(GX_TEVSTAGE0, GX_CC_ZERO, GX_CC_RASC, GX_CC_A0, GX_CC_ZERO);
+    GXSetTevAlphaIn(GX_TEVSTAGE0, GX_CA_ZERO, GX_CA_RASA, GX_CA_A0, GX_CA_ZERO);
+    // Second vertex block in the shared flowers_v array.
+    effSetVtxDescN64((effVtxArray*)(flowers_v + 0xb6));
+    GXBegin(GX_TRIANGLES, GX_VTXFMT0, 0x18);
     tri2(0, 1, 2, 0, 0, 2, 3, 0);
     tri2(2, 4, 5, 0, 2, 5, 3, 0);
     tri2(6, 7, 8, 0, 6, 8, 9, 0);

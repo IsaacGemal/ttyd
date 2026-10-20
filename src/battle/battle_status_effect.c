@@ -48,9 +48,9 @@ s8 _st_pri_data[] = {
 typedef struct BattleStatusChangeMsgData {
 	s8 type;             // 0x0
 	u8 pad_0x1[3];       // 0x1
-	const char* field_0x4; // 0x4
-	const char* field_0x8; // 0x8
-	const char* field_0xC; // 0xC
+	const char* mJapaneseName;   // 0x4
+	const char* mMessageName;    // 0x8
+	const char* mMessageNameAlt; // 0xC
 } BattleStatusChangeMsgData;
 
 BattleStatusChangeMsgData _st_chg_msg_data[] = {
@@ -97,31 +97,31 @@ typedef struct BattleUnitEffectFields {
 
 typedef struct BattleUnitKindOffsetFields {
 	u8 pad_0[0x48];
-	f32 mField_0x48; // 0x48
-	f32 mField_0x4C; // 0x4C
-	f32 mField_0x50; // 0x50
+	f32 mBurnFlameOffsetX; // 0x48
+	f32 mBurnFlameOffsetY; // 0x4C
+	f32 mBurnFlameOffsetZ; // 0x50
 } BattleUnitKindOffsetFields;
 
 typedef struct BattleEffectPos {
-	u32 field_0x0; // 0x0
+	u32 mType; // 0x0
 	Vec position;  // 0x4
 } BattleEffectPos;
 
 typedef struct BattleEffectPosScale {
-	u32 field_0x0;  // 0x0
+	u32 mType;      // 0x0
 	Vec position;   // 0x4
-	f32 field_0x10; // 0x10
+	f32 mIceScale;  // 0x10
 	u8 pad_0x14[0x24 - 0x14];
-	f32 mScale; // 0x24
+	f32 mFireScale; // 0x24
 } BattleEffectPosScale;
 
 typedef struct BattleStatusChangeEntry {
-	s8 type;       // 0x0
-	u8 field_0x1;  // 0x1
-	u8 field_0x2;  // 0x2
-	u8 field_0x3;  // 0x3
-	s32 field_0x4; // 0x4
-	s32 field_0x8; // 0x8
+	s8 type;           // 0x0
+	u8 mFlags;         // 0x1
+	u8 mCounter;       // 0x2
+	u8 mDisplayOffset; // 0x3
+	s32 mUnitId;       // 0x4
+	s32 mMsgVariant;   // 0x8
 } BattleStatusChangeEntry;
 
 typedef struct BattleUnitStatusChangeFields {
@@ -132,8 +132,13 @@ typedef struct BattleUnitStatusChangeFields {
 typedef struct BattleStatusChangeMsgWork {
 	BattleStatusChangeEntry entries[0x1C]; // 0x0
 	char message[0x100];                   // 0x150
-	u64 field_0x250;                       // 0x250
+	u64 mAnnouncedFlags;                   // 0x250
 } BattleStatusChangeMsgWork;
+
+typedef struct BattleWorkStatusChangeMsg {
+	u8 pad_0[0x18D88];
+	BattleStatusChangeMsgWork mWork; // 0x18D88
+} BattleWorkStatusChangeMsg;
 
 void BattleStatusEffectInit(BattleUnit* unit) {
 	; //stubbed in retail
@@ -273,9 +278,9 @@ void BSE_Fire(BattleUnit* unit) {
 		} else {
 			direction = -1.0f;
 		}
-		x += unit->mSizeMultiplier * (((BattleUnitKindOffsetFields*)unit->mKindParams)->mField_0x48 * direction);
-		y += ((BattleUnitKindOffsetFields*)unit->mKindParams)->mField_0x4C * unit->mSizeMultiplier;
-		z += ((BattleUnitKindOffsetFields*)unit->mKindParams)->mField_0x50 * unit->mSizeMultiplier;
+		x += unit->mSizeMultiplier * (((BattleUnitKindOffsetFields*)unit->mKindParams)->mBurnFlameOffsetX * direction);
+		y += ((BattleUnitKindOffsetFields*)unit->mKindParams)->mBurnFlameOffsetY * unit->mSizeMultiplier;
+		z += ((BattleUnitKindOffsetFields*)unit->mKindParams)->mBurnFlameOffsetZ * unit->mSizeMultiplier;
 		work->position.x = x;
 		work->position.y = y;
 		work->position.z = z + 5.0f;
@@ -322,7 +327,7 @@ void BSE_Freeze(BattleUnit* unit) {
 		heightScale = (f32)unit->mHeight / 36.0f;
 		scale = (widthScale <= heightScale) ? widthScale : heightScale;
 		scale *= unit->mSizeMultiplier;
-		work->field_0x10 = scale;
+		work->mIceScale = scale;
 		BtlUnit_GetPartsWorldPos(part, &x, &y, &z);
 		work->position.x = x;
 		work->position.y = y + 20.0f * scale;
@@ -421,7 +426,7 @@ BOOL BSE_TurnFirstProcessEffectMain(BattleUnit* unit) {
 			unit->mBurnDamageFlameAnimTimer += 1;
 			scale = 1.6f * sinfd((f32)(unit->mBurnDamageFlameAnimTimer * 3)) + 0.4f;
 			unit->mBurnDamageFlameScale = scale;
-			work->mScale = unit->mBurnDamageFlameScale;
+			work->mFireScale = unit->mBurnDamageFlameScale;
 			if (unit->mBurnDamageFlameAnimTimer >= 60) {
 				*(u16*)&unit->mBurnDamageFlameState += 1;
 			}
@@ -453,10 +458,10 @@ void BattleStatusChangeInfoWorkInit(BattleUnit* unit) {
 	for (i = 0; i < 6; i++) {
 		BattleStatusChangeEntry* entry = &entries[i];
 		entry->type = -1;
-		entry->field_0x1 = 0;
-		entry->field_0x2 = 0;
-		entry->field_0x3 = 0;
-		entry->field_0x4 = 0;
+		entry->mFlags = 0;
+		entry->mCounter = 0;
+		entry->mDisplayOffset = 0;
+		entry->mUnitId = 0;
 	}
 }
 #pragma dont_inline reset
@@ -509,8 +514,8 @@ void BattleStatusChangeInfoSetAnnouce(BattleUnit* unit, s32 type, s8 p1, s32 p2)
 		return;
 	}
 	entry.type = type;
-	entry.field_0x1 = p1;
-	entry.field_0x8 = p2;
+	entry.mFlags = p1;
+	entry.mMsgVariant = p2;
 #ifdef MUST_MATCH
 	if (list[i].type == type + 0) {
 #else
@@ -527,8 +532,8 @@ void BattleStatusChangeInfoSetAnnouce(BattleUnit* unit, s32 type, s8 p1, s32 p2)
 	pos = 0;
 	for (j = 0; j < 6; j++) {
 		if (list[j].type != -1) {
-			list[j].field_0x2 = pos;
-			list[j].field_0x4 = 0;
+			list[j].mCounter = pos;
+			list[j].mUnitId = 0;
 			pos += 0xA;
 		} else {
 			break;
@@ -541,7 +546,7 @@ void BattleStatusChangeInfoSetAnnouce(BattleUnit* unit, s32 type, s8 p1, s32 p2)
 	}
 	for (; j >= 0; j--) {
 		if (list[j].type != -1) {
-			list[j].field_0x3 = disp;
+			list[j].mDisplayOffset = disp;
 			disp += 0xA;
 		}
 	}
@@ -570,7 +575,7 @@ BOOL BattleStatusChangeAnnouceMain_Unit(BattleUnit* unit) {
 #pragma dont_inline reset
 
 void BattleStatusChangeMsgWorkInit(void) {
-	BattleStatusChangeMsgWork* work = (BattleStatusChangeMsgWork*)((u8*)_battleWorkPointer + 0x18D88);
+	BattleStatusChangeMsgWork* work = &((BattleWorkStatusChangeMsg*)_battleWorkPointer)->mWork;
 	s32 i;
 
 	memset(work, 0, sizeof(BattleStatusChangeMsgWork));
@@ -583,28 +588,28 @@ void BattleStatusChangeMsgWorkInit(void) {
 // Keep BattleStatusChangeMsgSetAnnouce out of line: the original calls it rather than inlining.
 #pragma dont_inline on
 void BattleStatusChangeMsgSetAnnouce(BattleUnit* unit, s32 type, s32 msg) {
-	BattleStatusChangeEntry* entry = &((BattleStatusChangeMsgWork*)((u8*)_battleWorkPointer + 0x18D88))->entries[type];
+	BattleStatusChangeEntry* entry = &((BattleStatusChangeMsgWork*)((char*)_battleWorkPointer + offsetof(BattleWorkStatusChangeMsg, mWork)))->entries[type];
 
-	entry->field_0x4 = unit->unitId;
+	entry->mUnitId = unit->unitId;
 	entry->type = type;
-	entry->field_0x2 = 0;
-	entry->field_0x8 = msg;
-	if (unit->currentKind == 0xDE) {
-		entry->field_0x1 |= 1;
+	entry->mCounter = 0;
+	entry->mMsgVariant = msg;
+	if (unit->currentKind == UNIT_MARIO) {
+		entry->mFlags |= 1;
 		return;
 	}
-	if (unit->currentKind >= 0xE0 && unit->currentKind < 0xE7) {
-		if (unit->mAlliance == 0) {
-			entry->field_0x1 |= 2;
+	if (unit->currentKind >= TYPE_PARTNER_MIN && unit->currentKind < TYPE_PARTNER_MAX) {
+		if (UNIT_ALLIANCE_ENEMY) {
+			entry->mFlags |= 2;
 			return;
 		}
 	}
-	entry->field_0x1 |= 4;
+	entry->mFlags |= 4;
 }
 #pragma dont_inline reset
 
 void BattleStatusChangeMsgAdjust(BattleWork* wp) {
-	BattleStatusChangeMsgWork* work = (BattleStatusChangeMsgWork*)((u8*)wp + 0x18D88);
+	BattleStatusChangeMsgWork* work = &((BattleWorkStatusChangeMsg*)wp)->mWork;
 	s8 i;
 
 	for (i = 0; i < 0x1C; i++) {
@@ -614,7 +619,7 @@ void BattleStatusChangeMsgAdjust(BattleWork* wp) {
 		if (entry->type != -1) {
 			s32 j;
 
-			entry->field_0x1 = 0;
+			entry->mFlags = 0;
 			for (j = 0; j < 0x40; j++) {
 				BattleUnit* unit = BattleGetUnitPtr(wp, j);
 
@@ -630,15 +635,15 @@ void BattleStatusChangeMsgAdjust(BattleWork* wp) {
 						}
 					}
 					if (found) {
-						BattleStatusChangeMsgSetAnnouce(unit, idx, info[k].field_0x8);
+						BattleStatusChangeMsgSetAnnouce(unit, idx, info[k].mMsgVariant);
 					}
 				}
 			}
-			if (entry->field_0x1 == 0) {
-				entry->field_0x4 = -1;
+			if (entry->mFlags == 0) {
+				entry->mUnitId = -1;
 				entry->type = -1;
-			} else if (work->field_0x250 & (s64)(1 << idx)) {
-				entry->field_0x4 = -1;
+			} else if (work->mAnnouncedFlags & (s64)(1 << idx)) {
+				entry->mUnitId = -1;
 				entry->type = -1;
 			}
 		}
@@ -646,7 +651,7 @@ void BattleStatusChangeMsgAdjust(BattleWork* wp) {
 }
 
 BOOL BattleStatusChangeMsgMain(BattleWork* wp) {
-	BattleStatusChangeMsgWork* work = (BattleStatusChangeMsgWork*)((u8*)wp + 0x18D88);
+	BattleStatusChangeMsgWork* work = &((BattleWorkStatusChangeMsg*)wp)->mWork;
 	BattleStatusChangeEntry* entry;
 	BOOL shown = FALSE;
 	s8* pri;
@@ -665,13 +670,13 @@ BOOL BattleStatusChangeMsgMain(BattleWork* wp) {
 			BattleUnit* unit;
 
 			shown = TRUE;
-			unit = BattleGetUnitPtr(wp, entry->field_0x4);
-			if (entry->field_0x2 != 0) {
-				entry->field_0x2--;
+			unit = BattleGetUnitPtr(wp, entry->mUnitId);
+			if (entry->mCounter != 0) {
+				entry->mCounter--;
 				if (BattlePadCheckTrigger(0x300) != 0) {
-					entry->field_0x2 = 0;
+					entry->mCounter = 0;
 				}
-				if (entry->field_0x2 == 0) {
+				if (entry->mCounter == 0) {
 					entry->type = -1;
 				}
 			} else {
@@ -680,15 +685,15 @@ BOOL BattleStatusChangeMsgMain(BattleWork* wp) {
 				sprintf(work->message, "");
 				for (i = 0; i < 0x1C; i++) {
 					if (entry->type == _st_chg_msg_data[i].type || _st_chg_msg_data[i].type == -1) {
-						if (entry->field_0x8 != 0) {
-							sprintf(work->message, msgSearch(_st_chg_msg_data[i].field_0x8));
+						if (entry->mMsgVariant != 0) {
+							sprintf(work->message, msgSearch(_st_chg_msg_data[i].mMessageName));
 						} else {
-							sprintf(work->message, msgSearch(_st_chg_msg_data[i].field_0xC));
+							sprintf(work->message, msgSearch(_st_chg_msg_data[i].mMessageNameAlt));
 						}
 						break;
 					}
 				}
-				entry->field_0x2 = 0x5A;
+				entry->mCounter = 0x5A;
 			}
 			dispEntry(0x8, 900.0f, 1, _st_chg_msg_disp, NULL);
 			break;
@@ -714,7 +719,7 @@ BOOL BattleStatusChangeMsgMain(BattleWork* wp) {
 // of the swapped set (same trick as battle_message.c _disp).
 void _st_chg_msg_disp(CameraId camera, void* param) {
 	BattleWork* wp = _battleWorkPointer;
-	BattleStatusChangeMsgWork* work = (BattleStatusChangeMsgWork*)((u8*)wp + 0x18D88);
+	BattleStatusChangeMsgWork* work = &((BattleWorkStatusChangeMsg*)wp)->mWork;
 	u16 lines;
 	u16 width;
 	f32 x;
