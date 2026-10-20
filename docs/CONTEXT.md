@@ -11190,3 +11190,24 @@ function already calls load-bearing.
 - `YUU_RANK_SETUP` / its gor twin: the three `goto done` became `break` (two inside the slot-search `for`) and the trailing one in the `else` branch was dropped (it was the last statement before `done:`). The `done:` label is gone.
 - Verified: tower `ninja` recreates build/G8MJ01/ok (MUST_MATCH build); both files compile without `-DMUST_MATCH` (mwcc rc 0).
 - Index (tools/cleanup_index.py): 21.584 -> 21.534 per kLOC (15355 -> 15319 weighted); goto category 307 -> 289.
+### Readability: goto cleanup in gor_03, mot_slit, evt_uranaisi (2026-10-20, Claude Haiku 5.5, n9-q-gotomisc)
+
+gor_03.c: the sel loop in goryuugijo_main_slot is a `while (k < 2)` loop. Its two `goto sel_inc` become `break`s out of the
+switch, so the `k++` runs at the loop end, and the `sel_body`/`sel_inc`/`sel_test` labels are gone. The `for` form still
+emits `mtctr`/`bdnz` (see the comment above the function), so `while` keeps the original `li r9,0; b test` shape.
+Matching build recreated; natural compile without MUST_MATCH exits 0. gor_03 code gotos 6 -> 2.
+
+Left in gor_03: slot_rotate_sub's two `goto done`. Writing the rotation tail once and folding it into the `wait == 0`
+branch and the outer else (7 lines duplicated) breaks the match; the skip path has to jump over the rotation.
+
+Left in mot_slit.c (7 gotos, unchanged): the MUST_MATCH `goto zero`/`goto done` in U_marioSlitContinueChk and
+slitContinueChk. A single default `state = 0` with nested ifs did not match, with named fields or with MW_U16/MW_U8.
+`goto keyOffPath` jumps into the else of the marioChkKey() test and would need the 60-line block duplicated, or a second
+marioChkKey() call; not done.
+
+Left in evt_uranaisi.c (7 gotos, unchanged): the `goto next` in the loop of the function that reads the story tags (3),
+which skip `count++` and jump to `storyId++`. Nested `if` forms with and without `&&` did not match. The MUST_MATCH
+`goto gswf_done` (both table functions) did not match with `break` plus `if (name == NULL) gswf = -1;`, or with a
+pre-loop `gswf = -1`.
+
+Index (`tools/cleanup_index.py`): goto 302 -> 298 sites, weighted 604 -> 596.
