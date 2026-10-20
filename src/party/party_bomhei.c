@@ -498,15 +498,11 @@ void bomhei_use_main(PartyEntry* party) {
         party->dir = angleABf(party->position.x, party->position.z, targetX, targetZ);
         party->field_FC = party->dir;
         party->jumpPara1 = 7.5f;
-#ifdef MUST_MATCH
-        // Natural form is -0.8333333f; the temp stops -O4,p folding the fneg into the pool word.
+        // The temp stops -O4,p folding the fneg into the pool word.
         {
             f32 gravity = 0.8333333f;
             party->jumpPara2 = -gravity;
         }
-#else
-        party->jumpPara2 = -0.8333333f;
-#endif
         partyChgPose(party, (char*)"J_1A");
         party->useMotionId = 2;
         party->tail.bobbery.marioMotion = 0xA;
@@ -533,13 +529,9 @@ void bomhei_use_main(PartyEntry* party) {
             f31 = 36.0f;
             if (strcmp(pm->animName, (char*)"M_W_7") == 0) {
                 f32 val = (f32)m_w_7_sync[party->tail.bobbery.syncFrame];
-#ifdef MUST_MATCH
-                // Temp keeps 0.25 in the target's f0 instead of f2.
+                // The temp keeps 0.25 in f0 instead of f2.
                 f32 quarter = 0.25f;
                 f31 += val * quarter;
-#else
-                f31 += val * 0.25f;
-#endif
             }
             party->position.x = pm->position.x;
             party->position.y = pm->position.y + f31;
@@ -572,15 +564,11 @@ void bomhei_use_main(PartyEntry* party) {
         party->dir = angleABf(party->position.x, party->position.z, targetX, targetZ);
         party->field_FC = party->dir;
         party->jumpPara1 = 3.5555556f;
-#ifdef MUST_MATCH
-        // Natural form is -0.35555556f; the temp stops -O4,p folding the fneg into the pool word.
+        // The temp stops -O4,p folding the fneg into the pool word.
         {
             f32 gravity = 0.35555556f;
             party->jumpPara2 = -gravity;
         }
-#else
-        party->jumpPara2 = -0.35555556f;
-#endif
 #ifdef MUST_MATCH
         // Natural form is (s16)10.5f; the temp stops the conversion folding to an integer.
         {
@@ -771,13 +759,9 @@ void bomhei_use_main(PartyEntry* party) {
             f31 = 36.0f;
             if (strcmp(pm->animName, (char*)"M_W_7") == 0) {
                 f32 val = (f32)m_w_7_sync[party->tail.bobbery.syncFrame];
-#ifdef MUST_MATCH
-                // Temp keeps 0.25 in the target's f0 instead of f2.
+                // The temp keeps 0.25 in f0 instead of f2.
                 f32 quarter = 0.25f;
                 f31 += val * quarter;
-#else
-                f31 += val * 0.25f;
-#endif
             }
             party->position.x = pm->position.x;
             party->position.y = pm->position.y + f31;

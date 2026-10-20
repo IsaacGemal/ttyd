@@ -219,11 +219,7 @@ void mot_ship_post(void) {
 static inline void shipWakeUpdate(f32 speed) {
     MarioWork* m = marioGetPtr();
 
-#ifdef MUST_MATCH
     if (!speed) {
-#else
-    if (speed == 0.0f) {
-#endif
         marioGetPtr();
         { s32 b; if (SHIP_DATA->unk08 > 180.0f) b = 0; else b = 1; speed = b ? 0.3f : 0.6f; }
         SHIP_DATA->unk10 += 0.1f * (speed - SHIP_DATA->unk10);
@@ -444,15 +440,10 @@ void mot_ship(void) {
             mario->moveDir = mario->directionView;
             f30 = SHIP_DATA->unk3C.y;
             SHIP_DATA->unk04 = f30;
-#ifdef MUST_MATCH
-            // The original doubles the distance with `d + d`, not `2.0f * d`.
+            // The distance is doubled as `d + d`, not `2.0f * d`.
             dy = SHIP_DATA->unk3C.y - mario->position.y;
-            *(f32*)((u8*)mario + 0x7C) = 0.0f;
-            *(f32*)((u8*)mario + 0x80) = (dy + dy) / 306.0f;
-#else
             mario->jumpVelY = 0.0f;
-            mario->jumpAccelY = 2.0f * (SHIP_DATA->unk3C.y - mario->position.y) / 306.0f;
-#endif
+            mario->jumpAccelY = (dy + dy) / 306.0f;
             mario->jumpJerkY = 0.0f;
             mario->jumpJerkStepY = 0.0f;
             mario->multiTimer = 0x24;
@@ -552,14 +543,9 @@ void mot_ship(void) {
             SHIP_DATA->unk04 = SHIP_DATA->unk3C.y;
             mario->baseSpeed = 2.8f;
             {
-#ifdef MUST_MATCH
-                // Keep the rounding factor first in the expression tree to pool 10 before 2.
+                // Keeping the rounding factor first in the expression tree pools 10 before 2.
                 s32 n = (s32)((10.0f * ((2.0f * distABf(mario->position.x, mario->position.z,
                     SHIP_DATA->unk3C.x, SHIP_DATA->unk3C.z)) / mario->baseSpeed) + 0.5f) / 10.0f);
-#else
-                f32 t = (2.0f * distABf(mario->position.x, mario->position.z, SHIP_DATA->unk3C.x, SHIP_DATA->unk3C.z)) / mario->baseSpeed;
-                s32 n = (s32)((10.0f * t + 0.5f) / 10.0f);
-#endif
                 f32 f6;
                 mario->directionView = angleABf(mario->position.x, mario->position.z, SHIP_DATA->unk3C.x, SHIP_DATA->unk3C.z);
                 mario->moveDir = mario->directionView;
@@ -924,40 +910,24 @@ void shipMove(void) {
     f31 = shipData[4];
     if (f30 || SHIP_DATA->swirlTimer != 0) {
         if (f26 > f28) {
-#ifdef MUST_MATCH
-            // Named temp: the original computes the sum in f1 and the coefficient in f0.
+            // The sum goes in f1 and the coefficient in f0.
             { f32 t = 1.0f + f26 - f28; f28 = t * shipData[3] + f28; }
-#else
-            f28 = (1.0f + f26 - f28) * shipData[3] + f28;
-#endif
             if (f28 >= f31) {
                 f28 = f31;
             }
         } else {
-#ifdef MUST_MATCH
             { f32 t = f26 - 1.0f - f28; f28 = t * shipData[3] + f28; }
-#else
-            f28 = (f26 - 1.0f - f28) * shipData[3] + f28;
-#endif
             if (f28 <= -f31) {
                 f28 = -f31;
             }
         }
         if (f29 > f27) {
-#ifdef MUST_MATCH
             { f32 t = 1.0f + f29 - f27; f27 = t * shipData[3] + f27; }
-#else
-            f27 = (1.0f + f29 - f27) * shipData[3] + f27;
-#endif
             if (f27 >= f31) {
                 f27 = f31;
             }
         } else {
-#ifdef MUST_MATCH
             { f32 t = f29 - 1.0f - f27; f27 = t * shipData[3] + f27; }
-#else
-            f27 = (f29 - 1.0f - f27) * shipData[3] + f27;
-#endif
             if (f27 <= -f31) {
                 f27 = -f31;
             }
