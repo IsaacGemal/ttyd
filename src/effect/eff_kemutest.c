@@ -22,11 +22,6 @@ __declspec(section ".sdata") u32 gap_10_804232DC_sbss2;
 #else
 GXColor unk_804232d8;
 #endif
-#ifdef MUST_MATCH
-/* Match-only trick: named .sdata2 constants, defined at the end of the file, so the compiler can't
-   fold `-32.0f * 0.5f` into -16 (the original does the multiply at runtime). The original's 0.5 and 16.0
-   are ordinary pool literals, so this duplicates them (two extra .sdata2 words). */
-#endif
 
 typedef struct {
 	f32 v[4];
@@ -189,25 +184,15 @@ EffectEntry* effKemuTestEntry(s32 type, f32 x, f32 y, f32 z, f32 scale) {
 			work->colorB = 0xFF;
 			work->scale = 1.0f;
 			if (type == 19) {
-#ifdef MUST_MATCH
-				/* MUST_MATCH: retail copies each rodata vector to a scratch Vec and
-				   indexes that; the plain form below loads the globals directly and
-				   leaves the frame and register allocation short. Declaring the
-				   scratch Vecs v88, v94, va0 is what makes the compiler emit the
-				   copies in the original's order (the natural v94, va0, v88 order
-				   reverses the store scheduling). */
+				/* Each rodata vector is copied to a scratch Vec and indexed from there, in this
+				   declaration order (the copies' store scheduling follows it). */
 				Vec v88 = vec3_802fdc88;
 				Vec v94 = vec3_802fdc94;
 				Vec va0 = vec3_802fdca0;
 
-				work->posX = ((f32*)&v94)[i - 1];
-				work->posY = ((f32*)&va0)[i - 1];
-				work->scale = ((f32*)&v88)[i - 1];
-#else
-				work->posX = ((const f32*)&vec3_802fdc94)[i - 1];
-				work->posY = ((const f32*)&vec3_802fdca0)[i - 1];
-				work->scale = ((const f32*)&vec3_802fdc88)[i - 1];
-#endif
+				work->posX = (&v94.x)[i - 1];
+				work->posY = (&va0.x)[i - 1];
+				work->scale = (&v88.x)[i - 1];
 				work->delay = 4 * i;
 				work->colorR = 0x78;
 				work->colorG = 0x78;
@@ -294,29 +279,19 @@ EffectEntry* effKemuTestEntry(s32 type, f32 x, f32 y, f32 z, f32 scale) {
 				}
 			}
 			else if (type == 5) {
-#ifdef MUST_MATCH
 				effKemuTestQuad vac = dat_802fdcac;
 
 				spd = 3.0f;
 				work->velX = spd * (f32)sin(6.2831855f * vac.v[i] / 360.0f);
 				work->velY = -spd * (f32)cos(6.2831855f * vac.v[i] / 360.0f);
-#else
-				work->velX = 3.0f * (f32)sin(6.2831855f * dat_802fdcac.v[i] / 360.0f);
-				work->velY = -3.0f * (f32)cos(6.2831855f * dat_802fdcac.v[i] / 360.0f);
-#endif
 				work->scale = 0.5f;
 			}
 			else if (type == 21) {
-#ifdef MUST_MATCH
 				Vec vbc = vec3_802fdcbc;
 
 				spd = 3.0f;
-				work->velX = spd * (f32)sin(6.2831855f * ((f32*)&vbc)[i] / 360.0f);
-				work->velY = -spd * (f32)cos(6.2831855f * ((f32*)&vbc)[i] / 360.0f);
-#else
-				work->velX = 3.0f * (f32)sin(6.2831855f * ((const f32*)&vec3_802fdcbc)[i] / 360.0f);
-				work->velY = -3.0f * (f32)cos(6.2831855f * ((const f32*)&vec3_802fdcbc)[i] / 360.0f);
-#endif
+				work->velX = spd * (f32)sin(6.2831855f * (&vbc.x)[i] / 360.0f);
+				work->velY = -spd * (f32)cos(6.2831855f * (&vbc.x)[i] / 360.0f);
 				work->scale = 0.5f;
 			}
 			else if (type == 9 || type == 17 || type == 20) {
@@ -453,19 +428,13 @@ EffectEntry* effKemuTestEntry(s32 type, f32 x, f32 y, f32 z, f32 scale) {
 			work->colorB = 0xFF;
 			break;
 		case 22: {
-#ifdef MUST_MATCH
 			Vec vc8 = vec3_802fdcc8;
 			Vec vd4 = vec3_802fdcd4;
 			Vec ve0 = vec3_802fdce0;
 
-			work->posX = ((f32*)&vc8)[i - 1];
-			work->posY = ((f32*)&vd4)[i - 1];
-			work->posZ = ((f32*)&ve0)[i - 1];
-#else
-			work->posX = ((const f32*)&vec3_802fdcc8)[i - 1];
-			work->posY = ((const f32*)&vec3_802fdcd4)[i - 1];
-			work->posZ = ((const f32*)&vec3_802fdce0)[i - 1];
-#endif
+			work->posX = (&vc8.x)[i - 1];
+			work->posY = (&vd4.x)[i - 1];
+			work->posZ = (&ve0.x)[i - 1];
 			work->velX = 0.0f;
 			work->velY = 0.0f;
 			work->velZ = 0.0f;
@@ -502,11 +471,8 @@ EffectEntry* effKemuTestEntry(s32 type, f32 x, f32 y, f32 z, f32 scale) {
 	return entry;
 }
 void effKemuTestMain(EffectEntry* effect) {
-#ifdef MUST_MATCH
-	/* MUST_MATCH: retail builds the Vec in a scratch and copies it to a second local before
-	   dispCalcZ; a single local folds the copy away. */
+	/* position is a second copy of disp, used by the sound, confetti and dispCalcZ calls. */
 	Vec position;
-#endif
 	Vec disp = (Vec){ 0.0f, 0.0f, 0.0f };
 	effKemuTestData* data = effect->userdata;
 	s32 type;
@@ -519,9 +485,7 @@ void effKemuTestMain(EffectEntry* effect) {
 	disp.x = data->posX;
 	disp.y = data->posY;
 	disp.z = data->posZ;
-#ifdef MUST_MATCH
 	position = disp;
-#endif
 	type = data->type;
 	camId = data->camId;
 	data++;
@@ -661,26 +625,16 @@ void effKemuTestMain(EffectEntry* effect) {
 		}
 	}
 	if (confetti) {
-#ifdef MUST_MATCH
 		psndSFXOn_3D("SFX_BTL_STAGE_BURST1", &position);
 		effConfettiEntry(6, 0x3C, position.x, position.y, position.z);
-#else
-		psndSFXOn_3D("SFX_BTL_STAGE_BURST1", &disp);
-		effConfettiEntry(6, 0x3C, disp.x, disp.y, disp.z);
-#endif
 	}
 	if (done >= effect->count - 1) {
 		effDelete(effect);
 	} else {
-#ifdef MUST_MATCH
 		dispEntry(camId, dispCalcZ(&position), 2, effKemuTestDisp, effect);
-#else
-		dispEntry(camId, dispCalcZ(&disp), 2, effKemuTestDisp, effect);
-#endif
 	}
 }
 
-#ifdef MUST_MATCH
 static inline GXColor kemuTestColor(effKemuTestData* data, u8 alpha) {
 	GXColor color = unk_804232d8;
 
@@ -690,7 +644,6 @@ static inline GXColor kemuTestColor(effKemuTestData* data, u8 alpha) {
 	color.a = alpha;
 	return color;
 }
-#endif
 
 /* Matches using the named .sdata2 constants above (so the compiler emits the
    `-32 * 0.5` multiply at runtime instead of folding it into -16), and a helper
@@ -794,61 +747,36 @@ void effKemuTestDisp(CameraId camId, void* param) {
 			PSMTXScale(scale, 0.0625f, 1.0f, 1.0f);
 			PSMTXConcat(mtx, scale, mtx);
 			GXLoadTexMtxImm(mtx, GX_TEXMTX1, GX_MTX2x4);
-			{
-#ifdef MUST_MATCH
-				f32 dsize_half;
-				f32 size;
-#else
-				f32 half = 0.5f;
-				f32 dsize_half = dsize * half;
-				f32 size = 16.0f;
-#endif
-
-				for (j = flag; j < 2; j++) {
-					if (j == 0) {
-						GXSetChanMatColor(GX_COLOR0A0, (GXColor){ 0x00, 0x00, 0x00, 0x60 });
-						PSMTXTrans(mtx, data->posX + 2.0f, data->posY - 2.0f, data->posZ);
-						PSMTXScale(scale, data->scale, data->scale, data->scale);
-						PSMTXConcat(view, mtx, mtx);
-						if (type == 0xB) {
-							PSMTXRotRad(rot, 'y', 0.017453292f * -camGetPtr(camId)->viewYaw);
-							PSMTXConcat(mtx, rot, mtx);
-						}
-						PSMTXConcat(mtx, scale, mtx);
-						GXLoadPosMtxImm(mtx, 0);
+			for (j = flag; j < 2; j++) {
+				if (j == 0) {
+					GXSetChanMatColor(GX_COLOR0A0, (GXColor){ 0x00, 0x00, 0x00, 0x60 });
+					PSMTXTrans(mtx, data->posX + 2.0f, data->posY - 2.0f, data->posZ);
+					PSMTXScale(scale, data->scale, data->scale, data->scale);
+					PSMTXConcat(view, mtx, mtx);
+					if (type == 0xB) {
+						PSMTXRotRad(rot, 'y', 0.017453292f * -camGetPtr(camId)->viewYaw);
+						PSMTXConcat(mtx, rot, mtx);
 					}
-					else {
-#ifdef MUST_MATCH
-						GXSetChanMatColor(GX_COLOR0A0, kemuTestColor(data, alpha));
-#else
-						GXColor color = unk_804232d8;
-
-						color.r = data->colorR;
-						color.g = data->colorG;
-						color.b = data->colorB;
-						color.a = alpha;
-						GXSetChanMatColor(GX_COLOR0A0, color);
-#endif
-						PSMTXTrans(mtx, data->posX, data->posY, data->posZ);
-						PSMTXScale(scale, data->scale, data->scale, data->scale);
-						PSMTXConcat(view, mtx, mtx);
-						if (type == 0xB) {
-							PSMTXRotRad(rot, 'y', 0.017453292f * -camGetPtr(camId)->viewYaw);
-							PSMTXConcat(mtx, rot, mtx);
-						}
-						PSMTXConcat(mtx, scale, mtx);
-						GXLoadPosMtxImm(mtx, 0);
+					PSMTXConcat(mtx, scale, mtx);
+					GXLoadPosMtxImm(mtx, 0);
+				}
+				else {
+					GXSetChanMatColor(GX_COLOR0A0, kemuTestColor(data, alpha));
+					PSMTXTrans(mtx, data->posX, data->posY, data->posZ);
+					PSMTXScale(scale, data->scale, data->scale, data->scale);
+					PSMTXConcat(view, mtx, mtx);
+					if (type == 0xB) {
+						PSMTXRotRad(rot, 'y', 0.017453292f * -camGetPtr(camId)->viewYaw);
+						PSMTXConcat(mtx, rot, mtx);
 					}
-#ifdef MUST_MATCH
-					/* Pool the shadow offset before the dimensions; MWCC still moves
-					   these loads and the multiply to the inner-loop preheader. */
-					{
-						f32 half = 0.5f;
+					PSMTXConcat(mtx, scale, mtx);
+					GXLoadPosMtxImm(mtx, 0);
+				}
+				{
+					f32 half = 0.5f;
+					f32 dsize_half = dsize * half;
+					f32 size = 16.0f;
 
-						dsize_half = dsize * half;
-						size = 16.0f;
-					}
-#endif
 					GXBegin(GX_QUADS, GX_VTXFMT0, 4);
 					GXPosition3f32(dsize_half, size, 0.0f);
 					GXTexCoord2f32(0.0f, 0.0f);
@@ -877,7 +805,3 @@ void effKemuTestSetRxRz(EffectEntry* effect, f32 rx, f32 rz) {
 	data->rotX = rx;
 	data->rotZ = rz;
 }
-
-#ifdef MUST_MATCH
-#endif
-
