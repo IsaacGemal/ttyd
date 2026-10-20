@@ -31,6 +31,26 @@ __declspec(section ".sdata2") u32 dat_8041c8f4 = 0xFFFFFFFF;
 __declspec(section ".sdata2") u32 dat_8041c8f8 = 0xFFFFFFFF;
 __declspec(section ".sdata2") u32 dat_8041c8fc = 0xFFFFFFFF;
 
+#define STATUS_WIN_OPEN_FRAMES 16.0f // open and close ramp lengths at animSpeed 1
+#define STATUS_WIN_CLOSE_FRAMES 28.0f
+#define ICON_SP_BANNER 466 // alwaysDt's blue star power banner; the draw loop stops here while no star power is owned
+#define STATUS_WIN_IDLE_SECONDS 10 // Mario standing still before the window opens; cooldown after an automatic toggle
+#define STATUS_WIN_CHANGE_SECONDS 2 // the window stays open this long after a value changes
+#define STATUS_WIN_BLINK_SECONDS 2 // blink length once a changed value settles
+#define STATUS_WIN_BLINK_PERIOD 16 // blink cycle in frames; the icon is hidden while blinkTimer % PERIOD < HIDE_FRAMES
+#define STATUS_WIN_BLINK_HIDE_FRAMES 6
+#define STATUS_WIN_MAX_STAR_POINT 99
+#define STATUS_WIN_MAX_COIN 999
+
+// Indices into alwaysDt (and partysDt for the party icon) that the blink masks hide.
+enum {
+    STATUS_DT_MARIO_HP = 1,
+    STATUS_DT_FP = 4,
+    STATUS_DT_COIN = 8,
+    STATUS_DT_AP = 12,
+    STATUS_DT_PARTY_ICON = 1,
+};
+
 //.data
 typedef struct alwaysDtEntry {
     s16 xpos;   // 0x0
@@ -120,40 +140,39 @@ static inline void valueMoveParty(s16* cur, s16* target);
 void statusWinInit(void) {
     wp = __memAlloc(HEAP_DEFAULT, sizeof(StatusWindowWork));
     memset(wp, 0, sizeof(StatusWindowWork));
-    wp->field_0x1C = float_1_8041c904;
-    wp->field_0x30 = -304.0f;
-    wp->field_0x34 = 208.0f;
-    wp->field_0x40 = -304.0f;
-    wp->field_0x44 = 334.0f;
-    wp->field_0x74 = 0;
-    wp->field_0x78 = 0;
-    wp->field_0x4 &= ~0xA;
-    wp->field_0x4 |= 5;
+    wp->animSpeed = float_1_8041c904;
+    wp->openX = -304.0f;
+    wp->openY = 208.0f;
+    wp->closedX = -304.0f;
+    wp->closedY = 334.0f;
+    wp->idleFrames = 0;
+    wp->toggleCooldown = 0;
+    wp->flags &= ~(STATUS_WIN_CLOSED | STATUS_WIN_CLOSING);
+    wp->flags |= (STATUS_WIN_OPEN | STATUS_WIN_OPENING);
 }
 
-// TODO: #defines?
 void statusWinReInit(void) {
-    wp->field_0x74 = 0;
-    wp->field_0x78 = 0;
-    if (wp->field_0x4 & 0x10) {
-        wp->field_0x4 &= ~0x10;
-        wp->field_0x4 &= ~0xA;
-        wp->field_0x4 |= 5;
-    } else if (wp->field_0x4 & 1) {
-        wp->field_0x4 &= ~0xA;
-        wp->field_0x4 |= 5;
+    wp->idleFrames = 0;
+    wp->toggleCooldown = 0;
+    if (wp->flags & STATUS_WIN_FORCE_OPEN) {
+        wp->flags &= ~STATUS_WIN_FORCE_OPEN;
+        wp->flags &= ~(STATUS_WIN_CLOSED | STATUS_WIN_CLOSING);
+        wp->flags |= (STATUS_WIN_OPEN | STATUS_WIN_OPENING);
+    } else if (wp->flags & STATUS_WIN_OPEN) {
+        wp->flags &= ~(STATUS_WIN_CLOSED | STATUS_WIN_CLOSING);
+        wp->flags |= (STATUS_WIN_OPEN | STATUS_WIN_OPENING);
     }
-    if (wp->field_0x4 & 0x20) {
-        wp->field_0x4 &= ~0x20;
-        wp->field_0x4 |= 0xA;
-        wp->field_0x4 &= ~5;
-    } else if (wp->field_0x4 & 2) {
-        wp->field_0x4 |= 0xA;
-        wp->field_0x4 &= ~5;
+    if (wp->flags & STATUS_WIN_FORCE_CLOSE) {
+        wp->flags &= ~STATUS_WIN_FORCE_CLOSE;
+        wp->flags |= (STATUS_WIN_CLOSED | STATUS_WIN_CLOSING);
+        wp->flags &= ~(STATUS_WIN_OPEN | STATUS_WIN_OPENING);
+    } else if (wp->flags & STATUS_WIN_CLOSED) {
+        wp->flags |= (STATUS_WIN_CLOSED | STATUS_WIN_CLOSING);
+        wp->flags &= ~(STATUS_WIN_OPEN | STATUS_WIN_OPENING);
     }
 }
 
-// The three negated `wp->field_0x4 & 0x11` tests materialise the boolean and branch `bne skip` in the
+// The three negated `wp->flags & (STATUS_WIN_OPEN | STATUS_WIN_FORCE_OPEN)` tests materialise the boolean and branch `bne skip` in the
 // original; a plain if folds the materialisation and a switch lowers `case 0` out of line (`beq` +
 // extra b), so they use the `(x ? 1 : 0)` shape under MUST_MATCH.
 // The cos()/lerp tail is in the #ifdef MUST_MATCH block below; its temporaries keep the original's
@@ -163,11 +182,11 @@ void statusWinMain(void) {
 
     mario = marioGetPtr();
     if (mario->characterId != 0) {
-        wp->field_0x4 = 2;
-        wp->field_0xC = float_1_8041c904;
-        wp->field_0x8 = float_1_8041c904;
-        wp->field_0x18 = float_0_8041c900;
-        wp->field_0x10 = float_0_8041c900;
+        wp->flags = STATUS_WIN_CLOSED;
+        wp->animDuration = float_1_8041c904;
+        wp->animTime = float_1_8041c904;
+        wp->openTarget = float_0_8041c900;
+        wp->openAmount = float_0_8041c900;
     } else if (strcmp(gp->currentAreaName, "yuu") != 0) {
         switch (seqGetSeq()) {
             case SEQ_GAME:
@@ -179,148 +198,148 @@ void statusWinMain(void) {
                     notCtrl = !marioChkCtrl();
                     if (notCtrl || (notKey = !marioChkKey(), notKey) || !(mario->flags & 1)) {
 #ifdef MUST_MATCH
-                        switch ((wp->field_0x4 & 0x11) != 0) {
+                        switch ((wp->flags & 0x11) != 0) {
                         default:
-                            wp->field_0x4 |= 0xA;
-                            wp->field_0x4 &= ~5;
+                            wp->flags |= 0xA;
+                            wp->flags &= ~5;
                             break;
                         case 0:
                             break;
                         }
 #else
-                        if (wp->field_0x4 & 0x11) {
-                            wp->field_0x4 |= 0xA;
-                            wp->field_0x4 &= ~5;
+                        if (wp->flags & (STATUS_WIN_OPEN | STATUS_WIN_FORCE_OPEN)) {
+                            wp->flags |= (STATUS_WIN_CLOSED | STATUS_WIN_CLOSING);
+                            wp->flags &= ~(STATUS_WIN_OPEN | STATUS_WIN_OPENING);
                         }
 #endif
                         valueCheck();
-                        wp->field_0x74 = 0;
-                        wp->field_0x78 = 0;
+                        wp->idleFrames = 0;
+                        wp->toggleCooldown = 0;
                     } else {
-                        if (PSVECDistance(&wp->field_0x68, &mario->position) < float_1_8041c904) {
-                            wp->field_0x74++;
-                            if (wp->field_0x74 > gp->framerate * 10) {
-                                wp->field_0x74 = gp->framerate * 10;
+                        if (PSVECDistance(&wp->marioPos, &mario->position) < float_1_8041c904) {
+                            wp->idleFrames++;
+                            if (wp->idleFrames > gp->framerate * STATUS_WIN_IDLE_SECONDS) {
+                                wp->idleFrames = gp->framerate * STATUS_WIN_IDLE_SECONDS;
 #ifdef MUST_MATCH
-                                if (wp->field_0x7C == 0 && wp->field_0x78 == 0 && !(wp->field_0x4 & 0x11 ? 1 : 0)) {
+                                if (wp->manualToggle == 0 && wp->toggleCooldown == 0 && !(wp->flags & 0x11 ? 1 : 0)) {
 #else
-                                if (wp->field_0x7C == 0 && wp->field_0x78 == 0 && !(wp->field_0x4 & 0x11)) {
+                                if (wp->manualToggle == 0 && wp->toggleCooldown == 0 && !(wp->flags & (STATUS_WIN_OPEN | STATUS_WIN_FORCE_OPEN))) {
 #endif
-                                    wp->field_0x4 &= ~0xA;
-                                    wp->field_0x4 |= 5;
-                                    wp->field_0x4 |= 0x100;
+                                    wp->flags &= ~(STATUS_WIN_CLOSED | STATUS_WIN_CLOSING);
+                                    wp->flags |= (STATUS_WIN_OPEN | STATUS_WIN_OPENING);
+                                    wp->flags |= STATUS_WIN_BADGES;
                                 }
                             }
                         } else {
-                            wp->field_0x74 = 0;
-                            wp->field_0x7C = 0;
+                            wp->idleFrames = 0;
+                            wp->manualToggle = 0;
 #ifdef MUST_MATCH
-                            if (wp->field_0x78 == 0) {
-                                switch ((wp->field_0x4 & 0x11) != 0) {
+                            if (wp->toggleCooldown == 0) {
+                                switch ((wp->flags & 0x11) != 0) {
                                 default:
-                                    wp->field_0x4 |= 0xA;
-                                    wp->field_0x4 &= ~5;
+                                    wp->flags |= 0xA;
+                                    wp->flags &= ~5;
                                     break;
                                 case 0:
                                     break;
                                 }
                             }
 #else
-                            if (wp->field_0x78 == 0 && (wp->field_0x4 & 0x11)) {
-                                wp->field_0x4 |= 0xA;
-                                wp->field_0x4 &= ~5;
+                            if (wp->toggleCooldown == 0 && (wp->flags & (STATUS_WIN_OPEN | STATUS_WIN_FORCE_OPEN))) {
+                                wp->flags |= (STATUS_WIN_CLOSED | STATUS_WIN_CLOSING);
+                                wp->flags &= ~(STATUS_WIN_OPEN | STATUS_WIN_OPENING);
                             }
 #endif
                         }
                         if (*(u16*)(mario->field_0x245 + 3) & 0x10) {
 #ifdef MUST_MATCH
-                            if (!(wp->field_0x4 & 0x11 ? 1 : 0)) {
+                            if (!(wp->flags & 0x11 ? 1 : 0)) {
 #else
-                            if (!(wp->field_0x4 & 0x11)) {
+                            if (!(wp->flags & (STATUS_WIN_OPEN | STATUS_WIN_FORCE_OPEN))) {
 #endif
-                                wp->field_0x4 &= ~0xA;
-                                wp->field_0x4 |= 5;
-                                wp->field_0x78 = gp->framerate * 10;
+                                wp->flags &= ~(STATUS_WIN_CLOSED | STATUS_WIN_CLOSING);
+                                wp->flags |= (STATUS_WIN_OPEN | STATUS_WIN_OPENING);
+                                wp->toggleCooldown = gp->framerate * STATUS_WIN_IDLE_SECONDS;
                                 psndSFXOn((const char*)0x2A);
-                                wp->field_0x4 |= 0x100;
+                                wp->flags |= STATUS_WIN_BADGES;
                             } else {
-                                wp->field_0x4 |= 0xA;
-                                wp->field_0x4 &= ~5;
-                                wp->field_0x78 = gp->framerate * 10;
-                                wp->field_0x7C = 1;
+                                wp->flags |= (STATUS_WIN_CLOSED | STATUS_WIN_CLOSING);
+                                wp->flags &= ~(STATUS_WIN_OPEN | STATUS_WIN_OPENING);
+                                wp->toggleCooldown = gp->framerate * STATUS_WIN_IDLE_SECONDS;
+                                wp->manualToggle = 1;
                                 psndSFXOn((const char*)0x2B);
                             }
                         }
                         if (valueCheck() != 0) {
-                            wp->field_0x78 = gp->framerate * 2;
+                            wp->toggleCooldown = gp->framerate * STATUS_WIN_CHANGE_SECONDS;
 #ifdef MUST_MATCH
-                            if (!(wp->field_0x4 & 0x11 ? 1 : 0)) {
+                            if (!(wp->flags & 0x11 ? 1 : 0)) {
 #else
-                            if (!(wp->field_0x4 & 0x11)) {
+                            if (!(wp->flags & (STATUS_WIN_OPEN | STATUS_WIN_FORCE_OPEN))) {
 #endif
-                                wp->field_0x4 &= ~0xA;
-                                wp->field_0x4 |= 5;
+                                wp->flags &= ~(STATUS_WIN_CLOSED | STATUS_WIN_CLOSING);
+                                wp->flags |= (STATUS_WIN_OPEN | STATUS_WIN_OPENING);
                             }
                         }
                     }
                 }
-                if (wp->field_0x78 != 0) {
-                    wp->field_0x78--;
+                if (wp->toggleCooldown != 0) {
+                    wp->toggleCooldown--;
                 }
-                wp->field_0x68 = mario->position;
-                if (wp->field_0x4 & 0x10) {
-                    wp->field_0x4 &= ~0xA;
+                wp->marioPos = mario->position;
+                if (wp->flags & STATUS_WIN_FORCE_OPEN) {
+                    wp->flags &= ~(STATUS_WIN_CLOSED | STATUS_WIN_CLOSING);
                 }
-                if (wp->field_0x4 & 0x20) {
-                    wp->field_0x4 &= ~5;
+                if (wp->flags & STATUS_WIN_FORCE_CLOSE) {
+                    wp->flags &= ~(STATUS_WIN_OPEN | STATUS_WIN_OPENING);
                 }
                 break;
             case SEQ_BATTLE:
                 break;
             default:
 #ifdef MUST_MATCH
-                switch ((wp->field_0x4 & 0x11) != 0) {
+                switch ((wp->flags & 0x11) != 0) {
                 default:
-                    wp->field_0x4 |= 0xA;
-                    wp->field_0x4 &= ~5;
+                    wp->flags |= 0xA;
+                    wp->flags &= ~5;
                     break;
                 case 0:
                     break;
                 }
 #else
-                if (wp->field_0x4 & 0x11) {
-                    wp->field_0x4 |= 0xA;
-                    wp->field_0x4 &= ~5;
+                if (wp->flags & (STATUS_WIN_OPEN | STATUS_WIN_FORCE_OPEN)) {
+                    wp->flags |= (STATUS_WIN_CLOSED | STATUS_WIN_CLOSING);
+                    wp->flags &= ~(STATUS_WIN_OPEN | STATUS_WIN_OPENING);
                 }
 #endif
                 break;
         }
 
-        if ((wp->field_0x4 & 0x4) || (wp->field_0x4 & 0x8) || (wp->field_0x4 & 0x40) || (wp->field_0x4 & 0x80)) {
-            *(f32*)((u8*)wp + 0x14) = wp->field_0x10;
-            wp->field_0x18 = (wp->field_0x4 & 0x44) ? float_1_8041c904 : float_0_8041c900;
-            wp->field_0x8 = float_0_8041c900;
-            wp->field_0xC = (wp->field_0x4 & 0x44) ? 16.0f / wp->field_0x1C : 28.0f / wp->field_0x1C;
-            wp->field_0x4 &= ~4;
-            wp->field_0x4 &= ~8;
-            wp->field_0x4 &= ~0x40;
-            wp->field_0x4 &= ~0x80;
+        if ((wp->flags & STATUS_WIN_OPENING) || (wp->flags & STATUS_WIN_CLOSING) || (wp->flags & STATUS_WIN_FORCE_OPENING) || (wp->flags & STATUS_WIN_FORCE_CLOSING)) {
+            wp->openFrom = wp->openAmount;
+            wp->openTarget = (wp->flags & (STATUS_WIN_OPENING | STATUS_WIN_FORCE_OPENING)) ? float_1_8041c904 : float_0_8041c900;
+            wp->animTime = float_0_8041c900;
+            wp->animDuration = (wp->flags & (STATUS_WIN_OPENING | STATUS_WIN_FORCE_OPENING)) ? STATUS_WIN_OPEN_FRAMES / wp->animSpeed : STATUS_WIN_CLOSE_FRAMES / wp->animSpeed;
+            wp->flags &= ~STATUS_WIN_OPENING;
+            wp->flags &= ~STATUS_WIN_CLOSING;
+            wp->flags &= ~STATUS_WIN_FORCE_OPENING;
+            wp->flags &= ~STATUS_WIN_FORCE_CLOSING;
         }
 
-        wp->field_0x8 += float_1_8041c904;
-        if (wp->field_0x8 >= wp->field_0xC) {
-            wp->field_0x8 = wp->field_0xC;
-            wp->field_0x10 = wp->field_0x18;
+        wp->animTime += float_1_8041c904;
+        if (wp->animTime >= wp->animDuration) {
+            wp->animTime = wp->animDuration;
+            wp->openAmount = wp->openTarget;
 #ifdef MUST_MATCH
             // Codegen-only: naming the zero object makes MWCC evaluate the field first and load
             // the constant into f0; writing the constant on the left restores the original's
             // 0.0-first fcmpu.
-            if (float_0_8041c900 == wp->field_0x10) {
-                wp->field_0x4 &= ~0x100;
+            if (float_0_8041c900 == wp->openAmount) {
+                wp->flags &= ~STATUS_WIN_BADGES;
             }
 #else
-            if (wp->field_0x10 == float_0_8041c900) {
-                wp->field_0x4 &= ~0x100;
+            if (wp->openAmount == float_0_8041c900) {
+                wp->flags &= ~STATUS_WIN_BADGES;
             }
 #endif
         } else {
@@ -336,21 +355,21 @@ void statusWinMain(void) {
             f32 a;
             f32 half;
 
-            c = cos(float_3p1416_8041c908 * wp->field_0x8 / wp->field_0xC);
+            c = cos(float_3p1416_8041c908 * wp->animTime / wp->animDuration);
             x = (f32)c;
             x = x;
             cc = float_1_8041c904 - x;
-            a = *(f32*)wp->field_0x14;
-            q = wp->field_0x18 - a;
+            a = wp->openFrom;
+            q = wp->openTarget - a;
             a = q * cc;
             q = a;
             half = float_0p5_8041c90c;
-            wp->field_0x10 = q * half + *(f32*)wp->field_0x14;
+            wp->openAmount = q * half + wp->openFrom;
 #else
             f32 c;
 
-            c = (f32)cos(float_3p1416_8041c908 * wp->field_0x8 / wp->field_0xC);
-            wp->field_0x10 = (wp->field_0x18 - *(f32*)wp->field_0x14) * (float_1_8041c904 - c) * float_0p5_8041c90c + *(f32*)wp->field_0x14;
+            c = (f32)cos(float_3p1416_8041c908 * wp->animTime / wp->animDuration);
+            wp->openAmount = (wp->openTarget - wp->openFrom) * (float_1_8041c904 - c) * float_0p5_8041c90c + wp->openFrom;
 #endif
         }
 
@@ -359,17 +378,17 @@ void statusWinMain(void) {
             // The original materialises `t = 1.0f` (f1) and then `t = 1.0f - x` (result f2); with a
             // plain `t -= x` MWCC reuses one register and the 1.0 load lands in f2. Codegen-only.
             f32 t = float_1_8041c904;
-            f32 x = wp->field_0x10;
+            f32 x = wp->openAmount;
             t = float_1_8041c904 - x;
 #else
-            f32 x = wp->field_0x10;
+            f32 x = wp->openAmount;
             f32 t = float_1_8041c904 - x;
 #endif
-            wp->field_0x20 = wp->field_0x30 * x + wp->field_0x40 * t;
-            wp->field_0x24 = wp->field_0x34 * x + wp->field_0x44 * t;
+            wp->originX = wp->openX * x + wp->closedX * t;
+            wp->originY = wp->openY * x + wp->closedY * t;
         }
         valueUpdate();
-        if (!(wp->field_0x4 & 0x1000)) {
+        if (!(wp->flags & STATUS_WIN_DISP_OFF)) {
             dispEntry(8, 500.0f, 0, statusWinDisp, NULL);
         }
     }
@@ -460,24 +479,25 @@ void statusWinDisp(CameraId camId, void* param) {
     GXColor numHp, numMaxHp, numFp, numMaxFp, numStar, numCoin, numPartyHp, numPartyMaxHp;
 #endif
 
-    baseX = wp->field_0x20;
-    baseY = wp->field_0x24;
+    baseX = wp->originX;
+    baseY = wp->originY;
     v6 = 1;
-    if (wp->field_0x88 > 0) {
-        wp->field_0x88--;
-        v6 = (wp->field_0x88 % 16) >= 6;
+    if (wp->blinkTimer > 0) {
+        wp->blinkTimer--;
+        v6 = (wp->blinkTimer % STATUS_WIN_BLINK_PERIOD) >= STATUS_WIN_BLINK_HIDE_FRAMES;
     }
 
     dtEntry = alwaysDt;
     for (i = 0; i < 13u; i++, dtEntry++) {
-        if (dtEntry->iconId == 466 && !pouchGetPtr()->mStarPowersObtained) {
+        if (dtEntry->iconId == ICON_SP_BANNER && !pouchGetPtr()->mStarPowersObtained) {
             break; // don't draw star power bar
         }
         if (!v6) {
-            if ((wp->field_0x80 & 1) && i == 1) {
+            if ((wp->blinkMask & STATUS_BLINK_MARIO_HP) && i == STATUS_DT_MARIO_HP) {
                 continue;
             }
-            if (((wp->field_0x80 & 2) && i == 4) || ((wp->field_0x80 & 0x10) && i == 8) || ((wp->field_0x80 & 4) && i == 12)) {
+            if (((wp->blinkMask & STATUS_BLINK_FP) && i == STATUS_DT_FP) || ((wp->blinkMask & STATUS_BLINK_COIN) && i == STATUS_DT_COIN) ||
+            ((wp->blinkMask & STATUS_BLINK_AP) && i == STATUS_DT_AP)) {
                 continue;
             }
         }
@@ -487,42 +507,42 @@ void statusWinDisp(CameraId camId, void* param) {
         SW_ICON_COL(mtx, 0x10, dtEntry->iconId, colAlways, *(GXColor*)&dat_8041c8e4);
     }
 
-    if (!(wp->field_0x80 & 1) || v6 != 0) {
-        number = *(s16*)((u8*)wp + 0x50);
+    if (!(wp->blinkMask & STATUS_BLINK_MARIO_HP) || v6 != 0) {
+        number = wp->hp;
         PSMTXTrans(hpMtx, baseX + 120.0f - 6.0f - 10.0f, baseY - 38.0f + 2.0f, float_0_8041c900);
         SW_NUM_GX(hpMtx, number, 0, numHp, *(GXColor*)&dat_8041c8e0);
     }
-    number = *(s16*)((u8*)wp + 0x52);
+    number = wp->maxHp;
     tx = baseX + 186.0f - 6.0f - 10.0f;
     ty = baseY - 38.0f + 3.0f;
     PSMTXTrans(maxHpMtx, tx, ty, float_0_8041c900);
     SW_NUM_GX(maxHpMtx, number, 1, numMaxHp, *(GXColor*)&dat_8041c8e0);
 
-    if (!(wp->field_0x80 & 2) || v6 != 0) {
-        number = *(s16*)((u8*)wp + 0x54);
+    if (!(wp->blinkMask & STATUS_BLINK_FP) || v6 != 0) {
+        number = wp->fp;
         PSMTXTrans(fpMtx, baseX + 292.0f - 6.0f, baseY - 38.0f + 2.0f, float_0_8041c900);
         SW_NUM_GX(fpMtx, number, 0, numFp, *(GXColor*)&dat_8041c8e0);
     }
-    number = *(s16*)((u8*)wp + 0x56);
+    number = wp->maxFp;
     PSMTXTrans(maxFpMtx, baseX + 358.0f - 6.0f, ty, float_0_8041c900);
     SW_NUM_GX(maxFpMtx, number, 1, numMaxFp, *(GXColor*)&dat_8041c8e0);
 
-    number = *(s16*)((u8*)wp + 0x5E);
+    number = wp->starPoint;
     PSMTXTrans(starMtx, baseX + 462.0f, ty = baseY - 38.0f + 2.0f, float_0_8041c900);
     SW_NUM_GX(starMtx, number, 0, numStar, *(GXColor*)&dat_8041c8e0);
 
-    if (!(wp->field_0x80 & 0x10) || v6 != 0) {
-        number = *(s16*)((u8*)wp + 0x60);
+    if (!(wp->blinkMask & STATUS_BLINK_COIN) || v6 != 0) {
+        number = wp->coin;
         PSMTXTrans(coinMtx, baseX + 572.0f, ty, float_0_8041c900);
         SW_NUM_GX(coinMtx, number, 0, numCoin, *(GXColor*)&dat_8041c8e0);
     }
 
-    if (!(wp->field_0x80 & 4) || v6 != 0) {
-        gaugeDisp(*(s16*)((u8*)wp + 0x62), baseX + 260.0f, baseY - 87.0f + 4.0f);
+    if (!(wp->blinkMask & STATUS_BLINK_AP) || v6 != 0) {
+        gaugeDisp(wp->ap, baseX + 260.0f, baseY - 87.0f + 4.0f);
     }
 
-    if (*(s16*)((u8*)wp + 0x58) != 0) {
-        s32 partyId = *(s16*)((u8*)wp + 0x58);
+    if (wp->partyId != 0) {
+        s32 partyId = wp->partyId;
 
         partysDt[1].iconId = party_icon[partyId];
         if (partyId == 4) {
@@ -553,7 +573,7 @@ void statusWinDisp(CameraId camId, void* param) {
         }
         dtEntry = partysDt;
         for (i = 0; i < 3u; i++, dtEntry++) {
-            if ((wp->field_0x80 & 8) && v6 == 0 && i == 1) {
+            if ((wp->blinkMask & STATUS_BLINK_PARTY_HP) && v6 == 0 && i == STATUS_DT_PARTY_ICON) {
                 continue;
             }
             PSMTXTrans(mtx, baseX + (f32)dtEntry->xpos, baseY - (f32)dtEntry->ypos, float_0_8041c900);
@@ -561,18 +581,18 @@ void statusWinDisp(CameraId camId, void* param) {
             PSMTXConcat(mtx, scale, mtx);
             SW_ICON_COL(mtx, 0x10, dtEntry->iconId, colParty, *(GXColor*)&dat_8041c8e8);
         }
-        if (!(wp->field_0x80 & 8) || v6 != 0) {
-            number = *(s16*)((u8*)wp + 0x5A);
+        if (!(wp->blinkMask & STATUS_BLINK_PARTY_HP) || v6 != 0) {
+            number = wp->partyHp;
             PSMTXTrans(partyHpMtx, baseX + 120.0f - 6.0f - 10.0f, baseY - 78.0f + 2.0f + 4.0f, float_0_8041c900);
             SW_NUM_GX(partyHpMtx, number, 0, numPartyHp, *(GXColor*)&dat_8041c8e0);
         }
-        number = *(s16*)((u8*)wp + 0x5C);
+        number = wp->partyMaxHp;
         PSMTXTrans(partyMaxHpMtx, tx, baseY - 78.0f + 2.0f + 4.0f, float_0_8041c900);
         SW_NUM_GX(partyMaxHpMtx, number, 1, numPartyMaxHp, *(GXColor*)&dat_8041c8e0);
     }
 
-    if ((wp->field_0x4 & 0x100) && gp->inBattle == 0) {
-        ty2 = -180.0f + (wp->field_0x34 - wp->field_0x24);
+    if ((wp->flags & STATUS_WIN_BADGES) && gp->inBattle == 0) {
+        ty2 = -180.0f + (wp->openY - wp->originY);
         PSMTXTrans(badgeMtx, -190.0f, ty2, float_0_8041c900);
         PSMTXScale(badgeScale, 0.75f, 0.75f, 0.75f);
         PSMTXConcat(badgeMtx, badgeScale, badgeMtx);
@@ -654,53 +674,53 @@ s32 valueCheck(void) {
     changed = 0;
     statusGetValue(&values);
 
-    if (*(s16*)((u8*)wp + 0x50) != values.hp) {
+    if (wp->hp != values.hp) {
         changed = 1;
-        *(u32*)((u8*)wp + 0x84) |= 1;
+        wp->changedMask |= STATUS_BLINK_MARIO_HP;
     }
-    if (*(s16*)((u8*)wp + 0x52) != values.maxHp) {
-        changed = 1;
-    }
-    if (*(s16*)((u8*)wp + 0x54) != values.fp) {
-        changed = 1;
-        *(u32*)((u8*)wp + 0x84) |= 2;
-    }
-    if (*(s16*)((u8*)wp + 0x56) != values.maxFp) {
+    if (wp->maxHp != values.maxHp) {
         changed = 1;
     }
-    if (wp->field_0x62 != values.ap) {
+    if (wp->fp != values.fp) {
+        changed = 1;
+        wp->changedMask |= STATUS_BLINK_FP;
+    }
+    if (wp->maxFp != values.maxFp) {
         changed = 1;
     }
-    if (*(s16*)((u8*)wp + 0x64) != values.maxAp) {
+    if (wp->ap != values.ap) {
         changed = 1;
     }
-    if (*(s16*)((u8*)wp + 0x58) != values.partyId) {
-        *(s16*)((u8*)wp + 0x58) = values.partyId;
-    } else if (*(s16*)((u8*)wp + 0x58) != 0) {
-        if (*(s16*)((u8*)wp + 0x5A) != values.partyHp) {
+    if (wp->maxAp != values.maxAp) {
+        changed = 1;
+    }
+    if (wp->partyId != values.partyId) {
+        wp->partyId = values.partyId;
+    } else if (wp->partyId != 0) {
+        if (wp->partyHp != values.partyHp) {
             changed = 1;
-            *(u32*)((u8*)wp + 0x84) |= 8;
+            wp->changedMask |= STATUS_BLINK_PARTY_HP;
         }
-        if (*(s16*)((u8*)wp + 0x5C) != values.partyMaxHp) {
+        if (wp->partyMaxHp != values.partyMaxHp) {
             changed = 1;
         }
     }
-    if (*(s16*)((u8*)wp + 0x5E) != values.starPoint) {
+    if (wp->starPoint != values.starPoint) {
         changed = 1;
     }
-    if (*(s16*)((u8*)wp + 0x60) != values.coin) {
+    if (wp->coin != values.coin) {
         changed = 1;
-        *(u32*)((u8*)wp + 0x84) |= 0x10;
+        wp->changedMask |= STATUS_BLINK_COIN;
     }
 
     if (changed == 0) {
-        if (*(u32*)((u8*)wp + 0x84) != 0) {
-            wp->field_0x80 = *(u32*)((u8*)wp + 0x84);
-            *(u32*)((u8*)wp + 0x84) = 0;
-            wp->field_0x88 = gp->framerate * 2;
+        if (wp->changedMask != 0) {
+            wp->blinkMask = wp->changedMask;
+            wp->changedMask = 0;
+            wp->blinkTimer = gp->framerate * STATUS_WIN_BLINK_SECONDS;
         }
     } else {
-        wp->field_0x80 = 0;
+        wp->blinkMask = 0;
     }
     return changed;
 }
@@ -721,7 +741,7 @@ void valueUpdate(void) {
     // The original materialises the statusWinCheck() result; a plain
     // if (!statusWinCheck()) folds the boolean away, so dispatch on it.
 #ifdef MUST_MATCH
-    switch ((wp->field_0x4 & 0x11) != 0) {
+    switch ((wp->flags & 0x11) != 0) {
     default:
 #else
     if (!statusWinCheck()) {
@@ -729,39 +749,39 @@ void valueUpdate(void) {
     }
 #endif
 #ifdef MUST_MATCH
-    curCoin = ((s16*)wp)[0x30];
+    curCoin = wp->coin;
     if (valueMoveAmount(curCoin, values.coin) != 0) {
 #else
-    if (valueMoveAmount(*(s16*)((u8*)wp + 0x60), values.coin) != 0) {
+    if (valueMoveAmount(wp->coin, values.coin) != 0) {
 #endif
         if (count % 8 == 0) {
             psndSFXOn("SFX_COUNT_COIN1");
         }
     }
 
-    valueMoveUpdate((s16*)((u8*)wp + 0x50), values.hp);
-    valueMoveUpdate((s16*)((u8*)wp + 0x52), values.maxHp);
-    valueMoveUpdate((s16*)((u8*)wp + 0x54), values.fp);
-    valueMoveUpdate((s16*)((u8*)wp + 0x56), values.maxFp);
-    valueMoveUpdate(&wp->field_0x62, values.ap);
-    valueMoveUpdate((s16*)((u8*)wp + 0x64), values.maxAp);
-    valueMoveUpdate((s16*)((u8*)wp + 0x5E), values.starPoint);
-    valueMoveUpdate((s16*)((u8*)wp + 0x60), values.coin);
+    valueMoveUpdate(&wp->hp, values.hp);
+    valueMoveUpdate(&wp->maxHp, values.maxHp);
+    valueMoveUpdate(&wp->fp, values.fp);
+    valueMoveUpdate(&wp->maxFp, values.maxFp);
+    valueMoveUpdate(&wp->ap, values.ap);
+    valueMoveUpdate(&wp->maxAp, values.maxAp);
+    valueMoveUpdate(&wp->starPoint, values.starPoint);
+    valueMoveUpdate(&wp->coin, values.coin);
 
-    *(s16*)((u8*)wp + 0x58) = values.partyId;
-    if (*(s16*)((u8*)wp + 0x58) != 0) {
+    wp->partyId = values.partyId;
+    if (wp->partyId != 0) {
 #ifdef MUST_MATCH
-        valueMoveParty((s16*)((u8*)wp + 0x5A), &values.partyHp);
+        valueMoveParty(&wp->partyHp, &values.partyHp);
 #else
-        valueMoveUpdate((s16*)((u8*)wp + 0x5A), values.partyHp);
+        valueMoveUpdate(&wp->partyHp, values.partyHp);
 #endif
-        valueMoveUpdate((s16*)((u8*)wp + 0x5C), values.partyMaxHp);
+        valueMoveUpdate(&wp->partyMaxHp, values.partyMaxHp);
     }
-    if (*(s16*)((u8*)wp + 0x5E) > 0x63) {
-        *(s16*)((u8*)wp + 0x5E) = 0x63;
+    if (wp->starPoint > STATUS_WIN_MAX_STAR_POINT) {
+        wp->starPoint = STATUS_WIN_MAX_STAR_POINT;
     }
-    if (*(s16*)((u8*)wp + 0x60) > 0x3E7) {
-        *(s16*)((u8*)wp + 0x60) = 0x3E7;
+    if (wp->coin > STATUS_WIN_MAX_COIN) {
+        wp->coin = STATUS_WIN_MAX_COIN;
     }
 #ifdef MUST_MATCH
         break;
@@ -772,60 +792,60 @@ void valueUpdate(void) {
 }
 
 void statusWinOpen(void) {
-    wp->field_0x4 &= ~0xA;
-    wp->field_0x4 |= 5;
+    wp->flags &= ~(STATUS_WIN_CLOSED | STATUS_WIN_CLOSING);
+    wp->flags |= (STATUS_WIN_OPEN | STATUS_WIN_OPENING);
 }
 
 void statusWinClose(void) {
-    wp->field_0x4 |= 0xA;
-    wp->field_0x4 &= ~5;
+    wp->flags |= (STATUS_WIN_CLOSED | STATUS_WIN_CLOSING);
+    wp->flags &= ~(STATUS_WIN_OPEN | STATUS_WIN_OPENING);
 }
 
 void statusWinForceOpen(void) {
-    wp->field_0x4 &= ~0xA;
-    wp->field_0x4 &= ~0xA0;
-    wp->field_0x4 |= 0x50;
+    wp->flags &= ~(STATUS_WIN_CLOSED | STATUS_WIN_CLOSING);
+    wp->flags &= ~(STATUS_WIN_FORCE_CLOSE | STATUS_WIN_FORCE_CLOSING);
+    wp->flags |= (STATUS_WIN_FORCE_OPEN | STATUS_WIN_FORCE_OPENING);
 }
 
 void statusWinForceClose(void) {
-    wp->field_0x4 &= ~5;
-    wp->field_0x4 &= ~0x50;
-    wp->field_0x4 |= 0xA0;
+    wp->flags &= ~(STATUS_WIN_OPEN | STATUS_WIN_OPENING);
+    wp->flags &= ~(STATUS_WIN_FORCE_OPEN | STATUS_WIN_FORCE_OPENING);
+    wp->flags |= (STATUS_WIN_FORCE_CLOSE | STATUS_WIN_FORCE_CLOSING);
 }
 
 void statusWinForceCloseClear(void) {
-    wp->field_0x4 &= ~0xA0;
+    wp->flags &= ~(STATUS_WIN_FORCE_CLOSE | STATUS_WIN_FORCE_CLOSING);
 }
 
 void statusWinForceOff(void) {
-    if (wp->field_0x4 & 0x10) {
-        wp->field_0x4 &= ~0x10;
-        wp->field_0x4 &= ~0xA;
-        wp->field_0x4 |= 5;
-    } else if (wp->field_0x4 & 1) {
-        wp->field_0x4 &= ~0xA;
-        wp->field_0x4 |= 5;
+    if (wp->flags & STATUS_WIN_FORCE_OPEN) {
+        wp->flags &= ~STATUS_WIN_FORCE_OPEN;
+        wp->flags &= ~(STATUS_WIN_CLOSED | STATUS_WIN_CLOSING);
+        wp->flags |= (STATUS_WIN_OPEN | STATUS_WIN_OPENING);
+    } else if (wp->flags & STATUS_WIN_OPEN) {
+        wp->flags &= ~(STATUS_WIN_CLOSED | STATUS_WIN_CLOSING);
+        wp->flags |= (STATUS_WIN_OPEN | STATUS_WIN_OPENING);
     }
-    if (wp->field_0x4 & 0x20) {
-        wp->field_0x4 &= ~0x20;
-        wp->field_0x4 |= 0xA;
-        wp->field_0x4 &= ~5;
-    } else if (wp->field_0x4 & 2) {
-        wp->field_0x4 |= 0xA;
-        wp->field_0x4 &= ~5;
+    if (wp->flags & STATUS_WIN_FORCE_CLOSE) {
+        wp->flags &= ~STATUS_WIN_FORCE_CLOSE;
+        wp->flags |= (STATUS_WIN_CLOSED | STATUS_WIN_CLOSING);
+        wp->flags &= ~(STATUS_WIN_OPEN | STATUS_WIN_OPENING);
+    } else if (wp->flags & STATUS_WIN_CLOSED) {
+        wp->flags |= (STATUS_WIN_CLOSED | STATUS_WIN_CLOSING);
+        wp->flags &= ~(STATUS_WIN_OPEN | STATUS_WIN_OPENING);
     }
 }
 
 void statusWinDispOn(void) {
-    wp->field_0x4 &= ~0x1000;
+    wp->flags &= ~STATUS_WIN_DISP_OFF;
 }
 
 void statusWinDispOff(void) {
-    wp->field_0x4 |= 0x1000;
+    wp->flags |= STATUS_WIN_DISP_OFF;
 }
 
 BOOL statusWinCheck(void) {
-    return (wp->field_0x4 & 0x11) != 0;
+    return (wp->flags & (STATUS_WIN_OPEN | STATUS_WIN_FORCE_OPEN)) != 0;
 }
 
 BOOL statusWinCheckUpdate(void) {
@@ -836,18 +856,18 @@ void statusWinForceUpdate(void) {
     StatusWindowValue values;
 
     statusGetValue(&values);
-    *(s16*)((u8*)wp + 0x50) = values.hp;
-    *(s16*)((u8*)wp + 0x52) = values.maxHp;
-    *(s16*)((u8*)wp + 0x54) = values.fp;
-    *(s16*)((u8*)wp + 0x56) = values.maxFp;
-    wp->field_0x62 = values.ap;
-    *(s16*)((u8*)wp + 0x64) = values.maxAp;
-    *(s16*)((u8*)wp + 0x5E) = values.starPoint;
-    *(s16*)((u8*)wp + 0x60) = values.coin;
-    *(s16*)((u8*)wp + 0x58) = values.partyId;
-    if (*(s16*)((u8*)wp + 0x58) != 0) {
-        *(s16*)((u8*)wp + 0x5A) = values.partyHp;
-        *(s16*)((u8*)wp + 0x5C) = values.partyMaxHp;
+    wp->hp = values.hp;
+    wp->maxHp = values.maxHp;
+    wp->fp = values.fp;
+    wp->maxFp = values.maxFp;
+    wp->ap = values.ap;
+    wp->maxAp = values.maxAp;
+    wp->starPoint = values.starPoint;
+    wp->coin = values.coin;
+    wp->partyId = values.partyId;
+    if (wp->partyId != 0) {
+        wp->partyHp = values.partyHp;
+        wp->partyMaxHp = values.partyMaxHp;
     }
 }
 
@@ -855,26 +875,26 @@ void statusWinForceUpdateCoin(void) {
     StatusWindowValue values;
 
     statusGetValue(&values);
-    *(s16*)((u8*)wp + 0x60) = values.coin;
+    wp->coin = values.coin;
 }
 
 Vec statusGetApPos(void) {
     Vec pos;
 
-    pos.x = wp->field_0x20 + alwaysDt[12].xpos;
-    pos.y = wp->field_0x24 - alwaysDt[12].ypos;
+    pos.x = wp->originX + alwaysDt[STATUS_DT_AP].xpos;
+    pos.y = wp->originY - alwaysDt[STATUS_DT_AP].ypos;
     pos.z = float_0_8041c900;
     return pos;
 }
 
 void statusAPBlink(s32 value) {
-    wp->field_0x80 = 0;
-    wp->field_0x80 |= 4;
-    wp->field_0x88 = value;
+    wp->blinkMask = 0;
+    wp->blinkMask |= STATUS_BLINK_AP;
+    wp->blinkTimer = value;
 }
 
 void N_statusClearBlink(void) {
-    wp->field_0x80 = 0;
+    wp->blinkMask = 0;
 }
 
 static inline s32 valueMoveAmount(s16 cur, s16 target) {
@@ -925,18 +945,18 @@ static inline void valueMoveParty(s16* cur, s16* target) {
 #endif
 
 void statusFPBlink(s32 value) {
-    wp->field_0x80 |= 2;
-    wp->field_0x88 = value;
+    wp->blinkMask |= STATUS_BLINK_FP;
+    wp->blinkTimer = value;
 }
 
 void statusMarioHPBlink(s32 value) {
-    wp->field_0x80 |= 1;
-    wp->field_0x88 = value;
+    wp->blinkMask |= STATUS_BLINK_MARIO_HP;
+    wp->blinkTimer = value;
 }
 
 void statusPartyHPBlink(s32 value) {
-    wp->field_0x80 |= 8;
-    wp->field_0x88 = value;
+    wp->blinkMask |= STATUS_BLINK_PARTY_HP;
+    wp->blinkTimer = value;
 }
 
 const f32 float_0_8041c900 = 0.0f;

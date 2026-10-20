@@ -13,46 +13,12 @@
 #include <string.h>
 #include "math_ext.h"
 
-// NOTE: local to cam_road.c; the work struct has no header yet. Offsets listed in REPORT.md.
-typedef struct CamRoadState {
-    /* 0x00 */ s32 unk_00;
-    /* 0x04 */ s32 unk_04;
-    /* 0x08 */ s32 unk_08;
-    /* 0x0C */ f32 unk_0C;
-    /* 0x10 */ f32 unk_10;
-    /* 0x14 */ f32 unk_14;
-    /* 0x18 */ f32 unk_18;
-    /* 0x1C */ f32 unk_1C;
-    /* 0x20 */ f32 unk_20;
-    /* 0x24 */ void* unk_24;
-    /* 0x28 */ f32 x;
-    /* 0x2C */ f32 y;
-    /* 0x30 */ f32 z;
-    /* 0x34 */ f32 unk_34;
-    /* 0x38 */ f32 unk_38;
-    /* 0x3C */ f32 unk_3C;
-    /* 0x40 */ f32 unk_40;
-    /* 0x44 */ f32 unk_44;
-    /* 0x48 */ f32 unk_48;
-    /* 0x4C */ f32 unk_4C;
-    /* 0x50 */ s64 time;
-    /* 0x58 */ f32 bank;
-    /* 0x5C */ f32 unk_5C;
-} CamRoadState;
-
-typedef struct CamRoadNode {
-    /* 0x00 */ u8 pad_00[0x20];
-    /* 0x20 */ u32 unk_20;
-    /* 0x24 */ u8 pad_24[0x1C];
-    /* 0x40 */ s32 unk_40;
-    /* 0x44 */ s32 unk_44;
-    /* 0x48 */ u8 pad_48[0x34];
-    /* 0x7C */ f32 unk_7C;
-} CamRoadNode;
+#define CAM_ROAD_MAP_101 0x65 // the map named "1.01"; gates the height-lock and curve-disable paths
+#define CAM_ROAD_MAP_OTHER 0x64
 
 typedef struct CamRoadMapEntry {
     /* 0x00 */ char name[0x28];
-    /* 0x28 */ s32 unk_28;
+    /* 0x28 */ s32 disabled;
     /* 0x2C */ u8 pad_2C[0x8C];
 } CamRoadMapEntry;
 
@@ -63,11 +29,11 @@ typedef struct CamRoadMap {
     /* 0x0CC */ u8 pad_0CC[0x1C];
     /* 0x0E8 */ u32 unk_E8;
     /* 0x0EC */ CamRoadMapEntry* entries;
-    /* 0x0F0 */ u32 unk_F0;
-    /* 0x0F4 */ u32 unk_F4;
-    /* 0x0F8 */ u32 unk_F8;
-    /* 0x0FC */ u32 unk_FC;
-    /* 0x100 */ u32 unk_100;
+    /* 0x0F0 */ u32 subs;
+    /* 0x0F4 */ u32 lists;
+    /* 0x0F8 */ u32 curvePts;
+    /* 0x0FC */ u32 verts;
+    /* 0x100 */ u32 indices;
     /* 0x104 */ u32 unk_104;
     /* 0x108 */ u32 unk_108;
 } CamRoadMap;
@@ -75,19 +41,22 @@ typedef struct CamRoadMap {
 // The 0xB8-byte curve entries of CamRoadMap::entries (CamRoadMapEntry is the same record seen from the name side).
 typedef struct CamRoadCurve {
     /* 0x00 */ u8 pad_00[0x20];
-    /* 0x20 */ u32 unk_20;
-    /* 0x24 */ f32 unk_24;
+    /* 0x20 */ u32 heightLock;
+    /* 0x24 */ f32 lockedHeight;
     /* 0x28 */ u32 disabled;
-    /* 0x2C */ u8 pad_2C[0x2C];
-    /* 0x58 */ f32 unk_58;
+    /* 0x2C */ u8 pad_2C[0x14];
+    /* 0x40 */ s32 firstSeg;
+    /* 0x44 */ s32 lastSeg;
+    /* 0x48 */ u8 pad_48[0x10];
+    /* 0x58 */ f32 radius;
     /* 0x5C */ u8 pad_5C[0x8];
-    /* 0x64 */ f32 unk_64;
+    /* 0x64 */ f32 yaw;
     /* 0x68 */ u8 pad_68[0x8];
-    /* 0x70 */ f32 unk_70;
+    /* 0x70 */ f32 roll;
     /* 0x74 */ u8 pad_74[0x8];
-    /* 0x7C */ f32 unk_7C;
+    /* 0x7C */ f32 shiftXRate;
     /* 0x80 */ u8 pad_80[0xC];
-    /* 0x8C */ f32 unk_8C;
+    /* 0x8C */ f32 topHeight;
     /* 0x90 */ u8 pad_90[0x18];
     /* 0xA8 */ s32 subStart;
     /* 0xAC */ s32 subCount;
@@ -109,47 +78,6 @@ typedef struct CamRoadList {
 } CamRoadList;
 
 
-typedef struct CamRoadWork {
-    /* 0x000 */ CamRoadMap* map;
-    /* 0x004 */ u32 unk_04;
-    /* 0x008 */ CamRoadState state0;
-    /* 0x068 */ CamRoadState state1;
-    /* 0x0C8 */ s32 unk_C8;
-    /* 0x0CC */ s32 unk_CC;
-    /* 0x0D0 */ f32 unk_D0;
-    /* 0x0D4 */ f32 unk_D4;
-    /* 0x0D8 */ CamRoadState state2;
-    /* 0x138 */ CamRoadState state3;
-    /* 0x198 */ s32 unk_198;
-    /* 0x19C */ f32 unk_19C;
-    /* 0x1A0 */ f32 unk_1A0;
-    /* 0x1A4 */ f32 unk_1A4;
-    /* 0x1A8 */ f32 unk_1A8;
-    /* 0x1AC */ f32 unk_1AC;
-    /* 0x1B0 */ f32 unk_1B0;
-    /* 0x1B4 */ f32 unk_1B4;
-    /* 0x1B8 */ f32 unk_1B8;
-    /* 0x1BC */ f32 unk_1BC;
-    /* 0x1C0 */ f32 unk_1C0;
-    /* 0x1C4 */ f32 unk_1C4;
-    /* 0x1C8 */ OSTime unk_1C8;
-    /* 0x1D0 */ u32 unk_1D0;
-    /* 0x1D4 */ f32 unk_1D4;
-    /* 0x1D8 */ f32 unk_1D8;
-    /* 0x1DC */ f32 unk_1DC;
-    /* 0x1E0 */ f32 unk_1E0;
-    /* 0x1E4 */ f32 unk_1E4;
-    /* 0x1E8 */ f32 unk_1E8;
-    /* 0x1EC */ f32 unk_1EC;
-    /* 0x1F0 */ f32 unk_1F0;
-    /* 0x1F4 */ f32 unk_1F4;
-    /* 0x1F8 */ f32 unk_1F8;
-    /* 0x1FC */ f32 unk_1FC;
-    /* 0x200 */ f32 unk_200;
-    /* 0x204 */ s32 unk_204;
-    /* 0x208 */ s32 unk_208;
-    /* 0x20C */ u8 pad_20C[0x4];
-} CamRoadWork;
 
 //.bss
 static CamRoadWork work;
@@ -169,10 +97,10 @@ void camRoadCurveOff(const char* name) {
     CamRoadMapEntry* entry = wp->map->entries;
     s32 i;
 
-    if (wp->unk_1D0 == 0x65) {
+    if (wp->mapKind == CAM_ROAD_MAP_101) {
         for (i = 0; i < wp->map->count; i++, entry++) {
             if (strcmp(entry->name, name) == 0) {
-                entry->unk_28 = 1;
+                entry->disabled = 1;
                 break;
             }
         }
@@ -183,10 +111,10 @@ void camRoadCurveOn(const char* name) {
     CamRoadMapEntry* entry = wp->map->entries;
     s32 i;
 
-    if (wp->unk_1D0 == 0x65) {
+    if (wp->mapKind == CAM_ROAD_MAP_101) {
         for (i = 0; i < wp->map->count; i++, entry++) {
             if (strcmp(entry->name, name) == 0) {
-                entry->unk_28 = 0;
+                entry->disabled = 0;
                 break;
             }
         }
@@ -196,33 +124,33 @@ void camRoadCurveOn(const char* name) {
 void camRoadReset(void) {
     s32 f204 = wp->unk_204;
     void* map = wp->map;
-    s32 f1d0 = wp->unk_1D0;
+    s32 f1d0 = wp->mapKind;
 
     memset(wp, 0, sizeof(CamRoadWork));
-    wp->unk_C8 = 0;
-    wp->state2.unk_00 = 0;
-    wp->state2.unk_00 = 0;
-    wp->unk_19C = 0.005f;
-    wp->unk_1A0 = 0.0f;
-    wp->unk_1A4 = 0.004f;
-    wp->unk_1A8 = 0.008f;
-    wp->unk_1AC = 1.0f;
-    wp->unk_1B0 = 1.0f;
-    wp->unk_1B4 = 2.0f;
-    wp->unk_1B8 = 1.0f;
-    wp->unk_1BC = 1.0f;
-    wp->unk_1C0 = 3.0f;
-    wp->unk_1C4 = 1.0f;
+    wp->hokanActive = 0;
+    wp->previous.valid = 0;
+    wp->previous.valid = 0;
+    wp->distRate = 0.005f;
+    wp->velRate = 0.0f;
+    wp->sideRecoverA = 0.004f;
+    wp->sideRecoverB = 0.008f;
+    wp->sideWeightA = 1.0f;
+    wp->sideWeightB = 1.0f;
+    wp->cmpHeadingW = 2.0f;
+    wp->cmpYawW = 1.0f;
+    wp->cmpRollW = 1.0f;
+    wp->cmpRadiusW = 3.0f;
+    wp->cmpDistW = 1.0f;
     wp->unk_204 = -1;
     wp->unk_208 = 0;
     wp->unk_204 = f204;
     wp->map = map;
-    wp->unk_1D0 = f1d0;
+    wp->mapKind = f1d0;
 }
 
 f32 camRoadGetCurrentShiftXRate(void) {
-    if (wp->state1.unk_00 != 0) {
-        return wp->state1.unk_5C;
+    if (wp->current.valid != 0) {
+        return wp->current.shiftXRate;
     }
     return 0.0f;
 }
@@ -238,86 +166,86 @@ CamRoadWork* camRoadGetWorkPtr(void) {
 void camRoadMain(f32* dst, f32 x, f32 y, f32 z, f32 ax, f32 ay, f32 az, f32 bank) {
     u32 result;
 
-    wp->unk_1EC = x;
-    wp->unk_1F0 = y;
-    wp->unk_1F4 = z;
-    wp->unk_1F8 = ax;
-    wp->unk_1FC = ay;
-    wp->unk_200 = az;
-    calcCamRoad(&wp->state1, &wp->state2, x / 10.0f, y / 10.0f,
+    wp->camX = x;
+    wp->camY = y;
+    wp->camZ = z;
+    wp->camAx = ax;
+    wp->camAy = ay;
+    wp->camAz = az;
+    calcCamRoad(&wp->current, &wp->previous, x / 10.0f, y / 10.0f,
                 z / 10.0f, ax / 10.0f, ay / 10.0f,
                 az / 10.0f, bank);
 
-    if (wp->unk_C8 != 0) {
-        result = compareCamRoad(&wp->state2, &wp->state1, &wp->unk_D4);
+    if (wp->hokanActive != 0) {
+        result = compareCamRoad(&wp->previous, &wp->current, &wp->hokanRate);
         if (result != 0) {
-            wp->unk_198 = result;
-            wp->unk_C8 = 1;
-            wp->unk_1C8 = gp->renderFieldTime;
-            wp->unk_D0 = 0.0f;
-            wp->state3 = wp->state0;
-            wp->state2 = wp->state1;
-            if (wp->state2.unk_08 != 0 || wp->state3.unk_08 != 0 ||
-                (wp->unk_1D0 == 0x65 &&
-                 ((wp->state2.unk_24 != NULL && ((CamRoadNode*)wp->state2.unk_24)->unk_20 != 0) ||
-                  (wp->state3.unk_24 != NULL && ((CamRoadNode*)wp->state3.unk_24)->unk_20 != 0))) ||
-                (wp->state2.unk_24 != NULL && ((CamRoadNode*)wp->state2.unk_24)->unk_7C) ||
-                (wp->state3.unk_24 != NULL && ((CamRoadNode*)wp->state3.unk_24)->unk_7C)) {
-                wp->unk_CC = 1;
+            wp->changeFlags = result;
+            wp->hokanActive = 1;
+            wp->hokanTime = gp->renderFieldTime;
+            wp->hokanT = 0.0f;
+            wp->hokanFrom = wp->blended;
+            wp->previous = wp->current;
+            if (wp->previous.flags != 0 || wp->hokanFrom.flags != 0 ||
+                (wp->mapKind == CAM_ROAD_MAP_101 &&
+                 ((wp->previous.road != NULL && ((CamRoadCurve*)wp->previous.road)->heightLock != 0) ||
+                  (wp->hokanFrom.road != NULL && ((CamRoadCurve*)wp->hokanFrom.road)->heightLock != 0))) ||
+                (wp->previous.road != NULL && ((CamRoadCurve*)wp->previous.road)->shiftXRate) ||
+                (wp->hokanFrom.road != NULL && ((CamRoadCurve*)wp->hokanFrom.road)->shiftXRate)) {
+                wp->hokanBlendPos = 1;
             } else {
-                wp->unk_CC = 0;
+                wp->hokanBlendPos = 0;
             }
         } else {
-            wp->state2 = wp->state1;
+            wp->previous = wp->current;
         }
     }
-    if (wp->unk_C8 == 0) {
-        result = compareCamRoad(&wp->state1, &wp->state2, &wp->unk_D4);
+    if (wp->hokanActive == 0) {
+        result = compareCamRoad(&wp->current, &wp->previous, &wp->hokanRate);
         if (result != 0) {
-            wp->unk_198 = result;
-            wp->unk_C8 = 1;
-            wp->unk_1C8 = gp->renderFieldTime;
-            wp->unk_D0 = 0.0f;
-            wp->state3 = wp->state2;
-            wp->state2 = wp->state1;
-            if (wp->state2.unk_08 != 0 || wp->state3.unk_08 != 0 ||
-                (wp->unk_1D0 == 0x65 &&
-                 ((wp->state2.unk_24 != NULL && ((CamRoadNode*)wp->state2.unk_24)->unk_20 != 0) ||
-                  (wp->state3.unk_24 != NULL && ((CamRoadNode*)wp->state3.unk_24)->unk_20 != 0))) ||
-                (wp->state2.unk_24 != NULL && ((CamRoadNode*)wp->state2.unk_24)->unk_7C) ||
-                (wp->state3.unk_24 != NULL && ((CamRoadNode*)wp->state3.unk_24)->unk_7C)) {
-                wp->unk_CC = 1;
+            wp->changeFlags = result;
+            wp->hokanActive = 1;
+            wp->hokanTime = gp->renderFieldTime;
+            wp->hokanT = 0.0f;
+            wp->hokanFrom = wp->previous;
+            wp->previous = wp->current;
+            if (wp->previous.flags != 0 || wp->hokanFrom.flags != 0 ||
+                (wp->mapKind == CAM_ROAD_MAP_101 &&
+                 ((wp->previous.road != NULL && ((CamRoadCurve*)wp->previous.road)->heightLock != 0) ||
+                  (wp->hokanFrom.road != NULL && ((CamRoadCurve*)wp->hokanFrom.road)->heightLock != 0))) ||
+                (wp->previous.road != NULL && ((CamRoadCurve*)wp->previous.road)->shiftXRate) ||
+                (wp->hokanFrom.road != NULL && ((CamRoadCurve*)wp->hokanFrom.road)->shiftXRate)) {
+                wp->hokanBlendPos = 1;
             } else {
-                wp->unk_CC = 0;
+                wp->hokanBlendPos = 0;
             }
         }
     }
 
-    if (wp->unk_C8 != 0) {
-        wp->unk_D0 += getV60FPS(wp->unk_D4, wp->unk_1C8, gp->renderFieldTime);
-        if (wp->unk_D0 > 1.0f) {
-            wp->unk_D0 = 1.0f;
+    if (wp->hokanActive != 0) {
+        wp->hokanT += getV60FPS(wp->hokanRate, wp->hokanTime, gp->renderFieldTime);
+        if (wp->hokanT > 1.0f) {
+            wp->hokanT = 1.0f;
         }
-        wp->unk_1C8 = gp->renderFieldTime;
-        calcHokanCamRoad(wp->unk_CC, &wp->state3, &wp->state2, wp->unk_D0, &wp->state1, &wp->state0);
-        if (wp->unk_CC != 0) {
-            wp->state0.unk_08 = 1;
+        wp->hokanTime = gp->renderFieldTime;
+        calcHokanCamRoad(wp->hokanBlendPos, &wp->hokanFrom, &wp->previous, wp->hokanT, &wp->current, &wp->blended);
+        if (wp->hokanBlendPos != 0) {
+            wp->blended.flags = 1;
         } else {
-            wp->state0.unk_08 = 0;
+            wp->blended.flags = 0;
         }
-        if (1.0f == wp->unk_D0) {
-            wp->state0 = wp->state2;
-            wp->unk_C8 = 0;
+        if (1.0f == wp->hokanT) {
+            wp->blended = wp->previous;
+            wp->hokanActive = 0;
         }
     } else {
 #ifdef MUST_MATCH
         // Match-only: the local alias keeps wp in r7 across the copy loops (see the comment above the function).
         CamRoadWork* w = wp;
-        w->state2 = w->state1;
-        wp->state0 = w->state2;
+        w->previous = w->current;
+        wp->blended = w->previous;
 #else
-        wp->state2 = wp->state1;
-        wp->state0 = wp->state2;
+        wp->previous = wp->current;
+        wp->blended = wp->previous;
 #endif
     }
 
@@ -364,12 +292,12 @@ void calcHokanCamRoad(s32 flag, CamRoadState* a, CamRoadState* b, f32 t, CamRoad
     }
 #ifdef MUST_MATCH
     // the original converts the first atan2 result in a scratch then copies it to angle
-    t0 = (f32)atan2(a->unk_34, a->unk_3C);
+    t0 = (f32)atan2(a->dirX, a->dirZ);
     angle = t0;
 #else
-    angle = (f32)atan2(a->unk_34, a->unk_3C);
+    angle = (f32)atan2(a->dirX, a->dirZ);
 #endif
-    angleB = (f32)atan2(b->unk_34, b->unk_3C);
+    angleB = (f32)atan2(b->dirX, b->dirZ);
     while (angle - angleB > 3.1415927f) {
         angle -= 6.2831855f;
     }
@@ -377,13 +305,13 @@ void calcHokanCamRoad(s32 flag, CamRoadState* a, CamRoadState* b, f32 t, CamRoad
         angle += 6.2831855f;
     }
     angle = angle + f31 * (angleB - angle);
-    out->unk_34 = (f32)sin(angle);
-    out->unk_3C = (f32)cos(angle);
-    out->unk_38 = a->unk_38 + f31 * (b->unk_38 - a->unk_38);
-    out->unk_40 = a->unk_40 + f31 * (b->unk_40 - a->unk_40);
-    out->unk_44 = a->unk_44 + f31 * (b->unk_44 - a->unk_44);
-    out->unk_48 = a->unk_48 + f31 * (b->unk_48 - a->unk_48);
-    out->unk_5C = a->unk_5C + f31 * (b->unk_5C - a->unk_5C);
+    out->dirX = (f32)sin(angle);
+    out->dirZ = (f32)cos(angle);
+    out->dirY = a->dirY + f31 * (b->dirY - a->dirY);
+    out->radius = a->radius + f31 * (b->radius - a->radius);
+    out->yaw = a->yaw + f31 * (b->yaw - a->yaw);
+    out->roll = a->roll + f31 * (b->roll - a->roll);
+    out->shiftXRate = a->shiftXRate + f31 * (b->shiftXRate - a->shiftXRate);
 }
 
 int __float_nan[];
@@ -449,16 +377,16 @@ u32 compareCamRoad(CamRoadState* cur, CamRoadState* prev, f32* out) {
     f32 dist;
     f32 cand;
 
-    if (prev->unk_00 == 0) {
+    if (prev->valid == 0) {
         return 0;
     }
-    if (cur->unk_24 == prev->unk_24) {
-        if (!(cur->unk_04 == 1 && prev->unk_04 == 0) && !(cur->unk_04 == 0 && prev->unk_08 == 1)) {
-            d = (s32)cur->unk_4C - (s32)prev->unk_4C;
+    if (cur->road == prev->road) {
+        if (!(cur->onRoad == 1 && prev->onRoad == 0) && !(cur->onRoad == 0 && prev->flags == 1)) {
+            d = (s32)cur->segment - (s32)prev->segment;
             if (abs(d) <= 1) {
                 return 0;
             }
-            range = ((CamRoadNode*)cur->unk_24)->unk_44 - ((CamRoadNode*)cur->unk_24)->unk_40;
+            range = ((CamRoadCurve*)cur->road)->lastSeg - ((CamRoadCurve*)cur->road)->firstSeg;
             lim = range;
             if (abs(d) >= --lim) {
                 return 0;
@@ -468,24 +396,24 @@ u32 compareCamRoad(CamRoadState* cur, CamRoadState* prev, f32* out) {
             }
         }
     }
-    if (cur->unk_24 != prev->unk_24) {
+    if (cur->road != prev->road) {
         flags |= 0x1;
     }
-    if (cur->unk_04 == 1 && prev->unk_04 == 0) {
+    if (cur->onRoad == 1 && prev->onRoad == 0) {
         flags |= 0x2;
     }
-    if (cur->unk_04 == 0 && prev->unk_08 == 1) {
+    if (cur->onRoad == 0 && prev->flags == 1) {
         flags |= 0x4;
     }
 #ifdef MUST_MATCH
     // the compiler materialises the negated `<=` here; the natural `> 1.0` emits a plain branch.
-    if (!(__fabsf(cur->unk_4C - prev->unk_4C) <= 1.0)) {
+    if (!(__fabsf(cur->segment - prev->segment) <= 1.0)) {
 #else
-    if (__fabsf(cur->unk_4C - prev->unk_4C) > 1.0) {
+    if (__fabsf(cur->segment - prev->segment) > 1.0) {
 #endif
         flags |= 0x8;
     }
-    dot = cur->unk_34 * prev->unk_34 + cur->unk_3C * prev->unk_3C;
+    dot = cur->dirX * prev->dirX + cur->dirZ * prev->dirZ;
     if (dot > 1.0f) {
         dot = 1.0f;
     }
@@ -494,28 +422,28 @@ u32 compareCamRoad(CamRoadState* cur, CamRoadState* prev, f32* out) {
     if (deg > 180.0f) {
         deg = 360.0f - deg;
     }
-    cand = 6.2831855f * cur->unk_40 * deg / 360.0f;
-    maxVal = cand * wp->unk_1B4;
-    diff = __fabsf(cur->unk_44 - prev->unk_44);
+    cand = 6.2831855f * cur->radius * deg / 360.0f;
+    maxVal = cand * wp->cmpHeadingW;
+    diff = __fabsf(cur->yaw - prev->yaw);
     if (diff > 180.0f) {
         diff = 360.0f - diff;
     }
-    cand = 6.2831855f * cur->unk_40 * diff / 360.0f;
-    cand = cand * wp->unk_1B8;
+    cand = 6.2831855f * cur->radius * diff / 360.0f;
+    cand = cand * wp->cmpYawW;
     if (cand > maxVal) {
         maxVal = cand;
     }
-    diff = __fabsf(cur->unk_48 - prev->unk_48);
+    diff = __fabsf(cur->roll - prev->roll);
     if (diff > 180.0f) {
         diff = 360.0f - diff;
     }
-    cand = 6.2831855f * cur->unk_40 * diff / 360.0f;
-    cand = cand * wp->unk_1BC;
+    cand = 6.2831855f * cur->radius * diff / 360.0f;
+    cand = cand * wp->cmpRollW;
     if (cand > maxVal) {
         maxVal = cand;
     }
-    cand = __fabsf(cur->unk_40 - prev->unk_40);
-    cand = cand * wp->unk_1C0;
+    cand = __fabsf(cur->radius - prev->radius);
+    cand = cand * wp->cmpRadiusW;
     if (cand > maxVal) {
         maxVal = cand;
     }
@@ -537,7 +465,7 @@ u32 compareCamRoad(CamRoadState* cur, CamRoadState* prev, f32* out) {
     if (maxVal < 0.01f && dist < 0.3f) {
         return 0;
     }
-    cand = dist * wp->unk_1C4;
+    cand = dist * wp->cmpDistW;
     if (cand > maxVal) {
         maxVal = cand;
     }
@@ -645,10 +573,10 @@ void calcCamRoad(CamRoadState* a, CamRoadState* b, f32 x, f32 y, f32 z, f32 ax, 
 
     for (i = 0; i < wp->map->count; i++, entry++) {
         subCount = entry->subCount;
-        sub = (CamRoadSub*)wp->map->unk_F0 + entry->subStart;
-        if (wp->unk_1D0 != 0x65 || entry->disabled == 0) {
+        sub = (CamRoadSub*)wp->map->subs + entry->subStart;
+        if (wp->mapKind != CAM_ROAD_MAP_101 || entry->disabled == 0) {
             if (subCount == 0) {
-                top = entry->unk_8C;
+                top = entry->topHeight;
 
                 if (!(top > ay) && top > tmin) {
                     tmin = top;
@@ -658,11 +586,11 @@ void calcCamRoad(CamRoadState* a, CamRoadState* b, f32 x, f32 y, f32 z, f32 ax, 
                 for (k = 0; k < subCount; k++, sub++) {
                     CamRoadMap* map = wp->map;
 
-                    verts = (Vec*)map->unk_FC + sub->vertStart;
+                    verts = (Vec*)map->verts + sub->vertStart;
                     n = sub->listCount;
-                    list = (CamRoadList*)map->unk_F4 + sub->listStart;
+                    list = (CamRoadList*)map->lists + sub->listStart;
                     for (j = 0; j < n; j++, list++) {
-                        idx = (s32*)wp->map->unk_100 + list->idxStart;
+                        idx = (s32*)wp->map->indices + list->idxStart;
                         idxp = idx + 1;
                         m = list->idxCount;
                         for (found = 1; found < m - 1; idxp++, found++) {
@@ -678,10 +606,10 @@ void calcCamRoad(CamRoadState* a, CamRoadState* b, f32 x, f32 y, f32 z, f32 ax, 
     }
 
     if (hit != NULL) {
-        h1.unk_08 = -1000000.0f;
-        h1.unk_18 = 0.0f;
-        h1.unk_1C = 0.0f;
-        h1.unk_20 = 0.0f;
+        h1.startY = -1000000.0f;
+        h1.normX = 0.0f;
+        h1.normY = 0.0f;
+        h1.normZ = 0.0f;
         if (!collisionCurve(0, hit, pos, &h1)) {
             hit = NULL;
         }
@@ -689,59 +617,59 @@ void calcCamRoad(CamRoadState* a, CamRoadState* b, f32 x, f32 y, f32 z, f32 ax, 
 
     cur = (CamRoadCurve*)hit;
     if (hit == NULL) {
-        if (b->unk_00 != 0) {
-            cur = (CamRoadCurve*)b->unk_24;
+        if (b->valid != 0) {
+            cur = (CamRoadCurve*)b->road;
         } else {
             cur = NULL;
         }
         if (cur == NULL) {
-            wp->unk_1D4 = x;
-            wp->unk_1D8 = y;
-            wp->unk_1DC = z;
-            wp->unk_1E0 = ax;
-            wp->unk_1E4 = ay;
-            wp->unk_1E8 = az;
+            wp->noRoadX = x;
+            wp->noRoadY = y;
+            wp->noRoadZ = z;
+            wp->noRoadAx = ax;
+            wp->noRoadAy = ay;
+            wp->noRoadAz = az;
             return;
         }
         px = x;
-        if (wp->unk_1D0 == 0x65 && cur != NULL && cur->unk_20 != 0) {
-            py = cur->unk_24;
+        if (wp->mapKind == CAM_ROAD_MAP_101 && cur != NULL && cur->heightLock != 0) {
+            py = cur->lockedHeight;
         } else {
             py = y;
         }
         pz = z;
         flags = 0;
-        f31 = -b->unk_34;
-        f30 = -b->unk_38;
-        f29 = -b->unk_3C;
-        f24 = b->unk_40;
-        s1B0 = b->unk_44;
-        s1AC = b->unk_48;
-        s1A8 = b->unk_4C;
+        f31 = -b->dirX;
+        f30 = -b->dirY;
+        f29 = -b->dirZ;
+        f24 = b->radius;
+        s1B0 = b->yaw;
+        s1AC = b->roll;
+        s1A8 = b->segment;
     } else {
 
-        if (h1.unk_00 < 0.0f) {
-            h1.unk_00 = 0.0f;
+        if (h1.param < 0.0f) {
+            h1.param = 0.0f;
         }
-        if (h1.unk_00 > 1.0f) {
-            h1.unk_00 = 1.0f;
+        if (h1.param > 1.0f) {
+            h1.param = 1.0f;
         }
-        s1B0 = cur->unk_64;
-        f24 = cur->unk_58;
-        s1AC = cur->unk_70;
-        px = h1.unk_0C;
-        if (wp->unk_1D0 == 0x65 && cur->unk_20 != 0) {
-            py = cur->unk_24;
+        s1B0 = cur->yaw;
+        f24 = cur->radius;
+        s1AC = cur->roll;
+        px = h1.x;
+        if (wp->mapKind == CAM_ROAD_MAP_101 && cur->heightLock != 0) {
+            py = cur->lockedHeight;
         } else {
             py = y;
         }
-        f31 = -h1.unk_20;
-        f29 = h1.unk_18;
-        len = f31 * f31 + h1.unk_18 * h1.unk_18;
-        pz = h1.unk_14;
-        flags = h1.unk_28;
-        s1A8 = (f32)h1.unk_24;
-        f30 = h1.unk_1C;
+        f31 = -h1.normZ;
+        f29 = h1.normX;
+        len = f31 * f31 + h1.normX * h1.normX;
+        pz = h1.z;
+        flags = h1.flags;
+        s1A8 = (f32)h1.segment;
+        f30 = h1.normY;
         if (len != 0.0) {
             len = sqrtf(len);
             f31 /= len;
@@ -758,18 +686,18 @@ void calcCamRoad(CamRoadState* a, CamRoadState* b, f32 x, f32 y, f32 z, f32 ax, 
         q.x = px;
         q.y = 100000000.0f;
         q.z = pz;
-        h1.unk_08 = -1000000.0f;
+        h1.startY = -1000000.0f;
         if (collisionCurve(1, curve, q, &h1)) {
-            px = h1.unk_0C;
-            pz = h1.unk_14;
-            flags |= h1.unk_28;
+            px = h1.x;
+            pz = h1.z;
+            flags |= h1.flags;
         }
     }
 
     if (cur != NULL) {
         rad = 3.141592f * (*(f32*)wp->map->unk_E8 / 2.0f / 180.0f);
 
-        if (bank && hit != NULL && b->unk_00 != 0) {
+        if (bank && hit != NULL && b->valid != 0) {
             f32 scale = 1.0f;
             f32 ox;
             f32 oz;
@@ -794,23 +722,23 @@ void calcCamRoad(CamRoadState* a, CamRoadState* b, f32 x, f32 y, f32 z, f32 ax, 
             t1.x = t1.x + ox;
             t1.y = 1000000.0f;
             t1.z = t1.z + oz;
-            h2.unk_08 = -1000000.0f;
-            h2.unk_18 = h2.unk_1C = h2.unk_20 = 0.0f;
+            h2.startY = -1000000.0f;
+            h2.normX = h2.normY = h2.normZ = 0.0f;
             found1 = 0;
             if (collisionCurve(0, (CollisionCurveData*)cur, t1, &h2)) {
                 found1 = 1;
-                t1.x = h2.unk_0C;
+                t1.x = h2.x;
                 t1.y = py;
-                t1.z = h2.unk_14;
+                t1.z = h2.z;
             }
             if (cur->hasCurve != 0) {
                 curve = (CollisionCurveData*)((CamRoadSub*)wp->map->unk_104 + cur->curveIdx);
-                h2.unk_08 = -1000000.0f;
+                h2.startY = -1000000.0f;
                 if (collisionCurve(1, curve, t1, &h2)) {
                     found1 = 1;
-                    t1.x = h2.unk_0C;
+                    t1.x = h2.x;
                     t1.y = py;
-                    t1.z = h2.unk_14;
+                    t1.z = h2.z;
                 }
             }
             if (found1 != 0) {
@@ -829,37 +757,37 @@ void calcCamRoad(CamRoadState* a, CamRoadState* b, f32 x, f32 y, f32 z, f32 ax, 
             t2 = pos;
             t2.x = t2.x + ox;
             t2.y = 1000000.0f;
-            h3.unk_08 = -1000000.0f;
+            h3.startY = -1000000.0f;
             oz = k2 * f31;
             t2.z = t2.z + oz;
-            h3.unk_18 = h3.unk_1C = h3.unk_20 = 0.0f;
+            h3.normX = h3.normY = h3.normZ = 0.0f;
             found2 = 0;
             flags = 0;
             if (collisionCurve(0, (CollisionCurveData*)cur, t2, &h3)) {
                 found2 = 1;
-                flags |= h3.unk_28;
-                t2.x = h3.unk_0C;
+                flags |= h3.flags;
+                t2.x = h3.x;
                 t2.y = py;
-                t2.z = h3.unk_14;
+                t2.z = h3.z;
             }
             if (cur->hasCurve != 0) {
                 curve = (CollisionCurveData*)((CamRoadSub*)wp->map->unk_104 + cur->curveIdx);
-                h3.unk_08 = -1000000.0f;
+                h3.startY = -1000000.0f;
                 if (collisionCurve(1, curve, t2, &h3)) {
                     found2 = 1;
-                    t2.x = h3.unk_0C;
-                    flags |= h3.unk_28;
-                    t2.z = h3.unk_14;
+                    t2.x = h3.x;
+                    flags |= h3.flags;
+                    t2.z = h3.z;
                 }
             }
             if (found2 != 0) {
                 hx = t2.x;
                 hz = t2.z;
-                if (!(h3.unk_28 & 1) && (b->unk_08 & 1)) {
-                    wp->unk_1AC = 0.0f;
+                if (!(h3.flags & 1) && (b->flags & 1)) {
+                    wp->sideWeightA = 0.0f;
                 }
-                if (!(h3.unk_28 & 2) && (b->unk_08 & 2)) {
-                    wp->unk_1B0 = 0.0f;
+                if (!(h3.flags & 2) && (b->flags & 2)) {
+                    wp->sideWeightB = 0.0f;
                 }
             } else {
                 hx = px;
@@ -874,12 +802,12 @@ void calcCamRoad(CamRoadState* a, CamRoadState* b, f32 x, f32 y, f32 z, f32 ax, 
             dB.z = hz - b->z;
             m1 = PSVECMag(&dA);
             PSVECMag(&dB);
-            m1 = m1 + getV60FPS(wp->unk_19C, b->time, gp->renderFieldTime);
-            m2 = getV60FPS(wp->unk_1A0, b->time, gp->renderFieldTime);
-            lim1 = m1 * wp->unk_1AC;
-            lim2 = m1 * wp->unk_1B0;
-            vel1 = m2 * wp->unk_1AC;
-            vel2 = m2 * wp->unk_1B0;
+            m1 = m1 + getV60FPS(wp->distRate, b->time, gp->renderFieldTime);
+            m2 = getV60FPS(wp->velRate, b->time, gp->renderFieldTime);
+            lim1 = m1 * wp->sideWeightA;
+            lim2 = m1 * wp->sideWeightB;
+            vel1 = m2 * wp->sideWeightA;
+            vel2 = m2 * wp->sideWeightB;
             u.x = nzv;
             u.z = f31;
             w.x = -u.z;
@@ -918,38 +846,38 @@ void calcCamRoad(CamRoadState* a, CamRoadState* b, f32 x, f32 y, f32 z, f32 ax, 
         }
     }
 
-    wp->unk_1AC = wp->unk_1AC + wp->unk_1A4;
-    if (wp->unk_1AC > 1.0f) {
-        wp->unk_1AC = 1.0f;
+    wp->sideWeightA = wp->sideWeightA + wp->sideRecoverA;
+    if (wp->sideWeightA > 1.0f) {
+        wp->sideWeightA = 1.0f;
     }
-    wp->unk_1B0 = wp->unk_1B0 + wp->unk_1A8;
-    if (wp->unk_1B0 > 1.0f) {
-        wp->unk_1B0 = 1.0f;
+    wp->sideWeightB = wp->sideWeightB + wp->sideRecoverB;
+    if (wp->sideWeightB > 1.0f) {
+        wp->sideWeightB = 1.0f;
     }
 
-    a->unk_00 = 1;
-    a->unk_04 = hit != NULL;
-    a->unk_08 = flags;
-    a->unk_0C = x;
-    a->unk_10 = y;
-    a->unk_14 = z;
-    a->unk_18 = ax;
-    a->unk_1C = ay;
-    a->unk_20 = az;
-    a->unk_24 = cur;
+    a->valid = 1;
+    a->onRoad = hit != NULL;
+    a->flags = flags;
+    a->inX = x;
+    a->inY = y;
+    a->inZ = z;
+    a->inAx = ax;
+    a->inAy = ay;
+    a->inAz = az;
+    a->road = cur;
     a->x = px;
     a->y = py;
     a->z = pz;
-    a->unk_34 = -f31;
-    a->unk_38 = -f30;
-    a->unk_3C = -f29;
-    a->unk_40 = f24;
-    a->unk_44 = s1B0;
-    a->unk_48 = s1AC;
-    a->unk_4C = s1A8;
+    a->dirX = -f31;
+    a->dirY = -f30;
+    a->dirZ = -f29;
+    a->radius = f24;
+    a->yaw = s1B0;
+    a->roll = s1AC;
+    a->segment = s1A8;
     a->time = gp->renderFieldTime;
     a->bank = bank;
-    a->unk_5C = cur->unk_7C;
+    a->shiftXRate = cur->shiftXRate;
 }
 
 
@@ -977,27 +905,27 @@ BOOL collisionCurve(s32 mode, CollisionCurveData* data, Vec p, CollisionCurveHit
     d0 = 0.0f;
 
     if (mode == 0) {
-        limA = data->unk_48;
-        limB = data->unk_4C;
+        limA = data->limitA;
+        limB = data->limitB;
         openEnds = 0;
-        half = data->unk_A4 / 2;
-        base = (Vec*)wp->map->unk_F8;
-        ptBase = &base[data->unk_A0];
-        nBase = &base[data->unk_A0 + half];
-        idxLo = data->unk_40;
-        idxHi = data->unk_44;
-        clampEnds = data->unk_84;
+        half = data->ptsCount / 2;
+        base = (Vec*)wp->map->curvePts;
+        ptBase = &base[data->ptsStart];
+        nBase = &base[data->ptsStart + half];
+        idxLo = data->firstSeg;
+        idxHi = data->lastSeg;
+        clampEnds = data->clampEnds;
     } else {
         idxLo = 0;
         limA = 0.0f;
-        base = (Vec*)wp->map->unk_F8;
+        base = (Vec*)wp->map->curvePts;
         limB = 0.0f;
-        ptBase = &base[data->unk_60];
+        ptBase = &base[data->curvePtsStart];
         idxHi = 1;
         clampEnds = 0;
         openEnds = 1;
-        half = data->unk_64 / 2;
-        nBase = &base[data->unk_60 + half];
+        half = data->curvePtsCount / 2;
+        nBase = &base[data->curvePtsStart + half];
     }
 
     yLo = nBase[idxLo].y;
@@ -1122,16 +1050,16 @@ BOOL collisionCurve(s32 mode, CollisionCurveData* data, Vec p, CollisionCurveHit
                         }
                     }
                     found = 1;
-                    out->unk_00 = yLo;
-                    out->unk_0C = dist * nLo->z + pLo->x;
-                    out->unk_10 = 0.0f;
-                    out->unk_14 = pLo->z - dist * nLo->x;
-                    out->unk_18 = nLo->x;
-                    out->unk_1C = 0.0f;
-                    out->unk_20 = nLo->z;
-                    out->unk_08 = h0;
-                    out->unk_24 = idxLo;
-                    out->unk_28 = flags | 1;
+                    out->param = yLo;
+                    out->x = dist * nLo->z + pLo->x;
+                    out->y = 0.0f;
+                    out->z = pLo->z - dist * nLo->x;
+                    out->normX = nLo->x;
+                    out->normY = 0.0f;
+                    out->normZ = nLo->z;
+                    out->startY = h0;
+                    out->segment = idxLo;
+                    out->flags = flags | 1;
                     continue;
                 }
                 if (h > yHi) {
@@ -1163,16 +1091,16 @@ BOOL collisionCurve(s32 mode, CollisionCurveData* data, Vec p, CollisionCurveHit
                         }
                     }
                     found = 1;
-                    out->unk_00 = yHi;
-                    out->unk_0C = dist * nHi->z + pHi->x;
-                    out->unk_10 = 0.0f;
-                    out->unk_14 = pHi->z - dist * nHi->x;
-                    out->unk_18 = nHi->x;
-                    out->unk_1C = 0.0f;
-                    out->unk_20 = nHi->z;
-                    out->unk_08 = h0;
-                    out->unk_24 = idxHi;
-                    out->unk_28 = flags | 1;
+                    out->param = yHi;
+                    out->x = dist * nHi->z + pHi->x;
+                    out->y = 0.0f;
+                    out->z = pHi->z - dist * nHi->x;
+                    out->normX = nHi->x;
+                    out->normY = 0.0f;
+                    out->normZ = nHi->z;
+                    out->startY = h0;
+                    out->segment = idxHi;
+                    out->flags = flags | 1;
                     continue;
                 }
                 if (xc > 0.0) {
@@ -1245,23 +1173,23 @@ BOOL collisionCurve(s32 mode, CollisionCurveData* data, Vec p, CollisionCurveHit
             } else if (!(xc > 0.0)) {
                 dir = -1.0f;
             }
-            out->unk_0C = ix + rx;
-            out->unk_10 = 0.0f;
-            out->unk_14 = iz + rz;
+            out->x = ix + rx;
+            out->y = 0.0f;
+            out->z = iz + rz;
             if (dir < 0.0f) {
-                out->unk_18 = -rz / rp;
-                out->unk_1C = 0.0f;
-                out->unk_20 = rx / rp;
+                out->normX = -rz / rp;
+                out->normY = 0.0f;
+                out->normZ = rx / rp;
             } else {
-                out->unk_18 = rz / rp;
-                out->unk_1C = 0.0f;
-                out->unk_20 = -rx / rp;
+                out->normX = rz / rp;
+                out->normY = 0.0f;
+                out->normZ = -rx / rp;
             }
-            out->unk_00 = h;
+            out->param = h;
             found = 1;
-            out->unk_08 = h0;
-            out->unk_24 = i;
-            out->unk_28 = flags;
+            out->startY = h0;
+            out->segment = i;
+            out->flags = flags;
         } else {
             sz = pts[0].z;
             dz = pts[1].z - sz;
@@ -1319,16 +1247,16 @@ BOOL collisionCurve(s32 mode, CollisionCurveData* data, Vec p, CollisionCurveHit
                         d = -d;
                     }
                     found = 1;
-                    out->unk_00 = yLo;
-                    out->unk_0C = d * nLo[0].z + pLo[0].x;
-                    out->unk_10 = 0.0f;
-                    out->unk_14 = pLo[0].z - d * nLo[0].x;
-                    out->unk_18 = nLo[0].x;
-                    out->unk_1C = 0.0f;
-                    out->unk_20 = nLo[0].z;
-                    out->unk_08 = h0;
-                    out->unk_24 = idxLo;
-                    out->unk_28 = flags | 1;
+                    out->param = yLo;
+                    out->x = d * nLo[0].z + pLo[0].x;
+                    out->y = 0.0f;
+                    out->z = pLo[0].z - d * nLo[0].x;
+                    out->normX = nLo[0].x;
+                    out->normY = 0.0f;
+                    out->normZ = nLo[0].z;
+                    out->startY = h0;
+                    out->segment = idxLo;
+                    out->flags = flags | 1;
                     continue;
                 }
                 if (y > yHi) {
@@ -1346,16 +1274,16 @@ BOOL collisionCurve(s32 mode, CollisionCurveData* data, Vec p, CollisionCurveHit
                         d = -d;
                     }
                     found = 1;
-                    out->unk_00 = yHi;
-                    out->unk_0C = d * nHi[0].z + pHi[0].x;
-                    out->unk_10 = 0.0f;
-                    out->unk_14 = pHi[0].z - d * nHi[0].x;
-                    out->unk_18 = nHi[0].x;
-                    out->unk_1C = 0.0f;
-                    out->unk_20 = nHi[0].z;
-                    out->unk_08 = h0;
-                    out->unk_24 = idxHi;
-                    out->unk_28 = flags | 1;
+                    out->param = yHi;
+                    out->x = d * nHi[0].z + pHi[0].x;
+                    out->y = 0.0f;
+                    out->z = pHi[0].z - d * nHi[0].x;
+                    out->normX = nHi[0].x;
+                    out->normY = 0.0f;
+                    out->normZ = nHi[0].z;
+                    out->startY = h0;
+                    out->segment = idxHi;
+                    out->flags = flags | 1;
                     continue;
                 }
                 cross = offx * nx + offz * dx;
@@ -1373,17 +1301,17 @@ BOOL collisionCurve(s32 mode, CollisionCurveData* data, Vec p, CollisionCurveHit
                     }
                 }
             }
-            out->unk_00 = y;
-            out->unk_0C = qx + offx;
-            out->unk_10 = 0.0f;
-            out->unk_14 = qz + offz;
+            out->param = y;
+            out->x = qx + offx;
+            out->y = 0.0f;
+            out->z = qz + offz;
             found = 1;
-            out->unk_18 = tl * (nrm[1].x - nrm[0].x) + nrm[0].x;
-            out->unk_1C = 0.0f;
-            out->unk_20 = tl * (nrm[1].z - nrm[0].z) + nrm[0].z;
-            out->unk_08 = h0;
-            out->unk_24 = i;
-            out->unk_28 = flags;
+            out->normX = tl * (nrm[1].x - nrm[0].x) + nrm[0].x;
+            out->normY = 0.0f;
+            out->normZ = tl * (nrm[1].z - nrm[0].z) + nrm[0].z;
+            out->startY = h0;
+            out->segment = i;
+            out->flags = flags;
         }
     }
     return found;
@@ -1511,7 +1439,7 @@ void calcCurrentCamState(f32* dst) {
     dst[0] = src->x;
     dst[1] = src->y;
     dst[2] = src->z;
-    if (wp->state0.unk_00 == 0) {
+    if (wp->blended.valid == 0) {
         dst[3] = 0.0f;
         dst[4] = 100.0f;
         dst[5] = 100.0f;
@@ -1520,14 +1448,14 @@ void calcCurrentCamState(f32* dst) {
         dst[8] = 0.0f;
         return;
     }
-    sx = wp->state0.x;
-    sy = wp->state0.y;
-    sz = wp->state0.z;
-    f27 = wp->state0.unk_34;
-    f26 = wp->state0.unk_3C;
-    f25 = wp->state0.unk_40;
-    f31 = wp->state0.unk_48;
-    angle = wp->state0.unk_44 * 3.141592f / 180.0f;
+    sx = wp->blended.x;
+    sy = wp->blended.y;
+    sz = wp->blended.z;
+    f27 = wp->blended.dirX;
+    f26 = wp->blended.dirZ;
+    f25 = wp->blended.radius;
+    f31 = wp->blended.roll;
+    angle = wp->blended.yaw * 3.141592f / 180.0f;
     f23 = f27 * f25 * (f32)cos(angle);
     f24 = f25 * (f32)sin(angle);
     f25b = f26 * f25 * (f32)cos(angle);
@@ -1559,20 +1487,20 @@ BOOL camRoadSetup(const char* filename) {
     DVDEntry* entry;
 
     memset(wp, 0, sizeof(CamRoadWork));
-    wp->unk_C8 = 0;
-    wp->state2.unk_00 = 0;
-    wp->state2.unk_00 = 0;
-    wp->unk_19C = 0.005f;
-    wp->unk_1A0 = 0.0f;
-    wp->unk_1A4 = 0.004f;
-    wp->unk_1A8 = 0.008f;
-    wp->unk_1AC = 1.0f;
-    wp->unk_1B0 = 1.0f;
-    wp->unk_1B4 = 2.0f;
-    wp->unk_1B8 = 1.0f;
-    wp->unk_1BC = 1.0f;
-    wp->unk_1C0 = 3.0f;
-    wp->unk_1C4 = 1.0f;
+    wp->hokanActive = 0;
+    wp->previous.valid = 0;
+    wp->previous.valid = 0;
+    wp->distRate = 0.005f;
+    wp->velRate = 0.0f;
+    wp->sideRecoverA = 0.004f;
+    wp->sideRecoverB = 0.008f;
+    wp->sideWeightA = 1.0f;
+    wp->sideWeightB = 1.0f;
+    wp->cmpHeadingW = 2.0f;
+    wp->cmpYawW = 1.0f;
+    wp->cmpRollW = 1.0f;
+    wp->cmpRadiusW = 3.0f;
+    wp->cmpDistW = 1.0f;
     wp->unk_204 = -1;
     wp->unk_208 = 0;
     camShiftInit();
@@ -1592,18 +1520,18 @@ BOOL camRoadSetup(const char* filename) {
     if (wp->map->unk_E8 < (u32)wp->map) {
         wp->map->unk_E8 += (u32)wp->map;
         wp->map->entries = (CamRoadMapEntry*)((u32)wp->map->entries + (u32)wp->map);
-        wp->map->unk_F0 += (u32)wp->map;
-        wp->map->unk_F4 += (u32)wp->map;
-        wp->map->unk_F8 += (u32)wp->map;
-        wp->map->unk_FC += (u32)wp->map;
-        wp->map->unk_100 += (u32)wp->map;
+        wp->map->subs += (u32)wp->map;
+        wp->map->lists += (u32)wp->map;
+        wp->map->curvePts += (u32)wp->map;
+        wp->map->verts += (u32)wp->map;
+        wp->map->indices += (u32)wp->map;
         wp->map->unk_104 += (u32)wp->map;
         wp->map->unk_108 += (u32)wp->map;
     }
     if (strcmp(wp->map->name, "1.01") == 0) {
-        wp->unk_1D0 = 0x65;
+        wp->mapKind = CAM_ROAD_MAP_101;
     } else {
-        wp->unk_1D0 = 0x64;
+        wp->mapKind = CAM_ROAD_MAP_OTHER;
     }
     return TRUE;
 }
