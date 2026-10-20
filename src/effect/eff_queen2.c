@@ -45,12 +45,12 @@ EffectEntry* effQueen2Entry(s32 type, f32 x, f32 y, f32 z) {
 	pos.y = y;
 	pos.z = z;
 
-	data->field_0x14 = PSVECDistance(&camGetPtr(CAMERA_3D)->cameraPos, &pos) / 10.0f;
-	data->field_0x10 = data->field_0x14;
-	data->field_0x18 = 0;
-	data->field_0x24 = 0;
-	data->field_0x20 = 0;
-	data->field_0x28 = NULL;
+	data->baseScale = PSVECDistance(&camGetPtr(CAMERA_3D)->cameraPos, &pos) / 10.0f;
+	data->scale = data->baseScale;
+	data->alpha = 0;
+	data->state = 0;
+	data->phaseTimer = 0;
+	data->chargeEntry = NULL;
 
 	return entry;
 }
@@ -70,54 +70,54 @@ void effQueen2Main(EffectEntry* effect) {
 
 	if (effect->flags & 4) {
 		effect->flags &= ~4;
-		if (data->field_0x28 != NULL) {
-			effDelete(data->field_0x28);
+		if (data->chargeEntry != NULL) {
+			effDelete(data->chargeEntry);
 		}
 		effDelete(effect);
 		return;
 	}
 
-	switch (data->field_0x24) {
+	switch (data->state) {
 	case 0:
-		data->field_0x18 = (s32)intplGetValue(0xB, data->field_0x20++, 0x3C, 0.0f, 128.0f);
-		if (data->field_0x20 > 0x3C) {
-			data->field_0x20 = 0;
-			data->field_0x24++;
+		data->alpha = (s32)intplGetValue(0xB, data->phaseTimer++, 0x3C, 0.0f, 128.0f);
+		if (data->phaseTimer > 0x3C) {
+			data->phaseTimer = 0;
+			data->state++;
 		}
 		break;
 	case 1: {
-		f32 start = data->field_0x14;
-		s32 timer = data->field_0x20++;
+		f32 start = data->baseScale;
+		s32 timer = data->phaseTimer++;
 
-		data->field_0x10 = intplGetValue(0xB, timer, 0x78, start, 3.0f);
-		if (data->field_0x20 > 0x78) {
-			data->field_0x20 = 0;
-			data->field_0x24++;
-			data->field_0x28 = effAkariChargeN64Entry(0, 0, data->position.x, data->position.y, data->position.z, 1.0f);
-			((EffAkariChargeData*)data->field_0x28->userdata)->reg0R = 0;
-			((EffAkariChargeData*)data->field_0x28->userdata)->reg0G = 0x9A;
-			((EffAkariChargeData*)data->field_0x28->userdata)->reg0B = 0xFF;
-			((EffAkariChargeData*)data->field_0x28->userdata)->reg1R = 0xFF;
-			((EffAkariChargeData*)data->field_0x28->userdata)->reg1G = 0xFF;
-			((EffAkariChargeData*)data->field_0x28->userdata)->reg1B = 0xFF;
+		data->scale = intplGetValue(0xB, timer, 0x78, start, 3.0f);
+		if (data->phaseTimer > 0x78) {
+			data->phaseTimer = 0;
+			data->state++;
+			data->chargeEntry = effAkariChargeN64Entry(0, 0, data->position.x, data->position.y, data->position.z, 1.0f);
+			((EffAkariChargeData*)data->chargeEntry->userdata)->reg0R = 0;
+			((EffAkariChargeData*)data->chargeEntry->userdata)->reg0G = 0x9A;
+			((EffAkariChargeData*)data->chargeEntry->userdata)->reg0B = 0xFF;
+			((EffAkariChargeData*)data->chargeEntry->userdata)->reg1R = 0xFF;
+			((EffAkariChargeData*)data->chargeEntry->userdata)->reg1G = 0xFF;
+			((EffAkariChargeData*)data->chargeEntry->userdata)->reg1B = 0xFF;
 		}
 		break;
 	}
 	case 2:
-		if (++data->field_0x20 > 0x78) {
-			data->field_0x20 = 0;
-			data->field_0x24++;
+		if (++data->phaseTimer > 0x78) {
+			data->phaseTimer = 0;
+			data->state++;
 			effTeresaEntry(1, data->position.x, data->position.y, data->position.z);
 			effIndirectEntry(1, 0x3C, data->position.x, data->position.y, data->position.z);
 		}
 		break;
 	case 3:
-		if (++data->field_0x20 > 0x1E) {
-			data->field_0x20 = 0;
-			data->field_0x24++;
+		if (++data->phaseTimer > 0x1E) {
+			data->phaseTimer = 0;
+			data->state++;
 			effTeresaEntry(1, data->position.x, data->position.y, data->position.z);
 			effIndirectEntry(1, 0x3C, data->position.x, data->position.y, data->position.z);
-			effSoftDelete(data->field_0x28);
+			effSoftDelete(data->chargeEntry);
 		}
 		break;
 	case 4:
@@ -125,10 +125,10 @@ void effQueen2Main(EffectEntry* effect) {
 		return;
 	}
 
-	if (data->field_0x24 >= 3) {
-		data->field_0x18 -= 2;
-		if (data->field_0x18 < 0) {
-			data->field_0x18 = 0;
+	if (data->state >= 3) {
+		data->alpha -= 2;
+		if (data->alpha < 0) {
+			data->alpha = 0;
 		}
 	}
 
@@ -147,7 +147,7 @@ void effQueen2Disp(CameraId camId, void* param) {
 	GXSetNumChans(1);
 	GXSetChanCtrl(4, 0, 0, 0, 0, 0, 2);
 
-	color = makeQueen2Color(data->field_0x18);
+	color = makeQueen2Color(data->alpha);
 	GXSetChanMatColor(4, color);
 
 	GXSetNumTexGens(0);
@@ -162,7 +162,7 @@ void effQueen2Disp(CameraId camId, void* param) {
 	GXSetVtxAttrFmt(0, 0xd, 1, 4, 0);
 
 	PSMTXTrans(mtx, data->position.x, data->position.y, data->position.z);
-	s = 10.0f * data->field_0x10;
+	s = 10.0f * data->scale;
 	PSMTXScale(scale, s, s, s);
 	PSMTXConcat(mtx, scale, scale);
 	PSMTXConcat(camera->view, scale, scale);
