@@ -10,12 +10,24 @@ Counts, per file and in total, the things a reader would want cleaned up. Each c
 the weighted count per 1000 non-blank code lines, so growing the tree does not by itself make it worse. Lower is
 better. Comments are ignored. Nothing here is a build or pass/fail check: tools/ci.py only reports the index and
 its delta, with a warning when it gets worse.
+
+Categories:
+- address_name (1): a symbol named by its address: dat_, vec3_, str_, lbl_, func_, L_, jumptable_ and so on.
+  unk_ names are not counted here (they are unk_name), and value-named pool constants are not counted here either.
+- pool_constant (0): a compiler pool constant named by its value: float_<value>_<addr>, double_<...>_<addr>,
+  double_to_int_<addr>, zero_<addr>, one/negone/half/two_<addr>. Reported in the table, not in the index: many have
+  to stay to keep a match.
+- raw_offset (2): a `((u8*)p + ...)` cast, and each use of a file-local offset macro, a single #define of the shape
+  `(*(T*)((u8*)(p) + (off)))` (WW_S32, MW_U16, MF32, GND_PTR, PF32, P8, ...). The #define itself is not counted.
+  Offset macros are recognised the way tools/offset_to_field.py recognises them (same body shape, one definition
+  per name), but every call of the name in the file counts, with no #undef scope.
 """
 import argparse
 import json
 import re
 import subprocess
 import sys
+from collections import Counter
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -24,7 +36,8 @@ ROOT = Path(__file__).resolve().parents[1]
 PATTERNS = {
     "unk_name": (1, re.compile(r"\bunk_\w+")),
     "field_0x": (1, re.compile(r"\bfield_0x[0-9A-Fa-f]+\b")),
-    "address_name": (1, re.compile(r"\b\w+_8[0-9A-Fa-f]{7}\b")),
+    "address_name": (1, re.compile(r"\b(?!(?:unk|float|double|zero|one|negone|half|two)_)\w+_8[0-9A-Fa-f]{7}\b")),
+    "pool_constant": (0, re.compile(r"\b(?:float|double|zero|one|negone|half|two)_(?:\w*_)?8[0-9A-Fa-f]{7}\b")),
     "raw_offset": (2, re.compile(r"\(\s*\(\s*u8\s*\*\s*\)\s*\(?\s*[\w.\->\[\]]+\s*\)?\s*\+")),
     "goto": (2, re.compile(r"\bgoto\s+\w+\s*;")),
     "must_match": (1, re.compile(r"^[ \t]*#\s*(?:if|ifdef|ifndef|elif)\b.*\bMUST_MATCH\b", re.M)),
@@ -46,13 +59,57 @@ def strip_comments(text):
     return re.sub(r"//[^\n]*", blank, text)
 
 
+# an offset macro's body, as in tools/offset_to_field.py: (*(T*)((u8*)(base) + (off))), T written out or a parameter
+OFFSET_MACRO_BODY = re.compile(r"\(\*\(\s*(?P<cast>[^()]+?)\s*\)\s*\(\(\s*u8\s*\*\s*\)\s*\(\s*(?P<base>\w+)\s*\)"
+                               r"\s*\+\s*\(\s*(?P<off>\w+)\s*\)\s*\)\s*\)")
+
+
+def offset_macros(code):
+    """{name: (first, last) line indices of its #define} for the function-like macros of one file that are defined
+    once and whose body is an offset cast."""
+    lines = code.split("\n")
+    seen, found = Counter(), {}
+    i = 0
+    while i < len(lines):
+        m = re.match(r"\s*#\s*define\s+(\w+)\(([^)]*)\)(.*)$", lines[i])
+        if not m:
+            i += 1
+            continue
+        first, name, body = i, m.group(1), m.group(3)
+        params = [p.strip() for p in m.group(2).split(",") if p.strip()]
+        while body.rstrip().endswith("\\") and i + 1 < len(lines):
+            i += 1
+            body = body.rstrip()[:-1] + " " + lines[i]
+        seen[name] += 1
+        b = OFFSET_MACRO_BODY.fullmatch(re.sub(r"\s+", " ", body).strip())
+        if b and b.group("cast").endswith("*") and b.group("base") in params and b.group("off") in params:
+            found[name] = (first, i)
+        i += 1
+    return {n: span for n, span in found.items() if seen[n] == 1}
+
+
+def blank_offset_macros(code):
+    """(code with the #define of each offset macro blanked, number of calls of those macros in the code)."""
+    spans = offset_macros(code)
+    if not spans:
+        return code, 0
+    lines = code.split("\n")
+    for first, last in spans.values():
+        for k in range(first, last + 1):
+            lines[k] = ""
+    code = "\n".join(lines)
+    names = sorted(spans, key=len, reverse=True)
+    return code, len(re.findall(r"\b(?:" + "|".join(map(re.escape, names)) + r")\s*\(", code))
+
+
 def count_text(text):
     """(non-blank code lines, {category: count}) for one file's text."""
     code = strip_comments(text)
     lines = sum(1 for l in code.splitlines() if l.strip())
+    code, macro_calls = blank_offset_macros(code)
     counts = {}
     for name, (_, rx) in PATTERNS.items():
-        n = len(rx.findall(code))
+        n = len(rx.findall(code)) + (macro_calls if name == "raw_offset" else 0)
         if n:
             counts[name] = n
     return lines, counts
