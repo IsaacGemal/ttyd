@@ -125,13 +125,7 @@ USER_FUNC(evt_mario_dokan_prepare) {
     mario->flags |= 0x100;
     type = evtGetValue(event, args[0]);
     if (type == 4) {
-#ifdef MUST_MATCH
-        // MUST_MATCH: the original copies each Vec with an unscheduled per-component load/store pair;
-        // volatile on both sides stops MWCC from hoisting the third load above the second store.
-        *(volatile Vec*)&mario->scale = *(volatile Vec*)&vecs[0];
-#else
         mario->scale = vecs[0];
-#endif
         mario->dispFlags |= 0x1000;
         party = partyGetPtr(marioGetPartyId());
         if (party != NULL) {
@@ -1076,10 +1070,9 @@ USER_FUNC(N_evt_mario_party_door_halve_hitbox) {
     return EVT_RETURN_DONE;
 }
 
-// The case-0 first argument must be built as a named float product, cast to s32, and only then is
-// `speed` divided by the framerate: this keeps the two `(f32)gp->framerate` conversions separate and
-// puts the magic double in f2 (the #else order lets MWCC coalesce the third argument into f2 and
-// land the double in f5). See evt_party_move_pos2 for the same idiom.
+// The case-0 first argument is built as an s32 local before `speed` is divided by the framerate: this keeps
+// the two `(f32)gp->framerate` conversions separate and puts the magic double in f2. See evt_party_move_pos2
+// for the same idiom.
 USER_FUNC(evt_mario_party_door_move) {
     s32* args = event->args;
     MarioWork* mario = marioGetPtr();
@@ -1087,7 +1080,6 @@ USER_FUNC(evt_mario_party_door_move) {
     f32 z = evtGetFloat(event, args[1]);
     f32 speed = evtGetFloat(event, args[2]);
     f32 dist;
-    f32 tmp;
     f32 sx;
     f32 sy;
     f32 sz;
@@ -1138,20 +1130,10 @@ USER_FUNC(evt_mario_party_door_move) {
             speed *= 0.4f;
         }
         {
-#ifdef MUST_MATCH
-            // MUST_MATCH: the named float product cast to int, then the speed division, is what
-            // separates the two framerate conversions and lands the double in f2.
-            f32 fr = (f32)gp->framerate * (dist / speed);
-            s32 n;
+            s32 n = (s32)((f32)gp->framerate * (dist / speed));
 
-            n = (s32)fr;
             speed = speed / (f32)gp->framerate;
             marioSetForceMove(n, mario->directionView, speed);
-#else
-            tmp = dist / speed;
-            speed = speed / (f32)gp->framerate;
-            marioSetForceMove((s32)((f32)gp->framerate * tmp), mario->directionView, speed);
-#endif
         }
         event->userdata[0] = 2;
         break;
@@ -1258,7 +1240,6 @@ USER_FUNC(evt_mario_party_bero_move) {
     f32 z = evtGetFloat(event, args[1]);
     f32 speed = evtGetFloat(event, args[2]);
     f32 dist;
-    f32 tmp;
     f32 sx;
     f32 sy;
     f32 sz;
@@ -1304,20 +1285,12 @@ USER_FUNC(evt_mario_party_bero_move) {
         if (mario->flags & MARIO_FLAG_BG_MODE) {
             speed *= 0.4f;
         }
-#ifdef MUST_MATCH
         {
-            f32 fr = (f32)gp->framerate * (dist / speed);
-            s32 n;
+            s32 n = (s32)((f32)gp->framerate * (dist / speed));
 
-            n = (s32)fr;
             speed = speed / (f32)gp->framerate;
             marioSetForceMove(n, mario->directionView, speed);
         }
-#else
-        tmp = dist / speed;
-        speed = speed / (f32)gp->framerate;
-        marioSetForceMove((s32)((f32)gp->framerate * tmp), mario->directionView, speed);
-#endif
         event->userdata[0] = 2;
         break;
     case 2:
