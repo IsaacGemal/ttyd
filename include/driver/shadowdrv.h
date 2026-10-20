@@ -76,6 +76,28 @@ typedef struct CharShadowWork {
     s32 defaultCollision; //0x118, shadowEntry sets flags 0x1 when set
 } CharShadowWork;
 
+// One shadowConfig block (0x48 bytes), reached as shadowConfig + configIdx * 0x48.
+// followCamera (0x0): 1 rebuilds the light position from CAMERA_3D each frame (shadowDisp, the char pass).
+// halfWidth/halfHeight (0x28/0x2C): the C_MTXFrustum/C_MTXOrtho extents, also the Projection quad's size.
+// nearZ/farZ (0x30/0x34): clip planes; depthShadowEnd builds the depth matrix from them.
+// isOrtho (0x38): 0 perspective (C_MTXFrustum), otherwise C_MTXOrtho.
+// depthMode (0x3C): mapdrv switches its depth TEV setup on it (0-5); depthShadowEnd uses GX_TF_Z8 for <= 2, GX_TF_Z16 above.
+// sizeIdx (0x40): index into ShadowSizeTbl. depthBias (0x44): z offset of the depth matrix.
+typedef struct ShadowConfigFields {
+    s32 followCamera; //0x0
+    Vec camPos;  //0x4
+    Vec up;      //0x10
+    Vec target;  //0x1C
+    f32 halfWidth; //0x28
+    f32 halfHeight; //0x2C
+    f32 nearZ; //0x30
+    f32 farZ; //0x34
+    s32 isOrtho; //0x38
+    u32 depthMode; //0x3C
+    s32 sizeIdx; //0x40
+    f32 depthBias; //0x44
+} ShadowConfigFields;
+
 void shadowInit(void);
 void shadowMain(void);
 s32 shadowEntry(f32 x, f32 y, f32 z, f32 size);
@@ -101,11 +123,11 @@ GXTexObj* shadowGetDepthShadowTexObj(void);
 void* shadowGetDepthShadowDepthMtx(void);
 void* shadowGetDepthShadowProjTexMtx(void);
 GXColor shadowGetDepthShadowColor(void);
-void* shadowGetDepthShadowConfig(void);
+ShadowConfigFields* shadowGetDepthShadowConfig(void);
 GXTexObj* shadowGetProjShadowTexObj(void);
 void* shadowGetProjShadowProjTexMtx(void);
 GXColor shadowGetProjShadowColor(void);
-void* shadowGetProjShadowConfig(void);
+ShadowConfigFields* shadowGetProjShadowConfig(void);
 GXTexObj* shadowGetRamp8TexObj(void);
 GXTexObj* shadowGetRamp16TexObj(void);
 void shadowCharShadowDisp_Collision(CameraId cameraId, void* param);

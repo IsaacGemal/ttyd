@@ -210,21 +210,6 @@ extern const f32 float_256_804198fc;
 extern const f32 float_16_80419900;
 extern const f32 float_neg1_80419908;
 
-typedef struct ShadowConfigFields {
-    u8 pad00[0x4];
-    Vec camPos;  //0x4
-    Vec up;      //0x10
-    Vec target;  //0x1C
-    f32 unk28;
-    f32 unk2C;
-    f32 unk30;
-    f32 unk34;
-    s32 unk38;
-    u32 unk3C;
-    s32 unk40;
-    f32 unk44;
-} ShadowConfigFields;
-
 extern GXColor dat_804198e0;
 extern GXColor dat_804198ec;
 extern GXColor dat_804198f0;
@@ -390,7 +375,7 @@ void shadowInit(void) { //almost 1:1, minor regalloc
         Mtx44* proj;                                                                                                                       \
         Vec camPos;                                                                                                                        \
         GXInvalidateTexAll();                                                                                                              \
-        size = ShadowSizeTbl[((ShadowConfigFields*)(shadowConfig + (w)->configIdx * 0x48))->unk40];                                               \
+        size = ShadowSizeTbl[((ShadowConfigFields*)(shadowConfig + (w)->configIdx * 0x48))->sizeIdx];                                               \
         extra;                                                                                                                             \
         GXGetViewportv(tmp_vp);                                                                                                            \
         GXGetScissor(&tmp_sci[0], &tmp_sci[1], &tmp_sci[2], &tmp_sci[3]);                                                                  \
@@ -400,13 +385,13 @@ void shadowInit(void) { //almost 1:1, minor regalloc
         proj = SHADOW_DISP_PROJ(w);                                                                                                   \
         camPos = cfg->camPos;                                                                                                              \
         C_MTXLookAt(w->lookAt, &camPos, &cfg->up, &cfg->target);                                                              \
-        if (cfg->unk38 == 0) {                                                                                                             \
-            C_MTXFrustum(*proj, cfg->unk2C, -cfg->unk2C, cfg->unk28, -cfg->unk28, cfg->unk30, cfg->unk34);                                 \
+        if (cfg->isOrtho == 0) {                                                                                                             \
+            C_MTXFrustum(*proj, cfg->halfHeight, -cfg->halfHeight, cfg->halfWidth, -cfg->halfWidth, cfg->nearZ, cfg->farZ);                                 \
         }                                                                                                                                  \
         else {                                                                                                                             \
-            C_MTXOrtho(*proj, cfg->unk2C, -cfg->unk2C, cfg->unk28, -cfg->unk28, cfg->unk30, cfg->unk34);                                   \
+            C_MTXOrtho(*proj, cfg->halfHeight, -cfg->halfHeight, cfg->halfWidth, -cfg->halfWidth, cfg->nearZ, cfg->farZ);                                   \
         }                                                                                                                                  \
-        GXSetProjection(SHADOW_DISP_GX_PROJ(w), ((ShadowConfigFields*)(shadowConfig + (w)->configIdx * 0x48))->unk38);                                                                                                \
+        GXSetProjection(SHADOW_DISP_GX_PROJ(w), ((ShadowConfigFields*)(shadowConfig + (w)->configIdx * 0x48))->isOrtho);                                                                                                \
         PSMTXCopy(camGetCurPtr()->view, tmp_view);                                                                                         \
         PSMTXCopy(w->lookAt, camGetCurPtr()->view);                                                                          \
     } while (0)
@@ -509,7 +494,7 @@ void shadowDisp(CameraId cameraId, void* param) {
         case 5: {
             shadowCharShadowDisp_Collision(cameraId, param);
             config = (ShadowConfigFields*)(shadowConfig + cswp->configIdx * 0x48);
-            if (*(s32*)config == 1) {
+            if (config->followCamera == 1) {
                 CameraEntry* cam = camGetPtr(CAMERA_3D);
 
                 config->camPos.x = cam->cameraAt.x;
@@ -756,7 +741,7 @@ void shadowCharShadowDisp_Projection(CameraId camId, void* param) {
         ((CharShadowWork*)work)->drawCount++;
     }
     if (((CharShadowWork*)work)->drawCount != 0) {
-        C_MTXOrtho(projMtx, config->unk2C, -config->unk2C, config->unk28, -config->unk28, config->unk30, config->unk34);
+        C_MTXOrtho(projMtx, config->halfHeight, -config->halfHeight, config->halfWidth, -config->halfWidth, config->nearZ, config->farZ);
         GXSetProjection(projMtx, 1);
         GXSetBlendMode(1, 4, 5, 0);
         GXSetChanCtrl(4, 0, 0, 1, 0, 2, 2);
@@ -788,8 +773,8 @@ void shadowCharShadowDisp_Projection(CameraId camId, void* param) {
 #endif
         C_MTXLookAt(lookAt, &camPos, &camUp, &camTarget);
         GXLoadPosMtxImm(lookAt, 0);
-        w = -config->unk28;
-        d = config->unk2C;
+        w = -config->halfWidth;
+        d = config->halfHeight;
         de = float_0p2_8041990c * d;
         we = float_0p2_8041990c * w;
         GXBegin(GX_QUADS, GX_VTXFMT0, 16);
@@ -1348,8 +1333,8 @@ GXColor shadowGetDepthShadowColor(void) {
     return color;
 }
 
-void* shadowGetDepthShadowConfig(void) {
-    return (u8*)shadowConfig + dswp->configIdx * 0x48;
+ShadowConfigFields* shadowGetDepthShadowConfig(void) {
+    return (ShadowConfigFields*)(shadowConfig + dswp->configIdx * 0x48);
 }
 
 void shadowProjShadowDrawCountUp(void) {
@@ -1371,8 +1356,8 @@ GXColor shadowGetProjShadowColor(void) {
     return pswp->color;
 }
 
-void* shadowGetProjShadowConfig(void) {
-    return (u8*)shadowConfig + pswp->configIdx * 0x48;
+ShadowConfigFields* shadowGetProjShadowConfig(void) {
+    return (ShadowConfigFields*)(shadowConfig + pswp->configIdx * 0x48);
 }
 
 void projShadowEnd(s32 arg0, ProjShadowWork* work) {
@@ -1389,7 +1374,7 @@ void projShadowEnd(s32 arg0, ProjShadowWork* work) {
 
     if (work->drawCount != 0) {
         config = (ShadowConfigFields*)(shadowConfig + work->configIdx * 0x48);
-        size = ShadowSizeTbl[config->unk40];
+        size = ShadowSizeTbl[config->sizeIdx];
         if (work->flags & 2) {
             if (work->flags & 4) {
                 bufferSize = GXGetTexBufferSize((size >> 1) & 0x7FFF, (size >> 1) & 0x7FFF, 2, 0, 0);
@@ -1418,11 +1403,11 @@ void projShadowEnd(s32 arg0, ProjShadowWork* work) {
         GXInitTexObjLOD(&work->texObj, 1, 1, float_0_804198f4, float_0_804198f4, float_0_804198f4, 0, 0, 0);
         config = (ShadowConfigFields*)(shadowConfig + work->configIdx * 0x48);
         if (&work->projTexMtx != NULL) {
-            if (config->unk38 == 0) {
-                C_MTXLightFrustum(mtx, -config->unk2C, config->unk2C, config->unk28, -config->unk28, config->unk30, float_0p5_804198f8, float_0p5_804198f8, float_0p5_804198f8, float_0p5_804198f8);
+            if (config->isOrtho == 0) {
+                C_MTXLightFrustum(mtx, -config->halfHeight, config->halfHeight, config->halfWidth, -config->halfWidth, config->nearZ, float_0p5_804198f8, float_0p5_804198f8, float_0p5_804198f8, float_0p5_804198f8);
             }
             else {
-                C_MTXLightOrtho(mtx, -config->unk2C, config->unk2C, config->unk28, -config->unk28, float_0p5_804198f8, float_0p5_804198f8, float_0p5_804198f8, float_0p5_804198f8);
+                C_MTXLightOrtho(mtx, -config->halfHeight, config->halfHeight, config->halfWidth, -config->halfWidth, float_0p5_804198f8, float_0p5_804198f8, float_0p5_804198f8, float_0p5_804198f8);
             }
             PSMTXConcat(mtx, work->lookAt, work->projTexMtx);
         }
@@ -1453,7 +1438,7 @@ void depthShadowEnd(s32 arg0, DepthShadowWork* work) {
 
     if (work->drawCount != 0) {
         config = (ShadowConfigFields*)(shadowConfig + work->configIdx * 0x48);
-        if (config->unk3C <= 2) {
+        if (config->depthMode <= 2) {
             fmt = 0x11;
             sizeFmt = 1;
         }
@@ -1462,7 +1447,7 @@ void depthShadowEnd(s32 arg0, DepthShadowWork* work) {
             sizeFmt = 3;
         }
         if (work->flags & 2) {
-            size = ShadowSizeTbl[config->unk40];
+            size = ShadowSizeTbl[config->sizeIdx];
             work->texBuffer = smartAlloc(GXGetTexBufferSize(size, size, sizeFmt, 0, 0), 3);
         }
         GXSetTexCopySrc(0, 0, size, size);
@@ -1473,19 +1458,19 @@ void depthShadowEnd(s32 arg0, DepthShadowWork* work) {
         GXInitTexObj(&work->texObj, work->texBuffer->address, size, size, sizeFmt, 0, 0, 0);
         GXInitTexObjLOD(&work->texObj, 0, 0, float_0_804198f4, float_0_804198f4, float_0_804198f4, 0, 0, 0);
         config2 = (ShadowConfigFields*)(shadowConfig + work->configIdx * 0x48);
-        flag = (config2->unk3C > 2);
+        flag = (config2->depthMode > 2);
         if (&work->projTexMtx != NULL) {
-            if (config2->unk38 == 0) {
-                C_MTXLightFrustum(mtx, -config2->unk2C, config2->unk2C, config2->unk28, -config2->unk28, config2->unk30, float_0p5_804198f8, float_0p5_804198f8, float_0p5_804198f8, float_0p5_804198f8);
+            if (config2->isOrtho == 0) {
+                C_MTXLightFrustum(mtx, -config2->halfHeight, config2->halfHeight, config2->halfWidth, -config2->halfWidth, config2->nearZ, float_0p5_804198f8, float_0p5_804198f8, float_0p5_804198f8, float_0p5_804198f8);
             }
             else {
-                C_MTXLightOrtho(mtx, -config2->unk2C, config2->unk2C, config2->unk28, -config2->unk28, float_0p5_804198f8, float_0p5_804198f8, float_0p5_804198f8, float_0p5_804198f8);
+                C_MTXLightOrtho(mtx, -config2->halfHeight, config2->halfHeight, config2->halfWidth, -config2->halfWidth, float_0p5_804198f8, float_0p5_804198f8, float_0p5_804198f8, float_0p5_804198f8);
             }
             PSMTXConcat(mtx, work->lookAt, work->projTexMtx);
         }
         if (&work->depthMtx != NULL) {
-            f29 = config2->unk30;
-            f30 = config2->unk34;
+            f29 = config2->nearZ;
+            f30 = config2->farZ;
             f31 = f30 - f29;
             PSMTXScale(mtx2, float_0_804198f4, float_0_804198f4, float_0_804198f4);
             if (flag) {
@@ -1494,7 +1479,7 @@ void depthShadowEnd(s32 arg0, DepthShadowWork* work) {
             else {
                 f4 = float_16_80419900;
             }
-            if (config2->unk38 == 0) {
+            if (config2->isOrtho == 0) {
                 f32 d = f30 / f31;
                 f32 n = f30 * f29 / f31;
 
@@ -1503,7 +1488,7 @@ void depthShadowEnd(s32 arg0, DepthShadowWork* work) {
                 mtx2[1][2] = d * f4;
                 mtx2[1][3] = n * f4;
                 mtx2[2][2] = float_1_80419904;
-                mtx2[2][3] = config2->unk44;
+                mtx2[2][3] = config2->depthBias;
             }
             else {
                 f32 d = float_neg1_80419908 / f31;
@@ -1513,7 +1498,7 @@ void depthShadowEnd(s32 arg0, DepthShadowWork* work) {
                 mtx2[0][3] = n;
                 mtx2[1][2] = d * f4;
                 mtx2[1][3] = n * f4;
-                mtx2[2][3] = float_1_80419904 + config2->unk44;
+                mtx2[2][3] = float_1_80419904 + config2->depthBias;
             }
             PSMTXConcat(mtx2, work->lookAt, work->depthMtx);
         }
