@@ -73,8 +73,8 @@ typedef struct BattleCommandMultiItem {
 } BattleCommandMultiItem; // 0x18
 
 typedef struct BattleCommand {
-    s32 unk0;                                 // 0x0
-    s32 field_4;                              // 0x4
+    s32 commandState;                         // 0x0
+    s32 menuFlags;                            // 0x4, bit 0 tested in battle_seq.c
     BattleCommandAction actionTable[6];       // 0x8
     BattleCommandWeapon weaponTable[21];      // 0x80
     BattleCommandOperation operationTable[7]; // 0x2CC
@@ -92,7 +92,10 @@ typedef struct BattleCommand {
     u8 restoreState;                          // 0x558, set to 1 or 2 when a sub-menu opens; tested by BattleMenuKeyOKInACT
     u8 pad_0x559[0x55C - 0x559];              // 0x559
     void* field_55C;                          // 0x55C
-    u8 unk560[0x574 - 0x560];                 // 0x560
+    s32 field_0x560;                          // 0x560, set to 0 then incremented in one command step
+    s32 selectedDetail;                       // 0x564, copied from the selected entry, switched on by the act setup
+    s32 eventId;                              // 0x568, pending event checked with evtCheckID
+    u8 pad_0x56C[0x574 - 0x56C];              // 0x56C
 } BattleCommand;
 // The battle-command error event script. It is a .sdata object in battle_seq_command.c; the declspec
 // lets BattleCommandInput emit the target's `li r3, _btl_cmd_error_msg_event@sda21` address form.
