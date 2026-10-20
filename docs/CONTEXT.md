@@ -9436,3 +9436,29 @@ as `*(s32*)(part + 0x1C0)` / `+ 0x44` (field_0x1C0 is one array), the float-bob 
 0x4F4/0x4FC bytes raw, and btlDispAnimeSpeed/btlDispAnimeSpeedReset take a `BattleUnit*` that is really a part
 (callers cast `(BattleUnit*)part`; it writes the part's `field_0x208` and multiplies by `motionSpeed` through `unit->hpGauge`). battle_seq.c
 tests the part-attribute `kUnknown_0x40000` against a unit's mAttributeFlags.
+### Readability: effects, group 4 (2026-10-19, Claude Haiku 5.5, n9-q-eff4; reviewed by Claude Opus 5.5)
+
+Work structs get names in eff_dogabon_attack_n64 (25 pieces as parallel arrays: pos/start/target rings, scale,
+rotation, velocity, per-piece `state`/`stateTimer`/`waitTimer`), eff_radiation_n64 (struct in its header; head
+`x`/`y`/`z`, `life`/`age`/`alpha`, per-piece `offset`/`rot*` with their start values and velocities, `lifetime`),
+eff_kameki_tornade_n64 (a chain of 8 `node*` arrays, two colours, two texture scrolls), eff_fire_spark_n64 and
+eff_kemuri1_n64 (`speed`, `velY`/`velYAccel`, `dirX`/`dirZ`, `sheetU0`/`sheetU1`, the two texture columns the
+draw cross-fades). GX call literals become GXEnum.h names throughout the five draws, dispEntry's first argument is
+CAMERA_3D, and the texgen post-matrix 0x7D/125 is GX_PTIDENTITY. In review: kameki's colours load GX_TEVREG0 and
+GX_TEVREG1 (GXSetTevColor ids 1 and 2; GX_TEVPREV is 0), not "TEVREG1/TEVREG2" as the field comments said, and
+its `texScrollU`/`V` are `texScroll0`/`1` (both are S offsets, one per texture matrix); radiation's `additive` is
+`noDepth` (its draw state is ordinary SRCALPHA/INVSRCALPHA blending with z test and z write off, in disp layer
+8), and the never-written Vec at 0x04 is `unsetPos` rather than `sortPos`; the MUST_MATCH-only GXSetTevColor and
+GXSetChanMatColor literals became enums too. Byte-identical; the five files' natural objects disassemble the same
+before and after the whole series (index 62.669 → 61.763 on its base).
+
+Lesson: the checksum never compiles `#else` code, so an enum swap or rename on a natural-only line is unchecked
+by the build. The worker once mapped a literal 1 to GX_TEVREG1 there (GXSetTevColor's 1 is GX_TEVREG0). For any
+literal → enum pass, check each value and the parameter's enum type against GXEnum.h, then compile the touched
+files without MUST_MATCH (tools/ci.py `natural`) and compare their disassembly with the base's.
+
+Open: radiation's Main copies `unsetPos` (head 0x04) as the dispCalcZ position, but no code writes it, so the
+sort key is whatever the heap held (retail bug or a field set elsewhere that is not decompiled yet; las_29 writes
+only `x`/`y`/`z`). Radiation `holdTimer` is only ever set to 0, and 0x1C/0x20 (`a5`) and the 0x34-0x54 scroll
+group are written but never read by the draw. Kemuri1's Disp skips entries whose own `sheetU0` > 15, a field only
+the head writes. kemuri1 0x14-0x2C (the case 0/1 jerk chain and the 0.94 dampers) and 0x38 are still field_0x.

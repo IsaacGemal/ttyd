@@ -31,33 +31,33 @@ u32 size4x4_tex32x32_vtx[14] = {
 
 typedef struct effFireSparkData {
     s32 type;             // 0x00
-    f32 field_0x04;       // 0x04
-    f32 field_0x08;       // 0x08
-    f32 field_0x0C;       // 0x0C
-    f32 field_0x10;       // 0x10
-    f32 field_0x14;       // 0x14
+    f32 posX;             // 0x04, head origin or particle position
+    f32 posY;             // 0x08
+    f32 posZ;             // 0x0C
+    f32 spreadX;          // 0x10, random spawn range on X (rand() % spreadX)
+    f32 spreadY;          // 0x14, random spawn range on Y
     s32 life;             // 0x18
-    s32 field_0x1C;       // 0x1C
-    s32 field_0x20;       // 0x20
-    s32 field_0x24;       // 0x24
-    s32 field_0x28;       // 0x28
-    s32 field_0x2C;       // 0x2C
-    s32 field_0x30;       // 0x30
-    s32 field_0x34;       // 0x34
-    s32 field_0x38;       // 0x38
-    s32 field_0x3C;       // 0x3C
-    f32 field_0x40;       // 0x40
-    f32 field_0x44;       // 0x44
-    f32 field_0x48;       // 0x48
-    f32 field_0x4C;       // 0x4C
-    f32 field_0x50;       // 0x50
-    f32 field_0x54;       // 0x54
-    f32 field_0x58;       // 0x58
-    f32 field_0x5C;       // 0x5C
-    f32 field_0x60;       // 0x60
-    s32 field_0x64;       // 0x64
-    f32 field_0x68;       // 0x68
-    f32 field_0x6C;       // 0x6C
+    s32 frame;            // 0x1C, head frame counter (wraps at 324000)
+    s32 color1R;          // 0x20, TEVREG0 colour
+    s32 color1G;          // 0x24
+    s32 color1B;          // 0x28
+    s32 alpha;            // 0x2C, TEVREG0 alpha, from life and frame
+    s32 color2R;          // 0x30, TEVREG1 colour
+    s32 color2G;          // 0x34
+    s32 color2B;          // 0x38
+    s32 color2A;          // 0x3C
+    f32 scale;            // 0x40
+    f32 velX;             // 0x44, eases toward velXTarget each frame
+    f32 velY;             // 0x48, eases toward velYTarget each frame
+    f32 velZ;             // 0x4C, eases toward velZTarget each frame
+    f32 velXTarget;       // 0x50
+    f32 velYTarget;       // 0x54
+    f32 velZTarget;       // 0x58
+    f32 texScrollU;       // 0x5C, TEXMTX1 translation
+    f32 texScrollV;       // 0x60
+    s32 cycleFrame;       // 0x64, 0..29 (scale_data index), negative until the particle starts
+    f32 velYScale;        // 0x68, scales the random initial velY
+    f32 velYTargetScale;  // 0x6C, scales the random velYTarget
 } effFireSparkData;
 
 // .sdata2 and .rodata constants named after their original addresses (defined by the split map).
@@ -84,34 +84,34 @@ EffectEntry* effFireSparkN64Entry(s32 type, s32 count, s32 life, f32 a4, f32 a5,
     effect->flags |= 2;
 
     data->type = type;
-    data->field_0x1C = 0;
+    data->frame = 0;
     if (life <= 0) {
         data->life = 1000;
     } else {
         data->life = life;
     }
-    data->field_0x2C = 0;
-    data->field_0x04 = a4;
-    data->field_0x08 = a5;
-    data->field_0x0C = a6;
-    data->field_0x40 = a9;
-    data->field_0x10 = a7;
-    data->field_0x14 = a8;
-    data->field_0x68 = a10;
-    data->field_0x6C = a11;
-    data->field_0x20 = 0x7f;
-    data->field_0x24 = 0;
-    data->field_0x28 = 0;
-    data->field_0x30 = 0x7f;
-    data->field_0x34 = 0x7f;
-    data->field_0x38 = 0;
-    data->field_0x3C = 0xff;
+    data->alpha = 0;
+    data->posX = a4;
+    data->posY = a5;
+    data->posZ = a6;
+    data->scale = a9;
+    data->spreadX = a7;
+    data->spreadY = a8;
+    data->velYScale = a10;
+    data->velYTargetScale = a11;
+    data->color1R = 0x7f;
+    data->color1G = 0;
+    data->color1B = 0;
+    data->color2R = 0x7f;
+    data->color2G = 0x7f;
+    data->color2B = 0;
+    data->color2A = 0xff;
 
     ratio = 30.f / (f32)(count - 1);
     ratio *= 0.5f;
     ptr = data + 1;
     for (i = 1; i < count; i++, ptr++) {
-        ptr->field_0x64 = (s32)(-(f32)i * ratio) - 1;
+        ptr->cycleFrame = (s32)(-(f32)i * ratio) - 1;
     }
 
     return effect;
@@ -134,9 +134,9 @@ void effFireSparkMain(EffectEntry* effect) {
     f32 v68;
     f32 v6C;
 
-    disp.x = data->field_0x04;
-    disp.y = data->field_0x08;
-    disp.z = data->field_0x0C;
+    disp.x = data->posX;
+    disp.y = data->posY;
+    disp.z = data->posZ;
 #ifdef MUST_MATCH
     position = disp;
 #endif
@@ -150,9 +150,9 @@ void effFireSparkMain(EffectEntry* effect) {
         data->life--;
     }
 
-    data->field_0x1C++;
-    if (data->field_0x1C > 324000) {
-        data->field_0x1C = 0x100;
+    data->frame++;
+    if (data->frame > 324000) {
+        data->frame = 0x100;
     }
 
     if (data->life < 0) {
@@ -161,57 +161,57 @@ void effFireSparkMain(EffectEntry* effect) {
     }
 
     life = data->life;
-    counter = data->field_0x1C;
+    counter = data->frame;
     if (life < 0x10) {
-        data->field_0x2C = life * 16;
+        data->alpha = life * 16;
     }
     if (counter < 0x10) {
-        data->field_0x2C = counter * 16 + 15;
+        data->alpha = counter * 16 + 15;
     }
 
-    rangeX = (s32)data->field_0x10;
-    half = 0.5f * data->field_0x10;
-    rangeY = (s32)data->field_0x14;
-    v68 = data->field_0x68;
-    v6C = data->field_0x6C;
+    rangeX = (s32)data->spreadX;
+    half = 0.5f * data->spreadX;
+    rangeY = (s32)data->spreadY;
+    v68 = data->velYScale;
+    v6C = data->velYTargetScale;
 
     data++;
     for (i = 1; i < effect->count; i++, data++) {
-        data->field_0x64++;
-        if (data->field_0x64 >= 0x1E) {
-            data->field_0x64 = 0;
+        data->cycleFrame++;
+        if (data->cycleFrame >= 0x1E) {
+            data->cycleFrame = 0;
         }
-        if (data->field_0x64 < 0) {
+        if (data->cycleFrame < 0) {
             continue;
         }
-        if (data->field_0x64 == 0) {
-            data->field_0x04 = (f32)(rand() % rangeX) - half;
-            data->field_0x08 = (f32)(rand() % rangeY);
-            data->field_0x0C = 0.0f;
-            data->field_0x44 = 0.05f * (f32)(rand() % 20 - 10);
-            data->field_0x48 = 0.05f * (v68 * (f32)(rand() % 40 - 1));
-            data->field_0x4C = 0.0f;
-            data->field_0x50 = 0.05f * (f32)(rand() % 20 - 10);
-            data->field_0x54 = 0.05f * (v6C * (f32)(rand() % 30 - 1));
-            data->field_0x58 = 0.0f;
-            data->field_0x5C = (f32)(rand() % 16);
-            data->field_0x60 = (f32)(rand() % 16);
+        if (data->cycleFrame == 0) {
+            data->posX = (f32)(rand() % rangeX) - half;
+            data->posY = (f32)(rand() % rangeY);
+            data->posZ = 0.0f;
+            data->velX = 0.05f * (f32)(rand() % 20 - 10);
+            data->velY = 0.05f * (v68 * (f32)(rand() % 40 - 1));
+            data->velZ = 0.0f;
+            data->velXTarget = 0.05f * (f32)(rand() % 20 - 10);
+            data->velYTarget = 0.05f * (v6C * (f32)(rand() % 30 - 1));
+            data->velZTarget = 0.0f;
+            data->texScrollU = (f32)(rand() % 16);
+            data->texScrollV = (f32)(rand() % 16);
         }
-        data->field_0x40 = scale_data[data->field_0x64];
-        data->field_0x04 += data->field_0x44;
-        data->field_0x08 += data->field_0x48;
-        data->field_0x0C += data->field_0x4C;
-        data->field_0x5C += 0.1f;
-        data->field_0x60 += 0.3f;
-        data->field_0x44 += 0.04f * (data->field_0x50 - data->field_0x44);
-        data->field_0x48 += 0.04f * (data->field_0x54 - data->field_0x48);
-        data->field_0x4C += 0.04f * (data->field_0x58 - data->field_0x4C);
+        data->scale = scale_data[data->cycleFrame];
+        data->posX += data->velX;
+        data->posY += data->velY;
+        data->posZ += data->velZ;
+        data->texScrollU += 0.1f;
+        data->texScrollV += 0.3f;
+        data->velX += 0.04f * (data->velXTarget - data->velX);
+        data->velY += 0.04f * (data->velYTarget - data->velY);
+        data->velZ += 0.04f * (data->velZTarget - data->velZ);
     }
 
 #ifdef MUST_MATCH
     dispEntry(4, dispCalcZ(&position), 2, effFireSparkDisp, effect);
 #else
-    dispEntry(4, dispCalcZ(&disp), 2, effFireSparkDisp, effect);
+    dispEntry(CAMERA_3D, dispCalcZ(&disp), 2, effFireSparkDisp, effect);
 #endif
 }
 
@@ -223,18 +223,18 @@ void effFireSparkMain(EffectEntry* effect) {
 #ifdef MUST_MATCH
 static inline void setFireSparkColor1(effFireSparkData* data, s32 alpha) {
     GXColor color = unk_80423100;
-    color.r = data->field_0x20;
-    color.g = data->field_0x24;
-    color.b = data->field_0x28;
+    color.r = data->color1R;
+    color.g = data->color1G;
+    color.b = data->color1B;
     color.a = alpha;
     GXSetTevColor(GX_TEVREG0, color);
 }
 static inline void setFireSparkColor2(effFireSparkData* data) {
     GXColor color = unk_80423104;
-    color.r = data->field_0x30;
-    color.g = data->field_0x34;
-    color.b = data->field_0x38;
-    color.a = data->field_0x3C;
+    color.r = data->color2R;
+    color.g = data->color2G;
+    color.b = data->color2B;
+    color.a = data->color2A;
     GXSetTevColor(GX_TEVREG1, color);
 }
 static inline void setFireSparkKColor(GXColor color) {
@@ -257,11 +257,11 @@ void effFireSparkDisp(CameraId camId, void* param) {
     effect = param;
     cam = camGetPtr(camId);
     data = effect->userdata;
-    alpha = data->field_0x2C;
+    alpha = data->alpha;
 
-    PSMTXTrans(m0, data->field_0x04, data->field_0x08, data->field_0x0C);
+    PSMTXTrans(m0, data->posX, data->posY, data->posZ);
     PSMTXRotRad(m1, 'y', -camGetPtr(CAMERA_3D)->viewYaw * float_deg2rad_8041ee9c);
-    PSMTXScale(m2, data->field_0x40, data->field_0x40, data->field_0x40);
+    PSMTXScale(m2, data->scale, data->scale, data->scale);
     PSMTXConcat(m0, m1, m0);
     PSMTXConcat(m0, m2, m0);
     PSMTXConcat(cam->view, m0, viewMtx);
@@ -275,16 +275,16 @@ void effFireSparkDisp(CameraId camId, void* param) {
         GXColor color1;
 
         color1 = unk_80423100;
-        color1.r = data->field_0x20;
-        color1.g = data->field_0x24;
-        color1.b = data->field_0x28;
+        color1.r = data->color1R;
+        color1.g = data->color1G;
+        color1.b = data->color1B;
         color1.a = alpha;
         GXSetTevColor(GX_TEVREG0, color1);
         color2 = unk_80423104;
-        color2.r = data->field_0x30;
-        color2.g = data->field_0x34;
-        color2.b = data->field_0x38;
-        color2.a = data->field_0x3C;
+        color2.r = data->color2R;
+        color2.g = data->color2G;
+        color2.b = data->color2B;
+        color2.a = data->color2A;
         GXSetTevColor(GX_TEVREG1, color2);
     }
 #endif
@@ -303,8 +303,8 @@ void effFireSparkDisp(CameraId camId, void* param) {
     GXSetTevAlphaIn(GX_TEVSTAGE1, GX_CA_ZERO, GX_CA_TEXA, GX_CA_A0, GX_CA_ZERO);
     GXSetTevKColorSel(GX_TEVSTAGE1, GX_TEV_KCSEL_K0);
     GXSetNumTexGens(2);
-    GXSetTexCoordGen2(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_TEXMTX0, GX_FALSE, 125);
-    GXSetTexCoordGen2(GX_TEXCOORD1, GX_TG_MTX2x4, GX_TG_TEX0, GX_TEXMTX1, GX_FALSE, 125);
+    GXSetTexCoordGen2(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_TEXMTX0, GX_FALSE, GX_PTIDENTITY);
+    GXSetTexCoordGen2(GX_TEXCOORD1, GX_TG_MTX2x4, GX_TG_TEX0, GX_TEXMTX1, GX_FALSE, GX_PTIDENTITY);
 #ifdef MUST_MATCH
     setFireSparkKColor(dat_8041ee98);
 #else
@@ -319,10 +319,10 @@ void effFireSparkDisp(CameraId camId, void* param) {
 
     data++;
     for (i = 1; i < effect->count; i++, data++) {
-        if (data->field_0x64 < 0) {
+        if (data->cycleFrame < 0) {
             continue;
         }
-        PSMTXTrans(m0, data->field_0x04, data->field_0x08, data->field_0x0C);
+        PSMTXTrans(m0, data->posX, data->posY, data->posZ);
         PSMTXConcat(viewMtx, m0, m0);
         GXLoadPosMtxImm(m0, GX_PNMTX0);
         GXSetCurrentMtx(GX_PNMTX0);
@@ -337,7 +337,7 @@ void effFireSparkDisp(CameraId camId, void* param) {
         PSMTXConcat(m2, m0, m2);
         GXLoadTexMtxImm(m2, GX_TEXMTX0, GX_MTX2x4);
         PSMTXScale(m2, float_0p03125_8041eea0, float_0p03125_8041eea0, 0.0f);
-        PSMTXTrans(m0, data->field_0x5C, data->field_0x60, 0.0f);
+        PSMTXTrans(m0, data->texScrollU, data->texScrollV, 0.0f);
         PSMTXConcat(m2, m0, m2);
         GXLoadTexMtxImm(m2, GX_TEXMTX1, GX_MTX2x4);
         GXBegin(GX_TRIANGLES, GX_VTXFMT0, 6);

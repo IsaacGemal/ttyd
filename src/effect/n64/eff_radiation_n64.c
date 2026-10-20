@@ -93,48 +93,48 @@ EffectEntry* effRadiationN64Entry(s32 type, f32 x, f32 y, f32 z, f32 a5) {
 	effect->flags |= 2;
 
 	data->type = type;
-	data->field_0x2C = 0;
-	data->field_0x28 = 100;
+	data->age = 0;
+	data->life = 100;
 	data->x = x;
 	data->y = y;
 	data->z = z;
 	data->field_0x20 = a5;
 	data->field_0x1C = a5;
-	data->field_0x94 = flag;
-	data->field_0x98 = 4;
+	data->noDepth = flag;
+	data->camId = CAMERA_3D;
 
 	switch (type) {
 	case 0:
 	case 1:
 		data++;
 		for (k = 1; k < effect->count; k++, data++) {
-			data->field_0x68 = (f32)((k - 1) * 30 / (count - 1) - 10);
-			data->field_0x7C = 50 - (k - 1) * 20 / (count - 1);
-			data->field_0x6C = 2.5f + 25.0f / (f32)data->field_0x7C;
-			data->field_0x70 = (f32)(s32)effTblRandN64(180, k * 3);
-			data->field_0x74 = (f32)(s32)effTblRandN64(180, k * 3 + 1);
-			data->field_0x78 = (f32)(s32)effTblRandN64(180, k * 3 + 2);
-			data->field_0x58 = data->field_0x68;
-			data->field_0x28 = data->field_0x7C;
-			data->field_0x8C = data->field_0x6C;
-			data->field_0x5C = data->field_0x70;
-			data->field_0x60 = data->field_0x74;
-			data->field_0x64 = data->field_0x78;
-			data->field_0x24 = 0;
-			data->field_0x2C = 0;
+			data->startOffset = (f32)((k - 1) * 30 / (count - 1) - 10);
+			data->lifetime = 50 - (k - 1) * 20 / (count - 1);
+			data->speed = 2.5f + 25.0f / (f32)data->lifetime;
+			data->startRotX = (f32)(s32)effTblRandN64(180, k * 3);
+			data->startRotY = (f32)(s32)effTblRandN64(180, k * 3 + 1);
+			data->startRotZ = (f32)(s32)effTblRandN64(180, k * 3 + 2);
+			data->offset = data->startOffset;
+			data->life = data->lifetime;
+			data->offsetVel = data->speed;
+			data->rotX = data->startRotX;
+			data->rotY = data->startRotY;
+			data->rotZ = data->startRotZ;
+			data->alpha = 0;
+			data->age = 0;
 		}
 		break;
 	default:
 		data++;
 		for (i = 1, n = 32; i < effect->count; n += 2, i++, data++) {
-			data->field_0x58 = 0.0f;
-			data->field_0x28 = n;
+			data->offset = 0.0f;
+			data->life = n;
 			row = (i - 1) * 5;
-			data->field_0x5C = (f32)r_data[row++];
-			data->field_0x60 = (f32)r_data[row++];
-			data->field_0x64 = (f32)r_data[row++];
-			data->field_0x24 = 0;
-			data->field_0x2C = 0;
+			data->rotX = (f32)r_data[row++];
+			data->rotY = (f32)r_data[row++];
+			data->rotZ = (f32)r_data[row++];
+			data->alpha = 0;
+			data->age = 0;
 			data->field_0x38 = 0.0f;
 			data->field_0x34 = 0.0f;
 			data->field_0x48 = 0.0f;
@@ -143,10 +143,10 @@ EffectEntry* effRadiationN64Entry(s32 type, f32 x, f32 y, f32 z, f32 a5) {
 			data->field_0x40 = 0.0f;
 			data->field_0x50 = 0.0f;
 			data->field_0x54 = 0.6f;
-			data->field_0x80 = 0.0f;
-			data->field_0x84 = 0.0f;
-			data->field_0x88 = (f32)r_data[++row] * 0.1f;
-			data->field_0x90 = 0;
+			data->rotXVel = 0.0f;
+			data->rotYVel = 0.0f;
+			data->rotZVel = (f32)r_data[++row] * 0.1f;
+			data->holdTimer = 0;
 		}
 		break;
 	}
@@ -170,23 +170,23 @@ void effRadiationMain(EffectEntry* effect) {
 	s32 counter;
 
 	data = effect->userdata;
-	position = initializeVec((Vec*)&data->pad_0x04);
+	position = initializeVec(&data->unsetPos);
 
 	type = data->type;
-	if (data->field_0x28 <= 10) {
-		data->field_0x28--;
+	if (data->life <= 10) {
+		data->life--;
 	}
-	data->field_0x2C++;
+	data->age++;
 	if (effect->flags & 4) {
 		effect->flags &= ~4;
-		data->field_0x28 = 10;
+		data->life = 10;
 	}
-	life = data->field_0x28;
+	life = data->life;
 	if (life < 0) {
 		effDelete(effect);
 		return;
 	}
-	counter = data->field_0x2C;
+	counter = data->age;
 
 	switch (type) {
 	case 0:
@@ -196,27 +196,27 @@ void effRadiationMain(EffectEntry* effect) {
 		n2 = n + 2;
 		data++;
 		for (i = 1; i < effect->count; i++, data++) {
-			data->field_0x28--;
-			data->field_0x2C++;
-			if (data->field_0x2C < 10) {
-				data->field_0x24 = data->field_0x2C * 12;
+			data->life--;
+			data->age++;
+			if (data->age < 10) {
+				data->alpha = data->age * 12;
 			}
-			if (data->field_0x28 < 5) {
-				data->field_0x24 = data->field_0x28 * 25;
+			if (data->life < 5) {
+				data->alpha = data->life * 25;
 			}
-			data->field_0x58 += data->field_0x8C;
-			if (data->field_0x28 <= 0) {
-				data->field_0x70 = (f32)(s32)effTblRandN64(180, n);
-				data->field_0x74 = (f32)(s32)effTblRandN64(180, n1);
-				data->field_0x78 = (f32)(s32)effTblRandN64(180, n2);
-				data->field_0x58 = data->field_0x68;
-				data->field_0x28 = data->field_0x7C;
-				data->field_0x8C = data->field_0x6C;
-				data->field_0x5C = data->field_0x70;
-				data->field_0x60 = data->field_0x74;
-				data->field_0x64 = data->field_0x78;
-				data->field_0x24 = 0;
-				data->field_0x2C = 0;
+			data->offset += data->offsetVel;
+			if (data->life <= 0) {
+				data->startRotX = (f32)(s32)effTblRandN64(180, n);
+				data->startRotY = (f32)(s32)effTblRandN64(180, n1);
+				data->startRotZ = (f32)(s32)effTblRandN64(180, n2);
+				data->offset = data->startOffset;
+				data->life = data->lifetime;
+				data->offsetVel = data->speed;
+				data->rotX = data->startRotX;
+				data->rotY = data->startRotY;
+				data->rotZ = data->startRotZ;
+				data->alpha = 0;
+				data->age = 0;
 			}
 		}
 		break;
@@ -254,26 +254,26 @@ void effRadiationMain(EffectEntry* effect) {
 			if (data->field_0x40 < 0.0f) {
 				data->field_0x40 += 256.0f;
 			}
-			data->field_0x28--;
-			data->field_0x2C++;
-			if (data->field_0x2C < 5) {
-				data->field_0x24 = data->field_0x2C * 50;
+			data->life--;
+			data->age++;
+			if (data->age < 5) {
+				data->alpha = data->age * 50;
 			}
-			if (data->field_0x28 < 5) {
-				data->field_0x24 = data->field_0x28 * 50;
+			if (data->life < 5) {
+				data->alpha = data->life * 50;
 			}
 			if (life < 10) {
-				data->field_0x24 = data->field_0x24 * life / 10;
+				data->alpha = data->alpha * life / 10;
 			}
-			if (data->field_0x28 <= 0) {
-				data->field_0x58 = 0.0f;
-				data->field_0x28 = n;
+			if (data->life <= 0) {
+				data->offset = 0.0f;
+				data->life = n;
 				row = (i - 1) * 5;
-				data->field_0x5C = (f32)r_data[row++];
-				data->field_0x60 = (f32)r_data[row++];
-				data->field_0x64 = (f32)r_data[row++];
-				data->field_0x24 = 0;
-				data->field_0x2C = 0;
+				data->rotX = (f32)r_data[row++];
+				data->rotY = (f32)r_data[row++];
+				data->rotZ = (f32)r_data[row++];
+				data->alpha = 0;
+				data->age = 0;
 				data->field_0x38 = 0.0f;
 				data->field_0x34 = 0.0f;
 				data->field_0x48 = 0.0f;
@@ -282,20 +282,20 @@ void effRadiationMain(EffectEntry* effect) {
 				data->field_0x40 = 0.0f;
 				data->field_0x50 = 0.0f;
 				data->field_0x54 = 0.6f;
-				data->field_0x80 = 0.0f;
-				data->field_0x84 = 0.0f;
-				data->field_0x88 = (f32)r_data[++row] * 0.1f;
-				data->field_0x90 = 0;
+				data->rotXVel = 0.0f;
+				data->rotYVel = 0.0f;
+				data->rotZVel = (f32)r_data[++row] * 0.1f;
+				data->holdTimer = 0;
 			}
-			if (data->field_0x90 > 0) {
-				data->field_0x90--;
-				if (data->field_0x90 > 0) {
+			if (data->holdTimer > 0) {
+				data->holdTimer--;
+				if (data->holdTimer > 0) {
 					continue;
 				}
 			}
-			data->field_0x5C += data->field_0x80;
-			data->field_0x60 += data->field_0x84;
-			data->field_0x64 += data->field_0x88;
+			data->rotX += data->rotXVel;
+			data->rotY += data->rotYVel;
+			data->rotZ += data->rotZVel;
 		}
 		break;
 	}
@@ -304,10 +304,10 @@ void effRadiationMain(EffectEntry* effect) {
 	{
 		EffRadiationData* data2 = effect->userdata;
 
-		if (data2->field_0x94 == 0) {
-			dispEntry(data2->field_0x98, dispCalcZ(&position), 2, effRadiationDisp, effect);
+		if (data2->noDepth == 0) {
+			dispEntry(data2->camId, dispCalcZ(&position), 2, effRadiationDisp, effect);
 		} else {
-			dispEntry(data2->field_0x98, dispCalcZ(&position), 8, effRadiationDisp, effect);
+			dispEntry(data2->camId, dispCalcZ(&position), 8, effRadiationDisp, effect);
 		}
 	}
 }
@@ -359,57 +359,57 @@ void effRadiationDisp(CameraId camId, void* param) {
 	data = effect->userdata;
 	type = data->type;
 
-	if (data->field_0x94 != 0) {
-		GXSetBlendMode(1, 4, 5, 0);
-		GXSetZCompLoc(1);
-		GXSetAlphaCompare(7, 0, 0, 7, 0);
-		GXSetZMode(0, 3, 0);
+	if (data->noDepth != 0) {
+		GXSetBlendMode(GX_BM_BLEND, GX_BL_SRCALPHA, GX_BL_INVSRCALPHA, GX_LO_CLEAR);
+		GXSetZCompLoc(GX_TRUE);
+		GXSetAlphaCompare(GX_ALWAYS, 0, GX_AOP_AND, GX_ALWAYS, 0);
+		GXSetZMode(GX_FALSE, GX_LEQUAL, GX_FALSE);
 	}
 	GXSetNumChans(1);
-	GXSetChanCtrl(4, 0, 0, 1, 0, 0, 2);
+	GXSetChanCtrl(GX_COLOR0A0, GX_FALSE, GX_SRC_REG, GX_SRC_VTX, GX_LIGHT_NULL, GX_DF_NONE, GX_AF_NONE);
 	switch (type) {
 	case 0:
 	case 1:
 		GXSetNumTevStages(1);
-		GXSetTevOrder(0, 0, 0, 0xff);
-		GXSetTevColorOp(0, 0, 0, 0, 1, 0);
-		GXSetTevAlphaOp(0, 0, 0, 0, 1, 0);
-		GXSetTevColorIn(0, 2, 0xc, 8, 0xf);
-		GXSetTevAlphaIn(0, 7, 1, 4, 7);
+		GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR_NULL);
+		GXSetTevColorOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+		GXSetTevAlphaOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+		GXSetTevColorIn(GX_TEVSTAGE0, GX_CC_C0, GX_CC_ONE, GX_CC_TEXC, GX_CC_ZERO);
+		GXSetTevAlphaIn(GX_TEVSTAGE0, GX_CA_ZERO, GX_CA_A0, GX_CA_TEXA, GX_CA_ZERO);
 		effGetTexObjN64(0x2c, &texObj);
-		GXLoadTexObj(&texObj, 0);
+		GXLoadTexObj(&texObj, GX_TEXMAP0);
 		GXSetNumTexGens(1);
-		GXSetTexCoordGen2(0, 1, 4, 0x1e, 0, 0x7d);
+		GXSetTexCoordGen2(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_TEXMTX0, GX_FALSE, GX_PTIDENTITY);
 		PSMTXScale(scale, 0.03125f, 0.03125f, 0.0f);
-		GXLoadTexMtxImm(scale, 0x1e, 1);
+		GXLoadTexMtxImm(scale, GX_TEXMTX0, GX_MTX2x4);
 		break;
 	default:
 		GXSetNumTevStages(1);
-		GXSetTevOrder(0, 0xff, 0xff, 4);
-		GXSetTevColorOp(0, 0, 0, 0, 1, 0);
-		GXSetTevAlphaOp(0, 0, 0, 0, 1, 0);
-		GXSetTevColorIn(0, 0xf, 0xf, 0xf, 2);
-		GXSetTevAlphaIn(0, 7, 7, 7, 5);
+		GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD_NULL, GX_TEXMAP_NULL, GX_COLOR0A0);
+		GXSetTevColorOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+		GXSetTevAlphaOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+		GXSetTevColorIn(GX_TEVSTAGE0, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ZERO, GX_CC_C0);
+		GXSetTevAlphaIn(GX_TEVSTAGE0, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_RASA);
 		GXSetNumTexGens(0);
 		break;
 	}
 
-	GXSetCullMode(0);
+	GXSetCullMode(GX_CULL_NONE);
 	PSMTXTrans(trans, data->x, data->y, data->z);
 
 	data++;
 	for (i = 1; i < effect->count; i++, data++) {
-		alpha = (f32)data->field_0x24 / 255.0f;
+		alpha = (f32)data->alpha / 255.0f;
 
-		PSMTXRotRad(rot, 'x', 0.017453292f * data->field_0x5C);
+		PSMTXRotRad(rot, 'x', 0.017453292f * data->rotX);
 		PSMTXConcat(trans, rot, work);
 
 		if (type >= 2) {
-			PSMTXRotRad(rot, 'z', 0.017453292f * (data->field_0x64 + (f32)(type == 3 ? 45 : 0)));
+			PSMTXRotRad(rot, 'z', 0.017453292f * (data->rotZ + (f32)(type == 3 ? 45 : 0)));
 			PSMTXConcat(work, rot, work);
-			PSMTXRotRad(rot, 'y', 0.017453292f * data->field_0x60);
+			PSMTXRotRad(rot, 'y', 0.017453292f * data->rotY);
 			PSMTXConcat(work, rot, work);
-			PSMTXTrans(trans2, data->field_0x58, 0.0f, 0.0f);
+			PSMTXTrans(trans2, data->offset, 0.0f, 0.0f);
 			PSMTXConcat(work, trans2, work);
 #ifdef MUST_MATCH
 			scaleX = 0.25f * (3.0f + alpha);
@@ -435,35 +435,35 @@ void effRadiationDisp(CameraId camId, void* param) {
 			PSMTXScale(scale, scaleX, scaleY, scaleZ);
 			PSMTXConcat(work, scale, work);
 #ifdef MUST_MATCH
-			GXSetTevColor(1, radiationSetColor(data->field_0x24, dat_8041fa90));
+			GXSetTevColor(GX_TEVREG0, radiationSetColor(data->alpha, dat_8041fa90));
 #else
 			{
 				GXColor color = dat_8041fa90;
-				color.a = data->field_0x24;
-				GXSetTevColor(1, color);
+				color.a = data->alpha;
+				GXSetTevColor(GX_TEVREG0, color);
 			}
 #endif
 		} else {
-			PSMTXRotRad(rot, 'y', 0.017453292f * data->field_0x60);
+			PSMTXRotRad(rot, 'y', 0.017453292f * data->rotY);
 			PSMTXConcat(work, rot, work);
-			PSMTXRotRad(rot, 'z', 0.017453292f * (data->field_0x64 + (f32)(type == 3 ? 45 : 0)));
+			PSMTXRotRad(rot, 'z', 0.017453292f * (data->rotZ + (f32)(type == 3 ? 45 : 0)));
 			PSMTXConcat(work, rot, work);
-			PSMTXTrans(trans2, data->field_0x58, 0.0f, 0.0f);
+			PSMTXTrans(trans2, data->offset, 0.0f, 0.0f);
 			PSMTXConcat(work, trans2, work);
 #ifdef MUST_MATCH
-			GXSetTevColor(1, radiationSetColor(data->field_0x24, dat_8041fa94));
+			GXSetTevColor(GX_TEVREG0, radiationSetColor(data->alpha, dat_8041fa94));
 #else
 			{
 				GXColor color = dat_8041fa94;
-				color.a = data->field_0x24;
-				GXSetTevColor(1, color);
+				color.a = data->alpha;
+				GXSetTevColor(GX_TEVREG0, color);
 			}
 #endif
 		}
 
 		PSMTXConcat(cam->view, work, work);
-		GXLoadPosMtxImm(work, 0);
-		GXSetCurrentMtx(0);
+		GXLoadPosMtxImm(work, GX_PNMTX0);
+		GXSetCurrentMtx(GX_PNMTX0);
 		switch (type) {
 		case 0:
 		case 1:
@@ -477,11 +477,11 @@ void effRadiationDisp(CameraId camId, void* param) {
 		switch (type) {
 		case 0:
 		case 1:
-			GXBegin(0x90, 0, 6);
+			GXBegin(GX_TRIANGLES, GX_VTXFMT0, 6);
 			tri2(0, 1, 2, 0, 0, 2, 3, 0);
 			break;
 		default:
-			GXBegin(0x90, 0, 3);
+			GXBegin(GX_TRIANGLES, GX_VTXFMT0, 3);
 #ifdef MUST_MATCH
 			tri1WithUnused(0, 1, 2, 0);
 #else
