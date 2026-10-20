@@ -252,12 +252,13 @@ BattleStageData muj_btlstage_data[4] = {
             NULL,                                       // mAttackEvtScript
             { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 },   // field_B4
         },
-        NULL,                                       // field_0x190
+        NULL,                                       // initEvent
         NULL,                                       // objectTurnEventA1
         NULL,                                       // objectTurnEventA2
         NULL,                                       // objectTurnEventB
-        { NULL, NULL, NULL, &bgset_muj_sun_event }, // field_0x1A0
+        { NULL, NULL, NULL, &bgset_muj_sun_event }, // layerEvents
         0,                                          // field_0x1B0
+        { 0 },                                      // layerDestroyed
     },
     {
         "bti_01",                                   // mGlobalStageDataDir
@@ -418,12 +419,13 @@ BattleStageData muj_btlstage_data[4] = {
             NULL,                                       // mAttackEvtScript
             { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 },   // field_B4
         },
-        NULL,                                       // field_0x190
+        NULL,                                       // initEvent
         NULL,                                       // objectTurnEventA1
         NULL,                                       // objectTurnEventA2
         NULL,                                       // objectTurnEventB
-        { NULL, NULL, NULL, &bgset_muj_sun_event }, // field_0x1A0
+        { NULL, NULL, NULL, &bgset_muj_sun_event }, // layerEvents
         0,                                          // field_0x1B0
+        { 0 },                                      // layerDestroyed
     },
     {
         "bti_01",                                   // mGlobalStageDataDir
@@ -584,12 +586,13 @@ BattleStageData muj_btlstage_data[4] = {
             NULL,                                       // mAttackEvtScript
             { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 },   // field_B4
         },
-        NULL,                                       // field_0x190
+        NULL,                                       // initEvent
         NULL,                                       // objectTurnEventA1
         NULL,                                       // objectTurnEventA2
         NULL,                                       // objectTurnEventB
-        { 0 },                                      // field_0x1A0
+        { 0 },                                      // layerEvents
         0,                                          // field_0x1B0
+        { 0 },                                      // layerDestroyed
     },
     {
         "bti_01",                                   // mGlobalStageDataDir
@@ -750,12 +753,13 @@ BattleStageData muj_btlstage_data[4] = {
             NULL,                                       // mAttackEvtScript
             { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 },   // field_B4
         },
-        NULL,                                       // field_0x190
+        NULL,                                       // initEvent
         NULL,                                       // objectTurnEventA1
         NULL,                                       // objectTurnEventA2
         NULL,                                       // objectTurnEventB
-        { NULL, NULL, NULL, &bgset_muj_sun_event }, // field_0x1A0
+        { NULL, NULL, NULL, &bgset_muj_sun_event }, // layerEvents
         0,                                          // field_0x1B0
+        { 0 },                                      // layerDestroyed
     },
 };
 

@@ -249,12 +249,13 @@ BattleStageData mri_btlstage_data[4] = {
             NULL,                                       // mAttackEvtScript
             { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 },   // field_B4
         },
-        &stg_02_1_init_evt,                         // field_0x190
+        &stg_02_1_init_evt,                         // initEvent
         NULL,                                       // objectTurnEventA1
         NULL,                                       // objectTurnEventA2
         NULL,                                       // objectTurnEventB
-        { 0 },                                      // field_0x1A0
-        0x00010001,                                 // field_0x1B0
+        { 0 },                                      // layerEvents
+        0,                                          // field_0x1B0
+        { 1, 0, 1 },                                // layerDestroyed
     },
     {
         "bti_01",                                   // mGlobalStageDataDir
@@ -415,12 +416,13 @@ BattleStageData mri_btlstage_data[4] = {
             NULL,                                       // mAttackEvtScript
             { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 },   // field_B4
         },
-        &stg_02_1_init_evt,                         // field_0x190
+        &stg_02_1_init_evt,                         // initEvent
         NULL,                                       // objectTurnEventA1
         NULL,                                       // objectTurnEventA2
         NULL,                                       // objectTurnEventB
-        { 0 },                                      // field_0x1A0
-        0x00010001,                                 // field_0x1B0
+        { 0 },                                      // layerEvents
+        0,                                          // field_0x1B0
+        { 1, 0, 1 },                                // layerDestroyed
     },
     {
         "bti_01",                                   // mGlobalStageDataDir
@@ -581,12 +583,13 @@ BattleStageData mri_btlstage_data[4] = {
             NULL,                                       // mAttackEvtScript
             { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 },   // field_B4
         },
-        &stg_02_1_init_evt,                         // field_0x190
+        &stg_02_1_init_evt,                         // initEvent
         NULL,                                       // objectTurnEventA1
         NULL,                                       // objectTurnEventA2
         NULL,                                       // objectTurnEventB
-        { 0 },                                      // field_0x1A0
-        0x00010001,                                 // field_0x1B0
+        { 0 },                                      // layerEvents
+        0,                                          // field_0x1B0
+        { 1, 0, 1 },                                // layerDestroyed
     },
     {
         "bti_01",                                   // mGlobalStageDataDir
@@ -747,12 +750,13 @@ BattleStageData mri_btlstage_data[4] = {
             NULL,                                       // mAttackEvtScript
             { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 },   // field_B4
         },
-        &stg_02_1_init_evt,                         // field_0x190
+        &stg_02_1_init_evt,                         // initEvent
         NULL,                                       // objectTurnEventA1
         NULL,                                       // objectTurnEventA2
         NULL,                                       // objectTurnEventB
-        { 0 },                                      // field_0x1A0
-        0x00010001,                                 // field_0x1B0
+        { 0 },                                      // layerEvents
+        0,                                          // field_0x1B0
+        { 1, 0, 1 },                                // layerDestroyed
     },
 };
 

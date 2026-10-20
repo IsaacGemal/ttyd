@@ -207,12 +207,13 @@ BattleStageData win_btlstage_data[1] = {
             NULL,                                       // mAttackEvtScript
             { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 },   // field_B4
         },
-        NULL,                                       // field_0x190
+        NULL,                                       // initEvent
         NULL,                                       // objectTurnEventA1
         NULL,                                       // objectTurnEventA2
         NULL,                                       // objectTurnEventB
-        { 0 },                                      // field_0x1A0
+        { 0 },                                      // layerEvents
         0,                                          // field_0x1B0
+        { 0 },                                      // layerDestroyed
     },
 };
 

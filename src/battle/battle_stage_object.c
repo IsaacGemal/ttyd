@@ -67,12 +67,10 @@ typedef struct BattleNozzleWork {
 
 // The original keeps (u8*)wp in its own register (`base`); without it these two functions score 94.51%.
 
-// BattleWork fields past stageObjects (inside field_180C0, no names yet) and the stage data's tail.
+// BattleWork fields past stageObjects (inside field_180C0, no names yet).
 #define BSO_WP_S8(wp, off) (*(s8*)((u8*)(wp) + (off)))
 #define BSO_WP_S32(wp, off) (*(s32*)((u8*)(wp) + (off)))
 #define BSO_WP_PTR(wp, off) (*(void**)((u8*)(wp) + (off)))
-#define BSO_STAGE_EVT(stage, off) (*(void**)((u8*)(stage) + (off)))
-#define BSO_STAGE_S8(stage, off) (*(s8*)((u8*)(stage) + (off)))
 
 #define BSO_UNSET(n) ((Vec){999.0f, 999.0f, 999.0f})
 #define BSO_STR_DEN "den"
@@ -357,20 +355,20 @@ void BattleStageObjectInit(void) {
 	}
 
 	// the stage's events; each layer with objects gets its own
-	if (BSO_STAGE_EVT(stage, 0x190) != NULL) {
-		evtEntry(BSO_STAGE_EVT(stage, 0x190), 10, 0);
+	if (stage->initEvent != NULL) {
+		evtEntry(stage->initEvent, 10, 0);
 	}
-	if (layer0 != 0 && BSO_STAGE_EVT(stage, 0x1A0) != NULL) {
-		BSO_WP_S32(wp, 0x180E4) = evtEntry(BSO_STAGE_EVT(stage, 0x1A0), 10, 0)->eventId;
+	if (layer0 != 0 && stage->layerEvents[0] != NULL) {
+		BSO_WP_S32(wp, 0x180E4) = evtEntry(stage->layerEvents[0], 10, 0)->eventId;
 	}
-	if (layer1 != 0 && BSO_STAGE_EVT(stage, 0x1A4) != NULL) {
-		BSO_WP_S32(wp, 0x180E8) = evtEntry(BSO_STAGE_EVT(stage, 0x1A4), 10, 0)->eventId;
+	if (layer1 != 0 && stage->layerEvents[1] != NULL) {
+		BSO_WP_S32(wp, 0x180E8) = evtEntry(stage->layerEvents[1], 10, 0)->eventId;
 	}
-	if (layer2 != 0 && BSO_STAGE_EVT(stage, 0x1A8) != NULL) {
-		BSO_WP_S32(wp, 0x180EC) = evtEntry(BSO_STAGE_EVT(stage, 0x1A8), 10, 0)->eventId;
+	if (layer2 != 0 && stage->layerEvents[2] != NULL) {
+		BSO_WP_S32(wp, 0x180EC) = evtEntry(stage->layerEvents[2], 10, 0)->eventId;
 	}
-	if (layer3 != 0 && BSO_STAGE_EVT(stage, 0x1AC) != NULL) {
-		BSO_WP_S32(wp, 0x180F0) = evtEntry(BSO_STAGE_EVT(stage, 0x1AC), 10, 0)->eventId;
+	if (layer3 != 0 && stage->layerEvents[3] != NULL) {
+		BSO_WP_S32(wp, 0x180F0) = evtEntry(stage->layerEvents[3], 10, 0)->eventId;
 	}
 	if (layer0 == 0) {
 		wp->stageFlags |= 2;
@@ -381,13 +379,13 @@ void BattleStageObjectInit(void) {
 	if (layer2 == 0) {
 		wp->stageFlags |= 8;
 	}
-	if (BSO_STAGE_S8(stage, 0x1B1)) {
+	if (stage->layerDestroyed[0]) {
 		wp->stageFlags |= 2;
 	}
-	if (BSO_STAGE_S8(stage, 0x1B2)) {
+	if (stage->layerDestroyed[1]) {
 		wp->stageFlags |= 4;
 	}
-	if (BSO_STAGE_S8(stage, 0x1B3)) {
+	if (stage->layerDestroyed[2]) {
 		wp->stageFlags |= 8;
 	}
 	if (!hasLayer6) {

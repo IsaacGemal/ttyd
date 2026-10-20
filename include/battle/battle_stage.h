@@ -29,12 +29,13 @@ typedef struct BattleStageData {
 	BattleStageObjectData* mObjects; //0xC, TODO extern?
 	BattleWeapon bgsetAttackA1; //0x10, _get_bgset_attack_data kind 0 (_object_turn_event_A1); none unless hpDamageFn is set
 	BattleWeapon bgsetAttackB; //0xD0, _get_bgset_attack_data kind 2 (_object_turn_event_B)
-	void* field_0x190; //0x190, battle_stage_object runs it as an event (BSO_STAGE_EVT) when set
+	void* initEvent; //0x190, battle_stage_object starts it at stage setup when set (las and mri point it at their stg_* init events)
 	void* objectTurnEventA1; //0x194, BattleStage_DestroyA1 runs it in place of _object_turn_event_A1 when set
 	void* objectTurnEventA2; //0x198, BattleStage_DestroyA2 runs it in place of _object_turn_event_A2 when set
 	void* objectTurnEventB; //0x19C, BattleStage_DestroyB runs it in place of _object_turn_event_B when set
-	void* field_0x1A0[4]; //0x1A0, layer 0-3 events read by battle_stage_object (BSO_STAGE_EVT)
-	u32 field_0x1B0; //0x1B0
+	void* layerEvents[4]; //0x1A0, battle_stage_object starts layer N's event at setup when the layer has objects
+	u8 field_0x1B0; //0x1B0
+	s8 layerDestroyed[3]; //0x1B1, layers 0-2: set means stageFlags 0x2/0x4/0x8 at setup, as _mobj_destroy sets them
 } BattleStageData;
 
 typedef struct BattleStageColor {
