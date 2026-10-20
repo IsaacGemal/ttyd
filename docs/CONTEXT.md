@@ -10530,26 +10530,31 @@ by the three typings.
 - `tou_btlobject_data` (tou2 rel) is `BattleStageObjectData[14]` (was `u32[84]`). Each 0x18-byte record is name, spawn (high half of word 1), layer (low half), three position floats, start and fall frame counts (first two bytes of word 5), and a zero pad; the floats are the shortest decimal literal that round-trips the original bits. `battle/battle_stage_object.h` is included.
 - The `(u8*)&tou_btlobject_data + 0x90` reference becomes `(u32)&tou_btlobject_data[6]`; the index-0 reference is unchanged.
 - Build: tower `ninja` recreates build/G8MJ01/ok. Natural (no -DMUST_MATCH) compile of battle_database_tou.c returns 0.
-### Tooling: offset_to_field.py offset macros and union outcome (2026-10-20, Claude Haiku 5.5, n9-q-o2fmac)
+
+### Tooling: offset_to_field.py offset macros and union outcome (2026-10-20, Claude Haiku 5.5, n9-q-o2fmac; review fixes Claude Opus 5.5)
 
 `tools/offset_to_field.py` now recognises file-local offset macros, `#define NAME(p, off) (*(T*)((u8*)(p) + (off)))`
-(WW_S32/WW_F32/WW_U16/WW_PTR in win_root.c and win_item.c, MW_S32/MW_U16/... in koopa_motion.c, MWVEC, GND_PTR, MF32).
-Each use is analysed as the expansion of its body, the same cast a raw site is, and a site is reported at the call.
-A rewritten use becomes the field access, and the #define is dropped once no use is left in that file. Macros of
-other shapes (WW_F32X, GND_CENTI) are not recognised. The exact-type rule holds for macro uses: no pointer
-retyping through a macro (the retype exception stays for raw casts only).
+with `p` and `off` parenthesised in the body (WW_S32/WW_F32/WW_U16/WW_PTR in win_root.c and win_item.c, MW_S32/MW_U16/...
+in koopa_motion.c, P8/PF32 in party.c, BU_S32, BSO_WP_*, MW_PTR, and `ENC(p, T, off)`-style type parameters). Each use
+is analysed as the expansion of its body, the same cast a raw site is, and a site is reported at the call. A rewritten
+use becomes the field access (`S32(*pp, 4) += 1` -> `(*pp)->y += 1`, `&S32(w, 4)` -> `&w->y`), and the #define (and an
+#undef of it) is dropped once the name appears nowhere else in that file: a use left in a MUST_MATCH or `#if 0` branch,
+a comment, or another macro's body keeps it. Only uses after the #define and before an #undef of it are expanded (a
+same-named function before or after is left alone); uses in comments and strings are skipped; a name defined twice is
+not recognised. Macros of other shapes (WW_F32X, GND_CENTI, NKF(off) with a fixed base, headers' macros) are not
+recognised. The exact-type rule holds for macro uses: no pointer retyping through a macro (the retype exception stays
+for raw casts only).
 
-Union: any offset that lands inside a union, at any depth, is now "union: needs a human" and no member is picked,
-even when exactly one member matches. This supersedes the older sentence in "Tooling: offset_to_field.py" above
-that says a union may pick its one matching member.
+Union: any offset that lands inside a union, at any depth (through nested structs and arrays of any rank), is now
+"union: needs a human" and no member is picked, even when exactly one member matches. This supersedes the older
+sentence in "Tooling: offset_to_field.py" above that says a union may pick its one matching member.
 
-`--list` on src/window/win_root.c, src/window/win_item.c, src/koopa_motion.c (870 (u8*) casts, 725 of them macro uses):
-convertible 4 (all `WW_S32(work, 0x21C/0x220)` in win_root.c sort_*_func, each to `work->itemScrollRow[0|1]`);
-lands in padding/unk field 695 (691 of them macros, mostly win_root.c); union: needs a human 11 (all
-`MW_U16(mario, 0x2A0)`-family in koopa_motion.c); type mismatch 11; untyped base 35; not a base + offset cast 47;
-no outer cast 28; indexed, no array field 19; offset not a literal 17; MUST_MATCH 2; outer cast not a pointer 1.
-Before this change the same three files had 145 raw casts, all unconvertible, and no macro uses were counted.
+`--list` on src/window/win_root.c, src/window/win_item.c, src/koopa_motion.c on main b8ba7a3b (570 (u8*) casts, 430
+of them macro uses): convertible 17 (all raw casts in win_item.c; no macro use converts); lands in padding/unk field 401
+(400 of them macros, mostly win_root.c `WW_*`); union: needs a human 11 (all `MW_U16(mario, 0x2A0)`-family in
+koopa_motion.c); type mismatch 11; untyped base 35; not a base + offset cast 47; no outer cast 28; offset not a literal
+17; MUST_MATCH 2; outer cast not a pointer 1. Whole tree: 3107 casts, 1235 macro uses, convertible 173 (85 macro uses,
+70 of them P*/PF32 in party.c).
 
-Demo: `--verify` on src/window/win_item.c converts nothing (its macro uses are all placeholder or type-mismatch
-outcomes), so there is no demo commit. The tower build with the ok check (build/G8MJ01/ok) passed for the unchanged
-tree, twice, in that run.
+Check (before the rebase onto b8ba7a3b): `--apply` on party.c, win_root.c, koopa_motion.c, battle_damage.c and npcdrv.c (74 rewrites, no #define dropped:
+every macro still has uses) built byte-identical on the tower (build/G8MJ01/ok recreated); those rewrites were reverted, not committed.

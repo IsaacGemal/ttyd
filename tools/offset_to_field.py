@@ -24,7 +24,9 @@ Offset macros: a file-local `#define NAME(p, off) (*(T*)((u8*)(p) + (off)))` (WW
 MF32, GND_PTR's `type` parameter, MWVEC, ...) is analysed as the cast it expands to, and a use such as
 `WW_S32(work, 0x214)` is rewritten to `work->field` under the same rules. The macro's type is its own cast's, so a
 field of any other type is never picked (no pointer retyping through a macro). A macro whose every use is rewritten
-has its #define dropped; a macro with any use left keeps it. Macros of other shapes are not recognised.
+has its #define (and #undef) dropped; a macro with any use left, in any branch, comment or other macro's body,
+keeps it. Only uses between the #define and an #undef of it count; a name defined twice, or a macro of any other
+shape, is not recognised.
 
 Types and layouts come from clang (libclang, target powerpc-unknown-eabi, the project's include paths and
 defines), so the base expression's declared type is whatever the compiler sees, through typedefs, struct
@@ -311,9 +313,10 @@ def define_mask(text):
 
 
 class Mac:
-    """A file-local offset macro: its parameters and its body with whitespace normalised."""
-    def __init__(self, name, params, body):
-        self.name, self.params, self.body = name, params, body
+    """A file-local offset macro: its parameters, its body with whitespace normalised, and the lines it is in scope
+    for (after its #define, before an #undef of it)."""
+    def __init__(self, name, params, body, lo, hi):
+        self.name, self.params, self.body, self.lo, self.hi = name, params, body, lo, hi
 
     def subst(self, args):
         """The body with each parameter replaced by its argument, as the preprocessor does it (one pass)."""
@@ -325,13 +328,17 @@ def parse_macros(text):
     """{name: Mac} for the function-like #defines of one file whose body is an offset cast. A name defined twice is
     dropped (its uses are then left alone)."""
     lines = text.split("\n")
-    found, seen = {}, Counter()
+    found, seen, undef = {}, Counter(), {}
     i = 0
     while i < len(lines):
+        mu = re.match(r"\s*#\s*undef\s+(\w+)", lines[i])
+        if mu:
+            undef.setdefault(mu.group(1), []).append(i + 1)
         mt = re.match(r"\s*#\s*define\s+(\w+)\(([^)]*)\)(.*)$", lines[i])
         i += 1
         if not mt:
             continue
+        lo = i
         name = mt.group(1)
         params = [p.strip() for p in mt.group(2).split(",") if p.strip()]
         body = mt.group(3)
@@ -341,8 +348,15 @@ def parse_macros(text):
         seen[name] += 1
         m = MACRO_BODY.fullmatch(re.sub(r"\s+", " ", body).strip())
         if m and m.group("cast").endswith("*") and m.group("base") in params and m.group("off") in params:
-            found[name] = Mac(name, params, re.sub(r"\s+", " ", body).strip())
+            found[name] = Mac(name, params, re.sub(r"\s+", " ", body).strip(), lo, len(lines) + 1)
+    for n, m in found.items():
+        m.hi = min([u for u in undef.get(n, []) if u > m.lo], default=m.hi)
     return {n: m for n, m in found.items() if seen[n] == 1}
+
+
+def comment_string_spans(text):
+    """[(start, end)] of the comments and string/char literals of a source text."""
+    return [m.span() for m in re.finditer(r'//[^\n]*|/\*.*?\*/|"(?:\\.|[^"\\\n])*"|\'(?:\\.|[^\'\\\n])*\'', text, re.S)]
 
 
 def match_args(text, open_idx):
@@ -381,6 +395,7 @@ def expand_macros(text, macros):
     enc = functools.partial(str.encode, encoding="utf-8", errors="surrogateescape")
     mm, defs = must_match_mask(text), define_mask(text)
     pat = re.compile(r"\b(" + "|".join(sorted(map(re.escape, macros), key=len, reverse=True)) + r")\s*\(")
+    quiet = comment_string_spans(text)
     out, exps, masked = [], [], []
     so = oo = done = 0
     for m in pat.finditer(text):
@@ -388,16 +403,13 @@ def expand_macros(text, macros):
         if i < done:
             continue
         line = text.count("\n", 0, i) + 1
-        if line in defs:
-            continue
-        pre = text[text.rfind("\n", 0, i) + 1:i]
-        if "//" in pre or pre.count('"') % 2:
+        mac = macros[m.group(1)]
+        if line in defs or not mac.lo < line < mac.hi or any(a <= i < b for a, b in quiet):
             continue
         call = match_args(text, m.end() - 1)
         if call is None:
             continue
         args, close = call
-        mac = macros[m.group(1)]
         if len(args) != len(mac.params):
             continue
         ctext = text[i:close + 1]
@@ -431,10 +443,10 @@ def touches_union(t, off, depth=0):
         if union:
             return True
         rel = off - foff
-        if ct.kind == ci.TypeKind.CONSTANTARRAY:
+        while ct.kind == ci.TypeKind.CONSTANTARRAY:
             et = ct.get_array_element_type().get_canonical()
             if et.get_size() <= 0:
-                continue
+                break
             rel %= et.get_size()
             ct = et
         if is_record(ct) and touches_union(ct, rel, depth + 1):
@@ -443,7 +455,8 @@ def touches_union(t, off, depth=0):
 
 
 def drop_dead_macros(text, names):
-    """Remove the #define of each name in `names` that no longer appears outside #define lines. (new text, [names])."""
+    """Remove the #define (and any #undef) of each name in `names` that no longer appears anywhere else, other
+    macros' bodies included. (new text, [names])."""
     lines = text.split("\n")
     blocks = {}
     for idx, line in enumerate(lines):
@@ -452,13 +465,16 @@ def drop_dead_macros(text, names):
             end = idx
             while lines[end].rstrip().endswith("\\") and end + 1 < len(lines):
                 end += 1
-            blocks[mt.group(1)] = (idx, end)
+            blocks.setdefault(mt.group(1), set()).update(range(idx, end + 1))
+        mu = re.match(r"\s*#\s*undef\s+(\w+)\s*$", line)
+        if mu and mu.group(1) in names:
+            blocks.setdefault(mu.group(1), set()).add(idx)
     if not blocks:
         return text, []
-    block_lines = {k for a, b in blocks.values() for k in range(a, b + 1)}
+    block_lines = set().union(*blocks.values())
     rest = "\n".join(l for k, l in enumerate(lines) if k not in block_lines)
     dead = {n for n in blocks if not re.search(r"\b" + re.escape(n) + r"\b", rest)}
-    drop = {k for n in dead for k in range(blocks[n][0], blocks[n][1] + 1)}
+    drop = set().union(*(blocks[n] for n in dead)) if dead else set()
     return "\n".join(l for k, l in enumerate(lines) if k not in drop), sorted(dead)
 
 
@@ -871,6 +887,10 @@ def analyse(rel, text=None):
     def orig_pos(p):
         return p - sum((e.s1 - e.s0) - (e.o1 - e.o0) for e in exps if e.s1 <= p)
 
+    # a (u8*) macro's own result cast, `*(u8*)((u8*)(p) + (off))`, is not a byte cast: report only the inner one
+    inner = {id(owner(s.at)) for s in sites if owner(s.at) and s.outcome != "not a base + offset cast"}
+    sites = [s for s in sites if not (owner(s.at) and id(owner(s.at)) in inner
+                                      and s.outcome == "not a base + offset cast")]
     hit, out = set(), []
     for s in sites:
         e = owner(s.at)
