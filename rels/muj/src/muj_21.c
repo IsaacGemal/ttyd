@@ -185,17 +185,17 @@ static USER_FUNC(fune_eff) {
     mapObjGetPos("S_fune_m", &pos);
     event->userdataf[2] = pos.x;
     *(f32*)&event->field_84 = pos.z;
-    ((EffFunemizuData*)e1->userdata)->field_0x44 = 3.0f;
+    ((EffFunemizuData*)e1->userdata)->scale = 3.0f;
     ((EffFunemizuData*)e1->userdata)->x = pos.x - 81.3f;
     ((EffFunemizuData*)e1->userdata)->y = pos.y - 51.0f;
     ((EffFunemizuData*)e1->userdata)->z = pos.z - 38.9f;
-    ((EffFunemizuData*)e1->userdata)->field_0x10 = 1.0f;
-    ((EffFunemizuData*)e1->userdata)->field_0x14 = 270.0f;
+    ((EffFunemizuData*)e1->userdata)->speed = 1.0f;
+    ((EffFunemizuData*)e1->userdata)->yaw = 270.0f;
     ((EffFunemizuData*)e2->userdata)->x = pos.x - 49.5f;
     ((EffFunemizuData*)e2->userdata)->y = pos.y - 51.0f;
     ((EffFunemizuData*)e2->userdata)->z = pos.z + 70.7f;
-    ((EffFunemizuData*)e2->userdata)->field_0x10 = 1.0f;
-    ((EffFunemizuData*)e2->userdata)->field_0x14 = 305.0f;
+    ((EffFunemizuData*)e2->userdata)->speed = 1.0f;
+    ((EffFunemizuData*)e2->userdata)->yaw = 305.0f;
     if (gp->retraceCount % 15 == 0) {
         effWaterDamageN64Entry(5, 30, pos.x + 106.1f, pos.y - 50.0f, pos.z + 106.1f, 2.0f);
     }

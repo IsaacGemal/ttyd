@@ -51,37 +51,37 @@ extern const f32 float_neg45_8041f940;
 // Compiler-pooled int->double bias, named after its original address.
 
 typedef struct effPacknBfireData {
-	s32 type;       // 0x00
-	f32 x;          // 0x04
-	f32 y;          // 0x08
-	f32 z;          // 0x0C
-	f32 vx;         // 0x10
-	f32 vy;         // 0x14
-	f32 vz;         // 0x18
-	s32 field_0x1C; // 0x1C
-	s32 lifetime;   // 0x20
-	s32 timer;      // 0x24
-	s32 field_0x28; // 0x28
-	s32 field_0x2C; // 0x2C
-	s32 field_0x30; // 0x30
-	s32 field_0x34; // 0x34
-	s32 field_0x38; // 0x38
-	s32 field_0x3C; // 0x3C
-	s32 field_0x40; // 0x40
-	s32 field_0x44; // 0x44
-	f32 scale;      // 0x48
-	f32 field_0x4C; // 0x4C
-	f32 field_0x50; // 0x50
-	f32 field_0x54; // 0x54
-	f32 field_0x58; // 0x58
-	f32 field_0x5C; // 0x5C
-	f32 field_0x60; // 0x60
-	f32 field_0x64; // 0x64
-	f32 field_0x68; // 0x68
-	f32 field_0x6C; // 0x6C
-	f32 field_0x70; // 0x70
-	f32 field_0x74; // 0x74
-	f32 field_0x78; // 0x78
+	s32 type;        // 0x00
+	f32 x;           // 0x04
+	f32 y;           // 0x08
+	f32 z;           // 0x0C
+	f32 vx;          // 0x10: target point (the flame flies from x/y/z toward it)
+	f32 vy;          // 0x14
+	f32 vz;          // 0x18
+	s32 travelFrames; // 0x1C: frames to reach the target
+	s32 lifetime;    // 0x20
+	s32 timer;       // 0x24
+	s32 colorR0;     // 0x28: TEVREG0 colour (R, G, B); colour 1 shares G at 0x2C
+	s32 colorG;      // 0x2C
+	s32 colorB0;     // 0x30
+	s32 alpha;       // 0x34: TEVREG0 alpha
+	s32 colorR1;     // 0x38: TEVREG1 colour
+	s32 field_0x3C;  // 0x3C
+	s32 colorB1;     // 0x40
+	s32 colorA1;     // 0x44
+	f32 scale;       // 0x48
+	f32 texScrollX;  // 0x4C: texture 1 scroll, grows by texSpeedX each frame and wraps at 128
+	f32 texScrollY;  // 0x50
+	f32 texSpeedX;   // 0x54: set each frame from sin(omega)
+	f32 texSpeedY;   // 0x58: set each frame from cos(omega)
+	f32 field_0x5C;  // 0x5C
+	f32 velX;        // 0x60: per-frame motion
+	f32 velY;        // 0x64
+	f32 velZ;        // 0x68
+	f32 scaleY;      // 0x6C: scale factor for the draw
+	f32 scaleX;      // 0x70
+	f32 rotZ;        // 0x74: tilt (degrees)
+	f32 rotSpeed;    // 0x78: added to rotZ each frame
 } effPacknBfireData;
 
 EffectEntry* effPacknBfireN64Entry(s32 type, s32 a1, s32 a2, f32 x, f32 y, f32 z, f32 vx, f32 vy, f32 vz, f32 scale) {
@@ -107,49 +107,49 @@ EffectEntry* effPacknBfireN64Entry(s32 type, s32 a1, s32 a2, f32 x, f32 y, f32 z
 	}
 	data->type = type;
 	data->timer = 0;
-	data->field_0x1C = a1;
-	data->field_0x34 = 0;
+	data->travelFrames = a1;
+	data->alpha = 0;
 	data->x = x;
 	data->y = y;
 	data->z = z;
 	data->vx = vx;
 	data->vy = vy;
 	data->vz = vz;
-	data->field_0x60 = (data->vx - data->x) / (f32)a1;
-	data->field_0x64 = (data->vy - data->y) / (f32)a1;
-	data->field_0x68 = (data->vz - data->z) / (f32)a1;
+	data->velX = (data->vx - data->x) / (f32)a1;
+	data->velY = (data->vy - data->y) / (f32)a1;
+	data->velZ = (data->vz - data->z) / (f32)a1;
 	data->scale = scale;
 
 	switch (type) {
 	case 0:
 		break;
 	case 1:
-		data->field_0x28 = 0xFF;
-		data->field_0x2C = 0x58;
-		data->field_0x30 = 0x46;
-		data->field_0x34 = 0x37;
-		data->field_0x38 = 0x0B;
+		data->colorR0 = 0xFF;
+		data->colorG = 0x58;
+		data->colorB0 = 0x46;
+		data->alpha = 0x37;
+		data->colorR1 = 0x0B;
 		data->field_0x3C = 0x33;
-		data->field_0x40 = 0x7B;
-		data->field_0x44 = 0xFF;
-		data->field_0x4C = (f32)(rand() % 65);
-		data->field_0x50 = (f32)(rand() % 65);
-		data->field_0x70 = float_0p2_8041f920;
-		data->field_0x6C = float_0p3_8041f92c;
-		data->field_0x54 = float_0_8041f8ec;
-		data->field_0x58 = float_0_8041f8ec;
-		data->field_0x74 = float_0_8041f8ec;
-		data->field_0x78 = float_neg10_8041f930;
+		data->colorB1 = 0x7B;
+		data->colorA1 = 0xFF;
+		data->texScrollX = (f32)(rand() % 65);
+		data->texScrollY = (f32)(rand() % 65);
+		data->scaleX = float_0p2_8041f920;
+		data->scaleY = float_0p3_8041f92c;
+		data->texSpeedX = float_0_8041f8ec;
+		data->texSpeedY = float_0_8041f8ec;
+		data->rotZ = float_0_8041f8ec;
+		data->rotSpeed = float_neg10_8041f930;
 		break;
 	default:
-		data->field_0x28 = 0xFF;
-		data->field_0x2C = 0x58;
-		data->field_0x30 = 0x46;
-		data->field_0x34 = 0x37;
-		data->field_0x38 = 0x0B;
+		data->colorR0 = 0xFF;
+		data->colorG = 0x58;
+		data->colorB0 = 0x46;
+		data->alpha = 0x37;
+		data->colorR1 = 0x0B;
 		data->field_0x3C = 0x33;
-		data->field_0x40 = 0x7B;
-		data->field_0x44 = 0xFF;
+		data->colorB1 = 0x7B;
+		data->colorA1 = 0xFF;
 		base = (f32)(rand() % 361);
 		for (i = 0; i < count; i++, data++) {
 			f32 rad;
@@ -158,16 +158,16 @@ EffectEntry* effPacknBfireN64Entry(s32 type, s32 a1, s32 a2, f32 x, f32 y, f32 z
 			data->y = y;
 			data->z = z;
 			rad = float_6p2832_8041f8f0 * (base + (f32)(i * 360 / 8)) / float_360_8041f8f4;
-			data->field_0x60 = float_5_8041f934 * (f32)sin(rad);
-			data->field_0x64 = float_2_8041f93c * (f32)cos(rad) + float_3_8041f938;
-			data->field_0x4C = (f32)(rand() % 65);
-			data->field_0x50 = (f32)(rand() % 65);
-			data->field_0x70 = float_1_8041f900;
-			data->field_0x6C = float_1_8041f900;
-			data->field_0x54 = float_0_8041f8ec;
-			data->field_0x58 = float_0_8041f8ec;
-			data->field_0x74 = float_neg45_8041f940;
-			data->field_0x78 = float_neg10_8041f930;
+			data->velX = float_5_8041f934 * (f32)sin(rad);
+			data->velY = float_2_8041f93c * (f32)cos(rad) + float_3_8041f938;
+			data->texScrollX = (f32)(rand() % 65);
+			data->texScrollY = (f32)(rand() % 65);
+			data->scaleX = float_1_8041f900;
+			data->scaleY = float_1_8041f900;
+			data->texSpeedX = float_0_8041f8ec;
+			data->texSpeedY = float_0_8041f8ec;
+			data->rotZ = float_neg45_8041f940;
+			data->rotSpeed = float_neg10_8041f930;
 		}
 		break;
 	}
@@ -215,20 +215,20 @@ void effPacknBfireMain(EffectEntry* effect) {
 	switch (type) {
 	case 0:
 		if ((timer & 3) == 0) {
-			effPacknBfireN64Entry(1, data->field_0x1C, data->field_0x1C, data->x, data->y, data->z, data->vx, data->vy,
+			effPacknBfireN64Entry(1, data->travelFrames, data->travelFrames, data->x, data->y, data->z, data->vx, data->vy,
 			                      data->vz, float_1_8041f900);
 		}
 		break;
 	case 1:
-		data->field_0x60 *= float_0p97_8041f90c;
-		data->field_0x68 *= float_0p97_8041f90c;
-		data->field_0x64 += float_0p02_8041f910 * (float_1_8041f900 - data->field_0x64);
-		data->x += data->field_0x60;
-		data->y += data->field_0x64;
-		data->z += data->field_0x68;
-		data->field_0x70 += float_0p05_8041f914 * (float_1_8041f900 - data->field_0x70);
-		data->field_0x6C += float_0p1_8041f918 * (float_1_8041f900 - data->field_0x6C);
-		data->field_0x74 += data->field_0x78;
+		data->velX *= float_0p97_8041f90c;
+		data->velZ *= float_0p97_8041f90c;
+		data->velY += float_0p02_8041f910 * (float_1_8041f900 - data->velY);
+		data->x += data->velX;
+		data->y += data->velY;
+		data->z += data->velZ;
+		data->scaleX += float_0p05_8041f914 * (float_1_8041f900 - data->scaleX);
+		data->scaleY += float_0p1_8041f918 * (float_1_8041f900 - data->scaleY);
+		data->rotZ += data->rotSpeed;
 		break;
 	case 2: {
 		/* Declared in this order, assigned in this order: the register allocator must hand 0.9 to f6 and 0.2
@@ -238,19 +238,19 @@ void effPacknBfireMain(EffectEntry* effect) {
 		vb = float_0p2_8041f920;
 		vz = float_0_8041f8ec;
 		for (i = 0; i < effect->count; i++, data++) {
-			data->field_0x60 *= va;
-			data->field_0x64 -= vb;
-			data->x += data->field_0x60;
-			data->y += data->field_0x64;
+			data->velX *= va;
+			data->velY -= vb;
+			data->x += data->velX;
+			data->y += data->velY;
 			if (data->y < vz) {
 				data->y = vz;
-				if (data->field_0x64 < vz) {
-					data->field_0x64 *= float_neg0p6_8041f924;
+				if (data->velY < vz) {
+					data->velY *= float_neg0p6_8041f924;
 				}
 			}
-			data->field_0x70 = float_0p07_8041f928 * -data->field_0x70 + data->field_0x70;
-			data->field_0x6C = float_0p05_8041f914 * -data->field_0x6C + data->field_0x6C;
-			data->field_0x74 += data->field_0x78;
+			data->scaleX = float_0p07_8041f928 * -data->scaleX + data->scaleX;
+			data->scaleY = float_0p05_8041f914 * -data->scaleY + data->scaleY;
+			data->rotZ += data->rotSpeed;
 		}
 		break;
 	}
@@ -267,19 +267,19 @@ void effPacknBfireMain(EffectEntry* effect) {
 // slot the compiler picks for the by-value GXColor copy.
 static inline void effPacknBfireSetColor0(effPacknBfireData* data, s32 alpha) {
 	GXColor color = unk_804231f8;
-	color.r = data->field_0x28;
-	color.g = data->field_0x2C;
-	color.b = data->field_0x30;
+	color.r = data->colorR0;
+	color.g = data->colorG;
+	color.b = data->colorB0;
 	color.a = alpha;
 	GXSetTevColor(GX_TEVREG0, color);
 }
 
 static inline void effPacknBfireSetColor1(effPacknBfireData* data) {
 	GXColor color = unk_804231fc;
-	color.r = data->field_0x38;
-	color.g = data->field_0x2C;
-	color.b = data->field_0x40;
-	color.a = data->field_0x44;
+	color.r = data->colorR1;
+	color.g = data->colorG;
+	color.b = data->colorB1;
+	color.a = data->colorA1;
 	GXSetTevColor(GX_TEVREG1, color);
 }
 
@@ -306,7 +306,7 @@ void effPacknBfireDisp(CameraId camId, void* param) {
 	effect = param;
 	cam = camGetPtr(camId);
 	data = effect->userdata;
-	alpha = data->field_0x34;
+	alpha = data->alpha;
 	scale = data->scale;
 
 	if (data->type == 0) {
@@ -345,8 +345,8 @@ void effPacknBfireDisp(CameraId camId, void* param) {
 	GXSetTevAlphaIn(GX_TEVSTAGE4, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_APREV);
 
 	GXSetNumTexGens(2);
-	GXSetTexCoordGen2(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_TEXMTX0, GX_FALSE, 0x7D);
-	GXSetTexCoordGen2(GX_TEXCOORD1, GX_TG_MTX2x4, GX_TG_TEX0, GX_TEXMTX1, GX_FALSE, 0x7D);
+	GXSetTexCoordGen2(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_TEXMTX0, GX_FALSE, GX_PTIDENTITY);
+	GXSetTexCoordGen2(GX_TEXCOORD1, GX_TG_MTX2x4, GX_TG_TEX0, GX_TEXMTX1, GX_FALSE, GX_PTIDENTITY);
 	PSMTXScale(mtxB, float_0p03125_8041f8e8, float_0p03125_8041f8e8, float_0_8041f8ec);
 	GXLoadTexMtxImm(mtxB, GX_TEXMTX0, GX_MTX2x4);
 	effGetTexObjN64(0x71, &texObj);
@@ -363,18 +363,18 @@ void effPacknBfireDisp(CameraId camId, void* param) {
 	deg2rad = float_deg2rad_8041f8fc;
 
 	for (i = 0; i < effect->count; i++, data++) {
-		data->field_0x4C += data->field_0x54;
-		data->field_0x50 += data->field_0x58;
+		data->texScrollX += data->texSpeedX;
+		data->texScrollY += data->texSpeedY;
 		z = MATCH_F32(float_0_8041f8ec);
-		angle = angleABf(z, z, data->field_0x60, data->field_0x64);
-		omega = twoPi * (data->field_0x74 - angle) / fullTurn;
-		data->field_0x54 = (f32)sin(omega);
-		data->field_0x58 = (f32)cos(omega);
-		if (data->field_0x4C < zero) {
-			data->field_0x4C += float_128_8041f8f8;
+		angle = angleABf(z, z, data->velX, data->velY);
+		omega = twoPi * (data->rotZ - angle) / fullTurn;
+		data->texSpeedX = (f32)sin(omega);
+		data->texSpeedY = (f32)cos(omega);
+		if (data->texScrollX < zero) {
+			data->texScrollX += float_128_8041f8f8;
 		}
-		if (data->field_0x50 > half) {
-			data->field_0x50 -= half;
+		if (data->texScrollY > half) {
+			data->texScrollY -= half;
 		}
 
 		PSMTXTrans(mtxA, data->x, data->y, data->z);
@@ -382,15 +382,15 @@ void effPacknBfireDisp(CameraId camId, void* param) {
 		PSMTXScale(mtxB, scale, scale, scale);
 		PSMTXConcat(mtxA, mtxC, mtxA);
 		PSMTXConcat(mtxA, mtxB, mtxA);
-		PSMTXScale(mtxB, data->field_0x70, data->field_0x6C, float_1_8041f900);
-		PSMTXRotRad(mtxC, 'z', deg2rad * data->field_0x74);
+		PSMTXScale(mtxB, data->scaleX, data->scaleY, float_1_8041f900);
+		PSMTXRotRad(mtxC, 'z', deg2rad * data->rotZ);
 		PSMTXConcat(mtxB, mtxC, mtxB);
 		PSMTXConcat(mtxA, mtxB, mtxA);
 		PSMTXConcat(cam->view, mtxA, mtxA);
 		GXLoadPosMtxImm(mtxA, GX_PNMTX0);
 		GXSetCurrentMtx(GX_PNMTX0);
 		PSMTXScale(mtxB, float_0p0039062_8041f904, float_0p015625_8041f908, float_0_8041f8ec);
-		PSMTXTrans(mtxA, data->field_0x4C, data->field_0x50, float_0_8041f8ec);
+		PSMTXTrans(mtxA, data->texScrollX, data->texScrollY, float_0_8041f8ec);
 		PSMTXConcat(mtxB, mtxA, mtxB);
 		GXLoadTexMtxImm(mtxB, GX_TEXMTX1, GX_MTX2x4);
 		GXBegin(GX_TRIANGLES, GX_VTXFMT0, 6);

@@ -111,15 +111,15 @@ EffectEntry* effFunemizuEntry(s32 type, f32 a, f32 b, f32 c, f32 d, f32 e) {
 	data->x = a;
 	data->y = b;
 	data->z = c;
-	data->field_0x18 = float_0_80421478;
-	data->field_0x1C = float_0_80421478;
-	data->field_0x20 = float_0_80421478;
-	data->field_0x24 = float_0_80421478;
-	data->field_0x2C = float_0_80421478;
-	data->field_0x28 = float_0_80421478;
-	data->field_0x30 = 0;
-	data->field_0x44 = float_1_80421484;
-	data->field_0x48 = 4;
+	data->scaleA = float_0_80421478;
+	data->scaleB = float_0_80421478;
+	data->scaleAY = float_0_80421478;
+	data->scaleBY = float_0_80421478;
+	data->texScrollB = float_0_80421478;
+	data->texScrollA = float_0_80421478;
+	data->timer = 0;
+	data->scale = float_1_80421484;
+	data->camId = 4;
 
 	for (i = 1, data = data + 1; i < entry->count; i++, data++) {
 		data->x = float_0_80421478;
@@ -127,15 +127,15 @@ EffectEntry* effFunemizuEntry(s32 type, f32 a, f32 b, f32 c, f32 d, f32 e) {
 		data->z = float_0_80421478;
 #ifdef MUST_MATCH
 		dz = d * float_0p5_8042147c;
-		data->field_0x10 = dz;
+		data->speed = dz;
 #else
-		data->field_0x10 = d;
+		data->speed = d;
 #endif
-		data->field_0x14 = e;
-		data->field_0x34 = data->field_0x10 + (f32)irand(2);
-		data->field_0x38 = (f32)irand(10) / float_100_804214a8 + float_0p1_80421498;
-		data->field_0x3C = irand(5);
-		data->field_0x40 = 255;
+		data->yaw = e;
+		data->velY = data->speed + (f32)irand(2);
+		data->gravity = (f32)irand(10) / float_100_804214a8 + float_0p1_80421498;
+		data->delay = irand(5);
+		data->alpha = 255;
 	}
 	return entry;
 }
@@ -173,14 +173,14 @@ void effFunemizuMain(EffectEntry* effect) {
 	pos2 = pos;
 
 	type = data->type;
-	camId = data->field_0x48;
-	data->field_0x30++;
-	if (data->field_0x30 > 1000) {
-		data->field_0x30 -= 1000;
+	camId = data->camId;
+	data->timer++;
+	if (data->timer > 1000) {
+		data->timer -= 1000;
 	}
 
 	if (data->type == 0 || data->type == 2) {
-		a = data->field_0x10;
+		a = data->speed;
 		b = a - float_1_80421484;
 		a = clamp01(a);
 		if (b < float_0_80421478) {
@@ -189,39 +189,39 @@ void effFunemizuMain(EffectEntry* effect) {
 		if (b > float_1_80421484) {
 			b = float_1_80421484;
 		}
-		data->field_0x18 += (a - data->field_0x18) / float_10_80421490;
-		data->field_0x1C += (b - data->field_0x1C) / float_10_80421490;
-		if (data->field_0x10 > float_1_80421484) {
-			data->field_0x20 += (a - data->field_0x20) / float_10_80421490;
-			data->field_0x24 += (b - data->field_0x24) / float_10_80421490;
+		data->scaleA += (a - data->scaleA) / float_10_80421490;
+		data->scaleB += (b - data->scaleB) / float_10_80421490;
+		if (data->speed > float_1_80421484) {
+			data->scaleAY += (a - data->scaleAY) / float_10_80421490;
+			data->scaleBY += (b - data->scaleBY) / float_10_80421490;
 		}
 		else {
 			f32 d;
 
-			d = a - data->field_0x20;
-			data->field_0x20 += d * float_0p5_8042147c;
-			d = b - data->field_0x24;
-			data->field_0x24 += d * float_0p5_8042147c;
+			d = a - data->scaleAY;
+			data->scaleAY += d * float_0p5_8042147c;
+			d = b - data->scaleBY;
+			data->scaleBY += d * float_0p5_8042147c;
 		}
-		data->field_0x28 += float_0p05_80421494 * data->field_0x18;
-		data->field_0x2C += float_0p1_80421498 * data->field_0x1C;
-		if (data->field_0x10 > float_0p1_80421498) {
-			if (data->field_0x30 % 10 == 0) {
+		data->texScrollA += float_0p05_80421494 * data->scaleA;
+		data->texScrollB += float_0p1_80421498 * data->scaleB;
+		if (data->speed > float_0p1_80421498) {
+			if (data->timer % 10 == 0) {
 				f32 sn;
 				f32 cs;
 				f32 angle;
 
-				angle = float_6p2832_8042149c * (data->field_0x14 - camGetPtr(CAMERA_3D)->viewYaw) / float_360_804214a0;
+				angle = float_6p2832_8042149c * (data->yaw - camGetPtr(CAMERA_3D)->viewYaw) / float_360_804214a0;
 				sn = (f32)sin(angle);
 				cs = (f32)cos(angle);
 				effFunemizuEntry(1, data->x - float_14_804214a4 * cs, data->y,
-				                 data->z - float_14_804214a4 * sn, data->field_0x10,
-				                 data->field_0x14);
+				                 data->z - float_14_804214a4 * sn, data->speed,
+				                 data->yaw);
 			}
 		}
 	}
 	else {
-		data->field_0x18 = float_1_80421484;
+		data->scaleA = float_1_80421484;
 		for (i = 1, data = data + 1; i < effect->count; i++, data++) {
 			f32 s;
 
@@ -229,18 +229,18 @@ void effFunemizuMain(EffectEntry* effect) {
 				dead++;
 				continue;
 			}
-			if (data->field_0x3C != 0) {
-				data->field_0x3C--;
+			if (data->delay != 0) {
+				data->delay--;
 				continue;
 			}
-			data->x += data->field_0x10 * (f32)cos(float_6p2832_8042149c * data->field_0x14 / float_360_804214a0);
-			s = (f32)sin(float_6p2832_8042149c * data->field_0x14 / float_360_804214a0);
-			data->z += data->field_0x10 * -s;
-			data->y += data->field_0x34;
-			data->field_0x34 -= data->field_0x38;
-			data->field_0x40 -= 8;
-			if (data->field_0x40 < 0) {
-				data->field_0x40 = 0;
+			data->x += data->speed * (f32)cos(float_6p2832_8042149c * data->yaw / float_360_804214a0);
+			s = (f32)sin(float_6p2832_8042149c * data->yaw / float_360_804214a0);
+			data->z += data->speed * -s;
+			data->y += data->velY;
+			data->velY -= data->gravity;
+			data->alpha -= 8;
+			if (data->alpha < 0) {
+				data->alpha = 0;
 			}
 		}
 		if (dead >= effect->count - 1) {
@@ -367,8 +367,8 @@ found:
 
 	PSMTXTrans(mtxC0, data->x, data->y, data->z);
 	PSMTXRotRad(mtx60, 'y',
-	            float_deg2rad_80421470 * (data->field_0x14 - camGetPtr(camId)->viewYaw));
-	PSMTXScale(mtx90, data->field_0x44, data->field_0x44, data->field_0x44);
+	            float_deg2rad_80421470 * (data->yaw - camGetPtr(camId)->viewYaw));
+	PSMTXScale(mtx90, data->scale, data->scale, data->scale);
 	PSMTXConcat(mtxC0, mtx60, mtxC0);
 	PSMTXConcat(mtxC0, mtx90, mtxC0);
 	zero = float_0_80421478;
@@ -379,7 +379,7 @@ found:
 	GXSetNumChans(1);
 	GXSetChanCtrl(GX_COLOR0A0, GX_FALSE, GX_SRC_REG, GX_SRC_VTX, GX_LIGHT_NULL, GX_DF_NONE, GX_AF_NONE);
 	GXSetNumTexGens(1);
-	GXSetTexCoordGen2(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, 0x1e, GX_FALSE, GX_PTIDENTITY);
+	GXSetTexCoordGen2(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_TEXMTX0, GX_FALSE, GX_PTIDENTITY);
 	GXSetNumTevStages(1);
 	GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR0A0);
 	GXSetTevColorOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
@@ -409,13 +409,13 @@ found:
 #endif
 		PSMTXScale(mtx90, oneR, oneR, scale);
 		PSMTXConcat(mtxC0, mtx90, mtxC0);
-		PSMTXScale(mtx90, data->field_0x18, data->field_0x20, data->field_0x18);
+		PSMTXScale(mtx90, data->scaleA, data->scaleAY, data->scaleA);
 		PSMTXConcat(mtxC0, mtx90, mtx90);
 		GXLoadPosMtxImm(mtx90, 0);
 		GXSetCurrentMtx(0);
 		zero = float_0_80421478;
-		PSMTXTrans(mtx90, data->field_0x28, zero, zero);
-		GXLoadTexMtxImm(mtx90, 0x1e, GX_MTX2x4);
+		PSMTXTrans(mtx90, data->texScrollA, zero, zero);
+		GXLoadTexMtxImm(mtx90, GX_TEXMTX0, GX_MTX2x4);
 
 		if (type == 0) {
 			GXClearVtxDesc();
@@ -450,13 +450,13 @@ found:
 			FUNEMIZU_DL_LOOP(2, gor_fune_dl_0_tbl, gor_fune_dl_0_size_tbl);
 		}
 
-		PSMTXScale(mtx90, data->field_0x1C, data->field_0x24, data->field_0x1C);
+		PSMTXScale(mtx90, data->scaleB, data->scaleBY, data->scaleB);
 		PSMTXConcat(mtxC0, mtx90, mtx90);
 		GXLoadPosMtxImm(mtx90, 0);
 		GXSetCurrentMtx(0);
 		zero = float_0_80421478;
-		PSMTXTrans(mtx90, data->field_0x2C, zero, zero);
-		GXLoadTexMtxImm(mtx90, 0x1e, GX_MTX2x4);
+		PSMTXTrans(mtx90, data->texScrollB, zero, zero);
+		GXLoadTexMtxImm(mtx90, GX_TEXMTX0, GX_MTX2x4);
 
 		if (type == 0) {
 			GXClearVtxDesc();
@@ -537,14 +537,14 @@ void effFunemizuShibukiDisp(CameraId camId, void* param) {
 
 	PSMTXTrans(mtx90, data->x, data->y, data->z);
 	PSMTXRotRad(mtx60, 'y',
-	            float_deg2rad_80421470 * (data->field_0x14 - camGetPtr(camId)->viewYaw));
+	            float_deg2rad_80421470 * (data->yaw - camGetPtr(camId)->viewYaw));
 	PSMTXConcat(mtx90, mtx60, mtx90);
 	PSMTXConcat(cam->view, mtx90, mtx30);
 
 	GXSetNumChans(1);
 	GXSetChanCtrl(GX_COLOR0A0, GX_FALSE, GX_SRC_REG, GX_SRC_REG, GX_LIGHT_NULL, GX_DF_NONE, GX_AF_NONE);
 	GXSetNumTexGens(1);
-	GXSetTexCoordGen2(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, 0x3c, GX_FALSE, GX_PTIDENTITY);
+	GXSetTexCoordGen2(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_IDENTITY, GX_FALSE, GX_PTIDENTITY);
 	GXSetNumTevStages(1);
 	GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR0A0);
 	GXSetTevOp(GX_TEVSTAGE0, GX_MODULATE);
@@ -561,17 +561,17 @@ void effFunemizuShibukiDisp(CameraId camId, void* param) {
 	i = 1;
 	data++;
 	for (; i < effect->count; i++, data++) {
-		if (data->field_0x3C != 0) {
+		if (data->delay != 0) {
 			continue;
 		}
 		if (data->y < float_0_80421478) {
 			continue;
 		}
 #ifdef MUST_MATCH
-		GXSetChanMatColor(GX_COLOR0A0, funemizuShibukiColor(data->field_0x40));
+		GXSetChanMatColor(GX_COLOR0A0, funemizuShibukiColor(data->alpha));
 #else
 		color = *(GXColor*)&dat_8042146c;
-		color.a = data->field_0x40;
+		color.a = data->alpha;
 		GXSetChanMatColor(GX_COLOR0A0, color);
 #endif
 		PSMTXTrans(mtx90, data->x, data->y, data->z);

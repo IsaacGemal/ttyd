@@ -141,12 +141,12 @@ EffectEntry* effKemuTestEntry(s32 type, f32 x, f32 y, f32 z, f32 scale) {
 	data->posX = x;
 	data->posY = y;
 	data->posZ = z;
-	data->field_0x28 = 0;
-	data->field_0x44 = 0;
+	data->age = 0;
+	data->delay = 0;
 	data->scale = scale;
-	data->field_0x1C = 4;
-	data->field_0x50 = 0.0f;
-	data->field_0x54 = 0.0f;
+	data->camId = 4;
+	data->rotX = 0.0f;
+	data->rotZ = 0.0f;
 
 #ifdef MUST_MATCH
 	/* MUST_MATCH: dead store kept only to steer MWCC's FP temp allocation. Without it `spd` is a
@@ -165,17 +165,17 @@ EffectEntry* effKemuTestEntry(s32 type, f32 x, f32 y, f32 z, f32 scale) {
 			work->posX = 0.0f;
 			work->posY = 0.0f;
 			work->posZ = 0.0f;
-			work->field_0x30 = 0x20;
-			work->field_0x28 = 0;
-			work->field_0x44 = 0;
-			work->field_0x4C = 0xFF;
-			work->field_0x4D = 0xFF;
-			work->field_0x4E = 0xFF;
+			work->life = 0x20;
+			work->age = 0;
+			work->delay = 0;
+			work->colorR = 0xFF;
+			work->colorG = 0xFF;
+			work->colorB = 0xFF;
 			work->scale = 1.0f;
 			if (type == 15) {
-				work->field_0x4C = 0x50;
-				work->field_0x4D = 0x4B;
-				work->field_0x4E = 0x4B;
+				work->colorR = 0x50;
+				work->colorG = 0x4B;
+				work->colorB = 0x4B;
 			}
 			break;
 		case 1:
@@ -183,15 +183,15 @@ EffectEntry* effKemuTestEntry(s32 type, f32 x, f32 y, f32 z, f32 scale) {
 			work->posX = 0.0f;
 			work->posY = 0.0f;
 			work->posZ = 0.0f;
-			work->field_0x30 = 0x80;
-			work->field_0x28 = 0;
-			work->field_0x34 = 0.95f;
-			work->field_0x38 = -0.04f;
-			work->field_0x3C = 0.94f;
-			work->field_0x44 = 0;
-			work->field_0x4C = 0xFF;
-			work->field_0x4D = 0xFF;
-			work->field_0x4E = 0xFF;
+			work->life = 0x80;
+			work->age = 0;
+			work->speed = 0.95f;
+			work->accel = -0.04f;
+			work->damp = 0.94f;
+			work->delay = 0;
+			work->colorR = 0xFF;
+			work->colorG = 0xFF;
+			work->colorB = 0xFF;
 			work->scale = 1.0f;
 			if (type == 19) {
 #ifdef MUST_MATCH
@@ -213,11 +213,11 @@ EffectEntry* effKemuTestEntry(s32 type, f32 x, f32 y, f32 z, f32 scale) {
 				work->posY = ((const f32*)&vec3_802fdca0)[i - 1];
 				work->scale = ((const f32*)&vec3_802fdc88)[i - 1];
 #endif
-				work->field_0x44 = 4 * i;
-				work->field_0x4C = 0x78;
-				work->field_0x4D = 0x78;
-				work->field_0x4E = 0x78;
-				work->field_0x34 *= 0.8f;
+				work->delay = 4 * i;
+				work->colorR = 0x78;
+				work->colorG = 0x78;
+				work->colorB = 0x78;
+				work->speed *= 0.8f;
 			}
 			break;
 		case 2:
@@ -226,12 +226,12 @@ EffectEntry* effKemuTestEntry(s32 type, f32 x, f32 y, f32 z, f32 scale) {
 			work->posX = 20.0f * (f32)sin(angle);
 			work->posY = 20.0f * (f32)cos(angle);
 			work->posZ = 0.0f;
-			work->field_0x30 = 0x20;
-			work->field_0x28 = 0;
-			work->field_0x44 = (i - 1) * 6;
-			work->field_0x4C = 0xFF;
-			work->field_0x4D = 0xFF;
-			work->field_0x4E = 0xFF;
+			work->life = 0x20;
+			work->age = 0;
+			work->delay = (i - 1) * 6;
+			work->colorR = 0xFF;
+			work->colorG = 0xFF;
+			work->colorB = 0xFF;
 			work->scale = 1.0f;
 			break;
 		case 3:
@@ -239,15 +239,15 @@ EffectEntry* effKemuTestEntry(s32 type, f32 x, f32 y, f32 z, f32 scale) {
 			work->posX = 20.0f * (f32)sin(angle);
 			work->posY = 20.0f * (f32)cos(angle);
 			work->posZ = 0.0f;
-			work->field_0x30 = 0x20;
-			work->field_0x28 = 0;
-			work->field_0x44 = (i - 1) * 3;
-			work->field_0x34 = 0.95f;
-			work->field_0x38 = -0.04f;
-			work->field_0x3C = 0.94f;
-			work->field_0x4C = 0xFF;
-			work->field_0x4D = 0xFF;
-			work->field_0x4E = 0xFF;
+			work->life = 0x20;
+			work->age = 0;
+			work->delay = (i - 1) * 3;
+			work->speed = 0.95f;
+			work->accel = -0.04f;
+			work->damp = 0.94f;
+			work->colorR = 0xFF;
+			work->colorG = 0xFF;
+			work->colorB = 0xFF;
 			work->scale = 1.0f;
 			break;
 		case 4:
@@ -262,13 +262,13 @@ EffectEntry* effKemuTestEntry(s32 type, f32 x, f32 y, f32 z, f32 scale) {
 			work->posX = 0.0f;
 			work->posY = 0.0f;
 			work->posZ = 0.0f;
-			work->field_0x30 = 0x20;
-			work->field_0x28 = 0;
-			work->field_0x44 = 0;
-			work->field_0x4C = 0xFF;
-			work->field_0x4D = 0xFF;
-			work->field_0x4E = 0xFF;
-			work->field_0x44 = 0;
+			work->life = 0x20;
+			work->age = 0;
+			work->delay = 0;
+			work->colorR = 0xFF;
+			work->colorG = 0xFF;
+			work->colorB = 0xFF;
+			work->delay = 0;
 			if (type == 4 || type == 13) {
 				f32 angle, spd;
 #ifdef MUST_MATCH
@@ -285,17 +285,17 @@ EffectEntry* effKemuTestEntry(s32 type, f32 x, f32 y, f32 z, f32 scale) {
 				work->velX = spd * (f32)sin(angle);
 				work->velY = -spd * (f32)cos(angle);
 				work->scale = 1.0f;
-				work->field_0x44 = irand(0x1E);
+				work->delay = irand(0x1E);
 				if (type == 13) {
-					work->field_0x34 = 0.59999996f;
-					work->field_0x38 = -0.08f;
-					work->field_0x3C = 0.94f;
-					work->field_0x4C = 0xAA;
-					work->field_0x4D = 0x82;
-					work->field_0x4E = 0xE6;
+					work->speed = 0.59999996f;
+					work->accel = -0.08f;
+					work->damp = 0.94f;
+					work->colorR = 0xAA;
+					work->colorG = 0x82;
+					work->colorB = 0xE6;
 					work->velX *= 0.8f;
 					work->velY *= 0.8f;
-					work->field_0x30 *= 2;
+					work->life *= 2;
 				}
 			}
 			else if (type == 5) {
@@ -338,34 +338,34 @@ EffectEntry* effKemuTestEntry(s32 type, f32 x, f32 y, f32 z, f32 scale) {
 				work->velX = spd * (f32)sin(angle);
 				work->velY = -spd * (f32)cos(angle);
 				work->scale = 1.0f;
-				work->field_0x44 = (i < (entry->count - 1) / 2 + 1) ? 0 : 8;
+				work->delay = (i < (entry->count - 1) / 2 + 1) ? 0 : 8;
 				if (type == 9) {
-					work->field_0x4C = 0xF8;
-					work->field_0x4D = 0xC0;
-					work->field_0x4E = 0xDE;
+					work->colorR = 0xF8;
+					work->colorG = 0xC0;
+					work->colorB = 0xDE;
 				}
 				else if (type == 17) {
-					work->field_0x4C = 0xFF;
-					work->field_0x4D = 0xFF;
-					work->field_0x4E = 0xFF;
+					work->colorR = 0xFF;
+					work->colorG = 0xFF;
+					work->colorB = 0xFF;
 				}
 				else if (type == 20) {
-					work->field_0x4C = 0xFF;
-					work->field_0x4D = 0x97;
-					work->field_0x4E = 0x10;
+					work->colorR = 0xFF;
+					work->colorG = 0x97;
+					work->colorB = 0x10;
 				}
 			}
 			else if (type == 10 || type == 14) {
-				work->field_0x34 = 0.95f;
-				work->field_0x38 = -0.04f;
-				work->field_0x3C = 0.94f;
-				work->field_0x30 = 0x40;
+				work->speed = 0.95f;
+				work->accel = -0.04f;
+				work->damp = 0.94f;
+				work->life = 0x40;
 				work->scale = 1.0f;
-				work->field_0x44 = 0;
+				work->delay = 0;
 				if (type == 10) {
-					work->field_0x4C = 0xAF;
-					work->field_0x4D = 0xA5;
-					work->field_0x4E = 0x9B;
+					work->colorR = 0xAF;
+					work->colorG = 0xA5;
+					work->colorB = 0x9B;
 				}
 			}
 			break;
@@ -373,15 +373,15 @@ EffectEntry* effKemuTestEntry(s32 type, f32 x, f32 y, f32 z, f32 scale) {
 			work->posX = (f32)(irand(0x28) - 0x14);
 			work->posY = (f32)(irand(0x14) - 0xA);
 			work->posZ = 0.0f;
-			work->field_0x30 = 0x40;
-			work->field_0x28 = 0;
-			work->field_0x44 = irand(0xA);
-			work->field_0x34 = 0.59999996f;
-			work->field_0x38 = -0.04f;
-			work->field_0x3C = 0.94f;
-			work->field_0x4C = 0xFF;
-			work->field_0x4D = 0xFF;
-			work->field_0x4E = 0xFF;
+			work->life = 0x40;
+			work->age = 0;
+			work->delay = irand(0xA);
+			work->speed = 0.59999996f;
+			work->accel = -0.04f;
+			work->damp = 0.94f;
+			work->colorR = 0xFF;
+			work->colorG = 0xFF;
+			work->colorB = 0xFF;
 			work->scale = 0.6f;
 			angle = angleABf(0.0f, 0.0f, work->posX, work->posY);
 			spd = 1.0f;
@@ -395,16 +395,16 @@ EffectEntry* effKemuTestEntry(s32 type, f32 x, f32 y, f32 z, f32 scale) {
 				work->posX = 0.0f;
 				work->posY = 0.0f;
 				work->posZ = 0.0f;
-				work->field_0x30 = 0x3C;
-				work->field_0x28 = 0;
+				work->life = 0x3C;
+				work->age = 0;
 				angle = 6.2831855f * (135.0f - 90.0f * ((f32)(i - 1) / (f32)(count - 2))) / 360.0f;
 				work->velX = spd * (f32)cos(angle);
 				work->velY = spd * (f32)sin(angle);
 			}
-			work->field_0x44 = irand(0x10);
-			work->field_0x4C = 0xDC;
-			work->field_0x4D = 0xC3;
-			work->field_0x4E = 0xE9;
+			work->delay = irand(0x10);
+			work->colorR = 0xDC;
+			work->colorG = 0xC3;
+			work->colorB = 0xE9;
 			work->scale = 1.0f;
 			break;
 		case 8:
@@ -417,15 +417,15 @@ EffectEntry* effKemuTestEntry(s32 type, f32 x, f32 y, f32 z, f32 scale) {
 				work->posX = 0.0f;
 				work->posY = 0.0f;
 				work->posZ = 0.0f;
-				work->field_0x30 = 0x20;
-				work->field_0x28 = 0;
+				work->life = 0x20;
+				work->age = 0;
 				work->velX = spd * (f32)cos(angle);
 				work->velY = spd * (f32)sin(angle);
 			}
-			work->field_0x44 = i % 0x20;
-			work->field_0x4C = 0xFF;
-			work->field_0x4D = 0xFF;
-			work->field_0x4E = 0xFF;
+			work->delay = i % 0x20;
+			work->colorR = 0xFF;
+			work->colorG = 0xFF;
+			work->colorB = 0xFF;
 			work->scale = 1.0f;
 			break;
 		case 11: {
@@ -437,25 +437,25 @@ EffectEntry* effKemuTestEntry(s32 type, f32 x, f32 y, f32 z, f32 scale) {
 			work->velX = 5.0f * (f32)sin(angle);
 			work->velY = 0.0f;
 			work->velZ = 5.0f * (f32)cos(angle);
-			work->field_0x30 = 0x40;
-			work->field_0x28 = 0;
-			work->field_0x44 = 0;
-			work->field_0x4C = 0xFF;
-			work->field_0x4D = 0xFF;
-			work->field_0x4E = 0xFF;
+			work->life = 0x40;
+			work->age = 0;
+			work->delay = 0;
+			work->colorR = 0xFF;
+			work->colorG = 0xFF;
+			work->colorB = 0xFF;
 			work->scale = 1.0f;
 			break;
 		}
 		case 12:
-			work->field_0x34 = 0.95f;
-			work->field_0x38 = -0.04f;
-			work->field_0x3C = 0.94f;
-			work->field_0x30 = 0x60;
+			work->speed = 0.95f;
+			work->accel = -0.04f;
+			work->damp = 0.94f;
+			work->life = 0x60;
 			work->scale = 0.0f;
-			work->field_0x44 = 0;
-			work->field_0x4C = 0xFF;
-			work->field_0x4D = 0xFF;
-			work->field_0x4E = 0xFF;
+			work->delay = 0;
+			work->colorR = 0xFF;
+			work->colorG = 0xFF;
+			work->colorB = 0xFF;
 			break;
 		case 22: {
 #ifdef MUST_MATCH
@@ -474,12 +474,12 @@ EffectEntry* effKemuTestEntry(s32 type, f32 x, f32 y, f32 z, f32 scale) {
 			work->velX = 0.0f;
 			work->velY = 0.0f;
 			work->velZ = 0.0f;
-			work->field_0x30 = 0x20;
-			work->field_0x28 = 0;
-			work->field_0x4C = 0xFF;
-			work->field_0x4D = 0xFF;
-			work->field_0x4E = 0xFF;
-			work->field_0x44 = 0;
+			work->life = 0x20;
+			work->age = 0;
+			work->colorR = 0xFF;
+			work->colorG = 0xFF;
+			work->colorB = 0xFF;
+			work->delay = 0;
 			work->scale = 0.5f;
 			break;
 		}
@@ -528,34 +528,34 @@ void effKemuTestMain(EffectEntry* effect) {
 	position = disp;
 #endif
 	type = data->type;
-	camId = data->field_0x1C;
+	camId = data->camId;
 	data++;
 	for (i = 1; i < effect->count; i++, data++) {
-		if (data->field_0x44 != 0) {
-			data->field_0x44--;
+		if (data->delay != 0) {
+			data->delay--;
 			continue;
 		}
-		data->field_0x20 = (s32)(16.0f * (f32)data->field_0x28 / (f32)data->field_0x30);
-		data->field_0x24 = (s32)(16.0f * (f32)(data->field_0x28 + 1) / (f32)data->field_0x30);
-		if (data->field_0x24 > 0xF) {
-			data->field_0x24 = 0xF;
+		data->frame = (s32)(16.0f * (f32)data->age / (f32)data->life);
+		data->nextFrame = (s32)(16.0f * (f32)(data->age + 1) / (f32)data->life);
+		if (data->nextFrame > 0xF) {
+			data->nextFrame = 0xF;
 		}
-		data->field_0x28++;
+		data->age++;
 		switch (type) {
 		case 1:
 		case 3:
 		case 19:
-			data->posY += data->field_0x34;
-			data->field_0x34 += data->field_0x38;
-			data->field_0x38 *= data->field_0x3C;
+			data->posY += data->speed;
+			data->speed += data->accel;
+			data->accel *= data->damp;
 			break;
 		case 10:
 		case 14:
 			angle = (90.0f + 180.0f * (f32)(i - 1) / (f32)(effect->count - 2)) * 6.2831855f / 360.0f;
-			data->posX += data->field_0x34 * (f32)sin(angle);
-			data->posY += -data->field_0x34 * (f32)cos(angle);
-			data->field_0x34 += data->field_0x38;
-			data->field_0x38 *= data->field_0x3C;
+			data->posX += data->speed * (f32)sin(angle);
+			data->posY += -data->speed * (f32)cos(angle);
+			data->speed += data->accel;
+			data->accel *= data->damp;
 			break;
 		case 4:
 		case 9:
@@ -576,9 +576,9 @@ void effKemuTestMain(EffectEntry* effect) {
 		case 6:
 			data->posX += data->velX;
 			data->velX *= 0.95f;
-			data->posY += data->field_0x34;
-			data->field_0x34 += data->field_0x38;
-			data->field_0x38 *= data->field_0x3C;
+			data->posY += data->speed;
+			data->speed += data->accel;
+			data->accel *= data->damp;
 			break;
 		case 7:
 		case 8:
@@ -598,10 +598,10 @@ void effKemuTestMain(EffectEntry* effect) {
 			break;
 		case 12:
 			angle = (90.0f + 360.0f * (f32)(i - 1) / (f32)(effect->count - 2)) * 6.2831855f / 360.0f;
-			data->posX += data->field_0x34 * (f32)sin(angle);
-			data->posY += -data->field_0x34 * (f32)cos(angle);
-			data->field_0x34 += data->field_0x38;
-			data->field_0x38 *= data->field_0x3C;
+			data->posX += data->speed * (f32)sin(angle);
+			data->posY += -data->speed * (f32)cos(angle);
+			data->speed += data->accel;
+			data->accel *= data->damp;
 			data->scale += 0.05f;
 			break;
 		case 13:
@@ -609,9 +609,9 @@ void effKemuTestMain(EffectEntry* effect) {
 			data->posY += data->velY;
 			data->velX *= 0.9f;
 			data->velY *= 0.9f;
-			data->posY += data->field_0x34;
-			data->field_0x34 += data->field_0x38;
-			data->field_0x38 *= data->field_0x3C;
+			data->posY += data->speed;
+			data->speed += data->accel;
+			data->accel *= data->damp;
 			break;
 		default:
 			break;
@@ -628,7 +628,7 @@ void effKemuTestMain(EffectEntry* effect) {
 
 			g = 255;
 			r = 255;
-			b = 255 - data->field_0x28 * 60;
+			b = 255 - data->age * 60;
 			if (b < 0) {
 				g = (s32)(0.8f * (f32)b) + 255;
 				b = 0;
@@ -640,28 +640,28 @@ void effKemuTestMain(EffectEntry* effect) {
 					}
 				}
 			}
-			data->field_0x4C = r;
-			data->field_0x4D = g;
-			data->field_0x4E = b;
-			if (type == 3 && i == 1 && data->field_0x28 == 30) {
+			data->colorR = r;
+			data->colorG = g;
+			data->colorB = b;
+			if (type == 3 && i == 1 && data->age == 30) {
 				confetti = 1;
 			}
 			break;
 		}
 		case 7:
-			data->field_0x4C += (s32)((0xBD - data->field_0x4C) / 10.0f);
-			data->field_0x4D += (s32)((0x10 - data->field_0x4D) / 10.0f);
-			data->field_0x4E += (s32)((0xAA - data->field_0x4E) / 10.0f);
+			data->colorR += (s32)((0xBD - data->colorR) / 10.0f);
+			data->colorG += (s32)((0x10 - data->colorG) / 10.0f);
+			data->colorB += (s32)((0xAA - data->colorB) / 10.0f);
 			break;
 		case 12:
-			data->field_0x4C += (s32)((0x82 - data->field_0x4C) / 64.0f);
-			data->field_0x4D += (s32)((0x82 - data->field_0x4D) / 64.0f);
-			data->field_0x4E += (s32)((0x82 - data->field_0x4E) / 64.0f);
+			data->colorR += (s32)((0x82 - data->colorR) / 64.0f);
+			data->colorG += (s32)((0x82 - data->colorG) / 64.0f);
+			data->colorB += (s32)((0x82 - data->colorB) / 64.0f);
 			break;
 		default:
 			break;
 		}
-		if (data->field_0x28 >= data->field_0x30) {
+		if (data->age >= data->life) {
 			done++;
 		}
 	}
@@ -689,9 +689,9 @@ void effKemuTestMain(EffectEntry* effect) {
 static inline GXColor kemuTestColor(effKemuTestData* data, u8 alpha) {
 	GXColor color = unk_804232d8;
 
-	color.r = data->field_0x4C;
-	color.g = data->field_0x4D;
-	color.b = data->field_0x4E;
+	color.r = data->colorR;
+	color.g = data->colorG;
+	color.b = data->colorB;
 	color.a = alpha;
 	return color;
 }
@@ -723,8 +723,8 @@ void effKemuTestDisp(CameraId camId, void* param) {
 		PSMTXRotRad(rot, 'y', 0.017453292f * -camGetPtr(camId)->viewYaw);
 	}
 	else {
-		PSMTXRotRad(rot, 'x', 0.017453292f * data->field_0x50);
-		PSMTXRotRad(scale, 'z', 0.017453292f * data->field_0x54);
+		PSMTXRotRad(rot, 'x', 0.017453292f * data->rotX);
+		PSMTXRotRad(scale, 'z', 0.017453292f * data->rotZ);
 		PSMTXConcat(rot, scale, rot);
 	}
 	PSMTXScale(scale, data->scale, data->scale, data->scale);
@@ -732,35 +732,35 @@ void effKemuTestDisp(CameraId camId, void* param) {
 	PSMTXConcat(mtx, scale, mtx);
 	PSMTXConcat(camera->view, mtx, view);
 	effGetTexObj(0x28, &tex);
-	GXLoadTexObj(&tex, 0);
+	GXLoadTexObj(&tex, GX_TEXMAP0);
 	GXSetNumChans(1);
-	GXSetChanCtrl(4, 0, 0, 0, 0, 0, 2);
+	GXSetChanCtrl(GX_COLOR0A0, GX_FALSE, GX_SRC_REG, GX_SRC_REG, GX_LIGHT_NULL, GX_DF_NONE, GX_AF_NONE);
 	GXSetNumTexGens(2);
-	GXSetTexCoordGen2(0, 1, 4, 0x1E, 0, 0x7D);
-	GXSetTexCoordGen2(1, 1, 4, 0x21, 0, 0x7D);
+	GXSetTexCoordGen2(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_TEXMTX0, GX_FALSE, GX_PTIDENTITY);
+	GXSetTexCoordGen2(GX_TEXCOORD1, GX_TG_MTX2x4, GX_TG_TEX0, GX_TEXMTX1, GX_FALSE, GX_PTIDENTITY);
 	GXSetNumTevStages(3);
-	GXSetTevOrder(0, 0, 0, 0xFF);
-	GXSetTevColorOp(0, 0, 0, 0, 1, 0);
-	GXSetTevAlphaOp(0, 0, 0, 0, 1, 0);
-	GXSetTevColorIn(0, 0xF, 0xF, 0xF, 8);
-	GXSetTevAlphaIn(0, 7, 7, 7, 4);
-	GXSetTevOrder(1, 1, 0, 0xFF);
-	GXSetTevColorOp(1, 0, 0, 0, 1, 0);
-	GXSetTevAlphaOp(1, 0, 0, 0, 1, 0);
-	GXSetTevColorIn(1, 0, 8, 2, 0xF);
-	GXSetTevAlphaIn(1, 0, 4, 1, 7);
-	GXSetTevColor(1, dat_80420ab0);
-	GXSetTevOrder(2, 0xFF, 0xFF, 4);
-	GXSetTevColorOp(2, 0, 0, 0, 1, 0);
-	GXSetTevAlphaOp(2, 0, 0, 0, 1, 0);
-	GXSetTevColorIn(2, 0xF, 0, 0xA, 0xF);
-	GXSetTevAlphaIn(2, 7, 0, 5, 7);
-	GXSetCullMode(0);
+	GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR_NULL);
+	GXSetTevColorOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+	GXSetTevAlphaOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+	GXSetTevColorIn(GX_TEVSTAGE0, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ZERO, GX_CC_TEXC);
+	GXSetTevAlphaIn(GX_TEVSTAGE0, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_TEXA);
+	GXSetTevOrder(GX_TEVSTAGE1, GX_TEXCOORD1, GX_TEXMAP0, GX_COLOR_NULL);
+	GXSetTevColorOp(GX_TEVSTAGE1, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+	GXSetTevAlphaOp(GX_TEVSTAGE1, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+	GXSetTevColorIn(GX_TEVSTAGE1, GX_CC_CPREV, GX_CC_TEXC, GX_CC_C0, GX_CC_ZERO);
+	GXSetTevAlphaIn(GX_TEVSTAGE1, GX_CA_APREV, GX_CA_TEXA, GX_CA_A0, GX_CA_ZERO);
+	GXSetTevColor(GX_TEVREG0, dat_80420ab0);
+	GXSetTevOrder(GX_TEVSTAGE2, GX_TEXCOORD_NULL, GX_TEXMAP_NULL, GX_COLOR0A0);
+	GXSetTevColorOp(GX_TEVSTAGE2, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+	GXSetTevAlphaOp(GX_TEVSTAGE2, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+	GXSetTevColorIn(GX_TEVSTAGE2, GX_CC_ZERO, GX_CC_CPREV, GX_CC_RASC, GX_CC_ZERO);
+	GXSetTevAlphaIn(GX_TEVSTAGE2, GX_CA_ZERO, GX_CA_APREV, GX_CA_RASA, GX_CA_ZERO);
+	GXSetCullMode(GX_CULL_NONE);
 	GXClearVtxDesc();
-	GXSetVtxDesc(9, 1);
-	GXSetVtxDesc(0xD, 1);
-	GXSetVtxAttrFmt(0, 9, 1, 4, 0);
-	GXSetVtxAttrFmt(0, 0xD, 1, 4, 0);
+	GXSetVtxDesc(GX_VA_POS, GX_DIRECT);
+	GXSetVtxDesc(GX_VA_TEX0, GX_DIRECT);
+	GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_POS_XYZ, GX_F32, 0);
+	GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, GX_TEX_ST, GX_F32, 0);
 
 	switch (type) {
 	case 1:
@@ -785,20 +785,20 @@ void effKemuTestDisp(CameraId camId, void* param) {
 		f32 dsize = -p32;
 
 		for (i = 1; i < effect->count; i++, data++) {
-			if (data->field_0x44 != 0) {
+			if (data->delay != 0) {
 				continue;
 			}
-			if (data->field_0x20 > 0xF) {
+			if (data->frame > 0xF) {
 				continue;
 			}
-			PSMTXTrans(mtx, 0.0625f * (f32)data->field_0x20, 0.0f, 0.0f);
+			PSMTXTrans(mtx, 0.0625f * (f32)data->frame, 0.0f, 0.0f);
 			PSMTXScale(scale, 0.0625f, 1.0f, 1.0f);
 			PSMTXConcat(mtx, scale, mtx);
-			GXLoadTexMtxImm(mtx, 0x1E, 1);
-			PSMTXTrans(mtx, 0.0625f * (f32)data->field_0x24, 0.0f, 0.0f);
+			GXLoadTexMtxImm(mtx, GX_TEXMTX0, GX_MTX2x4);
+			PSMTXTrans(mtx, 0.0625f * (f32)data->nextFrame, 0.0f, 0.0f);
 			PSMTXScale(scale, 0.0625f, 1.0f, 1.0f);
 			PSMTXConcat(mtx, scale, mtx);
-			GXLoadTexMtxImm(mtx, 0x21, 1);
+			GXLoadTexMtxImm(mtx, GX_TEXMTX1, GX_MTX2x4);
 			{
 #ifdef MUST_MATCH
 				f32 dsize_half;
@@ -811,7 +811,7 @@ void effKemuTestDisp(CameraId camId, void* param) {
 
 				for (j = flag; j < 2; j++) {
 					if (j == 0) {
-						GXSetChanMatColor(4, dat_80420ab4);
+						GXSetChanMatColor(GX_COLOR0A0, dat_80420ab4);
 						PSMTXTrans(mtx, data->posX + 2.0f, data->posY - 2.0f, data->posZ);
 						PSMTXScale(scale, data->scale, data->scale, data->scale);
 						PSMTXConcat(view, mtx, mtx);
@@ -824,15 +824,15 @@ void effKemuTestDisp(CameraId camId, void* param) {
 					}
 					else {
 #ifdef MUST_MATCH
-						GXSetChanMatColor(4, kemuTestColor(data, alpha));
+						GXSetChanMatColor(GX_COLOR0A0, kemuTestColor(data, alpha));
 #else
 						GXColor color = unk_804232d8;
 
-						color.r = data->field_0x4C;
-						color.g = data->field_0x4D;
-						color.b = data->field_0x4E;
+						color.r = data->colorR;
+						color.g = data->colorG;
+						color.b = data->colorB;
 						color.a = alpha;
-						GXSetChanMatColor(4, color);
+						GXSetChanMatColor(GX_COLOR0A0, color);
 #endif
 						PSMTXTrans(mtx, data->posX, data->posY, data->posZ);
 						PSMTXScale(scale, data->scale, data->scale, data->scale);
@@ -854,7 +854,7 @@ void effKemuTestDisp(CameraId camId, void* param) {
 						size = 16.0f;
 					}
 #endif
-					GXBegin(0x80, 0, 4);
+					GXBegin(GX_QUADS, GX_VTXFMT0, 4);
 					GXPosition3f32(dsize_half, size, 0.0f);
 					GXTexCoord2f32(0.0f, 0.0f);
 					GXPosition3f32(size, size, 0.0f);
@@ -872,15 +872,15 @@ void effKemuTestDisp(CameraId camId, void* param) {
 void effKemuTestDrawCam(EffectEntry* effect, s32 camId) {
 	effKemuTestData* data = effect->userdata;
 
-	data->field_0x1C = camId;
+	data->camId = camId;
 }
 
 
 void effKemuTestSetRxRz(EffectEntry* effect, f32 rx, f32 rz) {
 	effKemuTestData* data = effect->userdata;
 
-	data->field_0x50 = rx;
-	data->field_0x54 = rz;
+	data->rotX = rx;
+	data->rotZ = rz;
 }
 
 #ifdef MUST_MATCH

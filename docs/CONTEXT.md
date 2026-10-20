@@ -8979,3 +8979,20 @@ s32 at 0xF4 that KinopioSingSub sets to 3 and battle_audience.c counts down for 
 0x1E/0x45/0xD8/0xE0, the past-the-end `(u8*)member + 0x134` store in Entry_Sub, the byte-stepped `animPos`
 advances, `field_0xC`-`field_0x18` meanings per status, and evt_audience's 180/0 yaw against kinopio's 90/270
 (both pick the flip, but the convention differs).
+
+### Readability: effects, group 2 (2026-10-19, Claude Haiku 5.5, n9-q-eff2; reviewed by Claude Opus 5.5)
+
+Eight effects get their own data-struct names: EffFunemizuData (`speed`, `yaw`, layer scales `scaleA`/`scaleB`/
+`scaleAY`/`scaleBY`, `texScrollA`/`B`, `timer`, droplet `velY`/`gravity`/`delay`/`alpha`, `scale`, `camId`; the
+muj_20, muj_21 and gor_00 `fune_eff` user funcs that fill it now use the names), effCoolLeafData, effKemuTestData,
+effBreathFireData (`kind`, `childrenLeft`, `seed`, start/end/bend curve points, three-stage scale ease, two TEV
+colours), effMiniGameWork (`state`, `timer`, `vel`/`accel`, `swing`), effSnowDustData (entry-vs-particle uses of
+`life`/`angle`/`alpha` noted per field), effKemuri11Data and effPacknBfireData (colour 1 shares G at 0x2C). GX
+literals become enums in all of them (TEV stages/args/ops, texgen, GX_TEXMTX0/1, GX_IDENTITY, GX_PTIDENTITY,
+vertex attrs/formats, GX_TRIANGLES/QUADS), and `dispEntry(4, ...)`/`camGetPtr(4)` use CAMERA_3D. field_0x uses in
+these files 1039 → 15; weighted target score 1983 → 825. Review checked every literal-to-enum mapping (snow_dust's
+were regex-converted) against GXEnum.h and found them right; it corrected three field comments. Open:
+eff_snow_dust_n64.c's effSnowDustN64Entry and effSnowDustMain sit wholly inside `#ifdef MUST_MATCH` (pre-dating
+this pass), so a non-MUST_MATCH build doesn't define them and needs a portable #else; the remaining unnamed
+`field_0x` slots (kemutest 0x2C/0x40, snow_dust 0x20/0x2C, kemuri11 0x18, minigame 0x2C, packn_bfire 0x3C/0x5C)
+and packn_bfire's `vx`/`vy`/`vz`, which hold the target point, not a velocity.

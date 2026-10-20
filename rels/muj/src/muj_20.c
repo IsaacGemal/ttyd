@@ -740,15 +740,15 @@ USER_FUNC(kaizoku_fune_eff) {
     dist = distABf(x, z, pos.x, pos.z);
     angle = angleABf(x, z, pos.x, pos.z);
     dir = (angle < 180.0f) ? 1.0f : -1.0f;
-    ((EffFunemizuData*)eff->userdata)->field_0x44 = 5.0f;
+    ((EffFunemizuData*)eff->userdata)->scale = 5.0f;
     ((EffFunemizuData*)eff->userdata)->x = 140.0f * dir + pos.x;
     ((EffFunemizuData*)eff->userdata)->y = pos.y - 160.0f;
     ((EffFunemizuData*)eff->userdata)->z = 40.0f + pos.z;
-    ((EffFunemizuData*)eff->userdata)->field_0x10 = dist;
+    ((EffFunemizuData*)eff->userdata)->speed = dist;
     if (angle < 180.0f) {
-        ((EffFunemizuData*)eff->userdata)->field_0x14 = 135.0f + angle;
+        ((EffFunemizuData*)eff->userdata)->yaw = 135.0f + angle;
     } else {
-        ((EffFunemizuData*)eff->userdata)->field_0x14 = 45.0f + angle;
+        ((EffFunemizuData*)eff->userdata)->yaw = 45.0f + angle;
     }
     return EVT_RETURN_BLOCK;
 }
@@ -790,7 +790,7 @@ USER_FUNC(fune_eff) {
     if (evtGetValue(event, GSW(0)) == 2) {
         dist = 2.0f;
     }
-    ((EffFunemizuData*)eff1->userdata)->field_0x44 = 3.0f;
+    ((EffFunemizuData*)eff1->userdata)->scale = 3.0f;
 #ifdef MUST_MATCH
     ((EffFunemizuData*)eff1->userdata)->x = fune_eff_add_x(pos.x, 85.0f);
 #else
@@ -798,13 +798,13 @@ USER_FUNC(fune_eff) {
 #endif
     ((EffFunemizuData*)eff1->userdata)->y = pos.y - 51.0f;
     ((EffFunemizuData*)eff1->userdata)->z = 30.0f + pos.z;
-    ((EffFunemizuData*)eff1->userdata)->field_0x10 = dist;
-    ((EffFunemizuData*)eff1->userdata)->field_0x14 = 225.0f;
+    ((EffFunemizuData*)eff1->userdata)->speed = dist;
+    ((EffFunemizuData*)eff1->userdata)->yaw = 225.0f;
     ((EffFunemizuData*)eff2->userdata)->x = pos.x - 15.0f;
     ((EffFunemizuData*)eff2->userdata)->y = pos.y - 51.0f;
     ((EffFunemizuData*)eff2->userdata)->z = 90.0f + pos.z;
-    ((EffFunemizuData*)eff2->userdata)->field_0x10 = dist;
-    ((EffFunemizuData*)eff2->userdata)->field_0x14 = 180.0f;
+    ((EffFunemizuData*)eff2->userdata)->speed = dist;
+    ((EffFunemizuData*)eff2->userdata)->yaw = 180.0f;
     if (dist > 1.0f) {
         if (gp->retraceCount % 15 == 0) {
             effWaterDamageN64Entry(5, 30, pos.x - 150.0f, pos.y - 50.0f, pos.z, 2.0f);
