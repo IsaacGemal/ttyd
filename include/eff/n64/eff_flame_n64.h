@@ -9,30 +9,30 @@ typedef struct effFlameVtx {
 	u8 clr[4];  //0xA, RGBA8
 } effFlameVtx; //0xE
 typedef struct effFlameData {
-	s32 type;           //0x0
-	Vec position;       //0x4
-	f32 field_0x10;     //0x10
-	f32 field_0x14;     //0x14
-	f32 field_0x18;     //0x18
-	f32 field_0x1C;     //0x1C
-	f32 field_0x20;     //0x20
-	f32 field_0x24;     //0x24
-	s32 alpha;          //0x28
-	s32 life;           //0x2C
-	s32 counter;        //0x30
-	f32 field_0x34;     //0x34
-	f32 field_0x38;     //0x38
-	f32 field_0x3C;     //0x3C
-	f32 field_0x40;     //0x40
-	f32 field_0x44;     //0x44
-	f32 field_0x48;     //0x48
-	f32 field_0x4C;     //0x4C
-	f32 field_0x50;     //0x50
-	f32 field_0x54;     //0x54
-	f32 field_0x58;     //0x58
-	f32 field_0x5C;     //0x5C
-	f32 field_0x60;     //0x60
-	f32 rot;            //0x64
+	s32 type;                 //0x0
+	Vec position;             //0x4
+	f32 lagX;                 //0x10, position eased toward position at 0.1 a frame
+	f32 lagY;                 //0x14
+	f32 lagZ;                 //0x18
+	f32 scaleX;               //0x1C, eased toward baseScale at 0.04 a frame
+	f32 scaleY;               //0x20, eased toward baseScale
+	f32 baseScale;            //0x24
+	s32 alpha;                //0x28
+	s32 life;                 //0x2C
+	s32 counter;              //0x30
+	f32 scrollU;              //0x34, texture-matrix U, wraps at 64
+	f32 scrollUSpeed;         //0x38, eased toward scrollUSpeedTarget at 0.02 a frame
+	f32 scrollUSpeedTarget;   //0x3C
+	f32 scrollV;              //0x40, texture-matrix V, wraps at 128
+	f32 scrollVSpeed;         //0x44, eased toward scrollVSpeedTarget
+	f32 scrollVSpeedTarget;   //0x48
+	f32 scroll2U;             //0x4C, second texture matrix U, wraps at 64
+	f32 scroll2USpeed;        //0x50, eased toward scroll2USpeedTarget (types 1 and up)
+	f32 scroll2USpeedTarget;  //0x54
+	f32 scroll2V;             //0x58, second texture matrix V, wraps at 128
+	f32 scroll2VSpeed;        //0x5C, eased toward scroll2VSpeedTarget (types 1 and up)
+	f32 scroll2VSpeedTarget;  //0x60
+	f32 rot;                  //0x64, facing angle in degrees for type 2
 	u8 color0[3];       //0x68
 	u8 color1[4];       //0x6B
 	u8 pad_0x6F;        //0x6F
