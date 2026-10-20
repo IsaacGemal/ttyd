@@ -636,7 +636,7 @@ USER_FUNC(party_color) {
     return EVT_RETURN_DONE;
 }
 
-s32 unk_80177cf8(void) {
+s32 party_force_slit_off(void) {
     allPartyForceSlitOff();
     return 2;
 }
@@ -1127,7 +1127,7 @@ void winFontSetC(Vec* pos, Vec* scale, GXColor* color, const char* format, ...) 
 }
 #endif
 
-s32 unk_80175eb0(EventEntry* event, BOOL isFirstCall) {
+s32 winLectureWait(EventEntry* event, BOOL isFirstCall) {
     s32 value = evtGetValue(event, event->args[0]);
 
     if (isFirstCall) {
@@ -1140,7 +1140,7 @@ s32 unk_80175eb0(EventEntry* event, BOOL isFirstCall) {
     return 2;
 }
 
-s32 unk_80175e98(void) {
+s32 winLectureEnd(void) {
     wp->flags &= ~0x800;
     return 2;
 }
@@ -1261,7 +1261,7 @@ s32 kime_pose2[61] = {
 };
 
 // TODO: type
-s32 unk_evt_803757f0[15] = {
+s32 kime_pose_breed[15] = {
     0x0003005B, (s32)evt_party_nokotaro_get_status, 0x00000000, 0xFE363C80,
     0x00020019, 0xFE363C80, 0x00000000, 0x00000002,
     0x00000021, 0x0003005B, (s32)evt_party_set_breed_pose, 0x00000000,
@@ -1302,9 +1302,9 @@ s32 kime_pose_famicom[105] = {
 // TODO: type
 s32 evt_item_use[240] = {
     0x00010063, 0x00000000, 0x0001005B, (s32)evt_mario_normalize,
-    0x0001005B, (s32)unk_80177cf8, 0x00010009, 0x00000001,
+    0x0001005B, (s32)party_force_slit_off, 0x00010009, 0x00000001,
     0x0001005B, (s32)evt_mario_adjust_dir, 0x0002005B, (s32)evt_mario_set_pose,
-    (s32)"M_S_1", 0x0001005E, (s32)&unk_evt_803757f0, 0x00020018,
+    (s32)"M_S_1", 0x0001005E, (s32)&kime_pose_breed, 0x00020018,
     0xFE363C8B, 0x00000000, 0x0005005B, (s32)evt_mario_get_pos,
     0x00000000, 0xFE363C80, 0xFE363C81, 0xFE363C82,
     0x00020035, 0xFE363C81, 0x00000032, 0x0009005B,
@@ -1359,7 +1359,7 @@ s32 evt_item_use[240] = {
     0x0001005E, (s32)&kime_pose2, 0x00000020, 0x0001005E,
     (s32)&kime_pose_famicom, 0x00000021, 0x0001005B, (s32)itemUseFunc,
     0x0001000A, 0x000005DC, 0x0001005B, (s32)itemUseFunc2,
-    0x0001005E, (s32)&unk_evt_803757f0, 0x0001005B, (s32)evt_mario_set_normal_pose,
+    0x0001005E, (s32)&kime_pose_breed, 0x0001005B, (s32)evt_mario_set_normal_pose,
     0x00000002, 0x00000021, 0x00000002, 0x00000001,
 };
 
@@ -1436,28 +1436,28 @@ s32 evt_diary_read[259] = {
 s32 evt_lecture_msg[96] = {
     0x0001000A, 0x000003E8, 0x0005005B, (s32)evt_msg_print,
     0x00000000, (s32)"lecture_badge_00", 0x00000000, 0x00000000,
-    0x0002005B, (s32)unk_80175eb0, 0x00000001, 0x0001005B,
+    0x0002005B, (s32)winLectureWait, 0x00000001, 0x0001005B,
     (s32)evt_msg_continue, 0x0005005B, (s32)evt_msg_print, 0x00000000,
     (s32)"lecture_badge_01", 0x00000000, 0x00000000, 0x0002005B,
-    (s32)unk_80175eb0, 0x00000002, 0x0001005B, (s32)evt_msg_continue,
+    (s32)winLectureWait, 0x00000002, 0x0001005B, (s32)evt_msg_continue,
     0x0005005B, (s32)evt_msg_print, 0x00000000, (s32)"lecture_badge_02",
-    0x00000000, 0x00000000, 0x0002005B, (s32)unk_80175eb0,
+    0x00000000, 0x00000000, 0x0002005B, (s32)winLectureWait,
     0x00000005, 0x0001005B, (s32)evt_msg_continue, 0x0005005B,
     (s32)evt_msg_print, 0x00000000, (s32)"lecture_badge_03", 0x00000000,
-    0x00000000, 0x0002005B, (s32)unk_80175eb0, 0x00000006,
+    0x00000000, 0x0002005B, (s32)winLectureWait, 0x00000006,
     0x0001005B, (s32)evt_msg_continue, 0x0005005B, (s32)evt_msg_print,
     0x00000000, (s32)"lecture_badge_04", 0x00000000, 0x00000000,
-    0x0002005B, (s32)unk_80175eb0, 0x00000007, 0x0001005B,
+    0x0002005B, (s32)winLectureWait, 0x00000007, 0x0001005B,
     (s32)evt_msg_continue, 0x0005005B, (s32)evt_msg_print, 0x00000000,
     (s32)"lecture_badge_05", 0x00000000, 0x00000000, 0x0002005B,
-    (s32)unk_80175eb0, 0x00000008, 0x0001005B, (s32)evt_msg_continue,
+    (s32)winLectureWait, 0x00000008, 0x0001005B, (s32)evt_msg_continue,
     0x0005005B, (s32)evt_msg_print, 0x00000000, (s32)"lecture_badge_06",
-    0x00000000, 0x00000000, 0x0002005B, (s32)unk_80175eb0,
+    0x00000000, 0x00000000, 0x0002005B, (s32)winLectureWait,
     0x00000009, 0x0001005B, (s32)evt_msg_continue, 0x0005005B,
     (s32)evt_msg_print, 0x00000000, (s32)"lecture_badge_07", 0x00000000,
-    0x00000000, 0x0002005B, (s32)unk_80175eb0, 0x0000000A,
+    0x00000000, 0x0002005B, (s32)winLectureWait, 0x0000000A,
     0x0001005B, (s32)evt_msg_continue, 0x0001000A, 0x000001F4,
-    0x0001005B, (s32)unk_80175e98, 0x00000002, 0x00000001,
+    0x0001005B, (s32)winLectureEnd, 0x00000002, 0x00000001,
 };
 
 __declspec(section ".sdata2") const GXColor dat_8041dc90 = { 0xFF, 0xFF, 0xFF, 0xFF };
