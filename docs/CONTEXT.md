@@ -11669,3 +11669,9 @@ win_root.c weighted 435 -> 341; raw_offset total 1014 -> 959. Build byte-identic
 ### Raw-offset cleanup: mapdrv, mobjdrv (Claude Sonnet 5.5, s-offmapdrv)
 - `MapEntry`: the 8-byte opaque band at 0x170 is now `void* field_0x170; void* field_0x174;` (ARAM copies, only mapdrv reads them as pointers). bmapLoad's chunkBuf/chunkBufSize accesses use the named fields. Raw index 876 -> 871; build MATCH.
 - Left raw: the 0x178 access (past the 0x178-byte MapEntry stride, no field to hold it); `MapObject` 0xEC..0xF2 bounds (splitting the u8 band into four u16 members changes the store scheduling in the clear block and breaks the match); `mapDispMapGrp_bbox` (reads MapEntry+0xEC, mid-field of `bbox`); material +0x10C (mid-field of `MapMaterialTex::entries`); MapWork `activeGroup * 0x2F4 + off` accesses; mobjdrv has only cubeDN data-layout offsets and `&color` casts.
+
+## n9-q-s-offaud: raw offsets in battle_audience.c (2026-10-20)
+
+- `BattleAudienceWindow`: the pad at 0x10 becomes `f32 field_0x10` (only battle_audience.c reads the window; it stores the `0.0f` next to `posY`). `*(f32*)((u8*)window + 0x10)` is now `window->field_0x10`.
+- `BattleAudienceMember.animPos` (0x28, `s32*`): the eight `*(s32*)((u8*)member + 0x28) += N` cursor moves in BattleAudienceMain's script switch are now `member->animPos += N / 4`. Same object.
+- Left raw: `(u8*)_battleWorkPointer + 0x20000`, `wpHigh` and `audlocal` (documented codegen levers that keep the addis recomputation); `setupBase` (offsetof base); `*(u8*)&info->mStylishCommandMultiplier` (a u8 read of an s8 field); `member + 0x134` in BattleAudience_Delete (the next member's flags, past the struct); `BattleBreakSlotGetPtr() + 0x14` (BattleBreakSlot and its reel type are private to battle_break_slot.c, `field_14` f32 there). raw_offset 10 -> 1 by the index's count.
