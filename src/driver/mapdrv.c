@@ -2972,11 +2972,11 @@ void mapSetMaterialTev(s32 texCount, s32 drawMode, s32 flags, Mtx mtx) {
 			void* depthMtx = shadowGetDepthShadowDepthMtx();
 			void* depthProjMtx = shadowGetDepthShadowProjTexMtx();
 			GXColor color = shadowGetDepthShadowColor();
-			void* config = shadowGetDepthShadowConfig();
+			ShadowConfigFields* config = shadowGetDepthShadowConfig();
 			Mtx mtx2;
 			GXTevStageID stage;
 
-			switch (*(s32*)((u8*)config + 0x3C)) {
+			switch (config->depthMode) {
 			case 0:
 				GXSetTevColorOp(tevStage - 1, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVREG0);
 				GXSetTevAlphaOp(tevStage - 1, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVREG0);
@@ -3166,11 +3166,11 @@ void mapSetMaterialTev(s32 texCount, s32 drawMode, s32 flags, Mtx mtx) {
 			void* depthMtx = shadowGetDepthShadowDepthMtx();
 			void* depthProjMtx = shadowGetDepthShadowProjTexMtx();
 			GXColor color = shadowGetDepthShadowColor();
-			void* config = shadowGetDepthShadowConfig();
+			ShadowConfigFields* config = shadowGetDepthShadowConfig();
 			Mtx mtx2;
 			GXTevStageID stage;
 
-			switch (*(s32*)((u8*)config + 0x3C)) {
+			switch (config->depthMode) {
 			case 0:
 				GXSetTevColorOp(tevStage - 1, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVREG0);
 				GXSetTevAlphaOp(tevStage - 1, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVREG0);

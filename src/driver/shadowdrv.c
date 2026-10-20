@@ -210,21 +210,6 @@ extern const f32 float_256_804198fc;
 extern const f32 float_16_80419900;
 extern const f32 float_neg1_80419908;
 
-typedef struct ShadowConfigFields {
-    u8 pad00[0x4];
-    Vec camPos;  //0x4
-    Vec up;      //0x10
-    Vec target;  //0x1C
-    f32 unk28;
-    f32 unk2C;
-    f32 unk30;
-    f32 unk34;
-    s32 unk38;
-    u32 unk3C;
-    s32 unk40;
-    f32 unk44;
-} ShadowConfigFields;
-
 extern GXColor dat_804198e0;
 extern GXColor dat_804198ec;
 extern GXColor dat_804198f0;
@@ -308,23 +293,23 @@ void shadowInit(void) { //almost 1:1, minor regalloc
     u32 i;
     CharShadowWork* wp;
 
-    cswp->unk0 = 0;
-    cswp->unk4 = 0;
-    cswp->unk8 = 1;
-    cswp->unk100 = dat_804198e0;
-    cswp->unk10C = 1;
-    cswp->unk110 = 2;
-    cswp->unk114 = float_20_80419928;
-    cswp->unk118 = 1;
-    cswp->unk104 = 0;
+    cswp->flags = 0;
+    cswp->drawCount = 0;
+    cswp->configIdx = 1;
+    cswp->color = dat_804198e0;
+    cswp->projectionEnabled = 1;
+    cswp->defaultKind = 2;
+    cswp->defaultYScale = float_20_80419928;
+    cswp->defaultCollision = 1;
+    cswp->entryCount = 0;
     cswp->entries = __memAlloc(HEAP_DEFAULT, sizeof(ShadowEntry) * 64);
     memset(cswp->entries, 0, sizeof(ShadowEntry) * 64);
     wp = cswp;
-    wp->unkFC = smartAlloc(GXGetTexBufferSize(ShadowSizeTbl[0], ShadowSizeTbl[0], 2, 0, 0), 0);
-    dswp->unk0 = 2;
-    dswp->unk4 = 0;
-    dswp->unk8 = 0;
-    dswp->unk100 = dat_804198ec;
+    wp->texBuffer = smartAlloc(GXGetTexBufferSize(ShadowSizeTbl[0], ShadowSizeTbl[0], GX_TF_IA4, 0, 0), 0);
+    dswp->flags = 2;
+    dswp->drawCount = 0;
+    dswp->configIdx = 0;
+    dswp->color = dat_804198ec;
 
     bufferSize = GXGetTexBufferSize(0x10, 0x10, GX_TF_I8, GX_FALSE, 0);
     ramp8 = __memAlloc(HEAP_DEFAULT, GXGetTexBufferSize(0x10, 0x10, GX_TF_I8, GX_FALSE, 0));
@@ -344,17 +329,17 @@ void shadowInit(void) { //almost 1:1, minor regalloc
     GXInitTexObjLOD(&rampTex16, GX_NEAR, GX_NEAR, float_0_804198f4, float_0_804198f4, float_0_804198f4, GX_FALSE, GX_FALSE, GX_ANISO_1);
     DCFlushRange(ramp16, bufferSize2);
 
-    pswp->unk0 = 2;
-    pswp->unk4 = 0;
-    pswp->unk8 = 0;
-    pswp->unk100 = dat_804198f0;
+    pswp->flags = 2;
+    pswp->drawCount = 0;
+    pswp->configIdx = 0;
+    pswp->color = dat_804198f0;
 }
 
 #define SHADOW_ENTRY_DRAW(entry)                    \
     do {                                            \
         switch ((entry)->type) {                    \
         case 1:                                     \
-            GXSetArray(0xB, color_tbl_cube, 4);     \
+            GXSetArray(GX_VA_CLR0, color_tbl_cube, 4);     \
             GXCallDisplayList(cube_dl_top, 0x40);   \
             GXCallDisplayList(cube_dl_bottom, 0x20);\
             GXCallDisplayList(cube_dl_side, 0x20);  \
@@ -379,10 +364,10 @@ void shadowInit(void) { //almost 1:1, minor regalloc
 #endif
 #ifdef MUST_MATCH
 #define SHADOW_DISP_PROJ(w) shadowDispProjMtx(w)
-#define SHADOW_DISP_GX_PROJ(w) (*(Mtx44*)&(w)->pad3C[0])
+#define SHADOW_DISP_GX_PROJ(w) (*(Mtx44*)&(w)->projection)
 #else
-#define SHADOW_DISP_PROJ(w) ((Mtx44*)&(w)->pad3C[0])
-#define SHADOW_DISP_GX_PROJ(w) (*shadowDispProjMtx(w))
+#define SHADOW_DISP_PROJ(w) ((Mtx44*)&(w)->projection)
+#define SHADOW_DISP_GX_PROJ(w) ((w)->projection)
 #endif
 #define SHADOW_DISP_PROJ_SETUP(w, extra)                                                                                                   \
     do {                                                                                                                                   \
@@ -390,25 +375,25 @@ void shadowInit(void) { //almost 1:1, minor regalloc
         Mtx44* proj;                                                                                                                       \
         Vec camPos;                                                                                                                        \
         GXInvalidateTexAll();                                                                                                              \
-        size = ShadowSizeTbl[((ShadowConfigFields*)(shadowConfig + (w)->unk8 * 0x48))->unk40];                                               \
+        size = ShadowSizeTbl[((ShadowConfigFields*)(shadowConfig + (w)->configIdx * 0x48))->sizeIdx];                                               \
         extra;                                                                                                                             \
         GXGetViewportv(tmp_vp);                                                                                                            \
         GXGetScissor(&tmp_sci[0], &tmp_sci[1], &tmp_sci[2], &tmp_sci[3]);                                                                  \
         GXSetViewport(float_0_804198f4, float_0_804198f4, (f32)size, (f32)size, float_0_804198f4, float_1_80419904);                                                                        \
         GXSetScissor(1, 1, size - 2, size - 2);                                                                                            \
-        cfg = (ShadowConfigFields*)(shadowConfig + (w)->unk8 * 0x48);                                                                       \
+        cfg = (ShadowConfigFields*)(shadowConfig + (w)->configIdx * 0x48);                                                                       \
         proj = SHADOW_DISP_PROJ(w);                                                                                                   \
         camPos = cfg->camPos;                                                                                                              \
-        C_MTXLookAt(w->unkC, &camPos, &cfg->up, &cfg->target);                                                              \
-        if (cfg->unk38 == 0) {                                                                                                             \
-            C_MTXFrustum(*proj, cfg->unk2C, -cfg->unk2C, cfg->unk28, -cfg->unk28, cfg->unk30, cfg->unk34);                                 \
+        C_MTXLookAt(w->lookAt, &camPos, &cfg->up, &cfg->target);                                                              \
+        if (cfg->isOrtho == 0) {                                                                                                             \
+            C_MTXFrustum(*proj, cfg->halfHeight, -cfg->halfHeight, cfg->halfWidth, -cfg->halfWidth, cfg->nearZ, cfg->farZ);                                 \
         }                                                                                                                                  \
         else {                                                                                                                             \
-            C_MTXOrtho(*proj, cfg->unk2C, -cfg->unk2C, cfg->unk28, -cfg->unk28, cfg->unk30, cfg->unk34);                                   \
+            C_MTXOrtho(*proj, cfg->halfHeight, -cfg->halfHeight, cfg->halfWidth, -cfg->halfWidth, cfg->nearZ, cfg->farZ);                                   \
         }                                                                                                                                  \
-        GXSetProjection(SHADOW_DISP_GX_PROJ(w), ((ShadowConfigFields*)(shadowConfig + (w)->unk8 * 0x48))->unk38);                                                                                                \
+        GXSetProjection(SHADOW_DISP_GX_PROJ(w), ((ShadowConfigFields*)(shadowConfig + (w)->configIdx * 0x48))->isOrtho);                                                                                                \
         PSMTXCopy(camGetCurPtr()->view, tmp_view);                                                                                         \
-        PSMTXCopy(w->unkC, camGetCurPtr()->view);                                                                          \
+        PSMTXCopy(w->lookAt, camGetCurPtr()->view);                                                                          \
     } while (0)
 
 void shadowMain(void) {
@@ -416,26 +401,24 @@ void shadowMain(void) {
     dispEntry(CAMERA_OFFSCREEN2, float_0_804198f4, 9, shadowDisp, NULL);
     dispEntry(CAMERA_3D_EFFECTA, float_0_804198f4, 9, shadowDisp, NULL);
     dispEntry(CAMERA_3D_EFFECTB, float_0_804198f4, 9, shadowDisp, NULL);
-    if (cswp->unk10C != 0) {
+    if (cswp->projectionEnabled != 0) {
         dispEntry(CAMERA_SHADOW, float_0_804198f4, 5, shadowDisp, NULL);
     }
     dispEntry(CAMERA_SHADOW, float_0_804198f4, 0, shadowDisp, NULL);
     dispEntry(CAMERA_SHADOW, float_0_804198f4, 2, shadowDisp, NULL);
     dispEntry(CAMERA_SHADOW, float_0_804198f4, 7, shadowDisp, NULL);
-    cswp->unk104 = 0;
-    cswp->unk0 &= ~1;
-    cswp->unk4 = 0;
-    pswp->unk0 &= ~1;
-    pswp->unk4 = 0;
-    dswp->unk0 &= ~1;
-    dswp->unk4 = 0;
+    cswp->entryCount = 0;
+    cswp->flags &= ~1;
+    cswp->drawCount = 0;
+    pswp->flags &= ~1;
+    pswp->drawCount = 0;
+    dswp->flags &= ~1;
+    dswp->drawCount = 0;
 }
 
 // The viewport/scissor/look-at/projection block the original expands identically for the
 // proj, proj+depth and char shadow draw paths; it was a macro in the source.
-// The 0x4/0x10/0x1C offsets are the camera vectors in the config blob's unnamed head
-// (ShadowConfigFields only names 0x28+); 0x3C is ProjShadowWork's pad3C. No field exists for either.
-// MUST_MATCH: retail spells the projection matrix two ways -- w->unkC + 0x30 for `proj` and a fresh
+// MUST_MATCH: retail spells the projection matrix two ways -- w->lookAt + 0x30 for `proj` and a fresh
 // w + 0x3C for the GXSetProjection argument -- so the two are not CSE'd and the block's registers
 // come out as retail's. The natural code reads both through the helper (#else).
 // `size` is declared at function scope (not in the macro) so all three expansions share one temp,
@@ -446,14 +429,16 @@ void shadowMain(void) {
 // scratch slot (r1+0x8) and the GXSetFog copy in r1+0xc, as the original does; writing the colour
 // inline puts them the other way round. The independent form is under #else.
 static inline void shadowDispMatColor(void) {
-    GXColor c = cswp->unk100;
-    GXSetChanMatColor(4, c);
+    GXColor c = cswp->color;
+    GXSetChanMatColor(GX_COLOR0A0, c);
 }
 #endif
 
+#ifdef MUST_MATCH
 // The projection matrix as a fresh base+0x3C expression (writing it through the `proj`
 // local CSEs and the original recomputes it for GXSetProjection).
-static inline Mtx44* shadowDispProjMtx(ProjShadowWork* w) { return (Mtx44*)((u8*)w->unkC + 0x30); }
+static inline Mtx44* shadowDispProjMtx(ProjShadowWork* w) { return (Mtx44*)((u8*)w->lookAt + 0x30); }
+#endif
 
 // The instruction stream, calls and branches all match. shadowConfig (+0x40), testKagePosArray (+0xE0)
 // and vertex_tbl (+0x2C0) are defined in this unit's .data, so MWCC reaches them through the shared
@@ -469,40 +454,40 @@ void shadowDisp(CameraId cameraId, void* param) {
         shadowCharShadowDisp_Polygon(cameraId, param);
         camGetCurPtr();
         GXSetNumChans(1);
-        GXSetChanCtrl(4, 0, 0, 0, 0, 2, 2);
+        GXSetChanCtrl(GX_COLOR0A0, GX_FALSE, GX_SRC_REG, GX_SRC_REG, GX_LIGHT_NULL, GX_DF_CLAMP, GX_AF_NONE);
 #ifdef MUST_MATCH
         shadowDispMatColor();
 #else
         {
-            GXColor color = cswp->unk100;
-            GXSetChanMatColor(4, color);
+            GXColor color = cswp->color;
+            GXSetChanMatColor(GX_COLOR0A0, color);
         }
 #endif
         GXSetNumTexGens(0);
         GXSetNumTevStages(1);
-        GXSetTevOrder(0, 0xFF, 0xFF, 4);
-        GXSetTevColorOp(0, 0, 0, 0, 1, 0);
-        GXSetTevAlphaOp(0, 0, 0, 0, 1, 0);
-        GXSetTevColorIn(0, 0xF, 0xF, 0xF, 0xA);
-        GXSetTevAlphaIn(0, 7, 1, 5, 7);
-        GXSetFog(0, float_0_804198f4, float_0_804198f4, float_0_804198f4, float_0_804198f4, unk_80422f98);
-        GXSetBlendMode(1, 4, 5, 0);
-        GXSetZMode(1, 3, 0);
-        GXSetZCompLoc(1);
-        GXSetAlphaCompare(7, 0, 0, 7, 0);
-        GXSetCurrentMtx(0);
-        GXSetCullMode(0);
-        GXSetArray(9, testKagePosArray, 0xC);
+        GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD_NULL, GX_TEXMAP_NULL, GX_COLOR0A0);
+        GXSetTevColorOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+        GXSetTevAlphaOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+        GXSetTevColorIn(GX_TEVSTAGE0, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ZERO, GX_CC_RASC);
+        GXSetTevAlphaIn(GX_TEVSTAGE0, GX_CA_ZERO, GX_CA_A0, GX_CA_RASA, GX_CA_ZERO);
+        GXSetFog(GX_FOG_NONE, float_0_804198f4, float_0_804198f4, float_0_804198f4, float_0_804198f4, unk_80422f98);
+        GXSetBlendMode(GX_BM_BLEND, GX_BL_SRCALPHA, GX_BL_INVSRCALPHA, GX_LO_CLEAR);
+        GXSetZMode(GX_TRUE, GX_LEQUAL, GX_FALSE);
+        GXSetZCompLoc(GX_TRUE);
+        GXSetAlphaCompare(GX_ALWAYS, 0, GX_AOP_AND, GX_ALWAYS, 0);
+        GXSetCurrentMtx(GX_PNMTX0);
+        GXSetCullMode(GX_CULL_NONE);
+        GXSetArray(GX_VA_POS, testKagePosArray, 0xC);
         GXClearVtxDesc();
-        GXSetVtxDesc(9, 2);
-        GXSetVtxAttrFmt(0, 9, 1, 4, 0);
+        GXSetVtxDesc(GX_VA_POS, GX_INDEX8);
+        GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_POS_XYZ, GX_F32, 0);
         GXClearVtxDesc();
-        GXSetVtxDesc(9, 2);
-        GXSetVtxDesc(0xB, 2);
-        GXSetVtxAttrFmt(0, 9, 1, 4, 0);
-        GXSetVtxAttrFmt(0, 0xB, 1, 5, 0);
-        GXSetArray(9, vertex_tbl, 0xC);
-        GXSetArray(0xB, color_tbl, 4);
+        GXSetVtxDesc(GX_VA_POS, GX_INDEX8);
+        GXSetVtxDesc(GX_VA_CLR0, GX_INDEX8);
+        GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_POS_XYZ, GX_F32, 0);
+        GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_CLR0, GX_CLR_RGBA, GX_RGBA8, 0);
+        GXSetArray(GX_VA_POS, vertex_tbl, 0xC);
+        GXSetArray(GX_VA_CLR0, color_tbl, 4);
         cylinderShadowDraw(cameraId, param);
         shadowCharShadowDisp_Texture(cameraId, param);
     }
@@ -510,8 +495,8 @@ void shadowDisp(CameraId cameraId, void* param) {
         switch (work->renderMode) {
         case 5: {
             shadowCharShadowDisp_Collision(cameraId, param);
-            config = (ShadowConfigFields*)(shadowConfig + cswp->unk8 * 0x48);
-            if (*(s32*)config == 1) {
+            config = (ShadowConfigFields*)(shadowConfig + cswp->configIdx * 0x48);
+            if (config->followCamera == 1) {
                 CameraEntry* cam = camGetPtr(CAMERA_3D);
 
                 config->camPos.x = cam->cameraAt.x;
@@ -573,12 +558,12 @@ void shadowCharShadowDisp_Collision(CameraId cameraId, void* param) {
     HitCheckQuery* q;
 #endif
     f32 size;
-    f32 unk14;
+    f32 yScale;
     f32 zero;
 
     camGetCurPtr();
     zero = float_0_804198f4;
-    for (i = 0; i < cswp->unk104; i++, entry++) {
+    for (i = 0; i < cswp->entryCount; i++, entry++) {
         mtx = entry->matrix;
         if (entry->size == zero) {
             continue;
@@ -586,7 +571,7 @@ void shadowCharShadowDisp_Collision(CameraId cameraId, void* param) {
         if (entry->flags & 2) {
             continue;
         }
-        if (entry->unk2 != 3 && (entry->flags & 1) != 0) {
+        if (entry->kind != 3 && (entry->flags & 1) != 0) {
 #ifdef MUST_MATCH
             q = &query;
             q->targetPos = entry->position;
@@ -605,12 +590,12 @@ void shadowCharShadowDisp_Collision(CameraId cameraId, void* param) {
                 continue;
             }
             size = entry->size;
-            unk14 = entry->unk14;
+            yScale = entry->yScale;
             mtx[0][3] = query.hitPos.x + query.hitNormal.x;
             mtx[1][3] = query.hitPos.y + query.hitNormal.y;
             mtx[2][3] = query.hitPos.z + query.hitNormal.z;
             mtx[1][0] = query.hitNormal.x * size;
-            mtx[1][1] = query.hitNormal.y * unk14;
+            mtx[1][1] = query.hitNormal.y * yScale;
             mtx[1][2] = query.hitNormal.z * size;
             mtx[2][0] = float_0_804198f4;
             mtx[2][1] = query.hitNormal.z * size;
@@ -624,7 +609,7 @@ void shadowCharShadowDisp_Collision(CameraId cameraId, void* param) {
             size = entry->size;
             mtx[2][2] = size;
             mtx[0][0] = size;
-            mtx[1][1] = entry->unk14;
+            mtx[1][1] = entry->yScale;
         }
         entry->flags |= 2;
     }
@@ -678,46 +663,46 @@ void shadowCharShadowDisp_Projection(CameraId camId, void* param) {
 #ifdef MUST_MATCH
     vecs = (const u8*)&vec3_802c1a90;
 #endif
-    config = (ShadowConfigFields*)(shadowConfig + ((CharShadowWork*)work)->unk8 * 0x48);
+    config = (ShadowConfigFields*)(shadowConfig + ((CharShadowWork*)work)->configIdx * 0x48);
     entry = ((CharShadowWork*)work)->entries;
     view = camGetCurPtr()->view;
-    alpha = cswp->unk100.a;
+    alpha = cswp->color.a;
 
     GXSetNumChans(1);
-    GXSetChanCtrl(4, 0, 0, 0, 0, 2, 2);
+    GXSetChanCtrl(GX_COLOR0A0, GX_FALSE, GX_SRC_REG, GX_SRC_REG, GX_LIGHT_NULL, GX_DF_CLAMP, GX_AF_NONE);
 #ifdef MUST_MATCH
-    SHADOW_MAT_COLOR(4, pMatColor, cswp->unk100);
+    SHADOW_MAT_COLOR(GX_COLOR0A0, pMatColor, cswp->color);
 #else
-    GXSetChanMatColor(4, cswp->unk100);
+    GXSetChanMatColor(GX_COLOR0A0, cswp->color);
 #endif
     GXSetNumTexGens(0);
     GXSetNumTevStages(1);
-    GXSetTevOrder(0, 0xFF, 0xFF, 4);
-    GXSetTevColorOp(0, 0, 0, 0, 1, 0);
-    GXSetTevAlphaOp(0, 0, 0, 0, 1, 0);
-    GXSetTevColorIn(0, 0xF, 0xF, 0xF, 0xA);
-    GXSetTevAlphaIn(0, 7, 1, 5, 7);
+    GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD_NULL, GX_TEXMAP_NULL, GX_COLOR0A0);
+    GXSetTevColorOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+    GXSetTevAlphaOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+    GXSetTevColorIn(GX_TEVSTAGE0, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ZERO, GX_CC_RASC);
+    GXSetTevAlphaIn(GX_TEVSTAGE0, GX_CA_ZERO, GX_CA_A0, GX_CA_RASA, GX_CA_ZERO);
 #ifdef MUST_MATCH
     SHADOW_FOG_COLOR(pFogColor, unk_80422f98);
 #else
-    GXSetFog(0, float_0_804198f4, float_0_804198f4, float_0_804198f4, float_0_804198f4, unk_80422f98);
+    GXSetFog(GX_FOG_NONE, float_0_804198f4, float_0_804198f4, float_0_804198f4, float_0_804198f4, unk_80422f98);
 #endif
-    GXSetBlendMode(1, 4, 5, 0);
-    GXSetZMode(1, 3, 0);
-    GXSetZCompLoc(1);
-    GXSetAlphaCompare(7, 0, 0, 7, 0);
-    GXSetCurrentMtx(0);
-    GXSetCullMode(0);
-    GXSetArray(9, testKagePosArray, 0xC);
+    GXSetBlendMode(GX_BM_BLEND, GX_BL_SRCALPHA, GX_BL_INVSRCALPHA, GX_LO_CLEAR);
+    GXSetZMode(GX_TRUE, GX_LEQUAL, GX_FALSE);
+    GXSetZCompLoc(GX_TRUE);
+    GXSetAlphaCompare(GX_ALWAYS, 0, GX_AOP_AND, GX_ALWAYS, 0);
+    GXSetCurrentMtx(GX_PNMTX0);
+    GXSetCullMode(GX_CULL_NONE);
+    GXSetArray(GX_VA_POS, testKagePosArray, 0xC);
     GXClearVtxDesc();
-    GXSetVtxDesc(9, 2);
-    GXSetVtxAttrFmt(0, 9, 1, 4, 0);
-    GXSetBlendMode(0, 4, 5, 0);
+    GXSetVtxDesc(GX_VA_POS, GX_INDEX8);
+    GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_POS_XYZ, GX_F32, 0);
+    GXSetBlendMode(GX_BM_NONE, GX_BL_SRCALPHA, GX_BL_INVSRCALPHA, GX_LO_CLEAR);
     if (gp->inBattle != 0) {
 #ifdef MUST_MATCH
-        SHADOW_MAT_COLOR(4, pBattleColor, dat_804198e4);
+        SHADOW_MAT_COLOR(GX_COLOR0A0, pBattleColor, dat_804198e4);
 #else
-        GXSetChanMatColor(4, dat_804198e4);
+        GXSetChanMatColor(GX_COLOR0A0, dat_804198e4);
 #endif
     }
     else {
@@ -732,22 +717,22 @@ void shadowCharShadowDisp_Projection(CameraId camId, void* param) {
         GXColor color = dat_804198e8;
 
         color.r = color.g = color.b = alpha;
-        GXSetChanMatColor(4, color);
+        GXSetChanMatColor(GX_COLOR0A0, color);
 #endif
     }
-    GXSetZMode(0, 3, 0);
-    for (i = 0; i < cswp->unk104; i++, entry++) {
+    GXSetZMode(GX_FALSE, GX_LEQUAL, GX_FALSE);
+    for (i = 0; i < cswp->entryCount; i++, entry++) {
         if (entry->size == float_0_804198f4) {
             continue;
         }
-        if (entry->unk2 != 3) {
+        if (entry->kind != 3) {
             continue;
         }
         if (!(entry->flags & 2)) {
             continue;
         }
         PSMTXConcat(view, entry->matrix, mtx);
-        GXLoadPosMtxImm(mtx, 0);
+        GXLoadPosMtxImm(mtx, GX_PNMTX0);
         GXBegin(GX_TRIANGLESTRIP, GX_VTXFMT0, 6);
         GXPosition1x8(0);
         GXPosition1x8(1);
@@ -755,18 +740,18 @@ void shadowCharShadowDisp_Projection(CameraId camId, void* param) {
         GXPosition1x8(3);
         GXPosition1x8(4);
         GXPosition1x8(5);
-        ((CharShadowWork*)work)->unk4++;
+        ((CharShadowWork*)work)->drawCount++;
     }
-    if (((CharShadowWork*)work)->unk4 != 0) {
-        C_MTXOrtho(projMtx, config->unk2C, -config->unk2C, config->unk28, -config->unk28, config->unk30, config->unk34);
-        GXSetProjection(projMtx, 1);
-        GXSetBlendMode(1, 4, 5, 0);
-        GXSetChanCtrl(4, 0, 0, 1, 0, 2, 2);
+    if (((CharShadowWork*)work)->drawCount != 0) {
+        C_MTXOrtho(projMtx, config->halfHeight, -config->halfHeight, config->halfWidth, -config->halfWidth, config->nearZ, config->farZ);
+        GXSetProjection(projMtx, GX_ORTHOGRAPHIC);
+        GXSetBlendMode(GX_BM_BLEND, GX_BL_SRCALPHA, GX_BL_INVSRCALPHA, GX_LO_CLEAR);
+        GXSetChanCtrl(GX_COLOR0A0, GX_FALSE, GX_SRC_REG, GX_SRC_VTX, GX_LIGHT_NULL, GX_DF_CLAMP, GX_AF_NONE);
         GXClearVtxDesc();
-        GXSetVtxDesc(9, 1);
-        GXSetVtxAttrFmt(0, 9, 1, 4, 0);
-        GXSetVtxDesc(0xB, 1);
-        GXSetVtxAttrFmt(0, 0xB, 1, 5, 0);
+        GXSetVtxDesc(GX_VA_POS, GX_DIRECT);
+        GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_POS_XYZ, GX_F32, 0);
+        GXSetVtxDesc(GX_VA_CLR0, GX_DIRECT);
+        GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_CLR0, GX_CLR_RGBA, GX_RGBA8, 0);
 #ifdef MUST_MATCH
         {
             /* Read the three camera basis vectors through explicit ascending word temps to force
@@ -789,9 +774,9 @@ void shadowCharShadowDisp_Projection(CameraId camId, void* param) {
         camTarget = vec3_802c1ab4;
 #endif
         C_MTXLookAt(lookAt, &camPos, &camUp, &camTarget);
-        GXLoadPosMtxImm(lookAt, 0);
-        w = -config->unk28;
-        d = config->unk2C;
+        GXLoadPosMtxImm(lookAt, GX_PNMTX0);
+        w = -config->halfWidth;
+        d = config->halfHeight;
         de = float_0p2_8041990c * d;
         we = float_0p2_8041990c * w;
         GXBegin(GX_QUADS, GX_VTXFMT0, 16);
@@ -837,8 +822,8 @@ void shadowCharShadowDisp_Projection(CameraId camId, void* param) {
 // lower scratch slot (r1+0x10) and the GXSetFog copy in r1+0x14, as the original does; writing the
 // colour inline puts them the other way round. The independent form is under #else.
 static inline void shadowPolyMatColor(void) {
-    GXColor c = cswp->unk100;
-    GXSetChanMatColor(4, c);
+    GXColor c = cswp->color;
+    GXSetChanMatColor(GX_COLOR0A0, c);
 }
 #endif
 
@@ -852,53 +837,53 @@ void shadowCharShadowDisp_Polygon(CameraId camId, void* param) {
 
     view = camGetCurPtr()->view;
     GXSetNumChans(1);
-    GXSetChanCtrl(4, 0, 0, 0, 0, 2, 2);
+    GXSetChanCtrl(GX_COLOR0A0, GX_FALSE, GX_SRC_REG, GX_SRC_REG, GX_LIGHT_NULL, GX_DF_CLAMP, GX_AF_NONE);
 #ifdef MUST_MATCH
     shadowPolyMatColor();
 #else
     {
-        GXColor color = cswp->unk100;
-        GXSetChanMatColor(4, color);
+        GXColor color = cswp->color;
+        GXSetChanMatColor(GX_COLOR0A0, color);
     }
 #endif
     GXSetNumTexGens(0);
     GXSetNumTevStages(1);
-    GXSetTevOrder(0, 0xFF, 0xFF, 4);
-    GXSetTevColorOp(0, 0, 0, 0, 1, 0);
-    GXSetTevAlphaOp(0, 0, 0, 0, 1, 0);
-    GXSetTevColorIn(0, 0xF, 0xF, 0xF, 0xA);
-    GXSetTevAlphaIn(0, 7, 1, 5, 7);
-    GXSetFog(0, float_0_804198f4, float_0_804198f4, float_0_804198f4, float_0_804198f4, unk_80422f98);
-    GXSetBlendMode(1, 4, 5, 0);
-    GXSetZMode(1, 3, 0);
-    GXSetZCompLoc(1);
-    GXSetAlphaCompare(7, 0, 0, 7, 0);
-    GXSetCurrentMtx(0);
-    GXSetCullMode(0);
-    GXSetArray(9, testKagePosArray, 0xC);
+    GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD_NULL, GX_TEXMAP_NULL, GX_COLOR0A0);
+    GXSetTevColorOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+    GXSetTevAlphaOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+    GXSetTevColorIn(GX_TEVSTAGE0, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ZERO, GX_CC_RASC);
+    GXSetTevAlphaIn(GX_TEVSTAGE0, GX_CA_ZERO, GX_CA_A0, GX_CA_RASA, GX_CA_ZERO);
+    GXSetFog(GX_FOG_NONE, float_0_804198f4, float_0_804198f4, float_0_804198f4, float_0_804198f4, unk_80422f98);
+    GXSetBlendMode(GX_BM_BLEND, GX_BL_SRCALPHA, GX_BL_INVSRCALPHA, GX_LO_CLEAR);
+    GXSetZMode(GX_TRUE, GX_LEQUAL, GX_FALSE);
+    GXSetZCompLoc(GX_TRUE);
+    GXSetAlphaCompare(GX_ALWAYS, 0, GX_AOP_AND, GX_ALWAYS, 0);
+    GXSetCurrentMtx(GX_PNMTX0);
+    GXSetCullMode(GX_CULL_NONE);
+    GXSetArray(GX_VA_POS, testKagePosArray, 0xC);
     GXClearVtxDesc();
-    GXSetVtxDesc(9, 2);
-    GXSetVtxAttrFmt(0, 9, 1, 4, 0);
+    GXSetVtxDesc(GX_VA_POS, GX_INDEX8);
+    GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_POS_XYZ, GX_F32, 0);
     zero = float_0_804198f4;
-    for (i = 0; i < cswp->unk104; i++, entry++) {
+    for (i = 0; i < cswp->entryCount; i++, entry++) {
         if (entry->size == zero) {
             continue;
         }
-        if (entry->unk2 != 0) {
+        if (entry->kind != 0) {
             continue;
         }
         if (!(entry->flags & 2)) {
             continue;
         }
-        if (*(s16*)&entry->camId != camId) {
+        if (entry->camId != camId) {
             continue;
         }
-        if (camId == 1) {
+        if (camId == CAMERA_OFFSCREEN2) {
             sysWaitDrawSync();
             GXClearBoundingBox();
         }
         PSMTXConcat(view, entry->matrix, mtx);
-        GXLoadPosMtxImm(mtx, 0);
+        GXLoadPosMtxImm(mtx, GX_PNMTX0);
         GXBegin(GX_TRIANGLESTRIP, GX_VTXFMT0, 6);
         GXPosition1x8(0);
         GXPosition1x8(1);
@@ -906,10 +891,10 @@ void shadowCharShadowDisp_Polygon(CameraId camId, void* param) {
         GXPosition1x8(3);
         GXPosition1x8(4);
         GXPosition1x8(5);
-        if (camId == 1) {
+        if (camId == CAMERA_OFFSCREEN2) {
             sysWaitDrawSync();
             GXReadBoundingBox(&left, &top, &right, &bottom);
-            offscreenAddBoundingBox(entry->unk18, left, top, right, bottom);
+            offscreenAddBoundingBox(entry->offscreenId, left, top, right, bottom);
         }
     }
 }
@@ -921,8 +906,8 @@ void shadowCharShadowDisp_Polygon(CameraId camId, void* param) {
 // lower scratch slot (r1+0x10) and the GXSetFog copy in r1+0x14, as the original does; writing the
 // colour inline puts them the other way round. The independent form is under #else.
 static inline void shadowTexMatColor(void) {
-    GXColor c = cswp->unk100;
-    GXSetChanMatColor(4, c);
+    GXColor c = cswp->color;
+    GXSetChanMatColor(GX_COLOR0A0, c);
 }
 #endif
 
@@ -944,64 +929,64 @@ void shadowCharShadowDisp_Texture(CameraId camId, void* param) {
 
     view = camGetCurPtr()->view;
     GXSetNumChans(1);
-    GXSetChanCtrl(4, 0, 0, 0, 0, 2, 2);
+    GXSetChanCtrl(GX_COLOR0A0, GX_FALSE, GX_SRC_REG, GX_SRC_REG, GX_LIGHT_NULL, GX_DF_CLAMP, GX_AF_NONE);
 #ifdef MUST_MATCH
     shadowTexMatColor();
 #else
     {
-        GXColor color = cswp->unk100;
-        GXSetChanMatColor(4, color);
+        GXColor color = cswp->color;
+        GXSetChanMatColor(GX_COLOR0A0, color);
     }
 #endif
     effGetTexObjN64(0x2C, &texObj);
-    GXLoadTexObj(&texObj, 0);
+    GXLoadTexObj(&texObj, GX_TEXMAP0);
     GXSetNumTexGens(1);
-    GXSetTexCoordGen2(0, 1, 4, 0x3C, 0, 0x7D);
+    GXSetTexCoordGen2(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_IDENTITY, GX_FALSE, GX_PTIDENTITY);
     GXSetNumTevStages(1);
-    GXSetTevOrder(0, 0, 0, 4);
-    GXSetTevColorOp(0, 0, 0, 0, 1, 0);
-    GXSetTevAlphaOp(0, 0, 0, 0, 1, 0);
-    GXSetTevColorIn(0, 0xF, 0xF, 0xF, 0xA);
-    GXSetTevAlphaIn(0, 7, 4, 5, 7);
-    GXSetFog(0, float_0_804198f4, float_0_804198f4, float_0_804198f4, float_0_804198f4, unk_80422f9c);
-    GXSetBlendMode(1, 4, 5, 0);
-    GXSetZMode(1, 3, 0);
-    GXSetZCompLoc(1);
-    GXSetAlphaCompare(7, 0, 0, 7, 0);
-    GXSetCurrentMtx(0);
-    GXSetCullMode(0);
+    GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR0A0);
+    GXSetTevColorOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+    GXSetTevAlphaOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+    GXSetTevColorIn(GX_TEVSTAGE0, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ZERO, GX_CC_RASC);
+    GXSetTevAlphaIn(GX_TEVSTAGE0, GX_CA_ZERO, GX_CA_TEXA, GX_CA_RASA, GX_CA_ZERO);
+    GXSetFog(GX_FOG_NONE, float_0_804198f4, float_0_804198f4, float_0_804198f4, float_0_804198f4, unk_80422f9c);
+    GXSetBlendMode(GX_BM_BLEND, GX_BL_SRCALPHA, GX_BL_INVSRCALPHA, GX_LO_CLEAR);
+    GXSetZMode(GX_TRUE, GX_LEQUAL, GX_FALSE);
+    GXSetZCompLoc(GX_TRUE);
+    GXSetAlphaCompare(GX_ALWAYS, 0, GX_AOP_AND, GX_ALWAYS, 0);
+    GXSetCurrentMtx(GX_PNMTX0);
+    GXSetCullMode(GX_CULL_NONE);
     GXClearVtxDesc();
-    GXSetVtxDesc(9, 1);
-    GXSetVtxDesc(0xD, 1);
-    GXSetVtxAttrFmt(0, 9, 1, 4, 0);
-    GXSetVtxAttrFmt(0, 0xD, 1, 4, 0);
+    GXSetVtxDesc(GX_VA_POS, GX_DIRECT);
+    GXSetVtxDesc(GX_VA_TEX0, GX_DIRECT);
+    GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_POS_XYZ, GX_F32, 0);
+    GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, GX_TEX_ST, GX_F32, 0);
 #ifdef MUST_MATCH
     size = float_2p5_80419918;
     negSize = -size;
 #endif
     zero = float_0_804198f4;
-    for (i = 0; i < cswp->unk104; i++, entry++) {
+    for (i = 0; i < cswp->entryCount; i++, entry++) {
 #ifdef MUST_MATCH
         f32 positive, negative;
 #endif
         if (entry->size == zero) {
             continue;
         }
-        if (entry->unk2 != 1) {
+        if (entry->kind != 1) {
             continue;
         }
         if (!(entry->flags & 2)) {
             continue;
         }
-        if (*(s16*)&entry->camId != camId) {
+        if (entry->camId != camId) {
             continue;
         }
-        if (camId == 1) {
+        if (camId == CAMERA_OFFSCREEN2) {
             sysWaitDrawSync();
             GXClearBoundingBox();
         }
         PSMTXConcat(view, entry->matrix, mtx);
-        GXLoadPosMtxImm(mtx, 0);
+        GXLoadPosMtxImm(mtx, GX_PNMTX0);
         GXBegin(GX_QUADS, GX_VTXFMT0, 4);
 #ifdef MUST_MATCH
         // Keep separate zero/one loads and write coordinates at each FIFO access; named
@@ -1038,10 +1023,10 @@ void shadowCharShadowDisp_Texture(CameraId camId, void* param) {
         GXPosition3f32(negSize * float_0p5_804198f8, 0.0f, negSize * float_0p5_804198f8);
         GXTexCoord2f32(0.0f, 1.0f);
 #endif
-        if (camId == 1) {
+        if (camId == CAMERA_OFFSCREEN2) {
             sysWaitDrawSync();
             GXReadBoundingBox(&left, &top, &right, &bottom);
-            offscreenAddBoundingBox(entry->unk18, left, top, right, bottom);
+            offscreenAddBoundingBox(entry->offscreenId, left, top, right, bottom);
         }
     }
 }
@@ -1051,12 +1036,12 @@ void cylinder(ShadowEntry* entry) {
     u8* base = lbl_80303460;
 
     if (entry->flags & 4) {
-        GXSetArray(0xB, color_tbl_nodecay, 4);
+        GXSetArray(GX_VA_CLR0, color_tbl_nodecay, 4);
         GXCallDisplayList(base + 0x140, 0x40);
         GXCallDisplayList(base + 0x180, 0x40);
         GXCallDisplayList(base + 0x1C0, 0x40);
     } else {
-        f32 alpha = (f32)cswp->unk100.a;
+        f32 alpha = (f32)cswp->color.a;
 #ifdef MUST_MATCH
         // MUST_MATCH: declaring the fade clamp before the alpha ramp makes MWCC keep the u8->f32
         // conversion scratch in f3 and reuse it, giving retail's FP register allocation.
@@ -1085,7 +1070,7 @@ void cylinder(ShadowEntry* entry) {
         }
         {
             s32 c = (s32)(float_255_80419914 * f1);
-            GXSetArray(0xB, color_tbl, 4);
+            GXSetArray(GX_VA_CLR0, color_tbl, 4);
             if (float_0_804198f4 != f31) {
                 GXCallDisplayList(base + 0x200, 0x40);
             }
@@ -1109,11 +1094,11 @@ void cylinder(ShadowEntry* entry) {
 static inline void shadowTevColor(u8 a) {
     GXColor c = unk_80422fa0;
     c.a = a;
-    GXSetTevColor(1, c);
+    GXSetTevColor(GX_TEVREG0, c);
 }
 
 static inline void shadowMatColor(GXColor c) {
-    GXSetChanMatColor(4, c);
+    GXSetChanMatColor(GX_COLOR0A0, c);
 }
 #endif
 
@@ -1132,78 +1117,78 @@ void cylinderShadowDraw(CameraId camId, void* param) {
     (void)param;
     view = camGetCurPtr()->view;
     zero = float_0_804198f4;
-    for (i = 0; i < cswp->unk104; i++, entry++) {
+    for (i = 0; i < cswp->entryCount; i++, entry++) {
         if (entry->size == zero) {
             continue;
         }
-        if (entry->unk2 != 2) {
+        if (entry->kind != 2) {
             continue;
         }
         if (!(entry->flags & 2)) {
             continue;
         }
-        if (*(s16*)&entry->camId != camId) {
+        if (entry->camId != camId) {
             continue;
         }
-        if (camId == 1) {
+        if (camId == CAMERA_OFFSCREEN2) {
             sysWaitDrawSync();
             GXClearBoundingBox();
         }
         PSMTXConcat(view, entry->matrix, mtx);
-        GXLoadPosMtxImm(mtx, 0);
+        GXLoadPosMtxImm(mtx, GX_PNMTX0);
 #ifdef MUST_MATCH
         shadowTevColor(entry->mode);
 #else
         color = unk_80422fa0;
         color.a = entry->mode;
-        GXSetTevColor(1, color);
+        GXSetTevColor(GX_TEVREG0, color);
 #endif
-        GXSetZMode(1, 3, 0);
-        GXSetCullMode(2);
-        GXSetBlendMode(1, 1, 1, 0);
-        GXSetBlendMode(2, 1, 1, 7);
-        GXSetAlphaUpdate(1);
-        GXSetColorUpdate(0);
-        GXSetChanCtrl(4, 0, 0, 1, 0, 2, 2);
+        GXSetZMode(GX_TRUE, GX_LEQUAL, GX_FALSE);
+        GXSetCullMode(GX_CULL_BACK);
+        GXSetBlendMode(GX_BM_BLEND, GX_BL_ONE, GX_BL_ONE, GX_LO_CLEAR);
+        GXSetBlendMode(GX_BM_LOGIC, GX_BL_ONE, GX_BL_ONE, GX_LO_OR);
+        GXSetAlphaUpdate(GX_TRUE);
+        GXSetColorUpdate(GX_FALSE);
+        GXSetChanCtrl(GX_COLOR0A0, GX_FALSE, GX_SRC_REG, GX_SRC_VTX, GX_LIGHT_NULL, GX_DF_CLAMP, GX_AF_NONE);
         SHADOW_ENTRY_DRAW(entry);
-        GXSetZMode(1, 3, 0);
-        GXSetCullMode(1);
-        GXSetBlendMode(0, 4, 5, 0);
-        GXSetAlphaUpdate(1);
-        GXSetColorUpdate(0);
+        GXSetZMode(GX_TRUE, GX_LEQUAL, GX_FALSE);
+        GXSetCullMode(GX_CULL_FRONT);
+        GXSetBlendMode(GX_BM_NONE, GX_BL_SRCALPHA, GX_BL_INVSRCALPHA, GX_LO_CLEAR);
+        GXSetAlphaUpdate(GX_TRUE);
+        GXSetColorUpdate(GX_FALSE);
 #ifdef MUST_MATCH
         shadowMatColor(unk_80422fa4);
 #else
-        GXSetChanMatColor(4, unk_80422fa4);
+        GXSetChanMatColor(GX_COLOR0A0, unk_80422fa4);
 #endif
-        GXSetChanCtrl(4, 0, 0, 0, 0, 2, 2);
+        GXSetChanCtrl(GX_COLOR0A0, GX_FALSE, GX_SRC_REG, GX_SRC_REG, GX_LIGHT_NULL, GX_DF_CLAMP, GX_AF_NONE);
         SHADOW_ENTRY_DRAW(entry);
-        GXSetCullMode(2);
-        GXSetBlendMode(1, 6, 7, 0);
-        GXSetAlphaUpdate(0);
-        GXSetColorUpdate(1);
+        GXSetCullMode(GX_CULL_BACK);
+        GXSetBlendMode(GX_BM_BLEND, GX_BL_DSTALPHA, GX_BL_INVDSTALPHA, GX_LO_CLEAR);
+        GXSetAlphaUpdate(GX_FALSE);
+        GXSetColorUpdate(GX_TRUE);
 #ifdef MUST_MATCH
-        shadowMatColor(cswp->unk100);
+        shadowMatColor(cswp->color);
 #else
-        GXSetChanMatColor(4, cswp->unk100);
+        GXSetChanMatColor(GX_COLOR0A0, cswp->color);
 #endif
         SHADOW_ENTRY_DRAW(entry);
-        if (camId == 1) {
+        if (camId == CAMERA_OFFSCREEN2) {
             sysWaitDrawSync();
             GXReadBoundingBox(&left, &top, &right, &bottom);
-            offscreenAddBoundingBox(entry->unk18, left, top, right, bottom);
+            offscreenAddBoundingBox(entry->offscreenId, left, top, right, bottom);
         }
     }
 }
 
 s32 shadowEntry(f32 x, f32 y, f32 z, f32 size) {
     ShadowEntry* entries = cswp->entries;
-    s32 id = cswp->unk104;
+    s32 id = cswp->entryCount;
     ShadowEntry* entry = &entries[id];
     Vec pos;
 
     entry->flags = 0;
-    if (cswp->unk118 != 0) {
+    if (cswp->defaultCollision != 0) {
         entry->flags |= 1;
     }
     pos = vec3_802c1acc;
@@ -1212,27 +1197,27 @@ s32 shadowEntry(f32 x, f32 y, f32 z, f32 size) {
     pos.z = z;
     entry->position = pos;
     entry->size = size;
-    entry->unk14 = cswp->unk114;
-    entry->unk2 = cswp->unk110;
+    entry->yScale = cswp->defaultYScale;
+    entry->kind = cswp->defaultKind;
     entry->type = 0;
-    entry->unk18 = -1;
-    entry->camId = 4;
+    entry->offscreenId = -1;
+    entry->camId = CAMERA_3D;
     entry->decayX = float_1_80419904;
     entry->decayY = float_0p2_8041990c;
     entry->decayZ = float_0p4_80419910;
     entry->mode = 0xFF;
-    cswp->unk104++;
+    cswp->entryCount++;
     return id;
 }
 
-s32 shadowEntryMode(s32 unk2, f32 x, f32 y, f32 z, f32 size) {
+s32 shadowEntryMode(s32 kind, f32 x, f32 y, f32 z, f32 size) {
     ShadowEntry* entries = cswp->entries;
-    s32 id = cswp->unk104;
+    s32 id = cswp->entryCount;
     ShadowEntry* entry = &entries[id];
     Vec pos;
 
     entry->flags = 0;
-    if (cswp->unk118 != 0) {
+    if (cswp->defaultCollision != 0) {
         entry->flags |= 1;
     }
     pos = vec3_802c1ae4;
@@ -1241,16 +1226,16 @@ s32 shadowEntryMode(s32 unk2, f32 x, f32 y, f32 z, f32 size) {
     pos.z = z;
     entry->position = pos;
     entry->size = size;
-    entry->unk14 = cswp->unk114;
-    entry->unk2 = unk2;
+    entry->yScale = cswp->defaultYScale;
+    entry->kind = kind;
     entry->type = 0;
-    entry->unk18 = -1;
-    entry->camId = 4;
+    entry->offscreenId = -1;
+    entry->camId = CAMERA_3D;
     entry->decayX = float_1_80419904;
     entry->decayY = float_0p2_8041990c;
     entry->decayZ = float_0p4_80419910;
     entry->mode = 0xFF;
-    cswp->unk104++;
+    cswp->entryCount++;
     return id;
 }
 
@@ -1296,22 +1281,22 @@ void shadowFlagOn(s32 id, u16 flag) {
 }
 
 GXTexObj* shadowGetCharShadowTexObj(void) {
-    if (cswp->unk0 & 1) {
-        return smartTexObj((GXTexObj*)&cswp->field_0xC[0xD0], (void**)cswp->unkFC);
+    if (cswp->flags & 1) {
+        return smartTexObj(&cswp->texObj, &cswp->texBuffer->address);
     }
     return NULL;
 }
 
 void* shadowGetCharShadowProjTexMtx(void) {
-    return &cswp->field_0xC[0x70];
+    return &cswp->projTexMtx;
 }
 
 GXColor shadowGetCharShadowColor(void) {
-    return cswp->unk100;
+    return cswp->color;
 }
 
 s32 shadowGetCharShadowProjection(void) {
-    return cswp->unk10C;
+    return cswp->projectionEnabled;
 }
 
 GXTexObj* shadowGetRamp8TexObj(void) {
@@ -1323,58 +1308,58 @@ GXTexObj* shadowGetRamp16TexObj(void) {
 }
 
 void shadowDepthShadowDrawCountUp(void) {
-    dswp->unk4++;
+    dswp->drawCount++;
 }
 
 GXTexObj* shadowGetDepthShadowTexObj(void) {
-    if (dswp->unk0 & 1) {
-        return smartTexObj((GXTexObj*)&dswp->unkC[0xD0], *(void**)((u8*)dswp + 0xFC));
+    if (dswp->flags & 1) {
+        return smartTexObj(&dswp->texObj, &dswp->texBuffer->address);
     }
     return NULL;
 }
 
 void* shadowGetDepthShadowDepthMtx(void) {
-    return &dswp->unkC[0xA0];
+    return &dswp->depthMtx;
 }
 
 void* shadowGetDepthShadowProjTexMtx(void) {
-    return &dswp->unkC[0x70];
+    return &dswp->projTexMtx;
 }
 
 GXColor shadowGetDepthShadowColor(void) {
     GXColor color;
-    color.r = (0xFF - dswp->unk100.r) * dswp->unk100.a / 0xFF;
-    color.g = (0xFF - dswp->unk100.g) * dswp->unk100.a / 0xFF;
-    color.b = (0xFF - dswp->unk100.b) * dswp->unk100.a / 0xFF;
+    color.r = (0xFF - dswp->color.r) * dswp->color.a / 0xFF;
+    color.g = (0xFF - dswp->color.g) * dswp->color.a / 0xFF;
+    color.b = (0xFF - dswp->color.b) * dswp->color.a / 0xFF;
     color.a = 0;
     return color;
 }
 
-void* shadowGetDepthShadowConfig(void) {
-    return (u8*)shadowConfig + dswp->unk8 * 0x48;
+ShadowConfigFields* shadowGetDepthShadowConfig(void) {
+    return (ShadowConfigFields*)(shadowConfig + dswp->configIdx * 0x48);
 }
 
 void shadowProjShadowDrawCountUp(void) {
-    pswp->unk4++;
+    pswp->drawCount++;
 }
 
 GXTexObj* shadowGetProjShadowTexObj(void) {
-    if (pswp->unk0 & 1) {
-        return smartTexObj(&pswp->texObj, &pswp->unkFC->address);
+    if (pswp->flags & 1) {
+        return smartTexObj(&pswp->texObj, &pswp->texBuffer->address);
     }
     return NULL;
 }
 
 void* shadowGetProjShadowProjTexMtx(void) {
-    return &pswp->unk7C;
+    return &pswp->projTexMtx;
 }
 
 GXColor shadowGetProjShadowColor(void) {
-    return pswp->unk100;
+    return pswp->color;
 }
 
-void* shadowGetProjShadowConfig(void) {
-    return (u8*)shadowConfig + pswp->unk8 * 0x48;
+ShadowConfigFields* shadowGetProjShadowConfig(void) {
+    return (ShadowConfigFields*)(shadowConfig + pswp->configIdx * 0x48);
 }
 
 void projShadowEnd(s32 arg0, ProjShadowWork* work) {
@@ -1389,46 +1374,46 @@ void projShadowEnd(s32 arg0, ProjShadowWork* work) {
     GXSetViewport(tmp_vp[0], tmp_vp[1], tmp_vp[2], tmp_vp[3], tmp_vp[4], tmp_vp[5]);
     GXSetScissor(tmp_sci[0], tmp_sci[1], tmp_sci[2], tmp_sci[3]);
 
-    if (work->unk4 != 0) {
-        config = (ShadowConfigFields*)(shadowConfig + work->unk8 * 0x48);
-        size = ShadowSizeTbl[config->unk40];
-        if (work->unk0 & 2) {
-            if (work->unk0 & 4) {
-                bufferSize = GXGetTexBufferSize((size >> 1) & 0x7FFF, (size >> 1) & 0x7FFF, 2, 0, 0);
+    if (work->drawCount != 0) {
+        config = (ShadowConfigFields*)(shadowConfig + work->configIdx * 0x48);
+        size = ShadowSizeTbl[config->sizeIdx];
+        if (work->flags & 2) {
+            if (work->flags & 4) {
+                bufferSize = GXGetTexBufferSize((size >> 1) & 0x7FFF, (size >> 1) & 0x7FFF, GX_TF_IA4, 0, 0);
             }
             else {
-                bufferSize = GXGetTexBufferSize(size, size, 2, 0, 0);
+                bufferSize = GXGetTexBufferSize(size, size, GX_TF_IA4, 0, 0);
             }
-            work->unkFC = smartAlloc(bufferSize, 3);
+            work->texBuffer = smartAlloc(bufferSize, 3);
         }
         GXSetTexCopySrc(0, 0, size, size);
-        if (work->unk0 & 4) {
-            GXSetTexCopyDst((size >> 1) & 0x7FFF, (size >> 1) & 0x7FFF, 2, 1);
+        if (work->flags & 4) {
+            GXSetTexCopyDst((size >> 1) & 0x7FFF, (size >> 1) & 0x7FFF, GX_TF_IA4, GX_TRUE);
         }
         else {
-            GXSetTexCopyDst(size, size, 2, 0);
+            GXSetTexCopyDst(size, size, GX_TF_IA4, GX_FALSE);
         }
-        GXSetZMode(1, 3, 1);
-        GXCopyTex(work->unkFC->address, 1);
+        GXSetZMode(GX_TRUE, GX_LEQUAL, GX_TRUE);
+        GXCopyTex(work->texBuffer->address, GX_TRUE);
         GXPixModeSync();
-        if (work->unk0 & 4) {
-            GXInitTexObj(&work->texObj, work->unkFC->address, (size >> 1) & 0x7FFF, (size >> 1) & 0x7FFF, 2, 0, 0, 0);
+        if (work->flags & 4) {
+            GXInitTexObj(&work->texObj, work->texBuffer->address, (size >> 1) & 0x7FFF, (size >> 1) & 0x7FFF, GX_TF_IA4, 0, 0, 0);
         }
         else {
-            GXInitTexObj(&work->texObj, work->unkFC->address, size, size, 2, 0, 0, 0);
+            GXInitTexObj(&work->texObj, work->texBuffer->address, size, size, GX_TF_IA4, 0, 0, 0);
         }
         GXInitTexObjLOD(&work->texObj, 1, 1, float_0_804198f4, float_0_804198f4, float_0_804198f4, 0, 0, 0);
-        config = (ShadowConfigFields*)(shadowConfig + work->unk8 * 0x48);
-        if (&work->unk7C != NULL) {
-            if (config->unk38 == 0) {
-                C_MTXLightFrustum(mtx, -config->unk2C, config->unk2C, config->unk28, -config->unk28, config->unk30, float_0p5_804198f8, float_0p5_804198f8, float_0p5_804198f8, float_0p5_804198f8);
+        config = (ShadowConfigFields*)(shadowConfig + work->configIdx * 0x48);
+        if (&work->projTexMtx != NULL) {
+            if (config->isOrtho == 0) {
+                C_MTXLightFrustum(mtx, -config->halfHeight, config->halfHeight, config->halfWidth, -config->halfWidth, config->nearZ, float_0p5_804198f8, float_0p5_804198f8, float_0p5_804198f8, float_0p5_804198f8);
             }
             else {
-                C_MTXLightOrtho(mtx, -config->unk2C, config->unk2C, config->unk28, -config->unk28, float_0p5_804198f8, float_0p5_804198f8, float_0p5_804198f8, float_0p5_804198f8);
+                C_MTXLightOrtho(mtx, -config->halfHeight, config->halfHeight, config->halfWidth, -config->halfWidth, float_0p5_804198f8, float_0p5_804198f8, float_0p5_804198f8, float_0p5_804198f8);
             }
-            PSMTXConcat(mtx, work->unkC, work->unk7C);
+            PSMTXConcat(mtx, work->lookAt, work->projTexMtx);
         }
-        work->unk0 |= 1;
+        work->flags |= 1;
     }
 }
 
@@ -1449,45 +1434,45 @@ void depthShadowEnd(s32 arg0, DepthShadowWork* work) {
 
     cam = camGetCurPtr();
     PSMTXCopy(tmp_view, cam->view);
-    GXSetColorUpdate(1);
+    GXSetColorUpdate(GX_TRUE);
     GXSetViewport(tmp_vp[0], tmp_vp[1], tmp_vp[2], tmp_vp[3], tmp_vp[4], tmp_vp[5]);
     GXSetScissor(tmp_sci[0], tmp_sci[1], tmp_sci[2], tmp_sci[3]);
 
-    if (work->unk4 != 0) {
-        config = (ShadowConfigFields*)(shadowConfig + work->unk8 * 0x48);
-        if (config->unk3C <= 2) {
-            fmt = 0x11;
-            sizeFmt = 1;
+    if (work->drawCount != 0) {
+        config = (ShadowConfigFields*)(shadowConfig + work->configIdx * 0x48);
+        if (config->depthMode <= 2) {
+            fmt = GX_TF_Z8;
+            sizeFmt = GX_TF_I8;
         }
         else {
-            fmt = 0x13;
-            sizeFmt = 3;
+            fmt = GX_TF_Z16;
+            sizeFmt = GX_TF_IA8;
         }
-        if (work->unk0 & 2) {
-            size = ShadowSizeTbl[config->unk40];
-            *(smartEntry**)((u8*)work + 0xFC) = smartAlloc(GXGetTexBufferSize(size, size, sizeFmt, 0, 0), 3);
+        if (work->flags & 2) {
+            size = ShadowSizeTbl[config->sizeIdx];
+            work->texBuffer = smartAlloc(GXGetTexBufferSize(size, size, sizeFmt, 0, 0), 3);
         }
         GXSetTexCopySrc(0, 0, size, size);
         GXSetTexCopyDst(size, size, fmt, 0);
-        GXSetZMode(1, 3, 1);
-        GXCopyTex(((smartEntry*)*(void**)((u8*)work + 0xFC))->address, 1);
+        GXSetZMode(GX_TRUE, GX_LEQUAL, GX_TRUE);
+        GXCopyTex(work->texBuffer->address, GX_TRUE);
         GXPixModeSync();
-        GXInitTexObj((GXTexObj*)&work->unkC[0xD0], ((smartEntry*)*(void**)((u8*)work + 0xFC))->address, size, size, sizeFmt, 0, 0, 0);
-        GXInitTexObjLOD((GXTexObj*)&work->unkC[0xD0], 0, 0, float_0_804198f4, float_0_804198f4, float_0_804198f4, 0, 0, 0);
-        config2 = (ShadowConfigFields*)(shadowConfig + work->unk8 * 0x48);
-        flag = (config2->unk3C > 2);
-        if (&work->unkC[0x70] != NULL) {
-            if (config2->unk38 == 0) {
-                C_MTXLightFrustum(mtx, -config2->unk2C, config2->unk2C, config2->unk28, -config2->unk28, config2->unk30, float_0p5_804198f8, float_0p5_804198f8, float_0p5_804198f8, float_0p5_804198f8);
+        GXInitTexObj(&work->texObj, work->texBuffer->address, size, size, sizeFmt, 0, 0, 0);
+        GXInitTexObjLOD(&work->texObj, 0, 0, float_0_804198f4, float_0_804198f4, float_0_804198f4, 0, 0, 0);
+        config2 = (ShadowConfigFields*)(shadowConfig + work->configIdx * 0x48);
+        flag = (config2->depthMode > 2);
+        if (&work->projTexMtx != NULL) {
+            if (config2->isOrtho == 0) {
+                C_MTXLightFrustum(mtx, -config2->halfHeight, config2->halfHeight, config2->halfWidth, -config2->halfWidth, config2->nearZ, float_0p5_804198f8, float_0p5_804198f8, float_0p5_804198f8, float_0p5_804198f8);
             }
             else {
-                C_MTXLightOrtho(mtx, -config2->unk2C, config2->unk2C, config2->unk28, -config2->unk28, float_0p5_804198f8, float_0p5_804198f8, float_0p5_804198f8, float_0p5_804198f8);
+                C_MTXLightOrtho(mtx, -config2->halfHeight, config2->halfHeight, config2->halfWidth, -config2->halfWidth, float_0p5_804198f8, float_0p5_804198f8, float_0p5_804198f8, float_0p5_804198f8);
             }
-            PSMTXConcat(mtx, (f32(*)[4])work->unkC, (f32(*)[4])&work->unkC[0x70]);
+            PSMTXConcat(mtx, work->lookAt, work->projTexMtx);
         }
-        if (&work->unkC[0xA0] != NULL) {
-            f29 = config2->unk30;
-            f30 = config2->unk34;
+        if (&work->depthMtx != NULL) {
+            f29 = config2->nearZ;
+            f30 = config2->farZ;
             f31 = f30 - f29;
             PSMTXScale(mtx2, float_0_804198f4, float_0_804198f4, float_0_804198f4);
             if (flag) {
@@ -1496,7 +1481,7 @@ void depthShadowEnd(s32 arg0, DepthShadowWork* work) {
             else {
                 f4 = float_16_80419900;
             }
-            if (config2->unk38 == 0) {
+            if (config2->isOrtho == 0) {
                 f32 d = f30 / f31;
                 f32 n = f30 * f29 / f31;
 
@@ -1505,7 +1490,7 @@ void depthShadowEnd(s32 arg0, DepthShadowWork* work) {
                 mtx2[1][2] = d * f4;
                 mtx2[1][3] = n * f4;
                 mtx2[2][2] = float_1_80419904;
-                mtx2[2][3] = config2->unk44;
+                mtx2[2][3] = config2->depthBias;
             }
             else {
                 f32 d = float_neg1_80419908 / f31;
@@ -1515,11 +1500,11 @@ void depthShadowEnd(s32 arg0, DepthShadowWork* work) {
                 mtx2[0][3] = n;
                 mtx2[1][2] = d * f4;
                 mtx2[1][3] = n * f4;
-                mtx2[2][3] = float_1_80419904 + config2->unk44;
+                mtx2[2][3] = float_1_80419904 + config2->depthBias;
             }
-            PSMTXConcat(mtx2, (f32(*)[4])work->unkC, (f32(*)[4])&work->unkC[0xA0]);
+            PSMTXConcat(mtx2, work->lookAt, work->depthMtx);
         }
-        work->unk0 |= 1;
+        work->flags |= 1;
     }
 }
 
