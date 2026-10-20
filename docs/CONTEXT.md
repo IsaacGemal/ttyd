@@ -10269,3 +10269,20 @@ Verify: tower build ok (build/G8MJ01/ok recreated). The compiled win_mario.o kee
 - Users updated: rels/tik/src/unit/unit_boss_gesso.c's effOpukuJetwData writes (`rot`, colour zeroing). eff_freeze_n64.c already uses the glass names.
 - Left unnamed: `unk_80423120`-`unk_80423128` (glass), `unk_804231c8`-`unk_804231d0` (opuku_jetw) and `unk_80423160` (kameki_tornade) are zero GXColor templates; their names are address-based and not renamed here.
 - eff_break's `BreakEffect.field_0x18` is written (= 0) and never read, so it stays. eff_sunlight's `pad0` is the byte at 0x1F, a real gap. eff_stardust2 and eff_kameki_tornade have no field_0x names left in their headers or sources.
+### Readability: MobjBroken and EffStarPower field names (2026-10-20, Claude Haiku 5.5, n9-q-effmb; reviewed by Claude Opus 5.5)
+
+MobjBrokenWork (include/eff/eff_mobj_broken.h): `tiltAngle` (0x18, eased toward 20 or 720 degrees, the rotation in
+effMObjBrokenDisp), `dirAngle` (0x1C, the horizontal direction: the tilt axis is (cos, 0, sin) of it and Main moves the
+piece by horizSpeed along (sin, -cos)), `horizSpeed` (0x20, r * 0.0625), `velY` (0x24, added to posY each frame) and
+`gravity` (0x28, subtracted from velY each frame). EffStarPowerData (include/eff/n64/eff_star_power_n64.h): `age`
+(0x14, frame counter, incremented in Main and read as `counter`), `color2B` (0x30, Disp reads it as color2B), `scale`
+(0x38), `angleX/angleY/angleZ` (0x3C..0x44, degrees: Disp feeds them to PSMTXRotRad after deg2rad), and
+`prevAngleX/prevAngleY/prevAngleZ/prevScale` (0x48..0x54, copies of the angles and scale that Disp draws as the extra
+half-alpha star). The vec3_802fb718 zero vector is renamed `vec3Zero` (rename_symbol.py, symbols.txt).
+Matching build ok (ninja checksum); both files natural-compile (no MUST_MATCH) with no errors.
+Index: eff_mobj_broken.c 319.8 -> 271.3, eff_star_power_n64.c 401.4 -> 301.6, total 34.85 -> 34.73 per kLOC.
+Left: MobjBrokenWork `field_0x14` (set to 0xFF in the entry, never read); EffStarPowerData `field_0x0` (s16 set to 1,
+never read); `unk_80423278`..`unk_80423284` (sbss2 GXColor scratch: only copied to a local and fully overwritten, so
+the only proven name is "scratch"); the value-named float pool constants and `dat_804210dc/e0/e4` (the GXColors' uses
+are two matColor and two evtColor values, not a single role); `vec3_802fe634`/`vec3_802fe640` (two separate zero Vecs
+used as axis templates in the two cube loops, no proof which is which).
