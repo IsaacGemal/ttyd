@@ -1494,7 +1494,7 @@ s32 msgWindow_Entry(const char* msg, s32 a, s32 b) {
 	window = windowGetPointer(id);
 	window->main = msgWindow_Main;
 	window->delete = msgWindow_Delete;
-	*(u16*)window->field_0x0 = 5;
+	window->state = 5;
 	window->type = -1;
 	window->flags |= 2;
 	buf = __memAlloc(HEAP_DEFAULT, strlen(msg));
@@ -1555,7 +1555,7 @@ s32 msgWindow_Entry(const char* msg, s32 a, s32 b) {
 		data->selectTopY = window->y - (f32)(data->selectCursor * 0x1F + 0x3A);
 		break;
 	case WINDOW_TYPE_SMALL:
-		window->field_0x4 = 10;
+		window->priority = 10;
 		window->height = 0.7f * (f32)GXGetTexObjWidth(getWakuTexObj(3));
 		window->width = 0.7f * (f32)GXGetTexObjHeight(getWakuTexObj(3));
 		break;
@@ -1585,7 +1585,7 @@ void msgWindow_Add(const char* msg, s32 id) {
 	data = smart->address;
 	data->lastFrameTime = gp->renderTime;
 	msgAnalize(smart, msg);
-	*(u16*)window->field_0x0 = 1;
+	window->state = 1;
 	window->flags |= 2;
 }
 
@@ -1593,7 +1593,7 @@ void msgWindow_Continue(s32 id) {
 	WindowEntry* window = windowGetPointer(id);
 	MessageData* data;
 
-	*(u16*)window->field_0x0 = 1;
+	window->state = 1;
 	window->flags |= 2;
 	data = window->userdata->address;
 	data->lastFrameTime = gp->renderTime;
@@ -1603,7 +1603,7 @@ void msgWindow_Repeat(s32 id) {
 	WindowEntry* window = windowGetPointer(id);
 	MessageData* data;
 
-	*(u16*)window->field_0x0 = 1;
+	window->state = 1;
 	window->flags |= 2;
 	data = window->userdata->address;
 	data->lastFrameTime = gp->renderTime;
@@ -1621,10 +1621,10 @@ void msgWindow_ForceClose(const char* tag) {
 
 	for (i = 0; i < 7; i++) {
 		window = windowGetPointer(i);
-		if (window->flags && *(u16*)window->field_0x0 && window->userdata) {
+		if (window->flags && window->state && window->userdata) {
 			data = window->userdata->address;
 			if (data->tag && strcmp(data->tag, tag) == 0) {
-				*(u16*)window->field_0x0 = 7;
+				window->state = 7;
 				data = window->userdata->address;
 				if (data->flags & 8) {
 					BtlUnit_ChangeStayAnim(data->battleUnitId);
@@ -1672,7 +1672,7 @@ void msgWindow_Main(WindowEntry* window) {
 		}
 	}
 
-	switch (*(u16*)window->field_0x0) {
+	switch (window->state) {
 	case 5:
 		if (!(window->flags & 8)) {
 			s32 se = msgWindowOpen_SE_Data[window->type][0];
@@ -1680,15 +1680,15 @@ void msgWindow_Main(WindowEntry* window) {
 				psndSFXOn((const char*)(se | 0x20000));
 			}
 		}
-		*(OSTime*)(window->field_0x1C + 4) = gp->renderTime;
-		*(u16*)window->field_0x0 = 6;
+		window->stateTime = gp->renderTime;
+		window->state = 6;
 		/* fallthrough */
 	case 6:
 		window->flags |= 2;
-		window->alpha = (s16)(OSTicksToMilliseconds(gp->renderTime - *(OSTime*)(window->field_0x1C + 4)) * 255 / 200);
+		window->alpha = (s16)(OSTicksToMilliseconds(gp->renderTime - window->stateTime) * 255 / 200);
 		if (window->alpha > 0xff) {
 			window->alpha = 0xff;
-			*(u16*)window->field_0x0 = 1;
+			window->state = 1;
 			data->effectStart = gp->renderTime;
 			data->lastFrameTime = gp->renderTime;
 		}
@@ -1700,15 +1700,15 @@ void msgWindow_Main(WindowEntry* window) {
 				psndSFXOn((const char*)(se | 0x20000));
 			}
 		}
-		*(OSTime*)(window->field_0x1C + 4) = gp->renderTime;
-		*(u16*)window->field_0x0 = 8;
+		window->stateTime = gp->renderTime;
+		window->state = 8;
 		/* fallthrough */
 	case 8:
 		if (window->alpha == 0) {
 			windowDelete(window);
 			return;
 		}
-		window->alpha = 0xff - OSTicksToMilliseconds(gp->renderTime - *(OSTime*)(window->field_0x1C + 4)) * 255 / 200;
+		window->alpha = 0xff - OSTicksToMilliseconds(gp->renderTime - window->stateTime) * 255 / 200;
 		if (window->alpha <= 0) {
 			window->alpha = 0;
 		}
@@ -1716,7 +1716,7 @@ void msgWindow_Main(WindowEntry* window) {
 	case 1:
 		switch (msgMain(window->userdata)) {
 		case 0:
-			*(u16*)window->field_0x0 = 7;
+			window->state = 7;
 			data = window->userdata->address;
 			if (data->flags & 8) {
 				BtlUnit_ChangeStayAnim(data->battleUnitId);
@@ -1726,7 +1726,7 @@ void msgWindow_Main(WindowEntry* window) {
 			}
 			break;
 		case 1:
-			*(u16*)window->field_0x0 = 2;
+			window->state = 2;
 			window->flags &= ~2;
 			data = window->userdata->address;
 			if (data->flags & 8) {
@@ -1737,7 +1737,7 @@ void msgWindow_Main(WindowEntry* window) {
 			}
 			break;
 		case 2:
-			*(u16*)window->field_0x0 = 3;
+			window->state = 3;
 			break;
 		case 3:
 			break;
@@ -1755,7 +1755,7 @@ void msgWindow_Main(WindowEntry* window) {
 		u32 mask = (((MessageData*)window->userdata->address)->flags & 0x100) ? 0x500 : 0x100;
 		if (keyGetButtonTrg(0) & (mask | 0x200)) {
 #endif
-			*(u16*)window->field_0x0 = 1;
+			window->state = 1;
 			data->choiceState = 2;
 			if (keyGetButtonTrg(0) & 0x200) {
 				if (!(data->flags & 0x80)) {
@@ -1777,8 +1777,8 @@ void msgWindow_Main(WindowEntry* window) {
 				}
 			}
 			if (ok) {
-				*(u16*)window->field_0x0 = 9;
-				*(OSTime*)(window->field_0x1C + 4) = gp->renderTime;
+				window->state = 9;
+				window->stateTime = gp->renderTime;
 				psndSFXOn((const char*)0x20041);
 				data->flags |= 0x40;
 			}
@@ -1796,13 +1796,13 @@ void msgWindow_Main(WindowEntry* window) {
 		if (data->scrollY < value) {
 			break;
 		}
-		data->scrollY = (s32)((f32)((MessageData*)data)->scrollY - 0.6f * (f32)OSTicksToMilliseconds(gp->renderTime - *(OSTime*)(window->field_0x1C + 4)));
-		*(OSTime*)(window->field_0x1C + 4) = gp->renderTime;
+		data->scrollY = (s32)((f32)((MessageData*)data)->scrollY - 0.6f * (f32)OSTicksToMilliseconds(gp->renderTime - window->stateTime));
+		window->stateTime = gp->renderTime;
 		if (data->scrollY > value) {
 			break;
 		}
 		data->scrollY = value;
-		*(u16*)window->field_0x0 = 0xb;
+		window->state = 0xb;
 		break;
 	}
 	// Same no-op cast as case 9, on the scrollY update below.
@@ -1815,18 +1815,18 @@ void msgWindow_Main(WindowEntry* window) {
 		if (data->scrollY > value) {
 			break;
 		}
-		data->scrollY = (s32)((f32)((MessageData*)data)->scrollY + 0.6f * (f32)OSTicksToMilliseconds(gp->renderTime - *(OSTime*)(window->field_0x1C + 4)));
-		*(OSTime*)(window->field_0x1C + 4) = gp->renderTime;
+		data->scrollY = (s32)((f32)((MessageData*)data)->scrollY + 0.6f * (f32)OSTicksToMilliseconds(gp->renderTime - window->stateTime));
+		window->stateTime = gp->renderTime;
 		if (data->scrollY < value) {
 			break;
 		}
 		data->scrollY = value;
 		if (data->historyCursor == data->historyCount - 1) {
-			*(u16*)window->field_0x0 = 3;
+			window->state = 3;
 			data->flags &= ~0x40;
 		}
 		else {
-			*(u16*)window->field_0x0 = 0xb;
+			window->state = 0xb;
 		}
 		break;
 	}
@@ -1842,8 +1842,8 @@ void msgWindow_Main(WindowEntry* window) {
 		u32 mask = (((MessageData*)window->userdata->address)->flags & 0x100) ? 0x500 : 0x100;
 		if (keyGetButtonTrg(0) & mask) {
 #endif
-			*(u16*)window->field_0x0 = 0xa;
-			*(OSTime*)(window->field_0x1C + 4) = gp->renderTime;
+			window->state = 0xa;
+			window->stateTime = gp->renderTime;
 			{
 				MessageData* d = window->userdata->address;
 				d->historyCursor++;
@@ -1854,15 +1854,15 @@ void msgWindow_Main(WindowEntry* window) {
 			psndSFXOn((const char*)0x20041);
 		}
 		if (keyGetButtonTrg(0) & 0x200) {
-			*(u16*)window->field_0x0 = 0xa;
-			*(OSTime*)(window->field_0x1C + 4) = gp->renderTime;
+			window->state = 0xa;
+			window->stateTime = gp->renderTime;
 			data->historyCursor = data->historyCount - 1;
 			psndSFXOn((const char*)0x20041);
 		}
 		if (keyGetButtonTrg(0) & 0x10) {
 			u32 ok;
-			*(u16*)window->field_0x0 = 9;
-			*(OSTime*)(window->field_0x1C + 4) = gp->renderTime;
+			window->state = 9;
+			window->stateTime = gp->renderTime;
 			{
 				MessageData* d = window->userdata->address;
 				d->historyCursor--;
@@ -1881,16 +1881,16 @@ void msgWindow_Main(WindowEntry* window) {
 	}
 	}
 
-	dispEntry(8, 400.f - (f32)*(s16*)&window->field_0x4, 0, msgWindow_Disp, window);
+	dispEntry(8, 400.f - (f32)window->priority, 0, msgWindow_Disp, window);
 }
 
 void msgWindow_Clear_Main(WindowEntry* window) {
 	MessageData* data = window->userdata->address;
 
-	switch (*(u16*)window->field_0x0) {
+	switch (window->state) {
 	case 5:
-		*(u16*)window->field_0x0 = 1;
-		*(OSTime*)(window->field_0x1C + 4) = gp->renderTime;
+		window->state = 1;
+		window->stateTime = gp->renderTime;
 		data->effectStart = gp->renderTime;
 		data->lastFrameTime = gp->renderTime;
 		/* fallthrough */
@@ -1898,17 +1898,17 @@ void msgWindow_Clear_Main(WindowEntry* window) {
 	case 6:
 		window->flags |= 2;
 		if (window->alpha < 0xff) {
-			window->alpha = (s16)(OSTicksToMilliseconds(gp->renderTime - *(OSTime*)(window->field_0x1C + 4)) * 255 / 200);
+			window->alpha = (s16)(OSTicksToMilliseconds(gp->renderTime - window->stateTime) * 255 / 200);
 			if (window->alpha > 0xff) {
 				window->alpha = 0xff;
 			}
 		}
-		if (*(u16*)window->field_0x0 != 2) {
+		if (window->state != 2) {
 			s32 ret = msgMain(window->userdata);
 			switch (ret) {
 			case 0:
-				*(u16*)window->field_0x0 = 7;
-				*(OSTime*)(window->field_0x1C + 4) = gp->renderTime;
+				window->state = 7;
+				window->stateTime = gp->renderTime;
 				data = window->userdata->address;
 				if (data->flags & 8) {
 					BtlUnit_ChangeStayAnim(data->battleUnitId);
@@ -1918,7 +1918,7 @@ void msgWindow_Clear_Main(WindowEntry* window) {
 				}
 				break;
 			case 1:
-				*(u16*)window->field_0x0 = 2;
+				window->state = 2;
 				window->flags &= ~2;
 				data = window->userdata->address;
 				if (data->flags & 8) {
@@ -1929,7 +1929,7 @@ void msgWindow_Clear_Main(WindowEntry* window) {
 				}
 				break;
 			case 2:
-				*(u16*)window->field_0x0 = 3;
+				window->state = 3;
 				break;
 			case 3:
 				break;
@@ -1941,13 +1941,13 @@ void msgWindow_Clear_Main(WindowEntry* window) {
 			windowDelete(window);
 			return;
 		}
-		window->alpha = 0xff - OSTicksToMilliseconds(gp->renderTime - *(OSTime*)(window->field_0x1C + 4)) * 255 / 200;
+		window->alpha = 0xff - OSTicksToMilliseconds(gp->renderTime - window->stateTime) * 255 / 200;
 		if (window->alpha <= 0) {
 			window->alpha = 0;
 		}
 		break;
 	}
-	dispEntry(8, 400.f - (f32)*(s16*)&window->field_0x4, 0, msgWindow_Disp, window);
+	dispEntry(8, 400.f - (f32)window->priority, 0, msgWindow_Disp, window);
 }
 
 
@@ -1967,10 +1967,10 @@ void msgWindow_Disp(CameraId camId, void* param) {
 	case WINDOW_TYPE_MAJO: {
 		f32 half = 0.5f;
 
-		if (window->field_0x2C != 0) {
+		if (window->dispFlags != 0) {
 			f32 px, py, h, w;
 
-			if (window->field_0x2C & 0x10) {
+			if (window->dispFlags & 0x10) {
 				pos = window->anchor;
 			} else {
 				getScreenPoint(&window->anchor, &pos);
@@ -1984,7 +1984,7 @@ void msgWindow_Disp(CameraId camId, void* param) {
 				py = intplGetValue(0, window->alpha, 0xFF, pos.y, window->y - window->width * half);
 				h = intplGetValue(0, window->alpha, 0xFF, 10.f, window->height);
 				w = intplGetValue(0, window->alpha, 0xFF, 10.f, window->width);
-				windowDispGX_Message(window->type, window->field_0x2C, (u8)window->alpha, px - h * half, py + w * half, h, w, pos.x, pos.y);
+				windowDispGX_Message(window->type, window->dispFlags, (u8)window->alpha, px - h * half, py + w * half, h, w, pos.x, pos.y);
 				if (window->alpha == 0xFF) {
 					GXSetScissor(camera->scissor[0], (u32)(240.f - (window->y - 36.0f)), camera->scissor[2], 100);
 					drawn = msgDisp(window->userdata, (u8)window->alpha, 62.0f + window->x, window->y - 36.0f);
@@ -1994,7 +1994,7 @@ void msgWindow_Disp(CameraId camId, void* param) {
 				s32 top;
 
 				window->x = pos.x - window->height * half;
-				if (window->field_0x2C & 8) {
+				if (window->dispFlags & 8) {
 					window->y = pos.y - 80.f;
 				} else {
 					window->y = 60.f + pos.y;
@@ -2003,7 +2003,7 @@ void msgWindow_Disp(CameraId camId, void* param) {
 				py = intplGetValue(0, window->alpha, 0xFF, pos.y, window->y - window->width * half);
 				h = intplGetValue(0, window->alpha, 0xFF, 10.f, window->height);
 				w = intplGetValue(0, window->alpha, 0xFF, 10.f, window->width);
-				windowDispGX_Message(window->type, window->field_0x2C, (u8)window->alpha, px - h * half, py + w * half, h, w, pos.x, pos.y);
+				windowDispGX_Message(window->type, window->dispFlags, (u8)window->alpha, px - h * half, py + w * half, h, w, pos.x, pos.y);
 				if (window->alpha == 0xFF) {
 					top = 0xF0 - ((s32)window->y - 10);
 					if (top < 0) {
@@ -2066,12 +2066,12 @@ void selectWindow_Main(WindowEntry* window) {
 	s8 old;
 
 	msgMain(window->userdata);
-	switch (*(u16*)window->field_0x0) {
+	switch (window->state) {
 	case 5:
 		window->alpha += 0x19;
 		if (window->alpha > 0xff) {
 			window->alpha = 0xff;
-			*(u16*)window->field_0x0 = 1;
+			window->state = 1;
 		}
 		break;
 	case 1:
@@ -2107,24 +2107,24 @@ void selectWindow_Main(WindowEntry* window) {
 				break;
 			case -2:
 				data->selectCursor = -1;
-				*(u16*)window->field_0x0 = 7;
+				window->state = 7;
 				psndSFXOn((const char*)0x20013);
 				break;
 			default:
 				data->selectCursor = data->field_0x7A42;
-				*(u16*)window->field_0x0 = 7;
+				window->state = 7;
 				psndSFXOn((const char*)0x20013);
 				break;
 			}
 		}
 		else if (keyGetButtonTrg(0) & 0x100) {
-			*(u16*)window->field_0x0 = 7;
+			window->state = 7;
 			psndSFXOn((const char*)0x20012);
 		}
 		break;
 	case 7:
 		if (window->alpha == 0) {
-			*(u16*)window->field_0x0 = 4;
+			window->state = 4;
 			window->flags &= ~2;
 			return;
 		}
@@ -2136,7 +2136,7 @@ void selectWindow_Main(WindowEntry* window) {
 	case 4:
 		return;
 	}
-	dispEntry(8, 400.f - (f32)*(s16*)&window->field_0x4, 0, selectWindow_Disp, window);
+	dispEntry(8, 400.f - (f32)window->priority, 0, selectWindow_Disp, window);
 }
 
 // Builds the waku colour in one expression so MWCC lands it in the same stack slot as the

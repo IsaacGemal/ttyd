@@ -8560,3 +8560,15 @@ partySearchGround/Head). party_motion's offset macros use the fields where they 
 member-id compares use `PartyMember` (54). Raw PartyEntry casts 761 → 371; party_motion.c 206 → 100 per kLOC.
 Open: the tail 0x174-0x187 is a per-partner union (Vivian, Bobbery and Flurrie each use it differently) and needs a
 per-character layout; nokonoko_use's NKF(0x10C) stays a macro (the member form changes its code).
+
+### Readability: WindowEntry names (2026-10-19, Claude Haiku 5.5, n9-q-window; reviewed by Claude Opus 5.5)
+
+WindowEntry (0x48 bytes, windowdrv.h) gets `state` (u16 at 0x0, the msgdrv window state machine switched on by
+msgWindow_Main, msgWindow_Clear_Main and selectWindow_Main; values 1-11), `priority` (s16 at 0x4, set by
+windowEntry's parameter, drawn at dispEntry depth 400 - priority), `stateTime` (OSTime at 0x20, stamped on fade
+state changes and re-stamped each frame of the history scroll; header now includes dolphin/os.h) and `dispFlags`
+(s16 at 0x2C, set by _evt_msg_print and passed to windowDispGX_Message: 0x1 tail, 0x4/0x8 tail placement;
+msgWindow_Disp also tests 0x10 for an anchor already in screen space). evt_msg.c's `WindowVec` overlay is gone in
+favour of `window->anchor`, and `type == 1` uses `WINDOW_TYPE_SMALL`. Never-read bytes are `pad_0x1C`, `pad_0x2E`,
+`pad_0x44`. WindowEntry field_0x uses 77 → 0. Open: `userdata` still carries its "verify?" TODO, and
+windowDispGX_Message's `a2` parameter keeps its raw name (renaming the windowdrv.c drawing code is a separate pass).

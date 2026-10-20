@@ -2,6 +2,7 @@
 
 #include <dolphin/gx.h>
 #include <dolphin/mtx.h>
+#include <dolphin/os.h>
 #include "memory.h"
 
 typedef struct WindowEntry WindowEntry;
@@ -22,29 +23,30 @@ typedef enum WindowType {
 } WindowType;
 
 struct WindowEntry {
-	u8 field_0x0[2]; //0x0
+	u16 state; //0x0, msgdrv window state machine (values 1-11, see msgWindow_Main)
 	u16 flags; //0x2
-	u16 field_0x4; //0x4
+	s16 priority; //0x4, dispEntry depth is 400 - priority (msgWindow_Main, msgWindow_Clear_Main, selectWindow_Main)
 	s16 alpha; //0x6, window alpha
 	s32 type; //0x8, WindowType
 	f32 x; //0xC, window xpos
 	f32 y; //0x10, window ypos
 	f32 height; //0x14
 	f32 width; //0x18
-	u8 field_0x1C[0x28 - 0x1C]; //0x1C
+	u8 pad_0x1C[0x20 - 0x1C]; //0x1C, never read
+	OSTime stateTime; //0x20, renderTime base for the fade ramps (stamped on state change) and history scroll (re-stamped each frame)
 	smartEntry* userdata; //0x28, TODO: verify? could be wrong
-	s16 field_0x2C; //0x2C
-	u8 field_0x2E[0x30 - 0x2E]; //0x2E
+	s16 dispFlags; //0x2C, passed to windowDispGX_Message (0x1 draw tail, 0x4/0x8 tail placement); msgWindow_Disp: 0x10 anchor already in screen space, 0x8 y = pos.y - 80 instead of pos.y + 60
+	u8 pad_0x2E[0x30 - 0x2E]; //0x2E
 	Vec anchor; //0x30, world point the message window hangs from
 	void (*main)(WindowEntry* entry); //0x3C
 	void (*delete)(WindowEntry* entry); //0x40
-	u8 field_0x44[0x48 - 0x44]; //0x44
+	u8 pad_0x44[0x48 - 0x44]; //0x44
 };
 
 void windowInit(void);
 void windowTexSetup(void);
 void windowReInit(void);
-s32 windowEntry(u16 a1);
+s32 windowEntry(u16 priority);
 BOOL windowDelete(WindowEntry* entry);
 BOOL windowDeleteID(s32 id);
 void windowMain(void);
