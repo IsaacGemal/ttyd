@@ -67,12 +67,10 @@ extern Vec vec3_802c4038[];
 extern Vec vec3_802c4044[];
 extern const char mobj_offscreen_prefix[];
 extern const char mobj_image_prefix[];
-#ifdef MUST_MATCH
 // A typed aggregate copy emits the original four word loads and stores.
 typedef struct MobjNameTemplate {
     u32 words[4];
 } MobjNameTemplate;
-#endif
 extern Vec lv_block_position[];
 
 // Data objects defined later in this file or in other units, declared before their first use.
@@ -139,12 +137,7 @@ static u32 evt_shake[] = {
 extern s32 mobj_save_blk_sysevt[];
 extern Vec vec3_802c40a0[];
 extern Vec vec3_802c3ef4[];
-#ifdef MUST_MATCH
-// Copy all 16 template bytes; strcpy is sufficient in the natural build.
 #define LVB_TEMPLATE(dst, src) (*(MobjNameTemplate*)(dst) = *(const MobjNameTemplate*)(src))
-#else
-#define LVB_TEMPLATE(dst, src) strcpy((dst), (src))
-#endif
 s32 psndSFXOnEx_3D(const char* name, Vec* position, u8 vol, u8 pan, u16 pitch, u16 flags);
 
 const char* _switch_anim[6] = {
@@ -747,8 +740,6 @@ s32 evt_mobj_switch_red(EventEntry* event, BOOL isFirstCall) {
     MapObjectEntry* obj;
     BOOL inBattle = gp->inBattle != 0;
 
-    /* MUST_MATCH: the empty-through case 1 forces MWCC's switch decision tree; default alone folds to `beq`. */
-#ifdef MUST_MATCH
     switch (type) {
         case 0:
             asyncName = "MOBJ_RedSwitch";
@@ -758,12 +749,6 @@ s32 evt_mobj_switch_red(EventEntry* event, BOOL isFirstCall) {
             asyncName = "MOBJ_WhiteSwitch";
             break;
     }
-#else
-    asyncName = "MOBJ_WhiteSwitch";
-    if (type == 0) {
-        asyncName = "MOBJ_RedSwitch";
-    }
-#endif
     if (!animGroupBaseAsync(asyncName, inBattle, NULL)) {
         return 0;
     }
@@ -1009,10 +994,7 @@ s32 mobj_rideswitch_lightblue(MapObjectEntry* obj) {
 #endif
 
     switch (obj->state) {
-#ifdef MUST_MATCH
-        // MUST_MATCH: case 2's temporary declared at switch scope gets retail's stack slot (permuter).
         Vec v;
-#endif
         case 0:
             if (obj->flags & MOBJ_FLAG_TRIGGERED) {
                 mobjRunEvent(obj, obj->eventCode);
@@ -1044,34 +1026,14 @@ s32 mobj_rideswitch_lightblue(MapObjectEntry* obj) {
         }
         case 2: {
             AnimationPoseData* data = animPoseGetAnimBaseDataPtr(obj->poseId);
-#ifdef MUST_MATCH
-            // MUST_MATCH: route the products through a temporary `w` (copied to `v`) and move the
-            // vec+0x88 copy after them. This reproduces retail's FP scheduling (products in f2/f0/f1
-            // with 10.0 kept live) and the retail temp-copy of the Vec. The natural form is under #else.
-            // The named 0.8f/10.0f loads (rather than literals) keep both
-            // constants live, as in retail.
-            Vec w;
-            f32 vx;
-            f32 vy;
-            f32 vz;
+            Vec w = *(Vec*)((u8*)vec + 0x88);
             f32 mag;
             f32 dist;
 
-            vx = 0.8f * (10.0f * data->bboxMax.x);
-            vy = 10.0f * data->bboxMax.y;
-            vz = 0.8f * (10.0f * data->bboxMax.z);
-            w = *(Vec*)((u32*)vec + 0x22);
-            w.x = vx; w.y = vy; w.z = vz;
+            w.x = 0.8f * (10.0f * data->bboxMax.x);
+            w.y = 10.0f * data->bboxMax.y;
+            w.z = 0.8f * (10.0f * data->bboxMax.z);
             v = w;
-#else
-            Vec v = *(Vec*)((u8*)vec + 0x88);
-            f32 mag;
-            f32 dist;
-
-            v.x = 0.8f * (10.0f * data->bboxMax.x);
-            v.z = 0.8f * (10.0f * data->bboxMax.z);
-            v.y = 10.0f * data->bboxMax.y;
-#endif
             mag = PSVECMag(&v);
             dist = PSVECDistance(&obj->position, &marioGetPtr()->position);
             if (dist > mag) {
@@ -1765,11 +1727,9 @@ s32 evt_mobj_float_blk(EventEntry* event, BOOL isFirstCall) {
 
 // Data for mobj_switch_float_blk only (unit .rodata).
 
-#ifdef MUST_MATCH
-// Match-only inline for the case-0 `_switch_anim` scan. Written as its own function body, the
-// frontend keeps the loop-init copy (`i = idx`) that the same code inline in the caller folds to
-// `li`; the local declaration order below then gives retail's registers (p r27, anim r28,
-// idx r29, i r30).
+// The case-0 `_switch_anim` scan. Written as its own function body, the frontend keeps the loop-init
+// copy (`i = idx`) that the same code inline in the caller folds to `li`; the local declaration order
+// below then gives retail's registers (p r27, anim r28, idx r29, i r30).
 static inline s32 mobjSwitchAnimIndex(MapObjectEntry* o) {
     const char** p;
     AnimTableEntry* anim;
@@ -1787,7 +1747,6 @@ static inline s32 mobjSwitchAnimIndex(MapObjectEntry* o) {
     }
     return idx;
 }
-#endif
 
 // Switch-block state machine: picks the child/partner anim based on whether the linked block
 // is hit, runs the event, and opens/closes its animation.  `_switch_anim` is the six anim-name
@@ -1801,28 +1760,8 @@ s32 mobj_switch_float_blk(MapObjectEntry* obj) {
             if (!(obj->flags & MOBJ_FLAG_TRIGGERED)) {
                 break;
             }
-#ifdef MUST_MATCH
             *(s32*)&obj->unk1A0[4] =
                 (*(s32*)&obj->unk1A0[4] & 0x40000000) | mobjSwitchAnimIndex(obj);
-#else
-            {
-                s32 i;
-                s32 idx;
-                const char** p;
-
-                anim = animPoseGetCurrentAnim(obj->poseId);
-                idx = 0;
-                p = _switch_anim;
-                for (i = idx; i < 6; i++, p++) {
-                    if (strcmp(*p, anim->name) == 0) {
-                        idx = i;
-                        break;
-                    }
-                }
-                *(s32*)&obj->unk1A0[4] =
-                    (*(s32*)&obj->unk1A0[4] & 0x40000000) | idx;
-            }
-#endif
             if (*(s8*)&obj->childName[0] != 0) {
                 MapObjectEntry* child = mobjNameToPtr(&obj->childName[0]);
                 f32 hitNZ, hitNY, hitNX, distance, hitZ, hitY, hitX;
@@ -2920,23 +2859,9 @@ s32 mobj_badgeblk(MapObjectEntry* obj) {
                     mobjRunEvent(obj, obj->eventCode);
                 } else if (*(s32*)obj->unk1A0 != 0x79) {
                     ItemEntry* item;
-#ifdef MUST_MATCH
-                    // Two-step sum loads the 0.04 constant into f2 (the target's register) instead of f1.
-                    f32 y = 40.0f;
-
-                    y += obj->position.y;
-#else
                     f32 y = 40.0f + obj->position.y;
-#endif
-#ifdef MUST_MATCH
-                    // Float arguments evaluate before evtId, as in mobj_kururing_floor (see the note there).
-                    ((ItemEntry* (*)(const char*, ItemType, u16, f32, f32, f32, s32, s32))itemEntry)(
-                        obj->name, (ItemType)(*(s32*)obj->unk1A0), 4, obj->position.x, y, obj->position.z,
-                        obj->flagVar, 0);
-#else
-                    itemEntry(obj->name, (ItemType)(*(s32*)obj->unk1A0), 4, obj->flagVar, 0,
-                              obj->position.x, y, obj->position.z);
-#endif
+                    itemEntry(obj->name, (ItemType)(*(s32*)obj->unk1A0), 4,
+                        obj->position.x, y, obj->position.z, obj->flagVar, 0);
                     item = itemNameToPtr(obj->name);
                     itemFlagOn(item, 0x10);
                     item->boundRate = 0.7f;
@@ -2946,8 +2871,7 @@ s32 mobj_badgeblk(MapObjectEntry* obj) {
                     psndSFXOn_3D((const char*)0x1BC, &obj->position);
                 } else {
                     pouchAddCoin(1);
-                    itemEntry(NULL, (ItemType)0x79, 0xf, -1, 0, obj->position.x, obj->position.y,
-                              obj->position.z);
+                    itemEntry(NULL, (ItemType)0x79, 0xf, obj->position.x, obj->position.y, obj->position.z, -1, 0);
                     evtSetValue(NULL, obj->flagVar, 1);
                     psndSFXOn_3D((const char*)0x5B, &obj->position);
                 }
@@ -3057,8 +2981,7 @@ s32 mobj_powerupblk(MapObjectEntry* obj) {
                     gp->systemLevelFlags |= 3;
                     psndSFXOn_3D((const char*)0x201C0, &obj->position);
                     animPoseSetAnim(obj->poseId, "A_1", 1);
-                    itemEntry(PB_BLK1, (ItemType)0x57, 0xf, -1, 0, obj->position.x,
-                              obj->position.y, obj->position.z);
+                    itemEntry(PB_BLK1, (ItemType)0x57, 0xf, obj->position.x, obj->position.y, obj->position.z, -1, 0);
                     obj->state++;
                 }
             }
@@ -3076,9 +2999,8 @@ s32 mobj_powerupblk(MapObjectEntry* obj) {
             if (*(s32*)&obj->unk1A0[4] != 0) {
                 (*(s32*)&obj->unk1A0[4])--;
             } else {
-                itemForceGet(itemEntry(PB_BLK2, (ItemType)0x57, 0x11, -1, 0,
-                                       obj->position.x, 40.0f + obj->position.y,
-                                       obj->position.z));
+                itemForceGet(itemEntry(PB_BLK2, (ItemType)0x57, 0x11,
+                    obj->position.x, 40.0f + obj->position.y, obj->position.z, -1, 0));
                 evtSetValue(NULL, obj->flagVar, 1);
                 marioKeyOn();
                 if (strcmp(gp->currentMapName, PB_DOU02) == 0) {
@@ -3262,8 +3184,7 @@ s32 mobj_10countblk(MapObjectEntry* obj) {
                     mobjRunEvent(obj, obj->eventCode);
                 } else {
                     pouchAddCoin(1);
-                    itemEntry(NULL, (ItemType)0x79, 0xf, -1, 0, obj->position.x, obj->position.y,
-                              obj->position.z);
+                    itemEntry(NULL, (ItemType)0x79, 0xf, obj->position.x, obj->position.y, obj->position.z, -1, 0);
                     obj->timer = 0xC8;
                 }
                 obj->state++;
@@ -3281,8 +3202,7 @@ s32 mobj_10countblk(MapObjectEntry* obj) {
             } else if (obj->flags & MOBJ_FLAG_TRIGGERED) {
                 psndSFXOn_3D((const char*)0x1BF, &obj->position);
                 pouchAddCoin(1);
-                itemEntry(NULL, (ItemType)0x79, 0xf, -1, 0, obj->position.x, obj->position.y,
-                          obj->position.z);
+                itemEntry(NULL, (ItemType)0x79, 0xf, obj->position.x, obj->position.y, obj->position.z, -1, 0);
                 obj->flags &= ~MOBJ_FLAG_TRIGGERED;
                 animPoseSetAnim(obj->poseId, "A_1", 1);
             }
@@ -3671,17 +3591,7 @@ s32 mobj_kururing_floor(MapObjectEntry* obj) {
                     f32 y = 30.0f;
 
                     y += obj->position.y;
-#ifdef MUST_MATCH
-                    // The target evaluates the floats before evtId: `itemEntry`'s declared parameter order must be
-                    // (name, type, a3, f32, f32, f32, evtId, a5), not the header's (name, type, a3, evtId, a5, f32...).
-                    // The registers are identical either way; only the evaluation order (and so the schedule)
-                    // differs. Reported in REPORT.md; this cast reproduces the target order until the header is fixed.
-                    if (((ItemEntry* (*)(const char*, ItemType, u16, f32, f32, f32, s32, s32))itemEntry)(
-                            obj->name, 0x7d, 4, obj->position.x, y, obj->position.z, obj->flagVar, 0) != NULL) {
-#else
-                    if (itemEntry(obj->name, 0x7d, 4, obj->flagVar, 0, obj->position.x,
-                                  y, obj->position.z) != NULL) {
-#endif
+                    if (itemEntry(obj->name, 0x7d, 4, obj->position.x, y, obj->position.z, obj->flagVar, 0) != NULL) {
                         item = itemNameToPtr(obj->name);
                         itemFlagOn(item, 0x10);
                         item->boundRate = 0.6f;
@@ -3951,9 +3861,8 @@ s32 mobj_koopa_ojama_blk_evt(MapObjectEntry* obj) {
             psndSFXOn_3D((const char*)0x1C4, &obj->position);
             effMObjBrokenEntry(5, obj->position.x, 25.0f + obj->position.y,
                                25.0f + obj->position.z);
-            if ((item = itemEntry(obj->name, (ItemType)0x59, 4, -1, (s32)kpa_powerup_evt,
-                                  obj->position.x, 25.0f + obj->position.y,
-                                  obj->position.z)) != NULL) {
+            if ((item = itemEntry(obj->name, (ItemType)0x59, 4,
+                obj->position.x, 25.0f + obj->position.y, obj->position.z, -1, (s32)kpa_powerup_evt)) != NULL) {
                 itemStatusOn(item, 0x10);
                 itemFlagOn(item, 0x14);
                 item->lifeTime = 0x2710;
@@ -4187,17 +4096,9 @@ s32 evt_mobj_koopa_brick(EventEntry* event, BOOL isFirstCall) {
     obj->state = 0;
     *(s32*)obj->unk1A0 = unk1A0;
     mobjCalcMtx(obj);
-#ifdef MUST_MATCH
     animPoseSetAnim(obj->poseId, "S_1", 1);
-#else
-    animPoseSetAnim(obj->poseId, "S_1", 1);
-#endif
     if (evtGetValue(event, flagVar) != 0) {
-#ifdef MUST_MATCH
         animPoseSetAnim(obj->poseId, "S_1", 1);
-#else
-        animPoseSetAnim(obj->poseId, "S_1", 1);
-#endif
         obj->state = 0x63;
     }
     return 2;
@@ -4223,9 +4124,8 @@ s32 mobj_koopa_badgeblk(MapObjectEntry* obj) {
                     } else {
                         if (*(s32*)obj->unk1A0 == 0x59) {
                             ItemEntry* item;
-                            itemEntry(obj->name, (ItemType)(*(s32*)obj->unk1A0), 4, -1,
-                                      (s32)kpa_powerup_evt, obj->position.x,
-                                      12.5f + obj->position.y, obj->position.z);
+                            itemEntry(obj->name, (ItemType)(*(s32*)obj->unk1A0), 4,
+                                obj->position.x, 12.5f + obj->position.y, obj->position.z, -1, (s32)kpa_powerup_evt);
                             item = itemNameToPtr(obj->name);
                             itemStatusOn(item, 0x10);
                             itemFlagOn(item, 0x14);
@@ -4239,8 +4139,8 @@ s32 mobj_koopa_badgeblk(MapObjectEntry* obj) {
                             psndSFXOn_3D((const char*)0x836, &obj->position);
                         } else {
                             kpaAddCoin(1);
-                            itemEntry(NULL, (ItemType)0x79, 0xf, -1, 0, obj->position.x, obj->position.y,
-                                      obj->position.z);
+                            itemEntry(NULL, (ItemType)0x79, 0xf,
+                                obj->position.x, obj->position.y, obj->position.z, -1, 0);
                             evtSetValue(NULL, obj->flagVar, 1);
                             psndSFXOn_3D((const char*)0x5B, &obj->position);
                         }
@@ -4263,9 +4163,6 @@ s32 mobj_koopa_badgeblk(MapObjectEntry* obj) {
             break;
         case 0x5a:
             if (obj->flags & MOBJ_FLAG_TRIGGERED) {
-                // MUST_MATCH: the empty case 2 makes MWCC emit the retail switch decision tree
-                // (cmpwi/beq/bge/b) instead of folding the two default edges together.
-#ifdef MUST_MATCH
                 switch (kpaGetLevel()) {
                     case 2:
                         break;
@@ -4273,11 +4170,6 @@ s32 mobj_koopa_badgeblk(MapObjectEntry* obj) {
                         flag = TRUE;
                         break;
                 }
-#else
-                if (kpaGetLevel() == 3) {
-                    flag = TRUE;
-                }
-#endif
                 if (!flag) {
                     obj->flags &= ~MOBJ_FLAG_TRIGGERED;
                 } else {
@@ -4392,9 +4284,6 @@ s32 mobj_koopa_blk(MapObjectEntry* obj) {
     switch (obj->state) {
         case 0:
             if (obj->flags & MOBJ_FLAG_TRIGGERED) {
-                // MUST_MATCH: the empty case 2 makes MWCC emit the retail switch decision tree
-                // (cmpwi/beq/bge/b) instead of folding the two default edges together.
-#ifdef MUST_MATCH
                 switch (kpaGetLevel()) {
                     case 2:
                         break;
@@ -4402,11 +4291,6 @@ s32 mobj_koopa_blk(MapObjectEntry* obj) {
                         flag = 1;
                         break;
                 }
-#else
-                if (kpaGetLevel() == 3) {
-                    flag = 1;
-                }
-#endif
                 if (flag == 0) {
                     obj->flags &= ~MOBJ_FLAG_TRIGGERED;
                 } else {
@@ -4524,9 +4408,6 @@ s32 mobj_koopa_dokan_evt(MapObjectEntry* obj) {
 
 // Pipe model names are literals; the position retains its prefix Vec template.
 s32 evt_mobj_koopa_dokan(EventEntry* event, BOOL isFirstCall) {
-#ifdef MUST_MATCH
-
-#endif
     s32* args = event->args;
     s32 type = evtGetValue(event, args[0]);
     const char* name = (const char*)evtGetValue(event, args[1]);
@@ -5183,9 +5064,7 @@ s32 mobj_koopa_pole_evt(MapObjectEntry* obj) {
             mobjRunEvent(obj, obj->eventCode);
             obj->state++;
             break;
-#ifdef MUST_MATCH
         case 0x5f:
-#endif
         default:
             break;
     }

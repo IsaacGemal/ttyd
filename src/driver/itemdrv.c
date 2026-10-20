@@ -174,7 +174,7 @@ void itemCoinDrop(Vec* pos) {
 
     if (pouchGetCoin() > 0) {
         pouchAddCoin(-1);
-        item = itemEntry(NULL, ITEM_COIN, 8, -1, 0, pos->x, pos->y, pos->z);
+        item = itemEntry(NULL, ITEM_COIN, 8, pos->x, pos->y, pos->z, -1, 0);
         if (item != NULL) {
             item->status |= 0x40;
         }
@@ -578,7 +578,7 @@ void itemModeChange(ItemEntry* item, u16 mode) {
     item->subMode = 0;
 }
 
-ItemEntry* itemEntry(const char* name, ItemType type, u16 a3, s32 evtId, s32 a5, f32 a6, f32 a7, f32 a8) {
+ItemEntry* itemEntry(const char* name, ItemType type, u16 a3, f32 a6, f32 a7, f32 a8, s32 evtId, s32 a5) {
 	ItemWork* wp = itemGetWork();
 	int i;
 	ItemEntry* entry;

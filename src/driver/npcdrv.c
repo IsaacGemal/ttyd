@@ -3894,7 +3894,7 @@ void npcGetBackItemEntry(NpcEntry* entry) {
     for (i = 0; i < 8; i++) {
         ItemType item = info->recoveredItems[i];
         if (item) {
-            ItemEntry* itemEntryPtr = itemEntry(NULL, item, 0xB, -1, 0, entry->position.x, entry->position.y, entry->position.z);
+            ItemEntry* itemEntryPtr = itemEntry(NULL, item, 0xB, entry->position.x, entry->position.y, entry->position.z, -1, 0);
             itemFlagOn(itemEntryPtr, 0x100);
             info->recoveredItems[i] = 0;
         }

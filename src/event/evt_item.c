@@ -98,7 +98,7 @@ USER_FUNC(evt_item_entry) {
 	s32 a3 = evtGetValue(event, args[5]);
 	s32 evtId = args[6];
 	s32 a5 = evtGetValue(event, args[7]);
-	itemEntry((char*)name, type, (u16)a3, evtId, a5, (f32)a6, (f32)a7, (f32)a8);
+	itemEntry((char*)name, type, (u16)a3, (f32)a6, (f32)a7, (f32)a8, evtId, a5);
 	return EVT_RETURN_DONE;
 }
 USER_FUNC(evt_item_delete) {

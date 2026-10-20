@@ -210,7 +210,7 @@ s32 _get_item_announce(EventEntry* event, s32 isFirstCall) {
 
         BtlUnit_GetPos(unit, &x, &y, &z);
         y = y + (unit->mSizeMultiplier * BtlUnit_GetHeight(unit) + float_8_8041ccc4);
-        event->userdata[1] = (s32)itemEntry(NULL, itemNo, 0x11, -1, 0, x, y, z);
+        event->userdata[1] = (s32)itemEntry(NULL, itemNo, 0x11, x, y, z, -1, 0);
         event->userdata[2] = 0x5A;
     } else {
         if (event->userdata[2] > 0) {
