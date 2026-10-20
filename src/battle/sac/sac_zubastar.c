@@ -958,7 +958,7 @@ s32 zubastar_main(EventEntry* event, BOOL isFirstCall) {
 // The state machine matches. Every named float constant is a literal (0.0f, 104.0f, 600.0f, 200.0f,
 // 70.0f, 32767.0f, 35.0f, 2.0f, -1.25f) and the two initial vectors are the compound literals
 // (Vec){0,0,0} and (Vec){0,-1000,200} (the original's vec3_802ff7ac/b8 hold exactly those), so MWCC has
-// the known values and recovers the schedule. Two structural details matter (both under MUST_MATCH below):
+// the known values and recovers the schedule. Two structural details matter:
 // a single-case `switch` instead of `if` for the early-out guard, which makes MWCC emit `beq body;
 // b main_loop` like the original, and hoisting the SFX string into a loop-lived local to fix the
 // callee-saved colouring.
@@ -998,75 +998,66 @@ s32 zubastar_bomb(EventEntry* event, BOOL isFirstCall) {
 #else
     }
 #endif
-#ifdef MUST_MATCH
-    // The SFX string address must stay live across the main loop (hoisted into a callee-saved
-    // register) and the main-loop counter be declared after it; otherwise MWCC colours the whole
-    // callee-saved set one register higher (a/b r30/r31, bombCount r23) than the original
-    // (a/b r29/r30, bombCount r31). The natural form is the #else arm.
+    // The SFX string address is held in a local across the main loop (a callee-saved register), with
+    // the main-loop counter declared after it; otherwise MWCC colours the callee-saved set one
+    // register higher.
     {
         const char* sfx = "SFX_BTL_SAC_ZUBA_STAR3";
         s32 i;
-#endif
-    for (i = 0; i < work->bombCount; i++) {
-        ZubaStarBomb* bomb = work->bombs[i];
+        for (i = 0; i < work->bombCount; i++) {
+            ZubaStarBomb* bomb = work->bombs[i];
 
-        switch (bomb->state) {
-        case 0: {
-            s32 maxTimer = irand(0x1E) + 0x1E;
-            f32 sx = 0.0f;
-            f32 sy = 0.0f;
-            f32 sz = 0.0f;
-            s32 j;
+            switch (bomb->state) {
+            case 0: {
+                s32 maxTimer = irand(0x1E) + 0x1E;
+                f32 sx = 0.0f;
+                f32 sy = 0.0f;
+                f32 sz = 0.0f;
+                s32 j;
 
-            bomb->maxTimer = maxTimer;
-            bomb->from = (Vec){ 0.0f, 0.0f, 0.0f };
-            bomb->to = (Vec){ 0.0f, -1000.0f, 200.0f };
-            for (j = 0; j < bomb->count; j++) {
-                sx += bomb->points[j].x;
-                sy += bomb->points[j].y;
-                sz += bomb->points[j].z;
+                bomb->maxTimer = maxTimer;
+                bomb->from = (Vec){ 0.0f, 0.0f, 0.0f };
+                bomb->to = (Vec){ 0.0f, -1000.0f, 200.0f };
+                for (j = 0; j < bomb->count; j++) {
+                    sx += bomb->points[j].x;
+                    sy += bomb->points[j].y;
+                    sz += bomb->points[j].z;
+                }
+                bomb->center.x = sx / (f32)bomb->count;
+                bomb->center.y = sy / (f32)bomb->count;
+                bomb->center.z = sz / (f32)bomb->count;
+                bomb->to.x +=
+                    (bomb->center.x - 104.0f) * 600.0f / 200.0f;
+                bomb->angle = 0.0f;
+                bomb->angleVel = 70.0f * (f32)rand() / 32767.0f - 35.0f;
+                // (f32)maxTimer is cast at each use: the original converts it three times, so a temp
+                // here would fold them into one and change the schedule.
+                bomb->velY = (2.0f * (bomb->to.y - bomb->from.y) -
+                                    ((f32)maxTimer * (-1.25f * (f32)maxTimer))) /
+                                   (2.0f * (f32)maxTimer);
+                bomb->timer = 0;
+                bomb->state = 5;
+                psndSFXOn(sfx);
+                break;
             }
-            bomb->center.x = sx / (f32)bomb->count;
-            bomb->center.y = sy / (f32)bomb->count;
-            bomb->center.z = sz / (f32)bomb->count;
-            bomb->to.x +=
-                (bomb->center.x - 104.0f) * 600.0f / 200.0f;
-            bomb->angle = 0.0f;
-            bomb->angleVel = 70.0f * (f32)rand() / 32767.0f - 35.0f;
-            // (f32)maxTimer is cast at each use: the original converts it three times, so a temp
-            // here would fold them into one and change the schedule.
-            bomb->velY = (2.0f * (bomb->to.y - bomb->from.y) -
-                                ((f32)maxTimer * (-1.25f * (f32)maxTimer))) /
-                               (2.0f * (f32)maxTimer);
-            bomb->timer = 0;
-            bomb->state = 5;
-#ifdef MUST_MATCH
-            psndSFXOn(sfx);
-#else
-            psndSFXOn("SFX_BTL_SAC_ZUBA_STAR3");
-#endif
-            break;
-        }
-        case 5:
-            bomb->pos.x =
-                intplGetValue(0, bomb->timer, bomb->maxTimer, bomb->from.x, bomb->to.x);
-            bomb->pos.z =
-                intplGetValue(0, bomb->timer, bomb->maxTimer, bomb->from.z, bomb->to.z);
-            bomb->pos.y += bomb->velY;
-            bomb->angle += bomb->angleVel;
-            bomb->velY += -1.25f;
-            bomb->timer++;
-            if (bomb->timer > bomb->maxTimer) {
-                bomb->state = 0xA;
+            case 5:
+                bomb->pos.x =
+                    intplGetValue(0, bomb->timer, bomb->maxTimer, bomb->from.x, bomb->to.x);
+                bomb->pos.z =
+                    intplGetValue(0, bomb->timer, bomb->maxTimer, bomb->from.z, bomb->to.z);
+                bomb->pos.y += bomb->velY;
+                bomb->angle += bomb->angleVel;
+                bomb->velY += -1.25f;
+                bomb->timer++;
+                if (bomb->timer > bomb->maxTimer) {
+                    bomb->state = 0xA;
+                }
+                break;
+            case 0xA:
+                break;
             }
-            break;
-        case 0xA:
-            break;
         }
     }
-#ifdef MUST_MATCH
-    }
-#endif
     dispEntry(8, 0.0f, 1, zubastar_disp_bomb, NULL);
     return 0;
 }
@@ -1254,16 +1245,7 @@ void zubastar_disp2D(CameraId cameraId, void* param) {
         }
         if (star->state == 5) {
             {
-#ifdef MUST_MATCH
                 GXSetChanMatColor(GX_COLOR0A0, (GXColor){ alpha, alpha, alpha, 0xFF });
-#else
-                GXColor c = (GXColor){ 0x00, 0x00, 0x00, 0xFF };
-
-                c.r = alpha;
-                c.g = alpha;
-                c.b = alpha;
-                GXSetChanMatColor(GX_COLOR0A0, c);
-#endif
             }
             GXBegin(0xA8, 0, 2);
             GXPosition3f32(star->x0, star->y0, 0.0f);
@@ -1278,16 +1260,7 @@ void zubastar_disp2D(CameraId cameraId, void* param) {
             Mtx mtx;
 
             PSMTXTrans(mtx, Z2C(i)->x, Z2C(i)->y - yoffset, 0.0f);
-#ifdef MUST_MATCH
             iconDispGxCol(mtx, 0x10, 0x19D, (GXColor){ 0xFF, 0xFF, 0xFF, 0xFF - (i + 1) * 0x32 });
-#else
-            {
-                GXColor color = { 0xFF, 0xFF, 0xFF, 0x00 };
-
-                color.a = 0xFF - (i + 1) * 0x32;
-                iconDispGxCol(mtx, 0x10, 0x19D, color);
-            }
-#endif
         }
     }
 }

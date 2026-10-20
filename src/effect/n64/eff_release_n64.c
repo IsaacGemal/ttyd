@@ -162,7 +162,6 @@ EffectEntry* effReleaseN64Entry(s32 type, s32 duration, f32 x, f32 y, f32 z, f32
     return effect;
 }
 
-#ifdef MUST_MATCH
 // Builds the initial Vec from an anonymous zero literal so the compiler schedules the loads the way the
 // original does (see the prologue).
 static inline Vec releaseMakeVec(f32 x, f32 y, f32 z) {
@@ -172,7 +171,6 @@ static inline Vec releaseMakeVec(f32 x, f32 y, f32 z) {
     temp.z = z;
     return temp;
 }
-#endif
 
 #pragma opt_common_subs off // without it MWCC CSEs a shared subexpression in case 0 and picks different FPRs (94.0%)
 void effReleaseMain(EffectEntry* effect) {
@@ -183,13 +181,7 @@ void effReleaseMain(EffectEntry* effect) {
     s32 type;
     s32 i;
 
-#ifdef MUST_MATCH
     position = releaseMakeVec(data->x, data->y, data->z);
-#else
-    position.x = data->x;
-    position.y = data->y;
-    position.z = data->z;
-#endif
     position2 = position;
     type = data->type;
 
@@ -344,11 +336,9 @@ void effReleaseMain(EffectEntry* effect) {
             }
             break;
         }
-#ifdef MUST_MATCH
         // State 5 is a real state (case 4 sets it; effReleaseDisp tests it), and naming it here also
         // makes MWCC keep the target's redundant `bge default` before the `b default` in the dispatch.
         case 5:
-#endif
         default:
             data->scales[0] = 0.0f;
             data->scales[1] = 0.0f;
@@ -381,7 +371,6 @@ void effReleaseMain(EffectEntry* effect) {
 
 // .text
 
-#ifdef MUST_MATCH
 // The three GXColors are built inside inline setters so each call gets its own
 // local-plus-by-value-copy stack pair, as in the original.
 static inline void releaseSetColor1(effReleaseN64Data* data) {
@@ -407,7 +396,6 @@ static inline void releaseSetColor3(s32 alpha) {
     c.a = alpha;
     GXSetChanMatColor(GX_COLOR0A0, c);
 }
-#endif
 
 void effReleaseDisp(CameraId camId, void* param) {
 #ifdef MUST_MATCH
@@ -447,24 +435,11 @@ void effReleaseDisp(CameraId camId, void* param) {
     GXSetTexCoordGen2(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_TEXMTX0, GX_FALSE, GX_PTIDENTITY);
 
     {
-#ifdef MUST_MATCH
     releaseSetColor1(data);
-#else
-    GXColor color;
-    color = *(GXColor*)&unk_80423240;
-    color.r = data->tevReg1R;
-    color.g = data->tevReg1G;
-    color.b = data->tevReg1B;
-    color.a = data->tevReg1A;
-    GXSetTevColor(GX_TEVREG1, color);
-#endif
     }
     GXSetCullMode(GX_CULL_NONE);
 
     for (i = 0; i < 4; i++) {
-#ifndef MUST_MATCH
-        GXColor color2;
-#endif
         if (type == 1 && i == 2) {
             continue;
         }
@@ -479,16 +454,7 @@ void effReleaseDisp(CameraId camId, void* param) {
         PSMTXConcat(cam->view, scale, scale);
         GXLoadPosMtxImm(scale, GX_PNMTX0);
         GXSetCurrentMtx(GX_PNMTX0);
-#ifdef MUST_MATCH
         releaseSetColor2(data, i);
-#else
-        color2 = *(GXColor*)&unk_80423244;
-        color2.r = data->tevReg0R;
-        color2.g = data->tevReg0G;
-        color2.b = data->tevReg0B;
-        color2.a = data->alphas[i];
-        GXSetTevColor(GX_TEVREG0, color2);
-#endif
 
         switch (i) {
             case 0:
@@ -588,21 +554,12 @@ void effReleaseDisp(CameraId camId, void* param) {
             }
         }
         if (alpha > 0) {
-#ifndef MUST_MATCH
-            GXColor color3;
-#endif
             GXGetProjectionv(projv);
             C_MTXOrtho(ortho, 0.0f, 480.f, 0.0f, 608.0f, 0.0f, 1.0f);
             GXSetProjection(ortho, GX_ORTHOGRAPHIC);
             GXSetNumChans(1);
             GXSetChanCtrl(GX_COLOR0A0, GX_FALSE, GX_SRC_REG, GX_SRC_REG, GX_LIGHT_NULL, GX_DF_NONE, GX_AF_NONE);
-#ifdef MUST_MATCH
             releaseSetColor3(alpha);
-#else
-            color3 = *(GXColor*)&dat_8041fb38;
-            color3.a = alpha;
-            GXSetChanMatColor(GX_COLOR0A0, color3);
-#endif
             GXSetNumTevStages(1);
             GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD_NULL, GX_TEXMAP_NULL, GX_COLOR0A0);
             GXSetTevColorOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
