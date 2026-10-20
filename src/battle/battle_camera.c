@@ -80,10 +80,8 @@ void battleCameraInit(void) {
 // (not inlined); keep inlining off across the small API surface.
 #pragma dont_inline on
 
-#ifdef MUST_MATCH
 // Inlining this lookup gives case 7's live unit pointer the original register.
 static inline BattleUnit* bcam_get_unit(BattleWork* wp, s32 id) { return BattleGetUnitPtr(wp, id); }
-#endif
 // The unit pointers are shared function-scope locals reused across cases; which case uses which
 // one (and their declaration order) decides how the frontend numbers their per-case webs, and so
 // the registers in cases 7, 9, 11 and 13.
@@ -209,11 +207,7 @@ void battleCameraMain(void) {
     f32 y;
     f32 w;
 
-#ifdef MUST_MATCH
     unit2 = bcam_get_unit(wp, wp->cameraWork.unk10);
-#else
-    unit2 = BattleGetUnitPtr(wp, wp->cameraWork.unk10);
-#endif
     if (unit2 == NULL) {
       btl_camera_set_mode(0, 0);
       break;
@@ -295,12 +289,8 @@ void battleCameraMain(void) {
     if (t < 0.5f) {
       t = 0.5f;
     }
-#ifdef MUST_MATCH
-    // Materialise the product for the original register allocation.
+    // The product lives in its own temporary, which fixes the registers of the following float math.
     { f32 _t = float_2_8041c450 * wp->cameraWork.zoom; base = _t - 1.5f * (wa + wb); }
-#else
-    base = float_2_8041c450 * wp->cameraWork.zoom - 1.5f * (wa + wb);
-#endif
     f9 = (vv.y - wp->cameraWork.unkC8.y) * (wp->cameraWork.unkC8.y / 80.0f);
     xv = (1.0f - t) * wp->cameraWork.unkC8.x;
     v = (1.0f - t) * base;
@@ -453,12 +443,8 @@ void battleCameraMain(void) {
     if (t < 0.5f) {
       t = 0.5f;
     }
-#ifdef MUST_MATCH
-    // Materialise the product for the original register allocation.
+    // The product lives in its own temporary, which fixes the registers of the following float math.
     { f32 _t = float_2_8041c450 * wp->cameraWork.zoom; base = _t - 1.5f * (wa + wb); }
-#else
-    base = float_2_8041c450 * wp->cameraWork.zoom - 1.5f * (wa + wb);
-#endif
     f9 = (vv.y - wp->cameraWork.unkC8.y) * (wp->cameraWork.unkC8.y / 80.0f);
     xv = (1.0f - t) * wp->cameraWork.unkC8.x;
     v = (1.0f - t) * base;
@@ -519,15 +505,10 @@ void battleCameraMain(void) {
     if (t < 0.5f) {
       t = 0.5f;
     }
-#ifdef MUST_MATCH
-    // Match-only: the split subtraction keeps the intermediate in cy's register.
+    // The split subtraction keeps the intermediate in cy's register.
     cy = vv.y - wp->cameraWork.unkBC.y;
     u = 1.0f - t;
     cy -= 100.0f;
-#else
-    u = 1.0f - t;
-    cy = vv.y - wp->cameraWork.unkBC.y - 100.0f;
-#endif
     zz = float_2_8041c450 * wp->cameraWork.zoom;
     v = u * wp->cameraWork.unkC8.x;
     if (cy > 0.0f) {
@@ -785,7 +766,7 @@ void battleCameraMoveTo(s32 id, s32 a, f32* p1, f32* p2, f32* p3, f32* p4,
     f6 += wp->cameraWork.position.z;
   }
 
-  // MUST_MATCH: / 2.0f (not * 0.5f) makes MWCC schedule the subtraction before the halving.
+  // / 2.0f (not * 0.5f) makes MWCC schedule the subtraction before the halving.
   limit = (600.0f - f3) / 2.0f;
   if (limit < 0.0f) {
     limit = 0.0f;
