@@ -518,148 +518,128 @@ void mot_hammer2(void) {
                 M_S8(mario, 0x41) = 0x14;
             }
         }
-        if (M_S8(mario, 0x41) < 4) {
-            goto level_low;
-        }
-        M_F32(mario, 0x2B0) += 6.0f;
-        if (M_F32(mario, 0x2B0) >= 72.0f) {
-            M_F32(mario, 0x2B0) = 72.0f;
-        }
-        mario->currSubMotionId = 0xB;
-        marioChgPaper("P_H_1B");
-        M_S8(mario, 0x42) = 3;
-        m2 = marioGetPtr();
-        m2->unk148 = 0.4f;
-        m2->unk150.z = 0.005f;
-#ifdef MUST_MATCH
-        *(volatile f32*)&m2->field_68 = 1.7f;
-        *(volatile Vec*)&m2->field_6C = *(volatile Vec*)&vec3_802c5a80;
-#else
-        m2->field_68 = 1.7f;
-        m2->field_6C = vec3_802c5a80;
-#endif
-        M_S16(mario, 0x2B4) |= 0x1000;
-        goto common_6320;
-    level_low:
-        if (M_S8(mario, 0x41) < 3) {
-            goto level_1;
-        }
-        marioChgPaper("P_H_1A");
-        level = M_S16(mario, 0x2B4);
-        if (!(level & 1)) {
+        if (M_S8(mario, 0x41) >= 4) {
             M_F32(mario, 0x2B0) += 6.0f;
-            if (M_F32(mario, 0x2B0) >= 54.0f) {
-                M_F32(mario, 0x2B0) = 54.0f;
-                M_S16(mario, 0x2B4) |= 1;
-                M_S8(mario, 0x42) = 3;
-                m2 = marioGetPtr();
-                m2->unk148 = 0.4f;
-                m2->unk150.z = 0.005f;
+            if (M_F32(mario, 0x2B0) >= 72.0f) {
+                M_F32(mario, 0x2B0) = 72.0f;
+            }
+            mario->currSubMotionId = 0xB;
+            marioChgPaper("P_H_1B");
+            M_S8(mario, 0x42) = 3;
+            m2 = marioGetPtr();
+            m2->unk148 = 0.4f;
+            m2->unk150.z = 0.005f;
 #ifdef MUST_MATCH
-                *(volatile f32*)&m2->field_68 = 1.7f;
-                *(volatile Vec*)&m2->field_6C = *(volatile Vec*)&vec3_802c5a80;
+            *(volatile f32*)&m2->field_68 = 1.7f;
+            *(volatile Vec*)&m2->field_6C = *(volatile Vec*)&vec3_802c5a80;
 #else
-                m2->field_68 = 1.7f;
-                m2->field_6C = vec3_802c5a80;
+            m2->field_68 = 1.7f;
+            m2->field_6C = vec3_802c5a80;
 #endif
-                M_S16(mario, 0x2B4) |= 0x1000;
-            }
-            goto common_6320;
-        } else if (!(level & 0x10)) {
-            M_F32(mario, 0x2B0) += 1.0f;
-            if (M_F32(mario, 0x2B0) >= 54.0f) {
-                M_F32(mario, 0x2B0) = 54.0f;
-                M_S16(mario, 0x2B4) |= 0x10;
-            }
-            goto common_6320;
-        } else {
-            M_F32(mario, 0x2B0) -= 1.0f;
-            if (M_F32(mario, 0x2B0) <= 42.0f) {
-                M_F32(mario, 0x2B0) = 42.0f;
-                M_S16(mario, 0x2B4) &= ~0x10;
-            }
-            goto common_6320;
-        }
-    level_1:
-        if (M_S8(mario, 0x41) < 2) {
-            goto level_0;
-        }
-        marioChgPaper("P_H_1A");
-        level = M_S16(mario, 0x2B4);
-        if (!(level & 1)) {
-            M_F32(mario, 0x2B0) += 6.0f;
-            if (M_F32(mario, 0x2B0) >= 36.0f) {
-                M_F32(mario, 0x2B0) = 36.0f;
-                M_S16(mario, 0x2B4) |= 1;
-                M_S8(mario, 0x42) = 2;
-                m2 = marioGetPtr();
-                m2->unk148 = 0.3f;
-                m2->unk150.z = 0.005f;
+            M_S16(mario, 0x2B4) |= 0x1000;
+        } else if (M_S8(mario, 0x41) >= 3) {
+            marioChgPaper("P_H_1A");
+            level = M_S16(mario, 0x2B4);
+            if (!(level & 1)) {
+                M_F32(mario, 0x2B0) += 6.0f;
+                if (M_F32(mario, 0x2B0) >= 54.0f) {
+                    M_F32(mario, 0x2B0) = 54.0f;
+                    M_S16(mario, 0x2B4) |= 1;
+                    M_S8(mario, 0x42) = 3;
+                    m2 = marioGetPtr();
+                    m2->unk148 = 0.4f;
+                    m2->unk150.z = 0.005f;
 #ifdef MUST_MATCH
-                *(volatile f32*)&m2->field_68 = 1.6f;
-                *(volatile Vec*)&m2->field_6C = *(volatile Vec*)&vec3_802c5a80;
+                    *(volatile f32*)&m2->field_68 = 1.7f;
+                    *(volatile Vec*)&m2->field_6C = *(volatile Vec*)&vec3_802c5a80;
 #else
-                m2->field_68 = 1.6f;
-                m2->field_6C = vec3_802c5a80;
+                    m2->field_68 = 1.7f;
+                    m2->field_6C = vec3_802c5a80;
 #endif
-                M_S16(mario, 0x2B4) |= 0x1000;
+                    M_S16(mario, 0x2B4) |= 0x1000;
+                }
+            } else if (!(level & 0x10)) {
+                M_F32(mario, 0x2B0) += 1.0f;
+                if (M_F32(mario, 0x2B0) >= 54.0f) {
+                    M_F32(mario, 0x2B0) = 54.0f;
+                    M_S16(mario, 0x2B4) |= 0x10;
+                }
+            } else {
+                M_F32(mario, 0x2B0) -= 1.0f;
+                if (M_F32(mario, 0x2B0) <= 42.0f) {
+                    M_F32(mario, 0x2B0) = 42.0f;
+                    M_S16(mario, 0x2B4) &= ~0x10;
+                }
             }
-            goto common_6320;
-        } else if (!(level & 0x10)) {
-            M_F32(mario, 0x2B0) += 1.0f;
-            if (M_F32(mario, 0x2B0) >= 36.0f) {
-                M_F32(mario, 0x2B0) = 36.0f;
-                M_S16(mario, 0x2B4) |= 0x10;
-            }
-            goto common_6320;
-        } else {
-            M_F32(mario, 0x2B0) -= 1.0f;
-            if (M_F32(mario, 0x2B0) <= 30.f) {
-                M_F32(mario, 0x2B0) = 30.f;
-                M_S16(mario, 0x2B4) &= ~0x10;
-            }
-            goto common_6320;
-        }
-    level_0:
-        marioChgPaper("P_H_1A");
-        level = M_S16(mario, 0x2B4);
-        if (!(level & 1)) {
-            M_F32(mario, 0x2B0) += 6.0f;
-            if (M_F32(mario, 0x2B0) >= 18.0f) {
-                M_F32(mario, 0x2B0) = 18.0f;
-                M_S16(mario, 0x2B4) |= 1;
-                M_S8(mario, 0x42) = 1;
-                m2 = marioGetPtr();
-                m2->unk148 = 0.2f;
-                m2->unk150.z = 0.005f;
+        } else if (M_S8(mario, 0x41) >= 2) {
+            marioChgPaper("P_H_1A");
+            level = M_S16(mario, 0x2B4);
+            if (!(level & 1)) {
+                M_F32(mario, 0x2B0) += 6.0f;
+                if (M_F32(mario, 0x2B0) >= 36.0f) {
+                    M_F32(mario, 0x2B0) = 36.0f;
+                    M_S16(mario, 0x2B4) |= 1;
+                    M_S8(mario, 0x42) = 2;
+                    m2 = marioGetPtr();
+                    m2->unk148 = 0.3f;
+                    m2->unk150.z = 0.005f;
 #ifdef MUST_MATCH
-                *(volatile f32*)&m2->field_68 = 1.5f;
-                *(volatile Vec*)&m2->field_6C = *(volatile Vec*)&vec3_802c5a80;
+                    *(volatile f32*)&m2->field_68 = 1.6f;
+                    *(volatile Vec*)&m2->field_6C = *(volatile Vec*)&vec3_802c5a80;
 #else
-                m2->field_68 = 1.5f;
-                m2->field_6C = vec3_802c5a80;
+                    m2->field_68 = 1.6f;
+                    m2->field_6C = vec3_802c5a80;
 #endif
-                M_S16(mario, 0x2B4) |= 0x1000;
+                    M_S16(mario, 0x2B4) |= 0x1000;
+                }
+            } else if (!(level & 0x10)) {
+                M_F32(mario, 0x2B0) += 1.0f;
+                if (M_F32(mario, 0x2B0) >= 36.0f) {
+                    M_F32(mario, 0x2B0) = 36.0f;
+                    M_S16(mario, 0x2B4) |= 0x10;
+                }
+            } else {
+                M_F32(mario, 0x2B0) -= 1.0f;
+                if (M_F32(mario, 0x2B0) <= 30.f) {
+                    M_F32(mario, 0x2B0) = 30.f;
+                    M_S16(mario, 0x2B4) &= ~0x10;
+                }
             }
-            goto common_6320;
-        } else if (!(level & 0x10)) {
-            M_F32(mario, 0x2B0) += 1.0f;
-            if (M_F32(mario, 0x2B0) >= 24.0f) {
-                M_F32(mario, 0x2B0) = 24.0f;
-                M_S16(mario, 0x2B4) |= 0x10;
-            }
-            goto common_6320;
         } else {
-            M_F32(mario, 0x2B0) -= 1.0f;
-            if (M_F32(mario, 0x2B0) <= 18.0f) {
-                M_F32(mario, 0x2B0) = 18.0f;
-                M_S16(mario, 0x2B4) &= ~0x10;
+            marioChgPaper("P_H_1A");
+            level = M_S16(mario, 0x2B4);
+            if (!(level & 1)) {
+                M_F32(mario, 0x2B0) += 6.0f;
+                if (M_F32(mario, 0x2B0) >= 18.0f) {
+                    M_F32(mario, 0x2B0) = 18.0f;
+                    M_S16(mario, 0x2B4) |= 1;
+                    M_S8(mario, 0x42) = 1;
+                    m2 = marioGetPtr();
+                    m2->unk148 = 0.2f;
+                    m2->unk150.z = 0.005f;
+#ifdef MUST_MATCH
+                    *(volatile f32*)&m2->field_68 = 1.5f;
+                    *(volatile Vec*)&m2->field_6C = *(volatile Vec*)&vec3_802c5a80;
+#else
+                    m2->field_68 = 1.5f;
+                    m2->field_6C = vec3_802c5a80;
+#endif
+                    M_S16(mario, 0x2B4) |= 0x1000;
+                }
+            } else if (!(level & 0x10)) {
+                M_F32(mario, 0x2B0) += 1.0f;
+                if (M_F32(mario, 0x2B0) >= 24.0f) {
+                    M_F32(mario, 0x2B0) = 24.0f;
+                    M_S16(mario, 0x2B4) |= 0x10;
+                }
+            } else {
+                M_F32(mario, 0x2B0) -= 1.0f;
+                if (M_F32(mario, 0x2B0) <= 18.0f) {
+                    M_F32(mario, 0x2B0) = 18.0f;
+                    M_S16(mario, 0x2B4) &= ~0x10;
+                }
             }
-            goto common_6320;
         }
-    case 0xB:
-        goto common_63C4;
-    common_6320:
         if (M_S16(mario, 0x2B4) & 0x1000) {
             M_S16(mario, 0x2B4) &= ~0x1000;
             if (!(M_S16(mario, 0x2B4) & 0x2000)) {
@@ -680,7 +660,8 @@ void mot_hammer2(void) {
         if (strcmp(mario->paperAnimName, "P_H_1A") == 0) {
             animPoseSetLocalTime(mario->paperAnimGroupId[marioAnimeId()], M_F32(mario, 0x2B0) / 6.0f);
         }
-    common_63C4:
+    /* fallthrough to case 0xB */
+    case 0xB:
         if (mario->buttonHeld & 0x200) {
             break;
         }
