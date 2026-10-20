@@ -919,8 +919,8 @@ s32 npcEntry(const char* a1, const char* animName) {
     entry->field_154 = 1.0f;
     entry->gait = 0;
     entry->field_10C = "M_I_2";
-    entry->field_198 = gp->renderTime;
-    entry->field_188 = 0;
+    entry->lastUpdateTick = gp->renderTime;
+    entry->moveElapsed = 0;
     entry->jumpGravity = 1.0f;
     entry->field_1D0 = 0.0f;
     entry->jumpYScale = 1.0f;
@@ -1126,23 +1126,23 @@ void npcMain(void) {
         }
 
         if (entry->jumpFlags & 0x10) {
-            entry->field_190 = gp->renderTime - entry->field_198;
-            if (OSTicksToMilliseconds(entry->field_190) > 500) {
-                entry->field_190 = OSMillisecondsToTicks(16);
+            entry->frameTicks = gp->renderTime - entry->lastUpdateTick;
+            if (OSTicksToMilliseconds(entry->frameTicks) > 500) {
+                entry->frameTicks = OSMillisecondsToTicks(16);
             }
             if (entry->flags & 0x20000) {
-                entry->field_178 += entry->field_190;
+                entry->airTicks += entry->frameTicks;
             } else {
-                entry->field_178 = 0;
+                entry->airTicks = 0;
             }
-            entry->field_188 += entry->field_190;
-            entry->field_198 = gp->renderTime;
-            entry->field_1A0 = (f32)(OSTicksToMicroseconds(entry->field_188)) / 1000000.0f;
-            entry->field_180 = (f32)(OSTicksToMicroseconds(entry->field_178)) / 1000000.0f;
-            entry->moveDt = (f32)(OSTicksToMicroseconds(entry->field_190)) / 1000000.0f;
-            entry->field_1A8 = (f32)(OSTicksToMicroseconds(entry->field_198)) / 1000000.0f;
+            entry->moveElapsed += entry->frameTicks;
+            entry->lastUpdateTick = gp->renderTime;
+            entry->moveElapsedSec = (f32)(OSTicksToMicroseconds(entry->moveElapsed)) / 1000000.0f;
+            entry->airTime = (f32)(OSTicksToMicroseconds(entry->airTicks)) / 1000000.0f;
+            entry->moveDt = (f32)(OSTicksToMicroseconds(entry->frameTicks)) / 1000000.0f;
+            entry->lastUpdateSec = (f32)(OSTicksToMicroseconds(entry->lastUpdateTick)) / 1000000.0f;
         } else {
-            entry->field_198 = gp->renderTime;
+            entry->lastUpdateTick = gp->renderTime;
         }
 
         if (entry->flags & 2) {
@@ -1896,13 +1896,13 @@ void npcMoveG(NpcEntry* entry) {
     force = 0.0f;
     flags = entry->flags;
     if (flags & 0x20000) {
-        f32 d = entry->field_180 - entry->moveDt;
+        f32 d = entry->airTime - entry->moveDt;
         if (unkFlag == 0 || (jflags & 0x10000000)) {
             force = entry->jumpVelY * entry->moveDt +
-                    (-980.0f * entry->jumpGravity) * (entry->field_180 * entry->field_180 - d * d);
+                    (-980.0f * entry->jumpGravity) * (entry->airTime * entry->airTime - d * d);
         } else {
             force = 0.4f * (entry->jumpVelY * entry->moveDt) +
-                    (0.15f * (-980.0f * entry->jumpGravity)) * (entry->field_180 * entry->field_180 - d * d);
+                    (0.15f * (-980.0f * entry->jumpGravity)) * (entry->airTime * entry->airTime - d * d);
         }
         force *= entry->jumpYScale;
         if (entry->field_1D0 > 0.0f) {
@@ -1946,7 +1946,7 @@ void npcMoveG(NpcEntry* entry) {
             } else {
                 entry->jumpFlags &= ~1;
                 entry->position.y = hitY;
-                entry->field_178 = 0;
+                entry->airTicks = 0;
             }
         }
     }
@@ -3494,7 +3494,7 @@ BOOL npcCheckInterrupt(NpcEntry* npc) {
             npc->regularEvtId = evt->eventId;
             npc->interruptFlags &= 0xF00;
             npc->jumpFlags &= ~0x1000;
-            npc->field_188 = 0;
+            npc->moveElapsed = 0;
             npc->moveSpeed = 0.0f;
             return TRUE;
         }

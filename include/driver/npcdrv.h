@@ -169,15 +169,15 @@ typedef struct NpcEntry {
     Vec jumpStartPos;               // 0x158
     Vec jumpTargetPos;              // 0x164
     u8 field_170[0x178 - 0x170];    // 0x170
-    OSTime field_178;               // 0x178
-    f32 field_180;                  // 0x180
+    OSTime airTicks;                // 0x178, ticks airborne while the 0x20000 jump flag is set; reset on landing
+    f32 airTime;                    // 0x180, airTicks in seconds
     u8 field_184[0x188 - 0x184];    // 0x184
-    OSTime field_188;               // 0x188
-    OSTime field_190;               // 0x190
-    OSTime field_198;               // 0x198
-    f32 field_1A0;                  // 0x1A0
+    OSTime moveElapsed;             // 0x188, ticks since the current move began; cleared by the move events
+    OSTime frameTicks;              // 0x190, ticks since the last update (16 ms if it was over 500 ms)
+    OSTime lastUpdateTick;          // 0x198, gp->renderTime at the last update
+    f32 moveElapsedSec;             // 0x1A0, moveElapsed in seconds (compared against moveTime)
     f32 moveDt;                     // 0x1A4
-    f32 field_1A8;                  // 0x1A8
+    f32 lastUpdateSec;              // 0x1A8, lastUpdateTick in seconds
     f32 moveDir;                    // 0x1AC
     f32 moveSpeed;                  // 0x1B0
     Vec moveOffset;                 // 0x1B4

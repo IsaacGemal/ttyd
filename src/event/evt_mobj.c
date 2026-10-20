@@ -4819,7 +4819,7 @@ s32 mobj_koopa_fireber_dodai_evt(MapObjectEntry* obj) {
             for (i = 0; i < *(s32*)((u8*)obj + 0x1A4); i++) {
                 sprintf(buf, "%s%2x", obj->name, i);
                 npc = npcNameToPtr(buf);
-                npc->field_188 = 0;
+                npc->moveElapsed = 0;
                 npc->jumpStartPos = npc->position;
                 npc->jumpTargetPos.x = (f32)irand(0x65) / 200.0f;
                 npc->jumpTargetPos.y = 6.0f - (f32)irand(0x65) / 75.0f;
@@ -4851,7 +4851,7 @@ s32 mobj_koopa_fireber_dodai_evt(MapObjectEntry* obj) {
                 }
                 npc->jumpTargetPos.y = npc->jumpTargetPos.y - 0.2f;
             }
-            if (npc->moveTime <= npc->field_1A0) {
+            if (npc->moveTime <= npc->moveElapsedSec) {
                 obj->state = 0x63;
             }
             break;

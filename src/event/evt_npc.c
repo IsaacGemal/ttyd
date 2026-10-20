@@ -513,7 +513,7 @@ USER_FUNC(evt_npc_move_position) {
     }
 
     if (isFirstCall) {
-        npc->field_188 = 0;
+        npc->moveElapsed = 0;
         npc->gait = 0;
 
         npc->jumpTargetPos.x = targetX;
@@ -557,7 +557,7 @@ USER_FUNC(evt_npc_move_position) {
 
     if (npc->moveTime) {
         // timed move: field_0x1a0 is elapsed/progress, advanced externally
-        if (npc->moveTime <= npc->field_1A0) {
+        if (npc->moveTime <= npc->moveElapsedSec) {
             npc->moveSpeed = 0.0f;
             return EVT_RETURN_DONE;
         }
@@ -648,8 +648,8 @@ USER_FUNC(evt_npc_jump_position) {
     npc->jumpFlags |= 0x1000;
 
     if (isFirstCall) {
-        npc->field_188 = 0;
-        npc->field_178 = 0;
+        npc->moveElapsed = 0;
+        npc->airTicks = 0;
         npc->gait = 0;
 
         npc->jumpTargetPos.x = targetX;
@@ -898,7 +898,7 @@ USER_FUNC(evt_npc_glide_position) {
     }
 
     if (isFirstCall) {
-        npc->field_188 = 0;
+        npc->moveElapsed = 0;
         npc->gait = 0;
         npc->jumpTargetPos.x = targetX;
         npc->jumpTargetPos.y = targetY;
@@ -930,7 +930,7 @@ USER_FUNC(evt_npc_glide_position) {
     }
 
     flag = 0;
-    dy = npc->field_1A0;
+    dy = npc->moveElapsedSec;
     t = npc->moveTime;
     delta = npc->moveDt;
     if (dy >= t) {
@@ -1034,7 +1034,7 @@ USER_FUNC(evt_npc_homing_target) {
     npc->jumpFlags |= 0x10;
 
     if (isFirstCall) {
-        npc->field_188 = 0;
+        npc->moveElapsed = 0;
         npc->gait = 0;
 
         if (strcmp(targetName, "mario") == 0) {
@@ -1109,7 +1109,7 @@ USER_FUNC(evt_npc_homing_target) {
     VECSubtract(&npc->jumpTargetPos, &npc->position, &diff);
     sqrtf((diff.x * diff.x) + (diff.z * diff.z));
 
-    if (npc->moveTime && npc->moveTime <= npc->field_1A0) {
+    if (npc->moveTime && npc->moveTime <= npc->moveElapsedSec) {
         stop = 1;
     } else if (range > 0.0f && dist < range) {
         stop = 1;
@@ -2468,7 +2468,7 @@ USER_FUNC(evt_npc_kamek_move_position) {
     }
 
     if (isFirstCall) {
-        npc->field_188 = 0;
+        npc->moveElapsed = 0;
         npc->gait = 0;
 
         npc->jumpTargetPos.x = targetX;
@@ -2508,7 +2508,7 @@ USER_FUNC(evt_npc_kamek_move_position) {
 
     if (npc->moveTime) {
         // timed move: field_0x1a0 is elapsed/progress, advanced externally
-        if (npc->moveTime <= npc->field_1A0) {
+        if (npc->moveTime <= npc->moveElapsedSec) {
             npc->prevPosition = npc->jumpTargetPos;
             npc->position = npc->prevPosition;
             npc->moveSpeed = 0.0f;
@@ -2567,7 +2567,7 @@ USER_FUNC(evt_npc_kamek_kemuri1) {
     }
 
     if (npc->moveTime) {
-        if (npc->moveTime > npc->field_1A0) {
+        if (npc->moveTime > npc->moveElapsedSec) {
             _kamek_houki_kemuri(npc, npc->gait);
             return EVT_RETURN_BLOCK;
         }
@@ -2595,12 +2595,12 @@ USER_FUNC(evt_npc_kamek_kemuri2) {
             return EVT_RETURN_DONE;
         }
 
-        npc->field_188 = 0;
+        npc->moveElapsed = 0;
         npc->moveTime = moveTime;
         return EVT_RETURN_BLOCK;
     }
 
-    if (npc->moveTime <= npc->field_1A0) {
+    if (npc->moveTime <= npc->moveElapsedSec) {
         return EVT_RETURN_DONE;
     }
 

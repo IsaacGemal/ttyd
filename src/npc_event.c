@@ -320,8 +320,8 @@ USER_FUNC(_2d_dead_jump) {
     if (isFirstCall) {
         npc->flags |= 0x20000;
         npc->flags &= 0xBFFFFFEF;
-        npc->field_188 = 0;
-        npc->field_178 = 0;
+        npc->moveElapsed = 0;
+        npc->airTicks = 0;
         npc->gait = 0;
         npc->jumpTargetPos.x = f31;
         npc->jumpTargetPos.y = f24;
