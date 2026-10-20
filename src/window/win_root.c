@@ -36,8 +36,6 @@
 #define WW_S32(w, off) (*(s32*)((u8*)(w) + (off)))
 #define WW_U32(w, off) (*(u32*)((u8*)(w) + (off)))
 #define WW_PTR(w, off) (*(void**)((u8*)(w) + (off)))
-#define WW_F32(w, off) (*(f32*)((u8*)(w) + (off)))
-#define WW_U16(w, off) (*(u16*)((u8*)(w) + (off)))
 
 typedef struct SortTable {
     const char* name;                 // 0x0
@@ -55,11 +53,11 @@ typedef struct WinRootTab {
 } WinRootTab;
 
 typedef struct WinRootRec {
-    u32 a; // 0x0
-    u32 b; // 0x4
-    u32 c; // 0x8
+    s32 a; // 0x0
+    f32 b; // 0x4
+    f32 c; // 0x8
     s32 d; // 0xC
-    u32 e; // 0x10
+    s32 e; // 0x10
 } WinRootRec;
 
 typedef struct WinRoot {
@@ -68,6 +66,52 @@ typedef struct WinRoot {
     s32 tabCount;       // 0x44, tabs in use
     WinRootTab tabs[5]; // 0x48
     WinRootRec recs[5]; // 0xC0
+    u8 pad_0x124[0x4];
+    f32 field_0x128; // 0x128
+    f32 field_0x12C; // 0x12C
+    s32 field_0x130; // 0x130
+    s32 field_0x134; // 0x134
+    s32 field_0x138; // 0x138
+    u8 pad_0x13C[0xC];
+    s32 field_0x148; // 0x148
+    s32 field_0x14C; // 0x14C
+    u8 pad_0x150[0x14];
+    f32 field_0x164; // 0x164
+    f32 field_0x168; // 0x168
+    f32 field_0x16C; // 0x16C
+    f32 field_0x170; // 0x170
+    s32 field_0x174; // 0x174
+    s32 field_0x178; // 0x178
+    s32 field_0x17C; // 0x17C
+    u8 pad_0x180[0x4];
+    s32 field_0x184; // 0x184
+    u8 pad_0x188[0x14];
+    s32 field_0x19C; // 0x19C
+    u8 pad_0x1A0[0xA4];
+    f32 field_0x244; // 0x244
+    u8 pad_0x248[0x4];
+    f32 field_0x24C; // 0x24C
+    u8 pad_0x250[0x10];
+    f32 field_0x260; // 0x260
+    u8 pad_0x264[0x64];
+    s32 field_0x2C8; // 0x2C8
+    s32 field_0x2CC; // 0x2CC
+    s32 field_0x2D0; // 0x2D0
+    u8 pad_0x2D4[0xBC0];
+    s32 field_0xE94; // 0xE94
+    s32 field_0xE98; // 0xE98
+    s32 field_0xE9C; // 0xE9C
+    f32 field_0xEA0; // 0xEA0
+    u8 pad_0xEA4[0xEC];
+    s32 field_0xF90; // 0xF90
+    s32 field_0xF94; // 0xF94
+    s32 field_0xF98; // 0xF98
+    f32 field_0xF9C; // 0xF9C
+    u8 pad_0xFA0[0x98];
+    s32 field_0x1038; // 0x1038
+    u8 pad_0x103C[0x4];
+    s32 field_0x1040; // 0x1040
+    s32 field_0x1044; // 0x1044
 } WinRoot;
 
 #define WROOT(w) ((WinRoot*)(w))
@@ -323,33 +367,33 @@ s32 winRootMain(WindowWork* work) {
                 WROOT(work)->tabSel = j;
             }
         }
-        WW_S32(work, 0xCC) = -1;
-        WW_F32(work, 0xC8) = 1000.0f;
-        WW_F32(work, 0xC4) = 1000.0f;
-        WW_S32(work, 0xC0) = -1;
-        WW_S32(work, 0xE0) = -1;
-        WW_F32(work, 0xDC) = 1000.0f;
-        WW_F32(work, 0xD8) = 1000.0f;
-        WW_S32(work, 0xD4) = -1;
-        WW_S32(work, 0xF4) = -1;
-        WW_F32(work, 0xF0) = 1000.0f;
-        WW_F32(work, 0xEC) = 1000.0f;
-        WW_S32(work, 0xE8) = -1;
-        WW_S32(work, 0x108) = -1;
-        WW_F32(work, 0x104) = 1000.0f;
-        WW_F32(work, 0x100) = 1000.0f;
-        WW_S32(work, 0xFC) = -1;
-        WW_S32(work, 0x11C) = -1;
-        WW_F32(work, 0x118) = 1000.0f;
-        WW_F32(work, 0x114) = 1000.0f;
-        WW_S32(work, 0x110) = -1;
-        WW_F32(work, 0xC8) = 1000.0f;
-        WW_F32(work, 0xC4) = 1000.0f;
-        WW_S32(work, 0xCC) = 0;
-        WW_S32(work, 0xC0) = ((WinRootTab*)((u8*)WROOT(work)->tabs + WROOT(work)->tabSel * 0x18))->id;
-        WW_S32(work, 0x130) = 0;
-        WW_F32(work, 0x12C) = 1000.0f;
-        WW_F32(work, 0x128) = 1000.0f;
+        WROOT(work)->recs[0].d = -1;
+        WROOT(work)->recs[0].c = 1000.0f;
+        WROOT(work)->recs[0].b = 1000.0f;
+        WROOT(work)->recs[0].a = -1;
+        WROOT(work)->recs[1].d = -1;
+        WROOT(work)->recs[1].c = 1000.0f;
+        WROOT(work)->recs[1].b = 1000.0f;
+        WROOT(work)->recs[1].a = -1;
+        WROOT(work)->recs[2].d = -1;
+        WROOT(work)->recs[2].c = 1000.0f;
+        WROOT(work)->recs[2].b = 1000.0f;
+        WROOT(work)->recs[2].a = -1;
+        WROOT(work)->recs[3].d = -1;
+        WROOT(work)->recs[3].c = 1000.0f;
+        WROOT(work)->recs[3].b = 1000.0f;
+        WROOT(work)->recs[3].a = -1;
+        WROOT(work)->recs[4].d = -1;
+        WROOT(work)->recs[4].c = 1000.0f;
+        WROOT(work)->recs[4].b = 1000.0f;
+        WROOT(work)->recs[4].a = -1;
+        WROOT(work)->recs[0].c = 1000.0f;
+        WROOT(work)->recs[0].b = 1000.0f;
+        WROOT(work)->recs[0].d = 0;
+        WROOT(work)->recs[0].a = ((WinRootTab*)((u8*)WROOT(work)->tabs + WROOT(work)->tabSel * 0x18))->id;
+        WROOT(work)->field_0x130 = 0;
+        WROOT(work)->field_0x12C = 1000.0f;
+        WROOT(work)->field_0x128 = 1000.0f;
         WW_S32(work, 0x13C) = 0;
         WW_S32(work, 0x140) = 0;
         WW_S32(work, 0x144) = 0;
@@ -366,10 +410,10 @@ s32 winRootMain(WindowWork* work) {
         }
         work->posY = 300.0f;
         work->targetY = 185.0f;
-        WW_F32(work, 0x16C) = -1000.0f;
-        WW_F32(work, 0x164) = -1000.0f;
-        WW_F32(work, 0x170) = -1000.0f;
-        WW_F32(work, 0x168) = -1000.0f;
+        WROOT(work)->field_0x16C = -1000.0f;
+        WROOT(work)->field_0x164 = -1000.0f;
+        WROOT(work)->field_0x170 = -1000.0f;
+        WROOT(work)->field_0x168 = -1000.0f;
         str = ((WinRootTab*)((u8*)WROOT(work)->tabs + WROOT(work)->tabSel * 0x18))->str;
         winMsgEntry(work, 0, str, 0);
         work->rootState = 0xA;
@@ -414,7 +458,7 @@ s32 winRootMain(WindowWork* work) {
         break;
     case 10:
         if (work->buttonTrg & 0x1200) {
-            if (WW_S32(work, 0xCC) == 0x64) {
+            if (WROOT(work)->recs[0].d == 0x64) {
                 work->rootState = 0x14;
             }
             break;
@@ -453,10 +497,10 @@ s32 winRootMain(WindowWork* work) {
             for (j = 4; j > 0; j--) {
                 WROOT(work)->recs[j] = WROOT(work)->recs[j - 1];
             }
-            WW_F32(work, 0xC8) = 1000.0f;
-            WW_F32(work, 0xC4) = 1000.0f;
-            WW_S32(work, 0xCC) = 0x1E;
-            WW_S32(work, 0xC0) = ((WinRootTab*)((u8*)WROOT(work)->tabs + WROOT(work)->tabSel * 0x18))->id;
+            WROOT(work)->recs[0].c = 1000.0f;
+            WROOT(work)->recs[0].b = 1000.0f;
+            WROOT(work)->recs[0].d = 0x1E;
+            WROOT(work)->recs[0].a = ((WinRootTab*)((u8*)WROOT(work)->tabs + WROOT(work)->tabSel * 0x18))->id;
             work->targetX = (f32)(WROOT(work)->tabSel * 0x69 - 0x10E);
             str = ((WinRootTab*)((u8*)WROOT(work)->tabs + WROOT(work)->tabSel * 0x18))->str;
             winMsgEntry(work, 0, str, 0);
@@ -470,10 +514,10 @@ s32 winRootMain(WindowWork* work) {
             for (j = 4; j > 0; j--) {
                 WROOT(work)->recs[j] = WROOT(work)->recs[j - 1];
             }
-            WW_F32(work, 0xC8) = 1000.0f;
-            WW_F32(work, 0xC4) = 1000.0f;
-            WW_S32(work, 0xCC) = 0x14;
-            WW_S32(work, 0xC0) = ((WinRootTab*)((u8*)WROOT(work)->tabs + WROOT(work)->tabSel * 0x18))->id;
+            WROOT(work)->recs[0].c = 1000.0f;
+            WROOT(work)->recs[0].b = 1000.0f;
+            WROOT(work)->recs[0].d = 0x14;
+            WROOT(work)->recs[0].a = ((WinRootTab*)((u8*)WROOT(work)->tabs + WROOT(work)->tabSel * 0x18))->id;
             work->targetX = (f32)(WROOT(work)->tabSel * 0x69 - 0x10E);
             str = ((WinRootTab*)((u8*)WROOT(work)->tabs + WROOT(work)->tabSel * 0x18))->str;
             winMsgEntry(work, 0, str, 0);
@@ -526,12 +570,12 @@ s32 winRootMain(WindowWork* work) {
         for (j = 0; j < WROOT(work)->tabCount; j++) {
             WROOT(work)->tabs[j].state = 0xA;
         }
-        WW_S32(work, 0xCC) = 0xA;
-        WW_S32(work, 0xE0) = 0xA;
-        WW_S32(work, 0xF4) = 0xA;
-        WW_S32(work, 0x108) = 0xA;
-        WW_S32(work, 0x11C) = 0xA;
-        WW_S32(work, 0x130) = 0xA;
+        WROOT(work)->recs[0].d = 0xA;
+        WROOT(work)->recs[1].d = 0xA;
+        WROOT(work)->recs[2].d = 0xA;
+        WROOT(work)->recs[3].d = 0xA;
+        WROOT(work)->recs[4].d = 0xA;
+        WROOT(work)->field_0x130 = 0xA;
         N_mapDispOn();
         camDispOn(CAMERA_3D);
         work->rootState++;
@@ -554,7 +598,7 @@ s32 winRootMain(WindowWork* work) {
             winBadgeExit();
 #endif
             winLogExit(work);
-            if (WW_S32(work, 0x19C) != 0 && work->partySel != work->lastPartySel) {
+            if (WROOT(work)->field_0x19C != 0 && work->partySel != work->lastPartySel) {
                 return -2;
             }
             if (work->useItemId != 0) {
@@ -586,13 +630,13 @@ s32 winRootMain(WindowWork* work) {
             work->posX += (work->targetX - work->posX) / 4.0f;
             work->posY += (work->targetY + (((WinRootTab*)((u8*)WROOT(work)->tabs + WROOT(work)->tabSel * 0x18))->y - 185.0f) - work->posY) / 4.0f;
     } else {
-            work->posX += (work->targetX + WW_F32(work, 0xC4) - work->posX) / 4.0f;
+            work->posX += (work->targetX + WROOT(work)->recs[0].b - work->posX) / 4.0f;
             work->posY += (work->targetY - work->posY) / 4.0f;
     }
     work->posX = (f32)(work->posX +
         __fabs(2.0f * (f32)sin((f32)gp->retraceCount / 8.0f)));
-    WW_F32(work, 0x164) += (WW_F32(work, 0x16C) - WW_F32(work, 0x164)) / 4.0f;
-    WW_F32(work, 0x168) += (WW_F32(work, 0x170) - WW_F32(work, 0x168)) / 4.0f;
+    WROOT(work)->field_0x164 += (WROOT(work)->field_0x16C - WROOT(work)->field_0x164) / 4.0f;
+    WROOT(work)->field_0x168 += (WROOT(work)->field_0x170 - WROOT(work)->field_0x168) / 4.0f;
     dispEntry(CAMERA_2D, 1000.0f, 0, (DispCallback)winRootFbDraw, work);
     return 0;
 }
@@ -660,20 +704,20 @@ void winRootDisp(CameraId camId, WindowWork* work) {
     }
 
     for (i = 4; i >= 0; i--) {
-        u8* e = (u8*)work + i * 0x14;
-        s32 state = WW_S32(e, 0xCC);
+        WinRootRec* e = &WROOT(work)->recs[i];
+        s32 state = e->d;
 
         if (state == -1) {
             continue;
         }
-        if (i > 0 && WW_S32(e, 0xB8) == 0x64) {
+        if (i > 0 && WROOT(work)->recs[i - 1].d == 0x64) {
             continue;
         }
         if (i > 0 && (u32)(state - 0xA) <= 1) {
             continue;
         }
 
-        switch (WW_S32(e, 0xC0)) {
+        switch (e->a) {
             case 0:
                 winMarioDisp(camId, work, i);
                 break;
@@ -695,7 +739,7 @@ void winRootDisp(CameraId camId, WindowWork* work) {
     winRootTabDisp(work);
 
     winMailDisp(work);
-    winMsgDisp(work, WW_F32(work, 0x128), WW_F32(work, 0x12C));
+    winMsgDisp(work, WROOT(work)->field_0x128, WROOT(work)->field_0x12C);
     winSortGX(work);
 
     if (!(work->flags & 0x8000)) {
@@ -736,75 +780,75 @@ void winBgMain(WindowWork* work) {
     s32 i;
 
     for (i = 0; i < 5; i++) {
-        switch (WW_S32(p, 0xCC)) {
+        switch (WROOT(p)->recs[0].d) {
             case 0:
-                WW_F32(p, 0xC4) = 800.0f;
-                WW_F32(p, 0xC8) = 0.0f;
-                WW_S32(p, 0xD0) = 0;
-                WW_S32(p, 0xCC) = WW_S32(p, 0xCC) + 1;
+                WROOT(p)->recs[0].b = 800.0f;
+                WROOT(p)->recs[0].c = 0.0f;
+                WROOT(p)->recs[0].e = 0;
+                WROOT(p)->recs[0].d = WROOT(p)->recs[0].d + 1;
                 break;
             case 1: {
-                s32 step = WW_S32(p, 0xD0);
-                WW_S32(p, 0xD0) = step + 1;
-                WW_F32(p, 0xC4) = intplGetValue(0xB, step, 0x10, 800.0f, 0.0f);
-                if (WW_S32(p, 0xD0) > 0x10) {
-                    WW_S32(p, 0xCC) = 0x64;
+                s32 step = WROOT(p)->recs[0].e;
+                WROOT(p)->recs[0].e = step + 1;
+                WROOT(p)->recs[0].b = intplGetValue(0xB, step, 0x10, 800.0f, 0.0f);
+                if (WROOT(p)->recs[0].e > 0x10) {
+                    WROOT(p)->recs[0].d = 0x64;
                 }
                 break;
             }
             case 10:
-                WW_F32(p, 0xC8) = 0.0f;
-                WW_S32(p, 0xD0) = 0;
-                WW_S32(p, 0xCC) = WW_S32(p, 0xCC) + 1;
+                WROOT(p)->recs[0].c = 0.0f;
+                WROOT(p)->recs[0].e = 0;
+                WROOT(p)->recs[0].d = WROOT(p)->recs[0].d + 1;
                 break;
             case 11: {
-                s32 step = WW_S32(p, 0xD0);
-                WW_S32(p, 0xD0) = step + 1;
-                WW_F32(p, 0xC4) = intplGetValue(0xB, step, 0x10, 0.0f, 800.0f);
-                if (WW_S32(p, 0xD0) > 0x10) {
-                    WW_S32(p, 0xCC) = -1;
+                s32 step = WROOT(p)->recs[0].e;
+                WROOT(p)->recs[0].e = step + 1;
+                WROOT(p)->recs[0].b = intplGetValue(0xB, step, 0x10, 0.0f, 800.0f);
+                if (WROOT(p)->recs[0].e > 0x10) {
+                    WROOT(p)->recs[0].d = -1;
                 }
                 break;
             }
             case 20:
-                WW_F32(p, 0xC8) = 0.0f;
-                WW_S32(p, 0xD0) = 0;
-                WW_S32(p, 0xCC) = WW_S32(p, 0xCC) + 1;
+                WROOT(p)->recs[0].c = 0.0f;
+                WROOT(p)->recs[0].e = 0;
+                WROOT(p)->recs[0].d = WROOT(p)->recs[0].d + 1;
                 break;
             case 21: {
-                s32 step = WW_S32(p, 0xD0);
-                WW_S32(p, 0xD0) = step + 1;
-                WW_F32(p, 0xC4) = intplGetValue(0xB, step, 0x18, 640.0f, 0.0f);
-                if (WW_S32(p, 0xD0) > 0x18) {
-                    WW_S32(p, 0xCC) = 0x64;
+                s32 step = WROOT(p)->recs[0].e;
+                WROOT(p)->recs[0].e = step + 1;
+                WROOT(p)->recs[0].b = intplGetValue(0xB, step, 0x18, 640.0f, 0.0f);
+                if (WROOT(p)->recs[0].e > 0x18) {
+                    WROOT(p)->recs[0].d = 0x64;
                 }
                 break;
             }
             case 30:
-                WW_F32(p, 0xC8) = 0.0f;
-                WW_S32(p, 0xD0) = 0;
-                WW_S32(p, 0xCC) = WW_S32(p, 0xCC) + 1;
+                WROOT(p)->recs[0].c = 0.0f;
+                WROOT(p)->recs[0].e = 0;
+                WROOT(p)->recs[0].d = WROOT(p)->recs[0].d + 1;
                 break;
             case 31: {
-                s32 step = WW_S32(p, 0xD0);
-                WW_S32(p, 0xD0) = step + 1;
-                WW_F32(p, 0xC4) = intplGetValue(0xB, step, 0x18, -640.0f, 0.0f);
-                if (WW_S32(p, 0xD0) > 0x18) {
-                    WW_S32(p, 0xCC) = 0x64;
+                s32 step = WROOT(p)->recs[0].e;
+                WROOT(p)->recs[0].e = step + 1;
+                WROOT(p)->recs[0].b = intplGetValue(0xB, step, 0x18, -640.0f, 0.0f);
+                if (WROOT(p)->recs[0].e > 0x18) {
+                    WROOT(p)->recs[0].d = 0x64;
                 }
                 break;
             }
             case 40:
-                WW_F32(p, 0xC8) = 0.0f;
-                WW_S32(p, 0xD0) = 0;
-                WW_S32(p, 0xCC) = WW_S32(p, 0xCC) + 1;
+                WROOT(p)->recs[0].c = 0.0f;
+                WROOT(p)->recs[0].e = 0;
+                WROOT(p)->recs[0].d = WROOT(p)->recs[0].d + 1;
                 break;
             case 41: {
-                s32 step = WW_S32(p, 0xD0);
-                WW_S32(p, 0xD0) = step + 1;
-                WW_F32(p, 0xC4) = intplGetValue(0xB, step, 0x18, 0.0f, -640.0f);
-                if (WW_S32(p, 0xD0) > 0x18) {
-                    WW_S32(p, 0xCC) = -1;
+                s32 step = WROOT(p)->recs[0].e;
+                WROOT(p)->recs[0].e = step + 1;
+                WROOT(p)->recs[0].b = intplGetValue(0xB, step, 0x18, 0.0f, -640.0f);
+                if (WROOT(p)->recs[0].e > 0x18) {
+                    WROOT(p)->recs[0].d = -1;
                 }
                 break;
             }
@@ -934,47 +978,47 @@ void winBgGX(WindowWork* work, s32 type, f32 x, f32 y) {
 }
 
 void winMsgMain(WindowWork* work) {
-    switch (WW_S32(work, 0x130)) {
+    switch (WROOT(work)->field_0x130) {
         case 0:
-            WW_F32(work, 0x128) = -800.0f;
-            WW_F32(work, 0x12C) = -170.0f;
-            WW_S32(work, 0x134) = 0;
-            WW_S32(work, 0x130) = WW_S32(work, 0x130) + 1;
+            WROOT(work)->field_0x128 = -800.0f;
+            WROOT(work)->field_0x12C = -170.0f;
+            WROOT(work)->field_0x134 = 0;
+            WROOT(work)->field_0x130 = WROOT(work)->field_0x130 + 1;
             break;
         case 1: {
-            s32 step = WW_S32(work, 0x134);
-            WW_S32(work, 0x134) = step + 1;
-            WW_F32(work, 0x128) = intplGetValue(0xB, step, 0x10, -800.0f, 0.0f);
-            if (WW_S32(work, 0x134) > 0x10) {
-                WW_S32(work, 0x130) = WW_S32(work, 0x130) + 1;
+            s32 step = WROOT(work)->field_0x134;
+            WROOT(work)->field_0x134 = step + 1;
+            WROOT(work)->field_0x128 = intplGetValue(0xB, step, 0x10, -800.0f, 0.0f);
+            if (WROOT(work)->field_0x134 > 0x10) {
+                WROOT(work)->field_0x130 = WROOT(work)->field_0x130 + 1;
             }
             break;
         }
         case 2:
             if (keyGetDirTrg(0) & 0x100) {
-                WW_S32(work, 0x148) = WW_S32(work, 0x148) - 2;
-                if (WW_S32(work, 0x148) < 0) {
-                    WW_S32(work, 0x148) = 0;
+                WROOT(work)->field_0x148 = WROOT(work)->field_0x148 - 2;
+                if (WROOT(work)->field_0x148 < 0) {
+                    WROOT(work)->field_0x148 = 0;
                 } else {
                     psndSFXOn((const char*)0x20006);
                 }
             } else if (keyGetDirTrg(0) & 0x200) {
-                if (WW_S32(work, 0x148) / 2 < (WW_S32(work, 0x14C) + 1) / 2 - 1) {
-                    WW_S32(work, 0x148) = WW_S32(work, 0x148) + 2;
+                if (WROOT(work)->field_0x148 / 2 < (WROOT(work)->field_0x14C + 1) / 2 - 1) {
+                    WROOT(work)->field_0x148 = WROOT(work)->field_0x148 + 2;
                     psndSFXOn((const char*)0x20006);
                 }
             }
             break;
         case 10:
-            WW_S32(work, 0x134) = 0;
-            WW_S32(work, 0x130) = WW_S32(work, 0x130) + 1;
+            WROOT(work)->field_0x134 = 0;
+            WROOT(work)->field_0x130 = WROOT(work)->field_0x130 + 1;
             break;
         case 11: {
-            s32 step = WW_S32(work, 0x134);
-            WW_S32(work, 0x134) = step + 1;
-            WW_F32(work, 0x128) = intplGetValue(0xB, step, 0x10, 0.0f, -800.0f);
-            if (WW_S32(work, 0x134) > 0x10) {
-                WW_S32(work, 0x130) = WW_S32(work, 0x130) + 1;
+            s32 step = WROOT(work)->field_0x134;
+            WROOT(work)->field_0x134 = step + 1;
+            WROOT(work)->field_0x128 = intplGetValue(0xB, step, 0x10, 0.0f, -800.0f);
+            if (WROOT(work)->field_0x134 > 0x10) {
+                WROOT(work)->field_0x130 = WROOT(work)->field_0x130 + 1;
             }
             break;
         }
@@ -1014,18 +1058,18 @@ void winMsgDisp(WindowWork* work, f32 x, f32 y) {
 
     windowDispGX_Waku_col(0, (GXColor){0xFF, 0xFF, 0xFF, 0xFF}, fx, fy, 500.0f, 80.0f, 20.0f);
 
-    if (WW_S32(work, 0x138) != 0 && WW_S32(work, 0x138) > 0) {
+    if (WROOT(work)->field_0x138 != 0 && WROOT(work)->field_0x138 > 0) {
         winTexInit(*(TEXPalette**)work->winTpl->data);
         winTexSet(0x25, (Vec){ fx, fy, 0.0f }, (Vec){ 1.0f, 1.0f, 1.0f }, iconColor);
         winIconInit();
-        winMailIconV(((0, (ItemDataView*)itemDataTable)[WW_S32(work, 0x138)]).icon_id, (Vec){ fx, fy, 0.0f }, (Vec){ 1.0f, 1.0f, 1.0f }, iconColor);
+        winMailIconV(((0, (ItemDataView*)itemDataTable)[WROOT(work)->field_0x138]).icon_id, (Vec){ fx, fy, 0.0f }, (Vec){ 1.0f, 1.0f, 1.0f }, iconColor);
     }
 
     if (WW_PTR(work, 0x140) != NULL) {
         const char* msg;
         f32 edge;
 
-        edge = (WW_S32(work, 0x138) == -2) ? -130.0f : 0.0f;
+        edge = (WROOT(work)->field_0x138 == -2) ? -130.0f : 0.0f;
         msg = msgSearch((const char*)WW_PTR(work, 0x140));
         width = FontGetMessageWidth(msg);
         winNameGX(work, 1, (x - 120.0f) + edge, ty = 8.0f + (16.0f + fy), 240.0f, 32.0f);
@@ -1038,22 +1082,22 @@ void winMsgDisp(WindowWork* work, f32 x, f32 y) {
         if (strcmp((const char*)WW_PTR(work, 0x13C), "msg_lottery_number") == 0) {
             sprintf(buf, msgSearch((const char*)WW_PTR(work, 0x13C)), lotteryGetPtr()->mTicketNum);
             winFontInit();
-            winMsgFontV((Vec){ (40.0f + (x - 250.0f)) - 10.0f, fy + (f32)(WW_S32(work, 0x148) * 0x1C), 0.0f }, (Vec){ 1.0f, 1.0f, 1.0f }, fontColor, buf);
+            winMsgFontV((Vec){ (40.0f + (x - 250.0f)) - 10.0f, fy + (f32)(WROOT(work)->field_0x148 * 0x1C), 0.0f }, (Vec){ 1.0f, 1.0f, 1.0f }, fontColor, buf);
         } else {
             winFontInit();
-            winMailLabelV((Vec){ (40.0f + (x - 250.0f)) - 10.0f, fy + (f32)(WW_S32(work, 0x148) * 0x1C), 0.0f }, (Vec){ 1.0f, 1.0f, 1.0f }, fontColor, (const char*)WW_PTR(work, 0x13C));
+            winMailLabelV((Vec){ (40.0f + (x - 250.0f)) - 10.0f, fy + (f32)(WROOT(work)->field_0x148 * 0x1C), 0.0f }, (Vec){ 1.0f, 1.0f, 1.0f }, fontColor, (const char*)WW_PTR(work, 0x13C));
         }
         GXSetScissor(0, 0, 0x260, 0x1E0);
     }
 
-    if (WW_S32(work, 0x14C) > 2) {
+    if (WROOT(work)->field_0x14C > 2) {
         s32 i;
 
         winIconInit();
-        i = WW_S32(work, 0x148);
+        i = WROOT(work)->field_0x148;
         if (i == 0) {
             if ((gp->retraceCount & 0x1F) < 0x14) winMailIconV(0x1B6, (Vec){ (250.0f + x) - 10.0f, (40.0f + (y - 40.0f)) - 24.0f, 0.0f }, (Vec){ 0.6f, 0.6f, 0.6f }, (GXColor){0xFF, 0xFF, 0xFF, 0xFF});
-        } else if (i / 2 == (WW_S32(work, 0x14C) + 1) / 2 - 1) {
+        } else if (i / 2 == (WROOT(work)->field_0x14C + 1) / 2 - 1) {
             if ((gp->retraceCount & 0x1F) < 0x14) winMailIconV(0x1B5, (Vec){ (250.0f + x) - 10.0f, 24.0f + (40.0f + (y - 40.0f)), 0.0f }, (Vec){ 0.6f, 0.6f, 0.6f }, (GXColor){0xFF, 0xFF, 0xFF, 0xFF});
         } else if ((gp->retraceCount & 0x1F) < 0x14) {
             ix = (250.0f + x) - 10.0f;
@@ -1076,12 +1120,12 @@ void winMsgEntry(WindowWork* work, s32 a1, const char* str, s32 a3) {
             changed = TRUE;
         }
         if (changed) {
-            WW_S32(work, 0x138) = a1;
+            WROOT(work)->field_0x138 = a1;
             WW_PTR(work, 0x13C) = (void*)str;
             WW_S32(work, 0x140) = a3;
             FontGetMessageWidthLine((const char*)msgSearch((const char*)WW_PTR(work, 0x13C)), &width);
-            WW_S32(work, 0x148) = 0;
-            WW_S32(work, 0x14C) = width + 1;
+            WROOT(work)->field_0x148 = 0;
+            WROOT(work)->field_0x14C = width + 1;
             WW_PTR(work, 0x144) = (void*)str;
             strncpy(_tmp, str, 0x3C);
         }
@@ -1502,15 +1546,15 @@ void winBookGX(WindowWork* work, s32 type, f32 x, f32 y) {
         winFontInit();
         labelX = 20.0f + x;
         winFontSetLabelV((Vec){labelX, y - 14.0f, 0.0f}, (Vec){0.8f, 0.8f, 0.8f}, (GXColor){0x00, 0x00, 0x00, 0xFF},
-                         luigi_book_list[WW_S32(work, 0x2C8)][WW_S32(work, 0x2D0) * 2]);
+                         luigi_book_list[WROOT(work)->field_0x2C8][WROOT(work)->field_0x2D0 * 2]);
         winFontSetLabelV((Vec){220.0f + labelX, y - 14.0f, 0.0f}, (Vec){0.8f, 0.8f, 0.8f},
                          (GXColor){0x00, 0x00, 0x00, 0xFF},
-                         luigi_book_list[WW_S32(work, 0x2C8)][WW_S32(work, 0x2D0) * 2 + 1]);
+                         luigi_book_list[WROOT(work)->field_0x2C8][WROOT(work)->field_0x2D0 * 2 + 1]);
 
         // Luigi, reading: the closing pose on the last page
         pose = L_msgGetWork()->poseId;
         anim = animPoseGetAnimDataPtr(pose);
-        if (WW_S32(work, 0x2D0) < WW_S32(work, 0x2CC) - 1) {
+        if (WROOT(work)->field_0x2D0 < WROOT(work)->field_0x2CC - 1) {
             animPoseSetAnim(pose, "HOS_C_1", 0);
         } else {
             animPoseSetAnim(pose, "HOS_E_1", 0);
@@ -1644,13 +1688,13 @@ void winHakoGX(WindowWork* work, s32 type, f32 x, f32 y) {
     s32 id;
 
     if (type == 0) {
-        scroll = WW_F32(work, 0xEA0);
-        count = WW_S32(work, 0xE94);
-        cursor = WW_S32(work, 0xE9C);
+        scroll = WROOT(work)->field_0xEA0;
+        count = WROOT(work)->field_0xE94;
+        cursor = WROOT(work)->field_0xE9C;
     } else {
-        scroll = WW_F32(work, 0xF9C);
-        count = WW_S32(work, 0xF90);
-        cursor = WW_S32(work, 0xF98);
+        scroll = WROOT(work)->field_0xF9C;
+        count = WROOT(work)->field_0xF90;
+        cursor = WROOT(work)->field_0xF98;
     }
 
     GXSetBlendMode(0, 1, 0, 0);
@@ -2143,24 +2187,24 @@ int compare_func5_2_r(void* a, void* b) {
 
 void sort_5_1_func(WindowWork* work) {
     if (work->sortReverseNext == 0) {
-        qqsort((u8*)work + 0xEB8, WW_S32(work, 0xE94), 2, (int (*)(void*, void*))compare_func5_1);
+        qqsort((u8*)work + 0xEB8, WROOT(work)->field_0xE94, 2, (int (*)(void*, void*))compare_func5_1);
     } else {
-        qqsort((u8*)work + 0xEB8, WW_S32(work, 0xE94), 2, (int (*)(void*, void*))compare_func5_1_r);
+        qqsort((u8*)work + 0xEB8, WROOT(work)->field_0xE94, 2, (int (*)(void*, void*))compare_func5_1_r);
     }
     work->sortReverseNext = 1 - work->sortReverseNext;
-    WW_S32(work, 0xE98) = 0;
-    WW_S32(work, 0xE9C) = WW_S32(work, 0xE98) / 28;
+    WROOT(work)->field_0xE98 = 0;
+    WROOT(work)->field_0xE9C = WROOT(work)->field_0xE98 / 28;
 }
 
 void sort_5_2_func(WindowWork* work) {
     if (work->sortReverseNext == 0) {
-        qqsort((u8*)work + 0xEB8, WW_S32(work, 0xE94), 2, compare_func5_2);
+        qqsort((u8*)work + 0xEB8, WROOT(work)->field_0xE94, 2, compare_func5_2);
     } else {
-        qqsort((u8*)work + 0xEB8, WW_S32(work, 0xE94), 2, compare_func5_2_r);
+        qqsort((u8*)work + 0xEB8, WROOT(work)->field_0xE94, 2, compare_func5_2_r);
     }
     work->sortReverseNext = 1 - work->sortReverseNext;
-    WW_S32(work, 0xE98) = 0;
-    WW_S32(work, 0xE9C) = WW_S32(work, 0xE98) / 28;
+    WROOT(work)->field_0xE98 = 0;
+    WROOT(work)->field_0xE9C = WROOT(work)->field_0xE98 / 28;
 }
 
 // Same bubble sort as sort_4_3 but over the s16 array at work+0xEB8 (index +0xF0).
@@ -2181,9 +2225,9 @@ void sort_5_3_func(WindowWork* work) {
         s16 ib;
         s32 swap;
 
-        for (i = 0; i < WW_S32(work, 0xE94) - 1; i++) {
+        for (i = 0; i < WROOT(work)->field_0xE94 - 1; i++) {
             j = i + 1;
-            while (j < WW_S32(work, 0xE94)) {
+            while (j < WROOT(work)->field_0xE94) {
                 la = *(s16*)(base + i * 2 + 0xEB8);
                 lb = *(s16*)(base + j * 2 + 0xEB8);
                 ia = (s16)((s32)la + 0xF0);
@@ -2211,9 +2255,9 @@ void sort_5_3_func(WindowWork* work) {
         s16 ia;
         s16 ib;
 
-        for (i = 0; i < WW_S32(work, 0xE94) - 1; i++) {
+        for (i = 0; i < WROOT(work)->field_0xE94 - 1; i++) {
             j = i + 1;
-            while (j < WW_S32(work, 0xE94)) {
+            while (j < WROOT(work)->field_0xE94) {
                 la = *(s16*)(base + i * 2 + 0xEB8);
                 lb = *(s16*)(base + j * 2 + 0xEB8);
                 ia = (s16)((s32)la + 0xF0);
@@ -2235,8 +2279,8 @@ void sort_5_3_func(WindowWork* work) {
     }
 
     work->sortReverseNext = 1 - work->sortReverseNext;
-    WW_S32(work, 0xE98) = 0;
-    WW_S32(work, 0xE9C) = WW_S32(work, 0xE98) / 28;
+    WROOT(work)->field_0xE98 = 0;
+    WROOT(work)->field_0xE9C = WROOT(work)->field_0xE98 / 28;
 }
 
 // 1:1 (the `const` parameters reproduce the target's hoisted `lha` prologue load).
@@ -2293,24 +2337,24 @@ int compare_func6_2_r(void* a, void* b) {
 
 void sort_6_1_func(WindowWork* work) {
     if (work->sortReverseNext == 0) {
-        qqsort((u8*)work + 0xFB4, WW_S32(work, 0xF90), 2, (int (*)(void*, void*))compare_func6_1);
+        qqsort((u8*)work + 0xFB4, WROOT(work)->field_0xF90, 2, (int (*)(void*, void*))compare_func6_1);
     } else {
-        qqsort((u8*)work + 0xFB4, WW_S32(work, 0xF90), 2, (int (*)(void*, void*))compare_func6_1_r);
+        qqsort((u8*)work + 0xFB4, WROOT(work)->field_0xF90, 2, (int (*)(void*, void*))compare_func6_1_r);
     }
     work->sortReverseNext = 1 - work->sortReverseNext;
-    WW_S32(work, 0xF94) = 0;
-    WW_S32(work, 0xF98) = WW_S32(work, 0xF94) / 28;
+    WROOT(work)->field_0xF94 = 0;
+    WROOT(work)->field_0xF98 = WROOT(work)->field_0xF94 / 28;
 }
 
 void sort_6_2_func(WindowWork* work) {
     if (work->sortReverseNext == 0) {
-        qqsort((u8*)work + 0xFB4, WW_S32(work, 0xF90), 2, compare_func6_2);
+        qqsort((u8*)work + 0xFB4, WROOT(work)->field_0xF90, 2, compare_func6_2);
     } else {
-        qqsort((u8*)work + 0xFB4, WW_S32(work, 0xF90), 2, compare_func6_2_r);
+        qqsort((u8*)work + 0xFB4, WROOT(work)->field_0xF90, 2, compare_func6_2_r);
     }
     work->sortReverseNext = 1 - work->sortReverseNext;
-    WW_S32(work, 0xF94) = 0;
-    WW_S32(work, 0xF98) = WW_S32(work, 0xF94) / 28;
+    WROOT(work)->field_0xF94 = 0;
+    WROOT(work)->field_0xF98 = WROOT(work)->field_0xF94 / 28;
 }
 
 int compare_func1(void* a, void* b) {
@@ -2335,13 +2379,13 @@ int compare_func1_r(void* a, void* b) {
 
 void sort_7_1_func(WindowWork* work) {
     if (work->sortReverseNext == 0) {
-        qqsort((u8*)work + 0x1050, WW_S32(work, 0x1038), 2, compare_func1);
+        qqsort((u8*)work + 0x1050, WROOT(work)->field_0x1038, 2, compare_func1);
     } else {
-        qqsort((u8*)work + 0x1050, WW_S32(work, 0x1038), 2, compare_func1_r);
+        qqsort((u8*)work + 0x1050, WROOT(work)->field_0x1038, 2, compare_func1_r);
     }
     work->sortReverseNext = 1 - work->sortReverseNext;
-    WW_S32(work, 0x1040) = 0;
-    WW_S32(work, 0x1044) = WW_S32(work, 0x1040) / 16;
+    WROOT(work)->field_0x1040 = 0;
+    WROOT(work)->field_0x1044 = WROOT(work)->field_0x1040 / 16;
 }
 
 static inline s32 winRootFindTag(const char* tag, u8* buf) {
@@ -2402,15 +2446,15 @@ int compare_func2_r(const void* a, const void* b) {
 
 void sort_7_2_func(WindowWork* work) {
     if (work->sortReverseNext == 0) {
-        qqsort(&work->field_40[0x1010], WW_S32(work, 0x1038), 2, compare_func1);
-        qqsort(&work->field_40[0x1010], WW_S32(work, 0x1038), 2, (int (*)(void*, void*))compare_func2);
+        qqsort(&work->field_40[0x1010], WROOT(work)->field_0x1038, 2, compare_func1);
+        qqsort(&work->field_40[0x1010], WROOT(work)->field_0x1038, 2, (int (*)(void*, void*))compare_func2);
     } else {
-        qqsort(&work->field_40[0x1010], WW_S32(work, 0x1038), 2, compare_func1_r);
-        qqsort(&work->field_40[0x1010], WW_S32(work, 0x1038), 2, (int (*)(void*, void*))compare_func2_r);
+        qqsort(&work->field_40[0x1010], WROOT(work)->field_0x1038, 2, compare_func1_r);
+        qqsort(&work->field_40[0x1010], WROOT(work)->field_0x1038, 2, (int (*)(void*, void*))compare_func2_r);
     }
     work->sortReverseNext = 1 - work->sortReverseNext;
-    WW_S32(work, 0x1040) = 0;
-    WW_S32(work, 0x1044) = WW_S32(work, 0x1040) / 16;
+    WROOT(work)->field_0x1040 = 0;
+    WROOT(work)->field_0x1044 = WROOT(work)->field_0x1040 / 16;
 }
 
 int compare_func3(void* a, void* b) {
@@ -2469,15 +2513,15 @@ int compare_func3_r(void* a, void* b) {
 
 void sort_7_3_func(WindowWork* work) {
     if (work->sortReverseNext == 0) {
-        qqsort(&work->field_40[0x1010], WW_S32(work, 0x1038), 2, compare_func1);
-        qqsort(&work->field_40[0x1010], WW_S32(work, 0x1038), 2, compare_func3);
+        qqsort(&work->field_40[0x1010], WROOT(work)->field_0x1038, 2, compare_func1);
+        qqsort(&work->field_40[0x1010], WROOT(work)->field_0x1038, 2, compare_func3);
     } else {
-        qqsort(&work->field_40[0x1010], WW_S32(work, 0x1038), 2, compare_func1_r);
-        qqsort(&work->field_40[0x1010], WW_S32(work, 0x1038), 2, compare_func3_r);
+        qqsort(&work->field_40[0x1010], WROOT(work)->field_0x1038, 2, compare_func1_r);
+        qqsort(&work->field_40[0x1010], WROOT(work)->field_0x1038, 2, compare_func3_r);
     }
     work->sortReverseNext = 1 - work->sortReverseNext;
-    WW_S32(work, 0x1040) = 0;
-    WW_S32(work, 0x1044) = WW_S32(work, 0x1040) / 16;
+    WROOT(work)->field_0x1040 = 0;
+    WROOT(work)->field_0x1044 = WROOT(work)->field_0x1040 / 16;
 }
 
 // 1:1 (the `const` parameters reproduce the target's hoisted `lbz r3,0x1(r3)` prologue load).
@@ -2548,45 +2592,45 @@ void winSortMain(WindowWork* work) {
     u32 trg = work->buttonTrg;
     u32 rep = work->dirRep;
 
-    if (WW_S32(work, 0x17C) == 0) {
+    if (WROOT(work)->field_0x17C == 0) {
         trg = 0;
         rep = 0;
     }
 
     if (trg & 0x200) {
         psndSFXOn((const char*)0x20013);
-        WW_S32(work, 0x17C) = 0;
-        WW_F32(work, 0x16C) = -600.0f;
+        WROOT(work)->field_0x17C = 0;
+        WROOT(work)->field_0x16C = -600.0f;
     } else if (rep & 0x1000) {
         psndSFXOn((const char*)0x20005);
-        WW_S32(work, 0x174) = WW_S32(work, 0x174) - 1;
-        if (WW_S32(work, 0x174) < 0) {
-            WW_S32(work, 0x174) = WW_S32(work, 0x178) - 1;
+        WROOT(work)->field_0x174 = WROOT(work)->field_0x174 - 1;
+        if (WROOT(work)->field_0x174 < 0) {
+            WROOT(work)->field_0x174 = WROOT(work)->field_0x178 - 1;
         }
     } else if (rep & 0x2000) {
         psndSFXOn((const char*)0x20005);
-        WW_S32(work, 0x174) = WW_S32(work, 0x174) + 1;
-        if (WW_S32(work, 0x174) >= WW_S32(work, 0x178)) {
-            WW_S32(work, 0x174) = 0;
+        WROOT(work)->field_0x174 = WROOT(work)->field_0x174 + 1;
+        if (WROOT(work)->field_0x174 >= WROOT(work)->field_0x178) {
+            WROOT(work)->field_0x174 = 0;
         }
     } else if (trg & 0x100) {
         psndSFXOn((const char*)0x20012);
-        sort_data[WW_S32(work, 0x184)][WW_S32(work, 0x174)].func(work);
+        sort_data[WROOT(work)->field_0x184][WROOT(work)->field_0x174].func(work);
     } else if (trg & 0x1000) {
-        WW_S32(work, 0x17C) = 0;
-        WW_F32(work, 0x16C) = -600.0f;
+        WROOT(work)->field_0x17C = 0;
+        WROOT(work)->field_0x16C = -600.0f;
     }
 
-    if (WW_S32(work, 0x17C) != 0) {
-        work->targetX = 30.0f + WW_F32(work, 0x16C);
-        work->targetY = (WW_F32(work, 0x170) - 40.0f) -
-                              (f32)(WW_S32(work, 0x174) * 0x28);
-        winMsgEntry(work, 0, sort_data[WW_S32(work, 0x184)][WW_S32(work, 0x174)].name, 0);
+    if (WROOT(work)->field_0x17C != 0) {
+        work->targetX = 30.0f + WROOT(work)->field_0x16C;
+        work->targetY = (WROOT(work)->field_0x170 - 40.0f) -
+                              (f32)(WROOT(work)->field_0x174 * 0x28);
+        winMsgEntry(work, 0, sort_data[WROOT(work)->field_0x184][WROOT(work)->field_0x174].name, 0);
     }
 
     {
-        WW_F32(work, 0x164) += (WW_F32(work, 0x16C) - WW_F32(work, 0x164)) / 8.0f;
-        WW_F32(work, 0x168) += (WW_F32(work, 0x170) - WW_F32(work, 0x168)) / 8.0f;
+        WROOT(work)->field_0x164 += (WROOT(work)->field_0x16C - WROOT(work)->field_0x164) / 8.0f;
+        WROOT(work)->field_0x168 += (WROOT(work)->field_0x170 - WROOT(work)->field_0x168) / 8.0f;
     }
 }
 
@@ -2640,8 +2684,8 @@ SortTable* sort_data[8] = {sort_1, sort_2, sort_3, sort_4, sort_5, sort_6, sort_
 
 
 void winSortGX(WindowWork* work) {
-    f32 x = WW_F32(work, 0x164);
-    f32 y = WW_F32(work, 0x168);
+    f32 x = WROOT(work)->field_0x164;
+    f32 y = WROOT(work)->field_0x168;
     f32 w = 128.0f;
     f32 w2 = 136.0f;
     s32 i;
@@ -2664,24 +2708,24 @@ void winSortGX(WindowWork* work) {
     GXSetVtxAttrFmt(0, 0xD, 1, 4, 0);
     GXLoadPosMtxImm((const f32(*)[4])((u8*)camGetPtr(8) + 0x11C), 0);
     GXSetCurrentMtx(0);
-    if (WW_S32(work, 0x184) == 7) {
+    if (WROOT(work)->field_0x184 == 7) {
         GXSetScissor((u32)(16.0f +
-                           (16.0f + (304.0f + WW_F32(work, 0x244)))),
-                     (u32)(40.0f + (240.0f - WW_F32(work, 0x24C))), 0x200,
+                           (16.0f + (304.0f + WROOT(work)->field_0x244))),
+                     (u32)(40.0f + (240.0f - WROOT(work)->field_0x24C)), 0x200,
                      0xC0);
     }
 
     winSortPanel(work, 0xA5, x, y, w, 24.0);
     winSortPanel(work, 0xA3, x + w, y, 24.0f, 24.0);
-    for (i = 0; i < WW_S32(work, 0x178); i++) {
+    for (i = 0; i < WROOT(work)->field_0x178; i++) {
         winSortPanel(work, 0xA6, x + w + 8.0f, y - 24.0f - (f32)(i * 0x28), 16.0f, 40.0);
     }
-    winSortPanel(work, 0xA4, x + w, y - 24.0f - (f32)(WW_S32(work, 0x178) * 0x28), 24.0f, 24.0);
-    winSortPanel(work, 0xA7, x, y - 24.0f - (f32)(WW_S32(work, 0x178) * 0x28), w, 24.0);
-    winSortPanel(work, 0xA8, x, y - 24.0f, w2, (f32)(WW_S32(work, 0x178) * 0x28));
+    winSortPanel(work, 0xA4, x + w, y - 24.0f - (f32)(WROOT(work)->field_0x178 * 0x28), 24.0f, 24.0);
+    winSortPanel(work, 0xA7, x, y - 24.0f - (f32)(WROOT(work)->field_0x178 * 0x28), w, 24.0);
+    winSortPanel(work, 0xA8, x, y - 24.0f, w2, (f32)(WROOT(work)->field_0x178 * 0x28));
 
-    for (i = 0; i < WW_S32(work, 0x178); i++) {
-        const SortTable* list = sort_data[WW_S32(work, 0x184)];
+    for (i = 0; i < WROOT(work)->field_0x178; i++) {
+        const SortTable* list = sort_data[WROOT(work)->field_0x184];
         s32 tex = 0xAA;
 
         if (strcmp(list[i].name, "msg_menu_sort_aiueo") == 0) {
@@ -2698,7 +2742,7 @@ void winSortGX(WindowWork* work) {
             tex = 0xAA;
         }
 
-        if (i == WW_S32(work, 0x174)) {
+        if (i == WROOT(work)->field_0x174) {
             f32 row;
 
             winTexInit(*(TEXPalette**)work->winTpl->data);
@@ -2715,7 +2759,7 @@ void winSortGX(WindowWork* work) {
         }
     }
 
-    if (WW_S32(work, 0x184) == 7) {
+    if (WROOT(work)->field_0x184 == 7) {
         GXSetScissor(0, 0, 0x260, 0x1E0);
     }
 }
@@ -2729,19 +2773,19 @@ void winSortEntry(WindowWork* work, s32 idx, f32 a, f32 b) {
         count++;
     }
 
-    WW_S32(work, 0x184) = idx;
-    WW_S32(work, 0x178) = count;
-    WW_S32(work, 0x174) = 0;
+    WROOT(work)->field_0x184 = idx;
+    WROOT(work)->field_0x178 = count;
+    WROOT(work)->field_0x174 = 0;
     work->sortReverseNext = 0;
-    WW_F32(work, 0x164) = -1000.0f;
-    WW_F32(work, 0x16C) = a;
-    WW_F32(work, 0x168) = b;
-    WW_F32(work, 0x170) = b;
-    WW_S32(work, 0x17C) = 1;
+    WROOT(work)->field_0x164 = -1000.0f;
+    WROOT(work)->field_0x16C = a;
+    WROOT(work)->field_0x168 = b;
+    WROOT(work)->field_0x170 = b;
+    WROOT(work)->field_0x17C = 1;
 }
 
 s32 winSortWait(WindowWork* work) {
-    return WW_S32(work, 0x17C) != 0;
+    return WROOT(work)->field_0x17C != 0;
 }
 
 // Kage (paper) window quad. The vertex constants are literals so MWCC reloads each
@@ -2845,8 +2889,8 @@ typedef enum {
 void winMailDisp(WindowWork* work) {
     s32 i;
 
-    if (WW_F32(work, 0x244) < 320.0f && WW_F32(work, 0x24C) > -240.0f) {
-    winMailGX(work, WW_F32(work, 0x244), WW_F32(work, 0x24C));
+    if (WROOT(work)->field_0x244 < 320.0f && WROOT(work)->field_0x24C > -240.0f) {
+    winMailGX(work, WROOT(work)->field_0x244, WROOT(work)->field_0x24C);
 
     if (work->itemState != 0xCA) {
         for (i = 0; i < work->mailCount; i++) {
@@ -2868,20 +2912,20 @@ void winMailDisp(WindowWork* work) {
             }
             winTexInit(WIN_MAIL_TEX(work));
             winTexSet(0x77,
-                      (Vec){4.0f + (208.0f + WW_F32(work, 0x244)), WW_F32(work, 0x260) + ((WW_F32(work, 0x24C) - 56.0f) - (f32)(i * 40)), 0.0f},
+                      (Vec){4.0f + (208.0f + WROOT(work)->field_0x244), WROOT(work)->field_0x260 + ((WROOT(work)->field_0x24C - 56.0f) - (f32)(i * 40)), 0.0f},
                       (Vec){1.0f, 1.0f, 1.0f}, color);
             white = (GXColor){0xFF, 0xFF, 0xFF, 0xFF};
             winTexSet((s32)pouchCheckMail(id) == 2 ? WIN_TEX_MAIL_READ : WIN_TEX_MAIL_UNREAD,
-                      (Vec){72.0f + WW_F32(work, 0x244), WW_F32(work, 0x260) + (((WW_F32(work, 0x24C) - 56.0f) - (f32)(i * 40)) - 3.0f), 0.0f},
+                      (Vec){72.0f + WROOT(work)->field_0x244, WROOT(work)->field_0x260 + (((WROOT(work)->field_0x24C - 56.0f) - (f32)(i * 40)) - 3.0f), 0.0f},
                       (Vec){1.0f, 1.0f, 1.0f}, white);
             winTexSet((num + 1) / 10 + 0x65,
-                      (Vec){2.0f + (88.0f + WW_F32(work, 0x244)), WW_F32(work, 0x260) + (((WW_F32(work, 0x24C) - 56.0f) - (f32)(i * 40)) - 3.0f), 0.0f},
+                      (Vec){2.0f + (88.0f + WROOT(work)->field_0x244), WROOT(work)->field_0x260 + (((WROOT(work)->field_0x24C - 56.0f) - (f32)(i * 40)) - 3.0f), 0.0f},
                       (Vec){1.0f, 1.0f, 1.0f}, white);
             winTexSet((num + 1) % 10 + 0x65,
-                      (Vec){2.0f + (104.0f + WW_F32(work, 0x244)), WW_F32(work, 0x260) + (((WW_F32(work, 0x24C) - 56.0f) - (f32)(i * 40)) - 3.0f), 0.0f},
+                      (Vec){2.0f + (104.0f + WROOT(work)->field_0x244), WROOT(work)->field_0x260 + (((WROOT(work)->field_0x24C - 56.0f) - (f32)(i * 40)) - 3.0f), 0.0f},
                       (Vec){1.0f, 1.0f, 1.0f}, white);
             winFontInit();
-            winMailLabelV((Vec){120.0f + WW_F32(work, 0x244), WW_F32(work, 0x260) + (8.0f + ((WW_F32(work, 0x24C) - 56.0f) - (f32)(i * 40))), 0.0f},
+            winMailLabelV((Vec){120.0f + WROOT(work)->field_0x244, WROOT(work)->field_0x260 + (8.0f + ((WROOT(work)->field_0x24C - 56.0f) - (f32)(i * 40))), 0.0f},
                           (Vec){0.75f, 0.75f, 0.75f}, black, mail->name);
         }
         GXSetScissor(0, 0, 0x260, 0x1E0);
@@ -2907,35 +2951,35 @@ void winMailDisp(WindowWork* work) {
         // the header: envelope, opened mark, number and title
         winTexInit(WIN_MAIL_TEX(work));
         winTexSet(0x77,
-                  (Vec){4.0f + (208.0f + WW_F32(work, 0x244)), WW_F32(work, 0x24C) - 56.0f, 0.0f},
+                  (Vec){4.0f + (208.0f + WROOT(work)->field_0x244), WROOT(work)->field_0x24C - 56.0f, 0.0f},
                   (Vec){1.0f, 1.0f, 1.0f}, color);
         winTexSet(0x5E,
-                  (Vec){72.0f + WW_F32(work, 0x244), WW_F32(work, 0x24C) - 56.0f, 0.0f},
+                  (Vec){72.0f + WROOT(work)->field_0x244, WROOT(work)->field_0x24C - 56.0f, 0.0f},
                   (Vec){1.0f, 1.0f, 1.0f}, white);
         winTexSet((num + 1) / 10 + 0x65,
-                  (Vec){2.0f + (88.0f + WW_F32(work, 0x244)), (WW_F32(work, 0x24C) - 56.0f) - 3.0f, 0.0f},
+                  (Vec){2.0f + (88.0f + WROOT(work)->field_0x244), (WROOT(work)->field_0x24C - 56.0f) - 3.0f, 0.0f},
                   (Vec){1.0f, 1.0f, 1.0f}, white);
         winTexSet((num + 1) % 10 + 0x65,
-                  (Vec){2.0f + (104.0f + WW_F32(work, 0x244)), (WW_F32(work, 0x24C) - 56.0f) - 3.0f, 0.0f},
+                  (Vec){2.0f + (104.0f + WROOT(work)->field_0x244), (WROOT(work)->field_0x24C - 56.0f) - 3.0f, 0.0f},
                   (Vec){1.0f, 1.0f, 1.0f}, white);
         winFontInit();
-        winMailLabelV((Vec){120.0f + WW_F32(work, 0x244), 8.0f + (WW_F32(work, 0x24C) - 56.0f), 0.0f},
+        winMailLabelV((Vec){120.0f + WROOT(work)->field_0x244, 8.0f + (WROOT(work)->field_0x24C - 56.0f), 0.0f},
                       (Vec){0.75f, 0.75f, 0.75f}, black, mail->name);
 
         // the body, clipped to the page and scrolled by whole lines
-        top = 72.0f + (240.0f - WW_F32(work, 0x24C));
-        GXSetScissor(32.0f + (304.0f + WW_F32(work, 0x244)), top, 0x158, 0xB1);
+        top = 72.0f + (240.0f - WROOT(work)->field_0x24C);
+        GXSetScissor(32.0f + (304.0f + WROOT(work)->field_0x244), top, 0x158, 0xB1);
         winTexInit(WIN_MAIL_TEX(work));
         winTexSet(0x77,
-                  (Vec){4.0f + (208.0f + WW_F32(work, 0x244)), (WW_F32(work, 0x24C) - 56.0f) - 80.0f, 0.0f},
+                  (Vec){4.0f + (208.0f + WROOT(work)->field_0x244), (WROOT(work)->field_0x24C - 56.0f) - 80.0f, 0.0f},
                   (Vec){1.0f, 7.5f, 1.0f}, color);
         winFontInit();
-        winMailLabelV((Vec){80.0f + WW_F32(work, 0x244), (WW_F32(work, 0x24C) - 80.0f) + (f32)(work->mailScroll * 21), 0.0f},
+        winMailLabelV((Vec){80.0f + WROOT(work)->field_0x244, (WROOT(work)->field_0x24C - 80.0f) + (f32)(work->mailScroll * 21), 0.0f},
                       (Vec){0.75f, 0.75f, 0.75f}, (GXColor){0x00, 0x00, 0x00, 0xFF}, mail->body);
         if (mail->flags & 0x1000) {
             winTexInit(*(TEXPalette**)work->mailTpl->data);
             winTexSet(mail->picture,
-                      (Vec){210.0f + WW_F32(work, 0x244), 7.0f + ((WW_F32(work, 0x24C) - (f32)((work->mailLines - 1) * 21))
+                      (Vec){210.0f + WROOT(work)->field_0x244, 7.0f + ((WROOT(work)->field_0x24C - (f32)((work->mailLines - 1) * 21))
                                                    + (f32)(work->mailScroll * 21)), 0.0f},
                       (Vec){1.0f, 1.0f, 1.0f}, (GXColor){0xFF, 0xFF, 0xFF, 0xFF});
         }
@@ -2947,25 +2991,25 @@ void winMailDisp(WindowWork* work) {
             if (work->mailScroll == 0) {
                 if ((gp->retraceCount & 0x1F) < 20) {
                     winMailIconV(0x1B6,
-                                 (Vec){360.0f + WW_F32(work, 0x244), (20.0f + (WW_F32(work, 0x24C) - 230.0f)) - 24.0f, 0.0f},
+                                 (Vec){360.0f + WROOT(work)->field_0x244, (20.0f + (WROOT(work)->field_0x24C - 230.0f)) - 24.0f, 0.0f},
                                  (Vec){0.6f, 0.6f, 0.6f}, (GXColor){0xFF, 0xFF, 0xFF, 0xFF});
                 }
             } else if (work->mailScroll + 6 == work->mailLines) {
                 if ((gp->retraceCount & 0x1F) < 20) {
                     winMailIconV(0x1B5,
-                                 (Vec){360.0f + WW_F32(work, 0x244), 24.0f + (20.0f + (WW_F32(work, 0x24C) - 230.0f)), 0.0f},
+                                 (Vec){360.0f + WROOT(work)->field_0x244, 24.0f + (20.0f + (WROOT(work)->field_0x24C - 230.0f)), 0.0f},
                                  (Vec){0.6f, 0.6f, 0.6f}, (GXColor){0xFF, 0xFF, 0xFF, 0xFF});
                 }
             } else if ((gp->retraceCount & 0x1F) < 20) {
                 winMailIconV(0x1B5,
-                             (Vec){360.0f + WW_F32(work, 0x244), 24.0f + (20.0f + (WW_F32(work, 0x24C) - 230.0f)), 0.0f},
+                             (Vec){360.0f + WROOT(work)->field_0x244, 24.0f + (20.0f + (WROOT(work)->field_0x24C - 230.0f)), 0.0f},
                              (Vec){0.6f, 0.6f, 0.6f}, (GXColor){0xFF, 0xFF, 0xFF, 0xFF});
                 winMailIconV(0x1B6,
-                             (Vec){360.0f + WW_F32(work, 0x244), (20.0f + (WW_F32(work, 0x24C) - 230.0f)) - 24.0f, 0.0f},
+                             (Vec){360.0f + WROOT(work)->field_0x244, (20.0f + (WROOT(work)->field_0x24C - 230.0f)) - 24.0f, 0.0f},
                              (Vec){0.6f, 0.6f, 0.6f}, (GXColor){0xFF, 0xFF, 0xFF, 0xFF});
             }
             winMailIconV(0x70,
-                         (Vec){360.0f + WW_F32(work, 0x244), 20.0f + (WW_F32(work, 0x24C) - 230.0f), 0.0f},
+                         (Vec){360.0f + WROOT(work)->field_0x244, 20.0f + (WROOT(work)->field_0x24C - 230.0f), 0.0f},
                          (Vec){0.6f, 0.6f, 0.6f}, (GXColor){0xFF, 0xFF, 0xFF, 0xFF});
         }
     }    }
