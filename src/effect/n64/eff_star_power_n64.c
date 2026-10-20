@@ -7,43 +7,12 @@
 #include <dolphin/gx.h>
 #include "math_ext.h"
 
-// The linker-visible symbols keep their original address names; these aliases give them the role
-// the code uses them for.
-#define TEV_COLOR_SCRATCH_3 unk_80423284
-#define TEV_COLOR_SCRATCH_2 unk_80423280
-#define TEV_COLOR_SCRATCH_1 unk_8042327c
-#define TEV_COLOR_SCRATCH_0 unk_80423278
-#define TEXCOORD_SCALE float_0p015625_8041fe28
-#define ZERO_F32 float_0_8041fe2c
-#define DEG_TO_RAD float_deg2rad_8041fe30
-#define SPRITE_SCALE float_0p4_8041fe34
-#define ROT_Y_FACTOR float_0p4953_8041fe38
-#define ROT_X_RATE float_4_8041fe3c
-#define ROT_Z_FACTOR float_0p2234_8041fe40
-#define TAU float_6p2832_8041fe44
-#define ALPHA_RATE float_7p1234_8041fe48
-#define TURN_DEGREES float_360_8041fe4c
-#define ALPHA_MIDPOINT float_128_8041fe50
-#define COLOR_AMPLITUDE float_127_8041fe54
-#define COLOR1_R_RATE float_1p231_8041fe58
-#define COLOR1_MIDPOINT float_215_8041fe5c
-#define COLOR1_G_RATE float_0p531_8041fe60
-#define COLOR1_B_RATE float_3p231_8041fe64
-#define COLOR2_R_RATE float_0p298_8041fe68
-#define COLOR2_MIDPOINT float_188_8041fe6c
-#define COLOR2_G_RATE float_0p831_8041fe70
-#define COLOR2_B_RATE float_2p231_8041fe74
-#define SCALE_RATE float_2p044_8041fe78
-#define SCALE_MIDPOINT float_0p7_8041fe7c
-#define SCALE_AMPLITUDE float_0p3_8041fe80
-#define ZERO_VEC vec3_802fb718
-
 // .sbss2 zero GXColor scratch objects (declared in reverse: placed in reverse of declaration order)
 #pragma section ".sdata" ".sbss2"
-__declspec(section ".sdata") GXColor TEV_COLOR_SCRATCH_3;
-__declspec(section ".sdata") GXColor TEV_COLOR_SCRATCH_2;
-__declspec(section ".sdata") GXColor TEV_COLOR_SCRATCH_1;
-__declspec(section ".sdata") GXColor TEV_COLOR_SCRATCH_0;
+__declspec(section ".sdata") GXColor unk_80423284;
+__declspec(section ".sdata") GXColor unk_80423280;
+__declspec(section ".sdata") GXColor unk_8042327c;
+__declspec(section ".sdata") GXColor unk_80423278;
 
 u8 testsrc_akari_v[560] = {
 	0x00, 0x93, 0xFF, 0x36, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFF, 0xFF,
@@ -95,45 +64,45 @@ u8 testsrc_akari_v[560] = {
 	0x02, 0x6C, 0x03, 0x02, 0x00, 0x00, 0x00, 0xFF,
 };
 
-extern const f32 ZERO_F32;
-extern const f32 TEXCOORD_SCALE;
-extern const f32 DEG_TO_RAD;
-extern const f32 SPRITE_SCALE;
+extern const f32 float_0_8041fe2c;
+extern const f32 float_0p015625_8041fe28;
+extern const f32 float_deg2rad_8041fe30;
+extern const f32 float_0p4_8041fe34;
 
 // .data: retail vertex array for this unit (two effVtxArray entries, 0x118 bytes apart).
 extern u8 testsrc_akari_v[];
 // .sbss2 scratch GXColors the original copies its TEV colours into before overwriting every byte.
-extern const f32 ROT_X_RATE;
-extern const f32 ROT_Y_FACTOR;
-extern const f32 ROT_Z_FACTOR;
-extern const f32 TAU;
-extern const f32 ALPHA_RATE;
-extern const f32 TURN_DEGREES;
-extern const f32 ALPHA_MIDPOINT;
-extern const f32 COLOR_AMPLITUDE;
-extern const f32 COLOR1_R_RATE;
-extern const f32 COLOR1_MIDPOINT;
-extern const f32 COLOR1_G_RATE;
-extern const f32 COLOR1_B_RATE;
-extern const f32 COLOR2_R_RATE;
-extern const f32 COLOR2_MIDPOINT;
-extern const f32 COLOR2_G_RATE;
-extern const f32 COLOR2_B_RATE;
-extern const f32 SCALE_RATE;
-extern const f32 SCALE_MIDPOINT;
-extern const f32 SCALE_AMPLITUDE;
+extern const f32 float_4_8041fe3c;
+extern const f32 float_0p4953_8041fe38;
+extern const f32 float_0p2234_8041fe40;
+extern const f32 float_6p2832_8041fe44;
+extern const f32 float_7p1234_8041fe48;
+extern const f32 float_360_8041fe4c;
+extern const f32 float_128_8041fe50;
+extern const f32 float_127_8041fe54;
+extern const f32 float_1p231_8041fe58;
+extern const f32 float_215_8041fe5c;
+extern const f32 float_0p531_8041fe60;
+extern const f32 float_3p231_8041fe64;
+extern const f32 float_0p298_8041fe68;
+extern const f32 float_188_8041fe6c;
+extern const f32 float_0p831_8041fe70;
+extern const f32 float_2p231_8041fe74;
+extern const f32 float_2p044_8041fe78;
+extern const f32 float_0p7_8041fe7c;
+extern const f32 float_0p3_8041fe80;
 
 #ifdef MUST_MATCH
 // Non-const and forced into .rodata: with a plain `const` MWCC hoists two of the three
 // word loads into the prologue saves and the schedule no longer matches.
-__declspec(section ".rodata") Vec ZERO_VEC = { 0.0f, 0.0f, 0.0f };
+__declspec(section ".rodata") Vec vec3_802fb718 = { 0.0f, 0.0f, 0.0f };
 #else
-const Vec ZERO_VEC = { 0.0f, 0.0f, 0.0f };
+const Vec vec3_802fb718 = { 0.0f, 0.0f, 0.0f };
 #endif
 // Inline copy of the file-local helper: zero-fill a Vec from the rodata constant, then
 // overwrite it with the supplied position; the temporary is returned by value.
 inline Vec initializeVec(Vec* input) {
-    Vec temp = ZERO_VEC;
+    Vec temp = vec3_802fb718;
     temp.x = input->x;
     temp.y = input->y;
     temp.z = input->z;
@@ -170,17 +139,17 @@ EffectEntry* effStarPowerN64Entry(s32 type, s32 count, f32 x, f32 y, f32 z, f32 
     data->field_0x30 = 0;
     data->color2A = 0xFF;
     data->color1A = 0xFF;
-    data->field_0x3C = ZERO_F32;
-    data->field_0x40 = ZERO_F32;
-    data->field_0x44 = ZERO_F32;
+    data->field_0x3C = float_0_8041fe2c;
+    data->field_0x40 = float_0_8041fe2c;
+    data->field_0x44 = float_0_8041fe2c;
     return effect;
 }
 
 // The type==1 block's FP register allocation (retail keeps the counter fold in f2,
-// ROT_Y_FACTOR in f3, the ROT_X_RATE*counter product in f7 and the counter*4 conversion in f4)
+// float_0p4953 in f3, the float_4*counter product in f7 and the counter*4 conversion in f4)
 // only comes out when the product assignment is folded into the field_0x40 multiply's first
 // operand; assigning f7 on its own line rotates them to f3/f2/f4/f3. The pool double is placed
-// after ZERO_VEC only because "StarPowerN64" is written as a literal (a named const char[]
+// after vec3_802fb718 only because "StarPowerN64" is written as a literal (a named const char[]
 // would be laid out before the compiler's pooled constants).
 void effStarPowerMain(EffectEntry* effect) {
     EffStarPowerData* data = effect->userdata;
@@ -219,8 +188,8 @@ void effStarPowerMain(EffectEntry* effect) {
                 data->color2A = i;
             }
         }
-        // 0x38/0x3C/0x40/0x44 are the animated scale and x/y/z angles; 0x48..0x54 keep
-        // float copies of them for the first draw pass.
+        // 0x48..0x54 keep the previous frame's x/y/z angles and scale (0x3C..0x44, 0x38), which Disp
+        // draws as an extra half-alpha star when color2A is nonzero.
         *(f32*)&data->field_0x48 = data->field_0x3C;
         *(f32*)&data->field_0x4C = data->field_0x40;
         *(f32*)&data->field_0x50 = data->field_0x44;
@@ -231,24 +200,24 @@ void effStarPowerMain(EffectEntry* effect) {
                form under #else rotates the FPRs (fold f3, product f4, counter*4 f3). */
             f32 f7;
             data->field_0x3C = (f32)(counter * 4);
-            data->field_0x40 = ROT_Y_FACTOR * (f7 = ROT_X_RATE * (f32)counter);
-            data->field_0x44 = ROT_Z_FACTOR * f7;
+            data->field_0x40 = float_0p4953_8041fe38 * (f7 = float_4_8041fe3c * (f32)counter);
+            data->field_0x44 = float_0p2234_8041fe40 * f7;
 #else
             f32 f7;
             data->field_0x3C = (f32)(counter * 4);
-            f7 = ROT_X_RATE * (f32)counter;
-            data->field_0x40 = ROT_Y_FACTOR * f7;
-            data->field_0x44 = ROT_Z_FACTOR * f7;
+            f7 = float_4_8041fe3c * (f32)counter;
+            data->field_0x40 = float_0p4953_8041fe38 * f7;
+            data->field_0x44 = float_0p2234_8041fe40 * f7;
 #endif
             data->color1A = 0xFF;
-            data->color2A = (u8)(COLOR_AMPLITUDE * (f32)sin(TAU * (ALPHA_RATE * (f32)counter) / TURN_DEGREES) + ALPHA_MIDPOINT);
-            data->color1R = (u8)(COLOR_AMPLITUDE * (f32)sin(TAU * (COLOR1_R_RATE * (f32)counter) / TURN_DEGREES) + COLOR1_MIDPOINT);
-            data->color1G = (u8)(COLOR_AMPLITUDE * (f32)sin(TAU * (COLOR1_G_RATE * (f32)counter) / TURN_DEGREES) + COLOR1_MIDPOINT);
-            data->color1B = (u8)(COLOR_AMPLITUDE * (f32)sin(TAU * (COLOR1_B_RATE * (f32)counter) / TURN_DEGREES) + COLOR1_MIDPOINT);
-            data->color2R = (u8)(COLOR_AMPLITUDE * (f32)sin(TAU * (COLOR2_R_RATE * (f32)counter) / TURN_DEGREES) + COLOR2_MIDPOINT);
-            data->color2G = (u8)(COLOR_AMPLITUDE * (f32)sin(TAU * (COLOR2_G_RATE * (f32)counter) / TURN_DEGREES) + COLOR2_MIDPOINT);
-            data->field_0x30 = (u8)(COLOR_AMPLITUDE * (f32)sin(TAU * (COLOR2_B_RATE * (f32)counter) / TURN_DEGREES) + COLOR2_MIDPOINT);
-            data->field_0x38 = SCALE_AMPLITUDE * (f32)sin(TAU * (SCALE_RATE * (f32)counter) / TURN_DEGREES) + SCALE_MIDPOINT;
+            data->color2A = (u8)(float_127_8041fe54 * (f32)sin(float_6p2832_8041fe44 * (float_7p1234_8041fe48 * (f32)counter) / float_360_8041fe4c) + float_128_8041fe50);
+            data->color1R = (u8)(float_127_8041fe54 * (f32)sin(float_6p2832_8041fe44 * (float_1p231_8041fe58 * (f32)counter) / float_360_8041fe4c) + float_215_8041fe5c);
+            data->color1G = (u8)(float_127_8041fe54 * (f32)sin(float_6p2832_8041fe44 * (float_0p531_8041fe60 * (f32)counter) / float_360_8041fe4c) + float_215_8041fe5c);
+            data->color1B = (u8)(float_127_8041fe54 * (f32)sin(float_6p2832_8041fe44 * (float_3p231_8041fe64 * (f32)counter) / float_360_8041fe4c) + float_215_8041fe5c);
+            data->color2R = (u8)(float_127_8041fe54 * (f32)sin(float_6p2832_8041fe44 * (float_0p298_8041fe68 * (f32)counter) / float_360_8041fe4c) + float_188_8041fe6c);
+            data->color2G = (u8)(float_127_8041fe54 * (f32)sin(float_6p2832_8041fe44 * (float_0p831_8041fe70 * (f32)counter) / float_360_8041fe4c) + float_188_8041fe6c);
+            data->field_0x30 = (u8)(float_127_8041fe54 * (f32)sin(float_6p2832_8041fe44 * (float_2p231_8041fe74 * (f32)counter) / float_360_8041fe4c) + float_188_8041fe6c);
+            data->field_0x38 = float_0p3_8041fe80 * (f32)sin(float_6p2832_8041fe44 * (float_2p044_8041fe78 * (f32)counter) / float_360_8041fe4c) + float_0p7_8041fe7c;
         }
         if (counter == 1) {
             *(f32*)&data->field_0x48 = data->field_0x3C;
@@ -357,7 +326,7 @@ void effStarPowerDisp(CameraId camId, void* param) {
     GXSetNumChans(0);
     GXSetNumTexGens(1);
     GXSetTexCoordGen2(0, 1, 4, 0x1e, 0, 0x7d);
-    PSMTXScale(scale, TEXCOORD_SCALE, TEXCOORD_SCALE, ZERO_F32);
+    PSMTXScale(scale, float_0p015625_8041fe28, float_0p015625_8041fe28, float_0_8041fe2c);
     GXLoadTexMtxImm(scale, 0x1e, 1);
     effGetTexObjN64(0x49, &texObj);
     GXLoadTexObj(&texObj, 0);
@@ -365,32 +334,32 @@ void effStarPowerDisp(CameraId camId, void* param) {
 
     if (color2A != 0) {
         PSMTXTrans(trans, data->x, data->y, data->z);
-        PSMTXRotRad(rot, 'y', DEG_TO_RAD * -camGetPtr(CAMERA_3D)->viewYaw);
-        scaleVal = SPRITE_SCALE * *(f32*)&data->field_0x54;
+        PSMTXRotRad(rot, 'y', float_deg2rad_8041fe30 * -camGetPtr(CAMERA_3D)->viewYaw);
+        scaleVal = float_0p4_8041fe34 * *(f32*)&data->field_0x54;
         PSMTXScale(scale, scaleVal, scaleVal, scaleVal);
         PSMTXConcat(trans, rot, trans);
         PSMTXConcat(trans, scale, trans);
-        PSMTXRotRad(rot, 'x', DEG_TO_RAD * *(f32*)&data->field_0x48);
+        PSMTXRotRad(rot, 'x', float_deg2rad_8041fe30 * *(f32*)&data->field_0x48);
         PSMTXConcat(trans, rot, trans);
-        PSMTXRotRad(rot, 'y', DEG_TO_RAD * *(f32*)&data->field_0x4C);
+        PSMTXRotRad(rot, 'y', float_deg2rad_8041fe30 * *(f32*)&data->field_0x4C);
         PSMTXConcat(trans, rot, trans);
-        PSMTXRotRad(rot, 'z', DEG_TO_RAD * *(f32*)&data->field_0x50);
+        PSMTXRotRad(rot, 'z', float_deg2rad_8041fe30 * *(f32*)&data->field_0x50);
         PSMTXConcat(trans, rot, trans);
         PSMTXConcat(cam->view, trans, work);
         GXLoadPosMtxImm(work, 0);
         GXSetCurrentMtx(0);
         halfAlpha = color2A >> 1;
 #ifdef MUST_MATCH
-        GXSetTevColor(1, starPowerColor(TEV_COLOR_SCRATCH_0, color1R, color1G, color1B, halfAlpha));
-        GXSetTevColor(2, starPowerColor(TEV_COLOR_SCRATCH_1, color2R, color2G, color2B, halfAlpha));
+        GXSetTevColor(1, starPowerColor(unk_80423278, color1R, color1G, color1B, halfAlpha));
+        GXSetTevColor(2, starPowerColor(unk_8042327c, color2R, color2G, color2B, halfAlpha));
 #else
-        color = TEV_COLOR_SCRATCH_0;
+        color = unk_80423278;
         color.r = color1R;
         color.g = color1G;
         color.b = color1B;
         color.a = halfAlpha;
         GXSetTevColor(1, color);
-        color = TEV_COLOR_SCRATCH_1;
+        color = unk_8042327c;
         color.r = color2R;
         color.g = color2G;
         color.b = color2B;
@@ -420,16 +389,16 @@ void effStarPowerDisp(CameraId camId, void* param) {
     }
 
     PSMTXTrans(trans, data->x, data->y, data->z);
-    PSMTXRotRad(rot, 'y', DEG_TO_RAD * -camGetPtr(CAMERA_3D)->viewYaw);
-    scaleVal = SPRITE_SCALE * data->field_0x38;
+    PSMTXRotRad(rot, 'y', float_deg2rad_8041fe30 * -camGetPtr(CAMERA_3D)->viewYaw);
+    scaleVal = float_0p4_8041fe34 * data->field_0x38;
     PSMTXScale(scale, scaleVal, scaleVal, scaleVal);
     PSMTXConcat(trans, rot, trans);
     PSMTXConcat(trans, scale, trans);
-    PSMTXRotRad(rot, 'x', DEG_TO_RAD * data->field_0x3C);
+    PSMTXRotRad(rot, 'x', float_deg2rad_8041fe30 * data->field_0x3C);
     PSMTXConcat(trans, rot, trans);
-    PSMTXRotRad(rot, 'y', DEG_TO_RAD * data->field_0x40);
+    PSMTXRotRad(rot, 'y', float_deg2rad_8041fe30 * data->field_0x40);
     PSMTXConcat(trans, rot, trans);
-    PSMTXRotRad(rot, 'z', DEG_TO_RAD * data->field_0x44);
+    PSMTXRotRad(rot, 'z', float_deg2rad_8041fe30 * data->field_0x44);
     PSMTXConcat(trans, rot, trans);
     PSMTXConcat(cam->view, trans, work);
     GXLoadPosMtxImm(work, 0);
@@ -450,16 +419,16 @@ void effStarPowerDisp(CameraId camId, void* param) {
     }
 
 #ifdef MUST_MATCH
-    GXSetTevColor(1, starPowerColor(TEV_COLOR_SCRATCH_2, color1R, color1G, color1B, color1A));
-    GXSetTevColor(2, starPowerColor(TEV_COLOR_SCRATCH_3, color2R, color2G, color2B, color1A));
+    GXSetTevColor(1, starPowerColor(unk_80423280, color1R, color1G, color1B, color1A));
+    GXSetTevColor(2, starPowerColor(unk_80423284, color2R, color2G, color2B, color1A));
 #else
-    color = TEV_COLOR_SCRATCH_2;
+    color = unk_80423280;
     color.r = color1R;
     color.g = color1G;
     color.b = color1B;
     color.a = color1A;
     GXSetTevColor(1, color);
-    color = TEV_COLOR_SCRATCH_3;
+    color = unk_80423284;
     color.r = color2R;
     color.g = color2G;
     color.b = color2B;
@@ -489,26 +458,26 @@ void effStarPowerDisp(CameraId camId, void* param) {
 }
 
 // The pool constants the code above loads by name, defined after it (defined first, the compiler folds them).
-const f32 TEXCOORD_SCALE = 0.015625f;
-const f32 ZERO_F32 = 0.0f;
-const f32 DEG_TO_RAD = 0.017453292f;
-const f32 SPRITE_SCALE = 0.4f;
-const f32 ROT_Y_FACTOR = 0.4953f;
-const f32 ROT_X_RATE = 4.0f;
-const f32 ROT_Z_FACTOR = 0.2234f;
-const f32 TAU = 6.2831855f;
-const f32 ALPHA_RATE = 7.12343f;
-const f32 TURN_DEGREES = 360.0f;
-const f32 ALPHA_MIDPOINT = 128.0f;
-const f32 COLOR_AMPLITUDE = 127.0f;
-const f32 COLOR1_R_RATE = 1.231f;
-const f32 COLOR1_MIDPOINT = 215.0f;
-const f32 COLOR1_G_RATE = 0.531f;
-const f32 COLOR1_B_RATE = 3.231f;
-const f32 COLOR2_R_RATE = 0.298f;
-const f32 COLOR2_MIDPOINT = 188.0f;
-const f32 COLOR2_G_RATE = 0.831f;
-const f32 COLOR2_B_RATE = 2.231f;
-const f32 SCALE_RATE = 2.044f;
-const f32 SCALE_MIDPOINT = 0.7f;
-const f32 SCALE_AMPLITUDE = 0.3f;
+const f32 float_0p015625_8041fe28 = 0.015625f;
+const f32 float_0_8041fe2c = 0.0f;
+const f32 float_deg2rad_8041fe30 = 0.017453292f;
+const f32 float_0p4_8041fe34 = 0.4f;
+const f32 float_0p4953_8041fe38 = 0.4953f;
+const f32 float_4_8041fe3c = 4.0f;
+const f32 float_0p2234_8041fe40 = 0.2234f;
+const f32 float_6p2832_8041fe44 = 6.2831855f;
+const f32 float_7p1234_8041fe48 = 7.12343f;
+const f32 float_360_8041fe4c = 360.0f;
+const f32 float_128_8041fe50 = 128.0f;
+const f32 float_127_8041fe54 = 127.0f;
+const f32 float_1p231_8041fe58 = 1.231f;
+const f32 float_215_8041fe5c = 215.0f;
+const f32 float_0p531_8041fe60 = 0.531f;
+const f32 float_3p231_8041fe64 = 3.231f;
+const f32 float_0p298_8041fe68 = 0.298f;
+const f32 float_188_8041fe6c = 188.0f;
+const f32 float_0p831_8041fe70 = 0.831f;
+const f32 float_2p231_8041fe74 = 2.231f;
+const f32 float_2p044_8041fe78 = 2.044f;
+const f32 float_0p7_8041fe7c = 0.7f;
+const f32 float_0p3_8041fe80 = 0.3f;

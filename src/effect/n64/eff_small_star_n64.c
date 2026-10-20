@@ -104,7 +104,7 @@ static inline f32 sqrtf(f32 x) {
 // emits one .rodata zero Vec per case (the original's rodata has four, one shared with Main).
 #pragma opt_common_subs off // original reloads float_0 in each sqrt block rather than CSEing it
 void* effSmallStarN64Entry(s32 type, s32 count, f32 x, f32 y, f32 z, f32 dirX, f32 dirY, f32 dirZ) {
-    static f32 rotationAngle;
+    static f32 kaiten;
     EffectEntry* effect;
     effSmallStarN64Data* data;
     Vec axis;
@@ -243,9 +243,9 @@ void* effSmallStarN64Entry(s32 type, s32 count, f32 x, f32 y, f32 z, f32 dirX, f
         data->field_0x24 = 0xFF;
     }
 
-    rotationAngle = rotationAngle + float_15_8041fcd4;
-    if (rotationAngle > float_360_8041fc88) {
-        rotationAngle = float_0_8041fcac;
+    kaiten = kaiten + float_15_8041fcd4;
+    if (kaiten > float_360_8041fc88) {
+        kaiten = float_0_8041fcac;
     }
 
     return effect;

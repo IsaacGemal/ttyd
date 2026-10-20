@@ -63,7 +63,7 @@ ScaleEntry scale2[4] = {
 	{ 0x00, 1.0f }, { 0x64, 1.2f }, { 0xA0, 0.95f }, { 0xC8, 1.0f },
 };
 
-static u32 fireColorTable[24] = {
+static u32 col_tbl[24] = {
 	0xAC2E00FF, 0xE02200FF, 0xFD5F00FF, 0xFD5F04FF,
 	0xFF6900FF, 0xFF8A00FF, 0xFFB700FF, 0xFFD700FF,
 	0x0AE0FFFF, 0x10C3FFFF, 0x0961FFFF, 0x0961FFFF,
@@ -72,7 +72,7 @@ static u32 fireColorTable[24] = {
 	0xDEF618FF, 0xA0F606FF, 0xA0F606FF, 0x92E400FF,
 };
 
-static u8 smokeScaleTable[] = {
+static u8 scale_dt[] = {
 	0x80, 0x80, 0x81, 0x7F, 0x82, 0x7F, 0x83, 0x7E, 0x84, 0x7E, 0x84, 0x7E, 0x85, 0x7D, 0x86, 0x7D,
 	0x87, 0x7C, 0x88, 0x7C, 0x89, 0x7C, 0x8A, 0x7B, 0x8A, 0x7B, 0x8B, 0x7B, 0x8C, 0x7B, 0x8D, 0x7A,
 	0x8D, 0x7A, 0x8E, 0x7A, 0x8F, 0x79, 0x8F, 0x79, 0x90, 0x79, 0x91, 0x79, 0x92, 0x78, 0x92, 0x78,
@@ -752,9 +752,9 @@ void effFireDisp2(CameraId camId, void* param) {
 // Match-only: building the TevReg0 colour in an inline returning GXColor gives the target's
 // GXSetTevColor stack argument slot; a plain assignment lands in a different one.
 static inline GXColor effFireDisp3KColor(u8 a) {
-	GXColor tempColor = *(GXColor*)&unk_80423060;
-	tempColor.a = a;
-	return tempColor;
+	GXColor c = *(GXColor*)&unk_80423060;
+	c.a = a;
+	return c;
 }
 #endif
 void effFireDisp3(CameraId camId, void* param) {
@@ -873,7 +873,7 @@ void effFireDisp3(CameraId camId, void* param) {
 
 	leftX = -width * half;
 	rowHeight = 13.333333f;
-	colorEntry = (u8*)fireColorTable + (type - 5) * 0x20;
+	colorEntry = (u8*)col_tbl + (type - 5) * 0x20;
 
 	for (i = 0; i < 2; i++) {
 		switch (i) {
@@ -1085,11 +1085,11 @@ void effFireSmokeDisp(CameraId camId, void* param) {
 	camera = camGetPtr(camId);
 	if ((u32)data->counter * 2 < 0x3C) {
 #ifdef MUST_MATCH
-		scaleX = smokeScaleTable[data->counter * 2] / 128.0f;
-		scaleY = smokeScaleTable[data->counter * 2 + 1] / 128.0f;
+		scaleX = scale_dt[data->counter * 2] / 128.0f;
+		scaleY = scale_dt[data->counter * 2 + 1] / 128.0f;
 #else
-		scaleX = smokeScaleTable[data->counter * 2] * 0.0078125f;
-		scaleY = smokeScaleTable[data->counter * 2 + 1] * 0.0078125f;
+		scaleX = scale_dt[data->counter * 2] * 0.0078125f;
+		scaleY = scale_dt[data->counter * 2 + 1] * 0.0078125f;
 #endif
 	} else {
 		scaleX = 1.5f;

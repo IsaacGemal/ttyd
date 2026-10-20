@@ -117,8 +117,8 @@ typedef struct RecoverHeartData {
 	s32 delay;      // 0x34
 	f32 scaleW;     // 0x38
 	f32 scaleH;     // 0x3C
-	s32 duration;   // 0x40
-	s32 timeNegative; // 0x44
+	s32 amount;     // 0x40 drawn as digits from texture 0x53
+	s32 amountNegative; // 0x44 the entry argument was negative (and was negated)
 } RecoverHeartData; // 0x48
 
 EffectEntry* effRecoverHeartN64Entry(s32 type, s32 time, f32 x, f32 y, f32 z) {
@@ -138,12 +138,12 @@ EffectEntry* effRecoverHeartN64Entry(s32 type, s32 time, f32 x, f32 y, f32 z) {
 	data[0].timer = 0x2E;
 	data[0].field_0x30 = 0;
 	if (time < 0) {
-		data[0].timeNegative = 1;
+		data[0].amountNegative = 1;
 		time = -time;
 	} else {
-		data[0].timeNegative = 0;
+		data[0].amountNegative = 0;
 	}
-	data[0].duration = time;
+	data[0].amount = time;
 	{
 		RecoverHeartData* p;
 		s32 i;
@@ -273,7 +273,7 @@ void effRecoverHeartDisp(CameraId camId, void* param) {
 	s32 i;
 	s32 life;
 	s32 type;
-	s32 timeNegative;
+	s32 amountNegative;
 	CameraEntry* cam;
 	s32 stripe;
 	u32 texId;
@@ -290,14 +290,14 @@ void effRecoverHeartDisp(CameraId camId, void* param) {
 
 	cam = camGetPtr(camId);
 	data = effect->userdata;
-	timeNegative = data->timeNegative;
+	amountNegative = data->amountNegative;
 
 	PSMTXTrans(trans, data->x, data->y, data->z);
 	PSMTXRotRad(rot, 'y', float_deg2rad_8041fb08 * -camGetPtr(CAMERA_3D)->viewYaw);
 	PSMTXConcat(trans, rot, work);
 
 	type = data->type;
-	life = data->duration;
+	life = data->amount;
 	data++;
 
 	GXSetNumChans(1);
@@ -343,7 +343,7 @@ void effRecoverHeartDisp(CameraId camId, void* param) {
 
 		if ((type == 0 || type == 2) != 0) {
 			texId = 0x51;
-			if (timeNegative == 0) {
+			if (amountNegative == 0) {
 				texId = 0x50;
 			}
 		} else {
@@ -376,7 +376,7 @@ void effRecoverHeartDisp(CameraId camId, void* param) {
 			GXSetTevColorIn(0, 0xf, 8, 0xa, 0xf);
 			GXSetTevAlphaIn(0, 7, 4, 1, 7);
 
-			if (life < 10 && timeNegative == 0) {
+			if (life < 10 && amountNegative == 0) {
 				effGetTexObjN64(0x53, &texObj);
 				GXLoadTexObj(&texObj, 0);
 				PSMTXScale(scale, float_0p03125_8041fb0c, float_0p0026042_8041fb18, float_0_8041fb10);
@@ -394,7 +394,7 @@ void effRecoverHeartDisp(CameraId camId, void* param) {
 				GXBegin(0x90, 0, 6);
 				tri2(0, 1, 2, 0, 0, 2, 3, 0);
 			} else {
-				stripe = timeNegative != 0 ? 10 : quotient;
+				stripe = amountNegative != 0 ? 10 : quotient;
 				effGetTexObjN64(0x53, &texObj);
 				GXLoadTexObj(&texObj, 0);
 				PSMTXScale(scale, float_0p03125_8041fb0c, float_0p0026042_8041fb18, float_0_8041fb10);

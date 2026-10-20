@@ -14,7 +14,7 @@ typedef struct BreakEffect {
     f32 y;          // 0x08
     f32 z;          // 0x0C
     s32 timer;      // 0x10
-    f32 yOffset;    // 0x14
+    f32 texOffsetY; // 0x14
     s32 field_0x18; // 0x18
     s32 state;      // 0x1C
     f32 scale;      // 0x20
@@ -69,7 +69,7 @@ EffectEntry* effBreakEntry(s32 type, s32 maxTimer, f32 x, f32 y, f32 z) {
         elem->x = float_2_804210cc * (f32)((i - 1) * 0x24 + 0x12 - ((entry->count - 2) * 0x24 + 0x18) / 2);
         elem->y = float_0_804210b0;
         elem->z = float_0_804210b0;
-        elem->yOffset = float_10_804210d0;
+        elem->texOffsetY = float_10_804210d0;
         elem->field_0x18 = 0;
         elem->timer = (i - 1) * 0x15;
         elem->state = 0;
@@ -119,9 +119,9 @@ void effBreakMain(EffectEntry* effect) {
             break;
         case 1:
             if ((u32)data->timer < 0x15) {
-                data->yOffset = ty_data[data->timer];
+                data->texOffsetY = ty_data[data->timer];
                 data->timer++;
-                if (float_0_804210b0 == data->yOffset) {
+                if (float_0_804210b0 == data->texOffsetY) {
                     effStardustN64SetDrawCam(
                         effStardustN64Entry(1, position.x + data->x, position.y + data->y, position.z + data->z, scale), 8);
                 }
@@ -146,9 +146,9 @@ void effBreakMain(EffectEntry* effect) {
             break;
         case 4:
             if ((u32)data->timer < 0x15) {
-                data->yOffset = ty_data2[data->timer];
+                data->texOffsetY = ty_data2[data->timer];
                 if ((i & 1) == 0) {
-                    data->yOffset = -data->yOffset;
+                    data->texOffsetY = -data->texOffsetY;
                 }
                 data->timer++;
             } else {
@@ -216,10 +216,10 @@ void effBreakDisp(CameraId cameraId, void* param) {
         {
             // One volatile read of the zero word, reused for both arguments (the original loads it once and fmr's).
             f32 zero = *(volatile f32*)&float_0_804210b0;
-            PSMTXTrans(mtxB8, zero, data->yOffset, zero);
+            PSMTXTrans(mtxB8, zero, data->texOffsetY, zero);
         }
 #else
-        PSMTXTrans(mtxB8, 0.0f, data->yOffset, 0.0f);
+        PSMTXTrans(mtxB8, 0.0f, data->texOffsetY, 0.0f);
 #endif
         GXLoadTexMtxImm(mtxB8, 0x1e, 1);
         PSMTXTrans(mtxB8, data->x, data->y, data->z);

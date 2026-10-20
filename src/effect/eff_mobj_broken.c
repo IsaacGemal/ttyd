@@ -144,13 +144,13 @@ EffectEntry* effMObjBrokenEntry(s32 type, f32 x, f32 y, f32 z) {
 		work->field_0x18 = float_0_804210ec;
 		work->poseId = -1;
 		{
-			f32 radius = (f32)(irand(0xA) + 0xA);
+			f32 r = (f32)(irand(0xA) + 0xA);
 
-			work->field_0x20 = radius * float_0p0625_80421148;
+			work->field_0x20 = r * float_0p0625_80421148;
 		}
 		{
-			f32 origin = ZERO0;
-			work->field_0x1C = angleABf(origin, origin, work->posX, work->posZ);
+			f32 zero = ZERO0;
+			work->field_0x1C = angleABf(zero, zero, work->posX, work->posZ);
 		}
 		work->field_0x24 = (f32)(irand(3) + 3);
 		work->field_0x28 = (f32)(irand(5) + 2) / float_5_804210fc;
@@ -228,14 +228,14 @@ void effMObjBrokenMain(EffectEntry* effect) {
 		break;
 	}
 	{
-	f32 kPi, kDeg360, kTwoPi, kOne, kSinQuad, kCosQuad, kMinY;
+	f32 kPi, kDeg360, kTwoPi, kOne, k16605, k4967, kMinY;
 
 	kTwoPi = float_6p2832_804210f4;
 	kDeg360 = float_360_804210f8;
-	kSinQuad = float_0p16605_80421110;
+	k16605 = float_0p16605_80421110;
 	kOne = float_1_80421100;
 	kPi = float_3p1416_80421114;
-	kCosQuad = float_0p4967_80421124;
+	k4967 = float_0p4967_80421124;
 	kMinY = float_neg100_80421138;
 
 	data++;
@@ -254,13 +254,13 @@ void effMObjBrokenMain(EffectEntry* effect) {
 
 			if (angle <= kPi) {
 				if (angle <= float_1p5708_80421118) {
-					sinA = sinA * (angle * angle) - kSinQuad;
+					sinA = sinA * (angle * angle) - k16605;
 					sinA = sinA * (angle * angle) + kOne;
 					sinA = sinA * angle;
 				}
 				else {
 					angle = float_1p5708_80421118 - (angle - float_1p5708_80421118);
-					sinA = sinA * (angle * angle) - kSinQuad;
+					sinA = sinA * (angle * angle) - k16605;
 					sinA = sinA * (angle * angle) + kOne;
 					sinA = sinA * angle;
 				}
@@ -268,14 +268,14 @@ void effMObjBrokenMain(EffectEntry* effect) {
 			else {
 				if (angle < float_4p7124_8042111c) {
 					angle = angle - kPi;
-					sinA = sinA * (angle * angle) - kSinQuad;
+					sinA = sinA * (angle * angle) - k16605;
 					sinA = sinA * (angle * angle) + kOne;
 					sinA = sinA * angle;
 					sinA = -sinA;
 				}
 				else {
 					angle = float_1p5708_80421118 - (angle - float_4p7124_8042111c);
-					sinA = sinA * (angle * angle) - kSinQuad;
+					sinA = sinA * (angle * angle) - k16605;
 					sinA = sinA * (angle * angle) + kOne;
 					sinA = sinA * angle;
 					sinA = -sinA;
@@ -289,12 +289,12 @@ void effMObjBrokenMain(EffectEntry* effect) {
 
 			if (angle <= kPi) {
 				if (angle <= float_1p5708_80421118) {
-					cosA = cosA * (angle * angle) - kCosQuad;
+					cosA = cosA * (angle * angle) - k4967;
 					cosA = cosA * (angle * angle) + kOne;
 				}
 				else {
 					angle = float_1p5708_80421118 - (angle - float_1p5708_80421118);
-					cosA = cosA * (angle * angle) - kCosQuad;
+					cosA = cosA * (angle * angle) - k4967;
 					cosA = cosA * (angle * angle) + kOne;
 					cosA = -cosA;
 				}
@@ -302,13 +302,13 @@ void effMObjBrokenMain(EffectEntry* effect) {
 			else {
 				if (angle < float_4p7124_8042111c) {
 					angle = angle - kPi;
-					cosA = cosA * (angle * angle) - kCosQuad;
+					cosA = cosA * (angle * angle) - k4967;
 					cosA = cosA * (angle * angle) + kOne;
 					cosA = -cosA;
 				}
 				else {
 					angle = float_1p5708_80421118 - (angle - float_4p7124_8042111c);
-					cosA = cosA * (angle * angle) - kCosQuad;
+					cosA = cosA * (angle * angle) - k4967;
 					cosA = cosA * (angle * angle) + kOne;
 				}
 			}

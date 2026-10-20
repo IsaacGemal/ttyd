@@ -9590,3 +9590,26 @@ particle `field_0x38`, nozle `field_0x00`/`0x28`-`0x30`/`0x38`-`0x40` (both stru
 kemuri6's `accelStep` is only ever 0. pturn's `active` is set to 1 and never cleared. NiceEffectWork's
 0x24/0x2C/0x34-0x64 gaps are unmodelled. aji_02 and queen2 still cast userdata to EffAkariChargeData, a partial
 view of EffAkariChargeWork private to eff_akari_charge_n64.c.
+### Readability: effects pilot batch from the DeepSeek cleanup swarm (2026-10-19, DeepSeek V4.1 Flash, n9-q-ds1; reviewed by Claude Opus 5.5)
+
+One DeepSeek V4.1 Flash agent per file, edits confined to that file, then an Opus pass over every rename. eff_break:
+BreakEffect `type`, `timer` (head: the hold limit for state 3; particles: countdown/count-up and ty_data index),
+`texOffsetY` (0x14, the V translation loaded into GX_TEXMTX0, not a world offset), `state` (0-5), `scale`;
+effBreakEntry's second argument `maxTimer`. eff_fire: locals only (`scaleTable`/`tableCount`/`interp`,
+`frameCount`, `tevColor`/`tevKColor`, `halfWidth`/`quadSize`/`halfSize`, `leftX`/`rowHeight`, `modelMtx`,
+`color0`/`color1`, `packedYOffsets`); `col_tbl` and `scale_dt` keep their map names (symbols.txt, scope:local).
+eff_mobj_broken: `gridX/Y/Z`, `spacing`, `remain`, `sinA`/`cosA`, `zeroAxis`, `pass`, `kPi`/`kTwoPi`/`kDeg360`/
+`kOne`/`kMinY`/`kOffset`/`kDegToRad`; `k16605`/`k4967` stay value-named (0.16605 is the sine polynomial's cubic
+coefficient, so the swarm's `kSinQuad` was wrong). eff_mugi: entry parameters `x`/`y`/`z`/`baseAngle`, `type`,
+`dirSign`. eff_spirit: `mtxTrans`/`mtxRot`/`mtxScale` and GX enum names in effSpiritDisp. eff_blow_n64:
+effBlowParticle `type` (0x00, the entry argument), `state` (0x04, was misnamed `type`: 0 respawns particles, 1 -> 2
+when the head's life runs out, 2 deletes), `spawnVx/Vy/Vz`, `burstAx/Ay/Az` (added at life 4-6), `accX/Y/Z`,
+`rotSpeed`, `spawnRotZ`, `alpha`, `age`, `delay`. eff_recover_heart_n64: RecoverHeartData `alpha`, `timer`, `delay`,
+`amount` (0x40, drawn as one or two digits from texture 0x53; the swarm's `duration` was wrong) and `amountNegative`.
+eff_small_star_n64: GX enum names only; `kaiten` is the map's name (kaiten$412) and stays. eff_sstar_n64:
+effSstarN64Entry `targetX/Y/Z`, `speed`, `camVelX`/`camVelZ`/`horizSpeed`; Disp's `base`. eff_star_power_n64: a
+comment on the 0x48..0x54 previous-frame copies only; the swarm's `#define` aliases over the global float pool
+names were dropped. Matching build 32 files OK; all ten files natural-compile equivalent to the originals. Open:
+header-defined structs (effFireData, MobjBrokenWork, EffStarPowerData, SstarWork, effSmallStarN64Data) keep their
+field_0x names; EffStarPowerData 0x30 is the third color2 channel (driven like color2R/G); effRecoverHeartN64Entry's
+`time` parameter is the recovered amount; RecoverHeartData 0x20/0x30 are written but never read.
