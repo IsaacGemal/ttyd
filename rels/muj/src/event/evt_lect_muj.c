@@ -330,7 +330,7 @@ static USER_FUNC(lecture_button_set_pos) {
     return EVT_RETURN_DONE;
 }
 static void lect_map_cam_chg_sub(MapObject* mapObj, s32 camId, s32 recurse) {
-    mapObj->field_0x5 = camId;
+    mapObj->cameraId = camId;
     if (mapObj->child != NULL) {
         lect_map_cam_chg_sub(mapObj->child, camId, 1);
     }
