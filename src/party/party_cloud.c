@@ -245,7 +245,7 @@ static inline void cloudMoveToMario(PartyEntry* party) {
     pa = *(f32*)pm->unk1AC;
     pf = (pa < 90.0f || pa >= 270.0f);
     pa = toMovedir(pa + (pf != 0 ? -90.0f : 90.0f));
-    movePos((f32*)((u8*)party + 0x94), (f32*)((u8*)party + 0x9C), 3.3f, pa);
+    movePos(&party->targetPos.x, &party->targetPos.z, 3.3f, pa);
     party->targetPos.y += 10.0f;
     party->position = party->targetPos;
 }
@@ -312,12 +312,12 @@ static inline void cloudMoveToMarioStep(PartyEntry* party) {
     MarioWork* pm = party->playerPtr;
     f32 pa;
     s32 pf;
-    *(Vec*)((u8*)party + 0x94) = pm->position;
+    party->targetPos = pm->position;
     pa = *(f32*)pm->unk1AC;
     pf = (pa < 90.0f || pa >= 270.0f);
     pa = toMovedir(pa + (pf != 0 ? -90.0f : 90.0f));
-    movePos((f32*)((u8*)party + 0x94), (f32*)((u8*)party + 0x9C), 3.3f, pa);
-    *(f32*)((u8*)party + 0x98) += 10.0f;
+    movePos(&party->targetPos.x, &party->targetPos.z, 3.3f, pa);
+    party->targetPos.y += 10.0f;
 }
 #define MOVE_TO_MARIO() cloudMoveToMarioStep(party)
 #else
@@ -329,7 +329,7 @@ static inline void cloudMoveToMarioStep(PartyEntry* party) {
     pa = *(f32*)((u8*)pm + 0x1AC); \
     if (pa < 90.0f || pa >= 270.0f) { pf = 1; } \
     pa = toMovedir(pa + (pf ? -90.0f : 90.0f)); \
-    movePos((f32*)((u8*)party + 0x94), (f32*)((u8*)party + 0x9C), 3.3f, pa); \
+    movePos(&party->targetPos.x, &party->targetPos.z, 3.3f, pa); \
     party->targetPos.y += 10.0f; \
 } while (0)
 #endif
@@ -485,7 +485,7 @@ void N__cloud_use(PartyEntry* party) {
             *(s16*)(cloud->field_0x30 + 8) = 0;
         }
         if ((party->flags & PARTY_FLAG_IS_EVT_USE) == 0) {
-            if ((*(u16*)((u8*)party + 0x150) & 0x400) != 0 && marioKeyOffChk() == 0) {
+            if ((party->button & 0x400) != 0 && marioKeyOffChk() == 0) {
                 break;
             }
         } else {
@@ -511,14 +511,14 @@ void N__cloud_use(PartyEntry* party) {
         MOVE_TO_MARIO();
         party->position = party->targetPos;
         partyUpdateKeyData(party);
-        if ((*(u16*)((u8*)party + 0x152) & 0x400) != 0) {
+        if ((party->buttonNew & 0x400) != 0) {
             party->useMotionId = 0xA;
         }
         if (--party->timer <= 0) {
             party->useMotionId = 0x14;
             break;
         }
-        if (*(s8*)((u8*)party + 0x158) != 0 || *(s8*)((u8*)party + 0x159) != 0) {
+        if (party->stickX != 0 || party->stickY != 0) {
             party->useMotionId = 0x14;
         } else {
             break;

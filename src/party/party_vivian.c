@@ -369,7 +369,7 @@ void vivian_use(PartyEntry* party) {
         if (vivian_cancel_req) {
             party->useMotionId = 0x14;
         }
-        if (!(party->flags & PARTY_FLAG_IS_EVT_USE) && (*(u16*)&party->field_144[0xE] & 0x600)) {
+        if (!(party->flags & PARTY_FLAG_IS_EVT_USE) && (party->buttonNew & 0x600)) {
             party->useMotionId = 0x14;
         }
         break;

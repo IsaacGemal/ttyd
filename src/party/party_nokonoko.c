@@ -1077,7 +1077,7 @@ HitEntry* ccwall(PartyEntry* party, s32 flag) {
     ccfloor(party, flag, float_1, &hitX, &hitY, &hitZ, &distance, &hitNX, &hitNY, &hitNZ);
 
     party->frontHit = NULL;
-    *(HitEntry**)((u8*)party + 0x12C) = NULL;
+    party->field_12C = NULL;
     y += float_1;
 
     x = party->position.x;
@@ -1099,7 +1099,7 @@ HitEntry* ccwall(PartyEntry* party, s32 flag) {
         if (party->tail.koops.dashing != 0 || flag == 0) {
             party->frontHit = hit;
         }
-        *(HitEntry**)((u8*)party + 0x12C) = hit;
+        party->field_12C = hit;
         return hit;
     }
 
@@ -1125,7 +1125,7 @@ HitEntry* ccwall(PartyEntry* party, s32 flag) {
         if (party->tail.koops.dashing != 0 || flag == 0) {
             party->frontHit = hit;
         }
-        *(HitEntry**)((u8*)party + 0x12C) = hit;
+        party->field_12C = hit;
         party->position.x = hitX;
         return hit;
     }
@@ -1158,7 +1158,7 @@ HitEntry* ccwall(PartyEntry* party, s32 flag) {
         if (party->tail.koops.dashing != 0 || flag == 0) {
             party->frontHit = hit;
         }
-        *(HitEntry**)((u8*)party + 0x12C) = hit;
+        party->field_12C = hit;
         party->position.x = hitX;
         return hit;
     }

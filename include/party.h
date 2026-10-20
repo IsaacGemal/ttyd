@@ -105,9 +105,11 @@ typedef struct PartyEntry {
     Vec field_70;                // 0x70
     u8 field_7C[0x94 - 0x7C];    // 0x7C
     Vec targetPos;               // 0x94, destination of the appear/jump/fly routines; distABf'd against position
-    u8 field_A0[0xB8 - 0xA0];    // 0xA0
+    u8 field_A0[0xAC - 0xA0];    // 0xA0
+    Vec moveDelta;               // 0xAC, per-frame offset added to position: set by evt_party_set_hosei_xyz, mario->riderDelta in yoshi_use, zeroed in driveParty
     Vec field_B8;                // 0xB8
-    u8 field_C4[0xE4 - 0xC4];    // 0xC4
+    u8 field_C4[0xE0 - 0xC4];    // 0xC4
+    f32 groundSlope;             // 0xE0, partyGroundSlope result (party_hit.c), compared with 30.0f
     f32 groundY;                 // 0xE4, floor height saved by partySearchGround
     u8 field_E8[0xEC - 0xE8];    // 0xE8
     f32 field_EC;                // 0xEC
@@ -132,7 +134,18 @@ typedef struct PartyEntry {
     struct HitEntry* groundHit;  // 0x138, partySearchGround result
     u8 field_13C[0x140 - 0x13C]; // 0x13C
     struct HitEntry* headHit;    // 0x140, partySearchHead result
-    u8 field_144[0x160 - 0x144]; // 0x144
+    u8 field_144[0x150 - 0x144]; // 0x144
+    u16 button;                  // 0x150, held buttons (partyUpdateKeyData)
+    u16 buttonNew;               // 0x152, pressed this frame
+    u16 buttonRepeat;            // 0x154
+    u16 buttonUp;                // 0x156, released this frame
+    s8 stickX;                   // 0x158
+    s8 stickY;                   // 0x159, stored negated
+    s8 substickX;                // 0x15A
+    s8 substickY;                // 0x15B, stored negated
+    u8 triggerLeft;              // 0x15C
+    u8 triggerRight;             // 0x15D
+    u8 field_15E[0x160 - 0x15E]; // 0x15E
     MarioWork* playerPtr;        // 0x160
     s32 camId;                   // 0x164
     s32 yoshiPsndSFXId;          // 0x168

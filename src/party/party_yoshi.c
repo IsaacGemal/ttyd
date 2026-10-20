@@ -587,9 +587,9 @@ void yoshi_use(PartyEntry* party) {
             if (party->groundHit == NULL) {
                 return;
             }
-            party->position.x += P_F(0xAC);
-            party->position.y += P_F(0xB0);
-            party->position.z += P_F(0xB4);
+            party->position.x += party->moveDelta.x;
+            party->position.y += party->moveDelta.y;
+            party->position.z += party->moveDelta.z;
             return;
         }
         mario->trigFlags |= 0x20000;
@@ -602,9 +602,9 @@ void yoshi_use(PartyEntry* party) {
         party->speed = 0.0f;
         party->useMotionId = 7;
         if (party->groundHit != NULL) {
-            party->position.x += P_F(0xAC);
-            party->position.y += P_F(0xB0);
-            party->position.z += P_F(0xB4);
+            party->position.x += party->moveDelta.x;
+            party->position.y += party->moveDelta.y;
+            party->position.z += party->moveDelta.z;
         }
         partyChkGnd(party);
         return;
@@ -620,9 +620,9 @@ void yoshi_use(PartyEntry* party) {
     L_30B0:
         if (mario->hitobjStandOn == NULL) {
             if (party->groundHit != NULL) {
-                party->position.x += P_F(0xAC);
-                party->position.y += P_F(0xB0);
-                party->position.z += P_F(0xB4);
+                party->position.x += party->moveDelta.x;
+                party->position.y += party->moveDelta.y;
+                party->position.z += party->moveDelta.z;
             }
             partyChkGnd(party);
             return;
@@ -699,13 +699,13 @@ L_312C:
     L_3354:
         if (party->field_34 == 8) goto L_3588;
         if (yoshiGetStatus() == 1) {
-            P_F(0xAC) = mario->riderDelta.x;
-            P_F(0xB0) = mario->riderDelta.y;
-            P_F(0xB4) = mario->riderDelta.z;
+            party->moveDelta.x = mario->riderDelta.x;
+            party->moveDelta.y = mario->riderDelta.y;
+            party->moveDelta.z = mario->riderDelta.z;
         }
         if (party->flags & PARTY_FLAG_IS_GROUNDED) {
             if (!(party->flags & PARTY_FLAG_IS_EVT_USE)) {
-                if (P_U16(0x152) & 0x100) {
+                if (party->buttonNew & 0x100) {
                     party->useMotionId = 0x14;
                     goto L_3588;
                 }
@@ -759,7 +759,7 @@ L_312C:
         mario->position.z = party->position.z;
         mario->unk1A8 = party->field_10C;
         M_F(0x1AC) = party->field_110;
-        if (P_U16(0x152) & 0x600) {
+        if (party->buttonNew & 0x600) {
             party->useMotionId = 0x64;
         }
         searchGround(party);
@@ -797,18 +797,18 @@ L_3588:
         party->speed = 0.0f;
         party->useMotionId = 0x65;
         if (party->groundHit != NULL) {
-            party->position.x += P_F(0xAC);
-            party->position.y += P_F(0xB0);
-            party->position.z += P_F(0xB4);
+            party->position.x += party->moveDelta.x;
+            party->position.y += party->moveDelta.y;
+            party->position.z += party->moveDelta.z;
         }
         partyChkGnd(party);
         return;
     case 0x65:
         if (mario->hitobjStandOn == NULL) {
             if (party->groundHit != NULL) {
-                party->position.x += P_F(0xAC);
-                party->position.y += P_F(0xB0);
-                party->position.z += P_F(0xB4);
+                party->position.x += party->moveDelta.x;
+                party->position.y += party->moveDelta.y;
+                party->position.z += party->moveDelta.z;
             }
             partyChkGnd(party);
             return;
@@ -819,9 +819,9 @@ L_3588:
             party->field_3B = 0;
         }
         if (party->groundHit != NULL) {
-            party->position.x += P_F(0xAC);
-            party->position.y += P_F(0xB0);
-            party->position.z += P_F(0xB4);
+            party->position.x += party->moveDelta.x;
+            party->position.y += party->moveDelta.y;
+            party->position.z += party->moveDelta.z;
         }
         partyChkGnd(party);
         if (party->useStruct != NULL) {
@@ -988,7 +988,7 @@ L_3800:
                 }
                 goto L_3CE4;
             }
-            if (mario->airTimer <= 0x44 && (P_U16(0x150) & 0x100) && marioKeyOffChk() == 0) {
+            if (mario->airTimer <= 0x44 && (party->button & 0x100) && marioKeyOffChk() == 0) {
                 goto L_3CE4;
             }
             party->jumpPara1 = 0.0f;
@@ -1123,7 +1123,7 @@ L_3800:
                 L_getStick(party, &outAngle, &outDist);
                 L_yoshiFlyMove(party);
             }
-            if (!(P_U16(0x150) & 0x100) || marioKeyOffChk() != 0) {
+            if (!(party->button & 0x100) || marioKeyOffChk() != 0) {
                 if (party->useMotionId == 0x32) {
                     party->useMotionId = 0x33;
                 }
@@ -1225,9 +1225,9 @@ L_3800:
             return;
         }
         if (party->groundHit != NULL) {
-            party->position.x += P_F(0xAC);
-            party->position.y += P_F(0xB0);
-            party->position.z += P_F(0xB4);
+            party->position.x += party->moveDelta.x;
+            party->position.y += party->moveDelta.y;
+            party->position.z += party->moveDelta.z;
         }
         mario->field_EC.x = party->position.x;
         mario->field_EC.z = party->position.z;
@@ -1286,7 +1286,7 @@ void L_yoshiFlyMove(PartyEntry* party) {
 // keeps the negated-16 temp from constant-folding across the comparison.
 void inertia(PartyEntry* party) {
     MarioWork* mario = party->playerPtr;
-    f32 f3 = (f32)(s8)*(u8*)((u8*)party + 0x158);
+    f32 f3 = (f32)party->stickX;
     f32 f4 = *(f32*)((u8*)mario + 0x2B0);
     f32 f5 = *(f32*)((u8*)mario + 0x2B4);
     f32 zero = 0.0f;
@@ -1495,7 +1495,7 @@ void searchGround(PartyEntry* party) {
         u32 r = partyChkFrontStep(party, 11.0f, &out1, &out2, &out3);
         f32 d = out1 - party->position.y;
 
-        if (r != 0 && d <= 11.0f && d >= 5.0f && *(f32*)((u8*)party + 0xE0) <= 30.0f) {
+        if (r != 0 && d <= 11.0f && d >= 5.0f && party->groundSlope <= 30.0f) {
             party->field_120 = out1;
             {
                 f32 zero = 0.0f;
@@ -1731,7 +1731,7 @@ void checkWall(PartyEntry* party, f32 a, f32 b) {
                 party->field_12C = hit;
                 *(HitEntry**)((u8*)mario + 0x1E0) = hit;
             }
-            if (*(u16*)((u8*)party + 0x152) & 0x100) {
+            if (party->buttonNew & 0x100) {
                 HitEntry* h;
 
                 pos = party->position;
@@ -1834,8 +1834,8 @@ void L_getStick(PartyEntry* party, f32* outAngle, f32* outDist) {
         f32 dist;
         f32 ang;
 
-        x = *(s8*)((u8*)party + 0x158);
-        y = -(s32)*(s8*)((u8*)party + 0x159);
+        x = party->stickX;
+        y = -(s32)party->stickY;
         dist = distABf(0.0f, 0.0f, (f32)x, (f32)-y);
 
         if (dist >= 70.0f) {

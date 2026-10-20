@@ -484,7 +484,7 @@ void bomhei_use_main(PartyEntry* party) {
         /* fallthrough */
     case 1: {
         party->targetPos = mario->position;
-        movePos((f32*)((u8*)party + 0x94), (f32*)((u8*)party + 0x9C), -6.0f, toMovedirSimple(*(f32*)((u8*)mario + 0x1AC)));
+        movePos(&party->targetPos.x, &party->targetPos.z, -6.0f, toMovedirSimple(*(f32*)((u8*)mario + 0x1AC)));
         party->position.x += (party->targetPos.x - party->position.x) / (f32)party->timer;
         party->position.y += (party->targetPos.y - party->position.y) / (f32)party->timer;
         party->position.z += (party->targetPos.z - party->position.z) / (f32)party->timer;
