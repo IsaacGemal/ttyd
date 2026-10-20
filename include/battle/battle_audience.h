@@ -37,8 +37,12 @@ typedef struct StarPowerInfo {
 
 typedef struct BattleAudienceMember {
     s32 flags;                     // 0x0
-    s32 field_0x4;                 // 0x4
-    u8 field_0x8[0x19 - 0x8];      // 0x8
+    s32 step;                      // 0x4, case of the current status's ctrl-process switch (kinopio); 0 after ChangeStatus
+    s32 counter;                   // 0x8, per-status count: repeats left, or frames into an intplGetValue move (kinopio)
+    f32 field_0xC;                 // 0xC, per status: repeats left (status 4), walk direction +-1, distance walked
+    f32 field_0x10;                // 0x10, per status: distance per frame of the walk home
+    f32 field_0x14;                // 0x14, per status: length of the walk home
+    u8 field_0x18;                 // 0x18, colorB step, +4 or -4 (kinopio)
     u8 status;                     // 0x19
     u8 texIndex;                   // 0x1A, texture index for the current animation frame (TEXGetGXTexObjFromPalette)
     u8 type;                       // 0x1B, AudienceMemberType
@@ -48,8 +52,9 @@ typedef struct BattleAudienceMember {
     s32* animCur;                  // 0x24, animation in use (BattleAudience_SetAnim)
     s32* animPos;                  // 0x28, cursor in the command list of animCur
     s32 animWait;                  // 0x2C, frames left before the next command runs
-    u8 field_0x30[0x40 - 0x30];    // 0x30
-    u8 animDepth;                  // 0x40, index into the 0x34 table of the animation script
+    s32 motionTimer;               // 0x30, frames into the current squash or sway cycle (kinopio); 0 after ChangeStatus
+    s32 animLoop[3];               // 0x34, repeat counts of the animation script's -6/-7 loops, indexed by animDepth - 1
+    u8 animDepth;                  // 0x40, nesting depth of the animation script's loops (animLoop)
     u8 colorR;                     // 0x41
     u8 colorG;                     // 0x42
     u8 colorB;                     // 0x43
@@ -65,13 +70,14 @@ typedef struct BattleAudienceMember {
     Vec mRotation;                 // 0x9C
     Vec mRotationOffset;           // 0xA8
     Vec mHomePosition;             // 0xB4
-    u8 field_0xC0[0xCC - 0xC0];    // 0xC0
+    Vec dispPos;                   // 0xC0, position + jumpOffset (+ bobOffsetY for AUDIENCE_BOO), set each frame (kinopio)
     Vec jumpOffset;                // 0xCC, y is the hop height (clamped to 0 at the bottom)
     u8 field_0xD8[0xDC - 0xD8];    // 0xD8
     f32 jumpVelY;                  // 0xDC, added to jumpOffset.y each frame
     u8 field_0xE0[0xE4 - 0xE0];    // 0xE0
     f32 jumpAccelY;                // 0xE4, added to jumpVelY each frame
-    f32 field_0xE8;                // 0xE8
+    f32 yaw;                       // 0xE8, degrees, the draw code flips the sprite for (0, 180]; kinopio and bakugame set
+                                   //       90/270 from the x direction, evt_audience's moves 180/0; 270 after Entry_Sub
     u8 field_0xEC[0xF8 - 0xEC];    // 0xEC
     s32 interpFramesLeft;          // 0xF8
     s32 interpFramesTotal;         // 0xFC

@@ -1383,7 +1383,7 @@ void bakuGameAudienceSurpriseReset(void) {
         if ((u8)BattleAudience_GetExist(i)) {
             BattleAudienceMember* member = BattleAudienceGetPtr(i);
 
-            member->field_0xE8 = 90.0f;
+            member->yaw = 90.0f;
             if (!bakuGameAudienceCanThrowPos(i)) {
                 member->flags &= ~0x10;
             }
@@ -1455,9 +1455,9 @@ void bakuGameAudienceSurprise(void) {
             if (!bakuGameAudienceCanThrowPos(i)) {
                 BattleAudience_SetAnim(i, 7, 0);
                 if (irand(2) == 0) {
-                    member->field_0xE8 = 90.0f;
+                    member->yaw = 90.0f;
                 } else {
-                    member->field_0xE8 = 270.0f;
+                    member->yaw = 270.0f;
                 }
             } else {
                 BattleAudience_SetAnim(i, 3, 0);

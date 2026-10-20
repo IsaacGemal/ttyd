@@ -1087,11 +1087,11 @@ BOOL BattleAudience_CheckReactionPerPhase(void) {
 		}
 		for (i = 0; i < 200; i++) {
 			member = BattleAudienceGetPtr(i);
-			if ((u8)BattleAudience_GetSysCtrl(i) == 1 && member->type == 8 &&
+			if ((u8)BattleAudience_GetSysCtrl(i) == 1 && member->type == AUDIENCE_KOOPA &&
 					member->status == 0x11) {
 				member->timer--;
 				if (member->timer <= 0) {
-					member->field_0x4 = 4;
+					member->step = 4;
 				}
 			}
 		}
@@ -1984,9 +1984,9 @@ void BattleAudienceItemCtrlProcess(void) {
 					offset = 5;
 				}
 				vecB = vec3_802f9738;
-				vecB.x = *(f32*)((u8*)member + 0xc0) + kind->field_0xC;
-				vecB.y = *(f32*)((u8*)member + 0xc4) + kind->field_0x10 + intplGetValue(0, offset, 5, -10.0f, 0.0f);
-				vecB.z = *(f32*)((u8*)member + 0xc8) + 1.0f;
+				vecB.x = member->dispPos.x + kind->field_0xC;
+				vecB.y = member->dispPos.y + kind->field_0x10 + intplGetValue(0, offset, 5, -10.0f, 0.0f);
+				vecB.z = member->dispPos.z + 1.0f;
 				item->pos = vecB;
 			}
 			break;
@@ -2548,7 +2548,7 @@ void BattleAudienceAnimProcess(void) {
 		if (!(member->flags & 4)) {
 			continue;
 		}
-		anim = *(s32**)((u8*)member + 0x28);
+		anim = member->animPos;
 		if (member->animWait > 0) {
 			member->animWait -= 1;
 			continue;
@@ -2560,33 +2560,33 @@ void BattleAudienceAnimProcess(void) {
 			*(s32*)((u8*)member + 0x28) += 0xC;
 			break;
 		case -3:
-			*(s32**)((u8*)member + 0x28) = member->animCur;
+			member->animPos = member->animCur;
 			break;
 		case -4:
 			*(s32*)((u8*)member + 0x28) += 8;
 			break;
 		case -5:
 			target = anim[1];
-			*(s32**)((u8*)member + 0x28) = member->animCur;
-			while (!((*(s32**)((u8*)member + 0x28))[0] == -4 && (*(s32**)((u8*)member + 0x28))[1] == target)) {
+			member->animPos = member->animCur;
+			while (!(member->animPos[0] == -4 && member->animPos[1] == target)) {
 				*(s32*)((u8*)member + 0x28) += 4;
 			}
 			break;
 		case -6:
-			*(s32*)((u8*)member + 0x34 + member->animDepth * 4) = anim[1];
+			member->animLoop[member->animDepth] = anim[1];
 			member->animDepth += 1;
 			*(s32*)((u8*)member + 0x28) += 8;
 			break;
 		case -7:
-			*(s32*)((u8*)member + 0x30 + member->animDepth * 4) -= 1;
-			if (*(s32*)((u8*)member + 0x30 + member->animDepth * 4) <= 0) {
+			member->animLoop[member->animDepth - 1] -= 1;
+			if (member->animLoop[member->animDepth - 1] <= 0) {
 				member->animDepth -= 1;
 				*(s32*)((u8*)member + 0x28) += 4;
 			} else {
 				depth = 1;
 				do {
 					*(s32*)((u8*)member + 0x28) -= 4;
-					cmd = **(s32**)((u8*)member + 0x28);
+					cmd = *member->animPos;
 					if (cmd == -6) {
 						depth--;
 					}
@@ -2741,12 +2741,12 @@ void BattleAudienceDispAudience(CameraId camId, void* param) {
 			}
 		}
 
-		scaleX = *(f32*)((u8*)member + 0x54);
-		offsetX = *(f32*)((u8*)member + 0xA8) * scaleX;
-		scaleY = *(f32*)((u8*)member + 0x58);
-		offsetY = *(f32*)((u8*)member + 0xAC) * scaleY;
-		scaleZ = *(f32*)((u8*)member + 0x5C);
-		offsetZ = *(f32*)((u8*)member + 0xB0) * scaleZ;
+		scaleX = member->scale.x;
+		offsetX = member->mRotationOffset.x * scaleX;
+		scaleY = member->scale.y;
+		offsetY = member->mRotationOffset.y * scaleY;
+		scaleZ = member->scale.z;
+		offsetZ = member->mRotationOffset.z * scaleZ;
 		PSMTXScale(mtxScale, scaleX, scaleY, scaleZ);
 
 		{
@@ -2812,15 +2812,15 @@ void BattleAudienceDispAudience(CameraId camId, void* param) {
 			texBase = 8;
 		}
 
-		if (member->field_0xE8 >= 360.0f) {
-			member->field_0xE8 = member->field_0xE8 -
-			                     360.0f * (f32)(s32)(member->field_0xE8 / 360.0f);
+		if (member->yaw >= 360.0f) {
+			member->yaw = member->yaw -
+			                     360.0f * (f32)(s32)(member->yaw / 360.0f);
 		}
-		if (member->field_0xE8 < 0.0f) {
-			angle = (f32)(1 - (s32)(member->field_0xE8 / 360.0f));
-			member->field_0xE8 = member->field_0xE8 + 360.0f * angle;
+		if (member->yaw < 0.0f) {
+			angle = (f32)(1 - (s32)(member->yaw / 360.0f));
+			member->yaw = member->yaw + 360.0f * angle;
 		}
-		angle = member->field_0xE8;
+		angle = member->yaw;
 		if (angle > 0.0f && angle <= 180.0f) {
 			flip = 1;
 		}
@@ -3040,13 +3040,13 @@ void BattleAudience_Entry_Sub(s32 index, s32 type, u8 status) {
 	stage = BattleStageGetPtr();
 	member = BattleAudienceGetPtr(index);
 
-	member->field_0x4 = 0;
-	*(s32*)member->field_0x8 = 0;
+	member->step = 0;
+	member->counter = 0;
 	member->status = status;
 	member->type = type;
 	member->itemId = -1;
 	member->animTable = audience_kind[type].animTable;
-	*(s32*)((u8*)member + 0x30) = 0;
+	member->motionTimer = 0;
 	BattleAudience_SetAnim(index, 1, 1);
 
 	col = index / 20;
@@ -3073,15 +3073,15 @@ void BattleAudience_Entry_Sub(s32 index, s32 type, u8 status) {
 		member->position.y = -2000.0f;
 	}
 
-	*(Vec*)((u8*)member + 0x84) = (Vec){ 0.0f, 0.0f, 0.0f };
-	*(Vec*)((u8*)member + 0x78) = *(Vec*)((u8*)member + 0x84);
-	*(Vec*)((u8*)member + 0x90) = (Vec){ 0.0f, 0.0f, -1.0f };
+	member->accel = (Vec){ 0.0f, 0.0f, 0.0f };
+	member->velocity = member->accel;
+	member->normal = (Vec){ 0.0f, 0.0f, -1.0f };
 	member->mRotation = (Vec){ 0.0f, 0.0f, 0.0f };
 	member->mRotationOffset = (Vec){ 0.0f, 0.0f, 0.0f };
-	*(Vec*)((u8*)member + 0x54) = (Vec){ 1.0f, 1.0f, 1.0f };
-	*(Vec*)((u8*)member + 0x60) = (Vec){ 1.0f, 1.0f, 1.0f };
-	*(Vec*)((u8*)member + 0x6c) = (Vec){ 0.0f, 0.0f, 0.0f };
-	member->field_0xE8 = 270.0f;
+	member->scale = (Vec){ 1.0f, 1.0f, 1.0f };
+	member->baseSize = (Vec){ 1.0f, 1.0f, 1.0f };
+	member->drawOffset = (Vec){ 0.0f, 0.0f, 0.0f };
+	member->yaw = 270.0f;
 
 	if ((index >= 4 && index <= 0xf) ||
 	    (index >= 0x18 && index <= 0x23) ||
@@ -3121,10 +3121,10 @@ void BattleAudience_SetAnim(s32 id, s32 animId, BOOL force) {
 		return;
 	}
 	member->animCur = anim;
-	*(s32**)((u8*)member + 0x28) = anim;
+	member->animPos = anim;
 	member->animWait = 0;
 	for (i = 0; i < 3; i++) {
-		*(s32*)((u8*)member + 0x34 + i * 4) = 0;
+		member->animLoop[i] = 0;
 	}
 	member->animDepth = 0;
 }
@@ -3132,7 +3132,7 @@ void BattleAudience_SetAnim(s32 id, s32 animId, BOOL force) {
 
 BOOL BattleAudience_GetAnimEnd(s32 index) {
 	BattleAudienceMember* member = BattleAudienceGetPtr(index);
-	if (**(s32**)((u8*)member + 0x28) != -1) {
+	if (*member->animPos != -1) {
 		return FALSE;
 	}
 	return member->animWait <= 0;
@@ -3338,15 +3338,15 @@ void BattleAudience_ChangeStatus(s32 index, s32 status) {
 			member->colorR = zero;
 			member->colorA = 0xFF;
 			member->mRotation = (Vec){ 0.0f, 0.0f, 0.0f };
-			*(Vec*)((u8*)member + 0x6C) = (Vec){ 0.0f, 0.0f, 0.0f };
-			*(Vec*)((u8*)member + 0x60) = (Vec){ 1.0f, 1.0f, 1.0f };
-			*(Vec*)((u8*)member + 0x78) = (Vec){ 0.0f, 0.0f, 0.0f };
-			*(s32*)((u8*)member + 0x30) = zero;
-			member->field_0x4 = zero;
-			*(s32*)((u8*)member + 0x8) = zero;
-			*(f32*)((u8*)member + 0x14) = zeroF;
-			*(f32*)((u8*)member + 0x10) = zeroF;
-			*(f32*)((u8*)member + 0xC) = zeroF;
+			member->drawOffset = (Vec){ 0.0f, 0.0f, 0.0f };
+			member->baseSize = (Vec){ 1.0f, 1.0f, 1.0f };
+			member->velocity = (Vec){ 0.0f, 0.0f, 0.0f };
+			member->motionTimer = zero;
+			member->step = zero;
+			member->counter = zero;
+			member->field_0x14 = zeroF;
+			member->field_0x10 = zeroF;
+			member->field_0xC = zeroF;
 			member->status = status;
 		}
 	}
@@ -4139,10 +4139,10 @@ void BattleAudienceJoy_Sub(s32 a, s32 b, s32 c, s32 d) {
 			if (member->type == AUDIENCE_PIRANHA_PLANT) {
 				BattleAudience_ChangeStatus(i, 4);
 				if (d == 3) {
-					*(f32*)((u8*)member + 0xc) = 3.0f;
+					member->field_0xC = 3.0f;
 				}
 				else {
-					*(f32*)((u8*)member + 0xc) = 2.0f;
+					member->field_0xC = 2.0f;
 				}
 			}
 			else {
@@ -4150,10 +4150,10 @@ void BattleAudienceJoy_Sub(s32 a, s32 b, s32 c, s32 d) {
 				if (r < a) {
 					BattleAudience_ChangeStatus(i, 4);
 					if (d == 3) {
-						*(f32*)((u8*)member + 0xc) = 3.0f;
+						member->field_0xC = 3.0f;
 					}
 					else {
-						*(f32*)((u8*)member + 0xc) = 2.0f;
+						member->field_0xC = 2.0f;
 					}
 				}
 				else if (r < a + b) {
@@ -4322,7 +4322,7 @@ void BattleAudienceSoundClap(s32 a, s32 b) {
 	}
 	AUD_SOUND_ID(sound) = BattleAudienceSound1(name, r, l);
 	if (AUD_SOUND_ID(sound) != -1) {
-		*(s32*)((u8*)sound) |= 1;
+		sound->flags |= 1;
 		sound->timeLeft = a + b;
 		sound->mFadeoutTime = b;
 		vol = psndSFX_get_vol(AUD_SOUND_ID(sound));
@@ -4426,8 +4426,8 @@ void BattleAudienceSoundCheerKind(s32 kind, s32 a, s32 b) {
 	l = BattleAudience_GetPPAudienceNum_L();
 	snd4 = BattleAudienceSoundGetPtr(4);
 	snd5 = BattleAudienceSoundGetPtr(5);
-	if ((*(s32*)snd4 & 1) && (*(s32*)snd5 & 1)) {
-		if (*(s32*)((u8*)snd4 + 0xC) <= *(s32*)((u8*)snd5 + 0xC)) {
+	if ((snd4->flags & 1) && (snd5->flags & 1)) {
+		if (snd4->timeLeft <= snd5->timeLeft) {
 			BattleAudienceSoundStop(4);
 			sound = BattleAudienceSoundGetPtr(4);
 		}
@@ -4436,11 +4436,11 @@ void BattleAudienceSoundCheerKind(s32 kind, s32 a, s32 b) {
 			sound = BattleAudienceSoundGetPtr(5);
 		}
 	}
-	else if (*(s32*)snd4 & 1) {
+	else if (snd4->flags & 1) {
 		sound = BattleAudienceSoundGetPtr(5);
 		flag = 1;
 	}
-	else if (*(s32*)snd5 & 1) {
+	else if (snd5->flags & 1) {
 		sound = BattleAudienceSoundGetPtr(4);
 		flag = 1;
 	}
@@ -4581,7 +4581,7 @@ void BattleAudienceSoundHandBeat(void) {
 	BattleAudienceSoundStop(9);
 	AUD_SOUND_ID(sound) = BattleAudienceSound1("SFX_AUDIENCE_HANDBEAT1", r, l);
 	if (AUD_SOUND_ID(sound) != -1) {
-		*(s32*)((u8*)sound) |= 1;
+		sound->flags |= 1;
 		sound->timeLeft = -1;
 		sound->mFadeoutTime = 0;
 		sound->mForceFadeLength = 0;
@@ -4760,7 +4760,7 @@ void BattleAudienceSoundBombIgnite(s32 index, s32 a, s32 b) {
 	BattleAudienceSoundStop(0x14);
 	AUD_SOUND_ID(sound) = BattleAudienceSound2("SFX_AUDIENCE_BOMB_READY1", index);
 	if (AUD_SOUND_ID(sound) != -1) {
-		*(s32*)((u8*)sound) |= 1;
+		sound->flags |= 1;
 		sound->timeLeft = a + b;
 		sound->mFadeoutTime = b;
 		vol = psndSFX_get_vol(AUD_SOUND_ID(sound));
