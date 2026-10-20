@@ -87,7 +87,7 @@ void fileGarbageDataAdrClear(FileEntry* entry) {
 	void* data = *entry->data;
 	u8* d = data;
 
-	switch (entry->field_0x1) {
+	switch (entry->type) {
 		case 1:
 			if (*(u32*)(d + 0x14C) >= (u32)data) {
 				*(u32*)(d + 0x14C) -= (u32)data;
@@ -141,12 +141,12 @@ void fileGarbageDataAdrClear(FileEntry* entry) {
 			fileClearTpl(data);
 			break;
 
-		case 5: { // AnimationPoseData?
+		case 5: { // AnimationPoseData
 			s32 i;
 			s32 count;
 
 			if (*(u32*)(d + 0x14C) >= (u32)data) {
-				count = *(s32*)(d + 0x148);
+				count = ((AnimationPoseData*)d)->mAnimCount;
 				for (i = 0; i < count; i++) {
 					u32 elem = *(u32*)(d + 0x1AC) + i * 0x40;
 					u32 ptr = *(u32*)(elem + 0x3C);
@@ -364,7 +364,7 @@ void fileGarbageDataAdrSet(void* data, s32 type) {
 				*(u32*)((u8*)data + 0x1A4) += (u32)data;
 				*(u32*)((u8*)data + 0x1A8) += (u32)data;
 				*(u32*)((u8*)data + 0x1AC) += (u32)data;
-				count = *(s32*)((u8*)data + 0x148);
+				count = ((AnimationPoseData*)data)->mAnimCount;
 				for (j = 0; j < count; j++) {
 					AnimData* anim;
 					u32 off = (u32)((AnimTableEntry*)*(u32*)((u8*)data + 0x1AC))[j].data;
@@ -452,10 +452,10 @@ void fileGarbageMoveMem(void* data, FileEntry* file) {
 		if (file->entry) {
 			file->entry->address = data;
 		} else {
-			fileGarbageDataAdrSet(file->data[0], file->field_0x1);
+			fileGarbageDataAdrSet(file->data[0], file->type);
 		}
 	} else {
-		fileGarbageDataAdrSet(file->data[0], file->field_0x1);
+		fileGarbageDataAdrSet(file->data[0], file->type);
 	}
 }
 
@@ -491,8 +491,8 @@ void _fileGarbage(BOOL a1) {
 						OSYieldThread();
 					}
 				} else {
-					(*(s16*)((u8*)file + 0x2))--; // references is s16 in the original (lha/sth)
-					if (*(s16*)((u8*)file + 0x2) <= -2) {
+					file->references--;
+					if (file->references <= -2) {
 						file->state = 2;
 					}
 				}
@@ -506,7 +506,7 @@ void _fileGarbage(BOOL a1) {
 		next = file->next;
 		if (file->state == 2) {
 			file->state = 0;
-			if (&file->field_0x4 != file->data) {
+			if (&file->inlineData != file->data) {
 				smartFree((smartEntry*)file->data);
 			}
 			if (prev) {
@@ -604,10 +604,10 @@ FileEntry* _fileAlloc(const char* filename, s32 type, void (*callback)(FileEntry
 	}
 	if (handle) {
 		newentry->state = 1;
-		newentry->data = (void**)&newentry->field_0x4;
+		newentry->data = (void**)&newentry->inlineData;
 		*newentry->data = handle;
 		newentry->references = 1;
-		newentry->field_0x1 = type;
+		newentry->type = type;
 		newentry->next = NULL;
 		strcpy(newentry->filename, filename);
 		newentry->entry = NULL;
@@ -633,7 +633,7 @@ FileEntry* _fileAlloc(const char* filename, s32 type, void (*callback)(FileEntry
 		newentry->data = &smart->address;
 		newentry->state = 1;
 		newentry->references = 1;
-		newentry->field_0x1 = type;
+		newentry->type = type;
 		newentry->next = NULL;
 		strcpy(newentry->filename, filename);
 		newentry->entry = NULL;
@@ -680,11 +680,11 @@ void dvdReadDoneCallBack(s32 error, DVDFileInfo* info) {
 	if (error == -3) {
 		file->entry = NULL;
 		file->state = 2;
-		file->field_0x1 = 0xB;
+		file->type = 0xB;
 		DVDMgrClose(entry);
 	} else {
 		file->entry = NULL;
-		fileGarbageDataAdrSet(*file->data, file->field_0x1);
+		fileGarbageDataAdrSet(*file->data, file->type);
 		DVDMgrClose(entry);
 		if (file->callback) {
 			file->callback(file);
@@ -761,10 +761,10 @@ s32 fileAsync(const char* filename, s32 type, FileCallback callback) {
 	
 	if (handle) {
 		newentry->state = 3;
-		newentry->data = &newentry->field_0x4;
+		newentry->data = &newentry->inlineData;
 		*newentry->data = handle;
 		newentry->references = 0;
-		newentry->field_0x1 = type;
+		newentry->type = type;
 		newentry->next = 0;
 		strcpy(newentry->filename, filename);
 		newentry->entry = NULL;
@@ -802,7 +802,7 @@ s32 fileAsync(const char* filename, s32 type, FileCallback callback) {
 		newentry->data = &smart->address;
 		newentry->state = 3;
 		newentry->references = 0;
-		newentry->field_0x1 = type;
+		newentry->type = type;
 		newentry->next = NULL;
 		newentry->callback = callback;
 		strcpy(newentry->filename, filename);

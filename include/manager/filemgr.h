@@ -7,9 +7,9 @@ typedef void (*FileCallback)(struct FileEntry* file);
 
 typedef struct FileEntry {
 	u8 state; //0x0
-	s8 field_0x1; //0x1, TODO enum archivetype/type
+	s8 type; //0x1, TODO enum archivetype/type; selects the relocation case in fileGarbageDataAdrSet/Clear
 	s16 references; //0x2
-	void* field_0x4; //0x4
+	void* inlineData; //0x4, the handle when arcOpen opened the file (data points here)
 	u8 field_0x8[0x20 - 0x8]; //0x8
 	char filename[64]; //0x20
 	u8 field_0x60[0xA0 - 0x60]; //0x60
