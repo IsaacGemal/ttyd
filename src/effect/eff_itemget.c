@@ -74,17 +74,17 @@ EffectEntry* effItemGetEntry(s32 id, f32 x, f32 y, f32 z) {
 	entry->userdata = data;
 	entry->callback = effItemGetMain;
 	entry->flags |= 2;
-	data->field_0x0 = id;
+	data->id = id;
 	data->position.x = x;
 	data->position.y = y;
 	data->position.z = z;
-	data->field_0x10 = 0.0f;
-	data->field_0x14 = (f32)size_tbl[data->field_0x0] / 10.0f * 0.75f;
-	data->field_0x1C = 0;
-	data->field_0x20 = 0;
-	data->field_0x38 = 4;
-	data->field_0x34 = 0xFF;
-	data->field_0x18 = 1000;
+	data->animScale = 0.0f;
+	data->baseSize = (f32)size_tbl[data->id] / 10.0f * 0.75f;
+	data->frame = 0;
+	data->scaleMode = 0;
+	data->camId = CAMERA_3D;
+	data->alpha = 0xFF;
+	data->life = 1000;
 	ptr = data + 1;
 	for (i = 1; i < entry->count; i++, ptr++) {
 		ptr->position.x = 0.0f;
@@ -92,19 +92,19 @@ EffectEntry* effItemGetEntry(s32 id, f32 x, f32 y, f32 z) {
 		ptr->position.z = 0.0f;
 		if (id == 10) {
 			f32 c;
-			ptr->field_0x30 = 1.0471976f + 6.2831855f * (i - 1) / 6.0f;
-			ptr->field_0x24 = 5.0f * (f32)sin(ptr->field_0x30);
-			c = (f32)cos(ptr->field_0x30);
-			ptr->field_0x28 = -c * 5.0f;
-			ptr->field_0x2C = 0.0f;
+			ptr->angle = 1.0471976f + 6.2831855f * (i - 1) / 6.0f;
+			ptr->velX = 5.0f * (f32)sin(ptr->angle);
+			c = (f32)cos(ptr->angle);
+			ptr->velY = -c * 5.0f;
+			ptr->velZ = 0.0f;
 		} else {
-			ptr->field_0x30 = 6.2831855f * (i - 1) / (entry->count - 1);
-			ptr->field_0x24 = (f32)sin(ptr->field_0x30);
-			ptr->field_0x28 = -(f32)cos(ptr->field_0x30);
-			ptr->field_0x2C = 0.0f;
+			ptr->angle = 6.2831855f * (i - 1) / (entry->count - 1);
+			ptr->velX = (f32)sin(ptr->angle);
+			ptr->velY = -(f32)cos(ptr->angle);
+			ptr->velZ = 0.0f;
 		}
-		ptr->field_0x34 = 0;
-		ptr->field_0x1C = 0;
+		ptr->alpha = 0;
+		ptr->frame = 0;
 	}
 	return entry;
 }
@@ -119,68 +119,68 @@ void effItemGetMain(EffectEntry* effect) {
 
 	disp = initializeVec(&data->position);
 
-	camera = data->field_0x38;
-	id = data->field_0x0;
+	camera = data->camId;
+	id = data->id;
 	if (effect->flags & 4) {
 		effect->flags &= ~4;
-		data->field_0x18 = 16;
+		data->life = 16;
 	}
-	if (data->field_0x18 < 1000) {
-		data->field_0x18--;
+	if (data->life < 1000) {
+		data->life--;
 	}
-	if (data->field_0x18 < 16) {
-		data->field_0x34 = data->field_0x18 << 4;
+	if (data->life < 16) {
+		data->alpha = data->life << 4;
 	}
-	if (data->field_0x18 < 0) {
+	if (data->life < 0) {
 		effDelete(effect);
 		return;
 	}
-	data->field_0x1C++;
-	if ((u32)data->field_0x1C < 12) {
-		data->field_0x10 = (f32)scale_data[data->field_0x1C] / 100.0f;
+	data->frame++;
+	if ((u32)data->frame < 12) {
+		data->animScale = (f32)scale_data[data->frame] / 100.0f;
 	}
-	if (data->field_0x1C > 1000) {
-		data->field_0x1C = 1000;
+	if (data->frame > 1000) {
+		data->frame = 1000;
 	}
-	switch (data->field_0x20) {
+	switch (data->scaleMode) {
 	case 0:
 		break;
 	case 1:
-		if (data->field_0x10 < 100.0f) {
-			data->field_0x10 *= 1.1f;
+		if (data->animScale < 100.0f) {
+			data->animScale *= 1.1f;
 		}
 		break;
 	case 2:
-		data->field_0x10 *= 0.9f;
+		data->animScale *= 0.9f;
 		break;
 	}
 	data++;
 	for (i = 1; i < effect->count; i++, data++) {
-		data->field_0x1C++;
-		if (data->field_0x1C < 16) {
-			data->field_0x34 += 16;
-			if (data->field_0x34 > 0xFF) {
-				data->field_0x34 = 0xFF;
+		data->frame++;
+		if (data->frame < 16) {
+			data->alpha += 16;
+			if (data->alpha > 0xFF) {
+				data->alpha = 0xFF;
 			}
 		} else {
-			data->field_0x34 -= 8;
-			if (data->field_0x34 < 0) {
-				data->field_0x34 = 0;
+			data->alpha -= 8;
+			if (data->alpha < 0) {
+				data->alpha = 0;
 			}
 		}
-		if (data->field_0x1C > 1000) {
-			data->field_0x1C = 1000;
+		if (data->frame > 1000) {
+			data->frame = 1000;
 		}
-		if (data->field_0x34 == 0) {
+		if (data->alpha == 0) {
 			zeroCount++;
 		} else {
-			data->position.x += data->field_0x24;
-			data->position.y += data->field_0x28;
-			data->position.z += data->field_0x2C;
+			data->position.x += data->velX;
+			data->position.y += data->velY;
+			data->position.z += data->velZ;
 			if (id == 10) {
-				data->field_0x24 *= 0.9f;
-				data->field_0x28 *= 0.9f;
-				data->field_0x2C *= 0.9f;
+				data->velX *= 0.9f;
+				data->velY *= 0.9f;
+				data->velZ *= 0.9f;
 			}
 		}
 	}
@@ -220,7 +220,7 @@ void effItemGetDisp(CameraId camId, void* param) {
 	Vec vecC;
 	s32 alphaB;
 	s32 alphaA;
-	s32 field;
+	s32 headAlpha;
 	s32 i;
 	s32 j;
 	f32 f31;
@@ -233,13 +233,13 @@ void effItemGetDisp(CameraId camId, void* param) {
 	vecA = vec3_802fddb4;
 	vecB = vec3_802fddc0;
 	vecC = vec3_802fddcc;
-	scale = data->field_0x10 * data->field_0x14;
-	field = data->field_0x34;
+	scale = data->animScale * data->baseSize;
+	headAlpha = data->alpha;
 
-	GXSetBlendMode(1, 4, 5, 0);
-	GXSetZCompLoc(1);
-	GXSetAlphaCompare(7, 0, 0, 7, 0);
-	GXSetZMode(1, 3, 0);
+	GXSetBlendMode(GX_BM_BLEND, GX_BL_SRCALPHA, GX_BL_INVSRCALPHA, GX_LO_CLEAR);
+	GXSetZCompLoc(GX_TRUE);
+	GXSetAlphaCompare(GX_ALWAYS, 0, GX_AOP_AND, GX_ALWAYS, 0);
+	GXSetZMode(GX_TRUE, GX_LEQUAL, GX_FALSE);
 	PSMTXTrans(mtxTrans, data->position.x, data->position.y, data->position.z);
 	PSMTXRotRad(mtxRot, 'y', -camGetPtr(camId)->viewYaw * 0.017453292f);
 	PSMTXScale(mtxScale, scale, scale, scale);
@@ -249,8 +249,8 @@ void effItemGetDisp(CameraId camId, void* param) {
 	PSMTXTrans(mtxTrans, 2.0f * (f32)sin(6.2831855f * camGetPtr(camId)->viewYaw / 360.0f), 0.0f, 2.0f * -f31);
 	PSMTXConcat(mtxTrans, mtxBase, mtxBase);
 
-	GXSetTevColor(1, white);
-	GXSetTevColor(2, color_tbl[data->field_0x0]);
+	GXSetTevColor(GX_TEVREG0, white);
+	GXSetTevColor(GX_TEVREG1, color_tbl[data->id]);
 	C_MTXLightOrtho(mtxLight, 0.0f, 6.0f, 0.0f, 6.0f, 0.5f, 0.5f, 0.5f, 0.5f);
 	PSMTXMultVec(mtxRot, &vecA, &vecA);
 	C_MTXLookAt(mtxLook, &vecA, &vecB, &vecC);
@@ -258,35 +258,35 @@ void effItemGetDisp(CameraId camId, void* param) {
 	PSMTXConcat(mtxLight, mtxBase, mtxTex);
 
 	GXSetNumTexGens(2);
-	GXSetTexCoordGen2(0, 1, 0, 0x1E, 0, 0x7D);
-	GXSetTexCoordGen2(1, 1, 4, 0x3C, 0, 0x7D);
-	GXLoadTexMtxImm(mtxTex, 0x1E, 1);
+	GXSetTexCoordGen2(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_POS, GX_TEXMTX0, GX_FALSE, GX_PTIDENTITY);
+	GXSetTexCoordGen2(GX_TEXCOORD1, GX_TG_MTX2x4, GX_TG_TEX0, GX_IDENTITY, GX_FALSE, GX_PTIDENTITY);
+	GXLoadTexMtxImm(mtxTex, GX_TEXMTX0, GX_MTX2x4);
 	GXSetNumTevStages(2);
-	GXSetTevOrder(0, 0, 0, 0xFF);
-	GXSetTevColorOp(0, 0, 0, 0, 1, 0);
-	GXSetTevAlphaOp(0, 0, 0, 0, 1, 0);
-	GXSetTevColorIn(0, 2, 4, 8, 0xF);
-	GXSetTevAlphaIn(0, 7, 7, 7, 7);
-	GXSetTevOrder(1, 1, 1, 4);
-	GXSetTevColorOp(1, 0, 0, 0, 1, 0);
-	GXSetTevAlphaOp(1, 0, 0, 0, 1, 0);
-	GXSetTevColorIn(1, 0xF, 0, 0xA, 0xF);
-	GXSetTevAlphaIn(1, 7, 4, 5, 7);
+	GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR_NULL);
+	GXSetTevColorOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+	GXSetTevAlphaOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+	GXSetTevColorIn(GX_TEVSTAGE0, GX_CC_C0, GX_CC_C1, GX_CC_TEXC, GX_CC_ZERO);
+	GXSetTevAlphaIn(GX_TEVSTAGE0, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO);
+	GXSetTevOrder(GX_TEVSTAGE1, GX_TEXCOORD1, GX_TEXMAP1, GX_COLOR0A0);
+	GXSetTevColorOp(GX_TEVSTAGE1, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+	GXSetTevAlphaOp(GX_TEVSTAGE1, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+	GXSetTevColorIn(GX_TEVSTAGE1, GX_CC_ZERO, GX_CC_CPREV, GX_CC_RASC, GX_CC_ZERO);
+	GXSetTevAlphaIn(GX_TEVSTAGE1, GX_CA_ZERO, GX_CA_TEXA, GX_CA_RASA, GX_CA_ZERO);
 	effGetTexObj(0x2C, &texObj);
-	GXLoadTexObj(&texObj, 0);
+	GXLoadTexObj(&texObj, GX_TEXMAP0);
 	effGetTexObj(0x2A, &texObj);
-	GXLoadTexObj(&texObj, 1);
+	GXLoadTexObj(&texObj, GX_TEXMAP1);
 	GXSetNumChans(1);
-	GXSetChanCtrl(4, 0, 0, 0, 0, 0, 2);
-	GXSetCullMode(0);
+	GXSetChanCtrl(GX_COLOR0A0, GX_FALSE, GX_SRC_REG, GX_SRC_REG, GX_LIGHT_NULL, GX_DF_NONE, GX_AF_NONE);
+	GXSetCullMode(GX_CULL_NONE);
 	GXClearVtxDesc();
-	GXSetVtxDesc(9, 1);
-	GXSetVtxDesc(0xD, 1);
-	GXSetVtxAttrFmt(0, 9, 1, 4, 0);
-	GXSetVtxAttrFmt(0, 0xD, 1, 4, 0);
+	GXSetVtxDesc(GX_VA_POS, GX_DIRECT);
+	GXSetVtxDesc(GX_VA_TEX0, GX_DIRECT);
+	GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_POS_XYZ, GX_F32, 0);
+	GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, GX_TEX_ST, GX_F32, 0);
 
-	alphaA = field * 128 / 255;
-	alphaB = field * 255 / 255;
+	alphaA = headAlpha * 128 / 255;
+	alphaB = headAlpha * 255 / 255;
 	f31 = 32.0f;
 	{
 		f32 f = 64.0f;
@@ -304,7 +304,7 @@ void effItemGetDisp(CameraId camId, void* param) {
 			{
 				GXColor c = unk_804232f0;
 				c.a = alphaA;
-				GXSetChanMatColor(4, c);
+				GXSetChanMatColor(GX_COLOR0A0, c);
 			}
 #endif
 		} else {
@@ -315,13 +315,13 @@ void effItemGetDisp(CameraId camId, void* param) {
 			{
 				GXColor c = dat_80420b98;
 				c.a = alphaB;
-				GXSetChanMatColor(4, c);
+				GXSetChanMatColor(GX_COLOR0A0, c);
 			}
 #endif
 		}
 		GXLoadPosMtxImm(mtxTrans, 0);
 		GXSetCurrentMtx(0);
-		GXBegin(0x80, 0, 4);
+		GXBegin(GX_QUADS, GX_VTXFMT0, 4);
 		GXPosition3f32(f30, f31, 0.0f);
 		GXTexCoord2f32(0.0f, 0.0f);
 		GXPosition3f32(f31, f31, 0.0f);
@@ -332,10 +332,10 @@ void effItemGetDisp(CameraId camId, void* param) {
 		GXTexCoord2f32(0.0f, 2.0f);
 	}
 
-	GXSetTevColor(1, color_tbl[data->field_0x0]);
-	GXSetTevColor(2, white);
+	GXSetTevColor(GX_TEVREG0, color_tbl[data->id]);
+	GXSetTevColor(GX_TEVREG1, white);
 	effGetTexObj(0x2B, &texObj);
-	GXLoadTexObj(&texObj, 1);
+	GXLoadTexObj(&texObj, GX_TEXMAP1);
 
 	{
 		f32 f42 = 42.666668f;
@@ -367,8 +367,8 @@ void effItemGetDisp(CameraId camId, void* param) {
 #endif
 		for (j = 0; j < 2; j++) {
 			if (j == 0) {
-				alphaA = data->field_0x34 * 128 / 255;
-				if (data->field_0x34 != 0xFF) {
+				alphaA = data->alpha * 128 / 255;
+				if (data->alpha != 0xFF) {
 					alphaA -= 20;
 					if (alphaA < 0) {
 						alphaA = 0;
@@ -378,7 +378,7 @@ void effItemGetDisp(CameraId camId, void* param) {
 				PSMTXConcat(mtxBase, mtxTrans, mtxTex);
 				PSMTXTrans(mtxTrans, 2.0f, -2.0f, 0.0f);
 				PSMTXConcat(mtxTex, mtxTrans, mtxTex);
-				PSMTXRotRad(mtxRot, 'z', data->field_0x30);
+				PSMTXRotRad(mtxRot, 'z', data->angle);
 				PSMTXConcat(mtxTex, mtxRot, mtxTex);
 #ifdef MUST_MATCH
 				GXSetChanMatColor(4, itemColor0(alphaA, unk_804232f4));
@@ -386,21 +386,21 @@ void effItemGetDisp(CameraId camId, void* param) {
 				{
 					GXColor c = unk_804232f4;
 					c.a = alphaA;
-					GXSetChanMatColor(4, c);
+					GXSetChanMatColor(GX_COLOR0A0, c);
 				}
 #endif
 			} else {
 				PSMTXTrans(mtxTrans, data->position.x, data->position.y, data->position.z);
 				PSMTXConcat(mtxBase, mtxTrans, mtxTex);
-				PSMTXRotRad(mtxRot, 'z', data->field_0x30);
+				PSMTXRotRad(mtxRot, 'z', data->angle);
 				PSMTXConcat(mtxTex, mtxRot, mtxTex);
 #ifdef MUST_MATCH
-				GXSetChanMatColor(4, itemColor0(data->field_0x34 * 255 / 255, dat_80420b9c));
+				GXSetChanMatColor(4, itemColor0(data->alpha * 255 / 255, dat_80420b9c));
 #else
 				{
 					GXColor c = dat_80420b9c;
-					c.a = data->field_0x34 * 255 / 255;
-					GXSetChanMatColor(4, c);
+					c.a = data->alpha * 255 / 255;
+					GXSetChanMatColor(GX_COLOR0A0, c);
 				}
 #endif
 			}
@@ -408,8 +408,8 @@ void effItemGetDisp(CameraId camId, void* param) {
 			GXLoadPosMtxImm(mtxTrans, 0);
 			GXSetCurrentMtx(0);
 			PSMTXConcat(mtxLight, mtxTex, mtxTrans);
-			GXLoadTexMtxImm(mtxTrans, 0x1E, 0);
-			GXBegin(0x80, 0, 4);
+			GXLoadTexMtxImm(mtxTrans, GX_TEXMTX0, GX_MTX3x4);
+			GXBegin(GX_QUADS, GX_VTXFMT0, 4);
 			GXPosition3f32(f29, 0.0f, 0.0f);
 			GXTexCoord2f32(0.0f, 0.0f);
 			GXPosition3f32(f31, 0.0f, 0.0f);
@@ -447,10 +447,10 @@ void effItemUseDisp(CameraId camId, void* param) {
 	f32 f29;
 
 	cam = camGetPtr(camId);
-	GXSetBlendMode(1, 4, 5, 0);
-	GXSetZCompLoc(1);
-	GXSetAlphaCompare(7, 0, 0, 7, 0);
-	GXSetZMode(1, 3, 0);
+	GXSetBlendMode(GX_BM_BLEND, GX_BL_SRCALPHA, GX_BL_INVSRCALPHA, GX_LO_CLEAR);
+	GXSetZCompLoc(GX_TRUE);
+	GXSetAlphaCompare(GX_ALWAYS, 0, GX_AOP_AND, GX_ALWAYS, 0);
+	GXSetZMode(GX_TRUE, GX_LEQUAL, GX_FALSE);
 	PSMTXTrans(mtx1, data->position.x, data->position.y, data->position.z);
 	PSMTXRotRad(mtx2, 'y', -camGetPtr(CAMERA_3D)->viewYaw * 0.017453292f);
 	PSMTXScale(mtx3, 0.4f, 0.4f, 0.4f);
@@ -458,22 +458,22 @@ void effItemUseDisp(CameraId camId, void* param) {
 	PSMTXConcat(mtx4, mtx2, mtx4);
 	PSMTXConcat(cam->view, mtx4, mtx4);
 	GXSetNumTexGens(1);
-	GXSetTexCoordGen2(0, 1, 4, 0x3C, 0, 0x7D);
+	GXSetTexCoordGen2(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_IDENTITY, GX_FALSE, GX_PTIDENTITY);
 	GXSetNumTevStages(1);
-	GXSetTevOrder(0, 0, 0, 4);
-	GXSetTevColorOp(0, 0, 0, 0, 1, 0);
-	GXSetTevAlphaOp(0, 0, 0, 0, 1, 0);
-	GXSetTevOp(0, 0);
+	GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR0A0);
+	GXSetTevColorOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+	GXSetTevAlphaOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+	GXSetTevOp(GX_TEVSTAGE0, GX_MODULATE);
 	GXSetNumChans(1);
-	GXSetChanCtrl(4, 0, 0, 0, 0, 0, 2);
-	GXSetCullMode(0);
+	GXSetChanCtrl(GX_COLOR0A0, GX_FALSE, GX_SRC_REG, GX_SRC_REG, GX_LIGHT_NULL, GX_DF_NONE, GX_AF_NONE);
+	GXSetCullMode(GX_CULL_NONE);
 	GXClearVtxDesc();
-	GXSetVtxDesc(9, 1);
-	GXSetVtxDesc(0xD, 1);
-	GXSetVtxAttrFmt(0, 9, 1, 4, 0);
-	GXSetVtxAttrFmt(0, 0xD, 1, 4, 0);
+	GXSetVtxDesc(GX_VA_POS, GX_DIRECT);
+	GXSetVtxDesc(GX_VA_TEX0, GX_DIRECT);
+	GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_POS_XYZ, GX_F32, 0);
+	GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, GX_TEX_ST, GX_F32, 0);
 	effGetTexObj(0x2B, &texObj);
-	GXLoadTexObj(&texObj, 0);
+	GXLoadTexObj(&texObj, GX_TEXMAP0);
 
 #ifdef MUST_MATCH
 	// The half-size is computed inside the loop after the j==0 branch's 2.0f call; MWCC hoists it to
@@ -497,30 +497,30 @@ void effItemUseDisp(CameraId camId, void* param) {
 		for (j = 0; j < 2; j++) {
 			if (j == 0) {
 				PSMTXTrans(mtx1, data->position.x + 2.0f, data->position.y - 2.0f, data->position.z);
-				PSMTXRotRad(mtx2, 'z', data->field_0x30);
+				PSMTXRotRad(mtx2, 'z', data->angle);
 				PSMTXConcat(mtx1, mtx2, mtx1);
 				PSMTXConcat(mtx4, mtx1, mtx1);
 #ifdef MUST_MATCH
-				GXSetChanMatColor(4, itemColor1((data->field_0x34 * 64) / 255, unk_804232f8));
+				GXSetChanMatColor(4, itemColor1((data->alpha * 64) / 255, unk_804232f8));
 #else
 				{
 					GXColor color = unk_804232f8;
-					color.a = (data->field_0x34 * 64) / 255;
-					GXSetChanMatColor(4, color);
+					color.a = (data->alpha * 64) / 255;
+					GXSetChanMatColor(GX_COLOR0A0, color);
 				}
 #endif
 			} else {
 				PSMTXTrans(mtx1, data->position.x, data->position.y, data->position.z);
-				PSMTXRotRad(mtx2, 'z', data->field_0x30);
+				PSMTXRotRad(mtx2, 'z', data->angle);
 				PSMTXConcat(mtx1, mtx2, mtx1);
 				PSMTXConcat(mtx4, mtx1, mtx1);
 #ifdef MUST_MATCH
-				GXSetChanMatColor(4, itemColor1((data->field_0x34 * 128) / 255, dat_80420ba0));
+				GXSetChanMatColor(4, itemColor1((data->alpha * 128) / 255, dat_80420ba0));
 #else
 				{
 					GXColor color2 = dat_80420ba0;
-					color2.a = (data->field_0x34 * 128) / 255;
-					GXSetChanMatColor(4, color2);
+					color2.a = (data->alpha * 128) / 255;
+					GXSetChanMatColor(GX_COLOR0A0, color2);
 				}
 #endif
 			}
@@ -538,7 +538,7 @@ void effItemUseDisp(CameraId camId, void* param) {
 #endif
 			GXLoadPosMtxImm(mtx1, 0);
 			GXSetCurrentMtx(0);
-			GXBegin(0x80, 0, 4);
+			GXBegin(GX_QUADS, GX_VTXFMT0, 4);
 			GXPosition3f32(f31, 0.0f, 0.0f);
 			GXTexCoord2f32(0.0f, 0.0f);
 			GXPosition3f32(f29, 0.0f, 0.0f);

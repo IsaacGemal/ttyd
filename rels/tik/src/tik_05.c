@@ -2671,7 +2671,7 @@ USER_FUNC(crystal_bgmode) {
     s32 name = evtGetValue(event, args[0]);
     EffectEntry* entry = effNameToPtr((char*)name);
 
-    ((effItemGetData*)entry->userdata)->field_0x38 = 5;
+    ((effItemGetData*)entry->userdata)->camId = 5;
     return EVT_RETURN_DONE;
 }
 
@@ -2681,10 +2681,10 @@ USER_FUNC(map_bgmode) {
     s32 name2 = evtGetValue(event, args[1]);
     EffectEntry* entry = effNameToPtr((char*)name1);
 
-    ((effItemGetData*)entry->userdata)->field_0x38 = 5;
-    ((effItemGetData*)entry->userdata)->field_0x14 = 4.3f;
+    ((effItemGetData*)entry->userdata)->camId = 5;
+    ((effItemGetData*)entry->userdata)->baseSize = 4.3f;
     entry = effNameToPtr((char*)name2);
-    *(s32*)&((effItemGetData*)entry->userdata)->field_0x28 = 5;
+    *(s32*)&((effItemGetData*)entry->userdata)->velY = 5;
     marioSetCamId(5);
     return EVT_RETURN_DONE;
 }
@@ -2696,9 +2696,9 @@ USER_FUNC(map_bgmode_end) {
     EffectEntry* entry = effNameToPtr((char*)name1);
     effItemGetData* data = entry->userdata;
 
-    data->field_0x38 = 4;
+    data->camId = 4;
     entry = effNameToPtr((char*)name2);
-    *(s32*)&((effItemGetData*)entry->userdata)->field_0x28 = 4;
+    *(s32*)&((effItemGetData*)entry->userdata)->velY = 4;
     marioSetCamId(4);
     return EVT_RETURN_DONE;
 }

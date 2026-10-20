@@ -470,7 +470,7 @@ static USER_FUNC(effitemgetchange_cam) {
     s32 val = evtGetValue(event, args[1]);
 
     eff = effNameToPtr((const char*)eff);
-    ((effItemGetData*)eff->userdata)->field_0x38 = val;
+    ((effItemGetData*)eff->userdata)->camId = val;
     return EVT_RETURN_DONE;
 }
 
@@ -479,7 +479,7 @@ static USER_FUNC(effitemgetchange_cam_ptr) {
     EffectEntry* eff = (EffectEntry*)evtGetValue(event, args[0]);
     s32 val = evtGetValue(event, args[1]);
 
-    ((effItemGetData*)eff->userdata)->field_0x38 = val;
+    ((effItemGetData*)eff->userdata)->camId = val;
     return EVT_RETURN_DONE;
 }
 
@@ -487,7 +487,7 @@ static USER_FUNC(effitemget_open) {
     s32* args = event->args;
     EffectEntry* eff = effNameToPtr((const char*)evtGetValue(event, args[0]));
 
-    ((effItemGetData*)eff->userdata)->field_0x20 = 1;
+    ((effItemGetData*)eff->userdata)->scaleMode = 1;
     return EVT_RETURN_DONE;
 }
 
@@ -495,7 +495,7 @@ static USER_FUNC(effitemget_open_ptr) {
     s32* args = event->args;
     EffectEntry* eff = (EffectEntry*)evtGetValue(event, args[0]);
 
-    ((effItemGetData*)eff->userdata)->field_0x20 = 1;
+    ((effItemGetData*)eff->userdata)->scaleMode = 1;
     return EVT_RETURN_DONE;
 }
 

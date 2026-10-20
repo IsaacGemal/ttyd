@@ -379,7 +379,7 @@ static s32 effitemgetchange_cam(EventEntry* event, BOOL isFirstCall) {
     EffectEntry* eff = effNameToPtr((const char*)name);
     effItemGetData* data = eff->userdata;
 
-    data->field_0x38 = cam;
+    data->camId = cam;
     return EVT_RETURN_DONE;
 }
 
@@ -389,7 +389,7 @@ static s32 effitemgetchange_cam_ptr(EventEntry* event, BOOL isFirstCall) {
     s32 cam = evtGetValue(event, args[1]);
     effItemGetData* data = eff->userdata;
 
-    data->field_0x38 = cam;
+    data->camId = cam;
     return EVT_RETURN_DONE;
 }
 
@@ -398,7 +398,7 @@ static s32 effitemget_open(EventEntry* event, BOOL isFirstCall) {
     EffectEntry* eff = effNameToPtr((const char*)evtGetValue(event, args[0]));
     effItemGetData* data = eff->userdata;
 
-    data->field_0x20 = 1;
+    data->scaleMode = 1;
     return EVT_RETURN_DONE;
 }
 
@@ -407,7 +407,7 @@ static s32 effitemget_open_ptr(EventEntry* event, BOOL isFirstCall) {
     EffectEntry* eff = (EffectEntry*)evtGetValue(event, args[0]);
     effItemGetData* data = eff->userdata;
 
-    data->field_0x20 = 1;
+    data->scaleMode = 1;
     return EVT_RETURN_DONE;
 }
 
