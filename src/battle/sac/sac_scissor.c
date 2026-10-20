@@ -114,19 +114,6 @@ typedef struct StarTrail {
     f32 trailY[4];        // 0x50
 } StarTrail;
 
-// Star-stone effect userdata written at the end of star_control.
-// No header declares it.
-typedef struct ScissorEffectData {
-    u8 field_0x00[0x8];  // 0x00
-    f32 posX;            // 0x08
-    f32 posY;            // 0x0C
-    f32 posZ;            // 0x10
-    f32 scale;           // 0x14
-    f32 rotX;            // 0x18
-    f32 rotY;            // 0x1C
-    f32 rotZ;            // 0x20
-} ScissorEffectData;
-
 
 
 #ifdef MUST_MATCH
@@ -725,25 +712,25 @@ s32 star_control(void) {
         break;
     }
     if (work->starStone != NULL) {
-        ScissorEffectData* data = work->starStone->userdata;
+        effStarStoneData* data = work->starStone->userdata;
 
         if (work->state >= 4) {
             f32 zero = 0.0f;
 
-            data->posX = zero;
-            data->posY = -1000.0f;
-            data->posZ = zero;
+            data->x = zero;
+            data->y = -1000.0f;
+            data->z = zero;
         } else {
-            data->posX = work->starPos.x;
-            data->posY = work->starPos.y;
-            data->posZ = work->starPos.z;
+            data->x = work->starPos.x;
+            data->y = work->starPos.y;
+            data->z = work->starPos.z;
         }
         {
             f32 s = 1.5f;
 
-            data->rotX = work->starRot.x;
+            data->tipRotY = work->starRot.x;
             data->rotY = work->starRot.y;
-            data->rotZ = work->starRot.z;
+            data->tipRotZ = work->starRot.z;
             data->scale = s * work->starScale.x;
         }
     }
