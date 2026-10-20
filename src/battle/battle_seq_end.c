@@ -1651,7 +1651,7 @@ s32 _lvup_spot_move(EventEntry* event, BOOL isFirstCall) {
         {
             GXColor color = {0xFF, 0xFF, 0xFF, 0x00};
 
-            ((u8*)&color)[3] = (s32)intplGetValue(0, event->userdataEx[0], 21, float_255_80420c88, float_128_80420cc0);
+            color.a = (s32)intplGetValue(0, event->userdataEx[0], 21, float_255_80420c88, float_128_80420cc0);
             entry->color = color;
         }
         if (event->userdataEx[0] <= 0) {
@@ -1681,7 +1681,7 @@ s32 _lvup_spot_off(EventEntry* event, BOOL isFirstCall) {
         entry = &spot->entries[i];
         color = (GXColor){0xFF, 0xFF, 0xFF, 0x00};
 
-        ((u8*)&color)[3] = (s32)intplGetValue(2, event->userdata[1], event->userdata[0], float_0_80420c7c, (f32)event->userdata[2]);
+        color.a = (s32)intplGetValue(2, event->userdata[1], event->userdata[0], float_0_80420c7c, (f32)event->userdata[2]);
         entry->color = color;
         if (entry->color.a == 0) {
             entry->flags &= ~2;
