@@ -28,12 +28,12 @@ TitleWork* wp2 = &work2;
 
 // This unit's .rodata: the six Vec constants come first, in retail's order. disp1 passes the
 // first two by name; disp2/titleMain/L_titleInit reach the rest by fixed offsets from the base.
-const Vec tex7Translate[1] = {{ 0.0f, 0.0f, 0.0f }};
-const Vec tex7Scale[1] = {{ 1.0f, 1.0f, 1.0f }};
-const Vec tex5Translate[1] = {{ 0.0f, 0.0f, 0.0f }};
-const Vec tex5Scale[1] = {{ 1.0f, 1.0f, 1.0f }};
-const Vec tex6Translate[1] = {{ 0.0f, 0.0f, 0.0f }};
-const Vec tex6Scale[1] = {{ 1.0f, 1.0f, 1.0f }};
+const Vec vec3_802c11a0[1] = {{ 0.0f, 0.0f, 0.0f }};
+const Vec vec3_802c11ac[1] = {{ 1.0f, 1.0f, 1.0f }};
+const Vec vec3_802c11b8[1] = {{ 0.0f, 0.0f, 0.0f }};
+const Vec vec3_802c11c4[1] = {{ 1.0f, 1.0f, 1.0f }};
+const Vec vec3_802c11d0[1] = {{ 0.0f, 0.0f, 0.0f }};
+const Vec vec3_802c11dc[1] = {{ 1.0f, 1.0f, 1.0f }};
 
 // The first string block of the .rodata pool (reached by fixed offsets from the base).
 const char str_demoTplPath[] = "%s/demo.tpl";
@@ -80,7 +80,7 @@ s32 N_getDebugMode(void) {
 }
 
 // The original's L_titleInit and titleMain reach the later pooled strings by fixed offsets from the
-// unit's first rodata object, tex7Translate; plain literals are pooled the same way once the named
+// unit's first rodata object, vec3_802c11a0; plain literals are pooled the same way once the named
 // .rodata objects below are in place, so the natural (non-MATCH) form is the literal one.
 void L_titleInit(SequenceWork* work) {
 	memset(wp2, 0, sizeof(TitleWork));
@@ -128,19 +128,19 @@ void L_titleInit(SequenceWork* work) {
 	camGetPtr(CAMERA_2D)->flags |= 0x400;
 }
 
-// This unit's .sdata2 GXColor constants. titleMain, disp1 and
+// This unit's .sdata2 GXColor constants (the original names them dat_80419480..). titleMain, disp1 and
 // disp2 pass them by value to fadeEntry/unk_80177008/winTexSet/FontDrawColor through *(GXColor*)&name.
-const GXColor loadFadeWhite = {0xFF, 0xFF, 0xFF, 0xFF};
-const GXColor loadFadeBlack = {0x00, 0x00, 0x00, 0xFF};
-const GXColor gameOverFadeWhite = {0xFF, 0xFF, 0xFF, 0xFF};
-const GXColor gameOverFadeBlack = {0x00, 0x00, 0x00, 0xFF};
-const GXColor defaultFadeWhite = {0xFF, 0xFF, 0xFF, 0xFF};
-const GXColor defaultFadeBlack = {0x00, 0x00, 0x00, 0xFF};
-const GXColor step1FadeWhite = {0xFF, 0xFF, 0xFF, 0xFF};
-const GXColor step10FadeWhite = {0xFF, 0xFF, 0xFF, 0xFF};
-const GXColor step11FadeWhite = {0xFF, 0xFF, 0xFF, 0xFF};
-const GXColor step20FadeBlack = {0x00, 0x00, 0x00, 0xFF};
-const GXColor step20SlowFadeBlack = {0x00, 0x00, 0x00, 0xFF};
+const GXColor dat_80419480 = {0xFF, 0xFF, 0xFF, 0xFF};
+const GXColor dat_80419484 = {0x00, 0x00, 0x00, 0xFF};
+const GXColor dat_80419488 = {0xFF, 0xFF, 0xFF, 0xFF};
+const GXColor dat_8041948c = {0x00, 0x00, 0x00, 0xFF};
+const GXColor dat_80419490 = {0xFF, 0xFF, 0xFF, 0xFF};
+const GXColor dat_80419494 = {0x00, 0x00, 0x00, 0xFF};
+const GXColor dat_80419498 = {0xFF, 0xFF, 0xFF, 0xFF};
+const GXColor dat_8041949c = {0xFF, 0xFF, 0xFF, 0xFF};
+const GXColor dat_804194a0 = {0xFF, 0xFF, 0xFF, 0xFF};
+const GXColor dat_804194a4 = {0x00, 0x00, 0x00, 0xFF};
+const GXColor dat_804194a8 = {0x00, 0x00, 0x00, 0xFF};
 
 // dont_inline keeps titleMain a real `bl` from seq_titleMain; retail does not inline it.
 #pragma dont_inline on
@@ -181,20 +181,20 @@ void titleMain(SequenceWork* work) {
 				&& animGroupBaseAsync(TITLE_MAKU_C, 2, 0))
 			{
 				if (seqGetPrevSeq() == SEQ_LOAD) {
-					fadeEntry(0x40, 0, *(GXColor*)&loadFadeWhite);
-					fadeEntry(0x1f, 0, *(GXColor*)&loadFadeBlack);
+					fadeEntry(0x40, 0, *(GXColor*)&dat_80419480);
+					fadeEntry(0x1f, 0, *(GXColor*)&dat_80419484);
 					wp2->tex5PosY = 120.0f;
 					wp2->tex6PosY = -170.0f;
 					wp2->waitTimer = 0;
 				}
 				else if (seqGetPrevSeq() == SEQ_GAME_OVER) {
-					fadeEntry(0x15, 0, *(GXColor*)&gameOverFadeWhite);
-					fadeEntry(0x1d, 0, *(GXColor*)&gameOverFadeBlack);
+					fadeEntry(0x15, 0, *(GXColor*)&dat_80419488);
+					fadeEntry(0x1d, 0, *(GXColor*)&dat_8041948c);
 					wp2->waitTimer = 0x4e;
 				}
 				else {
-					fadeEntry(0x15, 0, *(GXColor*)&defaultFadeWhite);
-					fadeEntry(0x22, 0, *(GXColor*)&defaultFadeBlack);
+					fadeEntry(0x15, 0, *(GXColor*)&dat_80419490);
+					fadeEntry(0x22, 0, *(GXColor*)&dat_80419494);
 					fadeSetNarrowFast();
 					wp2->waitTimer = 0x17;
 				}
@@ -211,7 +211,7 @@ void titleMain(SequenceWork* work) {
 			}
 			if (fadeIsFinish()) {
 				if (seqGetPrevSeq() != SEQ_LOAD) {
-					fadeEntry(0x14, 0x1f4, *(GXColor*)&step1FadeWhite);
+					fadeEntry(0x14, 0x1f4, *(GXColor*)&dat_80419498);
 					wp2->step++;
 				}
 				else {
@@ -265,12 +265,12 @@ void titleMain(SequenceWork* work) {
 			}
 			break;
 		case 10:
-			fadeEntry(0x3f, 0, *(GXColor*)&step10FadeWhite);
+			fadeEntry(0x3f, 0, *(GXColor*)&dat_8041949c);
 			wp2->step++;
 			// fallthrough
 		case 11:
 			if (fadeIsFinish()) {
-				fadeEntry(0x1a, 0, *(GXColor*)&step11FadeWhite);
+				fadeEntry(0x1a, 0, *(GXColor*)&dat_804194a0);
 				wp2->step++;
 			}
 			break;
@@ -281,8 +281,8 @@ void titleMain(SequenceWork* work) {
 			}
 			break;
 		case 20:
-			fadeEntry(0x21, 0, *(GXColor*)&step20FadeBlack);
-			fadeEntry(0xa, 0x3e8, *(GXColor*)&step20SlowFadeBlack);
+			fadeEntry(0x21, 0, *(GXColor*)&dat_804194a4);
+			fadeEntry(0xa, 0x3e8, *(GXColor*)&dat_804194a8);
 			psndBGMOff_f_d(0x200, 0x3e8, 0);
 			wp2->phaseFrame = 0;
 			wp2->step++;
@@ -385,7 +385,7 @@ void disp1(CameraId cameraId, void* param) {
 	              camera->viewport[4], camera->viewport[5]);
 
 	winTexInit(*wp2->texture->data);
-	winTexSet(7, tex7Translate[0], tex7Scale[0], (GXColor){ 0xFF, 0xFF, 0xFF, 0xFF });
+	winTexSet(7, vec3_802c11a0[0], vec3_802c11ac[0], (GXColor){ 0xFF, 0xFF, 0xFF, 0xFF });
 
 	*camGetPtr(cameraId) = camBackup;
 	GXSetProjectionv(projBackup);
@@ -428,10 +428,10 @@ void disp2(CameraId cameraId, void* param) {
 
 	winTexInit(*wp2->texture->data);
 
-	unk_80177008(5, disp2Vec(tex5Translate[0], wp2->tex5PosY, wp2->tex5PosX), tex5Scale[0],
+	unk_80177008(5, disp2Vec(vec3_802c11b8[0], wp2->tex5PosY, wp2->tex5PosX), vec3_802c11c4[0],
 	             (GXColor){ 0xFF, 0xFF, 0xFF, 0xFF });
 
-	winTexSet(6, disp2Vec(tex6Translate[0], wp2->tex6PosY, wp2->tex6PosX), tex6Scale[0],
+	winTexSet(6, disp2Vec(vec3_802c11d0[0], wp2->tex6PosY, wp2->tex6PosX), vec3_802c11dc[0],
 	          (GXColor){ 0xFF, 0xFF, 0xFF, 0xFF });
 
 	wp2->pulseCounter += 1;

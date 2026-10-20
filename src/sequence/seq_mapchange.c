@@ -51,9 +51,9 @@
 extern BadgeShopWork* bdsw;
 extern BOOL dbg_lotteryinfo; // evt_lottery
 
-// .rodata pool prefix: the original's defaultLangCodes is an 8-byte { "jp", "us" } pair at .rodata+0.
+// .rodata pool prefix: the original's table_802C1028 is an 8-byte { "jp", "us" } pair at .rodata+0.
 // It is also the base MWCC uses for every pooled .rodata string reference in this unit.
-static const char* const defaultLangCodes[2] = { "jp", "us" };
+static const char* const table_802C1028[2] = { "jp", "us" };
 
 // .sbss, declared lowest address last (MWCC lays uninitialised globals out last-declared-first).
 char _next_area[0x20];
@@ -63,7 +63,7 @@ char _next_bero[0x20];
 // .sbss2 scratch colour and its trailing gap, also reverse-declared.
 #pragma section ".sdata" ".sbss2"
 __declspec(section ".sdata") u8 gap_10_80422F64_sbss2[4];
-__declspec(section ".sdata") GXColor fadeColor;
+__declspec(section ".sdata") GXColor unk_80422f60;
 #pragma section ".sdata" ".sbss"
 
 // .bss
@@ -118,7 +118,7 @@ void seq_mapChangeExit(SequenceWork* work) {
 extern void SoundSetOutputMode(s32 mode);
 extern s32 key_off[10];
 
-// Two-pointer view of defaultLangCodes; the original copies both words in one 64-bit move.
+// Two-pointer view of table_802C1028; the original copies both words in one 64-bit move.
 void seq_mapChangeMain(SequenceWork* work) {
     BOOL newarea;
     const char* area;
@@ -297,7 +297,7 @@ void seq_mapChangeMain(SequenceWork* work) {
         if (strncmp(_next_map, "dmo", 3) != 0 && strncmp(_next_map, "dig", 3) != 0 && strncmp(_next_map, "end", 3) != 0
             && strncmp(_next_map, "sys", 3) != 0 && strncmp(_next_map, SMC_STR(0x98, "gor_10"), 6) != 0) {
 #ifdef MUST_MATCH
-            *(MapLangPair*)lang = *(const MapLangPair*)defaultLangCodes;
+            *(MapLangPair*)lang = *(const MapLangPair*)table_802C1028;
 #else
             lang[0] = "jp";
             lang[1] = "us";
@@ -358,7 +358,7 @@ void seq_mapChangeMain(SequenceWork* work) {
                 evtEntryType(key_off, 0, 0, 0);
                 break;
             default:
-                fadeEntry(0x1C, 0, fadeColor);
+                fadeEntry(0x1C, 0, unk_80422f60);
                 break;
             }
             statusWinForceUpdate();

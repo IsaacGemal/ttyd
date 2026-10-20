@@ -361,7 +361,7 @@ void mono_capture(CameraId cameraId, void* param) {
 
 // Building the colour in an inline keeps the GXColor temporary in the slot the original uses.
 static inline GXColor monoColor(u8 alpha) {
-    GXColor color = *(GXColor*)&monoBaseColor;
+    GXColor color = *(GXColor*)&dat_8041ddb8;
     color.a = alpha;
     return color;
 }
@@ -1917,7 +1917,7 @@ EVT_BEGIN(partyChuchurinaAttack_Kiss)
         CALL(btlevtcmd_CalculateFaceDirection, -2, -1, LW(3), LW(4), 16, LW(15))
         CALL(btlevtcmd_ChangeFaceDirection, -2, LW(15))
     END_IF
-    CALL_CHILD(subsetevt_check_no_status)
+    CALL_CHILD(unk_evt_803510ec)
     IF_INT_NOT_EQUAL(LW(0), 0)
         CALL(btlevtcmd_CalculateFaceDirection, LW(3), LW(4), -2, -1, 16, LW(15))
         CALL(btlevtcmd_ChangeFaceDirection, LW(3), LW(15))
@@ -2002,7 +2002,7 @@ EVT_BEGIN(partyChuchurinaAttack_Kiss)
     CALL(btlevtcmd_AnimeChangePose, -2, 1, STRING("PCH_K_1"))
     WAIT_FRAMES(6)
     IF_INT_GREATER_OR_EQUAL(LW(5), 0)
-        CALL_CHILD(subsetevt_check_no_status)
+        CALL_CHILD(unk_evt_803510ec)
         IF_INT_NOT_EQUAL(LW(0), 0)
             CALL(btlevtcmd_AnimeChangePoseType, LW(3), LW(4), 59)
         END_IF
@@ -2048,7 +2048,7 @@ EVT_BEGIN(partyChuchurinaAttack_Kiss)
     CALL(evt_btl_camera_set_moveSpeedLv, 0, 1)
     CALL(evt_audience_ap_recovery)
     CALL(btlevtcmd_InviteApInfoReport)
-    CALL_CHILD(subsetevt_check_no_status)
+    CALL_CHILD(unk_evt_803510ec)
     IF_INT_NOT_EQUAL(LW(0), 0)
         CALL(btlevtcmd_ResetFaceDirection, LW(3))
         CALL(btlevtcmd_StartWaitEvent, LW(3))
@@ -2175,7 +2175,7 @@ EVT_END()
 // clang-format on
 #pragma force_active off
 
-__declspec(section ".sdata2") u32 monoBaseColor = 0xFFFFFF00;
+__declspec(section ".sdata2") u32 dat_8041ddb8 = 0xFFFFFF00;
 __declspec(section ".sdata2") const f32 float_910_8041ddbc = 910.0f;
 #pragma explicit_zero_data on
 #pragma force_active on

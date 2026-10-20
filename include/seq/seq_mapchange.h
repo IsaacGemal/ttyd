@@ -18,7 +18,7 @@ extern const char str_tou2[];
 extern const char str_tst[];
 extern const char str_jon[];
 
-// Two-pointer view of defaultLangCodes; the original copies both words in one 64-bit move.
+// Two-pointer view of table_802C1028; the original copies both words in one 64-bit move.
 #ifdef MUST_MATCH
 typedef struct { const char* a; const char* b; } MapLangPair;
 #endif

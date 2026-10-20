@@ -1467,7 +1467,7 @@ EVT_BEGIN(subsetevt_status_recovery)
     RETURN
 EVT_END()
 
-EVT_BEGIN(subsetevt_check_no_status)
+EVT_BEGIN(unk_evt_803510ec)
     CALL(btlevtcmd_CheckStatus, LW(3), 27, LW(0))
     IF_INT_NOT_EQUAL(LW(0), 0)
         SET_VALUE(LW(0), 0)

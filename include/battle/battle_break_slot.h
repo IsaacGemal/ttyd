@@ -24,9 +24,9 @@ void item_appear_force(BattleBreakSlotReel* reel, s32 id);
 // .sdata2 constants: declared const here, defined at the end of battle_break_slot.c so the compiler loads them
 // by name instead of folding them into its own literal pool.
 extern const f32 zero_80420520;
-extern const u32 slotIndicatorColor;
-extern const u32 slotCurrentColor;
-extern const u32 slotNextColor;
+extern const u32 dat_80420524;
+extern const u32 dat_80420528;
+extern const u32 dat_8042052c;
 extern const f32 float_226_80420530;
 extern const f32 float_42_80420534;
 extern const f32 float_122_80420538;

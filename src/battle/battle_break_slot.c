@@ -274,14 +274,14 @@ __declspec(section ".data") u32 doku_kinoko_effect[65] = {
 // local/outgoing GXColor pair out the way the original does; the direct build puts the two slots the
 // other way round.
 static inline GXColor slotColorA(u8 a) {
-    GXColor c = *(GXColor*)&slotCurrentColor;
+    GXColor c = *(GXColor*)&dat_80420528;
 
     c.a = a;
     return c;
 }
 
 static inline GXColor slotColorB(u8 a) {
-    GXColor c = *(GXColor*)&slotNextColor;
+    GXColor c = *(GXColor*)&dat_8042052c;
 
     c.a = a;
     return c;
@@ -594,7 +594,7 @@ void BattleBreakSlot_Main(void) {
             }
         }
 #ifdef MUST_MATCH
-        // retail tests j here, the audience loop's counter, which is only assigned on a field_08 == 210 frame: on the
+        // retail tests j here, the audience loop's counter, which is only assigned on a timer == 210 frame: on the
         // frame-220 call it reads an uninitialised local (rule 7: kept only under MUST_MATCH)
         if (slot->timer == 220 && j == 200) {
 #else
@@ -873,7 +873,7 @@ void BattleBreakSlotDispReel(CameraId camId, void* param) {
             if ((reel1->flags & 1) && reel1->state >= 1 && reel1->state <= 4) {
                 PSMTXTrans(mtxTrans, float_42_80420534 * (f32)i + float_226_80420530, float_122_80420538, float_0_8042053c);
                 {
-                    GXColor color = *(GXColor*)&slotIndicatorColor;
+                    GXColor color = *(GXColor*)&dat_80420524;
 
                     iconDispGxCol(mtxTrans, 0x10, 0x1D4, color);
                 }
@@ -915,11 +915,11 @@ void BattleBreakSlotDispReel(CameraId camId, void* param) {
             {
                 u16 tex0 = texList[reel->value];
 #ifdef MUST_MATCH
-                btlDispTexPlane2(mtxFinal, tex0, slotColor(reel->alpha, *(GXColor*)&slotCurrentColor), 0);
+                btlDispTexPlane2(mtxFinal, tex0, slotColor(reel->alpha, *(GXColor*)&dat_80420528), 0);
 #else
                 GXColor c0;
 
-                *(u32*)&c0 = slotCurrentColor;
+                *(u32*)&c0 = dat_80420528;
                 c0.a = reel->alpha;
                 btlDispTexPlane2(mtxFinal, tex0, c0, 0);
 #endif
@@ -939,11 +939,11 @@ void BattleBreakSlotDispReel(CameraId camId, void* param) {
                 PSMTXConcat(mtxTrans, mtxFinal, mtxFinal);
                 {
 #ifdef MUST_MATCH
-                    btlDispTexPlane2(mtxFinal, tex, slotColor(reel->alpha, *(GXColor*)&slotNextColor), 0);
+                    btlDispTexPlane2(mtxFinal, tex, slotColor(reel->alpha, *(GXColor*)&dat_8042052c), 0);
 #else
                     GXColor c1;
 
-                    *(u32*)&c1 = slotNextColor;
+                    *(u32*)&c1 = dat_8042052c;
                     c1.a = reel->alpha;
                     btlDispTexPlane2(mtxFinal, tex, c1, 0);
 #endif
@@ -1095,9 +1095,9 @@ void item_appear_force(BattleBreakSlotReel* reel, s32 id) {
 // real objects ahead of its own pooled literals instead of folding them.
 #pragma explicit_zero_data on
 __declspec(section ".sdata2") const f32 zero_80420520 = 0.0f;
-__declspec(section ".sdata2") const u32 slotIndicatorColor = 0xFFFFFFD0;
-__declspec(section ".sdata2") const u32 slotCurrentColor = 0xFFFFFF00;
-__declspec(section ".sdata2") const u32 slotNextColor = 0xFFFFFF00;
+__declspec(section ".sdata2") const u32 dat_80420524 = 0xFFFFFFD0;
+__declspec(section ".sdata2") const u32 dat_80420528 = 0xFFFFFF00;
+__declspec(section ".sdata2") const u32 dat_8042052c = 0xFFFFFF00;
 __declspec(section ".sdata2") const f32 float_226_80420530 = 226.0f;
 __declspec(section ".sdata2") const f32 float_42_80420534 = 42.0f;
 __declspec(section ".sdata2") const f32 float_122_80420538 = 122.0f;
