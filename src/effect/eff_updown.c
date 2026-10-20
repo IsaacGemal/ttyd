@@ -58,13 +58,6 @@ EffectEntry* effUpdownEntry(s32 type, f32 x, f32 y, f32 z, s32 field18, s32 life
 }
 
 // .text:0x45C | 0x8018DF88 | size: 0x1E8
-// MUST_MATCH: MWCC coalesces a single `a = alpha` with the parameter, shifting every color register;
-// re-materializing it at each case entry reproduces the original r28.
-#ifdef MUST_MATCH
-#define POLY_ALPHA a
-#else
-#define POLY_ALPHA alpha
-#endif
 // .text:0x644 | 0x8018E170 | size: 0x1D8
 // NONMATCHING (96.97%): scaleX/scaleY and the final Vec values exactly match; the remaining diff
 // is the frame++/renderMode/Vec-copy schedule (the original materialises &pos into r3 before the
@@ -74,9 +67,7 @@ void effUpdownMain(EffectEntry* effect) {
 	s32 type;
 	s32 renderMode;
 	Vec pos;
-#ifdef MUST_MATCH
 	Vec* p;
-#endif
 
 	type = work->type;
 	if (effect->flags & 4) {
@@ -98,26 +89,17 @@ void effUpdownMain(EffectEntry* effect) {
 			work->scaleX = (f32)scale_data[work->frame * 2] / 100.0f;
 			work->scaleY = (f32)scale_data[work->frame * 2 + 1] / 100.0f;
 		} else {
-#ifdef MUST_MATCH
-			/* MUST_MATCH: splitting out the signed frame delta and the constant (and the sine as a temp: it pools
+			/* Splitting out the signed frame delta and the constant (and the sine as a temp: it pools
 			   0.25 before 0.1) fixes the FP register allocation of the int->float conversion and the fnmsubs. */
 			f32 k = 0.25f;
 			s32 t = work->frame - 15;
+			f32 wave;
 			work->scaleX = 1.0f;
-			{
-				f32 wave = (f32)sin((f32)t * k);
-				work->scaleY = 1.0f - wave * 0.1f;
-			}
-#else
-			work->scaleY = 1.0f -
-						   (f32)sin((f32)(s32)(work->frame - 15) * 0.25f) * 0.1f;
-			work->scaleX = 1.0f;
-#endif
+			wave = (f32)sin((f32)t * k);
+			work->scaleY = 1.0f - wave * 0.1f;
 		}
 	}
-#ifdef MUST_MATCH
 	p = &pos;
-#endif
 	work->frame++;
 	pos = (Vec){ 0.0f, 0.0f, 0.0f };
 	pos.x = work->x;
@@ -127,32 +109,24 @@ void effUpdownMain(EffectEntry* effect) {
 	if (work->alpha != 0xFF) {
 		renderMode = 2;
 	}
-#ifdef MUST_MATCH
 	dispEntry(CAMERA_3D, dispCalcZ(p), renderMode, effUpdownDisp, effect);
-#else
-	dispEntry(CAMERA_3D, dispCalcZ(&pos), renderMode, effUpdownDisp, effect);
-#endif
 }
 
+// The alpha is copied into `a` at each case entry: MWCC coalesces a single `a = alpha` with the parameter,
+// shifting every color register, and the per-case copy reproduces the original r28.
 static void polygon(s32 type, s32 alpha, f32 x, f32 y, f32 w, f32 h, f32 u, f32 v) {
 	u8 r1, g1, b1;
-#ifdef MUST_MATCH
 	u8 a;
-#endif
 	u8 r2, g2, b2;
 
 	switch (type) {
 	case 0:
-#ifdef MUST_MATCH
 		a = alpha;
-#endif
 		r1 = g1 = b1 = 0xFF;
 		r2 = g2 = b2 = 0xFF;
 		break;
 	case 1:
-#ifdef MUST_MATCH
 		a = alpha;
-#endif
 		r1 = 0xE9;
 		g1 = 0x4A;
 		b1 = 0x3F;
@@ -161,9 +135,7 @@ static void polygon(s32 type, s32 alpha, f32 x, f32 y, f32 w, f32 h, f32 u, f32 
 		b2 = 0x3E;
 		break;
 	case 2:
-#ifdef MUST_MATCH
 		a = alpha;
-#endif
 		r1 = 0x3F;
 		g1 = 0x3F;
 		b1 = 0xE9;
@@ -175,16 +147,16 @@ static void polygon(s32 type, s32 alpha, f32 x, f32 y, f32 w, f32 h, f32 u, f32 
 
 	GXBegin(GX_QUADS, GX_VTXFMT0, 4);
 	GXPosition3f32(x, y, 0.0f);
-	GXColor4u8(r1, g1, b1, POLY_ALPHA);
+	GXColor4u8(r1, g1, b1, a);
 	GXTexCoord2f32(0.0f, 0.0f);
 	GXPosition3f32(x + w, y, 0.0f);
-	GXColor4u8(r1, g1, b1, POLY_ALPHA);
+	GXColor4u8(r1, g1, b1, a);
 	GXTexCoord2f32(u, 0.0f);
 	GXPosition3f32(x + w, y - h, 0.0f);
-	GXColor4u8(r2, g2, b2, POLY_ALPHA);
+	GXColor4u8(r2, g2, b2, a);
 	GXTexCoord2f32(u, v);
 	GXPosition3f32(x, y - h, 0.0f);
-	GXColor4u8(r2, g2, b2, POLY_ALPHA);
+	GXColor4u8(r2, g2, b2, a);
 	GXTexCoord2f32(0.0f, v);
 }
 

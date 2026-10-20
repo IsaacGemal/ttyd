@@ -133,11 +133,8 @@ EffectEntry* effMizutamaEntry(s32 type, f32 x, f32 y, f32 z, f32 angle) {
 }
 
 void effMizutamaMain(EffectEntry* effect) {
-#ifdef MUST_MATCH
-	/* MUST_MATCH: retail builds the Vec in a scratch and copies it to a second local before
-	   dispCalcZ; a single local folds the copy away. */
+	// The Vec is built in `disp` and copied to a second local before dispCalcZ; a single local folds the copy away.
 	Vec position;
-#endif
 	MizutamaData* data = effect->userdata;
 	Vec disp = { 0 };
 	s32 done = 0;
@@ -146,9 +143,7 @@ void effMizutamaMain(EffectEntry* effect) {
 	disp.x = data->x;
 	disp.y = data->y;
 	disp.z = data->z;
-#ifdef MUST_MATCH
 	position = disp;
-#endif
 
 	data++;
 	for (i = 1; i < effect->count; i++, data++) {
@@ -170,11 +165,7 @@ void effMizutamaMain(EffectEntry* effect) {
 	if (done >= effect->count - 1) {
 		effDelete(effect);
 	} else {
-#ifdef MUST_MATCH
 		dispEntry(CAMERA_3D, dispCalcZ(&position), 2, effMizutamaDisp, effect);
-#else
-		dispEntry(CAMERA_3D, dispCalcZ(&disp), 2, effMizutamaDisp, effect);
-#endif
 	}
 }
 
