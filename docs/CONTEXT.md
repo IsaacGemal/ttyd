@@ -9185,3 +9185,56 @@ unit_mario. animdrv 366 → 179 weighted. Open: `paperAnim` holds either a name 
 `const char*`); 0x16C and the AnimData/ANIMDATA_F44-F54 tail are still unnamed; eff_nice reads AnimData clip raw.
 The layout fix was merged with #884's (filemgr), which had closed the same gap with `void*` fields: the typed
 names above win, and filemgr's relocation calls use them.
+
+### Tooling: address-name literals and symbol renames (2026-10-19, Claude Opus 5.5, n9-q-addr; reviewed by Claude Opus 5.5)
+
+Address names (`float_0p5_80420df8`, `str_80301540`, `unk_802564b4`) were 13,993 of the cleanup index's weighted
+48,769 on main. What a rename needs depends on who reads the name:
+- **C only**: a name that never reaches the dol's symbol table as a function, i.e. statics, file-local objects and
+  constants. Data objects score by their bytes, so objdiff doesn't care; every C file that names the symbol must
+  still change together (the linker).
+- **C plus `config/G8MJ01/symbols.txt`**: functions. objdiff pairs a function with the original by its symbols.txt
+  name, so a source-only rename drops it to 0 and the unit's .text score falls. A dol symbol a REL references is
+  also in the dol's FORCEACTIVE list, which dtk writes from symbols.txt (`yuuSetWindowEvt`). Data objects get the
+  symbols.txt edit too, only to keep the names in step.
+- **Constants back to literals** are a different job: no name is needed at all, but the bytes can change. Named
+  objects pool first in definition order and literals after them in first-use order, and a named constant is
+  sometimes loaded or scheduled differently, so converting a whole file at once is often not byte-identical.
+  Each constant is tried and kept only if the object stays link-equivalent, on top of those already kept.
+
+Tools (all in `tools/`, run on the tower; uv supplies pyelftools):
+- `obj_equiv.py OLD.o NEW.o` (or `--tree OLD_DIR NEW_DIR`): link-time interchangeability. Every allocated
+  section's size, alignment and bytes; every relocation with its target resolved to a place (a symbol the object
+  defines becomes section+offset, so `float_x` and the compiler's `@123` at the same slot are equal; undefined
+  symbols stay names); every global both define must keep its place and size. Removed/added globals are listed, not
+  failed. The linked checksum stays the final word.
+- `addr_literals.py SRC.c ... | --all [--apply] [--kinds float,str,agg] [-j N]`: candidates are float, string and
+  const Vec/GXColor objects that only their own .c names, never address-taken, sizeof'd or volatile, and not named
+  anywhere in a `#ifdef`/`#ifndef MUST_MATCH` conditional (match-only code is left alone). It compiles variants to
+  a temp dir next to an untouched source (a `.qa_` copy, deleted after), compares with obj_equiv, and only
+  `--apply` writes, and only to the repo's own sources. Without `--apply` it just reports. `--all` takes ~90 s.
+- `rename_symbol.py OLD NEW [OLD NEW ...] [--dry-run]`: renames across src, include, rels, libs and symbols.txt;
+  refuses when NEW is spelled anywhere (or in a REL's symbols.txt), when two pairs share a NEW, when OLD is also a
+  REL symbol, or when OLD isn't found; matches whole symbols only (`foo` doesn't hit the static `foo$123`).
+- `ci.py`'s ratchet reports a function renamed in place (same unit, same address, same or better score) as
+  `renamed:` instead of a 100 -> 0 regression. Each successor excuses one lost function; a score drop, a move to
+  another unit, a function gone without a same-address successor, or a missing address still fails
+  (`tools/tests/test_ci_moved.py`). symbols.txt is protected, so a rename branch runs CI with `--allow-protected`.
+
+`tb.sh` gotcha: its rsync keeps the Mac file's mtime. When a tool rewrites sources on the tower and the Mac copy is
+synced back over them (or a file returns to an older version with an old mtime), ninja can see the object as newer
+than the source and keep a stale object, so the checksum "passes" on the old code. Touch the changed sources on the
+Mac before the confirming build.
+
+Pilot: evt_memcard 40/40 strings literal (172 -> 22 address names), eff_opuku_wprotect_n64 11/20 (115 -> 79),
+ac_stick_keep_left 8/13 (84 -> 49); function renames `memcard_buf_reset` (wraps cardBufReset),
+`yuuSetWindowEvt`/`evt_yuu_get_window_evt`/`yuuWindowEvt` (the yuu counter REL stores the script window_open runs
+as a child event; the user func reads it back). Cleanup index 69.467 -> 69.125. Review: the first pilot pass also
+rewrote constants inside MUST_MATCH conditionals (371 -> 30 across the three files); the guard keeps them, and
+with them the constants that only pooled in place alongside them.
+
+Recommendation: run `addr_literals.py --all --apply` later as its own branch, when other branches aren't holding
+the files (a dry run on this tree: another 12,128 -> 9,285 address names in the files with candidates, index to
+about 65.1), then the full build and CI. Don't mechanically rename the float constants that must stay named (the
+ones match-only code uses, or whose removal reorders the pool): leave them to the tool's verdict, and give them real
+names only by hand where the meaning is clear.
