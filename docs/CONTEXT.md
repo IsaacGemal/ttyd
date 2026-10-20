@@ -10122,3 +10122,39 @@ Left, and why:
 
 Build: `ninja` recreates build/G8MJ01/ok and the 32 modules pass; changed C files natural-compile (without MUST_MATCH).
 Index 36.223 -> 36.006 (koopa_motion 287 -> 288, mot_jabara 245 -> 252, mot_roll 200 -> 43 weighted).
+
+### Readability: mapdrv, animdrv and mobjdrv address names (2026-10-20, Claude Haiku 5.5, n9-q-mapanim)
+
+Renames, all through `tools/rename_symbol.py` (C, headers and symbols.txt together), each proven by where the value is read:
+- `unk_80418458` -> `mapDispDisabled` (mapdrv.c). `N_mapDispOff` stores TRUE and `N_mapDispOn` FALSE; `mapDisp` returns early
+  when it is set; `mapUnLoad`/`_mapLoad`/`bmapUnLoad` clear it. The type stays `u32` (the match-only path compares it signed).
+- mobjdrv.c float constants whose value is their whole name, with the address suffix dropped: `float_deg2rad` (0.017453292f,
+  pi/180, used as a degrees-to-radians factor by every MTXRotRad call), `float_2p5`.
+- mobjdrv.c strings, named by their contents: `str_HOBJ_` ("HOBJ_"), `str_MOBJ_` ("MOBJ_"), `str_MOBJ_tilde` ("MOBJ~"),
+  `str_S_1` ("S_1"). They are compared or strcpy'd in place of the literal.
+- mobjdrv.c `vec3_zero0`/`vec3_zero1`/`vec3_zero2` (the zero Vecs at .rodata 0x802C3D10/1C/28; the comment that explains why
+  mobjMain and mobjCalcMtx share them now names them by the new names).
+- animdrv.c `colorWhite0`..`colorWhite5` (the six {0xFF,0xFF,0xFF,0xFF} sdata2 GXColors, assigned to materialColor and
+  materialColor2 in the pose setup paths) and `vec3_zero3`..`vec3_zero6` (four zero Vecs read as lightPos and position
+  defaults). The numbering is the order in the object; the values are the proof.
+
+Left, and why:
+- The float constants that are also file-local statics elsewhere (`float_10`, `float_0`, `float_1`, `float_neg1`,
+  `float_neg0p5`, `float_5`, `float_25`, `float_20`, `float_0p1`, `float_0p5`): rename_symbol refuses any NEW already spelled
+  in the tree (party_yoshi, party_nokonoko, evt_mobj and others). They are 72 address-named references in mobjdrv.c.
+  addr_literals.py found 0 of 17 convertible in this file (pool order changes the bytes).
+- `lbl_803083C8`..`lbl_803083F8` (`{-1, 1}` / `{1, -1}` pairs in .data): nothing in the tree reads them and no name is proven.
+- `dat_80419a28` (`const s32 = 0x2f`, force_active, unreferenced): no consumer to name it from.
+- `unk_8005bb80()` (mobjdrv.c, the test in mobjMain's trigger path): its meaning isn't proven from this file.
+- `field_0x` in mapdrv.c/animdrv.c header structs not listed below, `goto`s, and raw offsets: offset_to_field.py found 0
+  convertible casts across the three files (117 casts: offsets that aren't literals, untyped bases, or padding), so the
+  remaining raw offsets need struct work, not a tool pass.
+
+Also renamed (mapdrv.h, MapMatTexMtx and MapMaterialTex, used only by mapSetTextureMatrix in mapdrv.c): field_0x0/0x4/0x8/0xC/0x10
+-> `transX`/`transY`/`scaleX`/`scaleY`/`rotation`, and MapMaterialTex's `field_0xB` -> `texCount`. Proof: the function builds
+`PSMTXTrans(tx, ty)` from field_0x0 and -field_0x4, `PSMTXScale(sx, sy)` from field_0x8/0xC, and `PSMTXRotRad` with
+0.017453292f * -field_0x10 (degrees); the loop runs `texCount - 1` down to 0 over `entries[]`, the same byte MapMaterial calls
+texCount. field_0x14/0x18 stay unnamed: they only feed a half-size centre term, and no caller shows what they measure.
+
+Check: tb.sh q-mapanim build OK (`build/G8MJ01/ok` recreated); natural compile of the three files without -DMUST_MATCH
+rc 0. Cleanup index 36.223 -> 36.059 (mapdrv 45.8 -> 39.1, animdrv 54.8 -> 46.9, mobjdrv 154.4 -> 110.3).
