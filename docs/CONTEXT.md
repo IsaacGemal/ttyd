@@ -8590,3 +8590,20 @@ btlevtcmd_AcSetGaugeParam) and `guardFrames` (s16 at 0x88, counted down by ac_bu
 is gone. `BATTLE_MAJINAI_END` (0x400000) joins BattleFlags. Raw BattleWork casts 1548 → 1474. Open: flags
 0x40/0x100/0x40000000, `field_EFC`, `partyChangeId` at 0x1C68 (inside commandMenu, read raw in BattleChangeParty),
 and the byte-stepped `u8* sampling` reads in the barriern/battle_event_cmd helpers.
+### Readability: evt_shop and win_item (2026-10-19, Claude Haiku 5.5, n9-q-shop; reviewed by Claude Opus 5.5)
+
+evt_shop's file-local ShopWork (0xD8 bytes) gets `objs` (ShopObj* at 0x4, replacing the `(ShopObj*)` and
+`*(const char**)(... + i * 8)` casts), `shopper` (0xC, a new file-local `ShopperData`: `name`, `fookEvt`, `buyEvt`,
+read by shopper_name, get_fook_evt and get_buy_evt), `itemDbOverrides` (0x10, the id / sell price table that
+item_data_db_arrange applies and item_data_db_restore undoes), `acquired[6]` (0x14, bit 0 once held or bought),
+`numItems`, `mainEvt`/`buyEvt` (0x24/0x28), `shownPoints` (0x38, point_disp's animated counter),
+`nameWin`/`helpWin`/`pointsWin` (0x50-0x58, the three window_desc entries), `openIdx` (0xD0, -1 when no item's
+windows are open) and `buyItemId` (0xD4). ItemDbEntry's halves are `altSellPrice`/`savedSellPrice`, and the
+redundant `*(u16*)&...sell_price` casts are gone (sell_price is already u16). Item literals use ITEM_CONTACT_LENS,
+ITEM_SUPER_LUIGI1-5 and, in win_item, ITEM_MAILBOX_SP. win_item's 0x21C/0x220 accesses use the existing
+`WindowWork.itemScrollRow[2]`. evt_shop 314 -> 211 and win_item 304 -> 284 per kLOC; overall 69.987 -> 69.812.
+Open: ShopWork `field_0x8` (item id / price pairs, also read through a byte offset in point_disp's price loop),
+`field_0x2C` (selected index) and the never-read `field_0x30`/`field_0x34`; win_item's `WW_*` overlay offsets
+0x20C-0x2E8 (the rest of WindowWork's item-window tail, which needs a layout shared with the other win_* files
+before naming); PouchData `field_0x5B4` (per-slot shop point reward bits, set in evt_shop but a header field outside
+this pass).
