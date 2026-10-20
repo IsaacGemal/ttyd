@@ -751,7 +751,7 @@ void mot_hammer2(void) {
                 hit = (HitEntry*)((u32)hit | 0);
             }
             if (hit != NULL) {
-                M_S32(mario, 0x1FC) = (s32)hit;
+                mario->hitobjHammer = hit;
             }
         }
 #else
@@ -759,7 +759,7 @@ void mot_hammer2(void) {
         if (hit != NULL && (hitGetAttr(hit) & 0x800005)) {
         }
         if (hit != NULL) {
-            M_S32(mario, 0x1FC) = (s32)hit;
+            mario->hitobjHammer = hit;
         }
 #endif
         f30 = mario->wCamVal1;

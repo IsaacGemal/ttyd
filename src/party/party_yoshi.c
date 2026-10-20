@@ -497,7 +497,7 @@ void yoshi_use(PartyEntry* party) {
     f32 fx;
     f32 fz;
 
-    if (*(s8*)((u8*)mario + 0x39) == 0) {
+    if (mario->keyOffCount == 0) {
         partyUpdateKeyData(party);
     } else {
         L_partyClearCont(party);
@@ -1669,11 +1669,11 @@ void checkWall(PartyEntry* party, f32 a, f32 b) {
             if ((party->flags & PARTY_FLAG_IS_BEING_USED) && marioChkBero(hit) == 1) {
                 party->field_134 = hit;
                 mario->hitobjPush = hit;
-                *(HitEntry**)((u8*)mario + 0x1F0) = hit;
+                mario->hitobjWall = hit;
             } else {
                 party->field_134 = NULL;
                 mario->hitobjPush = NULL;
-                *(HitEntry**)((u8*)mario + 0x1F0) = NULL;
+                mario->hitobjWall = NULL;
             }
         }
 
@@ -1818,7 +1818,7 @@ void L_getStick(PartyEntry* party, f32* outAngle, f32* outDist) {
     s32 y;
     MarioWork* mario = party->playerPtr;
 
-    if ((s8)*(u8*)((u8*)mario + 0x39) != 0) {
+    if (mario->keyOffCount != 0) {
         *outDist = 0.0f;
         *outAngle = party->field_FC;
         return;

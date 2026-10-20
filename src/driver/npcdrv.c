@@ -2381,7 +2381,7 @@ void fbatEncountCheck(void) {
         return;
     }
     nearest = 1000.0f;
-    if (marioChkTalkable() != 0 && *(s8*)((u8*)mario + 0x39) == 0) {
+    if (marioChkTalkable() != 0 && mario->keyOffCount == 0) {
         npc = wk->entries;
         best = NULL;
         i = 0;
@@ -2769,7 +2769,7 @@ void fbatBattleMode(void) {
                     }
                     entry->interruptFlags |= 0x10000000;
                     marioSetMutekiTime(3000);
-                    *(s16*)((u8*)mario + 0x2C0) = sysMsec2Frame(3000);
+                    mario->coinDropTimer = sysMsec2Frame(3000);
                     if (entry->flags & 0x200) {
                         animPoseSetAnim(entry->poseId, entry->currentAnim, TRUE);
                     }

@@ -229,10 +229,10 @@ typedef struct MarioWork {
 	void* hitobjStandOn;           // 0x1E4, 0x1E8 US HitEntry
 	void* hitobjJumpFrom;          // 0x1E8, 0x1EC US HitEntry
 	void* hitobjPush;              // 0x1EC JP, 0x1F0 US HitEntry
-    void* hitobjWall;              // 0x1F0, front-wall HitEntry mario_hit's wall check stores on either branch (also when hitobjPush is not set); read by the damage check, mot_roll and koopa_motion
+    void* hitobjWall;              // 0x1F0, front-wall HitEntry mario_hit's wall checks store on either branch (also when hitobjPush is not set), party_yoshi's too; unlike hitobjFront never swapped for hitobjBalloon; read by marioChkToge, mot_roll, mot_ship, koopa_motion and party_yoshi
     void* hitobjHead;              // 0x1F4, marioSearchHead result
     void* hitobjUnder;             // 0x1F8, marioSearchUnder result (mario_hit)
-    void* hitobjHammer;            // 0x1FC, hit mot_hammer's wall ray found this frame; cleared at each marioMotion; mobjdrv and casedrv test it for hammer triggers
+    void* hitobjHammer;            // 0x1FC, hit the hammer struck: mot_hammer copies its hitEstimate target (0x200) at impact and the case-0x14 front ray stores its hit; cleared at each marioMotion; mobjdrv and casedrv test it for hammer triggers
     u8 field_0x200[4];             // 0x200
     void* hitobjDamageReturn;      // 0x204, hit whose damage return position mot_damage uses
     void* hitobjStandOnPrev;       // 0x208, hitobjStandOn copied at the end of the frame (mario.c)
@@ -300,7 +300,7 @@ typedef struct MarioWork {
     };
     f32 field_0x2B8;               // 0x2B8
     u8 field_0x2BC[4];             // 0x2BC
-    s16 coinDropTimer;             // 0x2C0, set to 3000 msec by npc damage with marioSetMutekiTime; mario.c drops a coin every 30 frames while it runs
+    s16 coinDropTimer;             // 0x2C0, frames left dropping coins after fleeing a field battle: npcdrv sets sysMsec2Frame(3000) with marioSetMutekiTime(3000) on battle result 4 (escaped); mario.c drops a coin every 30 frames while it runs
     u8 field_0x2C2[0x2C4 - 0x2C2]; // 0x2C2
     f32 kpaSpeed;                  // 0x2C4, signed walk/swim speed (koopa_motion, koopa.c reset)
     u32 reloadMapOnBottomless;     // 0x2C8, set by N_marioReloadMapOnBottomlessOn/Off
