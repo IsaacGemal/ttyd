@@ -53,27 +53,27 @@ void winMakeEquipList(WindowWork* work) {
             entry += 0xC;
         }
     }
-    WW_S32(work, 0xD64) = count;
+    work->equipListCount = count;
 }
 
 // 312 B
 void winBadgeInit(WindowWork* work) {
-    WW_S32(work, 0x3DC) = 0;
-    WW_S32(work, 0x3E0) = 0;
-    WW_S32(work, 0x3E4) = 0;
-    WW_S32(work, 0x3EC) = 0;
-    WW_S32(work, 0x3E8) = 0;
-    WW_S32(work, 0x3F0) = 0;
+    work->badgeState = 0;
+    work->badgeTab = 0;
+    work->badgeSel[0] = 0;
+    work->badgeScrollRow[0] = 0;
+    work->badgeSel[1] = 0;
+    work->badgeScrollRow[1] = 0;
     winMakeEquipList(work);
 }
 
 // 464 B
 void winBadgeInit2(WindowWork* work) {
-    WW_F32(work, 0x158) = -270.0f;
-    WW_F32(work, 0x15C) = (f32)(0x7D - WW_S32(work, 0x3E0) * 0x28);
-    WW_F32(work, 0x3F4) = WW_F32(work, 0x3FC) = 184.0f * (f32)WW_S32(work, 0x3EC);
-    WW_F32(work, 0x3F8) = WW_F32(work, 0x400) = 184.0f * (f32)WW_S32(work, 0x3F0);
-    winMsgEntry(work, 0, WW_S32(work, 0x3E0) == 0 ? "msg_menu_badge_all" : "msg_menu_badge_equip", 0);
+    work->targetX = -270.0f;
+    work->targetY = (f32)(0x7D - work->badgeTab * 0x28);
+    work->badgeScrollPos[0] = work->badgeScrollTarget[0] = 184.0f * (f32)work->badgeScrollRow[0];
+    work->badgeScrollPos[1] = work->badgeScrollTarget[1] = 184.0f * (f32)work->badgeScrollRow[1];
+    winMsgEntry(work, 0, work->badgeTab == 0 ? "msg_menu_badge_all" : "msg_menu_badge_equip", 0);
     winMakeEquipList(work);
 }
 
@@ -106,17 +106,17 @@ void mario_change(WindowWork* work, s32 badgeId) {
             s1 = "S_1";
             s2 = "W_1";
         }
-        if (WW_S32(work, 0x188) != -1) {
-            animPoseRelease(WW_S32(work, 0x188));
-            WW_S32(work, 0x188) = animPoseEntry("d_mario", 0);
-            animPoseSetAnim(WW_S32(work, 0x188), s1, 1);
-            animPoseSetMaterialFlagOn(WW_S32(work, 0x188), 0x1800);
+        if (work->marioPose != -1) {
+            animPoseRelease(work->marioPose);
+            work->marioPose = animPoseEntry("d_mario", 0);
+            animPoseSetAnim(work->marioPose, s1, 1);
+            animPoseSetMaterialFlagOn(work->marioPose, 0x1800);
         }
-        if (WW_S32(work, 0xE1C) != -1) {
-            animPoseRelease(WW_S32(work, 0xE1C));
-            WW_S32(work, 0xE1C) = animPoseEntry("d_mario", 0);
-            animPoseSetAnim(WW_S32(work, 0xE1C), s2, 1);
-            animPoseSetMaterialFlagOn(WW_S32(work, 0xE1C), 0x1800);
+        if (work->mapMarioPose != -1) {
+            animPoseRelease(work->mapMarioPose);
+            work->mapMarioPose = animPoseEntry("d_mario", 0);
+            animPoseSetAnim(work->mapMarioPose, s2, 1);
+            animPoseSetMaterialFlagOn(work->mapMarioPose, 0x1800);
         }
     } else {
         if (badge147 && !badge148) {
@@ -128,17 +128,17 @@ void mario_change(WindowWork* work, s32 badgeId) {
         } else {
             anim = "a_mario";
         }
-        if (WW_S32(work, 0x188) != -1) {
-            animPoseRelease(WW_S32(work, 0x188));
-            WW_S32(work, 0x188) = animPoseEntry(anim, 0);
-            animPoseSetAnim(WW_S32(work, 0x188), "M_S_1", 1);
-            animPoseSetMaterialFlagOn(WW_S32(work, 0x188), 0x1800);
+        if (work->marioPose != -1) {
+            animPoseRelease(work->marioPose);
+            work->marioPose = animPoseEntry(anim, 0);
+            animPoseSetAnim(work->marioPose, "M_S_1", 1);
+            animPoseSetMaterialFlagOn(work->marioPose, 0x1800);
         }
-        if (WW_S32(work, 0xE1C) != -1) {
-            animPoseRelease(WW_S32(work, 0xE1C));
-            WW_S32(work, 0xE1C) = animPoseEntry(anim, 0);
-            animPoseSetAnim(WW_S32(work, 0xE1C), "M_W_1", 1);
-            animPoseSetMaterialFlagOn(WW_S32(work, 0xE1C), 0x1800);
+        if (work->mapMarioPose != -1) {
+            animPoseRelease(work->mapMarioPose);
+            work->mapMarioPose = animPoseEntry(anim, 0);
+            animPoseSetAnim(work->mapMarioPose, "M_W_1", 1);
+            animPoseSetMaterialFlagOn(work->mapMarioPose, 0x1800);
         }
     }
 }
@@ -155,7 +155,7 @@ s32 winBadgeMain(WindowWork* work) {
     s32 sel;
     s32 count;
 
-    switch (WW_S32(work, 0x3DC)) {
+    switch (work->badgeState) {
     case 0:
         if (work->buttonTrg & 0x200) {
             psndSFXOn((const char*)0x20013);
@@ -165,31 +165,31 @@ s32 winBadgeMain(WindowWork* work) {
             return -2;
         }
         if (work->dirRep & 0x3000) {
-            WW_S32(work, 0x3E0) = 1 - WW_S32(work, 0x3E0);
+            work->badgeTab = 1 - work->badgeTab;
             psndSFXOn((const char*)0x20005);
-            if (WW_S32(work, 0x3E0) != 0) {
+            if (work->badgeTab != 0) {
                 winMakeEquipList(work);
             }
         } else if (work->buttonTrg & 0x100) {
-            if (WW_S32(work, 0x3E0) == 0) {
+            if (work->badgeTab == 0) {
                 if (pouchGetHaveBadgeCnt() == 0) {
                     goto end;
                 }
             }
-            if (WW_S32(work, 0x3E0) == 1) {
-                if (WW_S32(work, 0xD64) == 0) {
+            if (work->badgeTab == 1) {
+                if (work->equipListCount == 0) {
                     goto end;
                 }
             }
             psndSFXOn((const char*)0x20012);
-            WW_S32(work, 0x3DC) = 10;
+            work->badgeState = 10;
             goto end;
         } else if (work->buttonTrg & 0x10) {
 #ifdef MUST_MATCH
             void* arg0 = work; // match-only: forces `mr r3, r31` before the idx branch (schedule)
 #endif
             s32 idx = 3;
-            if (WW_S32(work, 0x3E0) == 0) {
+            if (work->badgeTab == 0) {
                 idx = 2;
             }
 #ifdef MUST_MATCH
@@ -197,28 +197,28 @@ s32 winBadgeMain(WindowWork* work) {
 #else
             winSortEntry(work, idx, -310.0f, 150.0f);
 #endif
-            WW_S32(work, 0x124) = WW_S32(work, 0x3DC);
+            work->savedState = work->badgeState;
             psndSFXOn((const char*)0x20012);
-            WW_S32(work, 0x3DC) = 1000;
+            work->badgeState = 1000;
         }
-        WW_F32(work, 0x158) = -270.0f;
-        WW_F32(work, 0x15C) = (f32)(0x7D - WW_S32(work, 0x3E0) * 0x28);
-        winMsgEntry(work, 0, WW_S32(work, 0x3E0) == 0 ? "msg_menu_badge_all" : "msg_menu_badge_equip", 0);
+        work->targetX = -270.0f;
+        work->targetY = (f32)(0x7D - work->badgeTab * 0x28);
+        winMsgEntry(work, 0, work->badgeTab == 0 ? "msg_menu_badge_all" : "msg_menu_badge_equip", 0);
         goto end;
 
     case 10:
-        if (WW_S32(work, 0x3E0) == 0) {
+        if (work->badgeTab == 0) {
             count = pouchGetHaveBadgeCnt();
         } else {
-            count = WW_S32(work, 0xD64);
+            count = work->equipListCount;
         }
-        sel = WW_S32(work, 0x3E0);
+        sel = work->badgeTab;
         {
             s32 rows = (count + 7) / 8;
 
             if (work->buttonTrg & 0x100) {
                 if (sel == 0) {
-                    s32 idx = ((s32*)((u8*)work + 0x3E4))[sel];
+                    s32 idx = work->badgeSel[sel];
                     if (pouchEquipCheckBadgeIndex(idx)) {
                         psndSFXOn((const char*)0x20039);
                         pouchUnEquipBadgeIndex(idx);
@@ -254,7 +254,7 @@ s32 winBadgeMain(WindowWork* work) {
                 }
             } else if (work->buttonTrg & 0x200) {
                 psndSFXOn((const char*)0x20013);
-                WW_S32(work, 0x3DC) = 0;
+                work->badgeState = 0;
             } else if (work->buttonTrg & 0x1000) {
                 return -2;
             } else if (work->buttonRep & 0x40) {
@@ -262,20 +262,20 @@ s32 winBadgeMain(WindowWork* work) {
                 if (((s32*)((u8*)work + 0x3EC))[sel] < 0) {
                     ((s32*)((u8*)work + 0x3EC))[sel] = 0;
                 }
-                ((s32*)((u8*)work + 0x3E4))[sel] = ((s32*)((u8*)work + 0x3EC))[sel] * 8;
+                work->badgeSel[sel] = ((s32*)((u8*)work + 0x3EC))[sel] * 8;
                 psndSFXOn((const char*)0x20035);
             } else if (work->buttonRep & 0x20) {
                 ((s32*)((u8*)work + 0x3EC))[sel] = ((s32*)((u8*)work + 0x3EC))[sel] + 1;
                 if (((s32*)((u8*)work + 0x3EC))[sel] >= rows) {
                     ((s32*)((u8*)work + 0x3EC))[sel] = rows - 1;
                 }
-                ((s32*)((u8*)work + 0x3E4))[sel] = ((s32*)((u8*)work + 0x3EC))[sel] * 8;
+                work->badgeSel[sel] = ((s32*)((u8*)work + 0x3EC))[sel] * 8;
                 psndSFXOn((const char*)0x20035);
             } else if (work->dirRep & 0x1000) {
-                ((s32*)((u8*)work + 0x3E4))[sel] = ((s32*)((u8*)work + 0x3E4))[sel] - 1;
+                work->badgeSel[sel] = work->badgeSel[sel] - 1;
                 psndSFXOn((const char*)0x20035);
             } else if (work->dirRep & 0x2000) {
-                ((s32*)((u8*)work + 0x3E4))[sel] = ((s32*)((u8*)work + 0x3E4))[sel] + 1;
+                work->badgeSel[sel] = work->badgeSel[sel] + 1;
                 psndSFXOn((const char*)0x20035);
             } else if (work->buttonTrg & 0x10) {
 #ifdef MUST_MATCH
@@ -290,26 +290,26 @@ s32 winBadgeMain(WindowWork* work) {
 #else
                 winSortEntry(work, idx, -310.0f, 150.0f);
 #endif
-                WW_S32(work, 0x124) = WW_S32(work, 0x3DC);
+                work->savedState = work->badgeState;
                 psndSFXOn((const char*)0x20012);
-                WW_S32(work, 0x3DC) = 1000;
+                work->badgeState = 1000;
             }
 
-            if (((s32*)((u8*)work + 0x3E4))[sel] < 0) {
-                ((s32*)((u8*)work + 0x3E4))[sel] = count - 1;
+            if (work->badgeSel[sel] < 0) {
+                work->badgeSel[sel] = count - 1;
             }
-            if (((s32*)((u8*)work + 0x3E4))[sel] >= count) {
-                ((s32*)((u8*)work + 0x3E4))[sel] = 0;
+            if (work->badgeSel[sel] >= count) {
+                work->badgeSel[sel] = 0;
             }
-            ((s32*)((u8*)work + 0x3EC))[sel] = ((s32*)((u8*)work + 0x3E4))[sel] / 8;
-            WW_F32(work, 0x158) = -110.0f;
-            WW_F32(work, 0x15C) = (f32)(0x6E - (((s32*)((u8*)work + 0x3E4))[sel] % 8) * 0x17);
+            ((s32*)((u8*)work + 0x3EC))[sel] = work->badgeSel[sel] / 8;
+            work->targetX = -110.0f;
+            work->targetY = (f32)(0x6E - (work->badgeSel[sel] % 8) * 0x17);
             {
                 s32 msgId;
-                if (WW_S32(work, 0x3E0) == 0) {
-                    msgId = pouchHaveBadge(((s32*)((u8*)work + 0x3E4))[sel]);
+                if (work->badgeTab == 0) {
+                    msgId = pouchHaveBadge(work->badgeSel[sel]);
                 } else {
-                    msgId = ((s32*)((u8*)work + 0x40C))[((s32*)((u8*)work + 0x3E4))[sel] * 3];
+                    msgId = ((s32*)((u8*)work + 0x40C))[work->badgeSel[sel] * 3];
                 }
                 winMsgEntry(work, msgId, itemDataTable[msgId].menu_description, 0);
             }
@@ -318,7 +318,7 @@ s32 winBadgeMain(WindowWork* work) {
 
     case 1000:
         if (!winSortWait(work)) {
-            WW_S32(work, 0x3DC) = WW_S32(work, 0x124);
+            work->badgeState = work->savedState;
         }
         if (work->buttonTrg & 0x1000) {
             return -2;
@@ -332,10 +332,10 @@ end:
 
 // 136 B
 void winBadgeMain2(WindowWork* work) {
-    WW_F32(work, 0x3FC) = 184.0f * (f32)WW_S32(work, 0x3EC);
-    WW_F32(work, 0x3F4) += (WW_F32(work, 0x3FC) - WW_F32(work, 0x3F4)) / 4.0f;
-    WW_F32(work, 0x400) = 184.0f * (f32)WW_S32(work, 0x3F0);
-    WW_F32(work, 0x3F8) += (WW_F32(work, 0x400) - WW_F32(work, 0x3F8)) / 4.0f;
+    work->badgeScrollTarget[0] = 184.0f * (f32)work->badgeScrollRow[0];
+    work->badgeScrollPos[0] += (work->badgeScrollTarget[0] - work->badgeScrollPos[0]) / 4.0f;
+    work->badgeScrollTarget[1] = 184.0f * (f32)work->badgeScrollRow[1];
+    work->badgeScrollPos[1] += (work->badgeScrollTarget[1] - work->badgeScrollPos[1]) / 4.0f;
 }
 
 // The window draw functions take their Vec and GXColor arguments by value. win_main.h declares the font and
@@ -396,7 +396,7 @@ void winBadgeDisp(CameraId camId, void* param, s32 idx) {
     tabY = 4.0f + tabTop;
 
     for (i = 0; i < 2; i++) {
-        if (i == WW_S32(work, 0x3E0)) {
+        if (i == work->badgeTab) {
             winTexInit(WIN_BADGE_TEX(work));
             winTexSet(0xB4, (Vec){x - 190.0f, 20.0f + (tabTop - (f32)(i * 0x28)), 0.0f}, (Vec){1.0f, 1.0f, 1.0f},
                       dat_8041d350);
@@ -463,10 +463,10 @@ void badge_disp(WindowWork* work, f32 x, f32 y) {
     s32 gray;
     s32 count;
 
-    if (WW_S32(work, 0x3E0) == 0) {
+    if (work->badgeTab == 0) {
         count = pouchGetHaveBadgeCnt();
     } else {
-        count = WW_S32(work, 0xD64);
+        count = work->equipListCount;
     }
 
     GXSetScissor(0, 0x77, 0x260, 0xB8);
@@ -480,13 +480,13 @@ void badge_disp(WindowWork* work, f32 x, f32 y) {
         s32 equipped;
         f32 textY;
 
-        if (WW_S32(work, 0x3E0) == 0) {
+        if (work->badgeTab == 0) {
             badge = pouchHaveBadge(i);
         } else {
             badge = *(s32*)(entry + 0x40C);
         }
-        scroll = WW_F32X(work, WW_S32(work, 0x3E0), 0x3F4);
-        if (WW_S32(work, 0x3E0) == 0) {
+        scroll = WW_F32X(work, work->badgeTab, 0x3F4);
+        if (work->badgeTab == 0) {
             equipped = pouchEquipCheckBadgeIndex(i);
         } else {
             equipped = *(s32*)(entry + 0x404);
@@ -542,7 +542,7 @@ void badge_disp(WindowWork* work, f32 x, f32 y) {
     GXSetScissor(0, 0, 0x260, 0x1E0);
     white = (GXColor){ 0xFF, 0xFF, 0xFF, 0xFF };
     black = (GXColor){ 0x00, 0x00, 0x00, 0xFF };
-    if (work->badgeScrollRow[WW_S32(work, 0x3E0)] > 0) {
+    if (work->badgeScrollRow[work->badgeTab] > 0) {
         f32 arrowX;
 
         winTexInit(WIN_BADGE_TEX(work));
@@ -551,7 +551,7 @@ void badge_disp(WindowWork* work, f32 x, f32 y) {
         winIconInit();
         winIconSetV(0x7E, (Vec){arrowX, 20.0f + (113.0f + y), 0.0f}, (Vec){0.6f, 0.6f, 0.6f}, white);
     }
-    if (count > (work->badgeScrollRow[WW_S32(work, 0x3E0)] << 3) + 8) {
+    if (count > (work->badgeScrollRow[work->badgeTab] << 3) + 8) {
         f32 arrowX;
 
         winTexInit(WIN_BADGE_TEX(work));

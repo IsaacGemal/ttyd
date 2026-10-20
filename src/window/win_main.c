@@ -97,10 +97,6 @@ TEXPalette* winTexTpl = NULL;
 #define POUCH_GETPARTYHP(id) (*(s32(*)(s32))pouchGetPartyHP)(id)
 #define POUCH_SETPARTYHP(id, v) (*(void(*)(s32, s32))pouchSetPartyHP)(id, v)
 
-// WindowWork.currentEvent is actually at 0x18; the header wrongly places it
-// at 0x3C (0x14 is a s32 counter used by winLecture*). Use a raw offset.
-#define WP_CURRENT_EVENT(w) (*(EventEntry**)((u8*)(w) + 0x18))
-
 static s32 cam_r(void);
 s32 evt_diary_read[259];
 
@@ -225,29 +221,29 @@ void winMain(void) {
                     if ((u32)marioStGetSystemLevel() == 0 && !marioCheckMenuDisable() && !mobjCheckExec() && fadeIsFinish()) {
                         if (mario->characterId == 2) {
                             if (wp->buttonTrg & 0x1000) {
-                                WM_S32(0x1C) = 0;
+                                wp->openTabId = 0;
                                 goto check_open;
                             }
                         } else {
                             if (wp->buttonTrg & 0x1000) {
-                                WM_S32(0x1C) = 0;
+                                wp->openTabId = 0;
                                 goto check_open;
                             }
                             if (!(keyGetButton(0) & 0x10) && strcmp(gp->currentAreaName, "yuu") != 0) {
                                 if ((wp->buttonTrg & 1) && (swByteGet(0) >= 7 || partyChkJoin(1))) {
-                                    WM_S32(0x1C) = 1;
+                                    wp->openTabId = 1;
                                     goto check_open;
                                 }
                                 if (wp->buttonTrg & 8) {
-                                    WM_S32(0x1C) = 2;
+                                    wp->openTabId = 2;
                                     goto check_open;
                                 }
                                 if ((wp->buttonTrg & 2) && (swByteGet(0) >= 0x14 || pouchGetHaveBadgeCnt())) {
-                                    WM_S32(0x1C) = 3;
+                                    wp->openTabId = 3;
                                     goto check_open;
                                 }
                                 if (wp->buttonTrg & 4) {
-                                    WM_S32(0x1C) = 4;
+                                    wp->openTabId = 4;
                                 check_open:
                                     if (keyGetButton(0) & 0x40) {
                                         break;
@@ -258,11 +254,11 @@ void winMain(void) {
                         }
                     }
                 } else {
-                    WM_S32(0x1C) = 0;
+                    wp->openTabId = 0;
                 open_menu:
                     *(u16*)camGetPtr(CAMERA_2D) |= 0x200;
                     if (gp->flags & 0x1000) {
-                        WM_S32(0x1C) = 1;
+                        wp->openTabId = 1;
                     }
                     if (!(wp->flags & 0x1000)) {
                         marioStSystemLevel(4);
@@ -361,10 +357,10 @@ void winMain(void) {
                 } else {
                     npcStartForEvent();
                 }
-                if (WM_PTR(0x28) != NULL) {
-                    fileFree(WM_PTR(0x28));
+                if (wp->winTpl != NULL) {
+                    fileFree(wp->winTpl);
                 }
-                WM_PTR(0x28) = NULL;
+                wp->winTpl = NULL;
                 wp->flags = 0;
                 wp->menuState = 0;
                 break;
@@ -403,18 +399,18 @@ void winMain(void) {
                 }
                 cnt = 0;
                 for (i = 0; i < 7; i++) {
-                    if (party == winPartyDt[i].field_0x0) {
+                    if (party == winPartyDt[i].partnerId) {
                         list[cnt++] = &winPartyDt[i];
                     }
                 }
                 for (i = 0; i < 7; i++) {
-                    if (party != winPartyDt[i].field_0x0) {
+                    if (party != winPartyDt[i].partnerId) {
                         list[cnt++] = &winPartyDt[i];
                     }
                 }
                 wp->currentEvent = evtEntryType(&evt_item_use, 0, 0, 0);
                 *(s32*)((u8*)wp->currentEvent + 0xC4) = WM_S32(0x2D4);
-                *(s32*)((u8*)wp->currentEvent + 0xC8) = (WM_S32(0x2DC) == 0) ? 0 : (list - 1)[WM_S32(0x2DC)]->field_0x0;
+                *(s32*)((u8*)wp->currentEvent + 0xC8) = (WM_S32(0x2DC) == 0) ? 0 : (list - 1)[WM_S32(0x2DC)]->partnerId;
                 psndClearFlag(0x80);
                 wp->menuState += 1;
                 pouchRemoveItemIndex(WM_S32(0x2D4), WM_S32(0x2D8));
@@ -477,7 +473,7 @@ BOOL winTplLoad(void) {
     if ((u32)fileAsyncf(FILE_TYPE_TPL, 0, "%s/w/%s/win.tpl", getMarioStDvdRoot(), names[gp->language]) == 0) {
         return FALSE;
     }
-    WM_PTR(0x28) = fileAllocf(FILE_TYPE_TPL, "%s/w/%s/win.tpl", getMarioStDvdRoot(), names[gp->language]);
+    wp->winTpl = fileAllocf(FILE_TYPE_TPL, "%s/w/%s/win.tpl", getMarioStDvdRoot(), names[gp->language]);
     return TRUE;
 }
 
@@ -486,7 +482,7 @@ void winDisp(CameraId camId, void* param) {
 }
 
 void winDispKoopa(CameraId camId, void* param) {
-    winTexTpl = **(TEXPalette***)(*(u8**)((u8*)wp + 0x28) + 0xA0);
+    winTexTpl = (TEXPalette*)*wp->winTpl->data;
     GXSetCullMode(GX_CULL_NONE);
 #ifdef MUST_MATCH
     winDispKoopaSetFog();
@@ -1137,7 +1133,7 @@ s32 unk_80175eb0(EventEntry* event, BOOL isFirstCall) {
     if (isFirstCall) {
         wp->flags &= ~0x800;
     }
-    if (*(s32*)wp->field_0x14 < value) {
+    if (wp->lectureStep < value) {
         return 0;
     }
     wp->flags |= 0x800;
@@ -1160,7 +1156,7 @@ void winLectureKeyMask(void) {
         wp->dirRep = 0;
         return;
     }
-    switch (*(s32*)wp->field_0x14) {
+    switch (wp->lectureStep) {
         case 0:
         case 1:
             wp->buttonTrg = 0;
@@ -1168,7 +1164,7 @@ void winLectureKeyMask(void) {
             wp->dirTrg = 0;
             wp->dirRep = 0;
             if (keyGetButtonTrg(0) & PAD_BUTTON_A) {
-                (*(s32*)wp->field_0x14)++;
+                (wp->lectureStep)++;
             }
             break;
 
@@ -1180,7 +1176,7 @@ void winLectureKeyMask(void) {
             wp->dirTrg &= DEMO_STICK_RIGHT;
             wp->dirRep &= DEMO_STICK_RIGHT;
             if ((s32)wp->dirTrg != 0 || (s32)wp->dirRep != 0) {
-                (*(s32*)wp->field_0x14)++;
+                (wp->lectureStep)++;
             }
             break;
 
@@ -1193,7 +1189,7 @@ void winLectureKeyMask(void) {
             wp->dirTrg = 0;
             wp->dirRep = 0;
             if ((s32)wp->buttonTrg != 0 || (s32)wp->buttonRep != 0) {
-                (*(s32*)wp->field_0x14)++;
+                (wp->lectureStep)++;
             }
             break;
 
@@ -1203,7 +1199,7 @@ void winLectureKeyMask(void) {
             wp->dirTrg = 0;
             wp->dirRep = 0;
             if ((s32)wp->buttonTrg != 0 || (s32)wp->buttonRep != 0) {
-                (*(s32*)wp->field_0x14)++;
+                (wp->lectureStep)++;
             }
             break;
     }
@@ -1212,12 +1208,12 @@ void winLectureKeyMask(void) {
 void winLectureOn(void) {
     wp->flags |= 0x1000;
     wp->flags |= 0x800;
-    *(s32*)wp->field_0x14 = 0;
-    WP_CURRENT_EVENT(wp) = evtEntry(evt_lecture_msg, 0, 0);
+    wp->lectureStep = 0;
+    wp->lectureEvent = evtEntry(evt_lecture_msg, 0, 0);
 }
 
 s32 winLectureCheck(void) {
-    if ((wp->flags & 0x1000) && evtCheckID(WP_CURRENT_EVENT(wp)->eventId)) {
+    if ((wp->flags & 0x1000) && evtCheckID(wp->lectureEvent->eventId)) {
         return 1;
     }
     wp->flags &= ~0x1000;

@@ -4,35 +4,81 @@
 #include "evt/evt_cmd.h"
 #include "sdk/texPalette.h"
 
+// The pause menu's work area. Each submenu keeps its state in its own band, laid out one after another
+// rather than overlaid: root 0x1C-0x184, win_mario 0x160-0x198, win_party 0x19C-0x208, win_item
+// 0x20C-0x3DA (plus 0x1208/0x120C), win_badge 0x3DC-0xD64, win_log 0xD68-0x1204. win_root.c and
+// win_log.c also view it through their own overlay structs (WinRoot, LogWin).
 typedef struct WindowWork {
-    u16 flags;                  // 0x0
+    u16 flags;                  // 0x0, 0x2000 = famicom (8-bit) Mario
     u8 align_2[2];              // 0x2
     u32 buttonTrg;              // 0x4
     u32 buttonRep;              // 0x8
     u32 dirTrg;                 // 0xC
     u32 dirRep;                 // 0x10
-    u8 field_0x14[0x20 - 0x14]; // 0x14
-    s32 menuState;              // 0x20, TODO: rename?
-    u8 field_0x24[0x3C - 0x24]; // 0x24
-    EventEntry* currentEvent;   // 0x3C
-    u8 field_40[0x21C - 0x40];  // 0x40
+    s32 lectureStep;            // 0x14, win_main winLecture*: step counter
+    EventEntry* lectureEvent;   // 0x18, win_main winLectureOn: the evt_lecture_msg event
+    s32 openTabId;              // 0x1C, winMain: root tab id the menu opens on (0 = root, 1-4 = shortcut buttons)
+    s32 menuState;              // 0x20, winMain state machine
+    s32 rootState;              // 0x24, win_root state machine
+    struct FileEntry* winTpl;   // 0x28, w/<lang>/win.tpl
+    struct FileEntry* mailTpl;  // 0x2C, win_item: mail texture file
+    struct FileEntry* mapTpl;   // 0x30, win_log: map texture file
+    struct smartEntry* fbCopy;  // 0x34, win_root: framebuffer copy drawn behind the menu
+    s32 fbCopyReady;            // 0x38, win_root: set once fbCopy holds a frame
+    EventEntry* currentEvent;   // 0x3C, winMain: the evt_item_use / evt_diary_read event it waits on
+    // win_root's tab selection (0x40), tab count (0x44), WinRootTab[5] (0x48) and WinRootRec[5] (0xC0) live
+    // here. sort_7_2_func/sort_7_3_func address the tattle list at 0x1050 as &field_40[0x1010], and only
+    // that u8-array base matches, so the array has to keep starting at 0x40.
+    u8 field_40[0x124 - 0x40];  // 0x40
+    s32 savedState;             // 0x124, win_badge/win_item/win_log: menu state to return to after help text
+    u8 field_128[0x150 - 0x128]; // 0x128
+    f32 posX;                   // 0x150, cursor position, animates toward targetX (win_root, win_item, win_badge)
+    f32 posY;                   // 0x154, animates toward targetY
+    f32 targetX;                // 0x158, cursor target, set by every submenu
+    f32 targetY;                // 0x15C
+    u8 field_160[0x188 - 0x160]; // 0x160
+    s32 marioPose;              // 0x188, win_mario's Mario pose (mario_change rebuilds it; mapGX reads its anim)
+    u8 field_18C[0x1A0 - 0x18C]; // 0x18C
+    s32 partyPose[7];           // 0x1A0, win_party: pose handle per party slot
+    s32 partyId[7];             // 0x1BC, win_party: party member id per slot (PARTNER_* order)
+    s32 selPartyDt;             // 0x1D8, win_party: index into winPartyDt for the selected slot
+    s32 partySel;               // 0x1DC, win_party: selected slot
+    s32 partyCount;             // 0x1E0, partners joined (winPartyInit counts them; win_root, win_item read it)
+    f32 partyAngle;             // 0x1E4, win_party: current ring angle
+    f32 partyAngleTarget;       // 0x1E8
+    u8 field_1EC[0x1FC - 0x1EC]; // 0x1EC
+    s32 lastPartySel;           // 0x1FC, win_party: slot before the last move (win_root compares it)
+    s32 partyState;             // 0x200, win_party: state machine switch
+    s32 wazaCount;              // 0x204, win_party: moves shown (attack level + 2)
+    s32 wazaSel;                // 0x208, win_party: cursor among the moves
+    u8 field_20C[0x21C - 0x20C]; // 0x20C
     s32 itemScrollRow[2];       // 0x21C, win_item: first visible row per tab
-    u8 field_224[0x3EC - 0x224]; // 0x224
+    u8 field_224[0x3DC - 0x224]; // 0x224
+    s32 badgeState;             // 0x3DC, win_badge: state machine switch
+    s32 badgeTab;               // 0x3E0, win_badge: 0 = all badges, 1 = equipped
+    s32 badgeSel[2];            // 0x3E4, win_badge: cursor per tab
     s32 badgeScrollRow[2];      // 0x3EC, win_badge: first visible row per tab
-    u8 field_3F4[0x1210 - 0x3F4]; // 0x3F4
+    f32 badgeScrollPos[2];      // 0x3F4, animates toward badgeScrollTarget
+    f32 badgeScrollTarget[2];   // 0x3FC
+    u8 field_404[0xD64 - 0x404]; // 0x404, equipped-badge list, 0xC bytes per entry (win_root sorts it)
+    s32 equipListCount;         // 0xD64
+    u8 field_D68[0xE1C - 0xD68]; // 0xD68
+    s32 mapMarioPose;           // 0xE1C, win_log map's Mario pose (LogWin.pose; mario_change rebuilds it)
+    u8 field_E20[0x1208 - 0xE20]; // 0xE20
+    s32 useTargetWin[2];        // 0x1208, win_item: winMgr windows opened to pick who an item is used on
 } WindowWork;
 
 typedef struct WindowPartyDt {
-    s32 field_0x0;          // 0x0
-    s32 field_0x4;          // 0x4
-    const char* field_0x8;  // 0x8
-    const char* field_0xC;  // 0xC
-    const char* field_0x10; // 0x10
-    const char* field_0x14; // 0x14
-    const char* field_0x18; // 0x18
-    const char* field_0x1C; // 0x1C
-    const char* field_0x20; // 0x20
-} WindowPartyDt;            // TODO: rename
+    s32 partnerId;            // 0x0, PARTNER_* id (win_party, win_item)
+    s32 iconId;               // 0x4, icon drawn beside the partner (win_item winIconSetV)
+    const char* nameMsg;      // 0x8, msg key for the partner's name
+    const char* descMsg;      // 0xC, msg key for the partner's description
+    const char* model;        // 0x10, animPose model shown in win_party ("EFF_m_kuriko", "c_vivian", ...)
+    const char* anim;         // 0x14, its idle animation ("W_1", Vivian "PTR_S_1")
+    const char* famicomModel; // 0x18, model used when flags & 0x2000 ("d_mario")
+    const char* famicomAnim;  // 0x1C, its animation ("R_2", ...)
+    const char* waza;         // 0x20, the partner's four moves (u32 partyWeapon pointers)
+} WindowPartyDt;
 
 WindowWork* winGetPtr(void);
 void winInit(void);
