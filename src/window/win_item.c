@@ -259,7 +259,7 @@ static WinMgrDesc window_desc[2];
 // where the original computes it straight into r4 and uses displacements afterwards. Going
 // through a (trivially inlined) function makes the address a separate value and restores the
 // original sequence.
-static inline u16* winItemMailLine(void* w) { return (u16*)((u8*)w + 0x26C); }
+static inline u16* winItemMailLine(void* w) { return &((WindowWork*)w)->mailLines; }
 
 
 void winMakeSkipList(WindowWork* work) {
