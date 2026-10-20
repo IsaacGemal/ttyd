@@ -264,7 +264,7 @@ EffectEntry* effStarStoneEntry(s32 idx, f32 x, f32 y, f32 z, f32 scale) {
 	data->field_0x38 = 4;
 	data->field_0x3C = 0;
 	data->spreadAZ = float_0_80420b54;
-	data->field_0x48 = float_0_80420b54;
+	data->spreadAX = float_0_80420b54;
 	data->spreadBZ = float_0_80420b54;
 	data->spreadBX = float_0_80420b54;
 	data->field_0x58 = float_90_80420b80;
@@ -412,7 +412,7 @@ void effStarStoneMain(EffectEntry* effect) {
 			data->field_0x44 -= data->field_0x40;
 		}
 		if (data->field_0x3C > 2) {
-			data->field_0x48 -= (f32)sin(float_6p2832_80420b7c * (float_90_80420b80 + camGetPtr(data->field_0x38)->viewYaw) / float_360_80420b84);
+			data->spreadAX -= (f32)sin(float_6p2832_80420b7c * (float_90_80420b80 + camGetPtr(data->field_0x38)->viewYaw) / float_360_80420b84);
 			data->spreadAZ -= (f32)cos(float_6p2832_80420b7c * (float_90_80420b80 + camGetPtr(data->field_0x38)->viewYaw) / float_360_80420b84);
 			data->spreadBX += (f32)sin(float_6p2832_80420b7c * (float_90_80420b80 + camGetPtr(data->field_0x38)->viewYaw) / float_360_80420b84);
 			data->spreadBZ += (f32)cos(float_6p2832_80420b7c * (float_90_80420b80 + camGetPtr(data->field_0x38)->viewYaw) / float_360_80420b84);
@@ -783,7 +783,7 @@ void effStarStoneDisp_2(CameraId camId, void* param) {
 	GXSetZMode(GX_TRUE, GX_LEQUAL, GX_FALSE);
 	GXSetCullMode(GX_CULL_BACK);
 
-	PSMTXTrans(mtx, data->field_0x8 + data->field_0x48, data->field_0xC, data->field_0x10 + data->spreadAZ);
+	PSMTXTrans(mtx, data->field_0x8 + data->spreadAX, data->field_0xC, data->field_0x10 + data->spreadAZ);
 	PSMTXScale(scaleMtx, float_1p1_80420b4c * data->field_0x14, float_1p1_80420b4c * data->field_0x14, float_1p1_80420b4c * data->field_0x14);
 	PSMTXConcat(mtx, scaleMtx, mtx);
 	PSMTXRotRad(rotMtx, 'y', float_deg2rad_80420b50 * data->field_0x1C);
@@ -875,7 +875,7 @@ void effStarStoneDisp_2(CameraId camId, void* param) {
 	GXSetAlphaCompare(GX_ALWAYS, 0, GX_AOP_AND, GX_ALWAYS, 0);
 	GXSetZMode(GX_TRUE, GX_LEQUAL, GX_FALSE);
 
-	PSMTXTrans(mtx, data->field_0x8 + data->field_0x48, data->field_0xC, data->field_0x10 + data->spreadAZ);
+	PSMTXTrans(mtx, data->field_0x8 + data->spreadAX, data->field_0xC, data->field_0x10 + data->spreadAZ);
 	PSMTXScale(scaleMtx, data->field_0x14, data->field_0x14, data->field_0x14);
 	PSMTXConcat(mtx, scaleMtx, mtx);
 	PSMTXRotRad(rotMtx, 'y', float_deg2rad_80420b50 * data->field_0x1C);

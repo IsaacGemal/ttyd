@@ -26,8 +26,8 @@ typedef struct effStarStoneData {
 	s32 field_0x3C;  // 0x3C
 	f32 field_0x40;  // 0x40
 	f32 field_0x44;  // 0x44
-	f32 field_0x48;  // 0x48
-	f32 spreadAZ;    // 0x4C z offset of tip pair A, swung by camera yaw each tick
+	f32 spreadAX;    // 0x48 x offset of tip pair A, swung by camera yaw each tick
+	f32 spreadAZ;    // 0x4C z offset of tip pair A
 	f32 spreadBX;    // 0x50 x offset of tip pair B (opposite swing to A)
 	f32 spreadBZ;    // 0x54 z offset of tip pair B
 	f32 field_0x58;  // 0x58
