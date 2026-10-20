@@ -62,6 +62,23 @@ u8* d = (u8*)NOT_OFFSET(work);
         self.assertEqual(counts["raw_offset"], 1 + 4)  # NOT_OFFSET's body, plus four calls of the two offset macros
         self.assertEqual(lines, sum(1 for l in text.splitlines() if l.strip()))
 
+    def test_offset_from_a_parameter_makes_an_offset_macro(self):
+        text = """#define NKF(off) (*(f32*)((u8*)party + (off)))
+#define A14L(i) (((s32*)((u8*)yuwp + work->mode * 24))[5 + (i)])
+#define ANIM_FRAME_TIME(f) (*(f32*)((u8*)(f) + 0x0))
+#define DRAW(id_) \\
+    { \\
+        load(**(TEXPalette***)(*(u8**)((u8*)work + 0x28) + 0xA0), (id_)); \\
+    }
+f32 a = NKF(0x10) + NKF(0x14);
+s32 b = A14L(1);
+f32 c = ANIM_FRAME_TIME(f0) + ANIM_FRAME_TIME(f1);
+DRAW(3); DRAW(4);
+"""
+        self.assertEqual(sorted(cleanup_index.offset_macros(text)), ["A14L", "NKF"])
+        # three offset macro calls, plus the accessor's and DRAW's #define bodies once each
+        self.assertEqual(cleanup_index.count_text(text)[1]["raw_offset"], 3 + 2)
+
     def test_macro_defined_twice_is_not_an_offset_macro(self):
         text = """#define WW_S32(p, off) (*(s32*)((u8*)(p) + (off)))
 #define WW_S32(p, off) (*(s32*)((u8*)(p) + (off)))

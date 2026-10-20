@@ -11,16 +11,20 @@ the weighted count per 1000 non-blank code lines, so growing the tree does not b
 better. Comments are ignored. Nothing here is a build or pass/fail check: tools/ci.py only reports the index and
 its delta, with a warning when it gets worse.
 
-Categories:
-- address_name (1): a symbol named by its address: dat_, vec3_, str_, lbl_, func_, L_, jumptable_ and so on.
-  unk_ names are not counted here (they are unk_name), and value-named pool constants are not counted here either.
-- pool_constant (0): a compiler pool constant named by its value: float_<value>_<addr>, double_<...>_<addr>,
+Categories (definition changed 2026-10-20, n9-q-idxtool; the index on main went 29.772 -> 23.487, so compare
+numbers only within one definition: tools/ci.py measures HEAD and its base with the same script, and docs/CONTEXT.md
+records old and new values for main and the reference points):
+- address_name (1): a symbol named by its address: dat_, vec3_, str_, lbl_, L_, jumptable_, kuribo_init_800C23B4
+  and so on. Before the change it also counted unk_ names (counted again by unk_name) and pool constants.
+- pool_constant (0, new): a compiler pool constant named by its value: float_<value>_<addr>, double_<value>_<addr>,
   double_to_int_<addr>, zero_<addr>, one/negone/half/two_<addr>. Reported in the table, not in the index: many have
   to stay to keep a match.
-- raw_offset (2): a `((u8*)p + ...)` cast, and each use of a file-local offset macro, a single #define of the shape
-  `(*(T*)((u8*)(p) + (off)))` (WW_S32, MW_U16, MF32, GND_PTR, PF32, P8, ...). The #define itself is not counted.
-  Offset macros are recognised the way tools/offset_to_field.py recognises them (same body shape, one definition
-  per name), but every call of the name in the file counts, with no #undef scope.
+- raw_offset (2): a `((u8*)p + ...)` cast, and, new, each call of a file-local offset macro instead of its
+  #define. An offset macro is a function-like macro defined once in the file whose body has such a cast with a
+  parameter in the offset or in an index applied to the result: WW_S32(w, off), MF32(off), NKF(off), A14L(i).
+  Every call of the name in the file counts, with no #undef scope. A macro whose parameter is only the base
+  (ANIM_FRAME_TIME(f) over `(u8*)(f) + 0x0`) is a named accessor: its #define is the one raw offset, as before.
+  tools/offset_to_field.py --apply converts the subset of the shape `(*(T*)((u8*)(p) + (off)))`.
 """
 import argparse
 import json
@@ -59,14 +63,30 @@ def strip_comments(text):
     return re.sub(r"//[^\n]*", blank, text)
 
 
-# an offset macro's body, as in tools/offset_to_field.py: (*(T*)((u8*)(base) + (off))), T written out or a parameter
-OFFSET_MACRO_BODY = re.compile(r"\(\*\(\s*(?P<cast>[^()]+?)\s*\)\s*\(\(\s*u8\s*\*\s*\)\s*\(\s*(?P<base>\w+)\s*\)"
-                               r"\s*\+\s*\(\s*(?P<off>\w+)\s*\)\s*\)\s*\)")
+def offset_operand(body, end):
+    """The rest of the `((u8*)base + ...)` group that opens before END, plus any `)` and `[...]` straight after it:
+    the offset, and an index applied to the result."""
+    depth, i = 1, end
+    while i < len(body) and depth:
+        depth += {"(": 1, ")": -1}.get(body[i], 0)
+        i += 1
+    while i < len(body):
+        if body[i] in ") \t":
+            i += 1
+        elif body[i] == "[":
+            j = body.find("]", i)
+            i = len(body) if j < 0 else j + 1
+        else:
+            break
+    return body[end:i]
 
 
 def offset_macros(code):
     """{name: (first, last) line indices of its #define} for the function-like macros of one file that are defined
-    once and whose body is an offset cast."""
+    once and whose body is a raw offset where a parameter supplies the offset or the index (WW_S32(w, off), NKF(off),
+    A14L(i)), so every call is its own raw offset. A macro whose parameter is only the base, such as
+    ANIM_FRAME_TIME(f) over `(u8*)(f) + 0x0`, is a named accessor: its one #define is the raw offset."""
+    raw = PATTERNS["raw_offset"][1]
     lines = code.split("\n")
     seen, found = Counter(), {}
     i = 0
@@ -81,8 +101,8 @@ def offset_macros(code):
             i += 1
             body = body.rstrip()[:-1] + " " + lines[i]
         seen[name] += 1
-        b = OFFSET_MACRO_BODY.fullmatch(re.sub(r"\s+", " ", body).strip())
-        if b and b.group("cast").endswith("*") and b.group("base") in params and b.group("off") in params:
+        r = raw.search(body)
+        if r and params and re.search(r"\b(?:" + "|".join(map(re.escape, params)) + r")\b", offset_operand(body, r.end())):
             found[name] = (first, i)
         i += 1
     return {n: span for n, span in found.items() if seen[n] == 1}
