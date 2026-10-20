@@ -96,7 +96,7 @@ typedef struct MoamoaWork {
     Vec targets[3];     // 0x14, gathering points; moamoa i heads for targets[i % 3]
     s16 hitCount;       // 0x38, incremented on each player hit
     s16 nearHits[3];    // 0x3A, hits within 200 units of targets[i]; over 50 retires that target
-    s16 field_0x40;     // 0x40
+    s16 hammerFrames; // 0x40, frames Mario has stayed in MARIO_MOTION_HAMMER
     s16 idleFrames;     // 0x42, frames Mario has stood still (capped at 1000)
     u32 escapeEvt;      // 0x44, event id of evt_moamoa_escape once started
     s32 field_0x48;     // 0x48
@@ -104,7 +104,7 @@ typedef struct MoamoaWork {
     MoamoaGroup groups[32]; // 0x50
     f32 angleToMario;   // 0x550, angle from Mario to the moamoa in the current pose
     f32 distToMario;    // 0x554, distance from Mario to the current pose
-    s32 field_0x558;    // 0x558
+    s32 bounceCount;    // 0x558, consecutive bounces off the moamoa while Mario is airborne (capped at 2)
     f32 breathDir;      // 0x55C, cloud breath direction (-1 when not in use)
     f32 breathDist;     // 0x560, cloud breath distance
     Vec breathPos;      // 0x564
@@ -1273,19 +1273,19 @@ static s32 moamoa_hit_check(ExtPose* pose, MoamoaPose* entry) {
         if (d < (20.0f + mario->wPlayerCollisionBox.x) * 0.5f) {
 #endif
             if (mario->position.y > 10.0f + (*pose->matrix)[1][3] && (mario->flags & 0x20000) &&
-                !(mario->flags & 0x10000) && wp->field_0x558 < 2) {
+                !(mario->flags & 0x10000) && wp->bounceCount < 2) {
                 if (mario->currMotionId != 0x16 && mario->currMotionId != 0x1A)
                     marioChgMot(5);
-                wp->field_0x558++;
+                wp->bounceCount++;
                 return 1;
             }
         }
     }
 
     if ((mario->flags & 0x30000) == 0)
-        wp->field_0x558 = 0;
+        wp->bounceCount = 0;
 
-    if (mario->currMotionId == 0x12 && wp->field_0x40 > 10) {
+    if (mario->currMotionId == MARIO_MOTION_HAMMER && wp->hammerFrames > 10) {
         f32 ang;
         f32 rad;
         f32 s;
@@ -1473,9 +1473,9 @@ static void ext_moamoa_main(void) {
     camGetPtr(CAMERA_3D);
     handled = 0;
     if (mario->currMotionId == 0x12) {
-        wp->field_0x40++;
+        wp->hammerFrames++;
     } else {
-        wp->field_0x40 = 0;
+        wp->hammerFrames = 0;
     }
     if (mario->currMotionId == 0) {
         wp->idleFrames++;

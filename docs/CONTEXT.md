@@ -10950,3 +10950,32 @@ Verified: tower `ninja` recreates `build/G8MJ01/ok`; natural (no MUST_MATCH) com
 - New-definition counts. aea79288: field_0x 20942, raw_offset 9433, address_name 5137, must_match 2414, unk_name 2012, opt_pragma 1591, goto 491, fn_ptr_cast 363, inline_asm 7, pool_constant 7955. 2d92902a: field_0x 18317, raw_offset 7760, address_name 5141, must_match 2438, unk_name 1982, opt_pragma 1471, goto 491, fn_ptr_cast 352, inline_asm 7, pool_constant 7958. 1e542f53: raw_offset 2024, address_name 3443, field_0x 2820, must_match 2417, opt_pragma 1461, goto 485, unk_name 775, fn_ptr_cast 334, inline_asm 7, pool_constant 6027.
 - Not covered by either definition: REL-local address names (dat_gor_0001a46c, vec3_..._00012340, float_..._0000xxxx; about 900 in rels/, besides unk_ ones that unk_name still counts) end in a section offset, not an 8xxxxxxx address, so address_name and pool_constant miss them.
 - tools/ci.py runs the same script on HEAD and base, so its delta compares like with like. tools/tests passes (unittest discover).
+### Readability: las_04 firebar (2026-10-20, Claude Haiku 5.5, n9-q-relfld)
+
+FirebarEntry/FirebarDesc in las_04.h and las_04.c: `prevAngleDiff` (entry 0x10, last frame's compAngle, compared
+against the new one for the sign crossing in rot and trans), `speed` (0x18 and desc 0x18: rot adds it to the angle
+rate, trans adds it to position.x), `targetX` (0x28, the x that trans's state 1 compares against), `baseRadius`
+(0x2C and desc 0x24: segment 0's distance from the pivot in rot), `pulsePhase` (0x40, degrees, advanced by 6 and
+wrapped at 360, feeds the sin() that sets the disp pass's alpha and shadow volume), and desc `angleSpeed` (0x10).
+Left as field_0x: desc 0x14 and entry 0x20 (desc 0x14 is copied to entry 0x20, which nothing reads), and desc 0x20,
+which is the initial angle for type 0 and the target x for type 1.
+### Readability: rsh_05 moamoa work (2026-10-20, Claude Haiku 5.5, n9-q-relfld)
+
+MoamoaWork in rsh_05.c: 0x40 is `hammerFrames` (frames Mario has stayed in motion 0x12; the sweep fires past 10),
+and 0x558 is `bounceCount` (bounces off the moamoa's head while Mario is airborne, capped at 2, reset when neither
+0x10000 nor 0x20000 is set on Mario's flags).
+Left as field_0x: MoamoaPose 0x14, 0x1C and 0x20, which carry different values per state. In a jump 0x14 is the
+vertical velocity (stepped by 0x20 as gravity), in the breath push (state 0x30) 0x14/0x20 are the x/z acceleration and
+0x1C the y acceleration, and in the wave states (0x33/0x34) 0x1C and 0x20 are the height and sideways amplitudes.
+MoamoaWork 0x2 and 0x48 are never read. rsh_06.c keeps its own MoamoaPose copy (chain at 0x48, a different layout)
+and is not touched here.
+### Readability: gor_00 NanNpcEntry slots (2026-10-20, Claude Haiku 5.5, n9-q-relfld)
+
+gor_00.c and gor_00.h: no renames. The 32 field_0x uses in gor_00.c are all NanNpcEntry 0x70, 0x78 and 0x7C, and each
+slot has more than one role across the seqs: 0x70 is the step total of a movePos move and the
+next state after a jump, walk or suifu's state 100 move; 0x78 is the movePos step, a jump's quadratic term, the
+sway's right bound and suifu's speed (140-260); 0x7C is the movePos angle, a jump's linear term and the sway's left
+bound. Per the rule these stay field_0x. The other header slots are already named or unread: 0x16 and 0x94 are never
+read by gor, and 0x84 is not used by gor_00 (it lies in evt_nannpc's per-entry scratch, as noted above). The header's
+0x68-0x6C (`state`, `timer`) and 0x74 (`index`) differ from evt_nannpc.c's jumpStartX/jumpStartY and field_0x74 by
+design: gor's sequences use those slots for their own roles. muj_00.h, muj_10.h and muj_20.h carry their own copies.

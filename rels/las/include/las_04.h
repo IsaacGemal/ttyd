@@ -50,12 +50,12 @@ typedef struct FirebarDesc {
     u8 count;    // 0x01
     u16 pad_02;  // 0x02
     Vec position; // 0x04
-    f32 field_0x10; // 0x10
+    f32 angleSpeed; // 0x10
     f32 field_0x14; // 0x14
-    f32 field_0x18; // 0x18
+    f32 speed;      // 0x18
     void (*callback)(FirebarEntry*, s32); // 0x1C
     f32 field_0x20; // 0x20
-    f32 field_0x24; // 0x24
+    f32 baseRadius; // 0x24
 } FirebarDesc; // 0x28
 
 struct FirebarEntry {
@@ -63,19 +63,19 @@ struct FirebarEntry {
     u8 count;             // 0x01
     u16 flags;            // 0x02
     Vec position;         // 0x04
-    f32 field_0x10;       // 0x10
+    f32 prevAngleDiff;    // 0x10
     f32 angle;            // 0x14
-    f32 field_0x18;       // 0x18
+    f32 speed;            // 0x18
     f32 angleSpeed;       // 0x1C
     f32 field_0x20;       // 0x20
     f32 scale;            // 0x24
-    f32 field_0x28;       // 0x28
-    f32 field_0x2C;       // 0x2C
+    f32 targetX;          // 0x28
+    f32 baseRadius;       // 0x2C
     void (*callback)(FirebarEntry*, s32); // 0x30
     s32 counter;          // 0x34
     s32 sfxId;            // 0x38
     s32 state;            // 0x3C
-    f32 field_0x40;       // 0x40
+    f32 pulsePhase;       // 0x40
     FirebarSegment* segments; // 0x44
     FirebarDesc* desc;    // 0x48
 }; // 0x4C
