@@ -45,11 +45,9 @@ inline Vec initializeVec(Vec* input) {
 // Build the sine in its own inline so mwcc pools 180 before 120: a call's argument
 // constants pool after the other constants of the statement that holds the call, so the
 // inline expression in effOpukuWgunMain pools 120 first and the .sdata2 order differs.
-#ifdef MUST_MATCH
 static inline f32 opukuWgunSin(f32 t) {
 	return (f32)sin(6.2831855f * (180.0f * t) / 360.0f);
 }
-#endif
 EffectEntry* effOpukuWgunN64Entry(s32 type, s32 duration, f32 x, f32 y, f32 z, f32 endX, f32 endY, f32 endZ, f32 scale) {
 	EffectEntry* effect;
 	EffOpukuWgunData* data;
@@ -160,12 +158,7 @@ void effOpukuWgunMain(EffectEntry* effect) {
 		}
 		else {
 			data->x[i] = data->start.x + progress * (data->end.x - data->start.x);
-#ifdef MUST_MATCH
 			data->y[i] = data->start.y + progress * (data->end.y - data->start.y) + 120.0f * opukuWgunSin(progress);
-#else
-			data->y[i] = data->start.y + progress * (data->end.y - data->start.y)
-			           + 120.0f * (f32)sin(6.2831855f * (180.0f * progress) / 360.0f);
-#endif
 			data->z[i] = data->start.z + progress * (data->end.z - data->start.z);
 			data->alpha[i] = (u8)(255.0f - 255.0f * progress);
 		}
@@ -174,7 +167,6 @@ void effOpukuWgunMain(EffectEntry* effect) {
 	dispEntry(CAMERA_3D, dispCalcZ(&disp), 2, effOpukuWgunDisp, effect);
 }
 
-#ifdef MUST_MATCH
 // Build each colour and make the GXSetTevColor call inside the inline: mwcc then places each colour local
 // and its by-value copy in the original's stack slots (the eff_opuku_wprotect pattern). Returning the GXColor
 // and calling outside packs all locals together instead.
@@ -183,6 +175,7 @@ static inline void opukuWgunColor1(u8 r, u8 g, u8 b, u8 a) {
 	c.r = r; c.g = g; c.b = b; c.a = a;
 	GXSetTevColor(GX_TEVREG0, c);
 }
+#ifdef MUST_MATCH
 static inline void opukuWgunColor2(u8 r, u8 g, u8 b) {
 	GXColor c = *(GXColor*)&dat_8041f840;
 	c.r = r; c.g = g; c.b = b;
@@ -232,17 +225,10 @@ void effOpukuWgunDisp(CameraId camId, void* param) {
 	type = data->type;
 	scale = data->scale;
 
-#ifdef MUST_MATCH
 	opukuWgunColor1(data->field_0x34, data->field_0x38, data->field_0x3C, data->field_0x40);
+#ifdef MUST_MATCH
 	opukuWgunColor2(data->field_0x44, data->field_0x48, data->field_0x4C);
 #else
-	color = unk_804231e8;
-	color.r = data->field_0x34;
-	color.g = data->field_0x38;
-	color.b = data->field_0x3C;
-	color.a = data->field_0x40;
-	GXSetTevColor(GX_TEVREG0, color);
-
 	color = *(GXColor*)&dat_8041f840;
 	color.r = data->field_0x44;
 	color.g = data->field_0x48;

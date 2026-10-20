@@ -202,10 +202,8 @@ void effPeachDustMain(EffectEntry* effect) {
 	}
 }
 
-#ifdef MUST_MATCH
-// Match-only: building the colour in an inline fixes the by-value GXColor stack slot, and
-// routing the u8*k multiply through an inline local makes mwcc emit the byte as fmuls's
-// first operand. The plain forms are under #else below.
+// Building the colour in an inline fixes the by-value GXColor stack slot, and routing the u8*k
+// multiply through an inline local makes mwcc emit the byte as fmuls's first operand.
 static inline s32 scaleColor(const u8* t, s32 i, f32 k) {
 	u8 c = t[i];
 	return (s32)(c * k);
@@ -218,7 +216,6 @@ static inline GXColor peachDustColor(u8 r, u8 g, u8 b) {
 	c.b = b;
 	return c;
 }
-#endif
 
 // Local declaration order is chosen to reproduce mwcc's GPR assignment (camera i colorType
 // colorIndex vtx); moving the lines changes which register each loop variable gets.
@@ -279,15 +276,9 @@ void effPeachDustDisp(CameraId camId, void* param) {
 		if (colorIndex >= 0x24) {
 			colorIndex = 0;
 		}
-#ifdef MUST_MATCH
 		r = scaleColor(color_rotation_data, colorIndex++, 1.4f);
 		g = scaleColor(color_rotation_data, colorIndex++, 0.7f);
 		b = scaleColor(color_rotation_data, colorIndex++, 0.7f);
-#else
-		r = (s32)(color_rotation_data[colorIndex++] * 1.4f);
-		g = (s32)(color_rotation_data[colorIndex++] * 0.7f);
-		b = (s32)(color_rotation_data[colorIndex++] * 0.7f);
-#endif
 		if (r > 0xFF) {
 			r = 0xFF;
 		}
@@ -297,14 +288,7 @@ void effPeachDustDisp(CameraId camId, void* param) {
 		if (b > 0xFF) {
 			b = 0xFF;
 		}
-#ifdef MUST_MATCH
 		color = peachDustColor(r, g, b);
-#else
-		color = dat_8041f948;
-		color.r = r;
-		color.g = g;
-		color.b = b;
-#endif
 		GXSetTevColor(1, color);
 		switch (colorType & 7) {
 		case 0:

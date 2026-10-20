@@ -80,11 +80,9 @@ EffectEntry* effPokopiThunderN64Entry(s32 type, s32 lifetime, f32 x, f32 y, f32 
 	f32 dz;
 	f32 dist2;
 
-#ifdef MUST_MATCH
-	/* MUST_MATCH: a named zero variable makes MWCC emit `fcmpu cr0, f4, f0` (dist2 first);
-	   a literal `0.0f` puts the constant first. */
+	// A named zero variable makes MWCC emit `fcmpu cr0, f4, f0` (dist2 first); a literal `0.0f` puts the
+	// constant first.
 	f32 zero = 0.0f;
-#endif
 
 	effect = effEntry();
 	cameraId = 4;
@@ -126,11 +124,7 @@ EffectEntry* effPokopiThunderN64Entry(s32 type, s32 lifetime, f32 x, f32 y, f32 
 	dy = y - endY;
 	dz = z - endZ;
 	dist2 = dx * dx + dy * dy + dz * dz;
-#ifdef MUST_MATCH
 	if (dist2 != zero) {
-#else
-	if (dist2 != 0.0f) {
-#endif
 		data->field_0x114 = pt_sqrtf(dist2);
 	} else {
 		return NULL;
@@ -269,7 +263,6 @@ typedef struct EffPokopiThunderVtx {
 // GXSetTevColor. They are void inlines (not a colour returned and passed on) because that is what makes
 // MWCC pair each colour's build slot with its outgoing argument slot; the direct form gives a different
 // stack layout (same shape as effPokopiPchargeDisp).
-#ifdef MUST_MATCH
 static inline void effPokopiThunderSetColor1(EffPokopiThunderData* data, s32 a) {
 	GXColor c = unk_80423220;
 	c.r = data->tev1R;
@@ -279,6 +272,7 @@ static inline void effPokopiThunderSetColor1(EffPokopiThunderData* data, s32 a) 
 	GXSetTevColor(1, c);
 }
 
+#ifdef MUST_MATCH
 static inline void effPokopiThunderSetColor2(EffPokopiThunderData* data) {
 	GXColor c = *(GXColor*)&dat_8041fa20;
 	c.r = data->tev2R;
@@ -306,7 +300,6 @@ void effPokopiThunderDisp(CameraId camId, void* param) {
 	CameraEntry* cam;
 	s32 t1;
 	GXTexObj texObj;
-	GXColor color;
 	s32 cr;
 	f32 scale;
 	f32 t;
@@ -349,16 +342,7 @@ void effPokopiThunderDisp(CameraId camId, void* param) {
 	PSMTXConcat(cam->view, mtx, mtx);
 	GXLoadPosMtxImm(mtx, 0);
 	GXSetCurrentMtx(0);
-#ifdef MUST_MATCH
 	effPokopiThunderSetColor1(data, cr);
-#else
-	color = unk_80423220;
-	color.r = data->tev1R;
-	color.g = data->tev1G;
-	color.b = data->tev1B;
-	color.a = cr;
-	GXSetTevColor(1, color);
-#endif
 #ifdef MUST_MATCH
 	effPokopiThunderSetColor2(data);
 #else
