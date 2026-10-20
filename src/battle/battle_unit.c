@@ -130,7 +130,7 @@ BattleUnit* BtlUnit_Entry(BattleUnitSetup* setup) {
     BtlUnit_SetBaseScale(unit, 1.0f, 1.0f, 1.0f);
 
     unit->offsetCenter = unit->mKindParams->centerOffset;
-    *(Vec*)((u8*)unit + 0xB4) = unit->mKindParams->field_0x3C;
+    unit->field_0xB4 = unit->mKindParams->field_0x3C;
     unit->bintaHitOffset = unit->mKindParams->bintaHitOffset;
     unit->kissHitOffset = unit->mKindParams->kissHitOffset;
 
@@ -189,8 +189,8 @@ BattleUnit* BtlUnit_Entry(BattleUnitSetup* setup) {
         }
         part->defense = part->mKindPartParams->defense;
         part->defenseAttr = part->mKindPartParams->defenseAttr;
-        *(s16*)((u8*)part + 0x1A2) = part->mKindPartParams->field_0x30;
-        *(s16*)((u8*)part + 0x1A4) = part->mKindPartParams->field_0x32;
+        part->field_0x1A2 = part->mKindPartParams->field_0x30;
+        part->field_0x1A4 = part->mKindPartParams->field_0x32;
         part->field_0x78 = 1.0f;
         part->moveDirection = 0;
         part->faceDirection = wp->alliances[unit->mAlliance].attackDirection;
@@ -2036,11 +2036,11 @@ void BtlUnit_PayWeaponCost(BattleUnit* unit, BattleWeapon* weapon) {
     cost = BtlUnit_GetWeaponCost(unit, weapon);
     BtlUnit_SetFp(unit, fp - cost);
     if (unit->currentKind == UNIT_MARIO) {
-        BtlActRec_AddPoint((u8*)wp + 0x16F2F, cost);
-        BtlActRec_AddCount((u8*)wp + 0x16F30);
+        BtlActRec_AddPoint(wp->field_16F1C + 0x13, cost);
+        BtlActRec_AddCount(wp->field_16F1C + 0x14);
     } else if (unit->currentKind >= TYPE_PARTNER_MIN && unit->currentKind < TYPE_PARTNER_MAX) {
-        BtlActRec_AddPoint((u8*)wp + 0x16F31, cost);
-        BtlActRec_AddCount((u8*)wp + 0x16F32);
+        BtlActRec_AddPoint(wp->field_16F1C + 0x15, cost);
+        BtlActRec_AddCount(wp->field_16F1C + 0x16);
     }
 #ifdef MUST_MATCH
     /* Match-only: the header declares pouchAddAP as taking `s16`, but the target passed the full

@@ -4114,7 +4114,7 @@ USER_FUNC(btlevtcmd_SetEventAttack) {
     BattleUnit* unit = BattleGetUnitPtr(_battleWorkPointer, BattleTransID(event, btlId));
 
     unit->attackEventCode = (void*)args[1];
-    *(s32*)unit->field_0x2A8 = 0;
+    unit->field_0x2A8 = 0;
     return EVT_RETURN_DONE;
 }
 

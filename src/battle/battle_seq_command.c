@@ -2319,7 +2319,7 @@ void _btlcmd_SetAttackEvent(BattleUnit* unit, BattleCommand* cmd) {
 	if (cmd->cancelled) {
 		unit->moveState = 0;
 		unit->attackEventCode = btldefaultevt_Wait;
-		*(s32*)unit->field_0x2A8 = 1;
+		unit->field_0x2A8 = 1;
 		return;
 	}
 
@@ -2327,7 +2327,7 @@ void _btlcmd_SetAttackEvent(BattleUnit* unit, BattleCommand* cmd) {
 	case 5:
 		switch (cmd->operationKind) {
 		case 6:
-			*(s32*)unit->field_0x2A8 = 1;
+			unit->field_0x2A8 = 1;
 			if (unit->currentKind == 0xDE) {
 				unit->attackEventCode = btldefaultevt_Defend;
 			} else {
@@ -2336,75 +2336,75 @@ void _btlcmd_SetAttackEvent(BattleUnit* unit, BattleCommand* cmd) {
 			break;
 		case 5:
 			unit->attackEventCode = btldefaultevt_Appeal;
-			*(s32*)unit->field_0x2A8 = 1;
+			unit->field_0x2A8 = 1;
 			if (unit->currentKind == 0xDE) {
-				BtlActRec_AddCount((u8*)wp + 0x16F2D);
+				BtlActRec_AddCount(wp->field_16F1C + 0x11);
 			} else {
-				BtlActRec_AddCount((u8*)wp + 0x16F2E);
+				BtlActRec_AddCount(wp->field_16F1C + 0x12);
 			}
 			break;
 		case 7:
 			unit->attackEventCode = btldefaultevt_Wait;
-			*(s32*)unit->field_0x2A8 = 1;
+			unit->field_0x2A8 = 1;
 			if (unit->currentKind == 0xDE) {
-				BtlActRec_AddCount((u8*)wp + 0x16F2D);
+				BtlActRec_AddCount(wp->field_16F1C + 0x11);
 			} else {
-				BtlActRec_AddCount((u8*)wp + 0x16F2E);
+				BtlActRec_AddCount(wp->field_16F1C + 0x12);
 			}
 			break;
 		case 3:
 			unit->attackEventCode = btldefaultevt_Escape;
-			*(s32*)unit->field_0x2A8 = 1;
+			unit->field_0x2A8 = 1;
 			if (unit->currentKind == 0xDE) {
-				BtlActRec_AddCount((u8*)wp + 0x16F37);
+				BtlActRec_AddCount(wp->field_16F1C + 0x1B);
 			} else {
-				BtlActRec_AddCount((u8*)wp + 0x16F38);
+				BtlActRec_AddCount(wp->field_16F1C + 0x1C);
 			}
 			break;
 		case 1:
-			*(s32*)unit->field_0x2A8 = 0;
+			unit->field_0x2A8 = 0;
 			if (unit->currentKind == 0xDE) {
 				unit->attackEventCode = badgeWeapon_Charge.mAttackEvtScript;
-				BtlActRec_AddCount((u8*)wp + 0x16F33);
+				BtlActRec_AddCount(wp->field_16F1C + 0x17);
 			} else {
 				unit->attackEventCode = badgeWeapon_ChargeP.mAttackEvtScript;
-				BtlActRec_AddCount((u8*)wp + 0x16F34);
+				BtlActRec_AddCount(wp->field_16F1C + 0x18);
 			}
 			break;
 		case 2:
-			*(s32*)unit->field_0x2A8 = 0;
+			unit->field_0x2A8 = 0;
 			if (unit->currentKind == 0xDE) {
 				unit->attackEventCode = badgeWeapon_SuperCharge.mAttackEvtScript;
-				BtlActRec_AddCount((u8*)wp + 0x16F35);
+				BtlActRec_AddCount(wp->field_16F1C + 0x19);
 			} else {
 				unit->attackEventCode = badgeWeapon_SuperChargeP.mAttackEvtScript;
-				BtlActRec_AddCount((u8*)wp + 0x16F36);
+				BtlActRec_AddCount(wp->field_16F1C + 0x1A);
 			}
 			break;
 		case 0:
 			unit->attackEventCode = btldefaultevt_ChangeParty;
-			*(s32*)unit->field_0x2A8 = 1;
+			unit->field_0x2A8 = 1;
 			cmd->cursor[1].field_0 = 0;
 			if (wp->badgeEquippedFlags & 1) {
 				unit->moveState = 3;
 			}
 			if (unit->currentKind == 0xDE) {
-				BtlActRec_AddCount((u8*)wp + 0x16F29);
+				BtlActRec_AddCount(wp->field_16F1C + 0xD);
 			} else {
-				BtlActRec_AddCount((u8*)wp + 0x16F2A);
+				BtlActRec_AddCount(wp->field_16F1C + 0xE);
 			}
 			break;
 		case 4:
 			unit->attackEventCode = btldefaultevt_ProtectPartner;
-			*(s32*)unit->field_0x2A8 = 1;
+			unit->field_0x2A8 = 1;
 			break;
 		case 8:
 			unit->attackEventCode = BtlUnit_GetData(unit, 2);
-			*(s32*)unit->field_0x2A8 = 3;
+			unit->field_0x2A8 = 3;
 			break;
 		default:
 			unit->attackEventCode = btldefaultevt_Wait;
-			*(s32*)unit->field_0x2A8 = 1;
+			unit->field_0x2A8 = 1;
 			break;
 		}
 		break;
@@ -2419,47 +2419,47 @@ void _btlcmd_SetAttackEvent(BattleUnit* unit, BattleCommand* cmd) {
 		_btlcmd_GetCursorPtr(cmd, command, &cursor);
 		weapon = cmd->weaponTable[cursor->field_0].mWeaponParams;
 		unit->attackEventCode = weapon->mAttackEvtScript;
-		*(s32*)unit->field_0x2A8 = 0;
+		unit->field_0x2A8 = 0;
 		if (unit->attackEventCode == NULL) {
 			unit->attackEventCode = btldefaultevt_Wait;
 		}
 
 		switch (command) {
 		case 0:
-			BtlActRec_AddCount((u8*)wp + 0x16F1C);
+			BtlActRec_AddCount(wp->field_16F1C + 0x0);
 			break;
 		case 1:
-			BtlActRec_AddCount((u8*)wp + 0x16F1D);
+			BtlActRec_AddCount(wp->field_16F1C + 0x1);
 			break;
 		case 4:
 			if (_check_weapon_type_attack(weapon)) {
-				BtlActRec_AddCount((u8*)wp + 0x16F1E);
+				BtlActRec_AddCount(wp->field_16F1C + 0x2);
 			} else {
-				BtlActRec_AddCount((u8*)wp + 0x16F1F);
+				BtlActRec_AddCount(wp->field_16F1C + 0x3);
 			}
 			break;
 		case 2:
 			if ((s32)weapon != (s32)&ItemWeaponData_Naniga_Okorukana) {
 				if (unit->currentKind == 0xDE) {
 					if (_check_weapon_type_attack(weapon)) {
-						BtlActRec_AddCount((u8*)wp + 0x16F25);
+						BtlActRec_AddCount(wp->field_16F1C + 0x9);
 					} else {
-						BtlActRec_AddCount((u8*)wp + 0x16F26);
+						BtlActRec_AddCount(wp->field_16F1C + 0xA);
 					}
 				} else {
 					if (_check_weapon_type_attack(weapon)) {
-						BtlActRec_AddCount((u8*)wp + 0x16F27);
+						BtlActRec_AddCount(wp->field_16F1C + 0xB);
 					} else {
-						BtlActRec_AddCount((u8*)wp + 0x16F28);
+						BtlActRec_AddCount(wp->field_16F1C + 0xC);
 					}
 				}
 			}
 			break;
 		case 6:
 			if (_check_weapon_type_attack(weapon)) {
-				BtlActRec_AddCount((u8*)wp + 0x16F39);
+				BtlActRec_AddCount(wp->field_16F1C + 0x1D);
 			} else {
-				BtlActRec_AddCount((u8*)wp + 0x16F3A);
+				BtlActRec_AddCount(wp->field_16F1C + 0x1E);
 			}
 			break;
 		}
@@ -2468,7 +2468,7 @@ void _btlcmd_SetAttackEvent(BattleUnit* unit, BattleCommand* cmd) {
 	case 9:
 		unit->moveState = 1;
 		unit->attackEventCode = btldefaultevt_ChangePosition;
-		*(s32*)unit->field_0x2A8 = 7;
+		unit->field_0x2A8 = 7;
 		break;
 	case 11:
 		switch ((s8)unit->moveState) {
@@ -2486,11 +2486,11 @@ void _btlcmd_SetAttackEvent(BattleUnit* unit, BattleCommand* cmd) {
 			break;
 		}
 		unit->attackEventCode = btlataudGetAttackEventPtr(unit->unitId);
-		*(s32*)unit->field_0x2A8 = 3;
+		unit->field_0x2A8 = 3;
 		if (unit->currentKind == 0xDE) {
-			BtlActRec_AddCount((u8*)wp + 0x16F2B);
+			BtlActRec_AddCount(wp->field_16F1C + 0xF);
 		} else {
-			BtlActRec_AddCount((u8*)wp + 0x16F2C);
+			BtlActRec_AddCount(wp->field_16F1C + 0x10);
 		}
 		if (*(u32*)&wp->field_19080[0] & 1) {
 			msgWindow_Continue(*(s32*)&wp->field_19080[4]);
@@ -2512,15 +2512,15 @@ void _btlcmd_SetAttackEvent(BattleUnit* unit, BattleCommand* cmd) {
 			break;
 		}
 		unit->attackEventCode = btlataudGetMoveEventPtr(unit->unitId);
-		*(s32*)unit->field_0x2A8 = 3;
+		unit->field_0x2A8 = 3;
 		break;
 	case 13:
 		unit->attackEventCode = btldefaultevt_LectureEnd;
-		*(s32*)unit->field_0x2A8 = 3;
+		unit->field_0x2A8 = 3;
 		break;
 	default:
 		unit->attackEventCode = btldefaultevt_Wait;
-		*(s32*)unit->field_0x2A8 = 0;
+		unit->field_0x2A8 = 0;
 		break;
 	}
 }
