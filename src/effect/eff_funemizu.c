@@ -627,11 +627,11 @@ const char str_muj_00[8] = "muj_00";
 const char str_muj_02[8] = "muj_02";
 const char str_muj_04[8] = "muj_04";
 const char str_muj_10[8] = "muj_10";
-const char str_nok_00[8] = "nok_00";
+const char str_802FE848[8] = "nok_00";
 const char str_nok_01[8] = "nok_01";
 const char str_pik_00[8] = "pik_00";
 const char str_pik_01[8] = "pik_01";
-const char str_pik_04[8] = "pik_04";
+const char str_802FE868[8] = "pik_04";
 const char str_tik_02[8] = "tik_02";
 const char str_tik_15[8] = "tik_15";
 const char str_tik_16[8] = "tik_16";
@@ -742,11 +742,11 @@ FunemizuMapEntry unk_803b0640[32] = {
 	{ str_muj_02, 0x20305D00 },
 	{ str_muj_04, 0x0E2CA200 },
 	{ str_muj_10, 0x0E2CA200 },
-	{ str_nok_00, 0x69C3D700 },
+	{ str_802FE848, 0x69C3D700 },
 	{ str_nok_01, 0x69C3D700 },
 	{ str_pik_00, 0x82E3DF00 },
 	{ str_pik_01, 0x6DCBFF00 },
-	{ str_pik_04, 0x6DCBFF00 },
+	{ str_802FE868, 0x6DCBFF00 },
 	{ str_tik_02, 0x042C5100 },
 	{ str_tik_15, 0x304D5900 },
 	{ str_tik_16, 0x304D5900 },

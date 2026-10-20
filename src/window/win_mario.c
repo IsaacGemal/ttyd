@@ -18,7 +18,7 @@
 
 // .sdata2/.sdata objects this unit reads but does not define
 // .sdata2 anim names shared with winMarioInit
-const char str_M_S_1[6] = "M_S_1";
+const char str_8041D578[6] = "M_S_1";
 const char str_8041D580[4] = "S_1";
 const char str_M_H_1[6] = "M_H_1";
 const char str_R_1[4] = "R_1";
@@ -113,7 +113,7 @@ void winMarioInit(WindowWork* work) {
             break;
         }
         work->marioPose = animPoseEntry(anim, 0);
-        animPoseSetAnim(work->marioPose, str_M_S_1, 1);
+        animPoseSetAnim(work->marioPose, str_8041D578, 1);
     }
 
     animPoseSetMaterialFlagOn(work->marioPose, 0x1800);
@@ -229,7 +229,7 @@ s32 winMarioMain(WindowWork* work) {
                     }
                 }
             } else {
-                SET_ANIM(str_M_S_1);
+                SET_ANIM(str_8041D578);
             }
 #ifdef MUST_MATCH
             animPoseSetAnim(work->marioPose, (const char*)d2, 0);
@@ -844,24 +844,24 @@ void winMarioDisp(CameraId camId, void* param, s32 idx) {
 
 // .data: link table
 LinkDt linkDt[18] = {
-    { (s16)0xFEF4, (s16)0x008E, str_M_S_1, NULL, str_8041D580, 0x0000, 0x0000, str_msg_menu_mario_lv, { 0x06, 0x01, 0x0B, 0x09 } },
-    { (s16)0xFEF4, (s16)0x0076, str_M_S_1, NULL, str_8041D580, 0x0000, 0x0000, str_msg_menu_mario_star_r, { 0x00, 0x02, 0x0B, 0x07 } },
+    { (s16)0xFEF4, (s16)0x008E, str_8041D578, NULL, str_8041D580, 0x0000, 0x0000, str_msg_menu_mario_lv, { 0x06, 0x01, 0x0B, 0x09 } },
+    { (s16)0xFEF4, (s16)0x0076, str_8041D578, NULL, str_8041D580, 0x0000, 0x0000, str_msg_menu_mario_star_r, { 0x00, 0x02, 0x0B, 0x07 } },
     { (s16)0xFEF0, (s16)0x0044, str_M_H_1, NULL, str_R_1, 0x0009, 0x0000, NULL, { 0x01, 0x03, 0x0B, 0x07 } },
     { (s16)0xFF0E, (s16)0x0018, str_M_R_1, NULL, str_R_1, 0x0006, 0x0000, NULL, { 0x02, 0x04, 0x0B, 0x08 } },
-    { (s16)0xFEF2, (s16)0xFFDE, str_M_S_1, NULL, str_8041D580, 0x0000, 0x0000, str_msg_menu_mario_hp, { 0x03, 0x05, 0x0D, 0x0D } },
-    { (s16)0xFEF2, (s16)0xFFBC, str_M_S_1, NULL, str_8041D580, 0x0000, 0x0000, str_msg_menu_mario_fp, { 0x04, 0x06, 0x0D, 0x0D } },
-    { (s16)0xFEF2, (s16)0xFF9A, str_M_S_1, NULL, str_8041D580, 0x0000, 0x0000, str_msg_menu_mario_bp, { 0x05, 0x00, 0x0D, 0x0D } },
-    { (s16)0xFF9C, (s16)0x005A, str_M_S_1, str_M_S_1, str_8041D580, 0x0002, 0x0000, str_msg_slit, { 0x09, 0x0A, 0x02, 0x09 } },
-    { (s16)0xFF9C, (s16)0x0014, str_M_S_1, str_M_S_1, str_8041D580, 0x0004, 0x0000, str_msg_plane, { 0x0A, 0x04, 0x03, 0x0A } },
-    { (s16)0xFFCE, (s16)0x0082, str_M_S_1, str_M_S_1, str_8041D580, 0x0005, 0x0000, str_msg_ship, { 0x00, 0x07, 0x00, 0x0B } },
-    { (s16)0xFFCE, (s16)0x003C, str_M_S_1, str_M_S_1, str_8041D580, 0x0003, 0x0000, str_msg_roll, { 0x07, 0x08, 0x08, 0x0C } },
-    { (s16)0x0014, (s16)0x006A, str_M_S_1, NULL, str_8041D580, 0x0000, 0x0000, str_msg_menu_star_power, { 0x11, 0x0C, 0x09, 0x00 } },
-    { (s16)0x0014, (s16)0x0046, str_M_S_1, NULL, str_8041D580, 0x0000, 0x0000, str_msg_menu_mario_waza, { 0x0B, 0x0D, 0x0A, 0x00 } },
-    { (s16)0x0003, (s16)0x000A, str_M_S_1, NULL, str_8041D580, 0x0000, 0x0000, str_msg_menu_mario_star_p, { 0x0C, 0x0E, 0x04, 0x04 } },
-    { (s16)0x0003, (s16)0xFFEE, str_M_S_1, NULL, str_8041D580, 0x0000, 0x0000, str_msg_menu_mario_coin, { 0x0D, 0x0F, 0x04, 0x04 } },
-    { (s16)0x0003, (s16)0xFFD2, str_M_S_1, NULL, str_8041D580, 0x0000, 0x0000, str_msg_menu_mario_kakera, { 0x0E, 0x10, 0x04, 0x04 } },
-    { (s16)0x0003, (s16)0xFFB6, str_M_S_1, NULL, str_8041D580, 0x0000, 0x0000, str_msg_menu_mario_scoin, { 0x0F, 0x11, 0x04, 0x04 } },
-    { (s16)0x0003, (s16)0xFF9A, str_M_S_1, NULL, str_8041D580, 0x0000, 0x0000, str_msg_menu_mario_time, { 0x10, 0x0B, 0x04, 0x04 } },
+    { (s16)0xFEF2, (s16)0xFFDE, str_8041D578, NULL, str_8041D580, 0x0000, 0x0000, str_msg_menu_mario_hp, { 0x03, 0x05, 0x0D, 0x0D } },
+    { (s16)0xFEF2, (s16)0xFFBC, str_8041D578, NULL, str_8041D580, 0x0000, 0x0000, str_msg_menu_mario_fp, { 0x04, 0x06, 0x0D, 0x0D } },
+    { (s16)0xFEF2, (s16)0xFF9A, str_8041D578, NULL, str_8041D580, 0x0000, 0x0000, str_msg_menu_mario_bp, { 0x05, 0x00, 0x0D, 0x0D } },
+    { (s16)0xFF9C, (s16)0x005A, str_8041D578, str_8041D578, str_8041D580, 0x0002, 0x0000, str_msg_slit, { 0x09, 0x0A, 0x02, 0x09 } },
+    { (s16)0xFF9C, (s16)0x0014, str_8041D578, str_8041D578, str_8041D580, 0x0004, 0x0000, str_msg_plane, { 0x0A, 0x04, 0x03, 0x0A } },
+    { (s16)0xFFCE, (s16)0x0082, str_8041D578, str_8041D578, str_8041D580, 0x0005, 0x0000, str_msg_ship, { 0x00, 0x07, 0x00, 0x0B } },
+    { (s16)0xFFCE, (s16)0x003C, str_8041D578, str_8041D578, str_8041D580, 0x0003, 0x0000, str_msg_roll, { 0x07, 0x08, 0x08, 0x0C } },
+    { (s16)0x0014, (s16)0x006A, str_8041D578, NULL, str_8041D580, 0x0000, 0x0000, str_msg_menu_star_power, { 0x11, 0x0C, 0x09, 0x00 } },
+    { (s16)0x0014, (s16)0x0046, str_8041D578, NULL, str_8041D580, 0x0000, 0x0000, str_msg_menu_mario_waza, { 0x0B, 0x0D, 0x0A, 0x00 } },
+    { (s16)0x0003, (s16)0x000A, str_8041D578, NULL, str_8041D580, 0x0000, 0x0000, str_msg_menu_mario_star_p, { 0x0C, 0x0E, 0x04, 0x04 } },
+    { (s16)0x0003, (s16)0xFFEE, str_8041D578, NULL, str_8041D580, 0x0000, 0x0000, str_msg_menu_mario_coin, { 0x0D, 0x0F, 0x04, 0x04 } },
+    { (s16)0x0003, (s16)0xFFD2, str_8041D578, NULL, str_8041D580, 0x0000, 0x0000, str_msg_menu_mario_kakera, { 0x0E, 0x10, 0x04, 0x04 } },
+    { (s16)0x0003, (s16)0xFFB6, str_8041D578, NULL, str_8041D580, 0x0000, 0x0000, str_msg_menu_mario_scoin, { 0x0F, 0x11, 0x04, 0x04 } },
+    { (s16)0x0003, (s16)0xFF9A, str_8041D578, NULL, str_8041D580, 0x0000, 0x0000, str_msg_menu_mario_time, { 0x10, 0x0B, 0x04, 0x04 } },
 };
 
 #pragma force_active off
