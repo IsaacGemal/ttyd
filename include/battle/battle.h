@@ -253,7 +253,19 @@ struct BattleWork {
     u8 field_18FF0[0x19050 - 0x18FF0];  // 0x18FF0
     u32 reserveItems[4];                // 0x19050
     s32 field_19060;                    // 0x19060
-    u8 field_19064[0x19088 - 0x19064];  // 0x19064
+    u8 field_19064[0x19068 - 0x19064];  // 0x19064
+    u32 forceFlags;                     // 0x19068, no writer here; each bit forces a random outcome:
+                                        // 0x1 object fall, 0x2 the audience gets the falling object,
+                                        // 0x10/0x20/0x40 stage destroy A1/A2/B, 0x80 iron frame fall,
+                                        // 0x100 nozzle work, 0x200 nozzle turn, 0x10000 audience count
+                                        // = forceAudienceCount, 0x20000 frequent audience item throws,
+                                        // 0x40000 the 1-in-20 audience kind swap, 0x80000 bingo reels
+                                        // stop on forceSlotValue
+    u8 field_1906C[0x19074 - 0x1906C];  // 0x1906C
+    s32 forceAudienceCount;             // 0x19074, starting audience (capped at the max) under 0x10000
+    s32 forceAudienceKind;              // 0x19078, 1-12 fills the audience with one kind; 0 = off
+    s32 forceSlotValue;                 // 0x1907C, reel value forced under 0x80000
+    u8 field_19080[0x19088 - 0x19080];  // 0x19080
 };
 extern BattleWork* _battleWorkPointer;
 

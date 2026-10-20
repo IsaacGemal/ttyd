@@ -286,13 +286,13 @@ USER_FUNC(hammer_on) {
 USER_FUNC(aud_attack_init) {
     BattleWork* wp = _battleWorkPointer;
 
-    *(s32*)&wp->field_19064[0x1C] |= 1;
-    *(s32*)&wp->field_19064[0x20] = event->printWindowId;
+    *(s32*)&wp->field_19080[0] |= 1;
+    *(s32*)&wp->field_19080[4] = event->printWindowId;
     return EVT_RETURN_DONE;
 }
 
 USER_FUNC(aud_attack_end) {
-    *(s32*)&_battleWorkPointer->field_19064[0x1C] |= 1;
+    *(s32*)&_battleWorkPointer->field_19080[0] |= 1;
     return EVT_RETURN_DONE;
 }
 
