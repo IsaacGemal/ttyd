@@ -208,7 +208,7 @@ static void moamoa_pose_main(void) {
                 f = 1.0f;
             }
         }
-        pose->field_0x10 = seq->startFrame + (s32)((f32)(seq->frameCount - 1) * f);
+        pose->texId = seq->startFrame + (s32)((f32)(seq->frameCount - 1) * f);
     }
 }
 

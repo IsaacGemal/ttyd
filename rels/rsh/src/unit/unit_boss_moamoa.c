@@ -1288,7 +1288,7 @@ static void ext_moamoa_main(void) {
         if (frame >= anim->numPoses) {
             frame = anim->numPoses - 1;
         }
-        extPose->field_0x10 = anim->firstPose + frame;
+        extPose->texId = anim->firstPose + frame;
     }
 
     if (wp->mainUnitId != -1) {
@@ -1326,13 +1326,13 @@ static void ext_moamoa_main(void) {
                 inv = 1.0f - t;
                 if (vp0->y == -1000.0f || vp1->y == -1000.0f) {
                     offset = (Vec){ 0.0f, -1000.0f, 0.0f };
-                    extPose->flags &= ~1;
+                    extPose->flags &= ~EXT_POSE_VISIBLE;
                 } else {
                     PSVECScale(vp0, &offset, t);
                     PSVECScale(vp1, &tmp, inv);
                     PSVECAdd(&offset, &tmp, &offset);
                     PSVECAdd(&offset, &pose->jitter, &offset);
-                    extPose->flags |= 1;
+                    extPose->flags |= EXT_POSE_VISIBLE;
                 }
                 if (pose->ownerIdPtr != &wp->mainUnitId) {
                     for (j = 1; j < 5; j++) {

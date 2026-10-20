@@ -189,9 +189,9 @@ static void senteresa_ext_init(void) {
         (*pose->matrix)[1][3] = randf(10.0f, 400.0f);
         (*pose->matrix)[2][3] = mario->position.z + pTeresa[i].offsetZ;
         if (mario->position.x < (*pose->matrix)[0][3]) {
-            pose->field_0x4 = 90.0f;
+            pose->heading = 90.0f;
         } else {
-            pose->field_0x4 = 270.0f;
+            pose->heading = 270.0f;
         }
     }
     g_nNumEndProc[0] = 0;
@@ -1025,7 +1025,7 @@ static void senteresa_ext_main(void) {
     for (i = 0; i < count; i++, pose++) {
         switch (pTeresa[i].state) {
             case 0:
-                pose->field_0x10 = 0;
+                pose->texId = 0;
                 pTeresa[i].timer--;
                 if (pTeresa[i].timer == 0) {
                     if (i == 0) {
@@ -1040,11 +1040,11 @@ static void senteresa_ext_main(void) {
                 u8 old;
                 f32 angle;
 
-                pose->field_0x10 = (gp->retraceCount / 5 + i * i) & 0xF;
+                pose->texId = (gp->retraceCount / 5 + i * i) & 0xF;
                 if (mario->position.x < (*pose->matrix)[0][3]) {
-                    pose->field_0x4 = 90.0f;
+                    pose->heading = 90.0f;
                 } else {
-                    pose->field_0x4 = 270.0f;
+                    pose->heading = 270.0f;
                 }
                 computePos(&pTeresa[i], &pos);
                 (*pose->matrix)[0][3] = g_vecRotCenter.x + pos.x;
@@ -1088,11 +1088,11 @@ static void senteresa_ext_main(void) {
             case 2: {
                 f32 angle;
 
-                pose->field_0x10 = (gp->retraceCount / 5 + i * i) & 0xF;
+                pose->texId = (gp->retraceCount / 5 + i * i) & 0xF;
                 if (mario->position.x < (*pose->matrix)[0][3]) {
-                    pose->field_0x4 = 90.0f;
+                    pose->heading = 90.0f;
                 } else {
-                    pose->field_0x4 = 270.0f;
+                    pose->heading = 270.0f;
                 }
                 computePos(&pTeresa[i], &pos);
                 (*pose->matrix)[0][3] = g_vecRotCenter.x + pos.x;
@@ -1115,11 +1115,11 @@ static void senteresa_ext_main(void) {
                 break;
             }
             case 3:
-                pose->field_0x10 = (gp->retraceCount / 5 + i * i) & 0xF;
+                pose->texId = (gp->retraceCount / 5 + i * i) & 0xF;
                 if (mario->position.x < (*pose->matrix)[0][3]) {
-                    pose->field_0x4 = 90.0f;
+                    pose->heading = 90.0f;
                 } else {
-                    pose->field_0x4 = 270.0f;
+                    pose->heading = 270.0f;
                 }
                 computePos(&pTeresa[i], &pos);
                 (*pose->matrix)[0][3] = g_vecRotCenter.x + pos.x;
@@ -1132,7 +1132,7 @@ static void senteresa_ext_main(void) {
                 pTeresa[i].phase += 0.08f;
                 pTeresa[i].timer--;
                 if (pTeresa[i].timer == 0) {
-                    pose->flags &= ~2;
+                    pose->flags &= ~EXT_POSE_BILLBOARD;
                     pTeresa[i].timer = i * 0x1E + rand() % 10 + 0x127;
                     pTeresa[i].state++;
                 }
@@ -1141,7 +1141,7 @@ static void senteresa_ext_main(void) {
                 f32 angle;
                 s32 ret;
 
-                pose->field_0x10 = (gp->retraceCount + i * i) % 10 + 0x10;
+                pose->texId = (gp->retraceCount + i * i) % 10 + 0x10;
                 computePos(&pTeresa[i], &pos);
                 pos.y = (*pose->matrix)[1][3];
                 (*pose->matrix)[0][3] = g_vecRotCenter.x + pos.x;
@@ -1187,7 +1187,7 @@ static void senteresa_ext_main(void) {
             case 5: {
                 f32 angle;
 
-                pose->field_0x10 = (gp->retraceCount + i * i) % 10 + 0x10;
+                pose->texId = (gp->retraceCount + i * i) % 10 + 0x10;
                 pos.x = (*pose->matrix)[0][3];
                 pos.y = (*pose->matrix)[1][3];
                 pos.z = (*pose->matrix)[2][3];
@@ -1230,7 +1230,7 @@ static void senteresa_ext_main(void) {
                 f32 angle;
                 s32 ret;
 
-                pose->field_0x10 = (gp->retraceCount + i * i) % 10 + 0x10;
+                pose->texId = (gp->retraceCount + i * i) % 10 + 0x10;
                 (*pose->matrix)[0][3] = mario->position.x + pTeresa[i].offsetX;
                 (*pose->matrix)[1][3] = mario->position.y + pTeresa[i].offsetY;
                 (*pose->matrix)[2][3] = mario->position.z + pTeresa[i].offsetZ;
@@ -1265,7 +1265,7 @@ static void senteresa_ext_main(void) {
                 f32 angle;
                 s32 ret;
 
-                pose->field_0x10 = (s32)((100.0f - (f32)pTeresa[i].timer) / 100.0f * 12.0f) + 0x22;
+                pose->texId = (s32)((100.0f - (f32)pTeresa[i].timer) / 100.0f * 12.0f) + 0x22;
                 computePos(&pTeresa[i], &pos);
                 pos.y = (*pose->matrix)[1][3];
                 (*pose->matrix)[0][3] = g_vecRotCenter.x + pos.x;
@@ -1293,7 +1293,7 @@ static void senteresa_ext_main(void) {
                 break;
             }
             case 0xA:
-                pose->field_0x10 = (gp->retraceCount + i * i) % 8 + 0x1A;
+                pose->texId = (gp->retraceCount + i * i) % 8 + 0x1A;
                 (*pose->matrix)[0][3] += pTeresa[i].velX;
                 (*pose->matrix)[1][3] += pTeresa[i].velY;
                 (*pose->matrix)[2][3] += pTeresa[i].velZ;
@@ -1306,7 +1306,7 @@ static void senteresa_ext_main(void) {
             case 0x14: {
                 f32 angle;
 
-                pose->field_0x10 = (gp->retraceCount + i * i) % 10 + 0x10;
+                pose->texId = (gp->retraceCount + i * i) % 10 + 0x10;
                 computePos(&pTeresa[i], &pos);
                 pos.y = (*pose->matrix)[1][3];
                 (*pose->matrix)[0][3] = g_vecRotCenter.x + pos.x;
@@ -1340,7 +1340,7 @@ static void senteresa_ext_main(void) {
             case 0x15: {
                 f32 t;
 
-                pose->field_0x10 = (gp->retraceCount + i * i) % 10 + 0x10;
+                pose->texId = (gp->retraceCount + i * i) % 10 + 0x10;
                 t = pTeresa[i].phase;
                 if (t >= 1.0f) {
                     pTeresa[i].state = 0x16;
@@ -1367,7 +1367,7 @@ static void senteresa_ext_main(void) {
             case 0x16: {
                 s32 m;
 
-                pose->field_0x10 = (gp->retraceCount + i * i) % 10 + 0x10;
+                pose->texId = (gp->retraceCount + i * i) % 10 + 0x10;
                 m = pTeresa[i].timer & 7;
                 if (m == 0) {
                     (*pose->matrix)[0][3] += 2.0f;
@@ -1378,7 +1378,7 @@ static void senteresa_ext_main(void) {
                 break;
             }
             case 0x1E:
-                pose->field_0x10 = (gp->retraceCount + i * i) % 8 + 0x1A;
+                pose->texId = (gp->retraceCount + i * i) % 8 + 0x1A;
                 (*pose->matrix)[0][3] += pTeresa[i].velX;
                 (*pose->matrix)[1][3] += pTeresa[i].velY;
                 (*pose->matrix)[2][3] += pTeresa[i].velZ;
@@ -1390,7 +1390,7 @@ static void senteresa_ext_main(void) {
                 }
                 break;
             case 0x50:
-                pose->field_0x10 = (gp->retraceCount + i * i) % 10 + 0x10;
+                pose->texId = (gp->retraceCount + i * i) % 10 + 0x10;
                 (*pose->matrix)[1][3] = mario->position.y + pTeresa[i].offsetY;
                 break;
             case 0x63:
@@ -1532,9 +1532,9 @@ USER_FUNC(senteresa_syugo) {
         pTeresa[i].alpha = 0xFF;
         pTeresa[i].state = 0x14;
         if (pTeresa[i].startX < pTeresa[i].endX) {
-            pose->field_0x4 = 270.0f;
+            pose->heading = 270.0f;
         } else {
-            pose->field_0x4 = 90.0f;
+            pose->heading = 90.0f;
         }
     }
     return EVT_RETURN_DONE;

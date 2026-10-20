@@ -9634,3 +9634,24 @@ uses BattleCommand throughout. battle_seq_command.c field_/unk density 109.03 â†
 69.911. Open: battle.h still carries the deprecated duplicate `BattleWorkCommand`/`BattleWorkCommand*` types with
 the same layout, used by the party `__makeTechMenuFunc` builders; fold them into BattleCommand in a separate pass.
 `field_55C`, weapon `field_0x4`, and the menuFlags bits beyond 0x1 stay unnamed.
+### ExtPose field names and flags (2026-10-19, Claude Haiku worker ExtPose, n9-q-extpose; reviewed by Claude Opus 5.5)
+
+The extdrv sprite crowds (bom, eki, gon, jin, las, rsh, tou, usu, yuu, nannpc and the gundan/teresa/moamoa units)
+drive one `ExtPose` per sprite. Names, from extMain/extPoseDraw/extDrawShadow:
+- `heading` (0x4): the sprite's facing angle in degrees. extMain compares it with the camera angle to pick which way
+  the sprite turns; users set 90/270, `angleABf` results or random angles.
+- `groundY` (0x8): world Y the shadow is moved to when `EXT_POSE_SHADOW_AT_GROUND` is set (evt_nannpc sets it from
+  a script float).
+- `texId` (0x10): index into `ExtWork.textures` and the per-texture display lists; also the sort key.
+- `yaw` (0x14) eases 10% per frame toward `targetYaw` (0x1C), then writes the rotation into `*matrix`. 0x18 is
+  unnamed.
+- `ExtPoseFlags`: `EXT_POSE_VISIBLE` (0x1, drawn and sorted by texture), `EXT_POSE_BILLBOARD` (0x2, yaw follows the
+  camera: camera angle when facing it, camera + 180 when facing away; without it yaw is left alone),
+  `EXT_POSE_NO_SHADOW` (0x4), `EXT_POSE_SHADOW_AT_GROUND` (0x10). Single-bit literals on ExtPose `flags` use the
+  enum; combined values (`|= 7`, `= 3`, `|= 0x13`) stay numeric, and the many `flags` literals in the same files on
+  other structs (MoamoaPose, MoamoaWorkPose, KaronPoseEntry, FanPose, the yuu/nannpc entries) are not ExtPose bits.
+- `ExtSortEntry` `{index, key}`; `ExtMakeTextureEntry.animName` (0x4, the animation `animPoseDisp_MakeExtTexture`
+  renders); `ExtWork.shadowMtx` (0x3C, set by extLoadShadowMtx, concatenated into every shadow).
+
+Build byte-identical (32 files OK). Cleanup index 55.254 -> 54.980 against the merge base (field_0x 10,872 ->
+10,680).

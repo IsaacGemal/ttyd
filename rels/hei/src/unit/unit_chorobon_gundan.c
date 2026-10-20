@@ -309,12 +309,12 @@ void chorogun_ext_init(void) {
 
     chorogun = BattleAlloc(0xBB80);
     for (i = 0; i < extGetPoseNum(); i++, pose++) {
-        pose->flags = 1;
+        pose->flags = EXT_POSE_VISIBLE;
         PSMTXIdentity(*pose->matrix);
         (*pose->matrix)[0][3] = 0.0f;
         (*pose->matrix)[1][3] = -1000.0f;
         (*pose->matrix)[2][3] = 0.0f;
-        pose->field_0x4 = 90.0f;
+        pose->heading = 90.0f;
         chorogun[i].flags = 0;
         chorogun[i].state = 0;
         chorogun[i].position = vec3_0;
@@ -387,7 +387,7 @@ void chorogun_ext_main(void) {
     }
     alive = 1000 - alive;
     for (i = 0; i < extGetPoseNum(); i++, pose++) {
-        pose->field_0x10 = (gp->retraceCount + i * i) % 20;
+        pose->texId = (gp->retraceCount + i * i) % 20;
         entry = &chorogun[i];
         (*pose->matrix)[0][3] += entry->position.x;
         (*pose->matrix)[1][3] += entry->position.y;

@@ -179,8 +179,8 @@ static void senteresa_ext_init(void) {
         f32 c;
         f32 bscale;
 
-        pose->flags = 2;
-        pose->field_0x4 = 270.0f;
+        pose->flags = EXT_POSE_BILLBOARD;
+        pose->heading = 270.0f;
         PSMTXIdentity(*pose->matrix);
         pTeresa[i].field_0x00 = 0.0f;
         (*pose->matrix)[0][3] = 0.0f;
@@ -269,16 +269,16 @@ static void senteresa_ext_main(void) {
     for (i = 0; i < count; i++, pose++) {
         switch (pTeresa[i].field_0x2C) {
             case 0:
-                pose->field_0x10 = 0;
+                pose->texId = 0;
                 pTeresa[i].field_0x28--;
                 if (pTeresa[i].field_0x28 == 0) {
-                    pose->flags |= 1;
+                    pose->flags |= EXT_POSE_VISIBLE;
                     g_nNumOutBox[0]++;
                     pTeresa[i].field_0x2C++;
                 }
                 break;
             case 1: {
-                pose->field_0x10 = (gp->retraceCount + i * i) % 3 + 1;
+                pose->texId = (gp->retraceCount + i * i) % 3 + 1;
                 senteresa_ext_main_computePosHermite(pose, (f32*)&pTeresa[i]);
                 pTeresa[i].field_0x18 += 0.015f;
                 if (pTeresa[i].field_0x18 >= 1.0f) {

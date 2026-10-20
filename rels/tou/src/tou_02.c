@@ -1571,7 +1571,7 @@ static void pose_main(void) {
             fan->time = gp->renderTime;
             ratio = 0.0f;
         }
-        pose->field_0x10 = group->start + (s32)((f32)(group->count - 1) * ratio);
+        pose->texId = group->start + (s32)((f32)(group->count - 1) * ratio);
     }
 }
 
@@ -1620,7 +1620,7 @@ void ext_fan_init(void) {
         (*pose->matrix)[0][3] = 0.0f;
         (*pose->matrix)[1][3] = 0.0f;
         (*pose->matrix)[2][3] = 0.0f;
-        pose->field_0x4 = randf(0.0f, 360.0f);
+        pose->heading = randf(0.0f, 360.0f);
         type = irand(1000) % 3;
         switch (type) {
         case 0:
@@ -1734,7 +1734,7 @@ void ext_fan_main(void) {
             if (f->state == 0) {
                 f->position = mario->position;
                 vec = f->position;
-                p->flags &= ~1;
+                p->flags &= ~EXT_POSE_VISIBLE;
                 f->flags |= 1;
                 break;
             }
@@ -1756,13 +1756,13 @@ void ext_fan_main(void) {
             if (found == 0) {
                 found = 1;
                 fane->position = mario->position;
-                posee->flags &= ~1;
+                posee->flags &= ~EXT_POSE_VISIBLE;
                 fane->flags |= 1;
             } else {
                 NpcEntry* npc = npcNameToPtr("\x83\x60\x83\x83\x83\x93\x83\x73\x83\x87\x83\x93");
                 fane->position = npc->position;
                 vec = fane->position;
-                posee->flags &= ~1;
+                posee->flags &= ~EXT_POSE_VISIBLE;
                 fane->flags |= 1;
                 break;
             }
@@ -1984,7 +1984,7 @@ void ext_fan_main(void) {
         (*pose->matrix)[0][3] = fan->position.x;
         (*pose->matrix)[1][3] = fan->position.y;
         (*pose->matrix)[2][3] = fan->position.z;
-        pose->field_0x4 = angleABf(vec.x, vec.z, fan->position.x, fan->position.z);
+        pose->heading = angleABf(vec.x, vec.z, fan->position.x, fan->position.z);
     }
     psndSFX_pos(fan_wp->sfxId, &vec);
     psndSFX_vol(fan_wp->sfxId, (u8)(fan_wp->volume * fan_wp->idleCount / fan_wp->poseNum));
@@ -2008,7 +2008,7 @@ void ext_fan_dispent(void) {
             fan->time = now;
             ratio = 0.0f;
         }
-        pose->field_0x10 = group->start + (s32)((f32)(group->count - 1) * ratio);
+        pose->texId = group->start + (s32)((f32)(group->count - 1) * ratio);
     }
     dispEntry(4, 0.0f, 1, (DispCallback)fan_disp, NULL);
 }

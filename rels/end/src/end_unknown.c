@@ -1514,19 +1514,19 @@ void unk_end_00000440(void) {
 
         if (p0->y == -1000.0f || p1->y == -1000.0f) {
             offset = (Vec){0.0f, -1000.0f, 0.0f};
-            extPose->flags &= ~1;
+            extPose->flags &= ~EXT_POSE_VISIBLE;
         } else {
             PSVECScale(p0, &offset, ratio);
             PSVECScale(p1, &tmp, c);
             PSVECAdd(&offset, &tmp, &offset);
-            extPose->flags |= 1;
+            extPose->flags |= EXT_POSE_VISIBLE;
         }
         PSMTXTrans(mtx1, offset.x, offset.y, offset.z);
         PSMTXScale(mtx2, npc->scale.x, npc->scale.y, npc->scale.z);
         PSMTXConcat(mtx1, mtx2, mtx1);
         PSMTXTrans(mtx3, work->position.x, work->position.y, work->position.z);
         PSMTXConcat(mtx1, mtx3, *extPose->matrix);
-        extPose->field_0x10 = (gp->retraceCount + i) % 40;
+        extPose->texId = (gp->retraceCount + i) % 40;
         work++;
         extPose++;
     }

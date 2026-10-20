@@ -659,12 +659,12 @@ static void senkaron_ext_init(void) {
     i = extGetPoseNum() - 1;
     while (i >= 0) {
         pose->flags = 3;
-        pose->field_0x4 = randf(0.0f, 360.0f);
+        pose->heading = randf(0.0f, 360.0f);
         PSMTXIdentity(*pose->matrix);
         (*pose->matrix)[0][3] = randf(-385.0f, 375.0f);
         (*pose->matrix)[1][3] = 200.0f;
         (*pose->matrix)[2][3] = randf(-125.0f, 140.0f);
-        pose->field_0x4 = 90.0f;
+        pose->heading = 90.0f;
         senkaron[i].state = 0;
         senkaron[i].timer = (s32)randf(1.0f, 50.0f);
         senkaron[i].velY = -5.0f;
@@ -729,7 +729,7 @@ static void senkaron_ext_main(void) {
     for (; i >= 0; i--, pose++) {
         switch (senkaron[i].state) {
             case 0:
-                pose->field_0x10 = (gp->retraceCount + i * i) % 0x18;
+                pose->texId = (gp->retraceCount + i * i) % 0x18;
                 if (senkaron[i].timer > 0) {
                     if (senkaronEscapeFlag == 1) {
                         senkaron[i].state = 0x62;
@@ -756,7 +756,7 @@ static void senkaron_ext_main(void) {
                 }
                 break;
             case 1:
-                pose->field_0x10 = (gp->retraceCount + i * i) % 0x18;
+                pose->texId = (gp->retraceCount + i * i) % 0x18;
                 if (senkaronEscapeFlag == 1) {
                     f32 len;
 
@@ -770,9 +770,9 @@ static void senkaron_ext_main(void) {
                         senkaron[i].velZ = 4.0f * (*pose->matrix)[2][3] / len;
                     }
                     if (senkaron[i].velX < 0.0f) {
-                        pose->field_0x4 = 90.0f;
+                        pose->heading = 90.0f;
                     } else {
-                        pose->field_0x4 = 270.0f;
+                        pose->heading = 270.0f;
                     }
                     senkaron[i].state = 0x62;
                     senkaron[i].timer = 300;
@@ -836,15 +836,15 @@ static void senkaron_ext_main(void) {
                     }
                     if ((*pose->matrix)[0][3] >= mario->position.x) {
                         if (senkaron[i].flags & 1) {
-                            pose->field_0x4 = 270.0f;
+                            pose->heading = 270.0f;
                         } else {
-                            pose->field_0x4 = 90.0f;
+                            pose->heading = 90.0f;
                         }
                     } else {
                         if (senkaron[i].flags & 1) {
-                            pose->field_0x4 = 90.0f;
+                            pose->heading = 90.0f;
                         } else {
-                            pose->field_0x4 = 270.0f;
+                            pose->heading = 270.0f;
                         }
                     }
                     if (senkaron[i].timer == 0) {
@@ -883,7 +883,7 @@ static void senkaron_ext_main(void) {
                 }
                 break;
             case 0x61:
-                pose->flags |= 4;
+                pose->flags |= EXT_POSE_NO_SHADOW;
                 if ((*pose->matrix)[1][3] > -100.0f) {
                     (*pose->matrix)[0][3] += senkaron[i].velX;
                     (*pose->matrix)[1][3] += senkaron[i].velY;
@@ -892,14 +892,14 @@ static void senkaron_ext_main(void) {
                         (*pose->matrix)[2][3] = -125.0f;
                     }
                     senkaron[i].velY -= 0.3f;
-                    pose->field_0x10 = 0x18;
+                    pose->texId = 0x18;
                 } else {
                     marioGetPtr();
                     (*pose->matrix)[0][3] = randf(-385.0f, 375.0f);
                     (*pose->matrix)[1][3] = 200.0f;
                     (*pose->matrix)[2][3] = randf(-125.0f, 140.0f);
-                    pose->field_0x4 = randf(0.0f, 360.0f);
-                    pose->flags &= ~4;
+                    pose->heading = randf(0.0f, 360.0f);
+                    pose->flags &= ~EXT_POSE_NO_SHADOW;
                     senkaron[i].state = 0;
                     senkaron[i].timer = (s32)randf(1.0f, 1000.0f);
                     senkaron[i].velY = 0.0f;
@@ -913,7 +913,7 @@ static void senkaron_ext_main(void) {
                 } else {
                     senkaron[i].state = 0x63;
                 }
-                pose->field_0x10 = (gp->retraceCount + i * i) % 0x18;
+                pose->texId = (gp->retraceCount + i * i) % 0x18;
                 break;
             case 0x63:
                 break;

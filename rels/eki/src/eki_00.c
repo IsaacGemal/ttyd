@@ -512,7 +512,7 @@ static void moamoa_pose_main(void) {
             ratio = 0.0f;
         }
         pose++;
-        ep->field_0x10 = npc->firstPose + (s32)((npc->numPoses - 1) * ratio);
+        ep->texId = npc->firstPose + (s32)((npc->numPoses - 1) * ratio);
         ep++;
     }
 }
@@ -648,8 +648,8 @@ static s32 evt_moamoa_ry_reset(void) {
     s32 i;
 
     for (i = 0; i < wp->poseNum; i++) {
-        pose->field_0x14 = 0.0f;
-        pose->field_0x1C = 0.0f;
+        pose->yaw = 0.0f;
+        pose->targetYaw = 0.0f;
         pose++;
     }
     return EVT_RETURN_DONE;
@@ -757,7 +757,7 @@ static USER_FUNC(evt_moamoa_fusion) {
     ep = extGetPosePtr();
     pose = wp->poses;
     for (i = 0; i < wp->poseNum; i++, ep++, pose++) {
-        ep->flags |= 4;
+        ep->flags |= EXT_POSE_NO_SHADOW;
         pose->flags |= 0x400;
         pose->state = 0x3D;
         moamoa_pose_change(pose, "c_n_moa_a", "S_1");
@@ -1187,7 +1187,7 @@ static s32 evt_moamoa_fusion_debug(void) {
     MoamoaPose* pose = wp->poses;
 
     for (i = 0; i < wp->poseNum; i++, ep++, pose++) {
-        ep->flags |= 4;
+        ep->flags |= EXT_POSE_NO_SHADOW;
         pose->flags |= 0x400;
         pose->flags |= 0x100;
         pose->flags |= 0x200;
@@ -1453,10 +1453,10 @@ static void moamoa_jump(ExtPose* ep, MoamoaPose* pose, f32 f1, f32 f2, f32 f3, f
     pose->field_0x14 = pose->field_0x20 * (f32)pose->frames / 2.0f + ty / (f32)pose->frames;
     pose->state = 3;
     pose->queuedState = b;
-    ep->field_0x4 = angle + 180.0f;
+    ep->heading = angle + 180.0f;
     pose->flags |= 0x2;
-    ep->flags |= 0x10;
-    ep->flags &= ~0x4;
+    ep->flags |= EXT_POSE_SHADOW_AT_GROUND;
+    ep->flags &= ~EXT_POSE_NO_SHADOW;
 }
 
 #pragma dont_inline reset
@@ -2091,7 +2091,7 @@ static void ext_moamoa_main(void) {
                 ep->matrix[0][1][3] = pose->target.y;
                 ep->matrix[0][2][3] = pose->target.z;
                 pose->flags &= ~0x2;
-                ep->flags &= ~0x10;
+                ep->flags &= ~EXT_POSE_SHADOW_AT_GROUND;
                 pose->stateTimer = 0;
                 pose->state++;
             }
@@ -2202,10 +2202,10 @@ static void ext_moamoa_main(void) {
 
                 PSMTXRotRad(rot, 'y', 0.20943952f);
                 PSMTXConcat(*ep->matrix, rot, *ep->matrix);
-                ep->flags &= ~0x2;
+                ep->flags &= ~EXT_POSE_BILLBOARD;
                 pose->stateTimer++;
             } else {
-                ep->flags |= 0x2;
+                ep->flags |= EXT_POSE_BILLBOARD;
                 pose->stateTimer =
                     (100.0f - distABf(ep->matrix[0][0][3], ep->matrix[0][2][3], MOA_TARGET(i).x, MOA_TARGET(i).z)) / 2.0f;
                 pose->state++;
@@ -2243,8 +2243,8 @@ static void ext_moamoa_main(void) {
         }
         case 0x3E:
             pose->flags |= 0x20;
-            ep->flags &= ~0x1;
-            ep->flags |= 0x4;
+            ep->flags &= ~EXT_POSE_VISIBLE;
+            ep->flags |= EXT_POSE_NO_SHADOW;
             break;
         case 0x3F:
             r1 = (f32)rand() / 32767.0f;
@@ -2272,7 +2272,7 @@ static void ext_moamoa_main(void) {
             ep->matrix[0][2][3] += pose->target.z;
             PSMTXRotRad(rot, 'y', 0.20943952f);
             PSMTXConcat(*ep->matrix, rot, *ep->matrix);
-            ep->flags &= ~0x2;
+            ep->flags &= ~EXT_POSE_BILLBOARD;
             if (ep->matrix[0][0][3] < -1000.0f) {
                 pose->state = 0x3E;
             }

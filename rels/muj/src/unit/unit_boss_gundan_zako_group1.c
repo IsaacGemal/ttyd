@@ -668,12 +668,12 @@ s32 zakogun_ext_init1(EventEntry* event, BOOL isFirstCall) {
 }
 
 void zakogun_ext_init123_common(ExtPose* pose, s32 index) {
-    pose->flags = 1;
+    pose->flags = EXT_POSE_VISIBLE;
     PSMTXIdentity(*pose->matrix);
     (*pose->matrix)[0][3] = 0.0f;
     (*pose->matrix)[1][3] = -1000.0f;
     (*pose->matrix)[2][3] = 0.0f;
-    pose->field_0x4 = 90.0f;
+    pose->heading = 90.0f;
     zakogun[index].field_0x0 = 0;
     zakogun[index].state = 0;
     zakogun[index].timer = 0;
@@ -705,7 +705,7 @@ void zakogun_ext_main1(void) {
     for (i = 0; i < 6; i++, pose++) {
         ZakogunEntry* entry = &zakogun[i];
 
-        pose->field_0x10 = entry->poseStart + entry->poseIndex / entry->poseDiv;
+        pose->texId = entry->poseStart + entry->poseIndex / entry->poseDiv;
         entry->poseIndex++;
         if (entry->poseIndex >= entry->poseCount * entry->poseDiv) {
             entry->poseIndex = 0;
