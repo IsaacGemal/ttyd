@@ -76,7 +76,7 @@ __declspec(section ".sdata") u32 unk_80423310;
 
 // 100% matched. `t` splits the shared twoPi/360 division out of the
 // sin/cos arguments so it is computed once, as retail does. In case 5 the `negOne` local hoists the
-// -1.0f load into retail's f0 (MUST_MATCH; natural form in the #else).
+// -1.0f load into retail's f0.
 EffectEntry* effKissEntry(s32 type, f32 x, f32 y, f32 z, f32 angle) {
 	EffectEntry* entry;
 	KissEffectWork* data;
@@ -143,9 +143,8 @@ EffectEntry* effKissEntry(s32 type, f32 x, f32 y, f32 z, f32 angle) {
 			data->scaleX = 1.0f;
 			break;
 		case 5:
-#ifdef MUST_MATCH
 		{
-			/* MUST_MATCH: the local hoists the -1.0f load into retail's f0 (the natural form is in #else). */
+			/* the local hoists the -1.0f load into retail's f0 */
 			f32 negOne = -1.0f;
 			data->scaleY = 1.5f;
 			data->scaleX = 1.5f;
@@ -155,32 +154,21 @@ EffectEntry* effKissEntry(s32 type, f32 x, f32 y, f32 z, f32 angle) {
 			data->rot = data->rot * negOne;
 			break;
 		}
-#else
-			data->scaleY = 1.5f;
-			data->scaleX = 1.5f;
-			data->rot = 360.0f * (f32)i / (f32)(entry->count - 1);
-			data->velX = 3.0f * (f32)sin(6.2831855f * data->rot / 360.0f);
-			data->velY = 3.0f * (f32)cos(6.2831855f * data->rot / 360.0f);
-			data->rot = data->rot * -1.0f;
-			break;
-#endif
 		}
 	}
 	return entry;
 }
 
-// 100% matched. The u8 table readers write the *0.03125f as a /32.0f division (under MUST_MATCH): the
+// 100% matched. The u8 table readers write the *0.03125f as a /32.0f division: the
 // constant folds to the same float and the instruction stream is identical, but the division makes the
 // allocator keep the 2^52 mask, the 0.03125 reload and the u8->f32 conversion temp in retail's f4/f2/f3
 // (rather than the *0.03125f form's f3/f4/f2, which coalesces the conversion into the result).
 // `base`/`t` are function-scope so the two spiral cases share retail's f31 base / f30 t.
 void effKissMain(EffectEntry* effect) {
 	KissEffectWork* data = effect->userdata;
-#ifdef MUST_MATCH
-	/* MUST_MATCH: retail builds the Vec in a scratch and copies it to a second local before
+	/* retail builds the Vec in a scratch and copies it to a second local before
 	   dispCalcZ; a single local folds the copy away. */
 	Vec position;
-#endif
 	Vec disp = (Vec){ 0.0f, 0.0f, 0.0f };
 	s32 type;
 	s32 i;
@@ -191,9 +179,7 @@ void effKissMain(EffectEntry* effect) {
 	disp.x = data->x;
 	disp.y = data->y;
 	disp.z = data->z;
-#ifdef MUST_MATCH
 	position = disp;
-#endif
 
 	type = data->type;
 	angle = data->angle;
@@ -233,25 +219,15 @@ void effKissMain(EffectEntry* effect) {
 		base = 6.2831855f * angle;
 		for (i = 1; i < effect->count; i++, data++) {
 			if ((u32)data->frame < 24) {
-#ifdef MUST_MATCH
-				/* MUST_MATCH: the /32.0f nudge (the natural * 0.03125f is in #else). */
+				/* the /32.0f division is the register-allocation nudge */
 				f32 radius = (f32)kuri_kiss[data->frame * 3] / 32.0f;
-#else
-				f32 radius = (f32)kuri_kiss[data->frame * 3] * 0.03125f;
-#endif
 				radius *= 1.2f;
 				t = base / 360.0f;
 				data->x = radius * (f32)sin(t);
 				data->y = radius * (f32)cos(t);
-#ifdef MUST_MATCH
-				/* MUST_MATCH: the /32 division (rather than the *0.03125f in the #else) is the
-				   register-allocation nudge; the constant folds and the instruction stream matches. */
+				/* same /32 division nudge; the constant folds to the same float */
 				data->scaleX = (f32)kuri_kiss[data->frame * 3 + 1] / 32.0f;
 				data->scaleY = (f32)kuri_kiss[data->frame * 3 + 2] / 32.0f;
-#else
-				data->scaleX = (f32)kuri_kiss[data->frame * 3 + 1] * 0.03125f;
-				data->scaleY = (f32)kuri_kiss[data->frame * 3 + 2] * 0.03125f;
-#endif
 				data->rot = (f32)kuri_kiss_r[data->frame];
 				data->frame++;
 			}
@@ -262,24 +238,15 @@ void effKissMain(EffectEntry* effect) {
 		base = 6.2831855f * angle;
 		for (i = 1; i < effect->count; i++, data++) {
 			if ((u32)data->frame < 39) {
-#ifdef MUST_MATCH
-				/* MUST_MATCH: the /32.0f nudge (the natural * 0.03125f is in #else). */
+				/* the /32.0f division is the register-allocation nudge */
 				f32 radius = (f32)kura_kiss[data->frame * 3] / 32.0f;
-#else
-				f32 radius = (f32)kura_kiss[data->frame * 3] * 0.03125f;
-#endif
 				radius *= 1.2f;
 				t = base / 360.0f;
 				data->x = radius * (f32)sin(t);
 				data->y = radius * (f32)cos(t);
-#ifdef MUST_MATCH
-				/* MUST_MATCH: same /32 nudge as case 1. */
+				/* same /32 division nudge as case 1 */
 				data->scaleX = (f32)kura_kiss[data->frame * 3 + 1] / 32.0f;
 				data->scaleY = (f32)kura_kiss[data->frame * 3 + 2] / 32.0f;
-#else
-				data->scaleX = (f32)kura_kiss[data->frame * 3 + 1] * 0.03125f;
-				data->scaleY = (f32)kura_kiss[data->frame * 3 + 2] * 0.03125f;
-#endif
 				data->frame++;
 			}
 		}
@@ -306,23 +273,14 @@ void effKissMain(EffectEntry* effect) {
 	}
 	}
 
-#ifdef MUST_MATCH
 	if (type == 4 || type == 5) {
 		dispEntry(CAMERA_3D, dispCalcZ(&position), 2, effKissDisp2, effect);
 	} else {
 		dispEntry(CAMERA_3D, dispCalcZ(&position), 2, effKissDisp, effect);
 	}
-#else
-	if (type == 4 || type == 5) {
-		dispEntry(CAMERA_3D, dispCalcZ(&disp), 2, effKissDisp2, effect);
-	} else {
-		dispEntry(CAMERA_3D, dispCalcZ(&disp), 2, effKissDisp, effect);
-	}
-#endif
 }
 
-#ifdef MUST_MATCH
-/* MUST_MATCH: building the colour inside the helper that issues GXSetChanMatColor (instead of
+/* Building the colour inside the helper that issues GXSetChanMatColor (instead of
    returning it and passing it by value) puts the helper's colour local directly below retail's
    by-value argument copy, per call. eff_teresa.c/effThunderDisp use the same idiom. */
 static inline void effKissChanAlpha(const void* src, s32 a) {
@@ -344,13 +302,6 @@ static inline void effKissChanRot(const void* src, const u8* rgb, s32 a) {
 	color.a = a;
 	GXSetChanMatColor(GX_COLOR0A0, color);
 }
-#else
-static inline GXColor effKissAlphaColor(const void* src, s32 a) {
-	GXColor c = *(const GXColor*)src;
-	c.a = a;
-	return c;
-}
-#endif
 
 // Building each GXColor inside the helper that calls GXSetChanMatColor (rather than returning it and
 // letting the caller pass it by value) reproduces retail's stack layout: the helper's colour local lands
@@ -426,18 +377,9 @@ void effKissDisp(CameraId camId, void* param) {
 				GXLoadTexObj(&tex, GX_TEXMAP0);
 				if (pass == 0) {
 					offset = 1.5f;
-#ifdef MUST_MATCH
 					effKissChanAlpha(&unk_80423310, alpha / 2);
-#else
-					GXSetChanMatColor(GX_COLOR0A0, effKissAlphaColor(&unk_80423310, alpha / 2));
-#endif
 				} else {
-#ifdef MUST_MATCH
 					effKissChanKiss(type, alpha);
-#else
-					((u8*)&kiss_col[type])[3] = alpha;
-					GXSetChanMatColor(GX_COLOR0A0, *(GXColor*)&kiss_col[type]);
-#endif
 				}
 				rectH = 8.0f;
 				texU = 2.0f;
@@ -448,30 +390,13 @@ void effKissDisp(CameraId camId, void* param) {
 				if (pass == 0) {
 					effGetTexObj(0x59, &tex);
 					GXLoadTexObj(&tex, GX_TEXMAP0);
-#ifdef MUST_MATCH
 					effKissChanRot(&unk_80423314, (const u8*)color_rotation_data + frameIdx, alpha);
-#else
-					{
-						GXColor color;
-
-						color = *(GXColor*)&unk_80423314;
-						color.r = ((u8*)color_rotation_data)[frameIdx];
-						color.g = ((u8*)color_rotation_data)[frameIdx + 1];
-						color.b = ((u8*)color_rotation_data)[frameIdx + 2];
-						color.a = alpha;
-						GXSetChanMatColor(GX_COLOR0A0, color);
-					}
-#endif
 					rectW = 32.0f;
 					rectH = 40.0f;
 				} else {
 					effGetTexObj(0x58, &tex);
 					GXLoadTexObj(&tex, GX_TEXMAP0);
-#ifdef MUST_MATCH
 					effKissChanAlpha(&str_804213F0, alpha);
-#else
-					GXSetChanMatColor(GX_COLOR0A0, effKissAlphaColor(&str_804213F0, alpha));
-#endif
 					rectW = 20.0f;
 					rectH = 32.0f;
 				}
@@ -505,8 +430,7 @@ void effKissDisp(CameraId camId, void* param) {
 			GXSetCurrentMtx(GX_PNMTX0);
 			GXBegin(GX_QUADS, GX_VTXFMT0, 4);
 			if (type == 3) {
-#ifdef MUST_MATCH
-				// MUST_MATCH: a named 0.5f local makes MWCC emit rectW/rectH as the first fmuls operand like retail.
+				// a named 0.5f local makes MWCC emit rectW/rectH as the first fmuls operand like retail.
 				f32 h = 0.5f;
 				GXPosition3f32(-rectW * h, rectH * h, 0.0f);
 				GXTexCoord2f32(0.0f, 0.0f);
@@ -516,19 +440,8 @@ void effKissDisp(CameraId camId, void* param) {
 				GXTexCoord2f32(texU, texV);
 				GXPosition3f32(-rectW * h, -rectH * h, 0.0f);
 				GXTexCoord2f32(0.0f, texV);
-#else
-				GXPosition3f32(-rectW * 0.5f, rectH * 0.5f, 0.0f);
-				GXTexCoord2f32(0.0f, 0.0f);
-				GXPosition3f32(rectW * 0.5f, rectH * 0.5f, 0.0f);
-				GXTexCoord2f32(texU, 0.0f);
-				GXPosition3f32(rectW * 0.5f, -rectH * 0.5f, 0.0f);
-				GXTexCoord2f32(texU, texV);
-				GXPosition3f32(-rectW * 0.5f, -rectH * 0.5f, 0.0f);
-				GXTexCoord2f32(0.0f, texV);
-#endif
 			} else {
-#ifdef MUST_MATCH
-				// MUST_MATCH: same as the type-3 branch: keeps rectW first in the fmuls.
+				// same as the type-3 branch: keeps rectW first in the fmuls.
 				f32 h = 0.5f;
 				GXPosition3f32(-rectW * h, rectH, 0.0f);
 				GXTexCoord2f32(0.0f, 0.0f);
@@ -538,16 +451,6 @@ void effKissDisp(CameraId camId, void* param) {
 				GXTexCoord2f32(texU, texV);
 				GXPosition3f32(-rectW * h, 0.0f, 0.0f);
 				GXTexCoord2f32(0.0f, texV);
-#else
-				GXPosition3f32(-rectW * 0.5f, rectH, 0.0f);
-				GXTexCoord2f32(0.0f, 0.0f);
-				GXPosition3f32(rectW * 0.5f, rectH, 0.0f);
-				GXTexCoord2f32(texU, 0.0f);
-				GXPosition3f32(rectW * 0.5f, 0.0f, 0.0f);
-				GXTexCoord2f32(texU, texV);
-				GXPosition3f32(-rectW * 0.5f, 0.0f, 0.0f);
-				GXTexCoord2f32(0.0f, texV);
-#endif
 			}
 		}
 	}
@@ -576,12 +479,8 @@ kiss_disp_body:
 		heightScale = 1.15f;
 		texV = 0.5f;
 		for (i = 0; i < 2; i++) {
-#ifdef MUST_MATCH
-			// MUST_MATCH: a second copy of the loop's offset keeps its register different from the first loop's.
-			f32 off2 = 0.0f;
-#else
-			offset = 0.0f;
-#endif
+			// declared per iteration: a separate offset keeps its register different from the first loop's.
+			f32 offset = 0.0f;
 			data = effect->userdata;
 			switch (type) {
 			case 0:
@@ -590,62 +489,28 @@ kiss_disp_body:
 				effGetTexObj(0x42, &tex);
 				GXLoadTexObj(&tex, GX_TEXMAP0);
 				if (i == 0) {
-#ifdef MUST_MATCH
-					off2 = 1.5f;
-#else
 					offset = 1.5f;
-#endif
-#ifdef MUST_MATCH
 					effKissChanAlpha(&unk_80423318, alpha / 2);
-#else
-					GXSetChanMatColor(GX_COLOR0A0, effKissAlphaColor(&unk_80423318, alpha / 2));
-#endif
 				} else {
-#ifdef MUST_MATCH
 					effKissChanKiss(type, alpha);
-#else
-					((u8*)&kiss_col[type])[3] = alpha;
-					GXSetChanMatColor(GX_COLOR0A0, *(GXColor*)&kiss_col[type]);
-#endif
 				}
 				break;
 			case 3:
 				if (i == 0) {
 					effGetTexObj(0x5a, &tex);
 					GXLoadTexObj(&tex, GX_TEXMAP0);
-#ifdef MUST_MATCH
 					effKissChanRot(&unk_8042331c, (const u8*)color_rotation_data + frameIdx, alpha);
-#else
-					{
-						GXColor color;
-
-						color = *(GXColor*)&unk_8042331c;
-						color.r = ((u8*)color_rotation_data)[frameIdx];
-						color.g = ((u8*)color_rotation_data)[frameIdx + 1];
-						color.b = ((u8*)color_rotation_data)[frameIdx + 2];
-						color.a = alpha;
-						GXSetChanMatColor(GX_COLOR0A0, color);
-					}
-#endif
 				} else {
 					effGetTexObj(0x42, &tex);
 					GXLoadTexObj(&tex, GX_TEXMAP0);
-#ifdef MUST_MATCH
 					effKissChanAlpha(&str_804213F4, alpha);
-#else
-					GXSetChanMatColor(GX_COLOR0A0, effKissAlphaColor(&str_804213F4, alpha));
-#endif
 				}
 				break;
 			default:
 				break;
 			}
 
-#ifdef MUST_MATCH
-			PSMTXTrans(mtxA, off2, -off2, 0.0f);
-#else
 			PSMTXTrans(mtxA, offset, -offset, 0.0f);
-#endif
 			PSMTXRotRad(rot, 'z', negAngleDeg);
 			PSMTXConcat(rot, mtxA, mtxA);
 			PSMTXConcat(view, mtxA, mtxA);
@@ -654,8 +519,7 @@ kiss_disp_body:
 			GXSetCurrentMtx(GX_PNMTX0);
 			GXBegin(GX_QUADS, GX_VTXFMT0, 4);
 			{
-#ifdef MUST_MATCH
-				// MUST_MATCH: loop-local h/w keep the vertex temps in retail's scratch FPRs and texV supplies 0.5.
+				// loop-local h/w keep the vertex temps in retail's scratch FPRs and texV supplies 0.5.
 				f32 h = heightScale * data[1].y;
 				f32 w = 1.0f;
 				if (type == 3 && i == 0) {
@@ -669,21 +533,6 @@ kiss_disp_body:
 				GXTexCoord2f32(1.0f, 1.0f);
 				GXPosition3f32(-w * texV, 0.0f, 0.0f);
 				GXTexCoord2f32(0.0f, 1.0f);
-#else
-				rectH = heightScale * data[1].y;
-				texU = 1.0f;
-				if (type == 3 && i == 0) {
-					texU = 2.0f;
-				}
-				GXPosition3f32(-texU * 0.5f, rectH, 0.0f);
-				GXTexCoord2f32(0.0f, 0.0f);
-				GXPosition3f32(texU * 0.5f, rectH, 0.0f);
-				GXTexCoord2f32(1.0f, 0.0f);
-				GXPosition3f32(texU * 0.5f, 0.0f, 0.0f);
-				GXTexCoord2f32(1.0f, 1.0f);
-				GXPosition3f32(-texU * 0.5f, 0.0f, 0.0f);
-				GXTexCoord2f32(0.0f, 1.0f);
-#endif
 			}
 		}
 #ifdef MUST_MATCH
@@ -695,14 +544,12 @@ kiss_disp_body:
 #endif
 }
 
-#ifdef MUST_MATCH
-// MUST_MATCH: building the GXColor through an inline return puts the colour temp where retail keeps it.
+// building the GXColor through an inline return puts the colour temp where retail keeps it.
 static inline GXColor effKissDisp2Color(u8 alpha) {
 	GXColor c = *(GXColor*)&dat_804213f8;
 	c.a = alpha;
 	return c;
 }
-#endif
 
 // 100% matched. The colour inline puts the by-value GXColor temp in retail's slot; the vertex half-width
 // is `eight / 2.0f` in the loop (MWCC hoists it); splitting the yaw angle into two statements lands the negate and
@@ -753,12 +600,7 @@ void effKissDisp2(CameraId camId, void* param) {
 	GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, GX_TEX_ST, GX_F32, 0);
 	effGetTexObj(0x14, &texObj);
 	GXLoadTexObj(&texObj, GX_TEXMAP0);
-#ifdef MUST_MATCH
 	color = effKissDisp2Color(alpha);
-#else
-	color = *(GXColor*)&dat_804213f8;
-	color.a = alpha;
-#endif
 	GXSetChanMatColor(GX_COLOR0A0, color);
 
 	eight = 8.0f;
