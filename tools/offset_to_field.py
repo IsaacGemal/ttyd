@@ -9,6 +9,9 @@
                                                                            build stays byte-identical
 
 With no PATH the whole tree (src/, rels/*/src) is scanned. A PATH may be a file or a directory.
+Add `--compile-commands FILE` (configure.py's compile_commands.json from a built tree) for per-file include
+paths and defines, `--dwarf FILE` (from `--dwarf-index` on a built tree) to check every rewrite against MWCC's
+own layout, and `--skip-base TAG` to leave a struct's casts alone.
 
     *(f32*)((u8*)unit + 0x174)          ->  unit->moveSpeedY
     (Vec*)((u8*)pl + 0x98)              ->  &pl->pos
@@ -46,12 +49,21 @@ try:
     K = ci.CursorKind
 except ImportError:
     ci = None  # only --dwarf-index works without it
-BASE_ARGS = [
+CLANG_ARGS = [
     "-target", "powerpc-unknown-eabi", "-fsyntax-only", "-ferror-limit=0", "-funsigned-char", "-fdeclspec",
-    "-nostdinc", "-w", "-Iinclude", "-Ilibs/dolsdk2004/include", "-Ilibs/dolsdk2004/include/libc",
-    "-Ilibs/musyx/include", "-Ibuild/G8MJ01/include", "-DBUILD_VERSION=0", "-DVERSION_G8MJ01",
-    "-DSDK_REVISION=1", "-DMUST_MATCH", "-DNDEBUG=1",
+    "-nostdinc", "-w",
+    # MWCC-isms clang would otherwise reject: musyx's C `bool`, its fabs intrinsics, loose function pointers
+    "-Dbool=_Bool", "-D__fabsf=__builtin_fabsf", "-Wno-error=incompatible-function-pointer-types",
+    "-Wno-error=implicit-function-declaration", "-Wno-error=int-conversion",
 ]
+# used when there is no compile_commands.json (configure.py writes one next to build.ninja)
+DEFAULT_FLAGS = [
+    "-Iinclude", "-Ilibs/dolsdk2004/include", "-Ilibs/dolsdk2004/include/libc", "-Ilibs/musyx/include",
+    "-Ibuild/G8MJ01/include", "-DBUILD_VERSION=0", "-DVERSION_G8MJ01", "-DSDK_REVISION=1", "-DMUST_MATCH",
+    "-DNDEBUG=1", "-DMUSY_VERSION_MAJOR=2", "-DMUSY_VERSION_MINOR=0", "-DMUSY_VERSION_PATCH=3",
+]
+COMPILE_FLAGS = {}  # source path -> its -I/-D flags, from compile_commands.json
+STUB_DIR = None     # empty stand-ins for generated includes that aren't on this machine
 U8_CAST = re.compile(r"\(\s*u8\s*\*\s*\)")
 INT_LIT = re.compile(r"(0[xX][0-9A-Fa-f]+|\d+)[uUlL]*")
 SIMPLE = re.compile(r"[A-Za-z_]\w*(\s*(->|\.)\s*[A-Za-z_]\w*|\s*\[[^\[\]]*\])*")
@@ -87,12 +99,65 @@ def short_enum_headers():
     return _SHORT_ENUM_HEADERS
 
 
+def load_compile_commands(path):
+    import json
+    for e in json.loads(Path(path).read_text()):
+        d = Path(e["directory"])
+        f = Path(e["file"])
+        try:
+            rel = (f.relative_to(d) if f.is_absolute() else f).as_posix()
+        except ValueError:
+            continue
+        args = e.get("arguments") or e["command"].split()
+        flags, i = [], 0
+        while i < len(args):
+            a = args[i]
+            if a in ("-I", "-D", "-U") and i + 1 < len(args):
+                flags.append(a + args[i + 1])
+                i += 1
+            elif a.startswith(("-I", "-D", "-U")):
+                flags.append(a)
+            i += 1
+        COMPILE_FLAGS[rel] = flags
+
+
 def clang_args(rel):
-    args = list(BASE_ARGS)
-    parts = rel.split("/")
-    if parts[0] == "rels":
-        args.append(f"-Irels/{parts[1]}/include")
+    flags = COMPILE_FLAGS.get(rel)
+    if flags is None:
+        flags = list(DEFAULT_FLAGS)
+        parts = rel.split("/")
+        if parts[0] == "rels":
+            flags.append(f"-Irels/{parts[1]}/include")
+    args = CLANG_ARGS + flags
+    if STUB_DIR:
+        args.append(f"-idirafter{STUB_DIR}")
     return args
+
+
+def parse(rel, text):
+    """libclang TU for one source; generated includes this machine lacks are stubbed empty and the parse retried."""
+    global STUB_DIR
+    path = ROOT / rel
+    for _ in range(8):
+        tu = ci.Index.create().parse(str(path), args=clang_args(rel),
+                                     unsaved_files=[(str(path), text)] + short_enum_headers())
+        missing = [re.match(r"'(.+)' file not found", d.spelling) for d in tu.diagnostics if d.severity >= 4]
+        missing = [m.group(1) for m in missing if m]
+        if not missing:
+            return tu
+        if STUB_DIR is None:
+            import tempfile
+            STUB_DIR = tempfile.mkdtemp(prefix="offset_to_field-stubs-")
+        made = False
+        for name in missing:
+            stub = Path(STUB_DIR) / name
+            if not stub.exists():
+                stub.parent.mkdir(parents=True, exist_ok=True)
+                stub.write_text("")
+                made = True
+        if not made:
+            return tu
+    return tu
 
 
 DWARF_MEMBER = re.compile(r"^( *)(.*?)\b(\w+)(\[[^\]]*\])*; // offset 0x([0-9A-Fa-f]+), size 0x([0-9A-Fa-f]+)$")
@@ -448,8 +513,7 @@ def analyse(rel, text=None):
     if text is None:
         text = path.read_text(errors="replace")
     raw = text.encode("utf-8", errors="surrogateescape")
-    tu = ci.Index.create().parse(str(path), args=clang_args(rel),
-                                 unsaved_files=[(str(path), text)] + short_enum_headers())
+    tu = parse(rel, text)
     mm, defs = must_match_mask(text), define_mask(text)
     main = str(path)
 
@@ -764,6 +828,8 @@ def main():
     ap.add_argument("--list", action="store_true", help="print every site")
     ap.add_argument("--only", help="with --list: only sites with this outcome")
     ap.add_argument("--dwarf", help="JSON from --dwarf-index: skip sites where clang's layout disagrees with MWCC's")
+    ap.add_argument("--compile-commands", help="per-file include paths and defines (default: "
+                    "compile_commands.json at the repo root, which configure.py writes; else built-in defaults)")
     ap.add_argument("--skip-base", action="append", default=[], metavar="TAG",
                     help="leave casts on this struct (tag name) alone; repeatable")
     ap.add_argument("--dwarf-index", metavar="OUT", help="(on a built tree, no libclang needed) write the "
@@ -775,6 +841,11 @@ def main():
     if ci is None:
         sys.exit("needs libclang: run as `uv run --with libclang tools/offset_to_field.py ...`")
     SKIP_BASES.update(a.skip_base)
+    cc = Path(a.compile_commands) if a.compile_commands else ROOT / "compile_commands.json"
+    if cc.exists():
+        load_compile_commands(cc)
+    elif a.compile_commands:
+        sys.exit(f"{cc} not found")
     if a.dwarf:
         import json
         DWARF.update(json.loads(Path(a.dwarf).read_text()))
