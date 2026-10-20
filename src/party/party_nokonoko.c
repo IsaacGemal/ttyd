@@ -33,7 +33,7 @@ static const f32 float_0 = 0.0f;
 static const f32 float_neg1 = -1.0f;
 
 #ifdef MUST_MATCH
-// MUST_MATCH: nokonoko_use reads the pose names (str_802CE150/158) as offsets from this first .rodata object.
+// MUST_MATCH: nokonoko_use reads the pose names (str_PNK_K_2/158) as offsets from this first .rodata object.
 #define NK_STR(off, lit) (lit)
 #else
 #define NK_STR(off, lit) (lit)

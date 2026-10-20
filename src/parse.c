@@ -6,7 +6,7 @@
 ParseWork parse;
 
 const char str_8041A6B0[4] = "%d";
-const char str_8041A6B4[4] = "%f";
+const char str_fmt_f[4] = "%f";
 void parseInit(void* ptr, u32 size) {
 	parse.ptr = ptr;
 	parse.field_0x54 = 0;
@@ -225,7 +225,7 @@ BOOL parseGet1Next(s32 type, void* data) {
 			break;
 		case 2:
 			// Float: scanf with "%f".
-			sscanf((const char*)&base[tokenStart], str_8041A6B4, data);
+			sscanf((const char*)&base[tokenStart], str_fmt_f, data);
 			p[0] = tokenEnd;
 			break;
 		default:

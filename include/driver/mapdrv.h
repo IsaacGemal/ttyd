@@ -359,5 +359,5 @@ typedef struct MapFileAnimEntry {
     u8 field_0x1C[0x20 - 0x1C]; // 0x1C
 } MapFileAnimEntry;
 extern const char str_80419848[];
-extern const char str_804198D0[];
+extern const char str_s_s[];
 void* mapSearchDmdJoint(void* a, s8* b);

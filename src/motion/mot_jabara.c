@@ -325,18 +325,18 @@ static inline void jabaraFreeWork(void) {
 
 // .rodata strings; the compound-literal templates above pool ahead of them.
 const char str_802C5BB8[] = "M_J_1A";
-const char str_802C5BC0[] = "p_jyabara";
-const char str_802C5BCC[] = "PM_J_1B";
-const char str_802C5BD4[] = "PM_J_3B";
-const char str_802C5BDC[] = "PM_J_2B";
+const char str_p_jyabara[] = "p_jyabara";
+const char str_PM_J_1B[] = "PM_J_1B";
+const char str_PM_J_3B[] = "PM_J_3B";
+const char str_PM_J_2B[] = "PM_J_2B";
 const char str_802C5BE4[] = "M_J_5A";
-const char str_802C5BEC[] = "PM_J_1C";
+const char str_PM_J_1C[] = "PM_J_1C";
 const char str_802C5BF4[] = "M_J_1C";
-const char str_802C5BFC[] = "PM_J_1D";
-const char str_802C5C04[] = "eki_02";
-const char str_802C5C0C[] = "PM_J_1F";
-const char str_802C5C14[] = "PM_J_1G";
-const char str_802C5C1C[] = "PM_J_1H";
+const char str_PM_J_1D[] = "PM_J_1D";
+const char str_eki_02[] = "eki_02";
+const char str_PM_J_1F[] = "PM_J_1F";
+const char str_PM_J_1G[] = "PM_J_1G";
+const char str_PM_J_1H[] = "PM_J_1H";
 __declspec(section ".rodata") const u32 gap_04_802C5C24_rodata = 0;
 const f64 double_1p5708_802c5c28 = 1.5707963705062866;
 
@@ -368,10 +368,10 @@ extern const f32 float_0p6_8041ab78;
 extern const f32 float_neg0p6_8041ab7c;
 extern const f32 float_3p1416_8041ab80;
 extern const f32 float_neg1_8041ab84;
-extern __declspec(section ".sdata2") const char str_8041AB88[8];
+extern __declspec(section ".sdata2") const char str_M_S_4[8];
 extern const f32 float_10_8041ab90;
 extern const f32 float_1_8041ab94;
-extern __declspec(section ".sdata2") const char str_8041AB98[8];
+extern __declspec(section ".sdata2") const char str_M_W_6[8];
 extern const f32 float_90_8041aba0;
 extern const f32 float_270_8041aba4;
 extern const f32 float_neg0p5_8041aba8;
@@ -482,8 +482,8 @@ void mot_jabara(void) {
         mario->baseSpeed = 0.0f;
         mario->currSubMotionId = 0xA;
         marioChgPose(RSTR(0x30, str_802C5BB8));
-        marioPaperOn(RSTR(0x38, str_802C5BC0));
-        marioChgPaper(RSTR(0x44, str_802C5BCC));
+        marioPaperOn(RSTR(0x38, str_p_jyabara));
+        marioChgPaper(RSTR(0x44, str_PM_J_1B));
         mario->field_0x11C = mario->position;
         marioChkGnd();
         if (mario->currMotionId != MARIO_MOTION_JABARA) {
@@ -524,7 +524,7 @@ void mot_jabara(void) {
                     ((JabaraWork*)marioGetPtr()->motStruct)->flags |= 0x40000;
                     psndSFXOn_3D((const char*)0x184, &mario->position);
                 }
-                marioChgPaper(RSTR(0x4C, str_802C5BD4));
+                marioChgPaper(RSTR(0x4C, str_PM_J_3B));
                 MW_U8(mario, 0x42) = 3;
                 jabaraSetCamParam(0.4f, 0.005f, 1.7f);
             } else if (jt == 2) {
@@ -532,7 +532,7 @@ void mot_jabara(void) {
                     ((JabaraWork*)marioGetPtr()->motStruct)->flags |= 0x20000;
                     psndSFXOn_3D((const char*)0x183, &mario->position);
                 }
-                marioChgPaper(RSTR(0x54, str_802C5BDC));
+                marioChgPaper(RSTR(0x54, str_PM_J_2B));
                 MW_U8(mario, 0x42) = 2;
                 jabaraSetCamParam(0.3f, 0.005f, 1.6f);
             }
@@ -569,7 +569,7 @@ void mot_jabara(void) {
             mario2->unk150.z = JABARA_F32(float_0p01_8041aaf0);
             camFollowYOff();
             marioChgPose(RSTR(0x5C, str_802C5BE4));
-            marioChgPaper(RSTR(0x64, str_802C5BEC));
+            marioChgPaper(RSTR(0x64, str_PM_J_1C));
             psndSFXOn_3D((const char*)0x20185, &mario->position);
             psndSFXOn_3D((const char*)0x200B5, &mario->position);
             {
@@ -668,7 +668,7 @@ void mot_jabara(void) {
         break;
     case 30:
         marioChgPose(RSTR(0x6C, str_802C5BF4));
-        marioChgPaper(RSTR(0x74, str_802C5BFC));
+        marioChgPaper(RSTR(0x74, str_PM_J_1D));
         marioSetFallPara();
         mario->currSubMotionId = 0x1F;
         /* fallthrough */
@@ -696,7 +696,7 @@ void mot_jabara(void) {
     }
     switch (mario->currSubMotionId) {
     case 0x28:
-        if (strcmp(gp->currentMapName, RSTR(0x7C, str_802C5C04)) == 0) {
+        if (strcmp(gp->currentMapName, RSTR(0x7C, str_eki_02)) == 0) {
             if (mario->position.x >= JABARA_F32(float_neg450_8041ab5c) && mario->position.x <= JABARA_F32(float_neg190_8041ab60)) {
                 mario->flags |= 0x400;
             }
@@ -705,7 +705,7 @@ void mot_jabara(void) {
         evtEntryType(quake_evt, 0, 0, 0);
         marioClearJumpPara();
         marioChgPose(RSTR(0x5C, str_802C5BE4));
-        marioChgPaper(RSTR(0x84, str_802C5C0C));
+        marioChgPaper(RSTR(0x84, str_PM_J_1F));
         mario->jabaraAnimTime = 1;
         mario->poseTime = MW_S8(mario, 0x2BB);
         mario->dispOfs.y = JABARA_F32(float_neg8_8041ab64);
@@ -731,7 +731,7 @@ void mot_jabara(void) {
         animPoseSetLocalTime(mario->paperAnimGroupId[marioAnimeId()], (f32)(s8)mario->jabaraAnimTime);
         if (++MW_S8(mario, 0x2BB) >= 0x10) {
             mario->jabaraAnimTime = 0x10;
-            marioChgPaper(RSTR(0x8C, str_802C5C14));
+            marioChgPaper(RSTR(0x8C, str_PM_J_1G));
             marioPaperLightOff();
             mario->currSubMotionId = 0x2B;
             mario->multiTimer = 0x18;
@@ -742,7 +742,7 @@ void mot_jabara(void) {
             break;
         }
         marioChgPose(str_8041AB70);
-        marioChgPaper(RSTR(0x94, str_802C5C1C));
+        marioChgPaper(RSTR(0x94, str_PM_J_1H));
         marioPaperLightOff();
         mario->currSubMotionId = 0x32;
         mario->jabaraAnimTime = 0;
@@ -862,7 +862,7 @@ void mot_jabara(void) {
                         s32 t = mario->multiTimer;
                         mario->multiTimer = t - 1;
                         if (t <= 0) {
-                            marioChgPose(str_8041AB88);
+                            marioChgPose(str_M_S_4);
                             mario->currSubMotionId = 0x47;
                         }
                     }
@@ -925,7 +925,7 @@ void mot_jabara(void) {
                             s32 wall;
                             f32 move;
 
-                            marioChgPose(str_8041AB98);
+                            marioChgPose(str_M_W_6);
                             mario2 = marioGetPtr();
                             if (mario2->jabaraState == 0) {
                                 mario2->jabaraState = 1;
@@ -1053,10 +1053,10 @@ __declspec(section ".sdata2") const f32 float_0p6_8041ab78 = 0.6f;
 __declspec(section ".sdata2") const f32 float_neg0p6_8041ab7c = -0.6f;
 __declspec(section ".sdata2") const f32 float_3p1416_8041ab80 = 3.1415927f;
 __declspec(section ".sdata2") const f32 float_neg1_8041ab84 = -1.0f;
-__declspec(section ".sdata2") const char str_8041AB88[8] = "M_S_4";
+__declspec(section ".sdata2") const char str_M_S_4[8] = "M_S_4";
 __declspec(section ".sdata2") const f32 float_10_8041ab90 = 10.0f;
 __declspec(section ".sdata2") const f32 float_1_8041ab94 = 1.0f;
-__declspec(section ".sdata2") const char str_8041AB98[8] = "M_W_6";
+__declspec(section ".sdata2") const char str_M_W_6[8] = "M_W_6";
 __declspec(section ".sdata2") const f32 float_90_8041aba0 = 90.0f;
 __declspec(section ".sdata2") const f32 float_270_8041aba4 = 270.0f;
 __declspec(section ".sdata2") const f32 float_neg0p5_8041aba8 = -0.5f;

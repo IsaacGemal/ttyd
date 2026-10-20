@@ -884,7 +884,7 @@ static const char* boxNames[] = {
 };
 
 #include "math_ext.h"  // external MSL math ABI. Using <math.h> instead emits the inline sqrtf/sqrt
-                     // weak-local `_half`/`_three` doubles at str_802CDB20+0x210, which shifts every
+                     // weak-local `_half`/`_three` doubles at str_MOBJ_TreasureBox+0x210, which shifts every
                      // function's pooled Vec/angle constants up by 0x24 and costs the whole unit
 
 s32 partyHitIsBoxMobj(HitEntry* hit) {
@@ -2620,7 +2620,7 @@ static void flyMain(PartyEntry* party) {
 // rather than the position output, and the two `>= 0` guards that make MWCC emit the target's
 // `blt` skip-to-fallthrough branches.
 // Matching depends on math_ext.h above: with <math.h> the compiler moves the inline sqrtf doubles
-// to str_802CDB20+0x210 and all 32 pooled Vec templates shift by 0x24.
+// to str_MOBJ_TreasureBox+0x210 and all 32 pooled Vec templates shift by 0x24.
 BOOL partyGetAppearPos(PartyEntry* party, Vec* position) {
     MarioWork* player = party->playerPtr;
     HitCheckQuery query;
@@ -2944,11 +2944,11 @@ BOOL partyGetAppearPos(PartyEntry* party, Vec* position) {
 // stack offsets and control flow match.
 //
 // The original's Vec templates are the target's named rodata pool entries
-// (vec3_802cdeac..vec3_802cdf30) at str_802CDB20+0x38c..0x41c, addressed through one base register
-// (r31, base str_802CDB20, the first rodata string) live across the whole function.
+// (vec3_802cdeac..vec3_802cdf30) at str_MOBJ_TreasureBox+0x38c..0x41c, addressed through one base register
+// (r31, base str_MOBJ_TreasureBox, the first rodata string) live across the whole function.
 // `#include <math.h>` used to emit the inline sqrtf/sqrt weak-local `_half`/`_three` doubles at
-// str_802CDB20+0x210, which gave every function a per-object constant base instead of the single
-// pooled str_802CDB20 base. Swapping it for `#include "math_ext.h"` (external MSL math ABI, no
+// str_MOBJ_TreasureBox+0x210, which gave every function a per-object constant base instead of the single
+// pooled str_MOBJ_TreasureBox base. Swapping it for `#include "math_ext.h"` (external MSL math ABI, no
 // inline bodies) restores the pooled base: partyGetAppearPos and partyGetAppearPos4 jumped to
 // 100% and no other function regressed.
 // Tried and reverted (none beat 74.24%): `#pragma pool_data on`; named `const Vec` globals
@@ -3059,7 +3059,7 @@ false_ret:
 }
 #undef PARTY_APPEARPOS2_FAIL
 
-// With math_ext.h + pool_data the constants share str_802CDB20, but every angle/Vec literal offset
+// With math_ext.h + pool_data the constants share str_MOBJ_TreasureBox, but every angle/Vec literal offset
 // still lands at 0x29c.. instead of 0x41c.. (0x180 of other functions' .rodata is missing until the
 // whole unit is finished), plus a few fpr/stack slots follow the same shift. Declaring `u32 i` first
 // and the `targetDist` initializer before `unk1AC` fixed the r26/r27 and f25/f26 swaps.
@@ -3162,7 +3162,7 @@ BOOL partyGetAppearPos3(PartyEntry* party, Vec* position) {
 }
 
 // The original pools the five angle tables into one interleaved .rodata blob (base
-// str_802CDB20) and copies them with a sliding-window scheduler. Declaring the tables
+// str_MOBJ_TreasureBox) and copies them with a sliding-window scheduler. Declaring the tables
 // E,D,C,B,A puts them in retail's order in the pool and drives the sliding-window copy.
 //
 // The pool base only forms if the translation unit's first .rodata object is a named
@@ -3172,7 +3172,7 @@ BOOL partyGetAppearPos3(PartyEntry* party, Vec* position) {
 // base instead of the single pooled r31 base, which cost this function (and Pos2/3/5 and
 // partyGetMoveDirSpd) ~20 points each. With `#include "math_ext.h"` above, no inline sqrtf/sqrt
 // bodies are emitted at all, so the first .rodata object stays boxNames[] and the pooled
-// str_802CDB20 base forms; the retail sqrtf statics at .rodata+0x600 come from the functions' own
+// str_MOBJ_TreasureBox base forms; the retail sqrtf statics at .rodata+0x600 come from the functions' own
 // `const f64 _half`/`_three` locals instead.
 //
 // Keeping the Vec locals uninitialized and assigning `pos1 = (Vec){0,0,0}` etc. inside the
@@ -3185,7 +3185,7 @@ BOOL partyGetAppearPos3(PartyEntry* party, Vec* position) {
 // file already uses for that array. Like the original the fallback loop reads one entry past
 // the end of each angle table on its last pass.
 // Matching depends on both the <math.h>->math_ext.h swap at the top of the file and the pooled
-// str_802CDB20 base.
+// str_MOBJ_TreasureBox base.
 BOOL partyGetAppearPos4(PartyEntry* party, Vec* position) {
     PartyEntry* other = NULL;
     MarioWork* player = party->playerPtr;

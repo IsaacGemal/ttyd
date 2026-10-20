@@ -14,9 +14,9 @@
 
 // Data objects defined later in this file or in other units, declared before their first use.
 extern const char zero_8041a6b8[4];
-extern const char str_8041A6BC[8];
+extern const char str_dir[8];
 extern const f32 float_0_8041a6c4;
-extern const char str_8041A6C8[8];
+extern const char str_Npc[8];
 
 
 // clang-format off
@@ -212,7 +212,7 @@ BOOL setupDataCheck(void) {
         return TRUE;
     }
     parseInit(ptr, size);
-    while (parsePush(str_8041A6C8)) {
+    while (parsePush(str_Npc)) {
         parseTagGet1("<tribe>", 0, tribeName);
         parsePopNext();
         flag = gp->inBattle != 0;
@@ -318,11 +318,11 @@ void setupDataBase(const char* areaName, const char* mapName) {
         return;
     }
     parseInit(ptr, size);
-    for (; parsePush(str_8041A6C8); npcIndex++) {
+    for (; parsePush(str_Npc); npcIndex++) {
         parseTagGet1("<name>", 0, name);
         parseTagGet1("<tribe>", 0, tribeName);
         parseTagGet1("<position>", 3, &position);
-        parseTagGet1(str_8041A6BC, 2, &direction);
+        parseTagGet1(str_dir, 2, &direction);
         parseTagGet1("<aitype>", 0, aitype);
         parseTagGet1("<territory_type>", 0, territoryType);
         parseTagGet1("<territory_base>", 3, &territoryBase);
@@ -405,6 +405,6 @@ no_ai:
 
 // The original keeps these four .sdata2 words as named symbols; see config/G8MJ01/symbols.txt.
 __declspec(section ".sdata2") const char zero_8041a6b8[4] = "";
-__declspec(section ".sdata2") const char str_8041A6BC[8] = "<dir>";
+__declspec(section ".sdata2") const char str_dir[8] = "<dir>";
 __declspec(section ".sdata2") const f32 float_0_8041a6c4 = 0.0f;
-__declspec(section ".sdata2") const char str_8041A6C8[8] = "<Npc>";
+__declspec(section ".sdata2") const char str_Npc[8] = "<Npc>";

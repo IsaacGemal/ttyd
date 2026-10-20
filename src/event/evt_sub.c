@@ -85,7 +85,7 @@ s32 stop;
 
 // Unreferenced in the retail code; first in this unit's .rodata.
 #pragma force_active on
-const char str_802C32B8[8] = "%f%f%f";
+const char str_fmt_fff[8] = "%f%f%f";
 #pragma force_active reset
 
 extern s32 evt_win_one_message[];

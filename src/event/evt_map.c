@@ -26,9 +26,9 @@ EVT_DEF(evt_ride_airport);
 EVT_DEF(evt_nonride_airport);
 
 // .rodata
-const char str_802C1F08[12] = "p_hikohki";
-const char str_802C1F14[8] = "p_hune";
-const char str_802C1F1C[12] = "extparty";
+const char str_p_hikohki[12] = "p_hikohki";
+const char str_p_hune[8] = "p_hune";
+const char str_extparty[12] = "extparty";
 
 // .sdata2
 const u32 dat_80419958 = 0xFF;
@@ -241,7 +241,7 @@ USER_FUNC(evt_map_blend_set_flag) {
             animPoseSetMaterialFlagOff(party->paperAnimGroup, flag);
         }
     }
-    else if (strcmp((const char*)name, str_802C1F1C) == 0) {
+    else if (strcmp((const char*)name, str_extparty) == 0) {
         PartyEntry* party = partyGetPtr(marioGetExtraPartyId());
         if (onoff == 1) {
             animPoseSetMaterialFlagOn(party->paperAnimGroup, flag);
@@ -552,7 +552,7 @@ USER_FUNC(evt_map_entry_airport_harbor) {
     mapGetMapObj((const char*)name);
     switch (mode) {
     case 0:
-        if (animGroupBaseAsync(str_802C1F08, 0, NULL) == 0) {
+        if (animGroupBaseAsync(str_p_hikohki, 0, NULL) == 0) {
             return 0;
         }
         if ((s32)pouchCheckItem(ITEM_PLANE_CURSE) != 1) {
@@ -566,7 +566,7 @@ USER_FUNC(evt_map_entry_airport_harbor) {
         evtRunCaseEntry(1, 0, type, 0, evt_nonride_airport, data);
         break;
     case 1:
-        if (animGroupBaseAsync(str_802C1F14, 0, NULL) == 0) {
+        if (animGroupBaseAsync(str_p_hune, 0, NULL) == 0) {
             return 0;
         }
         if ((s32)pouchCheckItem(ITEM_BOAT_CURSE) != 1) {

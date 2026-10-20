@@ -4905,9 +4905,9 @@ const char* psenvlistname[] = {
 
 // Debug database path strings the original keeps in .rodata but nothing references.
 #pragma force_active on
-const char str_802E5640[40] = "%s/sound/proj/pmario_sound_bgm_txt.db";
-const char str_802E5668[40] = "%s/sound/proj/pmario_sound_env_txt.db";
-const char str_802E5690[40] = "%s/sound/proj/pmario_sound_sfx_txt.db";
+const char str_s_sound_proj_pmario_sound_bgm_txt_db[40] = "%s/sound/proj/pmario_sound_bgm_txt.db";
+const char str_s_sound_proj_pmario_sound_env_txt_db[40] = "%s/sound/proj/pmario_sound_env_txt.db";
+const char str_s_sound_proj_pmario_sound_sfx_txt_db[40] = "%s/sound/proj/pmario_sound_sfx_txt.db";
 #pragma force_active reset
 
 static f32 angleABTBL[] = {
