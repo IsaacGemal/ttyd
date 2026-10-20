@@ -110,7 +110,7 @@ u8 point_data[0x1E0] = {
 	0xEA, 0x32, 0x16, 0x00, 0x00, 0x3D, 0x03, 0xFD, 0xF0, 0xF0, 0xF0, 0x00,
 };
 
-// .data: the small quad the four drops draw; local to this file in the original.
+// .data: the small quad the four bubbles draw; local to this file in the original.
 static u32 size8x8_tex32x32_vtx[14] = {
 	0xFFFCFFFC, 0x00000000, 0x00000000, 0x00FF0004, 0xFFFC0000, 0x04000000, 0x000000FF,
 	0x00040004, 0x00000400, 0x04000000, 0x00FFFFFC, 0x00040000, 0x00000400, 0x000000FF,
@@ -155,10 +155,10 @@ EffectEntry* effOpukuWprotectN64Entry(s32 type, s32 duration, f32 x, f32 y, f32 
 	data->colorB = 0xFF;
 	data->field_0x30 = float_0_8041f890;
 	data->field_0x34 = float_0_8041f890;
-	data->dropTimer[0] = -1;
-	data->dropTimer[1] = -5;
-	data->dropTimer[2] = -9;
-	data->dropTimer[3] = -0xD;
+	data->bubbleTimer[0] = -1;
+	data->bubbleTimer[1] = -5;
+	data->bubbleTimer[2] = -9;
+	data->bubbleTimer[3] = -0xD;
 
 	return effect;
 }
@@ -208,16 +208,16 @@ void effOpukuWprotectMain(EffectEntry* effect) {
 		if (data->lifetime < 0x10) {
 			s32 v = data->lifetime << 4;
 			data->alpha = v;
-			data->alpha2 = v;
+			data->baseAlpha = v;
 		}
 		if (f14 < 0x10) {
 			data->alpha = (f14 << 4) + 0xf;
-			data->alpha2 = (f14 << 4) + 0xf;
+			data->baseAlpha = (f14 << 4) + 0xf;
 		}
 	} else {
 		if (f14 < 4) {
 			data->alpha = (f14 << 6) + 0x3f;
-			data->alpha2 = (f14 << 6) + 0x3f;
+			data->baseAlpha = (f14 << 6) + 0x3f;
 		}
 	}
 
@@ -247,30 +247,30 @@ void effOpukuWprotectMain(EffectEntry* effect) {
 	}
 
 	for (i = 0; i < 4; i++) {
-		data->dropTimer[i]++;
-		if (data->dropTimer[i] < 0) {
+		data->bubbleTimer[i]++;
+		if (data->bubbleTimer[i] < 0) {
 			continue;
 		}
-		if (data->dropTimer[i] == 0) {
-			data->dropX[i] = float_0_8041f890;
-			data->dropY[i] = 240.0f;
-			data->dropVelX[i] = 0.2f * (f32)(rand() % 11 - 5);
-			data->dropVelY[i] = (f32)(rand() % 11 + 2);
-			data->dropScale[i] = (f32)(rand() % 11 + 1);
+		if (data->bubbleTimer[i] == 0) {
+			data->bubbleX[i] = float_0_8041f890;
+			data->bubbleY[i] = 240.0f;
+			data->bubbleVelX[i] = 0.2f * (f32)(rand() % 11 - 5);
+			data->bubbleVelY[i] = (f32)(rand() % 11 + 2);
+			data->bubbleScale[i] = (f32)(rand() % 11 + 1);
 		}
-		data->dropX[i] += data->dropVelX[i];
-		data->dropY[i] += data->dropVelY[i];
-		data->dropVelX[i] *= 0.97f;
-		data->dropVelY[i] += float_0p1_8041f8a4 * (float_10_8041f898 - data->dropVelY[i]);
-		if (data->dropY[i] > 480.0f) {
-			data->dropTimer[i] = -(rand() % 11) - 1;
+		data->bubbleX[i] += data->bubbleVelX[i];
+		data->bubbleY[i] += data->bubbleVelY[i];
+		data->bubbleVelX[i] *= 0.97f;
+		data->bubbleVelY[i] += float_0p1_8041f8a4 * (float_10_8041f898 - data->bubbleVelY[i]);
+		if (data->bubbleY[i] > 480.0f) {
+			data->bubbleTimer[i] = -(rand() % 11) - 1;
 		}
 	}
 
 	dispEntry(CAMERA_3D, dispCalcZ(&pos), 2, effOpukuWprotectDisp, effect);
 }
 
-// The display pass: build the 40-point ring from point_data, draw the four drops,
+// The display pass: build the 40-point ring from point_data, draw the four bubbles,
 // then two indexed passes over the built vertices. Every coordinate conversion is
 // integer magic (fctiwz + lfd/fsubs), so no inline asm is needed.
 #ifdef MUST_MATCH
@@ -309,7 +309,7 @@ void effOpukuWprotectDisp(CameraId camId, void* param) {
 	WprotectVtx* p;
 	WprotectPoint* point;
 	GXTexObj texObj;
-	Mtx drop;
+	Mtx bubble;
 	Mtx scale;
 	Mtx trans;
 #ifndef MUST_MATCH
@@ -375,10 +375,10 @@ void effOpukuWprotectDisp(CameraId camId, void* param) {
 	GXSetTevColor(GX_TEVREG0, color1);
 #endif
 #ifdef MUST_MATCH
-	wprotectColor2(data->alpha2);
+	wprotectColor2(data->baseAlpha);
 #else
 	color2 = dat_8041f88c;
-	color2.a = data->alpha2;
+	color2.a = data->baseAlpha;
 	GXSetTevColor(GX_TEVREG1, color2);
 #endif
 	GXSetNumChans(0);
@@ -397,15 +397,15 @@ void effOpukuWprotectDisp(CameraId camId, void* param) {
 	GXSetCullMode(GX_CULL_NONE);
 
 	for (i = 0; i < 4; i++) {
-		if (data->dropTimer[i] >= 0) {
+		if (data->bubbleTimer[i] >= 0) {
 			PSMTXScale(scale, float_0p1_8041f8a4, float_0p1_8041f8a4, float_0p1_8041f8a4);
-			PSMTXTrans(drop, data->dropX[i], data->dropY[i], float_0_8041f890);
-			PSMTXConcat(scale, drop, drop);
-			PSMTXScale(scale, data->dropScale[i], data->dropScale[i], data->dropScale[i]);
-			PSMTXConcat(drop, scale, drop);
-			PSMTXConcat(trans, drop, drop);
-			GXLoadPosMtxImm(drop, 0);
-			GXSetCurrentMtx(0);
+			PSMTXTrans(bubble, data->bubbleX[i], data->bubbleY[i], float_0_8041f890);
+			PSMTXConcat(scale, bubble, bubble);
+			PSMTXScale(scale, data->bubbleScale[i], data->bubbleScale[i], data->bubbleScale[i]);
+			PSMTXConcat(bubble, scale, bubble);
+			PSMTXConcat(trans, bubble, bubble);
+			GXLoadPosMtxImm(bubble, GX_PNMTX0);
+			GXSetCurrentMtx(GX_PNMTX0);
 			effSetVtxDescN64((effVtxArray*)size8x8_tex32x32_vtx);
 			GXBegin(GX_TRIANGLES, GX_VTXFMT0, 6);
 			tri2(0, 1, 2, 0, 0, 2, 3, 0);
@@ -447,8 +447,8 @@ void effOpukuWprotectDisp(CameraId camId, void* param) {
 	GXInvalidateVtxCache();
 	PSMTXScale(scale, float_0p1_8041f8a4, float_0p1_8041f8a4, float_0p1_8041f8a4);
 	PSMTXConcat(trans, scale, scale);
-	GXLoadPosMtxImm(scale, 0);
-	GXSetCurrentMtx(0);
+	GXLoadPosMtxImm(scale, GX_PNMTX0);
+	GXSetCurrentMtx(GX_PNMTX0);
 	effSetVtxDescN64((effVtxArray*)vtx);
 	GXBegin(GX_TRIANGLES, GX_VTXFMT0, 60);
 	tri2(0, 1, 2, 0, 0, 2, 3, 0);

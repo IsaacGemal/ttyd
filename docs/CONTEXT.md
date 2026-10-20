@@ -9972,3 +9972,18 @@ the object taken when its use event ends) and `unitwin_lottery_disp_onoff` (gor_
 the ticket-number window), named like `unitwincoin_disp_onoff`. Haiku's first pass used camelCase (`unitwinHelpDisp`,
 `coinCountSfxTimer`, ...); the file's names are snake_case, so the review respelled them. Matching build OK; the three
 changed C files compile without MUST_MATCH. Landing needs `--allow-protected` (config/G8MJ01/symbols.txt).
+### Review: n9-q-kemuri (eff_fire, eff_opuku_wprotect_n64, eff_kemuri) (2026-10-20, Claude Opus 5.5)
+
+Names traced to their consumers. eff_fire `field_0x38` is not an intensity: Disp2 writes it to all four channels of
+TEVREG2, but only A2 is read, as stage 1's lerp weight from the colorIndex1 frame's texture alpha to the colorIndex2
+frame's, so it is `frameBlend` (Main sets 0x80, a half crossfade). 0x68..0x74 are Disp3's bounding box in screen
+pixels (x + 304, 240 - y, clamped to 608x480), and 0x70 starts as the y-up maximum and ends as the y-down top, so
+`screenLeft`/`screenRight`/`screenTop`/`screenBottom` (were screenMinX/MaxX/MaxY/MinY, wrong for 0x70/0x74 after the
+flip). wprotect's `drop*` arrays rise (velocity eased toward +10, respawn past y 480) inside the water shell, so they
+are `bubble*`; `alpha2` is TEVREG1 alpha, the shell's alpha where its texture alpha is 0 (`baseAlpha`). Kept:
+eff_fire `scaleX`/`scaleY`/`useMapBlend`, wprotect `lifetime`/`timer`/`colorR/G/B`/`alpha`, eff_kemuri GX_LIGHT_NULL,
+`vtx + 28` (WprotectVtx is 14 bytes). GX enums checked against their parameters; the remaining eff_fire casts became
+GX_CA_KONST and GX_TEV_COMP_A8_GT, wprotect's position-matrix 0s GX_PNMTX0. Matching build OK; all 13 objects built
+from the changed sources and users (eff_fire, eff_kemuri, wprotect, evt_map, battle_event_default, battle_database_las,
+las_29, unit_bubble/phantom/hermos in each REL that builds them) compile without MUST_MATCH and are obj_equiv-equivalent
+to the pre-branch ones.

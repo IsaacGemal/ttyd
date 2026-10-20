@@ -228,7 +228,7 @@ void effFireMain(EffectEntry* effect) {
 		if (data->colorIndex2 >= data->frameMax) {
 			data->colorIndex2 = 0;
 		}
-		data->intensity = 0x80;
+		data->frameBlend = 0x80;
 		break;
 	}
 	data->counter++;
@@ -442,9 +442,9 @@ void effFireDisp(CameraId camId, void* param) {
 	GXSetNumTevStages(1);
 	GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR_NULL);
 	GXSetTevColorOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
-	GXSetTevAlphaOp(GX_TEVSTAGE0, (GXTevOp)0xE, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+	GXSetTevAlphaOp(GX_TEVSTAGE0, GX_TEV_COMP_A8_GT, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
 	GXSetTevColorIn(GX_TEVSTAGE0, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ZERO, GX_CC_KONST);
-	GXSetTevAlphaIn(GX_TEVSTAGE0, GX_CA_TEXA, GX_CA_A0, (GXTevAlphaArg)6, GX_CA_ZERO);
+	GXSetTevAlphaIn(GX_TEVSTAGE0, GX_CA_TEXA, GX_CA_A0, GX_CA_KONST, GX_CA_ZERO);
 	GXSetTevKColorSel(GX_TEVSTAGE0, GX_TEV_KCSEL_K0);
 	GXSetTevKAlphaSel(GX_TEVSTAGE0, GX_TEV_KASEL_K0_A);
 	GXSetTevKColor(GX_KCOLOR0, *(GXColor*)&dat_8041e0bc);
@@ -486,9 +486,9 @@ void effFireDisp(CameraId camId, void* param) {
 	GXSetTevKColor(GX_KCOLOR1, *(GXColor*)&dat_8041e0c8);
 	GXSetTevOrder(GX_TEVSTAGE2, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR_NULL);
 	GXSetTevColorOp(GX_TEVSTAGE2, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
-	GXSetTevAlphaOp(GX_TEVSTAGE2, (GXTevOp)0xE, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+	GXSetTevAlphaOp(GX_TEVSTAGE2, GX_TEV_COMP_A8_GT, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
 	GXSetTevColorIn(GX_TEVSTAGE2, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ZERO, GX_CC_C0);
-	GXSetTevAlphaIn(GX_TEVSTAGE2, GX_CA_TEXA, GX_CA_A2, (GXTevAlphaArg)6, GX_CA_ZERO);
+	GXSetTevAlphaIn(GX_TEVSTAGE2, GX_CA_TEXA, GX_CA_A2, GX_CA_KONST, GX_CA_ZERO);
 	GXSetTevKAlphaSel(GX_TEVSTAGE2, GX_TEV_KASEL_1);
 	GXSetTevColor(GX_TEVREG2, *(GXColor*)&dat_8041e0cc);
 	GXSetTevOrder(GX_TEVSTAGE3, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR_NULL);
@@ -620,20 +620,20 @@ void effFireDisp2(CameraId camId, void* param) {
 	GXSetTevAlphaIn(GX_TEVSTAGE1, GX_CA_APREV, GX_CA_TEXA, GX_CA_A2, GX_CA_ZERO);
 #ifdef MUST_MATCH
 	tevColor = *(GXColor*)&unk_80423058;
-	GXSetTevColor(GX_TEVREG2, effFireDisp2Color(tevColor, data->intensity));
+	GXSetTevColor(GX_TEVREG2, effFireDisp2Color(tevColor, data->frameBlend));
 #else
 	tevColor = *(GXColor*)&unk_80423058;
-	tevColor.r = data->intensity;
-	tevColor.g = data->intensity;
-	tevColor.b = data->intensity;
-	tevColor.a = data->intensity;
+	tevColor.r = data->frameBlend;
+	tevColor.g = data->frameBlend;
+	tevColor.b = data->frameBlend;
+	tevColor.a = data->frameBlend;
 	GXSetTevColor(GX_TEVREG2, tevColor);
 #endif
 	GXSetTevOrder(GX_TEVSTAGE2, GX_TEXCOORD_NULL, GX_TEXMAP_NULL, GX_COLOR_NULL);
 	GXSetTevColorOp(GX_TEVSTAGE2, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
 	GXSetTevAlphaOp(GX_TEVSTAGE2, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
 	GXSetTevColorIn(GX_TEVSTAGE2, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ZERO, GX_CC_CPREV);
-	GXSetTevAlphaIn(GX_TEVSTAGE2, GX_CA_ZERO, GX_CA_APREV, (GXTevAlphaArg)6, GX_CA_ZERO);
+	GXSetTevAlphaIn(GX_TEVSTAGE2, GX_CA_ZERO, GX_CA_APREV, GX_CA_KONST, GX_CA_ZERO);
 	GXSetTevKAlphaSel(GX_TEVSTAGE2, GX_TEV_KASEL_K0_A);
 #ifdef MUST_MATCH
 	tevKColor = *(GXColor*)&unk_8042305c;
@@ -866,10 +866,10 @@ void effFireDisp3(CameraId camId, void* param) {
 	GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, GX_TEX_ST, GX_F32, 0);
 
 	// Accumulate the screen-space bounds of both quads.
-	data->screenMinX = 0x2710;
-	data->screenMaxY = -0x2710;
-	data->screenMaxX = -0x2710;
-	data->screenMinY = 0x2710;
+	data->screenLeft = 0x2710;
+	data->screenTop = -0x2710;
+	data->screenRight = -0x2710;
+	data->screenBottom = 0x2710;
 
 	leftX = -width * half;
 	rowHeight = 13.333333f;
@@ -923,10 +923,10 @@ void effFireDisp3(CameraId camId, void* param) {
 		}
 		PSMTXMultVec(modelMtx, &v, &v);
 		getScreenPoint(&v, &screen);
-		if (screen.x < (f32)data->screenMinX) data->screenMinX = (s32)screen.x;
-		if (screen.x > (f32)data->screenMaxX) data->screenMaxX = (s32)screen.x;
-		if (screen.y > (f32)data->screenMaxY) data->screenMaxY = (s32)screen.y;
-		if (screen.y < (f32)data->screenMinY) data->screenMinY = (s32)screen.y;
+		if (screen.x < (f32)data->screenLeft) data->screenLeft = (s32)screen.x;
+		if (screen.x > (f32)data->screenRight) data->screenRight = (s32)screen.x;
+		if (screen.y > (f32)data->screenTop) data->screenTop = (s32)screen.y;
+		if (screen.y < (f32)data->screenBottom) data->screenBottom = (s32)screen.y;
 
 		{
 			Vec tmp;
@@ -943,10 +943,10 @@ void effFireDisp3(CameraId camId, void* param) {
 		}
 		PSMTXMultVec(modelMtx, &v, &v);
 		getScreenPoint(&v, &screen);
-		if (screen.x < (f32)data->screenMinX) data->screenMinX = (s32)screen.x;
-		if (screen.x > (f32)data->screenMaxX) data->screenMaxX = (s32)screen.x;
-		if (screen.y > (f32)data->screenMaxY) data->screenMaxY = (s32)screen.y;
-		if (screen.y < (f32)data->screenMinY) data->screenMinY = (s32)screen.y;
+		if (screen.x < (f32)data->screenLeft) data->screenLeft = (s32)screen.x;
+		if (screen.x > (f32)data->screenRight) data->screenRight = (s32)screen.x;
+		if (screen.y > (f32)data->screenTop) data->screenTop = (s32)screen.y;
+		if (screen.y < (f32)data->screenBottom) data->screenBottom = (s32)screen.y;
 
 		{
 			Vec tmp;
@@ -962,10 +962,10 @@ void effFireDisp3(CameraId camId, void* param) {
 		}
 		PSMTXMultVec(modelMtx, &v, &v);
 		getScreenPoint(&v, &screen);
-		if (screen.x < (f32)data->screenMinX) data->screenMinX = (s32)screen.x;
-		if (screen.x > (f32)data->screenMaxX) data->screenMaxX = (s32)screen.x;
-		if (screen.y > (f32)data->screenMaxY) data->screenMaxY = (s32)screen.y;
-		if (screen.y < (f32)data->screenMinY) data->screenMinY = (s32)screen.y;
+		if (screen.x < (f32)data->screenLeft) data->screenLeft = (s32)screen.x;
+		if (screen.x > (f32)data->screenRight) data->screenRight = (s32)screen.x;
+		if (screen.y > (f32)data->screenTop) data->screenTop = (s32)screen.y;
+		if (screen.y < (f32)data->screenBottom) data->screenBottom = (s32)screen.y;
 
 		{
 			Vec tmp;
@@ -981,22 +981,22 @@ void effFireDisp3(CameraId camId, void* param) {
 		}
 		PSMTXMultVec(modelMtx, &v, &v);
 		getScreenPoint(&v, &screen);
-		if (screen.x < (f32)data->screenMinX) data->screenMinX = (s32)screen.x;
-		if (screen.x > (f32)data->screenMaxX) data->screenMaxX = (s32)screen.x;
-		if (screen.y > (f32)data->screenMaxY) data->screenMaxY = (s32)screen.y;
-		if (screen.y < (f32)data->screenMinY) data->screenMinY = (s32)screen.y;
+		if (screen.x < (f32)data->screenLeft) data->screenLeft = (s32)screen.x;
+		if (screen.x > (f32)data->screenRight) data->screenRight = (s32)screen.x;
+		if (screen.y > (f32)data->screenTop) data->screenTop = (s32)screen.y;
+		if (screen.y < (f32)data->screenBottom) data->screenBottom = (s32)screen.y;
 
 		colorEntry += 0x10;
 	}
 
-	data->screenMinX += 0x130;
-	data->screenMaxX += 0x130;
-	data->screenMaxY = 0xF0 - data->screenMaxY;
-	data->screenMinY = 0xF0 - data->screenMinY;
-	if (data->screenMinX < 0) data->screenMinX = 0;
-	if (data->screenMaxX > 0x260) data->screenMaxX = 0x260;
-	if (data->screenMaxY < 0) data->screenMaxY = 0;
-	if (data->screenMinY > 0x1E0) data->screenMinY = 0x1E0;
+	data->screenLeft += 0x130;
+	data->screenRight += 0x130;
+	data->screenTop = 0xF0 - data->screenTop;
+	data->screenBottom = 0xF0 - data->screenBottom;
+	if (data->screenLeft < 0) data->screenLeft = 0;
+	if (data->screenRight > 0x260) data->screenRight = 0x260;
+	if (data->screenTop < 0) data->screenTop = 0;
+	if (data->screenBottom > 0x1E0) data->screenBottom = 0x1E0;
 	data->field_0x64 = 1;
 }
 
