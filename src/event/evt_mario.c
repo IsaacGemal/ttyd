@@ -667,7 +667,7 @@ USER_FUNC(evt_mario_set_dir) {
     }
     if (event->userdata[2] == 1) {
         mario->directionView = 0.0f;
-        *(f32*)mario->unk19C = 0.0f;
+        mario->moveDir = 0.0f;
         return EVT_RETURN_DONE;
     }
     if (frames > 0) {
@@ -684,7 +684,7 @@ USER_FUNC(evt_mario_set_dir) {
         mario->unk1A8 = revise360(start + delta);
         mario->dispReqDir = mario->unk1A8;
         mario->directionView = toMovedirSimple(mario->unk1A8);
-        *(f32*)mario->unk19C = mario->directionView;
+        mario->moveDir = mario->directionView;
         n = event->userdata[0] + 1;
         event->userdata[0] = n;
         if (n > frames) {
@@ -698,7 +698,7 @@ USER_FUNC(evt_mario_set_dir) {
     mario->unk1A8 = revise360(270.0f - angle);
     mario->dispReqDir = mario->unk1A8;
     mario->directionView = toMovedirSimple(mario->unk1A8);
-    *(f32*)mario->unk19C = mario->directionView;
+    mario->moveDir = mario->directionView;
     return EVT_RETURN_DONE;
 }
 
@@ -707,7 +707,7 @@ USER_FUNC(evt_mario_set_reardir) {
 
     marioAdjustMoveDir();
     mario->directionView = 0.0f;
-    *(f32*)mario->unk19C = 0.0f;
+    mario->moveDir = 0.0f;
     return EVT_RETURN_DONE;
 }
 
@@ -742,8 +742,8 @@ USER_FUNC(evt_mario_set_dir_npc) {
     camYaw = camGetPtr(CAMERA_3D)->viewYaw;
     angle = revise360(angleABf(mario->position.x, mario->position.z, npc->position.x, npc->position.z) - camYaw);
     mario->dispReqDir = (angle < float_180_8041b904) ? float_180_8041b904 : float_0_8041b8ac;
-    *(f32*)mario->unk19C = toMovedirSimple(mario->dispReqDir);
-    mario->directionView = *(f32*)mario->unk19C;
+    mario->moveDir = toMovedirSimple(mario->dispReqDir);
+    mario->directionView = mario->moveDir;
     return EVT_RETURN_DONE;
 }
 
@@ -757,7 +757,7 @@ USER_FUNC(unk_800e23e0) {
 
     mario->dispReqDir = (angle < float_180_8041b904) ? float_180_8041b904 : float_0_8041b8ac;
     mario->directionView = angle;
-    *(f32*)mario->unk19C = angle;
+    mario->moveDir = angle;
     return EVT_RETURN_DONE;
 }
 
@@ -1513,7 +1513,7 @@ USER_FUNC(evt_mario_jump_pos) {
         mario->baseSpeed = distABf(mario->position.x, mario->position.z, x, z) / framesF;
         mario->directionView = angleABf(mario->position.x, mario->position.z, x, z);
         if (flag == 0) {
-            *(f32*)mario->unk19C = mario->directionView;
+            mario->moveDir = mario->directionView;
         }
         half = float_0p5_8041b8c8 * framesF;
         dy = y - mario->position.y;
@@ -1615,7 +1615,7 @@ USER_FUNC(evt_mario_jump_pos) {
             mario2->field_0x128 = __fabsf(distABf(mario2->position.x, mario2->position.z,
                                                           mario2->field_0x11C.x, mario2->field_0x11C.z));
             mario2->airTimer = 0;
-            *(s16*)mario2->field_0x52 = 0;
+            mario2->airTimerPeak = 0;
             mario2->flags &= ~MARIO_FLAG_STOP_AIR_MOVEMENT;
             camFollowYOn();
             landed = 1;
@@ -1721,7 +1721,7 @@ USER_FUNC(evt_mario_jump_jumpstand) {
         event->userdata[1] = sysMsec2Frame(time);
         mario->baseSpeed = distABf(mario->position.x, mario->position.z, tx, tz) / (f32)event->userdata[1];
         mario->directionView = angleABf(mario->position.x, mario->position.z, tx, tz);
-        *(f32*)mario->unk19C = mario->directionView;
+        mario->moveDir = mario->directionView;
         dy = ty - mario->position.y;
         t = float_0p5_8041b8c8 * (f32)event->userdata[1];
         if (__fabsf(dy) < float_1_8041b8a8) {
@@ -1787,7 +1787,7 @@ USER_FUNC(evt_mario_jump_jumpstand) {
             player->flags &= ~0x000F0000;
             player->field_0x128 = __fabsf(distABf(player->position.x, player->position.z, player->field_0x11C.x, player->field_0x11C.z));
             player->airTimer = 0;
-            *(s16*)player->field_0x52 = 0;
+            player->airTimerPeak = 0;
             player->flags &= ~0x80;
             camFollowYOn();
             landed = 1;
@@ -1825,7 +1825,7 @@ USER_FUNC(evt_mario_jump_jumpstand) {
         ty = ay;
         mario->baseSpeed = distABf(mario->position.x, mario->position.z, ax, az) / (f32)event->userdata[1];
         mario->directionView = angleABf(mario->position.x, mario->position.z, ax, az);
-        *(f32*)mario->unk19C = mario->directionView;
+        mario->moveDir = mario->directionView;
         t = float_0p5_8041b8c8 * (f32)event->userdata[1];
         tmp = float_20_8041b8cc / (t * t - t);
         mario->jumpVelY = tmp * t;
@@ -1873,7 +1873,7 @@ USER_FUNC(evt_mario_jump_jumpstand) {
             player->flags &= ~0x000F0000;
             player->field_0x128 = __fabsf(distABf(player->position.x, player->position.z, player->field_0x11C.x, player->field_0x11C.z));
             player->airTimer = 0;
-            *(s16*)player->field_0x52 = 0;
+            player->airTimerPeak = 0;
             player->flags &= ~0x80;
             camFollowYOn();
             landed = 1;
@@ -2019,7 +2019,7 @@ USER_FUNC(evt_koopa_hip_attack) {
         camFollowYOff();
         mario->baseSpeed = distABf(mario->position.x, mario->position.z, x, z) / frames;
         mario->directionView = angleABf(mario->position.x, mario->position.z, x, z);
-        *(f32*)mario->unk19C = mario->directionView;
+        mario->moveDir = mario->directionView;
         dy = y - mario->position.y;
         if (__fabsf(dy) < float_1_8041b8a8) {
             dy += angle;

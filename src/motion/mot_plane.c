@@ -25,8 +25,6 @@
 #define MF32(d, off) (*(f32*)((u8*)(d) + (off)))
 #define MFVEC(d, off) (*(Vec*)((u8*)(d) + (off)))
 
-// Raw MarioWork accessor for the unnamed Vec fields the original writes.
-#define MWVEC(m, off) (*(Vec*)((u8*)(m) + (off)))
 // MotionPlaneData fields the header does not name yet (macro expands to raw offsets).
 #define DATA ((MotionPlaneData*)mario->motStruct)
 
@@ -97,7 +95,7 @@ s32 mario_plane_cancel(void) {
 	}
 	if ((s32)mario->currSubMotionId >= 0xC && (s32)mario->currSubMotionId < 0x14) {
 		mario->currSubMotionId = 0x32;
-		*(f32*)mario->field_0x2AC = mario->position.y;
+		mario->field_0x2AC = mario->position.y;
 		return 1;
 	}
 	return 0;
@@ -148,14 +146,14 @@ static inline void planeReset(void) {
 #ifdef MUST_MATCH
 	// Volatile store/loads keep the following volatile Vec copies below it, as the original schedules them.
 	*(volatile f32*)&m->wPlayerCollisionBox.y = 37.0f;
-	*(volatile Vec*)((u8*)m + 0xBC) = *(volatile Vec*)&vec3_802c5cd8;
-	*(volatile Vec*)((u8*)m + 0xB0) = *(volatile Vec*)&vec3_802c5ce4;
-	*(volatile Vec*)((u8*)m + 0x98) = *(volatile Vec*)&vec3_802c5cf0;
+	*(volatile Vec*)&m->dispRot = *(volatile Vec*)&vec3_802c5cd8;
+	*(volatile Vec*)&m->dispPivot = *(volatile Vec*)&vec3_802c5ce4;
+	*(volatile Vec*)&m->dispOfs = *(volatile Vec*)&vec3_802c5cf0;
 #else
 	m->wPlayerCollisionBox.y = 37.0f;
-	MWVEC(m, 0xBC) = vec3_802c5cd8;
-	MWVEC(m, 0xB0) = vec3_802c5ce4;
-	MWVEC(m, 0x98) = vec3_802c5cf0;
+	m->dispRot = vec3_802c5cd8;
+	m->dispPivot = vec3_802c5ce4;
+	m->dispOfs = vec3_802c5cf0;
 #endif
 	marioPaperOff();
 	marioChgPaper(NULL);
@@ -220,9 +218,9 @@ void mot_plane(void) {
 		{
 			f32 zero = 0.0f;
 			mario->baseSpeed = zero;
-			MF32(mario, 0x2A4) = zero;
+			mario->unk2A4 = zero;
 			mario->wCamVal1 = mario->position.y;
-			MF32(mario, 0x2AC) = zero;
+			mario->field_0x2AC = zero;
 		}
 		attr = hitGetAttr(mario->hitobjJumpFrom);
 		((MotionPlaneData*)mario->motStruct)->flags = (attr >> 4) & 1;
@@ -241,10 +239,10 @@ void mot_plane(void) {
 		k = 0.125f;
 		m = 30.0f;
 		dir = (((MotionPlaneData*)mario->motStruct)->flags & 1) ? 1.0f : -1.0f;
-		v = MF32(mario, 0x2A4);
+		v = mario->unk2A4;
 		t = m * dir;
-		MF32(mario, 0x2A4) = k * (t - v) + v;
-		mario->unk1A8 += MF32(mario, 0x2A4);
+		mario->unk2A4 = k * (t - v) + v;
+		mario->unk1A8 += mario->unk2A4;
 		wrap = 0;
 		if (((MotionPlaneData*)mario->motStruct)->flags & 1) {
 			if (mario->unk1A8 >= 630.0f) {
@@ -273,8 +271,8 @@ void mot_plane(void) {
 				evt->lwData[2] = (s32)(sc * mario->position.z) - 0x0DB58580;
 			}
 		}
-		if (MF32(mario, 0x7C) > 0.0f) {
-			mario->position.y += MF32(mario, 0x7C);
+		if (mario->jumpVelY > 0.0f) {
+			mario->position.y += mario->jumpVelY;
 		}
 		break;
 	}
@@ -290,10 +288,10 @@ void mot_plane(void) {
 		k = 0.125f;
 		m = 30.0f;
 		dir = (((MotionPlaneData*)mario->motStruct)->flags & 1) ? 1.0f : -1.0f;
-		v = MF32(mario, 0x2A4);
+		v = mario->unk2A4;
 		t = m * dir;
-		MF32(mario, 0x2A4) = k * (t - v) + v;
-		mario->unk1A8 += MF32(mario, 0x2A4);
+		mario->unk2A4 = k * (t - v) + v;
+		mario->unk1A8 += mario->unk2A4;
 		wrap = 0;
 		if (((MotionPlaneData*)mario->motStruct)->flags & 1) {
 #ifdef MUST_MATCH
@@ -345,18 +343,18 @@ void mot_plane(void) {
 		                                                               : 270.0f;
 		{
 			f32 zero = 0.0f;
-			MF32(mario, 0x2A4) = zero;
+			mario->unk2A4 = zero;
 			MF32(mario->motStruct, 0x4) = zero;
 			MF32(mario->motStruct, 0xC) = zero;
 			MF32(mario->motStruct, 0x14) = zero;
 			MF32(mario->motStruct, 0x10) = zero;
 		}
 		if (((MotionPlaneData*)mario->motStruct)->flags & 1) {
-			MF32(mario, 0xB0) = planeData[33];
-			MF32(mario, 0x98) = planeData[34];
+			mario->dispPivot.x = planeData[33];
+			mario->dispOfs.x = planeData[34];
 		} else {
-			MF32(mario, 0xB0) = planeData[35];
-			MF32(mario, 0x98) = planeData[36];
+			mario->dispPivot.x = planeData[35];
+			mario->dispOfs.x = planeData[36];
 		}
 		mario->wPlayerCollisionBox.x = 20.0f;
 		mario->wPlayerCollisionBox.y = 12.333333f;
@@ -444,7 +442,7 @@ void mot_plane(void) {
 #endif
 			planeReset();
 			marioChgPose("M_J_1C");
-			a = MF32(mario, 0x2AC);
+			a = mario->field_0x2AC;
 			b = 37.0f;
 #ifdef MUST_MATCH
 			one = 1.0f;
@@ -457,12 +455,12 @@ void mot_plane(void) {
 #endif
 			mario->baseSpeed = 0.0f;
 			marioSetFallPara();
-			MF32(mario, 0x7C) = 0.0f;
+			mario->jumpVelY = 0.0f;
 			{
 				f32 half = 0.5f;
-				MF32(mario, 0x80) *= half;
-				MF32(mario, 0x84) *= half;
-				MF32(mario, 0x88) *= half;
+				mario->jumpAccelY *= half;
+				mario->jumpJerkY *= half;
+				mario->jumpJerkStepY *= half;
 			}
 			mario->currSubMotionId = 0x5A;
 			mario->dispFlags |= 0x100;
@@ -513,20 +511,20 @@ void mot_plane(void) {
 		{
 			f32 zero = 0.0f;
 			mario->baseSpeed = zero;
-			MF32(mario, 0x2A4) = zero;
+			mario->unk2A4 = zero;
 		}
-		mario->position.y = 1.0f + MF32(mario, 0x2AC);
+		mario->position.y = 1.0f + mario->field_0x2AC;
 		marioPreJump();
 		{
 #ifdef MUST_MATCH
 			f32 half;
 			f32 value;
-			value = MF32(mario, 0x7C);
+			value = mario->jumpVelY;
 			half = 0.5f;
-			MF32(mario, 0x7C) = value * half;
+			mario->jumpVelY = value * half;
 #else
 			f32 half = 0.5f;
-			MF32(mario, 0x7C) = MF32(mario, 0x7C) * 0.5f;
+			mario->jumpVelY = mario->jumpVelY * 0.5f;
 #endif
 		}
 		marioChgPose("M_J_1B");
@@ -545,30 +543,30 @@ void mot_plane(void) {
 		k3 = 0.3f;
 		k28 = 28.0f;
 		dir = (((MotionPlaneData*)mario->motStruct)->flags & 1) ? 1.0f : -1.0f;
-		v = MF32(mario, 0x2A4);
-		MF32(mario, 0x2A4) = k3 * (k28 * dir - v) + v;
-		mario->unk1A8 = revise360(mario->unk1A8 + MF32(mario, 0x2A4));
+		v = mario->unk2A4;
+		mario->unk2A4 = k3 * (k28 * dir - v) + v;
+		mario->unk1A8 = revise360(mario->unk1A8 + mario->unk2A4);
 		marioMakeJumpPara();
-		mario->position.y += MF32(mario, 0x7C);
+		mario->position.y += mario->jumpVelY;
 		marioChkOverhead();
-		if (MF32(mario, 0x7C) < 0.0f || *(void**)((u8*)mario + 0x1F4) != NULL) {
+		if (mario->jumpVelY < 0.0f || mario->hitobjHead != NULL) {
 #ifdef MUST_MATCH
 			f32 value;
 #endif
 			f32 half;
 			marioSetFallPara();
 #ifdef MUST_MATCH
-			value = MF32(mario, 0x7C);
+			value = mario->jumpVelY;
 #endif
 			half = 0.5f;
 #ifdef MUST_MATCH
-			MF32(mario, 0x7C) = value * half;
+			mario->jumpVelY = value * half;
 #else
-			MF32(mario, 0x7C) *= half;
+			mario->jumpVelY *= half;
 #endif
-			MF32(mario, 0x80) *= half;
-			MF32(mario, 0x84) *= half;
-			MF32(mario, 0x88) *= half;
+			mario->jumpAccelY *= half;
+			mario->jumpJerkY *= half;
+			mario->jumpJerkStepY *= half;
 			mario->currSubMotionId = 0x5A;
 			mario->dispFlags |= 0x100;
 			mario->multiTimer = 0x14;
@@ -585,9 +583,9 @@ void mot_plane(void) {
 			k3 = 0.3f;
 			k28 = 28.0f;
 			dir = (((MotionPlaneData*)mario->motStruct)->flags & 1) ? 1.0f : -1.0f;
-			v = MF32(mario, 0x2A4);
-			MF32(mario, 0x2A4) = k3 * (k28 * dir - v) + v;
-			mario->unk1A8 = revise360(mario->unk1A8 + MF32(mario, 0x2A4));
+			v = mario->unk2A4;
+			mario->unk2A4 = k3 * (k28 * dir - v) + v;
+			mario->unk1A8 = revise360(mario->unk1A8 + mario->unk2A4);
 			if (--mario->multiTimer <= 0) {
 				mario->dispFlags &= ~0x100;
 			}
@@ -597,14 +595,14 @@ void mot_plane(void) {
 #ifdef MUST_MATCH
 			f32 neg20;
 			f32 value;
-			value = MF32(mario, 0x7C);
+			value = mario->jumpVelY;
 			neg20 = -20.0f;
 			if (value <= neg20) {
 #else
 			f32 neg20 = -20.0f;
-			if (MF32(mario, 0x7C) <= neg20) {
+			if (mario->jumpVelY <= neg20) {
 #endif
-				MF32(mario, 0x7C) = neg20;
+				mario->jumpVelY = neg20;
 			}
 		}
 		mario->hitobjStandOn = NULL;
@@ -612,21 +610,21 @@ void mot_plane(void) {
 			f32 sy;
 			f32 sx;
 			f32 sz;
-			f32 y = MF32(mario, 0x7C);
+			f32 y = mario->jumpVelY;
 			HitEntry* hit = marioSearchGround(&sy, &sx, &sz, y, y);
 
 			if (hit != NULL) {
 				mario->position.y = sy;
 				mario->hitobjStandOn = hit;
 			} else {
-				mario->position.y += MF32(mario, 0x7C);
+				mario->position.y += mario->jumpVelY;
 			}
 		}
 		if (mario->hitobjStandOn != NULL) {
 			camFollowYOn();
 			allPartyRideOff2();
 			mario->airTimer = 0;
-			*(s16*)mario->field_0x52 = 0;
+			mario->airTimerPeak = 0;
 			mario->flags &= ~0x80;
 			marioAdjustMoveDir();
 			planeReset();
@@ -661,17 +659,17 @@ void mot_plane(void) {
 			f32 neg2 = -2.0f;
 			f32 zero = 0.0f;
 #endif
-			MF32(mario, 0x7C) = neg2;
-			MF32(mario, 0x80) = zero;
-			MF32(mario, 0x84) = zero;
-			MF32(mario, 0x88) = zero;
+			mario->jumpVelY = neg2;
+			mario->jumpAccelY = zero;
+			mario->jumpJerkY = zero;
+			mario->jumpJerkStepY = zero;
 		}
 		camFollowYOff();
 		/* fall through */
 	case 0x47:
 		marioMakeJumpPara();
-		mario->position.y += MF32(mario, 0x7C);
-		if (mario->position.y >= MF32(mario, 0x2AC) - 100.0f) {
+		mario->position.y += mario->jumpVelY;
+		if (mario->position.y >= mario->field_0x2AC - 100.0f) {
 			break;
 		}
 		mario->currSubMotionId = 0x48;
@@ -731,9 +729,9 @@ static void flyMain(void) {
 			}
 			/* fallthrough */
 		case 0xE:
-			if (MF32(mario, 0x9C) > planeData[38]) {
-				MF32(mario, 0x9C) -= 2.0f;
-				MF32(mario, 0xB4) += 2.0f;
+			if (mario->dispOfs.y > planeData[38]) {
+				mario->dispOfs.y -= 2.0f;
+				mario->dispPivot.y += 2.0f;
 				mario->position.y += 2.0f;
 			} else {
 				mario->currSubMotionId = 0xF;
@@ -745,12 +743,12 @@ static void flyMain(void) {
 	}
 	if (mario->buttonNew & 0x100) {
 		mario->currSubMotionId = 0x33;
-		MF32(mario, 0x2AC) = mario->position.y;
+		mario->field_0x2AC = mario->position.y;
 		return;
 	}
 	if (mario->buttonNew & 0x200) {
 		mario->currSubMotionId = 0x33;
-		MF32(mario, 0x2AC) = mario->position.y;
+		mario->field_0x2AC = mario->position.y;
 		return;
 	}
 	MF32(DATA, 0x8) = revise360(MF32(DATA, 0xC) * planeData[14] + MF32(DATA, 0x8));
@@ -1007,18 +1005,18 @@ static void flyMain(void) {
 	if (mario->baseSpeed >= planeData[0]) {
 		mario->baseSpeed = planeData[0];
 	}
-	MF32(mario, 0x90) = MF32(mario, 0x90) + MF32(DATA, 0x18);
-	MF32(mario, 0x90) = MF32(mario, 0x90) - planeData[29];
-	MF32(mario, 0xC4) = revise360(-MF32(DATA, 0x4));
+	mario->position.y = mario->position.y + MF32(DATA, 0x18);
+	mario->position.y = mario->position.y - planeData[29];
+	mario->dispRot.z = revise360(-MF32(DATA, 0x4));
 	{
 		f32 sin2, cos2, sin1, cos1;
 
 		mario->directionView = MF32(DATA, 0x8);
 		sincosf(&sin1, &cos1, mario->directionView);
-		MF32(mario, 0x94) = mario->baseSpeed * cos1 + MF32(mario, 0x94);
+		mario->position.z = mario->baseSpeed * cos1 + mario->position.z;
 		sincosf(&sin2, &cos2, 90.0f + MF32(DATA, 0x4));
-		MF32(mario, 0x90) = mario->baseSpeed * cos2 * (cos2 >= 0.0f ? planeData[31] : planeData[32]) + MF32(mario, 0x90);
-		MF32(mario, 0x8C) = sin2 * (mario->baseSpeed * sin1) + MF32(mario, 0x8C);
+		mario->position.y = mario->baseSpeed * cos2 * (cos2 >= 0.0f ? planeData[31] : planeData[32]) + mario->position.y;
+		mario->position.x = sin2 * (mario->baseSpeed * sin1) + mario->position.x;
 	}
 	if (mario->baseSpeed <= planeData[16]) {
 		s32 frames = sysMsec2Frame((s32)(1000.0f * planeData[17]));
@@ -1029,7 +1027,7 @@ static void flyMain(void) {
 
 				*(s32*)&DATA->field_0x4[0x20 - 0x4] = c;
 				if (c >= frames) {
-					MF32(mario, 0x2AC) = mario->position.y;
+					mario->field_0x2AC = mario->position.y;
 					mario->currSubMotionId = 0x3C;
 					return;
 				}
@@ -1040,7 +1038,7 @@ static void flyMain(void) {
 
 				*(s32*)&DATA->field_0x4[0x20 - 0x4] = c;
 				if (c >= frames) {
-					MF32(mario, 0x2AC) = mario->position.y;
+					mario->field_0x2AC = mario->position.y;
 					mario->currSubMotionId = 0x3C;
 					return;
 				}
@@ -1050,8 +1048,8 @@ static void flyMain(void) {
 		*(s32*)&DATA->field_0x4[0x20 - 0x4] = 0;
 	}
 	mario->hitobjUnder = marioSearchUnder();
-	if (chkCollision((f32*)((u8*)mario + 0x2AC)) != 0) {
-		if (*(HitEntry**)((u8*)mario + 0x1F4) != NULL) {
+	if (chkCollision(&mario->field_0x2AC) != 0) {
+		if (mario->hitobjHead != NULL) {
 			mario->currSubMotionId = 0x28;
 			return;
 		}
@@ -1099,13 +1097,13 @@ void mot_plane_post(void) {
 
 #ifdef MUST_MATCH
 	// The original copies each Vec with an unscheduled per-component load/store pair.
-	*(volatile Vec*)((u8*)m + 0xBC) = *(volatile Vec*)&vec3_802c5cd8;
-	*(volatile Vec*)((u8*)m + 0xB0) = *(volatile Vec*)&vec3_802c5ce4;
-	*(volatile Vec*)((u8*)m + 0x98) = *(volatile Vec*)&vec3_802c5cf0;
+	*(volatile Vec*)&m->dispRot = *(volatile Vec*)&vec3_802c5cd8;
+	*(volatile Vec*)&m->dispPivot = *(volatile Vec*)&vec3_802c5ce4;
+	*(volatile Vec*)&m->dispOfs = *(volatile Vec*)&vec3_802c5cf0;
 #else
-	MWVEC(m, 0xBC) = vec3_802c5cd8;
-	MWVEC(m, 0xB0) = vec3_802c5ce4;
-	MWVEC(m, 0x98) = vec3_802c5cf0;
+	m->dispRot = vec3_802c5cd8;
+	m->dispPivot = vec3_802c5ce4;
+	m->dispOfs = vec3_802c5cf0;
 #endif
 	marioPaperOff();
 	marioChgPaper(NULL);
@@ -1160,11 +1158,11 @@ s32 chkCollision(f32* out) {
 	v3C = vec3_802c5cfc;
 	{
 		f32 t0,t1,t2,t3,t4,t5,t6,t7,t8,t9,t10,t11,t12,t13,t14,t15;
-		t1 = MF32(mario, 0x98);
-		t3 = MF32(mario, 0x9C);
+		t1 = mario->dispOfs.x;
+		t3 = mario->dispOfs.y;
 		t0 = mario->position.x;
 		t2 = mario->position.y;
-		t4 = MF32(mario, 0xB0);
+		t4 = mario->dispPivot.x;
 		t9 = -sinA;
 		t10 = sinC * cosA;
 		t11 = 4.0f;
@@ -1172,13 +1170,13 @@ s32 chkCollision(f32* out) {
 		t5 = t0 + t1;
 		t6 = t2 + t3;
 		t4 = t4 + t5;
-		t8 = MF32(mario, 0xB4) + t6;
+		t8 = mario->dispPivot.y + t6;
 		t4 = t11 * t10 + t4;
 		t8 = t9 * t11 + t8;
 		t14 = mario->position.z;
-		t13 = MF32(mario, 0xA0);
+		t13 = mario->dispOfs.z;
 		t15 = t14 + t13;
-		t13 = MF32(mario, 0xB8);
+		t13 = mario->dispPivot.z;
 		t14 = t13 + t15;
 		t14 = t11 * t12 + t14;
 		v3C.x = t4;
@@ -1194,9 +1192,9 @@ s32 chkCollision(f32* out) {
 		f32 vx, vy, vz;
 		f32 pd40 = planeData[40];
 		sincosf(&sinC, &cosC, MF32(DATA, 0x8));
-		vx = MF32(mario, 0xB0) + (mario->position.x + MF32(mario, 0x98));
-		vy = MF32(mario, 0xB4) + (mario->position.y + MF32(mario, 0x9C));
-		vz = MF32(mario, 0xB8) + (mario->position.z + MF32(mario, 0xA0));
+		vx = mario->dispPivot.x + (mario->position.x + mario->dispOfs.x);
+		vy = mario->dispPivot.y + (mario->position.y + mario->dispOfs.y);
+		vz = mario->dispPivot.z + (mario->position.z + mario->dispOfs.z);
 		vx = pd40 * (sinC * -cosA) + vx;
 		vz = pd40 * (cosC * -cosA) + vz;
 		vy = sinA * pd40 + vy;
@@ -1285,7 +1283,7 @@ s32 chkCollision(f32* out) {
 		}
 	}
 
-	*(HitEntry**)((u8*)mario + 0x1F4) = NULL;
+	mario->hitobjHead = NULL;
 	if (mario->hitobjStandOn == NULL) {
 		{
 			f32 a0 = MF32(DATA, 0x30);
@@ -1296,7 +1294,7 @@ s32 chkCollision(f32* out) {
 			                    a0, a1, a2, 0.0f, 1.0f, 0.0f);
 		}
 		if (hit != NULL) {
-			*(HitEntry**)((u8*)mario + 0x1F4) = hit;
+			mario->hitobjHead = hit;
 			flag = 1;
 			*out = hy;
 		}

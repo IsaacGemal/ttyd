@@ -349,7 +349,7 @@ void marioSetRollDispDir(void) {
     f32 angle;
     f32 view;
     view = mario->directionView;
-    angle = *(f32*)mario->unk19C;
+    angle = mario->moveDir;
     mario2 = marioGetPtr();
 
     if (rollDispAngleInRange(angle, view, 135.0f) == 1) {
@@ -565,7 +565,7 @@ static inline s32 rollChkStickBack(f32 range) {
     f32 ref;
 
     m = marioGetPtr();
-    a10 = (f32)(s32)(10.0f * *(f32*)m->unk19C) / 10.0f;
+    a10 = (f32)(s32)(10.0f * m->moveDir) / 10.0f;
     ref = angleABf(0.0f, 0.0f, (f32)(s8)m->wStickDir1, (f32)(s8)m->wStickDir2);
     lo = a10 - range;
     if (lo < 0.0f) {
@@ -692,10 +692,9 @@ void mot_roll(void) {
             allPartyRideShip();
         }
 #ifdef MUST_MATCH
-        /* 0x9C is inside the header's field_0x98 block. */
-        *(f32*)(mario->field_0x98 + 4) = *(f32*)(mario->field_0x98 + 4) + kOneTenth;
+        mario->dispOfs.y = mario->dispOfs.y + kOneTenth;
 #else
-        *(f32*)((u8*)mario + 0x9C) = *(f32*)((u8*)mario + 0x9C) + 0.1f;
+        mario->dispOfs.y = mario->dispOfs.y + 0.1f;
 #endif
         if (*(f32*)((u8*)mario + 0x9C) > 1.0f) {
             *(f32*)((u8*)mario + 0x9C) = 1.0f;
@@ -1212,7 +1211,7 @@ vel_apply:
         goto roll_tail;
     }
 
-    f28 = *(f32*)mario->unk19C;
+    f28 = mario->moveDir;
     m3 = marioGetPtr();
     if (rollDispAngleInRange(f28, f30, 135.0f) == 1) {
         f28 = revise360(180.0f + f28);
@@ -1283,7 +1282,7 @@ vel_apply:
         mario->unk1A8 = revise360(f27);
     }
     mario->directionView = f28;
-    *(f32*)mario->unk19C = f28;
+    mario->moveDir = f28;
 
 roll_tail:
     if (mario->slopeTiltZ != 0.0f) {

@@ -135,11 +135,11 @@ void mot_damage(void) {
 		}
 #ifdef MUST_MATCH
 		// The original copies each Vec with an unscheduled per-component load/store pair.
-		*(volatile Vec*)mario->field_0x98 = *(volatile Vec*)&vec3_802f3238;
-		*(volatile Vec*)(mario->field_0x98 + 0xC) = *(volatile Vec*)&vec3_802f3244;
+		*(volatile Vec*)&mario->dispOfs = *(volatile Vec*)&vec3_802f3238;
+		*(volatile Vec*)&mario->dispOfs2 = *(volatile Vec*)&vec3_802f3244;
 #else
-		*(Vec*)mario->field_0x98 = vec3_802f3238;
-		*(Vec*)(mario->field_0x98 + 0xC) = vec3_802f3244;
+		mario->dispOfs = vec3_802f3238;
+		mario->dispOfs2 = vec3_802f3244;
 #endif
 		npcStopForEvent();
 	}
@@ -167,7 +167,7 @@ void mot_damage(void) {
 		}
 		mario->multiTimer = 0;
 		mario->currSubMotionId = 0xA;
-		*(f32*)mario->field_0x2AC = 20.0f;
+		mario->field_0x2AC = 20.0f;
 		break;
 	case 0xA:
 		if ((s32)(++mario->multiTimer) == 2) {
@@ -182,13 +182,13 @@ void mot_damage(void) {
 		{
 			f32 oldY = mario->position.y;
 
-			spd = *(f32*)mario->field_0x2AC;
+			spd = mario->field_0x2AC;
 			mario->position.y = oldY + spd;
 			spd -= 1.0f;
 			if (spd < 10.0f) {
 				spd = 10.0f;
 			}
-			*(f32*)mario->field_0x2AC = spd;
+			mario->field_0x2AC = spd;
 			if (mario->position.y >= mario->damageRootY && mario->damageRootY > oldY) {
 				Vec splashPos = mario->position;
 
@@ -383,7 +383,7 @@ void mot_damageToge(void) {
 		mario->baseSpeed = 0.0f;
 		mario->damageRootY = mario->position.y;
 		mario->multiTimer = 5;
-		*(f32*)mario->field_0x2AC = 4.0f;
+		mario->field_0x2AC = 4.0f;
 	}
 
 	switch (mario->currSubMotionId) {
@@ -401,13 +401,13 @@ void mot_damageToge(void) {
 		mario->currSubMotionId = 0xB;
 		// fallthrough
 	case 0xB:
-		spd = *(f32*)mario->field_0x2AC;
+		spd = mario->field_0x2AC;
 		mario->position.y = mario->position.y + spd;
 		spd -= 1.0f;
 		if (spd < 10.0f) {
 			spd = 10.0f;
 		}
-		*(f32*)mario->field_0x2AC = spd;
+		mario->field_0x2AC = spd;
 		if (mario->position.y < mario->damageRootY + 500.0f) {
 			break;
 		}

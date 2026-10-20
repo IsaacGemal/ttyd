@@ -61,7 +61,7 @@ void mot_vivian_post(void) {
     if (mario->currMotionId == 0x20 || mario->currMotionId == 0x1f) {
         mario->dispFlags &= ~0x1000;
         marioPaperOff();
-        *(Vec*)&mario->field_0x98[0xC] = (Vec){0.0f, 0.0f, 0.0f};
+        mario->dispOfs2 = (Vec){0.0f, 0.0f, 0.0f};
         mario->flags &= ~0x400;
         if (party != NULL) {
             partyPaperOff(party);
@@ -324,12 +324,12 @@ void vivian_use(PartyEntry* party) {
         vivianUseStep(party);
         if (0x1e - *(s32*)&party->field_22[2] <= 0x18) {
             party->dispOffset.y += 0.4f;
-            *(f32*)&mario->field_0x98[0x10] += 0.4f;
+            mario->dispOfs2.y += 0.4f;
             if (party->dispOffset.y >= 8.0f) {
                 party->dispOffset.y = 8.0f;
             }
-            if (*(f32*)&mario->field_0x98[0x10] >= 8.0f) {
-                *(f32*)&mario->field_0x98[0x10] = 8.0f;
+            if (mario->dispOfs2.y >= 8.0f) {
+                mario->dispOfs2.y = 8.0f;
             }
         }
         party->tail.vivian.charge += 1.0f;
@@ -455,9 +455,9 @@ void vivian_use(PartyEntry* party) {
         vivianUseStep(party);
         animPoseSetLocalTime(party->paperAnimGroup, (f32)*(s32*)&party->field_22[2]);
         animPoseSetLocalTime(mario->paperAnimGroupId[marioAnimeId()], (f32)party->tail.vivian.poseTime);
-        *(f32*)&mario->field_0x98[0x10] -= 0.4f;
-        if (*(f32*)&mario->field_0x98[0x10] <= 2.7f) {
-            *(f32*)&mario->field_0x98[0x10] = 2.7f;
+        mario->dispOfs2.y -= 0.4f;
+        if (mario->dispOfs2.y <= 2.7f) {
+            mario->dispOfs2.y = 2.7f;
         }
         party->dispOffset.y -= 0.4f;
         if (party->dispOffset.y <= 2.7f) {
@@ -474,9 +474,9 @@ void vivian_use(PartyEntry* party) {
         vivianUseStep(party);
         animPoseSetLocalTime(party->paperAnimGroup, 0.0f);
         animPoseSetLocalTime(mario->paperAnimGroupId[marioAnimeId()], (f32)party->tail.vivian.poseTime);
-        *(f32*)&mario->field_0x98[0x10] -= 0.4f;
-        if (*(f32*)&mario->field_0x98[0x10] <= 2.7f) {
-            *(f32*)&mario->field_0x98[0x10] = 2.7f;
+        mario->dispOfs2.y -= 0.4f;
+        if (mario->dispOfs2.y <= 2.7f) {
+            mario->dispOfs2.y = 2.7f;
         }
         party->dispOffset.y -= 0.4f;
         if (party->dispOffset.y <= 2.7f) {
@@ -509,7 +509,7 @@ void vivian_use(PartyEntry* party) {
         mario->dispFlags &= ~0x1000;
         mario->hitobjJumpFrom = mario->hitobjStandOn;
         mario->hitobjStandOn = NULL;
-        *(Vec*)&mario->field_0x98[0xC] = (Vec){0.0f, 0.0f, 0.0f};
+        mario->dispOfs2 = (Vec){0.0f, 0.0f, 0.0f};
         marioChgSmallJumpMotion();
         mario->baseSpeed = 0.0f;
         break;

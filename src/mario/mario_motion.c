@@ -429,7 +429,7 @@ void marioBoots(void) {
         return;
     }
     if (mario->characterId == 2) {
-        if (*(s16*)mario->field_0x52 < 6) {
+        if (mario->airTimerPeak < 6) {
             return;
         }
         if (kpaHipAttackOk() == 0) {
@@ -749,7 +749,7 @@ void marioJump(void) {
     }
     if (mario->jumpVelY <= 0.0f) {
         if (oldVy > 0.0f) {
-            *(s16*)mario->field_0x52 = mario->airTimer;
+            mario->airTimerPeak = mario->airTimer;
         }
         marioSetPeakYpos();
         mario2 = marioGetPtr();
@@ -954,7 +954,7 @@ void marioLandOn(void) {
     mario->flags &= ~MARIO_FLAG_STOP_AIR_MOVEMENT;
     mario->flags &= ~MARIO_FLAG_USE_FORCE_DIRECTION;
     mario->airTimer = 0;
-    *(s16*)mario->field_0x52 = 0;
+    mario->airTimerPeak = 0;
     if (mario->characterId != 2) {
         if (marioBgmodeChk() == 0) {
             camFollowYOn();
@@ -1132,12 +1132,12 @@ void mot_talk(void) {
             d = 270.0f - angle;
             r = revise360(d);
             if (r >= 90.0f && r <= 270.0f) {
-                *(f32*)mario->unk19C = toMovedir(90.0f);
-                mario->directionView = *(f32*)mario->unk19C;
+                mario->moveDir = toMovedir(90.0f);
+                mario->directionView = mario->moveDir;
                 mario->dispReqDir = 180.0f;
             } else {
-                *(f32*)mario->unk19C = toMovedir(90.0f);
-                mario->directionView = *(f32*)mario->unk19C;
+                mario->moveDir = toMovedir(90.0f);
+                mario->directionView = mario->moveDir;
                 mario->dispReqDir = 0.0f;
             }
         }
@@ -1648,14 +1648,14 @@ void mot_bottomless(void) {
             vec2.y += 10.0f;
         }
         mario->position.y = vec2.y;
-        *(f32*)mario->field_0x2AC = 8.0f;
+        mario->field_0x2AC = 8.0f;
         mario->multiTimer = (s16)(distABf(f31, f29, mario->position.x, mario->position.z) /
-                                  *(f32*)mario->field_0x2AC);
+                                  mario->field_0x2AC);
         mario->field_0x2B0 = angleABf(mario->position.x, mario->position.z, f31, f29);
     }
     switch (mario->currSubMotionId) {
     case 0:
-        movePos(&mario->position.x, &mario->position.z, *(f32*)mario->field_0x2AC,
+        movePos(&mario->position.x, &mario->position.z, mario->field_0x2AC,
                 mario->field_0x2B0);
         mario->field_EC.x = mario->position.x;
         mario->field_EC.z = mario->position.z;

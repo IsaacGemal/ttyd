@@ -91,7 +91,7 @@ static inline void rubStick(MarioWork* p, f32* outAngle, f32* outMag) {
     }
     angle = angleABf(0.0f, 0.0f, (f32)x, (f32)y2);
     if (!mag) {
-        angle = *(f32*)p->unk19C;
+        angle = p->moveDir;
     }
     angle = revise360(angle + p->targetYaw);
     *outAngle = angle;
@@ -204,7 +204,7 @@ s32 marioSetDirEventMain(void) {
         p->unk1A8 = revise360(p->dirEventStart + t);
         p->dispReqDir = p->unk1A8;
         p->directionView = toMovedirSimple(p->unk1A8);
-        *(f32*)p->unk19C = p->directionView;
+        p->moveDir = p->directionView;
         if (++p->dirEventFrame > frames) {
             p->dispFlags &= ~0x8000;
             return 1;
@@ -214,7 +214,7 @@ s32 marioSetDirEventMain(void) {
         p->unk1A8 = revise360(270.0f - p->dirEventTarget);
         p->dispReqDir = p->unk1A8;
         p->directionView = toMovedirSimple(p->unk1A8);
-        *(f32*)p->unk19C = p->directionView;
+        p->moveDir = p->directionView;
         p->dispFlags &= ~0x8000;
         return 1;
     }
@@ -247,13 +247,13 @@ void marioAdjustMoveDir(void) {
     MarioWork* p = marioGetPtr();
 
     if (p->unk1A8 >= 90.0f && p->unk1A8 <= 270.0f) {
-        *(f32*)p->unk19C = toMovedir(90.0f);
-        p->directionView = *(f32*)p->unk19C;
+        p->moveDir = toMovedir(90.0f);
+        p->directionView = p->moveDir;
         p->unk1A8 = 180.0f;
         p->dispReqDir = 180.0f;
     } else {
-        *(f32*)p->unk19C = toMovedir(90.0f);
-        p->directionView = *(f32*)p->unk19C;
+        p->moveDir = toMovedir(90.0f);
+        p->directionView = p->moveDir;
         p->unk1A8 = 0.0f;
         p->dispReqDir = 0.0f;
     }
@@ -424,7 +424,7 @@ void marioSetForceMove(s32 timer, f32 direction, f32 speed) {
     MarioWork* p = marioGetPtr();
 
     p->flags |= MARIO_FLAG_FORCED_MOVEMENT;
-    *(f32*)p->unk19C = direction;
+    p->moveDir = direction;
     p->directionView = direction;
     p->forceMoveTimer = timer;
     p->baseSpeed = speed;
@@ -440,7 +440,7 @@ void marioSetForceMove(s32 timer, f32 direction, f32 speed) {
 #else
     marioChgMot(speed > p->mBaseWalkSpeed ? MARIO_MOTION_DASH : MARIO_MOTION_WALK);
 #endif
-    *(f32*)p->unk19C = direction;
+    p->moveDir = direction;
     p->directionView = direction;
     p->forceMoveTimer = timer;
     p->baseSpeed = speed;
@@ -564,7 +564,7 @@ void marioGetStick(f32* outAngle, f32* outMag) {
     }
     angle = angleABf(0.0f, 0.0f, (f32)x, (f32)y2);
     if (!mag) {
-        angle = *(f32*)p->unk19C;
+        angle = p->moveDir;
     }
     angle = revise360(angle + p->targetYaw);
     *outAngle = angle;

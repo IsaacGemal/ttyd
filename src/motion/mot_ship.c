@@ -724,8 +724,8 @@ void mot_ship(void) {
         if ((s32)mario->currSubMotionId == 0x2F && r27) {
             mario->unk1A8 = revise360(mario->unk1A8);
             mario->dispReqDir = mario->unk1A8;
-            *(f32*)mario->unk19C = toMovedir(mario->unk1A8);
-            mario->directionView = *(f32*)mario->unk19C;
+            mario->moveDir = toMovedir(mario->unk1A8);
+            mario->directionView = mario->moveDir;
             mario->dispFlags &= ~0x100;
             mario->wPlayerCollisionBox.x = 20.0f;
             mario->wPlayerCollisionBox.y = 37.0f;
