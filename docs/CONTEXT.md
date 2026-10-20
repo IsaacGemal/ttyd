@@ -11140,3 +11140,8 @@ added or changed.
 
 Verified: tower `ninja` recreates `build/G8MJ01/ok` (after the pose-table rewrite was reverted); natural compile of
 party.c (no MUST_MATCH, -maxerrors 50) exits 0.
+
+### Readability: msgAnalize gotos (2026-10-20, Claude Haiku 5.5, n9-q-gotomsg)
+
+- src/driver/msgdrv.c msgAnalize: 10 gotos -> 1. The `loop:` label is now `for (;;)` with `continue` at each back-edge; `goto done` is `return;` in case 0 (the `done:` label went with it); the `aftertag` block is inlined at the end of `case '<'` (its only jump source); `defaultchar` is the code after the switch, reached from the former `default:`. Byte-identical: tower `ninja` recreates build/G8MJ01/ok (1231/1231 files matched).
+- Left: `goto parsed` (the tag scanner's `'>'` exit from the `for (n = 0x80 ...)` loop, skipping the `after = NULL` fallthrough). The structured forms need a flag or a loop-condition hack on `after`, both ruled out.
