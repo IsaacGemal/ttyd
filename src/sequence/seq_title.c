@@ -28,22 +28,22 @@ TitleWork* wp2 = &work2;
 
 // This unit's .rodata: the six Vec constants come first, in retail's order. disp1 passes the
 // first two by name; disp2/titleMain/L_titleInit reach the rest by fixed offsets from the base.
-const Vec vec3_802c11a0[1] = {{ 0.0f, 0.0f, 0.0f }};
-const Vec vec3_802c11ac[1] = {{ 1.0f, 1.0f, 1.0f }};
-const Vec vec3_802c11b8[1] = {{ 0.0f, 0.0f, 0.0f }};
-const Vec vec3_802c11c4[1] = {{ 1.0f, 1.0f, 1.0f }};
-const Vec vec3_802c11d0[1] = {{ 0.0f, 0.0f, 0.0f }};
-const Vec vec3_802c11dc[1] = {{ 1.0f, 1.0f, 1.0f }};
+const Vec tex7Translate[1] = {{ 0.0f, 0.0f, 0.0f }};
+const Vec tex7Scale[1] = {{ 1.0f, 1.0f, 1.0f }};
+const Vec tex5Translate[1] = {{ 0.0f, 0.0f, 0.0f }};
+const Vec tex5Scale[1] = {{ 1.0f, 1.0f, 1.0f }};
+const Vec tex6Translate[1] = {{ 0.0f, 0.0f, 0.0f }};
+const Vec tex6Scale[1] = {{ 1.0f, 1.0f, 1.0f }};
 
 // The first string block of the .rodata pool (reached by fixed offsets from the base).
-const char str_802C11E8[] = "%s/demo.tpl";
-const char str_802C11F4[] = "c_peach";
-const char str_802C11FC[] = "c_nazo";
-const char str_802C1204[] = "MOBJ_GoldenTreasureBox";
-const char str_802C121C[] = "MOBJ_BigTreasureBox";
-const char str_802C1230[] = "c_roten";
-const char str_802C1238[] = "c_kuribo_n";
-const char str_802C1244[] = "c_tyusan";
+const char str_demoTplPath[] = "%s/demo.tpl";
+const char str_c_peach[] = "c_peach";
+const char str_c_nazo[] = "c_nazo";
+const char str_MOBJ_GoldenTreasureBox[] = "MOBJ_GoldenTreasureBox";
+const char str_MOBJ_BigTreasureBox[] = "MOBJ_BigTreasureBox";
+const char str_c_roten[] = "c_roten";
+const char str_c_kuribo_n[] = "c_kuribo_n";
+const char str_c_tyusan[] = "c_tyusan";
 
 //local prototypes
 static void pressStartGX(s32 alpha, f32 x, f32 y); // local to this file in the original
@@ -80,7 +80,7 @@ s32 N_getDebugMode(void) {
 }
 
 // The original's L_titleInit and titleMain reach the later pooled strings by fixed offsets from the
-// unit's first rodata object, vec3_802c11a0; plain literals are pooled the same way once the named
+// unit's first rodata object, tex7Translate; plain literals are pooled the same way once the named
 // .rodata objects below are in place, so the natural (non-MATCH) form is the literal one.
 void L_titleInit(SequenceWork* work) {
 	memset(wp2, 0, sizeof(TitleWork));
@@ -128,38 +128,38 @@ void L_titleInit(SequenceWork* work) {
 	camGetPtr(CAMERA_2D)->flags |= 0x400;
 }
 
-// This unit's .sdata2 GXColor constants (the original names them dat_80419480..). titleMain, disp1 and
+// This unit's .sdata2 GXColor constants. titleMain, disp1 and
 // disp2 pass them by value to fadeEntry/unk_80177008/winTexSet/FontDrawColor through *(GXColor*)&name.
-const GXColor dat_80419480 = {0xFF, 0xFF, 0xFF, 0xFF};
-const GXColor dat_80419484 = {0x00, 0x00, 0x00, 0xFF};
-const GXColor dat_80419488 = {0xFF, 0xFF, 0xFF, 0xFF};
-const GXColor dat_8041948c = {0x00, 0x00, 0x00, 0xFF};
-const GXColor dat_80419490 = {0xFF, 0xFF, 0xFF, 0xFF};
-const GXColor dat_80419494 = {0x00, 0x00, 0x00, 0xFF};
-const GXColor dat_80419498 = {0xFF, 0xFF, 0xFF, 0xFF};
-const GXColor dat_8041949c = {0xFF, 0xFF, 0xFF, 0xFF};
-const GXColor dat_804194a0 = {0xFF, 0xFF, 0xFF, 0xFF};
-const GXColor dat_804194a4 = {0x00, 0x00, 0x00, 0xFF};
-const GXColor dat_804194a8 = {0x00, 0x00, 0x00, 0xFF};
+const GXColor loadFadeWhite = {0xFF, 0xFF, 0xFF, 0xFF};
+const GXColor loadFadeBlack = {0x00, 0x00, 0x00, 0xFF};
+const GXColor gameOverFadeWhite = {0xFF, 0xFF, 0xFF, 0xFF};
+const GXColor gameOverFadeBlack = {0x00, 0x00, 0x00, 0xFF};
+const GXColor defaultFadeWhite = {0xFF, 0xFF, 0xFF, 0xFF};
+const GXColor defaultFadeBlack = {0x00, 0x00, 0x00, 0xFF};
+const GXColor step1FadeWhite = {0xFF, 0xFF, 0xFF, 0xFF};
+const GXColor step10FadeWhite = {0xFF, 0xFF, 0xFF, 0xFF};
+const GXColor step11FadeWhite = {0xFF, 0xFF, 0xFF, 0xFF};
+const GXColor step20FadeBlack = {0x00, 0x00, 0x00, 0xFF};
+const GXColor step20SlowFadeBlack = {0x00, 0x00, 0x00, 0xFF};
 
 // dont_inline keeps titleMain a real `bl` from seq_titleMain; retail does not inline it.
 #pragma dont_inline on
 void titleMain(SequenceWork* work) {
-// The eight animation-name strings are named objects at the base of the pool (str_802C11E8..1244);
+// The eight animation-name strings are named objects at the base of the pool (str_demoTplPath through str_c_tyusan);
 // the three later ones are pooled literals from this function. Using the named objects here keeps
 // the compiler from pooling a second copy of the first eight, which would shift the whole pool.
 // The natural form is the plain literals.
 #ifdef MUST_MATCH
 #define TITLE_MAKU_LR "OFF_d_maku_left_right"
 #define TITLE_MAKU_C "OFF_d_maku_center"
-#define TITLE_DEMO_TPL str_802C11E8
-#define TITLE_PEACH str_802C11F4
-#define TITLE_NAZO str_802C11FC
-#define TITLE_GOLD str_802C1204
-#define TITLE_BIG str_802C121C
-#define TITLE_ROTEN str_802C1230
-#define TITLE_KURIBO str_802C1238
-#define TITLE_TYUSAN str_802C1244
+#define TITLE_DEMO_TPL str_demoTplPath
+#define TITLE_PEACH str_c_peach
+#define TITLE_NAZO str_c_nazo
+#define TITLE_GOLD str_MOBJ_GoldenTreasureBox
+#define TITLE_BIG str_MOBJ_BigTreasureBox
+#define TITLE_ROTEN str_c_roten
+#define TITLE_KURIBO str_c_kuribo_n
+#define TITLE_TYUSAN str_c_tyusan
 #define TITLE_DMO00 "dmo_00"
 #else
 #define TITLE_MAKU_LR "OFF_d_maku_left_right"
@@ -181,20 +181,20 @@ void titleMain(SequenceWork* work) {
 				&& animGroupBaseAsync(TITLE_MAKU_C, 2, 0))
 			{
 				if (seqGetPrevSeq() == SEQ_LOAD) {
-					fadeEntry(0x40, 0, *(GXColor*)&dat_80419480);
-					fadeEntry(0x1f, 0, *(GXColor*)&dat_80419484);
+					fadeEntry(0x40, 0, *(GXColor*)&loadFadeWhite);
+					fadeEntry(0x1f, 0, *(GXColor*)&loadFadeBlack);
 					wp2->tex5PosY = 120.0f;
 					wp2->tex6PosY = -170.0f;
 					wp2->waitTimer = 0;
 				}
 				else if (seqGetPrevSeq() == SEQ_GAME_OVER) {
-					fadeEntry(0x15, 0, *(GXColor*)&dat_80419488);
-					fadeEntry(0x1d, 0, *(GXColor*)&dat_8041948c);
+					fadeEntry(0x15, 0, *(GXColor*)&gameOverFadeWhite);
+					fadeEntry(0x1d, 0, *(GXColor*)&gameOverFadeBlack);
 					wp2->waitTimer = 0x4e;
 				}
 				else {
-					fadeEntry(0x15, 0, *(GXColor*)&dat_80419490);
-					fadeEntry(0x22, 0, *(GXColor*)&dat_80419494);
+					fadeEntry(0x15, 0, *(GXColor*)&defaultFadeWhite);
+					fadeEntry(0x22, 0, *(GXColor*)&defaultFadeBlack);
 					fadeSetNarrowFast();
 					wp2->waitTimer = 0x17;
 				}
@@ -211,7 +211,7 @@ void titleMain(SequenceWork* work) {
 			}
 			if (fadeIsFinish()) {
 				if (seqGetPrevSeq() != SEQ_LOAD) {
-					fadeEntry(0x14, 0x1f4, *(GXColor*)&dat_80419498);
+					fadeEntry(0x14, 0x1f4, *(GXColor*)&step1FadeWhite);
 					wp2->step++;
 				}
 				else {
@@ -265,12 +265,12 @@ void titleMain(SequenceWork* work) {
 			}
 			break;
 		case 10:
-			fadeEntry(0x3f, 0, *(GXColor*)&dat_8041949c);
+			fadeEntry(0x3f, 0, *(GXColor*)&step10FadeWhite);
 			wp2->step++;
 			// fallthrough
 		case 11:
 			if (fadeIsFinish()) {
-				fadeEntry(0x1a, 0, *(GXColor*)&dat_804194a0);
+				fadeEntry(0x1a, 0, *(GXColor*)&step11FadeWhite);
 				wp2->step++;
 			}
 			break;
@@ -281,8 +281,8 @@ void titleMain(SequenceWork* work) {
 			}
 			break;
 		case 20:
-			fadeEntry(0x21, 0, *(GXColor*)&dat_804194a4);
-			fadeEntry(0xa, 0x3e8, *(GXColor*)&dat_804194a8);
+			fadeEntry(0x21, 0, *(GXColor*)&step20FadeBlack);
+			fadeEntry(0xa, 0x3e8, *(GXColor*)&step20SlowFadeBlack);
 			psndBGMOff_f_d(0x200, 0x3e8, 0);
 			wp2->phaseFrame = 0;
 			wp2->step++;
@@ -385,7 +385,7 @@ void disp1(CameraId cameraId, void* param) {
 	              camera->viewport[4], camera->viewport[5]);
 
 	winTexInit(*wp2->texture->data);
-	winTexSet(7, vec3_802c11a0[0], vec3_802c11ac[0], (GXColor){ 0xFF, 0xFF, 0xFF, 0xFF });
+	winTexSet(7, tex7Translate[0], tex7Scale[0], (GXColor){ 0xFF, 0xFF, 0xFF, 0xFF });
 
 	*camGetPtr(cameraId) = camBackup;
 	GXSetProjectionv(projBackup);
@@ -428,10 +428,10 @@ void disp2(CameraId cameraId, void* param) {
 
 	winTexInit(*wp2->texture->data);
 
-	unk_80177008(5, disp2Vec(vec3_802c11b8[0], wp2->tex5PosY, wp2->tex5PosX), vec3_802c11c4[0],
+	unk_80177008(5, disp2Vec(tex5Translate[0], wp2->tex5PosY, wp2->tex5PosX), tex5Scale[0],
 	             (GXColor){ 0xFF, 0xFF, 0xFF, 0xFF });
 
-	winTexSet(6, disp2Vec(vec3_802c11d0[0], wp2->tex6PosY, wp2->tex6PosX), vec3_802c11dc[0],
+	winTexSet(6, disp2Vec(tex6Translate[0], wp2->tex6PosY, wp2->tex6PosX), tex6Scale[0],
 	          (GXColor){ 0xFF, 0xFF, 0xFF, 0xFF });
 
 	wp2->pulseCounter += 1;
@@ -453,11 +453,11 @@ void disp2(CameraId cameraId, void* param) {
 		// fontmgr.h declares FontDrawString(const char*, f32, f32); the original's declaration order is
 		// (f32, f32, const char*), which loads f1/f2 before the string pointer. Same ABI registers.
 #ifdef MUST_MATCH
-		((void (*)(f32, f32, const char*))FontDrawString)(60.0f, 220.0f, dat_ptr_8040f260);
-		((void (*)(f32, f32, const char*))FontDrawString)(200.0f, 220.0f, dat_ptr_8040f264);
+		((void (*)(f32, f32, const char*))FontDrawString)(60.0f, 220.0f, buildDateStr);
+		((void (*)(f32, f32, const char*))FontDrawString)(200.0f, 220.0f, buildTimeStr);
 #else
-		FontDrawString(dat_ptr_8040f260, 60.0f, 220.0f);
-		FontDrawString(dat_ptr_8040f264, 200.0f, 220.0f);
+		FontDrawString(buildDateStr, 60.0f, 220.0f);
+		FontDrawString(buildTimeStr, 200.0f, 220.0f);
 #endif
 	}
 
