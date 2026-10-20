@@ -67,11 +67,6 @@ typedef struct BattleNozzleWork {
 
 // The original keeps (u8*)wp in its own register (`base`); without it these two functions score 94.51%.
 
-// BattleWork fields past stageObjects (inside field_180C0, no names yet).
-#define BSO_WP_S8(wp, off) (*(s8*)((u8*)(wp) + (off)))
-#define BSO_WP_S32(wp, off) (*(s32*)((u8*)(wp) + (off)))
-#define BSO_WP_PTR(wp, off) (*(void**)((u8*)(wp) + (off)))
-
 #define BSO_UNSET(n) ((Vec){999.0f, 999.0f, 999.0f})
 #define BSO_STR_DEN "den"
 #define BSO_STR_A1 "A1"
@@ -359,16 +354,16 @@ void BattleStageObjectInit(void) {
 		evtEntry(stage->initEvent, 10, 0);
 	}
 	if (layer0 != 0 && stage->layerEvents[0] != NULL) {
-		BSO_WP_S32(wp, 0x180E4) = evtEntry(stage->layerEvents[0], 10, 0)->eventId;
+		wp->field_180E4 = evtEntry(stage->layerEvents[0], 10, 0)->eventId;
 	}
 	if (layer1 != 0 && stage->layerEvents[1] != NULL) {
-		BSO_WP_S32(wp, 0x180E8) = evtEntry(stage->layerEvents[1], 10, 0)->eventId;
+		wp->field_180E8 = evtEntry(stage->layerEvents[1], 10, 0)->eventId;
 	}
 	if (layer2 != 0 && stage->layerEvents[2] != NULL) {
-		BSO_WP_S32(wp, 0x180EC) = evtEntry(stage->layerEvents[2], 10, 0)->eventId;
+		wp->field_180EC = evtEntry(stage->layerEvents[2], 10, 0)->eventId;
 	}
 	if (layer3 != 0 && stage->layerEvents[3] != NULL) {
-		BSO_WP_S32(wp, 0x180F0) = evtEntry(stage->layerEvents[3], 10, 0)->eventId;
+		wp->field_180F0 = evtEntry(stage->layerEvents[3], 10, 0)->eventId;
 	}
 	if (layer0 == 0) {
 		wp->stageFlags |= 2;
@@ -1445,13 +1440,12 @@ void BattleObjectConfig(void) {
 
 void BattleStage_DestroyA1(void) {
 	BattleWork* wp = _battleWorkPointer;
-	u8* base = (u8*)wp;
 	void* evt = wp->fbatInfo->setup->stageData->objectTurnEventA1;
 
-	evtDeleteID(*(s32*)(base + 0x20000 - 0x7F1C));
-	*(s32*)(base + 0x20000 - 0x7F1C) = 0;
-	if (*(s32*)(base + 0x20000 - 0x7F20) != 0 && evtCheckID(*(s32*)(base + 0x20000 - 0x7F20))) {
-		evtDeleteID(*(s32*)(base + 0x20000 - 0x7F20));
+	evtDeleteID(wp->field_180E4);
+	wp->field_180E4 = 0;
+	if (wp->field_180E0 != 0 && evtCheckID(wp->field_180E0)) {
+		evtDeleteID(wp->field_180E0);
 	}
 	if (evt == NULL) {
 		evt = _object_turn_event_A1;
@@ -1459,7 +1453,7 @@ void BattleStage_DestroyA1(void) {
 	{
 		EventEntry* e = evtEntry(evt, 10, 0);
 		if (e != NULL) {
-			*(s32*)(base + 0x20000 - 0x7F20) = e->eventId;
+			wp->field_180E0 = e->eventId;
 		}
 	}
 }
@@ -1468,8 +1462,8 @@ void BattleStage_DestroyA2(void) {
 	BattleWork* wp = _battleWorkPointer;
 	void* evt = wp->fbatInfo->setup->stageData->objectTurnEventA2;
 
-	evtDeleteID(*(s32*)((u8*)wp + 0x20000 - 0x7F18));
-	*(s32*)((u8*)wp + 0x20000 - 0x7F18) = 0;
+	evtDeleteID(wp->field_180E8);
+	wp->field_180E8 = 0;
 	if (evt == NULL) {
 		evt = _object_turn_event_A2;
 	}
@@ -1478,13 +1472,12 @@ void BattleStage_DestroyA2(void) {
 
 void BattleStage_DestroyB(void) {
 	BattleWork* wp = _battleWorkPointer;
-	u8* base = (u8*)wp;
 	void* evt = wp->fbatInfo->setup->stageData->objectTurnEventB;
 
-	evtDeleteID(*(s32*)(base + 0x20000 - 0x7F14));
-	*(s32*)(base + 0x20000 - 0x7F14) = 0;
-	if (*(s32*)(base + 0x20000 - 0x7F20) != 0 && evtCheckID(*(s32*)(base + 0x20000 - 0x7F20))) {
-		evtDeleteID(*(s32*)(base + 0x20000 - 0x7F20));
+	evtDeleteID(wp->field_180EC);
+	wp->field_180EC = 0;
+	if (wp->field_180E0 != 0 && evtCheckID(wp->field_180E0)) {
+		evtDeleteID(wp->field_180E0);
 	}
 	if (evt == NULL) {
 		evt = _object_turn_event_B;
@@ -1492,7 +1485,7 @@ void BattleStage_DestroyB(void) {
 	{
 		EventEntry* e = evtEntry(evt, 10, 0);
 		if (e != NULL) {
-			*(s32*)(base + 0x20000 - 0x7F20) = e->eventId;
+			wp->field_180E0 = e->eventId;
 		}
 	}
 }
@@ -2346,11 +2339,11 @@ USER_FUNC(_nozzle_work_effect) {
 s32 BattleFogEndCheck(void) {
 	BattleWork* wp = _battleWorkPointer;
 
-	if (*(s32*)((u8*)wp + 0x1829C) == 0) {
+	if (wp->field_1829C == 0) {
 		return 1;
 	}
-	*(s32*)((u8*)wp + 0x1829C) = *(s32*)((u8*)wp + 0x1829C) - 1;
-	if (*(s32*)((u8*)wp + 0x1829C) > 0) {
+	wp->field_1829C = wp->field_1829C - 1;
+	if (wp->field_1829C > 0) {
 		return 0;
 	}
 	if (*(void**)((u8*)wp + 0x182A0) != NULL) {
@@ -2363,7 +2356,7 @@ s32 BattleFogEndCheck(void) {
 BOOL BattleFogForceStop(void) {
 	BattleWork* wp = _battleWorkPointer;
 
-	if (*(s32*)((u8*)wp + 0x1829C) == 0) {
+	if (wp->field_1829C == 0) {
 		return 0;
 	}
 	if (*(void**)((u8*)wp + 0x182A0) != NULL) {
