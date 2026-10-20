@@ -288,7 +288,7 @@ static USER_FUNC(evt_cloud_main) {
         if (h0 == hit || h1 == hit || h2 == hit || h3 == hit) {
             cp->mode++;
         }
-        cp->counter = 0;
+        cp->breathCount = 0;
         break;
     case 1: {
         f32 angle = mario->dispReqDir;
@@ -357,15 +357,15 @@ static USER_FUNC(evt_cloud_main) {
         img->animName = "A_1";
         img->startTime = animTimeGetTime(inBattle);
         img->flags &= ~2;
-        cp->timer = 0x1E;
-        cp->lastTime = 0.0f;
+        cp->waitTimer = 0x1E;
+        cp->lastLoopTimes = 0.0f;
         cp->mode++;
         break;
     case 4:
         img = imgNameToPtr(cp->imgName, inBattle);
-        if (cp->lastTime == 0.0f || 1.0f + cp->lastTime < img->loopTimes) {
+        if (cp->lastLoopTimes == 0.0f || 1.0f + cp->lastLoopTimes < img->loopTimes) {
             psndSFXOn_3D("SFX_OFF_CLAUD_WIND2", &mario->position);
-            cp->lastTime = img->loopTimes;
+            cp->lastLoopTimes = img->loopTimes;
         }
         if (mario->currMotionId != MARIO_MOTION_CLOUD) {
             cp->mode = 0xA;
@@ -373,17 +373,17 @@ static USER_FUNC(evt_cloud_main) {
         }
         hit = hitNameToPtr(cp->hitName);
         if (!(h0 == hit || h1 == hit || h2 == hit || h3 == hit)) {
-            if (cp->timer == 0) {
+            if (cp->waitTimer == 0) {
                 cp->mode = 0xA;
                 break;
             }
-            cp->timer--;
-            cp->counter += 2;
+            cp->waitTimer--;
+            cp->breathCount += 2;
             break;
         }
-        cp->timer = 0x1E;
-        cp->counter += 2;
-        if (cp->counter > cp->maxCount) {
+        cp->waitTimer = 0x1E;
+        cp->breathCount += 2;
+        if (cp->breathCount > cp->breathLimit) {
             cp->mode = 0x14;
         }
         break;
@@ -392,22 +392,22 @@ static USER_FUNC(evt_cloud_main) {
         break;
     case 0x14:
         psndSFXOn_3D("SFX_OFF_CLAUD_WIND3", &mario->position);
-        if (cp->script != NULL) {
-            evtEntry(cp->script, 0, 0);
+        if (cp->endScript != NULL) {
+            evtEntry(cp->endScript, 0, 0);
         }
         img = imgNameToPtr(cp->imgName, inBattle);
         img->animName = "A_2";
         img->startTime = animTimeGetTime(inBattle);
-        cp->timer = 0x3C;
+        cp->waitTimer = 0x3C;
         cp->mode++;
         break;
     case 0x15:
-        if (cp->timer != 0) {
-            cp->timer--;
+        if (cp->waitTimer != 0) {
+            cp->waitTimer--;
             break;
         }
-        cp->timer = 0x1E;
-        cp->counter += 2;
+        cp->waitTimer = 0x1E;
+        cp->breathCount += 2;
         cp->mode = 0x64;
         break;
     case 0x63:
@@ -483,11 +483,11 @@ USER_FUNC(evt_las_cloud_ent) {
         strcpy((char*)cp->mapGrpName[i], (const char*)a[i]);
     }
     strcpy(cp->hitName, (const char*)b);
-    cp->script = c;
-    cp->maxCount = 0xB4;
-    cp->counter = 0;
+    cp->endScript = c;
+    cp->breathLimit = 0xB4;
+    cp->breathCount = 0;
     cp->mode = 0;
-    cp->timer = 0;
+    cp->waitTimer = 0;
     cp->event = evtEntry(evt_cloud_main_evt, 0, 0);
     cp->event->lwData[0] = (s32)cp;
     return EVT_RETURN_DONE;

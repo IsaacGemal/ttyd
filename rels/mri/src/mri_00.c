@@ -709,8 +709,8 @@ static USER_FUNC(evt_cloud_main) {
         cp->mode = 0xDE;
         break;
     case 0xDE:
-        if (_ofs_get_boundingbox(cp->offName, &cp->field_0x19C, &cp->field_0x1A0, &cp->field_0x1A4, &cp->field_0x1A8) != 0) {
-            _img_alloc_capture((s32)cp->imgName, 0, 0, 1, cp->field_0x19C, cp->field_0x1A0, cp->field_0x1A4, cp->field_0x1A8);
+        if (_ofs_get_boundingbox(cp->offName, &cp->left, &cp->top, &cp->width, &cp->height) != 0) {
+            _img_alloc_capture((s32)cp->imgName, 0, 0, 1, cp->left, cp->top, cp->width, cp->height);
             cp->mode = 0xDF;
         }
         break;

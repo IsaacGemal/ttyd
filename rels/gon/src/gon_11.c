@@ -716,10 +716,10 @@ static USER_FUNC(evt_cloud_main) {
         break;
 
     case 0xDE:
-        if (_get_boundingbox(cp->hitName, &cp->field_0x19C, &cp->field_0x1A0, &cp->field_0x1A4,
-                             &cp->field_0x1A8)) {
-            _img_alloc_capture((s32)cp->imgName, 0, (s32)cp->offName, 1, cp->field_0x19C,
-                               cp->field_0x1A0, cp->field_0x1A4, cp->field_0x1A8);
+        if (_get_boundingbox(cp->hitName, &cp->left, &cp->top, &cp->width,
+                             &cp->height)) {
+            _img_alloc_capture((s32)cp->imgName, 0, (s32)cp->offName, 1, cp->left,
+                               cp->top, cp->width, cp->height);
             cp->mode = 0xDF;
         }
         break;

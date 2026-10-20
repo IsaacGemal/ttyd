@@ -44,7 +44,7 @@ typedef struct MovingFloorWork {
     /* 0x64 */ f32 time;
     /* 0x68 */ s32 duration[3];
     /* 0x74 */ s32 field_0x74;
-    /* 0x78 */ u32 halted;
+    /* 0x78 */ u32 seHalted;
     /* 0x7C */ u32 seId;
     /* 0x80 */ f32 turnSpeed;
     /* 0x84 */ f32 turn;
@@ -594,7 +594,7 @@ USER_FUNC(moving_floor_set_se) {
     MapObject* obj;
     s32 flag;
 
-    if (work->halted != 0) {
+    if (work->seHalted != 0) {
         return EVT_RETURN_DONE;
     }
     if (work->seId == 0) {
@@ -617,7 +617,7 @@ USER_FUNC(moving_floor_set_se) {
 USER_FUNC(moving_floor_stop_se) {
     MovingFloorWork* work = (MovingFloorWork*)evtGetValue(event, event->args[0]);
 
-    if (work->halted == 0 && work->seId != 0) {
+    if (work->seHalted == 0 && work->seId != 0) {
         psndSFXOff(work->seId);
         work->seId = 0;
     }
@@ -628,7 +628,7 @@ USER_FUNC(moving_floor_stop_se) {
 USER_FUNC(moving_floor_halt_se) {
     MovingFloorWork* work = (MovingFloorWork*)evtGetValue(event, event->args[0]);
 
-    work->halted = 1;
+    work->seHalted = 1;
     return EVT_RETURN_DONE;
 }
 
@@ -638,7 +638,7 @@ USER_FUNC(evt_moving_floor_delete) {
     EventEntry* entry = evtGetPtrID(id);
     MovingFloorWork* work = (MovingFloorWork*)entry->lwData[9];
 
-    if (work->halted == 0 && work->seId != 0) {
+    if (work->seHalted == 0 && work->seId != 0) {
         psndSFXOff(work->seId);
         work->seId = 0;
     }
