@@ -188,7 +188,11 @@ typedef struct MarioWork {
 	void* hitobjStandOn;           // 0x1E4, 0x1E8 US HitEntry
 	void* hitobjJumpFrom;          // 0x1E8, 0x1EC US HitEntry
 	void* hitobjPush;              // 0x1EC JP, 0x1F0 US HitEntry
-	u8 field_0x1F0[0x224 - 0x1F0]; // 0x1F0
+    u8 field_0x1F0[0x214 - 0x1F0]; // 0x1F0
+    f32 slopeAngle;                // 0x214, angle of the ground normal from vertical (mario_hit, mot_roll)
+    f32 slopeTiltX;                // 0x218, gndCentiPlain of the normal's z/y (mario_hit)
+    f32 slopeTiltY;                // 0x21C, zeroed beside the other two (mario_hit)
+    f32 slopeTiltZ;                // 0x220, gndCentiPlain of the normal's x/y (mario_hit, mot_roll)
 	f32 playerGravity;             // 0x224 JP, 228 US
     s32 paperAnimGroupId[3];       // 0x228 JP, 0x22C US
     u8 field_0x234[0x23C - 0x234]; // 0x234

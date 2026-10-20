@@ -224,10 +224,10 @@ void* kpaSearchGround(f32* a, f32* b, f32* c, f32 d) {
     void* result;
     mp = marioGetPtr();
     result = NULL;
-    MW_F32(mp, 0x218) = float_0_80420e80;
-    MW_F32(mp, 0x21c) = float_0_80420e80;
-    MW_F32(mp, 0x220) = float_0_80420e80;
-    MW_F32(mp, 0x214) = float_0_80420e80;
+    mp->slopeTiltX = float_0_80420e80;
+    mp->slopeTiltY = float_0_80420e80;
+    mp->slopeTiltZ = float_0_80420e80;
+    mp->slopeAngle = float_0_80420e80;
     if (mp->flags & MARIO_FLAG_FORCE_WALL) {
         *a = mp->position.y;
         return NULL;
@@ -348,10 +348,10 @@ void* kpaSearchGround(f32* a, f32* b, f32* c, f32 d) {
             kpaSetVec(&n, hitNX, hitNY, hitNZ);
             m2 = marioGetPtr();
             ny100 = float_100_80420e98 * n.y;
-            MW_F32(m2, 0x218) =
+            m2->slopeTiltX =
                 (f32)(s32)(angleABf(float_0_80420e80, float_0_80420e80, float_100_80420e98 * n.z, ny100) - float_180_80420e7c);
-            MW_F32(m2, 0x21c) = float_0_80420e80;
-            MW_F32(m2, 0x220) =
+            m2->slopeTiltY = float_0_80420e80;
+            m2->slopeTiltZ =
                 (f32)(s32)(angleABf(float_0_80420e80, float_0_80420e80, float_100_80420e98 * n.x, ny100) - float_180_80420e7c);
             if (kpaNrmToAngle(&n) >= float_50_80420eb0) {
                 hit = NULL;
@@ -365,12 +365,12 @@ void* kpaSearchGround(f32* a, f32* b, f32* c, f32 d) {
             kpaSetVec(&n, hitNX, hitNY, hitNZ);
             m2 = marioGetPtr();
             ny100 = float_100_80420e98 * n.y;
-            MW_F32(m2, 0x218) =
+            m2->slopeTiltX =
                 (f32)(s32)(angleABf(float_0_80420e80, float_0_80420e80, float_100_80420e98 * n.z, ny100) - float_180_80420e7c);
-            MW_F32(m2, 0x21c) = float_0_80420e80;
-            MW_F32(m2, 0x220) =
+            m2->slopeTiltY = float_0_80420e80;
+            m2->slopeTiltZ =
                 (f32)(s32)(angleABf(float_0_80420e80, float_0_80420e80, float_100_80420e98 * n.x, ny100) - float_180_80420e7c);
-            MW_F32(mp, 0x214) = kpaNrmToAngle(&n);
+            mp->slopeAngle = kpaNrmToAngle(&n);
             if (hitY < py && __fabsf(hitY - py) >= float_2_80420e88) {
                 *b = py - hitY;
                 *c = angleABf(px, pz, hitX, hitZ);

@@ -553,11 +553,11 @@ void marioChkGnd(void) {
     s32 ok;
 
     if (vivianGetStatus() == 2 || vivianGetStatus() == 1 || vivianGetStatus() == 3) {
-        GND_PTR(wp, HitEntry*, 0x1E4) = (HitEntry*)marioSearchGround(&gy, &gx, &gz, 37.0f, 0.0f);
+        wp->hitobjStandOn = (HitEntry*)marioSearchGround(&gy, &gx, &gz, 37.0f, 0.0f);
         GND_PTR(wp, HitEntry*, 0x1F8) = marioSearchUnder();
         return;
     }
-    GND_PTR(wp, HitEntry*, 0x1E4) = NULL;
+    wp->hitobjStandOn = NULL;
     if (wp->characterId == 2) {
         kpaClearHitobjRide();
     }
@@ -578,19 +578,19 @@ void marioChkGnd(void) {
     }
     if (!(wp->flags & 0x200)) {
         if (wp->flags & 0x1000000) {
-            hit = (HitEntry*)marioSearchGroundRoll(&gy, &gx, &gz, 11.0f, GND_PTR(wp, f32, 0x7C));
+            hit = (HitEntry*)marioSearchGroundRoll(&gy, &gx, &gz, 11.0f, wp->jumpVelY);
             if (hit != NULL) {
-                GND_PTR(wp, HitEntry*, 0x1E4) = hit;
+                wp->hitobjStandOn = hit;
                 GND_PTR(wp, f32, 0x1C0) = (f32)(s32)(100.f * gy + 0.5f) / 100.f;
             }
         } else {
             if (wp->characterId == 2) {
                 hit = (HitEntry*)kpaSearchGround(&gy, &gx, &gz, 11.0f);
             } else {
-                hit = (HitEntry*)marioSearchGround(&gy, &gx, &gz, 11.0f, GND_PTR(wp, f32, 0x7C));
+                hit = (HitEntry*)marioSearchGround(&gy, &gx, &gz, 11.0f, wp->jumpVelY);
             }
             if (hit != NULL) {
-                GND_PTR(wp, HitEntry*, 0x1E4) = hit;
+                wp->hitobjStandOn = hit;
                 GND_PTR(wp, f32, 0x1C0) = (f32)(s32)(100.f * gy + 0.5f) / 100.f;
             }
         }
@@ -610,22 +610,22 @@ void marioChkGnd(void) {
     }
     if (wp->currMotionId == 0x19) {
         if (marioChkShipMoveMode() != 0) {
-            if (GND_PTR(wp, HitEntry*, 0x1E4) == NULL) {
+            if (wp->hitobjStandOn == NULL) {
                 marioShipChgFall();
                 return;
             }
             wp->flags &= 0xFFFDFFFF;
         }
     } else {
-        if (wp->currMotionId != 0x1F && GND_PTR(wp, HitEntry*, 0x1E4) != NULL && (hitGetAttr(GND_PTR(wp, HitEntry*, 0x1E4)) & 0x200)) {
-            if (GND_PTR(wp, f32, 0x7C) >= 0.0f) {
+        if (wp->currMotionId != 0x1F && wp->hitobjStandOn != NULL && (hitGetAttr(wp->hitobjStandOn) & 0x200)) {
+            if (wp->jumpVelY >= 0.0f) {
                 marioSetFallPara();
             }
             set_damage_root_ypos(wp->position.y);
             marioChgMot(0x1F);
             return;
         }
-        if (GND_PTR(wp, HitEntry*, 0x1E4) != NULL && (hitGetAttr(GND_PTR(wp, HitEntry*, 0x1E4)) & 0x800)) {
+        if (wp->hitobjStandOn != NULL && (hitGetAttr(wp->hitobjStandOn) & 0x800)) {
             if (vivianGetStatus() != 2 && vivianGetStatus() != 1 && vivianGetStatus() != 3) {
                 set_damage_root_ypos(wp->position.y);
                 marioChgMot(0x20);
@@ -637,7 +637,7 @@ void marioChkGnd(void) {
                 hit = marioChkFrontStep(&fy, &fd, &fa);
                 dy = fy - wp->position.y;
                 if (hit != NULL) {
-                    if (dy <= 11.0f && dy >= 5.0f && GND_PTR(wp, f32, 0x214) <= 30.f) {
+                    if (dy <= 11.0f && dy >= 5.0f && wp->slopeAngle <= 30.f) {
                         GND_PTR(wp, f32, 0x1C4) = fy;
                         if (wp->baseSpeed) {
                             if (!(GND_PTR(wp, u32, 4) & 0x1000000)) {
@@ -653,7 +653,7 @@ void marioChkGnd(void) {
                 hit = marioChkFrontStep(&fy, &fd, &fa);
                 dy = fy - wp->position.y;
                 if (hit != NULL) {
-                    if (dy <= 11.0f && dy >= 5.0f && GND_PTR(wp, f32, 0x214) <= 30.f) {
+                    if (dy <= 11.0f && dy >= 5.0f && wp->slopeAngle <= 30.f) {
                         GND_PTR(wp, f32, 0x1C4) = fy;
                         if (wp->baseSpeed) {
                             roll_upstairs_on();
@@ -667,7 +667,7 @@ void marioChkGnd(void) {
         if (wp->characterId == 2) {
             ride = (HitEntry*)kpaChkHitobjRide();
         } else {
-            ride = GND_PTR(wp, HitEntry*, 0x1E4);
+            ride = wp->hitobjStandOn;
         }
         if (ride != NULL) {
             if (wp->flags & 0x1000000) {
@@ -688,10 +688,10 @@ void marioChkGnd(void) {
             } else if (!(wp->flags & 0x20000)) {
                 wp->flags &= 0xFFFEFFFF;
                 wp->flags |= 0x20000;
-                GND_PTR(wp, f32, 0x7C) = -0.4f;
-                GND_PTR(wp, f32, 0x80) = -0.06f;
-                GND_PTR(wp, f32, 0x84) = -0.04f;
-                GND_PTR(wp, f32, 0x88) = -0.02f;
+                wp->jumpVelY = -0.4f;
+                wp->jumpAccelY = -0.06f;
+                wp->jumpJerkY = -0.04f;
+                wp->jumpJerkStepY = -0.02f;
             }
         }
     }
@@ -782,10 +782,10 @@ HitEntry* marioSearchGround(f32* outY, f32* outX, f32* outZ, f32 a, f32 b) {
     f32 oz;
     f32 dist;
 
-    *(f32*)((u8*)wp + 0x218) = 0.0f;
-    *(f32*)((u8*)wp + 0x21C) = 0.0f;
-    *(f32*)((u8*)wp + 0x220) = 0.0f;
-    *(f32*)((u8*)wp + 0x214) = 0.0f;
+    wp->slopeTiltX = 0.0f;
+    wp->slopeTiltY = 0.0f;
+    wp->slopeTiltZ = 0.0f;
+    wp->slopeAngle = 0.0f;
     if (wp->flags & 0x200) {
         *outY = wp->position.y;
         return NULL;
@@ -856,9 +856,9 @@ HitEntry* marioSearchGround(f32* outY, f32* outX, f32* outZ, f32 a, f32 b) {
                 lim = 50.f;
             }
             wp2 = marioGetPtr();
-            GND_PTR(wp2, f32, 0x218) = gndCentiPlain(gndAnglePlain(normal.z, normal.y) - 180.f);
-            *(f32*)((u8*)wp2 + 0x21C) = 0.0f;
-            GND_PTR(wp2, f32, 0x220) = gndCentiPlain(gndAnglePlain(normal.x, normal.y) - 180.f);
+            wp2->slopeTiltX = gndCentiPlain(gndAnglePlain(normal.z, normal.y) - 180.f);
+            wp2->slopeTiltY = 0.0f;
+            wp2->slopeTiltZ = gndCentiPlain(gndAnglePlain(normal.x, normal.y) - 180.f);
             ang = angleABf(0.0f, 0.0f, (f32)sqrtf(normal.x * normal.x + normal.z * normal.z), -normal.y);
             if (ang >= lim) {
                 hit = NULL;
@@ -866,10 +866,10 @@ HitEntry* marioSearchGround(f32* outY, f32* outX, f32* outZ, f32 a, f32 b) {
         }
         if (hit != NULL) {
             MarioWork* wp2 = marioGetPtr();
-            GND_PTR(wp2, f32, 0x218) = gndCentiPlain(gndAnglePlain(normal.z, normal.y) - 180.f);
-            *(f32*)((u8*)wp2 + 0x21C) = 0.0f;
-            GND_PTR(wp2, f32, 0x220) = gndCentiPlain(gndAnglePlain(normal.x, normal.y) - 180.f);
-            *(f32*)((u8*)wp + 0x214) = angleABf(0.0f, 0.0f, (f32)sqrtf(normal.x * normal.x + normal.z * normal.z), -normal.y);
+            wp2->slopeTiltX = gndCentiPlain(gndAnglePlain(normal.z, normal.y) - 180.f);
+            wp2->slopeTiltY = 0.0f;
+            wp2->slopeTiltZ = gndCentiPlain(gndAnglePlain(normal.x, normal.y) - 180.f);
+            wp->slopeAngle = angleABf(0.0f, 0.0f, (f32)sqrtf(normal.x * normal.x + normal.z * normal.z), -normal.y);
             if (hitPos.y < py && __fabsf(hitPos.y - py) >= 2.0f) {
                 if (__fabsf(hitPos.y - py) > __fabsf(b)) {
                     *outX = __fabsf(py - hitPos.y);
@@ -928,9 +928,9 @@ s32 marioSearchGroundRoll(f32* outY, f32* outX, f32* outZ, f32 a, f32 b) {
     s32 i;
     s32 end;
 
-    *(f32*)((u8*)wp + 0x218) = 0.0f;
-    *(f32*)((u8*)wp + 0x21C) = 0.0f;
-    *(f32*)((u8*)wp + 0x220) = 0.0f;
+    wp->slopeTiltX = 0.0f;
+    wp->slopeTiltY = 0.0f;
+    wp->slopeTiltZ = 0.0f;
     if (wp->flags & 0x200) {
         *outY = wp->position.y;
         return 0;
@@ -951,7 +951,7 @@ s32 marioSearchGroundRoll(f32* outY, f32* outX, f32* outZ, f32 a, f32 b) {
     posX = wp->position.x;
     posZ = wp->position.z;
     dir = vec3_802c5790;
-    if (__fabsf(*(f32*)((u8*)wp + 0x214)) < 0.01f) {
+    if (__fabsf(wp->slopeAngle) < 0.01f) {
         dist = 2.0f;
         i = 0;
         end = 4;
@@ -1023,18 +1023,18 @@ s32 marioSearchGroundRoll(f32* outY, f32* outX, f32* outZ, f32 a, f32 b) {
             wp2 = marioGetPtr();
             ang1 = angleABf(0.0f, 0.0f, 100.f * out2.z,
                             100.f * out2.y);
-            *(f32*)((u8*)wp2 + 0x218) = (f32)(s32)(100.f * (ang1 - 180.f) + 0.5f) /
+            wp2->slopeTiltX = (f32)(s32)(100.f * (ang1 - 180.f) + 0.5f) /
                                         100.f;
-            *(f32*)((u8*)wp2 + 0x21C) = 0.0f;
+            wp2->slopeTiltY = 0.0f;
             ang2 = angleABf(0.0f, 0.0f, 100.f * out2.x,
                             100.f * out2.y);
-            *(f32*)((u8*)wp2 + 0x220) = (f32)(s32)(100.f * (ang2 - 180.f) + 0.5f) /
+            wp2->slopeTiltZ = (f32)(s32)(100.f * (ang2 - 180.f) + 0.5f) /
                                         100.f;
             ang3 = angleABf(0.0f, 0.0f, sqrtf(out2.x * out2.x + out2.z * out2.z), -out2.y);
             if (ang3 <= 105.0f && ang3 >= 75.0f) {
                 continue;
             }
-            *(f32*)((u8*)wp + 0x214) = ang3;
+            wp->slopeAngle = ang3;
             if (out1.y < posY && __fabsf(out1.y - posY) >= dist) {
                 if (__fabsf(out1.y - posY) > __fabsf(b)) {
                     *outX = __fabsf(posY - out1.y);
@@ -1159,10 +1159,10 @@ void* marioLandonChk_old(f32* pos, f32 spd) {
     s32 i;
     void* r;
 
-    *(f32*)((u8*)wp + 0x218) = 0.0f;
-    *(f32*)((u8*)wp + 0x21C) = 0.0f;
-    *(f32*)((u8*)wp + 0x220) = 0.0f;
-    *(f32*)((u8*)wp + 0x214) = 0.0f;
+    wp->slopeTiltX = 0.0f;
+    wp->slopeTiltY = 0.0f;
+    wp->slopeTiltZ = 0.0f;
+    wp->slopeAngle = 0.0f;
     if (wp->flags & 0x200) {
         *pos = wp->position.y;
         return NULL;
@@ -1218,10 +1218,10 @@ void* marioLandonChk_old(f32* pos, f32 spd) {
             wp2 = marioGetPtr();
             ny100 = 100.f * ny;
             *(f32*)&wp2->field_0x1F0[0x28] = gndCenti(angleABf(0.0f, 0.0f, 100.f * nz, ny100) - 180.f);
-            *(f32*)((u8*)wp2 + 0x21C) = 0.0f;
+            wp2->slopeTiltY = 0.0f;
             *(f32*)&wp2->field_0x1F0[0x30] = gndCenti(angleABf(0.0f, 0.0f, 100.f * nx, ny100) - 180.f);
             ang = angleABf(0.0f, 0.0f, (f32)sqrtf(nx * nx + nz * nz), -ny);
-            *(f32*)((u8*)wp + 0x214) = ang;
+            wp->slopeAngle = ang;
             if (__fabsf(LND_CENTI((yy - hy) - dist)) < 0.1f) {
                 *pos = LND_CENTI(hy);
                 return hit;
@@ -1262,10 +1262,10 @@ void* marioChkLandon2(f32* out, f32 a, f32 b) {
     f32 c;
     s32 i;
 
-    *(f32*)((u8*)wp + 0x218) = 0.0f;
-    *(f32*)((u8*)wp + 0x21C) = 0.0f;
-    *(f32*)((u8*)wp + 0x220) = 0.0f;
-    *(f32*)((u8*)wp + 0x214) = 0.0f;
+    wp->slopeTiltX = 0.0f;
+    wp->slopeTiltY = 0.0f;
+    wp->slopeTiltZ = 0.0f;
+    wp->slopeAngle = 0.0f;
     if (wp->flags & 0x200) {
         *out = wp->position.y;
         return NULL;
@@ -1318,11 +1318,11 @@ void* marioChkLandon2(f32* out, f32 a, f32 b) {
         if (hit != NULL) {
             MarioWork* wp2 = marioGetPtr();
 
-            *(f32*)((u8*)wp2 + 0x218) = gndCenti(gndAngle(normal.z, normal.y) - 180.f);
-            *(f32*)((u8*)wp2 + 0x21C) = 0.0f;
-            *(f32*)((u8*)wp2 + 0x220) = gndCenti(gndAngle(normal.x, normal.y) - 180.f);
+            wp2->slopeTiltX = gndCenti(gndAngle(normal.z, normal.y) - 180.f);
+            wp2->slopeTiltY = 0.0f;
+            wp2->slopeTiltZ = gndCenti(gndAngle(normal.x, normal.y) - 180.f);
             ang = angleABf(0.0f, 0.0f, (f32)sqrtf(normal.x * normal.x + normal.z * normal.z), -normal.y);
-            *(f32*)((u8*)wp + 0x214) = ang;
+            wp->slopeAngle = ang;
             if (__fabsf(LND_CENTI((yy - hitPos.y) - dist)) < 0.1f) {
                 *out = hitPos.y;
                 return hit;

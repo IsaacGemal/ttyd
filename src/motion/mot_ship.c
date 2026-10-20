@@ -810,8 +810,8 @@ void mot_ship(void) {
             marioClearJumpPara();
         }
         if (strcmp(gp->currentMapName, "dou_03") == 0 && mario->position.y <= 260.0f && mario->position.y >= 50.0f) {
-            if ((f32)(s32)(10.0f * *(f32*)((u8*)mario + 0x214) + 0.5f) / 10.0f != 0.0f) {
-                mario->position.y += 2.0f * (f32)sin(3.1415927f * *(f32*)((u8*)mario + 0x214) / 180.0f);
+            if ((f32)(s32)(10.0f * mario->slopeAngle + 0.5f) / 10.0f != 0.0f) {
+                mario->position.y += 2.0f * (f32)sin(3.1415927f * mario->slopeAngle / 180.0f);
                 { f30 = (f32)cos(3.1415927f * *(f32*)((unsigned char*)mario + 0x214) / 180.0f); mario->position.z += 2.0f * -f30; }
             }
         }

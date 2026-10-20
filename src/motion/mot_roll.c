@@ -890,7 +890,7 @@ void mot_roll(void) {
         if (!(hitGetAttr(mario->hitobjStandOn) & 0xA00) && mario->airTimer == 0 &&
             (mario->buttonNew & 0x100) &&
             (strcmp(gp->currentMapName, "eki_04\0") != 0 ||
-             !(fabsf(*(f32*)((u8*)mario + 0x214)) >= 40.0f))) {
+             !(fabsf(mario->slopeAngle) >= 40.0f))) {
             MarioWork* m = marioGetPtr();
 
             camFollowYOff();
@@ -962,38 +962,38 @@ void mot_roll(void) {
 
     if (!(mario->flags & 0x30000) && !(*(u32*)((u8*)mario + 0x2A4) & 0x20)) {
         f31 = angleABf(0.0f, 0.0f, f29, -f28);
-        if (*(f32*)((u8*)mario + 0x220) > 0.05f) {
+        if (mario->slopeTiltZ > 0.05f) {
             f32 tmp;
             f26 = (f31 > 180.0f) ? ((f32*)&rollData)[5] : ((f32*)&rollData)[6];
-            tmp = (f32)sin(3.1415927f * *(f32*)((u8*)mario + 0x220) / 180.0f);
+            tmp = (f32)sin(3.1415927f * mario->slopeTiltZ / 180.0f);
             tmp = tmp * f26;
             f30 = f30 - tmp;
             if (f30 <= -100.0f) {
                 f30 = -100.0f;
             }
-        } else if (*(f32*)((u8*)mario + 0x220) < -0.05f) {
+        } else if (mario->slopeTiltZ < -0.05f) {
             f32 tmp;
             f26 = (f31 < 180.0f) ? ((f32*)&rollData)[5] : ((f32*)&rollData)[6];
-            tmp = (f32)sin(3.1415927f * *(f32*)((u8*)mario + 0x220) / 180.0f);
+            tmp = (f32)sin(3.1415927f * mario->slopeTiltZ / 180.0f);
             tmp = tmp * f26;
             f30 = f30 - tmp;
             if (f30 >= 100.0f) {
                 f30 = 100.0f;
             }
         }
-        if (*(f32*)((u8*)mario + 0x218) > 0.05f) {
+        if (mario->slopeTiltX > 0.05f) {
             f32 tmp;
             f26 = (f31 > 180.0f) ? ((f32*)&rollData)[5] : ((f32*)&rollData)[6];
-            tmp = (f32)sin(3.1415927f * *(f32*)((u8*)mario + 0x218) / 180.0f);
+            tmp = (f32)sin(3.1415927f * mario->slopeTiltX / 180.0f);
             tmp = tmp * f26;
             ay = ay - tmp;
             if (ay <= -100.0f) {
                 ay = -100.0f;
             }
-        } else if (*(f32*)((u8*)mario + 0x218) < -0.05f) {
+        } else if (mario->slopeTiltX < -0.05f) {
             f32 tmp;
             f26 = (f31 < 180.0f) ? ((f32*)&rollData)[5] : ((f32*)&rollData)[6];
-            tmp = (f32)sin(3.1415927f * *(f32*)((u8*)mario + 0x218) / 180.0f);
+            tmp = (f32)sin(3.1415927f * mario->slopeTiltX / 180.0f);
             tmp = tmp * f26;
             ay = ay - tmp;
             if (ay >= 100.0f) {
@@ -1046,7 +1046,7 @@ void mot_roll(void) {
                 f28 = f28 + f28 * ((f32*)&rollData)[2];
             }
         } else if (mario->hitobjStandOn != NULL && mario->airTimer == 0) {
-            if (fabsf(*(f32*)((u8*)mario + 0x214) <= 1.0f)) {
+            if (fabsf(mario->slopeAngle <= 1.0f)) {
                 f29 = f29 + f29 * ((f32*)&rollData)[1];
                 f28 = f28 + f28 * ((f32*)&rollData)[1];
             } else {
@@ -1069,7 +1069,7 @@ void mot_roll(void) {
             }
         }
     } else {
-    if ((*(u32*)((u8*)mario + 0x2A4) & 0x10) && *(f32*)((u8*)mario + 0x220) == 0.0f &&
+    if ((*(u32*)((u8*)mario + 0x2A4) & 0x10) && mario->slopeTiltZ == 0.0f &&
     rollChkStickBack(135.0f) == 1) {
         f29 = f29 + 0.2f * (-f29);
         f28 = f28 + 0.2f * (-f28);
@@ -1087,11 +1087,11 @@ void mot_roll(void) {
     {
         fmax = ((f32*)&rollData)[0] / 0.05f;
         fqm = 1.0f;
-        if (mario->forceMoveTimer == 0 && fabsf(*(f32*)((u8*)mario + 0x214)) >= 1.0f) {
+        if (mario->forceMoveTimer == 0 && fabsf(mario->slopeAngle) >= 1.0f) {
             f32 ang = angleABf(0.0f, 0.0f, f29, -f28);
-            if (*(f32*)((u8*)mario + 0x220) > 0.0f) {
+            if (mario->slopeTiltZ > 0.0f) {
                 fqm = (ang > 180.0f) ? ((f32*)&rollData)[9] : 1.0f;
-            } else if (*(f32*)((u8*)mario + 0x220) < 0.0f) {
+            } else if (mario->slopeTiltZ < 0.0f) {
                 fqm = (ang < 180.0f) ? ((f32*)&rollData)[9] : 1.0f;
             }
         }
@@ -1112,11 +1112,11 @@ void mot_roll(void) {
     {
         fmax = ((f32*)&rollData)[0] / 0.05f;
         f31 = 1.0f;
-        if (mario->forceMoveTimer == 0 && fabsf(*(f32*)((u8*)mario + 0x214)) >= 1.0f) {
+        if (mario->forceMoveTimer == 0 && fabsf(mario->slopeAngle) >= 1.0f) {
             f32 ang = angleABf(0.0f, 0.0f, f29, -f28);
-            if (*(f32*)((u8*)mario + 0x218) > 0.0f) {
+            if (mario->slopeTiltX > 0.0f) {
                 f31 = (ang > 180.0f) ? ((f32*)&rollData)[9] : 1.0f;
-            } else if (*(f32*)((u8*)mario + 0x218) < 0.0f) {
+            } else if (mario->slopeTiltX < 0.0f) {
                 f31 = (ang < 180.0f) ? ((f32*)&rollData)[9] : 1.0f;
             }
         }
@@ -1286,9 +1286,9 @@ vel_apply:
     *(f32*)mario->unk19C = f28;
 
 roll_tail:
-    if (*(f32*)((u8*)mario + 0x220) != 0.0f) {
+    if (mario->slopeTiltZ != 0.0f) {
         *(f32*)((u8*)mario + 0xBC) =
-            revise360(-*(f32*)((u8*)mario + 0x220) *
+            revise360(-mario->slopeTiltZ *
                       (f32)sin(3.1415927f * mario->unk1A8 / 180.0f));
     } else {
         *(f32*)((u8*)mario + 0xBC) = 0.0f;
