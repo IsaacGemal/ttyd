@@ -63,7 +63,7 @@ extern const f32 float_0p6_8041ff58;
 extern const f32 float_0p01_8041ff5c;
 
 // .sdata
-// Keyframe scale factors (in hundredths) for the first seven frames and the seven after.
+// Scale keyframes in hundredths: scale_data for the first seven frames, then scale_data2 as a repeating seven-frame cycle.
 static u8 scale_data[8] = { 0x00, 0x1E, 0x50, 0x78, 0x70, 0x68, 0x64, 0x00 };
 static u8 scale_data2[8] = { 0x5E, 0x5C, 0x64, 0x69, 0x6B, 0x69, 0x64, 0x00 };
 

@@ -35,7 +35,7 @@ EffectEntry* effQueenEntry(s32 type, s32 lifetime, f32 x, f32 y, f32 z, f32 scal
 	data->field_0x14 = scale;
 	data->field_0x10 = 0.0f;
 
-	// 1000 is the idle value; the main loop only counts down below it.
+	// 1000 means no time limit; the main loop only counts down below it.
 	if (lifetime <= 0) {
 		data->field_0x20 = 1000;
 	} else {

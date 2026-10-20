@@ -95,7 +95,7 @@ static inline f32 effStarPointCosf(f32 rad) {
 #pragma opt_lifetimes off
 #pragma opt_propagation off
 EffectEntry* effStarPointEntry(s32 type, s32 count, f32 x, f32 y, f32 z) {
-    s32 lowAlpha;
+    s32 delay;
     EffectEntry* entry;
     StarPointData* data;
     s32 i;
@@ -114,7 +114,7 @@ EffectEntry* effStarPointEntry(s32 type, s32 count, f32 x, f32 y, f32 z) {
     data->frame = 0;
 
     i = 1;
-    lowAlpha = 4;
+    delay = 4;
     data = &data[1];
     for (; i < entry->count; i++, data++) {
         f32 angle = rand() % 360;
@@ -129,8 +129,8 @@ EffectEntry* effStarPointEntry(s32 type, s32 count, f32 x, f32 y, f32 z) {
         data->velY = 14.0f;
         data->gravity = 2.0f;
         data->alpha = 0;
-        data->delay = lowAlpha;
-        lowAlpha += 3;
+        data->delay = delay;
+        delay += 3;
     }
 
     return entry;

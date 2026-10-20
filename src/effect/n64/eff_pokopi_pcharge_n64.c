@@ -331,7 +331,7 @@ void effPokopiPchargeDisp(CameraId camId, void* param) {
 	u32 g;
 	u32 b;
 	f32 scaleXZ;
-	f32 xSpeed;
+	f32 radialOffset;
 	f32 scl;
 
 	camera = camGetPtr(camId);
@@ -342,7 +342,7 @@ void effPokopiPchargeDisp(CameraId camId, void* param) {
 	r = data->r;
 	g = data->g;
 	b = data->b;
-	xSpeed = data->field_0x38;
+	radialOffset = data->field_0x38;
 	PSMTXTrans(mtx, data->x, data->y, data->z);
 	PSMTXRotRad(rot, 'y', 0.017453292f * -camGetPtr(CAMERA_3D)->viewYaw);
 	PSMTXScale(scale, scaleXZ, scaleXZ, scaleXZ);
@@ -381,7 +381,7 @@ void effPokopiPchargeDisp(CameraId camId, void* param) {
 		effPokopiPchargeSetColor2(r, g, b, a);
 
 		PSMTXRotRad(rot, 'z', 0.017453292f * data->field_0x3C);
-		PSMTXTrans(mtx, data->x + xSpeed, 0.0f, 0.0f);
+		PSMTXTrans(mtx, data->x + radialOffset, 0.0f, 0.0f);
 		PSMTXConcat(rot, mtx, mtx);
 		if (type == 11 || type == 10) {
 			PSMTXScale(scale, scl, 1.0f, 1.0f);

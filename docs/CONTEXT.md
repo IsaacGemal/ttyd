@@ -9678,3 +9678,33 @@ mot_ship) are still pad. PartyCloud 0x10-0x1C (the sway angle and its direction 
 `unk0`-`unk2C` keep their names. PartyEntry: `field_8` (flag word), `field_32`/`field_33`/`field_3B`, the raw u8
 at 0x3D, the raw Vec at 0x94 (and 0x98/0x9C) in cloud's target setup, the raw s32 at 0x17C/0x180, `field_10C`/
 `field_110` (direction copies) and `unk16C` (event use duration in ms).
+### Readability: effects, yuu/gor/hom RELs, evt_img and evt_bero from the DeepSeek cleanup swarm, wave 3 (2026-10-19, DeepSeek V4.1 Flash, n9-q-ds3; reviewed by Claude Opus 5.5)
+
+Thirty files, one DeepSeek V4.1 Flash agent each; 74a2d570 carried 25 of them and the five REL files (yuu_02,
+yuu_03, hom_00, both evt_yuuranking) were left uncommitted in the worktree and land with the review. About 220
+renames were traced to their consumers; 9 were wrong and are fixed: eff_kemuri9 `frameU`/`frameV` are two
+consecutive U frames (TEXMTX0/TEXMTX1, blended), now `texFrame`/`nextTexFrame`; eff_pokopi_pcharge Disp's `xSpeed`
+is the head's 0x38 (vx_data) added to each particle's x before the z rotation, a radial offset, now
+`radialOffset`; evt_bero's `startIsAnchor` had the wrong polarity (0 anchors start at the hit object), now
+`reverse` as in bero_get_position_normal; gor evt_yuuranking 0x1C `goal` is the player's final score/time (stored
+into the rank table), now `result`, and the top case-2/3 block's `rowValue` (work's running value, not a row) is
+`timeValue`; yuu_03 ryushi_disp `orbitRadius` is the x sway amplitude (3 * sin, x only), now `swayAmplitude`;
+evt_ryushi_clr `halfScale` (half-cell parity offset) back to `half` and `zExtent` (xwp->unk10, the z spacing) to
+`zSpacing`. Comments fixed: eff_stone_smoke scale_data2 is a repeating seven-frame cycle; eff_queen's 1000 means no
+time limit; yuu4 gamerule's "ring"/"partition" comments replaced with what the code does (spins puro_*/pera_*;
+states 2-4/6-8 push Mario along z at the particle speed, ramping in 2/6); eff_opuku_wgun's register note follows
+`s` -> `offX`. Made consistent: gor evt_yuuranking now uses yuu's field names (`freeFlags`, `displayMode`, `result`,
+`rankIndex`, `currentValue`; rank-table `rankValue`/`rowValue`), yuu's `playFlags` (bit 2 is the wait-button bit) is
+`flags2` again, evt_bero keeps the file's `kind` for lwData[5], yuu_03 uses yuu_02's `wasAllocated`, and eff_starpoint's
+pre-existing `lowAlpha` local (it feeds `delay`) is `delay`. Churn reverted: yuu_03's work/data ->
+minigameWork/minigameData (siblings and yuu_03.h use work/data), `i` -> `index`, eff_opuku_wgun's copy of
+system.c's initializeVec. Kept: hom_00 test_glare's `bounds` view of field_0xEC with MAPOBJ_FLAG_BBOX /
+MAPOBJ_FLAG_DISPLAY_LIST, eff_holography's file-local 55 x 0x134 vertex-table struct, yuu_02's goto-free gate
+crossing, GX enum names (each checked by value and enum family). Matching build 32 files OK; all 30 files compile
+to objects equivalent to the pre-batch ones in both the matching and the natural build (tools/obj_equiv.py), no
+linker-map name renamed, no new #define. Open: eff_ice `spin` is the phase driving the rotZ/rotY wobble;
+eff_water_damage colorR/G/B (70, 180, 255) are never read in the file; eff_kemuri7 0x18..0x2C scale/rot names rest
+on the init values (1, 1, 1, 0, yaw, 0) and only rotY is read; eff_kemuri9 `startLife` (0x2C) and `lifetime`
+(0x3C) both hold a2 and only 0x3C is read; the rank-table views (A14/A74/AD4, PiantaParlorWork 0x14/0x74/0xD4) and
+the YuRankWork `field_10`/`field_14` names sit on single-line #defines; yuu_03.h fields (Yuuminigame4Data unk08..unk1C,
+RyushiEntry unk04..unk40) are still unkNN, with the agents' proposals in tools/swarm/data/c3_logs.

@@ -39,8 +39,8 @@ typedef struct effKemuri9Data {
     s32 life;       // 0x24
     s32 age;        // 0x28
     s32 startLife;   // 0x2C
-    s32 frameU;      // 0x30
-    s32 frameV;      // 0x34
+    s32 texFrame;    // 0x30
+    s32 nextTexFrame; // 0x34
     s32 frame;       // 0x38
     s32 lifetime;    // 0x3C
 } effKemuri9Data;
@@ -62,15 +62,15 @@ EffectEntry* effKemuri9N64Entry(s32 type, s32 count, s32 a2, f32 x, f32 y, f32 z
     data->life = a2;
     data->age = 0;
     data->startLife = a2;
-    data->frameU = 0;
+    data->texFrame = 0;
     data->type = type;
     data->x = x;
     data->y = y;
     data->z = z;
     data->scale = 10.f;
     data->targetScale = a6;
-    data->frameU = 0;
-    data->frameV = 0;
+    data->texFrame = 0;
+    data->nextTexFrame = 0;
     data->lifetime = a2;
     data->frame = 0;
 
@@ -104,24 +104,24 @@ void effKemuri9Main(EffectEntry* effect) {
     effKemuri9Data* data;
     Vec position;
     s32 scale;
-    s32 frameU;
-    s32 frameV;
+    s32 texFrame;
+    s32 nextTexFrame;
     s32 i;
 
     data = effect->userdata;
     position = kemuri9InitializeVec(data);
 
-    frameU = (s32)(16.0f * (f32)data->frame / (f32)data->lifetime);
-    frameV = (s32)(16.0f * (f32)(data->frame + 1) / (f32)data->lifetime);
+    texFrame = (s32)(16.0f * (f32)data->frame / (f32)data->lifetime);
+    nextTexFrame = (s32)(16.0f * (f32)(data->frame + 1) / (f32)data->lifetime);
     data->frame++;
-    if (frameV > 15) {
-        frameV = 15;
+    if (nextTexFrame > 15) {
+        nextTexFrame = 15;
     }
-    if (frameU > 15) {
-        frameU = 15;
+    if (texFrame > 15) {
+        texFrame = 15;
     }
-    data->frameU = frameU;
-    data->frameV = frameV;
+    data->texFrame = texFrame;
+    data->nextTexFrame = nextTexFrame;
 
     data->age++;
     data->life--;
@@ -159,17 +159,17 @@ void effKemuri9Disp(CameraId camId, void* param) {
     Mtx mtxScale;
     Mtx mtxRot;
     Mtx mtxView;
-    s32 frameU;
+    s32 texFrame;
     s32 type;
     s32 i;
     f32 size;
     f32 size2;
-    s32 frameV;
+    s32 nextTexFrame;
 
     cam = camGetPtr(camId);
     data = effect->userdata;
-    frameU = data->frameU;
-    frameV = data->frameV;
+    texFrame = data->texFrame;
+    nextTexFrame = data->nextTexFrame;
     type = data->type;
 
     PSMTXTrans(mtxWork, data->x, data->y, data->z);
@@ -188,12 +188,12 @@ void effKemuri9Disp(CameraId camId, void* param) {
     GXSetTexCoordGen2(0, 1, 4, 0x1E, 0, 0x7D);
     GXSetTexCoordGen2(1, 1, 4, 0x21, 0, 0x7D);
 
-    PSMTXTrans(mtxWork, 0.0625f * (f32)frameU, 0.0f, 0.0f);
+    PSMTXTrans(mtxWork, 0.0625f * (f32)texFrame, 0.0f, 0.0f);
     PSMTXScale(mtxScale, 0.0625f, 1.0f, 1.0f);
     PSMTXConcat(mtxWork, mtxScale, mtxWork);
     GXLoadTexMtxImm(mtxWork, 0x1E, 1);
 
-    PSMTXTrans(mtxWork, 0.0625f * (f32)frameV, 0.0f, 0.0f);
+    PSMTXTrans(mtxWork, 0.0625f * (f32)nextTexFrame, 0.0f, 0.0f);
     PSMTXScale(mtxScale, 0.0625f, 1.0f, 1.0f);
     PSMTXConcat(mtxWork, mtxScale, mtxWork);
     GXLoadTexMtxImm(mtxWork, 0x21, 1);

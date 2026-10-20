@@ -667,7 +667,7 @@ USER_FUNC(bero_get_position_normal) {
 	MarioWork* mario = marioGetPtr();
 	s32 reverse;
 	f32 length;
-	s32 direction;
+	s32 kind;
 	s32* p;
 	const char* hitName;
 	Vec start, end;
@@ -690,7 +690,7 @@ USER_FUNC(bero_get_position_normal) {
 	length = evtGetFloat(event, args[1]);
 	p = (s32*)event->lwData[6];
 	hitName = (const char*)event->lwData[3];
-	direction = event->lwData[5];
+	kind = event->lwData[5];
 
 	start.x = (f32)p[0];
 	start.y = (f32)p[1];
@@ -707,7 +707,7 @@ USER_FUNC(bero_get_position_normal) {
 		hitY = 0.0f;
 		hitZ = 0.0f;
 		distance = 1000000.0f;
-		angle = 360.0f * (f32)direction / 8.0f;
+		angle = 360.0f * (f32)kind / 8.0f;
 		if (reverse == 1) {
 			angle += 180.0f;
 		}
@@ -747,7 +747,7 @@ USER_FUNC(bero_get_position_normal) {
 	return EVT_RETURN_DONE;
 }
 
-void bero_get_position_pipe_sub(s32 startIsAnchor, s32 length, s32 hitName, s32 kind, Vec* start, Vec* end) {
+void bero_get_position_pipe_sub(s32 reverse, s32 length, s32 hitName, s32 kind, Vec* start, Vec* end) {
 	f32 hitX = 0.0f;
 	f32 hitY = 0.0f;
 	f32 hitZ = 0.0f;
@@ -767,7 +767,7 @@ void bero_get_position_pipe_sub(s32 startIsAnchor, s32 length, s32 hitName, s32 
 		length = -length;
 		off = -off;
 	case 2:
-		if (startIsAnchor == 0) {
+		if (reverse == 0) {
 			hitObjGetPos((const char*)hitName, start);
 			start->x -= off;
 			end->x = start->x + (f32)length;
@@ -796,7 +796,7 @@ void bero_get_position_pipe_sub(s32 startIsAnchor, s32 length, s32 hitName, s32 
 	case 9:
 		length = -length;
 	case 8:
-		if (startIsAnchor == 0) {
+		if (reverse == 0) {
 			hitObjGetPos((const char*)hitName, start);
 			end->x = start->x;
 			end->y = start->y + (f32)length;
@@ -817,24 +817,24 @@ void bero_get_position_pipe_sub(s32 startIsAnchor, s32 length, s32 hitName, s32 
 	}
 }
 
-	// NONMATCHING (97.50%): direction/startIsAnchor are in r31/r30 where the original has r30/r31, and the
+	// NONMATCHING (97.50%): kind/reverse are in r31/r30 where the original has r30/r31, and the
 	// BeroEY ternary is stored directly from f2 instead of the original's f0 + frsp f2,f0.
 USER_FUNC(bero_get_position_pipe_pure) {
 	s32* args = event->args;
-	s32 startIsAnchor;
-	s32 direction;
+	s32 reverse;
+	s32 kind;
 	s32 length;
 	Vec start, end;
 
-	startIsAnchor = evtGetValue(event, args[0]);
+	reverse = evtGetValue(event, args[0]);
 	length = (s32)evtGetFloat(event, args[1]);
-	direction = event->lwData[5];
-	bero_get_position_pipe_sub(startIsAnchor, length, event->lwData[3], direction, &start, &end);
+	kind = event->lwData[5];
+	bero_get_position_pipe_sub(reverse, length, event->lwData[3], kind, &start, &end);
 	BeroSX = start.x;
-	BeroSY = direction == 8 ? start.y - 37.5f : start.y;
+	BeroSY = kind == 8 ? start.y - 37.5f : start.y;
 	BeroSZ = start.z;
 	BeroEX = end.x;
-	if (direction == 8) {
+	if (kind == 8) {
 		BeroEY = end.y - 37.5f;
 	} else {
 		BeroEY = end.y;
@@ -849,13 +849,13 @@ USER_FUNC(bero_get_position_pipe_pure) {
 // (BeroPT = work.pos) drops the two zero-vector temps the original keeps.
 USER_FUNC(bero_get_position_pipe2) {
 	s32* args = event->args;
-	s32 startIsAnchor = evtGetValue(event, args[0]);
+	s32 reverse = evtGetValue(event, args[0]);
 	s32 length = (s32)evtGetFloat(event, args[1]);
 	Vec start, end;
 	Vec bpt, bat;
 	CameraParams work;
 
-	bero_get_position_pipe_sub(startIsAnchor, length, event->lwData[3], event->lwData[5], &start, &end);
+	bero_get_position_pipe_sub(reverse, length, event->lwData[3], event->lwData[5], &start, &end);
 	end.y += 1.0f;
 	camRoadReset();
 	camShiftReset();

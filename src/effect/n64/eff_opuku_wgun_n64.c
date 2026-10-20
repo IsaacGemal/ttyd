@@ -38,11 +38,11 @@ __declspec(section ".sdata") GXColor unk_804231e8;
 
 // Local copy of system.c's inline helper so it inlines here (as in eff_kemuri11.c).
 inline Vec initializeVec(Vec* input) {
-	Vec result = vec3_802fb2c0;
-	result.x = input->x;
-	result.y = input->y;
-	result.z = input->z;
-	return result;
+	Vec temp = vec3_802fb2c0;
+	temp.x = input->x;
+	temp.y = input->y;
+	temp.z = input->z;
+	return temp;
 }
 // Build the sine in its own inline so mwcc pools 180 before 120: a call's argument
 // constants pool after the other constants of the statement that holds the call, so the
@@ -197,7 +197,7 @@ static inline void opukuWgunColor2(u8 r, u8 g, u8 b) {
 // paired-single psq_l/psq_st conversions with the SDK's __OSs16tof32 / __OSf32tos16 inlines (plain casts
 // would lower to lha/fctiwz). The `zero` local keeps `data->z[i] + 0.0f` from folding away, which lands the
 // 0.0 in f31 and the 2pi/360/20/scale constants in retail's f28/f29/f30/f24; the `angle`/`rad` split gives
-// angle f22, rad/s f23 and size f21; `alpha` is an s32 so a_data*data->alpha/255 stores with a plain stb (no
+// angle f22, rad/offX f23 and size f21; `alpha` is an s32 so a_data*data->alpha/255 stores with a plain stb (no
 // clrlwi); and the triangle loop's `if (j >= 0)` guard reproduces retail's always-taken test. The two TEV
 // colours are built inside the inline (the eff_opuku_wprotect pattern) so each colour local and its by-value
 // copy land in retail's stack slots (temp/arg 0x1c/0x20 and 0x14/0x18); returning the GXColor and calling
