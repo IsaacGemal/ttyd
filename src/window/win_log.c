@@ -611,12 +611,12 @@ void winLogInit2(WindowWork* work) {
     s32 a;
     s32 b;
 
-    WW_F32(work, 0x158) = -128.0f;
+    work->targetX = -128.0f;
     a = WW_S32(work, 0xD70);
     b = WW_S32(work, 0xD6C);
     {
         f32 t = 45.0f * (f32)a;
-        WW_F32(work, 0x15C) = 8.0f + (t / 2.0f - 45.0f * (f32)b);
+        work->targetY = 8.0f + (t / 2.0f - 45.0f * (f32)b);
     }
     WW_F32(work, 0xE88) = 320.f;
     WW_F32(work, 0xE84) = 320.f;
@@ -651,9 +651,9 @@ void winLogExit(WindowWork* work) {
         fileFree(WW_PTR(work, 0x30));
         WW_PTR(work, 0x30) = NULL;
     }
-    if (WW_S32(work, 0xE1C) != -1) {
-        animPoseRelease(WW_S32(work, 0xE1C));
-        WW_S32(work, 0xE1C) = -1;
+    if (work->poseId2 != -1) {
+        animPoseRelease(work->poseId2);
+        work->poseId2 = -1;
     }
     for (i = 0; i < 7; i++) {
         effSoftDelete(*(EffectEntry**)((u8*)work + 0xE44 + i * 4));
@@ -1704,8 +1704,8 @@ void mapGX(WindowWork* work, f32 x, f32 y) {
             Mtx m;
             s32 n;
 
-            animPoseGetAnimPosePtr(WW_S32(work, 0x188));
-            anim = animPoseGetAnimDataPtr(WW_S32(work, 0x188));
+            animPoseGetAnimPosePtr(work->poseId);
+            anim = animPoseGetAnimDataPtr(work->poseId);
             scale = 1.5f;
             if (w->flags & 0x2000) {
                 scale = 3.0f;

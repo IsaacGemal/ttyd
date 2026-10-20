@@ -107,8 +107,8 @@ void winMarioInit(WindowWork* work) {
             anim = "S_4";
             break;
         }
-        WW_S32(work, 0x188) = animPoseEntry("d_mario", 0);
-        animPoseSetAnim(WW_S32(work, 0x188), anim, 1);
+        work->poseId = animPoseEntry("d_mario", 0);
+        animPoseSetAnim(work->poseId, anim, 1);
     } else {
         anim = "a_mario";
         switch (marioGetColor()) {
@@ -125,13 +125,13 @@ void winMarioInit(WindowWork* work) {
             anim = "a_mario_wl";
             break;
         }
-        WW_S32(work, 0x188) = animPoseEntry(anim, 0);
-        animPoseSetAnim(WW_S32(work, 0x188), str_8041D578, 1);
+        work->poseId = animPoseEntry(anim, 0);
+        animPoseSetAnim(work->poseId, str_8041D578, 1);
     }
 
-    animPoseSetMaterialFlagOn(WW_S32(work, 0x188), 0x1800);
+    animPoseSetMaterialFlagOn(work->poseId, 0x1800);
     if (marioGetPtr()->flags & 0x40000000) {
-        animPoseSetMaterialFlagOn(WW_S32(work, 0x188), 0xA000000);
+        animPoseSetMaterialFlagOn(work->poseId, 0xA000000);
     }
 
     WW_S32(work, 0x18C) = 0;
@@ -152,11 +152,11 @@ void winMarioInit2(WindowWork* work) {
 
     WW_S32(work, 0x160) = 0;
     x = (f32)linkDt[WW_S32(work, 0x160)].field_0;
-    WW_F32(work, 0x158) = x;
-    WW_F32(work, 0x158) = x;
+    work->targetX = x;
+    work->targetX = x;
     y = (f32)linkDt[WW_S32(work, 0x160)].field_2;
-    WW_F32(work, 0x15C) = y;
-    WW_F32(work, 0x15C) = y;
+    work->targetY = y;
+    work->targetY = y;
 
     switch (WW_S32(work, 0x160)) {
     case 2:
@@ -176,7 +176,7 @@ void winMarioInit2(WindowWork* work) {
 }
 
 void winMarioExit(WindowWork* work) {
-    animPoseRelease(WW_S32(work, 0x188));
+    animPoseRelease(work->poseId);
 }
 
 // The tail walks its own link pointer (`d2`) so MWCC colours it in r30 and the tail
@@ -245,9 +245,9 @@ s32 winMarioMain(WindowWork* work) {
                 SET_ANIM(str_8041D578);
             }
 #ifdef MUST_MATCH
-            animPoseSetAnim(WW_S32(work, 0x188), (const char*)d2, 0);
+            animPoseSetAnim(work->poseId, (const char*)d2, 0);
 #else
-            animPoseSetAnim(WW_S32(work, 0x188), anim, 0);
+            animPoseSetAnim(work->poseId, anim, 0);
 #endif
 #undef SET_ANIM
             return -1;
@@ -303,8 +303,8 @@ s32 winMarioMain(WindowWork* work) {
 
     tail:
         d2 = &linkDt[WW_S32(work, 0x160)];
-        WW_F32(work, 0x158) = (f32)d2->field_0;
-        WW_F32(work, 0x15C) = (f32)d2->field_2;
+        work->targetX = (f32)d2->field_0;
+        work->targetY = (f32)d2->field_2;
 
         switch (WW_S32(work, 0x160)) {
         case 2:
@@ -344,9 +344,9 @@ s32 winMarioMain(WindowWork* work) {
                 anim = hammer_pose[pouchGetHammerLv()];
             }
 
-            animPoseSetAnim(WW_S32(work, 0x188), anim, 0);
+            animPoseSetAnim(work->poseId, anim, 0);
             if (WW_S32(work, 0x18C) == 0) {
-                if (animPoseGetLoopTimes(WW_S32(work, 0x188)) >= 0.89f) {
+                if (animPoseGetLoopTimes(work->poseId) >= 0.89f) {
                     WW_S32(work, 0x18C) = 30;
                 }
             } else {
@@ -393,7 +393,7 @@ s32 winMarioMain(WindowWork* work) {
             } else {
                 anim = d2->field_4;
             }
-            animPoseSetAnim(WW_S32(work, 0x188), anim, 0);
+            animPoseSetAnim(work->poseId, anim, 0);
                     break;
         }
 
@@ -428,9 +428,9 @@ s32 winMarioMain(WindowWork* work) {
         } else if (work->buttonTrg & 0x1000) {
             return -2;
         }
-        WW_F32(work, 0x158) = -280.0f;
+        work->targetX = -280.0f;
         f2 = (f32)WW_S32(work, 0x194);
-        WW_F32(work, 0x15C) = 10.0f + ((120.0f - 26.0f * f2) - 12.0f);
+        work->targetY = 10.0f + ((120.0f - 26.0f * f2) - 12.0f);
         winMsgEntry(work, 0, superActionTable[WW_S32(work, 0x194)]->field_C, 0);
         break;
     }
@@ -626,7 +626,7 @@ void fukidashi(WindowWork* work, u32 type, f32 x, f32 y) {
 
 const char* hammer_pose[4] = { NULL, str_8041D584, str_8041D598, str_8041D5A0 };
 
-#define POSE (WW_S32(work, 0x188))
+#define POSE (work->poseId)
 
 void winMarioDisp(CameraId camId, void* param, s32 idx) {
     WindowWork* work = param;

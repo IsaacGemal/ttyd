@@ -185,8 +185,8 @@ void winPartyInit2(WindowWork* work) {
     WW_F32(work, 0x1E8) = time;
     WW_F32(work, 0x1E4) = time;
     WW_S32(work, 0x200) = 0;
-    WW_F32(work, 0x158) = -200.0f;
-    WW_F32(work, 0x15C) = 20.0f;
+    work->targetX = -200.0f;
+    work->targetY = 20.0f;
     winMsgEntry(work, 0, winPartyDt[WW_S32(work, 0x1D8)].field_0xC, 0);
 }
 
@@ -280,8 +280,8 @@ s32 winPartyMain(WindowWork* work) {
             goto apply;
         }
     apply:
-        WW_F32(work, 0x158) = -200.0f;
-        WW_F32(work, 0x15C) = 20.0f;
+        work->targetX = -200.0f;
+        work->targetY = 20.0f;
         WW_S32(work, 0x204) = pouchGetPartyAttackLv(winPartyDt[WW_S32(work, 0x1D8)].field_0x0) + 2;
         winMsgEntry(work, 0, winPartyDt[WW_S32(work, 0x1D8)].field_0xC, 0);
         break;
@@ -313,8 +313,8 @@ s32 winPartyMain(WindowWork* work) {
             }
         }
 
-        WW_F32(work, 0x158) = -10.0f;
-        WW_F32(work, 0x15C) = -26.0f * (f32)WW_S32(work, 0x208) + 5.0f;
+        work->targetX = -10.0f;
+        work->targetY = -26.0f * (f32)WW_S32(work, 0x208) + 5.0f;
         winMsgEntry(work, 0, *(const char**)((u8*)((void**)winPartyDt[WW_S32(work, 0x1D8)].field_0x20)[WW_S32(work, 0x208)] + 0xC), 0);
         break;
     }

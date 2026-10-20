@@ -377,8 +377,8 @@ void winItemInit(WindowWork* work) {
 void winItemInit2(WindowWork* work) {
     f32 t;
 
-    WW_F32(work, 0x158) = -275.0f;
-    WW_F32(work, 0x15C) = (f32)(0x7D - WW_S32(work, 0x210) * 0x28);
+    work->targetX = -275.0f;
+    work->targetY = (f32)(0x7D - WW_S32(work, 0x210) * 0x28);
 
     t = 190.f * (f32)work->itemScrollRow[0];
     WW_F32(work, 0x22C) = t;
@@ -453,12 +453,12 @@ s32 winItemMain(WindowWork* work) {
             break;
         } else if (work->buttonTrg & 0x10) {
             winSortEntry(work, WW_S32(work, 0x210) != 0, -310.f, 150.f);
-            WW_S32(work, 0x124) = WW_S32(work, 0x20C);
+            work->savedState = WW_S32(work, 0x20C);
             psndSFXOn((const char*)0x20012);
             WW_S32(work, 0x20C) = 1000;
         }
-        WW_F32(work, 0x158) = -275.0f;
-        WW_F32(work, 0x15C) = (f32)(0x7D - WW_S32(work, 0x210) * 0x28);
+        work->targetX = -275.0f;
+        work->targetY = (f32)(0x7D - WW_S32(work, 0x210) * 0x28);
         winMsgEntry(work, 0, WW_S32(work, 0x210) == 0 ? STR_MOCHI_ITEM : STR_MOCHI_DAIJI, 0);
         break;
 
@@ -581,15 +581,15 @@ s32 winItemMain(WindowWork* work) {
             psndSFXOn((const char*)0x20035);
         } else if (work->buttonTrg & 0x10) {
             winSortEntry(work, WW_S32(work, 0x210) != 0, -310.f, 150.f);
-            WW_S32(work, 0x124) = WW_S32(work, 0x20C);
+            work->savedState = WW_S32(work, 0x20C);
             psndSFXOn((const char*)0x20012);
             WW_S32(work, 0x20C) = 1000;
         } else if (work->buttonTrg & 0x1000) {
             return -2;
         }
     update10: {
-        WW_F32(work, 0x158) = (f32)((((s32*)((u8*)work + 0x214))[sel] % 10 % 2) * 0xCC - 0x9B);
-        WW_F32(work, 0x15C) = (f32)(0x6E - (((s32*)((u8*)work + 0x214))[sel] % 10 / 2) * 0x26);
+        work->targetX = (f32)((((s32*)((u8*)work + 0x214))[sel] % 10 % 2) * 0xCC - 0x9B);
+        work->targetY = (f32)(0x6E - (((s32*)((u8*)work + 0x214))[sel] % 10 / 2) * 0x26);
         item = (WW_S32(work, 0x210) == 0) ? pouchHaveItem(((s32*)((u8*)work + 0x214))[sel])
                                           : (s32)((s16*)((u8*)work + 0x2E8))[((s32*)((u8*)work + 0x214))[sel]];
         winMsgEntry(work, item, itemDataTable[item].description, 0);
@@ -606,8 +606,8 @@ s32 winItemMain(WindowWork* work) {
                 WW_F32(work, 0x238) = 320.f;
                 WW_F32(work, 0x240) = -240.f;
                 work->flags &= ~0x8000;
-                WW_F32(work, 0x150) = WW_F32(work, 0x158);
-                WW_F32(work, 0x154) = WW_F32(work, 0x15C);
+                work->posX = work->targetX;
+                work->posY = work->targetY;
             }
         } else if (work->buttonTrg & 0x200) {
             psndSFXOn((const char*)0x20013);
@@ -618,19 +618,19 @@ s32 winItemMain(WindowWork* work) {
                 WW_F32(work, 0x238) = 320.f;
                 WW_F32(work, 0x240) = -240.f;
                 work->flags &= ~0x8000;
-                WW_F32(work, 0x150) = WW_F32(work, 0x158);
-                WW_F32(work, 0x154) = WW_F32(work, 0x15C);
+                work->posX = work->targetX;
+                work->posY = work->targetY;
             }
         } else if (work->buttonTrg & 0x1000) {
             WW_F32(work, 0x238) = 320.f;
             WW_F32(work, 0x240) = -240.f;
             work->flags &= ~0x8000;
-            WW_F32(work, 0x150) = WW_F32(work, 0x158);
-            WW_F32(work, 0x154) = WW_F32(work, 0x15C);
+            work->posX = work->targetX;
+            work->posY = work->targetY;
             return -2;
         }
-        WW_F32(work, 0x158) = -170.f;
-        WW_F32(work, 0x15C) = 150.f;
+        work->targetX = -170.f;
+        work->targetY = 150.f;
         break;
 
     case 200:
@@ -708,7 +708,7 @@ s32 winItemMain(WindowWork* work) {
             }
         } else if (work->buttonTrg & 0x10) {
             winSortEntry(work, 7, WW_F32(work, 0x248), WW_F32(work, 0x250) - 60.f);
-            WW_S32(work, 0x124) = WW_S32(work, 0x20C);
+            work->savedState = WW_S32(work, 0x20C);
             psndSFXOn((const char*)0x20012);
             WW_S32(work, 0x20C) = 1000;
         } else if (work->buttonTrg & 0x1000) {
@@ -716,8 +716,8 @@ s32 winItemMain(WindowWork* work) {
             WW_F32(work, 0x250) = -240.f;
             return -2;
         }
-        WW_F32(work, 0x158) = -96.0f;
-        WW_F32(work, 0x15C) = 120.f - (f32)((WW_S32(work, 0x258) % 5) * 0x28);
+        work->targetX = -96.0f;
+        work->targetY = 120.f - (f32)((WW_S32(work, 0x258) % 5) * 0x28);
         break;
 
     case 201: {
@@ -766,8 +766,8 @@ s32 winItemMain(WindowWork* work) {
             WW_F32(work, 0x250) = -240.f;
             return -2;
         }
-        WW_F32(work, 0x158) = -96.0f;
-        WW_F32(work, 0x15C) = 120.f;
+        work->targetX = -96.0f;
+        work->targetY = 120.f;
         break;
 
     case 300:
@@ -857,7 +857,7 @@ s32 winItemMain(WindowWork* work) {
             winMgrClose(WW_S32(work, 0x120C));
             return -2;
         }
-        WW_F32(work, 0x158) = -80.f;
+        work->targetX = -80.f;
         {
             f32 f4;
             s32 t = WW_S32(work, 0x2DC);
@@ -872,7 +872,7 @@ s32 winItemMain(WindowWork* work) {
             {
                 f32 v = 130.f - 28.0f * (f32)t;
 
-                WW_F32(work, 0x15C) = v + f4;
+                work->targetY = v + f4;
             }
         }
         break;
@@ -896,7 +896,7 @@ s32 winItemMain(WindowWork* work) {
 
     case 1000:
         if (!winSortWait(work)) {
-            WW_S32(work, 0x20C) = WW_S32(work, 0x124);
+            WW_S32(work, 0x20C) = work->savedState;
         }
         if (work->buttonTrg & 0x1000) {
             return -2;
@@ -1212,9 +1212,9 @@ void itemUseDisp(WinMgrEntry* entry) {
         }
     }
     winTexInit(**(TEXPalette***)(*(u8**)((u8*)work + 0x28) + 0xA0));
-    winTexSet(0, (Vec){2.0f + WW_F32(work, 0x150), WW_F32(work, 0x154) - 2.0f, 0.0f}, (Vec){1.0f, 1.0f, 1.0f},
+    winTexSet(0, (Vec){2.0f + work->posX, work->posY - 2.0f, 0.0f}, (Vec){1.0f, 1.0f, 1.0f},
               dat_8041d4a0);
-    winTexSet(0, (Vec){WW_F32(work, 0x150), WW_F32(work, 0x154), 0.0f}, (Vec){1.0f, 1.0f, 1.0f}, white);
+    winTexSet(0, (Vec){work->posX, work->posY, 0.0f}, (Vec){1.0f, 1.0f, 1.0f}, white);
 }
 
 void itemUseDisp2(WinMgrEntry* entry) {
