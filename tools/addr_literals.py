@@ -1,21 +1,26 @@
 #!/usr/bin/env python3
-"""Turn a unit's address-named float constants (`float_0p5_80420df8`) back into literals where that changes no byte.
+"""Turn a unit's address-named constants (`float_0p5_80420df8`, `str_80301540`, `vec3_802fb2e8`) back into literals
+where that changes no byte.
 
-    uv run --with pyelftools python3 tools/addr_literals.py SRC.c [SRC.c ...] [--apply] [-j N]
-    uv run --with pyelftools python3 tools/addr_literals.py --all [--apply] [-j N]     every .c in src/ and rels/*/src
+    uv run --with pyelftools python3 tools/addr_literals.py SRC.c [SRC.c ...] [--apply] [-j N] [--kinds K,K]
+    uv run --with pyelftools python3 tools/addr_literals.py --all [--apply] [-j N] [--kinds K,K]   src/ and rels/*/src
 
-Candidates are the f32/f64 constants a .c defines itself (`const f32 float_X_8XXXXXXX = V;`, with or without
-`extern` forward declarations) that no other source or header names, that the code never takes the address of and
-that aren't volatile. Named constants land in the unit's pool before the literals the compiler pools itself (after
-them in a few units), and a named constant is sometimes loaded or scheduled differently from a literal, so only a
-contiguous run of the address-ordered constants can go: the search literalises the longest suffix (then the longest
-prefix) for which the recompiled object is link-equivalent to the current one (tools/obj_equiv.py: same section
-bytes, same relocation targets by place). Run after a clean build: the current objects in build/G8MJ01/src are the
-reference. Each unit is compiled with its own ninja command into a temporary directory, so units run in parallel.
+Kinds: `float` (f32/f64 objects), `str` (const char arrays), `agg` (const Vec/GXColor objects, as compound literals); all three
+by default. Candidates are the objects a .c defines itself that no other source or header names, that the code
+never takes the address or sizeof of and that aren't volatile.
 
-Without --apply it only reports. With --apply each source gets its kept literals; run ninja afterwards (the linked
-checksum is the final check) and tools/ci.py. Prints, per unit, how many constants became literals and how many
-address-named references went.
+Named objects and literals don't pool in the same place (named ones first, in definition order; literals in first-use
+order, in text order), and a named constant is sometimes loaded or scheduled differently from a literal, so each
+change is checked by recompiling: the unit is compiled with its own ninja command into a temporary directory and
+compared with the current object by tools/obj_equiv.py (same section bytes, same relocation targets by place). The
+search tries every candidate at once, then one at a time from the highest address down, each on top of those kept.
+String literals lose the alignment NULs the named arrays spelled out ("abc\\000") where the object stays the same.
+A comment block that only headed removed declarations goes too. The reference objects are brought up to date with
+ninja first, so run it on a tree that builds.
+
+Without --apply it only reports. With --apply the sources get their kept literals; then rebuild (the linked checksum is
+the final check) and run tools/ci.py. Prints, per unit, how many objects became literals and how the count of
+address-named references changed.
 """
 import argparse
 import os
@@ -38,6 +43,8 @@ FLOAT_DEF = re.compile(r"^" + SECTION + r"(static )?(?:const )?(f32|f64|float|do
 STR_LIT = r"\"(?:[^\"\\\n]|\\.)*\""
 STR_DEF = re.compile(r"^" + SECTION + r"(static )?const char (str_\w*?_?(8[0-9A-Fa-f]{7}))\[[^\]\n]*\] = (" + STR_LIT + r");", re.M)
 PAD = re.compile(r"(?:\\000|\\0)+\"$")
+AGG_DEF = re.compile(r"^" + SECTION.replace("rodata", "rodata|sdata") + r"(static )?(?:const )?(Vec|GXColor) ((?:vec3|dat)_\w*?_?(8[0-9A-Fa-f]{7}))"
+                     r" = (\{[^;{}\n]*\});", re.M)
 NUM = re.compile(r"^-?(\d+\.?\d*|\.\d+)([eE][-+]?\d+)?[fF]?$")
 
 
@@ -66,6 +73,8 @@ def candidates(path, text, refs, kinds):
         found += [(m.group(4), m.group(3), float_literal(m.group(2), m.group(5))) for m in FLOAT_DEF.finditer(text)]
     if "str" in kinds:
         found += [(m.group(3), m.group(2), m.group(4)) for m in STR_DEF.finditer(text)]
+    if "agg" in kinds:
+        found += [(m.group(4), m.group(3), f"({m.group(2)}){m.group(5)}") for m in AGG_DEF.finditer(text)]
     out = []
     for addr, name, lit in found:
         if lit is None or refs.get(name, {path}) != {path} or len(re.findall(r"\b" + name + r"\b", text)) < 2:
@@ -83,8 +92,8 @@ def literalise(text, consts):
     """TEXT with each constant's declarations removed and its uses replaced by its literal. A comment block that only
     headed removed declarations goes with them."""
     for _, name, lit in consts:
-        text = re.sub(r"^(?:extern )?" + SECTION + r"(?:static )?(?:const )?(?:f32|f64|float|double|char) " + name
-                      + r"(?:\[[^\]\n]*\])?(?: = (?:" + STR_LIT + r"|[^;\n]+))?;[ \t]*(?://[^\n]*)?\n", GONE, text, flags=re.M)
+        text = re.sub(r"^(?:extern )?" + SECTION + r"(?:static )?(?:const )?(?:f32|f64|float|double|char|Vec|GXColor) " + name
+                      + r"(?:\[[^\]\n]*\])?(?: = (?:" + STR_LIT + r"|\{[^;{}\n]*\}|[^;\n]+))?;[ \t]*(?://[^\n]*)?\n", GONE, text, flags=re.M)
         current = text
 
         def repl(m, lit=lit, current=current):
@@ -198,7 +207,7 @@ def main():
     ap.add_argument("srcs", nargs="*")
     ap.add_argument("--all", action="store_true")
     ap.add_argument("--apply", action="store_true")
-    ap.add_argument("--kinds", default="float,str", help="comma list of float, str (default both)")
+    ap.add_argument("--kinds", default="float,str,agg", help="comma list of float, str, agg (default all three)")
     ap.add_argument("-j", type=int, default=max(1, (os.cpu_count() or 2) // 2))
     a = ap.parse_args()
     texts = all_texts()
