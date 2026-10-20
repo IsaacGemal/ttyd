@@ -37,7 +37,9 @@ typedef struct WindowWork {
     f32 targetX;                // 0x158, cursor target, set by every submenu
     f32 targetY;                // 0x15C
     s32 marioLinkIdx;           // 0x160, win_mario: current linkDt entry (the cursor on the Mario page)
-    u8 field_164[0x188 - 0x164]; // 0x164
+    u8 field_164[0x180 - 0x164]; // 0x164
+    s32 sortReverseNext;        // 0x180, win_root's sorts: 0 = next press uses the ascending comparator, 1 = the _r one (flipped by each press, cleared by winSortEntry)
+    u8 field_184[0x188 - 0x184]; // 0x184
     s32 marioPose;              // 0x188, win_mario's Mario pose (mario_change rebuilds it; mapGX reads its anim)
     s32 marioHoldTimer;         // 0x18C, win_mario: frames left before the pose's anim is driven again (30 after a loop)
     s32 marioState;             // 0x190, win_mario: 0 = link cursor, 1 = super action cursor
@@ -56,9 +58,25 @@ typedef struct WindowWork {
     s32 partyState;             // 0x200, win_party: state machine switch
     s32 wazaCount;              // 0x204, win_party: moves shown (attack level + 2)
     s32 wazaSel;                // 0x208, win_party: cursor among the moves
-    u8 field_20C[0x21C - 0x20C]; // 0x20C
+    s32 itemState;              // 0x20C, win_item state machine switch
+    s32 itemTab;                // 0x210, win_item: 0 = held items (STR_MOCHI_ITEM), 1 = key items (STR_MOCHI_DAIJI)
+    s32 itemSel[2];             // 0x214, win_item: cursor per tab (win_root's sort_1_* and sort_2_* read [0] and [1])
     s32 itemScrollRow[2];       // 0x21C, win_item: first visible row per tab
-    u8 field_224[0x3DC - 0x224]; // 0x224
+    u8 field_224[0x254 - 0x224]; // 0x224, win_item's float positions (book and list slide)
+    s32 mailCount;              // 0x254, received mail (pouchReceiveMailCount)
+    s32 mailSel;                // 0x258, mail cursor
+    s32 mailPage;               // 0x25C, mailSel / 5
+    u8 field_260[0x268 - 0x260]; // 0x260, f32 positions
+    s32 mailScroll;             // 0x268, first visible line of the open mail
+    u16 mailLines;              // 0x26C, line count of the open mail (FontGetMessageWidthLine, +10 with a picture)
+    u8 field_26E[0x2D4 - 0x26E]; // 0x26E, mail index pairs (sort base), Luigi book state at 0x2C8-0x2D0
+    s32 useItemId;              // 0x2D4, item picked for use (win_item case 300; win_main hands it to the event)
+    s32 useItemSlot;            // 0x2D8, its pouch index (pouchRemoveItemIndex)
+    s32 useTargetSel;           // 0x2DC, target: 0 = Mario, else index into the joined partners
+    s32 useTimer;               // 0x2E0, frames since the item was used (removed after framerate * 2)
+    u8 field_2E4[0x2E8 - 0x2E4]; // 0x2E4
+    s16 skipList[0x79];         // 0x2E8, win_item: key items shown (winMakeSkipList: those not in menu_skip_list)
+    s16 skipCount;              // 0x3DA, entries in skipList
     s32 badgeState;             // 0x3DC, win_badge: state machine switch
     s32 badgeTab;               // 0x3E0, win_badge: 0 = all badges, 1 = equipped
     s32 badgeSel[2];            // 0x3E4, win_badge: cursor per tab

@@ -324,7 +324,7 @@ void winMain(void) {
                             wp->menuState = 0x64;
                             break;
                         case -3:
-                            if (WM_S32(0x2D4) == 0x4E) {
+                            if (wp->useItemId == 0x4E) {
                                 wp->menuState = 0x12C;
                             } else {
                                 wp->menuState = 0xC8;
@@ -409,11 +409,11 @@ void winMain(void) {
                     }
                 }
                 wp->currentEvent = evtEntryType(&evt_item_use, 0, 0, 0);
-                wp->currentEvent->lwData[10] = WM_S32(0x2D4);
-                wp->currentEvent->lwData[11] = (WM_S32(0x2DC) == 0) ? 0 : (list - 1)[WM_S32(0x2DC)]->partnerId;
+                wp->currentEvent->lwData[10] = wp->useItemId;
+                wp->currentEvent->lwData[11] = (wp->useTargetSel == 0) ? 0 : (list - 1)[wp->useTargetSel]->partnerId;
                 psndClearFlag(0x80);
                 wp->menuState += 1;
-                pouchRemoveItemIndex(WM_S32(0x2D4), WM_S32(0x2D8));
+                pouchRemoveItemIndex(wp->useItemId, wp->useItemSlot);
                 break;
             }
 
