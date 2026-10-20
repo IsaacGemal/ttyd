@@ -10558,3 +10558,28 @@ koopa_motion.c); type mismatch 11; untyped base 35; not a base + offset cast 47;
 
 Check (before the rebase onto b8ba7a3b): `--apply` on party.c, win_root.c, koopa_motion.c, battle_damage.c and npcdrv.c (74 rewrites, no #define dropped:
 every macro still has uses) built byte-identical on the tower (build/G8MJ01/ok recreated); those rewrites were reverted, not committed.
+## battle_stage: BattleStageData covers the 0x1B4 stage record (2026-10-20, Claude Haiku 5.5, n9-q-stagedata)
+
+`jon_btlstage_data` is 0x6D0 bytes: four 0x1B4 records that differ only in mObjects (`&jon_btlobject_data[0/2/4/6]`).
+Each field's role comes from the readers in src/battle:
+- 0x0 / 0x4: the dir strings. seq_battle's `bmapLoadRank` reads 0x4 as the specific dir. Nothing in src reads 0x0, so
+  its name is the header's existing one; its value ("bti_01") matches the rank literal bmapLoadRank passes.
+- 0x8 / 0xC: `mNumObjects` / `mObjects` (BattleStageObjectInit).
+- 0x10 and 0xD0: `BattleWeapon`s. `_get_bgset_attack_data` returns `stage + 0x10` for kind 0 and `stage + 0xD0` for
+  kind 2, and NULL unless the weapon's `hpDamageFn` (0x1C) is set. The jon bytes match BattleWeapon field for field:
+  baseAccuracy 100 at +0x10, superguardType 2 at +0x13, targetClassFlags 0x02100060 at +0x64, element/actionLevel
+  at +0x6C/+0x6E, counterResistanceFlags 0x7FF at +0x78, field_B4[3] 100 at +0xB4. Kind 0's hpDamageFn is NULL in all
+  four records; kind 2's is weaponGetPowerDefault with hpDamageWork[0] 1. Named by kind: kind 1 is never read.
+- 0x194 / 0x198 / 0x19C: `objectTurnEventA1` / `A2` / `B`. BattleStage_DestroyA1/A2/B run the stage's pointer and fall
+  back to `_object_turn_event_A1/A2/B` when it is NULL (jon has NULL in all three).
+- 0x190 and 0x1A0-0x1B3: no reader in src; zero in every jon record. Left as `field_0x190` and `field_0x1A0[20]`.
+
+The header's typedef `BattleStageDataSizeCheck` asserts sizeof == 0x1B4. battle_stage.h now includes
+battle/battle_database_common.h for BattleWeapon, and battle_database_jon.c includes battle/battle_stage.h.
+
+Left: seq_battle.c's `bmapLoadRank` still reads `setup + 0x4` raw (src/sequence, outside this pass); the other 17
+databases still declare `u32 X_btlstage_data[]` at the 0x1B4 stride.
+
+Verify: the tower `ninja` recreates build/G8MJ01/ok after the header/reader commit and after the jon commit; natural
+(no MUST_MATCH) compiles of battle_stage_object.c, battle_stage.c and battle_database_jon.c return 0. Index:
+33.297 -> 33.048 per kLOC (23341 -> 23185 weighted).
