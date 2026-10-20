@@ -49,7 +49,7 @@ s32 window_open[] = {
 	0xFE363C82, 0xFE363C83, 0x00010005, 0x00000000,
 	0x00010009, 0x00000001, 0x0004005B, (s32)evt_mario_set_pos,
 	0xFE363C81, 0xFE363C82, 0xFE363C83, 0x00000006,
-	0x00000070, 0x0002005B, (s32)unk_802243a4, 0xFE363C80,
+	0x00000070, 0x0002005B, (s32)evt_yuu_get_window_evt, 0xFE363C80,
 	0x0001005E, 0xFE363C80, 0x0005005B, (s32)evt_msg_print,
 	0x00000000, (s32)(char*)str_802FE8DC, 0x00000000, 0x00000000,
 	0x0003005B, (s32)evt_msg_select, 0x00000000, (s32)(char*)str_802FE8EC,
@@ -63,7 +63,7 @@ s32 window_open[] = {
 static u32 gap_08_80418B5C_sbss;
 
 PiantaParlorWork* yuwp;
-s32 unk_80418b54;
+s32 yuuWindowEvt; // script window_open runs as a child event (the yuu counter sets it per mode)
 PiantaParlorWork yuugijouwork;
 
 static inline s32 scale700(u32 v) {
@@ -319,13 +319,13 @@ USER_FUNC(yuuminigame_end) {
 	return 2;
 }
 
-USER_FUNC(unk_802243a4) {
-	evtSetValue(event, event->args[0], unk_80418b54);
+USER_FUNC(evt_yuu_get_window_evt) {
+	evtSetValue(event, event->args[0], yuuWindowEvt);
 	return 2;
 }
 
-void unk_8022439c(s32 value) {
-	unk_80418b54 = value;
+void yuuSetWindowEvt(s32 value) {
+	yuuWindowEvt = value;
 }
 
 EventEntry* evtYuuWindow(void) {

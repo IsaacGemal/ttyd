@@ -106,5 +106,5 @@ USER_FUNC(yuugijou_montemedal_wait);
 USER_FUNC(yuugijou_set_yupflag);
 USER_FUNC(yuuminigame_end);
 USER_FUNC(yuuminigame_window_end);
-USER_FUNC(unk_802243a4);
-void unk_8022439c(s32 value);
+USER_FUNC(evt_yuu_get_window_evt);
+void yuuSetWindowEvt(s32 value);

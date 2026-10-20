@@ -298,9 +298,9 @@ USER_FUNC(evt_yuucounter_alloc) {
     work->event = evtEntry(main_evt, 0, 0);
     work->event->lwData[0] = (s32)work;
     if (work->mode == 1) {
-        unk_8022439c((s32)unk_evt_yuu_00019728);
+        yuuSetWindowEvt((s32)unk_evt_yuu_00019728);
     } else {
-        unk_8022439c((s32)unk_evt_yuu_00019740);
+        yuuSetWindowEvt((s32)unk_evt_yuu_00019740);
     }
     return EVT_RETURN_DONE;
 }
