@@ -1127,7 +1127,7 @@ void winFontSetC(Vec* pos, Vec* scale, GXColor* color, const char* format, ...) 
 }
 #endif
 
-s32 winLectureWait(EventEntry* event, BOOL isFirstCall) {
+s32 win_lecture_wait(EventEntry* event, BOOL isFirstCall) {
     s32 value = evtGetValue(event, event->args[0]);
 
     if (isFirstCall) {
@@ -1436,26 +1436,26 @@ s32 evt_diary_read[259] = {
 s32 evt_lecture_msg[96] = {
     0x0001000A, 0x000003E8, 0x0005005B, (s32)evt_msg_print,
     0x00000000, (s32)"lecture_badge_00", 0x00000000, 0x00000000,
-    0x0002005B, (s32)winLectureWait, 0x00000001, 0x0001005B,
+    0x0002005B, (s32)win_lecture_wait, 0x00000001, 0x0001005B,
     (s32)evt_msg_continue, 0x0005005B, (s32)evt_msg_print, 0x00000000,
     (s32)"lecture_badge_01", 0x00000000, 0x00000000, 0x0002005B,
-    (s32)winLectureWait, 0x00000002, 0x0001005B, (s32)evt_msg_continue,
+    (s32)win_lecture_wait, 0x00000002, 0x0001005B, (s32)evt_msg_continue,
     0x0005005B, (s32)evt_msg_print, 0x00000000, (s32)"lecture_badge_02",
-    0x00000000, 0x00000000, 0x0002005B, (s32)winLectureWait,
+    0x00000000, 0x00000000, 0x0002005B, (s32)win_lecture_wait,
     0x00000005, 0x0001005B, (s32)evt_msg_continue, 0x0005005B,
     (s32)evt_msg_print, 0x00000000, (s32)"lecture_badge_03", 0x00000000,
-    0x00000000, 0x0002005B, (s32)winLectureWait, 0x00000006,
+    0x00000000, 0x0002005B, (s32)win_lecture_wait, 0x00000006,
     0x0001005B, (s32)evt_msg_continue, 0x0005005B, (s32)evt_msg_print,
     0x00000000, (s32)"lecture_badge_04", 0x00000000, 0x00000000,
-    0x0002005B, (s32)winLectureWait, 0x00000007, 0x0001005B,
+    0x0002005B, (s32)win_lecture_wait, 0x00000007, 0x0001005B,
     (s32)evt_msg_continue, 0x0005005B, (s32)evt_msg_print, 0x00000000,
     (s32)"lecture_badge_05", 0x00000000, 0x00000000, 0x0002005B,
-    (s32)winLectureWait, 0x00000008, 0x0001005B, (s32)evt_msg_continue,
+    (s32)win_lecture_wait, 0x00000008, 0x0001005B, (s32)evt_msg_continue,
     0x0005005B, (s32)evt_msg_print, 0x00000000, (s32)"lecture_badge_06",
-    0x00000000, 0x00000000, 0x0002005B, (s32)winLectureWait,
+    0x00000000, 0x00000000, 0x0002005B, (s32)win_lecture_wait,
     0x00000009, 0x0001005B, (s32)evt_msg_continue, 0x0005005B,
     (s32)evt_msg_print, 0x00000000, (s32)"lecture_badge_07", 0x00000000,
-    0x00000000, 0x0002005B, (s32)winLectureWait, 0x0000000A,
+    0x00000000, 0x0002005B, (s32)win_lecture_wait, 0x0000000A,
     0x0001005B, (s32)evt_msg_continue, 0x0001000A, 0x000001F4,
     0x0001005B, (s32)winLectureEnd, 0x00000002, 0x00000001,
 };

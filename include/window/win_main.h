@@ -13,7 +13,7 @@ void winDisp(CameraId camId, void* param);
 void winDispKoopa(CameraId camId, void* param);
 void winLectureKeyMask(void);
 s32 winLectureEnd(void);
-s32 winLectureWait(EventEntry* event, BOOL isFirstCall);
+s32 win_lecture_wait(EventEntry* event, BOOL isFirstCall);
 s32 party_force_slit_off(void);
 s32 itemUseFunc2(EventEntry* event, BOOL isFirstCall);
 s32 party_color(EventEntry* event, BOOL isFirstCall);
