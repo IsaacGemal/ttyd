@@ -1635,9 +1635,9 @@ void ext_fan_init(void) {
             break;
         }
 #ifdef MUST_MATCH
-        *(volatile s16*)&fan->field_0x2 = 0;
+        *(volatile s16*)&fan->state = 0;
 #else
-        fan->field_0x2 = 0;
+        fan->state = 0;
 #endif
         pos = vec3_tou_0000d028;
         pos.x = randf(-100.0f, 100.0f);
@@ -1680,7 +1680,7 @@ void fan_disp(void) {
 //  - `ang = (ang + breath) / 2.0f` folds to the retail `* 0.5` fused-multiply-add colouring; the
 //    literal `* 0.5f` picks different FPRs (same story as the `field_0x38` line below). Case 2
 //    computes it before copying `vec3_tou_0000d064` into `target`, and that template is a non-const
-//    `.rodata` object, so the copy is scheduled after the `field_0x2` store as in retail.
+//    `.rodata` object, so the copy is scheduled after the `state` store as in retail.
 //  - `fan->field_0x40 = scale * -c;` (negating the operand, not `-scale * c`) is what retail's
 //    fused form wants; `-(scale * c)` / `-scale * c` colour the FPRs differently.
 //  - the case-1 random angle goes through the `fanAngle` inline above: inlining `r * span + min`
@@ -1719,10 +1719,10 @@ void ext_fan_main(void) {
     FanPose* fp;
     s32 k;
 
-    if (mario->currMotionId == 0x12) {
-        fan_wp->field_0x50C++;
+    if (mario->currMotionId == MARIO_MOTION_HAMMER) {
+        fan_wp->hammerFrames++;
     } else {
-        fan_wp->field_0x50C = 0;
+        fan_wp->hammerFrames = 0;
     }
 
     if (evtGetValue(NULL, GF(10))) {
@@ -1731,7 +1731,7 @@ void ext_fan_main(void) {
         s32 n = fan_wp->poseNum;
 
         while (n > 0) {
-            if (f->field_0x2 == 0) {
+            if (f->state == 0) {
                 f->position = mario->position;
                 vec = f->position;
                 p->flags &= ~1;
@@ -1750,7 +1750,7 @@ void ext_fan_main(void) {
         posee = extGetPosePtr();
         fane = fan_wp->poses;
         for (i = 0; i < fan_wp->poseNum; i++, fane++, posee++) {
-            if (fane->field_0x2 != 0) {
+            if (fane->state != 0) {
                 continue;
             }
             if (found == 0) {
@@ -1774,7 +1774,7 @@ void ext_fan_main(void) {
     s32 i;
     fan = fan_wp->poses;
     for (i = 0; i < fan_wp->poseNum; i++, fan++) {
-        if (fan->field_0x2 != 0) {
+        if (fan->state != 0) {
             continue;
         }
         PSVECSubtract(&vec, &fan->position, &d);
@@ -1791,13 +1791,13 @@ void ext_fan_main(void) {
     s32 ip;
     FanPose* fanp = fan_wp->poses;
     for (ip = 0; ip < fan_wp->poseNum; ip++, fanp++) {
-        if (fanp->field_0x2 != 0) {
+        if (fanp->state != 0) {
             continue;
         }
         {
             FanPose* other = fan_wp->poses;
             for (j = 0; j < fan_wp->poseNum; j++, other++) {
-                if (other->field_0x2 != 0) {
+                if (other->state != 0) {
                     continue;
                 }
                 if (ip == j) {
@@ -1818,12 +1818,12 @@ void ext_fan_main(void) {
 
     fp = fan_wp->poses;
     for (k = 0; k < fan_wp->poseNum; k++, fp++) {
-        if (fp->field_0x2 != 0) {
+        if (fp->state != 0) {
             continue;
         }
         switch (check_hammer(fp)) {
         case 1:
-            fp->field_0x2 = 10;
+            fp->state = 10;
             {
                 f32 rf = (f32)rand() / 32767.0f;
                 f32 a = fanAngle(rf, 135.0f, 90.0f);
@@ -1849,13 +1849,13 @@ void ext_fan_main(void) {
                     f32 dxy = distABf(fp->position.x, fp->position.z, fp->target.x, fp->target.z);
                     f32 ang = angleABf(fp->position.x, fp->position.z, fp->target.x, fp->target.z);
 
-                    fp->field_0x44 = (s16)(dxy / fp->field_0x3C);
+                    fp->timer = (s16)(dxy / fp->field_0x3C);
 #ifdef MUST_MATCH
                     // /2.0f makes MWCC fold to the retail `* 0.5` fused-multiply-add colouring;
                     // the natural `* 0.5f` picks different FPRs.
-                    fp->field_0x38 = fp->field_0x40 * (f32)fp->field_0x44 / 2.0f + dy / (f32)fp->field_0x44;
+                    fp->field_0x38 = fp->field_0x40 * (f32)fp->timer / 2.0f + dy / (f32)fp->timer;
 #else
-                    fp->field_0x38 = fp->field_0x40 * (f32)fp->field_0x44 * 0.5f + dy / (f32)fp->field_0x44;
+                    fp->field_0x38 = fp->field_0x40 * (f32)fp->timer * 0.5f + dy / (f32)fp->timer;
 #endif
                     (void)ang;
                 }
@@ -1867,7 +1867,7 @@ void ext_fan_main(void) {
                 f32 ang = angleABf(mario->position.x, mario->position.z, fp->position.x, fp->position.z);
                 f32 breath = cloudGetBreathDir();
 
-                fp->field_0x2 = 20;
+                fp->state = 20;
                 ang = (ang + breath) / 2.0f;
                 fp->target = vec3_tou_0000d064;
                 {
@@ -1880,7 +1880,7 @@ void ext_fan_main(void) {
                     fp->field_0x3C = randf(0.03f, 0.06f);
                     c = fanCosf(a);
                     fp->field_0x40 = scale * -c;
-                    fp->field_0x44 = 120;
+                    fp->timer = 120;
                 }
                 psndSFXOn_3D(FAN_SFX("SFX_STG3_AUDIENCE_FAN_FLY1"), &fp->position);
             }
@@ -1890,12 +1890,12 @@ void ext_fan_main(void) {
             break;
         }
     }
-    fan_wp->field_0x510 = fan_wp->poseNum;
+    fan_wp->idleCount = fan_wp->poseNum;
 
     pose = extGetPosePtr();
     fan = fan_wp->poses;
     for (i = 0; i < fan_wp->poseNum; i++, pose++, fan++) {
-        switch (fan->field_0x2) {
+        switch (fan->state) {
         case 0:
         {
             HitCheckQuery query;
@@ -1943,19 +1943,19 @@ void ext_fan_main(void) {
                 fan->position.z += fan->field_0x3C * -c;
             }
             {
-                s16 v = fan->field_0x44;
+                s16 v = fan->timer;
 
-                fan->field_0x44 = --v;
+                fan->timer = --v;
                 if (v < 0) {
-                    fan->field_0x2 = 100;
+                    fan->state = 100;
                 }
             }
             break;
         case 20:
             {
-                s16 v = fan->field_0x44;
+                s16 v = fan->timer;
 
-                fan->field_0x44 = --v;
+                fan->timer = --v;
                 if (v > 0) {
                     fan->target.x += fan->field_0x38;
                     fan->target.y += fan->field_0x3C;
@@ -1964,22 +1964,22 @@ void ext_fan_main(void) {
                     fan->position.y += fan->target.y;
                     fan->position.z += fan->target.z;
                 } else {
-                    fan->field_0x2 = 100;
+                    fan->state = 100;
                 }
             }
             break;
         case 100:
             pose->flags &= ~3;
-            fan->field_0x2++;
+            fan->state++;
             break;
         case 101:
         default:
             break;
         }
         if (fan->flags & 1) {
-            fan_wp->field_0x510--;
-        } else if (fan->field_0x2 != 0) {
-            fan_wp->field_0x510--;
+            fan_wp->idleCount--;
+        } else if (fan->state != 0) {
+            fan_wp->idleCount--;
         }
         (*pose->matrix)[0][3] = fan->position.x;
         (*pose->matrix)[1][3] = fan->position.y;
@@ -1987,7 +1987,7 @@ void ext_fan_main(void) {
         pose->field_0x4 = angleABf(vec.x, vec.z, fan->position.x, fan->position.z);
     }
     psndSFX_pos(fan_wp->sfxId, &vec);
-    psndSFX_vol(fan_wp->sfxId, (u8)(fan_wp->volume * fan_wp->field_0x510 / fan_wp->poseNum));
+    psndSFX_vol(fan_wp->sfxId, (u8)(fan_wp->volume * fan_wp->idleCount / fan_wp->poseNum));
 }
 #pragma opt_lifetimes reset
 #pragma opt_propagation reset
@@ -2110,7 +2110,7 @@ s32 check_hammer(FanPose* pose) {
     if (pose->flags & 1) {
         return 0;
     }
-    if (mario->currMotionId == 0x12 && fan_wp->field_0x50C > 10) {
+    if (mario->currMotionId == MARIO_MOTION_HAMMER && fan_wp->hammerFrames > 10) {
 #ifdef MUST_MATCH
         // one expression: the original pools TWO_PI before 90.0f
         rad = TWO_PI * reviseAngle(mario->unk1A8 - 90.0f + camGetPtr(4)->viewYaw) / 360.0f;
@@ -2126,13 +2126,13 @@ s32 check_hammer(FanPose* pose) {
             return 1;
         }
     }
-    if (mario->currMotionId == 0x13 && (s32)mario->currSubMotionId == 0x14) {
+    if (mario->currMotionId == MARIO_MOTION_HAMMER_2 && (s32)mario->currSubMotionId == 0x14) {
         if (PSVECDistance(&mario->position, &pose->position) < 65.0f) {
             return 1;
         }
     }
     party = partyGetPtr(0);
-    if (party != NULL && party->currentMemberId == 5 && (party->flags & PARTY_FLAG_IS_BEING_USED)) {
+    if (party != NULL && party->currentMemberId == PARTY_MEMBER_FLURRIE && (party->flags & PARTY_FLAG_IS_BEING_USED)) {
         Vec local;
         f32 dist;
 
@@ -2154,7 +2154,7 @@ s32 check_hammer(FanPose* pose) {
 #pragma opt_lifetimes reset
 #pragma opt_propagation reset
 USER_FUNC(evt_end_count) {
-    evtSetValue(event, event->args[0], fan_wp->field_0x510);
+    evtSetValue(event, event->args[0], fan_wp->idleCount);
     return EVT_RETURN_DONE;
 }
 // clang-format on
