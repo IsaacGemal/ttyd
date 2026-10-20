@@ -224,7 +224,7 @@ USER_FUNC(btlevtcmd_GetRandomValue) {
 // variables; its backend CSE then turns the second `li 0` into `mr r5,r6` for the
 // `retcount = ceilcount` copy, where named locals keep `li r5,0`. Two separate `= 0`
 // statements (not `retcount = ceilcount = 0`) are needed so the front end emits two `li`s
-// for the CSE to merge. The MUST_MATCH block below makes the target load `args[0]` before
+// for the CSE to merge. The loads below put `args[0]` before
 // `args[1]` (reading `args[-1]` after `args += 2`).
 static inline s32 btlevtcmd_DrawLotsPick(s32* alloc, s32 count, s32 ceiling) {
     s32 ceilcount, retcount, i;
@@ -246,15 +246,9 @@ USER_FUNC(btlevtcmd_DrawLots) {
     s32 i, countId, count, max;
     s32 ceiling, retcount;
 
-#ifdef MUST_MATCH
     index = args[0];
     args += 2;
     countId = args[-1];
-#else
-    index = args[0];
-    countId = args[1];
-    args += 2;
-#endif
     count = evtGetValue(event, countId);
     alloc = BattleAlloc(sizeof(s32) * count);
     max = 0;
@@ -2202,18 +2196,10 @@ USER_FUNC(btlevtcmd_GetPartyTechLv) {
     kind = BattleGetUnitPtr(wp, id)->currentKind;
     value = 0;
     if (kind >= TYPE_PARTNER_MIN && kind < TYPE_PARTNER_MAX) {
-#ifdef MUST_MATCH
-        u8* p;
-#endif
+        PouchPartyData* d;
         i = BattleTransPartyId(kind);
-#ifdef MUST_MATCH
-        // the field access compiles to a different address computation (96.71%): the original adds i * 0xe to the
-        // pouch pointer first, then loads from +0xc
-        p = (u8*)pouchGetPtr() + i * 0xe;
-        value = *(s16*)(p + 0xc);
-#else
-        value = pouchGetPtr()->partyData[i].techLevel;
-#endif
+        d = &pouchGetPtr()->partyData[i];
+        value = d->techLevel;
     }
     evtSetValue(event, index, value);
     return EVT_RETURN_DONE;
@@ -2591,20 +2577,14 @@ USER_FUNC(btlevtcmd_OnToken) {
     s32* args = event->args;
     BattleUnit* unit;
     s32 btlId;
-#ifdef MUST_MATCH
     s32 t;
-#endif
 
     btlId = evtGetValue(event, args[0]);
     unit = BattleGetUnitPtr(_battleWorkPointer, BattleTransID(event, btlId));
-#ifdef MUST_MATCH
     // routing args[1] through a temp makes MWCC keep the field as the OR destination (`or r0, r0, r4`)
     t = args[1];
     t = unit->mTokenFlags | t;
     unit->mTokenFlags = t;
-#else
-    unit->mTokenFlags = args[1] | unit->mTokenFlags;
-#endif
     return EVT_RETURN_DONE;
 }
 
@@ -2612,20 +2592,14 @@ USER_FUNC(btlevtcmd_OffToken) {
     s32* args = event->args;
     BattleUnit* unit;
     s32 btlId;
-#ifdef MUST_MATCH
     s32 t;
-#endif
 
     btlId = evtGetValue(event, args[0]);
     unit = BattleGetUnitPtr(_battleWorkPointer, BattleTransID(event, btlId));
-#ifdef MUST_MATCH
     // routing args[1] through a temp makes MWCC keep the field as the ANDC destination (`andc r0, r0, r4`)
     t = args[1];
     t = unit->mTokenFlags & ~t;
     unit->mTokenFlags = t;
-#else
-    unit->mTokenFlags = unit->mTokenFlags & ~args[1];
-#endif
     return EVT_RETURN_DONE;
 }
 
@@ -4879,8 +4853,7 @@ USER_FUNC(btlevtcmd_FallPartsPosition) {
 
 //s32* battleId, s32* partNo, s32* tx, s32* ty, s32* tz, s32* frame, s32* height, s32* interp, s32* curve, s32* a
 // MATCHING. All callee-saved GPRs land where the target has them (id r28, partNo r27, part r27, aboveFloor
-// r28) because of the within-statement declarator order below; the dead btlId is reused so the scheduler puts
-// aboveFloor's `li r28, 0x0` before BattleGetUnitPtr. The intpl_sub calls go through an ABI-identical reordered
+// r28) because of the within-statement declarator order below. The intpl_sub calls go through an ABI-identical reordered
 // prototype (the original source declared the floats before the ints), the 0.0f literals give the compares the
 // constant FPRs the target uses, and the block-scoped `dist2` in the curve != 0 branch keeps the sqrt result in
 // f4 for the zero test with a copy in f3 for the division (`fmr f3, f4`).
@@ -4907,15 +4880,8 @@ USER_FUNC(btlevtcmd_DivePartsPosition) {
     interp = evtGetValue(event, args[7]);
     curve = evtGetValue(event, args[8]);
     a = evtGetValue(event, args[9]);
-    btlId = id;
     aboveFloor = 0;
-#ifdef MUST_MATCH
-    // Passing the dead btlId makes the scheduler put aboveFloor's `li r28, 0x0` before BattleGetUnitPtr, as the
-    // target does, instead of between the two calls.
-    unit = BattleGetUnitPtr(_battleWorkPointer, btlId);
-#else
     unit = BattleGetUnitPtr(_battleWorkPointer, id);
-#endif
     part = BtlUnit_GetPartsPtr(unit, partNo);
     if (interp >= 100) {
         aboveFloor = 1;
