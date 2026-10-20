@@ -126,19 +126,19 @@ static inline Vec recoveryZeroVec6(void) {
 }
 
 // .rodata (0x802F3508..0x802F3678)
-#define str_802F3558 "SFX_HP_RECOVER_SHINE1"
-#define str_802F3570 "SFX_HP_RECOVER_SHINE2"
-#define str_802F3588 "SFX_HP_RECOVER_SHINE3"
-#define str_802F35A0 "SFX_FP_RECOVER_SHINE1"
-#define str_802F35B8 "SFX_FP_RECOVER_SHINE2"
-#define str_802F35D0 "SFX_FP_RECOVER_SHINE3"
-#define str_802F35E8 "Recovery"
-#define str_802F35F4 "SFX_HP_RECOVER_SMALL1"
-#define str_802F360C "SFX_HP_RECOVER_MID1"
-#define str_802F3620 "SFX_HP_RECOVER_BIG1"
-#define str_802F3634 "SFX_FP_RECOVER_SMALL1"
-#define str_802F364C "SFX_FP_RECOVER_MID1"
-#define str_802F3660 "SFX_FP_RECOVER_BIG1"
+#define str_SFX_HP_RECOVER_SHINE1 "SFX_HP_RECOVER_SHINE1"
+#define str_SFX_HP_RECOVER_SHINE2 "SFX_HP_RECOVER_SHINE2"
+#define str_SFX_HP_RECOVER_SHINE3 "SFX_HP_RECOVER_SHINE3"
+#define str_SFX_FP_RECOVER_SHINE1 "SFX_FP_RECOVER_SHINE1"
+#define str_SFX_FP_RECOVER_SHINE2 "SFX_FP_RECOVER_SHINE2"
+#define str_SFX_FP_RECOVER_SHINE3 "SFX_FP_RECOVER_SHINE3"
+#define str_Recovery "Recovery"
+#define str_SFX_HP_RECOVER_SMALL1 "SFX_HP_RECOVER_SMALL1"
+#define str_SFX_HP_RECOVER_MID1 "SFX_HP_RECOVER_MID1"
+#define str_SFX_HP_RECOVER_BIG1 "SFX_HP_RECOVER_BIG1"
+#define str_SFX_FP_RECOVER_SMALL1 "SFX_FP_RECOVER_SMALL1"
+#define str_SFX_FP_RECOVER_MID1 "SFX_FP_RECOVER_MID1"
+#define str_SFX_FP_RECOVER_BIG1 "SFX_FP_RECOVER_BIG1"
 
 // 100%: the colour strings are string literals (not named `const char[]` objects), so the compiler pools
 // its own int->float double as the unit's only .rodata constant right after the zero-Vec helpers,
@@ -170,7 +170,7 @@ EffectEntry* effRecoveryEntry(s32 type, s32 count, f32 x, f32 y, f32 z) {
 		count = 0xB;
 		break;
 	}
-	effect->type = str_802F35E8;
+	effect->type = str_Recovery;
 	effect->count = count + 1;
 	data = __memAlloc(HEAP_EFFECT, effect->count * 0x44);
 	effect->userdata = data;
@@ -204,28 +204,28 @@ EffectEntry* effRecoveryEntry(s32 type, s32 count, f32 x, f32 y, f32 z) {
 	case 0:
 	case 7:
 		if (data->field_1 <= 5) {
-			psndSFXOn_3D(str_802F35F4, &disp);
+			psndSFXOn_3D(str_SFX_HP_RECOVER_SMALL1, &disp);
 		} else if (data->field_1 <= 0xA) {
-			psndSFXOn_3D(str_802F360C, &disp);
+			psndSFXOn_3D(str_SFX_HP_RECOVER_MID1, &disp);
 		} else {
-			psndSFXOn_3D(str_802F3620, &disp);
+			psndSFXOn_3D(str_SFX_HP_RECOVER_BIG1, &disp);
 		}
 		break;
 	case 1:
 	case 8:
 		if (data->field_1 <= 5) {
-			psndSFXOn_3D(str_802F3634, &disp);
+			psndSFXOn_3D(str_SFX_FP_RECOVER_SMALL1, &disp);
 		} else if (data->field_1 <= 0xA) {
-			psndSFXOn_3D(str_802F364C, &disp);
+			psndSFXOn_3D(str_SFX_FP_RECOVER_MID1, &disp);
 		} else {
-			psndSFXOn_3D(str_802F3660, &disp);
+			psndSFXOn_3D(str_SFX_FP_RECOVER_BIG1, &disp);
 		}
 		break;
 	case 4:
-		psndSFXOn_3D(str_802F3620, &disp);
+		psndSFXOn_3D(str_SFX_HP_RECOVER_BIG1, &disp);
 		break;
 	case 5:
-		psndSFXOn_3D(str_802F3660, &disp);
+		psndSFXOn_3D(str_SFX_FP_RECOVER_BIG1, &disp);
 		break;
 	}
 
@@ -435,27 +435,27 @@ void effRecoveryMain(EffectEntry* effect) {
 				switch (center->type) {
 				case 0:
 					if (center->field_1 <= 5) {
-						psndSFXOn_3D(str_802F3558, &soundArg);
+						psndSFXOn_3D(str_SFX_HP_RECOVER_SHINE1, &soundArg);
 					} else if (center->field_1 <= 10) {
-						psndSFXOn_3D(str_802F3570, &soundArg);
+						psndSFXOn_3D(str_SFX_HP_RECOVER_SHINE2, &soundArg);
 					} else {
-						psndSFXOn_3D(str_802F3588, &soundArg);
+						psndSFXOn_3D(str_SFX_HP_RECOVER_SHINE3, &soundArg);
 					}
 					break;
 				case 1:
 					if (center->field_1 <= 5) {
-						psndSFXOn_3D(str_802F35A0, &soundArg);
+						psndSFXOn_3D(str_SFX_FP_RECOVER_SHINE1, &soundArg);
 					} else if (center->field_1 <= 10) {
-						psndSFXOn_3D(str_802F35B8, &soundArg);
+						psndSFXOn_3D(str_SFX_FP_RECOVER_SHINE2, &soundArg);
 					} else {
-						psndSFXOn_3D(str_802F35D0, &soundArg);
+						psndSFXOn_3D(str_SFX_FP_RECOVER_SHINE3, &soundArg);
 					}
 					break;
 				case 4:
-					psndSFXOn_3D(str_802F3588, &soundArg);
+					psndSFXOn_3D(str_SFX_HP_RECOVER_SHINE3, &soundArg);
 					break;
 				case 5:
-					psndSFXOn_3D(str_802F35D0, &soundArg);
+					psndSFXOn_3D(str_SFX_FP_RECOVER_SHINE3, &soundArg);
 					break;
 				}
 			}

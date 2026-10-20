@@ -30,31 +30,31 @@ static USER_FUNC(paper_on);  // local to this file in the original
 // itemEntry is defined in driver/itemdrv.c but not declared in any header yet.
 
 // shared .sdata2 constants (named by their original addresses)
-__declspec(section ".sdata2") char str_8041BC68[8] = "mario";
+__declspec(section ".sdata2") char str_mario[8] = "mario";
 __declspec(section ".sdata2") f32 float_6p2832_8041bc70 = 6.2831855f;
 __declspec(section ".sdata2") f32 float_90_8041bc74 = 90.0f;
 __declspec(section ".sdata2") f32 float_360_8041bc78 = 360.0f;
-__declspec(section ".sdata2") char str_8041BC7C[8] = "M_S_1";
+__declspec(section ".sdata2") char str_M_S_1[8] = "M_S_1";
 
 // force_active: these strings are referenced only through the unit's other data (and by other units), the linker would drop the rest.
 #pragma force_active on
 // shared .rodata string pool (named by their original addresses)
-const char str_802ECE50[0x14] = "BGM_FF_GO_SLEEPING1";
+const char str_BGM_FF_GO_SLEEPING1[0x14] = "BGM_FF_GO_SLEEPING1";
 const char str_802ECE64[0x14] = "\217h\211\256\202\314\203J\203\201\203\211\203}\203\223";
-const char str_802ECE78[0x0C] = "c_jugem_c";
+const char str_c_jugem_c[0x0C] = "c_jugem_c";
 const char str_802ECE84[0x0C] = "\203J\203\201\203\211\203}\203\223";
-const char str_802ECE90[0x08] = "bom_02";
-const char str_802ECE98[0x08] = "gor_01";
-const char str_802ECEA0[0x08] = "muj_01";
-const char str_802ECEA8[0x08] = "nok_00";
-const char str_802ECEB0[0x08] = "pik_04";
-const char str_802ECEB8[0x08] = "usu_00";
-const char str_802ECEC0[0x0C] = "confetti";
-const char str_802ECECC[0x18] = "SFX_VOICE_MARIO_FIND1";
-const char str_802ECEE4[0x1C] = "SFX_EVT_50_HOTEL_SHUTTER1";
-const char str_802ECF00[0x0C] = "breakfast";
-const char str_802ECF0C[0x08] = "p_slit";
-const char str_802ECF14[0x08] = "PM_S_3A";
+const char str_bom_02[0x08] = "bom_02";
+const char str_gor_01[0x08] = "gor_01";
+const char str_muj_01[0x08] = "muj_01";
+const char str_nok_00[0x08] = "nok_00";
+const char str_pik_04[0x08] = "pik_04";
+const char str_usu_00[0x08] = "usu_00";
+const char str_confetti[0x0C] = "confetti";
+const char str_SFX_VOICE_MARIO_FIND1[0x18] = "SFX_VOICE_MARIO_FIND1";
+const char str_SFX_EVT_50_HOTEL_SHUTTER1[0x1C] = "SFX_EVT_50_HOTEL_SHUTTER1";
+const char str_breakfast[0x0C] = "breakfast";
+const char str_p_slit[0x08] = "p_slit";
+const char str_PM_S_3A[0x08] = "PM_S_3A";
 #pragma force_active reset
 
 // event function prototypes referenced by the script tables
@@ -153,7 +153,7 @@ s32 kinopio_house_talk_evt[] = {
 	(s32)evt_snd_sfxon_3d, 0x000203BB, 0xFE363C80, 0xFE363C81,
 	0xFE363C82, 0x00000000, 0x0000006D, 0x0001005B,
 	(s32)snd_off, 0x0002005B, (s32)evt_snd_bgmoff, 0x00000400,
-	0x0003005B, (s32)evt_snd_bgmon, 0x00000001, (s32)(char*)str_802ECE50,
+	0x0003005B, (s32)evt_snd_bgmon, 0x00000001, (s32)(char*)str_BGM_FF_GO_SLEEPING1,
 	0x0006005B, (s32)evt_fade_entry, 0x00000004, 0x00000BB8,
 	0x00000000, 0x00000000, 0x00000000, 0x0005005B,
 	(s32)evt_mario_get_pos, 0x00000000, 0xFE363C80, 0xFE363C81,
@@ -181,7 +181,7 @@ s32 kinopio_house_talk_evt[] = {
 	0xFE363C82, 0x0004005B, (s32)evt_mario_set_pos, 0xFE363C80,
 	0xFE363C81, 0xFE363C82, 0x0002005B, (s32)get_npcname,
 	0xFE363C80, 0x0003005B, (s32)evt_set_dir_to_target, 0xFE363C80,
-	(s32)str_8041BC68, 0x0002005B, (s32)evt_mario_set_dir_npc, 0xFE363C80,
+	(s32)str_mario, 0x0002005B, (s32)evt_mario_set_dir_npc, 0xFE363C80,
 	0x0003005B, (s32)evt_party_set_dir_npc, 0x00000000, 0xFE363C80,
 	0x0003005B, (s32)evt_party_set_dir_npc, 0x00000001, 0xFE363C80,
 	0x0004005B, (s32)evt_npc_flag_onoff, 0x00000001, 0xFE363C80,
@@ -225,29 +225,29 @@ s32 evt_50[] = {
 	0x0002005B, (s32)get_npcname, 0xFE363C8A, 0x0005005B,
 	(s32)evt_npc_get_position, 0xFE363C8A, 0xFE363C8D, 0xFE363C8E,
 	0xFE363C8F, 0x0003005B, (s32)evt_npc_entry, (s32)(char*)str_802ECE64,
-	(s32)(char*)str_802ECE78, 0x0003005B, (s32)evt_npc_set_tribe, (s32)(char*)str_802ECE64,
+	(s32)(char*)str_c_jugem_c, 0x0003005B, (s32)evt_npc_set_tribe, (s32)(char*)str_802ECE64,
 	(s32)(char*)str_802ECE84, 0x0001005B, (s32)N_cameraman_on, 0x0004005B,
 	(s32)evt_npc_flag_onoff, 0x00000001, (s32)(char*)str_802ECE64, 0x00008000,
 	0x0002005B, (s32)evt_sub_get_mapname, 0xFE363C80, 0x0002000C,
-	0xFE363C80, (s32)(char*)str_802ECE90, 0x0005005B, (s32)evt_npc_set_position,
+	0xFE363C80, (s32)(char*)str_bom_02, 0x0005005B, (s32)evt_npc_set_position,
 	(s32)(char*)str_802ECE64, 0xFFFFFE93, 0x0000001E, 0xFFFFFF56,
-	0x00000021, 0x0002000C, 0xFE363C80, (s32)(char*)str_802ECE98,
+	0x00000021, 0x0002000C, 0xFE363C80, (s32)(char*)str_gor_01,
 	0x0005005B, (s32)evt_npc_set_position, (s32)(char*)str_802ECE64, 0x000000A8,
 	0x0000009A, 0xFFFFFF1B, 0x00000021, 0x0002000C,
-	0xFE363C80, (s32)(char*)str_802ECEA0, 0x0005005B, (s32)evt_npc_set_position,
+	0xFE363C80, (s32)(char*)str_muj_01, 0x0005005B, (s32)evt_npc_set_position,
 	(s32)(char*)str_802ECE64, 0x0000010E, 0x00000014, 0xFFFFFF6F,
-	0x00000021, 0x0002000C, 0xFE363C80, (s32)(char*)str_802ECEA8,
+	0x00000021, 0x0002000C, 0xFE363C80, (s32)(char*)str_nok_00,
 	0x0005005B, (s32)evt_npc_set_position, (s32)(char*)str_802ECE64, 0xFFFFFE7F,
 	0x00000019, 0xFFFFFF6F, 0x00000021, 0x0002000C,
-	0xFE363C80, (s32)(char*)str_802ECEB0, 0x0005005B, (s32)evt_npc_set_position,
+	0xFE363C80, (s32)(char*)str_pik_04, 0x0005005B, (s32)evt_npc_set_position,
 	(s32)(char*)str_802ECE64, 0x00000136, 0x00000531, 0xFFFFFF9C,
 	0x0005005B, (s32)evt_npc_set_position, 0xFE363C8A, 0x00000136,
 	0x00000531, 0xFFFFFFBF, 0x00000021, 0x0002000C,
-	0xFE363C80, (s32)(char*)str_802ECEB8, 0x0005005B, (s32)evt_npc_set_position,
+	0xFE363C80, (s32)(char*)str_usu_00, 0x0005005B, (s32)evt_npc_set_position,
 	(s32)(char*)str_802ECE64, 0x0000010C, 0x00000000, 0xFFFFFF2E,
 	0x00000021, 0x0003005B, (s32)evt_set_dir_to_target, (s32)(char*)str_802ECE64,
-	(s32)str_8041BC68, 0x0003005B, (s32)evt_set_dir_to_target, 0xFE363C8A,
-	(s32)str_8041BC68, 0x0002005B, (s32)evt_mario_set_dir_npc, (s32)(char*)str_802ECE64,
+	(s32)str_mario, 0x0003005B, (s32)evt_set_dir_to_target, 0xFE363C8A,
+	(s32)str_mario, 0x0002005B, (s32)evt_mario_set_dir_npc, (s32)(char*)str_802ECE64,
 	0x0003005B, (s32)evt_party_set_dir_npc, 0x00000000, (s32)(char*)str_802ECE64,
 	0x0003005B, (s32)msg_no, 0x00000009, 0xFE363C80,
 	0x0005005B, (s32)evt_msg_print, 0x00000000, 0xFE363C80,
@@ -262,12 +262,12 @@ s32 evt_50[] = {
 	0x0005005B, (s32)evt_mario_get_pos, 0x00000000, 0xFE363C80,
 	0xFE363C81, 0xFE363C82, 0x00020035, 0xFE363C81,
 	0x00000064, 0x000F005B, (s32)evt_eff, 0x00000000,
-	(s32)(char*)str_802ECEC0, 0x00000003, 0xFE363C80, 0xFE363C81,
+	(s32)(char*)str_confetti, 0x00000003, 0xFE363C80, 0xFE363C81,
 	0xFE363C82, 0x00000258, 0x00000000, 0x00000000,
 	0x00000000, 0x00000000, 0x00000000, 0x00000000,
 	0x00000000, 0x0000006B, 0x0005005B, (s32)evt_mario_get_pos,
 	0x00000000, 0xFE363C80, 0xFE363C81, 0xFE363C82,
-	0x0006005B, (s32)evt_snd_sfxon_3d, (s32)(char*)str_802ECECC, 0xFE363C80,
+	0x0006005B, (s32)evt_snd_sfxon_3d, (s32)(char*)str_SFX_VOICE_MARIO_FIND1, 0xFE363C80,
 	0xFE363C81, 0xFE363C82, 0x00000000, 0x0000006D,
 	0x000C005B, (s32)evt_eff_fukidashi, 0x00000000, 0x00000000,
 	0x00000000, 0x00000000, 0x00000000, 0x00000000,
@@ -289,7 +289,7 @@ s32 evt_50[] = {
 	0xFE363C80, 0x00000000, 0xFE363C8A, 0x0002005B,
 	(s32)evt_mario_set_dir_npc, (s32)(char*)str_802ECE64, 0x0003005B, (s32)evt_party_set_dir_npc,
 	0x00000000, (s32)(char*)str_802ECE64, 0x0001000A, 0x0000012C,
-	0x0003005B, (s32)evt_snd_sfxon, (s32)(char*)str_802ECEE4, 0x00000000,
+	0x0003005B, (s32)evt_snd_sfxon, (s32)(char*)str_SFX_EVT_50_HOTEL_SHUTTER1, 0x00000000,
 	0x0006005B, (s32)evt_fade_entry, 0x00000008, 0x00000096,
 	0x000000FF, 0x000000FF, 0x000000FF, 0x0005005B,
 	(s32)evt_mario_get_pos, 0x00000000, 0xFE363C80, 0xFE363C81,
@@ -311,7 +311,7 @@ s32 evt_50[] = {
 	(s32)evt_fade_end_wait, 0x0002005B, (s32)evt_npc_check_delete, (s32)(char*)str_802ECE64,
 	0x0005005B, (s32)evt_npc_set_position, 0xFE363C8A, 0xFE363C8D,
 	0xFE363C8E, 0xFE363C8F, 0x0003005B, (s32)evt_set_dir_to_target,
-	0xFE363C8A, (s32)str_8041BC68, 0x0006005B, (s32)evt_fade_entry,
+	0xFE363C8A, (s32)str_mario, 0x0006005B, (s32)evt_fade_entry,
 	0x00000009, 0x000003E8, 0x00000000, 0x00000000,
 	0x00000000, 0x0001005B, (s32)evt_fade_end_wait, 0x0002005B,
 	(s32)evt_party_run, 0x00000000, 0x0002005B, (s32)evt_mario_key_onoff,
@@ -355,7 +355,7 @@ USER_FUNC(evt_kinopio_setup) {
     KinopioData* data = (KinopioData*)evtGetValue(event, event->args[0]);
     NpcEntry* npc = npcNameToPtr(data->npcname);
 
-    if (animGroupBaseAsync(str_802ECF0C, 0, NULL) == 0) {
+    if (animGroupBaseAsync(str_p_slit, 0, NULL) == 0) {
         return 0;
     }
     npc->talkEvt = kinopio_house_talk_evt;
@@ -472,13 +472,13 @@ USER_FUNC(get_from_bed_evt) {
 #pragma opt_propagation off
 static USER_FUNC(paper_on) {
     s32* args = event->args;
-    const char* str = str_802ECE50;
+    const char* str = str_BGM_FF_GO_SLEEPING1;
     f32 val = evtGetFloat(event, args[0]);
     MarioWork* mario = marioGetPtr();
 
     if (isFirstCall) {
         marioPaperOn(str + 0xBC);
-        marioChgPose(str_8041BC7C);
+        marioChgPose(str_M_S_1);
         marioChgPaper(str + 0xC4);
         event->userdata[0] = 0;
     }
@@ -535,10 +535,10 @@ USER_FUNC(offset) {
 }
 
 USER_FUNC(breakfast) {
-    ItemEntry* item = itemNameToPtr((char*)str_802ECF00);
+    ItemEntry* item = itemNameToPtr((char*)str_breakfast);
     if (item == NULL || !(item->flags & 1)) {
         if ((*wp)->field_0 != 0) {
-            itemEntry(str_802ECF00, (*wp)->field_0, 0x10, -1, 0, (*wp)->field_4, (*wp)->field_8, (*wp)->field_C);
+            itemEntry(str_breakfast, (*wp)->field_0, 0x10, -1, 0, (*wp)->field_4, (*wp)->field_8, (*wp)->field_C);
         }
     }
     return EVT_RETURN_DONE;
