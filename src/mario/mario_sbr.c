@@ -139,7 +139,7 @@ void marioBottomless(void) {
         marioChgMot(MARIO_MOTION_BOTTOMLESS);
         return;
     }
-    if (*(u32*)((u8*)p + 0x2C8) != 0) {
+    if (p->reloadMapOnBottomless != 0) {
         seqSetSeq(3, gp->currentMapName, gp->beroEnterName);
         return;
     }
@@ -180,12 +180,12 @@ void N_marioSetBottomlessRespawnPos(f32 x, f32 y, f32 z) {
 
 void N_marioReloadMapOnBottomlessOn(void) {
     MarioWork* p = marioGetPtr();
-    *(s32*)((u8*)p + 0x2C8) = 1;
+    p->reloadMapOnBottomless = 1;
 }
 
 void N_marioReloadMapOnBottomlessOff(void) {
     MarioWork* p = marioGetPtr();
-    *(s32*)((u8*)p + 0x2C8) = 0;
+    p->reloadMapOnBottomless = 0;
 }
 
 s32 marioSetDirEventMain(void) {
@@ -197,24 +197,24 @@ s32 marioSetDirEventMain(void) {
     if (!(p->dispFlags & 0x8000)) {
         return 1;
     }
-    frames = sysMsec2Frame(*(s32*)((u8*)p + 0x298));
+    frames = sysMsec2Frame(p->dirEventMsec);
     if (frames > 0) {
-        dir = revise360(270.0f - *(f32*)((u8*)p + 0x294));
-        t = (dir - *(f32*)((u8*)p + 0x290)) * ((f32)(*(s32*)((u8*)p + 0x29C)) / (f32)frames);
-        p->unk1A8 = revise360(*(f32*)((u8*)p + 0x290) + t);
+        dir = revise360(270.0f - p->dirEventTarget);
+        t = (dir - p->dirEventStart) * ((f32)(p->dirEventFrame) / (f32)frames);
+        p->unk1A8 = revise360(p->dirEventStart + t);
         p->dispReqDir = p->unk1A8;
         p->directionView = toMovedirSimple(p->unk1A8);
-        *(f32*)((u8*)p + 0x19C) = p->directionView;
-        if (++*(s32*)((u8*)p + 0x29C) > frames) {
+        *(f32*)p->unk19C = p->directionView;
+        if (++p->dirEventFrame > frames) {
             p->dispFlags &= ~0x8000;
             return 1;
         }
         return 0;
     } else {
-        p->unk1A8 = revise360(270.0f - *(f32*)((u8*)p + 0x294));
+        p->unk1A8 = revise360(270.0f - p->dirEventTarget);
         p->dispReqDir = p->unk1A8;
         p->directionView = toMovedirSimple(p->unk1A8);
-        *(f32*)((u8*)p + 0x19C) = p->directionView;
+        *(f32*)p->unk19C = p->directionView;
         p->dispFlags &= ~0x8000;
         return 1;
     }
@@ -231,7 +231,7 @@ void marioResetGravity(void) {
 }
 
 void* marioGetTouchNpcPtr(void) {
-    return *(void**)((u8*)marioGetPtr() + 0x1D4);
+    return marioGetPtr()->touchNpc;
 }
 
 BOOL marioChkPlanePlace(HitEntry* hit) {
@@ -240,20 +240,20 @@ BOOL marioChkPlanePlace(HitEntry* hit) {
 
 void marioSetPeakYpos(void) {
     MarioWork* p = marioGetPtr();
-    *(f32*)((u8*)p + 0x12C) = p->position.y;
+    p->peakYpos = p->position.y;
 }
 
 void marioAdjustMoveDir(void) {
     MarioWork* p = marioGetPtr();
 
     if (p->unk1A8 >= 90.0f && p->unk1A8 <= 270.0f) {
-        *(f32*)((u8*)p + 0x19C) = toMovedir(90.0f);
-        p->directionView = *(f32*)((u8*)p + 0x19C);
+        *(f32*)p->unk19C = toMovedir(90.0f);
+        p->directionView = *(f32*)p->unk19C;
         p->unk1A8 = 180.0f;
         p->dispReqDir = 180.0f;
     } else {
-        *(f32*)((u8*)p + 0x19C) = toMovedir(90.0f);
-        p->directionView = *(f32*)((u8*)p + 0x19C);
+        *(f32*)p->unk19C = toMovedir(90.0f);
+        p->directionView = *(f32*)p->unk19C;
         p->unk1A8 = 0.0f;
         p->dispReqDir = 0.0f;
     }
@@ -424,7 +424,7 @@ void marioSetForceMove(s32 timer, f32 direction, f32 speed) {
     MarioWork* p = marioGetPtr();
 
     p->flags |= MARIO_FLAG_FORCED_MOVEMENT;
-    *(f32*)((u8*)p + 0x19C) = direction;
+    *(f32*)p->unk19C = direction;
     p->directionView = direction;
     p->forceMoveTimer = timer;
     p->baseSpeed = speed;
@@ -440,7 +440,7 @@ void marioSetForceMove(s32 timer, f32 direction, f32 speed) {
 #else
     marioChgMot(speed > p->mBaseWalkSpeed ? MARIO_MOTION_DASH : MARIO_MOTION_WALK);
 #endif
-    *(f32*)((u8*)p + 0x19C) = direction;
+    *(f32*)p->unk19C = direction;
     p->directionView = direction;
     p->forceMoveTimer = timer;
     p->baseSpeed = speed;
@@ -564,7 +564,7 @@ void marioGetStick(f32* outAngle, f32* outMag) {
     }
     angle = angleABf(0.0f, 0.0f, (f32)x, (f32)y2);
     if (!mag) {
-        angle = *(f32*)((u8*)p + 0x19C);
+        angle = *(f32*)p->unk19C;
     }
     angle = revise360(angle + p->targetYaw);
     *outAngle = angle;
