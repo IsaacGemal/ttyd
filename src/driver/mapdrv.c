@@ -44,7 +44,7 @@ GXTexObj projTexObj;
 void* projTexImgRef;
 Mtx projMtx;
 BOOL __mapdrv_make_dl;
-u32 mapDispDisabled;
+BOOL mapDispDisabled;
 s32 error_count;
 BOOL error_flag;
 MapObject* current_mp;
@@ -1103,11 +1103,7 @@ void mapLoad(const char* map) {
 	MapWork* wp;
 
 	sysWaitDrawSync();
-#ifdef MUST_MATCH
 	wp = (MapWork*)mapWork; // redundant cast: makes MWCC load into r31 (wp's home) instead of the memset arg r3
-#else
-	wp = mapWork;
-#endif
 	activeGroup = 0;
 	memset(wp, 0, sizeof(MapWork));
 	_mapLoad(wp, 0, map);
@@ -2345,12 +2341,7 @@ void mapDisp(void) {
 
 	wp = &mapWork[activeGroup];
 	cam = camGetPtr(CAMERA_3D);
-#ifdef MUST_MATCH
-	/* the original emits cmpwi, i.e. it treats mapDispDisabled as signed */
-	if ((s32)mapDispDisabled != 0) {
-#else
 	if (mapDispDisabled != 0) {
-#endif
 		return;
 	}
 	entry = &wp->entries[0];
@@ -4547,7 +4538,6 @@ void mapObjSetFlushColor(const char* name, u8 r, u8 g, u8 b, u8 a) {
 	mapObjFlagOff(name, 0x40);
 }
 
-#ifdef MUST_MATCH
 // Built in an inline that returns the colour: puts the by-value argument copy above the local, as retail has it.
 static inline GXColor mapFlushColor(u8 r, u8 g, u8 b, u8 a) {
 	GXColor color = (GXColor){0, 0, 0, 0};
@@ -4558,20 +4548,9 @@ static inline GXColor mapFlushColor(u8 r, u8 g, u8 b, u8 a) {
 	color.a = a;
 	return color;
 }
-#endif
 
 void mapGrpSetFlushColor(const char* name, u8 r, u8 g, u8 b, u8 a) {
-#ifdef MUST_MATCH
 	mapGrpSetColor(name, mapFlushColor(r, g, b, a));
-#else
-	GXColor color = (GXColor){0, 0, 0, 0};
-
-	color.r = r;
-	color.g = g;
-	color.b = b;
-	color.a = a;
-	mapGrpSetColor(name, color);
-#endif
 	mapGrpFlagOff(name, 0x40);
 }
 
