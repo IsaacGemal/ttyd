@@ -109,8 +109,8 @@ void seq_mapChangeExit(SequenceWork* work) {
 #define STR_DIG_00 "dig_00"
 
 // The original .rodata string-pool base for this function's strings (see _unload).
-// tou_03 and %s/rel/%s.rel are explicit objects in the parse-time part of the pool (str_802C1060/
-// str_802C1068), so they must stay pool-relative; every other string here is a normal generated pool
+// tou_03 and %s/rel/%s.rel are explicit objects in the parse-time part of the pool (str_tou_03/
+// str_relPathFormat), so they must stay pool-relative; every other string here is a normal generated pool
 // entry and is emitted by using the literal.
 #define SMC_STR(off, lit) (lit)
 #define SMC_STR_OFF(off, lit) (lit)
@@ -148,16 +148,16 @@ void seq_mapChangeMain(SequenceWork* work) {
         } else {
             gp->didAreaChange = 1;
         }
-        if (strcmp(_next_map, str_802C1060) != 0) {
+        if (strcmp(_next_map, str_tou_03) != 0) {
             area = _next_area;
-            if (strcmp(_next_area, str_80419420) == 0) {
+            if (strcmp(_next_area, str_tou) == 0) {
                 if (seqGetSeq() == 1) {
-                    area = str_80419424;
-                } else if (strcmp(_next_map, str_802C1060) == 0) {
-                    area = str_80419424;
+                    area = str_tou2;
+                } else if (strcmp(_next_map, str_tou_03) == 0) {
+                    area = str_tou2;
                 }
             }
-            fileAsyncf(FILE_TYPE_RAW, 0, str_802C1068, getMarioStDvdRoot(), area);
+            fileAsyncf(FILE_TYPE_RAW, 0, str_relPathFormat, getMarioStDvdRoot(), area);
         }
         work->state++;
         return;
@@ -188,15 +188,15 @@ void seq_mapChangeMain(SequenceWork* work) {
             return;
         }
         area = _next_area;
-        if (strcmp(_next_area, str_80419420) == 0) {
+        if (strcmp(_next_area, str_tou) == 0) {
             if (seqGetSeq() == 1) {
-                area = str_80419424;
-            } else if (strcmp(_next_map, str_802C1060) == 0) {
-                area = str_80419424;
+                area = str_tou2;
+            } else if (strcmp(_next_map, str_tou_03) == 0) {
+                area = str_tou2;
             }
         }
         {
-            u32 r = (u32)fileAsyncf(FILE_TYPE_RAW, 0, str_802C1068, getMarioStDvdRoot(), area);
+            u32 r = (u32)fileAsyncf(FILE_TYPE_RAW, 0, str_relPathFormat, getMarioStDvdRoot(), area);
             s32 ready;
 
             if (r == 0) {
@@ -210,18 +210,18 @@ void seq_mapChangeMain(SequenceWork* work) {
                 FileEntry* file;
 
                 area = _next_area;
-                if (strcmp(_next_area, str_80419420) == 0) {
+                if (strcmp(_next_area, str_tou) == 0) {
                     if (seqGetSeq() == 1) {
-                        area = str_80419424;
-                    } else if (strcmp(_next_map, str_802C1060) == 0) {
-                        area = str_80419424;
+                        area = str_tou2;
+                    } else if (strcmp(_next_map, str_tou_03) == 0) {
+                        area = str_tou2;
                     }
                 }
-                file = (FileEntry*)fileAllocf(FILE_TYPE_RAW, str_802C1068, getMarioStDvdRoot(), area);
+                file = (FileEntry*)fileAllocf(FILE_TYPE_RAW, str_relPathFormat, getMarioStDvdRoot(), area);
                 if (file != NULL) {
-                    if (strncmp(area, str_8041942C, 3) == 0) {
+                    if (strncmp(area, str_tst, 3) == 0) {
                         gp->relocationBase = _mapAlloc((u32)file->data[1]);
-                    } else if (strncmp(area, str_80419430, 3) == 0) {
+                    } else if (strncmp(area, str_jon, 3) == 0) {
                         gp->relocationBase = _mapAlloc((u32)file->data[1]);
                     } else {
                         gp->relocationBase = gp->mapAlloc;
@@ -381,10 +381,10 @@ static const char* dir_str[8] = { "e", "ne", "n", "nw", "w", "sw", "s", "se" };
 
 // Short map-name strings that the original keeps ahead of _load's pooled zero and floats. Naming them places
 // them in the parse-time part of .sdata2 and keeps seq_mapChangeMain from pooling its own copies.
-const char str_80419420[] = "tou";
-const char str_80419424[] = "tou2";
-const char str_8041942C[] = "tst";
-const char str_80419430[] = "jon";
+const char str_tou[] = "tou";
+const char str_tou2[] = "tou2";
+const char str_tst[] = "tst";
+const char str_jon[] = "jon";
 
 void _unload(const char* prevMapName, const char* newMapName, const char* arg2) {
     BOOL unload;
@@ -556,5 +556,5 @@ void _relUnLoad(void) {
 
 // The original .rodata's seq_mapChangeMain strings; emitted here (after the code) so MWCC keeps the pool's
 // original slots: they land between _load's pooled zero-vecs and its pooled map-name strings.
-const char str_802C1060[8] = "tou_03";
-const char str_802C1068[16] = "%s/rel/%s.rel";
+const char str_tou_03[8] = "tou_03";
+const char str_relPathFormat[16] = "%s/rel/%s.rel";
