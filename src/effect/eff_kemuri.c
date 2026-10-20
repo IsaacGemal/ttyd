@@ -98,7 +98,12 @@ EffectEntry* effKemuriEntry(s32 int2, f32 float3, f32 float4, f32 float5, f32 fl
 			numEffects = 2;
 			break;
 	}
+#ifdef MUST_MATCH
+	// Retail reserves eight bytes for this string.
+	entry->type = "Kemuri\0";
+#else
 	entry->type = "Kemuri";
+#endif
 	entry->count = numEffects;
 	data = (effKemuriData*)__memAlloc(HEAP_EFFECT, sizeof(effKemuriData) * numEffects);
 	entry->userdata = data;
@@ -842,4 +847,10 @@ __declspec(section ".sdata") const GXColor unk_80423010;
 #else
 const GXColor unk_80423014 = { 0, 0, 0, 0 };
 const GXColor unk_80423010 = { 0, 0, 0, 0 };
+#endif
+
+#ifdef MUST_MATCH
+#pragma force_active on
+__declspec(section ".sdata2") const u32 gap_8041c72c = 0;
+#pragma force_active reset
 #endif
