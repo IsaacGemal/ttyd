@@ -33,20 +33,20 @@ typedef struct effKemuri2Data {
 	f32 x; //0x4
 	f32 y; //0x8
 	f32 z; //0xC
-	f32 field_0x10; //0x10
+	f32 speed; //0x10 horizontal drift, multiplies dirX/dirZ each tick
 	u8 field_0x14[0x20 - 0x14]; //0x14
-	f32 field_0x20; //0x20
+	f32 velY; //0x20 vertical velocity, damped by 0.9 per tick
 	u8 field_0x24[0x30 - 0x24]; //0x24
-	f32 field_0x30; //0x30
-	f32 field_0x34; //0x34
+	f32 dirX; //0x30 sin of the drift angle
+	f32 dirZ; //0x34 cos of the drift angle
 	u8 field_0x38[0x3C - 0x38]; //0x38
-	s32 counter; //0x3C
+	s32 counter; //0x3C ticks since spawn; the puff is deleted after 30
 	u8 field_0x40[0x64 - 0x40]; //0x40
-	f32 field_0x64; //0x64
-	f32 field_0x68; //0x68
-	s32 alpha; //0x6C
-	f32 field_0x70; //0x70
-	f32 field_0x74; //0x74
-	f32 field_0x78; //0x78
+	f32 spinVel; //0x64 spin rate, damped by 0.95 per tick
+	f32 spin; //0x68 accumulated z rotation in degrees
+	s32 alpha; //0x6C tint alpha, fades by 0.8 after counter passes 15
+	f32 pulseScale; //0x70 sin(counter) pulse, used as the scale of the quads
+	f32 scale; //0x74 base scale, starts at 1
+	f32 heading; //0x78 camera-relative yaw in degrees; picks which quad faces the camera
 	u8 field_0x7C[0x8C - 0x7C]; //0x7C
 } effKemuri2Data;
