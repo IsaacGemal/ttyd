@@ -116,10 +116,9 @@ static USER_FUNC(mario_kirimomi) {
     mario->scale.z = 1.0f;
     mario->scale.y = 1.0f;
     mario->scale.x = 1.0f;
-    // 0xB4/0xC4: unnamed MarioWork fields used only by the spin (kirimomi) effect.
-    *(f32*)((u8*)mario + 0xB4) = mario->wPlayerCollisionBox.y / 2.0f * mario->scale.y;
-    *(f32*)((u8*)mario + 0xC4) = angle;
-    *(f32*)((u8*)mario + 0xC4) = (f32)fmod(*(f32*)((u8*)mario + 0xC4), 360.0);
+    mario->dispPivot.y = mario->wPlayerCollisionBox.y / 2.0f * mario->scale.y;
+    mario->dispRot.z = angle;
+    mario->dispRot.z = (f32)fmod(mario->dispRot.z, 360.0);
     return EVT_RETURN_DONE;
 }
 
@@ -130,8 +129,7 @@ USER_FUNC(party_kirimomi) {
     party->field_70.z = 1.0f;
     party->field_70.y = 1.0f;
     party->field_70.x = 1.0f;
-    // 0x8C: unnamed PartyEntry field used only by the spin (kirimomi) effect.
-    *(f32*)((u8*)party + 0x8C) = party->height / 2.0f * party->field_70.y;
+    party->spinPivot.y = party->height / 2.0f * party->field_70.y;
     party->spinAngle = angle;
     party->spinAngle = (f32)fmod(party->spinAngle, 360.0);
     return EVT_RETURN_DONE;
@@ -142,8 +140,8 @@ USER_FUNC(mario_reset) {
     mario->scale.z = 1.0f;
     mario->scale.y = 1.0f;
     mario->scale.x = 1.0f;
-    *(f32*)((u8*)mario + 0xB4) = 0.0f;
-    *(f32*)((u8*)mario + 0xC4) = 0.0f;
+    mario->dispPivot.y = 0.0f;
+    mario->dispRot.z = 0.0f;
     return EVT_RETURN_DONE;
 }
 
@@ -152,7 +150,7 @@ USER_FUNC(party_reset) {
     party->field_70.z = 1.0f;
     party->field_70.y = 1.0f;
     party->field_70.x = 1.0f;
-    *(f32*)((u8*)party + 0x8C) = 0.0f;
+    party->spinPivot.y = 0.0f;
     party->spinAngle = 0.0f;
     return EVT_RETURN_DONE;
 }

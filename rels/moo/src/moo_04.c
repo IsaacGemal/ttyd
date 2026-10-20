@@ -85,20 +85,20 @@ static USER_FUNC(mario_kirimomi) {
     party = partyGetPtr(0);
     mario->scale.y = scale;
     mario->scale.x = scale;
-    *(f32*)((u8*)mario + 0xB4) = mario->wPlayerCollisionBox.y / 2.0f;
-    *(f32*)((u8*)mario + 0xB4) = *(f32*)((u8*)mario + 0xB4) * mario->scale.y;
-    *(f32*)((u8*)mario + 0xC4) -= 10.0f;
-    *(f32*)((u8*)mario + 0xC4) = (f32)fmod(*(f32*)((u8*)mario + 0xC4), 360.0);
+    mario->dispPivot.y = mario->wPlayerCollisionBox.y / 2.0f;
+    mario->dispPivot.y = mario->dispPivot.y * mario->scale.y;
+    mario->dispRot.z -= 10.0f;
+    mario->dispRot.z = (f32)fmod(mario->dispRot.z, 360.0);
 
     if (party != NULL) {
         *(f32*)((u8*)party + 0x74) = scale;
         *(f32*)((u8*)party + 0x70) = scale;
         if (party->currentMemberId != PARTY_MEMBER_YOSHI) {
-            *(f32*)((u8*)party + 0x8C) = party->height / 2.0f;
+            party->spinPivot.y = party->height / 2.0f;
         } else {
-            *(f32*)((u8*)party + 0x8C) = (party->height - 10.0f) / 2.0f;
+            party->spinPivot.y = (party->height - 10.0f) / 2.0f;
         }
-        *(f32*)((u8*)party + 0x8C) *= *(f32*)((u8*)party + 0x74);
+        party->spinPivot.y *= *(f32*)((u8*)party + 0x74);
         party->spinAngle -= 10.0f;
         party->spinAngle = (f32)fmod(party->spinAngle, 360.0);
     }
