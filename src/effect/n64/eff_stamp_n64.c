@@ -44,7 +44,7 @@ u32 size16x16_tex64x32_vtx[0x38 / 4] = {
 EffectEntry* effStampN64Entry(s32 type, f32 x, f32 y, f32 z) {
     EffectEntry* effect;
     effStampData* data;
-    effStampData* p;
+    effStampData* petal;
     f32 rad;
     f32 angle;
     s32 i;
@@ -81,20 +81,20 @@ EffectEntry* effStampN64Entry(s32 type, f32 x, f32 y, f32 z) {
         break;
     }
 
-    p = data + 1;
-    for (i = 1; i < 8; i++, p++) {
+    petal = data + 1;
+    for (i = 1; i < 8; i++, petal++) {
         angle = (i - 1) * 360 / 7;
         rad = float_6p2832_8041fe18 * (float_90_8041fe1c + angle) / float_360_8041fe20;
-        p->x = float_1_8041fdec * (f32)cos(rad);
-        p->y = float_1_8041fdec * (f32)sin(rad);
-        p->z = float_0_8041fde8;
-        p->field_0x10 = float_0_8041fde8;
-        p->field_0x14 = float_0_8041fde8;
-        p->field_0x18 = float_0_8041fde8;
-        p->scaleY = float_0p1_8041fdf4;
-        p->scaleX = float_0p1_8041fdf4;
-        p->scale = float_1_8041fdec;
-        p->angle = angle;
+        petal->x = float_1_8041fdec * (f32)cos(rad);
+        petal->y = float_1_8041fdec * (f32)sin(rad);
+        petal->z = float_0_8041fde8;
+        petal->field_0x10 = float_0_8041fde8;
+        petal->field_0x14 = float_0_8041fde8;
+        petal->field_0x18 = float_0_8041fde8;
+        petal->scaleY = float_0p1_8041fdf4;
+        petal->scaleX = float_0p1_8041fdf4;
+        petal->radius = float_1_8041fdec;
+        petal->angle = angle;
     }
     return effect;
 }
@@ -104,7 +104,7 @@ void effStampMain(EffectEntry* effect) {
     Vec position2;
     Vec position;
     s32 i;
-    s32 count;
+    s32 counter;
 
     data = effect->userdata;
     position = (Vec){ 0.0f, 0.0f, 0.0f };
@@ -118,25 +118,25 @@ void effStampMain(EffectEntry* effect) {
         effDelete(effect);
         return;
     }
-    count = data->counter;
-    if (count > 10) {
+    counter = data->counter;
+    if (counter > 10) {
         data->alpha = (s32)((f32)data->alpha * float_0p9_8041fdf0);
     }
     i = 1;
     data++;
     for (; i < effect->count; i++, data++) {
-        if (count > 10) {
+        if (counter > 10) {
             data->scaleY += float_0p1_8041fdf4 * (float_1_8041fdec - data->scaleY);
             data->scaleX += float_0p1_8041fdf4 * (float_2p4_8041fdf8 - data->scaleX);
-            data->scale += float_0p2_8041fdfc * (float_0p07_8041fe00 * (float_100_8041fe04 - data->scale));
+            data->radius += float_0p2_8041fdfc * (float_0p07_8041fe00 * (float_100_8041fe04 - data->radius));
         }
-        if (count < 10) {
+        if (counter < 10) {
             data->scaleY += float_0p05_8041fe08 * (float_7_8041fe0c - data->scaleY);
             data->scaleX += float_0p1_8041fdf4 * (float_1_8041fdec - data->scaleX);
-            data->scale += float_0p6_8041fe10 * (float_0p05_8041fe08 * (float_10_8041fe14 - data->scale));
+            data->radius += float_0p6_8041fe10 * (float_0p05_8041fe08 * (float_10_8041fe14 - data->radius));
         }
-        data->x = data->scale * (f32)cos(float_6p2832_8041fe18 * (float_90_8041fe1c + data->angle) / float_360_8041fe20);
-        data->y = data->scale * (f32)sin(float_6p2832_8041fe18 * (float_90_8041fe1c + data->angle) / float_360_8041fe20);
+        data->x = data->radius * (f32)cos(float_6p2832_8041fe18 * (float_90_8041fe1c + data->angle) / float_360_8041fe20);
+        data->y = data->radius * (f32)sin(float_6p2832_8041fe18 * (float_90_8041fe1c + data->angle) / float_360_8041fe20);
     }
     dispEntry(4, dispCalcZ(&position2), 2, effStampDisp, effect);
 }
@@ -179,7 +179,7 @@ void effStampDisp(CameraId camId, void* param) {
     data = effect->userdata;
 
     GXSetNumChans(1);
-    GXSetChanCtrl(GX_COLOR0A0, GX_DISABLE, GX_SRC_REG, GX_SRC_VTX, 0, GX_DF_NONE, GX_AF_NONE);
+    GXSetChanCtrl(GX_COLOR0A0, GX_DISABLE, GX_SRC_REG, GX_SRC_VTX, GX_LIGHT_NULL, GX_DF_NONE, GX_AF_NONE);
     GXSetNumTevStages(1);
     GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR0A0);
     GXSetTevColorOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
