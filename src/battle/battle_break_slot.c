@@ -37,7 +37,7 @@ struct BattleBreakSlotReel {
     s32 type;       // 0x00
     u32 flags;      // 0x04
     s32 state;      // 0x08
-    s32 field_0C;   // 0x0C
+    s32 stateTimer; // 0x0C
     s32 value;      // 0x10
     s32* cards;     // 0x14
     s32 count;      // 0x18
@@ -46,16 +46,16 @@ struct BattleBreakSlotReel {
     Vec rot;        // 0x2C
     Vec scale;      // 0x38
     Vec pivot;      // 0x44
-    f32 field_50;   // 0x50
-    f32 field_54;   // 0x54
-    u8 field_58;    // 0x58
+    f32 scrollStep; // 0x50
+    f32 scrollDelta; // 0x54
+    u8 alpha;      // 0x58
     u8 field_59[3]; // 0x59
 };
 
 struct BattleBreakSlot {
     u32 flags;      // 0x00
     s32 state;      // 0x04
-    s32 field_08;   // 0x08
+    s32 timer;      // 0x08
     s32 counter;    // 0x0C
     s32 breakTurn;  // 0x10
     f32 field_14;   // 0x14
@@ -68,7 +68,7 @@ struct BattleBreakSlot {
 // The original emits real calls to BattleBreakSlotGetPtr/ReelGetPtr.
 #pragma dont_inline on
 
-const char str_802FD6C0[] = "recovery";
+const char str_recovery[] = "recovery";
 
 // The original has these constants in .sdata2. They are declared extern const in the unit's header and defined
 // at the end of the file: a const object defined before its use is folded into MWCC's own literal pool, while an
@@ -141,7 +141,7 @@ __declspec(section ".data") u32 kinoko_effect[107] = {
     0x0005005B, (u32)btlevtcmd_GetPos, 0xFE363C83, 0xFE363C80,
     0xFE363C81, 0xFE363C82, 0x00020035, 0xFE363C81,
     0x00000032, 0x000F005B, (u32)evt_eff, (u32)(void*)&zero_80420520,
-    (u32)(void*)str_802FD6C0, 0x00000004, 0xFE363C80, 0xFE363C81,
+    (u32)(void*)str_recovery, 0x00000004, 0xFE363C80, 0xFE363C81,
     0xFE363C82, 0xFE363C85, 0x00000000, 0x00000000,
     0x00000000, 0x00000000, 0x00000000, 0x00000000,
     0x00000000, 0x0004005B, (u32)btlevtcmd_RecoverHp, 0xFE363C83,
@@ -155,7 +155,7 @@ __declspec(section ".data") u32 kinoko_effect[107] = {
     0xFE363C85, 0x0005005B, (u32)btlevtcmd_GetPos, 0xFE363C83,
     0xFE363C80, 0xFE363C81, 0xFE363C82, 0x00020035,
     0xFE363C81, 0x00000032, 0x000F005B, (u32)evt_eff,
-    (u32)(void*)&zero_80420520, (u32)(void*)str_802FD6C0, 0x00000004, 0xFE363C80,
+    (u32)(void*)&zero_80420520, (u32)(void*)str_recovery, 0x00000004, 0xFE363C80,
     0xFE363C81, 0xFE363C82, 0xFE363C85, 0x00000000,
     0x00000000, 0x00000000, 0x00000000, 0x00000000,
     0x00000000, 0x00000000, 0x0004005B, (u32)btlevtcmd_RecoverHp,
@@ -171,7 +171,7 @@ __declspec(section ".data") u32 flower_effect[44] = {
     0x0005005B, (u32)btlevtcmd_GetPos, 0xFE363C83, 0xFE363C80,
     0xFE363C81, 0xFE363C82, 0x00020035, 0xFE363C81,
     0x00000032, 0x000F005B, (u32)evt_eff, (u32)(void*)&zero_80420520,
-    (u32)(void*)str_802FD6C0, 0x00000005, 0xFE363C80, 0xFE363C81,
+    (u32)(void*)str_recovery, 0x00000005, 0xFE363C80, 0xFE363C81,
     0xFE363C82, 0xFE363C85, 0x00000000, 0x00000000,
     0x00000000, 0x00000000, 0x00000000, 0x00000000,
     0x00000000, 0x0004005B, (u32)btlevtcmd_RecoverFp, 0xFE363C83,
@@ -185,7 +185,7 @@ __declspec(section ".data") u32 shine_effect[151] = {
     0x0005005B, (u32)btlevtcmd_GetPos, 0xFE363C83, 0xFE363C80,
     0xFE363C81, 0xFE363C82, 0x00020035, 0xFE363C81,
     0x00000032, 0x000F005B, (u32)evt_eff, (u32)(void*)&zero_80420520,
-    (u32)(void*)str_802FD6C0, 0x00000004, 0xFE363C80, 0xFE363C81,
+    (u32)(void*)str_recovery, 0x00000004, 0xFE363C80, 0xFE363C81,
     0xFE363C82, 0xFE363C85, 0x00000000, 0x00000000,
     0x00000000, 0x00000000, 0x00000000, 0x00000000,
     0x00000000, 0x0004005B, (u32)btlevtcmd_RecoverHp, 0xFE363C83,
@@ -199,7 +199,7 @@ __declspec(section ".data") u32 shine_effect[151] = {
     0xFE363C85, 0x0005005B, (u32)btlevtcmd_GetPos, 0xFE363C83,
     0xFE363C80, 0xFE363C81, 0xFE363C82, 0x00020035,
     0xFE363C81, 0x00000032, 0x000F005B, (u32)evt_eff,
-    (u32)(void*)&zero_80420520, (u32)(void*)str_802FD6C0, 0x00000004, 0xFE363C80,
+    (u32)(void*)&zero_80420520, (u32)(void*)str_recovery, 0x00000004, 0xFE363C80,
     0xFE363C81, 0xFE363C82, 0xFE363C85, 0x00000000,
     0x00000000, 0x00000000, 0x00000000, 0x00000000,
     0x00000000, 0x00000000, 0x0004005B, (u32)btlevtcmd_RecoverHp,
@@ -211,7 +211,7 @@ __declspec(section ".data") u32 shine_effect[151] = {
     (u32)btlevtcmd_GetMaxFp, 0xFE363C83, 0xFE363C85, 0x0005005B,
     (u32)btlevtcmd_GetPos, 0xFE363C83, 0xFE363C80, 0xFE363C81,
     0xFE363C82, 0x00020035, 0xFE363C81, 0x00000032,
-    0x000F005B, (u32)evt_eff, (u32)(void*)&zero_80420520, (u32)(void*)str_802FD6C0,
+    0x000F005B, (u32)evt_eff, (u32)(void*)&zero_80420520, (u32)(void*)str_recovery,
     0x00000005, 0xFE363C80, 0xFE363C81, 0xFE363C82,
     0xFE363C85, 0x00000000, 0x00000000, 0x00000000,
     0x00000000, 0x00000000, 0x00000000, 0x00000000,
@@ -274,14 +274,14 @@ __declspec(section ".data") u32 doku_kinoko_effect[65] = {
 // local/outgoing GXColor pair out the way the original does; the direct build puts the two slots the
 // other way round.
 static inline GXColor slotColorA(u8 a) {
-    GXColor c = *(GXColor*)&dat_80420528;
+    GXColor c = *(GXColor*)&slotCurrentColor;
 
     c.a = a;
     return c;
 }
 
 static inline GXColor slotColorB(u8 a) {
-    GXColor c = *(GXColor*)&dat_8042052c;
+    GXColor c = *(GXColor*)&slotNextColor;
 
     c.a = a;
     return c;
@@ -374,14 +374,14 @@ void BattleBreakSlot_Main(void) {
         }
         if (n == 2 && BattleBreakSlotReelGetPtr(0)->value != BattleBreakSlotReelGetPtr(1)->value) {
             slot->state = 1;
-            slot->field_08 = 0;
+            slot->timer = 0;
         }
         break;
     case 1:
-        if (slot->field_08 == 60) {
+        if (slot->timer == 60) {
             for (i = 0, reel = BattleBreakSlotReelGetPtr(0); i < 2; i++) {
                 reel->state = 3;
-                reel->field_0C = 0;
+                reel->stateTimer = 0;
                 reel++;
             }
         }
@@ -396,7 +396,7 @@ void BattleBreakSlot_Main(void) {
             slot->state = 8;
             slot->counter = 0;
         }
-        slot->field_08++;
+        slot->timer++;
         break;
     case 2:
         n = 0;
@@ -408,7 +408,7 @@ void BattleBreakSlot_Main(void) {
         }
         if (n == 3) {
             slot->state = 3;
-            slot->field_08 = 0;
+            slot->timer = 0;
             for (i = 0, reel = BattleBreakSlotReelGetPtr(0); i < 3; i++) {
                 if (reel->state == 6) {
                     reel->state = 7;
@@ -428,24 +428,24 @@ void BattleBreakSlot_Main(void) {
         }
         if (n == 3) {
             slot->state = 4;
-            slot->field_08 = 0;
+            slot->timer = 0;
             psndSFXOff(slot->sound);
         }
-        if ((keyGetButtonTrg(0) & 0x100) && slot->field_08 >= 15) {
+        if ((keyGetButtonTrg(0) & 0x100) && slot->timer >= 15) {
             for (i = 0, reel = BattleBreakSlotReelGetPtr(0); i < 3; i++) {
                 if (reel->state == 8) {
                     reel->state = 9;
-                    reel->field_54 = float_neg1_80420550 * (float_0p2_80420554 + (float_0p15_80420558 * rand()) / float_32767_8042055c);
-                    reel->field_54 = float_neg1_80420550;
+                    reel->scrollDelta = float_neg1_80420550 * (float_0p2_80420554 + (float_0p15_80420558 * rand()) / float_32767_8042055c);
+                    reel->scrollDelta = float_neg1_80420550;
                     break;
                 }
                 reel++;
             }
         }
-        slot->field_08++;
+        slot->timer++;
         break;
     case 4:
-        if (slot->field_08 == 20) {
+        if (slot->timer == 20) {
             n = 0;
             for (i = 0, reel = BattleBreakSlotReelGetPtr(0); i < 2; i++) {
                 if (reel[0].value == reel[1].value) {
@@ -458,7 +458,7 @@ void BattleBreakSlot_Main(void) {
                 psndSFXOn("SFX_BTL_SLOT_SUCCESS1");
                 for (i = 0, reel = BattleBreakSlotReelGetPtr(0); i < 3; i++) {
                     reel->state = 11;
-                    reel->field_0C = 0;
+                    reel->stateTimer = 0;
                     reel++;
                 }
             } else {
@@ -466,12 +466,12 @@ void BattleBreakSlot_Main(void) {
                 psndSFXOn("SFX_BTL_SYS_BREAK_FAILRE1");
                 for (i = 0, reel = BattleBreakSlotReelGetPtr(0); i < 3; i++) {
                     reel->state = 12;
-                    reel->field_0C = 0;
+                    reel->stateTimer = 0;
                     reel++;
                 }
             }
         }
-        slot->field_08++;
+        slot->timer++;
         break;
     case 5:
         n = 0;
@@ -483,27 +483,27 @@ void BattleBreakSlot_Main(void) {
         }
         if (n == 3) {
             slot->state = 6;
-            slot->field_08 = 0;
+            slot->timer = 0;
         }
         break;
     case 6:
-        if (slot->field_08 == 0) {
+        if (slot->timer == 0) {
             if (BattleBreakSlotReelGetPtr(0)->value != 4) {
                 effBreakEntry(0, 240, float_0_8042053c, 80.0f, float_0_8042053c);
             } else {
-                slot->field_08 = 101;
+                slot->timer = 101;
                 BattleAudienceSoundBooing();
             }
         }
-        if (slot->field_08 == 20 || slot->field_08 == 40 || slot->field_08 == 60 || slot->field_08 == 80 ||
-            slot->field_08 == 100 || slot->field_08 == 120) {
+        if (slot->timer == 20 || slot->timer == 40 || slot->timer == 60 || slot->timer == 80 ||
+            slot->timer == 100 || slot->timer == 120) {
             psndSFXOn("SFX_BTL_SYS_BREAK1");
             btl_camera_shake_h(0, 10, 0, 5.0f, float_0_8042053c);
         }
-        if (slot->field_08 == 120) {
+        if (slot->timer == 120) {
             BattleAudienceSoundCheer(240, 240);
         }
-        if (slot->field_08 == 130) {
+        if (slot->timer == 130) {
             switch (BattleBreakSlotReelGetPtr(0)->value) {
             case 0:
                 evtEntry(kinoko_effect, 0, 0x20);
@@ -540,7 +540,7 @@ void BattleBreakSlot_Main(void) {
                 break;
             }
         }
-        if (slot->field_08 == 140) {
+        if (slot->timer == 140) {
             switch (BattleBreakSlotReelGetPtr(0)->value) {
             case 0:
             case 1:
@@ -555,7 +555,7 @@ void BattleBreakSlot_Main(void) {
                 btl_camera_set_mode(0, 0);
             }
         }
-        if (slot->field_08 == 180) {
+        if (slot->timer == 180) {
             updown = float_0_8042053c;
             switch (BattleBreakSlotReelGetPtr(0)->value) {
             case 0:
@@ -574,17 +574,17 @@ void BattleBreakSlot_Main(void) {
                 updown = float_0_8042053c;
             }
         }
-        if (slot->field_08 == 209 && float_0_8042053c != updown) {
+        if (slot->timer == 209 && float_0_8042053c != updown) {
             BattleAudienceSoundRun(0);
         }
-        if (slot->field_08 == 210) {
+        if (slot->timer == 210) {
             if (!(_battleWorkPointer->cameraWork.flags & 2)) {
                 btl_camera_shake_h(0, 1000, 0, 2.0f, 2.0f);
             }
             for (j = 0; j < 200; j++) {
                 if ((u8)BattleAudience_GetExist(j) == 1 &&
                     (BattleAudienceGetPtr(j)->status == 11 || BattleAudienceGetPtr(j)->status == 12)) {
-                    slot->field_08--;
+                    slot->timer--;
                     break;
                 }
             }
@@ -596,14 +596,14 @@ void BattleBreakSlot_Main(void) {
 #ifdef MUST_MATCH
         // retail tests j here, the audience loop's counter, which is only assigned on a field_08 == 210 frame: on the
         // frame-220 call it reads an uninitialised local (rule 7: kept only under MUST_MATCH)
-        if (slot->field_08 == 220 && j == 200) {
+        if (slot->timer == 220 && j == 200) {
 #else
-        if (slot->field_08 == 220) {
+        if (slot->timer == 220) {
 #endif
             btl_camera_set_mode(0, 0);
             btl_camera_noshake(0);
         }
-        if (slot->field_08 == 270) {
+        if (slot->timer == 270) {
             BattleAudienceAddTargetNum(float_0_8042053c, updown);
             slot->state = 8;
             slot->flags &= ~4;
@@ -627,7 +627,7 @@ void BattleBreakSlot_Main(void) {
                 }
             }
         }
-        slot->field_08++;
+        slot->timer++;
         break;
     case 7:
         n = 0;
@@ -650,29 +650,29 @@ void BattleBreakSlot_Main(void) {
         switch (reel->state) {
         case 0:
             reel->flags &= ~1;
-            reel->field_58 = 0xFF;
+            reel->alpha = 0xFF;
             break;
         case 1:
             if (i != 2) {
                 reel->flags |= 1;
             }
-            reel->field_0C++;
-            if (reel->field_0C <= 5) {
-                v = intplGetValue(0, reel->field_0C, 5, 110.0f, 142.0f);
+            reel->stateTimer++;
+            if (reel->stateTimer <= 5) {
+                v = intplGetValue(0, reel->stateTimer, 5, 110.0f, 142.0f);
                 reel->pos = (Vec){ float_42_80420534 * i + float_226_80420530, v, 0.0f };
                 reel->scale = (Vec){ 0.8f, 0.8f, 0.8f };
                 reel->rot = (Vec){ 0.0f, 0.0f, 0.0f };
                 reel->pivot = (Vec){ 0.0f, 0.0f, 0.0f };
-                reel->field_58 = 0xFF;
+                reel->alpha = 0xFF;
             } else {
-                v = intplGetValue(4, reel->field_0C - 5, 20, 142.0f, 174.0f);
+                v = intplGetValue(4, reel->stateTimer - 5, 20, 142.0f, 174.0f);
                 reel->pos = (Vec){ float_42_80420534 * i + float_226_80420530, v, 0.0f };
                 reel->scale = (Vec){ 0.8f, 0.8f, 0.8f };
                 reel->rot = (Vec){ 0.0f, 0.0f, 0.0f };
                 reel->pivot = (Vec){ 0.0f, 0.0f, 0.0f };
-                reel->field_58 = 0xFF;
+                reel->alpha = 0xFF;
             }
-            if (reel->field_0C >= 25) {
+            if (reel->stateTimer >= 25) {
                 reel->state = 2;
                 reel->index++;
                 if (reel->index >= reel->count) {
@@ -689,55 +689,55 @@ void BattleBreakSlot_Main(void) {
             if (reel->flags & 2) {
                 reel->flags &= ~2;
                 reel->state = 3;
-                reel->field_0C = 0;
+                reel->stateTimer = 0;
             }
             break;
         case 3:
-            v = intplGetValue(0, reel->field_0C, 20, 142.0f, 174.0f);
+            v = intplGetValue(0, reel->stateTimer, 20, 142.0f, 174.0f);
             reel->pos = (Vec){ float_42_80420534 * i + float_226_80420530, v, 0.0f };
             reel->scale = (Vec){ 0.8f, 0.8f, 0.8f };
             reel->rot = (Vec){ 0.0f, 0.0f, 0.0f };
-            reel->field_0C++;
-            if (reel->field_0C > 20) {
+            reel->stateTimer++;
+            if (reel->stateTimer > 20) {
                 reel->state = 0;
-                reel->field_0C = 0;
+                reel->stateTimer = 0;
                 reel->flags &= ~1;
             }
             break;
         case 4:
-            v = intplGetValue(0, reel->field_0C, 20, 142.0f, 174.0f);
+            v = intplGetValue(0, reel->stateTimer, 20, 142.0f, 174.0f);
             reel->pos = (Vec){ float_42_80420534 * i + float_226_80420530, v, 0.0f };
             reel->scale = (Vec){ 0.8f, 0.8f, 0.8f };
             reel->rot = (Vec){ 0.0f, 0.0f, 0.0f };
-            reel->field_0C++;
-            if (reel->field_0C > 20) {
+            reel->stateTimer++;
+            if (reel->stateTimer > 20) {
                 reel->state = 5;
                 reel->pos = (Vec){ (f32)(i * 128 - 128), -128.0f, 0.0f };
-                reel->field_0C = 0;
+                reel->stateTimer = 0;
             }
             break;
         case 5:
             reel->flags |= 1;
-            v = intplGetValue(0, reel->field_0C, 40, float_neg128_80420548, float_0_8042053c);
+            v = intplGetValue(0, reel->stateTimer, 40, float_neg128_80420548, float_0_8042053c);
             reel->pos = (Vec){ (f32)(i * 128 - 128), v, 0.0f };
             reel->scale = (Vec){ 1.0f, 1.0f, 1.0f };
             reel->rot = (Vec){ 0.0f, 0.0f, 0.0f };
-            reel->field_0C++;
-            if (reel->field_0C > 40) {
+            reel->stateTimer++;
+            if (reel->stateTimer > 40) {
                 if (reel->type == 2) {
                     reel->state = 6;
-                    reel->field_0C = 0;
+                    reel->stateTimer = 0;
                 } else {
                     reel->state = 10;
-                    reel->field_0C = 0;
+                    reel->stateTimer = 0;
                 }
             }
             break;
         case 6:
             break;
         case 7:
-            reel->field_50 = intplGetValue(0, reel->field_0C, 20, float_0_8042053c, 22.5f);
-            reel->pos = (Vec){ 128.0f * i + float_neg128_80420548, reel->pos.y + reel->field_50, 0.0f };
+            reel->scrollStep = intplGetValue(0, reel->stateTimer, 20, float_0_8042053c, 22.5f);
+            reel->pos = (Vec){ 128.0f * i + float_neg128_80420548, reel->pos.y + reel->scrollStep, 0.0f };
             reel->scale = (Vec){ 1.0f, 1.0f, 1.0f };
             reel->rot = (Vec){ 0.0f, 0.0f, 0.0f };
             reel->pivot = (Vec){ 0.0f, 0.0f, 0.0f };
@@ -749,15 +749,15 @@ void BattleBreakSlot_Main(void) {
                 }
                 reel->value = reel->cards[reel->index];
             }
-            reel->field_0C++;
-            if (reel->field_0C > 20) {
+            reel->stateTimer++;
+            if (reel->stateTimer > 20) {
                 reel->state = 8;
-                reel->field_0C = 0;
+                reel->stateTimer = 0;
             }
             break;
         case 8:
-            reel->field_50 = 22.5f;
-            reel->pos = (Vec){ 128.0f * i + float_neg128_80420548, reel->pos.y + reel->field_50, 0.0f };
+            reel->scrollStep = 22.5f;
+            reel->pos = (Vec){ 128.0f * i + float_neg128_80420548, reel->pos.y + reel->scrollStep, 0.0f };
             reel->scale = (Vec){ 1.0f, 1.0f, 1.0f };
             reel->rot = (Vec){ 0.0f, 0.0f, 0.0f };
             if (reel->pos.y >= 128.0f) {
@@ -770,14 +770,14 @@ void BattleBreakSlot_Main(void) {
             }
             break;
         case 9:
-            reel->field_50 += reel->field_54;
-            if (reel->field_50 < 20.0f) {
-                reel->field_50 = 20.0f;
+            reel->scrollStep += reel->scrollDelta;
+            if (reel->scrollStep < 20.0f) {
+                reel->scrollStep = 20.0f;
             }
-            reel->pos = (Vec){ 128.0f * i + float_neg128_80420548, reel->pos.y + reel->field_50, 0.0f };
+            reel->pos = (Vec){ 128.0f * i + float_neg128_80420548, reel->pos.y + reel->scrollStep, 0.0f };
             reel->scale = (Vec){ 1.0f, 1.0f, 1.0f };
             reel->rot = (Vec){ 0.0f, 0.0f, 0.0f };
-            if (reel->field_50 >= float_0_8042053c && reel->pos.y >= 128.0f) {
+            if (reel->scrollStep >= float_0_8042053c && reel->pos.y >= 128.0f) {
                 reel->pos.y -= 128.0f;
                 reel->index++;
                 if (reel->index == reel->count) {
@@ -803,38 +803,38 @@ void BattleBreakSlot_Main(void) {
                 }
                 reel->pos.y = float_0_8042053c;
                 reel->state = 10;
-                reel->field_0C = 0;
-                reel->field_54 = reel->field_50;
+                reel->stateTimer = 0;
+                reel->scrollDelta = reel->scrollStep;
             }
             break;
         case 10:
             if (i == 2) {
-                reel->field_0C++;
-                reel->field_50 = intplGetValue(0, reel->field_0C, 20, reel->field_50, float_0_8042053c);
-                reel->pos.y = reel->field_50 * (f32)sin(3.141592f * (2.0f * reel->field_0C) / 8.0f);
+                reel->stateTimer++;
+                reel->scrollStep = intplGetValue(0, reel->stateTimer, 20, reel->scrollStep, float_0_8042053c);
+                reel->pos.y = reel->scrollStep * (f32)sin(3.141592f * (2.0f * reel->stateTimer) / 8.0f);
             }
             break;
         case 11:
-            reel->field_50 = float_0_8042053c;
+            reel->scrollStep = float_0_8042053c;
             reel->pos.y = float_0_8042053c;
-            v = intplGetValue(0, reel->field_0C, 60, 1.0f, 2.0f);
+            v = intplGetValue(0, reel->stateTimer, 60, 1.0f, 2.0f);
             reel->scale = (Vec){ v, v, 1.0f };
-            reel->field_58 = intplGetValue(0, reel->field_0C, 60, 255.0f, float_0_8042053c);
-            reel->field_0C++;
-            if (reel->field_0C > 60) {
+            reel->alpha = intplGetValue(0, reel->stateTimer, 60, 255.0f, float_0_8042053c);
+            reel->stateTimer++;
+            if (reel->stateTimer > 60) {
                 reel->state = 13;
                 reel->flags &= ~1;
             }
             break;
         case 12:
-            reel->field_50 = float_0_8042053c;
+            reel->scrollStep = float_0_8042053c;
             reel->pos.y = float_0_8042053c;
-            v = intplGetValue(0, reel->field_0C, 40, float_0_8042053c, 128.0f);
+            v = intplGetValue(0, reel->stateTimer, 40, float_0_8042053c, 128.0f);
             reel->pos = (Vec){ 128.0f * i + float_neg128_80420548, v, 0.0f };
             reel->scale = (Vec){ 1.0f, 1.0f, 1.0f };
             reel->rot = (Vec){ 0.0f, 0.0f, 0.0f };
-            reel->field_0C++;
-            if (reel->field_0C > 40) {
+            reel->stateTimer++;
+            if (reel->stateTimer > 40) {
                 reel->state = 13;
                 reel->flags &= ~1;
             }
@@ -873,7 +873,7 @@ void BattleBreakSlotDispReel(CameraId camId, void* param) {
             if ((reel1->flags & 1) && reel1->state >= 1 && reel1->state <= 4) {
                 PSMTXTrans(mtxTrans, float_42_80420534 * (f32)i + float_226_80420530, float_122_80420538, float_0_8042053c);
                 {
-                    GXColor color = *(GXColor*)&dat_80420524;
+                    GXColor color = *(GXColor*)&slotIndicatorColor;
 
                     iconDispGxCol(mtxTrans, 0x10, 0x1D4, color);
                 }
@@ -915,12 +915,12 @@ void BattleBreakSlotDispReel(CameraId camId, void* param) {
             {
                 u16 tex0 = texList[reel->value];
 #ifdef MUST_MATCH
-                btlDispTexPlane2(mtxFinal, tex0, slotColor(reel->field_58, *(GXColor*)&dat_80420528), 0);
+                btlDispTexPlane2(mtxFinal, tex0, slotColor(reel->alpha, *(GXColor*)&slotCurrentColor), 0);
 #else
                 GXColor c0;
 
-                *(u32*)&c0 = dat_80420528;
-                c0.a = reel->field_58;
+                *(u32*)&c0 = slotCurrentColor;
+                c0.a = reel->alpha;
                 btlDispTexPlane2(mtxFinal, tex0, c0, 0);
 #endif
             }
@@ -939,12 +939,12 @@ void BattleBreakSlotDispReel(CameraId camId, void* param) {
                 PSMTXConcat(mtxTrans, mtxFinal, mtxFinal);
                 {
 #ifdef MUST_MATCH
-                    btlDispTexPlane2(mtxFinal, tex, slotColor(reel->field_58, *(GXColor*)&dat_8042052c), 0);
+                    btlDispTexPlane2(mtxFinal, tex, slotColor(reel->alpha, *(GXColor*)&slotNextColor), 0);
 #else
                     GXColor c1;
 
-                    *(u32*)&c1 = dat_8042052c;
-                    c1.a = reel->field_58;
+                    *(u32*)&c1 = slotNextColor;
+                    c1.a = reel->alpha;
                     btlDispTexPlane2(mtxFinal, tex, c1, 0);
 #endif
                 }
@@ -970,7 +970,7 @@ void BattleBreakSlot_PointInc(void) {
     }
     reel = BattleBreakSlotReelGetPtr(slot->counter);
     reel->state = 1;
-    reel->field_0C = 0;
+    reel->stateTimer = 0;
     slot->counter++;
     if (slot->counter > 3) {
         slot->counter = 3;
@@ -1034,7 +1034,7 @@ void BattleBreakSlot_Start(void) {
         reel = BattleBreakSlotReelGetPtr(0);
         for (i = 0; i < 3; i++) {
             reel->state = 4;
-            reel->field_0C = 0;
+            reel->stateTimer = 0;
             reel++;
         }
     }
@@ -1095,9 +1095,9 @@ void item_appear_force(BattleBreakSlotReel* reel, s32 id) {
 // real objects ahead of its own pooled literals instead of folding them.
 #pragma explicit_zero_data on
 __declspec(section ".sdata2") const f32 zero_80420520 = 0.0f;
-__declspec(section ".sdata2") const u32 dat_80420524 = 0xFFFFFFD0;
-__declspec(section ".sdata2") const u32 dat_80420528 = 0xFFFFFF00;
-__declspec(section ".sdata2") const u32 dat_8042052c = 0xFFFFFF00;
+__declspec(section ".sdata2") const u32 slotIndicatorColor = 0xFFFFFFD0;
+__declspec(section ".sdata2") const u32 slotCurrentColor = 0xFFFFFF00;
+__declspec(section ".sdata2") const u32 slotNextColor = 0xFFFFFF00;
 __declspec(section ".sdata2") const f32 float_226_80420530 = 226.0f;
 __declspec(section ".sdata2") const f32 float_42_80420534 = 42.0f;
 __declspec(section ".sdata2") const f32 float_122_80420538 = 122.0f;
