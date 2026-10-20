@@ -8996,3 +8996,15 @@ eff_snow_dust_n64.c's effSnowDustN64Entry and effSnowDustMain sit wholly inside 
 this pass), so a non-MUST_MATCH build doesn't define them and needs a portable #else; the remaining unnamed
 `field_0x` slots (kemutest 0x2C/0x40, snow_dust 0x20/0x2C, kemuri11 0x18, minigame 0x2C, packn_bfire 0x3C/0x5C)
 and packn_bfire's `vx`/`vy`/`vz`, which hold the target point, not a velocity.
+### Readability: action commands, part 2 (2026-10-19, Claude Haiku 5.5, n9-q-sac2; reviewed by Claude Opus 5.5)
+
+sac_common's sac_handbeat/sac_cheer write `BattleAudienceSound.timeLeft` instead of `*(s32*)((u8*)ptr + 0xC)`.
+sac_deka: DekaTiming gets `kind` (0x08; 1 must be pressed in the window, anything else boos when pressed, and
+kind 2 is drawn as a plane and never times out) and `offset` (0x10, added to the icon position, zeroed in state 2);
+DekaWork gets `timingSlideY` (0x4C, eased from -40 to 0 over 30 frames when the timing icons appear) and
+`starScaleFrom`/`starScaleTo` (0x444/0x448, the intplGetValue endpoints of the star's pulse). yuka_disp's GX loop
+reads `DekaYukaMesh.disp`/`texU`/`texV` by index instead of byte offsets from `u8* base`. end_muki and end_suki
+read the star stone's child effect as `effStarStoneData.field_0x34` instead of a pointer-offset cast. Open:
+sac_muki's main_icon/main_star still write the star stone through `f32* data` indices and main_cursor writes
+the stamp effect through `u8` offsets; both wait on real names for effStarStoneData and effStampData, since
+`field_0x` member names read no better than the offsets.
