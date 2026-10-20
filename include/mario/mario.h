@@ -109,12 +109,26 @@ typedef enum MarioTrigFlags {
 #pragma enumsalwaysint on
 
 // TODO: US struct is bigger, 0x2F8 vs 0x2E0
+#pragma enumsalwaysint off
+typedef enum PeachFlags {
+    PEACH_FLAG_AFTERSHOWER = (1 << 4),
+    PEACH_FLAG_INVISIBLE = (1 << 5),
+    PEACH_FLAG_HAPPY = (1 << 6),
+    PEACH_FLAG_UNEASY = (1 << 7),
+    PEACH_FLAG_ANGRY = (1 << 8),
+    PEACH_FLAG_ORDINARY = (1 << 9),
+    PEACH_FLAG_CARRY = (1 << 10),
+    PEACH_FLAG_STS_MASK = 0x7F0,
+    PEACH_FLAG_TRANSFORMED = (1 << 13)
+} PeachFlags;
+#pragma enumsalwaysint on
+
 typedef struct MarioWork {
     u32 flags;                     // 0x0
     s32 dispFlags;                 // 0x4
     u32 field_0x8;                 // 0x8
     u32 trigFlags;                 // 0xC
-    s32 peachFlags;                // 0x10
+    s32 peachFlags;                // 0x10, PeachFlags (peach.c, mario.c)
     u8 field_0x14[0x18 - 0x14];    // 0x14
     const char* animName;          // 0x18
     const char* paperAnimName;     // 0x1C
@@ -163,7 +177,8 @@ typedef struct MarioWork {
     Vec field_0xE0;                // 0xE0, bgTmp source in mot_damage
     Vec field_EC;                  // 0xEC
     Vec field_F8;                  // 0xF8
-    u8 unk104[0x11C - 0x104];      // 0x104
+    u8 unk104[0x110 - 0x104];      // 0x104
+    Vec prevPosition;              // 0x110, copy of position taken each frame (mario.c, peach.c); party_vivian reads its y
     Vec field_0x11C;               // 0x11C, reference point for the landing distance (evt_mario), y is a floor clamp (mario_hit)
     f32 field_0x128;               // 0x128, distance from field_0x11C at landing (evt_mario)
     f32 peakYpos;                  // 0x12C, marioSetPeakYpos
@@ -273,7 +288,7 @@ typedef struct MarioWork {
         f32 jabaraSpeed;           // 0x2B0, mot_jabara: angle step added to dispRot.x (its state machine raises and lowers it)
     };
     union {
-        u8 field_0x2B4[4];         // 0x2B4, f32 in party_yoshi, s32 in peach
+        s32 peachStayTimer;        // 0x2B4, peach_stay's frame count in state 0x14 (cleared on entry, capped at sysMsec2Frame(10000)); f32 in party_yoshi
         f32 jabaraAccel;           // 0x2B4, mot_jabara: step added to jabaraSpeed each frame
     };
     f32 field_0x2B8;               // 0x2B8

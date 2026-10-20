@@ -385,7 +385,7 @@ void vivian_use(PartyEntry* party) {
         party->field_B8 = party->position;
     }
     {
-        f32 d = mario->position.y - *(f32*)&mario->unk104[0x10];
+        f32 d = mario->position.y - mario->prevPosition.y;
         if (d > 0.0f) {
             party->field_B8.y += d;
         }
