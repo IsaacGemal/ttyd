@@ -9031,3 +9031,31 @@ tattle list at 0x1050 as `&work->field_40[0x1010]`; only that u8-array base matc
 starting at 0x40 until another spelling is found. Still unnamed: 0x404 equipped-badge list (0xC-byte records),
 win_item's 0x20C-0x3DA (its ItemWorkTail overlay and `WW_*` offsets, incl. the 0x26C mail line and 0x3DA),
 win_log 0xD68-0x1204 beyond LogWin's names, win_mario 0x160-0x198 and win_root 0x164-0x184.
+### Readability: Smorg and X-Naut Crump formation units (2026-10-19, Claude Haiku 5.5, n9-q-units; reviewed by Claude Opus 5.5)
+
+unit_boss_moamoa (Smorg): MoamoaWork names `animPoses[5]` (AnimationPose handles: [0] the main unit, [1-3] the
+units in unit work[3..5], [4] work[6] from moamoa2_on), `center` (a Vec: the pose-cloud centre guruguru spins
+around), `spinAngle` (degrees, +60/7 per frame, wrapped at 360, converted with 0.017453292f), `spinScale` (2.0 at
+guruguru start, -0.00444 per frame down to 0.8, scales the offset from `center`), `bodyScaleGoal` (moamoa_set_bodyScale)
+and `bodyScale` (eases toward it by 0.1 per frame). MoamoaWorkPose: `flags` (bit 0: the pose follows the
+guruguru spin or bomb scatter instead of its joint), `jitter` (a fixed +-10 random offset set at init),
+`animIdx` (index into `anims`), `poseTime` (renderTime the current cycle started; reset on an animIdx change and
+on each wrap) and `ownerIdPtr` (an `s32*` at `mainUnitId` or the unit work word holding the owning part's unit
+id, -1 once it is gone). MoamoaWorkAnim takes rsh_05's MoamoaGroup names for the same layout: `groupName`,
+`animName`, `cycleFrames`, `firstPose` and `numPoses` (an ext_moamoa_data index range). cycleFrames is 12.0f or
+the data entry's frame depending on `pose->type`, where `pose` is whatever the preceding type loop left behind
+(as in the original). The X-Naut Crump formation (unit_boss_gundan_zako_group1/2/3) shares one header now,
+`unit_boss_gundan_zako_common.h`, with ZakogunEntry (`from`/`to` interpolation endpoints, `velX`/`velY`/`velZ`,
+group3's `offsetX`/`offsetY` from the ball centre) and ZakogunWork (`phase` 0/1/2 picking zakogun_ext_main1/2/3,
+group3's ball `radius`/`angle`/`speed`, `landedCount`, group2's ceiling overlay `ceilFrom`/`ceilTo`/`ceilFrame`/
+`ceilFrames`/`ceilSfxHandle`, which replaces group2's WORK_* offset macros) plus the helper prototypes;
+group1.h and group3.h include it, and group3's `extern s32 zakogun_get_kanbu_id_evtcmd[]` became USER_FUNC. All
+three files use the same names for the same fields. Byte-identical.
+Weighted cleanup: unit_boss_moamoa.c 170 → 51, zako_group1.c 95 → 3, zako_group2.c 75 → 2, zako_group3.c 88 → 1.
+Open: MoamoaWorkPose 0x34 and 0x40 are multi-role (guruguru: start position and rotation axis; bomb: velocity
+and position), so they stay `field_0x34[3]`/`field_0x40[3]`; a union or role-neutral names would be next.
+MoamoaWorkPose/MoamoaPoseArg 0x14 is unused by name. The four `*(s32*)part->field_0x1C0` reads (the part's
+AnimationPose handle) and the AnimationPose +0x15C (world-position vertex smartEntry, after
+animPoseWorldPositionEvalOn) and +0x160 (its count) raw offsets wait on BattleUnitPart/AnimationPose names.
+MoamoaPoseArg duplicates MoamoaWorkPose's offsets. ZakogunEntry 0x0 and ZakogunWork 0x1C-0x33 and 0x40-0x47 are
+unnamed.
