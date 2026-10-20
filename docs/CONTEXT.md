@@ -11591,3 +11591,10 @@ makeConfettiColor1 (`*(GXColor*)&float_...` type-punned read). Build MATCH.
 - eff_rappa_n64: `tmp`/`randValue`/`cosPhi` temporaries are the only form. Still guarded: the anonymous zero-Vector in `initializeVec`.
 - eff_radiation_n64: `radiationSetColor` inline is the only form; `scaleZ` keeps the repeated expression (`scaleZ = scaleX` does not match). Still guarded: string padding and the `tri1` function-pointer cast.
 - evt_bero: all blocks stay (name-table copies depend on the guarded `.rodata` jumptable, string padding, `flush_pools`).
+
+## MUST_MATCH reduction: s-mmmix26 (2026-10-20, Claude Sonnet 5.5)
+
+- `MUST_MATCH` lines: `src/effect/eff_majinai.c` 6 -> 0, `src/effect/eff_damage_star.c` 6 -> 0, `src/effect/eff_break.c` 6 -> 4, `src/driver/itemdrv.c` 6 -> 5, `src/driver/imgdrv.c` 6 -> 6, `src/driver/effdrv.c` 6 -> 6. No names added. Each change was checked against the baseline objects with `tools/obj_equiv.py`; the full tower `ninja` recreates `build/G8MJ01/ok`.
+- `#else` alone matched: itemdrv `itemseq_Bound`-area `dirX == 0.0f && dirZ == 0.0f` compare (the operand-swapped MUST_MATCH arm is gone).
+- The MUST_MATCH shape became the only version, comments reworded: majinai's `effMajinaiGetInBattle` inline and the `position` copy of `disp` (it must be declared before `work`); damage_star's `damageStarSetAmbColor`/`SetMatColor`/`SetTevColor` helper chain (the `#else` inline calls change `.sdata2` and bytes) and the named `f05`; eff_break's `t` temp in effBreakMain (`float_20 * data->scale` and `data->scale * float_20` both fail).
+- Left under MUST_MATCH: eff_break's redundant language test, the volatile zero in `PSMTXTrans`, the volatile `GXWGFifo` writes and the volatile `float_1_804210bc`; itemdrv's `vec3_802cac04`/`vec3_802cac1c` `.rodata` declspecs and the volatile `status` read; imgdrv's two `? 1 : 0` argument ternaries and the identical-arm `flags & 8` if/else; effdrv's `"\0"` format-string padding and the hand-written GQR5/psq_l asm helpers.

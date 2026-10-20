@@ -44,22 +44,16 @@ EffectEntry* effMajinaiEntry(s32 type, f32 x, f32 y, f32 z) {
     return effect;
 }
 
-#ifdef MUST_MATCH
-/* MUST_MATCH: materialising the boolean through an inline makes MWCC colour it r29 (the plain
-   `inBattle = gp->inBattle != 0;` gets r28); the inlined body emits the identical instructions. */
+// Materialising the boolean through an inline makes MWCC colour it r29 (the plain
+// `inBattle = gp->inBattle != 0;` gets r28); the inlined body emits the identical instructions.
 static inline s32 effMajinaiGetInBattle(void) {
     return gp->inBattle != 0;
 }
-#endif
 
 void effMajinaiMain(EffectEntry* effect) {
     s32 inBattle;
     s32 i;
-#ifdef MUST_MATCH
-    /* MUST_MATCH: retail builds the Vec in a scratch and copies it to a second local before
-       dispCalcZ; a single local folds the copy away. */
     Vec position;
-#endif
     MajinaiWork* work = effect->userdata;
     Vec disp = { 0.0f, 0.0f, 0.0f };
     MapWork* map;
@@ -67,12 +61,10 @@ void effMajinaiMain(EffectEntry* effect) {
     disp.x = work->x;
     disp.y = work->y;
     disp.z = work->z;
-#ifdef MUST_MATCH
+    // Retail builds the Vec in a scratch and copies it to a second local before dispCalcZ;
+    // a single local folds the copy away.
     position = disp;
     inBattle = effMajinaiGetInBattle();
-#else
-    inBattle = gp->inBattle != 0;
-#endif
 
     if (effect->flags & 4) {
         effect->flags &= ~4;
@@ -176,11 +168,7 @@ void effMajinaiMain(EffectEntry* effect) {
             break;
     }
 
-#ifdef MUST_MATCH
     dispEntry(CAMERA_3D, dispCalcZ(&position), 2, effMajinaiDisp, effect);
-#else
-    dispEntry(CAMERA_3D, dispCalcZ(&disp), 2, effMajinaiDisp, effect);
-#endif
 }
 
 static inline void majinaiSetColor(MajinaiWork* work) {

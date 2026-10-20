@@ -385,10 +385,8 @@ void effDamageStarMain(EffectEntry* effect) {
     dispEntry(CAMERA_3D, dispCalcZ(&position), 8, effDamageStarDisp, effect);
 }
 
-// Match-only helpers: MWCC allocates the stack slots of these by-value GXColor arguments in the
-// order the (inlined) helper bodies appear, so each colour call goes through a helper. The natural
-// form is in the #else branches below.
-#ifdef MUST_MATCH
+// MWCC allocates the stack slots of these by-value GXColor arguments in the order the (inlined)
+// helper bodies appear, so each colour call goes through a helper.
 static inline void damageStarSetAmbColor(void) {
     GXSetChanAmbColor(4, (GXColor){ 0xFF, 0xFF, 0xFF, 0xFF });
 }
@@ -413,12 +411,11 @@ static inline void damageStarSendTevColor(GXColor color) {
 static inline void damageStarSetTevColor(void) {
     damageStarSendTevColor((GXColor){ 0xFF, 0xFF, 0x00, 0xFF });
 }
-#endif
 
 // The int->float conversion registers match; the conversion's magic double still references the
 // compiler's anonymous @345 copy rather than double_to_int_802f3458, but objdiff resolves data by
 // section offset so those two diffs do not score.
-// The GXColor stack temp slots match only with the match-only helpers above selected by MUST_MATCH.
+// The GXColor stack temp slots match only through the helpers above.
 void effDamageStarDisp(CameraId camId, void* param) {
     EffectEntry* effect = param;
     DamageStarData* data;
@@ -479,11 +476,7 @@ void effDamageStarDisp(CameraId camId, void* param) {
     GXSetTexCoordGen2(1, 1, 4, 60, 0, 125);
     GXSetNumChans(1);
     GXSetChanCtrl(4, 0, 0, 0, 0, 0, 2);
-#ifdef MUST_MATCH
     damageStarSetAmbColor();
-#else
-    GXSetChanAmbColor(4, (GXColor){0xFF, 0xFF, 0xFF, 0xFF});
-#endif
     GXSetCullMode(0);
     GXClearVtxDesc();
     GXSetVtxDesc(9, 1);
@@ -511,18 +504,8 @@ void effDamageStarDisp(CameraId camId, void* param) {
     for (i = 2; i < effect->count; i++, elem++) {
         s32 idx;
 
-#ifdef MUST_MATCH
         idx = (i + frame) % 12;
         damageStarSetMatColor(idx, elem->alpha);
-#else
-        color = unk_80423038;
-        idx = (i + frame) % 12;
-        color.r = color_rotation_data[idx * 3 + 0];
-        color.g = color_rotation_data[idx * 3 + 1];
-        color.b = color_rotation_data[idx * 3 + 2];
-        color.a = elem->alpha;
-        GXSetChanMatColor(4, color);
-#endif
 
         PSMTXIdentity(mtx1D8);
         PSMTXScaleApply(mtx1D8, mtx1D8, elem->scaleX, elem->scaleY, elem->scaleZ);
@@ -627,11 +610,7 @@ void effDamageStarDisp(CameraId camId, void* param) {
     GXSetTevAlphaOp(0, 0, 0, 0, 1, 0);
     GXSetTevColorIn(0, 0xF, 2, 8, 0xF);
     GXSetTevAlphaIn(0, 7, 7, 7, 4);
-#ifdef MUST_MATCH
     damageStarSetTevColor();
-#else
-    GXSetTevColor(1, (GXColor){0xFF, 0xFF, 0x00, 0xFF});
-#endif
     if (type == 1) {
         effGetTexObj(0x13, &texObj);
         GXLoadTexObj(&texObj, 2);
@@ -667,14 +646,10 @@ void effDamageStarDisp(CameraId camId, void* param) {
     sprintf(buf, "%d", damage);
     {
         s32 len = strlen(buf);
-#ifdef MUST_MATCH
         // Naming 0.5f keeps MWCC's int->float magic double in f4 (matches retail);
         // with the literal it lands in f1 and six fsubs/fmuls registers differ.
         f32 f05 = 0.5f;
         f32 x = 24.0f * (f32)(-(len - 1)) * f05;
-#else
-        f32 x = 24.0f * (f32)(-(len - 1)) * 0.5f;
-#endif
 
         PSMTXScale(mtx58, 0.04f, 0.04f, 0.04f);
         PSMTXTrans(mtx88, x, 0.0f, 0.0f);
