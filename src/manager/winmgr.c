@@ -43,19 +43,19 @@ typedef struct WinMgrSelectTbl {
 // Retain the descriptor tables and constants referenced by other units.
 #pragma force_active on
 // Named read-only objects follow the original small-data order.
-const char str_804219B8[] = "_kur";
-const char str_804219C0[] = "_nok";
-const char str_804219C8[] = "_win";
-const char str_804219D0[] = "_yos";
-const char str_804219D8[] = "_viv";
-const char str_804219E0[] = "_bom";
-const char str_804219E8[] = "_chu";
-const char str_804219F0[] = "_hp";
-const char str_804219F4[] = "_fp";
-const char str_804219F8[] = "_bp";
-const char str_804219FC[] = "\x82\x67\x82\x6f";
-const char str_80421A04[] = "\x82\x65\x82\x6f";
-const char str_80421A0C[] = "\x82\x61\x82\x6f";
+const char labelname_kur[] = "_kur";
+const char labelname_nok[] = "_nok";
+const char labelname_win[] = "_win";
+const char labelname_yos[] = "_yos";
+const char labelname_viv[] = "_viv";
+const char labelname_bom[] = "_bom";
+const char labelname_chu[] = "_chu";
+const char labelname_hp[] = "_hp";
+const char labelname_fp[] = "_fp";
+const char labelname_bp[] = "_bp";
+const char status_name_hp[] = "\x82\x67\x82\x6f";
+const char status_name_fp[] = "\x82\x65\x82\x6f";
+const char status_name_bp[] = "\x82\x61\x82\x6f";
 const GXColor dat_80421a14 = { 0x2b, 0xa4, 0xff, 0x00 };
 const GXColor dat_80421a18 = { 0x2b, 0xa4, 0xff, 0x00 };
 const GXColor dat_80421a1c = { 0x2b, 0xa4, 0xff, 0x00 };
@@ -87,10 +87,10 @@ static s16* mario_status_point_table[3];
 static WinMgrWork* wp = &work;
 u16 party_id_table[8] = { PARTNER_GOOMBELLA, PARTNER_KOOPS, PARTNER_FLURRIE, PARTNER_YOSHI, PARTNER_VIVIAN, PARTNER_BOBBERY, PARTNER_MSMOWZ, PARTNER_NONE };
 static u16 party_icon_table[8] = { 0x155, 0x156, 0x15F, 0x158, 0x160, 0x157, 0x161, 0 };
-static const char* party_labelname_table[7] = { str_804219B8, str_804219C0, str_804219C8, str_804219D0, str_804219D8, str_804219E0, str_804219E8 };
+static const char* party_labelname_table[7] = { labelname_kur, labelname_nok, labelname_win, labelname_yos, labelname_viv, labelname_bom, labelname_chu };
 static s32 mario_status_icon_table[3] = { 0x19F, 0x1A0, 0x1A1 };
-static const char* mario_status_labelname_table[3] = { str_804219F0, str_804219F4, str_804219F8 };
-static const char* mario_status_name_table[3] = { str_804219FC, str_80421A04, str_80421A0C };
+static const char* mario_status_labelname_table[3] = { labelname_hp, labelname_fp, labelname_bp };
+static const char* mario_status_name_table[3] = { status_name_hp, status_name_fp, status_name_bp };
 static s32 mario_status_henka_table[3] = { 5, 5, 3 };
 s32 mario_status_max_table[3] = { 200, 200, 99 };
 

@@ -33,7 +33,7 @@ extern const char str_802F560C[];
 extern const char str_802F5620[];
 extern const char str_802F5638[];
 #ifdef MUST_MATCH
-// The original reaches these through the str_802F4CE8 base register; inline literals pool so that the base folds.
+// The original reaches these through the luigi_book_1_page1 base register; inline literals pool so that the base folds.
 #define STR_MOCHI_ITEM "msg_menu_mochi_item"
 #define STR_MOCHI_DAIJI "msg_menu_mochi_daiji"
 #define STR_MAIL_TPL "%s/w/jp/mail.tpl\0\0\0"
@@ -113,125 +113,125 @@ extern WindowPartyDt winPartyDt[];
 
 // .rodata prefix of window/win_item: the 60 msg_luigi_book strings. The Vec templates after them
 // come from the draw functions' compound literals, in source order.
-const char str_802F4CE8[24] = "msg_luigi_book1_txt1\000\000\000";
+const char luigi_book_1_page1[24] = "msg_luigi_book1_txt1\000\000\000";
 
-const char str_802F4D00[24] = "msg_luigi_book1_txt2\000\000\000";
+const char luigi_book_1_page2[24] = "msg_luigi_book1_txt2\000\000\000";
 
-const char str_802F4D18[24] = "msg_luigi_book1_txt3\000\000\000";
+const char luigi_book_1_page3[24] = "msg_luigi_book1_txt3\000\000\000";
 
-const char str_802F4D30[24] = "msg_luigi_book1_txt4\000\000\000";
+const char luigi_book_1_page4[24] = "msg_luigi_book1_txt4\000\000\000";
 
-const char str_802F4D48[24] = "msg_luigi_book1_txt5\000\000\000";
+const char luigi_book_1_page5[24] = "msg_luigi_book1_txt5\000\000\000";
 
-const char str_802F4D60[24] = "msg_luigi_book1_txt6\000\000\000";
+const char luigi_book_1_page6[24] = "msg_luigi_book1_txt6\000\000\000";
 
-const char str_802F4D78[24] = "msg_luigi_book1_txt7\000\000\000";
+const char luigi_book_1_page7[24] = "msg_luigi_book1_txt7\000\000\000";
 
-const char str_802F4D90[24] = "msg_luigi_book1_txt8\000\000\000";
+const char luigi_book_1_page8[24] = "msg_luigi_book1_txt8\000\000\000";
 
-const char str_802F4DA8[24] = "msg_luigi_book1_txt9\000\000\000";
+const char luigi_book_1_page9[24] = "msg_luigi_book1_txt9\000\000\000";
 
-const char str_802F4DC0[24] = "msg_luigi_book1_txt10\000\000";
+const char luigi_book_1_page10[24] = "msg_luigi_book1_txt10\000\000";
 
-const char str_802F4DD8[24] = "msg_luigi_book1_txt11\000\000";
+const char luigi_book_1_page11[24] = "msg_luigi_book1_txt11\000\000";
 
-const char str_802F4DF0[24] = "msg_luigi_book1_txt12\000\000";
+const char luigi_book_1_page12[24] = "msg_luigi_book1_txt12\000\000";
 
-const char str_802F4E08[24] = "msg_luigi_book2_txt1\000\000\000";
+const char luigi_book_2_page1[24] = "msg_luigi_book2_txt1\000\000\000";
 
-const char str_802F4E20[24] = "msg_luigi_book2_txt2\000\000\000";
+const char luigi_book_2_page2[24] = "msg_luigi_book2_txt2\000\000\000";
 
-const char str_802F4E38[24] = "msg_luigi_book2_txt3\000\000\000";
+const char luigi_book_2_page3[24] = "msg_luigi_book2_txt3\000\000\000";
 
-const char str_802F4E50[24] = "msg_luigi_book2_txt4\000\000\000";
+const char luigi_book_2_page4[24] = "msg_luigi_book2_txt4\000\000\000";
 
-const char str_802F4E68[24] = "msg_luigi_book2_txt5\000\000\000";
+const char luigi_book_2_page5[24] = "msg_luigi_book2_txt5\000\000\000";
 
-const char str_802F4E80[24] = "msg_luigi_book2_txt6\000\000\000";
+const char luigi_book_2_page6[24] = "msg_luigi_book2_txt6\000\000\000";
 
-const char str_802F4E98[24] = "msg_luigi_book2_txt7\000\000\000";
+const char luigi_book_2_page7[24] = "msg_luigi_book2_txt7\000\000\000";
 
-const char str_802F4EB0[24] = "msg_luigi_book2_txt8\000\000\000";
+const char luigi_book_2_page8[24] = "msg_luigi_book2_txt8\000\000\000";
 
-const char str_802F4EC8[24] = "msg_luigi_book2_txt9\000\000\000";
+const char luigi_book_2_page9[24] = "msg_luigi_book2_txt9\000\000\000";
 
-const char str_802F4EE0[24] = "msg_luigi_book2_txt10\000\000";
+const char luigi_book_2_page10[24] = "msg_luigi_book2_txt10\000\000";
 
-const char str_802F4EF8[24] = "msg_luigi_book2_txt11\000\000";
+const char luigi_book_2_page11[24] = "msg_luigi_book2_txt11\000\000";
 
-const char str_802F4F10[24] = "msg_luigi_book2_txt12\000\000";
+const char luigi_book_2_page12[24] = "msg_luigi_book2_txt12\000\000";
 
-const char str_802F4F28[24] = "msg_luigi_book3_txt1\000\000\000";
+const char luigi_book_3_page1[24] = "msg_luigi_book3_txt1\000\000\000";
 
-const char str_802F4F40[24] = "msg_luigi_book3_txt2\000\000\000";
+const char luigi_book_3_page2[24] = "msg_luigi_book3_txt2\000\000\000";
 
-const char str_802F4F58[24] = "msg_luigi_book3_txt3\000\000\000";
+const char luigi_book_3_page3[24] = "msg_luigi_book3_txt3\000\000\000";
 
-const char str_802F4F70[24] = "msg_luigi_book3_txt4\000\000\000";
+const char luigi_book_3_page4[24] = "msg_luigi_book3_txt4\000\000\000";
 
-const char str_802F4F88[24] = "msg_luigi_book3_txt5\000\000\000";
+const char luigi_book_3_page5[24] = "msg_luigi_book3_txt5\000\000\000";
 
-const char str_802F4FA0[24] = "msg_luigi_book3_txt6\000\000\000";
+const char luigi_book_3_page6[24] = "msg_luigi_book3_txt6\000\000\000";
 
-const char str_802F4FB8[24] = "msg_luigi_book3_txt7\000\000\000";
+const char luigi_book_3_page7[24] = "msg_luigi_book3_txt7\000\000\000";
 
-const char str_802F4FD0[24] = "msg_luigi_book3_txt8\000\000\000";
+const char luigi_book_3_page8[24] = "msg_luigi_book3_txt8\000\000\000";
 
-const char str_802F4FE8[24] = "msg_luigi_book3_txt9\000\000\000";
+const char luigi_book_3_page9[24] = "msg_luigi_book3_txt9\000\000\000";
 
-const char str_802F5000[24] = "msg_luigi_book3_txt10\000\000";
+const char luigi_book_3_page10[24] = "msg_luigi_book3_txt10\000\000";
 
-const char str_802F5018[24] = "msg_luigi_book3_txt11\000\000";
+const char luigi_book_3_page11[24] = "msg_luigi_book3_txt11\000\000";
 
-const char str_802F5030[24] = "msg_luigi_book3_txt12\000\000";
+const char luigi_book_3_page12[24] = "msg_luigi_book3_txt12\000\000";
 
-const char str_802F5048[24] = "msg_luigi_book4_txt1\000\000\000";
+const char luigi_book_4_page1[24] = "msg_luigi_book4_txt1\000\000\000";
 
-const char str_802F5060[24] = "msg_luigi_book4_txt2\000\000\000";
+const char luigi_book_4_page2[24] = "msg_luigi_book4_txt2\000\000\000";
 
-const char str_802F5078[24] = "msg_luigi_book4_txt3\000\000\000";
+const char luigi_book_4_page3[24] = "msg_luigi_book4_txt3\000\000\000";
 
-const char str_802F5090[24] = "msg_luigi_book4_txt4\000\000\000";
+const char luigi_book_4_page4[24] = "msg_luigi_book4_txt4\000\000\000";
 
-const char str_802F50A8[24] = "msg_luigi_book4_txt5\000\000\000";
+const char luigi_book_4_page5[24] = "msg_luigi_book4_txt5\000\000\000";
 
-const char str_802F50C0[24] = "msg_luigi_book4_txt6\000\000\000";
+const char luigi_book_4_page6[24] = "msg_luigi_book4_txt6\000\000\000";
 
-const char str_802F50D8[24] = "msg_luigi_book4_txt7\000\000\000";
+const char luigi_book_4_page7[24] = "msg_luigi_book4_txt7\000\000\000";
 
-const char str_802F50F0[24] = "msg_luigi_book4_txt8\000\000\000";
+const char luigi_book_4_page8[24] = "msg_luigi_book4_txt8\000\000\000";
 
-const char str_802F5108[24] = "msg_luigi_book4_txt9\000\000\000";
+const char luigi_book_4_page9[24] = "msg_luigi_book4_txt9\000\000\000";
 
-const char str_802F5120[24] = "msg_luigi_book4_txt10\000\000";
+const char luigi_book_4_page10[24] = "msg_luigi_book4_txt10\000\000";
 
-const char str_802F5138[24] = "msg_luigi_book4_txt11\000\000";
+const char luigi_book_4_page11[24] = "msg_luigi_book4_txt11\000\000";
 
-const char str_802F5150[24] = "msg_luigi_book4_txt12\000\000";
+const char luigi_book_4_page12[24] = "msg_luigi_book4_txt12\000\000";
 
-const char str_802F5168[24] = "msg_luigi_book5_txt1\000\000\000";
+const char luigi_book_5_page1[24] = "msg_luigi_book5_txt1\000\000\000";
 
-const char str_802F5180[24] = "msg_luigi_book5_txt2\000\000\000";
+const char luigi_book_5_page2[24] = "msg_luigi_book5_txt2\000\000\000";
 
-const char str_802F5198[24] = "msg_luigi_book5_txt3\000\000\000";
+const char luigi_book_5_page3[24] = "msg_luigi_book5_txt3\000\000\000";
 
-const char str_802F51B0[24] = "msg_luigi_book5_txt4\000\000\000";
+const char luigi_book_5_page4[24] = "msg_luigi_book5_txt4\000\000\000";
 
-const char str_802F51C8[24] = "msg_luigi_book5_txt5\000\000\000";
+const char luigi_book_5_page5[24] = "msg_luigi_book5_txt5\000\000\000";
 
-const char str_802F51E0[24] = "msg_luigi_book5_txt6\000\000\000";
+const char luigi_book_5_page6[24] = "msg_luigi_book5_txt6\000\000\000";
 
-const char str_802F51F8[24] = "msg_luigi_book5_txt7\000\000\000";
+const char luigi_book_5_page7[24] = "msg_luigi_book5_txt7\000\000\000";
 
-const char str_802F5210[24] = "msg_luigi_book5_txt8\000\000\000";
+const char luigi_book_5_page8[24] = "msg_luigi_book5_txt8\000\000\000";
 
-const char str_802F5228[24] = "msg_luigi_book5_txt9\000\000\000";
+const char luigi_book_5_page9[24] = "msg_luigi_book5_txt9\000\000\000";
 
-const char str_802F5240[24] = "msg_luigi_book5_txt10\000\000";
+const char luigi_book_5_page10[24] = "msg_luigi_book5_txt10\000\000";
 
-const char str_802F5258[24] = "msg_luigi_book5_txt11\000\000";
+const char luigi_book_5_page11[24] = "msg_luigi_book5_txt11\000\000";
 
-const char str_802F5270[24] = "msg_luigi_book5_txt12\000\000";
+const char luigi_book_5_page12[24] = "msg_luigi_book5_txt12\000\000";
 
 
 
@@ -248,7 +248,7 @@ static WinMgrDesc window_desc[2];
 // Item window state machine: the held-item grid, the key-item list, the Luigi book
 // (case 100) and the received-mail viewer (cases 200/201/202). Transliterated from the
 // original assembly; every call, branch, loop and store is present.
-// The original keeps str_802F4CE8 in r30 and reaches str_802F560C/20/38 as r30+0x924/0x938/
+// The original keeps luigi_book_1_page1 in r30 and reaches str_802F560C/20/38 as r30+0x924/0x938/
 // 0x950 (one lis/addi + displacement). Our object pools the string literals used here, in the
 // same order (name_mario 0x900, msg_menu_sort_narabikae 0x90c, then the three below), so the
 // base register folds correctly. The frame (0x60), the int->float scratch doubles
@@ -1236,28 +1236,28 @@ void itemUseDisp2(WinMgrEntry* entry) {
 // The Luigi book page-pointer tables (.data). Each book lists the 12 page strings plus a
 // terminating NULL; luigi_book_list (.sdata) points at them in order.
 const char* luigi_book_1[13] = {
-    str_802F4CE8, str_802F4D00, str_802F4D18, str_802F4D30, str_802F4D48, str_802F4D60,
-    str_802F4D78, str_802F4D90, str_802F4DA8, str_802F4DC0, str_802F4DD8, str_802F4DF0, NULL,
+    luigi_book_1_page1, luigi_book_1_page2, luigi_book_1_page3, luigi_book_1_page4, luigi_book_1_page5, luigi_book_1_page6,
+    luigi_book_1_page7, luigi_book_1_page8, luigi_book_1_page9, luigi_book_1_page10, luigi_book_1_page11, luigi_book_1_page12, NULL,
 };
 
 const char* luigi_book_2[13] = {
-    str_802F4E08, str_802F4E20, str_802F4E38, str_802F4E50, str_802F4E68, str_802F4E80,
-    str_802F4E98, str_802F4EB0, str_802F4EC8, str_802F4EE0, str_802F4EF8, str_802F4F10, NULL,
+    luigi_book_2_page1, luigi_book_2_page2, luigi_book_2_page3, luigi_book_2_page4, luigi_book_2_page5, luigi_book_2_page6,
+    luigi_book_2_page7, luigi_book_2_page8, luigi_book_2_page9, luigi_book_2_page10, luigi_book_2_page11, luigi_book_2_page12, NULL,
 };
 
 const char* luigi_book_3[13] = {
-    str_802F4F28, str_802F4F40, str_802F4F58, str_802F4F70, str_802F4F88, str_802F4FA0,
-    str_802F4FB8, str_802F4FD0, str_802F4FE8, str_802F5000, str_802F5018, str_802F5030, NULL,
+    luigi_book_3_page1, luigi_book_3_page2, luigi_book_3_page3, luigi_book_3_page4, luigi_book_3_page5, luigi_book_3_page6,
+    luigi_book_3_page7, luigi_book_3_page8, luigi_book_3_page9, luigi_book_3_page10, luigi_book_3_page11, luigi_book_3_page12, NULL,
 };
 
 const char* luigi_book_4[13] = {
-    str_802F5048, str_802F5060, str_802F5078, str_802F5090, str_802F50A8, str_802F50C0,
-    str_802F50D8, str_802F50F0, str_802F5108, str_802F5120, str_802F5138, str_802F5150, NULL,
+    luigi_book_4_page1, luigi_book_4_page2, luigi_book_4_page3, luigi_book_4_page4, luigi_book_4_page5, luigi_book_4_page6,
+    luigi_book_4_page7, luigi_book_4_page8, luigi_book_4_page9, luigi_book_4_page10, luigi_book_4_page11, luigi_book_4_page12, NULL,
 };
 
 const char* luigi_book_5[13] = {
-    str_802F5168, str_802F5180, str_802F5198, str_802F51B0, str_802F51C8, str_802F51E0,
-    str_802F51F8, str_802F5210, str_802F5228, str_802F5240, str_802F5258, str_802F5270, NULL,
+    luigi_book_5_page1, luigi_book_5_page2, luigi_book_5_page3, luigi_book_5_page4, luigi_book_5_page5, luigi_book_5_page6,
+    luigi_book_5_page7, luigi_book_5_page8, luigi_book_5_page9, luigi_book_5_page10, luigi_book_5_page11, luigi_book_5_page12, NULL,
 };
 
 static WinMgrDesc window_desc[2] = {
