@@ -8959,3 +8959,23 @@ Open: fukidashi's entry params are still `a`..`i`; `field_0x50` (fukidashi), `fi
 snowman's `alpha`/`vScale` are written but never read (snowman's Disp is empty). crystal's Disp branches on `type`
 while Main uses `variant`; barrier and fire_dust load GX_TEVREG1 but their single TEV stage never reads C1/A1.
 barrier keeps u32 colour fields where fire_dust has s32.
+### Readability: battle audience (2026-10-19, Claude Haiku 5.5, n9-q-aud; reviewed by Claude Opus 5.5)
+
+battle_audience.c's raw member casts use #872's BattleAudienceMember names (`scale`, `baseSize`, `drawOffset`,
+`velocity`, `accel`, `normal`, `mRotationOffset`, `animPos`), the sound code uses BattleAudienceSound `flags` and
+`timeLeft`, and the koopa shell timer names AUDIENCE_KOOPA. In review the shared fields got names from all their
+users (battle_audience.c, battle_audience_kinopio.c, evt_audience.c, sac_bakugame.c, the battender rel): `step`
+(0x4, the ctrl-process switch case; the koopa timer jumps it to 4), `counter` (0x8, repeats left or frames into an
+intplGetValue move), `motionTimer` (0x30, the squash/sway cycle frame), `animLoop[3]` (0x34, the -6/-7 loop counts
+indexed by animDepth - 1), `dispPos` (0xC0, position + jumpOffset, plus bobOffsetY for AUDIENCE_BOO; the thrown
+item is placed from it) and `yaw` (0xE8, degrees; the draw code flips the sprite for (0, 180]). Kinopio's
+`*(f32*)(member->field_0xC0 + n)` reads are now `dispPos`/`jumpOffset`/`jumpVelY`/`jumpAccelY`. The old
+`field_0x8` array splits into `counter` and the generic `field_0xC`/`field_0x10`/`field_0x14`/`field_0x18`, since
+0xC is a repeat count, a walk direction (+-1) or a walked distance depending on the status. The one `-4` store to
+`field_0x18` stays `*(s8*)&member->field_0x18`: a plain u8 store loads 0xFC instead of -4. battle_audience.c
+471 → 378 weighted, battle_audience_kinopio.c 413 → 103; index 68.533 → 67.941.
+Left: 0xEC-0xF7 (a BattleUnit* target at 0xEC in KinopioTransEvt, an s16 member index at 0xF0 in KinopioEat, an
+s32 at 0xF4 that KinopioSingSub sets to 3 and battle_audience.c counts down for status 0xD; per-status, so unnamed), the never-read pads at
+0x1E/0x45/0xD8/0xE0, the past-the-end `(u8*)member + 0x134` store in Entry_Sub, the byte-stepped `animPos`
+advances, `field_0xC`-`field_0x18` meanings per status, and evt_audience's 180/0 yaw against kinopio's 90/270
+(both pick the flip, but the convention differs).
