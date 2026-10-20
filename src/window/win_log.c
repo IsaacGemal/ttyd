@@ -52,9 +52,6 @@ typedef struct MonosiriWork {
 } MonosiriWork;
 
 
-#define WW_S32(w, off) (*(s32*)((u8*)(w) + (off)))
-#define WW_F32(w, off) (*(f32*)((u8*)(w) + (off)))
-#define WW_PTR(w, off) (*(void**)((u8*)(w) + (off)))
 // win texture ids of the tattle-map location pins
 typedef enum {
     WIN_LOG_TEX_PIN_OFF = 0xB8,
@@ -606,41 +603,42 @@ void winLogInit(WindowWork* work) {
 // The conversion double still pools as an anonymous @271 literal instead of the
 // named 4503601774854144.0 (project-wide limitation, not scored).
 void winLogInit2(WindowWork* work) {
+    LogWin* w = (LogWin*)work;
     f32 v;
     const char* name;
     s32 a;
     s32 b;
 
     work->targetX = -128.0f;
-    a = WW_S32(work, 0xD70);
-    b = WW_S32(work, 0xD6C);
+    a = w->count;
+    b = w->sel;
     {
         f32 t = 45.0f * (f32)a;
         work->targetY = 8.0f + (t / 2.0f - 45.0f * (f32)b);
     }
-    WW_F32(work, 0xE88) = 320.f;
-    WW_F32(work, 0xE84) = 320.f;
-    WW_F32(work, 0xE90) = -240.f;
-    WW_F32(work, 0xE8C) = -240.f;
-    v = WW_S32(work, 0xE9C) * 0xE8;
-    WW_F32(work, 0xEA4) = v;
-    WW_F32(work, 0xEA0) = v;
-    WW_F32(work, 0xEAC) = -200.f;
-    WW_F32(work, 0xEA8) = -200.f;
-    WW_F32(work, 0xEB4) = -300.f;
-    WW_F32(work, 0xEB0) = -300.f;
-    WW_F32(work, 0xF84) = 320.f;
-    WW_F32(work, 0xF80) = 320.f;
-    WW_F32(work, 0xF8C) = -240.f;
-    WW_F32(work, 0xF88) = -240.f;
-    v = WW_S32(work, 0xF98) * 0xE8;
-    WW_F32(work, 0xFA0) = v;
-    WW_F32(work, 0xF9C) = v;
-    WW_F32(work, 0xFA8) = -200.f;
-    WW_F32(work, 0xFA4) = -200.f;
-    WW_F32(work, 0xFB0) = -300.f;
-    WW_F32(work, 0xFAC) = -300.f;
-    name = ((WinLogEntry*)((u8*)work + 0xD78))[WW_S32(work, 0xD6C)].name;
+    w->e88 = 320.f;
+    w->e84 = 320.f;
+    w->e90 = -240.f;
+    w->e8c = -240.f;
+    v = w->cardPage * 0xE8;
+    w->ea4 = v;
+    w->ea0 = v;
+    w->eac = -200.f;
+    w->ea8 = -200.f;
+    w->eb4 = -300.f;
+    w->eb0 = -300.f;
+    w->f84 = 320.f;
+    w->f80 = 320.f;
+    w->f8c = -240.f;
+    w->f88 = -240.f;
+    v = w->badgePage * 0xE8;
+    w->fa0 = v;
+    w->f9c = v;
+    w->fa8 = -200.f;
+    w->fa4 = -200.f;
+    w->fb0 = -300.f;
+    w->fac = -300.f;
+    name = ((WinLogEntry*)((u8*)work + 0xD78))[w->sel].name;
     winMsgEntry(work, 0, name, 0);
 }
 
@@ -656,7 +654,7 @@ void winLogExit(WindowWork* work) {
         work->mapMarioPose = -1;
     }
     for (i = 0; i < 7; i++) {
-        effSoftDelete(*(EffectEntry**)((u8*)work + 0xE44 + i * 4));
+        effSoftDelete(((LogWin*)work)->stones[i]);
     }
 }
 
@@ -1333,6 +1331,7 @@ s32 winLogMain(WindowWork* work) {
 void winLogMain2(WindowWork* work) {
     WinLogWork* w = (WinLogWork*)work;
     u8* ep = (u8*)work;
+    LogWin* lw = (LogWin*)work;
 #ifdef MUST_MATCH
     // Match-only second base alias: with one `work` base MWCC hoists the
     // second int->float fudge store (`stw r0, 0x8(r1)`) one /6 block early;
@@ -1416,78 +1415,78 @@ void winLogMain2(WindowWork* work) {
 
 #ifdef MUST_MATCH
     {
-        f32 d1 = WW_F32(new_var, 0xE28) - WW_F32(new_var, 0xE2C);
-        WW_F32(work, 0xE2C) += d1 / 8.0;
+        f32 d1 = ((LogWin*)new_var)->e28 - ((LogWin*)new_var)->e2c;
+        lw->e2c += d1 / 8.0;
     }
     {
-        f32 d2 = WW_F32(new_var, 0xE30) - WW_F32(work, 0xE34);
-        WW_F32(new_var, 0xE34) += d2 / 8.0;
+        f32 d2 = ((LogWin*)new_var)->e30 - lw->e34;
+        ((LogWin*)new_var)->e34 += d2 / 8.0;
     }
     {
-        f32 d3 = WW_F32(work, 0xE64) - WW_F32(work, 0xE68);
-        WW_F32(new_var, 0xE68) += d3 / 8.0;
+        f32 d3 = lw->e64 - lw->e68;
+        ((LogWin*)new_var)->e68 += d3 / 8.0;
     }
     {
-        f32 d4 = WW_F32(work, 0xE6C) - WW_F32(work, 0xE70);
-        WW_F32(new_var, 0xE70) += d4 / 8.0;
+        f32 d4 = lw->e6c - lw->e70;
+        ((LogWin*)new_var)->e70 += d4 / 8.0;
     }
     {
-        f32 d5 = WW_F32(new_var, 0xE74) - WW_F32(work, 0xE78);
-        WW_F32(work, 0xE78) += d5 / 8.0;
+        f32 d5 = ((LogWin*)new_var)->e74 - lw->e78;
+        lw->e78 += d5 / 8.0;
     }
     {
-        f32 d6 = WW_F32(work, 0xE7C) - WW_F32(new_var, 0xE80);
-        WW_F32(new_var, 0xE80) += d6 / 4.0f;
+        f32 d6 = lw->e7c - ((LogWin*)new_var)->e80;
+        ((LogWin*)new_var)->e80 += d6 / 4.0f;
     }
-    WW_F32(work, 0xEA4) = (f32)(WW_S32(work, 0xE9C) * 0xE8);
-    WW_F32(work, 0xEA0) += (WW_F32(new_var, 0xEA4) - WW_F32(new_var, 0xEA0)) / 6.0f;
-    WW_F32(work, 0xE84) += (WW_F32(work, 0xE88) - WW_F32(new_var, 0xE84)) / 6.0f;
-    WW_F32(new_var, 0xE8C) += (WW_F32(work, 0xE90) - WW_F32(new_var, 0xE8C)) / 6.0f;
-    WW_F32(work, 0xEA8) += (WW_F32(work, 0xEAC) - WW_F32(new_var, 0xEA8)) / 6.0f;
-    WW_F32(new_var, 0xEB0) += (WW_F32(work, 0xEB4) - WW_F32(work, 0xEB0)) / 6.0f;
-    WW_F32(work, 0xFA0) = (f32)(WW_S32(new_var, 0xF98) * 0xE8);
-    WW_F32(work, 0xF9C) += (WW_F32(work, 0xFA0) - WW_F32(new_var, 0xF9C)) / 6.0f;
-    WW_F32(new_var, 0xF80) += (WW_F32(new_var, 0xF84) - WW_F32(new_var, 0xF80)) / 6.0f;
-    WW_F32(work, 0xF88) += (WW_F32(work, 0xF8C) - WW_F32(new_var, 0xF88)) / 6.0f;
-    WW_F32(new_var, 0xFA4) += (WW_F32(new_var, 0xFA8) - WW_F32(new_var, 0xFA4)) / 6.0f;
-    WW_F32(work, 0xFAC) += (WW_F32(new_var, 0xFB0) - WW_F32(work, 0xFAC)) / 6.0f;
+    lw->ea4 = (f32)(lw->cardPage * 0xE8);
+    lw->ea0 += (((LogWin*)new_var)->ea4 - ((LogWin*)new_var)->ea0) / 6.0f;
+    lw->e84 += (lw->e88 - ((LogWin*)new_var)->e84) / 6.0f;
+    ((LogWin*)new_var)->e8c += (lw->e90 - ((LogWin*)new_var)->e8c) / 6.0f;
+    lw->ea8 += (lw->eac - ((LogWin*)new_var)->ea8) / 6.0f;
+    ((LogWin*)new_var)->eb0 += (lw->eb4 - lw->eb0) / 6.0f;
+    lw->fa0 = (f32)(((LogWin*)new_var)->badgePage * 0xE8);
+    lw->f9c += (lw->fa0 - ((LogWin*)new_var)->f9c) / 6.0f;
+    ((LogWin*)new_var)->f80 += (((LogWin*)new_var)->f84 - ((LogWin*)new_var)->f80) / 6.0f;
+    lw->f88 += (lw->f8c - ((LogWin*)new_var)->f88) / 6.0f;
+    ((LogWin*)new_var)->fa4 += (((LogWin*)new_var)->fa8 - ((LogWin*)new_var)->fa4) / 6.0f;
+    lw->fac += (((LogWin*)new_var)->fb0 - lw->fac) / 6.0f;
 #else
     {
-        f32 d1 = WW_F32(work, 0xE28) - WW_F32(work, 0xE2C);
-        WW_F32(work, 0xE2C) += d1 / 8.0;
+        f32 d1 = lw->e28 - lw->e2c;
+        lw->e2c += d1 / 8.0;
     }
     {
-        f32 d2 = WW_F32(work, 0xE30) - WW_F32(work, 0xE34);
-        WW_F32(work, 0xE34) += d2 / 8.0;
+        f32 d2 = lw->e30 - lw->e34;
+        lw->e34 += d2 / 8.0;
     }
     {
-        f32 d3 = WW_F32(work, 0xE64) - WW_F32(work, 0xE68);
-        WW_F32(work, 0xE68) += d3 / 8.0;
+        f32 d3 = lw->e64 - lw->e68;
+        lw->e68 += d3 / 8.0;
     }
     {
-        f32 d4 = WW_F32(work, 0xE6C) - WW_F32(work, 0xE70);
-        WW_F32(work, 0xE70) += d4 / 8.0;
+        f32 d4 = lw->e6c - lw->e70;
+        lw->e70 += d4 / 8.0;
     }
     {
-        f32 d5 = WW_F32(work, 0xE74) - WW_F32(work, 0xE78);
-        WW_F32(work, 0xE78) += d5 / 8.0;
+        f32 d5 = lw->e74 - lw->e78;
+        lw->e78 += d5 / 8.0;
     }
     {
-        f32 d6 = WW_F32(work, 0xE7C) - WW_F32(work, 0xE80);
-        WW_F32(work, 0xE80) += d6 / 4.0f;
+        f32 d6 = lw->e7c - lw->e80;
+        lw->e80 += d6 / 4.0f;
     }
-    WW_F32(work, 0xEA4) = (f32)(WW_S32(work, 0xE9C) * 0xE8);
-    WW_F32(work, 0xEA0) += (WW_F32(work, 0xEA4) - WW_F32(work, 0xEA0)) / 6.0f;
-    WW_F32(work, 0xE84) += (WW_F32(work, 0xE88) - WW_F32(work, 0xE84)) / 6.0f;
-    WW_F32(work, 0xE8C) += (WW_F32(work, 0xE90) - WW_F32(work, 0xE8C)) / 6.0f;
-    WW_F32(work, 0xEA8) += (WW_F32(work, 0xEAC) - WW_F32(work, 0xEA8)) / 6.0f;
-    WW_F32(work, 0xEB0) += (WW_F32(work, 0xEB4) - WW_F32(work, 0xEB0)) / 6.0f;
-    WW_F32(work, 0xFA0) = (f32)(WW_S32(work, 0xF98) * 0xE8);
-    WW_F32(work, 0xF9C) += (WW_F32(work, 0xFA0) - WW_F32(work, 0xF9C)) / 6.0f;
-    WW_F32(work, 0xF80) += (WW_F32(work, 0xF84) - WW_F32(work, 0xF80)) / 6.0f;
-    WW_F32(work, 0xF88) += (WW_F32(work, 0xF8C) - WW_F32(work, 0xF88)) / 6.0f;
-    WW_F32(work, 0xFA4) += (WW_F32(work, 0xFA8) - WW_F32(work, 0xFA4)) / 6.0f;
-    WW_F32(work, 0xFAC) += (WW_F32(work, 0xFB0) - WW_F32(work, 0xFAC)) / 6.0f;
+    lw->ea4 = (f32)(lw->cardPage * 0xE8);
+    lw->ea0 += (lw->ea4 - lw->ea0) / 6.0f;
+    lw->e84 += (lw->e88 - lw->e84) / 6.0f;
+    lw->e8c += (lw->e90 - lw->e8c) / 6.0f;
+    lw->ea8 += (lw->eac - lw->ea8) / 6.0f;
+    lw->eb0 += (lw->eb4 - lw->eb0) / 6.0f;
+    lw->fa0 = (f32)(lw->badgePage * 0xE8);
+    lw->f9c += (lw->fa0 - lw->f9c) / 6.0f;
+    lw->f80 += (lw->f84 - lw->f80) / 6.0f;
+    lw->f88 += (lw->f8c - lw->f88) / 6.0f;
+    lw->fa4 += (lw->fa8 - lw->fa4) / 6.0f;
+    lw->fac += (lw->fb0 - lw->fac) / 6.0f;
 #endif
 }
 
