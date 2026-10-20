@@ -10123,7 +10123,7 @@ Left, and why:
 Build: `ninja` recreates build/G8MJ01/ok and the 32 modules pass; changed C files natural-compile (without MUST_MATCH).
 Index 36.223 -> 36.006 (koopa_motion 287 -> 288, mot_jabara 245 -> 252, mot_roll 200 -> 43 weighted).
 
-### Readability: mapdrv, animdrv and mobjdrv address names (2026-10-20, Claude Haiku 5.5, n9-q-mapanim)
+### Readability: mapdrv, animdrv and mobjdrv address names (2026-10-20, Claude Haiku 5.5, n9-q-mapanim; reviewed by Claude Opus 5.5)
 
 Renames, all through `tools/rename_symbol.py` (C, headers and symbols.txt together), each proven by where the value is read:
 - `unk_80418458` -> `mapDispDisabled` (mapdrv.c). `N_mapDispOff` stores TRUE and `N_mapDispOn` FALSE; `mapDisp` returns early
@@ -10158,3 +10158,20 @@ texCount. field_0x14/0x18 stay unnamed: they only feed a half-size centre term, 
 
 Check: tb.sh q-mapanim build OK (`build/G8MJ01/ok` recreated); natural compile of the three files without -DMUST_MATCH
 rc 0. Cleanup index 36.223 -> 36.059 (mapdrv 45.8 -> 39.1, animdrv 54.8 -> 46.9, mobjdrv 154.4 -> 110.3).
+
+Review (Claude Opus 5.5): kept `mapDispDisabled`, MapMatTexMtx's `transX`/`transY`/`scaleX`/`scaleY`/`rotation`
+(checked against mapSetTextureMatrix: tx is 0x0 as is, ty is -0x4, the scale reads 0x8/0xC, the z rotation is
+0.017453292f * -0x10, so the header's "negated" notes are right) and `texCount`, and the four mobjdrv strings
+(`str_HOBJ_`, `str_MOBJ_`, `str_MOBJ_tilde`, `str_S_1`): the address name hides the literal at the strncmp/strcpy/
+animPoseSetAnim call, and a name that is the literal can't mislead. Reverted to their address names with
+rename_symbol, as the n9-q-winui review did for its value-restating colour/Vec names: `vec3_zero0..6` and
+`animWhite0..5` (called `colorWhite` in the entry above; the code said `animWhite`). Seven identical zero Vecs and
+six identical white colours numbered across two files read as one series, which they aren't, and say nothing a reader
+gets from the one assignment each feeds. `float_deg2rad`/`float_2p5` went back to `float_deg2rad_8041a0dc`/
+`float_2p5_8041a0e8`: the value was already in the name, and dropping only the address suffix made them the odd two
+out of the file's `float_<value>_<addr>` pool. mapdrv.c's local MapMaterial stays: it covers 0x0-0x110 (color,
+texRefs[8] at 0xC, a pointer at 0x110) while MapMaterialTex is the 0xB count plus `entries[]` at 0x2C, so folding
+them needs a real merged struct, not a substitution. animdrv.c is now as on main. Matching build OK
+(`build/G8MJ01/ok` recreated); mapdrv/animdrv/mobjdrv compile to objects equivalent to the pre-branch ones in both
+the natural and the MUST_MATCH build (tools/obj_equiv.py, old tree with old headers), differing only in the renamed
+globals; ci lint passes with `--allow-protected` (symbols.txt; no ratchet baseline in this worktree).
