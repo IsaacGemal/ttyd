@@ -53,11 +53,7 @@ typedef struct JabaraWork {
 // Each offset is listed in REPORT.md.
 #define MW_S8(m, off) (*(s8*)((u8*)(m) + (off)))
 #define MW_U8(m, off) (*(u8*)((u8*)(m) + (off)))
-#define MW_U16(m, off) (*(u16*)((u8*)(m) + (off)))
-#define MW_S16(m, off) (*(s16*)((u8*)(m) + (off)))
 #define MW_S32(m, off) (*(s32*)((u8*)(m) + (off)))
-#define MW_U32(m, off) (*(u32*)((u8*)(m) + (off)))
-#define MW_VEC(m, off) (*(Vec*)((u8*)(m) + (off)))
 
 #ifdef MUST_MATCH
 // A nonconst view keeps these named pool words from folding into duplicate literals.
@@ -474,7 +470,7 @@ void mot_jabara(void) {
         marioGetPtr()->motStruct = jw;
         memset(marioGetPtr()->motStruct, 0, 0x20);
     }
-    MW_S32(mario, 0x1F4) = 0;
+    mario->hitobjHead = NULL;
 
     switch (mario->currSubMotionId) {
     case 0:
@@ -611,7 +607,7 @@ void mot_jabara(void) {
         } else {
             sp3C = marioChkOverhead();
         }
-        if ((HitEntry*)MW_S32(mario, 0x1F4) == NULL) {
+        if ((HitEntry*)mario->hitobjHead == NULL) {
             if (mario->jumpVelY <= 0.0f) {
                 mario->currSubMotionId = 0x1E;
                 marioSetPeakYpos();
@@ -637,13 +633,13 @@ void mot_jabara(void) {
             mario->position.y = f31;
             if (MW_S8(mario, 0x42) <= 2) {
                 mario->currSubMotionId = 0x1E;
-            } else if (hitGetAttr((HitEntry*)MW_S32(mario, 0x1F4)) & 0x40000) {
+            } else if (hitGetAttr((HitEntry*)mario->hitobjHead) & 0x40000) {
                 mario->field_0x2A4 = mario->dispReqDir;
                 mario->unk1A8 = mario->dispReqDir;
                 mario->currSubMotionId = 0x46;
                 mario->multiTimer = 0xA;
                 mario->jabaraHitY = (s32)(sp3C + mario->wPlayerCollisionBox.y);
-                mario->position.z = jabaraGetHitDepth((HitEntry*)MW_S32(mario, 0x1F4));
+                mario->position.z = jabaraGetHitDepth((HitEntry*)mario->hitobjHead);
                 f30 = (f32)mario->jabaraHitY;
                 f28 = f30 - mario->wPlayerCollisionBox.y;
                 mario->position.y = f28 - JABARA_F32(float_3p5_8041ab50);
@@ -920,10 +916,10 @@ void mot_jabara(void) {
                         sp2C = JABARA_F32(float_10_8041ab90) + mario->wPlayerCollisionBox.y;
                         sp68.x = MATCH_F32(float_1_8041ab94) * (f32)sin((JABARA_F32(float_3p1416_8041ab80) * (mario->controlStickAngle + mario->targetYaw)) / 180.0f) + sp68.x;
                         sp68.z = sp68.z - MATCH_F32(float_1_8041ab94) * (f32)cos((JABARA_F32(float_3p1416_8041ab80) * (mario->controlStickAngle + mario->targetYaw)) / 180.0f);
-                        MW_S32(mario, 0x1F4) = (s32)marioSearchHead_jabara(&sp68, &sp2C, &sp30, 0.0f);
-                        if ((HitEntry*)MW_S32(mario, 0x1F4) == NULL) {
+                        mario->hitobjHead = marioSearchHead_jabara(&sp68, &sp2C, &sp30, 0.0f);
+                        if ((HitEntry*)mario->hitobjHead == NULL) {
                             sp2C = 5.0f + mario->wPlayerCollisionBox.y;
-                            MW_S32(mario, 0x1F4) = (s32)marioSearchHead(&sp68, &sp2C, 0.0f);
+                            mario->hitobjHead = marioSearchHead(&sp68, &sp2C, 0.0f);
                         }
                         if (mario->controlStickSensitivity) {
                             s32 wall;
@@ -941,8 +937,8 @@ void mot_jabara(void) {
                             }
                             wall = 0;
                             move = JABARA_F32(float_1_8041ab94);
-                            if ((HitEntry*)MW_S32(mario, 0x1F4) != NULL &&
-                                (hitGetAttr((HitEntry*)MW_S32(mario, 0x1F4)) & 0x40000)) {
+                            if ((HitEntry*)mario->hitobjHead != NULL &&
+                                (hitGetAttr((HitEntry*)mario->hitobjHead) & 0x40000)) {
                                 wall = 1;
                             }
                             if (wall != 0) {
