@@ -460,7 +460,7 @@ s32 pouchRemoveItemIndex(s32 id, s32 index) {
 	return FALSE;
 }
 
-void unk_800d06b4(char* src, char* dst) {
+void pouchHiraganaToKatakana(char* src, char* dst) {
 	u16 c;
 	int len = strlen(src) / 2;
 	char* s = src;

@@ -427,7 +427,7 @@ EVT_BEGIN(powerdownya_party_lank_rtn)
         CALL(evt_msg_print_add, 0, STRING("powerdown_04"))
         RETURN
     END_IF
-    CALL(unk_802399f8, LW(0))
+    CALL(evtPartyTechMixed, LW(0))
     IF_INT_EQUAL(LW(0), 0)
         CALL(evt_msg_print_add, 0, STRING("powerdown_07"))
         RETURN

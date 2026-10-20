@@ -2022,7 +2022,7 @@ WinMgrSelect* winMgrSelectEntry(s32 kind, s32 firstItem, BOOL canCancel) {
                 select->items[select->numItems++].id = i + BADGE_MIN;
             }
         }
-        qqsort(select->items, select->numItems, 4, (int (*)(void*, void*))unk_802379e4);
+        qqsort(select->items, select->numItems, 4, (int (*)(void*, void*))winMgrSelectCmpTypeSort);
         break;
     case 13:
         {
@@ -2042,7 +2042,7 @@ WinMgrSelect* winMgrSelectEntry(s32 kind, s32 firstItem, BOOL canCancel) {
                     select->numItems++;
                 }
             }
-            qqsort(select->items, select->numItems, 4, (int (*)(void*, void*))unk_80237a2c);
+            qqsort(select->items, select->numItems, 4, (int (*)(void*, void*))winMgrSelectCmpStarPrice);
         }
         break;
     case 14:
@@ -2142,7 +2142,7 @@ WinMgrSelect* winMgrSelectEntry(s32 kind, s32 firstItem, BOOL canCancel) {
     return select;
 }
 
-s32 unk_80237a2c(void* a, void* b) {
+s32 winMgrSelectCmpStarPrice(void* a, void* b) {
     u32 va = itemDataTable[((WinMgrSelectItem*)a)->id].star_piece_price;
     u32 vb = itemDataTable[((WinMgrSelectItem*)b)->id].star_piece_price;
 
@@ -2152,7 +2152,7 @@ s32 unk_80237a2c(void* a, void* b) {
     return va < vb ? -1 : 0;
 }
 
-s32 unk_802379e4(void* a, void* b) {
+s32 winMgrSelectCmpTypeSort(void* a, void* b) {
     s32 va = itemDataTable[((WinMgrSelectItem*)a)->id].type_sort_order;
     s32 vb = itemDataTable[((WinMgrSelectItem*)b)->id].type_sort_order;
 
@@ -2346,7 +2346,7 @@ void winMgrSelectDelete(WinMgrSelect* select) {
     __memFree(HEAP_DEFAULT, s);
 }
 
-s32 unk_80237448(WinMgrSelect* select) {
+s32 winMgrSelectCursor(WinMgrSelect* select) {
     return select->cursor;
 }
 
@@ -2480,7 +2480,7 @@ void select_main(WinMgrEntry* entry) {
 }
 
 #pragma opt_common_subs reset
-s32 unk_802399f8(EventEntry* event) {
+s32 evtPartyTechMixed(EventEntry* event) {
     s32* args = event->args;
     PouchData* pouch = pouchGetPtr();
     s32 i;
@@ -2527,7 +2527,7 @@ s32 unk_802399f8(EventEntry* event) {
     return 2;
 }
 
-s32 unk_80239b2c(EventEntry* event) {
+s32 evtPartyTechLow(EventEntry* event) {
     s32* args = event->args;
     PouchData* pouch = pouchGetPtr();
     s32 i;

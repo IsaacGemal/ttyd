@@ -509,6 +509,6 @@ s32 pouchGetPartyColor(PartyId partnerId);
 void pouchSetPartyColor(PartyId partnerId, u16 color);
 void pouchSetYoshiName(char* name);
 char* pouchGetYoshiName(void);
-void unk_800d06b4(char* src, char* dst);
+void pouchHiraganaToKatakana(char* src, char* dst);
 s32 pouchRemoveItemIndex(s32 id, s32 index);
 void pouchSortItem(s32 type);

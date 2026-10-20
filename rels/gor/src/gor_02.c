@@ -856,7 +856,7 @@ EVT_BEGIN(powerupya_party_rtn)
                 CALL(evt_msg_print, 0, STRING("powerup_13"), 0, STRING("me"))
                 BREAK_LOOP
             END_IF
-            CALL(unk_80239b2c, LW(0))
+            CALL(evtPartyTechLow, LW(0))
             IF_INT_EQUAL(LW(0), 0)
                 CALL(evt_msg_print, 0, STRING("powerup_13"), 0, STRING("me"))
                 BREAK_LOOP
@@ -881,7 +881,7 @@ EVT_BEGIN(powerupya_table_talk)
     CALL(evt_mario_key_onoff, 0)
     CALL(evt_party_stop, 0)
     CALL(evt_set_dir_to_target, STRING("me"), STRING("mario"))
-    CALL(unk_80239b2c, LW(0))
+    CALL(evtPartyTechLow, LW(0))
     IF_INT_EQUAL(LW(0), 0)
         CALL(evt_msg_print, 0, STRING("powerup_16"), 0, STRING("me"))
         GOTO(0)
