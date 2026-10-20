@@ -70,13 +70,13 @@ s32 kpaEnemyFireHitChk(f32 x, f32 y, f32 z, f32 a, f32 b) {
         return 0;
     }
     root = efp->userdata;
-    radius = root->unk40;
+    radius = root->radius;
     PSMTXTrans(m0, root->pos.x, root->pos.y, root->pos.z);
-    PSMTXRotRad(m1, 0x79, (root->unk48 - camGetPtr(4)->viewYaw) * float_deg2rad_80420eb4);
-    if (root->unk48 > float_90_80420eb8 && root->unk48 < float_270_80420ebc) {
-        PSMTXScale(m2, root->unk40, root->unk40, -root->unk40);
+    PSMTXRotRad(m1, 0x79, (root->yaw - camGetPtr(4)->viewYaw) * float_deg2rad_80420eb4);
+    if (root->yaw > float_90_80420eb8 && root->yaw < float_270_80420ebc) {
+        PSMTXScale(m2, root->radius, root->radius, -root->radius);
     } else {
-        PSMTXScale(m2, root->unk40, root->unk40, root->unk40);
+        PSMTXScale(m2, root->radius, root->radius, root->radius);
     }
     PSMTXConcat(m0, m1, m0);
     PSMTXConcat(m0, m2, m3);
@@ -85,10 +85,10 @@ s32 kpaEnemyFireHitChk(f32 x, f32 y, f32 z, f32 a, f32 b) {
     threshold = float_0p5_80420e70 * b;
     for (; i < efp->count; i++, root++) {
         f32 mag;
-        if (root->unk44 != 0) {
+        if (root->noHit != 0) {
             continue;
         }
-        scale = float_7_80420ec0 * root->unk40;
+        scale = float_7_80420ec0 * root->radius;
         PSMTXTrans(m0, root->pos.x, root->pos.y, root->pos.z);
         PSMTXScale(m2, scale, scale, scale);
         PSMTXConcat(m0, m2, m0);
@@ -125,7 +125,7 @@ s32 kpaEnemyHitChk(f32 x, f32 y, f32 z, f32 a, f32 b) {
         if (mp->flags & 0x20000) {
             if (mp->position.y > y) {
                 if (kpaGetLevel() == 0 && kpaGetStageType() != 1 && mp->unk4C == 0 && z < float_50_80420eb0) {
-                    marioChgMot(4);
+                    marioChgMot(MARIO_MOTION_JUMP_NPC);
                 }
                 return 1;
             }
@@ -456,7 +456,7 @@ void* kpaSearchHead(Vec* pos, f32* outY, f32 a) {
     } else {
         switch (kpaGetLevel()) {
         case 0:
-            if (mp->currMotionId == 0x25) {
+            if (mp->currMotionId == MARIO_MOTION_KPA_SWIM) {
                 dist = float_10_80420e90;
             } else {
                 dist = a;
@@ -588,7 +588,7 @@ void* kpaGetHitobj(void) {
     if (mp->characterId != 2) {
         return NULL;
     }
-    return KPA(mp)->unk1C;
+    return KPA(mp)->hitobj;
 }
 
 
@@ -597,7 +597,7 @@ void* kpaGetHitFlame(void) {
     if (mp->characterId != 2) {
         return NULL;
     }
-    return KPA(mp)->unk18;
+    return KPA(mp)->hitFlame;
 }
 
 
@@ -625,7 +625,7 @@ void* kpaHitCheck(void) {
     if (mp->characterId != 2) {
         return NULL;
     }
-    KPA(mp)->unk1C = NULL;
+    KPA(mp)->hitobj = NULL;
     kpaClearHeadAll();
     if (kpaFireAttackCheck() == 1) {
         return NULL;
@@ -670,7 +670,7 @@ void* kpaHitCheck(void) {
         }
     }
     }
-    KPA(mp)->unk1C = result;
+    KPA(mp)->hitobj = result;
     return result;
 }
 

@@ -8806,3 +8806,21 @@ step count in seq00's walk. end_unknown's functions and data still carry address
 unk_end_0000321c is still a u32 array rather than CreditsEndingRecord[50]). Swapping a literal for sizeof() is free
 for a constant like the 0x44 alloc, but where the size multiplies an index MWCC can switch to unsigned-multiply
 codegen (size_t); build-check every such swap.
+### Readability: koopa (2026-10-19, Claude Haiku 5.5, n9-q-koopa; reviewed by Claude Opus 5.5)
+
+KpaWork gets `hitFlame` (0x18, kpaGetHitFlame / kpaFireMain), `hitobj` (0x1C, kpaGetHitobj / kpaHitCheck),
+`moveRate` (0xD0, kpa_walk/kpa_dash from `_rateTbl`/`_rateTbl2`), `attackTimer` (0x140, counted down per attack
+step), `bubbleTimer` (0x150, kpa_swim) and typed placeholders `field_0x10`/`field_0x14` (f32, written only by
+kpa_walk) and `field_0x144` (read only by attack mode 0x17). KpaFireNode gets `radius`, `noHit`, `yaw` and
+`nextEfp`. New `KpaFlags`: `KPA_FLAG_NO_HIP` (0x10, set on kpa_swim entry, blocks kpaHipAttackOk),
+`KPA_FLAG_SPLASH_PENDING` (0x100, kpa_fall over water / swim surface jump, cleared when kpa_swim plays SFX 0x827),
+`KPA_FLAG_MUTEKI` (0x10000) and `KPA_FLAG_ALT_POSE` (0x01000000, picks the KPA_*_2 stay/walk pose); `KPA_SFX_NONE`
+for `sfxId`. Bowser runs through `marioMotTbl`'s own slots (mot_jump/mot_hip/... call the kpa_* functions; 0x25-0x27
+are kpa_swim/powup/powdown), so `MARIO_MOTION_*` is the right enum for every marioChgMot and currMotionId compare,
+including JUMP_3 (8) and the PLANE/DAMAGE/DAMAGE_TOGE early return, which mirror the same checks in mario.c.
+`riderDelta` replaces the raw MarioWork 0x174-0x17C casts. Index: koopa files slightly up (placeholders now count
+as field_0x), overall 69.701 -> 69.71. Open: flag 0x10000000 (set by kpaPowDown at level 0, no reader found) and
+who clears KPA_FLAG_NO_HIP; writers of `field_0x10`/`0x14`/`0x144`; the older `unkD8`/`unkE0` header names, which
+escape the index; `(f32)MW_U16(mario, 0x28)` in kpa_walk/kpa_dash stays raw because `(f32)(u16)mario->poseTime` changes the
+codegen; the MarioWork 0x7C-0x88 jump parameters, 0x110, 0x120, 0x1AC, 0x214-0x220, 0x246/0x248, 0x2A0/0x2A2 and
+0x2C4 are still unnamed on main.

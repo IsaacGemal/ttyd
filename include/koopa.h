@@ -5,11 +5,13 @@
 
 // Koopa's per-character work, allocated at mario->field_0x28C (size 0x154).
 typedef struct KpaWork {
-    u32 flags;              // 0x0
+    u32 flags;              // 0x0 (KpaFlags)
     s32 level;              // 0x4
-    u8 unk08[0x18 - 0x08];  // 0x8
-    void* unk18;            // 0x18
-    void* unk1C;            // 0x1C
+    u8 unk08[0x10 - 0x08];  // 0x8
+    f32 field_0x10;         // 0x10 (kpa_walk sets +0.02; no reader in the koopa files)
+    f32 field_0x14;         // 0x14 (kpa_walk sets -0.02; no reader in the koopa files)
+    void* hitFlame;         // 0x18 (kpaGetHitFlame, kpaFireMain)
+    void* hitobj;           // 0x1C (kpaGetHitobj, kpaHitCheck)
     void* head[10];         // 0x20
     u8 unk48[0x4C - 0x48];  // 0x48
     void* ride[10];         // 0x4C
@@ -18,7 +20,7 @@ typedef struct KpaWork {
     u8 unkA0[0xA4 - 0xA0];  // 0xA0
     f32 rideDist[10];       // 0xA4
     u8 unkCC[0xD0 - 0xCC];  // 0xCC
-    s32 unkD0;              // 0xD0
+    s32 moveRate;           // 0xD0 (kpa_walk/kpa_dash, from _rateTbl/_rateTbl2)
     u8 unkD4[0xD8 - 0xD4];  // 0xD4
     s32 unkD8;              // 0xD8
     u8 unkDC[0xE0 - 0xDC];  // 0xDC
@@ -26,12 +28,23 @@ typedef struct KpaWork {
     u8 unkE4[0x138 - 0xE4]; // 0xE4
     s32 mutekiTimer;        // 0x138
     s32 attackMode;         // 0x13C
-    u8 unk140[0x14C - 0x140];
-    u32 sfxId;              // 0x14C
-    u8 unk150[0x154 - 0x150];
+    s32 attackTimer;        // 0x140 (counts down each attack step)
+    s32 field_0x144;        // 0x144 (nonzero keeps attack mode 0x17's breath going; writer not found)
+    u8 unk148[0x14C - 0x148];
+    u32 sfxId;              // 0x14C (KPA_SFX_NONE when silent)
+    s32 bubbleTimer;        // 0x150 (kpa_swim frames until the next bubble)
 } KpaWork;
 
 #define KPA(m) (*(KpaWork**)((u8*)(m) + 0x28C))
+
+typedef enum KpaFlags {
+    KPA_FLAG_NO_HIP = 0x10,                // set on kpa_swim entry; kpaHipAttackOk returns 0 while set
+    KPA_FLAG_SPLASH_PENDING = 0x100,       // set by kpa_fall over water / kpa_swim's surface jump; cleared when kpa_swim plays the landing SFX
+    KPA_FLAG_MUTEKI = 0x10000,             // kpaMutekiOn/Off; kpaMutekiCheck reads it
+    KPA_FLAG_ALT_POSE = 0x01000000,        // kpa_stay/kpa_walk switch to the KPA_*_2 pose when set
+} KpaFlags;
+
+#define KPA_SFX_NONE 0xFFFFFFFFu
 
 // userdata of the fire effect (fireefp->userdata); nodes are 0x50 bytes apart
 typedef struct KpaFireNode {
@@ -40,10 +53,10 @@ typedef struct KpaFireNode {
     u8 unk10[0x1C - 0x10];
     s32 unk1C;      // 0x1C
     u8 unk20[0x40 - 0x20];
-    f32 unk40;      // 0x40
-    s32 unk44;      // 0x44
-    f32 unk48;      // 0x48
-    void* unk4C;    // 0x4C
+    f32 radius;     // 0x40
+    s32 noHit;      // 0x44 (nonzero: skipped by the fire hit checks)
+    f32 yaw;        // 0x48
+    void* nextEfp;  // 0x4C (next node's effect entry)
 } KpaFireNode;
 
 s32 kpaCamFollow(void);
