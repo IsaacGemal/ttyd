@@ -109,16 +109,16 @@ EffectEntry* effPokopiThunderN64Entry(s32 type, s32 lifetime, f32 x, f32 y, f32 
 	data->tev1A = 0xFF;
 
 	// The unnamed scratch fields the original keeps in the struct's reserved runs.
-	*(f32*)((u8*)data + 0x10) = x;
-	*(f32*)((u8*)data + 0x14) = y;
-	*(f32*)((u8*)data + 0x18) = z;
-	*(f32*)((u8*)data + 0x1C) = endX;
-	*(f32*)((u8*)data + 0x20) = endY;
-	*(f32*)((u8*)data + 0x24) = endZ;
+	data->field_0x10 = x;
+	data->field_0x14 = y;
+	data->field_0x18 = z;
+	data->field_0x1C = endX;
+	data->field_0x20 = endY;
+	data->field_0x24 = endZ;
 	data->x = x;
 	data->y = y;
 	data->z = z;
-	*(f32*)((u8*)data + 0x4C) = scale;
+	data->field_0x4C = scale;
 
 	data->cameraId = cameraId;
 
@@ -131,18 +131,18 @@ EffectEntry* effPokopiThunderN64Entry(s32 type, s32 lifetime, f32 x, f32 y, f32 
 #else
 	if (dist2 != 0.0f) {
 #endif
-		*(f32*)((u8*)data + 0x114) = pt_sqrtf(dist2);
+		data->field_0x114 = pt_sqrtf(dist2);
 	} else {
 		return NULL;
 	}
-	*(f32*)((u8*)data + 0x114) = 0.005f * *(f32*)((u8*)data + 0x114);
+	data->field_0x114 = 0.005f * data->field_0x114;
 	data->tev1R = 0xFF;
 	data->tev1G = 0xDC;
 	data->tev1B = 0x14;
 	data->tev2R = 0xFF;
 	data->tev2G = 0xFF;
 	data->tev2B = 0xFF;
-	*(s32*)((u8*)data + 0x110) = rand() % 360;
+	data->field_0x110 = rand() % 360;
 	return effect;
 }
 void effPokopiThunderMain(EffectEntry* effect) {
@@ -338,7 +338,7 @@ void effPokopiThunderDisp(CameraId camId, void* param) {
 	timer = data->timer;
 	cr = data->tev1A;
 	type = data->type;
-	scale = (*(f32*)((u8*)data + 0x4C));
+	scale = data->field_0x4C;
 	if (data->cameraId != 4) {
 		cam = camGetPtr(CAMERA_3D);
 		GXGetProjectionv(proj);
@@ -419,20 +419,20 @@ void effPokopiThunderDisp(CameraId camId, void* param) {
 	}
 
 	for (i = 0; i < 12; i++) {
-		s32 idx = *(s32*)((u8*)data + 0x110) + (i - timer) * 10;
+		s32 idx = data->field_0x110 + (i - timer) * 10;
 		t = (f32)tbl[i];
-		wx = 0.09090909f * ((*(f32*)((u8*)data + 0x1C)) - (*(f32*)((u8*)data + 0x10)));
+		wx = 0.09090909f * (data->field_0x1C - data->field_0x10);
 		ang = 6.2831855f * (f32)(idx % 120 - 60) / 360.0f;
-		wy = 0.09090909f * ((*(f32*)((u8*)data + 0x20)) - (*(f32*)((u8*)data + 0x14)));
+		wy = 0.09090909f * (data->field_0x20 - data->field_0x14);
 		f20 = 0.04f * (t * (f32)sin(ang));
 		f6 = 0.04f * (t * (f32)cos(ang));
 		t = wx * f6 - wy * f20;
 		data->ptX[i] = (t) +
-		          (0.09090909f * ((f32)i * ((*(f32*)((u8*)data + 0x1C)) - (*(f32*)((u8*)data + 0x10)))) + (*(f32*)((u8*)data + 0x10)));
+		          (0.09090909f * ((f32)i * (data->field_0x1C - data->field_0x10)) + data->field_0x10);
 		t = wy * f6;
 		data->ptY[i] = (wx * f20 + t) +
-		          (0.09090909f * ((f32)i * ((*(f32*)((u8*)data + 0x20)) - (*(f32*)((u8*)data + 0x14)))) + (*(f32*)((u8*)data + 0x14)));
-		data->ptZ[i] = zero + (0.09090909f * ((f32)i * ((*(f32*)((u8*)data + 0x24)) - (*(f32*)((u8*)data + 0x18)))) + (*(f32*)((u8*)data + 0x18)));
+		          (0.09090909f * ((f32)i * (data->field_0x20 - data->field_0x14)) + data->field_0x14);
+		data->ptZ[i] = zero + (0.09090909f * ((f32)i * (data->field_0x24 - data->field_0x18)) + data->field_0x18);
 		data->ptScale[i] = 0.1f * (f32)tbl[i + 12];
 	}
 

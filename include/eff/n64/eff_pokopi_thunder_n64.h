@@ -9,7 +9,12 @@ typedef struct EffPokopiThunderData {
 	f32 x;           // 0x4
 	f32 y;           // 0x8
 	f32 z;           // 0xC
-	u8 pad_0x10[0x18];
+	f32 field_0x10;  // 0x10
+	f32 field_0x14;  // 0x14
+	f32 field_0x18;  // 0x18
+	f32 field_0x1C;  // 0x1C
+	f32 field_0x20;  // 0x20
+	f32 field_0x24;  // 0x24
 	s32 lifetime;    // 0x28
 	s32 timer;       // 0x2C
 	s32 tev1R;  // 0x30
@@ -19,12 +24,13 @@ typedef struct EffPokopiThunderData {
 	s32 tev2R;  // 0x40
 	s32 tev2G;  // 0x44
 	s32 tev2B;  // 0x48
-	u8 pad_0x4C[0x4];
+	f32 field_0x4C;  // 0x4C
 	f32 ptX[12];     // 0x50
 	f32 ptY[12];     // 0x80
 	f32 ptZ[12];     // 0xB0
 	f32 ptScale[12]; // 0xE0
-	u8 pad_0x110[0x8];
+	s32 field_0x110; // 0x110
+	f32 field_0x114; // 0x114
 	s32 cameraId;    // 0x118
 } EffPokopiThunderData;
 void effPokopiThunderDisp(CameraId camId, void* param);
