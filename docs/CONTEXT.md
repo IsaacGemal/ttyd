@@ -11294,3 +11294,21 @@ The 19 `void mot_*(void)` prototypes mario_motion.c declared locally for marioMo
 - Left raw: the five `p - 0x7D68/0x7D58/0x7F20/0x7D54/0x7D5C` accesses in BattleWaitAllActiveEvtEnd (0x18298, 0x182A8, 0x180E0, 0x182AC, 0x182A4). Converting them to `wp->field_X` changes the MUST_MATCH object, even with the `u8* p = wp + 0x20000` alias kept (the build breaks in every rel), so the function stays raw.
 - Verified: tower `ninja` recreates build/G8MJ01/ok; battle_seq.c and battle_audience_kinopio.c compile by hand with and without `-DMUST_MATCH` (`-maxerror 50`).
 - Index (tools/cleanup_index.py): battle_seq.c raw_offset 22 -> 21; battle_audience_kinopio.c raw_offset 6 -> 5; tree-wide 20.675 -> 20.670 per kLOC (14709 -> 14705 weighted).
+
+### Structure: battle_mario.c event, BattleWork offsets (2026-10-20, Claude Haiku 5.5, n9-q-offbmario)
+
+Raw offsets in battle_mario.c: 22 -> 11 (weighted 44 -> 22; index 5.415 -> 2.707). No header changes.
+
+- EventEntry 0x88 and 0x8C in `_tatsumaki_effect` are `event->userdataEx[0]` and `event->userdataEx[1]` (s32, the
+  union member already in evtmgr.h). `EffectEntry*` casts on 0x8C follow the same change.
+- BattleWork 0x18FE1 (the `_majinai_powerup_check` byte store) is `wp->field_18FE1[0]`. The band's element 0 is
+  u8 in every other user (battle_seq_end.c, battle_seq.c, battle_damage.c), so no split was needed.
+  alias. battle_actrecord.c reads the same byte as `WP(0x24)`, also u8.
+
+Left raw:
+- EventEntry 0x90 and 0x94 (`field_0x90[2]`, u32) are read and written as s32 in `_tatsumaki_effect` and
+  `psndSFXOff`. Signedness differs from the field; retyping `field_0x90` is a separate change.
+- `*(u16*)((u8*)unit->mKindParams + 0x14)` in `mario_get_renzoku_count_max`: BattleUnitKind `field_0x14` is s16, read
+  here as u16.
+- `(u8*)effect->userdata + N` and the `EffectEntry*` userdata offsets: EffectEntry is outside this task's scope.
+- BattleWork 0x16F24 in _record_renzoku_count stays raw: indexing field_16F1C by an offset difference is not clearer.
