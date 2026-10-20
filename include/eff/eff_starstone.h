@@ -7,7 +7,7 @@ EffectEntry* effStarStoneEntry(s32 idx, f32 x, f32 y, f32 z, f32 scale);
 #include <dolphin/mtx.h>
 #include "driver/dispdrv.h"
 typedef struct effStarStoneData {
-	s32 starType;    // 0x0 idx % 7: picks the colour table entry and the diamond model
+	s32 starType;    // 0x0 idx % 7: colour table index; 0 is the diamond_1 model, 6 diamond_7, 1-5 diamond_2_2
 	u16 flags;       // 0x4 bit field, see effStarStoneMain
 	u8 field_0x6[2]; // 0x6
 	f32 x;           // 0x8
@@ -34,7 +34,7 @@ typedef struct effStarStoneData {
 	u8 tevReg0R;     // 0x5C TEVREG0 colour, red
 	u8 tevReg0G;     // 0x5D TEVREG0 colour, green
 	u8 tevReg0B;     // 0x5E TEVREG0 colour, blue
-	u8 tevReg0A;     // 0x5F TEVREG0 colour, alpha
+	u8 tevReg0A;     // 0x5F TEVREG0 colour, alpha; also the mode passed to U_shadowSetMode
 	s32 sfxHandle;   // 0x60 handle from psndSFXOn_3D for the shine loop
 } effStarStoneData;
 void effStarStoneDraw(CameraId camId, EffectEntry* entry);
