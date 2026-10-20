@@ -174,7 +174,7 @@ s32 _get_local_frame(EventEntry* event, BOOL isFirstCall) {
     AnimationPose* pose =
         animPoseGetAnimPosePtr(*(s32*)BattleGetUnitPartsPtr(BattleTransID(event, -2), 1)->field_0x1C0);
 
-    evtSetValue(event, arg, (s32)*(f32*)(pose->field_0x20 + 4));
+    evtSetValue(event, arg, (s32)pose->clipTime);
     return EVT_RETURN_DONE;
 }
 

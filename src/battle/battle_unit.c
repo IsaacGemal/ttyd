@@ -2253,7 +2253,7 @@ void BtlUnit_ControlPoseSoundMain(BattleUnitPart* part) {
     if (!pose) {
         return;
     }
-    total = *(f32*)((u8*)pose + 0x24) / 60.0f;
+    total = pose->clipTime / 60.0f;
     frame = __cvt_fp2unsigned(pose->loopTime);
     if ((u32)ps->frame > frame) {
         ps->prev = total;

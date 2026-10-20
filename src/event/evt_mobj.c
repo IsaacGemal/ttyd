@@ -3732,7 +3732,7 @@ s32 mobj_kururing_floor(MapObjectEntry* obj) {
             animGetPtr()->poses[obj->poseId].flags |= 0x10;
             obj->flags |= 0x400;
             dispEntry(2, 0.0f, 0, kururing_capture, obj);
-            vtx = &((Vec*)((smartEntry*)*(void**)((u8*)animPoseGetAnimPosePtr(obj->poseId) + 0x15C))->address)[1];
+            vtx = &((Vec*)animPoseGetAnimPosePtr(obj->poseId)->groupWorldPos->address)[1];
             mario = marioGetPtr();
             if (mobjIsInRange(obj->position.x, obj->position.z, 30.0f, mario->position.x, mario->position.z)) {
                 mario->position.y = vtx->y;

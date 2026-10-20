@@ -9167,3 +9167,21 @@ as CollisionCurveData's mode-1 fields at 0x60/0x64, so the 0x68 stride is real b
 range rather than a CamRoadSub; it wants its own type. statusWinMain calls `psndSFXOn((const char*)0x2A)` and
 `0x2B` with integer sound ids; psndSFXOn forwards the pointer to `__psndSFXOn` as an s32, and the cast pattern
 appears at about 200 sites repo-wide, so it reads as an id-or-name parameter typed too narrowly, not a statuswindow bug.
+### Readability: animdrv names (2026-10-19, Claude Haiku 5.5, n9-q-anim; reviewed by Claude Opus 5.5)
+
+AnimationPoseData's padding at 0x1A0 was 4 bytes short, so `groups` sat at 0x1A4 and `mpAnims` at 0x1A8 despite
+their comments; retail has them at 0x1A8/0x1AC, which animdrv.c reached through local ANIM_POSE_DATA_GROUPS/ANIMS
+macros (nothing used the misplaced fields). The gap is now `mBufferVisibility` (0x1A0) and `mBufferNode` (0x1A4),
+with `mBufferTexAnim` at 0x190, so `data->groups`/`data->mpAnims` read the right words and the macros are gone; no
+other offset moved. Also on AnimationPoseData: `xluFlags` (0xC4, bit n drawn at xluMode n, bit 3 animPoseTestXLU),
+`radius`/`height` (0xC8/0xCC, halved sizes). AnimData gets `frameCount`, `frame2Count`, `clip`, `frames`, the five
+delta tables and `frames2` (replacing the ANIM_DATA_* macros); AnimTexBind gets `palId` (0x4). AnimationPose gets
+the animPoseMain frame state (`animTime`, `clipTime`, `keyFrame1/2`, `keyAlpha`, `evtFrame1/2`, `evtValue`), the
+camera-facing rotation (`drawRotY`, `facingSign`, `targetRotY`), the paper block 0x94-0x11B (`paperAnim`,
+`paperTexData[2]`, `paperTexObj[2]`, `paperScaleX/Y`, `paperOffsetY`, `paperTexTrans/Scale[2]`, `paperLeft/Right/
+Top/Bottom`, replacing the POSE_* macros) and the world-eval buffers `groupWorldPos`/`groupWorldMtx` with counts
+(0x15C-0x168), used raw before in npcdrv, end_unknown, rsh_06, evt_mobj, win_log, bom, battle_unit, eff_nice and
+unit_mario. animdrv 366 → 179 weighted. Open: `paperAnim` holds either a name or a search index (typed
+`const char*`); 0x16C and the AnimData/ANIMDATA_F44-F54 tail are still unnamed; eff_nice reads AnimData clip raw.
+The layout fix was merged with #884's (filemgr), which had closed the same gap with `void*` fields: the typed
+names above win, and filemgr's relocation calls use them.

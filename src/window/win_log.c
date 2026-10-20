@@ -2143,7 +2143,7 @@ void capture(CameraId camId, void* param) {
     animPoseDrawMtx(w->poseId, tmp, 3, 0.0f, 1.0f);
     animPosePeraOn(w->poseId);
     if (w->unitKind == 0x6B) {
-        Vec* verts = (Vec*)((smartEntry*)*(void**)((u8*)animPoseGetAnimPosePtr(w->poseId) + 0x15C))->address;
+        Vec* verts = (Vec*)animPoseGetAnimPosePtr(w->poseId)->groupWorldPos->address;
         s32* counts = (s32*)((smartEntry*)smartAlloc(dat_80419a28 * 4, 3))->address;
         s32* order = (s32*)((smartEntry*)smartAlloc(0x7D0, 3))->address;
         int j;
