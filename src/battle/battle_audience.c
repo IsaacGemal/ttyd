@@ -2741,12 +2741,12 @@ void BattleAudienceDispAudience(CameraId camId, void* param) {
 			}
 		}
 
-		scaleX = *(f32*)((u8*)member + 0x54);
-		offsetX = *(f32*)((u8*)member + 0xA8) * scaleX;
-		scaleY = *(f32*)((u8*)member + 0x58);
-		offsetY = *(f32*)((u8*)member + 0xAC) * scaleY;
-		scaleZ = *(f32*)((u8*)member + 0x5C);
-		offsetZ = *(f32*)((u8*)member + 0xB0) * scaleZ;
+		scaleX = member->scale.x;
+		offsetX = member->mRotationOffset.x * scaleX;
+		scaleY = member->scale.y;
+		offsetY = member->mRotationOffset.y * scaleY;
+		scaleZ = member->scale.z;
+		offsetZ = member->mRotationOffset.z * scaleZ;
 		PSMTXScale(mtxScale, scaleX, scaleY, scaleZ);
 
 		{
@@ -3073,14 +3073,14 @@ void BattleAudience_Entry_Sub(s32 index, s32 type, u8 status) {
 		member->position.y = -2000.0f;
 	}
 
-	*(Vec*)((u8*)member + 0x84) = (Vec){ 0.0f, 0.0f, 0.0f };
-	*(Vec*)((u8*)member + 0x78) = *(Vec*)((u8*)member + 0x84);
-	*(Vec*)((u8*)member + 0x90) = (Vec){ 0.0f, 0.0f, -1.0f };
+	member->accel = (Vec){ 0.0f, 0.0f, 0.0f };
+	member->velocity = member->accel;
+	member->normal = (Vec){ 0.0f, 0.0f, -1.0f };
 	member->mRotation = (Vec){ 0.0f, 0.0f, 0.0f };
 	member->mRotationOffset = (Vec){ 0.0f, 0.0f, 0.0f };
-	*(Vec*)((u8*)member + 0x54) = (Vec){ 1.0f, 1.0f, 1.0f };
-	*(Vec*)((u8*)member + 0x60) = (Vec){ 1.0f, 1.0f, 1.0f };
-	*(Vec*)((u8*)member + 0x6c) = (Vec){ 0.0f, 0.0f, 0.0f };
+	member->scale = (Vec){ 1.0f, 1.0f, 1.0f };
+	member->baseSize = (Vec){ 1.0f, 1.0f, 1.0f };
+	member->drawOffset = (Vec){ 0.0f, 0.0f, 0.0f };
 	member->field_0xE8 = 270.0f;
 
 	if ((index >= 4 && index <= 0xf) ||
@@ -3338,9 +3338,9 @@ void BattleAudience_ChangeStatus(s32 index, s32 status) {
 			member->colorR = zero;
 			member->colorA = 0xFF;
 			member->mRotation = (Vec){ 0.0f, 0.0f, 0.0f };
-			*(Vec*)((u8*)member + 0x6C) = (Vec){ 0.0f, 0.0f, 0.0f };
-			*(Vec*)((u8*)member + 0x60) = (Vec){ 1.0f, 1.0f, 1.0f };
-			*(Vec*)((u8*)member + 0x78) = (Vec){ 0.0f, 0.0f, 0.0f };
+			member->drawOffset = (Vec){ 0.0f, 0.0f, 0.0f };
+			member->baseSize = (Vec){ 1.0f, 1.0f, 1.0f };
+			member->velocity = (Vec){ 0.0f, 0.0f, 0.0f };
 			*(s32*)((u8*)member + 0x30) = zero;
 			member->field_0x4 = zero;
 			*(s32*)((u8*)member + 0x8) = zero;
@@ -4322,7 +4322,7 @@ void BattleAudienceSoundClap(s32 a, s32 b) {
 	}
 	AUD_SOUND_ID(sound) = BattleAudienceSound1(name, r, l);
 	if (AUD_SOUND_ID(sound) != -1) {
-		*(s32*)((u8*)sound) |= 1;
+		sound->flags |= 1;
 		sound->timeLeft = a + b;
 		sound->mFadeoutTime = b;
 		vol = psndSFX_get_vol(AUD_SOUND_ID(sound));
@@ -4427,7 +4427,7 @@ void BattleAudienceSoundCheerKind(s32 kind, s32 a, s32 b) {
 	snd4 = BattleAudienceSoundGetPtr(4);
 	snd5 = BattleAudienceSoundGetPtr(5);
 	if ((*(s32*)snd4 & 1) && (*(s32*)snd5 & 1)) {
-		if (*(s32*)((u8*)snd4 + 0xC) <= *(s32*)((u8*)snd5 + 0xC)) {
+		if (snd4->timeLeft <= snd5->timeLeft) {
 			BattleAudienceSoundStop(4);
 			sound = BattleAudienceSoundGetPtr(4);
 		}
@@ -4581,7 +4581,7 @@ void BattleAudienceSoundHandBeat(void) {
 	BattleAudienceSoundStop(9);
 	AUD_SOUND_ID(sound) = BattleAudienceSound1("SFX_AUDIENCE_HANDBEAT1", r, l);
 	if (AUD_SOUND_ID(sound) != -1) {
-		*(s32*)((u8*)sound) |= 1;
+		sound->flags |= 1;
 		sound->timeLeft = -1;
 		sound->mFadeoutTime = 0;
 		sound->mForceFadeLength = 0;
@@ -4760,7 +4760,7 @@ void BattleAudienceSoundBombIgnite(s32 index, s32 a, s32 b) {
 	BattleAudienceSoundStop(0x14);
 	AUD_SOUND_ID(sound) = BattleAudienceSound2("SFX_AUDIENCE_BOMB_READY1", index);
 	if (AUD_SOUND_ID(sound) != -1) {
-		*(s32*)((u8*)sound) |= 1;
+		sound->flags |= 1;
 		sound->timeLeft = a + b;
 		sound->mFadeoutTime = b;
 		vol = psndSFX_get_vol(AUD_SOUND_ID(sound));
