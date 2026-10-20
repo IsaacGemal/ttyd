@@ -15,11 +15,11 @@ extern s32 btldefaultevt_Confuse[];
 extern s32 gesso_arm_damage_pose_event[];
 extern s32 gesso_arm_dead_event[];
 static BattleVulnerableStatus regist;
-BattleDataEntry unk_tik_00029f1c[13];
+BattleDataEntry gesso_left_arm_counter_data_table[13];
 static BattleUnitKindPart parts;
 static s32 init_event[25];
 static s32 damage_event[31];
-s32 unk_evt_tik_0002a0c8[93];
+s32 gesso_left_arm_counter_damage_event[93];
 static s32 attack_event[171];
 static s32 wait_event[6];
 
@@ -87,7 +87,7 @@ BattleUnitKind unit_boss_gesso_left_arm = {
     1,                          // numParts
     &parts,                     // mParts
     init_event,                 // initEvtScript
-    unk_tik_00029f1c,           // dataTable
+    gesso_left_arm_counter_data_table,           // dataTable
 };
 
 static BattleUnitDefense defence = { { 0, 0, 0, 0, 0 } };
@@ -127,20 +127,20 @@ static BattleDispPose pose_table[4] = {
 };
 
 // No terminator: BtlUnit_GetData reads on into data_table below.
-BattleDataEntry unk_tik_00029f1c[13] = {
-    { 0x18, unk_evt_tik_0002a0c8 },
-    { 0x19, unk_evt_tik_0002a0c8 },
-    { 0x1A, unk_evt_tik_0002a0c8 },
-    { 0x1B, unk_evt_tik_0002a0c8 },
-    { 0x1C, unk_evt_tik_0002a0c8 },
-    { 0x1D, unk_evt_tik_0002a0c8 },
-    { 0x1E, unk_evt_tik_0002a0c8 },
-    { 0x1F, unk_evt_tik_0002a0c8 },
-    { 0x20, unk_evt_tik_0002a0c8 },
-    { 0x21, unk_evt_tik_0002a0c8 },
-    { 0x22, unk_evt_tik_0002a0c8 },
-    { 0x23, unk_evt_tik_0002a0c8 },
-    { 0x24, unk_evt_tik_0002a0c8 },
+BattleDataEntry gesso_left_arm_counter_data_table[13] = {
+    { 0x18, gesso_left_arm_counter_damage_event },
+    { 0x19, gesso_left_arm_counter_damage_event },
+    { 0x1A, gesso_left_arm_counter_damage_event },
+    { 0x1B, gesso_left_arm_counter_damage_event },
+    { 0x1C, gesso_left_arm_counter_damage_event },
+    { 0x1D, gesso_left_arm_counter_damage_event },
+    { 0x1E, gesso_left_arm_counter_damage_event },
+    { 0x1F, gesso_left_arm_counter_damage_event },
+    { 0x20, gesso_left_arm_counter_damage_event },
+    { 0x21, gesso_left_arm_counter_damage_event },
+    { 0x22, gesso_left_arm_counter_damage_event },
+    { 0x23, gesso_left_arm_counter_damage_event },
+    { 0x24, gesso_left_arm_counter_damage_event },
 };
 
 static BattleDataEntry data_table[3] = {
@@ -190,7 +190,7 @@ static EVT_BEGIN(damage_event)
     RETURN
 EVT_END()
 
-EVT_BEGIN(unk_evt_tik_0002a0c8)
+EVT_BEGIN(gesso_left_arm_counter_damage_event)
     SET_VALUE(LW(10), -2)
     SET_VALUE(LW(11), 1)
     CALL(btlevtcmd_OnUnitFlag, LW(10), 1)
