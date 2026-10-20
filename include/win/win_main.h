@@ -36,9 +36,14 @@ typedef struct WindowWork {
     f32 posY;                   // 0x154, animates toward targetY
     f32 targetX;                // 0x158, cursor target, set by every submenu
     f32 targetY;                // 0x15C
-    u8 field_160[0x188 - 0x160]; // 0x160
+    s32 marioLinkIdx;           // 0x160, win_mario: current linkDt entry (the cursor on the Mario page)
+    u8 field_164[0x188 - 0x164]; // 0x164
     s32 marioPose;              // 0x188, win_mario's Mario pose (mario_change rebuilds it; mapGX reads its anim)
-    u8 field_18C[0x1A0 - 0x18C]; // 0x18C
+    s32 marioHoldTimer;         // 0x18C, win_mario: frames left before the pose's anim is driven again (30 after a loop)
+    s32 marioState;             // 0x190, win_mario: 0 = link cursor, 1 = super action cursor
+    s32 superActionSel;         // 0x194, win_mario: cursor among the owned super actions
+    s32 superActionCount;       // 0x198, win_mario: star powers owned (bit count of mStarPowersObtained)
+    u8 field_19C[0x1A0 - 0x19C]; // 0x19C
     s32 partyPose[7];           // 0x1A0, win_party: pose handle per party slot
     s32 partyId[7];             // 0x1BC, win_party: party member id per slot (PARTNER_* order)
     s32 selPartyDt;             // 0x1D8, win_party: index into winPartyDt for the selected slot
