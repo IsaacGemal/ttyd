@@ -305,34 +305,22 @@ void cloud_use(PartyEntry* party) {
 
 #define cloud ((PartyCloud*)party->useStruct)
 
+// The pragma stops MWCC CSE-ing party->targetPos into a callee-saved register across the inlined movePos.
 #ifdef MUST_MATCH
-// Match-only: stops MWCC CSE-ing party+0x94 into a callee-saved register across the inlined movePos.
 #pragma opt_common_subs off
+#endif
 static inline void cloudMoveToMarioStep(PartyEntry* party) {
     MarioWork* pm = party->playerPtr;
     f32 pa;
     s32 pf;
-    *(Vec*)((u8*)party + 0x94) = pm->position;
+    party->targetPos = pm->position;
     pa = pm->dispReqDir;
     pf = (pa < 90.0f || pa >= 270.0f);
     pa = toMovedir(pa + (pf != 0 ? -90.0f : 90.0f));
-    movePos((f32*)((u8*)party + 0x94), (f32*)((u8*)party + 0x9C), 3.3f, pa);
-    *(f32*)((u8*)party + 0x98) += 10.0f;
+    movePos(&party->targetPos.x, &party->targetPos.z, 3.3f, pa);
+    party->targetPos.y += 10.0f;
 }
 #define MOVE_TO_MARIO() cloudMoveToMarioStep(party)
-#else
-#define MOVE_TO_MARIO() do { \
-    MarioWork* pm = party->playerPtr; \
-    f32 pa; \
-    s32 pf = 0; \
-    party->targetPos = pm->position; \
-    pa = pm->dispReqDir; \
-    if (pa < 90.0f || pa >= 270.0f) { pf = 1; } \
-    pa = toMovedir(pa + (pf ? -90.0f : 90.0f)); \
-    movePos(&party->targetPos.x, &party->targetPos.z, 3.3f, pa); \
-    party->targetPos.y += 10.0f; \
-} while (0)
-#endif
 
 #ifdef MUST_MATCH
 // Match-only: the original re-reads party->playerPtr at the cloud->unk8 clamp (lwz r30, 0x160(r29));
@@ -597,34 +585,24 @@ void cloud_exit(PartyEntry* party) {
 }
 
 #define cloud ((PartyCloud*)party->useStruct)
-#ifdef MUST_MATCH
-// Match-only: reading the mode through an inline gives the original's register allocation
-// (cloud in r4, mode in r3); the plain dereference in the #else compiles the same but swaps them.
+// Reading the mode through an inline gives the original's register allocation
+// (cloud in r4, mode in r3); a plain dereference swaps them.
 static inline s16 getHitBreatheout2_mode(PartyEntry* party) {
     return ((PartyCloud*)party->useStruct)->mode;
 }
-#endif
 
 void getHitBreatheout2(PartyEntry* party, f32 angle) {
     MarioWork* mario;
     HitEntry* hit;
     f32 sin2, cos2, sin1, cos1;
     f32 hitX, hitY, hitZ, distance, hitNX, hitNY, hitNZ;
-#ifdef MUST_MATCH
     f32 dz, dx; // reversed declaration order puts dx/dz in the original's stack slots
-#else
-    f32 dx, dz;
-#endif
     f32 f31;
     f32 dir;
     f32 f30;
     s16 mode;
 
-#ifdef MUST_MATCH
     mode = getHitBreatheout2_mode(party);
-#else
-    mode = cloud->mode;
-#endif
     mario = party->playerPtr;
     if (mode == 0) {
         f30 = 8.0f;

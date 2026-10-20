@@ -93,7 +93,7 @@ BOOL nameEntPrepare(void) {
 	return fileAsyncf(FILE_TYPE_TPL, NULL, "%s/w/jp/name.tpl\0\0\0", getMarioStDvdRoot()) != 0;
 }
 
-// The integer expression is written in the original's operand order under MUST_MATCH; the natural form
+// The integer expression keeps the original's operand order; the form
 // `x*24 + x/5*30 - 190` reassociates and emits a different register/add order. The original selects the
 // type-2 table entry with a two-case switch, which is why it branches `beq case2; b default`.
 void nameEntOn(s32 type) {
@@ -108,11 +108,7 @@ void nameEntOn(s32 type) {
 	wp->cursorCol = 0;
 	wp->cursorRow = 0;
 
-#ifdef MUST_MATCH
 	wp->x1 = wp->x2 = (f32)(wp->cursorCol * 24 - 190 + wp->cursorCol / 5 * 30);
-#else
-	wp->x1 = wp->x2 = (f32)(wp->cursorCol * 24 + wp->cursorCol / 5 * 30 - 190);
-#endif
 	wp->y1 = wp->y2 = (f32)(112 - wp->cursorRow * 28);
 	wp->charCursorX = wp->charCursorTargetX = -106.0f;
 	wp->charCursorY = wp->charCursorTargetY = 135.0f;
@@ -279,13 +275,9 @@ s32 nameMain(void) {
 					s32 half2 = strlen(wp->name) >> 1;
 					s32 ofs2;
 
-#ifdef MUST_MATCH
 					// target increments the byte offset before the counter; a plain
 					// `count2++, ofs2 += 2` emits them the other way around.
 					for (count2 = 0, ofs2 = 0; count2 < half2; ofs2 += 2, count2++) {
-#else
-					for (count2 = 0, ofs2 = 0; count2 < half2; count2++, ofs2 += 2) {
-#endif
 						if (strncmp(&wp->name[ofs2], "\x81\x40", 2) != 0) {
 							break;
 						}
@@ -864,19 +856,11 @@ static inline void nameWinQuad(f32 x, f32 y, f32 w, f32 h) {
 // The second coord's scale. Separate f64 temps (hh2/ww2) reproduce the target's
 // callee-saved FP assignment; a shared hh/ww pair reassigns the register the first
 // coord just freed, so f23/f24 come out swapped.
-#ifdef MUST_MATCH
 #define NAME_WIN_SCALE2(H, W) \
 		hh2 = __fabs(H); \
 		ww2 = __fabs(W); \
 		yscale = (f32)hh2 / (f32)GXGetTexObjHeight(&texObj); \
 		xs = (f32)ww2 / (f32)GXGetTexObjWidth(&texObj);
-#else
-#define NAME_WIN_SCALE2(H, W) \
-		hh = __fabs(H); \
-		ww = __fabs(W); \
-		yscale = (f32)hh / (f32)GXGetTexObjHeight(&texObj); \
-		xs = (f32)ww / (f32)GXGetTexObjWidth(&texObj);
-#endif
 
 #define NAME_WIN_QUAD(tex, id0, id1, id2, vx, vy, W, H) \
 	{ \
@@ -955,14 +939,9 @@ void nameWinGX(void* tex, s32 arg1, f32 x, f32 y, f32 z, f32 w) {
 
 	NAME_WIN_QUAD(tex, arg1 + 4, arg1 + 5, arg1, x, y, z - 16.0f, w - 16.0f);
 	NAME_WIN_QUAD(tex, arg1 + 4, arg1 + 7, arg1 + 2, x + z - 16.0f, y, 16.0f, w - 16.0f);
-#ifdef MUST_MATCH
 	// bottom row: the top edge is written as bottom+16 so it is recomputed from the
-	// y-w the compiler already has; the natural `y - (w - 16.0f)` gets CSE'd with the
+	// y-w the compiler already has; the form `y - (w - 16.0f)` gets CSE'd with the
 	// upper rows and throws off the callee-saved FP assignment.
 	NAME_WIN_QUAD(tex, arg1 + 4, arg1 + 6, arg1 + 1, x, y - w + 16.0f, z - 16.0f, 16.0f);
 	NAME_WIN_QUAD(tex, arg1 + 4, arg1 + 8, arg1 + 3, x + z - 16.0f, y - w + 16.0f, 16.0f, 16.0f);
-#else
-	NAME_WIN_QUAD(tex, arg1 + 4, arg1 + 6, arg1 + 1, x, y - (w - 16.0f), z - 16.0f, 16.0f);
-	NAME_WIN_QUAD(tex, arg1 + 4, arg1 + 8, arg1 + 3, x + z - 16.0f, y - (w - 16.0f), 16.0f, 16.0f);
-#endif
 }

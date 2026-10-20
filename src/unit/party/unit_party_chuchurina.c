@@ -333,11 +333,7 @@ USER_FUNC(_chuchu_item_steal) {
             BtlUnit_EquipItem(unit, 1, 0);
         }
     }
-#ifdef MUST_MATCH
     evtSetValue(event, out, item);
-#else
-    evtSetValue(event, out, item);
-#endif
     return EVT_RETURN_DONE;
 }
 
