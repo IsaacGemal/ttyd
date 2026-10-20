@@ -81,7 +81,7 @@ typedef struct PuniData {
     s16 depth;                          // 0x11A, searchParent sets parent depth + 1; PuniDokuritsu and _daime_change decrement
     u16 animIdx;                        // 0x11C
     u16 prevAnimIdx;                    // 0x11E
-    u8 unk120[0x121 - 0x120];           // 0x120
+    u8 animDebounce;                    // 0x120, frames a new animIdx waits before it sticks (puniModeParent, counts to 8)
     u8 healIconTime;                // 0x121, frames the heal icon (0x8 bit 1) stays up; counts to 30 (evt_icon_disp_func)
     u8 unk122[0x124 - 0x122];           // 0x122
     s32 animTime;                       // 0x124

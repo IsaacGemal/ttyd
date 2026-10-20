@@ -401,7 +401,7 @@ void evt_icon_disp_func(CameraId camId, void* param) {
             pos = dat->pos;
             if (dat->statusFlags & 1) {
                 (dat->healIconTime)++;
-                if (*(s8*)((u8*)dat + 0x121) > 30) {
+                if (*(s8*)&dat->healIconTime > 30) {
                     dat->healIconTime = 0;
                     dat->statusFlags &= ~1;
                 }
@@ -3113,7 +3113,7 @@ void puniModeParent(PuniData* punidat) {
         } else {
             punidat->animIdx = 1;
         }
-        *(u8*)((u8*)punidat + 0x120) = 0;
+        punidat->animDebounce = 0;
         break;
     default:
         if (punidat->speed < 1.5f) {
@@ -3122,15 +3122,15 @@ void puniModeParent(PuniData* punidat) {
             punidat->animIdx = 1;
         }
         if (punidat->prevAnimIdx == punidat->animIdx) {
-            *(u8*)((u8*)punidat + 0x120) = 0;
+            punidat->animDebounce = 0;
         } else {
-            c = *(u8*)((u8*)punidat + 0x120);
+            c = punidat->animDebounce;
             c++;
-            *(u8*)((u8*)punidat + 0x120) = c;
+            punidat->animDebounce = c;
             if (c <= 8) {
                 punidat->animIdx = punidat->prevAnimIdx;
             } else {
-                *(u8*)((u8*)punidat + 0x120) = 0;
+                punidat->animDebounce = 0;
             }
         }
         break;
@@ -6272,7 +6272,7 @@ void puni_puni_main(void) {
             if ((pd->flags & 0x400) != 0) {
                 pd->flags &= ~0x06000000;
                 pd->statusFlags &= ~0x4;
-                *(u16*)((u8*)pd + 0x586) = 0;
+                pd->engaged = 0;
                 puniParaRecover(pd);
             }
         }
