@@ -994,10 +994,7 @@ s32 mobj_rideswitch_lightblue(MapObjectEntry* obj) {
 #endif
 
     switch (obj->state) {
-#ifdef MUST_MATCH
-        // MUST_MATCH: case 2's temporary declared at switch scope gets retail's stack slot (permuter).
         Vec v;
-#endif
         case 0:
             if (obj->flags & MOBJ_FLAG_TRIGGERED) {
                 mobjRunEvent(obj, obj->eventCode);
@@ -1029,34 +1026,14 @@ s32 mobj_rideswitch_lightblue(MapObjectEntry* obj) {
         }
         case 2: {
             AnimationPoseData* data = animPoseGetAnimBaseDataPtr(obj->poseId);
-#ifdef MUST_MATCH
-            // MUST_MATCH: route the products through a temporary `w` (copied to `v`) and move the
-            // vec+0x88 copy after them. This reproduces retail's FP scheduling (products in f2/f0/f1
-            // with 10.0 kept live) and the retail temp-copy of the Vec. The natural form is under #else.
-            // The named 0.8f/10.0f loads (rather than literals) keep both
-            // constants live, as in retail.
-            Vec w;
-            f32 vx;
-            f32 vy;
-            f32 vz;
+            Vec w = *(Vec*)((u8*)vec + 0x88);
             f32 mag;
             f32 dist;
 
-            vx = 0.8f * (10.0f * data->bboxMax.x);
-            vy = 10.0f * data->bboxMax.y;
-            vz = 0.8f * (10.0f * data->bboxMax.z);
-            w = *(Vec*)((u32*)vec + 0x22);
-            w.x = vx; w.y = vy; w.z = vz;
+            w.x = 0.8f * (10.0f * data->bboxMax.x);
+            w.y = 10.0f * data->bboxMax.y;
+            w.z = 0.8f * (10.0f * data->bboxMax.z);
             v = w;
-#else
-            Vec v = *(Vec*)((u8*)vec + 0x88);
-            f32 mag;
-            f32 dist;
-
-            v.x = 0.8f * (10.0f * data->bboxMax.x);
-            v.z = 0.8f * (10.0f * data->bboxMax.z);
-            v.y = 10.0f * data->bboxMax.y;
-#endif
             mag = PSVECMag(&v);
             dist = PSVECDistance(&obj->position, &marioGetPtr()->position);
             if (dist > mag) {
