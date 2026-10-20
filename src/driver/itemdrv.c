@@ -1403,31 +1403,30 @@ void itemseq_GetItem(ItemEntry* item) {
             if (item->status & 0x4000000) {
                 item->flags |= 0x100;
             }
-            goto state5Tail;
-        }
-        pouchRemoveItem(sel);
-        itemseq_tryGet(item);
-        item->status &= ~1;
-        item->itemId = sel;
-        item->getScript = NULL;
-        item->evtId = 0;
-        item->flags &= ~0x60;
-        {
-            // ItemData.icon_id is s16 in data/item_data.h, but the target loads it with lhz. Read the
-            // same field (stride 0x28, offset 0x20) through a u16 view instead of casting the header.
-            u16* iconIds = (u16*)((u8*)itemDataTable + 0x20);
+        } else {
+            pouchRemoveItem(sel);
+            itemseq_tryGet(item);
+            item->status &= ~1;
+            item->itemId = sel;
+            item->getScript = NULL;
+            item->evtId = 0;
+            item->flags &= ~0x60;
+            {
+                // ItemData.icon_id is s16 in data/item_data.h, but the target loads it with lhz. Read the
+                // same field (stride 0x28, offset 0x20) through a u16 view instead of casting the header.
+                u16* iconIds = (u16*)((u8*)itemDataTable + 0x20);
 
-            iconChange(item->name, iconIds[item->itemId * 0x14]);
-        }
-        wp->currId++;
-        {
-            IconEntry* icon = iconNameToPtr(item->name);
+                iconChange(item->name, iconIds[item->itemId * 0x14]);
+            }
+            wp->currId++;
+            {
+                IconEntry* icon = iconNameToPtr(item->name);
 
-            sprintf(icon->name, "_i%05x", wp->currId);
-            sprintf(item->name, "_i%05x", wp->currId);
+                sprintf(icon->name, "_i%05x", wp->currId);
+                sprintf(item->name, "_i%05x", wp->currId);
+            }
+            item->flags |= 0x100;
         }
-        item->flags |= 0x100;
-    state5Tail:
         item->flags &= ~0x1000;
         item->moveSpeed = 85.0f;
         item->jumpPower = 120.0f;
