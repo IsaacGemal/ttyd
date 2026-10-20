@@ -45,25 +45,25 @@ static u32 kmr_a_1_v[14] = {
 };
 
 typedef struct effKemuri5Data {
-    s32 field_0x0;   // 0x0
+    s32 alive;       // 0x0, 1 while the puff runs (Main clears it at timer 0)
     s16 field_0x4;   // 0x4
-    s16 field_0x6;   // 0x6
-    u8 field_0x8;    // 0x8
+    s16 timer;       // 0x6, frames left (30)
+    u8 alpha;        // 0x8, TEVREG0 alpha, falls 16 per frame after timer 15
     u8 pad_9[3];     // 0x9
     Vec position;    // 0xC
-    f32 field_0x18;  // 0x18
-    f32 field_0x1C;  // 0x1C
-    f32 field_0x20;  // 0x20
-    f32 field_0x24;  // 0x24
-    f32 field_0x28;  // 0x28
-    f32 field_0x2C;  // 0x2C
-    f32 field_0x30;  // 0x30
-    f32 field_0x34;  // 0x34
-    f32 field_0x38;  // 0x38
-    f32 field_0x3C;  // 0x3C
+    f32 scaleX;      // 0x18, 0.1 * sin(swayAngle) + baseScaleX
+    f32 scaleY;      // 0x1C, 0.1 * cos(swayAngle) + baseScaleY
+    f32 scaleZ;      // 0x20, 1.0, never changed
+    f32 baseScaleX;  // 0x24, grows towards 7.5
+    f32 baseScaleY;  // 0x28, decays by 0.98 (0.9 after timer 10)
+    f32 swayAngle;   // 0x2C, degrees, +12 per frame
+    f32 driftSpeed;  // 0x30, decays by 0.83 per frame
+    f32 velY;        // 0x34, added to position.y each frame
+    f32 accelY;      // 0x38, added to velY each frame, starts -0.02
+    f32 accelStep;   // 0x3C, added to accelY each frame (0.00005)
     f32 field_0x40;  // 0x40
-    f32 field_0x44;  // 0x44
-    f32 field_0x48;  // 0x48
+    f32 dirX;        // 0x44, sin of the drift angle, times driftSpeed moves position.x
+    f32 dirZ;        // 0x48, cos of the drift angle, times driftSpeed moves position.z
 } effKemuri5Data;
 
 // Local copy of system.c's inline helper so it inlines here (as in eff_water_damage_n64.c).
@@ -93,27 +93,27 @@ EffectEntry* effKemuri5N64Entry(f32 x, f32 y, f32 z, f32 a4) {
     effect->callback = effKemuri5Main;
 
     for (i = 0; i < 8; i++, data++) {
-        data->field_0x0 = 1;
+        data->alive = 1;
         data->field_0x40 = float_0_8041f360;
         data->position.x = x;
         data->position.y = y;
         data->position.z = z;
-        data->field_0x18 = float_1_8041f38c;
-        data->field_0x1C = float_1_8041f38c;
-        data->field_0x20 = float_1_8041f38c;
-        data->field_0x8 = 0xFF;
-        data->field_0x24 = float_0p03_8041f390 * (f32)(rand() % 11) + float_1_8041f38c;
-        data->field_0x28 = float_0p03_8041f390 * (f32)(rand() % 11) + float_1p7_8041f394;
-        data->field_0x2C = (f32)(rand() % 61);
-        data->field_0x6 = 0x1E;
+        data->scaleX = float_1_8041f38c;
+        data->scaleY = float_1_8041f38c;
+        data->scaleZ = float_1_8041f38c;
+        data->alpha = 0xFF;
+        data->baseScaleX = float_0p03_8041f390 * (f32)(rand() % 11) + float_1_8041f38c;
+        data->baseScaleY = float_0p03_8041f390 * (f32)(rand() % 11) + float_1p7_8041f394;
+        data->swayAngle = (f32)(rand() % 61);
+        data->timer = 0x1E;
         rad = (f32)(i * 45);
-        data->field_0x34 = float_0p5_8041f398;
-        data->field_0x38 = float_neg0p02_8041f39c;
-        data->field_0x3C = float_5Eneg05_8041f3a0;
-        data->field_0x30 = float_neg3p9_8041f3a4;
+        data->velY = float_0p5_8041f398;
+        data->accelY = float_neg0p02_8041f39c;
+        data->accelStep = float_5Eneg05_8041f3a0;
+        data->driftSpeed = float_neg3p9_8041f3a4;
         rad = float_6p2832_8041f36c * reviseAngle(a4 + rad) / float_360_8041f370;
-        data->field_0x44 = sin(rad);
-        data->field_0x48 = cos(rad);
+        data->dirX = sin(rad);
+        data->dirZ = cos(rad);
     }
 
     return effect;
@@ -132,32 +132,32 @@ void effKemuri5Main(EffectEntry* effect) {
     position = initializeVec(&data->position);
     any = 0;
     for (i = 0; i < effect->count; i++, data++) {
-        if (data->field_0x0 == 0) {
+        if (data->alive == 0) {
             continue;
         }
-        if (--data->field_0x6 <= 0) {
-            data->field_0x0 = 0;
+        if (--data->timer <= 0) {
+            data->alive = 0;
             continue;
         }
         any = 1;
-        data->field_0x2C = reviseAngle(float_12_8041f368 + data->field_0x2C);
-        v = (f32)sin(float_6p2832_8041f36c * data->field_0x2C / float_360_8041f370);
-        data->field_0x18 = float_0p1_8041f374 * v + data->field_0x24;
-        v = (f32)cos(float_6p2832_8041f36c * data->field_0x2C / float_360_8041f370);
-        data->field_0x1C = float_0p1_8041f374 * v + data->field_0x28;
-        data->field_0x30 *= float_0p83_8041f378;
-        data->position.x += data->field_0x30 * data->field_0x44;
-        data->position.z += data->field_0x30 * data->field_0x48;
-        data->field_0x38 += data->field_0x3C;
-        data->field_0x34 += data->field_0x38;
-        data->position.y += data->field_0x34;
-        data->field_0x24 = float_0p006_8041f37c * (float_7p5_8041f380 - data->field_0x24) + data->field_0x24;
-        data->field_0x28 *= float_0p98_8041f384;
-        if (data->field_0x6 < 10) {
-            data->field_0x28 *= float_0p9_8041f388;
+        data->swayAngle = reviseAngle(float_12_8041f368 + data->swayAngle);
+        v = (f32)sin(float_6p2832_8041f36c * data->swayAngle / float_360_8041f370);
+        data->scaleX = float_0p1_8041f374 * v + data->baseScaleX;
+        v = (f32)cos(float_6p2832_8041f36c * data->swayAngle / float_360_8041f370);
+        data->scaleY = float_0p1_8041f374 * v + data->baseScaleY;
+        data->driftSpeed *= float_0p83_8041f378;
+        data->position.x += data->driftSpeed * data->dirX;
+        data->position.z += data->driftSpeed * data->dirZ;
+        data->accelY += data->accelStep;
+        data->velY += data->accelY;
+        data->position.y += data->velY;
+        data->baseScaleX = float_0p006_8041f37c * (float_7p5_8041f380 - data->baseScaleX) + data->baseScaleX;
+        data->baseScaleY *= float_0p98_8041f384;
+        if (data->timer < 10) {
+            data->baseScaleY *= float_0p9_8041f388;
         }
-        if (data->field_0x6 < 15) {
-            data->field_0x8 -= 0x10;
+        if (data->timer < 15) {
+            data->alpha -= 0x10;
         }
     }
     if (any == 0) {
@@ -171,7 +171,7 @@ void effKemuri5Main(EffectEntry* effect) {
 static inline void kemuri5SetColor(u8 a) {
     GXColor color = dat_8041f358;
     color.a = a;
-    GXSetTevColor(1, color);
+    GXSetTevColor(GX_TEVREG0, color);
 }
 
 void effKemuri5Disp(CameraId camId, void* param) {
@@ -186,33 +186,33 @@ void effKemuri5Disp(CameraId camId, void* param) {
 
     GXSetNumChans(0);
     GXSetNumTexGens(1);
-    GXSetTexCoordGen2(0, 1, 4, 0x1E, 0, 0x7D);
+    GXSetTexCoordGen2(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_TEXMTX0, GX_FALSE, GX_PTIDENTITY);
     PSMTXScale(scale, float_0p0625_8041f35c, float_0p0625_8041f35c, float_0_8041f360);
-    GXLoadTexMtxImm(scale, 0x1E, 1);
+    GXLoadTexMtxImm(scale, GX_TEXMTX0, GX_MTX2x4);
     GXSetNumTevStages(1);
-    GXSetTevOrder(0, 0, 0, 0xFF);
-    GXSetTevColorOp(0, 0, 0, 0, 1, 0);
-    GXSetTevAlphaOp(0, 0, 0, 0, 1, 0);
-    GXSetTevColorIn(0, 8, 15, 15, 2);
-    GXSetTevAlphaIn(0, 7, 4, 1, 7);
+    GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR_NULL);
+    GXSetTevColorOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+    GXSetTevAlphaOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+    GXSetTevColorIn(GX_TEVSTAGE0, GX_CC_TEXC, GX_CC_ZERO, GX_CC_ZERO, GX_CC_C0);
+    GXSetTevAlphaIn(GX_TEVSTAGE0, GX_CA_ZERO, GX_CA_TEXA, GX_CA_A0, GX_CA_ZERO);
     effGetTexObjN64(0x4E, &texObj);
-    GXLoadTexObj(&texObj, 0);
-    GXSetCullMode(0);
+    GXLoadTexObj(&texObj, GX_TEXMAP0);
+    GXSetCullMode(GX_CULL_NONE);
     effSetVtxDescN64((effVtxArray*)kmr_a_1_v);
 
     for (i = 0; i < effect->count; i++, data++) {
-        if (data->field_0x0 == 0) {
+        if (data->alive == 0) {
             continue;
         }
-        kemuri5SetColor(data->field_0x8);
+        kemuri5SetColor(data->alpha);
         PSMTXTrans(trans, data->position.x, data->position.y, data->position.z);
         PSMTXRotRad(rot, 'y', float_deg2rad_8041f364 * -camGetPtr(CAMERA_3D)->viewYaw);
         PSMTXConcat(trans, rot, trans);
-        PSMTXScale(scale, data->field_0x18, data->field_0x1C, data->field_0x20);
+        PSMTXScale(scale, data->scaleX, data->scaleY, data->scaleZ);
         PSMTXConcat(trans, scale, trans);
         PSMTXConcat(cam->view, trans, trans);
-        GXLoadPosMtxImm(trans, 0);
-        GXBegin(0x90, 0, 6);
+        GXLoadPosMtxImm(trans, GX_PNMTX0);
+        GXBegin(GX_TRIANGLES, GX_VTXFMT0, 6);
         tri2(0, 3, 1, 0, 0, 2, 3, 0);
     }
 }

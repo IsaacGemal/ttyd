@@ -94,12 +94,12 @@ void effQueen2Main(EffectEntry* effect) {
 			data->field_0x20 = 0;
 			data->field_0x24++;
 			data->field_0x28 = effAkariChargeN64Entry(0, 0, data->position.x, data->position.y, data->position.z, 1.0f);
-			((EffAkariChargeData*)data->field_0x28->userdata)->field_0x18 = 0;
-			((EffAkariChargeData*)data->field_0x28->userdata)->field_0x1C = 0x9A;
-			((EffAkariChargeData*)data->field_0x28->userdata)->field_0x20 = 0xFF;
-			((EffAkariChargeData*)data->field_0x28->userdata)->field_0x28 = 0xFF;
-			((EffAkariChargeData*)data->field_0x28->userdata)->field_0x2C = 0xFF;
-			((EffAkariChargeData*)data->field_0x28->userdata)->field_0x30 = 0xFF;
+			((EffAkariChargeData*)data->field_0x28->userdata)->reg0R = 0;
+			((EffAkariChargeData*)data->field_0x28->userdata)->reg0G = 0x9A;
+			((EffAkariChargeData*)data->field_0x28->userdata)->reg0B = 0xFF;
+			((EffAkariChargeData*)data->field_0x28->userdata)->reg1R = 0xFF;
+			((EffAkariChargeData*)data->field_0x28->userdata)->reg1G = 0xFF;
+			((EffAkariChargeData*)data->field_0x28->userdata)->reg1B = 0xFF;
 		}
 		break;
 	}

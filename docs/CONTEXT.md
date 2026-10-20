@@ -9566,3 +9566,27 @@ mapdrv.h. Untyped effect userdata: fire_func writes `eff->userdata + 0x78/0x7C` 
 Also still raw: MarioWork 0xD8 (f32 compared with position.y in evt_mobj), the rideswitch Vec template reads at
 +0x7C/+0x88/+0x94, ImageEntry 0x110 (an OSTime inside `field_0x10C`), and mobjMain's `(HitEntry**)wp` cache over
 MapObjectWork `field_0x8`.
+### Readability: effects, group 7 (2026-10-19, Claude Haiku 5.5, n9-q-eff7; reviewed by Claude Opus 5.5)
+
+Work structs named in eff_kemuri5_n64 and eff_kemuri6_n64 (shared names where the roles match, though kemuri6
+has an extra `rotZ` at 0x18 so the offsets differ by one f32: `alive`, `timer`, `alpha`, `scaleX/Y/Z`,
+`baseScaleX/Y`, `swayAngle`, `velY`, `accelY`, `accelStep`; kemuri5 `driftSpeed`/`dirX`/`dirZ`, kemuri6 `type`
+gating the mario-stay hold), eff_pturn_n64 (the flat `effPturnN64Data` view folded into `PturnN64Elem`; the
+Entry's second-element writes are now `data[1].x` etc.), eff_akari_charge_n64 (`life`, `counter`, `alpha`,
+`scale`, and `reg0R/G/B` / `reg1R/G/B` after the GX_TEVREG0/1 they load, renamed through the EffAkariChargeData
+accessors in eff_thunder_n64, eff_queen2, aji_02/05/12 and mri_01), eff_nozle (`scrollX0/Y0/X1/Y1` for the two
+texture matrices, `rotX/rotY`, petal `offsetX/Y/Z`, `scaleX/Y`, `shrinking`) and eff_nice (NiceEffectWork
+`scaleX/Y/Z` for the acrobat sub-entries, `scale` for the whole effect, renamed in battle_seq, battle_damage and
+battle_event_cmd; `state`/`stateTimer` for the acrobat state machine). GX literals use their enums;
+dispEntry 4/8 are CAMERA_3D/CAMERA_2D (camdrv.h). Review: every swap checked by value and enum type against
+GXEnum.h, including the `#else` branches (akari's natural GXSetTevColor is GX_TEVREG1, as its MUST_MATCH line);
+all 15 touched C files compile without MUST_MATCH. PturnN64Elem stays one struct: the head-only and
+particle-only fields sit at disjoint offsets, and the two that both use (x/y/z, life) now say what each means
+(head: world position and a countdown held at 100; particle: offset in the head's transform and an age).
+Fixed in review: nozle's GXSetVtxDesc arguments read `2 == 2 ? GX_INDEX8 : GX_INDEX16`; nozle petal 0x34 back to
+`field_0x34` (written once, never read). Index 61.129 -> 60.457.
+Open: kemuri5 `field_0x4`/`field_0x40`, kemuri6 `field_0x34`/`0x44`-`0x4C`, akari `field_0x34`/`0x3C`/`0x40` and
+particle `field_0x38`, nozle `field_0x00`/`0x28`-`0x30`/`0x38`-`0x40` (both structs) have no confident reader.
+kemuri6's `accelStep` is only ever 0. pturn's `active` is set to 1 and never cleared. NiceEffectWork's
+0x24/0x2C/0x34-0x64 gaps are unmodelled. aji_02 and queen2 still cast userdata to EffAkariChargeData, a partial
+view of EffAkariChargeWork private to eff_akari_charge_n64.c.

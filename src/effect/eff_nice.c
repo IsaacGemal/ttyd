@@ -129,10 +129,10 @@ EffectEntry* effNiceEntry(s32 type, f32 x, f32 y, f32 z) {
 	userdata->position.x = x;
 	userdata->position.y = y;
 	userdata->position.z = z;
-	userdata->field_0x10 = 1.0f;
-	userdata->field_0x14 = 1.0f;
-	userdata->field_0x18 = 1.0f;
-	userdata->field_0x1C = 1.0f;
+	userdata->scaleX = 1.0f;
+	userdata->scaleY = 1.0f;
+	userdata->scaleZ = 1.0f;
+	userdata->scale = 1.0f;
 	userdata->poseId = -1;
 	switch (type) { //initialize other entries
 	case 7:
@@ -141,11 +141,11 @@ EffectEntry* effNiceEntry(s32 type, f32 x, f32 y, f32 z) {
 			ptr->position.x = 1000.0f;
 			ptr->position.y = 0.0f;
 			ptr->position.z = 0.0f;
-			ptr->field_0x10 = 1.0f;
-			ptr->field_0x14 = 1.0f;
-			ptr->field_0x18 = 1.0f;
-			ptr->field_0x28 = 0;
-			ptr->field_0x20 = 0;
+			ptr->scaleX = 1.0f;
+			ptr->scaleY = 1.0f;
+			ptr->scaleZ = 1.0f;
+			ptr->state = 0;
+			ptr->stateTimer = 0;
 		}
 		break;
 	default:
@@ -300,7 +300,7 @@ void effNiceMain(EffectEntry* effect) {
 		acrobatMain(effect);
 	}
 	else {
-		dispEntry(4, dispCalcZ(&position), 8, effNiceDisp, effect);
+		dispEntry(CAMERA_3D, dispCalcZ(&position), 8, effNiceDisp, effect);
 	}
 }
 
@@ -314,7 +314,7 @@ void effNiceDisp(CameraId camId, void* param) {
 
 	PSMTXTrans(mtxTrans, data->position.x, data->position.y, data->position.z);
 	PSMTXRotRad(mtxRot, 'y', -camGetPtr(camId)->viewYaw * float_0p017453_8041cba4);
-	PSMTXScale(mtxScale, data->field_0x1C, data->field_0x1C, data->field_0x1C);
+	PSMTXScale(mtxScale, data->scale, data->scale, data->scale);
 	PSMTXConcat(mtxTrans, mtxRot, mtxFinal);
 	PSMTXConcat(mtxFinal, mtxScale, mtxFinal);
 	PSMTXScale(mtxScale, 8.0f, 8.0f, 8.0f);
@@ -353,10 +353,10 @@ void acrobatMain(EffectEntry* effect) {
 
 	data++;
 	for (i = 1; i < effect->count; i++, data++) {
-		switch (data->field_0x28) {
+		switch (data->state) {
 		case 0:
-			data->field_0x20 = i * 4;
-			data->field_0x28++;
+			data->stateTimer = i * 4;
+			data->state++;
 			if (i == 1) {
 #ifdef MUST_MATCH
 				// MUST_MATCH: the s32 round trip pins the direct address materialisation (see above).
@@ -367,75 +367,75 @@ void acrobatMain(EffectEntry* effect) {
 			}
 			break;
 		case 1:
-			data->field_0x20--;
-			if (data->field_0x20 < 0) {
-				data->field_0x20 = 0;
-				data->field_0x28++;
+			data->stateTimer--;
+			if (data->stateTimer < 0) {
+				data->stateTimer = 0;
+				data->state++;
 			}
 			break;
 		case 2:
-			data->field_0x20++;
-			data->position.x = intplGetValue(0xC, data->field_0x20, 0x1E, 500.f, (f32)(i * 4));
-			if (data->field_0x20 >= 0x1E) {
-				data->field_0x20 = 0;
-				data->field_0x28++;
+			data->stateTimer++;
+			data->position.x = intplGetValue(0xC, data->stateTimer, 0x1E, 500.f, (f32)(i * 4));
+			if (data->stateTimer >= 0x1E) {
+				data->stateTimer = 0;
+				data->state++;
 			}
 			break;
 		case 3:
-			data->field_0x20++;
-			data->field_0x10 = intplGetValue(0xC, data->field_0x20, 8, 1.0f, 0.4f);
-			data->field_0x14 = intplGetValue(0xC, data->field_0x20, 8, 1.0f, 1.5f);
-			if (data->field_0x20 >= 8) {
-				data->field_0x20 = 0;
-				data->field_0x28++;
+			data->stateTimer++;
+			data->scaleX = intplGetValue(0xC, data->stateTimer, 8, 1.0f, 0.4f);
+			data->scaleY = intplGetValue(0xC, data->stateTimer, 8, 1.0f, 1.5f);
+			if (data->stateTimer >= 8) {
+				data->stateTimer = 0;
+				data->state++;
 			}
 			break;
 		case 4:
-			data->field_0x20++;
-			if (data->field_0x20 > (effect->count - i - 1) * 4) {
-				data->field_0x20 = 0;
-				data->field_0x28++;
+			data->stateTimer++;
+			if (data->stateTimer > (effect->count - i - 1) * 4) {
+				data->stateTimer = 0;
+				data->state++;
 			}
 			break;
 		case 5:
-			data->field_0x20++;
-			data->position.x = intplGetValue(8, data->field_0x20, 0x1E, (f32)(i * 4), (f32)(i * 0xC));
-			data->field_0x10 = intplGetValue(0xC, data->field_0x20, 0x1E, 0.2f, 1.0f);
-			data->field_0x14 = intplGetValue(0xC, data->field_0x20, 0x1E, 1.5f, 1.0f);
-			if (data->field_0x20 >= 0x1E) {
-				data->field_0x20 = 0;
-				data->field_0x28++;
+			data->stateTimer++;
+			data->position.x = intplGetValue(8, data->stateTimer, 0x1E, (f32)(i * 4), (f32)(i * 0xC));
+			data->scaleX = intplGetValue(0xC, data->stateTimer, 0x1E, 0.2f, 1.0f);
+			data->scaleY = intplGetValue(0xC, data->stateTimer, 0x1E, 1.5f, 1.0f);
+			if (data->stateTimer >= 0x1E) {
+				data->stateTimer = 0;
+				data->state++;
 			}
 			break;
 		case 6:
-			data->field_0x20++;
-			if (data->field_0x20 > 0x10) {
-				data->field_0x20 = 0;
-				data->field_0x28++;
+			data->stateTimer++;
+			if (data->stateTimer > 0x10) {
+				data->stateTimer = 0;
+				data->state++;
 			}
 			break;
 		case 7:
-			data->field_0x20++;
-			data->field_0x10 = intplGetValue(0xC, data->field_0x20, 0xF, 1.0f, 1.5f);
-			data->field_0x14 = intplGetValue(0xC, data->field_0x20, 0xF, 1.0f, 0.1f);
-			if (data->field_0x20 >= 0xF) {
-				data->field_0x20 = 0;
-				data->field_0x28++;
+			data->stateTimer++;
+			data->scaleX = intplGetValue(0xC, data->stateTimer, 0xF, 1.0f, 1.5f);
+			data->scaleY = intplGetValue(0xC, data->stateTimer, 0xF, 1.0f, 0.1f);
+			if (data->stateTimer >= 0xF) {
+				data->stateTimer = 0;
+				data->state++;
 			}
 			break;
 		case 8:
-			data->field_0x20++;
-			data->field_0x10 = intplGetValue(0xC, data->field_0x20, 0xF, 1.5f, 0.1f);
-			data->field_0x14 = intplGetValue(0xC, data->field_0x20, 0xF, 0.1f, 2.0f);
-			if (data->field_0x20 >= 0xF) {
-				data->field_0x20 = 0;
-				data->field_0x28++;
+			data->stateTimer++;
+			data->scaleX = intplGetValue(0xC, data->stateTimer, 0xF, 1.5f, 0.1f);
+			data->scaleY = intplGetValue(0xC, data->stateTimer, 0xF, 0.1f, 2.0f);
+			if (data->stateTimer >= 0xF) {
+				data->stateTimer = 0;
+				data->state++;
 			}
 			break;
 		case 9:
-			data->field_0x18 = 0.0f;
-			data->field_0x14 = 0.0f;
-			data->field_0x10 = 0.0f;
+			data->scaleZ = 0.0f;
+			data->scaleY = 0.0f;
+			data->scaleX = 0.0f;
 			done++;
 			break;
 		}
@@ -445,9 +445,9 @@ void acrobatMain(EffectEntry* effect) {
 	}
 	else {
 #ifdef MUST_MATCH
-		dispEntry(4, dispCalcZ(&position), 8, effAcrobatDisp, effect);
+		dispEntry(CAMERA_3D, dispCalcZ(&position), 8, effAcrobatDisp, effect);
 #else
-		dispEntry(4, dispCalcZ(&disp), 8, effAcrobatDisp, effect);
+		dispEntry(CAMERA_3D, dispCalcZ(&disp), 8, effAcrobatDisp, effect);
 #endif
 	}
 }
@@ -472,7 +472,7 @@ void effAcrobatDisp(CameraId camId, void* param) {
 	f32 offsetX, offsetY;
 
 	PSMTXTrans(mtxTrans, data->position.x, data->position.y, data->position.z);
-	PSMTXScale(mtxScale, data->field_0x1C, data->field_0x1C, data->field_0x1C);
+	PSMTXScale(mtxScale, data->scale, data->scale, data->scale);
 	PSMTXRotRad(mtxRot, 'y', -camGetPtr(camId)->viewYaw * float_0p017453_8041cba4);
 	PSMTXConcat(mtxTrans, mtxRot, mtxFinal);
 	PSMTXConcat(mtxFinal, mtxScale, mtxFinal);
@@ -511,7 +511,7 @@ void effAcrobatDisp(CameraId camId, void* param) {
 #else
 	for (; i < effect->count; i++, data++) {
 #endif
-		if (data->field_0x28 < 6) {
+		if (data->state < 6) {
 			offsetX = negSize * float_0p5_8041cbac;
 			offsetY = 0.0f;
 		}
@@ -526,15 +526,15 @@ void effAcrobatDisp(CameraId camId, void* param) {
 #endif
 		PSMTXTrans(mtxTrans, data->position.x, data->position.y, data->position.z);
 		PSMTXTrans(mtxRot, offsetX, offsetY, 0.0f);
-		PSMTXScale(mtxScale, data->field_0x10, data->field_0x14, data->field_0x18);
+		PSMTXScale(mtxScale, data->scaleX, data->scaleY, data->scaleZ);
 		PSMTXConcat(mtxRot, mtxScale, mtxScale);
 		PSMTXTrans(mtxRot, -offsetX, -offsetY, 0.0f);
 		PSMTXConcat(mtxScale, mtxRot, mtxScale);
 		PSMTXConcat(mtxTrans, mtxScale, mtxScale);
 		PSMTXConcat(mtxFinal, mtxScale, mtxScale);
 		PSMTXConcat(camera->view, mtxScale, mtxScale);
-		GXLoadPosMtxImm(mtxScale, 0);
-		GXSetCurrentMtx(0);
+		GXLoadPosMtxImm(mtxScale, GX_PNMTX0);
+		GXSetCurrentMtx(GX_PNMTX0);
 
 #ifdef MUST_MATCH
 		effGetTexObj(acrobat_tbl[gp->language][texIdx - 1], &texObj);

@@ -720,7 +720,7 @@ s32 _set_effect_luck(void) {
 		BtlUnit_GetPos(unit, &x, py, pz);
 		psndSFXOn(sfxName);
 		eff = effNiceEntry(6, x - 45.0f, 60.0f + y, z);
-		((NiceEffectWork*)eff->userdata)->field_0x1C = 0.75f;
+		((NiceEffectWork*)eff->userdata)->scale = 0.75f;
 	}
 	return 2;
 }
