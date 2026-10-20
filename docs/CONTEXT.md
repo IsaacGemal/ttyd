@@ -10037,3 +10037,19 @@ address names (`vec3_802ffa98..`, `dat_80421a28..74`), which addr_literals left 
 case; the evt prefix belongs to the evt core). Matching build OK; all seven changed C files natural-compile
 equivalent to the pre-branch objects (old tree with old headers), differing only in the renamed extern names.
 Landing needs `--allow-protected` (config/G8MJ01/symbols.txt).
+### Readability: battle_seq_command weapon flag (2026-10-20, Claude Haiku 5.5, n9-q-bstage)
+
+BattleCommandWeapon 0x4 is `mEnabled` (u32, type unchanged). The select code only accepts a weapon whose 0x4 is nonzero
+(_btlcmd_UpdateSelectWeaponTable sets 1 where mDisableReason is 0 and 0 otherwise, and the random-weapon candidate loop
+and the confuse path skip zero entries), and it is the same role as the BOOL mEnabled at 0x4 of BattleCommandAction and
+BattleCommandOperation. All 17 uses in battle_seq_command.c renamed. battle.h's BattleWorkCommandWeapon 0x4 stays
+`field_0x4`: the unit party files (unit_party_sanders/christine/...) write it through that struct, so renaming it is a
+separate change touching src/unit/party. Left unnamed in battle_seq_command: unit 0x2A8 (an s32 of event-state bits
+read in battle_seq.c and battle_disp.c; no single bit meaning is proven), the BattleWorkHpGauge reads in
+BattleDrawEnemyHPBar and the enemy HP gauge (field_0x2/0x8/0x14/0x18; meanings not proven from the draw code alone),
+the `(u8*)wp + 0x16F..` action-record counters (their index into field_16F1C does not map 1:1 to the
+BattleActRecordConditionType values). Also kept: the fn_ptr_cast calls to btlDispTexPlane and the other casts (they
+match the original's call shape), the goto blocks (control flow), and battle_stage.c's address-named float constants
+(addr_literals reports 0 of 21 convertible in battle_stage.c and battle_seq_command.c) and its six pooled `unk_8042301x`
+zero words (kept as address names; the comment at the declaration says why). Matching build OK (tower ninja, ok marker
+recreated); CI ratchet not run because the tower copy has no accepted baseline.
