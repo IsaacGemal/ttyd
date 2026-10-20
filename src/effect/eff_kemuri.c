@@ -214,19 +214,15 @@ void effKemuriMain(EffectEntry* effect) {
 	effKemuriData* data = effect->userdata;
 	s32 i = 1;
 	s32 type;
-#ifdef MUST_MATCH
-	/* MUST_MATCH: retail builds the Vec in a scratch and copies it to a second local before
-	   dispCalcZ; a single local folds the copy away. */
+	/* Retail builds the Vec in a scratch and copies it to a second local before dispCalcZ;
+	   a single local folds the copy away. */
 	Vec position;
-#endif
 	Vec disp = { 0.0f, 0.0f, 0.0f };
 
 	disp.x = data->x;
 	disp.y = data->y;
 	disp.z = data->z;
-#ifdef MUST_MATCH
 	position = disp;
-#endif
 
 	type = data->kind;
 	data++;
@@ -276,35 +272,27 @@ void effKemuriMain(EffectEntry* effect) {
 			return;
 		}
 	}
-#ifdef MUST_MATCH
 	dispEntry(CAMERA_3D, dispCalcZ(&position), 2, effKemuriDisp, effect);
-#else
-	dispEntry(CAMERA_3D, dispCalcZ(&disp), 2, effKemuriDisp, effect);
-#endif
 }
 
-// The MUST_MATCH re-read of effect->userdata below is needed for the register allocation: it makes MWCC
+// The re-read of effect->userdata below is needed for the register allocation: it makes MWCC
 // load it into a volatile register and copy it to the callee-saved r31 before the sin call (retail's
 // `lwz r7; mr r31, r7`).
 static void effKemuri2Main(EffectEntry* effect) {
 	effKemuri2Data* data = effect->userdata;
 	s32 i;
 	f32 angle;
-#ifdef MUST_MATCH
-	/* MUST_MATCH: retail builds the Vec in a scratch and copies it to a second local before
-	   dispCalcZ; a single local folds the copy away. */
+	/* Retail builds the Vec in a scratch and copies it to a second local before dispCalcZ;
+	   a single local folds the copy away. */
 	Vec position;
-#endif
 	Vec disp = { 0.0f, 0.0f, 0.0f };
 
 	disp.x = data->x;
 	disp.y = data->y;
 	disp.z = data->z;
-#ifdef MUST_MATCH
 	position = disp;
-	/* MUST_MATCH: redundant re-read makes MWCC split data into r7/r31 as retail does. */
+	/* The redundant re-read makes MWCC split data into r7/r31 as retail does. */
 	data = effect->userdata;
-#endif
 	angle = (f32)sin(float_3p1416_8041c6e0 * (f32)data->counter / float_30_8041c6e4);
 	data->counter++;
 	if (data->counter > 30) {
@@ -324,11 +312,7 @@ static void effKemuri2Main(EffectEntry* effect) {
 			data->alpha = (s32)((f32)data->alpha * float_0p8_8041c6f0);
 		}
 	}
-#ifdef MUST_MATCH
 	dispEntry(CAMERA_3D, dispCalcZ(&position), 2, effKemuri2Disp, effect);
-#else
-	dispEntry(CAMERA_3D, dispCalcZ(&disp), 2, effKemuri2Disp, effect);
-#endif
 }
 
 // Draws a Kemuri puff as two camera-facing quads.
@@ -517,12 +501,10 @@ void effKemuriDisp(CameraId camId, void* param) {
 #endif
 
 // Draws two camera-facing textured quads for the secondary smoke effect.
-#ifdef MUST_MATCH
 static inline GXColor kemuriTevColor(u8 alpha, GXColor c) {
 	c.a = alpha;
 	return c;
 }
-#endif
 
 // 100% matched: the p8/p12/n12p8 preheader locals (declared p8,p12,n12p8 and assigned
 // n12p8,p12,p8) and the quad's x6/y4/px/py locals reproduce retail's volatile-FPR colouring.
@@ -542,12 +524,10 @@ static void effKemuri2Disp(CameraId cameraId, void* param) {
 	Mtx outMtx;
 	Mtx tmpMtx;
 	s32 i;
-#ifdef MUST_MATCH
-	/* MUST_MATCH: names for the negSize source loads keep their volatile-FPR colouring. */
+	/* Names for the negSize source loads keep their volatile-FPR colouring. */
 	f32 p8;
 	f32 p12;
 	f32 n12p8;
-#endif
 
 	camera = camGetPtr(cameraId);
 
@@ -573,22 +553,14 @@ static void effKemuri2Disp(CameraId cameraId, void* param) {
 	GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_POS_XYZ, GX_F32, 0);
 	GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, GX_TEX_ST, GX_F32, 0);
 
-#ifdef MUST_MATCH
 	n12p8 = -float_12p8_8041c690;
 	p12 = float_12_8041c688;
 	p8 = float_8_8041c68c;
-#endif
 
 	for (i = 0; i < 2; i++) {
-#ifdef MUST_MATCH
 		const f32 negSizeX = -p12;
 		const f32 negSizeY = -p8;
 		const f32 negSize2 = n12p8 * float_0p5_8041c6cc;
-#else
-		const f32 negSizeX = -float_12_8041c688;
-		const f32 negSizeY = -float_8_8041c68c;
-		const f32 negSize2 = -float_12p8_8041c690 * float_0p5_8041c6cc;
-#endif
 
 		if ((data->heading > float_20_8041c694 && data->heading < float_160_8041c698) ||
 		    (data->heading > float_180_8041c69c && data->heading < float_340_8041c6a0)) {
@@ -624,23 +596,9 @@ static void effKemuri2Disp(CameraId cameraId, void* param) {
 			effGetTexObj(0xD, &texobj);
 			GXLoadTexObj(&texobj, GX_TEXMAP0);
 			if (i == 0) {
-#ifdef MUST_MATCH
 				GXSetTevColor(GX_TEVREG0, kemuriTevColor(data->alpha, unk_80423010));
-#else
-				GXColor color = unk_80423010;
-
-				color.a = data->alpha;
-				GXSetTevColor(GX_TEVREG0, color);
-#endif
 			} else {
-#ifdef MUST_MATCH
 				GXSetTevColor(GX_TEVREG0, kemuriTevColor(data->alpha, dat_8041c680));
-#else
-				GXColor color = dat_8041c680;
-
-				color.a = data->alpha;
-				GXSetTevColor(GX_TEVREG0, color);
-#endif
 			}
 			GXBegin(GX_QUADS, GX_VTXFMT0, 4);
 #ifdef MUST_MATCH
@@ -703,29 +661,11 @@ static void effKemuri2Disp(CameraId cameraId, void* param) {
 		if (i == 0) {
 			effGetTexObj(0xC, &texobj);
 			GXLoadTexObj(&texobj, GX_TEXMAP0);
-#ifdef MUST_MATCH
 			GXSetTevColor(GX_TEVREG0, kemuriTevColor(data->alpha, unk_80423014));
-#else
-			{
-				GXColor color = unk_80423014;
-
-				color.a = data->alpha;
-				GXSetTevColor(GX_TEVREG0, color);
-			}
-#endif
 		} else {
 			effGetTexObj(0xB, &texobj);
 			GXLoadTexObj(&texobj, GX_TEXMAP0);
-#ifdef MUST_MATCH
 			GXSetTevColor(GX_TEVREG0, kemuriTevColor(data->alpha, dat_8041c684));
-#else
-			{
-				GXColor color = dat_8041c684;
-
-				color.a = data->alpha;
-				GXSetTevColor(GX_TEVREG0, color);
-			}
-#endif
 		}
 		GXBegin(GX_QUADS, GX_VTXFMT0, 4);
 #ifdef MUST_MATCH
