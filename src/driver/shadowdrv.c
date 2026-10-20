@@ -339,7 +339,7 @@ void shadowInit(void) { //almost 1:1, minor regalloc
     do {                                            \
         switch ((entry)->type) {                    \
         case 1:                                     \
-            GXSetArray(0xB, color_tbl_cube, 4);     \
+            GXSetArray(GX_VA_CLR0, color_tbl_cube, 4);     \
             GXCallDisplayList(cube_dl_top, 0x40);   \
             GXCallDisplayList(cube_dl_bottom, 0x20);\
             GXCallDisplayList(cube_dl_side, 0x20);  \
@@ -430,7 +430,7 @@ void shadowMain(void) {
 // inline puts them the other way round. The independent form is under #else.
 static inline void shadowDispMatColor(void) {
     GXColor c = cswp->color;
-    GXSetChanMatColor(4, c);
+    GXSetChanMatColor(GX_COLOR0A0, c);
 }
 #endif
 
@@ -454,40 +454,40 @@ void shadowDisp(CameraId cameraId, void* param) {
         shadowCharShadowDisp_Polygon(cameraId, param);
         camGetCurPtr();
         GXSetNumChans(1);
-        GXSetChanCtrl(4, 0, 0, 0, 0, 2, 2);
+        GXSetChanCtrl(GX_COLOR0A0, GX_FALSE, GX_SRC_REG, GX_SRC_REG, GX_LIGHT_NULL, GX_DF_CLAMP, GX_AF_NONE);
 #ifdef MUST_MATCH
         shadowDispMatColor();
 #else
         {
             GXColor color = cswp->color;
-            GXSetChanMatColor(4, color);
+            GXSetChanMatColor(GX_COLOR0A0, color);
         }
 #endif
         GXSetNumTexGens(0);
         GXSetNumTevStages(1);
-        GXSetTevOrder(0, 0xFF, 0xFF, 4);
-        GXSetTevColorOp(0, 0, 0, 0, 1, 0);
-        GXSetTevAlphaOp(0, 0, 0, 0, 1, 0);
-        GXSetTevColorIn(0, 0xF, 0xF, 0xF, 0xA);
-        GXSetTevAlphaIn(0, 7, 1, 5, 7);
-        GXSetFog(0, float_0_804198f4, float_0_804198f4, float_0_804198f4, float_0_804198f4, unk_80422f98);
+        GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD_NULL, GX_TEXMAP_NULL, GX_COLOR0A0);
+        GXSetTevColorOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+        GXSetTevAlphaOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+        GXSetTevColorIn(GX_TEVSTAGE0, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ZERO, GX_CC_RASC);
+        GXSetTevAlphaIn(GX_TEVSTAGE0, GX_CA_ZERO, GX_CA_A0, GX_CA_RASA, GX_CA_ZERO);
+        GXSetFog(GX_FOG_NONE, float_0_804198f4, float_0_804198f4, float_0_804198f4, float_0_804198f4, unk_80422f98);
         GXSetBlendMode(GX_BM_BLEND, GX_BL_SRCALPHA, GX_BL_INVSRCALPHA, GX_LO_CLEAR);
         GXSetZMode(GX_TRUE, GX_LEQUAL, GX_FALSE);
         GXSetZCompLoc(GX_TRUE);
-        GXSetAlphaCompare(7, 0, 0, 7, 0);
+        GXSetAlphaCompare(GX_ALWAYS, 0, GX_AOP_AND, GX_ALWAYS, 0);
         GXSetCurrentMtx(GX_PNMTX0);
         GXSetCullMode(GX_CULL_NONE);
-        GXSetArray(9, testKagePosArray, 0xC);
+        GXSetArray(GX_VA_POS, testKagePosArray, 0xC);
         GXClearVtxDesc();
-        GXSetVtxDesc(9, 2);
-        GXSetVtxAttrFmt(0, 9, 1, 4, 0);
+        GXSetVtxDesc(GX_VA_POS, GX_INDEX8);
+        GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_POS_XYZ, GX_F32, 0);
         GXClearVtxDesc();
-        GXSetVtxDesc(9, 2);
-        GXSetVtxDesc(0xB, 2);
-        GXSetVtxAttrFmt(0, 9, 1, 4, 0);
-        GXSetVtxAttrFmt(0, 0xB, 1, 5, 0);
-        GXSetArray(9, vertex_tbl, 0xC);
-        GXSetArray(0xB, color_tbl, 4);
+        GXSetVtxDesc(GX_VA_POS, GX_INDEX8);
+        GXSetVtxDesc(GX_VA_CLR0, GX_INDEX8);
+        GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_POS_XYZ, GX_F32, 0);
+        GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_CLR0, GX_CLR_RGBA, GX_RGBA8, 0);
+        GXSetArray(GX_VA_POS, vertex_tbl, 0xC);
+        GXSetArray(GX_VA_CLR0, color_tbl, 4);
         cylinderShadowDraw(cameraId, param);
         shadowCharShadowDisp_Texture(cameraId, param);
     }
@@ -669,40 +669,40 @@ void shadowCharShadowDisp_Projection(CameraId camId, void* param) {
     alpha = cswp->color.a;
 
     GXSetNumChans(1);
-    GXSetChanCtrl(4, 0, 0, 0, 0, 2, 2);
+    GXSetChanCtrl(GX_COLOR0A0, GX_FALSE, GX_SRC_REG, GX_SRC_REG, GX_LIGHT_NULL, GX_DF_CLAMP, GX_AF_NONE);
 #ifdef MUST_MATCH
     SHADOW_MAT_COLOR(4, pMatColor, cswp->color);
 #else
-    GXSetChanMatColor(4, cswp->color);
+    GXSetChanMatColor(GX_COLOR0A0, cswp->color);
 #endif
     GXSetNumTexGens(0);
     GXSetNumTevStages(1);
-    GXSetTevOrder(0, 0xFF, 0xFF, 4);
-    GXSetTevColorOp(0, 0, 0, 0, 1, 0);
-    GXSetTevAlphaOp(0, 0, 0, 0, 1, 0);
-    GXSetTevColorIn(0, 0xF, 0xF, 0xF, 0xA);
-    GXSetTevAlphaIn(0, 7, 1, 5, 7);
+    GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD_NULL, GX_TEXMAP_NULL, GX_COLOR0A0);
+    GXSetTevColorOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+    GXSetTevAlphaOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+    GXSetTevColorIn(GX_TEVSTAGE0, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ZERO, GX_CC_RASC);
+    GXSetTevAlphaIn(GX_TEVSTAGE0, GX_CA_ZERO, GX_CA_A0, GX_CA_RASA, GX_CA_ZERO);
 #ifdef MUST_MATCH
     SHADOW_FOG_COLOR(pFogColor, unk_80422f98);
 #else
-    GXSetFog(0, float_0_804198f4, float_0_804198f4, float_0_804198f4, float_0_804198f4, unk_80422f98);
+    GXSetFog(GX_FOG_NONE, float_0_804198f4, float_0_804198f4, float_0_804198f4, float_0_804198f4, unk_80422f98);
 #endif
     GXSetBlendMode(GX_BM_BLEND, GX_BL_SRCALPHA, GX_BL_INVSRCALPHA, GX_LO_CLEAR);
     GXSetZMode(GX_TRUE, GX_LEQUAL, GX_FALSE);
     GXSetZCompLoc(GX_TRUE);
-    GXSetAlphaCompare(7, 0, 0, 7, 0);
+    GXSetAlphaCompare(GX_ALWAYS, 0, GX_AOP_AND, GX_ALWAYS, 0);
     GXSetCurrentMtx(GX_PNMTX0);
     GXSetCullMode(GX_CULL_NONE);
-    GXSetArray(9, testKagePosArray, 0xC);
+    GXSetArray(GX_VA_POS, testKagePosArray, 0xC);
     GXClearVtxDesc();
-    GXSetVtxDesc(9, 2);
-    GXSetVtxAttrFmt(0, 9, 1, 4, 0);
+    GXSetVtxDesc(GX_VA_POS, GX_INDEX8);
+    GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_POS_XYZ, GX_F32, 0);
     GXSetBlendMode(GX_BM_NONE, GX_BL_SRCALPHA, GX_BL_INVSRCALPHA, GX_LO_CLEAR);
     if (gp->inBattle != 0) {
 #ifdef MUST_MATCH
         SHADOW_MAT_COLOR(4, pBattleColor, dat_804198e4);
 #else
-        GXSetChanMatColor(4, dat_804198e4);
+        GXSetChanMatColor(GX_COLOR0A0, dat_804198e4);
 #endif
     }
     else {
@@ -717,7 +717,7 @@ void shadowCharShadowDisp_Projection(CameraId camId, void* param) {
         GXColor color = dat_804198e8;
 
         color.r = color.g = color.b = alpha;
-        GXSetChanMatColor(4, color);
+        GXSetChanMatColor(GX_COLOR0A0, color);
 #endif
     }
     GXSetZMode(GX_FALSE, GX_LEQUAL, GX_FALSE);
@@ -746,12 +746,12 @@ void shadowCharShadowDisp_Projection(CameraId camId, void* param) {
         C_MTXOrtho(projMtx, config->halfHeight, -config->halfHeight, config->halfWidth, -config->halfWidth, config->nearZ, config->farZ);
         GXSetProjection(projMtx, GX_ORTHOGRAPHIC);
         GXSetBlendMode(GX_BM_BLEND, GX_BL_SRCALPHA, GX_BL_INVSRCALPHA, GX_LO_CLEAR);
-        GXSetChanCtrl(4, 0, 0, 1, 0, 2, 2);
+        GXSetChanCtrl(GX_COLOR0A0, GX_FALSE, GX_SRC_REG, GX_SRC_VTX, GX_LIGHT_NULL, GX_DF_CLAMP, GX_AF_NONE);
         GXClearVtxDesc();
-        GXSetVtxDesc(9, 1);
-        GXSetVtxAttrFmt(0, 9, 1, 4, 0);
-        GXSetVtxDesc(0xB, 1);
-        GXSetVtxAttrFmt(0, 0xB, 1, 5, 0);
+        GXSetVtxDesc(GX_VA_POS, GX_DIRECT);
+        GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_POS_XYZ, GX_F32, 0);
+        GXSetVtxDesc(GX_VA_CLR0, GX_DIRECT);
+        GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_CLR0, GX_CLR_RGBA, GX_RGBA8, 0);
 #ifdef MUST_MATCH
         {
             /* Read the three camera basis vectors through explicit ascending word temps to force
@@ -823,7 +823,7 @@ void shadowCharShadowDisp_Projection(CameraId camId, void* param) {
 // colour inline puts them the other way round. The independent form is under #else.
 static inline void shadowPolyMatColor(void) {
     GXColor c = cswp->color;
-    GXSetChanMatColor(4, c);
+    GXSetChanMatColor(GX_COLOR0A0, c);
 }
 #endif
 
@@ -837,33 +837,33 @@ void shadowCharShadowDisp_Polygon(CameraId camId, void* param) {
 
     view = camGetCurPtr()->view;
     GXSetNumChans(1);
-    GXSetChanCtrl(4, 0, 0, 0, 0, 2, 2);
+    GXSetChanCtrl(GX_COLOR0A0, GX_FALSE, GX_SRC_REG, GX_SRC_REG, GX_LIGHT_NULL, GX_DF_CLAMP, GX_AF_NONE);
 #ifdef MUST_MATCH
     shadowPolyMatColor();
 #else
     {
         GXColor color = cswp->color;
-        GXSetChanMatColor(4, color);
+        GXSetChanMatColor(GX_COLOR0A0, color);
     }
 #endif
     GXSetNumTexGens(0);
     GXSetNumTevStages(1);
-    GXSetTevOrder(0, 0xFF, 0xFF, 4);
-    GXSetTevColorOp(0, 0, 0, 0, 1, 0);
-    GXSetTevAlphaOp(0, 0, 0, 0, 1, 0);
-    GXSetTevColorIn(0, 0xF, 0xF, 0xF, 0xA);
-    GXSetTevAlphaIn(0, 7, 1, 5, 7);
-    GXSetFog(0, float_0_804198f4, float_0_804198f4, float_0_804198f4, float_0_804198f4, unk_80422f98);
+    GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD_NULL, GX_TEXMAP_NULL, GX_COLOR0A0);
+    GXSetTevColorOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+    GXSetTevAlphaOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+    GXSetTevColorIn(GX_TEVSTAGE0, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ZERO, GX_CC_RASC);
+    GXSetTevAlphaIn(GX_TEVSTAGE0, GX_CA_ZERO, GX_CA_A0, GX_CA_RASA, GX_CA_ZERO);
+    GXSetFog(GX_FOG_NONE, float_0_804198f4, float_0_804198f4, float_0_804198f4, float_0_804198f4, unk_80422f98);
     GXSetBlendMode(GX_BM_BLEND, GX_BL_SRCALPHA, GX_BL_INVSRCALPHA, GX_LO_CLEAR);
     GXSetZMode(GX_TRUE, GX_LEQUAL, GX_FALSE);
     GXSetZCompLoc(GX_TRUE);
-    GXSetAlphaCompare(7, 0, 0, 7, 0);
+    GXSetAlphaCompare(GX_ALWAYS, 0, GX_AOP_AND, GX_ALWAYS, 0);
     GXSetCurrentMtx(GX_PNMTX0);
     GXSetCullMode(GX_CULL_NONE);
-    GXSetArray(9, testKagePosArray, 0xC);
+    GXSetArray(GX_VA_POS, testKagePosArray, 0xC);
     GXClearVtxDesc();
-    GXSetVtxDesc(9, 2);
-    GXSetVtxAttrFmt(0, 9, 1, 4, 0);
+    GXSetVtxDesc(GX_VA_POS, GX_INDEX8);
+    GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_POS_XYZ, GX_F32, 0);
     zero = float_0_804198f4;
     for (i = 0; i < cswp->entryCount; i++, entry++) {
         if (entry->size == zero) {
@@ -907,7 +907,7 @@ void shadowCharShadowDisp_Polygon(CameraId camId, void* param) {
 // colour inline puts them the other way round. The independent form is under #else.
 static inline void shadowTexMatColor(void) {
     GXColor c = cswp->color;
-    GXSetChanMatColor(4, c);
+    GXSetChanMatColor(GX_COLOR0A0, c);
 }
 #endif
 
@@ -929,13 +929,13 @@ void shadowCharShadowDisp_Texture(CameraId camId, void* param) {
 
     view = camGetCurPtr()->view;
     GXSetNumChans(1);
-    GXSetChanCtrl(4, 0, 0, 0, 0, 2, 2);
+    GXSetChanCtrl(GX_COLOR0A0, GX_FALSE, GX_SRC_REG, GX_SRC_REG, GX_LIGHT_NULL, GX_DF_CLAMP, GX_AF_NONE);
 #ifdef MUST_MATCH
     shadowTexMatColor();
 #else
     {
         GXColor color = cswp->color;
-        GXSetChanMatColor(4, color);
+        GXSetChanMatColor(GX_COLOR0A0, color);
     }
 #endif
     effGetTexObjN64(0x2C, &texObj);
@@ -943,23 +943,23 @@ void shadowCharShadowDisp_Texture(CameraId camId, void* param) {
     GXSetNumTexGens(1);
     GXSetTexCoordGen2(0, 1, 4, 0x3C, 0, 0x7D);
     GXSetNumTevStages(1);
-    GXSetTevOrder(0, 0, 0, 4);
-    GXSetTevColorOp(0, 0, 0, 0, 1, 0);
-    GXSetTevAlphaOp(0, 0, 0, 0, 1, 0);
-    GXSetTevColorIn(0, 0xF, 0xF, 0xF, 0xA);
-    GXSetTevAlphaIn(0, 7, 4, 5, 7);
-    GXSetFog(0, float_0_804198f4, float_0_804198f4, float_0_804198f4, float_0_804198f4, unk_80422f9c);
+    GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR0A0);
+    GXSetTevColorOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+    GXSetTevAlphaOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+    GXSetTevColorIn(GX_TEVSTAGE0, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ZERO, GX_CC_RASC);
+    GXSetTevAlphaIn(GX_TEVSTAGE0, GX_CA_ZERO, GX_CA_TEXA, GX_CA_RASA, GX_CA_ZERO);
+    GXSetFog(GX_FOG_NONE, float_0_804198f4, float_0_804198f4, float_0_804198f4, float_0_804198f4, unk_80422f9c);
     GXSetBlendMode(GX_BM_BLEND, GX_BL_SRCALPHA, GX_BL_INVSRCALPHA, GX_LO_CLEAR);
     GXSetZMode(GX_TRUE, GX_LEQUAL, GX_FALSE);
     GXSetZCompLoc(GX_TRUE);
-    GXSetAlphaCompare(7, 0, 0, 7, 0);
+    GXSetAlphaCompare(GX_ALWAYS, 0, GX_AOP_AND, GX_ALWAYS, 0);
     GXSetCurrentMtx(GX_PNMTX0);
     GXSetCullMode(GX_CULL_NONE);
     GXClearVtxDesc();
-    GXSetVtxDesc(9, 1);
-    GXSetVtxDesc(0xD, 1);
-    GXSetVtxAttrFmt(0, 9, 1, 4, 0);
-    GXSetVtxAttrFmt(0, 0xD, 1, 4, 0);
+    GXSetVtxDesc(GX_VA_POS, GX_DIRECT);
+    GXSetVtxDesc(GX_VA_TEX0, GX_DIRECT);
+    GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_POS_XYZ, GX_F32, 0);
+    GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, GX_TEX_ST, GX_F32, 0);
 #ifdef MUST_MATCH
     size = float_2p5_80419918;
     negSize = -size;
@@ -1036,7 +1036,7 @@ void cylinder(ShadowEntry* entry) {
     u8* base = lbl_80303460;
 
     if (entry->flags & 4) {
-        GXSetArray(0xB, color_tbl_nodecay, 4);
+        GXSetArray(GX_VA_CLR0, color_tbl_nodecay, 4);
         GXCallDisplayList(base + 0x140, 0x40);
         GXCallDisplayList(base + 0x180, 0x40);
         GXCallDisplayList(base + 0x1C0, 0x40);
@@ -1070,7 +1070,7 @@ void cylinder(ShadowEntry* entry) {
         }
         {
             s32 c = (s32)(float_255_80419914 * f1);
-            GXSetArray(0xB, color_tbl, 4);
+            GXSetArray(GX_VA_CLR0, color_tbl, 4);
             if (float_0_804198f4 != f31) {
                 GXCallDisplayList(base + 0x200, 0x40);
             }
@@ -1094,11 +1094,11 @@ void cylinder(ShadowEntry* entry) {
 static inline void shadowTevColor(u8 a) {
     GXColor c = unk_80422fa0;
     c.a = a;
-    GXSetTevColor(1, c);
+    GXSetTevColor(GX_TEVREG0, c);
 }
 
 static inline void shadowMatColor(GXColor c) {
-    GXSetChanMatColor(4, c);
+    GXSetChanMatColor(GX_COLOR0A0, c);
 }
 #endif
 
@@ -1141,7 +1141,7 @@ void cylinderShadowDraw(CameraId camId, void* param) {
 #else
         color = unk_80422fa0;
         color.a = entry->mode;
-        GXSetTevColor(1, color);
+        GXSetTevColor(GX_TEVREG0, color);
 #endif
         GXSetZMode(GX_TRUE, GX_LEQUAL, GX_FALSE);
         GXSetCullMode(GX_CULL_BACK);
@@ -1149,7 +1149,7 @@ void cylinderShadowDraw(CameraId camId, void* param) {
         GXSetBlendMode(GX_BM_LOGIC, GX_BL_ONE, GX_BL_ONE, GX_LO_OR);
         GXSetAlphaUpdate(GX_TRUE);
         GXSetColorUpdate(GX_FALSE);
-        GXSetChanCtrl(4, 0, 0, 1, 0, 2, 2);
+        GXSetChanCtrl(GX_COLOR0A0, GX_FALSE, GX_SRC_REG, GX_SRC_VTX, GX_LIGHT_NULL, GX_DF_CLAMP, GX_AF_NONE);
         SHADOW_ENTRY_DRAW(entry);
         GXSetZMode(GX_TRUE, GX_LEQUAL, GX_FALSE);
         GXSetCullMode(GX_CULL_FRONT);
@@ -1159,9 +1159,9 @@ void cylinderShadowDraw(CameraId camId, void* param) {
 #ifdef MUST_MATCH
         shadowMatColor(unk_80422fa4);
 #else
-        GXSetChanMatColor(4, unk_80422fa4);
+        GXSetChanMatColor(GX_COLOR0A0, unk_80422fa4);
 #endif
-        GXSetChanCtrl(4, 0, 0, 0, 0, 2, 2);
+        GXSetChanCtrl(GX_COLOR0A0, GX_FALSE, GX_SRC_REG, GX_SRC_REG, GX_LIGHT_NULL, GX_DF_CLAMP, GX_AF_NONE);
         SHADOW_ENTRY_DRAW(entry);
         GXSetCullMode(GX_CULL_BACK);
         GXSetBlendMode(GX_BM_BLEND, GX_BL_DSTALPHA, GX_BL_INVDSTALPHA, GX_LO_CLEAR);
@@ -1170,7 +1170,7 @@ void cylinderShadowDraw(CameraId camId, void* param) {
 #ifdef MUST_MATCH
         shadowMatColor(cswp->color);
 #else
-        GXSetChanMatColor(4, cswp->color);
+        GXSetChanMatColor(GX_COLOR0A0, cswp->color);
 #endif
         SHADOW_ENTRY_DRAW(entry);
         if (camId == CAMERA_OFFSCREEN2) {
