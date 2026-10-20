@@ -4923,7 +4923,7 @@ s32 evt_mobj_koopa_fireber_dodai(EventEntry* event, BOOL isFirstCall) {
         npcEntry(buf, str_802C41B0);
         npc = npcNameToPtr(buf);
         npc->flags |= 0x08000000;
-        *(u16*)((u8*)npc + 0x31E) |= 0xF;
+        npc->hazardImmuneFlags |= 0xF;
         npc->position.x = x;
         npc->position.y = 25.0f * (f32)i + y;
         npc->position.z = z;
