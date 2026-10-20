@@ -26,6 +26,8 @@
 #include "driver/animdrv.h"
 #include "driver/dispdrv.h"
 #include "driver/effdrv.h"
+#include "eff/n64/eff_pokopi_thunder_n64.h"
+#include "eff/n64/eff_shock_n64.h"
 #include "driver/extdrv.h"
 #include "driver/lightdrv.h"
 #include "driver/npcdrv.h"
@@ -4841,19 +4843,19 @@ USER_FUNC(queen_thunder) {
     pos.z = c;
     psndSFXOn_3D((const char*)0xf1e, &pos);
     eff = effPokopiThunderN64Entry(0, 0x28, a + 20.0f + (f32)irand(0x14), 150.0f, c + 20.0f, a, 0.0f, c, 1.0f);
-    *(s32*)((u8*)eff->userdata + 0x30) = 0xff;
-    *(s32*)((u8*)eff->userdata + 0x34) = 0xa0;
-    *(s32*)((u8*)eff->userdata + 0x38) = 0xc0;
-    *(s32*)((u8*)eff->userdata + 0x40) = 0x14;
-    *(s32*)((u8*)eff->userdata + 0x44) = 0x14;
-    *(s32*)((u8*)eff->userdata + 0x48) = 0x14;
+    ((EffPokopiThunderData*)eff->userdata)->field_0x30 = 0xff;
+    ((EffPokopiThunderData*)eff->userdata)->field_0x34 = 0xa0;
+    ((EffPokopiThunderData*)eff->userdata)->field_0x38 = 0xc0;
+    ((EffPokopiThunderData*)eff->userdata)->field_0x40 = 0x14;
+    ((EffPokopiThunderData*)eff->userdata)->field_0x44 = 0x14;
+    ((EffPokopiThunderData*)eff->userdata)->field_0x48 = 0x14;
     eff = effShockN64Entry(3, a, 0.0f, c, 80.0f, 80.0f);
-    *(s32*)((u8*)eff->userdata + 0x30) = 0x14;
-    *(s32*)((u8*)eff->userdata + 0x34) = 0x14;
-    *(s32*)((u8*)eff->userdata + 0x38) = 0x14;
-    *(s32*)((u8*)eff->userdata + 0x3C) = 0xff;
-    *(s32*)((u8*)eff->userdata + 0x40) = 0xa0;
-    *(s32*)((u8*)eff->userdata + 0x44) = 0xc0;
+    ((EffShockData*)eff->userdata)->field_0x30 = 0x14;
+    ((EffShockData*)eff->userdata)->field_0x34 = 0x14;
+    ((EffShockData*)eff->userdata)->field_0x38 = 0x14;
+    ((EffShockData*)eff->userdata)->field_0x3C = 0xff;
+    ((EffShockData*)eff->userdata)->field_0x40 = 0xa0;
+    ((EffShockData*)eff->userdata)->field_0x44 = 0xc0;
     btl_camera_shake_w(0, 8, 0, 1.0f, 1.0f);
     return EVT_RETURN_DONE;
 }
@@ -5105,12 +5107,12 @@ USER_FUNC(peach_shock_evt) {
     s32 b = evtGetValue(event, args[1]);
     s32 c = evtGetValue(event, args[2]);
     EffectEntry* eff = effShockN64Entry(3, (f32)a, (f32)b, (f32)c, 200.0f, 150.0f);
-    *(s32*)((u8*)eff->userdata + 0x30) = 10;
-    *(s32*)((u8*)eff->userdata + 0x34) = 10;
-    *(s32*)((u8*)eff->userdata + 0x38) = 10;
-    *(s32*)((u8*)eff->userdata + 0x3C) = irand(50) + 155;
-    *(s32*)((u8*)eff->userdata + 0x40) = irand(50) + 155;
-    *(s32*)((u8*)eff->userdata + 0x44) = irand(50) + 155;
+    ((EffShockData*)eff->userdata)->field_0x30 = 10;
+    ((EffShockData*)eff->userdata)->field_0x34 = 10;
+    ((EffShockData*)eff->userdata)->field_0x38 = 10;
+    ((EffShockData*)eff->userdata)->field_0x3C = irand(50) + 155;
+    ((EffShockData*)eff->userdata)->field_0x40 = irand(50) + 155;
+    ((EffShockData*)eff->userdata)->field_0x44 = irand(50) + 155;
     return EVT_RETURN_DONE;
 }
 
