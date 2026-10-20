@@ -461,19 +461,9 @@ USER_FUNC(bts_wariai_enzan_1f) {
     return EVT_RETURN_DONE;
 }
 
-// intplGetValue's real prototype is (s32, s32, s32, f32, f32), which is ABI-identical to this
-// reordered form (r3, f1, f2, r4, r5).  The order makes MWCC materialise both pooled constant
-// addresses and load the int temporaries right-to-left, as the retail bytes do (cf.
-// teresa_intpl in unit_atmic_teresa.c).
-#ifdef MUST_MATCH
-static inline f32 bts_intpl(s32 mode, f32 start, f32 end, s32 step, s32 steps) {
-    return ((f32 (*)(s32, f32, f32, s32, s32))intplGetValue)(mode, start, end, step, steps);
-}
-#else
 static inline f32 bts_intpl(s32 mode, f32 start, f32 end, s32 step, s32 steps) {
     return intplGetValue(mode, step, steps, start, end);
 }
-#endif
 USER_FUNC(bts_wariai_enzan_1f_intpl) {
     s32* args = event->args;
     f32 f28 = evtGetFloat(event, args[0]) - float_1_las_000192cc;

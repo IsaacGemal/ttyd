@@ -265,19 +265,9 @@ static USER_FUNC(wariai_enzan_1f) {
     return EVT_RETURN_DONE;
 }
 
-// The original intplGetValue prototype orders the float ranges before the integer step. That order is
-// ABI-identical to include/system.h's declaration (r3, f1, f2, r4, r5) but makes MWCC materialise both
-// float-constant addresses (lis/addi/lfs 0(rN)) and load the float args before the integer steps, as the
-// retail bytes do; the cast selects it.
-#ifdef MUST_MATCH
-static inline f32 intpl_f(s32 mode, f32 start, f32 end, s32 step, s32 steps) {
-    return ((f32 (*)(s32, f32, f32, s32, s32))intplGetValue)(mode, start, end, step, steps);
-}
-#else
 static inline f32 intpl_f(s32 mode, f32 start, f32 end, s32 step, s32 steps) {
     return intplGetValue(mode, step, steps, start, end);
 }
-#endif
 static USER_FUNC(wariai_enzan_1f_intpl) {
     s32* args = event->args;
     f32 a = evtGetFloat(event, args[0]) - 1.0f;

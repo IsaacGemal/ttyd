@@ -5,13 +5,7 @@
 extern BattleWork* _battleWorkPointer;
 
 // .sdata2 constants emitted by this unit
-#ifdef MUST_MATCH
-// volatile: forces atan2f_safety to reload the constants where the original does; without it the
-// register allocator keeps them live and picks different registers (89%).
-extern const volatile f64 double_0p0001_802efab0;
-#else
 extern const f64 double_0p0001_802efab0;
-#endif
 
 f32 sinfd(f32 deg) {
 	return (f32)sin(6.2831855f * deg / 360.0f);

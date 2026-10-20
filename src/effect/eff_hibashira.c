@@ -106,11 +106,6 @@ EffectEntry* effHibashiraEntry(s32 type, s32 segmentCount, s32 lifetime, f32 x, 
 void effHibashiraMain(EffectEntry* effect) {
 	HibashiraData* data;
 	HibashiraData* elem;
-#ifdef MUST_MATCH
-	/* MUST_MATCH: retail builds the Vec in a scratch and copies it to a second local
-	   before dispCalcZ; a single local folds the copy away. */
-	Vec position;
-#endif
 	Vec disp;
 	s32 type;
 	s32 inBattle;
@@ -118,9 +113,6 @@ void effHibashiraMain(EffectEntry* effect) {
 
 	data = effect->userdata;
 	disp = makeHibashiraVec(data->position.x, data->position.y, data->position.z);
-#ifdef MUST_MATCH
-	position = disp;
-#endif
 
 	inBattle = gp->inBattle != 0;
 	type = data->type;
@@ -202,11 +194,7 @@ void effHibashiraMain(EffectEntry* effect) {
 		}
 	}
 
-#ifdef MUST_MATCH
-	dispEntry(CAMERA_3D, dispCalcZ(&position), 2, effHibashiraDisp, effect);
-#else
 	dispEntry(CAMERA_3D, dispCalcZ(&disp), 2, effHibashiraDisp, effect);
-#endif
 }
 
 void effHibashiraDisp(CameraId camId, void* param) {

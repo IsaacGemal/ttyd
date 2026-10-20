@@ -331,15 +331,8 @@ static USER_FUNC(shadow_scale_memory) {
     return EVT_RETURN_DONE;
 }
 
-// `intplGetValue`'s real prototype is (s32, s32, s32, f32, f32). The cast below lists the two float
-// bounds before the step/duration words, which is ABI-identical (ints->r3-r5, floats->f1-f2) but makes
-// MWCC schedule the int->float conversion as the retail bytes do (cf. teresa_intpl in unit_atmic_teresa.c).
 static inline f32 monochrome_small_intpl(s32 mode, f32 start, f32 end, s32 step, s32 steps) {
-#ifdef MUST_MATCH
-    return ((f32 (*)(s32, f32, f32, s32, s32))intplGetValue)(mode, start, end, step, steps);
-#else
     return intplGetValue(mode, step, steps, start, end);
-#endif
 }
 
 static USER_FUNC(shadow_scale_small) {
