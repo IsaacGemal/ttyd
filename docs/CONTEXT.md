@@ -10702,3 +10702,38 @@ Address-named functions and the two statics in party_motion.c, renamed with tool
 Left: unk_8014cc24 (a USER_FUNC in party_motion.c that tou_00 calls with the same value twice as the fade arguments; the meaning of the repeat is not proven) and unk_800ba2dc (party.c, the field_34/field_35 mode-change handler; its branches do different end actions per mode and no single name covers them).
 
 Verify: tower `ninja` recreates build/G8MJ01/ok (matched build, checksum holds). Natural compiles (no -DMUST_MATCH) of the nine changed C files return 0. Index (tools/cleanup_index.py) on current origin/main: 31.408 -> 31.040 per kLOC (22348 -> 22086 weighted over 711538 code lines); unk_name 1169 -> 1038, address_name 10253 -> 10122.
+### Readability: yuu and gor REL unk_ names from their consumers (2026-10-20, Claude Haiku 5.5, n9-q-unkrel)
+
+Names from `tools/rename_symbol.py --rel` in the yuu and gor maps, by where each symbol is consumed.
+
+yuu_02.c: `yuu_monte_single_init` (USER_FUNC called by `evt_yuu_monte_single`, the script in the 3-roll init event),
+its dispEntry callback `monte_single_disp`, and the bss `monte_entries` (the MonteEntry table fall_rtn fills and
+monte_disp draws). camShiftReset in minigame03_end is `minigame03_cam_reset`.
+
+yuu_03.c: `yuu4_entry_init` (USER_FUNC called by `evt_yuu4_entry`, the subEvent of yuuminigame_init_4slit), its
+dispEntry callback `yuu4_entry_disp`, and the bss `yuu4_entries`. camShiftReset in minigame04_end is
+`minigame04_cam_reset`.
+
+gor.c: `inemuri_sfx_set` (stores the id from SFX_VOICE_MARIO_SLEEP1 in inemuri_snd) and `inemuri_sfx_stop` (stops it
+when mario_and_party_sleep deletes its loop), with the bss `inemuri_sfx_id`.
+
+gor_00.c: npcEnt's regularEvent slot (0x10 of NpcSetupInfo) gives `evt_mony_regular` and `evt_peton_regular`; their
+CALL_CHILD targets are `evt_mony_leave` and `evt_peton_leave`; `evt_mony_peton_restart` (SET GSW 278, then restarts
+both regular events) is called from the marco script; `evt_marco_party_move` is spawned by marco_talk;
+`epilogue_npc_clear` (USER_FUNC) is called first in epilogue_npc_entry.
+
+gor_02.c: `evt_powerupya_talk` (the talk slot of the powerupya npc in npcEnt) and its children
+`evt_powerupya_stardust`, `evt_powerupya_mario_move`, `evt_powerupya_party_move` and `evt_powerupya_watasu`
+(CALL_CHILD'ed on a watasu pick); `powerupya_watasu_items` (the item list {108, -1} passed to evt_win_item_select);
+`gor_get_mario_dir` (reads mario's dispReqDir into a variable); `evt_gor_hitobj_off` and `evt_gor_hitobj_on` (the
+A_kabe/A_saku/A_kmn/A_gomi hit objects).
+
+Left: unk_yuu_00001160, unk_yuu_000011e0 and unk_yuu_0000341c (USER_FUNCs or helpers with no caller in the tree);
+unk_gor_0000041c, unk_gor_0000050c and unk_gor_bss00000000 (no caller in the tree; the buffer is used only in gor.c);
+unk_evt_gor_000277f4 (no caller); unk_8009f9c8 (dol function shared by evt_nomal_cange in five RELs) and
+unk_800e23e0 (dol function shared by powerupya_party_lank_rtn and tik_11.c). Their names need the function bodies.
+
+Verified: tower `ninja` recreates `build/G8MJ01/ok` after each REL's renames (the yuu and gor sets); the natural
+(no MUST_MATCH) compiles of yuu_02.c, yuu_03.c, gor.c, gor_00.c and gor_02.c return 0. Index: whole tree
+31.420 per kLOC (22348 over 711268) -> 31.270 (22241 over 711268); unk_name 1169 -> 1062. Per file: yuu_02.c unk_name 30
+-> 2, yuu_03.c 26 -> 2, gor_02.c 30 -> 1, gor_00.c 20 -> 2, gor.c 16 -> 8.
