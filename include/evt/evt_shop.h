@@ -19,7 +19,7 @@ typedef struct ShopObj {
 	const char* hitName; //0x4
 } ShopObj;
 
-extern const char str_802ECDE0[];
+extern const char shop_map_rsh_03[];
 
 USER_FUNC(evt_shop_setup);
 s32 evtShopIsActive(void);

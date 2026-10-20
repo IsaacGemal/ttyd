@@ -65,8 +65,8 @@ extern Vec vec3_802c4020[];
 extern Vec vec3_802c402c[];
 extern Vec vec3_802c4038[];
 extern Vec vec3_802c4044[];
-extern const char str_802C3EC8[];
-extern const char str_802C3ED8[];
+extern const char mobj_offscreen_prefix[];
+extern const char mobj_image_prefix[];
 #ifdef MUST_MATCH
 // A typed aggregate copy emits the original four word loads and stores.
 typedef struct MobjNameTemplate {
@@ -88,7 +88,7 @@ extern Vec vec3_802c40b8[];
 extern Vec vec3_802c40c4[];
 extern Vec vec3_802c4050[];
 extern Vec vec3_802c405c[];
-extern u32 dat_8041a134;
+extern u32 kpa_pole_score_color;
 extern u32 dat_8041a130;
 
 extern s32 evt_lock_sound[];
@@ -1481,8 +1481,8 @@ s32 mobj_lv_blk_evt(MapObjectEntry* obj) {
     MarioWork* mario;
     BOOL inBattle;
 
-    LVB_TEMPLATE(offName, str_802C3EC8);
-    LVB_TEMPLATE(imgName, str_802C3ED8);
+    LVB_TEMPLATE(offName, mobj_offscreen_prefix);
+    LVB_TEMPLATE(imgName, mobj_image_prefix);
     inBattle = gp->inBattle != 0;
     mario = marioGetPtr();
     strcat(offName, obj->name);
@@ -3141,19 +3141,19 @@ s32 evt_mobj_powerupblk(EventEntry* event, BOOL isFirstCall) {
 // The name-buffer initializers emit their templates here, after save_first_hit.
 // Prefix data precedes the following callback's compiler-generated name buffers.
 #pragma force_active on
-const char str_802C3EC8[0x10] = "o_";
-const char str_802C3ED8[0x10] = "i_";
+const char mobj_offscreen_prefix[0x10] = "o_";
+const char mobj_image_prefix[0x10] = "i_";
 __declspec(section ".rodata") Vec lv_block_position[1] = {{0.0f, -2000.0f, 0.0f}};
 // vec3_802c3ef4: placeholder for the object the code copies (defining it hangs MWCC)
 __declspec(section ".rodata") Vec mobj_vec3_802c3ef4_template[1] = {{0.0f, 0.0f, 0.0f}};
-__declspec(section ".rodata") char str_802C3F00[0x18] = "SFX_MOBJ_LOCK_SWING1";
-__declspec(section ".rodata") char str_802C3F18[0x14] = "SFX_MOBJ_UNLOCK1";
-__declspec(section ".rodata") char str_802C3F2C[0x20] = "SFX_MOBJ_TREASURE_BOX_SWING1";
-__declspec(section ".rodata") char str_802C3F4C[0x1C] = "SFX_MOBJ_TREASURE_BOX_OPEN1";
-__declspec(section ".rodata") char str_802C3F68[0x20] = "SFX_MOBJ_TREASURE_BOX_SWING2";
-__declspec(section ".rodata") char str_802C3F88[0x1C] = "SFX_MOBJ_TREASURE_BOX_OPEN2";
-__declspec(section ".rodata") char str_802C3FA4[0x1C] = "SFX_MOBJ_BLACKBOX_SWING1";
-__declspec(section ".rodata") char str_802C3FC0[0x18] = "SFX_MOBJ_BLACKBOX_OPEN1";
+__declspec(section ".rodata") char sfx_mobj_lock_swing1[0x18] = "SFX_MOBJ_LOCK_SWING1";
+__declspec(section ".rodata") char sfx_mobj_unlock1[0x14] = "SFX_MOBJ_UNLOCK1";
+__declspec(section ".rodata") char sfx_mobj_treasure_box_swing1[0x20] = "SFX_MOBJ_TREASURE_BOX_SWING1";
+__declspec(section ".rodata") char sfx_mobj_treasure_box_open1[0x1C] = "SFX_MOBJ_TREASURE_BOX_OPEN1";
+__declspec(section ".rodata") char sfx_mobj_treasure_box_swing2[0x20] = "SFX_MOBJ_TREASURE_BOX_SWING2";
+__declspec(section ".rodata") char sfx_mobj_treasure_box_open2[0x1C] = "SFX_MOBJ_TREASURE_BOX_OPEN2";
+__declspec(section ".rodata") char sfx_mobj_blackbox_swing1[0x1C] = "SFX_MOBJ_BLACKBOX_SWING1";
+__declspec(section ".rodata") char sfx_mobj_blackbox_open1[0x18] = "SFX_MOBJ_BLACKBOX_OPEN1";
 __declspec(section ".rodata") static const Vec vec3_802c3fd8[1] = {{0.0f, 0.0f, 0.0f}};
 __declspec(section ".rodata") static const Vec vec3_802c3fe4[1] = {{0.0f, 0.0f, 0.0f}};
 __declspec(section ".rodata") char str_802C3FF0[0x10] = "save_first_hit";
@@ -4984,7 +4984,7 @@ void kpa_disp_pole_score(CameraId camera, void* param) {
     PSMTXScale(scale, 0.5f, 0.5f, 0.5f);
     PSMTXConcat(trans, scale, trans);
     FontDrawStart();
-    *(u32*)&color = dat_8041a134;
+    *(u32*)&color = kpa_pole_score_color;
     FontDrawColor(&color);
     FontDrawStringMtx(trans, psw->str);
 }
@@ -5260,7 +5260,7 @@ s32 evt_mobj_koopa_pole(EventEntry* event, BOOL isFirstCall) {
 
 // ROData pool objects
 __declspec(section ".sdata2") u32 dat_8041a130 = 0xFFFFFFFF;
-__declspec(section ".sdata2") u32 dat_8041a134 = 0xFFFFFFFF;
+__declspec(section ".sdata2") u32 kpa_pole_score_color = 0xFFFFFFFF;
 
 // .sdata
 s32 kpa_powerup_evt[7] = {
@@ -5301,13 +5301,13 @@ __declspec(section ".rodata") Vec mobj_vec3_802c40b8_template[1] = {{0.0f, 0.0f,
 __declspec(section ".rodata") Vec mobj_vec3_802c40c4_template[1] = {{0.0f, 0.0f, 0.0f}};
 __declspec(section ".rodata") Vec vec3_802c40d0[1] = {{0.0f, 0.0f, 0.0f}};
 __declspec(section ".rodata") char str_802C40DC[0xC] = "KPA2_G_1";
-__declspec(section ".rodata") char str_802C40E8[0x18] = "SFX_KUPPA_POST_JUMP1";
-__declspec(section ".rodata") char str_802C4100[0x18] = "SFX_KUPPA_POST_SLIDE1";
-__declspec(section ".rodata") char str_802C4118[0x18] = "SFX_KUPPA_POST_THROW1";
+__declspec(section ".rodata") char sfx_kuppa_post_jump1[0x18] = "SFX_KUPPA_POST_JUMP1";
+__declspec(section ".rodata") char sfx_kuppa_post_slide1[0x18] = "SFX_KUPPA_POST_SLIDE1";
+__declspec(section ".rodata") char sfx_kuppa_post_throw1[0x18] = "SFX_KUPPA_POST_THROW1";
 __declspec(section ".rodata") char str_802C4130[0x8] = "kpa_06";
 __declspec(section ".rodata") char str_802C4138[0x8] = "toride";
 __declspec(section ".rodata") char str_802C4140[0x8] = "toride_";
-__declspec(section ".rodata") char str_802C4148[0x14] = "SFX_KUPPA_STRUGGLE1";
+__declspec(section ".rodata") char sfx_kuppa_struggle1[0x14] = "SFX_KUPPA_STRUGGLE1";
 __declspec(section ".rodata") char str_802C415C[0xC] = "KPA2_S_1";
 __declspec(section ".rodata") Vec vec3_802c4168[1] = {{0.0f, 0.0f, 0.0f}};
 __declspec(section ".rodata") Vec vec3_802c4174[1] = {{0.0f, 0.0f, 0.0f}};
@@ -5328,31 +5328,31 @@ __declspec(section ".data") static f32 one_negone_359[2] = {1.0f, -1.0f};
 __declspec(section ".data") f32 lbl_80309D20[2] = {1.0f, -1.0f};
 s32 evt_lock_sound[20] = {
     0x0001000A, 0x00000064, 0x0006005B, (s32)evt_snd_sfxon_3d,
-    (s32)str_802C3F00, 0xFE363C80, 0xFE363C81, 0xFE363C82,
+    (s32)sfx_mobj_lock_swing1, 0xFE363C80, 0xFE363C81, 0xFE363C82,
     0x00000000, 0x0001000A, 0x000000C8, 0x0006005B,
-    (s32)evt_snd_sfxon_3d, (s32)str_802C3F18, 0xFE363C80, 0xFE363C81,
+    (s32)evt_snd_sfxon_3d, (s32)sfx_mobj_unlock1, 0xFE363C80, 0xFE363C81,
     0xFE363C82, 0x00000000, 0x00000002, 0x00000001,
 };
 s32 evt_box_sound1[20] = {
     0x0001000A, 0x00000064, 0x0006005B, (s32)evt_snd_sfxon_3d,
-    (s32)str_802C3F2C, 0xFE363C80, 0xFE363C81, 0xFE363C82,
+    (s32)sfx_mobj_treasure_box_swing1, 0xFE363C80, 0xFE363C81, 0xFE363C82,
     0x00000000, 0x0001000A, 0x000000C8, 0x0006005B,
-    (s32)evt_snd_sfxon_3d, (s32)str_802C3F4C, 0xFE363C80, 0xFE363C81,
+    (s32)evt_snd_sfxon_3d, (s32)sfx_mobj_treasure_box_open1, 0xFE363C80, 0xFE363C81,
     0xFE363C82, 0x00000000, 0x00000002, 0x00000001,
 };
 s32 evt_box_sound2[20] = {
     0x0001000A, 0x00000064, 0x0006005B, (s32)evt_snd_sfxon_3d,
-    (s32)str_802C3F68, 0xFE363C80, 0xFE363C81, 0xFE363C82,
+    (s32)sfx_mobj_treasure_box_swing2, 0xFE363C80, 0xFE363C81, 0xFE363C82,
     0x00000000, 0x0001000A, 0x000000C8, 0x0006005B,
-    (s32)evt_snd_sfxon_3d, (s32)str_802C3F88, 0xFE363C80, 0xFE363C81,
+    (s32)evt_snd_sfxon_3d, (s32)sfx_mobj_treasure_box_open2, 0xFE363C80, 0xFE363C81,
     0xFE363C82, 0x00000000, 0x00000002, 0x00000001,
 };
 s32 evt_box_sound3[23] = {
     0x0001000A, 0x00000064, 0x0006005B, (s32)evt_snd_sfxon_3d,
-    (s32)str_802C3FA4, 0xFE363C80, 0xFE363C81, 0xFE363C82,
+    (s32)sfx_mobj_blackbox_swing1, 0xFE363C80, 0xFE363C81, 0xFE363C82,
     0xFE363C8F, 0x0001000A, 0x000000C8, 0x0002005B,
     (s32)evt_snd_sfxoff, 0xFE363C8F, 0x0006005B, (s32)evt_snd_sfxon_3d,
-    (s32)str_802C3FC0, 0xFE363C80, 0xFE363C81, 0xFE363C82,
+    (s32)sfx_mobj_blackbox_open1, 0xFE363C80, 0xFE363C81, 0xFE363C82,
     0x00000000, 0x00000002, 0x00000001,
 };
 s32 mobj_save_blk_sysevt[41] = {
@@ -5377,7 +5377,7 @@ s32 kpa_pole[280] = {
     (s32)evt_mario_set_dir, 0x0000005A, 0x00000000, 0x00000000,
     0x0002005B, (s32)kpa_chg_pose, (s32)str_802C40DC, 0x0005005B,
     (s32)evt_mario_get_pos, 0x00000000, 0xFE363C81, 0xFE363C82,
-    0xFE363C83, 0x0006005B, (s32)evt_snd_sfxon_3d, (s32)str_802C40E8,
+    0xFE363C83, 0x0006005B, (s32)evt_snd_sfxon_3d, (s32)sfx_kuppa_post_jump1,
     0xFE363C81, 0xFE363C82, 0xFE363C83, 0x00000000,
     0x0003005B, (s32)evt_mobj_get_x_position, 0xFE363C8F, 0xFE363C84,
     0x0002005B, (s32)kpa_get_width, 0xFE363C85, 0x0002003C,
@@ -5392,7 +5392,7 @@ s32 kpa_pole[280] = {
     0x0005005B, (s32)kpa_disp_pole_score_main, 0xFE363C83, 0xFE363C87,
     0xFE363C85, 0xFE363C8D, 0x0000006D, 0x0005005B,
     (s32)evt_mario_get_pos, 0x00000000, 0xFE363C81, 0xFE363C82,
-    0xFE363C83, 0x0006005B, (s32)evt_snd_sfxon_3d, (s32)str_802C4100,
+    0xFE363C83, 0x0006005B, (s32)evt_snd_sfxon_3d, (s32)sfx_kuppa_post_slide1,
     0xFE363C81, 0xFE363C82, 0xFE363C83, 0xFE363C8A,
     0x0001006C, 0xFE363C86, 0x00010005, 0x00000000,
     0x0003005B, (s32)evt_mobj_get_y_position, 0xFE363C8F, 0xFE363C84,
@@ -5456,7 +5456,7 @@ s32 kpa_pole_move[151] = {
     0xFE363C85, 0x00020034, 0xFE363C89, 0xF24A8280,
     0x00020034, 0xFE363C8B, 0xF24A91B3, 0x00020034,
     0xFE363C8C, 0xF24A7E80, 0x0006005B, (s32)evt_snd_sfxon_3d,
-    (s32)str_802C4118, 0xFE363C80, 0xFE363C81, 0xFE363C82,
+    (s32)sfx_kuppa_post_throw1, 0xFE363C80, 0xFE363C81, 0xFE363C82,
     0xFE363C8D, 0x00010005, 0x00000064, 0x0002003A,
     0xFE363C80, 0xFE363C86, 0x0002003A, 0xFE363C81,
     0xFE363C87, 0x0002003A, 0xFE363C82, 0xFE363C88,
@@ -5501,7 +5501,7 @@ s32 kpa_move_to_toride[110] = {
     (s32)evt_mario_mov_pos2, 0xFE363C80, 0xFE363C85, 0x0000005A,
     0x0002001D, 0xFE363C86, 0x00000002, 0x0005005B,
     (s32)evt_mario_get_pos, 0x00000000, 0xFE363C81, 0xFE363C82,
-    0xFE363C83, 0x0006005B, (s32)evt_snd_sfxon_3d, (s32)str_802C4148,
+    0xFE363C83, 0x0006005B, (s32)evt_snd_sfxon_3d, (s32)sfx_kuppa_struggle1,
     0xFE363C81, 0xFE363C82, 0xFE363C83, 0xFE363C8A,
     0x0003005B, (s32)evt_mario_dispflag_onoff, 0x00000001, 0x00000002,
     0x0001000A, 0x000007D0, 0x0003005B, (s32)evt_mario_dispflag_onoff,
