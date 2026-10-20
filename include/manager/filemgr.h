@@ -23,8 +23,18 @@ typedef enum FileType {
 	FILE_TYPE_CANCELED = 11, // set by dvdReadDoneCallBack when the read was canceled; no case relocates it
 } FileType;
 
+// FileEntry::state. A FREE slot sits on the available list; ALLOCATED files hold references; GARBAGE files
+// are released by _fileGarbage; ASYNC entries were opened by fileAsync and become ALLOCATED when fileAlloc
+// claims them (while fileAsync's DVD read is pending, `entry` is set).
+typedef enum FileState {
+	FILE_STATE_FREE = 0,
+	FILE_STATE_ALLOCATED = 1,
+	FILE_STATE_GARBAGE = 2,
+	FILE_STATE_ASYNC = 3,
+} FileState;
+
 typedef struct FileEntry {
-	u8 state; //0x0
+	u8 state; //0x0, FileState
 	s8 type; //0x1, FileType
 	s16 references; //0x2
 	void* inlineData; //0x4, the handle when arcOpen opened the file (data points here)
@@ -58,4 +68,4 @@ void fileGarbageDataAdrSet(void* data, s32 type);
 void fileGarbageDataAdrClear(FileEntry* entry);
 void dvdReadDoneCallBack(s32 error, DVDFileInfo* info);
 s32 fileAsync(const char* filename, s32 type, FileCallback callback);
-FileEntry* _fileAlloc(const char* filename, s32 type, void (*callback)(FileEntry*));
+FileEntry* _fileAlloc(const char* filename, s32 type, FileCallback callback);

@@ -10208,3 +10208,11 @@ evt_mobj_koopa_pole), so the offsets are `kpa_pole`, `kpa_pole_move`, `kpa_move_
 "MOBJ_goal_pole"/"MOBJ_goal_hata" (str_802C4180/4190), which the natural branches already name. Nothing for
 mobjdrv.h. Matching build OK; evt_shop.c and evt_mobj.c compile without MUST_MATCH to objects equivalent to the
 pre-branch ones (tools/obj_equiv.py). Landing needs `--allow-protected` (config/G8MJ01/symbols.txt).
+
+### Readability: filemgr state values (2026-10-20, Claude Haiku 5.5, n9-q-filemgr2)
+
+`FileState` (filemgr.h) names `FileEntry::state`: 0 FREE (`_fileGarbage` moves the slot to the available list and sets 0), 1 ALLOCATED (`_fileAlloc` sets it, `fileFree` counts references down from it), 2 GARBAGE (`fileFree` and `dvdReadDoneCallBack`'s cancel path set it; `_fileGarbage` frees the memory and recycles the slot), 3 ASYNC (`fileAsync` creates it; `_fileAlloc` moves it to ALLOCATED when it claims one; `entry` is set only while the DVD read is pending). The enum is an int enum so `u8 state` comparisons and stores compile to the same code.
+
+`FILE_ENTRY_COUNT` (0x400) is the `FileEntry` pool size in `fileInit`. It is not the 0x400 `_filename` vsprintf buffer, which stays a literal. `file->entry->status = 8` is `DVDMGR_CLOSED` (bit 3 in dvdmgr.h, the close flag `DVDMgrClose` sets). `_fileAlloc`'s callback parameter is `FileCallback`, the same type.
+
+Left: the raw-offset relocation lines for types 1-3 and 6-10 (no struct and no caller for them), the AnimData words at 0x24-0x40 inside ANIMPOSE walks, `FileEntry` 0x8-0x20 and 0x60-0xA0 (unknown), `data[1]` (read as the length in `fileGarbageMoveMem`; it lives at the handle's +4 word for arcOpen and in the smart block for DVD reads, and neither is typed), the `_fileGarbage(int)` argument (both modes are visible, but the names would be guesses), and `archiveType` 0/1/2 (no archive-type enum is proven; animdrv only passes them).

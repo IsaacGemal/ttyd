@@ -22,23 +22,24 @@ FileManagerWork* afp = &fileWork;
 #define FILE_RELOC(field, base) (*(u32*)&(field) += (u32)(base))
 #define FILE_UNRELOC(field, base) (*(u32*)&(field) -= (u32)(base))
 #define POSE(data) ((AnimationPoseData*)(data))
+#define FILE_ENTRY_COUNT 0x400
 
 void fileInit(void) {
 	FileEntry* ptr;
 	int i;
 
-	afp->entries = __memAlloc(HEAP_DEFAULT, sizeof(FileEntry) * 0x400);
+	afp->entries = __memAlloc(HEAP_DEFAULT, sizeof(FileEntry) * FILE_ENTRY_COUNT);
 	afp->archiveType = 0;
 	afp->firstused = 0;
 	afp->lastused = 0;
-	memset(afp->entries, 0, sizeof(FileEntry) * 0x400);
+	memset(afp->entries, 0, sizeof(FileEntry) * FILE_ENTRY_COUNT);
 
-	for (ptr = afp->entries, i = 0; i < 0x400; i++, ptr++) {
+	for (ptr = afp->entries, i = 0; i < FILE_ENTRY_COUNT; i++, ptr++) {
 		ptr->next = ptr + 1;
 	}
 
 	afp->firstavailable = afp->entries;
-	afp->lastavailable = &afp->entries[0x3FF];
+	afp->lastavailable = &afp->entries[FILE_ENTRY_COUNT - 1];
 	afp->lastavailable->next = NULL;
 }
 
@@ -439,7 +440,7 @@ void fileGarbageDataAdrSet(void* data, s32 type) {
 }
 
 void fileGarbageMoveMem(void* data, FileEntry* file) {
-	if (file->state == 3) {
+	if (file->state == FILE_STATE_ASYNC) {
 		if (!file->entry) {
 			fileGarbageDataAdrClear(file);
 		}
@@ -448,7 +449,7 @@ void fileGarbageMoveMem(void* data, FileEntry* file) {
 	}
 	memmove(data, file->data[0], (u32)file->data[1]);
 	file->data[0] = data;
-	if (file->state == 3) {
+	if (file->state == FILE_STATE_ASYNC) {
 		if (file->entry) {
 			file->entry->address = data;
 		} else {
@@ -467,22 +468,22 @@ void _fileGarbage(BOOL a1) {
 
 	if (a1 == 0) {
 		for (file = afp->firstused; file; file = file->next) {
-			if (file->state == 3) {
+			if (file->state == FILE_STATE_ASYNC) {
 				if (file->entry) {
 					if (OSGetCurrentThread() == &dvdmgr_thread) {
-						file->entry->status = 8;
+						file->entry->status = DVDMGR_CLOSED;
 					} else {
 						while (file->entry) {
 							OSYieldThread();
 						}
 					}
 				}
-				file->state = 2;
+				file->state = FILE_STATE_GARBAGE;
 			}
 		}
 	} else if (a1 == 1) {
 		for (file = afp->firstused; file; file = file->next) {
-			if (file->state == 3) {
+			if (file->state == FILE_STATE_ASYNC) {
 				if (file->entry) {
 					if (OSGetCurrentThread() == &dvdmgr_thread) {
 						continue;
@@ -493,7 +494,7 @@ void _fileGarbage(BOOL a1) {
 				} else {
 					file->references--;
 					if (file->references <= -2) {
-						file->state = 2;
+						file->state = FILE_STATE_GARBAGE;
 					}
 				}
 			}
@@ -504,8 +505,8 @@ void _fileGarbage(BOOL a1) {
 	last = NULL;
 	for (file = afp->firstused; file; file = next) {
 		next = file->next;
-		if (file->state == 2) {
-			file->state = 0;
+		if (file->state == FILE_STATE_GARBAGE) {
+			file->state = FILE_STATE_FREE;
 			if (&file->inlineData != file->data) {
 				smartFree((smartEntry*)file->data);
 			}
@@ -542,7 +543,7 @@ FileEntry* fileAlloc(const char* filename, s32 type) {
 	return _fileAlloc(filename, type, NULL);
 }
 
-FileEntry* _fileAlloc(const char* filename, s32 type, void (*callback)(FileEntry*)) {
+FileEntry* _fileAlloc(const char* filename, s32 type, FileCallback callback) {
 	FileEntry *search, *newentry, *temp;
 	void* handle;
 	DVDEntry* entry;
@@ -552,12 +553,12 @@ FileEntry* _fileAlloc(const char* filename, s32 type, void (*callback)(FileEntry
 	for (search = afp->firstused; search; search = search->next) {
 		if (search->state && !strcmp(search->filename, filename)) {
 			while (search->entry) {;} //infinite loop????
-			if (search->state == 3) {
-				search->state = 1;
+			if (search->state == FILE_STATE_ASYNC) {
+				search->state = FILE_STATE_ALLOCATED;
 				search->references = 0;
 			}
-			else if (search->state == 2) {
-				search->state = 1;
+			else if (search->state == FILE_STATE_GARBAGE) {
+				search->state = FILE_STATE_ALLOCATED;
 			}
 			search->references++;
 			return search;
@@ -603,7 +604,7 @@ FileEntry* _fileAlloc(const char* filename, s32 type, void (*callback)(FileEntry
 		fileGarbageDataAdrSet(handle, type);
 	}
 	if (handle) {
-		newentry->state = 1;
+		newentry->state = FILE_STATE_ALLOCATED;
 		newentry->data = (void**)&newentry->inlineData;
 		*newentry->data = handle;
 		newentry->references = 1;
@@ -631,7 +632,7 @@ FileEntry* _fileAlloc(const char* filename, s32 type, void (*callback)(FileEntry
 		DVDMgrRead(entry, smart->address, test, 0);
 		DVDMgrClose(entry);
 		newentry->data = &smart->address;
-		newentry->state = 1;
+		newentry->state = FILE_STATE_ALLOCATED;
 		newentry->references = 1;
 		newentry->type = type;
 		newentry->next = NULL;
@@ -657,10 +658,10 @@ FileEntry* _fileAlloc(const char* filename, s32 type, void (*callback)(FileEntry
 void fileFree(FileEntry* handle) {
 	if (handle) {
 		if (handle->data) {
-			if (handle->state == 1) {
+			if (handle->state == FILE_STATE_ALLOCATED) {
 				handle->references--;
 				if (!handle->references) {
-					handle->state = 2;
+					handle->state = FILE_STATE_GARBAGE;
 				}
 			}
 		}
@@ -679,7 +680,7 @@ void dvdReadDoneCallBack(s32 error, DVDFileInfo* info) {
 	entry = file->entry;
 	if (error == DVD_RESULT_CANCELED) {
 		file->entry = NULL;
-		file->state = 2;
+		file->state = FILE_STATE_GARBAGE;
 		file->type = FILE_TYPE_CANCELED;
 		DVDMgrClose(entry);
 	} else {
@@ -710,9 +711,9 @@ s32 fileAsync(const char* filename, s32 type, FileCallback callback) {
 	for (search = afp->firstused; search; search = search->next) {
 		if (search->state && !strcmp(search->filename, filename)) {
 			if (search->entry) return 0;
-			if (search->state == 3) return (s32)search;
-			if (search->state == 2) {
-				search->state = 3;
+			if (search->state == FILE_STATE_ASYNC) return (s32)search;
+			if (search->state == FILE_STATE_GARBAGE) {
+				search->state = FILE_STATE_ASYNC;
 			}
 			return (s32)search;
 		}
@@ -760,7 +761,7 @@ s32 fileAsync(const char* filename, s32 type, FileCallback callback) {
 	}
 	
 	if (handle) {
-		newentry->state = 3;
+		newentry->state = FILE_STATE_ASYNC;
 		newentry->data = &newentry->inlineData;
 		*newentry->data = handle;
 		newentry->references = 0;
@@ -800,7 +801,7 @@ s32 fileAsync(const char* filename, s32 type, FileCallback callback) {
 		smart = smartAlloc(test, 0);
 		smart->field_0x8 = newentry;
 		newentry->data = &smart->address;
-		newentry->state = 3;
+		newentry->state = FILE_STATE_ASYNC;
 		newentry->references = 0;
 		newentry->type = type;
 		newentry->next = NULL;
