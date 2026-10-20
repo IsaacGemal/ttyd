@@ -95,7 +95,9 @@ typedef struct PartyEntry {
     u8 useMotionId;              // 0x39
     u8 field_3A;                 // 0x3A
     u8 field_3B;                 // 0x3B
-    u8 field_3C[0x4C - 0x3C];    // 0x3C
+    u8 field_3C[0x40 - 0x3C];    // 0x3C
+    f32 followDist;              // 0x40, distance from Mario at which a standing partner starts walking after him (party_motion_stay)
+    u8 field_44[0x4C - 0x44];    // 0x44
     s8 field_4C;                 // 0x4C
     u8 field_4D[0x54 - 0x4D];    // 0x4D
     f32 moveAngle;               // 0x54, heading passed to movePos
@@ -106,7 +108,9 @@ typedef struct PartyEntry {
     Vec dispOffset;              // 0x7C, added to position for the draw matrix (party.c), y bobbed by cloud and Vivian
     u8 field_88[0x94 - 0x88];    // 0x88
     Vec targetPos;               // 0x94, destination of the appear/jump/fly routines; distABf'd against position
-    u8 field_A0[0xAC - 0xA0];    // 0xA0
+    f32 velX;                    // 0xA0, x of the push velocity (partyMarioHosei sets it, partyGetMoveDirSpd adds it to moveDelta.x)
+    u8 field_A4[0xA8 - 0xA4];    // 0xA4
+    f32 velZ;                    // 0xA8, z of the push velocity (partyMarioHosei: f30 * -cos)
     Vec moveDelta;               // 0xAC, per-frame offset added to position: set by evt_party_set_hosei_xyz, mario->riderDelta in yoshi_use, zeroed in driveParty
     Vec field_B8;                // 0xB8
     u8 field_C4[0xE0 - 0xC4];    // 0xC4
