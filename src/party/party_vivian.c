@@ -68,11 +68,7 @@ void mot_vivian_post(void) {
             party->flags &= ~PARTY_FLAG_IS_BEING_USED;
             party->flags &= ~PARTY_FLAG_IS_EVT_USE;
             party->flags2 &= ~0x200000;
-#ifdef MUST_MATCH
-            *(volatile f32*)&party->tail.vivian.charge = 10.0f;
-#else
             party->tail.vivian.charge = 10.0f;
-#endif
             party->dispOffset = (Vec){0.0f, 0.0f, 0.0f};
             partyChgRunMode(party, 2);
             party->field_3B = 0;

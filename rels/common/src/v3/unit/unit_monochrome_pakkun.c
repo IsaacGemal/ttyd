@@ -354,11 +354,7 @@ static USER_FUNC(shadow_scale_small) {
     }
     start = (f32)unit->work[0];
     end = 0.0f;
-#ifdef MUST_MATCH
-    part->field_0x78 = ((f32 (*)(s32, f32, f32, s32, s32))intplGetValue)(0, start, end, unit->work[1], 15);
-#else
     part->field_0x78 = intplGetValue(0, unit->work[1], 15, start, end);
-#endif
     if (unit->work[1] >= 15) {
         return EVT_RETURN_DONE;
     }

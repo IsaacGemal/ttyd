@@ -140,21 +140,12 @@ s32 battleAcMain_TimingWide(BattleWork* work) {
 			}
 			break;
 		case -1:
-#ifdef MUST_MATCH
-			// battle_pad.h declares these u32, but the original tests the result signed (cmpwi r3,0).
-			if ((s32)BattlePadCheckUp(dec->buttonMask) != 0) {
-#else
 			if (BattlePadCheckUp(dec->buttonMask)) {
-#endif
 				cond = 1;
 			}
 			break;
 		default:
-#ifdef MUST_MATCH
-			if ((s32)BattlePadCheckNow(dec->buttonMask) == 0) {
-#else
 			if (!BattlePadCheckNow(dec->buttonMask)) {
-#endif
 				cond = 1;
 			}
 			break;

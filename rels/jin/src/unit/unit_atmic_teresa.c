@@ -1049,18 +1049,9 @@ void teresa_ext_init(void) {
     }
 }
 
-// The original intplGetValue prototype orders the float ranges before the integer step. That order is
-// ABI-identical to include/system.h's declaration (r3, f1, f2, r4, r5) but makes MWCC load the float args
-// before entry->counter, as the retail bytes do; the cast selects it.
-#ifdef MUST_MATCH
-static inline f32 teresa_intpl(s32 mode, f32 start, f32 end, s32 step, s32 steps) {
-    return ((f32 (*)(s32, f32, f32, s32, s32))intplGetValue)(mode, start, end, step, steps);
-}
-#else
 static inline f32 teresa_intpl(s32 mode, f32 start, f32 end, s32 step, s32 steps) {
     return intplGetValue(mode, step, steps, start, end);
 }
-#endif
 
 void teresa_ext_main(void) {
     s32 i;

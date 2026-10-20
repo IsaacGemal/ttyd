@@ -6,14 +6,6 @@
 #include <stdio.h>
 #include <string.h>
 
-#ifdef MUST_MATCH
-// MUST_MATCH: `& mask` (mask = -1) is a no-op that gives the eight hoisted colour bytes the original's
-// r20-r27 colouring; the plain reads colour them r18-r24+r31.
-#define NUM_COL(c) ((c) & mask)
-#else
-#define NUM_COL(c) (c)
-#endif
-
 // .text:0x0 | 0x802519D4 | size: 0x7D4
 void effNumberGX(Mtx* mtx, s32 type, s32 value, s32 color, s32 unk) {
 	CameraEntry* cam;
@@ -24,18 +16,12 @@ void effNumberGX(Mtx* mtx, s32 type, s32 value, s32 color, s32 unk) {
 	f32 neg24;
 	f32 pos24;
 	char buf[0x20];
-#ifdef MUST_MATCH
-	s32 mask;
-#endif
 	s32 half;
 	s32 len;
 	s32 i;
 	s32 j;
 
 	cam = camGetCurPtr();
-#ifdef MUST_MATCH
-	mask = -1;
-#endif
 
 	switch (type) {
 	case 0:
@@ -134,16 +120,16 @@ void effNumberGX(Mtx* mtx, s32 type, s32 value, s32 color, s32 unk) {
 
 			GXBegin(0x80, 0, 4);
 			GXPosition3f32(neg24, pos24, 0.0f);
-			GXColor4u8(NUM_COL(colors[1].r), NUM_COL(colors[1].g), NUM_COL(colors[1].b), NUM_COL(colors[1].a));
+			GXColor4u8(colors[1].r, colors[1].g, colors[1].b, colors[1].a);
 			GXTexCoord2f32(0.0f, 0.0f);
 			GXPosition3f32(pos24, pos24, 0.0f);
-			GXColor4u8(NUM_COL(colors[1].r), NUM_COL(colors[1].g), NUM_COL(colors[1].b), NUM_COL(colors[1].a));
+			GXColor4u8(colors[1].r, colors[1].g, colors[1].b, colors[1].a);
 			GXTexCoord2f32(1.0f, 0.0f);
 			GXPosition3f32(pos24, neg24, 0.0f);
-			GXColor4u8(NUM_COL(colors[0].r), NUM_COL(colors[0].g), NUM_COL(colors[0].b), NUM_COL(colors[0].a));
+			GXColor4u8(colors[0].r, colors[0].g, colors[0].b, colors[0].a);
 			GXTexCoord2f32(1.0f, 1.0f);
 			GXPosition3f32(neg24, neg24, 0.0f);
-			GXColor4u8(NUM_COL(colors[0].r), NUM_COL(colors[0].g), NUM_COL(colors[0].b), NUM_COL(colors[0].a));
+			GXColor4u8(colors[0].r, colors[0].g, colors[0].b, colors[0].a);
 			GXTexCoord2f32(0.0f, 1.0f);
 		}
 
