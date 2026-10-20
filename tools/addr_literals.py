@@ -16,8 +16,8 @@ change is checked by recompiling: the unit is compiled with its own ninja comman
 compared with the current object by tools/obj_equiv.py (same section bytes, same relocation targets by place). The
 search tries every candidate at once, then one at a time from the highest address down, each on top of those kept.
 String literals lose the alignment NULs the named arrays spelled out ("abc\\000") where the object stays the same.
-A comment block that only headed removed declarations goes too. The reference objects are brought up to date with
-ninja first, so run it on a tree that builds.
+A comment block that only headed removed declarations goes too; other comments keep the retail names. The reference
+objects are brought up to date with ninja first, so run it on a tree that builds.
 
 Without --apply it only reports. With --apply the sources get their kept literals; then rebuild (the linked checksum is
 the final check) and run tools/ci.py. Prints, per unit, how many objects became literals and how the count of
@@ -105,6 +105,32 @@ def candidates(path, text, refs, kinds):
 
 
 GONE = "\x00gone\n"
+FUNC_START = re.compile(r"^[A-Za-z_][^;=#]*\)\s*\{?\s*$")
+
+
+def comment_spans(text):
+    """(start, end) of every // and /* */ comment in TEXT, skipping string and character literals."""
+    spans, i, n = [], 0, len(text)
+    while i < n:
+        c = text[i]
+        if c in "\"'":
+            i += 1
+            while i < n and text[i] != c and text[i] != "\n":
+                i += 2 if text[i] == "\\" else 1
+            i += 1
+        elif text.startswith("//", i):
+            e = text.find("\n", i)
+            e = n if e < 0 else e
+            spans.append((i, e))
+            i = e
+        elif text.startswith("/*", i):
+            e = text.find("*/", i + 2)
+            e = n if e < 0 else e + 2
+            spans.append((i, e))
+            i = e
+        else:
+            i += 1
+    return spans
 
 
 def literalise(text, consts):
@@ -114,8 +140,11 @@ def literalise(text, consts):
         text = re.sub(r"^(?:extern )?" + SECTION + r"(?:static )?(?:const )?(?:f32|f64|float|double|char|Vec|GXColor) " + name
                       + r"(?:\[[^\]\n]*\])?(?: = (?:" + STR_LIT + r"|\{[^;{}\n]*\}|[^;\n]+))?;[ \t]*(?://[^\n]*)?\n", GONE, text, flags=re.M)
         current = text
+        spans = comment_spans(text)
 
-        def repl(m, lit=lit, current=current):
+        def repl(m, lit=lit, current=current, spans=spans):
+            if any(a <= m.start() < b for a, b in spans):
+                return m.group(0)  # a comment keeps naming the retail object
             if lit.startswith("-") and current[:m.start()].rstrip().endswith(("-", "+")):
                 return f"({lit})"
             return lit
@@ -130,7 +159,8 @@ def literalise(text, consts):
         j = i
         while j < len(lines) and lines[j] in (GONE, "\n"):
             j += 1
-        after_blank = j == len(lines) or lines[j - 1] == "\n" or lines[j].strip().startswith(("//", "#"))
+        after_blank = (j == len(lines) or lines[j - 1] == "\n" or lines[j].strip().startswith(("//", "#"))
+                       or FUNC_START.match(lines[j]))
         k = i
         while k > 0 and lines[k - 1].lstrip().startswith("//") and not lines[k - 1].startswith((" ", "\t")):
             k -= 1
