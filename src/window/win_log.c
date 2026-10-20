@@ -123,50 +123,50 @@ typedef struct LogWin {
     s32 mapMarioPose; // 0xE1C
     f32 mapCx; // 0xE20
     f32 mapCy; // 0xE24
-    f32 mapTargetX; // 0xE28
-    f32 mapPosX; // 0xE2C
-    f32 mapTargetY; // 0xE30
-    f32 mapPosY; // 0xE34
+    f32 e28; // 0xE28
+    f32 e2c; // 0xE2C
+    f32 e30; // 0xE30
+    f32 e34; // 0xE34
     f32 mapScrollX; // 0xE38
     f32 mapScrollY; // 0xE3C
     s32 stoneNum; // 0xE40
     EffectEntry* stones[7]; // 0xE44
     s32 stoneSel; // 0xE60
-    f32 stoneTargetX; // 0xE64
-    f32 stonePosX; // 0xE68
-    f32 stoneTargetY; // 0xE6C
-    f32 stonePosY; // 0xE70
-    f32 stoneTargetAlpha; // 0xE74
-    f32 stoneAlpha; // 0xE78
-    f32 stoneTargetAngle; // 0xE7C
-    f32 stoneAngle; // 0xE80
-    f32 cardBoxX; // 0xE84
-    f32 cardBoxTargetX; // 0xE88
-    f32 cardBoxY; // 0xE8C
-    f32 cardBoxTargetY; // 0xE90
+    f32 e64; // 0xE64
+    f32 e68; // 0xE68
+    f32 e6c; // 0xE6C
+    f32 e70; // 0xE70
+    f32 e74; // 0xE74
+    f32 e78; // 0xE78
+    f32 e7c; // 0xE7C
+    f32 e80; // 0xE80
+    f32 e84; // 0xE84
+    f32 e88; // 0xE88
+    f32 e8c; // 0xE8C
+    f32 e90; // 0xE90
     s32 cardCnt; // 0xE94
     s32 cardSel; // 0xE98
     s32 cardPage; // 0xE9C
-    f32 cardPageX; // 0xEA0
-    f32 cardPageTargetX; // 0xEA4
-    f32 cardPreviewX; // 0xEA8
-    f32 cardPreviewTargetX; // 0xEAC
-    f32 cardPreviewY; // 0xEB0
-    f32 cardPreviewTargetY; // 0xEB4
+    f32 ea0; // 0xEA0
+    f32 ea4; // 0xEA4
+    f32 ea8; // 0xEA8
+    f32 eac; // 0xEAC
+    f32 eb0; // 0xEB0
+    f32 eb4; // 0xEB4
     s16 cardIcon[100]; // 0xEB8
-    f32 badgeBoxX; // 0xF80
-    f32 badgeBoxTargetX; // 0xF84
-    f32 badgeBoxY; // 0xF88
-    f32 badgeBoxTargetY; // 0xF8C
+    f32 f80; // 0xF80
+    f32 f84; // 0xF84
+    f32 f88; // 0xF88
+    f32 f8c; // 0xF8C
     s32 badgeCnt; // 0xF90
     s32 badgeSel; // 0xF94
     s32 badgePage; // 0xF98
-    f32 badgePageX; // 0xF9C
-    f32 badgePageTargetX; // 0xFA0
-    f32 badgePreviewX; // 0xFA4
-    f32 badgePreviewTargetX; // 0xFA8
-    f32 badgePreviewY; // 0xFAC
-    f32 badgePreviewTargetY; // 0xFB0
+    f32 f9c; // 0xF9C
+    f32 fa0; // 0xFA0
+    f32 fa4; // 0xFA4
+    f32 fa8; // 0xFA8
+    f32 fac; // 0xFAC
+    f32 fb0; // 0xFB0
     s16 badgeIcon[58]; // 0xFB4
     f32 x1028; // 0x1028
     f32 x102c; // 0x102C
@@ -407,10 +407,10 @@ void winLogInit(WindowWork* work) {
     w->mapPick = 0;
     w->mapCy = 0.0f;
     w->mapCx = 0.0f;
-    w->mapPosX = 0.0f;
-    w->mapTargetX = 0.0f;
-    w->mapPosY = -480.f;
-    w->mapTargetY = -480.f;
+    w->e2c = 0.0f;
+    w->e28 = 0.0f;
+    w->e34 = -480.f;
+    w->e30 = -480.f;
     w->mapScrollY = 0.0f;
     w->mapScrollX = 0.0f;
     area = gp->currentAreaName;
@@ -492,15 +492,15 @@ void winLogInit(WindowWork* work) {
     w->stoneSel = 0;
     {
         f32 e7c = 51.42857f * winLogI2F(w->stoneSel, base, &e7cScratch);
-        w->stoneTargetAngle = e7c;
-        w->stoneAngle = e7c;
+        w->e7c = e7c;
+        w->e80 = e7c;
     }
-    w->stonePosX = 0.0f;
-    w->stoneTargetX = 0.0f;
-    w->stonePosY = -480.f;
-    w->stoneTargetY = -480.f;
-    w->stoneAlpha = 0.0f;
-    w->stoneTargetAlpha = 0.0f;
+    w->e68 = 0.0f;
+    w->e64 = 0.0f;
+    w->e70 = -480.f;
+    w->e6c = -480.f;
+    w->e78 = 0.0f;
+    w->e74 = 0.0f;
     w->cardCnt = 0;
     for (i = 0xF0; i < 0xF0 + 0x63; i++) {
         if (itemDataTable[i].type_sort_order != -1) {
@@ -509,17 +509,17 @@ void winLogInit(WindowWork* work) {
     }
     qqsort(w->cardIcon, w->cardCnt, 2, compare_func5_2);
     w->cardSel = 0;
-    w->cardBoxTargetX = 320.f;
-    w->cardBoxX = 320.f;
-    w->cardBoxTargetY = -240.f;
-    w->cardBoxY = -240.f;
+    w->e88 = 320.f;
+    w->e84 = 320.f;
+    w->e90 = -240.f;
+    w->e8c = -240.f;
     w->cardPage = 0;
-    w->cardPageTargetX = 0.0f;
-    w->cardPageX = 0.0f;
-    w->cardPreviewTargetX = -200.f;
-    w->cardPreviewX = -200.f;
-    w->cardPreviewTargetY = -300.f;
-    w->cardPreviewY = -300.f;
+    w->ea4 = 0.0f;
+    w->ea0 = 0.0f;
+    w->eac = -200.f;
+    w->ea8 = -200.f;
+    w->eb4 = -300.f;
+    w->eb0 = -300.f;
     w->badgeCnt = 0;
     for (i = 0xB3; i < 0xB3 + 0x39; i++) {
         if (itemDataTable[i].type_sort_order != -1) {
@@ -528,17 +528,17 @@ void winLogInit(WindowWork* work) {
     }
     qqsort(w->badgeIcon, w->badgeCnt, 2, compare_func6_2);
     w->badgeSel = 0;
-    w->badgeBoxTargetX = 320.f;
-    w->badgeBoxX = 320.f;
-    w->badgeBoxTargetY = -240.f;
-    w->badgeBoxY = -240.f;
+    w->f84 = 320.f;
+    w->f80 = 320.f;
+    w->f8c = -240.f;
+    w->f88 = -240.f;
     w->badgePage = 0;
-    w->badgePageTargetX = 0.0f;
-    w->badgePageX = 0.0f;
-    w->badgePreviewTargetX = -200.f;
-    w->badgePreviewX = -200.f;
-    w->badgePreviewTargetY = -300.f;
-    w->badgePreviewY = -300.f;
+    w->fa0 = 0.0f;
+    w->f9c = 0.0f;
+    w->fa8 = -200.f;
+    w->fa4 = -200.f;
+    w->fb0 = -300.f;
+    w->fac = -300.f;
     w->charCnt = 0;
     for (i = 1; i < 0xD8; i++) {
         if (battleGetUnitMonosiriPtr(i)->tattleLogTag != NULL) {
@@ -616,28 +616,28 @@ void winLogInit2(WindowWork* work) {
         f32 t = 45.0f * (f32)a;
         work->targetY = 8.0f + (t / 2.0f - 45.0f * (f32)b);
     }
-    w->cardBoxTargetX = 320.f;
-    w->cardBoxX = 320.f;
-    w->cardBoxTargetY = -240.f;
-    w->cardBoxY = -240.f;
+    w->e88 = 320.f;
+    w->e84 = 320.f;
+    w->e90 = -240.f;
+    w->e8c = -240.f;
     v = w->cardPage * 0xE8;
-    w->cardPageTargetX = v;
-    w->cardPageX = v;
-    w->cardPreviewTargetX = -200.f;
-    w->cardPreviewX = -200.f;
-    w->cardPreviewTargetY = -300.f;
-    w->cardPreviewY = -300.f;
-    w->badgeBoxTargetX = 320.f;
-    w->badgeBoxX = 320.f;
-    w->badgeBoxTargetY = -240.f;
-    w->badgeBoxY = -240.f;
+    w->ea4 = v;
+    w->ea0 = v;
+    w->eac = -200.f;
+    w->ea8 = -200.f;
+    w->eb4 = -300.f;
+    w->eb0 = -300.f;
+    w->f84 = 320.f;
+    w->f80 = 320.f;
+    w->f8c = -240.f;
+    w->f88 = -240.f;
     v = w->badgePage * 0xE8;
-    w->badgePageTargetX = v;
-    w->badgePageX = v;
-    w->badgePreviewTargetX = -200.f;
-    w->badgePreviewX = -200.f;
-    w->badgePreviewTargetY = -300.f;
-    w->badgePreviewY = -300.f;
+    w->fa0 = v;
+    w->f9c = v;
+    w->fa8 = -200.f;
+    w->fa4 = -200.f;
+    w->fb0 = -300.f;
+    w->fac = -300.f;
     name = ((WinLogEntry*)((u8*)work + 0xD78))[w->sel].name;
     winMsgEntry(work, 0, name, 0);
 }
@@ -666,7 +666,7 @@ void winLogExit(WindowWork* work) {
 
 LOGWIN_CHECK(rows, 0xD74);
 LOGWIN_CHECK(mapSel, 0xE14);
-LOGWIN_CHECK(badgeBoxTargetX, 0xF84);
+LOGWIN_CHECK(f84, 0xF84);
 LOGWIN_CHECK(badgeIcon, 0xFB4);
 LOGWIN_CHECK(charCnt, 0x1038);
 LOGWIN_CHECK(chars, 0x1050);
@@ -759,23 +759,23 @@ s32 winLogMain(WindowWork* work) {
                 case 4:
                     break;
                 case 0:
-                    w->mapTargetY = 20.f;
+                    w->e30 = 20.f;
                     break;
                 case 1:
-                    w->stoneTargetY = 20.f;
-                    w->stoneTargetAlpha = 255.0f;
+                    w->e6c = 20.f;
+                    w->e74 = 255.0f;
                     break;
                 case 2:
-                    w->cardBoxTargetX = -130.f;
-                    w->cardBoxTargetY = 120.f;
-                    w->cardPreviewTargetX = -200.f;
-                    w->cardPreviewTargetY = 60.f;
+                    w->e88 = -130.f;
+                    w->e90 = 120.f;
+                    w->eac = -200.f;
+                    w->eb4 = 60.f;
                     break;
                 case 3:
-                    w->badgeBoxTargetX = -130.f;
-                    w->badgeBoxTargetY = 120.f;
-                    w->badgePreviewTargetX = -200.f;
-                    w->badgePreviewTargetY = 60.f;
+                    w->f84 = -130.f;
+                    w->f8c = 120.f;
+                    w->fa8 = -200.f;
+                    w->fb0 = 60.f;
                     break;
                 }
                 SFX(0x20012);
@@ -852,7 +852,7 @@ s32 winLogMain(WindowWork* work) {
                     }
                     w->rows[w->sel].phase = 0x14;
                     w->state = 0;
-                    w->mapTargetY = -480.f;
+                    w->e30 = -480.f;
                     fileFree((FileEntry*)w->mapTpl);
                     w->mapTpl = 0;
                     if (w->mapMarioPose != -1) {
@@ -986,16 +986,16 @@ s32 winLogMain(WindowWork* work) {
                 }
                 w->rows[w->sel].phase = 0x14;
                 w->state = 0;
-                w->stoneTargetY = -480.f;
-                w->stoneTargetAlpha = 0.0f;
+                w->e6c = -480.f;
+                w->e74 = 0.0f;
             } else if (w->dirRep & 0x4000) {
                 w->stoneSel = w->stoneSel - 1;
                 while (w->stoneSel < 0) {
                     w->stoneSel = w->stoneSel + 7;
                 }
-                w->stoneTargetAngle = 51.42857f * (f32)w->stoneSel;
-                while (w->stoneAngle < w->stoneTargetAngle) {
-                    w->stoneAngle += 360.f;
+                w->e7c = 51.42857f * (f32)w->stoneSel;
+                while (w->e80 < w->e7c) {
+                    w->e80 += 360.f;
                 }
                 SFX(0x209D6);
                 SFX(0x20037);
@@ -1004,9 +1004,9 @@ s32 winLogMain(WindowWork* work) {
                 while (w->stoneSel > 6) {
                     w->stoneSel = w->stoneSel - 7;
                 }
-                w->stoneTargetAngle = 51.42857f * (f32)w->stoneSel;
-                while (w->stoneAngle > w->stoneTargetAngle) {
-                    w->stoneAngle -= 360.f;
+                w->e7c = 51.42857f * (f32)w->stoneSel;
+                while (w->e80 > w->e7c) {
+                    w->e80 -= 360.f;
                 }
                 SFX(0x209D6);
                 SFX(0x20037);
@@ -1039,10 +1039,10 @@ s32 winLogMain(WindowWork* work) {
                 }
                 w->rows[w->sel].phase = 0x14;
                 w->state = 0;
-                w->cardBoxTargetX = 330.f;
-                w->cardBoxTargetY = -250.f;
-                w->cardPreviewTargetX = -200.f;
-                w->cardPreviewTargetY = -300.f;
+                w->e88 = 330.f;
+                w->e90 = -250.f;
+                w->eac = -200.f;
+                w->eb4 = -300.f;
             } else if (w->buttonRep & 0x40) {
                 w->cardPage = w->cardPage - 1;
                 if (w->cardPage < 0) {
@@ -1123,10 +1123,10 @@ s32 winLogMain(WindowWork* work) {
                 }
                 w->rows[w->sel].phase = 0x14;
                 w->state = 0;
-                w->badgeBoxTargetX = 330.f;
-                w->badgeBoxTargetY = -250.f;
-                w->badgePreviewTargetX = -200.f;
-                w->badgePreviewTargetY = -300.f;
+                w->f84 = 330.f;
+                w->f8c = -250.f;
+                w->fa8 = -200.f;
+                w->fb0 = -300.f;
             } else if (w->buttonRep & 0x40) {
                 w->badgePage = w->badgePage - 1;
                 if (w->badgePage < 0) {
@@ -1415,78 +1415,78 @@ void winLogMain2(WindowWork* work) {
 
 #ifdef MUST_MATCH
     {
-        f32 d1 = ((LogWin*)new_var)->mapTargetX - ((LogWin*)new_var)->mapPosX;
-        lw->mapPosX += d1 / 8.0;
+        f32 d1 = ((LogWin*)new_var)->e28 - ((LogWin*)new_var)->e2c;
+        lw->e2c += d1 / 8.0;
     }
     {
-        f32 d2 = ((LogWin*)new_var)->mapTargetY - lw->mapPosY;
-        ((LogWin*)new_var)->mapPosY += d2 / 8.0;
+        f32 d2 = ((LogWin*)new_var)->e30 - lw->e34;
+        ((LogWin*)new_var)->e34 += d2 / 8.0;
     }
     {
-        f32 d3 = lw->stoneTargetX - lw->stonePosX;
-        ((LogWin*)new_var)->stonePosX += d3 / 8.0;
+        f32 d3 = lw->e64 - lw->e68;
+        ((LogWin*)new_var)->e68 += d3 / 8.0;
     }
     {
-        f32 d4 = lw->stoneTargetY - lw->stonePosY;
-        ((LogWin*)new_var)->stonePosY += d4 / 8.0;
+        f32 d4 = lw->e6c - lw->e70;
+        ((LogWin*)new_var)->e70 += d4 / 8.0;
     }
     {
-        f32 d5 = ((LogWin*)new_var)->stoneTargetAlpha - lw->stoneAlpha;
-        lw->stoneAlpha += d5 / 8.0;
+        f32 d5 = ((LogWin*)new_var)->e74 - lw->e78;
+        lw->e78 += d5 / 8.0;
     }
     {
-        f32 d6 = lw->stoneTargetAngle - ((LogWin*)new_var)->stoneAngle;
-        ((LogWin*)new_var)->stoneAngle += d6 / 4.0f;
+        f32 d6 = lw->e7c - ((LogWin*)new_var)->e80;
+        ((LogWin*)new_var)->e80 += d6 / 4.0f;
     }
-    lw->cardPageTargetX = (f32)(lw->cardPage * 0xE8);
-    lw->cardPageX += (((LogWin*)new_var)->cardPageTargetX - ((LogWin*)new_var)->cardPageX) / 6.0f;
-    lw->cardBoxX += (lw->cardBoxTargetX - ((LogWin*)new_var)->cardBoxX) / 6.0f;
-    ((LogWin*)new_var)->cardBoxY += (lw->cardBoxTargetY - ((LogWin*)new_var)->cardBoxY) / 6.0f;
-    lw->cardPreviewX += (lw->cardPreviewTargetX - ((LogWin*)new_var)->cardPreviewX) / 6.0f;
-    ((LogWin*)new_var)->cardPreviewY += (lw->cardPreviewTargetY - lw->cardPreviewY) / 6.0f;
-    lw->badgePageTargetX = (f32)(((LogWin*)new_var)->badgePage * 0xE8);
-    lw->badgePageX += (lw->badgePageTargetX - ((LogWin*)new_var)->badgePageX) / 6.0f;
-    ((LogWin*)new_var)->badgeBoxX += (((LogWin*)new_var)->badgeBoxTargetX - ((LogWin*)new_var)->badgeBoxX) / 6.0f;
-    lw->badgeBoxY += (lw->badgeBoxTargetY - ((LogWin*)new_var)->badgeBoxY) / 6.0f;
-    ((LogWin*)new_var)->badgePreviewX += (((LogWin*)new_var)->badgePreviewTargetX - ((LogWin*)new_var)->badgePreviewX) / 6.0f;
-    lw->badgePreviewY += (((LogWin*)new_var)->badgePreviewTargetY - lw->badgePreviewY) / 6.0f;
+    lw->ea4 = (f32)(lw->cardPage * 0xE8);
+    lw->ea0 += (((LogWin*)new_var)->ea4 - ((LogWin*)new_var)->ea0) / 6.0f;
+    lw->e84 += (lw->e88 - ((LogWin*)new_var)->e84) / 6.0f;
+    ((LogWin*)new_var)->e8c += (lw->e90 - ((LogWin*)new_var)->e8c) / 6.0f;
+    lw->ea8 += (lw->eac - ((LogWin*)new_var)->ea8) / 6.0f;
+    ((LogWin*)new_var)->eb0 += (lw->eb4 - lw->eb0) / 6.0f;
+    lw->fa0 = (f32)(((LogWin*)new_var)->badgePage * 0xE8);
+    lw->f9c += (lw->fa0 - ((LogWin*)new_var)->f9c) / 6.0f;
+    ((LogWin*)new_var)->f80 += (((LogWin*)new_var)->f84 - ((LogWin*)new_var)->f80) / 6.0f;
+    lw->f88 += (lw->f8c - ((LogWin*)new_var)->f88) / 6.0f;
+    ((LogWin*)new_var)->fa4 += (((LogWin*)new_var)->fa8 - ((LogWin*)new_var)->fa4) / 6.0f;
+    lw->fac += (((LogWin*)new_var)->fb0 - lw->fac) / 6.0f;
 #else
     {
-        f32 d1 = lw->mapTargetX - lw->mapPosX;
-        lw->mapPosX += d1 / 8.0;
+        f32 d1 = lw->e28 - lw->e2c;
+        lw->e2c += d1 / 8.0;
     }
     {
-        f32 d2 = lw->mapTargetY - lw->mapPosY;
-        lw->mapPosY += d2 / 8.0;
+        f32 d2 = lw->e30 - lw->e34;
+        lw->e34 += d2 / 8.0;
     }
     {
-        f32 d3 = lw->stoneTargetX - lw->stonePosX;
-        lw->stonePosX += d3 / 8.0;
+        f32 d3 = lw->e64 - lw->e68;
+        lw->e68 += d3 / 8.0;
     }
     {
-        f32 d4 = lw->stoneTargetY - lw->stonePosY;
-        lw->stonePosY += d4 / 8.0;
+        f32 d4 = lw->e6c - lw->e70;
+        lw->e70 += d4 / 8.0;
     }
     {
-        f32 d5 = lw->stoneTargetAlpha - lw->stoneAlpha;
-        lw->stoneAlpha += d5 / 8.0;
+        f32 d5 = lw->e74 - lw->e78;
+        lw->e78 += d5 / 8.0;
     }
     {
-        f32 d6 = lw->stoneTargetAngle - lw->stoneAngle;
-        lw->stoneAngle += d6 / 4.0f;
+        f32 d6 = lw->e7c - lw->e80;
+        lw->e80 += d6 / 4.0f;
     }
-    lw->cardPageTargetX = (f32)(lw->cardPage * 0xE8);
-    lw->cardPageX += (lw->cardPageTargetX - lw->cardPageX) / 6.0f;
-    lw->cardBoxX += (lw->cardBoxTargetX - lw->cardBoxX) / 6.0f;
-    lw->cardBoxY += (lw->cardBoxTargetY - lw->cardBoxY) / 6.0f;
-    lw->cardPreviewX += (lw->cardPreviewTargetX - lw->cardPreviewX) / 6.0f;
-    lw->cardPreviewY += (lw->cardPreviewTargetY - lw->cardPreviewY) / 6.0f;
-    lw->badgePageTargetX = (f32)(lw->badgePage * 0xE8);
-    lw->badgePageX += (lw->badgePageTargetX - lw->badgePageX) / 6.0f;
-    lw->badgeBoxX += (lw->badgeBoxTargetX - lw->badgeBoxX) / 6.0f;
-    lw->badgeBoxY += (lw->badgeBoxTargetY - lw->badgeBoxY) / 6.0f;
-    lw->badgePreviewX += (lw->badgePreviewTargetX - lw->badgePreviewX) / 6.0f;
-    lw->badgePreviewY += (lw->badgePreviewTargetY - lw->badgePreviewY) / 6.0f;
+    lw->ea4 = (f32)(lw->cardPage * 0xE8);
+    lw->ea0 += (lw->ea4 - lw->ea0) / 6.0f;
+    lw->e84 += (lw->e88 - lw->e84) / 6.0f;
+    lw->e8c += (lw->e90 - lw->e8c) / 6.0f;
+    lw->ea8 += (lw->eac - lw->ea8) / 6.0f;
+    lw->eb0 += (lw->eb4 - lw->eb0) / 6.0f;
+    lw->fa0 = (f32)(lw->badgePage * 0xE8);
+    lw->f9c += (lw->fa0 - lw->f9c) / 6.0f;
+    lw->f80 += (lw->f84 - lw->f80) / 6.0f;
+    lw->f88 += (lw->f8c - lw->f88) / 6.0f;
+    lw->fa4 += (lw->fa8 - lw->fa4) / 6.0f;
+    lw->fac += (lw->fb0 - lw->fac) / 6.0f;
 #endif
 }
 
@@ -1523,13 +1523,13 @@ void winLogDisp(CameraId camId, WindowWork* work, s32 idx) {
     white3 = white0;
 
     winBgGX(work, 4, x, y);
-    if (y + w->mapPosY > -480.f) {
-        mapGX(work, x + w->mapPosX, y + w->mapPosY);
+    if (y + w->e34 > -480.f) {
+        mapGX(work, x + w->e2c, y + w->e34);
     }
-    if (y + w->stonePosY > -480.f) {
+    if (y + w->e70 > -480.f) {
         winTexInit(LOG_TEXPAL());
-        winTexSet(0x24, logMkVec((Vec){0.0f, 0.0f, 0.0f}, x + w->stonePosX, y + w->stonePosY), (Vec){6e+01f, 1.0f, 1.0f},
-                  (GXColor){0xFF, 0xFF, 0xFF, w->stoneAlpha});
+        winTexSet(0x24, logMkVec((Vec){0.0f, 0.0f, 0.0f}, x + w->e68, y + w->e70), (Vec){6e+01f, 1.0f, 1.0f},
+                  (GXColor){0xFF, 0xFF, 0xFF, w->e78});
         for (i = 0; i < 7; i++) {
             Vec p = (Vec){0.0f, 0.0f, 1.7e+02f};
             Mtx rx;
@@ -1538,38 +1538,38 @@ void winLogDisp(CameraId camId, WindowWork* work, s32 idx) {
             PSMTXRotRad(rx, 'x', 0.43633232f);
             PSMTXRotRad(ry, 'y', 0.017453292f * (51.42857f *
                 (f32)i
-                - w->stoneAngle));
+                - w->e80));
             PSMTXMultVec(ry, &p, &p);
             PSMTXMultVec(rx, &p, &p);
-            winKageGX(work, p.x + (x + w->stonePosX), (p.y + (y + w->stonePosY)) - 30.f, p.z,
+            winKageGX(work, p.x + (x + w->e68), (p.y + (y + w->e70)) - 30.f, p.z,
                       1.0f, &(GXColor){0x00, 0x00, 0x00, 0x80});
-            ((effStarStoneData*)w->stones[i]->userdata)->x = p.x + (x + w->stonePosX);
-            ((effStarStoneData*)w->stones[i]->userdata)->y = 20.f + (p.y + (y + w->stonePosY));
+            ((effStarStoneData*)w->stones[i]->userdata)->x = p.x + (x + w->e68);
+            ((effStarStoneData*)w->stones[i]->userdata)->y = 20.f + (p.y + (y + w->e70));
             ((effStarStoneData*)w->stones[i]->userdata)->z = p.z;
         }
         for (i = 0; i < 7; i++) {
             effStarStoneDraw(8, w->stones[i]);
         }
     }
-    if (w->cardBoxX < 320.f && w->cardBoxY > -240.f) {
-        winHakoGX(work, 0, x + w->cardBoxX, y + w->cardBoxY);
+    if (w->e84 < 320.f && w->e8c > -240.f) {
+        winHakoGX(work, 0, x + w->e84, y + w->e8c);
         winTexInit(LOG_TEXPAL());
-        winTexSet(0x95, logMkVec((Vec){0.0f, 0.0f, 0.0f}, x + w->cardPreviewX, y + w->cardPreviewY), (Vec){1.0f, 1.0f, 1.0f}, white);
+        winTexSet(0x95, logMkVec((Vec){0.0f, 0.0f, 0.0f}, x + w->ea8, y + w->eb0), (Vec){1.0f, 1.0f, 1.0f}, white);
         if (swGet(w->cardIcon[w->cardSel] + 0x80) != 0) {
             winIconInit();
             monoIconV(itemDataTable[w->cardIcon[w->cardSel] + 240].icon_id,
-                      logMkVec((Vec){0.0f, 0.0f, 0.0f}, x + w->cardPreviewX, (y + w->cardPreviewY) - 4.0f),
+                      logMkVec((Vec){0.0f, 0.0f, 0.0f}, x + w->ea8, (y + w->eb0) - 4.0f),
                       (Vec){1.0f, 1.0f, 1.0f}, white);
         }
     }
-    if (w->badgeBoxX < 320.f && w->badgeBoxY > -240.f) {
-        winHakoGX(work, 1, x + w->badgeBoxX, y + w->badgeBoxY);
+    if (w->f80 < 320.f && w->f88 > -240.f) {
+        winHakoGX(work, 1, x + w->f80, y + w->f88);
         winTexInit(LOG_TEXPAL());
-        winTexSet(0x96, logMkVec((Vec){0.0f, 0.0f, 0.0f}, x + w->badgePreviewX, y + w->badgePreviewY), (Vec){1.0f, 1.0f, 1.0f}, white);
+        winTexSet(0x96, logMkVec((Vec){0.0f, 0.0f, 0.0f}, x + w->fa4, y + w->fac), (Vec){1.0f, 1.0f, 1.0f}, white);
         if (swGet(w->badgeIcon[w->badgeSel] + 0x41) != 0) {
             winIconInit();
             monoIconV(itemDataTable[w->badgeIcon[w->badgeSel] + 179].icon_id,
-                      logMkVec((Vec){0.0f, 0.0f, 0.0f}, x + w->badgePreviewX, (y + w->badgePreviewY) - 10.f),
+                      logMkVec((Vec){0.0f, 0.0f, 0.0f}, x + w->fa4, (y + w->fac) - 10.f),
                       (Vec){1.0f, 1.0f, 1.0f}, white);
         }
     }
