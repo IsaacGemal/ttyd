@@ -32,11 +32,6 @@ extern Vec vec3_muj_0001326c;
 extern Vec vec3_muj_00013278;
 extern Vec vec3_muj_00013284;
 
-// The group-2 control block reuses bytes the shared ZakogunWork leaves as padding for its
-// per-sequence interpolation fields
-#define WORK_VEC(off) (*(Vec*)((u8*)work_20_bss_6C + (off)))
-#define WORK_F32(off) (*(f32*)((u8*)work_20_bss_6C + (off)))
-#define WORK_S32(off) (*(s32*)((u8*)work_20_bss_6C + (off)))
 static BattleVulnerableStatus regist;
 static BattleDataEntry data_table[3];
 static BattleUnitKindPart parts[1];
@@ -344,21 +339,21 @@ s32 down_ceil_20_text_9C8C(EventEntry* event, BOOL isFirstCall) {
     f32 value;
 
     if (isFirstCall) {
-        WORK_VEC(0x48) = vec3_muj_0001323c;
-        WORK_VEC(0x54) = vec3_muj_00013248;
-        WORK_S32(0x60) = 0x78;
-        WORK_S32(0x64) = 0x78;
+        work_20_bss_6C->ceilFrom = vec3_muj_0001323c;
+        work_20_bss_6C->ceilTo = vec3_muj_00013248;
+        work_20_bss_6C->ceilFrame = 0x78;
+        work_20_bss_6C->ceilFrames = 0x78;
         flag[0] &= ~0x20;
         id = psndSFXOn("SFX_BOSS_TEAM_3RD_MOVE_CAILING1");
-        WORK_S32(0x6C) = id;
-        WORK_S32(0x6C) = id;
+        work_20_bss_6C->ceilSfxHandle = id;
+        work_20_bss_6C->ceilSfxHandle = id;
     }
-    value = intplGetValue(4, WORK_S32(0x64) - WORK_S32(0x60), WORK_S32(0x64), WORK_F32(0x4C), WORK_F32(0x58));
+    value = intplGetValue(4, work_20_bss_6C->ceilFrames - work_20_bss_6C->ceilFrame, work_20_bss_6C->ceilFrames, work_20_bss_6C->ceilFrom.y, work_20_bss_6C->ceilTo.y);
     obj2->mPosition.y = value;
     obj->mPosition.y = value;
-    WORK_S32(0x60) -= 1;
-    if (WORK_S32(0x60) < 0) {
-        psndSFXOff(WORK_S32(0x6C));
+    work_20_bss_6C->ceilFrame -= 1;
+    if (work_20_bss_6C->ceilFrame < 0) {
+        psndSFXOff(work_20_bss_6C->ceilSfxHandle);
         return 2;
     }
     return 0;
@@ -371,19 +366,19 @@ s32 up_ceil(EventEntry* event, BOOL isFirstCall) {
     f32 value;
 
     if (isFirstCall) {
-        WORK_VEC(0x48) = vec3_muj_00013254;
-        WORK_VEC(0x54) = vec3_muj_00013260;
-        WORK_S32(0x60) = 0x78;
-        WORK_S32(0x64) = 0x78;
+        work_20_bss_6C->ceilFrom = vec3_muj_00013254;
+        work_20_bss_6C->ceilTo = vec3_muj_00013260;
+        work_20_bss_6C->ceilFrame = 0x78;
+        work_20_bss_6C->ceilFrames = 0x78;
         flag[0] |= 0x20;
-        WORK_S32(0x6C) = psndSFXOn("SFX_BOSS_TEAM_3RD_MOVE_CAILING1");
+        work_20_bss_6C->ceilSfxHandle = psndSFXOn("SFX_BOSS_TEAM_3RD_MOVE_CAILING1");
     }
-    value = intplGetValue(4, WORK_S32(0x64) - WORK_S32(0x60), WORK_S32(0x64), WORK_F32(0x4C), WORK_F32(0x58));
+    value = intplGetValue(4, work_20_bss_6C->ceilFrames - work_20_bss_6C->ceilFrame, work_20_bss_6C->ceilFrames, work_20_bss_6C->ceilFrom.y, work_20_bss_6C->ceilTo.y);
     obj2->mPosition.y = value;
     obj->mPosition.y = value;
-    WORK_S32(0x60) -= 1;
-    if (WORK_S32(0x60) < 0) {
-        psndSFXOff(WORK_S32(0x6C));
+    work_20_bss_6C->ceilFrame -= 1;
+    if (work_20_bss_6C->ceilFrame < 0) {
+        psndSFXOff(work_20_bss_6C->ceilSfxHandle);
         return 2;
     }
     return 0;
@@ -398,19 +393,19 @@ s32 shake_ceil(EventEntry* event, BOOL isFirstCall) {
     f32 value;
 
     if (isFirstCall) {
-        WORK_VEC(0x48) = vec3_muj_0001326c;
-        WORK_VEC(0x54) = vec3_muj_00013278;
-        WORK_S32(0x60) = 0;
+        work_20_bss_6C->ceilFrom = vec3_muj_0001326c;
+        work_20_bss_6C->ceilTo = vec3_muj_00013278;
+        work_20_bss_6C->ceilFrame = 0;
     }
-    start = WORK_F32(0x4C);
-    end = WORK_F32(0x58);
-    step = WORK_S32(0x60);
+    start = work_20_bss_6C->ceilFrom.y;
+    end = work_20_bss_6C->ceilTo.y;
+    step = work_20_bss_6C->ceilFrame;
 
     value = intplGetValue(4, step, 9, start, end);
     obj2->mPosition.y = value;
     obj->mPosition.y = value;
-    WORK_S32(0x60) += 1;
-    if (WORK_S32(0x60) > 0x11) {
+    work_20_bss_6C->ceilFrame += 1;
+    if (work_20_bss_6C->ceilFrame > 0x11) {
         f32 last = 130.0f;
 
         obj2->mPosition.y = last;

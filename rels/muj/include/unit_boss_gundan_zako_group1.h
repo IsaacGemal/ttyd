@@ -43,9 +43,13 @@ typedef struct ZakogunWork {
     f32 radius;             // 0x34
     f32 angle;              // 0x38
     f32 speed;              // 0x3C
-    u8 pad_40[0x68 - 0x40]; // 0x40
+    u8 pad_40[8];           // 0x40
+    Vec ceilFrom;           // 0x48, group2 ceiling height start (.y)
+    Vec ceilTo;             // 0x54, group2 ceiling height end (.y)
+    s32 ceilFrame;          // 0x60
+    s32 ceilFrames;         // 0x64
     s32 landedCount;        // 0x68
-    u8 pad_6c[4];           // 0x6C
+    s32 ceilSfxHandle;      // 0x6C
     ZakogunEntry* entries;  // 0x70
 } ZakogunWork;
 
