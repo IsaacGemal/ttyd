@@ -373,11 +373,11 @@ void _firebar_rot(FirebarEntry* entry) {
     f32 half;
     s32 i;
 
-    sin(6.2831855f * entry->field_0x40 / 360.0f);
+    sin(6.2831855f * entry->pulsePhase / 360.0f);
     for (i = 0; i < entry->count; i++, seg++) {
         animPoseMain(seg->poseId);
         if (!(entry->flags & 1)) {
-            f29 = entry->scale * ((f32)i * entry->angleSpeed) + entry->field_0x2C;
+            f29 = entry->scale * ((f32)i * entry->angleSpeed) + entry->baseRadius;
             f30 = (f32)sin(entry->angle);
             {
                 f32 c = (f32)cos(entry->angle);
@@ -391,7 +391,7 @@ void _firebar_rot(FirebarEntry* entry) {
         }
     }
 
-    entry->angle += entry->field_0x18 * (1.0f + (f32)entry->counter / 10.0f);
+    entry->angle += entry->speed * (1.0f + (f32)entry->counter / 10.0f);
     {
         s32 hit = _firebar_hitCheck2(entry);
         f32 d2;
@@ -417,17 +417,17 @@ void _firebar_rot(FirebarEntry* entry) {
             if (entry->callback != NULL) {
                 entry->callback(entry, 2);
             }
-        } else if (f30 > entry->field_0x2C && f30 < f29 && !(entry->flags & 6) && hit == 0 &&
+        } else if (f30 > entry->baseRadius && f30 < f29 && !(entry->flags & 6) && hit == 0 &&
                    vivianGetStatus() != 1 && vivianGetStatus() != 2) {
-            if (entry->field_0x18 > 0.0f) {
-                if (entry->field_0x10 < 0.0f && f31 > 0.0f && entry->position.y < mario->position.y) {
+            if (entry->speed > 0.0f) {
+                if (entry->prevAngleDiff < 0.0f && f31 > 0.0f && entry->position.y < mario->position.y) {
                     entry->counter++;
                     if (entry->callback != NULL) {
                         entry->callback(entry, 1);
                     }
                 }
-            } else if (entry->field_0x18 < 0.0f) {
-                if (entry->field_0x10 > 0.0f && f31 < 0.0f && entry->position.y < mario->position.y) {
+            } else if (entry->speed < 0.0f) {
+                if (entry->prevAngleDiff > 0.0f && f31 < 0.0f && entry->position.y < mario->position.y) {
                     entry->counter++;
                     if (entry->callback != NULL) {
                         entry->callback(entry, 1);
@@ -435,7 +435,7 @@ void _firebar_rot(FirebarEntry* entry) {
                 }
             }
         }
-        entry->field_0x10 = f31;
+        entry->prevAngleDiff = f31;
     }
 }
 
@@ -447,7 +447,7 @@ void _firebar_trans(FirebarEntry* entry) {
     f32 f31;
     s32 i;
 
-    sin(6.2831855f * entry->field_0x40 / 360.0f);
+    sin(6.2831855f * entry->pulsePhase / 360.0f);
     switch (entry->state) {
     case 0:
         entry->scale += 0.05f;
@@ -457,7 +457,7 @@ void _firebar_trans(FirebarEntry* entry) {
         }
         break;
     case 1:
-        if (__fabsf(entry->position.x - entry->field_0x28) < 20.0f * __fabsf(entry->field_0x18)) {
+        if (__fabsf(entry->position.x - entry->targetX) < 20.0f * __fabsf(entry->speed)) {
             entry->state++;
         }
         break;
@@ -475,7 +475,7 @@ void _firebar_trans(FirebarEntry* entry) {
     } else {
         f31 = 1.0f;
     }
-    entry->position.x += entry->field_0x18;
+    entry->position.x += entry->speed;
     for (i = 0; i < entry->count; i++, seg++) {
         animPoseMain(seg->poseId);
         if (!(entry->flags & 1)) {
@@ -501,13 +501,13 @@ void _firebar_trans(FirebarEntry* entry) {
                 entry->callback(entry, 2);
             }
         } else if (!(entry->flags & 6) && hit == 0 && vivianGetStatus() != 1 && vivianGetStatus() != 2 &&
-                   entry->field_0x10 < 0.0f && f31 > 0.0f && entry->position.y < mario->position.y) {
+                   entry->prevAngleDiff < 0.0f && f31 > 0.0f && entry->position.y < mario->position.y) {
             entry->counter++;
             if (entry->callback != NULL) {
                 entry->callback(entry, 1);
             }
         }
-        entry->field_0x10 = f31;
+        entry->prevAngleDiff = f31;
     }
 }
 
@@ -535,18 +535,18 @@ USER_FUNC(firebar_entry) {
         entry->count = desc->count;
         entry->callback = desc->callback;
         entry->field_0x20 = desc->field_0x14;
-        entry->angleSpeed = desc->field_0x10;
-        entry->field_0x18 = desc->field_0x18;
+        entry->angleSpeed = desc->angleSpeed;
+        entry->speed = desc->speed;
         entry->scale = 1.0f;
-        entry->field_0x10 = 0.0f;
+        entry->prevAngleDiff = 0.0f;
         entry->angle = 0.0f;
         entry->counter = 0;
         entry->desc = desc;
-        entry->field_0x28 = desc->field_0x20;
-        entry->field_0x2C = desc->field_0x24;
+        entry->targetX = desc->field_0x20;
+        entry->baseRadius = desc->baseRadius;
         entry->sfxId = 0;
         entry->state = 0;
-        entry->field_0x40 = 0.0f;
+        entry->pulsePhase = 0.0f;
 
         switch (entry->type) {
         case 0:
@@ -554,9 +554,9 @@ USER_FUNC(firebar_entry) {
             break;
         case 1:
             if (desc->position.x < desc->field_0x20) {
-                entry->field_0x18 = __fabsf(desc->field_0x18);
+                entry->speed = __fabsf(desc->speed);
             } else {
-                entry->field_0x18 = -1.0f * __fabsf(desc->field_0x18);
+                entry->speed = -1.0f * __fabsf(desc->speed);
             }
             entry->scale = 0.0f;
             break;
@@ -649,9 +649,9 @@ USER_FUNC(firebar_entry) {
         }
     }
 
-    entry->field_0x40 += 6.0f;
-    if (entry->field_0x40 > 360.0f) {
-        entry->field_0x40 -= 360.0f;
+    entry->pulsePhase += 6.0f;
+    if (entry->pulsePhase > 360.0f) {
+        entry->pulsePhase -= 360.0f;
     }
     switch (entry->type) {
     case 0:
@@ -678,7 +678,7 @@ USER_FUNC(firebar_disp_evt) {
 
         f32 s;
 
-        s = (f32)sin(6.2831855f * entry->field_0x40 / 360.0f);
+        s = (f32)sin(6.2831855f * entry->pulsePhase / 360.0f);
         t = 0.625f + 0.375f * s;
         b = 0.4f * t;
         a = 0.2f * t;

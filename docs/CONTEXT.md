@@ -10950,3 +10950,12 @@ Verified: tower `ninja` recreates `build/G8MJ01/ok`; natural (no MUST_MATCH) com
 - New-definition counts. aea79288: field_0x 20942, raw_offset 9433, address_name 5137, must_match 2414, unk_name 2012, opt_pragma 1591, goto 491, fn_ptr_cast 363, inline_asm 7, pool_constant 7955. 2d92902a: field_0x 18317, raw_offset 7760, address_name 5141, must_match 2438, unk_name 1982, opt_pragma 1471, goto 491, fn_ptr_cast 352, inline_asm 7, pool_constant 7958. 1e542f53: raw_offset 2024, address_name 3443, field_0x 2820, must_match 2417, opt_pragma 1461, goto 485, unk_name 775, fn_ptr_cast 334, inline_asm 7, pool_constant 6027.
 - Not covered by either definition: REL-local address names (dat_gor_0001a46c, vec3_..._00012340, float_..._0000xxxx; about 900 in rels/, besides unk_ ones that unk_name still counts) end in a section offset, not an 8xxxxxxx address, so address_name and pool_constant miss them.
 - tools/ci.py runs the same script on HEAD and base, so its delta compares like with like. tools/tests passes (unittest discover).
+### Readability: las_04 firebar (2026-10-20, Claude Haiku 5.5, n9-q-relfld)
+
+FirebarEntry/FirebarDesc in las_04.h and las_04.c: `prevAngleDiff` (entry 0x10, last frame's compAngle, compared
+against the new one for the sign crossing in rot and trans), `speed` (0x18 and desc 0x18: rot adds it to the angle
+rate, trans adds it to position.x), `targetX` (0x28, the x that trans's state 1 compares against), `baseRadius`
+(0x2C and desc 0x24: segment 0's distance from the pivot in rot), `pulsePhase` (0x40, degrees, advanced by 6 and
+wrapped at 360, feeds the sin() that sets the disp pass's alpha and shadow volume), and desc `angleSpeed` (0x10).
+Left as field_0x: desc 0x14 and entry 0x20 (desc 0x14 is copied to entry 0x20, which nothing reads), and desc 0x20,
+which is the initial angle for type 0 and the target x for type 1.
