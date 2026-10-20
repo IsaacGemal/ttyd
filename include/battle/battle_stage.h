@@ -5,6 +5,7 @@
 #include <dolphin/gx.h>
 #include <dolphin/types.h>
 #include "battle/battle_stage_object.h"
+#include "battle/battle_database_common.h"
 
 typedef struct BattleSpotEntry {
 	u16 flags; // 0x0
@@ -26,6 +27,13 @@ typedef struct BattleStageData {
 	char* mSpecificStageDataDir; //0x4
 	u32 mNumObjects; //0x8
 	BattleStageObjectData* mObjects; //0xC, TODO extern?
+	BattleWeapon bgsetAttackA1; //0x10, _get_bgset_attack_data kind 0 (_object_turn_event_A1); none unless hpDamageFn is set
+	BattleWeapon bgsetAttackB; //0xD0, _get_bgset_attack_data kind 2 (_object_turn_event_B)
+	u32 field_0x190; //0x190
+	void* objectTurnEventA1; //0x194, BattleStage_DestroyA1 runs it in place of _object_turn_event_A1 when set
+	void* objectTurnEventA2; //0x198, BattleStage_DestroyA2 runs it in place of _object_turn_event_A2 when set
+	void* objectTurnEventB; //0x19C, BattleStage_DestroyB runs it in place of _object_turn_event_B when set
+	u8 field_0x1A0[0x1B4 - 0x1A0]; //0x1A0
 } BattleStageData;
 
 typedef struct BattleStageColor {
