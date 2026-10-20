@@ -25,13 +25,6 @@
 __declspec(section ".rodata") extern f32 queen_uv[4]; //gxsub.c
 extern GlobalWork* gp;
 
-#ifdef MUST_MATCH
-// The original passes the caller's own Vec where the by-value argument would take a copy.
-#define LIGHT_GET_NEAR(p, e, n, f) ((s32 (*)(Vec*, LightEntry**, s32, LightEntryFlags))lightGetNearObj)((p), (e), (n), (f))
-#else
-#define LIGHT_GET_NEAR(p, e, n, f) lightGetNearObj(*(p), (e), (n), (f))
-#endif
-
 #define TWO_PI 6.28318530717958647692528676655900576839433879875021f
 
 //.bss
@@ -44,7 +37,7 @@ GXTexObj projTexObj;
 void* projTexImgRef;
 Mtx projMtx;
 BOOL __mapdrv_make_dl;
-u32 mapDispDisabled;
+BOOL mapDispDisabled;
 s32 error_count;
 BOOL error_flag;
 MapObject* current_mp;
@@ -256,11 +249,8 @@ void mapInit(void) {
 	mapClipOffFlag = FALSE;
 }
 
-// The table walk below was moved into the inline helper so the deferred inliner emits the original's
-// `bne increment; b found` split.
-#ifdef MUST_MATCH
-// Moving the walk into an inline whose found path is a `return` makes the deferred inliner emit the
-// target's `bne increment; b found` split instead of a single `beq found`.
+// The table walk is an inline whose found path is a `return`, which makes the deferred inliner emit the
+// `bne increment; b found` split instead of a single `beq found`.
 static inline s32 mapSearchTextureIdx(void* table, u8** ref) {
 	const char** p;
 	const char* name;
@@ -278,7 +268,6 @@ static inline s32 mapSearchTextureIdx(void* table, u8** ref) {
 	}
 	return -1;
 }
-#endif
 void mapBuildTexture(MapObject* obj, TEXPalette* texture, void* table) {
 	int i;
 	int j;
@@ -290,25 +279,9 @@ void mapBuildTexture(MapObject* obj, TEXPalette* texture, void* table) {
 			u8** ref = *(u8***)(material + 0xC + j * 4);
 			s32 idx;
 			s32 use;
-			const char* name = *(const char**)(*ref);
 			TEXDescriptor* desc;
-			const char** p;
 
-			idx = 0;
-#ifdef MUST_MATCH
 			idx = mapSearchTextureIdx(table, ref);
-#else
-			p = (const char**)table;
-			while (idx < *(s32*)table) {
-				if (strcmp(p[1], name) == 0) {
-					goto found;
-				}
-				p++;
-				idx++;
-			}
-			idx = -1;
-		found:
-#endif
 			use = idx;
 			if (use == -1) {
 				use = 0;
@@ -574,13 +547,7 @@ void makeDisplayList(BOOL group) {
 				dest = wp->entries[group].dlData;
 			}
 			else {
-#ifdef MUST_MATCH
-				// MUST_MATCH: indexing the display-list pointers as a word array keeps the group offset live
-				// and gives the target's `add r3,wp,off; stw 0x16c(r3)` instead of an indexed store.
-				((void**)((u8*)wp + 0x16C))[group * (0x178 / 4)] = NULL;
-#else
 				wp->entries[group].dlData = NULL;
-#endif
 				break;
 			}
 		}
@@ -609,38 +576,29 @@ MapEntryAnimData* mapSearchAnmObj(const char* animName) {
 	return NULL;
 }
 
-// The search loop is inlined here instead of calling mapSearchAnmObj: MWCC's deferred inliner colors
-// the inlined wp/entry pair the other way when it inlines that function itself (99.47%). This copy,
-// with the loop pointer declared at function scope and j declared before i, reproduces the target's
-// registers. Natural form: `found = mapSearchAnmObj(animName);`.
-#ifdef MUST_MATCH
-static inline MapEntryAnimData* mapCheckAnimationSearch(const char* animName) {
+// Local copy of mapSearchAnmObj for the animation callers, with `entry` declared before `wp`: the inliner
+// allocates the helper's locals in declaration order, which puts wp in the higher register (r28).
+static inline MapEntryAnimData* mapFindAnm(const char* animName) {
 	MapEntry* entry;
 	MapWork* wp;
-	MapEntryAnimData* anim;
 	s32 j;
 	s32 i;
 
 	wp = &mapWork[activeGroup];
 	entry = &wp->entries[0];
 	for (i = 0; i < wp->entries[0].count; entry++, i++) {
-		anim = entry->animData;
+		MapEntryAnimData* anim = entry->animData;
 		for (j = 0; j < entry->animCount; j++, anim++) {
-			if ((*(u16*)anim & 0x1) && !strcmp(*(char**)*(void**)((u8*)anim + 0x18), animName)) {
+			if ((anim->flags & 0x1) && !strcmp(*(char**)anim->data, animName)) {
 				return anim;
 			}
 		}
 	}
 	return NULL;
 }
-#endif
 
 void mapCheckAnimation(const char* animName, BOOL* valid, f32* a3) {
-#ifdef MUST_MATCH
-	MapEntryAnimData* found = mapCheckAnimationSearch(animName);
-#else
-	MapEntryAnimData* found = mapSearchAnmObj(animName);
-#endif
+	MapEntryAnimData* found = mapFindAnm(animName);
 
 	*valid = FALSE;
 	*a3 = 0.0f;
@@ -740,50 +698,16 @@ void mapPlayAnimationLv(const char* name, s32 a2, s32 a3) {
 	}
 }
 
-#ifdef MUST_MATCH
-// Inline copy of mapSearchAnmObj with `entry` declared before `wp`: the inliner allocates the helper's
-// locals in declaration order, and that order puts wp in the higher register (r28) as in the target.
-// Natural form: `found = mapSearchAnmObj(name);`.
-static inline MapEntryAnimData* mapFindAnm(const char* animName) {
-	MapEntry* entry;
-	MapWork* wp;
-	s32 j;
-	s32 i;
-
-	wp = &mapWork[activeGroup];
-	entry = &wp->entries[0];
-	for (i = 0; i < wp->entries[0].count; entry++, i++) {
-		MapEntryAnimData* anim = entry->animData;
-		for (j = 0; j < entry->animCount; j++, anim++) {
-			if ((*(u16*)anim & 0x1) && !strcmp(*(char**)*(void**)((u8*)anim + 0x18), animName)) {
-				return anim;
-			}
-		}
-	}
-	return NULL;
-}
-#endif
-
 void mapPauseAnimation(const char* name) {
-#ifdef MUST_MATCH
 	MapEntryAnimData* found = mapFindAnm(name);
-#else
-	MapEntryAnimData* found = mapSearchAnmObj(name);
-#endif
 
 	if (found) {
 		found->flags |= 0x10;
 	}
 }
 
-// Matches via mapFindAnm: the inline copy's `entry`-before-`wp` declaration order puts wp in r28
-// (the higher register) in the target; inlining mapSearchAnmObj directly colors them the other way.
 void mapReStartAnimation(const char* name) {
-#ifdef MUST_MATCH
 	MapEntryAnimData* found = mapFindAnm(name);
-#else
-	MapEntryAnimData* found = mapSearchAnmObj(name);
-#endif
 
 	if (found) {
 		found->flags |= 0x20;
@@ -819,11 +743,7 @@ void mapReStartAnimationAll(void) {
 }
 
 void mapSetPlayRate(const char* name, f32 rate) {
-#ifdef MUST_MATCH
 	MapEntryAnimData* found = mapFindAnm(name);
-#else
-	MapEntryAnimData* found = mapSearchAnmObj(name);
-#endif
 
 	if (found) {
 		found->rate = rate;
@@ -1041,14 +961,7 @@ void _mapLoad(MapWork* wp, BOOL group, const char* map) {
 		if (light->field_0x40 == 0x12D60D8) {
 			flags = light->field_0x3C;
 		}
-#ifdef MUST_MATCH
-		// MUST_MATCH: the original evaluates the two f32 arguments before attenType/flags, so the
-		// floats are declared first in this cast; the header's declaration order differs but the
-		// register assignment is identical.
-		((s32 (*)(const char*, s32, Vec*, Vec*, GXColor, f32, f32, s32, s32))lightEntry)(light->name, type, &pos, &light->rotation, light->color, light->spotAngle, light->attenAngle, light->attenType, flags);
-#else
-		lightEntry(light->name, type, &pos, &light->rotation, light->color, light->attenType, flags, light->spotAngle, light->attenAngle);
-#endif
+		lightEntry(light->name, type, &pos, &light->rotation, light->color, light->spotAngle, light->attenAngle, light->attenType, flags);
 	}
 
 	mapResetPaperAmbColor();
@@ -1100,7 +1013,7 @@ void _mapLoad(MapWork* wp, BOOL group, const char* map) {
 
 // `i = 0; activeGroup = i;` plus `opt_propagation off` matched this; the pragma keeps the assignment
 // from constant-folding to a fresh r0 so i keeps r30.
-#pragma opt_propagation off // MUST_MATCH: keep activeGroup=i from folding to a fresh r0 so i keeps r30
+#pragma opt_propagation off // keep activeGroup=i from folding to a fresh r0 so i keeps r30
 
 static const s32 culling[] = {GX_CULL_FRONT, GX_CULL_BACK, GX_CULL_ALL, GX_CULL_NONE};
 static const s32 texmtx_tbl[] = {
@@ -1123,11 +1036,7 @@ void mapUnLoad(void) {
 	MapWork* wp;
 
 	sysWaitDrawSync();
-#ifdef MUST_MATCH
-	wp = (MapWork*)mapWork; // redundant cast: makes MWCC load mapWork into wp's home register r31
-#else
 	wp = mapWork;
-#endif
 	i = 0;
 	activeGroup = i;
 	entry = &wp->entries[0];
@@ -1187,11 +1096,7 @@ void mapLoad(const char* map) {
 	MapWork* wp;
 
 	sysWaitDrawSync();
-#ifdef MUST_MATCH
 	wp = (MapWork*)mapWork; // redundant cast: makes MWCC load into r31 (wp's home) instead of the memset arg r3
-#else
-	wp = mapWork;
-#endif
 	activeGroup = 0;
 	memset(wp, 0, sizeof(MapWork));
 	_mapLoad(wp, 0, map);
@@ -1361,17 +1266,11 @@ void mapCalcAnimMatrix(Mtx outMtx, Mtx inMtx, MapEntryAnimData* anim, void* join
 
 		for (k = 0; k < 9; k++) {
 			MapAnimChannel* ch = &key->chan[k];
-#ifdef MUST_MATCH
-			f32* outp = &out[k]; // MUST_MATCH: declared before chn so MWCC colours out=r4, chn=r5 like retail
-#endif
+			f32* outp = &out[k]; // declared before chn so MWCC colours out=r4, chn=r5
 			MapAnimChannel* chn = &next->chan[k];
 
 			if (ch->flag != 0) {
-#ifdef MUST_MATCH
 				*outp = ch->value;
-#else
-				out[k] = ch->value;
-#endif
 			}
 			else {
 				k0 = key->time;
@@ -1400,11 +1299,7 @@ void mapCalcAnimMatrix(Mtx outMtx, Mtx inMtx, MapEntryAnimData* anim, void* join
 				h10 = u + (u3 - 2.0f * u2);
 				h01 = -2.0f * u3 + a;
 				h11 = u3 - u2;
-#ifdef MUST_MATCH
 				*outp = value0 * h00
-#else
-				out[k] = value0 * h00
-#endif
 				       + tan0 * (d * h10)
 				       + value1 * h01
 				       + tan1 * (d * h11);
@@ -2394,19 +2289,11 @@ void _mapDispMapGrp_NoMaterial(MapObject* obj, void* a2) {
 	MapObject* o = (MapObject*)a2;
 
 	_mapDispMapObj_NoMaterial((s32)obj, o);
+	// the redundant casts colour the camera id to r30 and o to r31
 	if (o->child)
-#ifdef MUST_MATCH
-		// match-only: the redundant cast is what makes MWCC colour the camera id to r30 and o to r31
 		_mapDispMapGrp_NoMaterial((MapObject*)obj, o->child);
-#else
-		_mapDispMapGrp_NoMaterial(obj, o->child);
-#endif
 	if ((o->flags & MAPOBJ_FLAG_IN_GROUP) && o->next)
-#ifdef MUST_MATCH
 		_mapDispMapGrp_NoMaterial((MapObject*)obj, o->next);
-#else
-		_mapDispMapGrp_NoMaterial(obj, o->next);
-#endif
 }
 
 void mapDispMapObj_bbox(s32 camId, MapObject* obj) {
@@ -2447,12 +2334,7 @@ void mapDisp(void) {
 
 	wp = &mapWork[activeGroup];
 	cam = camGetPtr(CAMERA_3D);
-#ifdef MUST_MATCH
-	/* the original emits cmpwi, i.e. it treats mapDispDisabled as signed */
-	if ((s32)mapDispDisabled != 0) {
-#else
 	if (mapDispDisabled != 0) {
-#endif
 		return;
 	}
 	entry = &wp->entries[0];
@@ -2571,7 +2453,7 @@ s32 mapSetLight(MapObject* obj, LightEntry** entries) {
 
 	if (obj->joints->drawMode->unk2[0] & 0x8) {
 		if (*(u32*)(obj->joints->drawMode->unk2 + 2) == 0) {
-			count = LIGHT_GET_NEAR(&pos, entries, 8, 0);
+			count = lightGetNearObj(&pos, entries, 8, 0);
 		}
 		else {
 			for (i = 0; i < 0x20; i++) {
@@ -2587,7 +2469,7 @@ s32 mapSetLight(MapObject* obj, LightEntry** entries) {
 					}
 				}
 			}
-			if (count < 8) count += LIGHT_GET_NEAR(&pos, entries + count, 8 - count, 0);
+			if (count < 8) count += lightGetNearObj(&pos, entries + count, 8 - count, 0);
 		}
 	}
 	else {
@@ -2820,7 +2702,7 @@ void mapSetMaterialTev(s32 texCount, s32 drawMode, s32 flags, Mtx mtx) {
 
 			case 8:
 #ifdef MUST_MATCH
-				// match-only: the sine in its own comma step pools 2pi and 360 ahead of 127, as retail's .sdata2 has them.
+				// the sine in its own comma step pools 2pi and 360 ahead of 127, as retail's .sdata2 has them.
 				// The plain expression (any operand order, or with the angle in a statement before it) pools 127 first,
 				// and `wave = sin(...);` as its own statement moves the GXColor template load after the call.
 				GXSetTevColor(GX_TEVREG0, (GXColor){0, (wave = sin((TWO_PI * (f32)(2 * gp->retraceCount)) / 360.0f), (u8)((127.0f * wave) + 127.0f)), 0, 0});
@@ -3689,7 +3571,7 @@ void mapSetMaterialLight(s32 flags, Vec position) {
 	}
 	if ((u32)flags & 2) {
 		if (lightCheckCharaLight() && count < 8) {
-			count += LIGHT_GET_NEAR(&position, &lights[count], 8 - count, LIGHT_CHARA);
+			count += lightGetNearObj(&position, &lights[count], 8 - count, LIGHT_CHARA);
 		}
 	}
 	if ((u32)flags & 0x19) {
@@ -3705,7 +3587,7 @@ void mapSetMaterialLight(s32 flags, Vec position) {
 			}
 		}
 		else {
-			count = LIGHT_GET_NEAR(&position, lights, 8, LIGHT_CHARA);
+			count = lightGetNearObj(&position, lights, 8, LIGHT_CHARA);
 		}
 	}
 
@@ -3798,7 +3680,7 @@ void mapSetMaterialLight(s32 flags, Vec position) {
 
 // per-mesh vtx-format block (entry->vcdTable)
 
-#pragma opt_common_subs off // MUST_MATCH: stop MWCC CSEing a shared base into the wp/nrm/pos slots
+#pragma opt_common_subs off // stop MWCC CSEing a shared base into the wp/nrm/pos slots
 // The vertex-loop `p = &vp->x` scratch is matched by reading z as `p[2]`.
 static const GXVtxAttrFmtList attr_fmt[] = {
 	{GX_VA_POS, GX_POS_XYZ, GX_F32, 0},
@@ -3908,7 +3790,7 @@ void mapSetPolygon(MapObject* obj, MapFileMesh* mesh) {
 }
 #pragma opt_common_subs reset
 
-#pragma opt_common_subs off // MUST_MATCH: keep GX_VA_TEX0+i from being CSE-hoisted
+#pragma opt_common_subs off // keep GX_VA_TEX0+i from being CSE-hoisted
 // GX setup order/constants and addressing match. The `base = (u8*)wp + 0xA4` local gives the first
 // vcd_table load the original's `add r7, wp, idx` operand order (a direct `(u8*)wp->entries + off`
 // form emits the index first). `wp = mapGetWork()`, the `vcd` pointer local and the pos/nrm
@@ -3972,7 +3854,7 @@ void* mapSearchDmdJointSub(void* a, void* b) {
 
 #pragma opt_lifetimes off // target assigns a->r29/c->r30; default lifetime analysis swaps them
 void* mapSearchDmdJointSub2(void* a, void* b, const char* c) {
-	// match-only: `a` is cast at each use rather than aliased into a `joint` local -- the alias pushes
+	// `a` is cast at each use rather than aliased into a `joint` local -- the alias pushes
 	// a's live range past the buf-address computation and makes MWCC emit the prologue differently.
 	char buf[256];
 	const char* name = (const char*)b;
@@ -4436,7 +4318,7 @@ void spline_maketable(s32 count, s32 a, s32* b, s32* c) {
 
 		f32 sq = dx * dx + dy * dy + dz * dz;
 #ifdef MUST_MATCH
-		// match-only: writing the Newton result back into sq reuses x's FPR (the target overwrites f5);
+		// writing the Newton result back into sq reuses x's FPR (the target overwrites f5);
 		// calling spline_sqrtf forces the f32 return register f1 and leaves an extra `fmr f1,f5`
 		if (sq > 0.0f) {
 			f64 guess = __frsqrte(sq);
@@ -4649,7 +4531,6 @@ void mapObjSetFlushColor(const char* name, u8 r, u8 g, u8 b, u8 a) {
 	mapObjFlagOff(name, 0x40);
 }
 
-#ifdef MUST_MATCH
 // Built in an inline that returns the colour: puts the by-value argument copy above the local, as retail has it.
 static inline GXColor mapFlushColor(u8 r, u8 g, u8 b, u8 a) {
 	GXColor color = (GXColor){0, 0, 0, 0};
@@ -4660,20 +4541,9 @@ static inline GXColor mapFlushColor(u8 r, u8 g, u8 b, u8 a) {
 	color.a = a;
 	return color;
 }
-#endif
 
 void mapGrpSetFlushColor(const char* name, u8 r, u8 g, u8 b, u8 a) {
-#ifdef MUST_MATCH
 	mapGrpSetColor(name, mapFlushColor(r, g, b, a));
-#else
-	GXColor color = (GXColor){0, 0, 0, 0};
-
-	color.r = r;
-	color.g = g;
-	color.b = b;
-	color.a = a;
-	mapGrpSetColor(name, color);
-#endif
 	mapGrpFlagOff(name, 0x40);
 }
 
