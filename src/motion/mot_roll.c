@@ -612,11 +612,9 @@ void mot_roll(void) {
     f32 spd;
     f32 speed;
     f32 accel = 0.025f;
-#ifdef MUST_MATCH
     /* A named constant stops MWCC hoisting the 0.1 load, so the field is added before the constant as in
        the original. */
     f32 kOneTenth = 0.1f;
-#endif
     s32 cond;
     s32 i;
 
@@ -691,11 +689,7 @@ void mot_roll(void) {
         if (mario->multiTimer == 0x36) {
             allPartyRideShip();
         }
-#ifdef MUST_MATCH
         mario->dispOfs.y = mario->dispOfs.y + kOneTenth;
-#else
-        mario->dispOfs.y = mario->dispOfs.y + 0.1f;
-#endif
         if (mario->dispOfs.y > 1.0f) {
             mario->dispOfs.y = 1.0f;
         }

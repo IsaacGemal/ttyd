@@ -263,7 +263,6 @@ s32 nannpc_zcompare(ExtSortEntry* a, ExtSortEntry* b) {
     return 0;
 }
 
-#ifdef MUST_MATCH
 // The original compiler inlines this GX state setup (fog colour included) after the draw
 // loops, which is what places the fog GXColor copy below the tev one in the frame.
 static inline void nannpcExtSetup(void) {
@@ -283,7 +282,6 @@ static inline void nannpcExtSetup(void) {
     GXSetNumTexGens(1);
     GXSetNumTevStages(1);
 }
-#endif
 
 void nannpc_ext_disp(void) {
     NanNpcWork* work = nanNPCWork;
@@ -292,25 +290,7 @@ void nannpc_ext_disp(void) {
         s32 i;
         s32 count;
 
-#ifdef MUST_MATCH
         nannpcExtSetup();
-#else
-        extLoadVertex();
-        extLoadTexture();
-        GXSetTevOrder(0, 0, 0, 4);
-        GXSetTevColorOp(0, 0, 0, 0, 1, 0);
-        GXSetTevColorIn(0, 0xF, 8, 2, 0xF);
-        GXSetTevAlphaOp(0, 0, 0, 0, 1, 0);
-        GXSetTevAlphaIn(0, 7, 4, 1, 7);
-        GXSetNumChans(0);
-        GXSetChanCtrl(4, 0, 0, 0, 0, 0, 2);
-        {
-            GXColor color = dat_8041c568;
-            GXSetFog(0, 0.0f, 0.0f, 0.0f, 0.0f, color);
-        }
-        GXSetNumTexGens(1);
-        GXSetNumTevStages(1);
-#endif
         count = extGetPoseNum();
         for (i = count - 1; i >= 0; i--) {
             NanNpcEntry* entry = &work->entries[i];
