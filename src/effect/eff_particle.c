@@ -18,17 +18,10 @@ int __float_nan[];
 #define FP_NORMAL 4
 #define FP_SUBNORMAL 5
 
-#ifdef MUST_MATCH
-// Explicit scratch slots preserve retail's two inlined classification temporaries.
+// Takes the value through a pointer to a caller scratch slot, which gives retail's two inlined
+// classification temporaries their own stack slots.
 static inline s32 __fpclassifyf(const f32* x) {
-#else
-static inline s32 __fpclassifyf(f32 x) {
-#endif
-#ifdef MUST_MATCH
 #define FP_BITS (*(const s32*)x)
-#else
-#define FP_BITS (*(s32*)&x)
-#endif
 	switch (FP_BITS & 0x7F800000) {
 	case 0x7F800000:
 		if (FP_BITS & 0x007FFFFF) {
@@ -79,16 +72,9 @@ u32 seed = 1;
 
 // .sbss
 
-#define particle_fpclassify(x) __fpclassifyf(x)
-#define particle_isnan(x) (particle_fpclassify(x) == FP_NAN)
-
 // Inlined MetroWerks sqrtf. The double literals become .rodata pool entries (double_0p5,
 // double_3, double_0) that the original references through the vec3_80300260 base register.
-#ifdef MUST_MATCH
 static inline f32 particle_sqrtf(f32 x, f32* scratch) {
-#else
-static inline f32 particle_sqrtf(f32 x) {
-#endif
 	const f64 _half = .5;
 	const f64 _three = 3.0;
 
@@ -100,18 +86,12 @@ static inline f32 particle_sqrtf(f32 x) {
 		return x * guess;
 	} else if (x < 0.0) {
 		return NAN;
-#ifdef MUST_MATCH
 	} else {
 		*scratch = x;
 		if (__fpclassifyf(scratch) == FP_NAN) {
 			return NAN;
 		}
 	}
-#else
-	} else if (particle_isnan(x)) {
-		return NAN;
-	}
-#endif
 	return x;
 }
 
@@ -304,26 +284,6 @@ EffectEntry* effParticleEntry(s32 type, s32 count, s32 life, f32 x, f32 y, f32 z
 		w2->head = 0;
 	}
 	PSMTXIdentity(work->emitter.matrix);
-#ifdef MUST_MATCH
-	// MUST_MATCH: this array order makes MWCC put the four constants in the original's f3/f2/f1/f0
-	// (0.0, 5.0, 125.0, 25.0). The natural field-by-field form is under #else.
-	{
-		f32 c[4];
-
-		c[0] = 25.0f;
-		c[1] = 125.0f;
-		c[2] = 5.0f;
-		c[3] = 0.0f;
-		work->emitter.field_0x3C.z = c[3];
-		work->emitter.field_0x3C.y = c[3];
-		work->emitter.field_0x3C.x = c[3];
-		work->emitter.field_0x48 = work->emitter.field_0x3C;
-		work->emitter.field_0x54 = c[3];
-		work->emitter.field_0x58 = c[2];
-		work->emitter.field_0x5C = c[1];
-		work->emitter.field_0x60 = c[0];
-	}
-#else
 	work->emitter.field_0x3C.z = 0.0f;
 	work->emitter.field_0x3C.y = 0.0f;
 	work->emitter.field_0x3C.x = 0.0f;
@@ -332,7 +292,6 @@ EffectEntry* effParticleEntry(s32 type, s32 count, s32 life, f32 x, f32 y, f32 z
 	work->emitter.field_0x58 = 5.0f;
 	work->emitter.field_0x5C = 125.0f;
 	work->emitter.field_0x60 = 25.0f;
-#endif
 	{
 		Vec direction;
 		Vec direction2;
@@ -354,10 +313,6 @@ EffectEntry* effParticleEntry(s32 type, s32 count, s32 life, f32 x, f32 y, f32 z
 	return entry;
 }
 
-// The original calls EmitterEmit from effParticleMain instead of inlining it.
-#ifdef MUST_MATCH
-#pragma dont_inline on
-#endif
 void EmitterEmit(EffectEntry* effect, ParticleEmitter* emitter) {
 	ParticleWork* work = effect->userdata;
 	u32 oldCount;
@@ -388,9 +343,6 @@ void EmitterEmit(EffectEntry* effect, ParticleEmitter* emitter) {
 		}
 	}
 }
-#ifdef MUST_MATCH
-#pragma dont_inline reset
-#endif
 
 // use_last/y2 retain the other half of the disc sample for the next call.
 // Native scalar/conversion pooling and explicit classification scratch slots match
@@ -404,11 +356,9 @@ void ParticleEmit(EffectEntry* effect, ParticleEntry* particle, ParticleEmitter*
 	f32 x;
 	f32 radius;
 	f32 factor;
-#ifdef MUST_MATCH
 	// Reverse declaration order gives firstScratch +0x08 and secondScratch +0x0C.
 	f32 secondScratch;
 	f32 firstScratch;
-#endif
 
 	if (use_last) {
 		use_last = 0;
@@ -424,11 +374,7 @@ void ParticleEmit(EffectEntry* effect, ParticleEntry* particle, ParticleEmitter*
 			z = cd * (f32)(u32)seed * c2 - c1;
 			radius = x * x + z * z;
 		} while (radius > c1);
-#ifdef MUST_MATCH
 		factor = particle_sqrtf(-2.0f * (f32)log(radius) / radius, &firstScratch);
-#else
-		factor = particle_sqrtf(-2.0f * (f32)log(radius) / radius);
-#endif
 		random = x * factor;
 		use_last = 1;
 		y2 = z * factor;
@@ -455,11 +401,7 @@ void ParticleEmit(EffectEntry* effect, ParticleEntry* particle, ParticleEmitter*
 		particle->velocity.x *= 0.5f;
 		particle->velocity.z *= 0.5f;
 		radius *= 0.25f;
-#ifdef MUST_MATCH
 		particle->velocity.y = particle_sqrtf(c1 - radius, &secondScratch);
-#else
-		particle->velocity.y = particle_sqrtf(c1 - radius);
-#endif
 	}
 
 	PSVECScale(&particle->velocity, &particle->velocity, work->field_0xAC);

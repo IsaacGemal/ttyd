@@ -280,13 +280,8 @@ f32 toMovedir(f32 angle) {
     f32 dir;
 
     if (p->flags & MARIO_FLAG_PAPER_MODE) {
-#ifdef MUST_MATCH
         // See partyToMovedir: fusing the load keeps the 280 constant load ahead of the field load.
         if (280.0f == (dir = p->unk1A8) || 460.0f == dir) {
-#else
-        dir = p->unk1A8;
-        if (280.0f == dir || 460.0f == dir) {
-#endif
             angle = 0.0f;
         } else if (260.0f == dir || 440.0f == dir) {
             angle = 180.0f;
@@ -315,14 +310,9 @@ f32 partyToMovedir(PartyEntry* party, f32 dir) {
     MarioWork* player = party->playerPtr;
 
     if (party->flags & PARTY_FLAG_PAPER_MODE) {
-#ifdef MUST_MATCH
         // Fusing the field load into the first comparison makes mwcc emit the 280 constant load
         // before the field load, which the original does (plain `a = ...; if (280.0f == a)` emits them swapped).
         if (280.0f == (a = party->field_10C) || 460.0f == a) {
-#else
-        a = party->field_10C;
-        if (280.0f == a || 460.0f == a) {
-#endif
             dir = 0.0f;
         } else if (a == 260.0f || a == 440.0f) {
             dir = 180.0f;
@@ -365,13 +355,8 @@ f32 toMovedir2(f32 base, f32 adjust) {
     f32 delta;
 
     if (p->flags & MARIO_FLAG_PAPER_MODE) {
-#ifdef MUST_MATCH
         // See partyToMovedir: fusing the load keeps the 280 constant load ahead of the field load.
         if (280.0f == (dir = p->unk1A8) || 460.0f == dir) {
-#else
-        dir = p->unk1A8;
-        if (280.0f == dir || 460.0f == dir) {
-#endif
             base = 0.0f;
         } else if (260.0f == dir || 440.0f == dir) {
             base = 180.0f;
@@ -433,13 +418,9 @@ void marioSetForceMove(s32 timer, f32 direction, f32 speed) {
         p->currMotionId == MARIO_MOTION_YOSHI) {
         return;
     }
-#ifdef MUST_MATCH
     // Without the (s32) casts the ternary has enum type and mwcc zero-extends it (clrlwi r3,r0,16)
     // before the call; the original passes the constant directly in r3.
     marioChgMot(speed > p->mBaseWalkSpeed ? (s32)MARIO_MOTION_DASH : (s32)MARIO_MOTION_WALK);
-#else
-    marioChgMot(speed > p->mBaseWalkSpeed ? MARIO_MOTION_DASH : MARIO_MOTION_WALK);
-#endif
     p->moveDir = direction;
     p->directionView = direction;
     p->forceMoveTimer = timer;
@@ -657,24 +638,16 @@ s32 idx;
 s32 cur, prev, saved;
 s32 i;
 s32 result = 0;
-#ifdef MUST_MATCH
 s32* head; // retail reads the ring head through a pointer taken before the loop
-#endif
 
     if (w->unk08 < 2) {
         return -1;
     }
     cur = w->unk3C[w->unk0C];
     saved = w->unk14;
-#ifdef MUST_MATCH
     head = &w->unk0C;
-#endif
     for (i = 1; i <= 20; i++) {
-#ifdef MUST_MATCH
         idx = *head - i;
-#else
-        idx = w->unk0C - i;
-#endif
         while (idx < 0) {
             idx += 20;
         }

@@ -1440,13 +1440,7 @@ s32 BattleCommandDisplay_ActMenuMain(BattleWork* wp) {
 		BattleCommandDisplay_ActMenuEnd(wp);
 		cmd->actKind = 9;
 		cmd->commandState = 0x1D;
-#ifdef MUST_MATCH
-		// The original passes wp to this empty function although its header prototype takes (void):
-		// the target loads r3 with wp before both calls. Header should be fixed to take BattleWork*.
-		((void (*)(BattleWork*))BattleMenuDisp_ActSelect_Main)(wp);
-#else
-		BattleMenuDisp_ActSelect_Main();
-#endif
+		BattleMenuDisp_ActSelect_Main(wp);
 		return 1;
 	}
 	while (BattleMenuKeyOKInACT(wp)) {
@@ -1575,11 +1569,7 @@ s32 BattleCommandDisplay_ActMenuMain(BattleWork* wp) {
 		}
 		break;
 	}
-#ifdef MUST_MATCH
-	((void (*)(BattleWork*))BattleMenuDisp_ActSelect_Main)(wp);
-#else
-	BattleMenuDisp_ActSelect_Main();
-#endif
+	BattleMenuDisp_ActSelect_Main(wp);
 	return result;
 }
 
@@ -1743,12 +1733,7 @@ s32 BattleCommandDisplay_WeaponSelectMenuMain(BattleWork* wp, s32 arg) {
 		}
 		break;
 	}
-#ifdef MUST_MATCH
-	// MUST_MATCH: header declares BattleMenuDisp_WeaponSelect_Main(void), but the original passes wp in r3.
-	((void (*)(BattleWork*))BattleMenuDisp_WeaponSelect_Main)(wp);
-#else
-	BattleMenuDisp_WeaponSelect_Main();
-#endif
+	BattleMenuDisp_WeaponSelect_Main(wp);
 	return result;
 }
 
@@ -1961,12 +1946,7 @@ s32 BattleCommandDisplay_OperationMenuMain(BattleWork* wp) {
 		}
 	}
 end:
-#ifdef MUST_MATCH
-	// MUST_MATCH: header declares BattleMenuDisp_Operation_Main(void), but the original passes wp in r3.
-	((void (*)(BattleWork*))BattleMenuDisp_Operation_Main)(wp);
-#else
-	BattleMenuDisp_Operation_Main();
-#endif
+	BattleMenuDisp_Operation_Main(wp);
 	return result;
 }
 
@@ -2055,12 +2035,7 @@ s32 BattleCommandDisplay_MultiItemMenuMain(BattleWork* wp) {
 		}
 	}
 end:
-#ifdef MUST_MATCH
-	// MUST_MATCH: header declares BattleMenuDisp_MultiItem_Main(void), but the original passes wp in r3.
-	((void (*)(BattleWork*))BattleMenuDisp_MultiItem_Main)(wp);
-#else
-	BattleMenuDisp_MultiItem_Main();
-#endif
+	BattleMenuDisp_MultiItem_Main(wp);
 	return result;
 }
 
@@ -2140,12 +2115,7 @@ s32 BattleCommandDisplay_ChangePartySelectMenuMain(BattleWork* wp) {
 		}
 	}
 end:
-#ifdef MUST_MATCH
-	// MUST_MATCH: header declares BattleMenuDisp_ChangePartySelect_Main(void), but the original passes wp in r3.
-	((void (*)(BattleWork*))BattleMenuDisp_ChangePartySelect_Main)(wp);
-#else
-	BattleMenuDisp_ChangePartySelect_Main();
-#endif
+	BattleMenuDisp_ChangePartySelect_Main(wp);
 	return result;
 }
 
