@@ -537,19 +537,19 @@ void mobjMain(void) {
     if (gp->inBattle == 0) {
         HitEntry** hp = (HitEntry**)wp;
 
-        if (*(HitEntry**)((u8*)mario + 0x1FC) != NULL) {
+        if (mario->field_0x1FC != NULL) {
             if (hp[2] == NULL ||
-                strcmp(hitGetName(hp[2]), hitGetName(*(HitEntry**)((u8*)mario + 0x1FC))) != 0) {
-                hp[2] = *(HitEntry**)((u8*)mario + 0x1FC);
+                strcmp(hitGetName(hp[2]), hitGetName(mario->field_0x1FC)) != 0) {
+                hp[2] = mario->field_0x1FC;
             }
         } else {
             hp[2] = NULL;
         }
 
-        if (*(HitEntry**)((u8*)mario + 0x1F4) != NULL) {
+        if (mario->hitobjHead != NULL) {
             if (hp[3] == NULL ||
-                strcmp(hitGetName(hp[3]), hitGetName(*(HitEntry**)((u8*)mario + 0x1F4))) != 0) {
-                HitEntry* tmp = *(HitEntry**)((u8*)mario + 0x1F4);
+                strcmp(hitGetName(hp[3]), hitGetName(mario->hitobjHead)) != 0) {
+                HitEntry* tmp = mario->hitobjHead;
 
                 hp[3] = tmp;
                 v24 = tmp;
@@ -634,7 +634,7 @@ void mobjMain(void) {
                 v22 = 0;
                 hitObj = entry->hitObj[0].hitObject;
                 if (mario->characterId != 2) {
-                    if ((entry->flags & 0x10000) && *(void**)((u8*)mario + 0x1FC) == (void*)hitObj) {
+                    if ((entry->flags & 0x10000) && mario->field_0x1FC == (void*)hitObj) {
                         if (marioGetPtr()->position.y <= float_5_8041a0ec + entry->position.y) {
                             v22 = 1;
                             entry->triggerFlag = 0x10000;
@@ -658,7 +658,7 @@ void mobjMain(void) {
                         goto apply;
                     }
                     if (unk_8005bb80() != 0 && (entry->flags & 0x40000) &&
-                        *(void**)(mario->field_0x1DC + 4) == (void*)hitObj && (mario->buttonNew & 0x100) &&
+                        mario->hitobjFront == (void*)hitObj && (mario->buttonNew & 0x100) &&
                         v25 == 0) {
                         v22 = 1;
                         entry->triggerFlag = 0x40000;

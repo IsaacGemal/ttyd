@@ -289,7 +289,7 @@ void marioChgJumpStandMotion(f32 arg) {
 
     camFollowYOn();
     if (marioChkSts(0x10)) {
-        *(f32*)((u8*)mario + 0x2B8) = arg;
+        mario->field_0x2B8 = arg;
         effKemuriEntry(0, mario->position.x, mario->position.y, mario->position.z, 0.0f);
         mario = marioGetPtr();
         if (!(mario->flags & MARIO_FLAG_CHG_MOT_DISABLED)) {
@@ -309,10 +309,10 @@ void marioChgJumpStandMotion(f32 arg) {
             mario->trigFlags |= MARIO_TRIG_FLAG_IS_STARTING_NEW_MOTION;
         }
     } else if (mario->currMotionId == MARIO_MOTION_YOSHI) {
-        *(f32*)((u8*)mario + 0x2B8) = arg;
+        mario->field_0x2B8 = arg;
         yoshi_jumpStand();
     } else {
-        *(f32*)((u8*)mario + 0x2B8) = arg;
+        mario->field_0x2B8 = arg;
         mario = marioGetPtr();
         if (!(mario->flags & MARIO_FLAG_CHG_MOT_DISABLED)) {
             if (mario->prevMotionId == MARIO_MOTION_HIP || mario->prevMotionId == MARIO_MOTION_HIP_2) {
@@ -429,7 +429,7 @@ void marioBoots(void) {
         return;
     }
     if (mario->characterId == 2) {
-        if (*(s16*)((u8*)mario + 0x52) < 6) {
+        if (*(s16*)mario->field_0x52 < 6) {
             return;
         }
         if (kpaHipAttackOk() == 0) {
@@ -486,7 +486,7 @@ void marioBoots(void) {
 void marioMotion(void) {
     MarioWork* mario = marioGetPtr();
 
-    *(s32*)((u8*)mario + 0x1FC) = 0;
+    mario->field_0x1FC = 0;
     do {
         marioMotTbl[mario->currMotionId].unk0();
     } while (mario->trigFlags & MARIO_TRIG_FLAG_IS_STARTING_NEW_MOTION);
@@ -749,7 +749,7 @@ void marioJump(void) {
     }
     if (mario->jumpVelY <= 0.0f) {
         if (oldVy > 0.0f) {
-            *(s16*)((u8*)mario + 0x52) = mario->airTimer;
+            *(s16*)mario->field_0x52 = mario->airTimer;
         }
         marioSetPeakYpos();
         mario2 = marioGetPtr();
@@ -954,7 +954,7 @@ void marioLandOn(void) {
     mario->flags &= ~MARIO_FLAG_STOP_AIR_MOVEMENT;
     mario->flags &= ~MARIO_FLAG_USE_FORCE_DIRECTION;
     mario->airTimer = 0;
-    *(s16*)((u8*)mario + 0x52) = 0;
+    *(s16*)mario->field_0x52 = 0;
     if (mario->characterId != 2) {
         if (marioBgmodeChk() == 0) {
             camFollowYOn();
@@ -986,9 +986,9 @@ void marioLandOn(void) {
         mario->hitobjJumpFrom = NULL;
         return;
     }
-    *(f32*)((u8*)mario + 0x2B0) =
-        fabsf(distABf(mario->position.x, mario->position.z, *(f32*)((u8*)mario + 0x11C),
-                      *(f32*)((u8*)mario + 0x124)));
+    mario->field_0x2B0 =
+        fabsf(distABf(mario->position.x, mario->position.z, mario->field_0x11C.x,
+                      mario->field_0x11C.z));
     attr = hitGetAttr((HitEntry*)mario->hitobjStandOn);
     if (mario->currMotionId != MARIO_MOTION_DAMAGE && (attr & (1 << 9))) {
         set_damage_root_ypos(mario->position.y);
@@ -1014,18 +1014,18 @@ void marioLandOn(void) {
             mario = marioGetPtr();
             camFollowYOn();
             if (marioChkSts(MARIO_MOTION_HIP) != 0) {
-                *(f32*)((u8*)mario + 0x2B8) = 100.0f;
+                mario->field_0x2B8 = 100.0f;
                 effKemuriEntry(0, mario->position.x, mario->position.y, mario->position.z, 0.0f);
                 mario2 = marioGetPtr();
                 MARIO_CHG_BLOCK(mario2, MARIO_MOTION_JUMP_STAND);
                 return;
             }
             if (mario->currMotionId == MARIO_MOTION_YOSHI) {
-                *(f32*)((u8*)mario + 0x2B8) = 100.0f;
+                mario->field_0x2B8 = 100.0f;
                 yoshi_jumpStand();
                 return;
             }
-            *(f32*)((u8*)mario + 0x2B8) = 100.0f;
+            mario->field_0x2B8 = 100.0f;
             mario2 = marioGetPtr();
             MARIO_CHG_BLOCK(mario2, MARIO_MOTION_JUMP_STAND);
             return;
@@ -1132,12 +1132,12 @@ void mot_talk(void) {
             d = 270.0f - angle;
             r = revise360(d);
             if (r >= 90.0f && r <= 270.0f) {
-                *(f32*)((u8*)mario + 0x19C) = toMovedir(90.0f);
-                mario->directionView = *(f32*)((u8*)mario + 0x19C);
+                *(f32*)mario->unk19C = toMovedir(90.0f);
+                mario->directionView = *(f32*)mario->unk19C;
                 mario->dispReqDir = 180.0f;
             } else {
-                *(f32*)((u8*)mario + 0x19C) = toMovedir(90.0f);
-                mario->directionView = *(f32*)((u8*)mario + 0x19C);
+                *(f32*)mario->unk19C = toMovedir(90.0f);
+                mario->directionView = *(f32*)mario->unk19C;
                 mario->dispReqDir = 0.0f;
             }
         }
@@ -1196,13 +1196,13 @@ BOOL marioChkJump(void) {
     if (mario->currMotionId == MARIO_MOTION_YOSHI) {
         return FALSE;
     }
-    if (*(void**)((u8*)mario + 0x1DC) != NULL) {
-        if ((u32)hitGetAttr((HitEntry*)*(void**)((u8*)mario + 0x1DC)) & (1 << 31)) {
-            if (mobjGetHint(mobjHitObjPtrToPtr((HitEntry*)*(void**)((u8*)mario + 0x1DC))) == 1) {
+    if (*(void**)mario->field_0x1DC != NULL) {
+        if ((u32)hitGetAttr((HitEntry*)*(void**)mario->field_0x1DC) & (1 << 31)) {
+            if (mobjGetHint(mobjHitObjPtrToPtr((HitEntry*)*(void**)mario->field_0x1DC)) == 1) {
                 return FALSE;
             }
         }
-        caseEntry = caseCheckHitObj(*(void**)((u8*)mario + 0x1DC));
+        caseEntry = caseCheckHitObj(*(void**)mario->field_0x1DC);
         if (caseEntry != NULL) {
             if (caseEntry->activeConditionId == 9 || caseEntry->activeConditionId == 4 ||
                 caseEntry->activeConditionId == 12) {
@@ -1616,7 +1616,7 @@ void mot_bottomless(void) {
         mario->baseSpeed = 0.0f;
         mario->airTimer = 0;
         mario->currSubMotionId = 0;
-        if (*(f32*)((u8*)mario + 0xE4) < -2000.0f) {
+        if (mario->field_0xE0.y < -2000.0f) {
             if (strcmp(gp->currentMapName, BOTTOMLESS_WIN_03) == 0) {
                 f31 = 250.0f;
                 landY = 13.0f;
@@ -1631,9 +1631,9 @@ void mot_bottomless(void) {
                 f29 = mario->position.z;
             }
         } else {
-            f31 = *(f32*)((u8*)mario + 0xE0);
-            landY = *(f32*)((u8*)mario + 0xE4);
-            f29 = *(f32*)((u8*)mario + 0xE8);
+            f31 = mario->field_0xE0.x;
+            landY = mario->field_0xE0.y;
+            f29 = mario->field_0xE0.z;
         }
         pos = BOTTOMLESS_ZERO;
         pos.x = f31;
@@ -1648,15 +1648,15 @@ void mot_bottomless(void) {
             vec2.y += 10.0f;
         }
         mario->position.y = vec2.y;
-        *(f32*)((u8*)mario + 0x2AC) = 8.0f;
+        *(f32*)mario->field_0x2AC = 8.0f;
         mario->multiTimer = (s16)(distABf(f31, f29, mario->position.x, mario->position.z) /
-                                  *(f32*)((u8*)mario + 0x2AC));
-        *(f32*)((u8*)mario + 0x2B0) = angleABf(mario->position.x, mario->position.z, f31, f29);
+                                  *(f32*)mario->field_0x2AC);
+        mario->field_0x2B0 = angleABf(mario->position.x, mario->position.z, f31, f29);
     }
     switch (mario->currSubMotionId) {
     case 0:
-        movePos(&mario->position.x, &mario->position.z, *(f32*)((u8*)mario + 0x2AC),
-                *(f32*)((u8*)mario + 0x2B0));
+        movePos(&mario->position.x, &mario->position.z, *(f32*)mario->field_0x2AC,
+                mario->field_0x2B0);
         mario->field_EC.x = mario->position.x;
         mario->field_EC.z = mario->position.z;
         if ((s32)--mario->multiTimer <= 0) {
