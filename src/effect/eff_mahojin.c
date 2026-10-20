@@ -80,8 +80,8 @@ EffectEntry* effMahojinEntry(s32 type, f32 x, f32 y, f32 z) {
     data[0].animId[1] = -1;
     data[0].alpha = 0xFF;
     data[0].state = 0;
-    data[0].field_0x28 = NULL;
-    data[0].field_0x2C = NULL;
+    data[0].draw_arg = NULL;
+    data[0].draw_func = NULL;
 
     data[1].type = type;
     data[1].position.x = x;
@@ -93,8 +93,8 @@ EffectEntry* effMahojinEntry(s32 type, f32 x, f32 y, f32 z) {
     data[1].animId[1] = -1;
     data[1].alpha = 0xFF;
     data[1].state = 0;
-    data[1].field_0x28 = NULL;
-    data[1].field_0x2C = NULL;
+    data[1].draw_arg = NULL;
+    data[1].draw_func = NULL;
 
     for (i = 2, entry = &data[2]; i < effect->count; i++, entry++) {
         entry->position.x = x;
@@ -104,8 +104,8 @@ EffectEntry* effMahojinEntry(s32 type, f32 x, f32 y, f32 z) {
         entry->animId[1] = -1;
         entry->alpha = 0;
         entry->state = 0;
-        entry->field_0x28 = NULL;
-        entry->field_0x2C = NULL;
+        entry->draw_arg = NULL;
+        entry->draw_func = NULL;
     }
 
     return effect;
@@ -323,8 +323,8 @@ void effMahojinDisp(CameraId camId, void* param) {
         for (j = 0; j < effect->count; j++) {
             MahojinWork* entry = &data[order[j]];
 
-            if (i == 1 && entry->field_0x28 != NULL) {
-                entry->field_0x2C(camId, entry->field_0x28);
+            if (i == 1 && entry->draw_arg != NULL) {
+                entry->draw_func(camId, entry->draw_arg);
             }
 
             if (entry->animId[i] != -1) {
