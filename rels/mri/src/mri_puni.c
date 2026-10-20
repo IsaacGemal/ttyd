@@ -160,20 +160,20 @@ static inline f32 puniRandf(f32 a, f32 b) {
 }
 
 static inline void puniMapSetData(f32 unk0, f32 unk4, s32 unk8, s32 unkC, u32* data) {
-    Punimap->field_0x0 = unk0;
-    Punimap->field_0x4 = unk4;
+    Punimap->yMax = unk0;
+    Punimap->yMin = unk4;
     if (data == NULL) {
-        Punimap->field_0x14 = 0;
+        Punimap->hasData = 0;
         return;
     }
-    Punimap->field_0x8 = unk8;
-    Punimap->field_0xC = unkC;
-    Punimap->field_0x14 = 1;
-    Punimap->field_0x18 = data;
-    Punimap->field_0x1C = 0;
-    Punimap->field_0x10 = unk8 * unkC * 4;
-    Punimap->field_0x20 = _mapAlloc(Punimap->field_0x10);
-    memcpy(Punimap->field_0x18, data, Punimap->field_0x10);
+    Punimap->width = unk8;
+    Punimap->height = unkC;
+    Punimap->hasData = 1;
+    Punimap->gridSrc = data;
+    Punimap->valid = 0;
+    Punimap->dataSize = unk8 * unkC * 4;
+    Punimap->grid = _mapAlloc(Punimap->dataSize);
+    memcpy(Punimap->gridSrc, data, Punimap->dataSize);
 }
 
 static inline f32 puni_rndf(f32 min, f32 max) {
@@ -1461,7 +1461,7 @@ void puniMapBlk2Pos(s32 a, s32 b, f32* outX, f32* outZ) {
 
 u16 puniMapGetInfo(s32 x, s32 y) {
     PuniMap* map = Punimap;
-    u32 info = map->field_0x20[y * map->field_0x8 + x];
+    u32 info = map->grid[y * map->width + x];
 
     if ((info & 0xFF) == 0)
         return info | 0xFFFF;
@@ -1474,19 +1474,19 @@ void puniMapInit(void) {
 }
 
 void puniMapDataSet(s32 w, s32 h, f32 a, f32 b, void* data) {
-    Punimap->field_0x0 = a;
-    Punimap->field_0x4 = b;
+    Punimap->yMax = a;
+    Punimap->yMin = b;
     if (data == NULL) {
-        Punimap->field_0x14 = 0;
+        Punimap->hasData = 0;
     } else {
-        Punimap->field_0x8 = w;
-        Punimap->field_0xC = h;
-        Punimap->field_0x14 = 1;
-        Punimap->field_0x18 = data;
-        Punimap->field_0x1C = 0;
-        Punimap->field_0x10 = w * 4 * h;
-        Punimap->field_0x20 = _mapAlloc(Punimap->field_0x10);
-        memcpy(Punimap->field_0x18, data, Punimap->field_0x10);
+        Punimap->width = w;
+        Punimap->height = h;
+        Punimap->hasData = 1;
+        Punimap->gridSrc = data;
+        Punimap->valid = 0;
+        Punimap->dataSize = w * 4 * h;
+        Punimap->grid = _mapAlloc(Punimap->dataSize);
+        memcpy(Punimap->gridSrc, data, Punimap->dataSize);
     }
 }
 
@@ -1508,14 +1508,14 @@ void puniMapFindbuff(Vec* __restrict pos) {
     s32 out1;
     s32 out2;
 
-    if (Punimap->field_0x14 == 0)
+    if (Punimap->hasData == 0)
         return;
-    if (Punimap->field_0x0 < pos->y || Punimap->field_0x4 > pos->y) {
-        Punimap->field_0x1C = 0;
+    if (Punimap->yMax < pos->y || Punimap->yMin > pos->y) {
+        Punimap->valid = 0;
         return;
     }
-    memcpy(Punimap->field_0x20, Punimap->field_0x18, Punimap->field_0x10);
-    Punimap->field_0x1C = 1;
+    memcpy(Punimap->grid, Punimap->gridSrc, Punimap->dataSize);
+    Punimap->valid = 1;
     {
         f32 z = pos->z;
         f32 x = pos->x;
@@ -1534,18 +1534,18 @@ void puniMapFindbuff(Vec* __restrict pos) {
             break;
         }
     }
-    index = Punimap->field_0x8 * out2 + out1;
+    index = Punimap->width * out2 + out1;
     if (index < 0)
-        Punimap->field_0x1C = 0;
-    if (Punimap->field_0x1C == 0)
+        Punimap->valid = 0;
+    if (Punimap->valid == 0)
         return;
-    Punimap->field_0x20[index] |= 1;
+    Punimap->grid[index] |= 1;
     id = 1;
     while (1) {
         changed = 0;
-        total = Punimap->field_0x8 * Punimap->field_0xC;
+        total = Punimap->width * Punimap->height;
         for (i = 0; i < total; i++) {
-            buf = Punimap->field_0x20;
+            buf = Punimap->grid;
             cur = buf[i];
 
             if (cur == 0xFFFF)
@@ -1554,8 +1554,8 @@ void puniMapFindbuff(Vec* __restrict pos) {
                 continue;
             {
                 hi = cur & 0xF000;
-                above = &buf[i - Punimap->field_0x8];
-                below = &buf[i + Punimap->field_0x8];
+                above = &buf[i - Punimap->width];
+                below = &buf[i + Punimap->width];
                 left = &buf[i - 1];
                 right = &buf[i + 1];
                 {
@@ -3158,7 +3158,7 @@ void puniModeParent(PuniData* punidat) {
             punidat->timer = 0;
             flag = 0;
         }
-        if (*(s32*)((u8*)Punimap + 0x1C) != 0) {
+        if (Punimap->valid != 0) {
             flag = 0;
         }
         if (flag) {
@@ -3189,7 +3189,7 @@ void puniModeParent(PuniData* punidat) {
             punidat->state = 0;
             return;
         }
-        if (*(s32*)((u8*)Punimap + 0x14) != 0 && *(s32*)((u8*)Punimap + 0x1C) != 0) {
+        if (Punimap->hasData != 0 && Punimap->valid != 0) {
             f32 z = punidat->pos.z;
             f32 x = punidat->pos.x;
 
@@ -3208,7 +3208,7 @@ void puniModeParent(PuniData* punidat) {
             default:
                 break;
             }
-            v = *(u16*)((u8*)(*(u32*)((u8*)Punimap + 0x20)) + 2 * (a + b * *(s32*)((u8*)Punimap + 0x8)));
+            v = Punimap->grid[a + b * Punimap->width];
             if ((v & 0xff) == 0) {
                 v |= 0xffff;
             }
@@ -3231,7 +3231,7 @@ void puniModeParent(PuniData* punidat) {
 }
 #define PUNI_MODE_SEARCH_GETPOS(xx, yy) puniModeSearch_sub((xx), (yy), &c, &d)
 #define PUNI_MAP_AT(xx, zz) \
-    (((u16*)*(void**)((u8*)Punimap + 0x20))[(xx) + (zz) * (*(s32*)((u8*)Punimap + 0x8))])
+    (Punimap->grid[(xx) + (zz) * Punimap->width])
 void puniModeSearch(PuniData* puni) {
     static u16 takasa;
     static u16 move;
@@ -3260,15 +3260,15 @@ void puniModeSearch(PuniData* puni) {
         puni->state = 0;
         return;
     }
-    if (*(s32*)((u8*)Punimap + 0x1C) == 0 && puni->field_0x1A4 == 1000.0f) { // PuniData 0x1A4
+    if (Punimap->valid == 0 && puni->field_0x1A4 == 1000.0f) { // PuniData 0x1A4
         puni->mode = 16;
         puni->animIdx = 0;
         puni->state = 0;
     }
-    if (*(s32*)((u8*)Punimap + 0x14) == 0) {
+    if (Punimap->hasData == 0) {
         return;
     }
-    if (*(s32*)((u8*)Punimap + 0x1C) == 0) {
+    if (Punimap->valid == 0) {
         return;
     }
 

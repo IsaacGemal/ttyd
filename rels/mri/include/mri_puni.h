@@ -157,15 +157,15 @@ typedef struct PuniData {
 } PuniData;  // 0x5A8
 
 typedef struct PuniMap {
-    f32 field_0x0;       // 0x0
-    f32 field_0x4;       // 0x4
-    s32 field_0x8;       // 0x8
-    s32 field_0xC;       // 0xC
-    s32 field_0x10;      // 0x10
-    s32 field_0x14;      // 0x14
-    void* field_0x18;    // 0x18
-    s32 field_0x1C;      // 0x1C
-    u16* field_0x20;     // 0x20
+    f32 yMax;            // 0x0, puniMapFindbuff: pos.y above this is off the map
+    f32 yMin;            // 0x4, puniMapFindbuff: pos.y below this is off the map
+    s32 width;           // 0x8
+    s32 height;          // 0xC
+    s32 dataSize;        // 0x10, width * height * 4 bytes
+    s32 hasData;         // 0x14, 0 until puniMapDataSet gets a grid
+    void* gridSrc;       // 0x18, the source grid memcpy'd into grid on each refresh
+    s32 valid;           // 0x1C, set by puniMapFindbuff; 0 when the Puni is off the map
+    u16* grid;           // 0x20
 } PuniMap; // 0x24
 
 typedef struct PuniTexInfo {
