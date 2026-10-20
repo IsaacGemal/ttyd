@@ -640,7 +640,7 @@ f32 yuunpc_pose_sub(ExtPose* pose, YuunpcEntry* entry) {
     f32 f31;
     YuunpcPoseEntry* pe = &yuunpc_wp->poseEntries[entry->field_54];
 
-    if (!(pose->flags & 2)) {
+    if (!(pose->flags & EXT_POSE_BILLBOARD)) {
 #ifdef MUST_MATCH
         f32 angle = pose->heading;
         angle = 450.0f - angle;
@@ -2696,7 +2696,7 @@ void yuunpc_pose_minigame4_main(void) {
             }
             if (entry->field_28 <= -500.0f) {
                 entry->flags |= 0x80;
-                pose->flags &= ~1;
+                pose->flags &= ~EXT_POSE_VISIBLE;
             }
             break;
         }

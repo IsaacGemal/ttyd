@@ -2823,7 +2823,7 @@ void ext_kyaku_init(void) {
             }
         } while (1);
         if (strcmp(gp->beroEnterName, "s_bero_2") != 0 && (*pose->matrix)[2][3] > 350.0f) {
-            pose->flags &= ~1;
+            pose->flags &= ~EXT_POSE_VISIBLE;
         }
         if ((*pose->matrix)[1][3] != 0.0f) {
             state->field_0x0 |= 1;

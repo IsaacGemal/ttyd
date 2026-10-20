@@ -1734,7 +1734,7 @@ void ext_fan_main(void) {
             if (f->state == 0) {
                 f->position = mario->position;
                 vec = f->position;
-                p->flags &= ~1;
+                p->flags &= ~EXT_POSE_VISIBLE;
                 f->flags |= 1;
                 break;
             }
@@ -1756,13 +1756,13 @@ void ext_fan_main(void) {
             if (found == 0) {
                 found = 1;
                 fane->position = mario->position;
-                posee->flags &= ~1;
+                posee->flags &= ~EXT_POSE_VISIBLE;
                 fane->flags |= 1;
             } else {
                 NpcEntry* npc = npcNameToPtr("\x83\x60\x83\x83\x83\x93\x83\x73\x83\x87\x83\x93");
                 fane->position = npc->position;
                 vec = fane->position;
-                posee->flags &= ~1;
+                posee->flags &= ~EXT_POSE_VISIBLE;
                 fane->flags |= 1;
                 break;
             }

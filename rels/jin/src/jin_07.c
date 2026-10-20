@@ -179,7 +179,7 @@ static void senteresa_ext_init(void) {
         f32 c;
         f32 bscale;
 
-        pose->flags = 2;
+        pose->flags = EXT_POSE_BILLBOARD;
         pose->heading = 270.0f;
         PSMTXIdentity(*pose->matrix);
         pTeresa[i].field_0x00 = 0.0f;
@@ -272,7 +272,7 @@ static void senteresa_ext_main(void) {
                 pose->texId = 0;
                 pTeresa[i].field_0x28--;
                 if (pTeresa[i].field_0x28 == 0) {
-                    pose->flags |= 1;
+                    pose->flags |= EXT_POSE_VISIBLE;
                     g_nNumOutBox[0]++;
                     pTeresa[i].field_0x2C++;
                 }

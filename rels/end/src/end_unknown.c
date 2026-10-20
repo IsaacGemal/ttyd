@@ -1514,12 +1514,12 @@ void unk_end_00000440(void) {
 
         if (p0->y == -1000.0f || p1->y == -1000.0f) {
             offset = (Vec){0.0f, -1000.0f, 0.0f};
-            extPose->flags &= ~1;
+            extPose->flags &= ~EXT_POSE_VISIBLE;
         } else {
             PSVECScale(p0, &offset, ratio);
             PSVECScale(p1, &tmp, c);
             PSVECAdd(&offset, &tmp, &offset);
-            extPose->flags |= 1;
+            extPose->flags |= EXT_POSE_VISIBLE;
         }
         PSMTXTrans(mtx1, offset.x, offset.y, offset.z);
         PSMTXScale(mtx2, npc->scale.x, npc->scale.y, npc->scale.z);

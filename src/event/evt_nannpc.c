@@ -841,7 +841,7 @@ USER_FUNC(evt_nannpc_set_shadow_position) {
     s32 id = evtGetValue(event, args[0]);
     NanNpcEntry* entry = nannpcFind((const char*)id);
 
-    entry->pose->flags |= 0x10;
+    entry->pose->flags |= EXT_POSE_SHADOW_AT_GROUND;
     entry->pose->groundY = evtGetFloat(event, args[1]);
     return EVT_RETURN_DONE;
 }

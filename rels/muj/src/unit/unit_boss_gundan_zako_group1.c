@@ -668,7 +668,7 @@ s32 zakogun_ext_init1(EventEntry* event, BOOL isFirstCall) {
 }
 
 void zakogun_ext_init123_common(ExtPose* pose, s32 index) {
-    pose->flags = 1;
+    pose->flags = EXT_POSE_VISIBLE;
     PSMTXIdentity(*pose->matrix);
     (*pose->matrix)[0][3] = 0.0f;
     (*pose->matrix)[1][3] = -1000.0f;

@@ -4661,7 +4661,7 @@ EVT_END()
                 s32 i;                                                                                    \
                 ExtPose* pose = extGetPosePtr();                                                          \
                 for (i = 0; i < HAND->count; i++) {                                                       \
-                    pose->flags &= ~1;                                                                    \
+                    pose->flags &= ~EXT_POSE_VISIBLE;                                                     \
                     pose++;                                                                               \
                 }                                                                                         \
             }                                                                                             \
@@ -4686,8 +4686,8 @@ EVT_END()
                 pose = extGetPosePtr();                                                                   \
                 elem = HAND->elems;                                                                       \
                 for (i = 0; i < HAND->count; i++, pose++, elem++) {                                         \
-                    pose->flags |= 1;                                                                     \
-                    pose->flags &= ~2;                                                                    \
+                    pose->flags |= EXT_POSE_VISIBLE;                                                      \
+                    pose->flags &= ~EXT_POSE_BILLBOARD;                                                   \
                     PSMTXIdentity(*pose->matrix);                                                          \
                     elem->stagger = irand(0x14);                                                            \
                     elem->speed = 1.0f + (f32)irand(0xc8) / 100.0f;                                       \
@@ -4900,8 +4900,8 @@ USER_FUNC(peach_hand1000_dark_drag_1_evt) {
             pose = extGetPosePtr();
             elem = HAND->elems;
             for (i = 0; i < HAND->count; i++, pose++, elem++) {
-                pose->flags |= 1;
-                pose->flags &= ~2;
+                pose->flags |= EXT_POSE_VISIBLE;
+                pose->flags &= ~EXT_POSE_BILLBOARD;
                 PSMTXIdentity(*pose->matrix);
                 elem->stagger = irand(0x14);
                 elem->speed = 1.0f + (f32)irand(0xc8) / 100.0f;
@@ -5008,8 +5008,8 @@ USER_FUNC(queen_hp_drain_2_evt) {
             pose = extGetPosePtr();
             elem = HAND->elems;
             for (i = 0; i < HAND->count; i++, pose++, elem++) {
-                pose->flags |= 1;
-                pose->flags &= ~2;
+                pose->flags |= EXT_POSE_VISIBLE;
+                pose->flags &= ~EXT_POSE_BILLBOARD;
                 PSMTXIdentity(*pose->matrix);
                 elem->stagger = irand(0x14);
                 elem->speed = 1.0f + (f32)irand(0xc8) / 100.0f;
@@ -5141,8 +5141,8 @@ USER_FUNC(queen_hand_small_drag_1_evt) {
             pose = extGetPosePtr();
             elem = HAND->elems;
             for (i = 0; i < HAND->count; i++, pose++, elem++) {
-                pose->flags |= 1;
-                pose->flags &= ~2;
+                pose->flags |= EXT_POSE_VISIBLE;
+                pose->flags &= ~EXT_POSE_BILLBOARD;
                 PSMTXIdentity(*pose->matrix);
                 elem->stagger = irand(0x14);
                 elem->speed = 1.0f + (f32)irand(0xc8) / 100.0f;

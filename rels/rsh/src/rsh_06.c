@@ -1141,7 +1141,7 @@ static USER_FUNC(evt_moamoa_fusion) {
         s32 i;
 
         for (i = 0; i < wp->poseNum; i++, pose++, entry++) {
-            pose->flags |= 4;
+            pose->flags |= EXT_POSE_NO_SHADOW;
             entry->flags |= 0x400;
             entry->state = 0x3D;
             moamoa_pose_change(entry, "c_n_moa_a", "S_1");
@@ -1385,7 +1385,7 @@ static USER_FUNC(evt_moamoa_fusion_debug) {
     pose = extGetPosePtr();
     entry = wp->poses;
     for (i = 0; i < wp->poseNum; i++, pose++, entry++) {
-        pose->flags |= 4;
+        pose->flags |= EXT_POSE_NO_SHADOW;
         entry->flags |= 0x400;
         entry->flags |= 0x100;
         entry->flags |= 0x200;
@@ -1678,7 +1678,7 @@ static void ext_moamoa_init(void) {
                            &hz, &dist, &nx, &ny, &nz)) {
             (*pose->matrix)[1][3] = hy;
         } else {
-            pose->flags |= 4;
+            pose->flags |= EXT_POSE_NO_SHADOW;
             (*pose->matrix)[0][3] = randf(-500.0f, 500.0f);
             (*pose->matrix)[1][3] = randf(100.0f, 215.0f);
             (*pose->matrix)[2][3] = randf(70.0f, 75.0f);
@@ -1786,8 +1786,8 @@ static void moamoa_jump(ExtPose* pose, MoamoaPose* entry, f32 x, f32 y, f32 z, f
         pose->heading = 180.0f + ang;
     }
     entry->flags |= 2;
-    pose->flags |= 0x10;
-    pose->flags &= ~4;
+    pose->flags |= EXT_POSE_SHADOW_AT_GROUND;
+    pose->flags &= ~EXT_POSE_NO_SHADOW;
 }
 #pragma dont_inline reset
 
@@ -2252,7 +2252,7 @@ static void ext_moamoa_main(void) {
                 moamoa_jump(ep, entry, v.x, v.y, v.z, 2.0f * (r1 * randRange(1.5f, 1.5f) + 1.5f),
                             2.0f * (b * randRange(0.8f, 0.8f) + 0.8f), 0x3D, 0);
                 entry->flags |= 0x200;
-                ep->flags |= 4;
+                ep->flags |= EXT_POSE_NO_SHADOW;
             }
             break;
         }
@@ -2379,7 +2379,7 @@ static void ext_moamoa_main(void) {
                 (*ep->matrix)[1][3] = entry->target.y;
                 (*ep->matrix)[2][3] = entry->target.z;
                 entry->flags &= ~0x2;
-                ep->flags &= ~0x10;
+                ep->flags &= ~EXT_POSE_SHADOW_AT_GROUND;
                 entry->stateTimer = 0;
                 entry->state++;
             }
@@ -2490,8 +2490,8 @@ static void ext_moamoa_main(void) {
         }
         case 0x3E:
             entry->flags |= 0x20;
-            ep->flags &= ~0x1;
-            ep->flags |= 0x4;
+            ep->flags &= ~EXT_POSE_VISIBLE;
+            ep->flags |= EXT_POSE_NO_SHADOW;
             break;
         case 0x3F: {
             r1 = (f32)rand() / 32767.0f;
@@ -2520,7 +2520,7 @@ static void ext_moamoa_main(void) {
             (*ep->matrix)[2][3] += entry->target.z;
             PSMTXRotRad(rot, 'y', 0.20943952f);
             PSMTXConcat(*ep->matrix, rot, *ep->matrix);
-            ep->flags &= ~0x2;
+            ep->flags &= ~EXT_POSE_BILLBOARD;
             if ((*ep->matrix)[0][3] < -1000.0f) {
                 entry->state = 0x3E;
             }

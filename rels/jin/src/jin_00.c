@@ -1132,7 +1132,7 @@ static void senteresa_ext_main(void) {
                 pTeresa[i].phase += 0.08f;
                 pTeresa[i].timer--;
                 if (pTeresa[i].timer == 0) {
-                    pose->flags &= ~2;
+                    pose->flags &= ~EXT_POSE_BILLBOARD;
                     pTeresa[i].timer = i * 0x1E + rand() % 10 + 0x127;
                     pTeresa[i].state++;
                 }

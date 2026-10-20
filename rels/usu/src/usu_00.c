@@ -2027,10 +2027,10 @@ void kpaSen_ext_init(void) {
         kpaSen[i].state = -1;
         kpaSen[i].field_4 = 0.0f;
         if (i == 6) {
-            pose->flags &= ~1;
+            pose->flags &= ~EXT_POSE_VISIBLE;
         }
         if (i == 0x6a || i == 0x74) {
-            pose->flags &= ~1;
+            pose->flags &= ~EXT_POSE_VISIBLE;
         }
     }
 }

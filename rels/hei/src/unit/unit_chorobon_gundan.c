@@ -309,7 +309,7 @@ void chorogun_ext_init(void) {
 
     chorogun = BattleAlloc(0xBB80);
     for (i = 0; i < extGetPoseNum(); i++, pose++) {
-        pose->flags = 1;
+        pose->flags = EXT_POSE_VISIBLE;
         PSMTXIdentity(*pose->matrix);
         (*pose->matrix)[0][3] = 0.0f;
         (*pose->matrix)[1][3] = -1000.0f;

@@ -979,7 +979,7 @@ static void ext_main(void) {
                 Vec casePos2;
 
                 pose->matrix[0][1][3] -= 2.0f;
-                pose->flags &= ~2u;
+                pose->flags &= ~EXT_POSE_BILLBOARD;
                 PSMTXTrans(a, 0.0f, -20.0f, 0.0f);
                 v = sin((f32)(i + gp->retraceCount) / 100.0f);
                 PSMTXRotRad(b, 'z', 0.017453292f * (10.0f * v));

@@ -1036,7 +1036,7 @@ void teresa_ext_init(void) {
 
     teresa = BattleAlloc(0x690);
     for (i = 0; i < extGetPoseNum(); i++, pose++) {
-        pose->flags = 1;
+        pose->flags = EXT_POSE_VISIBLE;
         PSMTXIdentity(*pose->matrix);
         (*pose->matrix)[0][3] = 0.0f;
         (*pose->matrix)[1][3] = -1000.0f;
@@ -1155,7 +1155,7 @@ void teresa_ext_main(void) {
             (*pose->matrix)[0][0] = 1.0f;
             break;
         case 1:
-            pose->flags &= ~2;
+            pose->flags &= ~EXT_POSE_BILLBOARD;
             (*pose->matrix)[0][3] = posX;
             (*pose->matrix)[1][3] = posY;
             (*pose->matrix)[2][3] = posZ - 5.0f;
@@ -1184,7 +1184,7 @@ void teresa_ext_main(void) {
             (*pose->matrix)[0][0] += 0.02f;
             (*pose->matrix)[1][1] += 0.02f;
             if (entry->counter <= 0) {
-                pose->flags |= 2;
+                pose->flags |= EXT_POSE_BILLBOARD;
                 entry->state = 0xA;
                 entry->counter = 0x96;
                 entry->velocity.x = 0.0f;
@@ -1286,7 +1286,7 @@ void teresa_ext_main(void) {
                 entry->velocity.x = 0.0f;
                 entry->velocity.y = 0.0f;
                 entry->velocity.z = 0.0f;
-                pose->flags &= ~2;
+                pose->flags &= ~EXT_POSE_BILLBOARD;
             }
             entry->counter--;
             break;
@@ -1299,7 +1299,7 @@ void teresa_ext_main(void) {
             break;
         case 0x33:
         case 0x34:
-            pose->flags &= ~2;
+            pose->flags &= ~EXT_POSE_BILLBOARD;
             (*pose->matrix)[0][3] = posX - 15.0f;
             (*pose->matrix)[1][3] = posY - 5.0f;
             (*pose->matrix)[2][3] = posZ + 5.0f;
