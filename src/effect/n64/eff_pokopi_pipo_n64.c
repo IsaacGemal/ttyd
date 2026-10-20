@@ -18,7 +18,7 @@ typedef struct effPokopiPipoData {
 	s32 tevReg0R;       // 0x30 TEVREG0 red
 	s32 tevReg0G;       // 0x34 TEVREG0 green
 	s32 tevReg0B;       // 0x38 TEVREG0 blue
-	u32 alpha;          // 0x3C TEVREG0 alpha (0xFF)
+	u32 tevReg0A;          // 0x3C TEVREG0 alpha (0xFF)
 	f32 scale;          // 0x40
 	f32 velX;           // 0x44
 	f32 velY;           // 0x48
@@ -66,7 +66,7 @@ EffectEntry* effPokopiPipoN64Entry(s32 type, s32 count, f32 x, f32 y, f32 z, f32
 		data->lifetime = count + 60;
 	}
 	data->flightFrames = count;
-	data->alpha = 0xff;
+	data->tevReg0A = 0xff;
 	data->startEnd[0] = x;
 	data->startEnd[1] = y;
 	data->startEnd[2] = z;
@@ -194,7 +194,7 @@ void effPokopiPipoDisp(CameraId camId, void* param) {
 
 	camera = camGetPtr(camId);
 	data = effect->userdata;
-	alpha = data->alpha;
+	alpha = data->tevReg0A;
 	type = data->type;
 	scaleXZ = 0.71428573f * data->scale;
 	PSMTXTrans(mtx, data->x, data->y, data->z);

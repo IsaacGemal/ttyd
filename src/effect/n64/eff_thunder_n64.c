@@ -282,7 +282,7 @@ EffectEntry* effThunderN64Entry(s32 type, f32 x, f32 y, f32 z, f32 a5, f32 a6) {
 	} else {
 		data->life = 100;
 	}
-	data->alpha = 0xFF;
+	data->tevReg0A = 0xFF;
 	data->x = x;
 	data->y = y;
 	data->z = z;
@@ -403,16 +403,16 @@ void effThunderMain(EffectEntry* effect) {
 
 	if (type >= 3) {
 		if (counter > 6) {
-			data->alpha -= 13;
-			if (data->alpha < 0) {
-				data->alpha = 0;
+			data->tevReg0A -= 13;
+			if (data->tevReg0A < 0) {
+				data->tevReg0A = 0;
 			}
 		}
 	} else {
 		if (timer < 10) {
-			data->alpha -= 25;
-			if (data->alpha < 0) {
-				data->alpha = 0;
+			data->tevReg0A -= 25;
+			if (data->tevReg0A < 0) {
+				data->tevReg0A = 0;
 			}
 		}
 	}
@@ -532,7 +532,7 @@ void effThunderDisp(CameraId camId, void* param) {
 		PSMTXConcat(cam->view, mtx2, mtx2);
 		GXLoadPosMtxImm(mtx2, GX_PNMTX0);
 		GXSetCurrentMtx(GX_PNMTX0);
-		thunderSetColorA(data->alpha);
+		thunderSetColorA(data->tevReg0A);
 		break;
 	}
 

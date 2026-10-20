@@ -50,7 +50,7 @@ typedef struct effKemuri10Data {
     f32 texScroll;    // 0x4C texture-matrix U offset, advanced by texScrollSpeed each frame
     f32 texScrollSpeed; // 0x50
     f32 scale;        // 0x54
-    s32 alpha;        // 0x58 TEVREG0 alpha, ramps up for phases over 5 and down under 5
+    s32 tevReg0A;     // 0x58 TEVREG0 alpha, ramps up for phases over 5 and down under 5
     s32 life;         // 0x5C frames left (16 at init); the effect is deleted below 0
     s32 timer;        // 0x60 frames elapsed
     u8 tevReg0R;      // 0x64 TEVREG0 red
@@ -205,7 +205,7 @@ EffectEntry* effKemuri10N64Entry(s32 a1, f32 x, f32 y, f32 z, f32 dirX, f32 dirY
     data->life = 16;
     data->texScroll = float_278_8041f4d8;
     data->texScrollSpeed = float_32_8041f4dc;
-    data->alpha = 0;
+    data->tevReg0A = 0;
     data->timer = 0;
     data->tevReg0R = 0xF8;
     data->tevReg0G = 0x5C;
@@ -262,13 +262,13 @@ void effKemuri10Main(EffectEntry* effect) {
 
     for (i = 0; i < effect->count; i++, data++) {
         if (phase > 5) {
-            data->alpha = (s32)(float_0p3_8041f4bc * (f32)(255 - data->alpha) + (f32)data->alpha);
+            data->tevReg0A = (s32)(float_0p3_8041f4bc * (f32)(255 - data->tevReg0A) + (f32)data->tevReg0A);
             data->velX *= float_0p8_8041f4c0;
             data->velY *= float_0p8_8041f4c0;
             data->velZ *= float_0p8_8041f4c0;
         }
         if (phase < 5) {
-            data->alpha = (s32)((f32)data->alpha * float_0p6_8041f4c4);
+            data->tevReg0A = (s32)((f32)data->tevReg0A * float_0p6_8041f4c4);
             data->velX *= float_0p7_8041f4c8;
             data->velY *= float_0p7_8041f4c8;
             data->velZ *= float_0p7_8041f4c8;
@@ -296,7 +296,7 @@ static inline void kemuri10SetColor(effKemuri10Data* data) {
     color.r = data->tevReg0R;
     color.g = data->tevReg0G;
     color.b = data->tevReg0B;
-    color.a = data->alpha;
+    color.a = data->tevReg0A;
     GXSetTevColor(GX_TEVREG0, color);
 }
 

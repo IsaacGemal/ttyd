@@ -43,7 +43,7 @@ typedef struct EffWhirlwindData {
 	f32 z;                //0x10
 	f32 scale;            //0x14 current scale (header and particles)
 	f32 baseScale;        //0x18 1.2 * the size argument; the header's scale eases toward 2x this
-	s32 alpha;            //0x1C
+	s32 tevReg0A;         //0x1C
 	s32 lifetime;         //0x20 total frames (divides the header's scale ramp)
 	s32 life;             //0x24 frames left
 	s32 timer;            //0x28 frames elapsed
@@ -85,7 +85,7 @@ EffectEntry* effWhirlwindN64Entry(s32 a1, s32 a2, s32 a3, f32 a4) {
 	data->baseScale = f;
 	data->lifetime = a3;
 	data->life = a3;
-	data->alpha = 0;
+	data->tevReg0A = 0;
 	data->timer = 0;
 
 	p = data + 1;
@@ -202,19 +202,19 @@ void effWhirlwindMain(EffectEntry* effect) {
 	switch (type) {
 	case 8:
 		if (life > 5) {
-			data->alpha = (s32)(0.05f * (255 - data->alpha) + data->alpha);
+			data->tevReg0A = (s32)(0.05f * (255 - data->tevReg0A) + data->tevReg0A);
 		}
 		data->scale = data->baseScale * (f32)life / (f32)data->lifetime;
 		if (life < 10) {
-			data->alpha = life * 25;
+			data->tevReg0A = life * 25;
 		}
 		break;
 	default:
 		if (life > 5) {
-			data->alpha = (s32)(0.3f * (100 - data->alpha) + data->alpha);
+			data->tevReg0A = (s32)(0.3f * (100 - data->tevReg0A) + data->tevReg0A);
 		}
 		if (life < 10) {
-			data->alpha *= 0.8f;
+			data->tevReg0A *= 0.8f;
 			data->scale += 0.1f * (2.0f * data->baseScale - data->scale);
 		}
 		break;
@@ -278,7 +278,7 @@ void effWhirlwindDisp(CameraId camId, void* param) {
 	f32 scaleB;
 	s32 i;
 
-	alpha = data->alpha;
+	alpha = data->tevReg0A;
 	scaleA = data->scale;
 	scaleB = data->baseScale;
 	type = data->type;

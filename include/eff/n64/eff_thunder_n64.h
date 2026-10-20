@@ -9,7 +9,7 @@ typedef struct EffThunderData {
 	f32 x;              //0x4
 	f32 y;              //0x8
 	f32 z;              //0xC
-	s32 alpha;          //0x10 TEVREG0 alpha (drops by 25 or 13 a frame)
+	s32 tevReg0A;       //0x10 TEVREG0 alpha (drops by 25 or 13 a frame)
 	s32 life;           //0x14 frames left (100 = still growing in; the effect is deleted below 0)
 	s32 counter;        //0x18 frames elapsed
 	f32 scrollU0;       //0x1C texture 0 U offset, wraps at 256

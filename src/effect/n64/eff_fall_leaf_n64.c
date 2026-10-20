@@ -26,7 +26,7 @@ typedef struct effFallLeafData {
 	f32 y;                           // 0x08
 	f32 z;                           // 0x0C
 	u8 field_0x10[0x14];             // 0x10
-	s32 alpha;                       // 0x24 fade alpha, ramps up over the first 10 frames and down over the last 10
+	s32 tevReg0A;                       // 0x24 TEVREG0 alpha, fades up over the first 10 frames and down over the last 10
 	s32 life;                        // 0x28
 	s32 counter;                     // 0x2C
 	effFallLeafParticle particle[4]; // 0x30
@@ -132,7 +132,7 @@ EffectEntry* effFallLeafN64Entry(s32 type, s32 life, f32 x, f32 y, f32 z) {
 	data->z = z;
 	data->life = life;
 	data->counter = 0;
-	data->alpha = 0;
+	data->tevReg0A = 0;
 	particle = data->particle;
 	for (i = 1; i < 5; i++, particle++) {
 		switch (type) {
@@ -270,10 +270,10 @@ void effFallLeafMain(EffectEntry* effect) {
 	type = data->type;
 	life = data->life;
 	if (counter < 10) {
-		data->alpha = (s32)(float_0p3_8041edd4 * (f32)(0xFF - data->alpha) + (f32)data->alpha);
+		data->tevReg0A = (s32)(float_0p3_8041edd4 * (f32)(0xFF - data->tevReg0A) + (f32)data->tevReg0A);
 	}
 	if (life < 10) {
-		data->alpha = (s32)((f32)data->alpha * float_0p8_8041edd8);
+		data->tevReg0A = (s32)((f32)data->tevReg0A * float_0p8_8041edd8);
 	}
 	idx = counter + 20;
 	i = 1;
@@ -331,16 +331,16 @@ void effFallLeafDisp(CameraId cameraId, void* param) {
 	switch (type) {
 	case 0:
 	case 1:
-		leafSetColor0(((effFallLeafData*)data)->alpha);
+		leafSetColor0(((effFallLeafData*)data)->tevReg0A);
 		break;
 	case 2:
-		leafSetColor1(((effFallLeafData*)data)->alpha);
+		leafSetColor1(((effFallLeafData*)data)->tevReg0A);
 		break;
 	case 3:
-		leafSetColor2(((effFallLeafData*)data)->alpha);
+		leafSetColor2(((effFallLeafData*)data)->tevReg0A);
 		break;
 	case 4:
-		leafSetColor3(((effFallLeafData*)data)->alpha);
+		leafSetColor3(((effFallLeafData*)data)->tevReg0A);
 		break;
 	}
 
