@@ -129,7 +129,7 @@ extern const f32 float_neg38_80420d2c;
 extern const f32 float_neg40_80420d30;
 extern const f32 float_200_80420d34;
 extern const f32 float_neg200_80420d38;
-extern const char str__2d[4];
+extern const char str_fmt_2d[4];
 extern const f32 float_neg160_80420d40;
 extern const f32 float_225_80420d44;
 extern const f32 float_neg163_80420d48;
@@ -1227,7 +1227,7 @@ void _MarioExpDisp(CameraId camId, void* param) {
     pos.y = float_neg200_80420d38;
     pos.z = float_0_80420c7c;
     if (work != NULL) {
-        sprintf(buf, str__2d, work->expRemaining);
+        sprintf(buf, str_fmt_2d, work->expRemaining);
         len = strlen(buf);
 #ifdef MUST_MATCH
         // Retail builds the white colour after the width (float args first, as in battle_message.c's cast call).
@@ -2176,7 +2176,7 @@ __declspec(section ".sdata2") const f32 float_neg38_80420d2c = -38.0f;
 __declspec(section ".sdata2") const f32 float_neg40_80420d30 = -40.0f;
 __declspec(section ".sdata2") const f32 float_200_80420d34 = 200.0f;
 __declspec(section ".sdata2") const f32 float_neg200_80420d38 = -200.0f;
-__declspec(section ".sdata2") const char str__2d[4] = "%2d";
+__declspec(section ".sdata2") const char str_fmt_2d[4] = "%2d";
 __declspec(section ".sdata2") const f32 float_neg160_80420d40 = -160.0f;
 __declspec(section ".sdata2") const f32 float_225_80420d44 = 225.0f;
 __declspec(section ".sdata2") const f32 float_neg163_80420d48 = -163.0f;

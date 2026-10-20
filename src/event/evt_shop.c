@@ -98,7 +98,7 @@ extern u32 shop_list_title_color;
 extern u32 shop_points_color;
 extern u32 shop_item_name_color;
 extern u32 shop_price_color;
-extern const char str__d[];
+extern const char str_fmt_d[];
 extern const f32 float_0p5_8041bc5c;
 extern const f32 shop_price_digit_width;
 extern const f32 shop_item_name_y;
@@ -117,7 +117,7 @@ extern const f32 shop_icon_y_offset;
 extern u32 shopper_talk_evt[];
 extern u32 main_evt[4];
 extern u32 evt_shoplist[10];
-extern const char str__s[];
+extern const char str_fmt_s[];
 extern u32 shop_list_points_head_color;
 extern u32 shop_list_item_head_color;
 extern u32 shop_list_price_exchanged_color;
@@ -163,7 +163,7 @@ __declspec(section ".sdata2") const char str_mario[8] = "mario";
 __declspec(section ".sdata2") const char str_me[4] = "me";
 __declspec(section ".sdata2") const char shop_icon_name_fmt[6] = "shp%d";
 __declspec(section ".sdata2") const f32 shop_icon_y_offset = 6.0f;
-__declspec(section ".sdata2") const char str__s[4] = "%s";
+__declspec(section ".sdata2") const char str_fmt_s[4] = "%s";
 __declspec(section ".sdata2") const f32 float_0p6_8041bc2c = 0.6f;
 __declspec(section ".sdata2") const f32 float_40_8041bc30 = 40.0f;
 __declspec(section ".sdata2") const f32 float_0_8041bc34 = 0.0f;
@@ -177,7 +177,7 @@ __declspec(section ".sdata2") const f32 float_124_8041bc50 = 124.0f;
 __declspec(section ".sdata2") const f32 float_38_8041bc54 = 38.0f;
 __declspec(section ".sdata2") const f32 shop_item_name_y = 108.0f;
 __declspec(section ".sdata2") const f32 float_0p5_8041bc5c = 0.5f;
-__declspec(section ".sdata2") const char str__d[4] = "%d";
+__declspec(section ".sdata2") const char str_fmt_d[4] = "%d";
 __declspec(section ".sdata2") const f32 shop_price_digit_width = 12.0f;
 
 // Keep named scalar loads when definitions precede immediate code generation.
@@ -770,7 +770,7 @@ void list_disp(WinMgrEntry* entry) {
 			*(u32*)&color3 = shop_list_price_color;
 			FontDrawColor(&color3);
 		}
-		sprintf(buf, str__s, winZenkakuStr(shopPointList[i].price));
+		sprintf(buf, str_fmt_s, winZenkakuStr(shopPointList[i].price));
 		FontDrawMessage(entry->width / 2 - FontGetMessageWidth(buf) + entry->x - 90, entry->y - 20 - i * 26, buf);
 
 		FontDrawStart();
@@ -782,7 +782,7 @@ void list_disp(WinMgrEntry* entry) {
 			*(u32*)&color5 = shop_list_unit_color;
 			FontDrawColor(&color5);
 		}
-		sprintf(buf, str__s, msgSearch("msg_shop_point_list5"));
+		sprintf(buf, str_fmt_s, msgSearch("msg_shop_point_list5"));
 		{
 			f32 w = FontGetMessageWidth(buf);
 			f32 x = (f32)(entry->width / 2) - SHOP_F32(float_0p6_8041bc2c) * w;
@@ -913,7 +913,7 @@ void name_disp(WinMgrEntry* entry) {
 		pos.x *= (f32)gp->fbWidth * SHOP_F32(float_0p5_8041bc5c);
 		pos.y *= (f32)gp->efbHeight * SHOP_F32(float_0p5_8041bc5c);
 #endif
-		sprintf(buf, str__d, wp->items[i * 2 + 1]);
+		sprintf(buf, str_fmt_d, wp->items[i * 2 + 1]);
 		PSMTXTrans(mtx, SHOP_F32(shop_price_digit_width) * (f32)(strlen(buf) - 1) + pos.x, pos.y, pos.z);
 		iconNumberDispGx(mtx, *(s32*)((u8*)wp->items + i * 8 + 4), 0, *(GXColor*)&shop_price_color);
 	}

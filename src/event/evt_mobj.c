@@ -5305,8 +5305,8 @@ __declspec(section ".rodata") char sfx_kuppa_post_jump1[0x18] = "SFX_KUPPA_POST_
 __declspec(section ".rodata") char sfx_kuppa_post_slide1[0x18] = "SFX_KUPPA_POST_SLIDE1";
 __declspec(section ".rodata") char sfx_kuppa_post_throw1[0x18] = "SFX_KUPPA_POST_THROW1";
 __declspec(section ".rodata") char str_kpa_06[0x8] = "kpa_06";
-__declspec(section ".rodata") char str_802C4138[0x8] = "toride";
-__declspec(section ".rodata") char str_802C4140[0x8] = "toride_";
+__declspec(section ".rodata") char str_toride[0x8] = "toride";
+__declspec(section ".rodata") char str_toride_[0x8] = "toride_";
 __declspec(section ".rodata") char sfx_kuppa_struggle1[0x14] = "SFX_KUPPA_STRUGGLE1";
 __declspec(section ".rodata") char str_KPA2_S_1[0xC] = "KPA2_S_1";
 __declspec(section ".rodata") Vec vec3_802c4168[1] = {{0.0f, 0.0f, 0.0f}};
@@ -5485,8 +5485,8 @@ s32 kpa_move_to_toride[110] = {
     (s32)evt_mario_wait_landon, 0x00020032, 0xF9718885, 0x00000001,
     0x0002005B, (s32)evt_sub_get_mapname, 0xFE363C80, 0x0002000C,
     0xFE363C80, (s32)str_kpa_06, 0x0005005B, (s32)evt_mapobj_get_position,
-    (s32)str_802C4138, 0xFE363C80, 0xFE363C81, 0xFE363C82,
-    0x00000020, 0x0005005B, (s32)evt_mapobj_get_position, (s32)str_802C4140,
+    (s32)str_toride, 0xFE363C80, 0xFE363C81, 0xFE363C82,
+    0x00000020, 0x0005005B, (s32)evt_mapobj_get_position, (s32)str_toride_,
     0xFE363C80, 0xFE363C81, 0xFE363C82, 0x00000021,
     0x0002005B, (s32)kpa_get_level, 0xFE363C86, 0x00010022,
     0xFE363C86, 0x00010028, 0x00000001, 0x00020035,
