@@ -1794,18 +1794,18 @@ static void __makeTechMenuFunc(BattleWorkCommand* cmd, s32* count) {
 // One of the 256 particles drawn by _gundan_yoshi_run_effect: a 0x30-byte entry whose
 // display callback argument is the entry's +4 sub-structure. No header declares it.
 typedef struct YoshiGundanDispWork {
-    f32 field_0x00; // 0x00
-    f32 field_0x04; // 0x04
-    f32 field_0x08; // 0x08
-    f32 field_0x0c; // 0x0C
+    f32 posX; // 0x00
+    f32 posY; // 0x04
+    f32 posZ; // 0x08
+    f32 velX; // 0x0C
     f32 field_0x10; // 0x10
-    f32 field_0x14; // 0x14
+    f32 velZ; // 0x14
     u8  field_0x18[0x0c]; // 0x18
-    u8  field_0x24; // 0x24
-    u8  field_0x25; // 0x25, index into _yoshig_tpl_no_tbl (0..5)
+    u8  animTimer; // 0x24
+    u8  tplIndex; // 0x25, index into _yoshig_tpl_no_tbl (0..5)
     u8  field_0x26[2]; // 0x26
-    s32 field_0x28; // 0x28
-    s32 field_0x2c; // 0x2C
+    s32 startDelay; // 0x28
+    s32 state; // 0x2C
 } YoshiGundanDispWork;
 
 
@@ -1818,7 +1818,7 @@ extern u8 _yoshig_tpl_no_tbl[8];
 typedef struct YoshiGundanArea {
     s32 state;                // 0x0
     u8 pad_0x4[0x3008 - 0x4]; // 0x4
-    f32 field_0x3008;         // 0x3008
+    f32 avgPosX;              // 0x3008
 } YoshiGundanArea;
 
 USER_FUNC(btl_yoshi_yoroyoro_jump_calc_param) {
@@ -2123,7 +2123,7 @@ USER_FUNC(_gundan_yoshi_run_effect) {
         *(YoshiGundanArea**)((u8*)unit + 0x310) = area;
         memset(area, 0, 0x300C);
         area->state = 0;
-        area->field_0x3008 = 0.0f;
+        area->avgPosX = 0.0f;
         event->userdata[0] = 0;
         event->userdata[1] = psndSFXOn("SFX_BTL_YOSHI_TAIGUN1");
     } else {
@@ -2135,52 +2135,52 @@ USER_FUNC(_gundan_yoshi_run_effect) {
         // fallthrough
     case 1:
         done = 1;
-        area->field_0x3008 = 0.0f;
+        area->avgPosX = 0.0f;
         cur = (u8*)area;
         for (i = 0; i < 256; i++, cur += 0x30) {
             work = (YoshiGundanDispWork*)(cur + 4);
-            work->field_0x24++;
-            if (work->field_0x24 > 2) {
-                work->field_0x24 = 0;
-                work->field_0x25++;
-                if (work->field_0x25 >= 6) {
-                    work->field_0x25 = 0;
+            work->animTimer++;
+            if (work->animTimer > 2) {
+                work->animTimer = 0;
+                work->tplIndex++;
+                if (work->tplIndex >= 6) {
+                    work->tplIndex = 0;
                 }
             }
-            switch (work->field_0x2c) {
+            switch (work->state) {
             case 0:
-                work->field_0x2c++;
-                work->field_0x28 = irand(3);
-                work->field_0x00 = (f32)(-(30 * (i / 16) + 300) + irand(10));
-                work->field_0x04 = 0.0f;
-                work->field_0x08 = (f32)((i % 16) * 10 - 80);
-                work->field_0x25 = irand(6);
-                work->field_0x24 = irand(5);
-                work->field_0x0c = 3.0f + 0.1f * (f32)irand(10);
+                work->state++;
+                work->startDelay = irand(3);
+                work->posX = (f32)(-(30 * (i / 16) + 300) + irand(10));
+                work->posY = 0.0f;
+                work->posZ = (f32)((i % 16) * 10 - 80);
+                work->tplIndex = irand(6);
+                work->animTimer = irand(5);
+                work->velX = 3.0f + 0.1f * (f32)irand(10);
                 work->field_0x10 = 0.0f;
-                work->field_0x14 = 0.001f * (f32)(irand(2000) - 1000);
+                work->velZ = 0.001f * (f32)(irand(2000) - 1000);
                 // fallthrough
             case 1:
-                if (work->field_0x28 > 0) {
-                    work->field_0x28--;
+                if (work->startDelay > 0) {
+                    work->startDelay--;
                     goto yoshi_active;
                 }
                 // fallthrough
             case 2:
-                work->field_0x08 += work->field_0x14;
-                if (work->field_0x08 >= 80.0f) {
-                    work->field_0x08 = 80.0f;
-                    work->field_0x14 *= -1.0f;
+                work->posZ += work->velZ;
+                if (work->posZ >= 80.0f) {
+                    work->posZ = 80.0f;
+                    work->velZ *= -1.0f;
                 }
-                if (work->field_0x08 <= -80.0f) {
-                    work->field_0x08 = -80.0f;
-                    work->field_0x14 *= -1.0f;
+                if (work->posZ <= -80.0f) {
+                    work->posZ = -80.0f;
+                    work->velZ *= -1.0f;
                 }
-                work->field_0x00 += work->field_0x0c;
-                if (work->field_0x00 >= 300.0f) {
-                    work->field_0x00 = 300.0f;
-                    work->field_0x0c = 0.0f;
-                    work->field_0x2c = 999;
+                work->posX += work->velX;
+                if (work->posX >= 300.0f) {
+                    work->posX = 300.0f;
+                    work->velX = 0.0f;
+                    work->state = 999;
                 }
                 goto yoshi_active;
             default:
@@ -2193,19 +2193,19 @@ USER_FUNC(_gundan_yoshi_run_effect) {
             if (active) {
                 done = 0;
             }
-            area->field_0x3008 += work->field_0x00;
+            area->avgPosX += work->posX;
         }
         if (event->userdata[0] > 0) {
             event->userdata[0]--;
         } else {
             work = (YoshiGundanDispWork*)((u8*)area + 4 + irand(256) * 0x30);
             scale = 1.0f + 0.05f * (f32)irand(20);
-            effKemuTestEntry(0, work->field_0x00,
-                             5.0f + work->field_0x04 + (f32)irand(15),
+            effKemuTestEntry(0, work->posX,
+                             5.0f + work->posY + (f32)irand(15),
                              65.0f, scale);
         }
-        area->field_0x3008 *= 0.00390625f;
-        pos.x = area->field_0x3008;
+        area->avgPosX *= 0.00390625f;
+        pos.x = area->avgPosX;
         pos.y = 0.0f;
         pos.z = 0.0f;
         psndSFX_pos(event->userdata[1], &pos);
@@ -2236,7 +2236,7 @@ void _btlYoshiDisp(CameraId cameraId, void* param) {
     f32 x_scale;
     static const GXColor white = { 0xFF, 0xFF, 0xFF, 0xFF };
 
-    x_scale = (work->field_0x0c < 0.0f) ? 0.4f : -0.4f;
+    x_scale = (work->velX < 0.0f) ? 0.4f : -0.4f;
     color = white;
 #ifdef MUST_MATCH
     // btlDispTexPlane's real signature is
@@ -2246,11 +2246,11 @@ void _btlYoshiDisp(CameraId cameraId, void* param) {
     // argument setup (color pointer in r4, `li r5, 0`) is emitted. The natural decomp-form call
     // is under #else.
     ((void (*)(f32, f32, f32, f32, f32, s32, GXColor*, s32))btlDispTexPlane)(
-        work->field_0x00, 20.f + work->field_0x04, work->field_0x08, x_scale,
-        0.4f, _yoshig_tpl_no_tbl[work->field_0x25], &color, 0);
+        work->posX, 20.f + work->posY, work->posZ, x_scale,
+        0.4f, _yoshig_tpl_no_tbl[work->tplIndex], &color, 0);
 #else
-    btlDispTexPlane(_yoshig_tpl_no_tbl[work->field_0x25], color, work->field_0x00,
-                    20.f + work->field_0x04, work->field_0x08, x_scale,
+    btlDispTexPlane(_yoshig_tpl_no_tbl[work->tplIndex], color, work->posX,
+                    20.f + work->posY, work->posZ, x_scale,
                     0.4f);
 #endif
 }

@@ -10821,3 +10821,25 @@ rels/tik/include/tik_11.h still has one `unk_` name, outside this set.
 Verified: tower `ninja` recreates `build/G8MJ01/ok` (32 files OK); natural (no MUST_MATCH) compiles of the six changed C
 files return 0. Index (tools/cleanup_index.py): 30.889 -> 30.731 per kLOC (21979 -> 21866 weighted over 711538 code
 lines); field_0x 3533 -> 3476, unk_name 931 -> 875.
+
+### Readability: unit_party_yoshi gundan particle and area fields (2026-10-20, Claude Haiku 5.5, n9-q-yoshiu)
+
+`YoshiGundanDispWork` (the 0x30-byte particle used by `_gundan_yoshi_run_effect` and `_btlYoshiDisp`) and the
+`YoshiGundanArea` accumulator are named from their consumers:
+
+- `posX` (0x00): the x argument of `btlDispTexPlane` and of `effKemuTestEntry`; the area sums it into `avgPosX`.
+- `posY` (0x04): added to the display base y of 20 and to the kemu effect's y base of 5.
+- `posZ` (0x08) and `velZ` (0x14): z sway clamped to +/-80, reversing `velZ` at each limit.
+- `velX` (0x0C): per-frame x step, stops at x = 300; its sign also picks `x_scale` in `_btlYoshiDisp`.
+- `animTimer` (0x24): sub-frame counter that wraps at 2 and advances `tplIndex`.
+- `tplIndex` (0x25): index into `_yoshig_tpl_no_tbl`.
+- `startDelay` (0x28): frames to wait before the particle moves.
+- `state` (0x2C): 0 init, 1 running, 999 finished.
+- `avgPosX` (area 0x3008): the sum of all particles' posX, scaled by 1/256 for the SFX pan and read as an average
+  by `_wait_yoshig_run`.
+
+Left: `field_0x10` (written, never read), `field_0x18[12]` and `field_0x26[2]` (never accessed), and `_wait_yoshig_run`'s
+`*(f32*)((u8*)area + 0x3008)`, which still uses the offset (the cast is untyped and the rewrite was not needed for the name).
+
+Verified: tower `ninja` recreates `build/G8MJ01/ok`; natural and MUST_MATCH compiles of unit_party_yoshi.c return 0 with
+no diagnostics. Index (tools/cleanup_index.py): 30.279 -> 30.197 per kLOC (21545 -> 21486 weighted); field_0x 3208 -> 3149.
