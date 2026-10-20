@@ -11513,3 +11513,18 @@ eff_kemuri.c: 52 `MUST_MATCH` lines -> 33 (the `one`/`left` locals, `unity` temp
 - battle_seq_command: the five `BattleMenuDisp_*_Main` function-pointer casts went by fixing the header and definitions to take `BattleWork* wp` (the target passes wp in r3); plain calls match. Left: the no-op `(s32)(s8)` argument cast, the float-first `windowDispGX_Waku_col` function-pointer cast, and the `(BattleWork*)(void*)param` cast (each changes scheduling/registers when removed).
 - mario_sbr: the fused `280.0f == (dir = ...)` loads (x3), the `(s32)` enum ternary casts and the `head` ring pointer are now the only version. Left: the volatile `rubSet3C` stores and the three volatile `unk04`/`unk08` accesses, the `invert` switch with `t` (the plain if/else coalesces the temp), and the `#ifndef MUST_MATCH` marioSetBottomlessResetPosition (not in this game version).
 - Verified: tower `ninja` recreates build/G8MJ01/ok; all four files compile without `-DMUST_MATCH`; `tools/fncast_lint.py` clean.
+## n9-q-s-mmmix8 (MUST_MATCH reduction: eff_fireworks_n64, eff_las_mon, eff_itemget, sac_suki)
+
+No names added. MUST_MATCH lines before -> after: eff_fireworks_n64.c 12 -> 2, eff_las_mon.c 12 -> 4,
+eff_itemget.c 12 -> 0, sac_suki.c 12 -> 9. The linked build is byte-identical (build/G8MJ01/ok recreated); the four
+files also compile without -DMUST_MATCH.
+
+- eff_fireworks_n64: the two empty stub blocks and the unused GXColor-returning helpers are gone. The only versions are
+  the 80.0f literal, SetColor0/1 helpers, w/h/t temporaries, `zero` local and the `s`-as-ey quad. Guarded: the zero
+  Vec dead store in effFireworksMakeVec and its call site.
+- eff_las_mon: the `position` copy local, the effLasMonColor inline and its call are unconditional. Guarded: the
+  "LasMon\0" string padding and the empty `case 1`.
+- eff_itemget: itemColor0/itemColor1 and the in-loop half-size computations are unconditional, with the #else arms
+  deleted (none of them matched).
+- sac_suki: make_tev_color is unconditional. Guarded: SukiTable6 and SukiBytes6 type-punned copies, the memcpy #ifndef,
+  and the iconDispGx function-pointer cast (callers elsewhere pass s16/u16/s32, so no single header prototype fits).
