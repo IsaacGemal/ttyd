@@ -10463,19 +10463,21 @@ The nozzle_l NOZZLE_WORK_BODY argument was a fourth `event + 0x8C` site.
 - Build: tower `ninja` recreates build/G8MJ01/ok.
 ### Readability: win_root and win_item item, mail, sort and use state (2026-10-20, Claude Haiku 5.5, n9-q-rawwin)
 
-The raw offsets in these two files are `WW_S32(work, 0x..)` macros, not `*(T*)((u8*)p + off)` casts, so offset_to_field.py finds nothing to convert: a dry run on the pair reads 0 convertible of 144 `(u8*)` casts (most are `WW_*` arguments, unnamed space, or byte pointers). The names went into WindowWork (include/win/win_main.h) by where each field is read and written, keeping every offset and the struct size:
+### Readability: win_root and win_item item, mail, sort and use state (2026-10-20, Claude Haiku 5.5, n9-q-rawwin; review Claude Opus 5.5)
 
-- `sortReversed` (0x180): win_root's sort toggle. Each sort press flips it and passes pouchSortItem(n) or (n + 7), the `_r` comparators in mario_pouch.c.
-- `itemState` (0x20C), `itemTab` (0x210: 0 = held items, 1 = key items, the STR_MOCHI_ITEM and STR_MOCHI_DAIJI choice), `itemSel[2]` (0x214, cursor per tab; sort_1_* read [0], sort_2_* read [1]).
+The raw offsets in these files are `WW_S32(work, 0x..)` / `WM_S32(0x..)` macros, which offset_to_field.py doesn't convert. The names went into WindowWork (include/win/win_main.h) by where each field is read and written, keeping every offset and the struct size:
+
+- `sortReverseNext` (0x180): which comparator win_root's next sort press uses. winSortEntry clears it; each sort_*_func passes pouchSortItem(n) when it is 0 and (n + 7), the `_r` comparators, when it is 1, then flips it (the mail sorts pick compare_func4/5 or their `_r` versions the same way).
+- `itemState` (0x20C), `itemTab` (0x210: 0 = held items, 1 = key items, the STR_MOCHI_ITEM and STR_MOCHI_DAIJI choice), `itemSel[2]` (0x214, cursor per tab; sort_1_* use [0], sort_2_* use [1]).
 - `mailCount` (0x254, pouchReceiveMailCount), `mailSel` (0x258), `mailPage` (0x25C, mailSel / 5), `mailScroll` (0x268), `mailLines` (0x26C, u16 from FontGetMessageWidthLine, +10 when the mail has a picture).
-- `useItemId` (0x2D4), `useItemSlot` (0x2D8, the index pouchRemoveItemIndex takes), `useTargetSel` (0x2DC, 0 = Mario, else the joined partner), `useTimer` (0x2E0, removal after framerate * 2).
-- `skipCount` (0x3DA, s16): the count in ItemWorkTail's key-item skip list (0x2E8).
-- WinRoot's overlay (win_root.c): `tabSel` (0x40) and `tabCount` (0x44), the tab index and count (tabs stride 0x18).
+- `useItemId` (0x2D4), `useItemSlot` (0x2D8, the index pouchRemoveItemIndex takes), `useTargetSel` (0x2DC, 0 = Mario, else the joined partner), `useTimer` (0x2E0, cursor blink while picking the target, then removal after framerate * 2).
+- `skipList[0x79]` (0x2E8, s16: the readers load it with lha) and `skipCount` (0x3DA): winMakeSkipList's key items, those not in menu_skip_list. The file-local ItemWorkTail overlay that held them is gone; win_item reads and writes the WindowWork fields.
+- WinRoot overlay (win_root.c): `tabSel` (0x40) and `tabCount` (0x44), the tab index and count (tabs stride 0x18). They stay in the existing overlay because WindowWork's field_40 has to remain a u8 array (see its comment).
 
 win_main.c's `WM_S32(0x2D4/0x2D8/0x2DC)` reads are now `wp->useItemId`, `wp->useItemSlot` and `wp->useTargetSel`.
 
-Codegen: `((s32*)((u8*)work + 0x214))[sel]` in winItemMain looks like `work->itemSel[sel]`, but MWCC emits `lwzx`/`stwx` on a computed base instead of `stw 0x214(rN)`, and the matching build fails at winItemMain. Those indexed sites stay raw; the non-indexed ones are named. winItemMailLine's raw 0x26C stays too (its comment already records that it defeats MWCC's CSE).
+Codegen: `((s32*)((u8*)work + 0x214))[sel]` in winItemMain stays raw (comment at case 10): the original indexes off a computed base (`lwzx`/`stwx`), and `work->itemSel[sel]` fails the matching build. `work->skipList[idx]` does match. winItemMailLine's raw 0x26C and winItemDisp's `*(s16*)(entry + 0x2E8)` pointer walk stay as well.
 
-Left: the float positions at 0x224-0x252 (WW_F32; the lerp pairs look like current/target but the book and mail slides share them), the Luigi book state at 0x2C8-0x2D0, the mail index pairs at 0x26E (the qqsort base), the sort-menu words at 0x174-0x184, and win_root's 0xC0-0x13C, 0x244-0x250 and 0xE94+ fields. Their roles weren't proven in this pass. The overlay structs in win_root.c and win_party.c/win_badge.c keep their own WW_ macros for the other offsets.
+Left: the float positions at 0x224-0x252 (WW_F32; the book and mail slides share them), the Luigi book state at 0x2C8-0x2D0, the mail index pairs at 0x26E (the qqsort base), the sort-menu words at 0x174-0x184, and win_root's 0xC0-0x13C, 0x244-0x250 and 0xE94+ fields; their roles weren't proven.
 
-Verify: tower `ninja` recreates build/G8MJ01/ok (32 modules OK). win_root.c, win_item.c and win_main.c natural-compile without -DMUST_MATCH. Index: 33.803 -> 33.794 per kLOC.
+Verify: tower `ninja` recreates build/G8MJ01/ok. win_root.c, win_item.c and win_main.c compile without -DMUST_MATCH. Index: 33.311 -> 33.296 per kLOC.

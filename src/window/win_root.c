@@ -1871,12 +1871,12 @@ void sort_1_1_func(WindowWork* work) {
     pouchHaveItem(item);
     {
         s32 type = 7;
-        if (work->sortReversed == 0) {
+        if (work->sortReverseNext == 0) {
             type = 0;
         }
         pouchSortItem(type);
     }
-    work->sortReversed = 1 - work->sortReversed;
+    work->sortReverseNext = 1 - work->sortReverseNext;
     winMakeSkipList(work);
     work->itemSel[0] = 0;
     work->itemScrollRow[0] = work->itemSel[0] / 10;
@@ -1886,24 +1886,24 @@ void sort_1_2_func(WindowWork* work) {
     s32 item = work->itemSel[0];
     pouchGetHaveItemCnt();
     pouchHaveItem(item);
-    pouchSortItem(work->sortReversed == 0 ? 1 : 8);
-    work->sortReversed = 1 - work->sortReversed;
+    pouchSortItem(work->sortReverseNext == 0 ? 1 : 8);
+    work->sortReverseNext = 1 - work->sortReverseNext;
     winMakeSkipList(work);
     work->itemSel[0] = 0;
     work->itemScrollRow[0] = work->itemSel[0] / 10;
 }
 
 void sort_2_1_func(WindowWork* work) {
-    pouchSortItem(work->sortReversed == 0 ? 2 : 9);
-    work->sortReversed = 1 - work->sortReversed;
+    pouchSortItem(work->sortReverseNext == 0 ? 2 : 9);
+    work->sortReverseNext = 1 - work->sortReverseNext;
     winMakeSkipList(work);
     work->itemSel[1] = 0;
     work->itemScrollRow[1] = work->itemSel[1] / 10;
 }
 
 void sort_2_2_func(WindowWork* work) {
-    pouchSortItem(work->sortReversed == 0 ? 3 : 10);
-    work->sortReversed = 1 - work->sortReversed;
+    pouchSortItem(work->sortReverseNext == 0 ? 3 : 10);
+    work->sortReverseNext = 1 - work->sortReverseNext;
     winMakeSkipList(work);
     work->itemSel[1] = 0;
     work->itemScrollRow[1] = work->itemSel[1] / 10;
@@ -1913,8 +1913,8 @@ void sort_3_1_func(WindowWork* work) {
     s32 badge = work->badgeSel[0];
     pouchGetHaveBadgeCnt();
     pouchHaveBadge(badge);
-    pouchSortItem(work->sortReversed == 0 ? 4 : 11);
-    work->sortReversed = 1 - work->sortReversed;
+    pouchSortItem(work->sortReverseNext == 0 ? 4 : 11);
+    work->sortReverseNext = 1 - work->sortReverseNext;
     winMakeEquipList(work);
     work->badgeSel[0] = 0;
     work->badgeScrollRow[0] = work->badgeSel[0] / 8;
@@ -1924,8 +1924,8 @@ void sort_3_2_func(WindowWork* work) {
     s32 badge = work->badgeSel[0];
     pouchGetHaveBadgeCnt();
     pouchHaveBadge(badge);
-    pouchSortItem(work->sortReversed == 0 ? 5 : 12);
-    work->sortReversed = 1 - work->sortReversed;
+    pouchSortItem(work->sortReverseNext == 0 ? 5 : 12);
+    work->sortReverseNext = 1 - work->sortReverseNext;
     winMakeEquipList(work);
     work->badgeSel[0] = 0;
     work->badgeScrollRow[0] = work->badgeSel[0] / 8;
@@ -1935,9 +1935,9 @@ void sort_3_3_func(WindowWork* work) {
     s32 badge = work->badgeSel[0];
     pouchGetHaveBadgeCnt();
     pouchHaveBadge(badge);
-    pouchSortItem(work->sortReversed == 0 ? 6 : 13);
-    pouchSortItem(work->sortReversed == 0 ? 6 : 13);
-    work->sortReversed = 1 - work->sortReversed;
+    pouchSortItem(work->sortReverseNext == 0 ? 6 : 13);
+    pouchSortItem(work->sortReverseNext == 0 ? 6 : 13);
+    work->sortReverseNext = 1 - work->sortReverseNext;
     winMakeEquipList(work);
     work->badgeSel[0] = 0;
     work->badgeScrollRow[0] = work->badgeSel[0] / 8;
@@ -1998,23 +1998,23 @@ int N_compare_func4_2_r(void* a, void* b) {
 }
 
 void sort_4_1_func(WindowWork* work) {
-    if (work->sortReversed == 0) {
+    if (work->sortReverseNext == 0) {
         qqsort((u8*)work + 0x404, work->equipListCount, 0xC, (int (*)(void*, void*))N_compare_func4_1);
     } else {
         qqsort((u8*)work + 0x404, work->equipListCount, 0xC, (int (*)(void*, void*))N_compare_func4_1_r);
     }
-    work->sortReversed = 1 - work->sortReversed;
+    work->sortReverseNext = 1 - work->sortReverseNext;
     work->badgeSel[1] = 0;
     work->badgeScrollRow[1] = work->badgeSel[1] / 8;
 }
 
 void sort_4_2_func(WindowWork* work) {
-    if (work->sortReversed == 0) {
+    if (work->sortReverseNext == 0) {
         qqsort((u8*)work + 0x404, work->equipListCount, 0xC, N_compare_func4_2);
     } else {
         qqsort((u8*)work + 0x404, work->equipListCount, 0xC, N_compare_func4_2_r);
     }
-    work->sortReversed = 1 - work->sortReversed;
+    work->sortReverseNext = 1 - work->sortReverseNext;
     work->badgeSel[1] = 0;
     work->badgeScrollRow[1] = work->badgeSel[1] / 8;
 }
@@ -2028,7 +2028,7 @@ void sort_4_2_func(WindowWork* work) {
 // spills at 0x14/0x18/0x1c exactly.
 void sort_4_3_func(WindowWork* work) {
     u8* base = (u8*)work;
-    if (work->sortReversed == 0) {
+    if (work->sortReverseNext == 0) {
         s32 ida;
         s32 idb;
         s32 i;
@@ -2084,7 +2084,7 @@ void sort_4_3_func(WindowWork* work) {
         }
     }
 
-    work->sortReversed = 1 - work->sortReversed;
+    work->sortReverseNext = 1 - work->sortReverseNext;
     work->badgeSel[1] = 0;
     work->badgeScrollRow[1] = work->badgeSel[1] / 8;
 }
@@ -2142,23 +2142,23 @@ int compare_func5_2_r(void* a, void* b) {
 }
 
 void sort_5_1_func(WindowWork* work) {
-    if (work->sortReversed == 0) {
+    if (work->sortReverseNext == 0) {
         qqsort((u8*)work + 0xEB8, WW_S32(work, 0xE94), 2, (int (*)(void*, void*))compare_func5_1);
     } else {
         qqsort((u8*)work + 0xEB8, WW_S32(work, 0xE94), 2, (int (*)(void*, void*))compare_func5_1_r);
     }
-    work->sortReversed = 1 - work->sortReversed;
+    work->sortReverseNext = 1 - work->sortReverseNext;
     WW_S32(work, 0xE98) = 0;
     WW_S32(work, 0xE9C) = WW_S32(work, 0xE98) / 28;
 }
 
 void sort_5_2_func(WindowWork* work) {
-    if (work->sortReversed == 0) {
+    if (work->sortReverseNext == 0) {
         qqsort((u8*)work + 0xEB8, WW_S32(work, 0xE94), 2, compare_func5_2);
     } else {
         qqsort((u8*)work + 0xEB8, WW_S32(work, 0xE94), 2, compare_func5_2_r);
     }
-    work->sortReversed = 1 - work->sortReversed;
+    work->sortReverseNext = 1 - work->sortReverseNext;
     WW_S32(work, 0xE98) = 0;
     WW_S32(work, 0xE9C) = WW_S32(work, 0xE98) / 28;
 }
@@ -2172,7 +2172,7 @@ void sort_5_2_func(WindowWork* work) {
 // branches only for that reason.
 void sort_5_3_func(WindowWork* work) {
     u8* base = (u8*)work;
-    if (work->sortReversed == 0) {
+    if (work->sortReverseNext == 0) {
         s16 la;
         s16 lb;
         s32 i;
@@ -2234,7 +2234,7 @@ void sort_5_3_func(WindowWork* work) {
         }
     }
 
-    work->sortReversed = 1 - work->sortReversed;
+    work->sortReverseNext = 1 - work->sortReverseNext;
     WW_S32(work, 0xE98) = 0;
     WW_S32(work, 0xE9C) = WW_S32(work, 0xE98) / 28;
 }
@@ -2292,23 +2292,23 @@ int compare_func6_2_r(void* a, void* b) {
 }
 
 void sort_6_1_func(WindowWork* work) {
-    if (work->sortReversed == 0) {
+    if (work->sortReverseNext == 0) {
         qqsort((u8*)work + 0xFB4, WW_S32(work, 0xF90), 2, (int (*)(void*, void*))compare_func6_1);
     } else {
         qqsort((u8*)work + 0xFB4, WW_S32(work, 0xF90), 2, (int (*)(void*, void*))compare_func6_1_r);
     }
-    work->sortReversed = 1 - work->sortReversed;
+    work->sortReverseNext = 1 - work->sortReverseNext;
     WW_S32(work, 0xF94) = 0;
     WW_S32(work, 0xF98) = WW_S32(work, 0xF94) / 28;
 }
 
 void sort_6_2_func(WindowWork* work) {
-    if (work->sortReversed == 0) {
+    if (work->sortReverseNext == 0) {
         qqsort((u8*)work + 0xFB4, WW_S32(work, 0xF90), 2, compare_func6_2);
     } else {
         qqsort((u8*)work + 0xFB4, WW_S32(work, 0xF90), 2, compare_func6_2_r);
     }
-    work->sortReversed = 1 - work->sortReversed;
+    work->sortReverseNext = 1 - work->sortReverseNext;
     WW_S32(work, 0xF94) = 0;
     WW_S32(work, 0xF98) = WW_S32(work, 0xF94) / 28;
 }
@@ -2334,12 +2334,12 @@ int compare_func1_r(void* a, void* b) {
 }
 
 void sort_7_1_func(WindowWork* work) {
-    if (work->sortReversed == 0) {
+    if (work->sortReverseNext == 0) {
         qqsort((u8*)work + 0x1050, WW_S32(work, 0x1038), 2, compare_func1);
     } else {
         qqsort((u8*)work + 0x1050, WW_S32(work, 0x1038), 2, compare_func1_r);
     }
-    work->sortReversed = 1 - work->sortReversed;
+    work->sortReverseNext = 1 - work->sortReverseNext;
     WW_S32(work, 0x1040) = 0;
     WW_S32(work, 0x1044) = WW_S32(work, 0x1040) / 16;
 }
@@ -2401,14 +2401,14 @@ int compare_func2_r(const void* a, const void* b) {
 }
 
 void sort_7_2_func(WindowWork* work) {
-    if (work->sortReversed == 0) {
+    if (work->sortReverseNext == 0) {
         qqsort(&work->field_40[0x1010], WW_S32(work, 0x1038), 2, compare_func1);
         qqsort(&work->field_40[0x1010], WW_S32(work, 0x1038), 2, (int (*)(void*, void*))compare_func2);
     } else {
         qqsort(&work->field_40[0x1010], WW_S32(work, 0x1038), 2, compare_func1_r);
         qqsort(&work->field_40[0x1010], WW_S32(work, 0x1038), 2, (int (*)(void*, void*))compare_func2_r);
     }
-    work->sortReversed = 1 - work->sortReversed;
+    work->sortReverseNext = 1 - work->sortReverseNext;
     WW_S32(work, 0x1040) = 0;
     WW_S32(work, 0x1044) = WW_S32(work, 0x1040) / 16;
 }
@@ -2468,14 +2468,14 @@ int compare_func3_r(void* a, void* b) {
 }
 
 void sort_7_3_func(WindowWork* work) {
-    if (work->sortReversed == 0) {
+    if (work->sortReverseNext == 0) {
         qqsort(&work->field_40[0x1010], WW_S32(work, 0x1038), 2, compare_func1);
         qqsort(&work->field_40[0x1010], WW_S32(work, 0x1038), 2, compare_func3);
     } else {
         qqsort(&work->field_40[0x1010], WW_S32(work, 0x1038), 2, compare_func1_r);
         qqsort(&work->field_40[0x1010], WW_S32(work, 0x1038), 2, compare_func3_r);
     }
-    work->sortReversed = 1 - work->sortReversed;
+    work->sortReverseNext = 1 - work->sortReverseNext;
     WW_S32(work, 0x1040) = 0;
     WW_S32(work, 0x1044) = WW_S32(work, 0x1040) / 16;
 }
@@ -2501,12 +2501,12 @@ int compare_func4_r(const void* a, const void* b) {
 }
 
 void sort_8_1_func(WindowWork* work) {
-    if (work->sortReversed == 0) {
+    if (work->sortReverseNext == 0) {
         qqsort((u8*)work + 0x26E, work->mailCount, 2, (int (*)(void*, void*))compare_func4);
     } else {
         qqsort((u8*)work + 0x26E, work->mailCount, 2, (int (*)(void*, void*))compare_func4_r);
     }
-    work->sortReversed = 1 - work->sortReversed;
+    work->sortReverseNext = 1 - work->sortReverseNext;
     work->mailSel = 0;
     work->mailPage = work->mailSel / 5;
 }
@@ -2532,12 +2532,12 @@ int compare_func5_r(void* a, void* b) {
 }
 
 void sort_8_2_func(WindowWork* work) {
-    if (work->sortReversed == 0) {
+    if (work->sortReverseNext == 0) {
         qqsort((u8*)work + 0x26E, work->mailCount, 2, compare_func5);
     } else {
         qqsort((u8*)work + 0x26E, work->mailCount, 2, compare_func5_r);
     }
-    work->sortReversed = 1 - work->sortReversed;
+    work->sortReverseNext = 1 - work->sortReverseNext;
     work->mailSel = 0;
     work->mailPage = work->mailSel / 5;
 }
@@ -2732,7 +2732,7 @@ void winSortEntry(WindowWork* work, s32 idx, f32 a, f32 b) {
     WW_S32(work, 0x184) = idx;
     WW_S32(work, 0x178) = count;
     WW_S32(work, 0x174) = 0;
-    work->sortReversed = 0;
+    work->sortReverseNext = 0;
     WW_F32(work, 0x164) = -1000.0f;
     WW_F32(work, 0x16C) = a;
     WW_F32(work, 0x168) = b;

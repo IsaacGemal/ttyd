@@ -237,12 +237,6 @@ const char luigi_book_5_page12[24] = "msg_luigi_book5_txt12\000\000";
 
 
 
-typedef struct ItemWorkTail {
-    u8 pad[0x2E8];
-    u16 skipList[0x79];
-    s16 count;
-} ItemWorkTail;
-
 static WinMgrDesc window_desc[2];
 
 // Item window state machine: the held-item grid, the key-item list, the Luigi book
@@ -285,9 +279,8 @@ void winMakeSkipList(WindowWork* work) {
             }
         }
         if ((u32)j >= 0x12) {
-            ItemWorkTail* w = (ItemWorkTail*)work;
-            w->skipList[w->count] = item;
-            w->count++;
+            work->skipList[work->skipCount] = item;
+            work->skipCount++;
         }
     }
 }
@@ -360,9 +353,8 @@ void winItemInit(WindowWork* work) {
             }
         }
         if ((u32)j >= 0x12) {
-            ItemWorkTail* w = (ItemWorkTail*)work;
-            w->skipList[w->count] = item;
-            w->count++;
+            work->skipList[work->skipCount] = item;
+            work->skipCount++;
         }
     }
 
@@ -467,6 +459,8 @@ s32 winItemMain(WindowWork* work) {
         } else {
             count = work->skipCount;
         }
+        // itemSel[sel] stays `((s32*)((u8*)work + 0x214))[sel]`: the original indexes off a computed
+        // base (lwzx/stwx), which `work->itemSel[sel]` doesn't reproduce.
         sel = work->itemTab;
         rows = (count + 9) / 10;
 
@@ -494,7 +488,7 @@ s32 winItemMain(WindowWork* work) {
                 }
             } else {
                 idx = ((s32*)((u8*)work + 0x214))[sel];
-                idx2 = ((s16*)((u8*)work + 0x2E8))[idx];
+                idx2 = work->skipList[idx];
                 item = idx2;
                 if ((u32)(item - ITEM_SUPER_LUIGI1) <= 3 || item == ITEM_SUPER_LUIGI5) {
                     const char** book;
@@ -590,7 +584,7 @@ s32 winItemMain(WindowWork* work) {
         work->targetX = (f32)((((s32*)((u8*)work + 0x214))[sel] % 10 % 2) * 0xCC - 0x9B);
         work->targetY = (f32)(0x6E - (((s32*)((u8*)work + 0x214))[sel] % 10 / 2) * 0x26);
         item = (work->itemTab == 0) ? pouchHaveItem(((s32*)((u8*)work + 0x214))[sel])
-                                          : (s32)((s16*)((u8*)work + 0x2E8))[((s32*)((u8*)work + 0x214))[sel]];
+                                          : (s32)work->skipList[((s32*)((u8*)work + 0x214))[sel]];
         winMsgEntry(work, item, itemDataTable[item].description, 0);
     }
         break;

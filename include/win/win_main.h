@@ -38,7 +38,7 @@ typedef struct WindowWork {
     f32 targetY;                // 0x15C
     s32 marioLinkIdx;           // 0x160, win_mario: current linkDt entry (the cursor on the Mario page)
     u8 field_164[0x180 - 0x164]; // 0x164
-    s32 sortReversed;           // 0x180, win_root's item sort: 0 = ascending pouchSortItem types, 1 = the _r ones (toggled by each sort)
+    s32 sortReverseNext;        // 0x180, win_root's sorts: 0 = next press uses the ascending comparator, 1 = the _r one (flipped by each press, cleared by winSortEntry)
     u8 field_184[0x188 - 0x184]; // 0x184
     s32 marioPose;              // 0x188, win_mario's Mario pose (mario_change rebuilds it; mapGX reads its anim)
     s32 marioHoldTimer;         // 0x18C, win_mario: frames left before the pose's anim is driven again (30 after a loop)
@@ -74,8 +74,9 @@ typedef struct WindowWork {
     s32 useItemSlot;            // 0x2D8, its pouch index (pouchRemoveItemIndex)
     s32 useTargetSel;           // 0x2DC, target: 0 = Mario, else index into the joined partners
     s32 useTimer;               // 0x2E0, frames since the item was used (removed after framerate * 2)
-    u8 field_2E4[0x3DA - 0x2E4]; // 0x2E4, key-item skip list (u16[0x79] at 0x2E8, see ItemWorkTail)
-    s16 skipCount;              // 0x3DA, entries in that list
+    u8 field_2E4[0x2E8 - 0x2E4]; // 0x2E4
+    s16 skipList[0x79];         // 0x2E8, win_item: key items shown (winMakeSkipList: those not in menu_skip_list)
+    s16 skipCount;              // 0x3DA, entries in skipList
     s32 badgeState;             // 0x3DC, win_badge: state machine switch
     s32 badgeTab;               // 0x3E0, win_badge: 0 = all badges, 1 = equipped
     s32 badgeSel[2];            // 0x3E4, win_badge: cursor per tab
