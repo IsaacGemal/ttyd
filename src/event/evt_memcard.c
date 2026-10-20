@@ -20,7 +20,7 @@ s32 memcard_code(EventEntry* event, BOOL isFirstCall) {
     return EVT_RETURN_DONE;
 }
 
-s32 unk_802564b4(EventEntry* event, BOOL isFirstCall) {
+s32 memcard_buf_reset(EventEntry* event, BOOL isFirstCall) {
     cardBufReset();
     return EVT_RETURN_DONE;
 }
@@ -193,7 +193,7 @@ s32 evt_memcard_check[] = {
     0xFE363C8A,
     0x00000001,
     0x0001005B,
-    (s32)unk_802564b4,
+    (s32)memcard_buf_reset,
     0x00000021,
     0x00010022,
     0xFE363C80,
