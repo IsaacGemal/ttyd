@@ -1078,7 +1078,6 @@ void btlUnitPartsBlurDisp(CameraId camId, BattleUnitPart* parts) {
 	}
 }
 
-#pragma dont_inline on // the original keeps calls to this function out of line
 void btlDispEntAnime(BattleUnit* unit) {
 	BattleUnitPart* part = unit->mParts;
 
@@ -1097,9 +1096,7 @@ void btlDispEntAnime(BattleUnit* unit) {
 		part = part->mNextPart;
 	}
 }
-#pragma dont_inline reset
 
-#pragma dont_inline on // the original keeps calls to this function out of line
 void btlDispChangeAnime(BattleUnitPart* part, const char* animName, BOOL reset) {
 	s32* flags;
 
@@ -1116,17 +1113,13 @@ void btlDispChangeAnime(BattleUnitPart* part, const char* animName, BOOL reset) 
 		*flags &= ~8;
 	}
 }
-#pragma dont_inline reset
 
-#pragma dont_inline on // the original keeps calls to this function out of line
 void btlDispChangePeraAnime(BattleUnitPart* part, const char* animName) {
 	*(s32*)((char*)part + 0x204) |= 4;
 	*(u8*)((char*)part + 0x215) = 0;
 	animPoseSetEffectAnim(*(s32*)((char*)part + 0x1c0), animName, 1);
 }
-#pragma dont_inline reset
 
-#pragma dont_inline on // the original keeps calls to this function out of line
 void btlDispPoseAnime(BattleUnitPart* part) {
 	s32* flags = (s32*)((char*)part + 0x204);
 
@@ -1135,7 +1128,6 @@ void btlDispPoseAnime(BattleUnitPart* part) {
 	*flags &= ~0x80;
 	*flags &= ~0x4;
 }
-#pragma dont_inline reset
 
 #pragma dont_inline on // the original keeps calls to this function out of line
 void gravityOffsetControl(BattleUnitPart* part) {
@@ -1400,7 +1392,6 @@ void btlDispAnimeSpeed(BattleUnit* unit, f32 speed) {
 // The original pools 304.0f/240.0f/0.0f as literals; with the named externs MWCC keeps the
 // multiply results in f0 and reorders the constant loads. The literals reproduce the target
 // schedule exactly (the 3 remaining diffs are symbol-only and disappear when the unit links).
-#pragma dont_inline on
 void btlGetScreenPoint(Vec* pos, Vec* out) {
 	CameraEntry* cam = camGetPtr(CAMERA_3D);
 	Vec v;
@@ -1414,7 +1405,6 @@ void btlGetScreenPoint(Vec* pos, Vec* out) {
 	out->y = 240.0f * v.y;
 	out->z = 0.0f;
 }
-#pragma dont_inline reset
 
 void btlDispTex4(s32 id, Vec trans, Vec scale, Vec rot, GXColor color) {
 	u16 width;
