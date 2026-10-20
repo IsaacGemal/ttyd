@@ -188,7 +188,7 @@ void marioReInit_ship(void) {
     ((MotionShipData*)marioGetPtr()->motStruct)->unk0C = 4.25f;
     ((MotionShipData*)marioGetPtr()->motStruct)->eff =
         effFunemizuEntry(0, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
-    *(u32*)((u8*)((MotionShipData*)marioGetPtr()->motStruct)->eff->userdata + 0x48) = mario->camId;
+    ((EffFunemizuData*)((MotionShipData*)marioGetPtr()->motStruct)->eff->userdata)->camId = mario->camId;
     allPartyForceRideOn();
 }
 void mot_ship_post(void) {
@@ -231,19 +231,19 @@ static inline void shipWakeUpdate(f32 speed) {
         SHIP_DATA->unk10 += 0.1f * (speed - SHIP_DATA->unk10);
         speed = SHIP_DATA->unk10;
     }
-    ((f32*)SHIP_DATA->eff->userdata)[1] = m->position.x;
+    ((EffFunemizuData*)SHIP_DATA->eff->userdata)->x = m->position.x;
 #ifdef MUST_MATCH
     {
         // Assign zero in the right operand to keep the original f0/f1 loads and fadds.
         f32 zero;
-        ((f32*)SHIP_DATA->eff->userdata)[2] = m->position.y + (zero = 0.0f);
+        ((EffFunemizuData*)SHIP_DATA->eff->userdata)->y = m->position.y + (zero = 0.0f);
     }
 #else
-    ((f32*)SHIP_DATA->eff->userdata)[2] = m->position.y + 0.0f;
+    ((EffFunemizuData*)SHIP_DATA->eff->userdata)->y = m->position.y + 0.0f;
 #endif
-    ((f32*)SHIP_DATA->eff->userdata)[3] = m->position.z;
-    ((f32*)SHIP_DATA->eff->userdata)[4] = speed;
-    ((f32*)SHIP_DATA->eff->userdata)[5] = m->unk1A8;
+    ((EffFunemizuData*)SHIP_DATA->eff->userdata)->z = m->position.z;
+    ((EffFunemizuData*)SHIP_DATA->eff->userdata)->speed = speed;
+    ((EffFunemizuData*)SHIP_DATA->eff->userdata)->yaw = m->unk1A8;
 }
 
 // Defined after shipMove, where the original's copies sit: MWCC inlines them into mot_ship
@@ -512,7 +512,7 @@ void mot_ship(void) {
             mario->dispFlags |= 0x1000;
             psndSFXOn_3D((char*)0x18F, &mario->position);
             SHIP_DATA->eff = effFunemizuEntry(0, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
-            *(u32*)((u8*)SHIP_DATA->eff->userdata + 0x48) = mario->camId;
+            ((EffFunemizuData*)SHIP_DATA->eff->userdata)->camId = mario->camId;
             SHIP_DATA->unk08 = 0.0f;
             SHIP_DATA->unk0C = 4.25f;
             mario->currSubMotionId = 0x32;
@@ -812,12 +812,12 @@ void mot_ship(void) {
         if (strcmp(gp->currentMapName, "dou_03") == 0 && mario->position.y <= 260.0f && mario->position.y >= 50.0f) {
             if ((f32)(s32)(10.0f * mario->slopeAngle + 0.5f) / 10.0f != 0.0f) {
                 mario->position.y += 2.0f * (f32)sin(3.1415927f * mario->slopeAngle / 180.0f);
-                { f30 = (f32)cos(3.1415927f * *(f32*)((unsigned char*)mario + 0x214) / 180.0f); mario->position.z += 2.0f * -f30; }
+                { f30 = (f32)cos(3.1415927f * mario->slopeAngle / 180.0f); mario->position.z += 2.0f * -f30; }
             }
         }
-        *(s32*)((u8*)mario + 0x1E0) = 0;
+        mario->hitobjFront = NULL;
         *(s32*)((u8*)mario + 0x1DC) = 0;
-        *(s32*)((u8*)mario + 0x1EC) = 0;
+        mario->hitobjPush = NULL;
         *(s32*)((u8*)mario + 0x1F0) = 0;
         marioCheckWallShip(mario->baseSpeed, mario->directionView);
         if (mario->baseSpeed < 0.5f) {

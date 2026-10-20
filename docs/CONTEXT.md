@@ -9655,3 +9655,26 @@ drive one `ExtPose` per sprite. Names, from extMain/extPoseDraw/extDrawShadow:
 
 Build byte-identical (32 files OK). Cleanup index 55.254 -> 54.980 against the merge base (field_0x 10,872 ->
 10,680).
+### Readability: party_cloud, mot_roll, mot_ship (2026-10-19, Claude Haiku 5.5, n9-q-party2; reviewed by Claude Opus 5.5)
+
+PartyCloud gets `maxDist` (0xC, the cap on `unk8`, the breath distance, and the divisor for the breath effect's
+scale; 120 at init), `useTimer` (0x30, frames left in an event-driven use, from `sysMsec2Frame(party->unk16C)`),
+`sfxId` (0x34, the psndSFXOn_3D handle, 0xFFFFFFFF when none) and `mode` (0x38, s16, cycles 0/1/2 per frame and
+picks the hit-ray height 8/20/40 above Mario in getHitBreatheout2). The old trailing pad was
+`field_0x30[0x48 - 0xC]`, so the struct measured 0x6C; it is now 0x48, matching the `__memAlloc`/`memset` size in
+N__cloud_use. Nothing takes its sizeof and nothing outside party_cloud.c uses the type, so no offset or caller
+moved. The breath effect userdata goes through effKumokumoData (`x/y/z`, `scale`, `rotation`, `camera`,
+`color1R/G/B`, `color2R/G/B`). mot_roll's motStruct writes use MotRoll `velX`/`velY` (the names its other readers
+already had); mot_ship's funemizu userdata goes through EffFunemizuData (`x/y/z`, `speed`, `yaw`, `camId`), the
+0x1E0/0x1EC clears are `hitobjFront`/`hitobjPush = NULL`, and the cos term reads `slopeAngle` like the sin term
+beside it. Review: every name checked against its readers and offsets, access widths unchanged (sfxId is s32
+where the old compare read a u32; the compare against 0xFFFFFFFFu still converts to unsigned), MUST_MATCH and
+`#else` both updated. Fixed in review: the `mode` comment said it selected the breath reach; it selects the ray
+height. Matching build 32 files OK; mot_roll, mot_ship and party_cloud natural-compile. Index 46.227 -> 46.148.
+Open, MarioWork: 0x2A4 (a motion flag word), 0x2A8 (read as an s32 sfx handle where the header has the f32
+`wCamVal1`), 0x98/0x9C/0xB0/0xB4 inside the 0x98-0xC8 pad (mot_roll's reinit writes 6.0/-6.0 there), 0x2E (read
+as a u16 in party_cloud where the header has the MarioMotion enum `currMotionId`), 0x39; 0x1DC and 0x1F0 (cleared beside the hit objects in
+mot_ship) are still pad. PartyCloud 0x10-0x1C (the sway angle and its direction flag in getHitBreatheout2) and
+`unk0`-`unk2C` keep their names. PartyEntry: `field_8` (flag word), `field_32`/`field_33`/`field_3B`, the raw u8
+at 0x3D, the raw Vec at 0x94 (and 0x98/0x9C) in cloud's target setup, the raw s32 at 0x17C/0x180, `field_10C`/
+`field_110` (direction copies) and `unk16C` (event use duration in ms).
