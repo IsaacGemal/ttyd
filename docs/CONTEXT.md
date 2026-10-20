@@ -9347,3 +9347,27 @@ muj's per-REL slot names (0x70-0x84, 0xA0) folded into generic ones. gor_00.h ca
 evt_nannpc_move_position2 stores the move's start position there. FirstStrikeInfo and the 0x800000/0x1000000/
 0x10000000 attack kinds are unnamed; npcdrv.c has an orphaned comment above fbatAttackEnabled about fbatHitCheck's
 second argument.
+### Readability: effStarStoneData and effStampData (2026-10-19, Claude Haiku 5.5, n9-q-starstone; reviewed by Claude Opus 5.5)
+
+effStarStoneData (eff_starstone.h) gets `starType` (idx % 7: colour-table index; 0 and 6 draw the diamond_1 and
+diamond_7 models through effStarStoneDisp_1, 1-5 the diamond_2_2 tip pairs through effStarStoneDisp_2), `flags`,
+`x`/`y`/`z`, `scale`, `rotY` (whole star), `tipRotY`/`tipRotZ` (the tip pairs, applied after rotY in Disp_2; pair B
+uses the negated angles), `scrollU`/`scrollV` (texture-matrix translation; only U moves), `timer` (0..59),
+`matColor` (packed GXColor for GXSetChanMatColor), `dustEffect` (the snow-dust child), `camId`, `state`, `gravity`/
+`velY` (the bounce), and `tevReg0R/G/B/A`: the GX_TEVREG0 colour that TEV stage 1 multiplies into the vertex
+colours. Its alpha is the star's opacity and is also what effStarStoneMain passes to U_shadowSetMode, whose `mode`
+is the shadow's TEV alpha, so it is one value used twice, not two roles. effStampData (eff_stamp_n64.h) gets
+`scaleY`/`scaleX` (0x1C/0x20, the PSMTXScale factors) and `tevReg0R/G/B` (0x38) / `tevReg1R/G/B` (0x3B): the
+stamp's TEV stage computes lerp(C0, C1, raster alpha), and GXSetTevColor(1, ...)/(2, ...) load GX_TEVREG0/GX_TEVREG1
+(GX_TEVPREV is 0), so the worker's tevReg1/tevReg2 names were one register off and are renamed. effStampDisp's GX
+setup now uses enum names, each checked by value and enum type in GXEnum.h; the starstone MUST_MATCH calls pass
+GX_TEVREG0. Users updated: sac_bakugame/genki/muki/suki/zubastar, battle_damage (STAMP_COLOR), itemdrv, win_log and
+the bom/gor/kpa/las/mri/muj/nok/pik/tik/tou/usu map RELs. sac_scissor's local ScissorEffectData (posX..rotZ at
+0x8..0x20) was an overlay of effStarStoneData and is gone. Cleanup index 55.936 -> 55.333 on origin/main 042dadc2;
+every touched C file compiles without MUST_MATCH. Open: effStarStoneData `field_0x6`, `field_0x58` (set to 90 in
+the entry, not read in eff_starstone.c) and the `flags` bits still need names (1 set when the fall starts and
+tested in the Disp tip loops, 2 no dust child (idx >= 7), 4 shine loop wanted, 8 shine loop playing, 0x10 no landing
+sound, 0x20 not drawn); tipRotY/tipRotZ are never initialised by effStarStoneEntry; the
+dust child is written through raw offsets (0x04..0x0C, 0x4C..0x54, 0x68) because eff_snow_dust_n64 has no public
+struct; sac_scissor's `starRot.x/.z` feed tipRotY/tipRotZ, so that ScissorWork field is likely misnamed;
+effStampData `scale` (0x30) is the ring radius, not a scale, and `field_0x10..0x18` stay unnamed.
