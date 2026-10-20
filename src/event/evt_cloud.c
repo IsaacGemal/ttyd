@@ -38,15 +38,15 @@ typedef struct CloudEntry {
 	char offName[0x20];     // 0x48
 	char mapGrpName[0x20];  // 0x68
 	char hitName[0x20];     // 0x88
-	s32 field_0xA8;         // 0xA8
-	s32 field_0xAC;         // 0xAC
-	EventEntry* field_0xB0; // 0xB0
-	void* field_0xB4;       // 0xB4
-	s32 field_0xB8;         // 0xB8
-	const char** field_0xBC;// 0xBC
-	u16 field_0xC0;         // 0xC0
-	u16 field_0xC2;         // 0xC2
-	f32 field_0xC4;         // 0xC4
+	s32 breathLimit;        // 0xA8
+	s32 breathCount;        // 0xAC
+	EventEntry* event;      // 0xB0
+	void* endScript;        // 0xB4
+	s32 waitTimer;          // 0xB8
+	const char** mapGrpNames; // 0xBC
+	u16 capWidth;           // 0xC0
+	u16 capHeight;          // 0xC2
+	f32 lastLoopTimes;      // 0xC4
 } CloudEntry;               // 0xC8
 
 static CloudEntry cloud[16];
@@ -101,7 +101,7 @@ static USER_FUNC(evt_cloud_main) {
 		if (h0 == hit || h1 == hit || h2 == hit || h3 == hit) {
 			cp->mode++;
 		}
-		cp->field_0xAC = 0;
+		cp->breathCount = 0;
 		break;
 
 	case 1: {
@@ -119,7 +119,7 @@ static USER_FUNC(evt_cloud_main) {
 			if (!(cp->flags & 2)) {
 				mapGrpSetOffScreen(cp->mapGrpName, cp->offName);
 			} else {
-				const char** p = cp->field_0xBC;
+				const char** p = cp->mapGrpNames;
 				while (*p != NULL) {
 					mapGrpSetOffScreen(*p, cp->offName);
 					p++;
@@ -131,7 +131,7 @@ static USER_FUNC(evt_cloud_main) {
 	}
 
 	case 2:
-		if (cp->field_0xC0 != 0 && cp->field_0xC2 != 0) {
+		if (cp->capWidth != 0 && cp->capHeight != 0) {
 			mapObjGetPos(cp->mapGrpName, &pos);
 			PSMTXMultVec(camGetPtr(4)->view, &pos, &pos);
 			PSMTX44MultVec(camGetPtr(4)->projection, &pos, &pos);
@@ -142,10 +142,10 @@ static USER_FUNC(evt_cloud_main) {
 			t = 1.0f - pos.y;
 			w = t * (f32)gp->efbHeight;
 			pos.y = w * half;
-			width = cp->field_0xC0;
-			height = cp->field_0xC2;
-			left = (s32)(pos.x - (f32)(cp->field_0xC0 / 2));
-			top = (s32)(pos.y - (f32)(cp->field_0xC2 / 2));
+			width = cp->capWidth;
+			height = cp->capHeight;
+			left = (s32)(pos.x - (f32)(cp->capWidth / 2));
+			top = (s32)(pos.y - (f32)(cp->capHeight / 2));
 			if (left < 0) {
 				left = 0;
 			}
@@ -190,16 +190,16 @@ static USER_FUNC(evt_cloud_main) {
 		img->animName = "A_1";
 		img->startTime = animTimeGetTime(inBattle);
 		mapGrpFlagOn(cp->mapGrpName, 1);
-		cp->field_0xB8 = 0x1E;
+		cp->waitTimer = 0x1E;
 		cp->mode++;
-		cp->field_0xC4 = 0.0f;
+		cp->lastLoopTimes = 0.0f;
 		break;
 
 	case 4:
 		img = imgNameToPtr(cp->imgName, inBattle);
-		if (0.0f == cp->field_0xC4 || 1.0f + cp->field_0xC4 < img->loopTimes) {
+		if (0.0f == cp->lastLoopTimes || 1.0f + cp->lastLoopTimes < img->loopTimes) {
 			psndSFXOn_3D("SFX_OFF_CLAUD_WIND2", &mario->position);
-			cp->field_0xC4 = img->loopTimes;
+			cp->lastLoopTimes = img->loopTimes;
 		}
 		if (mario->currMotionId != 0x1B) {
 			cp->mode = 0xA;
@@ -207,16 +207,16 @@ static USER_FUNC(evt_cloud_main) {
 		}
 		hit = hitNameToPtr(cp->hitName);
 		if (!(h0 == hit || h1 == hit || h2 == hit || h3 == hit)) {
-			if (cp->field_0xB8 == 0) {
+			if (cp->waitTimer == 0) {
 				cp->mode = 0xA;
 			} else {
-				cp->field_0xB8--;
-				cp->field_0xAC += 2;
+				cp->waitTimer--;
+				cp->breathCount += 2;
 			}
 		} else {
-			cp->field_0xB8 = 0x1E;
-			cp->field_0xAC += 2;
-			if (cp->field_0xAC > cp->field_0xA8) {
+			cp->waitTimer = 0x1E;
+			cp->breathCount += 2;
+			if (cp->breathCount > cp->breathLimit) {
 				cp->mode = 0x14;
 			}
 		}
@@ -229,23 +229,23 @@ static USER_FUNC(evt_cloud_main) {
 
 	case 0x14:
 		psndSFXOn_3D("SFX_OFF_CLAUD_WIND3", &mario->position);
-		if (cp->field_0xB4 != NULL) {
-			evtEntry(cp->field_0xB4, 0, 0);
+		if (cp->endScript != NULL) {
+			evtEntry(cp->endScript, 0, 0);
 		}
 		img = imgNameToPtr(cp->imgName, inBattle);
 		img->animName = "A_2";
 		img->startTime = animTimeGetTime(inBattle);
 		hitObjFlagOn(cp->hitName, 1);
-		cp->field_0xB8 = 0x3C;
+		cp->waitTimer = 0x3C;
 		cp->mode++;
 		break;
 
 	case 0x15:
-		if (cp->field_0xB8 != 0) {
-			cp->field_0xB8--;
+		if (cp->waitTimer != 0) {
+			cp->waitTimer--;
 		} else {
-			cp->field_0xB8 = 0x1E;
-			cp->field_0xAC += 2;
+			cp->waitTimer = 0x1E;
+			cp->breathCount += 2;
 			cp->mode = 0x63;
 		}
 		break;
@@ -255,7 +255,7 @@ static USER_FUNC(evt_cloud_main) {
 		if (!(cp->flags & 2)) {
 			mapGrpClearOffScreen(cp->mapGrpName);
 		} else {
-			const char** p = cp->field_0xBC;
+			const char** p = cp->mapGrpNames;
 			while (*p != NULL) {
 				mapGrpClearOffScreen(*p);
 				p++;
@@ -317,18 +317,18 @@ USER_FUNC(evt_cloud_ent) {
 		strncpy(cp->mapGrpName, *(const char**)b, 0x20);
 	}
 	strncpy(cp->hitName, (const char*)c, 0x20);
-	cp->field_0xB4 = (void*)d;
-	cp->field_0xA8 = 0xB4;
-	cp->field_0xAC = 0;
+	cp->endScript = (void*)d;
+	cp->breathLimit = 0xB4;
+	cp->breathCount = 0;
 	cp->mode = 0;
-	cp->field_0xB8 = 0;
-	cp->field_0xC0 = 0;
-	cp->field_0xC2 = 0;
-	cp->field_0xB0 = evtEntry(evt_cloud_main_evt, 0, 0);
-	cp->field_0xB0->lwData[0] = (s32)cp;
+	cp->waitTimer = 0;
+	cp->capWidth = 0;
+	cp->capHeight = 0;
+	cp->event = evtEntry(evt_cloud_main_evt, 0, 0);
+	cp->event->lwData[0] = (s32)cp;
 	cloud_p = cp;
 	if (a != 0) {
-		cp->field_0xBC = (const char**)b;
+		cp->mapGrpNames = (const char**)b;
 		cp->flags |= 2;
 	}
 	return EVT_RETURN_DONE;
@@ -339,8 +339,8 @@ USER_FUNC(evt_cloud_set_cap_size) {
 	u16 width = evtGetValue(event, args[0]);
 	s32 height = evtGetValue(event, args[1]);
 
-	cloud_p->field_0xC0 = width;
-	cloud_p->field_0xC2 = height;
+	cloud_p->capWidth = width;
+	cloud_p->capHeight = height;
 	return EVT_RETURN_DONE;
 }
 
