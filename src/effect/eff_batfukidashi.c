@@ -61,20 +61,15 @@ static u8 offset_tbl[] = {
 
 void effCoinFukidashiMain(EffectEntry* effect) {
     CoinFukidashiData* data;
-#ifdef MUST_MATCH
-    /* MUST_MATCH: retail builds the Vec in a scratch and copies it to a second local before
-       dispCalcZ; a single local folds the copy away. */
+    /* The Vec is built in `disp` and copied to `position` before dispCalcZ; a single local folds the copy away. */
     Vec position;
-#endif
     Vec disp = { 0.0f, 0.0f, 0.0f };
 
     data = effect->userdata;
     disp.x = data->position.x;
     disp.y = data->position.y;
     disp.z = data->position.z;
-#ifdef MUST_MATCH
     position = disp;
-#endif
 
     if (effect->flags & 4) {
         effect->flags &= ~4;
@@ -105,21 +100,15 @@ void effCoinFukidashiMain(EffectEntry* effect) {
         data->field_0x24 = 0;
     }
 
-#ifdef MUST_MATCH
     dispEntry(CAMERA_3D, dispCalcZ(&position), 2, effCoinFukidashiDisp, effect);
-#else
-    dispEntry(CAMERA_3D, dispCalcZ(&disp), 2, effCoinFukidashiDisp, effect);
-#endif
 }
 
-#ifdef MUST_MATCH
-// MUST_MATCH: building the GXColor through an inline return puts the colour temp in the slot retail uses.
+// The GXColor is built through an inline return, which puts the colour temp in its own stack slot.
 static inline GXColor effCoinFukidashiColor(u8 alpha) {
     GXColor color = *(GXColor*)&dat_80420468;
     color.a = alpha;
     return color;
 }
-#endif
 
 // effCoinFukidashiDisp (1140 B, matched).
 void effCoinFukidashiDisp(CameraId cameraId, void* param) {
@@ -130,11 +119,8 @@ void effCoinFukidashiDisp(CameraId cameraId, void* param) {
     GXColor color;
     Mtx m0, m1, m2;
     f32 w, h;
-#ifdef MUST_MATCH
-    // MUST_MATCH: a named 0.5f local reproduces retail's FP register allocation of the vertex
-    // and text maths; using the literal directly swaps f0/f1 in eight instructions.
+    // 0.5f is held in a named local for the vertex and text maths; the literal directly would swap f0/f1.
     f32 half = 0.5f;
-#endif
     f32 textW;
     s32 alpha;
     char buf[0x40];
@@ -151,12 +137,7 @@ void effCoinFukidashiDisp(CameraId cameraId, void* param) {
     GXSetNumTevStages(1);
     GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR0A0);
     GXSetTevOp(GX_TEVSTAGE0, GX_MODULATE);
-#ifdef MUST_MATCH
     color = effCoinFukidashiColor(alpha);
-#else
-    color = *(GXColor*)&dat_80420468;
-    color.a = alpha;
-#endif
     GXSetChanMatColor(GX_COLOR0A0, color);
 
     PSMTXTrans(m0, data->position.x, data->position.y + data->field_0x10, data->position.z);
@@ -177,45 +158,21 @@ void effCoinFukidashiDisp(CameraId cameraId, void* param) {
     GXBegin(GX_QUADS, GX_VTXFMT0, 4);
     w = 0.4f * (f32)GXGetTexObjWidth(&tex);
     h = 0.4f * (f32)GXGetTexObjHeight(&tex);
-#ifdef MUST_MATCH
     GXPosition3f32(-w * half, h, 0.0f);
-#else
-    GXPosition3f32(-w * 0.5f, h, 0.0f);
-#endif
     GXTexCoord2f32(0.0f, 0.0f);
-#ifdef MUST_MATCH
     GXPosition3f32(w * half, h, 0.0f);
-#else
-    GXPosition3f32(w * 0.5f, h, 0.0f);
-#endif
     GXTexCoord2f32(1.0f, 0.0f);
-#ifdef MUST_MATCH
     GXPosition3f32(w * half, 0.0f, 0.0f);
-#else
-    GXPosition3f32(w * 0.5f, 0.0f, 0.0f);
-#endif
     GXTexCoord2f32(1.0f, 1.0f);
-#ifdef MUST_MATCH
     GXPosition3f32(-w * half, 0.0f, 0.0f);
-#else
-    GXPosition3f32(-w * 0.5f, 0.0f, 0.0f);
-#endif
     GXTexCoord2f32(0.0f, 1.0f);
 
     sprintf(buf, "%d", data->field_0x14);
     textW = data->scale * (f32)FontGetMessageWidth(buf) / 3.0f;
-#ifdef MUST_MATCH
     PSMTXTrans(m0, -textW * half, -28.0f, 0.0f);
-#else
-    PSMTXTrans(m0, -textW * 0.5f, -28.0f, 0.0f);
-#endif
     PSMTXScale(m1, data->scale / 3.0f, data->scale / 3.0f, data->scale / 3.0f);
     PSMTXConcat(m0, m1, m1);
-#ifdef MUST_MATCH
     PSMTXTrans(m0, textW * half, 28.0f, 0.0f);
-#else
-    PSMTXTrans(m0, textW * 0.5f, 28.0f, 0.0f);
-#endif
     PSMTXConcat(m1, m0, m1);
     PSMTXTrans(m0, data->position.x, data->position.y, data->position.z);
     PSMTXRotRad(m2, 'y', -camGetPtr(cameraId)->viewYaw * 0.017453292f);

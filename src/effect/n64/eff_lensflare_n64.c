@@ -78,28 +78,21 @@ EffectEntry* effLensflareN64Entry(s32 type, s32 a1, f32 x, f32 y, f32 z, f32 a2)
 // (r6) and materialise the loop pointer with `addi r31, r6, 0x34`, which flips the later register roles.
 void effLensflareMain(EffectEntry* effect) {
     LensflareEntry* data = (LensflareEntry*)effect->userdata;
-#ifdef MUST_MATCH
-    /* MUST_MATCH: retail builds the relaxed Vec in a scratch local and copies it to a
-       second local before dispCalcZ; a single local folds the copy away. */
+    /* The Vec is built in `disp` and copied to `position` before dispCalcZ; a single local folds the copy away. */
     Vec position;
-#endif
     Vec disp = (Vec){ 0.0f, 0.0f, 0.0f };
     f32 angle;
     f32 c;
     s32 i;
-#ifdef MUST_MATCH
-    /* MUST_MATCH: reading field_18 and field_1C once each keeps them in r0 and r3 as the original does;
+    /* field_18 and field_1C are each read once into a local, which keeps them in r0 and r3;
        reading the fields directly in each test reloads them and swaps the two registers. */
     s32 fade;
     s32 frame;
-#endif
 
     disp.x = ((LensflareData*)data)->x;
     disp.y = ((LensflareData*)data)->y;
     disp.z = ((LensflareData*)data)->z;
-#ifdef MUST_MATCH
     position = disp;
-#endif
 
     if (effect->flags & 4) {
         effect->flags &= ~4;
@@ -109,7 +102,6 @@ void effLensflareMain(EffectEntry* effect) {
         ((LensflareData*)data)->field_18--;
     }
     ((LensflareData*)data)->field_1C++;
-#ifdef MUST_MATCH
     fade = ((LensflareData*)data)->field_18;
     if (fade < 0) {
         effDelete(effect);
@@ -121,17 +113,6 @@ void effLensflareMain(EffectEntry* effect) {
     } else if (fade < 20) {
         ((LensflareData*)data)->field_14 = fade * 12;
     }
-#else
-    if (((LensflareData*)data)->field_18 < 0) {
-        effDelete(effect);
-        return;
-    }
-    if (((LensflareData*)data)->field_1C <= 20) {
-        ((LensflareData*)data)->field_14 = ((LensflareData*)data)->field_1C * 12;
-    } else if (((LensflareData*)data)->field_18 < 20) {
-        ((LensflareData*)data)->field_14 = ((LensflareData*)data)->field_18 * 12;
-    }
-#endif
 
     for (i = 1, data++; i < effect->count; i++, data++) {
         angle = 6.2831855f * (90.f * (data->field_2C - 70.f) / 10.f) / 360.f;
@@ -142,28 +123,16 @@ void effLensflareMain(EffectEntry* effect) {
         if (data->field_2C > 80.f) {
             data->field_2C = 60.f;
             data->field_28 = 0.1f * (f32)(rand() % 16) + 0.4f;
-#ifdef MUST_MATCH
-            /* MUST_MATCH: the natural extern form below makes MWCC CSE 0.1f across the rand() call into
-               a callee-saved f24, which grows the frame by 0x10. The literal rematerialises instead. */
+            /* The literal 0.1f is rematerialised after the rand() call rather than held in a callee-saved register. */
             data->field_30 = 0.1f * (f32)(rand() % 11) + 0.1f;
-#else
-            data->field_30 = 0.1f * (f32)(rand() % 11) + 0.1f;
-#endif
             data->field_20 = (f32)(rand() % 360);
         }
     }
-#ifdef MUST_MATCH
     dispEntry(4, dispCalcZ(&position), 2, effLensflareDisp, effect);
-#else
-    dispEntry(4, dispCalcZ(&disp), 2, effLensflareDisp, effect);
-#endif
 }
 
-#ifdef MUST_MATCH
-// Setting each TEV colour inside a void inline reproduces the original's
-// per-call by-value colour slots (build/copy pairs, interleaved with the
-// alpha computation). A natural inline block instead spills every colour to
-// its own slot and drops Disp from 100% to 99.72%.
+// Each TEV colour is set inside a void inline, which gives every call its own by-value colour slot
+// (build/copy pairs interleaved with the alpha computation).
 static inline void lensflareSetColor1(s32 a) {
     GXColor color = dat_8041f5d0;
     color.a = a;
@@ -197,7 +166,6 @@ static inline void lensflareSetColor5(s32 a) {
 static inline void lensflareSetColor6(void) {
     GXSetTevColor(2, dat_8041f5e0);
 }
-#endif
 
 // MWCC assigns the callee-saved GPRs partly by declaration order: `cam` must be
 // declared before `alpha` so cam lands in r27 and alpha in r26 (the loop counter
@@ -230,15 +198,7 @@ void effLensflareDisp(CameraId cameraId, void* param) {
     PSMTXRotRad(rot, 'y', 0.017453292f * -camGetPtr(CAMERA_3D)->viewYaw);
     PSMTXConcat(trans, rot, base);
     PSMTXConcat(cam->view, base, base);
-#ifdef MUST_MATCH
     lensflareSetColor1(alpha);
-#else
-    {
-        GXColor color = dat_8041f5d0;
-        color.a = alpha;
-        GXSetTevColor(1, color);
-    }
-#endif
     PSMTXRotRad(rot, 'z', 0.017453292f * (f32)(frame + (frame & 1) * 2));
     PSMTXConcat(base, rot, rot);
     GXLoadPosMtxImm(rot, 0);
@@ -257,15 +217,7 @@ void effLensflareDisp(CameraId cameraId, void* param) {
     GXLoadTexMtxImm(scale, 0x1e, 1);
     effGetTexObjN64(0x6f, &texObj);
     GXLoadTexObj(&texObj, 0);
-#ifdef MUST_MATCH
     lensflareSetColor2(alpha);
-#else
-    {
-        GXColor color = dat_8041f5d4;
-        color.a = alpha;
-        GXSetTevColor(1, color);
-    }
-#endif
     effSetVtxDescN64((effVtxArray*)size48x48_tex32x32_vtx);
     GXBegin(0x90, 0, 6);
     tri2(0, 1, 2, 0, 0, 2, 3, 0);
@@ -280,15 +232,7 @@ void effLensflareDisp(CameraId cameraId, void* param) {
         if (f30 == zero) {
             continue;
         }
-#ifdef MUST_MATCH
         lensflareSetColor3(((((LensflareData*)data)->field_14 * alpha) >> 8));
-#else
-        {
-            GXColor color = dat_8041f5d8;
-            color.a = (((LensflareData*)data)->field_14 * alpha) >> 8;
-            GXSetTevColor(1, color);
-        }
-#endif
         GXSetNumTevStages(1);
         GXSetTevOrder(0, 0, 0, 0xff);
         GXSetTevColorOp(0, 0, 0, 0, 1, 0);
@@ -317,17 +261,8 @@ void effLensflareDisp(CameraId cameraId, void* param) {
         GXBegin(0x90, 0, 6);
         tri2(8, 9, 10, 0, 8, 10, 11, 0);
 
-#ifdef MUST_MATCH
         lensflareSetColor4(((((LensflareData*)data)->field_14 * alpha) >> 9));
         lensflareSetColor6();
-#else
-        {
-            GXColor color = dat_8041f5dc;
-            color.a = (((LensflareData*)data)->field_14 * alpha) >> 9;
-            GXSetTevColor(1, color);
-        }
-        GXSetTevColor(2, dat_8041f5e0);
-#endif
         GXSetNumTevStages(1);
         GXSetTevOrder(0, 0, 0, 0xff);
         GXSetTevColorOp(0, 0, 0, 0, 1, 0);
@@ -350,15 +285,7 @@ void effLensflareDisp(CameraId cameraId, void* param) {
         GXBegin(0x90, 0, 6);
         tri2(4, 5, 6, 0, 4, 6, 7, 0);
 
-#ifdef MUST_MATCH
         lensflareSetColor5(((((LensflareData*)data)->field_14 * alpha) >> 8));
-#else
-        {
-            GXColor color = dat_8041f5e4;
-            color.a = (((LensflareData*)data)->field_14 * alpha) >> 8;
-            GXSetTevColor(1, color);
-        }
-#endif
         {
             f32 a = 34.0f + data->field_20;
             PSMTXRotRad(rot, 'z', 0.017453292f * (a + (f32)frame));
