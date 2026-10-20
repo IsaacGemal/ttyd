@@ -95,18 +95,18 @@ void cardInit(void) {
 	CARDInit();
 }
 
-void unk_800b0ed0(void) {
-	wp->unkE4 = wp->chan;
-	wp->unkEC = 10;
+void cardSlotWatchBegin(void) {
+	wp->slotWatchChan = wp->chan;
+	wp->slotWatchTimer = 10;
 	wp->flags |= 0x8000;
 }
 
-void unk_800b0eac(void) {
+void cardSlotWatchEnd(void) {
 	wp->flags &= ~0x8000;
 	wp->flags &= ~0xC000;
 }
 
-BOOL unk_800b0e80(void) {
+BOOL cardSlotChanged(void) {
     if (wp->flags & 0x8000 && wp->flags & 0x4000) {
         return TRUE;
     }
@@ -123,7 +123,7 @@ BOOL cardIsExec(void) {
     if (wp->flags & 1) {
         return TRUE;
     }
-    return wp->unkEC != 0;
+    return wp->slotWatchTimer != 0;
 }
 
 s32 cardGetCode(void) {
@@ -135,12 +135,12 @@ void cardMain(void) {
 
 	if (wp->flags & 0x8000) {
 		temp_r4 = (s32)(s64)-(CARDProbe(0) == 0); //is something inserted?
-		if (wp->unkE4 != temp_r4) {
+		if (wp->slotWatchChan != temp_r4) {
 			wp->flags |= 0x4000;
 		}
-		wp->unkE4 = temp_r4;
-		if (wp->unkEC) {
-			wp->unkEC--;
+		wp->slotWatchChan = temp_r4;
+		if (wp->slotWatchTimer) {
+			wp->slotWatchTimer--;
 		}
 	}
 

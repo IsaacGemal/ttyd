@@ -49,7 +49,7 @@ typedef struct {
 } CardData;
 
 typedef struct {
-    vu16 flags; //0x0
+    vu16 flags; //0x0, 0x8000 = slot watch on, 0x4000 = slot A card inserted/removed while watching
     u8 unk2[0x4 - 0x2]; //0x2
     void* workArea; //0x4
     s32 chan; //0x8
@@ -74,17 +74,17 @@ typedef struct {
     s32 unkD8; //0xD8
     u8 unkDC[0xE0 - 0xDC]; //0xDC
     s32 unkE0; //0xE0
-    s32 unkE4; //0xE4
+    s32 slotWatchChan; //0xE4, last slot A state while watching: 0 = card in, -1 = none (same encoding as chan)
     u8 unkE8[0xEC - 0xE8]; //0xE8
-    s32 unkEC; //0xEC
+    s32 slotWatchTimer; //0xEC, frames cardIsExec stays busy after cardSlotWatchBegin
 } CardWork;
 
 CardData* cardGetFilePtr(void);
 void cardBufReset(void);
 void cardInit(void);
-void unk_800b0ed0(void); // called by evt_memcard
-void unk_800b0eac(void); // called by evt_memcard
-BOOL unk_800b0e80(void); // called by evt_memcard
+void cardSlotWatchBegin(void); // called by evt_memcard
+void cardSlotWatchEnd(void); // called by evt_memcard
+BOOL cardSlotChanged(void); // called by evt_memcard
 BOOL cardIsExec(void);
 s32 cardGetCode(void);
 void cardMain(void);

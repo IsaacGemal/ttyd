@@ -25,15 +25,15 @@ s32 memcard_buf_reset(EventEntry* event, BOOL isFirstCall) {
     return EVT_RETURN_DONE;
 }
 
-s32 unk_80256490(EventEntry* event, BOOL isFirstCall) {
-    unk_800b0ed0();
+s32 memcard_slot_watch_begin(EventEntry* event, BOOL isFirstCall) {
+    cardSlotWatchBegin();
     return EVT_RETURN_DONE;
 }
 
-s32 unk_80256428(EventEntry* event, BOOL isFirstCall) {
+s32 memcard_slot_changed(EventEntry* event, BOOL isFirstCall) {
     s32* args = event->args;
 
-    if (unk_800b0e80()) {
+    if (cardSlotChanged()) {
         evtSetValue(event, args[0], 1);
     } else {
         evtSetValue(event, args[0], 0);
@@ -41,8 +41,8 @@ s32 unk_80256428(EventEntry* event, BOOL isFirstCall) {
     return EVT_RETURN_DONE;
 }
 
-s32 unk_80256404(EventEntry* event, BOOL isFirstCall) {
-    unk_800b0eac();
+s32 memcard_slot_watch_end(EventEntry* event, BOOL isFirstCall) {
+    cardSlotWatchEnd();
     return EVT_RETURN_DONE;
 }
 
@@ -227,7 +227,7 @@ s32 evt_memcard_check[] = {
     0x0001002B,
     0xFFFFFFFA,
     0x0001005B,
-    (s32)unk_80256490,
+    (s32)memcard_slot_watch_begin,
     0x0003005B,
     (s32)evt_msg_print_add,
     0x00000001,
@@ -255,7 +255,7 @@ s32 evt_memcard_check[] = {
     0xFE363C80,
     0x00000000,
     0x0002005B,
-    (s32)unk_80256428,
+    (s32)memcard_slot_changed,
     0xFE363C80,
     0x00020018,
     0xFE363C80,
@@ -304,7 +304,7 @@ s32 evt_memcard_check[] = {
     0xFE363C80,
     0x00000000,
     0x0002005B,
-    (s32)unk_80256428,
+    (s32)memcard_slot_changed,
     0xFE363C80,
     0x00020018,
     0xFE363C80,
@@ -364,7 +364,7 @@ s32 evt_memcard_check[] = {
     0x00010024,
     0xFFFFFFFC,
     0x0001005B,
-    (s32)unk_80256490,
+    (s32)memcard_slot_watch_begin,
     0x0003005B,
     (s32)evt_msg_print_add,
     0x00000000,
@@ -377,7 +377,7 @@ s32 evt_memcard_check[] = {
     0xFE363C80,
     0x00000000,
     0x0002005B,
-    (s32)unk_80256428,
+    (s32)memcard_slot_changed,
     0xFE363C80,
     0x00020018,
     0xFE363C80,
@@ -471,7 +471,7 @@ s32 evt_memcard_check[] = {
     (s32)evt_memcard_nosave,
     0x00000031,
     0x0002005B,
-    (s32)unk_80256404,
+    (s32)memcard_slot_watch_end,
     0xFE363C80,
     0x00020018,
     0xFBD3E28A,
@@ -879,7 +879,7 @@ s32 evt_memcard_save[] = {
     0x0001002B,
     0xFFFFFFFA,
     0x0001005B,
-    (s32)unk_80256490,
+    (s32)memcard_slot_watch_begin,
     0x0003005B,
     (s32)evt_msg_print_add,
     0x00000001,
@@ -907,7 +907,7 @@ s32 evt_memcard_save[] = {
     0xFE363C80,
     0x00000000,
     0x0002005B,
-    (s32)unk_80256428,
+    (s32)memcard_slot_changed,
     0xFE363C80,
     0x00020018,
     0xFE363C80,
@@ -958,7 +958,7 @@ s32 evt_memcard_save[] = {
     0x00000000,
     (s32)(void*)"msg_mcard_make_data_warning",
     0x0002005B,
-    (s32)unk_80256428,
+    (s32)memcard_slot_changed,
     0xFE363C80,
     0x00020018,
     0xFE363C80,
@@ -1035,7 +1035,7 @@ s32 evt_memcard_save[] = {
     0x00010024,
     0xFFFFFFFC,
     0x0001005B,
-    (s32)unk_80256490,
+    (s32)memcard_slot_watch_begin,
     0x0003005B,
     (s32)evt_msg_print_add,
     0x00000000,
@@ -1052,7 +1052,7 @@ s32 evt_memcard_save[] = {
     0x00000000,
     (s32)(void*)"msg_mcard_make_data_warning",
     0x0002005B,
-    (s32)unk_80256428,
+    (s32)memcard_slot_changed,
     0xFE363C80,
     0x00020018,
     0xFE363C80,
@@ -1196,7 +1196,7 @@ s32 evt_memcard_save[] = {
     (s32)(void*)"msg_mcard_save_miss",
     0x00000031,
     0x0001005B,
-    (s32)unk_80256404,
+    (s32)memcard_slot_watch_end,
     0x00020018,
     0xFBD3E28B,
     0x00000001,

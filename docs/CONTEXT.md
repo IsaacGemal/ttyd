@@ -10750,3 +10750,22 @@ Verified: tower `ninja` recreates `build/G8MJ01/ok` after each REL's renames (th
 `MapAllocEntry` (memory.c): bytes 0xC-0x20 of the header are never read or written, so they are `pad_0xC`.
 
 Users: `src/manager/filemgr.c` `smart->file = newentry` in `_fileAlloc` and `fileAsync`. No rels/ file touches these fields. Verified: tower `ninja` recreates `build/G8MJ01/ok`; natural (no MUST_MATCH) compiles of memory.c and filemgr.c return 0. Index: 30.889 per kLOC (21979 weighted) -> 30.808 (21921); field_0x 3533 -> 3475.
+### Readability: evt_memcard and cam_road unk_ names (2026-10-20, Claude Haiku 5.5, reviewed by Claude Opus 5.5, n9-q-memcam)
+
+cardmgr slot watch: while flag 0x8000 is set, cardMain probes slot A every frame with `-(CARDProbe(0) == 0)` (0 = card
+in, -1 = none, the encoding cardmgr's probe path also writes to `chan`), sets 0x4000 when the result differs from the
+stored state, stores it, and counts the timer down. So the mechanism is a card inserted/removed latch, not a retry
+or a "different card" (serial) check. Names: `cardSlotWatchBegin` (0x800B0ED0: seeds `slotWatchChan` (0xE4) from
+`chan`, `slotWatchTimer` (0xEC) = 10, sets 0x8000), `cardSlotChanged` (0x800B0E80: TRUE when 0x8000 and 0x4000 are both
+set), `cardSlotWatchEnd` (0x800B0EAC: clears 0x8000 and 0xC000). cardIsExec reports busy while `slotWatchTimer` is
+nonzero. CardWork has no flags enum, so the two bits are documented on the `flags` field comment. evt_memcard USER_FUNCs:
+`memcard_slot_watch_begin` (0x80256490), `memcard_slot_changed` (0x80256428, writes 1/0 into its argument) and
+`memcard_slot_watch_end` (0x80256404). The scripts start the watch before the format / make-data prompts, read
+`memcard_slot_changed` after each yes/no select and on 1 print `msg_out_mcard_warnning` and take the nosave path, and
+end the watch on the damage / save-miss exits. cam_road: CamRoadMap `unk_104` is `curveRanges`, the 0x68-byte record
+base that CamRoadCurve::curveIdx indexes; calcCamRoad hands each record to collisionCurve in mode 1, which reads only
+`curvePtsStart`/`curvePtsCount` (0x60/0x64), a point range into `curvePts`. Left as they were: CamRoadMap `unk_E8`
+(calcCamRoad reads its first float as an angle, calcCurrentCamState reads it as a Vec, so the element type is not
+settled), `unk_108` (only the load fixup touches it), and CamRoadWork `unk_204`/`unk_208` (no reader outside
+camRoadSetup/camRoadReset; unk_204 is kept across reset). Index: whole tree 30.808 -> 30.733 per kLOC
+(21921 -> 21868 weighted).
