@@ -1543,8 +1543,8 @@ void evalOn(void) {
     animPoseWorldPositionEvalOn(npc->poseId);
     wp->poseId = npc->poseId;
     pose = animPoseGetAnimPosePtr(npc->poseId);
-    positions = (Vec*)((smartEntry*)*(void**)((u8*)pose + 0x15C))->address;
-    n = *(s32*)((u8*)pose + 0x160);
+    positions = (Vec*)pose->groupWorldPos->address;
+    n = pose->groupWorldPosCount;
     for (i = 0; i < n; i++) {
         positions[i] = vec3_rsh_00013cec;
     }
@@ -2588,7 +2588,7 @@ static void ext_moamoa_dispent(void) {
 void moamoa_joint_position(void* entry_, Vec* out) {
     MoamoaPose* entry = entry_;
     AnimationPose* pose = animPoseGetAnimPosePtr(npcNameToPtr("base")->poseId);
-    Vec* positions = (Vec*)((smartEntry*)*(void**)((u8*)pose + 0x15C))->address;
+    Vec* positions = (Vec*)pose->groupWorldPos->address;
     Vec tmp;
     Vec* py = &positions[wp->chainGroup[entry->chain].y];
     f32 t = (f32)entry->chainSlot / (f32)wp->chainSlots[entry->chain];

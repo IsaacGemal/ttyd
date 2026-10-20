@@ -206,7 +206,7 @@ void effNiceMain(EffectEntry* effect) {
 		case 1:
 			end = *(f32*)((u8*)*(void**)((u8*)animData + 0x24) + 8);
 			base = (u32)gp->language == 0 ? 32.0f : 34.0f;
-			time = *(f32*)((u8*)pose + 0x24);
+			time = pose->clipTime;
 			if (time > base) {
 				alpha = 1.0f - (time - base) / (end - base);
 				if (alpha < 0.0f) {
@@ -227,7 +227,7 @@ void effNiceMain(EffectEntry* effect) {
 		case 2:
 			end2 = *(f32*)((u8*)*(void**)((u8*)animData + 0x24) + 8);
 			base2 = (u32)gp->language == 0 ? 35.0f : 37.0f;
-			time2 = *(f32*)((u8*)pose + 0x24);
+			time2 = pose->clipTime;
 			if (time2 > base2) {
 				alpha = 1.0f - (time2 - base2) / (end2 - base2);
 				if (alpha < 0.0f) {
@@ -248,7 +248,7 @@ void effNiceMain(EffectEntry* effect) {
 		case 3:
 			end3 = *(f32*)((u8*)*(void**)((u8*)animData + 0x24) + 8);
 			base3 = (u32)gp->language == 0 ? 45.0f : 40.f;
-			time3 = *(f32*)((u8*)pose + 0x24);
+			time3 = pose->clipTime;
 			if (time3 > base3) {
 				alpha = 1.0f - (time3 - base3) / (end3 - base3);
 				if (alpha < 0.0f) {
@@ -269,7 +269,7 @@ void effNiceMain(EffectEntry* effect) {
 		case 4:
 			end4 = *(f32*)((u8*)*(void**)((u8*)animData + 0x24) + 8);
 			base4 = (u32)gp->language == 0 ? 48.0f : 40.f;
-			time4 = *(f32*)((u8*)pose + 0x24);
+			time4 = pose->clipTime;
 			if (time4 > base4) {
 				alpha = 1.0f - (time4 - base4) / (end4 - base4);
 				if (alpha < 0.0f) {
