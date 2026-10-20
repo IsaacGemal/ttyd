@@ -25,7 +25,7 @@
 // One animated Teresian used by teresa_ext_main's state machine.
 typedef struct TeresaEntry {
     u8 state;        // 0x0
-    s8 animMode;     // 0x1, 0 loops frames 0-7, 1 plays frames 8-15 once (pose->field_0x10)
+    s8 animMode;     // 0x1, 0 loops frames 0-7, 1 plays frames 8-15 once (pose->texId)
     u8 pad_0x2[2];   // 0x2
     s32 timer;       // 0x4, animation frame clock; state 0x14 also waits on it
     s32 delay;       // 0x8, frames to wait before the state machine runs
