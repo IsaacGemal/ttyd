@@ -2,6 +2,7 @@
 #include <dolphin/mtx.h>
 #include "battle/battle.h"
 #include "battle/battle_information.h"
+#include "battle/battle_stage.h"
 #include "driver/animdrv.h"
 #include "driver/camdrv.h"
 #include "driver/effdrv.h"
@@ -81,7 +82,7 @@ void seq_battleExit(SequenceWork* work) {
 // the call site (MWCC also emits an unused out-of-line copy; the linker drops it, autolink passes).
 // The do-while, the switch(type) (which gives the `bge`/`b` shape) and the function-scope
 // fbat/case-2 store are the other shapes this needs.
-static void bmapLoadRank(s32 rank, u8* setup);
+static void bmapLoadRank(s32 rank, BattleStageData* stage);
 
 void seq_battleMain(SequenceWork* work) {
     FieldBattleData* fbat;
@@ -134,12 +135,12 @@ void seq_battleMain(SequenceWork* work) {
 
         case 3:
             {
-                u8* setup;
+                BattleStageData* setup;
                 PouchData* pouch;
                 BOOL skip;
 
                 fbat = fbatGetPointer();
-                setup = (u8*)fbat->target->battleInfo.stageData;
+                setup = fbat->target->battleInfo.stageData;
                 pouch = pouchGetPtr();
 
                 do {
@@ -235,20 +236,20 @@ void seq_battleMain(SequenceWork* work) {
 
 // See seq_battleMain: keeping this helper after it is what orders the "bti_0N" literals first in
 // .rodata (MWCC emits a file's functions in reverse source order). It is inlined at the call site.
-static void bmapLoadRank(s32 rank, u8* setup) {
+static void bmapLoadRank(s32 rank, BattleStageData* stage) {
     switch (rank) {
         case 0:
-            bmapLoad("bti_01", *(char**)(setup + 0x4));
+            bmapLoad("bti_01", stage->mSpecificStageDataDir);
             break;
         case 1:
-            bmapLoad("bti_02", *(char**)(setup + 0x4));
+            bmapLoad("bti_02", stage->mSpecificStageDataDir);
             break;
         case 2:
-            bmapLoad("bti_03", *(char**)(setup + 0x4));
+            bmapLoad("bti_03", stage->mSpecificStageDataDir);
             break;
         case 3:
         default:
-            bmapLoad("bti_04", *(char**)(setup + 0x4));
+            bmapLoad("bti_04", stage->mSpecificStageDataDir);
             break;
     }
 }

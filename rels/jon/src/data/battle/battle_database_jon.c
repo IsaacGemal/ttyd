@@ -152,10 +152,10 @@ BattleStageData jon_btlstage_data[4] = {
         "stg_00_3",                                 // mSpecificStageDataDir
         2,                                          // mNumObjects
         &jon_btlobject_data[0],                     // mObjects
-        {  // bgsetAttackKind0
+        {  // bgsetAttackA1
             NULL,                                       // name
             0,                                          // icon
-            0,                                          // item
+            ITEM_NULL,                                  // item
             NULL,                                       // description
             100,                                        // baseAccuracy
             0,                                          // baseFpCost
@@ -229,10 +229,10 @@ BattleStageData jon_btlstage_data[4] = {
             NULL,                                       // mAttackEvtScript
             { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 },   // field_B4
         },
-        {  // bgsetAttackKind2
+        {  // bgsetAttackB
             NULL,                                       // name
             0,                                          // icon
-            0,                                          // item
+            ITEM_NULL,                                  // item
             NULL,                                       // description
             100,                                        // baseAccuracy
             0,                                          // baseFpCost
@@ -317,10 +317,10 @@ BattleStageData jon_btlstage_data[4] = {
         "stg_00_3",                                 // mSpecificStageDataDir
         2,                                          // mNumObjects
         &jon_btlobject_data[2],                     // mObjects
-        {  // bgsetAttackKind0
+        {  // bgsetAttackA1
             NULL,                                       // name
             0,                                          // icon
-            0,                                          // item
+            ITEM_NULL,                                  // item
             NULL,                                       // description
             100,                                        // baseAccuracy
             0,                                          // baseFpCost
@@ -394,10 +394,10 @@ BattleStageData jon_btlstage_data[4] = {
             NULL,                                       // mAttackEvtScript
             { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 },   // field_B4
         },
-        {  // bgsetAttackKind2
+        {  // bgsetAttackB
             NULL,                                       // name
             0,                                          // icon
-            0,                                          // item
+            ITEM_NULL,                                  // item
             NULL,                                       // description
             100,                                        // baseAccuracy
             0,                                          // baseFpCost
@@ -482,10 +482,10 @@ BattleStageData jon_btlstage_data[4] = {
         "stg_00_3",                                 // mSpecificStageDataDir
         2,                                          // mNumObjects
         &jon_btlobject_data[4],                     // mObjects
-        {  // bgsetAttackKind0
+        {  // bgsetAttackA1
             NULL,                                       // name
             0,                                          // icon
-            0,                                          // item
+            ITEM_NULL,                                  // item
             NULL,                                       // description
             100,                                        // baseAccuracy
             0,                                          // baseFpCost
@@ -559,10 +559,10 @@ BattleStageData jon_btlstage_data[4] = {
             NULL,                                       // mAttackEvtScript
             { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 },   // field_B4
         },
-        {  // bgsetAttackKind2
+        {  // bgsetAttackB
             NULL,                                       // name
             0,                                          // icon
-            0,                                          // item
+            ITEM_NULL,                                  // item
             NULL,                                       // description
             100,                                        // baseAccuracy
             0,                                          // baseFpCost
@@ -647,10 +647,10 @@ BattleStageData jon_btlstage_data[4] = {
         "stg_00_3",                                 // mSpecificStageDataDir
         2,                                          // mNumObjects
         &jon_btlobject_data[6],                     // mObjects
-        {  // bgsetAttackKind0
+        {  // bgsetAttackA1
             NULL,                                       // name
             0,                                          // icon
-            0,                                          // item
+            ITEM_NULL,                                  // item
             NULL,                                       // description
             100,                                        // baseAccuracy
             0,                                          // baseFpCost
@@ -724,10 +724,10 @@ BattleStageData jon_btlstage_data[4] = {
             NULL,                                       // mAttackEvtScript
             { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 },   // field_B4
         },
-        {  // bgsetAttackKind2
+        {  // bgsetAttackB
             NULL,                                       // name
             0,                                          // icon
-            0,                                          // item
+            ITEM_NULL,                                  // item
             NULL,                                       // description
             100,                                        // baseAccuracy
             0,                                          // baseFpCost

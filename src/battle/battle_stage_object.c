@@ -1692,10 +1692,10 @@ USER_FUNC(_get_bgset_attack_data) {
 
 	switch (kind) {
 		case 0:
-			r5 = &wp->fbatInfo->setup->stageData->bgsetAttackKind0;
+			r5 = &wp->fbatInfo->setup->stageData->bgsetAttackA1;
 			break;
 		case 2:
-			r5 = &wp->fbatInfo->setup->stageData->bgsetAttackKind2;
+			r5 = &wp->fbatInfo->setup->stageData->bgsetAttackB;
 			break;
 		default:
 			r5 = NULL;
