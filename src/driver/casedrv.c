@@ -98,7 +98,7 @@ void caseMain(void) {
 	hit1E0 = mario->hitobjFront;
 	hitPush = mario->hitobjPush;
 	hit1FC = MW_PTR(mario, 0x1FC);
-	hit1F4 = MW_PTR(mario, 0x1F4);
+	hit1F4 = mario->hitobjHead;
 	val = mario->buttonNew;
 
 	if ((u32)marioStGetSystemLevel() != 0) {

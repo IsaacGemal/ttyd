@@ -64,8 +64,6 @@ WindowPartyDt winPartyDt[7] = {
 
 // Extended fields of WindowWork used by this unit. win/win_main.h only declares
 // the first 0x40 bytes, so the rest are reached through raw offsets below.
-#define WW_U16(w, off) (*(u16*)((u8*)(w) + (off)))
-#define WW_U32(w, off) (*(u32*)((u8*)(w) + (off)))
 #define WW_S32(w, off) (*(s32*)((u8*)(w) + (off)))
 #define WW_F32(w, off) (*(f32*)((u8*)(w) + (off)))
 
@@ -92,7 +90,7 @@ void winPartyInit(WindowWork* work) {
             if (pouch->partyData[j].flags & 2)
                 continue;
 
-            if (WW_U16(work, 0x0) & 0x2000) {
+            if (work->flags & 0x2000) {
                 model = winPartyDt[i].famicomModel;
                 switch (pouchGetPartyColor(PARTNER_YOSHI)) {
                 case 0: anim = "R_5"; break;
@@ -211,7 +209,7 @@ s32 winPartyMain(WindowWork* work) {
 
     switch (work->partyState) {
     case 0: {
-        u32 button = WW_U32(work, 0x4);
+        u32 button = work->buttonTrg;
         u32 dir;
 
         if (button & 0x100) {
@@ -234,7 +232,7 @@ s32 winPartyMain(WindowWork* work) {
             return -2;
         }
 
-        dir = WW_U32(work, 0x10);
+        dir = work->dirRep;
         if (dir & 0x4000) {
             s32 prev = work->partySel;
 
@@ -287,7 +285,7 @@ s32 winPartyMain(WindowWork* work) {
         break;
     }
     case 1: {
-        u32 dir = WW_U32(work, 0x10);
+        u32 dir = work->dirRep;
 
         if (dir & 0x1000) {
             work->wazaSel--;
@@ -302,7 +300,7 @@ s32 winPartyMain(WindowWork* work) {
             }
             psndSFXOn((const char*)0x20005);
         } else {
-            u32 button = WW_U32(work, 0x4);
+            u32 button = work->buttonTrg;
 
             if (button & 0x200) {
                 work->partyState = 0;
@@ -535,7 +533,7 @@ void winPartyDisp(CameraId camId, void* param, s32 partyIdx) {
             }
             animPoseSetAnim(pose, animName, 0);
             animPoseSetLocalTime(pose,
-                                 gp->retraceCount % (s32)*(f32*)(*(u8**)((u8*)anim + 0x24) + 0x8));
+                                 gp->retraceCount % (s32)*(f32*)((u8*)anim->clip + 0x8));
         } else {
             // the others: smaller, greyed out, still
             PSMTXTrans(mtx, (x - 140.0f) + pos.x, 20.0f + (y + pos.y), pos.z);

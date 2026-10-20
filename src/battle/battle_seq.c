@@ -2402,7 +2402,7 @@ void btlseqAct(BattleWork* wp) {
 							unit->mTokenFlags &= ~0x2000;
 						}
 						if (BtlUnit_GetBelong(unit) == 0) {
-							if (*(s32*)((u8*)unit + 0x2C) == 0x4000002) {
+							if (unit->seqPhase == 0x4000002) {
 								if (!BattlePhaseEndCheck() && !(wp->flags & 0x2000)) {
 									unit->mMoveColorLv = 0x60;
 								}
@@ -2514,8 +2514,8 @@ void btlseqPhaseFirstProcess(BattleWork* wp) { //1:1
 	s32 count;
 	s32 i;
 
-	*(s32*)((u8*)wp + 0x1C70) = 0;
-	*(u8*)((u8*)wp + 0x1C74) = 0;
+	wp->commandMenu.restoreId = 0;
+	wp->commandMenu.restoreState = 0;
 	for (i = 0; i < 64; i++) {
 		wp->unitIdTable[i] = -1;
 	}
@@ -2529,7 +2529,7 @@ void btlseqPhaseFirstProcess(BattleWork* wp) { //1:1
 					continue;
 				}
 			}
-			if (*(s32*)((u8*)unit + 0x2C) != BattleGetSeq(wp, SEQ_PHASE)) {
+			if (unit->seqPhase != BattleGetSeq(wp, SEQ_PHASE)) {
 				continue;
 			}
 			if (unit->mAttributeFlags & 0x80000) {

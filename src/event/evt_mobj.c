@@ -5251,7 +5251,7 @@ s32 evt_mobj_koopa_pole(EventEntry* event, BOOL isFirstCall) {
     child->unk1D8 = NULL;
     child->flagVar = 0;
     child->state = 0;
-    strcpy((char*)((u8*)child + 0x1B8), name);
+    strcpy(&child->childName[0], name);
     if (child->hitObj[0].hitObject != NULL) {
         child->hitObj[0].hitObject->flags |= 1;
     }

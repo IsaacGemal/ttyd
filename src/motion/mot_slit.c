@@ -977,13 +977,13 @@ keyOffPath:
                             query.targetPos.z = mario->position.z;
                             query.targetDistance = 20.0f;
                             movePos(&q->targetPos.x, &q->targetPos.z, 1.0f,
-                                    reviseAngle(90.0f + MW_F32(mario, 0x19C)));
+                                    reviseAngle(90.0f + mario->moveDir));
                             if (hitCheckVecHitObjXZ(q, (HitEntry*)(s32)mario->hitobjPush) != 0) {
                                 query.targetPos.x = mario->position.x;
                                 query.targetPos.z = mario->position.z;
                                 query.targetDistance = 20.0f;
                                 movePos(&q->targetPos.x, &q->targetPos.z, 1.0f,
-                                        reviseAngle(MW_F32(mario, 0x19C) - 90.0f));
+                                        reviseAngle(mario->moveDir - 90.0f));
                                 if (hitCheckVecHitObjXZ(q, (HitEntry*)(s32)mario->hitobjPush) != 0) {
                                     MW_S16(mario, 0x2D8) = 0x50;
                                 }

@@ -57,7 +57,6 @@ typedef struct JabaraWork {
 #define MW_S16(m, off) (*(s16*)((u8*)(m) + (off)))
 #define MW_S32(m, off) (*(s32*)((u8*)(m) + (off)))
 #define MW_U32(m, off) (*(u32*)((u8*)(m) + (off)))
-#define MW_F32(m, off) (*(f32*)((u8*)(m) + (off)))
 #define MW_VEC(m, off) (*(Vec*)((u8*)(m) + (off)))
 
 #ifdef MUST_MATCH
@@ -552,7 +551,7 @@ void mot_jabara(void) {
         if ((f32)mario->unk16C > JABARA_F32(float_480_8041ab18) || (f32)mario->unk16C < JABARA_F32(float_50_8041ab1c)) {
             camFollowYOn();
         }
-        if (mario->position.y == MW_F32(mario, 0x114)) {
+        if (mario->position.y == mario->prevPosition.y) {
             camFollowYOff();
         }
         sp74 = mario->position;

@@ -135,19 +135,17 @@ static USER_FUNC(mario_kirimomi) {
     MarioWork* mario = marioGetPtr();
     PartyEntry* party = partyGetPtr(0);
 
-    // 0xB4 and 0xC4 are unnamed MarioWork fields (inside the 0x98..0xC8 pad).
-    *(f32*)((u8*)mario + 0xB4) = mario->wPlayerCollisionBox.y / 2.0f;
-    *(f32*)((u8*)mario + 0xC4) -= 10.0f;
-    *(f32*)((u8*)mario + 0xC4) = (f32)fmod(*(f32*)((u8*)mario + 0xC4), 360.0);
+    mario->dispPivot.y = mario->wPlayerCollisionBox.y / 2.0f;
+    mario->dispRot.z -= 10.0f;
+    mario->dispRot.z = (f32)fmod(mario->dispRot.z, 360.0);
 
     if (party != NULL) {
-        // 0x8C is an unnamed PartyEntry field (inside the 0x88..0x94 pad).
         if (party->currentMemberId != PARTY_MEMBER_YOSHI) {
-            *(f32*)((u8*)party + 0x8C) = party->height / 2.0f;
+            party->spinPivot.y = party->height / 2.0f;
         } else {
-            *(f32*)((u8*)party + 0x8C) = (party->height - 10.0f) / 2.0f;
+            party->spinPivot.y = (party->height - 10.0f) / 2.0f;
         }
-        *(f32*)((u8*)party + 0x8C) *= party->field_70.y;
+        party->spinPivot.y *= party->field_70.y;
         party->spinAngle -= 10.0f;
         party->spinAngle = (f32)fmod(party->spinAngle, 360.0);
     }

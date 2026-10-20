@@ -955,8 +955,8 @@ USER_FUNC(moamoa1_on) {
         wp->animPoses[i] = (void*)part->poseId;
         animPoseWorldPositionEvalOn((s32)wp->animPoses[i]);
         anim = animPoseGetAnimPosePtr((s32)wp->animPoses[i]);
-        positions = (Vec*)((smartEntry*)*(void**)((u8*)anim + 0x15C))->address;
-        for (j = 0; j < *(s32*)((u8*)anim + 0x160); j++) {
+        positions = (Vec*)((smartEntry*)(void*)anim->groupWorldPos)->address;
+        for (j = 0; j < anim->groupWorldPosCount; j++) {
             *positions++ = (Vec){ 0.0f, -1000.0f, 0.0f };
         }
     }
@@ -994,8 +994,8 @@ USER_FUNC(moamoa2_on) {
     wp->animPoses[4] = (void*)part->poseId;
     animPoseWorldPositionEvalOn((s32)wp->animPoses[4]);
     pose = animPoseGetAnimPosePtr((s32)wp->animPoses[4]);
-    positions = (Vec*)((smartEntry*)*(void**)((u8*)pose + 0x15C))->address;
-    for (j = 0; j < *(s32*)((u8*)pose + 0x160); j++) {
+    positions = (Vec*)((smartEntry*)(void*)pose->groupWorldPos)->address;
+    for (j = 0; j < pose->groupWorldPosCount; j++) {
         *positions++ = (Vec){ 0.0f, -1000.0f, 0.0f };
     }
     for (i = 0, wp2 = wp->poses; i < wp->countA; i++, wp2++) {
@@ -1055,8 +1055,8 @@ USER_FUNC(moamoa_on) {
     wp->animPoses[0] = (void*)part->poseId;
     animPoseWorldPositionEvalOn((s32)wp->animPoses[0]);
     animPose = animPoseGetAnimPosePtr((s32)wp->animPoses[0]);
-    positions = (Vec*)((smartEntry*)*(void**)((u8*)animPose + 0x15C))->address;
-    for (i = 0; i < *(s32*)((u8*)animPose + 0x160); i++) {
+    positions = (Vec*)((smartEntry*)(void*)animPose->groupWorldPos)->address;
+    for (i = 0; i < animPose->groupWorldPosCount; i++) {
         *positions++ = (Vec){ 0.0f, -1000.0f, 0.0f };
     }
 
@@ -1298,7 +1298,7 @@ static void ext_moamoa_main(void) {
                 continue;
             }
             animPose = animPoseGetAnimPosePtr((s32)wp->animPoses[iF]);
-            vtx = (Vec*)((smartEntry*)*(void**)((u8*)animPose + 0x15C))->address;
+            vtx = (Vec*)((smartEntry*)(void*)animPose->groupWorldPos)->address;
             tmp2[iF] = vtx[animPoseGetGroupIdx((s32)wp->animPoses[iF], "joint_core")];
             PSVECSubtract(&tmp2[0], &tmp2[iF], &tmp1[iF]);
         }
@@ -1319,7 +1319,7 @@ static void ext_moamoa_main(void) {
                 Vec* vp1;
 
                 animPose = animPoseGetAnimPosePtr((s32)pose->animPose);
-                vtx = (Vec*)((smartEntry*)*(void**)((u8*)animPose + 0x15C))->address;
+                vtx = (Vec*)((smartEntry*)(void*)animPose->groupWorldPos)->address;
                 vp0 = &vtx[wp->groupCounts[pose->groupIdx * 2]];
                 vp1 = &vtx[wp->groupCounts[pose->groupIdx * 2 + 1]];
                 t = pose->frame;

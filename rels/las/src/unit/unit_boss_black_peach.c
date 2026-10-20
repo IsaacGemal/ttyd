@@ -1401,14 +1401,14 @@ USER_FUNC(shadow_queen_connect) {
     }
     data = (ShadowQueenData*)event->userdata[0];
     pose = animPoseGetAnimPosePtr(data->pose2Id);
-    verts = *(f32**)(*(void**)((u8*)pose + 0x15C));
+    verts = *(f32**)((void*)pose->groupWorldPos);
     part = BattleGetUnitPartsPtr(BattleTransID(event, -2), 3);
     BtlUnit_SetPartsPos(part, verts[data->locator2Group * 3], verts[data->locator2Group * 3 + 1], verts[data->locator2Group * 3 + 2]);
     part = BattleGetUnitPartsPtr(BattleTransID(event, -2), 5);
     *(f32*)((u8*)part + 0x4F8) = 7.0f;
     BtlUnit_SetPartsPos(part, verts[data->locator2Group * 3], verts[data->locator2Group * 3 + 1], verts[data->locator2Group * 3 + 2]);
     pose = animPoseGetAnimPosePtr(data->pose3Id);
-    verts = *(f32**)(*(void**)((u8*)pose + 0x15C));
+    verts = *(f32**)((void*)pose->groupWorldPos);
     part = BattleGetUnitPartsPtr(BattleTransID(event, -2), 4);
     *(f32*)((u8*)part + 0x4F8) = 1.0f;
     BtlUnit_SetPartsPos(part, verts[data->locator3Group * 3], verts[data->locator3Group * 3 + 1], verts[data->locator3Group * 3 + 2]);
@@ -1464,7 +1464,7 @@ USER_FUNC(make_pattern) {
     animPoseSetAnim(npc->poseId, "KRT_S_1", 1);
     animPoseGetAnimPosePtr(npc->poseId);
     data = animPoseGetAnimDataPtr(npc->poseId);
-    for (i = 0; i < (s32)*(f32*)(*(u8**)((u8*)data + 0x24) + 0x8); i += 3) {
+    for (i = 0; i < (s32)*(f32*)((u8*)data->clip + 0x8); i += 3) {
         p->str1 = "c_s_hand";
         p->str2 = "KRT_S_1";
         p->value = 3.0f * (f32)i;
