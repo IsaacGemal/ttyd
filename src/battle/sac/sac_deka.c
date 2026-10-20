@@ -1321,7 +1321,7 @@ void yuka_disp(CameraId cameraId, void* param) {
     DekaWork* p = get_ptr();
     CameraEntry* cam = camGetPtr(cameraId);
     GXTexObj texObj;
-    u8* base;
+    DekaYukaMesh* base;
     s32 i;
 #ifdef MUST_MATCH
     s32 j;
@@ -1361,14 +1361,14 @@ void yuka_disp(CameraId cameraId, void* param) {
 #endif
     for (i = 0; i < 0x80; i++) {
         GXBegin(0x80, 0, 4);
-        GXPosition3f32(*(f32*)(base + i * 0xC + 0xC18), *(f32*)(base + i * 0xC + 0xC1C), *(f32*)(base + i * 0xC + 0xC20));
-        GXTexCoord2f32(*(f32*)(base + i * 4 + 0x3060), *(f32*)(base + i * 4 + 0x3468));
-        GXPosition3f32(*(f32*)(base + i * 0xC + 0x1224), *(f32*)(base + i * 0xC + 0x1228), *(f32*)(base + i * 0xC + 0x122C));
-        GXTexCoord2f32(*(f32*)(base + i * 4 + 0x3264), *(f32*)(base + i * 4 + 0x366C));
-        GXPosition3f32(*(f32*)(base + i * 0xC + 0x1230), *(f32*)(base + i * 0xC + 0x1234), *(f32*)(base + i * 0xC + 0x1238));
-        GXTexCoord2f32(*(f32*)(base + i * 4 + 0x3268), *(f32*)(base + i * 4 + 0x3670));
-        GXPosition3f32(*(f32*)(base + i * 0xC + 0xC24), *(f32*)(base + i * 0xC + 0xC28), *(f32*)(base + i * 0xC + 0xC2C));
-        GXTexCoord2f32(*(f32*)(base + i * 4 + 0x3064), *(f32*)(base + i * 4 + 0x346C));
+        GXPosition3f32(base->disp[0][i].x, base->disp[0][i].y, base->disp[0][i].z);
+        GXTexCoord2f32(base->texU[0][i], base->texV[0][i]);
+        GXPosition3f32(base->disp[1][i].x, base->disp[1][i].y, base->disp[1][i].z);
+        GXTexCoord2f32(base->texU[1][i], base->texV[1][i]);
+        GXPosition3f32(base->disp[1][i + 1].x, base->disp[1][i + 1].y, base->disp[1][i + 1].z);
+        GXTexCoord2f32(base->texU[1][i + 1], base->texV[1][i + 1]);
+        GXPosition3f32(base->disp[0][i + 1].x, base->disp[0][i + 1].y, base->disp[0][i + 1].z);
+        GXTexCoord2f32(base->texU[0][i + 1], base->texV[0][i + 1]);
         GXEnd();
     }
 #ifdef MUST_MATCH
