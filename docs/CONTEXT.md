@@ -11333,3 +11333,14 @@ Renamed `str_XXXXXXXX` to `str_` plus the literal's text (non-identifier charact
 
 - strrest: remaining `str_XXXXXXXX` string symbols renamed to content names through `tools/rename_symbol.py` (format-only strings as `str_fmt_<spec>`, e.g. `str_fmt_04d`, `str_fmt_fff`). 91 renames: src/event and headers 17 (evt_map, evt_sub, evt_win, evt_cam, include/evt/evt_mobj.h), src/motion, mario, party, window, data, nameent, parse, pmario_sound and headers 34, src/battle (ac, sac, headers) 23, src/effect 7 and src/effect/n64 5, rels/tou 1 (`str_00001FA0` -> `str_fmt_ss`, `--rel tou`). Build MATCH after each batch.
 - strrest skipped: owned by another worker (peach, evt_mobj, battle_disp, mot_hammer, evt_shop, shadowdrv, battle_seq_end, battle_audience_kinopio; includes `str_toride`/`str_toride_`); already renamed on the strfune/strmisc/strteresa/peachstr branches (231 symbols); non-ASCII (`str_802FE1D8`, `str_802ECE64`, `str_802ECE84`, rels tou `str_00001F74`, REL-only las `str_00000668`/`str_00000674` whose data is not in the sources); duplicate names (`M_S_1`, `M_I_Y`, `A_1`, `MOBJ_HiddenHatenaBlock`, `%d`); name already exists (`str_MOBJ_Lv1Block` etc., `str_M_J_1A/5A/1C`, `str_gor_01`, `str_A_2`, `str_S_1`, `str_Z_1`); empty or no identifier text (`str_8041EDBC`, `str_80421980`, `"<<<"` pair); over 40 chars (`str_80419848`).
+### Cleanup: content names for address-named strings in eight units (2026-10-20, Claude Haiku 5.5, q-strmisc)
+
+Renamed 54 `str_XXXXXXXX` symbols to `str_` + the literal's text (non-identifier characters to `_`, repeats collapsed, trailing `_` dropped), with `tools/rename_symbol.py`; config/G8MJ01/symbols.txt updated with the same pairs. Per file, distinct symbols renamed: peach.c 11, evt_mobj.c 8, battle_disp.c 8, evt_shop.c 6, mot_hammer.c 6, shadowdrv.c 5, battle_seq_end.c 5, battle_audience_kinopio.c 5. Extern-only strings (battle_disp.c, evt_shop.c `str_802ECE38`, battle_seq_end.c `str_802FDDF0`) got their text from the built dol's .rodata.
+
+Skipped, left address-named:
+- `str_802C1B88` "actual depth from the light (16bit depth)" (shadowdrv.c): 41 characters, over the 40-character limit.
+- `str_802C4138` "toride" and `str_802C4140` "toride_" (evt_mobj.c): both would become `str_toride`.
+
+Printing `%s`/`%d`/`%2d` literals gave `str__s`, `str__d`, `str__2d` (leading `_` kept, only trailing `_` dropped).
+
+Verified: tower build recreates build/G8MJ01/ok. `tools/cleanup_index.py` address_name 3319 -> 3193 (weighted 14503 -> 14377).

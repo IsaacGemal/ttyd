@@ -3156,7 +3156,7 @@ __declspec(section ".rodata") char sfx_mobj_blackbox_swing1[0x1C] = "SFX_MOBJ_BL
 __declspec(section ".rodata") char sfx_mobj_blackbox_open1[0x18] = "SFX_MOBJ_BLACKBOX_OPEN1";
 __declspec(section ".rodata") static const Vec vec3_802c3fd8[1] = {{0.0f, 0.0f, 0.0f}};
 __declspec(section ".rodata") static const Vec vec3_802c3fe4[1] = {{0.0f, 0.0f, 0.0f}};
-__declspec(section ".rodata") char str_802C3FF0[0x10] = "save_first_hit";
+__declspec(section ".rodata") char str_save_first_hit[0x10] = "save_first_hit";
 #pragma force_active reset
 
 s32 mobj_brickblk(MapObjectEntry* obj) {
@@ -5288,8 +5288,8 @@ __declspec(section ".rodata") Vec mobj_vec3_802c4050_template[1] = {{0.0f, 0.0f,
 // vec3_802c405c: placeholder for the object the code copies (defining it hangs MWCC)
 __declspec(section ".rodata") Vec mobj_vec3_802c405c_template[1] = {{200.0f, 0.0f, 200.0f}};
 __declspec(section ".rodata") Vec vec3_802c4068[1] = {{0.0f, 0.0f, 0.0f}};
-const char str_802C4074[0x10] = "o_";
-const char str_802C4084[0x10] = "i_";
+const char str_o[0x10] = "o_";
+const char str_i[0x10] = "i_";
 __declspec(section ".rodata") Vec vec3_802c4094[1] = {{0.0f, -2000.0f, 0.0f}};
 // vec3_802c40a0: placeholder for the object the code copies (defining it hangs MWCC)
 __declspec(section ".rodata") Vec mobj_vec3_802c40a0_template[1] = {{0.0f, 0.0f, 0.0f}};
@@ -5300,19 +5300,19 @@ __declspec(section ".rodata") Vec mobj_vec3_802c40b8_template[1] = {{0.0f, 0.0f,
 // vec3_802c40c4: placeholder for the object the code copies (defining it hangs MWCC)
 __declspec(section ".rodata") Vec mobj_vec3_802c40c4_template[1] = {{0.0f, 0.0f, 0.0f}};
 __declspec(section ".rodata") Vec vec3_802c40d0[1] = {{0.0f, 0.0f, 0.0f}};
-__declspec(section ".rodata") char str_802C40DC[0xC] = "KPA2_G_1";
+__declspec(section ".rodata") char str_KPA2_G_1[0xC] = "KPA2_G_1";
 __declspec(section ".rodata") char sfx_kuppa_post_jump1[0x18] = "SFX_KUPPA_POST_JUMP1";
 __declspec(section ".rodata") char sfx_kuppa_post_slide1[0x18] = "SFX_KUPPA_POST_SLIDE1";
 __declspec(section ".rodata") char sfx_kuppa_post_throw1[0x18] = "SFX_KUPPA_POST_THROW1";
-__declspec(section ".rodata") char str_802C4130[0x8] = "kpa_06";
+__declspec(section ".rodata") char str_kpa_06[0x8] = "kpa_06";
 __declspec(section ".rodata") char str_802C4138[0x8] = "toride";
 __declspec(section ".rodata") char str_802C4140[0x8] = "toride_";
 __declspec(section ".rodata") char sfx_kuppa_struggle1[0x14] = "SFX_KUPPA_STRUGGLE1";
-__declspec(section ".rodata") char str_802C415C[0xC] = "KPA2_S_1";
+__declspec(section ".rodata") char str_KPA2_S_1[0xC] = "KPA2_S_1";
 __declspec(section ".rodata") Vec vec3_802c4168[1] = {{0.0f, 0.0f, 0.0f}};
 __declspec(section ".rodata") Vec vec3_802c4174[1] = {{0.0f, 0.0f, 0.0f}};
-const char str_802C4180[0x10] = "MOBJ_goal_pole";
-const char str_802C4190[0x10] = "MOBJ_goal_hata";
+const char str_MOBJ_goal_pole[0x10] = "MOBJ_goal_pole";
+const char str_MOBJ_goal_hata[0x10] = "MOBJ_goal_hata";
 // double_to_int_802c41c8: compiler int->float conversion constant, emitted at the first conversion
 // double_to_int_mask_802c42e0: compiler int->float conversion constant, emitted at the first conversion
 #pragma force_active reset
@@ -5360,7 +5360,7 @@ s32 mobj_save_blk_sysevt[41] = {
     0x00000000, 0x00020032, 0xFBD3E28A, 0x00000000,
     0x00020018, 0xF8405C69, 0x00000000, 0x00020032,
     0xF8405C69, 0x00000001, 0x0005005B, (s32)evt_msg_print,
-    0x00000000, (s32)str_802C3FF0, 0x00000000, 0x00000000,
+    0x00000000, (s32)str_save_first_hit, 0x00000000, 0x00000000,
     0x00020032, 0xFBD3E28A, 0x00000001, 0x00000021,
     0x0002001D, 0xF5DE0180, 0x00000007, 0x00020032,
     0xF8405C6C, 0x00000001, 0x00000021, 0x00020032,
@@ -5375,7 +5375,7 @@ s32 kpa_pole[280] = {
     0x0001005B, (s32)kpa_disp_pole_init, 0x0001005B, (s32)kpa_clear_jump_data,
     0x0002005B, (s32)kpa_get_hata_name, 0xFE363C8F, 0x0004005B,
     (s32)evt_mario_set_dir, 0x0000005A, 0x00000000, 0x00000000,
-    0x0002005B, (s32)kpa_chg_pose, (s32)str_802C40DC, 0x0005005B,
+    0x0002005B, (s32)kpa_chg_pose, (s32)str_KPA2_G_1, 0x0005005B,
     (s32)evt_mario_get_pos, 0x00000000, 0xFE363C81, 0xFE363C82,
     0xFE363C83, 0x0006005B, (s32)evt_snd_sfxon_3d, (s32)sfx_kuppa_post_jump1,
     0xFE363C81, 0xFE363C82, 0xFE363C83, 0x00000000,
@@ -5484,7 +5484,7 @@ s32 kpa_move_to_toride[110] = {
     0x0002005B, (s32)evt_mario_key_onoff, 0x00000000, 0x0001005B,
     (s32)evt_mario_wait_landon, 0x00020032, 0xF9718885, 0x00000001,
     0x0002005B, (s32)evt_sub_get_mapname, 0xFE363C80, 0x0002000C,
-    0xFE363C80, (s32)str_802C4130, 0x0005005B, (s32)evt_mapobj_get_position,
+    0xFE363C80, (s32)str_kpa_06, 0x0005005B, (s32)evt_mapobj_get_position,
     (s32)str_802C4138, 0xFE363C80, 0xFE363C81, 0xFE363C82,
     0x00000020, 0x0005005B, (s32)evt_mapobj_get_position, (s32)str_802C4140,
     0xFE363C80, 0xFE363C81, 0xFE363C82, 0x00000021,
@@ -5506,7 +5506,7 @@ s32 kpa_move_to_toride[110] = {
     0x0003005B, (s32)evt_mario_dispflag_onoff, 0x00000001, 0x00000002,
     0x0001000A, 0x000007D0, 0x0003005B, (s32)evt_mario_dispflag_onoff,
     0x00000000, 0x00000002, 0x0002005B, (s32)evt_snd_sfxoff,
-    0xFE363C8A, 0x0002005B, (s32)kpa_chg_pose, (s32)str_802C415C,
+    0xFE363C8A, 0x0002005B, (s32)kpa_chg_pose, (s32)str_KPA2_S_1,
     0x00000021, 0x0002005B, (s32)evt_mario_key_onoff, 0x00000001,
     0x00000002, 0x00000001,
 };

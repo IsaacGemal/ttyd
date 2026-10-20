@@ -31,12 +31,12 @@ const Vec vec3_802c5a8c = { 0.0f, 0.0f, 0.0f };
 const Vec vec3_802c5a98 = { 0.0f, 0.0f, 0.0f };
 const Vec vec3_802c5aa4 = { 0.0f, 0.0f, 0.0f };
 const Vec vec3_802c5ab0 = { 0.0f, 0.0f, 0.0f };
-const char str_802C5ABC[] = "MOBJ_Lv1Block";
-const char str_802C5ACC[] = "MOBJ_Lv1BigBlock";
-const char str_802C5AE0[] = "MOBJ_Lv2Block";
-const char str_802C5AF0[] = "MOBJ_Lv2BigBlock";
-const char str_802C5B04[] = "MOBJ_Lv3Block";
-const char str_802C5B14[] = "MOBJ_Lv3BigBlock";
+const char str_MOBJ_Lv1Block[] = "MOBJ_Lv1Block";
+const char str_MOBJ_Lv1BigBlock[] = "MOBJ_Lv1BigBlock";
+const char str_MOBJ_Lv2Block[] = "MOBJ_Lv2Block";
+const char str_MOBJ_Lv2BigBlock[] = "MOBJ_Lv2BigBlock";
+const char str_MOBJ_Lv3Block[] = "MOBJ_Lv3Block";
+const char str_MOBJ_Lv3BigBlock[] = "MOBJ_Lv3BigBlock";
 
 // .sdata
 s32 se_data[10] = {
@@ -179,18 +179,18 @@ void mot_hammer(void) {
         if (hitGetAttr(hit) & 0x80000000) {
             mobj = mobjHitObjPtrToPtr(hit);
             r28 = 0;
-            if (strcmp(mobj->animName, str_802C5ABC) == 0 ||
-                strcmp(mobj->animName, str_802C5ACC) == 0) {
+            if (strcmp(mobj->animName, str_MOBJ_Lv1Block) == 0 ||
+                strcmp(mobj->animName, str_MOBJ_Lv1BigBlock) == 0) {
                 if (pouchGetPtr()->hammerLevel >= 1) {
                     r28 = 1;
                 }
-            } else if (strcmp(mobj->animName, str_802C5AE0) == 0 ||
-                       strcmp(mobj->animName, str_802C5AF0) == 0) {
+            } else if (strcmp(mobj->animName, str_MOBJ_Lv2Block) == 0 ||
+                       strcmp(mobj->animName, str_MOBJ_Lv2BigBlock) == 0) {
                 if (pouchGetPtr()->hammerLevel >= 2) {
                     r28 = 1;
                 }
-            } else if (strcmp(mobj->animName, str_802C5B04) == 0 ||
-                       strcmp(mobj->animName, str_802C5B14) == 0) {
+            } else if (strcmp(mobj->animName, str_MOBJ_Lv3Block) == 0 ||
+                       strcmp(mobj->animName, str_MOBJ_Lv3BigBlock) == 0) {
                 if (pouchGetPtr()->hammerLevel >= 3) {
                     r28 = 1;
                 }

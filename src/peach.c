@@ -24,47 +24,47 @@ const char peach_pose_talk[] = "P_T_1";
 const char peach_pose_dash[] = "P_R_1";
 const char peach_pose_walk[] = "P_W_1";
 const char peach_pose_stay[] = "P_S_1";
-const char str_80420274[] = "P_U_1";
-const char str_8042027C[] = "P_N_1";
+const char str_P_U_1[] = "P_U_1";
+const char str_P_N_1[] = "P_N_1";
 const f32 float_47_80420284 = 47.0f;
 const f32 float_20_80420288 = 20.0f;
 const char peach_pose_transformed_stay[] = "S_1";
 const char peach_pose_transformed_talk[] = "T_1";
 const f32 float_30_80420294 = 30.0f;
-const char str_80420298[] = "P_Z_1";
-const char str_804202A0[] = "Z_1";
+const char str_P_Z_1[] = "P_Z_1";
+const char str_Z_1[] = "Z_1";
 const char peach_pose_transformed_walk[] = "W_1";
 const char peach_pose_transformed_dash[] = "R_1";
-const char str_804202AC[] = "P_Z_2";
+const char str_P_Z_2[] = "P_Z_2";
 const char peach_pose_aftershower_stay[] = "P_S_2";
 const char peach_pose_aftershower_walk[] = "P_W_2";
 const char peach_pose_aftershower_dash[] = "P_R_2";
 const char peach_pose_aftershower_talk[] = "P_T_2";
-const char str_804202D4[] = "P_Z_3";
+const char str_P_Z_3[] = "P_Z_3";
 const char peach_pose_invisible_stay[] = "P_S_3";
 const char peach_pose_invisible_walk[] = "P_W_3";
 const char peach_pose_invisible_dash[] = "P_R_3";
 const char peach_pose_invisible_talk[] = "P_T_3";
-const char str_804202FC[] = "P_Z_4";
+const char str_P_Z_4[] = "P_Z_4";
 const char peach_pose_uneasy_stay[] = "P_S_4";
 const char peach_pose_uneasy_walk[] = "P_W_4";
 const char peach_pose_uneasy_dash[] = "P_R_4";
 const char peach_pose_uneasy_talk[] = "P_T_4";
-const char str_80420324[] = "P_Z_5";
+const char str_P_Z_5[] = "P_Z_5";
 const char peach_pose_happy_stay[] = "P_S_5";
 const char peach_pose_happy_walk[] = "P_W_5";
 const char peach_pose_happy_dash[] = "P_R_5";
 const char peach_pose_happy_talk[] = "P_T_5";
-const char str_8042034C[] = "P_Z_6";
+const char str_P_Z_6[] = "P_Z_6";
 const char peach_pose_angry_stay[] = "P_S_6";
 const char peach_pose_angry_walk[] = "P_W_6";
 const char peach_pose_angry_dash[] = "P_R_6";
 const char peach_pose_angry_talk[] = "P_T_6";
-const char str_80420374[] = "P_Z_7";
+const char str_P_Z_7[] = "P_Z_7";
 const char peach_pose_ordinary_stay[] = "P_S_7";
 const char peach_pose_ordinary_walk[] = "P_W_7";
 const char peach_pose_ordinary_dash[] = "P_R_7";
-const char str_80420394[] = "P_Z_8";
+const char str_P_Z_8[] = "P_Z_8";
 const char peach_pose_carry_stay[] = "P_S_8";
 const char peach_pose_carry_walk[] = "P_W_8";
 const char peach_pose_carry_dash[] = "P_R_8";
@@ -151,8 +151,8 @@ void peachChgPose(const char* pose) {
         return;
     }
     if (mp->peachFlags & PEACH_FLAG_TRANSFORMED) {
-        if (strcmp(pose, str_80420298) == 0) {
-            pose = str_804202A0;
+        if (strcmp(pose, str_P_Z_1) == 0) {
+            pose = str_Z_1;
         } else if (strcmp(pose, peach_pose_stay) == 0) {
             pose = peach_pose_transformed_stay;
         } else if (strcmp(pose, peach_pose_walk) == 0) {
@@ -163,8 +163,8 @@ void peachChgPose(const char* pose) {
             pose = peach_pose_transformed_talk;
         }
     } else if (mp->peachFlags & PEACH_FLAG_AFTERSHOWER) {
-        if (strcmp(pose, str_80420298) == 0) {
-            pose = str_804202AC;
+        if (strcmp(pose, str_P_Z_1) == 0) {
+            pose = str_P_Z_2;
         } else if (strcmp(pose, peach_pose_stay) == 0) {
             pose = peach_pose_aftershower_stay;
         } else if (strcmp(pose, peach_pose_walk) == 0) {
@@ -175,8 +175,8 @@ void peachChgPose(const char* pose) {
             pose = peach_pose_aftershower_talk;
         }
     } else if (mp->peachFlags & PEACH_FLAG_INVISIBLE) {
-        if (strcmp(pose, str_80420298) == 0) {
-            pose = str_804202D4;
+        if (strcmp(pose, str_P_Z_1) == 0) {
+            pose = str_P_Z_3;
         } else if (strcmp(pose, peach_pose_stay) == 0) {
             pose = peach_pose_invisible_stay;
         } else if (strcmp(pose, peach_pose_walk) == 0) {
@@ -187,8 +187,8 @@ void peachChgPose(const char* pose) {
             pose = peach_pose_invisible_talk;
         }
     } else if (mp->peachFlags & PEACH_FLAG_UNEASY) {
-        if (strcmp(pose, str_80420298) == 0) {
-            pose = str_804202FC;
+        if (strcmp(pose, str_P_Z_1) == 0) {
+            pose = str_P_Z_4;
         } else if (strcmp(pose, peach_pose_stay) == 0) {
             pose = peach_pose_uneasy_stay;
         } else if (strcmp(pose, peach_pose_walk) == 0) {
@@ -199,8 +199,8 @@ void peachChgPose(const char* pose) {
             pose = peach_pose_uneasy_talk;
         }
     } else if (mp->peachFlags & PEACH_FLAG_HAPPY) {
-        if (strcmp(pose, str_80420298) == 0) {
-            pose = str_80420324;
+        if (strcmp(pose, str_P_Z_1) == 0) {
+            pose = str_P_Z_5;
         } else if (strcmp(pose, peach_pose_stay) == 0) {
             pose = peach_pose_happy_stay;
         } else if (strcmp(pose, peach_pose_walk) == 0) {
@@ -211,8 +211,8 @@ void peachChgPose(const char* pose) {
             pose = peach_pose_happy_talk;
         }
     } else if (mp->peachFlags & PEACH_FLAG_ANGRY) {
-        if (strcmp(pose, str_80420298) == 0) {
-            pose = str_8042034C;
+        if (strcmp(pose, str_P_Z_1) == 0) {
+            pose = str_P_Z_6;
         } else if (strcmp(pose, peach_pose_stay) == 0) {
             pose = peach_pose_angry_stay;
         } else if (strcmp(pose, peach_pose_walk) == 0) {
@@ -223,8 +223,8 @@ void peachChgPose(const char* pose) {
             pose = peach_pose_angry_talk;
         }
     } else if (mp->peachFlags & PEACH_FLAG_ORDINARY) {
-        if (strcmp(pose, str_80420298) == 0) {
-            pose = str_80420374;
+        if (strcmp(pose, str_P_Z_1) == 0) {
+            pose = str_P_Z_7;
         } else if (strcmp(pose, peach_pose_stay) == 0) {
             pose = peach_pose_ordinary_stay;
         } else if (strcmp(pose, peach_pose_walk) == 0) {
@@ -235,8 +235,8 @@ void peachChgPose(const char* pose) {
             pose = "P_T_13";
         }
     } else if (mp->peachFlags & PEACH_FLAG_CARRY) {
-        if (strcmp(pose, str_80420298) == 0) {
-            pose = str_80420394;
+        if (strcmp(pose, str_P_Z_1) == 0) {
+            pose = str_P_Z_8;
         } else if (strcmp(pose, peach_pose_stay) == 0) {
             pose = peach_pose_carry_stay;
         } else if (strcmp(pose, peach_pose_walk) == 0) {
@@ -390,7 +390,7 @@ void peach_stay(void) {
     switch (mp->currSubMotionId) {
         case 0:
             if ((s32)(++mp->multiTimer) >= sysMsec2Frame(50000)) {
-                marioChgPose(str_80420274);
+                marioChgPose(str_P_U_1);
                 mp->multiTimer = 0x50;
                 mp->currSubMotionId = 1;
                 mp->sfxIds[0] = psndSFXOn_3D((const char*)0x101, &mp->position);
@@ -406,7 +406,7 @@ void peach_stay(void) {
             break;
         case 2:
             if ((s32)(--mp->multiTimer) < 0) {
-                marioChgPose(str_8042027C);
+                marioChgPose(str_P_N_1);
                 mp->multiTimer = 0;
                 mp->currSubMotionId = 0x14;
                 mp->peachStayTimer = 0;

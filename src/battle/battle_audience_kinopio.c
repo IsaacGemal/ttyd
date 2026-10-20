@@ -134,13 +134,13 @@ static BattleWeapon weapon_teresa_trans = {
 };
 static s32 intrudeSound;
 
-const char str_802F8D68[] = "SFX_AUDIENCE_HEIHO_MOVE1";
+const char str_SFX_AUDIENCE_HEIHO_MOVE1[] = "SFX_AUDIENCE_HEIHO_MOVE1";
 const f64 double_450_802f8d88 = 450.0;
 const f64 double_300_802f8d90 = 300.0;
-const char str_802F8D98[] = "SFX_AUDIENCE_TELESA_MOVE1";
-const char str_802F8DB4[] = "SFX_AUDIENCE_TELESA_INVISIBLE1";
-const char str_802F8DD4[] = "SFX_AUDIENCE_RUN3";
-const char str_802F8DE8[] = "SFX_AUDIENCE_PANIC_SCREAM2";
+const char str_SFX_AUDIENCE_TELESA_MOVE1[] = "SFX_AUDIENCE_TELESA_MOVE1";
+const char str_SFX_AUDIENCE_TELESA_INVISIBLE1[] = "SFX_AUDIENCE_TELESA_INVISIBLE1";
+const char str_SFX_AUDIENCE_RUN3[] = "SFX_AUDIENCE_RUN3";
+const char str_SFX_AUDIENCE_PANIC_SCREAM2[] = "SFX_AUDIENCE_PANIC_SCREAM2";
 
 // 4-byte zero word that ends the unit's .rodata: an all-zero object needs explicit_zero_data to be emitted
 // and force_active to survive the linker.
@@ -842,7 +842,7 @@ void BattleAudienceCtrlProcessKinopioDamage(s32 index) {
 			member->motionTimer = 0;
 			if ((u8)BattleAudience_GetEscapeChangeOK(index) == 1) {
 				BattleAudience_ChangeStatus(index, 0xc);
-				psndSFXOn_3D(str_802F8DE8, &member->position);
+				psndSFXOn_3D(str_SFX_AUDIENCE_PANIC_SCREAM2, &member->position);
 			}
 			else {
 				BattleAudience_ChangeStatus(index, 0);
@@ -995,7 +995,7 @@ void BattleAudienceCtrlProcessKinopioEscape(s32 index) {
 					member->jumpAccelY = neg0p5;
 				}
 				member->step++;
-				psndSFXOn_3D(str_802F8DD4, &member->position);
+				psndSFXOn_3D(str_SFX_AUDIENCE_RUN3, &member->position);
 			}
 			break;
 		case 1:
@@ -1092,7 +1092,7 @@ void BattleAudienceCtrlProcessKinopioTransEvt(s32 index) {
 		BattleAudience_SetAnim(index, 1, 0);
 		*(BattleUnit**)((u8*)member + 0xec) = BattleAudienceDetectTargetAll();
 		member->counter = 0;
-		psndSFXOn_3D(str_802F8D98, &member->position);
+		psndSFXOn_3D(str_SFX_AUDIENCE_TELESA_MOVE1, &member->position);
 		member->step = 5;
 		// fallthrough
 	case 5:
@@ -1119,7 +1119,7 @@ void BattleAudienceCtrlProcessKinopioTransEvt(s32 index) {
 			unit = *(BattleUnit**)((u8*)member + 0xec);
 			part = BattleGetUnitPartsPtr(BtlUnit_GetUnitId(unit), BtlUnit_GetBodyPartsId(unit));
 			BtlUnit_GetHitPos(unit, part, &x_873, &y_874, &z_875);
-			psndSFXOn_3D(str_802F8D98, &member->position);
+			psndSFXOn_3D(str_SFX_AUDIENCE_TELESA_MOVE1, &member->position);
 		}
 		break;
 	case 0xa:
@@ -1137,7 +1137,7 @@ void BattleAudienceCtrlProcessKinopioTransEvt(s32 index) {
 			if (turns < 1 && !BtlUnit_CheckShadowGuard(unit)) {
 				BattleCheckDamage(BattleGetSystemPtr(work), unit, part,
 				    (BattleWeapon*)&weapon_teresa_trans, 0x100);
-				BtlUnit_snd_se(unit, str_802F8DB4, -250000000, 0);
+				BtlUnit_snd_se(unit, str_SFX_AUDIENCE_TELESA_INVISIBLE1, -250000000, 0);
 			}
 		}
 		if (member->counter >= 0x78) {
@@ -1196,7 +1196,7 @@ void BattleAudienceCtrlProcessKinopioIntrude(s32 index) {
 		member->velocity.y = 0.0f;
 		member->accel.y = 0.0f;
 		member->velocity.z = vz;
-		intrudeSound = psndSFXOn(str_802F8D68);
+		intrudeSound = psndSFXOn(str_SFX_AUDIENCE_HEIHO_MOVE1);
 	}
 		// fallthrough
 	case 5:
@@ -1234,7 +1234,7 @@ void BattleAudienceCtrlProcessKinopioIntrude(s32 index) {
 			btl_camera_set_moveto(0, 0x1e, 4, 698.0f * member->field_0xC,
 			    100.0f, zero, zero,
 			    60.0f, zero);
-			intrudeSound = psndSFXOn(str_802F8D68);
+			intrudeSound = psndSFXOn(str_SFX_AUDIENCE_HEIHO_MOVE1);
 		}
 		break;
 	}
@@ -1307,7 +1307,7 @@ void BattleAudienceCtrlProcessKinopioIntrude(s32 index) {
 		member->velocity.y = 0.0f;
 		member->accel.y = 0.0f;
 		member->velocity.z = vz;
-		intrudeSound = psndSFXOn(str_802F8D68);
+		intrudeSound = psndSFXOn(str_SFX_AUDIENCE_HEIHO_MOVE1);
 	}
 		// fallthrough
 	case 0x37:
@@ -1332,7 +1332,7 @@ void BattleAudienceCtrlProcessKinopioIntrude(s32 index) {
 			member->velocity.y = zero;
 			member->accel.y = zero;
 			member->velocity.z = zero;
-			intrudeSound = psndSFXOn(str_802F8D68);
+			intrudeSound = psndSFXOn(str_SFX_AUDIENCE_HEIHO_MOVE1);
 		}
 		break;
 	case 0x41:
