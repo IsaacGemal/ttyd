@@ -1087,7 +1087,7 @@ BOOL BattleAudience_CheckReactionPerPhase(void) {
 		}
 		for (i = 0; i < 200; i++) {
 			member = BattleAudienceGetPtr(i);
-			if ((u8)BattleAudience_GetSysCtrl(i) == 1 && member->type == 8 &&
+			if ((u8)BattleAudience_GetSysCtrl(i) == 1 && member->type == AUDIENCE_KOOPA &&
 					member->status == 0x11) {
 				member->timer--;
 				if (member->timer <= 0) {
@@ -2548,7 +2548,7 @@ void BattleAudienceAnimProcess(void) {
 		if (!(member->flags & 4)) {
 			continue;
 		}
-		anim = *(s32**)((u8*)member + 0x28);
+		anim = member->animPos;
 		if (member->animWait > 0) {
 			member->animWait -= 1;
 			continue;
@@ -2560,15 +2560,15 @@ void BattleAudienceAnimProcess(void) {
 			*(s32*)((u8*)member + 0x28) += 0xC;
 			break;
 		case -3:
-			*(s32**)((u8*)member + 0x28) = member->animCur;
+			member->animPos = member->animCur;
 			break;
 		case -4:
 			*(s32*)((u8*)member + 0x28) += 8;
 			break;
 		case -5:
 			target = anim[1];
-			*(s32**)((u8*)member + 0x28) = member->animCur;
-			while (!((*(s32**)((u8*)member + 0x28))[0] == -4 && (*(s32**)((u8*)member + 0x28))[1] == target)) {
+			member->animPos = member->animCur;
+			while (!(member->animPos[0] == -4 && member->animPos[1] == target)) {
 				*(s32*)((u8*)member + 0x28) += 4;
 			}
 			break;
@@ -2586,7 +2586,7 @@ void BattleAudienceAnimProcess(void) {
 				depth = 1;
 				do {
 					*(s32*)((u8*)member + 0x28) -= 4;
-					cmd = **(s32**)((u8*)member + 0x28);
+					cmd = *member->animPos;
 					if (cmd == -6) {
 						depth--;
 					}
@@ -3121,7 +3121,7 @@ void BattleAudience_SetAnim(s32 id, s32 animId, BOOL force) {
 		return;
 	}
 	member->animCur = anim;
-	*(s32**)((u8*)member + 0x28) = anim;
+	member->animPos = anim;
 	member->animWait = 0;
 	for (i = 0; i < 3; i++) {
 		*(s32*)((u8*)member + 0x34 + i * 4) = 0;
@@ -3132,7 +3132,7 @@ void BattleAudience_SetAnim(s32 id, s32 animId, BOOL force) {
 
 BOOL BattleAudience_GetAnimEnd(s32 index) {
 	BattleAudienceMember* member = BattleAudienceGetPtr(index);
-	if (**(s32**)((u8*)member + 0x28) != -1) {
+	if (*member->animPos != -1) {
 		return FALSE;
 	}
 	return member->animWait <= 0;
