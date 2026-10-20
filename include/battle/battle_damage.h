@@ -8,20 +8,20 @@ typedef struct BattleWork BattleWork;
 
 #include <dolphin/types.h>
 
-// Scratch space for BattleCheckCounter, zeroed and flagged by BattleInitCounterPreCheckWork.
+// Scratch space for BattleCheckCounter, zeroed by BattleInitCounterPreCheckWork with hitLands set to 1.
 typedef struct CounterPreCheckWork {
-	s32 field_0x0;  // 0x0
-	s32 field_0x4;  // 0x4
-	s32 field_0x8;  // 0x8
-	s32 field_0xC;  // 0xC
-	s32 field_0x10; // 0x10
-	s32 field_0x14; // 0x14
-	s32 field_0x18; // 0x18
-	s32 field_0x1C; // 0x1C
-	s32 field_0x20; // 0x20, counter type (0x2B..0x36)
-	s32 field_0x24; // 0x24, damage code (0x12B..0x136)
-	s32 field_0x28; // 0x28, counter count
-	s32 field_0x2C; // 0x2C, status id (0x1F..0x24)
+	s32 hitLands;        // 0x0, cleared by counter kinds 0x2B..0x30 (spiky, fiery, icy, electric part); BattleCheckDamage skips the hit when 0
+	s32 halfDamage;      // 0x4, payback status or poison counter: adds half the hit damage to counterDamage
+	s32 inflictBurn;     // 0x8, fiery status counter: the attacker gets STATUS_BURN
+	s32 inflictPoison;   // 0xC, poison status counter: the attacker gets STATUS_POISON
+	s32 inflictElectric; // 0x10, electric status counter: the attacker gets STATUS_ELECTRIC
+	s32 inflictFreeze;   // 0x14, icy status counter: the attacker gets STATUS_FREEZE
+	s32 holdFast;        // 0x18, hold fast status: adds half the hit damage, plays effBombEntry and the thunder sfx
+	s32 returnPostage;   // 0x1C, Return Postage badge: adds half the hit damage
+	s32 counterType;     // 0x20, counter kind (0x2B..0x36); BattleCheckCounter's return value is picked by it
+	s32 damageCode;      // 0x24, damage code (0x12B..0x136) for BattleDamageDirect on the attacker; nonzero once a counter matched
+	s32 counterDamage;   // 0x28, damage dealt back to the attacker (at least 1)
+	s32 hitEventCode;    // 0x2C, damage code (0x1F..0x24) BattleRunHitEvent runs on the target; 0 for the non-contact counters
 } CounterPreCheckWork;
 
 typedef struct BattleVulnerableStatus {

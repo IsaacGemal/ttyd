@@ -1668,13 +1668,13 @@ s32 _checkDamageCode_EmergencyRevival(BattleUnit* unit, s32* flags) {
 //    goes live.
 //  - the weapon's `s8 field_0x6D` is read as `*(u8*)&weapon->field_0x6D`, i.e. an `lbz` with no `extsb`
 //    or `mr`; a `(u8)` cast leaves an extra move and a plain s8 load sign-extends.
-//  - the counter body is a `while (work.field_0x0) { ... break; }` so the compiler emits the original's
+//  - the counter body is a `while (work.hitLands) { ... break; }` so the compiler emits the original's
 //    bottom-tested block (test after the body, `bne` back into it).
-//  - the tail is `if (work.field_0x24 != 0) { ... return -1; } return ret;` so the shared `return ret`
+//  - the tail is `if (work.damageCode != 0) { ... return -1; } return ret;` so the shared `return ret`
 //    lands out of line at the end like the original.
 //  - the three weaponField6D==0xe/0x10 tests are independent `if`s: `irand(100)` runs unconditionally.
 //  - the second emergency-revival block does NOT clear `unit2->damagePattern`; only the first one does.
-//  - `((u32)flags & 0x100)` and the `(u32)work.field_0x24/0x2C` casts give the original's `cmplwi`s.
+//  - `((u32)flags & 0x100)` and the `(u32)work.damageCode/hitEventCode` casts give the original's `cmplwi`s.
 //  - the status-damage flag test is `flags & 0x40000000` (IBM bit 1), not `flags & 2`.
 //
 // The four helpers it calls (`BattleInitCounterPreCheckWork`, `_checkDamageCode_EmergencyRevival`,
@@ -1759,7 +1759,7 @@ s32 BattleCheckDamage(BattleUnit* unit1, BattleUnit* unit2, BattleUnitPart* part
     }
 
     BattleCheckCounter(workp, unit1, unit2, part, weapon, &flags);
-    while (work.field_0x0) {
+    while (work.hitLands) {
         if (flags & 0x100) {
             if (part->counterAttributes & kCounterVolatileExplosive) {
                 BattleRunHitEvent(unit2, 0x719);
@@ -1869,7 +1869,7 @@ s32 BattleCheckDamage(BattleUnit* unit1, BattleUnit* unit2, BattleUnitPart* part
         }
         {
             u32 weaponField6D = *(u8*)&weapon->field_0x6D;
-            if (weaponField6D == 0x14 && (u32)work.field_0x24 != 0) {
+            if (weaponField6D == 0x14 && (u32)work.damageCode != 0) {
                 weaponField6D = 0;
             }
             if (weaponField6D == 0xe || weaponField6D == 0x10) {
@@ -1894,39 +1894,39 @@ s32 BattleCheckDamage(BattleUnit* unit1, BattleUnit* unit2, BattleUnitPart* part
 counter_done:
     *(s32*)unit1->field_0x27C += 1;
     unit2->field_0x26E[1] = *(s32*)unit1->field_0x27C;
-    if ((u32)work.field_0x24 != 0) {
-    if (work.field_0x4) {
-        work.field_0x28 += damage * 50 / 100;
+    if ((u32)work.damageCode != 0) {
+    if (work.halfDamage) {
+        work.counterDamage += damage * 50 / 100;
     }
-    if (work.field_0x18) {
-        work.field_0x28 += damage * 50 / 100;
+    if (work.holdFast) {
+        work.counterDamage += damage * 50 / 100;
     }
-    if (work.field_0x1C) {
-        work.field_0x28 += damage * 50 / 100;
+    if (work.returnPostage) {
+        work.counterDamage += damage * 50 / 100;
     }
-    if (work.field_0xC) {
+    if (work.inflictPoison) {
         s32 statusWork = 0;
         BattleSetStatusDamage(&statusWork, unit1, part, 0, STATUS_POISON, 100, 0, 3, 1);
     }
-    if (work.field_0x14) {
+    if (work.inflictFreeze) {
         s32 statusWork = 0;
         BattleSetStatusDamage(&statusWork, unit1, part, 0, STATUS_FREEZE, 100, 0, 3, 1);
     }
-    if (work.field_0x8) {
+    if (work.inflictBurn) {
         s32 statusWork = 0;
         BattleSetStatusDamage(&statusWork, unit1, part, 0, STATUS_BURN, 100, 0, 3, 1);
     }
-    if (work.field_0x10) {
+    if (work.inflictElectric) {
         s32 statusWork = 0;
         BattleSetStatusDamage(&statusWork, unit1, part, 0, STATUS_ELECTRIC, 100, 0, 3, 1);
     }
-    if (work.field_0x28 == 0) {
-        work.field_0x28 = 1;
+    if (work.counterDamage == 0) {
+        work.counterDamage = 1;
     }
     if (unit1->mAlliance == 0) {
         BattleAudience_Case_Countered();
     }
-    if (work.field_0x18) {
+    if (work.holdFast) {
         Vec pos;
         BtlUnit_GetHitPos(unit2, part, &pos.x, &pos.y, &pos.z);
         effBombEntry(0, pos.x, pos.y, pos.z, 1.0f);
@@ -1935,10 +1935,10 @@ counter_done:
     }
     BattleActionCommandStop(wp);
     BattleAcHelpSetDispType(0);
-    BattleDamageDirect(-5, unit1, 0, work.field_0x28, 0, work.field_0x24, 0, 1);
-    if ((u32)work.field_0x2C != 0) {
+    BattleDamageDirect(-5, unit1, 0, work.counterDamage, 0, work.damageCode, 0, 1);
+    if ((u32)work.hitEventCode != 0) {
         unit2->damagePattern = 0;
-        BattleRunHitEvent(unit2, work.field_0x2C);
+        BattleRunHitEvent(unit2, work.hitEventCode);
     }
     return -1;
     }
@@ -2117,80 +2117,80 @@ s32 BattleCheckCounter(void* work, BattleUnit* attacker, BattleUnit* target, Bat
     if (attacker == NULL) {
         return 0;
     }
-    w->field_0x28 = 0;
+    w->counterDamage = 0;
 
     if ((part->counterAttributes & kCounterTopSpiky) && attacker->badgesEquipped.SpikeShield == 0 &&
         !(weapon->counterResistanceFlags & 0x2)) {
-        w->field_0x20 = 0x2B;
-        w->field_0x24 = 0x12B;
-        w->field_0x28++;
-        w->field_0x2C = 0x1F;
+        w->counterType = 0x2B;
+        w->damageCode = 0x12B;
+        w->counterDamage++;
+        w->hitEventCode = 0x1F;
         *out |= 0x100;
-        w->field_0x0 = 0;
+        w->hitLands = 0;
     } else if ((part->counterAttributes & kCounterPreemptiveFrontSpiky) &&
                attacker->badgesEquipped.SpikeShield == 0 && !(weapon->counterResistanceFlags & 0x4)) {
-        w->field_0x20 = 0x2C;
-        w->field_0x24 = 0x12C;
-        w->field_0x28++;
-        w->field_0x2C = 0x20;
+        w->counterType = 0x2C;
+        w->damageCode = 0x12C;
+        w->counterDamage++;
+        w->hitEventCode = 0x20;
         *out |= 0x100;
-        w->field_0x0 = 0;
+        w->hitLands = 0;
     } else if ((part->counterAttributes & kCounterFrontSpiky) && attacker->badgesEquipped.SpikeShield == 0 &&
                !(weapon->counterResistanceFlags & 0x8)) {
-        w->field_0x20 = 0x2D;
-        w->field_0x24 = 0x12D;
-        w->field_0x28++;
-        w->field_0x2C = 0x21;
+        w->counterType = 0x2D;
+        w->damageCode = 0x12D;
+        w->counterDamage++;
+        w->hitEventCode = 0x21;
         *out |= 0x100;
-        w->field_0x0 = 0;
+        w->hitLands = 0;
     } else if (((part->counterAttributes & kCounterFiery) || (part->counterAttributes & kCounterFieryStatus)) &&
                attacker->badgesEquipped.IcePower == 0 && !(weapon->counterResistanceFlags & 0x10)) {
-        w->field_0x20 = 0x2E;
-        w->field_0x24 = 0x12E;
-        w->field_0x28++;
-        w->field_0x2C = 0x22;
+        w->counterType = 0x2E;
+        w->damageCode = 0x12E;
+        w->counterDamage++;
+        w->hitEventCode = 0x22;
         *out |= 0x100;
-        w->field_0x0 = 0;
+        w->hitLands = 0;
         if (part->counterAttributes & kCounterFieryStatus) {
-            w->field_0x8 = 1;
+            w->inflictBurn = 1;
         }
     } else if (((part->counterAttributes & kCounterIcy) || (part->counterAttributes & kCounterIcyStatus)) &&
                !(weapon->counterResistanceFlags & 0x20)) {
-        w->field_0x20 = 0x2F;
-        w->field_0x24 = 0x12F;
-        w->field_0x28++;
-        w->field_0x2C = 0x23;
+        w->counterType = 0x2F;
+        w->damageCode = 0x12F;
+        w->counterDamage++;
+        w->hitEventCode = 0x23;
         *out |= 0x100;
-        w->field_0x0 = 0;
+        w->hitLands = 0;
         if (part->counterAttributes & kCounterIcyStatus) {
-            w->field_0x14 = 1;
+            w->inflictFreeze = 1;
         }
     } else if (((part->counterAttributes & kCounterElectric) ||
                 (part->counterAttributes & kCounterElectricStatus)) &&
                !(weapon->counterResistanceFlags & 0x1) &&
                BtlUnit_CheckStatus(attacker, STATUS_ELECTRIC) == 0) {
-        w->field_0x20 = 0x30;
-        w->field_0x24 = 0x130;
-        w->field_0x28++;
-        w->field_0x2C = 0x24;
+        w->counterType = 0x30;
+        w->damageCode = 0x130;
+        w->counterDamage++;
+        w->hitEventCode = 0x24;
         *out |= 0x100;
-        w->field_0x0 = 0;
+        w->hitLands = 0;
         if (part->counterAttributes & kCounterElectricStatus) {
-            w->field_0x10 = 1;
+            w->inflictElectric = 1;
         }
     } else {
         if ((part->counterAttributes & kCounterExplosive) && !(weapon->counterResistanceFlags & 0x80) &&
             (weapon->element == 3 || weapon->element == 4 || weapon->element == 1 ||
              ((weapon->special & 0x400) && BtlUnit_CheckStatus(attacker, STATUS_BURN) != 0))) {
-            w->field_0x20 = 0x31;
-            w->field_0x24 = 0x131;
-            w->field_0x28++;
+            w->counterType = 0x31;
+            w->damageCode = 0x131;
+            w->counterDamage++;
             *out |= 0x100;
         }
         if ((part->counterAttributes & kCounterVolatileExplosive) && !(weapon->counterResistanceFlags & 0x100)) {
-            w->field_0x20 = 0x32;
-            w->field_0x24 = 0x132;
-            w->field_0x28++;
+            w->counterType = 0x32;
+            w->damageCode = 0x132;
+            w->counterDamage++;
             *out |= 0x100;
         }
         if ((BtlUnit_CheckStatus(target, STATUS_ELECTRIC) != 0 ||
@@ -2198,45 +2198,45 @@ s32 BattleCheckCounter(void* work, BattleUnit* attacker, BattleUnit* target, Bat
              (part->counterAttributes & kCounterElectricStatus)) &&
             !(weapon->counterResistanceFlags & 0x1) &&
             BtlUnit_CheckStatus(attacker, STATUS_ELECTRIC) == 0) {
-            w->field_0x20 = 0x34;
-            w->field_0x24 = 0x134;
-            w->field_0x28++;
+            w->counterType = 0x34;
+            w->damageCode = 0x134;
+            w->counterDamage++;
             *out |= 0x100;
             if (part->counterAttributes & kCounterElectricStatus) {
-                w->field_0x10 = 1;
+                w->inflictElectric = 1;
             }
         }
         if (BtlUnit_CheckStatus(target, STATUS_PAYBACK) != 0 && !(weapon->counterResistanceFlags & 0x200)) {
-            w->field_0x20 = 0x35;
-            w->field_0x24 = 0x135;
+            w->counterType = 0x35;
+            w->damageCode = 0x135;
             *out |= 0x100;
-            w->field_0x4 = 1;
+            w->halfDamage = 1;
         }
         if (((part->counterAttributes & kCounterPoison) || (part->counterAttributes & kCounterPoisonStatus)) &&
             !(weapon->counterResistanceFlags & 0x40)) {
-            w->field_0x20 = 0x33;
-            w->field_0x24 = 0x133;
+            w->counterType = 0x33;
+            w->damageCode = 0x133;
             *out |= 0x100;
-            w->field_0x4 = 1;
+            w->halfDamage = 1;
             if (part->counterAttributes & kCounterPoisonStatus) {
-                w->field_0xC = 1;
+                w->inflictPoison = 1;
             }
         }
         if (BtlUnit_CheckStatus(target, STATUS_HOLD_FAST) != 0 && !(weapon->counterResistanceFlags & 0x400)) {
-            w->field_0x20 = 0x36;
-            w->field_0x24 = 0x136;
+            w->counterType = 0x36;
+            w->damageCode = 0x136;
             *out |= 0x100;
-            w->field_0x18 = 1;
+            w->holdFast = 1;
         }
         if (target->badgesEquipped.ReturnPostage != 0 && !(weapon->counterResistanceFlags & 0x200)) {
-            w->field_0x20 = 0x35;
-            w->field_0x24 = 0x135;
+            w->counterType = 0x35;
+            w->damageCode = 0x135;
             *out |= 0x100;
-            w->field_0x1C = 1;
+            w->returnPostage = 1;
         }
     }
 
-    switch (w->field_0x20) {
+    switch (w->counterType) {
     case 0x2B:
         return 8;
     case 0x2C:
