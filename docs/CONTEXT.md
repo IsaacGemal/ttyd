@@ -10894,3 +10894,29 @@ Verified: tower `ninja` recreates `build/G8MJ01/ok` after each commit; natural (
 - Open, MarioWork: 0x20 (`u8[4]`, zeroed in marioReInit, no other reader); 0xE0 (`Vec`, mot_dokan stores position there, mario_motion and mot_damage read it, reinit sets -10000 as a sentinel); 0x2B8 (f32 jump height from marioGetJumpHeight and marioChgJumpStandMotion, but mario.c's yoshi branch rotates by it about z, mot_hammer uses it as an s32 sfx handle and mot_jabara as an s16 timer, so no single name is proven); 0x200 (mot_hammer's hitEstimate result at hammer start, cleared at 489, copied into 0x1FC at impact).
 
 Verified: tower `ninja` recreates `build/G8MJ01/ok`; game code 100% matched (8276/8276 functions); natural (no MUST_MATCH) compiles of the 15 changed C files return 0. Index (tools/cleanup_index.py) against current main: 29.869 -> 29.772 per kLOC (21253 -> 21184 weighted); field_0x 3006 -> 2959, raw_offset 928 -> 917.
+
+### Readability: sys REL SysWork and SysWorkEntry fields (2026-10-20, Claude Haiku 5.5, n9-q-relsys)
+
+Names from the reads and writes in `display_func` and the `display` user function (rels/sys/src/sys.c; struct in rels/sys/include/sys.h). Offsets and size are unchanged.
+
+- `SysWork`: `spinAngle` (0x08, f32; +2.5 per frame, wraps past 180; the Y rotation of the big quad, with `palIndex` as its texture), `palIndex` (0x0C; texture index into effect_sys.tpl, cycled 0..3), `frameCount` (0x10; texture scroll offset, wrapped at 0x500), `stage` (0x14; index into `msg_tbl`, set from display's event argument), `reveal` (0x18; high byte is the number of characters shown, low byte the alpha of the next one; +0x30 per frame up to 0x2710), `textAngle` (0x1C, f32; wave phase of the letters, +0.8 per frame, wrapped at 360).
+- `SysWorkEntry`: `timer` (0x10; the stagger delay starting at `i * 0x14 + 1`, counted down in phase 0, then the spin time 0..0x5A in phase 1), `phase` (0x14; 0 waiting, 1 spinning, 2 done), `palIndex` (0x18; texture index from the language table, passed to `TEXGetGXTexObjFromPalette`).
+- No other file includes `SysWork`.
+
+Verified: tower `ninja` recreates `build/G8MJ01/ok` (game 100% matched, 8276/8276 functions); natural (no MUST_MATCH) compile of sys.c returns 0.
+
+### Readability: eki_00 MoamoaWork fields (2026-10-20, Claude Haiku 5.5, n9-q-relsys)
+
+Two `MoamoaWork` fields in rels/eki/src/eki_00.c, named from their reads and writes:
+
+- `hammerFrames` (0x40, s16): written by the per-frame update (`ext_moamoa_main`), +1 per frame while `mario->currMotionId == MARIO_MOTION_HAMMER`, else 0. `moamoa_hit_check` reads it as `> 10` next to motion 0x12.
+- `bounceCount` (0x558, s32): `moamoa_hit_check`'s stomp branch bounces Mario (`marioChgMot(5)`) and counts up while it is below 2. It is cleared while `mario->flags & 0x30000` is clear.
+
+The main comment's `MoamoaPose.field_0x02` is now `MoamoaPose.state`.
+
+Left as `field_0x`:
+
+- `MoamoaPose` 0x14, 0x1C and 0x20 are reused by state. In state 3 (`moamoa_jump`) they are vertical velocity, horizontal speed and gravity. In state 0x30 they are the per-frame changes to `target` x, y and z. In states 0x33 and 0x34, 0x1C is a height and 0x20 a radius.
+- Never read: `MoamoaPose` 0x06, 0x3E and 0x48; `MoamoaWork` 0x0C and 0x10.
+
+Verified: tower `ninja` recreates `build/G8MJ01/ok` (game 100% matched); natural (no MUST_MATCH) compile of eki_00.c returns 0. Index (tools/cleanup_index.py): 29.721 -> 29.710 per kLOC (21148 -> 21140 weighted); field_0x 2923 -> 2915.

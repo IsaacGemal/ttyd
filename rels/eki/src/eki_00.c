@@ -94,7 +94,7 @@ typedef struct MoamoaWork {
     u16 nearHits0;     // 0x3A, hits near target0-2 (as in rsh_05); set to 100 by evt_moamoa_target_off
     u16 nearHits1;     // 0x3C
     u16 nearHits2;     // 0x3E
-    s16 field_0x40;    // 0x40
+    s16 hammerFrames;  // 0x40, frames Mario has been in MARIO_MOTION_HAMMER
     s16 idleFrames;    // 0x42, frames Mario has stood still (capped at 1000)
     EventEntry* escapeEvt; // 0x44
     u8 pad_0x48[4];    // 0x48
@@ -102,7 +102,7 @@ typedef struct MoamoaWork {
     MoamoaGroup groups[32];// 0x50
     f32 angleToMario;  // 0x550, angle from Mario to the moamoa in the current pose
     f32 distToMario;   // 0x554, distance from Mario to the current pose
-    s32 field_0x558;   // 0x558
+    s32 bounceCount;   // 0x558, head bounces on Mario (max 2), reset while mario->flags & 0x30000 is clear
     f32 breathDir;     // 0x55C, cloud breath direction (-1 when not in use)
     f32 breathDist;    // 0x560, cloud breath distance
     Vec breathPos;     // 0x564
@@ -1545,19 +1545,19 @@ static s32 moamoa_hit_check(ExtPose* ep, MoamoaPose* pose) {
         if (d < (20.0f + mario->wPlayerCollisionBox.x) * 0.5f) {
 #endif
             if (mario->position.y > 10.0f + (*ep->matrix)[1][3] && (mario->flags & 0x20000) &&
-                !(mario->flags & 0x10000) && wp->field_0x558 < 2) {
+                !(mario->flags & 0x10000) && wp->bounceCount < 2) {
                 if (mario->currMotionId != 0x16 && mario->currMotionId != 0x1A)
                     marioChgMot(5);
-                wp->field_0x558++;
+                wp->bounceCount++;
                 return 1;
             }
         }
     }
 
     if ((mario->flags & 0x30000) == 0)
-        wp->field_0x558 = 0;
+        wp->bounceCount = 0;
 
-    if (mario->currMotionId == 0x12 && wp->field_0x40 > 10) {
+    if (mario->currMotionId == 0x12 && wp->hammerFrames > 10) {
         f32 ang;
         f32 rad;
         f32 s;
@@ -1725,7 +1725,7 @@ static inline void moaPlayHit(ExtPose* ep) {
 // Keeps the inlined sin/cos argument in a callee-saved FPR instead of rematerialising it per branch.
 #pragma opt_lifetimes off
 // Per-frame update of every moamoa: hit checks against Mario and his partner, the jump/scatter state machine
-// (MoamoaPose.field_0x02), clamping into the room, then the animation frame update and the rider-delta limit.
+// (MoamoaPose.state), clamping into the room, then the animation frame update and the rider-delta limit.
 static inline f32 ekiSinfM(f32 rad) {
     f32 sinv = 0.00761f;
     f32 c1 = 0.16605f, c2 = 1.0f;
@@ -1826,9 +1826,9 @@ static void ext_moamoa_main(void) {
     camGetPtr(CAMERA_3D);
     handled = 0;
     if (mario->currMotionId == MARIO_MOTION_HAMMER) {
-        wp->field_0x40++;
+        wp->hammerFrames++;
     } else {
-        wp->field_0x40 = 0;
+        wp->hammerFrames = 0;
     }
     if (mario->currMotionId == MARIO_MOTION_STAY) {
         wp->idleFrames++;
