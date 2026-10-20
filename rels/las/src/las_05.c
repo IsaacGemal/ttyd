@@ -626,7 +626,7 @@ static void senkaron_ext_init(void) {
         (*pose->matrix)[0][3] = randf(-570.0f, 570.0f);
         (*pose->matrix)[1][3] = 250.0f;
         (*pose->matrix)[2][3] = randf(-270.0f, 270.0f);
-        pose->field_0x4 = 90.0f;
+        pose->heading = 90.0f;
         entries[i].type = 0;
         entries[i].field_4 = (s32)randf(1.0f, 200.0f);
         entries[i].field_C = -3.0f;
@@ -829,7 +829,7 @@ static void senkaron_ext_main(void) {
 
         switch (p->type) {
         case 0:
-            ep->field_0x10 = (gp->retraceCount + i * i) % 0x18;
+            ep->texId = (gp->retraceCount + i * i) % 0x18;
             if (p->field_4 > 0) {
                 if (skwp->escape != 0) {
                     ep->flags &= ~1;
@@ -857,7 +857,7 @@ static void senkaron_ext_main(void) {
             }
             break;
         case 1:
-            ep->field_0x10 = (gp->retraceCount + i * i) % 0x18;
+            ep->texId = (gp->retraceCount + i * i) % 0x18;
             if (skwp->escape != 0) {
                 if ((*ep->matrix)[0][3] == 0.0f && (*ep->matrix)[2][3] == 0.0f) {
                     p->field_8 = 1.0f;
@@ -870,9 +870,9 @@ static void senkaron_ext_main(void) {
                     p->field_10 = 4.0f * (*ep->matrix)[2][3] / len;
                 }
                 if (p->field_8 < 0.0f) {
-                    ep->field_0x4 = 90.0f;
+                    ep->heading = 90.0f;
                 } else {
-                    ep->field_0x4 = 270.0f;
+                    ep->heading = 270.0f;
                 }
                 p->type = 0x62;
                 p->field_4 = 300;
@@ -886,15 +886,15 @@ static void senkaron_ext_main(void) {
 
             if ((*ep->matrix)[0][3] >= mario->position.x) {
                 if (p->flags & 1) {
-                    ep->field_0x4 = 270.0f;
+                    ep->heading = 270.0f;
                 } else {
-                    ep->field_0x4 = 90.0f;
+                    ep->heading = 90.0f;
                 }
             } else {
                 if (p->flags & 1) {
-                    ep->field_0x4 = 90.0f;
+                    ep->heading = 90.0f;
                 } else {
-                    ep->field_0x4 = 270.0f;
+                    ep->heading = 270.0f;
                 }
             }
 
@@ -1037,13 +1037,13 @@ static void senkaron_ext_main(void) {
                     (*ep->matrix)[2][3] = -270.0f;
                 }
                 p->field_C -= 0.3f;
-                ep->field_0x10 = 0x18;
+                ep->texId = 0x18;
             } else {
                 marioGetPtr();
                 (*ep->matrix)[0][3] = randf(-570.0f, 570.0f);
                 (*ep->matrix)[1][3] = 250.0f;
                 (*ep->matrix)[2][3] = randf(-270.0f, 270.0f);
-                ep->field_0x4 = randf(0.0f, 360.0f);
+                ep->heading = randf(0.0f, 360.0f);
                 ep->flags &= ~4;
                 p->type = 0;
                 p->field_4 = rand() % 1000 + 1;
@@ -1076,7 +1076,7 @@ static void senkaron_ext_main(void) {
                 ep->flags &= ~1;
                 p->type = 0x63;
             }
-            ep->field_0x10 = (gp->retraceCount + i * i) % 0x18;
+            ep->texId = (gp->retraceCount + i * i) % 0x18;
             break;
         case 0x63:
             break;

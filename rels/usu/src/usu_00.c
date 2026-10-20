@@ -1955,7 +1955,7 @@ void kpaSen_ext_init(void) {
         pose->flags |= 3;
         PSMTXIdentity(*pose->matrix);
         if (i < 100) {
-            pose->field_0x4 = 90.0f;
+            pose->heading = 90.0f;
             kpaSen[i].field_14 = pos.x + 30.0f * (i / 10.0f) - 9.0f;
             kpaSen[i].field_18 = 0.0f;
             kpaSen[i].field_1C = pos.z + 50.0f * (i % 10 - 5);
@@ -1980,7 +1980,7 @@ void kpaSen_ext_init(void) {
             kpaSen[i].field_23 = 8;
         }
         else {
-            pose->field_0x4 = 270.0f;
+            pose->heading = 270.0f;
 #ifdef MUST_MATCH
             // Match-only: the original multiplies by the -30.0 constant and fuses; `pos.x - 30.0f * ...`
             // makes the compiler emit fnmsubs with the +30.0 constant.
@@ -2064,7 +2064,7 @@ void kpaSen_ext_main(void) {
             break;
         case 1:
             if (i < 100) {
-                pose->field_0x10 = calcPose(i, kpaSen[i].field_22, kpaSen[i].field_23, 1);
+                pose->texId = calcPose(i, kpaSen[i].field_22, kpaSen[i].field_23, 1);
 #ifdef MUST_MATCH
                 // Match-only: see above; an empty body is removed before register allocation.
                 if (i % 10 == 0) {
@@ -2076,7 +2076,7 @@ void kpaSen_ext_main(void) {
 #endif
             }
             else {
-                pose->field_0x10 = calcPose(i - 100, kpaSen[i].field_22, kpaSen[i].field_23, 1);
+                pose->texId = calcPose(i - 100, kpaSen[i].field_22, kpaSen[i].field_23, 1);
             }
             (*pose->matrix)[0][3] = kpaSen[i].field_8 * (1.0f - kpaSen[i].field_4) + kpaSen[i].field_14 * kpaSen[i].field_4;
             (*pose->matrix)[2][3] = kpaSen[i].field_10 * (1.0f - kpaSen[i].field_4) + kpaSen[i].field_1C * kpaSen[i].field_4;
@@ -2090,10 +2090,10 @@ void kpaSen_ext_main(void) {
             break;
         case 0x63:
             if (i < 100) {
-                pose->field_0x10 = calcPose(i, kpaSen[i].field_20, kpaSen[i].field_21, 0);
+                pose->texId = calcPose(i, kpaSen[i].field_20, kpaSen[i].field_21, 0);
             }
             else {
-                pose->field_0x10 = calcPose(i - 100, kpaSen[i].field_20, kpaSen[i].field_21, 0);
+                pose->texId = calcPose(i - 100, kpaSen[i].field_20, kpaSen[i].field_21, 0);
             }
             break;
         }

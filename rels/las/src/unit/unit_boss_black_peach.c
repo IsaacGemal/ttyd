@@ -4697,7 +4697,7 @@ EVT_END()
                         s32 v = irand(0xf) + (i / 10) * -0xf;                                             \
                         elem->posZ = (f32)(v + 0x46);                                                     \
                     }                                                                                     \
-                    pose->field_0x4 = (f32)(irand(0x14) - 0xa);                                           \
+                    pose->heading = (f32)(irand(0x14) - 0xa);                                           \
                     ((f32*)pose->matrix)[0] = 50.0f / (50.0f + (f32)irand(0x32));                         \
                     ((f32*)pose->matrix)[5] = 50.0f / (50.0f + (f32)irand(0x32));                         \
                     if (elem->mirror != 0) {                                                              \
@@ -4746,7 +4746,7 @@ static void pose_main(void) {
             elem->startTime = gp->renderTime;
             f1 -= 1.0f;
         }
-        pose->field_0x10 = hp->firstFrame + (s32)((hp->frameCount - 1) * f1);
+        pose->texId = hp->firstFrame + (s32)((hp->frameCount - 1) * f1);
         unitId = evtGetValue(NULL, 0xFD050F8A);
         if (unitId == -1) {
             ((f32*)pose->matrix)[3] = elem->posX;
@@ -4914,7 +4914,7 @@ USER_FUNC(peach_hand1000_dark_drag_1_evt) {
                     s32 v = irand(0xf) + (i / 10) * -0xf;
                     elem->posZ = (f32)(v + 0x46);
                 }
-                pose->field_0x4 = (f32)(irand(0x14) - 0xa);
+                pose->heading = (f32)(irand(0x14) - 0xa);
                 ((f32*)pose->matrix)[0] = 50.0f / (50.0f + (f32)irand(0x32));
                 ((f32*)pose->matrix)[5] = 50.0f / (50.0f + (f32)irand(0x32));
                 if (elem->mirror != 0) {
@@ -5022,7 +5022,7 @@ USER_FUNC(queen_hp_drain_2_evt) {
                     s32 v = irand(0xf) + (i / 10) * -0xf;
                     elem->posZ = (f32)(v + 0x10e);
                 }
-                pose->field_0x4 = (f32)(irand(0x14) - 0xa);
+                pose->heading = (f32)(irand(0x14) - 0xa);
                 ((f32*)pose->matrix)[0] = 50.0f / (50.0f + (f32)irand(0x32));
                 ((f32*)pose->matrix)[5] = 50.0f / (50.0f + (f32)irand(0x32));
                 if (elem->mirror != 0) {
@@ -5155,7 +5155,7 @@ USER_FUNC(queen_hand_small_drag_1_evt) {
                     s32 v = irand(0xf) + (i / 10) * -0xf;
                     elem->posZ = (f32)(v + 0x46);
                 }
-                pose->field_0x4 = (f32)(irand(0x14) - 0xa);
+                pose->heading = (f32)(irand(0x14) - 0xa);
                 ((f32*)pose->matrix)[0] = 50.0f / (50.0f + (f32)irand(0x32));
                 ((f32*)pose->matrix)[5] = 50.0f / (50.0f + (f32)irand(0x32));
                 if (elem->mirror != 0) {

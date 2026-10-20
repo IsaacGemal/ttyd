@@ -668,7 +668,7 @@ static void pose_main(void) {
             pd->states[i].time = gp->renderTime;
             t = 0.0f;
         }
-        pose->field_0x10 = entry->field_C + (s32)((f32)(entry->field_10 - 1) * t);
+        pose->texId = entry->field_C + (s32)((f32)(entry->field_10 - 1) * t);
         pose++;
     }
 }
@@ -848,7 +848,7 @@ void jump(s32 index, s32 a, f32 x, f32 y, f32 z, f32 p, f32 q) {
     }
     pd->states[index].field_1 = a;
     pd->states[index].field_0 = 100;
-    ep->field_0x4 = angleABf(x, z, ep->matrix[0][0][3], ep->matrix[0][2][3]);
+    ep->heading = angleABf(x, z, ep->matrix[0][0][3], ep->matrix[0][2][3]);
     if (index % 20 == 0 && !(pd->flags & 1)) {
         Vec pos2 = (Vec){ep->matrix[0][0][3], ep->matrix[0][1][3], ep->matrix[0][2][3]};
 
@@ -882,7 +882,7 @@ static void ext_main(void) {
                 pose->matrix[0][0][3] = pos.x;
                 pose->matrix[0][1][3] = pos.y;
                 pose->matrix[0][2][3] = pos.z;
-                pose->field_0x4 = angleABf(0.0f, 0.0f, pos.x, pos.z);
+                pose->heading = angleABf(0.0f, 0.0f, pos.x, pos.z);
             } else {
                 pd->states[i].field_0++;
             }
@@ -2335,7 +2335,7 @@ void ext_init_minnnanokoe(void) {
         pose->matrix[0][0][3] = (f32)rx;
         pose->matrix[0][1][3] = 0.0f;
         pose->matrix[0][2][3] = (f32)rz;
-        pose->field_0x4 = 270.0f;
+        pose->heading = 270.0f;
         pd = ((PoseRoot*)lp[0])->data;
         j = find_entry_minnnanokoe(pd);
         if (j < pd->count) {

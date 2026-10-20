@@ -5,15 +5,22 @@
 #include <dolphin/mtx.h>
 #include "driver/camdrv.h"
 
+typedef enum ExtPoseFlags {
+	EXT_POSE_VISIBLE = (1 << 0),
+	EXT_POSE_BILLBOARD = (1 << 1),
+	EXT_POSE_NO_SHADOW = (1 << 2),
+	EXT_POSE_SHADOW_AT_GROUND = (1 << 4),
+} ExtPoseFlags;
+
 typedef struct ExtPose {
-	u32 flags;      //0x0
-	f32 field_0x4;  //0x4
-	f32 field_0x8;  //0x8
-	Mtx* matrix;    //0xC
-	s32 field_0x10; //0x10
-	f32 field_0x14; //0x14
-	f32 field_0x18; //0x18
-	f32 field_0x1C; //0x1C
+	u32 flags;       //0x0, ExtPoseFlags
+	f32 heading;     //0x4, facing angle in degrees
+	f32 groundY;     //0x8, shadow height with EXT_POSE_SHADOW_AT_GROUND
+	Mtx* matrix;     //0xC
+	s32 texId;       //0x10, index into ExtWork.textures
+	f32 yaw;         //0x14, current yaw in degrees, eased toward targetYaw
+	f32 field_0x18;  //0x18
+	f32 targetYaw;   //0x1C
 } ExtPose;
 
 typedef struct ExtTexture {
@@ -25,13 +32,13 @@ typedef struct ExtTexture {
 // 0xC-byte entry `param` points at in extMakeTexture/extEntry (name, argument, scale).
 typedef struct ExtMakeTextureEntry {
 	const char* name; //0x0
-	void* field_0x4;  //0x4
+	void* animName;   //0x4
 	f32 field_0x8;    //0x8
 } ExtMakeTextureEntry;
 
 typedef struct ExtSortEntry {
-	s32 field_0x0; //0x0
-	f32 field_0x4; //0x4
+	s32 index; //0x0
+	f32 key;   //0x4
 } ExtSortEntry;
 
 typedef struct ExtWork {
@@ -50,7 +57,7 @@ typedef struct ExtWork {
 	void (*cb0)(void);     //0x30
 	void (*cb1)(void);     //0x34
 	s32 lastTex;           //0x38
-	Mtx field_0x3C;        //0x3C
+	Mtx shadowMtx;         //0x3C
 	u32 texSize;           //0x6C
 } ExtWork;
 

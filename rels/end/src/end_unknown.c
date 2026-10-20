@@ -1526,7 +1526,7 @@ void unk_end_00000440(void) {
         PSMTXConcat(mtx1, mtx2, mtx1);
         PSMTXTrans(mtx3, work->position.x, work->position.y, work->position.z);
         PSMTXConcat(mtx1, mtx3, *extPose->matrix);
-        extPose->field_0x10 = (gp->retraceCount + i) % 40;
+        extPose->texId = (gp->retraceCount + i) % 40;
         work++;
         extPose++;
     }

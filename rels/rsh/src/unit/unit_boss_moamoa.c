@@ -1288,7 +1288,7 @@ static void ext_moamoa_main(void) {
         if (frame >= anim->numPoses) {
             frame = anim->numPoses - 1;
         }
-        extPose->field_0x10 = anim->firstPose + frame;
+        extPose->texId = anim->firstPose + frame;
     }
 
     if (wp->mainUnitId != -1) {

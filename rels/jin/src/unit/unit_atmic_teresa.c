@@ -1041,7 +1041,7 @@ void teresa_ext_init(void) {
         (*pose->matrix)[0][3] = 0.0f;
         (*pose->matrix)[1][3] = -1000.0f;
         (*pose->matrix)[2][3] = 0.0f;
-        pose->field_0x4 = 90.0f;
+        pose->heading = 90.0f;
         teresa[i].state = 0;
         teresa[i].animMode = 0;
         teresa[i].timer = 0;
@@ -1120,11 +1120,11 @@ void teresa_ext_main(void) {
         case 1:
             entry->timer++;
             if (entry->timer <= 0x1E) {
-                pose->field_0x10 = 8;
+                pose->texId = 8;
             } else if (entry->timer < 0x2C) {
-                pose->field_0x10 = (entry->timer - 0x1E) / 2 + 9;
+                pose->texId = (entry->timer - 0x1E) / 2 + 9;
             } else {
-                pose->field_0x10 = 0xF;
+                pose->texId = 0xF;
             }
             break;
         default:
@@ -1132,7 +1132,7 @@ void teresa_ext_main(void) {
             if (entry->timer >= 0x18) {
                 entry->timer -= 0x18;
             }
-            pose->field_0x10 = entry->timer / 3;
+            pose->texId = entry->timer / 3;
             break;
         }
         if (entry->delay >= 1) {
@@ -1150,7 +1150,7 @@ void teresa_ext_main(void) {
             (*pose->matrix)[0][3] = 0.0f;
             (*pose->matrix)[1][3] = -1000.0f;
             (*pose->matrix)[2][3] = 0.0f;
-            pose->field_0x4 = 90.0f;
+            pose->heading = 90.0f;
             (*pose->matrix)[1][1] = 1.0f;
             (*pose->matrix)[0][0] = 1.0f;
             break;
@@ -1205,9 +1205,9 @@ void teresa_ext_main(void) {
             entry->targetPos.y = 10.0f;
             entry->targetPos.z = 90.0f * (f32)sin(angle);
             if ((*pose->matrix)[0][3] >= -100.0f) {
-                pose->field_0x4 = 90.0f;
+                pose->heading = 90.0f;
             } else {
-                pose->field_0x4 = 270.0f;
+                pose->heading = 270.0f;
             }
             entry->velocity.x = (entry->targetPos.x - (*pose->matrix)[0][3]) / 20.0f;
             entry->velocity.y = (entry->targetPos.y - (*pose->matrix)[1][3]) / 20.0f;
@@ -1226,9 +1226,9 @@ void teresa_ext_main(void) {
             entry->targetPos.y = 10.0f;
             entry->targetPos.z = 90.0f * (f32)sin(angle);
             if ((*pose->matrix)[0][3] >= -100.0f) {
-                pose->field_0x4 = 90.0f;
+                pose->heading = 90.0f;
             } else {
-                pose->field_0x4 = 270.0f;
+                pose->heading = 270.0f;
             }
             entry->velocity.x = (entry->targetPos.x - (*pose->matrix)[0][3]) / 20.0f;
             entry->velocity.y = (entry->targetPos.y - (*pose->matrix)[1][3]) / 20.0f;
@@ -1260,7 +1260,7 @@ void teresa_ext_main(void) {
                 entry->timer = 0;
                 entry->counter = 0x3C;
                 entry->delay = sp60[i];
-                pose->field_0x4 = 90.0f;
+                pose->heading = 90.0f;
             }
             break;
         case 0x17:

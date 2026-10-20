@@ -148,19 +148,19 @@ void extEntry(s32 count, void* param, void (*callback)(void), void (*cb0)(void),
 	memset(wp->poses, 0, wp->poseNum << 5);
 
 	for (i = 0; i < count; i++) {
-		wp->sortList[i].field_0x0 = i;
+		wp->sortList[i].index = i;
 		wp->poses[i].matrix = &wp->mtx[i];
 	}
 
-	PSMTXIdentity(wp->field_0x3C);
+	PSMTXIdentity(wp->shadowMtx);
 	dispEntry(0, 0.0f, 1, extMakeTexture, param);
 	if (callback != NULL) {
 		callback();
 	}
 }
 
-// The header's animPoseDisp_MakeExtTexture prototype puts f1 (the float) second, before field_0x4/texObj/base;
-// the original call site loads it last, so its declaration is (name, field_0x4, texObj, base, f1, f2, ...) -- the
+// The header's animPoseDisp_MakeExtTexture prototype puts f1 (the float) second, before animName/texObj/base;
+// the original call site loads it last, so its declaration is (name, animName, texObj, base, f1, f2, ...) -- the
 // integer registers are identical either way. The cast reproduces that evaluation order (MUST_MATCH); the natural
 // call with the header's order sits in the #else.
 void extMakeTexture(CameraId camId, void* param) {
@@ -190,10 +190,10 @@ void extMakeTexture(CameraId camId, void* param) {
 #ifdef MUST_MATCH
 		q = (const ExtMakeTextureEntry*)p;
 		((void (*)(const char*, void*, void*, void*, f32, f32, s32*, s32*, s32*, s32*))animPoseDisp_MakeExtTexture)(
-		    q->name, q->field_0x4, &tex->texObj, tex, q->field_0x8, 4.0f, &out0, &out1, &out2, &out3);
+		    q->name, q->animName, &tex->texObj, tex, q->field_0x8, 4.0f, &out0, &out1, &out2, &out3);
 #else
 		q = (const ExtMakeTextureEntry*)p;
-		animPoseDisp_MakeExtTexture(q->name, q->field_0x8, q->field_0x4, &tex->texObj, tex,
+		animPoseDisp_MakeExtTexture(q->name, q->field_0x8, q->animName, &tex->texObj, tex,
 		                            4.0f, &out0, &out1, &out2, &out3);
 #endif
 		j = i * 12;
@@ -287,12 +287,12 @@ void extMain(void) {
 	while (i >= 0) {
 		u32 flags = pose->flags;
 
-		sort->field_0x0 = i;
-		if (flags & 1) {
-			sort->field_0x4 = (f32)pose->field_0x10;
+		sort->index = i;
+		if (flags & EXT_POSE_VISIBLE) {
+			sort->key = (f32)pose->texId;
 		}
-		if (flags & 2) {
-			f32 diff = 90.0f + (angle - pose->field_0x4);
+		if (flags & EXT_POSE_BILLBOARD) {
+			f32 diff = 90.0f + (angle - pose->heading);
 
 			while (diff < -360.0f) {
 				diff += 360.0f;
@@ -307,7 +307,7 @@ void extMain(void) {
 				while (diff >= 360.0f) {
 					diff -= 360.0f;
 				}
-				pose->field_0x1C = target;
+				pose->targetYaw = target;
 			} else {
 				cam = camGetPtr(CAMERA_3D);
 				diff = (f32)atan2(-(cam->cameraAt.x - cam->cameraPos.x), -(cam->cameraAt.z - cam->cameraPos.z));
@@ -318,22 +318,22 @@ void extMain(void) {
 				if (diff < 0.0f) {
 					diff += 360.0f;
 				}
-				pose->field_0x1C = diff;
+				pose->targetYaw = diff;
 			}
-		while ((pose->field_0x1C - pose->field_0x14) > 180.0f) {
-			pose->field_0x14 += 360.0f;
+		while ((pose->targetYaw - pose->yaw) > 180.0f) {
+			pose->yaw += 360.0f;
 		}
-		while ((pose->field_0x1C - pose->field_0x14) < -180.0f) {
-			pose->field_0x14 -= 360.0f;
+		while ((pose->targetYaw - pose->yaw) < -180.0f) {
+			pose->yaw -= 360.0f;
 		}
 		{
-			f32 d = pose->field_0x1C - pose->field_0x14;
-			f32* p = &pose->field_0x14;
+			f32 d = pose->targetYaw - pose->yaw;
+			f32* p = &pose->yaw;
 
 			*p = 0.1f * d + *p;
 		}
 		{
-			f32 a = pose->field_0x14;
+			f32 a = pose->yaw;
 			f32 c;
 			f32 s;
 			s32 idx;
@@ -366,10 +366,10 @@ void extMain(void) {
 }
 
 static int compare(void* a, void* b) {
-	if (((ExtSortEntry*)a)->field_0x4 > ((ExtSortEntry*)b)->field_0x4) {
+	if (((ExtSortEntry*)a)->key > ((ExtSortEntry*)b)->key) {
 		return 1;
 	}
-	if (((ExtSortEntry*)a)->field_0x4 < ((ExtSortEntry*)b)->field_0x4) {
+	if (((ExtSortEntry*)a)->key < ((ExtSortEntry*)b)->key) {
 		return -1;
 	}
 	return 0;
@@ -389,8 +389,8 @@ void extPoseDraw(s32 poseId) {
 	ExtWork* wp = extGetWork();
 	ExtPose* pose = &wp->poses[poseId];
 
-	if (pose->flags & 1) {
-		s32 texId = pose->field_0x10;
+	if (pose->flags & EXT_POSE_VISIBLE) {
+		s32 texId = pose->texId;
 
 		if (wp->lastTex != texId) {
 			ExtTexture* tex = &wp->textures[texId];
@@ -405,7 +405,7 @@ void extPoseDraw(s32 poseId) {
 			PSMTXInvXpose(m, n);
 			GXLoadNrmMtxImm(n, 0);
 			GXSetCurrentMtx(0);
-			GXCallDisplayList((u8*)wp->dlBuffer + pose->field_0x10 * 0x80, wp->dlSizes[pose->field_0x10]);
+			GXCallDisplayList((u8*)wp->dlBuffer + pose->texId * 0x80, wp->dlSizes[pose->texId]);
 		}
 	}
 }
@@ -416,10 +416,10 @@ void extDraw(void) {
 	ExtSortEntry* sort = wp->sortList;
 
 	for (i = wp->poseNum - 1; i >= 0; i--, sort++) {
-		ExtPose* pose = &wp->poses[sort->field_0x0];
+		ExtPose* pose = &wp->poses[sort->index];
 
-		if (pose->flags & 1) {
-			s32 texId = pose->field_0x10;
+		if (pose->flags & EXT_POSE_VISIBLE) {
+			s32 texId = pose->texId;
 
 			if (texId != wp->lastTex) {
 				ExtTexture* tex = &wp->textures[texId];
@@ -543,7 +543,7 @@ void extLoadShadowRenderMode(void) {
 
 void extLoadShadowMtx(Mtx mtx) {
 	ExtWork* wp = extGetWork();
-	PSMTXCopy(mtx, wp->field_0x3C);
+	PSMTXCopy(mtx, wp->shadowMtx);
 }
 
 void extDrawShadow(void) {
@@ -552,14 +552,14 @@ void extDrawShadow(void) {
 	ExtSortEntry* sort = &wp->sortList[wp->poseNum - 1];
 
 	for (i = wp->poseNum - 1; i >= 0; i--, sort--) {
-		ExtPose* pose = &wp->poses[sort->field_0x0];
+		ExtPose* pose = &wp->poses[sort->index];
 
-		if (!(pose->flags & 4)) {
+		if (!(pose->flags & EXT_POSE_NO_SHADOW)) {
 			Mtx m;
 			PSMTXConcat(camGetCurPtr()->view, *pose->matrix, m);
-			PSMTXConcat(m, wp->field_0x3C, m);
-			if (pose->flags & 0x10) {
-				PSMTXTransApply(m, m, 0.0f, -(*pose->matrix)[1][3] + pose->field_0x8, 0.0f);
+			PSMTXConcat(m, wp->shadowMtx, m);
+			if (pose->flags & EXT_POSE_SHADOW_AT_GROUND) {
+				PSMTXTransApply(m, m, 0.0f, -(*pose->matrix)[1][3] + pose->groundY, 0.0f);
 			}
 			GXLoadPosMtxImm(m, 0);
 			GXSetCurrentMtx(0);

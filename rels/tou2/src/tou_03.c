@@ -293,7 +293,7 @@ static void pose_main(void) {
             state->cycleStart = gp->renderTime;
             ratio = 0.0f;
         }
-        pose->field_0x10 = entry->firstPose + (s32)((f32)(entry->numPoses - 1) * ratio);
+        pose->texId = entry->firstPose + (s32)((f32)(entry->numPoses - 1) * ratio);
     }
 }
 #pragma dont_inline reset
@@ -2803,7 +2803,7 @@ void ext_kyaku_init(void) {
                 }
                 (*pose->matrix)[0][3] = hitX;
                 (*pose->matrix)[2][3] = hitZ;
-                pose->field_0x4 = angleABf(0.0f, 0.0f, hitX, hitZ);
+                pose->heading = angleABf(0.0f, 0.0f, hitX, hitZ);
                 break;
             } else {
                 distance = 100000.0f;
@@ -2818,7 +2818,7 @@ void ext_kyaku_init(void) {
                 if (hitZ > 570.0f && fabsf(hitX) > 40.0f && fabsf(hitX) < 60.0f) {
                     (*pose->matrix)[0][3] += (f32)((hitX > 0.0f) ? -15 : 15);
                 }
-                pose->field_0x4 = angleABf(0.0f, 0.0f, hitX, hitZ);
+                pose->heading = angleABf(0.0f, 0.0f, hitX, hitZ);
                 break;
             }
         } while (1);

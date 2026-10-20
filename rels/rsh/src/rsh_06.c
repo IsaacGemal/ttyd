@@ -864,7 +864,7 @@ static void moamoa_pose_main(void) {
             entry->poseTime = gp->renderTime;
             f = 0.0f;
         }
-        pose->field_0x10 = poseTbl->firstPose + (s32)((f32)(poseTbl->numPoses - 1) * f);
+        pose->texId = poseTbl->firstPose + (s32)((f32)(poseTbl->numPoses - 1) * f);
     }
 }
 
@@ -1039,8 +1039,8 @@ static USER_FUNC(evt_moamoa_ry_reset) {
     s32 i;
 
     for (i = 0; i < wp->poseNum; i++) {
-        pose->field_0x14 = 0.0f;
-        pose->field_0x1C = 0.0f;
+        pose->yaw = 0.0f;
+        pose->targetYaw = 0.0f;
         pose++;
     }
     return EVT_RETURN_DONE;
@@ -1783,7 +1783,7 @@ static void moamoa_jump(ExtPose* pose, MoamoaPose* entry, f32 x, f32 y, f32 z, f
         entry->field_0x14 = entry->field_0x20 * entry->frames / 2.0f + dy / entry->frames;
         entry->state = 3;
         entry->queuedState = field0x2;
-        pose->field_0x4 = 180.0f + ang;
+        pose->heading = 180.0f + ang;
     }
     entry->flags |= 2;
     pose->flags |= 0x10;

@@ -350,7 +350,7 @@ static void ext_main(void) {
             break;
         }
         if (gp->retraceCount & 1) {
-            pose->field_0x10 = (gp->retraceCount + i) % 20;
+            pose->texId = (gp->retraceCount + i) % 20;
         }
     }
 }

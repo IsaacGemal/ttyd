@@ -256,10 +256,10 @@ void nanNPCOption(void) {
 }
 
 s32 nannpc_zcompare(ExtSortEntry* a, ExtSortEntry* b) {
-    if (a->field_0x4 < b->field_0x4) {
+    if (a->key < b->key) {
         return 1;
     }
-    if (a->field_0x4 > b->field_0x4) {
+    if (a->key > b->key) {
         return -1;
     }
     return 0;
@@ -318,12 +318,12 @@ void nannpc_ext_disp(void) {
             NanNpcEntry* entry = &work->entries[i];
             ExtSortEntry* sort = &work->sortList[i];
 
-            sort->field_0x0 = i;
-            sort->field_0x4 = entry->position.z;
+            sort->index = i;
+            sort->key = entry->position.z;
         }
         qqsort(work->sortList, work->count, 8, (int (*)(void*, void*))nannpc_zcompare);
         for (i = extGetPoseNum() - 1; i >= 0; i--) {
-            s32 id = work->sortList[i].field_0x0;
+            s32 id = work->sortList[i].index;
 
             GXSetTevColor(1, work->entries[id].color);
             extPoseDraw(id);
@@ -353,7 +353,7 @@ void nannpc_ext_init(void) {
 
     for (i = extGetPoseNum() - 1; i >= 0; i--) {
         pose->flags = 3;
-        pose->field_0x4 = 0.0f;
+        pose->heading = 0.0f;
         PSMTXIdentity(*pose->matrix);
         (*pose->matrix)[0][3] = 0.0f;
         (*pose->matrix)[1][3] = -1000.0f;
@@ -391,8 +391,8 @@ void nannpc_ext_main_sub_fast(void) {
             if (entry->animTable != NULL) {
                 entry->animCurrent = entry->animTable[(gp->retraceCount + i * i) % entry->animCount];
             }
-            entry->pose->field_0x10 = entry->animCurrent;
-            entry->pose->field_0x4 = -entry->field_0x60;
+            entry->pose->texId = entry->animCurrent;
+            entry->pose->heading = -entry->field_0x60;
             if (entry->flags & 2) {
                 (*entry->pose->matrix)[0][3] = 0.0f;
                 (*entry->pose->matrix)[1][3] = -1000.0f;
@@ -585,7 +585,7 @@ USER_FUNC(evt_nannpc_entry) {
         entry->field_0x50 = 0;
         entry->animCount = 0;
         entry->field_0x60 = 0.0f;
-        entry->pose->field_0x4 = -entry->field_0x60;
+        entry->pose->heading = -entry->field_0x60;
         entry->color = dat_8041c570;
         break;
     }
@@ -842,7 +842,7 @@ USER_FUNC(evt_nannpc_set_shadow_position) {
     NanNpcEntry* entry = nannpcFind((const char*)id);
 
     entry->pose->flags |= 0x10;
-    entry->pose->field_0x8 = evtGetFloat(event, args[1]);
+    entry->pose->groundY = evtGetFloat(event, args[1]);
     return EVT_RETURN_DONE;
 }
 

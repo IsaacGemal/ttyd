@@ -632,7 +632,7 @@ void yuunpc_set_jump_pose(const char* name, const char* anim, f32 value) {
     }
 }
 
-// The `450.0f - pose->field_0x4` register allocation is only reproduced by loading the field
+// The `450.0f - pose->heading` register allocation is only reproduced by loading the field
 // into angle first and subtracting it from the constant (MWCC puts the field in f2 and the
 // constant in f1, as the original does); the natural one-expression form lands in the other
 // registers. Everything else (logic, switch, calls) matches the original directly.
@@ -642,10 +642,10 @@ f32 yuunpc_pose_sub(ExtPose* pose, YuunpcEntry* entry) {
 
     if (!(pose->flags & 2)) {
 #ifdef MUST_MATCH
-        f32 angle = pose->field_0x4;
+        f32 angle = pose->heading;
         angle = 450.0f - angle;
 #else
-        f32 angle = 450.0f - pose->field_0x4;
+        f32 angle = 450.0f - pose->heading;
 #endif
         if (angle >= 360.0f) {
             angle -= 360.0f;
@@ -680,18 +680,18 @@ f32 yuunpc_pose_sub(ExtPose* pose, YuunpcEntry* entry) {
         case 0x300:
             animPoseSetLocalTime(entry->npc->poseId, (f32)(s32)(pe->field_1C * f31));
             {
-                f32 t = 3600.0f + (90.0f - pose->field_0x4);
+                f32 t = 3600.0f + (90.0f - pose->heading);
                 entry->npc->rotation.y = t - (f32)((s32)(t / 360.0f) * 360);
                 entry->npc->position = *(Vec*)&entry->field_24;
             }
             break;
         case 0:
             if (entry->field_54 != yuunpc_wp->field_20) {
-                pose->field_0x10 = pe->field_24 + (s32)((f32)pe->field_28 * f31);
+                pose->texId = pe->field_24 + (s32)((f32)pe->field_28 * f31);
             } else {
                 s32 j = (s32)(224.0f * f31);
                 s32 v = (s32)chusan_mov_tbl[j >> 3] != 0 ? chusan_act_tbl[j & 7] : 0;
-                pose->field_0x10 = pe->field_24 + v;
+                pose->texId = pe->field_24 + v;
             }
             break;
     }
@@ -737,7 +737,7 @@ void ext_yuunpc_minigame1_init(void) {
         ((MtxPtr)pose->matrix)[1][3] = arr1[(s32)((y - -560.0f) / 60.0f)];
         ((MtxPtr)pose->matrix)[2][3] = y + arr2[q % 8];
 
-        pose->field_0x4 = (f32)(irand(2) * 180 + 90);
+        pose->heading = (f32)(irand(2) * 180 + 90);
         entry->field_64 = 1.0f;
 
         switch (irand(1000) % 4) {
@@ -831,9 +831,9 @@ void yuunpc_pose_minigame1_main(void) {
             }
             if (irand(150) == 0) {
                 if (irand(101) <= 80) {
-                    pose->field_0x4 = angleABf(camX, 0.0f, f29, f28);
+                    pose->heading = angleABf(camX, 0.0f, f29, f28);
                 } else {
-                    pose->field_0x4 = angleABf(camX, 0.0f, f29 - 2.0f * (f29 - camX), f28);
+                    pose->heading = angleABf(camX, 0.0f, f29 - 2.0f * (f29 - camX), f28);
                 }
             }
         }
@@ -911,7 +911,7 @@ void ext_yuunpc_minigame2_init(void) {
         ((MtxPtr)pose->matrix)[1][3] = arr1[(s32)((y - -655.0f) / 60.0f)];
         ((MtxPtr)pose->matrix)[2][3] = y + arr2[q % 8];
 
-        pose->field_0x4 = (f32)(irand(2) * 180 + 90);
+        pose->heading = (f32)(irand(2) * 180 + 90);
         entry->field_64 = 1.0f;
 
         switch (irand(1000) % 4) {
@@ -1009,9 +1009,9 @@ void yuunpc_pose_minigame2_main(void) {
             }
             if (irand(150) == 0) {
                 if (irand(101) <= 80) {
-                    pose->field_0x4 = angleABf(camX, 0.0f, f29, f28);
+                    pose->heading = angleABf(camX, 0.0f, f29, f28);
                 } else {
-                    pose->field_0x4 = angleABf(camX, 0.0f, f29 - 2.0f * (f29 - camX), f28);
+                    pose->heading = angleABf(camX, 0.0f, f29 - 2.0f * (f29 - camX), f28);
                 }
             }
         }
@@ -1068,7 +1068,7 @@ void ext_yuunpc_minigame3_init(void) {
         ((MtxPtr)pose->matrix)[1][3] = arr1[(s32)((y - -750.0f) / 60.0f)];
         ((MtxPtr)pose->matrix)[2][3] = y + arr2[q % 8];
 
-        pose->field_0x4 = (f32)(irand(2) * 180 + 90);
+        pose->heading = (f32)(irand(2) * 180 + 90);
         entry->field_64 = 1.0f;
 
         switch (irand(1000) % 4) {
@@ -1161,9 +1161,9 @@ void yuunpc_pose_minigame3_main(void) {
             }
             if (irand(180) == 0) {
                 if (irand(101) <= 80) {
-                    pose->field_0x4 = angleABf(camX, 0.0f, f29, f28);
+                    pose->heading = angleABf(camX, 0.0f, f29, f28);
                 } else {
-                    pose->field_0x4 = angleABf(camX, 0.0f, f29 - 2.0f * (f29 - camX), f28);
+                    pose->heading = angleABf(camX, 0.0f, f29 - 2.0f * (f29 - camX), f28);
                 }
             }
         }
@@ -1494,7 +1494,7 @@ void ext_yuunpc_minigame4_init_sub(void) {
             ((MtxPtr)pose->matrix)[0][3] = 20.0f * (f32)q - 500.0f;
             ((MtxPtr)pose->matrix)[1][3] = arr1[(s32)((y - -750.0f) / 60.0f)];
             ((MtxPtr)pose->matrix)[2][3] = y + arr2[q % 8];
-            pose->field_0x4 = (f32)(irand(2) * 180 + 90);
+            pose->heading = (f32)(irand(2) * 180 + 90);
             entry->field_64 = 1.0f;
             switch (irand(1000) % 4) {
                 case 0:
@@ -1582,7 +1582,7 @@ void ext_yuunpc_minigame4_init_sub(void) {
             v.z = ((MtxPtr)pose->matrix)[2][3];
             *(Vec*)&entry->field_18 = v;
             *(Vec*)&entry->field_C = *(Vec*)&entry->field_18;
-            pose->field_0x4 = 270.0f;
+            pose->heading = 270.0f;
             entry->field_64 = 1.0f;
             v2 = (Vec){ 0.0f, 0.0f, 0.0f };
             v2.x = ((MtxPtr)pose->matrix)[0][3];
@@ -1594,7 +1594,7 @@ void ext_yuunpc_minigame4_init_sub(void) {
                     entry->npc = npcNameToPtr("yuusp0");
                     entry->npc->position = *(Vec*)&entry->field_24;
                     {
-                        f32 t = 3600.0f + (90.0f - pose->field_0x4);
+                        f32 t = 3600.0f + (90.0f - pose->heading);
                         entry->npc->rotation.y = t - (f32)((s32)(t / 360.0f) * 0x168);
                     }
                     animPosePeraOff(entry->npc->poseId);
@@ -1609,7 +1609,7 @@ void ext_yuunpc_minigame4_init_sub(void) {
                     entry->npc = npcNameToPtr("yuusp1");
                     entry->npc->position = *(Vec*)&entry->field_24;
                     {
-                        f32 t = 3600.0f + (90.0f - pose->field_0x4);
+                        f32 t = 3600.0f + (90.0f - pose->heading);
                         entry->npc->rotation.y = t - (f32)((s32)(t / 360.0f) * 0x168);
                     }
                     animPosePeraOff(entry->npc->poseId);
@@ -1622,7 +1622,7 @@ void ext_yuunpc_minigame4_init_sub(void) {
                     entry->npc = npcNameToPtr("yuusp2");
                     entry->npc->position = *(Vec*)&entry->field_24;
                     {
-                        f32 t = 3600.0f + (90.0f - pose->field_0x4);
+                        f32 t = 3600.0f + (90.0f - pose->heading);
                         entry->npc->rotation.y = t - (f32)((s32)(t / 360.0f) * 0x168);
                     }
                     animPosePeraOff(entry->npc->poseId);
@@ -1765,9 +1765,9 @@ void yuunpc_pose_minigame4_main(void) {
             }
             if (irand(100) == 0) {
                 if (irand(101) <= 80) {
-                    pose->field_0x4 = angleABf(camY, 0.0f, x, z);
+                    pose->heading = angleABf(camY, 0.0f, x, z);
                 } else {
-                    pose->field_0x4 = angleABf(camY, 0.0f, x - 2.0f * (x - camY), z);
+                    pose->heading = angleABf(camY, 0.0f, x - 2.0f * (x - camY), z);
                 }
             }
         }
@@ -2169,7 +2169,7 @@ void yuunpc_pose_minigame4_main(void) {
             if (!(yuunpc_wp->flags & 1) && entry->field_C.x > entry->field_24 && n <= 0) {
                 entry->flags |= 8;
                 entry->field_50 = 0x1e;
-                entry->field_44 = pose->field_0x4;
+                entry->field_44 = pose->heading;
                 entry->field_4C = 0;
                 yuunpc_pose_change(entry, entry->field_56, 1.0f, (f32)rand() / 32767.0f);
                 entry->field_3C = 0.0f;
@@ -2244,9 +2244,9 @@ void yuunpc_pose_minigame4_main(void) {
         {
             f32 v;
             entry->field_50 -= 1;
-            pose->field_0x4 = (-450.0f) * (1.0f - (f32)entry->field_50 / 30.0f) + entry->field_44;
-            v = pose->field_0x4 + 3600.0f;
-            pose->field_0x4 = v - (f32)((s32)(v / 360.0f) * 360);
+            pose->heading = (-450.0f) * (1.0f - (f32)entry->field_50 / 30.0f) + entry->field_44;
+            v = pose->heading + 3600.0f;
+            pose->heading = v - (f32)((s32)(v / 360.0f) * 360);
             break;
         }
         case 0x18:
@@ -2259,18 +2259,18 @@ void yuunpc_pose_minigame4_main(void) {
             } else {
                 r4v = (r3v & 0x1f) - 15;
             }
-            pose->field_0x4 = 2.0f * (f32)r4v + (-450.0f + entry->field_44);
-            v = pose->field_0x4 + 3600.0f;
-            pose->field_0x4 = v - (f32)((s32)(v / 360.0f) * 360);
+            pose->heading = 2.0f * (f32)r4v + (-450.0f + entry->field_44);
+            v = pose->heading + 3600.0f;
+            pose->heading = v - (f32)((s32)(v / 360.0f) * 360);
             break;
         }
         case 0x10:
         {
             f32 v;
             entry->field_50 -= 1;
-            pose->field_0x4 = (-450.0f) * (1.0f - (f32)entry->field_50 / 30.0f) + (-180.0f + (-450.0f + entry->field_44));
-            v = pose->field_0x4 + 3600.0f;
-            pose->field_0x4 = v - (f32)((s32)(v / 360.0f) * 360);
+            pose->heading = (-450.0f) * (1.0f - (f32)entry->field_50 / 30.0f) + (-180.0f + (-450.0f + entry->field_44));
+            v = pose->heading + 3600.0f;
+            pose->heading = v - (f32)((s32)(v / 360.0f) * 360);
             break;
         }
         default:

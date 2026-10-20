@@ -460,7 +460,7 @@ void zakogun_ext_main2(void) {
     for (i = 0; i < 25; i++, pose++) {
         ZakogunEntry* entry = &zakogun[i];
 
-        pose->field_0x10 = entry->poseStart + entry->poseIndex / entry->poseDiv;
+        pose->texId = entry->poseStart + entry->poseIndex / entry->poseDiv;
         entry->poseIndex++;
         if (entry->poseIndex >= entry->poseCount * entry->poseDiv) {
             entry->poseIndex = 0;
