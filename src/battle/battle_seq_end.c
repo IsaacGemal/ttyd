@@ -1756,18 +1756,19 @@ s32 _lvup_object_select_move(EventEntry* event, BOOL isFirstCall) {
         event->userdata[1] = 0x3C;
         event->userdata[2] = (s32)entry->pos.x;
         event->field_84 = (s32)entry->pos.z;
-        *(s32*)((u8*)event + 0x88) = (s32)mario->mPosition.x;
-        *(s32*)((u8*)event + 0x8C) = (s32)mario->mPosition.z;
+        // Mario's x and z, kept in the wInterpRelatedTime slot (0x88 and 0x8C) while this event runs.
+        ((s32*)&event->wInterpRelatedTime)[0] = (s32)mario->mPosition.x;
+        ((s32*)&event->wInterpRelatedTime)[1] = (s32)mario->mPosition.z;
     }
     event->userdata[0]++;
     if (event->userdata[0] < event->userdata[1]) {
-        entry->pos.x = intplGetValue(5, event->userdata[0], event->userdata[1], (f32)(s32)event->userdata[2], (f32)*(s32*)((u8*)event + 0x88));
-        entry->pos.z = intplGetValue(5, event->userdata[0], event->userdata[1], (f32)(s32)event->field_84, (f32)*(s32*)((u8*)event + 0x8C));
+        entry->pos.x = intplGetValue(5, event->userdata[0], event->userdata[1], (f32)(s32)event->userdata[2], (f32)((s32*)&event->wInterpRelatedTime)[0]);
+        entry->pos.z = intplGetValue(5, event->userdata[0], event->userdata[1], (f32)(s32)event->field_84, (f32)((s32*)&event->wInterpRelatedTime)[1]);
         entry->rot.y = reviseAngle(intplGetValue(5, event->userdata[0], event->userdata[1], float_0_80420c7c, float_2160_80420c84));
         return 0;
     }
-    entry->pos.x = (f32)*(s32*)((u8*)event + 0x88);
-    entry->pos.z = (f32)*(s32*)((u8*)event + 0x8C);
+    entry->pos.x = (f32)((s32*)&event->wInterpRelatedTime)[0];
+    entry->pos.z = (f32)((s32*)&event->wInterpRelatedTime)[1];
     return 2;
 }
 
