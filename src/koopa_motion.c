@@ -122,7 +122,7 @@ f32 kpaStickSpd(s32 arg) {
     if (stick <= -float_70_80420e50) {
         stick = -float_70_80420e50;
     }
-    f30 = MW_F32(mario, 0x2C4);
+    f30 = mario->kpaSpeed;
     if (stick == float_0_80420da0) {
         f32 decel = -0.2f;
         if (*(void**)((u8*)mario + 0x1F0) != NULL) {
@@ -157,7 +157,7 @@ f32 kpaStickSpd(s32 arg) {
         }
     }
     f31 = __fabsf(f30);
-    MW_F32(mario, 0x2C4) = f30;
+    mario->kpaSpeed = f30;
     mario->baseSpeed = f31;
     {
         f32 ang = angleABf(float_0_80420da0, float_0_80420da0, f30, float_0_80420da0);
@@ -462,7 +462,7 @@ void kpa_jump(void) {
         }
         if (mario->jumpVelY <= float_0_80420da0) {
             if (f31 > float_0_80420da0) {
-                MW_S16(mario, 0x52) = mario->airTimer;
+                mario->airTimerPeak = mario->airTimer;
             }
             marioSetPeakYpos();
             kpaSetFallPara();
@@ -500,7 +500,7 @@ void kpa_fall_80213C38(void) {
     }
     switch ((s32)mario->currSubMotionId) {
     case 0:
-        if (mario->position.y <= MW_F32(mario, 0x120)) {
+        if (mario->position.y <= mario->field_0x11C.y) {
             if (mario->position.y <= float_75_80420e44) {
                 if ((u32)(mario->dispFlags |= 0x00020000) != 0) {
                     camFollowYOn();
@@ -527,7 +527,7 @@ void kpa_fall_80213C38(void) {
         mario->airTimer = 0;
         mario->multiTimer = 0;
         mario->baseSpeed = float_0_80420da0;
-        MW_F32(mario, 0x2C4) = float_0_80420da0;
+        mario->kpaSpeed = float_0_80420da0;
     }
 }
 
@@ -587,7 +587,7 @@ void kpa_hip(void) {
             psndSFXOn_3D((char*)0x820, &mario->position);
             evtEntry(quake_kpaHipAttack_evt, 0, 0);
             mario->airTimer = 0;
-            MW_S16(mario, 0x52) = 0;
+            mario->airTimerPeak = 0;
         } else {
             mario->position.y += f31;
         }
@@ -805,7 +805,7 @@ void kpa_powdown(void) {
 void kpaSwimMove(void) {
     MarioWork* mario = marioGetPtr();
     f32 stick = (f32)(s8)mario->wStickDir1;
-    f32 speed = MW_F32(mario, 0x2C4);
+    f32 speed = mario->kpaSpeed;
     f32 f31;
     f32 ang;
 
@@ -825,7 +825,7 @@ void kpaSwimMove(void) {
             }
         }
     }
-    MW_F32(mario, 0x2C4) = speed;
+    mario->kpaSpeed = speed;
     f31 = float_0p06_80420de8 * __fabsf(speed);
     if (f31 >= float_2_80420de0) {
         f31 = float_2_80420de0;
@@ -860,7 +860,7 @@ void kpa_swim(void) {
         mario->multiTimer = 0;
         mario->currSubMotionId = 0;
         mario->baseSpeed = float_0_80420da0;
-        MW_F32(mario, 0x2C4) = float_0_80420da0;
+        mario->kpaSpeed = float_0_80420da0;
         KPA(marioGetPtr())->flags |= KPA_FLAG_NO_HIP;
     }
     if (mario->buttonNew & (1 << 9)) {
@@ -1073,7 +1073,7 @@ void kpa_swim(void) {
             }
         }
         if ((u32)kpaChkHitobjRide() != 0) {
-            MW_F32(mario, 0x2C4) = float_0_80420da0;
+            mario->kpaSpeed = float_0_80420da0;
             mario->baseSpeed = float_0_80420da0;
         }
         m2 = marioGetPtr();
@@ -1105,7 +1105,7 @@ void kpa_swim(void) {
         break;
     case 0x20:
         if ((u32)kpaChkHitobjRide() != 0) {
-            MW_F32(mario, 0x2C4) = float_0_80420da0;
+            mario->kpaSpeed = float_0_80420da0;
             mario->baseSpeed = float_0_80420da0;
         }
         break;
