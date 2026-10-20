@@ -229,9 +229,7 @@ void effStarPowerMain(EffectEntry* effect) {
 
 // The original builds each TEV colour in a local GXColor and copies it into the outgoing argument
 // slot; returning the colour from an inline makes mwcc lay those two slots out the same way it did
-// in the original (the same quirk eff_akari_charge_n64.c documents). MUST_MATCH only: the plain
-// build under #else uses the natural local-shaped code.
-#ifdef MUST_MATCH
+// in the original (the same quirk eff_akari_charge_n64.c documents).
 static inline GXColor starPowerColor(GXColor c, s32 r, s32 g, s32 b, s32 a) {
     c.r = r;
     c.g = g;
@@ -239,7 +237,6 @@ static inline GXColor starPowerColor(GXColor c, s32 r, s32 g, s32 b, s32 a) {
     c.a = a;
     return c;
 }
-#endif
 void effStarPowerDisp(CameraId camId, void* param) {
     s32 halfAlpha;
     EffStarPowerData* data;
@@ -257,9 +254,6 @@ void effStarPowerDisp(CameraId camId, void* param) {
     Mtx rot;
     Mtx work;
     GXTexObj texObj;
-#ifndef MUST_MATCH
-    GXColor color;
-#endif
     f32 scaleVal;
 
     cam = camGetPtr(camId);
@@ -347,23 +341,8 @@ void effStarPowerDisp(CameraId camId, void* param) {
         GXLoadPosMtxImm(work, 0);
         GXSetCurrentMtx(0);
         halfAlpha = color2A >> 1;
-#ifdef MUST_MATCH
         GXSetTevColor(1, starPowerColor(unk_80423278, color1R, color1G, color1B, halfAlpha));
         GXSetTevColor(2, starPowerColor(unk_8042327c, color2R, color2G, color2B, halfAlpha));
-#else
-        color = unk_80423278;
-        color.r = color1R;
-        color.g = color1G;
-        color.b = color1B;
-        color.a = halfAlpha;
-        GXSetTevColor(1, color);
-        color = unk_8042327c;
-        color.r = color2R;
-        color.g = color2G;
-        color.b = color2B;
-        color.a = halfAlpha;
-        GXSetTevColor(2, color);
-#endif
         GXSetNumChans(1);
         GXSetChanCtrl(4, 0, 0, 1, 0, 0, 2);
         GXSetNumTevStages(1);
@@ -416,23 +395,8 @@ void effStarPowerDisp(CameraId camId, void* param) {
         tri2(18, 14, 15, 0, 18, 15, 19, 0);
     }
 
-#ifdef MUST_MATCH
     GXSetTevColor(1, starPowerColor(unk_80423280, color1R, color1G, color1B, color1A));
     GXSetTevColor(2, starPowerColor(unk_80423284, color2R, color2G, color2B, color1A));
-#else
-    color = unk_80423280;
-    color.r = color1R;
-    color.g = color1G;
-    color.b = color1B;
-    color.a = color1A;
-    GXSetTevColor(1, color);
-    color = unk_80423284;
-    color.r = color2R;
-    color.g = color2G;
-    color.b = color2B;
-    color.a = color1A;
-    GXSetTevColor(2, color);
-#endif
     GXSetNumChans(1);
     GXSetChanCtrl(4, 0, 0, 1, 0, 0, 2);
     GXSetNumTevStages(1);

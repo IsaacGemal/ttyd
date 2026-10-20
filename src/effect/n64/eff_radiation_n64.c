@@ -320,14 +320,12 @@ extern const GXColor dat_8041fa94;
 extern u32 size150x20_tex32x32[14];
 extern u32 size300x40_tex32x32[11];
 
-// MUST_MATCH: building the colour in an inline is what makes the two call sites keep
+// Building the colour in an inline is what makes the two call sites keep
 // their own GXColor temporary (0x10/0x14 and 0x8/0xc); the natural assignment reuses one slot.
-#ifdef MUST_MATCH
 static inline GXColor radiationSetColor(s32 alpha, GXColor color) {
 	color.a = alpha;
 	return color;
 }
-#endif
 
 // The retail tri1 keeps a 4th, unused argument (eff_balloon_n64.s passes 0/1 there), but
 // include/eff/eff_n64.h and eff_n64.c's definition only declare 3. This caller passes 0.
@@ -411,13 +409,9 @@ void effRadiationDisp(CameraId camId, void* param) {
 			PSMTXConcat(work, rot, work);
 			PSMTXTrans(trans2, data->offset, 0.0f, 0.0f);
 			PSMTXConcat(work, trans2, work);
-#ifdef MUST_MATCH
+			// scaleZ repeats the expression; reusing scaleX changes the schedule
 			scaleX = 0.25f * (3.0f + alpha);
 			scaleZ = 0.25f * (3.0f + alpha);
-#else
-			scaleX = 0.25f * (3.0f + alpha);
-			scaleZ = scaleX;
-#endif
 			switch (i & 3) {
 			case 0:
 				scaleY = 0.3f * alpha;
@@ -434,15 +428,7 @@ void effRadiationDisp(CameraId camId, void* param) {
 			}
 			PSMTXScale(scale, scaleX, scaleY, scaleZ);
 			PSMTXConcat(work, scale, work);
-#ifdef MUST_MATCH
 			GXSetTevColor(GX_TEVREG0, radiationSetColor(data->alpha, dat_8041fa90));
-#else
-			{
-				GXColor color = dat_8041fa90;
-				color.a = data->alpha;
-				GXSetTevColor(GX_TEVREG0, color);
-			}
-#endif
 		} else {
 			PSMTXRotRad(rot, 'y', 0.017453292f * data->rotY);
 			PSMTXConcat(work, rot, work);
@@ -450,15 +436,7 @@ void effRadiationDisp(CameraId camId, void* param) {
 			PSMTXConcat(work, rot, work);
 			PSMTXTrans(trans2, data->offset, 0.0f, 0.0f);
 			PSMTXConcat(work, trans2, work);
-#ifdef MUST_MATCH
 			GXSetTevColor(GX_TEVREG0, radiationSetColor(data->alpha, dat_8041fa94));
-#else
-			{
-				GXColor color = dat_8041fa94;
-				color.a = data->alpha;
-				GXSetTevColor(GX_TEVREG0, color);
-			}
-#endif
 		}
 
 		PSMTXConcat(cam->view, work, work);
