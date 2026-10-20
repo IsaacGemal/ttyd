@@ -79,21 +79,17 @@ USER_FUNC(pre_kurio_use) {
     }
 
     hit = (HitEntry*)mario->hitobjPush;
-    if (hit != NULL && (hitGetAttr(hit) & 0x80000000)) {
-        goto found;
+    if (hit == NULL || !(hitGetAttr(hit) & 0x80000000)) {
+        hit = mario->hitobjFront;
+        if (hit == NULL || !(hitGetAttr(hit) & 0x80000000)) {
+            hit = (HitEntry*)mario->hitobjStandOn;
+            if (hit == NULL || !(hitGetAttr(hit) & 0x80000000)) {
+                event->lwData[0] = (s32) "msg_kuri_map";
+                return EVT_RETURN_DONE;
+            }
+        }
     }
-    hit = mario->hitobjFront;
-    if (hit != NULL && (hitGetAttr(hit) & 0x80000000)) {
-        goto found;
-    }
-    hit = (HitEntry*)mario->hitobjStandOn;
-    if (hit != NULL && (hitGetAttr(hit) & 0x80000000)) {
-        goto found;
-    }
-    event->lwData[0] = (s32) "msg_kuri_map";
-    return EVT_RETURN_DONE;
 
-found:
     obj = mobjHitObjPtrToPtr(hit);
     if (strcmp(obj->animName, "MOBJ_Lv1Block") == 0) {
         if (pouchGetHammerLv() < 1) {
@@ -101,17 +97,13 @@ found:
         } else {
             msg = "obj_hlp_block_y_1";
         }
-        goto done;
-    }
-    if (strcmp(obj->animName, "MOBJ_Lv1BigBlock") == 0) {
+    } else if (strcmp(obj->animName, "MOBJ_Lv1BigBlock") == 0) {
         if (pouchGetHammerLv() < 1) {
             msg = "obj_hlp_block_y_0";
         } else {
             msg = "obj_hlp_block_y_1";
         }
-        goto done;
-    }
-    if (strcmp(obj->animName, "MOBJ_Lv1BigBigBlock") == 0) {
+    } else if (strcmp(obj->animName, "MOBJ_Lv1BigBigBlock") == 0) {
         if (pouchGetHammerLv() < 1) {
             msg = "obj_hlp_block_y_0";
         } else if (pouchGetHammerLv() < 2) {
@@ -119,9 +111,7 @@ found:
         } else {
             msg = "obj_hlp_block_y_3";
         }
-        goto done;
-    }
-    if (strcmp(obj->animName, "MOBJ_Lv2Block") == 0 || strcmp(obj->animName, "MOBJ_Lv2BigBlock") == 0) {
+    } else if (strcmp(obj->animName, "MOBJ_Lv2Block") == 0 || strcmp(obj->animName, "MOBJ_Lv2BigBlock") == 0) {
         if (pouchGetHammerLv() < 1) {
             msg = "obj_hlp_block_s_0";
         } else if (pouchGetHammerLv() < 3) {
@@ -129,9 +119,7 @@ found:
         } else {
             msg = "obj_hlp_block_s_2";
         }
-        goto done;
-    }
-    if (strcmp(obj->animName, "MOBJ_Lv2BigBigBlock") == 0) {
+    } else if (strcmp(obj->animName, "MOBJ_Lv2BigBigBlock") == 0) {
         if (pouchGetHammerLv() < 1) {
             msg = "obj_hlp_block_s_0";
         } else if (pouchGetHammerLv() < 3) {
@@ -139,112 +127,71 @@ found:
         } else {
             msg = "obj_hlp_block_s_3";
         }
-        goto done;
-    }
-    if (strcmp(obj->animName, "MOBJ_Lv3BigBigBlock") == 0 || strcmp(obj->animName, "MOBJ_Lv3BigBlock") == 0 ||
-        strcmp(obj->animName, "MOBJ_Lv3Block") == 0) {
+    } else if (strcmp(obj->animName, "MOBJ_Lv3BigBigBlock") == 0 || strcmp(obj->animName, "MOBJ_Lv3BigBlock") == 0 ||
+               strcmp(obj->animName, "MOBJ_Lv3Block") == 0) {
         msg = "obj_hlp_redyellow_block";
-        goto done;
-    }
-    if (strcmp(obj->animName, "MOBJ_Block") == 0 || strcmp(obj->animName, "MOBJ_PinkBlock") == 0) {
+    } else if (strcmp(obj->animName, "MOBJ_Block") == 0 || strcmp(obj->animName, "MOBJ_PinkBlock") == 0) {
         msg = "obj_hlp_su_block";
-        goto done;
-    }
-    if (strcmp(obj->animName, "MOBJ_PowerUpBlock") == 0) {
+    } else if (strcmp(obj->animName, "MOBJ_PowerUpBlock") == 0) {
         msg = "obj_hlp_shine";
-        goto done;
-    }
-    if (strcmp(obj->animName, "MOBJ_HatenaBlock") == 0) {
+    } else if (strcmp(obj->animName, "MOBJ_HatenaBlock") == 0) {
         msg = "obj_hlp_hatena";
-        goto done;
-    }
-    if (strcmp(obj->animName, "MOBJ_BadgeBlock") == 0) {
+    } else if (strcmp(obj->animName, "MOBJ_BadgeBlock") == 0) {
         msg = "obj_hlp_badge_hatena";
-        goto done;
-    }
-    if (strcmp(obj->animName, "MOBJ_green_FlowBlock") == 0 ||
-        strcmp(obj->animName, "MOBJ_green_big_FlowBlock") == 0 ||
-        strcmp(obj->animName, "MOBJ_green_big02_FlowBlock") == 0 ||
-        strcmp(obj->animName, "MOBJ_purple_FlowBlock") == 0 ||
-        strcmp(obj->animName, "MOBJ_purple_big_FlowBlock") == 0 ||
-        strcmp(obj->animName, "MOBJ_purple_big02_FlowBlock") == 0 ||
-        strcmp(obj->animName, "MOBJ_orange_FlowBlock") == 0 ||
-        strcmp(obj->animName, "MOBJ_orange_big_FlowBlock") == 0 ||
-        strcmp(obj->animName, "MOBJ_orange_big02_FlowBlock") == 0) {
+    } else if (strcmp(obj->animName, "MOBJ_green_FlowBlock") == 0 ||
+               strcmp(obj->animName, "MOBJ_green_big_FlowBlock") == 0 ||
+               strcmp(obj->animName, "MOBJ_green_big02_FlowBlock") == 0 ||
+               strcmp(obj->animName, "MOBJ_purple_FlowBlock") == 0 ||
+               strcmp(obj->animName, "MOBJ_purple_big_FlowBlock") == 0 ||
+               strcmp(obj->animName, "MOBJ_purple_big02_FlowBlock") == 0 ||
+               strcmp(obj->animName, "MOBJ_orange_FlowBlock") == 0 ||
+               strcmp(obj->animName, "MOBJ_orange_big_FlowBlock") == 0 ||
+               strcmp(obj->animName, "MOBJ_orange_big02_FlowBlock") == 0) {
         msg = "obj_hlp_huyuu";
-        goto done;
-    }
-    if (strcmp(obj->animName, "MOBJ_green_FlowBlockSwitch") == 0 ||
-        strcmp(obj->animName, "MOBJ_purple_FlowBlockSwitch") == 0 ||
-        strcmp(obj->animName, "MOBJ_orange_FlowBlockSwitch") == 0) {
+    } else if (strcmp(obj->animName, "MOBJ_green_FlowBlockSwitch") == 0 ||
+               strcmp(obj->animName, "MOBJ_purple_FlowBlockSwitch") == 0 ||
+               strcmp(obj->animName, "MOBJ_orange_FlowBlockSwitch") == 0) {
         msg = "obj_hlp_huyuu_switch";
-        goto done;
-    }
-    if (strcmp(obj->animName, "MOBJ_BlueTornadoSwitch") == 0 ||
-        strcmp(obj->animName, "MOBJ_RedTornadoSwitch") == 0) {
+    } else if (strcmp(obj->animName, "MOBJ_BlueTornadoSwitch") == 0 ||
+               strcmp(obj->animName, "MOBJ_RedTornadoSwitch") == 0) {
         msg = (pouchGetJumpLv() < 2) ? "obj_hlp_big_switch_1" : "obj_hlp_big_switch_2";
-        goto done;
-    }
-    if (strcmp(obj->animName, "MOBJ_TreasureBox") == 0 || strcmp(obj->animName, "MOBJ_GrayTreasureBox") == 0 ||
-        strcmp(obj->animName, "MOBJ_BigTreasureBox") == 0) {
+    } else if (strcmp(obj->animName, "MOBJ_TreasureBox") == 0 || strcmp(obj->animName, "MOBJ_GrayTreasureBox") == 0 ||
+               strcmp(obj->animName, "MOBJ_BigTreasureBox") == 0) {
         msg = (mobjCheckItemboxOpen(obj) == 2) ? "obj_hlp_takara_1" : "obj_hlp_takara_0";
-        goto done;
-    }
-    if (strcmp(obj->animName, "MOBJ_BlackTreasureBox") == 0) {
+    } else if (strcmp(obj->animName, "MOBJ_BlackTreasureBox") == 0) {
         msg = (mobjCheckItemboxOpen(obj) == 2) ? "obj_hlp_blackbox_1" : "obj_hlp_blackbox_0";
-        goto done;
-    }
-    if (strcmp(obj->animName, "MOBJ_RedJumpStand") == 0 || strcmp(obj->animName, "MOBJ_RedJumpStand2") == 0 ||
-        strcmp(obj->animName, "MOBJ_BlueJumpStand") == 0 || strcmp(obj->animName, "MOBJ_BlueJumpStand2") == 0 ||
-        strcmp(obj->animName, "MOBJ_MapJumpStand") == 0) {
+    } else if (strcmp(obj->animName, "MOBJ_RedJumpStand") == 0 || strcmp(obj->animName, "MOBJ_RedJumpStand2") == 0 ||
+               strcmp(obj->animName, "MOBJ_BlueJumpStand") == 0 || strcmp(obj->animName, "MOBJ_BlueJumpStand2") == 0 ||
+               strcmp(obj->animName, "MOBJ_MapJumpStand") == 0) {
         msg = "obj_hlp_jump";
-        goto done;
-    }
-    if (strcmp(obj->animName, "MOBJ_RedTimerSwitch") == 0 || strcmp(obj->animName, "MOBJ_BlueTimerSwitch") == 0) {
+    } else if (strcmp(obj->animName, "MOBJ_RedTimerSwitch") == 0 || strcmp(obj->animName, "MOBJ_BlueTimerSwitch") == 0) {
         msg = "obj_hlp_timer_switch";
-        goto done;
-    }
-    if (strcmp(obj->animName, "MOBJ_RedSwitch") == 0 || strcmp(obj->animName, "MOBJ_BlueSwitch") == 0 ||
-        strcmp(obj->animName, "MOBJ_WhiteSwitch") == 0 || strcmp(obj->animName, "MOBJ_BlackSwitch") == 0) {
+    } else if (strcmp(obj->animName, "MOBJ_RedSwitch") == 0 || strcmp(obj->animName, "MOBJ_BlueSwitch") == 0 ||
+               strcmp(obj->animName, "MOBJ_WhiteSwitch") == 0 || strcmp(obj->animName, "MOBJ_BlackSwitch") == 0) {
         msg = "obj_hlp_switch";
-        goto done;
-    }
-    if (strcmp(obj->animName, "MOBJ_RideSwitchA") == 0 || strcmp(obj->animName, "MOBJ_RideSwitchB") == 0 ||
-        strcmp(obj->animName, "MOBJ_RideSwitchC") == 0) {
+    } else if (strcmp(obj->animName, "MOBJ_RideSwitchA") == 0 || strcmp(obj->animName, "MOBJ_RideSwitchB") == 0 ||
+               strcmp(obj->animName, "MOBJ_RideSwitchC") == 0) {
         msg = "obj_hlp_yuka_switch";
-        goto done;
-    }
-    if (strcmp(obj->animName, "MOBJ_BreakingFloor") == 0 ||
-        strcmp(obj->animName, "MOBJ_BlackBreakingFloor") == 0) {
+    } else if (strcmp(obj->animName, "MOBJ_BreakingFloor") == 0 ||
+               strcmp(obj->animName, "MOBJ_BlackBreakingFloor") == 0) {
         msg = "obj_hlp_hip_attack";
         if (pouchGetJumpLv() >= 2) {
             msg = "obj_hlp_hip_attack_1";
         }
-        goto done;
-    }
-    if (strcmp(obj->animName, "MOBJ_BombRock") == 0) {
+    } else if (strcmp(obj->animName, "MOBJ_BombRock") == 0) {
         msg = "obj_hlp_bomb_rock";
-        goto done;
-    }
-    if (strcmp(obj->animName, "MOBJ_Signboard") == 0) {
+    } else if (strcmp(obj->animName, "MOBJ_Signboard") == 0) {
         msg = "obj_hlp_kanban";
-        goto done;
-    }
-    if (strcmp(obj->animName, "MOBJ_Arrow") == 0) {
+    } else if (strcmp(obj->animName, "MOBJ_Arrow") == 0) {
         msg = "obj_hlp_yajirushi";
-        goto done;
-    }
-    if (strcmp(obj->animName, "MOBJ_Lock") == 0) {
+    } else if (strcmp(obj->animName, "MOBJ_Lock") == 0) {
         msg = "obj_hlp_lock";
-        goto done;
-    }
-    if (strcmp(obj->animName, KURURIN_FLOOR_NAME) == 0) {
+    } else if (strcmp(obj->animName, KURURIN_FLOOR_NAME) == 0) {
         msg = "msg_kuri_map";
-        goto done;
+    } else {
+        msg = "msg_kuri_map";
     }
-    msg = "msg_kuri_map";
 
-done:
     if (msg != NULL) {
         event->lwData[0] = (s32)msg;
         partyChgPoseId(party, 7);
