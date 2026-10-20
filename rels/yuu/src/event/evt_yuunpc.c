@@ -2415,22 +2415,16 @@ void yuunpc_pose_minigame4_main(void) {
                                     psndSFXOn_3D((const char*)0x8e0, (Vec*)&entry->field_24);
                                 }
                                 r26++;
-                                goto cbec;
-                            }
-                            if (f27 < entry->field_28 && f0 == entry->field_28) {
+                            } else if (f27 < entry->field_28 && f0 == entry->field_28) {
                                 entry->field_4C = 0;
                                 yuunpc_pose_change(entry, entry->field_56, 1.0f, (f32)rand() / 32767.0f);
                                 entry->field_3C = 0.0f;
-                                goto cbec;
-                            }
-                            if (irand(0x3c) == 0) {
+                            } else if (irand(0x3c) == 0) {
                                 if (entry->field_4 <= 1 && irand(3) == 0) {
                                     entry->field_4C = 0;
                                     yuunpc_pose_change(entry, entry->field_56, 1.0f, (f32)rand() / 32767.0f);
                                     entry->field_3C = 0.0f;
-                                    goto cbec;
-                                }
-                                if (f27 >= entry->field_28) {
+                                } else if (f27 >= entry->field_28) {
                                     entry->field_4C = 2;
                                     yuunpc_pose_change(entry, entry->field_5A, 1.0f, (f32)rand() / 32767.0f);
                                     if (entry->flags & 0x18) {
@@ -2469,34 +2463,27 @@ void yuunpc_pose_minigame4_main(void) {
                                         psndSFXOn_3D((const char*)0x8e0, (Vec*)&entry->field_24);
                                     }
                                     r26++;
-                                    goto cbec;
                                 } else {
                                     entry->field_4C = 0;
                                     yuunpc_pose_change(entry, entry->field_56, 1.0f, (f32)rand() / 32767.0f);
                                     entry->field_3C = 0.0f;
-                                    goto cbec;
                                 }
-                            }
-                            if (!(f27 < entry->field_28 && f0 == entry->field_28)) {
-                                if (!(entry->field_4 <= 3 && irand(0x3c) == 0)) {
-                                    goto cbec;
+                            } else if ((f27 < entry->field_28 && f0 == entry->field_28) || (entry->field_4 <= 3 && irand(0x3c) == 0)) {
+                                if (entry->field_4 <= 1 && irand(3) == 0) {
+                                    entry->field_4C = 0;
+                                    yuunpc_pose_change(entry, entry->field_56, 1.0f, (f32)rand() / 32767.0f);
+                                    entry->field_3C = 0.0f;
+                                } else {
+                                    entry->field_4C = 2;
+                                    yuunpc_pose_change(entry, entry->field_5A, 1.0f, (f32)rand() / 32767.0f);
+                                    if (entry->flags & 0x18) {
+                                        entry->field_3C = 1.0f;
+                                    } else {
+                                        entry->field_3C = 2.25f;
+                                    }
                                 }
-                            }
-                            if (entry->field_4 <= 1 && irand(3) == 0) {
-                                entry->field_4C = 0;
-                                yuunpc_pose_change(entry, entry->field_56, 1.0f, (f32)rand() / 32767.0f);
-                                entry->field_3C = 0.0f;
-                                goto cbec;
-                            }
-                            entry->field_4C = 2;
-                            yuunpc_pose_change(entry, entry->field_5A, 1.0f, (f32)rand() / 32767.0f);
-                            if (entry->flags & 0x18) {
-                                entry->field_3C = 1.0f;
-                            } else {
-                                entry->field_3C = 2.25f;
                             }
                         }
-                    cbec:
                         if ((r28 & 0x3f) == 0) {
                             s32 t = (s32)gp->retraceCount + i;
                             if ((t & 0xf) == 0) {
