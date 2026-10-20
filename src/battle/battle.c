@@ -1026,7 +1026,7 @@ void BattleInit(FieldBattleInfo* info) {
     BattleSetSeq(wp, SEQ_UNKNOWN, 0);
     BattleSetSeq(wp, SEQ_INIT, 0x1000000);
     wp->seqEndWork = NULL;
-    wp->commandMenu.field_4 = 0;
+    wp->commandMenu.menuFlags = 0;
     wp->commandMenu.cursor[0].field_0 = 0;
     wp->commandMenu.cursor[0].field_4 = 0;
     wp->commandMenu.cursor[1].field_0 = 0;

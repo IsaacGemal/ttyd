@@ -246,7 +246,7 @@ static EVT_BEGIN(init_event)
     RETURN
 EVT_END()
 USER_FUNC(get_actkind) {
-    evtSetValue(event, event->args[0], *(s32*)&_battleWorkPointer->commandMenu.unk540[0]);
+    evtSetValue(event, event->args[0], _battleWorkPointer->commandMenu.actKind);
     return EVT_RETURN_DONE;
 }
 

@@ -9613,3 +9613,24 @@ names were dropped. Matching build 32 files OK; all ten files natural-compile eq
 header-defined structs (effFireData, MobjBrokenWork, EffStarPowerData, SstarWork, effSmallStarN64Data) keep their
 field_0x names; EffStarPowerData 0x30 is the third color2 channel (driven like color2R/G); effRecoverHeartN64Entry's
 `time` parameter is the recovered amount; RecoverHeartData 0x20/0x30 are written but never read.
+
+### Readability: BattleCommand names (2026-10-19, Claude Haiku 5.5, n9-q-bcmd; reviewed by Claude Opus 5.5)
+
+BattleCommand (0x574 bytes, battle_seq_command.h; BattleWork.commandMenu at 0x171C) replaces `unk8[]` with its five
+menu tables: `actionTable[6]` (0x8, `BattleCommandAction` 0x14), `weaponTable[21]` (0x80, `BattleCommandWeapon`
+0x1C), `operationTable[7]` (0x2CC, `BattleCommandOperation` 0x1C), `partyTable[8]` (0x390, `BattleCommandParty`
+0x18) and `multiItemTable[3]` (0x450, `BattleCommandMultiItem` 0x18), each ending exactly where the next begins and
+the last at `cursor` (0x498). The state fields are `commandState` (0x0, the BattleCommandInput state machine),
+`menuFlags` (0x4), `actKind` (0x540, action mType; get_actkind), `savedActKind` (0x544, restored in state 0 after
+the 0xB/0xC overrides), `operationKind` (0x548), `partyChangeId` (0x54C = BattleWork 0x1C68, BattlePartyAnimeLoad;
+closes the BattleWork entry's open item), `multiItemKind` (u8 0x550), `cancelled` (u8 0x551), `restoreId` (0x554),
+`restoreState` (u8 0x558), `idleFrames` (0x560, 0x384 frames switch the idle camera), `disableReason` (0x564) and
+`eventId` (0x568). Every table entry's disable code is `mDisableReason` (action 0x10, weapon 0x18, operation 0x8,
+multi-item 0x14): it is copied into `disableReason` when a greyed entry is picked, and `_get_msg` maps it to the
+`btl_msg_cmderror_*` text (1 no FP, 2 no AP, 4/5 no Jump/Hammer target, 6 no escape, else "not now", which the
+builders write as 3). The multi-item byte at 0xE is `mKind` (1 Item, 2 Double Dip, 3 Triple Dip). battle_menu_disp.c's
+raw `wp + 0x1724/0x19e8/0x1aac/0x1b6c` and `cmd + idx * 0x1c + 0x8c` reads are now fields, and battle_seq_command.c
+uses BattleCommand throughout. battle_seq_command.c field_/unk density 109.03 → 97.66 per kLOC; overall 69.987 →
+69.911. Open: battle.h still carries the deprecated duplicate `BattleWorkCommand`/`BattleWorkCommand*` types with
+the same layout, used by the party `__makeTechMenuFunc` builders; fold them into BattleCommand in a separate pass.
+`field_55C`, weapon `field_0x4`, and the menuFlags bits beyond 0x1 stay unnamed.

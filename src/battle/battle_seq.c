@@ -222,7 +222,7 @@ void BattleCheckAllPinchStatus(BattleWork* wp, BOOL a2) {
 		wp->alertTick--;
 		if (wp->alertTick <= 0) {
 			wp->alertTick = 60;
-			if (wp->commandMenu.field_4 & 1) {
+			if (wp->commandMenu.menuFlags & 1) {
 				psndSFXOn("SFX_BTL_DANGER1");
 			}
 		}
@@ -251,7 +251,7 @@ void BattleCheckAllPinchStatus(BattleWork* wp, BOOL a2) {
 			wp->alertTick--;
 			if (wp->alertTick <= 0) {
 				wp->alertTick = 60;
-				if (wp->commandMenu.field_4 & 1) {
+				if (wp->commandMenu.menuFlags & 1) {
 					psndSFXOn("SFX_BTL_PINCH1");
 				}
 			}
