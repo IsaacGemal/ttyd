@@ -46,7 +46,7 @@ USER_FUNC(cam_mahojin_kaiten_main);
 USER_FUNC(map_bgmode_end);
 USER_FUNC(map_bgmode);
 USER_FUNC(crystal_bgmode);
-USER_FUNC(unk_tik_0000247c);
+USER_FUNC(map_disp_set);
 USER_FUNC(tiz_broken);
 void tiz_broken_draw(CameraId cameraId, void* param);
 USER_FUNC(tiz_stone);
