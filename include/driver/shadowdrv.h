@@ -6,57 +6,74 @@
 #include <dolphin/mtx.h>
 #include "memory.h"
 
+// The char, proj and depth work blocks share one layout up to 0x100: shadowDisp runs the projection pass
+// on cswp and dswp through a ProjShadowWork*, so the fields at 0x0-0x100 must line up.
+// flags (0x0): 0x1 texture is valid (shadowGet*TexObj), 0x2 texture buffer is allocated at draw time
+// (projShadowEnd, depthShadowEnd), 0x4 projShadowEnd copies at half resolution.
+// drawCount (0x4): bumped per drawn caster; the *ShadowEnd passes run only when it is non-zero.
+// configIdx (0x8): shadowConfig block (0x48 bytes) for this pass.
 typedef struct DepthShadowWork {
-    s32 unk0; //0x0
-    s32 unk4; //0x4
-    s32 unk8; //0x8
-    u8 unkC[0x100 - 0xC]; //0xC
-    GXColor unk100; //0x100
+    s32 flags; //0x0
+    s32 drawCount; //0x4
+    s32 configIdx; //0x8
+    Mtx lookAt; //0xC, light view (C_MTXLookAt), copied into the camera view
+    Mtx44 projection; //0x3C, light projection written by SHADOW_DISP_PROJ_SETUP
+    Mtx projTexMtx; //0x7C, light projection * lookAt (depthShadowEnd)
+    Mtx depthMtx; //0xAC, depth-compare matrix (depthShadowEnd)
+    GXTexObj texObj; //0xDC
+    smartEntry* texBuffer; //0xFC, smartAlloc'd copy target
+    GXColor color; //0x100
 } DepthShadowWork;
 
 typedef struct ProjShadowWork {
-    s32 unk0;
-    s32 unk4;
-    s32 unk8;
-    Mtx unkC;
-    u8 pad3C[0x7C - 0x3C];
-    Mtx unk7C;
+    s32 flags; //0x0
+    s32 drawCount; //0x4
+    s32 configIdx; //0x8
+    Mtx lookAt; //0xC
+    Mtx44 projection; //0x3C
+    Mtx projTexMtx; //0x7C
     u8 padAC[0xDC - 0xAC];
-    GXTexObj texObj;
-    smartEntry* unkFC;
-    GXColor unk100;
+    GXTexObj texObj; //0xDC
+    smartEntry* texBuffer; //0xFC
+    GXColor color; //0x100
 } ProjShadowWork;
 
+// One caster. kind (0x2): 0 polygon blob, 1 texture blob (effGetTexObjN64), 2 cylinder, 3 projected onto
+// the collision surface. flags (0x0): 0x1 collision (follow the hit normal), 0x2 matrix computed, 0x4 no decay.
 typedef struct ShadowEntry {
     u16 flags;               // 0x0
-    u8 unk2;                 // 0x2
-    u8 type;                 // 0x3
+    u8 kind;                 // 0x2
+    u8 type;                 // 0x3, 0 cylinder, 1 cube (SHADOW_ENTRY_DRAW)
     Vec position;            // 0x4
     f32 size;                // 0x10
-    f32 unk14;               // 0x14
-    s16 unk18;               // 0x18
+    f32 yScale;              // 0x14, Y scale of the collision matrix
+    s16 offscreenId;         // 0x18, offscreenAddBoundingBox id, -1 until set
     u16 camId;               // 0x1A
     f32 decayX;              // 0x1C
     f32 decayY;              // 0x20
     f32 decayZ;              // 0x24
-    u8 mode;                 // 0x28
-    u8 unk29[3];             // 0x29
+    u8 mode;                 // 0x28, TEV alpha of the cylinder colour
+    u8 pad29[3];             // 0x29
     Mtx matrix;              // 0x2C
 } ShadowEntry;
 
 typedef struct CharShadowWork {
-    s32 unk0; //0x0
-    s32 unk4; //0x4
-    s32 unk8; //0x8
-    u8 field_0xC[0xFC - 0xC]; //0xC
-    smartEntry* unkFC; //0xFC
-    GXColor unk100; //0x100
-    s32 unk104; //0x104
+    s32 flags; //0x0
+    s32 drawCount; //0x4
+    s32 configIdx; //0x8
+    Mtx lookAt; //0xC
+    Mtx44 projection; //0x3C
+    Mtx projTexMtx; //0x7C
+    u8 padAC[0xDC - 0xAC];
+    GXTexObj texObj; //0xDC
+    smartEntry* texBuffer; //0xFC
+    GXColor color; //0x100
+    s32 entryCount; //0x104
     ShadowEntry* entries; //0x108
-    s32 unk10C; //0x10C
-    s32 unk110; //0x110
-    f32 unk114; //0x114
-    s32 unk118; //0x118
+    s32 projectionEnabled; //0x10C, shadowMain runs the CAMERA_SHADOW projection pass when set
+    s32 defaultKind; //0x110, shadowEntry's kind
+    f32 defaultYScale; //0x114, shadowEntry's yScale
+    s32 defaultCollision; //0x118, shadowEntry sets flags 0x1 when set
 } CharShadowWork;
 
 void shadowInit(void);
