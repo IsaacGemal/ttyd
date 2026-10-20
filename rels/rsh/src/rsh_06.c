@@ -1549,7 +1549,7 @@ void evalOn(void) {
         positions[i] = vec3_rsh_00013cec;
     }
 
-    for (i = 0; i < dat_80419a28; i++) {
+    for (i = 0; i < moamoa_chain_count; i++) {
         wp->chainGroup[i].x = animPoseGetGroupIdx(npc->poseId, g_moamoa_chain_tbl[i].name);
         wp->chainGroup[i].y = animPoseGetGroupIdx(npc->poseId, g_moamoa_chain_tbl[i].anim);
     }
@@ -1559,7 +1559,7 @@ void evalOn(void) {
         s32 k;
         e = wp->poses;
         for (k = 0; k < wp->poseNum; k++, e++) {
-            e->chain = k % dat_80419a28;
+            e->chain = k % moamoa_chain_count;
             e->chainSlot = wp->chainSlots[e->chain]++;
         }
     }

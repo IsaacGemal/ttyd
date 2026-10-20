@@ -1477,7 +1477,7 @@ void credits_ext_init(void) {
             pos.z = credits_rand_range(-10.0f, 10.0f);
             work->position = pos;
         }
-        work->idx = i % dat_80419a28;
+        work->idx = i % moamoa_chain_count;
         work->counter = ((s32*)credits_chain_counts[0])[work->idx]++;
         work++;
         pose++;
@@ -1595,13 +1595,13 @@ s32 credits_moamoa_setup(EventEntry* event, BOOL isFirstCall) {
         positions[i] = (Vec){0.0f, -1000.0f, 0.0f};
     }
 
-    p = _mapAlloc(dat_80419a28 * 4);
+    p = _mapAlloc(moamoa_chain_count * 4);
     credits_chain_counts[0] = (u32)p;
-    memset(p, 0, dat_80419a28 * 4);
-    p = _mapAlloc(dat_80419a28 * 8);
+    memset(p, 0, moamoa_chain_count * 4);
+    p = _mapAlloc(moamoa_chain_count * 8);
     credits_chain_groups[0] = (u32)p;
-    memset(p, 0, dat_80419a28 * 8);
-    for (i = 0; i < dat_80419a28; i++) {
+    memset(p, 0, moamoa_chain_count * 8);
+    for (i = 0; i < moamoa_chain_count; i++) {
         ((s32*)credits_chain_groups[0])[i * 2 + 0] = animPoseGetGroupIdx(npc->poseId, g_moamoa_chain_tbl[i].name);
         ((s32*)credits_chain_groups[0])[i * 2 + 1] = animPoseGetGroupIdx(npc->poseId, g_moamoa_chain_tbl[i].anim);
     }
