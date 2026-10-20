@@ -109,7 +109,7 @@ s32 get_mobj_seq(EventEntry* event, BOOL isFirstCall) {
     if (obj == NULL) {
         evtSetValue(event, args[1], 1);
     } else {
-        evtSetValue(event, args[1], obj->unk1DC);
+        evtSetValue(event, args[1], obj->state);
     }
     return 2;
 }

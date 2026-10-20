@@ -273,7 +273,7 @@ void sw_reset(void) {
 s32 sw_main(MapObjectEntry* obj) {
     MapObjectEntry* su;
 
-    switch (obj->unk1DC) {
+    switch (obj->state) {
         case 0:
             if (!(obj->flags & 8)) {
                 break;
@@ -282,7 +282,7 @@ s32 sw_main(MapObjectEntry* obj) {
                 break;
             }
             lock = 1;
-            if (obj->unk1E0 == 0x200000) {
+            if (obj->triggerFlag == 0x200000) {
                 marioChgMot(5);
             }
             psndSFXOn_3D("SFX_STG6_OBJ_SWITCH_ON1", &obj->position);
@@ -312,7 +312,7 @@ s32 sw_main(MapObjectEntry* obj) {
                     sw_reset();
                 }
             }
-            obj->unk1DC++;
+            obj->state++;
             break;
         case 1:
             if (animPoseGetLoopTimes(obj->poseId) < 1.0f) {
@@ -321,7 +321,7 @@ s32 sw_main(MapObjectEntry* obj) {
             if (evtGetValue(NULL, GW(0)) == 1 && evtGetValue(NULL, GW(1)) == 10 &&
                 evtGetValue(NULL, GW(2)) == 3) {
                 evtEntry(evt_sw_complete, 0, 0);
-                obj->unk1DC++;
+                obj->state++;
                 break;
             }
             su = mobjNameToPtr("MOBJ_eki_06_su1");
@@ -352,7 +352,7 @@ s32 sw_main(MapObjectEntry* obj) {
                 }
             }
             obj->flags &= ~8;
-            obj->unk1DC = 0;
+            obj->state = 0;
             lock = 0;
             break;
         case 2:
@@ -390,9 +390,9 @@ USER_FUNC(sw_entry) {
     pos.y = y;
     pos.z = z;
     obj->position = pos;
-    obj->unk1D0 = sw_main;
+    obj->update = sw_main;
     obj->flags |= 0xa10000;
-    obj->unk1DC = 0;
+    obj->state = 0;
     mobjCalcMtx(obj);
     animPoseSetAnim(obj->poseId, "ANIM_1", 1);
     lock = 0;

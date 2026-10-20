@@ -101,7 +101,7 @@ void mobjDispXLU(CameraId camId, void* param) {
 
     if (entry->flags & 0x400) {
         animSetPaperTexMtx(entry->paperTexMtx, NULL, NULL);
-        animSetPaperTexObj(&entry->paperTexObj, NULL, NULL, entry->unk208, NULL, NULL, 1, 1);
+        animSetPaperTexObj(&entry->paperTexObj, NULL, NULL, entry->paperTex, NULL, NULL, 1, 1);
     }
     animPoseDraw(entry->poseId, entry->position.x, entry->position.y, entry->position.z, entry->rotation.y,
                  float_10_8041a0cc * entry->scale.x, 1);
@@ -121,7 +121,7 @@ void mobjDisp(CameraId camId, void* param) {
 
     if (entry->flags & 0x400) {
         animSetPaperTexMtx(entry->paperTexMtx, NULL, NULL);
-        animSetPaperTexObj(&entry->paperTexObj, NULL, NULL, entry->unk208, NULL, NULL, 1, 1);
+        animSetPaperTexObj(&entry->paperTexObj, NULL, NULL, entry->paperTex, NULL, NULL, 1, 1);
     }
     disp = dispGetCurWork();
     switch (disp->renderMode) {
@@ -153,7 +153,7 @@ void mobjDisp_OffscreenXLU(CameraId camId, void* param) {
     GXClearBoundingBox();
     if (entry->flags & 0x400) {
         animSetPaperTexMtx(entry->paperTexMtx, NULL, NULL);
-        animSetPaperTexObj(&entry->paperTexObj, NULL, NULL, entry->unk208, NULL, NULL, 1, 1);
+        animSetPaperTexObj(&entry->paperTexObj, NULL, NULL, entry->paperTex, NULL, NULL, 1, 1);
     }
     animPoseDraw(entry->poseId, entry->position.x, entry->position.y, entry->position.z, entry->rotation.y,
                  float_10_8041a0cc * entry->scale.x, 1);
@@ -374,9 +374,9 @@ s32 mobjEntry(const char* name, const char* animPoseName) {
     entry->position = (Vec){ 0.0f, 0.0f, 0.0f };
     entry->scale = (Vec){ 1.0f, 1.0f, 1.0f };
     entry->rotation = (Vec){ 0.0f, 0.0f, 0.0f };
-    entry->unk5C = (Vec){ 0.0f, 0.0f, 0.0f };
-    entry->unk68 = float_1_8041a0d0;
-    entry->unk6C = float_1_8041a0d0;
+    entry->velocity = (Vec){ 0.0f, 0.0f, 0.0f };
+    entry->gravity = float_1_8041a0d0;
+    entry->bounce = float_1_8041a0d0;
     entry->camId = CAMERA_3D;
     entry->poseId = animPoseEntry(animPoseName, gp->inBattle != 0);
     animPosePeraOff(entry->poseId);
@@ -610,21 +610,21 @@ void mobjMain(void) {
             }
 
             if (entry->flags & 0x40) {
-                if (entry->unk5C.y >= float_0_8041a0c8) {
-                    entry->position.y += entry->unk5C.y;
-                    entry->unk5C.y -= entry->unk68;
+                if (entry->velocity.y >= float_0_8041a0c8) {
+                    entry->position.y += entry->velocity.y;
+                    entry->velocity.y -= entry->gravity;
                 } else {
-                    dist = float_10_8041a0cc + (float_1_8041a0d0 + (f32)__fabs(entry->unk5C.y));
+                    dist = float_10_8041a0cc + (float_1_8041a0d0 + (f32)__fabs(entry->velocity.y));
                     if (hitCheckFilter(NULL, entry->position.x, float_10_8041a0cc + entry->position.y, entry->position.z, float_0_8041a0c8, float_neg1_8041a0d4, float_0_8041a0c8, &hitX, &hitY,
                                        &hitZ, &dist, &nx, &ny, &nz) != NULL) {
                         entry->position.y = hitY;
-                        { f32 tmpk = float_neg0p5_8041a0d8 * entry->unk6C; entry->unk5C.y = tmpk * entry->unk5C.y; }
-                        if (__fabs(entry->unk5C.y) <= 2.0) {
-                            entry->unk5C.y = float_0_8041a0c8;
+                        { f32 tmpk = float_neg0p5_8041a0d8 * entry->bounce; entry->velocity.y = tmpk * entry->velocity.y; }
+                        if (__fabs(entry->velocity.y) <= 2.0) {
+                            entry->velocity.y = float_0_8041a0c8;
                         }
                     } else {
-                        entry->position.y += entry->unk5C.y;
-                        entry->unk5C.y -= entry->unk68;
+                        entry->position.y += entry->velocity.y;
+                        entry->velocity.y -= entry->gravity;
                     }
                 }
                 mobjMainCalcMtx(entry, mtx3, TRUE);
@@ -637,56 +637,56 @@ void mobjMain(void) {
                     if ((entry->flags & 0x10000) && *(void**)((u8*)mario + 0x1FC) == (void*)hitObj) {
                         if (marioGetPtr()->position.y <= float_5_8041a0ec + entry->position.y) {
                             v22 = 1;
-                            entry->unk1E0 = 0x10000;
+                            entry->triggerFlag = 0x10000;
                             goto apply;
                         }
                     }
                     if ((entry->flags & 0x400000) && v24 == (void*)hitObj) {
                         v22 = 1;
-                        entry->unk1E0 = 0x400000;
+                        entry->triggerFlag = 0x400000;
                         goto apply;
                     }
                     if ((entry->flags & 0x200000) && *(void**)((u8*)mario + 0x1E4) == (void*)hitObj) {
                         v22 = 1;
-                        entry->unk1E0 = 0x200000;
+                        entry->triggerFlag = 0x200000;
                         goto apply;
                     }
                     if ((entry->flags & 0x1000000) && *(void**)((u8*)mario + 0x1E4) == (void*)hitObj &&
                         marioChkHipBump() != 0) {
                         v22 = 1;
-                        entry->unk1E0 = 0x1000000;
+                        entry->triggerFlag = 0x1000000;
                         goto apply;
                     }
                     if (unk_8005bb80() != 0 && (entry->flags & 0x40000) &&
                         *(void**)(mario->field_0x1DC + 4) == (void*)hitObj && (*(u16*)(mario->field_0x245 + 3) & 0x100) &&
                         v25 == 0) {
                         v22 = 1;
-                        entry->unk1E0 = 0x40000;
+                        entry->triggerFlag = 0x40000;
                         goto apply;
                     }
                     if ((entry->flags & 0x800000) && party != NULL) {
                         if (*(void**)((u8*)party + 0x130) == (void*)hitObj) {
                             v22 = 1;
-                            entry->unk1E0 = 0x800000;
+                            entry->triggerFlag = 0x800000;
                             goto apply;
                         }
                         if (*(void**)((u8*)party + 0x130) != NULL && party->currentMemberId == PARTY_MEMBER_BOBBERY &&
                             PSVECDistance(&party->position, &entry->position) < entry->hitObj[0].hitObject->radius + party->radius) {
                             v22 = 1;
-                            entry->unk1E0 = 0x800000;
+                            entry->triggerFlag = 0x800000;
                             goto apply;
                         }
                     }
                     if ((entry->flags & 0x2000000) && party != NULL && party->currentMemberId == PARTY_MEMBER_BOBBERY) {
                         if (*(void**)((u8*)party + 0x130) == (void*)hitObj) {
                             v22 = 1;
-                            entry->unk1E0 = 0x2000000;
+                            entry->triggerFlag = 0x2000000;
                             goto apply;
                         }
                         if (*(void**)((u8*)party + 0x130) != NULL &&
                             PSVECDistance(&party->position, &entry->position) < entry->hitObj[0].hitObject->radius + party->radius) {
                             v22 = 1;
-                            entry->unk1E0 = 0x800000;
+                            entry->triggerFlag = 0x800000;
                             goto apply;
                         }
                     }
@@ -697,7 +697,7 @@ void mobjMain(void) {
                         for (j = 0; j < 10; j++) {
                             if (kpaGetHitobjHead(j) == (void*)hitObj) {
                                 v22 = 1;
-                                entry->unk1E0 = 0x4000000;
+                                entry->triggerFlag = 0x4000000;
                                 break;
                             }
                         }
@@ -707,7 +707,7 @@ void mobjMain(void) {
                             if (kpaGetHitobjRide(j) == (void*)hitObj) {
                                 if (kpaHipAttackCheck() != 0) {
                                     v22 = 1;
-                                    entry->unk1E0 = 0x10000000;
+                                    entry->triggerFlag = 0x10000000;
                                     break;
                                 }
                             }
@@ -715,22 +715,22 @@ void mobjMain(void) {
                     }
                     if ((entry->flags & 0x8000000) && kpaGetHitobj() == (void*)hitObj && kpaGetLevel() == 3) {
                         v22 = 1;
-                        entry->unk1E0 = 0x8000000;
+                        entry->triggerFlag = 0x8000000;
                         goto apply;
                     }
                     if ((entry->flags & 0x20000000) && kpaGetHitFlame() == (void*)hitObj) {
                         v22 = 1;
-                        entry->unk1E0 = 0x20000000;
+                        entry->triggerFlag = 0x20000000;
                         goto apply;
                     }
                     if ((entry->flags & 0x80000) && *(void**)((u8*)mario + 0x1E0) == (void*)hitObj) {
                         v22 = 1;
-                        entry->unk1E0 = 0x80000;
+                        entry->triggerFlag = 0x80000;
                         goto apply;
                     }
                     if ((entry->flags & 0x200000) && *(void**)((u8*)mario + 0x1E4) == (void*)hitObj) {
                         v22 = 1;
-                        entry->unk1E0 = 0x200000;
+                        entry->triggerFlag = 0x200000;
                     }
                 }
             apply:
@@ -752,8 +752,8 @@ void mobjMain(void) {
                     entry->flags &= ~8;
                 }
             }
-            if (entry->unk1D0 != NULL) {
-                if (entry->unk1D0(entry) == -1)
+            if (entry->update != NULL) {
+                if (entry->update(entry) == -1)
                     continue;
             }
         }
@@ -994,7 +994,7 @@ BOOL mobjCheckExec() {
 s32 mobjCheckItemboxOpen(MapObjectEntry* entry) {
     if (strcmp(entry->animName, "MOBJ_TreasureBox") == 0 || strcmp(entry->animName, "MOBJ_BigTreasureBox") == 0 ||
         strcmp(entry->animName, "MOBJ_GrayTreasureBox") == 0 || strcmp(entry->animName, "MOBJ_BlackTreasureBox") == 0) {
-        if (entry->unk1DC == 99)
+        if (entry->state == 99)
             return 2;
         else
             return 1;
@@ -1073,9 +1073,9 @@ MapObjectEntry* mobjNearDistCheck2(f32 x, f32 y, f32 z, f32 minMagnitude, char**
 static int mobjCheckKururingFloorItem(MapObjectEntry* entry) { // was always inlined in retail but not in demo
     if (!strcmp(entry->animName, "MOBJ_KururinFloor")) {
         ItemEntry* item = itemNameToPtr(entry->name);
-        if ((item != NULL && (item->flags & 1) && evtGetValue(0, entry->unk1E4) == 0))
+        if ((item != NULL && (item->flags & 1) && evtGetValue(0, entry->flagVar) == 0))
             return 1;
-        else if ((evtGetValue(0, entry->unk1E4) != 0))
+        else if ((evtGetValue(0, entry->flagVar) != 0))
             return 1;
         else
             return 2;
