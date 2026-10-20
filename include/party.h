@@ -135,15 +135,17 @@ typedef struct PartyEntry {
     f32 jumpPara2;               // 0x118
     f32 jumpPara3;               // 0x11C
     f32 field_120;               // 0x120
-    u8 field_124[0x128 - 0x124]; // 0x124
+    f32 field_0x124;             // 0x124
     f32 targetDist;              // 0x128, distance to targetPos, set before the fly/jump step count
     void* field_12C;             // 0x12C
     struct HitEntry* frontHit;   // 0x130, check_front result
     void* field_134;             // 0x134
     struct HitEntry* groundHit;  // 0x138, partySearchGround result
-    u8 field_13C[0x140 - 0x13C]; // 0x13C
+    void* field_0x13C;           // 0x13C, written with groundHit (party_yoshi.c)
     struct HitEntry* headHit;    // 0x140, partySearchHead result
-    u8 field_144[0x150 - 0x144]; // 0x144
+    u32 field_0x144;             // 0x144
+    u32 field_0x148;             // 0x148
+    u8 field_14C[0x150 - 0x14C]; // 0x14C
     u16 button;                  // 0x150, held buttons (partyUpdateKeyData)
     u16 buttonNew;               // 0x152, pressed this frame
     u16 buttonRepeat;            // 0x154
@@ -154,7 +156,8 @@ typedef struct PartyEntry {
     s8 substickY;                // 0x15B, stored negated
     u8 triggerLeft;              // 0x15C
     u8 triggerRight;             // 0x15D
-    u8 field_15E[0x160 - 0x15E]; // 0x15E
+    u8 field_0x15E;              // 0x15E
+    u8 field_0x15F;              // 0x15F
     MarioWork* playerPtr;        // 0x160
     s32 camId;                   // 0x164
     s32 yoshiPsndSFXId;          // 0x168
