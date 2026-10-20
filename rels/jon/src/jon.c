@@ -2646,7 +2646,7 @@ s32 iri_12_makkino_set_y(EventEntry* event, BOOL isFirstCall) {
 s32 wait_landon(EventEntry* event, BOOL isFirstCall) {
     NpcEntry* npc = npcNameToPtr("マッキノ");
 
-    if (!(npc->flags & 0x10) || *(u32*)npc->field_300 != 0) {
+    if (!(npc->flags & 0x10) || npc->groundHit != NULL) {
         return EVT_RETURN_DONE;
     }
     return EVT_RETURN_BLOCK;
@@ -2663,5 +2663,5 @@ void iri_12_msgcb(s32 type, smartEntry* smart) {
 static s32 gonbaba_wait_landon(EventEntry* event, BOOL isFirstCall) {
     NpcEntry* npc = npcNameToPtr("敵");
 
-    return *(u32*)npc->field_300 != 0 ? 2 : 0;
+    return npc->groundHit != NULL ? 2 : 0;
 }

@@ -547,7 +547,7 @@ USER_FUNC(evt_npc_move_position) {
     event->userdata[0]++;
 
     // flag 0x4: bail if blocked and stuck > 5 frames
-    if ((moveFlags & 0x4) && npc->field_2FC && event->userdata[0] > 5) {
+    if ((moveFlags & 0x4) && npc->wallHit && event->userdata[0] > 5) {
         return EVT_RETURN_DONE;
     }
 
@@ -925,7 +925,7 @@ USER_FUNC(evt_npc_glide_position) {
         return EVT_RETURN_BLOCK;
     }
 
-    if ((mode & 1) && npc->field_2FC != 0) {
+    if ((mode & 1) && npc->wallHit != NULL) {
         return EVT_RETURN_DONE;
     }
 
@@ -1113,7 +1113,7 @@ USER_FUNC(evt_npc_homing_target) {
         stop = 1;
     } else if (range > 0.0f && dist < range) {
         stop = 1;
-    } else if ((flags & 0x4) && npc->field_2FC != 0) {
+    } else if ((flags & 0x4) && npc->wallHit != NULL) {
         stop = 1;
     }
 
@@ -1829,9 +1829,9 @@ USER_FUNC(evt_npc_set_offscreen) {
     const char* offscreen = (const char*)evtGetValue(event, args[1]);
     NpcEntry* npc = evtNpcNameToPtr(event, name);
     if (offscreen == NULL) {
-        npc->field_110 = -1;
+        npc->offscreenId = -1;
     } else {
-        npc->field_110 = offscreenNameToId(offscreen);
+        npc->offscreenId = offscreenNameToId(offscreen);
     }
     return EVT_RETURN_DONE;
 }
@@ -2275,7 +2275,7 @@ USER_FUNC(evt_npc_majo_disp_on) {
             break;
 
         case 0:
-            npc->field_154 += (3.0f - npc->field_154) / 10.0f;
+            npc->shadowScale += (3.0f - npc->shadowScale) / 10.0f;
             animPoseSetLocalTime(npc->poseId, 0.0f);
             event->userdata[1]++;
             if (event->userdata[1] > 30) {
@@ -2312,7 +2312,7 @@ USER_FUNC(evt_npc_majo_disp_on) {
             break;
 
         case 3:
-            npc->field_154 += (1.0f - npc->field_154) / 10.0f;
+            npc->shadowScale += (1.0f - npc->shadowScale) / 10.0f;
             event->userdata[1]++;
             if (event->userdata[1] > 30) {
                 return EVT_RETURN_DONE;
@@ -2339,7 +2339,7 @@ USER_FUNC(evt_npc_majo_disp_off) {
 
     switch (event->userdata[0]) {
         case 0:
-            npc->field_154 += (3.0f - npc->field_154) / 10.0f;
+            npc->shadowScale += (3.0f - npc->shadowScale) / 10.0f;
             event->userdata[1]++;
             if (event->userdata[1] > 30) {
                 event->userdata[0]++;
@@ -2378,10 +2378,10 @@ USER_FUNC(evt_npc_majo_disp_off) {
             break;
 
         case 3:
-            npc->field_154 += (-npc->field_154 / 10.0f);
+            npc->shadowScale += (-npc->shadowScale / 10.0f);
             event->userdata[1]++;
             if (event->userdata[1] > 30) {
-                npc->field_154 = 0.0f;
+                npc->shadowScale = 0.0f;
                 return EVT_RETURN_DONE;
             }
             break;
@@ -2496,7 +2496,7 @@ USER_FUNC(evt_npc_kamek_move_position) {
     }
 
     // flag 0x4: bail if blocked
-    if ((moveFlags & 0x4) && npc->field_2FC) {
+    if ((moveFlags & 0x4) && npc->wallHit) {
         return EVT_RETURN_DONE;
     }
 

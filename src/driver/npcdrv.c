@@ -548,7 +548,7 @@ void npcDisp(CameraId camId, void* param) {
 }
 
 // 1:1: npcDisp_xlu with a sysWaitDrawSync/GXClearBoundingBox prologue and a
-// GXReadBoundingBox + offscreenAddBoundingBox(entry->field_110, ...) epilogue.
+// GXReadBoundingBox + offscreenAddBoundingBox(entry->offscreenId, ...) epilogue.
 void npcDisp_offscreen_xlu(CameraId camId, void* param) {
     NpcEntry* entry = param; // cast to proper type
     Mtx mtx;
@@ -620,7 +620,7 @@ void npcDisp_offscreen_xlu(CameraId camId, void* param) {
     animPoseDrawMtx(entry->poseId, mtx, 3, rotY, 2.0f);
     sysWaitDrawSync();
     GXReadBoundingBox(&left, &top, &right, &bottom);
-    offscreenAddBoundingBox(entry->field_110, left, top, right, bottom);
+    offscreenAddBoundingBox(entry->offscreenId, left, top, right, bottom);
 }
 
 // 1:1: npcDisp with the offscreen bounding-box prologue/epilogue.
@@ -705,7 +705,7 @@ void npcDisp_offscreen(CameraId camId, void* param) {
     }
     sysWaitDrawSync();
     GXReadBoundingBox(&left, &top, &right, &bottom);
-    offscreenAddBoundingBox(entry->field_110, left, top, right, bottom);
+    offscreenAddBoundingBox(entry->offscreenId, left, top, right, bottom);
 }
 
 // Inline degree/radian sine and cosine approximations from the original blur path; only used
@@ -916,15 +916,15 @@ s32 npcEntry(const char* a1, const char* animName) {
     entry->width = animPoseGetHeight(entry->poseId);
     entry->height = animPoseGetRadius(entry->poseId);
     entry->scale = (Vec){ 1.0f, 1.0f, 1.0f };
-    entry->field_154 = 1.0f;
+    entry->shadowScale = 1.0f;
     entry->gait = 0;
     entry->field_10C = "M_I_2";
     entry->lastUpdateTick = gp->renderTime;
     entry->moveElapsed = 0;
     entry->jumpGravity = 1.0f;
-    entry->field_1D0 = 0.0f;
+    entry->maxFallSpeed = 0.0f;
     entry->jumpYScale = 1.0f;
-    entry->field_110 = -1;
+    entry->offscreenId = -1;
     entry->color = (GXColor){ 0xFF, 0xFF, 0xFF, 0xFF };
     entry->cameraId = CAMERA_3D;
     entry->attackMode = 0;
@@ -1165,7 +1165,7 @@ void npcMain(void) {
             npcKoopaWaterCheck(entry);
 #endif
             if ((entry->jumpFlags & 0x100000) && !(entry->jumpFlags & 0x10000000)) {
-                entry->field_1D0 = 100.0f;
+                entry->maxFallSpeed = 100.0f;
                 runScale = 0.5f;
             } else {
                 runScale = 1.0f;
@@ -1190,7 +1190,7 @@ void npcMain(void) {
                         entry->position.x += mx;
                         entry->position.z += mz;
                     } else {
-                        entry->field_2FC = (u32)npcHitCheckSide(entry, &entry->position.x, &entry->position.z,
+                        entry->wallHit = npcHitCheckSide(entry, &entry->position.x, &entry->position.z,
                                                                 &entry->moveDir, mx, mz);
                     }
                     entry->moveOffset.x = 0.0f;
@@ -1411,7 +1411,7 @@ void npcMain(void) {
                                     shadow.z += entry->tribe->shadowOffsetZ * entry->scale.z;
                                 }
                                 shadowId = shadowEntry(shadow.x, shadow.y, shadow.z,
-                                                  1.33f * (entry->field_154 *
+                                                  1.33f * (entry->shadowScale *
                                                                          (entry->width / 3.0f * entry->scale.x)));
                                 if (entry->flags & 0x80000) {
                                     shadowSetCollision(shadowId, 0);
@@ -1429,7 +1429,7 @@ void npcMain(void) {
                             }
                             animPoseVivianMain(entry->poseId, &feet);
                             shadowId = shadowEntry(entry->position.x, entry->position.y, entry->position.z,
-                                              entry->field_154 * (entry->width / 3.0f * entry->scale.x));
+                                              entry->shadowScale * (entry->width / 3.0f * entry->scale.x));
                             if (entry->flags & 0x80000) {
                                 shadowSetCollision(shadowId, 0);
                             }
@@ -1440,7 +1440,7 @@ void npcMain(void) {
                         }
                     }
 
-                    if (entry->field_110 != -1) {
+                    if (entry->offscreenId != -1) {
                         if (entry->color.a != 0xFF) {
                             dispEntry(CAMERA_OFFSCREEN2, z, 2, npcDisp_offscreen_xlu, entry);
                         } else {
@@ -1905,12 +1905,12 @@ void npcMoveG(NpcEntry* entry) {
                     (0.15f * (-980.0f * entry->jumpGravity)) * (entry->airTime * entry->airTime - d * d);
         }
         force *= entry->jumpYScale;
-        if (entry->field_1D0 > 0.0f) {
+        if (entry->maxFallSpeed > 0.0f) {
             f32 limit;
             if (unkFlag != 0) {
-                limit = 0.5f * (-entry->field_1D0 * entry->moveDt);
+                limit = 0.5f * (-entry->maxFallSpeed * entry->moveDt);
             } else {
-                limit = -entry->field_1D0 * entry->moveDt;
+                limit = -entry->maxFallSpeed * entry->moveDt;
             }
             if (force < limit) {
                 force = limit;
@@ -1939,7 +1939,7 @@ void npcMoveG(NpcEntry* entry) {
             distance = yOffset + absY;
             hit = hitCheckFilter(NULL, entry->position.x, entry->position.y + yOffset, entry->position.z, 0.0f, -1.0f, 0.0f, &hitX, &hitY,
                                  &hitZ, &distance, &hitNX, &hitNY, &hitNZ);
-            *(HitEntry**)entry->field_300 = hit;
+            entry->groundHit = hit;
             if (hit == NULL) {
                 entry->jumpFlags |= 1;
                 entry->position.y += moveY;
@@ -2099,9 +2099,9 @@ void fbatSetAttackAnnounce(s32 a1) {
     FirstStrikeInfo* firstStrike = &gp->fbatData->firstStrike;
 
     firstStrike->enabled = FALSE;
-    firstStrike->announceFlags = a1;
+    firstStrike->announceKind = a1;
     firstStrike->timer = 0;
-    switch (firstStrike->announceFlags) {
+    switch (firstStrike->announceKind) {
         case 0x20000:
         case 0x40000:
         case 0x80000:
@@ -2145,7 +2145,7 @@ static void fbatFirstAttackAnnounceMain(FieldBattleData* fbat) {
                     strike->bannerX =
                         intplGetValue(1, strike->timer - 80, 20, 0.0f, 600.0f);
                 } else {
-                    strike->announceFlags = 0;
+                    strike->announceKind = 0;
                     break;
                 }
                 strike->bannerY = 0.0f;
@@ -2154,7 +2154,7 @@ static void fbatFirstAttackAnnounceMain(FieldBattleData* fbat) {
             case 1:
                 strike->timer++;
                 if ((s32)strike->timer > 60) {
-                    strike->announceFlags = 0;
+                    strike->announceKind = 0;
                 } else {
                     strike->bannerX = 0.0f;
                     strike->bannerY = 0.0f;
@@ -2386,7 +2386,7 @@ void fbatEncountCheck(void) {
         best = NULL;
         i = 0;
         for (; i < total; i++, npc++) {
-            if ((npc->flags & 2) && !(npc->flags & 8) && ENC(npc, u32, 0x128) != 0) {
+            if ((npc->flags & 2) && !(npc->flags & 8) && npc->talkEvt != NULL) {
                 found = 0;
                 if (!(npc->position.y > mario->position.y + mario->wPlayerCollisionBox.y) &&
                     !(mario->position.y > npc->position.y + npc->height)) {
@@ -2478,7 +2478,7 @@ void fbatEncountCheck(void) {
                 fb3->mode = 2;
                 fb3->state = 0;
                 fb3->talkNpc = tgt;
-                ENC(tgt, s32, 0x318) = 0;
+                tgt->fbatHitKind = 0;
             }
             return;
         }
@@ -2498,7 +2498,7 @@ void fbatEncountCheck(void) {
                 fb2->mode = 3;
                 fb2->state = 0;
                 fb2->talkNpc = hit;
-                ENC(hit, s32, 0x318) = fval;
+                hit->fbatHitKind = fval;
             }
             switch (*fbatOut2) {
                 case 0x40000:
@@ -2732,7 +2732,7 @@ void fbatBattleMode(void) {
                     if ((s32)BattleInformationGetResult(info4) == 1) {
                         entry->btlCoinDropCount = *(u32*)&info4->field_0x14[0];
                     } else if (result == 1) {
-                        entry->btlCoinDropCount = entry->field_316;
+                        entry->btlCoinDropCount = entry->baseCoin;
                     } else {
                         mult = 0;
                         entry->btlCoinDropCount = 0;
@@ -2784,7 +2784,7 @@ void _npcDead(NpcEntry* entry, u16 koopaEncounterType) {
     entry->jumpFlags |= 4;
     entry->koopaEncounterType = koopaEncounterType;
     if (entry->flags & 4) {
-        fbatGetPointer()->deadInfo[0].mask |= (1 << entry->field_314);
+        fbatGetPointer()->deadInfo[0].mask |= (1 << entry->setupIndex);
     }
 }
 
@@ -3617,9 +3617,9 @@ void npcSetupBattleInfo(NpcEntry* npc, BattleSetupData* setup) {
             }
         }
     }
-    npc->field_316 = 0;
+    npc->baseCoin = 0;
     if (info->groupSetup != NULL) {
-        npc->field_316 = *(u8*)((u8*)info->groupSetup->enemyData->mUnitKindParams + 0x12);
+        npc->baseCoin = info->groupSetup->enemyData->mUnitKindParams->baseCoin;
     }
     npc->flags |= 0x10000000;
 }
@@ -4014,8 +4014,8 @@ void npcKoopaModeEncountCheck(void) {
                     kpaPowDown();
                     break;
                 default:
-                    if (!(entry->hazardImmuneFlags & 0x10) && *(u32*)entry->field_300 != 0 &&
-                        !strcmp(hitGetName((HitEntry*)(*(u32*)entry->field_300)), "a_magu")) {
+                    if (!(entry->hazardImmuneFlags & 0x10) && entry->groundHit != NULL &&
+                        !strcmp(hitGetName(entry->groundHit), "a_magu")) {
                         npcGroupDead(entry, 0x10);
                     }
                     break;
@@ -4036,7 +4036,7 @@ s32 npcKoopaModeMobjBoundDeadCheck(HitEntry* mobj) {
     }
     for (i = 0, entry = wp->entries; i < total; i++, entry++) {
         if (entry != NULL && (entry->flags & 1) && (entry->flags & 0x8000000) && !(entry->jumpFlags & 4) &&
-            !(entry->hazardImmuneFlags & 8) && *(u32*)entry->field_300 == (u32)mobj) {
+            !(entry->hazardImmuneFlags & 8) && (u32)entry->groundHit == (u32)mobj) {
             npcGroupDead(entry, 8);
             count++;
         }

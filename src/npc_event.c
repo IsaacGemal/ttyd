@@ -49,7 +49,7 @@ USER_FUNC(mahoon_get_groupname) {
 USER_FUNC(npc_check_wall_stop) {
     s32* args = event->args;
     NpcEntry* npc = evtNpcNameToPtr(event, "me");
-    if (npc->field_2FC != 0) {
+    if (npc->wallHit != NULL) {
         evtSetValue(event, args[0], 1);
     } else {
         evtSetValue(event, args[0], 0);
@@ -4320,7 +4320,7 @@ USER_FUNC(limitSpd) {
     s32* args = event->args;
     f32 speed = evtGetFloat(event, args[0]);
     NpcEntry* npc = evtNpcNameToPtr(event, "me");
-    npc->field_1D0 = speed;
+    npc->maxFallSpeed = speed;
     return EVT_RETURN_DONE;
 }
 

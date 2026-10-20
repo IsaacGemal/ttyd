@@ -340,7 +340,7 @@ void setupDataBase(const char* areaName, const char* mapName) {
         tribe = npcGetTribe(tribeName);
         npcEntry(name, tribe->modelName);
         npc = npcNameToPtr(name);
-        npc->field_314 = npcIndex;
+        npc->setupIndex = npcIndex;
         npc->flags |= 4;
         npc->position = position;
         npc->direction = direction;

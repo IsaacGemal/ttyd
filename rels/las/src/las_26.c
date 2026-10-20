@@ -80,7 +80,7 @@ EVT_END()
 
 USER_FUNC(bonbaba_wait_landon) {
     NpcEntry* npc = npcNameToPtr("ボンババ");
-    return (*(u32*)npc->field_300 != 0) ? 2 : 0;
+    return (npc->groundHit != NULL) ? 2 : 0;
 }
 
 EVT_BEGIN(bonbaba_evt)
