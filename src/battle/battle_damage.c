@@ -1668,7 +1668,7 @@ s32 _checkDamageCode_EmergencyRevival(BattleUnit* unit, s32* flags) {
 //    goes live.
 //  - the weapon's `s8 field_0x6D` is read as `*(u8*)&weapon->field_0x6D`, i.e. an `lbz` with no `extsb`
 //    or `mr`; a `(u8)` cast leaves an extra move and a plain s8 load sign-extends.
-//  - the counter body is a `while (work.field_0x0) { ... break; }` so the compiler emits the original's
+//  - the counter body is a `while (work.hitLands) { ... break; }` so the compiler emits the original's
 //    bottom-tested block (test after the body, `bne` back into it).
 //  - the tail is `if (work.damageCode != 0) { ... return -1; } return ret;` so the shared `return ret`
 //    lands out of line at the end like the original.
@@ -1759,7 +1759,7 @@ s32 BattleCheckDamage(BattleUnit* unit1, BattleUnit* unit2, BattleUnitPart* part
     }
 
     BattleCheckCounter(workp, unit1, unit2, part, weapon, &flags);
-    while (work.field_0x0) {
+    while (work.hitLands) {
         if (flags & 0x100) {
             if (part->counterAttributes & kCounterVolatileExplosive) {
                 BattleRunHitEvent(unit2, 0x719);
@@ -1898,7 +1898,7 @@ counter_done:
     if (work.halfDamage) {
         work.counterDamage += damage * 50 / 100;
     }
-    if (work.bombEffect) {
+    if (work.holdFast) {
         work.counterDamage += damage * 50 / 100;
     }
     if (work.returnPostage) {
@@ -1926,7 +1926,7 @@ counter_done:
     if (unit1->mAlliance == 0) {
         BattleAudience_Case_Countered();
     }
-    if (work.bombEffect) {
+    if (work.holdFast) {
         Vec pos;
         BtlUnit_GetHitPos(unit2, part, &pos.x, &pos.y, &pos.z);
         effBombEntry(0, pos.x, pos.y, pos.z, 1.0f);
@@ -2126,7 +2126,7 @@ s32 BattleCheckCounter(void* work, BattleUnit* attacker, BattleUnit* target, Bat
         w->counterDamage++;
         w->hitEventCode = 0x1F;
         *out |= 0x100;
-        w->field_0x0 = 0;
+        w->hitLands = 0;
     } else if ((part->counterAttributes & kCounterPreemptiveFrontSpiky) &&
                attacker->badgesEquipped.SpikeShield == 0 && !(weapon->counterResistanceFlags & 0x4)) {
         w->counterType = 0x2C;
@@ -2134,7 +2134,7 @@ s32 BattleCheckCounter(void* work, BattleUnit* attacker, BattleUnit* target, Bat
         w->counterDamage++;
         w->hitEventCode = 0x20;
         *out |= 0x100;
-        w->field_0x0 = 0;
+        w->hitLands = 0;
     } else if ((part->counterAttributes & kCounterFrontSpiky) && attacker->badgesEquipped.SpikeShield == 0 &&
                !(weapon->counterResistanceFlags & 0x8)) {
         w->counterType = 0x2D;
@@ -2142,7 +2142,7 @@ s32 BattleCheckCounter(void* work, BattleUnit* attacker, BattleUnit* target, Bat
         w->counterDamage++;
         w->hitEventCode = 0x21;
         *out |= 0x100;
-        w->field_0x0 = 0;
+        w->hitLands = 0;
     } else if (((part->counterAttributes & kCounterFiery) || (part->counterAttributes & kCounterFieryStatus)) &&
                attacker->badgesEquipped.IcePower == 0 && !(weapon->counterResistanceFlags & 0x10)) {
         w->counterType = 0x2E;
@@ -2150,7 +2150,7 @@ s32 BattleCheckCounter(void* work, BattleUnit* attacker, BattleUnit* target, Bat
         w->counterDamage++;
         w->hitEventCode = 0x22;
         *out |= 0x100;
-        w->field_0x0 = 0;
+        w->hitLands = 0;
         if (part->counterAttributes & kCounterFieryStatus) {
             w->inflictBurn = 1;
         }
@@ -2161,7 +2161,7 @@ s32 BattleCheckCounter(void* work, BattleUnit* attacker, BattleUnit* target, Bat
         w->counterDamage++;
         w->hitEventCode = 0x23;
         *out |= 0x100;
-        w->field_0x0 = 0;
+        w->hitLands = 0;
         if (part->counterAttributes & kCounterIcyStatus) {
             w->inflictFreeze = 1;
         }
@@ -2174,7 +2174,7 @@ s32 BattleCheckCounter(void* work, BattleUnit* attacker, BattleUnit* target, Bat
         w->counterDamage++;
         w->hitEventCode = 0x24;
         *out |= 0x100;
-        w->field_0x0 = 0;
+        w->hitLands = 0;
         if (part->counterAttributes & kCounterElectricStatus) {
             w->inflictElectric = 1;
         }
@@ -2226,7 +2226,7 @@ s32 BattleCheckCounter(void* work, BattleUnit* attacker, BattleUnit* target, Bat
             w->counterType = 0x36;
             w->damageCode = 0x136;
             *out |= 0x100;
-            w->bombEffect = 1;
+            w->holdFast = 1;
         }
         if (target->badgesEquipped.ReturnPostage != 0 && !(weapon->counterResistanceFlags & 0x200)) {
             w->counterType = 0x35;
