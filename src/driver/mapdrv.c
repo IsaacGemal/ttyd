@@ -1211,9 +1211,9 @@ void bmapLoad(const char* map1, const char* map2) {
 				((MapEntry*)p)->dat = NULL;
 			}
 			else {
-				((MapEntry*)p)->field_0x174 = aramMgrToAram(*(void**)(p + 0x8C), *(u32*)(p + 0x90));
-				_mapFree(*(void**)(p + 0x8C));
-				*(void**)(p + 0x8C) = NULL;
+				((MapEntry*)p)->field_0x174 = aramMgrToAram(((MapEntry*)p)->chunkBuf, ((MapEntry*)p)->chunkBufSize);
+				_mapFree(((MapEntry*)p)->chunkBuf);
+				((MapEntry*)p)->chunkBuf = NULL;
 			}
 		}
 	}
