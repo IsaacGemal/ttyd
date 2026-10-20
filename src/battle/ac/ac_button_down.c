@@ -34,11 +34,11 @@ u32 _button_table[7] = {0x100, 0x200, 0x400, 0x800, 0x40, 0x20, 0x10};
 // Button-down action-command work area at _battleWorkPointer + 0x1F4C. No header declares it yet;
 // two parallel per-button arrays and a timer.
 typedef struct ButtonDownWork {
-    s32 field_0x00;  // 0x00, countdown from ac acParams[0]
-    s32 field_0x04;  // 0x04, previous outputParams[0] (SFX edge detect)
+    s32 countdown;   // 0x00, presses left to make, from acParams[0]
+    s32 prevOutput;  // 0x04, previous outputParams[0] (SFX edge detect)
     u32 buttons[13]; // 0x08, button masks
     s32 states[13];  // 0x3C, 0 = waiting, 1 = pressed
-    s32 field_0x70;  // 0x70, post-AC timer
+    s32 endTimer;    // 0x70, post-AC timer
 } ButtonDownWork;
 
 
@@ -151,8 +151,8 @@ s32 battleAcMain_ButtonDown(BattleWork* work) {
             }
             case 100:
                 work->actionCommands.mAcState = 1000;
-                bd->field_0x04 = 0;
-                bd->field_0x00 = work->actionCommands.acParams[0];
+                bd->prevOutput = 0;
+                bd->countdown = work->actionCommands.acParams[0];
                 // fallthrough
             case 1000:
                 if ((work->actionCommands.field_0x4 & 1) && (work->actionCommands.mAcUnit->mTokenFlags & 0x10)) {
@@ -218,9 +218,9 @@ s32 battleAcMain_ButtonDown(BattleWork* work) {
                         }
                     }
                 check:
-                    if (bd->field_0x04 != work->actionCommands.outputParams[0]) {
+                    if (bd->prevOutput != work->actionCommands.outputParams[0]) {
                         psndSFXOn(sfx);
-                        bd->field_0x04 = work->actionCommands.outputParams[0];
+                        bd->prevOutput = work->actionCommands.outputParams[0];
                     }
                     if (allDone) {
                         cont = 1;
@@ -228,8 +228,8 @@ s32 battleAcMain_ButtonDown(BattleWork* work) {
                         work->actionCommands.result &= ~1;
                         work->actionCommands.mAcState = 1001;
                     } else {
-                        bd->field_0x00--;
-                        if (bd->field_0x00 >= 0) {
+                        bd->countdown--;
+                        if (bd->countdown >= 0) {
                             break;
                         }
                         work->actionCommands.result = 0;
@@ -250,12 +250,12 @@ s32 battleAcMain_ButtonDown(BattleWork* work) {
             case 1002:
                 return 0;
             case 1003:
-                bd->field_0x70 = 0x3C;
+                bd->endTimer = 0x3C;
                 work->actionCommands.mAcState = 1004;
                 break;
             case 1004:
-                bd->field_0x70--;
-                if (bd->field_0x70 <= 0) {
+                bd->endTimer--;
+                if (bd->endTimer <= 0) {
                     work->actionCommands.mAcState = 1005;
                 }
                 break;
