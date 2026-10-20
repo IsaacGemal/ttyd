@@ -302,17 +302,17 @@ s32 mapSetLight(MapObject* obj, LightEntry** entries);
 void mapSetPolygonVtxDesc(MapObject* obj, MapFileMesh* mesh);
 void mapCalcAnimMatrix(Mtx outMtx, Mtx inMtx, MapEntryAnimData* anim, void* joint);
 typedef struct MapMatTexMtx {
-    f32 field_0x0;  // 0x0
-    f32 field_0x4;  // 0x4
-    f32 field_0x8;  // 0x8
-    f32 field_0xC;  // 0xC
-    f32 field_0x10; // 0x10
+    f32 transX;     // 0x0
+    f32 transY;     // 0x4, negated before the matrix is built
+    f32 scaleX;     // 0x8
+    f32 scaleY;     // 0xC
+    f32 rotation;   // 0x10, degrees, negated before the matrix is built
     f32 field_0x14; // 0x14
     f32 field_0x18; // 0x18
 } MapMatTexMtx;
 typedef struct MapMaterialTex {
     u8 field_0x0[0xB];        // 0x0
-    u8 field_0xB;             // 0xB
+    u8 texCount;              // 0xB
     u8 field_0xC[0x2C - 0xC]; // 0xC
     MapMatTexMtx entries[];   // 0x2C
 } MapMaterialTex;

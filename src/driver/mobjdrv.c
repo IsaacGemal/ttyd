@@ -38,16 +38,16 @@ extern const f32 float_1_8041a0d0;
 extern const f32 float_neg1_8041a0d4;
 extern const f32 float_neg0p5_8041a0d8;
 extern const f32 float_deg2rad_8041a0dc;
-extern const char str_8041A0E0[8];
+extern const char str_HOBJ_[8];
 extern const f32 float_2p5_8041a0e8;
 extern const f32 float_5_8041a0ec;
 extern const f32 float_25_8041a0f0;
 extern const f32 float_20_8041a0f4;
 extern const f32 float_0p1_8041a0f8;
-extern const char str_8041A0FC[4];
+extern const char str_S_1[4];
 extern const f32 float_0p5_8041a100;
-extern const char str_8041A104[8];
-extern const char str_8041A10C[8];
+extern const char str_MOBJ_[8];
+extern const char str_MOBJ_tilde[8];
 
 #ifdef MUST_MATCH
 // MUST_MATCH: the original reaches the joint templates through the .data section base symbol (the
@@ -243,7 +243,7 @@ void mobjHitEntry(MapObjectEntry* entry, s32 type) {
     entry->scale2.z = (float_10_8041a0cc) * (entry->scale.z * (f32)__fabs(bboxMax.z - bboxMin.z));
 #endif
 
-    if (strncmp(animData->fileName, str_8041A0E0, strlen(str_8041A0E0)) == 0) {
+    if (strncmp(animData->fileName, str_HOBJ_, strlen(str_HOBJ_)) == 0) {
         entry->translation.z = (float_0_8041a0c8);
         entry->scale2.z = (float_10_8041a0cc) * ((float_2p5_8041a0e8) * entry->scale.z);
     }
@@ -271,7 +271,7 @@ void mobjHitEntry(MapObjectEntry* entry, s32 type) {
 #else
             memcpy(&entry->hitObj[0].unk4[8], &cubeDJ, 0x68);
 #endif
-            strcpy(entry->hitObj[0].name, str_8041A104);
+            strcpy(entry->hitObj[0].name, str_MOBJ_);
             strcat(entry->hitObj[0].name, entry->name);
             ((MapFileJoint*)&entry->hitObj[0].unk4[8])->name = entry->hitObj[0].name;
             entry->hitObj[0].hitObject = hitEntryMOBJ((MapFileJoint*)&entry->hitObj[0].unk4[8], mtx);
@@ -300,7 +300,7 @@ void mobjHitEntry(MapObjectEntry* entry, s32 type) {
 #else
             memcpy(&entry->hitObj[0].unk4[8], &headDJ, 0x68);
 #endif
-            strcpy(entry->hitObj[0].name, str_8041A104);
+            strcpy(entry->hitObj[0].name, str_MOBJ_);
             strcat(entry->hitObj[0].name, entry->name);
             ((MapFileJoint*)&entry->hitObj[0].unk4[8])->name = entry->hitObj[0].name;
             entry->hitObj[0].hitObject = hitEntryMOBJ((MapFileJoint*)&entry->hitObj[0].unk4[8], mtx);
@@ -329,7 +329,7 @@ void mobjHitEntry(MapObjectEntry* entry, s32 type) {
 #else
             memcpy(&entry->hitObj[0].unk4[8], &frontDJ, 0x68);
 #endif
-            strcpy(entry->hitObj[0].name, str_8041A104);
+            strcpy(entry->hitObj[0].name, str_MOBJ_);
             strcat(entry->hitObj[0].name, entry->name);
             ((MapFileJoint*)&entry->hitObj[0].unk4[8])->name = entry->hitObj[0].name;
             entry->hitObj[0].hitObject = hitEntryMOBJ((MapFileJoint*)&entry->hitObj[0].unk4[8], mtx);
@@ -339,7 +339,7 @@ void mobjHitEntry(MapObjectEntry* entry, s32 type) {
 #else
             memcpy(&entry->hitObj[1].unk4[8], &front2DJ, 0x68);
 #endif
-            strcpy(entry->hitObj[1].name, str_8041A10C);
+            strcpy(entry->hitObj[1].name, str_MOBJ_tilde);
             strcat(entry->hitObj[1].name, entry->name);
             ((MapFileJoint*)&entry->hitObj[1].unk4[8])->name = entry->hitObj[1].name;
             entry->hitObj[1].hitObject = hitEntryMOBJ((MapFileJoint*)&entry->hitObj[1].unk4[8], mtx);
@@ -381,7 +381,7 @@ s32 mobjEntry(const char* name, const char* animPoseName) {
     entry->poseId = animPoseEntry(animPoseName, gp->inBattle != 0);
     animPosePeraOff(entry->poseId);
     strcpy(entry->animName, animPoseName);
-    animPoseSetAnim(entry->poseId, str_8041A0FC, 1);
+    animPoseSetAnim(entry->poseId, str_S_1, 1);
     animPoseSetMaterialLightFlagOn(entry->poseId, 2);
     mobjHitEntry(entry, 0);
     entry->offscreenId = -1;
@@ -474,7 +474,7 @@ static inline void mobjMainCalcMtx(MapObjectEntry* entry, Mtx mtx, BOOL calcBBox
         entry->scale2.y = float_10_8041a0cc * (entry->scale.y * (f32)__fabs(bboxMax.y));
         entry->scale2.z = float_10_8041a0cc * (entry->scale.z * (f32)__fabs(bboxMax.z - bboxMin.z));
 
-        if (strncmp(animData->fileName, str_8041A0E0, strlen(str_8041A0E0)) == 0) {
+        if (strncmp(animData->fileName, str_HOBJ_, strlen(str_HOBJ_)) == 0) {
             entry->translation.z = float_0_8041a0c8;
             entry->scale2.z = float_10_8041a0cc * (float_2p5_8041a0e8 * entry->scale.z);
         }
@@ -921,7 +921,7 @@ void mobjCalcMtx(MapObjectEntry* entry) {
     entry->scale2.y = float_10_8041a0cc * (entry->scale.y * (f32)__fabs(bboxMax.y));
     entry->scale2.z = float_10_8041a0cc * (entry->scale.z * (f32)__fabs(bboxMax.z - bboxMin.z));
 
-    if (strncmp(animData->fileName, str_8041A0E0, strlen(str_8041A0E0)) == 0) {
+    if (strncmp(animData->fileName, str_HOBJ_, strlen(str_HOBJ_)) == 0) {
         entry->translation.z = float_0_8041a0c8;
         entry->scale2.z = float_10_8041a0cc * (float_2p5_8041a0e8 * entry->scale.z);
     }
@@ -1092,16 +1092,16 @@ __declspec(section ".sdata2") const f32 float_1_8041a0d0 = 1.0f;
 __declspec(section ".sdata2") const f32 float_neg1_8041a0d4 = -1.0f;
 __declspec(section ".sdata2") const f32 float_neg0p5_8041a0d8 = -0.5f;
 __declspec(section ".sdata2") const f32 float_deg2rad_8041a0dc = 0.017453292f;
-__declspec(section ".sdata2") const char str_8041A0E0[8] = "HOBJ_";
+__declspec(section ".sdata2") const char str_HOBJ_[8] = "HOBJ_";
 __declspec(section ".sdata2") const f32 float_2p5_8041a0e8 = 2.5f;
 __declspec(section ".sdata2") const f32 float_5_8041a0ec = 5.0f;
 __declspec(section ".sdata2") const f32 float_25_8041a0f0 = 25.0f;
 __declspec(section ".sdata2") const f32 float_20_8041a0f4 = 20.0f;
 __declspec(section ".sdata2") const f32 float_0p1_8041a0f8 = 0.1f;
-__declspec(section ".sdata2") const char str_8041A0FC[4] = "S_1";
+__declspec(section ".sdata2") const char str_S_1[4] = "S_1";
 __declspec(section ".sdata2") const f32 float_0p5_8041a100 = 0.5f;
-__declspec(section ".sdata2") const char str_8041A104[8] = "MOBJ_";
-__declspec(section ".sdata2") const char str_8041A10C[8] = "MOBJ~";
+__declspec(section ".sdata2") const char str_MOBJ_[8] = "MOBJ_";
+__declspec(section ".sdata2") const char str_MOBJ_tilde[8] = "MOBJ~";
 #pragma explicit_zero_data on
 #pragma force_active on
 __declspec(section ".sdata2") u32 gap_09_8041A114_sdata2[1] = { 0 };

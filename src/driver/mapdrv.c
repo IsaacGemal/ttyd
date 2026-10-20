@@ -44,7 +44,7 @@ GXTexObj projTexObj;
 void* projTexImgRef;
 Mtx projMtx;
 BOOL __mapdrv_make_dl;
-u32 unk_80418458;
+u32 mapDispDisabled;
 s32 error_count;
 BOOL error_flag;
 MapObject* current_mp;
@@ -151,11 +151,11 @@ const char* getMapDataDvdRoot(void) {
 }
 
 void N_mapDispOff(void) {
-	unk_80418458 = TRUE;
+	mapDispDisabled = TRUE;
 }
 
 void N_mapDispOn(void) {
-	unk_80418458 = FALSE;
+	mapDispDisabled = FALSE;
 }
 
 MapWork* mapGetWork(void) {
@@ -1093,7 +1093,7 @@ void _mapLoad(MapWork* wp, BOOL group, const char* map) {
 
 	makeDisplayList(group);
 	mapLoadDispFlags(group);
-	unk_80418458 = 0;
+	mapDispDisabled = 0;
 }
 
 // An empty string; symbols.txt names it as a float.
@@ -1148,7 +1148,7 @@ void mapUnLoad(void) {
 			entry->dlTotal = 0;
 		}
 	}
-	unk_80418458 = 0;
+	mapDispDisabled = 0;
 	hitReInit();
 	lightReInit();
 	envReInit();
@@ -1225,7 +1225,7 @@ void bmapUnLoad(void) {
 			entry->dlTotal = 0;
 		}
 	}
-	unk_80418458 = 0;
+	mapDispDisabled = 0;
 	hitReInit();
 	lightReInit();
 	envReInit();
@@ -2448,10 +2448,10 @@ void mapDisp(void) {
 	wp = &mapWork[activeGroup];
 	cam = camGetPtr(CAMERA_3D);
 #ifdef MUST_MATCH
-	/* the original emits cmpwi, i.e. it treats unk_80418458 as signed */
-	if ((s32)unk_80418458 != 0) {
+	/* the original emits cmpwi, i.e. it treats mapDispDisabled as signed */
+	if ((s32)mapDispDisabled != 0) {
 #else
-	if (unk_80418458 != 0) {
+	if (mapDispDisabled != 0) {
 #endif
 		return;
 	}
@@ -3424,25 +3424,25 @@ static inline void mapDrawObjectFog(MapObject* obj) {
 void mapSetTextureMatrix(MapMaterialTex* mat) {
 	s32 tc = 0;
 	s32 j = 0;
-	s32 i = mat->field_0xB - 1;
+	s32 i = mat->texCount - 1;
 	Mtx mtx, mtx3, mtx5, mtx2, mtx4;
 
 	for (; i >= 0; tc++, j++, i--) {
-		f32 f1 = mat->entries[i].field_0x10;
+		f32 f1 = mat->entries[i].rotation;
 		f32 rots = -f1;
-		f32 f5 = mat->entries[i].field_0x8;
+		f32 f5 = mat->entries[i].scaleX;
 		f32 sx = f5;
-		f32 f6 = mat->entries[i].field_0xC;
+		f32 f6 = mat->entries[i].scaleY;
 		f32 sy = f6;
-		f32 tx = mat->entries[i].field_0x0;
-		f32 f0 = mat->entries[i].field_0x4;
+		f32 tx = mat->entries[i].transX;
+		f32 f0 = mat->entries[i].transY;
 		f32 zero = 0.0f;
 		f32 ty = -f0;
 
-		if (mat->entries[i].field_0x8 != 1.0f || mat->entries[i].field_0xC != 1.0f || tx != 0.0f || ty != 0.0f || rots != 0.0f) {
+		if (mat->entries[i].scaleX != 1.0f || mat->entries[i].scaleY != 1.0f || tx != 0.0f || ty != 0.0f || rots != 0.0f) {
 			if (rots != zero) {
-				f32 f25 = 0.5f * mat->entries[i].field_0x14 * mat->entries[i].field_0x8;
-				f32 f24 = (1.0f - 0.5f * mat->entries[i].field_0x18) * mat->entries[i].field_0xC;
+				f32 f25 = 0.5f * mat->entries[i].field_0x14 * mat->entries[i].scaleX;
+				f32 f24 = (1.0f - 0.5f * mat->entries[i].field_0x18) * mat->entries[i].scaleY;
 				PSMTXTrans(mtx, f25, f24, 0.0f);
 				PSMTXRotRad(mtx2, 'z', 0.017453292f * rots);
 				PSMTXTrans(mtx3, -f25, -f24, 0.0f);
@@ -3487,10 +3487,10 @@ void mapSetTextureMatrix(MapMaterialTex* mat) {
 				}
 			}
 			GXLoadTexMtxImm(mtx, texmtx_tbl[i], 1);
-			GXSetTexCoordGen2(tc, 1, mat->field_0xB + 3 - j, texmtx_tbl[i], 0, 0x7D);
+			GXSetTexCoordGen2(tc, 1, mat->texCount + 3 - j, texmtx_tbl[i], 0, 0x7D);
 		}
 		else {
-			GXSetTexCoordGen2(tc, 1, mat->field_0xB + 3 - j, GX_IDENTITY, 0, 0x7D);
+			GXSetTexCoordGen2(tc, 1, mat->texCount + 3 - j, GX_IDENTITY, 0, 0x7D);
 		}
 	}
 }
