@@ -96,12 +96,12 @@ EffectEntry* effFireFlowerN64Entry(s32 type, s32 duration, f32 x, f32 y, f32 z) 
 	data->lifetime = duration;
 	data->timer = 0;
 	data->field_0x48 = 0;
-	data->field_0x3C = 0xff;
+	data->color1A = 0xff;
 	data->scale = 0.5f;
-	data->field_0x34 = 0;
-	data->field_0x38 = 0;
-	data->field_0x28 = 0.0f;
-	data->field_0x2C = -10.0f;
+	data->texFrame = 0;
+	data->color2A = 0;
+	data->angle = 0.0f;
+	data->offsetX = -10.0f;
 
 	p = &data[1];
 	for (i = 1; i < 0x1f; i++, p++) {
@@ -112,15 +112,15 @@ EffectEntry* effFireFlowerN64Entry(s32 type, s32 duration, f32 x, f32 y, f32 z) 
 		p->velX = 8.0f;
 		p->velY = 0.0f;
 		p->velZ = (f32)(rand() % 20 - 8);
-		p->field_0x20 = 0.05f * (f32)(rand() % 10 - 5);
-		p->field_0x24 = (f32)(rand() % 80 + 5);
-		p->field_0x3C = 0xff;
-		p->field_0x4C = i - 1;
+		p->velYAccel = 0.05f * (f32)(rand() % 10 - 5);
+		p->rot = (f32)(rand() % 80 + 5);
+		p->color1A = 0xff;
+		p->delay = i - 1;
 		p->timer = 10;
 		p->velX /= 1.5f;
 		p->velY /= 1.5f;
 		p->velZ /= 1.5f;
-		p->field_0x4C *= 2;
+		p->delay *= 2;
 	}
 	return effect;
 }
@@ -130,7 +130,7 @@ EffectEntry* effFireFlowerN64Entry(s32 type, s32 duration, f32 x, f32 y, f32 z) 
 // call's arguments in the order r3, f1, f2, r4, f3, r5.  The shared header keeps the semantically
 // ordered prototype, so the call is made through the reordered signature (same registers); without
 // it the compiler hoists `li r4, 7` above the mode test.  Same shape as evt_sub_spline_get_value.
-// (2) case 6: naming the 0.9f constant (`fadeScale`) keeps field_0x28 + 18.0f in f2, double_to_int in f3
+// (2) case 6: naming the 0.9f constant (`fadeScale`) keeps angle + 18.0f in f2, double_to_int in f3
 // and 0.9f in f1, matching retail.
 void effFireFlowerMain(EffectEntry* effect) {
 	effFireFlowerData* data = effect->userdata;
@@ -179,8 +179,8 @@ void effFireFlowerMain(EffectEntry* effect) {
 #else
 		effRotHammerSuccessN64Entry(0, 7, spawnX, data->y, data->z, 0x14);
 #endif
-		data->field_0x34 = 0;
-		data->field_0x38 = 0;
+		data->texFrame = 0;
+		data->color2A = 0;
 		data->state++;
 		data->timer = 0;
 		break;
@@ -190,8 +190,8 @@ void effFireFlowerMain(EffectEntry* effect) {
 			data->timer = 0;
 		} else {
 			data->scale = (f32)scale_data[timer - 1] * 0.01f;
-			data->field_0x34 = 0;
-			data->field_0x38 = 0;
+			data->texFrame = 0;
+			data->color2A = 0;
 		}
 		break;
 	case 2:
@@ -199,7 +199,7 @@ void effFireFlowerMain(EffectEntry* effect) {
 			data->state++;
 			data->timer = 0;
 		} else {
-			data->field_0x34 = 1;
+			data->texFrame = 1;
 		}
 		break;
 	case 3:
@@ -207,7 +207,7 @@ void effFireFlowerMain(EffectEntry* effect) {
 			data->state++;
 			data->timer = 0;
 		} else {
-			data->field_0x34 = 2;
+			data->texFrame = 2;
 		}
 		break;
 	case 4:
@@ -215,8 +215,8 @@ void effFireFlowerMain(EffectEntry* effect) {
 			data->state++;
 			data->timer = 0;
 		} else {
-			data->field_0x2C = 0.0f;
-			data->field_0x34 = 3;
+			data->offsetX = 0.0f;
+			data->texFrame = 3;
 			if ((timer >> 2) & 1) {
 				data->scale = 1.0f;
 			} else {
@@ -229,22 +229,22 @@ void effFireFlowerMain(EffectEntry* effect) {
 			data->state++;
 			data->timer = 0;
 		} else {
-			data->field_0x34 = 0;
-			data->field_0x2C = -10.0f;
+			data->texFrame = 0;
+			data->offsetX = -10.0f;
 		}
 		break;
 	case 6:
-		data->field_0x34 = 0;
+		data->texFrame = 0;
 #ifdef MUST_MATCH
 		fadeScale = 0.9f;
-		data->field_0x28 += 18.0f;
-		data->field_0x3C = (s32)((f32)data->field_0x3C * fadeScale);
+		data->angle += 18.0f;
+		data->color1A = (s32)((f32)data->color1A * fadeScale);
 #else
-		data->field_0x28 += 18.0f;
-		data->field_0x3C = (s32)((f32)data->field_0x3C * 0.9f);
+		data->angle += 18.0f;
+		data->color1A = (s32)((f32)data->color1A * 0.9f);
 #endif
-		if (data->field_0x28 >= 720.0f) {
-			data->field_0x28 = 720.0f;
+		if (data->angle >= 720.0f) {
+			data->angle = 720.0f;
 			data->state++;
 		}
 		break;
@@ -254,13 +254,13 @@ void effFireFlowerMain(EffectEntry* effect) {
 	data++;
 	if (state >= 4 && state <= 6) {
 		for (i = 1; i < effect->count; i++, data++) {
-			if (data->field_0x4C > 0) {
-				data->field_0x4C--;
-				if (data->field_0x4C > 0) {
+			if (data->delay > 0) {
+				data->delay--;
+				if (data->delay > 0) {
 					continue;
 				}
 			}
-			data->velY += data->field_0x20;
+			data->velY += data->velYAccel;
 			data->x += data->velX;
 			data->y += data->velY;
 			data->z += data->velZ;
@@ -303,11 +303,11 @@ void effFireFlowerDisp(CameraId camId, void* param) {
 	cam = camGetPtr(camId);
 	data = effect->userdata;
 	// Cache the fields the original keeps in callee-saved registers across the calls below.
-	texFrame = data->field_0x34;
+	texFrame = data->texFrame;
 	spriteScale = data->scale;
 	state = data->state;
-	angle = data->field_0x28;
-	offsetX = data->field_0x2C;
+	angle = data->angle;
+	offsetX = data->offsetX;
 
 	PSMTXTrans(trans, data->x, data->y, data->z);
 	PSMTXRotRad(rot, 'y', -camGetPtr(CAMERA_3D)->viewYaw * 0.017453292f);
@@ -315,8 +315,8 @@ void effFireFlowerDisp(CameraId camId, void* param) {
 	PSMTXConcat(trans, rot, m);
 	PSMTXConcat(m, scale, m);
 
-	effFireFlowerSetColor1(data->field_0x3C);
-	effFireFlowerSetColor2(data->field_0x38);
+	effFireFlowerSetColor1(data->color1A);
+	effFireFlowerSetColor2(data->color2A);
 
 	GXSetCullMode(0);
 	GXSetNumChans(1);
@@ -339,10 +339,10 @@ void effFireFlowerDisp(CameraId camId, void* param) {
 		GXLoadTexMtxImm(scale, 0x1e, 1);
 
 		for (i = 1, data++; i < effect->count; i++, data++) {
-			if (data->field_0x4C != 0) {
+			if (data->delay != 0) {
 				continue;
 			}
-			PSMTXRotRad(rot, 'z', 0.017453292f * data->field_0x24);
+			PSMTXRotRad(rot, 'z', 0.017453292f * data->rot);
 			PSMTXTrans(trans, data->x, data->y, data->z);
 			PSMTXConcat(rot, trans, trans);
 			PSMTXConcat(m2, trans, trans);
