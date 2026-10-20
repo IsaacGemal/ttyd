@@ -69,9 +69,6 @@ WindowPartyDt winPartyDt[7] = {
 
 void winPartyInit(WindowWork* work) {
     PouchData* pouch = pouchGetPtr();
-#ifndef MUST_MATCH
-    u8* p;
-#endif
     s32 i;
     s32 j;
     s32 k;
@@ -130,19 +127,11 @@ void winPartyInit(WindowWork* work) {
 
     i = 0;
     work->partySel = i;
-#ifdef MUST_MATCH
     for (; i < work->partyCount; i++) {
-#else
-    for (p = (u8*)work; i < work->partyCount; i++, p += 4) {
-#endif
         s32 party;
 
         party = !marioBgmodeChk() ? marioGetParty() : marioGetPtr()->prevPartyMemberId[0];
-#ifdef MUST_MATCH
         if (party == work->partyId[i]) {
-#else
-        if (party == *(s32*)(p + 0x1BC)) {
-#endif
             work->partySel = i;
             break;
         }
@@ -586,11 +575,7 @@ void winPartyDisp(CameraId camId, void* param, s32 partyIdx) {
             if (WIN_PARTY_ID(work, work->partySel) == winPartyDt[n].partnerId) {
                 const char* name;
 
-#ifdef MUST_MATCH
-                if ((4) != (winPartyDt[n].partnerId)) {
-#else
-                if (winPartyDt[n].partnerId != 4) {
-#endif
+                if (4 != winPartyDt[n].partnerId) {
                     name = msgSearch(winPartyDt[n].nameMsg);
                 } else {
                     name = pouchGetYoshiName();

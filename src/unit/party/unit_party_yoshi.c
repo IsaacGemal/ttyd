@@ -83,8 +83,6 @@ static s32 wait_event[6];
         (char*)msgSearch(*(char**)((u8*)cmd->mWeaponTable[*count].mWeaponParams + 0)); \
     (*count)++;
 
-// The original addresses the four weapons from one base register (addi r30, r5, lbl_80379A00@l, then
-// +0x624/+0x6E4/+0xAA4/+0xB64); naming each weapon directly does not reproduce that.
 __declspec(section ".data") u32 lbl_80379A00[2] = {
     0xBF800000, 0x3F800000,
 };
@@ -1759,24 +1757,9 @@ USER_FUNC(yoshi_original_color_anim_set) {
 // the target's. The remaining `4503601774854144.0` relocation names are objdiff-normalised.
 
 static void __makeTechMenuFunc(BattleWorkCommand* cmd, s32* count) {
-#ifdef MUST_MATCH
-    u8* const weaponBase = (u8*)lbl_80379A00;
-#endif
     s32 techLv = partyGetTechLv(
         BattleTransPartyId(BattleGetPartyPtr(_battleWorkPointer)->currentKind));
 
-#ifdef MUST_MATCH
-    TECH_MENU_ENTRY(weaponBase + 0x624);  // partyWeapon_YoshiNormalAttack
-    if (techLv >= 0) {
-        TECH_MENU_ENTRY(weaponBase + 0x6E4); // partyWeapon_YoshiNomikomi_Shot
-    }
-    if (techLv >= 1) {
-        TECH_MENU_ENTRY(weaponBase + 0xAA4); // partyWeapon_YoshiEggAttack_Minimini
-    }
-    if (techLv >= 2) {
-        TECH_MENU_ENTRY(weaponBase + 0xB64); // partyWeapon_YoshiCallGuard
-    }
-#else
     TECH_MENU_ENTRY((BattleWeapon*)partyWeapon_YoshiNormalAttack);
     if (techLv >= 0) {
         TECH_MENU_ENTRY((BattleWeapon*)partyWeapon_YoshiNomikomi_Shot);
@@ -1787,7 +1770,6 @@ static void __makeTechMenuFunc(BattleWorkCommand* cmd, s32* count) {
     if (techLv >= 2) {
         TECH_MENU_ENTRY((BattleWeapon*)partyWeapon_YoshiCallGuard);
     }
-#endif
 }
 
 
