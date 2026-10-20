@@ -6,6 +6,16 @@
 #include "party.h"
 #include "mario/mario_sbr.h"
 #include "mot/mot_slit.h"
+#include "motion/mot_damage.h"
+#include "motion/mot_dokan.h"
+#include "motion/mot_hip.h"
+#include "motion/mot_jabara.h"
+#include "motion/mot_roll.h"
+#include "motion/mot_ship.h"
+#include "motion/mot_stay.h"
+#include "motion/mot_walk.h"
+#include "motion/mot_yoshi.h"
+#include "party/party_cloud.h"
 #include "party/party_vivian.h"
 #include "driver/hitdrv.h"
 #include "driver/casedrv.h"
@@ -62,27 +72,6 @@ const char str_802C5A0C[8] = "tik_01";
 #endif
 extern f32 marioJumpSwData[];
 
-// Motion functions from other units; no header declares them.
-
-void mot_cloud(void);
-void mot_damage(void);
-void mot_damageToge(void);
-void mot_dash(void);
-void mot_dokan(void);
-void mot_grasp(void);
-void mot_hip(void);
-void mot_hip_post(void);
-void mot_jabara(void);
-void mot_jabara_post(void);
-void mot_roll(void);
-void mot_roll_post(void);
-void mot_ship(void);
-void mot_ship_post(void);
-void mot_stay(void);
-void mot_stay_post(void);
-void mot_walk(void);
-void mot_yoshi(void);
-void mot_yoshi_post(void);
 
 // clang-format off
 
