@@ -389,7 +389,7 @@ void imgCapture_Prim(ImageEntry* entry, s32 id) {
 				shadow->bboxH = entry->captureHeight;
 				height = shadow->bboxH;
 				width = shadow->bboxW;
-				fmtTex = shadow->srcFormat;
+				fmtTex = shadow->texFormat;
 				fmtDst = shadow->dstFormat;
 				mode = shadow->captureMode;
 				GXSetTexCopySrc(shadow->bboxX, shadow->bboxY, width, height);
@@ -427,7 +427,7 @@ void imgCapture_Prim(ImageEntry* entry, s32 id) {
 			shadow->bboxH = entry->captureHeight;
 			heightB = shadow->bboxH;
 			widthB = shadow->bboxW;
-			fmtTexB = shadow->srcFormat;
+			fmtTexB = shadow->texFormat;
 			fmtDstB = shadow->dstFormat;
 			modeB = shadow->captureMode;
 			GXSetTexCopySrc(shadow->bboxX, shadow->bboxY, widthB, heightB);
@@ -524,7 +524,7 @@ s32 imgEntry(const char* name, s32 type) { //1:1, needs variable names
 	entry->shadows[0].top = 0;
 	entry->shadows[0].offscreenId = -1;
 	entry->shadows[0].dstFormat = 6;
-	entry->shadows[0].srcFormat = 6;
+	entry->shadows[0].texFormat = 6;
 	entry->shadows[0].captureMode = 0;
 
 	entry->shadows[1].flags = 0;
@@ -532,7 +532,7 @@ s32 imgEntry(const char* name, s32 type) { //1:1, needs variable names
 	entry->shadows[1].top = 0;
 	entry->shadows[1].offscreenId = -1;
 	entry->shadows[1].dstFormat = 6;
-	entry->shadows[1].srcFormat = 6;
+	entry->shadows[1].texFormat = 6;
 	entry->shadows[1].captureMode = 0;
 
 	entry->shadows[2].flags = 0;
@@ -540,10 +540,10 @@ s32 imgEntry(const char* name, s32 type) { //1:1, needs variable names
 	entry->shadows[2].top = 0;
 	entry->shadows[2].offscreenId = -1;
 	entry->shadows[2].dstFormat = 6;
-	entry->shadows[2].srcFormat = 6;
+	entry->shadows[2].texFormat = 6;
 	entry->shadows[2].captureMode = 0;
 	entry->shadows[2].dstFormat = 39;
-	entry->shadows[2].srcFormat = 1;
+	entry->shadows[2].texFormat = 1;
 
 	return i;
 }

@@ -28,7 +28,7 @@ inline Vec initializeVec(Vec* input) {
     return temp;
 }
 
-EffectEntry* effGuruguruN64Entry(s32 type, s32 numParticles, f32 x, f32 y, f32 z, f32 scale) {
+EffectEntry* effGuruguruN64Entry(s32 type, s32 numParticles, f32 x, f32 y, f32 z, f32 radius) {
     EffectEntry* effect;
     EffGuruguruData* data;
     s32 i;
@@ -44,9 +44,9 @@ EffectEntry* effGuruguruN64Entry(s32 type, s32 numParticles, f32 x, f32 y, f32 z
     data[0].position.x = x;
     data[0].position.y = y;
     data[0].position.z = z;
-    data[0].scale = 0.0f;
+    data[0].radius = 0.0f;
     data[0].yaw = 0;
-    data[0].targetScale = scale;
+    data[0].targetRadius = radius;
     data[0].active = 1;
     data[0].drawScale = 1.0f;
 
@@ -68,7 +68,7 @@ EffectEntry* effGuruguruN64Entry(s32 type, s32 numParticles, f32 x, f32 y, f32 z
 void effGuruguruMain(EffectEntry* effect) {
     EffGuruguruData* data;
     Vec pos;
-    f32 scale;
+    f32 radius;
     s32 i;
 
     data = effect->userdata;
@@ -76,15 +76,15 @@ void effGuruguruMain(EffectEntry* effect) {
 
     if (data->active != 0) {
         data->yaw++;
-        data->scale += 0.1f * (data->targetScale - data->scale);
-        scale = data->scale;
+        data->radius += 0.1f * (data->targetRadius - data->radius);
+        radius = data->radius;
 
         data++;
         for (i = 1; i < effect->count; i++, data++) {
-            data->position.x = scale * (f32)sin(6.2831855f * (f32)data->yaw / 360.0f);
-            data->position.z = scale * (f32)cos(6.2831855f * (f32)data->yaw / 360.0f) *
+            data->position.x = radius * (f32)sin(6.2831855f * (f32)data->yaw / 360.0f);
+            data->position.z = radius * (f32)cos(6.2831855f * (f32)data->yaw / 360.0f) *
                                (f32)cos(6.2831855f * data->pitch / 360.0f);
-            data->position.y = scale * (f32)cos(6.2831855f * (f32)data->yaw / 360.0f) *
+            data->position.y = radius * (f32)cos(6.2831855f * (f32)data->yaw / 360.0f) *
                                (f32)sin(6.2831855f * data->pitch / 360.0f);
             data->angle += data->angleSpeed;
             data->pitch = 0.0f;

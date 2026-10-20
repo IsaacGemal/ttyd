@@ -168,7 +168,7 @@ static USER_FUNC(evt_cloud_main) {
 		img = imgNameToPtr(cp->imgName, inBattle);
 		img->flags |= 2;
 		img->poseId = animPaperPoseGetId(cp->animName, inBattle);
-		*(OSTime*)((u8*)img + 0x110) = animTimeGetTime(inBattle);
+		img->startTime = animTimeGetTime(inBattle);
 		tmpEvent.args = captureArgs;
 		captureArgs[0] = (s32)cp->imgName;
 		captureArgs[1] = 0;
@@ -188,7 +188,7 @@ static USER_FUNC(evt_cloud_main) {
 		img = imgNameToPtr(cp->imgName, inBattle);
 		img->flags &= ~2;
 		img->animName = "A_1";
-		*(OSTime*)((u8*)img + 0x110) = animTimeGetTime(inBattle);
+		img->startTime = animTimeGetTime(inBattle);
 		mapGrpFlagOn(cp->mapGrpName, 1);
 		cp->field_0xB8 = 0x1E;
 		cp->mode++;
@@ -234,7 +234,7 @@ static USER_FUNC(evt_cloud_main) {
 		}
 		img = imgNameToPtr(cp->imgName, inBattle);
 		img->animName = "A_2";
-		*(OSTime*)((u8*)img + 0x110) = animTimeGetTime(inBattle);
+		img->startTime = animTimeGetTime(inBattle);
 		hitObjFlagOn(cp->hitName, 1);
 		cp->field_0xB8 = 0x3C;
 		cp->mode++;

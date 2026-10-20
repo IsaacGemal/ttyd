@@ -52,7 +52,7 @@ inline Vec initializeVec(Vec* input) {
 	return temp;
 }
 
-EffectEntry* effRappaN64Entry(s32 type, s32 count, f32 x, f32 y, f32 z, f32 angle, f32 angleOffset) {
+EffectEntry* effRappaN64Entry(s32 type, s32 count, f32 x, f32 y, f32 z, f32 yaw, f32 pitch) {
 	EffectEntry* effect;
 	effRappaData* data;
 	effRappaData* p;
@@ -79,9 +79,9 @@ EffectEntry* effRappaN64Entry(s32 type, s32 count, f32 x, f32 y, f32 z, f32 angl
 	effect->userdata = data;
 	effect->callback = effRappaMain;
 #ifdef MUST_MATCH
-	tmp = float_6p2832_8041faf8 * angle;
+	tmp = float_6p2832_8041faf8 * yaw;
 #else
-	theta = float_6p2832_8041faf8 * angle / float_360_8041fb04;
+	theta = float_6p2832_8041faf8 * yaw / float_360_8041fb04;
 #endif
 	data->type = type;
 	data->position.x = x;
@@ -105,7 +105,7 @@ EffectEntry* effRappaN64Entry(s32 type, s32 count, f32 x, f32 y, f32 z, f32 angl
 		p->position.y = y;
 		p->position.z = z;
 		sinTheta = (f32)sin(theta);
-		phi = float_6p2832_8041faf8 * (angleOffset + (f32)((i & 2) * (i / 2) * 4)) / float_360_8041fb04;
+		phi = float_6p2832_8041faf8 * (pitch + (f32)((i & 2) * (i / 2) * 4)) / float_360_8041fb04;
 #ifdef MUST_MATCH
 		cosPhi = (f32)cos(phi);
 		p->velX = cosPhi * sinTheta;

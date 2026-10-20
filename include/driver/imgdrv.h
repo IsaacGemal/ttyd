@@ -15,7 +15,7 @@ typedef struct ImageShadow {
 	u16 bboxH; //0xE
 	s32 offscreenId; //0x10
 	s32 dstFormat; //0x14
-	s32 srcFormat; //0x18
+	s32 texFormat; //0x18
 	u8 texObjData[0x3C - 0x1C]; //0x1C, GXTexObj storage
 	smartEntry* imageData; //0x3C
 	s32 captureMode; //0x40

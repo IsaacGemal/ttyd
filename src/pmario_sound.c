@@ -5521,12 +5521,12 @@ void psndBGMMain(void) {
 			continue;
 		}
 
-		if (bgm->fadeTimer != 0 && bgm->fadeTimer != 0xFF) {
-			bgm->fadeTimer--;
+		if (bgm->scopeTimer != 0 && bgm->scopeTimer != 0xFF) {
+			bgm->scopeTimer--;
 		}
 
 		master = 100;
-		if (bgm->fadeTimer == 0) {
+		if (bgm->scopeTimer == 0) {
 			master = psnd.unk58;
 		}
 
@@ -5851,10 +5851,10 @@ s32 psndBGMOn_f_d(s32 a, s32 name, s32 c, s32 d, s32 e) {
 	bgm->reverb = reverb;
 	bgm->pan = pan;
 	if (((u8*)&entry->params)[3] == 1) {
-		bgm->fadeTimer = 0xFF;
+		bgm->scopeTimer = 0xFF;
 	}
 	else {
-		bgm->fadeTimer = 0;
+		bgm->scopeTimer = 0;
 	}
 	time = gp->renderTime;
 	bgm->startTime = time;
@@ -6012,13 +6012,13 @@ void psndBGMScope(s32 id, s32 scope) {
 		return;
 	}
 	if (scope > 0) {
-		bgm->fadeTimer = 0xFF;
+		bgm->scopeTimer = 0xFF;
 	}
 	if (scope < 0) {
-		bgm->fadeTimer = 0;
+		bgm->scopeTimer = 0;
 	}
 	if (scope == 0) {
-		bgm->fadeTimer = 0x1E;
+		bgm->scopeTimer = 0x1E;
 	}
 }
 
@@ -6153,8 +6153,8 @@ void psndSFXMain(void) {
                 sfx->unk18 = ch;
                 if ((u32)sfx->unk18 != -1) {
                     SoundSSPlayCh(sfx->unk18, (u32)entry->streamName);
-                    SoundSSSetPanCh(sfx->unk18, sfx->unkA);
-                    vol = (sfx->vol * sfx->pan) / 127 - sfx->unk10;
+                    SoundSSSetPanCh(sfx->unk18, sfx->pan);
+                    vol = (sfx->vol * sfx->baseVol) / 127 - sfx->unk10;
                     if (vol < 0) vol = 0;
                     if (vol > 0x7F) vol = 0x7F;
                     SoundSSSetVolCh(sfx->unk18, (u8)vol);
@@ -6164,17 +6164,17 @@ void psndSFXMain(void) {
                 sfx->unk18 = ch;
                 if ((u32)sfx->unk18 != -1) {
                     SoundSongPlayCh(sfx->unk18, entry->flags & 0x0FFFFFFF);
-                    vol = (sfx->vol * sfx->pan) / 127 - sfx->unk10;
+                    vol = (sfx->vol * sfx->baseVol) / 127 - sfx->unk10;
                     if (vol < 0) vol = 0;
                     if (vol > 0x7F) vol = 0x7F;
                     SoundSongSetVolCh(sfx->unk18, (u8)vol);
                 }
             } else {
                 if (sfx->unk6 & 2) {
-                    vol = (sfx->vol * sfx->pan) / 127 - sfx->unk10;
+                    vol = (sfx->vol * sfx->baseVol) / 127 - sfx->unk10;
                     if (vol < 0) vol = 0;
                     if (vol > 0x7F) vol = 0x7F;
-                    res = calc3D(sfx->unk0, (Vec*)sfx->pad1C, (u8)vol, sfx->unk12);
+                    res = calc3D(sfx->unk0, &sfx->position, (u8)vol, sfx->unk12);
                     sfx->unk18 = SoundEfxPlayEx((u16)entry->flags, 0, ((u8*)&res)[0], ((u8*)&res)[1]);
                     if ((u32)sfx->unk18 != -1) {
                         SoundEfxSetVolume(sfx->unk18, ((u8*)&res)[0]);
@@ -6186,10 +6186,10 @@ void psndSFXMain(void) {
 #endif
                     }
                 } else {
-                    vol = (sfx->vol * sfx->pan) / 127 - sfx->unk10;
+                    vol = (sfx->vol * sfx->baseVol) / 127 - sfx->unk10;
                     if (vol < 0) vol = 0;
                     if (vol > 0x7F) vol = 0x7F;
-                    sfx->unk18 = SoundEfxPlayEx((u16)entry->flags, 0, (u8)vol, sfx->unkA);
+                    sfx->unk18 = SoundEfxPlayEx((u16)entry->flags, 0, (u8)vol, sfx->pan);
                     if ((u32)sfx->unk18 != -1) {
 #ifdef MUST_MATCH
                         ((void (*)(s32, s16))SoundEfxSetPitch)(sfx->unk18, sfx->unk14);
@@ -6216,10 +6216,10 @@ void psndSFXMain(void) {
             sfx->unk6 &= ~1;
         }
         if (sfx->unk6 & 2) {
-            vol = (sfx->vol * sfx->pan) / 127 - sfx->unk10;
+            vol = (sfx->vol * sfx->baseVol) / 127 - sfx->unk10;
             if (vol < 0) vol = 0;
             if (vol > 0x7F) vol = 0x7F;
-            res = calc3D(sfx->unk0, (Vec*)sfx->pad1C, (u8)vol, sfx->unk12);
+            res = calc3D(sfx->unk0, &sfx->position, (u8)vol, sfx->unk12);
             if (entry->flags & 0x80000000) {
                 SoundSSSetPanCh(sfx->unk18, ((u8*)&res)[1]);
                 vol = ((u8*)&res)[0] * psnd.unk59 / 100;
@@ -6242,19 +6242,19 @@ void psndSFXMain(void) {
             }
         } else {
             if (entry->flags & 0x80000000) {
-                SoundSSSetPanCh(sfx->unk18, sfx->unkA);
-                vol = (sfx->vol * sfx->pan) / 127 - sfx->unk10;
+                SoundSSSetPanCh(sfx->unk18, sfx->pan);
+                vol = (sfx->vol * sfx->baseVol) / 127 - sfx->unk10;
                 if (vol < 0) vol = 0;
                 if (vol > 0x7F) vol = 0x7F;
                 SoundSSSetVolCh(sfx->unk18, (u8)vol);
             } else if (entry->flags & 0x40000000) {
-                vol = (sfx->vol * sfx->pan) / 127 - sfx->unk10;
+                vol = (sfx->vol * sfx->baseVol) / 127 - sfx->unk10;
                 if (vol < 0) vol = 0;
                 if (vol > 0x7F) vol = 0x7F;
                 SoundSongSetVolCh(sfx->unk18, (u8)vol);
             } else {
-                SoundEfxSetPan(sfx->unk18, sfx->unkA);
-                vol = (sfx->vol * sfx->pan) / 127 - sfx->unk10;
+                SoundEfxSetPan(sfx->unk18, sfx->pan);
+                vol = (sfx->vol * sfx->baseVol) / 127 - sfx->unk10;
                 if (vol < 0) vol = 0;
                 if (vol > 0x7F) vol = 0x7F;
                 SoundEfxSetVolume(sfx->unk18, (u8)vol);
@@ -6402,15 +6402,15 @@ s32 __psndSFXOn(s32 name, u8 vol, u8 pan, s32 pitch, Vec* position, s32 a6, s32 
 
     slot->unk0 = index;
     ((PaperSoundEffectDetail*)slot)->vol = vol;
-    ((PaperSoundEffectDetail*)slot)->pan = entry->volume;
-    ((PaperSoundEffectDetail*)slot)->unkA = pan;
+    ((PaperSoundEffectDetail*)slot)->baseVol = entry->volume;
+    ((PaperSoundEffectDetail*)slot)->pan = pan;
     ((PaperSoundEffectDetail*)slot)->unkE = (s16)(s32)((f32)(u16)pitch / 16.666666f + (f32)prio + (f32)entry->field_0x11);
     ((PaperSoundEffectDetail*)slot)->unk10 = (u16)(prio * 5);
-    ((PaperSoundEffectDetail*)slot)->padB[0] = entry->reverb;
-    *(u16*)(((PaperSoundEffectDetail*)slot)->padB + 1) = entry->field_0x10;
+    ((PaperSoundEffectDetail*)slot)->reverb = entry->reverb;
+    ((PaperSoundEffectDetail*)slot)->unkC = entry->field_0x10;
     ((PaperSoundEffectDetail*)slot)->unk14 = *(s16*)&entry->pitch;
     if (position != 0) {
-        *(Vec*)((PaperSoundEffectDetail*)slot)->pad1C = *position;
+        ((PaperSoundEffectDetail*)slot)->position = *position;
         if ((u32)a6 == 0) {
             *(u16*)&slot->unk6 |= 2;
         } else {
@@ -6418,7 +6418,7 @@ s32 __psndSFXOn(s32 name, u8 vol, u8 pan, s32 pitch, Vec* position, s32 a6, s32 
         }
     }
     ((PaperSoundEffectDetail*)slot)->unk12 = (u16)flags;
-    *(u16*)((PaperSoundEffectDetail*)slot)->pad16 = 0x7D00;
+    ((PaperSoundEffectDetail*)slot)->unk16 = 0x7D00;
     *(u16*)((u8*)&psnd + 0x50) += 1;
     ((PaperSoundEffectDetail*)slot)->unk4 = *(u16*)((u8*)&psnd + 0x50);
     slotIndex |= *(u16*)((u8*)&psnd + 0x50) << 8;

@@ -52,7 +52,7 @@ typedef struct PaperSoundBGM {
     u8 reverb;             // 0xD
     u8 volume;             // 0xE
     u8 pan;                // 0xF
-    u8 fadeTimer;          // 0x10
+    u8 scopeTimer;         // 0x10, psndBGMScope: 0xFF in scope (level 100), 0 out (follows psnd.unk58), else frames left
     u8 unk11[0x20 - 0x11]; // 0x11
     s8 unk20;              // 0x20
     u8 unk21[0x30 - 0x21]; // 0x21
@@ -74,17 +74,18 @@ typedef struct PaperSoundEffectDetail {
     s32 unk0;              // 0x0
     u16 unk4;              // 0x4
     u16 unk6;              // 0x6
-    u8 vol;                // 0x8
-    u8 pan;                // 0x9
-    u8 unkA;               // 0xA
-    u8 padB[3];            // 0xB
+    u8 vol;                // 0x8, the caller's volume
+    u8 baseVol;            // 0x9, SoundEffectEntry.volume; played volume is vol * baseVol / 127
+    u8 pan;                // 0xA
+    u8 reverb;             // 0xB
+    u16 unkC;              // 0xC, SoundEffectEntry.field_0x10; compared when a slot is evicted
     u16 unkE;              // 0xE
     u16 unk10;             // 0x10
     u16 unk12;             // 0x12
-    s16 unk14;             // 0x14
-    u8 pad16[2];           // 0x16
+    s16 unk14;             // 0x14, pitch
+    u16 unk16;             // 0x16
     s32 unk18;             // 0x18
-    u8 pad1C[0x28 - 0x1C]; // 0x1C
+    Vec position;          // 0x1C
 } PaperSoundEffectDetail;
 
 typedef struct PaperSoundEnv {

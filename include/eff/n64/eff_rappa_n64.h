@@ -29,7 +29,7 @@ extern const f32 float_0p9_8041faf0;
 extern const f32 float_10_8041faf4;
 void effRappaDisp(CameraId cameraId, void* param);
 void effRappaMain(EffectEntry* effect);
-EffectEntry* effRappaN64Entry(s32 type, s32 count, f32 x, f32 y, f32 z, f32 angle, f32 angleOffset);
+EffectEntry* effRappaN64Entry(s32 type, s32 count, f32 x, f32 y, f32 z, f32 yaw, f32 pitch);
 extern const f32 float_6p2832_8041faf8;
 extern const f32 float_5_8041fafc;
 extern const f32 float_0p25_8041fb00;

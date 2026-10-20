@@ -607,7 +607,7 @@ void fadeMain(void) {
 						imgEntry("fImg_dokan", entry->imageType);
 						entry->image = imgNameToPtr("fImg_dokan", entry->imageType);
 						entry->image->poseId = animPaperPoseGetId(entry->groupName, entry->imageType);
-						*(OSTime*)((u8*)entry->image + 0x110) = animTimeGetTime(entry->imageType);
+						entry->image->startTime = animTimeGetTime(entry->imageType);
 						entry->image->animName = entry->animName;
 						imgClearVirtualPoint(entry->image);
 						event.args = args;
@@ -692,7 +692,7 @@ void fadeMain(void) {
 						imgEntry("fImg_peron", entry->imageType);
 						entry->image = imgNameToPtr("fImg_peron", entry->imageType);
 						entry->image->poseId = animPaperPoseGetId(entry->groupName, entry->imageType);
-						*(OSTime*)((u8*)entry->image + 0x110) = animTimeGetTime(entry->imageType);
+						entry->image->startTime = animTimeGetTime(entry->imageType);
 						entry->image->animName = entry->animName;
 						imgClearVirtualPoint(entry->image);
 						switch (entry->type) {
@@ -782,7 +782,7 @@ void fadeMain(void) {
 								case 60:
 								case 61:
 								case 62:
-									*(OSTime*)((u8*)entry->image + 0x110) = animTimeGetTime(entry->imageType);
+									entry->image->startTime = animTimeGetTime(entry->imageType);
 #ifdef MUST_MATCH
 									{
 										const char* anim = "A_2";
@@ -817,7 +817,7 @@ void fadeMain(void) {
 					case 0:
 						entry->image = imgNameToPtr("fImg_peron", entry->imageType);
 						entry->image->poseId = animPaperPoseGetId(entry->groupName, entry->imageType);
-						*(OSTime*)((u8*)entry->image + 0x110) = animTimeGetTime(entry->imageType);
+						entry->image->startTime = animTimeGetTime(entry->imageType);
 						entry->image->animName = entry->animName;
 						imgClearVirtualPoint(entry->image);
 						switch (entry->type) {
