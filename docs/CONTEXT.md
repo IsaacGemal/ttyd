@@ -10780,3 +10780,42 @@ evt_movefloor.c's MovingFloorWork: `axisPos` (0x0C, the coordinate written to po
 Verified: tower `ninja` recreates `build/G8MJ01/ok`; the natural (no MUST_MATCH) and MUST_MATCH compiles of evt_cloud.c, evt_nannpc.c, evt_movefloor.c, gon_11.c, mri_00.c, gor_00.c, gor.c, muj_00.c, muj_10.c, muj_20.c and muj.c all return 0 (run by hand with -maxerrors 50). Index: whole tree 30.889 per kLOC (21979 over 711538) -> 30.617 (21785 over 711538); field_0x 3533 -> 3339.
 
 Review (Claude Opus 5.5): `halted` renamed `seHalted`, las_14.h brought into line with gon_11/mri_00, the gon_11/mri_00 bounding box named; tower `ninja` recreates `build/G8MJ01/ok`, and the MUST_MATCH and natural mwcc compiles of evt_movefloor.c, gon_11.c, mri_00.c and las_14.c return 0. Index after rebase and review: 30.513 per kLOC (21711 over 711538); field_0x 3265.
+### Readability: tik REL names for gesso arms, tik_00 and tik_05 (2026-10-20, Claude Haiku 5.5, n9-q-gesso)
+
+Names from `tools/rename_symbol.py --rel tik` and by hand, by where each symbol is consumed.
+
+Gesso arms (unit_boss_gesso_right_arm.c, unit_boss_gesso_left_arm.c, unit_boss_gesso.c):
+- Each arm's `unk_evt_tik_*` script is the event that runs for data tags 0x18-0x24 of its dataTable. battle_event_default.c's
+  counter-damage switch (damage codes 43-55) calls RunDataEventChild with tag 24-36, so the scripts are the counter-damage
+  events: `gesso_right_arm_counter_damage_event` and `gesso_left_arm_counter_damage_event`. The 13-entry tables they sit in
+  (`unk_tik_00028ebc`, `unk_tik_00029f1c`) are the arms' dataTables: `gesso_right_arm_counter_data_table` and
+  `gesso_left_arm_counter_data_table`. The two arms keep separate copies: each file defines its own table, so sharing one
+  event would move the object data.
+- `unk_evt_tik_000243c8` in unit_boss_gesso.c is SPAWN_EVENT'd from battle_entry_event beside the two arm spawns and runs
+  the `_test_rtn` USER_FUNC: `test_rtn_event`.
+
+tik_00.c (uranai and starmaniac):
+- `unk_tik_000005e8` is called from uranai_init and sets renderMode 10 on the "supotto" map object: `uranai_supotto_mode`.
+- `unk_tik_000005c0` (psndSetFlag 0x80) and `unk_tik_00000598` (psndClearFlag 0x80) are called from starmaniac_talk: the
+  same snd_off/snd_on pair as evt_kinopio.c: `starmaniac_snd_off` and `starmaniac_snd_on`.
+- `unk_evt_tik_0000f438` is the 4th word of the starmaniac npcEnt entry (its init slot, beside uranaisi_init): `starmaniac_init`.
+
+tik_05.c:
+- `unk_tik_0000247c` takes one argument and calls N_mapDispOn or N_mapDispOff; the tizu sequence calls it with 0 before the
+  paper entry and 1 after the fade: `map_disp_set`.
+- BrokenWork (tiz_broken's texture and shard buffers): `tex_copied` (draw sets it after GXCopyTex), `tex_buffer`,
+  `entry_buffer`. BrokenEntry, from tiz_broken and tiz_broken_draw: `state` (0 flying, 1 once x/y leave the 340/260 box),
+  `timer` (the wait before draw, checked against 0), `quadrant` (0-3, the diagonal of the draw angle), `impulse_x`,
+  `impulse_y`, `impulse_z` (added to x/y/z and decayed by param_tbl[2]), `spin_angle` (degrees about y) and `spin_speed`
+  (grows by param_tbl[4]), `vel_x`/`vel_y` (constant per-frame steps from the angle). x, y, z were already named.
+- MahojinWork (include/eff/eff_mahojin.h) 0x28/0x2C are the draw argument and function that eff_mahojin.c's Disp calls
+  and that starstone_setting fills with the star stone entry and effStarStoneDraw: `draw_arg` and `draw_func`.
+- disp_treasure_map_func writes the map_map effect's fields through EffTreasureMapData (eff_treasure_map.c reads x/y/z,
+  alpha at 0x14 and angle at 0x20 from that type), not through MahojinWork; the angle store is the same f32 at 0x20.
+
+Left: MahojinWork's `field_0x14` (include/eff/eff_mahojin.h; eff_mahojin.c only zeroes it and tik_05 no longer touches it).
+rels/tik/include/tik_11.h still has one `unk_` name, outside this set.
+
+Verified: tower `ninja` recreates `build/G8MJ01/ok` (32 files OK); natural (no MUST_MATCH) compiles of the six changed C
+files return 0. Index (tools/cleanup_index.py): 30.889 -> 30.731 per kLOC (21979 -> 21866 weighted over 711538 code
+lines); field_0x 3533 -> 3476, unk_name 931 -> 875.
