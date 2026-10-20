@@ -1136,19 +1136,19 @@ static inline void animPoseAddTexDelta(AnimTexMtx* dst, u8* src, s32 size) {
 #define ANIM_POSE_ADD_FRAME(pose, anim, frame, scale)                                               \
     do {                                                                                            \
         animPoseAddVecDelta((pose)->mpBufferVtxPos,                                                 \
-                            anim->posData + ANIM_FRAME_POS_OFF(frame) * 4,                    \
+                            (anim)->posData + ANIM_FRAME_POS_OFF(frame) * 4,                        \
                             ANIM_FRAME_POS_COUNT(frame) * 4, scale);                                \
         animPoseAddVecDelta((pose)->mpBufferVtxNrm,                                                 \
-                            anim->nrmData + ANIM_FRAME_NRM_OFF(frame) * 4,                    \
+                            (anim)->nrmData + ANIM_FRAME_NRM_OFF(frame) * 4,                        \
                             ANIM_FRAME_NRM_COUNT(frame) * 4, scale);                                \
-        animPoseAddVisDelta(anim->visData + ANIM_FRAME_VIS_OFF(frame) * 2,                    \
+        animPoseAddVisDelta((anim)->visData + ANIM_FRAME_VIS_OFF(frame) * 2,                        \
                             (pose)->mpBufferGroupVisibility,                                        \
                             ANIM_FRAME_VIS_COUNT(frame) * 2);                                       \
         animPoseAddNodeDelta((f32*)(pose)->mpBufferNode,                                            \
-                             anim->nodeData + ANIM_FRAME_NODE_OFF(frame) * 4,                 \
+                             (anim)->nodeData + ANIM_FRAME_NODE_OFF(frame) * 4,                     \
                              ANIM_FRAME_NODE_COUNT(frame) * 4, scale);                              \
         animPoseAddTexDelta((pose)->mpBufferTexAnimEntries,                                         \
-                            anim->texData + ANIM_FRAME_TEX_OFF(frame) * 0xC,                  \
+                            (anim)->texData + ANIM_FRAME_TEX_OFF(frame) * 0xC,                      \
                             ANIM_FRAME_TEX_COUNT(frame) * 0xC);                                     \
     } while (0)
 
@@ -3170,13 +3170,13 @@ void animPaperPoseDispSub(s32 unused, AnimationPose* param) {
     w = right - left;
     h = bottom - top;
 #ifdef MUST_MATCH
-    // match-only negation: the original emits -(left - pose114), not pose114 - left
+    // match-only negation: the original emits -(left - paperLeft), not paperLeft - left
     pose->paperTexTrans[0] = -((f32)left - (f32)pose->paperLeft) / (f32)(pose->paperRight - pose->paperLeft);
 #else
     pose->paperTexTrans[0] = ((f32)pose->paperLeft - (f32)left) / (f32)(pose->paperRight - pose->paperLeft);
 #endif
 #ifdef MUST_MATCH
-    // match-only negation: the original emits -(top - pose118), not pose118 - top
+    // match-only negation: the original emits -(top - paperTop), not paperTop - top
     pose->paperTexTrans[1] = -((f32)top - (f32)pose->paperTop) / (f32)(pose->paperBottom - pose->paperTop);
 #else
     pose->paperTexTrans[1] = ((f32)pose->paperTop - (f32)top) / (f32)(pose->paperBottom - pose->paperTop);
