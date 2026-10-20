@@ -11303,7 +11303,6 @@ Raw offsets in battle_mario.c: 22 -> 11 (weighted 44 -> 22; index 5.415 -> 2.707
   union member already in evtmgr.h). `EffectEntry*` casts on 0x8C follow the same change.
 - BattleWork 0x18FE1 (the `_majinai_powerup_check` byte store) is `wp->field_18FE1[0]`. The band's element 0 is
   u8 in every other user (battle_seq_end.c, battle_seq.c, battle_damage.c), so no split was needed.
-- BattleWork 0x16F24 in `_record_renzoku_count` is `&_battleWorkPointer->field_16F1C[0x16F24 - 0x16F1C]`, a u8
   alias. battle_actrecord.c reads the same byte as `WP(0x24)`, also u8.
 
 Left raw:
@@ -11312,3 +11311,4 @@ Left raw:
 - `*(u16*)((u8*)unit->mKindParams + 0x14)` in `mario_get_renzoku_count_max`: BattleUnitKind `field_0x14` is s16, read
   here as u16.
 - `(u8*)effect->userdata + N` and the `EffectEntry*` userdata offsets: EffectEntry is outside this task's scope.
+- BattleWork 0x16F24 in _record_renzoku_count stays raw: indexing field_16F1C by an offset difference is not clearer.
