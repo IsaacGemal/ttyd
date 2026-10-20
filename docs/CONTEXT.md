@@ -9275,8 +9275,8 @@ BtlUnit_CheckPinchStatus against mDangerHP/mPerilHP). Mario's 0x10 attribute is 
 
 Open: battle results (BattleInformationSetResult 1 win, 3 lose, 4/5 interrupted; 2 is read by npcdrv) need an enum in
 battle_information.h; BattleWork.flags 0x20 (InterruptStop(1), no caller in src), 0x40 (result 4, setter unknown)
-and 0x100 (`check_battleflag 256`: camera mode 0x12, the curtain event's walk-off); NpcBattleInfo.field_4 bits 0x40
-(a loss returns to the field with 1 HP instead of game over) and 0x20000000 (PAUSE3 voice) want an enum in npcdrv.h;
+and 0x100 (`check_battleflag 256`: camera mode 0x12, the curtain event's walk-off); NpcBattleFlags 0x20000000
+(PAUSE3 voice) has no name yet;
 BattleSeqEndWork `unk14`/`unk28` (zeroed beside `lvupSelect`/`confirmSel`, never read) and `unk0`; mAttributeFlags
 0x21000000 and unit->flags 0x80000000 in `_disable_enemy_unit_disp`; battle_mario.c's raw `event + 0x88/0x8C` casts
 can move to `userdataEx` too, and evt_sub's pointer use of 0x88 could join the union.
