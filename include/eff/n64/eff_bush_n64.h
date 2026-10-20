@@ -7,14 +7,14 @@ typedef struct BushN64Data {
 	f32 x;          // 0x4
 	f32 y;          // 0x8
 	f32 z;          // 0xC
-	f32 field_0x10; // 0x10
-	f32 field_0x14; // 0x14
-	f32 field_0x18; // 0x18
-	f32 field_0x1c; // 0x1C
-	f32 field_0x20; // 0x20
-	s32 field_0x24; // 0x24
+	f32 velX;       // 0x10
+	f32 velY;       // 0x14
+	f32 rotZ;       // 0x18: degrees
+	f32 swayPhase;  // 0x1C: degrees, random-walked each frame; drives rotZ and rotY
+	f32 rotY;       // 0x20: degrees
+	s32 alpha;      // 0x24: head only, TEV colour alpha
 	s32 lifetime;   // 0x28
-	s32 field_0x2c; // 0x2C
+	s32 age;        // 0x2C: head only, frames elapsed
 	f32 field_0x30; // 0x30
 } BushN64Data;
 EffectEntry* effBushN64Entry(s32 type, f32 x, f32 y, f32 z);

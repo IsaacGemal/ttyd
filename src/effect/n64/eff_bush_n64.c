@@ -49,18 +49,18 @@ EffectEntry* effBushN64Entry(s32 type, f32 x, f32 y, f32 z) {
 	data->y = y;
 	data->z = z;
 	data->lifetime = 100;
-	data->field_0x2c = 0;
-	data->field_0x24 = 0;
+	data->age = 0;
+	data->alpha = 0;
 	p = data + 1;
 	for (i = 1; i < 5; i++, p++) {
 		p->x = (f32)(rand() % 30 - 15);
 		p->y = 0.0f;
 		p->z = (f32)((rand() & 0x1E) - 15);
-		p->field_0x18 = (f32)(rand() & 0x168);
-		p->field_0x20 = (f32)(rand() & 0x168);
-		p->field_0x1c = (f32)((rand() % 100) / 10);
-		p->field_0x10 = 0.0f;
-		p->field_0x14 = 0.0f;
+		p->rotZ = (f32)(rand() & 0x168);
+		p->rotY = (f32)(rand() & 0x168);
+		p->swayPhase = (f32)((rand() % 100) / 10);
+		p->velX = 0.0f;
+		p->velY = 0.0f;
 	}
 	return effect;
 }
@@ -87,7 +87,7 @@ void effBushMain(EffectEntry* effect) {
 #endif
 
 	type = data->type;
-	if (data->field_0x2c >= 5 && data->field_0x2c < 15) {
+	if (data->age >= 5 && data->age < 15) {
 		switch (type) {
 		case 0:
 			if (marioGetPtr()->currMotionId == MARIO_MOTION_STAY) {
@@ -100,9 +100,9 @@ void effBushMain(EffectEntry* effect) {
 	}
 
 	data->lifetime--;
-	data->field_0x2c++;
-	if (data->field_0x2c > 324000) {
-		data->field_0x2c = 256;
+	data->age++;
+	if (data->age > 324000) {
+		data->age = 256;
 	}
 	life = data->lifetime;
 	if (life < 0) {
@@ -110,39 +110,39 @@ void effBushMain(EffectEntry* effect) {
 		return;
 	}
 
-	if (data->field_0x2c < 10) {
-		data->field_0x24 = (s32)(0.3f * (255 - data->field_0x24) + data->field_0x24);
+	if (data->age < 10) {
+		data->alpha = (s32)(0.3f * (255 - data->alpha) + data->alpha);
 	}
 	if (life < 10) {
 #ifdef MUST_MATCH
 		{
 			f32 fadeScale = 0.8f;
-			data->field_0x24 = (s32)((f32)data->field_0x24 * fadeScale);
+			data->alpha = (s32)((f32)data->alpha * fadeScale);
 		}
 #else
-		data->field_0x24 = (s32)((f32)data->field_0x24 * 0.8f);
+		data->alpha = (s32)((f32)data->alpha * 0.8f);
 #endif
 	}
 
 	data++;
 	for (i = 1; i < effect->count; i++, data++) {
-		wave = (f32)sin(6.2831855f * (2.0f * data->field_0x18) / 360.0f);
-		data->field_0x14 += -0.05f;
+		wave = (f32)sin(6.2831855f * (2.0f * data->rotZ) / 360.0f);
+		data->velY += -0.05f;
 		move = 0.2f * wave;
-		data->field_0x10 += move;
+		data->velX += move;
 		if (type == 0) {
-			data->field_0x10 *= 0.94f;
-			wave = (f32)sin(6.2831855f * data->field_0x18 / 360.0f);
-			data->field_0x14 *= 0.95f + 0.05f * wave;
+			data->velX *= 0.94f;
+			wave = (f32)sin(6.2831855f * data->rotZ / 360.0f);
+			data->velY *= 0.95f + 0.05f * wave;
 		} else {
-			data->field_0x14 += -0.05f;
-			data->field_0x10 *= 0.92f;
+			data->velY += -0.05f;
+			data->velX *= 0.92f;
 		}
-		data->field_0x1c += (f32)(rand() % 50) - 25.0f;
-		data->field_0x18 += 10.0f * (f32)sin(6.2831855f * data->field_0x1c / 360.0f);
-		data->field_0x20 += 10.0f * (f32)cos(6.2831855f * (data->field_0x1c / 2.0f) / 360.0f);
-		data->x += data->field_0x10;
-		data->y += data->field_0x14;
+		data->swayPhase += (f32)(rand() % 50) - 25.0f;
+		data->rotZ += 10.0f * (f32)sin(6.2831855f * data->swayPhase / 360.0f);
+		data->rotY += 10.0f * (f32)cos(6.2831855f * (data->swayPhase / 2.0f) / 360.0f);
+		data->x += data->velX;
+		data->y += data->velY;
 	}
 #ifdef MUST_MATCH
 	dispEntry(CAMERA_3D, dispCalcZ(&position), 2, effBushDisp, effect);
@@ -171,7 +171,7 @@ void effBushDisp(CameraId camId, void* param) {
 	PSMTXConcat(trans, rot, work);
 	PSMTXConcat(cam->view, work, work);
 
-	bushSetColor(data->field_0x24);
+	bushSetColor(data->alpha);
 	data++;
 	GXSetNumChans(1);
 	GXSetChanCtrl(4, 0, 0, 1, 0, 0, 2);
@@ -202,9 +202,9 @@ void effBushDisp(CameraId camId, void* param) {
 	deg2rad = 0.017453292f;
 	for (i = 1; i < effect->count; i++, data++) {
 		PSMTXTrans(trans, data->x, data->y, data->z);
-		PSMTXRotRad(rot, 'z', deg2rad * data->field_0x18);
+		PSMTXRotRad(rot, 'z', deg2rad * data->rotZ);
 		PSMTXConcat(trans, rot, trans);
-		PSMTXRotRad(rot, 'y', deg2rad * data->field_0x20);
+		PSMTXRotRad(rot, 'y', deg2rad * data->rotY);
 		PSMTXConcat(trans, rot, trans);
 		PSMTXConcat(work, trans, trans);
 		GXLoadPosMtxImm(trans, 0);
