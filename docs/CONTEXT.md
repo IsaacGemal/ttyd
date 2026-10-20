@@ -9907,3 +9907,29 @@ Matching build 32 files OK. Natural (no MUST_MATCH) objects of all 312 header us
 (284 byte-identical, 28 obj_equiv-equivalent). Cleanup index 45.810 -> 44.786 (field_0x 6,684 -> 6,059, raw
 offsets 2,309 -> 2,262). Open: SoundEnvList 0x5, SoundEffectEntry 0xE/0x10/0x11, effMagicHorao 0x14/0x1C,
 effRappa 0x1C/0x20, EffRipple 0x14/0x28 and effLaser 0x24 stay field_0x; SoundEnvList positions are still u32.
+### Readability: effects, evt_map/evt_uranaisi, Glitz Pit RELs and boss units, wave 6 of the DeepSeek cleanup swarm (2026-10-20, DeepSeek V4 Pro, n9-q-ds6; reviewed by Claude Opus 5.5)
+
+Seventeen files, one DeepSeek V4 Pro agent each (the first full Pro wave), then an Opus pass over every rename. About
+180 names, constants and comments checked; 11 needed fixing, all but one in comments or GX enums. Wrong name: tou2's
+evt_tou_set_ranking_win_lose first argument is 0 after a win and 1 after a loss (tou_03's match script), so `won` is
+`lost`. Wrong GX families: eff_rothammer_success's GXSetNumChans(GX_COLOR0)/GXSetNumTexGens(GX_TEXCOORD1) are counts,
+back to 0/1; tou's monitor_tev GXSetTevSwapMode(..., GX_CH_RED, GX_CH_RED) takes swap tables, now GX_TEV_SWAP0.
+Comments fixed: eff_mahojin's TEV callback blends the colour toward (E8,00,E8) by mahojin_rate (GX_CC_A0 as the lerp
+factor) and passes alpha through (the agent said alpha fades); its rim-piece comment claimed lit/dim pieces, now says
+which animations play; eff_kiss's four .sbss2 colour templates: only 0x80423310/18 keep black RGB, 0x80423314/1c get
+RGB from color_rotation_data; FallWork.height is the target's hit position above the floor (elements within radius/2
+land at y + height), not a drop height, and `roll` turns about the x = -200 pivot (no "shell rim"); evt_map's
+effFire field_0x88 makes effFireDisp multiply by the map blend colour (TEV stage 3, CPREV * C1) when map blending is
+on; aji_04's msg callback state 3 is the A/B press at a 0xFFFE wait point (msgdrv's choiceState 2), not a choice, so
+lwData[5] counts waits passed. Struct copy removed: tou2.h's BeltData was effStarStoneData (the belt is
+effStarStoneEntry(9, ...)), as tou.c's already was in this wave; tou2 now casts to effStarStoneData (`rotY`). Made
+consistent between the tou and tou2 RELs' duplicate structs: DispWork `scroll`/`targetScroll`/`page`, RuleEntry
+`kind`/`param` (NpcBattleInfo.battleRules[0]/[1]; tou.c had `type`/`field_0C`), fighter `defaultScore`. Kept: eff_fall's
+FallWork names (unk50..58 stay unnamed, a per-type vector), eff_splash `delay`/`gotColor`, rankup `state`/`alpha`,
+rothammer_success `rotSpeed`/`life`/`frame`/`lifeMax`, kumokumo `rotation`/`frame`, evt_uranaisi `storyId`/`mode`/
+`lastLabelId`, gor_irai `cursorX/Y` and PAD_TRIGGER_L/R, unit_kamec_white's attribute/status/token constants (values
+and enum families checked), unit_boss_koopa's field_18FF0 offsets (the command-disable counters). Matching build
+OK; all 17 C files and the 16 users of their changed headers (plus eff_fire.c) natural-compile equivalent to the
+pre-batch objects (tools/obj_equiv.py, old tree with old headers). Open: msgdrv.h's `choiceState`/`choiceMade`/
+`choiceIndex` describe the 0xFFFE button-wait, not a choice; BattleWork field_18FF0 still wants named slots; the tou
+and tou2 RELs keep separate copies of RankEntry/FighterEntry/RuleEntry/DispWork.

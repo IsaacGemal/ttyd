@@ -145,7 +145,7 @@ EffectEntry* effSplashEntry(s32 type, f32 x, f32 y, f32 z, f32 scale) {
 	data->scaleY = scale;
 	data->scaleX = scale;
 	data->counter = 0;
-	data->field_0x38 = 0;
+	data->gotColor = 0;
 
 	ptr = data + 1;
 	for (i = 1; i < num + 1; i++, ptr++) {
@@ -154,7 +154,7 @@ EffectEntry* effSplashEntry(s32 type, f32 x, f32 y, f32 z, f32 scale) {
 		ptr->position.x = 0.0f;
 		ptr->offsetX = 0.0f;
 		ptr->offsetY = 0.0f;
-		ptr->field_0x28 = 0;
+		ptr->delay = 0;
 		ptr->scaleZ = 1.0f;
 		ptr->scaleY = 1.0f;
 		ptr->scaleX = 1.0f;
@@ -227,7 +227,7 @@ EffectEntry* effSplashEntry(s32 type, f32 x, f32 y, f32 z, f32 scale) {
 		ptr->position.z = 2.0f * ptr->offsetY;
 		ptr->velocity = 10.0f;
 		ptr->decel = 1.0f;
-		ptr->field_0x28 = irand(10);
+		ptr->delay = irand(10);
 		ptr->scaleZ = 0.5f;
 		ptr->scaleY = 0.5f;
 		ptr->scaleX = 0.5f;
@@ -257,7 +257,8 @@ void effSplashMain(EffectEntry* effect) {
 	position = initializeVec(&data->position);
 	type = data->type;
 
-	if (data->field_0x38 == 0) {
+	// First display pass samples the backdrop color under the splash instead of drawing it.
+	if (data->gotColor == 0) {
 		dispEntry(CAMERA_3D, dispCalcZ(&position), 8, effSplashGetCol, effect);
 		return;
 	}
@@ -289,8 +290,8 @@ void effSplashMain(EffectEntry* effect) {
 
 	data++;
 	for (i = 1; i < effect->count; i++, data++) {
-		if (data->field_0x28 != 0) {
-			data->field_0x28--;
+		if (data->delay != 0) {
+			data->delay--;
 			continue;
 		}
 
@@ -378,8 +379,9 @@ void effSplashGetCol(enum CameraId camId, void* param) {
 		data->color.b = ((u8*)&color)[3];
 		data->color.a = 0xFF;
 	}
-	data->field_0x38 = 1;
+	data->gotColor = 1;
 	palette = unk_80224298();
+	// A per-map color lookup overrides the backdrop sample.
 	data->color.r = ((u8*)&palette)[0];
 	data->color.g = ((u8*)&palette)[1];
 	data->color.b = ((u8*)&palette)[2];
@@ -402,14 +404,14 @@ static inline void effSplashCallDL(void** dl, const u8* size) {
 void effSplashDisp(enum CameraId camId, void* param) {
 	EffectEntry* effect = param;
 	SplashData* data = effect->userdata;
-	f32 colA;
+	f32 colR;
 	Mtx mtxA;
-	f32 eight;
-	f32 halfq;
+	f32 size;
+	f32 negHalfSize;
 	f32 radiusA;
 	f32 radiusB;
-	f32 colB;
-	f32 fourq;
+	f32 colG;
+	f32 halfSize;
 	GXTexObj tex;
 	f32 offsetB;
 	Mtx mtxB;
@@ -424,7 +426,7 @@ void effSplashDisp(enum CameraId camId, void* param) {
 	Mtx mtxD;
 	s32 mode;
 	GXColor color;
-	f32 mulT;
+	f32 colB;
 
 	cam = camGetPtr(camId);
 	type = data->type;
@@ -472,7 +474,7 @@ void effSplashDisp(enum CameraId camId, void* param) {
 
 	data++;
 	for (i = 1; i < mode + 1; i++, data++) {
-		if (data->field_0x28 != 0) {
+		if (data->delay != 0) {
 			continue;
 		}
 
@@ -550,17 +552,17 @@ void effSplashDisp(enum CameraId camId, void* param) {
 			mulR = 1.0f;
 			mulG = 1.0f;
 			mulB = 1.0f;
-			colA = (f32)color.r / 255.0f;
-			colB = (f32)color.g / 255.0f;
-			mulT = (f32)color.b / 255.0f;
+			colR = (f32)color.r / 255.0f;
+			colG = (f32)color.g / 255.0f;
+			colB = (f32)color.b / 255.0f;
 			break;
 		case 2:
 			mulR = 1.0f;
 			mulG = 0.869f;
 			mulB = 0.0f;
-			mulT = 0.0f;
-			colA = 1.0f;
-			colB = 0.314f;
+			colB = 0.0f;
+			colR = 1.0f;
+			colG = 0.314f;
 			break;
 		}
 
@@ -588,7 +590,7 @@ void effSplashDisp(enum CameraId camId, void* param) {
 				c = (f32)cos(angle);
 				s = (f32)sin(angle);
 				GXPosition3f32(radiusB * s, offsetB, radiusB * c);
-				GXColor4u8((u8)(255.0f * colA), (u8)(255.0f * colB), (u8)(255.0f * mulT), 0xFF);
+				GXColor4u8((u8)(255.0f * colR), (u8)(255.0f * colG), (u8)(255.0f * colB), 0xFF);
 				GXTexCoord2f32((f32)(j & 1), 2.1f);
 			}
 			break;
@@ -622,7 +624,7 @@ void effSplashDisp(enum CameraId camId, void* param) {
 	GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, GX_TEX_ST, GX_F32, 0);
 
 	for (i = mode + 1; i < effect->count; i++, data++) {
-		if (data->field_0x28 != 0) {
+		if (data->delay != 0) {
 			continue;
 		}
 
@@ -652,20 +654,20 @@ void effSplashDisp(enum CameraId camId, void* param) {
 			break;
 		}
 
-		eight = 8.0f;
+		size = 8.0f;
 		GXBegin(GX_QUADS, GX_VTXFMT0, 4);
-		halfq = -eight / 2.0f;
-		fourq = 4.0f;
-		GXPosition3f32(halfq, fourq, 0.0f);
+		negHalfSize = -size / 2.0f;
+		halfSize = 4.0f;
+		GXPosition3f32(negHalfSize, halfSize, 0.0f);
 		GXColor4u8((u8)(255.0f * mulR), (u8)(255.0f * mulG), (u8)(255.0f * mulB), 0xFF);
 		GXTexCoord2f32(0.0f, 0.0f);
-		GXPosition3f32(fourq, fourq, 0.0f);
+		GXPosition3f32(halfSize, halfSize, 0.0f);
 		GXColor4u8((u8)(255.0f * mulR), (u8)(255.0f * mulG), (u8)(255.0f * mulB), 0xFF);
 		GXTexCoord2f32(1.0f, 0.0f);
-		GXPosition3f32(fourq, halfq, 0.0f);
+		GXPosition3f32(halfSize, negHalfSize, 0.0f);
 		GXColor4u8((u8)(255.0f * mulR), (u8)(255.0f * mulG), (u8)(255.0f * mulB), 0xFF);
 		GXTexCoord2f32(1.0f, 1.0f);
-		GXPosition3f32(halfq, halfq, 0.0f);
+		GXPosition3f32(negHalfSize, negHalfSize, 0.0f);
 		GXColor4u8((u8)(255.0f * mulR), (u8)(255.0f * mulG), (u8)(255.0f * mulB), 0xFF);
 		GXTexCoord2f32(0.0f, 1.0f);
 	}

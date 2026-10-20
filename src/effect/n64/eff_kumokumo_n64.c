@@ -100,7 +100,7 @@ static inline void effKumokumoCallDL(void** dl, const u8* size) {
 // The int->float magic doubles pool as anonymous labels (@392/@393/@447); the target names them
 // double_to_int_802faaa0/double_to_int_mask_802faaa8/360.0. The relocation names differ,
 // but the instruction bytes are identical.
-EffectEntry* effKumokumoN64Entry(s32 type, s32 param, f32 x, f32 y, f32 z, f32 scale, f32 a6, f32 a7) {
+EffectEntry* effKumokumoN64Entry(s32 type, s32 param, f32 x, f32 y, f32 z, f32 rotation, f32 a6, f32 scale) {
 	EffectEntry* effect;
 	effKumokumoData* data;
 	s32 count;
@@ -112,7 +112,7 @@ EffectEntry* effKumokumoN64Entry(s32 type, s32 param, f32 x, f32 y, f32 z, f32 s
 		count = 1;
 	}
 	if (type == 2) {
-		scale = 0.0f;
+		rotation = 0.0f;
 	}
 	// The four trailing NULs make the .rodata string object 16 bytes. The target has the 12-byte string
 	// ("KumokumoN64\0") followed by a 4-byte zero word; an explicit zero object would be emitted in the
@@ -124,7 +124,7 @@ EffectEntry* effKumokumoN64Entry(s32 type, s32 param, f32 x, f32 y, f32 z, f32 s
 	effect->callback = effKumokumoMain;
 	effect->flags |= 2;
 	data->type = type;
-	data->field_0x14 = 0;
+	data->frame = 0;
 	if (param <= 0) {
 		data->lifetime = 1000;
 	}
@@ -135,10 +135,10 @@ EffectEntry* effKumokumoN64Entry(s32 type, s32 param, f32 x, f32 y, f32 z, f32 s
 	data->x = x;
 	data->y = y;
 	data->z = z;
-	data->scale = a7;
+	data->scale = scale;
 	data->color2A = 0xff;
-	data->rotation = scale;
-	data->camera = 4;
+	data->rotation = rotation;
+	data->camera = CAMERA_3D;
 	data->texX = 0.0f;
 	data->texY = 0.0f;
 	data->texX2 = 0.0f;
@@ -244,7 +244,7 @@ EffectEntry* effKumokumoN64Entry(s32 type, s32 param, f32 x, f32 y, f32 z, f32 s
 // The type-3 respawn's angle must be built in the shared temp f1, not a dedicated local: reusing the
 // variable makes MWCC coalesce the raw (f32)irand(360) and its normalized value into f31, as the target
 // does. The type-0/4 decay writes scale/rotation without f3/f4 temporaries (with them MWCC colours
-// 30.0/scale to the opposite f-registers), and field_0x14 is copied to a local before the lifetime<16
+// 30.0/scale to the opposite f-registers), and frame is copied to a local before the lifetime<16
 // test so the compiler hoists its reload ahead of that branch's bge.
 void effKumokumoMain(EffectEntry* effect) {
 	effKumokumoData* data;
@@ -259,7 +259,7 @@ void effKumokumoMain(EffectEntry* effect) {
 	f32 f3;
 	f32 f4;
 	f32 k = 0.03125f;
-	s32 field14;
+	s32 frame;
 
 	data = effect->userdata;
 	pos = (Vec){ 0.0f, 0.0f, 0.0f };
@@ -276,17 +276,17 @@ void effKumokumoMain(EffectEntry* effect) {
 	if (data->lifetime < 1000) {
 		data->lifetime--;
 	}
-	data->field_0x14++;
+	data->frame++;
 	if (data->lifetime < 0) {
 		effDelete(effect);
 		return;
 	}
-	field14 = data->field_0x14;
+	frame = data->frame;
 	if (data->lifetime < 16) {
 		data->color1A = data->lifetime << 4;
 	}
-	if (field14 < 16) {
-		data->color1A = (field14 << 4) + 0xf;
+	if (frame < 16) {
+		data->color1A = (frame << 4) + 0xf;
 	}
 	data->texX += data->texXVel;
 	data->texY += data->texYVel;
@@ -343,7 +343,7 @@ void effKumokumoMain(EffectEntry* effect) {
 						data->lifetime = i * 15;
 						data->rotation = 0.0f;
 					}
-					data->rotation = (f32)(u32)(rz_tbl[(u32)data->field_0x14 % 31] + ((u32)data->field_0x14 * 180) / 31);
+					data->rotation = (f32)(u32)(rz_tbl[(u32)data->frame % 31] + ((u32)data->frame * 180) / 31);
 					data->rotation = (f32)fmod(data->rotation, 360.0);
 					break;
 				case 3:
@@ -394,7 +394,7 @@ void effKumokumoMain(EffectEntry* effect) {
 				default:
 					break;
 			}
-			data->field_0x14++;
+			data->frame++;
 		}
 	}
 	dispEntry(camera, dispCalcZ(&pos2), 2, effKumokumoDisp, effect);

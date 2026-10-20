@@ -67,7 +67,9 @@ static u32 color_rotation_data[] = {
 	0xFEB4FED5, 0xB4FEB4D5, 0xFEB4FEFE, 0xB4FED5AC,
 };
 
-// .sbss2 scratch words (declared in reverse: placed in reverse of declaration order).
+// .sbss2: four zeroed GXColor templates, copied before each draw: 0x80423310/18 keep their black RGB and get
+// only an alpha, 0x80423314/1c get RGB from color_rotation_data as well.
+// Declared in reverse: MWCC places them in reverse of declaration order.
 #pragma section ".sdata" ".sbss2"
 __declspec(section ".sdata") u32 unk_8042331c;
 __declspec(section ".sdata") u32 unk_80423318;
@@ -396,9 +398,9 @@ void effKissDisp(CameraId camId, void* param) {
 	PSMTXConcat(mtxA, scl, view);
 
 	GXSetNumChans(1);
-	GXSetChanCtrl(GX_COLOR0A0, GX_FALSE, GX_SRC_REG, GX_SRC_REG, 0, GX_DF_NONE, GX_AF_NONE);
+	GXSetChanCtrl(GX_COLOR0A0, GX_FALSE, GX_SRC_REG, GX_SRC_REG, GX_LIGHT_NULL, GX_DF_NONE, GX_AF_NONE);
 	GXSetNumTexGens(1);
-	GXSetTexCoordGen2(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_IDENTITY, GX_FALSE, 0x7d);
+	GXSetTexCoordGen2(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_IDENTITY, GX_FALSE, GX_PTIDENTITY);
 	GXSetNumTevStages(1);
 	GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR0A0);
 	GXSetTevColorOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
@@ -502,8 +504,8 @@ void effKissDisp(CameraId camId, void* param) {
 			}
 			PSMTXConcat(view, mtxA, mtxA);
 			PSMTXConcat(camera->view, mtxA, mtxA);
-			GXLoadPosMtxImm(mtxA, 0);
-			GXSetCurrentMtx(0);
+			GXLoadPosMtxImm(mtxA, GX_PNMTX0);
+			GXSetCurrentMtx(GX_PNMTX0);
 			GXBegin(GX_QUADS, GX_VTXFMT0, 4);
 			if (type == 3) {
 #ifdef MUST_MATCH
@@ -651,8 +653,8 @@ kiss_disp_body:
 			PSMTXConcat(rot, mtxA, mtxA);
 			PSMTXConcat(view, mtxA, mtxA);
 			PSMTXConcat(camera->view, mtxA, mtxA);
-			GXLoadPosMtxImm(mtxA, 0);
-			GXSetCurrentMtx(0);
+			GXLoadPosMtxImm(mtxA, GX_PNMTX0);
+			GXSetCurrentMtx(GX_PNMTX0);
 			GXBegin(GX_QUADS, GX_VTXFMT0, 4);
 			{
 #ifdef MUST_MATCH
@@ -737,9 +739,9 @@ void effKissDisp2(CameraId camId, void* param) {
 	PSMTXConcat(trans, scale, local);
 
 	GXSetNumChans(1);
-	GXSetChanCtrl(GX_COLOR0A0, GX_FALSE, GX_SRC_REG, GX_SRC_REG, 0, GX_DF_NONE, GX_AF_NONE);
+	GXSetChanCtrl(GX_COLOR0A0, GX_FALSE, GX_SRC_REG, GX_SRC_REG, GX_LIGHT_NULL, GX_DF_NONE, GX_AF_NONE);
 	GXSetNumTexGens(1);
-	GXSetTexCoordGen2(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, 0x3C, GX_FALSE, 0x7D);
+	GXSetTexCoordGen2(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_IDENTITY, GX_FALSE, GX_PTIDENTITY);
 	GXSetNumTevStages(1);
 	GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR0A0);
 	GXSetTevColorOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);

@@ -55,27 +55,27 @@ void FontDrawColor(GXColor* color);
 #endif
 
 typedef struct FighterEntry {
-    u16 flags;         // 0x00
+    u16 flags;         // 0x00 bits: 1 major, 2 minor, 4 champion, 8 player; 0x100-0x1000 pin story fighters to fixed ranks
     u16 pad_02;        // 0x02
     const char* name;  // 0x04
-    const char* name2; // 0x08
-    s32 field_0C;      // 0x0C
-    s32 battle1;       // 0x10
-    s32 battle2;       // 0x14
-    s16 field_18;      // 0x18
+    const char* title; // 0x08
+    s32 setupId;       // 0x0C battle setup table index
+    const char* taunt; // 0x10 msg id shown when the battle starts
+    const char* victory; // 0x14 msg id shown after the battle
+    s16 defaultScore;  // 0x18 starting ranking score
     u16 pad_1A;        // 0x1A
 } FighterEntry;
 
 typedef struct RuleEntry {
-    s32 field_00;    // 0x00
-    const char* msg; // 0x04
-    s32 field_08;    // 0x08
-    s32 field_0C;    // 0x0C
-    s32 field_10;    // 0x10
+    const char* name; // 0x00 rule title msg id
+    const char* msg;  // 0x04 rule description msg id
+    s32 kind;         // 0x08 rule kind: the _rule_msg_table index (NpcBattleInfo.battleRules[0])
+    s32 param;        // 0x0C the value printed by the rule display (battleRules[1])
+    s32 field_10;     // 0x10 battleRules[2]
 } RuleEntry;
 
 typedef struct RankEntry {
-    u16 flags; // 0x00
+    u16 flags; // 0x00 bits: 1 beaten (below us), 2 hidden, 4 player line
     u16 pad;   // 0x02
     s32 id;    // 0x04
     s16 score; // 0x08
@@ -88,28 +88,21 @@ typedef struct RankWork {
 } RankWork;
 
 typedef struct DispWork {
-    f32 field_00; // 0x0
-    f32 field_04; // 0x4
-    s32 field_08; // 0x8
+    f32 scroll;       // 0x0 current scroll offset, eases toward targetScroll
+    f32 targetScroll; // 0x4 scroll offset for the current page
+    s32 page;         // 0x8 current page index
 } DispWork;
 
 typedef struct PoseUser {
     Vec* locators; // 0x0
 } PoseUser;
 
-typedef struct BeltData {
-    u8 pad_00[8]; // 0x0
-    Vec pos;      // 0x8
-    u8 pad_14[8]; // 0x14
-    f32 field_1C; // 0x1C
-} BeltData;
-
 typedef struct GansWork {
     smartEntry* texData; // 0x0
     GXTexObj texObj;     // 0x4
-    s32 field_24;        // 0x24
-    s32 field_28;        // 0x28
-    s32 field_2C;        // 0x2C
+    s32 enabled;         // 0x24 monitor on/off
+    s32 alpha;           // 0x28 TEV color alpha, ramps toward 0 or 0x80
+    s32 texReady;        // 0x2C set after the scene is copied to the texture
 } GansWork;
 
 extern const u32 dat_tou_00009c38;
@@ -166,7 +159,7 @@ static f32 camGetRy(void);
 static USER_FUNC(getYoshiColor);
 static USER_FUNC(evt_tou_print_ranking);
 static void disp_proc(CameraId cameraId, void* param);
-static void printRanking(void); // TODO: real signature
+static void printRanking(void);
 static USER_FUNC(evt_tou_set_rule_result);
 static USER_FUNC(evt_tou_set_ranking_win_lose);
 static USER_FUNC(evt_tou_get_rule_info);
@@ -174,11 +167,11 @@ static USER_FUNC(evt_tou_get_fighter_battle_msg);
 static USER_FUNC(evt_tou_get_fighter_rank);
 static USER_FUNC(evt_tou_get_fighter_name2);
 static USER_FUNC(evt_tou_get_next_match);
-static void rankingControll(void); // TODO: real signature
+static void rankingControll(void);
 static void insert(s32* arr, s32 unused, s32 from, s32 to);
 static USER_FUNC(evt_rankingReInit);
-static void rankingExit(void); // TODO: real signature
-static void rankingInit(void); // TODO: real signature
+static void rankingExit(void);
+static void rankingInit(void);
 static s32 evt_open[165];
 s32 evt_doku_cake[234];
 s32 evt_michel_1[39];
@@ -975,7 +968,7 @@ EVT_BEGIN(unk_evt_tou_00012b54)
     RETURN
 EVT_END()
 
-static inline void doInsert(s32* arr, s32 n, s32 from, s32 to) {
+static inline void doInsert(s32* arr, s32 unused, s32 from, s32 to) {
     s32 i;
 
     if (from < to) {
@@ -2556,7 +2549,7 @@ EVT_BEGIN(evt_tou_match_after_default)
     IF_INT_EQUAL(LF(11), 1)
         CALL(evt_mario_set_dir, 270, 300, 0)
         CALL(evt_msg_print_party, STRING("stg3_tou_365"))
-        CALL(evt_pouch_remove_item, 65, LW(0))
+        CALL(evt_pouch_remove_item, ITEM_CHAMPS_BELT, LW(0))
     END_IF
     IF_INT_EQUAL(LF(12), 1)
         CALL(evt_mario_set_dir, 270, 300, 0)
@@ -2565,7 +2558,7 @@ EVT_BEGIN(evt_tou_match_after_default)
     IF_INT_EQUAL(LF(13), 1)
         CALL(evt_mario_set_dir, 270, 300, 0)
         CALL(evt_msg_print_party, STRING("stg3_tou_365_04_03"))
-        CALL(evt_pouch_add_item, 65, LW(0))
+        CALL(evt_pouch_add_item, ITEM_CHAMPS_BELT, LW(0))
     END_IF
     SET_VALUE(LF(0), 0)
     IF_INT_EQUAL(GSW(501), 10)
@@ -2738,7 +2731,7 @@ USER_FUNC(tou_champion_belt_27_text_34) {
         champion_belt_onoff[0] = 0;
     }
     pose = animPoseGetAnimPosePtr(npc->poseId);
-    loc = ((PoseUser*)*(void**)((u8*)pose + 0x15C))->locators;
+    loc = ((PoseUser*)pose->groupWorldPos)->locators;
     group = animPoseGetGroupIdx(npc->poseId, "locator8");
     cam = camGetPtr(CAMERA_3D);
     angle = reviseAngle((f32)atan2(-(cam->cameraAt.x - cam->cameraPos.x), -(cam->cameraAt.z - cam->cameraPos.z)) *
@@ -2749,25 +2742,25 @@ USER_FUNC(tou_champion_belt_27_text_34) {
     angle = reviseAngle(angle - pose->rotationY);
     handle = (EffectEntry*)event->userdata[0];
     ud = &handle->userdata;
-    ((BeltData*)*ud)->pos.x = loc[group].x;
-    ((BeltData*)*ud)->pos.y = loc[group].y;
-    ((BeltData*)*ud)->pos.z = loc[group].z;
+    ((effStarStoneData*)*ud)->x = loc[group].x;
+    ((effStarStoneData*)*ud)->y = loc[group].y;
+    ((effStarStoneData*)*ud)->z = loc[group].z;
     if ((angle > 90.0f && angle <= 270.0f) ||
         (angle < -90.0f && angle >= -270.0f)) {
-        ((BeltData*)*ud)->field_1C = 8.0f - (angle + camGetPtr(CAMERA_3D)->viewYaw);
+        ((effStarStoneData*)*ud)->rotY = 8.0f - (angle + camGetPtr(CAMERA_3D)->viewYaw);
     } else {
         cam = camGetPtr(CAMERA_3D);
-        ((BeltData*)*ud)->field_1C = -(angle + cam->viewYaw) - 8.0f;
+        ((effStarStoneData*)*ud)->rotY = -(angle + cam->viewYaw) - 8.0f;
     }
     if (npc->position.y <= -1000.0f) {
-        ((BeltData*)*ud)->pos.x = 0.0f;
-        ((BeltData*)*ud)->pos.y = -1000.0f;
-        ((BeltData*)*ud)->pos.z = 0.0f;
+        ((effStarStoneData*)*ud)->x = 0.0f;
+        ((effStarStoneData*)*ud)->y = -1000.0f;
+        ((effStarStoneData*)*ud)->z = 0.0f;
     }
     if (champion_belt_onoff[0] != 0) {
-        ((BeltData*)*ud)->pos.x = 0.0f;
-        ((BeltData*)*ud)->pos.y = -1000.0f;
-        ((BeltData*)*ud)->pos.z = 0.0f;
+        ((effStarStoneData*)*ud)->x = 0.0f;
+        ((effStarStoneData*)*ud)->y = -1000.0f;
+        ((effStarStoneData*)*ud)->z = 0.0f;
     }
     return EVT_RETURN_BLOCK;
 }
@@ -2858,19 +2851,19 @@ USER_FUNC(unk_tou_0000063c) {
 
 USER_FUNC(chk) {
     s32* args = event->args;
-    evtSetValue(event, args[0], partyChkJoin(4) != 0);
+    evtSetValue(event, args[0], partyChkJoin(PARTNER_YOSHI) != 0);
     return EVT_RETURN_DONE;
 }
 
 static USER_FUNC(getYoshiColor) {
     s32* args = event->args;
-    s32 color = pouchGetPartyColor(4);
+    s32 color = pouchGetPartyColor(PARTNER_YOSHI);
     evtSetValue(event, args[0], color);
     return EVT_RETURN_DONE;
 }
 
 USER_FUNC(onoff) {
-    ((GansWork*)gans_wp[0])->field_24 = evtGetValue(event, event->args[0]);
+    ((GansWork*)gans_wp[0])->enabled = evtGetValue(event, event->args[0]);
     return EVT_RETURN_DONE;
 }
 
@@ -2878,28 +2871,28 @@ void monitor_tev(void* param) {
     TevCallbackParam* p = param;
     GXColor color;
 
-    if (((GansWork*)gans_wp[0])->field_2C != 0) {
-        GXSetTexCoordGen2(1, 1, 4, 0x3c, 0, 0x7d);
+    if (((GansWork*)gans_wp[0])->texReady != 0) {
+        GXSetTexCoordGen2(GX_TEXCOORD1, GX_TG_MTX2x4, GX_TG_TEX0, GX_IDENTITY, GX_FALSE, GX_PTIDENTITY);
         GXLoadTexObj(smartTexObj(&((GansWork*)gans_wp[0])->texObj, (void**)((GansWork*)gans_wp[0])->texData), 1);
-        GXSetTevOrder(0, 1, 1, 0xff);
-        GXSetTevColorOp(0, 0, 0, 0, 1, 0);
-        GXSetTevAlphaOp(0, 0, 0, 0, 1, 0);
-        GXSetTevColorIn(0, 0xf, 0xf, 0xf, 8);
-        GXSetTevAlphaIn(0, 7, 7, 7, 4);
-        GXSetTevSwapMode(0, 0, 0);
-        GXSetTevOrder(1, 0, 0, 0xff);
-        GXSetTevColorOp(1, 0, 0, 0, 1, 0);
-        GXSetTevAlphaOp(1, 0, 0, 0, 1, 0);
-        GXSetTevColorIn(1, 8, 0, 3, 0xf);
-        GXSetTevAlphaIn(1, 7, 7, 7, 4);
-        GXSetTevSwapMode(1, 0, 0);
+        GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD1, GX_TEXMAP1, GX_COLOR_NULL);
+        GXSetTevColorOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+        GXSetTevAlphaOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+        GXSetTevColorIn(GX_TEVSTAGE0, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ZERO, GX_CC_TEXC);
+        GXSetTevAlphaIn(GX_TEVSTAGE0, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_TEXA);
+        GXSetTevSwapMode(GX_TEVSTAGE0, GX_TEV_SWAP0, GX_TEV_SWAP0);
+        GXSetTevOrder(GX_TEVSTAGE1, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR_NULL);
+        GXSetTevColorOp(GX_TEVSTAGE1, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+        GXSetTevAlphaOp(GX_TEVSTAGE1, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+        GXSetTevColorIn(GX_TEVSTAGE1, GX_CC_TEXC, GX_CC_CPREV, GX_CC_A0, GX_CC_ZERO);
+        GXSetTevAlphaIn(GX_TEVSTAGE1, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_TEXA);
+        GXSetTevSwapMode(GX_TEVSTAGE1, GX_TEV_SWAP0, GX_TEV_SWAP0);
 #ifdef MUST_MATCH
-        color = monitorColor(((GansWork*)gans_wp[0])->field_28);
+        color = monitorColor(((GansWork*)gans_wp[0])->alpha);
 #else
         color = *(GXColor*)&dat_tou_00009c38;
-        color.a = ((GansWork*)gans_wp[0])->field_28;
+        color.a = ((GansWork*)gans_wp[0])->alpha;
 #endif
-        GXSetTevColor(1, color);
+        GXSetTevColor(GX_TEVREG0, color);
         p->field_C = 2;
         p->field_14 = 2;
         p->field_10 = 2;
@@ -2908,35 +2901,35 @@ void monitor_tev(void* param) {
 
 USER_FUNC(make_monitor) {
     NpcEntry* npc = npcNameToPtr_NoAssert(
-        evtGetValue(NULL, 0xf5de0180) < 0xac ? "ガンス" : "キノシコワ");
+        evtGetValue(NULL, GSW(0)) < 0xac ? "ガンス" : "キノシコワ");
     GansWork* work;
 
     if (isFirstCall) {
-        work = (GansWork*)_mapAlloc(0x30);
+        work = (GansWork*)_mapAlloc(sizeof(GansWork));
         event->userdata[0] = (s32)work;
-        work->field_24 = 0;
-        work->field_2C = 0;
+        work->enabled = 0;
+        work->texReady = 0;
     }
     if (npc == NULL) {
         return EVT_RETURN_BLOCK;
     }
     work = (GansWork*)event->userdata[0];
     gans_wp[0] = (u32)work;
-    work->texData = smartAlloc(GXGetTexBufferSize(0x80, 0x80, 5, 0, 0), 3);
-    GXInitTexObj(&work->texObj, work->texData->address, 0x80, 0x80, (GXTexFmt)5, (GXTexWrapMode)0, (GXTexWrapMode)0, 0);
+    work->texData = smartAlloc(GXGetTexBufferSize(0x80, 0x80, GX_TF_RGB5A3, 0, 0), 3);
+    GXInitTexObj(&work->texObj, work->texData->address, 0x80, 0x80, GX_TF_RGB5A3, GX_CLAMP, GX_CLAMP, 0);
     GXInitTexObjLOD(&work->texObj, GX_LINEAR, GX_LINEAR, 0.0f, 0.0f, 0.0f, GX_FALSE, GX_FALSE, GX_ANISO_1);
-    if (((GansWork*)gans_wp[0])->field_24) {
-        ((GansWork*)gans_wp[0])->field_28 += 4;
-        if (((GansWork*)gans_wp[0])->field_28 > 0x80) {
-            ((GansWork*)gans_wp[0])->field_28 = 0x80;
+    if (((GansWork*)gans_wp[0])->enabled) {
+        ((GansWork*)gans_wp[0])->alpha += 4;
+        if (((GansWork*)gans_wp[0])->alpha > 0x80) {
+            ((GansWork*)gans_wp[0])->alpha = 0x80;
         }
     } else {
-        ((GansWork*)gans_wp[0])->field_28 -= 4;
-        if (((GansWork*)gans_wp[0])->field_28 < 0) {
-            ((GansWork*)gans_wp[0])->field_28 = 0;
+        ((GansWork*)gans_wp[0])->alpha -= 4;
+        if (((GansWork*)gans_wp[0])->alpha < 0) {
+            ((GansWork*)gans_wp[0])->alpha = 0;
         }
     }
-    dispEntry((CameraId)2, 0.0f, 3, gans_tex, work);
+    dispEntry(CAMERA_SHADOW, 0.0f, 3, gans_tex, work);
     return EVT_RETURN_BLOCK;
 }
 
@@ -2978,7 +2971,7 @@ void gans_tex(CameraId cameraId, void* param) {
     camPos = vec3_tou_00009c14;
     C_MTXLookAt(lookAt, &camPos, &camUp, &camTarget);
     cam = *camGetPtr(cameraId);
-    npc = npcNameToPtr(evtGetValue(NULL, 0xf5de0180) < 0xac ? "ガンス" : "キノシコワ");
+    npc = npcNameToPtr(evtGetValue(NULL, GSW(0)) < 0xac ? "ガンス" : "キノシコワ");
     PSMTXCopy(lookAt, camGetCurPtr()->view);
     animPosePeraOff(npc->poseId);
     PSMTXIdentity(mtx);
@@ -2989,13 +2982,13 @@ void gans_tex(CameraId cameraId, void* param) {
     animPosePeraOn(npc->poseId);
     PSMTXCopy(cam.view, camGetCurPtr()->view);
     GXSetTexCopySrc(0, 0, 0x80, 0x80);
-    GXSetTexCopyDst(0x80, 0x80, (GXTexFmt)5, 0);
-    GXCopyTex(work->texData->address, 1);
+    GXSetTexCopyDst(0x80, 0x80, GX_TF_RGB5A3, GX_FALSE);
+    GXCopyTex(work->texData->address, GX_TRUE);
     GXPixModeSync();
     GXSetViewport(viewport[0], viewport[1], viewport[2], viewport[3], viewport[4], viewport[5]);
     GXSetProjectionv(proj);
     GXSetScissor(x, y, wd, ht);
-    work->field_2C = 1;
+    work->texReady = 1;
 }
 
 const f32 float_0p125_tou_0000a888 = 0.125f;
@@ -3006,7 +2999,7 @@ static USER_FUNC(evt_tou_print_ranking) {
     s32 c;
 
     if (isFirstCall) {
-        memset((void*)dwp[0], 0, 0xc);
+        memset((void*)dwp[0], 0, sizeof(DispWork));
         c = 0;
         for (i = 0; i < ((RankWork*)rank_wp[0])->count; i++) {
             u16 f = ((RankWork*)rank_wp[0])->entries[i].flags;
@@ -3018,14 +3011,14 @@ static USER_FUNC(evt_tou_print_ranking) {
                 c++;
             }
         }
-        ((DispWork*)dwp[0])->field_08 = c / 0xb;
+        ((DispWork*)dwp[0])->page = c / 0xb;
         {
-            f32 v = (f32)(((DispWork*)dwp[0])->field_08 * 0xdc);
+            f32 v = (f32)(((DispWork*)dwp[0])->page * 0xdc);
 
-            ((DispWork*)dwp[0])->field_04 = v;
-            ((DispWork*)dwp[0])->field_00 = v;
+            ((DispWork*)dwp[0])->targetScroll = v;
+            ((DispWork*)dwp[0])->scroll = v;
         }
-        evtGetValue(NULL, 0xf5de0180);
+        evtGetValue(NULL, GSW(0));
         for (i = 0; i < ((RankWork*)rank_wp[0])->count; i++) {
         }
         return EVT_RETURN_BLOCK;
@@ -3034,28 +3027,28 @@ static USER_FUNC(evt_tou_print_ranking) {
         psndSFXOn((const char*)0x13);
         return EVT_RETURN_YIELD;
     }
-    if (((DispWork*)dwp[0])->field_08 > 0 && (keyGetButtonTrg(0) & 0x40)) {
+    if (((DispWork*)dwp[0])->page > 0 && (keyGetButtonTrg(0) & 0x40)) {
         psndSFXOn((const char*)5);
-        ((DispWork*)dwp[0])->field_08--;
+        ((DispWork*)dwp[0])->page--;
     }
-    if (((DispWork*)dwp[0])->field_08 < 1 && (keyGetButtonTrg(0) & 0x20)) {
-        ((DispWork*)dwp[0])->field_08++;
+    if (((DispWork*)dwp[0])->page < 1 && (keyGetButtonTrg(0) & 0x20)) {
+        ((DispWork*)dwp[0])->page++;
         psndSFXOn((const char*)5);
     }
-    ((DispWork*)dwp[0])->field_04 = (f32)(((DispWork*)dwp[0])->field_08 * 0xdc);
+    ((DispWork*)dwp[0])->targetScroll = (f32)(((DispWork*)dwp[0])->page * 0xdc);
     {
         DispWork* w = (DispWork*)dwp[0];
 #ifdef MUST_MATCH
-        // match-only: reading field_00 through dwp[0] again instead of w keeps MWCC from reordering
-        // the two field loads (the natural w->field_00 form lands field_00 in f3 before f2's field_04)
-        f32 t = w->field_04 - ((DispWork*)dwp[0])->field_00;
+        // match-only: reading scroll through dwp[0] again instead of w keeps MWCC from reordering
+        // the two field loads (the natural w->scroll form lands scroll in f3 before f2's targetScroll)
+        f32 t = w->targetScroll - ((DispWork*)dwp[0])->scroll;
 #else
-        f32 t = w->field_04 - w->field_00;
+        f32 t = w->targetScroll - w->scroll;
 #endif
 
-        w->field_00 = t * TOU_F32(float_0p125_tou_0000a888) + w->field_00;
+        w->scroll = t * TOU_F32(float_0p125_tou_0000a888) + w->scroll;
     }
-    dispEntry((CameraId)8, TOU_F32(float_300_tou_0000a88c), 0, disp_proc, NULL);
+    dispEntry(CAMERA_2D, TOU_F32(float_300_tou_0000a88c), 0, disp_proc, NULL);
     return EVT_RETURN_BLOCK;
 }
 
@@ -3098,7 +3091,7 @@ static void disp_proc(CameraId cameraId, void* param) {
     char buf[0x100];
     f32 c250;
 
-    if (evtGetValue(NULL, 0xf5de0180) < 0xac) {
+    if (evtGetValue(NULL, GSW(0)) < 0xac) {
         dt = (FighterEntry*)fighterDt;
     } else {
         dt = (FighterEntry*)fighterDt_re;
@@ -3130,7 +3123,7 @@ static void disp_proc(CameraId cameraId, void* param) {
     i = 0;
     off = 0;
     for (; i < ((RankWork*)rank_wp[0])->count; i++, off += 0xc) {
-        f26 = ((DispWork*)dwp[0])->field_00 + ((TOU_F32(float_135_tou_0000a8b0) - (f32)y) - TOU_F32(float_40_tou_0000a8c4));
+        f26 = ((DispWork*)dwp[0])->scroll + ((TOU_F32(float_135_tou_0000a8b0) - (f32)y) - TOU_F32(float_40_tou_0000a8c4));
         if (!(((RankEntry*)((u8*)((RankWork*)rank_wp[0])->entries + off))->flags & 2)) {
             PSMTXScale(scale, TOU_F32(float_0p8_tou_0000a8c8), TOU_F32(float_0p8_tou_0000a8c8), TOU_F32(float_0p8_tou_0000a8c8));
             if (rank != 0) {
@@ -3166,7 +3159,7 @@ static void disp_proc(CameraId cameraId, void* param) {
     }
     GXSetScissor(scX, (u16)(s32)TOU_F32(float_137_tou_0000a8d8), scW, (u16)(s32)TOU_F32(float_228_tou_0000a8dc));
     {
-        f32 yv = TOU_F32(float_95_tou_0000a8e0) + ((DispWork*)dwp[0])->field_00;
+        f32 yv = TOU_F32(float_95_tou_0000a8e0) + ((DispWork*)dwp[0])->scroll;
         Vec pos = vec3_tou_00009914;
 
         pos.x = TOU_F32(float_15_tou_0000a8e4) + f31;
@@ -3174,7 +3167,7 @@ static void disp_proc(CameraId cameraId, void* param) {
         iconDispGx(TOU_F32(float_0p8_tou_0000a8c8), &pos, 0x10, 0x123);
     }
     GXSetScissor(0, 0, 0x260, 0x1e0);
-    if (((DispWork*)dwp[0])->field_08 > 0) {
+    if (((DispWork*)dwp[0])->page > 0) {
         Vec pos = vec3_tou_00009920;
 
         pos.x = f31 + TOU_F32(float_250_tou_0000a890);
@@ -3186,7 +3179,7 @@ static void disp_proc(CameraId cameraId, void* param) {
             iconDispGx(0.6f, &pos, 0x10, 0x7e);
         }
     }
-    if (((DispWork*)dwp[0])->field_08 < 1) {
+    if (((DispWork*)dwp[0])->page < 1) {
         Vec pos = vec3_tou_00009938;
 
         pos.x = f31 + TOU_F32(float_250_tou_0000a890);
@@ -3203,7 +3196,7 @@ static void disp_proc(CameraId cameraId, void* param) {
 static void printRanking(void) {
     s32 i;
 
-    evtGetValue(NULL, 0xf5de0180);
+    evtGetValue(NULL, GSW(0));
     for (i = 0; i < ((RankWork*)rank_wp[0])->count; i++) {
     }
 }
@@ -3302,7 +3295,7 @@ USER_FUNC(evt_tou_get_rule_msg2_27_text_182C) {
     }
 
     for (i = 0; i < n; i++) {
-        if (ruleId == dt[i].field_08) {
+        if (ruleId == dt[i].kind) {
             break;
         }
     }
@@ -3347,14 +3340,14 @@ static USER_FUNC(evt_tou_get_rule_info) {
 
     if (type == 0) {
         for (i = 0; i < n; i++) {
-            if (dt[i].field_08 == 6) {
+            if (dt[i].kind == 6) {
                 break;
             }
         }
     } else if (type == 10) {
         for (;;) {
             i = rand() % n;
-            if (dt[i].field_08 != 0x30 && dt[i].field_08 != 0x20 && dt[i].field_08 != 0x40) {
+            if (dt[i].kind != 0x30 && dt[i].kind != 0x20 && dt[i].kind != 0x40) {
                 break;
             }
         }
@@ -3362,9 +3355,9 @@ static USER_FUNC(evt_tou_get_rule_info) {
         i = rand() % n;
     }
 
-    evtSetValue(event, args[1], dt[i].field_00);
-    evtSetValue(event, args[2], dt[i].field_08);
-    evtSetValue(event, args[3], dt[i].field_0C);
+    evtSetValue(event, args[1], (s32)dt[i].name);
+    evtSetValue(event, args[2], dt[i].kind);
+    evtSetValue(event, args[3], dt[i].param);
     evtSetValue(event, args[4], dt[i].field_10);
     return EVT_RETURN_DONE;
 }
@@ -3379,8 +3372,8 @@ static USER_FUNC(evt_tou_get_fighter_battle_msg) {
     } else {
         dt = (FighterEntry*)fighterDt_re;
     }
-    evtSetValue(event, args[1], dt[idx].battle1);
-    evtSetValue(event, args[2], dt[idx].battle2);
+    evtSetValue(event, args[1], (s32)dt[idx].taunt);
+    evtSetValue(event, args[2], (s32)dt[idx].victory);
     return EVT_RETURN_DONE;
 }
 
@@ -3414,7 +3407,7 @@ static USER_FUNC(evt_tou_get_fighter_name2) {
     } else {
         dt = (FighterEntry*)fighterDt_re;
     }
-    evtSetValue(event, args[1], (s32)msgSearch(dt[idx].name2));
+    evtSetValue(event, args[1], (s32)msgSearch(dt[idx].title));
     return EVT_RETURN_DONE;
 }
 
@@ -3429,7 +3422,7 @@ USER_FUNC(evt_tou_get_fighter_info_27_text_1CB8) {
         dt = (FighterEntry*)fighterDt_re;
     }
     evtSetValue(event, args[1], (s32)msgSearch(dt[idx].name));
-    evtSetValue(event, args[2], ((FighterEntry*)fighterDt)[idx].field_0C);
+    evtSetValue(event, args[2], ((FighterEntry*)fighterDt)[idx].setupId);
     return EVT_RETURN_DONE;
 }
 
@@ -3468,7 +3461,7 @@ static USER_FUNC(evt_tou_get_next_match) {
     } else {
         evtSetValue(event, args[0], list[1]);
     }
-    evtGetValue(NULL, 0xf5de0180);
+    evtGetValue(NULL, GSW(0));
     for (i = 0; i < ((RankWork*)rank_wp[0])->count; i++) {
     }
     return EVT_RETURN_DONE;
@@ -3693,7 +3686,7 @@ static void rankingControll(void) {
         }
     }
 
-    entry = (RankEntry*)__memAlloc(0, sizeof(RankEntry) * ((RankWork*)rank_wp[0])->count);
+    entry = (RankEntry*)__memAlloc(HEAP_DEFAULT, sizeof(RankEntry) * ((RankWork*)rank_wp[0])->count);
     for (i = 0; i < nAbove; i++) {
         entry[i] = ((RankWork*)rank_wp[0])->entries[above[i]];
     }
@@ -3705,7 +3698,7 @@ static void rankingControll(void) {
         entry[j] = ((RankWork*)rank_wp[0])->entries[below[i]];
     }
     memcpy(((RankWork*)rank_wp[0])->entries, entry, sizeof(RankEntry) * ((RankWork*)rank_wp[0])->count);
-    __memFree(0, entry);
+    __memFree(HEAP_DEFAULT, entry);
 
     rank = 0;
     for (i = 0; i < ((RankWork*)rank_wp[0])->count; i++) {
@@ -3754,7 +3747,7 @@ USER_FUNC(unk_tou_00002e24) {
         }
     }
     _mapFree(((RankWork*)rank_wp[0])->entries);
-    pouchRemoveItem(0x41);
+    pouchRemoveItem(ITEM_CHAMPS_BELT);
     {
         s32 k;
         for (k = 0; k < 0x14; k++) {
@@ -3815,8 +3808,8 @@ static void rankingInit(void) {
     s32 j;
     RankEntry* e;
 
-    memset((RankWork*)rank_wp[0], 0, 8);
-    ((RankWork*)rank_wp[0])->count = evtGetValue(NULL, 0xf5de0180) < 0xac ? 0x17 : 0x15;
+    memset((RankWork*)rank_wp[0], 0, sizeof(RankWork));
+    ((RankWork*)rank_wp[0])->count = evtGetValue(NULL, GSW(0)) < 0xac ? 0x17 : 0x15;
     ((RankWork*)rank_wp[0])->entries = _mapAlloc(((RankWork*)rank_wp[0])->count * sizeof(RankEntry));
     memset(((RankWork*)rank_wp[0])->entries, 0, ((RankWork*)rank_wp[0])->count * sizeof(RankEntry));
     e = ((RankWork*)rank_wp[0])->entries;
@@ -3831,14 +3824,14 @@ static void rankingInit(void) {
                 ((u8*)e)[8 + j] = swByteGet(e->id * 2 + 0x207 + j);
             }
         } else {
-            e->score = ((FighterEntry*)fighterDt)[e->id].field_18;
+            e->score = ((FighterEntry*)fighterDt)[e->id].defaultScore;
         }
         if (e->id == 0x14) {
             e->flags |= 4;
         }
     }
     swSet(0x9e1);
-    if (evtGetValue(NULL, 0xf5de0180) < 0xac) {
+    if (evtGetValue(NULL, GSW(0)) < 0xac) {
         ((RankWork*)rank_wp[0])->entries[0x15].flags |= 2;
         ((RankWork*)rank_wp[0])->entries[0x16].flags |= 2;
         if (evtGetValue(NULL, 0xf84064ec)) {

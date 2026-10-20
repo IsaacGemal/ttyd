@@ -348,6 +348,7 @@ void unk_aji_00000ed0(s32 state, smartEntry* smart) {
     MessageData* data = smart->address;
     EventEntry* event = data->event;
 
+    // state 5 = a text glyph is displayed; start the statue mouth animation if it isn't running
     if ((EventEntry*)event->lwData[8] == NULL || !evtCheckID(((EventEntry*)event->lwData[8])->eventId)) {
         if (state == 5) {
             event->lwData[8] = (s32)evtEntry(UNK_0x00022c3c, 0, 0);
@@ -361,6 +362,7 @@ static void callback(s32 state, smartEntry* smart) {
 
     data = smart->address;
     event = data->event;
+    // state 3 = A/B pressed at a 0xFFFE wait point (msgdrv choiceState 2); lwData[5] counts the waits passed
     if (strcmp(data->tag, "stg7_aji_06") == 0) {
         if (state == 3) {
             event->lwData[5]++;
@@ -383,6 +385,7 @@ static void callback(s32 state, smartEntry* smart) {
 
     data = smart->address;
     event = data->event;
+    // state 5 = a text glyph is displayed; start the statue mouth animation if it isn't running
     if ((EventEntry*)event->lwData[8] == NULL || !evtCheckID(((EventEntry*)event->lwData[8])->eventId)) {
         if (state == 5) {
             event->lwData[8] = (s32)evtEntry(UNK_0x00022c3c, 0, 0);
@@ -440,6 +443,7 @@ EVT_BEGIN(kuizu_sekizou)
     WAIT_MS(500)
     CALL(evt_cam3d_evt_set, 0, 83, 591, 0, 100, 91, 1000, 11)
     WAIT_MS(1000)
+    // LW(13) questions asked, LW(14) correct answers, LW(15) wrong answers, LF(0) last answer correct
     SET_VALUE(LW(13), 0)
     SET_VALUE(LW(14), 0)
     SET_VALUE(LW(15), 0)

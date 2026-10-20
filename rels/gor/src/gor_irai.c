@@ -31,8 +31,8 @@ typedef struct IraiWork {
     s32 cursor;                  // 0x080
     s32 prevCursor;              // 0x084
     s32 top;                     // 0x088
-    s32 unk_0x8C;                // 0x08C
-    s32 unk_0x90;                // 0x090
+    s32 cursorX;                 // 0x08C, finger icon screen X
+    s32 cursorY;                 // 0x090, finger icon screen Y
     s32 unk_0x94;                // 0x094
     f32 scroll;                  // 0x098
     char clientName[30][0x15];   // 0x09C
@@ -628,7 +628,7 @@ USER_FUNC(irai_main_func) {
                 }
             }
         }
-        if (work->top > 0 && (keyGetButtonTrg(0) & 0x40)) {
+        if (work->top > 0 && (keyGetButtonTrg(0) & PAD_TRIGGER_L)) {
             s32 amt = 10;
             if (work->top < amt) {
                 amt = work->top;
@@ -637,7 +637,7 @@ USER_FUNC(irai_main_func) {
             work->cursor -= amt;
             psndSFXOn((const char*)5);
         }
-        if (work->top < work->count - 10 && (keyGetButtonTrg(0) & 0x20)) {
+        if (work->top < work->count - 10 && (keyGetButtonTrg(0) & PAD_TRIGGER_R)) {
             s32 amt = 10;
             if (work->count - 10 - work->top < amt) {
                 amt = work->count - 10 - work->top;
@@ -651,9 +651,9 @@ USER_FUNC(irai_main_func) {
         }
         work->prevCursor = work->cursor;
         work->scroll += ((f32)(work->top * 30) - work->scroll) / 6.0f;
-        work->unk_0x8C = -0x81;
-        work->unk_0x90 = 0x78 - (work->cursor - work->top) * 0x1E;
-        iconSetPos("iraiYubi", (f32)work->unk_0x8C, (f32)work->unk_0x90, 0.0f);
+        work->cursorX = -0x81;
+        work->cursorY = 0x78 - (work->cursor - work->top) * 0x1E;
+        iconSetPos("iraiYubi", (f32)work->cursorX, (f32)work->cursorY, 0.0f);
         iconFlagOff("iraiYubi", 2);
         iconSetPos("iraiArrowUp", 231.0f, 178.0f, 0.0f);
         iconSetPos("iraiArrowDown", 231.0f, -190.0f, 0.0f);

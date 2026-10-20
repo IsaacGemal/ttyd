@@ -20,15 +20,15 @@ EffectEntry* effRankupEntry(s32 type, f32 x, f32 y, f32 z) {
 	entry->callback = effRankupMain;
 	entry->flags |= 2;
 
-	data->field_0x0 = type;
+	data->type = type;
 	data->position.x = x;
 	data->position.y = y;
 	data->position.z = z;
 	data->scale = 1.0f;
 	data->animId = -1;
-	data->field_0x18 = 0;
+	data->state = 0;
 	data->field_0x1C = 0;
-	data->field_0x20 = 0xFF;
+	data->alpha = 0xFF;
 
 	return entry;
 }
@@ -50,14 +50,14 @@ void effRankupMain(EffectEntry* effect) {
 		effDelete(effect);
 	}
 	else {
-		switch (data->field_0x18) {
+		switch (data->state) {
 		case 0:
 			if (!animGroupBaseAsync("EFF_TekiKyouka", inBattle, NULL)) {
 				return;
 			}
 			data->animId = animPoseEntry("EFF_TekiKyouka", inBattle);
 			animPoseSetAnim(data->animId, "Z_1", 1);
-			data->field_0x18++;
+			data->state++;
 			break;
 		case 1:
 			if (animPoseGetLoopTimes(data->animId) > 1.0f) {
@@ -68,9 +68,9 @@ void effRankupMain(EffectEntry* effect) {
 			break;
 		}
 		if (!(animPoseGetLoopTimes(data->animId) < 0.61538464f)) {
-			data->field_0x20 -= 0x14;
-			if (data->field_0x20 < 0) {
-				data->field_0x20 = 0;
+			data->alpha -= 0x14;
+			if (data->alpha < 0) {
+				data->alpha = 0;
 			}
 		}
 		dispEntry(CAMERA_3D, dispCalcZ(&disp), 2, effRankupDisp, effect);
@@ -106,7 +106,7 @@ void effRankupDisp(CameraId camId, void* param) {
 		PSMTXConcat(sp70, sp10, sp70);
 		PSMTXConcat(sp70, sp40, sp70);
 		animPoseSetMaterialFlagOn(data->animId, 0x40);
-		animPoseSetMaterialEvtColor(data->animId, makeRankupColor(data->field_0x20));
+		animPoseSetMaterialEvtColor(data->animId, makeRankupColor(data->alpha));
 		animPoseMain(data->animId);
 		animPoseDrawMtx(data->animId, sp70, 1, 0.0f, 6.0f);
 		animPoseDrawMtx(data->animId, sp70, 2, 0.0f, 6.0f);

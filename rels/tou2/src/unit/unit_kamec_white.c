@@ -908,10 +908,10 @@ static EVT_BEGIN(init_event2)
         ELSE
             CALL(btlevtcmd_ChangeDataTable, -2, PTR(data_table_sky_bunsin))
         END_IF
-        CALL(btlevtcmd_OnAttribute, -2, 4)
-        CALL(btlevtcmd_OnPartsAttribute, -2, 1, 2097152)
-        CALL(btlevtcmd_OnPartsAttribute, -2, 1, 2048)
-        CALL(btlevtcmd_OnPartsAttribute, -2, 1, 4194304)
+        CALL(btlevtcmd_OnAttribute, -2, kFloating)
+        CALL(btlevtcmd_OnPartsAttribute, -2, 1, kHammerlikeCannotTarget)
+        CALL(btlevtcmd_OnPartsAttribute, -2, 1, kIsWinged)
+        CALL(btlevtcmd_OnPartsAttribute, -2, 1, kShellTosslikeCannotTarget)
         CALL(btlevtcmd_GetPos, -2, LW(0), LW(1), LW(2))
         CALL(btlevtcmd_SetPos, -2, LW(0), 40, LW(2))
         CALL(btlevtcmd_SetHomePos, -2, LW(0), 40, LW(2))
@@ -968,7 +968,7 @@ static USER_FUNC(kamec_get_live_num) {
     for (i = 0; i < 64; i++) {
         BattleUnit* unit = wp->units[i];
 
-        if (unit != NULL && unit->mAlliance == 1 && !BtlUnit_CheckStatus(unit, 0x1b)) {
+        if (unit != NULL && unit->mAlliance == 1 && !BtlUnit_CheckStatus(unit, STATUS_INSTANT_KILL)) {
             count++;
         }
     }
@@ -1142,10 +1142,10 @@ EVT_END()
 static EVT_BEGIN(dmg_fall_event)
     SET_VALUE(LW(10), -2)
     SET_VALUE(LW(11), 1)
-    CALL(btlevtcmd_OffAttribute, -2, 4)
-    CALL(btlevtcmd_OffPartsAttribute, -2, 1, 2048)
-    CALL(btlevtcmd_OffPartsAttribute, -2, 1, 2097152)
-    CALL(btlevtcmd_OffPartsAttribute, -2, 1, 4194304)
+    CALL(btlevtcmd_OffAttribute, -2, kFloating)
+    CALL(btlevtcmd_OffPartsAttribute, -2, 1, kIsWinged)
+    CALL(btlevtcmd_OffPartsAttribute, -2, 1, kHammerlikeCannotTarget)
+    CALL(btlevtcmd_OffPartsAttribute, -2, 1, kShellTosslikeCannotTarget)
     CALL(btlevtcmd_AnimeChangePoseType, -2, 1, 39)
     WAIT_MS(500)
     CALL(btlevtcmd_AnimeSetPoseTable, -2, 1, PTR(pose_table))
@@ -1201,7 +1201,7 @@ static USER_FUNC(kamec_get_bunsin) {
     for (i = 0; i < 64; i++) {
         BattleUnit* unit = wp->units[i];
 
-        if (unit != NULL && unit->currentKind == 0x34) {
+        if (unit != NULL && unit->currentKind == UNIT_WHITE_MAGIKOOPA_CLONE) {
             found[count] = i;
             count++;
         }
@@ -1262,7 +1262,7 @@ static EVT_BEGIN(attack_event)
     ELSE
         CALL(kamec_get_bunsin, LW(1), LW(2), LW(3), LW(4), LW(0))
         IF_INT_GREATER_OR_EQUAL(LW(0), 1)
-            CALL(btlevtcmd_CheckToken, -2, 16, LW(0))
+            CALL(btlevtcmd_CheckToken, -2, kConfusedAction, LW(0))
             IF_INT_NOT_EQUAL(LW(0), 0)
                 CALL_CHILD(subsetevt_confuse_flustered)
                 GOTO(99)
@@ -1354,7 +1354,7 @@ static USER_FUNC(kamec_shuffle) {
     for (i = 0; i < 64; i++) {
         list[count] = wp->units[i];
         if (list[count] != NULL
-            && (list[count]->currentKind == 0x33 || list[count]->currentKind == 0x34)) {
+            && (list[count]->currentKind == UNIT_WHITE_MAGIKOOPA || list[count]->currentKind == UNIT_WHITE_MAGIKOOPA_CLONE)) {
             count++;
         }
     }
@@ -1712,7 +1712,7 @@ static EVT_BEGIN(attack_magic_event)
         CALL(btlevtcmd_ChoiceSamplingEnemy, LW(9), LW(3), LW(4))
     END_IF
     IF_INT_EQUAL(LW(3), -1)
-        CALL(btlevtcmd_CheckToken, -2, 16, LW(0))
+        CALL(btlevtcmd_CheckToken, -2, kConfusedAction, LW(0))
         IF_INT_NOT_EQUAL(LW(0), 0)
             CALL_CHILD(subsetevt_confuse_flustered)
             RETURN
@@ -1879,7 +1879,7 @@ static EVT_BEGIN(support_magic_event)
     CALL(btlevtcmd_SamplingEnemy, -2, LW(0), LW(9))
     CALL(btlevtcmd_ChoiceSamplingEnemy, LW(9), LW(3), LW(4))
     IF_INT_EQUAL(LW(3), -1)
-        CALL(btlevtcmd_CheckToken, -2, 16, LW(0))
+        CALL(btlevtcmd_CheckToken, -2, kConfusedAction, LW(0))
         IF_INT_NOT_EQUAL(LW(0), 0)
             CALL_CHILD(subsetevt_confuse_flustered)
             SET_VALUE(LW(0), 1)
@@ -1887,17 +1887,17 @@ static EVT_BEGIN(support_magic_event)
         END_IF
         GOTO(99)
     END_IF
-    IF_INT_EQUAL(LW(15), 10)
-        CALL(btlevtcmd_CheckStatus, LW(3), 10, LW(0))
+    IF_INT_EQUAL(LW(15), STATUS_HUGE)
+        CALL(btlevtcmd_CheckStatus, LW(3), STATUS_HUGE, LW(0))
     END_IF
-    IF_INT_EQUAL(LW(15), 14)
-        CALL(btlevtcmd_CheckStatus, LW(3), 14, LW(0))
+    IF_INT_EQUAL(LW(15), STATUS_DEFENSE_UP)
+        CALL(btlevtcmd_CheckStatus, LW(3), STATUS_DEFENSE_UP, LW(0))
     END_IF
-    IF_INT_EQUAL(LW(15), 6)
-        CALL(btlevtcmd_CheckStatus, LW(3), 6, LW(0))
+    IF_INT_EQUAL(LW(15), STATUS_ELECTRIC)
+        CALL(btlevtcmd_CheckStatus, LW(3), STATUS_ELECTRIC, LW(0))
     END_IF
-    IF_INT_EQUAL(LW(15), 18)
-        CALL(btlevtcmd_CheckStatus, LW(3), 18, LW(0))
+    IF_INT_EQUAL(LW(15), STATUS_INVISIBLE)
+        CALL(btlevtcmd_CheckStatus, LW(3), STATUS_INVISIBLE, LW(0))
     END_IF
     IF_INT_EQUAL(LW(0), 1)
         SET_VALUE(LW(0), 0)
@@ -1923,25 +1923,25 @@ static EVT_BEGIN(support_magic_event)
 EVT_END()
 
 static EVT_BEGIN(dekadeka_magic_event)
-    SET_VALUE(LW(15), 10)
+    SET_VALUE(LW(15), STATUS_HUGE)
     CALL_CHILD(support_magic_event)
     RETURN
 EVT_END()
 
 static EVT_BEGIN(katikati_magic_event)
-    SET_VALUE(LW(15), 14)
+    SET_VALUE(LW(15), STATUS_DEFENSE_UP)
     CALL_CHILD(support_magic_event)
     RETURN
 EVT_END()
 
 static EVT_BEGIN(biribiri_magic_event)
-    SET_VALUE(LW(15), 6)
+    SET_VALUE(LW(15), STATUS_ELECTRIC)
     CALL_CHILD(support_magic_event)
     RETURN
 EVT_END()
 
 static EVT_BEGIN(trans_magic_event)
-    SET_VALUE(LW(15), 18)
+    SET_VALUE(LW(15), STATUS_INVISIBLE)
     CALL_CHILD(support_magic_event)
     RETURN
 EVT_END()
@@ -1951,7 +1951,7 @@ static EVT_BEGIN(recover_magic_event)
     CALL(btlevtcmd_SamplingEnemy, -2, LW(0), LW(9))
     CALL(btlevtcmd_ChoiceSamplingEnemy, LW(9), LW(3), LW(4))
     IF_INT_EQUAL(LW(3), -1)
-        CALL(btlevtcmd_CheckToken, -2, 16, LW(0))
+        CALL(btlevtcmd_CheckToken, -2, kConfusedAction, LW(0))
         IF_INT_NOT_EQUAL(LW(0), 0)
             CALL_CHILD(subsetevt_confuse_flustered)
             SET_VALUE(LW(0), 1)
@@ -1994,7 +1994,7 @@ static EVT_BEGIN(all_recover_magic_event)
     CALL(btlevtcmd_SamplingEnemy, -2, LW(0), LW(9))
     CALL(btlevtcmd_ChoiceSamplingEnemy, LW(9), LW(3), LW(4))
     IF_INT_EQUAL(LW(3), -1)
-        CALL(btlevtcmd_CheckToken, -2, 16, LW(0))
+        CALL(btlevtcmd_CheckToken, -2, kConfusedAction, LW(0))
         IF_INT_NOT_EQUAL(LW(0), 0)
             CALL_CHILD(subsetevt_confuse_flustered)
             SET_VALUE(LW(0), 1)
@@ -2073,7 +2073,7 @@ static USER_FUNC(eff_magic) {
     z += 5.0f;
     effect = effMagic1N64Entry(0, d, x, y, z, a, b, c);
     unit->work[5] = (s32)effect;
-    *(f32*)((u8*)effect->userdata + 0x28) = unit->mSizeMultiplier;
+    ((effMagic1Data*)effect->userdata)->scale = unit->mSizeMultiplier;
     return EVT_RETURN_DONE;
 }
 
@@ -2141,7 +2141,7 @@ static USER_FUNC(eff_magic_get_posX) {
     id = BattleTransID(event, evtGetValue(event, args[0]));
     unit = BattleGetUnitPtr(_battleWorkPointer, id);
     effect = (EffectEntry*)unit->work[5];
-    evtSetFloat(event, args[1], *(f32*)((u8*)effect->userdata + 0x10));
+    evtSetFloat(event, args[1], ((effMagic1Data*)effect->userdata)->offsetX);
     return EVT_RETURN_DONE;
 }
 

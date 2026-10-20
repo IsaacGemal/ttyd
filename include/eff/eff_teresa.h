@@ -18,7 +18,7 @@ typedef struct EffTeresaData {
 	s32 field_0x30;      // 0x30
 	f32 scale;           // 0x34
 	f32 angle;           // 0x38
-	s32 field_0x3C;      // 0x3C
+	s32 state;           // 0x3C
 } EffTeresaData;
 void effTeresaMain(EffectEntry* effect);
 #include "driver/camdrv.h"

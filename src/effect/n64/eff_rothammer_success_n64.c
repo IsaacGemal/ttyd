@@ -22,7 +22,7 @@ static inline Vec initializeVec(Vec* input) {
     return temp;
 }
 
-EffectEntry* effRotHammerSuccessN64Entry(s32 type, s32 count, f32 x, f32 y, f32 z, s32 a6) {
+EffectEntry* effRotHammerSuccessN64Entry(s32 type, s32 count, f32 x, f32 y, f32 z, s32 life) {
     EffectEntry* effect;
     effRotHammerSuccessData* data;
     f32 angle;
@@ -34,9 +34,9 @@ EffectEntry* effRotHammerSuccessN64Entry(s32 type, s32 count, f32 x, f32 y, f32 
     data = __memAlloc(HEAP_EFFECT, (count + 1) * sizeof(effRotHammerSuccessData));
     effect->userdata = data;
     effect->callback = effRotHammerSuccessMain;
-    data->field_0x24 = a6;
-    data->field_0x28 = 0;
-    data->field_0x2c = a6;
+    data->life = life;
+    data->frame = 0;
+    data->lifeMax = life;
     data->type = type;
     data->position.x = x;
     data->position.y = y;
@@ -50,7 +50,7 @@ EffectEntry* effRotHammerSuccessN64Entry(s32 type, s32 count, f32 x, f32 y, f32 
         data->velocity.y = 8.0f * (f32)cos(angle);
         data->velocity.z = 0.0f;
         data->angle = 0.0f;
-        data->field_0x20 = 20.0f;
+        data->rotSpeed = 20.0f;
         data->scale = 1.0f;
     }
     return effect;
@@ -66,15 +66,15 @@ void effRotHammerSuccessMain(EffectEntry* effect) {
     s32 max;
 
     position2 = position;
-    data->field_0x28++;
-    data->field_0x24--;
-    if (data->field_0x24 < 0) {
+    data->frame++;
+    data->life--;
+    if (data->life < 0) {
         effDelete(effect);
         return;
     }
 
-    life = data->field_0x24;
-    max = data->field_0x2c;
+    life = data->life;
+    max = data->lifeMax;
     life2 = life * 2;
     for (i = 1, data++; i < effect->count; i++, data++) {
         if (life > 5) {
@@ -83,7 +83,7 @@ void effRotHammerSuccessMain(EffectEntry* effect) {
             data->velocity.z *= 0.8f;
         }
         if (life < 5) {
-            data->field_0x20 *= 0.8f;
+            data->rotSpeed *= 0.8f;
             data->velocity.x *= 0.7f;
             data->velocity.y *= 0.7f;
             data->velocity.z *= 0.7f;
@@ -94,7 +94,7 @@ void effRotHammerSuccessMain(EffectEntry* effect) {
         data->position.x += data->velocity.x;
         data->position.y += data->velocity.y;
         data->position.z = 0.0f;
-        data->angle += data->field_0x20;
+        data->angle += data->rotSpeed;
     }
 
     dispEntry(CAMERA_3D, dispCalcZ(&position2), 2, effRotHammerSuccessDisp, effect);
@@ -116,16 +116,16 @@ void effRotHammerSuccessDisp(CameraId camId, void* param) {
     data = effect->userdata;
     GXSetNumChans(0);
     GXSetNumTexGens(1);
-    GXSetTexCoordGen2(0, 1, 4, 0x3C, 0, 0x7D);
+    GXSetTexCoordGen2(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_IDENTITY, GX_FALSE, GX_PTIDENTITY);
     effGetTexObjN64(0x1D, &texObj);
-    GXLoadTexObj(&texObj, 0);
+    GXLoadTexObj(&texObj, GX_TEXMAP0);
     GXSetNumTevStages(1);
-    GXSetTevOrder(0, 0, 0, 0xFF);
-    GXSetTevColorOp(0, 0, 0, 0, 1, 0);
-    GXSetTevAlphaOp(0, 0, 0, 0, 1, 0);
-    GXSetTevColorIn(0, 0xF, 0xF, 0xF, 2);
-    GXSetTevAlphaIn(0, 7, 1, 4, 7);
-    GXSetCullMode(0);
+    GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR_NULL);
+    GXSetTevColorOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+    GXSetTevAlphaOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+    GXSetTevColorIn(GX_TEVSTAGE0, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ZERO, GX_CC_C0);
+    GXSetTevAlphaIn(GX_TEVSTAGE0, GX_CA_ZERO, GX_CA_A0, GX_CA_TEXA, GX_CA_ZERO);
+    GXSetCullMode(GX_CULL_NONE);
     effSetVtxDescN64((effVtxArray*)size16x16_tex32x32_vtx);
 
     PSMTXTrans(mtx, data->position.x, data->position.y, data->position.z);
@@ -134,7 +134,7 @@ void effRotHammerSuccessDisp(CameraId camId, void* param) {
     PSMTXConcat(cam->view, mtx, viewMtx);
 
     color = (GXColor){ 0xDC, 0xDC, 0x28, 0xE6 };
-    GXSetTevColor(1, color);
+    GXSetTevColor(GX_TEVREG0, color);
 
     for (i = 1, data++; i < effect->count; i++, data++) {
         PSMTXTrans(mtx, data->position.x, data->position.y, data->position.z);
@@ -143,9 +143,9 @@ void effRotHammerSuccessDisp(CameraId camId, void* param) {
         PSMTXConcat(mtx, rotMtx, mtx);
         PSMTXConcat(mtx, scaleMtx, mtx);
         PSMTXConcat(viewMtx, mtx, mtx);
-        GXLoadPosMtxImm(mtx, 0);
-        GXSetCurrentMtx(0);
-        GXBegin(0x90, 0, 6);
+        GXLoadPosMtxImm(mtx, GX_PNMTX0);
+        GXSetCurrentMtx(GX_PNMTX0);
+        GXBegin(GX_TRIANGLES, GX_VTXFMT0, 6);
         tri2(0, 1, 2, 0, 0, 2, 3, 0);
     }
 }
