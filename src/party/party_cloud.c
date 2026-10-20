@@ -306,7 +306,9 @@ void cloud_use(PartyEntry* party) {
 #define cloud ((PartyCloud*)party->useStruct)
 
 // The pragma stops MWCC CSE-ing party->targetPos into a callee-saved register across the inlined movePos.
+#ifdef MUST_MATCH
 #pragma opt_common_subs off
+#endif
 static inline void cloudMoveToMarioStep(PartyEntry* party) {
     MarioWork* pm = party->playerPtr;
     f32 pa;
@@ -549,7 +551,9 @@ void N__cloud_use(PartyEntry* party) {
     }
 }
 #undef cloud
+#ifdef MUST_MATCH
 #pragma opt_common_subs reset
+#endif
 #undef MOVE_TO_MARIO
 
 void cloud_exit(PartyEntry* party) {
