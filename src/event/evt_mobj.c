@@ -2956,10 +2956,10 @@ s32 mobj_badgeblk(MapObjectEntry* obj) {
 #endif
                     item = itemNameToPtr(obj->name);
                     itemFlagOn(item, 0x10);
-                    *(f32*)((u8*)item + 0x80) = 0.7f;
-                    *(f32*)((u8*)item + 0x84) = 1.0f;
-                    *(s32*)((u8*)item + 0x88) = 0;
-                    *(f32*)((u8*)item + 0x58) = 360.0f;
+                    item->boundRate = 0.7f;
+                    item->gravity = 1.0f;
+                    item->boundLimit = 0;
+                    item->jumpPower = 360.0f;
                     psndSFXOn_3D((const char*)0x1BC, &obj->position);
                 } else {
                     pouchAddCoin(1);
@@ -3701,10 +3701,10 @@ s32 mobj_kururing_floor(MapObjectEntry* obj) {
 #endif
                         item = itemNameToPtr(obj->name);
                         itemFlagOn(item, 0x10);
-                        *(f32*)&item->field_0x70[0x10] = 0.6f;
-                        *(f32*)&item->field_0x70[0x14] = 1.0f;
-                        *(s32*)&item->field_0x70[0x18] = 5;
-                        *(f32*)&item->field_0x4D[0xB] = 300.0f;
+                        item->boundRate = 0.6f;
+                        item->gravity = 1.0f;
+                        item->boundLimit = 5;
+                        item->jumpPower = 300.0f;
                     }
                 }
             }
@@ -3973,14 +3973,13 @@ s32 mobj_koopa_ojama_blk_evt(MapObjectEntry* obj) {
                                   obj->position.z)) != NULL) {
                 itemStatusOn(item, 0x10);
                 itemFlagOn(item, 0x14);
-                *(s32*)((u8*)item + 0x7C) = 0x2710;
-                *(s32*)((u8*)item + 0x78) = 0;
-                *(f32*)((u8*)item + 0x80) = 0.45f;
-                *(f32*)((u8*)item + 0x84) = 0.7f;
-                *(s32*)((u8*)item + 0x88) = 0;
-                *(f32*)((u8*)item + 0x58) = 500.0f;
-                *(f32*)((u8*)item + 0x50) = 120.0f;
-                *(s32*)((u8*)item + 0x54) = 0x5a;
+                item->lifeTime = 0x2710;
+                item->boundRate = 0.45f;
+                item->gravity = 0.7f;
+                item->boundLimit = 0;
+                item->jumpPower = 500.0f;
+                item->moveSpeed = 120.0f;
+                item->moveDir = 0x5a;
                 psndSFXOn_3D((const char*)0x836, &obj->position);
             }
             obj->state = 0x63;
@@ -4247,14 +4246,13 @@ s32 mobj_koopa_badgeblk(MapObjectEntry* obj) {
                             item = itemNameToPtr(obj->name);
                             itemStatusOn(item, 0x10);
                             itemFlagOn(item, 0x14);
-                            *(s32*)((u8*)item + 0x7C) = 0x2710;
-                            *(s32*)((u8*)item + 0x78) = 0;
-                            *(f32*)((u8*)item + 0x80) = 0.45f;
-                            *(f32*)((u8*)item + 0x84) = 0.7f;
-                            *(s32*)((u8*)item + 0x88) = 0;
-                            *(f32*)((u8*)item + 0x58) = 500.0f;
-                            *(f32*)((u8*)item + 0x50) = 120.0f;
-                            *(s32*)((u8*)item + 0x54) = 0x5a;
+                            item->lifeTime = 0x2710;
+                            item->boundRate = 0.45f;
+                            item->gravity = 0.7f;
+                            item->boundLimit = 0;
+                            item->jumpPower = 500.0f;
+                            item->moveSpeed = 120.0f;
+                            item->moveDir = 0x5a;
                             psndSFXOn_3D((const char*)0x836, &obj->position);
                         } else {
                             kpaAddCoin(1);
