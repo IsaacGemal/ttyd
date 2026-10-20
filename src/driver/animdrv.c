@@ -1040,17 +1040,31 @@ u32 animPoseGetMaterialEvtColor(s32 poseId) {
 // is 0x2C bytes, and the position, normal, texture, visibility and node deltas are indexed by
 // the frame's byte offsets.
 
-#define ANIM_FRAME_TIME(f)       (*(f32*)((u8*)(f) + 0x0))
-#define ANIM_FRAME_POS_OFF(f)    (*(s32*)((u8*)(f) + 0x4))
-#define ANIM_FRAME_POS_COUNT(f)  (*(s32*)((u8*)(f) + 0x8))
-#define ANIM_FRAME_NRM_OFF(f)    (*(s32*)((u8*)(f) + 0xC))
-#define ANIM_FRAME_NRM_COUNT(f)  (*(s32*)((u8*)(f) + 0x10))
-#define ANIM_FRAME_TEX_OFF(f)    (*(s32*)((u8*)(f) + 0x14))
-#define ANIM_FRAME_TEX_COUNT(f)  (*(s32*)((u8*)(f) + 0x18))
-#define ANIM_FRAME_VIS_OFF(f)    (*(s32*)((u8*)(f) + 0x1C))
-#define ANIM_FRAME_VIS_COUNT(f)  (*(s32*)((u8*)(f) + 0x20))
-#define ANIM_FRAME_NODE_OFF(f)   (*(s32*)((u8*)(f) + 0x24))
-#define ANIM_FRAME_NODE_COUNT(f) (*(s32*)((u8*)(f) + 0x28))
+typedef struct AnimFrame {
+    f32 time;      // 0x0
+    s32 posOff;    // 0x4
+    s32 posCount;  // 0x8
+    s32 nrmOff;    // 0xC
+    s32 nrmCount;  // 0x10
+    s32 texOff;    // 0x14
+    s32 texCount;  // 0x18
+    s32 visOff;    // 0x1C
+    s32 visCount;  // 0x20
+    s32 nodeOff;   // 0x24
+    s32 nodeCount; // 0x28
+} AnimFrame;
+
+#define ANIM_FRAME_TIME(f) (((AnimFrame*)(f))->time)
+#define ANIM_FRAME_POS_OFF(f) (((AnimFrame*)(f))->posOff)
+#define ANIM_FRAME_POS_COUNT(f) (((AnimFrame*)(f))->posCount)
+#define ANIM_FRAME_NRM_OFF(f) (((AnimFrame*)(f))->nrmOff)
+#define ANIM_FRAME_NRM_COUNT(f) (((AnimFrame*)(f))->nrmCount)
+#define ANIM_FRAME_TEX_OFF(f) (((AnimFrame*)(f))->texOff)
+#define ANIM_FRAME_TEX_COUNT(f) (((AnimFrame*)(f))->texCount)
+#define ANIM_FRAME_VIS_OFF(f) (((AnimFrame*)(f))->visOff)
+#define ANIM_FRAME_VIS_COUNT(f) (((AnimFrame*)(f))->visCount)
+#define ANIM_FRAME_NODE_OFF(f) (((AnimFrame*)(f))->nodeOff)
+#define ANIM_FRAME_NODE_COUNT(f) (((AnimFrame*)(f))->nodeCount)
 
 #define ANIM_FRAME_SIZE 0x2C
 
@@ -2960,10 +2974,10 @@ void animPaperPoseDisp(CameraId camId, void* param) {
 }
 
 // AnimData's paper fields (not declared in the header's truncated AnimData).
-#define ANIMDATA_F44(d) (*(f32*)((u8*)(d) + 0x44))
-#define ANIMDATA_F48(d) (*(f32*)((u8*)(d) + 0x48))
-#define ANIMDATA_F50(d) (*(f32*)((u8*)(d) + 0x50))
-#define ANIMDATA_F54(d) (*(f32*)((u8*)(d) + 0x54))
+#define ANIMDATA_F44(d) ((d)->field_0x44)
+#define ANIMDATA_F48(d) ((d)->field_0x48)
+#define ANIMDATA_F50(d) ((d)->field_0x50)
+#define ANIMDATA_F54(d) ((d)->field_0x54)
 // AnimationPose fields the header keeps as opaque padding.
 
 extern GXColor dat_80419a34;
