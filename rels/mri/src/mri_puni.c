@@ -2467,7 +2467,7 @@ void puniParaDamage(PuniData* puni) {
     }
 }
 
-// The compare and the add read field_0x574 again rather than through `before` (found by the permuter): with
+// The compare and the add read hp again rather than through `before` (found by the permuter): with
 // `before` in both, `before` lands in r5 where the target has r4.
 void puniParaRecover(PuniData* puni) {
     s16 before;
@@ -3035,7 +3035,7 @@ void puniModeNormal(PuniData* punidat) {
     }
 }
 
-// Picks the parent puni with the lowest field_0x11A. Kept as an inline helper so
+// Picks the parent puni with the lowest depth. Kept as an inline helper so
 // the loop pointer colours ahead of the field-load CSE temp (r3 in the original).
 static inline PuniData* puniParentpreFind(PuniData* punidat, s16* outMin) {
     s32 i;
@@ -3918,8 +3918,8 @@ void puniModePiyori(PuniData* punidat) {
     }
 }
 
-// The `field_0xE` store must be an unsigned 16-bit access so MWCC schedules `li r3, 0xd`
-// before it (the header declares `field_0xE` as s16); taking the field's address as u16* is the
+// The `prevMode` store must be an unsigned 16-bit access so MWCC schedules `li r3, 0xd`
+// before it (the header declares `prevMode` as s16); taking the field's address as u16* is the
 // only field-based way to get the target's order.
 void puniModeEscape(PuniData* punidat) {
     s32 i;
@@ -4019,7 +4019,7 @@ void puniModeRecover(PuniData* punidat) {
         if (punidat->windPower > 10.0f) {
 #ifdef MUST_MATCH
             // An unsigned 16-bit access makes MWCC schedule `li r3, 0xd` before the store, as in
-            // the target (the header declares `field_0xE` as s16).
+            // the target (the header declares `prevMode` as s16).
             *(u16*)&punidat->prevMode = punidat->mode;
 #else
             punidat->prevMode = punidat->mode;
@@ -5403,7 +5403,7 @@ void puni_puni_init(void) {
     memset(Punimap, 0, 0x24);
 }
 
-// case 7 keeps the `if (field_0x1DC != NULL)` block inside the `else`, so the field_0x1A0 branch skips both
+// case 7 keeps the `if (target != NULL)` block inside the `else`, so the windPower branch skips both
 // the search and the hit block on its way to the epilogue.
 void unk_mri_00012d58(PuniData* self) {
     switch (self->mode) {
