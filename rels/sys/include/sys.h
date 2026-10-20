@@ -10,20 +10,20 @@ typedef struct SysWorkEntry {
     f32 y;          // 0x04
     f32 z;          // 0x08
     f32 angle;      // 0x0C
-    s32 field_0x10; // 0x10
-    s32 field_0x14; // 0x14
-    s32 field_0x18; // 0x18
+    s32 timer;      // 0x10, frames to wait before the spin, then frames into it
+    s32 phase;      // 0x14, 0 waiting, 1 spinning, 2 spun
+    s32 palIndex;   // 0x18, texture index in the effect_sys palette
 } SysWorkEntry;
 
 typedef struct SysWork {
     s32 state;              // 0x00
     FileEntry* handle;      // 0x04
-    f32 field_0x8;          // 0x08
-    s32 field_0xC;          // 0x0C
-    s32 field_0x10;         // 0x10
-    s32 field_0x14;         // 0x14
-    s32 field_0x18;         // 0x18
-    f32 field_0x1C;         // 0x1C
+    f32 spinAngle;          // 0x08
+    s32 palIndex;           // 0x0C, texture index of the rotating icon
+    s32 frameCount;         // 0x10
+    s32 stage;              // 0x14, index into msg_tbl
+    s32 reveal;             // 0x18, revealed chars in the high byte, next char alpha in the low
+    f32 textAngle;          // 0x1C
     s32 count;              // 0x20
     SysWorkEntry entries[]; // 0x24
 } SysWork;

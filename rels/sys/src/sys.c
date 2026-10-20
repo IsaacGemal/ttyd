@@ -172,8 +172,8 @@ void display_func(CameraId cameraId, void* param) {
     f32 halfH;
     const u16* msg16;
     f32 w;
-    frame = work->field_0x10;
-    work->field_0x10 = frame + 1;
+    frame = work->frameCount;
+    work->frameCount = frame + 1;
     if (frame > 0x500) {
         frame -= 0x500;
     }
@@ -217,18 +217,18 @@ void display_func(CameraId cameraId, void* param) {
     GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_NRM, GX_NRM_XYZ, GX_F32, 0);
     GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, GX_TEX_ST, GX_F32, 0);
 
-    work->field_0x8 += 2.5f;
-    if (work->field_0x8 > 180.0f) {
-        work->field_0x8 = 0.0f;
-        work->field_0xC++;
-        work->field_0xC %= 4;
+    work->spinAngle += 2.5f;
+    if (work->spinAngle > 180.0f) {
+        work->spinAngle = 0.0f;
+        work->palIndex++;
+        work->palIndex %= 4;
     }
 
-    lightColor = getLightColor(90.0f + work->field_0x8);
+    lightColor = getLightColor(90.0f + work->spinAngle);
     GXSetChanMatColor(GX_COLOR0A0, (GXColor){ lightColor, lightColor, lightColor, 0xFF });
 
     PSMTXTrans(mtx, 0.0f, -40.0f, 0.0f);
-    PSMTXRotRad(mtx3, 'y', 0.017453292f * (90.0f + work->field_0x8));
+    PSMTXRotRad(mtx3, 'y', 0.017453292f * (90.0f + work->spinAngle));
     PSMTXConcat(mtx, mtx3, mtx);
     PSMTXConcat((MtxPtr)&cam->view, mtx, mtx);
     GXLoadPosMtxImm(mtx, GX_PNMTX0);
@@ -236,7 +236,7 @@ void display_func(CameraId cameraId, void* param) {
     GXLoadNrmMtxImm(mtx, GX_PNMTX0);
     GXSetCurrentMtx(GX_PNMTX0);
 
-    TEXGetGXTexObjFromPalette((TEXPalette*)work->handle->data[0], &tex, (u16)work->field_0xC);
+    TEXGetGXTexObjFromPalette((TEXPalette*)work->handle->data[0], &tex, (u16)work->palIndex);
     GXLoadTexObj(&tex, GX_TEXMAP0);
     GXBegin(GX_QUADS, GX_VTXFMT0, 4);
     halfW = (f32)(u16)GXGetTexObjWidth(&tex) / 2.0f;
@@ -254,11 +254,11 @@ void display_func(CameraId cameraId, void* param) {
     GXNormal3f32(0.0f, 0.0f, 1.0f);
     GXTexCoord2f32(0.0f, 1.0f);
 
-    msg = msgSearch((const char*)msg_tbl[work->field_0x14]);
+    msg = msgSearch((const char*)msg_tbl[work->stage]);
     FontDrawStart();
 
-    revealed = work->field_0x18 / 256;
-    alpha = work->field_0x18 % 256;
+    revealed = work->reveal / 256;
+    alpha = work->reveal % 256;
     msg16 = (const u16*)msg;
     for (j = 0; j < 0x2C; j += 2, msg16++) {
         if (j >= strlen(msg)) {
@@ -270,7 +270,7 @@ void display_func(CameraId cameraId, void* param) {
         PSMTXTrans(mtx, 0.0f, -40.0f, 0.0f);
         PSMTXRotRad(mtx3, 'z',
                     0.017453292f *
-                        (-8.181818f * (f32)j + work->field_0x1C));
+                        (-8.181818f * (f32)j + work->textAngle));
         PSMTXConcat(mtx, mtx3, mtx3);
         PSMTXTrans(mtx, 0.0f, 57.5f, 0.0f);
         PSMTXConcat(mtx3, mtx, mtx);
@@ -337,11 +337,11 @@ void display_func(CameraId cameraId, void* param) {
     for (i = 0; i < work->count; i++) {
         SysWorkEntry* entry = &work->entries[i];
 
-        if (entry->field_0x14 == 0) {
+        if (entry->phase == 0) {
             break;
         }
 
-        TEXGetGXTexObjFromPalette((TEXPalette*)work->handle->data[0], &tex, (u16)entry->field_0x18);
+        TEXGetGXTexObjFromPalette((TEXPalette*)work->handle->data[0], &tex, (u16)entry->palIndex);
         GXLoadTexObj(&tex, GX_TEXMAP0);
         TEXGetGXTexObjFromPalette((TEXPalette*)work->handle->data[0], &tex, (u16)niji_tbl[gp->language]);
         GXLoadTexObj(&tex, GX_TEXMAP1);
@@ -660,8 +660,8 @@ USER_FUNC(display) {
         work = _mapAlloc(0x104);
         event->userdata[0] = (s32)work;
         memset(work, 0, 0x104);
-        work->field_0x14 = value;
-        work->field_0x1C = 0.0f;
+        work->stage = value;
+        work->textAngle = 0.0f;
         work->count = 0;
         while (sysLangTbl(value)[work->count] != -1) {
             work->count++;
@@ -671,9 +671,9 @@ USER_FUNC(display) {
             work->entries[i].y = 40.0f;
             work->entries[i].z = 0.0f;
             work->entries[i].angle = 90.0f;
-            work->entries[i].field_0x10 = i * 0x14 + 1;
-            work->entries[i].field_0x14 = 0;
-            work->entries[i].field_0x18 = sysLangTbl(value)[i];
+            work->entries[i].timer = i * 0x14 + 1;
+            work->entries[i].phase = 0;
+            work->entries[i].palIndex = sysLangTbl(value)[i];
         }
     }
     work = (SysWork*)event->userdata[0];
@@ -689,31 +689,31 @@ USER_FUNC(display) {
             for (i = 0; i < work->count; i++) {
                 SysWorkEntry* entry = &work->entries[i];
 
-                switch (entry->field_0x14) {
+                switch (entry->phase) {
                     case 0:
-                        entry->field_0x10--;
-                        if (entry->field_0x10 < 0) {
-                            entry->field_0x10 = 0;
-                            entry->field_0x14++;
+                        entry->timer--;
+                        if (entry->timer < 0) {
+                            entry->timer = 0;
+                            entry->phase++;
                             effStardustN64SetDrawCam(effStardustN64Entry(4, entry->x, entry->y, entry->z, 40.0f), 5);
                         }
                         break;
                     case 1:
-                        entry->angle = intplGetValue(5, entry->field_0x10, 0x5A, 90.0f, 1800.0f);
-                        entry->field_0x10++;
-                        if (entry->field_0x10 > 0x5A) {
-                            entry->field_0x14++;
+                        entry->angle = intplGetValue(5, entry->timer, 0x5A, 90.0f, 1800.0f);
+                        entry->timer++;
+                        if (entry->timer > 0x5A) {
+                            entry->phase++;
                         }
                         break;
                     case 2:
                         if (i == work->count - 1) {
-                            work->field_0x1C += 0.8f;
-                            if (work->field_0x1C > 360.0f) {
-                                work->field_0x1C -= 360.0f;
+                            work->textAngle += 0.8f;
+                            if (work->textAngle > 360.0f) {
+                                work->textAngle -= 360.0f;
                             }
-                            work->field_0x18 += 0x30;
-                            if (work->field_0x18 > 0x2710) {
-                                work->field_0x18 = 0x2710;
+                            work->reveal += 0x30;
+                            if (work->reveal > 0x2710) {
+                                work->reveal = 0x2710;
                             }
                         }
                         break;
