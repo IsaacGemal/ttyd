@@ -14,7 +14,7 @@
 
 // Float pairs that precede the vertex arrays in the retail unit's .data; kept so
 // the unit's data section is complete. The arrays themselves are reached through
-// lbl_8039D5D0 (declared in the header) in effHokoriDisp under MUST_MATCH.
+// lbl_8039D5D0 (declared in the header).
 // The unit's own .data is reached only through lbl_8039D5D0 (the previous unit's last object), so keep it linked.
 #pragma force_active on
 __declspec(section ".data") u32 lbl_8039D5D0[2] = { 0xBF800000, 0x3F800000 };
@@ -127,12 +127,8 @@ void effHokoriMain(EffectEntry* effect) {
 	else {
 		type = data->type;
 		if (data->life < 0x18) {
-#ifdef MUST_MATCH
 			f32 k = 0.9f;
 			data->alpha = (s32)((f32)data->alpha * k);
-#else
-			data->alpha = (s32)((f32)data->alpha * 0.9f);
-#endif
 		}
 		i = 1;
 		data++;
@@ -184,9 +180,6 @@ void effHokoriDisp(CameraId cameraId, void* param) {
 	Mtx rot;
 	Mtx work;
 	effVtxArray* vtx;
-#ifdef MUST_MATCH
-	u8* vtxBase = (u8*)lbl_8039D5D0;
-#endif
 	s32 i;
 	s32 type;
 
@@ -243,24 +236,12 @@ void effHokoriDisp(CameraId cameraId, void* param) {
 		GXSetCurrentMtx(0);
 		if (type <= 1) {
 			if (i & 1) {
-#ifdef MUST_MATCH
-				vtx = (effVtxArray*)(vtxBase + 0x40);
-#else
 				vtx = (effVtxArray*)size16x32_tex32x64_vtx;
-#endif
 			} else {
-#ifdef MUST_MATCH
-				vtx = (effVtxArray*)(vtxBase + 0x78);
-#else
 				vtx = (effVtxArray*)size16x16_tex32x32_vtx;
-#endif
 			}
 		} else {
-#ifdef MUST_MATCH
-			vtx = (effVtxArray*)(vtxBase + 0xb0);
-#else
 			vtx = (effVtxArray*)size8x8_tex32x32_vtx;
-#endif
 		}
 		effSetVtxDescN64(vtx);
 		GXBegin(GX_TRIANGLES, GX_VTXFMT0, 6);

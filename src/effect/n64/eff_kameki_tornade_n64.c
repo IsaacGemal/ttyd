@@ -162,10 +162,9 @@ void effKamekiTornadeMain(EffectEntry* effect) {
 }
 // Build the two by-value GXColors in helpers so MWCC gives their argument copies the same stack
 // slots as the original (the trick from effBattenDisp2/effTimestampSetColor).
-#ifdef MUST_MATCH
-// MUST_MATCH: building the colour and calling GXSetTevColor inside the inline is what puts the
-// build/copy temps at the original's 0x28/0x2c and 0x20/0x24 slots; returning a GXColor from the
-// helper puts the first helper's build temp 4 bytes low (same shape as eff_fireworks_n64).
+// Building the colour and calling GXSetTevColor inside the inline is what puts the build/copy temps
+// at the original's 0x28/0x2c and 0x20/0x24 slots; returning a GXColor from the helper puts the first
+// helper's build temp 4 bytes low (same shape as eff_fireworks_n64).
 static inline void kamekiTornadeSetColor(effKamekiTornadeData* data, s32 field24) {
 	GXColor color = unk_80423160;
 
@@ -175,6 +174,7 @@ static inline void kamekiTornadeSetColor(effKamekiTornadeData* data, s32 field24
 	color.a = (u8)(s32)((f32)field24 * data->alphaScale);
 	GXSetTevColor(GX_TEVREG0, color);
 }
+#ifdef MUST_MATCH
 static inline void kamekiTornadeSetColor2(effKamekiTornadeData* data) {
 	GXColor color = *(GXColor*)&dat_8041f1d8;
 
@@ -184,15 +184,6 @@ static inline void kamekiTornadeSetColor2(effKamekiTornadeData* data) {
 	GXSetTevColor(GX_TEVREG1, color);
 }
 #else
-static inline GXColor kamekiTornadeSetColor(effKamekiTornadeData* data, s32 field24) {
-	GXColor color = unk_80423160;
-
-	color.r = data->colorR;
-	color.g = data->colorG;
-	color.b = data->colorB;
-	color.a = (u8)(s32)((f32)field24 * data->alphaScale);
-	return color;
-}
 static inline GXColor kamekiTornadeSetColor2(effKamekiTornadeData* data) {
 	GXColor color = *(GXColor*)&dat_8041f1d8;
 
@@ -208,7 +199,6 @@ static inline GXColor kamekiTornadeSetColor2(effKamekiTornadeData* data) {
 static inline void kamekiTornadeSetVtx(KamekiTornadeVtx* dst, KamekiTornadeVtx* src, Mtx mtx) {
 	Vec v;
 	memcpy(dst, src, sizeof(KamekiTornadeVtx));
-#ifdef MUST_MATCH
 	OSInitFastCast();
 	OSs16tof32(&dst->pos[0], &v.x);
 	OSs16tof32(&dst->pos[1], &v.y);
@@ -218,15 +208,6 @@ static inline void kamekiTornadeSetVtx(KamekiTornadeVtx* dst, KamekiTornadeVtx* 
 	OSf32tos16(&v.x, &dst->pos[0]);
 	OSf32tos16(&v.y, &dst->pos[1]);
 	OSf32tos16(&v.z, &dst->pos[2]);
-#else
-	v.x = dst->pos[0];
-	v.y = dst->pos[1];
-	v.z = dst->pos[2];
-	PSMTXMultVec(mtx, &v, &v);
-	dst->pos[0] = v.x;
-	dst->pos[1] = v.y;
-	dst->pos[2] = v.z;
-#endif
 }
 // The float constants are literals the compiler pools in first-use order. Declaring f19/angle/scale in
 // this order, and sharing one set of theta/s/rad/c locals between the two ring halves, gives the
@@ -286,13 +267,11 @@ void effKamekiTornadeDisp(CameraId camId, void* param) {
 	GXLoadTexObj(&texObj, GX_TEXMAP0);
 	GXLoadTexObj(&texObj, GX_TEXMAP1);
 
-#ifdef MUST_MATCH
 	kamekiTornadeSetColor(data, field24);
 
+#ifdef MUST_MATCH
 	kamekiTornadeSetColor2(data);
 #else
-	GXSetTevColor(GX_TEVREG0, kamekiTornadeSetColor(data, field24));
-
 	GXSetTevColor(GX_TEVREG1, kamekiTornadeSetColor2(data));
 #endif
 

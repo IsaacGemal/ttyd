@@ -533,32 +533,15 @@ inline Vec initializeVec(Vec* input) {
 }
 
 
-#ifdef MUST_MATCH
-// lbl_803B70C0 is evt_memcard's last object; the original reaches the wakka tables that follow it
-// as offsets from that symbol.
-#define DATA_AT(off, sym) (base + (off))
-#else
-#define DATA_AT(off, sym) ((u8*)(sym))
-#endif
-
-// MUST_MATCH: splitting the 20-entry display-list loop into this inline function gives it the
-// original's callee-saved colouring for the loop (dlptr/size_tbl/j in r27/r28/r29); inlined at
-// the call site the compiler instead colours them r28/r29/r27. The natural form is the #else loop.
-#ifdef MUST_MATCH
-static inline void wakkaDrawDL(u8* base) {
-    u32 j;
-    for (j = 0; j < 20; j++) {
-        GXCallDisplayList(((u8**)DATA_AT(0x1e8, wakka_dl_0_tbl))[j], wakka_dl_0_size_tbl[j] * 32);
-    }
-}
-#else
+// Splitting the 20-entry display-list loop into this inline function gives it the original's
+// callee-saved colouring for the loop (dlptr/size_tbl/j in r27/r28/r29); inlined at the call site
+// the compiler instead colours them r28/r29/r27.
 static inline void wakkaDrawDL(void) {
     u32 j;
     for (j = 0; j < 20; j++) {
         GXCallDisplayList(wakka_dl_0_tbl[j], wakka_dl_0_size_tbl[j] * 32);
     }
 }
-#endif
 
 void effUltraHammerDisp(enum CameraId camId, void *param) {
     EffectEntry *effect;
@@ -566,9 +549,6 @@ void effUltraHammerDisp(enum CameraId camId, void *param) {
     EffUltraHammerData *data;
     int i;
     s32 temp_r24;
-#ifdef MUST_MATCH
-    u8* base;
-#endif
     Mtx spC0;
     Mtx sp90;
     Mtx sp60;
@@ -576,9 +556,6 @@ void effUltraHammerDisp(enum CameraId camId, void *param) {
     GXTexObj sp10;
     
     effect = param;
-#ifdef MUST_MATCH
-    base = lbl_803B70C0;
-#endif
     data = effect->userdata;
     temp_r31 = camGetPtr(camId);
     temp_r24 = data->unk0;
@@ -626,7 +603,7 @@ void effUltraHammerDisp(enum CameraId camId, void *param) {
             GXClearVtxDesc();
             GXSetVtxDesc(GX_VA_POS, GX_INDEX8);
             GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_TEX_ST, GX_RGBA4, 10);
-            GXSetArray(GX_VA_POS, DATA_AT(0x40, wakka_vertex_tbl), 6);
+            GXSetArray(GX_VA_POS, (u8*)wakka_vertex_tbl, 6);
             GXSetVtxDesc(GX_VA_NRM, GX_INDEX8);
             GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_NRM, GX_TEX_S, GX_RGB8, 6);
             GXSetArray(GX_VA_NRM, &wakka_normal_tbl, 3);
@@ -635,12 +612,8 @@ void effUltraHammerDisp(enum CameraId camId, void *param) {
             GXSetArray(GX_VA_CLR0, &wakka_color0_tbl, 4);
             GXSetVtxDesc(GX_VA_TEX0, GX_INDEX8);
             GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, GX_TEX_ST, GX_RGBA4, 13);
-            GXSetArray(GX_VA_TEX0, DATA_AT(0x140, wakka_texcoord0_tbl), 4);
-#ifdef MUST_MATCH
-            wakkaDrawDL(base);
-#else
+            GXSetArray(GX_VA_TEX0, (u8*)wakka_texcoord0_tbl, 4);
             wakkaDrawDL();
-#endif
         }
     }
 }

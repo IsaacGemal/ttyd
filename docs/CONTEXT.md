@@ -11598,3 +11598,12 @@ makeConfettiColor1 (`*(GXColor*)&float_...` type-punned read). Build MATCH.
 - `#else` alone matched: itemdrv `itemseq_Bound`-area `dirX == 0.0f && dirZ == 0.0f` compare (the operand-swapped MUST_MATCH arm is gone).
 - The MUST_MATCH shape became the only version, comments reworded: majinai's `effMajinaiGetInBattle` inline and the `position` copy of `disp` (it must be declared before `work`); damage_star's `damageStarSetAmbColor`/`SetMatColor`/`SetTevColor` helper chain (the `#else` inline calls change `.sdata2` and bytes) and the named `f05`; eff_break's `t` temp in effBreakMain (`float_20 * data->scale` and `data->scale * float_20` both fail).
 - Left under MUST_MATCH: eff_break's redundant language test, the volatile zero in `PSMTXTrans`, the volatile `GXWGFifo` writes and the volatile `float_1_804210bc`; itemdrv's `vec3_802cac04`/`vec3_802cac1c` `.rodata` declspecs and the volatile `status` read; imgdrv's two `? 1 : 0` argument ternaries and the identical-arm `flags & 8` if/else; effdrv's `"\0"` format-string padding and the hand-written GQR5/psq_l asm helpers.
+
+## s-mmmix25: MUST_MATCH reduction (eff_kameki_tornade_n64, eff_hokori_n64, eff_ultra_hammer, win_main, evt_win)
+Structural only, no names added. The #else arm alone matched (guards dropped) in eff_hokori_n64 (vtx arrays reached by
+their own symbols, no lbl_8039D5D0 offsets) and eff_ultra_hammer (wakka tables by symbol, wakkaDrawDL() without base).
+MUST_MATCH shape made the only version: hokori `k = 0.9f` local, kameki SetVtx (SDK fast-cast inlines) and
+kamekiTornadeSetColor (GXSetTevColor inside the inline), win_main fog-colour helpers, evt_win `half = 0.5f` local.
+Still guarded: kameki string padding and SetColor2 (type-punned `*(GXColor*)&dat_8041f1d8` load), win_main GXPosition3f32
+FIFO macro and winFontSetC (reconstructed function), evt_win function-pointer casts, `*(u16*)` icon_id punned loads,
+the buttons do/while(0) tail and unitwin_icon_delete. Build MATCH.
