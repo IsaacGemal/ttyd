@@ -9848,3 +9848,28 @@ here), so 0x2A4 wants an f32 and the union another member; 0x39 an s8 flag; 0x52
 0.1 * the inertia length); 0x1DC and 0x1F0 HitEntry pointers checkWall stores; the 0x98/0xA4 Vec pair party_yoshi
 copies as one YoshiZeroVec6 (party_vivian and mot_damage index `field_0x98` by byte too). PartyEntry still raw in party_move: 0x3D, 0x3E
 (u8), 0x44 (u32, set to 0x10 beside followDist) and 0x52 (s16 contact counter partyMarioHosei returns: up to 100 while touching Mario, decays after).
+### Readability: MarioWork display Vecs, airTimerPeak, moveDir and the 0x2A4-0x2AC motion words (2026-10-19, Claude Haiku 5.5, n9-q-mot2; reviewed by Claude Opus 5.5)
+
+The 0x98-0xC8 pad is four Vecs, checked against mario.c's marioDisp/marioDispBlurSub matrix: `dispOfs` (0x98) and
+`dispOfs2` (0xA4) are added to position (blurPos for the blur copies) for the final translation; `dispPivot` (0xB0)
+is translated by -pivot before the display rotations and +pivot after them; `dispRot` (0xBC) holds x/z rotation
+degrees (y is never read; the y rotation is unk1A8 - targetYaw). 0x52 is `airTimerPeak` (s16): marioJump and
+koopa_motion store airTimer when jumpVelY turns non-positive, landing clears it, marioBoots (< 6) and
+marioChkHipAttack (>= 10) test it. 0x19C is `moveDir` (f32), the toMovedir() direction set beside directionView
+(evt_lecture saves it as stMdir4); the worker's `moveDir`/`wallYawCopy` union was dropped in review, since
+mario_hit's three wall checks just set the move direction to wallYaw. 0x2A4/0x2A8/0x2AC are per-motion scratch words
+that each motion types differently (mot_slit s32 counter, mot_ship anime frame, mot_roll flag word, mot_hammer s16,
+mot_jabara s32 y): the unions hold the f32 view (`field_0x2A4`; the existing `wCamVal1`) and the s32 sound handles
+`motionSfxId0`/`motionSfxId1` (mot_hip's two loops; mot_roll keeps its handle at 0x2A8 too). Review renamed the
+worker's `unk2A4`/`sfxId2A4`/`sfxId2A8`, which embedded offsets. `field_0x2AC` is f32; its only named users (mot_plane,
+mot_damage, mot_bottomless) read it as f32, and mot_roll/mot_jabara's s32 stores stay raw, so no codegen moved.
+mot_hip (55 sites), mot_jump (24) and mot_plane's MarioWork sites are named; mot_jump's MW/MWS16/MWS32 and mot_plane's
+MWVEC are gone (mot_jump keeps MWF32 for 0x2B4, mot_plane MF32/MFVEC for MotionPlaneData and the 0x18C pad). Matching build 32 files OK;
+all 17 changed C files compile to objects equivalent to the pre-branch ones in both the matching and the natural build
+(tools/obj_equiv.py, old sources with the old header). Overlap: n9-q-party3 converts party_yoshi's MarioWork casts to
+existing fields only (field_0x2B0, field_0x11C, hitobjHead, hitobjDamageReturn) and uses none of the renamed ones;
+its party_yoshi still has raw 0x98/0xA4 (dispOfs/dispOfs2), 0x19C (moveDir) and 0x2A4/0x2A8 that can take the new
+names after both land. Open, MarioWork: raw 0x52 in koopa_motion, mot_ship, mot_jabara, party_yoshi and evt_mario
+(evt_koopa_hip_attack); raw 0x19C in mot_hammer, party.c, party_yoshi; the 0x2A4-0x2AC raw users above; 0x18C (unk18C: a speed
+copied from baseSpeed in mot_plane, mot_ship and party_yoshi) is still a pad; 0x114/0x164, 0x1C4, 0x1DC, 0x1F0,
+0x1FC, 0x2B0/0x2B4/0x2B8 keep field names; peach.c's `unk170 + 0xC` still overruns into riderDelta.

@@ -1902,7 +1902,7 @@ void marioCheckWall(f32 a, f32 b) {
                 wp->wallYaw = b;
             }
         }
-        wp->wallYawCopy = wp->wallYaw;
+        wp->moveDir = wp->wallYaw;
     } else {
         wp->wallDist = 0.0f;
     }
@@ -2056,7 +2056,7 @@ void marioCheckWall_roll(f32 a, f32 b) {
     }
 
     if (a && wp->airTimer == 0) {
-        wp->wallYawCopy = wp->wallYaw;
+        wp->moveDir = wp->wallYaw;
     }
 
     if (wp->flags & 0x10000) {
@@ -2980,7 +2980,7 @@ void marioCheckWallShip(f32 a, f32 b) {
     }
 
     if (a && wp->airTimer == 0) {
-        wp->wallYawCopy = wp->wallYaw;
+        wp->moveDir = wp->wallYaw;
     }
 
     if (!a) {

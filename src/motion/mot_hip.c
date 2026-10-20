@@ -101,14 +101,14 @@ void mot_hip(void) {
         mario->dispPivot.y += dx;
         mario->dispOfs2.y = 0.0f;
         mario->currSubMotionId = 0;
-        mario->sfxId2A4 = -1;
-        mario->sfxId2A8 = -1;
+        mario->motionSfxId0 = -1;
+        mario->motionSfxId1 = -1;
     }
 
     switch (mario->currSubMotionId) {
     case 0:
-        mario->sfxId2A4 = psndSFXOn_3D((char*)0x158, &mario->position);
-        mario->sfxId2A8 = psndSFXOn_3D((char*)0xDB, &mario->position);
+        mario->motionSfxId0 = psndSFXOn_3D((char*)0x158, &mario->position);
+        mario->motionSfxId1 = psndSFXOn_3D((char*)0xDB, &mario->position);
         mario->spinSpeed = 0.0f;
         mario->baseSpeed = 0.0f;
         mario->currSubMotionId = 1;
@@ -139,13 +139,13 @@ void mot_hip(void) {
             marioOfsRotReset();
             m2->airTimer = 0;
             m2->airTimerPeak = 0;
-            if ((u32)m2->sfxId2A4 != 0xFFFFFFFF) {
-                psndSFXOff(m2->sfxId2A4);
-                m2->sfxId2A4 = -1;
+            if ((u32)m2->motionSfxId0 != 0xFFFFFFFF) {
+                psndSFXOff(m2->motionSfxId0);
+                m2->motionSfxId0 = -1;
             }
-            if ((u32)m2->sfxId2A8 != 0xFFFFFFFF) {
-                psndSFXOff(m2->sfxId2A8);
-                m2->sfxId2A8 = -1;
+            if ((u32)m2->motionSfxId1 != 0xFFFFFFFF) {
+                psndSFXOff(m2->motionSfxId1);
+                m2->motionSfxId1 = -1;
             }
             return;
         }
@@ -169,13 +169,13 @@ void mot_hip(void) {
             marioOfsRotReset();
             m2->airTimer = 0;
             m2->airTimerPeak = 0;
-            if ((u32)m2->sfxId2A4 != 0xFFFFFFFF) {
-                psndSFXOff(m2->sfxId2A4);
-                m2->sfxId2A4 = -1;
+            if ((u32)m2->motionSfxId0 != 0xFFFFFFFF) {
+                psndSFXOff(m2->motionSfxId0);
+                m2->motionSfxId0 = -1;
             }
-            if ((u32)m2->sfxId2A8 != 0xFFFFFFFF) {
-                psndSFXOff(m2->sfxId2A8);
-                m2->sfxId2A8 = -1;
+            if ((u32)m2->motionSfxId1 != 0xFFFFFFFF) {
+                psndSFXOff(m2->motionSfxId1);
+                m2->motionSfxId1 = -1;
             }
             return;
         }
@@ -205,13 +205,13 @@ void mot_hip(void) {
             marioOfsRotReset();
             m2->airTimer = 0;
             m2->airTimerPeak = 0;
-            if ((u32)m2->sfxId2A4 != 0xFFFFFFFF) {
-                psndSFXOff(m2->sfxId2A4);
-                m2->sfxId2A4 = -1;
+            if ((u32)m2->motionSfxId0 != 0xFFFFFFFF) {
+                psndSFXOff(m2->motionSfxId0);
+                m2->motionSfxId0 = -1;
             }
-            if ((u32)m2->sfxId2A8 != 0xFFFFFFFF) {
-                psndSFXOff(m2->sfxId2A8);
-                m2->sfxId2A8 = -1;
+            if ((u32)m2->motionSfxId1 != 0xFFFFFFFF) {
+                psndSFXOff(m2->motionSfxId1);
+                m2->motionSfxId1 = -1;
             }
             return;
         }
@@ -299,13 +299,13 @@ void mot_hip(void) {
             marioOfsRotReset();
             m2->airTimer = 0;
             m2->airTimerPeak = 0;
-            if ((u32)m2->sfxId2A4 != 0xFFFFFFFF) {
-                psndSFXOff(m2->sfxId2A4);
-                m2->sfxId2A4 = -1;
+            if ((u32)m2->motionSfxId0 != 0xFFFFFFFF) {
+                psndSFXOff(m2->motionSfxId0);
+                m2->motionSfxId0 = -1;
             }
-            if ((u32)m2->sfxId2A8 != 0xFFFFFFFF) {
-                psndSFXOff(m2->sfxId2A8);
-                m2->sfxId2A8 = -1;
+            if ((u32)m2->motionSfxId1 != 0xFFFFFFFF) {
+                psndSFXOff(m2->motionSfxId1);
+                m2->motionSfxId1 = -1;
             }
         }
         break;
@@ -377,13 +377,13 @@ void mot_hip_post(void) {
     marioOfsRotReset();
     mario->airTimer = 0;
     mario->airTimerPeak = 0;
-    if ((u32)mario->sfxId2A4 != 0xFFFFFFFF) {
-        psndSFXOff(mario->sfxId2A4);
-        mario->sfxId2A4 = -1;
+    if ((u32)mario->motionSfxId0 != 0xFFFFFFFF) {
+        psndSFXOff(mario->motionSfxId0);
+        mario->motionSfxId0 = -1;
     }
-    if ((u32)mario->sfxId2A8 != 0xFFFFFFFF) {
-        psndSFXOff(mario->sfxId2A8);
-        mario->sfxId2A8 = -1;
+    if ((u32)mario->motionSfxId1 != 0xFFFFFFFF) {
+        psndSFXOff(mario->motionSfxId1);
+        mario->motionSfxId1 = -1;
     }
 }
 

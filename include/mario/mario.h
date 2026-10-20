@@ -137,7 +137,7 @@ typedef struct MarioWork {
 	s16 unk4C;                     // 0x4C
 	s16 forceMoveTimer;            // 0x4E
     s16 airTimer;                  // 0x50
-    s16 airTimerPeak;              // 0x52, airTimer at the jump peak (koopa_motion); cleared with airTimer on landing (mot_hip, mot_jump)
+    s16 airTimerPeak;              // 0x52, airTimer when the jump peaks (marioJump, koopa_motion), cleared on landing; marioBoots and marioChkHipAttack test it
     s16 airTimerPrev;              // 0x54, airTimer copied at the end of the frame (mario.c, read by mario_kemuri)
     u8 field_0x56[0x5C - 0x56];    // 0x56
     s16 unk5C;                     // 0x5C
@@ -154,10 +154,10 @@ typedef struct MarioWork {
     f32 jumpJerkY;                 // 0x84, added to jumpAccelY each frame
     f32 jumpJerkStepY;             // 0x88, added to jumpJerkY each frame (0 unless a jump sets it)
     Vec position;                  // 0x8C
-    Vec dispOfs;                   // 0x98, display offset: mario.c's blur position sums it with dispOfs2 and blurPos
+    Vec dispOfs;                   // 0x98, display offset: marioDisp draws at position + dispOfs + dispOfs2 (the blur copies use blurPos)
     Vec dispOfs2;                  // 0xA4, second display offset, summed with dispOfs (mario.c blur position)
     Vec dispPivot;                 // 0xB0, display translation: -pivot before the display rotations, +pivot after them
-    Vec dispRot;                   // 0xBC, display rotation in degrees: x and z go into the matrix, y comes from unk1A8
+    Vec dispRot;                   // 0xBC, display rotation in degrees (x, z); y is not read: the y rotation comes from unk1A8 - targetYaw
     Vec scale;                     // 0xC8
     Vec lastGroundPos;             // 0xD4, position copied whenever airTimer is 0 (mot_jump, mot_roll)
     Vec field_0xE0;                // 0xE0, bgTmp source in mot_damage
@@ -189,10 +189,7 @@ typedef struct MarioWork {
 	f32 controlStickSensitivity;   // 0x190
 	f32 controlStickAngle;         // 0x194
     f32 targetYaw;                 // 0x198
-    union {
-        f32 moveDir;               // 0x19C, move direction set beside directionView (mot_hip, mot_jump, mot_ship, mot_roll)
-        f32 wallYawCopy;           // 0x19C, wallYaw copied here (mario_hit)
-    };
+    f32 moveDir;                   // 0x19C, move direction (toMovedir), set beside directionView; mario_hit sets it to wallYaw on wall contact
 	f32 directionView;             // 0x1A0
 	f32 unk1A4;                    // 0x1A4
     f32 unk1A8;                    // 0x1A8
@@ -258,15 +255,17 @@ typedef struct MarioWork {
         f32 spinSpeed;             // 0x2A0, added to unk1A8 each frame (mario_motion spin, mot_hip, evt_mario)
         f32 damageRootY;           // 0x2A0, surface height of the damage floor fallen into: splash height, start of the return arc (set_damage_root_ypos, mot_damage)
     };
+    // 0x2A4-0x2AC: per-motion scratch words; each motion gives them its own type (mot_slit's s32 counter,
+    // mot_ship's anime frame, mot_roll's flag word, mot_hammer's s16, mot_jabara's s32 y) through raw offsets.
     union {
-        f32 unk2A4;                // 0x2A4, f32 in mot_plane and mot_hammer
-        s32 sfxId2A4;              // 0x2A4, sound handle in mot_hip (-1 when none)
+        f32 field_0x2A4;           // 0x2A4, f32 in mot_plane (eased turn rate added to unk1A8), mot_hammer, mot_dokan
+        s32 motionSfxId0;          // 0x2A4, sound handle in mot_hip (-1 when none)
     };
     union {
-        f32 wCamVal1;              // 0x2A8, f32 step in mot_plane, mot_slit, mot_dokan, mot_hammer
-        s32 sfxId2A8;              // 0x2A8, sound handle in mot_hip (-1 when none)
+        f32 wCamVal1;              // 0x2A8, f32 step in mot_plane, mot_slit, mot_dokan, mot_hammer, mot_damage
+        s32 motionSfxId1;          // 0x2A8, sound handle in mot_hip and mot_roll (-1 when none)
     };
-    f32 field_0x2AC;               // 0x2AC
+    f32 field_0x2AC;               // 0x2AC, f32 in mot_plane, mot_damage, mot_slit and mot_bottomless (s32 0 in mot_roll/mot_jabara resets)
     f32 field_0x2B0;               // 0x2B0
     u8 field_0x2B4[0x2B8 - 0x2B4]; // 0x2B4
     f32 field_0x2B8;               // 0x2B8

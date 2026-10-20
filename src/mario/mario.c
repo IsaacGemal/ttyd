@@ -936,7 +936,7 @@ void marioReInit(void) {
 	f32 unk1A8;
 	f32 unk1AC;
 	f32 dirView;
-	f32 unk19C;
+	f32 moveDir;
 	s32 i;
 
 	highFlag = (wp = mp)->flags & 0x80000000;
@@ -952,7 +952,7 @@ void marioReInit(void) {
 	unk1A8 = wp->unk1A8;
 	unk1AC = wp->dispReqDir;
 	dirView = wp->directionView;
-	unk19C = wp->moveDir;
+	moveDir = wp->moveDir;
 	prevParty0 = wp->prevPartyMemberId[0];
 	prevParty1 = wp->prevPartyMemberId[1];
 	animGroup0 = wp->paperAnimGroupId[0];
@@ -982,7 +982,7 @@ void marioReInit(void) {
 	wp->unk1A8 = unk1A8;
 	wp->dispReqDir = unk1AC;
 	wp->directionView = dirView;
-	wp->moveDir = unk19C;
+	wp->moveDir = moveDir;
 	wp->prevPartyMemberId[0] = prevParty0;
 	wp->prevPartyMemberId[1] = prevParty1;
 	wp->currPartySlotId[0] = partySlot0;

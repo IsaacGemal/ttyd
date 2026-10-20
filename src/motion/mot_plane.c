@@ -218,7 +218,7 @@ void mot_plane(void) {
 		{
 			f32 zero = 0.0f;
 			mario->baseSpeed = zero;
-			mario->unk2A4 = zero;
+			mario->field_0x2A4 = zero;
 			mario->wCamVal1 = mario->position.y;
 			mario->field_0x2AC = zero;
 		}
@@ -239,10 +239,10 @@ void mot_plane(void) {
 		k = 0.125f;
 		m = 30.0f;
 		dir = (((MotionPlaneData*)mario->motStruct)->flags & 1) ? 1.0f : -1.0f;
-		v = mario->unk2A4;
+		v = mario->field_0x2A4;
 		t = m * dir;
-		mario->unk2A4 = k * (t - v) + v;
-		mario->unk1A8 += mario->unk2A4;
+		mario->field_0x2A4 = k * (t - v) + v;
+		mario->unk1A8 += mario->field_0x2A4;
 		wrap = 0;
 		if (((MotionPlaneData*)mario->motStruct)->flags & 1) {
 			if (mario->unk1A8 >= 630.0f) {
@@ -288,10 +288,10 @@ void mot_plane(void) {
 		k = 0.125f;
 		m = 30.0f;
 		dir = (((MotionPlaneData*)mario->motStruct)->flags & 1) ? 1.0f : -1.0f;
-		v = mario->unk2A4;
+		v = mario->field_0x2A4;
 		t = m * dir;
-		mario->unk2A4 = k * (t - v) + v;
-		mario->unk1A8 += mario->unk2A4;
+		mario->field_0x2A4 = k * (t - v) + v;
+		mario->unk1A8 += mario->field_0x2A4;
 		wrap = 0;
 		if (((MotionPlaneData*)mario->motStruct)->flags & 1) {
 #ifdef MUST_MATCH
@@ -343,7 +343,7 @@ void mot_plane(void) {
 		                                                               : 270.0f;
 		{
 			f32 zero = 0.0f;
-			mario->unk2A4 = zero;
+			mario->field_0x2A4 = zero;
 			MF32(mario->motStruct, 0x4) = zero;
 			MF32(mario->motStruct, 0xC) = zero;
 			MF32(mario->motStruct, 0x14) = zero;
@@ -511,7 +511,7 @@ void mot_plane(void) {
 		{
 			f32 zero = 0.0f;
 			mario->baseSpeed = zero;
-			mario->unk2A4 = zero;
+			mario->field_0x2A4 = zero;
 		}
 		mario->position.y = 1.0f + mario->field_0x2AC;
 		marioPreJump();
@@ -543,9 +543,9 @@ void mot_plane(void) {
 		k3 = 0.3f;
 		k28 = 28.0f;
 		dir = (((MotionPlaneData*)mario->motStruct)->flags & 1) ? 1.0f : -1.0f;
-		v = mario->unk2A4;
-		mario->unk2A4 = k3 * (k28 * dir - v) + v;
-		mario->unk1A8 = revise360(mario->unk1A8 + mario->unk2A4);
+		v = mario->field_0x2A4;
+		mario->field_0x2A4 = k3 * (k28 * dir - v) + v;
+		mario->unk1A8 = revise360(mario->unk1A8 + mario->field_0x2A4);
 		marioMakeJumpPara();
 		mario->position.y += mario->jumpVelY;
 		marioChkOverhead();
@@ -583,9 +583,9 @@ void mot_plane(void) {
 			k3 = 0.3f;
 			k28 = 28.0f;
 			dir = (((MotionPlaneData*)mario->motStruct)->flags & 1) ? 1.0f : -1.0f;
-			v = mario->unk2A4;
-			mario->unk2A4 = k3 * (k28 * dir - v) + v;
-			mario->unk1A8 = revise360(mario->unk1A8 + mario->unk2A4);
+			v = mario->field_0x2A4;
+			mario->field_0x2A4 = k3 * (k28 * dir - v) + v;
+			mario->unk1A8 = revise360(mario->unk1A8 + mario->field_0x2A4);
 			if (--mario->multiTimer <= 0) {
 				mario->dispFlags &= ~0x100;
 			}
