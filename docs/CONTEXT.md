@@ -10418,3 +10418,5 @@ whole tree 34.468 -> 34.244; end_unknown.c 113.415 (weighted 175) -> 18.146 (wei
 - Left: party_cloud 0x17C/0x180 (`= 0` integer stores into the flurrie union's f32 `bobAngle`/`bobStep`, a float name would change codegen), 0x2E (u16 read of the `currMotionId` enum, the header's MarioMotion), 0x3D (nested cast), 0x94 (MUST_MATCH); mot_ship 0x7C/0x80 (MUST_MATCH), 0x1F0 (HitEntry), 0x18C (pad); party_yoshi 0x18C, 0x1F0, 0x39 and 0x2B4 as above.
 - Index 33.803 -> 33.596 per kLOC (`tools/cleanup_index.py`).
 - Build: tower `ninja` recreates build/G8MJ01/ok. mot_ship.c and party_cloud.c natural-compile without -DMUST_MATCH (rc 0).
+
+Review (Claude Opus 5.5): every converted site checked against its motion. 0x2A4 is the frame count marioSetPaperAnimeLocalTime stores in poseTime and gives animPoseSetLocalTime, so `paperAnimeTime` stands; 0x9C/0x52/0x19C/0x11C/0x128 match their existing roles; the sweep fields match getHitBreatheout2 (the two rays start in opposite directions: sweepDown1 0, sweepDown2 1). MarioWork stays 0x2E0, PartyCloud's 0x10..0x20 span is unchanged. No changes.
