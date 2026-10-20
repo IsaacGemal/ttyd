@@ -104,7 +104,7 @@ void marioSetCharMode(s32 mode) {
 			animPoseRelease(wp->paperAnimGroupId[2]);
 			wp->paperAnimGroupId[2] = -1;
 		}
-		if (!(wp->peachFlags & 0x2000)) {
+		if (!(wp->peachFlags & PEACH_FLAG_TRANSFORMED)) {
 			wp->paperAnimGroupId[0] = animPoseEntry("c_peach", 2);
 			wp->paperAnimGroupId[1] = animPoseEntry("c_peach_r", 2);
 			npcSetMarioAutoTalkPose("P_S_1", "P_T_1");
@@ -877,7 +877,7 @@ void marioInit(void) {
 	mp->wPlayerCollisionBox.x = 20.0f;
 	mp->wPlayerCollisionBox.y = 37.0f;
 	mp->scale = (Vec){1.0f, 1.0f, 1.0f};
-	*(Vec*)(mp->unk104 + 0xC) = mp->position;
+	mp->prevPosition = mp->position;
 	mp->wPlayerCollisionBox.z = 20.0f;
 	marioChgPose("M_S_1");
 	*(s32*)mp->field_0x20 = 0;
@@ -1164,7 +1164,7 @@ void marioMain(void) {
 			if (pouchGetHP() <= 0) {
 				seqSetSeq(5, NULL, NULL);
 			}
-			*(Vec*)(p->unk104 + 0xC) = p->position;
+			p->prevPosition = p->position;
 			p->riderDelta.x = 0.0f;
 			p->riderDelta.y = 0.0f;
 			p->riderDelta.z = 0.0f;
@@ -1193,7 +1193,7 @@ void marioMain(void) {
 				if (pouchGetHP() <= 0) {
 					seqSetSeq(5, NULL, NULL);
 				}
-				*(Vec*)(p->unk104 + 0xC) = p->position;
+				p->prevPosition = p->position;
 				p->riderDelta.x = 0.0f;
 				p->riderDelta.y = 0.0f;
 				p->riderDelta.z = 0.0f;
@@ -1224,7 +1224,7 @@ void marioMain(void) {
 				if (pouchGetHP() <= 0) {
 					seqSetSeq(5, NULL, NULL);
 				}
-				*(Vec*)(p->unk104 + 0xC) = p->position;
+				p->prevPosition = p->position;
 				p->riderDelta.x = 0.0f;
 				p->riderDelta.y = 0.0f;
 				p->riderDelta.z = 0.0f;
@@ -1247,7 +1247,7 @@ void marioMain(void) {
 				if (pouchGetHP() <= 0) {
 					seqSetSeq(5, NULL, NULL);
 				}
-				*(Vec*)(p->unk104 + 0xC) = p->position;
+				p->prevPosition = p->position;
 				p->riderDelta.x = 0.0f;
 				p->riderDelta.y = 0.0f;
 				p->riderDelta.z = 0.0f;
@@ -1270,7 +1270,7 @@ void marioMain(void) {
 				if (pouchGetHP() <= 0) {
 					seqSetSeq(5, NULL, NULL);
 				}
-				*(Vec*)(p->unk104 + 0xC) = p->position;
+				p->prevPosition = p->position;
 				p->riderDelta.x = 0.0f;
 				p->riderDelta.y = 0.0f;
 				p->riderDelta.z = 0.0f;
@@ -1293,7 +1293,7 @@ void marioMain(void) {
 				if (pouchGetHP() <= 0) {
 					seqSetSeq(5, NULL, NULL);
 				}
-				*(Vec*)(p->unk104 + 0xC) = p->position;
+				p->prevPosition = p->position;
 				p->riderDelta.x = 0.0f;
 				p->riderDelta.y = 0.0f;
 				p->riderDelta.z = 0.0f;
@@ -1324,7 +1324,7 @@ void marioMain(void) {
 				if (pouchGetHP() <= 0) {
 					seqSetSeq(5, NULL, NULL);
 				}
-				*(Vec*)(p->unk104 + 0xC) = p->position;
+				p->prevPosition = p->position;
 				p->riderDelta.x = 0.0f;
 				p->riderDelta.y = 0.0f;
 				p->riderDelta.z = 0.0f;
@@ -1418,7 +1418,7 @@ void marioMain(void) {
 		if (pouchGetHP() <= 0) {
 			seqSetSeq(5, NULL, NULL);
 		}
-		*(Vec*)(p->unk104 + 0xC) = p->position;
+		p->prevPosition = p->position;
 		p->riderDelta.x = 0.0f;
 		p->riderDelta.y = 0.0f;
 		p->riderDelta.z = 0.0f;
@@ -2705,7 +2705,7 @@ void marioDisp(CameraId camId, void* param) {
 
 const char* toRearPose(const char* name) { //1:1
 	const char* rear = NULL;
-	if (mp->characterId == 1 && !(mp->peachFlags & 0x2000)) {
+	if (mp->characterId == 1 && !(mp->peachFlags & PEACH_FLAG_TRANSFORMED)) {
 		if (!strcmp(name, "P_Z_1")) {
 			rear = "P_Z_1R";
 		}
@@ -2844,7 +2844,7 @@ const char* toRearPose(const char* name) { //1:1
 
 const char* toFrontPose(const char* name) { //1:1
 	const char* front = NULL;
-	if (mp->characterId == 1 && !(mp->peachFlags & 0x2000)) {
+	if (mp->characterId == 1 && !(mp->peachFlags & PEACH_FLAG_TRANSFORMED)) {
 		if (!strcmp(name, "P_Z_1R")) {
 			front = "P_Z_1";
 		}

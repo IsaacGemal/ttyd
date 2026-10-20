@@ -20,10 +20,10 @@
 
 // .sdata2
 const f32 float_0_80420250 = 0.0f;
-const char str_80420254[] = "P_T_1";
-const char str_8042025C[] = "P_R_1";
-const char str_80420264[] = "P_W_1";
-const char str_8042026C[] = "P_S_1";
+const char peach_pose_talk[] = "P_T_1";
+const char peach_pose_dash[] = "P_R_1";
+const char peach_pose_walk[] = "P_W_1";
+const char peach_pose_stay[] = "P_S_1";
 const char str_80420274[] = "P_U_1";
 const char str_8042027C[] = "P_N_1";
 const f32 float_47_80420284 = 47.0f;
@@ -75,74 +75,74 @@ const char gap_09_804203B4_sdata2[4] = {0, 0, 0, 0};
 
 void peachSetStsNormal(void) {
     MarioWork* mp = marioGetPtr();
-    if (mp->peachFlags & 0x2000) {
+    if (mp->peachFlags & PEACH_FLAG_TRANSFORMED) {
         mp = marioGetPtr();
         if (mp->characterId != 1) {
             marioSetCharMode(1);
         }
-        if (mp->peachFlags & 0x2000) {
-            mp->peachFlags &= ~0x2000;
+        if (mp->peachFlags & PEACH_FLAG_TRANSFORMED) {
+            mp->peachFlags &= ~PEACH_FLAG_TRANSFORMED;
             if (mp->paperAnimGroupId[0] >= 0) {
                 animPoseRelease(mp->paperAnimGroupId[0]);
             }
             mp->paperAnimGroupId[0] = animPoseEntry("c_peach", 2);
-            npcSetMarioAutoTalkPose(str_8042026C, str_80420254);
+            npcSetMarioAutoTalkPose(peach_pose_stay, peach_pose_talk);
             mp->wPlayerCollisionBox.y = MATCH_F32(float_47_80420284);
             mp->wPlayerCollisionBox.x = MATCH_F32(float_20_80420288);
         }
     } else {
-        mp->peachFlags &= ~0x7F0;
-        peachChgPose(str_8042026C);
+        mp->peachFlags &= ~PEACH_FLAG_STS_MASK;
+        peachChgPose(peach_pose_stay);
     }
 }
 
 void peachSetStsAftershower(void) {
     MarioWork* mp = marioGetPtr();
-    mp->peachFlags &= ~0x7F0;
-    mp->peachFlags |= 0x10;
-    peachChgPose(str_8042026C);
+    mp->peachFlags &= ~PEACH_FLAG_STS_MASK;
+    mp->peachFlags |= PEACH_FLAG_AFTERSHOWER;
+    peachChgPose(peach_pose_stay);
 }
 
 void peachSetStsInvisible(void) {
     MarioWork* mp = marioGetPtr();
-    mp->peachFlags &= ~0x7F0;
-    mp->peachFlags |= 0x20;
-    peachChgPose(str_8042026C);
+    mp->peachFlags &= ~PEACH_FLAG_STS_MASK;
+    mp->peachFlags |= PEACH_FLAG_INVISIBLE;
+    peachChgPose(peach_pose_stay);
 }
 
 void peachSetStsHappy(void) {
     MarioWork* mp = marioGetPtr();
-    mp->peachFlags &= ~0x7F0;
-    mp->peachFlags |= 0x40;
-    peachChgPose(str_8042026C);
+    mp->peachFlags &= ~PEACH_FLAG_STS_MASK;
+    mp->peachFlags |= PEACH_FLAG_HAPPY;
+    peachChgPose(peach_pose_stay);
 }
 
 void peachSetStsUneasy(void) {
     MarioWork* mp = marioGetPtr();
-    mp->peachFlags &= ~0x7F0;
-    mp->peachFlags |= 0x80;
-    peachChgPose(str_8042026C);
+    mp->peachFlags &= ~PEACH_FLAG_STS_MASK;
+    mp->peachFlags |= PEACH_FLAG_UNEASY;
+    peachChgPose(peach_pose_stay);
 }
 
 void peachSetStsAngry(void) {
     MarioWork* mp = marioGetPtr();
-    mp->peachFlags &= ~0x7F0;
-    mp->peachFlags |= 0x100;
-    peachChgPose(str_8042026C);
+    mp->peachFlags &= ~PEACH_FLAG_STS_MASK;
+    mp->peachFlags |= PEACH_FLAG_ANGRY;
+    peachChgPose(peach_pose_stay);
 }
 
 void peachSetStsOrdinary(void) {
     MarioWork* mp = marioGetPtr();
-    mp->peachFlags &= ~0x7F0;
-    mp->peachFlags |= 0x200;
-    peachChgPose(str_8042026C);
+    mp->peachFlags &= ~PEACH_FLAG_STS_MASK;
+    mp->peachFlags |= PEACH_FLAG_ORDINARY;
+    peachChgPose(peach_pose_stay);
 }
 
 void peachSetStsCarry(void) {
     MarioWork* mp = marioGetPtr();
-    mp->peachFlags &= ~0x7F0;
-    mp->peachFlags |= 0x400;
-    peachChgPose(str_8042026C);
+    mp->peachFlags &= ~PEACH_FLAG_STS_MASK;
+    mp->peachFlags |= PEACH_FLAG_CARRY;
+    peachChgPose(peach_pose_stay);
 }
 
 void peachChgPose(const char* pose) {
@@ -150,100 +150,100 @@ void peachChgPose(const char* pose) {
     if (mp->dispFlags & 0x2) {
         return;
     }
-    if (mp->peachFlags & 0x2000) {
+    if (mp->peachFlags & PEACH_FLAG_TRANSFORMED) {
         if (strcmp(pose, str_80420298) == 0) {
             pose = str_804202A0;
-        } else if (strcmp(pose, str_8042026C) == 0) {
+        } else if (strcmp(pose, peach_pose_stay) == 0) {
             pose = str_8042028C;
-        } else if (strcmp(pose, str_80420264) == 0) {
+        } else if (strcmp(pose, peach_pose_walk) == 0) {
             pose = str_804202A4;
-        } else if (strcmp(pose, str_8042025C) == 0) {
+        } else if (strcmp(pose, peach_pose_dash) == 0) {
             pose = str_804202A8;
-        } else if (strcmp(pose, str_80420254) == 0) {
+        } else if (strcmp(pose, peach_pose_talk) == 0) {
             pose = str_80420290;
         }
-    } else if (mp->peachFlags & 0x10) {
+    } else if (mp->peachFlags & PEACH_FLAG_AFTERSHOWER) {
         if (strcmp(pose, str_80420298) == 0) {
             pose = str_804202AC;
-        } else if (strcmp(pose, str_8042026C) == 0) {
+        } else if (strcmp(pose, peach_pose_stay) == 0) {
             pose = str_804202B4;
-        } else if (strcmp(pose, str_80420264) == 0) {
+        } else if (strcmp(pose, peach_pose_walk) == 0) {
             pose = str_804202BC;
-        } else if (strcmp(pose, str_8042025C) == 0) {
+        } else if (strcmp(pose, peach_pose_dash) == 0) {
             pose = str_804202C4;
-        } else if (strcmp(pose, str_80420254) == 0) {
+        } else if (strcmp(pose, peach_pose_talk) == 0) {
             pose = str_804202CC;
         }
-    } else if (mp->peachFlags & 0x20) {
+    } else if (mp->peachFlags & PEACH_FLAG_INVISIBLE) {
         if (strcmp(pose, str_80420298) == 0) {
             pose = str_804202D4;
-        } else if (strcmp(pose, str_8042026C) == 0) {
+        } else if (strcmp(pose, peach_pose_stay) == 0) {
             pose = str_804202DC;
-        } else if (strcmp(pose, str_80420264) == 0) {
+        } else if (strcmp(pose, peach_pose_walk) == 0) {
             pose = str_804202E4;
-        } else if (strcmp(pose, str_8042025C) == 0) {
+        } else if (strcmp(pose, peach_pose_dash) == 0) {
             pose = str_804202EC;
-        } else if (strcmp(pose, str_80420254) == 0) {
+        } else if (strcmp(pose, peach_pose_talk) == 0) {
             pose = str_804202F4;
         }
-    } else if (mp->peachFlags & 0x80) {
+    } else if (mp->peachFlags & PEACH_FLAG_UNEASY) {
         if (strcmp(pose, str_80420298) == 0) {
             pose = str_804202FC;
-        } else if (strcmp(pose, str_8042026C) == 0) {
+        } else if (strcmp(pose, peach_pose_stay) == 0) {
             pose = str_80420304;
-        } else if (strcmp(pose, str_80420264) == 0) {
+        } else if (strcmp(pose, peach_pose_walk) == 0) {
             pose = str_8042030C;
-        } else if (strcmp(pose, str_8042025C) == 0) {
+        } else if (strcmp(pose, peach_pose_dash) == 0) {
             pose = str_80420314;
-        } else if (strcmp(pose, str_80420254) == 0) {
+        } else if (strcmp(pose, peach_pose_talk) == 0) {
             pose = str_8042031C;
         }
-    } else if (mp->peachFlags & 0x40) {
+    } else if (mp->peachFlags & PEACH_FLAG_HAPPY) {
         if (strcmp(pose, str_80420298) == 0) {
             pose = str_80420324;
-        } else if (strcmp(pose, str_8042026C) == 0) {
+        } else if (strcmp(pose, peach_pose_stay) == 0) {
             pose = str_8042032C;
-        } else if (strcmp(pose, str_80420264) == 0) {
+        } else if (strcmp(pose, peach_pose_walk) == 0) {
             pose = str_80420334;
-        } else if (strcmp(pose, str_8042025C) == 0) {
+        } else if (strcmp(pose, peach_pose_dash) == 0) {
             pose = str_8042033C;
-        } else if (strcmp(pose, str_80420254) == 0) {
+        } else if (strcmp(pose, peach_pose_talk) == 0) {
             pose = str_80420344;
         }
-    } else if (mp->peachFlags & 0x100) {
+    } else if (mp->peachFlags & PEACH_FLAG_ANGRY) {
         if (strcmp(pose, str_80420298) == 0) {
             pose = str_8042034C;
-        } else if (strcmp(pose, str_8042026C) == 0) {
+        } else if (strcmp(pose, peach_pose_stay) == 0) {
             pose = str_80420354;
-        } else if (strcmp(pose, str_80420264) == 0) {
+        } else if (strcmp(pose, peach_pose_walk) == 0) {
             pose = str_8042035C;
-        } else if (strcmp(pose, str_8042025C) == 0) {
+        } else if (strcmp(pose, peach_pose_dash) == 0) {
             pose = str_80420364;
-        } else if (strcmp(pose, str_80420254) == 0) {
+        } else if (strcmp(pose, peach_pose_talk) == 0) {
             pose = str_8042036C;
         }
-    } else if (mp->peachFlags & 0x200) {
+    } else if (mp->peachFlags & PEACH_FLAG_ORDINARY) {
         if (strcmp(pose, str_80420298) == 0) {
             pose = str_80420374;
-        } else if (strcmp(pose, str_8042026C) == 0) {
+        } else if (strcmp(pose, peach_pose_stay) == 0) {
             pose = str_8042037C;
-        } else if (strcmp(pose, str_80420264) == 0) {
+        } else if (strcmp(pose, peach_pose_walk) == 0) {
             pose = str_80420384;
-        } else if (strcmp(pose, str_8042025C) == 0) {
+        } else if (strcmp(pose, peach_pose_dash) == 0) {
             pose = str_8042038C;
-        } else if (strcmp(pose, str_80420254) == 0) {
+        } else if (strcmp(pose, peach_pose_talk) == 0) {
             pose = "P_T_13";
         }
-    } else if (mp->peachFlags & 0x400) {
+    } else if (mp->peachFlags & PEACH_FLAG_CARRY) {
         if (strcmp(pose, str_80420298) == 0) {
             pose = str_80420394;
-        } else if (strcmp(pose, str_8042026C) == 0) {
+        } else if (strcmp(pose, peach_pose_stay) == 0) {
             pose = str_8042039C;
-        } else if (strcmp(pose, str_80420264) == 0) {
+        } else if (strcmp(pose, peach_pose_walk) == 0) {
             pose = str_804203A4;
-        } else if (strcmp(pose, str_8042025C) == 0) {
+        } else if (strcmp(pose, peach_pose_dash) == 0) {
             pose = str_804203AC;
-        } else if (strcmp(pose, str_80420254) == 0) {
+        } else if (strcmp(pose, peach_pose_talk) == 0) {
             pose = "P_T_14\0\0\0\0\0";
         }
     }
@@ -260,8 +260,8 @@ void peachTransformOn(void) {
     if (mp->characterId != 1) {
         marioSetCharMode(1);
     }
-    if (!(mp->peachFlags & 0x2000)) {
-        mp->peachFlags |= 0x2000;
+    if (!(mp->peachFlags & PEACH_FLAG_TRANSFORMED)) {
+        mp->peachFlags |= PEACH_FLAG_TRANSFORMED;
         if (mp->paperAnimGroupId[0] >= 0) {
             animPoseRelease(mp->paperAnimGroupId[0]);
         }
@@ -280,13 +280,13 @@ void peachTransformOff(void) {
     if (mp->characterId != 1) {
         marioSetCharMode(1);
     }
-    if (mp->peachFlags & 0x2000) {
-        mp->peachFlags &= ~0x2000;
+    if (mp->peachFlags & PEACH_FLAG_TRANSFORMED) {
+        mp->peachFlags &= ~PEACH_FLAG_TRANSFORMED;
         if (mp->paperAnimGroupId[0] >= 0) {
             animPoseRelease(mp->paperAnimGroupId[0]);
         }
         mp->paperAnimGroupId[0] = animPoseEntry("c_peach", 2);
-        npcSetMarioAutoTalkPose(str_8042026C, str_80420254);
+        npcSetMarioAutoTalkPose(peach_pose_stay, peach_pose_talk);
         mp->wPlayerCollisionBox.y = MATCH_F32(float_47_80420284);
         mp->wPlayerCollisionBox.x = MATCH_F32(float_20_80420288);
     }
@@ -298,12 +298,12 @@ void peachPreInit(void) {
 s32 peachMain(void) {
     MarioWork* mp = marioGetPtr();
     if (mp->currMotionId == MARIO_MOTION_JUMP_3) {
-        *(Vec*)(mp->unk104 + 0xC) = mp->position;
+        mp->prevPosition = mp->position;
         {
             f32 zero = *(const f32*)&float_0_80420250;
-            *(f32*)(mp->unk170 + 4) = zero;
-            *(f32*)(mp->unk170 + 8) = zero;
-            *(f32*)(mp->unk170 + 0xC) = zero;
+            mp->riderDelta.x = zero;
+            mp->riderDelta.y = zero;
+            mp->riderDelta.z = zero;
         }
         marioBottomless();
         marioPreDisp();
@@ -357,10 +357,10 @@ s32 peachMain(void) {
     {
         f32 zero = *(const f32*)&float_0_80420250;
         *(s32*)(mp->field_0x32 + 2) += 1;
-        *(Vec*)(mp->unk104 + 0xC) = mp->position;
-        *(f32*)(mp->unk170 + 4) = zero;
-        *(f32*)(mp->unk170 + 8) = zero;
-        *(f32*)(mp->unk170 + 0xC) = zero;
+        mp->prevPosition = mp->position;
+        mp->riderDelta.x = zero;
+        mp->riderDelta.y = zero;
+        mp->riderDelta.z = zero;
     }
     return 1;
 }
@@ -373,7 +373,7 @@ void peach_stay(void) {
         mp->airTimer = 0;
         mp->multiTimer = 0;
         mp->currSubMotionId = 0;
-        peachChgPose(str_8042026C);
+        peachChgPose(peach_pose_stay);
         if (!(mp->flags & 0x20)) {
             mp->baseSpeed = MATCH_F32(float_0_80420250);
         }
@@ -384,7 +384,7 @@ void peach_stay(void) {
     if ((mp->flags & 0x8) || (mp->dispFlags & 0x40000000)) {
         return;
     }
-    if (mp->peachFlags & 0x27f0) {
+    if (mp->peachFlags & (PEACH_FLAG_TRANSFORMED | PEACH_FLAG_STS_MASK)) {
         return;
     }
     switch (mp->currSubMotionId) {
@@ -399,7 +399,7 @@ void peach_stay(void) {
             break;
         case 1:
             if ((s32)(--mp->multiTimer) < 0) {
-                marioChgPose(str_8042026C);
+                marioChgPose(peach_pose_stay);
                 mp->multiTimer = 0x64;
                 mp->currSubMotionId = 2;
             }
@@ -409,18 +409,18 @@ void peach_stay(void) {
                 marioChgPose(str_8042027C);
                 mp->multiTimer = 0;
                 mp->currSubMotionId = 0x14;
-                *(s32*)mp->field_0x2B4 = 0;
+                mp->peachStayTimer = 0;
             }
             break;
         case 0x14:
-            if ((s32)(++*(s32*)mp->field_0x2B4) >= sysMsec2Frame(0x2710)) {
-                *(s32*)mp->field_0x2B4 = sysMsec2Frame(0x2710);
+            if ((s32)(++mp->peachStayTimer) >= sysMsec2Frame(0x2710)) {
+                mp->peachStayTimer = sysMsec2Frame(0x2710);
             }
             if ((s32)(++mp->multiTimer) >= 0x64) {
                 mp->multiTimer = 0;
             }
             if (mp->flags & 0x8) {
-                marioChgPose(str_8042026C);
+                marioChgPose(peach_pose_stay);
                 mp->currSubMotionId = 0;
             }
             break;
@@ -435,7 +435,7 @@ void peach_walk(void) {
         if (mp->forceMoveTimer == 0) {
             mp->baseSpeed = marioGetWalkSpd();
         }
-        peachChgPose(str_80420264);
+        peachChgPose(peach_pose_walk);
         mp->currSubMotionId = 0;
         mp->multiTimer = 0;
     }
@@ -454,8 +454,8 @@ void peach_walk(void) {
                 u32 snd;
                 u32 snd2;
                 u32 pf = mp2->peachFlags;
-                if (!(pf & 0x2000)) {
-                    if ((pf & 0x20) && MATCH_F32(float_0_80420250) == mp2->scale.y) {
+                if (!(pf & PEACH_FLAG_TRANSFORMED)) {
+                    if ((pf & PEACH_FLAG_INVISIBLE) && MATCH_F32(float_0_80420250) == mp2->scale.y) {
                         snd = 0x80c;
                         snd2 = 0x80b;
                     } else {
@@ -491,7 +491,7 @@ void peach_dash(void) {
         if (mp->forceMoveTimer == 0) {
             mp->baseSpeed = marioGetDashSpd();
         }
-        peachChgPose(str_8042025C);
+        peachChgPose(peach_pose_dash);
         mp->currSubMotionId = 0;
         mp->multiTimer = 0;
     }
@@ -503,8 +503,8 @@ void peach_dash(void) {
         u32 snd2;
         u32 snd;
         u32 pf = mp2->peachFlags;
-        if (!(pf & 0x2000)) {
-            if ((pf & 0x20) && MATCH_F32(float_0_80420250) == mp2->scale.y) {
+        if (!(pf & PEACH_FLAG_TRANSFORMED)) {
+            if ((pf & PEACH_FLAG_INVISIBLE) && MATCH_F32(float_0_80420250) == mp2->scale.y) {
                 snd = 0x80c;
                 snd2 = 0x80b;
             } else {
@@ -536,8 +536,8 @@ void peach_dash(void) {
                 u32 snd2;
                 u32 snd;
                 u32 pf = mp2->peachFlags;
-                if (!(pf & 0x2000)) {
-                    if ((pf & 0x20) && MATCH_F32(float_0_80420250) == mp2->scale.y) {
+                if (!(pf & PEACH_FLAG_TRANSFORMED)) {
+                    if ((pf & PEACH_FLAG_INVISIBLE) && MATCH_F32(float_0_80420250) == mp2->scale.y) {
                         snd = 0x80c;
                         snd2 = 0x80b;
                     } else {
@@ -576,6 +576,6 @@ void peach_talk(void) {
         mp->currSubMotionId = 0;
         mp->baseSpeed = t;
         marioAdjustMoveDir();
-        peachChgPose(str_80420254);
+        peachChgPose(peach_pose_talk);
     }
 }
