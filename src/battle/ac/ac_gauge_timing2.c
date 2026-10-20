@@ -41,16 +41,16 @@ const Vec vec3_8030004c = { 0.0f, 0.0f, 0.0f };
 typedef struct GaugeTiming2Work {
 	s32 frame;      // 0x00
 	f32 progress;   // 0x04
-	s32 field_0x08; // 0x08
+	s32 elapsed;    // 0x08, frames since the gauge started; progress = 100 * elapsed / maxFrame
 	s32 maxFrame;   // 0x0C
-	s32 field_0x10; // 0x10
+	s32 inZone;     // 0x10, 1 while the progress is within 6 of a target still waiting for a press
 	s32 buttonMask; // 0x14
 	f32 value[8];   // 0x18
 	s8 state[8];    // 0x38
 	s8 flag[8];     // 0x40
 	u32 sound[8];   // 0x48
 	u16 total;      // 0x68
-	s8 field_0x6A;  // 0x6A
+	s8 tokenHit;    // 0x6A, outcome rolled up front when the unit has the token badge
 	u8 pad_0x6B;    // 0x6B
 	s32 timer;      // 0x6C
 } GaugeTiming2Work;
@@ -99,11 +99,11 @@ s32 battleAcMain_GaugeTiming2(BattleWork* work) {
 		disp->value = 0.0f;
 		disp->field_0xC = dat_80421ad8;
 		dec->frame = 0;
-		dec->field_0x08 = 0;
+		dec->elapsed = 0;
 		work->actionCommands.mAcState = 0x63;
 		work->actionCommands.result = 1;
 		dec->maxFrame = work->actionCommands.acParams[1];
-		dec->field_0x10 = 0;
+		dec->inZone = 0;
 		dec->progress = 0.0f;
 		work->actionCommands.outputParams[0] = 0;
 		dec->total = work->actionCommands.acParams[2] * 0x3C;
@@ -123,10 +123,10 @@ s32 battleAcMain_GaugeTiming2(BattleWork* work) {
 		if ((work->actionCommands.field_0x4 & 1) && (unit->mTokenFlags & 0x10)) {
 			if ((s32)irand(100) >= 0) {
 				work->actionCommands.field_0x8 = 0x1E;
-				dec->field_0x6A = 0;
+				dec->tokenHit = 0;
 			}
 			else {
-				dec->field_0x6A = 1;
+				dec->tokenHit = 1;
 				work->actionCommands.field_0x8 = 0x1E;
 			}
 			work->actionCommands.mAcState = 0x3E9;
@@ -165,8 +165,8 @@ s32 battleAcMain_GaugeTiming2(BattleWork* work) {
 			break;
 		}
 
-		dec->field_0x08++;
-		dec->progress = 100.f * (f32)dec->field_0x08 / (f32)dec->maxFrame;
+		dec->elapsed++;
+		dec->progress = 100.f * (f32)dec->elapsed / (f32)dec->maxFrame;
 
 		{
 			{
@@ -181,12 +181,12 @@ s32 battleAcMain_GaugeTiming2(BattleWork* work) {
 			}
 		}
 
-		dec->field_0x10 = 0;
+		dec->inZone = 0;
 		{
 			for (i = 0; i < work->actionCommands.acParams[2]; i++) {
 				if (dec->state[i] == 0) {
 					if (__fabs(dec->progress - dec->value[i]) <= 6.0) {
-						dec->field_0x10 = 1;
+						dec->inZone = 1;
 						if (dec->sound[i] == -1) {
 							dec->sound[i] = psndSFXOn(GT2_SFX("SFX_AC_PONE1"));
 						}
@@ -257,7 +257,7 @@ s32 battleAcMain_GaugeTiming2(BattleWork* work) {
 	case 0x3E9:
 		work->actionCommands.field_0x8--;
 		if (work->actionCommands.field_0x8 < 0) {
-			if (dec->field_0x6A != 0) {
+			if (dec->tokenHit != 0) {
 				work->actionCommands.result = 2;
 				work->actionCommands.mResultCount++;
 				work->actionCommands.outputParams[0] = irand(work->actionCommands.acParams[2]) + 1;
@@ -482,7 +482,7 @@ static void actionCommandDisp(f32 x, f32 y) {
 			break;
 		}
 		case 0x3E8:
-			if (dec->field_0x10 != 0) {
+			if (dec->inZone != 0) {
 				Vec t = vec3_80300028;
 				t.x = -225.0f + x + 28.0f;
 				t.y = 55.0f + y;
