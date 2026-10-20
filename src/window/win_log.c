@@ -2144,20 +2144,20 @@ void capture(CameraId camId, void* param) {
     animPosePeraOn(w->poseId);
     if (w->unitKind == 0x6B) {
         Vec* verts = (Vec*)animPoseGetAnimPosePtr(w->poseId)->groupWorldPos->address;
-        s32* counts = (s32*)((smartEntry*)smartAlloc(dat_80419a28 * 4, 3))->address;
+        s32* counts = (s32*)((smartEntry*)smartAlloc(moamoa_chain_count * 4, 3))->address;
         s32* order = (s32*)((smartEntry*)smartAlloc(0x7D0, 3))->address;
         int j;
 
-        memset(counts, 0, dat_80419a28 * 4);
+        memset(counts, 0, moamoa_chain_count * 4);
         for (j = 0; j < 0x1F4; j++) {
-            s32 k = j % dat_80419a28;
+            s32 k = j % moamoa_chain_count;
 
             order[j] = counts[k]++;
         }
         animPoseSetMaterialFlagOn(w->poseId2, 0x1800);
         animPosePeraOff(w->poseId2);
         for (j = 0; j < 0x1F4; j++) {
-            s32 k = j % dat_80419a28;
+            s32 k = j % moamoa_chain_count;
             f32 t = (f32)order[j] / (f32)counts[k];
             Vec* a = &verts[animPoseGetGroupIdx(w->poseId, g_moamoa_chain_tbl[k].name)];
             Vec* b = &verts[animPoseGetGroupIdx(w->poseId, g_moamoa_chain_tbl[k].anim)];

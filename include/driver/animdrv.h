@@ -364,7 +364,7 @@ typedef struct MoamoaChainEntry {
     char* anim; // 0x4
 } MoamoaChainEntry;
 extern MoamoaChainEntry g_moamoa_chain_tbl[47];
-extern const s32 dat_80419a28;
+extern const s32 moamoa_chain_count;
 extern Vec vec3_802c2db0[];
 // .sdata/.sdata2 objects referenced by name from driver/animdrv.c
 void evalProc(s32 parentGroupId, s32 groupId);

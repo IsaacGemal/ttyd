@@ -1060,14 +1060,14 @@ USER_FUNC(moamoa_on) {
         *positions++ = (Vec){ 0.0f, -1000.0f, 0.0f };
     }
 
-    for (i = 0; i < dat_80419a28; i++) {
+    for (i = 0; i < moamoa_chain_count; i++) {
         wp->groupCounts[i * 2] = animPoseGetGroupIdx((s32)wp->animPoses[0], g_moamoa_chain_tbl[i].name);
         wp->groupCounts[i * 2 + 1] = animPoseGetGroupIdx((s32)wp->animPoses[0], g_moamoa_chain_tbl[i].anim);
     }
 
     pose = wp->poses;
     for (i = 0; i < wp->countA; i++, pose++) {
-        pose->groupIdx = i % dat_80419a28;
+        pose->groupIdx = i % moamoa_chain_count;
         pose->seq = wp->seqCounts[pose->groupIdx]++;
     }
 

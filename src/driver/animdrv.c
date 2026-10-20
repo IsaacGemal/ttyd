@@ -3713,8 +3713,8 @@ const char* animPoseGetGroupName(s32 poseId, s32 group) {
 }
 
 // Named .sdata2 GXColor objects, defined after the code so the compiler keeps the loads.
-#pragma force_active on // dat_80419a28 has no reference and must still be emitted
-const s32 dat_80419a28 = 0x0000002f;
+#pragma force_active on // moamoa_chain_count has no reference and must still be emitted
+const s32 moamoa_chain_count = 0x0000002f;
 __declspec(section ".sdata2") GXColor dat_80419a2c = { 0xff, 0xff, 0xff, 0xff };
 __declspec(section ".sdata2") GXColor dat_80419a30 = { 0xff, 0xff, 0xff, 0xff };
 __declspec(section ".sdata2") GXColor dat_80419a34 = { 0xff, 0xff, 0xff, 0xff };

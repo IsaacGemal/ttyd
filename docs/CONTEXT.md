@@ -10362,3 +10362,49 @@ Review (Claude Opus 5.5): reverted with rename_symbol, as the n9-q-winui and map
 Left: the value-named `float_*` constants and `zero_80420520`; `unk_80177008` (win_main.c); chuchurina's `lbl_8037EC10`..`EC40` and `lbl_80003500`; `slot->field_14` (written 2.0f/3.0f per break, never read); `bdsw->field_0x114` (BadgeShopWork).
 
 Build: tower `ninja` recreates build/G8MJ01/ok; seq_title.c, seq_mapchange.c, battle_break_slot.c, battle_event_subset.c, mot_plane.c, system.c, unit_party_chuchurina.c and unit_party_christine.c compile without -DMUST_MATCH (rc 0).
+### Readability: end_unknown REL names, rename_symbol.py for REL symbols (2026-10-20, Claude Haiku 5.5, n9-q-relren)
+### Readability: end_unknown REL names, rename_symbol.py for REL symbols (2026-10-20, Claude Haiku 5.5, n9-q-relren; reviewed by Claude Opus 5.5)
+
+`tools/rename_symbol.py` renames a REL's own symbols now: a name defined in one `config/G8MJ01/<rel>/symbols.txt` is
+renamed in that map and in the REL's sources and the headers they reach through #include, and it refuses when a file
+outside that set spells the name. A name defined in several REL maps needs `--rel NAME`; the other RELs' copies keep
+their name, and the rename refuses when a file it would edit is also seen by one of those RELs. Headers are followed
+through `#include "..."` only, and files under rels/common/src belong to no REL's set, so a name spelled there is
+refused. A dol symbol that a REL map also spells is still refused. NEW is checked against every source and every
+map (dol and REL). The NEW-clash, word-boundary and pair checks are unchanged; a repeated OLD is refused.
+
+end_unknown.c (the q-endu entry on n9-q-endu was blocked on this): `unk_end_*` and `unk_evt_end_*` functions and
+scripts, `dat_end_*`/`zero_end_*`/`vec3_end_*`/`dat_ptr_end_*` data, and the bss slots, renamed by where each is
+consumed:
+- evt_ext_entry callbacks: `credits_ext_init` (extEntry's init slot), `credits_ext_update` (cb0, per frame),
+  `credits_ext_draw` (cb1) and `credits_ext_disp` (its dispEntry callback, extDraw).
+- Event scripts: `evt_credits_start` (relSetEvtAddr "end_00"), `evt_credits_sequence` (evtEntry stored in
+  CreditsWork.eventId), `evt_credits_fade` (SPAWN_EVENT_GET_ID in the sequence), `evt_credits_end` (SPAWN_EVENT at the end),
+  `evt_credits_pose_loop` (SPAWN_EVENT in start), `evt_credits_moamoa` (the moamoa ext setup script). The npc scripts
+  are named by the npc they create (`evt_credits_gesso`, `_gonbaba`, `_batten2`, `_atomic`, `_korutesu`, `_para`,
+  `_batten`, `_queen`, from their STRING("...") arguments).
+- CreditsWork setters called from scripts: `credits_set_mat_alpha`, `credits_set_overlay_alpha`, `credits_set_mode`,
+  `credits_set_tev_alpha` (each writes one field), `credits_draw` (dispEntry callback that reads GW(11)),
+  `credits_disp_start` (registers it), `credits_record_evt` (the per-record text and layout step), `credits_init`,
+  `credits_free` (from _epilog), `credits_font_reset`, `credits_npc_setup` (animPoseSetGXFunc and the tev callback
+  for one npc), `credits_npc_kind` (the wait-kind result 0/1/2 read by the pose loop), `credits_pose_evt` and
+  `credits_pose_disp`, `credits_pose_gx`, `credits_tev_callback`, `credits_rand_range`, `credits_moamoa_setup` and
+  `credits_moamoa_free`.
+- Data: `credits_work` (the 14-word block dat_ptr points at, CreditsWork's size) and `credits_work_ptr`,
+  `credits_ending_records` (the 50 x 0x24 CreditsEndingRecord table; only renamed, not retyped),
+  `credits_pose_states`, `credits_ext_setup`, `credits_chain_counts`, `credits_chain_groups`, `credits_ext_npc_name`/
+  `credits_ext_anim_name` (the "c_n_moa_a"/"S_1" strings), and the GXColor/Vec constants by their use
+  (`credits_image_mat`, `credits_pass0_mat`, `credits_pass1_mat`, `credits_mode1_tev`, `credits_mode2_tev`,
+  `credits_overlay_mat`, `credits_overlay_cam_pos`, `credits_overlay_cam_up`, `credits_overlay_target`).
+- `dat_80419a28` (main map, 0x2F = g_moamoa_chain_tbl[47]'s length) is `moamoa_chain_count`.
+
+Left: `unk_end_000009a4` (a USER_FUNC in end_unknown.h with no caller in the tree; no consumer to name it by);
+`negone_one`, `one_negone`, `neg_one` and `zero_end_00003038` (extend_data and `.rodata` values, value-only).
+`evt_credits_moamoa` is the event in the c_g_moamoa entry of R_credits_npc_info and creates モアモア. The raw
+`(u8*)credits_ending_records + offset` sites in credits_record_evt stay, because they carry the MUST_MATCH CSE
+workaround, as does the register-pinning `off` in credits_pose_evt. Typing
+credits_ending_records and R_credits_npc_info is still open and needs a per-step build check.
+
+Verified: tower `ninja` recreates `build/G8MJ01/ok` after the end renames and again after the moamoa rename (32 files OK);
+end_unknown.c compiles without MUST_MATCH (the ci.natural command run by hand). Index (tools/cleanup_index.py):
+whole tree 34.468 -> 34.244; end_unknown.c 113.415 (weighted 175) -> 18.146 (weighted 28).
