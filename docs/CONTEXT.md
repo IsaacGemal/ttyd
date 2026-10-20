@@ -10637,3 +10637,27 @@ battle_stage.c, battle_seq.c, seq_battle.c and battle_database_jon.c return 0. I
   -DMUST_MATCH) and MUST_MATCH compiles of every converted file and battle_stage_object.c return 0.
   `tools/cleanup_index.py` 33.051 -> 32.248 per kLOC (23185 -> 22770 weighted; `--rev a704ccf4` to HEAD). The non-blank
   line total rose 701484 -> 706100 because the initializers are longer.
+
+## battle_stage: eight stage tables typed as BattleStageData (2026-10-20, Claude Haiku 5.5; tail adapted by Claude Opus 5.5, n9-q-stage1)
+
+`X_btlstage_data` in battle_database_{aji,bom,dou,eki,gon,gor,gra,hei}.c is now `BattleStageData X_btlstage_data[N]` with
+full initializers, N = blob bytes / 0x1B4: aji 7, bom 1, dou 6, eki 4, gon 5, gor 2, gra 2, hei 11. The `(struct
+BattleStageData*)` casts at the btlgrp reference sites are gone; they are `&X_btlstage_data[k]`, or bare `X_btlstage_data`
+for k = 0. Each file includes battle/battle_stage.h. Values were decoded from the big-endian words; pointers keep their
+symbols (dir strings, `&X_btlobject_data[i]`, `weaponGetPowerDefault`).
+
+The tail uses the n9-q-stage2 names (`initEvent`, `layerEvents[4]`, `field_0x1B0`, `layerDestroyed[3]`; see the entry
+above). `initEvent` is NULL in all eight files. Event pointers: aji[6] `layerEvents[3]` = `&bgset_aji_space_event`,
+bom[0] `layerEvents[3]` = `&bgset_bom_snow_event`, dou[3..5] `layerEvents[2]` = `&bgset_dou_wave_event`. The old last
+word 0x00010101 (bom[0], dou[0..1], dou[3..5], eki[0..1]) is `0, { 1, 1, 1 }` and 0x00000101 (gra[1]) is
+`0, { 0, 1, 1 }`. Records whose tail is all zero stop at `layerEvents`, as jon's do.
+
+`bom_btlobject_data` is still `u32[66]`, so bom's mObjects carries a `(BattleStageObjectData*)` cast. Retyping that
+array is left for its own change.
+
+Left: nok and pik still declare `u32 X_btlstage_data[]`; with n9-q-stage2 every other `btlstage_data` symbol in
+config/G8MJ01 is typed.
+
+Verify: tower `ninja` recreates build/G8MJ01/ok on top of n9-q-stage2, and natural (no MUST_MATCH) and MUST_MATCH
+compiles of the eight battle_database_*.c return 0. Index on the n9-q-stage2 tip 32.248 per kLOC (22770 weighted over
+706100 code lines) -> 31.420 (22348 over 711268). The line count grew because of the new initializer lines.
