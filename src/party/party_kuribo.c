@@ -82,7 +82,7 @@ USER_FUNC(pre_kurio_use) {
     if (hit != NULL && (hitGetAttr(hit) & 0x80000000)) {
         goto found;
     }
-    hit = *(HitEntry**)((u8*)mario + 0x1E0);
+    hit = mario->hitobjFront;
     if (hit != NULL && (hitGetAttr(hit) & 0x80000000)) {
         goto found;
     }

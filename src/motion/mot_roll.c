@@ -870,8 +870,8 @@ void mot_roll(void) {
     }
     *(f32*)((u8*)mario + 0x130) = f26;
 
-    if (mario->hitobjStandOn == NULL && *(void**)((u8*)mario + 0x1E0) != NULL &&
-        !marioChkBero(*(HitEntry**)((u8*)mario + 0x1E0))) {
+    if (mario->hitobjStandOn == NULL && mario->hitobjFront != NULL &&
+        !marioChkBero(mario->hitobjFront)) {
         f29 = ((MotRoll*)marioGetPtr()->motStruct)->velX;
         fqm = ((MotRoll*)marioGetPtr()->motStruct)->velY;
         f29 = f29 + 0.2f * (-f29);
@@ -1015,7 +1015,7 @@ void mot_roll(void) {
     }
 
     if ((u32)mario->field_0x1D8 != 0) {
-        if (!marioChkBero(*(HitEntry**)((u8*)mario + 0x1E0))) {
+        if (!marioChkBero(mario->hitobjFront)) {
             f29 = f29 + 0.05f * (-f29);
             f28 = f28 + 0.05f * (-f28);
             if (fabsf(f29) < 0.1f) {
@@ -1027,8 +1027,8 @@ void mot_roll(void) {
         }
     }
 
-    if (*(void**)((u8*)mario + 0x1E0) != NULL && (s8)mario->wStickDir1 == 0 &&
-        (s8)mario->wStickDir2 == 0 && !marioChkBero(*(HitEntry**)((u8*)mario + 0x1E0))) {
+    if (mario->hitobjFront != NULL && (s8)mario->wStickDir1 == 0 &&
+        (s8)mario->wStickDir2 == 0 && !marioChkBero(mario->hitobjFront)) {
         f29 = f29 + 0.6f * (-f29);
         f28 = f28 + 0.6f * (-f28);
         if (fabsf(f29) < 0.1f) {

@@ -2682,7 +2682,7 @@ USER_FUNC(evt_mario_get_name_hitobj_under) {
     s32 arg = event->args[0];
     const char* name = NULL;
     MarioWork* mario = marioGetPtr();
-    void* hit = *(void**)((u8*)mario + 0x1F8);
+    void* hit = mario->hitobjUnder;
 
     if (hit != NULL) {
         name = hitGetName(hit);
@@ -2695,7 +2695,7 @@ USER_FUNC(evt_mario_get_name_hitobj_front) {
     s32 arg = event->args[0];
     const char* name = NULL;
     MarioWork* mario = marioGetPtr();
-    void* hit = *(void**)((u8*)mario + 0x1E0);
+    void* hit = mario->hitobjFront;
 
     if (hit != NULL) {
         name = hitGetName(hit);

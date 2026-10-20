@@ -844,7 +844,7 @@ static void flyMain(void) {
 				}
 				onPlace = 0;
 				m = marioGetPtr();
-				if (*(HitEntry**)((u8*)m + 0x1F8) != NULL && (hitGetAttr(*(HitEntry**)((u8*)m + 0x1F8)) & 0x38) != 0) {
+				if (m->hitobjUnder != NULL && (hitGetAttr(m->hitobjUnder) & 0x38) != 0) {
 					onPlace = 1;
 				}
 				if (onPlace == 0) {
@@ -909,7 +909,7 @@ static void flyMain(void) {
 						f31 = f31 * (90.0f / planeData[0]);
 						onPlace = 0;
 						m = marioGetPtr();
-						if (*(HitEntry**)((u8*)m + 0x1F8) != NULL && (hitGetAttr(*(HitEntry**)((u8*)m + 0x1F8)) & 0x38) != 0) {
+						if (m->hitobjUnder != NULL && (hitGetAttr(m->hitobjUnder) & 0x38) != 0) {
 							onPlace = 1;
 						}
 						if (onPlace == 0) {
@@ -977,7 +977,7 @@ static void flyMain(void) {
 				}
 				onPlace = 0;
 				m = marioGetPtr();
-				if (*(HitEntry**)((u8*)m + 0x1F8) != NULL && (hitGetAttr(*(HitEntry**)((u8*)m + 0x1F8)) & 0x38) != 0) {
+				if (m->hitobjUnder != NULL && (hitGetAttr(m->hitobjUnder) & 0x38) != 0) {
 					onPlace = 1;
 				}
 				if (onPlace == 0) {
@@ -989,7 +989,7 @@ static void flyMain(void) {
 			}
 			onPlace = 0;
 			m = marioGetPtr();
-			if (*(HitEntry**)((u8*)m + 0x1F8) != NULL && (hitGetAttr(*(HitEntry**)((u8*)m + 0x1F8)) & 0x38) != 0) {
+			if (m->hitobjUnder != NULL && (hitGetAttr(m->hitobjUnder) & 0x38) != 0) {
 				onPlace = 1;
 			}
 			if (onPlace != 0) {
@@ -1049,7 +1049,7 @@ static void flyMain(void) {
 	} else {
 		*(s32*)&DATA->field_0x4[0x20 - 0x4] = 0;
 	}
-	*(HitEntry**)((u8*)mario + 0x1F8) = marioSearchUnder();
+	mario->hitobjUnder = marioSearchUnder();
 	if (chkCollision((f32*)((u8*)mario + 0x2AC)) != 0) {
 		if (*(HitEntry**)((u8*)mario + 0x1F4) != NULL) {
 			mario->currSubMotionId = 0x28;
@@ -1059,11 +1059,11 @@ static void flyMain(void) {
 		{
 			HitEntry* hit = NULL;
 
-			if (*(HitEntry**)((u8*)mario + 0x1E0) != NULL) {
-				hit = *(HitEntry**)((u8*)mario + 0x1E0);
+			if (mario->hitobjFront != NULL) {
+				hit = mario->hitobjFront;
 			}
-			if ((HitEntry*)mario->hitobjStandOn != NULL) {
-				hit = (HitEntry*)mario->hitobjStandOn;
+			if (mario->hitobjStandOn != NULL) {
+				hit = mario->hitobjStandOn;
 			}
 			if (hit != NULL && (hitGetAttr(hit) & 0x200) != 0) {
 				mario->currSubMotionId = 0x46;
@@ -1189,7 +1189,7 @@ s32 chkCollision(f32* out) {
 
 	sincosf(&sinR, &cosR, MF32(DATA, 0xC));
 	sincosf(&sinA, &cosA, MF32(DATA, 0x4));
-	*(HitEntry**)((u8*)mario + 0x1E0) = NULL;
+	mario->hitobjFront = NULL;
 	{
 		f32 vx, vy, vz;
 		f32 pd40 = planeData[40];
@@ -1222,7 +1222,7 @@ s32 chkCollision(f32* out) {
 		                    a0, a1, a2, sinC, 0.0f, cosC);
 	}
 	if (hit != NULL) {
-		*(HitEntry**)((u8*)mario + 0x1E0) = hit;
+		mario->hitobjFront = hit;
 		flag = 1;
 		*out = hy;
 	}
@@ -1236,7 +1236,7 @@ s32 chkCollision(f32* out) {
 		                    a0, a1, a2, sinC, 0.0f, cosC);
 	}
 	if (hit != NULL) {
-		*(HitEntry**)((u8*)mario + 0x1E0) = hit;
+		mario->hitobjFront = hit;
 		flag = 1;
 		*out = hy;
 	}

@@ -558,19 +558,19 @@ void mobjMain(void) {
             hp[3] = NULL;
         }
 
-        if ((HitEntry*)mario->hitobjStandOn != NULL) {
+        if (mario->hitobjStandOn != NULL) {
             if (hp[4] == NULL ||
-                strcmp(hitGetName(hp[4]), hitGetName((HitEntry*)mario->hitobjStandOn)) != 0) {
-                hp[4] = (HitEntry*)mario->hitobjStandOn;
+                strcmp(hitGetName(hp[4]), hitGetName(mario->hitobjStandOn)) != 0) {
+                hp[4] = mario->hitobjStandOn;
             }
         } else {
             hp[4] = NULL;
         }
 
-        if (*(HitEntry**)((u8*)mario + 0x1E0) != NULL) {
+        if (mario->hitobjFront != NULL) {
             if (hp[5] == NULL ||
-                strcmp(hitGetName(hp[5]), hitGetName(*(HitEntry**)((u8*)mario + 0x1E0))) != 0) {
-                hp[5] = *(HitEntry**)((u8*)mario + 0x1E0);
+                strcmp(hitGetName(hp[5]), hitGetName(mario->hitobjFront)) != 0) {
+                hp[5] = mario->hitobjFront;
             }
         } else {
             hp[5] = NULL;
@@ -723,7 +723,7 @@ void mobjMain(void) {
                         entry->triggerFlag = 0x20000000;
                         goto apply;
                     }
-                    if ((entry->flags & 0x80000) && *(void**)((u8*)mario + 0x1E0) == (void*)hitObj) {
+                    if ((entry->flags & 0x80000) && mario->hitobjFront == (void*)hitObj) {
                         v22 = 1;
                         entry->triggerFlag = 0x80000;
                         goto apply;

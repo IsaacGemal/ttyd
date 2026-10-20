@@ -554,14 +554,14 @@ void marioChkGnd(void) {
 
     if (vivianGetStatus() == 2 || vivianGetStatus() == 1 || vivianGetStatus() == 3) {
         wp->hitobjStandOn = (HitEntry*)marioSearchGround(&gy, &gx, &gz, 37.0f, 0.0f);
-        GND_PTR(wp, HitEntry*, 0x1F8) = marioSearchUnder();
+        wp->hitobjUnder = marioSearchUnder();
         return;
     }
     wp->hitobjStandOn = NULL;
     if (wp->characterId == 2) {
         kpaClearHitobjRide();
     }
-    GND_PTR(wp, HitEntry*, 0x1F8) = marioSearchUnder();
+    wp->hitobjUnder = marioSearchUnder();
     if (wp->flags & 0x30000) {
         return;
     }
@@ -1072,7 +1072,7 @@ void marioChkToge(void) {
     if (vivianGetStatus() == 2 || vivianGetStatus() == 1 || vivianGetStatus() == 3) {
         return;
     }
-    hit = (HitEntry*)*(void**)((u8*)wp + 0x1E0);
+    hit = (HitEntry*)wp->hitobjFront;
     if (hit != NULL) {
         attr = hitGetAttr(hit);
         if (wp->currMotionId != 0x20 && (attr & 0x800) != 0 &&
@@ -1924,9 +1924,9 @@ void marioCheckWall(f32 a, f32 b) {
     hit = searchFrontWall(&v, &f8, a, b, wp->wPlayerCollisionBox.z);
     if (hit != NULL) {
         if (*(void**)((u8*)wp + 0x20C) != NULL) {
-            *(void**)((u8*)wp + 0x1E0) = *(void**)((u8*)wp + 0x20C);
+            wp->hitobjFront = *(void**)((u8*)wp + 0x20C);
         } else {
-            *(void**)((u8*)wp + 0x1E0) = hit;
+            wp->hitobjFront = hit;
         }
         if (marioChkBero(hit)) {
             if (a) {
@@ -1981,9 +1981,9 @@ void marioSearchFrontWall_staying(f32 a) {
     v = wp->position;
     hit = searchFrontWall(&v, &f8, halfx, wp->directionView - wp->targetYaw, wp->wPlayerCollisionBox.z);
     if (wp->currMotionId != 0x13) {
-        *(void**)((u8*)wp + 0x1E0) = hit;
+        wp->hitobjFront = hit;
     } else {
-        *(void**)((u8*)wp + 0x1E0) = NULL;
+        wp->hitobjFront = NULL;
     }
 
     if (hit == NULL) {
@@ -1991,9 +1991,9 @@ void marioSearchFrontWall_staying(f32 a) {
         v = wp->position;
         hit = searchFrontWall(&v, &f8, halfx, angle, wp->wPlayerCollisionBox.z);
         if (wp->currMotionId != 0x13) {
-            *(void**)((u8*)wp + 0x1E0) = hit;
+            wp->hitobjFront = hit;
         } else {
-            *(void**)((u8*)wp + 0x1E0) = NULL;
+            wp->hitobjFront = NULL;
         }
     } else {
         if (strcmp(gp->currentMapName, "dou_10") == 0) {
@@ -2004,14 +2004,14 @@ void marioSearchFrontWall_staying(f32 a) {
                 angle += 180.f;
                 hit = searchFrontWall(&v, &f8b, wp->wPlayerCollisionBox.x, angle, wp->wPlayerCollisionBox.z);
                 if (hit != NULL && wp->wPlayerCollisionBox.x >= f8b) {
-                    *(void**)((u8*)wp + 0x1E0) = hit;
+                    wp->hitobjFront = hit;
                     f8 = 0.5f * f8b;
                 }
             }
         }
     }
 
-    if (*(void**)((u8*)wp + 0x1E0) != NULL) {
+    if (wp->hitobjFront != NULL) {
         *(f32*)((u8*)wp + 0x210) = f8;
     }
 
@@ -2020,7 +2020,7 @@ void marioSearchFrontWall_staying(f32 a) {
         v = wp->position;
         hit = searchFrontWall(&v, &f8, halfx, wp->directionView, wp->wPlayerCollisionBox.z);
         if (hit != NULL) {
-            *(void**)((u8*)wp + 0x1DC) = *(void**)((u8*)wp + 0x1E0);
+            *(void**)((u8*)wp + 0x1DC) = wp->hitobjFront;
         }
     }
 
@@ -2105,7 +2105,7 @@ void marioCheckWall_roll(f32 a, f32 b) {
     v = wp->position;
     hit = searchFrontWall(&v, &f8, a, b, wp->wPlayerCollisionBox.z);
     if (hit != NULL) {
-        *(void**)((u8*)wp + 0x1E0) = hit;
+        wp->hitobjFront = hit;
         r = hitGetAttr(hit);
         {
             MarioWork* wp2 = marioGetPtr();
@@ -2376,7 +2376,7 @@ HitEntry* dou10_yoko_yari(f32* out) {
         return NULL;
     }
     toMovedir(wp->unk1A8);
-    hit = *(HitEntry**)((u8*)wp + 0x1E0);
+    hit = wp->hitobjFront;
     if (hit != NULL) {
         return hit;
     }
@@ -2397,14 +2397,14 @@ HitEntry* dou10_yoko_yari(f32* out) {
     dist100 = 100.f;
     hit = marioHitCheckVec(&tmp, &dir, &hitPos, &hitNormal, &dist100);
     if (hit != NULL && (hitGetAttr(hit) & 0x800)) {
-        *(HitEntry**)((u8*)wp + 0x1E0) = hit;
+        wp->hitobjFront = hit;
         *out = 0.8f;
     }
 
     pos = wp->position;
     hit = searchFrontWall(&pos, &f8, 20.f, 0.0f, 20.f);
     if (hit != NULL && (hitGetAttr(hit) & 0x800)) {
-        *(HitEntry**)((u8*)wp + 0x1E0) = hit;
+        wp->hitobjFront = hit;
         *out = 0.8f;
     }
 
@@ -2412,7 +2412,7 @@ HitEntry* dou10_yoko_yari(f32* out) {
     movePos(&pos.x, &pos.z, dist, 270.f);
     hit = searchFrontWall(&pos, &f8, 20.f, 0.0f, 20.f);
     if (hit != NULL && (hitGetAttr(hit) & 0x800)) {
-        *(HitEntry**)((u8*)wp + 0x1E0) = hit;
+        wp->hitobjFront = hit;
         *out = 0.8f;
     }
 
@@ -2420,7 +2420,7 @@ HitEntry* dou10_yoko_yari(f32* out) {
     movePos(&pos.x, &pos.z, dist, 90.f);
     hit = searchFrontWall(&pos, &f8, 20.f, 0.0f, 20.f);
     if (hit != NULL && (hitGetAttr(hit) & 0x800)) {
-        *(HitEntry**)((u8*)wp + 0x1E0) = hit;
+        wp->hitobjFront = hit;
         *out = 0.8f;
     }
 out:
@@ -2449,14 +2449,14 @@ HitEntry* dou10_yoko_yari2(f32* out) {
     dist = 100.f;
     hit = marioHitCheckVec(&tmp, &dir, &hitPos, &hitNormal, &dist);
     if (hit != NULL && (hitGetAttr(hit) & 0x800)) {
-        *(HitEntry**)((u8*)wp + 0x1E0) = hit;
+        wp->hitobjFront = hit;
         *out = 0.8f;
     }
 
     pos = wp->position;
     hit = searchFrontWall(&pos, &f8, 20.f, 0.0f, 20.f);
     if (hit != NULL && (hitGetAttr(hit) & 0x800)) {
-        *(HitEntry**)((u8*)wp + 0x1E0) = hit;
+        wp->hitobjFront = hit;
         *out = 0.8f;
     }
 
@@ -2464,7 +2464,7 @@ HitEntry* dou10_yoko_yari2(f32* out) {
     movePos(&pos.x, &pos.z, 8.0f, 270.f);
     hit = searchFrontWall(&pos, &f8, 20.f, 0.0f, 20.f);
     if (hit != NULL && (hitGetAttr(hit) & 0x800)) {
-        *(HitEntry**)((u8*)wp + 0x1E0) = hit;
+        wp->hitobjFront = hit;
         *out = 0.8f;
     }
 
@@ -2472,7 +2472,7 @@ HitEntry* dou10_yoko_yari2(f32* out) {
     movePos(&pos.x, &pos.z, 8.0f, 90.f);
     hit = searchFrontWall(&pos, &f8, 20.f, 0.0f, 20.f);
     if (hit != NULL && (hitGetAttr(hit) & 0x800)) {
-        *(HitEntry**)((u8*)wp + 0x1E0) = hit;
+        wp->hitobjFront = hit;
         *out = 0.8f;
     }
     return hit;
@@ -2518,7 +2518,7 @@ HitEntry* N_dou10_yoko_yari3(void* unused) {
     query.targetDistance = 40.f;
     hit = hitCheckVecFilter(&query, NULL);
     if (hit != NULL) {
-        *(HitEntry**)((u8*)wp + 0x1E0) = hit;
+        wp->hitobjFront = hit;
         return hit;
     }
     vx = wp->position.x;
@@ -2539,7 +2539,7 @@ HitEntry* N_dou10_yoko_yari3(void* unused) {
     query.targetDistance = 40.f;
     hit = hitCheckVecFilter(&query, NULL);
     if (hit != NULL) {
-        *(HitEntry**)((u8*)wp + 0x1E0) = hit;
+        wp->hitobjFront = hit;
     }
     return hit;
 }
@@ -3005,7 +3005,7 @@ void marioCheckWallShip(f32 a, f32 b) {
     if (hit != NULL) {
         MarioWork* wp2;
 
-        *(void**)((u8*)wp + 0x1E0) = hit;
+        wp->hitobjFront = hit;
         r = hitGetAttr(hit);
         wp2 = marioGetPtr();
         if ((r & 0x80000) && !(wp2->flags & 0x1000000)) {

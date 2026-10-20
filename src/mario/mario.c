@@ -744,17 +744,17 @@ void marioResetHitObj(const char* name) {
 	if (*(void**)((u8*)wp + 0x1dc) != NULL && !strcmp(hitGetName(*(HitEntry**)((u8*)wp + 0x1dc)), name)) {
 		*(void**)((u8*)wp + 0x1dc) = NULL;
 	}
-	if (*(void**)((u8*)wp + 0x1e0) != NULL && !strcmp(hitGetName(*(HitEntry**)((u8*)wp + 0x1e0)), name)) {
-		*(void**)((u8*)wp + 0x1e0) = NULL;
+	if (wp->hitobjFront != NULL && !strcmp(hitGetName(wp->hitobjFront), name)) {
+		wp->hitobjFront = NULL;
 	}
-	if (*(void**)((u8*)wp + 0x1e4) != NULL && !strcmp(hitGetName(*(HitEntry**)((u8*)wp + 0x1e4)), name)) {
-		*(void**)((u8*)wp + 0x1e4) = NULL;
+	if (wp->hitobjStandOn != NULL && !strcmp(hitGetName(wp->hitobjStandOn), name)) {
+		wp->hitobjStandOn = NULL;
 	}
-	if (*(void**)((u8*)wp + 0x1e8) != NULL && !strcmp(hitGetName(*(HitEntry**)((u8*)wp + 0x1e8)), name)) {
-		*(void**)((u8*)wp + 0x1e8) = NULL;
+	if (wp->hitobjJumpFrom != NULL && !strcmp(hitGetName(wp->hitobjJumpFrom), name)) {
+		wp->hitobjJumpFrom = NULL;
 	}
-	if (*(void**)((u8*)wp + 0x1ec) != NULL && !strcmp(hitGetName(*(HitEntry**)((u8*)wp + 0x1ec)), name)) {
-		*(void**)((u8*)wp + 0x1ec) = NULL;
+	if (wp->hitobjPush != NULL && !strcmp(hitGetName(wp->hitobjPush), name)) {
+		wp->hitobjPush = NULL;
 	}
 	if (*(void**)((u8*)wp + 0x1f0) != NULL && !strcmp(hitGetName(*(HitEntry**)((u8*)wp + 0x1f0)), name)) {
 		*(void**)((u8*)wp + 0x1f0) = NULL;
@@ -762,8 +762,8 @@ void marioResetHitObj(const char* name) {
 	if (*(void**)((u8*)wp + 0x1f4) != NULL && !strcmp(hitGetName(*(HitEntry**)((u8*)wp + 0x1f4)), name)) {
 		*(void**)((u8*)wp + 0x1f4) = NULL;
 	}
-	if (*(void**)((u8*)wp + 0x1f8) != NULL && !strcmp(hitGetName(*(HitEntry**)((u8*)wp + 0x1f8)), name)) {
-		*(void**)((u8*)wp + 0x1f8) = NULL;
+	if (wp->hitobjUnder != NULL && !strcmp(hitGetName(wp->hitobjUnder), name)) {
+		wp->hitobjUnder = NULL;
 	}
 	if (*(void**)((u8*)wp + 0x1fc) != NULL && !strcmp(hitGetName(*(HitEntry**)((u8*)wp + 0x1fc)), name)) {
 		*(void**)((u8*)wp + 0x1fc) = NULL;
@@ -1227,7 +1227,7 @@ void marioMain(void) {
 			partyMain();
 			marioCamMain();
 			*(void**)((u8*)wp + 0x1f4) = NULL;
-			*(void**)((u8*)wp + 0x1e0) = NULL;
+			wp->hitobjFront = NULL;
 			*(void**)((u8*)wp + 0x1dc) = NULL;
 			wp->hitobjPush = NULL;
 			*(void**)((u8*)wp + 0x1f0) = NULL;
@@ -1666,9 +1666,9 @@ void marioMoveMain(void) {
 		if (wp->flags & 0x01000000) {
 			*(void**)((u8*)wp + 0x1F4) = NULL;
 		}
-		*(void**)((u8*)wp + 0x1E0) = NULL;
+		wp->hitobjFront = NULL;
 		*(void**)((u8*)wp + 0x1DC) = NULL;
-		*(void**)((u8*)wp + 0x1EC) = NULL;
+		wp->hitobjPush = NULL;
 		*(void**)((u8*)wp + 0x1F0) = NULL;
 	}
 	if (wp->flags & MARIO_FLAG_CTRL_OFF) {
@@ -1826,7 +1826,7 @@ void marioMoveMain(void) {
 			marioCheckWall_roll(f31, dirRes);
 		}
 		N_dou10_yoko_yari3((u8*)wp + 0x210);
-		hit = (HitEntry*)*(void**)((u8*)wp + 0x1E0);
+		hit = (HitEntry*)wp->hitobjFront;
 		if (hit != NULL && (hitGetAttr(hit) & 0x800)) {
 			set_damage_root_ypos(wp->position.y);
 			marioChgMot(MARIO_MOTION_DAMAGE_TOGE);

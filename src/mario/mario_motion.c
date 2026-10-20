@@ -1210,13 +1210,13 @@ BOOL marioChkJump(void) {
             }
         }
     }
-    if (*(void**)((u8*)mario + 0x1E0) != NULL) {
-        if ((u32)hitGetAttr((HitEntry*)*(void**)((u8*)mario + 0x1E0)) & (1 << 31)) {
-            if (mobjGetHint(mobjHitObjPtrToPtr((HitEntry*)*(void**)((u8*)mario + 0x1E0))) == 1) {
+    if (mario->hitobjFront != NULL) {
+        if ((u32)hitGetAttr((HitEntry*)mario->hitobjFront) & (1 << 31)) {
+            if (mobjGetHint(mobjHitObjPtrToPtr((HitEntry*)mario->hitobjFront)) == 1) {
                 return FALSE;
             }
         }
-        caseEntry = caseCheckHitObj(*(void**)((u8*)mario + 0x1E0));
+        caseEntry = caseCheckHitObj(mario->hitobjFront);
         if (caseEntry != NULL) {
             if (caseEntry->activeConditionId == 9 || caseEntry->activeConditionId == 4 ||
                 caseEntry->activeConditionId == 12) {

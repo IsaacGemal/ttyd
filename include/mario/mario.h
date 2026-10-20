@@ -192,11 +192,14 @@ typedef struct MarioWork {
     s32 wallHoldTimer;             // 0x1D0, counts down from 14 before wallDist can drop (marioCheckWall)
     u8 field_0x1D4[0x1D8 - 0x1D4]; // 0x1D4
     s32 field_0x1D8;               // 0x1D8
-    u8 field_0x1DC[0x1E4 - 0x1DC]; // 0x1DC
+    u8 field_0x1DC[0x1E0 - 0x1DC]; // 0x1DC
+    void* hitobjFront;             // 0x1E0, front-wall HitEntry from searchFrontWall (marioCheckWall, mot_roll)
 	void* hitobjStandOn;           // 0x1E4, 0x1E8 US HitEntry
 	void* hitobjJumpFrom;          // 0x1E8, 0x1EC US HitEntry
 	void* hitobjPush;              // 0x1EC JP, 0x1F0 US HitEntry
-    u8 field_0x1F0[0x214 - 0x1F0]; // 0x1F0
+    u8 field_0x1F0[0x1F8 - 0x1F0]; // 0x1F0
+    void* hitobjUnder;             // 0x1F8, marioSearchUnder result (mario_hit)
+    u8 field_0x1FC[0x214 - 0x1FC]; // 0x1FC
     f32 slopeAngle;                // 0x214, angle of the ground normal from vertical (mario_hit, mot_roll)
     f32 slopeTiltX;                // 0x218, gndCentiPlain of the normal's z/y (mario_hit)
     f32 slopeTiltY;                // 0x21C, zeroed beside the other two (mario_hit)

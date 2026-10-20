@@ -203,7 +203,7 @@ static USER_FUNC(mario_chk) {
             hit = mario->hitobjJumpFrom;
         }
     } else {
-        hit = *(HitEntry**)((u8*)mario + 0x1F8);
+        hit = mario->hitobjUnder;
     }
     if (hit == NULL) {
         mapGrpFlagOff("hikaru_01", 1);

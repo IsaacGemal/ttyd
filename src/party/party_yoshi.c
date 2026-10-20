@@ -1664,15 +1664,15 @@ void checkWall(PartyEntry* party, f32 a, f32 b) {
 
     if (hit != NULL) {
         party->field_12C = hit;
-        *(HitEntry**)((u8*)mario + 0x1E0) = hit;
+        mario->hitobjFront = hit;
         if (a) {
             if ((party->flags & PARTY_FLAG_IS_BEING_USED) && marioChkBero(hit) == 1) {
                 party->field_134 = hit;
-                *(HitEntry**)((u8*)mario + 0x1EC) = hit;
+                mario->hitobjPush = hit;
                 *(HitEntry**)((u8*)mario + 0x1F0) = hit;
             } else {
                 party->field_134 = NULL;
-                *(HitEntry**)((u8*)mario + 0x1EC) = NULL;
+                mario->hitobjPush = NULL;
                 *(HitEntry**)((u8*)mario + 0x1F0) = NULL;
             }
         }
@@ -1716,14 +1716,14 @@ void checkWall(PartyEntry* party, f32 a, f32 b) {
             pos = party->position;
             hit = partySearchWallFront(party, &pos, a, party->dir);
             party->field_12C = hit;
-            *(HitEntry**)((u8*)mario + 0x1E0) = hit;
+            mario->hitobjFront = hit;
             if (hit == NULL) {
                 f32 dir = toMovedir(party->field_10C);
 
                 pos = party->position;
                 hit = partySearchWallFront(party, &pos, a, dir);
                 party->field_12C = hit;
-                *(HitEntry**)((u8*)mario + 0x1E0) = hit;
+                mario->hitobjFront = hit;
             }
             if (party->buttonNew & 0x100) {
                 HitEntry* h;
