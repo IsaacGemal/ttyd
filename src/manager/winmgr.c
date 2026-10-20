@@ -236,7 +236,7 @@ const char str_802FFEEC[] = "msg_window_title_6\000";
 
 #ifdef MUST_MATCH
 // MUST_MATCH: this inline keeps the descriptor 0x14 load before 0x10 with retail registers.
-static inline s32 get10(WinMgrDesc* d) { return d->field_0x10; }
+static inline s32 get10(WinMgrDesc* d) { return d->y; }
 #endif
 
 static inline void winMgrDispWaku1(Mtx mtx, WinMgrEntry* entry, const GXColor* base) {
@@ -615,7 +615,7 @@ const char str_802FFF44[] = "msg_window_title_8\000";
 // `if (x == width) { x = x; }` guards after the two title x computations are dead (x is not
 // changed) but keep those divisions scheduled before the following winFontInit, as in the target.
 // The target's dead `lwz r0,0x38(r24); cmpwi r0,0` before the first winFontInit is reproduced by
-// `if (select->field_0x38) { zero = zero; }` (the dead store is removed, the compare stays).
+// `if (select->itemId) { zero = zero; }` (the dead store is removed, the compare stays).
 void select_disp_mario(WinMgrEntry* entry) {
     WinMgrSelect* select = (WinMgrSelect*)entry->param;
     s32 i;
@@ -684,7 +684,7 @@ void select_disp_mario(WinMgrEntry* entry) {
 #ifdef MUST_MATCH
         // Reproduces the target's dead `lwz r0,0x38; cmpwi r0,0` before winFontInit: the self-store is
         // removed but the compare stays. The natural code has no such compare.
-        if (*(volatile s32*)&select->field_0x38) {
+        if (*(volatile s32*)&select->itemId) {
             zero = zero;
         }
 #endif
@@ -867,7 +867,7 @@ void select_disp_mario(WinMgrEntry* entry) {
 // offset with a copy (`mr r28,r27`) instead of a shift. The `if (x == width) { x = x; }` guards
 // after the two title x computations are dead (x is not changed) but keep those divisions scheduled
 // before the following winFontInit, as in the target. The target's dead `lwz r0,0x38(r30); cmpwi
-// r0,0x0` before the first winFontInit is reproduced by `if (select->field_0x38) { zero = zero; }`
+// r0,0x0` before the first winFontInit is reproduced by `if (select->itemId) { zero = zero; }`
 // (the dead store is removed, the compare stays).
 void select_disp_party(WinMgrEntry* entry) {
     WinMgrSelect* select = (WinMgrSelect*)entry->param;
@@ -931,7 +931,7 @@ void select_disp_party(WinMgrEntry* entry) {
 #ifdef MUST_MATCH
         // Reproduces the target's dead `lwz r0,0x38; cmpwi r0,0` before winFontInit: the self-store is
         // removed but the compare stays. The natural code has no such compare.
-        if (*(volatile s32*)&select->field_0x38) {
+        if (*(volatile s32*)&select->itemId) {
             zero = zero;
         }
 #endif
@@ -1205,7 +1205,7 @@ const char str_80421A9C[] = "%d";
 // to reproduce the original schedule.
 // Native conversions in select_disp_luigi and select_disp_party pool the signed/unsigned doubles
 // at .rodata+0x468/+0x4c0. The dead `lwz r0, 0x38(r25); cmpwi r0, 0x0` pair at the top of the
-// item loop is reproduced by `if (*(volatile s32*)&select->field_0x38) { zero = zero; }`.
+// item loop is reproduced by `if (*(volatile s32*)&select->itemId) { zero = zero; }`.
 void select_disp(WinMgrEntry* entry) {
     WinMgrSelect* select = (WinMgrSelect*)entry->param;
     s32 i;
@@ -1284,7 +1284,7 @@ void select_disp(WinMgrEntry* entry) {
 #ifdef MUST_MATCH
         // Reproduces the target's dead `lwz r0,0x38; cmpwi r0,0` before winFontInit: the self-store is
         // removed but the compare stays. The natural code has no such compare.
-        if (*(volatile s32*)&select->field_0x38) {
+        if (*(volatile s32*)&select->itemId) {
             zero = zero;
         }
 #endif
@@ -1368,7 +1368,7 @@ void select_disp(WinMgrEntry* entry) {
 
     }
 
-    if (select->field_0x38) {
+    if (select->itemId) {
         winIconInit();
         for (i = 2; i < 0x1e; i++) {
             GXColor color = colorBlack;
@@ -1657,7 +1657,7 @@ s32 winMgrEntry(WinMgrDesc* desc) {
     entry->animStep = 0;
     entry->description = desc;
     entry->x = entry->description->x;
-    entry->y = entry->description->field_0x10;
+    entry->y = entry->description->y;
     entry->width = entry->description->width;
     entry->height = entry->description->height;
 
@@ -1862,7 +1862,7 @@ WinMgrSelect* winMgrSelectEntry(s32 a1, s32 a2, BOOL a3) {
     select->iconY = 0.0f;
     select->iconX = 0.0f;
     select->baseY = 0.0f;
-    select->field_0x38 = a2;
+    select->itemId = a2;
 
     if (a3) {
         select->flags |= 0x100;
@@ -1880,7 +1880,7 @@ WinMgrSelect* winMgrSelectEntry(s32 a1, s32 a2, BOOL a3) {
 
     desc = select_desc_tbl[descId].descriptors;
     select->iconX = (f32)desc->x;
-    select->iconY = (f32)(desc->field_0x10 - 54);
+    select->iconY = (f32)(desc->y - 54);
 
     type = select->kind;
     switch (type) {
@@ -2163,7 +2163,7 @@ WinMgrSelect* winMgrSelectEntry(s32 a1, s32 a2, BOOL a3) {
 #ifdef MUST_MATCH
         s32 f1C = get10(desc);
 #else
-        s32 f1C = desc->field_0x10;
+        s32 f1C = desc->y;
 #endif
         s32 f18 = desc->x;
         s32 f24 = desc->height - (8 - select->numItems) * 0x18;
@@ -2206,7 +2206,7 @@ s32 winMgrSelect(WinMgrSelect* select) {
         if (flags & 0x2000) {
             return -1;
         }
-        if (select->field_0x38 != 0 && select->cursor == 0 && (flags & 0x100)) {
+        if (select->itemId != 0 && select->cursor == 0 && (flags & 0x100)) {
             return -1;
         }
         {

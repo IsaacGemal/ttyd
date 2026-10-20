@@ -15,7 +15,7 @@ struct WinMgrDesc {
 	s32 frameStyle; //0x4, winMgrDisp: which frame drawn (1, 3, 4/5)
 	s32 camId; //0x8, CameraId
 	s32 x; //0xC, copied to entry->x
-	s32 field_0x10; //0x10, entry->y (read by get10 under MUST_MATCH)
+	s32 y; //0x10, copied to entry->y (read by get10 under MUST_MATCH)
 	s32 width; //0x14, copied to entry->width
 	s32 height; //0x18, copied to entry->height
 	u8 color[0x20 - 0x1C]; //0x1C, frame RGB (winMgrDispWaku0); alpha is entry->alpha
@@ -40,7 +40,7 @@ struct WinMgrEntry {
 	const char* message; //0x34
 	s32 scrollPos; //0x38, help text scroll, 2 rows per step
 	s32 scrollRows; //0x3C, FontGetMessageWidthLine result + 1; scroll arrows show while > 2
-	u8 field_0x40[0x44 - 0x40]; //0x40
+	u8 pad_0x40[0x44 - 0x40]; //0x40
 };
 
 typedef struct WinMgrWork {
@@ -67,7 +67,7 @@ typedef struct WinMgrSelect {
 	s32 descriptorId[3]; //0x24
 	WinMgrSelectItem* items; //0x30
 	s32 numItems; //0x34
-	s32 field_0x38; //0x38
+	s32 itemId; //0x38, item id of an item-use menu (itemdrv passes it as winMgrSelectEntry a2, and the kind 1/2 list starts with it), 0 for event menus; nonzero makes winMgrSelect cancel on the first row
 } WinMgrSelect;
 
 void winMgrInit(void);
