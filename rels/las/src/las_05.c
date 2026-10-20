@@ -469,7 +469,7 @@ USER_FUNC(kurokaron_move_position) {
 
     npc->jumpFlags |= 0x10;
     if (isFirstCall != 0) {
-        npc->field_188 = 0;
+        npc->moveElapsed = 0;
         npc->gait = 0;
         npc->jumpTargetPos.x = x;
         npc->jumpTargetPos.y = npc->position.y;
@@ -521,7 +521,7 @@ USER_FUNC(kurokaron_move_position) {
     if (kurokaron_run_cnt != 0) {
         kurokaron_run_cnt--;
     }
-    if (npc->field_2FC != 0) {
+    if (npc->wallHit != NULL) {
         f32 angle = angleABf(mario->position.x, mario->position.z, npc->position.x, npc->position.z);
 
         if (kurokaron_move_flag & 4) {

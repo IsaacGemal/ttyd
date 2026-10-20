@@ -174,7 +174,7 @@ EVT_END()
 
 static USER_FUNC(gonbaba_wait_landon) {
     NpcEntry* npc = npcNameToPtr("ゴンババ");
-    return (*(u32*)npc->field_300 != 0) ? EVT_RETURN_DONE : EVT_RETURN_BLOCK;
+    return (npc->groundHit != NULL) ? EVT_RETURN_DONE : EVT_RETURN_BLOCK;
 }
 
 EVT_BEGIN(gonbaba_event)

@@ -148,7 +148,7 @@ typedef struct NpcEntry {
     s32 poseId;                     // 0x104
     s32 gait;                       // 0x108, 0 unset, 1 stay, 2 walk, 3 run (picks the dust effect in _kamek_houki_kemuri)
     const char* field_10C;          // 0x10C
-    s32 field_110;                  // 0x110
+    s32 offscreenId;                // 0x110, offscreen layer drawn into (evt_npc_set_offscreen), -1 none
     GXColor color;                  // 0x114
     s32 initEvtId;                  // 0x118
     s32 regularEvtId;               // 0x11C
@@ -162,22 +162,22 @@ typedef struct NpcEntry {
     void* blowEvent;                // 0x13C, verified
     u32 interruptFlags;             // 0x140, pending reactions: 1 found Mario, 2 lost, 4 returned, 8 blown, 0x10 dead, 0x10000000 move
     f32 direction;                  // 0x144, angle we're facing at, verified
-    u8 field_148[0x14C - 0x148];    // 0x148
+    f32 savedDirection;             // 0x148, direction kept while the npc is turned toward Mario (hit, noticed, talk), restored after
     f32 width;                      // 0x14C
     f32 height;                     // 0x150
-    f32 field_154;                  // 0x154
+    f32 shadowScale;                // 0x154, multiplies the shadow radius; 1.0 at entry, eased by the evt_npc_majo_disp_* events
     Vec jumpStartPos;               // 0x158
     Vec jumpTargetPos;              // 0x164
     u8 field_170[0x178 - 0x170];    // 0x170
-    OSTime field_178;               // 0x178
-    f32 field_180;                  // 0x180
+    OSTime airTicks;                // 0x178, ticks under gravity while flags 0x20000 is set; reset on landing
+    f32 airTime;                    // 0x180, airTicks in seconds
     u8 field_184[0x188 - 0x184];    // 0x184
-    OSTime field_188;               // 0x188
-    OSTime field_190;               // 0x190
-    OSTime field_198;               // 0x198
-    f32 field_1A0;                  // 0x1A0
+    OSTime moveElapsed;             // 0x188, ticks since the current move began; cleared by the move events
+    OSTime frameTicks;              // 0x190, ticks since the last update (16 ms if it was over 500 ms)
+    OSTime lastUpdateTick;          // 0x198, gp->renderTime at the last update
+    f32 moveElapsedSec;             // 0x1A0, moveElapsed in seconds (compared against moveTime)
     f32 moveDt;                     // 0x1A4
-    f32 field_1A8;                  // 0x1A8
+    f32 lastUpdateSec;              // 0x1A8, lastUpdateTick in seconds
     f32 moveDir;                    // 0x1AC
     f32 moveSpeed;                  // 0x1B0
     Vec moveOffset;                 // 0x1B4
@@ -185,7 +185,7 @@ typedef struct NpcEntry {
     f32 jumpVelY;                   // 0x1C4
     f32 jumpYScale;                 // 0x1C8
     f32 jumpGravity;                // 0x1CC
-    f32 field_1D0;                  // 0x1D0
+    f32 maxFallSpeed;               // 0x1D0, caps the fall per second under gravity (halved in water); 0 no cap, set by limitSpd
     s32 jumpFlags;                  // 0x1D4, TODO verify
     s16 footstepToggle;             // 0x1D8
     f32 footstepAccum;              // 0x1DC
@@ -204,15 +204,15 @@ typedef struct NpcEntry {
     f32 homingRange;                // 0x228, verified
     f32 homingAngle;                // 0x22C, verified
     NpcBattleInfo battleInfo;       // 0x230
-    s32 field_2F8;                  // 0x2F8
-    u32 field_2FC;                  // 0x2FC
-    u8 field_300[0x304 - 0x300];    // 0x300
+    s32 attackMode;                 // 0x2F8, set by evt_npc_set_attack_mode; nonzero makes a stomp a first strike against Mario
+    struct HitEntry* wallHit;       // 0x2FC, wall npcHitCheckSide stopped the last move against, NULL if none
+    struct HitEntry* groundHit;     // 0x300, floor npcMoveG last probed under a falling npc, NULL if the probe found none
     void* unitWork[4];              // 0x304
-    u8 field_314;                   // 0x314
+    u8 setupIndex;                  // 0x314, index in the map's npc setup: its bit in fbat deadInfo[0].mask marks it dead
     u8 btlCoinDropCount;            // 0x315
-    u8 field_316;                   // 0x316
+    u8 baseCoin;                    // 0x316, baseCoin of the lead unit kind, the coin drop for battle result 1
     s8 balloonType;                 // 0x317, s8: mario_balloon loads it with lbz; extsb
-    u8 field_318[0x31C - 0x318];    // 0x318
+    s32 fbatHitKind;                // 0x318, fbatHitCheck kind that started the field contact, 0 for a talk (written only)
     u16 koopaEncounterType;         // 0x31C
     u16 hazardImmuneFlags;          // 0x31E, bits 1/2/4/8/0x10 skip the npcGroupDead of that hazard class; set to 0x1F by set_bottle_flag_init
     u16 wFbatHitCheckRelated;       // 0x320
@@ -238,16 +238,16 @@ typedef struct NpcWork {
     s32 total;            // 0x4, maximum allowed
     s32 flags;            // 0x8
     NpcEntry* entries;    // 0xC
-    NpcEntry* field_0x10; // 0x10, wTalkCheckRelatedNpc, TODO: name
+    NpcEntry* talkCheckNpc; // 0x10, the NPC Mario can talk to this frame (set in the talk check, read on the talk button)
 } NpcWork;
 
 typedef struct FirstStrikeInfo {
     BOOL enabled;        // 0x0
-    u32 field_0x4;       // 0x4
+    u32 announceKind;    // 0x4, the attack code passed to fbatSetAttackAnnounce (as FbatHitInfo.kind); 0 when the banner ends
     u32 type;            // 0x8
-    u32 field_0xC;       // 0xC
-    f32 field_0x10;      // 0x10
-    f32 field_0x14;      // 0x14
+    u32 timer;           // 0xC, frames since the banner started
+    f32 bannerX;         // 0x10
+    f32 bannerY;         // 0x14
     const char* msg_tag; // 0x18
     GXColor color;       // 0x1C
 } FirstStrikeInfo;

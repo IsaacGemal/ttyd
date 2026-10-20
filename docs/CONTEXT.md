@@ -9119,3 +9119,26 @@ GXSetFog's type is GX_FOG_NONE. Overall 69.701 -> 69.681. Open: rename unk_80237
 unk_802379e4/unk_80237a2c (qqsort comparators by type_sort_order / star_piece_price) and unk_802399f8/unk_80239b2c
 (party tech-level checks) once rename_symbol.py lands; the keyGetDir* stick bits (0x100/0x200/0x1000/0x2000) and the
 psndSFXOn / icon ids have no repo names yet; WinMgrSelect `pad_2`.
+### Readability: npcdrv (2026-10-19, Claude Haiku 5.5, n9-q-npcdrv; reviewed by Claude Opus 5.5)
+
+NpcEntry's timers are named from npcMain's update block: `lastUpdateTick` (0x198, gp->renderTime at the last
+update), `frameTicks` (0x190, the gap since then, 16 ms when it was over 500 ms), `moveElapsed` (0x188, ticks since
+the current move began, cleared by npcdrv's interrupt dispatch and the evt_npc/evt_mobj/las_05 move events) and
+`airTicks` (0x178, accumulates while flags 0x20000 is set, zeroed when npcMoveG lands); all four are OSTime.
+Each has an f32 seconds copy made through OSTicksToMicroseconds / 1e6: `moveElapsedSec` (0x1A0), `airTime` (0x180,
+the t in npcMoveG's gravity integral), `moveDt` (0x1A4, already named) and `lastUpdateSec` (0x1A8). Also named:
+`offscreenId` (0x110, evt_npc_set_offscreen, -1 none), `savedDirection` (0x148, kept while the npc turns toward
+Mario on a hit, on noticing him or for a talk, then restored), `shadowScale` (0x154, the shadow radius multiplier the
+evt_npc_majo_disp_* events ease), `maxFallSpeed` (0x1D0, limitSpd; npcMoveG clamps the per-frame fall to it, half
+in water), `attackMode` (0x2F8, evt_npc_set_attack_mode, copied to FbatHitInfo.attackMode), `wallHit` (0x2FC,
+HitEntry* from npcHitCheckSide, the old `field_2FC != 0` wall tests), `groundHit` (0x300, HitEntry* npcMoveG's floor
+probe found; the `*(u32*)field_300` reads in npcdrv, gon_11, jon and las_26 and the a_magu/mobj checks),
+`setupIndex` (0x314, the npc's index in the map setup and its bit in fbat deadInfo[0].mask), `baseCoin` (0x316, the
+lead unit kind's BattleUnitKind.baseCoin, now read by name) and `fbatHitKind` (0x318, the fbatHitCheck code that
+started the contact, 0 for a talk; nothing reads it back). `ENC(npc, u32, 0x128)` in the talk check is the existing
+`talkEvt`. NpcWork 0x10 is `talkCheckNpc`; FirstStrikeInfo gets `announceKind` (0x4, the code given to
+fbatSetAttackAnnounce, the same space as FbatHitInfo.kind), `timer` (0xC, banner frames) and `bannerX`/`bannerY`.
+All renames are byte-identical. Open: the two `ENC(&info, s32, 0) = 0x400000` hammer sites in npcdrv.c stay under
+MUST_MATCH (writing `info.kind` in both arms lets MWCC if-convert to a select); `field_10C`, `field_170`,
+`field_184`, the flag bits 0x20/0x100000/0x20000000 and the `ENC(mario, NpcEntry*, 0x1D4)` MarioWork store stay
+as they are.

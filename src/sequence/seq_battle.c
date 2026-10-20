@@ -149,7 +149,7 @@ void seq_battleMain(SequenceWork* work) {
                         switch (type) {
                             case 1:
                             case 2:
-                                if (fbat->firstStrike.field_0x4 != 0) {
+                                if (fbat->firstStrike.announceKind != 0) {
                                     loadMap = FALSE;
                                 }
                                 break;

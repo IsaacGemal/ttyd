@@ -534,7 +534,7 @@ USER_FUNC(status_gauge_force_off) {
 USER_FUNC(set_talk_memory_ry) {
     NpcEntry* npc = npcNameToPtr("サンダース");
 
-    *(f32*)npc->field_148 = 270.0f;
+    npc->savedDirection = 270.0f;
     return EVT_RETURN_DONE;
 }
 
