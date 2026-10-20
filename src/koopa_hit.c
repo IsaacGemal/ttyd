@@ -33,10 +33,7 @@ extern const f32 float_90_80420eb8;
 extern const f32 float_270_80420ebc;
 extern const f32 float_7_80420ec0;
 
-#define MW_F32(m, off) (*(f32*)((u8*)(m) + (off)))
-#define MW_U32(m, off) (*(u32*)((u8*)(m) + (off)))
 #define MW_S16(m, off) (*(s16*)((u8*)(m) + (off)))
-#define MW_U16(m, off) (*(u16*)((u8*)(m) + (off)))
 
 const Vec vec3_802fe320 = { 0.0f, 0.0f, 0.0f };
 const Vec vec3_802fe32c = { 0.0f, 0.0f, 0.0f };
