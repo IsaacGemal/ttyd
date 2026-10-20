@@ -588,16 +588,11 @@ static inline void _ssDropSeq(void) {
     }
 }
 
-#ifdef MUST_MATCH
-// MUST_MATCH: the original homes the second half's effects and dvd pointers in r26/r27. Taking the
-// element address through a pointer-returning inline reproduces that; the plain `&sound.effects[i]`
-// swaps the pointer and the strength-reduced offset registers (99.71%).
+// The original homes the second half's effects and dvd pointers in r26/r27. Taking the element address
+// through a pointer-returning inline reproduces that; the plain `&sound.effects[i]` swaps the pointer and
+// the strength-reduced offset registers.
 static inline SoundEffect* sdd_eff(u32 i) { return &sound.effects[i]; }
 static inline SoundDVD* sdd_dvd(u32 i) { return &sound.dvds[i]; }
-#else
-#define sdd_eff(i) (&sound.effects[i])
-#define sdd_dvd(i) (&sound.dvds[i])
-#endif
 
 BOOL SoundDropData(void) {
     SoundSong* song;

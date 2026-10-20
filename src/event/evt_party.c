@@ -458,19 +458,14 @@ USER_FUNC(evt_party_move_pos2) {
         len = evtGetFloat(event, args[3]);
         dist = distABf(party->position.x, party->position.z, x, z);
         party->dir = angleABf(party->position.x, party->position.z, x, z);
-#ifdef MUST_MATCH
-        // MUST_MATCH: casting the frames product after `spd`, not in the one expression under
-        // #else, places the int->float temp at 0x10 and the fctiwz slot at 0x18; the #else form
-        // swaps the two slots.
+        // The frames product is converted to s32 after `spd` is computed, not in the one expression: that
+        // places the int->float temp at 0x10 and the fctiwz slot at 0x18; the single-expression form swaps
+        // the two slots.
         {
             f32 fr = (f32)gp->framerate * (dist / len);
             spd = len / (f32)gp->framerate;
             frames = (s32)fr;
         }
-#else
-        frames = (s32)((f32)gp->framerate * (dist / len));
-        spd = len / (f32)gp->framerate;
-#endif
         partySetForceMove(party, frames, party->dir, spd);
     }
     if (party->field_28 == 0) {
