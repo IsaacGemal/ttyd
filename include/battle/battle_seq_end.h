@@ -5,6 +5,7 @@ typedef struct EventEntry EventEntry;
 #include "driver/camdrv.h"
 
 typedef struct BattleWork BattleWork;
+typedef struct IconEntry IconEntry;
 
 #include <dolphin/types.h>
 
@@ -58,7 +59,7 @@ typedef struct BattleSeqEndWork {
     s32 unk28;               // 0x28, zeroed when the confirm prompt opens, never read
     s32 confirmCount;        // 0x2C, choices on the confirm prompt (2)
     u32 dispFlags;           // 0x30, SEQEND_DISP_* bits
-    u32 iconPtr[0x13];       // 0x34, icon object for each exp star ("_Bgsp%d"), 19 of them
+    IconEntry* iconPtr[0x13]; // 0x34, icon object for each exp star ("_Bgsp%d"), 19 of them
     s32 iconAlpha[0x13];     // 0x80, alpha ramped up while a star is lit
     s32 iconFrames[0x13];    // 0xCC, counts up to 0x10 while a star is lit
     Vec iconPos[0x13];       // 0x118, star positions
