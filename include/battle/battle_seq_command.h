@@ -26,7 +26,7 @@ typedef struct BattleCommandAction {
     char* mName;        // 0x8
     u16 mIcon;          // 0xC
     u8 pad_0xE[2];      // 0xE
-    u32 mDisableReason; // 0x10, 3 when mEnabled is 0, 0 when it is 1
+    u32 mDisableReason; // 0x10, _get_msg error code: 0 none, 3 not now, 4/5 no Jump/Hammer target
 } BattleCommandAction;  // 0x14
 
 typedef struct BattleCommandWeapon {
@@ -37,13 +37,13 @@ typedef struct BattleCommandWeapon {
     u8 pad_0xE[2];               // 0xE
     u32 mIndex;                  // 0x10, -1 for the built-in Jump and Hammer weapons
     ItemType mItem;              // 0x14
-    u32 field_0x18;              // 0x18
+    u32 mDisableReason;          // 0x18, as BattleCommandAction.mDisableReason; also 1 no FP, 2 no AP
 } BattleCommandWeapon;           // 0x1C
 
 typedef struct BattleCommandOperation {
     u32 mType;          // 0x0
     BOOL mEnabled;      // 0x4
-    u32 field_0x8;      // 0x8
+    u32 mDisableReason; // 0x8, as BattleCommandAction.mDisableReason; 1 no FP
     char* mName;        // 0xC
     u16 mIcon;          // 0x10
     u8 pad_0x12[2];     // 0x12
@@ -67,9 +67,10 @@ typedef struct BattleCommandMultiItem {
     char* mName;        // 0x4
     char* mDescription; // 0x8
     u16 mIcon;          // 0xC
-    u8 pad_0xE[2];      // 0xE
+    u8 mKind;           // 0xE, 1 Item, 2 Double Dip, 3 Triple Dip
+    u8 pad_0xF;         // 0xF
     u32 mWeaponCost;    // 0x10
-    u32 field_0x14;     // 0x14
+    u32 mDisableReason; // 0x14, 1 when mEnabled is 0
 } BattleCommandMultiItem; // 0x18
 
 typedef struct BattleCommand {
@@ -82,18 +83,18 @@ typedef struct BattleCommand {
     BattleCommandMultiItem multiItemTable[3]; // 0x450
     BattleCursor cursor[14];                  // 0x498
     s32 actKind;                              // 0x540, action mType (get_actkind reads it); _btlcmd_GetCursorPtr switches on it
-    s32 savedActKind;                         // 0x544, actKind saved when 0xC is set, restored by the restore path
+    s32 savedActKind;                         // 0x544, actKind saved before it is overridden with 0xB/0xC; restored in commandState 0
     s32 operationKind;                        // 0x548, operation mType, switched on in the operation menu
     s32 partyChangeId;                        // 0x54C, party mPartyId; BattleWork 0x1C68, passed to BattlePartyAnimeLoad
-    u8 multiItemKind;                         // 0x550, multiItemTable[i].pad_0xE[0] of the confirmed item
+    u8 multiItemKind;                         // 0x550, multiItemTable[i].mKind of the confirmed entry
     u8 cancelled;                             // 0x551, set by the cancel path, read by the action setup
     u8 pad_0x552[0x554 - 0x552];              // 0x552
-    s32 restoreId;                            // 0x554, compared with unk0 to clear the restore state
+    s32 restoreId;                            // 0x554, commandState saved by the restore path, compared with it to clear restoreState
     u8 restoreState;                          // 0x558, set to 1 or 2 when a sub-menu opens; tested by BattleMenuKeyOKInACT
     u8 pad_0x559[0x55C - 0x559];              // 0x559
     void* field_55C;                          // 0x55C
     s32 idleFrames;                           // 0x560, reset while a button is held, counts up otherwise; 0x384 switches the idle camera
-    s32 selectedDetail;                       // 0x564, copied from the selected entry, switched on by the act setup
+    s32 disableReason;                        // 0x564, mDisableReason of the rejected entry; _get_msg picks the error text
     s32 eventId;                              // 0x568, pending event checked with evtCheckID
     u8 pad_0x56C[0x574 - 0x56C];              // 0x56C
 } BattleCommand;
