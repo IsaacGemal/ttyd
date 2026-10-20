@@ -238,16 +238,16 @@ typedef struct NpcWork {
     s32 total;            // 0x4, maximum allowed
     s32 flags;            // 0x8
     NpcEntry* entries;    // 0xC
-    NpcEntry* field_0x10; // 0x10, wTalkCheckRelatedNpc, TODO: name
+    NpcEntry* talkCheckNpc; // 0x10, the NPC Mario can talk to this frame (set in the talk check, read on the talk button)
 } NpcWork;
 
 typedef struct FirstStrikeInfo {
     BOOL enabled;        // 0x0
-    u32 field_0x4;       // 0x4
+    u32 announceFlags;   // 0x4, the battle flag passed to fbatSetAttackAnnounce; cleared when the banner ends
     u32 type;            // 0x8
-    u32 field_0xC;       // 0xC
-    f32 field_0x10;      // 0x10
-    f32 field_0x14;      // 0x14
+    u32 timer;           // 0xC, frames since the banner started
+    f32 bannerX;         // 0x10
+    f32 bannerY;         // 0x14
     const char* msg_tag; // 0x18
     GXColor color;       // 0x1C
 } FirstStrikeInfo;

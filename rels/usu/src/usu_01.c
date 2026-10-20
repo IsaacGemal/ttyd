@@ -1671,7 +1671,7 @@ USER_FUNC(chk_fuki) {
     s32* args = event->args;
     s32 name = evtGetValue(event, args[0]);
     NpcWork* work = npcGetWorkPtr();
-    NpcEntry* npc = work->field_0x10;
+    NpcEntry* npc = work->talkCheckNpc;
     if (npc != NULL && strcmp(npc->description, (const char*)name) == 0) {
         evtSetValue(event, args[1], 1);
         return EVT_RETURN_DONE;

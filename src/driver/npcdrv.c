@@ -2099,9 +2099,9 @@ void fbatSetAttackAnnounce(s32 a1) {
     FirstStrikeInfo* firstStrike = &gp->fbatData->firstStrike;
 
     firstStrike->enabled = FALSE;
-    firstStrike->field_0x4 = a1;
-    firstStrike->field_0xC = 0;
-    switch (firstStrike->field_0x4) {
+    firstStrike->announceFlags = a1;
+    firstStrike->timer = 0;
+    switch (firstStrike->announceFlags) {
         case 0x20000:
         case 0x40000:
         case 0x80000:
@@ -2136,28 +2136,28 @@ static void fbatFirstAttackAnnounceMain(FieldBattleData* fbat) {
     if (strike->enabled) {
         switch (strike->type) {
             case 2:
-                strike->field_0xC++;
-                if ((s32)strike->field_0xC < 20) {
-                    strike->field_0x10 = intplGetValue(5, strike->field_0xC, 20, (-600.0f), 0.0f);
-                } else if ((s32)strike->field_0xC < 80) {
-                    strike->field_0x10 = 0.0f;
-                } else if ((s32)strike->field_0xC < 100) {
-                    strike->field_0x10 =
-                        intplGetValue(1, strike->field_0xC - 80, 20, 0.0f, 600.0f);
+                strike->timer++;
+                if ((s32)strike->timer < 20) {
+                    strike->bannerX = intplGetValue(5, strike->timer, 20, (-600.0f), 0.0f);
+                } else if ((s32)strike->timer < 80) {
+                    strike->bannerX = 0.0f;
+                } else if ((s32)strike->timer < 100) {
+                    strike->bannerX =
+                        intplGetValue(1, strike->timer - 80, 20, 0.0f, 600.0f);
                 } else {
-                    strike->field_0x4 = 0;
+                    strike->announceFlags = 0;
                     break;
                 }
-                strike->field_0x14 = 0.0f;
+                strike->bannerY = 0.0f;
                 dispEntry(CAMERA_FADE, 0.0f, 2, _fbatFirstAttackAnnouceDisp, strike);
                 break;
             case 1:
-                strike->field_0xC++;
-                if ((s32)strike->field_0xC > 60) {
-                    strike->field_0x4 = 0;
+                strike->timer++;
+                if ((s32)strike->timer > 60) {
+                    strike->announceFlags = 0;
                 } else {
-                    strike->field_0x10 = 0.0f;
-                    strike->field_0x14 = 0.0f;
+                    strike->bannerX = 0.0f;
+                    strike->bannerY = 0.0f;
                     dispEntry(CAMERA_FADE, 0.0f, 2, _fbatFirstAttackAnnouceDisp, strike);
                 }
                 break;
@@ -2184,8 +2184,8 @@ void _fbatFirstAttackAnnouceDisp(CameraId camId, void* param) {
     k = 0.1f;
 #endif
     message = msgSearch(firstStrike->msg_tag);
-    x = firstStrike->field_0x10;
-    y = firstStrike->field_0x14;
+    x = firstStrike->bannerX;
+    y = firstStrike->bannerY;
     width = FontGetMessageWidth(message);
     frameX = x + (f32)(irand(10000) % 5);
     frameY = y + (f32)(irand(10000) % 5);
@@ -2253,7 +2253,7 @@ void fbatEncountCheck(void) {
     wk = gp->inBattle != 0 ? &work.battle : &work.field;
     total = wk->total;
     mario = marioGetPtr();
-    wk->field_0x10 = NULL;
+    wk->talkCheckNpc = NULL;
     if ((u32)marioStGetSystemLevel() != 0) {
         return;
     }
@@ -2441,7 +2441,7 @@ void fbatEncountCheck(void) {
                                 found = 1;
                                 if (dist < nearest) {
                                     nearest = dist;
-                                    wk->field_0x10 = npc;
+                                    wk->talkCheckNpc = npc;
                                 }
                             }
                         }
@@ -2470,8 +2470,8 @@ void fbatEncountCheck(void) {
             }
         }
         ENC(mario, NpcEntry*, 0x1D4) = best;
-        if (wk->field_0x10 != NULL && (keyGetButtonTrg(0) & 0x100)) {
-            NpcEntry* tgt = wk->field_0x10;
+        if (wk->talkCheckNpc != NULL && (keyGetButtonTrg(0) & 0x100)) {
+            NpcEntry* tgt = wk->talkCheckNpc;
             FieldBattleData* fb3 = gp->fbatData;
 
             if (fb3->mode == 1) {
@@ -2562,7 +2562,7 @@ void fbatTalkMode(void) {
                 marioChgStayMotion();
                 fbatData->mode = 1;
                 wp = gp->inBattle ? &work.battle : &work.field;
-                wp->field_0x10 = NULL;
+                wp->talkCheckNpc = NULL;
             }
             break;
     }
@@ -2822,8 +2822,8 @@ void npcGroupDead(NpcEntry* entry, u16 type) {
 NpcEntry* fbatNpcTalkCheck(void) {
     NpcWork* wp = gp->inBattle ? &work.battle : &work.field;
 
-    if (wp->field_0x10 && marioChkTalkable()) {
-        return wp->field_0x10;
+    if (wp->talkCheckNpc && marioChkTalkable()) {
+        return wp->talkCheckNpc;
     }
     return NULL;
 }
