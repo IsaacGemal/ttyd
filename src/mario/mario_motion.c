@@ -62,27 +62,27 @@ const char str_802C5A0C[8] = "tik_01";
 #endif
 extern f32 marioJumpSwData[];
 
-// From other units not decompiled yet: no header declares them.
+// Motion functions from other units; no header declares them.
 
-extern s32 mot_cloud[];
-extern s32 mot_damage[];
-extern s32 mot_damageToge[];
-extern s32 mot_dash[];
-extern s32 mot_dokan[];
-extern s32 mot_grasp[];
-extern s32 mot_hip[];
-extern s32 mot_hip_post[];
-extern s32 mot_jabara[];
-extern s32 mot_jabara_post[];
-extern s32 mot_roll[];
-extern s32 mot_roll_post[];
-extern s32 mot_ship[];
-extern s32 mot_ship_post[];
-extern s32 mot_stay[];
-extern s32 mot_stay_post[];
-extern s32 mot_walk[];
-extern s32 mot_yoshi[];
-extern s32 mot_yoshi_post[];
+void mot_cloud(void);
+void mot_damage(void);
+void mot_damageToge(void);
+void mot_dash(void);
+void mot_dokan(void);
+void mot_grasp(void);
+void mot_hip(void);
+void mot_hip_post(void);
+void mot_jabara(void);
+void mot_jabara_post(void);
+void mot_roll(void);
+void mot_roll_post(void);
+void mot_ship(void);
+void mot_ship_post(void);
+void mot_stay(void);
+void mot_stay_post(void);
+void mot_walk(void);
+void mot_yoshi(void);
+void mot_yoshi_post(void);
 
 // clang-format off
 
@@ -1812,47 +1812,47 @@ void mot_forceReset(void) {
 
 // TODO: type
 MotTblEntry marioMotTbl[41] = {
-    { (void (*)(void))mot_stay, 0x00000000, (void (*)(void))mot_stay_post },
-    { (void (*)(void))mot_walk, 0x00000000, NULL },
-    { (void (*)(void))mot_dash, 0x00000000, NULL },
-    { (void (*)(void))mot_jump, 0x00000000, NULL },
-    { (void (*)(void))mot_jumpNpc, 0x00000000, NULL },
-    { (void (*)(void))mot_jumpSw, 0x00000000, NULL },
-    { (void (*)(void))mot_jumpStand, 0x00000000, NULL },
-    { (void (*)(void))mot_jump, 0x00000000, NULL },
-    { (void (*)(void))mot_jump, 0x00000000, NULL },
-    { (void (*)(void))mot_jumpSmall, 0x00000000, NULL },
-    { (void (*)(void))mot_fall, 0x00000000, (void (*)(void))mot_fall_post },
-    { (void (*)(void))mot_fall, 0x00000000, NULL },
-    { (void (*)(void))mot_upstairs, 0x00000000, NULL },
-    { (void (*)(void))mot_land, 0x00000000, NULL },
-    { (void (*)(void))mot_talk, 0x00000000, NULL },
-    { (void (*)(void))mot_getItem, 0x00000000, NULL },
-    { (void (*)(void))mot_hip, 0x00000000, (void (*)(void))mot_hip_post },
-    { (void (*)(void))mot_hip, 0x00000000, (void (*)(void))mot_hip_post },
-    { (void (*)(void))mot_hammer, 0x00000000, NULL },
-    { (void (*)(void))mot_hammer2, 0x00000000, (void (*)(void))mot_ham2_post },
-    { (void (*)(void))mot_jabara, 0x00000000, (void (*)(void))mot_jabara_post },
-    { (void (*)(void))mot_slit, 0x00000000, (void (*)(void))mot_slit_post },
-    { (void (*)(void))mot_roll, 0x00000000, (void (*)(void))mot_roll_post },
-    { (void (*)(void))mot_kaze, 0x00000000, NULL },
-    { (void (*)(void))mot_plane, 0x00000000, (void (*)(void))mot_plane_post },
-    { (void (*)(void))mot_ship, 0x00000000, (void (*)(void))mot_ship_post },
-    { (void (*)(void))mot_yoshi, 0x00000000, (void (*)(void))mot_yoshi_post },
-    { (void (*)(void))mot_cloud, 0x00000000, (void (*)(void))cloudResetAt },
-    { (void (*)(void))mot_vivian, 0x00000000, (void (*)(void))mot_vivian_post },
-    { (void (*)(void))mot_dokan, 0x00000000, NULL },
-    { (void (*)(void))mot_grasp, 0x00000000, NULL },
-    { (void (*)(void))mot_damage, 0x00000000, NULL },
-    { (void (*)(void))mot_damageToge, 0x00000000, NULL },
-    { (void (*)(void))mot_bottomless, 0x00000000, NULL },
-    { (void (*)(void))mot_forceReset, 0x00000000, NULL },
-    { (void (*)(void))mot_shadow, 0x00000000, NULL },
-    { (void (*)(void))mot_partyUse, 0x00000000, NULL },
-    { (void (*)(void))kpa_swim, 0x00000000, NULL },
-    { (void (*)(void))kpa_powup, 0x00000000, NULL },
-    { (void (*)(void))kpa_powdown, 0x00000000, NULL },
-    { (void (*)(void))mot_dummy, 0x00000000, NULL },
+    { mot_stay, 0x00000000, mot_stay_post },
+    { mot_walk, 0x00000000, NULL },
+    { mot_dash, 0x00000000, NULL },
+    { mot_jump, 0x00000000, NULL },
+    { mot_jumpNpc, 0x00000000, NULL },
+    { mot_jumpSw, 0x00000000, NULL },
+    { mot_jumpStand, 0x00000000, NULL },
+    { mot_jump, 0x00000000, NULL },
+    { mot_jump, 0x00000000, NULL },
+    { mot_jumpSmall, 0x00000000, NULL },
+    { mot_fall, 0x00000000, mot_fall_post },
+    { mot_fall, 0x00000000, NULL },
+    { mot_upstairs, 0x00000000, NULL },
+    { mot_land, 0x00000000, NULL },
+    { mot_talk, 0x00000000, NULL },
+    { mot_getItem, 0x00000000, NULL },
+    { mot_hip, 0x00000000, mot_hip_post },
+    { mot_hip, 0x00000000, mot_hip_post },
+    { mot_hammer, 0x00000000, NULL },
+    { mot_hammer2, 0x00000000, mot_ham2_post },
+    { mot_jabara, 0x00000000, mot_jabara_post },
+    { mot_slit, 0x00000000, mot_slit_post },
+    { mot_roll, 0x00000000, mot_roll_post },
+    { mot_kaze, 0x00000000, NULL },
+    { mot_plane, 0x00000000, mot_plane_post },
+    { mot_ship, 0x00000000, mot_ship_post },
+    { mot_yoshi, 0x00000000, mot_yoshi_post },
+    { mot_cloud, 0x00000000, cloudResetAt },
+    { mot_vivian, 0x00000000, mot_vivian_post },
+    { mot_dokan, 0x00000000, NULL },
+    { mot_grasp, 0x00000000, NULL },
+    { mot_damage, 0x00000000, NULL },
+    { mot_damageToge, 0x00000000, NULL },
+    { mot_bottomless, 0x00000000, NULL },
+    { mot_forceReset, 0x00000000, NULL },
+    { mot_shadow, 0x00000000, NULL },
+    { mot_partyUse, 0x00000000, NULL },
+    { kpa_swim, 0x00000000, NULL },
+    { kpa_powup, 0x00000000, NULL },
+    { kpa_powdown, 0x00000000, NULL },
+    { mot_dummy, 0x00000000, NULL },
 };
 // clang-format on
 
