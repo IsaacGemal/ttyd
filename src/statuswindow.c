@@ -121,7 +121,7 @@ static inline void valueMoveParty(s16* cur, s16* target);
 // Matching notes (all codegen-only; each call is ABI-identical to the header's by-value form):
 // * Every GXColor argument is staged in a function-scope local declared colours-first
 //   (colAlways..colB216 then numHp..numPartyMaxHp) and passed through a GXColor*-taking
-//   function-pointer cast (SW_ICON_COL/SW_NUM_GX, MUST_MATCH only). MWCC passes a by-value GXColor as a pointer in r6 either way, so this
+//   function-pointer cast (SW_ICON_COL/SW_NUM_GX, MUST_MATCH builds only). MWCC passes a by-value GXColor as a pointer in r6 either way, so this
 //   is safe, but it makes the compiler pass each local's home directly instead of building the
 //   fresh outgoing-copy pool that GC/2.6 allocates in program order. The local homes reproduce
 //   the original's slot grouping (iconDispGxCol at 0x28..0x40 above iconNumberDispGx at 0x08..0x24).
@@ -172,11 +172,10 @@ void statusWinReInit(void) {
     }
 }
 
-// The three negated `wp->flags & (STATUS_WIN_OPEN | STATUS_WIN_FORCE_OPEN)` tests materialise the boolean and branch `bne skip` in the
-// original; a plain if folds the materialisation and a switch lowers `case 0` out of line (`beq` +
-// extra b), so they use the `(x ? 1 : 0)` shape under MUST_MATCH.
-// The cos()/lerp tail is in the #ifdef MUST_MATCH block below; its temporaries keep the original's
-// FPR colouring while the #else form is the plain equivalent.
+// The three negated statusWinCheck() tests materialise the boolean and branch `bne skip` in the
+// original; a plain `!statusWinCheck()` folds the materialisation, so they use the `(x ? 1 : 0)` shape.
+// The close-if-open tests are `switch (statusWinCheck())`: a plain if changes the code size.
+// The cos()/lerp tail keeps the original's temporaries for its FPR colouring.
 void statusWinMain(void) {
     MarioWork* mario;
 
@@ -197,21 +196,14 @@ void statusWinMain(void) {
 
                     notCtrl = !marioChkCtrl();
                     if (notCtrl || (notKey = !marioChkKey(), notKey) || !(mario->flags & 1)) {
-#ifdef MUST_MATCH
-                        switch ((wp->flags & 0x11) != 0) {
+                        switch (statusWinCheck()) {
                         default:
-                            wp->flags |= 0xA;
-                            wp->flags &= ~5;
+                            wp->flags |= (STATUS_WIN_CLOSED | STATUS_WIN_CLOSING);
+                            wp->flags &= ~(STATUS_WIN_OPEN | STATUS_WIN_OPENING);
                             break;
                         case 0:
                             break;
                         }
-#else
-                        if (wp->flags & (STATUS_WIN_OPEN | STATUS_WIN_FORCE_OPEN)) {
-                            wp->flags |= (STATUS_WIN_CLOSED | STATUS_WIN_CLOSING);
-                            wp->flags &= ~(STATUS_WIN_OPEN | STATUS_WIN_OPENING);
-                        }
-#endif
                         valueCheck();
                         wp->idleFrames = 0;
                         wp->toggleCooldown = 0;
@@ -221,9 +213,9 @@ void statusWinMain(void) {
                             if (wp->idleFrames > gp->framerate * STATUS_WIN_IDLE_SECONDS) {
                                 wp->idleFrames = gp->framerate * STATUS_WIN_IDLE_SECONDS;
 #ifdef MUST_MATCH
-                                if (wp->manualToggle == 0 && wp->toggleCooldown == 0 && !(wp->flags & 0x11 ? 1 : 0)) {
+                                if (wp->manualToggle == 0 && wp->toggleCooldown == 0 && !(statusWinCheck() ? 1 : 0)) {
 #else
-                                if (wp->manualToggle == 0 && wp->toggleCooldown == 0 && !(wp->flags & (STATUS_WIN_OPEN | STATUS_WIN_FORCE_OPEN))) {
+                                if (wp->manualToggle == 0 && wp->toggleCooldown == 0 && !statusWinCheck()) {
 #endif
                                     wp->flags &= ~(STATUS_WIN_CLOSED | STATUS_WIN_CLOSING);
                                     wp->flags |= (STATUS_WIN_OPEN | STATUS_WIN_OPENING);
@@ -233,29 +225,22 @@ void statusWinMain(void) {
                         } else {
                             wp->idleFrames = 0;
                             wp->manualToggle = 0;
-#ifdef MUST_MATCH
                             if (wp->toggleCooldown == 0) {
-                                switch ((wp->flags & 0x11) != 0) {
+                                switch (statusWinCheck()) {
                                 default:
-                                    wp->flags |= 0xA;
-                                    wp->flags &= ~5;
+                                    wp->flags |= (STATUS_WIN_CLOSED | STATUS_WIN_CLOSING);
+                                    wp->flags &= ~(STATUS_WIN_OPEN | STATUS_WIN_OPENING);
                                     break;
                                 case 0:
                                     break;
                                 }
                             }
-#else
-                            if (wp->toggleCooldown == 0 && (wp->flags & (STATUS_WIN_OPEN | STATUS_WIN_FORCE_OPEN))) {
-                                wp->flags |= (STATUS_WIN_CLOSED | STATUS_WIN_CLOSING);
-                                wp->flags &= ~(STATUS_WIN_OPEN | STATUS_WIN_OPENING);
-                            }
-#endif
                         }
                         if (mario->buttonNew & 0x10) {
 #ifdef MUST_MATCH
-                            if (!(wp->flags & 0x11 ? 1 : 0)) {
+                            if (!(statusWinCheck() ? 1 : 0)) {
 #else
-                            if (!(wp->flags & (STATUS_WIN_OPEN | STATUS_WIN_FORCE_OPEN))) {
+                            if (!statusWinCheck()) {
 #endif
                                 wp->flags &= ~(STATUS_WIN_CLOSED | STATUS_WIN_CLOSING);
                                 wp->flags |= (STATUS_WIN_OPEN | STATUS_WIN_OPENING);
@@ -273,9 +258,9 @@ void statusWinMain(void) {
                         if (valueCheck() != 0) {
                             wp->toggleCooldown = gp->framerate * STATUS_WIN_CHANGE_SECONDS;
 #ifdef MUST_MATCH
-                            if (!(wp->flags & 0x11 ? 1 : 0)) {
+                            if (!(statusWinCheck() ? 1 : 0)) {
 #else
-                            if (!(wp->flags & (STATUS_WIN_OPEN | STATUS_WIN_FORCE_OPEN))) {
+                            if (!statusWinCheck()) {
 #endif
                                 wp->flags &= ~(STATUS_WIN_CLOSED | STATUS_WIN_CLOSING);
                                 wp->flags |= (STATUS_WIN_OPEN | STATUS_WIN_OPENING);
@@ -297,21 +282,14 @@ void statusWinMain(void) {
             case SEQ_BATTLE:
                 break;
             default:
-#ifdef MUST_MATCH
-                switch ((wp->flags & 0x11) != 0) {
+                switch (statusWinCheck()) {
                 default:
-                    wp->flags |= 0xA;
-                    wp->flags &= ~5;
+                    wp->flags |= (STATUS_WIN_CLOSED | STATUS_WIN_CLOSING);
+                    wp->flags &= ~(STATUS_WIN_OPEN | STATUS_WIN_OPENING);
                     break;
                 case 0:
                     break;
                 }
-#else
-                if (wp->flags & (STATUS_WIN_OPEN | STATUS_WIN_FORCE_OPEN)) {
-                    wp->flags |= (STATUS_WIN_CLOSED | STATUS_WIN_CLOSING);
-                    wp->flags &= ~(STATUS_WIN_OPEN | STATUS_WIN_OPENING);
-                }
-#endif
                 break;
         }
 
@@ -330,24 +308,16 @@ void statusWinMain(void) {
         if (wp->animTime >= wp->animDuration) {
             wp->animTime = wp->animDuration;
             wp->openAmount = wp->openTarget;
-#ifdef MUST_MATCH
             // Codegen-only: naming the zero object makes MWCC evaluate the field first and load
             // the constant into f0; writing the constant on the left restores the original's
             // 0.0-first fcmpu.
             if (float_0_8041c900 == wp->openAmount) {
                 wp->flags &= ~STATUS_WIN_BADGES;
             }
-#else
-            if (wp->openAmount == float_0_8041c900) {
-                wp->flags &= ~STATUS_WIN_BADGES;
-            }
-#endif
         } else {
-#ifdef MUST_MATCH
             // Codegen-only: the f64 temp gives the in-place `frsp f1,f1`, `x = x;` and the
             // `a = q*cc; q = a;` copy colour the diff/product into f2/f1, and `half` keeps the
-            // 0.5 load in f0 so the fmadds reads product*0.5 like the original. The #else is the
-            // plain form with identical semantics.
+            // 0.5 load in f0 so the fmadds reads product*0.5 like the original.
             f64 c;
             f32 x;
             f32 cc;
@@ -365,12 +335,6 @@ void statusWinMain(void) {
             q = a;
             half = float_0p5_8041c90c;
             wp->openAmount = q * half + wp->openFrom;
-#else
-            f32 c;
-
-            c = (f32)cos(float_3p1416_8041c908 * wp->animTime / wp->animDuration);
-            wp->openAmount = (wp->openTarget - wp->openFrom) * (float_1_8041c904 - c) * float_0p5_8041c90c + wp->openFrom;
-#endif
         }
 
         {
@@ -727,9 +691,7 @@ s32 valueCheck(void) {
 
 void valueUpdate(void) {
     static s32 count;
-#ifdef MUST_MATCH
     s16 curCoin;
-#endif
     StatusWindowValue values;
 
     statusGetValue(&values);
@@ -740,20 +702,10 @@ void valueUpdate(void) {
     }
     // The original materialises the statusWinCheck() result; a plain
     // if (!statusWinCheck()) folds the boolean away, so dispatch on it.
-#ifdef MUST_MATCH
-    switch ((wp->flags & 0x11) != 0) {
+    switch (statusWinCheck()) {
     default:
-#else
-    if (!statusWinCheck()) {
-        return;
-    }
-#endif
-#ifdef MUST_MATCH
     curCoin = wp->coin;
     if (valueMoveAmount(curCoin, values.coin) != 0) {
-#else
-    if (valueMoveAmount(wp->coin, values.coin) != 0) {
-#endif
         if (count % 8 == 0) {
             psndSFXOn("SFX_COUNT_COIN1");
         }
@@ -770,11 +722,7 @@ void valueUpdate(void) {
 
     wp->partyId = values.partyId;
     if (wp->partyId != 0) {
-#ifdef MUST_MATCH
         valueMoveParty(&wp->partyHp, &values.partyHp);
-#else
-        valueMoveUpdate(&wp->partyHp, values.partyHp);
-#endif
         valueMoveUpdate(&wp->partyMaxHp, values.partyMaxHp);
     }
     if (wp->starPoint > STATUS_WIN_MAX_STAR_POINT) {
@@ -783,12 +731,10 @@ void valueUpdate(void) {
     if (wp->coin > STATUS_WIN_MAX_COIN) {
         wp->coin = STATUS_WIN_MAX_COIN;
     }
-#ifdef MUST_MATCH
         break;
     case 0:
         return;
     }
-#endif
 }
 
 void statusWinOpen(void) {
@@ -928,7 +874,6 @@ static inline void valueMoveUpdate(s16* cur, s16 target) {
 // target in r5 (wp is still live in r7). Taking target by pointer makes both
 // operands memory loads, so *cur is loaded first and lands in r6; taking it by
 // value schedules the target load first and swaps the two registers.
-#ifdef MUST_MATCH
 static inline void valueMoveParty(s16* cur, s16* target) {
     s16 c = *cur;
     s16 t = *target;
@@ -942,7 +887,6 @@ static inline void valueMoveParty(s16* cur, s16* target) {
     }
     *cur += step;
 }
-#endif
 
 void statusFPBlink(s32 value) {
     wp->blinkMask |= STATUS_BLINK_FP;
