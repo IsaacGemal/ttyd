@@ -125,8 +125,6 @@ typedef struct ScissorEffectData {
     f32 rotX;            // 0x18
     f32 rotY;            // 0x1C
     f32 rotZ;            // 0x20
-    u8 field_0x24[0x34 - 0x24];  // 0x24
-    EffectEntry* child;  // 0x34, deleted with the star stone in scissor_end
 } ScissorEffectData;
 
 
@@ -1349,7 +1347,7 @@ s32 scissor_init(void) {
 s32 scissor_end(void) {
     ScissorWork* work = GetScissorPtr();
 
-    effDelete(((ScissorEffectData*)work->starStone->userdata)->child);
+    effDelete(((effStarStoneData*)work->starStone->userdata)->field_0x34);
     effDelete(work->starStone);
     if (work->captureBuf != NULL) {
         smartFree(work->captureBuf);
