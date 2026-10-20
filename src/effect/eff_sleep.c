@@ -48,14 +48,8 @@ EffectEntry* effSleepEntry(s32 a1, s32 duration, f32 x, f32 y, f32 z, f32 scale,
 	radians = (float_6p2832_8042242c * rotation) / 360.0f;
 	work = data + 1;
 	for (i = 1, delay = 16; i < effect->count; i++, delay += 16, work++) {
-#ifdef MUST_MATCH
-		// The original computes 16*i between the cos call and the multiply; assigning radius
-		// inside the expression makes the compiler schedule it that way.
+		// Assigning radius inside the expression schedules 16*i between the cos call and the multiply.
 		work->position.x = (radius = 16.0f * (f32)i) * (f32)cos(radians);
-#else
-		radius = 16.0f * (f32)i;
-		work->position.x = radius * (f32)cos(radians);
-#endif
 		work->position.y = radius * (f32)sin(radians);
 		work->position.z = 0.0f;
 		work->scale = (0.2f * (f32)i) + 1.0f;
@@ -67,20 +61,15 @@ EffectEntry* effSleepEntry(s32 a1, s32 duration, f32 x, f32 y, f32 z, f32 scale,
 
 void effSleepMain(EffectEntry* effect) {
 	effSleepData* data = effect->userdata;
-#ifdef MUST_MATCH
-	/* MUST_MATCH: retail builds the Vec in a scratch slot and copies it into a second local
-	   before dispCalcZ; a single local folds the copy away (same idiom as effMahornMain,
-	   effBombMain and effEnergyMain). */
+	// The Vec is built in `disp` and copied into a second local before dispCalcZ; a single local
+	// folds the copy away (same idiom as effMahornMain, effBombMain and effEnergyMain).
 	Vec position;
-#endif
 	Vec disp = { 0 };
 	s32 i;
 	disp.x = data->position.x;
 	disp.y = data->position.y;
 	disp.z = data->position.z;
-#ifdef MUST_MATCH
 	position = disp;
-#endif
 
 	if (effect->flags & 4) {
 		effect->flags &= ~4;
@@ -118,35 +107,25 @@ void effSleepMain(EffectEntry* effect) {
 		}
 	}
 
-#ifdef MUST_MATCH
 	dispEntry(CAMERA_3D, dispCalcZ(&position), 2, (DispCallback)effSleepDisp, effect);
-#else
-	dispEntry(CAMERA_3D, dispCalcZ(&disp), 2, (DispCallback)effSleepDisp, effect);
-#endif
 }
 
 // Sine of one 1/64-turn step; the multiply order and the u32 parameter are what retail's angle
 // conversion uses.
 static inline f32 effSleepSin(u32 angle) {
 	f32 rad = float_6p2832_8042242c * (f32)angle;
-#ifdef MUST_MATCH
-	// MUST_MATCH: retail keeps the half-scale at the call site; that placement is what gives
+	// The half-scale stays at the call site; that placement is what gives
 	// effSleepDisp's negEight/half-product their f23/f22 FPRs.
 	return (f32)sin(rad * float_0p015625_80422430);
-#else
-	return float_0p5_80422434 * (f32)sin(rad * float_0p015625_80422430);
-#endif
 }
 
-#ifdef MUST_MATCH
-// MUST_MATCH: a GXColor built through an inline return lands in the scratch slot retail uses
+// A GXColor built through an inline return lands in the scratch slot retail uses
 // (same idiom as effCoinFukidashiColor).
 static inline GXColor effSleepColor(u8 alpha) {
 	GXColor color = *(GXColor*)&dat_80422420;
 	color.a = alpha;
 	return color;
 }
-#endif
 
 // Materialise negEight*0.5 before the add; an inline helper adding its parameter second pins retail's
 // commutative fadds operand order, which a bare expression does not.
@@ -157,7 +136,7 @@ static inline f32 effSleepLeftX(f32 negativeHalfWidth, f32 sine) {
 // Declaring angle before data/i/j/headerAlpha and writing the second sine's angle as
 // `gp->retraceCount + angle + (j + 1) * 10` fixes the GPR allocation (retail camId r26,
 // headerAlpha r25, angle r29) and the integer add order.
-// The half-scale placement in effSleepSin and the named `negativeHalfWidth` product (both under MUST_MATCH)
+// The half-scale placement in effSleepSin and the named `negativeHalfWidth` product
 // fix the callee-saved FPR assignment: retail negEight f23, its half-product f22, the two sine
 // results f21/f20. Only dat/deg2rad/8/6.2832/0.015625/0.5 are named; the rest (1.0, 0.0, 0.125,
 // 4.0, "Sleep", 360, 16, 0.2) stay literal and the compiler pools them in exactly retail's order,
@@ -173,9 +152,7 @@ void effSleepDisp(CameraId camId, EffectEntry* effect) {
 	GXColor color;
 	f32 negEight;
 	f32 one;
-#ifdef MUST_MATCH
 	f32 negativeHalfWidth;
-#endif
 	s32 angle;
 	effSleepData* data = effect->userdata;
 	s32 i;
@@ -216,12 +193,7 @@ void effSleepDisp(CameraId camId, EffectEntry* effect) {
 			continue;
 		}
 
-#ifdef MUST_MATCH
 		color = effSleepColor((data->field_0x14 * headerAlpha) / 255);
-#else
-		color = *(GXColor*)&dat_80422420;
-		color.a = (data->field_0x14 * headerAlpha) / 255;
-#endif
 		GXSetChanMatColor(4, color);
 
 		PSMTXTrans(mtxBase, data->position.x, data->position.y, data->position.z);
@@ -232,33 +204,20 @@ void effSleepDisp(CameraId camId, EffectEntry* effect) {
 		GXSetCurrentMtx(0);
 
 		for (j = 0; j < 8; j++) {
-#ifdef MUST_MATCH
 			f32 sine0 = float_0p5_80422434 * effSleepSin(gp->retraceCount + angle + j * 10);
 			f32 sine1 = float_0p5_80422434 * effSleepSin(gp->retraceCount + angle + (j + 1) * 10);
-			// MUST_MATCH: one named half-product per iteration, assigned between the sine results
+			// One named half-product per iteration, assigned between the sine results
 			// and GXBegin, is what makes retail's negEight=f23/half-product=f22.
 			negativeHalfWidth = negEight * float_0p5_80422434;
-#else
-			f32 sine0 = effSleepSin(gp->retraceCount + angle + j * 10);
-			f32 sine1 = effSleepSin(gp->retraceCount + angle + (j + 1) * 10);
-#endif
 
 			GXBegin(0x80, 0, 4);
-#ifdef MUST_MATCH
 			GXPosition3f32(effSleepLeftX(negativeHalfWidth, sine1), one * (f32)(j + 1), 0.0f);
-#else
-			GXPosition3f32(effSleepLeftX(negEight * float_0p5_80422434, sine1), one * (f32)(j + 1), 0.0f);
-#endif
 			GXTexCoord2f32(0.0f, 0.125f * (f32)(7 - j));
 			GXPosition3f32(4.0f + sine1, one * (f32)(j + 1), 0.0f);
 			GXTexCoord2f32(1.0f, 0.125f * (f32)(7 - j));
 			GXPosition3f32(4.0f + sine0, one * (f32)j, 0.0f);
 			GXTexCoord2f32(1.0f, 0.125f * (f32)(8 - j));
-#ifdef MUST_MATCH
 			GXPosition3f32(effSleepLeftX(negativeHalfWidth, sine0), one * (f32)j, 0.0f);
-#else
-			GXPosition3f32(effSleepLeftX(negEight * float_0p5_80422434, sine0), one * (f32)j, 0.0f);
-#endif
 			GXTexCoord2f32(0.0f, 0.125f * (f32)(8 - j));
 		}
 	}

@@ -1459,7 +1459,7 @@ void BattleMenuDisp_ActSelect_Init(BattleWork* wp, BattleCursor* a, void* b, u32
     }
 }
 
-void BattleMenuDisp_ActSelect_Main(void) {}
+void BattleMenuDisp_ActSelect_Main(BattleWork* wp) {}
 void BattleMenuDisp_ActSelect_Disp(BattleWork* wp) {
     DrawMainMenu();
 }
@@ -1748,7 +1748,7 @@ void BattleMenuDisp_WeaponSelect_Init(BattleWork* wp, BattleCursor* menu, void* 
     }
 }
 
-void BattleMenuDisp_WeaponSelect_Main(void) {}
+void BattleMenuDisp_WeaponSelect_Main(BattleWork* wp) {}
 void BattleMenuDisp_WeaponSelect_Disp(BattleWork* wp) {
     DrawWeaponWin();
 }
@@ -1845,7 +1845,7 @@ void BattleMenuDisp_Operation_Init(BattleWork* wp, u32 flags) {
     }
 }
 
-void BattleMenuDisp_Operation_Main(void) {}
+void BattleMenuDisp_Operation_Main(BattleWork* wp) {}
 void BattleMenuDisp_Operation_Disp(BattleWork* wp) {
     DrawOperationWin();
 }
@@ -1918,7 +1918,7 @@ void BattleMenuDisp_ChangePartySelect_Init(BattleWork* wp, u32 flags) {
     }
 }
 
-void BattleMenuDisp_ChangePartySelect_Main(void) {}
+void BattleMenuDisp_ChangePartySelect_Main(BattleWork* wp) {}
 void BattleMenuDisp_ChangePartySelect_Disp(BattleWork* wp) {
     DrawChangePartyWin();
 }
@@ -1992,7 +1992,7 @@ void BattleMenuDisp_MultiItem_Init(BattleWork* wp, u32 flags) {
     }
 }
 
-void BattleMenuDisp_MultiItem_Main(void) {}
+void BattleMenuDisp_MultiItem_Main(BattleWork* wp) {}
 void BattleMenuDisp_MultiItem_Disp(BattleWork* wp) {
     DrawMultiItemWin();
 }
