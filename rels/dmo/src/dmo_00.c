@@ -107,12 +107,12 @@ USER_FUNC(demo_init) {
 }
 
 void demo_exit(void) {
-    CameraEntry* cam = camGetPtr(8);
+    CameraEntry* cam = camGetPtr(CAMERA_2D);
     if (wp->tplFile != 0) {
         fileFree(wp->tplFile);
     }
     psndClearFlag(4);
-    cam = camGetPtr(4);
+    cam = camGetPtr(CAMERA_3D);
     cam->viewport[0] = 0.0f;
     cam->viewport[1] = 0.0f;
     cam->viewport[2] = 608.0f;
@@ -138,7 +138,7 @@ void demo_cap(void) {
 }
 
 void demo_desk(CameraId cameraId, void* param) {
-    CameraEntry* cam = camGetPtr(8);
+    CameraEntry* cam = camGetPtr(CAMERA_2D);
     GXTexObj texObj;
     Mtx m1;
     Mtx m2;
@@ -154,15 +154,15 @@ void demo_desk(CameraId cameraId, void* param) {
 
     GXSetProjection(cam->projection, cam->projType);
     GXSetViewport(0.0f, 0.0f, 608.0f, 480.0f, 0.0f, 1.0f);
-    GXSetBlendMode(1, 4, 5, 0);
-    GXSetZCompLoc(1);
-    GXSetAlphaCompare(7, 0, 0, 7, 0);
-    GXSetZMode(0, 3, 0);
+    GXSetBlendMode(GX_BM_BLEND, GX_BL_SRCALPHA, GX_BL_INVSRCALPHA, GX_LO_CLEAR);
+    GXSetZCompLoc(GX_TRUE);
+    GXSetAlphaCompare(GX_ALWAYS, 0, GX_AOP_AND, GX_ALWAYS, 0);
+    GXSetZMode(GX_FALSE, GX_LEQUAL, GX_FALSE);
     GXSetNumChans(1);
     GXSetChanCtrl(4, 0, 0, 0, 0, 0, 2);
     GXSetChanMatColor(4, (GXColor) { 0xFF, 0xFF, 0xFF, (u8)(255.0f * (1.0f - wp->fade)) });
     GXSetNumTexGens(1);
-    GXSetTexCoordGen2(0, 1, 4, 0x3C, 0, 0x7D);
+    GXSetTexCoordGen2(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_IDENTITY, GX_FALSE, GX_PTIDENTITY);
     TEXGetGXTexObjFromPalette((TEXPalette*)wp->tplFile->data[0], &texObj, 0);
     GXLoadTexObj(&texObj, 0);
     GXSetNumTevStages(1);
@@ -175,13 +175,13 @@ void demo_desk(CameraId cameraId, void* param) {
     PSMTXConcat(cam->view, m1, m1);
     GXLoadPosMtxImm(m1, 0);
     GXSetCurrentMtx(0);
-    GXSetCullMode(0);
+    GXSetCullMode(GX_CULL_NONE);
     GXClearVtxDesc();
-    GXSetVtxDesc(9, 1);
-    GXSetVtxDesc(0xD, 1);
-    GXSetVtxAttrFmt(0, 9, 1, 4, 0);
-    GXSetVtxAttrFmt(0, 0xD, 1, 4, 0);
-    GXBegin(0x80, 0, 4);
+    GXSetVtxDesc(GX_VA_POS, GX_DIRECT);
+    GXSetVtxDesc(GX_VA_TEX0, GX_DIRECT);
+    GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_POS_XYZ, GX_F32, 0);
+    GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, GX_TEX_ST, GX_F32, 0);
+    GXBegin(GX_QUADS, GX_VTXFMT0, 4);
 #ifdef MUST_MATCH
     GXPosition3f32(-w * half, top, 0.0f);
     GXTexCoord2f32(0.0f, 0.0f);
@@ -205,7 +205,7 @@ void demo_desk(CameraId cameraId, void* param) {
 
 // demo_img projects the captured frame and duplicates it into two other viewports.
 void demo_img(CameraId cameraId, void* param) {
-    CameraEntry* cam = camGetPtr(8);
+    CameraEntry* cam = camGetPtr(CAMERA_2D);
     GXTexObj texObj;
     Mtx m1;
     Mtx m2;
@@ -230,17 +230,17 @@ void demo_img(CameraId cameraId, void* param) {
     }
     GXSetProjection(cam->projection, cam->projType);
     GXSetViewport(0.0f, 0.0f, 608.0f, 480.0f, 0.0f, 1.0f);
-    GXSetBlendMode(1, 4, 5, 0);
-    GXSetZCompLoc(1);
-    GXSetAlphaCompare(7, 0, 0, 7, 0);
-    GXSetZMode(0, 3, 0);
+    GXSetBlendMode(GX_BM_BLEND, GX_BL_SRCALPHA, GX_BL_INVSRCALPHA, GX_LO_CLEAR);
+    GXSetZCompLoc(GX_TRUE);
+    GXSetAlphaCompare(GX_ALWAYS, 0, GX_AOP_AND, GX_ALWAYS, 0);
+    GXSetZMode(GX_FALSE, GX_LEQUAL, GX_FALSE);
     GXSetNumChans(1);
     GXSetChanCtrl(4, 0, 0, 0, 0, 0, 2);
     GXSetChanMatColor(4, (GXColor) { 0xFF, 0xFF, 0xFF, (u8)(255.0f * (1.0f - wp->fade)) });
     TEXGetGXTexObjFromPalette((TEXPalette*)wp->tplFile->data[0], &texObj, wp->page + 8);
     GXLoadTexObj(&texObj, 0);
     GXSetNumTexGens(1);
-    GXSetTexCoordGen2(0, 1, 4, 0x3C, 0, 0x7D);
+    GXSetTexCoordGen2(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_IDENTITY, GX_FALSE, GX_PTIDENTITY);
     GXSetNumTevStages(1);
     GXSetTevOrder(0, 0, 0, 4);
     GXSetTevOp(0, 0);
@@ -252,12 +252,12 @@ void demo_img(CameraId cameraId, void* param) {
     PSMTXConcat(cam->view, m1, m1);
     GXLoadPosMtxImm(m1, 0);
     GXSetCurrentMtx(0);
-    GXSetCullMode(2);
+    GXSetCullMode(GX_CULL_BACK);
     GXClearVtxDesc();
-    GXSetVtxDesc(9, 1);
-    GXSetVtxDesc(0xD, 1);
-    GXSetVtxAttrFmt(0, 9, 1, 4, 0);
-    GXSetVtxAttrFmt(0, 0xD, 1, 4, 0);
+    GXSetVtxDesc(GX_VA_POS, GX_DIRECT);
+    GXSetVtxDesc(GX_VA_TEX0, GX_DIRECT);
+    GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_POS_XYZ, GX_F32, 0);
+    GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, GX_TEX_ST, GX_F32, 0);
     GXGetViewportv(vp);
     GXGetProjectionv(proj);
 #ifdef MUST_MATCH
@@ -276,17 +276,17 @@ void demo_img(CameraId cameraId, void* param) {
     GXProject(101.333336f, b, 0.0f, m1, proj, vp, &p2.x, &p2.y, &p2.z);
 #endif
     GXProject(a, b, 0.0f, m1, proj, vp, &p3.x, &p3.y, &p3.z);
-    cam = camGetPtr(4);
+    cam = camGetPtr(CAMERA_3D);
     cam->viewport[0] = p0.x;
     cam->viewport[1] = p0.y;
     cam->viewport[2] = p2.x - p0.x;
     cam->viewport[3] = p2.y - p0.y;
-    cam = camGetPtr(6);
+    cam = camGetPtr(CAMERA_3D_IMAGE);
     cam->viewport[0] = 0.0f;
     cam->viewport[1] = 0.0f;
     cam->viewport[2] = 608.0f;
     cam->viewport[3] = 480.0f;
-    GXBegin(0x80, 0, 4);
+    GXBegin(GX_QUADS, GX_VTXFMT0, 4);
     GXPosition3f32(a, top, 0.0f);
     GXTexCoord2f32(0.0f, 0.0f);
     GXPosition3f32(right, top, 0.0f);
@@ -298,7 +298,7 @@ void demo_img(CameraId cameraId, void* param) {
 }
 
 void demo_book(CameraId cameraId, void* param) {
-    CameraEntry* cam = camGetPtr(8);
+    CameraEntry* cam = camGetPtr(CAMERA_2D);
     GXTexObj texObj;
     Mtx m1;
     Mtx m2;
@@ -318,15 +318,15 @@ void demo_book(CameraId cameraId, void* param) {
     PSMTXConcat(cam->view, m1, m2);
     PSMTXTrans(m1, -w / 2.0f + 8.0f, 0.0f, 0.0f);
     PSMTXConcat(m2, m1, m1);
-    GXSetBlendMode(1, 4, 5, 0);
-    GXSetZCompLoc(1);
-    GXSetAlphaCompare(7, 0, 0, 7, 0);
-    GXSetZMode(0, 3, 0);
+    GXSetBlendMode(GX_BM_BLEND, GX_BL_SRCALPHA, GX_BL_INVSRCALPHA, GX_LO_CLEAR);
+    GXSetZCompLoc(GX_TRUE);
+    GXSetAlphaCompare(GX_ALWAYS, 0, GX_AOP_AND, GX_ALWAYS, 0);
+    GXSetZMode(GX_FALSE, GX_LEQUAL, GX_FALSE);
     GXSetNumChans(1);
     GXSetChanCtrl(4, 0, 0, 0, 0, 0, 2);
     GXSetChanMatColor(4, (GXColor) { 0xFF, 0xFF, 0xFF, (u8)(255.0f * (1.0f - wp->fade)) });
     GXSetNumTexGens(1);
-    GXSetTexCoordGen2(0, 1, 4, 0x3C, 0, 0x7D);
+    GXSetTexCoordGen2(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_IDENTITY, GX_FALSE, GX_PTIDENTITY);
     TEXGetGXTexObjFromPalette((TEXPalette*)wp->tplFile->data[0], &texObj, 1);
     GXLoadTexObj(&texObj, 0);
     GXSetNumTevStages(1);
@@ -334,19 +334,19 @@ void demo_book(CameraId cameraId, void* param) {
     GXSetTevOp(0, 0);
     GXSetTevAlphaIn(0, 7, 7, 7, 5);
     GXSetTevSwapMode(0, 0, 0);
-    GXSetCullMode(2);
+    GXSetCullMode(GX_CULL_BACK);
     GXClearVtxDesc();
-    GXSetVtxDesc(9, 1);
-    GXSetVtxDesc(0xD, 1);
-    GXSetVtxAttrFmt(0, 9, 1, 4, 0);
-    GXSetVtxAttrFmt(0, 0xD, 1, 4, 0);
+    GXSetVtxDesc(GX_VA_POS, GX_DIRECT);
+    GXSetVtxDesc(GX_VA_TEX0, GX_DIRECT);
+    GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_POS_XYZ, GX_F32, 0);
+    GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, GX_TEX_ST, GX_F32, 0);
     TEXGetGXTexObjFromPalette((TEXPalette*)wp->tplFile->data[0], &texObj, 2);
     GXLoadTexObj(&texObj, 0);
     w = (f32)(u16)GXGetTexObjWidth(&texObj);
     h = (f32)(u16)GXGetTexObjHeight(&texObj);
     GXLoadPosMtxImm(m1, 0);
     GXSetCurrentMtx(0);
-    GXBegin(0x80, 0, 4);
+    GXBegin(GX_QUADS, GX_VTXFMT0, 4);
     GXPosition3f32(0.0f, h / 2.0f, 0.0f);
     GXTexCoord2f32(1.0f, 0.0f);
     GXPosition3f32(w, h / 2.0f, 0.0f);
@@ -362,7 +362,7 @@ void demo_book(CameraId cameraId, void* param) {
     if (wp->page >= 0) {
         TEXGetGXTexObjFromPalette((TEXPalette*)wp->tplFile->data[0], &texObj, wp->page + 3);
         GXLoadTexObj(&texObj, 0);
-        GXBegin(0x80, 0, 4);
+        GXBegin(GX_QUADS, GX_VTXFMT0, 4);
         h95 = h * 0.95f;
         w95 = w * 0.95f;
         GXPosition3f32(0.0f, h95 / 2.0f, 0.0f);
@@ -375,13 +375,13 @@ void demo_book(CameraId cameraId, void* param) {
         GXTexCoord2f32(0.0f, 1.0f);
         demo_img(cameraId, param);
     }
-    GXSetBlendMode(0, 1, 0, 7);
-    GXSetZCompLoc(1);
-    GXSetAlphaCompare(7, 0, 0, 7, 0);
-    GXSetZMode(0, 3, 0);
+    GXSetBlendMode(GX_BM_NONE, GX_BL_ONE, GX_BL_ZERO, GX_LO_OR);
+    GXSetZCompLoc(GX_TRUE);
+    GXSetAlphaCompare(GX_ALWAYS, 0, GX_AOP_AND, GX_ALWAYS, 0);
+    GXSetZMode(GX_FALSE, GX_LEQUAL, GX_FALSE);
     GXSetNumChans(0);
     GXSetNumTexGens(1);
-    GXSetTexCoordGen2(0, 1, 4, 0x3C, 0, 0x7D);
+    GXSetTexCoordGen2(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_IDENTITY, GX_FALSE, GX_PTIDENTITY);
     GXSetNumTevStages(1);
     GXSetTevOrder(0, 0, 0, 0xFF);
     GXSetTevOp(0, 3);
@@ -392,7 +392,7 @@ void demo_book(CameraId cameraId, void* param) {
     GXSetCurrentMtx(0);
     TEXGetGXTexObjFromPalette((TEXPalette*)wp->tplFile->data[0], &texObj, 1);
     GXLoadTexObj(&texObj, 0);
-    GXBegin(0x80, 0, 4);
+    GXBegin(GX_QUADS, GX_VTXFMT0, 4);
     GXPosition3f32(0.0f, h / 2.0f, 0.0f);
     GXTexCoord2f32(0.0f, 0.0f);
     GXPosition3f32(w, h / 2.0f, 0.0f);
@@ -401,10 +401,10 @@ void demo_book(CameraId cameraId, void* param) {
     GXTexCoord2f32(1.0f, 1.0f);
     GXPosition3f32(0.0f, -h / 2.0f, 0.0f);
     GXTexCoord2f32(0.0f, 1.0f);
-    GXSetCullMode(1);
+    GXSetCullMode(GX_CULL_FRONT);
     TEXGetGXTexObjFromPalette((TEXPalette*)wp->tplFile->data[0], &texObj, 2);
     GXLoadTexObj(&texObj, 0);
-    GXBegin(0x80, 0, 4);
+    GXBegin(GX_QUADS, GX_VTXFMT0, 4);
     GXPosition3f32(0.0f, h / 2.0f, 0.0f);
     GXTexCoord2f32(1.0f, 0.0f);
     GXPosition3f32(w, h / 2.0f, 0.0f);
@@ -437,10 +437,10 @@ void demo_window(CameraId cameraId, void* param) {
     if (wp->winAlpha < 0) {
         wp->winAlpha = 0;
     }
-    GXSetBlendMode(1, 4, 5, 0);
-    GXSetZCompLoc(1);
-    GXSetAlphaCompare(7, 0, 0, 7, 0);
-    GXSetZMode(0, 3, 0);
+    GXSetBlendMode(GX_BM_BLEND, GX_BL_SRCALPHA, GX_BL_INVSRCALPHA, GX_LO_CLEAR);
+    GXSetZCompLoc(GX_TRUE);
+    GXSetAlphaCompare(GX_ALWAYS, 0, GX_AOP_AND, GX_ALWAYS, 0);
+    GXSetZMode(GX_FALSE, GX_LEQUAL, GX_FALSE);
     TEXGetGXTexObjFromPalette((TEXPalette*)wp->tplFile->data[0], &texObj, 0xD);
     GXLoadTexObj(&texObj, 0);
     w = (f32)(u16)GXGetTexObjWidth(&texObj);
@@ -449,22 +449,22 @@ void demo_window(CameraId cameraId, void* param) {
     GXSetChanCtrl(4, 0, 0, 0, 0, 0, 2);
     GXSetChanMatColor(4, (GXColor) { 0xFF, 0xFF, 0xFF, (u8)(wp->winAlpha * 255 / 255) });
     GXSetNumTexGens(1);
-    GXSetTexCoordGen2(0, 1, 4, 0x3C, 0, 0x7D);
+    GXSetTexCoordGen2(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_IDENTITY, GX_FALSE, GX_PTIDENTITY);
     GXSetNumTevStages(1);
     GXSetTevOrder(0, 0, 0, 4);
     GXSetTevOp(0, 0);
     GXSetTevSwapMode(0, 0, 0);
-    GXSetCullMode(2);
+    GXSetCullMode(GX_CULL_BACK);
     GXClearVtxDesc();
-    GXSetVtxDesc(9, 1);
-    GXSetVtxDesc(0xD, 1);
-    GXSetVtxAttrFmt(0, 9, 1, 4, 0);
-    GXSetVtxAttrFmt(0, 0xD, 1, 4, 0);
+    GXSetVtxDesc(GX_VA_POS, GX_DIRECT);
+    GXSetVtxDesc(GX_VA_TEX0, GX_DIRECT);
+    GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_POS_XYZ, GX_F32, 0);
+    GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, GX_TEX_ST, GX_F32, 0);
     PSMTXTrans(m1, 0.0f, -130.0f, 0.0f);
     PSMTXConcat(cam->view, m1, m1);
     GXLoadPosMtxImm(m1, 0);
     GXSetCurrentMtx(0);
-    GXBegin(0x80, 0, 4);
+    GXBegin(GX_QUADS, GX_VTXFMT0, 4);
     right = w / 2.0f;
     top = h / 2.0f;
     left = -right;
