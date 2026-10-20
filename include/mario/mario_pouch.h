@@ -427,7 +427,7 @@ typedef struct PouchData {
     u8 field_0x5A0[0x10];              // 0x5A0
     s16 mShopPoints;                   // 0x5B0
     u8 field_0x5B2[2];                 // 0x5B2
-    u32 field_0x5B4;                   // 0x5B4
+    u32 shopExchangedMask;             // 0x5B4, bit i set once shopPointList[i] has been given
     u8 mMerleeCurseUsesRemaining;      // 0x5B8
     s8 mTurnsUntilMerleeActivation;    // 0x5B9
     u8 mMerleeNextCurseType;           // 0x5BA

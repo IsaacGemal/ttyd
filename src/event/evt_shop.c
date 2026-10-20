@@ -73,7 +73,7 @@ typedef struct ShopWork {
 	s32 numItems;                 //0x20
 	EventEntry* mainEvt;          //0x24
 	EventEntry* buyEvt;           //0x28
-	s32 selectedItem;              //0x2C, selected item index
+	s32 selectedItem;             //0x2C, selected item index
 	u8 pad_0x30[0x38 - 0x30];     //0x30
 	s32 shownPoints;              //0x38, shop points as drawn by point_disp
 	u8 pad_0x3C[0x50 - 0x3C];
@@ -94,14 +94,14 @@ extern ItemData itemDataTable[];
 extern ShopPointEntry shopPointList[];
 extern const char str_802ECD50[];
 extern const char str_802ECE38[];
-extern u32 shop_title_color;
+extern u32 shop_list_title_color;
 extern u32 shop_points_color;
-extern u32 shop_name_color;
+extern u32 shop_item_name_color;
 extern u32 shop_price_color;
 extern const char str_8041BC60[];
 extern const f32 float_0p5_8041bc5c;
-extern const f32 shop_count_char_width;
-extern const f32 shop_name_y;
+extern const f32 shop_price_digit_width;
+extern const f32 shop_item_name_y;
 extern const f32 float_30_8041bc40;
 extern const f32 float_10_8041bc3c;
 extern const f32 float_36_8041bc44;
@@ -118,12 +118,12 @@ extern u32 shopper_talk_evt[];
 extern u32 main_evt[4];
 extern u32 evt_shoplist[10];
 extern const char str_8041BC28[];
-extern u32 shop_list_head_left_color;
-extern u32 shop_list_head_right_color;
+extern u32 shop_list_points_head_color;
+extern u32 shop_list_item_head_color;
 extern u32 shop_list_price_exchanged_color;
 extern u32 shop_list_price_color;
-extern u32 shop_list_label_exchanged_color;
-extern u32 shop_list_label_color;
+extern u32 shop_list_unit_exchanged_color;
+extern u32 shop_list_unit_color;
 extern u32 shop_list_item_exchanged_color;
 extern u32 shop_list_item_color;
 extern const f32 float_0p6_8041bc2c;
@@ -136,27 +136,27 @@ extern const f32 float_0p64_8041bc38;
 // .rodata
 const char str_802ECD50[16] = "item_first_hit";
 const char shop_map_mri_07[8] = "mri_07";
-const char shop_map_stg2_shop_04_1[16] = "stg2_shop_04_1";
+const char shop_msg_stg2_shop_04_1[16] = "stg2_shop_04_1";
 const char shop_map_usu_01[8] = "usu_01";
-const char shop_map_usugurashop_04_1[20] = "usugurashop_04_1";
+const char shop_msg_usugurashop_04_1[20] = "usugurashop_04_1";
 const char shop_map_rsh_03_a[12] = "rsh_03_a";
 const char shop_map_rsh_03_b[12] = "rsh_03_b";
 const char shop_map_rsh_03_c[12] = "rsh_03_c";
-const char shop_map_stg6_shop_04_1[16] = "stg6_shop_04_1";
+const char shop_msg_stg6_shop_04_1[16] = "stg6_shop_04_1";
 const char shop_msg_scroll_once_stop[24] = "<scrl_auto><once_stop>";
 const char shop_map_rsh_03[8] = "rsh_03";
 
 // .sdata2
-__declspec(section ".sdata2") u32 shop_name_color = 0xFFFFFFFF;
+__declspec(section ".sdata2") u32 shop_item_name_color = 0xFFFFFFFF;
 __declspec(section ".sdata2") u32 shop_price_color = 0xFFFFFFFF;
 __declspec(section ".sdata2") u32 shop_points_color = 0xFFFFFFFF;
-__declspec(section ".sdata2") u32 shop_title_color = 0xFFFFFFFF;
-__declspec(section ".sdata2") u32 shop_list_head_left_color = 0xFFFFFFFF;
-__declspec(section ".sdata2") u32 shop_list_head_right_color = 0xFFFFFFFF;
+__declspec(section ".sdata2") u32 shop_list_title_color = 0xFFFFFFFF;
+__declspec(section ".sdata2") u32 shop_list_points_head_color = 0xFFFFFFFF;
+__declspec(section ".sdata2") u32 shop_list_item_head_color = 0xFFFFFFFF;
 __declspec(section ".sdata2") u32 shop_list_price_exchanged_color = 0xF00000FF;
 __declspec(section ".sdata2") u32 shop_list_price_color = 0x000000FF;
-__declspec(section ".sdata2") u32 shop_list_label_exchanged_color = 0xF00000FF;
-__declspec(section ".sdata2") u32 shop_list_label_color = 0x000000FF;
+__declspec(section ".sdata2") u32 shop_list_unit_exchanged_color = 0xF00000FF;
+__declspec(section ".sdata2") u32 shop_list_unit_color = 0x000000FF;
 __declspec(section ".sdata2") u32 shop_list_item_exchanged_color = 0xF00000FF;
 __declspec(section ".sdata2") u32 shop_list_item_color = 0x000000FF;
 __declspec(section ".sdata2") const char str_8041BC10[8] = "mario";
@@ -175,10 +175,10 @@ __declspec(section ".sdata2") const f32 float_1p1_8041bc48 = 1.1f;
 __declspec(section ".sdata2") const f32 float_0p8_8041bc4c = 0.8f;
 __declspec(section ".sdata2") const f32 float_124_8041bc50 = 124.0f;
 __declspec(section ".sdata2") const f32 float_38_8041bc54 = 38.0f;
-__declspec(section ".sdata2") const f32 shop_name_y = 108.0f;
+__declspec(section ".sdata2") const f32 shop_item_name_y = 108.0f;
 __declspec(section ".sdata2") const f32 float_0p5_8041bc5c = 0.5f;
 __declspec(section ".sdata2") const char str_8041BC60[4] = "%d";
-__declspec(section ".sdata2") const f32 shop_count_char_width = 12.0f;
+__declspec(section ".sdata2") const f32 shop_price_digit_width = 12.0f;
 
 // Keep named scalar loads when definitions precede immediate code generation.
 #ifdef MUST_MATCH
@@ -482,8 +482,8 @@ USER_FUNC(exchange_shop_point) {
 	s32 price;
 
 	for (i = 0, p = shopPointList; (price = p->price) != -1; i++, p++) {
-		if (price <= pouch->mShopPoints && !(pouch->field_0x5B4 & (1 << i))) {
-			pouch->field_0x5B4 |= 1 << i;
+		if (price <= pouch->mShopPoints && !(pouch->shopExchangedMask & (1 << i))) {
+			pouch->shopExchangedMask |= 1 << i;
 			return EVT_RETURN_DONE;
 		}
 	}
@@ -504,7 +504,7 @@ USER_FUNC(chk_shop_point) {
 		if (price > points) {
 			continue;
 		}
-		if (pouch->field_0x5B4 & (1 << i)) {
+		if (pouch->shopExchangedMask & (1 << i)) {
 			continue;
 		}
 		if (points != 0x12C) {
@@ -533,7 +533,7 @@ USER_FUNC(reset_shop_point) {
 	PouchData* pouch = pouchGetPtr();
 
 	pouch->mShopPoints = 0;
-	pouch->field_0x5B4 = 0;
+	pouch->shopExchangedMask = 0;
 	return EVT_RETURN_DONE;
 }
 
@@ -745,7 +745,7 @@ void list_disp(WinMgrEntry* entry) {
 	msg = msgSearch("msg_shop_point_list5");
 	FontDrawStart();
 	FontDrawEdge();
-	*(u32*)&color0 = shop_list_head_left_color;
+	*(u32*)&color0 = shop_list_points_head_color;
 	FontDrawColor(&color0);
 	FontDrawMessage((100 - FontGetMessageWidth(msg)) / 2 + (10 + entry->x), entry->y + 13, msg);
 	FontDrawEdgeOff();
@@ -753,7 +753,7 @@ void list_disp(WinMgrEntry* entry) {
 	msg = msgSearch("msg_shop_point_list6");
 	FontDrawStart();
 	FontDrawEdge();
-	*(u32*)&color1 = shop_list_head_right_color;
+	*(u32*)&color1 = shop_list_item_head_color;
 	FontDrawColor(&color1);
 	FontDrawMessage(entry->x + entry->width / 2 - 10 + (100 - FontGetMessageWidth(msg)) / 2, entry->y + 13, msg);
 	FontDrawEdgeOff();
@@ -762,7 +762,7 @@ void list_disp(WinMgrEntry* entry) {
 	for (; shopPointList[i].price != -1; i++) {
 		item = &itemDataTable[shopPointList[i].item];
 		FontDrawStart();
-		if (pouch->field_0x5B4 & (1 << i)) {
+		if (pouch->shopExchangedMask & (1 << i)) {
 			*(u32*)&color2 = shop_list_price_exchanged_color;
 			FontDrawColor(&color2);
 		}
@@ -774,12 +774,12 @@ void list_disp(WinMgrEntry* entry) {
 		FontDrawMessage(entry->width / 2 - FontGetMessageWidth(buf) + entry->x - 90, entry->y - 20 - i * 26, buf);
 
 		FontDrawStart();
-		if (pouch->field_0x5B4 & (1 << i)) {
-			*(u32*)&color4 = shop_list_label_exchanged_color;
+		if (pouch->shopExchangedMask & (1 << i)) {
+			*(u32*)&color4 = shop_list_unit_exchanged_color;
 			FontDrawColor(&color4);
 		}
 		else {
-			*(u32*)&color5 = shop_list_label_color;
+			*(u32*)&color5 = shop_list_unit_color;
 			FontDrawColor(&color5);
 		}
 		sprintf(buf, str_8041BC28, msgSearch("msg_shop_point_list5"));
@@ -797,7 +797,7 @@ void list_disp(WinMgrEntry* entry) {
 
 		msg = msgSearch(item->name);
 		FontDrawStart();
-		if (pouch->field_0x5B4 & (1 << i)) {
+		if (pouch->shopExchangedMask & (1 << i)) {
 			*(u32*)&color6 = shop_list_item_exchanged_color;
 			FontDrawColor(&color6);
 		}
@@ -816,7 +816,7 @@ void title_disp(WinMgrEntry* entry) {
 
 		FontDrawStart();
 		FontDrawEdge();
-		*(u32*)&color = shop_title_color;
+		*(u32*)&color = shop_list_title_color;
 		FontDrawColor(&color);
 		FontDrawMessage(entry->x + (entry->width - FontGetMessageWidth(msg)) / 2, entry->y - 12, msg);
 		FontDrawEdgeOff();
@@ -891,9 +891,9 @@ void name_disp(WinMgrEntry* entry) {
 	if (winMgrAction(wp->nameWin) == 0) {
 		FontDrawStart();
 		FontDrawEdge();
-		*(u32*)&titleColor = shop_name_color;
+		*(u32*)&titleColor = shop_item_name_color;
 		FontDrawColor(&titleColor);
-		FontDrawString(msg, (f32)(-(s32)FontGetMessageWidth(msg) / 2), SHOP_F32(shop_name_y));
+		FontDrawString(msg, (f32)(-(s32)FontGetMessageWidth(msg) / 2), SHOP_F32(shop_item_name_y));
 		FontDrawEdgeOff();
 	}
 	for (i = 0; i < wp->numItems; i++) {
@@ -914,7 +914,7 @@ void name_disp(WinMgrEntry* entry) {
 		pos.y *= (f32)gp->efbHeight * SHOP_F32(float_0p5_8041bc5c);
 #endif
 		sprintf(buf, str_8041BC60, wp->items[i * 2 + 1]);
-		PSMTXTrans(mtx, SHOP_F32(shop_count_char_width) * (f32)(strlen(buf) - 1) + pos.x, pos.y, pos.z);
+		PSMTXTrans(mtx, SHOP_F32(shop_price_digit_width) * (f32)(strlen(buf) - 1) + pos.x, pos.y, pos.z);
 		iconNumberDispGx(mtx, *(s32*)((u8*)wp->items + i * 8 + 4), 0, *(GXColor*)&shop_price_color);
 	}
 }
@@ -996,16 +996,16 @@ u32 shopper_talk_evt[352] = {
     0xFBD3E280, 0x00000001, 0x0002005B, (u32)(void*)evt_mario_key_onoff, 0x00000001, 0x00000002, 0x00000021, 0x00020032,
     0xFBD3E28B, 0x00000000, 0x0002005B, (u32)(void*)evt_sub_get_mapname, 0xFE363C80, 0x0002000C, 0xFE363C80, (u32)(void*)shop_map_mri_07,
     0x00020018, 0xF8405C7A, 0x00000001, 0x0003005B, (u32)(void*)evt_sub_load_progresstime, 0xF5DE0185, 0xFE363C80, 0x0002001A,
-    0xFE363C80, 0x000DBBA0, 0x00020032, 0xFE363C8E, (u32)(void*)shop_map_stg2_shop_04_1, 0x00020032, 0xFBD3E28B, 0x00000001,
+    0xFE363C80, 0x000DBBA0, 0x00020032, 0xFE363C8E, (u32)(void*)shop_msg_stg2_shop_04_1, 0x00020032, 0xFBD3E28B, 0x00000001,
     0x00000021, 0x00000021, 0x00000021, 0x0002005B, (u32)(void*)evt_sub_get_mapname, 0xFE363C80, 0x0002000C, 0xFE363C80,
     (u32)(void*)shop_map_usu_01, 0x00020018, 0xF8405C7B, 0x00000001, 0x0003005B, (u32)(void*)evt_sub_load_progresstime, 0xF5DE018E, 0xFE363C80,
-    0x0002001A, 0xFE363C80, 0x000DBBA0, 0x00020032, 0xFE363C8E, (u32)(void*)shop_map_usugurashop_04_1, 0x00020032, 0xFBD3E28B,
+    0x0002001A, 0xFE363C80, 0x000DBBA0, 0x00020032, 0xFE363C8E, (u32)(void*)shop_msg_usugurashop_04_1, 0x00020032, 0xFBD3E28B,
     0x00000001, 0x00000021, 0x00000021, 0x00000021, 0x00020032, 0xFBD3E28C, 0x00000000, 0x0002005B,
     (u32)(void*)evt_sub_get_mapname, 0xFE363C80, 0x0002000C, 0xFE363C80, (u32)(void*)shop_map_rsh_03_a, 0x00020032, 0xFBD3E28C, 0x00000001,
     0x00000021, 0x0002000C, 0xFE363C80, (u32)(void*)shop_map_rsh_03_b, 0x00020032, 0xFBD3E28C, 0x00000001, 0x00000021,
     0x0002000C, 0xFE363C80, (u32)(void*)shop_map_rsh_03_c, 0x00020032, 0xFBD3E28C, 0x00000001, 0x00000021, 0x00020018,
     0xFBD3E28C, 0x00000001, 0x00020018, 0xF8405C7C, 0x00000001, 0x0003005B, (u32)(void*)evt_sub_load_progresstime, 0xF5DE0197,
-    0xFE363C80, 0x0002001A, 0xFE363C80, 0x000DBBA0, 0x00020032, 0xFE363C8E, (u32)(void*)shop_map_stg6_shop_04_1, 0x00020032,
+    0xFE363C80, 0x0002001A, 0xFE363C80, 0x000DBBA0, 0x00020032, 0xFE363C8E, (u32)(void*)shop_msg_stg6_shop_04_1, 0x00020032,
     0xFBD3E28B, 0x00000001, 0x00000021, 0x00000021, 0x00000021, 0x00020018, 0xFBD3E28B, 0x00000000,
     0x0004005B, (u32)get_msg, 0xFE363C8A, 0x00000004, 0xFE363C8E, 0x00000021, 0x00020018, 0xFBD3E28A,
     0x00000000, 0x0005005B, (u32)(void*)evt_msg_print, 0x00000000, 0xFE363C8E, 0x00000000, 0x00000000, 0x00000020,
