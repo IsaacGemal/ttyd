@@ -193,10 +193,10 @@ static inline void kpaFireBreath2(MarioWork* mp, Vec* pos) {
     }
     fireefp = effGonbabaBreathEntry(type, 0, x, y, z, escale);
     ((effGonbabaBreathData*)((EffectEntry*)fireefp)->userdata)->rotation =
-        (mp->dispReqDir >= 90.0f && mp->dispReqDir <= 270.0f) ? 0xB4 : 0;
+        (MW_F32(mp, 0x1AC) >= 90.0f && MW_F32(mp, 0x1AC) <= 270.0f) ? 0xB4 : 0;
     if (((effGonbabaBreathData*)((EffectEntry*)fireefp)->userdata)->child != NULL) {
         ((effGonbabaBreathData*)((EffectEntry*)((effGonbabaBreathData*)((EffectEntry*)fireefp)->userdata)->child)->userdata)->rotation =
-            (mp->dispReqDir >= 90.0f && mp->dispReqDir <= 270.0f) ? 0xB4 : 0;
+            (MW_F32(mp, 0x1AC) >= 90.0f && MW_F32(mp, 0x1AC) <= 270.0f) ? 0xB4 : 0;
     }
 }
 #else

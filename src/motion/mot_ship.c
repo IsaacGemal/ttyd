@@ -449,8 +449,8 @@ void mot_ship(void) {
 #ifdef MUST_MATCH
             // The original doubles the distance with `d + d`, not `2.0f * d`.
             dy = SHIP_DATA->unk3C.y - mario->position.y;
-            mario->jumpVelY = 0.0f;
-            mario->jumpAccelY = (dy + dy) / 306.0f;
+            *(f32*)((u8*)mario + 0x7C) = 0.0f;
+            *(f32*)((u8*)mario + 0x80) = (dy + dy) / 306.0f;
 #else
             mario->jumpVelY = 0.0f;
             mario->jumpAccelY = 2.0f * (SHIP_DATA->unk3C.y - mario->position.y) / 306.0f;

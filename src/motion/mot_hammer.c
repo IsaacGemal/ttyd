@@ -264,7 +264,7 @@ void mot_hammer(void) {
     } else {
         s32 b = mario->multiTimer;
 #ifdef MUST_MATCH
-        s32 t = (b <= 10) ? mario->multiTimer : 10;
+        s32 t = (b <= 10) ? M_S32(mario, 0x48) : 10;
         r27 = t;
 #else
         r27 = (b <= 10) ? b : 10;
@@ -732,7 +732,7 @@ void mot_hammer2(void) {
 #ifdef MUST_MATCH
         py__ = 20.f; px__ = mario->position.x; py__ += mario->position.y;
         pz__ = mario->position.z; one__ = 1.0f;
-        effUltraHammerEntry(mario->dispHalfTurn != 0, mario->multiTimer, px__, py__, pz__, one__);
+        effUltraHammerEntry(M_S8(mario, 0x43) != 0, mario->multiTimer, px__, py__, pz__, one__);
 #else
         effUltraHammerEntry(mario->dispHalfTurn != 0, mario->multiTimer, mario->position.x,
                             mario->position.y + 20.f, mario->position.z, 1.0f);

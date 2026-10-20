@@ -2069,7 +2069,7 @@ USER_FUNC(evt_koopa_hip_attack) {
         movePos(&mario->position.x, &mario->position.z, mario->baseSpeed, mario->directionView);
         marioMakeJumpPara();
 #ifdef MUST_MATCH
-        y = mario->jumpVelY;
+        y = *(f32*)((u8*)mario + 0x7C);
 #else
         vy = mario->jumpVelY;
 #endif

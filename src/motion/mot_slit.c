@@ -126,15 +126,15 @@ s32 U_marioSlitContinueChk(void) {
     } else if (marioBgmodeChk() == 1) {
         state = 0;
     } else if (!(mario2->dispFlags & (1 << 24))) {
-        if (mario2->buttonHeld & 0x20) {
+        if (MW_U16(mario2, 0x246) & 0x20) {
             state = 1;
         } else {
             goto zero;
         }
     } else {
-        if (mario2->buttonHeld & 0x20) {
+        if (MW_U16(mario2, 0x246) & 0x20) {
             state = 2;
-        } else if (mario2->triggerRight >= 0x32) {
+        } else if (MW_U8(mario2, 0x253) >= 0x32) {
             state = 2;
         } else {
             goto zero;
@@ -379,15 +379,15 @@ static inline s32 slitContinueChk(void) {
     } else if (marioBgmodeChk() == 1) {
         state = 0;
     } else if (!(mario2->dispFlags & (1 << 24))) {
-        if (mario2->buttonHeld & 0x20) {
+        if (MW_U16(mario2, 0x246) & 0x20) {
             state = 1;
         } else {
             goto zero;
         }
     } else {
-        if (mario2->buttonHeld & 0x20) {
+        if (MW_U16(mario2, 0x246) & 0x20) {
             state = 2;
-        } else if (mario2->triggerRight >= 0x32) {
+        } else if (MW_U8(mario2, 0x253) >= 0x32) {
             state = 2;
         } else {
             goto zero;

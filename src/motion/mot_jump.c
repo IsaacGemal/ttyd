@@ -136,10 +136,10 @@ void mot_jumpStand(void) {
             // puts the fsubs result in f1 and the data[8] load in f2, which the original swaps.
             {
                 f32 neg = MATCH_F32(float_neg1_8041abf8);
-                f32 v = mario->jumpVelY;
+                f32 v = MWF32(mario, 0x7C);
                 f32 diff = neg - v;
 
-                mario->jumpVelY = diff * marioJumpStandData[8] + v;
+                MWF32(mario, 0x7C) = diff * marioJumpStandData[8] + v;
             }
 #else
             mario->jumpVelY = (float_neg1_8041abf8 - mario->jumpVelY)
