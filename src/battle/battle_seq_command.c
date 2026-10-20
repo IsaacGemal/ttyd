@@ -1408,7 +1408,7 @@ void BattleCommandDisplay_ActMenuSetup(BattleWork* wp, void* arg) {
 	_btlcmd_MakeActClassTable(work);
 	_btlcmd_GetCursorPtr(cmd, 14, &cursor);
 	BattleMenuDisp_ActSelect_Init(work, cursor, cmd->actionTable, (u32)a);
-	cmd->field_0x560 = 0;
+	cmd->idleFrames = 0;
 	cmd->menuFlags |= 0x01000001;
 	if (a == NULL && cmd->restoreState == 0) {
 		_cursor_init(&cmd->cursor[2]);
@@ -1478,11 +1478,11 @@ s32 BattleCommandDisplay_ActMenuMain(BattleWork* wp) {
 
 		}
 		if ((s32)BattlePadCheckNow(-1)) {
-			cmd->field_0x560 = 0;
+			cmd->idleFrames = 0;
 			btl_camera_set_mode(0, 0);
 		} else {
-			s32 v = cmd->field_0x560 + 1;
-			cmd->field_0x560 = v;
+			s32 v = cmd->idleFrames + 1;
+			cmd->idleFrames = v;
 			if (v >= 0x384) {
 				btl_camera_set_mode(0, 6);
 				btl_camera_set_moveSpeedLv(0, 5);

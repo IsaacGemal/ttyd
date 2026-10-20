@@ -92,7 +92,7 @@ typedef struct BattleCommand {
     u8 restoreState;                          // 0x558, set to 1 or 2 when a sub-menu opens; tested by BattleMenuKeyOKInACT
     u8 pad_0x559[0x55C - 0x559];              // 0x559
     void* field_55C;                          // 0x55C
-    s32 field_0x560;                          // 0x560, set to 0 then incremented in one command step
+    s32 idleFrames;                           // 0x560, reset while a button is held, counts up otherwise; 0x384 switches the idle camera
     s32 selectedDetail;                       // 0x564, copied from the selected entry, switched on by the act setup
     s32 eventId;                              // 0x568, pending event checked with evtCheckID
     u8 pad_0x56C[0x574 - 0x56C];              // 0x56C
