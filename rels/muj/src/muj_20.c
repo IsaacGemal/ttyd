@@ -41,22 +41,22 @@
 
 // marcoship work, private to this unit (layout read from the original's asm).
 typedef struct MarcoShip {
-    f32 field_0x0;    // 0x0
-    f32 field_0x4;    // 0x4
-    f32 field_0x8;    // 0x8
-    s32 field_0xC;    // 0xC
-    s32 field_0x10;   // 0x10
+    f32 angle;        // 0x0, swing angle; marcoship_yure_func hands it to the script each frame
+    f32 angleStep;    // 0x4, per-frame change of angle, sign flips at each end
+    f32 angleLimit;   // 0x8, swing amplitude
+    s32 settled;      // 0xC, set once the swing has returned to rest; marcoship_stop_wait_func waits on it
+    s32 state;        // 0x10, 0 swing, 1 pause at an end, 2 swing back to zero (marcoship_stop_func), 3 at rest
     u8 pad_0x14[4];   // 0x14
-    OSTime field_0x18; // 0x18
+    OSTime stateTime; // 0x18, renderTime when the current state began
 } MarcoShip;
 
 // logo work, private to this unit (layout read from the original's asm).
 typedef struct LogoWork {
-    void* data;      // 0x0
-    f32 alpha;       // 0x4
-    s32 field_0x8;   // 0x8
+    FileEntry* tpl;  // 0x0, mariost.tpl
+    f32 offsetY;     // 0x4, added to the logo's y: -50 to 0 while fading in, 0 to 100 while fading out
+    s32 alpha;       // 0x8, 0-255, the logo's vertex alpha
     s32 state;       // 0xC
-    s32 field_0x10;  // 0x10
+    s32 timer;       // 0x10, fade step counter; advanced twice per frame, once per intplGetValue call
 } LogoWork;
 
 #pragma pool_data off
@@ -263,12 +263,12 @@ USER_FUNC(marcoship_yure_init_func) {
     MarcoShip* ship = _mapAlloc(0x20);
 
     marcoship = ship;
-    ship->field_0x0 = 0.0f;
-    ship->field_0x4 = 0.02f;
-    ship->field_0x8 = 1.5f;
-    ship->field_0xC = 0;
-    ship->field_0x10 = 0;
-    ship->field_0x18 = 0;
+    ship->angle = 0.0f;
+    ship->angleStep = 0.02f;
+    ship->angleLimit = 1.5f;
+    ship->settled = 0;
+    ship->state = 0;
+    ship->stateTime = 0;
     return EVT_RETURN_DONE;
 }
 
@@ -278,58 +278,58 @@ USER_FUNC(marcoship_yure_func) {
     f32 zero = 0.0f;
     s32 elapsed;
 
-    switch (ship->field_0x10) {
+    switch (ship->state) {
     case 0:
-        if (ship->field_0x4 > zero) {
-            if (ship->field_0x0 > ship->field_0x8) {
-                ship->field_0x4 *= -1.0f;
-                ship->field_0x10 = 1;
-                ship->field_0x18 = gp->renderTime;
+        if (ship->angleStep > zero) {
+            if (ship->angle > ship->angleLimit) {
+                ship->angleStep *= -1.0f;
+                ship->state = 1;
+                ship->stateTime = gp->renderTime;
                 break;
             }
-        } else if (ship->field_0x0 < -ship->field_0x8) {
-            ship->field_0x4 *= -1.0f;
-            ship->field_0x10 = 1;
-            ship->field_0x18 = gp->renderTime;
+        } else if (ship->angle < -ship->angleLimit) {
+            ship->angleStep *= -1.0f;
+            ship->state = 1;
+            ship->stateTime = gp->renderTime;
             break;
         }
-        ship->field_0x0 += ship->field_0x4;
+        ship->angle += ship->angleStep;
         break;
     case 1:
-        elapsed = OSTicksToMilliseconds((u32)gp->renderTime - (u32)ship->field_0x18);
+        elapsed = OSTicksToMilliseconds((u32)gp->renderTime - (u32)ship->stateTime);
         if (elapsed > 500) {
-            ship->field_0x10 = 0;
+            ship->state = 0;
         }
         break;
     case 2:
-        if (ship->field_0x4 > zero) {
-            if (ship->field_0x0 > zero) {
-                ship->field_0x10 = 3;
+        if (ship->angleStep > zero) {
+            if (ship->angle > zero) {
+                ship->state = 3;
                 break;
             }
-        } else if (ship->field_0x0 < zero) {
-            ship->field_0x10 = 3;
+        } else if (ship->angle < zero) {
+            ship->state = 3;
             break;
         }
-        ship->field_0x0 += ship->field_0x4;
+        ship->angle += ship->angleStep;
         break;
     case 3:
-        ship->field_0x0 = zero;
-        ship->field_0xC = 1;
+        ship->angle = zero;
+        ship->settled = 1;
         break;
     }
-    evtSetFloat(event, args[0], ship->field_0x0);
-    evtSetValue(event, args[1], ship->field_0xC);
+    evtSetFloat(event, args[0], ship->angle);
+    evtSetValue(event, args[1], ship->settled);
     return EVT_RETURN_DONE;
 }
 
 USER_FUNC(marcoship_stop_func) {
-    marcoship->field_0x10 = EVT_RETURN_DONE;
+    marcoship->state = 2;
     return EVT_RETURN_DONE;
 }
 
 USER_FUNC(marcoship_stop_wait_func) {
-    return (marcoship->field_0xC != 0) ? EVT_RETURN_DONE : 0;
+    return (marcoship->settled != 0) ? EVT_RETURN_DONE : 0;
 }
 
 USER_FUNC(evt_map_anim_rate) {
@@ -364,7 +364,7 @@ USER_FUNC(evt_map_anim_rate) {
 }
 
 // Matching note: the loop-invariant float literals are named locals so MWCC hoists them into
-// f25-f31; `(f32)r` is computed once into `rf` before the second `irand`; the field_0x74 add is
+// f25-f31; `(f32)r` is computed once into `rf` before the second `irand`; the radius add is
 // one `irand` with the 330 default loaded before the `d < 70` branch; and the declaration order
 // `work, i, entry, offset, r` is what lands i/entry/offset in r29/r28/r27.
 USER_FUNC(evt_set_fune_anim_rate) {
@@ -589,7 +589,7 @@ USER_FUNC(elmos1000tai_init) {
         entry = (NanNpcEntry*)((u8*)work->entries + offset);
         *(s32*)entry->pose |= 4;
         entry->color.a = 0;
-        entry->field_0x60 = c90;
+        entry->facingAngle = c90;
         entry->field_0x70 = i;
         if (i % 3 != 0) {
             r = irand(140) + 110;
@@ -597,15 +597,15 @@ USER_FUNC(elmos1000tai_init) {
             r = irand(360);
         }
         rf = (f32)r;
-        *(s32*)entry->field_0x74 = 250;
+        entry->radius = 250;
         d = abs(180 - r);
         r2 = 330;
         if (d < 70) {
             r2 = (70 - d) * 1000 / 70 + 330;
         }
-        *(s32*)entry->field_0x74 += irand(r2);
+        entry->radius += irand(r2);
         angle = c6p2832 * rf / c360;
-        v = (f32)*(s32*)entry->field_0x74;
+        v = (f32)entry->radius;
         s = (f32)sin(angle);
         c = (f32)cos(angle);
         entry->position.x = c0p9 * (v * s);
@@ -624,7 +624,7 @@ USER_FUNC(elmos1000tai_start) {
     for (i = 0; i < work->count; i++) {
         entry = &work->entries[i];
         entry->callback = elmos1000tai_seq00;
-        entry->field_0x68 = 0;
+        entry->state = 0;
     }
     return EVT_RETURN_DONE;
 }
@@ -632,26 +632,26 @@ USER_FUNC(elmos1000tai_start) {
 void elmos1000tai_seq00(struct NanNpcEntry* entry) {
     s32 elapsed;
 
-    switch (entry->field_0x68) {
+    switch (entry->state) {
     case 0:
-        entry->field_0x50 = gp->renderTime;
-        entry->field_0x6C = irand(1000) + *(s32*)entry->field_0x74 * 3;
-        entry->field_0x68 = 1;
+        entry->startTime = gp->renderTime;
+        entry->timer = irand(1000) + entry->radius * 3;
+        entry->state = 1;
         // fallthrough
     case 1:
-        elapsed = ((s32)gp->renderTime - (s32)entry->field_0x50) / (OS_TIMER_CLOCK / 1000);
-        if (elapsed >= entry->field_0x6C) {
-            entry->field_0x50 = gp->renderTime;
-            entry->field_0x6C = 500;
-            entry->field_0x68 = 2;
+        elapsed = ((s32)gp->renderTime - (s32)entry->startTime) / (OS_TIMER_CLOCK / 1000);
+        if (elapsed >= entry->timer) {
+            entry->startTime = gp->renderTime;
+            entry->timer = 500;
+            entry->state = 2;
         }
         break;
     case 2:
-        elapsed = ((s32)gp->renderTime - (s32)entry->field_0x50) / (OS_TIMER_CLOCK / 1000);
-        if (elapsed < entry->field_0x6C) {
-            entry->color.a = (u8)intplGetValue(0, elapsed, entry->field_0x6C, 0.0f, 255.0f);
+        elapsed = ((s32)gp->renderTime - (s32)entry->startTime) / (OS_TIMER_CLOCK / 1000);
+        if (elapsed < entry->timer) {
+            entry->color.a = (u8)intplGetValue(0, elapsed, entry->timer, 0.0f, 255.0f);
         } else {
-            entry->field_0x68 = 3;
+            entry->state = 3;
         }
         break;
     case 3:
@@ -1932,9 +1932,9 @@ static void pressStartGX(LogoWork* work, s32 alpha, f32 x, f32 y) {
     GXTexObj startText, gradient;
     Mtx v17, v16;
 
-    TEXGetGXTexObjFromPalette(**(TEXPalette***)((u8*)work->data + 0xA0), &startText, 8);
+    TEXGetGXTexObjFromPalette((TEXPalette*)*work->tpl->data, &startText, 8);
     GXLoadTexObj(&startText, GX_TEXMAP0);
-    TEXGetGXTexObjFromPalette(**(TEXPalette***)((u8*)work->data + 0xA0), &gradient, 9);
+    TEXGetGXTexObjFromPalette((TEXPalette*)*work->tpl->data, &gradient, 9);
     GXLoadTexObj(&gradient, GX_TEXMAP1);
     GXSetNumTevStages(2);
     GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR_NULL);
@@ -1997,9 +1997,9 @@ static void draw(CameraId cameraId, void* param) {
     GXSetProjection(camGetPtr(CAMERA_2D)->projection, camera->projType);
     camBackup = *camGetCurPtr();
     *camGetCurPtr() = *camGetPtr(CAMERA_2D);
-    winTexInit(**(TEXPalette***)((u8*)work->data + 0xA0));
-    unk_80177008(5, (Vec){ 0.0f, 100.0f + work->alpha, 0.0f }, (Vec){ 1.0f, 1.0f, 1.0f },
-                 (GXColor){ 0xFF, 0xFF, 0xFF, work->field_0x8 });
+    winTexInit((TEXPalette*)*work->tpl->data);
+    unk_80177008(5, (Vec){ 0.0f, 100.0f + work->offsetY, 0.0f }, (Vec){ 1.0f, 1.0f, 1.0f },
+                 (GXColor){ 0xFF, 0xFF, 0xFF, work->alpha });
     *camGetCurPtr() = camBackup;
     GXSetViewport(viewport[0], viewport[1], viewport[2], viewport[3], viewport[4], viewport[5]);
     GXSetProjectionv(projection);
@@ -2019,16 +2019,16 @@ USER_FUNC(logo) {
     }
     switch (work->state) {
     case 0:
-        work->data = fileAllocf(FILE_TYPE_TPL, "%s/mariost.tpl", getMarioStDvdRoot());
-        work->field_0x8 = 0;
-        work->alpha = 0.0f;
-        work->field_0x10 = 0;
+        work->tpl = fileAllocf(FILE_TYPE_TPL, "%s/mariost.tpl", getMarioStDvdRoot());
+        work->alpha = 0;
+        work->offsetY = 0.0f;
+        work->timer = 0;
         work->state++;
         break;
     case 1:
-        if (work->field_0x10 < 180) {
-            work->field_0x8 = (s32)intplGetValue(11, ++work->field_0x10, 180, 0.0f, 255.0f);
-            work->alpha = intplGetValue(11, ++work->field_0x10, 180, -50.0f, 0.0f);
+        if (work->timer < 180) {
+            work->alpha = (s32)intplGetValue(11, ++work->timer, 180, 0.0f, 255.0f);
+            work->offsetY = intplGetValue(11, ++work->timer, 180, -50.0f, 0.0f);
         } else if (gp->retraceCount % 15 == 0) {
             work->state++;
         }
@@ -2036,28 +2036,28 @@ USER_FUNC(logo) {
     case 2:
         if (evtGetValue(event, GF(0)) != 0) {
             if (keyGetButtonTrg(0) & 0x1300) {
-                work->field_0x10 = 0;
+                work->timer = 0;
                 work->state++;
                 evtSetValue(event, GF(1), 1);
             }
         }
         break;
     case 3:
-        if (work->field_0x10 < 120) {
-            work->field_0x8 = (s32)intplGetValue(11, ++work->field_0x10, 120, 255.0f, 0.0f);
-            work->alpha = intplGetValue(11, ++work->field_0x10, 120, 0.0f, 100.0f);
+        if (work->timer < 120) {
+            work->alpha = (s32)intplGetValue(11, ++work->timer, 120, 255.0f, 0.0f);
+            work->offsetY = intplGetValue(11, ++work->timer, 120, 0.0f, 100.0f);
         } else {
             work->state++;
         }
         break;
     case 4:
-        fileFree(work->data);
-        work->data = NULL;
+        fileFree(work->tpl);
+        work->tpl = NULL;
         _mapFree(work);
         evtSetValue(event, GF(2), 1);
         return EVT_RETURN_DONE;
     }
-    if (work->data != NULL) {
+    if (work->tpl != NULL) {
         dispEntry(8, 1000.0f, 0, draw, work);
     }
     return EVT_RETURN_BLOCK;

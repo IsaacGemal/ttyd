@@ -224,7 +224,7 @@ EVT_BEGIN(x)
 EVT_END()
 s32 _firstattack_setting(EventEntry* event, BOOL isFirstCall) {
     FieldBattleData* fbat = fbatGetPointer();
-    *(u32*)((u8*)fbat + 0x10) = 0x10000000;
+    fbat->firstAttackKind = 0x10000000;
     *(u32*)((u8*)fbat + 0x14) = 0x10;
     *(u32*)((u8*)fbat + 0x1C) &= ~1;
     fbatSetAttackAnnounce(0x10000000);

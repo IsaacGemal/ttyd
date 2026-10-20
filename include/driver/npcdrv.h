@@ -259,7 +259,9 @@ typedef struct FieldBattleData {
     NpcEntry* talkNpc;           // 0x4
     NpcEntry* target;            // 0x8
     s32 talkEvtId;               // 0xC, event started for talkNpc, waited on in state 1
-    s32 field_10;                // 0x10, out-param of fbatHitCheck
+    s32 firstAttackKind;         // 0x10, how the field contact was made, written by fbatHitCheck: 0x20000-0x80000
+                                 // jumps, 0x100000-0x400000 hammers, 0x800000, 0x1000000; tou_03 forces 0x10000000;
+                                 // seq_battle turns it into BattleInformationSetFirstAttack kinds 1-7
     u8 field_14[0x39 - 0x14];    // 0x14
     u8 ruleKeepResult;           // 0x39, read by evt_npc_get_battle_rule_keep_result
     u8 field_3A[0x3C - 0x3A];    // 0x3A

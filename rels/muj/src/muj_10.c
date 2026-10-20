@@ -430,26 +430,26 @@ u32 senin_event_erumospos[180] = {
 void elmosalpha_func(NanNpcEntry* entry) {
     s32 elapsed;
 
-    switch (entry->field_0x68) {
+    switch (entry->state) {
     case 0:
-        entry->field_0x50 = gp->renderTime;
-        entry->field_0x6C = irand(1000);
-        entry->field_0x68 = 1;
+        entry->startTime = gp->renderTime;
+        entry->timer = irand(1000);
+        entry->state = 1;
         // fallthrough
     case 1:
-        elapsed = ((s32)gp->renderTime - (s32)entry->field_0x50) / (OS_TIMER_CLOCK / 1000);
-        if (elapsed >= entry->field_0x6C) {
-            entry->field_0x50 = gp->renderTime;
-            entry->field_0x6C = 500;
-            entry->field_0x68 = 2;
+        elapsed = ((s32)gp->renderTime - (s32)entry->startTime) / (OS_TIMER_CLOCK / 1000);
+        if (elapsed >= entry->timer) {
+            entry->startTime = gp->renderTime;
+            entry->timer = 500;
+            entry->state = 2;
         }
         break;
     case 2:
-        elapsed = ((s32)gp->renderTime - (s32)entry->field_0x50) / (OS_TIMER_CLOCK / 1000);
-        if (elapsed < entry->field_0x6C) {
-            entry->color.a = (u8)intplGetValue(0, elapsed, entry->field_0x6C, 0.0f, 255.0f);
+        elapsed = ((s32)gp->renderTime - (s32)entry->startTime) / (OS_TIMER_CLOCK / 1000);
+        if (elapsed < entry->timer) {
+            entry->color.a = (u8)intplGetValue(0, elapsed, entry->timer, 0.0f, 255.0f);
         } else {
-            entry->field_0x68 = 3;
+            entry->state = 3;
         }
         break;
     case 3:

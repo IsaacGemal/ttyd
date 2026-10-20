@@ -2266,7 +2266,7 @@ void fbatEncountCheck(void) {
         return;
     }
     fb = gp->fbatData;
-    fbatOut = &fb->field_10;
+    fbatOut = &fb->firstAttackKind;
     hit = (NpcEntry*)fbatHitCheck(0x13F1, (s32)fbatOut);
     if (hit != NULL && fb->mode == 1) {
         FieldBattleData* fb2 = gp->fbatData;
@@ -2485,7 +2485,7 @@ void fbatEncountCheck(void) {
     }
     fb = gp->fbatData;
     if (fb->mode == 1) {
-        s32* fbatOut2 = &fb->field_10;
+        s32* fbatOut2 = &fb->firstAttackKind;
 
         hit = (NpcEntry*)fbatHitCheck(0x2361, (s32)fbatOut2);
         if (hit != NULL && fb->mode == 1) {
@@ -2617,7 +2617,7 @@ void fbatBattleMode(void) {
                         goto afterStrike;
                     }
                     if (pouchEquipCheckBadge(ITEM_FIRST_ATTACK) &&
-                        (fbatData->field_10 & 0x01FE0000) &&
+                        (fbatData->firstAttackKind & 0x01FE0000) &&
                         entry->battleInfo.groupSetup->enemyData->mUnitKindParams->mLevel < pouch->level) {
                         flagA = TRUE;
                         flagB = TRUE;
@@ -2638,7 +2638,7 @@ void fbatBattleMode(void) {
                     }
                     marioFBattlePrepare();
                     seqSetSeq(SEQ_BATTLE, NULL, NULL);
-                    if (fbatData->field_10 == 0x10000000) {
+                    if (fbatData->firstAttackKind == 0x10000000) {
                         unk_80058374();
                     }
                     fbatData->state = 1;
@@ -2832,7 +2832,7 @@ void fbatHitCheckAll(void) {
     fbatHitCheck(0x13F1, 0);
 }
 
-// What fbatHitCheck reports through its second argument (fbatEncountCheck reads it at fbatData + 0x10).
+// What fbatHitCheck reports through its second argument (fbatEncountCheck reads it as fbatData->firstAttackKind).
 
 
 // Mario can attack a field npc: not in a cutscene, menu or talk, not riding Vivian's shadow or a pipe.
