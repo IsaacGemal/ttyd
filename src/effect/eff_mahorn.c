@@ -9,8 +9,8 @@
 extern const f32 float_100_80422260;
 extern const f32 float_20_80422264;
 extern const f32 float_0p125_80422268;
-extern const u32 dat_80422240;
-extern const u32 dat_80422244;
+extern const u32 mahornColorOdd;
+extern const u32 mahornColorEven;
 extern const f32 float_deg2rad_80422248;
 extern const f32 float_8_8042224c;
 extern const f32 float_0p5_80422250;
@@ -72,9 +72,9 @@ EffectEntry* effMahornEntry(BOOL unused, s32 count, f32 posX, f32 posY, f32 posZ
             data->position.y = zero;
             data->position.z = zero;
             data->scale = zero;
-            data->field_0x14 = zero;
+            data->growth = zero;
             data->alpha = 0xff;
-            data->field_0x24 = i * 4;
+            data->delay = i * 4;
         }
         return effect;
     }
@@ -84,9 +84,9 @@ EffectEntry* effMahornEntry(BOOL unused, s32 count, f32 posX, f32 posY, f32 posZ
         data->position.y = 0.0f;
         data->position.z = 0.0f;
         data->scale = 0.0f;
-        data->field_0x14 = 0.0f;
+        data->growth = 0.0f;
         data->alpha = 0xff;
-        data->field_0x24 = i * 4;
+        data->delay = i * 4;
     }
     return effect;
 }
@@ -121,8 +121,8 @@ void effMahornMain(EffectEntry* effect) {
 
     data++;
     for (i = 1; i < effect->count; i++, data++) {
-        if (data->field_0x24 != 0) {
-            data->field_0x24--;
+        if (data->delay != 0) {
+            data->delay--;
         }
         else {
             data->counter++;
@@ -135,11 +135,11 @@ void effMahornMain(EffectEntry* effect) {
             data->scale = scale;
 #ifdef MUST_MATCH
             {
-                f32 t = float_20_80422264 - data->field_0x14;
-                data->field_0x14 = t * float_0p125_80422268 + data->field_0x14;
+                f32 t = float_20_80422264 - data->growth;
+                data->growth = t * float_0p125_80422268 + data->growth;
             }
 #else
-            data->field_0x14 = (float_20_80422264 - data->field_0x14) * float_0p125_80422268 + data->field_0x14;
+            data->growth = (float_20_80422264 - data->growth) * float_0p125_80422268 + data->growth;
 #endif
             data->alpha += -data->alpha / 64;
         }
@@ -208,29 +208,29 @@ void effMahornDisp(CameraId camId, void* param) {
 
     data++;
     for (i = 1; i < effect->count; i++, data++) {
-        if (data->field_0x24 != 0) {
+        if (data->delay != 0) {
             continue;
         }
 
 #ifdef MUST_MATCH
         if (i & 1) {
-            mahornColorCall(&dat_80422240, (data->alpha * headerAlpha) / 255);
+            mahornColorCall(&mahornColorOdd, (data->alpha * headerAlpha) / 255);
         } else {
-            mahornColorCall(&dat_80422244, (data->alpha * headerAlpha) / 255);
+            mahornColorCall(&mahornColorEven, (data->alpha * headerAlpha) / 255);
         }
 #else
-        color = *(GXColor*)((i & 1) ? &dat_80422240 : &dat_80422244);
+        color = *(GXColor*)((i & 1) ? &mahornColorOdd : &mahornColorEven);
         color.a = (data->alpha * headerAlpha) / 255;
         GXSetChanMatColor(GX_COLOR0A0, color);
 #endif
 
         PSMTXTrans(mtxBase, data->position.x, data->position.y, data->position.z);
         if (i & 1) {
-            PSMTXScale(mtxScale, data->scale * data->field_0x14, data->scale * data->field_0x14,
-                       data->scale * data->field_0x14);
+            PSMTXScale(mtxScale, data->scale * data->growth, data->scale * data->growth,
+                       data->scale * data->growth);
         } else {
-            PSMTXScale(mtxScale, data->scale * data->field_0x14, (-data->scale) * data->field_0x14,
-                       data->scale * data->field_0x14);
+            PSMTXScale(mtxScale, data->scale * data->growth, (-data->scale) * data->growth,
+                       data->scale * data->growth);
         }
         PSMTXConcat(mtxBase, mtxScale, mtxBase);
         PSMTXConcat(mtxFinal, mtxBase, mtxBase);
@@ -265,8 +265,8 @@ void effMahornDisp(CameraId camId, void* param) {
 }
 
 // The pool constants the code above loads by name, defined after it (defined first, the compiler folds them).
-const u32 dat_80422240 = 0xFDE83C00;
-const u32 dat_80422244 = 0xFFFCE700;
+const u32 mahornColorOdd = 0xFDE83C00;
+const u32 mahornColorEven = 0xFFFCE700;
 const f32 float_deg2rad_80422248 = 0.017453292f;
 const f32 float_8_8042224c = 8.0f;
 const f32 float_0p5_80422250 = 0.5f;
