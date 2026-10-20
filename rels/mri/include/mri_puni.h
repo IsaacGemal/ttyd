@@ -135,18 +135,18 @@ typedef struct PuniData {
     Vec field_0x560;                    // 0x560
     s32 field_0x56C;                    // 0x56C
     s32 field_0x570;                    // 0x570
-    s16 field_0x574;                    // 0x574
-    s16 field_0x576;                    // 0x576
-    s16 field_0x578;                    // 0x578
-    s16 field_0x57A;                    // 0x57A
-    s16 field_0x57C;                    // 0x57C
-    s16 field_0x57E;                    // 0x57E
-    s16 field_0x580;                    // 0x580
+    s16 hp;                         // 0x574, current hit points (puniParaRecover, puniParaDamage)
+    s16 maxHp;                      // 0x576, hit points cap; the danger and self checks divide hp by it
+    s16 hpRegen;                    // 0x578, hp added per regen tick (puniParaRecover)
+    s16 regenTimer;                 // 0x57A, frames until the next regen tick, counts down to 0
+    s16 regenInterval;              // 0x57C, regenTimer reloads to this (60 frames)
+    s16 attack;                     // 0x57E, attacker's strength (puniParaAttack: attack - defense)
+    s16 defense;                    // 0x580, subtracted from the attacker's attack
     s16 field_0x582;                    // 0x582
-    s16 field_0x584;                    // 0x584
-    s16 field_0x586;                    // 0x586
-    s16 field_0x588;                    // 0x588
-    s16 field_0x58A;                    // 0x58A
+    s16 damage;                     // 0x584, attack - defense, applied in puniParaDamage
+    s16 engaged;                    // 0x586, set once the puni is in a para fight; cleared at init
+    s16 hitChance;                  // 0x588, attacker's roll base (50) when the defender is not in mode 8
+    s16 hitChanceAlt;               // 0x58A, attacker's roll base (70) when the defender is in mode 8
     s32 field_0x58C;                    // 0x58C
     s32 field_0x590;                    // 0x590
     s32 field_0x594;                    // 0x594

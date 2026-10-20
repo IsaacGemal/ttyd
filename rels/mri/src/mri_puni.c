@@ -2395,28 +2395,28 @@ void puniParaAttack(PuniData* puni, PuniData* other) {
     s16 base;
     s32 flag;
 
-    if (other->field_0x586 == 0 && other->mode == 9) {
+    if (other->engaged == 0 && other->mode == 9) {
         return;
     }
 
 #ifdef MUST_MATCH
     // `base` makes MWCC keep the original's mr chance<-base before the add
     if (other->mode != 8) {
-        base = puni->field_0x588;
+        base = puni->hitChance;
         chance = base;
-        span = base + other->field_0x588;
+        span = base + other->hitChance;
     } else {
-        base = puni->field_0x58A;
+        base = puni->hitChanceAlt;
         chance = base;
-        span = base + (100 - other->field_0x58A);
+        span = base + (100 - other->hitChanceAlt);
     }
 #else
     if (other->mode != 8) {
-        chance = puni->field_0x588;
-        span = chance + other->field_0x588;
+        chance = puni->hitChance;
+        span = chance + other->hitChance;
     } else {
-        chance = puni->field_0x58A;
-        span = chance + (100 - other->field_0x58A);
+        chance = puni->hitChanceAlt;
+        span = chance + (100 - other->hitChanceAlt);
     }
 #endif
 
@@ -2431,8 +2431,8 @@ void puniParaAttack(PuniData* puni, PuniData* other) {
 #else
     if (chance > (s16)puni_rnd(span) || (other->flags & 0x08000000)) {
 #endif
-        if (puni->field_0x586 == 0) {
-            other->field_0x584 = puni->field_0x57E - other->field_0x580;
+        if (puni->engaged == 0) {
+            other->damage = puni->attack - other->defense;
             other->vel = (Vec){0.0f, 0.0f, 0.0f};
             other->target = (s32)puni;
             other->flags |= 0x2000;
@@ -2442,8 +2442,8 @@ void puniParaAttack(PuniData* puni, PuniData* other) {
             other->state = 0;
             other->flags &= ~0x02000000;
         }
-    } else if (other->field_0x586 == 0) {
-        puni->field_0x584 = other->field_0x57E - puni->field_0x580;
+    } else if (other->engaged == 0) {
+        puni->damage = other->attack - puni->defense;
         puni->vel = (Vec){0.0f, 0.0f, 0.0f};
         puni->target = (s32)other;
         puni->flags |= 0x2000;
@@ -2453,13 +2453,13 @@ void puniParaAttack(PuniData* puni, PuniData* other) {
         puni->state = 0;
         puni->flags &= ~0x02000000;
     }
-    puni->field_0x586 = 1;
-    other->field_0x586 = 1;
+    puni->engaged = 1;
+    other->engaged = 1;
 }
 
 void puniParaDamage(PuniData* puni) {
-    s16* hp = (s16*)((u8*)puni + 0x574);
-    s16 damage = puni->field_0x584;
+    s16* hp = &puni->hp;
+    s16 damage = puni->damage;
 
     *hp -= damage;
     if (*hp <= 0) {
@@ -2477,39 +2477,39 @@ void puniParaRecover(PuniData* puni) {
 
     debug = (u32)puni;
     if (puni->field_0x1AC > 0.001f || puni->mode == 0xD || puni->mode == 0xA) {
-        puni->field_0x57A = puni->field_0x57C;
+        puni->regenTimer = puni->regenInterval;
         return;
     }
 
-    puni->field_0x57A -= 1;
-    if (puni->field_0x57A != 0) {
+    puni->regenTimer -= 1;
+    if (puni->regenTimer != 0) {
         return;
     }
 
-    before = puni->field_0x574;
-    if (puni->field_0x574 < puni->field_0x576) {
-        puni->field_0x574 = puni->field_0x574 + puni->field_0x578;
-        if (puni->field_0x574 > puni->field_0x576) {
-            puni->field_0x574 = puni->field_0x576;
+    before = puni->hp;
+    if (puni->hp < puni->maxHp) {
+        puni->hp = puni->hp + puni->hpRegen;
+        if (puni->hp > puni->maxHp) {
+            puni->hp = puni->maxHp;
         }
-        if (puni->field_0x574 > before) {
+        if (puni->hp > before) {
             puni->field_0x8 |= 1;
             puni->field_0x121 = 0;
         }
     }
-    puni->field_0x57A = puni->field_0x57C;
+    puni->regenTimer = puni->regenInterval;
 }
 
 s32 puniParaDangerCheck(PuniData* puni) {
-    return 30 >= puni->field_0x574 * 100 / puni->field_0x576;
+    return 30 >= puni->hp * 100 / puni->maxHp;
 }
 
 s32 puniParaSelfCheck(PuniData* puni) {
-    return puni->field_0x574 * 100 / puni->field_0x576 >= 80;
+    return puni->hp * 100 / puni->maxHp >= 80;
 }
 
 s32 puniParaRecoverCheck(PuniData* puni) {
-    return puni->field_0x574 >= puni->field_0x576;
+    return puni->hp >= puni->maxHp;
 }
 
 static inline s32 puniQrnd2(s32 range) {
@@ -3848,13 +3848,13 @@ void puniModeDamage(PuniData* punidat) {
             punidat->pos.y = 0.0f;
             punidat->gravity = 0.0f;
             punidat->field_0x138 = punidat->pos;
-            punidat->field_0x574 -= punidat->field_0x584;
-            if (punidat->field_0x574 <= 0) {
-                punidat->field_0x574 = 0;
+            punidat->hp -= punidat->damage;
+            if (punidat->hp <= 0) {
+                punidat->hp = 0;
                 punidat->flags |= 0x4000;
                 punidat->field_0x8 |= 0x10;
             }
-            if (punidat->field_0x574 * 100 / punidat->field_0x576 <= 30) {
+            if (punidat->hp * 100 / punidat->maxHp <= 30) {
                 punidat->mode = 8;
                 punidat->animIdx = 2;
                 punidat->state = 0;
@@ -3900,7 +3900,7 @@ void puniModePiyori(PuniData* punidat) {
         break;
     case 0xA:
         if (*(u16*)&punidat->field_0xE == 10) {  // PuniData 0xE (unsigned in the original)
-            if (punidat->field_0x574 * 100 / punidat->field_0x576 <= 30) {
+            if (punidat->hp * 100 / punidat->maxHp <= 30) {
                 punidat->mode = 8;
                 punidat->animIdx = 2;
                 punidat->state = 0;
@@ -3943,7 +3943,7 @@ void puniModeEscape(PuniData* punidat) {
             punidat->state = 0;
             return;
         }
-        if (punidat->field_0x574 * 100 / punidat->field_0x576 >= 0x50) {
+        if (punidat->hp * 100 / punidat->maxHp >= 0x50) {
             punidat->mode = 0;
             punidat->animIdx = 0;
             punidat->state = 0;
@@ -4012,7 +4012,7 @@ void puniModeRecover(PuniData* punidat) {
         punidat->state = 1;
         break;
     case 1:
-        if (punidat->field_0x574 * 100 / punidat->field_0x576 >= 0x50) {
+        if (punidat->hp * 100 / punidat->maxHp >= 0x50) {
             punidat->mode = 0;
             punidat->animIdx = 0;
             punidat->state = 0;
@@ -6641,18 +6641,18 @@ void puni_init_para(PuniData* punidat, f32 x, f32 y, f32 z) {
     pd->field_0x190 = 6.0f;
     pd->field_0x194 = 2.0f;
     pd->field_0x198 = 3.0f;
-    pd->field_0x574 = 0x3C;
-    pd->field_0x576 = 0x3C;
-    pd->field_0x578 = 10;
-    pd->field_0x57A = 0x3C;
-    pd->field_0x57C = 0x3C;
-    pd->field_0x57E = 20;
-    pd->field_0x580 = 10;
+    pd->hp = 0x3C;
+    pd->maxHp = 0x3C;
+    pd->hpRegen = 10;
+    pd->regenTimer = 0x3C;
+    pd->regenInterval = 0x3C;
+    pd->attack = 20;
+    pd->defense = 10;
     pd->field_0x582 = 10;
-    pd->field_0x584 = 0;
-    pd->field_0x586 = 0;
-    pd->field_0x588 = 50;
-    pd->field_0x58A = 70;
+    pd->damage = 0;
+    pd->engaged = 0;
+    pd->hitChance = 50;
+    pd->hitChanceAlt = 70;
     pd->parentPuni = 0;
     pd->leftPuni = 0;
     pd->rightPuni = 0;
@@ -6673,18 +6673,18 @@ void toge_init_para(PuniData* punidat, f32 x, f32 y, f32 z) {
     pd->field_0x190 = 6.0f;
     pd->field_0x194 = 2.0f;
     pd->field_0x198 = 3.0f;
-    pd->field_0x574 = 0x3C;
-    pd->field_0x576 = 0x3C;
-    pd->field_0x578 = 10;
-    pd->field_0x57A = 0x3C;
-    pd->field_0x57C = 0x3C;
-    pd->field_0x57E = 20;
-    pd->field_0x580 = 10;
+    pd->hp = 0x3C;
+    pd->maxHp = 0x3C;
+    pd->hpRegen = 10;
+    pd->regenTimer = 0x3C;
+    pd->regenInterval = 0x3C;
+    pd->attack = 20;
+    pd->defense = 10;
     pd->field_0x582 = 10;
-    pd->field_0x584 = 0;
-    pd->field_0x586 = 0;
-    pd->field_0x588 = 50;
-    pd->field_0x58A = 70;
+    pd->damage = 0;
+    pd->engaged = 0;
+    pd->hitChance = 50;
+    pd->hitChanceAlt = 70;
     pd->flags |= 0x00101402;
 }
 
@@ -6930,18 +6930,18 @@ USER_FUNC(evt_puni_setup) {
         p->field_0x190 = 6.0f;
         p->field_0x194 = 2.0f;
         p->field_0x198 = 3.0f;
-        p->field_0x574 = 60;
-        p->field_0x576 = 60;
-        p->field_0x578 = 10;
-        p->field_0x57A = 60;
-        p->field_0x57C = 60;
-        p->field_0x57E = 20;
-        p->field_0x580 = 10;
+        p->hp = 60;
+        p->maxHp = 60;
+        p->hpRegen = 10;
+        p->regenTimer = 60;
+        p->regenInterval = 60;
+        p->attack = 20;
+        p->defense = 10;
         p->field_0x582 = 10;
-        p->field_0x584 = 0;
-        p->field_0x586 = 0;
-        p->field_0x588 = 50;
-        p->field_0x58A = 70;
+        p->damage = 0;
+        p->engaged = 0;
+        p->hitChance = 50;
+        p->hitChanceAlt = 70;
         p->parentPuni = 0;
         p->leftPuni = 0;
         p->rightPuni = 0;
@@ -7014,18 +7014,18 @@ USER_FUNC(evt_toge_setup) {
         p->field_0x190 = 6.0f;
         p->field_0x194 = 2.0f;
         p->field_0x198 = 3.0f;
-        p->field_0x574 = 60;
-        p->field_0x576 = 60;
-        p->field_0x578 = 10;
-        p->field_0x57A = 60;
-        p->field_0x57C = 60;
-        p->field_0x57E = 20;
-        p->field_0x580 = 10;
+        p->hp = 60;
+        p->maxHp = 60;
+        p->hpRegen = 10;
+        p->regenTimer = 60;
+        p->regenInterval = 60;
+        p->attack = 20;
+        p->defense = 10;
         p->field_0x582 = 10;
-        p->field_0x584 = 0;
-        p->field_0x586 = 0;
-        p->field_0x588 = 50;
-        p->field_0x58A = 70;
+        p->damage = 0;
+        p->engaged = 0;
+        p->hitChance = 50;
+        p->hitChanceAlt = 70;
         p->flags |= 0x00101402;
     }
     return 2;
@@ -7326,18 +7326,18 @@ USER_FUNC(evt_puni_init_puni) {
     punidat->field_0x190 = 6.0f;
     punidat->field_0x194 = 2.0f;
     punidat->field_0x198 = 3.0f;
-    punidat->field_0x574 = 0x3C;
-    punidat->field_0x576 = 0x3C;
-    punidat->field_0x578 = 0x0A;
-    punidat->field_0x57A = 0x3C;
-    punidat->field_0x57C = 0x3C;
-    punidat->field_0x57E = 0x14;
-    punidat->field_0x580 = 0x0A;
+    punidat->hp = 0x3C;
+    punidat->maxHp = 0x3C;
+    punidat->hpRegen = 0x0A;
+    punidat->regenTimer = 0x3C;
+    punidat->regenInterval = 0x3C;
+    punidat->attack = 0x14;
+    punidat->defense = 0x0A;
     punidat->field_0x582 = 0x0A;
-    punidat->field_0x584 = 0;
-    punidat->field_0x586 = 0;
-    punidat->field_0x588 = 0x32;
-    punidat->field_0x58A = 0x46;
+    punidat->damage = 0;
+    punidat->engaged = 0;
+    punidat->hitChance = 0x32;
+    punidat->hitChanceAlt = 0x46;
     punidat->parentPuni = 0;
     punidat->leftPuni = 0;
     punidat->rightPuni = 0;
@@ -7367,18 +7367,18 @@ USER_FUNC(evt_puni_init_teki) {
     punidat->field_0x190 = 6.0f;
     punidat->field_0x194 = 2.0f;
     punidat->field_0x198 = 3.0f;
-    punidat->field_0x574 = 0x3C;
-    punidat->field_0x576 = 0x3C;
-    punidat->field_0x578 = 0x0A;
-    punidat->field_0x57A = 0x3C;
-    punidat->field_0x57C = 0x3C;
-    punidat->field_0x57E = 0x14;
-    punidat->field_0x580 = 0x0A;
+    punidat->hp = 0x3C;
+    punidat->maxHp = 0x3C;
+    punidat->hpRegen = 0x0A;
+    punidat->regenTimer = 0x3C;
+    punidat->regenInterval = 0x3C;
+    punidat->attack = 0x14;
+    punidat->defense = 0x0A;
     punidat->field_0x582 = 0x0A;
-    punidat->field_0x584 = 0;
-    punidat->field_0x586 = 0;
-    punidat->field_0x588 = 0x32;
-    punidat->field_0x58A = 0x46;
+    punidat->damage = 0;
+    punidat->engaged = 0;
+    punidat->hitChance = 0x32;
+    punidat->hitChanceAlt = 0x46;
     punidat->flags |= 0x101402;
     return 2;
 }
