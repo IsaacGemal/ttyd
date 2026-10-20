@@ -53,7 +53,7 @@ typedef struct CreditsPoseState {
 } CreditsPoseState;
 
 
-// "end" REL credits work block (the target of dat_ptr_end_00003218)
+// "end" REL credits work block (the target of credits_work_ptr)
 typedef struct CreditsWork {
     /* 0x00 */ FileEntry* image;  // ending.tpl; *data is its TEXPalette*
     /* 0x04 */ s32 mode;
@@ -74,7 +74,7 @@ typedef struct CreditsNpcInfo {
     /* 0x08 */ s32* event;
 } CreditsNpcInfo;
 
-// per-pose entry allocated by unk_end_00001d90 for the credits animation callback
+// per-pose entry allocated by credits_pose_evt for the credits animation callback
 typedef struct CreditsPoseEntry {
     /* 0x00 */ s32 state;
     /* 0x04 */ s32 poseId;
@@ -88,32 +88,32 @@ typedef struct CreditsPoseEntry {
 #pragma pool_data off
 
 #pragma force_active on
-s32 unk_evt_end_000045cc[49];
-s32 unk_evt_end_0000478c[48];
-s32 unk_evt_end_0000484c[89];
-s32 unk_evt_end_000049b0[54];
-s32 unk_evt_end_00004a88[60];
-s32 unk_evt_end_00004b78[81];
-s32 unk_evt_end_00004cbc[50];
-s32 unk_evt_end_00004d84[83];
-s32 unk_evt_end_00004ed0[89];
-s32 unk_evt_end_0000503c[108];
+s32 evt_credits_end[49];
+s32 evt_credits_gesso[48];
+s32 evt_credits_gonbaba[89];
+s32 evt_credits_batten2[54];
+s32 evt_credits_atomic[60];
+s32 evt_credits_korutesu[81];
+s32 evt_credits_para[50];
+s32 evt_credits_batten[83];
+s32 evt_credits_queen[89];
+s32 evt_credits_moamoa[108];
 // .bss emitted in reverse source order by the deferred-inline compiler, so declare them
 // back-to-front to land at 0x00..0x10 as in the original.
-u32 unk_end_bss00000010[14];
-u32 unk_end_bss0000000c[1];
-u32 unk_end_bss00000008[1];
-u32 unk_end_bss00000004[1];
-u32 unk_end_bss00000000[1];
+u32 credits_work[14];
+u32 credits_chain_groups[1];
+u32 credits_chain_counts[1];
+u32 credits_ext_setup[1];
+u32 credits_pose_states[1];
 
 // clang-format off
 // TODO: type
-u32 dat_ptr_end_00003218[1] = {
-    (u32)&unk_end_bss00000010,
+u32 credits_work_ptr[1] = {
+    (u32)&credits_work,
 };
 
 // TODO: type
-u32 unk_end_0000321c[450] = {
+u32 credits_ending_records[450] = {
     0x00000000, 0x00000000, 0x00000000, 0x00000000,
     0x00000000, 0x00000000, (u32)"a00", 0x00000000,
     0x00000000, 0x00000000, 0x00000000, 0x00000001,
@@ -240,7 +240,7 @@ u32 R_credits_npc_info[456] = {
     (u32)"c_majinai", (u32)"W_1", 0x00000000, (u32)"c_botta",
     (u32)"W_1", 0x00000000, (u32)"c_mania", (u32)"MNA_W_1",
     0x00000000, (u32)"c_joho_a", (u32)"W_1", 0x00000000,
-    (u32)"c_gesso", (u32)"GSO_S2_1", (u32)&unk_evt_end_0000478c, (u32)"c_joho_b",
+    (u32)"c_gesso", (u32)"GSO_S2_1", (u32)&evt_credits_gesso, (u32)"c_joho_b",
     (u32)"W_1", 0x00000000, (u32)"c_gshop_m", (u32)"W_2",
     0x00000000, (u32)"c_gshop_m", (u32)"W_1", 0x00000000,
     (u32)"c_pub_m", (u32)"W_1", 0x00000000, (u32)"c_roten",
@@ -255,7 +255,7 @@ u32 R_credits_npc_info[456] = {
     (u32)"c_nokonoko", (u32)"NOK_W_1", 0x00000000, (u32)"c_kinopio",
     (u32)"KNP_W_1", 0x00000000, (u32)"c_kinopiko", (u32)"KNF_W_1",
     0x00000000, (u32)"c_kokinopio", (u32)"CKP_W_1", 0x00000000,
-    (u32)"c_gonbaba", (u32)"GNB_S_3", (u32)&unk_evt_end_0000484c, (u32)"c_flower",
+    (u32)"c_gonbaba", (u32)"GNB_S_3", (u32)&evt_credits_gonbaba, (u32)"c_flower",
     (u32)"W_1", 0x00000000, (u32)"c_kiza", (u32)"W_1",
     0x00000000, (u32)"c_kuribo", (u32)"KUR_W_1", 0x00000000,
     (u32)"c_kuribo", (u32)"TGK_W_1", 0x00000000, (u32)"c_kuribo",
@@ -272,7 +272,7 @@ u32 R_credits_npc_info[456] = {
     0x00000000, (u32)"c_puni", (u32)"W_1", 0x00000000,
     (u32)"c_puni", (u32)"W_1", 0x00000000, (u32)"c_puni",
     (u32)"W_1", 0x00000000, (u32)"c_mb_robo_1a", (u32)"W_1",
-    (u32)&unk_evt_end_00004d84, (u32)"c_puni", (u32)"W_1", 0x00000000,
+    (u32)&evt_credits_batten, (u32)"c_puni", (u32)"W_1", 0x00000000,
     (u32)"c_prival", (u32)"W_1", 0x00000000, (u32)"c_toge",
     (u32)"W_1", 0x00000000, (u32)"c_tchibi", (u32)"W_1",
     0x00000000, (u32)"c_sinemon", (u32)"SIN_W_1", 0x00000000,
@@ -293,7 +293,7 @@ u32 R_credits_npc_info[456] = {
     0x00000000, (u32)"c_kamek", (u32)"KMK_W_1", 0x00000000,
     (u32)"c_togenoko_b", (u32)"W_1", 0x00000000, (u32)"c_burosu_h",
     (u32)"BRO_W_1", 0x00000000, (u32)"c_koopa", (u32)"KPA_W_1",
-    0x00000000, (u32)"c_atmic_trs", (u32)"W_1", (u32)&unk_evt_end_00004a88,
+    0x00000000, (u32)"c_atmic_trs", (u32)"W_1", (u32)&evt_credits_atomic,
     (u32)"c_kamek_be", (u32)"W_1", 0x00000000, (u32)"c_f_son",
     (u32)"W_1", 0x00000000, (u32)"c_bubusan", (u32)"W_1",
     0x00000000, (u32)"c_f_mura", (u32)"W_1", 0x00000000,
@@ -308,7 +308,7 @@ u32 R_credits_npc_info[456] = {
     0x00000000, (u32)"c_majyorin", (u32)"MJR_W_1", 0x00000000,
     (u32)"c_maririn", (u32)"MRR_W_1", 0x00000000, (u32)"c_vivian",
     (u32)"PTR_W_1", 0x00000000, (u32)"c_korutesu1", (u32)"KRT_S_1",
-    (u32)&unk_evt_end_00004b78, (u32)"c_dance_r", (u32)"W_1", 0x00000000,
+    (u32)&evt_credits_korutesu, (u32)"c_dance_r", (u32)"W_1", 0x00000000,
     (u32)"c_dance_p", (u32)"W_1", 0x00000000, (u32)"c_dance_k",
     (u32)"W_1", 0x00000000, (u32)"c_bomt_n", (u32)"W_1",
     0x00000000, (u32)"c_marco", (u32)"W_1", 0x00000000,
@@ -320,20 +320,20 @@ u32 R_credits_npc_info[456] = {
     0x00000000, (u32)"c_pakflwr", (u32)"PKF_S_1", 0x00000000,
     (u32)"c_tyutyu", (u32)"PCH_W_1", 0x00000000, (u32)"c_powan",
     (u32)"W_1", 0x00000000, (u32)"c_g_moamoa", (u32)"S_3",
-    (u32)&unk_evt_end_0000503c, (u32)"c_papab", (u32)"W_1", 0x00000000,
+    (u32)&evt_credits_moamoa, (u32)"c_papab", (u32)"W_1", 0x00000000,
     (u32)"c_mamab", (u32)"W_1", 0x00000000, (u32)"c_konari",
     (u32)"W_1", 0x00000000, (u32)"c_unten", (u32)"W_1",
     0x00000000, (u32)"c_shasho_r", (u32)"W_1", 0x00000000,
     (u32)"c_smoko", (u32)"W_1", 0x00000000, (u32)"c_rose",
     (u32)"W_1", 0x00000000, (u32)"c_kinodebu", (u32)"W_1",
     0x00000000, (u32)"c_ghost_k", (u32)"W_1", 0x00000000,
-    (u32)"c_bom_sen", (u32)"S_2", (u32)&unk_evt_end_00004cbc, (u32)"c_waitress",
+    (u32)"c_bom_sen", (u32)"S_2", (u32)&evt_credits_para, (u32)"c_waitress",
     (u32)"W_1", 0x00000000, (u32)"c_puku_c", (u32)"W_1",
     0x00000000, (u32)"c_kinopiko", (u32)"KNF_W_1", 0x00000000,
     (u32)"c_n_moa_a", (u32)"W_1", 0x00000000, (u32)"c_met",
     (u32)"PMT_W_1", 0x00000000, (u32)"c_sanbo", (u32)"SNB_W_1",
     0x00000000, (u32)"c_bomson", (u32)"W_1", 0x00000000,
-    (u32)"c_mb_robo_2a", (u32)"J_2", (u32)&unk_evt_end_000049b0, (u32)"c_bwhite",
+    (u32)"c_mb_robo_2a", (u32)"J_2", (u32)&evt_credits_batten2, (u32)"c_bwhite",
     (u32)"W_1", 0x00000000, (u32)"c_hito_b", (u32)"W_1",
     0x00000000, (u32)"c_bom_n", (u32)"W_1", 0x00000000,
     (u32)"c_kmoon", (u32)"W_1", 0x00000000, (u32)"c_baria",
@@ -342,7 +342,7 @@ u32 R_credits_npc_info[456] = {
     (u32)"c_maho", (u32)"MAH_W_1", 0x00000000, (u32)"c_zako_n",
     (u32)"W_1", 0x00000000, (u32)"c_zako_m", (u32)"W_1",
     0x00000000, (u32)"c_shuryo", (u32)"W_1", 0x00000000,
-    (u32)"c_q_kage_m", (u32)"KRT_Z_1", (u32)&unk_evt_end_00004ed0, (u32)"c_gazigazi",
+    (u32)"c_q_kage_m", (u32)"KRT_Z_1", (u32)&evt_credits_queen, (u32)"c_gazigazi",
     (u32)"GAZ_A_1", 0x00000000, (u32)"a_mario", (u32)"M_W_1",
     0x00000000, (u32)"c_peach", (u32)"P_W_1", 0x00000000,
 };
@@ -353,7 +353,7 @@ void _prolog(void) {
     for (ctor = _ctors; *ctor != NULL; ctor++) {
         (*ctor)();
     }
-    relSetEvtAddr("end_00", unk_evt_end_00004690);
+    relSetEvtAddr("end_00", evt_credits_start);
 }
 
 void _epilog(void) {
@@ -362,17 +362,17 @@ void _epilog(void) {
     for (dtor = _dtors; *dtor != NULL; dtor++) {
         (*dtor)();
     }
-    unk_end_00000a14();
+    credits_free();
 }
 
 void _unresolved(void) {
 }
 
-void unk_end_00002508(TevCallbackParam* param) {
+void credits_tev_callback(TevCallbackParam* param) {
     GXSetTevColorIn(param->field_C - 1, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ONE);
 }
 
-void unk_end_00002494(s32 wXluStage) {
+void credits_pose_gx(s32 wXluStage) {
     AnimationWork* anim = animGetPtr();
 
     anim->currDispMode = wXluStage;
@@ -382,13 +382,13 @@ void unk_end_00002494(s32 wXluStage) {
     GXSetZMode(1, 3, 1);
 }
 
-void unk_end_000023ac(CameraId cameraId, void* param) {
+void credits_pose_disp(CameraId cameraId, void* param) {
     CreditsPoseEntry* entry = (CreditsPoseEntry*)param;
 
     if (evtGetValue(NULL, GF(10)) == 0) {
-        mapSetTevCallback(1, unk_end_00002508);
+        mapSetTevCallback(1, credits_tev_callback);
         animPoseSetMaterialFlagOn(entry->poseId, 0x1000000);
-        animPoseSetGXFunc(entry->poseId, unk_end_00002494, FALSE);
+        animPoseSetGXFunc(entry->poseId, credits_pose_gx, FALSE);
         animPoseDrawMtx(entry->poseId, entry->matrix, 1, 0.0f, 2.0f);
         animPoseDrawMtx(entry->poseId, entry->matrix, 2, 0.0f, 2.0f);
         animPoseDrawMtx(entry->poseId, entry->matrix, 3, 0.0f, 2.0f);
@@ -396,7 +396,7 @@ void unk_end_000023ac(CameraId cameraId, void* param) {
     }
 }
 
-s32 unk_end_000022e8(EventEntry* event, BOOL isFirstCall) {
+s32 credits_npc_kind(EventEntry* event, BOOL isFirstCall) {
     s32* args = event->args;
     s32 idx = evtGetValue(event, args[0]);
 
@@ -420,7 +420,7 @@ s32 unk_end_000022e8(EventEntry* event, BOOL isFirstCall) {
 // The early accesses write `off` (idx*0xC) so it stays in r29; the later name accesses use the local `npc` base
 // + off (compiled to `lwzx`) while the `anim` access uses the constant R_credits_npc_info + off, which is what
 // makes retail rematerialise the base instead of CSE-ing it with the name accesses.
-s32 unk_end_00001d90(EventEntry* event, BOOL isFirstCall) {
+s32 credits_pose_evt(EventEntry* event, BOOL isFirstCall) {
     s32 idx = evtGetValue(event, event->args[0]);
     s32 off = idx * 0xC;
     CreditsPoseEntry* entry;
@@ -443,7 +443,7 @@ s32 unk_end_00001d90(EventEntry* event, BOOL isFirstCall) {
         entry = _mapAlloc(sizeof(CreditsPoseEntry));
         memset(entry, 0, sizeof(CreditsPoseEntry));
         entry->state = 0;
-        entry->layout = ((CreditsWork*)dat_ptr_end_00003218[0])->layout;
+        entry->layout = ((CreditsWork*)credits_work_ptr[0])->layout;
         switch (entry->layout) {
             case 0:
                 entry->frame = -20.0f;
@@ -545,16 +545,16 @@ s32 unk_end_00001d90(EventEntry* event, BOOL isFirstCall) {
         }
     }
     animPoseMain(entry->poseId);
-    dispEntry(4, 0.0f, 1, unk_end_000023ac, entry);
+    dispEntry(4, 0.0f, 1, credits_pose_disp, entry);
     return EVT_RETURN_BLOCK;
 }
 
-EVT_BEGIN(unk_evt_end_00004044)
+EVT_BEGIN(evt_credits_pose_loop)
     SET_VALUE(LW(0), 0)
     LOOP(0)
-        CALL(unk_end_000022e8, LW(0), LW(1))
+        CALL(credits_npc_kind, LW(0), LW(1))
         BEGIN_INLINE_EVENT
-            CALL(unk_end_00001d90, LW(0))
+            CALL(credits_pose_evt, LW(0))
         END_INLINE_EVENT
         IF_INT_EQUAL(LW(1), 1)
             WAIT_MS(1920)
@@ -574,7 +574,7 @@ EVT_BEGIN(unk_evt_end_00004044)
     RETURN
 EVT_END()
 
-#define WORK ((CreditsWork*)dat_ptr_end_00003218[0])
+#define WORK ((CreditsWork*)credits_work_ptr[0])
 
 
 // The original builds each GXColor in a stack temp and copies it to the by-value
@@ -590,19 +590,19 @@ static inline void setTevColorGX(const GXColor* base, u8 a) {
     GXSetTevColor(1, c);
 }
 
-const GXColor dat_end_00002f2c = {0xFF, 0xFF, 0xFF, 0x00};
-const GXColor zero_end_00002f30 = {0x00, 0x00, 0x00, 0x00};
-const GXColor zero_end_00002f34 = {0x00, 0x00, 0x00, 0x00};
-const GXColor dat_end_00002f38 = {0xFF, 0xFF, 0xFF, 0x00};
-const GXColor zero_end_00002f3c = {0x00, 0x00, 0x00, 0x00};
-const Vec vec3_end_00002f40 = {0.0f, 0.0f, 0.0f};
-const Vec vec3_end_00002f4c = {0.0f, 1.0f, 0.0f};
-const Vec vec3_end_00002f58 = {0.0f, 0.0f, 0.0f};
-const GXColor dat_end_00002f64 = {0xFF, 0xFF, 0xFF, 0x00};
+const GXColor credits_image_mat = {0xFF, 0xFF, 0xFF, 0x00};
+const GXColor credits_mode1_tev = {0x00, 0x00, 0x00, 0x00};
+const GXColor credits_mode2_tev = {0x00, 0x00, 0x00, 0x00};
+const GXColor credits_pass0_mat = {0xFF, 0xFF, 0xFF, 0x00};
+const GXColor credits_pass1_mat = {0x00, 0x00, 0x00, 0x00};
+const Vec credits_overlay_cam_pos = {0.0f, 0.0f, 0.0f};
+const Vec credits_overlay_cam_up = {0.0f, 1.0f, 0.0f};
+const Vec credits_overlay_target = {0.0f, 0.0f, 0.0f};
+const GXColor credits_overlay_mat = {0xFF, 0xFF, 0xFF, 0x00};
 
 // The second GXBegin block uses its own width/height locals: with the loop's
 // variables reused the width temp lands in f30, fresh ones put it in f29 like retail.
-void unk_end_00001324(CameraId cameraId, void* param) {
+void credits_draw(CameraId cameraId, void* param) {
     s32 i;
     GXTexObj texObj;
     Mtx mtx1;
@@ -638,7 +638,7 @@ void unk_end_00001324(CameraId cameraId, void* param) {
     GXSetNumChans(1);
     GXSetChanCtrl(4, 0, 0, 0, 0, 0, 2);
 
-    setChanMatColorGX(&dat_end_00002f2c, WORK->matAlpha);
+    setChanMatColorGX(&credits_image_mat, WORK->matAlpha);
 
     switch (WORK->mode) {
         case 0:
@@ -646,14 +646,14 @@ void unk_end_00001324(CameraId cameraId, void* param) {
             GXLoadTexObj(&texObj, 0);
             break;
         case 1:
-            setTevColorGX(&zero_end_00002f30, WORK->tevAlpha);
+            setTevColorGX(&credits_mode1_tev, WORK->tevAlpha);
             TEXGetGXTexObjFromPalette(*(TEXPalette**)WORK->image->data, &texObj, 0x31);
             GXLoadTexObj(&texObj, 0);
             TEXGetGXTexObjFromPalette(*(TEXPalette**)WORK->image->data, &texObj, 0x32);
             GXLoadTexObj(&texObj, 1);
             break;
         case 2:
-            setTevColorGX(&zero_end_00002f34, WORK->tevAlpha);
+            setTevColorGX(&credits_mode2_tev, WORK->tevAlpha);
             TEXGetGXTexObjFromPalette(*(TEXPalette**)WORK->image->data, &texObj, 0x32);
             GXLoadTexObj(&texObj, 0);
             TEXGetGXTexObjFromPalette(*(TEXPalette**)WORK->image->data, &texObj, 0x33);
@@ -719,10 +719,10 @@ void unk_end_00001324(CameraId cameraId, void* param) {
 
     for (i = 0; i < 2; i++) {
         if (i == 0) {
-            setChanMatColorGX(&dat_end_00002f38, WORK->matAlpha);
+            setChanMatColorGX(&credits_pass0_mat, WORK->matAlpha);
             GXSetZMode(1, 3, 0);
         } else {
-            setChanMatColorGX(&zero_end_00002f3c, WORK->matAlpha);
+            setChanMatColorGX(&credits_pass1_mat, WORK->matAlpha);
             GXSetZMode(1, 4, 0);
         }
         GXBegin(0x80, 0, 4);
@@ -741,20 +741,20 @@ void unk_end_00001324(CameraId cameraId, void* param) {
     if (WORK->overlayAlpha > 0) {
         Vec camPosBuild;
 
-        camPosBuild = vec3_end_00002f40;
+        camPosBuild = credits_overlay_cam_pos;
         {
             f32 tanVal = (f32)tan(0.21816615760326385);
             camPosBuild.z = 240.0f / tanVal;
         }
         camPos = camPosBuild;
-        camUp = vec3_end_00002f4c;
-        target = vec3_end_00002f58;
+        camUp = credits_overlay_cam_up;
+        target = credits_overlay_target;
         GXSetNumTevStages(1);
         GXSetTevOrder(0, 0, 0, 4);
         GXSetTevOp(0, 0);
         TEXGetGXTexObjFromPalette(*(TEXPalette**)WORK->image->data, &texObj, 0x34);
         GXLoadTexObj(&texObj, 0);
-        setChanMatColorGX(&dat_end_00002f64, WORK->overlayAlpha);
+        setChanMatColorGX(&credits_overlay_mat, WORK->overlayAlpha);
         GXSetZMode(1, 3, 0);
         C_MTXLookAt(mtx3, &camPos, &camUp, &target);
         PSMTXTrans(mtx1, 0.0f, -138.0f, 0.0f);
@@ -777,52 +777,52 @@ void unk_end_00001324(CameraId cameraId, void* param) {
     }
 }
 
-EVT_BEGIN(unk_end_0000410c)
+EVT_BEGIN(evt_credits_fade)
     LOOP(0)
-        CALL(unk_end_0000122c, 1)
-        CALL(unk_end_000011f0, 0)
+        CALL(credits_set_mode, 1)
+        CALL(credits_set_tev_alpha, 0)
         WAIT_MS(18000)
         CALL(evt_sub_intpl_msec_init, 11, 0, 255, 4000)
         LOOP(0)
             CALL(evt_sub_intpl_msec_get_value)
-            CALL(unk_end_000011f0, LW(0))
+            CALL(credits_set_tev_alpha, LW(0))
             WAIT_FRAMES(1)
             IF_INT_EQUAL(LW(1), 0)
                 BREAK_LOOP
             END_IF
         END_LOOP
-        CALL(unk_end_000011f0, 255)
+        CALL(credits_set_tev_alpha, 255)
         WAIT_MS(4000)
-        CALL(unk_end_0000122c, 2)
-        CALL(unk_end_000011f0, 0)
+        CALL(credits_set_mode, 2)
+        CALL(credits_set_tev_alpha, 0)
         WAIT_MS(4000)
         CALL(evt_sub_intpl_msec_init, 11, 0, 255, 4000)
         LOOP(0)
             CALL(evt_sub_intpl_msec_get_value)
-            CALL(unk_end_000011f0, LW(0))
+            CALL(credits_set_tev_alpha, LW(0))
             WAIT_FRAMES(1)
             IF_INT_EQUAL(LW(1), 0)
                 BREAK_LOOP
             END_IF
         END_LOOP
-        CALL(unk_end_000011f0, 255)
+        CALL(credits_set_tev_alpha, 255)
         WAIT_MS(18000)
         CALL(evt_sub_intpl_msec_init, 11, 255, 0, 4000)
         LOOP(0)
             CALL(evt_sub_intpl_msec_get_value)
-            CALL(unk_end_000011f0, LW(0))
+            CALL(credits_set_tev_alpha, LW(0))
             WAIT_FRAMES(1)
             IF_INT_EQUAL(LW(1), 0)
                 BREAK_LOOP
             END_IF
         END_LOOP
-        CALL(unk_end_000011f0, 0)
+        CALL(credits_set_tev_alpha, 0)
         WAIT_MS(4000)
-        CALL(unk_end_0000122c, 1)
+        CALL(credits_set_mode, 1)
         CALL(evt_sub_intpl_msec_init, 11, 255, 0, 4000)
         LOOP(0)
             CALL(evt_sub_intpl_msec_get_value)
-            CALL(unk_end_000011f0, LW(0))
+            CALL(credits_set_tev_alpha, LW(0))
             WAIT_FRAMES(1)
             IF_INT_EQUAL(LW(1), 0)
                 BREAK_LOOP
@@ -831,32 +831,32 @@ EVT_BEGIN(unk_end_0000410c)
     END_LOOP
     RETURN
 EVT_END()
-s32 unk_end_000012e0(EventEntry* event, BOOL isFirstCall) {
-    dispEntry(4, 0.0f, 7, unk_end_00001324, NULL);
+s32 credits_disp_start(EventEntry* event, BOOL isFirstCall) {
+    dispEntry(4, 0.0f, 7, credits_draw, NULL);
     return EVT_RETURN_BLOCK;
 }
 
-s32 unk_end_000012a4(EventEntry* event, BOOL isFirstCall) {
-    ((CreditsWork*)dat_ptr_end_00003218[0])->matAlpha = evtGetValue(event, event->args[0]);
+s32 credits_set_mat_alpha(EventEntry* event, BOOL isFirstCall) {
+    ((CreditsWork*)credits_work_ptr[0])->matAlpha = evtGetValue(event, event->args[0]);
     return EVT_RETURN_DONE;
 }
 
-s32 unk_end_00001268(EventEntry* event, BOOL isFirstCall) {
-    ((CreditsWork*)dat_ptr_end_00003218[0])->overlayAlpha = evtGetValue(event, event->args[0]);
+s32 credits_set_overlay_alpha(EventEntry* event, BOOL isFirstCall) {
+    ((CreditsWork*)credits_work_ptr[0])->overlayAlpha = evtGetValue(event, event->args[0]);
     return EVT_RETURN_DONE;
 }
 
-s32 unk_end_0000122c(EventEntry* event, BOOL isFirstCall) {
-    ((CreditsWork*)dat_ptr_end_00003218[0])->mode = evtGetValue(event, event->args[0]);
+s32 credits_set_mode(EventEntry* event, BOOL isFirstCall) {
+    ((CreditsWork*)credits_work_ptr[0])->mode = evtGetValue(event, event->args[0]);
     return EVT_RETURN_DONE;
 }
 
-s32 unk_end_000011f0(EventEntry* event, BOOL isFirstCall) {
-    ((CreditsWork*)dat_ptr_end_00003218[0])->tevAlpha = evtGetValue(event, event->args[0]);
+s32 credits_set_tev_alpha(EventEntry* event, BOOL isFirstCall) {
+    ((CreditsWork*)credits_work_ptr[0])->tevAlpha = evtGetValue(event, event->args[0]);
     return EVT_RETURN_DONE;
 }
 
-EVT_BEGIN(unk_evt_end_000042e0)
+EVT_BEGIN(evt_credits_sequence)
     LOOP(0)
         IF_INT_EQUAL(GF(10), 1)
             RETURN
@@ -868,12 +868,12 @@ EVT_BEGIN(unk_evt_end_000042e0)
             WAIT_FRAMES(1)
         END_LOOP
         BEGIN_INLINE_EVENT_GET_ID(LW(9))
-            CALL(unk_end_000012e0)
+            CALL(credits_disp_start)
         END_INLINE_EVENT
         CALL(evt_sub_intpl_msec_init, 11, 0, 255, 500)
         LOOP(0)
             CALL(evt_sub_intpl_msec_get_value)
-            CALL(unk_end_000012a4, LW(0))
+            CALL(credits_set_mat_alpha, LW(0))
             WAIT_FRAMES(1)
             IF_INT_EQUAL(LW(1), 0)
                 BREAK_LOOP
@@ -890,7 +890,7 @@ EVT_BEGIN(unk_evt_end_000042e0)
             CALL(evt_sub_intpl_msec_init, 11, 0, 255, 500)
             LOOP(0)
                 CALL(evt_sub_intpl_msec_get_value)
-                CALL(unk_end_00001268, LW(0))
+                CALL(credits_set_overlay_alpha, LW(0))
                 WAIT_FRAMES(1)
                 IF_INT_EQUAL(LW(1), 0)
                     BREAK_LOOP
@@ -906,7 +906,7 @@ EVT_BEGIN(unk_evt_end_000042e0)
                 END_IF
             END_INLINE_EVENT
             WAIT_MS(500)
-            SPAWN_EVENT_GET_ID(PTR(unk_end_0000410c), LW(10))
+            SPAWN_EVENT_GET_ID(PTR(evt_credits_fade), LW(10))
             LOOP(0)
                 CALL(evt_key_get_buttontrg, 0, LW(0))
                 IF_BITS_SET(LW(0), 4352)
@@ -918,19 +918,19 @@ EVT_BEGIN(unk_evt_end_000042e0)
             DELETE_EVENT(LW(10))
             CALL(evt_fade_entry, 10, 500, 0, 0, 0)
             CALL(evt_fade_end_wait)
-            CALL(unk_end_0000122c, 0)
-            CALL(unk_end_000012a4, LW(0))
-            CALL(unk_end_00001268, LW(0))
+            CALL(credits_set_mode, 0)
+            CALL(credits_set_mat_alpha, LW(0))
+            CALL(credits_set_overlay_alpha, LW(0))
             CALL(evt_fade_entry, 9, 0, 0, 0, 0)
             CALL(evt_fade_end_wait)
             SET_VALUE(GW(10), 0)
-            SPAWN_EVENT(unk_evt_end_000045cc)
+            SPAWN_EVENT(evt_credits_end)
             RETURN
         END_IF
         CALL(evt_sub_intpl_msec_init, 11, 255, 0, 500)
         LOOP(0)
             CALL(evt_sub_intpl_msec_get_value)
-            CALL(unk_end_000012a4, LW(0))
+            CALL(credits_set_mat_alpha, LW(0))
             WAIT_FRAMES(1)
             IF_INT_EQUAL(LW(1), 0)
                 BREAK_LOOP
@@ -944,9 +944,9 @@ EVT_END()
 
 typedef struct CreditsEndingRecord {
     /* 0x00 */ s32 field_0x00;  // 0 in all 50 records and never read
-    /* 0x04 */ s32 layout;      // screen placement 0-4: the text x/y in unk_end_00000bc8, the pose path in
-                                // unk_end_00001d90, and GW(12)
-    /* 0x08 */ s32 texId;       // GW(11), the texture index unk_end_00001324 draws
+    /* 0x04 */ s32 layout;      // screen placement 0-4: the text x/y in credits_record_evt, the pose path in
+                                // credits_pose_evt, and GW(12)
+    /* 0x08 */ s32 texId;       // GW(11), the texture index credits_draw draws
     /* 0x0C */ const char* msgA[3];
     /* 0x18 */ const char* msgB[3];
 } CreditsEndingRecord;
@@ -954,7 +954,7 @@ typedef struct CreditsEndingRecord {
 // NONMATCHING (99.10%): register allocation only (retail colours `event` to r27, x to r29, y to r28; ours
 // r29/r24/r23). The lwzu and the rematerialised record base now match; the two `#ifdef MUST_MATCH` tricks
 // below break the pEntry/rec CSE that otherwise merges the two pointers.
-s32 unk_end_00000bc8(EventEntry* event, BOOL isFirstCall) {
+s32 credits_record_evt(EventEntry* event, BOOL isFirstCall) {
     s32 state = event->userdata[0];
     s32 index = event->userdata[1];
     s32* pEntry;
@@ -972,25 +972,25 @@ s32 unk_end_00000bc8(EventEntry* event, BOOL isFirstCall) {
         state = 0;
         index = 0;
         for (n = 0; n < 3; n++) {
-            ((CreditsWork*)dat_ptr_end_00003218[0])->windowIdA[n] = -1;
+            ((CreditsWork*)credits_work_ptr[0])->windowIdA[n] = -1;
         }
         for (n = 0; n < 3; n++) {
-            ((CreditsWork*)dat_ptr_end_00003218[0])->windowIdB[n] = -1;
+            ((CreditsWork*)credits_work_ptr[0])->windowIdB[n] = -1;
         }
         evtSetValue(ev, GW(10), 0);
-        ((CreditsWork*)dat_ptr_end_00003218[0])->eventId = (s32)evtEntry(unk_evt_end_000042e0, 0, 0);
+        ((CreditsWork*)credits_work_ptr[0])->eventId = (s32)evtEntry(evt_credits_sequence, 0, 0);
     }
 #ifdef MUST_MATCH
     // giving `offset` a fresh value before `pEntry` stops the compiler merging pEntry with rec, which is what
     // makes retail emit `lwzu` for `*++pEntry` and rematerialise the record base; the natural form is below.
     offset = index * 0x24;
-    pEntry = (s32*)((u8*)unk_end_0000321c + offset);
+    pEntry = (s32*)((u8*)credits_ending_records + offset);
 #else
-    pEntry = (s32*)((u8*)unk_end_0000321c + index * 0x24);
+    pEntry = (s32*)((u8*)credits_ending_records + index * 0x24);
 #endif
-    ((CreditsWork*)dat_ptr_end_00003218[0])->layout = *++pEntry;
+    ((CreditsWork*)credits_work_ptr[0])->layout = *++pEntry;
     offset = index * 0x24;
-    switch (((CreditsWork*)dat_ptr_end_00003218[0])->layout) {
+    switch (((CreditsWork*)credits_work_ptr[0])->layout) {
         case 0:
             x = -274;
             y = -24;
@@ -1017,7 +1017,7 @@ s32 unk_end_00000bc8(EventEntry* event, BOOL isFirstCall) {
     switch (state) {
         case 0:
             for (i = 0; i < 3; i++) {
-                const char* key = ((CreditsEndingRecord*)((u8*)unk_end_0000321c + offset))->msgA[i];
+                const char* key = ((CreditsEndingRecord*)((u8*)credits_ending_records + offset))->msgA[i];
 
                 if (key != NULL) {
                     const char* msg = msgSearch(key);
@@ -1038,11 +1038,11 @@ s32 unk_end_00000bc8(EventEntry* event, BOOL isFirstCall) {
                         xoff = (s32)((f32)x - 0.8f * (f32)FontGetMessageWidth(msg));
                     }
                     sprintf(bufA, "<clear><dkey><wpos %d %d 400 200><col f0f0f0ff><speed 0><scale 0.8>%s</scale></speed></col><wait 500></dkey><once_stop>", xoff - 0x3E, xpos, msg);
-                    ((CreditsWork*)dat_ptr_end_00003218[0])->windowIdA[i] = msgWindow_Entry(bufA, 0, 0);
+                    ((CreditsWork*)credits_work_ptr[0])->windowIdA[i] = msgWindow_Entry(bufA, 0, 0);
                 }
             }
             for (k = 0; k < 3; k++) {
-                const char* key = ((CreditsEndingRecord*)((u8*)unk_end_0000321c + offset))->msgB[k];
+                const char* key = ((CreditsEndingRecord*)((u8*)credits_ending_records + offset))->msgB[k];
 
                 if (key != NULL) {
                     s32 ypos;
@@ -1062,25 +1062,25 @@ s32 unk_end_00000bc8(EventEntry* event, BOOL isFirstCall) {
                         xoff = x - FontGetMessageWidth(msg);
                     }
                     sprintf(bufB, "<clear><dkey><wpos %d %d 400 200><col f0f0f0ff><speed 0>%s</speed></col><wait 5200></dkey><once_stop>", xoff - 0x3E, xpos, msg);
-                    ((CreditsWork*)dat_ptr_end_00003218[0])->windowIdB[k] = msgWindow_Entry(bufB, 0, 0);
+                    ((CreditsWork*)credits_work_ptr[0])->windowIdB[k] = msgWindow_Entry(bufB, 0, 0);
                 } else {
-                    ((CreditsWork*)dat_ptr_end_00003218[0])->windowIdB[k] = -1;
+                    ((CreditsWork*)credits_work_ptr[0])->windowIdB[k] = -1;
                 }
             }
             evtSetValue(ev, GW(10), 1);
-            evtSetValue(ev, GW(11), ((CreditsEndingRecord*)((u8*)unk_end_0000321c + index * 0x24))->texId);
+            evtSetValue(ev, GW(11), ((CreditsEndingRecord*)((u8*)credits_ending_records + index * 0x24))->texId);
             evtSetValue(ev, GW(12), *pEntry);
             state++;
             break;
         case 1:
             for (n = 0; n < 3; n++) {
-                if (((CreditsWork*)dat_ptr_end_00003218[0])->windowIdA[n] != -1 && windowCheckID(((CreditsWork*)dat_ptr_end_00003218[0])->windowIdA[n]) != 0) {
+                if (((CreditsWork*)credits_work_ptr[0])->windowIdA[n] != -1 && windowCheckID(((CreditsWork*)credits_work_ptr[0])->windowIdA[n]) != 0) {
                     break;
                 }
             }
             if (n >= 3) {
                 for (n = 0; n < 3; n++) {
-                    if (((CreditsWork*)dat_ptr_end_00003218[0])->windowIdB[n] != -1 && windowCheckID(((CreditsWork*)dat_ptr_end_00003218[0])->windowIdB[n]) != 0) {
+                    if (((CreditsWork*)credits_work_ptr[0])->windowIdB[n] != -1 && windowCheckID(((CreditsWork*)credits_work_ptr[0])->windowIdB[n]) != 0) {
                         break;
                     }
                 }
@@ -1096,7 +1096,7 @@ s32 unk_end_00000bc8(EventEntry* event, BOOL isFirstCall) {
                 s32 nulls;
 
                 if ((u32)next < 0x32) {
-                    nextRec = (CreditsEndingRecord*)((u8*)unk_end_0000321c + next * 0x24);
+                    nextRec = (CreditsEndingRecord*)((u8*)credits_ending_records + next * 0x24);
 
                     nulls = 0;
                     for (n = 0; n < 3; n++) {
@@ -1110,14 +1110,14 @@ s32 unk_end_00000bc8(EventEntry* event, BOOL isFirstCall) {
                 }
                 if (nulls < 3) {
                     for (n = 0; n < 3; n++) {
-                        if (((CreditsWork*)dat_ptr_end_00003218[0])->windowIdA[n] != -1) {
-                            msgWindow_Continue(((CreditsWork*)dat_ptr_end_00003218[0])->windowIdA[n]);
+                        if (((CreditsWork*)credits_work_ptr[0])->windowIdA[n] != -1) {
+                            msgWindow_Continue(((CreditsWork*)credits_work_ptr[0])->windowIdA[n]);
                         }
                     }
                 }
                 for (n = 0; n < 3; n++) {
-                    if (((CreditsWork*)dat_ptr_end_00003218[0])->windowIdB[n] != -1) {
-                        msgWindow_Continue(((CreditsWork*)dat_ptr_end_00003218[0])->windowIdB[n]);
+                    if (((CreditsWork*)credits_work_ptr[0])->windowIdB[n] != -1) {
+                        msgWindow_Continue(((CreditsWork*)credits_work_ptr[0])->windowIdB[n]);
                     }
                 }
                 evtSetValue(ev, GW(10), 2);
@@ -1143,15 +1143,15 @@ s32 unk_end_00000bc8(EventEntry* event, BOOL isFirstCall) {
 }
 
 
-s32 unk_end_00000a6c(EventEntry* event, BOOL isFirstCall) {
+s32 credits_init(EventEntry* event, BOOL isFirstCall) {
     s32 flag = (gp->inBattle != 0);
     s32 i;
 
     if (isFirstCall) {
-        ((CreditsWork*)dat_ptr_end_00003218[0])->image = NULL;
-        ((CreditsWork*)dat_ptr_end_00003218[0])->matAlpha = 0;
-        ((CreditsWork*)dat_ptr_end_00003218[0])->mode = 0;
-        ((CreditsWork*)dat_ptr_end_00003218[0])->layout = 0;
+        ((CreditsWork*)credits_work_ptr[0])->image = NULL;
+        ((CreditsWork*)credits_work_ptr[0])->matAlpha = 0;
+        ((CreditsWork*)credits_work_ptr[0])->mode = 0;
+        ((CreditsWork*)credits_work_ptr[0])->layout = 0;
         psndSetFlag(4);
         gp->language = 1;
         JUTFont_Free();
@@ -1160,8 +1160,8 @@ s32 unk_end_00000a6c(EventEntry* event, BOOL isFirstCall) {
     if ((void*)fileAsyncf(FILE_TYPE_TPL, NULL, "%s/ending.tpl", getMarioStDvdRoot()) == NULL) {
         return EVT_RETURN_BLOCK;
     }
-    if (((CreditsWork*)dat_ptr_end_00003218[0])->image == NULL) {
-        ((CreditsWork*)dat_ptr_end_00003218[0])->image = fileAllocf(FILE_TYPE_TPL, "%s/ending.tpl", getMarioStDvdRoot());
+    if (((CreditsWork*)credits_work_ptr[0])->image == NULL) {
+        ((CreditsWork*)credits_work_ptr[0])->image = fileAllocf(FILE_TYPE_TPL, "%s/ending.tpl", getMarioStDvdRoot());
     }
     for (i = 0; i < 5; i++) {
         if (animGroupBaseAsync(((CreditsNpcInfo*)R_credits_npc_info)[i].name, flag, NULL) == 0) {
@@ -1173,10 +1173,10 @@ s32 unk_end_00000a6c(EventEntry* event, BOOL isFirstCall) {
     return EVT_RETURN_DONE;
 }
 
-// dont_inline keeps unk_end_00000a14 a real `bl` from _epilog as in retail.
+// dont_inline keeps credits_free a real `bl` from _epilog as in retail.
 #pragma dont_inline on
-void unk_end_00000a14(void) {
-    CreditsWork* work = (CreditsWork*)dat_ptr_end_00003218[0];
+void credits_free(void) {
+    CreditsWork* work = (CreditsWork*)credits_work_ptr[0];
 
     fileFree(work->image);
     psndClearFlag(4);
@@ -1186,7 +1186,7 @@ void unk_end_00000a14(void) {
 }
 
 #pragma dont_inline reset
-s32 unk_end_000009cc(EventEntry* event, BOOL isFirstCall) {
+s32 credits_font_reset(EventEntry* event, BOOL isFirstCall) {
     gp->language = 0;
     JUTFont_Free();
     JUTFontSetup(0);
@@ -1199,27 +1199,27 @@ s32 unk_end_000009a4(EventEntry* event, BOOL isFirstCall) {
     return EVT_RETURN_DONE;
 }
 
-s32 unk_end_00000938(EventEntry* event, BOOL isFirstCall) {
+s32 credits_npc_setup(EventEntry* event, BOOL isFirstCall) {
     NpcEntry* npc = npcNameToPtr((const char*)evtGetValue(event, event->args[0]));
 
-    mapSetTevCallback(1, unk_end_00002508);
+    mapSetTevCallback(1, credits_tev_callback);
     animPoseSetMaterialFlagOn(npc->poseId, 0x1000000);
-    animPoseSetGXFunc(npc->poseId, unk_end_00002494, FALSE);
+    animPoseSetGXFunc(npc->poseId, credits_pose_gx, FALSE);
     return EVT_RETURN_DONE;
 }
 
-f32 unk_end_000008bc(f32 min, f32 max) {
+f32 credits_rand_range(f32 min, f32 max) {
     f32 r = (f32)rand() / 32767.0f;
 
     return r * (max - min) + min;
 }
 
-EVT_BEGIN(unk_evt_end_000045cc)
+EVT_BEGIN(evt_credits_end)
     CALL(evt_fade_entry, 12, 2000, 0, 0, 0)
     CALL(evt_fade_end_wait)
     WAIT_MS(1500)
     SET_VALUE(GF(10), 1)
-    CALL(unk_end_000009cc)
+    CALL(credits_font_reset)
     SET_VALUE(GSW(0), 404)
     SET_VALUE(LF(10), 0)
     SET_VALUE(LW(0), 21)
@@ -1231,7 +1231,7 @@ EVT_BEGIN(unk_evt_end_000045cc)
     RETURN
 EVT_END()
 
-EVT_BEGIN(unk_evt_end_00004690)
+EVT_BEGIN(evt_credits_start)
     CALL(evt_mario_cont_onoff, 0)
     CALL(evt_party_cont_onoff, 0, 0)
     CALL(evt_mario_set_pos, 0, -1000, 0)
@@ -1241,21 +1241,21 @@ EVT_BEGIN(unk_evt_end_00004690)
     CALL(evt_mapobj_flag_onoff, 1, 1, STRING("pPlane1"), 1)
     CALL(evt_bg_set_color, 0, 0, 0, 255)
     SET_VALUE(GF(10), 0)
-    CALL(unk_end_00000a6c)
-    SPAWN_EVENT(unk_evt_end_00004044)
+    CALL(credits_init)
+    SPAWN_EVENT(evt_credits_pose_loop)
     BEGIN_INLINE_EVENT
-        CALL(unk_end_00000bc8)
+        CALL(credits_record_evt)
     END_INLINE_EVENT
     CALL(evt_snd_bgmon, 512, STRING("BGM_STAFF_ROLL1"))
     SET_VALUE(GSW(0), 404)
     RETURN
 EVT_END()
 
-EVT_BEGIN(unk_evt_end_0000478c)
+EVT_BEGIN(evt_credits_gesso)
     CALL(evt_npc_entry, STRING("gesso"), STRING("c_gesso"))
     CALL(evt_npc_set_anim, STRING("gesso"), STRING("GSO_S2_1"))
     CALL(evt_npc_flag_onoff, 1, STRING("gesso"), 64)
-    CALL(unk_end_00000938, STRING("gesso"))
+    CALL(credits_npc_setup, STRING("gesso"))
     CALL(evt_sub_intpl_msec_init, 11, -4000, 4000, 5000)
     LOOP(0)
         CALL(evt_sub_intpl_msec_get_value)
@@ -1270,11 +1270,11 @@ EVT_BEGIN(unk_evt_end_0000478c)
     RETURN
 EVT_END()
 
-EVT_BEGIN(unk_evt_end_0000484c)
+EVT_BEGIN(evt_credits_gonbaba)
     CALL(evt_npc_entry, STRING("gonbaba"), STRING("c_gonbaba"))
     CALL(evt_npc_set_anim, STRING("gonbaba"), STRING("GNB_S_3"))
     CALL(evt_npc_flag_onoff, 1, STRING("gonbaba"), 64)
-    CALL(unk_end_00000938, STRING("gonbaba"))
+    CALL(credits_npc_setup, STRING("gonbaba"))
     CALL(evt_npc_set_scale, STRING("gonbaba"), FLOAT(0.5f), FLOAT(0.5f), FLOAT(0.5f))
     CALL(evt_npc_set_rotate, STRING("gonbaba"), 0, 180, 0)
     CALL(evt_sub_intpl_msec_init, 11, -10000, -1300, 2000)
@@ -1302,11 +1302,11 @@ EVT_BEGIN(unk_evt_end_0000484c)
     RETURN
 EVT_END()
 
-EVT_BEGIN(unk_evt_end_000049b0)
+EVT_BEGIN(evt_credits_batten2)
     CALL(evt_npc_entry, STRING("batten2"), STRING("c_mb_robo_2a"))
     CALL(evt_npc_set_anim, STRING("batten2"), STRING("J_2"))
     CALL(evt_npc_flag_onoff, 1, STRING("batten2"), 64)
-    CALL(unk_end_00000938, STRING("batten2"))
+    CALL(credits_npc_setup, STRING("batten2"))
     CALL(evt_npc_set_rotate, STRING("batten2"), 180, 0, 0)
     CALL(evt_sub_intpl_msec_init, 11, 4000, -4000, 4000)
     LOOP(0)
@@ -1322,11 +1322,11 @@ EVT_BEGIN(unk_evt_end_000049b0)
     RETURN
 EVT_END()
 
-EVT_BEGIN(unk_evt_end_00004a88)
+EVT_BEGIN(evt_credits_atomic)
     CALL(evt_npc_entry, STRING("atomic"), STRING("c_atmic_trs"))
     CALL(evt_npc_set_anim, STRING("atomic"), STRING("W_1"))
     CALL(evt_npc_flag_onoff, 1, STRING("atomic"), 32832)
-    CALL(unk_end_00000938, STRING("atomic"))
+    CALL(credits_npc_setup, STRING("atomic"))
     CALL(evt_npc_set_rotate, STRING("atomic"), 0, 180, 0)
     CALL(evt_npc_set_scale, STRING("atomic"), FLOAT(0.8f), FLOAT(0.8f), FLOAT(0.8f))
     CALL(evt_sub_intpl_msec_init, 11, -5000, 5000, 6000)
@@ -1343,12 +1343,12 @@ EVT_BEGIN(unk_evt_end_00004a88)
     RETURN
 EVT_END()
 
-EVT_BEGIN(unk_evt_end_00004b78)
+EVT_BEGIN(evt_credits_korutesu)
     CALL(evt_npc_entry, STRING("korutesu"), STRING("c_korutesu1"))
     CALL(evt_npc_set_anim, STRING("korutesu"), STRING("KRT_S_1"))
     CALL(evt_npc_flag_onoff, 1, STRING("korutesu"), 32832)
     CALL(evt_npc_set_ry, STRING("korutesu"), 90)
-    CALL(unk_end_00000938, STRING("korutesu"))
+    CALL(credits_npc_setup, STRING("korutesu"))
     CALL(evt_sub_intpl_msec_init, 11, -10000, -2000, 2000)
     LOOP(0)
         CALL(evt_sub_intpl_msec_get_value)
@@ -1374,12 +1374,12 @@ EVT_BEGIN(unk_evt_end_00004b78)
     RETURN
 EVT_END()
 
-EVT_BEGIN(unk_evt_end_00004cbc)
+EVT_BEGIN(evt_credits_para)
     WAIT_MS(1000)
     CALL(evt_npc_entry, STRING("para"), STRING("c_bom_sen"))
     CALL(evt_npc_set_anim, STRING("para"), STRING("S_2"))
     CALL(evt_npc_flag_onoff, 1, STRING("para"), 32832)
-    CALL(unk_end_00000938, STRING("para"))
+    CALL(credits_npc_setup, STRING("para"))
     CALL(evt_sub_intpl_msec_init, 11, 3000, -3000, 6000)
     LOOP(0)
         CALL(evt_sub_intpl_msec_get_value)
@@ -1394,11 +1394,11 @@ EVT_BEGIN(unk_evt_end_00004cbc)
     RETURN
 EVT_END()
 
-EVT_BEGIN(unk_evt_end_00004d84)
+EVT_BEGIN(evt_credits_batten)
     CALL(evt_npc_entry, STRING("batten"), STRING("c_mb_robo_1a"))
     CALL(evt_npc_set_anim, STRING("batten"), STRING("W_1"))
     CALL(evt_npc_flag_onoff, 1, STRING("batten"), 64)
-    CALL(unk_end_00000938, STRING("batten"))
+    CALL(credits_npc_setup, STRING("batten"))
     CALL(evt_npc_set_scale, STRING("batten"), FLOAT(0.6f), FLOAT(0.6f), FLOAT(0.6f))
     CALL(evt_sub_intpl_msec_init, 11, 10000, 500, 2000)
     LOOP(0)
@@ -1425,12 +1425,12 @@ EVT_BEGIN(unk_evt_end_00004d84)
     RETURN
 EVT_END()
 
-EVT_BEGIN(unk_evt_end_00004ed0)
+EVT_BEGIN(evt_credits_queen)
     WAIT_MS(7000)
     CALL(evt_npc_entry, STRING("queen"), STRING("c_q_kage_m"))
     CALL(evt_npc_set_anim, STRING("queen"), STRING("KRT_Z_1"))
     CALL(evt_npc_flag_onoff, 1, STRING("queen"), 64)
-    CALL(unk_end_00000938, STRING("queen"))
+    CALL(credits_npc_setup, STRING("queen"))
     CALL(evt_npc_set_scale, STRING("queen"), FLOAT(0.5f), FLOAT(0.5f), FLOAT(0.5f))
     CALL(evt_npc_set_ry, STRING("queen"), 90)
     CALL(evt_sub_intpl_msec_init, 11, -10000, -1000, 2000)
@@ -1458,12 +1458,12 @@ EVT_BEGIN(unk_evt_end_00004ed0)
     RETURN
 EVT_END()
 
-char* dat_ptr_end_00005034 = "c_n_moa_a";
+char* credits_ext_npc_name = "c_n_moa_a";
 
-char* dat_ptr_end_00005038 = "S_1";
-void unk_end_000006f8(void) {
+char* credits_ext_anim_name = "S_1";
+void credits_ext_init(void) {
     ExtPose* pose = extGetPosePtr();
-    CreditsPoseState* work = (CreditsPoseState*)unk_end_bss00000000[0];
+    CreditsPoseState* work = (CreditsPoseState*)credits_pose_states[0];
     s32 i;
 
     for (i = 0; i < extGetPoseNum(); i++) {
@@ -1472,13 +1472,13 @@ void unk_end_000006f8(void) {
         {
             Vec pos = {0.0f, 0.0f, 0.0f};
 
-            pos.x = unk_end_000008bc(-10.0f, 10.0f);
-            pos.y = unk_end_000008bc(-10.0f, 10.0f);
-            pos.z = unk_end_000008bc(-10.0f, 10.0f);
+            pos.x = credits_rand_range(-10.0f, 10.0f);
+            pos.y = credits_rand_range(-10.0f, 10.0f);
+            pos.z = credits_rand_range(-10.0f, 10.0f);
             work->position = pos;
         }
         work->idx = i % dat_80419a28;
-        work->counter = ((s32*)unk_end_bss00000008[0])[work->idx]++;
+        work->counter = ((s32*)credits_chain_counts[0])[work->idx]++;
         work++;
         pose++;
     }
@@ -1486,8 +1486,8 @@ void unk_end_000006f8(void) {
 
 // The declaration order of the loop induction vars (i, extPose, work) and the final
 // zero-fill pointer (count before p) sets the callee-saved register assignment the
-// original uses; the indices into unk_end_bss0000000c are kept as a pointer pair.
-void unk_end_00000440(void) {
+// original uses; the indices into credits_chain_groups are kept as a pointer pair.
+void credits_ext_update(void) {
     NpcEntry* npc = npcNameToPtr("モアモア");
     AnimationPose* pose = (AnimationPose*)animPoseGetAnimPosePtr(npc->poseId);
     Vec* positions = (Vec*)pose->groupWorldPos->address;
@@ -1504,12 +1504,12 @@ void unk_end_00000440(void) {
         return;
     }
     extPose = extGetPosePtr();
-    work = (CreditsPoseState*)unk_end_bss00000000[0];
+    work = (CreditsPoseState*)credits_pose_states[0];
     for (i = 0; i < extGetPoseNum(); i++) {
-        s32* idxPair = (s32*)unk_end_bss0000000c[0] + work->idx * 2;
+        s32* idxPair = (s32*)credits_chain_groups[0] + work->idx * 2;
         Vec* p0 = &positions[idxPair[0]];
         Vec* p1 = &positions[idxPair[1]];
-        f32 ratio = (f32)work->counter / (f32)((s32*)unk_end_bss00000008[0])[work->idx];
+        f32 ratio = (f32)work->counter / (f32)((s32*)credits_chain_counts[0])[work->idx];
         f32 c = 1.0f - ratio;
 
         if (p0->y == -1000.0f || p1->y == -1000.0f) {
@@ -1543,7 +1543,7 @@ void unk_end_00000440(void) {
 }
 
 // (bss arrays are declared uninitialized at the top of the file)
-void unk_end_0000039c(CameraId cameraId, void* param) {
+void credits_ext_disp(CameraId cameraId, void* param) {
     extLoadRenderMode();
     extLoadVertex();
     extLoadTexture();
@@ -1558,11 +1558,11 @@ void unk_end_0000039c(CameraId cameraId, void* param) {
     extLoadTextureExit();
 }
 
-void unk_end_0000035c(void) {
-    dispEntry(4, 0.0f, 1, unk_end_0000039c, NULL);
+void credits_ext_draw(void) {
+    dispEntry(4, 0.0f, 1, credits_ext_disp, NULL);
 }
 
-s32 unk_end_0000012c(EventEntry* event, BOOL isFirstCall) {
+s32 credits_moamoa_setup(EventEntry* event, BOOL isFirstCall) {
     NpcEntry* npc = npcNameToPtr("モアモア");
     AnimationPose* pose;
     Vec* positions;
@@ -1571,18 +1571,18 @@ s32 unk_end_0000012c(EventEntry* event, BOOL isFirstCall) {
     s32 count;
 
     p = _mapAlloc(0x1770);
-    unk_end_bss00000000[0] = (u32)p;
+    credits_pose_states[0] = (u32)p;
     memset(p, 0, 0x1770);
     animPoseWorldPositionEvalOn(npc->poseId);
     p = _mapAlloc(0x1EC);
-    unk_end_bss00000004[0] = (u32)p;
+    credits_ext_setup[0] = (u32)p;
     memset(p, 0, 0x1EC);
     for (i = 0; i < 0x28; i++) {
-        ((s32*)unk_end_bss00000004[0])[i * 3 + 0] = (s32)dat_ptr_end_00005034;
-        ((s32*)unk_end_bss00000004[0])[i * 3 + 1] = (s32)dat_ptr_end_00005038;
-        ((f32*)unk_end_bss00000004[0])[i * 3 + 2] = (f32)i;
+        ((s32*)credits_ext_setup[0])[i * 3 + 0] = (s32)credits_ext_npc_name;
+        ((s32*)credits_ext_setup[0])[i * 3 + 1] = (s32)credits_ext_anim_name;
+        ((f32*)credits_ext_setup[0])[i * 3 + 2] = (f32)i;
     }
-    evtSetValue(event, LW(10), unk_end_bss00000004[0]);
+    evtSetValue(event, LW(10), credits_ext_setup[0]);
 
     pose = (AnimationPose*)animPoseGetAnimPosePtr(npc->poseId);
     {
@@ -1596,28 +1596,28 @@ s32 unk_end_0000012c(EventEntry* event, BOOL isFirstCall) {
     }
 
     p = _mapAlloc(dat_80419a28 * 4);
-    unk_end_bss00000008[0] = (u32)p;
+    credits_chain_counts[0] = (u32)p;
     memset(p, 0, dat_80419a28 * 4);
     p = _mapAlloc(dat_80419a28 * 8);
-    unk_end_bss0000000c[0] = (u32)p;
+    credits_chain_groups[0] = (u32)p;
     memset(p, 0, dat_80419a28 * 8);
     for (i = 0; i < dat_80419a28; i++) {
-        ((s32*)unk_end_bss0000000c[0])[i * 2 + 0] = animPoseGetGroupIdx(npc->poseId, g_moamoa_chain_tbl[i].name);
-        ((s32*)unk_end_bss0000000c[0])[i * 2 + 1] = animPoseGetGroupIdx(npc->poseId, g_moamoa_chain_tbl[i].anim);
+        ((s32*)credits_chain_groups[0])[i * 2 + 0] = animPoseGetGroupIdx(npc->poseId, g_moamoa_chain_tbl[i].name);
+        ((s32*)credits_chain_groups[0])[i * 2 + 1] = animPoseGetGroupIdx(npc->poseId, g_moamoa_chain_tbl[i].anim);
     }
     return EVT_RETURN_DONE;
 }
 
-EVT_BEGIN(unk_evt_end_0000503c)
+EVT_BEGIN(evt_credits_moamoa)
     CALL(evt_npc_entry, STRING("モアモアダミー"), STRING("c_n_moa_a"))
     CALL(evt_npc_set_position, STRING("モアモアダミー"), 0, -1000, 0)
-    CALL(unk_end_00000938, STRING("モアモアダミー"))
+    CALL(credits_npc_setup, STRING("モアモアダミー"))
     CALL(evt_npc_entry, STRING("モアモア"), STRING("c_g_moamoa"))
     CALL(evt_npc_set_anim, STRING("モアモア"), STRING("S_3"))
     CALL(evt_npc_set_position, STRING("モアモア"), 0, -1000, 0)
     CALL(evt_npc_set_scale, STRING("モアモア"), FLOAT(0.5f), FLOAT(0.5f), FLOAT(0.5f))
-    CALL(unk_end_0000012c)
-    CALL(evt_ext_entry, 300, LW(10), PTR(unk_end_000006f8), PTR(unk_end_00000440), PTR(unk_end_0000035c))
+    CALL(credits_moamoa_setup)
+    CALL(evt_ext_entry, 300, LW(10), PTR(credits_ext_init), PTR(credits_ext_update), PTR(credits_ext_draw))
     CALL(evt_sub_intpl_msec_init, 11, -10000, -1000, 2000)
     LOOP(0)
         CALL(evt_sub_intpl_msec_get_value)
@@ -1639,19 +1639,19 @@ EVT_BEGIN(unk_evt_end_0000503c)
             BREAK_LOOP
         END_IF
     END_LOOP
-    CALL(unk_end_000000c4)
+    CALL(credits_moamoa_free)
     CALL(evt_npc_delete, STRING("モアモアダミー"))
     CALL(evt_npc_delete, STRING("モアモア"))
     RETURN
 EVT_END()
-s32 unk_end_000000c4(EventEntry* event, BOOL isFirstCall) {
+s32 credits_moamoa_free(EventEntry* event, BOOL isFirstCall) {
     NpcEntry* npc = npcNameToPtr("モアモア");
 
     L_animPoseWorldPositionEvalOff(npc->poseId);
-    _mapFree((void*)unk_end_bss00000000[0]);
+    _mapFree((void*)credits_pose_states[0]);
     extReset();
-    _mapFree((void*)unk_end_bss0000000c[0]);
-    _mapFree((void*)unk_end_bss00000008[0]);
+    _mapFree((void*)credits_chain_groups[0]);
+    _mapFree((void*)credits_chain_counts[0]);
     return EVT_RETURN_DONE;
 }
 
