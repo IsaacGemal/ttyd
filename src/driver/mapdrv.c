@@ -25,13 +25,6 @@
 __declspec(section ".rodata") extern f32 queen_uv[4]; //gxsub.c
 extern GlobalWork* gp;
 
-#ifdef MUST_MATCH
-// The original passes the caller's own Vec where the by-value argument would take a copy.
-#define LIGHT_GET_NEAR(p, e, n, f) ((s32 (*)(Vec*, LightEntry**, s32, LightEntryFlags))lightGetNearObj)((p), (e), (n), (f))
-#else
-#define LIGHT_GET_NEAR(p, e, n, f) lightGetNearObj(*(p), (e), (n), (f))
-#endif
-
 #define TWO_PI 6.28318530717958647692528676655900576839433879875021f
 
 //.bss
@@ -1020,7 +1013,7 @@ void _mapLoad(MapWork* wp, BOOL group, const char* map) {
 
 // `i = 0; activeGroup = i;` plus `opt_propagation off` matched this; the pragma keeps the assignment
 // from constant-folding to a fresh r0 so i keeps r30.
-#pragma opt_propagation off // MUST_MATCH: keep activeGroup=i from folding to a fresh r0 so i keeps r30
+#pragma opt_propagation off // keep activeGroup=i from folding to a fresh r0 so i keeps r30
 
 static const s32 culling[] = {GX_CULL_FRONT, GX_CULL_BACK, GX_CULL_ALL, GX_CULL_NONE};
 static const s32 texmtx_tbl[] = {
@@ -2460,7 +2453,7 @@ s32 mapSetLight(MapObject* obj, LightEntry** entries) {
 
 	if (obj->joints->drawMode->unk2[0] & 0x8) {
 		if (*(u32*)(obj->joints->drawMode->unk2 + 2) == 0) {
-			count = LIGHT_GET_NEAR(&pos, entries, 8, 0);
+			count = lightGetNearObj(&pos, entries, 8, 0);
 		}
 		else {
 			for (i = 0; i < 0x20; i++) {
@@ -2476,7 +2469,7 @@ s32 mapSetLight(MapObject* obj, LightEntry** entries) {
 					}
 				}
 			}
-			if (count < 8) count += LIGHT_GET_NEAR(&pos, entries + count, 8 - count, 0);
+			if (count < 8) count += lightGetNearObj(&pos, entries + count, 8 - count, 0);
 		}
 	}
 	else {
@@ -2709,7 +2702,7 @@ void mapSetMaterialTev(s32 texCount, s32 drawMode, s32 flags, Mtx mtx) {
 
 			case 8:
 #ifdef MUST_MATCH
-				// match-only: the sine in its own comma step pools 2pi and 360 ahead of 127, as retail's .sdata2 has them.
+				// the sine in its own comma step pools 2pi and 360 ahead of 127, as retail's .sdata2 has them.
 				// The plain expression (any operand order, or with the angle in a statement before it) pools 127 first,
 				// and `wave = sin(...);` as its own statement moves the GXColor template load after the call.
 				GXSetTevColor(GX_TEVREG0, (GXColor){0, (wave = sin((TWO_PI * (f32)(2 * gp->retraceCount)) / 360.0f), (u8)((127.0f * wave) + 127.0f)), 0, 0});
@@ -3578,7 +3571,7 @@ void mapSetMaterialLight(s32 flags, Vec position) {
 	}
 	if ((u32)flags & 2) {
 		if (lightCheckCharaLight() && count < 8) {
-			count += LIGHT_GET_NEAR(&position, &lights[count], 8 - count, LIGHT_CHARA);
+			count += lightGetNearObj(&position, &lights[count], 8 - count, LIGHT_CHARA);
 		}
 	}
 	if ((u32)flags & 0x19) {
@@ -3594,7 +3587,7 @@ void mapSetMaterialLight(s32 flags, Vec position) {
 			}
 		}
 		else {
-			count = LIGHT_GET_NEAR(&position, lights, 8, LIGHT_CHARA);
+			count = lightGetNearObj(&position, lights, 8, LIGHT_CHARA);
 		}
 	}
 
@@ -3687,7 +3680,7 @@ void mapSetMaterialLight(s32 flags, Vec position) {
 
 // per-mesh vtx-format block (entry->vcdTable)
 
-#pragma opt_common_subs off // MUST_MATCH: stop MWCC CSEing a shared base into the wp/nrm/pos slots
+#pragma opt_common_subs off // stop MWCC CSEing a shared base into the wp/nrm/pos slots
 // The vertex-loop `p = &vp->x` scratch is matched by reading z as `p[2]`.
 static const GXVtxAttrFmtList attr_fmt[] = {
 	{GX_VA_POS, GX_POS_XYZ, GX_F32, 0},
@@ -3797,7 +3790,7 @@ void mapSetPolygon(MapObject* obj, MapFileMesh* mesh) {
 }
 #pragma opt_common_subs reset
 
-#pragma opt_common_subs off // MUST_MATCH: keep GX_VA_TEX0+i from being CSE-hoisted
+#pragma opt_common_subs off // keep GX_VA_TEX0+i from being CSE-hoisted
 // GX setup order/constants and addressing match. The `base = (u8*)wp + 0xA4` local gives the first
 // vcd_table load the original's `add r7, wp, idx` operand order (a direct `(u8*)wp->entries + off`
 // form emits the index first). `wp = mapGetWork()`, the `vcd` pointer local and the pos/nrm
@@ -3861,7 +3854,7 @@ void* mapSearchDmdJointSub(void* a, void* b) {
 
 #pragma opt_lifetimes off // target assigns a->r29/c->r30; default lifetime analysis swaps them
 void* mapSearchDmdJointSub2(void* a, void* b, const char* c) {
-	// match-only: `a` is cast at each use rather than aliased into a `joint` local -- the alias pushes
+	// `a` is cast at each use rather than aliased into a `joint` local -- the alias pushes
 	// a's live range past the buf-address computation and makes MWCC emit the prologue differently.
 	char buf[256];
 	const char* name = (const char*)b;
@@ -4325,7 +4318,7 @@ void spline_maketable(s32 count, s32 a, s32* b, s32* c) {
 
 		f32 sq = dx * dx + dy * dy + dz * dz;
 #ifdef MUST_MATCH
-		// match-only: writing the Newton result back into sq reuses x's FPR (the target overwrites f5);
+		// writing the Newton result back into sq reuses x's FPR (the target overwrites f5);
 		// calling spline_sqrtf forces the f32 return register f1 and leaves an extra `fmr f1,f5`
 		if (sq > 0.0f) {
 			f64 guess = __frsqrte(sq);

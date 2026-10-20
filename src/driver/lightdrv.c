@@ -235,7 +235,7 @@ s32 _sort(const void* a, const void* b) {
 	}
 }
 
-s32 lightGetNearObj(Vec position, LightEntry** entries, s32 count, LightEntryFlags flags) {
+s32 lightGetNearObj(Vec* position, LightEntry** entries, s32 count, LightEntryFlags flags) {
 	LightWork* wp = lightGetWork();
 	LightNearObj near[32];
 	LightEntry* p;
@@ -249,7 +249,7 @@ s32 lightGetNearObj(Vec position, LightEntry** entries, s32 count, LightEntryFla
 		for (i = 0; i < wp->count; i++, p++) {
 			if (p->flags & LIGHT_ENABLED) {
 				near[num].entry = p;
-				near[num].distance = PSVECDistance(&position, &p->position);
+				near[num].distance = PSVECDistance(position, &p->position);
 				num++;
 			}
 		}
