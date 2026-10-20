@@ -367,7 +367,7 @@ void shadowInit(void) { //almost 1:1, minor regalloc
 #define SHADOW_DISP_GX_PROJ(w) (*(Mtx44*)&(w)->projection)
 #else
 #define SHADOW_DISP_PROJ(w) ((Mtx44*)&(w)->projection)
-#define SHADOW_DISP_GX_PROJ(w) (*shadowDispProjMtx(w))
+#define SHADOW_DISP_GX_PROJ(w) ((w)->projection)
 #endif
 #define SHADOW_DISP_PROJ_SETUP(w, extra)                                                                                                   \
     do {                                                                                                                                   \
@@ -434,9 +434,11 @@ static inline void shadowDispMatColor(void) {
 }
 #endif
 
+#ifdef MUST_MATCH
 // The projection matrix as a fresh base+0x3C expression (writing it through the `proj`
 // local CSEs and the original recomputes it for GXSetProjection).
 static inline Mtx44* shadowDispProjMtx(ProjShadowWork* w) { return (Mtx44*)((u8*)w->lookAt + 0x30); }
+#endif
 
 // The instruction stream, calls and branches all match. shadowConfig (+0x40), testKagePosArray (+0xE0)
 // and vertex_tbl (+0x2C0) are defined in this unit's .data, so MWCC reaches them through the shared
@@ -873,7 +875,7 @@ void shadowCharShadowDisp_Polygon(CameraId camId, void* param) {
         if (!(entry->flags & 2)) {
             continue;
         }
-        if (*(s16*)&entry->camId != camId) {
+        if (entry->camId != camId) {
             continue;
         }
         if (camId == CAMERA_OFFSCREEN2) {
@@ -976,7 +978,7 @@ void shadowCharShadowDisp_Texture(CameraId camId, void* param) {
         if (!(entry->flags & 2)) {
             continue;
         }
-        if (*(s16*)&entry->camId != camId) {
+        if (entry->camId != camId) {
             continue;
         }
         if (camId == CAMERA_OFFSCREEN2) {
@@ -1125,7 +1127,7 @@ void cylinderShadowDraw(CameraId camId, void* param) {
         if (!(entry->flags & 2)) {
             continue;
         }
-        if (*(s16*)&entry->camId != camId) {
+        if (entry->camId != camId) {
             continue;
         }
         if (camId == CAMERA_OFFSCREEN2) {

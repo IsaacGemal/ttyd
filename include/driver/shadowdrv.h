@@ -48,7 +48,7 @@ typedef struct ShadowEntry {
     f32 size;                // 0x10
     f32 yScale;              // 0x14, Y scale of the collision matrix
     s16 offscreenId;         // 0x18, offscreenAddBoundingBox id, -1 until set
-    u16 camId;               // 0x1A
+    s16 camId;               // 0x1A
     f32 decayX;              // 0x1C
     f32 decayY;              // 0x20
     f32 decayZ;              // 0x24
