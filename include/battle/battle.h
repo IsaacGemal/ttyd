@@ -28,6 +28,16 @@ typedef struct BattleWorkCommandWindow BattleWorkCommandWindow;
 
 typedef enum BattleFlags { BATTLE_SEQ_END = 0x80000000 } BattleFlags;
 
+typedef struct PhaseEvtEntry {
+    s32 unitIndex; // 0x0
+    s32 value;     // 0x4
+} PhaseEvtEntry;
+
+typedef struct BattleAfterReactionWork {
+    s32 id;      // 0x0
+    s32 field_4; // 0x4
+} BattleAfterReactionWork;
+
 typedef enum BattleSequence {
     SEQ_UNKNOWN = 0,
     SEQ_INIT = 1,
@@ -142,13 +152,16 @@ struct BattleWork {
     s32 seqUnknownValue;                // 0x4
     BattleAlliance alliances[3];        // 0x8
     BattleUnit* units[64];              // 0x20
-    u8 field_120[0x420 - 0x120];        // 0x120
+    s32 unitIdTable[64];                // 0x120
+    PhaseEvtEntry phaseEvtTable[64];    // 0x220, battleMakePhaseEvtTable / btlseqMove
     s32 activeUnitId;                   // 0x420
     s32 field_424;                      // 0x424
     u8 field_428[0xEF4 - 0x428];        // 0x428
     u32 flags;                          // 0xEF4
     s32 dispFlags;                      // 0xEF8
-    u8 field_EFC[0xF0C - 0xEFC];        // 0xEFC
+    u8 field_EFC[0xF00 - 0xEFC];        // 0xEFC
+    s32 stockExp;                       // 0xF00, BattleStoreExp / BattleGetStockExp
+    u8 field_F04[0xF0C - 0xF04];        // 0xF04
     s32 seqInitValue;                   // 0xF0C
     s32 seqFirstActValue;               // 0xF10
     s32 seqTurnValue;                   // 0xF14
@@ -169,7 +182,12 @@ struct BattleWork {
     s32 mStylishResult;                 // 0x2730
     s32 mStylishEarlyFrames;            // 0xA2734
     FieldBattleInfo* fbatInfo;          // 0x2738
-    u8 field_273C[0x2754 - 0x273C];     // 0x273C
+    s32 statusWinField0;                // 0x273C, BattleStatusWindowCheck hides the window when set
+    s32 statusWinField1;                // 0x2740, BattleStatusWindowCheck hides the window when set
+    s32 statusWinSystem;                // 0x2744, BattleStatusWindowSystemOn/Off, StatusWindowOnOff mode 2
+    s32 statusWinEvent;                 // 0x2748, BattleStatusWindowEventOn/Off, StatusWindowOnOff mode 0/1
+    s32 statusWinAPRecovery;            // 0x274C, BattleStatusWindowAPRecoveryOn/Off
+    u8 field_2750[0x2754 - 0x2750];     // 0x2750
     BattleCameraWork cameraWork;        // 0x2754
     BattleAudience audience;            // 0x2858
     u8 field_1616C[0x162A0 - 0x1616C];  // 0x1616C
@@ -178,7 +196,8 @@ struct BattleWork {
     s32 badgeEquippedFlags;             // 0x163D8
     FileEntry* menuTex;                 // 0x163DC
     BattleStage stage;                  // 0x163E0
-    u8 field_16F1C[0x17140 - 0x16F1C];  // 0x16F1C
+    u8 field_16F1C[0x16F40 - 0x16F1C];  // 0x16F1C
+    BattleAfterReactionWork afterReaction[64]; // 0x16F40
     BattleStageObject stageObjects[32]; // 0x17140
     u8 field_180C0[0x182B0 - 0x180C0];  // 0x180C0
     BattleIcon icons[16];               // 0x182B0

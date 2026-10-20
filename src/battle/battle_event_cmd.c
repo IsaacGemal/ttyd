@@ -6997,13 +6997,13 @@ USER_FUNC(btlevtcmd_StatusWindowOnOff) {
 
     switch (evtGetValue(event, *event->args)) {
     case 2:
-        *(s32*)((u8*)wp + 0x2744) = 1;
+        wp->statusWinSystem = 1;
         break;
     case 1:
-        *(s32*)((u8*)wp + 0x2748) = 1;
+        wp->statusWinEvent = 1;
         break;
     case 0:
-        *(s32*)((u8*)wp + 0x2748) = 0;
+        wp->statusWinEvent = 0;
         break;
     }
     BattleStatusWindowCheck();

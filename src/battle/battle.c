@@ -22,34 +22,6 @@
 
 
 
-// Fields of BattleWork that are still holes in the shared header.  The offsets
-// are load-bearing: they come from the original binary, not from the header.
-typedef struct BattleAfterReactionWork {
-    s32 id;      // 0x0
-    s32 field_4; // 0x4
-} BattleAfterReactionWork;
-
-typedef struct BattleWorkOverlay {
-    u8  _pad_0000[0x120];
-    s32 unitIdTable[64];           // 0x120
-    u8  _pad_0220[0xEF4 - 0x220];
-    u32 flags;                     // 0xEF4
-    u8  _pad_0EF8[0x8];            // 0xEF8 - 0xF00
-    s32 stockExp;                  // 0xF00
-    u8  _pad_0F04[0x1C68 - 0xF04];
-    s32 partyChangeId;             // 0x1C68
-    u8  _pad_1C6C[0x273C - 0x1C6C];
-    s32 statusWinField0;           // 0x273C
-    s32 statusWinField1;           // 0x2740
-    s32 statusWinField2;           // 0x2744
-    s32 statusWinField3;           // 0x2748
-    s32 statusWinField4;           // 0x274C
-    u8  _pad_2750[0x16F40 - 0x2750];
-    BattleAfterReactionWork afterReaction[64]; // 0x16F40
-} BattleWorkOverlay;
-
-#define BW_OVL(wp) ((BattleWorkOverlay*)(wp))
-
 extern BattleUnitSetup entryunit_party[7];
 
 // The original object defines these; other translation units reference them.
@@ -78,16 +50,16 @@ void BattleConsumeReserveItem(void) {
 }
 
 BOOL BattleStatusWindowCheck(void) {
-    BattleWorkOverlay* wp = BW_OVL(_battleWorkPointer);
+    BattleWork* wp = _battleWorkPointer;
     BOOL result;
 
     if (wp->statusWinField0) {
         result = FALSE;
     } else if (wp->statusWinField1) {
         result = FALSE;
-    } else if (wp->statusWinField4) {
+    } else if (wp->statusWinAPRecovery) {
         result = TRUE;
-    } else if (wp->statusWinField3 && wp->statusWinField2) {
+    } else if (wp->statusWinEvent && wp->statusWinSystem) {
         result = TRUE;
     } else {
         result = FALSE;
@@ -107,32 +79,32 @@ BOOL BattleStatusWindowCheck(void) {
 }
 
 void BattleStatusWindowSystemOff(void) {
-    BW_OVL(_battleWorkPointer)->statusWinField2 = 0;
+    _battleWorkPointer->statusWinSystem = 0;
     BattleStatusWindowCheck();
 }
 
 void BattleStatusWindowEventOff(void) {
-    BW_OVL(_battleWorkPointer)->statusWinField3 = 0;
+    _battleWorkPointer->statusWinEvent = 0;
     BattleStatusWindowCheck();
 }
 
 void BattleStatusWindowSystemOn(void) {
-    BW_OVL(_battleWorkPointer)->statusWinField2 = 1;
+    _battleWorkPointer->statusWinSystem = 1;
     BattleStatusWindowCheck();
 }
 
 void BattleStatusWindowEventOn(void) {
-    BW_OVL(_battleWorkPointer)->statusWinField3 = 1;
+    _battleWorkPointer->statusWinEvent = 1;
     BattleStatusWindowCheck();
 }
 
 void BattleStatusWindowAPRecoveryOff(void) {
-    BW_OVL(_battleWorkPointer)->statusWinField4 = 0;
+    _battleWorkPointer->statusWinAPRecovery = 0;
     BattleStatusWindowCheck();
 }
 
 void BattleStatusWindowAPRecoveryOn(void) {
-    BW_OVL(_battleWorkPointer)->statusWinField4 = 1;
+    _battleWorkPointer->statusWinAPRecovery = 1;
     BattleStatusWindowCheck();
 }
 
@@ -230,7 +202,7 @@ BOOL BattleAfterReactionMain(void) {
     BattleAfterReactionWork* q;
 
     wp = _battleWorkPointer;
-    q = BW_OVL(wp)->afterReaction;
+    q = wp->afterReaction;
 
     for (i = 0; i < 64; i++) {
         id = q[i].id;
@@ -266,7 +238,7 @@ BOOL BattleAfterReactionMain(void) {
 
 void BattleAfterReactionRelease(s32 id, s32 data) {
     s32 i, j;
-    BattleAfterReactionWork* q = BW_OVL(_battleWorkPointer)->afterReaction;
+    BattleAfterReactionWork* q = _battleWorkPointer->afterReaction;
 
     for (i = 0; i < 64; i++) {
         if (q[i].id != -1 && q[i].id == id && q[i].field_4 == data) {
@@ -282,7 +254,7 @@ void BattleAfterReactionRelease(s32 id, s32 data) {
 }
 
 void BattleAfterReactionEntry(s32 id, s32 data) {
-    BattleAfterReactionWork* q = BW_OVL(_battleWorkPointer)->afterReaction;
+    BattleAfterReactionWork* q = _battleWorkPointer->afterReaction;
     s32 i;
 
     for (i = 0; i < 64; i++) {
@@ -304,7 +276,7 @@ void BattleAfterReactionEntry(s32 id, s32 data) {
 }
 
 void BattleAfterReactionQueueInit(void) {
-    BattleAfterReactionWork* q = BW_OVL(_battleWorkPointer)->afterReaction;
+    BattleAfterReactionWork* q = _battleWorkPointer->afterReaction;
     s32 i;
 
     for (i = 0; i < 64; i++) {
@@ -334,7 +306,7 @@ f32 BattleGetFloorHeight(BattleWork* wp, f32 x, f32 y, f32 z) {
 }
 
 s32 BattleGetStockExp(BattleWork* wp) {
-    s32 exp = BW_OVL(wp)->stockExp;
+    s32 exp = wp->stockExp;
 
     if (exp <= 0) {
         return 1;
@@ -346,7 +318,7 @@ s32 BattleGetStockExp(BattleWork* wp) {
 }
 
 void BattleStoreExp(BattleWork* wp, s32 exp) {
-    BW_OVL(wp)->stockExp += exp;
+    wp->stockExp += exp;
 }
 
 void BattleStoreCoin(BattleWork* wp, s32 coins) {
@@ -676,7 +648,7 @@ BattleUnit* BattleChangeParty(BattleWork* wp) {
     s32 i;
     f32 y2, x, y, z;
 
-    newKind = BW_OVL(wp)->partyChangeId;
+    newKind = *(s32*)((u8*)wp + 0x1C68); // 0x1C68 is inside commandMenu, not yet named
     oldParty = BattleGetPartyPtr(wp);
     oldId = oldParty->unitId;
 
@@ -687,15 +659,15 @@ BattleUnit* BattleChangeParty(BattleWork* wp) {
     newParty = BtlUnit_Spawn(&entryunit_party[newKind - 0xE0], 1);
 
     for (i = 0; i < 64; i++) {
-        s32 id = BW_OVL(wp)->unitIdTable[i];
+        s32 id = wp->unitIdTable[i];
 
         if (id == -1) {
             continue;
         }
         if (id == oldId) {
-            BW_OVL(wp)->unitIdTable[i] = newParty->unitId;
+            wp->unitIdTable[i] = newParty->unitId;
         } else if (id == newParty->unitId) {
-            BW_OVL(wp)->unitIdTable[i] = oldId;
+            wp->unitIdTable[i] = oldId;
         }
     }
 
