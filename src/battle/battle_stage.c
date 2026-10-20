@@ -1039,9 +1039,8 @@ s32 tou_gamen_screen_tev_init(EventEntry* event) {
 // as tou2/tou_03's screen_tev, whose original is identical). With opt_propagation off
 // the base/col add into the byte index as the original does instead of folding into a
 // buf+col pointer. The min-clamp's `x = (x > ratio) ? ratio : x;` reproduces the
-// original's two-branch select. The MUST_MATCH blocks are allocator levers: the `zero`
-// alias and the function-scope counters fix the pointer web's vreg, and the split idx2
-// temporaries keep the running index in its own web.
+// original's two-branch select. The `zero` alias and the function-scope counters fix the
+// pointer web's vreg, and the split idx2 temporaries keep the running index in its own web.
 #pragma opt_propagation off // needed: with propagation on the second loop folds col into a buf+col pointer (see above)
 void tou_gamen_screen_tev(void* param) {
 	GXTexObj texObj;
@@ -1094,25 +1093,18 @@ void tou_gamen_screen_tev(void* param) {
 			}
 			{
 				s32 count = 100 + rand() % 100;
-#ifdef MUST_MATCH
-				// MUST_MATCH: sgcol is declared before sgrow but assigned after it, giving
-				// sgcol the higher vreg the original uses while sgrow is still computed
-				// first in program order.
+				// sgcol is declared before sgrow but assigned after it, giving sgcol the higher vreg the
+				// original uses while sgrow is still computed first in program order.
 				s32 sgcol;
 				s32 sgrow;
 				sgrow = (i / 4) << 8;
 				sgcol = (i % 4) << 3;
-#else
-				s32 sgrow = (i / 4) << 8;
-				s32 sgcol = (i % 4) << 3;
-#endif
 				for (k = 0; k < count; k++) {
 					s32 len = rand() % 4 + 2;
 					s32 start = rand() % (0x41 - len);
 					u8 val = rand() % 0x100;
 					for (j = start; j < start + len; j++) {
-#ifdef MUST_MATCH
-						// MUST_MATCH: same split idx2 lever as the first loop.
+						// The split idx2 temporary keeps the running index in its own web.
 						s32 idx;
 						s32 col;
 						s32 idx2;
@@ -1121,13 +1113,6 @@ void tou_gamen_screen_tev(void* param) {
 						idx += sgrow;
 						idx2 = idx + (j % 8);
 						buf[idx2 + col] = val;
-#else
-						s32 idx = (j / 8) * 0x20;
-						s32 col = sgcol;
-						idx += sgrow;
-						idx += (j % 8);
-						buf[idx + col] = val;
-#endif
 					}
 				}
 			}

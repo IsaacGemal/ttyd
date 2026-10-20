@@ -168,16 +168,10 @@ void init_breath(effGonbabaBreathData* data, s32 index, s32 type) {
 		data->position.y = 0.0f;
 		data->position.z = 0.0f;
 
-#ifdef MUST_MATCH
 		// This order makes MWCC pool 0.00761 and 0.16605 before f1, as in the target.
 		f5 = 0.00761f;
 		f4 = 0.16605f;
 		f1 = 3.1415927f;
-#else
-		f1 = 3.1415927f;
-		f5 = 0.00761f;
-		f4 = 0.16605f;
-#endif
 		f3 = 1.0f;
 		if (f6 <= f1) {
 			f1 = 1.5707964f;
@@ -264,14 +258,10 @@ void init_breath(effGonbabaBreathData* data, s32 index, s32 type) {
 		break;
 	case 17:
 		angle = 225.0f + (f32)irand(90);
-#ifdef MUST_MATCH
-		// MUST_MATCH: the two-statement form makes MWCC coalesce the division into f31 (retail); the
+		// The two-statement form makes MWCC coalesce the division into f31 (retail); the
 		// one-expression form computes it in f1 and copies.
 		speed = (f32)(irand(50) + 10) / 10.0f;
 		speed *= 1.5f;
-#else
-		speed = ((f32)(irand(50) + 10) / 10.0f) * 1.5f;
-#endif
 		data->field_0x44 = irand(100);
 		rad = 6.2831855f * angle;
 		f6 = rad / 360.0f;
@@ -280,16 +270,9 @@ void init_breath(effGonbabaBreathData* data, s32 index, s32 type) {
 		data->position.y = zero;
 		data->position.z = zero;
 
-#ifdef MUST_MATCH
-		// This order makes MWCC pool 0.00761 and 0.16605 before f1, as in the target.
-		f5 = 0.00761f;
-		f4 = 0.16605f;
-		f1 = 3.1415927f;
-#else
 		f1 = 3.1415927f;
 		f5 = 0.00761f;
 		f4 = 0.16605f;
-#endif
 		f2 = 1.0f;
 		if (f6 <= f1) {
 			f1 = 1.5707964f;
@@ -454,11 +437,7 @@ EffectEntry* effGonbabaBreathEntry(s32 type, s32 lifetime, f32 x, f32 y, f32 z, 
 // bounds before the step/steps words, so MWCC evaluates the two int->float conversions first and
 // colours them r0/r4 as retail does; the ABI is unchanged (ints r3-r5, floats f1-f2).
 static inline f32 intplGetValueFM(s32 mode, f32 start, f32 end, s32 currStep, s32 steps) {
-#ifdef MUST_MATCH
-	return ((f32 (*)(s32, f32, f32, s32, s32))intplGetValue)(mode, start, end, currStep, steps);
-#else
 	return intplGetValue(mode, currStep, steps, start, end);
-#endif
 }
 
 // `k`/`k2` are the named scale rates; naming them makes MWCC keep the `1.5f - scale` subtraction
@@ -467,24 +446,13 @@ static inline f32 intplGetValueFM(s32 mode, f32 start, f32 end, s32 currStep, s3
 void effGonbabaBreathMain(EffectEntry* effect) {
 	effGonbabaBreathData* data = effect->userdata;
 	Vec position;
-#ifdef MUST_MATCH
-#else
-	Vec disp = { 0 };
-#endif
 	f32 k = 0.25f;
 	f32 k2 = 0.125f;
 	s32 i;
 
-#ifdef MUST_MATCH
-	// Reuse the zero-Vec template initializeVec's body pools at parse time instead of emitting
-	// a second one.
+	// Copying through initializeVec reuses the zero-Vec template its body pools at parse time instead of
+	// emitting a second one.
 	position = initializeVec(&data->position);
-#else
-	disp.x = data->position.x;
-	disp.y = data->position.y;
-	disp.z = data->position.z;
-	position = disp;
-#endif
 
 	if (effect->flags & 4) {
 		effect->flags &= ~4;
@@ -639,12 +607,10 @@ void effGonbabaBreathDisp(CameraId camId, void* param) {
 	f32 fb;
 	f32 fc;
 	f32 fd;
-#ifdef MUST_MATCH
 	// `size`/`negSize` keep the shared 4.0f in non-volatile FPRs so case B computes negSize / 2.0f
-	// rather than folding to a -2.0 literal, matching the original; natural form uses the literals.
+	// rather than folding to a -2.0 literal, matching the original.
 	f32 size = 4.0f;
 	f32 negSize;
-#endif
 	s32 type;
 	s32 colorIdx;
 	s32 i;
@@ -702,9 +668,7 @@ void effGonbabaBreathDisp(CameraId camId, void* param) {
 	GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, GX_TEX_ST, GX_F32, 0);
 
 	colorIdx = type % 10;
-#ifdef MUST_MATCH
 	negSize = -size;
-#endif
 	for (i = 1, data = data + 1; i < effect->count; i++, data++) {
 		if (data->field_0x44 != 0) {
 			continue;
@@ -729,17 +693,10 @@ void effGonbabaBreathDisp(CameraId camId, void* param) {
 				col_tbl[colorIdx][j].a = (data->alpha * alpha) / 255;
 				GXSetChanMatColor(GX_COLOR0A0, col_tbl[colorIdx][j]);
 				GXBegin(GX_QUADS, GX_VTXFMT0, 4);
-#ifdef MUST_MATCH
 				fa = 16.0f - size * (f32)j;
 				fd = -fa;
 				fb = fa * half;
 				fc = fd * half;
-#else
-				fa = 16.0f - 4.0f * (f32)j;
-				fd = -fa;
-				fb = fa * 0.5f;
-				fc = fd * 0.5f;
-#endif
 				GXPosition3f32(fc, fb, 0.0f);
 				GXTexCoord2f32(0.0f, 0.0f);
 				GXPosition3f32(fb, fb, 0.0f);
@@ -765,11 +722,7 @@ void effGonbabaBreathDisp(CameraId camId, void* param) {
 			GXSetChanMatColor(GX_COLOR0A0, color);
 			GXBegin(GX_QUADS, GX_VTXFMT0, 4);
 			f1 = 2.0f;
-#ifdef MUST_MATCH
 			f2 = negSize / 2.0f;
-#else
-			f2 = -2.0f;
-#endif
 			GXPosition3f32(f2, f1, 0.0f);
 			GXTexCoord2f32(0.0f, 0.0f);
 			GXPosition3f32(f1, f1, 0.0f);
