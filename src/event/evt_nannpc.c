@@ -38,20 +38,20 @@ struct NanNpcEntry {
     Vec position;                   // 0x18
     Vec hoseiPosition;              // 0x24
     Vec homePosition;               // 0x30
-    Vec field_0x3C;                 // 0x3C
+    Vec velocity;                   // 0x3C
     f32 width;                      // 0x48
-    f32 field_0x4C;                 // 0x4C
-    OSTime field_0x50;              // 0x50
+    f32 range;                      // 0x4C
+    OSTime startTime;               // 0x50
     s16* animTable;                 // 0x58
     s16 animCount;                  // 0x5C
     s16 animCurrent;                // 0x5E
-    f32 field_0x60;                 // 0x60
+    f32 facingAngle;                // 0x60
     void (*callback)(NanNpcEntry*); // 0x64
-    s32 field_0x68;                 // 0x68
-    s32 field_0x6C;                 // 0x6C
-    s32 field_0x70;                 // 0x70
+    s32 jumpStartX;                 // 0x68
+    s32 jumpStartY;                 // 0x6C
+    s32 jumpStartZ;                 // 0x70
     u8 field_0x74[0x14];            // 0x74
-    Vec field_0x88;                 // 0x88
+    Vec moveStart;                  // 0x88
     u8 field_0x94[0x10];            // 0x94
     s32 work[6];                    // 0xA4
     GXColor color;                  // 0xBC
@@ -134,16 +134,16 @@ static inline BOOL nannpcHitWall(NanNpcEntry* entry, f32 vlen, Vec pos, Vec dir)
                                         dir.y, dir.z, &hitPos.x, &hitPos.y, &hitPos.z, &hitDist, &hitNormal.x, &hitNormal.y,
                                         &hitNormal.z);
     if ((u32)entry->work[4] == 0) {
-        PSVECAdd(&entry->position, &entry->field_0x3C, &entry->position);
+        PSVECAdd(&entry->position, &entry->velocity, &entry->position);
     } else {
         savedPos = entry->position;
-        PSVECAdd(&entry->position, &entry->field_0x3C, &entry->position);
-        if (entry->field_0x3C.y == 0.0f) {
+        PSVECAdd(&entry->position, &entry->velocity, &entry->position);
+        if (entry->velocity.y == 0.0f) {
             hitNormal.y = 0.0f;
         }
         PSVECNormalize(&hitNormal, &hitNormal);
         C_VECReflect(&dir, &hitNormal, &reflect);
-        PSVECScale(&reflect, &entry->field_0x3C, vlen);
+        PSVECScale(&reflect, &entry->velocity, vlen);
         scale = FALSE;
         d = PSVECDotProduct(&dir, &hitNormal);
         PSVECScale(&hitNormal, &hitNormal, d * -(vlen - hitDist) + 0.1f);
@@ -181,24 +181,24 @@ static inline void nannpcMoveEntry(NanNpcEntry* entry) {
     if (!(entry->flags & 4)) {
         return;
     }
-    vlen = PSVECMag(&entry->field_0x3C);
+    vlen = PSVECMag(&entry->velocity);
     if (vlen == zero) {
         return;
     }
     if (vlen > 10.0f) {
-        PSVECScale(&entry->field_0x3C, &entry->field_0x3C, 5.0f / vlen);
+        PSVECScale(&entry->velocity, &entry->velocity, 5.0f / vlen);
         vlen = 5.0f;
     }
     pos = entry->position;
     pos.y += 1.0f;
-    PSVECNormalize(&entry->field_0x3C, &velNorm);
+    PSVECNormalize(&entry->velocity, &velNorm);
     if (entry->flags & 8) {
-        PSVECAdd(&entry->position, &entry->field_0x3C, &entry->position);
-        PSVECScale(&entry->field_0x3C, &entry->field_0x3C, 0.6f);
+        PSVECAdd(&entry->position, &entry->velocity, &entry->position);
+        PSVECScale(&entry->velocity, &entry->velocity, 0.6f);
         return;
     }
     if (nannpcHitWall(entry, vlen, pos, velNorm)) {
-        PSVECScale(&entry->field_0x3C, &entry->field_0x3C, 0.6f);
+        PSVECScale(&entry->velocity, &entry->velocity, 0.6f);
     }
 }
 
@@ -222,15 +222,15 @@ void nanNPCOption(void) {
             }
             vlen = PSVECDistance(&entry->position, &other->position);
             PSVECSubtract(&entry->position, &other->position, &delta);
-            if (vlen <= entry->field_0x4C) {
+            if (vlen <= entry->range) {
                 if (PSVECMag(&delta) == 0.0f) {
                     delta.x = 1.0f;
                 }
                 PSVECNormalize(&delta, &delta);
                 delta.y = 0.0f;
                 PSVECScale(&delta, &delta, 0.5f);
-                PSVECAdd(&entry->field_0x3C, &delta, &entry->field_0x3C);
-                PSVECSubtract(&other->field_0x3C, &delta, &other->field_0x3C);
+                PSVECAdd(&entry->velocity, &delta, &entry->velocity);
+                PSVECSubtract(&other->velocity, &delta, &other->velocity);
             }
         }
     }
@@ -240,11 +240,11 @@ void nanNPCOption(void) {
             continue;
         }
         PSVECSubtract(&entry->homePosition, &entry->position, &delta);
-        if (PSVECMag(&delta) > 0.8f * entry->field_0x4C) {
+        if (PSVECMag(&delta) > 0.8f * entry->range) {
             PSVECNormalize(&delta, &delta);
             delta.y = 0.0f;
             PSVECScale(&delta, &delta, 0.5f);
-            PSVECAdd(&entry->field_0x3C, &delta, &entry->field_0x3C);
+            PSVECAdd(&entry->velocity, &delta, &entry->velocity);
         }
     }
 
@@ -390,7 +390,7 @@ void nannpc_ext_main_sub_fast(void) {
                 entry->animCurrent = entry->animTable[(gp->retraceCount + i * i) % entry->animCount];
             }
             entry->pose->texId = entry->animCurrent;
-            entry->pose->heading = -entry->field_0x60;
+            entry->pose->heading = -entry->facingAngle;
             if (entry->flags & 2) {
                 (*entry->pose->matrix)[0][3] = 0.0f;
                 (*entry->pose->matrix)[1][3] = -1000.0f;
@@ -475,12 +475,12 @@ USER_FUNC(evt_nannpc_init) {
         entry->homePosition = vec[1];
         entry->hoseiPosition = vec[2];
         entry->width = 32.0f;
-        entry->field_0x4C = 32.0f;
-        entry->field_0x50 = 0;
+        entry->range = 32.0f;
+        entry->startTime = 0;
         entry->animTable = NULL;
         entry->animCount = 0;
         entry->animCurrent = 0;
-        entry->field_0x60 = 0.0f;
+        entry->facingAngle = 0.0f;
         entry->callback = NULL;
         entry->color = (GXColor){0xFF, 0xFF, 0xFF, 0xFF};
     }
@@ -579,11 +579,11 @@ USER_FUNC(evt_nannpc_entry) {
         entry->homePosition = vec[4];
         entry->hoseiPosition = vec[5];
         entry->width = 32.0f;
-        entry->field_0x4C = 32.0f;
-        entry->field_0x50 = 0;
+        entry->range = 32.0f;
+        entry->startTime = 0;
         entry->animCount = 0;
-        entry->field_0x60 = 0.0f;
-        entry->pose->heading = -entry->field_0x60;
+        entry->facingAngle = 0.0f;
+        entry->pose->heading = -entry->facingAngle;
         entry->color = (GXColor){0xFF, 0xFF, 0xFF, 0xFF};
         break;
     }
@@ -638,7 +638,7 @@ USER_FUNC(evt_nannpc_set_size) {
     NanNpcEntry* entry = nannpcFind((const char*)id);
 
     entry->width = evtGetFloat(event, args[1]);
-    entry->field_0x4C = evtGetFloat(event, args[2]);
+    entry->range = evtGetFloat(event, args[2]);
     return EVT_RETURN_DONE;
 }
 
@@ -686,7 +686,7 @@ USER_FUNC(evt_nannpc_set_dir) {
     s32 id = evtGetValue(event, args[0]);
     NanNpcEntry* entry = nannpcFind((const char*)id);
 
-    entry->field_0x60 = (f32)evtGetValue(event, args[1]);
+    entry->facingAngle = (f32)evtGetValue(event, args[1]);
     return EVT_RETURN_DONE;
 }
 
@@ -732,14 +732,14 @@ USER_FUNC(evt_nannpc_move_position2) {
     speed = evtGetFloat(event, args[4]);
     if (isFirstCall) {
         event->savedTime = time;
-        entry->field_0x88 = entry->position;
+        entry->moveStart = entry->position;
     }
-    PSVECSubtract(&target, &entry->field_0x88, &delta);
+    PSVECSubtract(&target, &entry->moveStart, &delta);
     duration = (s32)((1000.0f * PSVECMag(&delta)) / speed);
     elapsed = (s32)OSTicksToMilliseconds((u64)(s32)((s32)time - (s32)event->savedTime));
     PSVECScale(&delta, &move, (f32)elapsed / (f32)duration);
     if (elapsed < duration) {
-        PSVECAdd(&entry->field_0x88, &move, &entry->position);
+        PSVECAdd(&entry->moveStart, &move, &entry->position);
         return EVT_RETURN_BLOCK;
     }
     entry->position = target;
@@ -765,27 +765,27 @@ USER_FUNC(evt_nannpc_jump_position) {
     f32 t;
 
     if (isFirstCall) {
-        entry->field_0x50 = gp->renderTime;
-        entry->field_0x68 = (s32)entry->position.x;
-        entry->field_0x6C = (s32)entry->position.y;
-        entry->field_0x70 = (s32)entry->position.z;
+        entry->startTime = gp->renderTime;
+        entry->jumpStartX = (s32)entry->position.x;
+        entry->jumpStartY = (s32)entry->position.y;
+        entry->jumpStartZ = (s32)entry->position.z;
         event->userdataf[1] = -4.0f * arcHeight;
-        event->userdataf[2] = (targetY - (f32)entry->field_0x6C) - event->userdataf[1];
+        event->userdataf[2] = (targetY - (f32)entry->jumpStartY) - event->userdataf[1];
     }
 
 #ifdef MUST_MATCH
-    rawElapsed = OSTicksToMilliseconds((OSTick)gp->renderTime - (OSTick)entry->field_0x50);
+    rawElapsed = OSTicksToMilliseconds((OSTick)gp->renderTime - (OSTick)entry->startTime);
     if ((s32)rawElapsed < duration) {
         t = (f32)(s32)rawElapsed / (f32)duration;
-        entry->position.x = intplGetValue(0, elapsed = rawElapsed, duration, (f32)entry->field_0x68, targetX);
+        entry->position.x = intplGetValue(0, elapsed = rawElapsed, duration, (f32)entry->jumpStartX, targetX);
 #else
-    elapsed = (s32)OSTicksToMilliseconds((OSTick)gp->renderTime - (OSTick)entry->field_0x50);
+    elapsed = (s32)OSTicksToMilliseconds((OSTick)gp->renderTime - (OSTick)entry->startTime);
     if (elapsed < duration) {
         t = (f32)elapsed / (f32)duration;
-        entry->position.x = intplGetValue(0, elapsed, duration, (f32)entry->field_0x68, targetX);
+        entry->position.x = intplGetValue(0, elapsed, duration, (f32)entry->jumpStartX, targetX);
 #endif
-        entry->position.z = intplGetValue(0, elapsed, duration, (f32)entry->field_0x70, targetZ);
-        entry->position.y = (f32)entry->field_0x6C + t * ((event->userdataf[1] * t) + event->userdataf[2]);
+        entry->position.z = intplGetValue(0, elapsed, duration, (f32)entry->jumpStartZ, targetZ);
+        entry->position.y = (f32)entry->jumpStartY + t * ((event->userdataf[1] * t) + event->userdataf[2]);
         return EVT_RETURN_BLOCK;
     }
     entry->position.x = targetX;

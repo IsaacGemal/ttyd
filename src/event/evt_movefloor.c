@@ -28,10 +28,10 @@ typedef struct MovingFloorWork {
     /* 0x00 */ u32 flags;
     /* 0x04 */ s32 kind;
     /* 0x08 */ f32 speed;
-    /* 0x0C */ f32 field_0x0C;
-    /* 0x10 */ f32 field_0x10;
+    /* 0x0C */ f32 axisPos;
+    /* 0x10 */ f32 progress;
     /* 0x14 */ u32 field_0x14;
-    /* 0x18 */ OSTime field_0x18;
+    /* 0x18 */ OSTime prevLifetime;
     /* 0x20 */ s32 mode;
     /* 0x24 */ s32 direction;
     /* 0x28 */ s32 index;
@@ -42,11 +42,11 @@ typedef struct MovingFloorWork {
     /* 0x5C */ f32 offsetY;
     /* 0x60 */ f32 prevOffsetY;
     /* 0x64 */ f32 time;
-    /* 0x68 */ s32 field_0x68[3];
+    /* 0x68 */ s32 duration[3];
     /* 0x74 */ s32 field_0x74;
-    /* 0x78 */ u32 field_0x78;
+    /* 0x78 */ u32 seHalted;
     /* 0x7C */ u32 seId;
-    /* 0x80 */ f32 field_0x80;
+    /* 0x80 */ f32 turnSpeed;
     /* 0x84 */ f32 turn;
 } MovingFloorWork;
 
@@ -148,53 +148,53 @@ USER_FUNC(evt_moving_floor_alloc) {
         work->time = 1.0f;
         work->start.x = (f32)event->lwData[2];
         work->end.x = (f32)event->lwData[3];
-        work->field_0x68[0] = event->lwData[4];
+        work->duration[0] = event->lwData[4];
         work->pos.x = work->start.x;
-        work->field_0x80 = (f32)event->lwData[11];
+        work->turnSpeed = (f32)event->lwData[11];
         break;
     case 1:
         work->index = 1;
         work->time = 1.0f;
         work->start.y = (f32)event->lwData[2];
         work->end.y = (f32)event->lwData[3];
-        work->field_0x68[1] = event->lwData[4];
+        work->duration[1] = event->lwData[4];
         work->pos.y = work->start.y;
-        work->field_0x80 = (f32)event->lwData[11];
+        work->turnSpeed = (f32)event->lwData[11];
         break;
     case 2:
         work->index = 2;
         work->time = 1.0f;
         work->start.z = (f32)event->lwData[2];
         work->end.z = (f32)event->lwData[3];
-        work->field_0x68[2] = event->lwData[4];
+        work->duration[2] = event->lwData[4];
         work->pos.z = work->start.z;
-        work->field_0x80 = (f32)event->lwData[11];
+        work->turnSpeed = (f32)event->lwData[11];
         break;
     case 3:
         work->index = 0;
         work->time = 1.0f;
         work->start.x = (f32)event->lwData[2];
         work->end.x = (f32)event->lwData[3];
-        work->field_0x68[0] = event->lwData[4];
+        work->duration[0] = event->lwData[4];
         work->pos.x = 0.5f * work->start.x + 0.5f * work->end.x;
         work->start.z = (f32)event->lwData[8];
         work->end.z = (f32)event->lwData[9];
-        work->field_0x68[2] = event->lwData[10];
+        work->duration[2] = event->lwData[10];
         work->pos.z = 0.5f * work->start.z + 0.5f * work->end.z;
-        work->field_0x80 = (f32)event->lwData[11];
+        work->turnSpeed = (f32)event->lwData[11];
         break;
     case 4:
         work->index = 2;
         work->time = 1.0f;
         work->start.x = (f32)event->lwData[2];
         work->end.x = (f32)event->lwData[3];
-        work->field_0x68[0] = event->lwData[4];
+        work->duration[0] = event->lwData[4];
         work->pos.x = work->start.x;
         work->start.z = (f32)event->lwData[8];
         work->end.z = (f32)event->lwData[9];
-        work->field_0x68[2] = event->lwData[10];
+        work->duration[2] = event->lwData[10];
         work->pos.z = work->start.z;
-        work->field_0x80 = (f32)event->lwData[11];
+        work->turnSpeed = (f32)event->lwData[11];
         break;
     case 5:
         work->flags &= ~1;
@@ -202,9 +202,9 @@ USER_FUNC(evt_moving_floor_alloc) {
         work->time = 1.0f;
         work->start.x = (f32)event->lwData[2];
         work->end.x = (f32)event->lwData[3];
-        work->field_0x68[0] = event->lwData[4];
+        work->duration[0] = event->lwData[4];
         work->pos.x = work->start.x;
-        work->field_0x80 = (f32)event->lwData[11];
+        work->turnSpeed = (f32)event->lwData[11];
         break;
     default:
         break;
@@ -239,7 +239,7 @@ USER_FUNC(evt_moving_floor_free) {
 }
 
 
-// The three explicit temporaries in the field_0x0C blend are what make MWCC put
+// The three explicit temporaries in the axisPos blend are what make MWCC put
 // `t = 1.0f - ratio` in f1 and the second value in f2, matching the original's
 // register allocation; the plain expression compiles to the opposite order.
 USER_FUNC(evt_moving_floor_init) {
@@ -383,29 +383,29 @@ USER_FUNC(evt_moving_floor_init) {
     } else {
         delta = ((f32*)&work->end)[work->index] - ((f32*)&work->start)[work->index];
     }
-    work->speed = delta / (f32)work->field_0x68[work->index];
+    work->speed = delta / (f32)work->duration[work->index];
 #ifdef MUST_MATCH
     if (reverse != 0) {
         f32 a = ((f32*)&work->start)[work->index];
         f32 b = ((f32*)&work->end)[work->index];
         f32 t = 1.0f - ratio;
-        work->field_0x0C = b * t + a * ratio;
+        work->axisPos = b * t + a * ratio;
     } else {
         f32 a = ((f32*)&work->end)[work->index];
         f32 b = ((f32*)&work->start)[work->index];
         f32 t = 1.0f - ratio;
-        work->field_0x0C = b * t + a * ratio;
+        work->axisPos = b * t + a * ratio;
     }
 #else
     if (reverse != 0) {
         f32 t = 1.0f - ratio;
-        work->field_0x0C = ((f32*)&work->end)[work->index] * t + ((f32*)&work->start)[work->index] * ratio;
+        work->axisPos = ((f32*)&work->end)[work->index] * t + ((f32*)&work->start)[work->index] * ratio;
     } else {
         f32 t = 1.0f - ratio;
-        work->field_0x0C = ((f32*)&work->start)[work->index] * t + ((f32*)&work->end)[work->index] * ratio;
+        work->axisPos = ((f32*)&work->start)[work->index] * t + ((f32*)&work->end)[work->index] * ratio;
     }
 #endif
-    work->field_0x10 = (f32)work->field_0x68[work->index] * ratio;
+    work->progress = (f32)work->duration[work->index] * ratio;
     return EVT_RETURN_DONE;
 }
 
@@ -418,14 +418,14 @@ USER_FUNC(evt_moving_floor_main) {
     f32 dt;
     u32 idx;
 
-    tick = ((s32*)&event->lifetime)[1] - ((s32*)&work->field_0x18)[1];
+    tick = ((s32*)&event->lifetime)[1] - ((s32*)&work->prevLifetime)[1];
     us = OSTicksToMicroseconds(tick);
     dt = (f32)us;
     {
         f32 b = dt / 1000.0f;
         f32 a = work->speed * dt / 1000.0f;
-        work->field_0x0C += a;
-        work->field_0x10 += b;
+        work->axisPos += a;
+        work->progress += b;
     }
 
     work->prev.x = work->pos.x;
@@ -438,7 +438,7 @@ USER_FUNC(evt_moving_floor_main) {
     } else {
         work->offsetY = 0.0f;
     }
-    ((f32*)&work->pos)[work->index] = work->field_0x0C;
+    ((f32*)&work->pos)[work->index] = work->axisPos;
     evtSetFloat(event, args[1], work->pos.x);
     evtSetFloat(event, args[2], work->pos.y + work->offsetY);
     evtSetFloat(event, args[3], work->pos.z);
@@ -449,7 +449,7 @@ USER_FUNC(evt_moving_floor_main) {
 USER_FUNC(evt_moving_floor_main2) {
     MovingFloorWork* work = (MovingFloorWork*)evtGetValue(event, event->args[0]);
 
-    work->field_0x18 = event->lifetime;
+    work->prevLifetime = event->lifetime;
     return EVT_RETURN_DONE;
 }
 
@@ -457,8 +457,8 @@ USER_FUNC(evt_moving_floor_main2) {
 USER_FUNC(moving_floor_get_end) {
     s32* args = event->args;
     MovingFloorWork* work = (MovingFloorWork*)evtGetValue(event, args[0]);
-    s32 a = (s32)work->field_0x10;
-    s32 b = (s32)((f32)work->field_0x68[work->index] * work->time);
+    s32 a = (s32)work->progress;
+    s32 b = (s32)((f32)work->duration[work->index] * work->time);
 
     if (a >= b) {
         evtSetValue(event, args[1], 1);
@@ -504,7 +504,7 @@ USER_FUNC(moving_floor_update_turn) {
     s32* args = event->args;
     MovingFloorWork* work = (MovingFloorWork*)evtGetValue(event, args[0]);
 
-    work->turn += work->field_0x80;
+    work->turn += work->turnSpeed;
     if (work->turn < 0.0f) {
         work->turn += 360.0f;
     }
@@ -579,8 +579,8 @@ USER_FUNC(moving_floor_reverse) {
         return EVT_RETURN_DONE;
     }
     work->speed *= -1.0f;
-    t = (f32)work->field_0x68[work->index] * work->time;
-    work->field_0x10 = t - work->field_0x10;
+    t = (f32)work->duration[work->index] * work->time;
+    work->progress = t - work->progress;
     work->direction ^= 1;
     return EVT_RETURN_DONE;
 }
@@ -594,7 +594,7 @@ USER_FUNC(moving_floor_set_se) {
     MapObject* obj;
     s32 flag;
 
-    if (work->field_0x78 != 0) {
+    if (work->seHalted != 0) {
         return EVT_RETURN_DONE;
     }
     if (work->seId == 0) {
@@ -617,7 +617,7 @@ USER_FUNC(moving_floor_set_se) {
 USER_FUNC(moving_floor_stop_se) {
     MovingFloorWork* work = (MovingFloorWork*)evtGetValue(event, event->args[0]);
 
-    if (work->field_0x78 == 0 && work->seId != 0) {
+    if (work->seHalted == 0 && work->seId != 0) {
         psndSFXOff(work->seId);
         work->seId = 0;
     }
@@ -628,7 +628,7 @@ USER_FUNC(moving_floor_stop_se) {
 USER_FUNC(moving_floor_halt_se) {
     MovingFloorWork* work = (MovingFloorWork*)evtGetValue(event, event->args[0]);
 
-    work->field_0x78 = 1;
+    work->seHalted = 1;
     return EVT_RETURN_DONE;
 }
 
@@ -638,7 +638,7 @@ USER_FUNC(evt_moving_floor_delete) {
     EventEntry* entry = evtGetPtrID(id);
     MovingFloorWork* work = (MovingFloorWork*)entry->lwData[9];
 
-    if (work->field_0x78 == 0 && work->seId != 0) {
+    if (work->seHalted == 0 && work->seId != 0) {
         psndSFXOff(work->seId);
         work->seId = 0;
     }

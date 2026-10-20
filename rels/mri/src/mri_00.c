@@ -677,8 +677,8 @@ static USER_FUNC(evt_cloud_main) {
         if (h0 == hit || h1 == hit || h2 == hit || h3 == hit) {
             cp->mode++;
         }
-        if (cp->field_0x18C > 0) {
-            cp->field_0x18C--;
+        if (cp->breathCount > 0) {
+            cp->breathCount--;
         }
         break;
     case 1: {
@@ -709,8 +709,8 @@ static USER_FUNC(evt_cloud_main) {
         cp->mode = 0xDE;
         break;
     case 0xDE:
-        if (_ofs_get_boundingbox(cp->offName, &cp->field_0x19C, &cp->field_0x1A0, &cp->field_0x1A4, &cp->field_0x1A8) != 0) {
-            _img_alloc_capture((s32)cp->imgName, 0, 0, 1, cp->field_0x19C, cp->field_0x1A0, cp->field_0x1A4, cp->field_0x1A8);
+        if (_ofs_get_boundingbox(cp->offName, &cp->left, &cp->top, &cp->width, &cp->height) != 0) {
+            _img_alloc_capture((s32)cp->imgName, 0, 0, 1, cp->left, cp->top, cp->width, cp->height);
             cp->mode = 0xDF;
         }
         break;
@@ -724,15 +724,15 @@ static USER_FUNC(evt_cloud_main) {
         img->animName = "A_1";
         (img->startTime) = animTimeGetTime(inBattle);
         img->flags &= ~2;
-        cp->field_0x198 = 0x1E;
-        cp->field_0x1AC = 0.0f;
+        cp->waitTimer = 0x1E;
+        cp->lastLoopTimes = 0.0f;
         cp->mode++;
         break;
     case 4:
         img = imgNameToPtr(cp->imgName, inBattle);
-        if (cp->field_0x1AC == 0.0f || 1.0f + cp->field_0x1AC < img->loopTimes) {
+        if (cp->lastLoopTimes == 0.0f || 1.0f + cp->lastLoopTimes < img->loopTimes) {
             psndSFXOn_3D("SFX_OFF_CLAUD_WIND2", &mario->position);
-            cp->field_0x1AC = img->loopTimes;
+            cp->lastLoopTimes = img->loopTimes;
         }
         if (mario->currMotionId != 0x1B) {
             cp->mode = 0xA;
@@ -740,16 +740,16 @@ static USER_FUNC(evt_cloud_main) {
         }
         hit = hitNameToPtr(cp->hitName);
         if (h0 != hit && h1 != hit && h2 != hit && h3 != hit) {
-            if (cp->field_0x198 == 0) {
+            if (cp->waitTimer == 0) {
                 cp->mode = 0xA;
             } else {
-                cp->field_0x198--;
-                cp->field_0x18C += 2;
+                cp->waitTimer--;
+                cp->breathCount += 2;
             }
         } else {
-            cp->field_0x198 = 0x1E;
-            cp->field_0x18C += 2;
-            if (cp->field_0x18C > cp->field_0x188) {
+            cp->waitTimer = 0x1E;
+            cp->breathCount += 2;
+            if (cp->breathCount > cp->breathLimit) {
                 cp->mode = 0x14;
             }
         }
@@ -759,21 +759,21 @@ static USER_FUNC(evt_cloud_main) {
         break;
     case 0x14:
         psndSFXOn_3D("SFX_OFF_CLAUD_WIND3", &mario->position);
-        if (cp->field_0x194 != NULL) {
-            evtEntry(cp->field_0x194, 0, 0);
+        if (cp->endScript != NULL) {
+            evtEntry(cp->endScript, 0, 0);
         }
         img = imgNameToPtr(cp->imgName, inBattle);
         img->animName = "A_2";
         (img->startTime) = animTimeGetTime(inBattle);
-        cp->field_0x198 = 0x3C;
+        cp->waitTimer = 0x3C;
         cp->mode++;
         break;
     case 0x15:
-        if (cp->field_0x198 != 0) {
-            cp->field_0x198--;
+        if (cp->waitTimer != 0) {
+            cp->waitTimer--;
         } else {
-            cp->field_0x198 = 0x1E;
-            cp->field_0x18C += 2;
+            cp->waitTimer = 0x1E;
+            cp->breathCount += 2;
             cp->mode = 0x64;
         }
         break;
@@ -843,13 +843,13 @@ USER_FUNC(evt_mri_cloud_ent) {
         strcpy((char*)cp->mapGrpName[i], (const char*)a[i]);
     }
     strcpy(cp->hitName, (const char*)b);
-    cp->field_0x194 = c;
-    cp->field_0x188 = 0xB4;
-    cp->field_0x18C = 0;
+    cp->endScript = c;
+    cp->breathLimit = 0xB4;
+    cp->breathCount = 0;
     cp->mode = 0;
-    cp->field_0x198 = 0;
-    cp->field_0x190 = evtEntry(evt_cloud_main_evt, 0, 0);
-    cp->field_0x190->lwData[0] = (s32)cp;
+    cp->waitTimer = 0;
+    cp->event = evtEntry(evt_cloud_main_evt, 0, 0);
+    cp->event->lwData[0] = (s32)cp;
     return EVT_RETURN_DONE;
 }
 
