@@ -11346,3 +11346,9 @@ Printing `%s`/`%d`/`%2d` literals gave `str__s`, `str__d`, `str__2d` (leading `_
 Verified: tower build recreates build/G8MJ01/ok. `tools/cleanup_index.py` address_name 3319 -> 3193 (weighted 14503 -> 14377).
 - Opus follow-up: format strings named str_fmt_s/str_fmt_d/str_fmt_2d; "toride"/"toride_" named str_toride/str_toride_ (trailing underscore kept so both get a name).
 - After rebase: evt_shop's "mario" string keeps its address name (str_8041BC10); str_mario names the evt_kinopio copy.
+## s-mmpmot: party_motion.c MUST_MATCH reduction
+
+- `src/party/party_motion.c` went from 52 to 16 `MUST_MATCH` lines. Every block was tried with its `#else` alone; only the two `k = 0.05f` stagings (and the `f32 k` local) matched, so those became the plain `0.05f * (...)` form.
+- The rest of the matching arms were small enough to read normally (an extra `ytmp`/`readId`/`w` local, `angle += 180.0f; angle = revise360(angle)`, `case 0:` ahead of `default`, `!party->speed`, the one-compound-test angle check, the `-3.0f` staging, the recomputed 1.4 product, the `Vec pos` copies of the named rodata vectors) and now stand alone without `#ifdef`. The jump targetPos stores keep `Vec pos = FV(...)` but one assignment per line.
+- Left under `MUST_MATCH`: the data-layout pieces (PM_RODATA, the reverse-order `.sbss` dummy, the FB/FV macros), the `(f32*)(u32)(s64)(s32)&vA0.z` movePos argument (px/pz locals, `s32` casts, and swapped store order all change the object), the nested `f0 = ... (f1 = ... (f6 = ...))` travel-time expression and the `party->targetDist = (f6 = party->targetDist)` self-store in party_motion_jump (the plain form shifts the f5/f6 colouring), and the three `hitFlag` redundant-NULL re-tests (party_motion_damage, two in the hit-height probe loop; ternary, `&&` and single-expression rewrites all move branch targets).
+- Verified: tower `ninja` recreates build/G8MJ01/ok; party_motion.c also compiles without `-DMUST_MATCH` (`-maxerrors 50`).

@@ -515,11 +515,9 @@ skip_target:
                 party->useMotionId = 0;
             }
             break;
-#ifdef MUST_MATCH
         // `case 0` is redundant with `default` but is what makes mwcc
         // build the 3-entry {0,1,2} search tree the original has.
         case 0:
-#endif
         default:
             partyChgPose(party, FB(str_PCH_A2_1, "PCH_A2_1"));
             party->useMotionId = 1;
@@ -573,11 +571,9 @@ void party_motion_idle(PartyEntry* party) {
                         party->useMotionId = 0;
                     }
                     break;
-#ifdef MUST_MATCH
                 // `case 0` is redundant with `default` but is what makes mwcc
                 // build the 3-entry {0,1,2} search tree the original has.
                 case 0:
-#endif
                 default:
                     partyChgPose(party, FB(str_PCH_A2_1, "PCH_A2_1"));
                     party->useMotionId = 1;
@@ -810,9 +806,7 @@ void party_motion_homing_walk(PartyEntry* party) {
     Vec v58;
     f32 s1;
     s32 writeId;
-#ifdef MUST_MATCH
     s32 readId;
-#endif
     f32 c2;
     Vec v4c;
     f32 s2;
@@ -1034,12 +1028,8 @@ void party_motion_homing_walk(PartyEntry* party) {
                 }
             }
             writeId = partyGetFootmarkWriteId(id);
-#ifdef MUST_MATCH
             readId = partyGetFootmarkReadId(id);
             if (readId == writeId) {
-#else
-            if (writeId == partyGetFootmarkReadId(id)) {
-#endif
                 partySetTargetSpeed(party, party->playerPtr->baseSpeed);
                 if (!(party->playerPtr->baseSpeed != 0.0f && party->velX == 0.0f && party->velZ == 0.0f)) {
                     angle = party->dir;
@@ -1721,7 +1711,7 @@ void party_set_behind_dir(PartyEntry* party, f32 dir) {
 // Retail stages the y probe argument in a named temp with constant propagation off, so
 // mwcc schedules the hd = 1000.0f load after the y add (into f0, not f3); the second wall
 // probe uses a fresh local `w` so its height lands in f28 rather than f29. Both shapes
-// are MUST_MATCH-only.
+// are the shapes that match.
 #pragma opt_propagation off // keep constant-load scheduling so hd's 1000.0f load stays after the y add
 void party_motion_behind_mario(PartyEntry* party) {
     MarioWork* mario;
@@ -1734,9 +1724,7 @@ void party_motion_behind_mario(PartyEntry* party) {
     f32 fWall;
     Vec appear;
     f32 hnz, hny, hnx, hd, hz, hy, hx;
-#ifdef MUST_MATCH
     f32 ytmp;
-#endif
 
     mario = party->playerPtr;
     if (party->field_8 & 0x2) {
@@ -1755,12 +1743,8 @@ void party_motion_behind_mario(PartyEntry* party) {
                         angle = toMovedir(mario2->unk1A8);
                     }
                 }
-#ifdef MUST_MATCH
                 angle += 180.0f;
                 angle = revise360(angle);
-#else
-                angle = revise360(angle + 180.0f);
-#endif
             } else {
                 party->field_8 = (party->field_8 & ~0x10000);
                 angle = revise360(180.0f + angleABf(mario->position.x, mario->position.z, party->targetPos.x, party->targetPos.z));
@@ -1786,12 +1770,8 @@ void party_motion_behind_mario(PartyEntry* party) {
                     angle = toMovedir(mario2->unk1A8);
                 }
             }
-#ifdef MUST_MATCH
             angle += 180.0f;
             party->moveAngle = revise360(angle);
-#else
-            party->moveAngle = revise360(angle + 180.0f);
-#endif
         }
     }
     partyGetAppearPos4(party, &appear);
@@ -1799,14 +1779,9 @@ void party_motion_behind_mario(PartyEntry* party) {
     x = appear.x;
     z = appear.z;
     f31 = angleABf(party->position.x, party->position.z, appear.x, appear.z);
-#ifdef MUST_MATCH
     ytmp = f30 + touch_wall_ct;
     hd = 1000.0f;
     hit = hitCheckFilter(NULL, x, ytmp, z, 0.0f, -1.0f, 0.0f, &hx, &hy, &hz, &hd, &hnx, &hny, &hnz);
-#else
-    hd = 1000.0f;
-    hit = hitCheckFilter(NULL, x, f30 + touch_wall_ct, z, 0.0f, -1.0f, 0.0f, &hx, &hy, &hz, &hd, &hnx, &hny, &hnz);
-#endif
     if (hit == NULL) {
         f29 = -2000.0f;
     } else {
@@ -1835,14 +1810,9 @@ void party_motion_behind_mario(PartyEntry* party) {
             z = party->position.z;
             movePos(&x, &z, f29, f31);
             angleABf(party->position.x, party->position.z, x, z);
-#ifdef MUST_MATCH
             ytmp = f30 + touch_wall_ct;
             bhd = 1000.0f;
             hit = hitCheckFilter(NULL, x, ytmp, z, 0.0f, -1.0f, 0.0f, &bhx, &bhy, &bhz, &bhd, &bhnx, &bhny, &bhnz);
-#else
-            bhd = 1000.0f;
-            hit = hitCheckFilter(NULL, x, f30 + touch_wall_ct, z, 0.0f, -1.0f, 0.0f, &bhx, &bhy, &bhz, &bhd, &bhnx, &bhny, &bhnz);
-#endif
             if (hit == NULL) {
                 fWall = -2000.0f;
             } else {
@@ -1857,16 +1827,11 @@ void party_motion_behind_mario(PartyEntry* party) {
                 return;
             }
         } else if (f30 > party->position.y) {
-#ifdef MUST_MATCH
             f32 chnz, chny, chnx, chd, chz, chy, chx, w;
-#else
-            f32 chnz, chny, chnx, chd, chz, chy, chx;
-#endif
             x = party->position.x;
             z = party->position.z;
             movePos(&x, &z, f29, f31);
             angleABf(party->position.x, party->position.z, x, z);
-#ifdef MUST_MATCH
             ytmp = f30 + touch_wall_ct;
             chd = 1000.0f;
             hit = hitCheckFilter(NULL, x, ytmp, z, 0.0f, -1.0f, 0.0f, &chx, &chy, &chz, &chd, &chnx, &chny, &chnz);
@@ -1883,23 +1848,6 @@ void party_motion_behind_mario(PartyEntry* party) {
                 partyChgMot(party, 2);
                 return;
             }
-#else
-            chd = 1000.0f;
-            hit = hitCheckFilter(NULL, x, f30 + touch_wall_ct, z, 0.0f, -1.0f, 0.0f, &chx, &chy, &chz, &chd, &chnx, &chny, &chnz);
-            if (hit == NULL) {
-                f28 = -2000.0f;
-            } else {
-                f28 = (f32)(s32)(100.0f * chy + 0.5f) / 100.0f;
-                hitGetAttr(hit);
-            }
-            if (fabsf(party->position.y - f28) > 1.0f) {
-                party->targetPos.x = x;
-                party->targetPos.y = f28;
-                party->targetPos.z = z;
-                partyChgMot(party, 2);
-                return;
-            }
-#endif
         }
         hit = partySearchGround(party, 10.0f, 0.0f);
         if (hit != NULL) {
@@ -1957,9 +1905,7 @@ void party_motion_behind_mario_continue(PartyEntry* party) {
     f32 dist;
     f32 limit;
     f32 hnz, hny, hnx, hd, hz, hy, hx;
-#ifdef MUST_MATCH
     f32 ytmp;
-#endif
 
     mario = party->playerPtr;
     if (!(party->flags & PARTY_FLAG_IS_PARTNER)) {
@@ -2020,14 +1966,9 @@ void party_motion_behind_mario_continue(PartyEntry* party) {
     }
     movePos(&x, &z, limit, party->moveAngle);
     angleABf(party->position.x, party->position.z, x, z);
-#ifdef MUST_MATCH
     ytmp = targetY + touch_wall_ct;
     hd = 1000.0f;
     hit = hitCheckFilter(NULL, x, ytmp, z, 0.0f, -1.0f, 0.0f, &hx, &hy, &hz, &hd, &hnx, &hny, &hnz);
-#else
-    hd = 1000.0f;
-    hit = hitCheckFilter(NULL, x, targetY + touch_wall_ct, z, 0.0f, -1.0f, 0.0f, &hx, &hy, &hz, &hd, &hnx, &hny, &hnz);
-#endif
     if (hit == NULL) {
         ty = -2000.0f;
     } else {
@@ -2105,9 +2046,6 @@ void party_motion_behind_mario_fly(PartyEntry* party) {
     f32 limit;
     f32 f31;
     f32 f29;
-#ifdef MUST_MATCH
-    f32 k;
-#endif
     Vec pos;
 
     mario = party->playerPtr;
@@ -2127,12 +2065,8 @@ void party_motion_behind_mario_fly(PartyEntry* party) {
                         dir = toMovedir(mario2->unk1A8);
                     }
                 }
-#ifdef MUST_MATCH
                 dir += 180.0f;
                 dir = revise360(dir);
-#else
-                dir = revise360(dir + 180.0f);
-#endif
             } else {
                 party->field_8 = (party->field_8 & ~0x10000);
                 dir = revise360(180.0f + angleABf(mario->position.x, mario->position.z, party->targetPos.x, party->targetPos.z));
@@ -2158,12 +2092,8 @@ void party_motion_behind_mario_fly(PartyEntry* party) {
                     dir = toMovedir(mario2->unk1A8);
                 }
             }
-#ifdef MUST_MATCH
             dir += 180.0f;
             party->moveAngle = revise360(dir);
-#else
-            party->moveAngle = revise360(dir + 180.0f);
-#endif
         }
     }
     angleABf(party->position.x, party->position.z, party->targetPos.x, party->targetPos.z);
@@ -2199,12 +2129,7 @@ void party_motion_behind_mario_fly(PartyEntry* party) {
             }
             party->position.x = pos.x;
             party->position.z = pos.z;
-#ifdef MUST_MATCH
-            k = 0.05f;
-            party->position.y = k * (party->targetPos.y - party->position.y) + party->position.y;
-#else
             party->position.y = 0.05f * (party->targetPos.y - party->position.y) + party->position.y;
-#endif
             partyChgSpeedPose(party, party->speed);
         } else {
             goto restore;
@@ -2249,12 +2174,7 @@ void party_motion_behind_mario_fly(PartyEntry* party) {
             if (f31 > party->height) {
                 hit = NULL;
             }
-#ifdef MUST_MATCH
-            k = 0.05f;
-            party->position.y = k * (party->groundY - party->position.y) + party->position.y;
-#else
             party->position.y = 0.05f * (party->groundY - party->position.y) + party->position.y;
-#endif
         }
         party->groundHit = hit;
     }
@@ -2272,9 +2192,7 @@ void party_motion_beside_mario(PartyEntry* party) {
     f32 dist;
     f32 limit;
     f32 hnz, hny, hnx, hd, hz, hy, hx;
-#ifdef MUST_MATCH
     f32 ytmp;
-#endif
 
     mario = party->playerPtr;
     if (party->field_8 & 0x2) {
@@ -2290,12 +2208,8 @@ void party_motion_beside_mario(PartyEntry* party) {
                 dir = toMovedir(mario2->unk1A8);
             }
         }
-#ifdef MUST_MATCH
         dir += 90.0f;
         party->moveAngle = revise360(dir);
-#else
-        party->moveAngle = revise360(dir + 90.0f);
-#endif
         limit = 1.5f * mario->wPlayerCollisionBox.x;
         x = mario->position.x;
         z = mario->position.z;
@@ -2317,12 +2231,8 @@ void party_motion_beside_mario(PartyEntry* party) {
                 dir = toMovedir(mario2->unk1A8);
             }
         }
-#ifdef MUST_MATCH
         dir += 90.0f;
         party->moveAngle = revise360(dir);
-#else
-        party->moveAngle = revise360(dir + 90.0f);
-#endif
     }
     limit = 1.5f * mario->wPlayerCollisionBox.x;
     x = mario->position.x;
@@ -2330,14 +2240,9 @@ void party_motion_beside_mario(PartyEntry* party) {
     y = mario->position.y;
     movePos(&x, &z, limit, party->moveAngle);
     angleABf(party->position.x, party->position.z, x, z);
-#ifdef MUST_MATCH
     ytmp = y + touch_wall_ct;
     hd = 1000.0f;
     hit = hitCheckFilter(NULL, x, ytmp, z, 0.0f, -1.0f, 0.0f, &hx, &hy, &hz, &hd, &hnx, &hny, &hnz);
-#else
-    hd = 1000.0f;
-    hit = hitCheckFilter(NULL, x, y + touch_wall_ct, z, 0.0f, -1.0f, 0.0f, &hx, &hy, &hz, &hd, &hnx, &hny, &hnz);
-#endif
     if (hit == NULL) {
         dist = -2000.0f;
     } else {
@@ -2403,8 +2308,7 @@ void party_motion_beside_mario(PartyEntry* party) {
 }
 #pragma opt_propagation reset
 
-// The appear-position stores are scratch Vecs seeded from vec3_802f3e40+0x18/0x24/0x30/0x3c (MUST_MATCH;
-// the natural three scalar stores elide the copies and shrink the frame from 0xb0 to 0x70). The getFrontFloor/<= path
+// The appear-position stores are scratch Vecs seeded from vec3_802f3e40+0x18/0x24/0x30/0x3c (the natural three scalar stores elide the copies and shrink the frame from 0xb0 to 0x70). The getFrontFloor/<= path
 // also shares one store, which the previous version dropped. Declaring `f32 sinV, cosV;` before `f32 tx,ty,tz;`
 // puts the f32 stack slots in the original's order (0x8..0x18), moving `Vec wall;` into its case puts the scratch
 // Vecs at 0x28/0x34/0x40/0x4c, `u32 id;` fixes the GPR rotation, and the negated float tests reproduce MWCC's crors.
@@ -2426,8 +2330,8 @@ void party_motion_beside_mario(PartyEntry* party) {
 #pragma opt_lifetimes off
 // Keep the nested travel-time assignments until backend allocation; their redundant copies then disappear.
 #pragma opt_dead_assignments off
-// Retail keeps the distance (f5) live into the height code, so the height takes f6. The two MUST_MATCH
-// distance self-stores below give the allocator those ranges; the post-allocation peephole then deletes each
+// Retail keeps the distance (f5) live into the height code, so the height takes f6. The distance
+// self-stores below give the allocator those ranges; the post-allocation peephole then deletes each
 // load/store pair (the #661 self-store lever).
 void party_motion_jump(PartyEntry* party) {
     MarioWork* mario;
@@ -2441,9 +2345,7 @@ void party_motion_jump(PartyEntry* party) {
     f32 zero;
     u32 id;
     s32 writeId;
-#ifdef MUST_MATCH
     s32 readId; // holds the call result so MWCC emits the target's `cmpw r3, r27` (see comment above)
-#endif
 
     mario = party->playerPtr;
     id = partyGetFootmarkId(&party->flags);
@@ -2462,25 +2364,17 @@ void party_motion_jump(PartyEntry* party) {
             ty = party->position.y;
             tz = party->position.z;
             movePos(&tx, &tz, party->speed, party->dir);
-#ifdef MUST_MATCH
             {
                 Vec pos = FV(vec3_802f3e58, ((Vec){0.0f, 0.0f, 0.0f}));
-                pos.x = tx; pos.y = ty; pos.z = tz;
+                pos.x = tx;
+                pos.y = ty;
+                pos.z = tz;
                 party->targetPos = pos;
             }
-#else
-            party->targetPos.x = tx;
-            party->targetPos.y = ty;
-            party->targetPos.z = tz;
-#endif
         } else if (!(party->field_8 & 0x400000)) {
             writeId = partyGetFootmarkWriteId(id);
-#ifdef MUST_MATCH
             readId = partyGetFootmarkReadId(id);
             if (readId == writeId) {
-#else
-            if (writeId == partyGetFootmarkReadId(id)) {
-#endif
                 if (partyGetTargetDist(id, party->position.x, party->position.z) > 2.0f * mario->wPlayerCollisionBox.x) {
                     f29 = partyGetTargetDir(id, party->position.x, party->position.z);
                     getFrontFloor(party, &floor, f29);
@@ -2492,34 +2386,22 @@ void party_motion_jump(PartyEntry* party) {
                     tz = party->position.z;
                     movePos(&tx, &tz, 0.6f * party->radius, f29);
                 }
-#ifdef MUST_MATCH
                 {
                     Vec pos = FV(vec3_802f3e64, ((Vec){0.0f, 0.0f, 0.0f}));
-                    pos.x = tx; pos.y = ty; pos.z = tz;
+                    pos.x = tx;
+                    pos.y = ty;
+                    pos.z = tz;
                     party->targetPos = pos;
                 }
-#else
-                party->targetPos.x = tx;
-                party->targetPos.y = ty;
-                party->targetPos.z = tz;
-#endif
             } else {
                 partyGetReadId(id, &tx, &ty, &tz);
                 f30 = 50.0f;
                 f31 = distABf(party->position.x, party->position.z, tx, tz);
-#ifdef MUST_MATCH
-                // Recomputing the product instead of naming the temporary makes MWCC keep
-                // the constant 50 in f0 and the product in f1 (target colouring); the
-                // named-temporary form below scores slightly worse but reads naturally.
+                // Recomputing the product instead of naming a temporary keeps the constant 50
+                // in f0 and the product in f1.
                 if (50.0f > 1.4f * (ty - party->position.y)) {
                     f30 = 1.4f * (ty - party->position.y);
                 }
-#else
-                f0 = 1.4f * (ty - party->position.y);
-                if (50.0f > f0) {
-                    f30 = f0;
-                }
-#endif
                 angle = angleABf(party->position.x, party->position.z, tx, tz);
                 sincosf(&sinV, &cosV, angle);
                 if (f31 > f30) {
@@ -2532,17 +2414,13 @@ void party_motion_jump(PartyEntry* party) {
                     tx = tx + f31 * sinV;
                     tz = tz + f31 * cosV;
                     ty += 10.0f;
-#ifdef MUST_MATCH
                     {
                         Vec pos = FV(vec3_802f3e70, ((Vec){0.0f, 0.0f, 0.0f}));
-                        pos.x = tx; pos.y = ty; pos.z = tz;
+                        pos.x = tx;
+                        pos.y = ty;
+                        pos.z = tz;
                         party->targetPos = pos;
                     }
-#else
-                    party->targetPos.x = tx;
-                    party->targetPos.y = ty;
-                    party->targetPos.z = tz;
-#endif
                 } else {
                     if (partyGetTargetDistY(id) == 0.0f) {
                         f31 = 0.0f;
@@ -2553,17 +2431,13 @@ void party_motion_jump(PartyEntry* party) {
                         tx = ntx;
                         tz = ntz;
                     }
-#ifdef MUST_MATCH
                     {
                         Vec pos = FV(vec3_802f3e7c, ((Vec){0.0f, 0.0f, 0.0f}));
-                        pos.x = tx; pos.y = ty; pos.z = tz;
+                        pos.x = tx;
+                        pos.y = ty;
+                        pos.z = tz;
                         party->targetPos = pos;
                     }
-#else
-                    party->targetPos.x = tx;
-                    party->targetPos.y = ty;
-                    party->targetPos.z = tz;
-#endif
                 }
                 if (f31 < f30) {
                     partyNextReadId(id);
@@ -3099,8 +2973,6 @@ void partyChgMotSlitFloor(PartyEntry* party) {
 }
 #pragma dont_inline reset
 
-// Match shapes below are marked MUST_MATCH: the natural forms compile to the
-// same logic but differ in mwcc register allocation / block layout.
 BOOL party_slit(PartyEntry* party) {
     s32 ret = 1;
     MarioWork* mario = party->playerPtr;
@@ -3155,12 +3027,7 @@ BOOL party_slit(PartyEntry* party) {
         }
         break;
     case 0xA:
-#ifdef MUST_MATCH
-        // `!field` makes mwcc load the field into f1 and 0.0f into f0, as the original does.
         if (!party->speed) {
-#else
-        if (party->speed == 0.0f) {
-#endif
             partyChgPaper(party, "PM_S_1B");
             party->field_10C = 270.0f;
         } else {
@@ -3172,23 +3039,11 @@ BOOL party_slit(PartyEntry* party) {
             }
             party->field_10C = (party->flags2 & 0x200) ? 280.0f : 260.0f;
             angle = revise360(party->dir - mario->targetYaw);
-#ifdef MUST_MATCH
-            // One compound test: mwcc shares a single 0x168 body at the end;
-            // the natural if / else-if form duplicates that body.
             if (angle >= 315.0f || angle <= 45.0f || (angle >= 135.0f && angle <= 225.0f)) {
                 partyChgPaper(party, "PM_S_1E");
             } else {
                 partyChgPaper(party, "PM_S_1D");
             }
-#else
-            if (angle >= 315.0f || angle <= 45.0f) {
-                partyChgPaper(party, "PM_S_1E");
-            } else if (angle < 135.0f || angle > 225.0f) {
-                partyChgPaper(party, "PM_S_1D");
-            } else {
-                partyChgPaper(party, "PM_S_1E");
-            }
-#endif
         }
         if (!(mario->flags & 0x100000)) {
             if (!(hitGetAttr(party->field_12C) & 0x2000)) {
@@ -3213,14 +3068,8 @@ BOOL party_slit(PartyEntry* party) {
     case 0x15:
         angle = revise360(party->dir - party->playerTargetYaw);
         party->field_10C = (angle <= 180.0f) ? 260.0f : 280.0f;
-#ifdef MUST_MATCH
-        // Staging -3.0f in a temp makes mwcc put position.y in f1 and the
-        // constant in f0, matching the original's fadds operand order.
         angle = -3.0f;
         party->position.y = party->position.y + angle;
-#else
-        party->position.y = party->position.y + -3.0f;
-#endif
         if (--party->timer <= 0) {
             party->field_3A = 0x16;
         }
