@@ -682,7 +682,7 @@ USER_FUNC(unk_80174e98) {
 			sprintf(name, str_8041DAC0, i);
 			if (wp->taken[i] & 1) {
 				iconFlagOn(name, 2);
-			} else if (*(u32*)((u8*)obj + 0x0) & 1) {
+			} else if (*(u32*)obj & 1) {
 				iconFlagOn(name, 2);
 			} else {
 				iconFlagOff(name, 2);
