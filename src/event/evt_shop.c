@@ -50,40 +50,46 @@ u8 gap_08_80418944_sbss[4];
 static evt_shop_work* _wp;
 char mapname[16];
 
+typedef struct ItemDbEntry {
+	s32 id;               //0x0
+	s16 altSellPrice;     //0x4, sell price written into itemDataTable while the shop is open
+	s16 savedSellPrice;   //0x6, the original sell price, restored by item_data_db_restore
+} ItemDbEntry;
+
+typedef struct ShopperData {
+	const char* name; //0x0
+	s32 fookEvt;      //0x4
+	s32 buyEvt;       //0x8
+} ShopperData;
+
 typedef struct ShopWork {
-	u16 flags;              //0x0
-	u16 pad_02;             //0x2
-	void* field_0x4;        //0x4
-	s32* field_0x8;         //0x8
-	void* field_0xC;        //0xC
-	void* field_0x10;       //0x10
-	u16 field_0x14[6];      //0x14
-	s32 field_0x20;         //0x20
-	EventEntry* field_0x24; //0x24
-	EventEntry* field_0x28; //0x28
-	s32 field_0x2C;         //0x2C
-	s32 field_0x30;         //0x30
-	s32 field_0x34;         //0x34
-	s32 field_0x38;         //0x38
-	u8 field_0x3C[0x50 - 0x3C];
-	s32 field_0x50;         //0x50
-	s32 field_0x54;         //0x54
-	s32 field_0x58;         //0x58
-	u8 field_0x5C[0xD0 - 0x5C];
-	s32 field_0xD0;         //0xD0
-	s32 field_0xD4;         //0xD4
+	u16 flags;                 //0x0, bit 0: shop UI on (disp_off clears it), bit 1: purchase event running
+	u16 pad_02;                //0x2
+	ShopObj* objs;             //0x4, one per shop object: map object name and hit name
+	s32* field_0x8;            //0x8, item id / price pairs
+	ShopperData* shopper;      //0xC
+	ItemDbEntry* itemDbBackup; //0x10
+	u16 acquired[6];           //0x14, bit 0 set once the item is held or bought
+	s32 numItems;              //0x20
+	EventEntry* mainEvt;       //0x24
+	EventEntry* buyEvt;        //0x28
+	s32 field_0x2C;            //0x2C, selected item index
+	s32 field_0x30;            //0x30
+	s32 field_0x34;            //0x34
+	s32 shownPoints;           //0x38, shop points as drawn by point_disp
+	u8 pad_0x3C[0x50 - 0x3C];
+	s32 nameWin;               //0x50, window_desc[0]: item name
+	s32 helpWin;               //0x54, window_desc[1]: item description
+	s32 pointsWin;             //0x58, window_desc[2]: shop points
+	u8 pad_0x5C[0xD0 - 0x5C];
+	s32 openIdx;               //0xD0, item whose windows are open, -1 when none
+	s32 buyItemId;             //0xD4
 } ShopWork;
 
 typedef struct ShopPointEntry {
 	s32 price; //0x0
 	s32 item;  //0x4
 } ShopPointEntry;
-
-typedef struct ItemDbEntry {
-	s32 id;      //0x0
-	s16 field_4; //0x4
-	s16 field_6; //0x6
-} ItemDbEntry;
 
 extern ItemData itemDataTable[];
 extern ShopPointEntry shopPointList[];
@@ -245,93 +251,93 @@ USER_FUNC(evt_shop_main_func) {
 	}
 
 	if (party != NULL && (party->flags & PARTY_FLAG_IS_BEING_USED)) {
-		if (wp->field_0xD0 != -1) {
-			wp->field_0xD0 = -1;
-			winMgrClose(wp->field_0x50);
-			winMgrClose(wp->field_0x54);
+		if (wp->openIdx != -1) {
+			wp->openIdx = -1;
+			winMgrClose(wp->nameWin);
+			winMgrClose(wp->helpWin);
 		}
 		return 0;
 	}
 
 	if (winGhostDiaryChk() || N_itemPickUpFromFieldCheck()) {
-		if (wp->field_0xD0 != -1) {
-			wp->field_0xD0 = -1;
-			winMgrClose(wp->field_0x50);
-			winMgrClose(wp->field_0x54);
+		if (wp->openIdx != -1) {
+			wp->openIdx = -1;
+			winMgrClose(wp->nameWin);
+			winMgrClose(wp->helpWin);
 		}
 		return 0;
 	}
 
 	if (!(wp->flags & 2)) {
 		if (hit != NULL) {
-			for (i = 0; i < wp->field_0x20; i++) {
-				if (strcmp(((ShopObj*)wp->field_0x4)[i].hitName, hitGetName(hit)) == 0) {
+			for (i = 0; i < wp->numItems; i++) {
+				if (strcmp(wp->objs[i].hitName, hitGetName(hit)) == 0) {
 					break;
 				}
 			}
-			if (!(wp->field_0x14[i] & 1) && i < wp->field_0x20) {
-				if (wp->field_0xD0 != i) {
-					if (wp->field_0xD0 == -1) {
-						winMgrOpen(wp->field_0x50);
-						winMgrOpen(wp->field_0x54);
+			if (!(wp->acquired[i] & 1) && i < wp->numItems) {
+				if (wp->openIdx != i) {
+					if (wp->openIdx == -1) {
+						winMgrOpen(wp->nameWin);
+						winMgrOpen(wp->helpWin);
 					}
-					wp->field_0xD0 = i;
+					wp->openIdx = i;
 					wp->field_0x2C = i;
-					winMgrHelpInit(winMgrGetPtr(wp->field_0x54));
+					winMgrHelpInit(winMgrGetPtr(wp->helpWin));
 				}
 				selected = 1;
 			}
 		}
-		if (selected == 0 && wp->field_0xD0 != -1) {
-			wp->field_0xD0 = -1;
-			winMgrClose(wp->field_0x50);
-			winMgrClose(wp->field_0x54);
+		if (selected == 0 && wp->openIdx != -1) {
+			wp->openIdx = -1;
+			winMgrClose(wp->nameWin);
+			winMgrClose(wp->helpWin);
 		}
-		if (wp->field_0xD0 != -1) {
+		if (wp->openIdx != -1) {
 			wp->flags |= 1;
 			if (buttons & 0x100) {
 				marioKeyOff();
-				wp->field_0x28 = evtEntry(buy_evt, 0, 0);
-				wp->field_0x28->lwData[0] = (s32)wp;
+				wp->buyEvt = evtEntry(buy_evt, 0, 0);
+				wp->buyEvt->lwData[0] = (s32)wp;
 				wp->flags |= 2;
-				winMgrClose(wp->field_0x50);
-				winMgrClose(wp->field_0x54);
-				wp->field_0xD0 = -1;
-				wp->field_0xD4 = 0;
+				winMgrClose(wp->nameWin);
+				winMgrClose(wp->helpWin);
+				wp->openIdx = -1;
+				wp->buyItemId = 0;
 			}
 		}
 	} else {
-		if (evtCheckID(wp->field_0x28->eventId) == 0) {
+		if (evtCheckID(wp->buyEvt->eventId) == 0) {
 			wp->flags &= ~2;
 			marioKeyOn();
-			if (wp->field_0xD4 == 0x33) {
-				wp->field_0x14[wp->field_0x2C] |= 1;
+			if (wp->buyItemId == ITEM_CONTACT_LENS) {
+				wp->acquired[wp->field_0x2C] |= 1;
 			}
-			if (wp->field_0xD4 == 0x37) {
-				wp->field_0x14[wp->field_0x2C] |= 1;
+			if (wp->buyItemId == ITEM_SUPER_LUIGI1) {
+				wp->acquired[wp->field_0x2C] |= 1;
 			}
-			if (wp->field_0xD4 == 0x38) {
-				wp->field_0x14[wp->field_0x2C] |= 1;
+			if (wp->buyItemId == ITEM_SUPER_LUIGI2) {
+				wp->acquired[wp->field_0x2C] |= 1;
 			}
-			if (wp->field_0xD4 == 0x39) {
-				wp->field_0x14[wp->field_0x2C] |= 1;
+			if (wp->buyItemId == ITEM_SUPER_LUIGI3) {
+				wp->acquired[wp->field_0x2C] |= 1;
 			}
-			if (wp->field_0xD4 == 0x3A) {
-				wp->field_0x14[wp->field_0x2C] |= 1;
+			if (wp->buyItemId == ITEM_SUPER_LUIGI4) {
+				wp->acquired[wp->field_0x2C] |= 1;
 			}
-			if (wp->field_0xD4 == 0x3B) {
-				wp->field_0x14[wp->field_0x2C] |= 1;
+			if (wp->buyItemId == ITEM_SUPER_LUIGI5) {
+				wp->acquired[wp->field_0x2C] |= 1;
 			}
 		}
 	}
 
-	for (i = 0; i < wp->field_0x20; i++) {
-		MapObject* obj = mapGetMapObj(((ShopObj*)wp->field_0x4)[i].name);
+	for (i = 0; i < wp->numItems; i++) {
+		MapObject* obj = mapGetMapObj(wp->objs[i].name);
 		if (obj != NULL) {
 			char name[32];
 
 			sprintf(name, str_8041BC1C, i);
-			if (wp->field_0x14[i] & 1) {
+			if (wp->acquired[i] & 1) {
 				iconFlagOn(name, 2);
 			} else if (*(u32*)obj & 1) {
 				iconFlagOn(name, 2);
@@ -358,12 +364,12 @@ USER_FUNC(keep_pouchcheck_func) {
 }
 
 s32 item_data_db_restore(void) {
-	ItemDbEntry* p = (ItemDbEntry*)((ShopWork*)_wp)->field_0x10;
+	ItemDbEntry* p = ((ShopWork*)_wp)->itemDbBackup;
 	s32 id;
 
 	if (p != NULL) {
 		while ((id = p->id) != 0) {
-			itemDataTable[id].sell_price = p->field_6;
+			itemDataTable[id].sell_price = p->savedSellPrice;
 			p++;
 		}
 	}
@@ -371,13 +377,13 @@ s32 item_data_db_restore(void) {
 }
 
 s32 item_data_db_arrange(void) {
-	ItemDbEntry* p = (ItemDbEntry*)((ShopWork*)_wp)->field_0x10;
+	ItemDbEntry* p = ((ShopWork*)_wp)->itemDbBackup;
 	s32 id;
 
 	if (p != NULL) {
 		while ((id = p->id) != 0) {
-			p->field_6 = *(u16*)&itemDataTable[id].sell_price;
-			itemDataTable[p->id].sell_price = p->field_4;
+			p->savedSellPrice = itemDataTable[id].sell_price;
+			itemDataTable[p->id].sell_price = p->altSellPrice;
 			p++;
 		}
 	}
@@ -395,12 +401,12 @@ USER_FUNC(name_price) {
 	s32 id = evtGetValue(event, args[0]);
 
 	evtSetValue(event, args[1], (s32)msgSearch(itemDataTable[id].name));
-	evtSetValue(event, args[2], *(u16*)&itemDataTable[id].sell_price);
+	evtSetValue(event, args[2], itemDataTable[id].sell_price);
 	return EVT_RETURN_DONE;
 }
 
 USER_FUNC(get_fook_evt) {
-	evtSetValue(event, event->args[0], *(s32*)((u8*)((ShopWork*)_wp)->field_0xC + 0x4));
+	evtSetValue(event, event->args[0], ((ShopWork*)_wp)->shopper->fookEvt);
 	return EVT_RETURN_DONE;
 }
 
@@ -410,12 +416,12 @@ USER_FUNC(get_ptr) {
 }
 
 USER_FUNC(set_buy_item_id) {
-	((ShopWork*)_wp)->field_0xD4 = evtGetValue(event, event->args[0]);
+	((ShopWork*)_wp)->buyItemId = evtGetValue(event, event->args[0]);
 	return EVT_RETURN_DONE;
 }
 
 USER_FUNC(get_buy_evt) {
-	evtSetValue(event, event->args[0], *(s32*)((u8*)((ShopWork*)_wp)->field_0xC + 0x8));
+	evtSetValue(event, event->args[0], ((ShopWork*)_wp)->shopper->buyEvt);
 	return EVT_RETURN_DONE;
 }
 
@@ -451,7 +457,7 @@ USER_FUNC(disp_off) {
 }
 
 USER_FUNC(shopper_name) {
-	evtSetValue(event, event->args[0], *(s32*)((u8*)((ShopWork*)_wp)->field_0xC + 0x0));
+	evtSetValue(event, event->args[0], (s32)((ShopWork*)_wp)->shopper->name);
 	return EVT_RETURN_DONE;
 }
 
@@ -608,7 +614,7 @@ USER_FUNC(point_wait) {
 	ShopWork* wp = (ShopWork*)_wp;
 	PouchData* pouch = pouchGetPtr();
 
-	if (wp->field_0x38 != pouch->mShopPoints) {
+	if (wp->shownPoints != pouch->mShopPoints) {
 		psndSFXOn((const char*)0x8CA);
 		return EVT_RETURN_BLOCK;
 	}
@@ -620,12 +626,12 @@ USER_FUNC(point_disp_onoff) {
 	PouchData* pouch = pouchGetPtr();
 	ShopWork* wp = (ShopWork*)_wp;
 
-	wp->field_0x38 = pouch->mShopPoints;
+	wp->shownPoints = pouch->mShopPoints;
 	if (value != 0) {
-		winMgrOpen(wp->field_0x58);
+		winMgrOpen(wp->pointsWin);
 	}
 	else {
-		winMgrClose(wp->field_0x58);
+		winMgrClose(wp->pointsWin);
 	}
 	return EVT_RETURN_DONE;
 }
@@ -650,50 +656,50 @@ USER_FUNC(evt_shop_setup) {
 	memset(wp, 0, 0xD8);
 	_wp = (evt_shop_work*)wp;
 	strncpy(mapname, gp->currentMapName, 15);
-	wp->field_0x4 = (void*)v0;
+	wp->objs = (ShopObj*)v0;
 	wp->field_0x8 = (s32*)v1;
-	wp->field_0xC = (void*)v2;
-	wp->field_0x10 = (void*)v3;
-	wp->field_0x20 = 6;
+	wp->shopper = (ShopperData*)v2;
+	wp->itemDbBackup = (ItemDbEntry*)v3;
+	wp->numItems = 6;
 
-	for (i = 0; i < wp->field_0x20; i++) {
+	for (i = 0; i < wp->numItems; i++) {
 		Vec pos;
 		char buf[0x20];
 
-		mapObjGetPos(*(const char**)((u8*)wp->field_0x4 + i * 8), &pos);
-		mapObjFlagOn(*(const char**)((u8*)wp->field_0x4 + i * 8), 0x4000);
+		mapObjGetPos(wp->objs[i].name, &pos);
+		mapObjFlagOn(wp->objs[i].name, 0x4000);
 		sprintf(buf, str_8041BC1C, i);
 		iconEntry(buf, *(u16*)&itemDataTable[wp->field_0x8[i * 2]].icon_id);
 		iconSetPos(buf, pos.x, SHOP_F32(float_6_8041bc24) + pos.y, pos.z);
 		iconFlagOn(buf, 0x40);
-		wp->field_0x14[i] = 0;
-		if (wp->field_0x8[i * 2] == 0x33 && (s32)pouchCheckItem(0x33) != 0) {
-			wp->field_0x14[i] |= 1;
+		wp->acquired[i] = 0;
+		if (wp->field_0x8[i * 2] == ITEM_CONTACT_LENS && (s32)pouchCheckItem(ITEM_CONTACT_LENS) != 0) {
+			wp->acquired[i] |= 1;
 		}
-		if (wp->field_0x8[i * 2] == 0x37 && (s32)pouchCheckItem(0x37) != 0) {
-			wp->field_0x14[i] |= 1;
+		if (wp->field_0x8[i * 2] == ITEM_SUPER_LUIGI1 && (s32)pouchCheckItem(ITEM_SUPER_LUIGI1) != 0) {
+			wp->acquired[i] |= 1;
 		}
-		if (wp->field_0x8[i * 2] == 0x38 && (s32)pouchCheckItem(0x38) != 0) {
-			wp->field_0x14[i] |= 1;
+		if (wp->field_0x8[i * 2] == ITEM_SUPER_LUIGI2 && (s32)pouchCheckItem(ITEM_SUPER_LUIGI2) != 0) {
+			wp->acquired[i] |= 1;
 		}
-		if (wp->field_0x8[i * 2] == 0x39 && (s32)pouchCheckItem(0x39) != 0) {
-			wp->field_0x14[i] |= 1;
+		if (wp->field_0x8[i * 2] == ITEM_SUPER_LUIGI3 && (s32)pouchCheckItem(ITEM_SUPER_LUIGI3) != 0) {
+			wp->acquired[i] |= 1;
 		}
-		if (wp->field_0x8[i * 2] == 0x3A && (s32)pouchCheckItem(0x3A) != 0) {
-			wp->field_0x14[i] |= 1;
+		if (wp->field_0x8[i * 2] == ITEM_SUPER_LUIGI4 && (s32)pouchCheckItem(ITEM_SUPER_LUIGI4) != 0) {
+			wp->acquired[i] |= 1;
 		}
-		if (wp->field_0x8[i * 2] == 0x3B && (s32)pouchCheckItem(0x3B) != 0) {
-			wp->field_0x14[i] |= 1;
+		if (wp->field_0x8[i * 2] == ITEM_SUPER_LUIGI5 && (s32)pouchCheckItem(ITEM_SUPER_LUIGI5) != 0) {
+			wp->acquired[i] |= 1;
 		}
 	}
-	npc = npcNameToPtr(*(const char**)v2);
+	npc = npcNameToPtr(((ShopperData*)v2)->name);
 	npc->talkEvt = shopper_talk_evt;
-	wp->field_0x24 = evtEntryType(main_evt, 0, 0x20, 0);
-	wp->field_0x24->lwData[0] = (s32)wp;
+	wp->mainEvt = evtEntryType(main_evt, 0, 0x20, 0);
+	wp->mainEvt->lwData[0] = (s32)wp;
 	for (i = 0; i < 3; i++) {
-		(&wp->field_0x50)[i] = winMgrEntry(&window_desc[i]);
+		(&wp->nameWin)[i] = winMgrEntry(&window_desc[i]);
 	}
-	wp->field_0xD0 = -1;
+	wp->openIdx = -1;
 	evtRunCaseEntry(9, 1, (s32)str_802ECDE8, 0, (s32*)evt_shoplist, 0);
 	return EVT_RETURN_DONE;
 }
@@ -845,14 +851,14 @@ void point_disp(WinMgrEntry* entry) {
 			iconDispGx2(mtx, 0x10, 0x20A);
 		}
 		PSMTXTrans(mtx, SHOP_F32(float_124_8041bc50) + (f32)entry->x, (f32)entry->y - SHOP_F32(float_38_8041bc54), SHOP_F32(float_0_8041bc34));
-		iconNumberDispGx(mtx, wp->field_0x38, 0, *(GXColor*)&dat_8041bbe8);
-		delta = pouch->mShopPoints - wp->field_0x38;
+		iconNumberDispGx(mtx, wp->shownPoints, 0, *(GXColor*)&dat_8041bbe8);
+		delta = pouch->mShopPoints - wp->shownPoints;
 		if (delta != 0) {
 			delta /= 10;
 			if (delta == 0) {
-				delta = (pouch->mShopPoints > wp->field_0x38) ? 1 : -1;
+				delta = (pouch->mShopPoints > wp->shownPoints) ? 1 : -1;
 			}
-			wp->field_0x38 += delta;
+			wp->shownPoints += delta;
 		}
 	}
 }
@@ -862,7 +868,7 @@ void help_disp(WinMgrEntry* entry) {
 	s32 offset = wp->field_0x2C * 8;
 	s32* items = wp->field_0x8;
 
-	if (!winMgrAction(wp->field_0x54)) {
+	if (!winMgrAction(wp->helpWin)) {
 		s32 item = *(s32*)((u8*)items + offset);
 		entry->message = msgSearch(itemDataTable[item].description);
 		winMgrHelpDraw(entry);
@@ -889,7 +895,7 @@ void name_disp(WinMgrEntry* entry) {
 #else
 	msg = msgSearch(itemDataTable[wp->field_0x8[wp->field_0x2C * 2]].name);
 #endif
-	if (winMgrAction(wp->field_0x50) == 0) {
+	if (winMgrAction(wp->nameWin) == 0) {
 		FontDrawStart();
 		FontDrawEdge();
 		*(u32*)&titleColor = dat_8041bbe0;
@@ -897,11 +903,11 @@ void name_disp(WinMgrEntry* entry) {
 		FontDrawString(msg, (f32)(-(s32)FontGetMessageWidth(msg) / 2), SHOP_F32(float_108_8041bc58));
 		FontDrawEdgeOff();
 	}
-	for (i = 0; i < wp->field_0x20; i++) {
-		if (wp->field_0x14[i] & 1) {
+	for (i = 0; i < wp->numItems; i++) {
+		if (wp->acquired[i] & 1) {
 			continue;
 		}
-		mapObjGetPos(*(const char**)((u8*)wp->field_0x4 + i * 8), &pos);
+		mapObjGetPos(wp->objs[i].name, &pos);
 		pos.y += SHOP_F32(float_30_8041bc40);
 		PSMTXMultVec(camGetPtr(4)->view, &pos, &pos);
 		PSMTX44MultVec(camGetPtr(4)->projection, &pos, &pos);
