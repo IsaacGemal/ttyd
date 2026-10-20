@@ -10363,11 +10363,15 @@ Left: the value-named `float_*` constants and `zero_80420520`; `unk_80177008` (w
 
 Build: tower `ninja` recreates build/G8MJ01/ok; seq_title.c, seq_mapchange.c, battle_break_slot.c, battle_event_subset.c, mot_plane.c, system.c, unit_party_chuchurina.c and unit_party_christine.c compile without -DMUST_MATCH (rc 0).
 ### Readability: end_unknown REL names, rename_symbol.py for REL symbols (2026-10-20, Claude Haiku 5.5, n9-q-relren)
+### Readability: end_unknown REL names, rename_symbol.py for REL symbols (2026-10-20, Claude Haiku 5.5, n9-q-relren; reviewed by Claude Opus 5.5)
 
 `tools/rename_symbol.py` renames a REL's own symbols now: a name defined in one `config/G8MJ01/<rel>/symbols.txt` is
 renamed in that map and in the REL's sources and the headers they reach through #include, and it refuses when a file
-outside that set spells the name. A name defined in several REL maps needs `--rel NAME`. A dol symbol that a REL map
-also spells is still refused. The NEW-clash, word-boundary and pair checks are unchanged.
+outside that set spells the name. A name defined in several REL maps needs `--rel NAME`; the other RELs' copies keep
+their name, and the rename refuses when a file it would edit is also seen by one of those RELs. Headers are followed
+through `#include "..."` only, and files under rels/common/src belong to no REL's set, so a name spelled there is
+refused. A dol symbol that a REL map also spells is still refused. NEW is checked against every source and every
+map (dol and REL). The NEW-clash, word-boundary and pair checks are unchanged; a repeated OLD is refused.
 
 end_unknown.c (the q-endu entry on n9-q-endu was blocked on this): `unk_end_*` and `unk_evt_end_*` functions and
 scripts, `dat_end_*`/`zero_end_*`/`vec3_end_*`/`dat_ptr_end_*` data, and the bss slots, renamed by where each is
@@ -10395,10 +10399,10 @@ consumed:
 - `dat_80419a28` (main map, 0x2F = g_moamoa_chain_tbl[47]'s length) is `moamoa_chain_count`.
 
 Left: `unk_end_000009a4` (a USER_FUNC in end_unknown.h with no caller in the tree; no consumer to name it by);
-`negone_one`, `one_negone`, `neg_one` and `zero_end_00003038` (extend_data and `.rodata` values, value-only);
-`unk_evt_end_0000503c`'s table entry (its event is listed under c_papab in R_credits_npc_info, but the script creates
-モアモア; named by the body). The 11 raw `(u8*)unk_end_0000321c + offset` sites in credits_record_evt stay, because
-they carry the MUST_MATCH CSE workaround, as does the register-pinning `off` in credits_pose_evt. Typing
+`negone_one`, `one_negone`, `neg_one` and `zero_end_00003038` (extend_data and `.rodata` values, value-only).
+`evt_credits_moamoa` is the event in the c_g_moamoa entry of R_credits_npc_info and creates モアモア. The raw
+`(u8*)credits_ending_records + offset` sites in credits_record_evt stay, because they carry the MUST_MATCH CSE
+workaround, as does the register-pinning `off` in credits_pose_evt. Typing
 credits_ending_records and R_credits_npc_info is still open and needs a per-step build check.
 
 Verified: tower `ninja` recreates `build/G8MJ01/ok` after the end renames and again after the moamoa rename (32 files OK);

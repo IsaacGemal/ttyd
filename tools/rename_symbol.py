@@ -14,7 +14,8 @@ A REL's own symbol (defined in config/G8MJ01/<rel>/symbols.txt) is renamed in th
 it: the REL's sources and headers under rels/<rel>/, plus the headers those reach through #include (searched in the
 including file's directory, include/, rels/common/include and rels/<rel>/{include,src}). Such a rename refuses when a
 file outside that set spells OLD. When OLD is defined in more than one REL map the rename is refused as ambiguous
-unless `--rel NAME` picks the map. A dol symbol that any REL map also spells is still refused: the REL entry may be a
+unless `--rel NAME` picks the map; the other RELs' copies are separate objects and keep their name, and the rename
+refuses when a file it would edit is also seen by one of those RELs. A dol symbol that any REL map also spells is still refused: the REL entry may be a
 different object, so rename it by hand.
 
 Refuses when NEW is already spelled anywhere in those places or in a REL's symbols.txt (a clash would break the link
@@ -23,6 +24,7 @@ OLD is ambiguous or not found. Rebuild afterwards (`python3 configure.py && ninj
 tools/ci.py with --allow-protected (symbols.txt); its ratchet reads a function renamed in place as a rename, not a
 regression.
 """
+import os
 import re
 import sys
 from pathlib import Path
@@ -63,7 +65,7 @@ def visible(rel, texts):
         seen.add(p)
         for inc in INCLUDE.findall(texts[p]):
             for d in [p.parent, *search]:
-                cand = d / inc
+                cand = Path(os.path.normpath(d / inc))
                 if cand in texts and cand.is_file():
                     todo.append(cand)
                     break
@@ -98,6 +100,9 @@ def main():
     news = [new for _, new in pairs]
     if len(set(news)) != len(news):
         sys.exit("the same NEW name is given twice")
+    olds = [old for old, _ in pairs]
+    if len(set(olds)) != len(olds):
+        sys.exit("the same OLD name is given twice")
     plan = []
     for old, new in pairs:
         if not re.fullmatch(r"[A-Za-z_]\w*", new):
@@ -109,6 +114,7 @@ def main():
         owners = [p for p in rel_maps if defines(old, rel_maps[p])]
         if in_dol and owners:
             sys.exit(f"{old} is defined in the dol map and in {owners[0].relative_to(ROOT)}: rename it by hand")
+        all_owners = owners
         if owners:
             if rel_pick is not None:
                 owners = [p for p in owners if p.parent.name == rel_pick]
@@ -119,7 +125,16 @@ def main():
                 sys.exit(f"{old} is ambiguous (REL maps: {names}): pick one with --rel NAME")
             owner = owners[0]
             scope = visible(owner.parent.name, texts) | {owner}
-            outside = [p for p in texts if p not in scope and word(old).search(texts[p])]
+            others = set()
+            for o in all_owners:
+                if o != owner:
+                    others |= visible(o.parent.name, texts) | {o}
+            shared = [p for p in scope & others if word(old).search(texts[p])]
+            if shared:
+                sys.exit(f"{old} is spelled in {', '.join(str(p.relative_to(ROOT)) for p in shared[:5])}, which "
+                         f"another REL defining {old} also sees: rename it by hand")
+            seen = scope | others
+            outside = [p for p in texts if p not in seen and word(old).search(texts[p])]
             if outside:
                 sys.exit(f"{old} is spelled outside rels/{owner.parent.name} "
                          f"({', '.join(str(p.relative_to(ROOT)) for p in outside[:5])}): rename it by hand")
