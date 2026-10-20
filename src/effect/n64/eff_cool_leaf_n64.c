@@ -31,14 +31,14 @@ extern const f32 float_0p4_8041eca0;
 extern const f32 float_0p98_8041eca4;
 extern const f32 float_0p8464_8041eca8;
 extern const f32 float_0p9604_8041ecac;
-extern const u32 dat_8041ec50;
+extern const u32 coolLeafTevColor;
 extern u8 size12x12_tex64x64_brown_vtx[];
 extern u8 size12x12_tex64x64_red_vtx[];
 
 // clang-format off
-static inline void effCoolLeafSetColor(u8 a) {
-    GXColor color = *(GXColor*)&dat_8041ec50;
-    color.a = a;
+static inline void effCoolLeafSetColor(u8 alpha) {
+    GXColor color = *(GXColor*)&coolLeafTevColor;
+    color.a = alpha;
     GXSetTevColor(GX_TEVREG0, color);
 }
 
@@ -75,12 +75,12 @@ static inline Vec makeVec(f32 x, f32 y, f32 z) {
 EffectEntry* effCoolLeafN64Entry(s32 type, f32 x, f32 y, f32 z) {
     EffectEntry* effect;
     effCoolLeafData* data;
-    effCoolLeafData* ptr;
+    effCoolLeafData* leaf;
     s32 i;
-    s32 rnd01;
-    s32 rnd11;
-    s32 rnd361;
-    s32 rnd101;
+    s32 randX;
+    s32 randY;
+    s32 randAngle;
+    s32 randSpin;
 
     effect = effEntry();
     effect->type = "CoolLeafN64";
@@ -95,38 +95,38 @@ EffectEntry* effCoolLeafN64Entry(s32 type, f32 x, f32 y, f32 z) {
     data->life = 100;
     data->age = 0;
     data->alpha = 0;
-    ptr = data + 1;
-    for (i = 1; i < 5; i++, ptr++) {
-        rnd01 = rand() % 51;
-        rnd11 = rand() % 21;
-        rnd361 = rand() % 361;
-        rnd101 = rand() % 101;
-        ptr->x = (f32)(rnd01 + 75);
-        ptr->y = (f32)(rnd11 + 70);
-        ptr->z = float_0_8041ec60;
-        ptr->rotZ = (f32)rnd361;
-        ptr->rotY = (f32)(360 - rnd361);
+    leaf = data + 1;
+    for (i = 1; i < 5; i++, leaf++) {
+        randX = rand() % 51;
+        randY = rand() % 21;
+        randAngle = rand() % 361;
+        randSpin = rand() % 101;
+        leaf->x = (f32)(randX + 75);
+        leaf->y = (f32)(randY + 70);
+        leaf->z = float_0_8041ec60;
+        leaf->rotZ = (f32)randAngle;
+        leaf->rotY = (f32)(360 - randAngle);
         switch (type) {
             case 0:
-                ptr->spin = float_0p1_8041ecb0 * (f32)rnd101;
-                ptr->velX = float_0_8041ec60;
-                ptr->velY = float_0_8041ec60;
-                ptr->driftX = -3.0f;
-                ptr->driftY = float_0_8041ec60;
-                ptr->driftZ = 3.0f;
+                leaf->spin = float_0p1_8041ecb0 * (f32)randSpin;
+                leaf->velX = float_0_8041ec60;
+                leaf->velY = float_0_8041ec60;
+                leaf->driftX = -3.0f;
+                leaf->driftY = float_0_8041ec60;
+                leaf->driftZ = 3.0f;
                 break;
             case 1:
-                ptr->spin = float_0p1_8041ecb0 * (f32)rnd101 * float_2_8041ec70;
-                ptr->velX = float_0_8041ec60;
-                ptr->velY = float_0_8041ec60;
-                ptr->driftX = -6.0f;
-                ptr->driftY = float_0_8041ec60;
-                ptr->driftZ = 6.0f;
+                leaf->spin = float_0p1_8041ecb0 * (f32)randSpin * float_2_8041ec70;
+                leaf->velX = float_0_8041ec60;
+                leaf->velY = float_0_8041ec60;
+                leaf->driftX = -6.0f;
+                leaf->driftY = float_0_8041ec60;
+                leaf->driftZ = 6.0f;
                 break;
             case 2:
-                ptr->spin = float_0p1_8041ecb0 * (f32)rnd101 * float_2_8041ec70;
-                ptr->velX = -ptr->x * (0.008f * (f32)(rand() % 11) + float_0p05_8041ec88);
-                ptr->velY = -ptr->y * (0.008f * (f32)(rand() % 11) + float_0p05_8041ec88);
+                leaf->spin = float_0p1_8041ecb0 * (f32)randSpin * float_2_8041ec70;
+                leaf->velX = -leaf->x * (0.008f * (f32)(rand() % 11) + float_0p05_8041ec88);
+                leaf->velY = -leaf->y * (0.008f * (f32)(rand() % 11) + float_0p05_8041ec88);
                 break;
             default:
                 break;
@@ -136,7 +136,7 @@ EffectEntry* effCoolLeafN64Entry(s32 type, f32 x, f32 y, f32 z) {
 }
 
 
-// Feeding the type-2 loop's sin/cos results through the `s` temp (a natural shape,
+// Feeding the type-2 loop's sin/cos results through the `trig` temp (a natural shape,
 // guarded by MUST_MATCH below) changes the allocator's global callee-saved FPR
 // assignment so both the type-1 and type-2 loop-constant groups land on the original's
 // registers; the plain straight-into-the-multiply form scores 99.82%. Previously the
@@ -147,14 +147,15 @@ void effCoolLeafMain(EffectEntry* effect) {
     effCoolLeafData* data = effect->userdata;
     Vec position;
     s32 type;
-    s32 counter;
+    s32 age;
     s32 life;
-    s32 idx;
+    s32 randIndex;
     s32 i;
-    f32 s;
-    f32 t;
-    f32 u;
-    f32 sn;
+    f32 sway;
+    f32 swayPush;
+    f32 doublePush;
+    f32 tiltSin;
+    f32 trig;
 
     position = makeVec(data->x, data->y, data->z);
 
@@ -164,10 +165,10 @@ void effCoolLeafMain(EffectEntry* effect) {
         effDelete(effect);
         return;
     }
-    counter = data->age;
+    age = data->age;
     type = data->type;
     life = data->life;
-    if (counter < 10) {
+    if (age < 10) {
         data->alpha = (s32)(float_0p3_8041ec64 * (f32)(255 - data->alpha) + (f32)data->alpha);
     }
     if (life < 10) {
@@ -177,22 +178,22 @@ void effCoolLeafMain(EffectEntry* effect) {
     switch (type) {
     case 0:
         i = 1;
-        idx = counter + 20;
-        for (; i < effect->count; idx += 20, i++, data++) {
-            s = (f32)sin(float_6p2832_8041ec6c * (float_2_8041ec70 * data->rotZ) / float_360_8041ec74);
+        randIndex = age + 20;
+        for (; i < effect->count; randIndex += 20, i++, data++) {
+            sway = (f32)sin(float_6p2832_8041ec6c * (float_2_8041ec70 * data->rotZ) / float_360_8041ec74);
             data->velY += float_neg0p05_8041ec78;
-            t = float_0p2_8041ec7c * s;
-            data->velX += t;
+            swayPush = float_0p2_8041ec7c * sway;
+            data->velX += swayPush;
             if (type == 0) {
                 data->velX *= float_0p94_8041ec80;
-                sn = (f32)sin(float_6p2832_8041ec6c * data->rotZ / float_360_8041ec74);
-                data->velY *= float_0p05_8041ec88 * sn + float_0p95_8041ec84;
+                tiltSin = (f32)sin(float_6p2832_8041ec6c * data->rotZ / float_360_8041ec74);
+                data->velY *= float_0p05_8041ec88 * tiltSin + float_0p95_8041ec84;
             }
             else {
                 data->velY += float_neg0p05_8041ec78;
                 data->velX *= float_0p92_8041ec8c;
             }
-            data->spin += (f32)(s32)(effTblRandN64(50, idx) - 25);
+            data->spin += (f32)(s32)(effTblRandN64(50, randIndex) - 25);
             data->rotZ += float_10_8041ec90 * (f32)sin(float_6p2832_8041ec6c * data->spin / float_360_8041ec74);
             data->rotY += float_10_8041ec90 * (f32)cos(float_6p2832_8041ec6c * (float_0p5_8041ec94 * data->spin) / float_360_8041ec74);
             data->x += data->velX;
@@ -237,16 +238,16 @@ void effCoolLeafMain(EffectEntry* effect) {
         break;
     case 1:
         i = 1;
-        idx = counter + 20;
-        for (; i < effect->count; idx += 20, i++, data++) {
-            s = (f32)sin(float_6p2832_8041ec6c * (float_2_8041ec70 * data->rotZ) / float_360_8041ec74);
+        randIndex = age + 20;
+        for (; i < effect->count; randIndex += 20, i++, data++) {
+            sway = (f32)sin(float_6p2832_8041ec6c * (float_2_8041ec70 * data->rotZ) / float_360_8041ec74);
             data->velY += float_neg0p05_8041ec78;
-            t = float_0p2_8041ec7c * s;
-            u = float_2_8041ec70 * t;
-            data->velX += u;
+            swayPush = float_0p2_8041ec7c * sway;
+            doublePush = float_2_8041ec70 * swayPush;
+            data->velX += doublePush;
             data->velY += float_neg0p05_8041ec78;
             data->velX *= float_0p8464_8041eca8;
-            data->spin += (f32)(s32)(effTblRandN64(50, idx) - 25);
+            data->spin += (f32)(s32)(effTblRandN64(50, randIndex) - 25);
             data->rotZ += float_10_8041ec90 * (f32)sin(float_6p2832_8041ec6c * data->spin / float_360_8041ec74);
             data->rotY += float_10_8041ec90 * (f32)cos(float_6p2832_8041ec6c * (float_0p5_8041ec94 * data->spin) / float_360_8041ec74);
             data->x += data->velX;
@@ -291,15 +292,15 @@ void effCoolLeafMain(EffectEntry* effect) {
         break;
     case 2:
         i = 1;
-        idx = counter + 20;
-        for (; i < effect->count; idx += 20, i++, data++) {
-            data->spin += (f32)(s32)(effTblRandN64(50, idx) - 25);
+        randIndex = age + 20;
+        for (; i < effect->count; randIndex += 20, i++, data++) {
+            data->spin += (f32)(s32)(effTblRandN64(50, randIndex) - 25);
 #ifdef MUST_MATCH
-            // Match shape: keeping the call results in `s` pins the loop-constant FPRs to the original's.
-            s = (f32)sin(float_6p2832_8041ec6c * data->spin / float_360_8041ec74);
-            data->rotZ += float_10_8041ec90 * s;
-            s = (f32)cos(float_6p2832_8041ec6c * (float_0p5_8041ec94 * data->spin) / float_360_8041ec74);
-            data->rotY += float_10_8041ec90 * s;
+            // Match shape: keeping the call results in `trig` pins the loop-constant FPRs to the original's.
+            trig = (f32)sin(float_6p2832_8041ec6c * data->spin / float_360_8041ec74);
+            data->rotZ += float_10_8041ec90 * trig;
+            trig = (f32)cos(float_6p2832_8041ec6c * (float_0p5_8041ec94 * data->spin) / float_360_8041ec74);
+            data->rotY += float_10_8041ec90 * trig;
 #else
             data->rotZ += float_10_8041ec90 * (f32)sin(float_6p2832_8041ec6c * data->spin / float_360_8041ec74);
             data->rotY += float_10_8041ec90 * (f32)cos(float_6p2832_8041ec6c * (float_0p5_8041ec94 * data->spin) / float_360_8041ec74);
@@ -318,17 +319,17 @@ void effCoolLeafDisp(CameraId cameraId, void* param) {
     effCoolLeafData* data = effect->userdata;
     GXTexObj texObj;
     Mtx trans;
-    Mtx scale;
+    Mtx texMtx;
     Mtx rot;
-    Mtx work;
+    Mtx viewMtx;
     s32 type = data->type;
     s32 i;
     f32 deg2rad;
 
     PSMTXTrans(trans, data->x, data->y, data->z);
     PSMTXRotRad(rot, 'y', float_deg2rad_8041ec54 * -camGetPtr(CAMERA_3D)->viewYaw);
-    PSMTXConcat(trans, rot, work);
-    PSMTXConcat(cam->view, work, work);
+    PSMTXConcat(trans, rot, viewMtx);
+    PSMTXConcat(cam->view, viewMtx, viewMtx);
 
     effCoolLeafSetColor(data->alpha);
 
@@ -339,8 +340,8 @@ void effCoolLeafDisp(CameraId cameraId, void* param) {
     GXSetChanCtrl(GX_COLOR0A0, GX_FALSE, GX_SRC_REG, GX_SRC_VTX, GX_LIGHT_NULL, GX_DF_NONE, GX_AF_NONE);
     GXSetNumTexGens(1);
     GXSetTexCoordGen2(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_TEXMTX0, GX_FALSE, GX_PTIDENTITY);
-    PSMTXScale(scale, float_4_8041ec58, float_1_8041ec5c, float_0_8041ec60);
-    GXLoadTexMtxImm(scale, GX_TEXMTX0, GX_MTX2x4);
+    PSMTXScale(texMtx, float_4_8041ec58, float_1_8041ec5c, float_0_8041ec60);
+    GXLoadTexMtxImm(texMtx, GX_TEXMTX0, GX_MTX2x4);
     GXSetNumTevStages(1);
     GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR0A0);
     GXSetTevColorOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
@@ -363,9 +364,9 @@ void effCoolLeafDisp(CameraId cameraId, void* param) {
         PSMTXConcat(trans, rot, trans);
         PSMTXRotRad(rot, 'y', deg2rad * data->rotY);
         PSMTXConcat(trans, rot, trans);
-        PSMTXConcat(work, trans, trans);
-        GXLoadPosMtxImm(trans, 0);
-        GXSetCurrentMtx(0);
+        PSMTXConcat(viewMtx, trans, trans);
+        GXLoadPosMtxImm(trans, GX_PNMTX0);
+        GXSetCurrentMtx(GX_PNMTX0);
         switch (type) {
         case 0:
             GXSetArray(GX_VA_POS, size12x12_tex64x64_brown_vtx, 0xE);
@@ -410,7 +411,7 @@ u8 size12x12_tex64x64_red_vtx[112] = {
 // clang-format on
 
 // The pool constants the code above loads by name, defined after it (defined first, the compiler folds them).
-const u32 dat_8041ec50 = 0x14641400;
+const u32 coolLeafTevColor = 0x14641400;
 const f32 float_deg2rad_8041ec54 = 0.017453292f;
 const f32 float_4_8041ec58 = 4.0f;
 const f32 float_1_8041ec5c = 1.0f;
