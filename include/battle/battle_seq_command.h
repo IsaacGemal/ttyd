@@ -31,7 +31,7 @@ typedef struct BattleCommandAction {
 
 typedef struct BattleCommandWeapon {
     BattleWeapon* mWeaponParams; // 0x0
-    u32 field_0x4;               // 0x4
+    u32 mEnabled;                // 0x4
     char* mName;                 // 0x8
     u16 mIcon;                   // 0xC, read at commandMenu + idx * 0x1C + 0x8C by DrawWeaponWin
     u8 pad_0xE[2];               // 0xE

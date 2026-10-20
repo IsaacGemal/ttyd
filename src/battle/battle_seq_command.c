@@ -373,7 +373,7 @@ s32 _btlcmd_MakeSelectWeaponTable(BattleWork* wp, s32 arg) {
 			cmd->weaponTable[count].mIndex = -1;
 			cmd->weaponTable[count].mItem = 0;
 			cmd->weaponTable[count].mWeaponParams = &marioDefaultWeapon_Jump;
-			cmd->weaponTable[count].field_0x4 = 0;
+			cmd->weaponTable[count].mEnabled = 0;
 			cmd->weaponTable[count].mDisableReason = 0;
 			cmd->weaponTable[count].mIcon = _getJumpIconId();
 			if (cmd->weaponTable[count].mWeaponParams->name != NULL) {
@@ -390,7 +390,7 @@ s32 _btlcmd_MakeSelectWeaponTable(BattleWork* wp, s32 arg) {
 			cmd->weaponTable[count].mIndex = -1;
 			cmd->weaponTable[count].mItem = 0;
 			cmd->weaponTable[count].mWeaponParams = &marioWeapon_KururinJump;
-			cmd->weaponTable[count].field_0x4 = 0;
+			cmd->weaponTable[count].mEnabled = 0;
 			cmd->weaponTable[count].mDisableReason = 0;
 			cmd->weaponTable[count].mIcon = _getJumpIconId();
 			if (cmd->weaponTable[count].mWeaponParams->name != NULL) {
@@ -404,7 +404,7 @@ s32 _btlcmd_MakeSelectWeaponTable(BattleWork* wp, s32 arg) {
 			cmd->weaponTable[count].mIndex = -1;
 			cmd->weaponTable[count].mItem = 0;
 			cmd->weaponTable[count].mWeaponParams = &marioWeapon_JyabaraJump;
-			cmd->weaponTable[count].field_0x4 = 0;
+			cmd->weaponTable[count].mEnabled = 0;
 			cmd->weaponTable[count].mDisableReason = 0;
 			cmd->weaponTable[count].mIcon = _getJumpIconId();
 			if (cmd->weaponTable[count].mWeaponParams->name != NULL) {
@@ -420,7 +420,7 @@ s32 _btlcmd_MakeSelectWeaponTable(BattleWork* wp, s32 arg) {
 			cmd->weaponTable[count].mIndex = -1;
 			cmd->weaponTable[count].mItem = 0;
 			cmd->weaponTable[count].mWeaponParams = &marioDefaultWeapon_Hammer;
-			cmd->weaponTable[count].field_0x4 = 0;
+			cmd->weaponTable[count].mEnabled = 0;
 			cmd->weaponTable[count].mDisableReason = 0;
 			cmd->weaponTable[count].mIcon = _getHammerIconId();
 			if (cmd->weaponTable[count].mWeaponParams->name != NULL) {
@@ -437,7 +437,7 @@ s32 _btlcmd_MakeSelectWeaponTable(BattleWork* wp, s32 arg) {
 			cmd->weaponTable[count].mIndex = -1;
 			cmd->weaponTable[count].mItem = 0;
 			cmd->weaponTable[count].mWeaponParams = &marioWeapon_KaitenHammer;
-			cmd->weaponTable[count].field_0x4 = 0;
+			cmd->weaponTable[count].mEnabled = 0;
 			cmd->weaponTable[count].mDisableReason = 0;
 			cmd->weaponTable[count].mIcon = _getHammerIconId();
 			if (cmd->weaponTable[count].mWeaponParams->name != NULL) {
@@ -451,7 +451,7 @@ s32 _btlcmd_MakeSelectWeaponTable(BattleWork* wp, s32 arg) {
 			cmd->weaponTable[count].mIndex = -1;
 			cmd->weaponTable[count].mItem = 0;
 			cmd->weaponTable[count].mWeaponParams = &marioWeapon_UltraHammer;
-			cmd->weaponTable[count].field_0x4 = 0;
+			cmd->weaponTable[count].mEnabled = 0;
 			cmd->weaponTable[count].mDisableReason = 0;
 			cmd->weaponTable[count].mIcon = _getHammerIconId();
 			if (cmd->weaponTable[count].mWeaponParams->name != NULL) {
@@ -471,7 +471,7 @@ s32 _btlcmd_MakeSelectWeaponTable(BattleWork* wp, s32 arg) {
 				cmd->weaponTable[count].mIndex = i;
 				cmd->weaponTable[count].mItem = badge;
 				cmd->weaponTable[count].mWeaponParams = itemDataTable[badge].battle_params;
-				cmd->weaponTable[count].field_0x4 = 0;
+				cmd->weaponTable[count].mEnabled = 0;
 				cmd->weaponTable[count].mDisableReason = 0;
 				if (cmd->weaponTable[count].mWeaponParams->item != 0) {
 					cmd->weaponTable[count].mIcon = *(u16*)&itemDataTable[badge].icon_id;
@@ -497,7 +497,7 @@ s32 _btlcmd_MakeSelectWeaponTable(BattleWork* wp, s32 arg) {
 				cmd->weaponTable[count].mIndex = i;
 				cmd->weaponTable[count].mItem = badge;
 				cmd->weaponTable[count].mWeaponParams = itemDataTable[badge].battle_params;
-				cmd->weaponTable[count].field_0x4 = 0;
+				cmd->weaponTable[count].mEnabled = 0;
 				cmd->weaponTable[count].mDisableReason = 0;
 				if (cmd->weaponTable[count].mWeaponParams->item != 0) {
 					cmd->weaponTable[count].mIcon = *(u16*)&itemDataTable[badge].icon_id;
@@ -528,7 +528,7 @@ s32 _btlcmd_MakeSelectWeaponTable(BattleWork* wp, s32 arg) {
 				cmd->weaponTable[count].mIndex = j;
 				cmd->weaponTable[count].mItem = id;
 				cmd->weaponTable[count].mWeaponParams = item->battle_params;
-				cmd->weaponTable[count].field_0x4 = 0;
+				cmd->weaponTable[count].mEnabled = 0;
 				cmd->weaponTable[count].mDisableReason = 0;
 				if (cmd->weaponTable[count].mWeaponParams == NULL) {
 					cmd->weaponTable[count].mWeaponParams = &ItemWeaponData_CookingItem;
@@ -553,7 +553,7 @@ s32 _btlcmd_MakeSelectWeaponTable(BattleWork* wp, s32 arg) {
 			cmd->weaponTable[count].mItem = 0;
 			cmd->weaponTable[count].mIndex = 0;
 			cmd->weaponTable[count].mWeaponParams = &defaultWeapon_Dummy_NoItem;
-			cmd->weaponTable[count].field_0x4 = 0;
+			cmd->weaponTable[count].mEnabled = 0;
 			cmd->weaponTable[count].mDisableReason = 0;
 			cmd->weaponTable[count].mIcon = 0x162;
 			if (cmd->weaponTable[count].mWeaponParams->name != NULL) {
@@ -573,7 +573,7 @@ s32 _btlcmd_MakeSelectWeaponTable(BattleWork* wp, s32 arg) {
 				cmd->weaponTable[count].mIndex = -1;
 				cmd->weaponTable[count].mItem = 0;
 				cmd->weaponTable[count].mWeaponParams = ((BattleWeapon**)superActionTable)[j];
-				cmd->weaponTable[count].field_0x4 = 0;
+				cmd->weaponTable[count].mEnabled = 0;
 				cmd->weaponTable[count].mIcon = *(u16*)&((BattleWeapon**)superActionTable)[j]->icon;
 				cmd->weaponTable[count].mDisableReason = 0;
 				if (cmd->weaponTable[count].mWeaponParams->name != NULL) {
@@ -622,7 +622,7 @@ void _btlcmd_UpdateSelectWeaponTable(BattleWork* wp, s32 arg) {
 		s32 check;
 
 		params = cmd->weaponTable[i].mWeaponParams;
-		cmd->weaponTable[i].field_0x4 = 0;
+		cmd->weaponTable[i].mEnabled = 0;
 		cmd->weaponTable[i].mDisableReason = 0;
 		if (params == NULL) {
 			continue;
@@ -649,7 +649,7 @@ void _btlcmd_UpdateSelectWeaponTable(BattleWork* wp, s32 arg) {
 				}
 			}
 		} else {
-			cmd->weaponTable[i].field_0x4 = 1;
+			cmd->weaponTable[i].mEnabled = 1;
 			cmd->weaponTable[i].mDisableReason = 0;
 		}
 	}
@@ -1665,7 +1665,7 @@ s32 BattleCommandDisplay_WeaponSelectMenuMain(BattleWork* wp, s32 arg) {
 			wp->commandMenu.restoreId = 0;
 		}
 		if (BattlePadCheckTrigger(0x100) || wp->commandMenu.restoreState != 0) {
-			if ((s32)cmd->weaponTable[cursor->field_0].field_0x4 != 0) {
+			if ((s32)cmd->weaponTable[cursor->field_0].mEnabled != 0) {
 				psndSFXOn((char*)0x9D8);
 				BattleCommandDisplay_WeaponSelectMenuEnd(wp);
 				_btlcmd_SelectWeaponDecide(wp, arg, cursor->field_0);
@@ -2775,7 +2775,7 @@ void* BattleSetConfuseAct(BattleWork* wp, BattleUnit* unit) {
 
 			for (n = 0; n < cursor->unk8; n++) {
 				weapon = cmd->weaponTable[n].mWeaponParams;
-				if ((s32)cmd->weaponTable[n].field_0x4 == 0) {
+				if ((s32)cmd->weaponTable[n].mEnabled == 0) {
 					continue;
 				}
 				if (!(weapon->special & 0x10000)) {
@@ -2796,7 +2796,7 @@ void* BattleSetConfuseAct(BattleWork* wp, BattleUnit* unit) {
 		} else {
 			return NULL;
 		}
-		if ((s32)cmd->weaponTable[cursor->field_0].field_0x4 == 0) {
+		if ((s32)cmd->weaponTable[cursor->field_0].mEnabled == 0) {
 			return subsetevt_confuse_flustered;
 		}
 		_btlcmd_SelectWeaponDecide(wp, cmd->actKind, cursor->field_0);
