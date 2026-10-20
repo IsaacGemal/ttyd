@@ -11125,3 +11125,18 @@ Index (`tools/cleanup_index.py --top 40`): total 22.080 -> 21.575 per kLOC; raw_
 win_root.c 794 -> 435 weighted (298.4 -> 160.8 per kLOC). field_0x names rose 2754 -> 3001 (each offset-named member
 counts as one); the net is still down. Matching build recreated at every batch (MATCH after each of 8 batches of 40
 sites and the macro cleanup); win_root.c natural-compiles without MUST_MATCH.
+### Readability: party.c raw offsets, field_34 (2026-10-20, Claude Haiku 5.5, n9-q-offparty)
+
+party.c: 6 of 62 offset-macro uses became plain `party->field_34` (P8(party, 0x34) in partyDokanInit's switch, the
+two switches, the `== 3` check and the three stores). field_34 is a plain u8, the same width and signedness. No names
+added or changed.
+- Left, 56 offset-macro uses plus 8 other raw casts: pointer fields read as u32 (0x12C, 0x130, 0x134, 0x138, 0x140);
+  an offset inside a band with no field of its own (0x124, 0x13C, 0x144, 0x148, 0x15E, MarioWork 0x3E); a field of the
+  other signedness (P16(party, 0x28), P32(party, 0x24), P8(party, 0x158..0x15B), PS8(party, 0x30)); MarioWork 0x2E,
+  a MarioMotion enum read as u16.
+- Left as raw, and not converted: the six `*(char**)((u8*)partyPoseTbl + id * 0x3c + N)` sites (N = 16/32/36) map to
+  `partyPoseTbl[id][4/8/9]`, but the rewrite changed codegen (DOL checksum failed); the match needs the raw form.
+- Index (tools/cleanup_index.py): party.c 182 -> 170 weighted (69.678 -> 65.084 per kLOC); tree 22.215 -> 22.198 per kLOC.
+
+Verified: tower `ninja` recreates `build/G8MJ01/ok` (after the pose-table rewrite was reverted); natural compile of
+party.c (no MUST_MATCH, -maxerrors 50) exits 0.
