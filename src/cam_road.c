@@ -34,7 +34,7 @@ typedef struct CamRoadMap {
     /* 0x0F8 */ u32 curvePts;
     /* 0x0FC */ u32 verts;
     /* 0x100 */ u32 indices;
-    /* 0x104 */ u32 unk_104;
+    /* 0x104 */ u32 curveRanges;
     /* 0x108 */ u32 unk_108;
 } CamRoadMap;
 
@@ -682,7 +682,7 @@ void calcCamRoad(CamRoadState* a, CamRoadState* b, f32 x, f32 y, f32 z, f32 ax, 
     }
 
     if (cur->hasCurve != 0) {
-        curve = (CollisionCurveData*)((CamRoadSub*)wp->map->unk_104 + cur->curveIdx);
+        curve = (CollisionCurveData*)((CamRoadSub*)wp->map->curveRanges + cur->curveIdx);
         q.x = px;
         q.y = 100000000.0f;
         q.z = pz;
@@ -732,7 +732,7 @@ void calcCamRoad(CamRoadState* a, CamRoadState* b, f32 x, f32 y, f32 z, f32 ax, 
                 t1.z = h2.z;
             }
             if (cur->hasCurve != 0) {
-                curve = (CollisionCurveData*)((CamRoadSub*)wp->map->unk_104 + cur->curveIdx);
+                curve = (CollisionCurveData*)((CamRoadSub*)wp->map->curveRanges + cur->curveIdx);
                 h2.startY = -1000000.0f;
                 if (collisionCurve(1, curve, t1, &h2)) {
                     found1 = 1;
@@ -771,7 +771,7 @@ void calcCamRoad(CamRoadState* a, CamRoadState* b, f32 x, f32 y, f32 z, f32 ax, 
                 t2.z = h3.z;
             }
             if (cur->hasCurve != 0) {
-                curve = (CollisionCurveData*)((CamRoadSub*)wp->map->unk_104 + cur->curveIdx);
+                curve = (CollisionCurveData*)((CamRoadSub*)wp->map->curveRanges + cur->curveIdx);
                 h3.startY = -1000000.0f;
                 if (collisionCurve(1, curve, t2, &h3)) {
                     found2 = 1;
@@ -1525,7 +1525,7 @@ BOOL camRoadSetup(const char* filename) {
         wp->map->curvePts += (u32)wp->map;
         wp->map->verts += (u32)wp->map;
         wp->map->indices += (u32)wp->map;
-        wp->map->unk_104 += (u32)wp->map;
+        wp->map->curveRanges += (u32)wp->map;
         wp->map->unk_108 += (u32)wp->map;
     }
     if (strcmp(wp->map->name, "1.01") == 0) {
