@@ -525,7 +525,7 @@ void kpa3DMain(void) {
         marioMove();
         marioChkOverhead();
         if (mp->airTimer > 0x64) {
-            marioChgMot(0xA);
+            marioChgMot(MARIO_MOTION_FALL);
             marioSetFallPara();
         }
     } else if (mp->flags & 0x10000) {
@@ -762,7 +762,7 @@ s32 kpaFireAttackCheck(void) {
 void kpaAttackStart(void) {
     MarioWork* mp = marioGetPtr();
     if (KPA(mp)->attackMode == 0) {
-        marioChgMot(0);
+        marioChgMot(MARIO_MOTION_STAY);
         KPA(mp)->attackMode = 1;
     }
 }

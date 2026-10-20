@@ -213,7 +213,7 @@ void kpa_stay(void) {
         marioChgMot(MARIO_MOTION_KPA_SWIM);
         flag = 1;
     } else {
-        marioChgMot(3);
+        marioChgMot(MARIO_MOTION_JUMP);
         flag = 1;
     }
     if (flag != 0) {
@@ -231,10 +231,10 @@ void kpa_stay(void) {
     if (kpaGetStageViewType() == 0) {
         mario->baseSpeed = f31;
         if (mario->baseSpeed > float_0_80420da0) {
-            marioChgMot(1);
+            marioChgMot(MARIO_MOTION_WALK);
         }
     } else if (mario->controlStickSensitivity > float_0_80420da0) {
-        marioChgMot(1);
+        marioChgMot(MARIO_MOTION_WALK);
     }
 }
 
@@ -272,7 +272,7 @@ void kpa_walk(void) {
         marioChgMot(MARIO_MOTION_KPA_SWIM);
         flag = 1;
     } else {
-        marioChgMot(3);
+        marioChgMot(MARIO_MOTION_JUMP);
         flag = 1;
     }
     if (flag != 0) {
@@ -280,7 +280,7 @@ void kpa_walk(void) {
     }
     if (MW_U16(mario, 0x248) & (1 << 9)) {
         kpaAttackStart();
-        marioChgMot(0);
+        marioChgMot(MARIO_MOTION_STAY);
         return;
     }
     if (kpaGetBodyStatus() == 2) {
@@ -323,11 +323,11 @@ void kpa_walk(void) {
     }
     if (kpaGetStageViewType() == 0) {
         if (mario->baseSpeed == float_0_80420da0 && !(mario->flags & 0x20)) {
-            marioChgMot(0);
+            marioChgMot(MARIO_MOTION_STAY);
             return;
         }
     } else if (mario->controlStickSensitivity == float_0_80420da0 && !(mario->flags & 0x20)) {
-        marioChgMot(0);
+        marioChgMot(MARIO_MOTION_STAY);
         return;
     }
     if (marioKeyOffChk() != 0) {
@@ -340,7 +340,7 @@ void kpa_walk(void) {
     angle = (s32)(s8)mario->wStickDir1 * (s32)(s8)mario->wStickDir1 +
             (s32)(s8)mario->wStickDir2 * (s32)(s8)mario->wStickDir2;
     if (angle > 0xBD1) {
-        marioChgMot(2);
+        marioChgMot(MARIO_MOTION_DASH);
     }
 }
 // Matched. The `& 0xFFFF` (MUST_MATCH) forces the original's extrwi for `poseTime`; staging the
@@ -370,7 +370,7 @@ void kpa_dash(void) {
         marioChgMot(MARIO_MOTION_KPA_SWIM);
         flag = 1;
     } else {
-        marioChgMot(3);
+        marioChgMot(MARIO_MOTION_JUMP);
         flag = 1;
     }
     if (flag != 0) {
@@ -378,7 +378,7 @@ void kpa_dash(void) {
     }
     if (MW_U16(mario, 0x248) & (1 << 9)) {
         kpaAttackStart();
-        marioChgMot(0);
+        marioChgMot(MARIO_MOTION_STAY);
         return;
     }
     if (kpaGetBodyStatus() == 2) {
@@ -416,11 +416,11 @@ void kpa_dash(void) {
     }
     if (kpaGetStageViewType() == 0) {
         if (mario->baseSpeed == float_0_80420da0 && !(mario->flags & 0x20)) {
-            marioChgMot(0);
+            marioChgMot(MARIO_MOTION_STAY);
             return;
         }
     } else if (mario->controlStickSensitivity == float_0_80420da0 && !(mario->flags & 0x20)) {
-        marioChgMot(0);
+        marioChgMot(MARIO_MOTION_STAY);
         return;
     }
     if (marioKeyOffChk() != 0) {
@@ -433,7 +433,7 @@ void kpa_dash(void) {
     angle = (s32)(s8)mario->wStickDir1 * (s32)(s8)mario->wStickDir1 +
             (s32)(s8)mario->wStickDir2 * (s32)(s8)mario->wStickDir2;
     if (angle <= 0xBD1) {
-        marioChgMot(1);
+        marioChgMot(MARIO_MOTION_WALK);
     }
 }
 
@@ -474,7 +474,7 @@ void kpa_jump(void) {
             marioSetPeakYpos();
             kpaSetFallPara();
             marioMakeJumpPara();
-            marioChgMot(0xA);
+            marioChgMot(MARIO_MOTION_FALL);
         }
         mario->position.y += MW_F32(mario, 0x7C);
     }
@@ -690,7 +690,7 @@ void kpa_powup(void) {
         f0 = kpaGetBaseScale(level);
         f0 = (f0 - f31) / float_5_80420dec;
     } else {
-        marioChgMot(0);
+        marioChgMot(MARIO_MOTION_STAY);
         return;
     }
     switch ((s32)mario->currSubMotionId) {
@@ -730,7 +730,7 @@ void kpa_powup(void) {
         marioResetCamShiftRate();
         m2->unk138 = float_20_80420e30 * (f32)(-KPA(m2)->level);
         mario->flags &= ~0x10000000;
-        marioChgMot(0);
+        marioChgMot(MARIO_MOTION_STAY);
         mario->unk4C = 0;
     }
 }
@@ -764,7 +764,7 @@ void kpa_powdown(void) {
         f0 = kpaGetBaseScale(level);
         f0 = (f31 - f0) / float_5_80420dec;
     } else {
-        marioChgMot(0);
+        marioChgMot(MARIO_MOTION_STAY);
         return;
     }
     switch ((s32)mario->currSubMotionId) {
@@ -801,7 +801,7 @@ void kpa_powdown(void) {
         marioResetCamShiftRate();
         m2->unk138 = float_20_80420e30 * (f32)(-KPA(m2)->level);
         mario->flags &= ~0x10000000;
-        marioChgMot(0);
+        marioChgMot(MARIO_MOTION_STAY);
     }
 }
 
@@ -1004,7 +1004,7 @@ void kpa_swim(void) {
                 mario->flags &= ~0x000F0000;
                 kpaSetFallPara();
                 marioMakeJumpPara();
-                marioChgMot(0xA);
+                marioChgMot(MARIO_MOTION_FALL);
                 return;
             }
             break;
