@@ -225,7 +225,7 @@ void nokonoko_use(PartyEntry* party) {
                 party->position.x = a;
                 party->position.z = b;
                 nokonoko_finish(party);
-                goto L_800CD8BC;
+                return;
             }
         }
     }
@@ -539,7 +539,7 @@ void nokonoko_use(PartyEntry* party) {
             f4 = (f32)sin(6.2831855f * party->dir / 360.0f);
             effSmallStarN64Entry(3, 1, party->position.x, party->position.y + party->height, party->position.z,
                                  f4, -1.0f, -f31);
-            goto L_800CD8BC;
+            return;
         }
         f1 = revise360(party->dir - party->playerTargetYaw);
         f2 = (f1 > 180.0f) ? 1.0f : -1.0f;
@@ -558,7 +558,7 @@ void nokonoko_use(PartyEntry* party) {
     case 0x35:
         if (ccwall(party, 1)) {
             party->useMotionId = 0x46;
-            goto L_800CD8BC;
+            return;
         }
         party->tail.koops.slideDecay -= 2.2f;
         if (party->tail.koops.slideDecay <= 0.0f) {
@@ -630,14 +630,14 @@ void nokonoko_use(PartyEntry* party) {
         if (party->targetDist <= 10.0f) {
             party->useMotionId = 0x46;
             party->speed = 0.0f;
-            goto L_800CD8BC;
+            return;
         }
         break;
 
     case 0x37:
         if (ccwall(party, 1)) {
             party->useMotionId = 0x46;
-            goto L_800CD8BC;
+            return;
         }
         f1 = revise360(party->dir - party->playerTargetYaw);
         f2 = (f1 > 180.0f) ? 1.0f : -1.0f;
@@ -657,7 +657,7 @@ void nokonoko_use(PartyEntry* party) {
         if (party->speed <= 0.0f) {
             party->useMotionId = 0x46;
             party->speed = 0.0f;
-            goto L_800CD8BC;
+            return;
         }
         break;
 
@@ -689,7 +689,7 @@ void nokonoko_use(PartyEntry* party) {
             party->tail.koops.heldItem = NULL;
         }
         nokonoko_finish(party);
-        goto L_800CD8BC;
+        return;
 
     default:
         break;
@@ -727,11 +727,11 @@ void nokonoko_use(PartyEntry* party) {
         if (hit != NULL) {
             if (!(hitGetAttr(hit) & 0x80000000)) {
                 party->useMotionId = 0x64;
-                goto L_800CD8BC;
+                return;
             }
             mobjHitObjPtrToPtr(hit);
             party->useMotionId = 0x6e;
-            goto L_800CD8BC;
+            return;
         }
         party->targetDist -= party->speed;
         if (party->targetDist <= 20.0f) {
@@ -829,7 +829,7 @@ void nokonoko_use(PartyEntry* party) {
             party->tail.koops.heldItem = NULL;
         }
         nokonoko_finish(party);
-        goto L_800CD8BC;
+        return;
 
     case 0x58:
         party->speed = 0.0f;
@@ -975,7 +975,7 @@ void nokonoko_use(PartyEntry* party) {
             break;
         }
         nokonoko_finish(party);
-        goto L_800CD8BC;
+        return;
 
     default:
         break;
@@ -984,7 +984,6 @@ void nokonoko_use(PartyEntry* party) {
     if (party->useMotionId != 0x64) {
         partyMoveNoHosei(party);
     }
-L_800CD8BC:
     return;
 }
 #undef NKF
