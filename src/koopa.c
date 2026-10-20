@@ -192,10 +192,10 @@ static inline void kpaFireBreath2(MarioWork* mp, Vec* pos) {
     }
     fireefp = effGonbabaBreathEntry(type, 0, x, y, z, escale);
     ((effGonbabaBreathData*)((EffectEntry*)fireefp)->userdata)->rotation =
-        (MW_F32(mp, 0x1AC) >= 90.0f && MW_F32(mp, 0x1AC) <= 270.0f) ? 0xB4 : 0;
+        (mp->dispReqDir >= 90.0f && mp->dispReqDir <= 270.0f) ? 0xB4 : 0;
     if (((effGonbabaBreathData*)((EffectEntry*)fireefp)->userdata)->child != NULL) {
         ((effGonbabaBreathData*)((EffectEntry*)((effGonbabaBreathData*)((EffectEntry*)fireefp)->userdata)->child)->userdata)->rotation =
-            (MW_F32(mp, 0x1AC) >= 90.0f && MW_F32(mp, 0x1AC) <= 270.0f) ? 0xB4 : 0;
+            (mp->dispReqDir >= 90.0f && mp->dispReqDir <= 270.0f) ? 0xB4 : 0;
     }
 }
 #else
@@ -367,8 +367,8 @@ void kpa2DMain(void) {
     if (mp->noHitEnemyCt != 0) {
         mp->noHitEnemyCt--;
     }
-    MW_U32(mp, 0x1F4) = 0;
-    MW_U32(mp, 0x1E0) = 0;
+    mp->hitobjHead = NULL;
+    mp->hitobjFront = NULL;
     mp->actionHitObj = NULL;
     mp->hitobjPush = NULL;
     mp->hitobjWall = NULL;
@@ -386,7 +386,7 @@ void kpa2DMain(void) {
         }
     }
     if (mp->currMotionId == MARIO_MOTION_JUMP_3) {
-        prevPos = (Vec*)((u8*)mp + 0x110);
+        prevPos = &mp->prevPosition;
     *prevPos = mp->position;
         mp->riderDelta.x = 0.0f;
         mp->riderDelta.y = 0.0f;
@@ -457,7 +457,7 @@ void kpa2DMain(void) {
     mario_kemuri_80130474();
     marioCamMain();
     mp->field_0x34++;
-    prevPos = (Vec*)((u8*)mp + 0x110);
+    prevPos = &mp->prevPosition;
     *prevPos = mp->position;
     mp->riderDelta.x = 0.0f;
     mp->riderDelta.y = 0.0f;
@@ -474,7 +474,7 @@ void kpa3DMain(void) {
 
     hit = kpaHitCheck();
     if (hit != NULL) {
-        MW_U32(mp, 0x1F4) = (u32)hit;
+        mp->hitobjHead = hit;
     }
     if (mp->noHitEnemyCt != 0) {
         mp->noHitEnemyCt--;
@@ -486,8 +486,8 @@ void kpa3DMain(void) {
         mp->field_0x34++;
         partyMain();
         marioCamMain();
-        MW_U32(mp, 0x1F4) = 0;
-        MW_U32(mp, 0x1E0) = 0;
+        mp->hitobjHead = NULL;
+        mp->hitobjFront = NULL;
         mp->actionHitObj = NULL;
         mp->hitobjPush = NULL;
         mp->hitobjWall = NULL;
@@ -507,7 +507,7 @@ void kpa3DMain(void) {
         }
     }
     if (mp->currMotionId == MARIO_MOTION_JUMP_3) {
-        prevPos = (Vec*)((u8*)mp + 0x110);
+        prevPos = &mp->prevPosition;
     *prevPos = mp->position;
         mp->riderDelta.x = 0.0f;
         mp->riderDelta.y = 0.0f;
@@ -557,7 +557,7 @@ void kpa3DMain(void) {
     partyMain();
     marioCamMain();
     mp->field_0x34++;
-    prevPos = (Vec*)((u8*)mp + 0x110);
+    prevPos = &mp->prevPosition;
     *prevPos = mp->position;
     mp->riderDelta.x = 0.0f;
     mp->riderDelta.y = 0.0f;

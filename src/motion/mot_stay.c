@@ -20,11 +20,7 @@
 
 // Raw accessors for MarioWork fields not named in include/mario/mario.h.
 // Offsets are listed in REPORT.md.
-#define MW(m, off) (*(u32*)((u8*)(m) + (off)))
 #define MWS32(m, off) (*(s32*)((u8*)(m) + (off)))
-#define MWU16(m, off) (*(u16*)((u8*)(m) + (off)))
-#define MWS16(m, off) (*(s16*)((u8*)(m) + (off)))
-#define MWVEC(m, off) (*(Vec*)((u8*)(m) + (off)))
 #define MW_ZERO MATCH_F32(float_0_8041aef8)
 
 // .sdata2
@@ -83,11 +79,11 @@ void mot_stay(void) {
         mario->multiTimer = 0;
         mario->currSubMotionId = 0;
         mario->wMotionTimer = 0;
-        MWVEC(mario, 0x11C) = mario->position;
+        mario->field_0x11C = mario->position;
         MWS32(mario, 0x2B0) = 0;
         MWS32(mario, 0x2B8) = 0;
         MWS32(mario, 0x2B4) = 0;
-        MWS16(mario, 0x5A) = 0;
+        mario->field_0x5A = 0;
         marioSoundInit();
         marioResetCamFollowRate();
 
@@ -114,7 +110,7 @@ void mot_stay(void) {
                     if (low && marioChkKey()) {
                         mario->dispFlags |= 4;
                         marioChgPose("M_S_3");
-                        MWS16(mario, 0x58) = 0;
+                        mario->field_0x58 = 0;
                     } else if (strcmp(mario->animName, "M_I_Y") != 0) {
                         marioChgPose(str_8041AEF0);
                     }
@@ -148,19 +144,19 @@ void mot_stay(void) {
         return;
     }
 
-    if (++MWS16(mario, 0x5A) > sysMsec2Frame(1000)) {
+    if (++mario->field_0x5A > sysMsec2Frame(1000)) {
         if (!(mario->flags & MARIO_FLAG_IS_CARRYING_BOBBERY) && marioChkKey()) {
             s32 low = pouchGetHP() <= 5;
 
             if (low) {
                 if (strcmp(mario->animName, "M_S_3") != 0) {
-                    MWS16(mario, 0x58) = 0;
+                    mario->field_0x58 = 0;
                 }
                 mario->dispFlags |= 4;
                 marioChgPose("M_S_3");
             } else {
-                if ((s32)mario->currSubMotionId == 0 && MWS16(mario, 0x5A) != 0) {
-                    MWS16(mario, 0x5A) = 0;
+                if ((s32)mario->currSubMotionId == 0 && mario->field_0x5A != 0) {
+                    mario->field_0x5A = 0;
                     if (strcmp(mario->animName, "M_I_Y") != 0) {
                         marioChgPose(str_8041AEF0);
                     }
@@ -172,14 +168,14 @@ void mot_stay(void) {
     if (strcmp(mario->animName, "M_S_3") == 0 && marioChkKey()) {
         MarioWork* m = marioGetPtr();
 
-        MWS16(m, 0x58)++;
-        if (MWS16(m, 0x58) > 0xF0) {
-            MWS16(m, 0x58) = 0;
+        m->field_0x58++;
+        if (m->field_0x58 > 0xF0) {
+            m->field_0x58 = 0;
         }
-        if (MWS16(m, 0x58) == 0xF) {
+        if (m->field_0x58 == 0xF) {
             m->sfxIds[0] = psndSFXOn_3D((const char*)0xE1, &m->position);
         }
-        if (MWS16(m, 0x58) == 0x87) {
+        if (m->field_0x58 == 0x87) {
             m->sfxIds[0] = psndSFXOn_3D((const char*)0xE2, &m->position);
         }
     }

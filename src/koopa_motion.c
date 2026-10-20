@@ -19,8 +19,6 @@
 #include "eff/eff_mizutama.h"
 #include "math_ext.h"
 
-#define MW_F32(m, off) (*(f32*)((u8*)(m) + (off)))
-#define MW_S32(m, off) (*(s32*)((u8*)(m) + (off)))
 #define MW_U16(m, off) (*(u16*)((u8*)(m) + (off)))
 
 // .rodata: the unit's strings and the int->float magic/2^52 doubles are compiler-pooled literals
@@ -837,7 +835,7 @@ void kpaSwimMove(void) {
     if (f31 != float_0_80420da0) {
         mario->directionView = ang;
     }
-    MW_F32(mario, 0x18C) = f31;
+    mario->field_0x18C = f31;
 }
 #pragma opt_common_subs reset
 #pragma dont_inline reset

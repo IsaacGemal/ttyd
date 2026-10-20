@@ -1789,7 +1789,7 @@ void marioMoveMain(void) {
 	if (wp->flags & MARIO_FLAG_PRE_BATTLE_PHYSICS) {
 		f31 = 0.0f;
 	}
-	*(f32*)wp->unk18C = f31;
+	wp->field_0x18C = f31;
 
 	if (wp->flags & MARIO_FLAG_USE_FORCE_DIRECTION) {
 		dirRes = wp->unk1A4;

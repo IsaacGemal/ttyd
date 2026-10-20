@@ -12,10 +12,8 @@
 // Prototypes not yet in headers (these functions are defined in driver/mobjdrv.c and driver/npcdrv.c,
 // but no included header declares them). See REPORT.md.
 
-// Raw-offset accessors for MarioWork fields that are still padding in mario/mario.h:
-//   0x260: EffectEntry* for the balloon effect.
-//   0x264: NpcEntry* the balloon is attached to.
-#define MW_U32(m, off) (*(u32*)((u8*)(m) + (off)))
+// MarioWork.field_0x260: EffectEntry* of the balloon effect. field_0x264: NpcEntry* the balloon is attached to.
+// Both are stored as u32.
 
 // opt_propagation off: keeps the 0 in r31 across the marioGetPtr call, as the original does,
 // instead of rematerialising it after the call.
@@ -25,7 +23,7 @@ void marioBaloonInit(void) {
     u32 zero = 0;
 
     mario = marioGetPtr();
-    MW_U32(mario, 0x260) = zero;
+    mario->field_0x260 = zero;
 }
 #pragma opt_propagation reset
 
@@ -34,7 +32,7 @@ void marioBalloonOn(s32 type) {
 
     if (!(mario->dispFlags & 0x02000000)) {
         mario->dispFlags |= 0x02000000;
-        MW_U32(mario, 0x260) = (u32)effMarioBalloonEntry(type, NULL);
+        mario->field_0x260 = (u32)effMarioBalloonEntry(type, NULL);
     }
 }
 
@@ -43,9 +41,9 @@ void marioBalloonOff(void) {
 
     if (mario->dispFlags & 0x02000000) {
         mario->dispFlags &= ~0x02000000;
-        effDelete((EffectEntry*)MW_U32(mario, 0x260));
-        MW_U32(mario, 0x260) = 0;
-        MW_U32(mario, 0x264) = 0;
+        effDelete((EffectEntry*)mario->field_0x260);
+        mario->field_0x260 = 0;
+        mario->field_0x264 = 0;
     }
 }
 
@@ -218,14 +216,14 @@ void marioBalloonMain(void) {
             balloonType = ((NpcEntry*)hit)->balloonType;
             ret = TRUE;
         }
-        if (MW_U32(mario, 0x264) != (u32)hit) {
+        if (mario->field_0x264 != (u32)hit) {
             MarioWork* m2 = marioGetPtr();
 
             if (m2->dispFlags & 0x02000000) {
                 m2->dispFlags &= ~0x02000000;
-                effDelete((EffectEntry*)MW_U32(m2, 0x260));
-                MW_U32(m2, 0x260) = 0;
-                MW_U32(m2, 0x264) = 0;
+                effDelete((EffectEntry*)m2->field_0x260);
+                m2->field_0x260 = 0;
+                m2->field_0x264 = 0;
             }
         }
     }
@@ -243,18 +241,18 @@ void marioBalloonMain(void) {
                 return;
             }
             m2->dispFlags |= 0x02000000;
-            MW_U32(m2, 0x260) = (u32)effMarioBalloonEntry(balloonType, (NpcEntry*)hit);
-            MW_U32(m2, 0x264) = (u32)hit;
+            m2->field_0x260 = (u32)effMarioBalloonEntry(balloonType, (NpcEntry*)hit);
+            m2->field_0x264 = (u32)hit;
             return;
         } else {
             MarioWork* m2 = marioGetPtr();
 
             if (!(m2->dispFlags & 0x02000000)) {
                 m2->dispFlags |= 0x02000000;
-                MW_U32(m2, 0x260) = (u32)effMarioBalloonEntry(balloonType, NULL);
+                m2->field_0x260 = (u32)effMarioBalloonEntry(balloonType, NULL);
             }
             if (hit != NULL) {
-                MW_U32(mario, 0x264) = (u32)hit;
+                mario->field_0x264 = (u32)hit;
             }
             return;
         }
@@ -263,9 +261,9 @@ void marioBalloonMain(void) {
 
         if (m2->dispFlags & 0x02000000) {
             m2->dispFlags &= ~0x02000000;
-            effDelete((EffectEntry*)MW_U32(m2, 0x260));
-            MW_U32(m2, 0x260) = 0;
-            MW_U32(m2, 0x264) = 0;
+            effDelete((EffectEntry*)m2->field_0x260);
+            m2->field_0x260 = 0;
+            m2->field_0x264 = 0;
         }
     }
 }
