@@ -529,7 +529,7 @@ static USER_FUNC(efffukidashichange_cam) {
     s32 name = evtGetValue(event, args[0]);
     s32 cam = evtGetValue(event, args[1]);
     EffectEntry* effect = effNameToPtr((char*)name);
-    ((effFukidashiData*)effect->userdata)->field_0x4C = cam;
+    ((effFukidashiData*)effect->userdata)->camId = cam;
     return EVT_RETURN_DONE;
 }
 
