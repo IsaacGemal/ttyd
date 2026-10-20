@@ -14,8 +14,8 @@ extern GXColor unk_80423260;
 // .sdata2 float constants (named after their original addresses).
 extern const f32 float_6p2832_8041fc84;
 extern const f32 float_360_8041fc88;
-extern const f32 float_0p03705_8041fc8c;
-extern const f32 float_0p4967_8041fc90;
+extern const f32 kCosX4;
+extern const f32 kCosX2;
 extern const f32 float_1_8041fc94;
 extern const f32 float_3p1416_8041fc98;
 extern const f32 float_1p5708_8041fc9c;
@@ -111,9 +111,9 @@ void* effSmallStarN64Entry(s32 type, s32 count, f32 x, f32 y, f32 z, f32 dirX, f
     Mtx mtx;
     f32 mag;
     f32 norm;
-    f32 px;
-    f32 py;
-    f32 pz;
+    f32 perpX;
+    f32 perpY;
+    f32 perpZ;
     s32 i;
 
     effect = effEntry();
@@ -131,34 +131,34 @@ void* effSmallStarN64Entry(s32 type, s32 count, f32 x, f32 y, f32 z, f32 dirX, f
     dirZ *= norm;
 
     if (dirX != float_0_8041fcac) {
-        px = -dirY / dirX;
-        py = float_1_8041fc94;
-        pz = float_0_8041fcac;
+        perpX = -dirY / dirX;
+        perpY = float_1_8041fc94;
+        perpZ = float_0_8041fcac;
     } else if (dirY != float_0_8041fcac) {
-        px = float_1_8041fc94;
-        py = -dirX / dirY;
-        pz = float_0_8041fcac;
+        perpX = float_1_8041fc94;
+        perpY = -dirX / dirY;
+        perpZ = float_0_8041fcac;
     } else {
-        px = float_1_8041fc94;
-        py = float_0_8041fcac;
-        pz = -dirX / dirZ;
+        perpX = float_1_8041fc94;
+        perpY = float_0_8041fcac;
+        perpZ = -dirX / dirZ;
     }
 
-    mag = px * px + py * py + pz * pz;
+    mag = perpX * perpX + perpY * perpY + perpZ * perpZ;
     if (mag == float_0_8041fcac) {
         return NULL;
     }
     norm = float_1_8041fc94 / sqrtf(mag);
-    px *= norm;
-    py *= norm;
-    pz *= norm;
+    perpX *= norm;
+    perpY *= norm;
+    perpZ *= norm;
 
     dirX *= float_8_8041fcc0;
     dirY *= float_8_8041fcc0;
     dirZ *= float_8_8041fcc0;
-    px *= float_8_8041fcc0;
-    py *= float_8_8041fcc0;
-    pz *= float_8_8041fcc0;
+    perpX *= float_8_8041fcc0;
+    perpY *= float_8_8041fcc0;
+    perpZ *= float_8_8041fcc0;
 
     effect->type = "SmallStarN64";
     effect->count = count;
@@ -167,7 +167,7 @@ void* effSmallStarN64Entry(s32 type, s32 count, f32 x, f32 y, f32 z, f32 dirX, f
     effect->callback = effSmallStarMain;
 
     for (i = 0; i < count; i++, data++) {
-        f32 angle = (float_6p2832_8041fc84 * camGetPtr(CAMERA_3D)->viewYaw) / float_360_8041fc88;
+        f32 yawRad = (float_6p2832_8041fc84 * camGetPtr(CAMERA_3D)->viewYaw) / float_360_8041fc88;
         data->type = type;
         data->x = x;
         data->y = y;
@@ -184,19 +184,19 @@ void* effSmallStarN64Entry(s32 type, s32 count, f32 x, f32 y, f32 z, f32 dirX, f
             temp.z = dirZ;
             axis = temp;
             PSMTXRotAxisRad(mtx, &axis, float_deg2rad_8041fc80 * (float_360_8041fc88 * (f32)i / (f32)(count - 1)));
-            data->velX = dirX + mtx[0][0] * px + mtx[0][1] * py + mtx[0][2] * pz;
-            data->velY = dirY + mtx[1][0] * px + mtx[1][1] * py + mtx[1][2] * pz;
-            data->velZ = dirZ + mtx[2][0] * px + mtx[2][1] * py + mtx[2][2] * pz;
+            data->velX = dirX + mtx[0][0] * perpX + mtx[0][1] * perpY + mtx[0][2] * perpZ;
+            data->velY = dirY + mtx[1][0] * perpX + mtx[1][1] * perpY + mtx[1][2] * perpZ;
+            data->velZ = dirZ + mtx[2][0] * perpX + mtx[2][1] * perpY + mtx[2][2] * perpZ;
             break;
         }
         case 3: {
             Vec temp = (Vec){ 0.0f, 0.0f, 0.0f };
-            f32 t;
-            temp.x = (f32)sin(angle);
-            temp.z = -(f32)cos(angle);
+            f32 spreadDeg;
+            temp.x = (f32)sin(yawRad);
+            temp.z = -(f32)cos(yawRad);
             axis = temp;
-            t = count == 1 ? float_0_8041fcac : (float_100_8041fcc4 * (f32)i / (f32)(count - 1)) - float_50_8041fcc8;
-            PSMTXRotAxisRad(mtx, &axis, float_deg2rad_8041fc80 * t);
+            spreadDeg = count == 1 ? float_0_8041fcac : (float_100_8041fcc4 * (f32)i / (f32)(count - 1)) - float_50_8041fcc8;
+            PSMTXRotAxisRad(mtx, &axis, float_deg2rad_8041fc80 * spreadDeg);
             data->velX = mtx[0][0] * dirX + mtx[0][1] * dirY + mtx[0][2] * dirZ;
             data->velY = mtx[1][0] * dirX + mtx[1][1] * dirY + mtx[1][2] * dirZ;
             data->velZ = mtx[2][0] * dirX + mtx[2][1] * dirY + mtx[2][2] * dirZ;
@@ -204,8 +204,8 @@ void* effSmallStarN64Entry(s32 type, s32 count, f32 x, f32 y, f32 z, f32 dirX, f
         }
         case 4: {
             Vec temp = (Vec){ 0.0f, 0.0f, 0.0f };
-            temp.x = (f32)sin(angle);
-            temp.z = -(f32)cos(angle);
+            temp.x = (f32)sin(yawRad);
+            temp.z = -(f32)cos(yawRad);
             axis = temp;
             PSMTXRotAxisRad(mtx, &axis, float_deg2rad_8041fc80 * (float_360_8041fc88 * (f32)i / (f32)(count - 1)));
             data->velX = mtx[0][0] * dirX + mtx[0][1] * dirY + mtx[0][2] * dirZ;
@@ -217,30 +217,30 @@ void* effSmallStarN64Entry(s32 type, s32 count, f32 x, f32 y, f32 z, f32 dirX, f
 
         switch (type) {
         case 0:
-            data->field_0x20 = float_0_8041fcac;
-            data->field_0x28 = 0x18;
+            data->spinSpeed = float_0_8041fcac;
+            data->life = 0x18;
             break;
         case 1:
-            data->field_0x20 = float_20_8041fccc;
-            data->field_0x28 = 0x18;
+            data->spinSpeed = float_20_8041fccc;
+            data->life = 0x18;
             break;
         case 2:
-            data->field_0x20 = float_20_8041fccc;
+            data->spinSpeed = float_20_8041fccc;
             data->velX *= float_0p5_8041fcd0;
             data->velY *= float_0p5_8041fcd0;
             data->velZ *= float_0p5_8041fcd0;
-            data->field_0x28 = 0x28;
+            data->life = 0x28;
             break;
         case 3:
         case 4:
-            data->field_0x20 = float_20_8041fccc;
-            data->field_0x28 = 0x18;
+            data->spinSpeed = float_20_8041fccc;
+            data->life = 0x18;
             break;
         }
 
-        data->field_0x1C = float_0_8041fcac;
-        data->field_0x2C = 0;
-        data->field_0x24 = 0xFF;
+        data->spinAngle = float_0_8041fcac;
+        data->frameCount = 0;
+        data->alpha = 0xFF;
     }
 
     kaiten = kaiten + float_15_8041fcd4;
@@ -264,10 +264,10 @@ void effSmallStarMain(EffectEntry* effect) {
     s32 life;
     s32 i;
     f32 angle;
-    f32 c2;
-    f32 c1;
+    f32 cosC0;
+    f32 cosC2;
     f32 wave;
-    f32 t;
+    f32 sq;
     f32 rad;
 
     data = effect->userdata;
@@ -277,69 +277,69 @@ void effSmallStarMain(EffectEntry* effect) {
     position.z = data->z;
     position2 = position;
 
-    data->field_0x28--;
-    data->field_0x2C++;
-    life = data->field_0x28;
+    data->life--;
+    data->frameCount++;
+    life = data->life;
     if (life < 0) {
         effDelete(effect);
         return;
     }
 
-    angle = (f32)(data->field_0x2C * 6) * float_6p2832_8041fc84;
+    angle = (f32)(data->frameCount * 6) * float_6p2832_8041fc84;
     for (i = 0; i < effect->count; i++, data++) {
         if (data->type == 2) {
-            wave = float_0p03705_8041fc8c;
-            c1 = float_0p4967_8041fc90;
-            c2 = float_1_8041fc94;
+            wave = kCosX4;
+            cosC2 = kCosX2;
+            cosC0 = float_1_8041fc94;
             rad = angle / float_360_8041fc88;
 
             if (rad <= float_3p1416_8041fc98) {
                 if (rad <= float_1p5708_8041fc9c) {
-                    t = rad * rad;
-                    wave = wave * t - c1;
-                    wave = wave * t + c2;
+                    sq = rad * rad;
+                    wave = wave * sq - cosC2;
+                    wave = wave * sq + cosC0;
                 } else {
 #ifdef MUST_MATCH
                     rad = float_1p5708_8041fc9c - (rad - float_1p5708_8041fc9c);
-                    t = rad * rad;
+                    sq = rad * rad;
 #else
-                    t = float_1p5708_8041fc9c - (rad - float_1p5708_8041fc9c);
-                    t = t * t;
+                    sq = float_1p5708_8041fc9c - (rad - float_1p5708_8041fc9c);
+                    sq = sq * sq;
 #endif
-                    wave = wave * t - c1;
-                    wave = wave * t + c2;
+                    wave = wave * sq - cosC2;
+                    wave = wave * sq + cosC0;
                     wave = -wave;
                 }
             } else {
                 if (rad < float_4p7124_8041fca0) {
 #ifdef MUST_MATCH
                     rad = rad - float_3p1416_8041fc98;
-                    t = rad * rad;
+                    sq = rad * rad;
 #else
-                    t = rad - float_3p1416_8041fc98;
-                    t = t * t;
+                    sq = rad - float_3p1416_8041fc98;
+                    sq = sq * sq;
 #endif
-                    wave = wave * t - c1;
-                    wave = wave * t + c2;
+                    wave = wave * sq - cosC2;
+                    wave = wave * sq + cosC0;
                     wave = -wave;
                 } else {
 #ifdef MUST_MATCH
                     rad = float_1p5708_8041fc9c - (rad - float_4p7124_8041fca0);
-                    t = rad * rad;
+                    sq = rad * rad;
 #else
-                    t = float_1p5708_8041fc9c - (rad - float_4p7124_8041fca0);
-                    t = t * t;
+                    sq = float_1p5708_8041fc9c - (rad - float_4p7124_8041fca0);
+                    sq = sq * sq;
 #endif
-                    wave = wave * t - c1;
-                    wave = wave * t + c2;
+                    wave = wave * sq - cosC2;
+                    wave = wave * sq + cosC0;
                 }
             }
             data->velY = float_4_8041fca4 * wave;
             data->velX *= float_0p94_8041fca8;
             data->velZ *= float_0p94_8041fca8;
             if (data->velY < float_0_8041fcac) {
-                data->field_0x20 *= float_0p8_8041fcb0;
-                data->field_0x24 = (s32)((f32)data->field_0x24 * float_0p6_8041fcb4);
+                data->spinSpeed *= float_0p8_8041fcb0;
+                data->alpha = (s32)((f32)data->alpha * float_0p6_8041fcb4);
             }
         } else {
             if (life > 5) {
@@ -349,11 +349,11 @@ void effSmallStarMain(EffectEntry* effect) {
             }
             if (life < 20 && life > 5) {
                 if (data->type == 0) {
-                    data->field_0x20 += float_1_8041fc94;
+                    data->spinSpeed += float_1_8041fc94;
                 }
             } else if (life < 5) {
-                data->field_0x20 *= float_0p8_8041fcb0;
-                data->field_0x24 = (s32)((f32)data->field_0x24 * float_0p6_8041fcb4);
+                data->spinSpeed *= float_0p8_8041fcb0;
+                data->alpha = (s32)((f32)data->alpha * float_0p6_8041fcb4);
                 data->velX *= float_0p7_8041fcb8;
                 data->velY *= float_0p7_8041fcb8;
                 data->velZ *= float_0p7_8041fcb8;
@@ -362,7 +362,7 @@ void effSmallStarMain(EffectEntry* effect) {
         data->x += data->velX;
         data->y += data->velY;
         data->z += data->velZ;
-        data->field_0x1C += data->field_0x20;
+        data->spinAngle += data->spinSpeed;
     }
 
     dispEntry(((effSmallStarN64Data*)effect->userdata)->camera, dispCalcZ(&position2), 2, effSmallStarDisp, effect);
@@ -371,13 +371,13 @@ void effSmallStarMain(EffectEntry* effect) {
 #pragma opt_lifetimes reset
 void effSmallStarDisp(CameraId camId, void* param) {
     EffectEntry* effect = param;
-    s32 idx1;
-    s32 idx2;
-    s32 idx3;
+    s32 rIdx;
+    s32 gIdx;
+    s32 bIdx;
     effSmallStarN64Data* data;
     s32 i;
     CameraEntry* cam;
-    s32 base;
+    s32 colorBase;
     GXTexObj texObj;
     Mtx mtx1;
     Mtx mtx2;
@@ -401,23 +401,23 @@ void effSmallStarDisp(CameraId camId, void* param) {
     GXSetCullMode(GX_CULL_NONE);
     effSetVtxDescN64((effVtxArray*)size16x16_tex32x32_vtx);
 
-    // The split multiply/modulo keeps base in r4; writing it as one expression moves it to r3.
-    base = (data->field_0x2C - 1) * 3;
-    base %= 36;
-    idx1 = base;
-    idx2 = base + 1;
-    idx3 = base + 2;
+    // The split multiply/modulo keeps colorBase in r4; writing it as one expression moves it to r3.
+    colorBase = (data->frameCount - 1) * 3;
+    colorBase %= 36;
+    rIdx = colorBase;
+    gIdx = colorBase + 1;
+    bIdx = colorBase + 2;
     for (i = 0; i < effect->count; i++, data++) {
         color = unk_80423260;
-        color.r = color_rotation_data[idx1 % 36];
-        color.g = color_rotation_data[idx2 % 36];
-        color.b = color_rotation_data[idx3 % 36];
-        color.a = data->field_0x24;
+        color.r = color_rotation_data[rIdx % 36];
+        color.g = color_rotation_data[gIdx % 36];
+        color.b = color_rotation_data[bIdx % 36];
+        color.a = data->alpha;
         GXSetTevColor(GX_TEVREG0, color);
 
         PSMTXTrans(mtx1, data->x, data->y, data->z);
         PSMTXRotRad(mtx2, 'y', -camGetPtr(CAMERA_3D)->viewYaw * float_deg2rad_8041fc80);
-        PSMTXRotRad(mtx3, 'z', float_deg2rad_8041fc80 * data->field_0x1C);
+        PSMTXRotRad(mtx3, 'z', float_deg2rad_8041fc80 * data->spinAngle);
         PSMTXConcat(mtx1, mtx2, mtx1);
         PSMTXConcat(mtx1, mtx3, mtx1);
         PSMTXConcat(cam->view, mtx1, mtx1);
@@ -426,9 +426,9 @@ void effSmallStarDisp(CameraId camId, void* param) {
         GXBegin(GX_TRIANGLES, GX_VTXFMT0, 6);
         tri2(0, 1, 2, 0, 0, 2, 3, 0);
 
-        idx1 += 3;
-        idx2 += 3;
-        idx3 += 3;
+        rIdx += 3;
+        gIdx += 3;
+        bIdx += 3;
     }
 }
 void effSmallStarN64CamChg(EffectEntry* effect, s32 camId) {
@@ -446,8 +446,8 @@ void effSmallStarN64CamChg(EffectEntry* effect, s32 camId) {
 const f32 float_deg2rad_8041fc80 = 0.017453292f;
 const f32 float_6p2832_8041fc84 = 6.2831855f;
 const f32 float_360_8041fc88 = 360.0f;
-const f32 float_0p03705_8041fc8c = 0.03705f;
-const f32 float_0p4967_8041fc90 = 0.4967f;
+const f32 kCosX4 = 0.03705f;
+const f32 kCosX2 = 0.4967f;
 const f32 float_1_8041fc94 = 1.0f;
 const f32 float_3p1416_8041fc98 = 3.1415927f;
 const f32 float_1p5708_8041fc9c = 1.5707964f;

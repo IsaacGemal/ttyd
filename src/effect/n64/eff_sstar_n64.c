@@ -211,12 +211,12 @@ EffectEntry* effSstarN64Entry(s32 type, f32 x, f32 y, f32 z, f32 targetX, f32 ta
     effect->userdata = data;
     effect->callback = effSstarMain;
 
-    data->field_0x0 = 1;
+    data->canBounce = 1;
     data->position.x = x;
     data->position.y = y;
     data->position.z = z;
-    data->field_0x1C = float_0_8041fd8c;
-    data->field_0x24 = float_0_8041fd8c;
+    data->bounceCount = float_0_8041fd8c;
+    data->rollAngle = float_0_8041fd8c;
     data->field_0x28 = float_0_8041fd8c;
     data->type = type;
 
@@ -256,20 +256,20 @@ EffectEntry* effSstarN64Entry(s32 type, f32 x, f32 y, f32 z, f32 targetX, f32 ta
     }
     if (negCos * data->velX + negSin * data->velZ < float_0_8041fd8c) {
         horizSpeed = -horizSpeed;
-        data->field_0x2C = float_neg20_8041fdd4;
+        data->rollSpeed = float_neg20_8041fdd4;
     } else {
-        data->field_0x2C = float_20_8041fdd8;
+        data->rollSpeed = float_20_8041fdd8;
     }
     negCos = -horizSpeed;
     angle = angleABf(float_0_8041fd8c, float_0_8041fd8c, -data->velY, negCos);
-    data->field_0x24 = angle;
+    data->rollAngle = angle;
     data->angle = angle;
-    data->field_0x34 = negCos;
+    data->horizVel = negCos;
     data->lifetime = (s32)(dist / speed);
     for (i = 0; i < 8; i++) {
         PSMTXTrans(data->mtx[i], data->position.x, data->position.y, data->position.z);
     }
-    data->field_0x3C = -1;
+    data->histIndex = -1;
     return effect;
 }
 #pragma opt_common_subs reset
@@ -300,26 +300,26 @@ void effSstarMain(EffectEntry* effect) {
         prevY = data->position.y - float_32_8041fd9c * (data->velY * distance);
         prevZ = data->position.z - float_32_8041fd9c * (data->velZ * distance);
         distance = lbl_8041FDA0;
-        if (data->field_0x0 != 0 && data->velY < float_0_8041fd8c) {
+        if (data->canBounce != 0 && data->velY < float_0_8041fd8c) {
             if (hitCheckFilter(NULL, prevX, prevY, prevZ, float_0_8041fd8c, float_neg1_8041fda4, float_0_8041fd8c, &hitX,
                     &hitX, &hitZ, &distance, &hitNX, &hitNY, &hitNZ) != NULL) {
                 if (distance < float_42_8041fda8) {
                     data->velY = float_0p6_8041fdac * -data->velY;
                     data->velX *= float_0p7_8041fdb0;
-                    data->field_0x34 *= float_0p7_8041fdb0;
-                    data->field_0x2C *= float_0p7_8041fdb0;
-                    data->field_0x1C += float_1_8041fd94;
-                    data->field_0x0 = 0;
-                    if (data->field_0x1C >= float_10_8041fdb4) {
+                    data->horizVel *= float_0p7_8041fdb0;
+                    data->rollSpeed *= float_0p7_8041fdb0;
+                    data->bounceCount += float_1_8041fd94;
+                    data->canBounce = 0;
+                    if (data->bounceCount >= float_10_8041fdb4) {
                         data->lifetime = -1;
                     }
                 }
             }
         }
-        if (data->field_0x1C != float_0_8041fd8c) {
+        if (data->bounceCount != float_0_8041fd8c) {
             data->velY += float_neg0p5_8041fdb8;
-            data->field_0x24 += data->field_0x2C;
-            data->angle = angleABf(float_0_8041fd8c, float_0_8041fd8c, -data->velY, data->field_0x34);
+            data->rollAngle += data->rollSpeed;
+            data->angle = angleABf(float_0_8041fd8c, float_0_8041fd8c, -data->velY, data->horizVel);
         }
     }
     if (gp->inBattle == 0) {
@@ -374,7 +374,7 @@ void effSstarDisp(CameraId camId, void* param) {
     PSMTXConcat(mtx1, mtx2, mtx3);
     PSMTXScale(mtx4, scale, scale, scale);
     PSMTXConcat(mtx3, mtx4, mtx3);
-    PSMTXRotRad(mtx2, 'z', float_deg2rad_8041fd84 * data->field_0x24);
+    PSMTXRotRad(mtx2, 'z', float_deg2rad_8041fd84 * data->rollAngle);
     PSMTXConcat(mtx3, mtx2, mtx3);
 
     GXSetCullMode(GX_CULL_NONE);
@@ -449,19 +449,19 @@ void effSstarDisp(CameraId camId, void* param) {
         effGetTexObjN64(0xA, &tex);
         GXLoadTexObj(&tex, 0);
     }
-    data->field_0x3C++;
-    if (data->field_0x3C >= 8) {
-        data->field_0x3C = 0;
+    data->histIndex++;
+    if (data->histIndex >= 8) {
+        data->histIndex = 0;
     }
-    if (data->field_0x1C <= float_1_8041fd94) {
-        idx = data->field_0x3C + 5;
+    if (data->bounceCount <= float_1_8041fd94) {
+        idx = data->histIndex + 5;
         PSMTXTrans(mtx1, data->position.x, data->position.y, data->position.z);
         PSMTXRotRad(mtx2, 'y', -camGetPtr(camId)->viewYaw * float_deg2rad_8041fd84);
         PSMTXConcat(mtx1, mtx2, mtx1);
         PSMTXScale(mtx4, scale, scale, scale);
         PSMTXConcat(mtx1, mtx4, mtx1);
         PSMTXRotRad(mtx2, 'z', float_deg2rad_8041fd84 * data->angle);
-        PSMTXConcat(mtx1, mtx2, data->mtx[data->field_0x3C]);
+        PSMTXConcat(mtx1, mtx2, data->mtx[data->histIndex]);
 
         for (i = 0; i < 5; i++) {
             sstarSetVtx(&data->vtx[i * 2], data->mtx[(idx - i + 8) % 8],
