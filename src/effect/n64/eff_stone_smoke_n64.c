@@ -63,6 +63,7 @@ extern const f32 float_0p6_8041ff58;
 extern const f32 float_0p01_8041ff5c;
 
 // .sdata
+// Keyframe scale factors (in hundredths) for the first seven frames and the seven after.
 static u8 scale_data[8] = { 0x00, 0x1E, 0x50, 0x78, 0x70, 0x68, 0x64, 0x00 };
 static u8 scale_data2[8] = { 0x5E, 0x5C, 0x64, 0x69, 0x6B, 0x69, 0x64, 0x00 };
 
@@ -92,7 +93,7 @@ void effStoneSmokeMain(EffectEntry* effect) {
 	if (data->life < 1000) {
 		data->life--;
 	}
-	data->field_0x14++;
+	data->field_0x14++; // elapsed-frame counter, indexes the scale keyframes below
 
 	if (data->life < 0) {
 		effDelete(effect);

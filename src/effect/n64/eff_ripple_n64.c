@@ -90,7 +90,7 @@ EffectEntry* effRippleN64Entry(s32 type, f32 x, f32 y, f32 z, f32 scale) {
 #pragma optimization_level 2 // only this function needs the level-2 allocation; see above
 void effRippleMain(EffectEntry* effect) {
 	EffRippleData* data = effect->userdata;
-	Vec position2;
+	Vec dispPos;
 	Vec position;
 	s32 timer;
 	s32 type;
@@ -99,7 +99,7 @@ void effRippleMain(EffectEntry* effect) {
 	position.x = data->x;
 	position.y = data->y;
 	position.z = data->z;
-	position2 = position;
+	dispPos = position;
 
 	timer = data->field_0x1C;
 	type = data->type;
@@ -118,17 +118,17 @@ void effRippleMain(EffectEntry* effect) {
 #ifdef MUST_MATCH
 		/* MUST_MATCH: the original loads the new effect's userdata into r3 before reading
 		   data->rz, so rz lands in f1; the natural one-liner reads userdata first and reuses f0. */
-		EffectEntry* e = effRippleN64Entry(type * 10, data->x, data->y, data->z, float_0_8041fba0);
+		EffectEntry* subEffect = effRippleN64Entry(type * 10, data->x, data->y, data->z, float_0_8041fba0);
 		f32 rz = data->rz;
-		EffRippleData* newData = e->userdata;
+		EffRippleData* subData = subEffect->userdata;
 		f32 rx = data->rx;
-		newData->rx = rx;
-		newData->rz = rz;
+		subData->rx = rx;
+		subData->rz = rz;
 #else
-		EffRippleData* newData =
+		EffRippleData* subData =
 			effRippleN64Entry(type * 10, data->x, data->y, data->z, float_0_8041fba0)->userdata;
-		newData->rx = data->rx;
-		newData->rz = data->rz;
+		subData->rx = data->rx;
+		subData->rz = data->rz;
 #endif
 	}
 
@@ -149,7 +149,7 @@ void effRippleMain(EffectEntry* effect) {
 	}
 
 	data->field_0x10 += float_0p1_8041fbb8;
-	dispEntry(data->camId, dispCalcZ(&position2), 2, effRippleDisp, effect);
+	dispEntry(data->camId, dispCalcZ(&dispPos), 2, effRippleDisp, effect);
 }
 #pragma pop
 
@@ -170,7 +170,7 @@ void effRippleDisp(CameraId camId, void* param) {
 	Mtx scaleMtx;
 	Mtx rotXMtx;
 	s32 type;
-	s32 field24;
+	s32 texScroll;
 
 	cam = camGetPtr(camId);
 	data = effect->userdata;
@@ -205,9 +205,9 @@ void effRippleDisp(CameraId camId, void* param) {
 		effRippleSetColor(dat_8041fb98, data->field_0x18);
 	}
 
-	field24 = data->field_0x24;
+	texScroll = data->field_0x24;
 	PSMTXScale(scaleMtx, float_0p03125_8041fba4, float_0p03125_8041fba4, float_0_8041fba0);
-	PSMTXTrans(transMtx, float_0_8041fba0, (f32)field24, float_0_8041fba0);
+	PSMTXTrans(transMtx, float_0_8041fba0, (f32)texScroll, float_0_8041fba0);
 	PSMTXConcat(scaleMtx, transMtx, transMtx);
 	GXLoadTexMtxImm(transMtx, 0x21, 1);
 

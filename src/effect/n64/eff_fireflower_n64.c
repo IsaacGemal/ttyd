@@ -130,7 +130,7 @@ EffectEntry* effFireFlowerN64Entry(s32 type, s32 duration, f32 x, f32 y, f32 z) 
 // call's arguments in the order r3, f1, f2, r4, f3, r5.  The shared header keeps the semantically
 // ordered prototype, so the call is made through the reordered signature (same registers); without
 // it the compiler hoists `li r4, 7` above the mode test.  Same shape as evt_sub_spline_get_value.
-// (2) case 6: naming the 0.9f constant (`k`) keeps field_0x28 + 18.0f in f2, double_to_int in f3
+// (2) case 6: naming the 0.9f constant (`fadeScale`) keeps field_0x28 + 18.0f in f2, double_to_int in f3
 // and 0.9f in f1, matching retail.
 void effFireFlowerMain(EffectEntry* effect) {
 	effFireFlowerData* data = effect->userdata;
@@ -143,9 +143,9 @@ void effFireFlowerMain(EffectEntry* effect) {
 	s32 i;
 	s32 timer;
 	s32 state;
-	f32 fx;
+	f32 spawnX;
 #ifdef MUST_MATCH
-	f32 k;
+	f32 fadeScale;
 #endif
 
 	disp.x = data->x;
@@ -167,17 +167,17 @@ void effFireFlowerMain(EffectEntry* effect) {
 	switch (state) {
 	case 0:
 		if (data->mode == 0) {
-			fx = data->x - 10.0f;
+			spawnX = data->x - 10.0f;
 		} else {
-			fx = 10.0f + data->x;
+			spawnX = 10.0f + data->x;
 		}
 #ifdef MUST_MATCH
 		/* MUST_MATCH: the original's prototype had count declared between y and z, so the
 		   argument loads come out r3, f1, f2, r4, f3, r5.  The shared header keeps the
 		   semantically ordered prototype, so reorder only here (registers are identical). */
-		((EffectEntry* (*)(s32, f32, f32, s32, f32, s32))effRotHammerSuccessN64Entry)(0, fx, data->y, 7, data->z, 0x14);
+		((EffectEntry* (*)(s32, f32, f32, s32, f32, s32))effRotHammerSuccessN64Entry)(0, spawnX, data->y, 7, data->z, 0x14);
 #else
-		effRotHammerSuccessN64Entry(0, 7, fx, data->y, data->z, 0x14);
+		effRotHammerSuccessN64Entry(0, 7, spawnX, data->y, data->z, 0x14);
 #endif
 		data->field_0x34 = 0;
 		data->field_0x38 = 0;
@@ -236,9 +236,9 @@ void effFireFlowerMain(EffectEntry* effect) {
 	case 6:
 		data->field_0x34 = 0;
 #ifdef MUST_MATCH
-		k = 0.9f;
+		fadeScale = 0.9f;
 		data->field_0x28 += 18.0f;
-		data->field_0x3C = (s32)((f32)data->field_0x3C * k);
+		data->field_0x3C = (s32)((f32)data->field_0x3C * fadeScale);
 #else
 		data->field_0x28 += 18.0f;
 		data->field_0x3C = (s32)((f32)data->field_0x3C * 0.9f);
@@ -292,10 +292,10 @@ void effFireFlowerDisp(CameraId camId, void* param) {
 	Mtx m2;
 	s32 state;
 	s32 i;
-	s32 field34;
-	f32 scaleVal;
-	f32 field28;
-	f32 field2C;
+	s32 texFrame;
+	f32 spriteScale;
+	f32 angle;
+	f32 offsetX;
 #ifdef MUST_MATCH
 	u8* vtx = lbl_8039CA10;
 #endif
@@ -303,11 +303,11 @@ void effFireFlowerDisp(CameraId camId, void* param) {
 	cam = camGetPtr(camId);
 	data = effect->userdata;
 	// Cache the fields the original keeps in callee-saved registers across the calls below.
-	field34 = data->field_0x34;
-	scaleVal = data->scale;
+	texFrame = data->field_0x34;
+	spriteScale = data->scale;
 	state = data->state;
-	field28 = data->field_0x28;
-	field2C = data->field_0x2C;
+	angle = data->field_0x28;
+	offsetX = data->field_0x2C;
 
 	PSMTXTrans(trans, data->x, data->y, data->z);
 	PSMTXRotRad(rot, 'y', -camGetPtr(CAMERA_3D)->viewYaw * 0.017453292f);
@@ -390,16 +390,16 @@ void effFireFlowerDisp(CameraId camId, void* param) {
 	GXSetTexCoordGen2(0, 1, 4, 0x1e, 0, 0x7d);
 	GXSetTexCoordGen2(1, 1, 4, 0x21, 0, 0x7d);
 	PSMTXScale(scale, 0.03125f, 0.0078125f, 0.0f);
-	PSMTXTrans(trans, 0.0f, (f32)(3 - field34) * 32.0f, 0.0f);
+	PSMTXTrans(trans, 0.0f, (f32)(3 - texFrame) * 32.0f, 0.0f);
 	PSMTXConcat(scale, trans, trans);
 	GXLoadTexMtxImm(trans, 0x1e, 1);
-	PSMTXTrans(trans, 0.0f, (f32)(2 - field34) * 32.0f, 0.0f);
+	PSMTXTrans(trans, 0.0f, (f32)(2 - texFrame) * 32.0f, 0.0f);
 	PSMTXConcat(scale, trans, trans);
 	GXLoadTexMtxImm(trans, 0x21, 1);
-	PSMTXTrans(trans, field2C, 0.0f, 0.0f);
-	PSMTXScale(scale, scaleVal, scaleVal, scaleVal);
+	PSMTXTrans(trans, offsetX, 0.0f, 0.0f);
+	PSMTXScale(scale, spriteScale, spriteScale, spriteScale);
 	PSMTXConcat(trans, scale, trans);
-	PSMTXRotRad(rot, 'y', 0.017453292f * field28);
+	PSMTXRotRad(rot, 'y', 0.017453292f * angle);
 	PSMTXConcat(trans, rot, trans);
 	PSMTXConcat(m, trans, trans);
 	PSMTXConcat(cam->view, trans, trans);

@@ -153,7 +153,7 @@ void effAkariSflushDisp(CameraId camId, void* param) {
 	Mtx viewMtx;
 	Mtx outerMtx;
 	Mtx workMtx;
-	s32 field14;
+	s32 age;
 	s32 i;
 	s32 alpha;
 	s32 j;
@@ -166,7 +166,7 @@ void effAkariSflushDisp(CameraId camId, void* param) {
 
 	cam = camGetPtr(camId);
 	data = effect->userdata;
-	field14 = data->field_0x14;
+	age = data->field_0x14;
 	alpha = data->field_0x24;
 	PSMTXTrans(mtx, data->x, data->y, data->z);
 	PSMTXRotRad(rotMtx, 'y', -camGetPtr(CAMERA_3D)->viewYaw * float_deg2rad_8041e904);
@@ -208,7 +208,7 @@ void effAkariSflushDisp(CameraId camId, void* param) {
 
 	for (i = 0; i < data->field_0x30 + 1; i++) {
 		scaleVal = float_0p1_8041e910 * (f32)cos(float_6p2832_8041e908 *
-		                                        (f32)(field14 * 8 + i * 180 / (data->field_0x30 + 1)) /
+		                                        (f32)(age * 8 + i * 180 / (data->field_0x30 + 1)) /
 		                                        float_360_8041e90c) +
 		           (f32)(i + 1);
 		scaleVal *= data->field_0x2C;

@@ -48,18 +48,18 @@ extern const f32 float_0p5_8041f1d0;
 // .data vertex arrays passed to effSetVtxDescN64.
 
 typedef struct effIceData {
-    s32 type;       // 0x00
-    f32 x;          // 0x04
-    f32 y;          // 0x08
-    f32 z;          // 0x0C
-    f32 field_0x10; // 0x10
-    f32 field_0x14; // 0x14
-    f32 field_0x18; // 0x18
-    f32 field_0x1C; // 0x1C
-    f32 field_0x20; // 0x20
-    s32 field_0x24; // 0x24
-    s32 field_0x28; // 0x28
-    s32 field_0x2C; // 0x2C
+    s32 type;    // 0x00
+    f32 x;       // 0x04
+    f32 y;       // 0x08
+    f32 z;       // 0x0C
+    f32 velX;    // 0x10
+    f32 velY;    // 0x14
+    f32 rotZ;    // 0x18
+    f32 spin;    // 0x1C
+    f32 rotY;    // 0x20
+    s32 alpha;   // 0x24
+    s32 life;    // 0x28
+    s32 age;     // 0x2C
 } effIceData;
 
 static void effIceMain(EffectEntry* effect);
@@ -80,19 +80,19 @@ EffectEntry* effIceN64Entry(s32 type, f32 x, f32 y, f32 z) {
     data->x = x;
     data->y = y;
     data->z = z;
-    data->field_0x28 = 30;
-    data->field_0x2C = 0;
-    data->field_0x24 = 0;
+    data->life = 30;
+    data->age = 0;
+    data->alpha = 0;
     ptr = data + 1;
     for (i = 1; i < 9; i++, ptr++) {
         ptr->x = (f32)(rand() % 10 - 5);
         ptr->y = (f32)(rand() % 10 + 5);
         ptr->z = float_10_8041f1cc;
-        ptr->field_0x18 = (f32)(rand() % 360);
-        ptr->field_0x20 = (f32)(rand() % 360);
-        ptr->field_0x1C = (f32)(rand() % 100 / 10);
-        ptr->field_0x10 = float_0_8041f1a4;
-        ptr->field_0x14 = float_2_8041f1b8;
+        ptr->rotZ = (f32)(rand() % 360);
+        ptr->rotY = (f32)(rand() % 360);
+        ptr->spin = (f32)(rand() % 100 / 10);
+        ptr->velX = float_0_8041f1a4;
+        ptr->velY = float_2_8041f1b8;
     }
     return effect;
 }
@@ -103,12 +103,12 @@ static void effIceMain(EffectEntry* effect) {
     effIceData* data = effect->userdata;
     Vec position2;
     Vec position;
-    s32 counter;
-    s32 life;
+    s32 age;
+    s32 lifeLeft;
     s32 idx;
     s32 i;
-    f32 s;
-    f32 t;
+    f32 sway;
+    f32 swayAccel;
 
     position = vec3_802fa820;
     position.x = data->x;
@@ -116,35 +116,35 @@ static void effIceMain(EffectEntry* effect) {
     position.z = data->z;
     position2 = position;
 
-    data->field_0x28--;
-    data->field_0x2C++;
-    if (data->field_0x28 < 0) {
+    data->life--;
+    data->age++;
+    if (data->life < 0) {
         effDelete(effect);
         return;
     }
-    counter = data->field_0x2C;
-    life = data->field_0x28;
-    if (counter < 10) {
-        data->field_0x24 = (s32)(float_0p3_8041f1ac * (f32)(0xFF - data->field_0x24) + (f32)data->field_0x24);
+    age = data->age;
+    lifeLeft = data->life;
+    if (age < 10) {
+        data->alpha = (s32)(float_0p3_8041f1ac * (f32)(0xFF - data->alpha) + (f32)data->alpha);
     }
-    if (life < 10) {
-        data->field_0x24 = (s32)((f32)data->field_0x24 * float_0p8_8041f1b0);
+    if (lifeLeft < 10) {
+        data->alpha = (s32)((f32)data->alpha * float_0p8_8041f1b0);
     }
-    idx = life + 20;
+    idx = lifeLeft + 20;
     i = 1;
     data++;
     for (; i < effect->count; idx += 20, i++, data++) {
-        s = (f32)sin(float_6p2832_8041f1b4 * (float_2_8041f1b8 * data->field_0x18) / float_360_8041f1bc);
-        data->field_0x14 += float_neg0p05_8041f1c0;
-        t = float_0p2_8041f1c4 * s;
-        data->field_0x10 += t;
-        data->field_0x14 += float_neg0p05_8041f1c0;
-        data->field_0x10 *= float_0p92_8041f1c8;
-        data->field_0x1C += (f32)(s32)(effTblRandN64(50, idx) - 25);
-        data->field_0x18 += float_10_8041f1cc * (f32)sin(float_6p2832_8041f1b4 * data->field_0x1C / float_360_8041f1bc);
-        data->field_0x20 += float_10_8041f1cc * (f32)cos(float_6p2832_8041f1b4 * (data->field_0x1C * float_0p5_8041f1d0) / float_360_8041f1bc);
-        data->x += data->field_0x10;
-        data->y += data->field_0x14;
+        sway = (f32)sin(float_6p2832_8041f1b4 * (float_2_8041f1b8 * data->rotZ) / float_360_8041f1bc);
+        data->velY += float_neg0p05_8041f1c0;
+        swayAccel = float_0p2_8041f1c4 * sway;
+        data->velX += swayAccel;
+        data->velY += float_neg0p05_8041f1c0;
+        data->velX *= float_0p92_8041f1c8;
+        data->spin += (f32)(s32)(effTblRandN64(50, idx) - 25);
+        data->rotZ += float_10_8041f1cc * (f32)sin(float_6p2832_8041f1b4 * data->spin / float_360_8041f1bc);
+        data->rotY += float_10_8041f1cc * (f32)cos(float_6p2832_8041f1b4 * (data->spin * float_0p5_8041f1d0) / float_360_8041f1bc);
+        data->x += data->velX;
+        data->y += data->velY;
     }
     dispEntry(4, dispCalcZ(&position2), 2, effIceDisp, effect);
 }
@@ -184,7 +184,7 @@ static void effIceDisp(CameraId camId, void* param) {
     PSMTXConcat(mPos, mRot, mBase);
     PSMTXConcat(cam->view, mBase, mBase);
 
-    iceSetColor(data->field_0x24);
+    iceSetColor(data->alpha);
 
     for (i = 1, data++; i < effect->count; i++, data++) {
         if (i & 1) {
@@ -206,9 +206,9 @@ static void effIceDisp(CameraId camId, void* param) {
             PSMTXTrans(mPos, data->x, data->y, data->z);
         } else {
             PSMTXTrans(mPos, data->x, data->y, data->z);
-            PSMTXRotRad(mRot, 'z', float_deg2rad_8041f19c * data->field_0x18);
+            PSMTXRotRad(mRot, 'z', float_deg2rad_8041f19c * data->rotZ);
             PSMTXConcat(mPos, mRot, mPos);
-            PSMTXRotRad(mRot, 'y', float_deg2rad_8041f19c * data->field_0x20);
+            PSMTXRotRad(mRot, 'y', float_deg2rad_8041f19c * data->rotY);
             PSMTXConcat(mPos, mRot, mPos);
         }
 

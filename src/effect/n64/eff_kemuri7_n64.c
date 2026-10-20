@@ -36,34 +36,34 @@ extern const f32 float_5_8041f418;
 
 // Build the TEV register colour as the original does; the inline keeps the GXColor
 // local at r1+0x8 with its outgoing copy at r1+0xc.
-static inline void kemuri7SetColor(u8 a) {
+static inline void kemuri7SetColor(u8 alpha) {
     GXColor color = *(GXColor*)&dat_8041f3e8;
-    color.a = a;
+    color.a = alpha;
     GXSetTevColor(1, color);
 }
 
 typedef struct effKemuri7Data {
-    s32 field_0x0;               // 0x0
+    s32 active;                  // 0x0: cleared once the puff expires
     u8 pad_4[2];                 // 0x4
-    s16 field_0x6;               // 0x6
-    u8 field_0x8;                // 0x8
+    s16 lifetime;                // 0x6: frames left
+    u8 alpha;                    // 0x8: TEV register colour alpha
     u8 pad_9[3];                 // 0x9
     Vec position;                // 0xC
-    f32 field_0x18;              // 0x18
-    f32 field_0x1C;              // 0x1C
-    f32 field_0x20;              // 0x20
-    f32 field_0x24;              // 0x24
-    f32 field_0x28;              // 0x28
-    f32 field_0x2C;              // 0x2C
-    Mtx field_0x30;              // 0x30
-    f32 field_0x60;              // 0x60
+    f32 scaleX;                  // 0x18: initialised to 1
+    f32 scaleY;                  // 0x1C: initialised to 1
+    f32 scaleZ;                  // 0x20: initialised to 1
+    f32 rotX;                    // 0x24: initialised to 0
+    f32 rotY;                    // 0x28: yaw in degrees
+    f32 rotZ;                    // 0x2C: initialised to 0
+    Mtx matrix;                  // 0x30: world matrix built each frame
+    f32 direction;               // 0x60: 0 mirrors the quad on X
     u8 pad_64[0x6C - 0x64];      // 0x64
     f32 field_0x6C;              // 0x6C
     f32 field_0x70;              // 0x70
     f32 field_0x74;              // 0x74
     u8 pad_78[0x80 - 0x78];      // 0x78
-    f32 field_0x80;              // 0x80
-    f32 field_0x84;              // 0x84
+    f32 sinAngle;                // 0x80: sine of the spawn yaw
+    f32 cosAngle;                // 0x84: cosine of the spawn yaw
 } effKemuri7Data;
 
 // Local copy of system.c's inline helper so it inlines here as in the original.
@@ -75,14 +75,14 @@ inline Vec initializeVec(Vec* input) {
     return temp;
 }
 
-EffectEntry* effKemuri7N64Entry(f32 x, f32 y, f32 z, f32 angle, f32 scale) {
+EffectEntry* effKemuri7N64Entry(f32 x, f32 y, f32 z, f32 angleDeg, f32 direction) {
     EffectEntry* effect;
     effKemuri7Data* data;
-    f32 field28;
-    f32 a;
-    f32 b;
-    f32 r;
-    f32 r2;
+    f32 yaw;
+    f32 baseAngle;
+    f32 sideAngle;
+    f32 baseRad;
+    f32 offsetRad;
     s32 i;
 
     effect = effEntry();
@@ -93,34 +93,36 @@ EffectEntry* effKemuri7N64Entry(f32 x, f32 y, f32 z, f32 angle, f32 scale) {
     effect->callback = effKemuri7Main;
 
     for (i = 0; i < 1; i++) {
-        field28 = float_30_8041f400 * scale + angle - float_15_8041f404;
-        data->field_0x0 = 1;
+        yaw = float_30_8041f400 * direction + angleDeg - float_15_8041f404;
+        data->active = 1;
         data->field_0x6C = float_0_8041f3f0;
         data->position.x = x;
         data->position.y = y;
         data->position.z = z;
-        data->field_0x18 = float_1_8041f3f8;
-        data->field_0x1C = float_1_8041f3f8;
-        data->field_0x20 = float_1_8041f3f8;
-        data->field_0x8 = 0xFF;
-        data->field_0x60 = scale;
+        data->scaleX = float_1_8041f3f8;
+        data->scaleY = float_1_8041f3f8;
+        data->scaleZ = float_1_8041f3f8;
+        data->alpha = 0xFF;
+        data->direction = direction;
         data->field_0x70 = float_0_8041f3f0;
         data->field_0x74 = float_0_8041f3f0;
-        data->field_0x6 = 0xFF;
-        data->field_0x24 = float_0_8041f3f0;
-        data->field_0x28 = field28;
-        data->field_0x2C = float_0_8041f3f0;
+        data->lifetime = 0xFF;
+        data->rotX = float_0_8041f3f0;
+        data->rotY = yaw;
+        data->rotZ = float_0_8041f3f0;
 
-        b = float_180_8041f408 * scale;
-        a = reviseAngle(angle);
-        r = float_6p2832_8041f40c * a / float_360_8041f410;
-        data->field_0x80 = (f32)sin(r);
-        data->field_0x84 = (f32)cos(r);
+        sideAngle = float_180_8041f408 * direction;
+        baseAngle = reviseAngle(angleDeg);
+        baseRad = float_6p2832_8041f40c * baseAngle / float_360_8041f410;
+        data->sinAngle = (f32)sin(baseRad);
+        data->cosAngle = (f32)cos(baseRad);
 
-        r2 = float_6p2832_8041f40c * (float_45_8041f414 + a - b) / float_360_8041f410;
-        data->position.x += float_5_8041f418 * (f32)sin(r2);
-        data->position.z += float_5_8041f418 * (f32)cos(r2);
-        data->field_0x8 = 0xFF;
+        // Spawn 5 units out at 45 degrees to the facing direction, moved to the
+        // opposite side when direction is set.
+        offsetRad = float_6p2832_8041f40c * (float_45_8041f414 + baseAngle - sideAngle) / float_360_8041f410;
+        data->position.x += float_5_8041f418 * (f32)sin(offsetRad);
+        data->position.z += float_5_8041f418 * (f32)cos(offsetRad);
+        data->alpha = 0xFF;
     }
     return effect;
 }
@@ -137,18 +139,18 @@ void effKemuri7Main(EffectEntry* effect) {
     active = 0;
 
     for (i = 0; i < effect->count; i++, data++) {
-        if (data->field_0x0 == 0) {
+        if (data->active == 0) {
             continue;
         }
-        if (--data->field_0x6 <= 0) {
-            data->field_0x0 = 0;
+        if (--data->lifetime <= 0) {
+            data->active = 0;
             continue;
         }
         active = 1;
         PSMTXTrans(m0, data->position.x, data->position.y, data->position.z);
-        PSMTXRotRad(m1, 'y', float_deg2rad_8041f3fc * data->field_0x28);
-        PSMTXConcat(m0, m1, data->field_0x30);
-        data->field_0x8--;
+        PSMTXRotRad(m1, 'y', float_deg2rad_8041f3fc * data->rotY);
+        PSMTXConcat(m0, m1, data->matrix);
+        data->alpha--;
     }
 
     if (active == 0) {
@@ -173,32 +175,32 @@ void effKemuri7Disp(CameraId camId, void* param) {
 
     GXSetNumChans(0);
     GXSetNumTexGens(1);
-    GXSetTexCoordGen2(0, 1, 4, 0x1e, 0, 0x7d);
+    GXSetTexCoordGen2(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_TEXMTX0, GX_FALSE, GX_PTIDENTITY);
     PSMTXScale(scale, float_0p03125_8041f3ec, float_0p03125_8041f3ec, float_0_8041f3f0);
-    GXLoadTexMtxImm(scale, 0x1e, 1);
+    GXLoadTexMtxImm(scale, GX_TEXMTX0, GX_MTX2x4);
     GXSetNumTevStages(1);
-    GXSetTevOrder(0, 0, 0, 0xff);
-    GXSetTevColorOp(0, 0, 0, 0, 1, 0);
-    GXSetTevAlphaOp(0, 0, 0, 0, 1, 0);
-    GXSetTevColorIn(0, 0xf, 0xf, 0xf, 0xf);
-    GXSetTevAlphaIn(0, 7, 4, 1, 7);
+    GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR_NULL);
+    GXSetTevColorOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+    GXSetTevAlphaOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+    GXSetTevColorIn(GX_TEVSTAGE0, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ZERO);
+    GXSetTevAlphaIn(GX_TEVSTAGE0, GX_CA_ZERO, GX_CA_TEXA, GX_CA_A0, GX_CA_ZERO);
     effGetTexObjN64(0x4f, &texObj);
-    GXLoadTexObj(&texObj, 0);
-    GXSetCullMode(0);
+    GXLoadTexObj(&texObj, GX_TEXMAP0);
+    GXSetCullMode(GX_CULL_NONE);
     effSetVtxDescN64((effVtxArray*)foot_vtx);
 
     for (i = 0; i < effect->count; i++, data++) {
-        if (data->field_0x0 == 0) {
+        if (data->active == 0) {
             continue;
         }
-        kemuri7SetColor(data->field_0x8);
-        PSMTXConcat(cam->view, data->field_0x30, work);
-        if (data->field_0x60 == float_0_8041f3f0) {
+        kemuri7SetColor(data->alpha);
+        PSMTXConcat(cam->view, data->matrix, work);
+        if (data->direction == float_0_8041f3f0) {
             PSMTXScale(scale, float_neg1_8041f3f4, float_1_8041f3f8, float_1_8041f3f8);
             PSMTXConcat(work, scale, work);
         }
         GXLoadPosMtxImm(work, 0);
-        GXBegin(0x90, 0, 6);
+        GXBegin(GX_TRIANGLES, GX_VTXFMT0, 6);
         tri2(0, 1, 2, 0, 0, 2, 3, 0);
     }
 }

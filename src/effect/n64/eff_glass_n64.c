@@ -152,7 +152,7 @@ static inline void effGlassSetColor1(effGlassData* data, s32 a) {
 	color.g = data->field_0x1C;
 	color.b = data->field_0x20;
 	color.a = a;
-	GXSetTevColor(1, color);
+	GXSetTevColor(GX_TEVREG0, color);
 }
 static inline void effGlassSetColor2(effGlassData* data, s32 a) {
 	GXColor color = unk_80423124;
@@ -160,7 +160,7 @@ static inline void effGlassSetColor2(effGlassData* data, s32 a) {
 	color.g = data->field_0x2C;
 	color.b = data->field_0x30;
 	color.a = a;
-	GXSetTevColor(2, color);
+	GXSetTevColor(GX_TEVREG1, color);
 }
 static inline void effGlassSetColor3(effGlassData* data, s32 a) {
 	GXColor color = unk_80423128;
@@ -168,7 +168,7 @@ static inline void effGlassSetColor3(effGlassData* data, s32 a) {
 	color.g = data->field_0x1C;
 	color.b = data->field_0x20;
 	color.a = a;
-	GXSetTevColor(1, color);
+	GXSetTevColor(GX_TEVREG0, color);
 }
 /* MUST_MATCH: calling the cast through an inline makes mwcc allocate the frame conversion's scratch slot
    first (0x100) instead of last, matching the original. */
@@ -208,32 +208,32 @@ void effGlassDisp(CameraId camId, void* param) {
 	PSMTXConcat(cam->view, trans, viewMtx);
 	PSMTXRotRad(rot, 'z', 0.017453292f * data->rot);
 	PSMTXConcat(viewMtx, rot, trans);
-	GXLoadPosMtxImm(trans, 0);
-	GXSetCurrentMtx(0);
+	GXLoadPosMtxImm(trans, GX_PNMTX0);
+	GXSetCurrentMtx(GX_PNMTX0);
 
 	GXSetNumChans(0);
 	GXSetNumTevStages(3);
-	GXSetTevOrder(0, 0, 0, 0xff);
-	GXSetTevColorOp(0, 0, 0, 0, 1, 0);
-	GXSetTevAlphaOp(0, 0, 0, 0, 1, 0);
-	GXSetTevColorIn(0, 0xf, 0xf, 0xf, 8);
-	GXSetTevAlphaIn(0, 7, 7, 7, 4);
-	GXSetTevOrder(1, 1, 1, 0xff);
-	GXSetTevColorOp(1, 0, 0, 0, 1, 0);
-	GXSetTevAlphaOp(1, 0, 0, 0, 1, 0);
-	GXSetTevColorIn(1, 0, 8, 5, 0xf);
-	GXSetTevAlphaIn(1, 0, 4, 2, 7);
-	GXSetTevOrder(2, 0xff, 0xff, 0xff);
-	GXSetTevColorOp(2, 0, 0, 0, 1, 0);
-	GXSetTevAlphaOp(2, 0, 0, 0, 1, 0);
-	GXSetTevColorIn(2, 4, 2, 0, 0xf);
-	GXSetTevAlphaIn(2, 7, 1, 0, 7);
+	GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR_NULL);
+	GXSetTevColorOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+	GXSetTevAlphaOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+	GXSetTevColorIn(GX_TEVSTAGE0, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ZERO, GX_CC_TEXC);
+	GXSetTevAlphaIn(GX_TEVSTAGE0, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_TEXA);
+	GXSetTevOrder(GX_TEVSTAGE1, GX_TEXCOORD1, GX_TEXMAP1, GX_COLOR_NULL);
+	GXSetTevColorOp(GX_TEVSTAGE1, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+	GXSetTevAlphaOp(GX_TEVSTAGE1, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+	GXSetTevColorIn(GX_TEVSTAGE1, GX_CC_CPREV, GX_CC_TEXC, GX_CC_A1, GX_CC_ZERO);
+	GXSetTevAlphaIn(GX_TEVSTAGE1, GX_CA_APREV, GX_CA_TEXA, GX_CA_A1, GX_CA_ZERO);
+	GXSetTevOrder(GX_TEVSTAGE2, GX_TEXCOORD_NULL, GX_TEXMAP_NULL, GX_COLOR_NULL);
+	GXSetTevColorOp(GX_TEVSTAGE2, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+	GXSetTevAlphaOp(GX_TEVSTAGE2, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+	GXSetTevColorIn(GX_TEVSTAGE2, GX_CC_C1, GX_CC_C0, GX_CC_CPREV, GX_CC_ZERO);
+	GXSetTevAlphaIn(GX_TEVSTAGE2, GX_CA_ZERO, GX_CA_A0, GX_CA_APREV, GX_CA_ZERO);
 	effGetTexObjN64(0x59, &texObj);
-	GXLoadTexObj(&texObj, 0);
-	GXLoadTexObj(&texObj, 1);
+	GXLoadTexObj(&texObj, GX_TEXMAP0);
+	GXLoadTexObj(&texObj, GX_TEXMAP1);
 	GXSetNumTexGens(2);
-	GXSetTexCoordGen2(0, 1, 4, 0x1e, 0, 0x7d);
-	GXSetTexCoordGen2(1, 1, 4, 0x21, 0, 0x7d);
+	GXSetTexCoordGen2(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_TEXMTX0, GX_FALSE, GX_PTIDENTITY);
+	GXSetTexCoordGen2(GX_TEXCOORD1, GX_TG_MTX2x4, GX_TG_TEX0, GX_TEXMTX1, GX_FALSE, GX_PTIDENTITY);
 
 	type = type % 2;
 #ifdef MUST_MATCH
@@ -248,11 +248,11 @@ void effGlassDisp(CameraId camId, void* param) {
 	PSMTXScale(scale, 0.015625f, 0.0078125f, 0.0f);
 	PSMTXTrans(trans, (f32)typeOffset, (f32)frameOffset, 0.0f);
 	PSMTXConcat(scale, trans, scale);
-	GXLoadTexMtxImm(scale, 0x1e, 1);
+	GXLoadTexMtxImm(scale, GX_TEXMTX0, GX_MTX2x4);
 	PSMTXScale(scale, 0.015625f, 0.0078125f, 0.0f);
 	PSMTXTrans(trans, (f32)typeOffset, (f32)(frameOffset + 0x20), 0.0f);
 	PSMTXConcat(scale, trans, scale);
-	GXLoadTexMtxImm(scale, 0x21, 1);
+	GXLoadTexMtxImm(scale, GX_TEXMTX1, GX_MTX2x4);
 
 #ifdef MUST_MATCH
 	effGlassSetColor1(data, dataAlpha);
@@ -263,15 +263,15 @@ void effGlassDisp(CameraId camId, void* param) {
 	color1.g = data->field_0x1C;
 	color1.b = data->field_0x20;
 	color1.a = dataAlpha;
-	GXSetTevColor(1, color1);
+	GXSetTevColor(GX_TEVREG0, color1);
 	color2 = unk_80423124;
 	color2.r = data->field_0x28;
 	color2.g = data->field_0x2C;
 	color2.b = data->field_0x30;
 	color2.a = tileAlpha;
-	GXSetTevColor(2, color2);
+	GXSetTevColor(GX_TEVREG1, color2);
 #endif
-	GXSetCullMode(0);
+	GXSetCullMode(GX_CULL_NONE);
 	effSetVtxDescN64((effVtxArray*)size16x16_tex32x32_vtx);
 	GXBegin(GX_TRIANGLES, GX_VTXFMT0, 6);
 	tri2(0, 1, 2, 0, 0, 2, 3, 0);
@@ -285,19 +285,19 @@ void effGlassDisp(CameraId camId, void* param) {
 		color3.g = data->field_0x1C;
 		color3.b = data->field_0x20;
 		color3.a = dataAlpha * tileAlpha / 255;
-		GXSetTevColor(1, color3);
+		GXSetTevColor(GX_TEVREG0, color3);
 #endif
 		GXSetNumChans(1);
-		GXSetChanCtrl(4, 0, 0, 1, 0, 0, 2);
+		GXSetChanCtrl(GX_COLOR0A0, GX_FALSE, GX_SRC_REG, GX_SRC_VTX, 0, GX_DF_NONE, GX_AF_NONE);
 		GXSetNumTevStages(1);
-		GXSetTevOrder(0, 0xff, 0xff, 4);
-		GXSetTevColorOp(0, 0, 0, 0, 1, 0);
-		GXSetTevAlphaOp(0, 0, 0, 0, 1, 0);
-		GXSetTevColorIn(0, 0xf, 0xf, 0xf, 2);
-		GXSetTevAlphaIn(0, 7, 1, 5, 7);
+		GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD_NULL, GX_TEXMAP_NULL, GX_COLOR0A0);
+		GXSetTevColorOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+		GXSetTevAlphaOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+		GXSetTevColorIn(GX_TEVSTAGE0, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ZERO, GX_CC_C0);
+		GXSetTevAlphaIn(GX_TEVSTAGE0, GX_CA_ZERO, GX_CA_A0, GX_CA_RASA, GX_CA_ZERO);
 		effSetVtxDescN64((effVtxArray*)size48x48_tex32x32_vtx);
-		GXLoadPosMtxImm(viewMtx, 0);
-		GXSetCurrentMtx(0);
+		GXLoadPosMtxImm(viewMtx, GX_PNMTX0);
+		GXSetCurrentMtx(GX_PNMTX0);
 		GXBegin(GX_TRIANGLES, GX_VTXFMT0, 0xc);
 		tri2(0, 1, 4, 0, 1, 2, 4, 0);
 		tri2(0, 4, 3, 0, 4, 2, 3, 0);

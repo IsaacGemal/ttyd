@@ -24,11 +24,11 @@ typedef struct effKemuri12Data {
     u16 type;        // 0x0
     u8 pad_2[2];     // 0x2
     Vec position;    // 0x4
-    f32 field_0x10;  // 0x10
-    s32 field_0x14;  // 0x14
-    s32 field_0x18;  // 0x18
-    s32 field_0x1c;  // 0x1c
-    f32 field_0x20;  // 0x20
+    f32 scale;  // 0x10
+    s32 life;  // 0x14
+    s32 elapsed;  // 0x18
+    s32 maxLife;  // 0x1c
+    f32 animProgress;  // 0x20
     u8 color[4];     // 0x24
 } effKemuri12Data;
 
@@ -67,15 +67,15 @@ EffectEntry* effKemuri12N64Entry(s32 type, s32 life, f32 x, f32 y, f32 z, f32 sc
     data = __memAlloc(HEAP_EFFECT, sizeof(effKemuri12Data));
     effect->userdata = data;
     effect->callback = effKemuri12Main;
-    data->field_0x14 = life;
-    data->field_0x18 = 0;
-    data->field_0x1c = life;
-    data->field_0x20 = 0.0f;
+    data->life = life;
+    data->elapsed = 0;
+    data->maxLife = life;
+    data->animProgress = 0.0f;
     data->type = type;
     data->position.x = x;
     data->position.y = y;
     data->position.z = z;
-    data->field_0x10 = scale;
+    data->scale = scale;
 
     // The colour stores are ordered to reproduce the original's store scheduling.
     switch (type) {
@@ -109,10 +109,10 @@ void effKemuri12Main(EffectEntry* effect) {
     e = effect;
     data = e->userdata;
     position = initializeVec(&data->position);
-    data->field_0x20 = 8.0f * (f32)data->field_0x18 / (f32)data->field_0x1c;
-    data->field_0x18++;
-    data->field_0x14--;
-    if (data->field_0x14 < 0) {
+    data->animProgress = 8.0f * (f32)data->elapsed / (f32)data->maxLife;
+    data->elapsed++;
+    data->life--;
+    if (data->life < 0) {
         effDelete(e);
         return;
     }
@@ -147,9 +147,9 @@ void effKemuri12Disp(CameraId camId, void* param) {
     GXTexObj texobj;
     Mtx m0, m1, m2;
     s32 type;
-    s32 ia;
+    s32 frameIndex;
     s32 scaled;
-    s32 frac256;
+    s32 frameFraction;
     s32 isLast;
     u32* vtx;
 
@@ -157,9 +157,9 @@ void effKemuri12Disp(CameraId camId, void* param) {
     cam = camGetPtr(camId);
     data = effect->userdata;
     type = data->type;
-    ia = (s32)data->field_0x20;
-    frac256 = (s32)(256.0f * (data->field_0x20 - (f32)ia));
-    isLast = (ia == 7) ? 1 : 0;
+    frameIndex = (s32)data->animProgress;
+    frameFraction = (s32)(256.0f * (data->animProgress - (f32)frameIndex));
+    isLast = (frameIndex == 7) ? 1 : 0;
 
     GXSetNumChans(0);
     GXSetNumTevStages(3);
@@ -184,7 +184,7 @@ void effKemuri12Disp(CameraId camId, void* param) {
 
     PSMTXTrans(m0, data->position.x, data->position.y, data->position.z);
     PSMTXRotRad(m2, 'y', -camGetPtr(CAMERA_3D)->viewYaw * 0.017453292f);
-    PSMTXScale(m1, data->field_0x10, data->field_0x10, data->field_0x10);
+    PSMTXScale(m1, data->scale, data->scale, data->scale);
     PSMTXConcat(m0, m2, m0);
     PSMTXConcat(m0, m1, m0);
     PSMTXRotRad(m2, 'z', 0.34906584f);
@@ -195,7 +195,7 @@ void effKemuri12Disp(CameraId camId, void* param) {
 
 #ifdef MUST_MATCH
     setKemuriColor(GX_TEVREG0, data->color[0], data->color[1], data->color[2], data->color[3]);
-    setKemuriAlphaColor(GX_TEVREG1, frac256);
+    setKemuriAlphaColor(GX_TEVREG1, frameFraction);
 #else
     {
         GXColor color = unk_80423190;
@@ -207,7 +207,7 @@ void effKemuri12Disp(CameraId camId, void* param) {
     }
     {
         GXColor color = unk_80423194;
-        color.a = frac256;
+        color.a = frameFraction;
         GXSetTevColor(GX_TEVREG1, color);
     }
 #endif
@@ -216,7 +216,7 @@ void effKemuri12Disp(CameraId camId, void* param) {
     GXSetTexCoordGen2(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_TEXMTX0, GX_FALSE, GX_PTIDENTITY);
     GXSetTexCoordGen2(GX_TEXCOORD1, GX_TG_MTX2x4, GX_TG_TEX0, GX_TEXMTX1, GX_FALSE, GX_PTIDENTITY);
 
-    scaled = ia * 32;
+    scaled = frameIndex * 32;
     PSMTXScale(m1, 0.00390625f, 0.03125f, 0.0f);
     PSMTXTrans(m0, (f32)scaled, 0.0f, 0.0f);
     PSMTXConcat(m1, m0, m1);
@@ -260,7 +260,5 @@ void effKemuri12Disp(CameraId camId, void* param) {
         break;
     }
 }
-
-// The pool constants the code above loads by name, defined after it (defined first, the compiler folds them).
 
 // The pool constants the code above loads by name, defined after it (defined first, the compiler folds them).

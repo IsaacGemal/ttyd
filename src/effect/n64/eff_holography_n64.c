@@ -1073,6 +1073,11 @@ u8 xlu_data[16] = {
 	0x00, 0x00, 0x28, 0x50, 0x78, 0xA0, 0xBE, 0xDC,
 };
 
+// ach_01_v holds 55 precomputed vertex tables of 0x134 bytes each.
+typedef struct holographyVtxData {
+	u8 frames[55][0x134];
+} holographyVtxData;
+
 EffectEntry* effHolographyN64Entry(s32 type, s32 count, f32 x, f32 y, f32 z, f32 scale) {
 	EffectEntry* effect;
 	EffHolographyData* data;
@@ -1215,7 +1220,7 @@ void effHolographyDisp(CameraId camId, void* param) {
 	if (vtxIndex < 0) {
 		vtxIndex = 0;
 	}
-	effSetVtxDescN64((effVtxArray*)((u8*)ach_01_v + vtxIndex * 0x134));
+	effSetVtxDescN64((effVtxArray*)((holographyVtxData*)ach_01_v)->frames[vtxIndex]);
 
 	effHolographySetColor2(frame);
 

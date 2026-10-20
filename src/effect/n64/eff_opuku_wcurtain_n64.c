@@ -134,7 +134,7 @@ void effOpukuWcurtainDisp(CameraId camId, void* param) {
 	s32 i;
 	s32 j;
 	s32 texS;
-	s32 a;
+	s32 alpha;
 	OpukuWcurtainVtx* vtx;
 	OpukuWcurtainVtx* base;
 	s32 counter = data->counter;
@@ -179,8 +179,8 @@ void effOpukuWcurtainDisp(CameraId camId, void* param) {
 		vtx[0].r = 0xFF;
 		vtx[0].g = 0xFF;
 		vtx[0].b = 0xFF;
-		a = 0xFF - i * 20;
-		vtx[0].a = a;
+		alpha = 0xFF - i * 20;
+		vtx[0].a = alpha;
 		vtx[1].x = 10 * (i * 5 - 30);
 		vtx[1].y = (s32)(10.0f * (60.0f + data->field_0x2C[i]));
 		vtx[1].z = 0;
@@ -189,7 +189,7 @@ void effOpukuWcurtainDisp(CameraId camId, void* param) {
 		vtx[1].r = 0xFF;
 		vtx[1].g = 0xFF;
 		vtx[1].b = 0xFF;
-		vtx[1].a = a;
+		vtx[1].a = alpha;
 		vtx += 2;
 	}
 

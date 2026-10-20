@@ -14,14 +14,14 @@ typedef struct effWaterDamageData {
 	s32 type;        //0x0
 	Vec position;    //0x4
 	Vec velocity;    //0x10
-	s32 field_0x1C;  //0x1C
-	s32 field_0x20;  //0x20
-	s32 field_0x24;  //0x24
-	s32 field_0x28;  //0x28
-	s32 field_0x2C;  //0x2C
-	s32 field_0x30;  //0x30
+	s32 life;        //0x1C
+	s32 timer;       //0x20
+	s32 colorR;      //0x24
+	s32 colorG;      //0x28
+	s32 colorB;      //0x2C
+	s32 alpha;       //0x30
 	f32 scale;       //0x34
-	s32 field_0x38;  //0x38
+	s32 isBig;       //0x38
 } effWaterDamageData; //0x3C
 
 static const f32 float_deg2rad_8042015c = 0.017453292f;
@@ -105,22 +105,22 @@ EffectEntry* effWaterDamageN64Entry(s32 type, s32 time, f32 x, f32 y, f32 z, f32
 	effect->callback = effWaterDamageMain;
 	effect->flags |= 2;
 	data->type = type;
-	data->field_0x20 = 0;
+	data->timer = 0;
 	if (time <= 0) {
-		data->field_0x1C = 1000;
+		data->life = 1000;
 	}
 	else {
-		data->field_0x1C = time;
+		data->life = time;
 	}
-	data->field_0x30 = 255;
+	data->alpha = 255;
 	data->position.x = x;
 	data->position.y = y;
 	data->position.z = z;
 	data->scale = scale;
-	data->field_0x24 = 70;
-	data->field_0x28 = 180;
-	data->field_0x2C = 255;
-	data->field_0x38 = isBig;
+	data->colorR = 70;
+	data->colorG = 180;
+	data->colorB = 255;
+	data->isBig = isBig;
 
 	for (i = 1, data++; i < effect->count; i++, data++) {
 		data->position.x = 0.0f;
@@ -148,7 +148,7 @@ EffectEntry* effWaterDamageN64Entry(s32 type, s32 time, f32 x, f32 y, f32 z, f32
 			data->velocity.y = (f32)(rand() % 10 - 5) * 0.5f;
 			data->velocity.z = (f32)(rand() % 10 - 5) * 0.5f;
 			data->scale = 0.4f;
-			data->field_0x1C = i;
+			data->life = i;
 			break;
 		case 4:
 			data->velocity.x = (f32)(rand() % 7 - 3);
@@ -160,7 +160,7 @@ EffectEntry* effWaterDamageN64Entry(s32 type, s32 time, f32 x, f32 y, f32 z, f32
 			data->velocity.y = (f32)(rand() % 10 + 5) * 0.3f;
 			data->velocity.z = (f32)(rand() % 10 - 5) * 0.3f;
 			data->scale = 1.0f;
-			data->field_0x1C = i;
+			data->life = i;
 			break;
 		case 6:
 		{
@@ -172,7 +172,7 @@ EffectEntry* effWaterDamageN64Entry(s32 type, s32 time, f32 x, f32 y, f32 z, f32
 			data->velocity.y = (f32)(rand() % 5) * 0.3f;
 			data->velocity.z = data->position.z / 12.0f;
 			data->scale = 1.0f;
-			data->field_0x1C = i;
+			data->life = i;
 			break;
 		}
 		case 7:
@@ -187,11 +187,11 @@ EffectEntry* effWaterDamageN64Entry(s32 type, s32 time, f32 x, f32 y, f32 z, f32
 			data->velocity.y = (f32)(rand() % 10 + 5) * 0.1f;
 			data->velocity.z = mario->baseSpeed * data->position.z / 2.0f;
 			data->scale = 1.0f;
-			data->field_0x1C = 3 * i;
+			data->life = 3 * i;
 			break;
 		}
 		}
-		data->field_0x30 = 255;
+		data->alpha = 255;
 	}
 	return effect;
 }
@@ -205,29 +205,29 @@ void effWaterDamageMain(EffectEntry* effect) {
 
 	disp = initializeVec(&data->position);
 	type = data->type;
-	isBig = data->field_0x38;
+	isBig = data->isBig;
 
 	if (effect->flags & 4) {
 		effect->flags &= ~4;
-		data->field_0x1C = 0x10;
+		data->life = 0x10;
 	}
-	if (data->field_0x1C < 0x3E8) {
-		data->field_0x1C--;
+	if (data->life < 0x3E8) {
+		data->life--;
 	}
-	data->field_0x20++;
-	if (data->field_0x1C < 0) {
+	data->timer++;
+	if (data->life < 0) {
 		effDelete(effect);
 		return;
 	}
-	if (data->field_0x1C < 4) {
-		data->field_0x30 = data->field_0x1C << 6;
+	if (data->life < 4) {
+		data->alpha = data->life << 6;
 	}
 
 	for (i = 1, data++; i < effect->count; i++, data++) {
 		data->position.x += data->velocity.x;
 		data->position.y += data->velocity.y;
 		data->position.z += data->velocity.z;
-		data->field_0x30 *= 0.98f;
+		data->alpha *= 0.98f;
 		if (type == 2) {
 			data->velocity.y += -0.8f;
 		}
@@ -295,7 +295,7 @@ void effWaterDamageDisp(CameraId camId, void* param) {
 
 	x = (s32)data->position.x;
 	y = (s32)data->position.y;
-	alpha = data->field_0x30;
+	alpha = data->alpha;
 
 	GXSetBlendMode(GX_BM_BLEND, GX_BL_SRCALPHA, GX_BL_INVSRCALPHA, GX_LO_CLEAR);
 	GXSetZCompLoc(GX_TRUE);
@@ -363,11 +363,11 @@ void effWaterDamageDisp(CameraId camId, void* param) {
 		GXSetCurrentMtx(GX_PNMTX0);
 
 #ifdef MUST_MATCH
-		effWaterDamageSetColor0(alpha * data->field_0x30 / 255);
+		effWaterDamageSetColor0(alpha * data->alpha / 255);
 		effWaterDamageSetColor1();
 #else
 		color = (GXColor){ 0xC8, 0xFF, 0xFF, 0x00 };
-		color.a = alpha * data->field_0x30 / 255;
+		color.a = alpha * data->alpha / 255;
 		GXSetTevColor(GX_TEVREG0, color);
 		GXSetTevColor(GX_TEVREG1, (GXColor){ 0x00, 0x20, 0x20, 0x00 });
 #endif
@@ -420,7 +420,7 @@ void effWaterDamageDisp2(CameraId camId, void* param) {
 
 	x = (s32)data->position.x;
 	y = (s32)data->position.y;
-	alpha = data->field_0x30;
+	alpha = data->alpha;
 
 	GXSetBlendMode(GX_BM_BLEND, GX_BL_SRCALPHA, GX_BL_INVSRCALPHA, GX_LO_CLEAR);
 	GXSetZCompLoc(GX_TRUE);
@@ -438,10 +438,10 @@ void effWaterDamageDisp2(CameraId camId, void* param) {
 	GXSetChanCtrl(4, 0, 0, 0, 0, 0, 2);
 
 #ifdef MUST_MATCH
-	color = effWaterDamageColor(alpha * data->field_0x30 / 255);
+	color = effWaterDamageColor(alpha * data->alpha / 255);
 #else
 	color = (GXColor){ 0xC8, 0xFF, 0xFF, 0x00 };
-	color.a = alpha * data->field_0x30 / 255;
+	color.a = alpha * data->alpha / 255;
 #endif
 	GXSetChanMatColor(4, color);
 

@@ -8,16 +8,16 @@
 
 typedef struct StarPointData {
     s32 type;       // 0x00
-    s32 field_0x04; // 0x04
-    s32 field_0x08; // 0x08
+    s32 life;       // 0x04
+    s32 frame;      // 0x08
     Vec position;   // 0x0C
-    f32 field_0x18; // 0x18
-    f32 field_0x1C; // 0x1C
-    f32 field_0x20; // 0x20
-    f32 field_0x24; // 0x24
+    f32 velX;       // 0x18
+    f32 velZ;       // 0x1C
+    f32 velY;       // 0x20
+    f32 gravity;    // 0x24
     s32 field_0x28; // 0x28
-    s32 field_0x2C; // 0x2C
-    s32 field_0x30; // 0x30
+    s32 alpha;      // 0x2C
+    s32 delay;      // 0x30
 } StarPointData;
 
 
@@ -110,8 +110,8 @@ EffectEntry* effStarPointEntry(s32 type, s32 count, f32 x, f32 y, f32 z) {
     data->position.x = x;
     data->position.y = y;
     data->position.z = z;
-    data->field_0x04 = 60;
-    data->field_0x08 = 0;
+    data->life = 60;
+    data->frame = 0;
 
     i = 1;
     lowAlpha = 4;
@@ -124,12 +124,12 @@ EffectEntry* effStarPointEntry(s32 type, s32 count, f32 x, f32 y, f32 z) {
         data->position.y = 0.0f;
         data->position.z = 0.0f;
         rad = (6.2831855f * angle) / 360.0f;
-        data->field_0x18 = 2.0f * effStarPointSinf(rad);
-        data->field_0x1C = 2.0f * effStarPointCosf(rad);
-        data->field_0x20 = 14.0f;
-        data->field_0x24 = 2.0f;
-        data->field_0x2C = 0;
-        data->field_0x30 = lowAlpha;
+        data->velX = 2.0f * effStarPointSinf(rad);
+        data->velZ = 2.0f * effStarPointCosf(rad);
+        data->velY = 14.0f;
+        data->gravity = 2.0f;
+        data->alpha = 0;
+        data->delay = lowAlpha;
         lowAlpha += 3;
     }
 
@@ -149,30 +149,30 @@ void effStarPointMain(EffectEntry* effect) {
     disp.z = data->position.z;
     position = disp;
 
-    data->field_0x04--;
-    data->field_0x08++;
-    if (data->field_0x04 < 0) {
+    data->life--;
+    data->frame++;
+    if (data->life < 0) {
         effDelete(effect);
         return;
     }
 
     data++;
     for (i = 1; i < effect->count; i++, data++) {
-        if (data->field_0x30 != 0) {
-            data->field_0x30--;
-            data->field_0x2C = 0;
+        if (data->delay != 0) {
+            data->delay--;
+            data->alpha = 0;
         } else {
-            data->field_0x20 -= data->field_0x24;
-            data->position.x += data->field_0x18;
-            data->position.y += data->field_0x20;
-            data->position.z += data->field_0x1C;
-            if (data->field_0x20 < 0.0f) {
-                data->field_0x2C -= 2;
-                if (data->field_0x2C < 0) {
-                    data->field_0x2C = 0;
+            data->velY -= data->gravity;
+            data->position.x += data->velX;
+            data->position.y += data->velY;
+            data->position.z += data->velZ;
+            if (data->velY < 0.0f) {
+                data->alpha -= 2;
+                if (data->alpha < 0) {
+                    data->alpha = 0;
                 }
             } else {
-                data->field_0x2C = 0xff;
+                data->alpha = 0xff;
             }
         }
     }
@@ -194,7 +194,7 @@ void effStarPointDisp(CameraId camId, void* param) {
 
     data++;
     for (i = 1; i < effect->count; i++, data++) {
-        if (data->field_0x2C != 0) {
+        if (data->alpha != 0) {
             PSMTXTrans(elemMtx, data->position.x, data->position.y, data->position.z);
             PSMTXConcat(mtx, elemMtx, elemMtx);
             iconDispGx2(elemMtx, 0, 0x18C);

@@ -76,7 +76,7 @@ void effBushMain(EffectEntry* effect) {
 	s32 type;
 	s32 life;
 	s32 i;
-	f32 s;
+	f32 wave;
 	f32 move;
 
 	disp.x = data->x;
@@ -116,8 +116,8 @@ void effBushMain(EffectEntry* effect) {
 	if (life < 10) {
 #ifdef MUST_MATCH
 		{
-			f32 k = 0.8f;
-			data->field_0x24 = (s32)((f32)data->field_0x24 * k);
+			f32 fadeScale = 0.8f;
+			data->field_0x24 = (s32)((f32)data->field_0x24 * fadeScale);
 		}
 #else
 		data->field_0x24 = (s32)((f32)data->field_0x24 * 0.8f);
@@ -126,14 +126,14 @@ void effBushMain(EffectEntry* effect) {
 
 	data++;
 	for (i = 1; i < effect->count; i++, data++) {
-		s = (f32)sin(6.2831855f * (2.0f * data->field_0x18) / 360.0f);
+		wave = (f32)sin(6.2831855f * (2.0f * data->field_0x18) / 360.0f);
 		data->field_0x14 += -0.05f;
-		move = 0.2f * s;
+		move = 0.2f * wave;
 		data->field_0x10 += move;
 		if (type == 0) {
 			data->field_0x10 *= 0.94f;
-			s = (f32)sin(6.2831855f * data->field_0x18 / 360.0f);
-			data->field_0x14 *= 0.95f + 0.05f * s;
+			wave = (f32)sin(6.2831855f * data->field_0x18 / 360.0f);
+			data->field_0x14 *= 0.95f + 0.05f * wave;
 		} else {
 			data->field_0x14 += -0.05f;
 			data->field_0x10 *= 0.92f;
