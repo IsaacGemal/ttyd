@@ -10308,13 +10308,12 @@ Left: `field_0x0` in both structs (the `type` argument is stored and never read)
 - Left: `monte_snd_flag` (original-looking static), `gap_08_80418B5C_sbss`, the scale700/scale2000b helpers. monte_disp's rows 2 and 3 use 0x1A9C8 inline and scale2000b uses 0x12110, so they are not merged.
 - Verified: the tower ninja build recreates build/G8MJ01/ok. The MUST_MATCH object is byte-identical to the build's. The header users (src event.c, cardmgr.c, mario_pouch.c, mariost.c, win_main.c and rels gor_03, gor/yuu evt_yuuranking, yuu_00-03, yuu evt_yuucounter) compile with and without -DMUST_MATCH at -maxerrors 50.
 
-### Readability: eff_mahorn particle fields and colours, eff_mizutama pool names (2026-10-20, Claude Haiku 5.5, n9-q-mizu)
+### Readability: eff_mahorn particle fields and colours (2026-10-20, Claude Haiku 5.5, n9-q-mizu)
 
 - eff_mahorn `field_0x14` is `growth` (effMahornData, 0x14). It is 0 at spawn, Main eases it toward 20 by 1/8 of the gap each frame, and Disp multiplies it into the particle scale.
 - eff_mahorn `field_0x24` is `delay` (0x24). Entry sets it to `i * 4` per particle, Main counts it down, and Disp skips the particle while it is nonzero.
 - eff_mahorn's Entry parameter `unk` is `timer`: it becomes the header's lifetime (`data->timer`), which Main counts down, fades alpha over the last 16 frames and deletes at below 0. A value of 0 or less gives 1000, which Main never counts down. evt_eff.c passes its eighth script argument.
 - eff_mahorn `dat_80422240` / `dat_80422244` are `mahornColorOdd` / `mahornColorEven`: Disp takes `(i & 1) ? &dat_80422240 : &dat_80422244` as the base colour and sets `.a` from the particle alpha. Odd particles also keep the unflipped Y scale.
-- Address-named pool constants whose bare value name is unused elsewhere in the tree dropped the address suffix: eff_mizutama `float_0p3`, `float_0p97`, `float_0p99`, `float_135`, `float_225`, `float_6p2832`; eff_mahorn `float_deg2rad` (the viewYaw degrees-to-radians factor in Disp). The rest keep their suffix: bare names such as `float_0`, `float_1`, `float_4`, `float_8`, `float_100`, `float_0p5`, `float_2`, `float_360` already name objects in other units, and the link would clash.
-- Left: eff_mizutama `field_0x1C` and `field_0x20` (set to 0 at spawn, never read in the unit). eff_mahorn's `unused` parameter and header field 0x0 (stored, never read; the only caller passes a script argument). The MUST_MATCH `volatile` pool constants and the `zero` / `negEight` locals stay as they are.
-- Cleanup index: total 34.850 -> 34.771 per kLOC. eff_mizutama.c 395.8 -> 300.0, eff_mahorn.c 410.2 -> 293.0.
-- Verify: tower build recreates build/G8MJ01/ok; tools/obj_equiv.py against the pre-change objects reports only the global renames; both files compile without MUST_MATCH.
+- Left: eff_mahorn's `unused` parameter and header field 0x0 (stored, never read; the only caller passes a script argument). The MUST_MATCH `volatile` pool constants and the `zero` / `negEight` locals stay as they are.
+- Cleanup index: total 34.850 -> 34.808 per kLOC; eff_mahorn.c 410.2 -> 304.7.
+- Verify: tower build recreates build/G8MJ01/ok.

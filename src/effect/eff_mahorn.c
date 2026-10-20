@@ -11,7 +11,7 @@ extern const f32 float_20_80422264;
 extern const f32 float_0p125_80422268;
 extern const u32 mahornColorOdd;
 extern const u32 mahornColorEven;
-extern const f32 float_deg2rad;
+extern const f32 float_deg2rad_80422248;
 extern const f32 float_8_8042224c;
 extern const f32 float_0p5_80422250;
 extern const f32 float_4_80422254;
@@ -179,7 +179,7 @@ void effMahornDisp(CameraId camId, void* param) {
     headerAlpha = data->alpha;
     PSMTXTrans(mtxBase, data->position.x, data->position.y, data->position.z);
     PSMTXScale(mtxScale, data->scale, data->scale, data->scale);
-    PSMTXRotRad(mtxRot, 'y', -camGetPtr(camId)->viewYaw * float_deg2rad);
+    PSMTXRotRad(mtxRot, 'y', -camGetPtr(camId)->viewYaw * float_deg2rad_80422248);
     PSMTXConcat(mtxBase, mtxRot, mtxFinal);
     PSMTXConcat(mtxFinal, mtxScale, mtxFinal);
 
@@ -267,7 +267,7 @@ void effMahornDisp(CameraId camId, void* param) {
 // The pool constants the code above loads by name, defined after it (defined first, the compiler folds them).
 const u32 mahornColorOdd = 0xFDE83C00;
 const u32 mahornColorEven = 0xFFFCE700;
-const f32 float_deg2rad = 0.017453292f;
+const f32 float_deg2rad_80422248 = 0.017453292f;
 const f32 float_8_8042224c = 8.0f;
 const f32 float_0p5_80422250 = 0.5f;
 const f32 float_4_80422254 = 4.0f;

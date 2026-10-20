@@ -20,19 +20,19 @@ typedef struct MizutamaData {
 	s32 timer;      // 0x24
 } MizutamaData;
 
-extern const f32 float_0p97;
-extern const f32 float_0p3;
-extern const f32 float_0p99;
+extern const f32 float_0p97_80421288;
+extern const f32 float_0p3_8042128c;
+extern const f32 float_0p99_80421290;
 extern const f32 float_0p01_80421294;
 extern const f32 float_8_80421270;
 extern const f32 float_0p5_80421278;
 extern const f32 float_4_8042127c;
 extern const f32 float_360_80421274;
-extern const f32 float_6p2832;
+extern const f32 float_6p2832_80421298;
 extern const f32 float_2_8042129c;
 extern const f32 float_100_804212a0;
-extern const f32 float_225;
-extern const f32 float_135;
+extern const f32 float_225_804212a4;
+extern const f32 float_135_804212a8;
 
 #ifdef MUST_MATCH
 /* MUST_MATCH: the original reloads these two .sdata2 constants before every FIFO store;
@@ -93,11 +93,11 @@ EffectEntry* effMizutamaEntry(s32 type, f32 x, f32 y, f32 z, f32 angle) {
 		if (type < 4) {
 			f32 r = (f32)radius;
 
-			a = float_6p2832 * (f32)irand(360) / float_360_80421274;
+			a = float_6p2832_80421298 * (f32)irand(360) / float_360_80421274;
 			data->x = r * (f32)sin(a);
 			data->y = r * -(f32)cos(a);
 			data->z = float_0_80421280;
-			a = float_6p2832 * angle / float_360_80421274;
+			a = float_6p2832_80421298 * angle / float_360_80421274;
 			data->vx = float_2_8042129c * (f32)sin(a);
 			data->vy = float_2_8042129c * (f32)cos(a);
 			data->scale = (f32)(irand(20) + 80) / float_100_804212a0;
@@ -115,13 +115,13 @@ EffectEntry* effMizutamaEntry(s32 type, f32 x, f32 y, f32 z, f32 angle) {
 			   once and shares the load between y, z and the compare (found by the permuter). */
 			zero = (data->y = float_0_80421280);
 			data->z = zero;
-			angle = (data->x < zero) ? float_225 : float_135;
+			angle = (data->x < zero) ? float_225_804212a4 : float_135_804212a8;
 #else
 			data->y = float_0_80421280;
 			data->z = float_0_80421280;
-			angle = (data->x < float_0_80421280) ? float_225 : float_135;
+			angle = (data->x < float_0_80421280) ? float_225_804212a4 : float_135_804212a8;
 #endif
-			a = float_6p2832 * angle / float_360_80421274;
+			a = float_6p2832_80421298 * angle / float_360_80421274;
 			data->vx = float_2_8042129c * (f32)sin(a);
 			data->vy = float_2_8042129c * (f32)cos(a);
 			data->scale = (f32)(irand(20) + 80) / float_100_804212a0;
@@ -157,10 +157,10 @@ void effMizutamaMain(EffectEntry* effect) {
 		} else {
 			data->x += data->vx;
 			data->y += data->vy;
-			data->vx *= float_0p97;
-			data->vy *= float_0p97;
-			data->y += float_0p3;
-			data->scale *= float_0p99;
+			data->vx *= float_0p97_80421288;
+			data->vy *= float_0p97_80421288;
+			data->y += float_0p3_8042128c;
+			data->scale *= float_0p99_80421290;
 			if (data->scale < float_0p01_80421294) {
 				done++;
 			}
@@ -262,13 +262,13 @@ const volatile f32 float_1_80421284 = 1.0f;
 #else
 const f32 float_1_80421284 = 1.0f;
 #endif
-const f32 float_0p97 = 0.97f;
-const f32 float_0p3 = 0.3f;
-const f32 float_0p99 = 0.99f;
+const f32 float_0p97_80421288 = 0.97f;
+const f32 float_0p3_8042128c = 0.3f;
+const f32 float_0p99_80421290 = 0.99f;
 const f32 float_0p01_80421294 = 0.01f;
-const f32 float_6p2832 = 6.2831855f;
+const f32 float_6p2832_80421298 = 6.2831855f;
 const f32 float_2_8042129c = 2.0f;
 const f32 float_100_804212a0 = 100.0f;
-const f32 float_225 = 225.0f;
-const f32 float_135 = 135.0f;
+const f32 float_225_804212a4 = 225.0f;
+const f32 float_135_804212a8 = 135.0f;
 
