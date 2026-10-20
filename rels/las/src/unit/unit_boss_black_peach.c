@@ -1370,7 +1370,7 @@ typedef struct HandData {
 #define HAND ((HandWork*)hand_wp[0])
 
 typedef struct ShadowQueenData {
-    s32 pose2Id;                // handle from part 2 (+0x1C0), animPoseWorldPositionEvalOn
+    s32 pose2Id;                // handle from part 2 (poseId), animPoseWorldPositionEvalOn
     s32 pose3Id;                // handle from part 3
     s32 pose4Id;                // handle from part 4
     u8 pad_0x0C[0x34];
@@ -1387,15 +1387,15 @@ USER_FUNC(shadow_queen_connect) {
     if (isFirstCall) {
         data = __memAlloc(4, 0x48);
         event->userdata[0] = (s32)data;
-        data->pose2Id = *(s32*)((u8*)BattleGetUnitPartsPtr(BattleTransID(event, -2), 2) + 0x1C0);
+        data->pose2Id = BattleGetUnitPartsPtr(BattleTransID(event, -2), 2)->poseId;
         animPoseWorldPositionEvalOn(data->pose2Id);
         data->locator2Group = animPoseGetGroupIdx(data->pose2Id, "locator12");
-        data->pose3Id = *(s32*)((u8*)BattleGetUnitPartsPtr(BattleTransID(event, -2), 3) + 0x1C0);
+        data->pose3Id = BattleGetUnitPartsPtr(BattleTransID(event, -2), 3)->poseId;
         animPoseWorldPositionEvalOn(data->pose3Id);
         data->locator3Group = animPoseGetGroupIdx(data->pose3Id, "locator12");
         animPosePeraOff(data->pose2Id);
         animPosePeraOff(data->pose3Id);
-        data->pose4Id = *(s32*)((u8*)BattleGetUnitPartsPtr(BattleTransID(event, -2), 4) + 0x1C0);
+        data->pose4Id = BattleGetUnitPartsPtr(BattleTransID(event, -2), 4)->poseId;
         animPosePeraOff(data->pose4Id);
     }
     data = (ShadowQueenData*)event->userdata[0];
@@ -1417,35 +1417,35 @@ USER_FUNC(shadow_queen_connect) {
 USER_FUNC(peach_talk_synchro_shadow_head_evt) {
     BattleUnitPart* part;
     part = BattleGetUnitPartsPtr(BattleTransID(event, -2), 1);
-    if (strcmp((char*)&part->field_0x1C0[4], "KRT_T_1") == 0 || strcmp((char*)&part->field_0x1C0[4], "KRT_T_2") == 0 ||
-        strcmp((char*)&part->field_0x1C0[4], "KRT_T_3") == 0) {
+    if (strcmp(part->poseName, "KRT_T_1") == 0 || strcmp(part->poseName, "KRT_T_2") == 0 ||
+        strcmp(part->poseName, "KRT_T_3") == 0) {
         part = BattleGetUnitPartsPtr(BattleTransID(event, -2), 3);
-        if (strcmp((char*)&part->field_0x1C0[4], "KRT_T_1") != 0) {
+        if (strcmp(part->poseName, "KRT_T_1") != 0) {
             BtlUnit_SetAnim(part, "KRT_T_1");
             return EVT_RETURN_BLOCK;
         }
     }
     part = BattleGetUnitPartsPtr(BattleTransID(event, -2), 1);
-    if (strcmp((char*)&part->field_0x1C0[4], "KRT_T_1") != 0 && strcmp((char*)&part->field_0x1C0[4], "KRT_T_2") != 0 &&
-        strcmp((char*)&part->field_0x1C0[4], "KRT_T_3") != 0) {
+    if (strcmp(part->poseName, "KRT_T_1") != 0 && strcmp(part->poseName, "KRT_T_2") != 0 &&
+        strcmp(part->poseName, "KRT_T_3") != 0) {
         part = BattleGetUnitPartsPtr(BattleTransID(event, -2), 3);
-        if (strcmp((char*)&part->field_0x1C0[4], "KRT_T_1") == 0) {
+        if (strcmp(part->poseName, "KRT_T_1") == 0) {
             BtlUnit_SetAnim(part, "KRT_S_1");
             return EVT_RETURN_BLOCK;
         }
     }
     part = BattleGetUnitPartsPtr(BattleTransID(event, -2), 1);
-    if (strcmp((char*)&part->field_0x1C0[4], "KRT_D_1") == 0) {
+    if (strcmp(part->poseName, "KRT_D_1") == 0) {
         part = BattleGetUnitPartsPtr(BattleTransID(event, -2), 3);
-        if (strcmp((char*)&part->field_0x1C0[4], "KRT_D_1") != 0) {
+        if (strcmp(part->poseName, "KRT_D_1") != 0) {
             BtlUnit_SetAnim(part, "KRT_D_1");
             return EVT_RETURN_BLOCK;
         }
     }
     part = BattleGetUnitPartsPtr(BattleTransID(event, -2), 1);
-    if (strcmp((char*)&part->field_0x1C0[4], "KRT_D_1") != 0) {
+    if (strcmp(part->poseName, "KRT_D_1") != 0) {
         part = BattleGetUnitPartsPtr(BattleTransID(event, -2), 3);
-        if (strcmp((char*)&part->field_0x1C0[4], "KRT_D_1") == 0) {
+        if (strcmp(part->poseName, "KRT_D_1") == 0) {
             BtlUnit_SetAnim(part, "KRT_S_1");
             return EVT_RETURN_BLOCK;
         }

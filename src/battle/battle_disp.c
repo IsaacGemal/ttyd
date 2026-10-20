@@ -440,9 +440,9 @@ void btlDispMain(void) {
 
 		part = unit->mParts;
 		while (part != NULL) {
-			if (*(s32*)part->field_0x1C0 != -1) {
-			animName = (char*)part + 0x1C4;
-			if (!(*(s32*)(part->field_0x1C0 + 0x44) & 2)) {
+			if (part->poseId != -1) {
+			animName = part->poseName;
+			if (!(part->partFlags & 2)) {
 				statusPose = _GetStatusPoseType(unit);
 				if (unit->currentKind >= UNIT_GOOMBA && unit->currentKind < UNIT_UNUSED_TREE) {
 					animName = searchPoseTbl((BattleDispPose*)part->poseTable, statusPose);
@@ -477,48 +477,48 @@ void btlDispMain(void) {
 				btlDispAnimeSpeedReset((BattleUnit*)part);
 			}
 
-			if (*(s32*)(part->field_0x1C0 + 0x44) & 1) {
+			if (part->partFlags & 1) {
 				s32 changed = 0;
 
-				*(s32*)(part->field_0x1C0 + 0x44) &= ~1;
-				if ((*(s32*)(part->field_0x1C0 + 0x44) &= ~0x200) != 0) {
-					animPoseSetAnim(*(s32*)part->field_0x1C0, animName, 1);
+				part->partFlags &= ~1;
+				if ((part->partFlags &= ~0x200) != 0) {
+					animPoseSetAnim(part->poseId, animName, 1);
 				} else {
-					animPoseSetAnim(*(s32*)part->field_0x1C0, animName, 0);
+					animPoseSetAnim(part->poseId, animName, 0);
 				}
-				part->field_0x1C0[0x54] = 0;
-				if (*(s32*)(part->field_0x1C0 + 0x44) & 4) {
-					part->field_0x1C0[0x55] = 0;
+				part->statusPoseStep = 0;
+				if (part->partFlags & 4) {
+					part->statusPoseKind = 0;
 				} else {
-					part->field_0x1C0[0x55] = 1;
+					part->statusPoseKind = 1;
 					if (BtlUnit_CheckStatus(unit, 0x12) ||
 					    part->color.a != 0xFF) {
 						changed = 1;
-						part->field_0x1C0[0x55] = 7;
+						part->statusPoseKind = 7;
 					}
 				}
-				if (!((*(s32*)(part->field_0x1C0 + 0x44) & 2) && !(*(s32*)(part->field_0x1C0 + 0x44) & 8) &&
-				      !(*(s32*)(part->field_0x1C0 + 0x44) & 0x80))) {
-					part->field_0x1C0[0x55] = 1;
+				if (!((part->partFlags & 2) && !(part->partFlags & 8) &&
+				      !(part->partFlags & 0x80))) {
+					part->statusPoseKind = 1;
 					if (BtlUnit_CheckStatus(unit, 0x12) ||
 					    part->color.a != 0xFF) {
 						changed = 1;
-						part->field_0x1C0[0x55] = 7;
+						part->statusPoseKind = 7;
 					}
 					if (BtlUnit_CheckStatus(unit, 7)) {
 						changed = 1;
-						part->field_0x1C0[0x55] = 4;
+						part->statusPoseKind = 4;
 					}
 				}
 				if (changed && (part->attributes & 0x8000)) {
 					changed = 0;
-					part->field_0x1C0[0x55] = 0;
+					part->statusPoseKind = 0;
 				}
-				if (!(*(s32*)(part->field_0x1C0 + 0x44) & 4)) {
-					if (changed && !(*(s32*)(part->field_0x1C0 + 0x44) & 0x40)) {
-						*(s32*)(part->field_0x1C0 + 0x44) |= 0x40;
-					} else if (!changed && (*(s32*)(part->field_0x1C0 + 0x44) & 0x40)) {
-						*(s32*)(part->field_0x1C0 + 0x44) &= ~0x40;
+				if (!(part->partFlags & 4)) {
+					if (changed && !(part->partFlags & 0x40)) {
+						part->partFlags |= 0x40;
+					} else if (!changed && (part->partFlags & 0x40)) {
+						part->partFlags &= ~0x40;
 					}
 				}
 			}
@@ -527,7 +527,7 @@ void btlDispMain(void) {
 			floatOffsetControl(part);
 			statusPoseControl(part);
 			BtlUnit_GetPartsWorldPos(part, &wx, &wy, &wz);
-			animPoseMain(*(s32*)part->field_0x1C0);
+			animPoseMain(part->poseId);
 			v = vec3_802eddd0;
 			v.x = wx;
 			v.y = wy;
@@ -548,12 +548,12 @@ void btlDispMain(void) {
 			if (!(unit->mAttributeFlags & 0x1000000) && !(part->attributes & 0x1000000)) {
 				if (!(part->attributes & kMainPart) || !(unit->mAttributeFlags & kVeiled)) {
 					if (part->field_0x4F4[3] < 0xFF ||
-					    animPoseTestXLU(*(s32*)part->field_0x1C0)) {
-						if (!(*(s32*)(part->field_0x1C0 + 0x44) & 0x100)) {
+					    animPoseTestXLU(part->poseId)) {
+						if (!(part->partFlags & 0x100)) {
 							dispEntry(4, dispCalcZ(&v2), 2, btlUnitPartsDisp, part);
 						}
 					} else {
-						if (!(*(s32*)(part->field_0x1C0 + 0x44) & 0x100)) {
+						if (!(part->partFlags & 0x100)) {
 							dispEntry(4, dispCalcZ(&v2), 1, btlUnitPartsDisp, part);
 						}
 					}
@@ -619,7 +619,7 @@ void btlDispMain(void) {
 				vivian.x = (f32)unit->work[0];
 				vivian.y = (f32)unit->work[1];
 				vivian.z = (f32)unit->work[2];
-				animPoseVivianMain(*(s32*)part->field_0x1C0, &vivian);
+				animPoseVivianMain(part->poseId, &vivian);
 			}
 			BtlUnit_ControlPoseSoundMain(part);
 			}
@@ -705,7 +705,7 @@ void btlUnitPartsDisp(CameraId camId, void* param) {
 	wp = _battleWorkPointer;
 	flip = 1.0f;
 	owner = parts->mOwner;
-	if (*(s32*)((char*)parts + 0x1C0) < 0) {
+	if (parts->poseId < 0) {
 		return;
 	}
 
@@ -943,19 +943,19 @@ void btlUnitPartsDisp(CameraId camId, void* param) {
 		parts->evtColor.g = parts->evtColor.g * owner->mMoveColorCur / 0xFF;
 		parts->evtColor.b = parts->evtColor.b * owner->mMoveColorCur / 0xFF;
 	}
-	animPoseSetMaterialEvtColor(*(s32*)((char*)parts + 0x1C0), parts->evtColor);
-	animPoseSetMaterialFlagOn(*(s32*)((char*)parts + 0x1C0), 0x40);
+	animPoseSetMaterialEvtColor(parts->poseId, parts->evtColor);
+	animPoseSetMaterialFlagOn(parts->poseId, 0x40);
 	if (parts->dispCallback) {
 		parts->dispCallback(parts, 0);
 	}
 	if (BtlUnit_CheckStatus(owner, 0x10)) {
-		animPoseSetMaterialFlagOn(*(s32*)((char*)parts + 0x1C0), 0x800000);
+		animPoseSetMaterialFlagOn(parts->poseId, 0x800000);
 	} else {
-		animPoseSetMaterialFlagOff(*(s32*)((char*)parts + 0x1C0), 0x800000);
+		animPoseSetMaterialFlagOff(parts->poseId, 0x800000);
 	}
-	animPoseDrawMtx(*(s32*)parts->field_0x1C0, m27, 1, f30, 2.0f);
-	animPoseDrawMtx(*(s32*)parts->field_0x1C0, m27, 2, f30, 2.0f);
-	animPoseDrawMtx(*(s32*)parts->field_0x1C0, m27, 3, f30, 2.0f);
+	animPoseDrawMtx(parts->poseId, m27, 1, f30, 2.0f);
+	animPoseDrawMtx(parts->poseId, m27, 2, f30, 2.0f);
+	animPoseDrawMtx(parts->poseId, m27, 3, f30, 2.0f);
 	if (parts->dispCallback) {
 		parts->dispCallback(parts, 1);
 	}
@@ -1073,9 +1073,9 @@ void btlUnitPartsBlurDisp(CameraId camId, BattleUnitPart* parts) {
 			if (color.a == 0) continue;
 			animPoseSetMaterialEvtColor(*(s32*)((char*)parts + 0x1c0), color);
 			animPoseSetMaterialFlagOn(*(s32*)((char*)parts + 0x1c0), 0x40);
-			animPoseDrawMtx(*(s32*)parts->field_0x1C0, work->orientation, 1, work->rotation, 2.0f);
-			animPoseDrawMtx(*(s32*)parts->field_0x1C0, work->orientation, 2, work->rotation, 2.0f);
-			animPoseDrawMtx(*(s32*)parts->field_0x1C0, work->orientation, 3, work->rotation, 2.0f);
+			animPoseDrawMtx(parts->poseId, work->orientation, 1, work->rotation, 2.0f);
+			animPoseDrawMtx(parts->poseId, work->orientation, 2, work->rotation, 2.0f);
+			animPoseDrawMtx(parts->poseId, work->orientation, 3, work->rotation, 2.0f);
 		}
 	}
 }

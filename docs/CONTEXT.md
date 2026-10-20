@@ -9802,3 +9802,27 @@ objects. Open: effTimestampN64Data `colorR/G/B` (70/180/120) are written but not
 battle_status_effect's BattleStatusChangeEntry serves both the per-unit list (`mCounter` is a 10-frame stagger there,
 `mFlags` the caller's p1) and the message list (a countdown and a Mario/partner/enemy bit set), so those two names fit
 only one use each; effKemuri8Data in the header still overlaps the file-local effKemuri8Particle.
+
+### Readability: battle_event_cmd's BattleUnit/BattleUnitPart fields, and the pose and event slots tree-wide (2026-10-19, Claude Haiku 5.5 then Claude Opus 5.5, n9-q-btlevt)
+
+Haiku's three commits on battle_event_cmd.c, checked field by field: the 48 offset_to_field conversions land on the
+right members (BattleUnit seMode 0x188 / seModeSrc 0x1C0, BattleUnitPart seMode 0xC0 / seModeSrc 0xF8, each mode's
+sfx names, delay and intervals at the right width, part statusPoseKind 0x215 u8, motionSpeed 0x20C f32);
+GetConsumeItem's cursor read is `commandMenu.cursor[11].field_0` (0x171C + 0x498 + 11 * 0xC = 0x1C38); the kind
+literals are UNIT_MARIO / TYPE_PARTNER_MIN / TYPE_PARTNER_MAX. _MoveSoundControlCore's BtlUnitSeMode* prototype
+matches its only two callers. Opus then named what Haiku had proved but left as `field_0x` because other files use
+it: BattleUnitPart 0x1C0 `poseId` (the animPoseEntry handle, -1 when empty, released by animPoseRelease) and 0x1C4
+`poseName` (char[0x40]: btlevtcmd_AnimeChangePoseDirect strcpy's the animation name there, btlUnitPartsDisp passes
+it to animPoseSetAnim, black_peach strcmp's it, BtlUnit_Entry clears its first byte); BattleUnit 0x29C
+`attackEventCode` (the action script battle_seq starts into attackEventId: weapon mAttackEvtScript, the default
+wait/defend/appeal/escape scripts, BtlUnit_GetData 2/3) and 0x2B4/0x2B8 `entryEventCode`/`entryEventId`
+(btlevtcmd_SetEventEntry's script, started for each unit at battle start; the id is cleared once evtCheckID says it
+ended). Every user in src/ and rels/ went over, raw `(u8*)part + 0x1C0` casts included (battle_unit, battle_seq,
+battle_mario, battle_disp, eff_majinai, unit_heavy_bom, batten_leader, black_peach). battle_disp's
+`part->field_0x1C0 + 0x44` and `field_0x1C0[0x54]`/`[0x55]` indexed past the old 0x44-byte block: they are
+`partFlags`, `statusPoseStep` and `statusPoseKind`. _MoveSoundControlEndCore now takes (BattleUnit*, BtlUnitSeMode*)
+and _MoveSoundControlCore's owner is a BattleUnitPart*. Both handle checks keep the unsigned compare against
+0xFFFFFFFF: `sfxHandle != -1` is an instruction shorter and broke the checksum. Left: BattleUnit 0x2A0 and 0x2A8
+(attack flags: bits 1/2/8/0x10 steer battle_seq's action dispatch) stay unnamed. Matching build 32 files OK; all 19
+changed C files compile with and without MUST_MATCH, and the natural objects are equivalent to the pre-branch ones
+(tools/obj_equiv.py). Cleanup index 43.102 -> 42.632 (field_0x 5554 -> 5434, raw_offset 1981 -> 1876).

@@ -122,7 +122,7 @@ void effMajinaiMain(EffectEntry* effect) {
             } else {
                 BattleUnit* unit = BattleGetMarioPtr(_battleWorkPointer);
                 BattleUnitPart* part = BtlUnit_GetPartsPtr(unit, BtlUnit_GetBodyPartsId(unit));
-                animPoseSetMaterialFlagOn(*(s32*)((u8*)part + 0x1C0), 0x800);
+                animPoseSetMaterialFlagOn(part->poseId, 0x800);
             }
 
             if (animPoseGetLoopTimes(work->animPose) >= 0.93f) {
@@ -164,7 +164,7 @@ void effMajinaiMain(EffectEntry* effect) {
             } else {
                 BattleUnit* unit = BattleGetMarioPtr(_battleWorkPointer);
                 BattleUnitPart* part = BtlUnit_GetPartsPtr(unit, BtlUnit_GetBodyPartsId(unit));
-                animPoseSetMaterialFlagOff(*(s32*)((u8*)part + 0x1C0), 0x800);
+                animPoseSetMaterialFlagOff(part->poseId, 0x800);
             }
 
             work->alpha -= 5;

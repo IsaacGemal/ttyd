@@ -433,7 +433,7 @@ static USER_FUNC(waku_main) {
     unit = BattleGetUnitPtr(wp, id);
     part1 = BtlUnit_GetPartsPtr(unit, 1);
     part3 = BtlUnit_GetPartsPtr(unit, 3);
-    poseId = *(s32*)part1->field_0x1C0;
+    poseId = part1->poseId;
     animPoseWorldPositionEvalOn(poseId);
     animPoseGetAnimBaseDataPtr(poseId);
     pose = animPoseGetAnimPosePtr(poseId);

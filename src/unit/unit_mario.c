@@ -172,7 +172,7 @@ EVT_END()
 s32 _get_local_frame(EventEntry* event, BOOL isFirstCall) {
     s32 arg = event->args[0];
     AnimationPose* pose =
-        animPoseGetAnimPosePtr(*(s32*)BattleGetUnitPartsPtr(BattleTransID(event, -2), 1)->field_0x1C0);
+        animPoseGetAnimPosePtr(BattleGetUnitPartsPtr(BattleTransID(event, -2), 1)->poseId);
 
     evtSetValue(event, arg, (s32)pose->clipTime);
     return EVT_RETURN_DONE;
@@ -225,9 +225,9 @@ static s32 _mario_makkuro_set(EventEntry* event, BOOL isFirstCall) {
 
     if (mario != NULL) {
         mapSetTevCallback(0xB, callback);
-        animPoseSetMaterialFlagOn(*(s32*)BtlUnit_GetPartsPtr(mario, 1)->field_0x1C0, 0xB000000);
-        animPoseSetMaterialFlagOn(*(s32*)BtlUnit_GetPartsPtr(mario, 2)->field_0x1C0, 0xB000000);
-        animPoseSetMaterialFlagOn(*(s32*)BtlUnit_GetPartsPtr(mario, 3)->field_0x1C0, 0xB000000);
+        animPoseSetMaterialFlagOn(BtlUnit_GetPartsPtr(mario, 1)->poseId, 0xB000000);
+        animPoseSetMaterialFlagOn(BtlUnit_GetPartsPtr(mario, 2)->poseId, 0xB000000);
+        animPoseSetMaterialFlagOn(BtlUnit_GetPartsPtr(mario, 3)->poseId, 0xB000000);
     }
     return EVT_RETURN_DONE;
 }
@@ -279,33 +279,33 @@ s32 _mario_super_emblem_anim_set(EventEntry* event, s32 mode) {
             return EVT_RETURN_DONE;
         }
         part = BattleGetUnitPartsPtr(id, 1);
-        animPoseGetAnimPosePtr(*(s32*)part->field_0x1C0);
-        if (*(s32*)part->field_0x1C0 != -1) {
-            animPoseRelease(*(s32*)part->field_0x1C0);
-            *(s32*)part->field_0x1C0 = -1;
+        animPoseGetAnimPosePtr(part->poseId);
+        if (part->poseId != -1) {
+            animPoseRelease(part->poseId);
+            part->poseId = -1;
         }
         part = BattleGetUnitPartsPtr(id, 2);
-        animPoseGetAnimPosePtr(*(s32*)part->field_0x1C0);
-        if (*(s32*)part->field_0x1C0 != -1) {
-            animPoseRelease(*(s32*)part->field_0x1C0);
-            *(s32*)part->field_0x1C0 = -1;
+        animPoseGetAnimPosePtr(part->poseId);
+        if (part->poseId != -1) {
+            animPoseRelease(part->poseId);
+            part->poseId = -1;
         }
         part = BattleGetUnitPartsPtr(id, 3);
-        animPoseGetAnimPosePtr(*(s32*)part->field_0x1C0);
-        if (*(s32*)part->field_0x1C0 != -1) {
-            animPoseRelease(*(s32*)part->field_0x1C0);
-            *(s32*)part->field_0x1C0 = -1;
+        animPoseGetAnimPosePtr(part->poseId);
+        if (part->poseId != -1) {
+            animPoseRelease(part->poseId);
+            part->poseId = -1;
         }
     }
 
     if (animEffectAsync(anim, 1)) {
         BattleUnitPart* part;
         part = BattleGetUnitPartsPtr(id, 1);
-        *(s32*)part->field_0x1C0 = animPoseEntry(anim, 1);
+        part->poseId = animPoseEntry(anim, 1);
         part = BattleGetUnitPartsPtr(id, 2);
-        *(s32*)part->field_0x1C0 = animPoseEntry(anim, 1);
+        part->poseId = animPoseEntry(anim, 1);
         part = BattleGetUnitPartsPtr(id, 3);
-        *(s32*)part->field_0x1C0 = animPoseEntry(anim, 1);
+        part->poseId = animPoseEntry(anim, 1);
         return EVT_RETURN_DONE;
     }
 

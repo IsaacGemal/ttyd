@@ -242,7 +242,7 @@ USER_FUNC(replace_evt) {
 
     part = BattleGetUnitPartsPtr(BattleTransID(event, -2), 1);
     unit = BattleGetUnitPtr(_battleWorkPointer, BattleTransID(event, -2));
-    animData = animPoseGetAnimBaseDataPtr(*(s32*)part->field_0x1C0);
+    animData = animPoseGetAnimBaseDataPtr(part->poseId);
     vmin = (Vec){ animData->bboxMin.x, animData->bboxMin.y, animData->bboxMin.z };
     vmax = (Vec){ animData->bboxMax.x, animData->bboxMax.y, animData->bboxMax.z };
     width = (s32)(2.0f * (vmax.x - vmin.x));
@@ -254,12 +254,12 @@ USER_FUNC(replace_evt) {
     height /= 2;
     size = GXGetTexBufferSize(width, height, GX_TF_RGB5A3, GX_FALSE, 0);
     p->tex = smartAlloc(size, 1);
-    p->poseId = *(s32*)part->field_0x1C0;
+    p->poseId = part->poseId;
     p->part = part;
     GXInitTexObj(&p->texObj, p->tex->address, width, height, GX_TF_RGB5A3, GX_CLAMP, GX_CLAMP, GX_FALSE);
     GXInitTexObjLOD(&p->texObj, GX_NEAR, GX_NEAR, 0.0f, 0.0f, 0.0f, GX_FALSE, GX_FALSE, GX_ANISO_1);
     PSMTXIdentity(p->mtx);
-    animGetPtr()->poses[*(s32*)part->field_0x1C0].flags |= 0x10;
+    animGetPtr()->poses[part->poseId].flags |= 0x10;
     *(void (**)(BattleUnitPart*, s32))((u8*)part + 0x210) = replace_callback;
     *(WanawanaWork**)((u8*)unit + 0x310) = p;
     *(smartEntry**)((u8*)unit + 0x318) = p->tex;

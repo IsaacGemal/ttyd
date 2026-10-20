@@ -204,7 +204,7 @@ USER_FUNC(battle_evt_majo_disp_on) {
     v5 = evtGetValue(event, args[5]);
     unit = BattleGetUnitPtr(_battleWorkPointer, id);
     parts = BattleGetUnitPartsPtr(id, v1);
-    pose = *(s32*)parts->field_0x1C0;
+    pose = parts->poseId;
 
     if (isFirstCall) {
 #ifdef MUST_MATCH
@@ -1168,7 +1168,7 @@ USER_FUNC(battle_evt_majo_disp_off) {
     v3 = evtGetValue(event, args[3]);
     unit = BattleGetUnitPtr(_battleWorkPointer, id);
     parts = BattleGetUnitPartsPtr(id, v1);
-    pose = *(s32*)parts->field_0x1C0;
+    pose = parts->poseId;
 
     if (isFirstCall) {
         event->userdata[0] = 0;
