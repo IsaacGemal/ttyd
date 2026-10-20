@@ -1900,7 +1900,7 @@ USER_FUNC(evt_npc_set_attack_mode) {
     const char* name = (const char*)evtGetValue(event, args[0]);
     s16 mode = evtGetValue(event, args[1]);
     NpcEntry* npc = evtNpcNameToPtr(event, name);
-    npc->field_2F8 = mode;
+    npc->attackMode = mode;
     return EVT_RETURN_DONE;
 }
 

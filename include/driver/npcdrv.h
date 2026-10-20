@@ -204,7 +204,7 @@ typedef struct NpcEntry {
     f32 homingRange;                // 0x228, verified
     f32 homingAngle;                // 0x22C, verified
     NpcBattleInfo battleInfo;       // 0x230
-    s32 field_2F8;                  // 0x2F8
+    s32 attackMode;                 // 0x2F8, set by evt_npc_set_attack_mode; nonzero makes a stomp a first strike against Mario
     u32 field_2FC;                  // 0x2FC
     u8 field_300[0x304 - 0x300];    // 0x300
     void* unitWork[4];              // 0x304

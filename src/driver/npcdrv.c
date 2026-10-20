@@ -155,7 +155,7 @@ BOOL dbg_battleskip;
 #define ENC(p, T, off) (*(T*)((u8*)(p) + (off)))
 typedef struct FbatHitInfo {
     s32 kind;           // 0x0, the attack (the fbatSetAttackAnnounce code)
-    s32 field_0x4;      // 0x4, the npc's field_2F8, for a stomp that becomes the enemy's first strike
+    s32 attackMode;     // 0x4, the npc's attackMode, for a stomp that becomes the enemy's first strike
     f32 dist;           // 0x8, to the nearest npc hit so far
     u32 flags;          // 0xC, 1: only a test (no attack announce)
 } FbatHitInfo;
@@ -927,7 +927,7 @@ s32 npcEntry(const char* a1, const char* animName) {
     entry->field_110 = -1;
     entry->color = (GXColor){ 0xFF, 0xFF, 0xFF, 0xFF };
     entry->cameraId = CAMERA_3D;
-    entry->field_2F8 = 0;
+    entry->attackMode = 0;
     entry->balloonType = 1;
     if (animPoseGetVivianType(entry->poseId)) {
         entry->flags |= 0x4000000;
@@ -2955,7 +2955,7 @@ void* fbatHitCheck(s32 flags, s32 out) {
                     continue;
                 }
                 if (stomp && !(npc->jumpFlags & 0x10000) && mario->unk4C <= 0) {
-                    if (npc->field_2F8 == 0 || fbatNpcEventDone(npc)) {
+                    if (npc->attackMode == 0 || fbatNpcEventDone(npc)) {
                         if (npc->flags & 0x20000000) {
                             continue;
                         }
@@ -2981,7 +2981,7 @@ void* fbatHitCheck(s32 flags, s32 out) {
                         if (!dryRun) {
                             fbatSetAttackAnnounce(info.kind);
                         }
-                        info.field_0x4 = npc->field_2F8;
+                        info.attackMode = npc->attackMode;
                     }
                 }
                 if (!jump) {
