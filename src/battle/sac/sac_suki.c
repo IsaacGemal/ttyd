@@ -545,7 +545,7 @@ static void main_star(void) {
 s32 end_suki(EventEntry* event, BOOL isFirstCall) {
     SukiWork* work = get_ptr();
 
-    effDelete(*(EffectEntry**)((u8*)work->effect->userdata + 0x34));
+    effDelete(((effStarStoneData*)work->effect->userdata)->field_0x34);
     effDelete(work->effect);
     return 2;
 }
