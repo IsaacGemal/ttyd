@@ -606,38 +606,38 @@ void effFunemizuShibukiDisp(CameraId camId, void* param) {
 // ---------------------------------------------------------------------------
 
 // .rodata: the map-name strings, in the original's address order.
-const char str_802FE7A0[8] = "dou_02";
-const char str_802FE7A8[8] = "dou_03";
-const char str_802FE7B0[8] = "dou_04";
-const char str_802FE7B8[8] = "dou_05";
-const char str_802FE7C0[8] = "dou_07";
-const char str_802FE7C8[8] = "dou_08";
-const char str_802FE7D0[8] = "dou_09";
-const char str_802FE7D8[8] = "dou_10";
-const char str_802FE7E0[8] = "dou_11";
-const char str_802FE7E8[8] = "dou_12";
-const char str_802FE7F0[8] = "gon_01";
-const char str_802FE7F8[8] = "gor_00";
-const char str_802FE800[8] = "gor_02";
-const char str_802FE808[8] = "hei_01";
-const char str_802FE810[8] = "las_04";
-const char str_802FE818[8] = "las_09";
-const char str_802FE820[8] = "mri_16";
-const char str_802FE828[8] = "muj_00";
-const char str_802FE830[8] = "muj_02";
-const char str_802FE838[8] = "muj_04";
-const char str_802FE840[8] = "muj_10";
+const char str_dou_02[8] = "dou_02";
+const char str_dou_03[8] = "dou_03";
+const char str_dou_04[8] = "dou_04";
+const char str_dou_05[8] = "dou_05";
+const char str_dou_07[8] = "dou_07";
+const char str_dou_08[8] = "dou_08";
+const char str_dou_09[8] = "dou_09";
+const char str_dou_10[8] = "dou_10";
+const char str_dou_11[8] = "dou_11";
+const char str_dou_12[8] = "dou_12";
+const char str_gon_01[8] = "gon_01";
+const char str_gor_00[8] = "gor_00";
+const char str_gor_02[8] = "gor_02";
+const char str_hei_01[8] = "hei_01";
+const char str_las_04[8] = "las_04";
+const char str_las_09[8] = "las_09";
+const char str_mri_16[8] = "mri_16";
+const char str_muj_00[8] = "muj_00";
+const char str_muj_02[8] = "muj_02";
+const char str_muj_04[8] = "muj_04";
+const char str_muj_10[8] = "muj_10";
 const char str_802FE848[8] = "nok_00";
-const char str_802FE850[8] = "nok_01";
-const char str_802FE858[8] = "pik_00";
-const char str_802FE860[8] = "pik_01";
+const char str_nok_01[8] = "nok_01";
+const char str_pik_00[8] = "pik_00";
+const char str_pik_01[8] = "pik_01";
 const char str_802FE868[8] = "pik_04";
-const char str_802FE870[8] = "tik_02";
-const char str_802FE878[8] = "tik_15";
-const char str_802FE880[8] = "tik_16";
-const char str_802FE888[8] = "tik_17";
-const char str_802FE890[8] = "tik_18";
-const char str_802FE898[8] = "tik_20";
+const char str_tik_02[8] = "tik_02";
+const char str_tik_15[8] = "tik_15";
+const char str_tik_16[8] = "tik_16";
+const char str_tik_17[8] = "tik_17";
+const char str_tik_18[8] = "tik_18";
+const char str_tik_20[8] = "tik_20";
 const Vec vec3_802fe8a0 = { 0.0f, 0.0f, 0.0f };
 
 #pragma force_active on
@@ -721,38 +721,38 @@ u32 gor_fune_dl_1_1[16] = {
 	0x00010513, 0x00001219, 0x00010112, 0x00001318, 0x00000200, 0x00000000, 0x00000000, 0x00000000,
 };
 FunemizuMapEntry unk_803b0640[32] = {
-	{ str_802FE7A0, 0x0E2CA200 },
-	{ str_802FE7A8, 0x0E2CA200 },
-	{ str_802FE7B0, 0x0E2CA200 },
-	{ str_802FE7B8, 0x0E2CA200 },
-	{ str_802FE7C0, 0x0E2CA200 },
-	{ str_802FE7C8, 0x0E2CA200 },
-	{ str_802FE7D0, 0x0E2CA200 },
-	{ str_802FE7D8, 0x0E2CA200 },
-	{ str_802FE7E0, 0x0E2CA200 },
-	{ str_802FE7E8, 0x0E2CA200 },
-	{ str_802FE7F0, 0x00614900 },
-	{ str_802FE7F8, 0x00306500 },
-	{ str_802FE800, 0x00306500 },
-	{ str_802FE808, 0x51C3CB00 },
-	{ str_802FE810, 0x081C2C00 },
-	{ str_802FE818, 0x45798E00 },
-	{ str_802FE820, 0x00A6FF00 },
-	{ str_802FE828, 0x0E2CA200 },
-	{ str_802FE830, 0x20305D00 },
-	{ str_802FE838, 0x0E2CA200 },
-	{ str_802FE840, 0x0E2CA200 },
+	{ str_dou_02, 0x0E2CA200 },
+	{ str_dou_03, 0x0E2CA200 },
+	{ str_dou_04, 0x0E2CA200 },
+	{ str_dou_05, 0x0E2CA200 },
+	{ str_dou_07, 0x0E2CA200 },
+	{ str_dou_08, 0x0E2CA200 },
+	{ str_dou_09, 0x0E2CA200 },
+	{ str_dou_10, 0x0E2CA200 },
+	{ str_dou_11, 0x0E2CA200 },
+	{ str_dou_12, 0x0E2CA200 },
+	{ str_gon_01, 0x00614900 },
+	{ str_gor_00, 0x00306500 },
+	{ str_gor_02, 0x00306500 },
+	{ str_hei_01, 0x51C3CB00 },
+	{ str_las_04, 0x081C2C00 },
+	{ str_las_09, 0x45798E00 },
+	{ str_mri_16, 0x00A6FF00 },
+	{ str_muj_00, 0x0E2CA200 },
+	{ str_muj_02, 0x20305D00 },
+	{ str_muj_04, 0x0E2CA200 },
+	{ str_muj_10, 0x0E2CA200 },
 	{ str_802FE848, 0x69C3D700 },
-	{ str_802FE850, 0x69C3D700 },
-	{ str_802FE858, 0x82E3DF00 },
-	{ str_802FE860, 0x6DCBFF00 },
+	{ str_nok_01, 0x69C3D700 },
+	{ str_pik_00, 0x82E3DF00 },
+	{ str_pik_01, 0x6DCBFF00 },
 	{ str_802FE868, 0x6DCBFF00 },
-	{ str_802FE870, 0x042C5100 },
-	{ str_802FE878, 0x304D5900 },
-	{ str_802FE880, 0x304D5900 },
-	{ str_802FE888, 0x304D5900 },
-	{ str_802FE890, 0x304D5900 },
-	{ str_802FE898, 0x304D5900 },
+	{ str_tik_02, 0x042C5100 },
+	{ str_tik_15, 0x304D5900 },
+	{ str_tik_16, 0x304D5900 },
+	{ str_tik_17, 0x304D5900 },
+	{ str_tik_18, 0x304D5900 },
+	{ str_tik_20, 0x304D5900 },
 };
 __declspec(section ".data") u32 unk_803b0640_end[1] = { 0 };
 

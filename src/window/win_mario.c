@@ -20,11 +20,11 @@
 // .sdata2 anim names shared with winMarioInit
 const char str_8041D578[6] = "M_S_1";
 const char str_8041D580[4] = "S_1";
-const char str_8041D584[6] = "M_H_1";
-const char str_8041D58C[4] = "R_1";
-const char str_8041D590[6] = "M_R_1";
-const char str_8041D598[6] = "M_H_4";
-const char str_8041D5A0[6] = "M_H_7";
+const char str_M_H_1[6] = "M_H_1";
+const char str_R_1[4] = "R_1";
+const char str_M_R_1[6] = "M_R_1";
+const char str_M_H_4[6] = "M_H_4";
+const char str_M_H_7[6] = "M_H_7";
 
 // .rodata / .sdata2 objects this unit reads but does not define yet
 
@@ -45,32 +45,32 @@ extern LinkDt linkDt[];
 extern BattleWeapon* superActionTable[];
 
 // .rodata strings, before the code: their jumptable pools land after them
-const char str_802F5650[20] = "msg_menu_mario_lv\x00\x00\x00";
-const char str_802F5664[24] = "msg_menu_mario_star_r\x00\x00\x00";
-const char str_802F567C[20] = "msg_menu_mario_hp\x00\x00\x00";
-const char str_802F5690[20] = "msg_menu_mario_fp\x00\x00\x00";
-const char str_802F56A4[20] = "msg_menu_mario_bp\x00\x00\x00";
-const char str_802F56B8[12] = "msg_slit\x00\x00\x00\x00";
-const char str_802F56C4[12] = "msg_plane\x00\x00\x00";
-const char str_802F56D0[12] = "msg_ship\x00\x00\x00\x00";
-const char str_802F56DC[12] = "msg_roll\x00\x00\x00\x00";
-const char str_802F56E8[20] = "msg_menu_star_power\x00";
-const char str_802F56FC[20] = "msg_menu_mario_waza\x00";
-const char str_802F5710[24] = "msg_menu_mario_star_p\x00\x00\x00";
-const char str_802F5728[20] = "msg_menu_mario_coin\x00";
-const char str_802F573C[24] = "msg_menu_mario_kakera\x00\x00\x00";
-const char str_802F5754[24] = "msg_menu_mario_scoin\x00\x00\x00\x00";
-const char str_802F576C[20] = "msg_menu_mario_time\x00";
-const char str_802F5780[16] = "msg_hammer_1\x00\x00\x00\x00";
-const char str_802F5790[16] = "msg_hammer_2\x00\x00\x00\x00";
-const char str_802F57A0[16] = "msg_hammer_3\x00\x00\x00\x00";
-const char str_802F57B0[12] = "msg_boots_1\x00";
-const char str_802F57BC[12] = "msg_boots_2\x00";
-const char str_802F57C8[12] = "msg_boots_3\x00";
+const char str_msg_menu_mario_lv[20] = "msg_menu_mario_lv\x00\x00\x00";
+const char str_msg_menu_mario_star_r[24] = "msg_menu_mario_star_r\x00\x00\x00";
+const char str_msg_menu_mario_hp[20] = "msg_menu_mario_hp\x00\x00\x00";
+const char str_msg_menu_mario_fp[20] = "msg_menu_mario_fp\x00\x00\x00";
+const char str_msg_menu_mario_bp[20] = "msg_menu_mario_bp\x00\x00\x00";
+const char str_msg_slit[12] = "msg_slit\x00\x00\x00\x00";
+const char str_msg_plane[12] = "msg_plane\x00\x00\x00";
+const char str_msg_ship[12] = "msg_ship\x00\x00\x00\x00";
+const char str_msg_roll[12] = "msg_roll\x00\x00\x00\x00";
+const char str_msg_menu_star_power[20] = "msg_menu_star_power\x00";
+const char str_msg_menu_mario_waza[20] = "msg_menu_mario_waza\x00";
+const char str_msg_menu_mario_star_p[24] = "msg_menu_mario_star_p\x00\x00\x00";
+const char str_msg_menu_mario_coin[20] = "msg_menu_mario_coin\x00";
+const char str_msg_menu_mario_kakera[24] = "msg_menu_mario_kakera\x00\x00\x00";
+const char str_msg_menu_mario_scoin[24] = "msg_menu_mario_scoin\x00\x00\x00\x00";
+const char str_msg_menu_mario_time[20] = "msg_menu_mario_time\x00";
+const char str_msg_hammer_1[16] = "msg_hammer_1\x00\x00\x00\x00";
+const char str_msg_hammer_2[16] = "msg_hammer_2\x00\x00\x00\x00";
+const char str_msg_hammer_3[16] = "msg_hammer_3\x00\x00\x00\x00";
+const char str_msg_boots_1[12] = "msg_boots_1\x00";
+const char str_msg_boots_2[12] = "msg_boots_2\x00";
+const char str_msg_boots_3[12] = "msg_boots_3\x00";
 
 // .sdata lookup tables (window "help" message ids per upgrade level)
-const char* hammer_help[4] = { NULL, str_802F5780, str_802F5790, str_802F57A0 };
-const char* boots_help[4] = { NULL, str_802F57B0, str_802F57BC, str_802F57C8 };
+const char* hammer_help[4] = { NULL, str_msg_hammer_1, str_msg_hammer_2, str_msg_hammer_3 };
+const char* boots_help[4] = { NULL, str_msg_boots_1, str_msg_boots_2, str_msg_boots_3 };
 
 
 void winMarioInit(WindowWork* work) {
@@ -215,7 +215,7 @@ s32 winMarioMain(WindowWork* work) {
                 } else {
                     switch (marioGetColor()) {
                     case 0:
-                        SET_ANIM(str_8041D58C);
+                        SET_ANIM(str_R_1);
                         break;
                     case 1:
                         SET_ANIM("R_15");
@@ -314,7 +314,7 @@ s32 winMarioMain(WindowWork* work) {
                 } else {
                     switch (marioGetColor()) {
                     case 0:
-                        anim = str_8041D58C;
+                        anim = str_R_1;
                         break;
                     case 1:
                         anim = "R_15";
@@ -364,7 +364,7 @@ s32 winMarioMain(WindowWork* work) {
                 } else {
                     switch (marioGetColor()) {
                     case 0:
-                        anim = str_8041D58C;
+                        anim = str_R_1;
                         break;
                     case 1:
                         anim = "R_15";
@@ -611,7 +611,7 @@ void fukidashi(WindowWork* work, u32 type, f32 x, f32 y) {
     }
 }
 
-const char* hammer_pose[4] = { NULL, str_8041D584, str_8041D598, str_8041D5A0 };
+const char* hammer_pose[4] = { NULL, str_M_H_1, str_M_H_4, str_M_H_7 };
 
 #define POSE (work->marioPose)
 
@@ -844,24 +844,24 @@ void winMarioDisp(CameraId camId, void* param, s32 idx) {
 
 // .data: link table
 LinkDt linkDt[18] = {
-    { (s16)0xFEF4, (s16)0x008E, str_8041D578, NULL, str_8041D580, 0x0000, 0x0000, str_802F5650, { 0x06, 0x01, 0x0B, 0x09 } },
-    { (s16)0xFEF4, (s16)0x0076, str_8041D578, NULL, str_8041D580, 0x0000, 0x0000, str_802F5664, { 0x00, 0x02, 0x0B, 0x07 } },
-    { (s16)0xFEF0, (s16)0x0044, str_8041D584, NULL, str_8041D58C, 0x0009, 0x0000, NULL, { 0x01, 0x03, 0x0B, 0x07 } },
-    { (s16)0xFF0E, (s16)0x0018, str_8041D590, NULL, str_8041D58C, 0x0006, 0x0000, NULL, { 0x02, 0x04, 0x0B, 0x08 } },
-    { (s16)0xFEF2, (s16)0xFFDE, str_8041D578, NULL, str_8041D580, 0x0000, 0x0000, str_802F567C, { 0x03, 0x05, 0x0D, 0x0D } },
-    { (s16)0xFEF2, (s16)0xFFBC, str_8041D578, NULL, str_8041D580, 0x0000, 0x0000, str_802F5690, { 0x04, 0x06, 0x0D, 0x0D } },
-    { (s16)0xFEF2, (s16)0xFF9A, str_8041D578, NULL, str_8041D580, 0x0000, 0x0000, str_802F56A4, { 0x05, 0x00, 0x0D, 0x0D } },
-    { (s16)0xFF9C, (s16)0x005A, str_8041D578, str_8041D578, str_8041D580, 0x0002, 0x0000, str_802F56B8, { 0x09, 0x0A, 0x02, 0x09 } },
-    { (s16)0xFF9C, (s16)0x0014, str_8041D578, str_8041D578, str_8041D580, 0x0004, 0x0000, str_802F56C4, { 0x0A, 0x04, 0x03, 0x0A } },
-    { (s16)0xFFCE, (s16)0x0082, str_8041D578, str_8041D578, str_8041D580, 0x0005, 0x0000, str_802F56D0, { 0x00, 0x07, 0x00, 0x0B } },
-    { (s16)0xFFCE, (s16)0x003C, str_8041D578, str_8041D578, str_8041D580, 0x0003, 0x0000, str_802F56DC, { 0x07, 0x08, 0x08, 0x0C } },
-    { (s16)0x0014, (s16)0x006A, str_8041D578, NULL, str_8041D580, 0x0000, 0x0000, str_802F56E8, { 0x11, 0x0C, 0x09, 0x00 } },
-    { (s16)0x0014, (s16)0x0046, str_8041D578, NULL, str_8041D580, 0x0000, 0x0000, str_802F56FC, { 0x0B, 0x0D, 0x0A, 0x00 } },
-    { (s16)0x0003, (s16)0x000A, str_8041D578, NULL, str_8041D580, 0x0000, 0x0000, str_802F5710, { 0x0C, 0x0E, 0x04, 0x04 } },
-    { (s16)0x0003, (s16)0xFFEE, str_8041D578, NULL, str_8041D580, 0x0000, 0x0000, str_802F5728, { 0x0D, 0x0F, 0x04, 0x04 } },
-    { (s16)0x0003, (s16)0xFFD2, str_8041D578, NULL, str_8041D580, 0x0000, 0x0000, str_802F573C, { 0x0E, 0x10, 0x04, 0x04 } },
-    { (s16)0x0003, (s16)0xFFB6, str_8041D578, NULL, str_8041D580, 0x0000, 0x0000, str_802F5754, { 0x0F, 0x11, 0x04, 0x04 } },
-    { (s16)0x0003, (s16)0xFF9A, str_8041D578, NULL, str_8041D580, 0x0000, 0x0000, str_802F576C, { 0x10, 0x0B, 0x04, 0x04 } },
+    { (s16)0xFEF4, (s16)0x008E, str_8041D578, NULL, str_8041D580, 0x0000, 0x0000, str_msg_menu_mario_lv, { 0x06, 0x01, 0x0B, 0x09 } },
+    { (s16)0xFEF4, (s16)0x0076, str_8041D578, NULL, str_8041D580, 0x0000, 0x0000, str_msg_menu_mario_star_r, { 0x00, 0x02, 0x0B, 0x07 } },
+    { (s16)0xFEF0, (s16)0x0044, str_M_H_1, NULL, str_R_1, 0x0009, 0x0000, NULL, { 0x01, 0x03, 0x0B, 0x07 } },
+    { (s16)0xFF0E, (s16)0x0018, str_M_R_1, NULL, str_R_1, 0x0006, 0x0000, NULL, { 0x02, 0x04, 0x0B, 0x08 } },
+    { (s16)0xFEF2, (s16)0xFFDE, str_8041D578, NULL, str_8041D580, 0x0000, 0x0000, str_msg_menu_mario_hp, { 0x03, 0x05, 0x0D, 0x0D } },
+    { (s16)0xFEF2, (s16)0xFFBC, str_8041D578, NULL, str_8041D580, 0x0000, 0x0000, str_msg_menu_mario_fp, { 0x04, 0x06, 0x0D, 0x0D } },
+    { (s16)0xFEF2, (s16)0xFF9A, str_8041D578, NULL, str_8041D580, 0x0000, 0x0000, str_msg_menu_mario_bp, { 0x05, 0x00, 0x0D, 0x0D } },
+    { (s16)0xFF9C, (s16)0x005A, str_8041D578, str_8041D578, str_8041D580, 0x0002, 0x0000, str_msg_slit, { 0x09, 0x0A, 0x02, 0x09 } },
+    { (s16)0xFF9C, (s16)0x0014, str_8041D578, str_8041D578, str_8041D580, 0x0004, 0x0000, str_msg_plane, { 0x0A, 0x04, 0x03, 0x0A } },
+    { (s16)0xFFCE, (s16)0x0082, str_8041D578, str_8041D578, str_8041D580, 0x0005, 0x0000, str_msg_ship, { 0x00, 0x07, 0x00, 0x0B } },
+    { (s16)0xFFCE, (s16)0x003C, str_8041D578, str_8041D578, str_8041D580, 0x0003, 0x0000, str_msg_roll, { 0x07, 0x08, 0x08, 0x0C } },
+    { (s16)0x0014, (s16)0x006A, str_8041D578, NULL, str_8041D580, 0x0000, 0x0000, str_msg_menu_star_power, { 0x11, 0x0C, 0x09, 0x00 } },
+    { (s16)0x0014, (s16)0x0046, str_8041D578, NULL, str_8041D580, 0x0000, 0x0000, str_msg_menu_mario_waza, { 0x0B, 0x0D, 0x0A, 0x00 } },
+    { (s16)0x0003, (s16)0x000A, str_8041D578, NULL, str_8041D580, 0x0000, 0x0000, str_msg_menu_mario_star_p, { 0x0C, 0x0E, 0x04, 0x04 } },
+    { (s16)0x0003, (s16)0xFFEE, str_8041D578, NULL, str_8041D580, 0x0000, 0x0000, str_msg_menu_mario_coin, { 0x0D, 0x0F, 0x04, 0x04 } },
+    { (s16)0x0003, (s16)0xFFD2, str_8041D578, NULL, str_8041D580, 0x0000, 0x0000, str_msg_menu_mario_kakera, { 0x0E, 0x10, 0x04, 0x04 } },
+    { (s16)0x0003, (s16)0xFFB6, str_8041D578, NULL, str_8041D580, 0x0000, 0x0000, str_msg_menu_mario_scoin, { 0x0F, 0x11, 0x04, 0x04 } },
+    { (s16)0x0003, (s16)0xFF9A, str_8041D578, NULL, str_8041D580, 0x0000, 0x0000, str_msg_menu_mario_time, { 0x10, 0x0B, 0x04, 0x04 } },
 };
 
 #pragma force_active off
