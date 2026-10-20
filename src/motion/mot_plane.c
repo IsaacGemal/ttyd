@@ -21,11 +21,10 @@
 #include <string.h>
 #include "matching.h"
 
-// Raw MotionPlaneData accessors for fields the header does not name yet.
+// Raw accessor for the MarioWork word at 0x18C (MarioWork.unk18C).
 #define MF32(d, off) (*(f32*)((u8*)(d) + (off)))
-#define MFVEC(d, off) (*(Vec*)((u8*)(d) + (off)))
 
-// MotionPlaneData fields the header does not name yet (macro expands to raw offsets).
+// The plane data block of mario->motStruct.
 #define DATA ((MotionPlaneData*)mario->motStruct)
 
 // .rodata zero vectors used by the plane motion (original vec3_802c5c9c / vec3_802c5cd8...).
@@ -161,7 +160,7 @@ static inline void planeReset(void) {
 	m->dispFlags &= ~0x100;
 }
 
-// Plane state machine. Raw accesses below cover fields that are not named in the headers.
+// Plane state machine.
 // Matching local declaration/assignment order preserves the retail register allocation.
 #ifdef MUST_MATCH
 // Keep literal-initialized factors in the original load order and registers.
@@ -344,8 +343,8 @@ void mot_plane(void) {
 			mario->field_0x2A4 = zero;
 			((MotionPlaneData*)mario->motStruct)->pitch = zero;
 			((MotionPlaneData*)mario->motStruct)->bank = zero;
-			MF32(mario->motStruct, 0x14) = zero;
-			MF32(mario->motStruct, 0x10) = zero;
+			((MotionPlaneData*)mario->motStruct)->field_0x14 = zero;
+			((MotionPlaneData*)mario->motStruct)->field_0x10 = zero;
 		}
 		if (((MotionPlaneData*)mario->motStruct)->flags & 1) {
 			mario->dispPivot.x = planeData[33];
@@ -359,7 +358,7 @@ void mot_plane(void) {
 		mario->baseSpeed = __fabsf(0.02f * (f32)(s8)mario->wStickDir1);
 		mario->currSubMotionId = 0xC;
 		mario->baseSpeed = 1.0f;
-		MF32(mario->motStruct, 0x10) = 2.0f;
+		((MotionPlaneData*)mario->motStruct)->field_0x10 = 2.0f;
 		m = marioGetPtr();
 		m->unk148 = 0.0f;
 		m->unk150.z = 0.004f;
@@ -823,8 +822,8 @@ static void flyMain(void) {
 				}
 			}
 		} else {
-			if (DATA->pitch <= 0.0f || MF32(DATA, 0x14) <= 0.0f) {
-				if (MF32(DATA, 0x14) > 0.0f && MF32(DATA, 0x14) < 1.0f) {
+			if (DATA->pitch <= 0.0f || DATA->field_0x14 <= 0.0f) {
+				if (DATA->field_0x14 > 0.0f && DATA->field_0x14 < 1.0f) {
 					DATA->pitch = MATCH_F32(DATA->pitch) + planeData[30];
 				}
 				{
@@ -844,8 +843,8 @@ static void flyMain(void) {
 					onPlace = 1;
 				}
 				if (onPlace == 0) {
-					MF32(DATA, 0x1C) = f31;
-					DATA->pitch = DATA->pitch + MF32(DATA, 0x1C);
+					DATA->field_0x1C = f31;
+					DATA->pitch = DATA->pitch + DATA->field_0x1C;
 				} else {
 					DATA->pitch += -0.001f;
 					mario->baseSpeed += 0.5f;
@@ -858,7 +857,7 @@ static void flyMain(void) {
 				DATA->pitch = planeData[4];
 			}
 			if (DATA->pitch >= 6.0f) {
-				MF32(DATA, 0x14) = 0.0f;
+				DATA->field_0x14 = 0.0f;
 			}
 		}
 	}
@@ -890,12 +889,12 @@ static void flyMain(void) {
 					s = sin(3.1415927f * DATA->pitch / 180.0f);
 					a = planeData[21] * s;
 					f31 = f31 * a;
-					f31 = f31 + MF32(DATA, 0x14);
-					MF32(DATA, 0x14) = f31;
+					f31 = f31 + DATA->field_0x14;
+					DATA->field_0x14 = f31;
 				} else {
-					MF32(DATA, 0x14) = planeData[22];
+					DATA->field_0x14 = planeData[22];
 				}
-				DATA->pitch = DATA->pitch + MF32(DATA, 0x14);
+				DATA->pitch = DATA->pitch + DATA->field_0x14;
 				if (f31 <= 0.0f) {
 					if (mario->baseSpeed <= planeData[0] * planeData[23]) {
 						f31 = planeData[0] - mario->baseSpeed * planeData[24];
@@ -914,11 +913,11 @@ static void flyMain(void) {
 							if (v <= planeData[26]) {
 								v = 2.0f * planeData[26];
 							}
-							MF32(DATA, 0x1C) = v;
+							DATA->field_0x1C = v;
 						}
 					}
 				}
-				DATA->pitch = DATA->pitch + MF32(DATA, 0x1C);
+				DATA->pitch = DATA->pitch + DATA->field_0x1C;
 			}
 			{
 				f32 add;
@@ -927,13 +926,13 @@ static void flyMain(void) {
 					f32 s = sin(3.1415927f * (planeData[0] - mario->baseSpeed) / 180.0f);
 
 					add = planeData[18] * s;
-					MF32(DATA, 0x18) = MF32(DATA, 0x18) + add;
-					if (MF32(DATA, 0x18) <= planeData[19]) {
-						MF32(DATA, 0x18) = planeData[19];
+					DATA->field_0x18 = DATA->field_0x18 + add;
+					if (DATA->field_0x18 <= planeData[19]) {
+						DATA->field_0x18 = planeData[19];
 					}
 				} else {
-					add = 0.1f * -MF32(DATA, 0x18) + MF32(DATA, 0x18);
-					MF32(DATA, 0x18) = add;
+					add = 0.1f * -DATA->field_0x18 + DATA->field_0x18;
+					DATA->field_0x18 = add;
 				}
 				DATA->pitch = DATA->pitch + add;
 			}
@@ -944,8 +943,8 @@ static void flyMain(void) {
 			{
 				f32 s = sin(3.1415927f * (planeData[9] * __fabsf(DATA->pitch)) / 180.0f);
 
-				MF32(DATA, 0x10) = planeData[10] * s;
-				mario->baseSpeed = mario->baseSpeed + MF32(DATA, 0x10);
+				DATA->field_0x10 = planeData[10] * s;
+				mario->baseSpeed = mario->baseSpeed + DATA->field_0x10;
 			}
 			f3 = 0.0f;
 			if (DATA->pitch > 0.0f) {
@@ -959,16 +958,16 @@ static void flyMain(void) {
 				f31 = sin(3.1415927f * (planeData[12] * f3) / 180.0f);
 				y = sin(3.1415927f * (mario->baseSpeed * planeData[11]) / 180.0f);
 				x = planeData[13] * (y * f31);
-				MF32(DATA, 0x14) = MF32(DATA, 0x14) + x;
+				DATA->field_0x14 = DATA->field_0x14 + x;
 			}
 			if ((s8)(mario->wStickDir1 & 0xff) != 0) {
 				if (DATA->flags & 1) {
-					if ((s8)mario->wStickDir1 > 0 && MF32(DATA, 0x14) >= 1.0f) {
-						MF32(DATA, 0x14) = 1.0f;
+					if ((s8)mario->wStickDir1 > 0 && DATA->field_0x14 >= 1.0f) {
+						DATA->field_0x14 = 1.0f;
 					}
 				} else {
-					if ((s8)mario->wStickDir1 < 0 && MF32(DATA, 0x14) >= 1.0f) {
-						MF32(DATA, 0x14) = 1.0f;
+					if ((s8)mario->wStickDir1 < 0 && DATA->field_0x14 >= 1.0f) {
+						DATA->field_0x14 = 1.0f;
 					}
 				}
 				onPlace = 0;
@@ -977,9 +976,9 @@ static void flyMain(void) {
 					onPlace = 1;
 				}
 				if (onPlace == 0) {
-					MF32(DATA, 0x1C) += 0.1f * (1.0f - MF32(DATA, 0x1C));
-					if (MF32(DATA, 0x1C) >= 0.0f) {
-						MF32(DATA, 0x1C) = 0.0f;
+					DATA->field_0x1C += 0.1f * (1.0f - DATA->field_0x1C);
+					if (DATA->field_0x1C >= 0.0f) {
+						DATA->field_0x1C = 0.0f;
 					}
 				}
 			}
@@ -989,21 +988,21 @@ static void flyMain(void) {
 				onPlace = 1;
 			}
 			if (onPlace != 0) {
-				MF32(DATA, 0x24) = -22.0f;
+				DATA->field_0x24 = -22.0f;
 			} else {
-				MF32(DATA, 0x24) += 0.1f * (planeData[4] - MF32(DATA, 0x24));
+				DATA->field_0x24 += 0.1f * (planeData[4] - DATA->field_0x24);
 			}
-			DATA->pitch = DATA->pitch + MF32(DATA, 0x14);
-			if (DATA->pitch <= MF32(DATA, 0x24)) {
-				DATA->pitch = MF32(DATA, 0x24);
+			DATA->pitch = DATA->pitch + DATA->field_0x14;
+			if (DATA->pitch <= DATA->field_0x24) {
+				DATA->pitch = DATA->field_0x24;
 			}
-			MF32(DATA, 0x18) = 0.1f * -MF32(DATA, 0x18) + MF32(DATA, 0x18);
+			DATA->field_0x18 = 0.1f * -DATA->field_0x18 + DATA->field_0x18;
 		}
 	}
 	if (mario->baseSpeed >= planeData[0]) {
 		mario->baseSpeed = planeData[0];
 	}
-	mario->position.y = mario->position.y + MF32(DATA, 0x18);
+	mario->position.y = mario->position.y + DATA->field_0x18;
 	mario->position.y = mario->position.y - planeData[29];
 	mario->dispRot.z = revise360(-DATA->pitch);
 	{
@@ -1181,7 +1180,7 @@ s32 chkCollision(f32* out) {
 		v3C.y = t8;
 		v3C.z = t14;
 	}
-	MFVEC(DATA, 0x3C) = v3C;
+	DATA->field_0x3C = v3C;
 
 	sincosf(&sinR, &cosR, DATA->bank);
 	sincosf(&sinA, &cosA, DATA->pitch);
@@ -1204,15 +1203,15 @@ s32 chkCollision(f32* out) {
 		v30.y = vy;
 		vz = vz + (planeData[39] * (cosA * cosC) - planeData[39] * (sinR * sinC));
 		v30.z = vz;
-		MFVEC(DATA, 0x30) = v30;
+		DATA->field_0x30 = v30;
 	}
 
 	ten = 10.0f;
 	{
 		MotionPlaneData* d = DATA;
-		f32 a0 = MF32(d, 0x30) - ten * sinC;
-		f32 a2 = MF32(d, 0x38) - ten * cosC;
-		f32 a1 = MF32(d, 0x34);
+		f32 a0 = d->field_0x30.x - ten * sinC;
+		f32 a2 = d->field_0x30.z - ten * cosC;
+		f32 a1 = d->field_0x30.y;
 		dist = ten + mario->baseSpeed;
 		hit = marioHitCheck(&hx, &hy, &hz, &dist, &nx, &ny, &nz,
 		                    a0, a1, a2, sinC, 0.0f, cosC);
@@ -1224,9 +1223,9 @@ s32 chkCollision(f32* out) {
 	}
 
 	{
-		f32 a0 = MF32(DATA, 0x3C);
-		f32 a1 = MF32(DATA, 0x40);
-		f32 a2 = MF32(DATA, 0x44);
+		f32 a0 = DATA->field_0x3C.x;
+		f32 a1 = DATA->field_0x3C.y;
+		f32 a2 = DATA->field_0x3C.z;
 		dist = mario->baseSpeed;
 		hit = marioHitCheck(&hx, &hy, &hz, &dist, &nx, &ny, &nz,
 		                    a0, a1, a2, sinC, 0.0f, cosC);
@@ -1238,9 +1237,9 @@ s32 chkCollision(f32* out) {
 	}
 
 	{
-		f32 a0 = MF32(DATA, 0x30);
-		f32 a1 = MF32(DATA, 0x34);
-		f32 a2 = MF32(DATA, 0x38);
+		f32 a0 = DATA->field_0x30.x;
+		f32 a1 = DATA->field_0x30.y;
+		f32 a2 = DATA->field_0x30.z;
 		mario->hitobjStandOn = NULL;
 		dist = 10.1f;
 		hit = marioHitCheck(&hx, &hy, &hz, &dist, &nx, &ny, &nz,
@@ -1254,9 +1253,9 @@ s32 chkCollision(f32* out) {
 
 	if (flag == 0) {
 		{
-			f32 a0 = MF32(DATA, 0x3C);
-			f32 a1 = MF32(DATA, 0x40);
-			f32 a2 = MF32(DATA, 0x44);
+			f32 a0 = DATA->field_0x3C.x;
+			f32 a1 = DATA->field_0x3C.y;
+			f32 a2 = DATA->field_0x3C.z;
 			mario->hitobjStandOn = NULL;
 			dist = 10.1f;
 			hit = marioHitCheck(&hx, &hy, &hz, &dist, &nx, &ny, &nz,
@@ -1270,10 +1269,10 @@ s32 chkCollision(f32* out) {
 	}
 
 	if (flag == 0) {
-		PSVECSubtract(&MFVEC(DATA, 0x3C), &MFVEC(DATA, 0x30), &dir);
+		PSVECSubtract(&DATA->field_0x3C, &DATA->field_0x30, &dir);
 		dist = PSVECMag(&dir);
 		PSVECNormalize(&dir, &dir);
-		hit = marioHitCheckVec(&MFVEC(DATA, 0x30), &dir, &normal, NULL, &dist);
+		hit = marioHitCheckVec(&DATA->field_0x30, &dir, &normal, NULL, &dist);
 		if (hit != NULL) {
 			mario->hitobjStandOn = hit;
 			flag = 1;
@@ -1284,9 +1283,9 @@ s32 chkCollision(f32* out) {
 	mario->hitobjHead = NULL;
 	if (mario->hitobjStandOn == NULL) {
 		{
-			f32 a0 = MF32(DATA, 0x30);
-			f32 a1 = MF32(DATA, 0x34);
-			f32 a2 = MF32(DATA, 0x38);
+			f32 a0 = DATA->field_0x30.x;
+			f32 a1 = DATA->field_0x30.y;
+			f32 a2 = DATA->field_0x30.z;
 			dist = 2.0f;
 			hit = marioHitCheck(&hx, &hy, &hz, &dist, &nx, &ny, &nz,
 			                    a0, a1, a2, 0.0f, 1.0f, 0.0f);

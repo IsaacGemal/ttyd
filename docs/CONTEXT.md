@@ -11088,3 +11088,9 @@ file is obj_equiv-equivalent to the pre-branch natural object.
   `goto L_3CE4` (skip the L_3C2C tail after searchGround2 or the airTimer exits; no shape without duplicating the
   tail or a flag). marioYoshiForceCancel and yoshi_exit keep `goto not_toge` / `goto exit_not_toge`: duplicating the
   field_34 block into the toge else changed the object size (+0x2C), and a flag was not added.
+
+### Readability: MotionPlaneData typed bands (2026-10-20, Claude Haiku 5.5, n9-q-typeplane)
+
+- include/mot/mot_plane.h: the `u8 field_0x10[16]` band is now `f32 field_0x10`, `field_0x14`, `field_0x18`, `field_0x1C` (each read and written as f32 in mot_plane.c), the `u8 field_0x24[4]` band is `f32 field_0x24`, and the 0x2C..0x2F bytes stay `u8 field_0x2C[4]` (no reads). `field_0x30` and `field_0x3C` are `Vec` (both passed whole as `&DATA->field_0x30` to PSVECSubtract and marioHitCheckVec, and their components read as `.x/.y/.z` where the code reads f32s at 0x30..0x44). The header includes `<dolphin/mtx.h>` for `Vec`. Size stays 0x48; no names were added or renamed (flags, pitch, heading, bank, stallTimer, sfxId unchanged).
+- src/motion/mot_plane.c: every MF32/MFVEC site on MotionPlaneData is a plain field access (`DATA->field_0x14`, `d->field_0x30.z`, `&DATA->field_0x3C`). The three `mario->motStruct` sites use `((MotionPlaneData*)mario->motStruct)->field_0x10`/`field_0x14`. The MFVEC macro is gone. MF32 stays only for `MF32(mario, 0x18C)` (MarioWork.unk18C, left alone).
+- Build: tower `ninja` recreates build/G8MJ01/ok (1231/1231 files matched); mot_plane.c compiles without -DMUST_MATCH (mwcc rc 0).
