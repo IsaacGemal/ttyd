@@ -130,7 +130,7 @@ s32 kpaEnemyHitChk(f32 x, f32 y, f32 z, f32 a, f32 b) {
         if (mp->unk4C != 0) {
             return 3;
         }
-        if (mp->unk78 == 0) {
+        if (mp->noHitEnemyCt == 0) {
             return 4;
         }
     }

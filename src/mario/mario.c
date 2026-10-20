@@ -918,7 +918,7 @@ void marioReInit(void) {
 	s32 paperPoseId;
 	s8 prevParty0;
 	s8 prevParty1;
-	s32 field28C;
+	struct KpaWork* koopaWork;
 	f32 unk1A8;
 	f32 unk1AC;
 	f32 dirView;
@@ -932,7 +932,7 @@ void marioReInit(void) {
 	partySlot0 = wp->currPartySlotId[0];
 	partySlot1 = wp->currPartySlotId[1];
 	peachFlags = wp->peachFlags;
-	field28C = *(s32*)&wp->koopaWork;
+	koopaWork = wp->koopaWork;
 	trigFlags = wp->trigFlags;
 	motionId = wp->currMotionId;
 	unk1A8 = wp->unk1A8;
@@ -960,7 +960,7 @@ void marioReInit(void) {
 	}
 
 	wp->peachFlags = peachFlags;
-	*(s32*)&wp->koopaWork = field28C;
+	wp->koopaWork = koopaWork;
 	wp->camId = camId;
 	wp->characterId = characterId;
 	wp->trigFlags = trigFlags;

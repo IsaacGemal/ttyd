@@ -816,7 +816,7 @@ void mot_ship(void) {
             }
         }
         mario->hitobjFront = NULL;
-        *(s32*)((u8*)mario + 0x1DC) = 0;
+        mario->actionHitObj = NULL;
         mario->hitobjPush = NULL;
         *(s32*)((u8*)mario + 0x1F0) = 0;
         marioCheckWallShip(mario->baseSpeed, mario->directionView);

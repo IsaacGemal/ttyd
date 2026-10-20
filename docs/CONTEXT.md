@@ -10277,19 +10277,19 @@ Verify: tower build ok (build/G8MJ01/ok recreated). The compiled win_mario.o kee
 - Left as found: `field_0x28` in SstarWork (written 0 at spawn, never read); `SstarVtx.unk`; `lbl_8041FDA0`, `unk_80423260` and the other `.sdata2` float constants (address names kept; value-only names would invent meaning or clash with names already used elsewhere in the repo, and rename_symbol refuses those); `angle` in sstar's Entry (it holds the camera yaw, then the launch heading).
 - Verified: tower build recreates `build/G8MJ01/ok` with 32 modules OK; the two units compile without MUST_MATCH (the `ci.natural` command, run by hand: the tower copy has no .git, so `ci.natural` itself sees no diff there). Index: eff_small_star_n64.c 378.6 -> 300.0, eff_sstar_n64.c 319.1 -> 266.0 (the rest is address names: .sdata2 constants and the lbl_/unk_ data).
 
-### Readability: MarioWork 0x1DC, 0x28C and 0x78 names, prevPosition in mario_hit (2026-10-20, Claude Haiku 5.5, n9-q-evtmario2)
+### Readability: MarioWork 0x1DC, 0x28C and 0x78 names, prevPosition in mario_hit (2026-10-20, Claude Haiku 5.5, n9-q-evtmario2; review fixes Claude Opus 5.5)
 
-- `actionHitObj` (0x1DC, `void*`, was `u8 field_0x1DC[4]`): mario_hit's marioSearchFrontWall_staying clears it on the frame buttonNew has 0x100 (A) and sets it to hitobjFront when a front wall is found. mario_motion's action check reads it (hitGetAttr, mobjGetHint, caseCheckHitObj) only after that same A press. mario.c's marioResetHitObj and its reset clear it; party_vivian and mot_yoshi zero it.
-- `koopaWork` (0x28C, `u8*`, was `u8 field_0x28C[4]`): the KpaWork pointer from koopa.h. `KPA(m)` is now `(*(KpaWork**)&(m)->koopaWork)`. evt_mario's koopa stores (0x144, 0x01000000 flag) and mario.c's save/restore around its memset use it.
-- `unk78` (0x78) is `s16` (was `u8 unk78[2]`). koopa.c decrements it, koopa_motion sets sysMsec2Frame(3000), koopa_hit's kpaEnemyHitChk tests `== 0`, evt_mobj and rels/kpa's kpa_nohitenemy_ct_clear clear it. koopa_hit's MW_S16 macro is gone; the koopa_hit, evt_mobj and kpa.c accesses are direct.
-- mario_hit's `GND_PTR(wp, f32, 0x114)` is `wp->prevPosition.y`.
+- `actionHitObj` (0x1DC, `void*`, was `u8 field_0x1DC[4]`): mario_hit's marioSearchFrontWall_staying clears it on the frame buttonNew has 0x100 (A) and sets it to hitobjFront when a front wall is found; party_yoshi does the same from partySearchWallFront on an A press. marioChkJump (mario_motion) and the balloon check (mario_balloon) read it (hitGetAttr, mobjGetHint, caseCheckHitObj) to decide whether the press acts on the object. marioResetHitObj, marioMain/marioMoveMain, koopa.c's per-frame reset, mot_ship, mot_yoshi and party_vivian clear it.
+- `koopaWork` (0x28C, `struct KpaWork*`, forward-declared in mario.h, was `u8 field_0x28C[4]`): `KPA(m)` is now `((m)->koopaWork)`. evt_koopa_fire/evt_koopa_weary/evt_koopa_chk_dead use KpaWork fields (field_0x144, flags), and marioReInit keeps it in a `struct KpaWork*` local across its memset.
+- `noHitEnemyCt` (0x78, `s16`, was `u8 unk78[2]`): named after the original symbols kpaNoHitEnemyCheck (returns it) and kpa_nohitenemy_ct_clear (rels/kpa, zeroes it). kpaPowDown sets sysMsec2Frame(3000), koopa.c decrements it each frame while nonzero, kpaEnemyHitChk returns 4 (enemy hit) only when it is 0, kpaMSetMutekiTimer and evt_mobj's koopa pole clear it. The MW_S16 macros in koopa.c, koopa_hit.c and koopa_motion.c are gone.
+- mario_hit's `GND_PTR(wp, f32, 0x114)` is `wp->prevPosition.y`; mario_balloon's raw 0x1E0 reads are `hitobjFront`.
+- KpaWork's field_0x144 comment now names its writer, evt_koopa_fire.
 
 Left, and why:
 - 0x164 (f32 in the unk160 pad, written by marioChkGndRollProbe as prevPosition.y - position.y): nothing in the tree reads it, so it has no name and stays `GND_PTR`.
 - 0x1FC (`void* field_0x1FC`): the only setter is the reset to 0 in mario_motion; mario.c clears it by name and mobjdrv reads it. No name.
 - 0x2B8 (f32): the jump-from z (mot_jump), the jump-stand argument (mario_motion), 100.0f in its switch cases, the z tilt of motion 0x1A (mario.c), and mot_jabara's s16 timer. The roles differ per motion, so no single name.
 - 0x1F0 (HitEntry*): unchanged; see the n9-q-koopam entry.
-- Raw 0x1DC and 0x78 casts outside the two files (koopa.c `MW_U32`/`MW_S16`, koopa_motion.c, mario_balloon.c, mot_ship.c, party_yoshi.c) still compile to the same accesses; their owners can convert them.
 - evt_mario.c's `*(f32*)((u8*)mario + 0x7C)` is inside MUST_MATCH and stays raw.
 
-Build: tower `ninja` recreates build/G8MJ01/ok; koopa.c, koopa_hit.c, koopa_motion.c, mario.c, mario_hit.c, mario_motion.c, mot_yoshi.c, party_vivian.c, evt_mario.c and evt_mobj.c natural-compile without -DMUST_MATCH (rc 0, no errors).
+Build: tower `ninja` recreates build/G8MJ01/ok; koopa.c, koopa_hit.c, koopa_motion.c, mario.c, mario_hit.c, mario_motion.c, mario_balloon.c, mot_yoshi.c, mot_ship.c, party_vivian.c, party_yoshi.c, evt_mario.c, evt_mobj.c and rels/kpa/src/kpa.c natural-compile without -DMUST_MATCH (rc 0, no errors).

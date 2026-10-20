@@ -29,13 +29,13 @@ typedef struct KpaWork {
     s32 mutekiTimer;        // 0x138
     s32 attackMode;         // 0x13C
     s32 attackTimer;        // 0x140 (counts down each attack step)
-    s32 field_0x144;        // 0x144 (nonzero keeps attack mode 0x17's breath going; writer not found)
+    s32 field_0x144;        // 0x144 (nonzero keeps attack mode 0x17's breath going; evt_koopa_fire sets it while its count runs)
     u8 unk148[0x14C - 0x148];
     u32 sfxId;              // 0x14C (KPA_SFX_NONE when silent)
     s32 bubbleTimer;        // 0x150 (kpa_swim frames until the next bubble)
 } KpaWork;
 
-#define KPA(m) (*(KpaWork**)&(m)->koopaWork)
+#define KPA(m) ((m)->koopaWork)
 
 typedef enum KpaFlags {
     KPA_FLAG_NO_HIP = 0x10,                // set on kpa_swim entry; kpaHipAttackOk returns 0 while set

@@ -22,7 +22,6 @@
 #define MW_F32(m, off) (*(f32*)((u8*)(m) + (off)))
 #define MW_S32(m, off) (*(s32*)((u8*)(m) + (off)))
 #define MW_U16(m, off) (*(u16*)((u8*)(m) + (off)))
-#define MW_S16(m, off) (*(s16*)((u8*)(m) + (off)))
 
 // .rodata: the unit's strings and the int->float magic/2^52 doubles are compiler-pooled literals
 // (used at their sites), not named objects.  MWCC pools them in function-emission order, so the
@@ -633,7 +632,7 @@ s32 kpaPowDown(void) {
     kpaCancelAttackMode();
     if (kpaGetLevel() > 0) {
         KPA(mario)->level--;
-        MW_S16(mario, 0x78) = sysMsec2Frame(3000);
+        mario->noHitEnemyCt = sysMsec2Frame(3000);
         marioChgMot(MARIO_MOTION_KPA_POW_DOWN);
         return 1;
     }

@@ -2063,21 +2063,21 @@ USER_FUNC(evt_koopa_fire) {
     switch (event->userdata[0]) {
     case 0:
         if (--event->userdata[2] != 0) {
-            *(s32*)(mario->koopaWork + 0x144) = 1;
+            mario->koopaWork->field_0x144 = 1;
             return EVT_RETURN_BLOCK;
         }
         break;
     }
-    *(s32*)(mario->koopaWork + 0x144) = 0;
+    mario->koopaWork->field_0x144 = 0;
     return EVT_RETURN_YIELD;
 }
 
 USER_FUNC(evt_koopa_chk_dead) {
     s32* args = event->args;
     MarioWork* mario = marioGetPtr();
-    u32* kpa = (u32*)mario->koopaWork;
+    KpaWork* kpa = mario->koopaWork;
 
-    evtSetValue(event, args[0], (*kpa >> 28) & 1);
+    evtSetValue(event, args[0], (kpa->flags >> 28) & 1);
     return EVT_RETURN_DONE;
 }
 
@@ -2086,9 +2086,9 @@ USER_FUNC(evt_koopa_weary) {
     MarioWork* mario = marioGetPtr();
 
     if (args[0] != 0) {
-        *(u32*)mario->koopaWork |= 0x01000000;
+        mario->koopaWork->flags |= 0x01000000;
     } else {
-        *(u32*)mario->koopaWork &= ~0x01000000;
+        mario->koopaWork->flags &= ~0x01000000;
     }
     return EVT_RETURN_DONE;
 }
