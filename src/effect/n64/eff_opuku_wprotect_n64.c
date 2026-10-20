@@ -16,15 +16,10 @@ __declspec(section ".sdata") GXColor unk_804231f0;
 #include "math_ext.h"
 #include <stdlib.h>
 
-// .rodata scratch vector the original zeroes before filling in the effect position.
-const Vec vec3_802fb2e8 = { 0.0f, 0.0f, 0.0f };
 // The compiler's int->float magic double (0x4330000080000000) is intentionally not
 // defined here: defining it duplicates the pool. Left out, the single pooled entry is
 // emitted at the original's .rodata+0x10 offset and resolves to the original address.
 
-// .sdata2 scratch/default tev colours (loaded whole, one channel overwritten).
-const GXColor dat_8041f888 = { 0xFF, 0xFF, 0xFF, 0x00 };
-const GXColor dat_8041f88c = { 0x00, 0x00, 0xFF, 0x00 };
 // .sbss2 scratch colour the second pass fills in; the reference reads it before writing.
 
 // The 40-point ring the display pass renders: signed 1-byte XYZ (times 10),
@@ -108,7 +103,7 @@ static u32 size8x8_tex32x32_vtx[14] = {
 // Inline copy of system.c's helper: zero-fill a Vec from the rodata constant, then
 // overwrite it with the supplied position; the temporary is returned by value.
 inline Vec initializeVec(Vec* input) {
-	Vec temp = vec3_802fb2e8;
+	Vec temp = (Vec){ 0.0f, 0.0f, 0.0f };
 	temp.x = input->x;
 	temp.y = input->y;
 	temp.z = input->z;
@@ -291,13 +286,13 @@ void effOpukuWprotectMain(EffectEntry* effect) {
 // each colour local and its by-value copy in the original's stack slots. Returning the
 // GXColor and calling outside packs all locals together instead.
 static inline void wprotectColor1(s32 a) {
-	GXColor c = dat_8041f888;
+	GXColor c = (GXColor){ 0xFF, 0xFF, 0xFF, 0x00 };
 	c.a = a;
 	GXSetTevColor(GX_TEVREG0, c);
 }
 
 static inline void wprotectColor2(s32 a) {
-	GXColor c = dat_8041f88c;
+	GXColor c = (GXColor){ 0x00, 0x00, 0xFF, 0x00 };
 	c.a = a;
 	GXSetTevColor(GX_TEVREG1, c);
 }
@@ -383,14 +378,14 @@ void effOpukuWprotectDisp(CameraId camId, void* param) {
 #ifdef MUST_MATCH
 	wprotectColor1(alpha);
 #else
-	color1 = dat_8041f888;
+	color1 = (GXColor){ 0xFF, 0xFF, 0xFF, 0x00 };
 	color1.a = alpha;
 	GXSetTevColor(GX_TEVREG0, color1);
 #endif
 #ifdef MUST_MATCH
 	wprotectColor2(data->field_0x28);
 #else
-	color2 = dat_8041f88c;
+	color2 = (GXColor){ 0x00, 0x00, 0xFF, 0x00 };
 	color2.a = data->field_0x28;
 	GXSetTevColor(GX_TEVREG1, color2);
 #endif
