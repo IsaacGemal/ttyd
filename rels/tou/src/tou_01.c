@@ -2660,9 +2660,9 @@ static USER_FUNC(starstone_set_pos) {
     f32 z = evtGetFloat(event, args[3]);
     EffectEntry* entry = effNameToPtr((const char*)name);
 
-    ((effStarStoneData*)entry->userdata)->field_0x8 = x;
-    ((effStarStoneData*)entry->userdata)->field_0xC = y;
-    ((effStarStoneData*)entry->userdata)->field_0x10 = z;
+    ((effStarStoneData*)entry->userdata)->x = x;
+    ((effStarStoneData*)entry->userdata)->y = y;
+    ((effStarStoneData*)entry->userdata)->z = z;
     return EVT_RETURN_DONE;
 }
 
@@ -3085,7 +3085,7 @@ static USER_FUNC(starstone_set_ry) {
     f32 value = evtGetFloat(event, args[1]);
     EffectEntry* entry = effNameToPtr((const char*)name);
 
-    ((effStarStoneData*)entry->userdata)->field_0x1C = value;
+    ((effStarStoneData*)entry->userdata)->rotY = value;
     return EVT_RETURN_DONE;
 }
 // clang-format on

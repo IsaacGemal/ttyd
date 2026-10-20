@@ -2624,7 +2624,7 @@ static USER_FUNC(starstone_entry) {
         sprintf(name, "starstone%d", i);
         effect = effStarStoneEntry(i, radius * c + x0, y, radius * s + z0, 1.0f);
         effSetName(effect, name);
-        ((effStarStoneData*)effect->userdata)->field_0x4 &= ~4;
+        ((effStarStoneData*)effect->userdata)->flags &= ~4;
     }
     return EVT_RETURN_DONE;
 }
@@ -2653,9 +2653,9 @@ static USER_FUNC(starstone_set_pos) {
         {
             EffectEntry* effect = effNameToPtr(name);
 
-            ((effStarStoneData*)effect->userdata)->field_0x8 = radius * c + x0;
-            ((effStarStoneData*)effect->userdata)->field_0xC = y;
-            ((effStarStoneData*)effect->userdata)->field_0x10 = radius * s + z0;
+            ((effStarStoneData*)effect->userdata)->x = radius * c + x0;
+            ((effStarStoneData*)effect->userdata)->y = y;
+            ((effStarStoneData*)effect->userdata)->z = radius * s + z0;
         }
     }
     return EVT_RETURN_DONE;
@@ -2671,7 +2671,7 @@ static USER_FUNC(starstone_set_ry) {
 
         sprintf(name, "starstone%d", i);
         effect = effNameToPtr(name);
-        ((effStarStoneData*)effect->userdata)->field_0x1C = ry;
+        ((effStarStoneData*)effect->userdata)->rotY = ry;
     }
     return EVT_RETURN_DONE;
 }

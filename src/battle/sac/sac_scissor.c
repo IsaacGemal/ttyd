@@ -1347,7 +1347,7 @@ s32 scissor_init(void) {
 s32 scissor_end(void) {
     ScissorWork* work = GetScissorPtr();
 
-    effDelete(((effStarStoneData*)work->starStone->userdata)->field_0x34);
+    effDelete(((effStarStoneData*)work->starStone->userdata)->dustEffect);
     effDelete(work->starStone);
     if (work->captureBuf != NULL) {
         smartFree(work->captureBuf);

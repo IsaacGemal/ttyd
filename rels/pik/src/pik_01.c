@@ -982,9 +982,9 @@ static USER_FUNC(starstone_set_pos) {
     f32 z = evtGetFloat(event, args[3]);
     EffectEntry* effect = effNameToPtr((const char*)name);
 
-    ((effStarStoneData*)effect->userdata)->field_0x8 = x;
-    ((effStarStoneData*)effect->userdata)->field_0xC = y;
-    ((effStarStoneData*)effect->userdata)->field_0x10 = z;
+    ((effStarStoneData*)effect->userdata)->x = x;
+    ((effStarStoneData*)effect->userdata)->y = y;
+    ((effStarStoneData*)effect->userdata)->z = z;
     return EVT_RETURN_DONE;
 }
 
@@ -995,7 +995,7 @@ static USER_FUNC(starstone_set_ry) {
     EffectEntry* effect = effNameToPtr((const char*)name);
     effStarStoneData* data = effect->userdata;
 
-    data->field_0x1C = ry;
+    data->rotY = ry;
     return EVT_RETURN_DONE;
 }
 

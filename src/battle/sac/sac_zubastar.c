@@ -213,13 +213,13 @@ static s32 main_star(EventEntry* event, BOOL isFirstCall) {
         effStarStoneData* data = work->effect->userdata;
         f32 s = 1.5f;
 
-        data->field_0x8 = work->starCur.x;
-        data->field_0xC = work->starCur.y;
-        data->field_0x10 = work->starCur.z;
-        data->field_0x18 = work->scale2.x;
-        data->field_0x1C = work->scale2.y;
-        data->field_0x20 = work->scale2.z;
-        data->field_0x14 = s * work->scale1.x;
+        data->x = work->starCur.x;
+        data->y = work->starCur.y;
+        data->z = work->starCur.z;
+        data->tipRotY = work->scale2.x;
+        data->rotY = work->scale2.y;
+        data->tipRotZ = work->scale2.z;
+        data->scale = s * work->scale1.x;
     }
     dispEntry(4, 0.0f, 2, zubaStarDispStar, NULL);
     return 0;
@@ -1082,7 +1082,7 @@ s32 zubastar_end(EventEntry* event, BOOL isFirstCall) {
     ZubaStarWork* work = GetZubaStarPtr();
     s32 i;
 
-    effDelete(((effStarStoneData*)work->effect->userdata)->field_0x34);
+    effDelete(((effStarStoneData*)work->effect->userdata)->dustEffect);
     effDelete(work->effect);
     for (i = 0; i < 0xC8; i++) {
         if (work->bombs[i] != NULL) {

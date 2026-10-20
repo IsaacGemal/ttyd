@@ -243,13 +243,13 @@ static USER_FUNC(main_star) {
     if (baku->starStone != NULL) {
         effStarStoneData* data = baku->starStone->userdata;
 
-        data->field_0x8 = baku->starPos.x;
-        data->field_0xC = baku->starPos.y;
-        data->field_0x10 = baku->starPos.z;
-        data->field_0x18 = baku->starRot.x;
-        data->field_0x1C = baku->starRot.y;
-        data->field_0x20 = baku->starRot.z;
-        data->field_0x14 = 1.5f * baku->starScale.x;
+        data->x = baku->starPos.x;
+        data->y = baku->starPos.y;
+        data->z = baku->starPos.z;
+        data->tipRotY = baku->starRot.x;
+        data->rotY = baku->starRot.y;
+        data->tipRotZ = baku->starRot.z;
+        data->scale = 1.5f * baku->starScale.x;
     }
     dispEntry(4, 0.0f, 2, bakuGameDispStar, NULL);
     return EVT_RETURN_BLOCK;
@@ -262,7 +262,7 @@ s32 init_bakugame(EventEntry* event, BOOL isFirstCall) {
 
 s32 end_bakugame(EventEntry* event, BOOL isFirstCall) {
     BakuGameWork* baku = GetBakuGamePtr();
-    effDelete(((effStarStoneData*)baku->starStone->userdata)->field_0x34);
+    effDelete(((effStarStoneData*)baku->starStone->userdata)->dustEffect);
     effDelete(baku->starStone);
     return EVT_RETURN_DONE;
 }

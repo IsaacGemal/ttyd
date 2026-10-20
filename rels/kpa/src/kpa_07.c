@@ -89,7 +89,7 @@ EVT_END()
 static s32 starstone_fall(EventEntry* event, BOOL isFirstCall) {
     effStarStoneData* data = effNameToPtr((const char*)evtGetValue(event, event->args[0]))->userdata;
 
-    data->field_0x3C = 1;
+    data->state = 1;
     return 2;
 }
 
@@ -98,7 +98,7 @@ USER_FUNC(set_starstone_ry) {
     const char* name = (const char*)evtGetValue(event, args[0]);
     f32 ry = evtGetFloat(event, args[1]);
 
-    ((effStarStoneData*)effNameToPtr(name)->userdata)->field_0x1C = ry;
+    ((effStarStoneData*)effNameToPtr(name)->userdata)->rotY = ry;
     return 2;
 }
 
@@ -110,9 +110,9 @@ static s32 set_starstone_pos(EventEntry* event, BOOL isFirstCall) {
     f32 z = evtGetFloat(event, args[3]);
     EffectEntry* effect = effNameToPtr(name);
 
-    ((effStarStoneData*)effect->userdata)->field_0x8 = x;
-    ((effStarStoneData*)effect->userdata)->field_0xC = y;
-    ((effStarStoneData*)effect->userdata)->field_0x10 = z;
+    ((effStarStoneData*)effect->userdata)->x = x;
+    ((effStarStoneData*)effect->userdata)->y = y;
+    ((effStarStoneData*)effect->userdata)->z = z;
     return 2;
 }
 
@@ -120,9 +120,9 @@ static s32 get_starstone_pos(EventEntry* event, BOOL isFirstCall) {
     s32* args = event->args;
     EffectEntry* effect = effNameToPtr((const char*)evtGetValue(event, args[0]));
 
-    evtSetFloat(event, args[1], ((effStarStoneData*)effect->userdata)->field_0x8);
-    evtSetFloat(event, args[2], ((effStarStoneData*)effect->userdata)->field_0xC);
-    evtSetFloat(event, args[3], ((effStarStoneData*)effect->userdata)->field_0x10);
+    evtSetFloat(event, args[1], ((effStarStoneData*)effect->userdata)->x);
+    evtSetFloat(event, args[2], ((effStarStoneData*)effect->userdata)->y);
+    evtSetFloat(event, args[3], ((effStarStoneData*)effect->userdata)->z);
     return 2;
 }
 
@@ -137,7 +137,7 @@ static s32 starstone_entry(EventEntry* event, BOOL isFirstCall) {
     EffectEntry* effect = effStarStoneEntry(idx, x, y, z, scale);
 
     effSetName(effect, name);
-    ((effStarStoneData*)effect->userdata)->field_0x4 |= 0x10;
+    ((effStarStoneData*)effect->userdata)->flags |= 0x10;
     return 2;
 }
 

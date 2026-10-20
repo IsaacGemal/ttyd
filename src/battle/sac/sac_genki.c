@@ -792,20 +792,20 @@ void main_weapon(s32 idx) {
         if (weapon->field_44 != NULL) {
             effStarStoneData* data = (effStarStoneData*)weapon->field_44->userdata;
 
-            data->field_0x8 = weapon->pos[0].x;
-            data->field_0xC = weapon->pos[0].y;
-            data->field_0x10 = weapon->pos[0].z;
-            data->field_0x14 = scale;
-            data->field_0x5F = 0xFF;
+            data->x = weapon->pos[0].x;
+            data->y = weapon->pos[0].y;
+            data->z = weapon->pos[0].z;
+            data->scale = scale;
+            data->tevReg0A = 0xFF;
         }
         for (i = 0; i < 3; i++) {
             effStarStoneData* data = (effStarStoneData*)weapon->field_48[i]->userdata;
 
-            data->field_0x8 = weapon->pos[i + 1].x;
-            data->field_0xC = weapon->pos[i + 1].y;
-            data->field_0x10 = weapon->pos[i + 1].z;
-            data->field_0x14 = scale;
-            data->field_0x5F = 0xFF - (i + 1) * 0x32;
+            data->x = weapon->pos[i + 1].x;
+            data->y = weapon->pos[i + 1].y;
+            data->z = weapon->pos[i + 1].z;
+            data->scale = scale;
+            data->tevReg0A = 0xFF - (i + 1) * 0x32;
         }
     }
 }
@@ -1190,17 +1190,17 @@ USER_FUNC(end_genki) {
     for (i = 0; i < 7; i++) {
         star = &genki->stars[i];
         if (star->field_60 != NULL) {
-            effDelete(((effStarStoneData*)star->field_60->userdata)->field_0x34);
+            effDelete(((effStarStoneData*)star->field_60->userdata)->dustEffect);
             effDelete(star->field_60);
         }
     }
     for (i = 0; i < 7; i++) {
         weapon = &genki->weapon[i];
         if (weapon->field_44 != NULL) {
-            effDelete(((effStarStoneData*)weapon->field_44->userdata)->field_0x34);
+            effDelete(((effStarStoneData*)weapon->field_44->userdata)->dustEffect);
             effDelete(weapon->field_44);
             for (j = 0; j < 3; j++) {
-                effDelete(((effStarStoneData*)weapon->field_48[j]->userdata)->field_0x34);
+                effDelete(((effStarStoneData*)weapon->field_48[j]->userdata)->dustEffect);
                 effDelete(weapon->field_48[j]);
             }
         }
