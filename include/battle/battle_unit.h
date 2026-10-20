@@ -442,7 +442,7 @@ typedef struct BattleWorkUnitPart {
     Vec mHitOffset;                                // 0x17C
     Vec mHitCursorBaseOffset;                      // 0x188, guess
     Vec mHitCursorOffset;                          // 0x194
-    s16 field_0x1A0;                               // 0x1A0
+    s16 detectOffsetX;                             // 0x1A0, x offset of the part's search box, scaled by facing (battle_detect)
     u8 field_0x1A2[0x1AC - 0x1A2];                 // 0x1A2
     PartsAttribute_Flags attributes;               // 0x1AC
     PartsCounterAttribute_Flags counterAttributes; // 0x1B0
@@ -451,7 +451,13 @@ typedef struct BattleWorkUnitPart {
     void* poseTable;                               // 0x1BC
     u8 field_0x1C0[0x204 - 0x1C0];                 // 0x1C0, pose-anim block: handle at +0, flags at +0x44
     u32 partFlags;                                 // 0x204, bit 0x10 and 0x80 are set and cleared by battle_unit.c
-    u8 field_0x208[0x21C - 0x208];                 // 0x208
+    f32 field_0x208;                               // 0x208, 1.0 at entry
+    f32 motionSpeed;                               // 0x20C, btlevtcmd_AnimeSetMotionSpeed
+    void* dispCallback;                            // 0x210, called with (part, 0) and (part, 1) by btlUnitPartsDisp
+    u8 effectStopped;                              // 0x214
+    u8 statusPoseState;                            // 0x215, statusPoseControl's switch
+    u8 pad_0x216[2];                               // 0x216
+    GXColor evtColor;                              // 0x218, animPoseSetMaterialEvtColor's colour, RGB scaled by the owner's mMoveColorCur
     BattleWorkUnitPartBlur blurWork;               // 0x21C
     BtlUnitPartPoseSound poseSound;                // 0x4D0
     s32 poseSoundEventId;                          // 0x4E8, -1 when no pose sound event is queued
@@ -544,7 +550,8 @@ typedef struct BattleUnit {
     s8 activeTurns;                              // 0x24
     s8 swallowRate;                              // 0x25
     s8 swallowAttribute;                         // 0x26
-    u8 field_0x27[0x30 - 0x27];                  // 0x27
+    u8 field_0x27[0x2C - 0x27];                  // 0x27, battle_seq sorts units by the s32 at 0x28
+    s32 seqPhase;                                // 0x2C, SEQ_PHASE value the unit acts in (battle_seq)
     Vec mHomePosition;                           // 0x30
     Vec mPosition;                               // 0x3C
     Vec mPositionOffset;                         // 0x48
@@ -664,7 +671,12 @@ typedef struct BattleUnit {
     ItemDropData* dropTable;                     // 0x308
     u8 field_0x30C[0x30D - 0x30C];               // 0x30C
     u8 mMoveColorLv;                             // 0x30D
-    u8 field_0x30E[0x320 - 0x30E];               // 0x30E
+    u8 mMoveColorCur;                            // 0x30E, eases toward mMoveColorLv each frame; btlUnitPartsDisp scales the parts' evtColor by it
+    u8 pad_0x30F;                                // 0x30F
+    void* mExtraWork;                            // 0x310, BattleAlloc(0x44) for UNIT_UNUSED_UFO, freed on delete
+    void* mExtraWorkFree;                        // 0x314, called with the unit on delete when set
+    void* mSmartEntry;                           // 0x318, smartFree'd on delete
+    u8 pad_0x31C[0x320 - 0x31C];                 // 0x31C
     EffectEntry* mSleepEff;                      // 0x320
     EffectEntry* mFireEff;                       // 0x324
     EffectEntry* mFreezeEff;                     // 0x328

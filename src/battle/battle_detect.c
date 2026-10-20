@@ -125,7 +125,7 @@ void _btlSamplingEnemy(u8* sampling) {
                 !(part->attributes & 0x20000)) {
                 entries->field_0x18 += s->attackDirection * 300;
             }
-            entries->field_0x18 += part->field_0x1A0 * faceDirection;
+            entries->field_0x18 += part->detectOffsetX * faceDirection;
 
             entries->field_0xC = (s16)(wx + entries->field_0x18);
             entries->field_0x10 = (s16)wy;

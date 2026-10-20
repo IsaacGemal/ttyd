@@ -687,7 +687,7 @@ BattleUnit* BattleChangeParty(BattleWork* wp) {
     BtlUnit_SetParamToPouch(oldParty);
     oldParty->flags |= 8;
     newParty->mMoveColorLv = oldParty->mMoveColorLv;
-    newParty->field_0x30E[0] = oldParty->field_0x30E[0];
+    newParty->mMoveColorCur = oldParty->mMoveColorCur;
 
     return newParty;
 }

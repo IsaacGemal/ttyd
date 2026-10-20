@@ -2927,7 +2927,7 @@ USER_FUNC(btl_hitoffsetx) {
     arg1 = evtGetValue(event, args[1]);
     part = BattleGetUnitPartsPtr(unitId, arg1);
     arg2 = evtGetValue(event, args[2]);
-    part->field_0x1A0 = arg2;
+    part->detectOffsetX = arg2;
     return EVT_RETURN_DONE;
 }
 

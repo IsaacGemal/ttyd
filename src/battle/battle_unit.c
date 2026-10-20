@@ -119,7 +119,7 @@ BattleUnit* BtlUnit_Entry(BattleUnitSetup* setup) {
         unit->mLevel = pouchGetPtr()->level;
     }
 
-    *(s32*)((u8*)unit + 0x2C) = setup->field_0x8;
+    unit->seqPhase = setup->field_0x8;
     unit->unisonPhaseEventCode = NULL;
     unit->phaseEventCode = NULL;
     unit->phaseEventId = 0;
@@ -226,14 +226,14 @@ BattleUnit* BtlUnit_Entry(BattleUnitSetup* setup) {
         part->mHitCursorOffset.y = 0.0f;
         part->mHitCursorOffset.z = 0.0f;
         part->color = dat_8041c3b8;
-        part->field_0x1A0 = setup->field_0x18;
+        part->detectOffsetX = setup->field_0x18;
         part->poseTable = kindPart->poseTable;
         *(s32*)((u8*)part + 0x1C0) = -1;
         *(u8*)((u8*)part + 0x1C4) = 0;
-        *(f32*)((u8*)part + 0x208) = 1.0f;
-        *(f32*)((u8*)part + 0x20C) = 1.0f;
-        *(u8*)((u8*)part + 0x215) = 0;
-        *(u8*)((u8*)part + 0x214) = 0;
+        part->field_0x208 = 1.0f;
+        part->motionSpeed = 1.0f;
+        part->statusPoseState = 0;
+        part->effectStopped = 0;
         part->poseSoundEventId = -1;
         part->partName = part->mKindPartParams->partName;
 
@@ -253,16 +253,16 @@ BattleUnit* BtlUnit_Entry(BattleUnitSetup* setup) {
     unit->mStayPoseName = BtlUnit_GetPoseNameFromType(part, 0x2B);
 
     unit->mMoveColorLv = 0xFF;
-    *(u8*)((u8*)unit + 0x30E) = 0xFF;
+    unit->mMoveColorCur = 0xFF;
     btlDispEntAnime(unit);
-    *(void**)((u8*)unit + 0x310) = NULL;
-    *(void**)((u8*)unit + 0x314) = NULL;
+    unit->mExtraWork = NULL;
+    unit->mExtraWorkFree = NULL;
 
     switch (unit->currentKind) {
     case UNIT_MARIO:
         break;
     case UNIT_UNUSED_UFO:
-        *(void**)((u8*)unit + 0x310) = BattleAlloc(0x44);
+        unit->mExtraWork = BattleAlloc(0x44);
         break;
     }
 
@@ -325,17 +325,16 @@ BOOL BtlUnit_Delete(BattleUnit* unit) {
     }
     BattleStatusEffectDelete(unit);
     BattleStatusIconDelete(unit);
-    // Cleanup hooks the header does not name: +0x310 buffer, +0x314 its destructor, +0x318 smart pointer.
-    if (*(void**)((u8*)unit + 0x310)) {
-        if (*(void**)((u8*)unit + 0x314)) {
-            ((void (*)(BattleUnit*)) * (void**)((u8*)unit + 0x314))(unit);
+    if (unit->mExtraWork) {
+        if (unit->mExtraWorkFree) {
+            ((void (*)(BattleUnit*)) unit->mExtraWorkFree)(unit);
         } else {
-            BattleFree(*(void**)((u8*)unit + 0x310));
+            BattleFree(unit->mExtraWork);
         }
     }
-    if (*(void**)((u8*)unit + 0x318)) {
-        smartFree(*(smartEntry**)((u8*)unit + 0x318));
-        *(void**)((u8*)unit + 0x318) = NULL;
+    if (unit->mSmartEntry) {
+        smartFree(unit->mSmartEntry);
+        unit->mSmartEntry = NULL;
     }
     part = unit->mParts;
     for (; part; part = part->mNextPart) {
@@ -2021,7 +2020,7 @@ s32 BtlUnit_GetWeaponCost(BattleUnit* unit, BattleWeapon* weapon) {
         }
     }
     if (cost != 0) {
-        cost -= ((u8*)unit)[0x2F1];
+        cost -= unit->badgesEquipped.FlowerSaver;
         if (cost <= 0) {
             cost = 1;
         }
@@ -2301,7 +2300,7 @@ void BtlUnit_ControlPoseSoundMain(BattleUnitPart* part) {
                 }
                 psndSFX_vol(soundId, 0x7F);
                 ps->count++;
-                if (*(s32*)((u8*)part->mOwner + 0x2C) != BattleGetSeq(wp, SEQ_PHASE)) {
+                if (part->mOwner->seqPhase != BattleGetSeq(wp, SEQ_PHASE)) {
                     u32 vol = 0x7F;
 #ifdef MUST_MATCH
                     // The address read preserves retail's load and multiply order.
