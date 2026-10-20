@@ -2473,7 +2473,7 @@ void marioDispBlurSub(s32* unused, s32 blurId) {
 	PSMTXConcat(temp, mtx, mtx);
 
 	if (wp->flags & 0x1000000) {
-		PSMTXScale(scale, 1.0f, *(f32*)wp->field_0x130, 1.0f);
+		PSMTXScale(scale, 1.0f, wp->rollScaleY, 1.0f);
 		PSMTXConcat(scale, mtx, mtx);
 	}
 
@@ -2683,7 +2683,7 @@ void marioDisp(CameraId camId, void* param) {
 	PSMTXConcat(temp, mtx, mtx);
 
 	if (wp->flags & 0x1000000) {
-		PSMTXScale(scale, 1.0f, *(f32*)wp->field_0x130, 1.0f);
+		PSMTXScale(scale, 1.0f, wp->rollScaleY, 1.0f);
 		PSMTXConcat(scale, mtx, mtx);
 	}
 
