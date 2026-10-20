@@ -180,13 +180,13 @@ void effTorchDisp(CameraId cameraId, void* param) {
 	GXTexObj texObj;
 	Mtx mtxPos, mtxScale, mtxRot, mtxView, mtxTex;
 	s32 i;
-	f32 s;
+	f32 scale;
 
 	camView = camGetPtr(cameraId);
 	PSMTXTrans(mtxPos, data->position.x, data->position.y, data->position.z);
 	PSMTXRotRad(mtxRot, 'y', -camGetPtr(cameraId)->viewYaw * 0.017453292f);
-	s = *(f32*)((u8*)data + 0x10);
-	PSMTXScale(mtxScale, s * *(f32*)((u8*)data + 0x14), s * *(f32*)((u8*)data + 0x18), s);
+	scale = *(f32*)((u8*)data + 0x10);
+	PSMTXScale(mtxScale, scale * *(f32*)((u8*)data + 0x14), scale * *(f32*)((u8*)data + 0x18), scale);
 	PSMTXConcat(mtxPos, mtxRot, mtxView);
 	PSMTXConcat(mtxView, mtxScale, mtxView);
 	PSMTXConcat(camView->view, mtxView, mtxView);

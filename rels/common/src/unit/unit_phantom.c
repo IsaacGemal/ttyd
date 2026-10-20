@@ -97,7 +97,7 @@ BattleUnitKind UNIT_DATA_SYM = {
     "SFX_BTL_DAMAGE_FIRE1",     // fireDamageSfxName
     "SFX_BTL_DAMAGE_ICE1",      // iceDamageSfxName
     "SFX_BTL_DAMAGE_BIRIBIRI1", // electricDamageSfxName
-    0x00000004,                 // attributeFlags
+    kFloating,                  // attributeFlags
     &regist,                    // vulnStatus
     2,                          // numParts
     parts,                      // mParts
@@ -176,7 +176,7 @@ static BattleUnitKindPart parts[2] = {
         &defence,              // defense
         &defence_attr,         // defenseAttr
         0x00000109,            // attributes
-        0x00000010,            // counterAttributes
+        kCounterFiery,         // counterAttributes
         pose_table,            // poseTable
     },
     {
@@ -510,7 +510,7 @@ static EVT_BEGIN(normal_attack_event)
         CALL(btlevtcmd_ChoiceSamplingEnemy, LW(9), LW(3), LW(4))
     END_IF
     IF_INT_EQUAL(LW(3), -1)
-        CALL(btlevtcmd_CheckToken, -2, 16, LW(0))
+        CALL(btlevtcmd_CheckToken, -2, kConfusedAction, LW(0))
         IF_INT_NOT_EQUAL(LW(0), 0)
             CALL_CHILD(subsetevt_confuse_flustered)
             RETURN
@@ -667,7 +667,7 @@ static EVT_BEGIN(fire_attack_event)
         CALL(btlevtcmd_ChoiceSamplingEnemy, LW(9), LW(3), LW(4))
     END_IF
     IF_INT_EQUAL(LW(3), -1)
-        CALL(btlevtcmd_CheckToken, -2, 16, LW(0))
+        CALL(btlevtcmd_CheckToken, -2, kConfusedAction, LW(0))
         IF_INT_NOT_EQUAL(LW(0), 0)
             CALL_CHILD(subsetevt_confuse_flustered)
             RETURN
@@ -812,7 +812,7 @@ static EVT_BEGIN(all_fire_attack_event)
         CALL(btlevtcmd_ChoiceSamplingEnemy, LW(9), LW(3), LW(4))
     END_IF
     IF_INT_EQUAL(LW(3), -1)
-        CALL(btlevtcmd_CheckToken, -2, 16, LW(0))
+        CALL(btlevtcmd_CheckToken, -2, kConfusedAction, LW(0))
         IF_INT_NOT_EQUAL(LW(0), 0)
             CALL_CHILD(subsetevt_confuse_flustered)
             RETURN

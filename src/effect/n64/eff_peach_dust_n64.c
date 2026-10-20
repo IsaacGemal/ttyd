@@ -75,7 +75,7 @@ static u8 color_rotation_data[36] = {
 	0xB4, 0xFE, 0xB4, 0xD5, 0xFE, 0xB4, 0xFE, 0xFE, 0xB4, 0xFE, 0xD5, 0xAC,
 };
 
-EffectEntry* effPeachDustN64Entry(s32 type, f32 x, f32 y, f32 z, f32 a4, f32 a5) {
+EffectEntry* effPeachDustN64Entry(s32 type, f32 x, f32 y, f32 z, f32 a4, f32 angleDeg) {
 	s8* table;
 	EffectEntry* effect;
 	PeachDustParticle* work;
@@ -84,7 +84,7 @@ EffectEntry* effPeachDustN64Entry(s32 type, f32 x, f32 y, f32 z, f32 a4, f32 a5)
 	s32 j;
 	s32 i;
 	f32 angle;
-	f32 rad;
+	f32 radians;
 	f32 radius;
 
 	effect = effEntry();
@@ -99,7 +99,7 @@ EffectEntry* effPeachDustN64Entry(s32 type, f32 x, f32 y, f32 z, f32 a4, f32 a5)
 	work->counter = 0;
 	work->field_0x00 = type;
 	work->life = 0x50;
-	angle = 6.2831855f * a5;
+	angle = 6.2831855f * angleDeg;
 	table = &data[type * 0x100];
 	count = 1;
 	particle = work + 1;
@@ -109,10 +109,10 @@ EffectEntry* effPeachDustN64Entry(s32 type, f32 x, f32 y, f32 z, f32 a4, f32 a5)
 				continue;
 			}
 			radius = (f32)((j - 8) * 2) + 0.1f * (f32)(rand() % 20 - 10);
-			rad = angle / 360.f;
-			particle->x = radius * (f32)cos(rad);
+			radians = angle / 360.f;
+			particle->x = radius * (f32)cos(radians);
 			particle->y = (f32)(i * 2) + 0.1f * (f32)(rand() % 20 - 10);
-			particle->z = radius * (f32)sin(rad);
+			particle->z = radius * (f32)sin(radians);
 			particle->vx = 0.04f * particle->x;
 			particle->vy = 0.04f * particle->y;
 			particle->gravity = 0.001f * (f32)(rand() % 10);
@@ -143,7 +143,7 @@ EffectEntry* effPeachDustN64Entry(s32 type, f32 x, f32 y, f32 z, f32 a4, f32 a5)
 }
 
 void effPeachDustMain(EffectEntry* effect) {
-	PeachDustParticle* data;
+	PeachDustParticle* particles;
 #ifdef MUST_MATCH
 	f32* scalePtr;
 #endif
@@ -153,45 +153,45 @@ void effPeachDustMain(EffectEntry* effect) {
 	s32 i;
 	s32 active;
 
-	data = effect->userdata;
-	position = makeVec(data->x, data->y, data->z);
+	particles = effect->userdata;
+	position = makeVec(particles->x, particles->y, particles->z);
 	position2 = position;
-	data->life--;
-	data->counter++;
-	colorIndex = data->counter;
+	particles->life--;
+	particles->counter++;
+	colorIndex = particles->counter;
 	active = 0;
-	data++;
-	for (i = 0; i < effect->count - 1; i++, data++) {
-		data->field_0x28 = (colorIndex + i + i) & 7;
-		if (data->life < 0) {
+	particles++;
+	for (i = 0; i < effect->count - 1; i++, particles++) {
+		particles->field_0x28 = (colorIndex + i + i) & 7;
+		if (particles->life < 0) {
 			active++;
 		}
-		data->life--;
-		if (data->life > 30 || data->life < 0) {
-			data->field_0x28 = -1;
+		particles->life--;
+		if (particles->life > 30 || particles->life < 0) {
+			particles->field_0x28 = -1;
 		}
 		else {
-			data->counter++;
-			colorIndex = data->counter;
+			particles->counter++;
+			colorIndex = particles->counter;
 #ifdef MUST_MATCH
-			scalePtr = &data->scale;
+			scalePtr = &particles->scale;
 #endif
 			if (colorIndex - 1 < 25) {
-				data->scale = 0.01f * (f32)scale_data[colorIndex - 1] * 0.4f;
+				particles->scale = 0.01f * (f32)scale_data[colorIndex - 1] * 0.4f;
 			}
 			else {
 				f32 k = 0.1f;
 #ifdef MUST_MATCH
 				// Match-only: reading the old scale through a pointer taken earlier keeps the load order of the original.
-				data->scale = k * (k - data->scale) + *scalePtr;
+				particles->scale = k * (k - particles->scale) + *scalePtr;
 #else
-				data->scale = k * (k - data->scale) + data->scale;
+				particles->scale = k * (k - particles->scale) + particles->scale;
 #endif
 			}
-			data->x += data->vx;
-			data->y += data->vy;
-			data->vy += data->gravity;
-			data->z += data->vx;
+			particles->x += particles->vx;
+			particles->y += particles->vy;
+			particles->vy += particles->gravity;
+			particles->z += particles->vx;
 		}
 	}
 	if (active >= effect->count - 1) {
@@ -224,7 +224,7 @@ static inline GXColor peachDustColor(u8 r, u8 g, u8 b) {
 // colorIndex vtx); moving the lines changes which register each loop variable gets.
 void effPeachDustDisp(CameraId camId, void* param) {
 	EffectEntry* effect = param;
-	PeachDustParticle* data;
+	PeachDustParticle* particles;
 	Mtx mtx;
 	Mtx texMtx;
 	Mtx rot;
@@ -242,7 +242,7 @@ void effPeachDustDisp(CameraId camId, void* param) {
 	f32 scale;
 
 	camera = camGetPtr(camId);
-	data = effect->userdata;
+	particles = effect->userdata;
 	GXSetNumChans(0);
 	GXSetNumTexGens(1);
 	GXSetTexCoordGen2(0, 1, 4, 0x1E, 0, 0x7D);
@@ -257,19 +257,19 @@ void effPeachDustDisp(CameraId camId, void* param) {
 	GXSetTevColorIn(0, 2, 0xC, 8, 0xF);
 	GXSetTevAlphaIn(0, 7, 1, 4, 7);
 	GXSetCullMode(0);
-	colorIndex = (data->counter - 1) * 3;
-	PSMTXTrans(mtx, data->x, data->y, data->z);
+	colorIndex = (particles->counter - 1) * 3;
+	PSMTXTrans(mtx, particles->x, particles->y, particles->z);
 	PSMTXRotRad(rot, 'y', 0.017453292f * -camGetPtr(CAMERA_3D)->viewYaw);
 	PSMTXConcat(mtx, rot, view);
 	PSMTXConcat(camera->view, view, view);
-	data++;
-	for (i = 0; i < effect->count - 1; i++, data++) {
-		colorType = data->field_0x28;
+	particles++;
+	for (i = 0; i < effect->count - 1; i++, particles++) {
+		colorType = particles->field_0x28;
 		if (colorType < 0) {
 			continue;
 		}
-		PSMTXTrans(mtx, data->x, data->y, data->z);
-		scale = data->scale;
+		PSMTXTrans(mtx, particles->x, particles->y, particles->z);
+		scale = particles->scale;
 		mtx[0][0] = scale;
 		mtx[1][1] = scale;
 		mtx[2][2] = scale;
@@ -308,28 +308,28 @@ void effPeachDustDisp(CameraId camId, void* param) {
 		GXSetTevColor(1, color);
 		switch (colorType & 7) {
 		case 0:
-			vtx = (effVtxArray*)((u8*)size8x8_tex22x22_vtx + 0xA8);
+			vtx = &((effVtxArray*)size8x8_tex22x22_vtx)[3];
 			break;
 		case 1:
-			vtx = (effVtxArray*)((u8*)size8x8_tex22x22_vtx + 0xE0);
+			vtx = &((effVtxArray*)size8x8_tex22x22_vtx)[4];
 			break;
 		case 2:
-			vtx = (effVtxArray*)((u8*)size8x8_tex22x22_vtx + 0x118);
+			vtx = &((effVtxArray*)size8x8_tex22x22_vtx)[5];
 			break;
 		case 3:
-			vtx = (effVtxArray*)((u8*)size8x8_tex22x22_vtx + 0x150);
+			vtx = &((effVtxArray*)size8x8_tex22x22_vtx)[6];
 			break;
 		case 4:
-			vtx = (effVtxArray*)((u8*)size8x8_tex22x22_vtx + 0x188);
+			vtx = &((effVtxArray*)size8x8_tex22x22_vtx)[7];
 			break;
 		case 5:
-			vtx = (effVtxArray*)size8x8_tex22x22_vtx;
+			vtx = &((effVtxArray*)size8x8_tex22x22_vtx)[0];
 			break;
 		case 6:
-			vtx = (effVtxArray*)((u8*)size8x8_tex22x22_vtx + 0x38);
+			vtx = &((effVtxArray*)size8x8_tex22x22_vtx)[1];
 			break;
 		case 7:
-			vtx = (effVtxArray*)((u8*)size8x8_tex22x22_vtx + 0x70);
+			vtx = &((effVtxArray*)size8x8_tex22x22_vtx)[2];
 			break;
 		}
 		effSetVtxDescN64(vtx);

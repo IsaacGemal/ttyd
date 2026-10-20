@@ -27,6 +27,7 @@ void FontDrawColor(GXColor* color);
 #include "driver/mapdrv.h"
 #include "eff/eff_stageclear.h"
 #include "eff/eff_itemget.h"
+#include "eff/eff_starstone.h"
 #include <stdio.h>
 #include "battle/ac/ac_table.h"
 #include "battle/battle_ac.h"
@@ -68,13 +69,13 @@ void FontDrawColor(GXColor* color);
 
 typedef struct SplineWork {
 	s32 type;      // 0x0
-	s32 field_4;   // 0x4
-	s32 field_8;   // 0x8
-	s32 field_C;   // 0xC
+	s32 knots;     // 0x4
+	s32 points;    // 0x8
+	s32 tangents;  // 0xC
 	s32 step;      // 0x10
 	s32 steps;     // 0x14
 	s32 mode;      // 0x18
-	s32 field_1C;  // 0x1C
+	s32 endTime;   // 0x1C
 	OSTime time;   // 0x20
 	s32 timeBased; // 0x28
 } SplineWork;
@@ -243,15 +244,15 @@ USER_FUNC(evt_sub_spline_init) {
 	SplineWork* work = _mapAlloc(0x30);
 	event->lwData[15] = (s32)work;
 	work->type = count;
-	work->field_4 = (s32)_mapAlloc(count * 4);
-	work->field_8 = c;
-	work->field_C = (s32)_mapAlloc(count * 0xC);
-	spline_maketable(count, work->field_8, (s32*)work->field_4, (s32*)work->field_C);
+	work->knots = (s32)_mapAlloc(count * 4);
+	work->points = c;
+	work->tangents = (s32)_mapAlloc(count * 0xC);
+	spline_maketable(count, work->points, (s32*)work->knots, (s32*)work->tangents);
 	work->timeBased = a;
 	work->mode = b;
 	work->step = 0;
 	work->steps = d;
-	work->field_1C = e;
+	work->endTime = e;
 	work->time = event->lifetime;
 	return EVT_RETURN_DONE;
 }
@@ -274,7 +275,7 @@ USER_FUNC(evt_sub_spline_get_value) {
 	} else {
 		u64 diff = (u64)event->lifetime - (u64)work->time;
 		f31 = (f32)(diff / (OS_TIMER_CLOCK / 1000));
-		f1 = ((f32 (*)(s32, f32, f32, s32, s32))intplGetValue)(work->mode, 0.0f, 1.0f, (s32)f31, work->field_1C);
+		f1 = ((f32 (*)(s32, f32, f32, s32, s32))intplGetValue)(work->mode, 0.0f, 1.0f, (s32)f31, work->endTime);
 	}
 #else
 	if (work->timeBased == 0) {
@@ -282,10 +283,10 @@ USER_FUNC(evt_sub_spline_get_value) {
 	} else {
 		u64 diff = (u64)event->lifetime - (u64)work->time;
 		f31 = (f32)(diff / (OS_TIMER_CLOCK / 1000));
-		f1 = intplGetValue(work->mode, (s32)f31, work->field_1C, 0.0f, 1.0f);
+		f1 = intplGetValue(work->mode, (s32)f31, work->endTime, 0.0f, 1.0f);
 	}
 #endif
-	spline_getvalue(out, work->type, work->field_8, work->field_4, work->field_C, f1);
+	spline_getvalue(out, work->type, work->points, work->knots, work->tangents, f1);
 	evtSetValue(event, args[0], (s32)(1024.0f * out[0]) + 0xF24A7A80);
 	evtSetValue(event, args[1], (s32)(1024.0f * out[1]) + 0xF24A7A80);
 	evtSetValue(event, args[2], (s32)(1024.0f * out[2]) + 0xF24A7A80);
@@ -296,13 +297,13 @@ USER_FUNC(evt_sub_spline_get_value) {
 			return EVT_RETURN_DONE;
 		}
 	} else {
-		if (f31 <= (f32)work->field_1C) {
+		if (f31 <= (f32)work->endTime) {
 			evtSetValue(event, args[3], 1);
 			return EVT_RETURN_DONE;
 		}
 	}
-	_mapFree((void*)work->field_4);
-	_mapFree((void*)work->field_C);
+	_mapFree((void*)work->knots);
+	_mapFree((void*)work->tangents);
 	_mapFree(work);
 	evtSetValue(event, args[3], 0);
 	return EVT_RETURN_DONE;
@@ -322,12 +323,12 @@ USER_FUNC(evt_sub_spline_get_value_manual) {
 	f32 out[3];
 
 	if (work->timeBased != 0) {
-		f0 = (f32)work->field_1C;
+		f0 = (f32)work->endTime;
 	} else {
 		f0 = (f32)work->steps;
 	}
 	f1 = f2 / f0;
-	spline_getvalue(out, work->type, work->field_8, work->field_4, work->field_C, f1);
+	spline_getvalue(out, work->type, work->points, work->knots, work->tangents, f1);
 	evtSetValue(event, args[1], (s32)(1024.0f * out[0]) + 0xF24A7A80);
 	evtSetValue(event, args[2], (s32)(1024.0f * out[1]) + 0xF24A7A80);
 	evtSetValue(event, args[3], (s32)(1024.0f * out[2]) + 0xF24A7A80);
@@ -337,9 +338,9 @@ USER_FUNC(evt_sub_spline_get_value_manual) {
 
 
 USER_FUNC(evt_sub_spline_free) {
-	void* work = (void*)event->lwData[15];
-	_mapFree(*(void**)((u8*)work + 4));
-	_mapFree(*(void**)((u8*)work + 0xC));
+	SplineWork* work = (SplineWork*)event->lwData[15];
+	_mapFree((void*)work->knots);
+	_mapFree((void*)work->tangents);
 	_mapFree(work);
 	return EVT_RETURN_DONE;
 }
@@ -787,18 +788,18 @@ USER_FUNC(evt_sub_get_coin) {
 		event->userdata[1] = (s32)effItemGetEntry(7, pos1.x, pos1.y, pos1.z);
 		event->userdata[2] = 0;
 		event->field_84 = 0;
-		*(s32**)((u8*)event + 0x88) = _mapAlloc(8);
+		event->userdataEx[0] = (s32)_mapAlloc(8);
 	}
 
 	eff = (EffectEntry*)event->userdata[1];
-	work = *(s32**)((u8*)event + 0x88);
+	work = (s32*)event->userdataEx[0];
 
 	switch (event->userdata[0]) {
 	case 0:
 		iconEntry("iraiCoin", 0x18B);
 		iconSetPos("iraiCoin", pos2.x, pos2.y, pos2.z);
 		iconFlagOn("iraiCoin", 0x102);
-		*(s32*)((u8*)eff->userdata + 0x38) = 5;
+		((effItemGetData*)eff->userdata)->camId = 5;
 		marioChgGetItemMotion();
 		event->field_84 = winMgrEntry(&coinget_window_desc);
 		winMgrOpen(event->field_84);
@@ -860,8 +861,8 @@ USER_FUNC(stone_ry) {
 	s32 angle = evtGetValue(event, args[1]);
 	ItemEntry* itemPtr = itemNameToPtr((char*)item);
 	EffectEntry* eff = itemPtr->effect;
-	*(u16*)((u8*)eff->userdata + 4) &= ~4;
-	*(f32*)((u8*)eff->userdata + 0x1C) = (f32)(angle % 360);
+	((effStarStoneData*)eff->userdata)->flags &= ~4;
+	((effStarStoneData*)eff->userdata)->rotY = (f32)(angle % 360);
 	return EVT_RETURN_DONE;
 }
 
@@ -876,9 +877,9 @@ static s32 stone_bg(EventEntry* event, BOOL isFirstCall) {
 
 	cam->letterBoxCamId = 5;
 	eff = effNameToPtr("sub_bg");
-	*(s32*)((u8*)eff->userdata + 0x38) = 5;
+	((effItemGetData*)eff->userdata)->camId = 5;
 	itemPtr = itemNameToPtr((char*)item);
-	*(s32*)((u8*)itemPtr->effect->userdata + 0x38) = 5;
+	((effStarStoneData*)itemPtr->effect->userdata)->camId = 5;
 	npc = npcNameToPtr_NoAssert("\202\311\202\271\203}\203\212\203I");
 	if (npc != NULL && evtGetValue(event, 0xF5DE0180) < 0xD3) {
 		npcNameToPtr_NoAssert("\202\311\202\271\203}\203\212\203I")->cameraId = 5;
@@ -891,7 +892,7 @@ static s32 stone_bg(EventEntry* event, BOOL isFirstCall) {
 
 USER_FUNC(stone_bg_open) {
 	EffectEntry* eff = effNameToPtr("sub_bg");
-	*(s32*)((u8*)eff->userdata + 0x20) = 1;
+	((effItemGetData*)eff->userdata)->scaleMode = 1;
 	return EVT_RETURN_DONE;
 }
 

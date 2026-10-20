@@ -36,6 +36,7 @@ static inline void parseTagName(char* dst, s8* src, s32 pos, s32 end) {
 
 BOOL parsePush(const char* tag) {
 	static char buf[128];
+	// field_0x4 and size head two parallel 10-entry position arrays indexed by nesting depth.
 	s32 i = ((s32*)&parse.field_0x4)[parse.field_0x54];
 	s32 end = ((s32*)&parse.size)[parse.field_0x54];
 	s8* base = parse.ptr;
@@ -106,6 +107,7 @@ void parsePop(void) {
 // .text:0x2F8 | 0x80083D64 | size: 0x28
 void parsePopNext(void) {
 	parse.field_0x54--;
+	// Resume the parent level at the end of the child tag that was just parsed.
 	((s32*)&parse.field_0x4)[parse.field_0x54] = ((s32*)&parse.field_0x30)[parse.field_0x54];
 }
 
@@ -135,6 +137,7 @@ BOOL parseGet1Next(s32 type, void* data) {
 
 	switch (type) {
 	case 3:
+		// Three-component (x, y, z) value: parse each part as a float.
 		result *= parseGet1Next(2, data);
 		result *= parseGet1Next(2, (s8*)data + 4);
 		result *= parseGet1Next(2, (s8*)data + 8);
@@ -181,6 +184,7 @@ BOOL parseGet1Next(s32 type, void* data) {
 
 		switch (type) {
 		case 0: {
+			// String: copy the quoted text, dropping the surrounding quotes.
 			k = tokenStart;
 			dst = data;
 			src = base + tokenStart;
@@ -215,10 +219,12 @@ BOOL parseGet1Next(s32 type, void* data) {
 			break;
 		}
 		case 1:
+			// Integer: scanf with "%d".
 			sscanf((const char*)&base[tokenStart], str_8041A6B0, data);
 			p[0] = tokenEnd;
 			break;
 		case 2:
+			// Float: scanf with "%f".
 			sscanf((const char*)&base[tokenStart], str_8041A6B4, data);
 			p[0] = tokenEnd;
 			break;

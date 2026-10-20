@@ -37,13 +37,13 @@ extern const f32 float_neg1p2_8041fd34;
 extern const f32 float_0p01_8041fd38;
 
 typedef struct effSnowfallData {
-	s32 field_0x00;  // 0x00
+	s32 active;      // 0x00
 	s32 type;        // 0x04
 	Vec position;    // 0x08
 	Vec velocity;    // 0x14
 	s32 life;        // 0x20
-	s32 field_0x24;  // 0x24
-	s32 field_0x28;  // 0x28
+	s32 age;         // 0x24
+	s32 alpha;       // 0x28
 	s32 count;       // 0x2C
 	s32 timer;       // 0x30
 } effSnowfallData;
@@ -75,13 +75,13 @@ static inline void effSnowfallSetBlendColor(GXColor* blend, s32 alpha) {
 	c.g = blend->g * 0xFF;
 	c.b = blend->b * 0xFF;
 	c.a = alpha * blend->a;
-	GXSetTevColor(1, c);
+	GXSetTevColor(GX_TEVREG0, c);
 }
 
 static inline void effSnowfallSetPlainColor(s32 alpha) {
 	GXColor c = dat_8041fd10;
 	c.a = alpha;
-	GXSetTevColor(1, c);
+	GXSetTevColor(GX_TEVREG0, c);
 }
 
 void cam_clip_chk(void* p, s32 a, s32 b, s32 c) {
@@ -112,7 +112,7 @@ void cam_clip_chk(void* p, s32 a, s32 b, s32 c) {
 	} else if (i < -b) {
 		if (c < 100) {
 			data->velocity.y = float_0_8041fd18;
-			data->field_0x28 = 0;
+			data->alpha = 0;
 		} else {
 			i = -i;
 			i %= b;
@@ -146,12 +146,12 @@ EffectEntry* effSnowfallN64Entry(s32 type, s32 count) {
 	data = __memAlloc(HEAP_EFFECT, num * sizeof(effSnowfallData));
 	effect->userdata = data;
 	effect->callback = effSnowfallMain;
-	data->field_0x24 = 0;
+	data->age = 0;
 	data->life = 100;
 	data->type = type;
 	data->count = count;
-	data->field_0x28 = 0xFF;
-	data->field_0x00 = 1;
+	data->alpha = 0xFF;
+	data->active = 1;
 	particle = data + 1;
 	for (i = 0; i < count; i++, particle++) {
 		CameraEntry* cam = camGetPtr(CAMERA_3D);
@@ -162,7 +162,7 @@ EffectEntry* effSnowfallN64Entry(s32 type, s32 count) {
 		particle->velocity.x = ((f32)(rand() % 20) - float_10_8041fd30) * float_0p05_8041fd2c;
 		particle->velocity.y = float_neg1p2_8041fd34 - (f32)(rand() % 80) * float_0p01_8041fd38;
 		particle->velocity.z = ((f32)(rand() % 20) - float_10_8041fd30) * float_0p05_8041fd2c;
-		particle->field_0x28 = 0xFF;
+		particle->alpha = 0xFF;
 		particle->velocity.x *= 0.5f;
 		particle->velocity.y *= 0.5f;
 		particle->velocity.z *= 0.5f;
@@ -191,11 +191,11 @@ void effSnowfallMain(EffectEntry* effect) {
 		effDelete(effect);
 		return;
 	}
-	data->field_0x24++;
+	data->age++;
 	life = data->life;
 	count = data->count;
 	if (life < 10) {
-		data->field_0x28 = life * 25;
+		data->alpha = life * 25;
 	}
 	limit = (s32)float_166_8041fd24;
 	data++;
@@ -240,31 +240,31 @@ void effSnowfallDisp(CameraId cameraId, void* param) {
 
 	cam = camGetPtr(cameraId);
 	data = effect->userdata;
-	if (data->field_0x00 == 0) {
+	if (data->active == 0) {
 		return;
 	}
 	count = data->count;
-	alpha = data->field_0x28;
+	alpha = data->alpha;
 	GXSetNumChans(0);
 	GXSetNumTexGens(1);
-	GXSetTexCoordGen2(0, 1, 4, 0x1e, 0, 0x7d);
+	GXSetTexCoordGen2(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_TEXMTX0, GX_FALSE, GX_PTIDENTITY);
 	PSMTXScale(scaleMtx, float_0p03125_8041fd14, float_0p03125_8041fd14, float_0_8041fd18);
-	GXLoadTexMtxImm(scaleMtx, 0x1e, 1);
+	GXLoadTexMtxImm(scaleMtx, GX_TEXMTX0, GX_MTX2x4);
 	GXSetNumTevStages(1);
-	GXSetTevOrder(0, 0, 0, 0xff);
-	GXSetTevColorOp(0, 0, 0, 0, 1, 0);
-	GXSetTevAlphaOp(0, 0, 0, 0, 1, 0);
-	GXSetTevColorIn(0, 0xf, 0xf, 0xf, 0xc);
-	GXSetTevAlphaIn(0, 7, 4, 1, 7);
+	GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR_NULL);
+	GXSetTevColorOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+	GXSetTevAlphaOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+	GXSetTevColorIn(GX_TEVSTAGE0, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ONE);
+	GXSetTevAlphaIn(GX_TEVSTAGE0, GX_CA_ZERO, GX_CA_TEXA, GX_CA_A0, GX_CA_ZERO);
 	effGetTexObjN64(0x63, &texObj);
 	effGetTexObjN64(0x64, &texObj2);
 	dst = (u8*)OSPhysicalToCached(GXGetTexObjData(&texObj));
 	src = (u8*)OSPhysicalToCached(GXGetTexObjData(&texObj2));
-	dst += GXGetTexBufferSize(0x40, 0x40, 0, 1, 2);
-	memcpy(dst, src, GXGetTexBufferSize(0x10, 0x10, 0, 0, 0));
-	DCFlushRange(dst, GXGetTexBufferSize(0x40, 0x40, 0, 1, 3));
-	GXInitTexObjLOD(&texObj, 5, 1, float_0_8041fd18, float_2_8041fd1c, float_0_8041fd18, 1, 1, 0);
-	GXLoadTexObj(&texObj, 0);
+	dst += GXGetTexBufferSize(0x40, 0x40, GX_TF_I4, GX_TRUE, 2);
+	memcpy(dst, src, GXGetTexBufferSize(0x10, 0x10, GX_TF_I4, GX_FALSE, 0));
+	DCFlushRange(dst, GXGetTexBufferSize(0x40, 0x40, GX_TF_I4, GX_TRUE, 3));
+	GXInitTexObjLOD(&texObj, GX_LIN_MIP_LIN, GX_LINEAR, float_0_8041fd18, float_2_8041fd1c, float_0_8041fd18, GX_TRUE, GX_TRUE, GX_ANISO_1);
+	GXLoadTexObj(&texObj, GX_TEXMAP0);
 	if (mapGetWork()->entries[0].flags & 2) {
 		mapGetBlend(&blend);
 #ifdef MUST_MATCH
@@ -275,7 +275,7 @@ void effSnowfallDisp(CameraId cameraId, void* param) {
 		color.g = blend.g * 0xFF;
 		color.b = blend.b * 0xFF;
 		color.a = alpha * blend.a;
-		GXSetTevColor(1, color);
+		GXSetTevColor(GX_TEVREG0, color);
 #endif
 	} else {
 #ifdef MUST_MATCH
@@ -283,10 +283,10 @@ void effSnowfallDisp(CameraId cameraId, void* param) {
 #else
 		color = dat_8041fd10;
 		color.a = alpha;
-		GXSetTevColor(1, color);
+		GXSetTevColor(GX_TEVREG0, color);
 #endif
 	}
-	GXSetCullMode(0);
+	GXSetCullMode(GX_CULL_NONE);
 	effSetVtxDescN64((effVtxArray*)eff_snowfall_v);
 	PSMTXRotRad(rotMtx, 'y', float_deg2rad_8041fd20 * -camGetPtr(CAMERA_3D)->viewYaw);
 	PSMTXConcat(cam->view, rotMtx, rotMtx);
@@ -295,14 +295,14 @@ void effSnowfallDisp(CameraId cameraId, void* param) {
 		if (data->timer > 0) {
 			continue;
 		}
-		if (data->field_0x28 == 0) {
+		if (data->alpha == 0) {
 			continue;
 		}
 		PSMTXTrans(transMtx, data->position.x, data->position.y, data->position.z);
 		PSMTXConcat(rotMtx, transMtx, transMtx);
-		GXLoadPosMtxImm(transMtx, 0);
-		GXSetCurrentMtx(0);
-		GXBegin(0x80, 0, 0x20);
+		GXLoadPosMtxImm(transMtx, GX_PNMTX0);
+		GXSetCurrentMtx(GX_PNMTX0);
+		GXBegin(GX_QUADS, GX_VTXFMT0, 0x20);
 		for (j = 0; j < 4; j++) {
 			for (k = 0; k < 8; k++) {
 				GXPosition1x16(j * 8 + k);

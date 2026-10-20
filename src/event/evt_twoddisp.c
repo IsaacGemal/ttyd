@@ -30,7 +30,7 @@ typedef struct TwoDDisplayer {
 	f32 y;           // 0x18
 	f32 baseX;       // 0x1c
 	f32 baseY;       // 0x20
-	s32 field_0x24;  // 0x24, text pointer or icon id
+	s32 data;        // 0x24, text pointer or icon id
 	f32 scale;       // 0x28
 	u32 field_0x2C;  // 0x2c
 	u32 field_0x30;  // 0x30
@@ -77,7 +77,6 @@ static inline void twoddisp_fontColor(GXColor color) {
 // because other call sites (ac_timing_wide) rely on the `s16` declaration.
 void twoddisp_disp(CameraId cameraId, void* param) {
 	s32 offset;
-	s32 i;
 	TwoDDisplayer* entry;
 	Vec pos;
 	GXColor color;
@@ -88,16 +87,15 @@ void twoddisp_disp(CameraId cameraId, void* param) {
 #endif
 	char text[0x100];
 
-	offset = 0;
-	for (i = 0; i < 100; i++, offset += 0x34) {
-		entry = (TwoDDisplayer*)((u8*)twodPtr + offset);
+	for (offset = 0; offset < 100; offset++) {
+		entry = &twodPtr[offset];
 		if ((s8)entry->name[0] == 0) {
 			continue;
 		}
 		if (!(entry->flags & 1)) {
 			continue;
 		}
-		if (!(entry->field_0x24 & 0x80000000)) {
+		if (!(entry->data & 0x80000000)) {
 			color = unk_80423048;
 			pos.x = entry->baseX + entry->x;
 			pos.y = entry->baseY + entry->y;
@@ -105,16 +103,16 @@ void twoddisp_disp(CameraId cameraId, void* param) {
 			GXSetFog(GX_FOG_NONE, 0.0f, 0.0f, 0.0f, 0.0f, color);
 #ifdef MUST_MATCH
 			// Match-only: original call site passes a u16 icon id (clrlwi); the header's s16 would extsh.
-			((void (*)(Vec*, s16, u16, f32))iconDispGx)(&pos, 0x10, entry->field_0x24, entry->scale);
+			((void (*)(Vec*, s16, u16, f32))iconDispGx)(&pos, 0x10, entry->data, entry->scale);
 #else
-			iconDispGx(entry->scale, &pos, 0x10, entry->field_0x24);
+			iconDispGx(entry->scale, &pos, 0x10, entry->data);
 #endif
 		} else {
 			FontDrawStart();
 			FontDrawScale(entry->scale);
 			textColor = unk_8042304c;
 			GXSetFog(GX_FOG_NONE, 0.0f, 0.0f, 0.0f, 0.0f, textColor);
-			sprintf(text, (char*)entry->field_0x24);
+			sprintf(text, (char*)entry->data);
 #ifdef MUST_MATCH
 			twoddisp_fontColor(dat_8041cca8);
 #else
@@ -168,7 +166,7 @@ USER_FUNC(evt_twoddisp_init) {
 		entry->baseX = 0.0f;
 		entry->y = 0.0f;
 		entry->baseY = 0.0f;
-		entry->field_0x24 = 0;
+		entry->data = 0;
 		entry->scale = 1.0f;
 	}
 	return EVT_RETURN_DONE;
@@ -194,7 +192,7 @@ USER_FUNC(evt_twoddisp_entry) {
 			entry->baseX = 0.0f;
 			entry->y = 0.0f;
 			entry->baseY = 0.0f;
-			entry->field_0x24 = data;
+			entry->data = data;
 			entry->scale = 1.0f;
 			break;
 		}
@@ -229,9 +227,6 @@ USER_FUNC(evt_twoddisp_set_base_position) {
 	entry->baseY = evtGetFloat(event, args[2]);
 	return EVT_RETURN_DONE;
 }
-
-#ifdef MUST_MATCH
-#endif
 
 //s32* onoff, s32* name, s32* flag
 USER_FUNC(evt_twoddisp_flag_onoff) {

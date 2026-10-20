@@ -28,6 +28,13 @@ extern const f32 float_0p03705_8041ca0c;
 extern const f32 float_0p4967_8041ca10;
 extern const f32 float_0p2_8041ca14;
 
+// View of the maya-animation object whose first two entries' matrices are
+// combined in effDamageStarDisp. The entries are 0x34 bytes apart.
+typedef struct DamageStarAnim {
+    u8 header[0x14];
+    EffectMayaAnimEntry entries[];
+} DamageStarAnim;
+
 // .sbss2 scratch object used by effDamageStarDisp's colour build. Declared in reverse
 // (the second is placed first) with the small-data section remapped to .sbss2.
 #pragma section ".sdata" ".sbss2"
@@ -255,7 +262,7 @@ EffectEntry* effDamageStarEntry(s32 type, s32 count, f32 x, f32 y, f32 z, f32 sp
     DamageStarData* data;
     s32 origCount;
     s32 i;
-    f32 f4;
+    f32 angleStep;
 
     entry = effEntry();
     origCount = count;
@@ -281,12 +288,12 @@ EffectEntry* effDamageStarEntry(s32 type, s32 count, f32 x, f32 y, f32 z, f32 sp
     data->field_0x3C = origCount;
     data->field_0x40 = gp->retraceCount;
 
-    f4 = 30.0f - (f32)(count + 2);
+    angleStep = 30.0f - (f32)(count + 2);
     i = 1;
     data = &data[1];
     for (; i < count + 2; i++, data++) {
-        s32 spiral = i * ((i % 2) * 2 - 1) / 2;
-        f32 a = f4 * (f32)spiral + angle;
+        s32 angleIndex = i * ((i % 2) * 2 - 1) / 2;
+        f32 a = angleStep * (f32)angleIndex + angle;
         f32 rad;
 
         data->angle = a;
@@ -316,7 +323,7 @@ void effDamageStarMain(EffectEntry* effect) {
     DamageStarData* data;
     Vec position;
     Vec disp;
-    u32 count = 0;
+    u32 steps = 0;
     s32 i;
 
     data = effect->userdata;
@@ -330,13 +337,13 @@ void effDamageStarMain(EffectEntry* effect) {
     effCalcMayaAnim(data->anim);
 
     if (gp->retraceCount > (u32)data->field_0x40) {
-        count = gp->retraceCount - data->field_0x40;
+        steps = gp->retraceCount - data->field_0x40;
     }
-    if (count < 1) {
-        count = 1;
+    if (steps < 1) {
+        steps = 1;
     }
 
-    while (count--) {
+    while (steps--) {
         data = effect->userdata;
         if (data->field_0x24 < 100) {
             data->field_0x24--;
@@ -438,12 +445,12 @@ void effDamageStarDisp(CameraId camId, void* param) {
     Mtx mtxB8;
     Mtx mtx88;
     Mtx mtx58;
-    s32 flag;
+    s32 mirrorX; // X mirror flag (set from the launch angle)
     f32 angle;
     DamageStarData* elem;
     s32 i;
     s32 frame;
-    s32 count;
+    s32 damage;
     s32 type;
     char buf[32];
 
@@ -451,11 +458,11 @@ void effDamageStarDisp(CameraId camId, void* param) {
     data = effect->userdata;
     angle = data->angle;
     frame = data->frame;
-    count = data->field_0x3C;
+    damage = data->field_0x3C;
     if (angle > 0.0f) {
-        flag = 1;
+        mirrorX = 1;
     } else {
-        flag = 0;
+        mirrorX = 0;
     }
     type = data->type;
 
@@ -564,7 +571,7 @@ void effDamageStarDisp(CameraId camId, void* param) {
     PSMTXRotRad(mtxB8, 'y', MTXDegToRad(-camGetPtr(camId)->viewYaw));
     PSMTXTrans(mtx88, data->position.x, data->position.y, data->position.z);
     PSMTXConcat(mtx88, mtxB8, mtx148);
-    if (flag == 0) {
+    if (mirrorX == 0) {
         PSMTXScale(mtx58, 12.0f, 12.0f, 12.0f);
         PSMTXConcat(mtx148, mtx58, mtx148);
     } else {
@@ -574,11 +581,11 @@ void effDamageStarDisp(CameraId camId, void* param) {
     PSMTXTrans(mtx88, 10.0f, -1.5f, 0.0f);
     PSMTXConcat(mtx148, mtx88, mtx148);
     {
-        Mtx* animMtx = (Mtx*)((u8*)data->anim + 0x14);
+        DamageStarAnim* anim = (DamageStarAnim*)data->anim;
 
-        PSMTXConcat(mtx148, *animMtx, mtx148);
-        animMtx = (Mtx*)((u8*)data->anim + 0x48);
-        PSMTXConcat(mtx148, *animMtx, mtx148);
+        PSMTXConcat(mtx148, anim->entries[0].mtx, mtx148);
+        anim = (DamageStarAnim*)data->anim;
+        PSMTXConcat(mtx148, anim->entries[1].mtx, mtx148);
     }
     GXSetCurrentMtx(0);
     PSMTXTransApply(mtx148, mtx118, 2.5f, -2.5f, 0.0f);
@@ -664,7 +671,7 @@ void effDamageStarDisp(CameraId camId, void* param) {
     GXSetZCompLoc(1);
     GXSetAlphaCompare(7, 0, 0, 7, 0);
     GXSetZMode(0, 3, 0);
-    sprintf(buf, "%d", count);
+    sprintf(buf, "%d", damage);
     {
         s32 len = strlen(buf);
 #ifdef MUST_MATCH
@@ -680,6 +687,6 @@ void effDamageStarDisp(CameraId camId, void* param) {
         PSMTXTrans(mtx88, x, 0.0f, 0.0f);
         PSMTXConcat(mtx58, mtx88, mtx88);
         PSMTXConcat(mtx148, mtx88, mtx118);
-        effNumberGX(&mtx118, 2, count, 0xFF, 1);
+        effNumberGX(&mtx118, 2, damage, 0xFF, 1);
     }
 }

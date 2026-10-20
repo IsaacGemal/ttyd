@@ -35,14 +35,14 @@ static u32 size32x32_tex32x32_vtx[0xE] = {
 };
 
 static inline Vec initializeVec(Vec* input) {
-	Vec temp = (Vec){ 0.0f, 0.0f, 0.0f };
-	temp.x = input->x;
-	temp.y = input->y;
-	temp.z = input->z;
-	return temp;
+	Vec result = (Vec){ 0.0f, 0.0f, 0.0f };
+	result.x = input->x;
+	result.y = input->y;
+	result.z = input->z;
+	return result;
 }
 
-EffectEntry* effBomheiN64Entry(s32 type, s32 count, f32 x, f32 y, f32 z, f32 a5) {
+EffectEntry* effBomheiN64Entry(s32 type, s32 count, f32 x, f32 y, f32 z, f32 scale) {
 	EffectEntry* effect;
 	effBomheiData* data;
 
@@ -60,7 +60,7 @@ EffectEntry* effBomheiN64Entry(s32 type, s32 count, f32 x, f32 y, f32 z, f32 a5)
 	data->x = x;
 	data->y = y;
 	data->z = z;
-	data->field_0x10 = a5;
+	data->field_0x10 = scale;
 	data->field_0x24 = float_0_8041ea38;
 	if (type == 0) {
 		data->field_0x28 = float_0_8041ea38;

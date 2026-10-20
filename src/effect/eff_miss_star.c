@@ -14,13 +14,13 @@ typedef struct MissStarData {
     f32 dvx;        // 0x18
     f32 dvy;        // 0x1C
     f32 dvz;        // 0x20
-    s32 field_0x24; // 0x24
-    s32 field_0x28; // 0x28
+    s32 moveTimer;  // 0x24
+    s32 delay;      // 0x28
     f32 angle;      // 0x2C
     f32 angleVel;   // 0x30
     f32 field_0x34;  // 0x34
     f32 scale;      // 0x38
-    s32 field_0x3C; // 0x3C
+    s32 deleteTimer; // 0x3C
     f32 field_0x40; // 0x40
 } MissStarData;
 
@@ -102,9 +102,9 @@ EffectEntry* effMissStarEntry(s32 type, f32 x, f32 y, f32 z, s32 lifetime, s32 a
         data->angle = 0.0f;
         data->angleVel = (f32)(sign * 107);
         data->field_0x34 = -camGetPtr(CAMERA_3D)->viewYaw;
-        data->field_0x24 = 14;
-        data->field_0x28 = lifetime;
-        data->field_0x3C = 10;
+        data->moveTimer = 14;
+        data->delay = lifetime;
+        data->deleteTimer = 10;
         data->field_0x40 = 255.0f;
     }
 
@@ -128,14 +128,14 @@ void effMissStarMain(EffectEntry* effect) {
     angleVelScale = 0.8f;
 
     for (i = 0; i < effect->count; i++, data++) {
-        if (data->field_0x28 != 0) {
-            data->field_0x28--;
-            if (data->field_0x28 == 0) {
+        if (data->delay != 0) {
+            data->delay--;
+            if (data->delay == 0) {
                 break;
             }
         }
 
-        if (data->field_0x24 >= 0) {
+        if (data->moveTimer >= 0) {
             data->position.x += data->dvx;
             data->position.y += data->dvy;
             data->position.z += data->dvz;
@@ -146,7 +146,7 @@ void effMissStarMain(EffectEntry* effect) {
         data->angle = reviseAngle(data->angle);
         data->angleVel *= angleVelScale;
 
-        if (data->field_0x24 < 10) {
+        if (data->moveTimer < 10) {
             data->vx *= 0.5f;
             data->vy *= 0.5f;
             data->vz *= 0.5f;
@@ -155,10 +155,10 @@ void effMissStarMain(EffectEntry* effect) {
             data->dvz = data->vz;
         }
 
-        data->field_0x24--;
-        if (data->field_0x24 < 0) {
-            data->field_0x3C--;
-            if (data->field_0x3C < 0) {
+        data->moveTimer--;
+        if (data->moveTimer < 0) {
+            data->deleteTimer--;
+            if (data->deleteTimer < 0) {
                 effDelete(effect);
                 return;
             }
@@ -198,7 +198,7 @@ void effMissStarDisp(CameraId camId, void* param) {
     GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, GX_TEX_ST, GX_F32, 0);
 
     for (i = 0; i < effect->count; i++, data++) {
-        if (data->field_0x28 != 0) {
+        if (data->delay != 0) {
             break;
         }
 

@@ -14,16 +14,16 @@
 // userdata load ahead of the copy (see docs/CONTEXT.md, Grind 19). The literal
 // lands in .rodata at the position the named zero vector used to occupy.
 static inline Vec makeHibashiraVec(f32 x, f32 y, f32 z) {
-	Vec temp = (Vec){ 0.0f, 0.0f, 0.0f };
-	temp.x = x;
-	temp.y = y;
-	temp.z = z;
-	return temp;
+	Vec vec = (Vec){ 0.0f, 0.0f, 0.0f };
+	vec.x = x;
+	vec.y = y;
+	vec.z = z;
+	return vec;
 }
 
 // .rodata
 
-// .sdata2 strings effHibashiraMain reads from the original unit's data.
+// .sdata2 white GXColor with zero alpha; the alpha byte is overwritten per pillar segment.
 
 // .sdata2
 extern const u32 dat_80422338;
@@ -34,7 +34,7 @@ inline GXColor makeHibashiraColor(s32 alpha) {
 	return color;
 }
 
-EffectEntry* effHibashiraEntry(s32 type, s32 countArg, s32 c, f32 x, f32 y, f32 z, f32 x2, f32 y2, f32 z2, f32 scale) {
+EffectEntry* effHibashiraEntry(s32 type, s32 segmentCount, s32 lifetime, f32 x, f32 y, f32 z, f32 x2, f32 y2, f32 z2, f32 scale) {
 	EffectEntry* entry;
 	HibashiraData* data;
 	HibashiraData* elem;
@@ -56,7 +56,7 @@ EffectEntry* effHibashiraEntry(s32 type, s32 countArg, s32 c, f32 x, f32 y, f32 
 	case 3:
 	case 4:
 	case 5:
-		count = countArg + 1;
+		count = segmentCount + 1;
 		break;
 	}
 
@@ -74,10 +74,10 @@ EffectEntry* effHibashiraEntry(s32 type, s32 countArg, s32 c, f32 x, f32 y, f32 
 	data->scale = scale;
 	data->animPose = -1;
 	data->field_0x18 = 0xFF;
-	if (c <= 0) {
+	if (lifetime <= 0) {
 		data->field_0x1C = 1000;
 	} else {
-		data->field_0x1C = c;
+		data->field_0x1C = lifetime;
 	}
 	data->field_0x20 = 0;
 
@@ -92,8 +92,8 @@ EffectEntry* effHibashiraEntry(s32 type, s32 countArg, s32 c, f32 x, f32 y, f32 
 		elem->position.y = (f32)(i - 1) * (dy / (f32)(count - 1));
 		elem->position.z = (f32)(i - 1) * (dz / (f32)(count - 1));
 		{
-			f32 s = (f32)sin(3.1415927f * (f32)i / (f32)(entry->count - 1));
-			elem->scale = 0.5f + s;
+			f32 arcScale = (f32)sin(3.1415927f * (f32)i / (f32)(entry->count - 1));
+			elem->scale = 0.5f + arcScale;
 		}
 		elem->animPose = -1;
 		elem->field_0x18 = 0xFF;

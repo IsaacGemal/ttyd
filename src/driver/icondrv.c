@@ -55,6 +55,11 @@ inline IconEntry* iconGetEntry(const char* name) {
     return NULL;
 }
 
+// The per-icon offset table gives the byte offset of each entry from the start of icon.bin.
+static inline IconBinaryEntry* iconBinEntry(IconBinary* bin, u16 iconId) {
+    return (IconBinaryEntry*)((u8*)bin + bin->offset[iconId]);
+}
+
 // MUST_MATCH: the retail code walks the frame table through a pointer cast from the entry start (frames at +2 u32 slots);
 // `data->frames[i]` compiles to the same loads but the registers come out differently. iconDispGxAlpha and iconGetTexObj
 // take the pointer from an inline accessor; iconDispGx2 and iconDispGxCol cast it into a block-local pointer.
@@ -174,7 +179,7 @@ void iconMain(void) {
                         if (!icon_tpl_ok || !icon_bin_ok) {
                             tmp = NULL;
                         } else {
-                            tmp = (IconBinaryEntry*)((u8*)bin + bin->offset[id]);
+                            tmp = iconBinEntry(bin, id);
                         }
                         data = tmp;
                     }
@@ -233,7 +238,7 @@ void iconEntry(const char* name, u16 iconId) {
         if (!icon_tpl_ok || !icon_bin_ok) {
             data = NULL;
         } else {
-            data = (IconBinaryEntry*)((u8*)bin + bin->offset[id]);
+            data = iconBinEntry(bin, id);
         }
     }
     if (data) {
@@ -288,7 +293,7 @@ void iconEntry2D(const char* name, s16 iconId) {
         if (!icon_tpl_ok || !icon_bin_ok) {
             data = NULL;
         } else {
-            data = (IconBinaryEntry*)((u8*)bin + bin->offset[id]);
+            data = iconBinEntry(bin, id);
         }
     }
     if (data) {
@@ -331,7 +336,7 @@ void iconChange(const char* name, u16 iconId) {
         if (!icon_tpl_ok || !icon_bin_ok) {
             data = NULL;
         } else {
-            data = (IconBinaryEntry*)((u8*)bin + bin->offset[id]);
+            data = iconBinEntry(bin, id);
         }
     }
     entry->width = data->width;
@@ -397,7 +402,7 @@ void iconDispGxAlpha(Vec* position, s16 flags, s16 iconId, u8 alpha, f32 scale) 
         if (!icon_tpl_ok || !icon_bin_ok) {
             data = NULL;
         } else {
-            data = (IconBinaryEntry*)((u8*)bin + bin->offset[id]);
+            data = iconBinEntry(bin, id);
         }
     }
     entryp->width = data->width;
@@ -452,7 +457,7 @@ void iconDispGx2(Mtx mtx, s16 flags, s16 iconId) {
     if (!icon_tpl_ok || !icon_bin_ok) {
         data = NULL;
     } else {
-        data = (IconBinaryEntry*)((u8*)bin + bin->offset[id]);
+        data = iconBinEntry(bin, id);
     }
     entryp->width = data->width;
     entryp->height = data->height;
@@ -501,7 +506,7 @@ void iconDispGxCol(Mtx pos, s16 flags, s32 iconId, GXColor color) {
     if (!icon_tpl_ok || !icon_bin_ok) {
         data = NULL;
     } else {
-        data = (IconBinaryEntry*)((u8*)bin + bin->offset[id]);
+        data = iconBinEntry(bin, id);
     }
     entryp->width = data->width;
     entryp->height = data->height;
@@ -547,7 +552,7 @@ void iconGetTexObj(GXTexObj* texObj, u16 iconId) {
         if (!icon_tpl_ok || !icon_bin_ok) {
             data = NULL;
         } else {
-            data = (IconBinaryEntry*)((u8*)bin + bin->offset[(u16)iconId]);
+            data = iconBinEntry(bin, (u16)iconId);
         }
     }
     tplId = data->frames[0].tplId;
@@ -583,7 +588,7 @@ void iconGetWidthHight(u16* width, u16* height, u16 iconId) {
     if (!icon_tpl_ok || !icon_bin_ok) {
         entry = NULL;
     } else {
-        entry = (IconBinaryEntry*)((u8*)bin + bin->offset[iconId]);
+        entry = iconBinEntry(bin, iconId);
     }
     *width = entry->width;
     *height = entry->height;

@@ -20,7 +20,7 @@ inline Vec initializeVec(Vec* input) {
 	temp.z = input->z;
 	return temp;
 }
-EffectEntry* effBalloonN64Entry(s32 type, f32 x, f32 y, f32 z, f32 a4, f32 a5) {
+EffectEntry* effBalloonN64Entry(s32 type, f32 x, f32 y, f32 z, f32 targetRadius, f32 angleDeg) {
 	EffectEntry* effect;
 	effBalloonN64Data* data;
 
@@ -35,9 +35,9 @@ EffectEntry* effBalloonN64Entry(s32 type, f32 x, f32 y, f32 z, f32 a4, f32 a5) {
 	data->x = x;
 	data->y = y;
 	data->z = z;
-	data->field_0x10 = a5;
+	data->field_0x10 = angleDeg;
 	data->field_0x1C = 100;
-	data->field_0x14 = a4;
+	data->field_0x14 = targetRadius;
 	data->field_0x18 = 0.0f;
 	data->field_0x20 = 0;
 	return effect;
@@ -56,9 +56,9 @@ void effBalloonMain(EffectEntry* effect) {
 	f32 radius;
 	f32 angle;
 	f32 wave;
-	// MUST_MATCH: the sin call in its own statement (result in `s`) makes MWCC pool
+	// MUST_MATCH: the sin call in its own statement (result in `sinOffset`) makes MWCC pool
 	// 30/5/2 before 1.5, the original's .sdata2 order; the fused form pools 1.5 first.
-	f32 s;
+	f32 sinOffset;
 	s32 i;
 	s32 phase;
 
@@ -87,9 +87,9 @@ void effBalloonMain(EffectEntry* effect) {
 			segs->y = -radius * (f32)cos(angle);
 #ifdef MUST_MATCH
 			wave = (f32)sin(6.2831855f * (f32)(i * 53) / 360.0f);
-			s = (f32)sin(6.2831855f * (30.0f * (5.0f + (f32)i) +
-			                           (wave = 0.1f * wave + 2.0f) * (f32)phase) / 360.0f);
-			segs->x += s * 1.5f;
+			sinOffset = (f32)sin(6.2831855f * (30.0f * (5.0f + (f32)i) +
+			                                  (wave = 0.1f * wave + 2.0f) * (f32)phase) / 360.0f);
+			segs->x += sinOffset * 1.5f;
 #else
 			wave = 0.1f * (f32)sin(6.2831855f * (f32)(i * 53) / 360.0f) + 2.0f;
 			segs->x += 1.5f * (f32)sin(6.2831855f * (30.0f * (5.0f + (f32)i) +
@@ -218,26 +218,26 @@ void effBalloonDisp(CameraId camId, void* param) {
 
 	if (life == 0) {
 		effGetTexObjN64(0x5F, &texObj);
-		GXLoadTexObj(&texObj, 0);
+		GXLoadTexObj(&texObj, GX_TEXMAP0);
 	} else if (life == 1) {
 		effGetTexObjN64(0x5E, &texObj);
-		GXLoadTexObj(&texObj, 0);
+		GXLoadTexObj(&texObj, GX_TEXMAP0);
 	} else {
 		effGetTexObjN64(0x5D, &texObj);
-		GXLoadTexObj(&texObj, 0);
+		GXLoadTexObj(&texObj, GX_TEXMAP0);
 	}
 
 	GXSetNumChans(0);
 	GXSetNumTexGens(1);
-	GXSetTexCoordGen2(0, 1, 4, 0x1E, 0, 0x7D);
+	GXSetTexCoordGen2(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_TEXMTX0, GX_FALSE, GX_PTIDENTITY);
 	PSMTXScale(texMtx, 0.0625f, 0.0625f, 0.0f);
-	GXLoadTexMtxImm(texMtx, 0x1E, 1);
+	GXLoadTexMtxImm(texMtx, GX_TEXMTX0, GX_MTX2x4);
 	GXSetNumTevStages(1);
-	GXSetTevOrder(0, 0, 0, 0xFF);
-	GXSetTevColorOp(0, 0, 0, 0, 1, 0);
-	GXSetTevAlphaOp(0, 0, 0, 0, 1, 0);
-	GXSetTevColorIn(0, 0xF, 0xF, 0xF, 0xC);
-	GXSetTevAlphaIn(0, 7, 7, 7, 4);
+	GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR_NULL);
+	GXSetTevColorOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+	GXSetTevAlphaOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+	GXSetTevColorIn(GX_TEVSTAGE0, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ONE);
+	GXSetTevAlphaIn(GX_TEVSTAGE0, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_TEXA);
 
 	PSMTXTrans(transMtx, data->x, data->y, data->z);
 	effBalloonSetVtx(vtx, &balloon_vtx[1], transMtx);
@@ -260,19 +260,19 @@ void effBalloonDisp(CameraId camId, void* param) {
 	DCFlushRange(vtx, 0x1C0);
 	GXInvalidateVtxCache();
 	GXLoadPosMtxImm(cam->view, 0);
-	GXSetCurrentMtx(0);
-	GXSetCullMode(0);
+	GXSetCurrentMtx(GX_PNMTX0);
+	GXSetCullMode(GX_CULL_NONE);
 	effSetVtxDescN64((effVtxArray*)vtx);
 
 	if (life < 100) {
-		GXBegin(0x90, 0, 3);
+		GXBegin(GX_TRIANGLES, GX_VTXFMT0, 3);
 #ifdef MUST_MATCH
 		tri1WithUnused(0x15, 2, 1, 0);
 #else
 		tri1(0x15, 2, 1);
 #endif
 		for (i = 0; i < 19; i++) {
-			GXBegin(0x90, 0, 3);
+			GXBegin(GX_TRIANGLES, GX_VTXFMT0, 3);
 #ifdef MUST_MATCH
 			tri1WithUnused(1, i + 2, i + 3, 1);
 #else
@@ -280,7 +280,7 @@ void effBalloonDisp(CameraId camId, void* param) {
 #endif
 		}
 	} else {
-		GXBegin(0x90, 0, 6);
+		GXBegin(GX_TRIANGLES, GX_VTXFMT0, 6);
 #ifdef MUST_MATCH
 		tri1WithUnused(0, 1, 2, 0);
 		tri1WithUnused(0, 0x15, 1, 0);
@@ -289,7 +289,7 @@ void effBalloonDisp(CameraId camId, void* param) {
 		tri1(0, 0x15, 1);
 #endif
 		for (i = 0; i < 19; i++) {
-			GXBegin(0x90, 0, 3);
+			GXBegin(GX_TRIANGLES, GX_VTXFMT0, 3);
 #ifdef MUST_MATCH
 			tri1WithUnused(1, i + 2, i + 3, 1);
 #else

@@ -62,21 +62,21 @@ static u32 size8x8_tex22x22_vtx[0x70] = {
     0x00FFFFF8, 0x00080000, 0x134002C0, 0x000000FF,
 };
 
-// One Stardust2N64 particle; the entry at index 0 also carries the shared
-// colour/rotation state that effStardust2Disp caches before the loop.
+// One Stardust2N64 particle. Element 0 is the effect header (position, age,
+// life, draw camera); the particles follow it.
 typedef struct EffStardust2Data {
-    u16 flags;      // 0x00
+    u16 flags;      // 0x00: set when the caller passes type 6 (stored as type 3)
     s16 type;       // 0x02
     f32 x;          // 0x04
     f32 y;          // 0x08
     f32 z;          // 0x0C
-    f32 field_10;   // 0x10
-    f32 field_14;   // 0x14
-    f32 field_18;   // 0x18
+    f32 velX;       // 0x10: x step, or orbit factor for types 0/1
+    f32 velY;       // 0x14: y step, or orbit factor for types 0/1
+    f32 accelY;     // 0x18: y drift; added to y for types 0/1, to velY otherwise
     f32 scale;      // 0x1C
-    u32 field_20;   // 0x20
-    s32 field_24;   // 0x24
-    s32 field_28;   // 0x28
+    u32 age;        // 0x20: frames since spawn; drives colour/scale tables
+    s32 life;       // 0x24: frames left; deleted below 0
+    s32 vtxIndex;   // 0x28: vertex strip 0..7; -1 skips drawing
     s32 drawCam;    // 0x2C
 } EffStardust2Data;
 
@@ -125,9 +125,9 @@ EffectEntry* effStardust2N64Entry(s32 type, s32 count, s32 life, f32 x, f32 y, f
     data->x = x;
     data->y = y;
     data->z = z;
-    data->field_20 = 0;
+    data->age = 0;
     data->type = type;
-    data->field_24 = life;
+    data->life = life;
     data->drawCam = 4;
 
     denom = (f32)(count + 1) - float_1_8041fe9c;
@@ -152,42 +152,42 @@ EffectEntry* effStardust2N64Entry(s32 type, s32 count, s32 life, f32 x, f32 y, f
         vA = baseA - stepA * t;
         vB = baseB - stepB * t;
 
-        ptr->field_24 = i + 30;
-        ptr->field_20 = 0;
+        ptr->life = i + 30;
+        ptr->age = 0;
         ptr->scale = float_1_8041fe9c;
         yStep = ((f32)i - float_1_8041fe9c) * (scaleB / denom);
 
         switch (type) {
         case 0:
         case 1:
-            ptr->field_18 = float_0_8041fe98;
-            ptr->field_10 = s * vA;
-            ptr->field_14 = c * vB;
+            ptr->accelY = float_0_8041fe98;
+            ptr->velX = s * vA;
+            ptr->velY = c * vB;
             ptr->z = float_0_8041fe98;
             break;
         case 2:
         case 5:
-            ptr->field_10 = s * vA;
+            ptr->velX = s * vA;
             ptr->y = yStep;
             ptr->z = c * vA;
-            ptr->field_14 = 0.03f * (f32)(-(rand() % 10));
-            ptr->field_18 = 0.04f * (f32)(rand() % 10) + 0.01f;
+            ptr->velY = 0.03f * (f32)(-(rand() % 10));
+            ptr->accelY = 0.04f * (f32)(rand() % 10) + 0.01f;
             break;
         case 3:
             ptr->x = 0.005f * (s * scaleA * (f32)(rand() % 100));
             ptr->y = 0.005f * (c * scaleB * (f32)(rand() % 100));
             ptr->z = float_0_8041fe98;
-            ptr->field_14 = float_0_8041fe98;
-            ptr->field_10 = float_0_8041fe98;
-            ptr->field_18 = float_0_8041fe98;
-            ptr->field_24 += i + i;
+            ptr->velY = float_0_8041fe98;
+            ptr->velX = float_0_8041fe98;
+            ptr->accelY = float_0_8041fe98;
+            ptr->life += i + i;
             break;
         default:
-            ptr->field_10 = s * vA;
+            ptr->velX = s * vA;
             ptr->y = yStep;
             ptr->z = c * vA;
-            ptr->field_14 = 0.03f * (f32)(-(rand() % 10));
-            ptr->field_18 = 0.04f * (f32)(rand() % 10) + 0.01f;
+            ptr->velY = 0.03f * (f32)(-(rand() % 10));
+            ptr->accelY = 0.04f * (f32)(rand() % 10) + 0.01f;
             break;
         }
     }
@@ -195,7 +195,7 @@ EffectEntry* effStardust2N64Entry(s32 type, s32 count, s32 life, f32 x, f32 y, f
 }
 void effStardust2Main(EffectEntry* effect) {
     EffStardust2Data* data;
-    Vec position2;
+    Vec dispPosition;
     Vec position;
     s32 i;
     s16 type;
@@ -207,15 +207,15 @@ void effStardust2Main(EffectEntry* effect) {
 
     data = effect->userdata;
     position = makeVec(data->x, data->y, data->z);
-    position2 = position;
+    dispPosition = position;
     drawCam = data->drawCam;
-    data->field_24--;
-    data->field_20++;
-    colorIndex = data->field_20;
+    data->life--;
+    data->age++;
+    colorIndex = data->age;
     type = data->type;
     active = 0;
     if ((u32)type <= 1 || type == 3 || type >= 10) {
-        if (data->field_24 < 0) {
+        if (data->life < 0) {
             effDelete(effect);
             return;
         }
@@ -226,12 +226,13 @@ void effStardust2Main(EffectEntry* effect) {
         switch (type) {
         case 0:
         case 1:
-            data->field_28 = (colorIndex + i) & 7;
-            data->field_18 += -0.02f;
+            data->vtxIndex = (colorIndex + i) & 7;
+            data->accelY += -0.02f;
+            // speed_data and scale_data have 14 usable entries
             if (colorIndex - 1 < 14) {
                 f32 val = 0.01f * speed_data[colorIndex - 1];
-                data->x = data->field_10 * val;
-                data->y = data->field_14 * val + data->field_18;
+                data->x = data->velX * val;
+                data->y = data->velY * val + data->accelY;
                 data->scale = 0.01f * scale_data[colorIndex - 1];
             }
             else {
@@ -245,23 +246,23 @@ void effStardust2Main(EffectEntry* effect) {
                 }
                 rad = 6.2831855f * angle / 360.f;
                 data->type = 10;
-                data->field_10 = one * (f32)sin(rad);
-                data->field_14 = one * (f32)cos(rad);
-                data->field_18 = -0.05f;
+                data->velX = one * (f32)sin(rad);
+                data->velY = one * (f32)cos(rad);
+                data->accelY = -0.05f;
             }
             break;
         case 30:
         case 10:
-            data->field_28 = (colorIndex + i) & 7;
-            data->field_10 *= 0.96f;
-            data->field_14 *= 0.96f;
-            data->field_14 += data->field_18;
-            data->x += data->field_10;
-            data->y += data->field_14;
+            data->vtxIndex = (colorIndex + i) & 7;
+            data->velX *= 0.96f;
+            data->velY *= 0.96f;
+            data->velY += data->accelY;
+            data->x += data->velX;
+            data->y += data->velY;
             data->scale += 0.1f * (0.1f - data->scale);
             break;
         case 3:
-            data->field_28 = (colorIndex + i + i) & 7;
+            data->vtxIndex = (colorIndex + i + i) & 7;
             if (colorIndex - 1 < 14) {
                 data->scale = 0.01f * scale_data[colorIndex - 1];
             }
@@ -273,38 +274,38 @@ void effStardust2Main(EffectEntry* effect) {
         case 4:
         case 5:
         default:
-            data->field_28 = (colorIndex + i + i) & 7;
-            if (data->field_24 < 0) {
+            data->vtxIndex = (colorIndex + i + i) & 7;
+            if (data->life < 0) {
                 active++;
             }
-            data->field_24--;
-            if (data->field_24 > 30 || data->field_24 < 0) {
-                data->field_28 = -1;
+            data->life--;
+            if (data->life > 30 || data->life < 0) {
+                data->vtxIndex = -1;
             }
             else {
-                data->field_20++;
-                colorIndex = data->field_20;
+                data->age++;
+                colorIndex = data->age;
                 if (colorIndex - 1 < 14) {
                     data->scale = 0.01f * scale_data[colorIndex - 1];
                     if (type == 5) {
-                        data->field_14 += data->field_18;
-                        data->y += data->field_14;
+                        data->velY += data->accelY;
+                        data->y += data->velY;
                     }
                 }
                 else {
                     data->scale += 0.1f * (0.1f - data->scale);
-                    data->field_14 += data->field_18;
-                    data->y += data->field_14;
+                    data->velY += data->accelY;
+                    data->y += data->velY;
                 }
                 if (type == 4) {
                     rad = 6.2831855f * (f32)(colorIndex * 12) / 360.f;
-                    data->x = data->field_10 * (f32)sin(rad);
-                    data->z = data->field_10 * (f32)cos(rad);
+                    data->x = data->velX * (f32)sin(rad);
+                    data->z = data->velX * (f32)cos(rad);
                 }
                 else {
-                    data->x = data->field_10;
+                    data->x = data->velX;
                 }
-                data->field_14 *= 0.96f;
+                data->velY *= 0.96f;
             }
             break;
         }
@@ -315,7 +316,7 @@ void effStardust2Main(EffectEntry* effect) {
             return;
         }
     }
-    dispEntry(drawCam, dispCalcZ(&position2), 2, effStardust2Disp, effect);
+    dispEntry(drawCam, dispCalcZ(&dispPosition), 2, effStardust2Disp, effect);
 }
 
 #ifdef MUST_MATCH
@@ -333,7 +334,7 @@ void effStardust2Disp(CameraId camId, void* param) {
     EffStardust2Data* data;
     s32 type;
     s32 i;
-    s32 renderType;
+    s32 vtxIndex;
     s32 colorIdx;
     effVtxArray* vtx;
     GXTexObj texObj;
@@ -352,7 +353,7 @@ void effStardust2Disp(CameraId camId, void* param) {
     cam = camGetPtr(camId);
     data = entry->userdata;
     type = data->type;
-    colorIdx = (data->field_20 - 1) * 3;
+    colorIdx = (data->age - 1) * 3;
     PSMTXTrans(mtx, data->x, data->y, data->z);
     PSMTXRotRad(rot, 'y', -camGetPtr(CAMERA_3D)->viewYaw * float_deg2rad_8041fe8c);
     PSMTXConcat(mtx, rot, base);
@@ -402,8 +403,8 @@ void effStardust2Disp(CameraId camId, void* param) {
     }
 
     for (i = 0; i < entry->count - 1; i++, data++) {
-        renderType = data->field_28;
-        if (renderType < 0) {
+        vtxIndex = data->vtxIndex;
+        if (vtxIndex < 0) {
             continue;
         }
         PSMTXTrans(mtx, data->x, data->y, data->z);
@@ -412,6 +413,7 @@ void effStardust2Disp(CameraId camId, void* param) {
         GXLoadPosMtxImm(mtx, GX_PNMTX0);
         GXSetCurrentMtx(GX_PNMTX0);
 
+        // wrap to the start of the 36-byte colour rotation table
         if (colorIdx >= 0x24) {
             colorIdx = 0;
         }
@@ -437,30 +439,30 @@ void effStardust2Disp(CameraId camId, void* param) {
 #endif
         GXSetTevColor(GX_TEVREG0, color);
 
-        switch (renderType & 7) {
+        switch (vtxIndex & 7) {
         case 0:
-            vtx = (effVtxArray*)((u8*)size8x8_tex22x22_vtx + 0xA8);
+            vtx = &((effVtxArray*)size8x8_tex22x22_vtx)[3];
             break;
         case 1:
-            vtx = (effVtxArray*)((u8*)size8x8_tex22x22_vtx + 0xE0);
+            vtx = &((effVtxArray*)size8x8_tex22x22_vtx)[4];
             break;
         case 2:
-            vtx = (effVtxArray*)((u8*)size8x8_tex22x22_vtx + 0x118);
+            vtx = &((effVtxArray*)size8x8_tex22x22_vtx)[5];
             break;
         case 3:
-            vtx = (effVtxArray*)((u8*)size8x8_tex22x22_vtx + 0x150);
+            vtx = &((effVtxArray*)size8x8_tex22x22_vtx)[6];
             break;
         case 4:
-            vtx = (effVtxArray*)((u8*)size8x8_tex22x22_vtx + 0x188);
+            vtx = &((effVtxArray*)size8x8_tex22x22_vtx)[7];
             break;
         case 5:
-            vtx = (effVtxArray*)size8x8_tex22x22_vtx;
+            vtx = &((effVtxArray*)size8x8_tex22x22_vtx)[0];
             break;
         case 6:
-            vtx = (effVtxArray*)((u8*)size8x8_tex22x22_vtx + 0x38);
+            vtx = &((effVtxArray*)size8x8_tex22x22_vtx)[1];
             break;
         case 7:
-            vtx = (effVtxArray*)((u8*)size8x8_tex22x22_vtx + 0x70);
+            vtx = &((effVtxArray*)size8x8_tex22x22_vtx)[2];
             break;
         }
         effSetVtxDescN64(vtx);
@@ -469,7 +471,7 @@ void effStardust2Disp(CameraId camId, void* param) {
     }
 }
 void effStardust2N64SetDrawCam(EffectEntry* entry, s32 cam) {
-    *(s32*)((u8*)entry->userdata + 0x2C) = cam;
+    ((EffStardust2Data*)entry->userdata)->drawCam = cam;
 }
 
 // The constants the code above loads by name, defined after it (defined first, the compiler folds them).

@@ -48,12 +48,13 @@ u32 BattleInformationGetResult(FieldBattleInfo* info) {
 	return info->result;
 }
 
-// One entry of a heart/flower drop parameter table (battle_heart_drop_param_default etc.).
+// One entry of a heart/flower drop parameter table (battle_heart_drop_param_default etc.),
+// tried in order while the stat is at or below the entry's threshold.
 typedef struct DropMaterialParam {
-	s32 field_0x0; // 0x0
-	s32 field_0x4; // 0x4
-	s32 field_0x8; // 0x8
-	s32 field_0xC; // 0xC
+	s32 statPercentThreshold; // 0x0, highest HP/FP percent this entry applies to
+	s32 dropChancePercent;    // 0x4, chance the entry drops anything at all
+	s32 dropCount;            // 0x8, how many drops to roll for
+	s32 itemChancePercent;    // 0xC, chance for each of those drops
 } DropMaterialParam;
 
 // The 20 candidate items the Hog badge rolls between.
@@ -64,11 +65,11 @@ typedef struct HogTable {
 // Items the Hog badge can drop when the player has no held items.
 const HogTable N_item_hog_table = {
 	{
-		0x00000098, 0x00000098, 0x00000098, 0x000000A2,
-		0x00000094, 0x0000009A, 0x00000099, 0x00000084,
-		0x00000087, 0x0000008B, 0x00000000, 0x00000000,
-		0x00000000, 0x00000000, 0x00000000, 0x00000000,
-		0x00000000, 0x00000000, 0x00000000, 0x00000000,
+		ITEM_DRIED_SHROOM, ITEM_DRIED_SHROOM, ITEM_DRIED_SHROOM, ITEM_FRIGHT_MASK,
+		ITEM_MUSHROOM, ITEM_HONEY_SYRUP, ITEM_TASTY_TONIC, ITEM_FIRE_FLOWER,
+		ITEM_VOLT_SHROOM, ITEM_POW_BLOCK, ITEM_NULL, ITEM_NULL,
+		ITEM_NULL, ITEM_NULL, ITEM_NULL, ITEM_NULL,
+		ITEM_NULL, ITEM_NULL, ITEM_NULL, ITEM_NULL,
 	}
 };
 
@@ -94,18 +95,18 @@ void BattleInformationSetDropMaterial(FieldBattleInfo* info) {
 	}
 
 	setup->heartsDropped = 0;
-	while ((threshold = heartParams->field_0x0) != 0) {
+	while ((threshold = heartParams->statPercentThreshold) != 0) {
 		if (hpPercent <= threshold) {
 #ifdef MUST_MATCH
 			roll = irand(100);
-			i = heartParams->field_0x8;
-			if (roll < heartParams->field_0x4) {
+			i = heartParams->dropCount;
+			if (roll < heartParams->dropChancePercent) {
 #else
-			if (irand(100) < heartParams->field_0x4) {
-				i = heartParams->field_0x8;
+			if (irand(100) < heartParams->dropChancePercent) {
+				i = heartParams->dropCount;
 #endif
 				while (i != 0) {
-					if (irand(100) < heartParams->field_0xC) {
+					if (irand(100) < heartParams->itemChancePercent) {
 						setup->heartsDropped++;
 					}
 					i--;
@@ -122,18 +123,18 @@ void BattleInformationSetDropMaterial(FieldBattleInfo* info) {
 	}
 
 	setup->flowersDropped = 0;
-	while ((threshold = flowerParams->field_0x0) != 0) {
+	while ((threshold = flowerParams->statPercentThreshold) != 0) {
 		if (fpPercent <= threshold) {
 #ifdef MUST_MATCH
 			roll = irand(100);
-			j = flowerParams->field_0x8;
-			if (roll < flowerParams->field_0x4) {
+			j = flowerParams->dropCount;
+			if (roll < flowerParams->dropChancePercent) {
 #else
-			if (irand(100) < flowerParams->field_0x4) {
-				j = flowerParams->field_0x8;
+			if (irand(100) < flowerParams->dropChancePercent) {
+				j = flowerParams->dropCount;
 #endif
 				while (j != 0) {
-					if (irand(100) < flowerParams->field_0xC) {
+					if (irand(100) < flowerParams->itemChancePercent) {
 						setup->flowersDropped++;
 					}
 					j--;
@@ -145,30 +146,32 @@ void BattleInformationSetDropMaterial(FieldBattleInfo* info) {
 	}
 
 	{
-		s32 fieldA = group->field_0x8;
-		s32 fieldB = group->field_0xC;
-		s32 fieldC = group->field_0x10;
+		s32 heldItemChance = group->field_0x8;
+		s32 dropTableChance = group->field_0xC;
+		s32 noDropChance = group->field_0x10;
 		s32 band = 0;
 		s32 badge;
 
+		// Early in the game item drops are disabled.
 		if (evtGetValue(0, 0xF5DE0180) <= 0x13) {
-			fieldB = 0;
-			fieldA = 0;
-			fieldC = 100;
+			dropTableChance = 0;
+			heldItemChance = 0;
+			noDropChance = 100;
 		}
-		badge = pouchEquipCheckBadge(0x13a);
+		badge = pouchEquipCheckBadge(ITEM_ITEM_HOG);
 		if (badge >= 1) {
-			fieldA *= badge + 1;
-			fieldB *= badge + 1;
+			heldItemChance *= badge + 1;
+			dropTableChance *= badge + 1;
 		}
-		roll = irand(fieldB + fieldA + fieldC);
+		// Roll over the drop-table, held-item and no-drop bands in that order.
+		roll = irand(dropTableChance + heldItemChance + noDropChance);
 
 		{
-			s32 diff = roll - fieldB;
+			s32 diff = roll - dropTableChance;
 
 			if (diff < 0) {
 				band = 1;
-			} else if (diff - fieldA < 0) {
+			} else if (diff - heldItemChance < 0) {
 				band = 2;
 			}
 		}
@@ -229,7 +232,7 @@ void BattleInformationSetDropMaterial(FieldBattleInfo* info) {
 					if (i >= 8) {
 						setup->itemDropped = 0;
 					}
-				} else if (pouchEquipCheckBadge(0x13a) >= 1) {
+				} else if (pouchEquipCheckBadge(ITEM_ITEM_HOG) >= 1) {
 					HogTable itemTable = N_item_hog_table;
 
 					setup->itemDropped = itemTable.items[irand(20)];
