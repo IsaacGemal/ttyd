@@ -67,7 +67,7 @@ void _btlSamplingEnemy(u8* sampling) {
         if (unit == NULL) {
             continue;
         }
-        if (BtlUnit_CheckStatus(unit, 0x1B)) {
+        if (BtlUnit_CheckStatus(unit, STATUS_INSTANT_KILL)) {
             continue;
         }
         if (unit->mAttributeFlags & 0x40) {
@@ -158,17 +158,17 @@ void _btlSamplingEnemy(u8* sampling) {
             keep = 0;
         else if ((s->filterFlags & 0x10000) && unit->currentKind != UNIT_MARIO)
             keep = 0;
-        else if ((s->filterFlags & 0x20000) && (unit->currentKind < 0xD8 || unit->currentKind >= 0xDA))
+        else if ((s->filterFlags & 0x20000) && (unit->currentKind < UNIT_UNUSED_TREE || unit->currentKind >= UNIT_UNUSED_TESTNPC))
             keep = 0;
         else if ((s->filterFlags & 0x1) && (unit->currentKind == UNIT_MARIO || unit->currentKind == UNIT_SHELL_SHIELD))
             keep = 0;
         else if ((s->filterFlags & 0x2) && (unit->currentKind >= UNIT_GOOMBELLA && unit->currentKind < UNIT_MAX))
             keep = 0;
-        else if ((s->filterFlags & 0x10) && (unit->currentKind >= UNIT_GOOMBA && unit->currentKind < 0xD8))
+        else if ((s->filterFlags & 0x10) && (unit->currentKind >= UNIT_GOOMBA && unit->currentKind < UNIT_UNUSED_TREE))
             keep = 0;
-        else if ((s->filterFlags & 0x40) && (unit->currentKind >= 0xDA && unit->currentKind < 0xDE))
+        else if ((s->filterFlags & 0x40) && (unit->currentKind >= UNIT_UNUSED_TESTNPC && unit->currentKind < UNIT_MARIO))
             keep = 0;
-        else if ((s->filterFlags & 0x20) && (unit->currentKind >= 0xD8 && unit->currentKind < 0xDA))
+        else if ((s->filterFlags & 0x20) && (unit->currentKind >= UNIT_UNUSED_TREE && unit->currentKind < UNIT_UNUSED_TESTNPC))
             keep = 0;
         else if ((s->filterFlags & 0x1000) && s->unitId == unit->unitId)
             keep = 0;
@@ -183,12 +183,12 @@ void _btlSamplingEnemy(u8* sampling) {
             keep = 0;
         else if ((s->filterFlags & 0x100000) &&
                  (!((part->attributes & kMainPart) || (part->attributes & kImportantPart)) ||
-                  (part->attributes & 0x40000)))
+                  (part->attributes & kUnknown_0x40000)))
             keep = 0;
         else if ((s->filterFlags & 0x200000) &&
                  (!((part->attributes & kMainPart) || (part->attributes & kImportantPart) ||
                     (part->attributes & kSemiImportantPart)) ||
-                  (part->attributes & 0x40000)))
+                  (part->attributes & kUnknown_0x40000)))
             keep = 0;
         else
             keep = 1;
@@ -210,7 +210,7 @@ void _btlSamplingEnemy(u8* sampling) {
         part = BtlUnit_GetPartsPtr(unit, entry->partId);
 
         if (s->filterFlags2 & 0x1) {
-            if (part->attributes & 0x80000) {
+            if (part->attributes & kUntattleable) {
                 keep = 0;
                 goto ac4_keep_done;
             }
@@ -223,41 +223,41 @@ void _btlSamplingEnemy(u8* sampling) {
                 goto ac4_keep_done;
             }
         }
-        if ((s->filterFlags2 & 0x2) && (unit->mAttributeFlags & 0x4)) {
+        if ((s->filterFlags2 & 0x2) && (unit->mAttributeFlags & kFloating)) {
             keep = 0;
             goto ac4_keep_done;
         }
-        if ((s->filterFlags2 & 0x4) && (unit->mAttributeFlags & 0x2)) {
+        if ((s->filterFlags2 & 0x4) && (unit->mAttributeFlags & kCeiling)) {
             keep = 0;
             goto ac4_keep_done;
         }
-        if ((s->filterFlags2 & 0x8) && (unit->mAttributeFlags & 0x4)) {
+        if ((s->filterFlags2 & 0x8) && (unit->mAttributeFlags & kFloating)) {
             keep = 0;
             goto ac4_keep_done;
         }
-        if ((s->filterFlags2 & 0x10) && !(unit->mAttributeFlags & 0x4) &&
-            !(unit->mAttributeFlags & 0x2)) {
+        if ((s->filterFlags2 & 0x10) && !(unit->mAttributeFlags & kFloating) &&
+            !(unit->mAttributeFlags & kCeiling)) {
             keep = 0;
             goto ac4_keep_done;
         }
-        if ((s->filterFlags2 & 0x1000) && (part->attributes & 0x100000)) {
+        if ((s->filterFlags2 & 0x1000) && (part->attributes & kJumplikeCannotTarget)) {
             keep = 0;
             goto ac4_keep_done;
         }
-        if ((s->filterFlags2 & 0x2000) && (part->attributes & 0x200000) &&
+        if ((s->filterFlags2 & 0x2000) && (part->attributes & kHammerlikeCannotTarget) &&
             ((s->filterFlags2 & 0x100000) == 0 || s->unitId != unit->unitId)) {
             keep = 0;
             goto ac4_keep_done;
         }
-        if ((s->filterFlags2 & 0x4000) && (part->attributes & 0x400000)) {
+        if ((s->filterFlags2 & 0x4000) && (part->attributes & kShellTosslikeCannotTarget)) {
             keep = 0;
             goto ac4_keep_done;
         }
-        if ((s->filterFlags2 & 0x8000) && !(part->attributes & 0x400000)) {
+        if ((s->filterFlags2 & 0x8000) && !(part->attributes & kShellTosslikeCannotTarget)) {
             keep = 0;
             goto ac4_keep_done;
         }
-        if ((s->filterFlags2 & 0x2000000) && (unit->mAttributeFlags & 0x20)) {
+        if ((s->filterFlags2 & 0x2000000) && (unit->mAttributeFlags & kShellShielded)) {
             keep = 0;
             goto ac4_keep_done;
         }
@@ -313,7 +313,7 @@ void _btlSamplingEnemy(u8* sampling) {
         unit = BattleGetUnitPtr(wp, entry->unitId);
         part = BtlUnit_GetPartsPtr(unit, entry->partId);
 
-        if ((s->filterFlags2 & 0x1000000) && !(part->attributes & 0x10)) {
+        if ((s->filterFlags2 & 0x1000000) && !(part->attributes & kUnknown_0x10)) {
             noDup = 1;
 
                 for (j = 0; j < count; j++) {
@@ -343,10 +343,10 @@ void _btlSamplingEnemy(u8* sampling) {
                         BattleUnit* u3;
 
                         p2attr = p2->attributes;
-                        if (p2attr & 0x10) {
+                        if (p2attr & kUnknown_0x10) {
                             continue;
                         }
-                        if (p2attr & 0x400000) {
+                        if (p2attr & kShellTosslikeCannotTarget) {
                             continue;
                         }
                         u2 = BattleGetUnitPtr(wp, s->unitId);
@@ -478,10 +478,10 @@ void BattleChoiceSamplingEnemy(u8* sampling, u32 flags, s32* outId, s32* outPart
 
         unit = BattleGetUnitPtr(wp, s->entries[e].unitId);
         weights[e] += 100;
-        if ((flags & 0x1) && unit->currentKind == 0xDE) {
+        if ((flags & 0x1) && unit->currentKind == UNIT_MARIO) {
             weights[e] = (s32)((f32)weights[e] * float_1p5_8041bf08);
         }
-        if ((flags & 0x2) && unit->currentKind >= 0xE0 && unit->currentKind < 0xE7) {
+        if ((flags & 0x2) && unit->currentKind >= TYPE_PARTNER_MIN && unit->currentKind < TYPE_PARTNER_MAX) {
             weights[e] = (s32)((f32)weights[e] * float_1p5_8041bf08);
         }
         if ((flags & 0x4)) {
@@ -519,7 +519,7 @@ void BattleChoiceSamplingEnemy(u8* sampling, u32 flags, s32* outId, s32* outPart
         }
 
         if (s->weapon != NULL) {
-            if (unit->mAttributeFlags & 0x20000) {
+            if (unit->mAttributeFlags & kInactive) {
                 weights[e] = 1;
             }
             switch (s->weapon->item) {
