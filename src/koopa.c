@@ -216,7 +216,7 @@ s32 kpaNoHitEnemyCheck(void) {
 }
 
 s32 kpaMutekiCheck(void) {
-    return (KPA(marioGetPtr())->flags >> 16) & 1;
+    return (KPA(marioGetPtr())->flags & KPA_FLAG_MUTEKI) != 0;
 }
 
 void kpaMutekiOn(void) {
