@@ -411,20 +411,14 @@ void itemMain(void) {
         }
 
         if (mode != 2) {
-#ifdef MUST_MATCH
-            // The original tests the timer as u64; the s64 member compiles to a different load sequence.
-            if (*(u64*)&entry->lifeTime == 0) {
-#else
             if (entry->lifeTime == 0) {
-#endif
                 entry->status &= ~0x100;
             } else if (entry->status & 0x4000) {
                 entry->status &= ~0x100;
             } else {
                 f32 elapsed = (f32)OSTicksToMicroseconds(gp->renderTime - entry->lastTime) / 1000.0f;
 
-                entry->lifeTime
-                    = (s64)((f32) entry->lifeTime - elapsed);
+                entry->lifeTime -= elapsed;
                 if (entry->lifeTime <= 0) {
                     entry->mode = 9;
                     entry->subMode = 0;
