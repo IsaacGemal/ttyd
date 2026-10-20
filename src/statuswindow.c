@@ -212,7 +212,11 @@ void statusWinMain(void) {
                             wp->idleFrames++;
                             if (wp->idleFrames > gp->framerate * STATUS_WIN_IDLE_SECONDS) {
                                 wp->idleFrames = gp->framerate * STATUS_WIN_IDLE_SECONDS;
+#ifdef MUST_MATCH
                                 if (wp->manualToggle == 0 && wp->toggleCooldown == 0 && !(statusWinCheck() ? 1 : 0)) {
+#else
+                                if (wp->manualToggle == 0 && wp->toggleCooldown == 0 && !statusWinCheck()) {
+#endif
                                     wp->flags &= ~(STATUS_WIN_CLOSED | STATUS_WIN_CLOSING);
                                     wp->flags |= (STATUS_WIN_OPEN | STATUS_WIN_OPENING);
                                     wp->flags |= STATUS_WIN_BADGES;
@@ -233,7 +237,11 @@ void statusWinMain(void) {
                             }
                         }
                         if (mario->buttonNew & 0x10) {
+#ifdef MUST_MATCH
                             if (!(statusWinCheck() ? 1 : 0)) {
+#else
+                            if (!statusWinCheck()) {
+#endif
                                 wp->flags &= ~(STATUS_WIN_CLOSED | STATUS_WIN_CLOSING);
                                 wp->flags |= (STATUS_WIN_OPEN | STATUS_WIN_OPENING);
                                 wp->toggleCooldown = gp->framerate * STATUS_WIN_IDLE_SECONDS;
@@ -249,7 +257,11 @@ void statusWinMain(void) {
                         }
                         if (valueCheck() != 0) {
                             wp->toggleCooldown = gp->framerate * STATUS_WIN_CHANGE_SECONDS;
+#ifdef MUST_MATCH
                             if (!(statusWinCheck() ? 1 : 0)) {
+#else
+                            if (!statusWinCheck()) {
+#endif
                                 wp->flags &= ~(STATUS_WIN_CLOSED | STATUS_WIN_CLOSING);
                                 wp->flags |= (STATUS_WIN_OPEN | STATUS_WIN_OPENING);
                             }
@@ -326,11 +338,16 @@ void statusWinMain(void) {
         }
 
         {
+#ifdef MUST_MATCH
             // The original materialises `t = 1.0f` (f1) and then `t = 1.0f - x` (result f2); with a
             // plain `t -= x` MWCC reuses one register and the 1.0 load lands in f2. Codegen-only.
             f32 t = float_1_8041c904;
             f32 x = wp->openAmount;
             t = float_1_8041c904 - x;
+#else
+            f32 x = wp->openAmount;
+            f32 t = float_1_8041c904 - x;
+#endif
             wp->originX = wp->openX * x + wp->closedX * t;
             wp->originY = wp->openY * x + wp->closedY * t;
         }
