@@ -826,7 +826,7 @@ void partyReInit(void) {
             if (party->currentMemberId == PARTY_MEMBER_MS_MOWZ) {
                 chuchu_reinit(party);
             }
-            unk_8014c47c();
+            partyResetTouchWallCt();
         }
     }
 }
@@ -1147,7 +1147,7 @@ void driveParty(PartyEntry* party) {
             break;
         case 1:
             if (!(party->flags & PARTY_FLAG_CTRL_OFF) || (party->flags & PARTY_FLAG_RUN_OFF)) {
-                unk_800c7c98(party);
+                partyNormalMain(party);
             }
             break;
         case 2:

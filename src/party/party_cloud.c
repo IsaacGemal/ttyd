@@ -186,12 +186,12 @@ f32 cloudGetBreathDist() {
     return breathDist;
 }
 
-void unk_801820d0(PartyEntry* party) {
+void flurrieBobInit(PartyEntry* party) {
     party->tail.flurrie.bobAngle = 0.0f;
     party->tail.flurrie.bobStep = 4.25f;
 }
 
-void unk_8018206c(PartyEntry* party) {
+void flurrieBobUpdate(PartyEntry* party) {
     f32 bob;
 
     party->tail.flurrie.bobAngle = revise360(party->tail.flurrie.bobAngle - party->tail.flurrie.bobStep);

@@ -10683,3 +10683,21 @@ Left: no `btlstage_data` or `btlobject_data` blob is `u32` in rels/ any more.
 Verify: tower `ninja` recreates build/G8MJ01/ok after each of the three files. Natural (no MUST_MATCH) and MUST_MATCH
 compiles of battle_database_{nok,pik,bom}.c return 0. `tools/cleanup_index.py` 31.420 -> 31.408 per kLOC (22348
 weighted both; 711268 -> 711538 code lines).
+### Readability: party_motion and party_move unk_ names (2026-10-20, Claude Haiku 5.5, n9-q-unkparty)
+
+Address-named functions and the two statics in party_motion.c, renamed with tools/rename_symbol.py (symbols.txt, sources, headers, party.c, evt_mario.c, party_chuchu/cloud/nokonoko.c, pmario_sound.c, seq_battle.c). Each name comes from the code that calls it and what it writes:
+- Speed: `partySetSpeed` (unk_800c9398) sets speed2 and speed to value times gravity (0.75 in shallow water). `partySetTargetSpeed` (unk_800c93d0) sets speed2 and eases speed toward it, 5% of the gap up and 10% down. `partyStepSpeed` (unk_800c92c4) is that easing with no new target; chuchu and nokonoko call it every frame.
+- Pose and sound: `partyChgSpeedPose` (unk_800c8f24) picks walk pose 2 or run pose 3 from the speed and calls `partyStepSfx` (unk_800c90d4), the footstep counter in field_2D (run cadence when the value is 1). `partyChgIdlePose` (unk_800c9044) picks sleep pose 6 when Mario is in deep sleep or the sleep flag is set, otherwise pose 1.
+- Facing: `partySetCamFacing` (unk_800c8e74) writes field_110 as 180 or 0 from whether Mario lies in the camera-relative range 90..270.
+- Hit test: `partyHitIsBoxMobj` (unk_800c8dd0) is true when the hit's MOBJ name is in the file's boxNames list (boxes, jump stands, switches, blocks).
+- Distance: `partyGetTargetDistYFrom` (unk_800c9f48) is the absolute y gap to Mario for id 0, else to the other party target or Mario.
+- Mode dispatch: `partyNormalMain` (unk_800c7c98) is the field_34 == 1 handler: it switches on field_36 and runs `partyNormalGround` (unk_8014bbc8) for sub-state 0.
+- Ground: `partyUpdateFloor` (unk_8014ba3c) probes head and ground hits, sets groundHit and the grounded and shallow-water flags, snaps to groundY, and starts a fall when no floor is found. `partyFollowHeight` (unk_8014b824) eases y toward Mario's height (+5, or +1 with flags2 0x8000) at 5% or 10%.
+- `partyResetTouchWallCt` (unk_8014c47c) sets touch_wall_ct to 60; party.c calls it after chuchu_reinit.
+- `upstairsFrames` (unk_804189ec, s32) and `upstairsStepY` (unk_804189e8, f32) are party_motion_upstairs' frame countdown (set to 3) and per-frame y step, (field_120 - y) / 3.
+- Flurrie (party_cloud.c): `flurrieBobInit` (unk_801820d0) zeroes tail.flurrie.bobAngle and sets bobStep 4.25, as cloud_move does; `flurrieBobUpdate` (unk_8018206c) advances the angle and sets dispOffset.y to 3 + 3 sin(angle).
+- `psndBGMOn_f` (unk_800d7270, pmario_sound.c) is the wrapper evt_snd_bgmon_f calls: psndBGMOn_f_d with 0x2EE as d.
+
+Left: unk_8014cc24 (a USER_FUNC in party_motion.c that tou_00 calls with the same value twice as the fade arguments; the meaning of the repeat is not proven) and unk_800ba2dc (party.c, the field_34/field_35 mode-change handler; its branches do different end actions per mode and no single name covers them).
+
+Verify: tower `ninja` recreates build/G8MJ01/ok (matched build, checksum holds). Natural compiles (no -DMUST_MATCH) of the nine changed C files return 0. Index (tools/cleanup_index.py): 31.420 -> 31.052 per kLOC (22348 -> 22086 weighted); unk_name 1169 -> 1038, address_name 10253 -> 10122.

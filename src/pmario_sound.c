@@ -5638,7 +5638,7 @@ BOOL psndBGMOn(u32 r3, char* bgm_name) {
 	return psndBGMOn_f_d(r3, (s32)bgm_name, 0x3E8, 0x2EE, 0);
 }
 
-BOOL unk_800d7270(s32 a, char* b, s32 c, s32 d) {
+BOOL psndBGMOn_f(s32 a, char* b, s32 c, s32 d) {
 	return psndBGMOn_f_d(a, (s32)b, c, 0x2EE, d);
 }
 

@@ -389,7 +389,7 @@ void battle_exit(void) {
     PSMTXMultVec(mtx, &craft->position, &craft->position);
 
     if (evtGetValue(NULL, 0xF5DE0180) >= 0x6D && evtGetValue(NULL, 0xF5DE0180) < 0x6F) {
-        unk_800d7270(0x120, 0, 0x2EE, 1);
+        psndBGMOn_f(0x120, 0, 0x2EE, 1);
     } else if (evtGetValue(NULL, 0xF5DE0180) != 0x192 && seqGetNextSeq() != 5) {
         psndBGMOn(0x120, 0);
         psndENVOn(0x120, 0);
