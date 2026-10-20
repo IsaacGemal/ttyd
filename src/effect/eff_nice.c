@@ -300,7 +300,7 @@ void effNiceMain(EffectEntry* effect) {
 		acrobatMain(effect);
 	}
 	else {
-		dispEntry(4, dispCalcZ(&position), 8, effNiceDisp, effect);
+		dispEntry(CAMERA_3D, dispCalcZ(&position), 8, effNiceDisp, effect);
 	}
 }
 
@@ -445,9 +445,9 @@ void acrobatMain(EffectEntry* effect) {
 	}
 	else {
 #ifdef MUST_MATCH
-		dispEntry(4, dispCalcZ(&position), 8, effAcrobatDisp, effect);
+		dispEntry(CAMERA_3D, dispCalcZ(&position), 8, effAcrobatDisp, effect);
 #else
-		dispEntry(4, dispCalcZ(&disp), 8, effAcrobatDisp, effect);
+		dispEntry(CAMERA_3D, dispCalcZ(&disp), 8, effAcrobatDisp, effect);
 #endif
 	}
 }

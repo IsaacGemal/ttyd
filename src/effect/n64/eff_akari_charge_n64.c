@@ -291,15 +291,15 @@ void effAkariChargeMain(EffectEntry* effect) {
 
 	if (type == 0) {
 #ifdef MUST_MATCH
-		dispEntry(4, dispCalcZ(&position), 2, effAkariChargeDisp, effect);
+		dispEntry(CAMERA_3D, dispCalcZ(&position), 2, effAkariChargeDisp, effect);
 #else
-		dispEntry(4, dispCalcZ(&disp), 2, effAkariChargeDisp, effect);
+		dispEntry(CAMERA_3D, dispCalcZ(&disp), 2, effAkariChargeDisp, effect);
 #endif
 	} else {
 #ifdef MUST_MATCH
-		dispEntry(8, dispCalcZ(&position), 2, effAkariChargeDisp, effect);
+		dispEntry(CAMERA_2D, dispCalcZ(&position), 2, effAkariChargeDisp, effect);
 #else
-		dispEntry(8, dispCalcZ(&disp), 2, effAkariChargeDisp, effect);
+		dispEntry(CAMERA_2D, dispCalcZ(&disp), 2, effAkariChargeDisp, effect);
 #endif
 	}
 }
