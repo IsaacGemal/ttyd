@@ -489,7 +489,7 @@ void mot_jump(void) {
         }
         psndSFXOn_3D((const char*)0x14D, &mario->position);
         if (mario->airTimer == 0) {
-            *(Vec*)((u8*)mario + 0xD4) = mario->position;
+            mario->lastGroundPos = mario->position;
         }
         mario->trigFlags &= ~0x10000;
     }
@@ -558,7 +558,7 @@ void mot_jumpSmall(void) {
         }
         psndSFXOn_3D((const char*)0x14D, &mario->position);
         if (mario->airTimer == 0) {
-            *(Vec*)((u8*)mario + 0xD4) = mario->position;
+            mario->lastGroundPos = mario->position;
         }
         mario->trigFlags &= ~0x10000;
     }
@@ -622,9 +622,9 @@ void mot_fall(void) {
         mario->trigFlags &= ~MARIO_TRIG_FLAG_IS_STARTING_NEW_MOTION;
         mario->flags &= ~0x10000;
         mario->flags |= 0x20000;
-        if (MW(mario, 0x280) != 0xFFFFFFFFu) {
-            psndSFXOff(MW(mario, 0x280));
-            MW(mario, 0x280) = 0xFFFFFFFFu;
+        if (mario->sfxIds[2] != 0xFFFFFFFFu) {
+            psndSFXOff(mario->sfxIds[2]);
+            mario->sfxIds[2] = 0xFFFFFFFFu;
         }
         marioResetCamFollowRate();
         mario->currSubMotionId = 0;
@@ -638,7 +638,7 @@ void mot_fall(void) {
             mario->flags |= 0x80;
         }
         if (mario->airTimer == 0) {
-            *(Vec*)((u8*)mario + 0xD4) = mario->position;
+            mario->lastGroundPos = mario->position;
         }
     }
 
@@ -676,9 +676,9 @@ void mot_fall(void) {
 void mot_fall_post(void) {
     MarioWork* mario = marioGetPtr();
 
-    if (MW(mario, 0x280) != 0xFFFFFFFFu) {
-        psndSFXOff(MW(mario, 0x280));
-        MW(mario, 0x280) = 0xFFFFFFFFu;
+    if (mario->sfxIds[2] != 0xFFFFFFFFu) {
+        psndSFXOff(mario->sfxIds[2]);
+        mario->sfxIds[2] = 0xFFFFFFFFu;
     }
 }
 
@@ -693,9 +693,9 @@ void mot_land(void) {
         mario->currSubMotionId = 0;
         mario->baseSpeed = MATCH_F32(float_0_8041abb8);
         marioResetCamFollowRate();
-        if (MW(mario, 0x280) != 0xFFFFFFFFu) {
-            psndSFXOff(MW(mario, 0x280));
-            MW(mario, 0x280) = 0xFFFFFFFFu;
+        if (mario->sfxIds[2] != 0xFFFFFFFFu) {
+            psndSFXOff(mario->sfxIds[2]);
+            mario->sfxIds[2] = 0xFFFFFFFFu;
         }
     }
 

@@ -1888,28 +1888,28 @@ void marioCheckWall(f32 a, f32 b) {
 
     *(f32*)&wp->field_0x1F0[0x20] = 1000.f;
     if (a && wp->airTimer == 0) {
-        if (*(f32*)((u8*)wp + 0x1C8) < a) {
-            *(f32*)((u8*)wp + 0x1C8) = a;
-            *(f32*)((u8*)wp + 0x1CC) = b;
-            *(s32*)((u8*)wp + 0x1D0) = 0xE;
+        if (wp->wallDist < a) {
+            wp->wallDist = a;
+            wp->wallYaw = b;
+            wp->wallHoldTimer = 0xE;
         } else {
-            s32 t = *(s32*)((u8*)wp + 0x1D0) - 1;
+            s32 t = wp->wallHoldTimer - 1;
 
-            *(s32*)((u8*)wp + 0x1D0) = t;
+            wp->wallHoldTimer = t;
             if (t <= 0) {
-                *(s32*)((u8*)wp + 0x1D0) = 0;
-                *(f32*)((u8*)wp + 0x1C8) = a;
-                *(f32*)((u8*)wp + 0x1CC) = b;
+                wp->wallHoldTimer = 0;
+                wp->wallDist = a;
+                wp->wallYaw = b;
             }
         }
-        *(f32*)((u8*)wp + 0x19C) = *(f32*)((u8*)wp + 0x1CC);
+        *(f32*)((u8*)wp + 0x19C) = wp->wallYaw;
     } else {
 #ifdef MUST_MATCH
         // volatile forces a fresh float_0 load; without it MWCC CSEs the constant into
         // f1, which also flips the float_0/float_1000 allocation at the top.
         *(f32*)&wp->field_0x1C0[0x8] = 0.0f;
 #else
-        *(f32*)((u8*)wp + 0x1C8) = 0.0f;
+        wp->wallDist = 0.0f;
 #endif
     }
 
@@ -2967,18 +2967,18 @@ void marioCheckWallShip(f32 a, f32 b) {
 
     *(f32*)&wp->field_0x1F0[0x20] = 1000.f;
     if (a && wp->airTimer == 0) {
-        if (*(f32*)((u8*)wp + 0x1C8) < a) {
-            *(f32*)((u8*)wp + 0x1C8) = a;
-            *(f32*)((u8*)wp + 0x1CC) = b;
-            *(s32*)((u8*)wp + 0x1D0) = 0xE;
+        if (wp->wallDist < a) {
+            wp->wallDist = a;
+            wp->wallYaw = b;
+            wp->wallHoldTimer = 0xE;
         } else {
-            s32 t = *(s32*)((u8*)wp + 0x1D0) - 1;
+            s32 t = wp->wallHoldTimer - 1;
 
-            *(s32*)((u8*)wp + 0x1D0) = t;
+            wp->wallHoldTimer = t;
             if (t <= 0) {
-                *(s32*)((u8*)wp + 0x1D0) = 0;
-                *(f32*)((u8*)wp + 0x1C8) = a;
-                *(f32*)((u8*)wp + 0x1CC) = b;
+                wp->wallHoldTimer = 0;
+                wp->wallDist = a;
+                wp->wallYaw = b;
             }
         }
     } else {
@@ -2992,7 +2992,7 @@ void marioCheckWallShip(f32 a, f32 b) {
     }
 
     if (a && wp->airTimer == 0) {
-        *(f32*)((u8*)wp + 0x19C) = *(f32*)((u8*)wp + 0x1CC);
+        *(f32*)((u8*)wp + 0x19C) = wp->wallYaw;
     }
 
     if (!a) {

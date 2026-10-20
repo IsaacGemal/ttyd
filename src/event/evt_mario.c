@@ -532,7 +532,7 @@ USER_FUNC(evt_mario_set_enable_key) {
     s32* args = event->args;
     s32 val = evtGetValue(event, args[0]);
 
-    *(s32*)((u8*)marioGetPtr() + 0x284) = val;
+    marioGetPtr()->inputMask = val;
     return EVT_RETURN_DONE;
 }
 
@@ -1688,9 +1688,9 @@ USER_FUNC(evt_mario_jump_jumpstand) {
         event->userdata[3] = 0;
         if (mode == 3) {
             event->userdata[3] = 2;
-        } else if (*(f32*)((u8*)mario + 0xD8) < mario->position.y) {
+        } else if (mario->lastGroundPos.y < mario->position.y) {
             event->userdata[3] = 2;
-        } else if (*(f32*)((u8*)mario + 0xD8) <= h + float_1p5_8041b8c4 * mario->wPlayerCollisionBox.y) {
+        } else if (mario->lastGroundPos.y <= h + float_1p5_8041b8c4 * mario->wPlayerCollisionBox.y) {
             event->userdata[3] = 2;
         } else {
             event->userdata[3] = 1;

@@ -399,7 +399,7 @@ void peach_stay(void) {
                 marioChgPose(str_80420274);
                 mp->multiTimer = 0x50;
                 mp->currSubMotionId = 1;
-                *(s32*)((u8*)mp + 0x278) = psndSFXOn_3D((const char*)0x101, &mp->position);
+                mp->sfxIds[0] = psndSFXOn_3D((const char*)0x101, &mp->position);
                 marioAdjustMoveDir();
             }
             break;

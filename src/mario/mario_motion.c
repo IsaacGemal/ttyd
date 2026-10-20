@@ -1267,7 +1267,7 @@ BOOL marioChkTransform(void) {
     if (!(mario->buttonNew & (1 << 11))) {
         return FALSE;
     }
-    if (!(mario->trigFlags & (1 << 2)) && (s8)*(u8*)((u8*)mario + 0x3B) != 0) {
+    if (!(mario->trigFlags & (1 << 2)) && mario->partyUseTimer != 0) {
         return FALSE;
     }
     if (mario->currMotionId == MARIO_MOTION_YOSHI) {

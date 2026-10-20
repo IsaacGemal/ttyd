@@ -460,8 +460,8 @@ void marioUpdateKeyData(void) {
     p->triggerRight = gp->triggerRight[0];
     p->unusedInput[0] = 0;
     p->unusedInput[1] = 0;
-    if (*(u32*)((u8*)p + 0x284) != 0) {
-        mask = *(u32*)((u8*)p + 0x284);
+    if (p->inputMask != 0) {
+        mask = p->inputMask;
     } else {
         mask = -1;
     }
@@ -496,7 +496,7 @@ void marioUpdateKeyData(void) {
         p->triggerRight = 0;
         p->unusedInput[0] = 0;
         p->unusedInput[1] = 0;
-        if (*(u32*)((u8*)p + 0x284) == 0) {
+        if (p->inputMask == 0) {
             p->buttonHeld = 0;
             p->buttonNew = 0;
             p->buttonRepeat = 0;

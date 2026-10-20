@@ -179,9 +179,9 @@ void mot_dokan(void) {
             marioPaperLightOff();
             mario->dispFlags |= 8;
             mario->dispFlags |= 0x100;
-            mario->unk1A8 = M_F32(mario, 0x1AC);
+            mario->unk1A8 = mario->dispReqDir;
             mario->currSubMotionId = 0x14;
-            M_F32(mario, 0x2A0) = float_0_8041cd80;
+            mario->spinSpeed = float_0_8041cd80;
             STORE_F32V(mario, 0x2A0, float_30_8041cd8c);
             COPY_VEC(&mario->scale, &vec3_802f3d78);
             _partyEntry(1);
@@ -205,8 +205,8 @@ void mot_dokan(void) {
             marioPaperLightOff();
             marioChgPaper(str_802F3E20);
             marioChgPose("M_Z_1");
-            mario->unk1A8 = M_F32(mario, 0x1AC);
-            M_F32(mario, 0x2A0) = float_30_8041cd8c;
+            mario->unk1A8 = mario->dispReqDir;
+            mario->spinSpeed = float_30_8041cd8c;
             mario->multiTimer = 0x14;
             mario->currSubMotionId = 0;
         } else if (M_S8(mario, 0x3E) == 4) {
@@ -221,8 +221,8 @@ void mot_dokan(void) {
             marioPaperLightOff();
             marioChgPaper(str_802F3E20);
             marioChgPose("M_Z_1");
-            mario->unk1A8 = M_F32(mario, 0x1AC);
-            M_F32(mario, 0x2A0) = float_30_8041cd8c;
+            mario->unk1A8 = mario->dispReqDir;
+            mario->spinSpeed = float_30_8041cd8c;
             mario->currSubMotionId = 0x28;
             _partyEntry(1);
             mario->dispFlags |= 0x1000;
@@ -233,7 +233,7 @@ void mot_dokan(void) {
 
     switch (mario->currSubMotionId) {
     case 0xA:
-        mario->unk1A8 = revise360(mario->unk1A8 + M_F32(mario, 0x2A0));
+        mario->unk1A8 = revise360(mario->unk1A8 + mario->spinSpeed);
         mario->scale.x += float_neg0p005_8041cd90;
         if (mario->scale.x < float_0_8041cd80) {
             mario->scale.x = float_0_8041cd80;
@@ -249,7 +249,7 @@ void mot_dokan(void) {
         }
         // fallthrough
     case 0x15:
-        mario->unk1A8 = revise360(mario->unk1A8 + M_F32(mario, 0x2A0));
+        mario->unk1A8 = revise360(mario->unk1A8 + mario->spinSpeed);
         if (mario->flags & 0x02000000) {
             mario->scale.x += float_0p03_8041cd98;
             if (mario->scale.x >= float_1_8041cd9c) {
@@ -267,13 +267,13 @@ void mot_dokan(void) {
         }
         break;
     case 0x1E:
-        mario->unk1A8 = revise360(mario->unk1A8 + M_F32(mario, 0x2A0));
+        mario->unk1A8 = revise360(mario->unk1A8 + mario->spinSpeed);
         break;
     case 0x0:
         if ((s32)--mario->multiTimer > 0) {
             break;
         }
-        M_F32(mario, 0xBC) += M_F32(mario, 0x2A0);
+        M_F32(mario, 0xBC) += mario->spinSpeed;
         mario->scale.x += float_neg0p02_8041cda4;
         if (mario->scale.x < float_0_8041cd80) {
             mario->scale.x = float_0_8041cd80;
@@ -285,7 +285,7 @@ void mot_dokan(void) {
         M_F32(mario, 0xA0) = float_neg3_8041cdac;
         break;
     case 0x28:
-        M_F32(mario, 0xBC) += M_F32(mario, 0x2A0);
+        M_F32(mario, 0xBC) += mario->spinSpeed;
         mario->scale.x += float_0p03_8041cd98;
         if (mario->scale.x >= float_1_8041cd9c) {
             mario->scale.x = float_1_8041cd9c;
@@ -338,14 +338,14 @@ void mot_dokan(void) {
         }
         break;
     case 0x65:
-        mario->unk1A8 += M_F32(mario, 0x2A0);
+        mario->unk1A8 += mario->spinSpeed;
         if (mario->unk1A8 >= float_540_8041cdb0) {
             marioChgPaper(str_802F3E34);
             mario->multiTimer = 0x14;
             mario->currSubMotionId = 0x66;
             M_F32(mario, 0xBC) = float_0_8041cd80;
-            M_F32(mario, 0x1AC) = revise360(float_180_8041cdb4 + M_F32(mario, 0x1AC));
-            mario->unk1A8 = M_F32(mario, 0x1AC);
+            mario->dispReqDir = revise360(float_180_8041cdb4 + mario->dispReqDir);
+            mario->unk1A8 = mario->dispReqDir;
             mario->directionView = toMovedirSimple(mario->unk1A8);
             M_F32(mario, 0x19C) = mario->directionView;
             partyDokanEnd(marioGetPartyId(), M_S8(mario, 0x3E));
@@ -367,7 +367,7 @@ void mot_dokan(void) {
         marioPaperOff();
         marioChgMot(0);
         mario->unk1A8 = revise360(mario->unk1A8);
-        M_F32(mario, 0x1AC) = mario->unk1A8;
+        mario->dispReqDir = mario->unk1A8;
         mario->directionView = toMovedirSimple(mario->unk1A8);
         M_F32(mario, 0x19C) = mario->directionView;
         if (M_S8(mario, 0x3E) == 4) {
@@ -390,7 +390,7 @@ void mot_dokan(void) {
         mario->currSubMotionId = 0x6F;
         // fallthrough
     case 0x6F:
-        mario->unk1A8 += M_F32(mario, 0x2A0);
+        mario->unk1A8 += mario->spinSpeed;
         if (mario->unk1A8 >= float_540_8041cdb0) {
             if (!(mario->flags & 0x02000000)) {
                 camFollowYOn();
@@ -399,8 +399,8 @@ void mot_dokan(void) {
             mario->multiTimer = 0x14;
             mario->currSubMotionId = 0x70;
             M_F32(mario, 0xBC) = float_0_8041cd80;
-            M_F32(mario, 0x1AC) = revise360(mario->unk1A8);
-            mario->unk1A8 = M_F32(mario, 0x1AC);
+            mario->dispReqDir = revise360(mario->unk1A8);
+            mario->unk1A8 = mario->dispReqDir;
             mario->directionView = toMovedirSimple(mario->unk1A8);
             M_F32(mario, 0x19C) = mario->directionView;
             partyDokanEnd(marioGetPartyId(), M_S8(mario, 0x3E));
@@ -422,7 +422,7 @@ void mot_dokan(void) {
         marioPaperOff();
         marioChgMot(0);
         mario->unk1A8 = revise360(mario->unk1A8);
-        M_F32(mario, 0x1AC) = mario->unk1A8;
+        mario->dispReqDir = mario->unk1A8;
         mario->directionView = toMovedirSimple(mario->unk1A8);
         M_F32(mario, 0x19C) = mario->directionView;
         if (!(mario->flags & 0x02000000)) {

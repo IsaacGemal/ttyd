@@ -225,9 +225,9 @@ void mot_damage(void) {
 		if (mario->flags & MARIO_FLAG_BG_MODE) {
 			Vec bgTmp = vec3_802f328c;
 
-			bgTmp.x = *(f32*)(mario->field_0xD4 + 0xC);
-			bgTmp.y = *(f32*)(mario->field_0xD4 + 0x10);
-			bgTmp.z = *(f32*)(mario->field_0xD4 + 0x14);
+			bgTmp.x = mario->field_0xE0.x;
+			bgTmp.y = mario->field_0xE0.y;
+			bgTmp.z = mario->field_0xE0.z;
 			target = bgTmp;
 		}
 		spd = target.z;

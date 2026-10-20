@@ -1266,9 +1266,9 @@ s32 mobj_jumpstand_red(MapObjectEntry* obj) {
                 evt = mobjRunEvent(obj, obj->eventCode);
                 if (evt != NULL) {
                     s32 flag;
-                    if (*(f32*)((u8*)mario + 0xD8) < mario->position.y) {
+                    if (mario->lastGroundPos.y < mario->position.y) {
                         flag = 0;
-                    } else if (*(f32*)((u8*)mario + 0xD8) <
+                    } else if (mario->lastGroundPos.y <
                                obj->position.y + mario->wPlayerCollisionBox.y) {
                         flag = 0;
                     } else {

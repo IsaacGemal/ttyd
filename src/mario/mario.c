@@ -839,7 +839,7 @@ void marioOfsRotReset(void) {
 }
 
 void marioSoundInit(void) {
-	s32* p = (s32*)((u8*)mp + 0x278);
+	s32* p = mp->sfxIds;
 
 	p[0] = -1;
 	p[1] = -1;
@@ -864,9 +864,9 @@ void marioInit(void) {
 	mp = (MarioWork*)__memAlloc(HEAP_DEFAULT, 0x2e0);
 	memset(mp, 0, 0x2e0);
 	wp = mp;
-	*(s32*)((u8*)wp + 0x278) = -1;
-	*(s32*)((u8*)wp + 0x27c) = -1;
-	*(s32*)((u8*)wp + 0x280) = -1;
+	wp->sfxIds[0] = -1;
+	wp->sfxIds[1] = -1;
+	wp->sfxIds[2] = -1;
 	pouchInit();
 	marioResetGravity();
 	marioInitCamId();
@@ -1051,7 +1051,7 @@ void marioReInit(void) {
 		pouchGetItem(ITEM_HAMMER);
 	}
 
-	*(Vec*)(wp->field_0xD4 + 0xC) = vec3_802c36f8;
+	wp->field_0xE0 = vec3_802c36f8;
 }
 
 // MUST_MATCH: the original builds the coin position in an inlined struct return, so the

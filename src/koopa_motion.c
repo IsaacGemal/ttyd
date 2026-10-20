@@ -455,7 +455,7 @@ void kpa_jump(void) {
         kpaChgPose("KPA_J_1A", "KPA2_J_1A");
         psndSFXOn_3D((char*)0x81E, &mario->position);
         if (mario->airTimer == 0) {
-            *(Vec*)mario->field_0xD4 = mario->position;
+            mario->lastGroundPos = mario->position;
         }
         MW_U16(mario, 0x2A0) = 0;
     }
@@ -502,7 +502,7 @@ void kpa_fall_80213C38(void) {
             mario->flags |= 0x80;
         }
         if (mario->airTimer == 0) {
-            *(Vec*)mario->field_0xD4 = mario->position;
+            mario->lastGroundPos = mario->position;
         }
     }
     switch ((s32)mario->currSubMotionId) {
@@ -559,7 +559,7 @@ void kpa_hip(void) {
         mario->baseSpeed = float_0_80420da0;
         marioChgPose("KPA2_J_1C");
     }
-    if (MW_F32(mario, 0xD8) >= mario->position.y && (mario->dispFlags & 0x20000)) {
+    if (mario->lastGroundPos.y >= mario->position.y && (mario->dispFlags & 0x20000)) {
         camFollowYOn();
     }
     switch (mario->currSubMotionId) {

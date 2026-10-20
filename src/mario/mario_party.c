@@ -9,7 +9,7 @@
 s32 marioUseParty(void) {
     MarioWork* wp = marioGetPtr();
     PartyEntry* party;
-    s8* timer = (s8*)((u8*)wp + 0x3B);
+    s8* timer = &wp->partyUseTimer;
 
     if (N_marioChkUseParty()) {
         *timer = 0;
@@ -78,7 +78,7 @@ s32 marioUseParty(void) {
 
 s32 unk_8013be14(void) {
     MarioWork* wp = marioGetPtr();
-    s8* timer = (s8*)((u8*)wp + 0x3B);
+    s8* timer = &wp->partyUseTimer;
 
     if (wp->trigFlags & MARIO_TRIG_FLAG_USE_PARTNER) {
         if (marioKeyOffChk() != 0) {

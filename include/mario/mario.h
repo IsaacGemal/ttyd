@@ -123,11 +123,14 @@ typedef struct MarioWork {
     u8 field_0x2A[0x2E - 0x2A];    // 0x2A
     MarioMotion currMotionId;      // 0x2E
     MarioMotion prevMotionId;      // 0x30, TODO check
-    u8 field_0x32[0x3C - 0x32];    // 0x32
+    u8 field_0x32[0x3B - 0x32];    // 0x32
+    s8 partyUseTimer;              // 0x3B, set to 5 when the X press starts a partner use, cleared when it ends (mario_party, mario_motion)
     s8 characterId;                // 0x3C
     s8 colorId;                    // 0x3D
     u8 field_0x3E[0x40 - 0x3E];    // 0x3E
 	s8 wMotionTimer;               // 0x40
+    u8 field_0x41[0x43 - 0x41];    // 0x41
+    s8 dispHalfTurn;               // 0x43, adds 180 to the roll display target (mot_roll)
     u32 currSubMotionId;           // 0x44
     s32 multiTimer;                // 0x48, ???
 	s16 unk4C;                     // 0x4C
@@ -150,7 +153,8 @@ typedef struct MarioWork {
     Vec position;                  // 0x8C
     u8 field_0x98[0xC8 - 0x98];    // 0x98
     Vec scale;                     // 0xC8
-    u8 field_0xD4[0xEC - 0xD4];    // 0xD4
+    Vec lastGroundPos;             // 0xD4, position copied whenever airTimer is 0 (mot_jump, mot_roll)
+    Vec field_0xE0;                // 0xE0, bgTmp source in mot_damage
     Vec field_EC;                  // 0xEC
     Vec field_F8;                  // 0xF8
     u8 unk104[0x134 - 0x104];      // 0x104
@@ -182,7 +186,11 @@ typedef struct MarioWork {
     f32 dispReqDir;                // 0x1AC, requested display direction (get_mario_dispReqDir; party moves aim by it)
     u8 field_0x1B0[0x1B4 - 0x1B0]; // 0x1B0
     Vec wPlayerCollisionBox;       // 0x1B4 JP, 0x1B8 US
-    u8 field_0x1C0[0x1D8 - 0x1C0]; // 0x1C0
+    u8 field_0x1C0[0x1C8 - 0x1C0]; // 0x1C0
+    f32 wallDist;                  // 0x1C8, largest front-wall distance held for wallHoldTimer frames (marioCheckWall)
+    f32 wallYaw;                   // 0x1CC, the wall angle that goes with wallDist (marioCheckWall)
+    s32 wallHoldTimer;             // 0x1D0, counts down from 14 before wallDist can drop (marioCheckWall)
+    u8 field_0x1D4[0x1D8 - 0x1D4]; // 0x1D4
     s32 field_0x1D8;               // 0x1D8
     u8 field_0x1DC[0x1E4 - 0x1DC]; // 0x1DC
 	void* hitobjStandOn;           // 0x1E4, 0x1E8 US HitEntry
@@ -214,7 +222,9 @@ typedef struct MarioWork {
     u8 unusedInput[0x258 - 0x254]; // 0x254, cleared with the MARIO_TRIG_FLAG_DISABLE_UNUSED_INPUT case
     u32 padDirs;                   // 0x258, DemoPad[0].dirs this frame
     u32 padDirsPressed;            // 0x25C, dirs newly set since the previous frame
-    u8 field_0x260[0x288 - 0x260]; // 0x260
+    u8 field_0x260[0x278 - 0x260]; // 0x260
+    s32 sfxIds[3];                 // 0x278, sound handles, 0xFFFFFFFF when none (mot_jump, mot_stay, peach, marioSoundInit)
+    u32 inputMask;                 // 0x284, button mask set from evt_mario; 0 means unmasked (marioUpdateKeyData)
     void* motStruct;               // 0x288, motion userdata, TODO rename?
     u8 field_0x28C[0x2A0 - 0x28C]; // 0x28C
     f32 spinSpeed;                 // 0x2A0, added to unk1A8 each frame (mario_motion spin, mot_hip, evt_mario)

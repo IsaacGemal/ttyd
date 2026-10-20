@@ -334,7 +334,7 @@ static f32 rollDispCalcTarget(MarioWork* mario, f32 angle) {
     f32 res = 270.0f + mario->targetYaw - angle;
     f32 off;
 
-    if (*(s8*)((u8*)mario + 0x43) != 0) {
+    if (mario->dispHalfTurn != 0) {
         off = -180.0f;
     } else {
         off = 0.0f;
@@ -404,12 +404,12 @@ void marioSetRollDispDir(void) {
     {
         f32 a = toMovedir(mario->unk1A8);
 
-        if (*(s8*)((u8*)mario + 0x43) != 0) {
+        if (mario->dispHalfTurn != 0) {
             a = revise360(180.0f + a);
         }
         if (rollDispAngleInRange(angle, a, 135.0f) == 1) {
-            *(s8*)((u8*)mario + 0x43) =
-                (*(s8*)((u8*)mario + 0x43) + 1) & 1;
+            mario->dispHalfTurn =
+                (mario->dispHalfTurn + 1) & 1;
         }
     }
     mario->unk1A8 = rollDispCalcTarget(mario, angle);
@@ -643,11 +643,11 @@ void mot_roll(void) {
         camGetPtr(CAMERA_2D)->flags |= 0x200;
         marioAdjustMoveDir();
         if (mario->unk1A8 < 90.0f || mario->unk1A8 > 270.0f) {
-            *(s8*)((u8*)mario + 0x43) = 1;
+            mario->dispHalfTurn = 1;
             mario->directionView = revise360(270.0f - mario->targetYaw);
             *(f32*)((u8*)mario + 0x19C) = 270.0f;
         } else {
-            *(s8*)((u8*)mario + 0x43) = 0;
+            mario->dispHalfTurn = 0;
             mario->directionView = revise360(90.0f - mario->targetYaw);
             *(f32*)((u8*)mario + 0x19C) = 90.0f;
         }
@@ -903,7 +903,7 @@ void mot_roll(void) {
             psndSFXOn_3D((char*)0x17C, &marioGetPtr()->position);
             mario->hitobjJumpFrom = mario->hitobjStandOn;
             mario->hitobjStandOn = NULL;
-            *(Vec*)((u8*)mario + 0xD4) = mario->position;
+            mario->lastGroundPos = mario->position;
             *(Vec*)((u8*)mario + 0x11C) = mario->position;
             camFollowYOff();
         }
@@ -923,7 +923,7 @@ void mot_roll(void) {
         }
         if (mario->airTimer == 0) {
             if (mario->jumpVelY < 0.0f) {
-                *(Vec*)((u8*)mario + 0xD4) = mario->position;
+                mario->lastGroundPos = mario->position;
                 camFollowYOn();
             }
         }
@@ -1263,23 +1263,23 @@ vel_apply:
     f28 = 1.2f * (f30 - f28) + f28;
     f28 = revise360(f28);
     f30 = toMovedir(mario->unk1A8);
-    if (*(s8*)((u8*)mario + 0x43) != 0) {
+    if (mario->dispHalfTurn != 0) {
         f30 = revise360(180.0f + f30);
     }
     if (rollDispAngleInRange(f28, f30, 135.0f) == 1) {
-        *(s8*)((u8*)mario + 0x43) = (*(s8*)((u8*)mario + 0x43) + 1) & 1;
+        mario->dispHalfTurn = (mario->dispHalfTurn + 1) & 1;
     }
     f27 = 270.0f + mario->targetYaw - f28;
-    f27 = f27 + ((*(s8*)((u8*)mario + 0x43) != 0) ? -180.0f : 0.0f);
+    f27 = f27 + ((mario->dispHalfTurn != 0) ? -180.0f : 0.0f);
     mario->unk1A8 = revise360(f27);
     if (mario->unk1A8 >= 200.0f) {
         f27 = 270.0f + mario->targetYaw - f28;
-        f27 = f27 + ((*(s8*)((u8*)mario + 0x43) != 0) ? -180.0f : 0.0f);
+        f27 = f27 + ((mario->dispHalfTurn != 0) ? -180.0f : 0.0f);
         mario->unk1A8 = revise360(f27);
     }
     if (mario->unk1A8 < 170.0f) {
         f27 = 270.0f + mario->targetYaw - f28;
-        f27 = f27 + ((*(s8*)((u8*)mario + 0x43) != 0) ? -180.0f : 0.0f);
+        f27 = f27 + ((mario->dispHalfTurn != 0) ? -180.0f : 0.0f);
         mario->unk1A8 = revise360(f27);
     }
     mario->directionView = f28;
