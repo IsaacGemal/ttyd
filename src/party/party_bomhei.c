@@ -1224,7 +1224,7 @@ void partyGetReturnPos(Vec* pos) {
     pos->z = pz;
 }
 
-// Raw offsets used: MarioWork 0x246.  field_12C is a HitEntry* stored in a void* field.
+// field_12C is a HitEntry* stored in a void* field.
 
 // 100%. Requires the unit's data described above: the jump-stand strings are inline literals (pooled
 // after the compiler's own int->float magic double at .rodata+0x58), and the functions are listed in

@@ -93,9 +93,9 @@ void caseMain(void) {
 	partyGetPtr(marioGetPartyId());
 
 	hitStandOn = mario->hitobjStandOn;
-	hit1F8 = MW_PTR(mario, 0x1F8);
+	hit1F8 = mario->hitobjUnder;
 	hitJumpFrom = mario->hitobjJumpFrom;
-	hit1E0 = MW_PTR(mario, 0x1E0);
+	hit1E0 = mario->hitobjFront;
 	hitPush = mario->hitobjPush;
 	hit1FC = MW_PTR(mario, 0x1FC);
 	hit1F4 = MW_PTR(mario, 0x1F4);
