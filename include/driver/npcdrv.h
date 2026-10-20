@@ -65,7 +65,7 @@ typedef struct BattleSetupData {
 
 typedef struct NpcBattleInfo {
     struct BattleStageData* stageData; // 0x0
-    s32 flags;                         // 0x4, copied from BattleSetupData.flags; drop-disable bits 1 coin, 2 heart, 4 flower, 8 item
+    s32 flags;                         // 0x4, copied from BattleSetupData.flags; drop-disable bits 1 coin, 2 heart, 4 flower, 8 item; 0x10 disables the escape operation
     s32 fixDropItem;                   // 0x8, copied from BattleSetupData.fixDropItem; read by evt_npc_get_drop_fixitem
     ItemType itemDropped;              // 0xC
     s32 heartsDropped;                 // 0x10

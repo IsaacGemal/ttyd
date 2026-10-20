@@ -3535,8 +3535,8 @@ void npcSetupBattleInfo(NpcEntry* npc, BattleSetupData* setup) {
     s32 sum;
     s32 weight;
 
-    memset(info, 0, 0xC8);
-    memset(info->recoveredItems, 0, 0x20);
+    memset(info, 0, sizeof(*info));
+    memset(info->recoveredItems, 0, sizeof(info->recoveredItems));
     if (setup == NULL) {
         return;
     }
@@ -3593,7 +3593,7 @@ void npcSetupBattleInfo(NpcEntry* npc, BattleSetupData* setup) {
     if (info->groupSetup != NULL) {
         num = info->groupSetup->numEnemies;
         enemy = info->groupSetup->enemyData;
-        memset(info->heldItems, 0, 0x20);
+        memset(info->heldItems, 0, sizeof(info->heldItems));
         for (i = 0; i < num; enemy++, i++) {
             list = enemy->itemDropTable;
             if (list != NULL) {
