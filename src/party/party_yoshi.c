@@ -251,19 +251,18 @@ void marioYoshiForceCancel(void) {
     if (yoshiGetStatus() != 0) {
 #ifdef MUST_MATCH
         MarioWork* pl = *(MarioWork* volatile*)&party->playerPtr;
-        Vec* dst = (Vec*)((u8*)pl + 0x98);
-        *(volatile Vec*)&dst[0] = *(const volatile Vec*)&vec[0];
-        *(volatile Vec*)&dst[1] = *(const volatile Vec*)&vec[1];
+        *(volatile Vec*)&pl->dispOfs = *(const volatile Vec*)&vec[0];
+        *(volatile Vec*)&pl->dispOfs2 = *(const volatile Vec*)&vec[1];
 #else
         MarioWork* pl = party->playerPtr;
-        *(YoshiZeroVec6*)((u8*)pl + 0x98) = *(YoshiZeroVec6*)vec;
+        *(YoshiZeroVec6*)&pl->dispOfs = *(YoshiZeroVec6*)vec;
 #endif
 
         {
             PartyEntry* extra = partyGetPtr(marioGetExtraPartyId());
             if (extra != NULL) {
 #ifdef MUST_MATCH
-                *(volatile Vec*)((u8*)extra + 0x7C) = *(const volatile Vec*)&vec[2];
+                *(volatile Vec*)&extra->dispOffset = *(const volatile Vec*)&vec[2];
 #else
                 extra->dispOffset = vec[2];
 #endif
@@ -327,19 +326,18 @@ void yoshi_exit(PartyEntry* arg) {
     if (yoshiGetStatus() != 0) {
 #ifdef MUST_MATCH
         MarioWork* pl = *(MarioWork* volatile*)&party->playerPtr;
-        Vec* dst = (Vec*)((u8*)pl + 0x98);
-        *(volatile Vec*)&dst[0] = *(const volatile Vec*)&vec[0];
-        *(volatile Vec*)&dst[1] = *(const volatile Vec*)&vec[1];
+        *(volatile Vec*)&pl->dispOfs = *(const volatile Vec*)&vec[0];
+        *(volatile Vec*)&pl->dispOfs2 = *(const volatile Vec*)&vec[1];
 #else
         MarioWork* pl = party->playerPtr;
-        *(YoshiZeroVec6*)((u8*)pl + 0x98) = *(YoshiZeroVec6*)vec;
+        *(YoshiZeroVec6*)&pl->dispOfs = *(YoshiZeroVec6*)vec;
 #endif
 
         {
             PartyEntry* extra = partyGetPtr(marioGetExtraPartyId());
             if (extra != NULL) {
 #ifdef MUST_MATCH
-                *(volatile Vec*)((u8*)extra + 0x7C) = *(const volatile Vec*)&vec[2];
+                *(volatile Vec*)&extra->dispOffset = *(const volatile Vec*)&vec[2];
 #else
                 extra->dispOffset = vec[2];
 #endif
@@ -455,10 +453,8 @@ void yoshi_init(PartyEntry* party) {
     party->radius = float_20;
     party->yoshiPsndSFXId = -1;
 }
-#define P_P(off) (*(void**)((u8*)party + (off)))
 #define M_F(off) (*(f32*)((u8*)mario + (off)))
 #define M_S(off) (*(s32*)((u8*)mario + (off)))
-#define M_P(off) (*(void**)((u8*)mario + (off)))
 
 
 // Rider height offset for Yoshi's current walk/run/flutter pose frame.
@@ -665,10 +661,10 @@ void yoshi_use(PartyEntry* party) {
             party->field_12C = NULL;
             party->field_134 = NULL;
             party->headHit = NULL;
-            M_P(0x1E0) = NULL;
-            M_P(0x1EC) = NULL;
-            M_P(0x1F0) = NULL;
-            M_P(0x1F4) = NULL;
+            mario->hitobjFront = NULL;
+            mario->hitobjPush = NULL;
+            mario->hitobjWall = NULL;
+            mario->hitobjHead = NULL;
             f30 = mario->directionView;
             f31 = mario->baseSpeed;
             yoshiSearchHead(party);
@@ -741,9 +737,9 @@ void yoshi_use(PartyEntry* party) {
                 party->position.z = mario->position.z;
                 party->field_12C = NULL;
                 party->field_134 = NULL;
-                M_P(0x1E0) = NULL;
-                M_P(0x1EC) = NULL;
-                M_P(0x1F0) = NULL;
+                mario->hitobjFront = NULL;
+                mario->hitobjPush = NULL;
+                mario->hitobjWall = NULL;
                 f30 = party->dir;
                 f31 = party->speed;
                 yoshiSearchHead(party);
@@ -758,7 +754,7 @@ void yoshi_use(PartyEntry* party) {
                     party->useMotionId = 0x64;
                 }
                 searchGround(party);
-                M_F(0x18C) = f31;
+                mario->field_0x18C = f31;
             }
         }
         break;
@@ -773,17 +769,17 @@ L_3588:
 #ifdef MUST_MATCH
             // Volatile, as in marioYoshiForceCancel: keeps the playerPtr load ahead of the copies.
             MarioWork* pl64 = *(MarioWork* volatile*)&party->playerPtr;
-            *(volatile Vec*)((u8*)pl64 + 0x98) = *(const volatile Vec*)&vec3_802cccd0;
-            *(volatile Vec*)((u8*)pl64 + 0xA4) = *(const volatile Vec*)&vec3_802cccdc;
+            *(volatile Vec*)&pl64->dispOfs = *(const volatile Vec*)&vec3_802cccd0;
+            *(volatile Vec*)&pl64->dispOfs2 = *(const volatile Vec*)&vec3_802cccdc;
 #else
             MarioWork* pl64 = party->playerPtr;
-            *(YoshiZeroVec6*)((u8*)pl64 + 0x98) = *(const YoshiZeroVec6*)&vec3_802cccd0;
+            *(YoshiZeroVec6*)&pl64->dispOfs = *(const YoshiZeroVec6*)&vec3_802cccd0;
 #endif
         }
         extra = partyGetPtr(marioGetExtraPartyId());
         if (extra != NULL) {
 #ifdef MUST_MATCH
-            *(volatile Vec*)((u8*)extra + 0x7C) = *(const volatile Vec*)&vec3_802ccce8;
+            *(volatile Vec*)&extra->dispOffset = *(const volatile Vec*)&vec3_802ccce8;
 #else
             extra->dispOffset = vec3_802ccce8;
 #endif
@@ -991,9 +987,9 @@ L_3588:
             fx = 0.0f;
             fz = 0.0f;
             movePos(&fx, &fz, -6.0f, toMovedir(party->field_10C));
-            M_F(0x98) = fx;
-            M_F(0xA0) = fz;
-            M_F(0xA8) = 8.0f + yoshiRideHeight(party);
+            mario->dispOfs.x = fx;
+            mario->dispOfs.z = fz;
+            mario->dispOfs2.y = 8.0f + yoshiRideHeight(party);
             extra = partyGetPtr(marioGetExtraPartyId());
             if (extra != NULL) {
                 extra->dispOffset.y = yoshiRideHeight(party);
@@ -1006,7 +1002,7 @@ L_3588:
             party->flags |= PARTY_FLAG_IS_JUMPING;
             mario->airTimer = 0;
             mario->airTimerPeak = 0;
-            P_P(0x13C) = party->groundHit;
+            party->field_0x13C = party->groundHit;
             L_sweatEntry(party, NULL);
             mario->hitobjStandOn = NULL;
             mario->field_0x11C = mario->position;
@@ -1122,9 +1118,9 @@ L_3588:
             }
             party->field_12C = NULL;
             party->field_134 = NULL;
-            M_P(0x1E0) = NULL;
-            M_P(0x1EC) = NULL;
-            M_P(0x1F0) = NULL;
+            mario->hitobjFront = NULL;
+            mario->hitobjPush = NULL;
+            mario->hitobjWall = NULL;
             f30 = party->dir;
             f31 = party->speed;
             yoshiSearchHead(party);
@@ -1190,17 +1186,17 @@ L_3588:
 #ifdef MUST_MATCH
                 // Volatile, as in marioYoshiForceCancel: keeps the playerPtr load ahead of the copies.
                 MarioWork* pl = *(MarioWork* volatile*)&party->playerPtr;
-                *(volatile Vec*)((u8*)pl + 0x98) = *(const volatile Vec*)&vec3_802cccd0;
-                *(volatile Vec*)((u8*)pl + 0xA4) = *(const volatile Vec*)&vec3_802cccdc;
+                *(volatile Vec*)&pl->dispOfs = *(const volatile Vec*)&vec3_802cccd0;
+                *(volatile Vec*)&pl->dispOfs2 = *(const volatile Vec*)&vec3_802cccdc;
 #else
                 MarioWork* pl = party->playerPtr;
-                *(YoshiZeroVec6*)((u8*)pl + 0x98) = *(const YoshiZeroVec6*)&vec3_802cccd0;
+                *(YoshiZeroVec6*)&pl->dispOfs = *(const YoshiZeroVec6*)&vec3_802cccd0;
 #endif
             }
             extra = partyGetPtr(marioGetExtraPartyId());
             if (extra != NULL) {
 #ifdef MUST_MATCH
-                *(volatile Vec*)((u8*)extra + 0x7C) = *(const volatile Vec*)&vec3_802ccce8;
+                *(volatile Vec*)&extra->dispOffset = *(const volatile Vec*)&vec3_802ccce8;
 #else
                 extra->dispOffset = vec3_802ccce8;
 #endif
@@ -1222,10 +1218,8 @@ L_3588:
 }
 
 #undef VEC_S2
-#undef P_P
 #undef M_F
 #undef M_S
-#undef M_P
 
 
 void L_yoshiFlyMove(PartyEntry* party) {
@@ -1257,7 +1251,7 @@ void L_yoshiFlyMove(PartyEntry* party) {
         party->dir = revise360(f31 + party->playerTargetYaw);
         party->field_FC = revise360(f31 + party->playerTargetYaw);
     }
-    *(f32*)((u8*)mario + 0x18C) = f29;
+    mario->field_0x18C = f29;
 }
 
 // The `zero` local (rather than a literal 0.0f) stops MWCC folding
@@ -1394,10 +1388,8 @@ void searchGround(PartyEntry* party) {
             set_damage_root_ypos(mario->position.y - 8.0f);
             {
                 MarioWork* pl = party->playerPtr;
-                Vec* dst = (Vec*)((u8*)pl + 0x98);
-
-                dst[0] = vec[0];
-                dst[1] = vec[1];
+                pl->dispOfs = vec[0];
+                pl->dispOfs2 = vec[1];
             }
             {
                 PartyEntry* extra = partyGetPtr(marioGetExtraPartyId());
