@@ -165,14 +165,11 @@ void windowMain(void) {
 	}
 }
 
-#ifdef MUST_MATCH
-// MUST_MATCH: the original's outgoing GXColor argument slots need the fog colour passed through a
-// by-value inline (fog temp at r1+0x8) and the tev colour passed as a direct compound literal (built at
-// r1+0xc, copied to r1+0x10); the natural forms land in the other slots.
-static inline void kanbanSetFog(GXColor color) {
+// The fog colour goes through a by-value inline so its outgoing argument temp sits at r1+0x8; the tev colour
+// below is a direct compound literal (built at r1+0xc, copied to r1+0x10).
+static inline void windowSetFog(GXColor color) {
 	GXSetFog(GX_FOG_NONE, 0.0f, 0.0f, 0.0f, 0.0f, color);
 }
-#endif
 
 void windowDispGX_Kanban(s32 type, u8 alpha, f32 x, f32 y, f32 height, f32 width) {
 	CameraEntry* camera;
@@ -180,7 +177,6 @@ void windowDispGX_Kanban(s32 type, u8 alpha, f32 x, f32 y, f32 height, f32 width
 	Mtx wood_mtx1, wood_mtx2, wood_mtx3, wood_mtx4; //+0x104, for case 2/4
 	Mtx lines_mtx1, lines_mtx2, lines_mtx3, lines_mtx4; //+0x44, for case 10
 	Mtx letter_mtx;
-	GXColor tevColor;
 	GXColor fogColor;
 
 	camera = camGetCurPtr();
@@ -190,11 +186,7 @@ void windowDispGX_Kanban(s32 type, u8 alpha, f32 x, f32 y, f32 height, f32 width
 	GXSetBlendMode(GX_BM_BLEND, GX_BL_SRCALPHA, GX_BL_INVSRCALPHA, GX_LO_OR);
 	GXSetZMode(GX_TRUE, GX_ALWAYS, GX_FALSE);
 	fogColor = dat_8041a430;
-#ifdef MUST_MATCH
-	kanbanSetFog(fogColor);
-#else
-	GXSetFog(GX_FOG_NONE, 0.0f, 0.0f, 0.0f, 0.0f, fogColor);
-#endif
+	windowSetFog(fogColor);
 	GXClearVtxDesc();
 	GXSetVtxDesc(GX_VA_POS, GX_DIRECT);
 	GXSetVtxDesc(GX_VA_TEX0, GX_DIRECT);
@@ -211,12 +203,7 @@ void windowDispGX_Kanban(s32 type, u8 alpha, f32 x, f32 y, f32 height, f32 width
 	GXSetTevAlphaIn(GX_TEVSTAGE0, GX_CA_ZERO, GX_CA_A0, GX_CA_TEXA, GX_CA_ZERO);
 	GXSetTevSwapMode(GX_TEVSTAGE0, GX_TEV_SWAP0, GX_TEV_SWAP0);
 	GXSetCurrentMtx(0);
-#ifdef MUST_MATCH
 	GXSetTevColor(GX_TEVREG0, (GXColor){0xFF, 0xFF, 0xFF, alpha});
-#else
-	tevColor = (GXColor){0xFF, 0xFF, 0xFF, alpha};
-	GXSetTevColor(GX_TEVREG0, tevColor);
-#endif
 	MTXTrans(trans, x, y, 0.0f);
 	MTXScale(scale, height / 560.0f, width / 176.0f, 1.0f);
 	MTXConcat(trans, scale, trans);
@@ -425,19 +412,9 @@ void windowDispGX_Kanban(s32 type, u8 alpha, f32 x, f32 y, f32 height, f32 width
 	}
 }
 
-// MUST_MATCH: a named colour passed through an inline reproduces the original's stack layout for
-// GXSetFog's by-value GXColor argument (same trick as kanbanSetFog/wakuSetFog).
-#ifdef MUST_MATCH
-static inline void windowSetFog(GXColor color) {
-	GXSetFog(GX_FOG_NONE, 0.0f, 0.0f, 0.0f, 0.0f, color);
-}
-#endif
-
 void windowDispGX_System(s32 type, u8 alpha, f32 x, f32 y, f32 height, f32 width) {
 	CameraEntry* camera;
-#ifdef MUST_MATCH
 	f32 zero;
-#endif
 	f32 scroll;
 	Mtx mtx;
 	Mtx trans, scale;
@@ -459,11 +436,7 @@ void windowDispGX_System(s32 type, u8 alpha, f32 x, f32 y, f32 height, f32 width
 	GXSetAlphaCompare(GX_ALWAYS, 0, GX_AOP_AND, GX_ALWAYS, 0);
 	GXSetBlendMode(GX_BM_BLEND, GX_BL_SRCALPHA, GX_BL_INVSRCALPHA, GX_LO_OR);
 	GXSetZMode(GX_TRUE, GX_ALWAYS, GX_FALSE);
-#ifdef MUST_MATCH
 	windowSetFog(dat_8041a430);
-#else
-	GXSetFog(GX_FOG_NONE, 0.0f, 0.0f, 0.0f, 0.0f, dat_8041a430);
-#endif
 	GXClearVtxDesc();
 	GXSetVtxDesc(GX_VA_POS, GX_DIRECT);
 	GXSetVtxDesc(GX_VA_TEX0, GX_DIRECT);
@@ -539,17 +512,10 @@ void windowDispGX_System(s32 type, u8 alpha, f32 x, f32 y, f32 height, f32 width
 
 	GXPosition3f32(0.0f, 0.0f, 0.0f);
 	GXTexCoord2f32(0.0f, 0.0f);
-#ifdef MUST_MATCH
+	// `zero` is a real local, not the literal 0.0f, so MWCC keeps the fadds/fsubs pair.
 	zero = 0.0f;
-	// MUST_MATCH: `zero` (a real local, not the literal 0.0f) stops MWCC folding 0.0f + x away, which
-	// the original's fadds/fsubs pairs require; computing x2/y2 after the first vertex also fixes the
-	// target's callee-saved FP allocation for this block.
 	x2 = zero + (height - 32.0f);
 	y2 = zero - (width - 32.0f);
-#else
-	x2 = 0.0f + (height - 32.0f);
-	y2 = 0.0f - (width - 32.0f);
-#endif
 
 	GXPosition3f32(x2, 0.0f, 0.0f); //f29 = x2, 0.0f + (height - 32.0f)
 	GXTexCoord2f32(1.0f, 0.0f);
@@ -625,14 +591,9 @@ void windowDispGX_System(s32 type, u8 alpha, f32 x, f32 y, f32 height, f32 width
 	GXBegin(GX_QUADS, GX_VTXFMT0, 4);
 
 	x3 = height - 32.0f;
-#ifdef MUST_MATCH
-	// MUST_MATCH: splitting the add into two statements makes MWCC encode the fadds as `x3 + 32.0f`
-	// (fadds f25, f1, f0); the natural single expression comes out with the operands swapped.
+	// Two statements so MWCC encodes the fadds as `x3 + 32.0f` (fadds f25, f1, f0).
 	x4 = x3;
 	x4 += 32.0f; //f25 = x4
-#else
-	x4 = x3 + 32.0f; //f25 = x4
-#endif
 
 	GXPosition3f32(x3, 0.0f, 0.0f);
 	GXTexCoord2f32(0.0f, 0.0f);
@@ -681,21 +642,10 @@ void windowDispGX_System(s32 type, u8 alpha, f32 x, f32 y, f32 height, f32 width
 	GXTexCoord2f32(0.0f, 1.0f);
 }
 
-// 100% match; the parameter copies and block-local indices below are MUST_MATCH allocation/branch hints.
 void _windowDispGX_Message(s32 type, s32 a2, u8 alpha, BOOL dark, f32 x, f32 y, f32 height, f32 width, f32 a9, f32 a10) {
-#ifdef MUST_MATCH
-	// MUST_MATCH: copying the parameters in this order reproduces the original's callee-saved FP
-	// allocation (x->f27, y->f28, height->f29, width->f30, a9->f31, a10->f26). Without them the
-	// allocator gives a9 f27 first and every callee-saved register is rotated.
-	f32 px=x, py=y, ph=height, pw=width, pa9=a9, pa10=a10;
-#else
-	#define px x
-	#define py y
-	#define ph height
-	#define pw width
-	#define pa9 a9
-	#define pa10 a10
-#endif
+	// Copying the parameters in this order gives the callee-saved FP allocation (x->f27, y->f28, height->f29,
+	// width->f30, a9->f31, a10->f26).
+	f32 px = x, py = y, ph = height, pw = width, pa9 = a9, pa10 = a10;
 	CameraEntry* camera;
 	Mtx trans, scale;
 	Mtx norm_mtx1, norm_mtx2, norm_mtx3, norm_mtx4;
@@ -801,12 +751,15 @@ void _windowDispGX_Message(s32 type, s32 a2, u8 alpha, BOOL dark, f32 x, f32 y, 
 			break;
 
 		case WINDOW_TYPE_SMALL: //images 3, 4
-				// MUST_MATCH: a block-local index reproduces the original's branch instead of a select.
-#ifdef MUST_MATCH
-				{ GXTexObj* o = wakuTexObj; s32 i = 3; if (dark) i = 4; GXLoadTexObj(&o[i], GX_TEXMAP0); }
-#else
-				GXLoadTexObj(&wakuTexObj[dark ? 4 : 3], GX_TEXMAP0);
-#endif
+				// The table pointer and index are block locals so the choice compiles to a branch, not a select.
+				{
+					GXTexObj* o = wakuTexObj;
+					s32 i = 3;
+					if (dark) {
+						i = 4;
+					}
+					GXLoadTexObj(&o[i], GX_TEXMAP0);
+				}
 			MTXScale(trans, ph, pw, 1.0f);
 			MTXTransApply(trans, trans, px, py, 0.0f);
 			MTXConcat(camera->view, trans, trans);
@@ -1092,21 +1045,27 @@ void _windowDispGX_Message(s32 type, s32 a2, u8 alpha, BOOL dark, f32 x, f32 y, 
 			case WINDOW_TYPE_NORMAL:
 			case WINDOW_TYPE_SMALL:
 			case WINDOW_TYPE_BOSS:
-				// MUST_MATCH: a block-local index reproduces the original's branch instead of a select.
-#ifdef MUST_MATCH
-				{ GXTexObj* o = wakuTexObj; s32 i = 1; if (dark) i = 2; GXLoadTexObj(&o[i], GX_TEXMAP0); }
-#else
-				GXLoadTexObj(&wakuTexObj[dark ? 2 : 1], GX_TEXMAP0);
-#endif
+				// The table pointer and index are block locals so the choice compiles to a branch, not a select.
+				{
+					GXTexObj* o = wakuTexObj;
+					s32 i = 1;
+					if (dark) {
+						i = 2;
+					}
+					GXLoadTexObj(&o[i], GX_TEXMAP0);
+				}
 				break;
 
 			case WINDOW_TYPE_MAJO:
-				// MUST_MATCH: a block-local index reproduces the original's branch instead of a select.
-#ifdef MUST_MATCH
-				{ GXTexObj* o = wakuTexObj; s32 i = 7; if (dark) i = 8; GXLoadTexObj(&o[i], GX_TEXMAP0); }
-#else
-				GXLoadTexObj(&wakuTexObj[dark ? 8 : 7], GX_TEXMAP0);
-#endif
+				// The table pointer and index are block locals so the choice compiles to a branch, not a select.
+				{
+					GXTexObj* o = wakuTexObj;
+					s32 i = 7;
+					if (dark) {
+						i = 8;
+					}
+					GXLoadTexObj(&o[i], GX_TEXMAP0);
+				}
 				break;
 
 			default:
@@ -1134,14 +1093,6 @@ void _windowDispGX_Message(s32 type, s32 a2, u8 alpha, BOOL dark, f32 x, f32 y, 
 ret:;
 #endif
 }
-#ifndef MUST_MATCH
-#undef px
-#undef py
-#undef ph
-#undef pw
-#undef pa9
-#undef pa10
-#endif
 
 void windowDispGX_Message(s32 type, s32 a2, u8 alpha, f32 x, f32 y, f32 height, f32 width, f32 a9, f32 a10) {
 	GXSetCullMode(GX_CULL_NONE);
@@ -1177,14 +1128,6 @@ void windowDispGX_Message(s32 type, s32 a2, u8 alpha, f32 x, f32 y, f32 height, 
 	}
 }
 
-#ifdef MUST_MATCH
-// MUST_MATCH: the fog colour must be passed through a by-value inline so its outgoing argument temp
-// lands at r1+0x8; the direct compound literal lands at r1+0xc, swapping it with the tev colour's temp.
-static inline void wakuSetFog(GXColor color) {
-	GXSetFog(GX_FOG_NONE, 0.0f, 0.0f, 0.0f, 0.0f, color);
-}
-#endif
-
 void windowDispGX_Waku_col(u16 gxTexMapID, GXColor color, f32 x, f32 y, f32 width, f32 height, f32 curve) {
 	CameraEntry* camera = camGetCurPtr();
 	Mtx mtx;
@@ -1200,11 +1143,7 @@ void windowDispGX_Waku_col(u16 gxTexMapID, GXColor color, f32 x, f32 y, f32 widt
 		GXSetAlphaCompare(GX_ALWAYS, 0, GX_AOP_AND, GX_ALWAYS, 0);
 		GXSetBlendMode(GX_BM_BLEND, GX_BL_SRCALPHA, GX_BL_INVSRCALPHA, GX_LO_OR);
 		GXSetZMode(GX_TRUE, GX_ALWAYS, GX_FALSE);
-#ifdef MUST_MATCH
-		wakuSetFog(dat_8041a430);
-#else
-		GXSetFog(GX_FOG_NONE, 0.0f, 0.0f, 0.0f, 0.0f, dat_8041a430);
-#endif
+		windowSetFog(dat_8041a430);
 		GXClearVtxDesc();
 		GXSetVtxDesc(GX_VA_POS, GX_DIRECT);
 		GXSetVtxDesc(GX_VA_TEX0, GX_DIRECT);
@@ -1379,11 +1318,7 @@ void windowDispGX2_Waku_col(Mtx mtx, u16 gxTexMapID, GXColor color, f32 x, f32 y
 		GXSetAlphaCompare(GX_ALWAYS, 0, GX_AOP_AND, GX_ALWAYS, 0);
 		GXSetBlendMode(GX_BM_BLEND, GX_BL_SRCALPHA, GX_BL_INVSRCALPHA, GX_LO_OR);
 		GXSetZMode(GX_TRUE, GX_ALWAYS, GX_FALSE);
-#ifdef MUST_MATCH
-		wakuSetFog(dat_8041a430);
-#else
-		GXSetFog(GX_FOG_NONE, 0.0f, 0.0f, 0.0f, 0.0f, dat_8041a430);
-#endif
+		windowSetFog(dat_8041a430);
 		GXClearVtxDesc();
 		GXSetVtxDesc(GX_VA_POS, GX_DIRECT);
 		GXSetVtxDesc(GX_VA_TEX0, GX_DIRECT);
@@ -1549,12 +1484,8 @@ void windowDispGX2_Waku_col(Mtx mtx, u16 gxTexMapID, GXColor color, f32 x, f32 y
 }
 
 s32 windowCheckID(s32 id) {
-#ifdef MUST_MATCH
-	// the named-field form compiles to `add r3, base, off; lhz 0x2(r3)`; the original uses an index load
-	return (*(u16*)((u8*)WinObjects + id * 0x48 + 2)) & 2;
-#else
-	return WinObjects[id].flags & 2;
-#endif
+	WindowEntry* entry = &WinObjects[id];
+	return entry->flags & 2;
 }
 
 WindowEntry* windowGetPointer(s32 id) {
