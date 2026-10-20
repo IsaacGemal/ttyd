@@ -10610,3 +10610,54 @@ battle_stage.c, battle_seq.c, seq_battle.c and battle_database_jon.c return 0. I
 - Verify: tower `ninja` (after `configure.py`) recreates build/G8MJ01/ok. Object check for the 15 edited files, per module, against the HEAD sources: all equivalent under obj_equiv.
 - Index: 33.298 per kLOC (23341 weighted over 700968 code lines) before, 33.239 (23295 over 700838) after.
 - Not committed: tools/ci.py cannot run in this worktree yet (the tower copy has no git metadata, and build/ci/accepted.json has no baseline for this branch), so the commit gate in CLAUDE.md is not met.
+
+## battle_stage: nine more stage tables typed as BattleStageData (2026-10-20, Claude Haiku 5.5; tail names Claude Opus 5.5, n9-q-stage2)
+
+- Header tail, layout and size unchanged. Readers are all in `BattleStageObjectInit` (battle_stage_object.c), which now
+  reads them as fields instead of through the removed `BSO_STAGE_EVT` / `BSO_STAGE_S8` offset macros:
+  - 0x190 `void* initEvent`: started with `evtEntry` when non-NULL. The blobs that set it point it at the original-named
+    `stg_02_1_init_evt` (mri), `stg_08_1_init_event` / `stg_08_6_init_event` (las).
+  - 0x1A0 `void* layerEvents[4]`: layer N's event is started when non-NULL and the stage has layer-N objects; its event
+    id goes to BattleWork 0x180E4 + 4N. Blobs: `&bgset_rsh_bg_event` in [2] (rsh), `&bgset_*_event` / `_evt` in [3]
+    (moo, muj, tou, las).
+  - 0x1B0 `u8 field_0x1B0`: no reader; 0 in every record.
+  - 0x1B1 `s8 layerDestroyed[3]`: read as s8; a set byte for layer 0/1/2 ORs `stageFlags` with 0x2/0x4/0x8, the bits
+    `_mobj_destroy` sets when it destroys that layer and that setup also sets for a layer with no objects. The old
+    u32 words 0x00010101 (tik, tou, las) and 0x00010001 (mri) are `0, { 1, 1, 1 }` and `0, { 1, 0, 1 }`.
+  jon's records name the slots too (`initEvent` NULL, `layerEvents` `{ 0 }`).
+- Converted, one commit each: moo (1 record), rsh (1), win (1), tou2 (2), tik (4), mri (4), muj (4), jin (6), las (10).
+  Each `u32 X_btlstage_data[N]` is now `BattleStageData X_btlstage_data[K]` in jon's layout: object pointers are
+  `&X_btlobject_data[i]`, strings and functions are written by name, the weapons use jon's field order, and the three
+  flag words are 8-digit hex. Every converted record has `icon` 0, `item` ITEM_NULL, `special` 0, `element` 0,
+  `acHelpMsg` NULL, `field_0x14` 0.0f and `targetWeightingFlags` 0, so those fields are unambiguous. The
+  `(struct BattleStageData*)` casts at the reference sites are gone: record 0 is the bare name, record k is
+  `&X_btlstage_data[k]`. `battle_database_tou.c` already included battle_stage.h; the rest gained the include.
+- Left: aji, bom, dou, eki, gon, gor, gra and hei keep `u32 X_btlstage_data[]`; their casts are untouched.
+- Verify: tower `ninja` recreates build/G8MJ01/ok after the header change and after each file. Natural (no
+  -DMUST_MATCH) and MUST_MATCH compiles of every converted file and battle_stage_object.c return 0.
+  `tools/cleanup_index.py` 33.051 -> 32.248 per kLOC (23185 -> 22770 weighted; `--rev a704ccf4` to HEAD). The non-blank
+  line total rose 701484 -> 706100 because the initializers are longer.
+
+## battle_stage: eight stage tables typed as BattleStageData (2026-10-20, Claude Haiku 5.5; tail adapted by Claude Opus 5.5, n9-q-stage1)
+
+`X_btlstage_data` in battle_database_{aji,bom,dou,eki,gon,gor,gra,hei}.c is now `BattleStageData X_btlstage_data[N]` with
+full initializers, N = blob bytes / 0x1B4: aji 7, bom 1, dou 6, eki 4, gon 5, gor 2, gra 2, hei 11. The `(struct
+BattleStageData*)` casts at the btlgrp reference sites are gone; they are `&X_btlstage_data[k]`, or bare `X_btlstage_data`
+for k = 0. Each file includes battle/battle_stage.h. Values were decoded from the big-endian words; pointers keep their
+symbols (dir strings, `&X_btlobject_data[i]`, `weaponGetPowerDefault`).
+
+The tail uses the n9-q-stage2 names (`initEvent`, `layerEvents[4]`, `field_0x1B0`, `layerDestroyed[3]`; see the entry
+above). `initEvent` is NULL in all eight files. Event pointers: aji[6] `layerEvents[3]` = `&bgset_aji_space_event`,
+bom[0] `layerEvents[3]` = `&bgset_bom_snow_event`, dou[3..5] `layerEvents[2]` = `&bgset_dou_wave_event`. The old last
+word 0x00010101 (bom[0], dou[0..1], dou[3..5], eki[0..1]) is `0, { 1, 1, 1 }` and 0x00000101 (gra[1]) is
+`0, { 0, 1, 1 }`. Records whose tail is all zero stop at `layerEvents`, as jon's do.
+
+`bom_btlobject_data` is still `u32[66]`, so bom's mObjects carries a `(BattleStageObjectData*)` cast. Retyping that
+array is left for its own change.
+
+Left: nok and pik still declare `u32 X_btlstage_data[]`; with n9-q-stage2 every other `btlstage_data` symbol in
+config/G8MJ01 is typed.
+
+Verify: tower `ninja` recreates build/G8MJ01/ok on top of n9-q-stage2, and natural (no MUST_MATCH) and MUST_MATCH
+compiles of the eight battle_database_*.c return 0. Index on the n9-q-stage2 tip 32.248 per kLOC (22770 weighted over
+706100 code lines) -> 31.420 (22348 over 711268). The line count grew because of the new initializer lines.
