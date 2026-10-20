@@ -2282,46 +2282,27 @@ void btlseqAct(BattleWork* wp) {
 		}
 		unit = BattleGetUnitPtr(wp, wp->activeUnitId);
 		event = NULL;
-		if (wp->flags & 0x40000000) {
-			if (!(unit->mAttributeFlags & 0x2000) &&
-				!(*(s32*)((u8*)unit + 0x2A8) & 8) && !(*(s32*)((u8*)unit + 0x2A8) & 0x10)) {
-				event = evtEntry(btldefaultevt_CantMoveZeroGravity, 0xA, 0);
-				goto act_done;
+		if ((wp->flags & 0x40000000) && !(unit->mAttributeFlags & 0x2000) &&
+			!(*(s32*)((u8*)unit + 0x2A8) & 8) && !(*(s32*)((u8*)unit + 0x2A8) & 0x10)) {
+			event = evtEntry(btldefaultevt_CantMoveZeroGravity, 0xA, 0);
+		} else if (*(s32*)((u8*)unit + 0x2A8) & 0x10) {
+			if (unit->attackEventCode != NULL) {
+				event = evtEntry(unit->attackEventCode, 0xA, 0);
 			}
-		}
-		if (*(s32*)((u8*)unit + 0x2A8) & 0x10) {
-			if (unit->attackEventCode == NULL) {
-				goto act_done;
-			}
+		} else if (*(s32*)((u8*)unit + 0x2A8) & 2) {
 			event = evtEntry(unit->attackEventCode, 0xA, 0);
-			goto act_done;
-		}
-		if (*(s32*)((u8*)unit + 0x2A8) & 2) {
-			event = evtEntry(unit->attackEventCode, 0xA, 0);
-			goto act_done;
-		}
-		if (BtlUnit_CheckStatus(unit, 1) || BtlUnit_CheckStatus(unit, 2) ||
-			BtlUnit_CheckStatus(unit, 9)) {
-			goto act_done;
-		}
-		if (BtlUnit_CheckStatus(unit, 0x1B) && !(unit->mAttributeFlags & 0x10000)) {
-			goto act_done;
-		}
-		if (BtlUnit_CheckStatus(unit, 6)) {
-			if (irand(100) < 0) {
+		} else if (!(BtlUnit_CheckStatus(unit, 1) || BtlUnit_CheckStatus(unit, 2) ||
+			BtlUnit_CheckStatus(unit, 9)) &&
+			!(BtlUnit_CheckStatus(unit, 0x1B) && !(unit->mAttributeFlags & 0x10000))) {
+			if (BtlUnit_CheckStatus(unit, 6) && irand(100) < 0) {
 				event = evtEntry(btldefaultevt_BiribiriMove, 0xA, 0);
-				goto act_done;
-			}
-		}
-		if (BtlUnit_CheckStatus(unit, 5)) {
-			if (irand(100) < 0x32) {
+			} else if (BtlUnit_CheckStatus(unit, 5) && irand(100) < 0x32) {
 				unit->mTokenFlags |= 0x10;
 				event = evtEntry(*(void**)((u8*)unit + 0x2A0), 0xA, 0);
-				goto act_done;
+			} else {
+				event = evtEntry(unit->attackEventCode, 0xA, 0);
 			}
 		}
-		event = evtEntry(unit->attackEventCode, 0xA, 0);
-	act_done:
 		if (event != NULL) {
 			unit->attackEventId = event->eventId;
 			event->unitId = unit->unitId;

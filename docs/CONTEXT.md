@@ -11211,3 +11211,20 @@ which skip `count++` and jump to `storyId++`. Nested `if` forms with and without
 pre-loop `gswf = -1`.
 
 Index (`tools/cleanup_index.py`): goto 302 -> 298 sites, weighted 604 -> 596.
+### Readability: battle_seq.c act-selection gotos (2026-10-20, Claude Haiku 5.5, n9-q-gotonpc)
+
+battle_seq.c case 0x6000006 (the attack-event choice): the eight `goto act_done` became one if / else-if chain whose
+final `else` is the default `evtEntry(attackEventCode)`. The checks run in the same order, and `irand` still runs only
+when its status check passes. No names changed. battle_seq.c now has no gotos.
+
+Verified: tower `ninja` recreates `build/G8MJ01/ok`; natural compile of battle_seq.c (no MUST_MATCH, -maxerrors 50)
+exits 0.
+
+Left in npcdrv.c (8 gotos). Each form below was built and the DOL checksum failed, so the match needs the goto form:
+- fbatBattleMode first-strike `afterStrike` (2 gotos): one `&&`/`||` condition, and a repeated-flag else-if chain. Both
+  changed codegen.
+- fbatBattleMode coin-bonus `after` (1 goto): a `mult != 0` guard around the three bonus `if`s. Changed codegen.
+- npcMain MOVE/RETURN `found` (2 gotos): folded into one else-if on the distance and angle test. Changed codegen.
+- npcMain `interrupt` (3 gotos): jumps out of the blow, territory, find and move stages to `npcCheckInterrupt`. Each
+  stage declares its own locals and sets its own flag, so a structured form needs nested else blocks that repeat the
+  later stages or a flag variable.
