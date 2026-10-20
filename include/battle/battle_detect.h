@@ -9,14 +9,14 @@ typedef struct BattleSamplingEntry {
     s16 y;           // 0x6
     s16 z;           // 0x8
     u8 pad_0xA[2];   // 0xA
-    s32 field_0xC;   // 0xC
-    s32 field_0x10;  // 0x10
-    s32 field_0x14;  // 0x14
-    s32 field_0x18;  // 0x18
-    u8 field_0x1C;   // 0x1C
-    s8 field_0x1D;   // 0x1D
+    s32 hitX;        // 0xC, x plus xBias (BtlCompForwardLv input, dedup distance)
+    s32 hitY;        // 0x10
+    s32 hitZ;        // 0x14, z plus 5
+    s32 xBias;       // 0x18, attack-direction and part offset; weighted x10 in the sort
+    u8 forwardLv;    // 0x1C, BtlCompForwardLv(attackDirection, hitX)
+    s8 zSide;        // 0x1D, 0 when hitZ < -30, else 1
     u8 pad_0x1E[2];  // 0x1E
-    s32 field_0x20;  // 0x20
+    s32 field_0x20;  // 0x20, set to -1 when the entry is built
 } BattleSamplingEntry;
 
 typedef struct BattleSampling {
@@ -28,8 +28,8 @@ typedef struct BattleSampling {
     s32 unitId;                    // 0xAB8
     s8 belong;                     // 0xABC
     u8 pad_0xABD[0xAC0 - 0xABD];  // 0xABD
-    u32 field_0xAC0;               // 0xAC0
-    u32 field_0xAC4;               // 0xAC4
+    u32 filterFlags;               // 0xAC0
+    u32 filterFlags2;              // 0xAC4
     s8 attackDirection;            // 0xAC8
 } BattleSampling;
 
