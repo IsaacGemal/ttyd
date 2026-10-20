@@ -98,12 +98,7 @@ EffectEntry* effKemuriEntry(s32 int2, f32 float3, f32 float4, f32 float5, f32 fl
 			numEffects = 2;
 			break;
 	}
-#ifdef MUST_MATCH
-	// Retail reserves eight bytes for this string.
-	entry->type = "Kemuri\0";
-#else
 	entry->type = "Kemuri";
-#endif
 	entry->count = numEffects;
 	data = (effKemuriData*)__memAlloc(HEAP_EFFECT, sizeof(effKemuriData) * numEffects);
 	entry->userdata = data;
@@ -283,10 +278,9 @@ void effKemuriMain(EffectEntry* effect) {
 #endif
 }
 
-// Two MUST_MATCH shapes below are needed for the register allocation: a redundant re-read of
-// effect->userdata makes MWCC load it into a volatile register and copy it to the callee-saved
-// r31 before the sin call (retail's `lwz r7; mr r31, r7`), and a non-const `k = 0.8f` local
-// keeps the alpha int->float conversion in retail's f1/f2/f0 order.
+// The MUST_MATCH re-read of effect->userdata below is needed for the register allocation: it makes MWCC
+// load it into a volatile register and copy it to the callee-saved r31 before the sin call (retail's
+// `lwz r7; mr r31, r7`).
 static void effKemuri2Main(EffectEntry* effect) {
 	effKemuri2Data* data = effect->userdata;
 	s32 i;
@@ -322,14 +316,7 @@ static void effKemuri2Main(EffectEntry* effect) {
 		data->spin += data->spinVel;
 		data->pulseScale = angle;
 		if (data->counter > 15) {
-#ifdef MUST_MATCH
-			/* MUST_MATCH: a local keeps the conversion in retail's f1/f2/f0 order. */
-			f32 k = float_0p8_8041c6f0;
-
-			data->alpha = (s32)((f32)data->alpha * k);
-#else
 			data->alpha = (s32)((f32)data->alpha * float_0p8_8041c6f0);
-#endif
 		}
 	}
 #ifdef MUST_MATCH
@@ -855,10 +842,4 @@ __declspec(section ".sdata") const GXColor unk_80423010;
 #else
 const GXColor unk_80423014 = { 0, 0, 0, 0 };
 const GXColor unk_80423010 = { 0, 0, 0, 0 };
-#endif
-
-#ifdef MUST_MATCH
-#pragma force_active on
-__declspec(section ".sdata2") const u32 gap_8041c72c = 0;
-#pragma force_active reset
 #endif
