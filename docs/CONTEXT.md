@@ -9519,3 +9519,25 @@ array, BattleActions 0x5C) is `outputParams[1]` like its siblings. MUST_MATCH bl
 field_0x uses in src/battle/ac + include/battle/ac 1138 → 217; what is left is BattleActions' own `field_0x4`,
 `field_0x8`, `field_0x30`, `field_0x2BC` and BattleACDispParams' `field_0x0`/`field_0xC`/`field_0x10`/
 `field_0x24`, which need evidence from battle_ac.c and the other ac users before naming.
+### Readability: MarioWork names (2026-10-19, Claude Haiku 5.5, n9-q-mario; reviewed by Claude Opus 5.5)
+
+MarioWork (mario.h) gets the jump integrator `jumpVelY`/`jumpAccelY`/`jumpJerkY`/`jumpJerkStepY` (0x7C-0x88; each
+frame the next one down is added in, and jumpVelY goes into position.y), the per-frame pad copy marioUpdateKeyData
+writes (`buttonHeld`/`buttonNew`/`buttonRepeat`/`buttonUp` as u16 truncations of gp's u32s, `wStickDir1/2` and
+`substickX/Y` as s8 like gp's, `triggerLeft/Right`, `unusedInput`, `padDirs`/`padDirsPressed` from DemoPad[0].dirs,
+and `inputMask` at 0x284), `dispReqDir` (0x1AC), `spinSpeed` (0x2A0), the ground slope block `slopeAngle` and
+`slopeTiltX/Y/Z` (0x214-0x220; X is the tilt about X from the normal's z/y, Z the tilt about Z from x/y), the wall
+hold `wallDist`/`wallYaw`/`wallHoldTimer` (0x1C8-0x1D0), `frontWallDist` (0x210), `hitobjFront`/`hitobjUnder`,
+`sfxIds[3]`, `partyUseTimer` (0x3B), `dispHalfTurn` (0x43, a 0/1 facing flip) and `lastGroundPos` (0xD4).
+MarioWork casts and offset macros 2104 → about 1060. MUST_MATCH branches keep their raw offsets, except party_cloud's
+`pm->unk1AC`, which no longer exists. Review fix: narrowing the padding arrays had left mario_hit indexing
+`field_0x1F0[0x20..0x30]` and `field_0x1C0[0x8..0x10]` past their new ends (the offsets were still right); those
+now use the members, apart from the two MUST_MATCH `wallDist` stores. Commit 04e3dbff's message overstates
+mot_roll's slopeAngle reads: mot_roll compares it against 40 (the eki_04 check) and 1; the 30-degree check is in
+mario_hit.
+Left: the per-motion scratch at 0x2A4/0x2A8 (mot_roll flags, mot_hip and mot_roll SFX ids, an f32 in mot_plane)
+and 0x2B8-0x2DC (mot_jabara, mot_slit) needs per-motion structs, not one name; 0x19C is both a move direction and
+the wall yaw copy; several Vec blocks (0x98-0xC8, 0xE0, 0x104-0x134) are still unnamed. MarioFlags isn't applied
+to the raw `flags` literals yet. The worker held back because it thought two names contradicted the code, but both
+hold: 0x08000000 (`IS_TOUCHING_CEILING`) is set by marioChkOverhead when marioSearchHead hits, and 0x01000000
+(`TUBE_MODE`) is the roll state, which is Tube Mode. Applying the enum is the next pass.
