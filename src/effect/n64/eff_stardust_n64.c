@@ -246,11 +246,9 @@ EffectEntry* effStardustN64Entry(s32 type, f32 x, f32 y, f32 z, f32 scale) {
 #pragma opt_propagation off
 void effStardustMain(EffectEntry* effect) {
     EffStardustN64Data* data = effect->userdata;
-#ifdef MUST_MATCH
-    /* MUST_MATCH: retail builds the Vec in a scratch slot and copies it into a second local before
+    /* Retail builds the Vec in a scratch slot and copies it into a second local before
        dispCalcZ; a single local folds the copy away (same idiom as effDogabonAttackMain). */
     Vec position;
-#endif
     Vec disp = vec3_802fb770;
     s32 i;
     s32 type;
@@ -263,9 +261,7 @@ void effStardustMain(EffectEntry* effect) {
     disp.x = data->x;
     disp.y = data->y;
     disp.z = data->z;
-#ifdef MUST_MATCH
     position = disp;
-#endif
 
     camera = data->drawCam;
     data->life--;
@@ -291,21 +287,14 @@ void effStardustMain(EffectEntry* effect) {
                 data->scale = 0.01f * (f32)scale_data[counter - 1];
             } else {
                 s32 rnd;
-#ifdef MUST_MATCH
-                /* MUST_MATCH: retail materialises the signed int->float conversion of `rnd` into a
-                   temp before the multiply; writing the angle as one expression (the #else form)
+                /* Retail materialises the signed int->float conversion of `rnd` into a
+                   temp before the multiply; writing the angle as one expression
                    makes MWCC coalesce the conversion into the loaded double's register. */
                 f32 p;
-#endif
                 rnd = effTblRandN64(0x168, i + 0xb1);
-#ifdef MUST_MATCH
                 p = (f32)rnd;
                 radius = 0.5f * (f32)(i & 3) + 1.0f;
                 angle = 6.2831855f * p / 360.f;
-#else
-                angle = 6.2831855f * (f32)rnd / 360.f;
-                radius = 0.5f * (f32)(i & 3) + 1.0f;
-#endif
                 data->type = 10;
                 data->velX = radius * (f32)sin(angle);
                 data->velY = radius * (f32)cos(angle);
@@ -353,15 +342,10 @@ void effStardustMain(EffectEntry* effect) {
         return;
     }
 
-#ifdef MUST_MATCH
     dispEntry(camera, dispCalcZ(&position), 2, effStardustDisp, effect);
-#else
-    dispEntry(camera, dispCalcZ(&disp), 2, effStardustDisp, effect);
-#endif
 }
 
-#ifdef MUST_MATCH
-/* MUST_MATCH: the original builds the TEV colour through a helper, so GXSetTevColor's argument
+/* The original builds the TEV colour through a helper, so GXSetTevColor's argument
    temp is allocated next to the helper's local (0x8) instead of above it (the plain #else form
    swaps the two scratch slots). Same idiom as effFireSparkDisp. */
 static inline void stardustN64SetTevColor(s32 r, s32 g, s32 b) {
@@ -371,7 +355,6 @@ static inline void stardustN64SetTevColor(s32 r, s32 g, s32 b) {
     color.b = b;
     GXSetTevColor(GX_TEVREG0, color);
 }
-#endif
 
 void effStardustDisp(CameraId camId, void* param) {
     EffectEntry* entry = param;
@@ -382,7 +365,6 @@ void effStardustDisp(CameraId camId, void* param) {
     s32 colorIdx;
     effVtxArray* vtx;
     GXTexObj texObj;
-    GXColor color;
     Mtx mtx;
     Mtx scale;
     Mtx rot;
@@ -450,15 +432,7 @@ void effStardustDisp(CameraId camId, void* param) {
         if (colorBByte > 0xFF) {
             colorBByte = 0xFF;
         }
-#ifdef MUST_MATCH
         stardustN64SetTevColor(colorRByte, colorGByte, colorBByte);
-#else
-        color = dat_8041fef0;
-        color.r = colorRByte;
-        color.g = colorGByte;
-        color.b = colorBByte;
-        GXSetTevColor(GX_TEVREG0, color);
-#endif
 
         // Eight 0x38-byte (14-word) vertex strips; strip N starts at word N * 14.
         switch (renderType & 7) {

@@ -64,10 +64,8 @@ EffectEntry* effKemuri1N64Entry(s32 type, f32 x, f32 y, f32 z, f32 a5) {
 	f32 sinAngle;
 	f32 cosAngle;
 	f32 k94;
-#ifdef MUST_MATCH
 	// Holds the sin/cos argument so MWCC does not fold the constant into a .rodata double.
 	f32 arg;
-#endif
 
 	effect = effEntry();
 	switch (type) {
@@ -140,13 +138,9 @@ EffectEntry* effKemuri1N64Entry(s32 type, f32 x, f32 y, f32 z, f32 a5) {
 				entry->position.x = 0.0f;
 				entry->position.y = 0.0f;
 				entry->position.z = 4.0f;
-#ifdef MUST_MATCH
 				// Split so 90/180 pool before 6.28, as the original's .sdata2 order requires.
 				angle = reviseAngle(90.0f + 180.0f * (f32)(i - 1));
 				angle = 6.2831855f * angle / 360.0f;
-#else
-				angle = 6.2831855f * reviseAngle(180.0f * (f32)(i - 1) + 90.0f) / 360.0f;
-#endif
 				entry->dirX = sin(angle);
 				entry->dirZ = cos(angle);
 				entry->colorR = 0xFF;
@@ -158,19 +152,11 @@ EffectEntry* effKemuri1N64Entry(s32 type, f32 x, f32 y, f32 z, f32 a5) {
 			for (i = 1; i < effCount; i++, entry++) {
 				switch (i - 1) {
 				case 0:
-#ifdef MUST_MATCH
 					arg = 2.3561945f;
 					sinAngle = (f32)sin(arg);
-#else
-					sinAngle = (f32)sin(2.3561945f);
-#endif
 					entry->position.x = 25.0f * -sinAngle;
 					entry->position.y = 0.0f;
-#ifdef MUST_MATCH
 					cosAngle = (f32)cos(arg);
-#else
-					cosAngle = (f32)cos(2.3561945f);
-#endif
 					entry->position.z = 25.0f * -cosAngle;
 					entry->velY = 0.95f;
 					entry->velYAccel = -0.04f;
@@ -178,19 +164,11 @@ EffectEntry* effKemuri1N64Entry(s32 type, f32 x, f32 y, f32 z, f32 a5) {
 				entry->field_0x28 = k94;
 					break;
 				case 1:
-#ifdef MUST_MATCH
 					arg = -2.3561945f;
 					sinAngle = (f32)sin(arg);
-#else
-					sinAngle = (f32)sin(-2.3561945f);
-#endif
 					entry->position.x = 25.0f * -sinAngle;
 					entry->position.y = 4.0f;
-#ifdef MUST_MATCH
 					cosAngle = (f32)cos(arg);
-#else
-					cosAngle = (f32)cos(-2.3561945f);
-#endif
 					entry->position.z = 25.0f * -cosAngle;
 					entry->velY = 0.84999996f;
 					entry->velYAccel = -0.04f;
@@ -198,19 +176,11 @@ EffectEntry* effKemuri1N64Entry(s32 type, f32 x, f32 y, f32 z, f32 a5) {
 				entry->field_0x28 = k94;
 					break;
 				case 2:
-#ifdef MUST_MATCH
 					arg = 0.34906587f;
 					sinAngle = (f32)sin(arg);
-#else
-					sinAngle = (f32)sin(0.34906587f);
-#endif
 					entry->position.x = 25.0f * -sinAngle;
 					entry->position.y = 10.0f;
-#ifdef MUST_MATCH
 					cosAngle = (f32)cos(arg);
-#else
-					cosAngle = (f32)cos(0.34906587f);
-#endif
 					entry->position.z = 25.0f * -cosAngle;
 					entry->velY = 0.75f;
 					entry->velYAccel = -0.04f;
@@ -233,39 +203,26 @@ EffectEntry* effKemuri1N64Entry(s32 type, f32 x, f32 y, f32 z, f32 a5) {
 				// Case-4-7 scope: shadowing the function-scope `angle` makes MWCC keep the angle in the
 				// original's f20 (the function-scope one lands in f21 here).
 				f32 angle;
-#ifdef MUST_MATCH
 				// The temp and direct-constant shapes below are what colour this loop's a5 to f31 and its
-				// nine constants to f22..f30; the #else form is the natural code and scores 99.69%.
+				// nine constants to f22..f30; the plain forms score 99.69%.
 				f32 s30;
 				f32 c34;
-#endif
 				entry->speed = -3.0f;
 				entry->field_0x14 = 0.93f;
 				entry->velY = 0.0f;
 				entry->velYAccel = 0.099999994f;
-#ifdef MUST_MATCH
 				entry->field_0x28 = 0.94f;
 				entry->field_0x2C = 0.94f;
-#else
-				k94 = 0.94f;
-				entry->field_0x28 = k94;
-				entry->field_0x2C = k94;
-#endif
 				angle = 6.2831855f * (a5 + (f32)((i - 1) * 360 / (effCount - 1))) / 360.0f;
 				sinAngle = (f32)sin(angle);
 				entry->position.x = 10.0f * -sinAngle;
 				entry->position.y = 0.0f;
 				cosAngle = (f32)cos(angle);
 				entry->position.z = 10.0f * -cosAngle;
-#ifdef MUST_MATCH
 				s30 = sin(angle);
 				entry->dirX = s30;
 				c34 = cos(angle);
 				entry->dirZ = c34;
-#else
-				entry->dirX = sin(angle);
-				entry->dirZ = cos(angle);
-#endif
 				switch (type) {
 				case 4:
 				case 7:
@@ -370,7 +327,6 @@ void effKemuri1Main(EffectEntry* effect) {
 // Draws every live entry as a camera-facing textured quad. Matching uses the same tricks as the sibling
 // effKemuri8Disp/effKemuri9Disp: a `half` local held in f29, the colour helpers above, and a two-variable
 // size (size/size2) with 0.0f/1.0f literals in the vertex stream.
-#ifdef MUST_MATCH
 // Building each colour and making its GXSetChanMatColor call inside a void inline pairs the local with
 // its outgoing copy (0x8/0xc and 0x10), so the TEV colour's by-value temp lands at 0x14 as the
 // original's does (the plain `GXColor color` local would take 0x14 instead). Same shape as eff_kemuri8.
@@ -387,7 +343,6 @@ static inline void kemuri1SetChanMatColorB(u8 r, u8 g, u8 b) {
 	c.a = 0xFF;
 	GXSetChanMatColor(GX_COLOR0A0, c);
 }
-#endif
 
 void effKemuri1Disp(CameraId camId, void* param) {
 	f32 half = 0.5f;
@@ -486,27 +441,14 @@ void effKemuri1Disp(CameraId camId, void* param) {
 
 		for (j = 0; j < 2; j++) {
 			if (j == 0) {
-#ifdef MUST_MATCH
 				kemuri1SetChanMatColorA();
-#else
-				GXSetChanMatColor(GX_COLOR0A0, dat_8041f234);
-#endif
 				PSMTXTrans(mtxTmp, 2.0f + data->position.x,
 					data->position.y - 2.0f, data->position.z);
 				PSMTXConcat(mtxBase, mtxTmp, mtxTmp);
 				GXLoadPosMtxImm(mtxTmp, GX_PNMTX0);
 			}
 			else {
-#ifdef MUST_MATCH
 				kemuri1SetChanMatColorB(data->colorR, data->colorG, data->colorB);
-#else
-				GXColor color = unk_80423168;
-				color.r = data->colorR;
-				color.g = data->colorG;
-				color.b = data->colorB;
-				color.a = 0xFF;
-				GXSetChanMatColor(GX_COLOR0A0, color);
-#endif
 				PSMTXTrans(mtxTmp, data->position.x, data->position.y, data->position.z);
 				PSMTXConcat(mtxBase, mtxTmp, mtxTmp);
 				GXLoadPosMtxImm(mtxTmp, GX_PNMTX0);
@@ -514,7 +456,6 @@ void effKemuri1Disp(CameraId camId, void* param) {
 
 			GXBegin(GX_QUADS, GX_VTXFMT0, 4);
 
-#ifdef MUST_MATCH
 			// Two variables so MWCC emits the original's duplicate `fmr` and four separate size*0.5 corners;
 			// the 0.0f/1.0f literals make it reload them per store instead of hoisting them into extra FPRs.
 			switch (type) {
@@ -540,28 +481,6 @@ void effKemuri1Disp(CameraId camId, void* param) {
 			GXTexCoord2f32(1.0f, 1.0f);
 			GXPosition3f32(-size2 * half, -size * half, 0.0f);
 			GXTexCoord2f32(0.0f, 1.0f);
-#else
-			switch (type) {
-			case 0:
-				size = 16.0f;
-				break;
-			case 1:
-				size = 24.0f;
-				break;
-			default:
-				size = 32.0f;
-				break;
-			}
-
-			GXPosition3f32(-size * half, size * half, 0.0f);
-			GXTexCoord2f32(0.0f, 0.0f);
-			GXPosition3f32(size * half, size * half, 0.0f);
-			GXTexCoord2f32(1.0f, 0.0f);
-			GXPosition3f32(size * half, -size * half, 0.0f);
-			GXTexCoord2f32(1.0f, 1.0f);
-			GXPosition3f32(-size * half, -size * half, 0.0f);
-			GXTexCoord2f32(0.0f, 1.0f);
-#endif
 		}
 	}
 }

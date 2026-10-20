@@ -60,12 +60,10 @@ EffectEntry* effMagic1N64Entry(s32 type, s32 count, f32 x0, f32 y0, f32 z0, f32 
 }
 void effMagic1Main(EffectEntry* effect) {
     effMagic1Data* data = effect->userdata;
-#ifdef MUST_MATCH
-    /* MUST_MATCH: retail builds the Vec in a scratch slot and copies it into a second
+    /* Retail builds the Vec in a scratch slot and copies it into a second
        local before dispCalcZ; a single local folds the copy away (same idiom as
        effAkariSflushMain/effGlassMain). */
     Vec position;
-#endif
     Vec disp = { 0 };
     f32 order;
     s32 type;
@@ -73,16 +71,10 @@ void effMagic1Main(EffectEntry* effect) {
     disp.x = data->offsetX;
     disp.y = data->offsetY;
     disp.z = data->offsetZ;
-#ifdef MUST_MATCH
     position = disp;
-#endif
 
     if ((u32)marioStGetSystemLevel() != 0) {
-#ifdef MUST_MATCH
         order = dispCalcZ(&position);
-#else
-        order = dispCalcZ(&disp);
-#endif
         dispEntry(CAMERA_3D, order, 2, (DispCallback)effMagic1Disp, effect);
     } else {
         if (effect->flags & 4) {
@@ -110,37 +102,25 @@ void effMagic1Main(EffectEntry* effect) {
         data->offsetX += data->velX;
         data->offsetY += data->velY;
         data->offsetZ += data->velZ;
-#ifdef MUST_MATCH
         order = dispCalcZ(&position);
-#else
-        order = dispCalcZ(&disp);
-#endif
         dispEntry(CAMERA_3D, order, 2, (DispCallback)effMagic1Disp, effect);
     }
 }
 
 // Per-channel animation sine used by main_dl. The original recomputes the
 // phase for every channel, so this stays a macro instead of a shared local.
-// MUST_MATCH: spelling the *32 as a shift and putting the +180 before the anime byte is
+// Spelling the *32 as a shift and putting the +180 before the anime byte is
 // what puts the phase sum's registers where the original has them (the natural form
 // leaves retraceCount in r0 and the anime byte in r3, swapped).
-#ifdef MUST_MATCH
 #define MAGIC1_PHASE(phase) ((gp->retraceCount << 5) + 180 + (phase))
-#else
-#define MAGIC1_PHASE(phase) (gp->retraceCount * 32 + (phase) + 180)
-#endif
 #define MAGIC1_SIN(phase) \
     ((f32)sin(6.2831855f * (f32)(s32)MAGIC1_PHASE(phase) / 360.0f))
 // color2's sine has no +180 offset: the original computes retraceCount*32 + anime[0].
-#ifdef MUST_MATCH
 #define MAGIC1_PHASE2(phase) ((gp->retraceCount << 5) + (phase))
-#else
-#define MAGIC1_PHASE2(phase) (gp->retraceCount * 32 + (phase))
-#endif
 #define MAGIC1_SIN2(phase) \
     ((f32)sin(6.2831855f * (f32)(s32)MAGIC1_PHASE2(phase) / 360.0f))
 
-// Match-only: building each colour through an inline return puts its local and its
+// Building each colour through an inline return puts its local and its
 // return temp where the original does (a plain local lands in the other slot); the
 // explicit (s32) casts keep the u8 channels on the signed int-to-float sequence
 // (without them MWCC uses the unsigned constant and the pool gains a second double).
@@ -148,7 +128,6 @@ void effMagic1Main(EffectEntry* effect) {
 // f29 (the target order); loading the channel byte into `a` first keeps the byte live
 // across the sin call so it stays in a callee-saved GPR. Without the split the two
 // constants and the f3/f4 temps land in the opposite slots.
-#ifdef MUST_MATCH
 static inline GXColor magic1Color2(u8* anime) {
     GXColor c = *(GXColor*)&dat_8041f650;
     { s32 a = anime[1]; f32 s = (f32)MAGIC1_SIN2(anime[0]);
@@ -170,23 +149,6 @@ static inline GXColor magic1Color1(GXColor c, u8* anime, s32 alpha) {
     c.a = alpha;
     return c;
 }
-#else
-static inline GXColor magic1Color2(u8* anime) {
-    GXColor c = *(GXColor*)&dat_8041f650;
-    c.r = (u8)(s32)(anime[1] + 0.5f * (255 - anime[1]) * (1.0f + MAGIC1_SIN2(anime[0])));
-    c.g = (u8)(s32)(anime[2] + 0.5f * (255 - anime[2]) * (1.0f + MAGIC1_SIN2(anime[0])));
-    c.b = (u8)(s32)(anime[3] + 0.5f * (255 - anime[3]) * (1.0f + MAGIC1_SIN2(anime[0])));
-    return c;
-}
-
-static inline GXColor magic1Color1(GXColor c, u8* anime, s32 alpha) {
-    c.r = (u8)(s32)(anime[1] - 0.5f * anime[1] * (1.0f + MAGIC1_SIN(anime[0])));
-    c.g = (u8)(s32)(anime[2] - 0.5f * anime[2] * (1.0f + MAGIC1_SIN(anime[0])));
-    c.b = (u8)(s32)(anime[3] - 0.5f * anime[3] * (1.0f + MAGIC1_SIN(anime[0])));
-    c.a = alpha;
-    return c;
-}
-#endif
 
 // Details are in REPORT.md.
 static void main_dl(EffectEntry* effect, Mtx mtx) {
@@ -215,11 +177,9 @@ static void main_dl(EffectEntry* effect, Mtx mtx) {
     f32 z;
     f32 cosAngle;
     f32 angle;
-#ifdef MUST_MATCH
-    // MUST_MATCH: naming the (3-j)*64 product first makes MWCC load 64 into f30 and
+    // Naming the (3-j)*64 product first makes MWCC load 64 into f30 and
     // 1/256 into f31 as the original does (in one expression it swaps the two).
     f32 t;
-#endif
 
     data = effect->userdata;
     type = data->type;
@@ -309,20 +269,12 @@ static void main_dl(EffectEntry* effect, Mtx mtx) {
 
             size = (type == 0) ? 15 : 10;
             PSMTXScale(mtxB, 2.0f, 0.25f, 1.0f);
-#ifdef MUST_MATCH
             {
                 f32 k64 = 64.0f;
                 f32 k256 = 0.00390625f;
                 t = k64 * (f32)(3 - j);
                 PSMTXTrans(mtxA, 0.0f, t * k256, 0.0f);
             }
-#else
-            {
-                f32 k64 = 64.0f;
-                f32 k256 = 0.00390625f;
-                PSMTXTrans(mtxA, 0.0f, (f32)(3 - j) * k64 * k256, 0.0f);
-            }
-#endif
             PSMTXConcat(mtxA, mtxB, mtxA);
             GXLoadTexMtxImm(mtxA, GX_TEXMTX0, 1);
 
