@@ -33,7 +33,7 @@ __declspec(section ".sdata2") u32 dat_8041c8fc = 0xFFFFFFFF;
 
 #define STATUS_WIN_OPEN_FRAMES 16.0f // ramp length at animSpeed 1 for opening, and for closing
 #define STATUS_WIN_CLOSE_FRAMES 28.0f
-#define ICON_SP_BANNER 466 // alwaysDt's blue star power banner; the bar is skipped while no star power is owned
+#define ICON_SP_BANNER 466 // alwaysDt's blue star power banner; the draw loop stops here while no star power is owned
 #define STATUS_WIN_IDLE_SECONDS 10 // Mario standing still before the window opens; cooldown after an automatic toggle
 #define STATUS_WIN_CHANGE_SECONDS 2 // the window stays open this long after a value changes
 #define STATUS_WIN_BLINK_SECONDS 2 // blink length once a changed value settles
