@@ -347,7 +347,7 @@ static USER_FUNC(lecture_button_set_pos) {
 }
 
 static void lect_map_cam_chg_sub(MapObject* obj, s32 flag, s32 recurse) {
-    obj->field_0x0[5] = flag;
+    obj->cameraId = flag;
     if (obj->child) {
         lect_map_cam_chg_sub(obj->child, flag, 1);
     }

@@ -8728,3 +8728,26 @@ evt_party_set_hosei_xyz) and `groundSlope` (0xE0, partyGroundSlope). Yoshi's `P_
 party_yoshi.c 316 → 232 per kLOC, party_bomhei.c 288 → 58; overall 69.987 → 69.262. Open: partyUpdateKeyData,
 the draw matrix and the 0xAC/0x7C zeroing in party.c/evt_party.c still use raw offsets; the s32 zero-stores to
 float tail slots in cloud_init and the nokonoko inits stay raw (`stw` of r0, not `stfs`); 0x88 is still padding.
+### Readability: mapdrv (2026-10-19, Claude Haiku 5.5, n9-q-mapdrv; reviewed by Claude Opus 5.5)
+
+MapObject (mapdrv.h) gets `flags` (0x0), `renderMode` (0x4, the dispEntry render mode _mapEnt picks from the
+joint's drawMode; 2 when mapTestXLU says translucent), `cameraId` (0x5, the dispEntry camera, CAMERA_3D from
+_mapEnt; the lecture rels' lect_map_cam_chg_sub retarget it), `color` (0xC, a colour scale with flag 0x40 and the
+TEV flush colour with 0x100000, so it is not only the flush colour), `center` (0x10), `localMtx` (0x4C, trans * rot
+* scale), `animLocalMtx` (0x7C, localMtx with the matrix animation applied by mapCalcAnimMatrix in mapMain),
+`offScreenId`/`entryIdx` (0xDC/0xDE) and `dlBuf[8]`/`dlSize[8]` (0xF4/0x114, makeDisplayList). The flag bits
+with a visible effect are the MapObjectFlags enum (HIDDEN, CLIP, GROUP, IN_GROUP, COLOR, OFFSCREEN, DISPLAY_LIST,
+DIRTY, NO_BLEND, NO_BLEND1, ANIM_MTX, NO_DISP, NO_FOG, FLUSH, USER_MTX, BBOX, TEV_CALLBACK_MASK) and are used by
+name in mapdrv.c; 0x4, 0x8, 0x8000, 0x400000 and the mapSetMaterialTev-only bits stay hex. MapEntry gets
+`blend[3]` (0x16, scales for entry flags 0x2/0x4/0x8), `chunkBuf`/`chunkBufSize` (0x8C), `tevCallback[16]`
+(0x110), `dlTotal`/`dlData` (0x168); the old `field_0x8C + 8/0xC/0x18` reads are the existing `textureTable`,
+`lightTable` and `vcdTable`. The TEX-format read in mapSetPolygonVtxDesc is vcdTable (0xA4, the "vcd_table"
+chunk, the same slot its POS path and hitdrv's HIT_VTX_FRAC read); its local is now `vcdFmt`. MapEntryAnimData
+reads use `flags`/`frame`/`rate`/`data`. The renames reach envdrv, hitdrv, battle_stage_object, eff_majinai, eki_03,
+gor_00, las_08, rsh and the seven evt_lect files (pure renames; evt_lect_tik's unused MAPOBJ_FLAG macro is gone).
+mapdrv.c 457 → 233 weighted. Open: MapEntry's 0x170/0x174/0x178 ARAM copies of dat/chunk/tpl are still byte
+offsets, and 0x178 runs past the 0x178-byte entry into the next entry (or MapWork.field_2F0); mapMain and
+mapCalcAnimMatrix still step the anim cursor as a `u8*` with byte offsets; mapSetTevCallback keeps its
+`mapWork + activeGroup * 0x2F4 + 0x110` byte store because an indexed `tevCallback[idx]` store changes codegen;
+MapObject.unkAC (the mapObjRotate/Translate/Scale matrix, read in hitdrv, evt_door, evt_light, aji_13, dou_11) and
+the GXReadBoundingBox shorts at 0xEC stay unnamed.

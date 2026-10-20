@@ -1192,7 +1192,7 @@ void rsh_window_tev(RshWindowTevParam* param, s32 arg1) {
     f32 right;
 
     s.obj = param->obj;
-    s.flags = *(u32*)s.obj->field_0x0;
+    s.flags = s.obj->flags;
     stage = param->field_C;
     texMap = param->field_10;
     texCoord = param->field_14;
@@ -1200,12 +1200,12 @@ void rsh_window_tev(RshWindowTevParam* param, s32 arg1) {
 
     if (s.flags & 0x20) {
         while ((s.obj = s.obj->parent) != NULL) {
-            s.flags = *(u32*)s.obj->field_0x0;
+            s.flags = s.obj->flags;
             if ((s.flags & 0x10) == 0) {
                 continue;
             }
             if ((s.flags & 0x20000000) == 0) {
-                *(u32*)s.obj->field_0x0 |= 0x20000000;
+                s.obj->flags |= 0x20000000;
                 return;
             }
             x0 = *(u16*)(s.obj->field_0xEC + 0);
@@ -1217,7 +1217,7 @@ void rsh_window_tev(RshWindowTevParam* param, s32 arg1) {
     }
     else {
         if ((s.flags & 0x20000000) == 0) {
-            *(u32*)s.obj->field_0x0 |= 0x20000000;
+            s.obj->flags |= 0x20000000;
             return;
         }
         x0 = *(u16*)(s.obj->field_0xEC + 0);

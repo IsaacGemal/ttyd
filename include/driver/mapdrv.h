@@ -98,18 +98,47 @@ typedef struct MapHeader {
     void* buffer;               // 0x40, the loaded map file
 } MapHeader;
 
+// MapObject.flags bits whose effect is visible in mapdrv.c; the rest stay hex at their uses.
+enum MapObjectFlags {
+    MAPOBJ_FLAG_HIDDEN = 0x1,          // mapDisp skips the normal draw (still drawn offscreen with 0x80)
+    MAPOBJ_FLAG_CLIP = 0x2,            // bounds-clip in mapDisp; _mapEnt sets it for small joints
+    MAPOBJ_FLAG_GROUP = 0x10,          // group root: drawn with the _mapDispMapGrp variants
+    MAPOBJ_FLAG_IN_GROUP = 0x20,       // under a group root; _mapDispMapGrp also walks next
+    MAPOBJ_FLAG_COLOR = 0x40,          // scale by color (mapObjSetColor, setColor)
+    MAPOBJ_FLAG_OFFSCREEN = 0x80,      // also drawn to offScreenId (_setOffScrnId, mapObjSetOffScreen)
+    MAPOBJ_FLAG_DISPLAY_LIST = 0x100,  // draw the prebuilt dlBuf lists; only set when dlSize[0] != 0
+    MAPOBJ_FLAG_DIRTY = 0x200,         // modelWorldMtx needs recalculating (mapReCalcMatrix clears it)
+    MAPOBJ_FLAG_NO_BLEND = 0x800,      // ignore MapEntry blend[0] and blend[2]
+    MAPOBJ_FLAG_NO_BLEND1 = 0x1000,    // ignore MapEntry blend[1]
+    MAPOBJ_FLAG_ANIM_MTX = 0x2000,     // use animLocalMtx instead of localMtx
+    MAPOBJ_FLAG_NO_DISP = 0x4000,      // mapDisp skips the object entirely
+    MAPOBJ_FLAG_NO_FOG = 0x80000,      // mapDrawObjectFog leaves fog off
+    MAPOBJ_FLAG_FLUSH = 0x100000,      // TEV flush with color (mapObjFlushOn)
+    MAPOBJ_FLAG_USER_MTX = 0x200000,   // multiply in unkAC (mapObjRotate/Translate/Scale)
+    MAPOBJ_TEV_CALLBACK_MASK = 0x0F000000, // index into MapEntry tevCallback
+    MAPOBJ_FLAG_BBOX = 0x20000000,     // capture the screen bounds into field_0xEC (mapDispMapObj_bbox)
+};
+
 typedef struct MapObject {
-    u8 field_0x0[0x8 - 0x0];     // 0x0
-    MapFileJoint* joints;        // 0x8
-    u8 field_0xC[0x1C - 0xC];    // 0xC
-    Mtx modelWorldMtx;           // 0x1C
-    u8 field_0x4C[0xAC - 0x4C];  // 0x4C
-    Mtx unkAC;                   // 0xAC
-    u8 field_0xDC[0xE0 - 0xDC];  // 0xDC
-    struct MapObject* parent;    // 0xE0
-    struct MapObject* child;     // 0xE4
-    struct MapObject* next;      // 0xE8
-    u8 field_0xEC[0x134 - 0xEC]; // 0xEC
+    u32 flags;                // 0x0, MapObjectFlags
+    u8 renderMode;            // 0x4, dispEntry render mode 0-5, chosen in _mapEnt from the joint's drawMode
+    u8 cameraId;              // 0x5, dispEntry camera, CAMERA_3D from _mapEnt (lect_map_cam_chg_sub retargets it)
+    u8 field_0x6[0x8 - 0x6];  // 0x6
+    MapFileJoint* joints;     // 0x8
+    GXColor color;            // 0xC, colour scale with MAPOBJ_FLAG_COLOR, flush colour with MAPOBJ_FLAG_FLUSH
+    Vec center;               // 0x10, centre of the joint's bounds
+    Mtx modelWorldMtx;        // 0x1C
+    Mtx localMtx;             // 0x4C, the joint's trans * rot * scale
+    Mtx animLocalMtx;         // 0x7C, localMtx with the matrix animation applied (mapCalcAnimMatrix)
+    Mtx unkAC;                // 0xAC, mapObjRotate/Translate/Scale, applied with MAPOBJ_FLAG_USER_MTX
+    s16 offScreenId;          // 0xDC, -1 when none (mapObjSetOffScreen, mapObjClearOffScreen)
+    s16 entryIdx;             // 0xDE, index into mapWork[activeGroup].entries
+    struct MapObject* parent; // 0xE0
+    struct MapObject* child;  // 0xE4
+    struct MapObject* next;   // 0xE8
+    u8 field_0xEC[0xF4 - 0xEC];  // 0xEC, four u16 screen bounds, cleared each frame with MAPOBJ_FLAG_BBOX
+    void* dlBuf[8];           // 0xF4, display list copies (makeDisplayList)
+    u32 dlSize[8];            // 0x114, display list sizes (makeDisplayList)
 } MapObject;
 
 typedef struct MapError {
@@ -131,7 +160,8 @@ typedef struct MapEntry {
     s32 count;                     // 0x0
     u16 flags;                     // 0x4
     char name[16];                 // 0x6
-    u8 field_0x16[0x24 - 0x16];    // 0x16, the blend colours (mapSetBlend, mapSetBlend2)
+    GXColor blend[3];              // 0x16, colour scales for flags 0x2 / 0x4 / 0x8 (mapSetBlend, mapSetBlend2)
+    u8 field_0x22[0x24 - 0x22];    // 0x22
     s32 fogEnable;                 // 0x24
     s32 fogType;                   // 0x28, index into fog_type
     f32 fogStart;                  // 0x2C
@@ -142,7 +172,8 @@ typedef struct MapEntry {
     u32 datSize;                   // 0x80
     void* tpl;                     // 0x84, ./map/%s/texture.tpl
     u32 tplSize;                   // 0x88
-    u8 field_0x8C[0x94 - 0x8C];    // 0x8C
+    void* chunkBuf;                // 0x8C, buffer for the chunk data, freed on unload
+    u32 chunkBufSize;              // 0x90
     void* textureTable;            // 0x94, "texture_table" chunk
     struct MapFileLightTable* lightTable; // 0x98, "light_table" chunk
     struct MapFileFog* fogTable;   // 0x9C, "fog_table" chunk
@@ -151,14 +182,16 @@ typedef struct MapEntry {
     MapObject* rootMapObj;         // 0xA8
     struct HitEntry* rootHitObj;     // 0xAC
     Vec bbox[8];                   // 0xB0
-    u8 field_110[0x150 - 0x110];   // 0x110
+    void* tevCallback[16];         // 0x110, TEV-stage callbacks (mapSetTevCallback)
     s32 numJoints;                 // 0x150, TODO: rename? see: hitNumJoints
     MapObject* objects;            // 0x154, TODO: rename? see: hitNumJoints
     s32 hitNumJoints;              // 0x158
     struct HitEntry* hitEntries;     // 0x15C
     s32 animCount;                 // 0x160, entries in animData
     MapEntryAnimData* animData;    // 0x164
-    u8 field_0x168[0x178 - 0x168]; // 0x168
+    u32 dlTotal;                   // 0x168, total size of the display lists (makeDisplayList)
+    void* dlData;                  // 0x16C, buffer the display lists are copied into
+    u8 field_0x170[0x178 - 0x170]; // 0x170, ARAM copies (bmapLoad, mapLoad)
 } MapEntry;
 
 typedef struct MapWork {

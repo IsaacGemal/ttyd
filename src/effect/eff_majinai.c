@@ -41,9 +41,8 @@ EffectEntry* effMajinaiEntry(s32 type, f32 x, f32 y, f32 z) {
     work->state = 0;
     work->animPose = -1;
 
-    // The map's third GXColor (0x1E) is still unnamed inside MapEntry.field_0x16.
     map = mapGetWork();
-    *(u32*)&map->entries[0].field_0x16[8] = dat_80422568;
+    *(u32*)&map->entries[0].blend[2] = dat_80422568;
 
     return effect;
 }
@@ -101,7 +100,7 @@ void effMajinaiMain(EffectEntry* effect) {
             map = mapGetWork();
             {
                 GXColor color;
-                s32 value = map->entries[0].field_0x16[8];
+                s32 value = map->entries[0].blend[2].r;
 
                 value -= 5;
                 if (value < 0x40) {
@@ -111,7 +110,7 @@ void effMajinaiMain(EffectEntry* effect) {
                 color.r = value;
                 color.g = value;
                 color.b = value;
-                *(GXColor*)&map->entries[0].field_0x16[8] = color;
+                map->entries[0].blend[2] = color;
             }
             map->entries[0].flags |= 8;
 
@@ -143,7 +142,7 @@ void effMajinaiMain(EffectEntry* effect) {
             map = mapGetWork();
             {
                 GXColor color;
-                s32 value = map->entries[0].field_0x16[8];
+                s32 value = map->entries[0].blend[2].r;
 
                 value += 5;
                 if (value > 0xff) {
@@ -153,7 +152,7 @@ void effMajinaiMain(EffectEntry* effect) {
                 color.r = value;
                 color.g = value;
                 color.b = value;
-                *(GXColor*)&map->entries[0].field_0x16[8] = color;
+                map->entries[0].blend[2] = color;
             }
             map->entries[0].flags |= 8;
 

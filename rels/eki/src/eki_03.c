@@ -231,7 +231,7 @@ static USER_FUNC(test_glare) {
 
     marioGetPtr();
     if (isFirstCall) {
-        *(u32*)obj->field_0x0 |= 0x20000000;
+        obj->flags |= 0x20000000;
         return 0;
     }
 

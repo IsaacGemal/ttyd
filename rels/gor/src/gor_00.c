@@ -5766,8 +5766,8 @@ USER_FUNC(funeflag_save) {
     MapObject* obj0 = mapGetMapObj("S_fune_b");
     MapObject* obj1 = mapGetMapObj("S_fune_c");
 
-    event->lwData[8] = *(s32*)obj0->field_0x0 & 1;
-    event->lwData[9] = *(s32*)obj1->field_0x0 & 1;
+    event->lwData[8] = obj0->flags & 1;
+    event->lwData[9] = obj1->flags & 1;
     return EVT_RETURN_DONE;
 }
 

@@ -1560,19 +1560,19 @@ void envSetWater(s32 arg0, void* arg1) {
 
     obj = (MapObject*)yami->unk0;
     tevStage = yami->tevStage;
-    flags = *(u32*)((MapObject*)yami->unk0)->field_0x0;
+    flags = ((MapObject*)yami->unk0)->flags;
     texMap = yami->texMap;
     texCoord = yami->texCoord;
     unk18 = yami->unk18;
 
     if (flags & 0x20) {
         while ((obj = obj->parent) != NULL) {
-            flags = *(u32*)obj->field_0x0;
+            flags = obj->flags;
             if ((flags & 0x10) == 0) {
                 continue;
             }
             if ((flags & 0x20000000) == 0) {
-                *(u32*)obj->field_0x0 = flags | 0x20000000;
+                obj->flags = flags | 0x20000000;
                 return;
             }
             x0 = *(u16*)(obj->field_0xEC + 0);
@@ -1584,7 +1584,7 @@ void envSetWater(s32 arg0, void* arg1) {
     }
     else {
         if ((flags & 0x20000000) == 0) {
-            *(u32*)obj->field_0x0 = flags | 0x20000000;
+            obj->flags = flags | 0x20000000;
             return;
         }
         x0 = *(u16*)(obj->field_0xEC + 0);
@@ -1630,7 +1630,7 @@ void envSetWater(s32 arg0, void* arg1) {
     GXInitTexObj(&captureObj, capture, (u16)(width / 2), (u16)(height / 2), GX_TF_RGB565, GX_CLAMP, GX_CLAMP, GX_FALSE);
     GXInitTexObjLOD(&captureObj, GX_NEAR, GX_NEAR, 0.0f, 0.0f, 0.0f, GX_FALSE, GX_FALSE, GX_ANISO_1);
 
-    PSMTXMultVec(yami->unk4, (Vec*)(((MapObject*)yami->unk0)->field_0xC + 4), &pos);
+    PSMTXMultVec(yami->unk4, &((MapObject*)yami->unk0)->center, &pos);
     scale = 1000.0f / PSVECDistance(&camGetCurPtr()->cameraPos, &pos);
     if (scale < 0.0f) {
         scale = 0.0f;

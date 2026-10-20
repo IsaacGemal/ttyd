@@ -364,9 +364,9 @@ MapObject* _mapEnt(MapFileJoint* joint, MapObject* parent, Mtx mtx, s32 index) {
 		obj++;
 	}
 
-	*(u32*)obj->field_0x0 = 0;
+	obj->flags = 0;
 	obj->joints = joint;
-	*(s16*)(obj->field_0xDC + 2) = index;
+	obj->entryIdx = index;
 
 	PSMTXTrans(transMtx, joint->translation.x, joint->translation.y, joint->translation.z);
 	PSMTXScale(scaleMtx, joint->scale.x, joint->scale.y, joint->scale.z);
@@ -376,20 +376,20 @@ MapObject* _mapEnt(MapFileJoint* joint, MapObject* parent, Mtx mtx, s32 index) {
 	PSMTXConcat(transMtx, rotMtxZ, transMtx);
 	PSMTXConcat(transMtx, rotMtxY, transMtx);
 	PSMTXConcat(transMtx, rotMtxX, transMtx);
-	PSMTXConcat(transMtx, scaleMtx, (f32(*)[4])obj->field_0x4C);
-	PSMTXConcat(mtx, (f32(*)[4])obj->field_0x4C, obj->modelWorldMtx);
+	PSMTXConcat(transMtx, scaleMtx, obj->localMtx);
+	PSMTXConcat(mtx, obj->localMtx, obj->modelWorldMtx);
 	PSMTXIdentity(obj->unkAC);
 
-	*(u32*)obj->field_0x0 |= 0x200;
-	*(u8*)(obj->field_0x0 + 5) = 4;
-	*(s16*)(obj->field_0xDC) = -1;
+	obj->flags |= MAPOBJ_FLAG_DIRTY;
+	obj->cameraId = 4;
+	obj->offScreenId = -1;
 	obj->parent = parent;
 	obj->next = NULL;
 	obj->child = NULL;
 
 	if (joint->drawMode != NULL) {
 	if (joint->drawMode->unk2[0] & 1) {
-		*(u32*)obj->field_0x0 |= 0x8;
+		obj->flags |= 0x8;
 	}
 	switch (joint->drawMode->unk0[0]) {
 	case 0:
@@ -405,55 +405,55 @@ MapObject* _mapEnt(MapFileJoint* joint, MapObject* parent, Mtx mtx, s32 index) {
 				else if (*(u8*)((u8*)ref + 0xA) == 1) count1++;
 			}
 		}
-		if (count2) *(u8*)(obj->field_0x0 + 4) = 2;
-		else if (count1) *(u8*)(obj->field_0x0 + 4) = 1;
-		else *(u8*)(obj->field_0x0 + 4) = 0;
+		if (count2) obj->renderMode = 2;
+		else if (count1) obj->renderMode = 1;
+		else obj->renderMode = 0;
 		break;
 	case 1:
 		mode = 0;
-		if (*(u32*)obj->field_0x0 & 0x8) mode = 3;
-		*(u8*)(obj->field_0x0 + 4) = mode;
+		if (obj->flags & 0x8) mode = 3;
+		obj->renderMode = mode;
 		break;
 	case 2:
 		mode = 1;
-		if (*(u32*)obj->field_0x0 & 0x8) mode = 4;
-		*(u8*)(obj->field_0x0 + 4) = mode;
+		if (obj->flags & 0x8) mode = 4;
+		obj->renderMode = mode;
 		break;
 	case 3:
 		mode = 2;
-		if (*(u32*)obj->field_0x0 & 0x8) mode = 5;
-		*(u8*)(obj->field_0x0 + 4) = mode;
+		if (obj->flags & 0x8) mode = 5;
+		obj->renderMode = mode;
 		break;
 	}
 
 	if (joint->drawMode->unk2[0] & 0x2) {
-		*(u32*)obj->field_0x0 |= 0x10;
+		obj->flags |= MAPOBJ_FLAG_GROUP;
 		if (joint->drawMode->unk2[0] & 0x10) {
-			*(u32*)obj->field_0x0 |= 0x8000;
+			obj->flags |= 0x8000;
 		}
 		switch (joint->drawMode->unk0[0]) {
-		case 0: *(u8*)(obj->field_0x0 + 4) = 2; break;
-		case 1: *(u8*)(obj->field_0x0 + 4) = 0; break;
-		case 2: *(u8*)(obj->field_0x0 + 4) = 1; break;
+		case 0: obj->renderMode = 2; break;
+		case 1: obj->renderMode = 0; break;
+		case 2: obj->renderMode = 1; break;
 		case 3:
-		default: *(u8*)(obj->field_0x0 + 4) = 2; break;
+		default: obj->renderMode = 2; break;
 		}
 	}
 
-	if (*(u32*)obj->field_0x0 & 0x10) {
-		if (parent != NULL && ((*(u32*)parent->field_0x0 & 0x10) || (*(u32*)parent->field_0x0 & 0x20))) {
-			*(u32*)obj->field_0x0 &= ~0x10;
+	if (obj->flags & MAPOBJ_FLAG_GROUP) {
+		if (parent != NULL && ((parent->flags & MAPOBJ_FLAG_GROUP) || (parent->flags & MAPOBJ_FLAG_IN_GROUP))) {
+			obj->flags &= ~MAPOBJ_FLAG_GROUP;
 		}
 	}
-	else if (parent != NULL && ((*(u32*)parent->field_0x0 & 0x10) || (*(u32*)parent->field_0x0 & 0x20))) {
-		*(u32*)obj->field_0x0 |= 0x20;
-		if (*(u32*)parent->field_0x0 & 0x8000) {
-			*(u32*)obj->field_0x0 |= 0x8000;
+	else if (parent != NULL && ((parent->flags & MAPOBJ_FLAG_GROUP) || (parent->flags & MAPOBJ_FLAG_IN_GROUP))) {
+		obj->flags |= MAPOBJ_FLAG_IN_GROUP;
+		if (parent->flags & 0x8000) {
+			obj->flags |= 0x8000;
 		}
 	}
 
 	if (joint->drawMode->unk2[0] & 0x4) {
-		*(u32*)obj->field_0x0 |= 0x4;
+		obj->flags |= 0x4;
 	}
 	}
 	else {
@@ -461,18 +461,18 @@ MapObject* _mapEnt(MapFileJoint* joint, MapObject* parent, Mtx mtx, s32 index) {
 	}
 
 	if (joint->partCount) {
-		PSVECAdd(&joint->bboxMin, &joint->bboxMax, (Vec*)(obj->field_0xC + 4));
-		PSVECScale((Vec*)(obj->field_0xC + 4), (Vec*)(obj->field_0xC + 4), 0.5f);
+		PSVECAdd(&joint->bboxMin, &joint->bboxMax, &obj->center);
+		PSVECScale(&obj->center, &obj->center, 0.5f);
 	}
 	else {
-		*(Vec*)(obj->field_0xC + 4) = joint->translation;
+		obj->center = joint->translation;
 	}
 
 	if (joint->partCount) {
-		PSMTXMultVec(obj->modelWorldMtx, (Vec*)(obj->field_0xC + 4), &vecA);
+		PSMTXMultVec(obj->modelWorldMtx, &obj->center, &vecA);
 		PSMTXMultVec(obj->modelWorldMtx, &joint->bboxMax, &vecB);
 		if (PSVECSquareDistance(&vecA, &vecB) < 20000.0f) {
-			*(u32*)obj->field_0x0 |= 0x2;
+			obj->flags |= MAPOBJ_FLAG_CLIP;
 		}
 	}
 	return obj;
@@ -525,8 +525,8 @@ void makeDisplayList(BOOL group) {
 	for (pass = 0; pass < 2; pass++) {
 		obj = wp->entries[group].objects;
 		for (i = 0; i < 8; i++) {
-			*(void**)(obj->field_0xEC + 8 + i * 4) = NULL;
-			*(u32*)(obj->field_0xEC + 0x28 + i * 4) = 0;
+			obj->dlBuf[i] = NULL;
+			obj->dlSize[i] = 0;
 		}
 		for (i = 0; i < wp->entries[group].numJoints; i++, obj++) {
 			if (obj->joints->partCount < 1 || obj->joints->partCount > 8) {
@@ -539,7 +539,7 @@ void makeDisplayList(BOOL group) {
 				continue;
 			}
 			if (shadowGetCharShadowProjection() != 0) {
-				if (*(u32*)obj->field_0x0 & 0x4) {
+				if (obj->flags & 0x4) {
 					continue;
 				}
 			}
@@ -555,23 +555,23 @@ void makeDisplayList(BOOL group) {
 				GXResetWriteGatherPipe();
 				mapSetMaterial(obj, material);
 				GXSetCullMode(culling[obj->joints->drawMode->cullMode]);
-				*(u32*)(obj->field_0xEC + 0x28 + j * 4) = GXEndDisplayList();
+				obj->dlSize[j] = GXEndDisplayList();
 				if (pass == 0) {
-					total += *(u32*)(obj->field_0xEC + 0x28 + j * 4);
+					total += obj->dlSize[j];
 				}
 				else {
-					*(void**)(obj->field_0xEC + 8 + j * 4) = dest;
-					dest += *(u32*)(obj->field_0xEC + 0x28 + j * 4);
-					memcpy(*(void**)(obj->field_0xEC + 8 + j * 4), buf, *(u32*)(obj->field_0xEC + 0x28 + j * 4));
-					DCFlushRange(*(void**)(obj->field_0xEC + 8 + j * 4), *(u32*)(obj->field_0xEC + 0x28 + j * 4));
+					obj->dlBuf[j] = dest;
+					dest += obj->dlSize[j];
+					memcpy(obj->dlBuf[j], buf, obj->dlSize[j]);
+					DCFlushRange(obj->dlBuf[j], obj->dlSize[j]);
 				}
 			}
 		}
 		if (pass == 0) {
-			*(u32*)(wp->entries[group].field_0x168) = total;
-			if (*(u32*)(wp->entries[group].field_0x168) != 0) {
-				*(void**)(wp->entries[group].field_0x168 + 4) = _mapAllocTail(*(u32*)(wp->entries[group].field_0x168));
-				dest = *(u8**)(wp->entries[group].field_0x168 + 4);
+			wp->entries[group].dlTotal = total;
+			if (wp->entries[group].dlTotal != 0) {
+				wp->entries[group].dlData = _mapAllocTail(wp->entries[group].dlTotal);
+				dest = wp->entries[group].dlData;
 			}
 			else {
 #ifdef MUST_MATCH
@@ -579,7 +579,7 @@ void makeDisplayList(BOOL group) {
 				// and gives the target's `add r3,wp,off; stw 0x16c(r3)` instead of an indexed store.
 				((void**)((u8*)wp + 0x16C))[group * (0x178 / 4)] = NULL;
 #else
-				*(void**)(wp->entries[group].field_0x168 + 4) = NULL;
+				wp->entries[group].dlData = NULL;
 #endif
 				break;
 			}
@@ -601,7 +601,7 @@ MapEntryAnimData* mapSearchAnmObj(const char* animName) {
 	for (i = 0; i < wp->entries[0].count; entry++, i++) {
 		MapEntryAnimData* anim = entry->animData;
 		for (j = 0; j < entry->animCount; j++, anim++) {
-			if ((*(u16*)anim & 0x1) && !strcmp(*(char**)*(void**)((u8*)anim + 0x18), animName)) {
+			if ((anim->flags & 0x1) && !strcmp(*(char**)anim->data, animName)) {
 				return anim;
 			}
 		}
@@ -645,10 +645,10 @@ void mapCheckAnimation(const char* animName, BOOL* valid, f32* a3) {
 	*valid = FALSE;
 	*a3 = 0.0f;
 	if (found) {
-		if (*(u16*)found & 0x2) {
+		if (found->flags & 0x2) {
 			*valid = TRUE;
 		}
-		*a3 = 1000.0f * (*(f32*)(*(u8**)((u8*)found + 0x18) + 8) - *(f32*)((u8*)found + 0x10)) / (f32)gp->framerate;
+		*a3 = 1000.0f * (*(f32*)((u8*)found->data + 8) - found->frame) / (f32)gp->framerate;
 	}
 	else {
 		*valid = TRUE;
@@ -675,7 +675,7 @@ void mapPlayAnimationLv(const char* name, s32 a2, s32 a3) {
 	for (i = 0; i < wp->entries[0].count; entry++, i++) {
 		found = entry->animData;
 		for (j = 0; j < entry->animCount; j++, found++) {
-			if (!strcmp(*(char**)*(void**)((u8*)found + 0x18), name)) {
+			if (!strcmp(*(char**)found->data, name)) {
 				valid = TRUE;
 				break;
 			}
@@ -691,34 +691,34 @@ void mapPlayAnimationLv(const char* name, s32 a2, s32 a3) {
 
 	found8 = (u8*)found;
 
-	*(u16*)found = 0;
+	found->flags = 0;
 	switch (a3) {
 	case 0:
 		break;
 	case 1:
-		*(u16*)found |= 0x100;
+		found->flags |= 0x100;
 		break;
 	case 2:
-		*(u16*)found |= 0x200;
+		found->flags |= 0x200;
 		break;
 	case 3:
-		*(u16*)found |= 0x400;
+		found->flags |= 0x400;
 		break;
 	case 4:
-		*(u16*)found |= 0x800;
+		found->flags |= 0x800;
 		break;
 	}
 
-	if (*(u16*)found & 0x100) {
+	if (found->flags & 0x100) {
 		time = gp->systemLv0Time;
 	}
-	else if (*(u16*)found & 0x200) {
+	else if (found->flags & 0x200) {
 		time = gp->systemLv1Time;
 	}
-	else if (*(u16*)found & 0x400) {
+	else if (found->flags & 0x400) {
 		time = gp->systemLv2Time;
 	}
-	else if (*(u16*)found & 0x800) {
+	else if (found->flags & 0x800) {
 		time = gp->systemLv3Time;
 	}
 	else if (gp->inBattle) {
@@ -731,9 +731,9 @@ void mapPlayAnimationLv(const char* name, s32 a2, s32 a3) {
 	*(OSTime*)(found8 + 0x8) = OSTicksToMilliseconds(time);
 	*(f32*)(found8 + 0x10) = 0.0f;
 	*(f32*)(found8 + 0x14) = 1.0f;
-	*(u16*)found |= 0x1;
+	found->flags |= 0x1;
 	if (a2 == 1) {
-		*(u16*)found |= 0x4;
+		found->flags |= 0x4;
 	}
 	if (a2 == 2) {
 		*(OSTime*)(found8 + 0x8) -= (u64)(1000.0f * *(f32*)(*(u8**)(found8 + 0x18) + 8) / (f32)gp->framerate);
@@ -772,7 +772,7 @@ void mapPauseAnimation(const char* name) {
 #endif
 
 	if (found) {
-		*(u16*)found |= 0x10;
+		found->flags |= 0x10;
 	}
 }
 
@@ -786,7 +786,7 @@ void mapReStartAnimation(const char* name) {
 #endif
 
 	if (found) {
-		*(u16*)found |= 0x20;
+		found->flags |= 0x20;
 	}
 }
 
@@ -799,7 +799,7 @@ void mapPauseAnimationAll(void) {
 	for (i = 0; i < wp->entries[0].count; entry++, i++) {
 		MapEntryAnimData* anim = entry->animData;
 		for (j = 0; j < entry->animCount; j++, anim++) {
-			*(u16*)anim |= 0x10;
+			anim->flags |= 0x10;
 		}
 	}
 }
@@ -813,7 +813,7 @@ void mapReStartAnimationAll(void) {
 	for (i = 0; i < wp->entries[0].count; entry++, i++) {
 		MapEntryAnimData* anim = entry->animData;
 		for (j = 0; j < entry->animCount; j++, anim++) {
-			*(u16*)anim |= 0x20;
+			anim->flags |= 0x20;
 		}
 	}
 }
@@ -826,7 +826,7 @@ void mapSetPlayRate(const char* name, f32 rate) {
 #endif
 
 	if (found) {
-		*(f32*)((u8*)found + 0x14) = rate;
+		found->rate = rate;
 	}
 }
 
@@ -1142,10 +1142,10 @@ void mapUnLoad(void) {
 			entry->animCount = 0;
 			entry->animData = NULL;
 		}
-		if (*(void**)((u8*)entry + 0x16C)) {
-			_mapFree(*(void**)((u8*)entry + 0x16C));
-			*(void**)((u8*)entry + 0x16C) = NULL;
-			*(void**)((u8*)entry + 0x168) = NULL;
+		if (entry->dlData) {
+			_mapFree(entry->dlData);
+			entry->dlData = NULL;
+			entry->dlTotal = 0;
 		}
 	}
 	unk_80418458 = 0;
@@ -1168,9 +1168,9 @@ void mapUnLoad(void) {
 			}
 			entry->tpl = NULL;
 		}
-		if (*(void**)entry->field_0x8C) {
-			_mapFree(*(void**)entry->field_0x8C);
-			*(void**)entry->field_0x8C = NULL;
+		if (entry->chunkBuf) {
+			_mapFree(entry->chunkBuf);
+			entry->chunkBuf = NULL;
 		}
 		strncpy(entry->name, "", 0x10);
 	}
@@ -1219,10 +1219,10 @@ void bmapUnLoad(void) {
 			entry->animCount = 0;
 			entry->animData = NULL;
 		}
-		if (*(void**)((u8*)entry + 0x16C)) {
-			_mapFree(*(void**)((u8*)entry + 0x16C));
-			*(void**)((u8*)entry + 0x16C) = NULL;
-			*(void**)((u8*)entry + 0x168) = NULL;
+		if (entry->dlData) {
+			_mapFree(entry->dlData);
+			entry->dlData = NULL;
+			entry->dlTotal = 0;
 		}
 	}
 	unk_80418458 = 0;
@@ -1243,9 +1243,9 @@ void bmapUnLoad(void) {
 			}
 			entry->tpl = NULL;
 		}
-		if (*(void**)entry->field_0x8C) {
-			_mapFree(*(void**)entry->field_0x8C);
-			*(void**)entry->field_0x8C = NULL;
+		if (entry->chunkBuf) {
+			_mapFree(entry->chunkBuf);
+			entry->chunkBuf = NULL;
 		}
 		strncpy(entry->name, "", 0x10);
 	}
@@ -1265,14 +1265,14 @@ void bmapUnLoad(void) {
 			*(void**)((u8*)entry + 0x178) = NULL;
 		}
 		else {
-			*(void**)entry->field_0x8C = _mapAllocTail(*(u32*)(entry->field_0x8C + 4));
-			aramMgrToMram(*(void**)(entry->field_0x168 + 0xC), *(void**)entry->field_0x8C);
-			*(void**)(entry->field_0x168 + 0xC) = NULL;
+			entry->chunkBuf = _mapAllocTail(entry->chunkBufSize);
+			aramMgrToMram(*(void**)((u8*)entry + 0x174), entry->chunkBuf);
+			*(void**)((u8*)entry + 0x174) = NULL;
 		}
 		makeDisplayList(i);
 	}
-	if (*(void**)wp->entries[0].field_0x8C) {
-		arcEntry(1, *(void**)wp->entries[0].field_0x8C, *(u32*)(wp->entries[0].field_0x8C + 4));
+	if (wp->entries[0].chunkBuf) {
+		arcEntry(1, wp->entries[0].chunkBuf, wp->entries[0].chunkBufSize);
 	}
 }
 
@@ -1287,11 +1287,11 @@ void bmapLoad(const char* map1, const char* map2) {
 	wp = mapGetWork();
 	for (i = 0; i < wp->entries[0].count; i++) {
 		entry = &mapGetWork()->entries[i];
-		if (*(void**)((u8*)entry + 0x16C)) {
-			_mapFree(*(void**)((u8*)entry + 0x16C));
+		if (entry->dlData) {
+			_mapFree(entry->dlData);
 		}
-		*(s32*)((u8*)entry + 0x168) = 0;
-		*(s32*)((u8*)entry + 0x16C) = 0;
+		entry->dlTotal = 0;
+		entry->dlData = NULL;
 		p = (u8*)&wp->entries[i];
 		*(s32*)(p + 0x170) = 0;
 		*(s32*)(p + 0x178) = 0;
@@ -1349,8 +1349,8 @@ void mapCalcAnimMatrix(Mtx outMtx, Mtx inMtx, MapEntryAnimData* anim, void* join
 	for (i = 1; i < count; i++) {
 		key = &joint->key[i - 1];
 		next = &joint->key[i];
-		if (*(f32*)((u8*)anim + 0x10) <= next->time) {
-			t = *(f32*)((u8*)anim + 0x10);
+		if (anim->frame <= next->time) {
+			t = anim->frame;
 		}
 		else if (i == count - 1) {
 			t = next->time;
@@ -1461,7 +1461,7 @@ static BOOL mapReCalcMatrixCheck(BOOL force, u32 flags) {
 	BOOL recalc;
 
 	recalc = FALSE;
-	if (flags & 0x200) {
+	if (flags & MAPOBJ_FLAG_DIRTY) {
 		recalc = TRUE;
 	}
 	if (force) {
@@ -1471,13 +1471,13 @@ static BOOL mapReCalcMatrixCheck(BOOL force, u32 flags) {
 }
 
 void mapReCalcMatrix(MapObject* obj, Mtx mtx, BOOL force) {
-	u32* flags = (u32*)obj->field_0x0;
+	u32* flags = &obj->flags;
 	MapObject* child;
 	MapObject* next;
 	BOOL recalc;
 
 	recalc = FALSE;
-	if ((*flags) & 0x200) {
+	if ((*flags) & MAPOBJ_FLAG_DIRTY) {
 		recalc = TRUE;
 	}
 	if (force) {
@@ -1485,31 +1485,31 @@ void mapReCalcMatrix(MapObject* obj, Mtx mtx, BOOL force) {
 	}
 
 	if (recalc) {
-		if ((*flags) & 0x2000) {
-			PSMTXConcat(mtx, (MtxPtr)((u8*)obj + 0x7C), obj->modelWorldMtx);
+		if ((*flags) & MAPOBJ_FLAG_ANIM_MTX) {
+			PSMTXConcat(mtx, obj->animLocalMtx, obj->modelWorldMtx);
 		}
 		else {
-			PSMTXConcat(mtx, (MtxPtr)((u8*)obj + 0x4C), obj->modelWorldMtx);
+			PSMTXConcat(mtx, obj->localMtx, obj->modelWorldMtx);
 		}
-		if ((*flags) & 0x200000) {
+		if ((*flags) & MAPOBJ_FLAG_USER_MTX) {
 			PSMTXConcat(obj->modelWorldMtx, obj->unkAC, obj->modelWorldMtx);
 		}
-		(*flags) &= ~0x200;
+		(*flags) &= ~MAPOBJ_FLAG_DIRTY;
 
 		child = obj->child;
 		if (child != NULL) {
-			u32* cflags = (u32*)child->field_0x0;
+			u32* cflags = &child->flags;
 
-			if ((*cflags) & 0x2000) {
-				PSMTXConcat(obj->modelWorldMtx, (MtxPtr)((u8*)child + 0x7C), child->modelWorldMtx);
+			if ((*cflags) & MAPOBJ_FLAG_ANIM_MTX) {
+				PSMTXConcat(obj->modelWorldMtx, child->animLocalMtx, child->modelWorldMtx);
 			}
 			else {
-				PSMTXConcat(obj->modelWorldMtx, (MtxPtr)((u8*)child + 0x4C), child->modelWorldMtx);
+				PSMTXConcat(obj->modelWorldMtx, child->localMtx, child->modelWorldMtx);
 			}
-			if ((*cflags) & 0x200000) {
+			if ((*cflags) & MAPOBJ_FLAG_USER_MTX) {
 				PSMTXConcat(child->modelWorldMtx, child->unkAC, child->modelWorldMtx);
 			}
-			(*cflags) &= ~0x200;
+			(*cflags) &= ~MAPOBJ_FLAG_DIRTY;
 
 			if (child->child != NULL) {
 				mapReCalcMatrix(child->child, child->modelWorldMtx, 1);
@@ -1521,19 +1521,19 @@ void mapReCalcMatrix(MapObject* obj, Mtx mtx, BOOL force) {
 
 		next = obj->next;
 		if (next != NULL) {
-			u32* nflags = (u32*)next->field_0x0;
+			u32* nflags = &next->flags;
 
 			if (mapReCalcMatrixCheck(force, *nflags)) {
-				if ((*nflags) & 0x2000) {
-					PSMTXConcat(mtx, (MtxPtr)((u8*)next + 0x7C), next->modelWorldMtx);
+				if ((*nflags) & MAPOBJ_FLAG_ANIM_MTX) {
+					PSMTXConcat(mtx, next->animLocalMtx, next->modelWorldMtx);
 				}
 				else {
-					PSMTXConcat(mtx, (MtxPtr)((u8*)next + 0x4C), next->modelWorldMtx);
+					PSMTXConcat(mtx, next->localMtx, next->modelWorldMtx);
 				}
-				if ((*nflags) & 0x200000) {
+				if ((*nflags) & MAPOBJ_FLAG_USER_MTX) {
 					PSMTXConcat(next->modelWorldMtx, next->unkAC, next->modelWorldMtx);
 				}
-				(*nflags) &= ~0x200;
+				(*nflags) &= ~MAPOBJ_FLAG_DIRTY;
 
 				if (next->child != NULL) {
 					mapReCalcMatrix(next->child, next->modelWorldMtx, 1);
@@ -1555,19 +1555,19 @@ void mapReCalcMatrix(MapObject* obj, Mtx mtx, BOOL force) {
 	else {
 		child = obj->child;
 		if (child != NULL) {
-			u32* cflags = (u32*)child->field_0x0;
+			u32* cflags = &child->flags;
 
 			if (mapReCalcMatrixCheck(force, *cflags)) {
-				if ((*cflags) & 0x2000) {
-					PSMTXConcat(obj->modelWorldMtx, (MtxPtr)((u8*)child + 0x7C), child->modelWorldMtx);
+				if ((*cflags) & MAPOBJ_FLAG_ANIM_MTX) {
+					PSMTXConcat(obj->modelWorldMtx, child->animLocalMtx, child->modelWorldMtx);
 				}
 				else {
-					PSMTXConcat(obj->modelWorldMtx, (MtxPtr)((u8*)child + 0x4C), child->modelWorldMtx);
+					PSMTXConcat(obj->modelWorldMtx, child->localMtx, child->modelWorldMtx);
 				}
-				if ((*cflags) & 0x200000) {
+				if ((*cflags) & MAPOBJ_FLAG_USER_MTX) {
 					PSMTXConcat(child->modelWorldMtx, child->unkAC, child->modelWorldMtx);
 				}
-				(*cflags) &= ~0x200;
+				(*cflags) &= ~MAPOBJ_FLAG_DIRTY;
 
 				if (child->child != NULL) {
 					mapReCalcMatrix(child->child, child->modelWorldMtx, 1);
@@ -1588,19 +1588,19 @@ void mapReCalcMatrix(MapObject* obj, Mtx mtx, BOOL force) {
 
 		next = obj->next;
 		if (next != NULL) {
-			u32* nflags = (u32*)next->field_0x0;
+			u32* nflags = &next->flags;
 
 			if (mapReCalcMatrixCheck(force, *nflags)) {
-				if ((*nflags) & 0x2000) {
-					PSMTXConcat(mtx, (MtxPtr)((u8*)next + 0x7C), next->modelWorldMtx);
+				if ((*nflags) & MAPOBJ_FLAG_ANIM_MTX) {
+					PSMTXConcat(mtx, next->animLocalMtx, next->modelWorldMtx);
 				}
 				else {
-					PSMTXConcat(mtx, (MtxPtr)((u8*)next + 0x4C), next->modelWorldMtx);
+					PSMTXConcat(mtx, next->localMtx, next->modelWorldMtx);
 				}
-				if ((*nflags) & 0x200000) {
+				if ((*nflags) & MAPOBJ_FLAG_USER_MTX) {
 					PSMTXConcat(next->modelWorldMtx, next->unkAC, next->modelWorldMtx);
 				}
-				(*nflags) &= ~0x200;
+				(*nflags) &= ~MAPOBJ_FLAG_DIRTY;
 
 				if (next->child != NULL) {
 					mapReCalcMatrix(next->child, next->modelWorldMtx, 1);
@@ -2051,9 +2051,9 @@ void mapMain(void) {
 				for (k = 0; k < *(s32*)list19; p += 4, k++) {
 					MapObject* obj = mapGetMapObj(*(char**)*(u8**)(p + 4));
 					if (obj != NULL) {
-						mapCalcAnimMatrix((f32(*)[4])((u8*)obj + 0x7C), (f32(*)[4])((u8*)obj + 0x4C), (MapEntryAnimData*)anim, *(u8**)(p + 4));
-						*(u32*)obj |= 0x2000;
-						*(u32*)obj |= 0x200;
+						mapCalcAnimMatrix(obj->animLocalMtx, obj->localMtx, (MapEntryAnimData*)anim, *(u8**)(p + 4));
+						obj->flags |= MAPOBJ_FLAG_ANIM_MTX;
+						obj->flags |= MAPOBJ_FLAG_DIRTY;
 						updated = TRUE;
 					}
 				}
@@ -2154,8 +2154,8 @@ void _mapDispMapObj(CameraId camId, MapObject* obj) {
 	cam = camGetPtr(camId);
 	current_mp = obj;
 
-	if (*(u32*)obj->field_0x0 & 0x20) {
-		if (*(u32*)obj->field_0x0 & 0x8000) {
+	if (obj->flags & MAPOBJ_FLAG_IN_GROUP) {
+		if (obj->flags & 0x8000) {
 			f32 proj[7];
 			MapFileJoint* root;
 			s32 index;
@@ -2196,12 +2196,12 @@ void _mapDispMapObj(CameraId camId, MapObject* obj) {
 			GXSetProjectionv(proj);
 		}
 
-		kind = obj->field_0x0[4];
+		kind = obj->renderMode;
 		if (obj->joints->partCount > 0) {
-			GXColor color = *(GXColor*)obj->field_0xC;
+			GXColor color = obj->color;
 			GXColor matColor = *(GXColor*)((u8*)obj->joints->parts[0].material + 0x10C);
 
-			if (mapTestXLU(*(u32*)obj->field_0x0, &color, &matColor)) {
+			if (mapTestXLU(obj->flags, &color, &matColor)) {
 				kind = 2;
 			}
 		}
@@ -2246,7 +2246,7 @@ void _mapDispMapObj(CameraId camId, MapObject* obj) {
 
 	PSMTXConcat(cam->view, obj->modelWorldMtx, mtx);
 	GXLoadPosMtxImm(mtx, GX_PNMTX0);
-	if (!(*(u32*)obj->field_0x0 & 0x100)) {
+	if (!(obj->flags & MAPOBJ_FLAG_DISPLAY_LIST)) {
 		PSMTXInvXpose(mtx, invMtx);
 		GXLoadNrmMtxImm(invMtx, GX_PNMTX0);
 	}
@@ -2257,16 +2257,16 @@ void _mapDispMapObj(CameraId camId, MapObject* obj) {
 	}
 	mapDrawObjectFog(obj);
 
-	if (!(*(u32*)obj->field_0x0 & 0x20) || !((*(u32*)obj->field_0x0 & 0x4000) || ((*(u32*)obj->field_0x0 & 0x1) && !(*(u32*)obj->field_0x0 & 0x80)) || ((*(u32*)obj->field_0x0 & 0x40) && obj->field_0xC[3] == 0))) {
-		if (*(u32*)obj->field_0x0 & 0x100) {
+	if (!(obj->flags & MAPOBJ_FLAG_IN_GROUP) || !((obj->flags & MAPOBJ_FLAG_NO_DISP) || ((obj->flags & MAPOBJ_FLAG_HIDDEN) && !(obj->flags & MAPOBJ_FLAG_OFFSCREEN)) || ((obj->flags & MAPOBJ_FLAG_COLOR) && obj->color.a == 0))) {
+		if (obj->flags & MAPOBJ_FLAG_DISPLAY_LIST) {
 			for (i = 0; i < obj->joints->partCount; i++) {
 				MapMaterialTex* material = obj->joints->parts[i].material;
 				MapFileMesh* mesh = obj->joints->parts[i].mesh;
 
 				mapSetTextureMatrix(material);
-				mapSetMaterialLastStageBlend(*(u32*)obj->field_0x0, *(GXColor*)obj->field_0xC, *(GXColor*)((u8*)material + 0x10C));
+				mapSetMaterialLastStageBlend(obj->flags, obj->color, *(GXColor*)((u8*)material + 0x10C));
 				mapSetPolygonVtxDesc(obj, mesh);
-				GXCallDisplayList(*(void**)(obj->field_0xEC + 8 + i * 4), *(u32*)(obj->field_0xEC + 0x28 + i * 4));
+				GXCallDisplayList(obj->dlBuf[i], obj->dlSize[i]);
 				{
 					p = (u8*)mesh;
 					for (j = 0; j < mesh->displayListCount; j++) {
@@ -2282,17 +2282,17 @@ void _mapDispMapObj(CameraId camId, MapObject* obj) {
 				MapFileMesh* mesh = obj->joints->parts[i].mesh;
 
 				mapSetTextureMatrix(material);
-				mapSetMaterialLastStageBlend(*(u32*)obj->field_0x0, *(GXColor*)obj->field_0xC, *(GXColor*)((u8*)material + 0x10C));
+				mapSetMaterialLastStageBlend(obj->flags, obj->color, *(GXColor*)((u8*)material + 0x10C));
 				mapSetMaterial(obj, material);
 				mapSetPolygon(obj, mesh);
 			}
 		}
 	}
 
-	if (*(u32*)obj->field_0x0 & 0x8000) {
+	if (obj->flags & 0x8000) {
 		GXSetProjection(cam->projection, cam->projType);
 	}
-	if (*(u32*)obj->field_0x0 & 0x0F000000) {
+	if (obj->flags & MAPOBJ_TEV_CALLBACK_MASK) {
 		GXSetTevDirect(GX_TEVSTAGE0);
 		GXSetTevDirect(GX_TEVSTAGE1);
 		GXSetTevDirect(GX_TEVSTAGE2);
@@ -2305,7 +2305,7 @@ void _mapDispMapObj(CameraId camId, MapObject* obj) {
 void _mapDispMapGrp(CameraId camId, MapObject* obj) {
 	_mapDispMapObj(camId, obj);
 	if (obj->child) _mapDispMapGrp(camId, obj->child);
-	if ((*(u32*)obj->field_0x0 & 0x20) && obj->next) _mapDispMapGrp(camId, obj->next);
+	if ((obj->flags & MAPOBJ_FLAG_IN_GROUP) && obj->next) _mapDispMapGrp(camId, obj->next);
 }
 
 void mapDispMapObj(CameraId camId, MapObject* obj) {
@@ -2327,7 +2327,7 @@ void mapDispMapObj_off(CameraId camId, MapObject* obj) {
 	_mapDispMapObj(camId, obj);
 	sysWaitDrawSync();
 	GXReadBoundingBox(&v0, &v1, &v2, &v3);
-	offscreenAddBoundingBox(*(s16*)obj->field_0xDC, v0, v1, v2, v3);
+	offscreenAddBoundingBox(obj->offScreenId, v0, v1, v2, v3);
 }
 
 void mapDispMapGrp_off(CameraId camId, MapObject* obj) {
@@ -2355,11 +2355,11 @@ void test_kururing_mapdisp(CameraId camId) {
 	for (i = 0; i < wp->entries[0].count; entry++, i++) {
 		obj = entry->objects;
 		for (j = 0; j < entry->numJoints; j++, obj++) {
-			flags = *(u32*)obj->field_0x0;
+			flags = obj->flags;
 			if (flags & 0x400000) {
-				*(u32*)obj->field_0x0 = flags & ~0x2;
+				obj->flags = flags & ~MAPOBJ_FLAG_CLIP;
 				_mapDispMapObj(camId, obj);
-				*(u32*)obj->field_0x0 = flags;
+				obj->flags = flags;
 			}
 		}
 	}
@@ -2401,7 +2401,7 @@ void _mapDispMapGrp_NoMaterial(MapObject* obj, void* a2) {
 #else
 		_mapDispMapGrp_NoMaterial(obj, o->child);
 #endif
-	if ((*(u32*)o->field_0x0 & 0x20) && o->next)
+	if ((o->flags & MAPOBJ_FLAG_IN_GROUP) && o->next)
 #ifdef MUST_MATCH
 		_mapDispMapGrp_NoMaterial((MapObject*)obj, o->next);
 #else
@@ -2463,30 +2463,30 @@ void mapDisp(void) {
 		}
 		obj = entry->objects;
 		for (j = 0; j < entry->numJoints; j++, obj++) {
-#define OBJ_FLAGS (*(u32*)obj->field_0x0)
-			if (OBJ_FLAGS & 0x4000) continue;
-			if ((OBJ_FLAGS & 0x1) && !(OBJ_FLAGS & 0x80)) continue;
-			if (OBJ_FLAGS & 0x40) {
-				if (obj->field_0xC[3] == 0) continue;
+#define OBJ_FLAGS (obj->flags)
+			if (OBJ_FLAGS & MAPOBJ_FLAG_NO_DISP) continue;
+			if ((OBJ_FLAGS & MAPOBJ_FLAG_HIDDEN) && !(OBJ_FLAGS & MAPOBJ_FLAG_OFFSCREEN)) continue;
+			if (OBJ_FLAGS & MAPOBJ_FLAG_COLOR) {
+				if (obj->color.a == 0) continue;
 			}
-			if (OBJ_FLAGS & 0x20000000) {
+			if (OBJ_FLAGS & MAPOBJ_FLAG_BBOX) {
 				*(u16*)(obj->field_0xEC + 4) = 0;
 				*(u16*)(obj->field_0xEC + 6) = 0;
 				*(u16*)(obj->field_0xEC + 0) = 0;
 				*(u16*)(obj->field_0xEC + 2) = 0;
 			}
-			if (OBJ_FLAGS & 0x20) continue;
-			if (!(OBJ_FLAGS & 0x10)) {
+			if (OBJ_FLAGS & MAPOBJ_FLAG_IN_GROUP) continue;
+			if (!(OBJ_FLAGS & MAPOBJ_FLAG_GROUP)) {
 				if (obj->joints->partCount < 1) continue;
 			}
-			if (!(OBJ_FLAGS & 0x800)) {
-				if ((entry->flags & 2) && entry->field_0x16[3] == 0) continue;
+			if (!(OBJ_FLAGS & MAPOBJ_FLAG_NO_BLEND)) {
+				if ((entry->flags & 2) && entry->blend[0].a == 0) continue;
 			}
-			if (!(OBJ_FLAGS & 0x1000)) {
-				if ((entry->flags & 4) && entry->field_0x16[7] == 0) continue;
+			if (!(OBJ_FLAGS & MAPOBJ_FLAG_NO_BLEND1)) {
+				if ((entry->flags & 4) && entry->blend[1].a == 0) continue;
 			}
 			PSMTXConcat(cam->view, obj->modelWorldMtx, mtx);
-			if ((OBJ_FLAGS & 0x2) && !mapClipOffFlag) {
+			if ((OBJ_FLAGS & MAPOBJ_FLAG_CLIP) && !mapClipOffFlag) {
 				joint = obj->joints;
 #define CLIP_TEST(cx, cy, cz) \
 	clipPos.x = (cx); \
@@ -2531,7 +2531,7 @@ void mapDisp(void) {
 				if (clip) continue;
 			}
 #undef OBJ_FLAGS
-			PSMTXMultVec(mtx, (Vec*)(obj->field_0xC + 4), &dispPos);
+			PSMTXMultVec(mtx, &obj->center, &dispPos);
 			PSMTX44MultVec(cam->projection, &dispPos, &dispPos);
 			order = 5000.0f * dispPos.z + 5000.0f;
 			if (order < 0.0f) {
@@ -2541,22 +2541,22 @@ void mapDisp(void) {
 				order = 10000.0f;
 			}
 			order *= -1.0f;
-			id = obj->field_0x0[4];
+			id = obj->renderMode;
 			if (obj->joints->partCount > 0) {
-				color = *(GXColor*)obj->field_0xC;
+				color = obj->color;
 				matColor = *(GXColor*)((u8*)obj->joints->parts[0].material + 0x10C);
-				if (mapTestXLU(*(u32*)obj->field_0x0, &color, &matColor)) {
+				if (mapTestXLU(obj->flags, &color, &matColor)) {
 					id = 2;
 				}
 			}
-			if (*(u32*)obj->field_0x0 & 0x20000000) {
-				dispEntry(CAMERA_OFFSCREEN2, 5000.0f, 3, !(*(u32*)obj->field_0x0 & 0x10) ? (DispCallback)mapDispMapObj_bbox : (DispCallback)mapDispMapGrp_bbox, obj);
+			if (obj->flags & MAPOBJ_FLAG_BBOX) {
+				dispEntry(CAMERA_OFFSCREEN2, 5000.0f, 3, !(obj->flags & MAPOBJ_FLAG_GROUP) ? (DispCallback)mapDispMapObj_bbox : (DispCallback)mapDispMapGrp_bbox, obj);
 			}
-			if (*(u32*)obj->field_0x0 & 0x80) {
-				dispEntry(CAMERA_OFFSCREEN2, order, id, !(*(u32*)obj->field_0x0 & 0x10) ? (DispCallback)mapDispMapObj_off : (DispCallback)mapDispMapGrp_off, obj);
+			if (obj->flags & MAPOBJ_FLAG_OFFSCREEN) {
+				dispEntry(CAMERA_OFFSCREEN2, order, id, !(obj->flags & MAPOBJ_FLAG_GROUP) ? (DispCallback)mapDispMapObj_off : (DispCallback)mapDispMapGrp_off, obj);
 			}
-			if (!(*(u32*)obj->field_0x0 & 0x1)) {
-				dispEntry(obj->field_0x0[5], order, id, !(*(u32*)obj->field_0x0 & 0x10) ? (DispCallback)mapDispMapObj : (DispCallback)mapDispMapGrp, obj);
+			if (!(obj->flags & MAPOBJ_FLAG_HIDDEN)) {
+				dispEntry(obj->cameraId, order, id, !(obj->flags & MAPOBJ_FLAG_GROUP) ? (DispCallback)mapDispMapObj : (DispCallback)mapDispMapGrp, obj);
 			}
 		}
 	}
@@ -2567,7 +2567,7 @@ s32 mapSetLight(MapObject* obj, LightEntry** entries) {
 	s32 count = 0;
 	s32 i;
 
-	PSMTXMultVec(obj->modelWorldMtx, (Vec*)(obj->field_0xC + 4), &pos);
+	PSMTXMultVec(obj->modelWorldMtx, &obj->center, &pos);
 
 	if (obj->joints->drawMode->unk2[0] & 0x8) {
 		if (*(u32*)(obj->joints->drawMode->unk2 + 2) == 0) {
@@ -2576,8 +2576,8 @@ s32 mapSetLight(MapObject* obj, LightEntry** entries) {
 		else {
 			for (i = 0; i < 0x20; i++) {
 				if (*(u32*)(obj->joints->drawMode->unk2 + 2) & (1 << i)) {
-					MapEntry* entry = &mapWork[activeGroup].entries[*(s16*)(obj->field_0xDC + 2)];
-					void* list = *(void**)(entry->field_0x8C + 0x0C);
+					MapEntry* entry = &mapWork[activeGroup].entries[obj->entryIdx];
+					void* list = entry->lightTable;
 					LightEntry* l = lightNameToPtr(*(const char**)*(void**)((u8*)list + i * 4 + 4));
 
 					if (!(l->flags & LIGHT_AMBIENT)) {
@@ -2594,8 +2594,8 @@ s32 mapSetLight(MapObject* obj, LightEntry** entries) {
 		if (*(u32*)(obj->joints->drawMode->unk2 + 2) != 0) {
 			for (i = 0; i < 0x20; i++) {
 				if (*(u32*)(obj->joints->drawMode->unk2 + 2) & (1 << i)) {
-					MapEntry* entry = &mapWork[activeGroup].entries[*(s16*)(obj->field_0xDC + 2)];
-					void* list = *(void**)(entry->field_0x8C + 0x0C);
+					MapEntry* entry = &mapWork[activeGroup].entries[obj->entryIdx];
+					void* list = entry->lightTable;
 					LightEntry* l = lightNameToPtr(*(const char**)*(void**)((u8*)list + i * 4 + 4));
 
 					if (!(l->flags & LIGHT_AMBIENT)) {
@@ -3270,11 +3270,11 @@ void mapSetMaterialTev(s32 texCount, s32 drawMode, s32 flags, Mtx mtx) {
 		s32 alpha;
 		f32 c;
 
-		if (flags & 0x100000) {
-			red = current_mp->field_0xC[0];
-			green = current_mp->field_0xC[1];
-			blue = current_mp->field_0xC[2];
-			alpha = current_mp->field_0xC[3];
+		if (flags & MAPOBJ_FLAG_FLUSH) {
+			red = current_mp->color.r;
+			green = current_mp->color.g;
+			blue = current_mp->color.b;
+			alpha = current_mp->color.a;
 		}
 		else {
 			red = 0xF0;
@@ -3329,7 +3329,7 @@ void mapSetMaterialTev(s32 texCount, s32 drawMode, s32 flags, Mtx mtx) {
 		texCoord++;
 	}
 
-	if (flags & 0xF000000) {
+	if (flags & MAPOBJ_TEV_CALLBACK_MASK) {
 		MapTevCallback work;
 		MapTevCallback* workPtr = &work;
 		void (*callback)(MapTevCallback*);
@@ -3343,8 +3343,8 @@ void mapSetMaterialTev(s32 texCount, s32 drawMode, s32 flags, Mtx mtx) {
 		workPtr->texMap = texMap;
 		workPtr->texCoord = texCoord;
 		workPtr->numIndStage = 0;
-		cbIndex = (u32)(flags & 0xF000000) >> 22 & 0x3FC;
-		cbBase = (u8*)&mapWork[activeGroup].entries[0] + 0x110;
+		cbIndex = (u32)(flags & MAPOBJ_TEV_CALLBACK_MASK) >> 22 & 0x3FC;
+		cbBase = (u8*)mapWork[activeGroup].entries[0].tevCallback;
 		callback = *(void**)(cbBase + cbIndex);
 		if (callback != NULL) {
 			callback(workPtr);
@@ -3363,7 +3363,7 @@ void mapSetMaterialLastStageBlend(s32 flags, GXColor color1, GXColor color2) {
 	MapWork* wp = mapGetWork();
 	GXColor color = {0xFF, 0xFF, 0xFF, 0xFF};
 
-	if (flags & 0x40) {
+	if (flags & MAPOBJ_FLAG_COLOR) {
 		color.r = color.r * color1.r / 255;
 		color.g = color.g * color1.g / 255;
 		color.b = color.b * color1.b / 255;
@@ -3372,23 +3372,23 @@ void mapSetMaterialLastStageBlend(s32 flags, GXColor color1, GXColor color2) {
 	if (color2.r != 0xFF) {
 		color.a = color.a * color2.r / 255;
 	}
-	if ((wp->entries[0].flags & 0x2) && !(flags & 0x800)) {
-		color.r = color.r * wp->entries[0].field_0x16[0] / 255;
-		color.g = color.g * wp->entries[0].field_0x16[1] / 255;
-		color.b = color.b * wp->entries[0].field_0x16[2] / 255;
-		color.a = color.a * wp->entries[0].field_0x16[3] / 255;
+	if ((wp->entries[0].flags & 0x2) && !(flags & MAPOBJ_FLAG_NO_BLEND)) {
+		color.r = color.r * wp->entries[0].blend[0].r / 255;
+		color.g = color.g * wp->entries[0].blend[0].g / 255;
+		color.b = color.b * wp->entries[0].blend[0].b / 255;
+		color.a = color.a * wp->entries[0].blend[0].a / 255;
 	}
-	if ((wp->entries[0].flags & 0x4) && !(flags & 0x1000)) {
-		color.r = color.r * wp->entries[0].field_0x16[4] / 255;
-		color.g = color.g * wp->entries[0].field_0x16[5] / 255;
-		color.b = color.b * wp->entries[0].field_0x16[6] / 255;
-		color.a = color.a * wp->entries[0].field_0x16[7] / 255;
+	if ((wp->entries[0].flags & 0x4) && !(flags & MAPOBJ_FLAG_NO_BLEND1)) {
+		color.r = color.r * wp->entries[0].blend[1].r / 255;
+		color.g = color.g * wp->entries[0].blend[1].g / 255;
+		color.b = color.b * wp->entries[0].blend[1].b / 255;
+		color.a = color.a * wp->entries[0].blend[1].a / 255;
 	}
-	if ((wp->entries[0].flags & 0x8) && !(flags & 0x800)) {
-		color.r = color.r * wp->entries[0].field_0x16[8] / 255;
-		color.g = color.g * wp->entries[0].field_0x16[9] / 255;
-		color.b = color.b * wp->entries[0].field_0x16[10] / 255;
-		color.a = color.a * wp->entries[0].field_0x16[11] / 255;
+	if ((wp->entries[0].flags & 0x8) && !(flags & MAPOBJ_FLAG_NO_BLEND)) {
+		color.r = color.r * wp->entries[0].blend[2].r / 255;
+		color.g = color.g * wp->entries[0].blend[2].g / 255;
+		color.b = color.b * wp->entries[0].blend[2].b / 255;
+		color.a = color.a * wp->entries[0].blend[2].a / 255;
 	}
 	GXSetTevKColor(GX_KCOLOR0, color);
 }
@@ -3413,7 +3413,7 @@ static inline void mapDrawObjectFog(MapObject* obj) {
 	CameraEntry* cur = camGetCurPtr();
 	MapEntry* entry = &mapWork[activeGroup].entries[0];
 
-	if ((entry->flags & 0x1) && !(*(u32*)obj->field_0x0 & 0x80000)) {
+	if ((entry->flags & 0x1) && !(obj->flags & MAPOBJ_FLAG_NO_FOG)) {
 		GXSetFog(fog_type[entry->fogType], entry->fogStart, entry->fogEnd, cur->near, cur->far, entry->fogColor);
 	}
 	else {
@@ -3626,8 +3626,8 @@ void mapSetMaterial(MapObject* obj, void* materialPtr) {
 		TEXDescriptor* desc;
 
 		wp = &mapWork[activeGroup];
-		desc = TEXGet(wp->entries[*(s16*)(obj->field_0xDC + 2)].tpl,
-		              mapMatSearchTex(*(s32**)(wp->entries[*(s16*)(obj->field_0xDC + 2)].field_0x8C + 8),
+		desc = TEXGet(wp->entries[obj->entryIdx].tpl,
+		              mapMatSearchTex(wp->entries[obj->entryIdx].textureTable,
 		                              *(const char**)ref->field_0x0));
 		GXInitTexObj(&texObj, desc->textureHeader->data, desc->textureHeader->width, desc->textureHeader->height,
 		             desc->textureHeader->format, texwrap_tbl[ref->wrapS], texwrap_tbl[ref->wrapT],
@@ -3640,7 +3640,7 @@ void mapSetMaterial(MapObject* obj, void* materialPtr) {
 	}
 
 	mapSetMaterialTev(mat->texCount, mat->field_0x110 ? mat->field_0x110[0] : 0,
-	                  *(s32*)obj->field_0x0, obj->modelWorldMtx);
+	                  obj->flags, obj->modelWorldMtx);
 }
 
 void mapSetPaperAmbColor(GXColor* color) {
@@ -3796,7 +3796,7 @@ void mapSetMaterialLight(s32 flags, Vec position) {
 
 // vertex layout of an unpacked display list (stride 0x18)
 
-// per-mesh vtx-format block (the value at entry->field_0x8C + 0x18)
+// per-mesh vtx-format block (entry->vcdTable)
 
 #pragma opt_common_subs off // MUST_MATCH: stop MWCC CSEing a shared base into the wp/nrm/pos slots
 // The vertex-loop `p = &vp->x` scratch is matched by reading z as `p[2]`.
@@ -3826,7 +3826,7 @@ void mapSetPolygon(MapObject* obj, MapFileMesh* mesh) {
 
 	GXSetCullMode(culling[obj->joints->drawMode->cullMode]);
 
-	if (!(wp->entries[*(s16*)(obj->field_0xDC + 2)].flags & 0x8000)) {
+	if (!(wp->entries[obj->entryIdx].flags & 0x8000)) {
 		GXClearVtxDesc();
 		GXSetVtxAttrFmtv(GX_VTXFMT0, attr_fmt);
 		GXSetVtxDesc(GX_VA_POS, GX_INDEX16);
@@ -3878,7 +3878,7 @@ void mapSetPolygon(MapObject* obj, MapFileMesh* mesh) {
 		GXSetVtxDesc(GX_VA_POS, GX_INDEX16);
 		{
 			u8* base = (u8*)wp + 0xA4;
-			fmt = (MapVtxFmt*)*(void**)(base + *(s16*)(obj->field_0xDC + 2) * 0x178);
+			fmt = (MapVtxFmt*)*(void**)(base + obj->entryIdx * 0x178);
 		}
 		GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_POS_XYZ, GX_S16, (u8)fmt->field_0x44);
 		GXSetArray(GX_VA_POS, pos, 6);
@@ -3896,7 +3896,7 @@ void mapSetPolygon(MapObject* obj, MapFileMesh* mesh) {
 		for (i = 0; i < 8; i++) {
 			if (!(mask & (1 << (i + 4)))) break;
 			GXSetVtxDesc(GX_VA_TEX0 + i, GX_INDEX16);
-			fmt = (MapVtxFmt*)*(void**)(wp->entries[*(s16*)(obj->field_0xDC + 2)].field_0x8C + 0x18);
+			fmt = (MapVtxFmt*)wp->entries[obj->entryIdx].vcdTable;
 			GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0 + i, GX_TEX_ST, GX_S16, (u8)fmt->field_0x48[i]);
 			GXSetArray(GX_VA_TEX0 + i, (void*)(((u32*)mesh->vcdTableOffset)[6 + i] + 4), 4);
 		}
@@ -3910,7 +3910,7 @@ void mapSetPolygon(MapObject* obj, MapFileMesh* mesh) {
 
 #pragma opt_common_subs off // MUST_MATCH: keep GX_VA_TEX0+i from being CSE-hoisted
 // GX setup order/constants and addressing match. The `base = (u8*)wp + 0xA4` local gives the first
-// material load the original's `add r7, wp, idx` operand order (a direct `(u8*)wp->entries + off`
+// vcd_table load the original's `add r7, wp, idx` operand order (a direct `(u8*)wp->entries + off`
 // form emits the index first). `wp = mapGetWork()`, the `vcd` pointer local and the pos/nrm
 // declaration order are the rest of the matched source shape.
 void mapSetPolygonVtxDesc(MapObject* obj, MapFileMesh* mesh) {
@@ -3920,7 +3920,7 @@ void mapSetPolygonVtxDesc(MapObject* obj, MapFileMesh* mesh) {
 	u32 mask;
 	u32* vcd;
 	s32 i;
-	u8* material;
+	u8* vcdFmt;
 	wp = mapGetWork();
 	vcd = (u32*)mesh->vcdTableOffset;
 	pos = (void*)(vcd[0] + 4);
@@ -3931,9 +3931,9 @@ void mapSetPolygonVtxDesc(MapObject* obj, MapFileMesh* mesh) {
 	GXSetVtxDesc(GX_VA_POS, GX_INDEX16);
 	{
 		u8* base = (u8*)wp + 0xA4;
-		material = *(u8**)(base + *(s16*)(obj->field_0xDC + 2) * 0x178);
+		vcdFmt = *(u8**)(base + obj->entryIdx * 0x178);
 	}
-	GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_POS_XYZ, GX_S16, (u8)*(u32*)(material + 0x44));
+	GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_POS_XYZ, GX_S16, (u8)*(u32*)(vcdFmt + 0x44));
 	GXSetArray(GX_VA_POS, pos, 6);
 	GXSetVtxDesc(GX_VA_NRM, GX_INDEX16);
 	GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_NRM, GX_NRM_XYZ, GX_S8, 6);
@@ -3953,8 +3953,8 @@ void mapSetPolygonVtxDesc(MapObject* obj, MapFileMesh* mesh) {
 			break;
 		}
 		GXSetVtxDesc(GX_VA_TEX0 + i, GX_INDEX16);
-		material = *(u8**)(wp->entries[*(s16*)(obj->field_0xDC + 2)].field_0x8C + 0x18);
-		GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0 + i, GX_TEX_ST, GX_S16, (u8)*(u32*)(material + 0x48 + i * 4));
+		vcdFmt = (u8*)wp->entries[obj->entryIdx].vcdTable;
+		GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0 + i, GX_TEX_ST, GX_S16, (u8)*(u32*)(vcdFmt + 0x48 + i * 4));
 		GXSetArray(GX_VA_TEX0 + i, (void*)(((u32*)mesh->vcdTableOffset)[6 + i] + 4), 4);
 	}
 }
@@ -4034,8 +4034,8 @@ void mapObjFlagOn(const char* name, u32 flag) {
 	if (obj == NULL) {
 		mapErrorEntry(0, name);
 	}
-	else if (!(flag & 0x100) || *(void**)((u8*)obj + 0x114)) {
-		*(u32*)obj->field_0x0 |= flag;
+	else if (!(flag & MAPOBJ_FLAG_DISPLAY_LIST) || obj->dlSize[0]) {
+		obj->flags |= flag;
 	}
 }
 
@@ -4046,20 +4046,20 @@ void mapObjFlagOff(const char* name, u32 flag) {
 		mapErrorEntry(0, name);
 	}
 	else {
-		*(u32*)obj->field_0x0 &= ~flag;
+		obj->flags &= ~flag;
 	}
 }
 
 void mapFlgOn(MapObject* obj, u32 flag, s32 a3) {
-	if (!(flag & 0x100) || *(void**)((u8*)obj + 0x114)) {
-		*(u32*)obj->field_0x0 |= flag;
+	if (!(flag & MAPOBJ_FLAG_DISPLAY_LIST) || obj->dlSize[0]) {
+		obj->flags |= flag;
 	}
 	if (obj->child) mapFlgOn(obj->child, flag, 1);
 	if (a3 && obj->next) mapFlgOn(obj->next, flag, 1);
 }
 
 void mapFlgOff(MapObject* obj, u32 flag, s32 a3) {
-	*(u32*)obj->field_0x0 &= ~flag;
+	obj->flags &= ~flag;
 	if (obj->child) mapFlgOff(obj->child, flag, 1);
 	if (a3 && obj->next) mapFlgOff(obj->next, flag, 1);
 }
@@ -4092,12 +4092,12 @@ void mapGrpFlagOff(const char* name, u32 flag) {
 #pragma dont_inline reset
 
 void _setOffScrnId(MapObject* obj, s32 id, s32 a3) {
-	*(s16*)obj->field_0xDC = id;
+	obj->offScreenId = id;
 	if (id != -1) {
-		*(u32*)obj->field_0x0 |= 0x80;
+		obj->flags |= MAPOBJ_FLAG_OFFSCREEN;
 	}
 	else {
-		*(u32*)obj->field_0x0 &= ~0x80;
+		obj->flags &= ~MAPOBJ_FLAG_OFFSCREEN;
 	}
 	if (obj->child) _setOffScrnId(obj->child, id, 1);
 	if (a3 && obj->next) _setOffScrnId(obj->next, id, 1);
@@ -4106,8 +4106,8 @@ void _setOffScrnId(MapObject* obj, s32 id, s32 a3) {
 void mapObjSetOffScreen(const char* name, const char* offName) {
 	MapObject* obj = mapGetMapObjSub(name);
 
-	*(s16*)obj->field_0xDC = offscreenNameToId(offName);
-	*(u32*)obj->field_0x0 |= 0x80;
+	obj->offScreenId = offscreenNameToId(offName);
+	obj->flags |= MAPOBJ_FLAG_OFFSCREEN;
 }
 
 void mapGrpSetOffScreen(const char* name, const char* offName) {
@@ -4120,8 +4120,8 @@ void mapGrpSetOffScreen(const char* name, const char* offName) {
 void mapObjClearOffScreen(const char* name) {
 	MapObject* obj = mapGetMapObjSub(name);
 
-	*(s16*)obj->field_0xDC = -1;
-	*(u32*)obj->field_0x0 &= ~0x80;
+	obj->offScreenId = -1;
+	obj->flags &= ~MAPOBJ_FLAG_OFFSCREEN;
 }
 
 void mapGrpClearOffScreen(const char* name) {
@@ -4135,9 +4135,9 @@ void mapObjRotate(const char* name, f32 x, f32 y, f32 z) {
 		Mtx mx;
 		Mtx my;
 		Mtx mz;
-		u32* flags = (u32*)obj->field_0x0;
+		u32* flags = &obj->flags;
 
-		if (!(*flags & 0x200)) {
+		if (!(*flags & MAPOBJ_FLAG_DIRTY)) {
 			PSMTXIdentity(obj->unkAC);
 		}
 		PSMTXRotRad(mx, 'x', 0.017453292f * x);
@@ -4146,8 +4146,8 @@ void mapObjRotate(const char* name, f32 x, f32 y, f32 z) {
 		PSMTXConcat(obj->unkAC, mz, obj->unkAC);
 		PSMTXConcat(obj->unkAC, my, obj->unkAC);
 		PSMTXConcat(obj->unkAC, mx, obj->unkAC);
-		*flags |= 0x200000;
-		*flags |= 0x200;
+		*flags |= MAPOBJ_FLAG_USER_MTX;
+		*flags |= MAPOBJ_FLAG_DIRTY;
 	}
 }
 
@@ -4156,15 +4156,15 @@ void mapObjTranslate(const char* name, f32 x, f32 y, f32 z) {
 
 	if (obj) {
 		Mtx m;
-		u32* flags = (u32*)obj->field_0x0;
+		u32* flags = &obj->flags;
 
-		if (!(*flags & 0x200)) {
+		if (!(*flags & MAPOBJ_FLAG_DIRTY)) {
 			PSMTXIdentity(obj->unkAC);
 		}
 		PSMTXTrans(m, x / 10.0f, y / 10.0f, z / 10.0f);
 		PSMTXConcat(obj->unkAC, m, obj->unkAC);
-		*flags |= 0x200000;
-		*flags |= 0x200;
+		*flags |= MAPOBJ_FLAG_USER_MTX;
+		*flags |= MAPOBJ_FLAG_DIRTY;
 	}
 }
 
@@ -4173,15 +4173,15 @@ void mapObjScale(const char* name, f32 x, f32 y, f32 z) {
 
 	if (obj) {
 		Mtx m;
-		u32* flags = (u32*)obj->field_0x0;
+		u32* flags = &obj->flags;
 
-		if (!(*flags & 0x200)) {
+		if (!(*flags & MAPOBJ_FLAG_DIRTY)) {
 			PSMTXIdentity(obj->unkAC);
 		}
 		PSMTXScale(m, x, y, z);
 		PSMTXConcat(obj->unkAC, m, obj->unkAC);
-		*flags |= 0x200000;
-		*flags |= 0x200;
+		*flags |= MAPOBJ_FLAG_USER_MTX;
+		*flags |= MAPOBJ_FLAG_DIRTY;
 	}
 }
 
@@ -4192,7 +4192,7 @@ void mapObjGetPosSub(MapObject* obj, Vec* pos, s32* count, void* a4) {
 	else {
 		Vec v;
 
-		PSMTXMultVec(obj->modelWorldMtx, (Vec*)(obj->field_0xC + 4), &v);
+		PSMTXMultVec(obj->modelWorldMtx, &obj->center, &v);
 		PSVECAdd(pos, &v, pos);
 		(*count)++;
 	}
@@ -4293,15 +4293,15 @@ void mapObjSetColor(const char* name, GXColor* color) {
 	MapObject* obj = mapGetMapObjSub(name);
 
 	if (obj) {
-		*(u32*)((u8*)obj + 0xC) = *(u32*)color;
-		*(u32*)obj->field_0x0 |= 0x40;
+		*(u32*)&obj->color = *(u32*)color;
+		obj->flags |= MAPOBJ_FLAG_COLOR;
 	}
 }
 
 void setColor(MapObject* obj, GXColor color, s32 a3) {
 	if (obj == 0) return;
-	*(GXColor*)&obj->field_0xC = color;
-	*(u32*)obj->field_0x0 |= 0x40;
+	obj->color = color;
+	obj->flags |= MAPOBJ_FLAG_COLOR;
 	if (obj->child) {
 		setColor(obj->child, color, 1);
 	}
@@ -4581,16 +4581,16 @@ BOOL mapCheckData(MapHeader* header, const char* map, const char* date) {
 }
 
 BOOL mapTestXLU(u32 flags, GXColor* a, GXColor* b) {
-	if ((flags & 0x40) && a->a != 0xFF) {
+	if ((flags & MAPOBJ_FLAG_COLOR) && a->a != 0xFF) {
 		return TRUE;
 	}
 	if (b->a != 0xFF) {
 		return TRUE;
 	}
-	if (!(flags & 0x800) && (mapWork[activeGroup].entries[0].flags & 0x2) && mapWork[activeGroup].entries[0].field_0x16[3] != 0xFF) {
+	if (!(flags & MAPOBJ_FLAG_NO_BLEND) && (mapWork[activeGroup].entries[0].flags & 0x2) && mapWork[activeGroup].entries[0].blend[0].a != 0xFF) {
 		return TRUE;
 	}
-	if (!(flags & 0x1000) && (mapWork[activeGroup].entries[0].flags & 0x4) && mapWork[activeGroup].entries[0].field_0x16[7] != 0xFF) {
+	if (!(flags & MAPOBJ_FLAG_NO_BLEND1) && (mapWork[activeGroup].entries[0].flags & 0x4) && mapWork[activeGroup].entries[0].blend[1].a != 0xFF) {
 		return TRUE;
 	}
 	return FALSE;
@@ -4609,7 +4609,7 @@ void mapObjFlushOn(const char* name) {
 		mapErrorEntry(0, name);
 	}
 	else {
-		*(u32*)obj->field_0x0 |= 0x100000;
+		obj->flags |= MAPOBJ_FLAG_FLUSH;
 	}
 }
 
@@ -4620,7 +4620,7 @@ void mapObjFlushOff(const char* name) {
 		mapErrorEntry(0, name);
 	}
 	else {
-		*(u32*)obj->field_0x0 &= ~0x100000;
+		obj->flags &= ~MAPOBJ_FLAG_FLUSH;
 	}
 }
 
@@ -4643,8 +4643,8 @@ void mapObjSetFlushColor(const char* name, u8 r, u8 g, u8 b, u8 a) {
 	color.a = a;
 	obj = mapGetMapObjSub(name);
 	if (obj) {
-		*(u32*)obj->field_0xC = *(u32*)&color;
-		*(u32*)obj->field_0x0 |= 0x40;
+		obj->color = color;
+		obj->flags |= MAPOBJ_FLAG_COLOR;
 	}
 	mapObjFlagOff(name, 0x40);
 }
