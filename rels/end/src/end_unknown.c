@@ -53,6 +53,12 @@ typedef struct CreditsPoseState {
 } CreditsPoseState;
 
 
+// ending.tpl as loaded into CreditsWork.image
+typedef struct CreditsImage {
+    u8 pad_0x00[0xA0];
+    TEXPalette** palette;   // 0xA0
+} CreditsImage;
+
 // "end" REL credits work block (the target of dat_ptr_end_00003218)
 typedef struct CreditsWork {
     /* 0x00 */ void* image;
@@ -622,7 +628,7 @@ void unk_end_00001324(CameraId cameraId, void* param) {
     if (WORK->image == NULL) {
         return;
     }
-    if ((u32)var1 >= (**(TEXPalette***)((u8*)WORK->image + 0xA0))->numDescriptors) {
+    if ((u32)var1 >= (*((CreditsImage*)WORK->image)->palette)->numDescriptors) {
         return;
     }
     if (var1 == 9 && swGet(0x5E7) != 0) {
@@ -642,21 +648,21 @@ void unk_end_00001324(CameraId cameraId, void* param) {
 
     switch (WORK->mode) {
         case 0:
-            TEXGetGXTexObjFromPalette(**(TEXPalette***)((u8*)WORK->image + 0xA0), &texObj, var1);
+            TEXGetGXTexObjFromPalette(*((CreditsImage*)WORK->image)->palette, &texObj, var1);
             GXLoadTexObj(&texObj, 0);
             break;
         case 1:
             setTevColorGX(&zero_end_00002f30, WORK->tevColor);
-            TEXGetGXTexObjFromPalette(**(TEXPalette***)((u8*)WORK->image + 0xA0), &texObj, 0x31);
+            TEXGetGXTexObjFromPalette(*((CreditsImage*)WORK->image)->palette, &texObj, 0x31);
             GXLoadTexObj(&texObj, 0);
-            TEXGetGXTexObjFromPalette(**(TEXPalette***)((u8*)WORK->image + 0xA0), &texObj, 0x32);
+            TEXGetGXTexObjFromPalette(*((CreditsImage*)WORK->image)->palette, &texObj, 0x32);
             GXLoadTexObj(&texObj, 1);
             break;
         case 2:
             setTevColorGX(&zero_end_00002f34, WORK->tevColor);
-            TEXGetGXTexObjFromPalette(**(TEXPalette***)((u8*)WORK->image + 0xA0), &texObj, 0x32);
+            TEXGetGXTexObjFromPalette(*((CreditsImage*)WORK->image)->palette, &texObj, 0x32);
             GXLoadTexObj(&texObj, 0);
-            TEXGetGXTexObjFromPalette(**(TEXPalette***)((u8*)WORK->image + 0xA0), &texObj, 0x33);
+            TEXGetGXTexObjFromPalette(*((CreditsImage*)WORK->image)->palette, &texObj, 0x33);
             GXLoadTexObj(&texObj, 1);
             break;
         default:
@@ -752,7 +758,7 @@ void unk_end_00001324(CameraId cameraId, void* param) {
         GXSetNumTevStages(1);
         GXSetTevOrder(0, 0, 0, 4);
         GXSetTevOp(0, 0);
-        TEXGetGXTexObjFromPalette(**(TEXPalette***)((u8*)WORK->image + 0xA0), &texObj, 0x34);
+        TEXGetGXTexObjFromPalette(*((CreditsImage*)WORK->image)->palette, &texObj, 0x34);
         GXLoadTexObj(&texObj, 0);
         setChanMatColorGX(&dat_end_00002f64, WORK->overlayColor);
         GXSetZMode(1, 3, 0);
