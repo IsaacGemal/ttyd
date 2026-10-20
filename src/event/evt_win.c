@@ -174,7 +174,7 @@ typedef struct UnitWinObj {
 } UnitWinObj;             // size 0xC
 
 typedef struct UnitWinWork {
-	u16 flags;                  // 0x0, UNITWIN_FLAG_*
+	u16 flags;                  // 0x0
 	u16 pad_02;                 // 0x2
 	UnitWinObj* objList;        // 0x4
 	s32* items;                 // 0x8, item id per object (0 = none)
@@ -192,7 +192,7 @@ typedef struct UnitWinWork {
 	f32 cursorY;                // 0x40
 	f32 listY;                  // 0x44
 	u8 pad_0x48[0x4];           // 0x48
-	s32 excludeMember;          // 0x4C, party member left out of the list
+	s32 excludeId;              // 0x4C, entry left out of the list (partner id, or stat row)
 	s32 mode;                   // 0x50, which list the window shows
 	u16 freeState;              // 0x54, bit 0 requests free, bit 1 is set once the event has run
 	u8 pad_0x56[2];             // 0x56
@@ -204,7 +204,7 @@ typedef struct UnitWinWork {
 	s32 useTaken;               // 0xE4, set by the script when the use was accepted
 } UnitWinWork;
 
-static int party_id_table[8] = { PARTY_MEMBER_GOOMBELLA, PARTY_MEMBER_KOOPS, PARTY_MEMBER_FLURRIE, PARTY_MEMBER_YOSHI, PARTY_MEMBER_VIVIAN, PARTY_MEMBER_BOBBERY, PARTY_MEMBER_MS_MOWZ, PARTY_MEMBER_NONE };
+static int party_id_table[8] = { PARTNER_GOOMBELLA, PARTNER_KOOPS, PARTNER_FLURRIE, PARTNER_YOSHI, PARTNER_VIVIAN, PARTNER_BOBBERY, PARTNER_MSMOWZ, PARTNER_NONE };
 static u32 party_icon_table[7] = { 0x155, 0x156, 0x15F, 0x158, 0x160, 0x157, 0x161 };
 static const char* party_labelname_table[7] = { "_kur", "_nok", "_win", "_yos", "_viv", "_bom", "_chu" };
 static u32 mario_status_icon_table[3] = { 0x19F, 0x1A0, 0x1A1 };
@@ -1072,8 +1072,8 @@ void evt_unitwin_disp_func(CameraId cameraId, void* param) {
 				break;
 			case 11: {
 				s32 got = badgeShop_get(bdsw->bargain_table, (s16)(i + BADGE_MIN));
-				if (got - badgeShop_ThrowCheck(i + 0xF0) > 0) {
-					item = i + 0xF0;
+				if (got - badgeShop_ThrowCheck(i + BADGE_MIN) > 0) {
+					item = i + BADGE_MIN;
 				} else {
 					item = 0;
 				}
@@ -1081,7 +1081,7 @@ void evt_unitwin_disp_func(CameraId cameraId, void* param) {
 			}
 			case 13:
 				if ((s16)badgeShop_get(bdsw->starmaniac_table, (s16)(i + BADGE_MIN)) > 0) {
-					item = i + 0xF0;
+					item = i + BADGE_MIN;
 				} else {
 					item = 0;
 				}
@@ -1292,7 +1292,7 @@ void evt_unitwin_disp_func(CameraId cameraId, void* param) {
 		GXGetScissor(&scX, &scY, &scW, &scH);
 		GXSetScissor(0x120, 0xA2, 0x11C, 0xbe - listOff);
 
-		for (i = 0; party_id_table[i] != PARTY_MEMBER_NONE; i++) {
+		for (i = 0; party_id_table[i] != PARTNER_NONE; i++) {
 			char buf[0x20];
 			const char* name;
 			s32 flag;
@@ -1324,7 +1324,7 @@ void evt_unitwin_disp_func(CameraId cameraId, void* param) {
 					}
 				}
 			} else {
-				if (!partyChkJoin(party_id_table[i]) || wp->excludeMember == party_id_table[i]) {
+				if (!partyChkJoin(party_id_table[i]) || wp->excludeId == party_id_table[i]) {
 					continue;
 				}
 				if (pouch->partyData[party_id_table[i]].techLevel > 0) {
@@ -1591,7 +1591,7 @@ void evt_unitwin_disp_func(CameraId cameraId, void* param) {
 			s32 flag;
 			s32 arrow;
 			GXColor rowColor;
-			if (i == wp->excludeMember) { continue; }
+			if (i == wp->excludeId) { continue; }
 			if (mario_status_point_table[i][0] - mario_status_henka_table[i] > 0) {
 				rowColor = *(GXColor*)&dat_8041dab0;
 				blocked = 0;
