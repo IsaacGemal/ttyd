@@ -243,7 +243,15 @@ struct BattleWork {
     u8 field_180C0[0x180DC - 0x180C0];  // 0x180C0
     u8 stageFlags;                      // 0x180DC, bits 0x2/0x4/0x8 set by the layer switches (battle_stage_object.c),
                                         // 0x20 set by init_ceil, _disable_enemy_unit_disp and read by ceil_exist
-    u8 field_180DD[0x182B0 - 0x180DD];  // 0x180DD
+    u8 field_180DD[0x180E0 - 0x180DD];  // 0x180DD
+    s32 field_180E0;                    // 0x180E0
+    s32 field_180E4;                    // 0x180E4
+    s32 field_180E8;                    // 0x180E8
+    s32 field_180EC;                    // 0x180EC
+    s32 field_180F0;                    // 0x180F0
+    u8 field_180F4[0x1829C - 0x180F4];  // 0x180F4, pointer slots read with several pointer types
+    s32 field_1829C;                    // 0x1829C
+    u8 field_182A0[0x182B0 - 0x182A0];  // 0x182A0, pointer or s32 depending on the user
     BattleIcon icons[16];               // 0x182B0
     u8 field_18C70[0x18D88 - 0x18C70];  // 0x18C70
     BattleStatusChangeMsgWork statusChangeMsg; // 0x18D88
