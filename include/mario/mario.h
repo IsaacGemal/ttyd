@@ -159,7 +159,9 @@ typedef struct MarioWork {
     s16 airTimer;                  // 0x50
     s16 airTimerPeak;              // 0x52, airTimer when the jump peaks (marioJump, koopa_motion), cleared on landing; marioBoots and marioChkHipAttack test it
     s16 airTimerPrev;              // 0x54, airTimer copied at the end of the frame (mario.c, read by mario_kemuri)
-    u8 field_0x56[0x5C - 0x56];    // 0x56
+    u8 field_0x56[0x58 - 0x56];    // 0x56
+    s16 field_0x58;                // 0x58
+    s16 field_0x5A;                // 0x5A
     s16 unk5C;                     // 0x5C
     s16 unk5E;                     // 0x5E
     s16 unk60;                     // 0x60
@@ -206,7 +208,7 @@ typedef struct MarioWork {
 	f32 baseSpeed;                 // 0x180, same on US
     f32 mBaseWalkSpeed;            // 0x184
     f32 mBaseDashSpeed;            // 0x188, same on US
-    u8 unk18C[0x190 - 0x18C];      // 0x18C
+    f32 field_0x18C;               // 0x18C
 	f32 controlStickSensitivity;   // 0x190
 	f32 controlStickAngle;         // 0x194
     f32 targetYaw;                 // 0x198
@@ -263,7 +265,8 @@ typedef struct MarioWork {
     u8 unusedInput[0x258 - 0x254]; // 0x254, cleared with the MARIO_TRIG_FLAG_DISABLE_UNUSED_INPUT case
     u32 padDirs;                   // 0x258, DemoPad[0].dirs this frame
     u32 padDirsPressed;            // 0x25C, dirs newly set since the previous frame
-    u8 field_0x260[8];             // 0x260
+    u32 field_0x260;               // 0x260
+    u32 field_0x264;               // 0x264
     s32 slitFloorValid;            // 0x268, nonzero while slitFloorPos is set (mot_slit: cleared by marioClearSlitFloor, set in slit state 0x5A)
     Vec slitFloorPos;              // 0x26C, floor point marioGetSlitFloorPos returns (copied from position in slit state 0x5A)
     s32 sfxIds[3];                 // 0x278, sound handles, 0xFFFFFFFF when none (mot_jump, mot_stay, peach, marioSoundInit)

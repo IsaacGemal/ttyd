@@ -21,7 +21,7 @@
 #include <string.h>
 #include "matching.h"
 
-// Raw accessor for the MarioWork word at 0x18C (MarioWork.unk18C).
+// Raw accessor for the MarioWork word at 0x18C (MarioWork.field_0x18C).
 #define MF32(d, off) (*(f32*)((u8*)(d) + (off)))
 
 // The plane data block of mario->motStruct.
