@@ -66,18 +66,12 @@ static inline Vec initializeVec2(Vec* input) {
 }
 #endif
 
-#ifdef MUST_MATCH
-// MUST_MATCH: building the GXColor through an inline return puts the colour temp in the slot retail uses.
+// Building the GXColor through a local and setting its alpha puts the colour temp in the slot retail uses.
 static inline GXColor effNanigaMaterialColor(u8 alpha) {
 	GXColor color = (GXColor){ 0xFF, 0xFF, 0xFF, 0x00 };
 	color.a = alpha;
 	return color;
 }
-#else
-static inline GXColor effNanigaMaterialColor(u8 alpha) {
-	return (GXColor){ 0xFF, 0xFF, 0xFF, alpha };
-}
-#endif
 
 void effNanigaDisp3(CameraId camId, void* param) {
 	EffectEntry* effect = param;
@@ -335,12 +329,8 @@ void effNanigaMain(EffectEntry* effect) {
 			data->timer++;
 		}
 		else {
-#ifdef MUST_MATCH
-			// MUST_MATCH: the addend must be on the left so MWCC loads float_40 before data->end.
+			// The addend is on the left so MWCC loads float_40 before data->end.
 			data->field_0x34 = 40.f + data->end;
-#else
-			data->field_0x34 = data->end + 40.f;
-#endif
 			data->timer = 60;
 			data->state = 10;
 		}
@@ -388,17 +378,11 @@ void effNanigaMain(EffectEntry* effect) {
 	while (data->field_0x34 < 0.0f) {
 		data->field_0x34 += 40.f * (f32)data->count;
 	}
-#ifdef MUST_MATCH
-	// MUST_MATCH: writing this loop's constant as the literal 40.0f (== 40.f) makes MWCC hoist
+	// Writing this loop's constant as the literal 40.0f (== 40.f) makes MWCC hoist
 	// that load before the shared int->float magic pair, matching the original's loop-setup order.
 	while (data->field_0x34 >= 40.0f * (f32)(data->count + 2)) {
 		data->field_0x34 -= 40.0f * (f32)data->count;
 	}
-#else
-	while (data->field_0x34 >= 40.f * (f32)(data->count + 2)) {
-		data->field_0x34 -= 40.f * (f32)data->count;
-	}
-#endif
 
 	// A local keeps the second switch's selector live into the default case (the original has no reload).
 	state = data->state;

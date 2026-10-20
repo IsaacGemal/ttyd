@@ -667,13 +667,9 @@ void pouchSortItem(s32 type) {
 	ItemData* itemA;
 	ItemData* itemB;
 	s32 count;
-#ifdef MUST_MATCH
 	// Calling the inlined pouchGetPtr() instead of reading mpp directly is what makes MWCC keep the
 	// pouch pointer in r29 for the whole function (the original caches it there).
 	PouchData* pouch = pouchGetPtr();
-#else
-	PouchData* pouch = mpp;
-#endif
 	s32 i, j, k, badgeCount;
 	BOOL swap;
 	s16 temp1, temp2;
