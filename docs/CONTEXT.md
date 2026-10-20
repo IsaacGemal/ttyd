@@ -10661,3 +10661,25 @@ config/G8MJ01 is typed.
 Verify: tower `ninja` recreates build/G8MJ01/ok on top of n9-q-stage2, and natural (no MUST_MATCH) and MUST_MATCH
 compiles of the eight battle_database_*.c return 0. Index on the n9-q-stage2 tip 32.248 per kLOC (22770 weighted over
 706100 code lines) -> 31.420 (22348 over 711268). The line count grew because of the new initializer lines.
+
+## battle_stage: nok and pik stage tables, bom object array typed (2026-10-20, Claude Haiku 5.5, n9-q-stage3)
+
+`nok_btlstage_data` and `pik_btlstage_data` are now `BattleStageData X[1]` with full initializers, in jon's field order.
+Both blobs are one 0x1B4 record. mObjects is `&nok_btlobject_data[0]` and `&pik_btlobject_data[0]`, and the
+`(struct BattleStageData*)` casts at the btlgrpsel references are gone (`nok_btlstage_data`, `pik_btlstage_data`).
+Each stage's tail (0x190-0x1B3) is all zero, so initEvent, the object-turn events, and layerEvents `{ 0 }` are NULL and
+field_0x1B0 / layerDestroyed are not written out. Both weapons are decoded from the blob: bgsetAttackA1 has
+baseAccuracy 100, superguardType 2, targetClassFlags 0x02100060, targetPropertyFlags 0x20000000, counterResistanceFlags
+0x000007FF, and bgsetAttackB additionally has hpDamageFn `weaponGetPowerDefault` and hpDamageWork[0] 1. nok's A1 has
+the same `weaponGetPowerDefault` hpDamageFn.
+
+`pik_btlobject_data` was also still `u32[12]` and is now `BattleStageObjectData[2]` (`"C"` on layer 3 at the origin,
+`"A2"` on layer 1 at (0, 0, -74)), so pik's mObjects needs no cast. `bom_btlobject_data` is `BattleStageObjectData[11]`
+(nine objects with layer 1 or 0, then `"B"` on layer 2 and `"C"` on layer 3), and bom's mObjects drops its
+`(BattleStageObjectData*)` cast; bom's only reference to the array is that stage table.
+
+Left: no `btlstage_data` or `btlobject_data` blob is `u32` in rels/ any more.
+
+Verify: tower `ninja` recreates build/G8MJ01/ok after each of the three files. Natural (no MUST_MATCH) and MUST_MATCH
+compiles of battle_database_{nok,pik,bom}.c return 0. `tools/cleanup_index.py` 31.420 -> 31.408 per kLOC (22348
+weighted both; 711268 -> 711538 code lines).
