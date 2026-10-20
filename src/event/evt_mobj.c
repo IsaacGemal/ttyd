@@ -4209,9 +4209,6 @@ s32 mobj_koopa_badgeblk(MapObjectEntry* obj) {
             break;
         case 0x5a:
             if (obj->flags & MOBJ_FLAG_TRIGGERED) {
-                // MUST_MATCH: the empty case 2 makes MWCC emit the retail switch decision tree
-                // (cmpwi/beq/bge/b) instead of folding the two default edges together.
-#ifdef MUST_MATCH
                 switch (kpaGetLevel()) {
                     case 2:
                         break;
@@ -4219,11 +4216,6 @@ s32 mobj_koopa_badgeblk(MapObjectEntry* obj) {
                         flag = TRUE;
                         break;
                 }
-#else
-                if (kpaGetLevel() == 3) {
-                    flag = TRUE;
-                }
-#endif
                 if (!flag) {
                     obj->flags &= ~MOBJ_FLAG_TRIGGERED;
                 } else {
@@ -4338,9 +4330,6 @@ s32 mobj_koopa_blk(MapObjectEntry* obj) {
     switch (obj->state) {
         case 0:
             if (obj->flags & MOBJ_FLAG_TRIGGERED) {
-                // MUST_MATCH: the empty case 2 makes MWCC emit the retail switch decision tree
-                // (cmpwi/beq/bge/b) instead of folding the two default edges together.
-#ifdef MUST_MATCH
                 switch (kpaGetLevel()) {
                     case 2:
                         break;
@@ -4348,11 +4337,6 @@ s32 mobj_koopa_blk(MapObjectEntry* obj) {
                         flag = 1;
                         break;
                 }
-#else
-                if (kpaGetLevel() == 3) {
-                    flag = 1;
-                }
-#endif
                 if (flag == 0) {
                     obj->flags &= ~MOBJ_FLAG_TRIGGERED;
                 } else {
@@ -5126,9 +5110,7 @@ s32 mobj_koopa_pole_evt(MapObjectEntry* obj) {
             mobjRunEvent(obj, obj->eventCode);
             obj->state++;
             break;
-#ifdef MUST_MATCH
         case 0x5f:
-#endif
         default:
             break;
     }
