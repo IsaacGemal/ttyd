@@ -166,13 +166,9 @@ static inline void effBalloonSetVtx(BalloonVtx* dst, BalloonVtx* src, Mtx mtx) {
 	OSs16tof32(&dst->pos[2], &BALLOON_VEC->z);
 	PSMTXMultVec(mtx, BALLOON_VEC, BALLOON_VEC);
 	OSInitFastCast(); /* retail's GQR2-5 setup before the f32->s16 writes */
-#ifdef MUST_MATCH
 	// The original holds the memcpy destination in a caller register and stores pos[0]
-	// through it; the natural form below re-derives the address from the loop pointer.
+	// through it; passing &dst->pos[0] inline re-derives the address from the loop pointer.
 	{ s16* out = &dst->pos[0]; OSf32tos16(&BALLOON_VEC->x, out); }
-#else
-	OSf32tos16(&BALLOON_VEC->x, &dst->pos[0]);
-#endif
 	OSf32tos16(&BALLOON_VEC->y, &dst->pos[1]);
 	OSf32tos16(&BALLOON_VEC->z, &dst->pos[2]);
 #undef BALLOON_VEC
