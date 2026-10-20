@@ -6,24 +6,24 @@
 
 // Per-entry state of the 200 "teresa" boxes managed by senteresa_ext_init/ext_main.
 typedef struct TeresaEntry {
-    f32 field_0x00; //0x0
-    f32 field_0x04; //0x4
-    f32 field_0x08; //0x8
-    f32 field_0x0C; //0xC
-    f32 field_0x10; //0x10
-    f32 field_0x14; //0x14
-    f32 field_0x18; //0x18
-    f32 field_0x1C; //0x1C
-    f32 field_0x20; //0x20
-    f32 field_0x24; //0x24
-    f32 field_0x28; //0x28
-    f32 field_0x2C; //0x2C
-    f32 field_0x30; //0x30
-    f32 field_0x34; //0x34
-    f32 field_0x38; //0x38
-    s32 field_0x3C; //0x3C
-    u8 field_0x40;  //0x40
-    u8 field_0x41;  //0x41
+    f32 velX; //0x0, added to the pose each frame; set from 4.2f * v.x (jump-out)
+    f32 velY; //0x4, upward speed, drops by 0.3f per frame (ballistic fall)
+    f32 velZ; //0x8, set from v.z (jump-out) and cos(angle) (spin)
+    f32 angle; //0xC, orbit angle in degrees (computePos, +spinSpeed per frame, wraps at 360)
+    f32 offsetX; //0x10, x relative to mario (matrix x = mario x + offsetX each frame)
+    f32 offsetY; //0x14, y relative to mario (same use as offsetX)
+    f32 offsetZ; //0x18, z relative to mario (same use as offsetX)
+    f32 phase; //0x1C, bob phase in radians (sin(1.2f * phase); wraps at pi)
+    f32 spinSpeed; //0x20, angular speed added to angle each frame (clamped at 1.2f)
+    f32 startX; //0x24, saved pose position when a move starts (lerp source)
+    f32 startY; //0x28
+    f32 startZ; //0x2C
+    f32 endX; //0x30, lerp target (npc position plus a circle offset)
+    f32 endY; //0x34
+    f32 endZ; //0x38
+    s32 timer; //0x3C, frames left in the current state (counts down to 0)
+    u8 alpha; //0x40, color.a for the teresa's NPC
+    u8 state; //0x41, state-machine step (senteresa_ext_main switch)
     u8 pad_0x42[2]; //0x42
 } TeresaEntry;
 
