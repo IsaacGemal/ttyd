@@ -123,7 +123,7 @@ s32 windowEntry(u16 a1) {
 		if (!(entry->flags & 1)) {
 			memset(entry, 0, sizeof(WindowEntry));
 			entry->flags = 1;
-			entry->field_0x4 = a1;
+			entry->priority = a1;
 			return i;
 		}
 	}
