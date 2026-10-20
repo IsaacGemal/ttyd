@@ -8690,3 +8690,26 @@ names throughout (the MUST_MATCH colour helpers included), `camId == 1` is `CAME
 default to `CAMERA_3D`. shadowDispProjMtx is now under `#ifdef MUST_MATCH` because the plain-C #else reads
 `w->projection` directly and no longer needs it. Open: the SHADOW_MAT_COLOR/SHADOW_FOG_COLOR fn-cast macro bodies
 keep their literals, and the MUST_MATCH double spelling of the projection matrix stays.
+### Readability: action commands (2026-10-19, Claude Haiku 5.5, n9-q-sac; reviewed by Claude Opus 5.5)
+
+The star-stone action commands sac_bakugame, sac_scissor, sac_zubastar and sac_genki get their own work structs
+named. BakuGameWork (sac_bakugame, 0x2B8 bytes): `phase`/`phaseTimer` and `stage`/`counter`/`duration` (the outer
+and inner bakuGameMain switches), the time gauge `gauge`/`gaugeBoost`/`gaugeDecay`/`gaugeFill`, `countdown`,
+`cooldown`, `intensity` (camera shake and animPoseDrawMtx), `team`/`selTeam`, Mario's drop (`fromPos`, `landPos`,
+`fallSpeed`), the heiho's `heihoState`/`heihoPos`/`heihoFrom`/`heihoTo`/`heihoVelY`, the star stone's `starPos`/
+`starFrom`/`starTo`/`starScale`/`starRot`, the per-team jump velocities and the two SFX handles; BakuGameWorkEntry
+gets `state`, `frame`, `meter` and `iconScale`. The BattleWork bytes at 0x1F2C are `BakuGameGaugeColor`
+(`r`/`g`/`b`/`a` plus `dg`/`db`): BattleAcDrawGauge multiplies its bar colour by them when flag 1 is set, and
+bakuGameDisp2D sweeps g and b between 0x80 and 0xF5 once the gauge is full. ScissorWork: stick/cursor state
+(`prevStickX`, `stickX`, `cursorX`, `cursorVelX`, `lastPointX`), `pointBuf`/`pointCount`, `triBuf`/`triCount`,
+`hitUnitIds`/`hitPower`, `comboCount`, `audienceVol`, the timer (`timerPhase`, `timerFrame`, `timeLeft`,
+`timerPos`), `captureBuf` and the star-stone Vecs. ZubaStarWork: `phase`/`sequence`/`gaugePhase` with their timers,
+`timeLeft`, `hitCount`, `cursor`/`cursorHistory`, the slash `cutStart`/`cutEnd`/`cutFrame`, `curStar`, the gauge
+fields and `gaugeSfx`; ZubaStarBomb: `pos`, `center`, `from`/`to`, `angle`/`angleVel`, `velY`. All four files read
+the star stone's child effect as `effStarStoneData::field_0x34` instead of `userdata + 0x34`, and sac_genki indexes
+`&genki->objects[idx]`. Weighted density: bakugame 787 → 94, scissor 383 → 91, zubastar 344 → 80, genki 331 → 326.
+Left: sac_genki's address-named float constants (`float_0_80421d84` and friends) stay, since they are the .sdata2
+pool the MUST_MATCH paths reference by address; effStarStoneData's own fields and the first two BattleAcDrawGauge
+arguments (BakuGameWork 0xDC/0xE0) belong to eff_starstone and battle_ac and are named there, not per caller;
+GenkiWork's `field_44`/`field_48`/`field_60` effect pointers and BakuGameGaugeColor's never-touched 0x4 byte are
+still unnamed.
