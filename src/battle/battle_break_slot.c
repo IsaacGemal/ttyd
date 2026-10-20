@@ -351,6 +351,7 @@ void BattleBreakSlot_Init(void) {
 void BattleBreakSlot_Main(void) {
     static f32 updown;
     BattleWork* wp = _battleWorkPointer;
+    // battle - 0x6F98/0x6F84 are BattleWork forceFlags/forceSlotValue (wp->field recomputes the addis)
     u8* battle = (u8*)wp + 0x20000;
     BattleAudience* audience = BattleAudienceBaseGetPtr();
     BattleBreakSlot* slot = BattleBreakSlotGetPtr();
@@ -957,6 +958,7 @@ void BattleBreakSlot_End(void) {
 	//stubbed in retail
 }
 void BattleBreakSlot_PointInc(void) {
+    // battle - 0x6F98/0x6F84 are BattleWork forceFlags/forceSlotValue
     u8* battle = (u8*)_battleWorkPointer + 0x20000;
     BattleBreakSlot* slot = BattleBreakSlotGetPtr();
     BattleBreakSlotReel* reel;

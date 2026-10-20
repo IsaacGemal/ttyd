@@ -2524,8 +2524,8 @@ void _btlcmd_SetAttackEvent(BattleUnit* unit, BattleCommand* cmd) {
 		} else {
 			BtlActRec_AddCount((u8*)wp + 0x16F2C);
 		}
-		if (*(u32*)&wp->field_19064[0x1C] & 1) {
-			msgWindow_Continue(*(s32*)&wp->field_19064[0x20]);
+		if (*(u32*)&wp->field_19080[0] & 1) {
+			msgWindow_Continue(*(s32*)&wp->field_19080[4]);
 		}
 		break;
 	case 12:

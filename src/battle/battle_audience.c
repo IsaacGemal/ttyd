@@ -470,7 +470,7 @@ void BattleAudience_PerAct(void) {
 	info = audience->impendingBonuses;
 	if (info != NULL && ((flag2 = audience->flags & 0x100) || (audience->flags & 0x200))) {
 		if (flag2) {
-			value = (f32)(*(u8*)((u8*)info + 8) * (audience->mNumStylishCommandsThisAttack * 2));
+			value = (f32)(*(u8*)&info->mStylishCommandMultiplier * (audience->mNumStylishCommandsThisAttack * 2));
 			delta += value;
 			if (value >= 30.0f) {
 				BattleAudienceAddPhaseEvtList(0);
@@ -580,13 +580,11 @@ void BattleAudience_PerPhase(u32 value) {
 BOOL BattleAudience_CheckReactionPerPhase(void) {
 	BattleAudience* audience;
 	BattleAudienceMember* member;
-	u8* aud;
 	s32 evtList[200];
 	s32 phaseList[14];
 	s32 i, j, k, n, count, idx;
 
 	audience = BattleAudienceBaseGetPtr();
-	aud = (u8*)audience;
 	pouchGetPtr();
 	if (!(audience->flags & 8)) {
 		return FALSE;
@@ -696,7 +694,7 @@ BOOL BattleAudience_CheckReactionPerPhase(void) {
 				}
 				break;
 			case 3:
-				if (*(s32*)(aud + 0x137B0) != 0) {
+				if (audience->typeWeights[7] != 0) {
 					for (j = 0; j < audience->mMaxAudience; ) {
 						if (!(u8)BattleAudience_GetExist(j)) {
 							BattleAudienceAddPhaseEvtList(3);
@@ -1169,6 +1167,8 @@ void BattleAudienceSettingAudience(void) {
 	s32 listTotal;
 	BattleAudience* audience;
 
+	// base - 0x6F98/0x6F8C/0x6F88 are BattleWork forceFlags/forceAudienceCount/forceAudienceKind; reading them as
+	// _battleWorkPointer->field recomputes the addis per access
 	base = (u8*)_battleWorkPointer + 0x20000;
 	audience = BattleAudienceBaseGetPtr();
 	setupBase = (u8*)_battleWorkPointer->fbatInfo->setup + offsetof(NpcBattleInfo, audienceMode);
@@ -1514,6 +1514,7 @@ void BattleAudienceGuestTPLRead(s32 id, AudienceMemberType member, const char* p
 void BattleAudienceCtrlProcess(void) {
 	BattleWork* wp = _battleWorkPointer;
 	s32 r;
+	// wpHigh - 0x6f98 is BattleWork.forceFlags (wp->forceFlags recomputes the addis)
 	u8* wpHigh = (u8*)wp + 0x20000;
 	BattleAudience* audience = BattleAudienceBaseGetPtr();
 	BattleAudienceMember* member;
@@ -1852,7 +1853,6 @@ void BattleAudienceItemCtrlProcess(void) {
 	BattleUnit* unit;
 	BattleUnitPart* part;
 	BattleAudienceItemKind* kindItems;
-	u8* aud;
 	Vec hitPos;
 	Vec vecA;
 	Vec vecB;
@@ -1868,7 +1868,6 @@ void BattleAudienceItemCtrlProcess(void) {
 	s32 acc;
 
 	i = 0;
-	aud = (u8*)audience;
 	item = BattleAudienceItemGetPtr(0);
 	for (; i < 100; i++, item++) {
 		if (!(item->flags & 1)) {
@@ -1920,14 +1919,14 @@ void BattleAudienceItemCtrlProcess(void) {
 			item->scale = 1.0f;
 			item->angleZ = 0.0f;
 			vecA = battleAudienceItemZeroVec();
-			vecA.x = member->position.x + kind->field_0xC;
-			vecA.y = member->position.y + kind->field_0x10 - 10.0f;
+			vecA.x = member->position.x + kind->offsetX;
+			vecA.y = member->position.y + kind->offsetY - 10.0f;
 			vecA.z = member->position.z + 1.0f;
 			item->pos = vecA;
 #else
 			vecA = vec3_802f972c;
-			vecA.x = member->position.x + kind->field_0xC;
-			vecA.y = member->position.y + kind->field_0x10 - 10.0f;
+			vecA.x = member->position.x + kind->offsetX;
+			vecA.y = member->position.y + kind->offsetY - 10.0f;
 			vecA.z = member->position.z + 1.0f;
 			item->scale = 1.0f;
 			item->angleZ = 0.0f;
@@ -1977,8 +1976,8 @@ void BattleAudienceItemCtrlProcess(void) {
 					offset = 5;
 				}
 				vecB = vec3_802f9738;
-				vecB.x = member->dispPos.x + kind->field_0xC;
-				vecB.y = member->dispPos.y + kind->field_0x10 + intplGetValue(0, offset, 5, -10.0f, 0.0f);
+				vecB.x = member->dispPos.x + kind->offsetX;
+				vecB.y = member->dispPos.y + kind->offsetY + intplGetValue(0, offset, 5, -10.0f, 0.0f);
 				vecB.z = member->dispPos.z + 1.0f;
 				item->pos = vecB;
 			}
@@ -2043,35 +2042,35 @@ void BattleAudienceItemCtrlProcess(void) {
 					switch (item->mItemType) {
 					case 0xec:
 						#ifdef MUST_MATCH
-						memcpy(audience->field_137FC, tbl + 0x40, 0xc0);
+						memcpy(&audience->itemWeapon, tbl + 0x40, 0xc0);
 #else
-						memcpy(audience->field_137FC, weapon_data_akikan, 0xc0);
+						memcpy(&audience->itemWeapon, weapon_data_akikan, 0xc0);
 #endif
-						*(s32*)(aud + 0x1381c) = *(s32*)(aud + 0x1381c) + audience->itemCombo - 1;
+						audience->itemWeapon.hpDamageWork[0] += audience->itemCombo - 1;
 						break;
 					case 0xed:
 						#ifdef MUST_MATCH
-						memcpy(audience->field_137FC, tbl + 0x100, 0xc0);
+						memcpy(&audience->itemWeapon, tbl + 0x100, 0xc0);
 #else
-						memcpy(audience->field_137FC, weapon_data_brick, 0xc0);
+						memcpy(&audience->itemWeapon, weapon_data_brick, 0xc0);
 #endif
-						*(s32*)(aud + 0x1381c) = *(s32*)(aud + 0x1381c) + audience->itemCombo - 1;
+						audience->itemWeapon.hpDamageWork[0] += audience->itemCombo - 1;
 						break;
 					case 0xee:
 						#ifdef MUST_MATCH
-						memcpy(audience->field_137FC, tbl + 0x1c0, 0xc0);
+						memcpy(&audience->itemWeapon, tbl + 0x1c0, 0xc0);
 #else
-						memcpy(audience->field_137FC, weapon_data_bone, 0xc0);
+						memcpy(&audience->itemWeapon, weapon_data_bone, 0xc0);
 #endif
-						*(s32*)(aud + 0x1381c) = *(s32*)(aud + 0x1381c) + audience->itemCombo - 1;
+						audience->itemWeapon.hpDamageWork[0] += audience->itemCombo - 1;
 						break;
 					case 0xef:
 						#ifdef MUST_MATCH
-						memcpy(audience->field_137FC, tbl + 0x280, 0xc0);
+						memcpy(&audience->itemWeapon, tbl + 0x280, 0xc0);
 #else
-						memcpy(audience->field_137FC, weapon_data_hammer, 0xc0);
+						memcpy(&audience->itemWeapon, weapon_data_hammer, 0xc0);
 #endif
-						*(s32*)(aud + 0x1381c) = *(s32*)(aud + 0x1381c) + audience->itemCombo - 1;
+						audience->itemWeapon.hpDamageWork[0] += audience->itemCombo - 1;
 						break;
 					}
 					BattleAudience_SetPresentItemNo(item->mItemType);
@@ -2700,13 +2699,13 @@ void BattleAudienceDispAudience(CameraId camId, void* param) {
 			GXLoadTexObj(&texObj, GX_TEXMAP0);
 			{
 				f32 w = (f32)GXGetTexObjWidth(&texObj);
-				f32 k = audience_kind[member->type].field_0x18;
+				f32 k = audience_kind[member->type].scaleX;
 				w = k * w / 64.0f;
 				member->scale.x = member->baseSize.x * w;
 			}
 			{
 				f32 h = (f32)GXGetTexObjHeight(&texObj);
-				f32 k = audience_kind[member->type].field_0x1C;
+				f32 k = audience_kind[member->type].scaleY;
 				h = k * h / 64.0f;
 				member->scale.y = member->baseSize.y * h;
 			}
@@ -2719,13 +2718,13 @@ void BattleAudienceDispAudience(CameraId camId, void* param) {
 					GXLoadTexObj(&texObj, GX_TEXMAP0);
 					{
 						f32 w = (f32)GXGetTexObjWidth(&texObj);
-						f32 k = audience_kind[member->type].field_0x18;
+						f32 k = audience_kind[member->type].scaleX;
 						w = k * w / 64.0f;
 						member->scale.x = member->baseSize.x * w;
 					}
 					{
 						f32 h = (f32)GXGetTexObjHeight(&texObj);
-						f32 k = audience_kind[member->type].field_0x1C;
+						f32 k = audience_kind[member->type].scaleY;
 						h = k * h / 64.0f;
 						member->scale.y = member->baseSize.y * h;
 					}
@@ -3717,7 +3716,7 @@ void BattleAudience_ApRecoveryBuild(StarPowerInfo* info) {
 	party = BattleGetPartyPtr(wp);
 	crowdKindSum = 0.0f;
 	for (i = 0; i < 13; i++) {
-		crowdKindSum += audience_kind[i].field_0x14 * (f32)BattleAudience_GetPPAudienceNumKind(i);
+		crowdKindSum += audience_kind[i].apWeight * (f32)BattleAudience_GetPPAudienceNumKind(i);
 	}
 	sqrtWeight = (f32)sqrt(crowdKindSum);
 	spAcMultiplier = info->mSpAcSuccessMultiplier;
@@ -5003,7 +5002,7 @@ void BattleAudience_Case_ActionCommandGood(void) {
 #pragma dont_inline reset
 
 #pragma dont_inline on
-void BattleAudience_Case_ActionCommandBad(void* arg) {
+void BattleAudience_Case_ActionCommandBad(BattleWeapon* weapon) {
 	BattleAudience* audience = BattleAudienceBaseGetPtr();
 	s32 count = 0;
 	s32 i;
@@ -5015,7 +5014,7 @@ void BattleAudience_Case_ActionCommandBad(void* arg) {
 	if (count != 0) {
 		BattleAudienceSoundBooing();
 		BattleAudienceJoy(0);
-		if (*(u32*)((u8*)arg + 0x1c) == (u32)weaponGetPowerFromMarioHammerLv) {
+		if ((u32)weapon->hpDamageFn == (u32)weaponGetPowerFromMarioHammerLv) {
 			BattleAudienceAddPhaseEvtList(7);
 		}
 	}

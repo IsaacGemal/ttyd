@@ -237,7 +237,7 @@ s32 _damage(EventEntry* event) {
     evtGetValue(event, args[0]);
     audience = BattleAudienceBaseGetPtr();
     BattleActionCommandResetDefenceResult();
-    BattleCheckDamage(BattleGetSystemPtr(work), unit, part, (BattleWeapon*)((u8*)audience + 0x137FC), 0x100);
+    BattleCheckDamage(BattleGetSystemPtr(work), unit, part, &audience->itemWeapon, 0x100);
     return 2;
 }
 

@@ -2703,8 +2703,7 @@ USER_FUNC(_object_fall_attack) {
 			if (pouchGetPtr()->mStarPowersObtained != 0
 			    && (BattleAudienceBaseGetPtr()->flags & 0x4000) == 0
 			    && newEntry->type != 6 && newEntry->type != 7
-			    && ((*(u32*)&wp->field_19064[4] & 2) != 0 || irand(100) < 10)) {
-				// BattleWork.field_19064 padding: a BattleWork flag word.
+			    && ((wp->forceFlags & 2) != 0 || irand(100) < 10)) {
 				newEntry->mode = 1;
 				newEntry->partId = -1;
 				newEntry->unitId = BattleAudience_HaitiRandForFallObject();

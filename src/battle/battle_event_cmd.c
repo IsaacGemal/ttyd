@@ -6228,10 +6228,10 @@ USER_FUNC(btlevtcmd_WeaponAftereffect) {
     a1 = 0;
 
     value = irand(weapon->field_B4[0] + weapon->field_B4[1] + weapon->field_B4[2] + weapon->field_B4[3]);
-    if (*(u32*)&wp->field_19064[4] & 0x10) {
+    if (wp->forceFlags & 0x10) {
         a1 = 1;
     }
-    if (*(u32*)&wp->field_19064[4] & 0x20) {
+    if (wp->forceFlags & 0x20) {
         a2 = 1;
     }
     value -= weapon->field_B4[0];
@@ -6257,7 +6257,7 @@ USER_FUNC(btlevtcmd_WeaponAftereffect) {
     }
     if ((wp->field_180C0[0x1C] & 0x2) && !(wp->field_180C0[0x1C] & 0x8)) {
         if (irand(100) < weapon->field_B4[4] ||
-            (*(u32*)&wp->field_19064[4] & 0x40)) {
+            (wp->forceFlags & 0x40)) {
             b = 1;
             if (!(wp->field_180C0[0x1C] & 0x4)) {
                 a2 = 1;
@@ -6273,17 +6273,17 @@ USER_FUNC(btlevtcmd_WeaponAftereffect) {
     if (b) {
         BattleStage_DestroyB();
     }
-    if (irand(100) < weapon->field_B4[5] || (*(u32*)&wp->field_19064[4] & 0x200)) {
+    if (irand(100) < weapon->field_B4[5] || (wp->forceFlags & 0x200)) {
         BattleStage_NozzleDirChangeCheck();
     }
-    if (irand(100) < weapon->field_B4[6] || (*(u32*)&wp->field_19064[4] & 0x100)) {
+    if (irand(100) < weapon->field_B4[6] || (wp->forceFlags & 0x100)) {
         BattleStage_NozzleWorkCheck(1);
     }
-    if (irand(100) < weapon->field_B4[7] || (*(u32*)&wp->field_19064[4] & 0x80)) {
+    if (irand(100) < weapon->field_B4[7] || (wp->forceFlags & 0x80)) {
         BattleStage_IronFrameFallCheck();
     }
     if (wp->field_180C0[0x1C] & 0x20) {
-        if (*(u32*)&wp->field_19064[4] & 0x1) {
+        if (wp->forceFlags & 0x1) {
             BattleStage_ObjectFallCheck();
         } else if (irand(100) < weapon->field_B4[8]) {
             BattleStage_ObjectFallCheck();

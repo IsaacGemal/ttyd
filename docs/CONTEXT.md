@@ -9987,3 +9987,27 @@ GX_CA_KONST and GX_TEV_COMP_A8_GT, wprotect's position-matrix 0s GX_PNMTX0. Matc
 from the changed sources and users (eff_fire, eff_kemuri, wprotect, evt_map, battle_event_default, battle_database_las,
 las_29, unit_bubble/phantom/hermos in each REL that builds them) compile without MUST_MATCH and are obj_equiv-equivalent
 to the pre-branch ones.
+### Readability: BattleAudienceKind fields, the audience item weapon and BattleWork's force fields (2026-10-20, Claude Haiku 5.5, n9-q-audience; reviewed by Claude Opus 5.5)
+
+BattleAudienceKind 0xC/0x10 are `offsetX`/`offsetY` (added to the member's position for a thrown item), 0x14 is
+`apWeight` (per kind, times the member count, summed and square-rooted in BattleAudience_ApRecoveryBuild), 0x18/0x1C
+are `scaleX`/`scaleY` (times the texture size in BattleAudienceDispAudience). BattleAudience 0x137FC is
+`BattleWeapon itemWeapon` (0xC0, the thrown item's weapon_data_* copy; the combo bonus adds to `hpDamageWork[0]`,
+battle_attack_audience's `_damage` passes it to BattleCheckDamage), and BattleAudience_Case_ActionCommandBad takes the
+BattleWeapon* battle_ac.c already passes. battle_audience.h now includes battle_database_common.h (no cycle; that
+header includes only types and mario_pouch.h). Review: the worker's 0x19084 for the forced reel value was wrong
+(battle - 0x6F84 is 0x1907C). BattleWork 0x19068 is `forceFlags`, a word nothing in the game writes whose bits each
+force a random outcome: 0x1/0x2 object falls (0x2 onto the audience), 0x10/0x20/0x40 stage destroy A1/A2/B,
+0x80/0x100/0x200 iron frame, nozzle work, nozzle turn, 0x10000 the audience count from 0x19074
+(`forceAudienceCount`), 0x20000 frequent audience item throws, 0x40000 the 1-in-20 audience kind swap, 0x80000 bingo
+reels stopping on 0x1907C (`forceSlotValue`); 0x19078 is `forceAudienceKind` (1-12 maps to one audience kind for the
+whole crowd). battle_event_cmd, battle_stage_object, battle_seq_command and the gor lecture unit now read those names
+(0x19080/0x19084, the lecture's message-window flag and id, stay a pad). The `base - 0x6F98` reads in
+BattleAudienceSettingAudience, BattleAudienceCtrlProcess, BattleBreakSlot_Main and BattleBreakSlot_PointInc stay raw
+with a comment naming the fields: `wp->forceFlags` recomputes the addis per access (+1 to +4 instructions), and
+`((BattleWork*)(base - 0x20000))->field` adds a subis, so the hoisted `wp + 0x20000` pointer is the original shape.
+Also: the dead `aud` locals in BattleAudience_CheckReactionPerPhase/BattleAudienceItemCtrlProcess went (the one read,
+`aud + 0x137B0`, is `audience->typeWeights[7]`), and the combo bonus is `hpDamageWork[0] += itemCombo - 1`. Matching
+build OK; all 161 C files that changed or include battle.h/battle_audience.h/battle_audience_kind_data.h compile, with
+and without MUST_MATCH, to objects equivalent to the pre-branch ones (tools/obj_equiv.py --tree, old tree with old
+headers).
