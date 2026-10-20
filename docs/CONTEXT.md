@@ -9257,3 +9257,26 @@ Open: the `dat_804221f0`-`dat_80422210` / `float_0p10207_80422208` icon colours 
 address (and read through `*(GXColor*)&`); the IconDispTableEntry `texId` values (13-34) are not tied to an icon
 enum; evt_lottery's MUST_MATCH slot clear (`q[12]`/`q[13]` through a `(u8*)info + arg1 * 8` base) and the
 right-to-left tier-miss clause stay; lottery_info's 0x2-0x7, 0x12-0x17 and 0x2A-0x2F have no readers anywhere.
+### Readability: battle_seq_end (2026-10-19, Claude Haiku 5.5 and Claude Opus 5.5, n9-q-seqend)
+
+The SEQ_END sub-sequence steps 0x07000000-0x0700001F are now `BattleSeqEndStep` (battle.h, next to
+`BattleSequence`), named from what each case of btlseqEnd does: `SEQ_END_INIT`, the lose path (`LOSE_FADE`,
+`LOSE_FADE_WAIT`), the field end event (`WIN_EVT`, `WIN_EVT_WAIT`), the win setup, exp count, Merlee, level-up,
+rank-up and victory-pose steps, then `FADE_OUT`, `FADE_WAIT` and `RETURN`. btlseqEnd, `_audience_Whistle_control`'s
+case run and the six `BattleSetSeq(wp, SEQ_END, 0x7000000)` calls in battle_seq.c/battle.c use them. The lose path's
+`seqSetSeq(SEQ_MOVE, ...)` was the battle enum's 5 standing in for `SEQ_GAME_OVER`. EventEntry 0x88 is now a union of
+`wInterpRelatedTime` and `s32 userdataEx[2]`: battle_seq_end's spot and level-up-object user functions keep scratch
+ints there (Haiku's first pass aliased them as `((s32*)&event->wInterpRelatedTime)[n]`). New flag names, each
+proven from its setter: `BATTLE_ESCAPED` (BattleWork.flags 0x10, btlevtcmd_InterruptStop(0) at the end of
+btldefaultevt_Escape) and a `BattleUnitStatus_Flags` enum for mStatusFlags: `kStatusFlipped` (0x1, Koops'
+dmg_turn_event/wakeup_event, blocks BtlUnit_CanActStatus), `kStatusDanger`/`kStatusPeril` (0x10000000/0x20000000,
+BtlUnit_CheckPinchStatus against mDangerHP/mPerilHP). Mario's 0x10 attribute is the existing `kVeiled`, status 0x1B is
+`STATUS_INSTANT_KILL`.
+
+Open: battle results (BattleInformationSetResult 1 win, 3 lose, 4/5 interrupted; 2 is read by npcdrv) need an enum in
+battle_information.h; BattleWork.flags 0x20 (InterruptStop(1), no caller in src), 0x40 (result 4, setter unknown)
+and 0x100 (`check_battleflag 256`: camera mode 0x12, the curtain event's walk-off); NpcBattleFlags 0x20000000
+(PAUSE3 voice) has no name yet;
+BattleSeqEndWork `unk14`/`unk28` (zeroed beside `lvupSelect`/`confirmSel`, never read) and `unk0`; mAttributeFlags
+0x21000000 and unit->flags 0x80000000 in `_disable_enemy_unit_disp`; battle_mario.c's raw `event + 0x88/0x8C` casts
+can move to `userdataEx` too, and evt_sub's pointer use of 0x88 could join the union.

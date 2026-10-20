@@ -28,6 +28,7 @@ typedef struct BattleWorkCommandCursor BattleWorkCommandCursor;
 typedef struct BattleWorkCommandWindow BattleWorkCommandWindow;
 
 typedef enum BattleFlags {
+    BATTLE_ESCAPED = 0x10,      // set by btlevtcmd_InterruptStop(0), the end of btldefaultevt_Escape
     BATTLE_SEQ_END = 0x80000000,
     BATTLE_MAJINAI_END = 0x400000, // set by BattleMajinaiEndCheck when Merlee has no curse uses left
 } BattleFlags;
@@ -52,6 +53,42 @@ typedef enum BattleSequence {
     SEQ_ACT = 6,
     SEQ_END = 7
 } BattleSequence;
+
+// Steps of the SEQ_END sub-sequence (BattleGetSeq(wp, SEQ_END)), run by btlseqEnd in battle_seq_end.c.
+typedef enum BattleSeqEndStep {
+    SEQ_END_INIT = 0x07000000,             // set the battle result, pick the branch, allocate seqEndWork
+    SEQ_END_LOSE_FADE = 0x07000001,        // Mario's side was cleared: fade out, BGM off
+    SEQ_END_LOSE_FADE_WAIT = 0x07000002,   // then game over, or SEQ_END_RETURN when the setup allows losing
+    SEQ_END_WIN_EVT = 0x07000003,          // won, and the field battle has an end event: start it
+    SEQ_END_WIN_EVT_WAIT = 0x07000004,     // wait for it (it can send the battle back to SEQ_TURN)
+    SEQ_END_WIN_CLEAR_STATUS = 0x07000005, // unflip the partner, use reserved items, clear statuses
+    SEQ_END_WIN_START = 0x07000006,        // units' battle-end events and drops; Merlee's exp curse starts here
+    SEQ_END_WIN_MAJINAI_WAIT = 0x07000007, // wait for Merlee's exp-up event
+    SEQ_END_EXP_INIT = 0x07000008,         // stock exp, victory camera and BGM
+    SEQ_END_EXP_DELAY = 0x07000009,
+    SEQ_END_EXP_START = 0x0700000A,        // units' exp events and the point effect
+    SEQ_END_EXP_COUNT = 0x0700000B,        // exp ticks into star points
+    SEQ_END_EXP_COUNT_END = 0x0700000C,
+    SEQ_END_EXP_END_WAIT = 0x0700000D,
+    SEQ_END_MAJINAI_END = 0x0700000E,      // Merlee has no uses left: announce it
+    SEQ_END_MAJINAI_END_WAIT = 0x0700000F,
+    SEQ_END_LVUP_CHECK = 0x07000010,
+    SEQ_END_LVUP_CURTAIN = 0x07000011,     // _curtain_close_event
+    SEQ_END_LVUP_SELECT = 0x07000012,      // choose HP, FP or BP
+    SEQ_END_LVUP_CONFIRM = 0x07000013,     // yes/no prompt; no step leads here
+    SEQ_END_LVUP_JUMP_WAIT = 0x07000014,   // _jump_event
+    SEQ_END_LVUP_APPLY = 0x07000015,
+    SEQ_END_LVUP_CHEER = 0x07000016,
+    SEQ_END_RANK_UP = 0x07000017,
+    SEQ_END_RANK_UP_WAIT = 0x07000018,
+    SEQ_END_WIN_POSE = 0x07000019,         // no level-up: victory voice and pose
+    SEQ_END_WIN_POSE_WAIT = 0x0700001A,
+    SEQ_END_WIN_POSE_DONE = 0x0700001B,
+    SEQ_END_WIN_DONE = 0x0700001C,
+    SEQ_END_FADE_OUT = 0x0700001D,
+    SEQ_END_FADE_WAIT = 0x0700001E,
+    SEQ_END_RETURN = 0x0700001F,           // hand Mario and the party back to the field, free seqEndWork
+} BattleSeqEndStep;
 
 // deprecated ------------------------------------------------------------
 struct BattleWorkCommandAction {

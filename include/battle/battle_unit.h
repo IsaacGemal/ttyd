@@ -59,6 +59,13 @@ typedef enum BattleUnitAttribute_Flags { // 32-bit size
     kUnknownUnit_0x2000000 = (1 << 25)   // 0x2000000
 } BattleUnitAttribute_Flags;
 
+// Bits in BattleUnit.mStatusFlags (BtlUnit_CheckStatusFlag, BtlUnit_OnStatusFlag, BtlUnit_OffStatusFlag).
+typedef enum BattleUnitStatus_Flags {
+    kStatusFlipped = (1 << 0), // 0x1, overturned (Koops' dmg_turn_event, flippedTurns); can't act or guard
+    kStatusDanger = (1 << 28), // 0x10000000, currentHp <= mDangerHP (BtlUnit_CheckPinchStatus)
+    kStatusPeril = (1 << 29),  // 0x20000000, currentHp <= mPerilHP (BtlUnit_CheckPinchStatus)
+} BattleUnitStatus_Flags;
+
 typedef enum PartsCounterAttribute_Flags {   // 32-bit size
     kCounterTopSpiky = (1 << 0),             // 0x1
     kCounterPreemptiveFrontSpiky = (1 << 1), // 0x2

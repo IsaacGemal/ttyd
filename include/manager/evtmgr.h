@@ -181,7 +181,10 @@ struct EventEntry {
         f32 userdataf[3];
     }; // 0x78, TODO check
     u32 field_84;              // 0x84
-    OSTime wInterpRelatedTime; // 0x88
+    union {
+        OSTime wInterpRelatedTime; // 0x88
+        s32 userdataEx[2];         // 0x88, two more scratch words for user functions (after userdata, field_84)
+    };
     u32 field_0x90[2];         // 0x90, unknown
     UserFunction userfunc;     // 0x98
     s32 lwData[16];            // 0x9C, validated

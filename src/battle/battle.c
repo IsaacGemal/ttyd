@@ -1001,7 +1001,7 @@ BOOL BattleMain(void) {
     if ((gp->flags & 0x1000) && (gp->flags & 0x2000) && BattleGetSeq(wp, SEQ_UNKNOWN) == 2) {
         wp->flags |= 0x60;
         BattleSetSeq(wp, SEQ_UNKNOWN, 3);
-        BattleSetSeq(wp, SEQ_END, 0x7000000);
+        BattleSetSeq(wp, SEQ_END, SEQ_END_INIT);
         return TRUE;
     }
 
