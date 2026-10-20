@@ -99,24 +99,24 @@ EffectEntry* effHoraoSpellN64Entry(s32 type, s32 life, f32 x, f32 y, f32 z, f32 
 	effect->callback = effHoraoSpellMain;
 	effect->flags |= 2;
 	data->type = type;
-	data->field_0x14 = 0;
+	data->age = 0;
 	if (life <= 0) {
-		data->field_0x10 = 1000;
+		data->life = 1000;
 	} else {
-		data->field_0x10 = life;
+		data->life = life;
 	}
-	data->field_0x24 = 0;
+	data->color1A = 0;
 	data->x = x;
 	data->y = y;
 	data->z = z;
-	data->field_0x38 = scale;
-	data->field_0x18 = 70;
-	data->field_0x1C = 180;
-	data->field_0x20 = 120;
-	data->field_0x28 = 20;
-	data->field_0x2C = 230;
-	data->field_0x30 = 50;
-	data->field_0x34 = 255;
+	data->scale = scale;
+	data->color1R = 70;
+	data->color1G = 180;
+	data->color1B = 120;
+	data->color2R = 20;
+	data->color2G = 230;
+	data->color2B = 50;
+	data->color2A = 255;
 	return effect;
 }
 void effHoraoSpellMain(EffectEntry* effect) {
@@ -135,27 +135,27 @@ void effHoraoSpellMain(EffectEntry* effect) {
 
 	if (effect->flags & 4) {
 		effect->flags &= ~4;
-		data->field_0x10 = 16;
+		data->life = 16;
 	}
 
-	timer = data->field_0x10;
+	timer = data->life;
 	if (timer < 1000) {
-		data->field_0x10 = timer - 1;
+		data->life = timer - 1;
 	}
-	data->field_0x14++;
-	timer = data->field_0x10;
+	data->age++;
+	timer = data->life;
 
 	if (timer < 0) {
 		effDelete(effect);
 		return;
 	}
 
-	counter = data->field_0x14;
+	counter = data->age;
 	if (timer < 16) {
-		data->field_0x24 = timer * 16;
+		data->color1A = timer * 16;
 	}
 	if (counter < 16) {
-		data->field_0x24 = counter * 16 + 15;
+		data->color1A = counter * 16 + 15;
 	}
 	dispEntry(4, dispCalcZ(&pos2), 2, effHoraoSpellDisp, effect);
 }
@@ -268,31 +268,31 @@ void effHoraoSpellDisp(CameraId camId, void* param) {
 	s32 j;
 	effHoraoSpellVtx* vtx;
 
-	counter = data->field_0x14;
-	alpha = data->field_0x24;
+	counter = data->age;
+	alpha = data->color1A;
 	PSMTXTrans(transMtx, data->x, data->y, data->z);
 	PSMTXRotRad(rotMtx, 'y', 0.017453292f * -camGetPtr(CAMERA_3D)->viewYaw);
 	PSMTXConcat(transMtx, rotMtx, transMtx);
-	scale = data->field_0x38;
+	scale = data->scale;
 	PSMTXScale(scaleMtx, scale, scale, scale);
 	PSMTXConcat(transMtx, scaleMtx, transMtx);
 	PSMTXConcat(cam->view, transMtx, resultMtx);
 
 #ifdef MUST_MATCH
-	GXSetTevColor(GX_TEVREG0, makeHoraoSpellColor(unk_80423150, data->field_0x18, data->field_0x1C, data->field_0x20, alpha));
-	GXSetTevColor(GX_TEVREG1, makeHoraoSpellColor(unk_80423154, data->field_0x28, data->field_0x2C, data->field_0x30, data->field_0x34));
+	GXSetTevColor(GX_TEVREG0, makeHoraoSpellColor(unk_80423150, data->color1R, data->color1G, data->color1B, alpha));
+	GXSetTevColor(GX_TEVREG1, makeHoraoSpellColor(unk_80423154, data->color2R, data->color2G, data->color2B, data->color2A));
 #else
 	color = unk_80423150;
-	color.r = data->field_0x18;
-	color.g = data->field_0x1C;
-	color.b = data->field_0x20;
+	color.r = data->color1R;
+	color.g = data->color1G;
+	color.b = data->color1B;
 	color.a = alpha;
 	GXSetTevColor(GX_TEVREG0, color);
 	color = unk_80423154;
-	color.r = data->field_0x28;
-	color.g = data->field_0x2C;
-	color.b = data->field_0x30;
-	color.a = data->field_0x34;
+	color.r = data->color2R;
+	color.g = data->color2G;
+	color.b = data->color2B;
+	color.a = data->color2A;
 	GXSetTevColor(GX_TEVREG1, color);
 #endif
 	GXSetNumChans(1);
@@ -324,13 +324,13 @@ void effHoraoSpellDisp(CameraId camId, void* param) {
 		GXLoadPosMtxImm(transMtx, GX_PNMTX0);
 		GXSetCurrentMtx(GX_PNMTX0);
 #ifdef MUST_MATCH
-		GXSetTevColor(GX_TEVREG0, makeHoraoSpellColor2p(colorIdx, data->field_0x24, unk_80423158));
+		GXSetTevColor(GX_TEVREG0, makeHoraoSpellColor2p(colorIdx, data->color1A, unk_80423158));
 #else
 		color = unk_80423158;
 		color.r = colr[colorIdx];
 		color.g = colg[colorIdx];
 		color.b = colb[colorIdx];
-		color.a = data->field_0x24;
+		color.a = data->color1A;
 		GXSetTevColor(GX_TEVREG0, color);
 #endif
 		color = *(GXColor*)&dat_8041f158;

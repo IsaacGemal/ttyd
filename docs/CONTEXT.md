@@ -10920,3 +10920,10 @@ Left as `field_0x`:
 - Never read: `MoamoaPose` 0x06, 0x3E and 0x48; `MoamoaWork` 0x0C and 0x10.
 
 Verified: tower `ninja` recreates `build/G8MJ01/ok` (game 100% matched); natural (no MUST_MATCH) compile of eki_00.c returns 0. Index (tools/cleanup_index.py): 29.721 -> 29.710 per kLOC (21148 -> 21140 weighted); field_0x 2923 -> 2915.
+
+### Work struct field names: eff_bush, eff_horao_spell (2026-10-20, Claude Haiku 5.5, n9-q-effn64c)
+- `BushN64Data`: 0x10/0x14 are `velX`/`velY` (particle velocity added to x/y), 0x18/0x20 are `rotZ`/`rotY` (degrees, the Disp rotations), 0x1C is `swayPhase` (degrees, random-walked each frame, it drives the rotZ and rotY increments). The head's 0x24 is `alpha` (TEV colour alpha) and 0x2C is `age`. 0x30 is never read, so it stays `field_0x30`.
+- `effHoraoSpellData`: 0x10 is `life` (Main counts it down; 1000 is endless), 0x14 is `age`. 0x18/0x1C/0x20 are `color1R/G/B`, 0x24 is `color1A` (TEVREG0 alpha, faded by Main), 0x28/0x2C/0x30 are `color2R/G/B`, 0x34 is `color2A` (TEVREG1 alpha) and 0x38 is `scale`.
+- Left: the `.sbss2` zero GXColor templates in eff_horao_spell (`unk_80423150/54/58`), eff_thruhammer (`unk_80423298..804232A4`) and eff_kemuri11 (`unk_80423180..8042318C`) keep their address names, as with glass, opuku_jetw, kameki and stamp: each is a zero template copied then overwritten, and a zero alpha that passes through to GXSetTevColor proves no role beyond that. eff_kemuri11's `field_0x18` (written 0 at child spawn, never read).
+
+Verified: tower `ninja` recreates `build/G8MJ01/ok`; natural (no MUST_MATCH) compiles of eff_bush_n64.c and eff_horao_spell_n64.c return 0. Index (tools/cleanup_index.py) against current main: 29.710 -> 29.577 per kLOC (21140 -> 21045 weighted); field_0x 2915 -> 2820.
