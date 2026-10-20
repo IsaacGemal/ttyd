@@ -68,19 +68,19 @@ EffectEntry* effStampN64Entry(s32 type, f32 x, f32 y, f32 z) {
 
     switch (type) {
     case 0:
-        data->field_0x38 = data->field_0x3B = 20;
-        data->field_0x39 = data->field_0x3C = 21;
-        data->field_0x3A = data->field_0x3D = 242;
+        data->tevReg1R = data->tevReg2R = 20;
+        data->tevReg1G = data->tevReg2G = 21;
+        data->tevReg1B = data->tevReg2B = 242;
         break;
     case 1:
-        data->field_0x38 = data->field_0x3B = 200;
-        data->field_0x39 = data->field_0x3C = 21;
-        data->field_0x3A = data->field_0x3D = 212;
+        data->tevReg1R = data->tevReg2R = 200;
+        data->tevReg1G = data->tevReg2G = 21;
+        data->tevReg1B = data->tevReg2B = 212;
         break;
     case 2:
-        data->field_0x38 = data->field_0x3B = 255;
-        data->field_0x39 = data->field_0x3C = 181;
-        data->field_0x3A = data->field_0x3D = 218;
+        data->tevReg1R = data->tevReg2R = 255;
+        data->tevReg1G = data->tevReg2G = 181;
+        data->tevReg1B = data->tevReg2B = 218;
         break;
     }
 
@@ -94,8 +94,8 @@ EffectEntry* effStampN64Entry(s32 type, f32 x, f32 y, f32 z) {
         p->field_0x10 = float_0_8041fde8;
         p->field_0x14 = float_0_8041fde8;
         p->field_0x18 = float_0_8041fde8;
-        p->field_0x1C = float_0p1_8041fdf4;
-        p->field_0x20 = float_0p1_8041fdf4;
+        p->scaleY = float_0p1_8041fdf4;
+        p->scaleX = float_0p1_8041fdf4;
         p->scale = float_1_8041fdec;
         p->angle = angle;
     }
@@ -129,13 +129,13 @@ void effStampMain(EffectEntry* effect) {
     data++;
     for (; i < effect->count; i++, data++) {
         if (count > 10) {
-            data->field_0x1C += float_0p1_8041fdf4 * (float_1_8041fdec - data->field_0x1C);
-            data->field_0x20 += float_0p1_8041fdf4 * (float_2p4_8041fdf8 - data->field_0x20);
+            data->scaleY += float_0p1_8041fdf4 * (float_1_8041fdec - data->scaleY);
+            data->scaleX += float_0p1_8041fdf4 * (float_2p4_8041fdf8 - data->scaleX);
             data->scale += float_0p2_8041fdfc * (float_0p07_8041fe00 * (float_100_8041fe04 - data->scale));
         }
         if (count < 10) {
-            data->field_0x1C += float_0p05_8041fe08 * (float_7_8041fe0c - data->field_0x1C);
-            data->field_0x20 += float_0p1_8041fdf4 * (float_1_8041fdec - data->field_0x20);
+            data->scaleY += float_0p05_8041fe08 * (float_7_8041fe0c - data->scaleY);
+            data->scaleX += float_0p1_8041fdf4 * (float_1_8041fdec - data->scaleX);
             data->scale += float_0p6_8041fe10 * (float_0p05_8041fe08 * (float_10_8041fe14 - data->scale));
         }
         data->x = data->scale * (f32)cos(float_6p2832_8041fe18 * (float_90_8041fe1c + data->angle) / float_360_8041fe20);
@@ -150,18 +150,18 @@ void effStampMain(EffectEntry* effect) {
 #ifdef MUST_MATCH
 static inline void effStampSetColor1(effStampData* data) {
     GXColor color = unk_80423270;
-    color.r = data->field_0x38;
-    color.g = data->field_0x39;
-    color.b = data->field_0x3A;
+    color.r = data->tevReg1R;
+    color.g = data->tevReg1G;
+    color.b = data->tevReg1B;
     color.a = data->alpha;
     GXSetTevColor(1, color);
 }
 
 static inline void effStampSetColor2(effStampData* data) {
     GXColor color = unk_80423274;
-    color.r = data->field_0x3B;
-    color.g = data->field_0x3C;
-    color.b = data->field_0x3D;
+    color.r = data->tevReg2R;
+    color.g = data->tevReg2G;
+    color.b = data->tevReg2B;
     GXSetTevColor(2, color);
 }
 #endif
@@ -206,16 +206,16 @@ void effStampDisp(CameraId camId, void* param) {
 
         tmp = unk_80423270;
         color = tmp;
-        color.r = data->field_0x38;
-        color.g = data->field_0x39;
-        color.b = data->field_0x3A;
+        color.r = data->tevReg1R;
+        color.g = data->tevReg1G;
+        color.b = data->tevReg1B;
         color.a = data->alpha;
         GXSetTevColor(1, color);
         tmp = unk_80423274;
         color2 = tmp;
-        color2.r = data->field_0x3B;
-        color2.g = data->field_0x3C;
-        color2.b = data->field_0x3D;
+        color2.r = data->tevReg2R;
+        color2.g = data->tevReg2G;
+        color2.b = data->tevReg2B;
         GXSetTevColor(2, color2);
 #endif
     }
@@ -234,7 +234,7 @@ void effStampDisp(CameraId camId, void* param) {
     for (i = 1; i < effect->count; i++, data++) {
         PSMTXTrans(mtx, data->x, data->y, data->z);
         PSMTXRotRad(rotMtx, 'z', deg2rad * data->angle);
-        PSMTXScale(scaleMtx, data->field_0x20, data->field_0x1C, float_1_8041fdec);
+        PSMTXScale(scaleMtx, data->scaleX, data->scaleY, float_1_8041fdec);
         PSMTXConcat(mtx, rotMtx, mtx);
         PSMTXConcat(mtx, scaleMtx, mtx);
         PSMTXConcat(viewMtx, mtx, mtx);
