@@ -22,25 +22,25 @@ typedef struct effKemuri1Data {
 	u16 type; //0x0
 	u8 align_2[2]; //0x2, TODO: verify align
 	Vec position; //0x4
-	f32 field_0x10; //0x10
+	f32 speed; //0x10, horizontal speed along (dirX, dirZ) in types 0/1 and 4-7
 	f32 field_0x14; //0x14
 	f32 field_0x18; //0x18
 	f32 field_0x1C; //0x1C
-	f32 field_0x20; //0x20
-	f32 field_0x24; //0x24
+	f32 velY; //0x20
+	f32 velYAccel; //0x24, added to velY every frame
 	f32 field_0x28; //0x28
 	f32 field_0x2C; //0x2C
-	f32 field_0x30; //0x30
-	f32 field_0x34; //0x34
+	f32 dirX; //0x30, sin of the heading
+	f32 dirZ; //0x34, cos of the heading
 	s32 field_0x38; //0x38
-	s32 field_0x3C; //0x3C
-	s32 field_0x40; //0x40
-	u8 field_0x44; //0x44
-	u8 field_0x45; //0x45
-	u8 field_0x46; //0x46
+	s32 frame; //0x3C, frames since spawn
+	s32 sheetU0; //0x40, texture column of this frame (16 over the lifetime)
+	u8 colorR; //0x44
+	u8 colorG; //0x45
+	u8 colorB; //0x46
 	u8 align_47; //0x47
-	s32 field_0x48; //0x48
-	s32 field_0x4C; //0x4C
+	s32 sheetU1; //0x48, texture column of the next frame
+	s32 duration; //0x4C
 } effKemuri1Data;
 
 //local prototypes
@@ -96,28 +96,28 @@ EffectEntry* effKemuri1N64Entry(s32 type, f32 x, f32 y, f32 z, f32 a5) {
 		case 0:
 		case 1:
 			data->field_0x38 = 0;
-			data->field_0x4C = 15;
+			data->duration = 15;
 			break;
 		case 2:
 			data->field_0x38 = 3;
-			data->field_0x4C = 65;
+			data->duration = 65;
 			break;
 		case 3:
 			data->field_0x38 = 2;
-			data->field_0x4C = 129;
+			data->duration = 129;
 			break;
 		case 4:
 		case 5:
 		case 6:
 		case 7:
 			data->field_0x38 = 3;
-			data->field_0x4C = 65;
+			data->duration = 65;
 			break;
 		default:
 			break;
 	}
 
-	data->field_0x3C = 0;
+	data->frame = 0;
 	data->type = type;
 	data->position.x = x;
 	data->position.y = y;
@@ -128,12 +128,12 @@ EffectEntry* effKemuri1N64Entry(s32 type, f32 x, f32 y, f32 z, f32 a5) {
 		case 0:
 		case 1:
 			for (i = 1; i < effCount; i++, entry++) {
-				entry->field_0x10 = -3.0f;
+				entry->speed = -3.0f;
 				entry->field_0x14 = 0.29999998f;
 				entry->field_0x18 = 0.0f;
 				entry->field_0x1C = 0.0f;
-				entry->field_0x20 = 1.75f;
-				entry->field_0x24 = -0.16f;
+				entry->velY = 1.75f;
+				entry->velYAccel = -0.16f;
 				entry->field_0x28 = 0.0f;
 				entry->field_0x2C = 0.0f;
 				entry->position.x = 0.0f;
@@ -146,11 +146,11 @@ EffectEntry* effKemuri1N64Entry(s32 type, f32 x, f32 y, f32 z, f32 a5) {
 #else
 				angle = 6.2831855f * reviseAngle(180.0f * (f32)(i - 1) + 90.0f) / 360.0f;
 #endif
-				entry->field_0x30 = sin(angle);
-				entry->field_0x34 = cos(angle);
-				entry->field_0x44 = 0xFF;
-				entry->field_0x45 = 0xFF;
-				entry->field_0x46 = 0xFF;
+				entry->dirX = sin(angle);
+				entry->dirZ = cos(angle);
+				entry->colorR = 0xFF;
+				entry->colorG = 0xFF;
+				entry->colorB = 0xFF;
 			}
 			break;
 		case 3:
@@ -171,8 +171,8 @@ EffectEntry* effKemuri1N64Entry(s32 type, f32 x, f32 y, f32 z, f32 a5) {
 					cosAngle = (f32)cos(2.3561945f);
 #endif
 					entry->position.z = 25.0f * -cosAngle;
-					entry->field_0x20 = 0.95f;
-					entry->field_0x24 = -0.04f;
+					entry->velY = 0.95f;
+					entry->velYAccel = -0.04f;
 					k94 = 0.94f;
 				entry->field_0x28 = k94;
 					break;
@@ -191,8 +191,8 @@ EffectEntry* effKemuri1N64Entry(s32 type, f32 x, f32 y, f32 z, f32 a5) {
 					cosAngle = (f32)cos(-2.3561945f);
 #endif
 					entry->position.z = 25.0f * -cosAngle;
-					entry->field_0x20 = 0.84999996f;
-					entry->field_0x24 = -0.04f;
+					entry->velY = 0.84999996f;
+					entry->velYAccel = -0.04f;
 					k94 = 0.94f;
 				entry->field_0x28 = k94;
 					break;
@@ -211,17 +211,17 @@ EffectEntry* effKemuri1N64Entry(s32 type, f32 x, f32 y, f32 z, f32 a5) {
 					cosAngle = (f32)cos(0.34906587f);
 #endif
 					entry->position.z = 25.0f * -cosAngle;
-					entry->field_0x20 = 0.75f;
-					entry->field_0x24 = -0.04f;
+					entry->velY = 0.75f;
+					entry->velYAccel = -0.04f;
 					k94 = 0.94f;
 				entry->field_0x28 = k94;
 					break;
 				}
-				entry->field_0x30 = 0.0f;
-				entry->field_0x34 = 0.0f;
-				entry->field_0x44 = 0xFF;
-				entry->field_0x45 = 0xFF;
-				entry->field_0x46 = 0xFF;
+				entry->dirX = 0.0f;
+				entry->dirZ = 0.0f;
+				entry->colorR = 0xFF;
+				entry->colorG = 0xFF;
+				entry->colorB = 0xFF;
 			}
 			break;
 		case 4:
@@ -238,10 +238,10 @@ EffectEntry* effKemuri1N64Entry(s32 type, f32 x, f32 y, f32 z, f32 a5) {
 				f32 s30;
 				f32 c34;
 #endif
-				entry->field_0x10 = -3.0f;
+				entry->speed = -3.0f;
 				entry->field_0x14 = 0.93f;
-				entry->field_0x20 = 0.0f;
-				entry->field_0x24 = 0.099999994f;
+				entry->velY = 0.0f;
+				entry->velYAccel = 0.099999994f;
 #ifdef MUST_MATCH
 				entry->field_0x28 = 0.94f;
 				entry->field_0x2C = 0.94f;
@@ -258,29 +258,29 @@ EffectEntry* effKemuri1N64Entry(s32 type, f32 x, f32 y, f32 z, f32 a5) {
 				entry->position.z = 10.0f * -cosAngle;
 #ifdef MUST_MATCH
 				s30 = sin(angle);
-				entry->field_0x30 = s30;
+				entry->dirX = s30;
 				c34 = cos(angle);
-				entry->field_0x34 = c34;
+				entry->dirZ = c34;
 #else
-				entry->field_0x30 = sin(angle);
-				entry->field_0x34 = cos(angle);
+				entry->dirX = sin(angle);
+				entry->dirZ = cos(angle);
 #endif
 				switch (type) {
 				case 4:
 				case 7:
-					entry->field_0x44 = 0xFF;
-					entry->field_0x45 = 0xFF;
-					entry->field_0x46 = 0xFF;
+					entry->colorR = 0xFF;
+					entry->colorG = 0xFF;
+					entry->colorB = 0xFF;
 					break;
 				case 5:
-					entry->field_0x44 = 0xDD;
-					entry->field_0x45 = 0xB7;
-					entry->field_0x46 = 0x05;
+					entry->colorR = 0xDD;
+					entry->colorG = 0xB7;
+					entry->colorB = 0x05;
 					break;
 				case 6:
-					entry->field_0x44 = 0x21;
-					entry->field_0x45 = 0x8C;
-					entry->field_0x46 = 0x8D;
+					entry->colorR = 0x21;
+					entry->colorG = 0x8C;
+					entry->colorB = 0x8D;
 					break;
 				}
 			}
@@ -311,9 +311,9 @@ void effKemuri1Main(EffectEntry* effect) {
 	position = kemuri1InitVec(&data->position);
 
 	type = data->type;
-	b = (s32)(16.0f * (f32)data->field_0x3C / (f32)data->field_0x4C);
-	a = (s32)(16.0f * (f32)(data->field_0x3C + 1) / (f32)data->field_0x4C);
-	data->field_0x3C++;
+	b = (s32)(16.0f * (f32)data->frame / (f32)data->duration);
+	a = (s32)(16.0f * (f32)(data->frame + 1) / (f32)data->duration);
+	data->frame++;
 	if (a > 15) {
 		a = 15;
 	}
@@ -321,8 +321,8 @@ void effKemuri1Main(EffectEntry* effect) {
 		effDelete(effect);
 		return;
 	}
-	data->field_0x40 = b;
-	data->field_0x48 = a;
+	data->sheetU0 = b;
+	data->sheetU1 = a;
 
 	data++;
 	for (i = 1; i < effect->count; i++, data++) {
@@ -331,30 +331,30 @@ void effKemuri1Main(EffectEntry* effect) {
 		case 1:
 			data->field_0x18 += data->field_0x1C;
 			data->field_0x14 += data->field_0x18;
-			data->field_0x10 += data->field_0x14;
-			data->position.x += data->field_0x10 * data->field_0x30;
-			data->position.z += data->field_0x10 * data->field_0x34;
+			data->speed += data->field_0x14;
+			data->position.x += data->speed * data->dirX;
+			data->position.z += data->speed * data->dirZ;
 			data->field_0x28 += data->field_0x2C;
-			data->field_0x24 += data->field_0x28;
-			data->field_0x20 += data->field_0x24;
-			data->position.y += data->field_0x20;
+			data->velYAccel += data->field_0x28;
+			data->velY += data->velYAccel;
+			data->position.y += data->velY;
 			break;
 		case 3:
-			data->position.y += data->field_0x20;
-			data->field_0x20 += data->field_0x24;
-			data->field_0x24 *= data->field_0x28;
+			data->position.y += data->velY;
+			data->velY += data->velYAccel;
+			data->velYAccel *= data->field_0x28;
 			break;
 		case 4:
 		case 5:
 		case 6:
 		case 7:
-			data->position.x += data->field_0x10 * data->field_0x30;
-			data->position.z += data->field_0x10 * data->field_0x34;
-			data->field_0x10 *= data->field_0x14;
-			data->position.y += data->field_0x20;
-			data->field_0x20 += data->field_0x24;
-			data->field_0x24 *= data->field_0x28;
-			data->field_0x20 *= data->field_0x2C;
+			data->position.x += data->speed * data->dirX;
+			data->position.z += data->speed * data->dirZ;
+			data->speed *= data->field_0x14;
+			data->position.y += data->velY;
+			data->velY += data->velYAccel;
+			data->velYAccel *= data->field_0x28;
+			data->velY *= data->field_0x2C;
 			break;
 		}
 	}
@@ -363,7 +363,7 @@ void effKemuri1Main(EffectEntry* effect) {
 		effDelete(effect);
 		return;
 	}
-	dispEntry(4, dispCalcZ(&position), 2, effKemuri1Disp, effect);
+	dispEntry(CAMERA_3D, dispCalcZ(&position), 2, effKemuri1Disp, effect);
 }
 
 // Draws every live entry as a camera-facing textured quad. Matching uses the same tricks as the sibling
@@ -411,8 +411,8 @@ void effKemuri1Disp(CameraId camId, void* param) {
 
 	cam = camGetPtr(camId);
 	type = data->type;
-	field0 = data->field_0x40;
-	field1 = data->field_0x48;
+	field0 = data->sheetU0;
+	field1 = data->sheetU1;
 
 	scale = 1.0f;
 	switch (type) {
@@ -433,62 +433,62 @@ void effKemuri1Disp(CameraId camId, void* param) {
 	PSMTXConcat(cam->view, mtxTmp, mtxBase);
 
 	effGetTexObj(0x28, &texobj);
-	GXLoadTexObj(&texobj, 0);
+	GXLoadTexObj(&texobj, GX_TEXMAP0);
 
 	GXSetNumChans(1);
-	GXSetChanCtrl(4, 0, 0, 0, 0, 0, 2);
+	GXSetChanCtrl(GX_COLOR0A0, GX_FALSE, GX_SRC_REG, GX_SRC_REG, GX_LIGHT_NULL, GX_DF_NONE, GX_AF_NONE);
 	GXSetNumTexGens(2);
-	GXSetTexCoordGen2(0, 1, 4, 0x1E, 0, 0x7D);
-	GXSetTexCoordGen2(1, 1, 4, 0x21, 0, 0x7D);
+	GXSetTexCoordGen2(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_TEXMTX0, GX_FALSE, 0x7D);
+	GXSetTexCoordGen2(GX_TEXCOORD1, GX_TG_MTX2x4, GX_TG_TEX0, GX_TEXMTX1, GX_FALSE, 0x7D);
 	GXSetNumTevStages(3);
-	GXSetTevOrder(0, 0, 0, 0xFF);
-	GXSetTevColorOp(0, 0, 0, 0, 1, 0);
-	GXSetTevAlphaOp(0, 0, 0, 0, 1, 0);
-	GXSetTevColorIn(0, 0xF, 0xF, 0xF, 8);
-	GXSetTevAlphaIn(0, 7, 7, 7, 4);
-	GXSetTevOrder(1, 1, 0, 0xFF);
-	GXSetTevColorOp(1, 0, 0, 0, 1, 0);
-	GXSetTevAlphaOp(1, 0, 0, 0, 1, 0);
-	GXSetTevColorIn(1, 0, 8, 2, 0xF);
-	GXSetTevAlphaIn(1, 0, 4, 1, 7);
-	GXSetTevColor(1, dat_8041f230);
-	GXSetTevOrder(2, 0xFF, 0xFF, 4);
-	GXSetTevColorOp(2, 0, 0, 0, 1, 0);
-	GXSetTevAlphaOp(2, 0, 0, 0, 1, 0);
-	GXSetTevColorIn(2, 0xF, 0, 0xA, 0xF);
-	GXSetTevAlphaIn(2, 7, 0, 5, 7);
-	GXSetCullMode(0);
+	GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR_NULL);
+	GXSetTevColorOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+	GXSetTevAlphaOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+	GXSetTevColorIn(GX_TEVSTAGE0, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ZERO, GX_CC_TEXC);
+	GXSetTevAlphaIn(GX_TEVSTAGE0, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_TEXA);
+	GXSetTevOrder(GX_TEVSTAGE1, GX_TEXCOORD1, GX_TEXMAP0, GX_COLOR_NULL);
+	GXSetTevColorOp(GX_TEVSTAGE1, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+	GXSetTevAlphaOp(GX_TEVSTAGE1, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+	GXSetTevColorIn(GX_TEVSTAGE1, GX_CC_CPREV, GX_CC_TEXC, GX_CC_C0, GX_CC_ZERO);
+	GXSetTevAlphaIn(GX_TEVSTAGE1, GX_CA_APREV, GX_CA_TEXA, GX_CA_A0, GX_CA_ZERO);
+	GXSetTevColor(GX_TEVREG0, dat_8041f230);
+	GXSetTevOrder(GX_TEVSTAGE2, GX_TEXCOORD_NULL, GX_TEXMAP_NULL, GX_COLOR0A0);
+	GXSetTevColorOp(GX_TEVSTAGE2, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+	GXSetTevAlphaOp(GX_TEVSTAGE2, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+	GXSetTevColorIn(GX_TEVSTAGE2, GX_CC_ZERO, GX_CC_CPREV, GX_CC_RASC, GX_CC_ZERO);
+	GXSetTevAlphaIn(GX_TEVSTAGE2, GX_CA_ZERO, GX_CA_APREV, GX_CA_RASA, GX_CA_ZERO);
+	GXSetCullMode(GX_CULL_NONE);
 	GXClearVtxDesc();
-	GXSetVtxDesc(9, 1);
-	GXSetVtxDesc(13, 1);
-	GXSetVtxAttrFmt(0, 9, 1, 4, 0);
-	GXSetVtxAttrFmt(0, 13, 1, 4, 0);
+	GXSetVtxDesc(GX_VA_POS, GX_DIRECT);
+	GXSetVtxDesc(GX_VA_TEX0, GX_DIRECT);
+	GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_POS_XYZ, GX_F32, 0);
+	GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, GX_TEX_ST, GX_F32, 0);
 
 	scrollX = 0.0625f * (f32)field0;
 	scrollY = 0.0625f * (f32)field1;
 
 	data++;
 	for (i = 1; i < effect->count; i++, data++) {
-		if (data->field_0x40 > 15) {
+		if (data->sheetU0 > 15) {
 			continue;
 		}
 
 		PSMTXTrans(mtxTmp, scrollX, 0.0f, 0.0f);
 		PSMTXScale(mtxScale, 0.0625f, 1.0f, 1.0f);
 		PSMTXConcat(mtxTmp, mtxScale, mtxTmp);
-		GXLoadTexMtxImm(mtxTmp, 0x1E, 1);
+		GXLoadTexMtxImm(mtxTmp, GX_TEXMTX0, GX_MTX2x4);
 
 		PSMTXTrans(mtxTmp, scrollY, 0.0f, 0.0f);
 		PSMTXScale(mtxScale, 0.0625f, 1.0f, 1.0f);
 		PSMTXConcat(mtxTmp, mtxScale, mtxTmp);
-		GXLoadTexMtxImm(mtxTmp, 0x21, 1);
+		GXLoadTexMtxImm(mtxTmp, GX_TEXMTX1, GX_MTX2x4);
 
 		for (j = 0; j < 2; j++) {
 			if (j == 0) {
 #ifdef MUST_MATCH
 				kemuri1SetChanMatColorA();
 #else
-				GXSetChanMatColor(4, dat_8041f234);
+				GXSetChanMatColor(GX_COLOR0A0, dat_8041f234);
 #endif
 				PSMTXTrans(mtxTmp, 2.0f + data->position.x,
 					data->position.y - 2.0f, data->position.z);
@@ -497,21 +497,21 @@ void effKemuri1Disp(CameraId camId, void* param) {
 			}
 			else {
 #ifdef MUST_MATCH
-				kemuri1SetChanMatColorB(data->field_0x44, data->field_0x45, data->field_0x46);
+				kemuri1SetChanMatColorB(data->colorR, data->colorG, data->colorB);
 #else
 				GXColor color = unk_80423168;
-				color.r = data->field_0x44;
-				color.g = data->field_0x45;
-				color.b = data->field_0x46;
+				color.r = data->colorR;
+				color.g = data->colorG;
+				color.b = data->colorB;
 				color.a = 0xFF;
-				GXSetChanMatColor(4, color);
+				GXSetChanMatColor(GX_COLOR0A0, color);
 #endif
 				PSMTXTrans(mtxTmp, data->position.x, data->position.y, data->position.z);
 				PSMTXConcat(mtxBase, mtxTmp, mtxTmp);
 				GXLoadPosMtxImm(mtxTmp, 0);
 			}
 
-			GXBegin(0x80, 0, 4);
+			GXBegin(GX_QUADS, GX_VTXFMT0, 4);
 
 #ifdef MUST_MATCH
 			// Two variables so MWCC emits the original's duplicate `fmr` and four separate size*0.5 corners;
