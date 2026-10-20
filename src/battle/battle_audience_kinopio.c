@@ -1201,10 +1201,10 @@ void BattleAudienceCtrlProcessKinopioIntrude(s32 index) {
 		len = (f32)sqrt(dx * dx + dz * dz);
 		vx = 5.0f * (dx / len);
 		vz = 5.0f * (dz / len);
-		*(f32*)(member->field_0x8 + 0x70) = vx;
-		*(f32*)(member->field_0x8 + 0x74) = 0.0f;
-		*(f32*)(member->field_0x8 + 0x80) = 0.0f;
-		*(f32*)(member->field_0x8 + 0x78) = vz;
+		member->velocity.x = vx;
+		member->velocity.y = 0.0f;
+		member->accel.y = 0.0f;
+		member->velocity.z = vz;
 		intrudeSound = psndSFXOn(str_802F8D68);
 	}
 		// fallthrough
@@ -1212,23 +1212,23 @@ void BattleAudienceCtrlProcessKinopioIntrude(s32 index) {
 		if (member->position.z <= 110.0f) {
 			member->field_0x4 = 0xa;
 			member->position.z = 110.0f;
-			*(f32*)(member->field_0x8 + 0x70) = 0.0f;
-			*(f32*)(member->field_0x8 + 0x74) = 10.0f;
-			*(f32*)(member->field_0x8 + 0x80) = -0.7f;
-			*(f32*)(member->field_0x8 + 0x78) = -1.5f;
+			member->velocity.x = 0.0f;
+			member->velocity.y = 10.0f;
+			member->accel.y = -0.7f;
+			member->velocity.z = -1.5f;
 			psndSFXOff(intrudeSound);
 		}
 		break;
 	case 0xa: {
 		f32 zero = 0.0f;
-		if (*(f32*)(member->field_0x8 + 0x74) <= zero &&
+		if (member->velocity.y <= zero &&
 		    member->position.y <= zero) {
 			f32 dz;
 			f32 dx;
 			member->field_0x4 = 0xf;
 			member->position.y = zero;
-			*(f32*)(member->field_0x8 + 0x74) = zero;
-			*(f32*)(member->field_0x8 + 0x80) = zero;
+			member->velocity.y = zero;
+			member->accel.y = zero;
 			dir = *(f32*)(member->field_0x8 + 4);
 			t = 300.0f * dir;
 			dx = t - member->position.x;
@@ -1236,9 +1236,9 @@ void BattleAudienceCtrlProcessKinopioIntrude(s32 index) {
 			len = (f32)sqrt(dx * dx + dz * dz);
 			vx = 5.0f * (dx / len);
 			vz = 5.0f * (dz / len);
-			*(f32*)(member->field_0x8 + 0x70) = vx;
-			*(f32*)(member->field_0x8 + 0x74) = zero;
-			*(f32*)(member->field_0x8 + 0x78) = vz;
+			member->velocity.x = vx;
+			member->velocity.y = zero;
+			member->velocity.z = vz;
 			btl_camera_set_mode(0, 3);
 			btl_camera_set_moveto(0, 0x1e, 4, 698.0f * *(f32*)(member->field_0x8 + 4),
 			    100.0f, zero, zero,
@@ -1257,7 +1257,7 @@ void BattleAudienceCtrlProcessKinopioIntrude(s32 index) {
 #endif
 			member->field_0x4 = 0x10;
 			*(s32*)member->field_0x8 = 0x23;
-			*(Vec*)(member->field_0x8 + 0x70) = vec3_802f8c84;
+			member->velocity = vec3_802f8c84;
 		}
 		break;
 	case 0x10:
@@ -1312,10 +1312,10 @@ void BattleAudienceCtrlProcessKinopioIntrude(s32 index) {
 		len = (f32)sqrt(dx * dx + dz * dz);
 		vx = 5.0f * (dx / len);
 		vz = 5.0f * (dz / len);
-		*(f32*)(member->field_0x8 + 0x70) = vx;
-		*(f32*)(member->field_0x8 + 0x74) = 0.0f;
-		*(f32*)(member->field_0x8 + 0x80) = 0.0f;
-		*(f32*)(member->field_0x8 + 0x78) = vz;
+		member->velocity.x = vx;
+		member->velocity.y = 0.0f;
+		member->accel.y = 0.0f;
+		member->velocity.z = vz;
 		intrudeSound = psndSFXOn(str_802F8D68);
 	}
 		// fallthrough
@@ -1323,24 +1323,24 @@ void BattleAudienceCtrlProcessKinopioIntrude(s32 index) {
 		if (member->position.z <= 110.0f) {
 			member->field_0x4 = 0x3c;
 			member->position.z = 110.0f;
-			*(f32*)(member->field_0x8 + 0x70) = 0.0f;
-			*(f32*)(member->field_0x8 + 0x74) = 10.0f;
-			*(f32*)(member->field_0x8 + 0x80) = -0.7f;
-			*(f32*)(member->field_0x8 + 0x78) = -1.5f;
+			member->velocity.x = 0.0f;
+			member->velocity.y = 10.0f;
+			member->accel.y = -0.7f;
+			member->velocity.z = -1.5f;
 			psndSFXOff(intrudeSound);
 		}
 		break;
 	case 0x3c:
-		if (*(f32*)(member->field_0x8 + 0x74) <= 0.0f &&
+		if (member->velocity.y <= 0.0f &&
 		    member->position.y <= 0.0f) {
 			f32 zero = 0.0f;
 			member->field_0x4 = 0x41;
 			*(s32*)member->field_0x8 = 0;
 			member->position.y = zero;
-			*(f32*)(member->field_0x8 + 0x70) = zero;
-			*(f32*)(member->field_0x8 + 0x74) = zero;
-			*(f32*)(member->field_0x8 + 0x80) = zero;
-			*(f32*)(member->field_0x8 + 0x78) = zero;
+			member->velocity.x = zero;
+			member->velocity.y = zero;
+			member->accel.y = zero;
+			member->velocity.z = zero;
 			intrudeSound = psndSFXOn(str_802F8D68);
 		}
 		break;
@@ -1388,9 +1388,9 @@ void BattleAudienceCtrlProcessKinopioIntrude(s32 index) {
 		len = (f32)sqrt(dx * dx + dz * dz);
 		vx = 5.0f * (dx / len);
 		vz = 5.0f * (dz / len);
-		*(f32*)(member->field_0x8 + 0x70) = vx;
-		*(f32*)(member->field_0x8 + 0x74) = zero;
-		*(f32*)(member->field_0x8 + 0x78) = vz;
+		member->velocity.x = vx;
+		member->velocity.y = zero;
+		member->velocity.z = vz;
 	}
 		break;
 	case 0x4b:
@@ -1401,7 +1401,7 @@ void BattleAudienceCtrlProcessKinopioIntrude(s32 index) {
 		if (__fabs(member->position.x) >= double_300_802f8d90) {
 #endif
 			member->field_0x4 = 0x50;
-			*(Vec*)(member->field_0x8 + 0x70) = vec3_802f8c90;
+			member->velocity = vec3_802f8c90;
 			psndSFXOff(intrudeSound);
 		}
 		break;
