@@ -20,7 +20,7 @@ void mot_yoshi(void) {
         mario->hitobjFront = NULL;
         mario->hitobjStandOn = NULL;
         mario->hitobjPush = NULL;
-        *(u32*)mario->field_0x1F0 = 0;
+        mario->hitobjWall = NULL;
         mario->hitobjHead = NULL;
         mario->hitobjUnder = NULL;
     }

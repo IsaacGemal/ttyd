@@ -816,7 +816,7 @@ void mot_ship(void) {
         mario->hitobjFront = NULL;
         mario->actionHitObj = NULL;
         mario->hitobjPush = NULL;
-        *(s32*)((u8*)mario + 0x1F0) = 0;
+        mario->hitobjWall = NULL;
         marioCheckWallShip(mario->baseSpeed, mario->directionView);
         if (mario->baseSpeed < 0.5f) {
             mario->baseSpeed = 0.0f;
@@ -965,7 +965,7 @@ void shipMove(void) {
     }
     if (!f30) {
         f32 f3 = shipData[0];
-        if (*(void**)((u8*)mario + 0x1F0) != NULL) {
+        if (mario->hitobjWall != NULL) {
             f3 = shipData[1];
         }
         f3 = __fabsf(f3);

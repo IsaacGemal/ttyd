@@ -1039,8 +1039,8 @@ void mot_roll(void) {
     }
 
     if (mario->forceMoveTimer == 0 && !f30 && !ay) {
-        if (*(void**)((u8*)mario + 0x1F0) != NULL) {
-            if (!marioChkBero(*(HitEntry**)((u8*)mario + 0x1F0))) {
+        if (mario->hitobjWall != NULL) {
+            if (!marioChkBero(mario->hitobjWall)) {
                 f29 = f29 + f29 * ((f32*)&rollData)[2];
                 f28 = f28 + f28 * ((f32*)&rollData)[2];
             }

@@ -140,7 +140,11 @@ typedef struct MarioWork {
     u8 field_0x2A[0x2E - 0x2A];    // 0x2A
     MarioMotion currMotionId;      // 0x2E
     MarioMotion prevMotionId;      // 0x30, TODO check
-    u8 field_0x32[0x3B - 0x32];    // 0x32
+    u8 field_0x32[0x34 - 0x32];    // 0x32
+    u32 field_0x34;                // 0x34, counter bumped in mario.c, peach.c and koopa.c motions; blur capture (mario.c) tests bit 0
+    s8 ctrlOffCount;               // 0x38, marioCtrlOff nesting count (flag 0x2); marioCtrlOn returns it to 0
+    s8 keyOffCount;                // 0x39, marioKeyOff nesting count (flag 0x8); marioKeyOn returns it to 0
+    u8 field_0x3A;                 // 0x3A
     s8 partyUseTimer;              // 0x3B, set to 5 when the X press starts a partner use, cleared when it ends (mario_party, mario_motion)
     s8 characterId;                // 0x3C
     s8 colorId;                    // 0x3D
@@ -164,7 +168,7 @@ typedef struct MarioWork {
     f32 field_68;                  // 0x68
     Vec field_6C;                  // 0x6C
     s16 noHitEnemyCt;              // 0x78, koopa frames left without enemy hits: kpaPowDown sets sysMsec2Frame(3000), kpaNoHitEnemyCheck returns it, kpa_nohitenemy_ct_clear zeroes it
-    s16 field_0x7A;                // 0x7A
+    s16 itemGetDisableTimer;       // 0x7A, frames left on the MARIO_FLAG_ITEM_GET_DISABLED block: marioItemGetDisable sets 20, marioItemGetChk counts down and clears the flag
     f32 jumpVelY;                  // 0x7C, per-frame Y step added to position.y (evt_mario, mot_roll, mot_ship)
     f32 jumpAccelY;                // 0x80, added to jumpVelY each frame
     f32 jumpJerkY;                 // 0x84, added to jumpAccelY each frame
@@ -225,10 +229,10 @@ typedef struct MarioWork {
 	void* hitobjStandOn;           // 0x1E4, 0x1E8 US HitEntry
 	void* hitobjJumpFrom;          // 0x1E8, 0x1EC US HitEntry
 	void* hitobjPush;              // 0x1EC JP, 0x1F0 US HitEntry
-    u8 field_0x1F0[4];             // 0x1F0, HitEntry of the wall searchFrontWall touched (mario_hit), set even when hitobjPush is not
+    void* hitobjWall;              // 0x1F0, front-wall HitEntry mario_hit's wall checks store on either branch (also when hitobjPush is not set), party_yoshi's too; unlike hitobjFront never swapped for hitobjBalloon; read by marioChkToge, mot_roll, mot_ship, koopa_motion and party_yoshi
     void* hitobjHead;              // 0x1F4, marioSearchHead result
     void* hitobjUnder;             // 0x1F8, marioSearchUnder result (mario_hit)
-    void* field_0x1FC;             // 0x1FC
+    void* hitobjHammer;            // 0x1FC, hit the hammer struck: mot_hammer copies its hitEstimate target (0x200) at impact and the case-0x14 front ray stores its hit; cleared at each marioMotion; mobjdrv and casedrv test it for hammer triggers
     u8 field_0x200[4];             // 0x200
     void* hitobjDamageReturn;      // 0x204, hit whose damage return position mot_damage uses
     void* hitobjStandOnPrev;       // 0x208, hitobjStandOn copied at the end of the frame (mario.c)
@@ -295,7 +299,9 @@ typedef struct MarioWork {
         f32 jabaraAccel;           // 0x2B4, mot_jabara: step added to jabaraSpeed each frame
     };
     f32 field_0x2B8;               // 0x2B8
-    u8 field_0x2BC[0x2C4 - 0x2BC]; // 0x2BC
+    u8 field_0x2BC[4];             // 0x2BC
+    s16 coinDropTimer;             // 0x2C0, frames left dropping coins after fleeing a field battle: npcdrv sets sysMsec2Frame(3000) with marioSetMutekiTime(3000) on battle result 4 (escaped); mario.c drops a coin every 30 frames while it runs
+    u8 field_0x2C2[0x2C4 - 0x2C2]; // 0x2C2
     f32 kpaSpeed;                  // 0x2C4, signed walk/swim speed (koopa_motion, koopa.c reset)
     u32 reloadMapOnBottomless;     // 0x2C8, set by N_marioReloadMapOnBottomlessOn/Off
     Vec bottomlessResetPosition;   // 0x2CC JP, 0x2E4 US

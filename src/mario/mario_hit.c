@@ -1079,7 +1079,7 @@ void marioChkToge(void) {
         }
     }
 
-    hit = (HitEntry*)*(void**)wp->field_0x1F0;
+    hit = (HitEntry*)wp->hitobjWall;
     if (hit != NULL) {
         attr = hitGetAttr(hit);
         if (wp->currMotionId != 0x20 && (attr & 0x800) != 0) {
@@ -1919,14 +1919,14 @@ void marioCheckWall(f32 a, f32 b) {
         if (marioChkBero(hit)) {
             if (a) {
                 wp->hitobjPush = hit;
-                *(void**)wp->field_0x1F0 = hit;
+                wp->hitobjWall = hit;
             }
             movePos(&wp->position.x, &wp->position.z, a, b);
         } else {
             s32 t;
 
             wp->frontWallDist = f8;
-            *(void**)wp->field_0x1F0 = hit;
+            wp->hitobjWall = hit;
             t = wp->field_0x3E[1] + 1;
             wp->field_0x3E[1] = t;
             if ((s8)t >= 0x14) {
@@ -2109,14 +2109,14 @@ void marioCheckWall_roll(f32 a, f32 b) {
         if (r != 0) {
             if (a) {
                 wp->hitobjPush = hit;
-                *(void**)wp->field_0x1F0 = hit;
+                wp->hitobjWall = hit;
             }
             movePos(&wp->position.x, &wp->position.z, a, b);
         } else {
             s32 t;
 
             wp->frontWallDist = f8;
-            *(void**)wp->field_0x1F0 = hit;
+            wp->hitobjWall = hit;
             t = wp->field_0x3E[1] + 1;
             wp->field_0x3E[1] = t;
             if ((s8)t >= 0x14) {
@@ -2999,7 +2999,7 @@ void marioCheckWallShip(f32 a, f32 b) {
         if (r != 0) {
             if (a) {
                 wp->hitobjPush = hit;
-                *(void**)wp->field_0x1F0 = hit;
+                wp->hitobjWall = hit;
             }
             movePos(&wp->position.x, &wp->position.z, a, b);
             v = wp->position;
@@ -3011,7 +3011,7 @@ void marioCheckWallShip(f32 a, f32 b) {
                 s32 t;
 
                 wp->frontWallDist = f8;
-                *(void**)wp->field_0x1F0 = hit;
+                wp->hitobjWall = hit;
                 t = wp->field_0x3E[1] + 1;
                 wp->field_0x3E[1] = t;
                 if ((s8)t >= 0x14) {

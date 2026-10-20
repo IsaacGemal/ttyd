@@ -371,7 +371,7 @@ void kpa2DMain(void) {
     MW_U32(mp, 0x1E0) = 0;
     mp->actionHitObj = NULL;
     mp->hitobjPush = NULL;
-    MW_U32(mp, 0x1F0) = 0;
+    mp->hitobjWall = NULL;
     marioItemGetChk();
     kpaFireAttack();
     kpaFireMain();
@@ -395,7 +395,7 @@ void kpa2DMain(void) {
         marioPreDisp();
         mario_kemuri_80130474();
         marioCamMain();
-        MW_U32(mp, 0x34)++;
+        mp->field_0x34++;
         return;
     }
     pos = mp->position;
@@ -456,7 +456,7 @@ void kpa2DMain(void) {
     marioBalloonMain();
     mario_kemuri_80130474();
     marioCamMain();
-    MW_U32(mp, 0x34)++;
+    mp->field_0x34++;
     prevPos = (Vec*)((u8*)mp + 0x110);
     *prevPos = mp->position;
     mp->riderDelta.x = 0.0f;
@@ -483,14 +483,14 @@ void kpa3DMain(void) {
         mp->currMotionId == MARIO_MOTION_DAMAGE_TOGE) {
         marioPreDisp();
         marioBottomless();
-        MW_U32(mp, 0x34)++;
+        mp->field_0x34++;
         partyMain();
         marioCamMain();
         MW_U32(mp, 0x1F4) = 0;
         MW_U32(mp, 0x1E0) = 0;
         mp->actionHitObj = NULL;
         mp->hitobjPush = NULL;
-        MW_U32(mp, 0x1F0) = 0;
+        mp->hitobjWall = NULL;
         return;
     }
     marioItemGetChk();
@@ -518,7 +518,7 @@ void kpa3DMain(void) {
         mario_kemuri_80130474();
         partyMain();
         marioCamMain();
-        MW_U32(mp, 0x34)++;
+        mp->field_0x34++;
         return;
     }
     if (mp->flags & 0x40000) {
@@ -556,7 +556,7 @@ void kpa3DMain(void) {
     mario_kemuri_80130474();
     partyMain();
     marioCamMain();
-    MW_U32(mp, 0x34)++;
+    mp->field_0x34++;
     prevPos = (Vec*)((u8*)mp + 0x110);
     *prevPos = mp->position;
     mp->riderDelta.x = 0.0f;

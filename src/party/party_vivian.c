@@ -49,7 +49,7 @@ void mot_vivian(void) {
         mario->hitobjFront = NULL;
         mario->actionHitObj = NULL;
         mario->hitobjPush = NULL;
-        *(u32*)&mario->field_0x1F0[0] = 0;
+        mario->hitobjWall = NULL;
     }
 }
 

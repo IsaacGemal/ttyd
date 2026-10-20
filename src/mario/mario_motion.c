@@ -486,7 +486,7 @@ void marioBoots(void) {
 void marioMotion(void) {
     MarioWork* mario = marioGetPtr();
 
-    mario->field_0x1FC = 0;
+    mario->hitobjHammer = 0;
     do {
         marioMotTbl[mario->currMotionId].unk0();
     } while (mario->trigFlags & MARIO_TRIG_FLAG_IS_STARTING_NEW_MOTION);

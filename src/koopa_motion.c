@@ -124,7 +124,7 @@ f32 kpaStickSpd(s32 arg) {
     f30 = mario->kpaSpeed;
     if (stick == float_0_80420da0) {
         f32 decel = -0.2f;
-        if (*(void**)((u8*)mario + 0x1F0) != NULL) {
+        if (mario->hitobjWall != NULL) {
             decel = -0.7f;
         }
         f30 += f30 * decel;

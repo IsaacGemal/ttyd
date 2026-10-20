@@ -537,10 +537,10 @@ void mobjMain(void) {
     if (gp->inBattle == 0) {
         HitEntry** hp = (HitEntry**)wp;
 
-        if (mario->field_0x1FC != NULL) {
+        if (mario->hitobjHammer != NULL) {
             if (hp[2] == NULL ||
-                strcmp(hitGetName(hp[2]), hitGetName(mario->field_0x1FC)) != 0) {
-                hp[2] = mario->field_0x1FC;
+                strcmp(hitGetName(hp[2]), hitGetName(mario->hitobjHammer)) != 0) {
+                hp[2] = mario->hitobjHammer;
             }
         } else {
             hp[2] = NULL;
@@ -634,7 +634,7 @@ void mobjMain(void) {
                 v22 = 0;
                 hitObj = entry->hitObj[0].hitObject;
                 if (mario->characterId != 2) {
-                    if ((entry->flags & 0x10000) && mario->field_0x1FC == (void*)hitObj) {
+                    if ((entry->flags & 0x10000) && mario->hitobjHammer == (void*)hitObj) {
                         if (marioGetPtr()->position.y <= float_5_8041a0ec + entry->position.y) {
                             v22 = 1;
                             entry->triggerFlag = 0x10000;

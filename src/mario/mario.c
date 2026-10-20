@@ -364,7 +364,7 @@ void marioItemGetDisable(void) {
 	MarioWork* wp = mp;
 
 	wp->flags |= 0x4000;
-	wp->field_0x7A = 0x14;
+	wp->itemGetDisableTimer = 0x14;
 }
 
 void marioItemGetChk(void) {
@@ -372,12 +372,12 @@ void marioItemGetChk(void) {
 	s32 var;
 
 	work = mp;
-	var = mp->field_0x7A;
+	var = mp->itemGetDisableTimer;
 	if (var > 0) {
 		var--;
-		work->field_0x7A = (s16)var;
+		work->itemGetDisableTimer = (s16)var;
 		if ((s16)var <= 0) {
-			work->field_0x7A = 0;
+			work->itemGetDisableTimer = 0;
 			mp->flags &= ~0x4000u;
 		}
 	}
@@ -557,14 +557,14 @@ BOOL marioChkKey(void) {
 }
 
 BOOL marioChkCtrl(void) {
-	return ((s8*)mp->field_0x32)[6] == 0;
+	return mp->ctrlOffCount == 0;
 }
 
 s32 N_marioChkUseParty(void) {
 	if ((u16)gp->buttonNew[0] & 0x100f) {
 		return 1;
 	}
-	return ((s8*)mp->field_0x32)[6];
+	return mp->ctrlOffCount;
 }
 
 void marioFBattlePrepare(void) {
@@ -596,29 +596,29 @@ void marioFBattlePost(void) {
 }
 
 s32 marioCtrlOffChk(void) {
-	return ((s8*)mp->field_0x32)[6];
+	return mp->ctrlOffCount;
 }
 
 s32 marioKeyOffChk(void) {
-	return ((s8*)mp->field_0x32)[7];
+	return mp->keyOffCount;
 }
 
 s32 marioCtrlOff(void) {
 	MarioWork* wp = mp;
 
 	wp->flags |= MARIO_FLAG_CTRL_OFF;
-	((s8*)wp->field_0x32)[6]++;
-	return ((s8*)wp->field_0x32)[6];
+	wp->ctrlOffCount++;
+	return wp->ctrlOffCount;
 }
 
 s32 marioCtrlOn(void) {
 	MarioWork* wp = mp;
 
-	((s8*)wp->field_0x32)[6]--;
-	if (((s8*)wp->field_0x32)[6] == 0) {
+	wp->ctrlOffCount--;
+	if (wp->ctrlOffCount == 0) {
 		wp->flags &= ~MARIO_FLAG_CTRL_OFF;
 	}
-	return ((s8*)wp->field_0x32)[6];
+	return wp->ctrlOffCount;
 }
 
 s32 marioCtrlOff2(void) {
@@ -626,37 +626,37 @@ s32 marioCtrlOff2(void) {
 
 	wp->flags |= MARIO_FLAG_CTRL_OFF_2;
 	wp->flags |= MARIO_FLAG_CTRL_OFF;
-	((s8*)wp->field_0x32)[6]++;
-	return ((s8*)wp->field_0x32)[6];
+	wp->ctrlOffCount++;
+	return wp->ctrlOffCount;
 }
 
 s32 marioCtrlOn2(void) {
 	MarioWork* wp = mp;
 
 	wp->flags &= ~MARIO_FLAG_CTRL_OFF_2;
-	((s8*)wp->field_0x32)[6]--;
-	if (((s8*)wp->field_0x32)[6] == 0) {
+	wp->ctrlOffCount--;
+	if (wp->ctrlOffCount == 0) {
 		wp->flags &= ~MARIO_FLAG_CTRL_OFF;
 	}
-	return ((s8*)wp->field_0x32)[6];
+	return wp->ctrlOffCount;
 }
 
 s32 marioKeyOff(void) {
 	MarioWork* wp = mp;
 
 	wp->flags |= MARIO_FLAG_KEY_OFF;
-	((s8*)wp->field_0x32)[7]++;
-	return ((s8*)wp->field_0x32)[7];
+	wp->keyOffCount++;
+	return wp->keyOffCount;
 }
 
 s32 marioKeyOn(void) {
 	MarioWork* wp = mp;
 
-	((s8*)wp->field_0x32)[7]--;
-	if (((s8*)wp->field_0x32)[7] == 0) {
+	wp->keyOffCount--;
+	if (wp->keyOffCount == 0) {
 		wp->flags &= ~MARIO_FLAG_KEY_OFF;
 	}
-	return ((s8*)wp->field_0x32)[7];
+	return wp->keyOffCount;
 }
 
 s16 marioSetMutekiTime(s32 msec) {
@@ -742,8 +742,8 @@ void marioResetHitObj(const char* name) {
 	if (wp->hitobjPush != NULL && !strcmp(hitGetName(wp->hitobjPush), name)) {
 		wp->hitobjPush = NULL;
 	}
-	if (*(void**)wp->field_0x1F0 != NULL && !strcmp(hitGetName(*(HitEntry**)wp->field_0x1F0), name)) {
-		*(void**)wp->field_0x1F0 = NULL;
+	if (wp->hitobjWall != NULL && !strcmp(hitGetName(wp->hitobjWall), name)) {
+		wp->hitobjWall = NULL;
 	}
 	if (wp->hitobjHead != NULL && !strcmp(hitGetName(wp->hitobjHead), name)) {
 		wp->hitobjHead = NULL;
@@ -751,8 +751,8 @@ void marioResetHitObj(const char* name) {
 	if (wp->hitobjUnder != NULL && !strcmp(hitGetName(wp->hitobjUnder), name)) {
 		wp->hitobjUnder = NULL;
 	}
-	if (wp->field_0x1FC != NULL && !strcmp(hitGetName(wp->field_0x1FC), name)) {
-		wp->field_0x1FC = NULL;
+	if (wp->hitobjHammer != NULL && !strcmp(hitGetName(wp->hitobjHammer), name)) {
+		wp->hitobjHammer = NULL;
 	}
 }
 
@@ -1053,7 +1053,7 @@ static inline Vec marioCoinPos(f32 x, f32 y, f32 z) {
 
 // MUST_MATCH: the blur history update is inlined in the original, and every copy re-reads mp.
 static inline void marioUpdateBlurPos(void) {
-	if ((*(u32*)(mp->field_0x32 + 2) & 1) && (mp->dispFlags & 0x08000000)) {
+	if ((mp->field_0x34 & 1) && (mp->dispFlags & 0x08000000)) {
 		Vec* p = &blurPos[blurPosId];
 
 		*p = mp->position;
@@ -1074,7 +1074,7 @@ void marioMain(void) {
 		return;
 	}
 
-	if (((u16)gp->buttonNew[0] & 0x100f) ? 1 : *(s8*)(wp->field_0x32 + 6)) {
+	if (((u16)gp->buttonNew[0] & 0x100f) ? 1 : wp->ctrlOffCount) {
 		if (wp->characterId == 0) {
 			BOOL badge1 = pouchEquipCheckBadge(0x147);
 			BOOL badge2 = pouchEquipCheckBadge(0x148);
@@ -1138,9 +1138,9 @@ void marioMain(void) {
 	if (wp->unk4C > 0) {
 		wp->unk4C--;
 	}
-	if (*(s16*)(wp->field_0x2BC + 4) > 0) {
-		*(s16*)(wp->field_0x2BC + 4) -= 1;
-		if (*(s16*)(wp->field_0x2BC + 4) % 30 == 0 && *(s16*)(wp->field_0x2BC + 4) > 0) {
+	if (wp->coinDropTimer > 0) {
+		wp->coinDropTimer -= 1;
+		if (wp->coinDropTimer % 30 == 0 && wp->coinDropTimer > 0) {
 			Vec pos = marioCoinPos(wp->position.x, wp->position.y + 30.0f, wp->position.z);
 
 			itemCoinDrop(&pos);
@@ -1168,7 +1168,7 @@ void marioMain(void) {
 			p->riderDelta.x = 0.0f;
 			p->riderDelta.y = 0.0f;
 			p->riderDelta.z = 0.0f;
-			*(u32*)(p->field_0x32 + 2) += 1;
+			p->field_0x34 += 1;
 		}
 		return;
 	}
@@ -1197,7 +1197,7 @@ void marioMain(void) {
 				p->riderDelta.x = 0.0f;
 				p->riderDelta.y = 0.0f;
 				p->riderDelta.z = 0.0f;
-				*(u32*)(p->field_0x32 + 2) += 1;
+				p->field_0x34 += 1;
 			}
 			return;
 		}
@@ -1216,7 +1216,7 @@ void marioMain(void) {
 			wp->hitobjFront = NULL;
 			wp->actionHitObj = NULL;
 			wp->hitobjPush = NULL;
-			*(void**)wp->field_0x1F0 = NULL;
+			wp->hitobjWall = NULL;
 			{
 				MarioWork* p = mp;
 				p->airTimerPrev = p->airTimer;
@@ -1228,7 +1228,7 @@ void marioMain(void) {
 				p->riderDelta.x = 0.0f;
 				p->riderDelta.y = 0.0f;
 				p->riderDelta.z = 0.0f;
-				*(u32*)(p->field_0x32 + 2) += 1;
+				p->field_0x34 += 1;
 			}
 			return;
 		}
@@ -1251,7 +1251,7 @@ void marioMain(void) {
 				p->riderDelta.x = 0.0f;
 				p->riderDelta.y = 0.0f;
 				p->riderDelta.z = 0.0f;
-				*(u32*)(p->field_0x32 + 2) += 1;
+				p->field_0x34 += 1;
 			}
 			return;
 		}
@@ -1274,7 +1274,7 @@ void marioMain(void) {
 				p->riderDelta.x = 0.0f;
 				p->riderDelta.y = 0.0f;
 				p->riderDelta.z = 0.0f;
-				*(u32*)(p->field_0x32 + 2) += 1;
+				p->field_0x34 += 1;
 			}
 			return;
 		}
@@ -1297,7 +1297,7 @@ void marioMain(void) {
 				p->riderDelta.x = 0.0f;
 				p->riderDelta.y = 0.0f;
 				p->riderDelta.z = 0.0f;
-				*(u32*)(p->field_0x32 + 2) += 1;
+				p->field_0x34 += 1;
 			}
 			return;
 		}
@@ -1308,7 +1308,7 @@ void marioMain(void) {
 			mario_kemuri_80130474();
 			partyMain();
 			marioCamMain();
-			if ((*(u32*)(wp->field_0x32 + 2) & 1) && (mp->dispFlags & 0x08000000)) {
+			if ((wp->field_0x34 & 1) && (mp->dispFlags & 0x08000000)) {
 				Vec* p = &blurPos[blurPosId];
 
 				*p = mp->position;
@@ -1328,7 +1328,7 @@ void marioMain(void) {
 				p->riderDelta.x = 0.0f;
 				p->riderDelta.y = 0.0f;
 				p->riderDelta.z = 0.0f;
-				*(u32*)(p->field_0x32 + 2) += 1;
+				p->field_0x34 += 1;
 			}
 			return;
 		}
@@ -1402,7 +1402,7 @@ void marioMain(void) {
 	mario_kemuri_80130474();
 	partyMain();
 	marioCamMain();
-	if ((*(u32*)(wp->field_0x32 + 2) & 1) && (mp->dispFlags & 0x08000000)) {
+	if ((wp->field_0x34 & 1) && (mp->dispFlags & 0x08000000)) {
 		Vec* p = &blurPos[blurPosId];
 
 		*p = mp->position;
@@ -1422,7 +1422,7 @@ void marioMain(void) {
 		p->riderDelta.x = 0.0f;
 		p->riderDelta.y = 0.0f;
 		p->riderDelta.z = 0.0f;
-		*(u32*)(p->field_0x32 + 2) += 1;
+		p->field_0x34 += 1;
 	}
 }
 
@@ -1655,7 +1655,7 @@ void marioMoveMain(void) {
 		wp->hitobjFront = NULL;
 		wp->actionHitObj = NULL;
 		wp->hitobjPush = NULL;
-		*(void**)wp->field_0x1F0 = NULL;
+		wp->hitobjWall = NULL;
 	}
 	if (wp->flags & MARIO_FLAG_CTRL_OFF) {
 		return;
@@ -2279,7 +2279,7 @@ void marioPreDisp(void) {
 		marioRearAnime();
 	}
 
-	if (*(s8*)&wp->field_0x32[0x38 - 0x32] == 0 && !(wp->dispFlags & 0x100)) {
+	if (wp->ctrlOffCount == 0 && !(wp->dispFlags & 0x100)) {
 		marioMakeDispDir();
 	}
 
