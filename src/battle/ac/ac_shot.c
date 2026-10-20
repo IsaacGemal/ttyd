@@ -31,10 +31,10 @@ extern u32 unk_80423078;
 // _disp_target_mark's action-command work area at BattleWork+0x1F4C. No header declares it,
 // so the fields are named from the original's uses. Offsets here are relative to 0x1F4C.
 typedef struct TargetMarkWork {
-    u8 field_0x0[0x24]; // 0x00
+    u8 pad_0x00[0x24];  // 0x00
     f32 rotZ;           // 0x24 (BattleWork+0x1F70), marker angle
-    u8 field_0x28[4];   // 0x28 (BattleWork+0x1F74), unused by this function
-    f32 field_0x2C;     // 0x2C (BattleWork+0x1F78), passed as the f4 argument
+    u8 pad_0x28[4];     // 0x28 (BattleWork+0x1F74), unused by this function
+    f32 rollAngle;      // 0x2C (BattleWork+0x1F78), passed as the f4 argument
     f32 x;              // 0x30 (BattleWork+0x1F7C)
     f32 y;              // 0x34 (BattleWork+0x1F80)
     f32 z;              // 0x38 (BattleWork+0x1F84)
@@ -43,22 +43,22 @@ typedef struct TargetMarkWork {
 // The full ac_shot work area at BattleWork+0x1F4C, used by battleAcMain_Shot, actionCommandDisp and
 // _disp_target_mark_afterimage. Offsets are relative to 0x1F4C.
 typedef struct AcShotWork {
-    s32 field_0x00;      // 0x00, hit timer
-    s32 field_0x04;      // 0x04
+    s32 timer;           // 0x00, frames until the marker stops by itself (0x168 at start)
+    s32 pad_0x04;        // 0x04, never accessed
     s32 index;           // 0x08, history write index
-    f32 field_0x0C;      // 0x0C
-    f32 field_0x10;      // 0x10
-    f32 field_0x14;      // 0x14
-    f32 field_0x18;      // 0x18
-    f32 field_0x1C;      // 0x1C, gauge value
-    f32 field_0x20;      // 0x20
+    f32 minValue;        // 0x0C, acParams[2] as f32: the lowest gauge value a result can take
+    f32 maxValue;        // 0x10, acParams[3] as f32: the scale the gauge percent is taken against
+    f32 angleMin;        // 0x14, lower bound of the marker sweep (acParams[4])
+    f32 angleMax;        // 0x18, upper bound of the marker sweep (acParams[5])
+    f32 gauge;           // 0x1C, 0..100, rises 1 per frame while the button is held
+    f32 gaugeStart;      // 0x20, 100 * minValue / maxValue: the gauge value at the start
     f32 rotZ;            // 0x24, marker angle
-    f32 field_0x28;      // 0x28, angular velocity
-    f32 field_0x2C;      // 0x2C, afterimage roll angle
+    f32 rotSpeed;        // 0x28, angular velocity (acParams[6] / 10); flips sign at the bounds
+    f32 rollAngle;       // 0x2C, afterimage roll angle, +8 per frame
     f32 x;               // 0x30
     f32 y;               // 0x34
     f32 z;               // 0x38
-    s32 field_0x3C;      // 0x3C, end-of-AC timer
+    s32 endTimer;        // 0x3C, end-of-AC timer
     f32 rotHistory[3];   // 0x40
     f32 angleHistory[3]; // 0x4C
     f32 valueHistory[3]; // 0x58
@@ -73,7 +73,7 @@ static inline void _acShotAppendHistory(AcShotWork* aw, BattleWork* work) {
     work->actionCommands.outputParams[2] = (s32)aw->rotZ;
     work->actionCommands.outputParams[0] = 1;
     aw->rotHistory[aw->index] = aw->rotZ;
-    aw->angleHistory[aw->index] = aw->field_0x2C;
+    aw->angleHistory[aw->index] = aw->rollAngle;
     aw->valueHistory[aw->index] = 70.0f;
     aw->index++;
     work->actionCommands.outputParams[3]++;
@@ -104,14 +104,14 @@ s32 battleAcMain_Shot(BattleWork* work) {
             case 0:
                 _ac_disp_init(work);
                 work->actionCommands.result = 1;
-                aw->field_0x0C = (f32)work->actionCommands.acParams[2];
-                aw->field_0x10 = (f32)work->actionCommands.acParams[3];
-                aw->field_0x14 = (f32)work->actionCommands.acParams[4];
-                aw->field_0x18 = (f32)work->actionCommands.acParams[5];
-                aw->field_0x20 = 100.0f * aw->field_0x0C / aw->field_0x10;
-                aw->field_0x1C = aw->field_0x20;
-                aw->rotZ = aw->field_0x14 + (f32)irand((s32)(aw->field_0x18 - aw->field_0x14));
-                aw->field_0x28 = 0.1f * (f32)work->actionCommands.acParams[6];
+                aw->minValue = (f32)work->actionCommands.acParams[2];
+                aw->maxValue = (f32)work->actionCommands.acParams[3];
+                aw->angleMin = (f32)work->actionCommands.acParams[4];
+                aw->angleMax = (f32)work->actionCommands.acParams[5];
+                aw->gaugeStart = 100.0f * aw->minValue / aw->maxValue;
+                aw->gauge = aw->gaugeStart;
+                aw->rotZ = aw->angleMin + (f32)irand((s32)(aw->angleMax - aw->angleMin));
+                aw->rotSpeed = 0.1f * (f32)work->actionCommands.acParams[6];
                 aw->index = 0;
                 work->actionCommands.field_0x8 = 0x1E;
                 unit = BattleGetUnitPtr(work, work->actionCommands.acParams[0]);
@@ -129,7 +129,7 @@ s32 battleAcMain_Shot(BattleWork* work) {
             case 0x63:
                 break;
             case 0x64:
-                aw->field_0x00 = 0x168;
+                aw->timer = 0x168;
                 work->actionCommands.mAcState = 0x3E8;
                 aw->sfx = psndSFXOn(sfx);
                 // fallthrough
@@ -143,19 +143,19 @@ s32 battleAcMain_Shot(BattleWork* work) {
                         }
                     }
                     {
-                        f32 range = aw->field_0x10 - aw->field_0x0C;
+                        f32 range = aw->maxValue - aw->minValue;
                         s32 r;
                         f32 zero = 0.0f;
                         if (range != zero) {
-                            r = (s32)(aw->field_0x0C + (f32)irand((s32)range));
+                            r = (s32)(aw->minValue + (f32)irand((s32)range));
                         } else {
-                            r = (s32)aw->field_0x0C;
+                            r = (s32)aw->minValue;
                         }
                         work->actionCommands.outputParams[1] =
-                            (s32)(aw->field_0x10 * (f32)r / 100.0f);
+                            (s32)(aw->maxValue * (f32)r / 100.0f);
                     }
-                    if ((f32)work->actionCommands.outputParams[1] < aw->field_0x0C) {
-                        work->actionCommands.outputParams[1] = (s32)aw->field_0x0C;
+                    if ((f32)work->actionCommands.outputParams[1] < aw->minValue) {
+                        work->actionCommands.outputParams[1] = (s32)aw->minValue;
                     }
                     _acShotAppendHistory(aw, work);
                     if (aw->index >= work->actionCommands.acParams[1]) {
@@ -169,18 +169,18 @@ s32 battleAcMain_Shot(BattleWork* work) {
                 }
                 if (!(BattlePadCheckTrigger(0x100) != 0 || work->actionCommands.outputParams[0] != 0 ||
                       work->actionCommands.guardFrames > 0)) {
-                    if (--aw->field_0x00 <= 0) {
+                    if (--aw->timer <= 0) {
                         work->actionCommands.outputParams[1] =
-                            (s32)(aw->field_0x10 * aw->field_0x1C / 100.0f);
-                        if ((f32)work->actionCommands.outputParams[1] < aw->field_0x0C) {
-                            work->actionCommands.outputParams[1] = (s32)aw->field_0x0C;
+                            (s32)(aw->maxValue * aw->gauge / 100.0f);
+                        if ((f32)work->actionCommands.outputParams[1] < aw->minValue) {
+                            work->actionCommands.outputParams[1] = (s32)aw->minValue;
                         }
                         _acShotAppendHistory(aw, work);
                         if (aw->index >= work->actionCommands.acParams[1]) {
                             work->actionCommands.result = 0;
                             work->actionCommands.mAcState = 0x3EA;
                         } else {
-                            aw->field_0x00 = 0x168;
+                            aw->timer = 0x168;
                         }
                         cont = 1;
                     }
@@ -192,29 +192,29 @@ s32 battleAcMain_Shot(BattleWork* work) {
                 {
                     f32 zero = 0.0f;
                     f32 neg = -1.0f;
-                    if (aw->field_0x28 != zero) {
-                        aw->rotZ += aw->field_0x28;
-                        if (aw->field_0x28 > zero) {
-                            if (aw->rotZ >= aw->field_0x18) {
-                                aw->rotZ = aw->field_0x18;
-                                aw->field_0x28 = aw->field_0x28 * neg;
+                    if (aw->rotSpeed != zero) {
+                        aw->rotZ += aw->rotSpeed;
+                        if (aw->rotSpeed > zero) {
+                            if (aw->rotZ >= aw->angleMax) {
+                                aw->rotZ = aw->angleMax;
+                                aw->rotSpeed = aw->rotSpeed * neg;
                             }
                         } else {
-                            if (aw->rotZ <= aw->field_0x14) {
-                                aw->rotZ = aw->field_0x14;
-                                aw->field_0x28 = aw->field_0x28 * neg;
+                            if (aw->rotZ <= aw->angleMin) {
+                                aw->rotZ = aw->angleMin;
+                                aw->rotSpeed = aw->rotSpeed * neg;
                             }
                         }
                     }
                 }
-                aw->field_0x2C += 8.0f;
+                aw->rollAngle += 8.0f;
                 break;
             case 0x3E9:
                 if (work->actionCommands.guardFrames > 0) {
                     work->actionCommands.outputParams[1] =
-                        (s32)(50.0f * aw->field_0x10 / 100.0f);
-                    if ((f32)work->actionCommands.outputParams[1] < aw->field_0x0C) {
-                        work->actionCommands.outputParams[1] = (s32)aw->field_0x0C;
+                        (s32)(50.0f * aw->maxValue / 100.0f);
+                    if ((f32)work->actionCommands.outputParams[1] < aw->minValue) {
+                        work->actionCommands.outputParams[1] = (s32)aw->minValue;
                     }
                     _acShotAppendHistory(aw, work);
                     if (aw->index >= work->actionCommands.acParams[1]) {
@@ -227,16 +227,16 @@ s32 battleAcMain_Shot(BattleWork* work) {
                     cont = 1;
                 }
                 {
-                    f32 g = aw->field_0x1C;
+                    f32 g = aw->gauge;
                     f32 one = 1.0f;
-                    aw->field_0x1C = g + one;
-                    if (aw->field_0x1C > 100.0f) {
-                        aw->field_0x1C = 100.0f;
+                    aw->gauge = g + one;
+                    if (aw->gauge > 100.0f) {
+                        aw->gauge = 100.0f;
                     }
                 }
                 if (work->actionCommands.acFlag & 1) {
                     {
-                        f32 sum = aw->field_0x0C + aw->field_0x10;
+                        f32 sum = aw->minValue + aw->maxValue;
                         f32 half = 0.5f;
                         work->actionCommands.outputParams[1] = (s32)(sum * half);
                     }
@@ -250,9 +250,9 @@ s32 battleAcMain_Shot(BattleWork* work) {
                 } else {
                     if ((s32)BattlePadCheckNow(0x100) == 0) {
                         work->actionCommands.outputParams[1] =
-                            (s32)(aw->field_0x10 * aw->field_0x1C / 100.0f);
-                        if ((f32)work->actionCommands.outputParams[1] < aw->field_0x0C) {
-                            work->actionCommands.outputParams[1] = (s32)aw->field_0x0C;
+                            (s32)(aw->maxValue * aw->gauge / 100.0f);
+                        if ((f32)work->actionCommands.outputParams[1] < aw->minValue) {
+                            work->actionCommands.outputParams[1] = (s32)aw->minValue;
                         }
                         _acShotAppendHistory(aw, work);
                         if (aw->index >= work->actionCommands.acParams[1]) {
@@ -268,15 +268,15 @@ s32 battleAcMain_Shot(BattleWork* work) {
                 work->actionCommands.mAcState = 0x3EB;
                 break;
             case 0x3EC:
-                aw->field_0x3C = 0x3C;
+                aw->endTimer = 0x3C;
                 work->actionCommands.mAcState = 0x3ED;
                 if (aw->sfx != -1) {
                     psndSFXOff(aw->sfx);
                 }
                 break;
             case 0x3ED:
-                aw->field_0x3C--;
-                if (aw->field_0x3C <= 0) {
+                aw->endTimer--;
+                if (aw->endTimer <= 0) {
                     work->actionCommands.mAcState = 0x3EE;
                 }
                 break;
@@ -392,7 +392,7 @@ static void actionCommandDisp(f32 x, f32 y) {
     v.y = 25.0f + y;
     iconDispGx(1.0f, &v, 0x10, 0x8C);
 
-    target = aw->field_0x1C / 100.0f;
+    target = aw->gauge / 100.0f;
     if (disp->value <= target) {
         disp->value += 0.01f;
         if (disp->value > target) {
@@ -490,7 +490,7 @@ void _draw_target_mark(GXColor* MARK_COLOR_RESTRICT color, f32 x, f32 y, f32 z, 
 
 void _disp_target_mark(CameraId cameraId, void* param) {
     BattleWork* work = param;
-    TargetMarkWork* tm = (TargetMarkWork*)((u8*)work + 0x1F4C);
+    TargetMarkWork* tm = (TargetMarkWork*)&work->actionCommands.field_0x2BC[0];
     Vec pos;
     Vec screen;
     GXColor color;
@@ -500,7 +500,7 @@ void _disp_target_mark(CameraId cameraId, void* param) {
     pos.z = tm->z;
     btlGetScreenPoint(&pos, &screen);
     color = dat_8041e4ac;
-    _draw_target_mark(&color, screen.x, screen.y, screen.z, tm->field_0x2C);
+    _draw_target_mark(&color, screen.x, screen.y, screen.z, tm->rollAngle);
 }
 
 // The original builds the afterimage colour after intplGetValue and copies it to the by-value slot.
