@@ -5142,7 +5142,7 @@ void gundan1000tai_seq00(NanNpcEntry* entry) {
         entry->field_0x7C = angle;
         entry->field_0x70 = (s32)(dist / duration);
         entry->timer = 0;
-        entry->field_0xA4 = 0;
+        entry->moveDone = 0;
         evt_nannpc_set_animtbl_sub(entry, (s16*)dai3_run_animtbl);
         entry->state++;
         // fallthrough
@@ -5153,7 +5153,7 @@ void gundan1000tai_seq00(NanNpcEntry* entry) {
         if (entry->timer >= entry->field_0x70) {
             entry->position.x = entry->hoseiPosition.x;
             entry->position.z = entry->hoseiPosition.z;
-            entry->field_0xA4 = 1;
+            entry->moveDone = 1;
             evt_nannpc_set_animtbl_sub(entry, (s16*)dai3_animtbl);
             entry->state++;
         }
@@ -5183,7 +5183,7 @@ void gundan1000tai_seq01(NanNpcEntry* entry) {
         s32 r;
 
         entry->basePos = entry->position;
-        entry->field_0xA4 = 0;
+        entry->moveDone = 0;
         entry->endFlag = 0;
         r = irand(0x3E8);
         if (r < 0x32) {
@@ -5368,7 +5368,7 @@ void gundan1000tai_seq01(NanNpcEntry* entry) {
         break;
     case 102:
         evt_nannpc_set_animtbl_sub(entry, (s16*)dai3_animtbl);
-        entry->field_0xA4 = 1;
+        entry->moveDone = 1;
         break;
     }
 }
