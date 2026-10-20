@@ -32,12 +32,8 @@ static const f32 float_0p1 = 0.1f;
 static const f32 float_0 = 0.0f;
 static const f32 float_neg1 = -1.0f;
 
-#ifdef MUST_MATCH
-// MUST_MATCH: nokonoko_use reads the pose names (str_PNK_K_2/158) as offsets from this first .rodata object.
+// nokonoko_use reads the pose names (str_PNK_K_2/158) as offsets from this first .rodata object.
 #define NK_STR(off, lit) (lit)
-#else
-#define NK_STR(off, lit) (lit)
-#endif
 #define NKF_180 180.0
 
 static const f32 float_90 = 90.0f;
@@ -1040,13 +1036,11 @@ static inline float fsub32(f32 arg0, f32 arg1)
   return arg0 - arg1;
 }
 
-#ifdef MUST_MATCH
-// Same-byte match for the original's fadds f0, f5, f0 operand order in the first probe.
+// Operand order matters: the original's first probe is fadds f0, f5, f0.
 static inline float fadd32(f32 arg0, f32 arg1)
 {
   return arg0 + arg1;
 }
-#endif
 
 static void ccfloor(PartyEntry* party, s32 flag, f32 step, f32* hitX, f32* hitY, f32* hitZ, f32* distance,
                     f32* hitNX, f32* hitNY, f32* hitNZ);
@@ -1171,11 +1165,7 @@ static void ccfloor(PartyEntry* party, s32 flag, f32 step, f32* hitX, f32* hitY,
     x = party->position.x;
     z = party->position.z;
     oy = party->position.y + party->height + float_10;
-#ifdef MUST_MATCH
     *distance = fadd32(party->height, float_30);
-#else
-    *distance = party->height + float_30;
-#endif
     hit = hitCheckFilter(NULL, x, oy, z, float_0, float_neg1, float_0, hitX, hitY, hitZ,
                          distance, hitNX, hitNY, hitNZ);
     if (((hitGetAttr(hit) >> 9) & 1) == 1) {

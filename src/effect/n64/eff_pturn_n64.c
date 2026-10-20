@@ -331,7 +331,6 @@ void pturn_main_dispp(CameraId camId, void* param) {
 // The integer locals are declared in reverse live-range order on purpose: mwcc hands out its
 // callee-saved registers in declaration order (highest first), so this pins
 // offsetA=r30/offsetB=r29/offsetC=r28/data=r27/i=r26/displayNum=r25 exactly as the original.
-// The vertex arrays are anchored on lbl_803A4790 so the three effSetVtxDescN64 offsets match.
 void pturn_num_dispp(CameraId camId, void* param) {
     EffectEntry* effect = param;
     CameraEntry* cam;
@@ -340,9 +339,6 @@ void pturn_num_dispp(CameraId camId, void* param) {
     Mtx scale;
     Mtx rot;
     Mtx work;
-#ifdef MUST_MATCH
-    u8* vtxBase;
-#endif
     s32 offsetA;
     s32 offsetB;
     s32 offsetC;
@@ -350,9 +346,6 @@ void pturn_num_dispp(CameraId camId, void* param) {
     s32 i;
     s32 displayNum;
 
-#ifdef MUST_MATCH
-    vtxBase = (u8*)lbl_803A4790;
-#endif
     cam = camGetPtr(camId);
     data = effect->userdata;
     PSMTXTrans(trans, data->x, data->y, data->z);
@@ -396,11 +389,7 @@ void pturn_num_dispp(CameraId camId, void* param) {
                 { f32 z1 = MATCH_F32(float_0_8041fa68); PSMTXTrans(trans, z1, (f32)offsetA, z1); }
                 PSMTXConcat(scale, trans, scale);
                 GXLoadTexMtxImm(scale, GX_TEXMTX0, GX_MTX2x4);
-#ifdef MUST_MATCH
-                effSetVtxDescN64((effVtxArray*)(vtxBase + 0x78));
-#else
                 effSetVtxDescN64((effVtxArray*)size24x24_tex32x32_pturn_vtx);
-#endif
                 GXBegin(GX_TRIANGLES, GX_VTXFMT0, 6);
                 tri2(0, 1, 2, 0, 0, 2, 3, 0);
             } else {
@@ -408,22 +397,14 @@ void pturn_num_dispp(CameraId camId, void* param) {
                 { f32 z2 = MATCH_F32(float_0_8041fa68); PSMTXTrans(trans, z2, (f32)offsetB, z2); }
                 PSMTXConcat(scale, trans, scale);
                 GXLoadTexMtxImm(scale, GX_TEXMTX0, GX_MTX2x4);
-#ifdef MUST_MATCH
-                effSetVtxDescN64((effVtxArray*)(vtxBase + 0xe8));
-#else
                 effSetVtxDescN64((effVtxArray*)size16x24_tex32x32_r_pturn_vtx);
-#endif
                 GXBegin(GX_TRIANGLES, GX_VTXFMT0, 6);
                 tri2(0, 1, 2, 0, 0, 2, 3, 0);
                 PSMTXScale(scale, float_0p03125_8041fa6c, float_0p0026042_8041fa70, MATCH_F32(float_0_8041fa68));
                 { f32 z3 = MATCH_F32(float_0_8041fa68); PSMTXTrans(trans, z3, (f32)offsetC, z3); }
                 PSMTXConcat(scale, trans, scale);
                 GXLoadTexMtxImm(scale, GX_TEXMTX0, GX_MTX2x4);
-#ifdef MUST_MATCH
-                effSetVtxDescN64((effVtxArray*)(vtxBase + 0xb0));
-#else
                 effSetVtxDescN64((effVtxArray*)size16x24_tex32x32_l_pturn_vtx);
-#endif
                 GXBegin(GX_TRIANGLES, GX_VTXFMT0, 6);
                 tri2(0, 1, 2, 0, 0, 2, 3, 0);
             }
