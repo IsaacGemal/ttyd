@@ -440,8 +440,8 @@ s32 unk_end_00001d90(EventEntry* event, BOOL isFirstCall) {
         return EVT_RETURN_DONE;
     }
     if (isFirstCall) {
-        entry = _mapAlloc(0x44);
-        memset(entry, 0, 0x44);
+        entry = _mapAlloc(sizeof(CreditsPoseEntry));
+        memset(entry, 0, sizeof(CreditsPoseEntry));
         entry->state = 0;
         entry->entryIdx = ((CreditsWork*)dat_ptr_end_00003218[0])->entryIdx;
         switch (entry->entryIdx) {
