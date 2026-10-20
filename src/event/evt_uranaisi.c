@@ -402,8 +402,7 @@ s32 uranaisi_data_make_next(const char* prefix, s32 type) {
     }
 
     count = 0;
-    storyId = 0;
-    while (1) {
+    for (storyId = 0;; storyId++) {
         sprintf(label, "%s_%04d", prefix, storyId);
         msg = (const s8*)msgSearch(label);
         if (msg[0] != '<') {
@@ -459,16 +458,16 @@ s32 uranaisi_data_make_next(const char* prefix, s32 type) {
             if (labelId != -1) {
                 if (type & 1) {
                     if (labelId != wp->lastLabelId) {
-                        goto next;
+                        continue;
                     }
                     wp->info[count].labelId = (s16)labelId;
                     wp->info[count].storyId = (s16)storyId;
                 } else {
                     if (labelId > maxLabel) {
-                        goto next;
+                        continue;
                     }
                     if (labelId < wp->lastLabelId) {
-                        goto next;
+                        continue;
                     }
                     if (labelId > wp->lastLabelId) {
                         wp->lastLabelId = labelId;
@@ -478,8 +477,6 @@ s32 uranaisi_data_make_next(const char* prefix, s32 type) {
                 count++;
             }
         }
-    next:
-        storyId++;
     }
     return count;
 }
