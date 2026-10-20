@@ -142,15 +142,12 @@ void demo_desk(CameraId cameraId, void* param) {
     GXTexObj texObj;
     Mtx m1;
     Mtx m2;
-#ifdef MUST_MATCH
-    // MUST_MATCH: these temporaries pin MWCC's FPR assignment and commutative-operand order; the
-    // #else branch is the natural form and does not match.
+    // Named temporaries pin MWCC's FPR assignment and commutative-operand order.
     f32 w = 608.0f;
     f32 h = 480.0f;
     f32 top = 240.0f;
     f32 right = 304.0f;
     f32 half = 0.5f;
-#endif
 
     GXSetProjection(cam->projection, cam->projType);
     GXSetViewport(0.0f, 0.0f, 608.0f, 480.0f, 0.0f, 1.0f);
@@ -182,7 +179,6 @@ void demo_desk(CameraId cameraId, void* param) {
     GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_POS_XYZ, GX_F32, 0);
     GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, GX_TEX_ST, GX_F32, 0);
     GXBegin(GX_QUADS, GX_VTXFMT0, 4);
-#ifdef MUST_MATCH
     GXPosition3f32(-w * half, top, 0.0f);
     GXTexCoord2f32(0.0f, 0.0f);
     GXPosition3f32(right, top, 0.0f);
@@ -191,16 +187,6 @@ void demo_desk(CameraId cameraId, void* param) {
     GXTexCoord2f32(1.0f, 1.0f);
     GXPosition3f32(-w * half, -h * half, 0.0f);
     GXTexCoord2f32(0.0f, 1.0f);
-#else
-    GXPosition3f32(-608.0f * 0.5f, 240.0f, 0.0f);
-    GXTexCoord2f32(0.0f, 0.0f);
-    GXPosition3f32(304.0f, 240.0f, 0.0f);
-    GXTexCoord2f32(1.0f, 0.0f);
-    GXPosition3f32(304.0f, -480.0f * 0.5f, 0.0f);
-    GXTexCoord2f32(1.0f, 1.0f);
-    GXPosition3f32(-608.0f * 0.5f, -480.0f * 0.5f, 0.0f);
-    GXTexCoord2f32(0.0f, 1.0f);
-#endif
 }
 
 // demo_img projects the captured frame and duplicates it into two other viewports.
@@ -216,14 +202,12 @@ void demo_img(CameraId cameraId, void* param) {
     f32 a;
     f32 right = 101.333336f;
     f32 top = 115.0f;
-#ifdef MUST_MATCH
-    // MUST_MATCH: these locals keep MWCC from folding the edge expressions into a single pool literal;
-    // the original loads 202.66667/0.5 (and 160/0.5/35) and emits fneg/fmuls/fmadds. The #else form is natural.
+    // These locals keep MWCC from folding the edge expressions into a single pool literal; the original
+    // loads 202.66667/0.5 (and 160/0.5/35) and emits fneg/fmuls/fmadds.
     f32 edge_w = 202.66667f;
     f32 edge_h = 160.0f;
     f32 half = 0.5f;
     f32 topoff = 35.0f;
-#endif
 
     if (wp->page == -1) {
         return;
@@ -260,21 +244,12 @@ void demo_img(CameraId cameraId, void* param) {
     GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, GX_TEX_ST, GX_F32, 0);
     GXGetViewportv(vp);
     GXGetProjectionv(proj);
-#ifdef MUST_MATCH
     a = -edge_w * half;
-#else
-    a = -202.66667f * 0.5f;
-#endif
     GXProject(a, 115.0f, 0.0f, m1, proj, vp, &p0.x, &p0.y, &p0.z);
     GXProject(101.333336f, 115.0f, 0.0f, m1, proj, vp, &p1.x, &p1.y, &p1.z);
-#ifdef MUST_MATCH
-    // MUST_MATCH: assigning b inside the call (instead of on its own line) makes MWCC schedule the call's
-    // 101.333336 load and &p2.y setup the way the original does; the #else form is the natural one.
+    // Assigning b inside the call (instead of on its own line) makes MWCC schedule the call's
+    // 101.333336 load and &p2.y setup the way the original does.
     GXProject(101.333336f, (b = -edge_h * half + topoff), 0.0f, m1, proj, vp, &p2.x, &p2.y, &p2.z);
-#else
-    b = -160.0f * 0.5f + 35.0f;
-    GXProject(101.333336f, b, 0.0f, m1, proj, vp, &p2.x, &p2.y, &p2.z);
-#endif
     GXProject(a, b, 0.0f, m1, proj, vp, &p3.x, &p3.y, &p3.z);
     cam = camGetPtr(CAMERA_3D);
     cam->viewport[0] = p0.x;

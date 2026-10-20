@@ -119,14 +119,10 @@ void effThruHammerMain(EffectEntry* effect) {
 			data->position.x = 0.0f;
 			data->position.y = 0.0f;
 			data->position.z = 0.0f;
-#ifdef MUST_MATCH
 			{
 				f32 s = (f32)sin(6.2831855f * data->rotZ / 360.0f);
 				data->dirX = -s * 0.5f;
 			}
-#else
-			data->dirX = -(f32)sin(6.2831855f * data->rotZ / 360.0f) * 0.5f;
-#endif
 			data->dirY = 0.5f * (f32)cos(6.2831855f * data->rotZ / 360.0f);
 			data->dirZ = 0.0f;
 			data->texScrollA = 32.0f;
@@ -150,8 +146,7 @@ void effThruHammerMain(EffectEntry* effect) {
 	dispEntry(CAMERA_3D, dispCalcZ(&disp), 2, effThruHammerDisp, effect);
 }
 
-#ifdef MUST_MATCH
-/* MUST_MATCH: setting each colour inside a void inline (rather than assigning a local and
+/* Setting each colour inside a void inline (rather than assigning a local and
    returning/passing it) reproduces the original's per-call by-value colour slots, with the
    inline's build local just below the copy the call passes (same shape as effGlassDisp). */
 static inline void thruColor4(s32 reg, u32* base, u8 r, u8 g, u8 b, s32 a) {
@@ -170,7 +165,6 @@ static inline void thruColor3(s32 reg, u32* base, u8 r, u8 g, u8 b) {
 	c.b = b;
 	GXSetTevColor(reg, c);
 }
-#endif
 
 // The four GXColors are built and passed inside the void inlines above, which makes
 // MWCC emit retail's per-call by-value slots (inline local just below the copy it passes).
@@ -216,58 +210,16 @@ void effThruHammerDisp(CameraId camId, void* param) {
 	PSMTXConcat(cam->view, trans, work);
 
 	alpha = data->alpha;
-#ifdef MUST_MATCH
 	thruColor4(1, &unk_80423298, cr, cg, cb, alpha);
-#else
-	{
-		GXColor color1 = *(GXColor*)&unk_80423298;
-		color1.r = cr;
-		color1.g = cg;
-		color1.b = cb;
-		color1.a = alpha;
-		GXSetTevColor(1, color1);
-	}
-#endif
 
-#ifdef MUST_MATCH
 	thruColor3(2, &unk_8042329c, cr2, cg2, cb2);
-#else
-	{
-		GXColor color2 = *(GXColor*)&unk_8042329c;
-		color2.r = cr2;
-		color2.g = cg2;
-		color2.b = cb2;
-		GXSetTevColor(2, color2);
-	}
-#endif
 
 	GXSetCullMode(GX_CULL_BACK);
 	main_dl(effect, work);
 
-#ifdef MUST_MATCH
 	thruColor4(1, &unk_804232a0, cr, cg, cb, alpha);
-#else
-	{
-		GXColor color3 = *(GXColor*)&unk_804232a0;
-		color3.r = cr;
-		color3.g = cg;
-		color3.b = cb;
-		color3.a = alpha;
-		GXSetTevColor(1, color3);
-	}
-#endif
 
-#ifdef MUST_MATCH
 	thruColor3(2, &unk_804232a4, cr2, cg2, cb2);
-#else
-	{
-		GXColor color4 = *(GXColor*)&unk_804232a4;
-		color4.r = cr2;
-		color4.g = cg2;
-		color4.b = cb2;
-		GXSetTevColor(2, color4);
-	}
-#endif
 
 	GXSetCullMode(GX_CULL_FRONT);
 	main_dl(effect, work);

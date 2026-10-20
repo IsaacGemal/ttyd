@@ -2755,7 +2755,7 @@ void partySetCamId(PartyEntry* party, s32 cameraId) {
     party->camId = cameraId;
 }
 
-// A named `want` cache orders the 0.0 compare first (MUST_MATCH; the plain read form scores 99.38%).
+// A named `want` cache orders the 0.0 compare first (the plain field_110 read form scores 99.38%).
 // Caching field_10C in `old` before the outer compare (nothing writes it in between) plus
 // opt_lifetimes off gives the original arithmetic and clamp FPR allocation (field_10C in f2, field_110
 // in f3, and the clamp reloads in f1); without `old` the common-subexpression pass raises the arithmetic to f3.
@@ -2764,9 +2764,7 @@ void partyMakeDispDir(PartyEntry* party) {
     f32 angle;
     f32 target;
     f32 old;
-#ifdef MUST_MATCH
     f32 want;
-#endif
 
     if (party->flags2 & 0x100) {
         return;
@@ -2799,11 +2797,7 @@ void partyMakeDispDir(PartyEntry* party) {
     }
     old = party->field_10C;
     if (old <= 180.0f) {
-#ifdef MUST_MATCH
         if (0.0f == (want = party->field_110)) {
-#else
-        if (0.0f == party->field_110) {
-#endif
             f32 t = (party->field_8 & 0x1000) ? 20.0f : -40.0f;
             f32 s;
 
@@ -2817,11 +2811,7 @@ void partyMakeDispDir(PartyEntry* party) {
                 party->field_10C = 0.0f;
                 party->field_8 &= ~0x1000;
             }
-#ifdef MUST_MATCH
         } else if (180.0f == want) {
-#else
-        } else if (180.0f == party->field_110) {
-#endif
             f32 t = (party->field_8 & 0x1000) ? 170.0f : 220.0f;
             f32 s;
 
@@ -2837,11 +2827,7 @@ void partyMakeDispDir(PartyEntry* party) {
             }
         }
     } else if (old > 180.0f) {
-#ifdef MUST_MATCH
         if (0.0f == (want = party->field_110)) {
-#else
-        if (0.0f == party->field_110) {
-#endif
             f32 t = (party->field_8 & 0x1000) ? 20.0f : -40.0f;
             f32 s;
 
@@ -2855,11 +2841,7 @@ void partyMakeDispDir(PartyEntry* party) {
                 party->field_10C = 0.0f;
                 party->field_8 &= ~0x1000;
             }
-#ifdef MUST_MATCH
         } else if (180.0f == want) {
-#else
-        } else if (180.0f == party->field_110) {
-#endif
             f32 t = (party->field_8 & 0x1000) ? 170.0f : 220.0f;
             f32 s;
 
