@@ -732,13 +732,13 @@ s32 winItemMain(WindowWork* work) {
         mail = (u8*)mailGetPtr(work->field_26E[work->mailSel * 2 + 1]);
 
         if (*(u16*)(mail + 0) & 0x1000) {
-            WW_S32(work, 0x2C) = fileAsyncf(FILE_TYPE_TPL, NULL, STR_MAIL_TPL, getMarioStDvdRoot());
-            if ((u32)WW_S32(work, 0x2C) != 0) {
-                WW_S32(work, 0x2C) = (s32)fileAllocf(FILE_TYPE_TPL, STR_MAIL_TPL, getMarioStDvdRoot());
+            work->mailTpl = (FileEntry*)fileAsyncf(FILE_TYPE_TPL, NULL, STR_MAIL_TPL, getMarioStDvdRoot());
+            if ((u32)work->mailTpl != 0) {
+                work->mailTpl = fileAllocf(FILE_TYPE_TPL, STR_MAIL_TPL, getMarioStDvdRoot());
                 work->itemState += 1;
             }
         } else {
-            WW_S32(work, 0x2C) = 0;
+            work->mailTpl = NULL;
             work->itemState += 1;
         }
         break;
@@ -758,13 +758,13 @@ s32 winItemMain(WindowWork* work) {
         }
         if (work->buttonTrg & 0x200) {
             psndSFXOn((const char*)0x20036);
-            if ((u32)WW_S32(work, 0x2C) != 0) {
-                fileFree((FileEntry*)WW_S32(work, 0x2C));
+            if ((u32)work->mailTpl != 0) {
+                fileFree(work->mailTpl);
             }
             work->itemState = 200;
         } else if (work->buttonTrg & 0x1000) {
-            if ((u32)WW_S32(work, 0x2C) != 0) {
-                fileFree((FileEntry*)WW_S32(work, 0x2C));
+            if ((u32)work->mailTpl != 0) {
+                fileFree(work->mailTpl);
             }
             WINITEM(work)->field_0x248 = 320.f;
             WINITEM(work)->field_0x250 = -240.f;
