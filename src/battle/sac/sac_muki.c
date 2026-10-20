@@ -875,7 +875,7 @@ s32 end_muki(EventEntry* event, BOOL isFirstCall) {
     s32 i;
     MukiEntry* entry;
 
-    effDelete(*(EffectEntry**)((u8*)work->starStone->userdata + 0x34));
+    effDelete(((effStarStoneData*)work->starStone->userdata)->field_0x34);
     effDelete(work->starStone);
 #ifdef MUST_MATCH
     mask = -1;

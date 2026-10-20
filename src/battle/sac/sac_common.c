@@ -142,7 +142,7 @@ s32 sac_handbeat(EventEntry* event, BOOL isFirstCall) {
     BattleAudienceSoundSetVol(4, volPer, 1);
     if (handBeatEnable == 0) {
         BattleAudienceSound* ptr = BattleAudienceSoundGetPtr(4);
-        *(s32*)((u8*)ptr + 0xC) = 0xB4;
+        ptr->timeLeft = 0xB4;
         ptr->mFadeoutTime = 0xB4;
         return 2;
     }
@@ -193,7 +193,7 @@ s32 sac_cheer(EventEntry* event, BOOL isFirstCall) {
     }
     if (cheerEnable == 0) {
         BattleAudienceSound* ptr = BattleAudienceSoundGetPtr(4);
-        *(s32*)((u8*)ptr + 0xC) = 0xB4;
+        ptr->timeLeft = 0xB4;
         ptr->mFadeoutTime = 0xB4;
         return 2;
     }
