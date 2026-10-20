@@ -63,39 +63,6 @@ typedef struct HpGaugeLocal {
     f32 field_18; // 0x18
 } HpGaugeLocal;
 
-typedef struct BtlUnitSeMode {
-    s32 field_0x0;  // 0x0
-    s32 field_0x4;  // 0x4
-    s16 field_0x8;  // 0x8
-    s16 field_0xA;  // 0xA
-    s16 field_0xC;  // 0xC
-    s16 field_0xE;  // 0xE
-    s16 field_0x10; // 0x10
-    s16 field_0x12; // 0x12
-    s16 field_0x14; // 0x14
-    s32 field_0x18; // 0x18
-} BtlUnitSeMode;
-typedef struct BtlUnitSeModeSrc {
-    s32 field_0x0;  // 0x0
-    s32 field_0x4;  // 0x4
-    s32 field_0x8;  // 0x8
-    s32 field_0xC;  // 0xC
-    s16 field_0x10; // 0x10
-    s16 field_0x12; // 0x12
-    s16 field_0x14; // 0x14
-    s16 field_0x16; // 0x16
-    s32 field_0x18; // 0x18
-    s32 field_0x1C; // 0x1C
-    s16 field_0x20; // 0x20
-    s16 field_0x22; // 0x22
-    s16 field_0x24; // 0x24
-    s16 field_0x26; // 0x26
-    s32 field_0x28; // 0x28
-    s32 field_0x2C; // 0x2C
-    s16 field_0x30; // 0x30
-    s16 field_0x32; // 0x32
-    s16 field_0x34; // 0x34
-} BtlUnitSeModeSrc;
 typedef struct BattleWeaponFields {
     u8 pad_0x0[0x8];
     s32 itemId;    // 0x8
@@ -2163,83 +2130,79 @@ void BtlUnit_ResetMoveStatus(BattleUnit* unit) {
 
 // `case 0` shares the default body: the original routes b == 0 through the same
 // zero-fill as any other unlisted value, and MWCC emits its fall-through branch.
-void BtlUnit_LoadSeMode(s32 a, s32 b, void* c, void* d) {
-    BtlUnitSeModeSrc* src = c;
-    BtlUnitSeMode* dst = d;
+void BtlUnit_LoadSeMode(s32 mode, s32 action, void* src, void* dst) {
+    BtlUnitSeModeSrc* s = src;
+    BtlUnitSeMode* d = dst;
 
-    dst->field_0x14 = 0;
-    dst->field_0x18 = -1;
-    switch (b) {
+    d->beat = 0;
+    d->sfxHandle = -1;
+    switch (action) {
         case -1:
-            switch (a) {
+            switch (mode) {
                 case 0:
-                    dst->field_0x0 = src->field_0x8;
-                    dst->field_0x4 = src->field_0xC;
-                    dst->field_0xC = src->field_0x10;
-                    dst->field_0xE = src->field_0x12;
-                    dst->field_0x10 = src->field_0x14;
+                    d->sfxA = s->mode0SfxA;
+                    d->sfxB = s->mode0SfxB;
+                    d->delay = s->mode0Delay;
+                    d->intervalA = s->mode0IntervalA;
+                    d->intervalB = s->mode0IntervalB;
                     break;
                 case 1:
-                    dst->field_0x0 = src->field_0x18;
-                    dst->field_0x4 = src->field_0x1C;
-                    dst->field_0xC = src->field_0x20;
-                    dst->field_0xE = src->field_0x22;
-                    dst->field_0x10 = src->field_0x24;
+                    d->sfxA = s->mode1SfxA;
+                    d->sfxB = s->mode1SfxB;
+                    d->delay = s->mode1Delay;
+                    d->intervalA = s->mode1IntervalA;
+                    d->intervalB = s->mode1IntervalB;
                     break;
                 case 2:
-                    dst->field_0x0 = src->field_0x0;
-                    dst->field_0x4 = src->field_0x4;
-                    dst->field_0xC = 0;
-                    dst->field_0xE = 0;
-                    dst->field_0x10 = 0;
+                    d->sfxA = s->mode2SfxA;
+                    d->sfxB = s->mode2SfxB;
+                    d->delay = 0;
+                    d->intervalA = 0;
+                    d->intervalB = 0;
                     break;
                 case 3:
-                    dst->field_0x0 = src->field_0x28;
-                    dst->field_0x4 = src->field_0x2C;
-                    dst->field_0xC = src->field_0x30;
-                    dst->field_0xE = src->field_0x32;
-                    dst->field_0x10 = src->field_0x34;
+                    d->sfxA = s->mode3SfxA;
+                    d->sfxB = s->mode3SfxB;
+                    d->delay = s->mode3Delay;
+                    d->intervalA = s->mode3IntervalA;
+                    d->intervalB = s->mode3IntervalB;
                     break;
                 default:
-                    dst->field_0x0 = 0;
-                    dst->field_0x4 = 0;
-                    dst->field_0xC = 0;
-                    dst->field_0xE = 0;
-                    dst->field_0x10 = 0;
+                    d->sfxA = 0;
+                    d->sfxB = 0;
+                    d->delay = 0;
+                    d->intervalA = 0;
+                    d->intervalB = 0;
                     break;
             }
-            dst->field_0x12 = dst->field_0xC;
+            d->countdown = d->delay;
             break;
         case -2:
-            dst->field_0x12 = dst->field_0xC;
+            d->countdown = d->delay;
             break;
         case 0:
         default:
-            dst->field_0x0 = 0;
-            dst->field_0x4 = 0;
-            dst->field_0xC = 0;
-            dst->field_0xE = 0;
-            dst->field_0x10 = 0;
-            dst->field_0x12 = dst->field_0xC;
+            d->sfxA = 0;
+            d->sfxB = 0;
+            d->delay = 0;
+            d->intervalA = 0;
+            d->intervalB = 0;
+            d->countdown = d->delay;
             break;
     }
 }
 
 
-// Source layout BtlUnit_LoadSeMode copies the four se-mode variants from. The
-// variants live at 0x0, 0x8, 0x18 and 0x28; the header leaves the owning regions
-// unnamed, so the fields are listed at their offsets.
-
-void BtlUnit_SetSeMode(BtlUnitSeMode* se, s32 a, s32 b, s16 c, s16 d, s16 e, s16 f, s16 g) {
-    se->field_0x0 = a;
-    se->field_0x4 = b;
-    se->field_0xC = c;
-    se->field_0xE = d;
-    se->field_0x10 = d;
-    se->field_0x14 = 0;
-    se->field_0x8 = f;
-    se->field_0xA = g;
-    se->field_0x18 = -1;
+void BtlUnit_SetSeMode(BtlUnitSeMode* se, s32 sfxA, s32 sfxB, s16 delay, s16 interval, s16 unused, s16 param8, s16 paramA) {
+    se->sfxA = sfxA;
+    se->sfxB = sfxB;
+    se->delay = delay;
+    se->intervalA = interval;
+    se->intervalB = interval;
+    se->beat = 0;
+    se->param8 = param8;
+    se->paramA = paramA;
+    se->sfxHandle = -1;
 }
 
 void BtlUnit_SetCommandAnimPose(BattleUnit* unit) {
