@@ -13,20 +13,20 @@
 
 typedef struct effNozleEntryData {
 	f32 field_0x00; // 0x00
-	f32 field_0x04; // 0x04
-	f32 field_0x08; // 0x08
-	f32 field_0x0C; // 0x0C
-	f32 field_0x10; // 0x10
-	f32 field_0x14; // 0x14
-	f32 field_0x18; // 0x18
-	f32 field_0x1C; // 0x1C
-	f32 field_0x20; // 0x20
-	f32 field_0x24; // 0x24
+	f32 offsetX;    // 0x04, petal offset, decays by 1/300 per frame
+	f32 offsetY;    // 0x08
+	f32 offsetZ;    // 0x0C, 20 * index
+	f32 scaleX;     // 0x10, +1 or -1 by index parity
+	f32 scaleY;     // 0x14, eases towards 1.3, then 0.8 once shrinking
+	f32 scrollX0;   // 0x18, texture 0 translation
+	f32 scrollY0;   // 0x1C, +0.002 per frame
+	f32 scrollX1;   // 0x20, texture 1 translation
+	f32 scrollY1;   // 0x24, +0.004 per frame
 	f32 field_0x28; // 0x28
 	f32 field_0x2C; // 0x2C
 	f32 field_0x30; // 0x30
-	s32 field_0x34; // 0x34
-	s32 field_0x38; // 0x38
+	s32 alpha;      // 0x34, 0xFF
+	s32 shrinking;  // 0x38, set to 1 once scaleY passes 1.2
 	f32 field_0x3C; // 0x3C
 	f32 field_0x40; // 0x40
 } effNozleEntryData;
@@ -36,17 +36,17 @@ typedef struct effNozleData {
 	Vec position;                // 0x04
 	f32 scaleX;                  // 0x10
 	f32 scaleY;                  // 0x14
-	f32 field_0x18;              // 0x18
-	f32 field_0x1C;              // 0x1C
-	f32 field_0x20;              // 0x20
-	f32 field_0x24;              // 0x24
+	f32 scrollX0;                // 0x18, texture 0 translation (x)
+	f32 scrollY0;                // 0x1C, texture 0 translation (-y), -1/24 per frame
+	f32 scrollX1;                // 0x20, texture 1 translation (x)
+	f32 scrollY1;                // 0x24, texture 1 translation (-y), -1/12 per frame
 	f32 scale;                   // 0x28
 	s32 lifetime;                // 0x2C
 	s32 counter;                 // 0x30
 	s32 alpha;                   // 0x34
 	f32 field_0x38;              // 0x38
-	f32 field_0x3C;              // 0x3C
-	f32 field_0x40;              // 0x40
+	f32 rotX;                    // 0x3C, degrees
+	f32 rotY;                    // 0x40, degrees
 	effNozleEntryData entries[]; // 0x44
 } effNozleData;
 
@@ -262,10 +262,10 @@ EffectEntry* effNozleEntry(s32 type, s32 duration, f32 x, f32 y, f32 z, f32 rotX
 	data->scaleX = (type == 3) ? 1.0f : 0.0f;
 	data->scaleY = (type == 3) ? 1.0f : 0.0f;
 	data->scale = 1.0f;
-	data->field_0x1C = 0.0f;
-	data->field_0x18 = 0.0f;
-	data->field_0x24 = 0.0f;
-	data->field_0x20 = 0.0f;
+	data->scrollY0 = 0.0f;
+	data->scrollX0 = 0.0f;
+	data->scrollY1 = 0.0f;
+	data->scrollX1 = 0.0f;
 	if (duration <= 0) {
 		data->lifetime = 1000;
 	} else {
@@ -273,23 +273,23 @@ EffectEntry* effNozleEntry(s32 type, s32 duration, f32 x, f32 y, f32 z, f32 rotX
 	}
 	data->counter = 0;
 	data->alpha = 0xFF;
-	data->field_0x3C = rotX;
-	data->field_0x40 = rotY;
+	data->rotX = rotX;
+	data->rotY = rotY;
 
 	entry = data->entries;
 	for (i = 1; i < effect->count; i++) {
 		dir = (i & 1) ? -1 : 1;
-		entry->field_0x04 = (f32)(dir * 400);
-		entry->field_0x08 = 0.0f;
-		entry->field_0x0C = 20.f * (f32)i;
-		entry->field_0x10 = (f32)((i & 1) ? 1 : -1);
-		entry->field_0x14 = 1.0f;
-		entry->field_0x1C = 0.0f;
-		entry->field_0x18 = 0.0f;
-		entry->field_0x24 = 0.0f;
-		entry->field_0x20 = 0.0f;
-		entry->field_0x34 = 0xFF;
-		entry->field_0x38 = 0;
+		entry->offsetX = (f32)(dir * 400);
+		entry->offsetY = 0.0f;
+		entry->offsetZ = 20.f * (f32)i;
+		entry->scaleX = (f32)((i & 1) ? 1 : -1);
+		entry->scaleY = 1.0f;
+		entry->scrollY0 = 0.0f;
+		entry->scrollX0 = 0.0f;
+		entry->scrollY1 = 0.0f;
+		entry->scrollX1 = 0.0f;
+		entry->alpha = 0xFF;
+		entry->shrinking = 0;
 		entry++;
 	}
 	return effect;
@@ -323,8 +323,8 @@ void effNozleMain(EffectEntry* effect) {
 			data->scaleX = (f32)scale_dt[data->lifetime * 2] / 100.f;
 			data->scaleY = (f32)scale_dt[data->lifetime * 2 + 1] / 100.f;
 		}
-		data->field_0x1C += -0.041666668f;
-		data->field_0x24 += -0.083333336f;
+		data->scrollY0 += -0.041666668f;
+		data->scrollY1 += -0.083333336f;
 		break;
 	case 3:
 	{
@@ -334,18 +334,18 @@ void effNozleMain(EffectEntry* effect) {
 		data = effect->userdata;
 		data++;
 		for (i = 1; i < effect->count; i++, data++) {
-			((effNozleEntryData*)data)->field_0x04 += -((effNozleEntryData*)data)->field_0x04 / 300.f;
-			if (((effNozleEntryData*)data)->field_0x38 == 0) {
-				((effNozleEntryData*)data)->field_0x14 += (1.3f - ((effNozleEntryData*)data)->field_0x14) / 500.f;
-				if (((effNozleEntryData*)data)->field_0x14 > 1.2f) {
-					((effNozleEntryData*)data)->field_0x38 = 1;
+			((effNozleEntryData*)data)->offsetX += -((effNozleEntryData*)data)->offsetX / 300.f;
+			if (((effNozleEntryData*)data)->shrinking == 0) {
+				((effNozleEntryData*)data)->scaleY += (1.3f - ((effNozleEntryData*)data)->scaleY) / 500.f;
+				if (((effNozleEntryData*)data)->scaleY > 1.2f) {
+					((effNozleEntryData*)data)->shrinking = 1;
 				}
 			} else {
-				((effNozleEntryData*)data)->field_0x14 += (0.8f - ((effNozleEntryData*)data)->field_0x14) / 300.f;
+				((effNozleEntryData*)data)->scaleY += (0.8f - ((effNozleEntryData*)data)->scaleY) / 300.f;
 			}
-			((effNozleEntryData*)data)->field_0x1C += 0.002f;
-			((effNozleEntryData*)data)->field_0x20 += 0.002f;
-			((effNozleEntryData*)data)->field_0x24 += 0.004f;
+			((effNozleEntryData*)data)->scrollY0 += 0.002f;
+			((effNozleEntryData*)data)->scrollX1 += 0.002f;
+			((effNozleEntryData*)data)->scrollY1 += 0.004f;
 		}
 		break;
 	}
@@ -390,147 +390,147 @@ void effNozleDisp(CameraId camId, void* param) {
 	base = (u8*)lbl_803AE260;
 	camera = camGetPtr(camId);
 	alpha = data->alpha;
-	GXSetBlendMode(1, 4, 5, 0);
-	GXSetZCompLoc(1);
-	GXSetAlphaCompare(7, 0, 0, 7, 0);
-	GXSetZMode(1, 3, 0);
+	GXSetBlendMode(GX_BM_BLEND, GX_BL_SRCALPHA, GX_BL_INVSRCALPHA, GX_LO_CLEAR);
+	GXSetZCompLoc(GX_TRUE);
+	GXSetAlphaCompare(GX_ALWAYS, 0, GX_AOP_AND, GX_ALWAYS, 0);
+	GXSetZMode(GX_TRUE, GX_LEQUAL, GX_FALSE);
 
 	PSMTXTrans(transMtx, data->position.x, data->position.y, data->position.z);
-	PSMTXRotRad(rotMtx, 'y', 0.017453292f * data->field_0x40);
+	PSMTXRotRad(rotMtx, 'y', 0.017453292f * data->rotY);
 	PSMTXConcat(transMtx, rotMtx, transMtx);
-	PSMTXRotRad(rotMtx, 'x', 0.017453292f * data->field_0x3C);
+	PSMTXRotRad(rotMtx, 'x', 0.017453292f * data->rotX);
 	PSMTXConcat(transMtx, rotMtx, transMtx);
 	PSMTXScale(scaleMtx, data->scale * data->scaleX, data->scale * data->scaleY, data->scale);
 	PSMTXConcat(transMtx, scaleMtx, transMtx);
 	PSMTXConcat(camera->view, transMtx, mtx);
-	GXLoadPosMtxImm(mtx, 0);
-	GXSetCurrentMtx(0);
+	GXLoadPosMtxImm(mtx, GX_PNMTX0);
+	GXSetCurrentMtx(GX_PNMTX0);
 
 	GXSetNumChans(1);
-	GXSetChanCtrl(4, 0, 0, 1, 0, 0, 2);
+	GXSetChanCtrl(GX_COLOR0A0, GX_FALSE, GX_SRC_REG, GX_SRC_VTX, GX_LIGHT_NULL, GX_DF_NONE, GX_AF_NONE);
 	GXSetNumTexGens(2);
-	GXSetTexCoordGen2(0, 1, 4, 0x1E, 0, 0x7D);
-	GXSetTexCoordGen2(1, 1, 5, 0x21, 0, 0x7D);
+	GXSetTexCoordGen2(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_TEXMTX0, GX_FALSE, GX_PTIDENTITY);
+	GXSetTexCoordGen2(GX_TEXCOORD1, GX_TG_MTX2x4, GX_TG_TEX1, GX_TEXMTX1, GX_FALSE, GX_PTIDENTITY);
 
-	PSMTXTrans(transMtx, data->field_0x18, -data->field_0x1C, 0.0f);
-	GXLoadTexMtxImm(transMtx, 0x1E, 1);
-	PSMTXTrans(transMtx, data->field_0x20, -data->field_0x24, 0.0f);
-	GXLoadTexMtxImm(transMtx, 0x21, 1);
+	PSMTXTrans(transMtx, data->scrollX0, -data->scrollY0, 0.0f);
+	GXLoadTexMtxImm(transMtx, GX_TEXMTX0, GX_MTX2x4);
+	PSMTXTrans(transMtx, data->scrollX1, -data->scrollY1, 0.0f);
+	GXLoadTexMtxImm(transMtx, GX_TEXMTX1, GX_MTX2x4);
 
 	effGetTexObj(0x3C, &tex);
-	GXLoadTexObj(&tex, 0);
+	GXLoadTexObj(&tex, GX_TEXMAP0);
 	switch (data->type) {
 	case 0:
 	case 3:
 		effGetTexObj(0x3D, &tex);
-		GXLoadTexObj(&tex, 1);
+		GXLoadTexObj(&tex, GX_TEXMAP1);
 		break;
 	case 2:
 		effGetTexObj(0x3E, &tex);
-		GXLoadTexObj(&tex, 1);
+		GXLoadTexObj(&tex, GX_TEXMAP1);
 		break;
 	}
 
 	GXSetNumTevStages(3);
-	GXSetTevOrder(0, 0, 1, 0xFF);
-	GXSetTevColorOp(0, 0, 0, 0, 1, 0);
-	GXSetTevAlphaOp(0, 0, 0, 0, 1, 0);
-	GXSetTevColorIn(0, 0xF, 0xF, 0xF, 8);
-	GXSetTevAlphaIn(0, 7, 7, 7, 4);
-	GXSetTevOrder(1, 1, 0, 0xFF);
-	GXSetTevColorOp(1, 0, 0, 0, 1, 0);
-	GXSetTevAlphaOp(1, 0, 0, 0, 1, 0);
-	GXSetTevColorIn(1, 0xF, 0, 9, 0xF);
-	GXSetTevAlphaIn(1, 7, 0, 4, 7);
-	GXSetTevOrder(2, 0xFF, 0xFF, 4);
-	GXSetTevColorOp(2, 0, 0, 0, 1, 0);
-	GXSetTevAlphaOp(2, 0, 0, 0, 1, 0);
-	GXSetTevColorIn(2, 0xF, 0, 0xA, 0xF);
-	GXSetTevAlphaIn(2, 7, 0, 5, 7);
-	GXSetCullMode(0);
+	GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP1, GX_COLOR_NULL);
+	GXSetTevColorOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+	GXSetTevAlphaOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+	GXSetTevColorIn(GX_TEVSTAGE0, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ZERO, GX_CC_TEXC);
+	GXSetTevAlphaIn(GX_TEVSTAGE0, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_TEXA);
+	GXSetTevOrder(GX_TEVSTAGE1, GX_TEXCOORD1, GX_TEXMAP0, GX_COLOR_NULL);
+	GXSetTevColorOp(GX_TEVSTAGE1, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+	GXSetTevAlphaOp(GX_TEVSTAGE1, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+	GXSetTevColorIn(GX_TEVSTAGE1, GX_CC_ZERO, GX_CC_CPREV, GX_CC_TEXA, GX_CC_ZERO);
+	GXSetTevAlphaIn(GX_TEVSTAGE1, GX_CA_ZERO, GX_CA_APREV, GX_CA_TEXA, GX_CA_ZERO);
+	GXSetTevOrder(GX_TEVSTAGE2, GX_TEXCOORD_NULL, GX_TEXMAP_NULL, GX_COLOR0A0);
+	GXSetTevColorOp(GX_TEVSTAGE2, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+	GXSetTevAlphaOp(GX_TEVSTAGE2, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+	GXSetTevColorIn(GX_TEVSTAGE2, GX_CC_ZERO, GX_CC_CPREV, GX_CC_RASC, GX_CC_ZERO);
+	GXSetTevAlphaIn(GX_TEVSTAGE2, GX_CA_ZERO, GX_CA_APREV, GX_CA_RASA, GX_CA_ZERO);
+	GXSetCullMode(GX_CULL_NONE);
 
 	switch (data->type) {
 	case 0:
 		GXClearVtxDesc();
-		GXSetVtxDesc(9, 2);
-		GXSetVtxAttrFmt(0, 9, 1, 3, 7);
-		GXSetArray(9, DATA_AT(0x40, nozle_1_vertex_tbl), 6);
-		GXSetVtxDesc(0xA, 2);
-		GXSetVtxAttrFmt(0, 0xA, 0, 1, 6);
-		GXSetArray(0xA, nozle_1_normal_tbl, 3);
-		GXSetVtxDesc(0xB, 2);
-		GXSetVtxAttrFmt(0, 0xB, 1, 5, 0);
-		GXSetArray(0xB, nozle_1_color0_tbl, 4);
-		GXSetVtxDesc(0xD, 2);
-		GXSetVtxAttrFmt(0, 0xD, 1, 3, 0xE);
-		GXSetArray(0xD, DATA_AT(0x200, nozle_1_texcoord0_tbl), 4);
-		GXSetVtxDesc(0xE, 2);
-		GXSetVtxAttrFmt(0, 0xE, 1, 3, 0xE);
-		GXSetArray(0xE, DATA_AT(0x2E0, nozle_1_texcoord1_tbl), 4);
+		GXSetVtxDesc(GX_VA_POS, GX_INDEX8);
+		GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_POS_XYZ, GX_S16, 7);
+		GXSetArray(GX_VA_POS, DATA_AT(0x40, nozle_1_vertex_tbl), 6);
+		GXSetVtxDesc(GX_VA_NRM, 2 == 2 ? GX_INDEX8 : GX_INDEX16);
+		GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_NRM, GX_NRM_XYZ, GX_S8, 6);
+		GXSetArray(GX_VA_NRM, nozle_1_normal_tbl, 3);
+		GXSetVtxDesc(GX_VA_CLR0, 2 == 2 ? GX_INDEX8 : GX_INDEX16);
+		GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_CLR0, GX_CLR_RGBA, GX_RGBA8, 0);
+		GXSetArray(GX_VA_CLR0, nozle_1_color0_tbl, 4);
+		GXSetVtxDesc(GX_VA_TEX0, 2 == 2 ? GX_INDEX8 : GX_INDEX16);
+		GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, GX_TEX_ST, GX_S16, 0xE);
+		GXSetArray(GX_VA_TEX0, DATA_AT(0x200, nozle_1_texcoord0_tbl), 4);
+		GXSetVtxDesc(GX_VA_TEX1, 2 == 2 ? GX_INDEX8 : GX_INDEX16);
+		GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX1, GX_TEX_ST, GX_S16, 0xE);
+		GXSetArray(GX_VA_TEX1, DATA_AT(0x2E0, nozle_1_texcoord1_tbl), 4);
 		nozleDrawDL1_0();
 		GXClearVtxDesc();
-		GXSetVtxDesc(9, 2);
-		GXSetVtxAttrFmt(0, 9, 1, 3, 7);
-		GXSetArray(9, DATA_AT(0x40, nozle_1_vertex_tbl), 6);
-		GXSetVtxDesc(0xA, 2);
-		GXSetVtxAttrFmt(0, 0xA, 0, 1, 6);
-		GXSetArray(0xA, nozle_1_normal_tbl, 3);
-		GXSetVtxDesc(0xB, 2);
-		GXSetVtxAttrFmt(0, 0xB, 1, 5, 0);
-		GXSetArray(0xB, nozle_1_color0_tbl, 4);
-		GXSetVtxDesc(0xD, 2);
-		GXSetVtxAttrFmt(0, 0xD, 1, 3, 0xE);
-		GXSetArray(0xD, DATA_AT(0x200, nozle_1_texcoord0_tbl), 4);
-		GXSetVtxDesc(0xE, 2);
-		GXSetVtxAttrFmt(0, 0xE, 1, 3, 0xE);
-		GXSetArray(0xE, DATA_AT(0x2E0, nozle_1_texcoord1_tbl), 4);
+		GXSetVtxDesc(GX_VA_POS, GX_INDEX8);
+		GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_POS_XYZ, GX_S16, 7);
+		GXSetArray(GX_VA_POS, DATA_AT(0x40, nozle_1_vertex_tbl), 6);
+		GXSetVtxDesc(GX_VA_NRM, 2 == 2 ? GX_INDEX8 : GX_INDEX16);
+		GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_NRM, GX_NRM_XYZ, GX_S8, 6);
+		GXSetArray(GX_VA_NRM, nozle_1_normal_tbl, 3);
+		GXSetVtxDesc(GX_VA_CLR0, 2 == 2 ? GX_INDEX8 : GX_INDEX16);
+		GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_CLR0, GX_CLR_RGBA, GX_RGBA8, 0);
+		GXSetArray(GX_VA_CLR0, nozle_1_color0_tbl, 4);
+		GXSetVtxDesc(GX_VA_TEX0, 2 == 2 ? GX_INDEX8 : GX_INDEX16);
+		GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, GX_TEX_ST, GX_S16, 0xE);
+		GXSetArray(GX_VA_TEX0, DATA_AT(0x200, nozle_1_texcoord0_tbl), 4);
+		GXSetVtxDesc(GX_VA_TEX1, 2 == 2 ? GX_INDEX8 : GX_INDEX16);
+		GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX1, GX_TEX_ST, GX_S16, 0xE);
+		GXSetArray(GX_VA_TEX1, DATA_AT(0x2E0, nozle_1_texcoord1_tbl), 4);
 		nozleDrawDL1_1();
 		break;
 	case 2:
 		GXClearVtxDesc();
-		GXSetVtxDesc(9, 3);
-		GXSetVtxAttrFmt(0, 9, 1, 3, 7);
-		GXSetArray(9, DATA_AT(0x640, nozle_3_vertex_tbl), 6);
-		GXSetVtxDesc(0xA, 3);
-		GXSetVtxAttrFmt(0, 0xA, 0, 1, 6);
-		GXSetArray(0xA, nozle_3_normal_tbl, 3);
-		GXSetVtxDesc(0xB, 3);
-		GXSetVtxAttrFmt(0, 0xB, 1, 5, 0);
-		GXSetArray(0xB, DATA_AT(0xBC0, nozle_3_color0_tbl), 4);
-		GXSetVtxDesc(0xD, 3);
-		GXSetVtxAttrFmt(0, 0xD, 1, 3, 0xE);
-		GXSetArray(0xD, DATA_AT(0x8C0, nozle_3_texcoord0_tbl), 4);
-		GXSetVtxDesc(0xE, 3);
-		GXSetVtxAttrFmt(0, 0xE, 1, 3, 0xE);
-		GXSetArray(0xE, DATA_AT(0xA40, nozle_3_texcoord1_tbl), 4);
+		GXSetVtxDesc(GX_VA_POS, GX_INDEX16);
+		GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_POS_XYZ, GX_S16, 7);
+		GXSetArray(GX_VA_POS, DATA_AT(0x640, nozle_3_vertex_tbl), 6);
+		GXSetVtxDesc(GX_VA_NRM, 3 == 2 ? GX_INDEX8 : GX_INDEX16);
+		GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_NRM, GX_NRM_XYZ, GX_S8, 6);
+		GXSetArray(GX_VA_NRM, nozle_3_normal_tbl, 3);
+		GXSetVtxDesc(GX_VA_CLR0, 3 == 2 ? GX_INDEX8 : GX_INDEX16);
+		GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_CLR0, GX_CLR_RGBA, GX_RGBA8, 0);
+		GXSetArray(GX_VA_CLR0, DATA_AT(0xBC0, nozle_3_color0_tbl), 4);
+		GXSetVtxDesc(GX_VA_TEX0, 3 == 2 ? GX_INDEX8 : GX_INDEX16);
+		GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, GX_TEX_ST, GX_S16, 0xE);
+		GXSetArray(GX_VA_TEX0, DATA_AT(0x8C0, nozle_3_texcoord0_tbl), 4);
+		GXSetVtxDesc(GX_VA_TEX1, 3 == 2 ? GX_INDEX8 : GX_INDEX16);
+		GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX1, GX_TEX_ST, GX_S16, 0xE);
+		GXSetArray(GX_VA_TEX1, DATA_AT(0xA40, nozle_3_texcoord1_tbl), 4);
 		nozleDrawDL3_1(base);
 		GXClearVtxDesc();
-		GXSetVtxDesc(9, 3);
-		GXSetVtxAttrFmt(0, 9, 1, 3, 7);
-		GXSetArray(9, DATA_AT(0x640, nozle_3_vertex_tbl), 6);
-		GXSetVtxDesc(0xA, 3);
-		GXSetVtxAttrFmt(0, 0xA, 0, 1, 6);
-		GXSetArray(0xA, nozle_3_normal_tbl, 3);
-		GXSetVtxDesc(0xB, 3);
-		GXSetVtxAttrFmt(0, 0xB, 1, 5, 0);
-		GXSetArray(0xB, DATA_AT(0xBC0, nozle_3_color0_tbl), 4);
-		GXSetVtxDesc(0xD, 3);
-		GXSetVtxAttrFmt(0, 0xD, 1, 3, 0xE);
-		GXSetArray(0xD, DATA_AT(0x8C0, nozle_3_texcoord0_tbl), 4);
-		GXSetVtxDesc(0xE, 3);
-		GXSetVtxAttrFmt(0, 0xE, 1, 3, 0xE);
-		GXSetArray(0xE, DATA_AT(0xA40, nozle_3_texcoord1_tbl), 4);
+		GXSetVtxDesc(GX_VA_POS, GX_INDEX16);
+		GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_POS_XYZ, GX_S16, 7);
+		GXSetArray(GX_VA_POS, DATA_AT(0x640, nozle_3_vertex_tbl), 6);
+		GXSetVtxDesc(GX_VA_NRM, 3 == 2 ? GX_INDEX8 : GX_INDEX16);
+		GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_NRM, GX_NRM_XYZ, GX_S8, 6);
+		GXSetArray(GX_VA_NRM, nozle_3_normal_tbl, 3);
+		GXSetVtxDesc(GX_VA_CLR0, 3 == 2 ? GX_INDEX8 : GX_INDEX16);
+		GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_CLR0, GX_CLR_RGBA, GX_RGBA8, 0);
+		GXSetArray(GX_VA_CLR0, DATA_AT(0xBC0, nozle_3_color0_tbl), 4);
+		GXSetVtxDesc(GX_VA_TEX0, 3 == 2 ? GX_INDEX8 : GX_INDEX16);
+		GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, GX_TEX_ST, GX_S16, 0xE);
+		GXSetArray(GX_VA_TEX0, DATA_AT(0x8C0, nozle_3_texcoord0_tbl), 4);
+		GXSetVtxDesc(GX_VA_TEX1, 3 == 2 ? GX_INDEX8 : GX_INDEX16);
+		GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX1, GX_TEX_ST, GX_S16, 0xE);
+		GXSetArray(GX_VA_TEX1, DATA_AT(0xA40, nozle_3_texcoord1_tbl), 4);
 		nozleDrawDL3_0(base);
 		break;
 	case 3:
-		GXSetTevAlphaIn(0, 7, 1, 4, 7);
+		GXSetTevAlphaIn(GX_TEVSTAGE0, GX_CA_ZERO, GX_CA_A0, GX_CA_TEXA, GX_CA_ZERO);
 #ifdef MUST_MATCH
 		color = nozleTevColor(alpha);
 #else
 		color = *(GXColor*)&unk_80423300;
 		color.a = alpha;
 #endif
-		GXSetTevColor(1, color);
+		GXSetTevColor(GX_TEVREG0, color);
 #ifdef MUST_MATCH
 		// the original rematerialises data here, re-reading effect->userdata
 		entry = (effNozleEntryData*)((effNozleData*)effect->userdata);
@@ -539,32 +539,32 @@ void effNozleDisp(CameraId camId, void* param) {
 		entry = data->entries;
 #endif
 		for (i = 1; i < effect->count; i++, entry++) {
-			PSMTXTrans(transMtx, entry->field_0x18, -entry->field_0x1C, 0.0f);
-			GXLoadTexMtxImm(transMtx, 0x1E, 1);
-			PSMTXTrans(transMtx, entry->field_0x20, -entry->field_0x24, 0.0f);
-			GXLoadTexMtxImm(transMtx, 0x21, 1);
-			PSMTXTrans(transMtx, entry->field_0x04, entry->field_0x08, entry->field_0x0C);
-			PSMTXScale(scaleMtx, entry->field_0x10, entry->field_0x14, 1.0f);
+			PSMTXTrans(transMtx, entry->scrollX0, -entry->scrollY0, 0.0f);
+			GXLoadTexMtxImm(transMtx, GX_TEXMTX0, GX_MTX2x4);
+			PSMTXTrans(transMtx, entry->scrollX1, -entry->scrollY1, 0.0f);
+			GXLoadTexMtxImm(transMtx, GX_TEXMTX1, GX_MTX2x4);
+			PSMTXTrans(transMtx, entry->offsetX, entry->offsetY, entry->offsetZ);
+			PSMTXScale(scaleMtx, entry->scaleX, entry->scaleY, 1.0f);
 			PSMTXConcat(transMtx, scaleMtx, scaleMtx);
 			PSMTXConcat(mtx, scaleMtx, scaleMtx);
-			GXLoadPosMtxImm(scaleMtx, 0);
+			GXLoadPosMtxImm(scaleMtx, GX_PNMTX0);
 
 			GXClearVtxDesc();
-			GXSetVtxDesc(9, 2);
-			GXSetVtxAttrFmt(0, 9, 1, 3, 6);
-			GXSetArray(9, DATA_AT(0x1880, nozle_4_vertex_tbl), 6);
-			GXSetVtxDesc(0xA, 2);
-			GXSetVtxAttrFmt(0, 0xA, 0, 1, 6);
-			GXSetArray(0xA, nozle_4_normal_tbl, 3);
-			GXSetVtxDesc(0xB, 2);
-			GXSetVtxAttrFmt(0, 0xB, 1, 5, 0);
-			GXSetArray(0xB, nozle_4_color0_tbl, 4);
-			GXSetVtxDesc(0xD, 2);
-			GXSetVtxAttrFmt(0, 0xD, 1, 3, 0xD);
-			GXSetArray(0xD, DATA_AT(0x1940, nozle_4_texcoord0_tbl), 4);
-			GXSetVtxDesc(0xE, 2);
-			GXSetVtxAttrFmt(0, 0xE, 1, 3, 0xD);
-			GXSetArray(0xE, DATA_AT(0x19C0, nozle_4_texcoord1_tbl), 4);
+			GXSetVtxDesc(GX_VA_POS, GX_INDEX8);
+			GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_POS_XYZ, GX_S16, 6);
+			GXSetArray(GX_VA_POS, DATA_AT(0x1880, nozle_4_vertex_tbl), 6);
+			GXSetVtxDesc(GX_VA_NRM, 2 == 2 ? GX_INDEX8 : GX_INDEX16);
+			GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_NRM, GX_NRM_XYZ, GX_S8, 6);
+			GXSetArray(GX_VA_NRM, nozle_4_normal_tbl, 3);
+			GXSetVtxDesc(GX_VA_CLR0, 2 == 2 ? GX_INDEX8 : GX_INDEX16);
+			GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_CLR0, GX_CLR_RGBA, GX_RGBA8, 0);
+			GXSetArray(GX_VA_CLR0, nozle_4_color0_tbl, 4);
+			GXSetVtxDesc(GX_VA_TEX0, 2 == 2 ? GX_INDEX8 : GX_INDEX16);
+			GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, GX_TEX_ST, GX_S16, 0xD);
+			GXSetArray(GX_VA_TEX0, DATA_AT(0x1940, nozle_4_texcoord0_tbl), 4);
+			GXSetVtxDesc(GX_VA_TEX1, 2 == 2 ? GX_INDEX8 : GX_INDEX16);
+			GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX1, GX_TEX_ST, GX_S16, 0xD);
+			GXSetArray(GX_VA_TEX1, DATA_AT(0x19C0, nozle_4_texcoord1_tbl), 4);
 			nozleDrawDL4_0();
 		}
 		break;
