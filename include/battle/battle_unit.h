@@ -456,7 +456,8 @@ typedef struct BattleWorkUnitPart {
     BattleUnitDefense* defense;                    // 0x1B4
     BattleUnitDefenseAttr* defenseAttr;            // 0x1B8
     void* poseTable;                               // 0x1BC
-    u8 field_0x1C0[0x204 - 0x1C0];                 // 0x1C0, pose-anim block: handle at +0, flags at +0x44
+    s32 poseId;                                    // 0x1C0, animPoseEntry handle, -1 when none (animPoseRelease)
+    char poseName[0x204 - 0x1C4];                  // 0x1C4, current animation name, strcpy'd and passed to animPoseSetAnim
     u32 partFlags;                                 // 0x204, bit 0x10 and 0x80 are set and cleared by battle_unit.c
     f32 field_0x208;                               // 0x208, 1.0 at entry
     f32 motionSpeed;                               // 0x20C, btlevtcmd_AnimeSetMotionSpeed
@@ -664,12 +665,15 @@ typedef struct BattleUnit {
     void* unisonPhaseEventCode;                  // 0x290
     void* phaseEventCode;                        // 0x294
     s32 phaseEventId;                            // 0x298
-    u8 field_0x29C[0x2A4 - 0x29C];               // 0x29C
+    void* attackEventCode;                       // 0x29C, script battle_seq starts as the unit's action (attackEventId)
+    u8 field_0x2A0[0x2A4 - 0x2A0];               // 0x2A0
     s32 attackEventId;                           // 0x2A4
     u8 field_0x2A8[0x2AC - 0x2A8];               // 0x2A8
     void* damageEventCode;                       // 0x2AC
     s32 damageEventId;                           // 0x2B0
-    u8 field_0x2B4[0x2D0 - 0x2B4];               // 0x2B4
+    void* entryEventCode;                        // 0x2B4, btlevtcmd_SetEventEntry; battle_seq runs it at battle start
+    s32 entryEventId;                            // 0x2B8, its event id, 0 once it has finished
+    u8 field_0x2BC[0x2D0 - 0x2BC];               // 0x2BC
     s32 mBodyPartsId;                            // 0x2D0
     char* mTalkPoseName;                         // 0x2D4, BtlUnit_GetPoseNameFromType of the talk pose
     char* mStayPoseName;                         // 0x2D8, BtlUnit_GetPoseNameFromType of the stay pose

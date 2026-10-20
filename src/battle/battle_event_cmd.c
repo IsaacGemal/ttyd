@@ -4117,7 +4117,7 @@ USER_FUNC(btlevtcmd_SetEventEntry) {
     s32 btlId = evtGetValue(event, args[0]);
     BattleUnit* unit = BattleGetUnitPtr(_battleWorkPointer, BattleTransID(event, btlId));
 
-    *(s32*)unit->field_0x2B4 = args[1];
+    unit->entryEventCode = (void*)args[1];
     return EVT_RETURN_DONE;
 }
 
@@ -4147,7 +4147,7 @@ USER_FUNC(btlevtcmd_SetEventAttack) {
     s32 btlId = evtGetValue(event, args[0]);
     BattleUnit* unit = BattleGetUnitPtr(_battleWorkPointer, BattleTransID(event, btlId));
 
-    *(s32*)unit->field_0x29C = args[1];
+    unit->attackEventCode = (void*)args[1];
     *(s32*)unit->field_0x2A8 = 0;
     return EVT_RETURN_DONE;
 }
@@ -5525,16 +5525,16 @@ USER_FUNC(btlevtcmd_AnimeChangeGroup) {
     part = BattleGetUnitPartsPtr(id, partId);
     group = evtGetValue(event, args[2]);
     if (isFirstCall) {
-        if (*(s32*)part->field_0x1C0 != -1) {
-            animPoseRelease(*(s32*)part->field_0x1C0);
-            *(s32*)part->field_0x1C0 = -1;
+        if (part->poseId != -1) {
+            animPoseRelease(part->poseId);
+            part->poseId = -1;
         }
         animEffectAsync((const char*)group, 1);
     }
     if (animEffectAsync((const char*)group, 1) == 0) {
         return EVT_RETURN_BLOCK;
     }
-    *(s32*)part->field_0x1C0 = animPoseEntry((const char*)group, 1);
+    part->poseId = animPoseEntry((const char*)group, 1);
     return EVT_RETURN_DONE;
 }
 
@@ -5587,10 +5587,10 @@ USER_FUNC(btlevtcmd_AnimeChangePoseDirect) {
     part = BattleGetUnitPartsPtr(btlId, partId);
     name = evtGetValue(event, args[2]);
 
-    strcpy((char*)&part->field_0x1C0[4], (const char*)name);
+    strcpy(part->poseName, (const char*)name);
     part->partFlags &= ~0x80;
     part->partFlags &= ~0x10;
-    animPoseSetAnim(*(s32*)part->field_0x1C0, (const char*)name, 1);
+    animPoseSetAnim(part->poseId, (const char*)name, 1);
     part->statusPoseKind = 1;
     if (BtlUnit_CheckStatus(unit, 0x12)) {
         part->statusPoseKind = 7;
@@ -5618,7 +5618,7 @@ USER_FUNC(btlevtcmd_AnimeWaitPlayComplete) {
         event->userdata[0]--;
         return EVT_RETURN_BLOCK;
     }
-    loopTimes = animPoseGetLoopTimes(*(s32*)part->field_0x1C0);
+    loopTimes = animPoseGetLoopTimes(part->poseId);
     if (loopTimes < 1.0f) {
         return EVT_RETURN_BLOCK;
     }
@@ -5642,10 +5642,10 @@ USER_FUNC(btlevtcmd_AnimeWaitPlayLoopTiming) {
         event->userdata[2] = 0;
     }
     // The original threshold double is (double)0.01f (3f847ae140000000), not the exact 0.01 double.
-    if (__fabs(animPoseGetAnimPosePtr(*(s32*)part->field_0x1C0)->localTimeRate) < (f64)0.01f) {
+    if (__fabs(animPoseGetAnimPosePtr(part->poseId)->localTimeRate) < (f64)0.01f) {
         return 2;
     }
-    loopTimes = animPoseGetLoopTimes(*(s32*)part->field_0x1C0);
+    loopTimes = animPoseGetLoopTimes(part->poseId);
     if (event->userdata[0] > 0) {
         event->userdata[0]--;
         return 0;
@@ -5681,7 +5681,7 @@ USER_FUNC(btlevtcmd_SetTalkPose) {
     s32 value = args[1];
     BattleUnit* unit = BattleGetUnitPtr(_battleWorkPointer, BattleTransID(event, btlId));
 
-    *(s32*)&unit->mTalkPoseName = value;
+    unit->mTalkPoseName = (char*)value;
     return EVT_RETURN_DONE;
 }
 
@@ -5692,7 +5692,7 @@ USER_FUNC(btlevtcmd_SetStayPose) {
     s32 value = args[1];
     BattleUnit* unit = BattleGetUnitPtr(_battleWorkPointer, BattleTransID(event, btlId));
 
-    *(s32*)&unit->mStayPoseName = value;
+    unit->mStayPoseName = (char*)value;
     return EVT_RETURN_DONE;
 }
 
@@ -5870,7 +5870,7 @@ USER_FUNC(btlevtcmd_AnimeChangePaperGroup) {
     part = BattleGetUnitPartsPtr(id, partId);
     group = evtGetValue(event, args[2]);
     flag = evtGetValue(event, args[3]);
-    animPoseSetEffect(*(s32*)part->field_0x1C0, (const char*)group, flag);
+    animPoseSetEffect(part->poseId, (const char*)group, flag);
     return EVT_RETURN_DONE;
 }
 
@@ -6613,7 +6613,7 @@ void _UnitMoveSoundControl(BattleUnit* unit) {
     f32 x, y, z;
 
     BtlUnit_GetPos(unit, &x, &y, &z);
-    _MoveSoundControlCore(unit, &unit->seMode, 0, x, y, z);
+    _MoveSoundControlCore(unit, &unit->seMode, NULL, x, y, z);
 }
 #pragma dont_inline reset
 
@@ -6627,8 +6627,9 @@ void _PartsMoveSoundControl(BattleUnitPart* part) {
 }
 #pragma dont_inline reset
 
-// unit, work (= &unit->seMode), optional owner part, and an x/y/z position offset
-void _MoveSoundControlCore(BattleUnit* unit, BtlUnitSeMode* work, void* owner, f32 x, f32 y, f32 z) {
+// work is the unit's seMode, or the part's when owner is that part (NULL for the unit itself); x/y/z is where the
+// beat sounds play.
+void _MoveSoundControlCore(BattleUnit* unit, BtlUnitSeMode* work, BattleUnitPart* owner, f32 x, f32 y, f32 z) {
     Vec pos;
     Vec unitPos;
     s32 a;
@@ -6643,8 +6644,8 @@ void _MoveSoundControlCore(BattleUnit* unit, BtlUnitSeMode* work, void* owner, f
         if ((u32)work->sfxHandle == 0xFFFFFFFF) {
             work->sfxHandle = BtlUnit_snd_se_pos(unit, (const char*)a, 0xF1194D80, 0, &pos);
         }
-        if (owner != 0) {
-            BtlUnit_GetPartsWorldPos((BattleUnitPart*)owner, &unitPos.x, &unitPos.y, &unitPos.z);
+        if (owner != NULL) {
+            BtlUnit_GetPartsWorldPos(owner, &unitPos.x, &unitPos.y, &unitPos.z);
         }
         else {
             BtlUnit_GetPos(unit, &unitPos.x, &unitPos.y, &unitPos.z);
@@ -6679,24 +6680,25 @@ void _MoveSoundControlCore(BattleUnit* unit, BtlUnitSeMode* work, void* owner, f
 // the original calls _UnitMoveSoundControlEnd with `bl`, not inlined
 #pragma dont_inline on
 void _UnitMoveSoundControlEnd(BattleUnit* unit) {
-    _MoveSoundControlEndCore(unit, (u32*)&unit->seMode);
+    _MoveSoundControlEndCore(unit, &unit->seMode);
 }
 #pragma dont_inline reset
 
 // the original calls _PartsMoveSoundControlEnd with `bl`, not inlined
 #pragma dont_inline on
 void _PartsMoveSoundControlEnd(BattleUnitPart* part) {
-    u32* work = (u32*)&part->seMode;
+    BtlUnitSeMode* work = &part->seMode;
     _MoveSoundControlEndCore(part->mOwner, work);
 }
 #pragma dont_inline reset
 
 // Keep _MoveSoundControlEndCore out of line: the original calls it rather than inlining.
 #pragma dont_inline on
-void _MoveSoundControlEndCore(void* a, u32* work) {
-    if (work[6] != 0xFFFFFFFF) {
-        psndSFXOff(work[6]);
-        work[6] = 0xFFFFFFFF;
+void _MoveSoundControlEndCore(BattleUnit* unit, BtlUnitSeMode* work) {
+    // unsigned compare, as in retail (a signed one against -1 is an instruction shorter)
+    if ((u32)work->sfxHandle != 0xFFFFFFFF) {
+        psndSFXOff(work->sfxHandle);
+        work->sfxHandle = -1;
     }
 }
 #pragma dont_inline reset

@@ -706,7 +706,7 @@ static USER_FUNC(_set_draw_callback) {
     id = BattleTransID(event, -2);
     unit = BattleGetUnitPtr(wp, id);
     part = BtlUnit_GetPartsPtr(unit, 1);
-    animPoseSetDispCallBack(*(s32*)((u8*)part + 0x1C0), _fire_point_callback, part);
+    animPoseSetDispCallBack(part->poseId, _fire_point_callback, part);
     part = BtlUnit_GetPartsPtr(unit, 2);
     part->attributes |= 0x1000000;
     return EVT_RETURN_DONE;
@@ -962,7 +962,7 @@ static void _fire_point_callback(BattleUnitPart* part, s32 group) {
 
     unit = part->mOwner;
     if (unit->work[0] != 0) {
-        pose = *(s32*)((u8*)part + 0x1C0);
+        pose = part->poseId;
         switch (unit->work[1]) {
             case 0:
                 name = "locator11";
@@ -979,7 +979,7 @@ static void _fire_point_callback(BattleUnitPart* part, s32 group) {
                 break;
         }
         if (strcmp(name, animPoseGetGroupName(pose, group)) == 0) {
-            poseId = *(s32*)((u8*)BtlUnit_GetPartsPtr(unit, 2) + 0x1C0);
+            poseId = BtlUnit_GetPartsPtr(unit, 2)->poseId;
             shape = animPoseGetShapeIdx(poseId, "pPlaneShape3");
             animPoseDrawShape(poseId, shape);
         }

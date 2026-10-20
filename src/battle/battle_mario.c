@@ -8122,7 +8122,7 @@ USER_FUNC(_paper_light_off) {
     id = BattleTransID(event, v0);
     v1 = evtGetValue(event, args[1]);
     part = BattleGetUnitPartsPtr(id, v1);
-    animPoseSetMaterialLightFlagOff(*(s32*)((u8*)part + 0x1C0), 1);
+    animPoseSetMaterialLightFlagOff(part->poseId, 1);
     return EVT_RETURN_DONE;
 }
 

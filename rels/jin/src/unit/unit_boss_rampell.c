@@ -81,7 +81,7 @@ static USER_FUNC(_mario_makkuro_set) {
     unit = BattleGetUnitPtr(work, BattleTransID(event, -2));
     if (unit != NULL) {
         faker_mario_makkuro_set();
-        animPoseSetMaterialFlagOn(*(s32*)BtlUnit_GetPartsPtr(unit, 1)->field_0x1C0, 0xB000000);
+        animPoseSetMaterialFlagOn(BtlUnit_GetPartsPtr(unit, 1)->poseId, 0xB000000);
     }
     return EVT_RETURN_DONE;
 }

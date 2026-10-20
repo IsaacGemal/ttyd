@@ -1736,15 +1736,15 @@ USER_FUNC(yoshi_original_color_anim_set) {
             return EVT_RETURN_DONE;
         }
         part = BattleGetUnitPartsPtr(id, 1);
-        animPoseGetAnimPosePtr(*(s32*)part->field_0x1C0);
-        if (*(s32*)part->field_0x1C0 != -1) {
-            animPoseRelease(*(s32*)part->field_0x1C0);
-            *(s32*)part->field_0x1C0 = -1;
+        animPoseGetAnimPosePtr(part->poseId);
+        if (part->poseId != -1) {
+            animPoseRelease(part->poseId);
+            part->poseId = -1;
         }
     }
     if (animEffectAsync(name, 1)) {
         part = BattleGetUnitPartsPtr(id, 1);
-        *(s32*)part->field_0x1C0 = animPoseEntry(name, 1);
+        part->poseId = animPoseEntry(name, 1);
         return EVT_RETURN_DONE;
     }
     return 0;

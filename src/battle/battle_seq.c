@@ -360,7 +360,7 @@ void btlseqFirstAct(BattleWork* wp) {
 				if (unit == NULL) {
 					continue;
 				}
-				if (*(void**)unit->field_0x2B4 == NULL) {
+				if (unit->entryEventCode == NULL) {
 					continue;
 				}
 				if (setup->flags & 0x00100000) {
@@ -373,11 +373,11 @@ void btlseqFirstAct(BattleWork* wp) {
 				}
 				if (marioGetPtr()->currMotionId == 0x1A && unit->currentKind == 0xDE) {
 					evt = evtEntry(BtlUnit_GetData(unit, 0x41), 10, 0);
-					*(s32*)(unit->field_0x2B4 + 4) = evt->eventId;
+					unit->entryEventId = evt->eventId;
 					evt->unitId = unit->unitId;
 				} else {
-					evt = evtEntry(*(void**)unit->field_0x2B4, 10, 0);
-					*(s32*)(unit->field_0x2B4 + 4) = evt->eventId;
+					evt = evtEntry(unit->entryEventCode, 10, 0);
+					unit->entryEventId = evt->eventId;
 					evt->unitId = unit->unitId;
 				}
 			}
@@ -414,7 +414,7 @@ void btlseqFirstAct(BattleWork* wp) {
 		unit1->flags |= 0x04000000;
 		if (party < 9) {
 			weapon = _GetFirstAttackWeapon(party);
-			*(void**)unit1->field_0x29C = weapon->mAttackEvtScript;
+			unit1->attackEventCode = weapon->mAttackEvtScript;
 			*(s32*)unit1->field_0x2A8 = 0;
 			BattleStatusWindowEventOff();
 		}
@@ -423,7 +423,7 @@ void btlseqFirstAct(BattleWork* wp) {
 		} else {
 			BattleAudience_Case_FirstAttack_Bad();
 		}
-		evt = evtEntry(*(void**)unit1->field_0x29C, 10, 0);
+		evt = evtEntry(unit1->attackEventCode, 10, 0);
 		if (evt != NULL) {
 			evt->unitId = unit1->unitId;
 			unit1->attackEventId = evt->eventId;
@@ -437,8 +437,8 @@ void btlseqFirstAct(BattleWork* wp) {
 		case 6:
 			unit = BattleGetPartyPtr(wp);
 			if (unit != NULL) {
-				evt = evtEntry(*(void**)unit->field_0x2B4, 10, 0);
-				*(s32*)(unit->field_0x2B4 + 4) = evt->eventId;
+				evt = evtEntry(unit->entryEventCode, 10, 0);
+				unit->entryEventId = evt->eventId;
 				evt->unitId = unit->unitId;
 			}
 			break;
@@ -446,8 +446,8 @@ void btlseqFirstAct(BattleWork* wp) {
 		case 8:
 			unit = BattleGetMarioPtr(wp);
 			if (unit != NULL) {
-				evt = evtEntry(*(void**)unit->field_0x2B4, 10, 0);
-				*(s32*)(unit->field_0x2B4 + 4) = evt->eventId;
+				evt = evtEntry(unit->entryEventCode, 10, 0);
+				unit->entryEventId = evt->eventId;
 				evt->unitId = unit->unitId;
 			}
 			break;
@@ -2184,7 +2184,7 @@ BOOL BattlePhaseEndCheck(void) { //1:1
 }
 
 // Raw offsets (fields that battle_unit.h leaves in padding, so no named member exists):
-// 0x258, 0x280, 0x29C, 0x2A0, 0x2A8, 0x2C, 0x2C4, 0x2C8, 0x2CC.
+// 0x258, 0x280, 0x2A0, 0x2A8, 0x2C, 0x2C4, 0x2C8, 0x2CC.
 // Case 0 shadows `unit` so MWCC keeps it in r29 (the outer `unit` is r31 elsewhere); the original splits
 // them the same way. The moveState switch lists case 8 before the shared case 7/case 9 so the bodies come
 // out in the target's order, and the currentKind check is a switch so the then-block lands before the else.
@@ -2257,7 +2257,7 @@ void btlseqAct(BattleWork* wp) {
 
 	case 0x6000005:
 		unit = BattleGetUnitPtr(wp, wp->activeUnitId);
-		*(void**)((u8*)unit + 0x29C) = BtlUnit_GetData(unit, 2);
+		unit->attackEventCode = BtlUnit_GetData(unit, 2);
 		*(s32*)((u8*)unit + 0x2A8) = 1;
 		BattleSetSeq(wp, SEQ_ACT, 0x6000006);
 		break;
@@ -2271,7 +2271,7 @@ void btlseqAct(BattleWork* wp) {
 
 	case 0x6000004:
 		unit = BattleGetUnitPtr(wp, wp->activeUnitId);
-		*(void**)((u8*)unit + 0x29C) = BtlUnit_GetData(unit, 3);
+		unit->attackEventCode = BtlUnit_GetData(unit, 3);
 		*(s32*)((u8*)unit + 0x2A8) = 0x1B;
 		BattleSetSeq(wp, SEQ_ACT, 0x6000006);
 		break;
@@ -2290,14 +2290,14 @@ void btlseqAct(BattleWork* wp) {
 			}
 		}
 		if (*(s32*)((u8*)unit + 0x2A8) & 0x10) {
-			if (*(void**)((u8*)unit + 0x29C) == NULL) {
+			if (unit->attackEventCode == NULL) {
 				goto act_done;
 			}
-			event = evtEntry(*(void**)((u8*)unit + 0x29C), 0xA, 0);
+			event = evtEntry(unit->attackEventCode, 0xA, 0);
 			goto act_done;
 		}
 		if (*(s32*)((u8*)unit + 0x2A8) & 2) {
-			event = evtEntry(*(void**)((u8*)unit + 0x29C), 0xA, 0);
+			event = evtEntry(unit->attackEventCode, 0xA, 0);
 			goto act_done;
 		}
 		if (BtlUnit_CheckStatus(unit, 1) || BtlUnit_CheckStatus(unit, 2) ||
@@ -2320,7 +2320,7 @@ void btlseqAct(BattleWork* wp) {
 				goto act_done;
 			}
 		}
-		event = evtEntry(*(void**)((u8*)unit + 0x29C), 0xA, 0);
+		event = evtEntry(unit->attackEventCode, 0xA, 0);
 	act_done:
 		if (event != NULL) {
 			unit->attackEventId = event->eventId;
@@ -2539,7 +2539,7 @@ void btlseqPhaseFirstProcess(BattleWork* wp) { //1:1
 			unit->protectId = -1;
 			part = unit->mParts;
 			while (part) {
-				if (*(s32*)((u8*)part + 0x1C0) != -1) {
+				if (part->poseId != -1) {
 					part->poseSound.flag = 1;
 				}
 				part = part->mNextPart;
@@ -2724,12 +2724,12 @@ s32 BattleWaitAllActiveEvtEnd_NoBgSetEndWait(BattleWork* wp) { //1:1
 				}
 				break;
 			}
-			while (*(s32*)(unit->field_0x2B4 + 4)) {
-				if (evtCheckID(*(s32*)(unit->field_0x2B4 + 4))) {
+			while (unit->entryEventId) {
+				if (evtCheckID(unit->entryEventId)) {
 					result = FALSE;
 				}
 				else {
-					*(s32*)(unit->field_0x2B4 + 4) = 0;
+					unit->entryEventId = 0;
 				}
 				break;
 			}

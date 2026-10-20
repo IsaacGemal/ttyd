@@ -2852,7 +2852,7 @@ USER_FUNC(btlevtcmd_AnimeGetPose) {
     unitId = BattleTransID(event, arg0);
     arg1 = evtGetValue(event, args[1]);
     evtSetValue(event, args[2],
-                (s32)animPoseGetCurrentAnim(*(s32*)((u8*)BattleGetUnitPartsPtr(unitId, arg1) + 0x1C0)));
+                (s32)animPoseGetCurrentAnim(BattleGetUnitPartsPtr(unitId, arg1)->poseId));
     return EVT_RETURN_DONE;
 }
 
@@ -2940,7 +2940,7 @@ USER_FUNC(_set_draw_callback) {
     id = BattleTransID(event, -2);
     unit = BattleGetUnitPtr(wp, id);
     part1 = BtlUnit_GetPartsPtr(unit, 1);
-    animPoseSetDispCallBack(*(s32*)((u8*)part1 + 0x1C0), _light_point_callback, part1);
+    animPoseSetDispCallBack(part1->poseId, _light_point_callback, part1);
     part3 = BtlUnit_GetPartsPtr(unit, 3);
     part4 = BtlUnit_GetPartsPtr(unit, 4);
     part5 = BtlUnit_GetPartsPtr(unit, 5);
@@ -2956,7 +2956,7 @@ USER_FUNC(_set_draw_callback) {
 
 void _light_point_callback(struct BattleWorkUnitPart* part, s32 group, void* mtx) {
     BattleUnit* unit = part->mOwner;
-    s32 pose = *(s32*)((u8*)part + 0x1C0);
+    s32 pose = part->poseId;
     s32 idx;
     if (strcmp("locator6", animPoseGetGroupName(pose, group)) == 0) {
         idx = 0;
@@ -2973,31 +2973,31 @@ void _light_point_callback(struct BattleWorkUnitPart* part, s32 group, void* mtx
     }
     switch (idx) {
     case 0: {
-        s32 pose3 = *(s32*)((u8*)BtlUnit_GetPartsPtr(unit, 3) + 0x1C0);
+        s32 pose3 = BtlUnit_GetPartsPtr(unit, 3)->poseId;
         s32 shape = animPoseGetShapeIdx(pose3, "pPlaneShape34");
         animPoseDrawShape(pose3, shape);
         break;
     }
     case 1: {
-        s32 pose4 = *(s32*)((u8*)BtlUnit_GetPartsPtr(unit, 4) + 0x1C0);
+        s32 pose4 = BtlUnit_GetPartsPtr(unit, 4)->poseId;
         s32 shape = animPoseGetShapeIdx(pose4, "pPlaneShape37");
         animPoseDrawShape(pose4, shape);
         break;
     }
     case 2: {
-        s32 pose5 = *(s32*)((u8*)BtlUnit_GetPartsPtr(unit, 5) + 0x1C0);
+        s32 pose5 = BtlUnit_GetPartsPtr(unit, 5)->poseId;
         s32 shape = animPoseGetShapeIdx(pose5, "pPlaneShape36");
         animPoseDrawShape(pose5, shape);
         break;
     }
     case 3: {
-        s32 pose6 = *(s32*)((u8*)BtlUnit_GetPartsPtr(unit, 6) + 0x1C0);
+        s32 pose6 = BtlUnit_GetPartsPtr(unit, 6)->poseId;
         s32 shape = animPoseGetShapeIdx(pose6, "pPlaneShape35");
         animPoseDrawShape(pose6, shape);
         break;
     }
     case 4: {
-        s32 pose7 = *(s32*)((u8*)BtlUnit_GetPartsPtr(unit, 7) + 0x1C0);
+        s32 pose7 = BtlUnit_GetPartsPtr(unit, 7)->poseId;
         s32 shape = animPoseGetShapeIdx(pose7, "pPlaneShape36");
         animPoseDrawShape(pose7, shape);
         break;

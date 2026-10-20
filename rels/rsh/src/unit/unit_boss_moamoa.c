@@ -952,7 +952,7 @@ USER_FUNC(moamoa1_on) {
             part = BattleGetUnitPartsPtr(unit->work[5], 1);
             break;
         }
-        wp->animPoses[i] = (void*)*(s32*)part->field_0x1C0;
+        wp->animPoses[i] = (void*)part->poseId;
         animPoseWorldPositionEvalOn((s32)wp->animPoses[i]);
         anim = animPoseGetAnimPosePtr((s32)wp->animPoses[i]);
         positions = (Vec*)((smartEntry*)*(void**)((u8*)anim + 0x15C))->address;
@@ -991,7 +991,7 @@ USER_FUNC(moamoa2_on) {
     MoamoaWorkPose* wp2;
     s32 j;
 
-    wp->animPoses[4] = (void*)*(s32*)part->field_0x1C0;
+    wp->animPoses[4] = (void*)part->poseId;
     animPoseWorldPositionEvalOn((s32)wp->animPoses[4]);
     pose = animPoseGetAnimPosePtr((s32)wp->animPoses[4]);
     positions = (Vec*)((smartEntry*)*(void**)((u8*)pose + 0x15C))->address;
@@ -1052,7 +1052,7 @@ USER_FUNC(moamoa_on) {
     wp->mainUnitId = BattleTransID(event, -2);
     BattleGetUnitPtr(_battleWorkPointer, wp->mainUnitId);
     part = BattleGetUnitPartsPtr(wp->mainUnitId, 1);
-    wp->animPoses[0] = (void*)*(s32*)part->field_0x1C0;
+    wp->animPoses[0] = (void*)part->poseId;
     animPoseWorldPositionEvalOn((s32)wp->animPoses[0]);
     animPose = animPoseGetAnimPosePtr((s32)wp->animPoses[0]);
     positions = (Vec*)((smartEntry*)*(void**)((u8*)animPose + 0x15C))->address;

@@ -117,7 +117,7 @@ BattleUnit* BtlUnit_Entry(BattleUnitSetup* setup) {
     unit->phaseEventId = 0;
     unit->waitEventCode = NULL;
     unit->waitEventId = 0;
-    *(s32*)((u8*)unit + 0x29C) = 0;
+    unit->attackEventCode = NULL;
     unit->attackEventId = 0;
 
     BtlUnit_SetPos(unit, setup->position.x, setup->position.y, setup->position.z);
@@ -220,8 +220,8 @@ BattleUnit* BtlUnit_Entry(BattleUnitSetup* setup) {
         part->color = dat_8041c3b8;
         part->detectOffsetX = setup->field_0x18;
         part->poseTable = kindPart->poseTable;
-        *(s32*)((u8*)part + 0x1C0) = -1;
-        *(u8*)((u8*)part + 0x1C4) = 0;
+        part->poseId = -1;
+        part->poseName[0] = 0;
         part->field_0x208 = 1.0f;
         part->motionSpeed = 1.0f;
         part->statusPoseKind = 0;
@@ -333,9 +333,9 @@ BOOL BtlUnit_Delete(BattleUnit* unit) {
         if (part->poseSoundEventId != -1) {
             part->poseSoundEventId = -1;
         }
-        if (*(s32*)((u8*)part + 0x1C0) != -1) {
-            animPoseSetEffect(*(s32*)((u8*)part + 0x1C0), NULL, FALSE);
-            animPoseRelease(*(s32*)((u8*)part + 0x1C0));
+        if (part->poseId != -1) {
+            animPoseSetEffect(part->poseId, NULL, FALSE);
+            animPoseRelease(part->poseId);
         }
     }
     BattleFree(unit->mParts);
@@ -2246,10 +2246,10 @@ void BtlUnit_ControlPoseSoundMain(BattleUnitPart* part) {
     if (!entry) {
         return;
     }
-    if (*(s32*)((u8*)part + 0x1C0) == -1) {
+    if (part->poseId == -1) {
         return;
     }
-    pose = animPoseGetAnimPosePtr(*(s32*)((u8*)part + 0x1C0));
+    pose = animPoseGetAnimPosePtr(part->poseId);
     if (!pose) {
         return;
     }
@@ -2278,7 +2278,7 @@ void BtlUnit_ControlPoseSoundMain(BattleUnitPart* part) {
     if (ps->prev == ps->cur) {
         return;
     }
-    anim = animPoseGetCurrentAnim(*(s32*)((u8*)part + 0x1C0))->name;
+    anim = animPoseGetCurrentAnim(part->poseId)->name;
     for (; entry->poseName; entry++) {
         if (strcmp(entry->poseName, anim) != 0) {
             continue;

@@ -164,7 +164,7 @@ USER_FUNC(btlevtcmd_CheckCommandUnit);
 
 USER_FUNC(btlevtcmd_ACRStart);
 USER_FUNC(btlevtcmd_ACRGetResult);
-void _MoveSoundControlEndCore(void* a, u32* work);
+void _MoveSoundControlEndCore(BattleUnit* unit, BtlUnitSeMode* work);
 USER_FUNC(btlevtcmd_CheckStatus);
 USER_FUNC(btlevtcmd_AnimeChangePoseType);
 USER_FUNC(btlevtcmd_FaceDirectionAdd);
@@ -197,7 +197,7 @@ USER_FUNC(btlevtcmd_SamplingEnemy);
 USER_FUNC(btlevtcmd_ChoiceSamplingEnemy);
 USER_FUNC(btlevtcmd_GetSelectNextEnemy);
 USER_FUNC(btlevtcmd_snd_se);
-void _MoveSoundControlCore(BattleUnit* unit, BtlUnitSeMode* work, void* owner, f32 x, f32 y, f32 z);
+void _MoveSoundControlCore(BattleUnit* unit, BtlUnitSeMode* work, BattleUnitPart* owner, f32 x, f32 y, f32 z);
 USER_FUNC(btlevtcmd_StopWaitEvent);
 USER_FUNC(btlevtcmd_snd_voice);
 USER_FUNC(btlevtcmd_snd_se_offset);
