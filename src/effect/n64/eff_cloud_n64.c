@@ -214,16 +214,10 @@ inline Vec makeVec(f32 x, f32 y, f32 z) {
 void effCloudMain(EffectEntry* effect) {
 	effCloudData* data = effect->userdata;
 	Vec position;
-#ifdef MUST_MATCH
-	Vec position2;
-#endif
 	s32 type;
 	s32 counter;
 
 	position = makeVec(data->x, data->y, data->z);
-#ifdef MUST_MATCH
-	position2 = position;
-#endif
 	type = data->type;
 
 	if (effect->flags & 4) {
@@ -288,17 +282,12 @@ void effCloudMain(EffectEntry* effect) {
 		}
 	}
 
-#ifdef MUST_MATCH
-	dispEntry(CAMERA_3D, dispCalcZ(&position2), 2, effCloudDisp, effect);
-#else
 	dispEntry(CAMERA_3D, dispCalcZ(&position), 2, effCloudDisp, effect);
-#endif
 }
 
 // Two helpers that each build the TEV colour locally and pass it by value: this puts mwcc's three
 // colour stack slots where the target has them (local r1+0x10, first copy r1+0x14, second copy r1+0xc).
 // The plain assignment shape lands them 4 bytes lower and shifts mtx/texObj down too.
-#ifdef MUST_MATCH
 static inline void effCloudTevColor0(s32 r, s32 g, s32 b, s32 a) {
 	GXColor c = unk_804230c0;
 	c.r = r;
@@ -315,7 +304,6 @@ static inline void effCloudTevColor1(s32 r, s32 g, s32 b) {
 	c.b = b;
 	GXSetTevColor(GX_TEVREG1, c);
 }
-#endif
 
 // effCloudDisp's ring loop needed two changes to match: the Vtx pointer is rebuilt per iteration
 // (`((cloudVtx*)base) + i * 2`) instead of being a stepped function-scope pointer, which lands it in
@@ -348,11 +336,6 @@ void effCloudDisp(CameraId cameraId, void* param) {
 	f32 a;
 	f32 sx;
 	s32 age;
-#ifdef MUST_MATCH
-	// colours are built in the MUST_MATCH inlines above
-#else
-	GXColor color;
-#endif
 	EffectEntry* effect;
 	s32 fadeB;
 	s32 alpha0;
@@ -408,24 +391,9 @@ void effCloudDisp(CameraId cameraId, void* param) {
 	effGetTexObjN64(0x83, &texObj);
 	GXLoadTexObj(&texObj, GX_TEXMAP0);
 
-#ifdef MUST_MATCH
 	effCloudTevColor0(data->color0R, data->color0G, data->color0B, alpha0);
 
 	effCloudTevColor1(data->color1R, data->color1G, data->color1B);
-#else
-	color = unk_804230c0;
-	color.r = data->color0R;
-	color.g = data->color0G;
-	color.b = data->color0B;
-	color.a = alpha0;
-	GXSetTevColor(GX_TEVREG0, color);
-
-	color = unk_804230c4;
-	color.r = data->color1R;
-	color.g = data->color1G;
-	color.b = data->color1B;
-	GXSetTevColor(GX_TEVREG1, color);
-#endif
 
 	GXLoadPosMtxImm(cam->view, GX_PNMTX0);
 	GXSetCurrentMtx(GX_PNMTX0);

@@ -118,15 +118,13 @@ void effAkariSflushMain(EffectEntry* effect) {
 // `color = <global>; color.r = ...; GXSetTevColor(1, color);` puts mwcc's colour local at the higher
 // stack slot and the by-value copy at the lower one (target: local r1+0xc, first copy r1+0x10, second
 // call's copy r1+0x8).  Two helpers that each build a local and make the call put all three slots where
-// the original has them (the same shape as effPikkyoloDisp).  MUST_MATCH only: a codegen shape, with the
-// plain build under #else.
+// the original has them (the same shape as effPikkyoloDisp).
 //
 // The 1.0f/30.0f/0.0f arguments stay as literals: the original rematerialises them from the pool each
 // inner iteration (pool entries 1.0f / 30.f / 0.0f); referencing
 // the named externs makes mwcc hoist them into callee-saved FPRs and shifts every other constant's
 // register.  The literals get anonymous .sdata2 labels (@227-@229), which objdiff scores as equal to
 // the named symbols, so the function is 100%.
-#ifdef MUST_MATCH
 static inline void effAkariSflushColor1(s32 r, s32 g, s32 b, s32 a) {
 	GXColor c = unk_804230a0;
 	c.r = r;
@@ -140,7 +138,6 @@ static inline void effAkariSflushColor2(void) {
 	GXColor c = dat_8041e900;
 	GXSetTevColor(2, c);
 }
-#endif
 
 void effAkariSflushDisp(CameraId camId, void* param) {
 	EffectEntry* effect = param;
@@ -157,11 +154,6 @@ void effAkariSflushDisp(CameraId camId, void* param) {
 	s32 alpha;
 	s32 j;
 	f32 scaleVal;
-#ifdef MUST_MATCH
-	/* colours are built inside the MUST_MATCH inlines above */
-#else
-	GXColor color;
-#endif
 
 	cam = camGetPtr(camId);
 	data = effect->userdata;
@@ -189,18 +181,8 @@ void effAkariSflushDisp(CameraId camId, void* param) {
 	GXSetTevAlphaIn(1, 7, 7, 7, 0);
 	GXSetNumTexGens(0);
 
-#ifdef MUST_MATCH
 	effAkariSflushColor1(data->color1R, data->color1G, data->color1B, alpha);
 	effAkariSflushColor2();
-#else
-	color = unk_804230a0;
-	color.r = data->color1R;
-	color.g = data->color1G;
-	color.b = data->color1B;
-	color.a = alpha;
-	GXSetTevColor(1, color);
-	GXSetTevColor(2, dat_8041e900);
-#endif
 
 	GXSetCullMode(0);
 	effSetVtxDescN64((effVtxArray*)size16x16_tex32x32_vtx);

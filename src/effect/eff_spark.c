@@ -69,11 +69,9 @@ EffectEntry* effSparkEntry(s32 type, s32 a2, f32 x, f32 y, f32 z, f32 a6) {
 	s32 i;
 	f32 scale;
 	f32 half;
-#ifdef MUST_MATCH
-	// Match-only: split into two statements so MWCC loads the 0.5 constant into f0 and the converted
+	// Split into two statements so MWCC loads the 0.5 constant into f0 and the converted
 	// max_seq_num into f1; a single expression makes it swap the two (same shape as eff_akari_pose_n64).
 	f32 maxF;
-#endif
 	effSparkData* p;
 
 	entry = effEntry();
@@ -94,12 +92,8 @@ EffectEntry* effSparkEntry(s32 type, s32 a2, f32 x, f32 y, f32 z, f32 a6) {
 	data->position.z = z;
 	data->scale = scale;
 
-#ifdef MUST_MATCH
 	maxF = (f32)max_seq_num[type];
 	half = maxF * float_0p5_8041e280;
-#else
-	half = (f32)max_seq_num[type] * float_0p5_8041e280;
-#endif
 	p = data + 1;
 	for (i = 1; i < 6; i++, p++) {
 		p->seq = (s32)(-1.0f - half * (f32)(i & 1));
