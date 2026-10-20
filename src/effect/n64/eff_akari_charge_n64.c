@@ -117,7 +117,7 @@ typedef struct EffAkariChargeWork {
 	f32 z;           //0xC
 	s32 life;        //0x10, 1000 when the caller passes a2 <= 0
 	s32 counter;     //0x14, frames since the start; also the texture scroll in disp
-	s32 reg0R;      //0x18, TEVREG0 colour of the particles (set by the caller)
+	s32 reg0R;       //0x18, TEVREG0 colour of the particles (set by the caller)
 	s32 reg0G;      //0x1C
 	s32 reg0B;      //0x20
 	s32 alpha;       //0x24, head fade in and out

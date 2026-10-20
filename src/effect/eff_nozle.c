@@ -25,7 +25,7 @@ typedef struct effNozleEntryData {
 	f32 field_0x28; // 0x28
 	f32 field_0x2C; // 0x2C
 	f32 field_0x30; // 0x30
-	s32 alpha;      // 0x34, 0xFF
+	s32 field_0x34; // 0x34, set to 0xFF, never read (the head's alpha slot; Disp uses the head alpha)
 	s32 shrinking;  // 0x38, set to 1 once scaleY passes 1.2
 	f32 field_0x3C; // 0x3C
 	f32 field_0x40; // 0x40
@@ -288,7 +288,7 @@ EffectEntry* effNozleEntry(s32 type, s32 duration, f32 x, f32 y, f32 z, f32 rotX
 		entry->scrollX0 = 0.0f;
 		entry->scrollY1 = 0.0f;
 		entry->scrollX1 = 0.0f;
-		entry->alpha = 0xFF;
+		entry->field_0x34 = 0xFF;
 		entry->shrinking = 0;
 		entry++;
 	}
@@ -455,16 +455,16 @@ void effNozleDisp(CameraId camId, void* param) {
 		GXSetVtxDesc(GX_VA_POS, GX_INDEX8);
 		GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_POS_XYZ, GX_S16, 7);
 		GXSetArray(GX_VA_POS, DATA_AT(0x40, nozle_1_vertex_tbl), 6);
-		GXSetVtxDesc(GX_VA_NRM, 2 == 2 ? GX_INDEX8 : GX_INDEX16);
+		GXSetVtxDesc(GX_VA_NRM, GX_INDEX8);
 		GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_NRM, GX_NRM_XYZ, GX_S8, 6);
 		GXSetArray(GX_VA_NRM, nozle_1_normal_tbl, 3);
-		GXSetVtxDesc(GX_VA_CLR0, 2 == 2 ? GX_INDEX8 : GX_INDEX16);
+		GXSetVtxDesc(GX_VA_CLR0, GX_INDEX8);
 		GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_CLR0, GX_CLR_RGBA, GX_RGBA8, 0);
 		GXSetArray(GX_VA_CLR0, nozle_1_color0_tbl, 4);
-		GXSetVtxDesc(GX_VA_TEX0, 2 == 2 ? GX_INDEX8 : GX_INDEX16);
+		GXSetVtxDesc(GX_VA_TEX0, GX_INDEX8);
 		GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, GX_TEX_ST, GX_S16, 0xE);
 		GXSetArray(GX_VA_TEX0, DATA_AT(0x200, nozle_1_texcoord0_tbl), 4);
-		GXSetVtxDesc(GX_VA_TEX1, 2 == 2 ? GX_INDEX8 : GX_INDEX16);
+		GXSetVtxDesc(GX_VA_TEX1, GX_INDEX8);
 		GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX1, GX_TEX_ST, GX_S16, 0xE);
 		GXSetArray(GX_VA_TEX1, DATA_AT(0x2E0, nozle_1_texcoord1_tbl), 4);
 		nozleDrawDL1_0();
@@ -472,16 +472,16 @@ void effNozleDisp(CameraId camId, void* param) {
 		GXSetVtxDesc(GX_VA_POS, GX_INDEX8);
 		GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_POS_XYZ, GX_S16, 7);
 		GXSetArray(GX_VA_POS, DATA_AT(0x40, nozle_1_vertex_tbl), 6);
-		GXSetVtxDesc(GX_VA_NRM, 2 == 2 ? GX_INDEX8 : GX_INDEX16);
+		GXSetVtxDesc(GX_VA_NRM, GX_INDEX8);
 		GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_NRM, GX_NRM_XYZ, GX_S8, 6);
 		GXSetArray(GX_VA_NRM, nozle_1_normal_tbl, 3);
-		GXSetVtxDesc(GX_VA_CLR0, 2 == 2 ? GX_INDEX8 : GX_INDEX16);
+		GXSetVtxDesc(GX_VA_CLR0, GX_INDEX8);
 		GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_CLR0, GX_CLR_RGBA, GX_RGBA8, 0);
 		GXSetArray(GX_VA_CLR0, nozle_1_color0_tbl, 4);
-		GXSetVtxDesc(GX_VA_TEX0, 2 == 2 ? GX_INDEX8 : GX_INDEX16);
+		GXSetVtxDesc(GX_VA_TEX0, GX_INDEX8);
 		GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, GX_TEX_ST, GX_S16, 0xE);
 		GXSetArray(GX_VA_TEX0, DATA_AT(0x200, nozle_1_texcoord0_tbl), 4);
-		GXSetVtxDesc(GX_VA_TEX1, 2 == 2 ? GX_INDEX8 : GX_INDEX16);
+		GXSetVtxDesc(GX_VA_TEX1, GX_INDEX8);
 		GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX1, GX_TEX_ST, GX_S16, 0xE);
 		GXSetArray(GX_VA_TEX1, DATA_AT(0x2E0, nozle_1_texcoord1_tbl), 4);
 		nozleDrawDL1_1();
@@ -491,16 +491,16 @@ void effNozleDisp(CameraId camId, void* param) {
 		GXSetVtxDesc(GX_VA_POS, GX_INDEX16);
 		GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_POS_XYZ, GX_S16, 7);
 		GXSetArray(GX_VA_POS, DATA_AT(0x640, nozle_3_vertex_tbl), 6);
-		GXSetVtxDesc(GX_VA_NRM, 3 == 2 ? GX_INDEX8 : GX_INDEX16);
+		GXSetVtxDesc(GX_VA_NRM, GX_INDEX16);
 		GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_NRM, GX_NRM_XYZ, GX_S8, 6);
 		GXSetArray(GX_VA_NRM, nozle_3_normal_tbl, 3);
-		GXSetVtxDesc(GX_VA_CLR0, 3 == 2 ? GX_INDEX8 : GX_INDEX16);
+		GXSetVtxDesc(GX_VA_CLR0, GX_INDEX16);
 		GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_CLR0, GX_CLR_RGBA, GX_RGBA8, 0);
 		GXSetArray(GX_VA_CLR0, DATA_AT(0xBC0, nozle_3_color0_tbl), 4);
-		GXSetVtxDesc(GX_VA_TEX0, 3 == 2 ? GX_INDEX8 : GX_INDEX16);
+		GXSetVtxDesc(GX_VA_TEX0, GX_INDEX16);
 		GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, GX_TEX_ST, GX_S16, 0xE);
 		GXSetArray(GX_VA_TEX0, DATA_AT(0x8C0, nozle_3_texcoord0_tbl), 4);
-		GXSetVtxDesc(GX_VA_TEX1, 3 == 2 ? GX_INDEX8 : GX_INDEX16);
+		GXSetVtxDesc(GX_VA_TEX1, GX_INDEX16);
 		GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX1, GX_TEX_ST, GX_S16, 0xE);
 		GXSetArray(GX_VA_TEX1, DATA_AT(0xA40, nozle_3_texcoord1_tbl), 4);
 		nozleDrawDL3_1(base);
@@ -508,16 +508,16 @@ void effNozleDisp(CameraId camId, void* param) {
 		GXSetVtxDesc(GX_VA_POS, GX_INDEX16);
 		GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_POS_XYZ, GX_S16, 7);
 		GXSetArray(GX_VA_POS, DATA_AT(0x640, nozle_3_vertex_tbl), 6);
-		GXSetVtxDesc(GX_VA_NRM, 3 == 2 ? GX_INDEX8 : GX_INDEX16);
+		GXSetVtxDesc(GX_VA_NRM, GX_INDEX16);
 		GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_NRM, GX_NRM_XYZ, GX_S8, 6);
 		GXSetArray(GX_VA_NRM, nozle_3_normal_tbl, 3);
-		GXSetVtxDesc(GX_VA_CLR0, 3 == 2 ? GX_INDEX8 : GX_INDEX16);
+		GXSetVtxDesc(GX_VA_CLR0, GX_INDEX16);
 		GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_CLR0, GX_CLR_RGBA, GX_RGBA8, 0);
 		GXSetArray(GX_VA_CLR0, DATA_AT(0xBC0, nozle_3_color0_tbl), 4);
-		GXSetVtxDesc(GX_VA_TEX0, 3 == 2 ? GX_INDEX8 : GX_INDEX16);
+		GXSetVtxDesc(GX_VA_TEX0, GX_INDEX16);
 		GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, GX_TEX_ST, GX_S16, 0xE);
 		GXSetArray(GX_VA_TEX0, DATA_AT(0x8C0, nozle_3_texcoord0_tbl), 4);
-		GXSetVtxDesc(GX_VA_TEX1, 3 == 2 ? GX_INDEX8 : GX_INDEX16);
+		GXSetVtxDesc(GX_VA_TEX1, GX_INDEX16);
 		GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX1, GX_TEX_ST, GX_S16, 0xE);
 		GXSetArray(GX_VA_TEX1, DATA_AT(0xA40, nozle_3_texcoord1_tbl), 4);
 		nozleDrawDL3_0(base);
@@ -553,16 +553,16 @@ void effNozleDisp(CameraId camId, void* param) {
 			GXSetVtxDesc(GX_VA_POS, GX_INDEX8);
 			GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_POS_XYZ, GX_S16, 6);
 			GXSetArray(GX_VA_POS, DATA_AT(0x1880, nozle_4_vertex_tbl), 6);
-			GXSetVtxDesc(GX_VA_NRM, 2 == 2 ? GX_INDEX8 : GX_INDEX16);
+			GXSetVtxDesc(GX_VA_NRM, GX_INDEX8);
 			GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_NRM, GX_NRM_XYZ, GX_S8, 6);
 			GXSetArray(GX_VA_NRM, nozle_4_normal_tbl, 3);
-			GXSetVtxDesc(GX_VA_CLR0, 2 == 2 ? GX_INDEX8 : GX_INDEX16);
+			GXSetVtxDesc(GX_VA_CLR0, GX_INDEX8);
 			GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_CLR0, GX_CLR_RGBA, GX_RGBA8, 0);
 			GXSetArray(GX_VA_CLR0, nozle_4_color0_tbl, 4);
-			GXSetVtxDesc(GX_VA_TEX0, 2 == 2 ? GX_INDEX8 : GX_INDEX16);
+			GXSetVtxDesc(GX_VA_TEX0, GX_INDEX8);
 			GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, GX_TEX_ST, GX_S16, 0xD);
 			GXSetArray(GX_VA_TEX0, DATA_AT(0x1940, nozle_4_texcoord0_tbl), 4);
-			GXSetVtxDesc(GX_VA_TEX1, 2 == 2 ? GX_INDEX8 : GX_INDEX16);
+			GXSetVtxDesc(GX_VA_TEX1, GX_INDEX8);
 			GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX1, GX_TEX_ST, GX_S16, 0xD);
 			GXSetArray(GX_VA_TEX1, DATA_AT(0x19C0, nozle_4_texcoord1_tbl), 4);
 			nozleDrawDL4_0();
