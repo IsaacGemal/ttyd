@@ -305,7 +305,7 @@ void shadowInit(void) { //almost 1:1, minor regalloc
     cswp->entries = __memAlloc(HEAP_DEFAULT, sizeof(ShadowEntry) * 64);
     memset(cswp->entries, 0, sizeof(ShadowEntry) * 64);
     wp = cswp;
-    wp->texBuffer = smartAlloc(GXGetTexBufferSize(ShadowSizeTbl[0], ShadowSizeTbl[0], 2, 0, 0), 0);
+    wp->texBuffer = smartAlloc(GXGetTexBufferSize(ShadowSizeTbl[0], ShadowSizeTbl[0], GX_TF_IA4, 0, 0), 0);
     dswp->flags = 2;
     dswp->drawCount = 0;
     dswp->configIdx = 0;
@@ -469,12 +469,12 @@ void shadowDisp(CameraId cameraId, void* param) {
         GXSetTevColorIn(0, 0xF, 0xF, 0xF, 0xA);
         GXSetTevAlphaIn(0, 7, 1, 5, 7);
         GXSetFog(0, float_0_804198f4, float_0_804198f4, float_0_804198f4, float_0_804198f4, unk_80422f98);
-        GXSetBlendMode(1, 4, 5, 0);
-        GXSetZMode(1, 3, 0);
-        GXSetZCompLoc(1);
+        GXSetBlendMode(GX_BM_BLEND, GX_BL_SRCALPHA, GX_BL_INVSRCALPHA, GX_LO_CLEAR);
+        GXSetZMode(GX_TRUE, GX_LEQUAL, GX_FALSE);
+        GXSetZCompLoc(GX_TRUE);
         GXSetAlphaCompare(7, 0, 0, 7, 0);
-        GXSetCurrentMtx(0);
-        GXSetCullMode(0);
+        GXSetCurrentMtx(GX_PNMTX0);
+        GXSetCullMode(GX_CULL_NONE);
         GXSetArray(9, testKagePosArray, 0xC);
         GXClearVtxDesc();
         GXSetVtxDesc(9, 2);
@@ -685,17 +685,17 @@ void shadowCharShadowDisp_Projection(CameraId camId, void* param) {
 #else
     GXSetFog(0, float_0_804198f4, float_0_804198f4, float_0_804198f4, float_0_804198f4, unk_80422f98);
 #endif
-    GXSetBlendMode(1, 4, 5, 0);
-    GXSetZMode(1, 3, 0);
-    GXSetZCompLoc(1);
+    GXSetBlendMode(GX_BM_BLEND, GX_BL_SRCALPHA, GX_BL_INVSRCALPHA, GX_LO_CLEAR);
+    GXSetZMode(GX_TRUE, GX_LEQUAL, GX_FALSE);
+    GXSetZCompLoc(GX_TRUE);
     GXSetAlphaCompare(7, 0, 0, 7, 0);
-    GXSetCurrentMtx(0);
-    GXSetCullMode(0);
+    GXSetCurrentMtx(GX_PNMTX0);
+    GXSetCullMode(GX_CULL_NONE);
     GXSetArray(9, testKagePosArray, 0xC);
     GXClearVtxDesc();
     GXSetVtxDesc(9, 2);
     GXSetVtxAttrFmt(0, 9, 1, 4, 0);
-    GXSetBlendMode(0, 4, 5, 0);
+    GXSetBlendMode(GX_BM_NONE, GX_BL_SRCALPHA, GX_BL_INVSRCALPHA, GX_LO_CLEAR);
     if (gp->inBattle != 0) {
 #ifdef MUST_MATCH
         SHADOW_MAT_COLOR(4, pBattleColor, dat_804198e4);
@@ -718,7 +718,7 @@ void shadowCharShadowDisp_Projection(CameraId camId, void* param) {
         GXSetChanMatColor(4, color);
 #endif
     }
-    GXSetZMode(0, 3, 0);
+    GXSetZMode(GX_FALSE, GX_LEQUAL, GX_FALSE);
     for (i = 0; i < cswp->entryCount; i++, entry++) {
         if (entry->size == float_0_804198f4) {
             continue;
@@ -730,7 +730,7 @@ void shadowCharShadowDisp_Projection(CameraId camId, void* param) {
             continue;
         }
         PSMTXConcat(view, entry->matrix, mtx);
-        GXLoadPosMtxImm(mtx, 0);
+        GXLoadPosMtxImm(mtx, GX_PNMTX0);
         GXBegin(GX_TRIANGLESTRIP, GX_VTXFMT0, 6);
         GXPosition1x8(0);
         GXPosition1x8(1);
@@ -742,8 +742,8 @@ void shadowCharShadowDisp_Projection(CameraId camId, void* param) {
     }
     if (((CharShadowWork*)work)->drawCount != 0) {
         C_MTXOrtho(projMtx, config->halfHeight, -config->halfHeight, config->halfWidth, -config->halfWidth, config->nearZ, config->farZ);
-        GXSetProjection(projMtx, 1);
-        GXSetBlendMode(1, 4, 5, 0);
+        GXSetProjection(projMtx, GX_ORTHOGRAPHIC);
+        GXSetBlendMode(GX_BM_BLEND, GX_BL_SRCALPHA, GX_BL_INVSRCALPHA, GX_LO_CLEAR);
         GXSetChanCtrl(4, 0, 0, 1, 0, 2, 2);
         GXClearVtxDesc();
         GXSetVtxDesc(9, 1);
@@ -772,7 +772,7 @@ void shadowCharShadowDisp_Projection(CameraId camId, void* param) {
         camTarget = vec3_802c1ab4;
 #endif
         C_MTXLookAt(lookAt, &camPos, &camUp, &camTarget);
-        GXLoadPosMtxImm(lookAt, 0);
+        GXLoadPosMtxImm(lookAt, GX_PNMTX0);
         w = -config->halfWidth;
         d = config->halfHeight;
         de = float_0p2_8041990c * d;
@@ -852,12 +852,12 @@ void shadowCharShadowDisp_Polygon(CameraId camId, void* param) {
     GXSetTevColorIn(0, 0xF, 0xF, 0xF, 0xA);
     GXSetTevAlphaIn(0, 7, 1, 5, 7);
     GXSetFog(0, float_0_804198f4, float_0_804198f4, float_0_804198f4, float_0_804198f4, unk_80422f98);
-    GXSetBlendMode(1, 4, 5, 0);
-    GXSetZMode(1, 3, 0);
-    GXSetZCompLoc(1);
+    GXSetBlendMode(GX_BM_BLEND, GX_BL_SRCALPHA, GX_BL_INVSRCALPHA, GX_LO_CLEAR);
+    GXSetZMode(GX_TRUE, GX_LEQUAL, GX_FALSE);
+    GXSetZCompLoc(GX_TRUE);
     GXSetAlphaCompare(7, 0, 0, 7, 0);
-    GXSetCurrentMtx(0);
-    GXSetCullMode(0);
+    GXSetCurrentMtx(GX_PNMTX0);
+    GXSetCullMode(GX_CULL_NONE);
     GXSetArray(9, testKagePosArray, 0xC);
     GXClearVtxDesc();
     GXSetVtxDesc(9, 2);
@@ -876,12 +876,12 @@ void shadowCharShadowDisp_Polygon(CameraId camId, void* param) {
         if (*(s16*)&entry->camId != camId) {
             continue;
         }
-        if (camId == 1) {
+        if (camId == CAMERA_OFFSCREEN2) {
             sysWaitDrawSync();
             GXClearBoundingBox();
         }
         PSMTXConcat(view, entry->matrix, mtx);
-        GXLoadPosMtxImm(mtx, 0);
+        GXLoadPosMtxImm(mtx, GX_PNMTX0);
         GXBegin(GX_TRIANGLESTRIP, GX_VTXFMT0, 6);
         GXPosition1x8(0);
         GXPosition1x8(1);
@@ -889,7 +889,7 @@ void shadowCharShadowDisp_Polygon(CameraId camId, void* param) {
         GXPosition1x8(3);
         GXPosition1x8(4);
         GXPosition1x8(5);
-        if (camId == 1) {
+        if (camId == CAMERA_OFFSCREEN2) {
             sysWaitDrawSync();
             GXReadBoundingBox(&left, &top, &right, &bottom);
             offscreenAddBoundingBox(entry->offscreenId, left, top, right, bottom);
@@ -937,7 +937,7 @@ void shadowCharShadowDisp_Texture(CameraId camId, void* param) {
     }
 #endif
     effGetTexObjN64(0x2C, &texObj);
-    GXLoadTexObj(&texObj, 0);
+    GXLoadTexObj(&texObj, GX_TEXMAP0);
     GXSetNumTexGens(1);
     GXSetTexCoordGen2(0, 1, 4, 0x3C, 0, 0x7D);
     GXSetNumTevStages(1);
@@ -947,12 +947,12 @@ void shadowCharShadowDisp_Texture(CameraId camId, void* param) {
     GXSetTevColorIn(0, 0xF, 0xF, 0xF, 0xA);
     GXSetTevAlphaIn(0, 7, 4, 5, 7);
     GXSetFog(0, float_0_804198f4, float_0_804198f4, float_0_804198f4, float_0_804198f4, unk_80422f9c);
-    GXSetBlendMode(1, 4, 5, 0);
-    GXSetZMode(1, 3, 0);
-    GXSetZCompLoc(1);
+    GXSetBlendMode(GX_BM_BLEND, GX_BL_SRCALPHA, GX_BL_INVSRCALPHA, GX_LO_CLEAR);
+    GXSetZMode(GX_TRUE, GX_LEQUAL, GX_FALSE);
+    GXSetZCompLoc(GX_TRUE);
     GXSetAlphaCompare(7, 0, 0, 7, 0);
-    GXSetCurrentMtx(0);
-    GXSetCullMode(0);
+    GXSetCurrentMtx(GX_PNMTX0);
+    GXSetCullMode(GX_CULL_NONE);
     GXClearVtxDesc();
     GXSetVtxDesc(9, 1);
     GXSetVtxDesc(0xD, 1);
@@ -979,12 +979,12 @@ void shadowCharShadowDisp_Texture(CameraId camId, void* param) {
         if (*(s16*)&entry->camId != camId) {
             continue;
         }
-        if (camId == 1) {
+        if (camId == CAMERA_OFFSCREEN2) {
             sysWaitDrawSync();
             GXClearBoundingBox();
         }
         PSMTXConcat(view, entry->matrix, mtx);
-        GXLoadPosMtxImm(mtx, 0);
+        GXLoadPosMtxImm(mtx, GX_PNMTX0);
         GXBegin(GX_QUADS, GX_VTXFMT0, 4);
 #ifdef MUST_MATCH
         // Keep separate zero/one loads and write coordinates at each FIFO access; named
@@ -1021,7 +1021,7 @@ void shadowCharShadowDisp_Texture(CameraId camId, void* param) {
         GXPosition3f32(negSize * float_0p5_804198f8, 0.0f, negSize * float_0p5_804198f8);
         GXTexCoord2f32(0.0f, 1.0f);
 #endif
-        if (camId == 1) {
+        if (camId == CAMERA_OFFSCREEN2) {
             sysWaitDrawSync();
             GXReadBoundingBox(&left, &top, &right, &bottom);
             offscreenAddBoundingBox(entry->offscreenId, left, top, right, bottom);
@@ -1128,12 +1128,12 @@ void cylinderShadowDraw(CameraId camId, void* param) {
         if (*(s16*)&entry->camId != camId) {
             continue;
         }
-        if (camId == 1) {
+        if (camId == CAMERA_OFFSCREEN2) {
             sysWaitDrawSync();
             GXClearBoundingBox();
         }
         PSMTXConcat(view, entry->matrix, mtx);
-        GXLoadPosMtxImm(mtx, 0);
+        GXLoadPosMtxImm(mtx, GX_PNMTX0);
 #ifdef MUST_MATCH
         shadowTevColor(entry->mode);
 #else
@@ -1141,19 +1141,19 @@ void cylinderShadowDraw(CameraId camId, void* param) {
         color.a = entry->mode;
         GXSetTevColor(1, color);
 #endif
-        GXSetZMode(1, 3, 0);
-        GXSetCullMode(2);
-        GXSetBlendMode(1, 1, 1, 0);
-        GXSetBlendMode(2, 1, 1, 7);
-        GXSetAlphaUpdate(1);
-        GXSetColorUpdate(0);
+        GXSetZMode(GX_TRUE, GX_LEQUAL, GX_FALSE);
+        GXSetCullMode(GX_CULL_BACK);
+        GXSetBlendMode(GX_BM_BLEND, GX_BL_ONE, GX_BL_ONE, GX_LO_CLEAR);
+        GXSetBlendMode(GX_BM_LOGIC, GX_BL_ONE, GX_BL_ONE, GX_LO_OR);
+        GXSetAlphaUpdate(GX_TRUE);
+        GXSetColorUpdate(GX_FALSE);
         GXSetChanCtrl(4, 0, 0, 1, 0, 2, 2);
         SHADOW_ENTRY_DRAW(entry);
-        GXSetZMode(1, 3, 0);
-        GXSetCullMode(1);
-        GXSetBlendMode(0, 4, 5, 0);
-        GXSetAlphaUpdate(1);
-        GXSetColorUpdate(0);
+        GXSetZMode(GX_TRUE, GX_LEQUAL, GX_FALSE);
+        GXSetCullMode(GX_CULL_FRONT);
+        GXSetBlendMode(GX_BM_NONE, GX_BL_SRCALPHA, GX_BL_INVSRCALPHA, GX_LO_CLEAR);
+        GXSetAlphaUpdate(GX_TRUE);
+        GXSetColorUpdate(GX_FALSE);
 #ifdef MUST_MATCH
         shadowMatColor(unk_80422fa4);
 #else
@@ -1161,17 +1161,17 @@ void cylinderShadowDraw(CameraId camId, void* param) {
 #endif
         GXSetChanCtrl(4, 0, 0, 0, 0, 2, 2);
         SHADOW_ENTRY_DRAW(entry);
-        GXSetCullMode(2);
-        GXSetBlendMode(1, 6, 7, 0);
-        GXSetAlphaUpdate(0);
-        GXSetColorUpdate(1);
+        GXSetCullMode(GX_CULL_BACK);
+        GXSetBlendMode(GX_BM_BLEND, GX_BL_DSTALPHA, GX_BL_INVDSTALPHA, GX_LO_CLEAR);
+        GXSetAlphaUpdate(GX_FALSE);
+        GXSetColorUpdate(GX_TRUE);
 #ifdef MUST_MATCH
         shadowMatColor(cswp->color);
 #else
         GXSetChanMatColor(4, cswp->color);
 #endif
         SHADOW_ENTRY_DRAW(entry);
-        if (camId == 1) {
+        if (camId == CAMERA_OFFSCREEN2) {
             sysWaitDrawSync();
             GXReadBoundingBox(&left, &top, &right, &bottom);
             offscreenAddBoundingBox(entry->offscreenId, left, top, right, bottom);
@@ -1199,7 +1199,7 @@ s32 shadowEntry(f32 x, f32 y, f32 z, f32 size) {
     entry->kind = cswp->defaultKind;
     entry->type = 0;
     entry->offscreenId = -1;
-    entry->camId = 4;
+    entry->camId = CAMERA_3D;
     entry->decayX = float_1_80419904;
     entry->decayY = float_0p2_8041990c;
     entry->decayZ = float_0p4_80419910;
@@ -1228,7 +1228,7 @@ s32 shadowEntryMode(s32 kind, f32 x, f32 y, f32 z, f32 size) {
     entry->kind = kind;
     entry->type = 0;
     entry->offscreenId = -1;
-    entry->camId = 4;
+    entry->camId = CAMERA_3D;
     entry->decayX = float_1_80419904;
     entry->decayY = float_0p2_8041990c;
     entry->decayZ = float_0p4_80419910;
@@ -1377,28 +1377,28 @@ void projShadowEnd(s32 arg0, ProjShadowWork* work) {
         size = ShadowSizeTbl[config->sizeIdx];
         if (work->flags & 2) {
             if (work->flags & 4) {
-                bufferSize = GXGetTexBufferSize((size >> 1) & 0x7FFF, (size >> 1) & 0x7FFF, 2, 0, 0);
+                bufferSize = GXGetTexBufferSize((size >> 1) & 0x7FFF, (size >> 1) & 0x7FFF, GX_TF_IA4, 0, 0);
             }
             else {
-                bufferSize = GXGetTexBufferSize(size, size, 2, 0, 0);
+                bufferSize = GXGetTexBufferSize(size, size, GX_TF_IA4, 0, 0);
             }
             work->texBuffer = smartAlloc(bufferSize, 3);
         }
         GXSetTexCopySrc(0, 0, size, size);
         if (work->flags & 4) {
-            GXSetTexCopyDst((size >> 1) & 0x7FFF, (size >> 1) & 0x7FFF, 2, 1);
+            GXSetTexCopyDst((size >> 1) & 0x7FFF, (size >> 1) & 0x7FFF, GX_TF_IA4, GX_TRUE);
         }
         else {
-            GXSetTexCopyDst(size, size, 2, 0);
+            GXSetTexCopyDst(size, size, GX_TF_IA4, GX_FALSE);
         }
-        GXSetZMode(1, 3, 1);
-        GXCopyTex(work->texBuffer->address, 1);
+        GXSetZMode(GX_TRUE, GX_LEQUAL, GX_TRUE);
+        GXCopyTex(work->texBuffer->address, GX_TRUE);
         GXPixModeSync();
         if (work->flags & 4) {
-            GXInitTexObj(&work->texObj, work->texBuffer->address, (size >> 1) & 0x7FFF, (size >> 1) & 0x7FFF, 2, 0, 0, 0);
+            GXInitTexObj(&work->texObj, work->texBuffer->address, (size >> 1) & 0x7FFF, (size >> 1) & 0x7FFF, GX_TF_IA4, 0, 0, 0);
         }
         else {
-            GXInitTexObj(&work->texObj, work->texBuffer->address, size, size, 2, 0, 0, 0);
+            GXInitTexObj(&work->texObj, work->texBuffer->address, size, size, GX_TF_IA4, 0, 0, 0);
         }
         GXInitTexObjLOD(&work->texObj, 1, 1, float_0_804198f4, float_0_804198f4, float_0_804198f4, 0, 0, 0);
         config = (ShadowConfigFields*)(shadowConfig + work->configIdx * 0x48);
@@ -1432,19 +1432,19 @@ void depthShadowEnd(s32 arg0, DepthShadowWork* work) {
 
     cam = camGetCurPtr();
     PSMTXCopy(tmp_view, cam->view);
-    GXSetColorUpdate(1);
+    GXSetColorUpdate(GX_TRUE);
     GXSetViewport(tmp_vp[0], tmp_vp[1], tmp_vp[2], tmp_vp[3], tmp_vp[4], tmp_vp[5]);
     GXSetScissor(tmp_sci[0], tmp_sci[1], tmp_sci[2], tmp_sci[3]);
 
     if (work->drawCount != 0) {
         config = (ShadowConfigFields*)(shadowConfig + work->configIdx * 0x48);
         if (config->depthMode <= 2) {
-            fmt = 0x11;
-            sizeFmt = 1;
+            fmt = GX_TF_Z8;
+            sizeFmt = GX_TF_I8;
         }
         else {
-            fmt = 0x13;
-            sizeFmt = 3;
+            fmt = GX_TF_Z16;
+            sizeFmt = GX_TF_IA8;
         }
         if (work->flags & 2) {
             size = ShadowSizeTbl[config->sizeIdx];
@@ -1452,8 +1452,8 @@ void depthShadowEnd(s32 arg0, DepthShadowWork* work) {
         }
         GXSetTexCopySrc(0, 0, size, size);
         GXSetTexCopyDst(size, size, fmt, 0);
-        GXSetZMode(1, 3, 1);
-        GXCopyTex(work->texBuffer->address, 1);
+        GXSetZMode(GX_TRUE, GX_LEQUAL, GX_TRUE);
+        GXCopyTex(work->texBuffer->address, GX_TRUE);
         GXPixModeSync();
         GXInitTexObj(&work->texObj, work->texBuffer->address, size, size, sizeFmt, 0, 0, 0);
         GXInitTexObjLOD(&work->texObj, 0, 0, float_0_804198f4, float_0_804198f4, float_0_804198f4, 0, 0, 0);
