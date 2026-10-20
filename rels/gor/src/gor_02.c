@@ -346,7 +346,7 @@ static USER_FUNC(enzan_cam_turn_keisan) {
     return EVT_RETURN_DONE;
 }
 
-EVT_BEGIN(unk_evt_gor_0003d138)
+EVT_BEGIN(evt_gor_hitobj_off)
     CALL(evt_hitobj_onoff, STRING("A_kabe"), 1, 0)
     CALL(evt_hitobj_onoff, STRING("A_saku"), 1, 0)
     CALL(evt_hitobj_onoff, STRING("A_kmn"), 1, 0)
@@ -355,7 +355,7 @@ EVT_BEGIN(unk_evt_gor_0003d138)
     RETURN
 EVT_END()
 
-EVT_BEGIN(unk_evt_gor_0003d1a4)
+EVT_BEGIN(evt_gor_hitobj_on)
     CALL(evt_hitobj_onoff, STRING("A_kabe"), 1, 1)
     CALL(evt_hitobj_onoff, STRING("A_saku"), 1, 1)
     CALL(evt_hitobj_onoff, STRING("A_kmn"), 1, 1)
@@ -508,7 +508,7 @@ USER_FUNC(stonechangertn) {
     return EVT_RETURN_DONE;
 }
 
-USER_FUNC(unk_gor_0000574c) {
+USER_FUNC(gor_get_mario_dir) {
     s32* args = event->args;
     MarioWork* mario = marioGetPtr();
 
@@ -934,11 +934,11 @@ EVT_END()
 
 
 // TODO: type
-u32 unk_gor_0003e5c0[2] = {
+u32 powerupya_watasu_items[2] = {
     0x0000006C, 0xFFFFFFFF,
 };
 
-EVT_BEGIN(unk_evt_gor_0003e5c8)
+EVT_BEGIN(evt_powerupya_stardust)
     LOOP(0)
         CALL(evt_npc_get_position, STRING("me"), LW(0), LW(1), LW(2))
         ADD(LW(1), 30)
@@ -948,7 +948,7 @@ EVT_BEGIN(unk_evt_gor_0003e5c8)
     RETURN
 EVT_END()
 
-EVT_BEGIN(unk_evt_gor_0003e648)
+EVT_BEGIN(evt_powerupya_mario_move)
     WAIT_MS(200)
     CALL(evt_mario_dispflag_onoff, 0, 2)
     CALL(evt_mario_get_pos, 0, LW(0), LW(1), LW(2))
@@ -964,7 +964,7 @@ EVT_BEGIN(unk_evt_gor_0003e648)
     RETURN
 EVT_END()
 
-EVT_BEGIN(unk_evt_gor_0003e708)
+EVT_BEGIN(evt_powerupya_party_move)
     WAIT_MS(200)
     CALL(evt_party_get_pos, 0, LW(0), LW(1), LW(2))
     IF_INT_LESS_OR_EQUAL(LW(2), -210)
@@ -977,13 +977,13 @@ EVT_BEGIN(unk_evt_gor_0003e708)
     RETURN
 EVT_END()
 
-EVT_BEGIN(unk_evt_gor_0003e7a0)
+EVT_BEGIN(evt_powerupya_watasu)
     CALL(evt_mario_dispflag_onoff, 1, 2)
     CALL(evt_mario_set_pose, STRING("M_C_3"))
     CALL(evt_mario_get_pos, 0, LW(3), LW(4), LW(5))
     ADD(LW(4), 20)
     ADD(LW(5), 10)
-    CALL(unk_gor_0000574c, LW(6))
+    CALL(gor_get_mario_dir, LW(6))
     IF_FLOAT_EQUAL(LW(6), FLOAT(0.0f))
         ADD(LW(3), -20)
     ELSE
@@ -1020,7 +1020,7 @@ EVT_BEGIN(unk_evt_gor_0003e7a0)
             WAIT_FRAMES(1)
         END_LOOP
     END_INLINE_EVENT
-    SPAWN_EVENT_GET_ID(PTR(unk_evt_gor_0003e5c8), LW(5))
+    SPAWN_EVENT_GET_ID(PTR(evt_powerupya_stardust), LW(5))
     CALL(evt_npc_get_position, STRING("me"), LW(7), LW(8), LW(9))
     CALL(evt_snd_sfxon_3d, STRING("SFX_EVT_STARSTONE_SHINE1"), LW(7), LW(8), LW(9), LW(6))
     CALL(evt_snd_sfxon_3d, STRING("SFX_EVT_LOTTERY_BOMB_BURST2"), LW(7), LW(8), LW(9), 0)
@@ -1093,9 +1093,9 @@ EVT_BEGIN(unk_evt_gor_0003e7a0)
     CALL(evt_npc_set_anim, STRING("me"), STRING("S_1"))
     WAIT_MS(750)
     CALL(evt_msg_print, 0, STRING("powerup_ev_06"), 0, STRING("me"))
-    SPAWN_EVENT(unk_evt_gor_0003e648)
+    SPAWN_EVENT(evt_powerupya_mario_move)
     CALL(evt_party_stop, 0)
-    SPAWN_EVENT(unk_evt_gor_0003e708)
+    SPAWN_EVENT(evt_powerupya_party_move)
     CALL(evt_npc_status_onoff, 1, STRING("me"), 2)
     CALL(evt_npc_move_position, STRING("me"), -365, -115, 0, FLOAT(120.0f), 0)
     WAIT_MS(500)
@@ -1129,7 +1129,7 @@ EVT_BEGIN(unk_evt_gor_0003e7a0)
     RETURN
 EVT_END()
 
-EVT_BEGIN(unk_evt_gor_0003f020)
+EVT_BEGIN(evt_powerupya_talk)
     IF_INT_EQUAL(GSWF(1203), 1)
         IF_INT_EQUAL(GSWF(1204), 0)
             CALL(evt_msg_print, 0, STRING("powerup_ev_01"), 0, STRING("me"))
@@ -1156,9 +1156,9 @@ EVT_BEGIN(unk_evt_gor_0003f020)
         ELSE
             CALL(evt_pouch_check_item, 108, LW(0))
             IF_INT_NOT_EQUAL(LW(0), 0)
-                CALL(evt_win_item_select, 0, PTR(unk_gor_0003e5c0), LW(0), 0)
+                CALL(evt_win_item_select, 0, PTR(powerupya_watasu_items), LW(0), 0)
                 IF_INT_NOT_EQUAL(LW(0), -1)
-                    CALL_CHILD(unk_evt_gor_0003e7a0)
+                    CALL_CHILD(evt_powerupya_watasu)
                 END_IF
             ELSE
                 CALL(evt_msg_print, 0, STRING("powerup_ev_03"), 0, STRING("me"))
@@ -2540,7 +2540,7 @@ EVT_END()
 // TODO: type
 static u32 npcEnt[368] = {
     (u32)"パワーアップ屋", 0x00080600, 0x00000000, (u32)&powerupya_init,
-    0x00000000, (u32)&unk_evt_gor_0003f020, 0x00000000, 0x00000000,
+    0x00000000, (u32)&evt_powerupya_talk, 0x00000000, 0x00000000,
     0x00000000, 0x00000000, 0x00000000, 0x00000000,
     0x00000000, 0x00000000, 0x00000000, 0x00000000,
     0x00000000, 0x00000000, 0x00000000, 0x00000000,
@@ -2657,7 +2657,7 @@ static char* door_data_01_npc[2] = {
 };
 
 static EVT_BEGIN(evt_door_01_open)
-    SPAWN_EVENT(unk_evt_gor_0003d138)
+    SPAWN_EVENT(evt_gor_hitobj_off)
     CALL(evt_snd_bgmoff, 18432)
     CALL(evt_snd_envoff, 18432)
     CALL(evt_snd_env_lpf, 0, 800)
@@ -2685,7 +2685,7 @@ static EVT_BEGIN(evt_door_01_open)
 EVT_END()
 
 static EVT_BEGIN(evt_door_01_close)
-    SPAWN_EVENT(unk_evt_gor_0003d1a4)
+    SPAWN_EVENT(evt_gor_hitobj_on)
     CALL(evt_snd_bgmon, 160, 0)
     CALL(evt_snd_envon, 160, 0)
     CALL(evt_snd_env_lpf, 0, 0)
@@ -2743,7 +2743,7 @@ static char* door_data_02_npc[2] = {
 };
 
 EVT_BEGIN(evt_door_02_open)
-    SPAWN_EVENT(unk_evt_gor_0003d138)
+    SPAWN_EVENT(evt_gor_hitobj_off)
     SWITCH(GSW(0))
         CASE_OR_EQUAL(18)
         CASE_OR_EQUAL(64)
@@ -2789,7 +2789,7 @@ EVT_BEGIN(evt_door_02_open)
 EVT_END()
 
 EVT_BEGIN(evt_door_02_close)
-    SPAWN_EVENT(unk_evt_gor_0003d1a4)
+    SPAWN_EVENT(evt_gor_hitobj_on)
     SWITCH(GSW(0))
         CASE_OR_EQUAL(347)
         CASE_OR_EQUAL(348)
@@ -2877,7 +2877,7 @@ static char* door_data_03_mobj[2] = {
 };
 
 static EVT_BEGIN(evt_door_03_close)
-    SPAWN_EVENT(unk_evt_gor_0003d1a4)
+    SPAWN_EVENT(evt_gor_hitobj_on)
     CALL(evt_snd_bgmon, 160, 0)
     CALL(evt_snd_envon, 160, 0)
     CALL(evt_snd_env_lpf, 0, 0)
@@ -2926,7 +2926,7 @@ static EVT_BEGIN(evt_door_03_close)
 EVT_END()
 
 static EVT_BEGIN(evt_door_03_open)
-    SPAWN_EVENT(unk_evt_gor_0003d138)
+    SPAWN_EVENT(evt_gor_hitobj_off)
     CALL(evt_snd_bgmoff, 18432)
     CALL(evt_snd_envoff, 18432)
     CALL(evt_snd_env_lpf, 0, 800)
@@ -3006,7 +3006,7 @@ static EVT_BEGIN(evt_door_03_caseopen)
 EVT_END()
 
 EVT_BEGIN(evt_door_03_roll_open)
-    SPAWN_EVENT(unk_evt_gor_0003d138)
+    SPAWN_EVENT(evt_gor_hitobj_off)
     BEGIN_INLINE_EVENT
         CALL(evt_mapobj_get_position, STRING("S_i01_dan_mC"), LW(1), LW(2), LW(3))
         SUBTRACT(LW(2), 40)
@@ -3115,7 +3115,7 @@ static EVT_BEGIN(evt_wall_04)
 EVT_END()
 
 static EVT_BEGIN(evt_door_04_open)
-    SPAWN_EVENT(unk_evt_gor_0003d138)
+    SPAWN_EVENT(evt_gor_hitobj_off)
     CALL(evt_snd_bgmoff, 18432)
     CALL(evt_snd_envoff, 18432)
     CALL(evt_snd_env_lpf, 0, 800)
@@ -3123,7 +3123,7 @@ static EVT_BEGIN(evt_door_04_open)
 EVT_END()
 
 static EVT_BEGIN(evt_door_04_close)
-    SPAWN_EVENT(unk_evt_gor_0003d1a4)
+    SPAWN_EVENT(evt_gor_hitobj_on)
     CALL(evt_snd_bgmon, 160, 0)
     CALL(evt_snd_envon, 160, 0)
     CALL(evt_snd_env_lpf, 0, 0)
@@ -3215,7 +3215,7 @@ char* door_data_05_npc_01[3] = {
 };
 
 EVT_BEGIN(evt_door_05_open)
-    SPAWN_EVENT(unk_evt_gor_0003d138)
+    SPAWN_EVENT(evt_gor_hitobj_off)
     CALL(evt_snd_bgmoff, 18432)
     CALL(evt_snd_envoff, 18432)
     CALL(evt_snd_env_lpf, 0, 800)
@@ -3223,7 +3223,7 @@ EVT_BEGIN(evt_door_05_open)
 EVT_END()
 
 EVT_BEGIN(evt_door_05_close)
-    SPAWN_EVENT(unk_evt_gor_0003d1a4)
+    SPAWN_EVENT(evt_gor_hitobj_on)
     CALL(evt_snd_bgmoff, 513)
     CALL(evt_snd_bgmon, 288, 0)
     CALL(evt_snd_bgmon, 160, 0)
@@ -3342,7 +3342,7 @@ u32 door_data_06_npc_01[1] = {
 };
 
 EVT_BEGIN(evt_door_06_open)
-    SPAWN_EVENT(unk_evt_gor_0003d138)
+    SPAWN_EVENT(evt_gor_hitobj_off)
     CALL(evt_snd_bgmoff, 18432)
     CALL(evt_snd_envoff, 18432)
     CALL(evt_snd_env_lpf, 0, 800)
@@ -3350,7 +3350,7 @@ EVT_BEGIN(evt_door_06_open)
 EVT_END()
 
 EVT_BEGIN(evt_door_06_close)
-    SPAWN_EVENT(unk_evt_gor_0003d1a4)
+    SPAWN_EVENT(evt_gor_hitobj_on)
     CALL(evt_snd_bgmon, 160, 0)
     CALL(evt_snd_envon, 160, 0)
     CALL(evt_snd_env_lpf, 0, 0)

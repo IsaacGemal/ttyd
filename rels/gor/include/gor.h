@@ -9,12 +9,12 @@ extern voidfunctionptr _ctors[];
 extern voidfunctionptr _dtors[];
 
 extern void* unk_gor_bss00000000[];
-extern s32 unk_gor_bss00000004[];
+extern s32 inemuri_sfx_id[];
 extern BattleSetupData btlsetup_gor_tbl[7];
 extern u32 btl_gor_setup_no_tbl[];
 
-USER_FUNC(unk_gor_000000cc);
-USER_FUNC(unk_gor_00000104);
+USER_FUNC(inemuri_sfx_stop);
+USER_FUNC(inemuri_sfx_set);
 USER_FUNC(evt_goki_sub_intpl_get_value);
 USER_FUNC(evt_goki_sub_intpl_init);
 USER_FUNC(evt_gor_villager_urouro_check_func);
