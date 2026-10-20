@@ -400,9 +400,9 @@ void evt_icon_disp_func(CameraId camId, void* param) {
 
             pos = dat->pos;
             if (dat->field_0x8 & 1) {
-                (dat->field_0x121)++;
+                (dat->healIconTime)++;
                 if (*(s8*)((u8*)dat + 0x121) > 30) {
-                    dat->field_0x121 = 0;
+                    dat->healIconTime = 0;
                     dat->field_0x8 &= ~1;
                 }
             }
@@ -651,9 +651,9 @@ void puniAnimation(PuniData* dat, PuniPose* pose) {
             visible = 0;
         }
         if (visible) {
-            npc->position.x = dat->pos.x + dat->field_0x144;
-            npc->position.y = dat->pos.y + dat->field_0x148;
-            npc->position.z = dat->pos.z + dat->field_0x14C;
+            npc->position.x = dat->pos.x + dat->dispOffset.x;
+            npc->position.y = dat->pos.y + dat->dispOffset.y;
+            npc->position.z = dat->pos.z + dat->dispOffset.z;
         } else {
             npc->position.x = 0.0f;
             npc->position.y = -1000.0f;
@@ -665,8 +665,8 @@ void puniAnimation(PuniData* dat, PuniPose* pose) {
         npc->scale.x = dat->scale;
         npc->scale.y = dat->scale;
         npc->direction = dat->direction;
-        npc->rotation.z = dat->field_0x184;
-        npc->rotationOffset.y = dat->field_0x188;
+        npc->rotation.z = dat->rotZ;
+        npc->rotationOffset.y = dat->rotOffsetY;
     } else {
         MriPuniAnimSet* set;
         s32 count;
@@ -715,9 +715,9 @@ void puniAnimation(PuniData* dat, PuniPose* pose) {
             visible = 0;
         }
         if (visible) {
-            pose->matrix[0][0][3] = dat->pos.x + dat->field_0x144;
-            pose->matrix[0][1][3] = dat->pos.y + dat->field_0x148;
-            pose->matrix[0][2][3] = dat->pos.z + dat->field_0x14C;
+            pose->matrix[0][0][3] = dat->pos.x + dat->dispOffset.x;
+            pose->matrix[0][1][3] = dat->pos.y + dat->dispOffset.y;
+            pose->matrix[0][2][3] = dat->pos.z + dat->dispOffset.z;
         } else {
             pose->matrix[0][0][3] = 0.0f;
             pose->matrix[0][1][3] = -1000.0f;
@@ -725,8 +725,8 @@ void puniAnimation(PuniData* dat, PuniPose* pose) {
         }
         pose->field_0x14 = dat->scale;
         pose->field_0x4 = -dat->direction;
-        pose->field_0x8 = dat->field_0x184;
-        pose->field_0xC = dat->field_0x188;
+        pose->field_0x8 = dat->rotZ;
+        pose->field_0xC = dat->rotOffsetY;
     }
 
     dat->prevAnimIdx = dat->animIdx;
@@ -863,11 +863,11 @@ void _ymode_mri_16_00(PuniData* puni) {
     if (!(puni->pos.z > -76.46314f)) {
         return;
     }
-    if (!(puni->field_0x138.z <= -76.46314f)) {
+    if (!(puni->prevPos.z <= -76.46314f)) {
         return;
     }
 
-    *(Vec*)&puni->pos = puni->field_0x138;
+    *(Vec*)&puni->pos = puni->prevPos;
     puni->pos.z -= 0.0002f;
 }
 
@@ -924,12 +924,12 @@ void _ymode_mri_16_01(PuniData* puni) {
         return;
     }
 
-    if (puni->pos.z > 60.00006f && puni->field_0x138.z <= 60.00006f) {
-        *(Vec*)&puni->pos = puni->field_0x138;
+    if (puni->pos.z > 60.00006f && puni->prevPos.z <= 60.00006f) {
+        *(Vec*)&puni->pos = puni->prevPos;
         puni->pos.z -= 0.0002f;
     }
-    if (puni->pos.z < -10.00012f && puni->field_0x138.z >= -10.00012f) {
-        *(Vec*)&puni->pos = puni->field_0x138;
+    if (puni->pos.z < -10.00012f && puni->prevPos.z >= -10.00012f) {
+        *(Vec*)&puni->pos = puni->prevPos;
         puni->pos.z += 0.0002f;
     }
 }
@@ -1055,8 +1055,8 @@ void puniSetYPosition(PuniData* puni) {
     case 4:
     case 5:
     case 6:
-        if (11.0 < __fabsf(puni->field_0x138.y - puni->pos.y)) {
-            puni->pos.y = puni->field_0x138.y;
+        if (11.0 < __fabsf(puni->prevPos.y - puni->pos.y)) {
+            puni->pos.y = puni->prevPos.y;
         }
         break;
     }
@@ -1947,7 +1947,7 @@ void puniPositionRecover(PuniData* puni) {
     puni->pos.x += randf(0.0f, 2.0f) - 1.0f;
     puni->pos.z += randf(0.0f, 2.0f) - 1.0f;
 
-    *(Vec*)&puni->field_0x138 = puni->pos;
+    *(Vec*)&puni->prevPos = puni->pos;
 }
 
 s32 puniMoveAtari(PuniData* punidat, Vec pos, Vec vel, s32 arg3, f32 mag) {
@@ -1961,21 +1961,21 @@ s32 puniMoveAtari(PuniData* punidat, Vec pos, Vec vel, s32 arg3, f32 mag) {
     f32 dist;
     s32 result = 1;
 
-    punidat->field_0x214 = NULL;
-    punidat->field_0x210 = NULL;
+    punidat->hitDir = NULL;
+    punidat->hitVel = NULL;
     dist = mag;
 
     if (punidat->flags & 0x1000) {
-        punidat->field_0x210 =
+        punidat->hitVel =
             hitCheckFilter(0, pos.x, pos.y, pos.z, vel.x, vel.y, vel.z, &hit.x, &hit.y, &hit.z,
                                 &dist, &normal.x, &normal.y, &normal.z);
     }
-    if (punidat->field_0x210 == NULL) {
+    if (punidat->hitVel == NULL) {
         PSVECAdd(&punidat->pos, &punidat->vel, &punidat->pos);
         goto done;
     }
     start = punidat->pos;
-    punidat->field_0x560 = normal;
+    punidat->hitNormal = normal;
     PSVECAdd(&punidat->pos, &punidat->vel, &punidat->pos);
     if (0.0f == punidat->vel.y) {
         normal.y = 0.0f;
@@ -1998,10 +1998,10 @@ s32 puniMoveAtari(PuniData* punidat, Vec pos, Vec vel, s32 arg3, f32 mag) {
         PSVECNormalize(&dir, &dir);
         pos = start;
         pos.y += 1.0f;
-        punidat->field_0x214 =
+        punidat->hitDir =
             hitCheckFilter(0, start.x, start.y + 1.0f, start.z, dir.x, dir.y, dir.z, &hit2x, &hit2y,
                                 &hit2z, &dist, &normal2x, &normal2y, &normal2z);
-        if (punidat->field_0x214 != NULL) {
+        if (punidat->hitDir != NULL) {
             punidat->pos = start;
         }
     }
@@ -2018,14 +2018,14 @@ void unk_mri_000095f0(PuniData* puni, Vec pos, Vec vel, f32 mag) {
     f32 normal2x, normal2y, normal2z;
     f32 dist;
 
-    puni->field_0x214 = NULL;
-    puni->field_0x210 = NULL;
+    puni->hitDir = NULL;
+    puni->hitVel = NULL;
     dist = mag;
 
-    puni->field_0x210 =
+    puni->hitVel =
         hitCheckFilter(0, pos.x, pos.y, pos.z, vel.x, vel.y, vel.z, &hit.x, &hit.y, &hit.z, &dist,
                        &normal.x, &normal.y, &normal.z);
-    if (puni->field_0x210 == NULL) {
+    if (puni->hitVel == NULL) {
         PSVECAdd(&puni->pos, &puni->vel, &puni->pos);
         return;
     }
@@ -2033,7 +2033,7 @@ void unk_mri_000095f0(PuniData* puni, Vec pos, Vec vel, f32 mag) {
         return;
     }
     start = puni->pos;
-    puni->field_0x560 = normal;
+    puni->hitNormal = normal;
     PSVECAdd(&puni->pos, &puni->vel, &puni->pos);
     if (0.0f == puni->vel.y) {
         normal.y = 0.0f;
@@ -2049,10 +2049,10 @@ void unk_mri_000095f0(PuniData* puni, Vec pos, Vec vel, f32 mag) {
     dist = PSVECMag(&dir);
     if (dist > 0.0f) {
         PSVECNormalize(&dir, &dir);
-        puni->field_0x214 =
+        puni->hitDir =
             hitCheckFilter(0, start.x, start.y + 1.0f, start.z, dir.x, dir.y, dir.z, &hit2x, &hit2y,
                            &hit2z, &dist, &normal2x, &normal2y, &normal2z);
-        if (puni->field_0x214 != NULL) {
+        if (puni->hitDir != NULL) {
             puni->pos = start;
         }
     }
@@ -2068,21 +2068,21 @@ void unk_mri_0000980c(PuniData* punidat, Vec pos, Vec vel, f32 mag) {
     f32 normal2x, normal2y, normal2z;
     f32 dist;
 
-    punidat->field_0x214 = NULL;
-    punidat->field_0x210 = NULL;
+    punidat->hitDir = NULL;
+    punidat->hitVel = NULL;
     dist = mag;
 
     if (punidat->flags & 0x1000) {
-        punidat->field_0x210 =
+        punidat->hitVel =
             hitCheckFilter(0, pos.x, pos.y, pos.z, vel.x, vel.y, vel.z, &hit.x, &hit.y, &hit.z,
                                 &dist, &normal.x, &normal.y, &normal.z);
     }
-    if (punidat->field_0x210 == NULL) {
+    if (punidat->hitVel == NULL) {
         PSVECAdd(&punidat->pos, &punidat->vel, &punidat->pos);
         return;
     }
     start = punidat->pos;
-    punidat->field_0x560 = normal;
+    punidat->hitNormal = normal;
     PSVECAdd(&punidat->pos, &punidat->vel, &punidat->pos);
     if (0.0f == punidat->vel.y) {
         normal.y = 0.0f;
@@ -2102,10 +2102,10 @@ void unk_mri_0000980c(PuniData* punidat, Vec pos, Vec vel, f32 mag) {
         PSVECNormalize(&dir, &dir);
         pos = start;
         pos.y += 1.0f;
-        punidat->field_0x214 =
+        punidat->hitDir =
             hitCheckFilter(0, start.x, start.y + 1.0f, start.z, dir.x, dir.y, dir.z, &hit2x, &hit2y,
                                 &hit2z, &dist, &normal2x, &normal2y, &normal2z);
-        if (punidat->field_0x214 != NULL) {
+        if (punidat->hitDir != NULL) {
             punidat->pos = start;
         }
     }
@@ -2166,19 +2166,19 @@ void puniMoveDecel(PuniData* puni) {
     dir = tmp;
     up2 = up;
 
-    puni->field_0x214 = 0;
-    puni->field_0x210 = 0;
+    puni->hitDir = 0;
+    puni->hitVel = 0;
     dist = mag;
     if (puni->flags & 0x1000) {
-        puni->field_0x210 =
+        puni->hitVel =
             hitCheckFilter(0, up2.x, up2.y, up2.z, dir.x, dir.y, dir.z, &hitP.x, &hitP.y, &hitP.z,
                                 &dist, &hitN.x, &hitN.y, &hitN.z);
     }
-    if (puni->field_0x210 == 0) {
+    if (puni->hitVel == 0) {
         PSVECAdd(&puni->pos, &puni->vel, &puni->pos);
     } else {
         saved = puni->pos;
-        puni->field_0x560 = hitN;
+        puni->hitNormal = hitN;
         PSVECAdd(&puni->pos, &puni->vel, &puni->pos);
         if (puni->vel.y == 0.0f) {
             hitN.y = 0.0f;
@@ -2194,15 +2194,15 @@ void puniMoveDecel(PuniData* puni) {
         dist = PSVECMag(&diff);
         if (dist > 0.0f) {
             PSVECNormalize(&diff, &diff);
-            puni->field_0x214 =
+            puni->hitDir =
                 hitCheckFilter(0, saved.x, saved.y + 1.0f, saved.z, diff.x, diff.y, diff.z, &hitP2x,
                                     &hitP2y, &hitP2z, &dist, &hitN2x, &hitN2y, &hitN2z);
-            if (puni->field_0x214 != 0) {
+            if (puni->hitDir != 0) {
                 puni->pos = saved;
             }
         }
     }
-    if (puni->field_0x210 != 0 || puni->field_0x214 != 0) {
+    if (puni->hitVel != 0 || puni->hitDir != 0) {
         puni->flags |= 0x00400000;
     } else {
         PSVECScale(&puni->vel, &puni->vel, 0.6f);
@@ -2244,17 +2244,17 @@ void puniMoveLimitedNormal(PuniData* puni) {
     dir = tmp;
     up2 = up;
 
-    puni->field_0x214 = 0;
-    puni->field_0x210 = 0;
+    puni->hitDir = 0;
+    puni->hitVel = 0;
     dist = mag;
-    puni->field_0x210 =
+    puni->hitVel =
         hitCheckFilter(0, up2.x, up2.y, up2.z, dir.x, dir.y, dir.z, &hitP.x, &hitP.y, &hitP.z,
                             &dist, &hitN.x, &hitN.y, &hitN.z);
-    if (puni->field_0x210 == 0) {
+    if (puni->hitVel == 0) {
         PSVECAdd(&puni->pos, &puni->vel, &puni->pos);
     } else if (Punigp->area != 0x12) {
         saved = puni->pos;
-        puni->field_0x560 = hitN;
+        puni->hitNormal = hitN;
         PSVECAdd(&puni->pos, &puni->vel, &puni->pos);
         if (0.0f == puni->vel.y) {
             hitN.y = 0.0f;
@@ -2267,15 +2267,15 @@ void puniMoveLimitedNormal(PuniData* puni) {
         dist = PSVECMag(&diff);
         if (dist > 0.0f) {
             PSVECNormalize(&diff, &diff);
-            puni->field_0x214 =
+            puni->hitDir =
                 hitCheckFilter(0, saved.x, 1.0f + saved.y, saved.z, diff.x, diff.y, diff.z, &hitP2x,
                                     &hitP2y, &hitP2z, &dist, &hitN2x, &hitN2y, &hitN2z);
-            if (puni->field_0x214 != 0) {
+            if (puni->hitDir != 0) {
                 puni->pos = saved;
             }
         }
     }
-    if (puni->field_0x210 != 0 || puni->field_0x214 != 0) {
+    if (puni->hitVel != 0 || puni->hitDir != 0) {
         puni->flags |= 0x00400000;
     } else {
         puni->flags &= ~0x00400000;
@@ -2324,19 +2324,19 @@ void puniMoveNormal(PuniData* puni) {
     dir = tmp;
     up2 = up;
 
-    puni->field_0x214 = 0;
-    puni->field_0x210 = 0;
+    puni->hitDir = 0;
+    puni->hitVel = 0;
     dist = mag;
     if (puni->flags & 0x1000) {
-        puni->field_0x210 =
+        puni->hitVel =
             hitCheckFilter(0, up2.x, up2.y, up2.z, dir.x, dir.y, dir.z, &hitP.x, &hitP.y, &hitP.z,
                                 &dist, &hitN.x, &hitN.y, &hitN.z);
     }
-    if (puni->field_0x210 == 0) {
+    if (puni->hitVel == 0) {
         PSVECAdd(&puni->pos, (Vec*)&puni->vel, &puni->pos);
     } else {
         saved = puni->pos;
-        puni->field_0x560 = hitN;
+        puni->hitNormal = hitN;
         PSVECAdd(&puni->pos, (Vec*)&puni->vel, &puni->pos);
         if (((Vec*)&puni->vel)->y == 0.0f) {
             hitN.y = 0.0f;
@@ -2352,15 +2352,15 @@ void puniMoveNormal(PuniData* puni) {
         dist = PSVECMag(&diff);
         if (dist > 0.0f) {
             PSVECNormalize(&diff, &diff);
-            puni->field_0x214 =
+            puni->hitDir =
                 hitCheckFilter(0, saved.x, saved.y + 1.0f, saved.z, diff.x, diff.y, diff.z, &hitP2x,
                                     &hitP2y, &hitP2z, &dist, &hitN2x, &hitN2y, &hitN2z);
-            if (puni->field_0x214 != 0) {
+            if (puni->hitDir != 0) {
                 puni->pos = saved;
             }
         }
     }
-    if (puni->field_0x210 != 0 || puni->field_0x214 != 0) {
+    if (puni->hitVel != 0 || puni->hitDir != 0) {
         puni->flags |= 0x00400000;
     } else {
         puni->flags &= ~0x00400000;
@@ -2382,10 +2382,8 @@ void puniMoveSimple(PuniData* puni) {
 }
 
 void puniMoveCustom(PuniData* puni) {
-    void (*move)(PuniData*) = (void (*)(PuniData*))puni->field_0x570;
-
-    if (move != NULL) {
-        move(puni);
+    if (puni->moveFunc != NULL) {
+        puni->moveFunc(puni);
     }
 }
 
@@ -2494,7 +2492,7 @@ void puniParaRecover(PuniData* puni) {
         }
         if (puni->hp > before) {
             puni->field_0x8 |= 1;
-            puni->field_0x121 = 0;
+            puni->healIconTime = 0;
         }
     }
     puni->regenTimer = puni->regenInterval;
@@ -3609,20 +3607,20 @@ s32 puniModeAway_sub(PuniData* punidat) {
         vel = (Vec){0.0f, 0.0f, 0.0f};
     }
     puniMoveAtari(punidat, pos, vel, 0, mag);
-    p = punidat->field_0x210;
-    if (p != NULL || punidat->field_0x214 != NULL) {
+    p = punidat->hitVel;
+    if (p != NULL || punidat->hitDir != NULL) {
         if (p != NULL && (p->attributes & 4)) {
-            *(f32*)&punidat->unk168[0] = -punidat->field_0x560.x;  // PuniData 0x168, 0x560
-            *(f32*)&punidat->unk168[4] = -punidat->field_0x560.y;  // PuniData 0x16C
-            *(f32*)&punidat->unk168[8] = -punidat->field_0x560.z;  // PuniData 0x170, 0x568
+            *(f32*)&punidat->unk168[0] = -punidat->hitNormal.x;  // PuniData 0x168, 0x560
+            *(f32*)&punidat->unk168[4] = -punidat->hitNormal.y;  // PuniData 0x16C
+            *(f32*)&punidat->unk168[8] = -punidat->hitNormal.z;  // PuniData 0x170, 0x568
             punidat->state = 1;
             return 1;
         }
-        p = punidat->field_0x214;
+        p = punidat->hitDir;
         if (p != NULL && (p->attributes & 4)) {
-            *(f32*)&punidat->unk168[0] = -punidat->field_0x560.x;  // PuniData 0x168, 0x560
-            *(f32*)&punidat->unk168[4] = -punidat->field_0x560.y;  // PuniData 0x16C
-            *(f32*)&punidat->unk168[8] = -punidat->field_0x560.z;  // PuniData 0x170, 0x568
+            *(f32*)&punidat->unk168[0] = -punidat->hitNormal.x;  // PuniData 0x168, 0x560
+            *(f32*)&punidat->unk168[4] = -punidat->hitNormal.y;  // PuniData 0x16C
+            *(f32*)&punidat->unk168[8] = -punidat->hitNormal.z;  // PuniData 0x170, 0x568
             punidat->state = 1;
             return 1;
         }
@@ -3847,7 +3845,7 @@ void puniModeDamage(PuniData* punidat) {
             punidat->flags &= ~0x2000;
             punidat->pos.y = 0.0f;
             punidat->gravity = 0.0f;
-            punidat->field_0x138 = punidat->pos;
+            punidat->prevPos = punidat->pos;
             punidat->hp -= punidat->damage;
             if (punidat->hp <= 0) {
                 punidat->hp = 0;
@@ -4088,24 +4086,24 @@ s32 puniModeWind_sub(PuniData* punidat) {
     }
     puniMoveAtari(punidat, pos, vel, 0, mag);
     if (Punigp->phase == 3) {
-        if (punidat->field_0x210 != NULL || punidat->field_0x214 != NULL) {
+        if (punidat->hitVel != NULL || punidat->hitDir != NULL) {
             punidat->state = 10;
             return 2;
         }
     }
-    if (punidat->field_0x210 != NULL || punidat->field_0x214 != NULL) {
-        if (punidat->field_0x210 != NULL && (punidat->field_0x210->attributes & 4)) {
-            *(f32*)((u8*)punidat + 0x168) = -punidat->field_0x560.x;  // PuniData 0x168, 0x560
+    if (punidat->hitVel != NULL || punidat->hitDir != NULL) {
+        if (punidat->hitVel != NULL && (punidat->hitVel->attributes & 4)) {
+            *(f32*)((u8*)punidat + 0x168) = -punidat->hitNormal.x;  // PuniData 0x168, 0x560
             *(f32*)((u8*)punidat + 0x16C) = 0.0f;  // PuniData 0x16C
-            *(f32*)((u8*)punidat + 0x170) = -punidat->field_0x560.z;  // PuniData 0x170, 0x568
+            *(f32*)((u8*)punidat + 0x170) = -punidat->hitNormal.z;  // PuniData 0x170, 0x568
             *(Vec*)((u8*)punidat + 0x150) = punidat->pos;  // PuniData 0x150
             punidat->state = 3;
             return 1;
         }
-        if (punidat->field_0x214 != NULL && (punidat->field_0x214->attributes & 4)) {
-            *(f32*)((u8*)punidat + 0x168) = -punidat->field_0x560.x;  // PuniData 0x168, 0x560
+        if (punidat->hitDir != NULL && (punidat->hitDir->attributes & 4)) {
+            *(f32*)((u8*)punidat + 0x168) = -punidat->hitNormal.x;  // PuniData 0x168, 0x560
             *(f32*)((u8*)punidat + 0x16C) = 0.0f;  // PuniData 0x16C
-            *(f32*)((u8*)punidat + 0x170) = -punidat->field_0x560.z;  // PuniData 0x170, 0x568
+            *(f32*)((u8*)punidat + 0x170) = -punidat->hitNormal.z;  // PuniData 0x170, 0x568
             *(Vec*)((u8*)punidat + 0x150) = punidat->pos;  // PuniData 0x150
             punidat->state = 3;
             return 1;
@@ -4125,14 +4123,14 @@ void puniModeWind_kaiten(PuniData* punidat) {
         dir = punidat->subState ^ 1;  // PuniData 0x1E0
     }
     if (dir != 0) {
-        punidat->field_0x184 += 10.0f;
-        if (punidat->field_0x184 >= 360.0f) {
-            punidat->field_0x184 -= 360.0f;
+        punidat->rotZ += 10.0f;
+        if (punidat->rotZ >= 360.0f) {
+            punidat->rotZ -= 360.0f;
         }
     } else {
-        punidat->field_0x184 -= 10.0f;
-        if (punidat->field_0x184 <= 0.0f) {
-            punidat->field_0x184 += 360.0f;
+        punidat->rotZ -= 10.0f;
+        if (punidat->rotZ <= 0.0f) {
+            punidat->rotZ += 360.0f;
         }
     }
 }
@@ -4148,9 +4146,9 @@ void puniModeWind(PuniData* punidat) {
     switch (punidat->state) {
     case 0:
         if (punidat->flags & 0x18) {
-            punidat->field_0x188 = 8.0f;
+            punidat->rotOffsetY = 8.0f;
         } else {
-            punidat->field_0x148 = 8.0f;
+            punidat->dispOffset.y = 8.0f;
         }
         punidat->flags &= ~0x100000;
         PSVECSubtract(&punidat->pos, &mario->position, &vec);
@@ -4234,9 +4232,9 @@ void puniModeWind(PuniData* punidat) {
             *(Vec*)&punidat->vel = (Vec){0.0f, 0.0f, 0.0f};
             punidat->mode = 0x11;
             punidat->animIdx = 0;
-            punidat->field_0x188 = 0.0f;
-            punidat->field_0x184 = 0.0f;
-            punidat->field_0x148 = 0.0f;
+            punidat->rotOffsetY = 0.0f;
+            punidat->rotZ = 0.0f;
+            punidat->dispOffset.y = 0.0f;
             punidat->state = 0;
         } else {
             punidat->state = 10;
@@ -4247,15 +4245,15 @@ void puniModeWind(PuniData* punidat) {
         if (!(punidat->windPower > 0.0f)) {
             if (Punigp->phase == 3) {
                 punidat->mode = 0xa;
-                punidat->field_0x188 = 0.0f;
-                punidat->field_0x184 = 0.0f;
-                punidat->field_0x148 = 0.0f;
+                punidat->rotOffsetY = 0.0f;
+                punidat->rotZ = 0.0f;
+                punidat->dispOffset.y = 0.0f;
                 *(Vec*)&punidat->vel = (Vec){0.0f, 0.0f, 0.0f};
                 punidat->state = 0;
             } else {
-                punidat->field_0x188 = 0.0f;
-                punidat->field_0x184 = 0.0f;
-                punidat->field_0x148 = 0.0f;
+                punidat->rotOffsetY = 0.0f;
+                punidat->rotZ = 0.0f;
+                punidat->dispOffset.y = 0.0f;
                 *(Vec*)&punidat->vel = (Vec){0.0f, 0.0f, 0.0f};
                 punidat->mode = 1;
                 punidat->state = 0;
@@ -4441,7 +4439,7 @@ void puniModeUpdraft(PuniData* punidat) {
         if (s > 7) {
             x = 4 - (s & 7);
         }
-        punidat->field_0x144 = 0.5f * (f32)x;
+        punidat->dispOffset.x = 0.5f * (f32)x;
     }
 
     switch (punidat->state) {
@@ -4512,7 +4510,7 @@ void puniModeUpdraft(PuniData* punidat) {
 
     {
         Vec v = punidat->pos;
-        v.x += punidat->field_0x144;
+        v.x += punidat->dispOffset.x;
         v.y += 15.0f;
         v.z += 3.0f;
         ((f32*)((EffectEntry*)punidat->effect)->userdata)[1] = v.x;
@@ -4534,7 +4532,7 @@ void puniModeUpdraft(PuniData* punidat) {
             if (hit == 0) {
                 punidat->mode = 0x14;
                 punidat->state = 0;
-                punidat->field_0x144 = 0.0f;
+                punidat->dispOffset.x = 0.0f;
             } else {
                 punidat->pos = pos;
                 *(Vec*)&punidat->vel = vel;
@@ -4545,7 +4543,7 @@ void puniModeUpdraft(PuniData* punidat) {
         if (punidat->pos.y >= 0.0f) {
             punidat->mode = 0x14;
             punidat->state = 0;
-            punidat->field_0x144 = 0.0f;
+            punidat->dispOffset.x = 0.0f;
         }
     }
 }
@@ -4689,10 +4687,10 @@ void puniModeWater(PuniData* punidat) {
                     intplGetValue(0, step, 0x12C, punidat->accel.z, *(f32*)((u8*)punidat + 0x158));
                 y = punidat->height * t + punidat->vertVel;
                 punidat->pos.y = t * y + punidat->accel.y;
-                *(Vec*)&punidat->field_0x138 = punidat->pos;
+                *(Vec*)&punidat->prevPos = punidat->pos;
             } else {
                 punidat->pos = *(Vec*)((u8*)punidat + 0x150);
-                *(Vec*)&punidat->field_0x138 = punidat->pos;
+                *(Vec*)&punidat->prevPos = punidat->pos;
                 punidat->state = 4;
             }
             break;
@@ -5371,7 +5369,7 @@ void puni_puni_init(void) {
     *(PuniData**)&Punigp->marioPuni = pd;
     pd->flags |= 0x180404;
     pd->pos = mario->position;
-    *(Vec*)&pd->field_0x138 = pd->pos;
+    *(Vec*)&pd->prevPos = pd->pos;
     pd->radius = 10.0f;
     pd->mode = 30;
     pd->angle = 0;
@@ -5390,7 +5388,7 @@ void puni_puni_init(void) {
         pose++;
         *(Vec*)(puni + 0x144) = (Vec){0.0f, 0.0f, 0.0f};
         ((PuniData*)puni)->direction = 0.0f;
-        ((PuniData*)puni)->field_0x188 = 0.0f;
+        ((PuniData*)puni)->rotOffsetY = 0.0f;
         ((PuniData*)puni)->scale = 1.0f;
         *(f32*)(puni + 0x19C) = 10.0f;
         ((PuniData*)puni)->flags = 0;
@@ -5688,15 +5686,15 @@ void fn_19_13A90(PuniData* puni) {
     PSVECNormalize((Vec*)&puni->vel, &nA);
     qA = vA;
     rA = nA;
-    puni->field_0x214 = 0;
-    puni->field_0x210 = 0;
+    puni->hitDir = 0;
+    puni->hitVel = 0;
     dA = mag;
     if (puni->flags & 0x1000) {
-        puni->field_0x210 =
+        puni->hitVel =
             hitCheckFilter(NULL, qA.x, qA.y, qA.z, rA.x, rA.y, rA.z, &hitPA.x, &hitPA.y, &hitPA.z, &dA,
                                 &hitNA.x, &hitNA.y, &hitNA.z);
     }
-    if (puni->field_0x210 == 0) {
+    if (puni->hitVel == 0) {
         PSVECAdd(&puni->pos, (Vec*)&puni->vel, &puni->pos);
     } else {
         svA = puni->pos;
@@ -5715,15 +5713,15 @@ void fn_19_13A90(PuniData* puni) {
         dA = PSVECMag(&sepA);
         if (dA > 0.0f) {
             PSVECNormalize(&sepA, &sepA);
-            puni->field_0x214 = hitCheckFilter(NULL, svA.x, svA.y + 1.0f, svA.z, sepA.x, sepA.y,
+            puni->hitDir = hitCheckFilter(NULL, svA.x, svA.y + 1.0f, svA.z, sepA.x, sepA.y,
                                                              sepA.z, &hitP2Ax, &hitP2Ay, &hitP2Az, &dA, &hitN2Ax,
                                                              &hitN2Ay, &hitN2Az);
-            if (puni->field_0x214 != 0) {
+            if (puni->hitDir != 0) {
                 puni->pos = svA;
             }
         }
     }
-    if (puni->field_0x210 != 0 || puni->field_0x214 != 0) {
+    if (puni->hitVel != 0 || puni->hitDir != 0) {
         puni->flags |= 0x400000;
     } else {
         PSVECScale((Vec*)&puni->vel, (Vec*)&puni->vel, 0.6f);
@@ -5750,13 +5748,13 @@ void fn_19_13A90(PuniData* puni) {
     PSVECNormalize((Vec*)&puni->vel, &nB);
     rB = nB;
     qB = vB;
-    puni->field_0x214 = 0;
-    puni->field_0x210 = 0;
+    puni->hitDir = 0;
+    puni->hitVel = 0;
     dB = mag;
-    puni->field_0x210 =
+    puni->hitVel =
         hitCheckFilter(NULL, qB.x, qB.y, qB.z, rB.x, rB.y, rB.z, &hitPB.x, &hitPB.y, &hitPB.z, &dB,
                             &hitNB.x, &hitNB.y, &hitNB.z);
-    if (puni->field_0x210 == 0) {
+    if (puni->hitVel == 0) {
         PSVECAdd(&puni->pos, (Vec*)&puni->vel, &puni->pos);
     } else if (Punigp->area != 0x12) {
         svB = puni->pos;
@@ -5773,15 +5771,15 @@ void fn_19_13A90(PuniData* puni) {
         dB = PSVECMag(&sepB);
         if (dB > 0.0f) {
             PSVECNormalize(&sepB, &sepB);
-            puni->field_0x214 = hitCheckFilter(NULL, svB.x, svB.y + 1.0f, svB.z, sepB.x, sepB.y,
+            puni->hitDir = hitCheckFilter(NULL, svB.x, svB.y + 1.0f, svB.z, sepB.x, sepB.y,
                                                              sepB.z, &hitP2Bx, &hitP2By, &hitP2Bz, &dB, &hitN2Bx,
                                                              &hitN2By, &hitN2Bz);
-            if (puni->field_0x214 != 0) {
+            if (puni->hitDir != 0) {
                 puni->pos = svB;
             }
         }
     }
-    if (puni->field_0x210 != 0 || puni->field_0x214 != 0) {
+    if (puni->hitVel != 0 || puni->hitDir != 0) {
         puni->flags |= 0x400000;
     } else {
         puni->flags &= ~0x400000;
@@ -5802,15 +5800,15 @@ void fn_19_13A90(PuniData* puni) {
     PSVECNormalize((Vec*)&puni->vel, &nD);
     qD = vD;
     rD = nD;
-    puni->field_0x214 = 0;
-    puni->field_0x210 = 0;
+    puni->hitDir = 0;
+    puni->hitVel = 0;
     dD = mag;
     if (puni->flags & 0x1000) {
-        puni->field_0x210 =
+        puni->hitVel =
             hitCheckFilter(NULL, qD.x, qD.y, qD.z, rD.x, rD.y, rD.z, &hitPD.x, &hitPD.y, &hitPD.z, &dD,
                                 &hitND.x, &hitND.y, &hitND.z);
     }
-    if (puni->field_0x210 == 0) {
+    if (puni->hitVel == 0) {
         PSVECAdd(&puni->pos, (Vec*)&puni->vel, &puni->pos);
     } else {
         svD = puni->pos;
@@ -5829,15 +5827,15 @@ void fn_19_13A90(PuniData* puni) {
         dD = PSVECMag(&sepD);
         if (dD > 0.0f) {
             PSVECNormalize(&sepD, &sepD);
-            puni->field_0x214 = hitCheckFilter(NULL, svD.x, svD.y + 1.0f, svD.z, sepD.x, sepD.y,
+            puni->hitDir = hitCheckFilter(NULL, svD.x, svD.y + 1.0f, svD.z, sepD.x, sepD.y,
                                                              sepD.z, &hitP2Dx, &hitP2Dy, &hitP2Dz, &dD, &hitN2Dx,
                                                              &hitN2Dy, &hitN2Dz);
-            if (puni->field_0x214 != 0) {
+            if (puni->hitDir != 0) {
                 puni->pos = svD;
             }
         }
     }
-    if (puni->field_0x210 != 0 || puni->field_0x214 != 0) {
+    if (puni->hitVel != 0 || puni->hitDir != 0) {
         puni->flags |= 0x400000;
     } else {
         puni->flags &= ~0x400000;
@@ -5847,8 +5845,8 @@ void fn_19_13A90(PuniData* puni) {
         }
         break;
     case 29:
-        if ((u32)puni->field_0x570 != 0) {
-            ((void (*)(PuniData*))puni->field_0x570)(puni);
+        if (puni->moveFunc != NULL) {
+            puni->moveFunc(puni);
         }
         puniSetYPosition(puni);
         break;
@@ -5881,15 +5879,15 @@ void fn_19_13A90(PuniData* puni) {
     PSVECNormalize((Vec*)&puni->vel, &nE);
     qE = vE;
     rE = nE;
-    puni->field_0x214 = 0;
-    puni->field_0x210 = 0;
+    puni->hitDir = 0;
+    puni->hitVel = 0;
     dE = mag;
     if (puni->flags & 0x1000) {
-        puni->field_0x210 =
+        puni->hitVel =
             hitCheckFilter(NULL, qE.x, qE.y, qE.z, rE.x, rE.y, rE.z, &hitPE.x, &hitPE.y, &hitPE.z, &dE,
                                 &hitNE.x, &hitNE.y, &hitNE.z);
     }
-    if (puni->field_0x210 == 0) {
+    if (puni->hitVel == 0) {
         PSVECAdd(&puni->pos, (Vec*)&puni->vel, &puni->pos);
     } else {
         svE = puni->pos;
@@ -5908,15 +5906,15 @@ void fn_19_13A90(PuniData* puni) {
         dE = PSVECMag(&sepE);
         if (dE > 0.0f) {
             PSVECNormalize(&sepE, &sepE);
-            puni->field_0x214 = hitCheckFilter(NULL, svE.x, svE.y + 1.0f, svE.z, sepE.x, sepE.y,
+            puni->hitDir = hitCheckFilter(NULL, svE.x, svE.y + 1.0f, svE.z, sepE.x, sepE.y,
                                                              sepE.z, &hitP2Ex, &hitP2Ey, &hitP2Ez, &dE, &hitN2Ex,
                                                              &hitN2Ey, &hitN2Ez);
-            if (puni->field_0x214 != 0) {
+            if (puni->hitDir != 0) {
                 puni->pos = svE;
             }
         }
     }
-    if (puni->field_0x210 != 0 || puni->field_0x214 != 0) {
+    if (puni->hitVel != 0 || puni->hitDir != 0) {
         puni->flags |= 0x400000;
     } else {
         PSVECScale((Vec*)&puni->vel, (Vec*)&puni->vel, 0.6f);
@@ -6269,7 +6267,7 @@ void puni_puni_main(void) {
         PuniData* pd = &Punidat[1];
         s32 i;
         for (i = 1; i < PUNI_DATA_MAX; i++, pd++) {
-            PSVECSubtract(&pd->pos, (Vec*)&pd->field_0x138, &v);
+            PSVECSubtract(&pd->pos, (Vec*)&pd->prevPos, &v);
             pd->speed = PSVECMag(&v);
             if ((pd->flags & 0x400) != 0) {
                 pd->flags &= ~0x06000000;
@@ -6402,7 +6400,7 @@ void puni_puni_main(void) {
         for (i = 1; i < PUNI_DATA_MAX; i++, pd++) {
             if ((pd->flags & 0x400) != 0) {
                 if ((pd->flags & 0x200) == 0) {
-                    *(Vec*)&pd->field_0x138 = pd->pos;
+                    *(Vec*)&pd->prevPos = pd->pos;
                     fn_19_13A90(pd);
                 }
                 puniAnimation(pd, pose);
@@ -6418,7 +6416,7 @@ void puni_puni_main(void) {
         for (i = 1; i <= 0x6D; i++, pd++) {
             if ((pd->flags & 0x400) != 0) {
                 if ((pd->flags & 0x200) == 0) {
-                    *(Vec*)&pd->field_0x138 = pd->pos;
+                    *(Vec*)&pd->prevPos = pd->pos;
                     fn_19_13A90(pd);
                 }
                 puniAnimation(pd, pose);
@@ -6637,7 +6635,7 @@ void puni_init_para(PuniData* punidat, f32 x, f32 y, f32 z) {
     pd->pos.x = x;
     pd->pos.y = y;
     pd->pos.z = z;
-    pd->field_0x138 = pd->pos;
+    pd->prevPos = pd->pos;
     pd->radius = 6.0f;
     pd->spacing = 2.0f;
     pd->reach = 3.0f;
@@ -6669,7 +6667,7 @@ void toge_init_para(PuniData* punidat, f32 x, f32 y, f32 z) {
     pd->pos.x = x;
     pd->pos.y = y;
     pd->pos.z = z;
-    pd->field_0x138 = pd->pos;
+    pd->prevPos = pd->pos;
     pd->radius = 6.0f;
     pd->spacing = 2.0f;
     pd->reach = 3.0f;
@@ -6926,7 +6924,7 @@ USER_FUNC(evt_puni_setup) {
         p->pos.x = sx;
         p->pos.y = sy;
         p->pos.z = sz;
-        *(Vec*)&p->field_0x138 = p->pos;
+        *(Vec*)&p->prevPos = p->pos;
         p->radius = 6.0f;
         p->spacing = 2.0f;
         p->reach = 3.0f;
@@ -7010,7 +7008,7 @@ USER_FUNC(evt_toge_setup) {
         p->pos.y = y;
         zhi = z + 120.0f;
         p->pos.z = (z - 120.0f) + rz * (zhi - (z - 120.0f));
-        *(Vec*)&p->field_0x138 = p->pos;
+        *(Vec*)&p->prevPos = p->pos;
         p->radius = 6.0f;
         p->spacing = 2.0f;
         p->reach = 3.0f;
@@ -7322,7 +7320,7 @@ USER_FUNC(evt_puni_init_puni) {
     punidat->pos.x = x;
     punidat->pos.y = y;
     punidat->pos.z = z;
-    punidat->field_0x138 = punidat->pos;
+    punidat->prevPos = punidat->pos;
     punidat->radius = 6.0f;
     punidat->spacing = 2.0f;
     punidat->reach = 3.0f;
@@ -7363,7 +7361,7 @@ USER_FUNC(evt_puni_init_teki) {
     punidat->pos.x = x;
     punidat->pos.y = y;
     punidat->pos.z = z;
-    punidat->field_0x138 = punidat->pos;
+    punidat->prevPos = punidat->pos;
     punidat->radius = 6.0f;
     punidat->spacing = 2.0f;
     punidat->reach = 3.0f;
@@ -7402,7 +7400,7 @@ USER_FUNC(evt_puni_set_position) {
     punidat->pos.z = evtGetValue(event, args[3]);
 
     // copies the Vec at 0x12C word-for-word (not an int conversion).
-    *(Vec*)&punidat->field_0x138 = punidat->pos;
+    *(Vec*)&punidat->prevPos = punidat->pos;
     return EVT_RETURN_DONE;
 }
 
@@ -7447,20 +7445,20 @@ USER_FUNC(evt_puni_korokoro) {
     case 5:
         if (isFirstCall) {
             if (punidat->flags & 8) {
-                punidat->field_0x188 = 8.0f;
+                punidat->rotOffsetY = 8.0f;
             } else {
-                punidat->field_0x148 = 8.0f;
+                punidat->dispOffset.y = 8.0f;
             }
         }
-        punidat->field_0x184 += evtGetValue(event, args[1]);
+        punidat->rotZ += evtGetValue(event, args[1]);
         return EVT_RETURN_BLOCK;
     default:
         if (punidat->flags & 8) {
-            punidat->field_0x188 = 0.0f;
+            punidat->rotOffsetY = 0.0f;
         } else {
-            punidat->field_0x148 = 0.0f;
+            punidat->dispOffset.y = 0.0f;
         }
-        punidat->field_0x184 = evtGetValue(event, args[2]);
+        punidat->rotZ = evtGetValue(event, args[2]);
         return EVT_RETURN_DONE;
     }
 }
@@ -7478,9 +7476,9 @@ USER_FUNC(evt_puni_move_position) {
     if (isFirstCall) {
         event->savedTime = gp->renderTime;
         punidat->accel = punidat->pos;
-        punidat->field_0x204.x = x;
-        punidat->field_0x204.y = punidat->pos.y;
-        punidat->field_0x204.z = z;
+        punidat->moveTarget.x = x;
+        punidat->moveTarget.y = punidat->pos.y;
+        punidat->moveTarget.z = z;
     }
     {
         u32 cond;
@@ -7489,15 +7487,15 @@ USER_FUNC(evt_puni_move_position) {
         if ((s32)(cond = ((u32)gp->renderTime - (u32)event->savedTime) / ((__OSBusClock / 4) / 1000)) < duration) {
             elapsed = cond;
             punidat->pos.x =
-                intplGetValue(0, elapsed, duration, punidat->accel.x, punidat->field_0x204.x);
+                intplGetValue(0, elapsed, duration, punidat->accel.x, punidat->moveTarget.x);
             punidat->pos.z =
-                intplGetValue(0, elapsed, duration, punidat->accel.z, punidat->field_0x204.z);
-            *(Vec*)&punidat->field_0x138 = punidat->pos;
+                intplGetValue(0, elapsed, duration, punidat->accel.z, punidat->moveTarget.z);
+            *(Vec*)&punidat->prevPos = punidat->pos;
             return EVT_RETURN_BLOCK;
         }
     }
-    punidat->pos = punidat->field_0x204;
-    *(Vec*)&punidat->field_0x138 = punidat->pos;
+    punidat->pos = punidat->moveTarget;
+    *(Vec*)&punidat->prevPos = punidat->pos;
     return EVT_RETURN_DONE;
 }
 
@@ -7511,26 +7509,26 @@ USER_FUNC(evt_puni_move_position2) {
     if (isFirstCall) {
         event->savedTime = gp->renderTime;
         punidat->accel = punidat->pos;
-        punidat->field_0x204.x = x;
-        punidat->field_0x204.y = punidat->pos.y;
-        punidat->field_0x204.z = z;
+        punidat->moveTarget.x = x;
+        punidat->moveTarget.y = punidat->pos.y;
+        punidat->moveTarget.z = z;
     }
     {
         f32 sec = sysFrame2SecFloat(speed);
-        f32 dist = PSVECDistance(&punidat->accel, &punidat->field_0x204);
+        f32 dist = PSVECDistance(&punidat->accel, &punidat->moveTarget);
         s32 msec = ((u32)gp->renderTime - (u32)event->savedTime) / ((__OSBusClock / 4) / 1000);
         s32 frame = (s32)(0.5f + sysMsec2FrameFloat((f32)msec));
         Vec dir;
 
-        PSVECSubtract(&punidat->field_0x204, &punidat->accel, &dir);
+        PSVECSubtract(&punidat->moveTarget, &punidat->accel, &dir);
         PSVECNormalize(&dir, &dir);
         if (frame < (s32)(dist / sec)) {
             PSVECScale(&dir, &dir, sec * (f32)frame);
             PSVECAdd(&punidat->accel, &dir, &punidat->pos);
             return EVT_RETURN_BLOCK;
         }
-        punidat->pos = punidat->field_0x204;
-        *(Vec*)&punidat->field_0x138 = punidat->pos;
+        punidat->pos = punidat->moveTarget;
+        *(Vec*)&punidat->prevPos = punidat->pos;
         return EVT_RETURN_DONE;
     }
 }

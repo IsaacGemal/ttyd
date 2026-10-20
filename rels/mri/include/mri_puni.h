@@ -78,19 +78,17 @@ typedef struct PuniData {
     u16 state;                          // 0x114
     s16 angle;                          // 0x116
     s16 treeId;                     // 0x118, tree the puni belongs to; -1 when unlinked, copied from the parent (searchParent)
-    s16 depth;// 0x11A, searchParent sets parent depth + 1; PuniDokuritsu and _daime_change decrement
+    s16 depth;                          // 0x11A, searchParent sets parent depth + 1; PuniDokuritsu and _daime_change decrement
     u16 animIdx;                        // 0x11C
     u16 prevAnimIdx;                    // 0x11E
     u8 unk120[0x121 - 0x120];           // 0x120
-    u8 field_0x121;                     // 0x121
+    u8 healIconTime;                // 0x121, frames the heal icon (0x8 bit 1) stays up; counts to 30 (evt_icon_disp_func)
     u8 unk122[0x124 - 0x122];           // 0x122
     s32 animTime;                       // 0x124
     s32 timer;                          // 0x128
     Vec pos;                            // 0x12C
-    Vec field_0x138;                    // 0x138
-    f32 field_0x144;                    // 0x144
-    f32 field_0x148;                    // 0x148
-    f32 field_0x14C;                    // 0x14C
+    Vec prevPos;                    // 0x138, position at the last frame; pos - prevPos gives speed (puni_puni_main)
+    Vec dispOffset;                     // 0x144, added to pos for npc->position (puniAnimation)
     u8 unk150[0x15C - 0x150];           // 0x150
     Vec vel;                            // 0x15C
     u8 unk168[0x174 - 0x168];           // 0x168
@@ -98,8 +96,8 @@ typedef struct PuniData {
     f32 gravity;                        // 0x178
     u8 unk17C[0x180 - 0x17C];           // 0x17C
     f32 direction;                      // 0x180
-    f32 field_0x184;                    // 0x184
-    f32 field_0x188;                    // 0x188
+    f32 rotZ;                       // 0x184, npc->rotation.z; evt_puni_korokoro spins it
+    f32 rotOffsetY;                 // 0x188, npc->rotationOffset.y; the spin pivot (8.0 while korokoro spins)
     f32 scale;                          // 0x18C
     f32 radius;                     // 0x190, collision radius (puniOption adds two); also scales vel in puniModeAway and puniModeWind
     f32 spacing;                    // 0x194, gap kept beyond radius (puniOption, puniModeParent's leash test)
@@ -127,14 +125,14 @@ typedef struct PuniData {
     f32 vertVel;                        // 0x1F0
     f32 jumpVelStart;                   // 0x1F4
     Vec accel;                          // 0x1F8
-    Vec field_0x204;                    // 0x204
-    struct HitEntry* field_0x210;       // 0x210
-    struct HitEntry* field_0x214;       // 0x214
+    Vec moveTarget;                 // 0x204, destination of evt_puni_move_position (x and z; y keeps the start height)
+    struct HitEntry* hitVel;        // 0x210, HitEntry from puniMoveAtari's first check along vel
+    struct HitEntry* hitDir;        // 0x214, HitEntry from puniMoveAtari's second check from the start point
     s32 effect;                         // 0x218
     u8 unk21C[0x560 - 0x21C];           // 0x21C
-    Vec field_0x560;                    // 0x560
+    Vec hitNormal;                  // 0x560, surface normal of the last puniMoveAtari hit
     s32 field_0x56C;                    // 0x56C
-    s32 field_0x570;                    // 0x570
+    void (*moveFunc)(struct PuniData*); // 0x570, per-puni move callback, called with the puni (puniMoveCustom)
     s16 hp;                         // 0x574, current hit points (puniParaRecover, puniParaDamage)
     s16 maxHp;                      // 0x576, hit points cap; the danger and self checks divide hp by it
     s16 hpRegen;                    // 0x578, hp added per regen tick (puniParaRecover)
