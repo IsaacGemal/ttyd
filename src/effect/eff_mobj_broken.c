@@ -62,10 +62,10 @@ EffectEntry* effMObjBrokenEntry(s32 type, f32 x, f32 y, f32 z) {
 	MobjBrokenWork* work;
 	s32 i;
 	s32 idx;
-	s32 r27;
-	s32 r26;
-	s32 r25;
-	f32 f29;
+	s32 gridX;
+	s32 gridY;
+	s32 gridZ;
+	f32 spacing;
 	s32 count;
 
 	entry = effEntry();
@@ -108,65 +108,65 @@ EffectEntry* effMObjBrokenEntry(s32 type, f32 x, f32 y, f32 z) {
 		case 0:
 		case 1:
 		case 2:
-			f29 = float_6p25_8042113c;
-			r27 = (idx - 1) % 4 / 2;
-			r26 = (idx - 1) / 4;
-			r25 = (idx - 1) % 4 % 2;
+			spacing = float_6p25_8042113c;
+			gridX = (idx - 1) % 4 / 2;
+			gridY = (idx - 1) / 4;
+			gridZ = (idx - 1) % 4 % 2;
 			break;
 		case 3:
 		case 4:
 		case 5:
-			f29 = float_12p5_80421140;
-			r27 = (idx - 1) % 4 / 2;
-			r26 = (idx - 1) / 4;
-			r25 = (idx - 1) % 4 % 2;
+			spacing = float_12p5_80421140;
+			gridX = (idx - 1) % 4 / 2;
+			gridY = (idx - 1) / 4;
+			gridZ = (idx - 1) % 4 % 2;
 			break;
 		case 6:
-			f29 = float_12p5_80421140;
-			r27 = (idx - 1) % 2;
-			r26 = (idx - 1) / 2;
-			r25 = 0;
+			spacing = float_12p5_80421140;
+			gridX = (idx - 1) % 2;
+			gridY = (idx - 1) / 2;
+			gridZ = 0;
 			break;
 		case 7:
-			f29 = float_12p5_80421140;
-			r27 = (idx - 1) % 2;
-			r26 = (idx - 1) / 2;
-			r25 = 0;
+			spacing = float_12p5_80421140;
+			gridX = (idx - 1) % 2;
+			gridY = (idx - 1) / 2;
+			gridZ = 0;
 			break;
 		default:
 			break;
 		}
-		work->posX = (f32)r27 * f29 - f29 * float_0p5_80421144;
-		work->posY = (f32)r26 * f29 + f29 * float_0p5_80421144;
-		work->posZ = (f32)r25 * f29 - f29 * float_0p5_80421144;
-		work->scale = f29;
+		work->posX = (f32)gridX * spacing - spacing * float_0p5_80421144;
+		work->posY = (f32)gridY * spacing + spacing * float_0p5_80421144;
+		work->posZ = (f32)gridZ * spacing - spacing * float_0p5_80421144;
+		work->scale = spacing;
 		work->field_0x14 = 0xFF;
 		work->field_0x18 = float_0_804210ec;
 		work->poseId = -1;
 		{
-			f32 r = (f32)(irand(0xA) + 0xA);
+			f32 radius = (f32)(irand(0xA) + 0xA);
 
-			work->field_0x20 = r * float_0p0625_80421148;
+			work->field_0x20 = radius * float_0p0625_80421148;
 		}
 		{
-			f32 zero = ZERO0;
-			work->field_0x1C = angleABf(zero, zero, work->posX, work->posZ);
+			f32 origin = ZERO0;
+			work->field_0x1C = angleABf(origin, origin, work->posX, work->posZ);
 		}
 		work->field_0x24 = (f32)(irand(3) + 3);
 		work->field_0x28 = (f32)(irand(5) + 2) / float_5_804210fc;
 	}
 	if (type != 7) {
 		// Retail reads work[-1].posY here; work is one past the last element.
-		f32 f0 = (work - 1)->posY;
+		f32 offsetY = (work - 1)->posY;
 		f32 scale = (type < 3) ? float_0p5_80421144 : float_1_80421100;
 
-		effKemuTestEntry(2, x, y + f0, z, scale);
+		effKemuTestEntry(2, x, y + offsetY, z, scale);
 	}
 	else {
 		// Retail reads work[0].posY, one past the type-7 allocation (count is 9).
-		f32 f0 = work->posY;
+		f32 offsetY = work->posY;
 
-		effKemuTestEntry(0x10, x, y + f0, z, float_1_80421100);
+		effKemuTestEntry(0x10, x, y + offsetY, z, float_1_80421100);
 	}
 	return entry;
 }
@@ -201,7 +201,7 @@ void effMObjBrokenMain(EffectEntry* effect) {
 	MobjBrokenWork* work;
 	s32 inBattle;
 	s32 done = 0;
-	f32 d;
+	f32 remain;
 
 	disp = vec3_802fe628;
 	disp.x = data->posX;
@@ -228,15 +228,15 @@ void effMObjBrokenMain(EffectEntry* effect) {
 		break;
 	}
 	{
-	f32 kpi, k360, k2pi, k1, k16605, k4967, kneg100;
+	f32 kPi, kDeg360, kTwoPi, kOne, kSinQuad, kCosQuad, kMinY;
 
-	k2pi = float_6p2832_804210f4;
-	k360 = float_360_804210f8;
-	k16605 = float_0p16605_80421110;
-	k1 = float_1_80421100;
-	kpi = float_3p1416_80421114;
-	k4967 = float_0p4967_80421124;
-	kneg100 = float_neg100_80421138;
+	kTwoPi = float_6p2832_804210f4;
+	kDeg360 = float_360_804210f8;
+	kSinQuad = float_0p16605_80421110;
+	kOne = float_1_80421100;
+	kPi = float_3p1416_80421114;
+	kCosQuad = float_0p4967_80421124;
+	kMinY = float_neg100_80421138;
 
 	data++;
 	for (i = 1; i < effect->count; i++, data++) {
@@ -249,82 +249,82 @@ void effMObjBrokenMain(EffectEntry* effect) {
 			break;
 		}
 		{
-			f32 s = MATCH_F32(float_0p00761_8042110c);
-			f32 angle = k2pi * data->field_0x1C / k360;
+			f32 sinA = MATCH_F32(float_0p00761_8042110c);
+			f32 angle = kTwoPi * data->field_0x1C / kDeg360;
 
-			if (angle <= kpi) {
+			if (angle <= kPi) {
 				if (angle <= float_1p5708_80421118) {
-					s = s * (angle * angle) - k16605;
-					s = s * (angle * angle) + k1;
-					s = s * angle;
+					sinA = sinA * (angle * angle) - kSinQuad;
+					sinA = sinA * (angle * angle) + kOne;
+					sinA = sinA * angle;
 				}
 				else {
 					angle = float_1p5708_80421118 - (angle - float_1p5708_80421118);
-					s = s * (angle * angle) - k16605;
-					s = s * (angle * angle) + k1;
-					s = s * angle;
+					sinA = sinA * (angle * angle) - kSinQuad;
+					sinA = sinA * (angle * angle) + kOne;
+					sinA = sinA * angle;
 				}
 			}
 			else {
 				if (angle < float_4p7124_8042111c) {
-					angle = angle - kpi;
-					s = s * (angle * angle) - k16605;
-					s = s * (angle * angle) + k1;
-					s = s * angle;
-					s = -s;
+					angle = angle - kPi;
+					sinA = sinA * (angle * angle) - kSinQuad;
+					sinA = sinA * (angle * angle) + kOne;
+					sinA = sinA * angle;
+					sinA = -sinA;
 				}
 				else {
 					angle = float_1p5708_80421118 - (angle - float_4p7124_8042111c);
-					s = s * (angle * angle) - k16605;
-					s = s * (angle * angle) + k1;
-					s = s * angle;
-					s = -s;
+					sinA = sinA * (angle * angle) - kSinQuad;
+					sinA = sinA * (angle * angle) + kOne;
+					sinA = sinA * angle;
+					sinA = -sinA;
 				}
 			}
-			data->posX = data->field_0x20 * s + data->posX;
+			data->posX = data->field_0x20 * sinA + data->posX;
 		}
 		{
-			f32 angle = k2pi * data->field_0x1C / k360;
-			f32 c = MATCH_F32(float_0p03705_80421120);
+			f32 angle = kTwoPi * data->field_0x1C / kDeg360;
+			f32 cosA = MATCH_F32(float_0p03705_80421120);
 
-			if (angle <= kpi) {
+			if (angle <= kPi) {
 				if (angle <= float_1p5708_80421118) {
-					c = c * (angle * angle) - k4967;
-					c = c * (angle * angle) + k1;
+					cosA = cosA * (angle * angle) - kCosQuad;
+					cosA = cosA * (angle * angle) + kOne;
 				}
 				else {
 					angle = float_1p5708_80421118 - (angle - float_1p5708_80421118);
-					c = c * (angle * angle) - k4967;
-					c = c * (angle * angle) + k1;
-					c = -c;
+					cosA = cosA * (angle * angle) - kCosQuad;
+					cosA = cosA * (angle * angle) + kOne;
+					cosA = -cosA;
 				}
 			}
 			else {
 				if (angle < float_4p7124_8042111c) {
-					angle = angle - kpi;
-					c = c * (angle * angle) - k4967;
-					c = c * (angle * angle) + k1;
-					c = -c;
+					angle = angle - kPi;
+					cosA = cosA * (angle * angle) - kCosQuad;
+					cosA = cosA * (angle * angle) + kOne;
+					cosA = -cosA;
 				}
 				else {
 					angle = float_1p5708_80421118 - (angle - float_4p7124_8042111c);
-					c = c * (angle * angle) - k4967;
-					c = c * (angle * angle) + k1;
+					cosA = cosA * (angle * angle) - kCosQuad;
+					cosA = cosA * (angle * angle) + kOne;
 				}
 			}
-			data->posZ = data->field_0x20 * -c + data->posZ;
+			data->posZ = data->field_0x20 * -cosA + data->posZ;
 		}
 		data->posY = data->posY + data->field_0x24;
 		data->field_0x24 = data->field_0x24 - data->field_0x28;
 		if (type < 6) {
-			d = float_20_80421128 - data->field_0x18;
-			data->field_0x18 = d * float_0p125_8042112c + data->field_0x18;
+			remain = float_20_80421128 - data->field_0x18;
+			data->field_0x18 = remain * float_0p125_8042112c + data->field_0x18;
 		}
 		else {
-			d = float_720_80421130 - data->field_0x18;
-			data->field_0x18 = d * float_0p03125_80421134 + data->field_0x18;
+			remain = float_720_80421130 - data->field_0x18;
+			data->field_0x18 = remain * float_0p03125_80421134 + data->field_0x18;
 		}
-		if (data->posY < kneg100) {
+		if (data->posY < kMinY) {
 			done++;
 		}
 	}
@@ -362,9 +362,9 @@ void effMObjBrokenDisp(CameraId camId, void* param) {
 	Vec tmpAxis2;
 #ifdef MUST_MATCH
 	// volatile keeps MWCC from hoisting the shared zero-Vec load out of the loop.
-	volatile const Vec* base;
+	volatile const Vec* zeroAxis;
 #else
-	const Vec* base;
+	const Vec* zeroAxis;
 #endif
 	GXTexObj tex;
 	Mtx mtx;
@@ -409,35 +409,35 @@ void effMObjBrokenDisp(CameraId camId, void* param) {
 		GXLoadTexObj(&tex, 0);
 	}
 	GXSetChanMatColor(4, dat_804210d8);
-	base = &vec3_802fe634;
+	zeroAxis = &vec3_802fe634;
 	data = effect->userdata;
 	data++;
 	for (i = 1; i < effect->count; i++, data++) {
 #ifdef MUST_MATCH
 		// Declaration order fixes the callee-saved FPRs; assignment order fixes the load order.
-		f32 kdeg;
-		f32 k5;
-		f32 k360;
-		f32 k2pi;
+		f32 kDegToRad;
+		f32 kOffset;
+		f32 kDeg360;
+		f32 kTwoPi;
 
-		k2pi = float_6p2832_804210f4;
-		k360 = float_360_804210f8;
-		k5 = float_5_804210fc;
-		kdeg = float_deg2rad_804210e8;
+		kTwoPi = float_6p2832_804210f4;
+		kDeg360 = float_360_804210f8;
+		kOffset = float_5_804210fc;
+		kDegToRad = float_deg2rad_804210e8;
 #else
-		f32 k2pi = float_6p2832_804210f4;
-		f32 k360 = float_360_804210f8;
-		f32 k5 = float_5_804210fc;
-		f32 kdeg = float_deg2rad_804210e8;
+		f32 kTwoPi = float_6p2832_804210f4;
+		f32 kDeg360 = float_360_804210f8;
+		f32 kOffset = float_5_804210fc;
+		f32 kDegToRad = float_deg2rad_804210e8;
 #endif
-		tmpAxis1 = *base;
-		tmpAxis1.x = (f32)cos(k2pi * data->field_0x1C / k360);
-		tmpAxis1.z = (f32)sin(k2pi * data->field_0x1C / k360);
+		tmpAxis1 = *zeroAxis;
+		tmpAxis1.x = (f32)cos(kTwoPi * data->field_0x1C / kDeg360);
+		tmpAxis1.z = (f32)sin(kTwoPi * data->field_0x1C / kDeg360);
 		axis1 = tmpAxis1;
-		PSMTXTrans(mtx, k5 + data->posX, data->posY - k5, data->posZ);
+		PSMTXTrans(mtx, kOffset + data->posX, data->posY - kOffset, data->posZ);
 		PSMTXScale(scale, data->scale, data->scale, data->scale);
 		PSMTXConcat(mtx, scale, mtx);
-		PSMTXRotAxisRad(rot, &axis1, kdeg * -data->field_0x18);
+		PSMTXRotAxisRad(rot, &axis1, kDegToRad * -data->field_0x18);
 		PSMTXConcat(mtx, rot, mtx);
 		{
 			f32 one = ONE1;
@@ -450,11 +450,11 @@ void effMObjBrokenDisp(CameraId camId, void* param) {
 		GXDrawCube();
 	}
 	GXSetChanMatColor(4, dat_804210dc);
-	base = &vec3_802fe640;
+	zeroAxis = &vec3_802fe640;
 	data = effect->userdata;
 	data++;
 	for (i = 1; i < effect->count; i++, data++) {
-		tmpAxis2 = *base;
+		tmpAxis2 = *zeroAxis;
 		tmpAxis2.x = (f32)cos(float_6p2832_804210f4 * data->field_0x1C / float_360_804210f8);
 		tmpAxis2.z = (f32)sin(float_6p2832_804210f4 * data->field_0x1C / float_360_804210f8);
 		axis2 = tmpAxis2;
@@ -492,7 +492,7 @@ void effMObjBrokenDisp2(CameraId camId, void* param) {
 	Mtx rot;
 	Mtx view;
 	s32 i;
-	s32 j;
+	s32 pass;
 
 	data = effect->userdata;
 	camGetPtr(camId);
@@ -501,14 +501,14 @@ void effMObjBrokenDisp2(CameraId camId, void* param) {
 	PSMTXScale(scale, data->scale, data->scale, data->scale);
 	PSMTXConcat(mtx, rot, mtx);
 	PSMTXConcat(mtx, scale, view);
-	for (j = 0; j < 2; j++) {
+	for (pass = 0; pass < 2; pass++) {
 		data = effect->userdata;
 		data++;
 		for (i = 1; i < effect->count; i++, data++) {
 			if (data->poseId == -1) {
 				continue;
 			}
-			if (j == 0) {
+			if (pass == 0) {
 				animPoseSetMaterialFlagOn(data->poseId, 0x40);
 				animPoseSetMaterialEvtColor(data->poseId, dat_804210e0);
 			}
@@ -516,7 +516,7 @@ void effMObjBrokenDisp2(CameraId camId, void* param) {
 				animPoseSetMaterialFlagOn(data->poseId, 0x40);
 				animPoseSetMaterialEvtColor(data->poseId, dat_804210e4);
 			}
-			PSMTXTrans(mtx, data->posX + (1 - j) * 4, data->posY - (1 - j) * 4, data->posZ);
+			PSMTXTrans(mtx, data->posX + (1 - pass) * 4, data->posY - (1 - pass) * 4, data->posZ);
 			PSMTXScale(scale, data->scale, data->scale, data->scale);
 			PSMTXConcat(view, mtx, mtx);
 			PSMTXConcat(mtx, scale, mtx);

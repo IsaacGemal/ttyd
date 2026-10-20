@@ -206,51 +206,51 @@ void effSpiritDisp(CameraId camId, void* param) {
     CameraEntry* cam;
     GXColor color;
     GXTexObj texObj;
-    Mtx mtx90;
-    Mtx mtx60;
-    Mtx mtx30;
+    Mtx mtxTrans;
+    Mtx mtxRot;
+    Mtx mtxScale;
     f32 scale;
 
     cam = camGetPtr(camId);
-    PSMTXTrans(mtx90, data->x, data->y, data->z);
-    PSMTXRotRad(mtx60, 'y', float_deg2rad_80422270 * -camGetPtr(camId)->viewYaw);
+    PSMTXTrans(mtxTrans, data->x, data->y, data->z);
+    PSMTXRotRad(mtxRot, 'y', float_deg2rad_80422270 * -camGetPtr(camId)->viewYaw);
     scale = data->scale * data->scaleBase;
-    PSMTXScale(mtx30, scale, scale, scale);
-    PSMTXConcat(mtx90, mtx60, mtx60);
-    PSMTXConcat(mtx60, mtx30, mtx30);
-    PSMTXConcat(cam->view, mtx30, mtx30);
-    GXLoadPosMtxImm(mtx30, 0);
-    GXSetCurrentMtx(0);
+    PSMTXScale(mtxScale, scale, scale, scale);
+    PSMTXConcat(mtxTrans, mtxRot, mtxRot);
+    PSMTXConcat(mtxRot, mtxScale, mtxScale);
+    PSMTXConcat(cam->view, mtxScale, mtxScale);
+    GXLoadPosMtxImm(mtxScale, GX_PNMTX0);
+    GXSetCurrentMtx(GX_PNMTX0);
     effGetTexObj(0x83, &texObj);
-    GXLoadTexObj(&texObj, 0);
+    GXLoadTexObj(&texObj, GX_TEXMAP0);
     GXSetNumChans(1);
-    GXSetChanCtrl(4, 0, 0, 0, 0, 0, 2);
+    GXSetChanCtrl(GX_COLOR0A0, GX_FALSE, GX_SRC_REG, GX_SRC_REG, GX_LIGHT_NULL, GX_DF_NONE, GX_AF_NONE);
 #ifdef MUST_MATCH
     color = effSpiritMakeColor(data);
-    GXSetChanMatColor(4, color);
+    GXSetChanMatColor(GX_COLOR0A0, color);
 #else
     color = *(GXColor*)&unk_80423350;
     color.r = data->colorR;
     color.g = data->colorG;
     color.b = data->colorB;
     color.a = (u8)(float_0p8_80422274 * (f32)data->alpha);
-    GXSetChanMatColor(4, color);
+    GXSetChanMatColor(GX_COLOR0A0, color);
 #endif
     GXSetNumTexGens(1);
-    GXSetTexCoordGen2(0, 1, 4, 0x3C, 0, 0x7D);
+    GXSetTexCoordGen2(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_IDENTITY, GX_FALSE, GX_PTIDENTITY);
     GXSetNumTevStages(1);
-    GXSetTevOrder(0, 0, 0, 4);
-    GXSetTevColorOp(0, 0, 0, 0, 1, 0);
-    GXSetTevAlphaOp(0, 0, 0, 0, 1, 0);
-    GXSetTevColorIn(0, 0xF, 0xF, 0xF, 0xA);
-    GXSetTevAlphaIn(0, 7, 7, 7, 4);
-    GXSetCullMode(0);
+    GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR0A0);
+    GXSetTevColorOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+    GXSetTevAlphaOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+    GXSetTevColorIn(GX_TEVSTAGE0, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ZERO, GX_CC_RASC);
+    GXSetTevAlphaIn(GX_TEVSTAGE0, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_TEXA);
+    GXSetCullMode(GX_CULL_NONE);
     GXClearVtxDesc();
-    GXSetVtxDesc(9, 1);
-    GXSetVtxDesc(0xD, 1);
-    GXSetVtxAttrFmt(0, 9, 1, 4, 0);
-    GXSetVtxAttrFmt(0, 0xD, 1, 4, 0);
-    GXBegin(0x80, 0, 4);
+    GXSetVtxDesc(GX_VA_POS, GX_DIRECT);
+    GXSetVtxDesc(GX_VA_TEX0, GX_DIRECT);
+    GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_POS_XYZ, GX_F32, 0);
+    GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, GX_TEX_ST, GX_F32, 0);
+    GXBegin(GX_QUADS, GX_VTXFMT0, 4);
 #ifdef MUST_MATCH
     // Retail's GXVert.h expands GXPosition/GXTexCoord as macros, so each FIFO store reloads its
     // constant; the inline forms in our header CSE the loads. MATCH_F32 forces the reloads the

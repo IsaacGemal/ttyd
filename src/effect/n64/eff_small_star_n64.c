@@ -104,7 +104,7 @@ static inline f32 sqrtf(f32 x) {
 // emits one .rodata zero Vec per case (the original's rodata has four, one shared with Main).
 #pragma opt_common_subs off // original reloads float_0 in each sqrt block rather than CSEing it
 void* effSmallStarN64Entry(s32 type, s32 count, f32 x, f32 y, f32 z, f32 dirX, f32 dirY, f32 dirZ) {
-    static f32 kaiten;
+    static f32 rotationAngle;
     EffectEntry* effect;
     effSmallStarN64Data* data;
     Vec axis;
@@ -243,9 +243,9 @@ void* effSmallStarN64Entry(s32 type, s32 count, f32 x, f32 y, f32 z, f32 dirX, f
         data->field_0x24 = 0xFF;
     }
 
-    kaiten = kaiten + float_15_8041fcd4;
-    if (kaiten > float_360_8041fc88) {
-        kaiten = float_0_8041fcac;
+    rotationAngle = rotationAngle + float_15_8041fcd4;
+    if (rotationAngle > float_360_8041fc88) {
+        rotationAngle = float_0_8041fcac;
     }
 
     return effect;
@@ -389,7 +389,7 @@ void effSmallStarDisp(CameraId camId, void* param) {
     GXSetZMode(GX_FALSE, GX_ALWAYS, GX_FALSE);
     GXSetNumChans(0);
     GXSetNumTexGens(1);
-    GXSetTexCoordGen2(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, 0x3C, GX_FALSE, GX_PTIDENTITY);
+    GXSetTexCoordGen2(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_IDENTITY, GX_FALSE, GX_PTIDENTITY);
     effGetTexObjN64(0x1D, &texObj);
     GXLoadTexObj(&texObj, GX_TEXMAP0);
     GXSetNumTevStages(1);
@@ -423,7 +423,7 @@ void effSmallStarDisp(CameraId camId, void* param) {
         PSMTXConcat(cam->view, mtx1, mtx1);
         GXLoadPosMtxImm(mtx1, 0);
         GXSetCurrentMtx(0);
-        GXBegin(0x90, 0, 6);
+        GXBegin(GX_TRIANGLES, GX_VTXFMT0, 6);
         tri2(0, 1, 2, 0, 0, 2, 3, 0);
 
         idx1 += 3;
