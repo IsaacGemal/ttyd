@@ -311,7 +311,7 @@ s32 peachMain(void) {
         mario_kemuri_80130474();
         partyMain();
         marioCamMain();
-        *(s32*)(mp->field_0x32 + 2) += 1;
+        mp->field_0x34 += 1;
         return 1;
     }
     if (mp->flags & 0x40000) {
@@ -356,7 +356,7 @@ s32 peachMain(void) {
     marioCamMain();
     {
         f32 zero = *(const f32*)&float_0_80420250;
-        *(s32*)(mp->field_0x32 + 2) += 1;
+        mp->field_0x34 += 1;
         mp->prevPosition = mp->position;
         mp->riderDelta.x = zero;
         mp->riderDelta.y = zero;

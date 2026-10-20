@@ -1289,7 +1289,7 @@ void inertia(PartyEntry* party) {
 
     if (f3 == zero) {
         f32 k = float_neg0p07;
-        if (*(u32*)mario->field_0x1F0 != 0) {
+        if (mario->hitobjWall != NULL) {
             k = float_neg0p5;
         }
         f4 = f4 * k + f4;
