@@ -214,19 +214,15 @@ void effKemuriMain(EffectEntry* effect) {
 	effKemuriData* data = effect->userdata;
 	s32 i = 1;
 	s32 type;
-#ifdef MUST_MATCH
-	/* MUST_MATCH: retail builds the Vec in a scratch and copies it to a second local before
-	   dispCalcZ; a single local folds the copy away. */
+	/* Retail builds the Vec in a scratch and copies it to a second local before dispCalcZ;
+	   a single local folds the copy away. */
 	Vec position;
-#endif
 	Vec disp = { 0.0f, 0.0f, 0.0f };
 
 	disp.x = data->x;
 	disp.y = data->y;
 	disp.z = data->z;
-#ifdef MUST_MATCH
 	position = disp;
-#endif
 
 	type = data->kind;
 	data++;
@@ -276,35 +272,27 @@ void effKemuriMain(EffectEntry* effect) {
 			return;
 		}
 	}
-#ifdef MUST_MATCH
 	dispEntry(CAMERA_3D, dispCalcZ(&position), 2, effKemuriDisp, effect);
-#else
-	dispEntry(CAMERA_3D, dispCalcZ(&disp), 2, effKemuriDisp, effect);
-#endif
 }
 
-// The MUST_MATCH re-read of effect->userdata below is needed for the register allocation: it makes MWCC
+// The re-read of effect->userdata below is needed for the register allocation: it makes MWCC
 // load it into a volatile register and copy it to the callee-saved r31 before the sin call (retail's
 // `lwz r7; mr r31, r7`).
 static void effKemuri2Main(EffectEntry* effect) {
 	effKemuri2Data* data = effect->userdata;
 	s32 i;
 	f32 angle;
-#ifdef MUST_MATCH
-	/* MUST_MATCH: retail builds the Vec in a scratch and copies it to a second local before
-	   dispCalcZ; a single local folds the copy away. */
+	/* Retail builds the Vec in a scratch and copies it to a second local before dispCalcZ;
+	   a single local folds the copy away. */
 	Vec position;
-#endif
 	Vec disp = { 0.0f, 0.0f, 0.0f };
 
 	disp.x = data->x;
 	disp.y = data->y;
 	disp.z = data->z;
-#ifdef MUST_MATCH
 	position = disp;
-	/* MUST_MATCH: redundant re-read makes MWCC split data into r7/r31 as retail does. */
+	/* The redundant re-read makes MWCC split data into r7/r31 as retail does. */
 	data = effect->userdata;
-#endif
 	angle = (f32)sin(float_3p1416_8041c6e0 * (f32)data->counter / float_30_8041c6e4);
 	data->counter++;
 	if (data->counter > 30) {
@@ -324,11 +312,7 @@ static void effKemuri2Main(EffectEntry* effect) {
 			data->alpha = (s32)((f32)data->alpha * float_0p8_8041c6f0);
 		}
 	}
-#ifdef MUST_MATCH
 	dispEntry(CAMERA_3D, dispCalcZ(&position), 2, effKemuri2Disp, effect);
-#else
-	dispEntry(CAMERA_3D, dispCalcZ(&disp), 2, effKemuri2Disp, effect);
-#endif
 }
 
 // Draws a Kemuri puff as two camera-facing quads.
@@ -339,10 +323,8 @@ static void effKemuri2Main(EffectEntry* effect) {
 #pragma opt_common_subs off
 #endif
 void effKemuriDisp(CameraId camId, void* param) {
-#ifdef MUST_MATCH
 	f32 one;
 	f32 left;
-#endif
 	EffectEntry* effect = param;
 	effKemuriData* data = effect->userdata;
 	s32 i;
@@ -410,9 +392,7 @@ void effKemuriDisp(CameraId camId, void* param) {
 	GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_POS_XYZ, GX_F32, 0);
 	GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, GX_TEX_ST, GX_F32, 0);
 
-#ifdef MUST_MATCH
 	one = float_1_8041c6b0;
-#endif
 	data++;
 	for (i = 1; i < effect->count; i++, data++) {
 		for (j = 0; j < 2; j++) {
@@ -436,78 +416,48 @@ void effKemuriDisp(CameraId camId, void* param) {
 			PSMTXConcat(tmpMtx, scaleMtx, tmpMtx);
 			GXLoadPosMtxImm(tmpMtx, GX_PNMTX0);
 
-#ifdef MUST_MATCH
-			{ f32 unity = MATCH_F32(float_1_8041c6b0); PSMTXScale(scaleMtx, float_0p0625_8041c6d8, unity, unity); }
-#else
-			PSMTXScale(scaleMtx, float_0p0625_8041c6d8, float_1_8041c6b0, float_1_8041c6b0);
-#endif
+			{
+				f32 unity = MATCH_F32(float_1_8041c6b0);
+
+				PSMTXScale(scaleMtx, float_0p0625_8041c6d8, unity, unity);
+			}
 			PSMTXTrans(transMtx, (f32)data->sheetU0, float_neg0p2_8041c6dc, float_0_8041c6bc);
 			PSMTXConcat(scaleMtx, transMtx, transMtx);
 			GXLoadTexMtxImm(transMtx, GX_TEXMTX0, GX_MTX2x4);
 
-#ifdef MUST_MATCH
-			{ f32 unity = MATCH_F32(float_1_8041c6b0); PSMTXScale(scaleMtx, float_0p0625_8041c6d8, unity, unity); }
-#else
-			PSMTXScale(scaleMtx, float_0p0625_8041c6d8, float_1_8041c6b0, float_1_8041c6b0);
-#endif
+			{
+				f32 unity = MATCH_F32(float_1_8041c6b0);
+
+				PSMTXScale(scaleMtx, float_0p0625_8041c6d8, unity, unity);
+			}
 			PSMTXTrans(transMtx, (f32)data->sheetU1, float_neg0p2_8041c6dc, float_0_8041c6bc);
 			PSMTXConcat(scaleMtx, transMtx, transMtx);
 			GXLoadTexMtxImm(transMtx, GX_TEXMTX1, GX_MTX2x4);
 
 			GXBegin(GX_QUADS, GX_VTXFMT0, 4);
-#ifdef MUST_MATCH
+			// Each vertex is a position (x, y, z) followed by a texcoord (s, t), written straight to the FIFO
+			// so the constants load from their own symbols.
 			left = -one * float_0p5_8041c6cc;
 			GXParam1f32(left);
 			GXParam1f32(one);
 			GXWGFifo.f32 = MATCH_F32(float_0_8041c6bc);
-#else
-			GXPosition3f32(-float_1_8041c6b0 * float_0p5_8041c6cc, float_1_8041c6b0, float_0_8041c6bc);
-#endif
-#ifdef MUST_MATCH
 			GXWGFifo.f32 = MATCH_F32(float_0_8041c6bc);
 			GXWGFifo.f32 = MATCH_F32(float_0_8041c6bc);
-#else
-			GXTexCoord2f32(float_0_8041c6bc, float_0_8041c6bc);
-#endif
-#ifdef MUST_MATCH
 			GXParam1f32(float_0p5_8041c6cc);
 			GXParam1f32(one);
 			GXWGFifo.f32 = MATCH_F32(float_0_8041c6bc);
-#else
-			GXPosition3f32(float_0p5_8041c6cc, float_1_8041c6b0, float_0_8041c6bc);
-#endif
-#ifdef MUST_MATCH
 			GXWGFifo.f32 = MATCH_F32(float_1_8041c6b0);
 			GXWGFifo.f32 = MATCH_F32(float_0_8041c6bc);
-#else
-			GXTexCoord2f32(float_1_8041c6b0, float_0_8041c6bc);
-#endif
-#ifdef MUST_MATCH
 			GXParam1f32(float_0p5_8041c6cc);
 			GXParam1f32(MATCH_F32(float_0_8041c6bc));
 			GXWGFifo.f32 = MATCH_F32(float_0_8041c6bc);
-#else
-			GXPosition3f32(float_0p5_8041c6cc, float_0_8041c6bc, float_0_8041c6bc);
-#endif
-#ifdef MUST_MATCH
 			GXWGFifo.f32 = MATCH_F32(float_1_8041c6b0);
 			GXWGFifo.f32 = MATCH_F32(float_1_8041c6b0);
-#else
-			GXTexCoord2f32(float_1_8041c6b0, float_1_8041c6b0);
-#endif
-#ifdef MUST_MATCH
 			GXParam1f32(left);
 			GXParam1f32(MATCH_F32(float_0_8041c6bc));
 			GXWGFifo.f32 = MATCH_F32(float_0_8041c6bc);
-#else
-			GXPosition3f32(-float_1_8041c6b0 * float_0p5_8041c6cc, float_0_8041c6bc, float_0_8041c6bc);
-#endif
-#ifdef MUST_MATCH
 			GXWGFifo.f32 = MATCH_F32(float_0_8041c6bc);
 			GXWGFifo.f32 = MATCH_F32(float_1_8041c6b0);
-#else
-			GXTexCoord2f32(float_0_8041c6bc, float_1_8041c6b0);
-#endif
 		}
 	}
 }
@@ -517,19 +467,15 @@ void effKemuriDisp(CameraId camId, void* param) {
 #endif
 
 // Draws two camera-facing textured quads for the secondary smoke effect.
-#ifdef MUST_MATCH
 static inline GXColor kemuriTevColor(u8 alpha, GXColor c) {
 	c.a = alpha;
 	return c;
 }
-#endif
 
 // 100% matched: the p8/p12/n12p8 preheader locals (declared p8,p12,n12p8 and assigned
 // n12p8,p12,p8) and the quad's x6/y4/px/py locals reproduce retail's volatile-FPR colouring.
-#ifdef MUST_MATCH
-// MUST_MATCH: reading 6.4 through a cast keeps the front end from merging its uses.
+// Reading 6.4 through a cast keeps the front end from merging its uses.
 #define KEMURI_SIXP4 (*(f32*)&float_6p4_8041c6d4)
-#endif
 static void effKemuri2Disp(CameraId cameraId, void* param) {
 	EffectEntry* effect = param;
 	effKemuri2Data* data = effect->userdata;
@@ -542,12 +488,10 @@ static void effKemuri2Disp(CameraId cameraId, void* param) {
 	Mtx outMtx;
 	Mtx tmpMtx;
 	s32 i;
-#ifdef MUST_MATCH
-	/* MUST_MATCH: names for the negSize source loads keep their volatile-FPR colouring. */
+	/* Names for the negSize source loads keep their volatile-FPR colouring. */
 	f32 p8;
 	f32 p12;
 	f32 n12p8;
-#endif
 
 	camera = camGetPtr(cameraId);
 
@@ -573,32 +517,22 @@ static void effKemuri2Disp(CameraId cameraId, void* param) {
 	GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_POS_XYZ, GX_F32, 0);
 	GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, GX_TEX_ST, GX_F32, 0);
 
-#ifdef MUST_MATCH
 	n12p8 = -float_12p8_8041c690;
 	p12 = float_12_8041c688;
 	p8 = float_8_8041c68c;
-#endif
 
 	for (i = 0; i < 2; i++) {
-#ifdef MUST_MATCH
 		const f32 negSizeX = -p12;
 		const f32 negSizeY = -p8;
 		const f32 negSize2 = n12p8 * float_0p5_8041c6cc;
-#else
-		const f32 negSizeX = -float_12_8041c688;
-		const f32 negSizeY = -float_8_8041c68c;
-		const f32 negSize2 = -float_12p8_8041c690 * float_0p5_8041c6cc;
-#endif
 
 		if ((data->heading > float_20_8041c694 && data->heading < float_160_8041c698) ||
 		    (data->heading > float_180_8041c69c && data->heading < float_340_8041c6a0)) {
-#ifdef MUST_MATCH
-			/* MUST_MATCH: named quad temps reproduce retail's volatile-FPR colouring. */
+			/* Named quad temps reproduce retail's volatile-FPR colouring. */
 			f32 x6;
 			f32 y4;
 			f32 px;
 			f32 py;
-#endif
 			PSMTXTrans(transMtx, data->x + (f32)(1 - i), data->y - (f32)(1 - i), data->z);
 			PSMTXRotRad(rotMtx, 'y', float_deg2rad_8041c6a4 * -camGetPtr(cameraId)->viewYaw);
 			PSMTXRotRad(rotMtx2, 'z', float_0p17453_8041c6a8);
@@ -624,26 +558,13 @@ static void effKemuri2Disp(CameraId cameraId, void* param) {
 			effGetTexObj(0xD, &texobj);
 			GXLoadTexObj(&texobj, GX_TEXMAP0);
 			if (i == 0) {
-#ifdef MUST_MATCH
 				GXSetTevColor(GX_TEVREG0, kemuriTevColor(data->alpha, unk_80423010));
-#else
-				GXColor color = unk_80423010;
-
-				color.a = data->alpha;
-				GXSetTevColor(GX_TEVREG0, color);
-#endif
 			} else {
-#ifdef MUST_MATCH
 				GXSetTevColor(GX_TEVREG0, kemuriTevColor(data->alpha, dat_8041c680));
-#else
-				GXColor color = dat_8041c680;
-
-				color.a = data->alpha;
-				GXSetTevColor(GX_TEVREG0, color);
-#endif
 			}
 			GXBegin(GX_QUADS, GX_VTXFMT0, 4);
-#ifdef MUST_MATCH
+			// Each vertex is a position (x, y, z) followed by a texcoord (s, t), written straight to the FIFO
+			// so the constants load from their own symbols.
 			px = negSizeX * float_0p5_8041c6cc;
 			py = negSizeY * float_0p5_8041c6cc;
 			y4 = float_4_8041c6d0;
@@ -668,16 +589,6 @@ static void effKemuri2Disp(CameraId cameraId, void* param) {
 			GXWGFifo.f32 = MATCH_F32(float_0_8041c6bc);
 			GXWGFifo.f32 = MATCH_F32(float_0_8041c6bc);
 			GXWGFifo.f32 = MATCH_F32(float_1_8041c6b0);
-#else
-			GXPosition3f32(negSizeX * float_0p5_8041c6cc, float_4_8041c6d0, float_0_8041c6bc);
-			GXTexCoord2f32(float_0_8041c6bc, float_0_8041c6bc);
-			GXPosition3f32(float_6_8041c6c4, float_4_8041c6d0, float_0_8041c6bc);
-			GXTexCoord2f32(float_1_8041c6b0, float_0_8041c6bc);
-			GXPosition3f32(float_6_8041c6c4, negSizeY * float_0p5_8041c6cc, float_0_8041c6bc);
-			GXTexCoord2f32(float_1_8041c6b0, float_1_8041c6b0);
-			GXPosition3f32(negSizeX * float_0p5_8041c6cc, negSizeY * float_0p5_8041c6cc, float_0_8041c6bc);
-			GXTexCoord2f32(float_0_8041c6bc, float_1_8041c6b0);
-#endif
 		}
 
 		PSMTXTrans(transMtx, data->x + (f32)(1 - i), data->y - (f32)(1 - i), data->z);
@@ -703,83 +614,35 @@ static void effKemuri2Disp(CameraId cameraId, void* param) {
 		if (i == 0) {
 			effGetTexObj(0xC, &texobj);
 			GXLoadTexObj(&texobj, GX_TEXMAP0);
-#ifdef MUST_MATCH
 			GXSetTevColor(GX_TEVREG0, kemuriTevColor(data->alpha, unk_80423014));
-#else
-			{
-				GXColor color = unk_80423014;
-
-				color.a = data->alpha;
-				GXSetTevColor(GX_TEVREG0, color);
-			}
-#endif
 		} else {
 			effGetTexObj(0xB, &texobj);
 			GXLoadTexObj(&texobj, GX_TEXMAP0);
-#ifdef MUST_MATCH
 			GXSetTevColor(GX_TEVREG0, kemuriTevColor(data->alpha, dat_8041c684));
-#else
-			{
-				GXColor color = dat_8041c684;
-
-				color.a = data->alpha;
-				GXSetTevColor(GX_TEVREG0, color);
-			}
-#endif
 		}
 		GXBegin(GX_QUADS, GX_VTXFMT0, 4);
-#ifdef MUST_MATCH
+		// Each vertex is a position (x, y, z) followed by a texcoord (s, t), written straight to the FIFO
+		// so the constants load from their own symbols.
 		GXWGFifo.f32 = negSize2;
 		GXWGFifo.f32 = KEMURI_SIXP4;
 		GXWGFifo.f32 = MATCH_F32(float_0_8041c6bc);
-#else
-		GXPosition3f32(negSize2, float_6p4_8041c6d4, float_0_8041c6bc);
-#endif
-#ifdef MUST_MATCH
 		GXWGFifo.f32 = MATCH_F32(float_0_8041c6bc);
 		GXWGFifo.f32 = MATCH_F32(float_0_8041c6bc);
-#else
-		GXTexCoord2f32(float_0_8041c6bc, float_0_8041c6bc);
-#endif
-#ifdef MUST_MATCH
 		GXWGFifo.f32 = KEMURI_SIXP4;
 		GXWGFifo.f32 = KEMURI_SIXP4;
 		GXWGFifo.f32 = MATCH_F32(float_0_8041c6bc);
-#else
-		GXPosition3f32(float_6p4_8041c6d4, float_6p4_8041c6d4, float_0_8041c6bc);
-#endif
-#ifdef MUST_MATCH
 		GXWGFifo.f32 = MATCH_F32(float_1_8041c6b0);
 		GXWGFifo.f32 = MATCH_F32(float_0_8041c6bc);
-#else
-		GXTexCoord2f32(float_1_8041c6b0, float_0_8041c6bc);
-#endif
-#ifdef MUST_MATCH
 		GXWGFifo.f32 = KEMURI_SIXP4;
 		GXWGFifo.f32 = negSize2;
 		GXWGFifo.f32 = MATCH_F32(float_0_8041c6bc);
-#else
-		GXPosition3f32(float_6p4_8041c6d4, negSize2, float_0_8041c6bc);
-#endif
-#ifdef MUST_MATCH
 		GXWGFifo.f32 = MATCH_F32(float_1_8041c6b0);
 		GXWGFifo.f32 = MATCH_F32(float_1_8041c6b0);
-#else
-		GXTexCoord2f32(float_1_8041c6b0, float_1_8041c6b0);
-#endif
-#ifdef MUST_MATCH
 		GXWGFifo.f32 = negSize2;
 		GXWGFifo.f32 = negSize2;
 		GXWGFifo.f32 = MATCH_F32(float_0_8041c6bc);
-#else
-		GXPosition3f32(negSize2, negSize2, float_0_8041c6bc);
-#endif
-#ifdef MUST_MATCH
 		GXWGFifo.f32 = MATCH_F32(float_0_8041c6bc);
 		GXWGFifo.f32 = MATCH_F32(float_1_8041c6b0);
-#else
-		GXTexCoord2f32(float_0_8041c6bc, float_1_8041c6b0);
-#endif
 	}
 }
 
