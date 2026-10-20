@@ -28,19 +28,7 @@ extern const f32 float_24_8041f8b0;
 extern const f32 float_2_8041f8b4;
 extern const f32 float_6p2832_8041f8b8;
 extern const f32 float_360_8041f8bc;
-extern const f32 float_127_8041f8c0;
-extern const f32 float_32_8041f8c4;
-extern const f32 float_0p01_8041f8c8;
-extern const f32 float_6_8041f8cc;
-extern const f32 float_256_8041f8d0;
-extern const f32 float_0p2_8041f8d4;
-extern const f32 float_128_8041f8d8;
-extern const f32 float_240_8041f8dc;
-extern const f32 float_0p97_8041f8e0;
-extern const f32 float_480_8041f8e4;
 
-// .rodata scratch vector the original zeroes before filling in the effect position.
-const Vec vec3_802fb2e8 = { 0.0f, 0.0f, 0.0f };
 // The compiler's int->float magic double (0x4330000080000000) is intentionally not
 // defined here: defining it duplicates the pool. Left out, the single pooled entry is
 // emitted at the original's .rodata+0x10 offset and resolves to the original address.
@@ -131,7 +119,7 @@ static u32 size8x8_tex32x32_vtx[14] = {
 // Inline copy of system.c's helper: zero-fill a Vec from the rodata constant, then
 // overwrite it with the supplied position; the temporary is returned by value.
 inline Vec initializeVec(Vec* input) {
-	Vec temp = vec3_802fb2e8;
+	Vec temp = (Vec){ 0.0f, 0.0f, 0.0f };
 	temp.x = input->x;
 	temp.y = input->y;
 	temp.z = input->z;
@@ -263,22 +251,22 @@ void effOpukuWprotectMain(EffectEntry* effect) {
 #else
 	s = (f32)sin(float_6p2832_8041f8b8 * (f32)(f14 * 7) / float_360_8041f8bc);
 #endif
-	data->field_0x1C = (u8)(s32)(float_32_8041f8c4 * s + float_127_8041f8c0);
-	t = float_0p01_8041f8c8 * (f32)f14;
+	data->field_0x1C = (u8)(s32)(32.0f * s + 127.0f);
+	t = 0.01f * (f32)f14;
 	a1 = float_6p2832_8041f8b8 * t / float_360_8041f8bc;
 	sin1 = (f32)sin(a1);
-	sin2 = (f32)sin(float_6p2832_8041f8b8 * (float_6_8041f8cc * t) / float_360_8041f8bc);
+	sin2 = (f32)sin(float_6p2832_8041f8b8 * (6.0f * t) / float_360_8041f8bc);
 	cos1 = (f32)cos(float_6p2832_8041f8b8 * (float_2_8041f8b4 * t) / float_360_8041f8bc);
 	cos2 = (f32)cos(a1);
 	{
-		f32 sin2s = float_32_8041f8c4 * sin2;
-		data->field_0x30 = float_256_8041f8d0
+		f32 sin2s = 32.0f * sin2;
+		data->field_0x30 = 256.0f
 		    + sin2s * sin1
-		    + float_32_8041f8c4 * cos1
-		    + float_32_8041f8c4 * cos2;
+		    + 32.0f * cos1
+		    + 32.0f * cos2;
 	}
-	data->field_0x34 += float_0p2_8041f8d4;
-	if (data->field_0x34 >= float_128_8041f8d8) {
+	data->field_0x34 += 0.2f;
+	if (data->field_0x34 >= 128.0f) {
 		data->field_0x34 = float_0_8041f890;
 	}
 
@@ -289,16 +277,16 @@ void effOpukuWprotectMain(EffectEntry* effect) {
 		}
 		if (data->field_0x88[i] == 0) {
 			data->field_0x38[i] = float_0_8041f890;
-			data->field_0x48[i] = float_240_8041f8dc;
-			data->field_0x58[i] = float_0p2_8041f8d4 * (f32)(rand() % 11 - 5);
+			data->field_0x48[i] = 240.0f;
+			data->field_0x58[i] = 0.2f * (f32)(rand() % 11 - 5);
 			data->field_0x68[i] = (f32)(rand() % 11 + 2);
 			data->field_0x78[i] = (f32)(rand() % 11 + 1);
 		}
 		data->field_0x38[i] += data->field_0x58[i];
 		data->field_0x48[i] += data->field_0x68[i];
-		data->field_0x58[i] *= float_0p97_8041f8e0;
+		data->field_0x58[i] *= 0.97f;
 		data->field_0x68[i] += float_0p1_8041f8a4 * (float_10_8041f898 - data->field_0x68[i]);
-		if (data->field_0x48[i] > float_480_8041f8e4) {
+		if (data->field_0x48[i] > 480.0f) {
 			data->field_0x88[i] = -(rand() % 11) - 1;
 		}
 	}
@@ -518,13 +506,3 @@ const f32 float_24_8041f8b0 = 24.0f;
 const f32 float_2_8041f8b4 = 2.0f;
 const f32 float_6p2832_8041f8b8 = 6.2831855f;
 const f32 float_360_8041f8bc = 360.0f;
-const f32 float_127_8041f8c0 = 127.0f;
-const f32 float_32_8041f8c4 = 32.0f;
-const f32 float_0p01_8041f8c8 = 0.01f;
-const f32 float_6_8041f8cc = 6.0f;
-const f32 float_256_8041f8d0 = 256.0f;
-const f32 float_0p2_8041f8d4 = 0.2f;
-const f32 float_128_8041f8d8 = 128.0f;
-const f32 float_240_8041f8dc = 240.0f;
-const f32 float_0p97_8041f8e0 = 0.97f;
-const f32 float_480_8041f8e4 = 480.0f;

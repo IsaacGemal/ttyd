@@ -257,6 +257,34 @@ def moved_functions(worse, report):
     return out
 
 
+def renamed_functions(worse, changes):
+    """The `worse` entries that are a function renamed in place (config/G8MJ01/symbols.txt and the source together):
+    gone from its unit, and the same unit gained a function at the same address with at least the old score.
+    Returns [(entry, new_name, new_score)]."""
+    gained = {}
+    for u in changes.get("units") or []:
+        for f in u.get("functions") or []:
+            if "to" in f and "from" not in f:
+                addr = (f.get("metadata") or {}).get("virtual_address")
+                if addr is not None:
+                    gained[(u["name"], addr)] = (f["name"], f["to"].get("fuzzy_match_percent") or 0.0)
+    lost = {}
+    for u in changes.get("units") or []:
+        for f in u.get("functions") or []:
+            if "from" in f and "to" not in f:
+                lost[f"{u['name']}:{f['name']}"] = (u["name"], (f.get("metadata") or {}).get("virtual_address"))
+    out = []
+    for w in worse:
+        name, key, a, b = w
+        if key != "fuzzy_match_percent" or name not in lost or b != 0 or lost[name][1] is None:
+            continue
+        new = gained.get(lost[name])
+        if new and new[1] >= a:
+            del gained[lost[name]]  # one successor excuses one lost function
+            out.append((w, new[0], new[1]))
+    return out
+
+
 def ratchet(allowed=()):
     current = BUILD / "report.json"
     changes = CI_DIR / "changes.json"
@@ -297,6 +325,9 @@ def ratchet(allowed=()):
             continue  # unit linked, removed or new: the checksum and the unit measures cover it
         a, b = before.get(key, 0.0), after.get(key, 0.0)
         (worse if b < a else better if b > a else []).append((f"{key[0]}[{key[1]}]", "fuzzy_match_percent", a, b))
+    for w, new, score in renamed_functions(worse, data):
+        print(f"     renamed: {w[0]} -> {new} ({w[2]:.2f} -> {score:.2f})")
+        worse.remove(w)
     for w, unit, score in moved_functions(worse, json.loads(current.read_text())):
         print(f"     moved: {w[0].split(':', 1)[1]} {w[0].split(':', 1)[0]} -> {unit} ({w[2]:.2f} -> {score:.2f})")
         worse.remove(w)
