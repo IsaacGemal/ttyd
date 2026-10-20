@@ -389,7 +389,7 @@ void effSmallStarDisp(CameraId camId, void* param) {
     GXSetZMode(GX_FALSE, GX_ALWAYS, GX_FALSE);
     GXSetNumChans(0);
     GXSetNumTexGens(1);
-    GXSetTexCoordGen2(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, 0x3C, GX_FALSE, GX_PTIDENTITY);
+    GXSetTexCoordGen2(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_IDENTITY, GX_FALSE, GX_PTIDENTITY);
     effGetTexObjN64(0x1D, &texObj);
     GXLoadTexObj(&texObj, GX_TEXMAP0);
     GXSetNumTevStages(1);
@@ -423,7 +423,7 @@ void effSmallStarDisp(CameraId camId, void* param) {
         PSMTXConcat(cam->view, mtx1, mtx1);
         GXLoadPosMtxImm(mtx1, 0);
         GXSetCurrentMtx(0);
-        GXBegin(0x90, 0, 6);
+        GXBegin(GX_TRIANGLES, GX_VTXFMT0, 6);
         tri2(0, 1, 2, 0, 0, 2, 3, 0);
 
         idx1 += 3;

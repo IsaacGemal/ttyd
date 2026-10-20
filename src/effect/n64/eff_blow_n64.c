@@ -35,32 +35,32 @@ static inline void blowSetColor(u8 a) {
 }
 
 typedef struct effBlowParticle {
-	s32 field_0x00;  // 0x00
-	s32 type;        // 0x04
+	s32 type;        // 0x00 caller type value
+	s32 state;       // 0x04 0 = respawn, 1 = finishing, 2 = dead
 	f32 x;           // 0x08
 	f32 y;           // 0x0C
 	f32 z;           // 0x10
 	f32 vx;          // 0x14
 	f32 vy;          // 0x18
 	f32 vz;          // 0x1C
-	f32 field_0x20;  // 0x20
-	f32 field_0x24;  // 0x24
-	f32 field_0x28;  // 0x28
-	f32 field_0x2C;  // 0x2C
-	f32 field_0x30;  // 0x30
-	f32 field_0x34;  // 0x34
-	f32 field_0x38;  // 0x38
-	f32 field_0x3C;  // 0x3C
-	f32 field_0x40;  // 0x40
+	f32 spawnVx;     // 0x20
+	f32 spawnVy;     // 0x24
+	f32 spawnVz;     // 0x28
+	f32 burstAx;     // 0x2C
+	f32 burstAy;     // 0x30
+	f32 burstAz;     // 0x34
+	f32 accX;        // 0x38
+	f32 accY;        // 0x3C
+	f32 accZ;        // 0x40
 	f32 scaleX;      // 0x44
 	f32 scaleY;      // 0x48
 	f32 rotZ;        // 0x4C
-	f32 field_0x50;  // 0x50
-	f32 field_0x54;  // 0x54
-	s32 field_0x58;  // 0x58
+	f32 rotSpeed;    // 0x50
+	f32 spawnRotZ;   // 0x54
+	s32 alpha;       // 0x58
 	s32 life;        // 0x5C
-	s32 field_0x60;  // 0x60
-	s32 field_0x64;  // 0x64
+	s32 age;         // 0x60
+	s32 delay;       // 0x64
 } effBlowParticle;
 
 #ifdef MUST_MATCH
@@ -237,13 +237,13 @@ EffectEntry* effBlowN64Entry(s32 type, s32 count, f32 x, f32 y, f32 z, f32 dirX,
 	effect->userdata = data;
 	effect->callback = effBlowMain;
 
-	data->type = 0;
-	data->field_0x00 = type;
+	data->state = 0;
+	data->type = type;
 	data->x = x;
 	data->y = y;
 	data->z = z;
 	data->life = 10;
-	data->field_0x60 = 0;
+	data->age = 0;
 
 	work = data + 1;
 	twoX = float_2_8041e9c4 * dirX;
@@ -259,27 +259,27 @@ EffectEntry* effBlowN64Entry(s32 type, s32 count, f32 x, f32 y, f32 z, f32 dirX,
 		axis = blowInitVec(dirX, dirY, dirZ);
 		PSMTXRotAxisRad(mtx, &axis, float_deg2rad_8041e98c * (f32)(i * 360 / 5));
 
-		work->field_0x20 = twoX;
+		work->spawnVx = twoX;
 		work->vx = twoX;
-		work->field_0x24 = twoY;
+		work->spawnVy = twoY;
 		work->vy = twoY;
-		work->field_0x28 = twoZ;
+		work->spawnVz = twoZ;
 		work->vz = twoZ;
-		work->field_0x38 = accX;
-		work->field_0x3C = accY;
-		work->field_0x40 = accZ;
-		work->field_0x2C = float_4_8041e994 * (float_0p1_8041e9cc * (mtx[0][0] * px + mtx[0][1] * py + mtx[0][2] * pz));
-		work->field_0x30 = float_4_8041e994 * (float_0p1_8041e9cc * (mtx[1][0] * px + mtx[1][1] * py + mtx[1][2] * pz));
-		work->field_0x34 = float_4_8041e994 * (float_0p1_8041e9cc * (mtx[2][0] * px + mtx[2][1] * py + mtx[2][2] * pz));
+		work->accX = accX;
+		work->accY = accY;
+		work->accZ = accZ;
+		work->burstAx = float_4_8041e994 * (float_0p1_8041e9cc * (mtx[0][0] * px + mtx[0][1] * py + mtx[0][2] * pz));
+		work->burstAy = float_4_8041e994 * (float_0p1_8041e9cc * (mtx[1][0] * px + mtx[1][1] * py + mtx[1][2] * pz));
+		work->burstAz = float_4_8041e994 * (float_0p1_8041e9cc * (mtx[2][0] * px + mtx[2][1] * py + mtx[2][2] * pz));
 
 		work->scaleX = float_0p5_8041e990;
 		work->scaleY = float_4_8041e994;
-		work->field_0x50 = float_20_8041e998;
+		work->rotSpeed = float_20_8041e998;
 		angle = (f32)(rand() % 360);
-		work->field_0x54 = angle;
+		work->spawnRotZ = angle;
 		work->rotZ = angle;
-		work->field_0x58 = 0xFF;
-		work->field_0x64 = ((i - 1) / 5) * 2;
+		work->alpha = 0xFF;
+		work->delay = ((i - 1) / 5) * 2;
 		work->life = 10;
 	}
 
@@ -294,7 +294,7 @@ void effBlowMain(EffectEntry* effect) {
 	s32 life;
 	s32 i;
 	s32 elemLife;
-	s32 type;
+	s32 state;
 
 	data = effect->userdata;
 	position = (Vec){ 0.0f, 0.0f, 0.0f };
@@ -304,36 +304,36 @@ void effBlowMain(EffectEntry* effect) {
 	position2 = position;
 
 	data->life--;
-	data->field_0x60++;
+	data->age++;
 	life = data->life;
-	type = data->type;
-	if (life < 0 && type == 2) {
+	state = data->state;
+	if (life < 0 && state == 2) {
 		effDelete(effect);
 		return;
 	}
 
 	for (i = 1, data++; i < effect->count; i++, data++) {
-		if (data->field_0x64 > 0) {
-			data->field_0x64--;
-			if (data->field_0x64 > 0) {
+		if (data->delay > 0) {
+			data->delay--;
+			if (data->delay > 0) {
 				continue;
 			}
 		}
 		data->life--;
 		elemLife = data->life;
 		if (elemLife < 0) {
-			if (type == 0) {
+			if (state == 0) {
 				data->x = float_0_8041e988;
 				data->y = float_0_8041e988;
 				data->z = float_0_8041e988;
-				data->vx = data->field_0x20;
-				data->vy = data->field_0x24;
-				data->vz = data->field_0x28;
+				data->vx = data->spawnVx;
+				data->vy = data->spawnVy;
+				data->vz = data->spawnVz;
 				data->scaleX = float_0p5_8041e990;
 				data->scaleY = float_4_8041e994;
-				data->field_0x50 = float_20_8041e998;
-				data->rotZ = data->field_0x54;
-				data->field_0x58 = 0xFF;
+				data->rotSpeed = float_20_8041e998;
+				data->rotZ = data->spawnRotZ;
+				data->alpha = 0xFF;
 				data->life = 10;
 				data->life--;
 				elemLife = data->life;
@@ -344,42 +344,42 @@ void effBlowMain(EffectEntry* effect) {
 				data->vx = float_0_8041e988;
 				data->vy = float_0_8041e988;
 				data->vz = float_0_8041e988;
-				data->field_0x58 = 0;
+				data->alpha = 0;
 				data->life = 0;
 			}
 		}
 		if (elemLife == 5 || elemLife == 6 || elemLife == 4) {
-			data->vx += data->field_0x2C;
-			data->vy += data->field_0x30;
-			data->vz += data->field_0x34;
+			data->vx += data->burstAx;
+			data->vy += data->burstAy;
+			data->vz += data->burstAz;
 		}
 		if (elemLife < 8) {
 			data->scaleX += float_8_8041e99c * (float_0p03_8041e9a0 * (lbl_8041E9A4 - data->scaleX));
 			data->scaleY += float_6_8041e9a8 * (float_0p03_8041e9a0 * (float_0p5_8041e990 - data->scaleY));
 		}
-		data->vx += data->field_0x38;
-		data->vy += data->field_0x3C;
-		data->vz += data->field_0x40;
+		data->vx += data->accX;
+		data->vy += data->accY;
+		data->vz += data->accZ;
 		if (data->vy < float_0_8041e988) {
-			data->field_0x50 *= float_0p2_8041e9ac;
+			data->rotSpeed *= float_0p2_8041e9ac;
 			data->vx *= float_0p225_8041e9b0;
 			data->vy *= float_0p45_8041e9b4;
 			data->vz *= float_0p225_8041e9b0;
-			data->field_0x58 = (s32)((f32)data->field_0x58 * float_0p8_8041e9b8);
+			data->alpha = (s32)((f32)data->alpha * float_0p8_8041e9b8);
 		}
 		data->x += data->vx;
 		data->y += data->vy;
 		data->z += data->vz;
-		data->rotZ += data->field_0x50;
+		data->rotZ += data->rotSpeed;
 	}
 
 	if (life < 0) {
 		effBlowParticle* work = effect->userdata;
-		if (work->type == 1) {
-			work->type = 2;
+		if (work->state == 1) {
+			work->state = 2;
 		}
 		work->life = 10;
-		work->field_0x60 = 0;
+		work->age = 0;
 	}
 	dispEntry(CAMERA_3D, dispCalcZ(&position2), 2, effBlowDisp, effect);
 }

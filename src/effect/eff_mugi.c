@@ -48,12 +48,12 @@ extern const f32 float_neg3p9_8041cabc;
 // f19-f27 for the pooled constants and f28-f31 for the four arguments; MWCC only
 // colours it that way when the sin() result is held in a temp before the store
 // (see the MUST_MATCH block below).
-EffectEntry* effMugiKemuriEntry(f32 float1, f32 float2, f32 float3, f32 float4) {
+EffectEntry* effMugiKemuriEntry(f32 x, f32 y, f32 z, f32 baseAngle) {
 	EffectEntry* entry = effEntry();
 	MugiKemuriWork* work;
 	f32 angle;
 #ifdef MUST_MATCH
-	f32 s;
+	f32 sinAngle;
 #endif
 	s32 i;
 
@@ -70,16 +70,16 @@ EffectEntry* effMugiKemuriEntry(f32 float1, f32 float2, f32 float3, f32 float4) 
 		work->scale = float_0p3_8041cab0;
 		work->speed = float_0_8041ca74;
 		work->unk38 = float_0_8041ca74;
-		work->x = float1;
-		work->y = float2;
-		work->z = float3;
+		work->x = x;
+		work->y = y;
+		work->z = z;
 		work->scaleX = float_0p7_8041ca94;
 		work->scaleY = float_0p7_8041ca94;
 		work->scaleZ = float_0p7_8041ca94;
 		work->alpha = 0xFF;
 		work->lifetime = 60;
 		work->rotX = float_0_8041ca74;
-		work->rotY = float4 + (f32)(i * 72);
+		work->rotY = baseAngle + (f32)(i * 72);
 		work->rotZ = float_0_8041ca74;
 		work->time = float_1p75_8041cab4;
 		work->timeAdd = float_neg0p08_8041cab8;
@@ -93,8 +93,8 @@ EffectEntry* effMugiKemuriEntry(f32 float1, f32 float2, f32 float3, f32 float4) 
 		// callee-saved FPR allocation (args f28-f31, constants f19-f27); without it
 		// MWCC rotates the whole band by four (args f24-f27). The natural form is
 		// under #else.
-		s = sin(angle);
-		work->sinA = s;
+		sinAngle = sin(angle);
+		work->sinA = sinAngle;
 #else
 		work->sinA = sin(angle);
 #endif
@@ -104,12 +104,12 @@ EffectEntry* effMugiKemuriEntry(f32 float1, f32 float2, f32 float3, f32 float4) 
 	return entry;
 }
 
-// The ±10/±90 ternaries must be written `float6 != 0 ? -N : N` (the branch takes the
+// The ±10/±90 ternaries must be written `dirSign != 0 ? -N : N` (the branch takes the
 // negative case) and the loop must advance `work` itself (`i++, work++` with `work->`),
 // which keeps one web for the pointer; with `work[i]` the allocator splits it and swaps
 // the entry/work callee-saved registers. The int->float magic still pools as a local
 // @NNN@ rather than double_to_int_802f34f0; that symbol name does not affect the score.
-EffectEntry* effMugiKemuri2Entry(s32 int1, f32 float2, f32 float3, f32 float4, f32 float5, f32 float6) {
+EffectEntry* effMugiKemuri2Entry(s32 type, f32 x, f32 y, f32 z, f32 baseAngle, f32 dirSign) {
 	EffectEntry* entry = effEntry();
 	MugiKemuriWork* work;
 	f32 angle;
@@ -125,28 +125,28 @@ EffectEntry* effMugiKemuri2Entry(s32 int1, f32 float2, f32 float3, f32 float4, f
 
 	for (i = 0; i < 5; i++, work++) {
 		work->active = 1;
-		work->type = int1;
+		work->type = type;
 		work->unk38 = float_0_8041ca74;
-		work->x = float2;
-		work->y = float3;
-		work->z = float4;
+		work->x = x;
+		work->y = y;
+		work->z = z;
 		work->scaleX = float_0p7_8041ca94;
 		work->scaleY = float_0p7_8041ca94;
 		work->scaleZ = float_0p7_8041ca94;
 		work->alpha = 0xFF;
 		work->speed = float_1_8041ca8c;
 		work->scale = float_5p4_8041ca98;
-		work->scaleSpeed = (f32)((float6 != float_0_8041ca74) ? -10 : 10);
+		work->scaleSpeed = (f32)((dirSign != float_0_8041ca74) ? -10 : 10);
 		work->time = float_0p5_8041ca9c;
 		work->timeAdd = float_neg0p07_8041caa0;
 		work->timeVel = float_0p003_8041caa4;
 		work->timeVelAdd = float_0_8041ca74;
 		work->lifetime = 15;
-		work->rotY = float5;
+		work->rotY = baseAngle;
 		work->rotX = float_0_8041ca74;
 		work->rotZ = float_0_8041ca74;
 		work->randOff = (f32)(((rand() % 100) >> 4) & 1);
-		angle = reviseAngle(float5 + (f32)((float6 != float_0_8041ca74) ? -90 : 90));
+		angle = reviseAngle(baseAngle + (f32)((dirSign != float_0_8041ca74) ? -90 : 90));
 		angle = float_6p2832_8041caa8 * angle / float_360_8041caac;
 		work->sinA = sin(angle);
 		work->cosA = cos(angle);

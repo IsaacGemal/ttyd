@@ -188,6 +188,8 @@ void effStarPowerMain(EffectEntry* effect) {
                 data->color2A = i;
             }
         }
+        // 0x48..0x54 keep the previous frame's x/y/z angles and scale (0x3C..0x44, 0x38), which Disp
+        // draws as an extra half-alpha star when color2A is nonzero.
         *(f32*)&data->field_0x48 = data->field_0x3C;
         *(f32*)&data->field_0x4C = data->field_0x40;
         *(f32*)&data->field_0x50 = data->field_0x44;

@@ -190,7 +190,7 @@ static inline void sstarSetVtx(SstarVtx* dst, Mtx mtx, SstarVtx* tbl, s32 idx) {
 // loads, which is what reproduces the original's `fcmpu f31,f0`/`fcmpo` operand order. Do not
 // reorder/simplify.
 #pragma opt_common_subs off
-EffectEntry* effSstarN64Entry(s32 type, f32 x, f32 y, f32 z, f32 a5, f32 a6, f32 a7, f32 a8) {
+EffectEntry* effSstarN64Entry(s32 type, f32 x, f32 y, f32 z, f32 targetX, f32 targetY, f32 targetZ, f32 speed) {
     EffectEntry* effect;
     SstarWork* data;
     f32 dx, dy, dz;
@@ -198,9 +198,9 @@ EffectEntry* effSstarN64Entry(s32 type, f32 x, f32 y, f32 z, f32 a5, f32 a6, f32
     f32 scale;
     f32 angle;
     f32 negCos;
-    f32 c;
-    f32 s;
-    f32 d2;
+    f32 camVelX;
+    f32 camVelZ;
+    f32 horizSpeed;
     f32 negSin;
     s32 i;
 
@@ -232,14 +232,14 @@ EffectEntry* effSstarN64Entry(s32 type, f32 x, f32 y, f32 z, f32 a5, f32 a6, f32
         data->colB = 0x5A;
     }
 
-    dx = a5 - x;
-    dy = a6 - y;
-    dz = a7 - z;
+    dx = targetX - x;
+    dy = targetY - y;
+    dz = targetZ - z;
     dist = dx * dx + dy * dy + dz * dz;
     scale = dist;
     if (dist != float_0_8041fd8c) {
         dist = sqrtf(dist);
-        scale = a8 / dist;
+        scale = speed / dist;
     }
     data->velX = dx * scale;
     data->velY = dy * scale;
@@ -248,24 +248,24 @@ EffectEntry* effSstarN64Entry(s32 type, f32 x, f32 y, f32 z, f32 a5, f32 a6, f32
     angle = (float_6p2832_8041fdcc * camGetPtr(CAMERA_3D)->viewYaw) / float_360_8041fdd0;
     negCos = -(f32)cos(angle);
     negSin = -(f32)sin(angle);
-    c = negCos * data->velX;
-    s = negSin * data->velZ;
-    d2 = c * c + s * s;
-    if (d2 != float_0_8041fd8c) {
-        d2 = sqrtf(d2);
+    camVelX = negCos * data->velX;
+    camVelZ = negSin * data->velZ;
+    horizSpeed = camVelX * camVelX + camVelZ * camVelZ;
+    if (horizSpeed != float_0_8041fd8c) {
+        horizSpeed = sqrtf(horizSpeed);
     }
     if (negCos * data->velX + negSin * data->velZ < float_0_8041fd8c) {
-        d2 = -d2;
+        horizSpeed = -horizSpeed;
         data->field_0x2C = float_neg20_8041fdd4;
     } else {
         data->field_0x2C = float_20_8041fdd8;
     }
-    negCos = -d2;
+    negCos = -horizSpeed;
     angle = angleABf(float_0_8041fd8c, float_0_8041fd8c, -data->velY, negCos);
     data->field_0x24 = angle;
     data->angle = angle;
     data->field_0x34 = negCos;
-    data->lifetime = (s32)(dist / a8);
+    data->lifetime = (s32)(dist / speed);
     for (i = 0; i < 8; i++) {
         PSMTXTrans(data->mtx[i], data->position.x, data->position.y, data->position.z);
     }
@@ -341,7 +341,7 @@ void effSstarMain(EffectEntry* effect) {
 
 // Each of the five trail segments is two table vertices (2i, 2i+1), both transformed by the
 // segment's history matrix. The vertex tables are addressed by name, so MWCC reaches them through
-// the unit's .data base (lbl_803A5C90). The `b = i * 2;` form of the final tri2 loop is what emits
+// the unit's .data base (lbl_803A5C90). The `base = i * 2;` form of the final tri2 loop is what emits
 // retail's `mr r24, r22` init.
 void effSstarDisp(CameraId camId, void* param) {
     EffectEntry* effect = param;
@@ -351,7 +351,7 @@ void effSstarDisp(CameraId camId, void* param) {
     Mtx mtx3;
     GXTexObj tex;
     SstarWork* data;
-    s32 b;
+    s32 base;
     GXColor color;
     s32 colR;
     f32 scale;
@@ -418,7 +418,7 @@ void effSstarDisp(CameraId camId, void* param) {
     effSetVtxDescN64((effVtxArray*)size64x64_tex64x64_vtx);
     PSMTXConcat(cam->view, mtx3, mtx1);
     GXLoadPosMtxImm(mtx1, 0);
-    GXBegin(0x90, 0, 6);
+    GXBegin(GX_TRIANGLES, 0, 6);
     tri2(0, 1, 2, 0, 0, 2, 3, 0);
 
     GXSetNumTevStages(1);
@@ -428,7 +428,7 @@ void effSstarDisp(CameraId camId, void* param) {
     GXSetTevColorIn(0, 0xF, 0xF, 0xF, 0xC);
     GXSetTevAlphaIn(0, 7, 5, 3, 7);
     effSetVtxDescN64((effVtxArray*)size128x128_tex32x32_vtx);
-    GXBegin(0x90, 0, 0xC);
+    GXBegin(GX_TRIANGLES, 0, 0xC);
     tri2(0, 1, 4, 0, 1, 2, 4, 0);
     tri2(0, 4, 3, 0, 4, 2, 3, 0);
 
@@ -474,9 +474,9 @@ void effSstarDisp(CameraId camId, void* param) {
         effSetVtxDescN64((effVtxArray*)data->vtx);
         GXLoadPosMtxImm(cam->view, 0);
         for (i = 0; i < 4; i++) {
-            b = i * 2;
-            GXBegin(0x90, 0, 6);
-            tri2(b, b + 1, b + 2, b, b + 1, b + 3, b + 2, b + 1);
+            base = i * 2;
+            GXBegin(GX_TRIANGLES, 0, 6);
+            tri2(base, base + 1, base + 2, base, base + 1, base + 3, base + 2, base + 1);
         }
     }
 }

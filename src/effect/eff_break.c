@@ -9,15 +9,15 @@
 #include "evt/evt_cmd.h"
 
 typedef struct BreakEffect {
-    s32 field_0x00; // 0x00
+    s32 type;       // 0x00
     f32 x;          // 0x04
     f32 y;          // 0x08
     f32 z;          // 0x0C
-    s32 field_0x10; // 0x10
-    f32 field_0x14; // 0x14
+    s32 timer;      // 0x10
+    f32 texOffsetY; // 0x14
     s32 field_0x18; // 0x18
-    s32 field_0x1C; // 0x1C
-    f32 field_0x20; // 0x20
+    s32 state;      // 0x1C
+    f32 scale;      // 0x20
 } BreakEffect;
 
 static u32 tex_jp[6] = { 0xAD, 0xAE, 0xAF, 0xB0, 0xB1, 0xB2 };
@@ -34,7 +34,7 @@ extern f32 ty_data[21];
 extern f32 ty_data2[21];
 
 // clang-format off
-EffectEntry* effBreakEntry(s32 type, s32 a2, f32 x, f32 y, f32 z) {
+EffectEntry* effBreakEntry(s32 type, s32 maxTimer, f32 x, f32 y, f32 z) {
     EffectEntry* entry;
     BreakEffect* data;
     BreakEffect* elem;
@@ -56,12 +56,12 @@ EffectEntry* effBreakEntry(s32 type, s32 a2, f32 x, f32 y, f32 z) {
     data = __memAlloc(HEAP_EFFECT, count * sizeof(BreakEffect));
     entry->userdata = data;
     entry->callback = effBreakMain;
-    data->field_0x00 = type;
+    data->type = type;
     data->x = x;
     data->y = y;
     data->z = z;
-    data->field_0x10 = a2;
-    data->field_0x20 = float_2_804210cc;
+    data->timer = maxTimer;
+    data->scale = float_2_804210cc;
 
     for (i = 1; i < entry->count; i++) {
         elem = &data[i];
@@ -69,10 +69,10 @@ EffectEntry* effBreakEntry(s32 type, s32 a2, f32 x, f32 y, f32 z) {
         elem->x = float_2_804210cc * (f32)((i - 1) * 0x24 + 0x12 - ((entry->count - 2) * 0x24 + 0x18) / 2);
         elem->y = float_0_804210b0;
         elem->z = float_0_804210b0;
-        elem->field_0x14 = float_10_804210d0;
+        elem->texOffsetY = float_10_804210d0;
         elem->field_0x18 = 0;
-        elem->field_0x10 = (i - 1) * 0x15;
-        elem->field_0x1C = 0;
+        elem->timer = (i - 1) * 0x15;
+        elem->state = 0;
     }
     return entry;
 }
@@ -97,62 +97,62 @@ void effBreakMain(EffectEntry* effect) {
     disp.z = data->z;
     position = disp;
 #ifdef MUST_MATCH
-    // The target loads field_0x20 into f1, then the constant into f0, and multiplies f0*f1. Keeping the field in a
+    // The target loads scale into f1, then the constant into f0, and multiplies f0*f1. Keeping the field in a
     // temp and writing the constant first gives that allocation (the pragma above is required for it to hold).
-    t = data->field_0x20;
+    t = data->scale;
     scale = float_20_804210c0 * t;
 #else
-    scale = data->field_0x20 * float_20_804210c0;
+    scale = data->scale * float_20_804210c0;
 #endif
-    max = data->field_0x10;
+    max = data->timer;
 
     done = 0;
     data = &data[1];
     for (i = 1; i < effect->count; i++, data++) {
-        switch (data->field_0x1C) {
+        switch (data->state) {
         case 0:
-            data->field_0x10--;
-            if (data->field_0x10 <= 0) {
-                data->field_0x10 = 0;
-                data->field_0x1C++;
+            data->timer--;
+            if (data->timer <= 0) {
+                data->timer = 0;
+                data->state++;
             }
             break;
         case 1:
-            if ((u32)data->field_0x10 < 0x15) {
-                data->field_0x14 = ty_data[data->field_0x10];
-                data->field_0x10++;
-                if (float_0_804210b0 == data->field_0x14) {
+            if ((u32)data->timer < 0x15) {
+                data->texOffsetY = ty_data[data->timer];
+                data->timer++;
+                if (float_0_804210b0 == data->texOffsetY) {
                     effStardustN64SetDrawCam(
                         effStardustN64Entry(1, position.x + data->x, position.y + data->y, position.z + data->z, scale), 8);
                 }
             } else {
-                data->field_0x10 = (effect->count - 1 - i) * 0x15;
-                data->field_0x1C++;
+                data->timer = (effect->count - 1 - i) * 0x15;
+                data->state++;
             }
             break;
         case 2:
-            data->field_0x10--;
-            if (data->field_0x10 <= 0) {
-                data->field_0x10 = 0;
-                data->field_0x1C++;
+            data->timer--;
+            if (data->timer <= 0) {
+                data->timer = 0;
+                data->state++;
             }
             break;
         case 3:
-            data->field_0x10++;
-            if (data->field_0x10 > max) {
-                data->field_0x10 = 0;
-                data->field_0x1C++;
+            data->timer++;
+            if (data->timer > max) {
+                data->timer = 0;
+                data->state++;
             }
             break;
         case 4:
-            if ((u32)data->field_0x10 < 0x15) {
-                data->field_0x14 = ty_data2[data->field_0x10];
+            if ((u32)data->timer < 0x15) {
+                data->texOffsetY = ty_data2[data->timer];
                 if ((i & 1) == 0) {
-                    data->field_0x14 = -data->field_0x14;
+                    data->texOffsetY = -data->texOffsetY;
                 }
-                data->field_0x10++;
+                data->timer++;
             } else {
-                data->field_0x1C++;
+                data->state++;
             }
             break;
         case 5:
@@ -187,7 +187,7 @@ void effBreakDisp(CameraId cameraId, void* param) {
     s32 i;
 
     cam = camGetPtr(cameraId);
-    scale = data->field_0x20;
+    scale = data->scale;
     PSMTXTrans(mtxB8, data->x, data->y, data->z);
     PSMTXRotRad(mtx88, 'y', -camGetPtr(cameraId)->viewYaw * float_deg2rad_804210a8);
     PSMTXConcat(mtxB8, mtx88, mtxB8);
@@ -216,10 +216,10 @@ void effBreakDisp(CameraId cameraId, void* param) {
         {
             // One volatile read of the zero word, reused for both arguments (the original loads it once and fmr's).
             f32 zero = *(volatile f32*)&float_0_804210b0;
-            PSMTXTrans(mtxB8, zero, data->field_0x14, zero);
+            PSMTXTrans(mtxB8, zero, data->texOffsetY, zero);
         }
 #else
-        PSMTXTrans(mtxB8, 0.0f, data->field_0x14, 0.0f);
+        PSMTXTrans(mtxB8, 0.0f, data->texOffsetY, 0.0f);
 #endif
         GXLoadTexMtxImm(mtxB8, 0x1e, 1);
         PSMTXTrans(mtxB8, data->x, data->y, data->z);

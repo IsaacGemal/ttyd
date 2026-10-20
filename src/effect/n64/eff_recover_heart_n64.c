@@ -111,14 +111,14 @@ typedef struct RecoverHeartData {
 	f32 angle;      // 0x1C
 	f32 field_0x20; // 0x20
 	f32 scale;      // 0x24
-	s32 field_0x28; // 0x28
-	s32 field_0x2C; // 0x2C
+	s32 alpha;      // 0x28
+	s32 timer;      // 0x2C
 	s32 field_0x30; // 0x30
-	s32 field_0x34; // 0x34
+	s32 delay;      // 0x34
 	f32 scaleW;     // 0x38
 	f32 scaleH;     // 0x3C
-	s32 field_0x40; // 0x40
-	s32 field_0x44; // 0x44
+	s32 amount;     // 0x40 drawn as digits from texture 0x53
+	s32 amountNegative; // 0x44 the entry argument was negative (and was negated)
 } RecoverHeartData; // 0x48
 
 EffectEntry* effRecoverHeartN64Entry(s32 type, s32 time, f32 x, f32 y, f32 z) {
@@ -135,15 +135,15 @@ EffectEntry* effRecoverHeartN64Entry(s32 type, s32 time, f32 x, f32 y, f32 z) {
 	data[0].x = x;
 	data[0].y = y;
 	data[0].z = z;
-	data[0].field_0x2C = 0x2E;
+	data[0].timer = 0x2E;
 	data[0].field_0x30 = 0;
 	if (time < 0) {
-		data[0].field_0x44 = 1;
+		data[0].amountNegative = 1;
 		time = -time;
 	} else {
-		data[0].field_0x44 = 0;
+		data[0].amountNegative = 0;
 	}
-	data[0].field_0x40 = time;
+	data[0].amount = time;
 	{
 		RecoverHeartData* p;
 		s32 i;
@@ -160,7 +160,7 @@ EffectEntry* effRecoverHeartN64Entry(s32 type, s32 time, f32 x, f32 y, f32 z) {
 			p->angle = float_0_8041fb10;
 			if (i == 1) {
 				p->x = float_0_8041fb10;
-				p->field_0x34 = 0;
+				p->delay = 0;
 				p->scaleW = float_0_8041fb10;
 				p->scaleH = float_0_8041fb10;
 				p->vy = float_1p4_8041fb34;
@@ -169,14 +169,14 @@ EffectEntry* effRecoverHeartN64Entry(s32 type, s32 time, f32 x, f32 y, f32 z) {
 				s32 v = m * ((i - 1) >> 1);
 				p->x = (f32)(v * 4);
 				p->vy = float_1p4_8041fb34;
-				p->field_0x34 = 11;
+				p->delay = 11;
 				p->scaleW = float_0_8041fb10;
 				p->scaleH = float_0_8041fb10;
 			}
 		}
 	}
-	data[1].field_0x2C = 0;
-	data[1].field_0x28 = 0xFF;
+	data[1].timer = 0;
+	data[1].alpha = 0xFF;
 	return effect;
 }
 
@@ -190,48 +190,48 @@ inline Vec initializeVec(Vec* input) {
 }
 
 void effRecoverHeartMain(EffectEntry* effect) {
-	s32 phi;
+	s32 anglePhase;
 	s32 scaleBase;
 	s32 life;
 	RecoverHeartData* data;
 	s32 i;
-	s32 field2C;
+	s32 animFrame;
 	f32 fade;
 	f32 angle;
 	Vec position;
 
 	data = effect->userdata;
 	position = initializeVec((Vec*)&data->x);
-	data->field_0x2C--;
+	data->timer--;
 	data->field_0x30++;
-	life = data->field_0x2C;
+	life = data->timer;
 	if (life < 0) {
 		effDelete(effect);
 		return;
 	}
-	phi = life * 12 + 38;
+	anglePhase = life * 12 + 38;
 	scaleBase = life * 25;
 	fade = float_0p05_8041fb1c * (f32)life;
 	data++;
-	for (i = 1; i < effect->count; phi += 38, i++, data++) {
-		field2C = data->field_0x2C;
-		if (data->field_0x34 > 0) {
-			data->field_0x34--;
-			if (data->field_0x34 > 0) {
+	for (i = 1; i < effect->count; anglePhase += 38, i++, data++) {
+		animFrame = data->timer;
+		if (data->delay > 0) {
+			data->delay--;
+			if (data->delay > 0) {
 				continue;
 			}
 		}
-		if (field2C >= 7) {
+		if (animFrame >= 7) {
 			data->scaleH = float_1_8041fb14;
 			data->scaleW = float_1_8041fb14;
 		} else {
-			data->scaleW = scale_w_dat[field2C];
-			data->scaleH = scale_h_dat[field2C];
+			data->scaleW = scale_w_dat[animFrame];
+			data->scaleH = scale_h_dat[animFrame];
 		}
 		data->x += data->vx;
 		data->y += data->vy;
 		data->z += data->vz;
-		angle = float_6p2832_8041fb20 * (f32)phi / float_360_8041fb24;
+		angle = float_6p2832_8041fb20 * (f32)anglePhase / float_360_8041fb24;
 		data->angle = float_neg30_8041fb28 * (f32)sin(angle);
 		data->scale = float_8_8041fb2c * (f32)cos(angle);
 		if (life < 20) {
@@ -239,10 +239,10 @@ void effRecoverHeartMain(EffectEntry* effect) {
 			data->angle *= fade;
 		}
 		if (life < 10) {
-			data->field_0x28 = scaleBase;
+			data->alpha = scaleBase;
 			data->vy *= float_0p9_8041fb30;
 		}
-		data->field_0x2C++;
+		data->timer++;
 	}
 	dispEntry(CAMERA_3D, dispCalcZ(&position), 2, effRecoverHeartDisp, effect);
 }
@@ -253,7 +253,7 @@ void effRecoverHeartMain(EffectEntry* effect) {
 // local and the outgoing copy in the original's stack slots.
 static inline void recoverHeartSetColor(RecoverHeartData* d) {
 	GXColor color = *(GXColor*)&unk_80423238;
-	color.a = d->field_0x28;
+	color.a = d->alpha;
 	GXSetTevColor(GX_TEVREG0, color);
 }
 #endif
@@ -266,14 +266,14 @@ static inline void recoverHeartSetColor(RecoverHeartData* d) {
 // on these at the top of the file.
 void effRecoverHeartDisp(CameraId camId, void* param) {
 	EffectEntry* effect = param;
-	s32 unknown;
+	s32 stripOffset;
 	s32 remainder;
 	s32 quotient;
 	RecoverHeartData* data;
 	s32 i;
 	s32 life;
 	s32 type;
-	s32 flag;
+	s32 amountNegative;
 	CameraEntry* cam;
 	s32 stripe;
 	u32 texId;
@@ -290,14 +290,14 @@ void effRecoverHeartDisp(CameraId camId, void* param) {
 
 	cam = camGetPtr(camId);
 	data = effect->userdata;
-	flag = data->field_0x44;
+	amountNegative = data->amountNegative;
 
 	PSMTXTrans(trans, data->x, data->y, data->z);
 	PSMTXRotRad(rot, 'y', float_deg2rad_8041fb08 * -camGetPtr(CAMERA_3D)->viewYaw);
 	PSMTXConcat(trans, rot, work);
 
 	type = data->type;
-	life = data->field_0x40;
+	life = data->amount;
 	data++;
 
 	GXSetNumChans(1);
@@ -306,12 +306,12 @@ void effRecoverHeartDisp(CameraId camId, void* param) {
 	GXSetTexCoordGen2(0, 1, 4, 0x1e, 0, 0x7d);
 	GXSetCullMode(0);
 
-	unknown = 0x160 - life * 32;
+	stripOffset = 0x160 - life * 32;
 	remainder = life % 10;
 	quotient = life / 10;
 
 	for (i = 1; i < effect->count; i++, data++) {
-		if (data->field_0x34 > 0) {
+		if (data->delay > 0) {
 			continue;
 		}
 
@@ -320,12 +320,12 @@ void effRecoverHeartDisp(CameraId camId, void* param) {
 #else
 		{
 			GXColor color = *(GXColor*)&unk_80423238;
-			color.a = data->field_0x28;
+			color.a = data->alpha;
 			GXSetTevColor(GX_TEVREG0, color);
 		}
 #endif
 
-		if (data->field_0x28 == 0xff) {
+		if (data->alpha == 0xff) {
 			GXSetNumTevStages(1);
 			GXSetTevOrder(0, 0, 0, 4);
 			GXSetTevColorOp(0, 0, 0, 0, 1, 0);
@@ -343,7 +343,7 @@ void effRecoverHeartDisp(CameraId camId, void* param) {
 
 		if ((type == 0 || type == 2) != 0) {
 			texId = 0x51;
-			if (flag == 0) {
+			if (amountNegative == 0) {
 				texId = 0x50;
 			}
 		} else {
@@ -376,11 +376,11 @@ void effRecoverHeartDisp(CameraId camId, void* param) {
 			GXSetTevColorIn(0, 0xf, 8, 0xa, 0xf);
 			GXSetTevAlphaIn(0, 7, 4, 1, 7);
 
-			if (life < 10 && flag == 0) {
+			if (life < 10 && amountNegative == 0) {
 				effGetTexObjN64(0x53, &texObj);
 				GXLoadTexObj(&texObj, 0);
 				PSMTXScale(scale, float_0p03125_8041fb0c, float_0p0026042_8041fb18, float_0_8041fb10);
-				PSMTXTrans(trans, float_0_8041fb10, (f32)unknown, float_0_8041fb10);
+				PSMTXTrans(trans, float_0_8041fb10, (f32)stripOffset, float_0_8041fb10);
 				PSMTXConcat(scale, trans, scale);
 				GXLoadTexMtxImm(scale, 0x1e, 1);
 				if (type == 0) {
@@ -394,7 +394,7 @@ void effRecoverHeartDisp(CameraId camId, void* param) {
 				GXBegin(0x90, 0, 6);
 				tri2(0, 1, 2, 0, 0, 2, 3, 0);
 			} else {
-				stripe = flag != 0 ? 10 : quotient;
+				stripe = amountNegative != 0 ? 10 : quotient;
 				effGetTexObjN64(0x53, &texObj);
 				GXLoadTexObj(&texObj, 0);
 				PSMTXScale(scale, float_0p03125_8041fb0c, float_0p0026042_8041fb18, float_0_8041fb10);
