@@ -831,20 +831,15 @@ void partyChgSpeedPose(PartyEntry* party, f32 f1) {
 }
 
 // Match note: without opt_propagation off, MWCC propagates the 270.0f literal and emits
-// `fadds f0, f1, f0`; keeping the sum in a named temp makes it emit the original `fadds f0, f0, f1`.
+// `fadds f0, f1, f0`; reading the yaw into a local first makes it emit the original `fadds f0, f0, f1`.
 #pragma opt_propagation off // keep the constant load scheduling so fadds takes its operands in the original order
 void partySetDispDirToMario(PartyEntry* party) {
     PartyEntry* work = party;
     MarioWork* mario = work->playerPtr;
     f32 angle = angleABf(party->position.x, party->position.z, mario->position.x, mario->position.z);
     CameraEntry* cam = camGetPtr(CAMERA_3D);
-#ifdef MUST_MATCH
     f32 viewYaw = cam->viewYaw;
-    f32 sum = viewYaw + 270.0f;
-    f32 result = revise360(sum - angle);
-#else
-    f32 result = revise360(cam->viewYaw + 270.0f - angle);
-#endif
+    f32 result = revise360(viewYaw + 270.0f - angle);
     s32 flag = 0;
 
     if (result >= float_90_8041b470 && result <= 270.0f) {
@@ -920,30 +915,20 @@ void partyMoveNoHosei(PartyEntry* party) {
 }
 
 // partyMoveMain returns a state code in r3.
-#ifdef MUST_MATCH
-// Match shape: for these zero compares the original loads the field into f1 and 0.0f into f0;
-// comparing against a named zero makes this compiler allocate the same registers.
-#define PARTY_MOVE_ZERO zero
-#else
-#define PARTY_MOVE_ZERO 0.0f
-#endif
+// The zero compares go through the `zero` local: the original loads the field into f1 and 0.0f into f0.
 s32 partyMoveMain(PartyEntry* party, s32 hosei) {
     PartyEntry* work = party;
     Vec pos;
     f32 speed;
     f32 angle;
-#ifdef MUST_MATCH
     f32 zero;
-#endif
     HitEntry* hit;
 
     work->field_12C = NULL;
     work->field_134 = NULL;
     pos = party->position;
     speed = 0.0f;
-#ifdef MUST_MATCH
     zero = 0.0f;
-#endif
 
     if (hosei != 0) {
         partyGetMoveDirSpd(party, &angle, &speed);
@@ -955,7 +940,7 @@ s32 partyMoveMain(PartyEntry* party, s32 hosei) {
         hit = partySearchFrontWall(party, &pos, speed, angle);
         if (hit != NULL) {
             work->field_12C = hit;
-            if (work->speed != PARTY_MOVE_ZERO) {
+            if (work->speed != zero) {
                 work->field_134 = hit;
             }
         }
@@ -999,7 +984,7 @@ s32 partyMoveMain(PartyEntry* party, s32 hosei) {
                 party->flags &= ~PARTY_FLAG_IS_GROUNDED;
                 if (!(party->flags & PARTY_FLAG_IS_FALLING)) {
                     party->flags |= PARTY_FLAG_IS_FALLING;
-                    if (work->jumpPara2 == PARTY_MOVE_ZERO) {
+                    if (work->jumpPara2 == zero) {
                         work->jumpPara2 = -1.4f;
                     }
                 }
@@ -1020,7 +1005,7 @@ s32 partyMoveMain(PartyEntry* party, s32 hosei) {
             party->flags &= ~PARTY_FLAG_IS_GROUNDED;
             if (!(party->flags & PARTY_FLAG_IS_FALLING)) {
                 party->flags |= PARTY_FLAG_IS_FALLING;
-                if (work->jumpPara2 == PARTY_MOVE_ZERO) {
+                if (work->jumpPara2 == zero) {
                     work->jumpPara2 = -1.4f;
                 }
             }
@@ -1041,7 +1026,6 @@ s32 partyMoveMain(PartyEntry* party, s32 hosei) {
     }
     return 0;
 }
-#undef PARTY_MOVE_ZERO
 
 // The switch lists cases 0-3 (empty) with case 6, leaving 4/5 to `default`. Grouping 0-3 is what makes
 // the compare tree emit the original's redundant `cmpwi r0,4; bge` leaf; with cases 4/5 or 0-5 the
@@ -1624,13 +1608,9 @@ static inline void partyWalkFootmarkSub(Vec* pos, s32 flags, s32 slot) {
     f = (Footmark*)(footmarkBuf + slot * 0x500 + id * 0x10);
     if ((f->field_0 & 1) == 0 || (flags & 1) == 0) {
         if (f->x != pos->x || f->y != pos->y || f->z != pos->z) {
-#ifdef MUST_MATCH
             /* the named temp makes the compiler keep readId in r3 and id + 1 in r0 */
             s32 readIdx = readId[slot];
             if (readIdx != id + 1) {
-#else
-            if (readId[slot] != id + 1) {
-#endif
                 writeId[slot]++;
                 if (writeId[slot] >= 0x50) {
                     writeId[slot] = 0;
@@ -2118,13 +2098,9 @@ static inline void partyFlyFootmarkSub(Vec* pos, s32 flags, s32 slot) {
     f = (Footmark*)(footmarkBuf + slot * 0x500 + id * 0x10);
     if ((f->field_0 & 1) == 0 || (flags & 1) == 0) {
         if (f->x != pos->x || f->y != pos->y || f->z != pos->z) {
-#ifdef MUST_MATCH
             /* the named temp makes the compiler keep readId in r3 and id + 1 in r0 */
             s32 readIdx = readId[slot];
             if (readIdx != id + 1) {
-#else
-            if (readId[slot] != id + 1) {
-#endif
                 writeId[slot]++;
                 if (writeId[slot] >= 0x50) {
                     writeId[slot] = 0;
@@ -2165,7 +2141,6 @@ void partyFlyMain(PartyEntry* party) {
 
     if (party->currentSlotId == 0) {
         Vec pos;
-#ifdef MUST_MATCH
         /* the named temp makes the compiler load mario's flags before clearing flags */
         s32 marioFlags = marioGetPtr()->flags;
 
@@ -2173,16 +2148,10 @@ void partyFlyMain(PartyEntry* party) {
         if (marioFlags & 0x10000) {
             flags = 1;
         }
-#else
-        flags = (marioGetPtr()->flags & 0x10000) != 0;
-#endif
         pos = marioGetPtr()->position;
         partyFlyFootmarkSub(&pos, flags, 0);
     } else {
-#ifdef MUST_MATCH
-        /* the original calls anotherPartyGetPtr and discards its result */
-        target = anotherPartyGetPtr(party->currentSlotId);
-#endif
+        anotherPartyGetPtr(party->currentSlotId);
         target = partyGetPtr(0);
         if (target != NULL) {
             Vec pos;
@@ -2195,16 +2164,12 @@ void partyFlyMain(PartyEntry* party) {
             partyFlyFootmarkSub(&pos, flags, 1);
         } else {
             Vec pos;
-#ifdef MUST_MATCH
             s32 marioFlags = marioGetPtr()->flags;
 
             flags = 0;
             if (marioFlags & 0x10000) {
                 flags = 1;
             }
-#else
-            flags = (marioGetPtr()->flags & 0x10000) != 0;
-#endif
             pos = marioGetPtr()->position;
             partyFlyFootmarkSub(&pos, flags, 0);
         }
