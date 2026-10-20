@@ -50,8 +50,6 @@ static const f32 float_6 = 6.0f;
 static const f32 float_1 = 1.0f;
 static const f32 float_0p4 = 0.4f;
 
-#define NKI(off) (*(ItemEntry**)((u8*)party + (off)))
-
 s32 nokonokoGetStatus(PartyEntry* party) {
     if (party == NULL) {
         return 0;
@@ -87,7 +85,7 @@ s32 nokonoko_holdItem(void) {
     if (party->currentMemberId != PARTY_MEMBER_KOOPS || !(party->flags & PARTY_FLAG_IS_BEING_USED)) {
         return 0;
     }
-    return *(ItemEntry**)((u8*)party + 0x174) != NULL;
+    return party->tail.koops.heldItem != NULL;
 }
 
 void nokonoko_bye(PartyEntry* party) {
@@ -167,9 +165,9 @@ void unk_800cd9a0(void) {
 }
 
 void nokonoko_use_post(PartyEntry* party) {
-    if (*(ItemEntry**)((u8*)party + 0x174) != NULL) {
-        itemNokoForceGet(*(ItemEntry**)((u8*)party + 0x174));
-        *(ItemEntry**)((u8*)party + 0x174) = NULL;
+    if (party->tail.koops.heldItem != NULL) {
+        itemNokoForceGet(party->tail.koops.heldItem);
+        party->tail.koops.heldItem = NULL;
     }
     marioGetPtr();
     if (nokoSe != 0xFFFFFFFFu) {
@@ -190,7 +188,6 @@ void nokonoko_use_post(PartyEntry* party) {
 
 #define NKF(off) (*(f32*)((u8*)party + (off)))
 #define NKS(off) (*(s32*)((u8*)party + (off)))
-#define NKS16(off) (*(s16*)((u8*)party + (off)))
 #define NKM(off) (*(f32*)((u8*)mario + (off)))
 
 // Koops' overworld use state machine.  Reconstructed from the original asm; the
@@ -233,16 +230,16 @@ void nokonoko_use(PartyEntry* party) {
 
     if (party->field_8 & 0x8) {
         party->field_8 &= ~0x8;
-        NKI(0x174) = NULL;
+        party->tail.koops.heldItem = NULL;
         NKS(0x178) = 0;
         NKS(0x17c) = 0;
         NKS(0x180) = 0;
         if (party->flags & PARTY_FLAG_IS_EVT_USE) {
             if (party->unk16C > 0) {
-                NKS16(0x17e) |= 0x1;
+                party->tail.koops.moveFlags |= 0x1;
             }
         } else {
-            NKS16(0x17e) &= ~0x1;
+            party->tail.koops.moveFlags &= ~0x1;
         }
         party->useMotionId = 0;
     }
@@ -260,8 +257,8 @@ void nokonoko_use(PartyEntry* party) {
         party->height = 18.5f;
         party->useMotionId = 1;
         party->timer = 100;
-        NKI(0x174) = NULL;
-        NKS16(0x17c) = 0;
+        party->tail.koops.heldItem = NULL;
+        party->tail.koops.dashing = 0;
         marioAdjustMoveDir();
         mario->baseSpeed = 0.0f;
         party->targetPos = mario->position;
@@ -287,9 +284,9 @@ void nokonoko_use(PartyEntry* party) {
             goto L_800CC620;
         }
         NKF(0x10C) = revise360(45.0f + NKF(0x10C));
-        NKF(0x58) += (party->targetPos.x - NKF(0x58)) / (f32)party->timer;
-        NKF(0x5c) += (party->targetPos.y - NKF(0x5c)) / (f32)party->timer;
-        NKF(0x60) += (party->targetPos.z - NKF(0x60)) / (f32)party->timer;
+        party->position.x += (party->targetPos.x - party->position.x) / (f32)party->timer;
+        party->position.y += (party->targetPos.y - party->position.y) / (f32)party->timer;
+        party->position.z += (party->targetPos.z - party->position.z) / (f32)party->timer;
         if (--party->timer > 0) {
             goto L_800CC620;
         }
@@ -346,11 +343,11 @@ void nokonoko_use(PartyEntry* party) {
             effKemuTestDrawCam(eff, party->camId);
         }
         party->targetDist += party->speed;
-        if (NKI(0x174) == NULL) {
-            NKI(0x174) = itemNearDistCheck(party->position.x, party->position.y, party->position.z,
+        if (party->tail.koops.heldItem == NULL) {
+            party->tail.koops.heldItem = itemNearDistCheck(party->position.x, party->position.y, party->position.z,
                                                 0.5f * party->radius + 12.0f);
-            if (NKI(0x174) != NULL) {
-                itemPickUp(NKI(0x174));
+            if (party->tail.koops.heldItem != NULL) {
+                itemPickUp(party->tail.koops.heldItem);
                 party->useMotionId = 0x32;
                 psndSFXOn_3D((const char*)0x92c, &party->position);
                 f31 = (f32)cos(6.2831855f * party->dir / 360.0f);
@@ -387,10 +384,10 @@ void nokonoko_use(PartyEntry* party) {
             }
             goto L_800CC620;
         }
-        if (NKS16(0x17e) & 1) {
+        if (party->tail.koops.moveFlags & 1) {
             party->timer = 5;
             party->useMotionId = 0x15;
-            NKS16(0x17c) = 1;
+            party->tail.koops.dashing = 1;
             if (nokoSe == 0xFFFFFFFFu) {
                 nokoSe = psndSFXOn_3D((const char*)0x92e, &party->position);
             }
@@ -403,7 +400,7 @@ void nokonoko_use(PartyEntry* party) {
         if (++party->timer >= 5) {
             party->timer = 5;
             party->useMotionId = 0x14;
-            NKS16(0x17c) = 1;
+            party->tail.koops.dashing = 1;
             if (nokoSe == 0xFFFFFFFFu) {
                 nokoSe = psndSFXOn_3D((const char*)0x92e, &party->position);
             }
@@ -431,11 +428,11 @@ void nokonoko_use(PartyEntry* party) {
             }
             goto L_800CC620;
         }
-        if (NKI(0x174) == NULL) {
-            NKI(0x174) = itemNearDistCheck(party->position.x, party->position.y, party->position.z,
+        if (party->tail.koops.heldItem == NULL) {
+            party->tail.koops.heldItem = itemNearDistCheck(party->position.x, party->position.y, party->position.z,
                                                 0.5f * party->radius + 12.0f);
-            if (NKI(0x174) != NULL) {
-                itemPickUp(NKI(0x174));
+            if (party->tail.koops.heldItem != NULL) {
+                itemPickUp(party->tail.koops.heldItem);
                 party->useMotionId = 0x32;
                 psndSFXOn_3D((const char*)0x92c, &party->position);
                 f31 = (f32)cos(6.2831855f * party->dir / 360.0f);
@@ -473,7 +470,7 @@ void nokonoko_use(PartyEntry* party) {
             if (*(u16*)(mario->field_0x245 + 1) & 0x400) {
                 goto L_800CC620;
             }
-            party->useMotionId = (NKS16(0x17c) != 0) ? 0x50 : 0x32;
+            party->useMotionId = (party->tail.koops.dashing != 0) ? 0x50 : 0x32;
             marioGetPtr();
             if (nokoSe != 0xFFFFFFFFu) {
                 psndSFXOff(nokoSe);
@@ -481,7 +478,7 @@ void nokonoko_use(PartyEntry* party) {
             }
             goto L_800CC620;
         }
-        if (NKS16(0x17e) & 1) {
+        if (party->tail.koops.moveFlags & 1) {
             party->useMotionId = 0x50;
         } else {
             party->useMotionId = 0x32;
@@ -518,7 +515,7 @@ L_800CC620:
         goto L_800CCD8C;
 
     case 0x33:
-        if (NKS16(0x17c) != 0) {
+        if (party->tail.koops.dashing != 0) {
             f3 = 20.0f;
         } else {
             f3 = 10.0f;
@@ -555,7 +552,7 @@ L_800CC620:
         party->targetDist = 0.0f;
         party->useMotionId = 0x35;
         party->speed = 0.1f * (-1.0f - party->speed) + party->speed;
-        NKF(0x178) = 50.0f;
+        party->tail.koops.slideDecay = 50.0f;
         goto L_800CCD8C;
 
     case 0x35:
@@ -563,15 +560,15 @@ L_800CC620:
             party->useMotionId = 0x46;
             goto L_800CD8BC;
         }
-        NKF(0x178) -= 2.2f;
-        if (NKF(0x178) <= 0.0f) {
-            NKF(0x178) = 0.0f;
+        party->tail.koops.slideDecay -= 2.2f;
+        if (party->tail.koops.slideDecay <= 0.0f) {
+            party->tail.koops.slideDecay = 0.0f;
         }
         f1 = revise360(party->dir - party->playerTargetYaw);
         f2 = (f1 > 180.0f) ? 1.0f : -1.0f;
         NKF(0x10C) = revise360(50.0f * f2 + NKF(0x10C));
         f3 = -2.0f - party->speed;
-        f2 = (NKS16(0x17c) != 0) ? 0.2f : 0.1f;
+        f2 = (party->tail.koops.dashing != 0) ? 0.2f : 0.1f;
 #ifdef MUST_MATCH
         // Volatile re-read of the speed, as retail reloads it after the f3/f2 setup.
         NKF(0x104) = f3 * f2 + *(volatile f32*)((u8*)party + 0x104);
@@ -645,12 +642,12 @@ L_800CC620:
         f1 = revise360(party->dir - party->playerTargetYaw);
         f2 = (f1 > 180.0f) ? 1.0f : -1.0f;
         NKF(0x10C) = revise360(50.0f * f2 + NKF(0x10C));
-        NKF(0x178) -= 2.2f;
-        if (NKF(0x178) <= 0.0f) {
-            NKF(0x178) = 0.0f;
+        party->tail.koops.slideDecay -= 2.2f;
+        if (party->tail.koops.slideDecay <= 0.0f) {
+            party->tail.koops.slideDecay = 0.0f;
         }
         f3 = -2.0f - party->speed;
-        f2 = (NKS16(0x17c) != 0) ? 0.2f : 0.1f;
+        f2 = (party->tail.koops.dashing != 0) ? 0.2f : 0.1f;
 #ifdef MUST_MATCH
         // Volatile re-read of the speed, as retail reloads it after the f3/f2 setup.
         NKF(0x104) = f3 * f2 + *(volatile f32*)((u8*)party + 0x104);
@@ -687,9 +684,9 @@ L_800CC620:
         goto L_800CCD8C;
 
     case 0x47:
-        if (NKI(0x174) != NULL) {
-            itemNokoForceGet(NKI(0x174));
-            NKI(0x174) = NULL;
+        if (party->tail.koops.heldItem != NULL) {
+            itemNokoForceGet(party->tail.koops.heldItem);
+            party->tail.koops.heldItem = NULL;
         }
         nokonoko_finish(party);
         goto L_800CD8BC;
@@ -715,11 +712,11 @@ L_800CCD8C:
         if (party->speed >= 18.0f) {
             party->speed = 18.0f;
         }
-        if (NKI(0x174) == NULL) {
-            NKI(0x174) = itemNearDistCheck(party->position.x, party->position.y, party->position.z,
+        if (party->tail.koops.heldItem == NULL) {
+            party->tail.koops.heldItem = itemNearDistCheck(party->position.x, party->position.y, party->position.z,
                                                 0.5f * party->radius + 12.0f);
-            if (NKI(0x174) != NULL) {
-                itemPickUp(NKI(0x174));
+            if (party->tail.koops.heldItem != NULL) {
+                itemPickUp(party->tail.koops.heldItem);
                 psndSFXOn_3D((const char*)0x92c, &party->position);
                 f31 = (f32)cos(6.2831855f * party->dir / 360.0f);
                 f4 = (f32)sin(6.2831855f * party->dir / 360.0f);
@@ -748,11 +745,11 @@ L_800CCD8C:
         f2 = (f1 > 180.0f) ? 1.0f : -1.0f;
         NKF(0x10C) = revise360(50.0f * f2 + NKF(0x10C));
         party->speed += 0.35f * (-1.0f - party->speed);
-        if (NKI(0x174) == NULL) {
-            NKI(0x174) = itemNearDistCheck(party->position.x, party->position.y, party->position.z,
+        if (party->tail.koops.heldItem == NULL) {
+            party->tail.koops.heldItem = itemNearDistCheck(party->position.x, party->position.y, party->position.z,
                                                 0.5f * party->radius + 12.0f);
-            if (NKI(0x174) != NULL) {
-                itemPickUp(NKI(0x174));
+            if (party->tail.koops.heldItem != NULL) {
+                itemPickUp(party->tail.koops.heldItem);
                 psndSFXOn_3D((const char*)0x92c, &party->position);
                 f31 = (f32)cos(6.2831855f * party->dir / 360.0f);
                 f4 = (f32)sin(6.2831855f * party->dir / 360.0f);
@@ -768,7 +765,7 @@ L_800CCD8C:
         if (party->targetDist <= 0.0f) {
             party->targetDist = distABf(party->targetPos.x, party->targetPos.z, party->position.x, party->position.z);
             party->useMotionId = 0x54;
-            NKF(0x178) = 50.0f;
+            party->tail.koops.slideDecay = 50.0f;
             party->dir = angleABf(party->position.x, party->position.z, party->targetPos.x, party->targetPos.z);
         }
         goto L_800CD8A8;
@@ -820,17 +817,17 @@ L_800CCD8C:
         }
         party->speed = 0.0f;
         party->flags2 &= ~0x10;
-        if (NKI(0x174) != NULL) {
-            itemNokoForceGet(NKI(0x174));
-            NKI(0x174) = NULL;
+        if (party->tail.koops.heldItem != NULL) {
+            itemNokoForceGet(party->tail.koops.heldItem);
+            party->tail.koops.heldItem = NULL;
         }
         if (party->groundHit == NULL) {
             party->useMotionId = 0x58;
             goto L_800CD8A8;
         }
-        if (NKI(0x174) != NULL) {
-            itemNokoForceGet(NKI(0x174));
-            NKI(0x174) = NULL;
+        if (party->tail.koops.heldItem != NULL) {
+            itemNokoForceGet(party->tail.koops.heldItem);
+            party->tail.koops.heldItem = NULL;
         }
         nokonoko_finish(party);
         goto L_800CD8BC;
@@ -873,7 +870,7 @@ L_800CCD8C:
         party->targetPos = out2;
         party->targetDist = distABf(party->position.x, party->position.z, party->targetPos.x, party->targetPos.z);
         party->dir = angleABf(party->position.x, party->position.z, party->targetPos.x, party->targetPos.z);
-        NKF(0x178) = 50.0f;
+        party->tail.koops.slideDecay = 50.0f;
         goto L_800CD8A8;
 
     case 0x5A:
@@ -899,7 +896,7 @@ L_800CCD8C:
         party->useMotionId = 0x6f;
         /* fallthrough */
     case 0x6F:
-        NKF(0x5c) += party->jumpPara1;
+        party->position.y += party->jumpPara1;
         {
             Vec vscr = party->position;
             f32 vsx, vsy, vsz;
@@ -994,7 +991,6 @@ L_800CD8BC:
 }
 #undef NKF
 #undef NKS
-#undef NKS16
 #undef NKM
 
 void nokonoko_finish(PartyEntry* party) {
@@ -1007,9 +1003,9 @@ void nokonoko_finish(PartyEntry* party) {
     if (!(party->flags & PARTY_FLAG_IS_BEING_USED)) {
         return;
     }
-    if (*(ItemEntry**)((u8*)party + 0x174) != NULL) {
-        itemNokoForceGet(*(ItemEntry**)((u8*)party + 0x174));
-        *(ItemEntry**)((u8*)party + 0x174) = NULL;
+    if (party->tail.koops.heldItem != NULL) {
+        itemNokoForceGet(party->tail.koops.heldItem);
+        party->tail.koops.heldItem = NULL;
     }
     marioGetPtr();
     if (nokoSe != 0xFFFFFFFFu) {
@@ -1081,7 +1077,7 @@ HitEntry* ccwall(PartyEntry* party, s32 flag) {
     ccfloor(party, flag, float_1, &hitX, &hitY, &hitZ, &distance, &hitNX, &hitNY, &hitNZ);
 
     party->frontHit = NULL;
-    *(HitEntry**)((u8*)party + 0x12C) = NULL;
+    party->field_12C = NULL;
     y += float_1;
 
     x = party->position.x;
@@ -1100,10 +1096,10 @@ HitEntry* ccwall(PartyEntry* party, s32 flag) {
         dot = ssin * hitNX + scos * hitNZ;
         party->position.x += float_0p5 * (ssin - dot * hitNX);
         party->position.z += float_0p5 * (scos - dot * hitNZ);
-        if (*(s16*)(p + 0x17C) != 0 || flag == 0) {
+        if (party->tail.koops.dashing != 0 || flag == 0) {
             party->frontHit = hit;
         }
-        *(HitEntry**)((u8*)party + 0x12C) = hit;
+        party->field_12C = hit;
         return hit;
     }
 
@@ -1126,10 +1122,10 @@ HitEntry* ccwall(PartyEntry* party, s32 flag) {
         dot = ssin * hitNX + scos * hitNZ;
         party->position.x += float_0p5 * (ssin - dot * hitNX);
         party->position.z += float_0p5 * (scos - dot * hitNZ);
-        if (*(s16*)(p + 0x17C) != 0 || flag == 0) {
+        if (party->tail.koops.dashing != 0 || flag == 0) {
             party->frontHit = hit;
         }
-        *(HitEntry**)((u8*)party + 0x12C) = hit;
+        party->field_12C = hit;
         party->position.x = hitX;
         return hit;
     }
@@ -1159,10 +1155,10 @@ HitEntry* ccwall(PartyEntry* party, s32 flag) {
         dot = ssin * hitNX + scos * hitNZ;
         party->position.x += float_0p5 * (ssin - dot * hitNX);
         party->position.z += float_0p5 * (scos - dot * hitNZ);
-        if (*(s16*)(p + 0x17C) != 0 || flag == 0) {
+        if (party->tail.koops.dashing != 0 || flag == 0) {
             party->frontHit = hit;
         }
-        *(HitEntry**)((u8*)party + 0x12C) = hit;
+        party->field_12C = hit;
         party->position.x = hitX;
         return hit;
     }
@@ -1200,11 +1196,11 @@ static void ccfloor(PartyEntry* party, s32 flag, f32 step, f32* hitX, f32* hitY,
                 if (flag == 0) {
                     party->position.y = *hitY;
                     if (__fabsf(py - *hitY) >= step) {
-                        *(s16*)(p + 0x17E) |= 0x2;
+                        party->tail.koops.moveFlags |= 0x2;
                     }
                 }
             } else {
-                if ((*(s16*)(p + 0x17E) & 0x2) != 0 && flag == 1) {
+                if ((party->tail.koops.moveFlags & 0x2) != 0 && flag == 1) {
                     party->position.y = *hitY;
                 }
                 if (__fabsf(py - *hitY) <= float_6) {

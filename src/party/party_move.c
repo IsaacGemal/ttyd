@@ -1286,9 +1286,9 @@ void partyGetMoveDirSpd(PartyEntry* party, f32* angle, f32* speed) {
         }
     }
     sincosf(&sinv, &cosv, work->dir);
-    // PartyEntry declares no field in its 0x7C gap at 0xA0/0xA8/0xAC/0xB4; raw offsets kept.
-    f31 = work->speed * sinv + (*(f32*)((u8*)work + 0xAC) + *(f32*)((u8*)work + 0xA0));
-    f30 = work->speed * cosv + (*(f32*)((u8*)work + 0xB4) + *(f32*)((u8*)work + 0xA8));
+    // 0xA0 and 0xA8 are not named in PartyEntry yet; raw offsets kept.
+    f31 = work->speed * sinv + (work->moveDelta.x + *(f32*)((u8*)work + 0xA0));
+    f30 = work->speed * cosv + (work->moveDelta.z + *(f32*)((u8*)work + 0xA8));
     *angle = angleABf(0.0f, 0.0f, f31, f30);
     scale = (work->flags & PARTY_FLAG_IN_SHALLOW_WATER) ? 0.75f : 1.0f;
     len = partySqrtf(f31 * f31 + f30 * f30);

@@ -226,7 +226,7 @@ void partyChkGnd(PartyEntry* party) {
         return;
     }
     partyChkFrontStep(party, 11.0f, &a, &b, &c);
-    if (a - party->position.y >= 5.0f && *(f32*)((u8*)party + 0xE0) <= 30.0f) {
+    if (a - party->position.y >= 5.0f && party->groundSlope <= 30.0f) {
         party->field_120 = a;
         if (party->speed) {
             partyChgMot(party, 6);
@@ -293,7 +293,7 @@ HitEntry* partySearchGround(PartyEntry* party, f32 up, f32 down) {
         return NULL;
     }
     *(Vec*)party->field_C4 = (Vec){0.0f, 0.0f, 0.0f};
-    *(f32*)(party->field_C4 + (0xE0 - 0xC4)) = 0.0f;
+    party->groundSlope = 0.0f;
     off = __fabsf(up);
     off += 0.1f;
     if (marioGetPtr()->currMotionId == MARIO_MOTION_YOSHI) {
@@ -354,7 +354,7 @@ HitEntry* partySearchGround(PartyEntry* party, f32 up, f32 down) {
             }
         }
         if (hit != NULL) {
-            *(f32*)(party->field_C4 + (0xE0 - 0xC4)) = partyGroundSlope(party, n);
+            party->groundSlope = partyGroundSlope(party, n);
             if (hitY < py && __fabsf(hitY - py) >= 2.0f) {
                 if (__fabsf(hitY - py) > __fabsf(down)) {
                     *(f32*)party->field_E8 = __fabsf(py - hitY);
@@ -419,7 +419,7 @@ u32 partyChkFrontStep(PartyEntry* party, f32 a, f32* out1, f32* out2, f32* out3)
 
     a += 0.01f;
     *(Vec*)party->field_C4 = (Vec){0.0f, 0.0f, 0.0f};
-    *(f32*)(party->field_C4 + (0xE0 - 0xC4)) = 0.0f;
+    party->groundSlope = 0.0f;
     h = partyGetHeight(party);
     *out1 = party->position.y;
     *out2 = -1.0f;
@@ -446,7 +446,7 @@ u32 partyChkFrontStep(PartyEntry* party, f32 a, f32* out1, f32* out2, f32* out3)
 
     hit = partyFrontStepHit(party, &query, &hitPos, &n);
     if (hit != NULL) {
-        *(f32*)(party->field_C4 + (0xE0 - 0xC4)) = partyGroundSlope(party, n);
+        party->groundSlope = partyGroundSlope(party, n);
         if (hitPos.y < py && __fabsf(hitPos.y - py) >= 2.0f) {
             *out2 = py - hitPos.y;
             *out3 = angleABf(px, pz, hitPos.x, hitPos.z);

@@ -8713,3 +8713,18 @@ pool the MUST_MATCH paths reference by address; effStarStoneData's own fields an
 arguments (BakuGameWork 0xDC/0xE0) belong to eff_starstone and battle_ac and are named there, not per caller;
 GenkiWork's `field_44`/`field_48`/`field_60` effect pointers and BakuGameGaugeColor's never-touched 0x4 byte are
 still unnamed.
+
+### Readability: PartyEntry per-partner tail (2026-10-19, Claude Haiku 5.5, n9-q-ptail; reviewed by Claude Opus 5.5)
+
+PartyEntry's 0x174-0x187 tail is now `union { ... } tail;` with one struct per user: `jump` (`jumpAccel`, the
+generic jump in partyRideMain and evt_party_jump_pos), `yoshi` (`jumpVel`, `jumpAccel`), `bobbery` (`motionTimer`,
+`marioMotion` and `syncFrame` for the mario_controll states, `countdownSfxId` 0x93C, `alarmSfxId` 0x93D),
+`flurrie` (`breathFx`, `bobAngle`, `bobStep`), `koops` (`heldItem` from the shell search, `slideDecay`, `dashing`,
+`moveFlags`) and `vivian` (`charge`, also read by party.c for her shadow size, `moveSpeed`, `poseTime`, `ripple`).
+Outside the tail: the input snapshot at 0x150-0x15D (`button`, `buttonNew`, `buttonRepeat`, `buttonUp`, `stickX/Y`,
+`substickX/Y`, `triggerLeft/Right`, copied from GlobalWork by partyUpdateKeyData), `dispOffset` (0x7C, added to
+position for the draw matrix, bobbed by Flurrie and Vivian, set by p_roll), `moveDelta` (0xAC,
+evt_party_set_hosei_xyz) and `groundSlope` (0xE0, partyGroundSlope). Yoshi's `P_F`/`P_S`/`P_U16` shims are gone.
+party_yoshi.c 316 → 232 per kLOC, party_bomhei.c 288 → 58; overall 69.987 → 69.262. Open: partyUpdateKeyData,
+the draw matrix and the 0xAC/0x7C zeroing in party.c/evt_party.c still use raw offsets; the s32 zero-stores to
+float tail slots in cloud_init and the nokonoko inits stay raw (`stw` of r0, not `stfs`); 0x88 is still padding.

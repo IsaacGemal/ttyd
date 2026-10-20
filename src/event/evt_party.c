@@ -576,19 +576,19 @@ USER_FUNC(evt_party_jump_pos) {
             }
             dy = (dy + dy) / (tmp * tmp - tmp);
             party->jumpPara1 = dy * tmp;
-            PF32(party, 0x174) = -dy;
+            party->tail.jump.jumpAccel = -dy;
             event->userdata[2] = (s32)(float_0p5_8041bb14 + tmp);
             event->userdata[3] = 1;
             /* fallthrough */
         case 1:
             movePos(&party->position.x, &party->position.z, party->speed, party->dir);
             party->position.y += party->jumpPara1;
-            party->jumpPara1 += PF32(party, 0x174);
+            party->jumpPara1 += party->tail.jump.jumpAccel;
             if (--event->userdata[2] <= 0) {
                 tmp = float_0p5_8041bb14 * frames;
                 dy = ty - party->position.y;
                 party->jumpPara1 = float_0_8041bb1c;
-                PF32(party, 0x174) = (dy + dy) / (tmp * tmp - tmp);
+                party->tail.jump.jumpAccel = (dy + dy) / (tmp * tmp - tmp);
                 party->jumpPara3 = float_0_8041bb1c;
                 event->userdata[2] = (s32)(float_0p5_8041bb14 + tmp);
                 event->userdata[3] = 2;
@@ -596,7 +596,7 @@ USER_FUNC(evt_party_jump_pos) {
             break;
         case 2:
             movePos(&party->position.x, &party->position.z, party->speed, party->dir);
-            party->jumpPara1 += PF32(party, 0x174);
+            party->jumpPara1 += party->tail.jump.jumpAccel;
             frames = party->jumpPara1;
             grounded = 0;
             hit = partySearchGround(party, __fabsf(frames), __fabsf(frames));
@@ -616,7 +616,7 @@ USER_FUNC(evt_party_jump_pos) {
             if (--event->userdata[2] <= 0) {
                 partyChgPoseId(party, 1);
                 party->jumpPara3 = float_0_8041bb1c;
-                PF32(party, 0x174) = float_0_8041bb1c;
+                party->tail.jump.jumpAccel = float_0_8041bb1c;
                 party->speed = float_0_8041bb1c;
                 unk_800ba2dc(party);
                 return 1;

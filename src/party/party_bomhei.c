@@ -56,13 +56,13 @@ void bomhei_bye(PartyEntry* party) {
         party->field_8 &= ~0x8;
         partyGoodbyeInit(party);
         party->playerPtr->flags &= ~0x2000;
-        if (*(u32*)((u8*)party + 0x180) != 0xFFFFFFFF) {
-            psndSFXOff(*(s32*)((u8*)party + 0x180));
-            *(s32*)((u8*)party + 0x180) = -1;
+        if ((u32)party->tail.bobbery.countdownSfxId != 0xFFFFFFFF) {
+            psndSFXOff(party->tail.bobbery.countdownSfxId);
+            party->tail.bobbery.countdownSfxId = -1;
         }
-        if (*(u32*)((u8*)party + 0x184) != 0xFFFFFFFF) {
-            psndSFXOff(*(s32*)((u8*)party + 0x184));
-            *(s32*)((u8*)party + 0x184) = -1;
+        if ((u32)party->tail.bobbery.alarmSfxId != 0xFFFFFFFF) {
+            psndSFXOff(party->tail.bobbery.alarmSfxId);
+            party->tail.bobbery.alarmSfxId = -1;
         }
     }
     if (partyGoodbyeMain(party)) {
@@ -76,10 +76,10 @@ void bomhei_init_800BFBB0(PartyEntry* party) {
     party->field_32 = 0;
     party->height = 28.0f;
     party->radius = 28.0f;
-    *(u8*)((u8*)party + 0x17A) = 100;
-    *(s32*)((u8*)party + 0x17C) = -1;
-    *(s32*)((u8*)party + 0x180) = -1;
-    *(s32*)((u8*)party + 0x184) = -1;
+    party->tail.bobbery.marioMotion = 100;
+    party->tail.bobbery.field_17C = -1;
+    party->tail.bobbery.countdownSfxId = -1;
+    party->tail.bobbery.alarmSfxId = -1;
 }
 
 
@@ -119,13 +119,13 @@ void bomhei_exit(PartyEntry* party) {
     party->flags &= ~PARTY_FLAG_FORCE_FALL;
     party->flags &= ~PARTY_FLAG_IS_EVT_USE;
     party->flags &= ~PARTY_FLAG_IS_BEING_USED;
-    if (*(u32*)((u8*)party + 0x180) != 0xFFFFFFFF) {
-        psndSFXOff(*(s32*)((u8*)party + 0x180));
-        *(s32*)((u8*)party + 0x180) = -1;
+    if ((u32)party->tail.bobbery.countdownSfxId != 0xFFFFFFFF) {
+        psndSFXOff(party->tail.bobbery.countdownSfxId);
+        party->tail.bobbery.countdownSfxId = -1;
     }
-    if (*(u32*)((u8*)party + 0x184) != 0xFFFFFFFF) {
-        psndSFXOff(*(s32*)((u8*)party + 0x184));
-        *(s32*)((u8*)party + 0x184) = -1;
+    if ((u32)party->tail.bobbery.alarmSfxId != 0xFFFFFFFF) {
+        psndSFXOff(party->tail.bobbery.alarmSfxId);
+        party->tail.bobbery.alarmSfxId = -1;
     }
     if (party->useStruct != NULL) {
         __memFree(0, party->useStruct);
@@ -155,13 +155,13 @@ void bomhei_use_cancel(void) {
     party->flags &= ~PARTY_FLAG_FORCE_FALL;
     party->flags &= ~PARTY_FLAG_IS_EVT_USE;
     party->flags &= ~PARTY_FLAG_IS_BEING_USED;
-    if (*(u32*)((u8*)party + 0x180) != 0xFFFFFFFF) {
-        psndSFXOff(*(s32*)((u8*)party + 0x180));
-        *(s32*)((u8*)party + 0x180) = -1;
+    if ((u32)party->tail.bobbery.countdownSfxId != 0xFFFFFFFF) {
+        psndSFXOff(party->tail.bobbery.countdownSfxId);
+        party->tail.bobbery.countdownSfxId = -1;
     }
-    if (*(u32*)((u8*)party + 0x184) != 0xFFFFFFFF) {
-        psndSFXOff(*(s32*)((u8*)party + 0x184));
-        *(s32*)((u8*)party + 0x184) = -1;
+    if ((u32)party->tail.bobbery.alarmSfxId != 0xFFFFFFFF) {
+        psndSFXOff(party->tail.bobbery.alarmSfxId);
+        party->tail.bobbery.alarmSfxId = -1;
     }
     if (party->useStruct != NULL) {
         __memFree(0, party->useStruct);
@@ -213,13 +213,13 @@ void bomhei_use_cancel2(void) {
     party->flags &= ~PARTY_FLAG_FORCE_FALL;
     party->flags &= ~PARTY_FLAG_IS_EVT_USE;
     party->flags &= ~PARTY_FLAG_IS_BEING_USED;
-    if (*(u32*)((u8*)party + 0x180) != 0xFFFFFFFF) {
-        psndSFXOff(*(s32*)((u8*)party + 0x180));
-        *(s32*)((u8*)party + 0x180) = -1;
+    if ((u32)party->tail.bobbery.countdownSfxId != 0xFFFFFFFF) {
+        psndSFXOff(party->tail.bobbery.countdownSfxId);
+        party->tail.bobbery.countdownSfxId = -1;
     }
-    if (*(u32*)((u8*)party + 0x184) != 0xFFFFFFFF) {
-        psndSFXOff(*(s32*)((u8*)party + 0x184));
-        *(s32*)((u8*)party + 0x184) = -1;
+    if ((u32)party->tail.bobbery.alarmSfxId != 0xFFFFFFFF) {
+        psndSFXOff(party->tail.bobbery.alarmSfxId);
+        party->tail.bobbery.alarmSfxId = -1;
     }
     if (party->useStruct != NULL) {
         __memFree(0, party->useStruct);
@@ -261,13 +261,13 @@ void bomhei_use_post(PartyEntry* party) {
         party->field_8 |= 8;
     }
     party->playerPtr->flags &= ~0x2000;
-    if (*(u32*)((u8*)party + 0x180) != 0xFFFFFFFF) {
-        psndSFXOff(*(s32*)((u8*)party + 0x180));
-        *(s32*)((u8*)party + 0x180) = -1;
+    if ((u32)party->tail.bobbery.countdownSfxId != 0xFFFFFFFF) {
+        psndSFXOff(party->tail.bobbery.countdownSfxId);
+        party->tail.bobbery.countdownSfxId = -1;
     }
-    if (*(u32*)((u8*)party + 0x184) != 0xFFFFFFFF) {
-        psndSFXOff(*(s32*)((u8*)party + 0x184));
-        *(s32*)((u8*)party + 0x184) = -1;
+    if ((u32)party->tail.bobbery.alarmSfxId != 0xFFFFFFFF) {
+        psndSFXOff(party->tail.bobbery.alarmSfxId);
+        party->tail.bobbery.alarmSfxId = -1;
     }
     if (party->useStruct != NULL) {
         __memFree(0, party->useStruct);
@@ -299,9 +299,9 @@ void bomhei_use(PartyEntry* party) {
                 }
             }
         }
-        if (*(u8*)((u8*)party + 0x17A) != 0x66) {
+        if (party->tail.bobbery.marioMotion != 0x66) {
             if (mario->currMotionId == 0x1F || mario->currMotionId == 0x20) {
-                *(u8*)((u8*)party + 0x17A) = 0x66;
+                party->tail.bobbery.marioMotion = 0x66;
                 return;
             }
             mario_controll(party);
@@ -330,13 +330,13 @@ void bomhei_use(PartyEntry* party) {
                 p2->flags &= ~PARTY_FLAG_FORCE_FALL;
                 p2->flags &= ~PARTY_FLAG_IS_EVT_USE;
                 p2->flags &= ~PARTY_FLAG_IS_BEING_USED;
-                if (*(u32*)((u8*)p2 + 0x180) != 0xFFFFFFFF) {
-                    psndSFXOff(*(s32*)((u8*)p2 + 0x180));
-                    *(s32*)((u8*)p2 + 0x180) = -1;
+                if ((u32)p2->tail.bobbery.countdownSfxId != 0xFFFFFFFF) {
+                    psndSFXOff(p2->tail.bobbery.countdownSfxId);
+                    p2->tail.bobbery.countdownSfxId = -1;
                 }
-                if (*(u32*)((u8*)p2 + 0x184) != 0xFFFFFFFF) {
-                    psndSFXOff(*(s32*)((u8*)p2 + 0x184));
-                    *(s32*)((u8*)p2 + 0x184) = -1;
+                if ((u32)p2->tail.bobbery.alarmSfxId != 0xFFFFFFFF) {
+                    psndSFXOff(p2->tail.bobbery.alarmSfxId);
+                    p2->tail.bobbery.alarmSfxId = -1;
                 }
                 if (p2->useStruct != NULL) {
                     __memFree(0, p2->useStruct);
@@ -365,13 +365,13 @@ void bomhei_use(PartyEntry* party) {
             p2->flags &= ~PARTY_FLAG_FORCE_FALL;
             p2->flags &= ~PARTY_FLAG_IS_EVT_USE;
             p2->flags &= ~PARTY_FLAG_IS_BEING_USED;
-            if (*(u32*)((u8*)p2 + 0x180) != 0xFFFFFFFF) {
-                psndSFXOff(*(s32*)((u8*)p2 + 0x180));
-                *(s32*)((u8*)p2 + 0x180) = -1;
+            if ((u32)p2->tail.bobbery.countdownSfxId != 0xFFFFFFFF) {
+                psndSFXOff(p2->tail.bobbery.countdownSfxId);
+                p2->tail.bobbery.countdownSfxId = -1;
             }
-            if (*(u32*)((u8*)p2 + 0x184) != 0xFFFFFFFF) {
-                psndSFXOff(*(s32*)((u8*)p2 + 0x184));
-                *(s32*)((u8*)p2 + 0x184) = -1;
+            if ((u32)p2->tail.bobbery.alarmSfxId != 0xFFFFFFFF) {
+                psndSFXOff(p2->tail.bobbery.alarmSfxId);
+                p2->tail.bobbery.alarmSfxId = -1;
             }
             if (p2->useStruct != NULL) {
                 __memFree(0, p2->useStruct);
@@ -399,13 +399,13 @@ void bomhei_use(PartyEntry* party) {
             p2->flags &= ~PARTY_FLAG_FORCE_FALL;
             p2->flags &= ~PARTY_FLAG_IS_EVT_USE;
             p2->flags &= ~PARTY_FLAG_IS_BEING_USED;
-            if (*(u32*)((u8*)p2 + 0x180) != 0xFFFFFFFF) {
-                psndSFXOff(*(s32*)((u8*)p2 + 0x180));
-                *(s32*)((u8*)p2 + 0x180) = -1;
+            if ((u32)p2->tail.bobbery.countdownSfxId != 0xFFFFFFFF) {
+                psndSFXOff(p2->tail.bobbery.countdownSfxId);
+                p2->tail.bobbery.countdownSfxId = -1;
             }
-            if (*(u32*)((u8*)p2 + 0x184) != 0xFFFFFFFF) {
-                psndSFXOff(*(s32*)((u8*)p2 + 0x184));
-                *(s32*)((u8*)p2 + 0x184) = -1;
+            if ((u32)p2->tail.bobbery.alarmSfxId != 0xFFFFFFFF) {
+                psndSFXOff(p2->tail.bobbery.alarmSfxId);
+                p2->tail.bobbery.alarmSfxId = -1;
             }
             if (p2->useStruct != NULL) {
                 __memFree(0, p2->useStruct);
@@ -433,13 +433,13 @@ void bomhei_use(PartyEntry* party) {
             p2->flags &= ~PARTY_FLAG_FORCE_FALL;
             p2->flags &= ~PARTY_FLAG_IS_EVT_USE;
             p2->flags &= ~PARTY_FLAG_IS_BEING_USED;
-            if (*(u32*)((u8*)p2 + 0x180) != 0xFFFFFFFF) {
-                psndSFXOff(*(s32*)((u8*)p2 + 0x180));
-                *(s32*)((u8*)p2 + 0x180) = -1;
+            if ((u32)p2->tail.bobbery.countdownSfxId != 0xFFFFFFFF) {
+                psndSFXOff(p2->tail.bobbery.countdownSfxId);
+                p2->tail.bobbery.countdownSfxId = -1;
             }
-            if (*(u32*)((u8*)p2 + 0x184) != 0xFFFFFFFF) {
-                psndSFXOff(*(s32*)((u8*)p2 + 0x184));
-                *(s32*)((u8*)p2 + 0x184) = -1;
+            if ((u32)p2->tail.bobbery.alarmSfxId != 0xFFFFFFFF) {
+                psndSFXOff(p2->tail.bobbery.alarmSfxId);
+                p2->tail.bobbery.alarmSfxId = -1;
             }
             if (p2->useStruct != NULL) {
                 __memFree(0, p2->useStruct);
@@ -475,8 +475,8 @@ void bomhei_use_main(PartyEntry* party) {
     switch (party->useMotionId) {
     case 0:
         party->useMotionId = 1;
-        *(u8*)((u8*)party + 0x17A) = 100;
-        *(s16*)((u8*)party + 0x178) = 0;
+        party->tail.bobbery.marioMotion = 100;
+        party->tail.bobbery.motionTimer = 0;
         party->timer = 4;
         ((BomheiWork*)party->useStruct)->timer = 0;
         ((BomheiWork*)party->useStruct)->flags = 0;
@@ -484,7 +484,7 @@ void bomhei_use_main(PartyEntry* party) {
         /* fallthrough */
     case 1: {
         party->targetPos = mario->position;
-        movePos((f32*)((u8*)party + 0x94), (f32*)((u8*)party + 0x9C), -6.0f, toMovedirSimple(*(f32*)((u8*)mario + 0x1AC)));
+        movePos(&party->targetPos.x, &party->targetPos.z, -6.0f, toMovedirSimple(*(f32*)((u8*)mario + 0x1AC)));
         party->position.x += (party->targetPos.x - party->position.x) / (f32)party->timer;
         party->position.y += (party->targetPos.y - party->position.y) / (f32)party->timer;
         party->position.z += (party->targetPos.z - party->position.z) / (f32)party->timer;
@@ -510,7 +510,7 @@ void bomhei_use_main(PartyEntry* party) {
 #endif
         partyChgPose(party, (char*)"J_1A");
         party->useMotionId = 2;
-        *(u8*)((u8*)party + 0x17A) = 0xA;
+        party->tail.bobbery.marioMotion = 0xA;
         break;
     }
     case 2:
@@ -521,7 +521,7 @@ void bomhei_use_main(PartyEntry* party) {
             partyChgPose(party, (char*)"L_1");
             ((BomheiWork*)party->useStruct)->timer = (s16)sysMsec2Frame(3000);
             party->useMotionId = 0xA;
-            *(u8*)((u8*)party + 0x17A) = 0x14;
+            party->tail.bobbery.marioMotion = 0x14;
         }
         break;
     case 0xA:
@@ -533,7 +533,7 @@ void bomhei_use_main(PartyEntry* party) {
 
             f31 = 36.0f;
             if (strcmp(pm->animName, (char*)"M_W_7") == 0) {
-                f32 val = (f32)m_w_7_sync[*(u8*)((u8*)party + 0x17B)];
+                f32 val = (f32)m_w_7_sync[party->tail.bobbery.syncFrame];
 #ifdef MUST_MATCH
                 // Temp keeps 0.25 in the target's f0 instead of f2.
                 f32 quarter = 0.25f;
@@ -564,7 +564,7 @@ void bomhei_use_main(PartyEntry* party) {
     switch (party->useMotionId) {
     case 0x14: {
         psndSFXOn_3D((char*)0x939, &party->playerPtr->position);
-        *(u8*)((u8*)party + 0x17A) = 0x1E;
+        party->tail.bobbery.marioMotion = 0x1E;
         party->useMotionId = 0x15;
         targetX = party->position.x;
         targetZ = party->position.z;
@@ -695,13 +695,13 @@ void bomhei_use_main(PartyEntry* party) {
             ((BomheiWork*)party->useStruct)->timer--;
             if (((BomheiWork*)party->useStruct)->timer == (s16)sysMsec2Frame(2500)) {
                 ((BomheiWork*)party->useStruct)->flags |= 2;
-                if (*(u32*)((u8*)party + 0x184) == 0xFFFFFFFF) {
-                    *(s32*)((u8*)party + 0x180) = psndSFXOn_3D((char*)0x93C, &party->playerPtr->position);
+                if ((u32)party->tail.bobbery.alarmSfxId == 0xFFFFFFFF) {
+                    party->tail.bobbery.countdownSfxId = psndSFXOn_3D((char*)0x93C, &party->playerPtr->position);
                 }
             } else if (((BomheiWork*)party->useStruct)->timer == (s16)sysMsec2Frame(500)) {
                 party->useMotionId = 0x32;
                 if ((mario->flags & 0x2000) != 0) {
-                    *(u8*)((u8*)party + 0x17A) = 0x28;
+                    party->tail.bobbery.marioMotion = 0x28;
                 } else {
                     party->useMotionId = 0x32;
                 }
@@ -711,9 +711,9 @@ void bomhei_use_main(PartyEntry* party) {
 
     switch (party->useMotionId) {
     case 0x28: {
-        if (*(u32*)((u8*)party + 0x180) != 0xFFFFFFFF) {
-            psndSFXOff(*(s32*)((u8*)party + 0x180));
-            *(s32*)((u8*)party + 0x180) = -1;
+        if ((u32)party->tail.bobbery.countdownSfxId != 0xFFFFFFFF) {
+            psndSFXOff(party->tail.bobbery.countdownSfxId);
+            party->tail.bobbery.countdownSfxId = -1;
         }
         splash = party->position;
         marioSetSplash(0, &splash);
@@ -749,12 +749,12 @@ void bomhei_use_main(PartyEntry* party) {
 
     switch (party->useMotionId) {
     case 0x32:
-        if (*(u32*)((u8*)party + 0x180) != 0xFFFFFFFF) {
-            psndSFXOff(*(s32*)((u8*)party + 0x180));
-            *(s32*)((u8*)party + 0x180) = -1;
+        if ((u32)party->tail.bobbery.countdownSfxId != 0xFFFFFFFF) {
+            psndSFXOff(party->tail.bobbery.countdownSfxId);
+            party->tail.bobbery.countdownSfxId = -1;
         }
-        if (*(u32*)((u8*)party + 0x184) == 0xFFFFFFFF) {
-            *(s32*)((u8*)party + 0x184) = psndSFXOn_3D((char*)0x93D, &party->playerPtr->position);
+        if ((u32)party->tail.bobbery.alarmSfxId == 0xFFFFFFFF) {
+            party->tail.bobbery.alarmSfxId = psndSFXOn_3D((char*)0x93D, &party->playerPtr->position);
         }
         partyChgPose(party, (char*)"A_3");
         party->useMotionId = 0x33;
@@ -771,7 +771,7 @@ void bomhei_use_main(PartyEntry* party) {
 
             f31 = 36.0f;
             if (strcmp(pm->animName, (char*)"M_W_7") == 0) {
-                f32 val = (f32)m_w_7_sync[*(u8*)((u8*)party + 0x17B)];
+                f32 val = (f32)m_w_7_sync[party->tail.bobbery.syncFrame];
 #ifdef MUST_MATCH
                 // Temp keeps 0.25 in the target's f0 instead of f2.
                 f32 quarter = 0.25f;
@@ -792,9 +792,9 @@ void bomhei_use_main(PartyEntry* party) {
             bomhei_checkHit(party);
             break;
         }
-        if (*(u32*)((u8*)party + 0x184) != 0xFFFFFFFF) {
-            psndSFXOff(*(s32*)((u8*)party + 0x184));
-            *(s32*)((u8*)party + 0x184) = -1;
+        if ((u32)party->tail.bobbery.alarmSfxId != 0xFFFFFFFF) {
+            psndSFXOff(party->tail.bobbery.alarmSfxId);
+            party->tail.bobbery.alarmSfxId = -1;
         }
         ((BomheiWork*)party->useStruct)->flags &= ~0x2;
         party->frontHit = check_front(party);
@@ -813,13 +813,13 @@ void bomhei_use_main(PartyEntry* party) {
     case 0x3C: {
         s32 found;
 
-        if (*(u32*)((u8*)party + 0x180) != 0xFFFFFFFF) {
-            psndSFXOff(*(s32*)((u8*)party + 0x180));
-            *(s32*)((u8*)party + 0x180) = -1;
+        if ((u32)party->tail.bobbery.countdownSfxId != 0xFFFFFFFF) {
+            psndSFXOff(party->tail.bobbery.countdownSfxId);
+            party->tail.bobbery.countdownSfxId = -1;
         }
-        if (*(u32*)((u8*)party + 0x184) != 0xFFFFFFFF) {
-            psndSFXOff(*(s32*)((u8*)party + 0x184));
-            *(s32*)((u8*)party + 0x184) = -1;
+        if ((u32)party->tail.bobbery.alarmSfxId != 0xFFFFFFFF) {
+            psndSFXOff(party->tail.bobbery.alarmSfxId);
+            party->tail.bobbery.alarmSfxId = -1;
         }
         psndSFXOn_3D((char*)0x93B, &party->position);
         ((BomheiWork*)party->useStruct)->timer = 0;
@@ -970,7 +970,7 @@ BOOL mario_bomhei_keychk(void) {
     if (!(party->flags & PARTY_FLAG_IS_BEING_USED)) {
         return TRUE;
     }
-    motion = *(u8*)((u8*)party + 0x17A);
+    motion = party->tail.bobbery.marioMotion;
     if (motion == 0xA || (motion >= 0x14 && motion <= 0x15) || motion == 0x65 ||
         (motion >= 0x28 && motion <= 0x29) || (motion >= 0x1E && motion <= 0x24)) {
         return FALSE;
@@ -997,8 +997,8 @@ BOOL mario_bomhei_keychk2(void) {
     if (!(party->flags & PARTY_FLAG_IS_BEING_USED)) {
         return TRUE;
     }
-    if (*(u8*)((u8*)party + 0x17A) == 0xA || *(u8*)((u8*)party + 0x17A) == 0x65 ||
-        (*(u8*)((u8*)party + 0x17A) >= 0x1E && *(u8*)((u8*)party + 0x17A) <= 0x24)) {
+    if (party->tail.bobbery.marioMotion == 0xA || party->tail.bobbery.marioMotion == 0x65 ||
+        (party->tail.bobbery.marioMotion >= 0x1E && party->tail.bobbery.marioMotion <= 0x24)) {
         return FALSE;
     }
     return TRUE;
@@ -1007,71 +1007,71 @@ BOOL mario_bomhei_keychk2(void) {
 // .text:0xC7C | 0x800BDACC | size: 0x94
 void mario_controll(PartyEntry* party) {
     MarioWork* mario = party->playerPtr;
-    u8 motion = *(u8*)((u8*)party + 0x17A);
+    u8 motion = party->tail.bobbery.marioMotion;
 
     switch (motion) {
     case 0xA:
         marioAdjustMoveDir();
         marioChgPose("M_U_2");
         mario->flags |= 0x2000;
-        *(u8*)((u8*)party + 0x17A) = 0x65;
+        party->tail.bobbery.marioMotion = 0x65;
         break;
     case 0x14:
         mario->flags |= 0x2000;
-        *(u8*)((u8*)party + 0x17A) = 0x15;
+        party->tail.bobbery.marioMotion = 0x15;
         break;
     case 0x15:
         if (strcmp(mario->animName, "M_W_7") == 0) {
             int t;
             animPoseSetLocalTime(mario->paperAnimGroupId[marioAnimeId()],
-                                 (f32)*(u8*)((u8*)party + 0x17B));
-            t = *(u8*)((u8*)party + 0x17B) + 1;
-            *(u8*)((u8*)party + 0x17B) = t;
+                                 (f32)party->tail.bobbery.syncFrame);
+            t = party->tail.bobbery.syncFrame + 1;
+            party->tail.bobbery.syncFrame = t;
             if ((u8)t >= 0x28) {
-                *(u8*)((u8*)party + 0x17B) = 0;
+                party->tail.bobbery.syncFrame = 0;
             }
         } else {
-            *(u8*)((u8*)party + 0x17B) = 0;
+            party->tail.bobbery.syncFrame = 0;
         }
         break;
     case 0x28:
         marioChgMot(0);
-        *(u8*)((u8*)party + 0x17A) = 0x29;
-        *(s16*)((u8*)party + 0x178) = 0x28;
+        party->tail.bobbery.marioMotion = 0x29;
+        party->tail.bobbery.motionTimer = 0x28;
         break;
     case 0x29: {
-        s16 t = --*(s16*)((u8*)party + 0x178);
+        s16 t = --party->tail.bobbery.motionTimer;
         if (t <= 0) {
             marioChgMot(0);
-            *(u8*)((u8*)party + 0x17A) = 0x64;
+            party->tail.bobbery.marioMotion = 0x64;
         }
         break;
     }
     case 0x1E:
         marioChgMot(0);
-        *(u8*)((u8*)party + 0x17A) = 0x1F;
+        party->tail.bobbery.marioMotion = 0x1F;
         break;
     case 0x1F:
         marioChgPose("M_C_1");
         mario->flags &= ~0x2000;
-        *(s16*)((u8*)party + 0x178) = 0x32;
-        *(u8*)((u8*)party + 0x17A) = 0x20;
+        party->tail.bobbery.motionTimer = 0x32;
+        party->tail.bobbery.marioMotion = 0x20;
         break;
     case 0x20: {
-        s16 t = --*(s16*)((u8*)party + 0x178);
+        s16 t = --party->tail.bobbery.motionTimer;
         if (t <= 0) {
-            *(u8*)((u8*)party + 0x17A) = 0x24;
-            *(s16*)((u8*)party + 0x178) = 0xA;
+            party->tail.bobbery.marioMotion = 0x24;
+            party->tail.bobbery.motionTimer = 0xA;
         }
         break;
     }
     case 0x24: {
         s16 t;
-        animPoseSetLocalTime(mario->paperAnimGroupId[marioAnimeId()], (f32)*(s16*)((u8*)party + 0x178));
-        t = --*(s16*)((u8*)party + 0x178);
+        animPoseSetLocalTime(mario->paperAnimGroupId[marioAnimeId()], (f32)party->tail.bobbery.motionTimer);
+        t = --party->tail.bobbery.motionTimer;
         if (t < 0) {
             marioChgMot(0);
-            *(u8*)((u8*)party + 0x17A) = 0x64;
+            party->tail.bobbery.marioMotion = 0x64;
         }
         break;
     }
@@ -1224,8 +1224,7 @@ void partyGetReturnPos(Vec* pos) {
     pos->z = pz;
 }
 
-// Raw offsets used (no named field): PartyEntry 0x178/0x17A/0x17B motion scratch, 0x180/0x184 SFX ids;
-// MarioWork 0x246.  field_12C is a HitEntry* stored in a void* field.
+// Raw offsets used: MarioWork 0x246.  field_12C is a HitEntry* stored in a void* field.
 
 // 100%. Requires the unit's data described above: the jump-stand strings are inline literals (pooled
 // after the compiler's own int->float magic double at .rodata+0x58), and the functions are listed in
