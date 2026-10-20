@@ -554,49 +554,49 @@ USER_FUNC(koburon_get_encount_info) {
 void suifu_kyorokyoro(NanNpcEntry* entry) {
     s32 elapsed;
 
-    switch (entry->field_0x68) {
+    switch (entry->state) {
     case 0:
-        entry->field_0x50 = gp->renderTime;
-        entry->field_0x68 = 1;
-        entry->field_0x6C = irand(1000) + 100;
-        if (entry->field_0x60 == 90.0f) {
-            entry->field_0x60 = 270.0f;
+        entry->stateStart = gp->renderTime;
+        entry->state = 1;
+        entry->stateDuration = irand(1000) + 100;
+        if (entry->direction == 90.0f) {
+            entry->direction = 270.0f;
         } else {
-            entry->field_0x60 = 90.0f;
+            entry->direction = 90.0f;
         }
         break;
     case 1:
-        elapsed = ((s32)gp->renderTime - (s32)entry->field_0x50) / (OS_TIMER_CLOCK / 1000);
-        if (elapsed > entry->field_0x6C) {
-            entry->field_0x50 = gp->renderTime;
-            entry->field_0x68 = 2;
-            entry->field_0x6C = irand(350) + 350;
-            if (entry->field_0x60 == 90.0f) {
-                entry->field_0x60 = 270.0f;
+        elapsed = ((s32)gp->renderTime - (s32)entry->stateStart) / (OS_TIMER_CLOCK / 1000);
+        if (elapsed > entry->stateDuration) {
+            entry->stateStart = gp->renderTime;
+            entry->state = 2;
+            entry->stateDuration = irand(350) + 350;
+            if (entry->direction == 90.0f) {
+                entry->direction = 270.0f;
             } else {
-                entry->field_0x60 = 90.0f;
+                entry->direction = 90.0f;
             }
         }
         break;
     case 2:
-        elapsed = ((s32)gp->renderTime - (s32)entry->field_0x50) / (OS_TIMER_CLOCK / 1000);
-        if (elapsed > entry->field_0x6C) {
-            entry->field_0x50 = gp->renderTime;
-            entry->field_0x68 = 3;
-            entry->field_0x6C = irand(350) + 350;
-            if (entry->field_0x60 == 90.0f) {
-                entry->field_0x60 = 270.0f;
+        elapsed = ((s32)gp->renderTime - (s32)entry->stateStart) / (OS_TIMER_CLOCK / 1000);
+        if (elapsed > entry->stateDuration) {
+            entry->stateStart = gp->renderTime;
+            entry->state = 3;
+            entry->stateDuration = irand(350) + 350;
+            if (entry->direction == 90.0f) {
+                entry->direction = 270.0f;
             } else {
-                entry->field_0x60 = 90.0f;
+                entry->direction = 90.0f;
             }
         }
         break;
     case 3:
-        elapsed = ((s32)gp->renderTime - (s32)entry->field_0x50) / (OS_TIMER_CLOCK / 1000);
-        if (elapsed > entry->field_0x6C) {
+        elapsed = ((s32)gp->renderTime - (s32)entry->stateStart) / (OS_TIMER_CLOCK / 1000);
+        if (elapsed > entry->stateDuration) {
             entry->callback = NULL;
-            if (entry->field_0x60 == 90.0f) {
-                entry->field_0x60 = 270.0f;
+            if (entry->direction == 90.0f) {
+                entry->direction = 270.0f;
             }
         }
         break;
@@ -604,7 +604,7 @@ void suifu_kyorokyoro(NanNpcEntry* entry) {
 }
 
 void suifu_kyorokyoro_init(NanNpcEntry* entry) {
-    entry->field_0x68 = 0;
+    entry->state = 0;
     entry->callback = suifu_kyorokyoro;
 }
 
@@ -895,94 +895,94 @@ NanNpcEntry* random_choice_target(s32 type) {
 }
 
 void tobikakari_seq00(NanNpcEntry* entry) {
-    void* dat = *(void**)((u8*)entry + 0xA0);
+    void* dat = entry->data;
     s32 elapsed;
 
-    switch (entry->field_0x68) {
+    switch (entry->state) {
     case 0: {
         s32 r = irand(1000);
         if (r < 100) {
-            entry->field_0x68 = 10;
+            entry->state = 10;
         } else if (r < 200) {
-            entry->field_0x50 = (s32)gp->renderTime;
-            entry->field_0x6C = irand(500) + 1;
-            entry->field_0x68 = 0x15;
+            entry->stateStart = (s32)gp->renderTime;
+            entry->stateDuration = irand(500) + 1;
+            entry->state = 0x15;
         } else {
-            entry->field_0x50 = (s32)gp->renderTime;
-            entry->field_0x6C = irand(2000) + 500;
-            entry->field_0x68 = 0x16;
+            entry->stateStart = (s32)gp->renderTime;
+            entry->stateDuration = irand(2000) + 500;
+            entry->state = 0x16;
         }
         break;
     }
     case 10: {
         NanNpcEntry* target;
         Vec* pos;
-        entry->field_0x50 = (s32)gp->renderTime;
+        entry->stateStart = (s32)gp->renderTime;
         entry->hoseiPosition = entry->position;
         target = random_choice_target(*(s32*)((u8*)dat + 0xC));
-        pos = (Vec*)*(void**)((u8*)target + 0xA0);
+        pos = (Vec*)target->data;
         entry->homePosition = *pos;
         entry->homePosition.z += 2.0f;
-        *(f32*)((u8*)entry + 0x78) = -4.0f * (f32)(irand(30) + 100);
-        *(f32*)((u8*)entry + 0x7C) = entry->homePosition.y - entry->hoseiPosition.y - *(f32*)((u8*)entry + 0x78);
-        entry->field_0x6C = irand(500) + 400;
+        entry->jumpCurveA = -4.0f * (f32)(irand(30) + 100);
+        entry->jumpCurveB = entry->homePosition.y - entry->hoseiPosition.y - entry->jumpCurveA;
+        entry->stateDuration = irand(500) + 400;
         if (entry->hoseiPosition.x < entry->homePosition.x) {
-            entry->field_0x60 = 90.0f;
+            entry->direction = 90.0f;
         } else {
-            entry->field_0x60 = 270.0f;
+            entry->direction = 270.0f;
         }
-        entry->field_0x68 = 0x14;
+        entry->state = 0x14;
         entry->field_0x70 = 0x15;
         break;
     }
     case 11:
-        entry->field_0x50 = (s32)gp->renderTime;
+        entry->stateStart = (s32)gp->renderTime;
         entry->hoseiPosition = entry->position;
         entry->homePosition = *(Vec*)dat;
-        *(f32*)((u8*)entry + 0x78) = -4.0f * (f32)(irand(30) + 100);
-        *(f32*)((u8*)entry + 0x7C) = entry->homePosition.y - entry->hoseiPosition.y - *(f32*)((u8*)entry + 0x78);
-        entry->field_0x6C = irand(500) + 400;
-        entry->field_0x68 = 0x14;
+        entry->jumpCurveA = -4.0f * (f32)(irand(30) + 100);
+        entry->jumpCurveB = entry->homePosition.y - entry->hoseiPosition.y - entry->jumpCurveA;
+        entry->stateDuration = irand(500) + 400;
+        entry->state = 0x14;
         entry->field_0x70 = 0x16;
         break;
     case 20:
-        elapsed = ((s32)gp->renderTime - (s32)entry->field_0x50) / (OS_TIMER_CLOCK / 1000);
-        if (elapsed < entry->field_0x6C) {
+        elapsed = ((s32)gp->renderTime - (s32)entry->stateStart) / (OS_TIMER_CLOCK / 1000);
+        if (elapsed < entry->stateDuration) {
             f32 sz, ez;
             s32 steps;
-            f32 t = (f32)elapsed / (f32)entry->field_0x6C;
-            entry->position.x = intplGetValue(0, elapsed, entry->field_0x6C, entry->hoseiPosition.x, entry->homePosition.x);
+            f32 t = (f32)elapsed / (f32)entry->stateDuration;
+            entry->position.x = intplGetValue(0, elapsed, entry->stateDuration, entry->hoseiPosition.x, entry->homePosition.x);
 #ifdef MUST_MATCH
             // MUST_MATCH: reading the second call's arguments into locals through volatile pointers stops the
             // compiler hoisting the step-count lwz ahead of the two lfs, matching the original's schedule. The
             // plain form (below) scores 99.34%.
             sz = *(volatile f32*)&entry->hoseiPosition.z;
             ez = *(volatile f32*)&entry->homePosition.z;
-            steps = *(volatile s32*)&entry->field_0x6C;
+            steps = *(volatile s32*)&entry->stateDuration;
 #else
             sz = entry->hoseiPosition.z;
             ez = entry->homePosition.z;
-            steps = entry->field_0x6C;
+            steps = entry->stateDuration;
 #endif
             entry->position.z = intplGetValue(0, elapsed, steps, sz, ez);
-            entry->position.y = t * (*(f32*)((u8*)entry + 0x78) * t + *(f32*)((u8*)entry + 0x7C)) + entry->hoseiPosition.y;
+            entry->position.y = t * (entry->jumpCurveA * t + entry->jumpCurveB) + entry->hoseiPosition.y;
         } else {
             entry->position = entry->homePosition;
-            entry->field_0x50 = (s32)gp->renderTime;
-            entry->field_0x6C = irand(2000) + 500;
-            entry->field_0x68 = entry->field_0x70;
+            entry->stateStart = (s32)gp->renderTime;
+            entry->stateDuration = irand(2000) + 500;
+            entry->state = entry->field_0x70;
         }
         break;
     case 21:
-        elapsed = ((s32)gp->renderTime - (s32)entry->field_0x50) / (OS_TIMER_CLOCK / 1000);
-        if (elapsed > entry->field_0x6C) {
-            entry->field_0x68 = 11;
+        elapsed = ((s32)gp->renderTime - (s32)entry->stateStart) / (OS_TIMER_CLOCK / 1000);
+        if (elapsed > entry->stateDuration) {
+            entry->state = 11;
         }
         break;
     case 22:
-        elapsed = ((s32)gp->renderTime - (s32)entry->field_0x50) / (OS_TIMER_CLOCK / 1000);
-        if (elapsed > entry->field_0x6C) {
-            entry->field_0x68 = 10;
+        elapsed = ((s32)gp->renderTime - (s32)entry->stateStart) / (OS_TIMER_CLOCK / 1000);
+        if (elapsed > entry->stateDuration) {
+            entry->state = 10;
         }
         break;
     }
@@ -999,8 +999,8 @@ USER_FUNC(tobikakaru_init) {
     for (i = 0; i < 0x5F; i++) {
         entry = &work->entries[i + 10];
         entry->callback = tobikakari_seq00;
-        entry->field_0x68 = 0;
-        *(void**)((u8*)entry + 0xA0) = dat;
+        entry->state = 0;
+        entry->data = dat;
         evt_nannpc_set_animtbl_sub(entry, (s16*)suifu_animtbl_run);
         *(Vec*)dat = entry->position;
         *(s32*)(dat + 0xC) = 0;
@@ -1009,8 +1009,8 @@ USER_FUNC(tobikakaru_init) {
     for (i = 0; i < 100; i++) {
         entry = &work->entries[i + 0x69];
         entry->callback = tobikakari_seq00;
-        entry->field_0x68 = 0;
-        *(void**)((u8*)entry + 0xA0) = dat;
+        entry->state = 0;
+        entry->data = dat;
         *(Vec*)dat = entry->position;
         *(s32*)(dat + 0xC) = 1;
         dat += 0x10;
@@ -1018,8 +1018,8 @@ USER_FUNC(tobikakaru_init) {
     for (i = 0; i < 100; i++) {
         entry = &work->entries[i + 0xCD];
         entry->callback = tobikakari_seq00;
-        entry->field_0x68 = 0;
-        *(void**)((u8*)entry + 0xA0) = dat;
+        entry->state = 0;
+        entry->data = dat;
         evt_nannpc_set_animtbl_sub(entry, (s16*)dai3_animtbl_run);
         *(Vec*)dat = entry->position;
         *(s32*)(dat + 0xC) = 2;

@@ -9,7 +9,7 @@ typedef struct NanNpcEntry NanNpcEntry;
 
 // Nameless-NPC work and per-entry state. src/event/evt_nannpc.c keeps these private, but the
 // REL needs the same layout to drive suifu_option_* / elmosalpha_func, so it is mirrored here
-// (names and offsets copied from that file).
+// (offsets copied from that file).
 struct NanNpcEntry {
     char name[16];                  // 0x0
     void* pose;                     // 0x10
@@ -21,18 +21,22 @@ struct NanNpcEntry {
     Vec field_0x3C;                 // 0x3C
     f32 width;                      // 0x48
     f32 field_0x4C;                 // 0x4C
-    OSTime field_0x50;              // 0x50
+    OSTime stateStart;              // 0x50, renderTime when the current state began
     s16* animTable;                 // 0x58
     s16 animCount;                  // 0x5C
     s16 animCurrent;                // 0x5E
-    f32 field_0x60;                 // 0x60
+    f32 direction;                  // 0x60, facing in degrees (90 or 270)
     void (*callback)(NanNpcEntry*); // 0x64
-    s32 field_0x68;                 // 0x68
-    s32 field_0x6C;                 // 0x6C
+    s32 state;                      // 0x68
+    s32 stateDuration;              // 0x6C, ms until the current state ends
     s32 field_0x70;                 // 0x70
-    u8 field_0x74[0x14];            // 0x74
+    s32 radius;                     // 0x74, orbit radius (elmos1000tai) and the base of its first wait
+    f32 jumpCurveA;                 // 0x78, y = hoseiPosition.y + t * (jumpCurveA * t + jumpCurveB)
+    f32 jumpCurveB;                 // 0x7C
+    u8 pad_0x80[0x8];               // 0x80
     Vec field_0x88;                 // 0x88
-    u8 field_0x94[0x10];            // 0x94
+    u8 pad_0x94[0xC];               // 0x94
+    void* data;                     // 0xA0, per-entry record (tobikakari: home Vec, kind at +0xC)
     s32 work[6];                    // 0xA4
     GXColor color;                  // 0xBC
 };
