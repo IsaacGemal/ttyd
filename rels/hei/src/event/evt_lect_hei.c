@@ -26,6 +26,8 @@
 #include "eff/eff_fukidashi.h"
 #include "eff/eff_itemget.h"
 #include "eff/eff_mario_balloon.h"
+#include "eff/eff_itemget.h"
+#include "eff/eff_fukidashi.h"
 #include "mario/mario.h"
 #include "mario/mariost.h"
 #include "manager/evtmgr_cmd.h"
