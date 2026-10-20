@@ -272,21 +272,12 @@ __declspec(section ".sdata") u8 gap_07_8040F4AC_sdata[4] = { 0 };
 #pragma explicit_zero_data reset
 
 // Data references use the original symbols, not pool constants.
-// MUST_MATCH: declaring the two GXGetTexBufferSize results `unsigned long long` (with the calls written
-// out directly) is what stops MWCC staging each call result through r0 (`mr r0,r3; ...; mr rN,r0`) while
-// keeping retail's block-2 bufferSize2/ramp16 r30/r31 rotation. With plain `u32` the first call stages
-// and the block-2 pair rotates the wrong way, whichever call/inline shape is used. The natural types are
-// under #else (that form does not match).
+// The two GXGetTexBufferSize results are declared `unsigned long long` with the calls written out directly;
+// that keeps MWCC from staging each call result through r0 and keeps the block-2 bufferSize2/ramp16 r30/r31 rotation.
 void shadowInit(void) { //almost 1:1, minor regalloc
-#ifdef MUST_MATCH
     unsigned long long bufferSize;
     u8* ramp8;
     unsigned long long bufferSize2;
-#else
-    u32 bufferSize;
-    u8* ramp8;
-    u32 bufferSize2;
-#endif
     u16* ramp16;
     u32 i;
     CharShadowWork* wp;
@@ -414,6 +405,10 @@ void shadowMain(void) {
     dswp->drawCount = 0;
 }
 
+static inline void shadowMatColor(GXColor c) {
+    GXSetChanMatColor(GX_COLOR0A0, c);
+}
+
 // The viewport/scissor/look-at/projection block the original expands identically for the
 // proj, proj+depth and char shadow draw paths; it was a macro in the source.
 // MUST_MATCH: retail spells the projection matrix two ways -- w->lookAt + 0x30 for `proj` and a fresh
@@ -422,15 +417,6 @@ void shadowMain(void) {
 // `size` is declared at function scope (not in the macro) so all three expansions share one temp,
 // which is what keeps it in retail's r27 in every branch.
 
-#ifdef MUST_MATCH
-// MUST_MATCH: building the by-value GXColor in an inlined helper is what puts its copy in the lower
-// scratch slot (r1+0x8) and the GXSetFog copy in r1+0xc, as the original does; writing the colour
-// inline puts them the other way round. The independent form is under #else.
-static inline void shadowDispMatColor(void) {
-    GXColor c = cswp->color;
-    GXSetChanMatColor(GX_COLOR0A0, c);
-}
-#endif
 
 #ifdef MUST_MATCH
 // The projection matrix as a fresh base+0x3C expression (writing it through the `proj`
@@ -453,14 +439,7 @@ void shadowDisp(CameraId cameraId, void* param) {
         camGetCurPtr();
         GXSetNumChans(1);
         GXSetChanCtrl(GX_COLOR0A0, GX_FALSE, GX_SRC_REG, GX_SRC_REG, GX_LIGHT_NULL, GX_DF_CLAMP, GX_AF_NONE);
-#ifdef MUST_MATCH
-        shadowDispMatColor();
-#else
-        {
-            GXColor color = cswp->color;
-            GXSetChanMatColor(GX_COLOR0A0, color);
-        }
-#endif
+    shadowMatColor(cswp->color);
         GXSetNumTexGens(0);
         GXSetNumTevStages(1);
         GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD_NULL, GX_TEXMAP_NULL, GX_COLOR0A0);
@@ -552,9 +531,7 @@ void shadowCharShadowDisp_Collision(CameraId cameraId, void* param) {
     HitCheckQuery query;
     f32 (*mtx)[4];
     HitEntry* hit;
-#ifdef MUST_MATCH
     HitCheckQuery* q;
-#endif
     f32 size;
     f32 yScale;
     f32 zero;
@@ -570,20 +547,12 @@ void shadowCharShadowDisp_Collision(CameraId cameraId, void* param) {
             continue;
         }
         if (entry->kind != 3 && (entry->flags & 1) != 0) {
-#ifdef MUST_MATCH
             q = &query;
             q->targetPos = entry->position;
             q->targetPos.y += float_1_80419904;
             q->targetDir = vec3_802c1a90;
             q->targetDistance = float_150_80419920;
             hit = hitCheckVecFilter(q, _filter);
-#else
-            query.targetPos = entry->position;
-            query.targetPos.y += float_1_80419904;
-            query.targetDir = vec3_802c1a90;
-            query.targetDistance = float_150_80419920;
-            hit = hitCheckVecFilter(&query, _filter);
-#endif
             if (hit == NULL) {
                 continue;
             }
@@ -815,15 +784,6 @@ void shadowCharShadowDisp_Projection(CameraId camId, void* param) {
     }
 }
 
-#ifdef MUST_MATCH
-// MUST_MATCH: building the by-value GXColor inside an inlined helper makes MWCC put its local in the
-// lower scratch slot (r1+0x10) and the GXSetFog copy in r1+0x14, as the original does; writing the
-// colour inline puts them the other way round. The independent form is under #else.
-static inline void shadowPolyMatColor(void) {
-    GXColor c = cswp->color;
-    GXSetChanMatColor(GX_COLOR0A0, c);
-}
-#endif
 
 void shadowCharShadowDisp_Polygon(CameraId camId, void* param) {
     ShadowEntry* entry = cswp->entries;
@@ -836,14 +796,7 @@ void shadowCharShadowDisp_Polygon(CameraId camId, void* param) {
     view = camGetCurPtr()->view;
     GXSetNumChans(1);
     GXSetChanCtrl(GX_COLOR0A0, GX_FALSE, GX_SRC_REG, GX_SRC_REG, GX_LIGHT_NULL, GX_DF_CLAMP, GX_AF_NONE);
-#ifdef MUST_MATCH
-    shadowPolyMatColor();
-#else
-    {
-        GXColor color = cswp->color;
-        GXSetChanMatColor(GX_COLOR0A0, color);
-    }
-#endif
+    shadowMatColor(cswp->color);
     GXSetNumTexGens(0);
     GXSetNumTevStages(1);
     GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD_NULL, GX_TEXMAP_NULL, GX_COLOR0A0);
@@ -899,15 +852,6 @@ void shadowCharShadowDisp_Polygon(CameraId camId, void* param) {
 
 // Retail keeps negSize in f30 across the loop and computes the negative half-size in f2
 // per entry. Match-only FIFO writes below reuse the named zero/one objects without pooling duplicates.
-#ifdef MUST_MATCH
-// MUST_MATCH: building the by-value GXColor inside an inlined helper makes MWCC put its local in the
-// lower scratch slot (r1+0x10) and the GXSetFog copy in r1+0x14, as the original does; writing the
-// colour inline puts them the other way round. The independent form is under #else.
-static inline void shadowTexMatColor(void) {
-    GXColor c = cswp->color;
-    GXSetChanMatColor(GX_COLOR0A0, c);
-}
-#endif
 
 void shadowCharShadowDisp_Texture(CameraId camId, void* param) {
     ShadowEntry* entry = cswp->entries;
@@ -928,14 +872,7 @@ void shadowCharShadowDisp_Texture(CameraId camId, void* param) {
     view = camGetCurPtr()->view;
     GXSetNumChans(1);
     GXSetChanCtrl(GX_COLOR0A0, GX_FALSE, GX_SRC_REG, GX_SRC_REG, GX_LIGHT_NULL, GX_DF_CLAMP, GX_AF_NONE);
-#ifdef MUST_MATCH
-    shadowTexMatColor();
-#else
-    {
-        GXColor color = cswp->color;
-        GXSetChanMatColor(GX_COLOR0A0, color);
-    }
-#endif
+    shadowMatColor(cswp->color);
     effGetTexObjN64(0x2C, &texObj);
     GXLoadTexObj(&texObj, GX_TEXMAP0);
     GXSetNumTexGens(1);
@@ -1040,15 +977,9 @@ void cylinder(ShadowEntry* entry) {
         GXCallDisplayList(base + 0x1C0, 0x40);
     } else {
         f32 alpha = (f32)cswp->color.a;
-#ifdef MUST_MATCH
-        // MUST_MATCH: declaring the fade clamp before the alpha ramp makes MWCC keep the u8->f32
-        // conversion scratch in f3 and reuse it, giving retail's FP register allocation.
+        // The fade clamp is declared before the alpha ramp so the u8->f32 conversion scratch stays in f3.
         f32 f31 = float_1_80419904 - entry->decayZ;
         f32 f2 = alpha * entry->decayX / float_255_80419914;
-#else
-        f32 f2 = alpha * entry->decayX / float_255_80419914;
-        f32 f31 = float_1_80419904 - entry->decayZ;
-#endif
         f32 f1 = f2 * entry->decayY;
 
         if (f31 < float_0_804198f4) {
@@ -1084,21 +1015,13 @@ void cylinder(ShadowEntry* entry) {
 // The three material passes each draw the cube display lists for type 1 and the cylinder otherwise; the
 // original expands this identically three times, so it was a macro in the source.
 
-#ifdef MUST_MATCH
-// MUST_MATCH: building the by-value GXColor inside an inlined helper puts its scratch slot below the
-// GXSetTevColor argument copy and gives the helper's slot the lower address (r1+0x18, argument r1+0x1c),
-// as the original does; written inline the two swap. Same for shadowMatColor: the by-value color is built
-// in the helper so its scratch slot lands where retail's does.
+// A by-value GXColor built in an inlined helper keeps its scratch slot where the original has it.
 static inline void shadowTevColor(u8 a) {
     GXColor c = unk_80422fa0;
     c.a = a;
     GXSetTevColor(GX_TEVREG0, c);
 }
 
-static inline void shadowMatColor(GXColor c) {
-    GXSetChanMatColor(GX_COLOR0A0, c);
-}
-#endif
 
 #pragma opt_common_subs reset
 void cylinderShadowDraw(CameraId camId, void* param) {
@@ -1108,9 +1031,6 @@ void cylinderShadowDraw(CameraId camId, void* param) {
     u16 left, top, right, bottom;
     f32 zero;
     s32 i;
-#ifndef MUST_MATCH
-    GXColor color;
-#endif
 
     (void)param;
     view = camGetCurPtr()->view;
@@ -1134,13 +1054,7 @@ void cylinderShadowDraw(CameraId camId, void* param) {
         }
         PSMTXConcat(view, entry->matrix, mtx);
         GXLoadPosMtxImm(mtx, GX_PNMTX0);
-#ifdef MUST_MATCH
         shadowTevColor(entry->mode);
-#else
-        color = unk_80422fa0;
-        color.a = entry->mode;
-        GXSetTevColor(GX_TEVREG0, color);
-#endif
         GXSetZMode(GX_TRUE, GX_LEQUAL, GX_FALSE);
         GXSetCullMode(GX_CULL_BACK);
         GXSetBlendMode(GX_BM_BLEND, GX_BL_ONE, GX_BL_ONE, GX_LO_CLEAR);
@@ -1154,22 +1068,14 @@ void cylinderShadowDraw(CameraId camId, void* param) {
         GXSetBlendMode(GX_BM_NONE, GX_BL_SRCALPHA, GX_BL_INVSRCALPHA, GX_LO_CLEAR);
         GXSetAlphaUpdate(GX_TRUE);
         GXSetColorUpdate(GX_FALSE);
-#ifdef MUST_MATCH
         shadowMatColor(unk_80422fa4);
-#else
-        GXSetChanMatColor(GX_COLOR0A0, unk_80422fa4);
-#endif
         GXSetChanCtrl(GX_COLOR0A0, GX_FALSE, GX_SRC_REG, GX_SRC_REG, GX_LIGHT_NULL, GX_DF_CLAMP, GX_AF_NONE);
         SHADOW_ENTRY_DRAW(entry);
         GXSetCullMode(GX_CULL_BACK);
         GXSetBlendMode(GX_BM_BLEND, GX_BL_DSTALPHA, GX_BL_INVDSTALPHA, GX_LO_CLEAR);
         GXSetAlphaUpdate(GX_FALSE);
         GXSetColorUpdate(GX_TRUE);
-#ifdef MUST_MATCH
         shadowMatColor(cswp->color);
-#else
-        GXSetChanMatColor(GX_COLOR0A0, cswp->color);
-#endif
         SHADOW_ENTRY_DRAW(entry);
         if (camId == CAMERA_OFFSCREEN2) {
             sysWaitDrawSync();
