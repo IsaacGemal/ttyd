@@ -1727,11 +1727,9 @@ s32 evt_mobj_float_blk(EventEntry* event, BOOL isFirstCall) {
 
 // Data for mobj_switch_float_blk only (unit .rodata).
 
-#ifdef MUST_MATCH
-// Match-only inline for the case-0 `_switch_anim` scan. Written as its own function body, the
-// frontend keeps the loop-init copy (`i = idx`) that the same code inline in the caller folds to
-// `li`; the local declaration order below then gives retail's registers (p r27, anim r28,
-// idx r29, i r30).
+// The case-0 `_switch_anim` scan. Written as its own function body, the frontend keeps the loop-init
+// copy (`i = idx`) that the same code inline in the caller folds to `li`; the local declaration order
+// below then gives retail's registers (p r27, anim r28, idx r29, i r30).
 static inline s32 mobjSwitchAnimIndex(MapObjectEntry* o) {
     const char** p;
     AnimTableEntry* anim;
@@ -1749,7 +1747,6 @@ static inline s32 mobjSwitchAnimIndex(MapObjectEntry* o) {
     }
     return idx;
 }
-#endif
 
 // Switch-block state machine: picks the child/partner anim based on whether the linked block
 // is hit, runs the event, and opens/closes its animation.  `_switch_anim` is the six anim-name
@@ -1763,28 +1760,8 @@ s32 mobj_switch_float_blk(MapObjectEntry* obj) {
             if (!(obj->flags & MOBJ_FLAG_TRIGGERED)) {
                 break;
             }
-#ifdef MUST_MATCH
             *(s32*)&obj->unk1A0[4] =
                 (*(s32*)&obj->unk1A0[4] & 0x40000000) | mobjSwitchAnimIndex(obj);
-#else
-            {
-                s32 i;
-                s32 idx;
-                const char** p;
-
-                anim = animPoseGetCurrentAnim(obj->poseId);
-                idx = 0;
-                p = _switch_anim;
-                for (i = idx; i < 6; i++, p++) {
-                    if (strcmp(*p, anim->name) == 0) {
-                        idx = i;
-                        break;
-                    }
-                }
-                *(s32*)&obj->unk1A0[4] =
-                    (*(s32*)&obj->unk1A0[4] & 0x40000000) | idx;
-            }
-#endif
             if (*(s8*)&obj->childName[0] != 0) {
                 MapObjectEntry* child = mobjNameToPtr(&obj->childName[0]);
                 f32 hitNZ, hitNY, hitNX, distance, hitZ, hitY, hitX;
