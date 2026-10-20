@@ -96,7 +96,7 @@ typedef struct MoamoaWork {
     Vec targets[3];     // 0x14, gathering points; moamoa i heads for targets[i % 3]
     s16 hitCount;       // 0x38, incremented on each player hit
     s16 nearHits[3];    // 0x3A, hits within 200 units of targets[i]; over 50 retires that target
-    s16 motion12Frames; // 0x40, frames Mario has stayed in motion 0x12
+    s16 hammerFrames; // 0x40, frames Mario has stayed in MARIO_MOTION_HAMMER
     s16 idleFrames;     // 0x42, frames Mario has stood still (capped at 1000)
     u32 escapeEvt;      // 0x44, event id of evt_moamoa_escape once started
     s32 field_0x48;     // 0x48
@@ -1285,7 +1285,7 @@ static s32 moamoa_hit_check(ExtPose* pose, MoamoaPose* entry) {
     if ((mario->flags & 0x30000) == 0)
         wp->bounceCount = 0;
 
-    if (mario->currMotionId == 0x12 && wp->motion12Frames > 10) {
+    if (mario->currMotionId == MARIO_MOTION_HAMMER && wp->hammerFrames > 10) {
         f32 ang;
         f32 rad;
         f32 s;
@@ -1473,9 +1473,9 @@ static void ext_moamoa_main(void) {
     camGetPtr(CAMERA_3D);
     handled = 0;
     if (mario->currMotionId == 0x12) {
-        wp->motion12Frames++;
+        wp->hammerFrames++;
     } else {
-        wp->motion12Frames = 0;
+        wp->hammerFrames = 0;
     }
     if (mario->currMotionId == 0) {
         wp->idleFrames++;

@@ -10961,7 +10961,7 @@ Left as field_0x: desc 0x14 and entry 0x20 (desc 0x14 is copied to entry 0x20, w
 which is the initial angle for type 0 and the target x for type 1.
 ### Readability: rsh_05 moamoa work (2026-10-20, Claude Haiku 5.5, n9-q-relfld)
 
-MoamoaWork in rsh_05.c: 0x40 is `motion12Frames` (frames Mario has stayed in motion 0x12; the sweep fires past 10),
+MoamoaWork in rsh_05.c: 0x40 is `hammerFrames` (frames Mario has stayed in motion 0x12; the sweep fires past 10),
 and 0x558 is `bounceCount` (bounces off the moamoa's head while Mario is airborne, capped at 2, reset when neither
 0x10000 nor 0x20000 is set on Mario's flags).
 Left as field_0x: MoamoaPose 0x14, 0x1C and 0x20, which carry different values per state. In a jump 0x14 is the
