@@ -102,12 +102,14 @@ typedef struct WinRoot {
     s32 field_0xE98; // 0xE98
     s32 field_0xE9C; // 0xE9C
     f32 field_0xEA0; // 0xEA0
-    u8 pad_0xEA4[0xEC];
+    u8 pad_0xEA4[0x14];
+    s16 field_0xEB8[0x6C]; // 0xEB8
     s32 field_0xF90; // 0xF90
     s32 field_0xF94; // 0xF94
     s32 field_0xF98; // 0xF98
     f32 field_0xF9C; // 0xF9C
-    u8 pad_0xFA0[0x98];
+    u8 pad_0xFA0[0x14];
+    s16 field_0xFB4[0x42]; // 0xFB4
     s32 field_0x1038; // 0x1038
     u8 pad_0x103C[0x4];
     s32 field_0x1040; // 0x1040
@@ -1790,12 +1792,12 @@ void winHakoGX(WindowWork* work, s32 type, f32 x, f32 y) {
                 s32 idx = page * 0x1C + row * 7 + col;
                 if (idx < count) {
                     if (texBase == 0) {
-                        s16 itemId = *(s16*)((u8*)work + 0xEB8 + idx * 2);
+                        s16 itemId = WROOT(work)->field_0xEB8[idx];
                         if (swGet(itemId + 0x80) != 0) {
                             continue;
                         }
                     } else {
-                        s16 itemId = *(s16*)((u8*)work + 0xFB4 + idx * 2);
+                        s16 itemId = WROOT(work)->field_0xFB4[idx];
                         if (swGet(itemId + 0x41) != 0) {
                             continue;
                         }
@@ -1816,16 +1818,16 @@ void winHakoGX(WindowWork* work, s32 type, f32 x, f32 y) {
                     s32 iconId;
 
                     if (texBase == 0) {
-                        if (swGet(*(s16*)((u8*)work + 0xEB8 + idx * 2) + 0x80) == 0) {
+                        if (swGet(WROOT(work)->field_0xEB8[idx] + 0x80) == 0) {
                             continue;
                         }
-                        { ItemData* it = &itemDataTable[*(s16*)((u8*)work + 0xEB8 + idx * 2)];
+                        { ItemData* it = &itemDataTable[WROOT(work)->field_0xEB8[idx]];
                         iconId = *(u16*)&it[0xF0].icon_id; }
                     } else {
-                        if (swGet(*(s16*)((u8*)work + 0xFB4 + idx * 2) + 0x41) == 0) {
+                        if (swGet(WROOT(work)->field_0xFB4[idx] + 0x41) == 0) {
                             continue;
                         }
-                        { ItemData* it = &itemDataTable[*(s16*)((u8*)work + 0xFB4 + idx * 2)];
+                        { ItemData* it = &itemDataTable[WROOT(work)->field_0xFB4[idx]];
                         iconId = *(u16*)&it[0xB3].icon_id; }
                     }
                     winMailIconV(iconId, (Vec){((x + (f32)(col * 0x38)) + 24.0f) + 4.0f, ((scroll + (y - (f32)(row * 0x38))) - (f32)(page * 0xE8)) - 28.0f, 0.0f}, (Vec){0.8f, 0.8f, 0.8f}, (GXColor){0xFF, 0xFF, 0xFF, 0xFF});
@@ -2187,9 +2189,9 @@ int compare_func5_2_r(void* a, void* b) {
 
 void sort_5_1_func(WindowWork* work) {
     if (work->sortReverseNext == 0) {
-        qqsort((u8*)work + 0xEB8, WROOT(work)->field_0xE94, 2, (int (*)(void*, void*))compare_func5_1);
+        qqsort(WROOT(work)->field_0xEB8, WROOT(work)->field_0xE94, 2, (int (*)(void*, void*))compare_func5_1);
     } else {
-        qqsort((u8*)work + 0xEB8, WROOT(work)->field_0xE94, 2, (int (*)(void*, void*))compare_func5_1_r);
+        qqsort(WROOT(work)->field_0xEB8, WROOT(work)->field_0xE94, 2, (int (*)(void*, void*))compare_func5_1_r);
     }
     work->sortReverseNext = 1 - work->sortReverseNext;
     WROOT(work)->field_0xE98 = 0;
@@ -2198,9 +2200,9 @@ void sort_5_1_func(WindowWork* work) {
 
 void sort_5_2_func(WindowWork* work) {
     if (work->sortReverseNext == 0) {
-        qqsort((u8*)work + 0xEB8, WROOT(work)->field_0xE94, 2, compare_func5_2);
+        qqsort(WROOT(work)->field_0xEB8, WROOT(work)->field_0xE94, 2, compare_func5_2);
     } else {
-        qqsort((u8*)work + 0xEB8, WROOT(work)->field_0xE94, 2, compare_func5_2_r);
+        qqsort(WROOT(work)->field_0xEB8, WROOT(work)->field_0xE94, 2, compare_func5_2_r);
     }
     work->sortReverseNext = 1 - work->sortReverseNext;
     WROOT(work)->field_0xE98 = 0;
@@ -2337,9 +2339,9 @@ int compare_func6_2_r(void* a, void* b) {
 
 void sort_6_1_func(WindowWork* work) {
     if (work->sortReverseNext == 0) {
-        qqsort((u8*)work + 0xFB4, WROOT(work)->field_0xF90, 2, (int (*)(void*, void*))compare_func6_1);
+        qqsort(WROOT(work)->field_0xFB4, WROOT(work)->field_0xF90, 2, (int (*)(void*, void*))compare_func6_1);
     } else {
-        qqsort((u8*)work + 0xFB4, WROOT(work)->field_0xF90, 2, (int (*)(void*, void*))compare_func6_1_r);
+        qqsort(WROOT(work)->field_0xFB4, WROOT(work)->field_0xF90, 2, (int (*)(void*, void*))compare_func6_1_r);
     }
     work->sortReverseNext = 1 - work->sortReverseNext;
     WROOT(work)->field_0xF94 = 0;
@@ -2348,9 +2350,9 @@ void sort_6_1_func(WindowWork* work) {
 
 void sort_6_2_func(WindowWork* work) {
     if (work->sortReverseNext == 0) {
-        qqsort((u8*)work + 0xFB4, WROOT(work)->field_0xF90, 2, compare_func6_2);
+        qqsort(WROOT(work)->field_0xFB4, WROOT(work)->field_0xF90, 2, compare_func6_2);
     } else {
-        qqsort((u8*)work + 0xFB4, WROOT(work)->field_0xF90, 2, compare_func6_2_r);
+        qqsort(WROOT(work)->field_0xFB4, WROOT(work)->field_0xF90, 2, compare_func6_2_r);
     }
     work->sortReverseNext = 1 - work->sortReverseNext;
     WROOT(work)->field_0xF94 = 0;
