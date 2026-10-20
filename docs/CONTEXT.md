@@ -11704,10 +11704,7 @@ raw_offset total 876 -> 831. Build byte-identical (build/G8MJ01/ok recreated); a
 
 No new names. eff_starstone.c reads the snow-dust effect's userdata as `effSnowDustData` (topR/topG/topB 0x4C-0x54, camId 0x68,
 x/y/z 0x04-0x0C). gor evt_yuuranking.c's `YBASE_*` macros are gone: `A14/A74/AD4` index `yuwp->rankUsed/rankScore/rankMonte`
-directly (the A14L/A74L/AD4L/A74F/A14R views stay raw: they exist to fold the add order). unit_boss_batten_leader.c reads
-effSyuryouEntry's userdata as `EffSyuryouData` (position, scale). evt_lect_hei.c and evt_lect_gor.c: the `effitemget*`
+directly (the A14L/A74L/AD4L/A74F/A14R views stay raw: they exist to fold the add order). evt_lect_gor.c: the `effitemget*`
 helpers use `effItemGetData` (camId 0x38, scaleMode 0x20; the scripts create "itemget" effects), the balloon helper uses
 `EffMarioBalloonData.cameraId` (0x1C, effMarioBalloonEntry), the fukidashi helper `effFukidashiData.camId` (0x4C; script
-creates it with evt_eff_fukidashi). Left raw: the `evt_eff_colorchange00` / `evt_eff_barriersizechange` / `evt_eff_firechange00`
-userdata sites in unit_boss_batten_leader.c (effect type not shown by any script), `(u8*)b + 8` / `(u8*)ppos + 4` in the lect
-files (MUST_MATCH position bases), end_unknown.c's `off`/`offset` forms and bom_01.c's padding-landing sites (match tricks).
+creates it with evt_eff_fukidashi). Left raw: `(u8*)b + 8` / `(u8*)ppos + 4` in evt_lect_gor.c (MUST_MATCH position bases), end_unknown.c's `off`/`offset` forms and bom_01.c's padding-landing sites (match tricks).
