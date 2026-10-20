@@ -41,31 +41,23 @@ u32 stg_houki_kemuri_v[126] = {
 };
 
 typedef struct effKemuri10Data {
-    s32 field_0x0;    // 0x0
+    s32 field_0x0;    // 0x0 written at init, never read
     Vec position;     // 0x4
-    f32 field_0x10;   // 0x10
-    f32 field_0x14;   // 0x14
-    f32 field_0x18;   // 0x18
-    f32 field_0x1C;   // 0x1C
-    f32 field_0x20;   // 0x20
-    f32 field_0x24;   // 0x24
-    f32 field_0x28;   // 0x28
-    f32 field_0x2C;   // 0x2C
-    f32 field_0x30;   // 0x30
-    f32 field_0x34;   // 0x34
-    f32 field_0x38;   // 0x38
-    f32 field_0x3C;   // 0x3C
-    f32 field_0x40;   // 0x40
-    f32 field_0x44;   // 0x44
-    f32 field_0x48;   // 0x48
-    f32 field_0x4C;   // 0x4C
-    f32 field_0x50;   // 0x50
-    f32 field_0x54;   // 0x54
-    s32 field_0x58;   // 0x58
-    s32 field_0x5C;   // 0x5C
-    s32 field_0x60;   // 0x60
-    u8 field_0x64[8]; // 0x64
-    s32 field_0x6C;   // 0x6C
+    f32 velX;         // 0x10 -4 * the direction, added to position each frame
+    f32 velY;         // 0x14
+    f32 velZ;         // 0x18
+    Mtx orient;       // 0x1C columns: up (0), side (1), dir (2); the zero column 3 is the translation
+    f32 texScroll;    // 0x4C texture-matrix U offset, advanced by texScrollSpeed each frame
+    f32 texScrollSpeed; // 0x50
+    f32 scale;        // 0x54
+    s32 alpha;        // 0x58 TEVREG0 alpha, ramps up for phases over 5 and down under 5
+    s32 life;         // 0x5C frames left (16 at init); the effect is deleted below 0
+    s32 timer;        // 0x60 frames elapsed
+    u8 tevReg0R;      // 0x64 TEVREG0 red
+    u8 tevReg0G;      // 0x65 TEVREG0 green
+    u8 tevReg0B;      // 0x66 TEVREG0 blue
+    u8 field_0x67[5]; // 0x67 a second RGB copy at 0x67-0x69 (written at init, never read), 0x6A-0x6B unused
+    s32 camId;        // 0x6C dispEntry camera (CAMERA_3D)
 } effKemuri10Data;
 
 
@@ -207,34 +199,34 @@ EffectEntry* effKemuri10N64Entry(s32 a1, f32 x, f32 y, f32 z, f32 dirX, f32 dirY
     data->position.x = x;
     data->position.y = y;
     data->position.z = z;
-    data->field_0x10 = float_4_8041f4d4 * -dirX;
-    data->field_0x14 = float_4_8041f4d4 * -dirY;
-    data->field_0x18 = float_4_8041f4d4 * -dirZ;
-    data->field_0x5C = 16;
-    data->field_0x4C = float_278_8041f4d8;
-    data->field_0x50 = float_32_8041f4dc;
-    data->field_0x58 = 0;
-    data->field_0x60 = 0;
-    data->field_0x64[0] = 0xF8;
-    data->field_0x64[1] = 0x5C;
-    data->field_0x64[2] = 0xE5;
-    data->field_0x64[3] = 0xF8;
-    data->field_0x64[4] = 0x5C;
-    data->field_0x64[5] = 0xE5;
-    data->field_0x1C = upX;
-    data->field_0x2C = upY;
-    data->field_0x3C = upZ;
-    data->field_0x20 = sideX;
-    data->field_0x30 = sideY;
-    data->field_0x40 = sideZ;
-    data->field_0x24 = dirX;
-    data->field_0x34 = dirY;
-    data->field_0x44 = dirZ;
-    data->field_0x28 = float_0_8041f4b8;
-    data->field_0x38 = float_0_8041f4b8;
-    data->field_0x48 = float_0_8041f4b8;
-    data->field_0x54 = float_0p1_8041f4e0 * scale;
-    data->field_0x6C = 4;
+    data->velX = float_4_8041f4d4 * -dirX;
+    data->velY = float_4_8041f4d4 * -dirY;
+    data->velZ = float_4_8041f4d4 * -dirZ;
+    data->life = 16;
+    data->texScroll = float_278_8041f4d8;
+    data->texScrollSpeed = float_32_8041f4dc;
+    data->alpha = 0;
+    data->timer = 0;
+    data->tevReg0R = 0xF8;
+    data->tevReg0G = 0x5C;
+    data->tevReg0B = 0xE5;
+    data->field_0x67[0] = 0xF8;
+    data->field_0x67[1] = 0x5C;
+    data->field_0x67[2] = 0xE5;
+    data->orient[0][0] = upX;
+    data->orient[1][0] = upY;
+    data->orient[2][0] = upZ;
+    data->orient[0][1] = sideX;
+    data->orient[1][1] = sideY;
+    data->orient[2][1] = sideZ;
+    data->orient[0][2] = dirX;
+    data->orient[1][2] = dirY;
+    data->orient[2][2] = dirZ;
+    data->orient[0][3] = float_0_8041f4b8;
+    data->orient[1][3] = float_0_8041f4b8;
+    data->orient[2][3] = float_0_8041f4b8;
+    data->scale = float_0p1_8041f4e0 * scale;
+    data->camId = 4;
 
     return effect;
 }
@@ -259,10 +251,10 @@ void effKemuri10Main(EffectEntry* effect) {
     data = effect->userdata;
     position = initializeVec(&data->position);
     position2 = position;
-    camera = data->field_0x6C;
-    data->field_0x5C--;
-    data->field_0x60++;
-    phase = data->field_0x5C;
+    camera = data->camId;
+    data->life--;
+    data->timer++;
+    phase = data->life;
     if (phase < 0) {
         effDelete(effect);
         return;
@@ -270,22 +262,22 @@ void effKemuri10Main(EffectEntry* effect) {
 
     for (i = 0; i < effect->count; i++, data++) {
         if (phase > 5) {
-            data->field_0x58 = (s32)(float_0p3_8041f4bc * (f32)(255 - data->field_0x58) + (f32)data->field_0x58);
-            data->field_0x10 *= float_0p8_8041f4c0;
-            data->field_0x14 *= float_0p8_8041f4c0;
-            data->field_0x18 *= float_0p8_8041f4c0;
+            data->alpha = (s32)(float_0p3_8041f4bc * (f32)(255 - data->alpha) + (f32)data->alpha);
+            data->velX *= float_0p8_8041f4c0;
+            data->velY *= float_0p8_8041f4c0;
+            data->velZ *= float_0p8_8041f4c0;
         }
         if (phase < 5) {
-            data->field_0x58 = (s32)((f32)data->field_0x58 * float_0p6_8041f4c4);
-            data->field_0x10 *= float_0p7_8041f4c8;
-            data->field_0x14 *= float_0p7_8041f4c8;
-            data->field_0x18 *= float_0p7_8041f4c8;
+            data->alpha = (s32)((f32)data->alpha * float_0p6_8041f4c4);
+            data->velX *= float_0p7_8041f4c8;
+            data->velY *= float_0p7_8041f4c8;
+            data->velZ *= float_0p7_8041f4c8;
         }
-        data->position.x += data->field_0x10;
-        data->position.y += data->field_0x14;
-        data->position.z += data->field_0x18;
-        data->field_0x4C += data->field_0x50;
-        data->field_0x54 *= float_1p05_8041f4cc;
+        data->position.x += data->velX;
+        data->position.y += data->velY;
+        data->position.z += data->velZ;
+        data->texScroll += data->texScrollSpeed;
+        data->scale *= float_1p05_8041f4cc;
     }
 
     dispEntry(camera, dispCalcZ(&position2), 2, effKemuri10Disp, effect);
@@ -301,10 +293,10 @@ __declspec(section ".sdata") u32 unk_80423178;
 // Build the TEV register colour from the scratch colour and the effect data.
 static inline void kemuri10SetColor(effKemuri10Data* data) {
     GXColor color = *(GXColor*)&unk_80423178;
-    color.r = data->field_0x64[0];
-    color.g = data->field_0x64[1];
-    color.b = data->field_0x64[2];
-    color.a = data->field_0x58;
+    color.r = data->tevReg0R;
+    color.g = data->tevReg0G;
+    color.b = data->tevReg0B;
+    color.a = data->alpha;
     GXSetTevColor(GX_TEVREG0, color);
 }
 
@@ -315,37 +307,37 @@ void effKemuri10Disp(CameraId camId, void* param) {
     GXTexObj texObj;
     Mtx m0;
     Mtx m1;
-    s32 field4C;
+    s32 scrollU;
 
     cam = camGetPtr(camId);
     data = effect->userdata;
-    field4C = (s32)data->field_0x4C;
+    scrollU = (s32)data->texScroll;
 
     GXSetNumChans(0);
     GXSetNumTexGens(1);
-    GXSetTexCoordGen2(0, 1, 4, 0x1e, 0, 0x7d);
+    GXSetTexCoordGen2(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_TEXMTX0, GX_FALSE, GX_PTIDENTITY);
     PSMTXScale(m1, float_0p015625_8041f4b0, float_0p03125_8041f4b4, float_0_8041f4b8);
-    PSMTXTrans(m0, (f32)field4C, float_0_8041f4b8, float_0_8041f4b8);
+    PSMTXTrans(m0, (f32)scrollU, float_0_8041f4b8, float_0_8041f4b8);
     PSMTXConcat(m1, m0, m0);
-    GXLoadTexMtxImm(m0, 0x1e, 1);
+    GXLoadTexMtxImm(m0, GX_TEXMTX0, GX_MTX2x4);
     effGetTexObjN64(0x1f, &texObj);
-    GXLoadTexObj(&texObj, 0);
+    GXLoadTexObj(&texObj, GX_TEXMAP0);
     GXSetNumTevStages(1);
-    GXSetTevOrder(0, 0, 0, 0xff);
-    GXSetTevColorOp(0, 0, 0, 0, 1, 0);
-    GXSetTevAlphaOp(0, 0, 0, 0, 1, 0);
-    GXSetTevColorIn(0, 0xf, 0xf, 0xf, 2);
-    GXSetTevAlphaIn(0, 7, 4, 1, 7);
+    GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR_NULL);
+    GXSetTevColorOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+    GXSetTevAlphaOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+    GXSetTevColorIn(GX_TEVSTAGE0, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ZERO, GX_CC_C0);
+    GXSetTevAlphaIn(GX_TEVSTAGE0, GX_CA_ZERO, GX_CA_TEXA, GX_CA_A0, GX_CA_ZERO);
     kemuri10SetColor(data);
     PSMTXTrans(m0, data->position.x, data->position.y, data->position.z);
-    PSMTXConcat(m0, (MtxPtr)&data->field_0x1C, m0);
-    PSMTXScale(m1, data->field_0x54, data->field_0x54, data->field_0x54);
+    PSMTXConcat(m0, data->orient, m0);
+    PSMTXScale(m1, data->scale, data->scale, data->scale);
     PSMTXConcat(m0, m1, m0);
     PSMTXConcat(cam->view, m0, m0);
-    GXLoadPosMtxImm(m0, 0);
-    GXSetCurrentMtx(0);
+    GXLoadPosMtxImm(m0, GX_PNMTX0);
+    GXSetCurrentMtx(GX_PNMTX0);
     effSetVtxDescN64((effVtxArray*)stg_houki_kemuri_v);
-    GXBegin(0x90, 0, 0xc0);
+    GXBegin(GX_TRIANGLES, GX_VTXFMT0, 0xc0);
     tri2(0, 1, 2, 0, 0, 2, 3, 0);
     tri2(3, 2, 4, 0, 3, 4, 5, 0);
     tri2(2, 6, 7, 0, 2, 7, 4, 0);
