@@ -75,9 +75,9 @@ s32 jetCount[1];
 static u32 list[1];
 EffectEntry* eff_suikomi[1];
 s32 screamId[1];
-s32 unk_aji_bss00000168[1];
-u8 unk_aji_bss00000165;
-u8 unk_aji_bss00000164;
+s32 screamFadeTimer[1];
+u8 screamStartVol;
+u8 screamVol;
 TargetWork* wp_target[1];
 u32 targetSoundId[1];
 static EffectEntry* eff_charge[1];
@@ -1178,7 +1178,7 @@ EVT_BEGIN(aud_attack_event)
     CALL(btlevtcmd_snd_se, -2, STRING("SFX_BOSS_MBTN_INHALE1"), EVTDAT_POINTER_MAX, 0, LW(15))
     CALL(aud_suikomi, -2)
     BEGIN_SIBLING_EVENT
-        CALL(unk_aji_00007668)
+        CALL(aud_suikomi_fade)
     END_SIBLING_EVENT
     CALL(evt_snd_sfxoff, LW(15))
     CALL(btlevtcmd_GetUnitWork, -2, 0, LW(0))
@@ -2120,26 +2120,26 @@ USER_FUNC(aud_suikomi) {
 // the global back by name; the compiler folds that store into the stb and reuses the
 // converted value. Storing through a `vol` local (the natural form) instead makes it
 // materialise the global's address into a temp (addi + stb 0(base)).
-USER_FUNC(unk_aji_00007668) {
+USER_FUNC(aud_suikomi_fade) {
     s32 timer;
     f32 v;
     u8 vol;
 
     if (isFirstCall) {
-        unk_aji_bss00000168[0] = 120;
-        unk_aji_bss00000165 = psndSFX_get_vol(screamId[0]);
+        screamFadeTimer[0] = 120;
+        screamStartVol = psndSFX_get_vol(screamId[0]);
     }
-    timer = --unk_aji_bss00000168[0];
-    v = intplGetValue(0, 120 - timer, 120, unk_aji_bss00000165, 0.0f);
+    timer = --screamFadeTimer[0];
+    v = intplGetValue(0, 120 - timer, 120, screamStartVol, 0.0f);
 #ifdef MUST_MATCH
-    unk_aji_bss00000164 = (u8)v;
-    psndSFX_vol(screamId[0], unk_aji_bss00000164);
+    screamVol = (u8)v;
+    psndSFX_vol(screamId[0], screamVol);
 #else
     vol = (u8)(s32)v;
-    unk_aji_bss00000164 = vol;
+    screamVol = vol;
     psndSFX_vol(screamId[0], vol);
 #endif
-    if (unk_aji_bss00000168[0] <= 0) {
+    if (screamFadeTimer[0] <= 0) {
         return EVT_RETURN_DONE;
     }
     return EVT_RETURN_BLOCK;
@@ -2289,40 +2289,40 @@ USER_FUNC(aud_target_mark) {
     if (isFirstCall) {
         wp_target[0] = BattleAlloc(0xC);
         wp_target[0]->effect = effBattenEntry(1, 1000, 0.0f, -1000.0f, 0.0f, 1.0f);
-        wp_target[0]->field_0x0 = 0;
-        wp_target[0]->field_0x4 = 0;
+        wp_target[0]->state = 0;
+        wp_target[0]->timer = 0;
         targetSoundId[0] = psndSFXOn("SFX_BOSS_MBTN_SEARCH1");
     }
     data = wp_target[0]->effect->userdata;
-    switch (wp_target[0]->field_0x0) {
+    switch (wp_target[0]->state) {
     case 0:
-        wp_target[0]->field_0x4 += 1;
-        data->position.x = intplGetValue(4, wp_target[0]->field_0x4, 60, 60.0f + f31, f31 - 5.0f);
-        data->position.y = intplGetValue(4, wp_target[0]->field_0x4, 60, 20.0f + f30, 60.0f + f30);
+        wp_target[0]->timer += 1;
+        data->position.x = intplGetValue(4, wp_target[0]->timer, 60, 60.0f + f31, f31 - 5.0f);
+        data->position.y = intplGetValue(4, wp_target[0]->timer, 60, 20.0f + f30, 60.0f + f30);
         data->position.z = 20.0f + f29;
-        if (wp_target[0]->field_0x4 >= 60) {
-            wp_target[0]->field_0x0 = 5;
-            wp_target[0]->field_0x4 = 0;
+        if (wp_target[0]->timer >= 60) {
+            wp_target[0]->state = 5;
+            wp_target[0]->timer = 0;
         }
         break;
     case 5:
-        wp_target[0]->field_0x4 += 1;
-        data->position.x = intplGetValue(4, wp_target[0]->field_0x4, 40, f31 - 5.0f, f31 - 25.0f);
-        data->position.y = intplGetValue(4, wp_target[0]->field_0x4, 40, 60.0f + f30, 20.0f + f30);
+        wp_target[0]->timer += 1;
+        data->position.x = intplGetValue(4, wp_target[0]->timer, 40, f31 - 5.0f, f31 - 25.0f);
+        data->position.y = intplGetValue(4, wp_target[0]->timer, 40, 60.0f + f30, 20.0f + f30);
         data->position.z = 20.0f + f29;
-        if (wp_target[0]->field_0x4 >= 40) {
-            wp_target[0]->field_0x0 = 10;
-            wp_target[0]->field_0x4 = 0;
+        if (wp_target[0]->timer >= 40) {
+            wp_target[0]->state = 10;
+            wp_target[0]->timer = 0;
         }
         break;
     case 10:
-        wp_target[0]->field_0x4 += 1;
-        data->position.x = intplGetValue(4, wp_target[0]->field_0x4, 20, f31 - 25.0f, f31);
-        data->position.y = intplGetValue(4, wp_target[0]->field_0x4, 20, 20.0f + f30, f30);
+        wp_target[0]->timer += 1;
+        data->position.x = intplGetValue(4, wp_target[0]->timer, 20, f31 - 25.0f, f31);
+        data->position.y = intplGetValue(4, wp_target[0]->timer, 20, 20.0f + f30, f30);
         data->position.z = 20.0f + f29;
-        if (wp_target[0]->field_0x4 >= 20) {
-            wp_target[0]->field_0x0 = 15;
-            wp_target[0]->field_0x4 = 0;
+        if (wp_target[0]->timer >= 20) {
+            wp_target[0]->state = 15;
+            wp_target[0]->timer = 0;
             effDelete(wp_target[0]->effect);
             wp_target[0]->effect = effBattenEntry(2, 1000, f31, f30, f29 + 10.0f, 1.0f);
             psndSFXOff(targetSoundId[0]);
@@ -2330,8 +2330,8 @@ USER_FUNC(aud_target_mark) {
         }
         break;
     case 15:
-        wp_target[0]->field_0x4 += 1;
-        if (wp_target[0]->field_0x4 >= 90) {
+        wp_target[0]->timer += 1;
+        if (wp_target[0]->timer >= 90) {
             effDelete(wp_target[0]->effect);
             BattleFree(wp_target[0]);
             return EVT_RETURN_DONE;
@@ -2364,8 +2364,8 @@ static USER_FUNC(arm_init) {
 
         work[i] = BattleAlloc(sizeof(ArmWork));
         w = work[i];
-        w->field_0xC = (Vec){ 0.0f, 0.0f, 0.0f };
-        work[i]->field_0x0 = w->field_0xC;
+        w->pos = (Vec){ 0.0f, 0.0f, 0.0f };
+        work[i]->prevPos = w->pos;
     }
     return EVT_RETURN_DONE;
 }
@@ -2408,23 +2408,23 @@ static USER_FUNC(arm_main) {
     id = BattleTransID(event, id);
     unit = BattleGetUnitPtr(wp, id);
     BtlUnit_GetPos(unit, &x, &y, &z);
-    w->field_0x0 = w->field_0xC;
+    w->prevPos = w->pos;
     pos = (Vec){ 0.0f, 0.0f, 0.0f };
     pos.x = x;
     pos.y = y;
     pos.z = z;
-    w->field_0xC = pos;
+    w->pos = pos;
     if (evtCheckID(unit->waitEventId) != 1) {
-        f32 dx = w->field_0xC.x - w->field_0x0.x;
-        f32 dy = w->field_0xC.y - w->field_0x0.y;
+        f32 dx = w->pos.x - w->prevPos.x;
+        f32 dy = w->pos.y - w->prevPos.y;
 
         if (dx != 0.0f) {
-            w->field_0x1C = 360.0f * (f32)atan(dy / dx) / 6.283184f;
-            w->field_0x18 = w->field_0x18 + (w->field_0x1C - w->field_0x18) / 3.0f;
+            w->targetRotZ = 360.0f * (f32)atan(dy / dx) / 6.283184f;
+            w->rotZ = w->rotZ + (w->targetRotZ - w->rotZ) / 3.0f;
             BtlUnit_GetRotate(unit, &rx, &ry, &rz);
-            BtlUnit_SetRotate(unit, rx, ry, w->field_0x18);
+            BtlUnit_SetRotate(unit, rx, ry, w->rotZ);
         } else {
-            w->field_0x1C = 0.0f;
+            w->targetRotZ = 0.0f;
         }
     }
     BtlUnit_GetBaseRotate(unit, &bx, &by, &bz);
@@ -2442,9 +2442,9 @@ static USER_FUNC(arm_main) {
     PSMTXCopy(mtx74, data->matrix);
     offset = (Vec){ 0.0f, -18.0f, 0.0f };
     PSMTXMultVec(mtx74, &offset, &offset);
-    data->position.x = w->field_0xC.x + offset.x;
-    data->position.y = w->field_0xC.y + offset.y;
-    data->position.z = w->field_0xC.z + offset.z;
+    data->position.x = w->pos.x + offset.x;
+    data->position.y = w->pos.y + offset.y;
+    data->position.z = w->pos.z + offset.z;
     return EVT_RETURN_DONE;
 }
 
