@@ -2,16 +2,17 @@
 
 #include "evt/evt_cmd.h"
 
+#include <dolphin/gx.h>
 #include <dolphin/types.h>
 #include "battle/battle_stage_object.h"
 
 typedef struct BattleSpotEntry {
 	u16 flags; // 0x0
-	u8 field_0x2[0x4 - 0x2]; // 0x2
-	Vec field_4; // 0x4
-	Vec field_10; // 0x10
-	Vec field_1C; // 0x1C
-	s32 field_28; // 0x28, unknown, unused and set by an sbss2 var, TODO?
+	u8 pad_2[0x4 - 0x2]; // 0x2
+	Vec pos; // 0x4, translation in drawCone
+	Vec rot; // 0x10, rotation in degrees per axis (drawCone)
+	Vec scale; // 0x1C
+	GXColor color; // 0x28, drawn by batSpotDisp; the alpha byte at 0x2B is read by drawCone
 } BattleSpotEntry;
 
 typedef struct BattleSpotWork {
@@ -27,8 +28,79 @@ typedef struct BattleStageData {
 	BattleStageObjectData* mObjects; //0xC, TODO extern?
 } BattleStageData;
 
-typedef struct BattleWorkStage {
-	u8 field_0x0[0xB3C - 0x0]; //0x0
+typedef struct BattleStageColor {
+	u8 r; //0x0
+	u8 g; //0x1
+	u8 b; //0x2
+	u8 a; //0x3
+} BattleStageColor;
+
+typedef struct BattleStageDark {
+	u32 field_0;          //0x0, set to 1 in BattleStageInit, never read
+	u8 alpha;             //0x4, current darkness drawn by BattleStageDispDark
+	u8 baseAlpha;         //0x5
+	u8 alphaFrom;         //0x6
+	u8 baseFrom;          //0x7
+	u8 alphaTo;           //0x8
+	u8 baseTo;            //0x9
+	u8 pad_A[2];          //0xA
+	s32 alphaFrames;      //0xC
+	s32 baseFrames;       //0x10
+	s32 alphaFramesTotal; //0x14
+	s32 baseFramesTotal;  //0x18
+	s8 alphaEase;         //0x1C
+	s8 baseEase;          //0x1D
+	u8 pad_1E[2];         //0x1E
+} BattleStageDark;
+
+typedef struct BattleStageLight {
+	u32 flags;                 //0x0
+	char name[0x20];           //0x4
+	BattleStageColor colorCur; //0x24
+	BattleStageColor colorFrom; //0x28
+	BattleStageColor colorTo;   //0x2C
+	s32 colorFrames;           //0x30
+	s32 colorFramesTotal;      //0x34
+	s8 colorEase;              //0x38
+	u8 pad_39[3];              //0x39
+	f32 widthCur;              //0x3C
+	f32 widthFrom;             //0x40
+	f32 widthTo;               //0x44
+	s32 widthFrames;           //0x48
+	s32 widthFramesTotal;      //0x4C
+	s8 widthEase;              //0x50
+	u8 pad_51[3];              //0x51
+	Vec posCur;                //0x54
+	Vec posFrom;               //0x60
+	Vec posTo;                 //0x6C
+	s32 posFrames;             //0x78
+	s32 posFramesTotal;        //0x7C
+	s8 posEase;                //0x80
+	u8 pad_81[3];              //0x81
+	Vec targetCur;             //0x84
+	Vec targetFrom;            //0x90
+	Vec targetTo;              //0x9C
+	s32 targetFrames;          //0xA8
+	s32 targetFramesTotal;     //0xAC
+	s8 targetEase;             //0xB0
+	u8 pad_B1[3];              //0xB1
+	Vec upCur;                 //0xB4
+	Vec upFrom;                //0xC0
+	Vec upTo;                  //0xCC
+	s32 upFrames;              //0xD8
+	s32 upFramesTotal;         //0xDC
+	s8 upEase;                 //0xE0
+	u8 pad_E1[3];              //0xE1
+	void* spline;              //0xE4
+} BattleStageLight;
+
+typedef struct BattleStage {
+	u32 field_0;                 //0x0
+	BattleStageLight lights[12]; //0x4
+	BattleStageDark stgDark;     //0xAE4
+	BattleStageDark audDark;     //0xB04
+	Vec stageSize;               //0xB24, btlevtcmd_GetStageSize; y is the stage object spawn height, z the stage depth (floor is 0 up to it)
+	Vec audienceAreaSize;        //0xB30, btlevtcmd_GetStageAudienceAreaSize; y is the audience floor height (BattleGetFloorHeight past stageSize.z)
 } BattleStage;
 
 BattleStage* BattleStageGetPtr(void);

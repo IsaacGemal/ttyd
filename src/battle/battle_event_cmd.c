@@ -6374,13 +6374,13 @@ USER_FUNC(btlevtcmd_GetStageSize) {
     index2 = args[1];
     index3 = args[2];
     if (index1 != EVTDAT_POINTER_MAX) {
-        evtSetValue(event, index1, (s32)*(f32*)((u8*)stage + 0xB24));
+        evtSetValue(event, index1, (s32)stage->stageSize.x);
     }
     if (index2 != EVTDAT_POINTER_MAX) {
-        evtSetValue(event, index2, (s32)*(f32*)((u8*)stage + 0xB28));
+        evtSetValue(event, index2, (s32)stage->stageSize.y);
     }
     if (index3 != EVTDAT_POINTER_MAX) {
-        evtSetValue(event, index3, (s32)*(f32*)((u8*)stage + 0xB2C));
+        evtSetValue(event, index3, (s32)stage->stageSize.z);
     }
     return EVT_RETURN_DONE;
 }
@@ -6398,13 +6398,13 @@ USER_FUNC(btlevtcmd_GetStageAudienceAreaSize) {
     index2 = args[1];
     index3 = args[2];
     if (index1 != EVTDAT_POINTER_MAX) {
-        evtSetValue(event, index1, (s32)*(f32*)((u8*)stage + 0xB30));
+        evtSetValue(event, index1, (s32)stage->audienceAreaSize.x);
     }
     if (index2 != EVTDAT_POINTER_MAX) {
-        evtSetValue(event, index2, (s32)*(f32*)((u8*)stage + 0xB34));
+        evtSetValue(event, index2, (s32)stage->audienceAreaSize.y);
     }
     if (index3 != EVTDAT_POINTER_MAX) {
-        evtSetValue(event, index3, (s32)*(f32*)((u8*)stage + 0xB38));
+        evtSetValue(event, index3, (s32)stage->audienceAreaSize.z);
     }
     return EVT_RETURN_DONE;
 }

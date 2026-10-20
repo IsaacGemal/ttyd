@@ -33,40 +33,41 @@ typedef struct FadeEntry {
 	u16 flags; //0x0, 4 = use virtual pos
 	u8 pad_2[2]; //0x2
 	FadeType type; //0x4
-	s32 field_0x8; //0x8
-	u8 field_0xC[0x10 - 0xC]; //0xC
+	s32 step; //0x8, index into the per-type state machine in fadeMain
+	u8 pad_C[0x10 - 0xC]; //0xC
 	s64 duration; //0x10
 	GXColor color; //0x18
 	f32 fadeSpotX; //0x1C
 	f32 fadeSpotY; //0x20
-	f32 field_0x24; //0x24
-	f32 field_0x28; //0x28
-	u8 field_0x2C[0x5C - 0x2C]; //0x2C
-	f32 field_0x5C; //0x5C
-	const char* field_0x60; //0x60
-	const char* field_0x64; //0x64
+	f32 alpha; //0x24, 0..1 fade amount
+	f32 angle; //0x28, degrees (rotation of the fade texture)
+	Mtx texMtx; //0x2C, texture matrix written by disp_texture
+	f32 elapsed; //0x5C, accumulated by 16.67 per frame
+	const char* groupName; //0x60
+	const char* animName; //0x64
 	s32 imageType; //0x68
-	s32 field_0x6C; //0x6C
-	s32 field_0x70; //0x70
-	u8 field_0x74[0x78 - 0x74]; //0x74
+	s32 pose; //0x6C, animPoseEntry handle (-1 = none)
+	s32 paperPose; //0x70, animPaperPoseEntry handle (-1 = none)
+	GXColor poseColor; //0x74, colour fed to animPoseSetMaterialEvtColor
 	f32 animOffsetX; //0x78
 	f32 animOffsetY; //0x7C
 	Vec VirtualPos; //0x80
 	ImageEntry* image; //0x8C
-	f32 field_0x90; //0x90
-	u8 field_0x94[0x9C - 0x94]; //0x94
+	f32 scale; //0x90
+	s32 frameCount; //0x94
+	s32 sfxHandle; //0x98
 	OffscreenCallback callback; //0x9C
 	void* offparam; //0xA0
-	s32 field_0xA4; //0xA4
+	s32 delayFrames; //0xA4, frames to hold before the fade starts
 } FadeEntry;
 
 typedef struct FadeWork {
 	u16 flags; //0x0
 	u8 pad_2[2]; //0x2
-	u32 field_0x4; //0x4
+	u32 pad_4; //0x4
 	FadeEntry entries[5]; //0x8
-	s32 field_0x350; //0x350
-	f32 field_0x354; //0x354, softness? fadeTecSoftOn
+	s32 activeEntry; //0x350, index of the entry the fade is running (-1 = none)
+	f32 softAmount; //0x354, ramp 0..1 for fadeTecSoftOn/Off
 	TEXPalette* texture; //0x358
 	BOOL loaded; //0x35C
 } FadeWork;

@@ -1587,31 +1587,31 @@ s32 _lvup_spot_on(EventEntry* event, BOOL isFirstCall) {
 
     switch (code) {
     case 0:
-        entry->field_4 = (Vec){float_25_80420c9c * (f32)code + float_neg50_80420cc4, 25.0f, -50.0f};
+        entry->pos = (Vec){float_25_80420c9c * (f32)code + float_neg50_80420cc4, 25.0f, -50.0f};
         break;
     case 1:
-        entry->field_4 = (Vec){float_25_80420c9c * (f32)code + float_neg50_80420cc4, -10.0f, -50.0f};
+        entry->pos = (Vec){float_25_80420c9c * (f32)code + float_neg50_80420cc4, -10.0f, -50.0f};
         break;
     case 2:
-        entry->field_4 = (Vec){float_25_80420c9c * (f32)code + float_neg50_80420cc4, 25.0f, -50.0f};
+        entry->pos = (Vec){float_25_80420c9c * (f32)code + float_neg50_80420cc4, 25.0f, -50.0f};
         break;
     case 3:
-        entry->field_4 = (Vec){float_25_80420c9c * (f32)code + float_neg50_80420cc4, -10.0f, -50.0f};
+        entry->pos = (Vec){float_25_80420c9c * (f32)code + float_neg50_80420cc4, -10.0f, -50.0f};
         break;
     case 4:
-        entry->field_4 = (Vec){float_25_80420c9c * (f32)code + float_neg50_80420cc4, 25.0f, -50.0f};
+        entry->pos = (Vec){float_25_80420c9c * (f32)code + float_neg50_80420cc4, 25.0f, -50.0f};
         break;
     }
 #ifdef MUST_MATCH
     // MUST_MATCH: the volatile Vec stores stop MWCC hoisting the dat_80420c28 load across them, and the
     // volatile read pins it to the end in r0; the non-volatile form schedules it one slot early (98.39).
-    *(volatile Vec*)&entry->field_10 = (Vec){0.0f, 0.0f, 0.0f};
-    *(volatile Vec*)&entry->field_1C = (Vec){15.0f, 15.0f, 150.0f};
-    entry->field_28 = *(volatile const u32*)&dat_80420c28;
+    *(volatile Vec*)&entry->rot = (Vec){0.0f, 0.0f, 0.0f};
+    *(volatile Vec*)&entry->scale = (Vec){15.0f, 15.0f, 150.0f};
+    entry->color = *(volatile const GXColor*)&dat_80420c28;
 #else
-    entry->field_10 = (Vec){0.0f, 0.0f, 0.0f};
-    entry->field_1C = (Vec){15.0f, 15.0f, 150.0f};
-    entry->field_28 = dat_80420c28;
+    entry->rot = (Vec){0.0f, 0.0f, 0.0f};
+    entry->scale = (Vec){15.0f, 15.0f, 150.0f};
+    entry->color = *(const GXColor*)&dat_80420c28;
 #endif
     entry->flags |= 2;
     return 2;
@@ -1628,8 +1628,8 @@ s32 _lvup_spot_move(EventEntry* event, BOOL isFirstCall) {
     if (isFirstCall) {
         event->userdata[0] = 0;
         event->userdata[1] = 0;
-        event->userdata[2] = (s32)entry->field_4.x;
-        event->field_84 = (s32)entry->field_4.y;
+        event->userdata[2] = (s32)entry->pos.x;
+        event->field_84 = (s32)entry->pos.y;
         *(s32*)&event->wInterpRelatedTime = 0;
     }
 
@@ -1641,41 +1641,41 @@ s32 _lvup_spot_move(EventEntry* event, BOOL isFirstCall) {
     case 1:
         switch (code) {
         case 0:
-            entry->field_4.x = float_0p5_80420c8c * BattleGetMarioPtr(_battleWorkPointer)->mPosition.x;
-            entry->field_4.y = float_neg20_80420c90;
+            entry->pos.x = float_0p5_80420c8c * BattleGetMarioPtr(_battleWorkPointer)->mPosition.x;
+            entry->pos.y = float_neg20_80420c90;
             break;
         case 1:
-            entry->field_4.x = float_50_80420c94 * sinfd(reviseAngle(float_1p1_80420c98 * (float_3_80420c6c * (f32)event->userdata[0]))) + (f32)event->userdata[2];
-            entry->field_4.y = (f32)((s32)event->field_84 + 25) - float_25_80420c9c * sinfd(reviseAngle(float_1p1_80420c98 * (float_2p5_80420ca4 * (f32)event->userdata[0]) + float_90_80420ca0));
+            entry->pos.x = float_50_80420c94 * sinfd(reviseAngle(float_1p1_80420c98 * (float_3_80420c6c * (f32)event->userdata[0]))) + (f32)event->userdata[2];
+            entry->pos.y = (f32)((s32)event->field_84 + 25) - float_25_80420c9c * sinfd(reviseAngle(float_1p1_80420c98 * (float_2p5_80420ca4 * (f32)event->userdata[0]) + float_90_80420ca0));
             break;
         case 2:
-            entry->field_4.x = float_65_80420ca8 * sinfd(reviseAngle(float_1p1_80420c98 * (float_2p5_80420ca4 * (f32)event->userdata[0]) + float_180_80420cac)) + (f32)event->userdata[2];
-            entry->field_4.y = (f32)((s32)event->field_84 - 25) + float_25_80420c9c * sinfd(reviseAngle(float_1p1_80420c98 * (float_7p5_80420cb0 * (f32)event->userdata[0]) + float_90_80420ca0));
+            entry->pos.x = float_65_80420ca8 * sinfd(reviseAngle(float_1p1_80420c98 * (float_2p5_80420ca4 * (f32)event->userdata[0]) + float_180_80420cac)) + (f32)event->userdata[2];
+            entry->pos.y = (f32)((s32)event->field_84 - 25) + float_25_80420c9c * sinfd(reviseAngle(float_1p1_80420c98 * (float_7p5_80420cb0 * (f32)event->userdata[0]) + float_90_80420ca0));
             break;
         case 3:
-            entry->field_4.x = (f32)event->userdata[2] - float_50_80420c94 * sinfd(reviseAngle(float_1p1_80420c98 * (float_4_80420c78 * (f32)event->userdata[0])));
-            entry->field_4.y = (f32)((s32)event->field_84 + 25) - float_25_80420c9c * sinfd(reviseAngle(float_1p1_80420c98 * (float_2p5_80420ca4 * (f32)event->userdata[0]) + float_90_80420ca0));
+            entry->pos.x = (f32)event->userdata[2] - float_50_80420c94 * sinfd(reviseAngle(float_1p1_80420c98 * (float_4_80420c78 * (f32)event->userdata[0])));
+            entry->pos.y = (f32)((s32)event->field_84 + 25) - float_25_80420c9c * sinfd(reviseAngle(float_1p1_80420c98 * (float_2p5_80420ca4 * (f32)event->userdata[0]) + float_90_80420ca0));
             break;
         case 4:
-            entry->field_4.x = (f32)(event->userdata[2] - 50) - float_50_80420c94 * sinfd(reviseAngle(float_1p1_80420c98 * (float_3_80420c6c * (f32)event->userdata[0]) + float_270_80420cb4));
-            entry->field_4.y = (f32)((s32)event->field_84 - 25) + float_25_80420c9c * sinfd(reviseAngle(float_1p1_80420c98 * (float_4p5_80420cb8 * (f32)event->userdata[0]) + float_90_80420ca0));
+            entry->pos.x = (f32)(event->userdata[2] - 50) - float_50_80420c94 * sinfd(reviseAngle(float_1p1_80420c98 * (float_3_80420c6c * (f32)event->userdata[0]) + float_270_80420cb4));
+            entry->pos.y = (f32)((s32)event->field_84 - 25) + float_25_80420c9c * sinfd(reviseAngle(float_1p1_80420c98 * (float_4p5_80420cb8 * (f32)event->userdata[0]) + float_90_80420ca0));
             break;
         }
         break;
     case 2:
         *(s32*)&event->wInterpRelatedTime = 20;
-        event->userdata[2] = (s32)entry->field_4.x;
-        event->field_84 = (s32)entry->field_4.y;
+        event->userdata[2] = (s32)entry->pos.x;
+        event->field_84 = (s32)entry->pos.y;
         event->userdata[1]++;
     case 3:
         --*(s32*)&event->wInterpRelatedTime;
-        entry->field_4.x = intplGetValue(2, *(s32*)&event->wInterpRelatedTime, 21, float_0_80420c7c, (f32)event->userdata[2]);
-        entry->field_4.y = intplGetValue(2, *(s32*)&event->wInterpRelatedTime, 21, float_neg25_80420cbc, (f32)(s32)event->field_84);
+        entry->pos.x = intplGetValue(2, *(s32*)&event->wInterpRelatedTime, 21, float_0_80420c7c, (f32)event->userdata[2]);
+        entry->pos.y = intplGetValue(2, *(s32*)&event->wInterpRelatedTime, 21, float_neg25_80420cbc, (f32)(s32)event->field_84);
         {
             GXColor color = {0xFF, 0xFF, 0xFF, 0x00};
 
             ((u8*)&color)[3] = (s32)intplGetValue(0, *(s32*)&event->wInterpRelatedTime, 21, float_255_80420c88, float_128_80420cc0);
-            entry->field_28 = *(u32*)&color;
+            entry->color = color;
         }
         if (*(s32*)&event->wInterpRelatedTime <= 0) {
             event->userdata[1]++;
@@ -1697,7 +1697,7 @@ s32 _lvup_spot_off(EventEntry* event, BOOL isFirstCall) {
     if (isFirstCall) {
         event->userdata[0] = evtGetValue(event, args[0]);
         event->userdata[1] = event->userdata[0];
-        event->userdata[2] = *((u8*)spot->entries + 0x2B);
+        event->userdata[2] = spot->entries->color.a;
     }
     event->userdata[1]--;
     for (i = 0; i < 5; i++) {
@@ -1705,8 +1705,8 @@ s32 _lvup_spot_off(EventEntry* event, BOOL isFirstCall) {
         color = (GXColor){0xFF, 0xFF, 0xFF, 0x00};
 
         ((u8*)&color)[3] = (s32)intplGetValue(2, event->userdata[1], event->userdata[0], float_0_80420c7c, (f32)event->userdata[2]);
-        entry->field_28 = *(u32*)&color;
-        if (((u8*)&entry->field_28)[3] == 0) {
+        entry->color = color;
+        if (entry->color.a == 0) {
             entry->flags &= ~2;
         }
     }
