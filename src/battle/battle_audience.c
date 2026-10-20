@@ -872,8 +872,6 @@ BOOL BattleAudience_CheckReactionPerPhase(void) {
 			break;
 		case 4:
 			switch (audience->phaseStep) {
-			case 5:
-				goto scan4;
 			case 0:
 				count = 0;
 				for (i = 0; i <= 59; i++) {
@@ -883,22 +881,22 @@ BOOL BattleAudience_CheckReactionPerPhase(void) {
 				}
 				BattleAudience_ChangeStatus(evtList[irand(count)], 0xE);
 				audience->phaseStep = 5;
-				goto scan4;
+				// fall through
+			case 5:
+				for (i = 0; i <= 59; i++) {
+					if ((u8)BattleAudience_GetSysCtrl(i) && BattleAudienceGetPtr(i)->status == 0xE) {
+						break;
+					}
+				}
+				if (i == 0x3C) {
+					audience->phaseEvtCount = 0;
+				}
+				break;
 			default:
 				if (audience->phaseStep >= 5) {
 					break;
 				}
 				break;
-			}
-			break;
-		scan4:
-			for (i = 0; i <= 59; i++) {
-				if ((u8)BattleAudience_GetSysCtrl(i) && BattleAudienceGetPtr(i)->status == 0xE) {
-					break;
-				}
-			}
-			if (i == 0x3C) {
-				audience->phaseEvtCount = 0;
 			}
 			break;
 		case 5:
@@ -941,8 +939,6 @@ BOOL BattleAudience_CheckReactionPerPhase(void) {
 			break;
 		case 9:
 			switch (audience->phaseStep) {
-			case 5:
-				goto scan9;
 			case 0:
 				count = 0;
 				for (i = 0; i <= 59; i++) {
@@ -952,22 +948,22 @@ BOOL BattleAudience_CheckReactionPerPhase(void) {
 				}
 				BattleAudience_ChangeStatus(evtList[irand(count)], 0xF);
 				audience->phaseStep = 5;
-				goto scan9;
+				// fall through
+			case 5:
+				for (i = 0; i <= 59; i++) {
+					if ((u8)BattleAudience_GetSysCtrl(i) && BattleAudienceGetPtr(i)->status == 0xF) {
+						break;
+					}
+				}
+				if (i == 0x3C) {
+					audience->phaseEvtCount = 0;
+				}
+				break;
 			default:
 				if (audience->phaseStep >= 5) {
 					break;
 				}
 				break;
-			}
-			break;
-		scan9:
-			for (i = 0; i <= 59; i++) {
-				if ((u8)BattleAudience_GetSysCtrl(i) && BattleAudienceGetPtr(i)->status == 0xF) {
-					break;
-				}
-			}
-			if (i == 0x3C) {
-				audience->phaseEvtCount = 0;
 			}
 			break;
 		case 10:
@@ -1020,8 +1016,6 @@ BOOL BattleAudience_CheckReactionPerPhase(void) {
 			break;
 		case 12:
 			switch (audience->phaseStep) {
-			case 5:
-				goto scan12;
 			case 0:
 				count = 0;
 				for (i = 0; i <= 59; i++) {
@@ -1032,22 +1026,22 @@ BOOL BattleAudience_CheckReactionPerPhase(void) {
 				}
 				BattleAudience_ChangeStatus(evtList[irand(count)], 0x14);
 				audience->phaseStep = 5;
-				goto scan12;
+				// fall through
+			case 5:
+				for (i = 0; i <= 59; i++) {
+					if ((u8)BattleAudience_GetSysCtrl(i) && BattleAudienceGetPtr(i)->status == 0x14) {
+						break;
+					}
+				}
+				if (i == 0x3C) {
+					audience->phaseEvtCount = 0;
+				}
+				break;
 			default:
 				if (audience->phaseStep >= 5) {
 					break;
 				}
 				break;
-			}
-			break;
-		scan12:
-			for (i = 0; i <= 59; i++) {
-				if ((u8)BattleAudience_GetSysCtrl(i) && BattleAudienceGetPtr(i)->status == 0x14) {
-					break;
-				}
-			}
-			if (i == 0x3C) {
-				audience->phaseEvtCount = 0;
 			}
 			break;
 		case 13:

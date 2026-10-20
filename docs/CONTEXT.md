@@ -11171,3 +11171,16 @@ party.c (no MUST_MATCH, -maxerrors 50) exits 0.
 - `src/effect/n64/eff_pokopi_thunder_n64.c`: all 26 `((u8*)data + 0xNN)` casts became `data->field_0xNN`.
 - Left raw: the five `(u8*)yuragi_data_table[...] + t1 * 0x18` / `+ 0xF0` sites in effPokopiThunderDisp. They are stride-0x18 offsets into the `u8 yuragi_data[0x108]` and `yuragi_data2` tables; typing them would change data definitions, which this pass does not touch.
 - Verified: tower `ninja` recreates build/G8MJ01/ok; the file compiles by hand with and without `-DMUST_MATCH` (`-maxerrors 50`) with no output. Index (tools/cleanup_index.py): 22.042 -> 22.018 per kLOC (15682 -> 15665 weighted); this file's raw_offset 26 -> 0, weighted 63 -> 37.
+
+### Cleanup: battle_audience goto removal in BattleAudience_CheckReactionPerPhase (2026-10-20, Claude Haiku 5.5, q-gotoaud)
+
+The six `goto scan4/scan9/scan12` jumps are gone. In cases 4, 9 and 12 the scan loop moved into the inner switch as the
+last case, and the `case 0` block falls through into it after `phaseStep = 5`; the old `scan` labels sat between two
+`break`s and were only reached by goto. The `default` arm is unchanged. Build stays byte-identical (`build/G8MJ01/ok`).
+Index for the file 70.48 -> 68.15 per kLOC (345 -> 333 weighted); gotos in the file 12 -> 6.
+
+Kept in `BattleAudienceItemCtrlProcess`: `goto deactivate` (two, at the top of the loop), `goto remove` (three: the
+empty item table, a null target, the timer-zero case 6) and the MUST_MATCH `goto case4_body`. The `deactivate` and
+`remove` tails are shared by five jump sites; a structured form needs either the four-statement tail duplicated or a
+flag local, and the flag is a new name. The MUST_MATCH goto is the case-3 hit-to-case-4 jump the comment above the
+function already calls load-bearing.
