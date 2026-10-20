@@ -62,7 +62,7 @@ typedef struct DekaTiming {
     /*0x04*/ s32 unk04;
     /*0x08*/ s32 kind;  // 1: a press in the window scores; other kinds boo
     /*0x0C*/ f32 time;
-    /*0x10*/ Vec offset;  // added to the icon position, set on state 2
+    /*0x10*/ Vec offset;  // added to the icon position; zeroed in state 2
     /*0x1C*/ u8 pad1C[0x34 - 0x1C];
     /*0x34*/ u8 alpha;
     /*0x35*/ u8 flag;

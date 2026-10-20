@@ -512,12 +512,12 @@ void main_cursor(void) {
                         EffectEntry* eff =
                             effStampN64Entry(2, x, 20.0f + y, 10.0f + z);
 
-                        ((effStampData*)eff->userdata)->field_0x38 = 0;
-                        ((effStampData*)eff->userdata)->field_0x39 = 0xC8;
-                        ((effStampData*)eff->userdata)->field_0x3A = 0;
-                        ((effStampData*)eff->userdata)->field_0x3B = 0;
-                        ((effStampData*)eff->userdata)->field_0x3C = 0x0A;
-                        ((effStampData*)eff->userdata)->field_0x3D = 0;
+                        ((u8*)eff->userdata)[0x38] = 0;
+                        ((u8*)eff->userdata)[0x39] = 0xC8;
+                        ((u8*)eff->userdata)[0x3A] = 0;
+                        ((u8*)eff->userdata)[0x3B] = 0;
+                        ((u8*)eff->userdata)[0x3C] = 0x0A;
+                        ((u8*)eff->userdata)[0x3D] = 0;
                     }
                     work->field_34 = 0;
                     work->field_00 |= 1;
@@ -697,7 +697,7 @@ void main_point(s32 index) {
 void main_icon(s32 index) {
     MukiWork* work = get_ptr();
     MukiEntry* entry = &work->entries[index];
-    effStarStoneData* data;
+    f32* data;
 
     switch (entry->type) {
     case 0:
@@ -762,14 +762,14 @@ void main_icon(s32 index) {
 
     if (entry->effect != NULL) {
         data = entry->effect->userdata;
-        data->field_0x8 = entry->pos.x;
-        data->field_0xC = entry->pos.y;
-        data->field_0x10 = entry->pos.z;
-        data->field_0x18 = entry->field_24;
-        data->field_0x1C = entry->rot;
-        data->field_0x20 = entry->field_2C;
-        data->field_0x14 = 9.0f * entry->scale.x;
-        data->field_0x5F = entry->alpha;
+        data[2] = entry->pos.x;
+        data[3] = entry->pos.y;
+        data[4] = entry->pos.z;
+        data[6] = entry->field_24;
+        data[7] = entry->rot;
+        data[8] = entry->field_2C;
+        data[5] = 9.0f * entry->scale.x;
+        ((u8*)data)[0x5F] = entry->alpha;
     }
 }
 #pragma dont_inline reset
@@ -778,7 +778,7 @@ void main_icon(s32 index) {
 static void main_star(void) {
     MukiWork* work = get_ptr();
     BattleUnit* mario = BattleGetMarioPtr(_battleWorkPointer);
-    effStarStoneData* data;
+    f32* data;
     f32 f;
 
     switch (work->field_3B4) {
@@ -851,13 +851,13 @@ static void main_star(void) {
         f32 s = 1.5f;
 
         data = work->starStone->userdata;
-        data->field_0x8 = work->posX;
-        data->field_0xC = work->posY;
-        data->field_0x10 = work->posZ;
-        data->field_0x18 = work->scale2.x;
-        data->field_0x1C = work->scale2.y;
-        data->field_0x20 = work->scale2.z;
-        data->field_0x14 = s * work->scale.x;
+        data[2] = work->posX;
+        data[3] = work->posY;
+        data[4] = work->posZ;
+        data[6] = work->scale2.x;
+        data[7] = work->scale2.y;
+        data[8] = work->scale2.z;
+        data[5] = s * work->scale.x;
     }
 }
 #pragma dont_inline reset
