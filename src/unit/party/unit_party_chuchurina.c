@@ -353,7 +353,7 @@ void mono_capture(CameraId cameraId, void* param) {
     GXSetTexCopyDst(0x260, 0x1E0, 1, 0);
     GXCopyTex((*(smartEntry**)((u8*)unit + 0x318))->address, 0);
     GXPixModeSync();
-    *(u32*)((u8*)parts + 0x204) &= ~0x100;
+    parts->partFlags &= ~0x100;
 }
 
 // opt_common_subs on folds the repeated quad vertex constants into registers; the original reloads each.

@@ -193,7 +193,7 @@ USER_FUNC(_shot_move) {
         unit->mMoveCurrentPos.x = x;
         unit->mMoveCurrentPos.y = y;
         unit->mMoveCurrentPos.z = z;
-        *(f32*)((u8*)unit + 0x178) =
+        unit->moveAngle =
             angleABf(float_0_8041de60, float_0_8041de60, float_1_8041de64, float_0_8041de60);
         unit->mFallAccel = float_0p2_8041de68;
         unit->mMoveSpeedY = float_0p8_8041de6c * (float_0p9_8041de70 * (speed * cosfd((f32)angleArg)));
@@ -201,7 +201,7 @@ USER_FUNC(_shot_move) {
     }
     unit->mMoveCurrentPos.y += unit->mMoveSpeedY;
     unit->mMoveSpeedY -= unit->mFallAccel;
-    btlMovePos(&unit->mMoveCurrentPos.x, &unit->mMoveCurrentPos.z, unit->mMoveSpeedXZ, *(f32*)((u8*)unit + 0x178));
+    btlMovePos(&unit->mMoveCurrentPos.x, &unit->mMoveCurrentPos.z, unit->mMoveSpeedXZ, unit->moveAngle);
     BtlUnit_SetPos(unit, unit->mMoveCurrentPos.x, unit->mMoveCurrentPos.y, unit->mMoveCurrentPos.z);
     floor = BattleGetFloorHeight(work, unit->mMoveCurrentPos.x, unit->mMoveCurrentPos.y, unit->mMoveCurrentPos.z);
     if (unit->mMoveCurrentPos.y > floor) {

@@ -2708,10 +2708,10 @@ static USER_FUNC(eff_staff) {
     data = (u8*)effSyuryouEntry(0, 0x5A, 0.0f, -1000.0f, 0.0f)->userdata;
     BtlUnit_GetPos(unit, &x, &y, &z);
     faceDir = (f32)unit->faceDirection;
-    *(f32*)(data + 0x4) = 6.0f * (*(f32*)((u8*)unit + 0x114) * faceDir) + x;
-    *(f32*)(data + 0x8) = 68.0f * *(f32*)((u8*)unit + 0x114) + y;
+    *(f32*)(data + 0x4) = 6.0f * (unit->mSizeMultiplier * faceDir) + x;
+    *(f32*)(data + 0x8) = 68.0f * unit->mSizeMultiplier + y;
     *(f32*)(data + 0xC) = 5.0f + z;
-    *(f32*)(data + 0x10) = *(f32*)((u8*)unit + 0x114);
+    *(f32*)(data + 0x10) = unit->mSizeMultiplier;
     return EVT_RETURN_DONE;
 }
 
@@ -2790,9 +2790,9 @@ USER_FUNC(check_satellite) {
             u8* data = (u8*)((EffectEntry*)unit->work[8])->userdata;
             BtlUnit_GetPos(unit, &x, &y, &z);
             *(f32*)(data + 0x4) = x;
-            *(f32*)(data + 0x8) = y - 12.5f * *(f32*)((u8*)unit + 0x114);
+            *(f32*)(data + 0x8) = y - 12.5f * unit->mSizeMultiplier;
             *(f32*)(data + 0xC) = z + 10.0f;
-            *(f32*)(data + 0x10) = 2.5f * *(f32*)((u8*)unit + 0x114);
+            *(f32*)(data + 0x10) = 2.5f * unit->mSizeMultiplier;
         }
         bodyPart->attributes |= 0x40000000;
         part2->attributes |= 0x20000000;

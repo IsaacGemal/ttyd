@@ -1858,20 +1858,20 @@ USER_FUNC(btl_yoshi_yoroyoro_jump_calc_param) {
     BtlUnit_GetPos(unit, &px, &py, &pz);
     BtlUnit_SetMoveStartPos(unit, px, py, pz);
     BtlUnit_SetMoveCurrentPos(unit, px, py, pz);
-    *(f32*)((u8*)unit + 0x178) = angleABf(px, pz, tx, tz);
-    *(f32*)((u8*)unit + 0x17C) = distABf(px, pz, tx, tz);
+    unit->moveAngle = angleABf(px, pz, tx, tz);
+    unit->moveDist = distABf(px, pz, tx, tz);
     if (tx - px > 0.0f) {
         unit->moveDirection = 1;
     } else if (tx - px < 0.0f) {
         unit->moveDirection = -1;
     }
-    *(f32*)((u8*)unit + 0x17C) = __fabs(tx - px);
-    *(s32*)((u8*)unit + 0x168) = 180;
-    *(f32*)((u8*)unit + 0x180) = (f32)*(s32*)((u8*)unit + 0x168);
+    unit->moveDist = __fabs(tx - px);
+    unit->moveFrames = 180;
+    unit->moveProgress = (f32)unit->moveFrames;
     unit->mMoveSpeedY = 0.0f;
-    unit->mMoveSpeedXZ = *(f32*)((u8*)unit + 0x17C) / (f32)*(s32*)((u8*)unit + 0x168);
+    unit->mMoveSpeedXZ = unit->moveDist / (f32)unit->moveFrames;
     evtSetFloat(event, speedVar, unit->mMoveSpeedXZ);
-    evtSetValue(event, frameVar, *(s32*)((u8*)unit + 0x168));
+    evtSetValue(event, frameVar, unit->moveFrames);
     return 2;
 }
 
@@ -1925,23 +1925,23 @@ USER_FUNC(btl_yoshi_yoroyoro_jump_move) {
     newSpeedY = 10.f *
                 sinfd(180.f +
                       360.f *
-                          (*(f32*)((u8*)unit + 0x180) -
-                           (f32)(*(s32*)((u8*)unit + 0x168) % 90)) /
+                          (unit->moveProgress -
+                           (f32)(unit->moveFrames % 90)) /
                           90.f);
     BtlUnit_GetPartsPtr(unit, 1);
     unit->mMoveCurrentPos.y =
         unit->mMoveSpeedY +
         (unit->mMoveStartPos.y +
          (unit->mMoveTargetPos.y - unit->mMoveStartPos.y) *
-             (*(f32*)((u8*)unit + 0x180) - (f32)*(s32*)((u8*)unit + 0x168)) /
-             *(f32*)((u8*)unit + 0x180));
+             (unit->moveProgress - (f32)unit->moveFrames) /
+             unit->moveProgress);
     unit->mMoveSpeedY = newSpeedY;
     unit->work[5] =
         (s32)(75.0f -
               25.0f *
                   sinfd(360.f *
-                            (*(f32*)((u8*)unit + 0x180) -
-                             (f32)(*(s32*)((u8*)unit + 0x168) % 90)) /
+                            (unit->moveProgress -
+                             (f32)(unit->moveFrames % 90)) /
                         90.f));
     BtlUnit_SetPos(unit, unit->mMoveCurrentPos.x, unit->mMoveCurrentPos.y, unit->mMoveCurrentPos.z);
     event->userdata[1]++;
@@ -1979,8 +1979,8 @@ USER_FUNC(btl_yoshi_yoroyoro_jump_move) {
             ((effSweatData*)effect->userdata)->position.z = unit->mMoveCurrentPos.z;
         }
     }
-    *(s32*)((u8*)unit + 0x168) -= 1;
-    if (*(s32*)((u8*)unit + 0x168) <= 0) {
+    unit->moveFrames -= 1;
+    if (unit->moveFrames <= 0) {
         BtlUnit_SetPos(unit, unit->mMoveTargetPos.x, unit->mMoveTargetPos.y, unit->mMoveTargetPos.z);
         return 2;
     }
