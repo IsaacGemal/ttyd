@@ -76,22 +76,22 @@ s32 battleAcMain_AirGauge(BattleWork* work) {
 	case 0x64:
 		if ((work->actionCommands.field_0x4 & 1) && (work->actionCommands.mAcUnit->mTokenFlags & 0x10)) {
 			if ((s32)irand(100) >= 0) {
-				work->actionCommands.field_0x8 = *(s32*)((u8*)work + 0x1cd4) / 2;
+				work->actionCommands.field_0x8 = work->actionCommands.acParams[3] / 2;
 				work->actionCommands.outputParams[0] = 0;
 				work->actionCommands.outputParams[2] = 0;
 			}
 			else {
-				s32 r = (s32)irand(*(s32*)((u8*)work + 0x1cd0) - 1) + 1;
+				s32 r = (s32)irand(work->actionCommands.acParams[2] - 1) + 1;
 				work->actionCommands.outputParams[0] = r;
 				switch (r) {
 				case 1:
-					work->actionCommands.field_0x8 = *(s32*)((u8*)work + 0x1cd4) - 1;
+					work->actionCommands.field_0x8 = work->actionCommands.acParams[3] - 1;
 					break;
 				case 2:
-					work->actionCommands.field_0x8 = *(s32*)((u8*)work + 0x1cd8) - 1;
+					work->actionCommands.field_0x8 = work->actionCommands.acParams[4] - 1;
 					break;
 				case 3:
-					work->actionCommands.field_0x8 = *(s32*)((u8*)work + 0x1cdc) - 1;
+					work->actionCommands.field_0x8 = work->actionCommands.acParams[5] - 1;
 					break;
 #ifdef MUST_MATCH
 				// Match-only empty case 4: sharing the default body makes MWCC pivot the
@@ -100,7 +100,7 @@ s32 battleAcMain_AirGauge(BattleWork* work) {
 				case 4:
 #endif
 				default:
-					work->actionCommands.field_0x8 = *(s32*)((u8*)work + 0x1cdc) + 1;
+					work->actionCommands.field_0x8 = work->actionCommands.acParams[5] + 1;
 					break;
 				}
 				work->actionCommands.outputParams[2] = 100;
@@ -137,7 +137,7 @@ s32 battleAcMain_AirGauge(BattleWork* work) {
 			dec->gaugePercent = 100.0f;
 		}
 		BattleAcGaugeSeUpdate(dec->gaugePercent);
-		if (dec->frame < *(s32*)((u8*)work + 0x1ccc)) {
+		if (dec->frame < work->actionCommands.acParams[1]) {
 			break;
 		}
 		if (work->actionCommands.mAcUnit->badgesEquipped.AutoCommand) {
@@ -159,7 +159,7 @@ s32 battleAcMain_AirGauge(BattleWork* work) {
 			// makes MWCC keep it in r4 across the chain and load it lazily, as the original does.
 			s32 difficulty;
 #endif
-			if (dec->gaugePercent < (f32)*(s32*)((u8*)work + 0x1cd4)) {
+			if (dec->gaugePercent < (f32)work->actionCommands.acParams[3]) {
 				work->actionCommands.outputParams[0] = 1;
 			}
 #ifdef MUST_MATCH
@@ -169,7 +169,7 @@ s32 battleAcMain_AirGauge(BattleWork* work) {
 #endif
 				work->actionCommands.outputParams[0] = 2;
 			}
-			else if (dec->gaugePercent < (f32)*(s32*)((u8*)work + 0x1cd8)) {
+			else if (dec->gaugePercent < (f32)work->actionCommands.acParams[4]) {
 				work->actionCommands.outputParams[0] = 2;
 			}
 #ifdef MUST_MATCH
@@ -179,7 +179,7 @@ s32 battleAcMain_AirGauge(BattleWork* work) {
 #endif
 				work->actionCommands.outputParams[0] = 3;
 			}
-			else if (dec->gaugePercent < (f32)*(s32*)((u8*)work + 0x1cdc)) {
+			else if (dec->gaugePercent < (f32)work->actionCommands.acParams[5]) {
 				work->actionCommands.outputParams[0] = 3;
 			}
 #ifdef MUST_MATCH
@@ -189,7 +189,7 @@ s32 battleAcMain_AirGauge(BattleWork* work) {
 #endif
 				work->actionCommands.outputParams[0] = 4;
 			}
-			else if (dec->gaugePercent < (f32)*(s32*)((u8*)work + 0x1ce0)) {
+			else if (dec->gaugePercent < (f32)work->actionCommands.acParams[6]) {
 				work->actionCommands.outputParams[0] = 4;
 			}
 			else {

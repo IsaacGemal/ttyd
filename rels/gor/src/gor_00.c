@@ -5663,7 +5663,7 @@ void gor_stg4_018_cb(s32 type, smartEntry* smart) {
 
     switch (type) {
     case 3:
-        if (*(u16*)((u8*)data + 8) == 1) {
+        if (data->choiceIndex == 1) {
             evtSetValue(NULL, LSWF(6), 1);
         }
         break;

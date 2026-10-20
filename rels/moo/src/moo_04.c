@@ -83,10 +83,10 @@ static USER_FUNC(mario_kirimomi) {
     scale = evtGetFloat(event, args[0]);
     mario = marioGetPtr();
     party = partyGetPtr(0);
-    *(f32*)((u8*)mario + 0xCC) = scale;
-    *(f32*)((u8*)mario + 0xC8) = scale;
+    mario->scale.y = scale;
+    mario->scale.x = scale;
     *(f32*)((u8*)mario + 0xB4) = mario->wPlayerCollisionBox.y / 2.0f;
-    *(f32*)((u8*)mario + 0xB4) = *(f32*)((u8*)mario + 0xB4) * *(f32*)((u8*)mario + 0xCC);
+    *(f32*)((u8*)mario + 0xB4) = *(f32*)((u8*)mario + 0xB4) * mario->scale.y;
     *(f32*)((u8*)mario + 0xC4) -= 10.0f;
     *(f32*)((u8*)mario + 0xC4) = (f32)fmod(*(f32*)((u8*)mario + 0xC4), 360.0);
 

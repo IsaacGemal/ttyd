@@ -84,7 +84,7 @@ USER_FUNC(_sanders_make_extra_work_area) {
 
     id = BattleTransID(event, -2);
     unit = BattleGetUnitPtr(work, id);
-    *(void**)((u8*)unit + 0x310) = BattleAlloc(0xC0);
+    unit->mExtraWork = BattleAlloc(0xC0);
     return EVT_RETURN_DONE;
 }
 
@@ -152,7 +152,7 @@ USER_FUNC(_make_counterset_weapon) {
     id = BattleTransID(event, -2);
     unit = BattleGetUnitPtr(work, id);
     arg0 = args[0];
-    area = *(void**)((u8*)unit + 0x310);
+    area = unit->mExtraWork;
     value = evtGetValue(event, arg0);
     value2 = evtGetValue(event, args[1]);
     memcpy(area, (void*)value, 0xC0);
@@ -193,7 +193,7 @@ USER_FUNC(_shot_move) {
         unit->mMoveCurrentPos.x = x;
         unit->mMoveCurrentPos.y = y;
         unit->mMoveCurrentPos.z = z;
-        *(f32*)((u8*)unit + 0x178) =
+        unit->moveAngle =
             angleABf(float_0_8041de60, float_0_8041de60, float_1_8041de64, float_0_8041de60);
         unit->mFallAccel = float_0p2_8041de68;
         unit->mMoveSpeedY = float_0p8_8041de6c * (float_0p9_8041de70 * (speed * cosfd((f32)angleArg)));
@@ -201,7 +201,7 @@ USER_FUNC(_shot_move) {
     }
     unit->mMoveCurrentPos.y += unit->mMoveSpeedY;
     unit->mMoveSpeedY -= unit->mFallAccel;
-    btlMovePos(&unit->mMoveCurrentPos.x, &unit->mMoveCurrentPos.z, unit->mMoveSpeedXZ, *(f32*)((u8*)unit + 0x178));
+    btlMovePos(&unit->mMoveCurrentPos.x, &unit->mMoveCurrentPos.z, unit->mMoveSpeedXZ, unit->moveAngle);
     BtlUnit_SetPos(unit, unit->mMoveCurrentPos.x, unit->mMoveCurrentPos.y, unit->mMoveCurrentPos.z);
     floor = BattleGetFloorHeight(work, unit->mMoveCurrentPos.x, unit->mMoveCurrentPos.y, unit->mMoveCurrentPos.z);
     if (unit->mMoveCurrentPos.y > floor) {
@@ -233,7 +233,7 @@ USER_FUNC(_judge_on_stage) {
     outIndex = args[1];
     unit = BattleGetUnitPtr(work, id);
     BtlUnit_GetPos(unit, &x, &y, &z);
-    if (fabs(x) < float_40_8041de58 + *(f32*)((u8*)stage + 0xB24)) {
+    if (fabs(x) < float_40_8041de58 + stage->stageSize.x) {
         evtSetValue(event, outIndex, 1);
     } else {
         evtSetValue(event, outIndex, 0);

@@ -558,10 +558,10 @@ void mobjMain(void) {
             hp[3] = NULL;
         }
 
-        if (*(HitEntry**)((u8*)mario + 0x1E4) != NULL) {
+        if ((HitEntry*)mario->hitobjStandOn != NULL) {
             if (hp[4] == NULL ||
-                strcmp(hitGetName(hp[4]), hitGetName(*(HitEntry**)((u8*)mario + 0x1E4))) != 0) {
-                hp[4] = *(HitEntry**)((u8*)mario + 0x1E4);
+                strcmp(hitGetName(hp[4]), hitGetName((HitEntry*)mario->hitobjStandOn)) != 0) {
+                hp[4] = (HitEntry*)mario->hitobjStandOn;
             }
         } else {
             hp[4] = NULL;
@@ -646,12 +646,12 @@ void mobjMain(void) {
                         entry->triggerFlag = 0x400000;
                         goto apply;
                     }
-                    if ((entry->flags & 0x200000) && *(void**)((u8*)mario + 0x1E4) == (void*)hitObj) {
+                    if ((entry->flags & 0x200000) && mario->hitobjStandOn == (void*)hitObj) {
                         v22 = 1;
                         entry->triggerFlag = 0x200000;
                         goto apply;
                     }
-                    if ((entry->flags & 0x1000000) && *(void**)((u8*)mario + 0x1E4) == (void*)hitObj &&
+                    if ((entry->flags & 0x1000000) && mario->hitobjStandOn == (void*)hitObj &&
                         marioChkHipBump() != 0) {
                         v22 = 1;
                         entry->triggerFlag = 0x1000000;
@@ -665,12 +665,12 @@ void mobjMain(void) {
                         goto apply;
                     }
                     if ((entry->flags & 0x800000) && party != NULL) {
-                        if (*(void**)((u8*)party + 0x130) == (void*)hitObj) {
+                        if ((void*)party->frontHit == (void*)hitObj) {
                             v22 = 1;
                             entry->triggerFlag = 0x800000;
                             goto apply;
                         }
-                        if (*(void**)((u8*)party + 0x130) != NULL && party->currentMemberId == PARTY_MEMBER_BOBBERY &&
+                        if ((void*)party->frontHit != NULL && party->currentMemberId == PARTY_MEMBER_BOBBERY &&
                             PSVECDistance(&party->position, &entry->position) < entry->hitObj[0].hitObject->radius + party->radius) {
                             v22 = 1;
                             entry->triggerFlag = 0x800000;
@@ -678,12 +678,12 @@ void mobjMain(void) {
                         }
                     }
                     if ((entry->flags & 0x2000000) && party != NULL && party->currentMemberId == PARTY_MEMBER_BOBBERY) {
-                        if (*(void**)((u8*)party + 0x130) == (void*)hitObj) {
+                        if ((void*)party->frontHit == (void*)hitObj) {
                             v22 = 1;
                             entry->triggerFlag = 0x2000000;
                             goto apply;
                         }
-                        if (*(void**)((u8*)party + 0x130) != NULL &&
+                        if ((void*)party->frontHit != NULL &&
                             PSVECDistance(&party->position, &entry->position) < entry->hitObj[0].hitObject->radius + party->radius) {
                             v22 = 1;
                             entry->triggerFlag = 0x800000;
@@ -728,7 +728,7 @@ void mobjMain(void) {
                         entry->triggerFlag = 0x80000;
                         goto apply;
                     }
-                    if ((entry->flags & 0x200000) && *(void**)((u8*)mario + 0x1E4) == (void*)hitObj) {
+                    if ((entry->flags & 0x200000) && mario->hitobjStandOn == (void*)hitObj) {
                         v22 = 1;
                         entry->triggerFlag = 0x200000;
                     }

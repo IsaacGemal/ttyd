@@ -300,7 +300,7 @@ void kpa_stg1_036_cb(s32 type, smartEntry* smart) {
 
     switch (type) {
     case 3:
-        if (*(u16*)((u8*)msg + 0x8) == 2) {
+        if (msg->choiceIndex == 2) {
             evtSetValue(NULL, LSWF(1), TRUE);
         }
         break;
@@ -843,7 +843,7 @@ void kpa_stg1_014_2_cb(s32 type, smartEntry* smart) {
 
     switch (type) {
     case 3:
-        if (*(u16*)((u8*)msg + 0x8) == 2) {
+        if (msg->choiceIndex == 2) {
             evtSetValue(NULL, LSWF(1), TRUE);
         }
         break;
@@ -900,7 +900,7 @@ void kpa_stg1_008_cb(s32 type, smartEntry* smart) {
 
     switch (type) {
     case 3:
-        if (*(u16*)((u8*)msg + 0x8) == 1) {
+        if (msg->choiceIndex == 1) {
             evtSetValue(NULL, LSWF(1), TRUE);
         }
         break;

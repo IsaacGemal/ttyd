@@ -1268,7 +1268,7 @@ void rsh_window_tev(RshWindowTevParam* param, s32 arg1) {
     near = (f32)gp->efbHeight * half / angle;
     C_MTXLightFrustum(frustumMtx, top, bottom, left, right, near,
         half, half, 0.4f, 0.6f);
-    PSMTXConcat(frustumMtx, *(Mtx*)((u8*)camGetCurPtr() + 0x11C), frustumMtx);
+    PSMTXConcat(frustumMtx, camGetCurPtr()->view, frustumMtx);
     PSMTXConcat(frustumMtx, *(Mtx*)param->field_4, frustumMtx);
 
     GXSetTexCoordGen2(texCoord, GX_TG_MTX3x4, GX_TG_POS, texMtx[texMap], GX_FALSE, GX_PTIDENTITY);

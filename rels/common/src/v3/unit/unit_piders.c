@@ -421,7 +421,7 @@ static USER_FUNC(piders_yarn_init) {
     s32 id = BattleTransID(event, -2);
     BattleUnit* unit = BattleGetUnitPtr(_battleWorkPointer, id);
 
-    *(void**)((u8*)unit + 0x310) = __memAlloc(HEAP_BATTLE, 0x1c);
+    unit->mExtraWork = __memAlloc(HEAP_BATTLE, 0x1c);
     return EVT_RETURN_DONE;
 }
 
@@ -490,7 +490,7 @@ static USER_FUNC(piders_draw_yarn) {
     u8 alpha = evtGetValue(event, event->args[0]);
     s32 id = BattleTransID(event, -2);
     BattleUnit* unit = BattleGetUnitPtr(_battleWorkPointer, id);
-    PidersYarnWork* yarn = *(PidersYarnWork**)((u8*)unit + 0x310);
+    PidersYarnWork* yarn = (PidersYarnWork*)unit->mExtraWork;
 
     BtlUnit_GetHomePos(unit, &yarn->field_0xC, &yarn->field_0x10, &yarn->field_0x14);
     yarn->field_0x10 = (f32)unit->work[2];

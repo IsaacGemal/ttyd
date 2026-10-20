@@ -258,18 +258,18 @@ s32 winBadgeMain(WindowWork* work) {
             } else if (work->buttonTrg & 0x1000) {
                 return -2;
             } else if (work->buttonRep & 0x40) {
-                ((s32*)((u8*)work + 0x3EC))[sel] = ((s32*)((u8*)work + 0x3EC))[sel] - 1;
-                if (((s32*)((u8*)work + 0x3EC))[sel] < 0) {
-                    ((s32*)((u8*)work + 0x3EC))[sel] = 0;
+                work->badgeScrollRow[sel] = work->badgeScrollRow[sel] - 1;
+                if (work->badgeScrollRow[sel] < 0) {
+                    work->badgeScrollRow[sel] = 0;
                 }
-                work->badgeSel[sel] = ((s32*)((u8*)work + 0x3EC))[sel] * 8;
+                work->badgeSel[sel] = work->badgeScrollRow[sel] * 8;
                 psndSFXOn((const char*)0x20035);
             } else if (work->buttonRep & 0x20) {
-                ((s32*)((u8*)work + 0x3EC))[sel] = ((s32*)((u8*)work + 0x3EC))[sel] + 1;
-                if (((s32*)((u8*)work + 0x3EC))[sel] >= rows) {
-                    ((s32*)((u8*)work + 0x3EC))[sel] = rows - 1;
+                work->badgeScrollRow[sel] = work->badgeScrollRow[sel] + 1;
+                if (work->badgeScrollRow[sel] >= rows) {
+                    work->badgeScrollRow[sel] = rows - 1;
                 }
-                work->badgeSel[sel] = ((s32*)((u8*)work + 0x3EC))[sel] * 8;
+                work->badgeSel[sel] = work->badgeScrollRow[sel] * 8;
                 psndSFXOn((const char*)0x20035);
             } else if (work->dirRep & 0x1000) {
                 work->badgeSel[sel] = work->badgeSel[sel] - 1;
@@ -301,7 +301,7 @@ s32 winBadgeMain(WindowWork* work) {
             if (work->badgeSel[sel] >= count) {
                 work->badgeSel[sel] = 0;
             }
-            ((s32*)((u8*)work + 0x3EC))[sel] = work->badgeSel[sel] / 8;
+            work->badgeScrollRow[sel] = work->badgeSel[sel] / 8;
             work->targetX = -110.0f;
             work->targetY = (f32)(0x6E - (work->badgeSel[sel] % 8) * 0x17);
             {

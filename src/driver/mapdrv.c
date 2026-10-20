@@ -933,9 +933,9 @@ static inline void mapLoadDispFlags(BOOL group) {
 
 			// MapJointDrawMode has no named field at 0x2/0x4; use raw offsets.
 			if (!(*(u8*)((u8*)dm + 2) & 8) && *(u32*)((u8*)dm + 4) == 0) {
-				if (shadowGetCharShadowProjection() == 0 || !(*(u32*)((u8*)obj + 0) & 4)) {
+				if (shadowGetCharShadowProjection() == 0 || !(obj->flags & 4)) {
 					if (wp->entries[group].flags & 0x8000) {
-						*(u32*)((u8*)obj + 0) |= 0x100;
+						obj->flags |= 0x100;
 					}
 				}
 			}
@@ -1635,10 +1635,10 @@ static inline u8* mapSearchAnimObj(const char* name) {
 	wp = &mapWork[activeGroup];
 	entry = &wp->entries[0];
 	for (i = 0; i < wp->entries[0].count; entry++, i++) {
-		if (*(u8**)((u8*)entry + 0xA0) == NULL) {
+		if ((u8*)entry->materialNameTable == NULL) {
 			return NULL;
 		}
-		for (j = 0, ofs = 0; j < *(s32*)(table = *(u8**)((u8*)entry + 0xA0)); ofs += 8, j++) {
+		for (j = 0, ofs = 0; j < *(s32*)(table = (u8*)entry->materialNameTable); ofs += 8, j++) {
 			u8* pair = (u8*)((u32)table + ofs + 4);
 			if (!strcmp(*(char**)pair, name)) {
 				return *(u8**)(pair + 4);
@@ -2341,7 +2341,7 @@ void mapDispMapGrp_off(CameraId camId, MapObject* obj) {
 	_mapDispMapGrp(camId, obj);
 	sysWaitDrawSync();
 	GXReadBoundingBox(&v0, &v1, &v2, &v3);
-	offscreenAddBoundingBox(*(s16*)((u8*)obj + 0xDC), v0, v1, v2, v3);
+	offscreenAddBoundingBox(obj->offScreenId, v0, v1, v2, v3);
 }
 
 void test_kururing_mapdisp(CameraId camId) {
@@ -4248,14 +4248,14 @@ void mapFogOff(void) {
 void mapSetBlend(GXColor* color) {
 	MapEntry* entry = &mapWork[activeGroup].entries[0];
 
-	*(GXColor*)((u8*)entry + 0x16) = *color;
+	entry->blend[0] = *color;
 	entry->flags |= 0x2;
 }
 
 void mapSetBlend2(GXColor* color) {
 	MapEntry* entry = &mapWork[activeGroup].entries[0];
 
-	*(GXColor*)((u8*)entry + 0x1A) = *color;
+	entry->blend[1] = *color;
 	entry->flags |= 0x4;
 }
 
@@ -4263,7 +4263,7 @@ void mapGetBlend(GXColor* out) {
 	MapEntry* entry = &mapWork[activeGroup].entries[0];
 
 	if (entry->flags & 0x2) {
-		*out = *(GXColor*)((u8*)entry + 0x16);
+		*out = entry->blend[0];
 	}
 	else {
 		*out = (GXColor){0xFF, 0xFF, 0xFF, 0xFF};
@@ -4274,7 +4274,7 @@ void mapGetBlend2(GXColor* out) {
 	MapEntry* entry = &mapWork[activeGroup].entries[0];
 
 	if (entry->flags & 0x4) {
-		*out = *(GXColor*)((u8*)entry + 0x1A);
+		*out = entry->blend[1];
 	}
 	else {
 		*out = (GXColor){0xFF, 0xFF, 0xFF, 0xFF};
@@ -4684,8 +4684,8 @@ void mapObjGetFlushColor(const char* name, u8* r, u8* g, u8* b, u8* a) {
 		mapErrorEntry(0, name);
 		return;
 	}
-	*r = *(u8*)((u8*)obj + 0xC);
-	*g = *(u8*)((u8*)obj + 0xD);
-	*b = *(u8*)((u8*)obj + 0xE);
-	*a = *(u8*)((u8*)obj + 0xF);
+	*r = obj->color.r;
+	*g = obj->color.g;
+	*b = obj->color.b;
+	*a = obj->color.a;
 }

@@ -629,10 +629,10 @@ USER_FUNC(mario_hosei_all) {
         mario->riderDelta.x = value;
     }
     if (party != NULL && hitIsGroup(party->groundHit, hit)) {
-        *(f32*)((u8*)party + 0xAC) = value;
+        party->moveDelta.x = value;
     }
     if (party2 != NULL && hitIsGroup(party2->groundHit, hit)) {
-        *(f32*)((u8*)party2 + 0xAC) = value;
+        party2->moveDelta.x = value;
     }
     return EVT_RETURN_DONE;
 }

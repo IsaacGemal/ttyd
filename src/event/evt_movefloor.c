@@ -605,7 +605,7 @@ USER_FUNC(moving_floor_set_se) {
             return EVT_RETURN_DONE;
         }
         flag = 0;
-        if ((psndGetFlag() & 0x100) && !(*(u32*)((u8*)obj + 0x0) & 0x1800)) {
+        if ((psndGetFlag() & 0x100) && !(obj->flags & 0x1800)) {
             flag = 0x10000;
         }
         work->seId = psndSFXOn_3D((const char*)(flag | 0x424), &pos);

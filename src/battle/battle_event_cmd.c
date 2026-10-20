@@ -5642,7 +5642,7 @@ USER_FUNC(btlevtcmd_AnimeWaitPlayLoopTiming) {
         event->userdata[2] = 0;
     }
     // The original threshold double is (double)0.01f (3f847ae140000000), not the exact 0.01 double.
-    if (__fabs(*(f32*)((u8*)animPoseGetAnimPosePtr(*(s32*)((u8*)part + 0x1C0)) + 0x44)) < (f64)0.01f) {
+    if (__fabs(animPoseGetAnimPosePtr(*(s32*)((u8*)part + 0x1C0))->localTimeRate) < (f64)0.01f) {
         return 2;
     }
     loopTimes = animPoseGetLoopTimes(*(s32*)((u8*)part + 0x1C0));

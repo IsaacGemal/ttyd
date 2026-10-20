@@ -336,9 +336,9 @@ void mot_ship(void) {
             SHIP_DATA->unk20 = 15.0f;
             {
                 EventEntry* evt = evtEntry(sound_evt, 0, 0);
-                *(s32*)((u8*)evt + 0x9C) = (s32)(1024.0f * mario->position.x) - 0x0DB58580;
-                *(s32*)((u8*)evt + 0xA0) = (s32)(1024.0f * mario->position.y) - 0x0DB58580;
-                *(s32*)((u8*)evt + 0xA4) = (s32)(1024.0f * mario->position.z) - 0x0DB58580;
+                evt->lwData[0] = (s32)(1024.0f * mario->position.x) - 0x0DB58580;
+                evt->lwData[1] = (s32)(1024.0f * mario->position.y) - 0x0DB58580;
+                evt->lwData[2] = (s32)(1024.0f * mario->position.z) - 0x0DB58580;
             }
         }
         if (*(f32*)((u8*)mario + 0x7C) > 0.0f) {
@@ -600,9 +600,9 @@ void mot_ship(void) {
             psndSFXOn_3D((char*)0x192, &mario->position);
             {
                 EventEntry* evt = evtEntry(sound_evt2, 0, 0);
-                *(s32*)((u8*)evt + 0x9C) = (s32)(1024.0f * mario->position.x) - 0x0DB58580;
-                *(s32*)((u8*)evt + 0xA0) = (s32)(1024.0f * mario->position.y) - 0x0DB58580;
-                *(s32*)((u8*)evt + 0xA4) = (s32)(1024.0f * mario->position.z) - 0x0DB58580;
+                evt->lwData[0] = (s32)(1024.0f * mario->position.x) - 0x0DB58580;
+                evt->lwData[1] = (s32)(1024.0f * mario->position.y) - 0x0DB58580;
+                evt->lwData[2] = (s32)(1024.0f * mario->position.z) - 0x0DB58580;
             }
         }
         break;

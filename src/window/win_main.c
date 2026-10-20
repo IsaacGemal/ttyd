@@ -409,8 +409,8 @@ void winMain(void) {
                     }
                 }
                 wp->currentEvent = evtEntryType(&evt_item_use, 0, 0, 0);
-                *(s32*)((u8*)wp->currentEvent + 0xC4) = WM_S32(0x2D4);
-                *(s32*)((u8*)wp->currentEvent + 0xC8) = (WM_S32(0x2DC) == 0) ? 0 : (list - 1)[WM_S32(0x2DC)]->partnerId;
+                wp->currentEvent->lwData[10] = WM_S32(0x2D4);
+                wp->currentEvent->lwData[11] = (WM_S32(0x2DC) == 0) ? 0 : (list - 1)[WM_S32(0x2DC)]->partnerId;
                 psndClearFlag(0x80);
                 wp->menuState += 1;
                 pouchRemoveItemIndex(WM_S32(0x2D4), WM_S32(0x2D8));
@@ -574,7 +574,7 @@ USER_FUNC(itemUseFunc) {
                 cnt = 0x12C;
                 break;
             }
-            target = (f32*)(*(u8**)((u8*)effRecoveryEntry(0, item->hp_restored, party->position.x, party->position.y + party->height, party->position.z) + 0xC) + 0x40);
+            target = (f32*)((u8*)effRecoveryEntry(0, item->hp_restored, party->position.x, party->position.y + party->height, party->position.z)->userdata + 0x40);
             *target = (-(*(f32*)&party->field_E8[8])) * MATCH_F32(float_0p5_8041dc98);
             cnt++;
             break;

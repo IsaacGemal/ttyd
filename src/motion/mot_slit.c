@@ -717,7 +717,7 @@ void mot_slit(void) {
         MW_F32(mario, 0x2AC) = mario->position.y;
         slitCapSpeed(mario);
         marioGetPtr();
-        psndSFXOn_3D((const char*)0x177, (Vec*)((u8*)mario + 0x8C));
+        psndSFXOn_3D((const char*)0x177, &mario->position);
         break;
     case 2:
         if (mario->controlStickSensitivity == zero) {
@@ -1116,7 +1116,7 @@ keyOffPath:
                 mario->directionView = toMovedirSimple(mario->unk1A8);
             }
         }
-        psndSFXOn_3D((const char*)0x178, (Vec*)((u8*)mario + 0x8C));
+        psndSFXOn_3D((const char*)0x178, &mario->position);
         /* fallthrough */
     case 0x65:
         if (mario->controlStickSensitivity == zero) {
@@ -1170,7 +1170,7 @@ keyOffPath:
             MW_F32(mario, 0x1AC) = mario->unk1A8;
             mario->directionView = toMovedirSimple(mario->unk1A8);
         }
-        psndSFXOn_3D((const char*)0x178, (Vec*)((u8*)mario + 0x8C));
+        psndSFXOn_3D((const char*)0x178, &mario->position);
         /* fallthrough */
     case 0x6F:
         count16 = MW_S16(mario, 0x2DA);
@@ -1213,7 +1213,7 @@ keyOffPath:
             MW_F32(mario, 0x1AC) = mario->unk1A8;
             mario->directionView = toMovedirSimple(mario->unk1A8);
         }
-        psndSFXOn_3D((const char*)0x178, (Vec*)((u8*)mario + 0x8C));
+        psndSFXOn_3D((const char*)0x178, &mario->position);
         /* fallthrough */
     case 0x79:
         count16 = MW_S16(mario, 0x2DA);

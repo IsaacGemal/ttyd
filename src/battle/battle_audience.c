@@ -3947,7 +3947,7 @@ s32 BattleAudienceAddAudienceNum(s32 num) {
 			}
 			if (BattleAudience_Entry(id, type, 0xb) == 1) {
 				result++;
-				*(s32*)((u8*)BattleAudienceGetPtr(id) + 0x8) = result;
+				BattleAudienceGetPtr(id)->counter = result;
 			}
 		}
 	}
@@ -3963,7 +3963,7 @@ s32 BattleAudienceAddAudienceNum(s32 num) {
 				id = waitlist[irand(n)];
 				BattleAudience_ChangeStatus(id, 0xc);
 				result--;
-				*(s32*)((u8*)BattleAudienceGetPtr(id) + 0x8) = -result;
+				BattleAudienceGetPtr(id)->counter = -result;
 			}
 		}
 	}
@@ -3997,7 +3997,7 @@ void BattleAudienceAddPuni(s32 num) {
 	BattleWork* wp = _battleWorkPointer;
 	BattleAudience* audience = BattleAudienceBaseGetPtr();
 	s32 i;
-	if (pouchGetPtr()->mStarPowersObtained != 0 && *(s32*)((u8*)audience + 0x137B0) > 0 &&
+	if (pouchGetPtr()->mStarPowersObtained != 0 && audience->typeWeights[7] > 0 &&
 			num > 0 && !(wp->flags & 0x100)) {
 		f32 one = 1.0f;
 		for (i = 0; i < num; i++) {

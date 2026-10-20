@@ -915,7 +915,7 @@ L_800CCD8C:
         if (!(party->flags & PARTY_FLAG_IS_EVT_USE)) {
             partyGetReturnPos(&v);
         } else {
-            *(Vec*)&v = *(Vec*)((u8*)mario + 0x8c);
+            *(Vec*)&v = mario->position;
             f1 = *(f32*)(mario->unk1AC);
             {
                 s32 flag = 0;
@@ -958,7 +958,7 @@ L_800CCD8C:
             party->jumpPara1 = -6.0f;
         }
         if (party->position.y < -2000.0f) {
-            party->position = *(Vec*)((u8*)mario + 0x8c);
+            party->position = mario->position;
             party->position.y += 200.0f;
         }
         if (party->groundHit != NULL) {

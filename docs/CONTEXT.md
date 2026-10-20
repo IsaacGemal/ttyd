@@ -9280,3 +9280,49 @@ and 0x100 (`check_battleflag 256`: camera mode 0x12, the curtain event's walk-of
 BattleSeqEndWork `unk14`/`unk28` (zeroed beside `lvupSelect`/`confirmSel`, never read) and `unk0`; mAttributeFlags
 0x21000000 and unit->flags 0x80000000 in `_disable_enemy_unit_disp`; battle_mario.c's raw `event + 0x88/0x8C` casts
 can move to `userdataEx` too, and evt_sub's pointer use of 0x88 could join the union.
+
+### Tooling: offset_to_field.py (2026-10-19, Claude Opus 5.5, n9-q-offtool; reviewed by Claude Opus 5.5)
+
+`tools/offset_to_field.py` rewrites raw byte-offset casts into the field they already land on:
+`*(f32*)((u8*)unit + 0x174)` -> `unit->moveSpeedY`, `(Vec*)((u8*)pl + 0x98)` -> `&pl->pos`,
+`((f32*)((u8*)p + 0x40))[i]` -> `p->arr[i]`. It parses each file with libclang (powerpc-eabi, the file's own
+-I/-D flags), so the base's type comes from the compiler. A site is rewritten only when the offset is an
+integer literal, it is the exact start of a field whose type is the cast's pointee (const ignored), and the
+field is not volatile, not a bitfield and not a placeholder name (`unk*`, `pad*`, `field_*`, `_*`). In a
+union, exactly one member path may match. The cast must not sit in a macro or inside a MUST_MATCH
+`#if`/`#ifdef` (either arm), and its pointer must not be stepped through or stored in a variable. One
+exception on type: a pointer read through another pointer type keeps its cast, as `(T*)p->next`. Every
+rewrite is also checked against MWCC's own layout from the objects' DWARF.
+
+How to run it. Run it on the Mac, where libclang comes from uv; no build ever runs on the Mac. You need two
+files from a built tree on the tower: its `compile_commands.json`, which configure.py writes and tb.sh does
+not sync, so `scp pop-os:ttyd-n4-TAG/compile_commands.json`, and a DWARF index made by
+`tb.sh TAG 'python3 tools/offset_to_field.py --dwarf-index /tmp/dw.json'`. Then:
+`uv run --with libclang tools/offset_to_field.py --compile-commands CC --dwarf DW [--list] [PATH...]` gives a
+dry-run table of outcomes, and the same with `--apply PATH...` rewrites the files. Then build with tb.sh and
+require "32 files OK". `--verify --build-cmd CMD` builds and bisects, reverting files that break. Use
+`--skip-base TAG` to leave alone a struct another branch is editing.
+
+Results. The pilot's dry run found 189 convertible casts out of about 4650 (u8*) casts. 133 were applied in 34
+files, and 24 more landed in BattleWork's newly named `acParams`. After the readability branches of 2026-10-19
+landed, about 110 of those survive; on the files they rewrote, main's version was kept. A rerun on that tree,
+with a fresh DWARF index, found 195 convertible casts, and then 163 after a second rebase. Of those, 139 were
+applied in 29 files through `--verify`, and all were byte-identical. The whole-tree table now reads 108
+convertible out of 4021. Most of the rest land on unnamed space: 1823 casts hit padding or `unk`/`field_`
+names, and 884 have a `void*`/`u8*` base. Rerun the tool after each naming pass: a field that gets named turns
+its casts convertible. Regenerate the DWARF index too, since a stale one blocks the newly named fields as
+"layouts disagree".
+
+The enumsalwaysint fix. MWCC's `#pragma enumsalwaysint off` sizes an enum to its values, and clang ignores
+the pragma. Without a fix, every struct holding such an enum came out with int-sized members and wrong
+offsets. The tool feeds clang in-memory copies of those headers, adding `__attribute__((packed))` to each enum
+in the off regions.
+
+Limits. Clang's layout is the one that decides, and DWARF is only a cross-check: a file with no DWARF entry
+for a struct goes unchecked, so the byte-identical build is the real verdict. Generated includes missing on
+the Mac (`assets/*.inc`, `texPalette.h`) are stubbed empty, with a note on stderr. About 25 files still parse
+with clang errors (declaration conflicts inside function scope, none of them in struct layouts). The tool
+never names fields itself, and it leaves pointer arithmetic, non-literal offsets and casts on untyped bases
+alone. Open: the 108 convertible casts are in files that open branches were editing at the time:
+battle_event_cmd (48), evt_mario (19), win_root (15), mario, mario_hit, mario_motion, evt_mobj, battle_seq and
+evt_lect_win. Check those files' claims before running `--apply` on them.

@@ -733,8 +733,8 @@ void BattleAudienceCtrlProcessKinopioItemOn(s32 index, s32 kind) {
 	else if (!(member->flags & 0x20) && (work->flags & 0x80)) {
 		item = BattleAudienceItemGetPtr(member->itemId);
 		if (!(audience->flags & 0x40000)) {
-			(*(s32*)((u8*)item + 0x8))--;
-			if ((item->flags & 1) && *(s32*)((u8*)item + 0x8) <= 0 && item->state == 1) {
+			item->timer--;
+			if ((item->flags & 1) && item->timer <= 0 && item->state == 1) {
 				BattleAudience_ChangeStatus(index, 8);
 				BattleAudienceSoundItemThrow(0, index);
 			}
@@ -1239,7 +1239,7 @@ void BattleAudienceCtrlProcessKinopioIntrude(s32 index) {
 		break;
 	}
 	case 0xf:
-		member->mRotation.y = *(f32*)((u8*)camGetPtr(4) + 0x114);
+		member->mRotation.y = camGetPtr(4)->viewYaw;
 #ifdef MUST_MATCH
 		// Read through a pointer cast, as retail loads it; the plain read scores 99.995%.
 		if (__fabs(member->position.x) >= *(const f64*)&double_450_802f8d88) {
@@ -1712,7 +1712,7 @@ void BattleAudienceCtrlProcessKinopioEat(s32 index) {
 		if (member->counter > 0) {
 			member->counter--;
 		}
-		if (member->counter <= 0 && 0.0f == *(f32*)((u8*)target + 0xd0)) {
+		if (member->counter <= 0 && 0.0f == target->jumpOffset.y) {
 			BattleAudience_SetAnim(index, 0x12, 0);
 			target->flags |= 2;
 			member->step = 3;
@@ -1800,7 +1800,7 @@ void BattleAudienceCtrlProcessKinopioEat(s32 index) {
 			row = id % 0x14;
 			x = (f32)(row * 0x19 - 0xeb + r);
 			member->mHomePosition.x = (member->position.x = x);
-			member->mHomePosition.y = *(f32*)((u8*)stage + 0xb34);
+			member->mHomePosition.y = stage->audienceAreaSize.y;
 			z = 0.1f * (f32)row + (f32)(col * 0x1e + 0x73);
 			member->position.z = z;
 			member->mHomePosition.z = z;
@@ -1818,8 +1818,8 @@ void BattleAudienceCtrlProcessKinopioEat(s32 index) {
 	}
 	case 0xb: {
 		f32 stageY;
-		if (member->position.y >= *(f32*)((u8*)stage + 0xb34)) {
-			stageY = *(f32*)((u8*)stage + 0xb34);
+		if (member->position.y >= stage->audienceAreaSize.y) {
+			stageY = stage->audienceAreaSize.y;
 			member->mHomePosition.y = stageY;
 			member->position.y = stageY;
 			member->velocity.y = 0.0f;

@@ -1062,8 +1062,8 @@ static void flyMain(void) {
 			if (*(HitEntry**)((u8*)mario + 0x1E0) != NULL) {
 				hit = *(HitEntry**)((u8*)mario + 0x1E0);
 			}
-			if (*(HitEntry**)((u8*)mario + 0x1E4) != NULL) {
-				hit = *(HitEntry**)((u8*)mario + 0x1E4);
+			if ((HitEntry*)mario->hitobjStandOn != NULL) {
+				hit = (HitEntry*)mario->hitobjStandOn;
 			}
 			if (hit != NULL && (hitGetAttr(hit) & 0x200) != 0) {
 				mario->currSubMotionId = 0x46;
