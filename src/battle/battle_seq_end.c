@@ -1456,7 +1456,7 @@ s32 _nozzle_set_offset(EventEntry* event, BOOL isFirstCall) {
     BattleStageObject* obj = BattleSearchObjectPtr((const char*)id);
 
     if (obj != NULL) {
-        obj->field_0x10.y = offset;
+        obj->mPositionOffset1.y = offset;
     }
     return 2;
 }
@@ -1509,7 +1509,7 @@ s32 _disable_enemy_unit_disp(EventEntry* event, BOOL isFirstCall) {
 
         if (obj != NULL) {
             wp->stageFlags |= 0x20;
-            obj->mFlags |= 1;
+            obj->mFlags |= BSO_FLAG_HIDDEN;
             mapGrpFlagOn("if_body", 1);
             mapGrpFlagOn("if_wire", 1);
         }

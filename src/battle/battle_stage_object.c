@@ -257,27 +257,27 @@ void BattleStageObjectInit(void) {
 				break;
 			}
 			obj->mRotation.x = obj->mRotation.y = obj->mRotation.z = 0.0f;
-			obj->field_0x34 = BSO_UNSET(0);
-			obj->field_0x40 = BSO_UNSET(1);
-			obj->field_0x4C = BSO_UNSET(2);
-			obj->field_0x58 = BSO_UNSET(3);
+			obj->mLastPosition = BSO_UNSET(0);
+			obj->mLastPositionOffset1 = BSO_UNSET(1);
+			obj->mLastRotation = BSO_UNSET(2);
+			obj->mLastPositionOffset2 = BSO_UNSET(3);
 			mapGrpFlagOff(obj->data->name, 1);
 			switch (data->mSpawnSpecialUnitType) {
-			case 0:
+			case BSO_SPAWN_TREE:
 				unit = BtlUnit_Entry((BattleUnitSetup*)_entry_tree_data);
 				*(s32*)((u8*)unit + 0xB2C) = obj->id;
 				obj->mBattleUnitIdx = unit->unitId;
 				BtlUnit_SetPos(unit, obj->mPosition.x, obj->mPosition.y, obj->mPosition.z);
 				BtlUnit_SetHomePos(unit, obj->mPosition.x, obj->mPosition.y, obj->mPosition.z);
 				break;
-			case 1:
+			case BSO_SPAWN_SWITCH:
 				unit = BtlUnit_Entry((BattleUnitSetup*)_entry_switch_data);
 				*(s32*)((u8*)unit + 0xB2C) = obj->id;
 				obj->mBattleUnitIdx = unit->unitId;
 				BtlUnit_SetPos(unit, obj->mPosition.x, obj->mPosition.y, obj->mPosition.z);
 				BtlUnit_SetHomePos(unit, obj->mPosition.x, obj->mPosition.y, obj->mPosition.z);
 				break;
-			case 2:
+			case BSO_SPAWN_NONE:
 				break;
 			}
 		}
@@ -301,10 +301,10 @@ void BattleStageObjectInit(void) {
 			obj->mBattleUnitIdx = -1;
 			obj->mPosition = nozzle->mPosition;
 			obj->mRotation.x = obj->mRotation.y = obj->mRotation.z = 0.0f;
-			obj->field_0x34 = BSO_UNSET(4);
-			obj->field_0x40 = BSO_UNSET(5);
-			obj->field_0x4C = BSO_UNSET(6);
-			obj->field_0x58 = BSO_UNSET(7);
+			obj->mLastPosition = BSO_UNSET(4);
+			obj->mLastPositionOffset1 = BSO_UNSET(5);
+			obj->mLastRotation = BSO_UNSET(6);
+			obj->mLastPositionOffset2 = BSO_UNSET(7);
 			mapGrpFlagOff(obj->data->name, 1);
 		}
 	}
@@ -323,12 +323,12 @@ void BattleStageObjectInit(void) {
 	obj->mPosition = data->mPosition;
 	obj->mPosition.y = BattleStageGetPtr()->stageSize.y;
 	obj->mRotation.x = obj->mRotation.y = obj->mRotation.z = 0.0f;
-	obj->field_0x34 = BSO_UNSET(8);
-	obj->field_0x40 = BSO_UNSET(9);
-	obj->field_0x4C = BSO_UNSET(10);
-	obj->field_0x58 = BSO_UNSET(11);
+	obj->mLastPosition = BSO_UNSET(8);
+	obj->mLastPositionOffset1 = BSO_UNSET(9);
+	obj->mLastRotation = BSO_UNSET(10);
+	obj->mLastPositionOffset2 = BSO_UNSET(11);
 	mapGrpFlagOn(obj->data->name, 1);
-	obj->mFlags |= 1;
+	obj->mFlags |= BSO_FLAG_HIDDEN;
 	id++;
 
 	// the spotlights, up to the entry with no name
@@ -348,12 +348,12 @@ void BattleStageObjectInit(void) {
 		obj->mBattleUnitIdx = -1;
 		obj->mPosition = light->mPosition;
 		obj->mRotation.x = obj->mRotation.y = obj->mRotation.z = 0.0f;
-		obj->field_0x34 = BSO_UNSET(12);
-		obj->field_0x40 = BSO_UNSET(13);
-		obj->field_0x4C = BSO_UNSET(14);
-		obj->field_0x58 = BSO_UNSET(15);
+		obj->mLastPosition = BSO_UNSET(12);
+		obj->mLastPositionOffset1 = BSO_UNSET(13);
+		obj->mLastRotation = BSO_UNSET(14);
+		obj->mLastPositionOffset2 = BSO_UNSET(15);
 		mapGrpFlagOn(obj->data->name, 1);
-		obj->mFlags |= 1;
+		obj->mFlags |= BSO_FLAG_HIDDEN;
 	}
 
 	// the stage's events; each layer with objects gets its own
@@ -1345,29 +1345,29 @@ void BattleStageObjectMain(void) {
 		}
 
 		changed = 0;
-		if (obj->mPosition.x != obj->field_0x34.x || obj->mPosition.y != obj->field_0x34.y
-		    || obj->mPosition.z != obj->field_0x34.z) {
-			obj->field_0x34 = obj->mPosition;
+		if (obj->mPosition.x != obj->mLastPosition.x || obj->mPosition.y != obj->mLastPosition.y
+		    || obj->mPosition.z != obj->mLastPosition.z) {
+			obj->mLastPosition = obj->mPosition;
 			changed = 1;
 		}
-		if (obj->field_0x10.x != obj->field_0x40.x || obj->field_0x10.y != obj->field_0x40.y
-		    || obj->field_0x10.z != obj->field_0x40.z) {
-			obj->field_0x40 = obj->field_0x10;
+		if (obj->mPositionOffset1.x != obj->mLastPositionOffset1.x || obj->mPositionOffset1.y != obj->mLastPositionOffset1.y
+		    || obj->mPositionOffset1.z != obj->mLastPositionOffset1.z) {
+			obj->mLastPositionOffset1 = obj->mPositionOffset1;
 			changed = 1;
 		}
-		if (obj->field_0x28.x != obj->field_0x58.x || obj->field_0x28.y != obj->field_0x58.y
-		    || obj->field_0x28.z != obj->field_0x58.z) {
-			obj->field_0x58 = obj->field_0x28;
+		if (obj->mPositionOffset2.x != obj->mLastPositionOffset2.x || obj->mPositionOffset2.y != obj->mLastPositionOffset2.y
+		    || obj->mPositionOffset2.z != obj->mLastPositionOffset2.z) {
+			obj->mLastPositionOffset2 = obj->mPositionOffset2;
 			changed = 1;
 		}
-		if (obj->mRotation.x != obj->field_0x4C.x || obj->mRotation.y != obj->field_0x4C.y
-		    || obj->mRotation.z != obj->field_0x4C.z) {
-			obj->field_0x4C = obj->mRotation;
+		if (obj->mRotation.x != obj->mLastRotation.x || obj->mRotation.y != obj->mLastRotation.y
+		    || obj->mRotation.z != obj->mLastRotation.z) {
+			obj->mLastRotation = obj->mRotation;
 			changed = 1;
 		}
 
-		if (obj->mFlags & 2) {
-			obj->mFlags &= ~2;
+		if (obj->mFlags & BSO_FLAG_DIRTY) {
+			obj->mFlags &= ~BSO_FLAG_DIRTY;
 			changed = 1;
 		}
 
@@ -1393,9 +1393,9 @@ void BattleStageObjectMain(void) {
 			case 7:
 				if (changed) {
 					mapObjTranslate(obj->data->name,
-					                obj->mPosition.x + obj->field_0x10.x + obj->field_0x28.x,
-					                obj->mPosition.y + obj->field_0x10.y + obj->field_0x28.y,
-					                obj->mPosition.z + obj->field_0x10.z + obj->field_0x28.z);
+					                obj->mPosition.x + obj->mPositionOffset1.x + obj->mPositionOffset2.x,
+					                obj->mPosition.y + obj->mPositionOffset1.y + obj->mPositionOffset2.y,
+					                obj->mPosition.z + obj->mPositionOffset1.z + obj->mPositionOffset2.z);
 					mapObjRotate(obj->data->name, obj->mRotation.x, obj->mRotation.y,
 					             obj->mRotation.z);
 				}
@@ -1403,21 +1403,21 @@ void BattleStageObjectMain(void) {
 			case 2:
 				if (changed) {
 					mapObjTranslate(obj->data->name,
-					                obj->mPosition.x + obj->field_0x10.x + obj->field_0x28.x,
-					                obj->mPosition.y + obj->field_0x10.y + obj->field_0x28.y,
-					                obj->mPosition.z + obj->field_0x10.z + obj->field_0x28.z);
-					mapObjTranslate(obj->data->name, 0.0f, -obj->field_0x10.y, 0.0f);
+					                obj->mPosition.x + obj->mPositionOffset1.x + obj->mPositionOffset2.x,
+					                obj->mPosition.y + obj->mPositionOffset1.y + obj->mPositionOffset2.y,
+					                obj->mPosition.z + obj->mPositionOffset1.z + obj->mPositionOffset2.z);
+					mapObjTranslate(obj->data->name, 0.0f, -obj->mPositionOffset1.y, 0.0f);
 					mapObjRotate(obj->data->name, ((Vec*)(base - 0x7F3C))->x, ((Vec*)(base - 0x7F3C))->y,
 					             ((Vec*)(base - 0x7F3C))->z);
-					mapObjTranslate(obj->data->name, 0.0f, obj->field_0x10.y, 0.0f);
+					mapObjTranslate(obj->data->name, 0.0f, obj->mPositionOffset1.y, 0.0f);
 				}
 				break;
 			case 3:
 				if (changed) {
 					mapObjTranslate(obj->data->name,
-					                obj->mPosition.x + obj->field_0x10.x + obj->field_0x28.x,
-					                obj->mPosition.y + obj->field_0x10.y + obj->field_0x28.y,
-					                obj->mPosition.z + obj->field_0x10.z + obj->field_0x28.z);
+					                obj->mPosition.x + obj->mPositionOffset1.x + obj->mPositionOffset2.x,
+					                obj->mPosition.y + obj->mPositionOffset1.y + obj->mPositionOffset2.y,
+					                obj->mPosition.z + obj->mPositionOffset1.z + obj->mPositionOffset2.z);
 					mapObjTranslate(obj->data->name, 0.0f, -obj->mPosition.y, 0.0f);
 					mapObjRotate(obj->data->name, obj->mRotation.x, obj->mRotation.y,
 					             obj->mRotation.z);
@@ -1426,7 +1426,7 @@ void BattleStageObjectMain(void) {
 				break;
 		}
 
-		if (obj->mFlags & 1) {
+		if (obj->mFlags & BSO_FLAG_HIDDEN) {
 			if (!(mapGetMapObj(obj->data->name)->flags & 1)) {
 				mapGrpFlagOn(obj->data->name, 1);
 			}
@@ -1658,7 +1658,7 @@ USER_FUNC(_mobj_destroy) {
 	for (i = 0; i < 32; i++) {
 		obj = &wp->stageObjects[i];
 		if (obj->id > 0 && obj->data->mLayer == layer) {
-			obj->mFlags |= 1;
+			obj->mFlags |= BSO_FLAG_HIDDEN;
 			unit = BattleGetUnitPtr(wp, obj->mBattleUnitIdx);
 			if (unit != NULL) {
 				BattleUnitPart* p = unit->mParts;

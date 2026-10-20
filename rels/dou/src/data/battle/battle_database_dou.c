@@ -967,8 +967,8 @@ static USER_FUNC(_wave_offset) {
     s32 next1;
     s32 next4;
 
-    obj->field_0x10.x = (f32)arg3 * sinfd((f32)(arg1 * 360 / arg2));
-    obj->field_0x10.y = (f32)arg6 + sinfd((f32)(arg4 * 360 / arg5 + 270)) * (f32)arg6;
+    obj->mPositionOffset1.x = (f32)arg3 * sinfd((f32)(arg1 * 360 / arg2));
+    obj->mPositionOffset1.y = (f32)arg6 + sinfd((f32)(arg4 * 360 / arg5 + 270)) * (f32)arg6;
 
     next1 = arg1 + 1;
     if (next1 >= arg2) {

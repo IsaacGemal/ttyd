@@ -2830,7 +2830,7 @@ void _mapobj_data_touch_scale(s32 kind) { //1:1
 	for (i = 0; i < 32; i++) {
 		BattleStageObject* obj = &wp->stageObjects[i];
 		if (obj->id > 0 && obj->data->mLayer == kind) {
-			obj->mFlags |= 2;
+			obj->mFlags |= BSO_FLAG_DIRTY;
 		}
 	}
 }
@@ -2909,7 +2909,7 @@ s32 _set_haikei_entry_scale(EventEntry* event, BOOL isFirstCall) {
 					obj = &wp->stageObjects[i];
 					if (obj->id > 0 && obj->data->mLayer == 0) {
 						mapObjScale(obj->data->name, scale2 / scaleDiv, scale1 / scaleDiv, 1.0f);
-						obj->mFlags |= 2;
+						obj->mFlags |= BSO_FLAG_DIRTY;
 					}
 				}
 			}
@@ -2947,13 +2947,13 @@ s32 _set_haikei_entry_scale(EventEntry* event, BOOL isFirstCall) {
 					obj2 = &wp->stageObjects[i];
 					if (obj2->id > 0 && obj2->data->mLayer == 1) {
 						mapObjScale(obj2->data->name, scale2 / scaleDiv, scale1 / scaleDiv, 1.0f);
-						obj2->mFlags |= 2;
+						obj2->mFlags |= BSO_FLAG_DIRTY;
 					}
 #else
 					obj = &wp->stageObjects[i];
 					if (obj->id > 0 && obj->data->mLayer == 1) {
 						mapObjScale(obj->data->name, scale2 / scaleDiv, scale1 / scaleDiv, 1.0f);
-						obj->mFlags |= 2;
+						obj->mFlags |= BSO_FLAG_DIRTY;
 					}
 #endif
 				}

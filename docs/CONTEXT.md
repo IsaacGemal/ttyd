@@ -9484,3 +9484,18 @@ Open: FieldBattleData 0x14/0x1C (`field_14`, `field_14[8]`),
 DemoWork `field_0x00`, ScreenWork `field_0x28` (set to -1, otherwise unread), FanPose `field_0x6`/`0x38`-`0x40`/
 `0x46`. The next shared-struct target is ExtPose `field_0x4` (yaw) and `field_0x10` (pose/frame index), which
 gon_03, tou_02, tou_03, rsh_05 and the other ext users write (about 20 REL sources).
+
+### Readability: battle stage objects (2026-10-19, Claude Haiku 5.5, n9-q-bso; reviewed by Claude Opus 5.5)
+
+BattleStageObject (battle_stage_object.h) gets `mPositionOffset1` (0x10, added to mPosition on every layer; the
+layer-2 rotation pivots about its y; _nozzle_set_offset writes y) and `mPositionOffset2` (0x28,
+btlevtcmd_SacBgsetMove writes x/y). 0x34-0x58 are the change-detection copies `mLastPosition`,
+`mLastPositionOffset1`, `mLastRotation`, `mLastPositionOffset2`: BattleStageObjectInit seeds them with the 999
+`BSO_UNSET` sentinel and BattleStageObjectMain re-applies the transform to the map object when any differs. 0x75 is
+`pad_75`. New enums: `BattleStageObjectFlags` (`BSO_FLAG_HIDDEN` 0x1: Main keeps map group flag 1 on while set, and
+the map draw loop skips objects with that flag; set by _mobj_destroy and the if_body ceiling in battle_seq_end.c;
+`BSO_FLAG_DIRTY` 0x2: forces a transform re-apply, then cleared; set by the battle_seq.c scale code) and
+`BattleStageObjectSpawnType` (`BSO_SPAWN_TREE`/`SWITCH`/`NONE` for BattleStageObjectData's
+mSpawnSpecialUnitType). _mapobj_data_touch_scale reads `obj->data->mLayer` instead of a raw +6. Open:
+`field_0x72` (only zeroed, in battle_stage_object.c), and btlevtcmd_BtlStageObjFlagOnOff takes its flag from the
+script.
