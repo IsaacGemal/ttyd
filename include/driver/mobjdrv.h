@@ -16,8 +16,33 @@ typedef struct MapObjectHitEntry {
     u8 unk4[0x88 - 0x14]; // 0x14
 } MapObjectHitEntry;
 
+// MapObjectEntry.flags bits whose effect is visible in mobjdrv.c; the rest stay hex at their uses.
+// The MOBJ_FLAG_TRIGGER_* bits arm one mobjMain hit test each; the bit that fired is copied to triggerFlag.
+// 0x10000, 0x40000 and 0x80000 are hit tests on MarioWork HitEntry pointers that have no names yet
+// (0x1FC, 0x1E0); 0x2 and 0x800 both suppress the shadow.
+enum MapObjectEntryFlags {
+    MOBJ_FLAG_ACTIVE = 0x1,               // slot in use (mobjEntry sets it, mobjDelete clears it)
+    MOBJ_FLAG_RECALC_MTX = 0x4,           // mobjMain rebuilds the matrix once, then clears it
+    MOBJ_FLAG_TRIGGERED = 0x8,            // set when a hit test fires; no hit tests run while it is set
+    MOBJ_FLAG_GRAVITY = 0x40,             // mobjMain applies velocity, gravity and bounce
+    MOBJ_FLAG_NO_CULL = 0x80,             // skip the view-frustum test before dispEntry
+    MOBJ_FLAG_RETRIGGER = 0x100,          // mobjMain clears MOBJ_FLAG_TRIGGERED every frame
+    MOBJ_FLAG_PAPER_TEX = 0x400,          // draw with paperTexObj/paperTexMtx
+    MOBJ_FLAG_BLINK = 0x2000,             // not drawn on alternate 8-frame spans
+    MOBJ_FLAG_NO_DISP = 0x4000,           // animated but never passed to dispEntry
+    MOBJ_FLAG_TRIGGER_HEAD = 0x400000,    // Mario's head hit (MarioWork 0x1F4, marioSearchHead); also a type-1 shadow
+    MOBJ_FLAG_TRIGGER_STAND_ON = 0x200000, // Mario stands on it (hitobjStandOn), also checked as Bowser
+    MOBJ_FLAG_TRIGGER_HIP_DROP = 0x1000000, // Mario stands on it and marioChkHipBump
+    MOBJ_FLAG_TRIGGER_PARTY = 0x800000,   // partner's frontHit, or Bobbery within range
+    MOBJ_FLAG_TRIGGER_BOBBERY = 0x2000000, // Bobbery's frontHit (in range reports MOBJ_FLAG_TRIGGER_PARTY)
+    MOBJ_FLAG_TRIGGER_KPA_HEAD = 0x4000000, // Bowser: kpaGetHitobjHead
+    MOBJ_FLAG_TRIGGER_KPA_LV3 = 0x8000000, // Bowser: kpaGetHitobj at kpaGetLevel 3
+    MOBJ_FLAG_TRIGGER_KPA_HIP = 0x10000000, // Bowser: kpaGetHitobjRide and kpaHipAttackCheck
+    MOBJ_FLAG_TRIGGER_KPA_FLAME = 0x20000000, // Bowser: kpaGetHitFlame
+};
+
 typedef struct MapObjectEntry {
-    s32 flags;                   // 0x0
+    s32 flags;                   // 0x0, MapObjectEntryFlags
     u8 camId;                    // 0x4
     char name[16];               // 0x5
     char animName[16];           // 0x15
@@ -45,7 +70,7 @@ typedef struct MapObjectEntry {
     s32* eventCode;              // 0x1D4, event script run by mobjRunEvent
     s32* unk1D8;                 // 0x1D8, event script
     s32 state;                   // 0x1DC, per-type step: 0 idle, 0x63 done (mobjCheckItemboxOpen tests 99)
-    s32 triggerFlag;             // 0x1E0, the entry->flags bit that last hit Mario (0x200000, 0x1000000, ...)
+    s32 triggerFlag;             // 0x1E0, the MOBJ_FLAG_TRIGGER_* (or other hit-test) bit that last fired
     s32 flagVar;                 // 0x1E4, script variable/flag: set when activated, read by evtGetValue
     GXTexObj paperTexObj;        // 0x1E8
     smartEntry* paperTex;        // 0x208, smartAlloc buffer that GXCopyTex fills for the paper texture
