@@ -740,8 +740,6 @@ s32 evt_mobj_switch_red(EventEntry* event, BOOL isFirstCall) {
     MapObjectEntry* obj;
     BOOL inBattle = gp->inBattle != 0;
 
-    /* MUST_MATCH: the empty-through case 1 forces MWCC's switch decision tree; default alone folds to `beq`. */
-#ifdef MUST_MATCH
     switch (type) {
         case 0:
             asyncName = "MOBJ_RedSwitch";
@@ -751,12 +749,6 @@ s32 evt_mobj_switch_red(EventEntry* event, BOOL isFirstCall) {
             asyncName = "MOBJ_WhiteSwitch";
             break;
     }
-#else
-    asyncName = "MOBJ_WhiteSwitch";
-    if (type == 0) {
-        asyncName = "MOBJ_RedSwitch";
-    }
-#endif
     if (!animGroupBaseAsync(asyncName, inBattle, NULL)) {
         return 0;
     }
