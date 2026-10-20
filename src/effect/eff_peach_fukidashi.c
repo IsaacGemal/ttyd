@@ -82,9 +82,7 @@ void effPeachFukidashiDisp(CameraId camId, void* param) {
     EffPeachFukidashiData* data = effect->userdata;
     CameraEntry* cam;
     MarioWork* mario;
-#ifdef MUST_MATCH
     f32 rad;
-#endif
     Vec temp1;
     Vec basePos1;
     Vec axis1;
@@ -126,13 +124,9 @@ void effPeachFukidashiDisp(CameraId camId, void* param) {
 
     PSMTXTrans(m0, data->position.x, data->position.y, data->position.z);
     cam = camGetPtr(camId);
-#ifdef MUST_MATCH
     rad = -cam->viewYaw;
     rad = 0.017453292f * rad;
     PSMTXRotRad(m1, 'y', rad);
-#else
-    PSMTXRotRad(m1, 'y', -cam->viewYaw * 0.017453292f);
-#endif
     PSMTXConcat(m0, m1, m2);
     PSMTXScale(m3, 0.4f, 0.34f, 0.4f);
     PSMTXRotRad(m1, 'z', 0.017453292f * data->field_0x18);
@@ -166,13 +160,9 @@ void effPeachFukidashiDisp(CameraId camId, void* param) {
                                        fabsf(1.5f * data->angle / 90.0f)),
                data->position.z);
     cam = camGetPtr(camId);
-#ifdef MUST_MATCH
     rad = -cam->viewYaw;
     rad = 0.017453292f * rad;
     PSMTXRotRad(m1, 'y', rad);
-#else
-    PSMTXRotRad(m1, 'y', -cam->viewYaw * 0.017453292f);
-#endif
     PSMTXConcat(m0, m1, m2);
     PSMTXTrans(m0, 0.0f, 0.0f, 1.0f);
     PSMTXConcat(m2, m0, m2);
@@ -186,11 +176,9 @@ void effPeachFukidashiDisp(CameraId camId, void* param) {
         case 1:
             iconDispGx2(m2, 0, 0x1F3);
             break;
-#ifdef MUST_MATCH
-        /* MUST_MATCH: the empty case 2 forces MWCC's switch decision tree to emit the
+        /* The empty case 2 forces MWCC's switch decision tree to emit the
            duplicated branch to the default body that retail has. */
         case 2:
-#endif
         default:
             iconDispGx2(m2, 0, 0x1F4);
             break;
@@ -224,13 +212,9 @@ void effPeachFukidashiDisp(CameraId camId, void* param) {
                        8.0f,
                    data->position.z);
         cam = camGetPtr(camId);
-#ifdef MUST_MATCH
         rad = -cam->viewYaw;
         rad = 0.017453292f * rad;
         PSMTXRotRad(m1, 'y', rad);
-#else
-        PSMTXRotRad(m1, 'y', -cam->viewYaw * 0.017453292f);
-#endif
         PSMTXConcat(m0, m1, m2);
         PSMTXTrans(m0, 0.0f, 0.0f, 1.0f);
         PSMTXConcat(m2, m0, m2);

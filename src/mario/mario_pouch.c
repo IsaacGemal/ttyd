@@ -1179,7 +1179,7 @@ void pouchMajinaiInit(u32 curseCount) {
 	}
 }
 
-u8 pouchGetKpaCoin(void) {
+u32 pouchGetKpaCoin(void) {
 	return mpp->mSuperBowserCoins;
 }
 
