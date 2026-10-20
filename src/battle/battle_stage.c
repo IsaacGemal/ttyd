@@ -97,7 +97,7 @@ typedef struct ScreenWork {
 	f32 offsetYTarget;    //0x1C
 	s32 tick;             //0x20, counts frames; retargets every 200
 	s32 noiseMode;        //0x24, 1 builds the noise texture, 0 uses the captured screen
-	f32 initDefault;      //0x28, set to -1.0 in tou_gamen_screen_tev_init and never read
+	f32 field_0x28;       //0x28, set to -1.0 in tou_gamen_screen_tev_init and never read
 } ScreenWork;
 typedef struct ScreenTevParam {
 	u8 pad[0xC];
@@ -143,12 +143,12 @@ void BattleStageInit(void) {
 	stage->audDark.alphaFrames = 0;
 	stage->audDark.alphaFramesTotal = 0;
 
-	stage->stageLimits.x = float_290_8041c854;
-	stage->stageLimits.y = float_200_8041c858;
-	stage->stageLimits.z = float_90_8041c85c;
-	stage->floorPos.x = stage->stageLimits.x;
-	stage->floorPos.y = float_neg50_8041c860;
-	stage->floorPos.z = float_200_8041c858;
+	stage->stageSize.x = float_290_8041c854;
+	stage->stageSize.y = float_200_8041c858;
+	stage->stageSize.z = float_90_8041c85c;
+	stage->audienceAreaSize.x = stage->stageSize.x;
+	stage->audienceAreaSize.y = float_neg50_8041c860;
+	stage->audienceAreaSize.z = float_200_8041c858;
 	BattleStageObjectInit();
 	batSpotInit();
 }
@@ -999,7 +999,7 @@ s32 screen_evt_func(void) {
 }
 
 // float_neg1 is const so MWCC hoists its single load to the top of the function,
-// where the original loads it, instead of just before the initDefault store.
+// where the original loads it, instead of just before the field_0x28 store.
 s32 tou_gamen_screen_tev_init(EventEntry* event) {
 	u32 size;
 
@@ -1015,7 +1015,7 @@ s32 tou_gamen_screen_tev_init(EventEntry* event) {
 		screen_wp->offsetYTarget = float_0_8041c7f0;
 		screen_wp->offsetY = float_0_8041c7f0;
 		screen_wp->tick = 0;
-		screen_wp->initDefault = float_neg1_8041c818;
+		screen_wp->field_0x28 = float_neg1_8041c818;
 	}
 
 	if (evtGetValue(event, GSW(0)) == 0xA3) {

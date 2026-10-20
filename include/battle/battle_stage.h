@@ -99,8 +99,8 @@ typedef struct BattleStage {
 	BattleStageLight lights[12]; //0x4
 	BattleStageDark stgDark;     //0xAE4
 	BattleStageDark audDark;     //0xB04
-	Vec stageLimits;             //0xB24, y is the stage object spawn height, z the floor cutoff in BattleGetFloorHeight
-	Vec floorPos;                //0xB30, y is the floor height returned by BattleGetFloorHeight
+	Vec stageSize;               //0xB24, btlevtcmd_GetStageSize; y is the stage object spawn height, z the stage depth (floor is 0 up to it)
+	Vec audienceAreaSize;        //0xB30, btlevtcmd_GetStageAudienceAreaSize; y is the audience floor height (BattleGetFloorHeight past stageSize.z)
 } BattleStage;
 
 BattleStage* BattleStageGetPtr(void);

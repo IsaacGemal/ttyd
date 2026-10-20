@@ -299,10 +299,10 @@ void BattleCheckUnitBroken(BattleWork* wp) {
 f32 BattleGetFloorHeight(BattleWork* wp, f32 x, f32 y, f32 z) {
     BattleStage* stage = BattleStageGetPtr();
 
-    if (z <= stage->stageLimits.z) {
+    if (z <= stage->stageSize.z) {
         return 0.0f;
     }
-    return stage->floorPos.y;
+    return stage->audienceAreaSize.y;
 }
 
 s32 BattleGetStockExp(BattleWork* wp) {

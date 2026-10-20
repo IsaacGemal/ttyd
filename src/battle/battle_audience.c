@@ -3057,7 +3057,7 @@ void BattleAudience_Entry_Sub(s32 index, s32 type, u8 status) {
 	member->colorR = 0;
 	member->colorA = 0xff;
 
-	y = *(f32*)((u8*)stage + 0xB34);
+	y = stage->audienceAreaSize.y;
 	z = 0.1f * (f32)row + (f32)(col * 0x1e + 0x73);
 	member->position.y = y;
 	member->mHomePosition.y = y;
