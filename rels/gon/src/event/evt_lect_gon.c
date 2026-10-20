@@ -349,7 +349,7 @@ static USER_FUNC(lecture_button_set_pos) {
 // the original keeps the recursive call as a real `bl`
 #pragma dont_inline on
 static void lect_map_cam_chg_sub(MapObject* obj, s32 camId, s32 arg) {
-    obj->field_0x0[5] = camId;
+    obj->field_0x5 = camId;
     if (obj->child != NULL) {
         lect_map_cam_chg_sub(obj->child, camId, 1);
     }

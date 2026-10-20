@@ -216,12 +216,12 @@ USER_FUNC(hi_onoff) {
     onoff = evtGetValue(event, args[1]);
     mapObj = mapGetMapObj(taimatu_data[index * 2]);
     if (onoff != 0) {
-        *(u32*)mapObj->field_0x0 &= ~1;
+        mapObj->flags &= ~1;
         hitObjGetPos(taimatu_data[index * 2 + 1], &pos);
         effect = effTorchEntry(0, pos.x, pos.y, pos.z, float_0p7_las_00012688);
         effSetName(effect, taimatu_data[index * 2 + 1]);
     } else {
-        *(u32*)mapObj->field_0x0 |= 1;
+        mapObj->flags |= 1;
         effSoftDelete(effNameToPtr(taimatu_data[index * 2 + 1]));
     }
     return EVT_RETURN_DONE;

@@ -359,16 +359,16 @@ static void lect_map_cam_chg_sub(MapObject* obj, s32 val, s32 recurse) {
     MapObject* d;
     MapObject* e;
 
-    obj->field_0x0[5] = val;
+    obj->field_0x5 = val;
     a = obj->child;
     if (a != NULL) {
-        a->field_0x0[5] = val;
+        a->field_0x5 = val;
         b = a->child;
         if (b != NULL) {
-            b->field_0x0[5] = val;
+            b->field_0x5 = val;
             c = b->child;
             if (c != NULL) {
-                c->field_0x0[5] = val;
+                c->field_0x5 = val;
                 if (c->child != NULL)
                     lect_map_cam_chg_sub(c->child, val, 1);
                 if (c->next != NULL)
@@ -376,7 +376,7 @@ static void lect_map_cam_chg_sub(MapObject* obj, s32 val, s32 recurse) {
             }
             c = b->next;
             if (c != NULL) {
-                c->field_0x0[5] = val;
+                c->field_0x5 = val;
                 if (c->child != NULL)
                     lect_map_cam_chg_sub(c->child, val, 1);
                 if (c->next != NULL)
@@ -385,10 +385,10 @@ static void lect_map_cam_chg_sub(MapObject* obj, s32 val, s32 recurse) {
         }
         d = a->next;
         if (d != NULL) {
-            d->field_0x0[5] = val;
+            d->field_0x5 = val;
             e = d->child;
             if (e != NULL) {
-                e->field_0x0[5] = val;
+                e->field_0x5 = val;
                 if (e->child != NULL)
                     lect_map_cam_chg_sub(e->child, val, 1);
                 if (e->next != NULL)
@@ -396,7 +396,7 @@ static void lect_map_cam_chg_sub(MapObject* obj, s32 val, s32 recurse) {
             }
             d = d->next;
             if (d != NULL) {
-                d->field_0x0[5] = val;
+                d->field_0x5 = val;
                 if (d->child != NULL)
                     lect_map_cam_chg_sub(d->child, val, 1);
                 if (d->next != NULL)
@@ -407,13 +407,13 @@ static void lect_map_cam_chg_sub(MapObject* obj, s32 val, s32 recurse) {
     if (recurse) {
         c = obj->next;
         if (c != NULL) {
-            c->field_0x0[5] = val;
+            c->field_0x5 = val;
             b = c->child;
             if (b != NULL) {
-                b->field_0x0[5] = val;
+                b->field_0x5 = val;
                 a = b->child;
                 if (a != NULL) {
-                    a->field_0x0[5] = val;
+                    a->field_0x5 = val;
                     if (a->child != NULL)
                         lect_map_cam_chg_sub(a->child, val, 1);
                     if (a->next != NULL)
@@ -421,7 +421,7 @@ static void lect_map_cam_chg_sub(MapObject* obj, s32 val, s32 recurse) {
                 }
                 e = b->next;
                 if (e != NULL) {
-                    e->field_0x0[5] = val;
+                    e->field_0x5 = val;
                     if (e->child != NULL)
                         lect_map_cam_chg_sub(e->child, val, 1);
                     if (e->next != NULL)
@@ -430,10 +430,10 @@ static void lect_map_cam_chg_sub(MapObject* obj, s32 val, s32 recurse) {
             }
             d = c->next;
             if (d != NULL) {
-                d->field_0x0[5] = val;
+                d->field_0x5 = val;
                 e = d->child;
                 if (e != NULL) {
-                    e->field_0x0[5] = val;
+                    e->field_0x5 = val;
                     if (e->child != NULL)
                         lect_map_cam_chg_sub(e->child, val, 1);
                     if (e->next != NULL)
@@ -441,7 +441,7 @@ static void lect_map_cam_chg_sub(MapObject* obj, s32 val, s32 recurse) {
                 }
                 d = d->next;
                 if (d != NULL) {
-                    d->field_0x0[5] = val;
+                    d->field_0x5 = val;
                     if (d->child != NULL)
                         lect_map_cam_chg_sub(d->child, val, 1);
                     if (d->next != NULL)

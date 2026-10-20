@@ -1427,11 +1427,11 @@ void BattleStageObjectMain(void) {
 		}
 
 		if (obj->mFlags & 1) {
-			if (!(*(u32*)mapGetMapObj(obj->data->name)->field_0x0 & 1)) {
+			if (!(mapGetMapObj(obj->data->name)->flags & 1)) {
 				mapGrpFlagOn(obj->data->name, 1);
 			}
 		} else {
-			if (*(u32*)mapGetMapObj(obj->data->name)->field_0x0 & 1) {
+			if (mapGetMapObj(obj->data->name)->flags & 1) {
 				mapGrpFlagOff(obj->data->name, 1);
 			}
 		}

@@ -99,17 +99,25 @@ typedef struct MapHeader {
 } MapHeader;
 
 typedef struct MapObject {
-    u8 field_0x0[0x8 - 0x0];     // 0x0
-    MapFileJoint* joints;        // 0x8
-    u8 field_0xC[0x1C - 0xC];    // 0xC
-    Mtx modelWorldMtx;           // 0x1C
-    u8 field_0x4C[0xAC - 0x4C];  // 0x4C
-    Mtx unkAC;                   // 0xAC
-    u8 field_0xDC[0xE0 - 0xDC];  // 0xDC
-    struct MapObject* parent;    // 0xE0
-    struct MapObject* child;     // 0xE4
-    struct MapObject* next;      // 0xE8
-    u8 field_0xEC[0x134 - 0xEC]; // 0xEC
+    u32 flags;                // 0x0, the map object flag word (mapObjFlagOn, mapFlgOn)
+    u8 dispMode;              // 0x4, 0-5, set from the joint's drawMode in mapEntrySub
+    u8 field_0x5;             // 0x5, set to 4 in mapEntrySub, never read in mapdrv.c
+    u8 field_0x6[0x8 - 0x6];  // 0x6
+    MapFileJoint* joints;     // 0x8
+    GXColor flushColor;       // 0xC, flush colour (mapObjSetFlushColor); alpha is byte 3
+    Vec center;               // 0x10, centre of the joint's bounds
+    Mtx modelWorldMtx;        // 0x1C
+    Mtx localMtx;             // 0x4C, the joint's trans * rot * scale
+    Mtx altLocalMtx;          // 0x7C, used instead of localMtx when flags & 0x2000
+    Mtx unkAC;                // 0xAC, mapObjRotate/Translate/Scale, applied when flags & 0x200000
+    s16 offScreenId;          // 0xDC, -1 when none (mapObjSetOffScreen, mapObjClearOffScreen)
+    s16 entryIdx;             // 0xDE, index into mapWork[activeGroup].entries
+    struct MapObject* parent; // 0xE0
+    struct MapObject* child;  // 0xE4
+    struct MapObject* next;   // 0xE8
+    u8 field_0xEC[0xF4 - 0xEC];  // 0xEC, four u16 cleared when flags & 0x20000000
+    void* dlBuf[8];           // 0xF4, display list copies (makeDisplayList)
+    u32 dlSize[8];            // 0x114, display list sizes (makeDisplayList)
 } MapObject;
 
 typedef struct MapError {

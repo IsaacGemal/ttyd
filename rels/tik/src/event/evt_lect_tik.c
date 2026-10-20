@@ -41,9 +41,9 @@ static s32 x_flag_data[2];
 static LectureButton lbtn[2];
 static Vec daiv;
 
-// MapObject.field_0x5 is unnamed in mapdrv.h; byte 5 sits inside the field_0x0[8] padding array. It is the
+// MapObject.field_0x5 is unnamed in mapdrv.h; byte 5 sits next to dispMode (byte 4). It is the
 // visibility flag the lecture sets.
-#define MAPOBJ_FLAG(obj) ((obj)->field_0x0[5])
+#define MAPOBJ_FLAG(obj) ((obj)->field_0x5)
 
 #pragma force_active on
 extern s32 evt_mario_paper_plane[];
@@ -354,7 +354,7 @@ static USER_FUNC(lecture_button_set_pos) {
 }
 
 static void lect_map_cam_chg_sub(MapObject* obj, s32 value, s32 recurse) {
-    obj->field_0x0[5] = value;
+    obj->field_0x5 = value;
     if (obj->child != NULL) {
         lect_map_cam_chg_sub(obj->child, value, 1);
     }
