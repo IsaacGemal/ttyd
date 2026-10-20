@@ -2949,13 +2949,13 @@ USER_FUNC(btlevtcmd_JumpPosition) {
         unit->mMoveSpeedXZ = unit->mMoveSpeedXZ +
                              unit->moveDist / (f32)unit->moveFrames;
         BtlUnit_LoadSeMode(2, a, (u8*)unit + 0x1C0, (u8*)unit + 0x188);
-        if (*(s32*)((u8*)unit + 0x188) != 0) {
+        if (unit->seMode.sfxA != 0) {
             pos = vec3_802ede88;
             pos.x = unit->mMoveCurrentPos.x;
             pos.y = unit->mMoveCurrentPos.y;
             pos.z = unit->mMoveCurrentPos.z;
             posb = pos;
-            psndSFXOn_3D((const char*)*(s32*)((u8*)unit + 0x188), &posb);
+            psndSFXOn_3D((const char*)unit->seMode.sfxA, &posb);
         }
     }
     unit->mMoveCurrentPos.y += unit->mMoveSpeedY;
@@ -2979,13 +2979,13 @@ USER_FUNC(btlevtcmd_JumpPosition) {
     unit->moveFrames--;
     if (unit->moveFrames <= 0) {
         BtlUnit_SetPos(unit, unit->mMoveTargetPos.x, unit->mMoveTargetPos.y, unit->mMoveTargetPos.z);
-        if (*(s32*)((u8*)unit + 0x18C) != 0) {
+        if (unit->seMode.sfxB != 0) {
             pos2 = vec3_802ede94;
             pos2.x = unit->mMoveTargetPos.x;
             pos2.y = unit->mMoveTargetPos.y;
             pos2.z = unit->mMoveTargetPos.z;
             posb2 = pos2;
-            psndSFXOn_3D((const char*)*(s32*)((u8*)unit + 0x18C), &posb2);
+            psndSFXOn_3D((const char*)unit->seMode.sfxB, &posb2);
         }
         return 1;
     }
@@ -4470,13 +4470,13 @@ USER_FUNC(btlevtcmd_MarioJumpPosition) {
                 unit->mMoveSpeedY = unit->mFallAccel * (0.8 * h + 1.0) + unit->mMoveSpeedY;
             }
             BtlUnit_LoadSeMode(2, a, (u8*)unit + 0x1C0, (u8*)unit + 0x188);
-            if (*(s32*)((u8*)unit + 0x188) != 0) {
+            if (unit->seMode.sfxA != 0) {
                 pos = vec3_802edea0;
                 pos.x = unit->mMoveCurrentPos.x;
                 pos.y = unit->mMoveCurrentPos.y;
                 pos.z = unit->mMoveCurrentPos.z;
                 pos2 = pos;
-                psndSFXOn_3D((const char*)*(s32*)((u8*)unit + 0x188), &pos2);
+                psndSFXOn_3D((const char*)unit->seMode.sfxA, &pos2);
             }
         }
     }
@@ -4719,13 +4719,13 @@ USER_FUNC(btlevtcmd_JumpPartsPosition) {
             part->mMoveSpeedXZ +
             part->moveDist / (f32)part->moveFrames;
         BtlUnit_LoadSeMode(2, a, (u8*)part + 0xF8, (u8*)part + 0xC0);
-        if (*(s32*)((u8*)part + 0xC0) != 0) {
+        if (part->seMode.sfxA != 0) {
             pos = vec3_802edeac;
             pos.x = part->mMoveCurrentPos.x;
             pos.y = part->mMoveCurrentPos.y;
             pos.z = part->mMoveCurrentPos.z;
             posb = pos;
-            psndSFXOn_3D((const char*)*(s32*)((u8*)part + 0xC0), &posb);
+            psndSFXOn_3D((const char*)part->seMode.sfxA, &posb);
         }
     }
     part->mMoveCurrentPos.y += part->mMoveSpeedY;
@@ -4751,13 +4751,13 @@ USER_FUNC(btlevtcmd_JumpPartsPosition) {
     if (part->moveFrames <= 0) {
         BtlUnit_SetPartsPos(part, part->mMoveTargetPos.x, part->mMoveTargetPos.y,
                             part->mMoveTargetPos.z);
-        if (*(s32*)((u8*)part + 0xC4) != 0) {
+        if (part->seMode.sfxB != 0) {
             pos2 = vec3_802edeb8;
             pos2.x = part->mMoveTargetPos.x;
             pos2.y = part->mMoveTargetPos.y;
             pos2.z = part->mMoveTargetPos.z;
             posb2 = pos2;
-            psndSFXOn_3D((const char*)*(s32*)((u8*)part + 0xC4), &posb2);
+            psndSFXOn_3D((const char*)part->seMode.sfxB, &posb2);
         }
         return 1;
     }
@@ -5591,9 +5591,9 @@ USER_FUNC(btlevtcmd_AnimeChangePoseDirect) {
     part->partFlags &= ~0x80;
     part->partFlags &= ~0x10;
     animPoseSetAnim(*(s32*)((u8*)part + 0x1C0), (const char*)name, 1);
-    *(u8*)((u8*)part + 0x215) = 1;
+    part->statusPoseKind = 1;
     if (BtlUnit_CheckStatus(unit, 0x12)) {
-        *(u8*)((u8*)part + 0x215) = 7;
+        part->statusPoseKind = 7;
     }
     return EVT_RETURN_DONE;
 }
@@ -5852,7 +5852,7 @@ USER_FUNC(btlevtcmd_AnimeSetMotionSpeed) {
     id = BattleTransID(event, btlId);
     partId = evtGetValue(event, args[1]);
     part = BattleGetUnitPartsPtr(id, partId);
-    *(f32*)((u8*)part + 0x20C) = evtGetFloat(event, args[2]);
+    part->motionSpeed = evtGetFloat(event, args[2]);
     return EVT_RETURN_DONE;
 }
 
@@ -6437,7 +6437,7 @@ USER_FUNC(btlevtcmd_SetMoveSoundDataWork) {
     s16 v6 = (s16)evtGetValue(event, args[6]);
     s16 v7 = (s16)evtGetValue(event, args[7]);
 
-    BtlUnit_SetSeMode((struct BtlUnitSeMode*)((u8*)unit + 0x188), v1, v2, (s16)v3, (s16)v4, (s16)v5, v6, v7);
+    BtlUnit_SetSeMode(&unit->seMode, v1, v2, (s16)v3, (s16)v4, (s16)v5, v6, v7);
     return EVT_RETURN_DONE;
 }
 
@@ -6455,11 +6455,11 @@ USER_FUNC(btlevtcmd_SetRunSound) {
     v3 = evtGetValue(event, args[3]);
     v4 = evtGetValue(event, args[4]);
     v5 = evtGetValue(event, args[5]);
-    *(s32*)((u8*)unit + 0x1C8) = v1;
-    *(s32*)((u8*)unit + 0x1CC) = v2;
-    *(s16*)((u8*)unit + 0x1D0) = v3;
-    *(s16*)((u8*)unit + 0x1D2) = v4;
-    *(s16*)((u8*)unit + 0x1D4) = v5;
+    unit->seModeSrc.mode0SfxA = v1;
+    unit->seModeSrc.mode0SfxB = v2;
+    unit->seModeSrc.mode0Delay = v3;
+    unit->seModeSrc.mode0IntervalA = v4;
+    unit->seModeSrc.mode0IntervalB = v5;
     return EVT_RETURN_DONE;
 }
 
@@ -6478,11 +6478,11 @@ USER_FUNC(btlevtcmd_SetPartsRunSound) {
     v3 = evtGetValue(event, args[4]);
     v4 = evtGetValue(event, args[5]);
     v5 = evtGetValue(event, args[6]);
-    *(s32*)((u8*)part + 0x100) = v1;
-    *(s32*)((u8*)part + 0x104) = v2;
-    *(s16*)((u8*)part + 0x108) = v3;
-    *(s16*)((u8*)part + 0x10A) = v4;
-    *(s16*)((u8*)part + 0x10C) = v5;
+    part->seModeSrc.mode0SfxA = v1;
+    part->seModeSrc.mode0SfxB = v2;
+    part->seModeSrc.mode0Delay = v3;
+    part->seModeSrc.mode0IntervalA = v4;
+    part->seModeSrc.mode0IntervalB = v5;
     return EVT_RETURN_DONE;
 }
 
@@ -6500,11 +6500,11 @@ USER_FUNC(btlevtcmd_SetWalkSound) {
     v3 = evtGetValue(event, args[3]);
     v4 = evtGetValue(event, args[4]);
     v5 = evtGetValue(event, args[5]);
-    *(s32*)((u8*)unit + 0x1D8) = v1;
-    *(s32*)((u8*)unit + 0x1DC) = v2;
-    *(s16*)((u8*)unit + 0x1E0) = v3;
-    *(s16*)((u8*)unit + 0x1E2) = v4;
-    *(s16*)((u8*)unit + 0x1E4) = v5;
+    unit->seModeSrc.mode1SfxA = v1;
+    unit->seModeSrc.mode1SfxB = v2;
+    unit->seModeSrc.mode1Delay = v3;
+    unit->seModeSrc.mode1IntervalA = v4;
+    unit->seModeSrc.mode1IntervalB = v5;
     return EVT_RETURN_DONE;
 }
 
@@ -6523,11 +6523,11 @@ USER_FUNC(btlevtcmd_SetPartsWalkSound) {
     v3 = evtGetValue(event, args[4]);
     v4 = evtGetValue(event, args[5]);
     v5 = evtGetValue(event, args[6]);
-    *(s32*)((u8*)part + 0x110) = v1;
-    *(s32*)((u8*)part + 0x114) = v2;
-    *(s16*)((u8*)part + 0x118) = v3;
-    *(s16*)((u8*)part + 0x11A) = v4;
-    *(s16*)((u8*)part + 0x11C) = v5;
+    part->seModeSrc.mode1SfxA = v1;
+    part->seModeSrc.mode1SfxB = v2;
+    part->seModeSrc.mode1Delay = v3;
+    part->seModeSrc.mode1IntervalA = v4;
+    part->seModeSrc.mode1IntervalB = v5;
     return EVT_RETURN_DONE;
 }
 
@@ -6545,11 +6545,11 @@ USER_FUNC(btlevtcmd_SetDiveSound) {
     v3 = evtGetValue(event, args[3]);
     v4 = evtGetValue(event, args[4]);
     v5 = evtGetValue(event, args[5]);
-    *(s32*)((u8*)unit + 0x1E8) = v1;
-    *(s32*)((u8*)unit + 0x1EC) = v2;
-    *(s16*)((u8*)unit + 0x1F0) = v3;
-    *(s16*)((u8*)unit + 0x1F2) = v4;
-    *(s16*)((u8*)unit + 0x1F4) = v5;
+    unit->seModeSrc.mode3SfxA = v1;
+    unit->seModeSrc.mode3SfxB = v2;
+    unit->seModeSrc.mode3Delay = v3;
+    unit->seModeSrc.mode3IntervalA = v4;
+    unit->seModeSrc.mode3IntervalB = v5;
     return EVT_RETURN_DONE;
 }
 
@@ -6568,11 +6568,11 @@ USER_FUNC(btlevtcmd_SetPartsDiveSound) {
     v3 = evtGetValue(event, args[4]);
     v4 = evtGetValue(event, args[5]);
     v5 = evtGetValue(event, args[6]);
-    *(s32*)((u8*)part + 0x120) = v1;
-    *(s32*)((u8*)part + 0x124) = v2;
-    *(s16*)((u8*)part + 0x128) = v3;
-    *(s16*)((u8*)part + 0x12A) = v4;
-    *(s16*)((u8*)part + 0x12C) = v5;
+    part->seModeSrc.mode3SfxA = v1;
+    part->seModeSrc.mode3SfxB = v2;
+    part->seModeSrc.mode3Delay = v3;
+    part->seModeSrc.mode3IntervalA = v4;
+    part->seModeSrc.mode3IntervalB = v5;
     return EVT_RETURN_DONE;
 }
 
@@ -6585,8 +6585,8 @@ USER_FUNC(btlevtcmd_SetJumpSound) {
     s32 a = evtGetValue(event, args[1]);
     s32 b = evtGetValue(event, args[2]);
 
-    *(s32*)((u8*)unit + 0x1C0) = a;
-    *(s32*)((u8*)unit + 0x1C4) = b;
+    unit->seModeSrc.mode2SfxA = a;
+    unit->seModeSrc.mode2SfxB = b;
     return EVT_RETURN_DONE;
 }
 
@@ -6602,8 +6602,8 @@ USER_FUNC(btlevtcmd_SetPartsJumpSound) {
     part = BattleGetUnitPartsPtr(id, partId);
     v1 = evtGetValue(event, args[2]);
     v2 = evtGetValue(event, args[3]);
-    *(s32*)((u8*)part + 0xF8) = v1;
-    *(s32*)((u8*)part + 0xFC) = v2;
+    part->seModeSrc.mode2SfxA = v1;
+    part->seModeSrc.mode2SfxB = v2;
     return EVT_RETURN_DONE;
 }
 
