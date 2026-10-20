@@ -5135,7 +5135,7 @@ static inline void slot_stop_sub(GoryuugijoWork* work, SlotData* data, s32 reel,
 // Returns nothing: like goryuugijo_init_slot it is a `void` function stored in an evt UserFunction slot (the
 // original never writes r3). Phase 4's first table read keeps the step in `j` (written inline, the slotgara
 // base is lowered before the 45.0f constant and their scratch registers swap); case 6 has the inline form. The
-// sel loop's `goto` counter reproduces the original's explicit `li r9,0; b test` loop (a `for` becomes
+// sel loop's `while` counter reproduces the original's explicit `li r9,0; b test` loop (a `for` becomes
 // `mtctr`/`bdnz`), and case 11's `CaseSetup* sp` materialises the struct address once (r22).
 void goryuugijo_main_slot(EventEntry* event, BOOL isFirstCall) {
     s32 j;
@@ -5267,8 +5267,7 @@ void goryuugijo_main_slot(EventEntry* event, BOOL isFirstCall) {
                 }
                 sel = irand(2);
                 k = 0;
-                goto sel_test;
-                sel_body:
+                while (k < 2) {
                     sel = (sel + 1) & 1;
                     switch (sel) {
                     case 0:
@@ -5281,7 +5280,7 @@ void goryuugijo_main_slot(EventEntry* event, BOOL isFirstCall) {
 #else
                         if (s != tmp[0][i] && tmp[2][i] == s) {
 #endif
-                            goto sel_inc;
+                            break;
                         }
                         if (s == 0) {
                             data->count[i] = 1;
@@ -5306,7 +5305,7 @@ void goryuugijo_main_slot(EventEntry* event, BOOL isFirstCall) {
 #else
                         if (s != tmp[2][i] && s == tmp[0][i]) {
 #endif
-                            goto sel_inc;
+                            break;
                         }
                         if (s == 0) {
                             data->count[i] = 0;
@@ -5324,10 +5323,8 @@ void goryuugijo_main_slot(EventEntry* event, BOOL isFirstCall) {
                         k = 1;
                         break;
                     }
-                sel_inc:
                     k++;
-                sel_test:
-                    if (k < 2) goto sel_body;
+                }
             }
             data->phase += 1;
         }
