@@ -4,12 +4,12 @@
 #include "manager/winmgr.h"
 
 USER_FUNC(evt_unitwin_main_func);
-USER_FUNC(unk_80174e98);
+USER_FUNC(evt_unitwin_select_func);
 void evt_unitwin_disp_func(CameraId cameraId, void* param);
-void unk_80175710(WinMgrEntry* entry);
-void unk_801758fc(WinMgrEntry* entry);
-void unk_8017597c(WinMgrEntry* entry);
-void unk_8017599c(WinMgrEntry* entry);
+void unitwinShopPointDisp(WinMgrEntry* entry);
+void unitwinHelpDisp(WinMgrEntry* entry);
+void unitwinHelpMain(WinMgrEntry* entry);
+void unitwinSellTableDisp(WinMgrEntry* entry);
 
 USER_FUNC(evt_unitwin_alloc);
 USER_FUNC(evt_unitwin_free);
