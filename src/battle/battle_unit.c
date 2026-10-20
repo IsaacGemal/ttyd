@@ -115,7 +115,7 @@ BattleUnit* BtlUnit_Entry(BattleUnitSetup* setup) {
     unit->groupSetupId = -1;
     unit->mAlliance = setup->alliance;
     unit->mLevel = unit->mKindParams->mLevel;
-    if (unit->currentKind == 0xDE || (unit->currentKind >= 0xE0 && unit->currentKind < 0xE7)) {
+    if (unit->currentKind == UNIT_MARIO || (unit->currentKind >= TYPE_PARTNER_MIN && unit->currentKind < TYPE_PARTNER_MAX)) {
         unit->mLevel = pouchGetPtr()->level;
     }
 
@@ -312,8 +312,8 @@ BOOL BtlUnit_Delete(BattleUnit* unit) {
     }
     id = unit->unitId;
     for (j = 0; j < 64; j++) {
-        if (*(s32*)((u8*)wp + 0x120 + j * 4) == id) {
-            *(s32*)((u8*)wp + 0x120 + j * 4) = -1;
+        if (wp->unitIdTable[j] == id) {
+            wp->unitIdTable[j] = -1;
         }
     }
     if (unit->flags & 0x40000000) {
@@ -372,17 +372,17 @@ BattleUnit* BtlUnit_Spawn(BattleUnitSetup* setup, s32 flags) {
             if (id == -1) {
                 break;
             }
-            if (*(s32*)((u8*)wp + 0x120 + i * 4) == -1) {
+            if (wp->unitIdTable[i] == -1) {
 #ifdef MUST_MATCH
                 { s32* pp = &((s32*)((u8*)wp + 0x120))[i]; *pp = id; }
 #else
-                *(s32*)((u8*)wp + 0x120 + i * 4) = id;
+                wp->unitIdTable[i] = id;
 #endif
                 break;
             }
             {
-                s32 prev = *(s32*)((u8*)wp + 0x120 + i * 4);
-                *(s32*)((u8*)wp + 0x120 + i * 4) = id;
+                s32 prev = wp->unitIdTable[i];
+                wp->unitIdTable[i] = id;
                 id = prev;
             }
         }
@@ -394,17 +394,17 @@ BattleUnit* BtlUnit_Spawn(BattleUnitSetup* setup, s32 flags) {
             if (id == -1) {
                 break;
             }
-            if (*(s32*)((u8*)wp + 0x120 + i * 4) == -1) {
+            if (wp->unitIdTable[i] == -1) {
 #ifdef MUST_MATCH
                 { s32* pp = &((s32*)((u8*)wp + 0x120))[i]; *pp = id; }
 #else
-                *(s32*)((u8*)wp + 0x120 + i * 4) = id;
+                wp->unitIdTable[i] = id;
 #endif
                 break;
             }
             {
-                s32 prev = *(s32*)((u8*)wp + 0x120 + i * 4);
-                *(s32*)((u8*)wp + 0x120 + i * 4) = id;
+                s32 prev = wp->unitIdTable[i];
+                wp->unitIdTable[i] = id;
                 id = prev;
             }
         }
@@ -1664,7 +1664,7 @@ s32 BtlUnit_GetACPossibility(BattleUnit* unit) {
     if (unit->mAlliance != 0) {
         return 0;
     }
-    if (unit->currentKind == 0xDF) {
+    if (unit->currentKind == UNIT_SHELL_SHIELD) {
         return 0;
     }
     if (BtlUnit_CheckStatus(unit, STATUS_SLEEP) || BtlUnit_CheckStatus(unit, STATUS_STOP) ||
@@ -1759,7 +1759,7 @@ void BtlUnit_SetParamFromPouch(BattleUnit* unit) {
 void BtlUnit_ReviseHpFp(BattleUnit* unit) {
     PouchData* pouch = pouchGetPtr();
 
-    if (unit->currentKind == 0xDE) {
+    if (unit->currentKind == UNIT_MARIO) {
         unit->baseMaxHp = pouch->baseMaxHP;
         unit->maxHp = pouch->baseMaxHP + unit->badgesEquipped.HpPlus * 5;
         unit->baseMaxFp = pouch->baseMaxFP;
@@ -1821,7 +1821,7 @@ void BtlUnit_CheckPinchStatus(BattleUnit* unit, BOOL a2) {
     if (unit->currentHp <= unit->mKindParams->mPerilHP && unit->currentHp < unit->maxHp) {
         if (!(unit->mStatusFlags & 0x20000000)) {
             unit->mStatusFlags |= 0x20000000;
-            if (!a2 && unit->currentKind == 0xDE) {
+            if (!a2 && unit->currentKind == UNIT_MARIO) {
                 BattleAudience_Case_MarioDanger();
             }
         }
@@ -1832,7 +1832,7 @@ void BtlUnit_CheckPinchStatus(BattleUnit* unit, BOOL a2) {
     if (unit->currentHp <= unit->mKindParams->mDangerHP && unit->currentHp < unit->maxHp) {
         if (!(unit->mStatusFlags & 0x10000000)) {
             unit->mStatusFlags |= 0x10000000;
-            if (!(unit->mStatusFlags & 0x20000000) && !a2 && unit->currentKind == 0xDE) {
+            if (!(unit->mStatusFlags & 0x20000000) && !a2 && unit->currentKind == UNIT_MARIO) {
                 BattleAudience_Case_MarioPinch();
             }
         }
@@ -2081,7 +2081,7 @@ BattleUnit* BtlUnit_GetGuardKouraPtr(BattleUnit* unit) {
 
     for (i = 0; i < 64; i++) {
         other = BattleGetUnitPtr(wp, i);
-        if (other && other->currentKind == 0xDF && other->work[0] == id) {
+        if (other && other->currentKind == UNIT_SHELL_SHIELD && other->work[0] == id) {
             break;
         }
     }
@@ -2458,7 +2458,7 @@ BOOL BtlUnit_CheckShadowGuard(BattleUnit* unit) {
     if (unit->mAttributeFlags & kVeiled) {
         return TRUE;
     }
-    if (unit->currentKind == 0xE4 && unit->work[4] > 0) {
+    if (unit->currentKind == UNIT_VIVIAN && unit->work[4] > 0) {
         return TRUE;
     }
     return FALSE;
