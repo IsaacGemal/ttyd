@@ -204,7 +204,7 @@ typedef struct UnitWinWork {
 	s32 useTaken;               // 0xE4, set by the script when the use was accepted
 } UnitWinWork;
 
-static int party_id_table[8] = { 1, 2, 5, 4, 6, 3, 7, 0 };
+static int party_id_table[8] = { PARTY_MEMBER_GOOMBELLA, PARTY_MEMBER_KOOPS, PARTY_MEMBER_FLURRIE, PARTY_MEMBER_YOSHI, PARTY_MEMBER_VIVIAN, PARTY_MEMBER_BOBBERY, PARTY_MEMBER_MS_MOWZ, PARTY_MEMBER_NONE };
 static u32 party_icon_table[7] = { 0x155, 0x156, 0x15F, 0x158, 0x160, 0x157, 0x161 };
 static const char* party_labelname_table[7] = { "_kur", "_nok", "_win", "_yos", "_viv", "_bom", "_chu" };
 static u32 mario_status_icon_table[3] = { 0x19F, 0x1A0, 0x1A1 };
@@ -728,7 +728,7 @@ USER_FUNC(evt_unitwin_main_func) {
 // Yoshi's icon follows the colour he hatched with.
 static inline s32 unitwin_party_icon(s32 iconId) {
 	if (iconId == 0x158) {
-		switch (pouchGetPartyColor(4)) {
+		switch (pouchGetPartyColor(PARTNER_YOSHI)) {
 		case 0: iconId = 0x158; break;
 		case 1: iconId = 0x159; break;
 		case 2: iconId = 0x15A; break;
@@ -810,7 +810,7 @@ void evt_unitwin_disp_func(CameraId cameraId, void* param) {
 				GXSetProjection(cam->projection, cam->projType);
 				{
 					s32 item = wp->items[i];
-					if (item >= 0xF0 && item < 0x153) {
+					if (item >= BADGE_MIN && item < BADGE_MAX) {
 						price = (u16)itemDataTable[item].discount_price;
 					} else {
 						price = ((ItemDataView*)&itemDataTable[item])->buy_price;
@@ -1071,7 +1071,7 @@ void evt_unitwin_disp_func(CameraId cameraId, void* param) {
 				item = pouchHaveBadge(i);
 				break;
 			case 11: {
-				s32 got = badgeShop_get(bdsw->bargain_table, (s16)(i + 0xF0));
+				s32 got = badgeShop_get(bdsw->bargain_table, (s16)(i + BADGE_MIN));
 				if (got - badgeShop_ThrowCheck(i + 0xF0) > 0) {
 					item = i + 0xF0;
 				} else {
@@ -1080,7 +1080,7 @@ void evt_unitwin_disp_func(CameraId cameraId, void* param) {
 				break;
 			}
 			case 13:
-				if ((s16)badgeShop_get(bdsw->starmaniac_table, (s16)(i + 0xF0)) > 0) {
+				if ((s16)badgeShop_get(bdsw->starmaniac_table, (s16)(i + BADGE_MIN)) > 0) {
 					item = i + 0xF0;
 				} else {
 					item = 0;
@@ -1292,7 +1292,7 @@ void evt_unitwin_disp_func(CameraId cameraId, void* param) {
 		GXGetScissor(&scX, &scY, &scW, &scH);
 		GXSetScissor(0x120, 0xA2, 0x11C, 0xbe - listOff);
 
-		for (i = 0; party_id_table[i] != 0; i++) {
+		for (i = 0; party_id_table[i] != PARTY_MEMBER_NONE; i++) {
 			char buf[0x20];
 			const char* name;
 			s32 flag;
