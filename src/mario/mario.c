@@ -1825,7 +1825,7 @@ void marioMoveMain(void) {
 		} else {
 			marioCheckWall_roll(f31, dirRes);
 		}
-		N_dou10_yoko_yari3((u8*)wp + 0x210);
+		N_dou10_yoko_yari3(&wp->frontWallDist);
 		hit = (HitEntry*)wp->hitobjFront;
 		if (hit != NULL && (hitGetAttr(hit) & 0x800)) {
 			set_damage_root_ypos(wp->position.y);

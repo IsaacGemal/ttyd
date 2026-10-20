@@ -130,7 +130,7 @@ typedef struct MarioWork {
     u8 field_0x3E[0x40 - 0x3E];    // 0x3E
 	s8 wMotionTimer;               // 0x40
     u8 field_0x41[0x43 - 0x41];    // 0x41
-    s8 dispHalfTurn;               // 0x43, adds 180 to the roll display target (mot_roll)
+    s8 dispHalfTurn;               // 0x43, 0/1 half-turn flag: mot_roll adds 180 to its display target, mot_hammer sets it from marioGetRub's side
     u32 currSubMotionId;           // 0x44
     s32 multiTimer;                // 0x48, ???
 	s16 unk4C;                     // 0x4C
@@ -199,11 +199,12 @@ typedef struct MarioWork {
 	void* hitobjPush;              // 0x1EC JP, 0x1F0 US HitEntry
     u8 field_0x1F0[0x1F8 - 0x1F0]; // 0x1F0
     void* hitobjUnder;             // 0x1F8, marioSearchUnder result (mario_hit)
-    u8 field_0x1FC[0x214 - 0x1FC]; // 0x1FC
+    u8 field_0x1FC[0x210 - 0x1FC]; // 0x1FC
+    f32 frontWallDist;             // 0x210, searchFrontWall distance, reset to 1000 each check (marioCheckWall, dou10_yoko_yari)
     f32 slopeAngle;                // 0x214, angle of the ground normal from vertical (mario_hit, mot_roll)
-    f32 slopeTiltX;                // 0x218, gndCentiPlain of the normal's z/y (mario_hit)
+    f32 slopeTiltX;                // 0x218, tilt about X: gndCentiPlain of the normal's z/y (mario_hit, mot_roll)
     f32 slopeTiltY;                // 0x21C, zeroed beside the other two (mario_hit)
-    f32 slopeTiltZ;                // 0x220, gndCentiPlain of the normal's x/y (mario_hit, mot_roll)
+    f32 slopeTiltZ;                // 0x220, tilt about Z: gndCentiPlain of the normal's x/y (mario_hit, mot_roll)
 	f32 playerGravity;             // 0x224 JP, 228 US
     s32 paperAnimGroupId[3];       // 0x228 JP, 0x22C US
     u8 field_0x234[0x23C - 0x234]; // 0x234
@@ -218,8 +219,8 @@ typedef struct MarioWork {
     u16 buttonUp;                  // 0x24C, gp->buttonUp
 	s8 wStickDir1;                 // 0x24E JP, 0x252 US
 	s8 wStickDir2;                 // 0x24F JP, 0x253 US
-    u8 substickX;                  // 0x250, gp->substickX
-    u8 substickY;                  // 0x251, -gp->substickY
+    s8 substickX;                  // 0x250, gp->substickX
+    s8 substickY;                  // 0x251, -gp->substickY
     u8 triggerLeft;                // 0x252, gp->triggerLeft
     u8 triggerRight;               // 0x253, gp->triggerRight
     u8 unusedInput[0x258 - 0x254]; // 0x254, cleared with the MARIO_TRIG_FLAG_DISABLE_UNUSED_INPUT case

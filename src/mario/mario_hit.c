@@ -898,13 +898,13 @@ HitEntry* marioSearchGround(f32* outY, f32* outX, f32* outZ, f32 a, f32 b) {
     return NULL;
 }
 
-// The roll variant of marioSearchGround: the sample ring depends on |wp+0x214| (flat: 0..3, steep: 4..6) and the
+// The roll variant of marioSearchGround: the sample ring depends on |slopeAngle| (flat: 0..3, steep: 4..6) and the
 // accepted slope window is ang > 105 or ang < 75.
 // salvaged wave 59 version; its `fabs(...) <= dist` was flipped (the asm is cror eq,gt,eq = >=) and
 // is fixed here, the slope window (ang > 105 || ang < 75) re-checked.
 // The probe direction and start point are read from their named vectors (non-const under MUST_MATCH, MEM_VEC), so
 // MWCC addresses them through its own .rodata base as the original does; the loop index takes the start value
-// directly; the probe is the file's marioHitCheckVec (inlined); the 0x220 slope store comes before the sqrt for the
+// directly; the probe is the file's marioHitCheckVec (inlined); the slopeTiltZ store comes before the sqrt for the
 // third angle. Float declaration order from a rasim search. The rounded cosine sits in its own local before it is
 // negated (written inline, the constant and the negated cosine swap f0/f1-f2).
 s32 marioSearchGroundRoll(f32* outY, f32* outX, f32* outZ, f32 a, f32 b) {
@@ -1076,7 +1076,7 @@ void marioChkToge(void) {
     if (hit != NULL) {
         attr = hitGetAttr(hit);
         if (wp->currMotionId != 0x20 && (attr & 0x800) != 0 &&
-            *(f32*)&wp->field_0x1F0[0x20] < 0.5f * wp->wPlayerCollisionBox.x) {
+            wp->frontWallDist < 0.5f * wp->wPlayerCollisionBox.x) {
             set_damage_root_ypos(wp->position.y);
             marioChgMot(0x20);
         }
@@ -1217,9 +1217,9 @@ void* marioLandonChk_old(f32* pos, f32 spd) {
 
             wp2 = marioGetPtr();
             ny100 = 100.f * ny;
-            *(f32*)&wp2->field_0x1F0[0x28] = gndCenti(angleABf(0.0f, 0.0f, 100.f * nz, ny100) - 180.f);
+            wp2->slopeTiltX = gndCenti(angleABf(0.0f, 0.0f, 100.f * nz, ny100) - 180.f);
             wp2->slopeTiltY = 0.0f;
-            *(f32*)&wp2->field_0x1F0[0x30] = gndCenti(angleABf(0.0f, 0.0f, 100.f * nx, ny100) - 180.f);
+            wp2->slopeTiltZ = gndCenti(angleABf(0.0f, 0.0f, 100.f * nx, ny100) - 180.f);
             ang = angleABf(0.0f, 0.0f, (f32)sqrtf(nx * nx + nz * nz), -ny);
             wp->slopeAngle = ang;
             if (__fabsf(LND_CENTI((yy - hy) - dist)) < 0.1f) {
@@ -1627,10 +1627,10 @@ void* marioSearchHead(Vec* pos, f32* outY, f32 a) {
             wp2 = marioGetPtr();
             ny100 = 100.f * ny;
 
-            *(f32*)&wp2->field_0x1F0[0x28] =
+            wp2->slopeTiltX =
                 gndCenti(angleABf(0.0f, 0.0f, 100.f * nz, ny100) - 180.f);
-            *(f32*)&wp2->field_0x1F0[0x2C] = 0.0f;
-            *(f32*)&wp2->field_0x1F0[0x30] =
+            wp2->slopeTiltY = 0.0f;
+            wp2->slopeTiltZ =
                 gndCenti(angleABf(0.0f, 0.0f, 100.f * nx, ny100) - 180.f);
             ang = angleABf(0.0f, 0.0f, (f32)sqrtf(nx * nx + nz * nz), -ny);
             if (!(wp->flags & 0x1000000)) {
@@ -1886,7 +1886,7 @@ void marioCheckWall(f32 a, f32 b) {
     f32 f8;
     s32 r;
 
-    *(f32*)&wp->field_0x1F0[0x20] = 1000.f;
+    wp->frontWallDist = 1000.f;
     if (a && wp->airTimer == 0) {
         if (wp->wallDist < a) {
             wp->wallDist = a;
@@ -1915,7 +1915,7 @@ void marioCheckWall(f32 a, f32 b) {
 
     if (!a) {
         marioSearchFrontWall_staying(b);
-        dou10_yoko_yari((f32*)&wp->field_0x1F0[0x20]);
+        dou10_yoko_yari(&wp->frontWallDist);
         return;
     }
 
@@ -1937,7 +1937,7 @@ void marioCheckWall(f32 a, f32 b) {
         } else {
             s32 t;
 
-            *(f32*)&wp->field_0x1F0[0x20] = f8;
+            wp->frontWallDist = f8;
             *(void**)((u8*)wp + 0x1F0) = hit;
             t = wp->field_0x3E[1] + 1;
             wp->field_0x3E[1] = t;
@@ -1960,7 +1960,7 @@ void marioCheckWall(f32 a, f32 b) {
         wp->position = v;
     }
     marioChkWallAround(&wp->position, 0, a, b, wp->wPlayerCollisionBox.z, wp->wPlayerCollisionBox.y);
-    dou10_yoko_yari((f32*)&wp->field_0x1F0[0x20]);
+    dou10_yoko_yari(&wp->frontWallDist);
 }
 
 void marioSearchFrontWall_staying(f32 a) {
@@ -2012,7 +2012,7 @@ void marioSearchFrontWall_staying(f32 a) {
     }
 
     if (wp->hitobjFront != NULL) {
-        *(f32*)((u8*)wp + 0x210) = f8;
+        wp->frontWallDist = f8;
     }
 
     if (wp->buttonNew & 0x100) {
@@ -2041,28 +2041,28 @@ void marioCheckWall_roll(f32 a, f32 b) {
     HitCheckQuery query;
     s32 r;
 
-    *(f32*)&wp->field_0x1F0[0x20] = 1000.f;
+    wp->frontWallDist = 1000.f;
     if (a && wp->airTimer == 0) {
-        if (*(f32*)&wp->field_0x1C0[0x8] < a) {
-            *(f32*)&wp->field_0x1C0[0x8] = a;
-            *(f32*)&wp->field_0x1C0[0xC] = b;
-            *(s32*)&wp->field_0x1C0[0x10] = 0xE;
+        if (wp->wallDist < a) {
+            wp->wallDist = a;
+            wp->wallYaw = b;
+            wp->wallHoldTimer = 0xE;
         } else {
-            s32 t = *(s32*)&wp->field_0x1C0[0x10] - 1;
+            s32 t = wp->wallHoldTimer - 1;
 
-            *(s32*)&wp->field_0x1C0[0x10] = t;
+            wp->wallHoldTimer = t;
             if (t <= 0) {
-                *(s32*)&wp->field_0x1C0[0x10] = 0;
-                *(f32*)&wp->field_0x1C0[0x8] = a;
-                *(f32*)&wp->field_0x1C0[0xC] = b;
+                wp->wallHoldTimer = 0;
+                wp->wallDist = a;
+                wp->wallYaw = b;
             }
         }
     } else {
-        *(f32*)&wp->field_0x1C0[0x8] = 0.0f;
+        wp->wallDist = 0.0f;
     }
 
     if (a && wp->airTimer == 0) {
-        *(f32*)&wp->unk19C[0] = *(f32*)&wp->field_0x1C0[0xC];
+        *(f32*)&wp->unk19C[0] = wp->wallYaw;
     }
 
     if (wp->flags & 0x10000) {
@@ -2127,7 +2127,7 @@ void marioCheckWall_roll(f32 a, f32 b) {
         } else {
             s32 t;
 
-            *(f32*)&wp->field_0x1F0[0x20] = f8;
+            wp->frontWallDist = f8;
             *(void**)((u8*)wp + 0x1F0) = hit;
             t = wp->field_0x3E[1] + 1;
             wp->field_0x3E[1] = t;
@@ -2225,8 +2225,8 @@ HitEntry* searchFrontWall(Vec* pos, f32* out, f32 a, f32 b, f32 c) {
     }
     sincosf(&sin, &cos, b);
     if (marioChkSts(0x10) != 0 && strcmp(gp->currentMapName, "eki_04") == 0) {
-        if (__fabsf(*(f32*)&wp->field_0x1F0[0x28]) >= 45.0f ||
-            __fabsf(*(f32*)&wp->field_0x1F0[0x30]) >= 45.0f) {
+        if (__fabsf(wp->slopeTiltX) >= 45.0f ||
+            __fabsf(wp->slopeTiltZ) >= 45.0f) {
             pos->x += a * sin;
             pos->z += a * cos;
             return NULL;
@@ -2568,10 +2568,10 @@ HitEntry* marioChkFrontStep(f32* outY, f32* outDist, f32* outAngle) {
     f32 off;
     f32 c;
 
-    *(f32*)&wp->field_0x1F0[0x28] = 0.0f;
-    *(f32*)&wp->field_0x1F0[0x2C] = 0.0f;
-    *(f32*)&wp->field_0x1F0[0x30] = 0.0f;
-    *(f32*)&wp->field_0x1F0[0x24] = 0.0f;
+    wp->slopeTiltX = 0.0f;
+    wp->slopeTiltY = 0.0f;
+    wp->slopeTiltZ = 0.0f;
+    wp->slopeAngle = 0.0f;
     if (wp->flags & 0x1000000) {
         h = 18.5f;
     } else {
@@ -2614,14 +2614,14 @@ HitEntry* marioChkFrontStep(f32* outY, f32* outDist, f32* outAngle) {
     hit = marioHitCheckVec(&v, &dir, &hitPos, &n, &dist);
     if (hit != NULL) {
         wp2 = marioGetPtr();
-        *(f32*)&wp2->field_0x1F0[0x28] = ROUND_CENTI(
+        wp2->slopeTiltX = ROUND_CENTI(
             gndAngle(n.z, n.y) -
             180.f);
-        *(f32*)&wp2->field_0x1F0[0x2C] = 0.0f;
-        *(f32*)&wp2->field_0x1F0[0x30] = ROUND_CENTI(
+        wp2->slopeTiltY = 0.0f;
+        wp2->slopeTiltZ = ROUND_CENTI(
             gndAngle(n.x, n.y) -
             180.f);
-        *(f32*)&wp->field_0x1F0[0x24] =
+        wp->slopeAngle =
             angleABf(0.0f, 0.0f, sqrtf(n.x * n.x + n.z * n.z), -n.y);
         if (hitPos.y < py && __fabsf(hitPos.y - py) >= 2.0f) {
             *outDist = py - hitPos.y;
@@ -2965,7 +2965,7 @@ void marioCheckWallShip(f32 a, f32 b) {
     f32 mag;
     s32 r;
 
-    *(f32*)&wp->field_0x1F0[0x20] = 1000.f;
+    wp->frontWallDist = 1000.f;
     if (a && wp->airTimer == 0) {
         if (wp->wallDist < a) {
             wp->wallDist = a;
@@ -2987,7 +2987,7 @@ void marioCheckWallShip(f32 a, f32 b) {
         // f1, which also flips the float_0/float_1000 allocation at the top.
         *(f32*)&wp->field_0x1C0[0x8] = 0.0f;
 #else
-        *(f32*)&wp->field_0x1C0[0x8] = 0.0f;
+        wp->wallDist = 0.0f;
 #endif
     }
 
@@ -3029,7 +3029,7 @@ void marioCheckWallShip(f32 a, f32 b) {
             } else {
                 s32 t;
 
-                *(f32*)((u8*)wp + 0x210) = f8;
+                wp->frontWallDist = f8;
                 *(void**)((u8*)wp + 0x1F0) = hit;
                 t = wp->field_0x3E[1] + 1;
                 wp->field_0x3E[1] = t;
