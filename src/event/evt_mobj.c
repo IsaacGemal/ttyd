@@ -4486,11 +4486,11 @@ s32 fire_func(EventEntry* event, BOOL isFirstCall) {
         unk7C = (1.0f - unk7C) * k + unk7C;
         unk80 = (1.0f - unk80) * k + unk80;
     }
-    *(f32*)((u8*)eff->userdata + 0x78) = unk7C;
-    *(f32*)((u8*)eff->userdata + 0x7C) = unk80;
+    ((effFireData*)eff->userdata)->scaleX = unk7C;
+    ((effFireData*)eff->userdata)->scaleY = unk80;
     if (unk7C >= 0.99f) {
-        *(f32*)((u8*)eff->userdata + 0x78) = 1.0f;
-        *(f32*)((u8*)eff->userdata + 0x7C) = 1.0f;
+        ((effFireData*)eff->userdata)->scaleX = 1.0f;
+        ((effFireData*)eff->userdata)->scaleY = 1.0f;
         return 2;
     }
     event->userdataf[1] = unk7C;

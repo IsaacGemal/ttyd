@@ -2965,7 +2965,7 @@ USER_FUNC(_object_fall_attack) {
 					pos.x -= 45.0f;
 					{
 						EffectEntry* e = effNiceEntry(6, pos.x, pos.y, pos.z);
-						*(f32*)((u8*)e->userdata + 0x1C) = 0.75f;
+						((NiceEffectWork*)e->userdata)->scale = 0.75f;
 					}
 					target->damagePattern = 0;
 					BattleRunHitEvent(target, 0x126);
