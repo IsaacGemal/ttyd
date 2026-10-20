@@ -11059,3 +11059,9 @@ battle_seq_command.c: 14 of 37 `goto` removed, no names changed (37 -> 23 in the
   camelCase with `field_0xNN` (keep ours: TTYD's own symbols are camelCase); their policy discourages AI naming of
   fields and globals, and the one AI-named set they kept (itflipper) is backed by a debugger-evidence doc and marked
   tentative, which is the standard our CONTEXT evidence lines aim at.
+### Readability: eff_kemuri MUST_MATCH blocks (2026-10-20, Claude Haiku 5.5, n9-q-mmkemuri)
+### Readability: eff_kemuri MUST_MATCH blocks (2026-10-20, Claude Haiku 5.5 + Claude Opus 5.5, n9-q-mmkemuri)
+
+eff_kemuri.c: the `f32 k` temp in effKemuri2Main's alpha scale is gone (the plain `* float_0p8_8041c6f0` form matches). The "Kemuri\0" entry string and the force_active gap_8041c72c dummy stay: the code still matches without them, but CI's data ratchet drops eff_kemuri matched_data 100 -> 85.11, so both are needed for the data sections.
+
+Kept, with the reason each failed: the Vec scratch copies around dispCalcZ in effKemuriMain and effKemuri2Main and the redundant effect->userdata re-read in effKemuri2Main (removing them, alone or together, changes the output); the opt_common_subs pragma pair around effKemuriDisp; the raw GXWGFifo writes, the one/left and unity temps in effKemuriDisp and the kemuriTevColor, KEMURI_SIXP4 and quad-temp shapes in effKemuri2Disp; the __declspec(section ".data") on touchdown_scale and heavy_scale; the unk_80423010/14 .sbss2 templates.

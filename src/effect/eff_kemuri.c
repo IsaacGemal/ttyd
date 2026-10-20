@@ -283,10 +283,9 @@ void effKemuriMain(EffectEntry* effect) {
 #endif
 }
 
-// Two MUST_MATCH shapes below are needed for the register allocation: a redundant re-read of
-// effect->userdata makes MWCC load it into a volatile register and copy it to the callee-saved
-// r31 before the sin call (retail's `lwz r7; mr r31, r7`), and a non-const `k = 0.8f` local
-// keeps the alpha int->float conversion in retail's f1/f2/f0 order.
+// The MUST_MATCH re-read of effect->userdata below is needed for the register allocation: it makes MWCC
+// load it into a volatile register and copy it to the callee-saved r31 before the sin call (retail's
+// `lwz r7; mr r31, r7`).
 static void effKemuri2Main(EffectEntry* effect) {
 	effKemuri2Data* data = effect->userdata;
 	s32 i;
@@ -322,14 +321,7 @@ static void effKemuri2Main(EffectEntry* effect) {
 		data->spin += data->spinVel;
 		data->pulseScale = angle;
 		if (data->counter > 15) {
-#ifdef MUST_MATCH
-			/* MUST_MATCH: a local keeps the conversion in retail's f1/f2/f0 order. */
-			f32 k = float_0p8_8041c6f0;
-
-			data->alpha = (s32)((f32)data->alpha * k);
-#else
 			data->alpha = (s32)((f32)data->alpha * float_0p8_8041c6f0);
-#endif
 		}
 	}
 #ifdef MUST_MATCH
