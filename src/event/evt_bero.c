@@ -434,8 +434,7 @@ USER_FUNC(evt_bero_get_into_info) {
 		}
 		event->lwData[5] = kind;
 		event->lwData[6] = (s32)&entry->field_0xC;
-#ifdef MUST_MATCH
-		// MUST_MATCH: a pointer temp (instead of the ternary) gives the original's cmplwi/bne layout
+		// a pointer temp rather than a ternary gives the original's cmplwi/bne layout
 		{
 			s32* ev = entry->enterEvent;
 			if (ev == NULL) {
@@ -443,9 +442,6 @@ USER_FUNC(evt_bero_get_into_info) {
 			}
 			event->lwData[7] = (s32)ev;
 		}
-#else
-		event->lwData[7] = entry->enterEvent ? (s32)entry->enterEvent : (s32)default_entevt;
-#endif
 		event->lwData[8] = 0xffff0000;
 		return EVT_RETURN_DONE;
 	} else {
@@ -493,8 +489,7 @@ USER_FUNC(evt_bero_get_into_info) {
 		}
 		event->lwData[5] = kind;
 		event->lwData[6] = (s32)&entry->field_0xC;
-#ifdef MUST_MATCH
-		// MUST_MATCH: a pointer temp (instead of the ternary) gives the original's cmplwi/bne layout
+		// a pointer temp rather than a ternary gives the original's cmplwi/bne layout
 		{
 			s32* ev = entry->enterEvent;
 			if (ev == NULL) {
@@ -502,9 +497,6 @@ USER_FUNC(evt_bero_get_into_info) {
 			}
 			event->lwData[7] = (s32)ev;
 		}
-#else
-		event->lwData[7] = entry->enterEvent ? (s32)entry->enterEvent : (s32)default_entevt;
-#endif
 		event->lwData[8] = 0xffff0000;
 		return EVT_RETURN_DONE;
 	}
@@ -517,12 +509,10 @@ USER_FUNC(evt_bero_read_mario_pera) {
 	switch (event->userdata[0]) {
 	default:
 		break;
-#ifdef MUST_MATCH
-	// MUST_MATCH: the empty case 2 makes MWCC emit the retail switch decision tree
+	// the empty case 2 makes MWCC emit the retail switch decision tree
 	// (cmpwi/beq/bge/b) instead of folding the default edges together.
 	case 2:
 		break;
-#endif
 	case 0:
 #ifdef MUST_MATCH
 		// MUST_MATCH: the original string object carries two trailing padding bytes.
@@ -559,7 +549,7 @@ USER_FUNC(evt_bero_id_filter) {
 // NOTE (100%): the local names[] backing store is emitted as an anonymous .rodata symbol
 // (@NNN) instead of the original's local jumptable_802C4970; objdiff scores this 100% but
 // still flags the two relocations. The enter/exitEvent null-checks are shaped for match
-// only (see the MUST_MATCH comments).
+// only (see the comments at those sites).
 USER_FUNC(evt_bero_get_info_num) {
 	BeroEntry* entry;
 	s32 kind;
@@ -610,8 +600,7 @@ USER_FUNC(evt_bero_get_info_num) {
 	}
 	event->lwData[5] = kind;
 	event->lwData[6] = (s32)&entry->field_0xC;
-#ifdef MUST_MATCH
-	// MUST_MATCH: a pointer temp (instead of the ternary) gives the original's cmplwi/bne layout
+	// a pointer temp rather than a ternary gives the original's cmplwi/bne layout
 	{
 		s32* ev = entry->enterEvent;
 		if (ev == NULL) {
@@ -619,9 +608,6 @@ USER_FUNC(evt_bero_get_info_num) {
 		}
 		event->lwData[7] = (s32)ev;
 	}
-#else
-	event->lwData[7] = entry->enterEvent ? (s32)entry->enterEvent : (s32)default_entevt;
-#endif
 	event->lwData[8] = 0xffff0000;
 	event->lwData[9] = BeroSW[id];
 	event->lwData[10] = entry->field_0x20;
@@ -644,8 +630,7 @@ USER_FUNC(evt_bero_get_info_num) {
 			break;
 		}
 	}
-#ifdef MUST_MATCH
-	// MUST_MATCH: a pointer temp (instead of the ternary) gives the original's cmplwi/bne layout
+	// a pointer temp rather than a ternary gives the original's cmplwi/bne layout
 	{
 		s32* ev = entry->exitEvent;
 		if (ev == NULL) {
@@ -653,9 +638,6 @@ USER_FUNC(evt_bero_get_info_num) {
 		}
 		event->lwData[11] = (s32)ev;
 	}
-#else
-	event->lwData[11] = entry->exitEvent ? (s32)entry->exitEvent : (s32)default_outevt;
-#endif
 	event->lwData[12] = 0xffff0000;
 	event->lwData[13] = (s32)entry->nextareaArg1;
 	event->lwData[14] = (s32)entry->nextareaArg2;
@@ -671,17 +653,11 @@ USER_FUNC(bero_get_position_normal) {
 	s32* p;
 	const char* hitName;
 	Vec start, end;
-#ifdef MUST_MATCH
-	// MUST_MATCH: the compiler lays locals out in reverse declaration order, so this order
-	// reproduces the original's stack map (hitX at 0x08, e at 0x30). Usage below is unchanged.
+	// the compiler lays locals out in reverse declaration order, so this order
+	// reproduces the original's stack map (hitX at 0x08, e at 0x30).
 	Vec e, ray;
 	f32 hitNZ, hitNY, hitNX, distance;
 	f32 hitZ, hitY, hitX;
-#else
-	Vec ray, e;
-	f32 hitX, hitY, hitZ, distance;
-	f32 hitNX, hitNY, hitNZ;
-#endif
 	f32 sn, cs, rad;
 	f32 angle;
 	f32 len;
@@ -717,10 +693,8 @@ USER_FUNC(bero_get_position_normal) {
 		ray.y = start.y;
 		cs = (f32)cos(rad);
 		ray.z = start.z - 30.0f * -cs;
-#ifdef MUST_MATCH
-		// MUST_MATCH: the original writes distance twice; the compiler keeps both stores.
+		// the original writes distance twice; the compiler keeps both stores.
 		distance = 1000000.0f;
-#endif
 		if (hitCheckFilter(NULL, ray.x, ray.y, ray.z, 0.0f, -1.0f, 0.0f, &hitX, &hitY,
 		                   &hitZ, &distance, &hitNX, &hitNY, &hitNZ) != NULL) {
 			ray.y = hitY;
@@ -755,11 +729,9 @@ void bero_get_position_pipe_sub(s32 reverse, s32 length, s32 hitName, s32 kind, 
 	f32 hitNX;
 	f32 hitNY;
 	f32 hitNZ;
-#ifdef MUST_MATCH
-	// MUST_MATCH: keeping hitY in a plain temp stops the compiler from reloading it from its
-	// stack slot between the two stores (the original loads it once); the natural form is below.
+	// hitY goes through a plain temp so the compiler loads it once for the two stores
+	// instead of reloading it from its stack slot.
 	f32 y;
-#endif
 	f32 off = 20.0f;
 
 	switch (kind) {
@@ -784,14 +756,9 @@ void bero_get_position_pipe_sub(s32 reverse, s32 length, s32 hitName, s32 kind, 
 			hitCheckFilter(NULL, start->x, start->y, start->z, 0.0f, -1.0f, 0.0f, &hitX,
 			               &hitY, &hitZ, &distance, &hitNX, &hitNY, &hitNZ);
 		}
-#ifdef MUST_MATCH
 		y = hitY;
 		start->y = y;
 		end->y = y;
-#else
-		start->y = hitY;
-		end->y = hitY;
-#endif
 		break;
 	case 9:
 		length = -length;
@@ -1072,17 +1039,12 @@ USER_FUNC(evt_bero_move_mario_speed) {
 	dist = sec * (f32)frames;
 	dx = sn * dist;
 	dy = -(cs * dist);
-#ifdef MUST_MATCH
-	// MUST_MATCH: loading BeroSX/BeroSY into locals here extends their scratch webs so the
+	// loading BeroSX/BeroSY into locals here extends their scratch webs so the
 	// allocator keeps the int->double magic in f1 and the products in f2, retail's colours.
 	bsx = BeroSX;
 	marioGetPtr()->position.x = bsx + dx;
 	bsy = BeroSY;
 	marioGetPtr()->position.y = bsy + dy;
-#else
-	marioGetPtr()->position.x = BeroSX + dx;
-	marioGetPtr()->position.y = BeroSY + dy;
-#endif
 	marioGetPtr()->position.z = BeroSZ;
 	reachedX = 0;
 	if (vx >= 0 && BeroEX <= marioGetPtr()->position.x) {
