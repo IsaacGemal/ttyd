@@ -70,8 +70,8 @@ void fadeInit(void) {
 	for (i = 0; i < 5; i++) {
 		FadeEntry* entry = &wp->entries[i];
 
-		entry->field_0x6C = -1;
-		entry->field_0x70 = -1;
+		entry->pose = -1;
+		entry->paperPose = -1;
 
 		entry->fadeSpotX = 0.0f;
 		entry->fadeSpotY = 0.0f;
@@ -79,12 +79,12 @@ void fadeInit(void) {
 		entry->animOffsetX = 0.0f;
 		entry->animOffsetY = 0.0f;
 
-		entry->field_0x90 = 1.0f;
+		entry->scale = 1.0f;
 
-		entry->field_0xA4 = 0;
+		entry->delayFrames = 0;
 	}
 
-	wp->field_0x350 = -1;
+	wp->activeEntry = -1;
 	wp->texture = NULL;
 	wp->loaded = FALSE;
 }
@@ -112,23 +112,23 @@ void fadeTexSetup(void) {
 //TODO: probably lots of switch statements
 // Frees the resources held by an entry and re-initialises it.
 static inline void fadeEntryReset(FadeEntry* entry) {
-	if (entry->field_0x6C >= 0) {
-		animPoseRelease(entry->field_0x6C);
+	if (entry->pose >= 0) {
+		animPoseRelease(entry->pose);
 	}
-	if (entry->field_0x70 >= 0) {
-		animPaperPoseRelease(entry->field_0x70);
+	if (entry->paperPose >= 0) {
+		animPaperPoseRelease(entry->paperPose);
 	}
 	if (entry->image) {
 		imgRelease(entry->image, entry->imageType);
 	}
 	memset(entry, 0, sizeof(FadeEntry));
-	entry->field_0x6C = -1;
-	entry->field_0x70 = -1;
+	entry->pose = -1;
+	entry->paperPose = -1;
 	entry->fadeSpotX = 0.0f;
 	entry->fadeSpotY = 0.0f;
 	entry->animOffsetX = 0.0f;
 	entry->animOffsetY = 0.0f;
-	entry->field_0x90 = 1.0f;
+	entry->scale = 1.0f;
 }
 
 void fadeEntry(s32 type, s32 duration, GXColor color) {
@@ -139,14 +139,14 @@ void fadeEntry(s32 type, s32 duration, GXColor color) {
 		return;
 	}
 	if (type == 16) { //type 16 is type 9 but white
-		type = 9;
+		type = FADE_IN_BLACK;
 		color = (GXColor){0xF0, 0xF0, 0xF0, 0xFF};
 	}
-	if (type == 17) {
-		type = 10;
+	if (type == FADE_OUT_WHITE) {
+		type = FADE_OUT_BLACK;
 		color = (GXColor){0xF0, 0xF0, 0xF0, 0xFF};
 	}
-	if (type == 18) {
+	if (type == FADE_IN_WHITE2) {
 		type = 11;
 		color = (GXColor){0xF0, 0xF0, 0xF0, 0xFF};
 	}
@@ -192,7 +192,7 @@ void fadeEntry(s32 type, s32 duration, GXColor color) {
 			entry = &wp->entries[0];
 			index = 0;
 			fadeEntryReset(&wp->entries[2]);
-			entry->field_0xA4 = 0;
+			entry->delayFrames = 0;
 			switch (type) {
 				case 1:
 				case 3:
@@ -201,7 +201,7 @@ void fadeEntry(s32 type, s32 duration, GXColor color) {
 				case 11:
 				case 14:
 					if (duration != 0) {
-						entry->field_0xA4 = 2;
+						entry->delayFrames = 2;
 					}
 					break;
 			}
@@ -280,177 +280,177 @@ void fadeEntry(s32 type, s32 duration, GXColor color) {
 	entry->type = type;
 	entry->duration = duration;
 	entry->color = color;
-	entry->field_0x24 = 0;
-	entry->field_0x28 = 0;
-	entry->field_0x5C = 0;
-	entry->field_0x8 = 0;
+	entry->alpha = 0;
+	entry->angle = 0;
+	entry->elapsed = 0;
+	entry->step = 0;
 	entry->animOffsetX = 0.0f;
 	entry->animOffsetY = 0.0f;
-	entry->field_0x90 = 1.0f;
+	entry->scale = 1.0f;
 	if (type != 50 && type != 53) {
 		entry->callback = NULL;
 	}
-	wp->field_0x350 = index;
+	wp->activeEntry = index;
 	if (type == 34 || type == 40) {
-		entry->field_0x90 = 3.0f;
+		entry->scale = 3.0f;
 	}
 
 	switch (type) {
 		case 43:
-			entry->field_0x60 = "OFF_d_dokan_down";
-			entry->field_0x64 = "A_1";
+			entry->groupName = "OFF_d_dokan_down";
+			entry->animName = "A_1";
 			entry->imageType = 2;
 			break;
 		case 44:
-			entry->field_0x60 = "OFF_d_dokan_down";
-			entry->field_0x64 = "A_2";
+			entry->groupName = "OFF_d_dokan_down";
+			entry->animName = "A_2";
 			entry->imageType = 2;
 			break;
 		case 41:
-			entry->field_0x60 = "OFF_d_dokan_up";
-			entry->field_0x64 = "A_1";
+			entry->groupName = "OFF_d_dokan_up";
+			entry->animName = "A_1";
 			entry->imageType = 2;
 			break;
 		case 42:
-			entry->field_0x60 = "OFF_d_dokan_up";
-			entry->field_0x64 = "A_2";
+			entry->groupName = "OFF_d_dokan_up";
+			entry->animName = "A_2";
 			entry->imageType = 2;
 			break;
 		case 45:
-			entry->field_0x60 = "OFF_d_dokan_left";
-			entry->field_0x64 = "A_1";
+			entry->groupName = "OFF_d_dokan_left";
+			entry->animName = "A_1";
 			entry->imageType = 2;
 			break;
 		case 46:
-			entry->field_0x60 = "OFF_d_dokan_left";
-			entry->field_0x64 = "A_2";
+			entry->groupName = "OFF_d_dokan_left";
+			entry->animName = "A_2";
 			entry->imageType = 2;
 			break;
 		case 47:
-			entry->field_0x60 = "OFF_d_dokan_right";
-			entry->field_0x64 = "A_1";
+			entry->groupName = "OFF_d_dokan_right";
+			entry->animName = "A_1";
 			entry->imageType = 2;
 			break;
 		case 48:
-			entry->field_0x60 = "OFF_d_dokan_right";
-			entry->field_0x64 = "A_2";
+			entry->groupName = "OFF_d_dokan_right";
+			entry->animName = "A_2";
 			entry->imageType = 2;
 			break;
 		case 22:
-			entry->field_0x60 = "OFF_d_maku_up_down";
-			entry->field_0x64 = "A_1";
+			entry->groupName = "OFF_d_maku_up_down";
+			entry->animName = "A_1";
 			entry->imageType = 2;
 			break;
 		case 23:
-			entry->field_0x60 = "OFF_d_maku_up_down";
-			entry->field_0x64 = "A_2";
+			entry->groupName = "OFF_d_maku_up_down";
+			entry->animName = "A_2";
 			entry->imageType = 2;
 			break;
 		case 24:
 		case 27:
 		case 63:
-			entry->field_0x60 = "OFF_d_maku_left_right";
-			entry->field_0x64 = "A_1";
+			entry->groupName = "OFF_d_maku_left_right";
+			entry->animName = "A_1";
 			entry->imageType = 2;
 			break;
 		case 26:
-			entry->field_0x60 = "OFF_d_maku_left_right";
-			entry->field_0x64 = "Z_1";
+			entry->groupName = "OFF_d_maku_left_right";
+			entry->animName = "Z_1";
 			entry->imageType = 2;
 			break;
 		case 25:
 		case 28:
 		case 64:
-			entry->field_0x60 = "OFF_d_maku_left_right";
-			entry->field_0x64 = "A_2";
+			entry->groupName = "OFF_d_maku_left_right";
+			entry->animName = "A_2";
 			entry->imageType = 2;
 			break;
 		case 29:
 		case 35:
-			entry->field_0x60 = "OFF_d_maku_center";
-			entry->field_0x64 = "A_1";
+			entry->groupName = "OFF_d_maku_center";
+			entry->animName = "A_1";
 			entry->imageType = 2;
 			break;
 		case 30:
 		case 36:
-			entry->field_0x60 = "OFF_d_maku_center";
-			entry->field_0x64 = "A_2";
+			entry->groupName = "OFF_d_maku_center";
+			entry->animName = "A_2";
 			entry->imageType = 2;
 			break;
 		case 31:
 		case 34:
 		case 37:
 		case 40:
-			entry->field_0x60 = "OFF_d_maku_center";
-			entry->field_0x64 = "Z_2";
+			entry->groupName = "OFF_d_maku_center";
+			entry->animName = "Z_2";
 			entry->imageType = 2;
 			break;
 		case 32:
 		case 38:
-			entry->field_0x60 = "OFF_d_maku_center";
-			entry->field_0x64 = "Z_1";
+			entry->groupName = "OFF_d_maku_center";
+			entry->animName = "Z_1";
 			entry->imageType = 2;
 			break;
 		case 49:
 		case 52:
-			entry->field_0x60 = "OFF_d_meku";
-			entry->field_0x64 = "Z_1";
+			entry->groupName = "OFF_d_meku";
+			entry->animName = "Z_1";
 			entry->imageType = 2;
 			break;
 		case 50:
 		case 53:
-			entry->field_0x60 = "OFF_d_meku";
-			entry->field_0x64 = "A_1";
+			entry->groupName = "OFF_d_meku";
+			entry->animName = "A_1";
 			entry->imageType = 2;
 			break;
 		case 51:
-			entry->field_0x60 = "OFF_d_four_meku_5sec";
-			entry->field_0x64 = "A_1";
+			entry->groupName = "OFF_d_four_meku_5sec";
+			entry->animName = "A_1";
 			entry->imageType = 2;
 			break;
 		case 54:
-			entry->field_0x60 = "OFF_f_in_out_mario";
-			entry->field_0x64 = "A_3";
+			entry->groupName = "OFF_f_in_out_mario";
+			entry->animName = "A_3";
 			entry->imageType = 2;
 			break;
 		case 55:
-			entry->field_0x60 = "OFF_f_in_out_mario";
-			entry->field_0x64 = "A_1";
+			entry->groupName = "OFF_f_in_out_mario";
+			entry->animName = "A_1";
 			entry->imageType = 2;
 			break;
 		case 56:
-			entry->field_0x60 = "OFF_f_in_out_peach";
-			entry->field_0x64 = "A_3";
+			entry->groupName = "OFF_f_in_out_peach";
+			entry->animName = "A_3";
 			entry->imageType = 2;
 			break;
 		case 57:
-			entry->field_0x60 = "OFF_f_in_out_peach";
-			entry->field_0x64 = "A_1";
+			entry->groupName = "OFF_f_in_out_peach";
+			entry->animName = "A_1";
 			entry->imageType = 2;
 			break;
 		case 58:
-			entry->field_0x60 = "OFF_f_in_out_kuppa";
-			entry->field_0x64 = "A_3";
+			entry->groupName = "OFF_f_in_out_kuppa";
+			entry->animName = "A_3";
 			entry->imageType = 2;
 			break;
 		case 59:
-			entry->field_0x60 = "OFF_f_in_out_kuppa";
-			entry->field_0x64 = "A_1";
+			entry->groupName = "OFF_f_in_out_kuppa";
+			entry->animName = "A_1";
 			entry->imageType = 2;
 			break;
 		case 60:
-			entry->field_0x60 = "OFF_f_in_out_mario";
-			entry->field_0x64 = "A_2";
+			entry->groupName = "OFF_f_in_out_mario";
+			entry->animName = "A_2";
 			entry->imageType = 2;
 			break;
 		case 61:
-			entry->field_0x60 = "OFF_f_in_out_peach";
-			entry->field_0x64 = "A_2";
+			entry->groupName = "OFF_f_in_out_peach";
+			entry->animName = "A_2";
 			entry->imageType = 2;
 			break;
 		case 62:
-			entry->field_0x60 = "OFF_f_in_out_kuppa";
-			entry->field_0x64 = "A_2";
+			entry->groupName = "OFF_f_in_out_kuppa";
+			entry->animName = "A_2";
 			entry->imageType = 2;
 			break;
 		default:
@@ -465,11 +465,11 @@ void fadeTecOff(void) {
 }
 void fadeTecSoftOn(void) {
 	wp->flags |= 0x1010;
-	wp->field_0x354 = 0.0f;
+	wp->softAmount = 0.0f;
 }
 void fadeTecSoftOff(void) {
 	wp->flags |= 0x1020;
-	wp->field_0x354 = 1.0f;
+	wp->softAmount = 1.0f;
 }
 void fadeSoftFocusOn(void) {
 	wp->flags |= 0x2000;
@@ -523,28 +523,28 @@ void fadeMain(void) {
 			case 9:
 			case 11:
 			case 14:
-				switch (entry->field_0x8) {
+				switch (entry->step) {
 					case 0:
 						if (entry->duration != 0) {
-							if (entry->field_0xA4 != 0) {
-								entry->field_0xA4--;
+							if (entry->delayFrames != 0) {
+								entry->delayFrames--;
 							}
 							else {
-								entry->field_0x5C += 16.666666f;
+								entry->elapsed += 16.666666f;
 							}
-							entry->field_0x24 = entry->field_0x5C / (f32)entry->duration;
-							entry->field_0x24 = 1.0f - entry->field_0x24;
-							entry->field_0x28 += 10.0f;
-							if (entry->field_0x24 < 0.0f) {
-								entry->field_0x24 = 0.0f;
+							entry->alpha = entry->elapsed / (f32)entry->duration;
+							entry->alpha = 1.0f - entry->alpha;
+							entry->angle += 10.0f;
+							if (entry->alpha < 0.0f) {
+								entry->alpha = 0.0f;
 								entry->flags |= 2;
-								entry->field_0x8++;
+								entry->step++;
 							}
 						}
 						else {
-							entry->field_0x24 = 0.0f;
+							entry->alpha = 0.0f;
 							entry->flags |= 2;
-							entry->field_0x8++;
+							entry->step++;
 						}
 						break;
 				}
@@ -556,22 +556,22 @@ void fadeMain(void) {
 			case 12:
 			case 13:
 			case 15:
-				switch (entry->field_0x8) {
+				switch (entry->step) {
 					case 0:
 						if (entry->duration != 0) {
-							entry->field_0x5C += 16.666666f;
-							entry->field_0x24 = entry->field_0x5C / (f32)entry->duration;
-							entry->field_0x28 -= 10.0f;
-							if (entry->field_0x24 > 1.0f) {
-								entry->field_0x24 = 1.0f;
+							entry->elapsed += 16.666666f;
+							entry->alpha = entry->elapsed / (f32)entry->duration;
+							entry->angle -= 10.0f;
+							if (entry->alpha > 1.0f) {
+								entry->alpha = 1.0f;
 								entry->flags |= 2;
-								entry->field_0x8++;
+								entry->step++;
 							}
 						}
 						else {
-							entry->field_0x24 = 1.0f;
+							entry->alpha = 1.0f;
 							entry->flags |= 2;
-							entry->field_0x8++;
+							entry->step++;
 						}
 						break;
 				}
@@ -584,31 +584,31 @@ void fadeMain(void) {
 			case 46:
 			case 47:
 			case 48:
-				switch (entry->field_0x8) {
+				switch (entry->step) {
 					case 0: {
 						s32 args[10];
 						EventEntry event;
 
-						if (!animGroupBaseAsync(entry->field_0x60, entry->imageType, NULL)) {
-							if (entry->field_0x70 < 0 && (entry->type == 42 || entry->type == 44 ||
+						if (!animGroupBaseAsync(entry->groupName, entry->imageType, NULL)) {
+							if (entry->paperPose < 0 && (entry->type == 42 || entry->type == 44 ||
 							                              entry->type == 46 || entry->type == 48)) {
 								wp->flags |= 0x8000;
 							}
 							break;
 						}
 						wp->flags &= ~0x8000;
-						if (entry->field_0x70 >= 0) {
+						if (entry->paperPose >= 0) {
 							imgRelease(entry->image, entry->imageType);
-							animPaperPoseRelease(entry->field_0x70);
-							entry->field_0x70 = -1;
+							animPaperPoseRelease(entry->paperPose);
+							entry->paperPose = -1;
 							entry->image = NULL;
 						}
-						entry->field_0x70 = animPaperPoseEntry(entry->field_0x60, entry->imageType);
+						entry->paperPose = animPaperPoseEntry(entry->groupName, entry->imageType);
 						imgEntry("fImg_dokan", entry->imageType);
 						entry->image = imgNameToPtr("fImg_dokan", entry->imageType);
-						entry->image->poseId = animPaperPoseGetId(entry->field_0x60, entry->imageType);
+						entry->image->poseId = animPaperPoseGetId(entry->groupName, entry->imageType);
 						*(OSTime*)((u8*)entry->image + 0x110) = animTimeGetTime(entry->imageType);
-						entry->image->animName = entry->field_0x64;
+						entry->image->animName = entry->animName;
 						imgClearVirtualPoint(entry->image);
 						event.args = args;
 						args[0] = (s32)"fImg_dokan";
@@ -622,31 +622,31 @@ void fadeMain(void) {
 						evt_img_alloc_capture(&event, TRUE);
 						switch (entry->type) {
 							case 45:
-								*(s32*)&entry->field_0x94[4] = psndSFXOn((const char*)0x403AB);
+								entry->sfxHandle = psndSFXOn((const char*)0x403AB);
 								break;
 							case 47:
-								*(s32*)&entry->field_0x94[4] = psndSFXOn((const char*)0x403AC);
+								entry->sfxHandle = psndSFXOn((const char*)0x403AC);
 								break;
 							case 41:
-								*(s32*)&entry->field_0x94[4] = psndSFXOn((const char*)0x403AD);
+								entry->sfxHandle = psndSFXOn((const char*)0x403AD);
 								break;
 							case 43:
-								*(s32*)&entry->field_0x94[4] = psndSFXOn((const char*)0x403AE);
+								entry->sfxHandle = psndSFXOn((const char*)0x403AE);
 								break;
 							case 46:
-								*(s32*)&entry->field_0x94[4] = psndSFXOn((const char*)0x403AF);
+								entry->sfxHandle = psndSFXOn((const char*)0x403AF);
 								break;
 							case 48:
-								*(s32*)&entry->field_0x94[4] = psndSFXOn((const char*)0x403B0);
+								entry->sfxHandle = psndSFXOn((const char*)0x403B0);
 								break;
 							case 42:
-								*(s32*)&entry->field_0x94[4] = psndSFXOn((const char*)0x403B1);
+								entry->sfxHandle = psndSFXOn((const char*)0x403B1);
 								break;
 							case 44:
-								*(s32*)&entry->field_0x94[4] = psndSFXOn((const char*)0x403B2);
+								entry->sfxHandle = psndSFXOn((const char*)0x403B2);
 								break;
 						}
-						entry->field_0x8++;
+						entry->step++;
 						break;
 					}
 					case 1:
@@ -658,12 +658,12 @@ void fadeMain(void) {
 								case 46:
 								case 48:
 									imgRelease(entry->image, entry->imageType);
-									animPaperPoseRelease(entry->field_0x70);
-									entry->field_0x70 = -1;
+									animPaperPoseRelease(entry->paperPose);
+									entry->paperPose = -1;
 									entry->image = NULL;
 									break;
 							}
-							entry->field_0x8++;
+							entry->step++;
 						}
 						break;
 				}
@@ -676,24 +676,24 @@ void fadeMain(void) {
 			case 60:
 			case 61:
 			case 62:
-				switch (entry->field_0x8) {
+				switch (entry->step) {
 					case 0:
-						if (!animGroupBaseAsync(entry->field_0x60, entry->imageType, NULL)) {
+						if (!animGroupBaseAsync(entry->groupName, entry->imageType, NULL)) {
 							break;
 						}
-						if (entry->field_0x70 >= 0) {
+						if (entry->paperPose >= 0) {
 							imgRelease(entry->image, entry->imageType);
-							animPaperPoseRelease(entry->field_0x70);
-							entry->field_0x70 = -1;
+							animPaperPoseRelease(entry->paperPose);
+							entry->paperPose = -1;
 							entry->image = NULL;
 						}
-						entry->field_0x70 = animPaperPoseEntry(entry->field_0x60, entry->imageType);
-						animPoseSetMaterialFlagOn(entry->field_0x70, 0x1800);
+						entry->paperPose = animPaperPoseEntry(entry->groupName, entry->imageType);
+						animPoseSetMaterialFlagOn(entry->paperPose, 0x1800);
 						imgEntry("fImg_peron", entry->imageType);
 						entry->image = imgNameToPtr("fImg_peron", entry->imageType);
-						entry->image->poseId = animPaperPoseGetId(entry->field_0x60, entry->imageType);
+						entry->image->poseId = animPaperPoseGetId(entry->groupName, entry->imageType);
 						*(OSTime*)((u8*)entry->image + 0x110) = animTimeGetTime(entry->imageType);
-						entry->image->animName = entry->field_0x64;
+						entry->image->animName = entry->animName;
 						imgClearVirtualPoint(entry->image);
 						switch (entry->type) {
 							case 52: {
@@ -771,7 +771,7 @@ void fadeMain(void) {
 								break;
 							}
 						}
-						entry->field_0x8++;
+						entry->step++;
 						break;
 					case 1:
 						if (entry->image->field_0x118 >= 1.0f) {
@@ -797,13 +797,13 @@ void fadeMain(void) {
 									entry->flags |= 2;
 									break;
 							}
-							entry->field_0x8++;
+							entry->step++;
 						}
 						break;
 					case 2:
 						if (entry->image->field_0x118 >= 1.0f) {
 							entry->flags |= 2;
-							entry->field_0x8++;
+							entry->step++;
 						}
 						break;
 				}
@@ -813,12 +813,12 @@ void fadeMain(void) {
 			case 54:
 			case 56:
 			case 58:
-				switch (entry->field_0x8) {
+				switch (entry->step) {
 					case 0:
 						entry->image = imgNameToPtr("fImg_peron", entry->imageType);
-						entry->image->poseId = animPaperPoseGetId(entry->field_0x60, entry->imageType);
+						entry->image->poseId = animPaperPoseGetId(entry->groupName, entry->imageType);
 						*(OSTime*)((u8*)entry->image + 0x110) = animTimeGetTime(entry->imageType);
-						entry->image->animName = entry->field_0x64;
+						entry->image->animName = entry->animName;
 						imgClearVirtualPoint(entry->image);
 						switch (entry->type) {
 							case 54:
@@ -831,79 +831,79 @@ void fadeMain(void) {
 								psndSFXOn((const char*)0x40365);
 								break;
 						}
-						entry->field_0x8++;
+						entry->step++;
 						break;
 					case 1:
 						if (entry->image->field_0x118 >= 1.0f) {
 							entry->flags |= 2;
 							imgRelease(entry->image, entry->imageType);
-							animPaperPoseRelease(entry->field_0x70);
-							entry->field_0x70 = -1;
+							animPaperPoseRelease(entry->paperPose);
+							entry->paperPose = -1;
 							entry->image = NULL;
 							if (entry->type == 53) {
 								offscreenDelete("fOff_peron");
 							}
-							entry->field_0x8++;
+							entry->step++;
 						}
 						break;
 				}
 				break;
 			case 22:
-				switch (entry->field_0x8) {
+				switch (entry->step) {
 					case 0:
-						if (!animGroupBaseAsync(entry->field_0x60, entry->imageType, NULL)) {
+						if (!animGroupBaseAsync(entry->groupName, entry->imageType, NULL)) {
 							break;
 						}
-						if (entry->field_0x6C >= 0) {
-							animPoseRelease(entry->field_0x6C);
+						if (entry->pose >= 0) {
+							animPoseRelease(entry->pose);
 						}
-						entry->field_0x6C = animPoseEntry(entry->field_0x60, entry->imageType);
-						animPoseSetMaterialFlagOn(entry->field_0x6C, 0x1800);
-						animPoseSetAnim(entry->field_0x6C, entry->field_0x64, TRUE);
-						*(GXColor*)entry->field_0x74 = (GXColor){0xFF, 0xFF, 0xFF, 0xFF};
-						animPoseSetMaterialFlagOff(entry->field_0x6C, 0x40);
-						entry->field_0x8++;
+						entry->pose = animPoseEntry(entry->groupName, entry->imageType);
+						animPoseSetMaterialFlagOn(entry->pose, 0x1800);
+						animPoseSetAnim(entry->pose, entry->animName, TRUE);
+						entry->poseColor = (GXColor){0xFF, 0xFF, 0xFF, 0xFF};
+						animPoseSetMaterialFlagOff(entry->pose, 0x40);
+						entry->step++;
 					case 1:
-						animPoseMain(entry->field_0x6C);
-						if (animPoseGetLoopTimes(entry->field_0x6C) >= 1.0f) {
+						animPoseMain(entry->pose);
+						if (animPoseGetLoopTimes(entry->pose) >= 1.0f) {
 							entry->flags |= 2;
-							entry->field_0x8++;
+							entry->step++;
 						}
 						break;
 					case 2:
-						animPoseMain(entry->field_0x6C);
+						animPoseMain(entry->pose);
 						break;
 				}
 				break;
 			case 23:
-				switch (entry->field_0x8) {
+				switch (entry->step) {
 					case 0:
-						if (!animGroupBaseAsync(entry->field_0x60, entry->imageType, NULL)) {
+						if (!animGroupBaseAsync(entry->groupName, entry->imageType, NULL)) {
 							break;
 						}
-						if (entry->field_0x6C >= 0) {
-							animPoseRelease(entry->field_0x6C);
+						if (entry->pose >= 0) {
+							animPoseRelease(entry->pose);
 						}
-						entry->field_0x6C = animPoseEntry(entry->field_0x60, entry->imageType);
-						animPoseSetMaterialFlagOn(entry->field_0x6C, 0x1800);
-						animPoseSetAnim(entry->field_0x6C, entry->field_0x64, TRUE);
-						*(GXColor*)entry->field_0x74 = (GXColor){0xFF, 0xFF, 0xFF, 0xFF};
-						animPoseSetMaterialFlagOff(entry->field_0x6C, 0x40);
-						entry->field_0x8++;
+						entry->pose = animPoseEntry(entry->groupName, entry->imageType);
+						animPoseSetMaterialFlagOn(entry->pose, 0x1800);
+						animPoseSetAnim(entry->pose, entry->animName, TRUE);
+						entry->poseColor = (GXColor){0xFF, 0xFF, 0xFF, 0xFF};
+						animPoseSetMaterialFlagOff(entry->pose, 0x40);
+						entry->step++;
 					case 1:
-						if (animPoseGetLoopTimes(entry->field_0x6C) >= 0.5f) {
-							entry->field_0x74[0] *= 0.98f;
-							entry->field_0x74[1] *= 0.98f;
-							entry->field_0x74[2] *= 0.98f;
-							animPoseSetMaterialEvtColor(entry->field_0x6C, *(GXColor*)entry->field_0x74);
-							animPoseSetMaterialFlagOn(entry->field_0x6C, 0x40);
+						if (animPoseGetLoopTimes(entry->pose) >= 0.5f) {
+							entry->poseColor.r *= 0.98f;
+							entry->poseColor.g *= 0.98f;
+							entry->poseColor.b *= 0.98f;
+							animPoseSetMaterialEvtColor(entry->pose, entry->poseColor);
+							animPoseSetMaterialFlagOn(entry->pose, 0x40);
 						}
-						animPoseMain(entry->field_0x6C);
-						if (animPoseGetLoopTimes(entry->field_0x6C) >= 1.0f) {
+						animPoseMain(entry->pose);
+						if (animPoseGetLoopTimes(entry->pose) >= 1.0f) {
 							entry->flags |= 2;
-							entry->field_0x8++;
-							animPoseRelease(entry->field_0x6C);
-							entry->field_0x6C = -1;
+							entry->step++;
+							animPoseRelease(entry->pose);
+							entry->pose = -1;
 						}
 						break;
 				}
@@ -926,106 +926,106 @@ void fadeMain(void) {
 			case 51:
 			case 63:
 			case 64:
-				switch (entry->field_0x8) {
+				switch (entry->step) {
 					case 0:
-						if (!animGroupBaseAsync(entry->field_0x60, entry->imageType, NULL)) {
+						if (!animGroupBaseAsync(entry->groupName, entry->imageType, NULL)) {
 							break;
 						}
 						switch (entry->type) {
 							case 24:
 							case 27:
 							case 63:
-								*(s32*)&entry->field_0x94[4] = psndSFXOn((const char*)0x40325);
+								entry->sfxHandle = psndSFXOn((const char*)0x40325);
 								break;
 							case 25:
 							case 28:
 							case 64:
-								*(s32*)&entry->field_0x94[4] = psndSFXOn((const char*)0x40326);
+								entry->sfxHandle = psndSFXOn((const char*)0x40326);
 								break;
 							case 29:
 							case 35:
-								*(s32*)&entry->field_0x94[4] = psndSFXOn((const char*)0x40321);
+								entry->sfxHandle = psndSFXOn((const char*)0x40321);
 								break;
 							case 30:
 							case 36:
-								*(s32*)&entry->field_0x94[4] = psndSFXOn((const char*)0x40322);
+								entry->sfxHandle = psndSFXOn((const char*)0x40322);
 								break;
 						}
-						if (entry->field_0x6C >= 0) {
-							animPoseRelease(entry->field_0x6C);
+						if (entry->pose >= 0) {
+							animPoseRelease(entry->pose);
 						}
-						entry->field_0x6C = animPoseEntry(entry->field_0x60, entry->imageType);
-						animPoseSetMaterialFlagOn(entry->field_0x6C, 0x1800);
-						animPoseSetAnim(entry->field_0x6C, entry->field_0x64, TRUE);
-						entry->field_0x8++;
+						entry->pose = animPoseEntry(entry->groupName, entry->imageType);
+						animPoseSetMaterialFlagOn(entry->pose, 0x1800);
+						animPoseSetAnim(entry->pose, entry->animName, TRUE);
+						entry->step++;
 						if (entry->type == 34 || entry->type == 40) {
-							entry->field_0x90 = 3.0f;
-							*(s32*)&entry->field_0x94[0] = 0;
+							entry->scale = 3.0f;
+							entry->frameCount = 0;
 						}
 					case 1:
-						animPoseMain(entry->field_0x6C);
+						animPoseMain(entry->pose);
 						if (entry->type == 34 || entry->type == 40) {
 							if (!(entry->flags & 8)) {
-								if (*(s32*)&entry->field_0x94[0] < 180) {
-									entry->field_0x90 = intplGetValue(12, ++*(s32*)&entry->field_0x94[0], 180, 3.0f, 1.0f);
+								if (entry->frameCount < 180) {
+									entry->scale = intplGetValue(12, ++entry->frameCount, 180, 3.0f, 1.0f);
 								}
 							}
 							else {
-								if (*(s32*)&entry->field_0x94[0] < 90) {
-									entry->field_0x90 = intplGetValue(12, ++*(s32*)&entry->field_0x94[0], 90, 1.5f, 1.0f);
+								if (entry->frameCount < 90) {
+									entry->scale = intplGetValue(12, ++entry->frameCount, 90, 1.5f, 1.0f);
 								}
 							}
 						}
-						if (animPoseGetLoopTimes(entry->field_0x6C) >= 1.0f) {
+						if (animPoseGetLoopTimes(entry->pose) >= 1.0f) {
 							if (entry->type == 34 || entry->type == 40) {
 								if (!(entry->flags & 8)) {
-									if (*(s32*)&entry->field_0x94[0] == 180) {
+									if (entry->frameCount == 180) {
 										entry->flags |= 2;
-										entry->field_0x8++;
+										entry->step++;
 									}
 								}
 								else {
-									if (*(s32*)&entry->field_0x94[0] == 90) {
+									if (entry->frameCount == 90) {
 										entry->flags |= 2;
-										entry->field_0x8++;
+										entry->step++;
 									}
 								}
 							}
 							else {
 								entry->flags |= 2;
-								entry->field_0x8++;
-								psndSFXOff(*(s32*)&entry->field_0x94[4]);
+								entry->step++;
+								psndSFXOff(entry->sfxHandle);
 								if (entry->type == 25 || entry->type == 28 || entry->type == 64) {
-									animPoseRelease(entry->field_0x6C);
-									entry->field_0x6C = -1;
+									animPoseRelease(entry->pose);
+									entry->pose = -1;
 								}
 							}
 						}
 						break;
 					case 2:
-						if (entry->field_0x6C >= 0) {
-							animPoseMain(entry->field_0x6C);
+						if (entry->pose >= 0) {
+							animPoseMain(entry->pose);
 						}
 						break;
 				}
 				break;
 			case 33:
 			case 39:
-				switch (entry->field_0x8) {
+				switch (entry->step) {
 					case 0:
-						entry->field_0x90 = 1.0f;
-						*(s32*)&entry->field_0x94[0] = 0;
-						entry->field_0x8++;
+						entry->scale = 1.0f;
+						entry->frameCount = 0;
+						entry->step++;
 					case 1:
-						animPoseMain(entry->field_0x6C);
-						if (*(s32*)&entry->field_0x94[0] < 120) {
-							entry->field_0x90 = intplGetValue(12, ++*(s32*)&entry->field_0x94[0], 120, 1.0f, 3.0f);
+						animPoseMain(entry->pose);
+						if (entry->frameCount < 120) {
+							entry->scale = intplGetValue(12, ++entry->frameCount, 120, 1.0f, 3.0f);
 						}
 						else {
 							entry->flags |= 2;
-							entry->field_0x8++;
-							animPoseRelease(entry->field_0x6C);
-							entry->field_0x6C = -1;
+							entry->step++;
+							animPoseRelease(entry->pose);
+							entry->pose = -1;
 						}
 						break;
 				}
@@ -1074,7 +1074,7 @@ void fadeMain(void) {
 			case 60:
 			case 61:
 			case 62:
-				if (entry->field_0x70 >= 0 && entry->callback != NULL) {
+				if (entry->paperPose >= 0 && entry->callback != NULL) {
 					dispEntry(CAMERA_OFFSCREEN2, 0.0f, 0, entry->callback, entry->offparam);
 				}
 				break;
@@ -1172,16 +1172,16 @@ void disp_texture(CameraId camId, void* param) {
 			TEXGetGXTexObjFromPalette(wp->texture, &texObj, 0);
 			GXLoadTexObj(&texObj, GX_TEXMAP0);
 			if (!(entry->flags & 2)) {
-				f4 = entry->field_0x24;
+				f4 = entry->alpha;
 				f31 = 100.0f * f4 * f4 * f4 * f4 * f4;
 				PSMTXTrans(mtx1, 0.5f, 0.5f, 0.0f);
 				PSMTXScale(mtx3, f31, f31, 1.0f);
 				PSMTXTrans(mtx2, -0.5f, -0.5f, 0.0f);
 				PSMTXConcat(mtx1, mtx3, mtx3);
-				PSMTXConcat(mtx3, mtx2, (f32(*)[4])entry->field_0x2C);
+				PSMTXConcat(mtx3, mtx2, entry->texMtx);
 			}
 			else if (entry->type == 2) {
-				PSMTXTrans((f32(*)[4])entry->field_0x2C, 1.0f, 1.0f, 0.0f);
+				PSMTXTrans(entry->texMtx, 1.0f, 1.0f, 0.0f);
 			}
 			break;
 		case 3:
@@ -1193,19 +1193,19 @@ void disp_texture(CameraId camId, void* param) {
 			TEXGetGXTexObjFromPalette(wp->texture, &texObj, 1);
 			GXLoadTexObj(&texObj, GX_TEXMAP0);
 			if (!(entry->flags & 2)) {
-				f4 = entry->field_0x24;
+				f4 = entry->alpha;
 				f31 = 100.0f * f4 * f4 * f4 * f4 * f4;
 				PSMTXTrans(mtx1, 0.5f, 0.5f, 0.0f);
 				PSMTXScale(mtx3, f31, f31, 1.0f);
-				PSMTXRotRad(mtx4, 'z', 0.017453292f * entry->field_0x28);
+				PSMTXRotRad(mtx4, 'z', 0.017453292f * entry->angle);
 				PSMTXTrans(mtx2, -0.5f - entry->fadeSpotX / (f32)gp->fbWidth,
 				           -0.5f + entry->fadeSpotY / (f32)gp->efbHeight, 0.0f);
 				PSMTXConcat(mtx1, mtx3, mtx3);
 				PSMTXConcat(mtx3, mtx4, mtx3);
-				PSMTXConcat(mtx3, mtx2, (f32(*)[4])entry->field_0x2C);
+				PSMTXConcat(mtx3, mtx2, entry->texMtx);
 			}
 			else if (entry->type == 4 || entry->type == 6) {
-				PSMTXTrans((f32(*)[4])entry->field_0x2C, 1.0f, 1.0f, 0.0f);
+				PSMTXTrans(entry->texMtx, 1.0f, 1.0f, 0.0f);
 			}
 			break;
 		case 7:
@@ -1221,20 +1221,20 @@ void disp_texture(CameraId camId, void* param) {
 			GXSetCurrentMtx(GX_PNMTX0);
 			GXInitTexObj(&texObj, &i4tex, 1, 1, GX_TF_I4, GX_CLAMP, GX_CLAMP, GX_FALSE);
 			GXLoadTexObj(&texObj, GX_TEXMAP0);
-			PSMTXIdentity((f32(*)[4])entry->field_0x2C);
-			entry->color.a = (u8)(255.0f * entry->field_0x24);
+			PSMTXIdentity(entry->texMtx);
+			entry->color.a = (u8)(255.0f * entry->alpha);
 			break;
 		case 13:
 			GXLoadPosMtxImm(camera->view, GX_PNMTX0);
 			GXSetCurrentMtx(GX_PNMTX0);
 			GXInitTexObj(&texObj, &i4tex, 1, 1, GX_TF_I4, GX_CLAMP, GX_CLAMP, GX_FALSE);
 			GXLoadTexObj(&texObj, GX_TEXMAP0);
-			PSMTXIdentity((f32(*)[4])entry->field_0x2C);
+			PSMTXIdentity(entry->texMtx);
 			break;
 	}
 
-	GXLoadTexMtxImm((f32(*)[4])entry->field_0x2C, 0x1e, GX_MTX2x4);
-	GXSetTexCoordGen2(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, 0x1e, GX_FALSE, GX_PTIDENTITY);
+	GXLoadTexMtxImm(entry->texMtx, GX_TEXMTX0, GX_MTX2x4);
+	GXSetTexCoordGen2(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_TEXMTX0, GX_FALSE, GX_PTIDENTITY);
 	GXSetTevColor(GX_TEVREG0, entry->color);
 	GXBegin(GX_QUADS, GX_VTXFMT0, 4);
 	f4 = 304.0f;
@@ -1391,7 +1391,7 @@ void disp_maku(CameraId camId, void* param) {
 			return;
 	}
 
-	if (entry->field_0x6C < 0) {
+	if (entry->pose < 0) {
 		return;
 	}
 	if (entry->flags & 4) {
@@ -1413,11 +1413,11 @@ void disp_maku(CameraId camId, void* param) {
 		mag = PSVECMag(&pos);
 		f31 = mag / f30;
 		f30 = f30 - mag;
-		animPoseSetGXFunc(entry->field_0x6C, 0, 0);
+		animPoseSetGXFunc(entry->pose, 0, 0);
 		GXSetZScaleOffset(z(), 0.0f);
 	}
 	else {
-		f31 = entry->field_0x90;
+		f31 = entry->scale;
 		f30 = 0.0f;
 		zFill();
 	}
@@ -1438,9 +1438,9 @@ void disp_maku(CameraId camId, void* param) {
 	PSMTXConcat(mtx1, mtx2, mtx1);
 	PSMTXTrans(mtx2, 32.0f, -24.0f, 0.0f);
 	PSMTXConcat(mtx1, mtx2, mtx1);
-	animPoseDrawMtx(entry->field_0x6C, mtx1, 1, 0.0f, f31);
-	animPoseDrawMtx(entry->field_0x6C, mtx1, 2, 0.0f, f31);
-	animPoseDrawMtx(entry->field_0x6C, mtx1, 3, 0.0f, f31);
+	animPoseDrawMtx(entry->pose, mtx1, 1, 0.0f, f31);
+	animPoseDrawMtx(entry->pose, mtx1, 2, 0.0f, f31);
+	animPoseDrawMtx(entry->pose, mtx1, 3, 0.0f, f31);
 	sysWaitDrawSync();
 }
 
@@ -1501,25 +1501,25 @@ void disp_tec(CameraId camId, void* param) {
 
 	if (wp->flags & 0x30) {
 		if (wp->flags & 0x10) {
-			wp->field_0x354 += 0.04f;
-			if (wp->field_0x354 > 1.0f) {
-				wp->field_0x354 = 1.0f;
+			wp->softAmount += 0.04f;
+			if (wp->softAmount > 1.0f) {
+				wp->softAmount = 1.0f;
 				wp->flags &= ~0x10;
 			}
 		}
 		else {
-			wp->field_0x354 -= 0.04f;
-			if (wp->field_0x354 < 0.0f) {
-				wp->field_0x354 = 0.0f;
+			wp->softAmount -= 0.04f;
+			if (wp->softAmount < 0.0f) {
+				wp->softAmount = 0.0f;
 				wp->flags &= ~0x20;
 				wp->flags &= ~0x3000;
 			}
 		}
 #ifdef MUST_MATCH
-		color = makeFadeTevColor((u8)(255.0f * wp->field_0x354));
+		color = makeFadeTevColor((u8)(255.0f * wp->softAmount));
 #else
 		color = (GXColor){0, 0, 0, 0};
-		color.a = (u8)(255.0f * wp->field_0x354);
+		color.a = (u8)(255.0f * wp->softAmount);
 #endif
 		GXSetTevColor(GX_TEVREG1, color);
 		GXSetNumTevStages(2);
@@ -1589,34 +1589,34 @@ void disp_dummy_black(CameraId camId, void* param) {
 BOOL fadeIsFinish(void) {
 	FadeEntry* entry;
 
-	if (wp->field_0x350 == -1) {
+	if (wp->activeEntry == -1) {
 		return TRUE;
 	}
 
-	entry = &wp->entries[wp->field_0x350];
+	entry = &wp->entries[wp->activeEntry];
 	return (entry->flags >> 1) & 1;
 }
 void fadeReset(s32 id) { //TODO: better param name?
 	FadeEntry* entry;
 
 	entry = &wp->entries[id];
-	if (entry->field_0x6C >= 0) {
-		animPoseRelease(entry->field_0x6C);
+	if (entry->pose >= 0) {
+		animPoseRelease(entry->pose);
 	}
-	if (entry->field_0x70 >= 0) {
-		animPaperPoseRelease(entry->field_0x70);
+	if (entry->paperPose >= 0) {
+		animPaperPoseRelease(entry->paperPose);
 	}
 	if (entry->image) {
 		imgRelease(entry->image, entry->imageType);
 	}
 	memset(entry, 0, sizeof(FadeEntry));
-	entry->field_0x6C = -1;
-	entry->field_0x70 = -1;
+	entry->pose = -1;
+	entry->paperPose = -1;
 	entry->fadeSpotX = 0.0f;
 	entry->fadeSpotY = 0.0f;
 	entry->animOffsetX = 0.0f;
 	entry->animOffsetY = 0.0f;
-	entry->field_0x90 = 1.0f;
+	entry->scale = 1.0f;
 }
 TEXPalette* fadeGetTpl(void) {
 	return wp->texture;
