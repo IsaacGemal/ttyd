@@ -63,120 +63,120 @@ static inline s32 scale2000b(u32 v) {
 	return (q >= 0 ? q : 0);
 }
 
-// The rank_monte[1][1] element needs the assignment repeated in the true arm: with the plain ternary MWCC colours
+// The rankMonte[1][1] element needs the assignment repeated in the true arm: with the plain ternary MWCC colours
 // yuwp r6/scaled r7 instead of the target's r7/r6. The helper form would be natural but it hoists the
-// rank_score[2] constants four instructions early (and four inlined scale700 calls make mwcceppc hang).
+// rankScore[2] constants four instructions early (and four inlined scale700 calls make mwcceppc hang).
 void yuugijou_init(void) {
 	s32 scaled;
 
 	yuwp = &yuugijouwork;
 	memset(yuwp, 0, sizeof(PiantaParlorWork));
 
-	yuwp->rank_used[0][0] = 1;
-	yuwp->rank_used[0][1] = 1;
-	yuwp->rank_used[0][2] = 1;
-	yuwp->rank_used[0][3] = 1;
-	yuwp->rank_used[0][4] = 1;
+	yuwp->rankUsed[0][0] = 1;
+	yuwp->rankUsed[0][1] = 1;
+	yuwp->rankUsed[0][2] = 1;
+	yuwp->rankUsed[0][3] = 1;
+	yuwp->rankUsed[0][4] = 1;
 
-	yuwp->rank_score[0][0] = 0x5B964;
-	yuwp->rank_score[0][1] = 0x5825A;
-	yuwp->rank_score[0][2] = 0x4F826;
-	yuwp->rank_score[0][3] = 0x4C3D8;
-	yuwp->rank_score[0][4] = 0x4237E;
+	yuwp->rankScore[0][0] = 0x5B964;
+	yuwp->rankScore[0][1] = 0x5825A;
+	yuwp->rankScore[0][2] = 0x4F826;
+	yuwp->rankScore[0][3] = 0x4C3D8;
+	yuwp->rankScore[0][4] = 0x4237E;
 
-	yuwp->rank_monte[0][0] = 0xE;
-	yuwp->rank_monte[0][1] = 0xC;
-	yuwp->rank_monte[0][2] = 0xF;
-	yuwp->rank_monte[0][3] = 0xB;
-	yuwp->rank_monte[0][4] = 0xA;
+	yuwp->rankMonte[0][0] = 0xE;
+	yuwp->rankMonte[0][1] = 0xC;
+	yuwp->rankMonte[0][2] = 0xF;
+	yuwp->rankMonte[0][3] = 0xB;
+	yuwp->rankMonte[0][4] = 0xA;
 
-	yuwp->rank_used[1][0] = 1;
-	yuwp->rank_used[1][1] = 1;
-	yuwp->rank_used[1][2] = 1;
-	yuwp->rank_used[1][3] = 1;
-	yuwp->rank_used[1][4] = 1;
+	yuwp->rankUsed[1][0] = 1;
+	yuwp->rankUsed[1][1] = 1;
+	yuwp->rankUsed[1][2] = 1;
+	yuwp->rankUsed[1][3] = 1;
+	yuwp->rankUsed[1][4] = 1;
 
-	yuwp->rank_score[1][0] = 2;
-	yuwp->rank_score[1][1] = 5;
-	yuwp->rank_score[1][2] = 0x12;
-	yuwp->rank_score[1][3] = 0x1B;
-	yuwp->rank_score[1][4] = 0x8A;
+	yuwp->rankScore[1][0] = 2;
+	yuwp->rankScore[1][1] = 5;
+	yuwp->rankScore[1][2] = 0x12;
+	yuwp->rankScore[1][3] = 0x1B;
+	yuwp->rankScore[1][4] = 0x8A;
 
-	yuwp->rank_monte[1][0] = scale700(yuwp->rank_score[1][0]) + 1;
+	yuwp->rankMonte[1][0] = scale700(yuwp->rankScore[1][0]) + 1;
 #ifdef MUST_MATCH
 	// MUST_MATCH: the repeated assignment only shapes the register allocator (it CSEs to one quotient).
-	yuwp->rank_monte[1][1] = (scaled = (0x2BC - (s32)yuwp->rank_score[1][1]) * 15 / 0x2BC) >= 0 ? (scaled = (0x2BC - (s32)yuwp->rank_score[1][1]) * 15 / 0x2BC) : 0;
+	yuwp->rankMonte[1][1] = (scaled = (0x2BC - (s32)yuwp->rankScore[1][1]) * 15 / 0x2BC) >= 0 ? (scaled = (0x2BC - (s32)yuwp->rankScore[1][1]) * 15 / 0x2BC) : 0;
 #else
-	yuwp->rank_monte[1][1] = ((scaled = (0x2BC - (s32)yuwp->rank_score[1][1]) * 15 / 0x2BC) >= 0 ? scaled : 0);
+	yuwp->rankMonte[1][1] = ((scaled = (0x2BC - (s32)yuwp->rankScore[1][1]) * 15 / 0x2BC) >= 0 ? scaled : 0);
 #endif
-	yuwp->rank_monte[1][2] = ((scaled = (0x2BC - (s32)yuwp->rank_score[1][2]) * 15 / 0x2BC) >= 0 ? scaled : 0);
-	yuwp->rank_monte[1][3] = ((scaled = (0x2BC - (s32)yuwp->rank_score[1][3]) * 15 / 0x2BC) >= 0 ? scaled : 0);
-	yuwp->rank_monte[1][4] = ((scaled = (0x2BC - (s32)yuwp->rank_score[1][4]) * 15 / 0x2BC) >= 0 ? scaled : 0);
+	yuwp->rankMonte[1][2] = ((scaled = (0x2BC - (s32)yuwp->rankScore[1][2]) * 15 / 0x2BC) >= 0 ? scaled : 0);
+	yuwp->rankMonte[1][3] = ((scaled = (0x2BC - (s32)yuwp->rankScore[1][3]) * 15 / 0x2BC) >= 0 ? scaled : 0);
+	yuwp->rankMonte[1][4] = ((scaled = (0x2BC - (s32)yuwp->rankScore[1][4]) * 15 / 0x2BC) >= 0 ? scaled : 0);
 
-	yuwp->rank_used[2][0] = 1;
-	yuwp->rank_used[2][1] = 1;
-	yuwp->rank_used[2][2] = 1;
-	yuwp->rank_used[2][3] = 1;
-	yuwp->rank_used[2][4] = 1;
+	yuwp->rankUsed[2][0] = 1;
+	yuwp->rankUsed[2][1] = 1;
+	yuwp->rankUsed[2][2] = 1;
+	yuwp->rankUsed[2][3] = 1;
+	yuwp->rankUsed[2][4] = 1;
 
-	yuwp->rank_score[2][0] = 0x20850;
-	yuwp->rank_score[2][1] = 0x20436;
-	yuwp->rank_score[2][2] = 0x20184;
-	yuwp->rank_score[2][3] = 0x1F91E;
-	yuwp->rank_score[2][4] = 0x1E3AC;
+	yuwp->rankScore[2][0] = 0x20850;
+	yuwp->rankScore[2][1] = 0x20436;
+	yuwp->rankScore[2][2] = 0x20184;
+	yuwp->rankScore[2][3] = 0x1F91E;
+	yuwp->rankScore[2][4] = 0x1E3AC;
 
-	yuwp->rank_monte[2][0] = ((scaled = ((s32)yuwp->rank_score[2][0] - 0x1A9C8) / 2000) >= 0 ? scaled : 0) + 7;
-	yuwp->rank_monte[2][1] = ((scaled = ((s32)yuwp->rank_score[2][1] - 0x1A9C8) / 2000) >= 0 ? scaled : 0) + 6;
-	yuwp->rank_monte[2][2] = ((scaled = ((s32)yuwp->rank_score[2][2] - 0x1A9C8) / 2000) >= 0 ? scaled : 0) + 4;
-	yuwp->rank_monte[2][3] = ((scaled = ((s32)yuwp->rank_score[2][3] - 0x1A9C8) / 2000) >= 0 ? scaled : 0) + 4;
-	yuwp->rank_monte[2][4] = ((scaled = ((s32)yuwp->rank_score[2][4] - 0x1A9C8) / 2000) >= 0 ? scaled : 0) + 1;
+	yuwp->rankMonte[2][0] = ((scaled = ((s32)yuwp->rankScore[2][0] - 0x1A9C8) / 2000) >= 0 ? scaled : 0) + 7;
+	yuwp->rankMonte[2][1] = ((scaled = ((s32)yuwp->rankScore[2][1] - 0x1A9C8) / 2000) >= 0 ? scaled : 0) + 6;
+	yuwp->rankMonte[2][2] = ((scaled = ((s32)yuwp->rankScore[2][2] - 0x1A9C8) / 2000) >= 0 ? scaled : 0) + 4;
+	yuwp->rankMonte[2][3] = ((scaled = ((s32)yuwp->rankScore[2][3] - 0x1A9C8) / 2000) >= 0 ? scaled : 0) + 4;
+	yuwp->rankMonte[2][4] = ((scaled = ((s32)yuwp->rankScore[2][4] - 0x1A9C8) / 2000) >= 0 ? scaled : 0) + 1;
 
-	yuwp->rank_used[3][0] = 1;
-	yuwp->rank_used[3][1] = 1;
-	yuwp->rank_used[3][2] = 1;
-	yuwp->rank_used[3][3] = 1;
-	yuwp->rank_used[3][4] = 1;
+	yuwp->rankUsed[3][0] = 1;
+	yuwp->rankUsed[3][1] = 1;
+	yuwp->rankUsed[3][2] = 1;
+	yuwp->rankUsed[3][3] = 1;
+	yuwp->rankUsed[3][4] = 1;
 
-	yuwp->rank_score[3][0] = 0x16BDE;
-	yuwp->rank_score[3][1] = 0x16968;
-	yuwp->rank_score[3][2] = 0x16382;
-	yuwp->rank_score[3][3] = 0x1627E;
-	yuwp->rank_score[3][4] = 0x15950;
+	yuwp->rankScore[3][0] = 0x16BDE;
+	yuwp->rankScore[3][1] = 0x16968;
+	yuwp->rankScore[3][2] = 0x16382;
+	yuwp->rankScore[3][3] = 0x1627E;
+	yuwp->rankScore[3][4] = 0x15950;
 
-	yuwp->rank_monte[3][0] = scale2000b(yuwp->rank_score[3][0]) + 7;
-	yuwp->rank_monte[3][1] = scale2000b(yuwp->rank_score[3][1]) + 6;
-	yuwp->rank_monte[3][2] = scale2000b(yuwp->rank_score[3][2]) + 4;
-	yuwp->rank_monte[3][3] = scale2000b(yuwp->rank_score[3][3]) + 3;
-	yuwp->rank_monte[3][4] = scale2000b(yuwp->rank_score[3][4]) + 4;
+	yuwp->rankMonte[3][0] = scale2000b(yuwp->rankScore[3][0]) + 7;
+	yuwp->rankMonte[3][1] = scale2000b(yuwp->rankScore[3][1]) + 6;
+	yuwp->rankMonte[3][2] = scale2000b(yuwp->rankScore[3][2]) + 4;
+	yuwp->rankMonte[3][3] = scale2000b(yuwp->rankScore[3][3]) + 3;
+	yuwp->rankMonte[3][4] = scale2000b(yuwp->rankScore[3][4]) + 4;
 }
 
 // The original splits the visibility test as `flag1 == 0 || flag2 == 0`; two separate early
 // returns would fold into a single `beq` instead of the target's `bne body; b end`.
 void monteCountDisp(void) {
 	static s32 monte_snd_flag;
-	s32 base_y = -180;
+	s32 baseY = -180;
 	Mtx mtx;
 	s32 delta;
 
 	if (yuwp->flags & 4) {
-		base_y = -120;
+		baseY = -120;
 	}
 	if ((yuwp->flags & 1) == 0 || (yuwp->flags & 2) == 0) return;
-	windowDispGX_Waku_col(0, *(GXColor*)&waku_col, -288.0f, (f32)(base_y + 44), 200.0f, 44.0f, 16.0f);
+	windowDispGX_Waku_col(0, *(GXColor*)&waku_col, -288.0f, (f32)(baseY + 44), 200.0f, 44.0f, 16.0f);
 
-	PSMTXTrans(mtx, -260.0f, (f32)(base_y + 2), 0.0f);
+	PSMTXTrans(mtx, -260.0f, (f32)(baseY + 2), 0.0f);
 	iconDispGxCol(mtx, 0x10, 0x13F, *(GXColor*)&icon_col_left);
 
-	PSMTXTrans(mtx, -230.0f, (f32)(base_y + 2), 0.0f);
+	PSMTXTrans(mtx, -230.0f, (f32)(baseY + 2), 0.0f);
 	iconDispGxCol(mtx, 0x10, 0x1D6, *(GXColor*)&icon_col_right);
 
-	PSMTXTrans(mtx, -128.0f, (f32)(base_y + 2), 0.0f);
-	iconNumberDispGx(mtx, yuwp->disp_tokens, 0, *(GXColor*)&number_col);
+	PSMTXTrans(mtx, -128.0f, (f32)(baseY + 2), 0.0f);
+	iconNumberDispGx(mtx, yuwp->dispTokens, 0, *(GXColor*)&number_col);
 
-	yuwp->disp_timer++;
-	if ((yuwp->disp_timer & 3) == 0) {
-		delta = yuwp->tokens - yuwp->disp_tokens;
-		yuwp->disp_timer = 0;
+	yuwp->dispTimer++;
+	if ((yuwp->dispTimer & 3) == 0) {
+		delta = yuwp->tokens - yuwp->dispTokens;
+		yuwp->dispTimer = 0;
 		if (monte_snd_flag == 0 && delta != 0) {
 			psndSFXOn((const char*)0x8CA);
 			monte_snd_flag = 8;
@@ -184,9 +184,9 @@ void monteCountDisp(void) {
 		if (delta != 0) {
 			delta /= 10;
 			if (delta == 0) {
-				delta = ((s32)yuwp->tokens > (s32)yuwp->disp_tokens) ? 1 : -1;
+				delta = ((s32)yuwp->tokens > (s32)yuwp->dispTokens) ? 1 : -1;
 			}
-			yuwp->disp_tokens += delta;
+			yuwp->dispTokens += delta;
 		}
 	}
 	if (monte_snd_flag != 0) {
@@ -196,7 +196,7 @@ void monteCountDisp(void) {
 
 USER_FUNC(yuugijou_add_montemedal) {
 	s32* args = event->args;
-	s32 sync_disp = evtGetValue(event, args[0]);
+	s32 syncDisp = evtGetValue(event, args[0]);
 	s32 amount = evtGetValue(event, args[1]);
 	s32 sum = yuwp->tokens + amount;
 
@@ -205,8 +205,8 @@ USER_FUNC(yuugijou_add_montemedal) {
 	} else {
 		yuwp->tokens = 99999;
 	}
-	if (sync_disp != 0) {
-		yuwp->disp_tokens = yuwp->tokens;
+	if (syncDisp != 0) {
+		yuwp->dispTokens = yuwp->tokens;
 	}
 	return 2;
 }
@@ -222,7 +222,7 @@ USER_FUNC(yuugijou_get_montemedal_keep) {
 	if (yuwp->flags & 2) {
 		evtSetValue(event, args[0], 0);
 	} else {
-		evtSetValue(event, args[0], yuwp->kept_tokens);
+		evtSetValue(event, args[0], yuwp->keptTokens);
 	}
 	return 2;
 }
@@ -232,7 +232,7 @@ USER_FUNC(yuugijou_add_montemedal_moto) {
 
 	evtGetValue(event, args[0]);
 	if (yuwp->flags & 2) {
-		yuwp->kept_tokens += evtGetValue(event, args[1]);
+		yuwp->keptTokens += evtGetValue(event, args[1]);
 	}
 	return 2;
 }
@@ -240,7 +240,7 @@ USER_FUNC(yuugijou_add_montemedal_moto) {
 USER_FUNC(yuugijou_montemedal_disp_onoff) {
 	if (evtGetValue(event, event->args[0]) != 0) {
 		yuwp->flags |= 1;
-		yuwp->disp_tokens = yuwp->tokens;
+		yuwp->dispTokens = yuwp->tokens;
 	} else {
 		yuwp->flags &= ~1;
 	}
@@ -248,7 +248,7 @@ USER_FUNC(yuugijou_montemedal_disp_onoff) {
 }
 
 USER_FUNC(yuugijou_montemedal_wait) {
-	if ((s32)yuwp->disp_tokens != (s32)yuwp->tokens) {
+	if ((s32)yuwp->dispTokens != (s32)yuwp->tokens) {
 		return 0;
 	}
 	return 2;
@@ -256,9 +256,9 @@ USER_FUNC(yuugijou_montemedal_wait) {
 
 USER_FUNC(yuugijou_montemedal_keep) {
 	if (yuwp->flags & 2) {
-		yuwp->kept_tokens = yuwp->tokens;
+		yuwp->keptTokens = yuwp->tokens;
 		yuwp->tokens = 0;
-		yuwp->disp_tokens = 0;
+		yuwp->dispTokens = 0;
 		yuwp->flags &= ~2;
 		yuwp->flags &= ~1;
 	}
@@ -267,9 +267,9 @@ USER_FUNC(yuugijou_montemedal_keep) {
 
 USER_FUNC(yuugijou_montemedal_return) {
 	if (!(yuwp->flags & 2)) {
-		s32 kept = yuwp->kept_tokens;
+		s32 kept = yuwp->keptTokens;
 		yuwp->tokens = kept;
-		yuwp->disp_tokens = kept;
+		yuwp->dispTokens = kept;
 		yuwp->flags |= 2;
 		yuwp->flags |= 1;
 	}

@@ -6,13 +6,13 @@
 
 typedef struct PiantaParlorWork {
 	u32 flags; //0x00 bit 0: count display on, bit 1: medals taken out, bit 2: yup flag, bit 3: window ended
-	u32 kept_tokens; //0x04
+	u32 keptTokens; //0x04
 	s32 tokens; //0x08
-	u32 disp_timer; //0x0C
-	u32 disp_tokens; //0x10
-	u32 rank_used[4][6]; //0x14 [mode][slot]
-	u32 rank_score[4][6]; //0x74 [mode][slot]
-	u32 rank_monte[4][6]; //0xD4 [mode][slot]
+	u32 dispTimer; //0x0C
+	u32 dispTokens; //0x10
+	u32 rankUsed[4][6]; //0x14 [mode][slot]
+	u32 rankScore[4][6]; //0x74 [mode][slot]
+	u32 rankMonte[4][6]; //0xD4 [mode][slot]
 	u32 field_0x134; //0x134
 } PiantaParlorWork;
 
