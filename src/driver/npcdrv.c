@@ -1231,134 +1231,133 @@ void npcMain(void) {
                     state = evt->wNpcEventType;
                     if (entry->blowEvent != NULL && state != NPC_EVENT_TYPE_BLOW && state != NPC_EVENT_TYPE_DEAD && npcCheckBlow(entry)) {
                         entry->interruptFlags |= 8;
-                        goto interrupt;
-                    }
-
-                    if (entry->territoryType != NPC_TERRITORY_TYPE_NOTHING && (state == NPC_EVENT_TYPE_MOVE || state == NPC_EVENT_TYPE_FIND)) {
-                        hit = FALSE;
-                        if (entry->territoryType == NPC_TERRITORY_TYPE_CIRCLE) {
-                            f32 dx;
-                            f32 dz;
-
-                            dx = entry->territoryBase.x - entry->position.x;
-                            dz = entry->territoryBase.z - entry->position.z;
-                            dist = sqrtf(dx * dx + dz * dz);
-                            if (dist > (state == NPC_EVENT_TYPE_FIND ? entry->territoryHoming.x : entry->territoryHoming.x)) {
-                                hit = TRUE;
-                            }
-                        } else if (entry->territoryType == NPC_TERRITORY_TYPE_SQUARE) {
-                            if (state == NPC_EVENT_TYPE_FIND) {
-                                if (entry->position.x < entry->territoryBase.x - entry->territoryHoming.x ||
-                                    entry->position.x > entry->territoryBase.x + entry->territoryHoming.x ||
-                                    entry->position.z < entry->territoryBase.z - entry->territoryHoming.z ||
-                                    entry->position.z > entry->territoryBase.z + entry->territoryHoming.z) {
-                                    hit = TRUE;
-                                }
-                            } else if (entry->position.x < entry->territoryBase.x - entry->territoryLoiter.x ||
-                                       entry->position.x > entry->territoryBase.x + entry->territoryLoiter.x ||
-                                       entry->position.z < entry->territoryBase.z - entry->territoryLoiter.z ||
-                                       entry->position.z > entry->territoryBase.z + entry->territoryLoiter.z) {
-                                hit = TRUE;
-                            }
-                        }
-                        if (hit) {
-                            entry->interruptFlags |= 4;
-                            goto interrupt;
-                        }
-                    }
-
-                    if (state == NPC_EVENT_TYPE_FIND) {
-                        f32 dx;
-                        f32 dy;
-                        f32 dz;
-                        BOOL hit;
-
-                        mario = marioGetPtr();
-                        dx = mario->position.x - entry->position.x;
-                        dy = mario->position.y - entry->position.y;
-                        dz = mario->position.z - entry->position.z;
-                        PSVECSubtract(&entry->prevPosition, &entry->position, &moved);
-                        dir = entry->direction;
-                        if ((entry->jumpFlags & 2) && sqrtf(moved.x * moved.x + moved.z * moved.z) > 0.05f) {
-                            dir = entry->moveDir;
-                        }
-                        hit = FALSE;
-                        if (!npcMarioNoticeable()) {
-                            hit = TRUE;
-                        } else {
-                            dist = sqrtf(dx * dx + dz * dz);
-                            if (dist > 0.25f * entry->homingRange) {
-                                if (dy > entry->territoryLoiter.y) {
-                                    hit = TRUE;
-                                } else if (-dy > entry->territoryHoming.y) {
-                                    hit = TRUE;
-                                } else if (dist > entry->homingRange) {
-                                    hit = TRUE;
-                                } else if (angle = angleABf(0.0f, 0.0f, dx, dz),
-                                           __fabsf(compAngle(dir, angle)) > 0.5f * entry->homingAngle) {
-                                    hit = TRUE;
-                                }
-                            }
-                        }
-                        if (hit) {
-                            entry->interruptFlags |= 2;
-                            goto interrupt;
-                        }
-                    }
-
-                    if (state == NPC_EVENT_TYPE_MOVE || state == NPC_EVENT_TYPE_RETURN) {
-                        f32 dx;
-                        f32 dist;
-                        f32 dy;
-                        f32 dz;
-                        f32 angle;
-                        BOOL hit;
-
-                        mario = marioGetPtr();
-                        dx = mario->position.x - entry->position.x;
-                        dy = mario->position.y - entry->position.y;
-                        dz = mario->position.z - entry->position.z;
-                        dist = sqrtf(dx * dx + dz * dz);
-                        PSVECSubtract(&entry->prevPosition, &entry->position, &back);
-                        dir = reviseAngle(entry->direction) < 180.0f ? 90.0f : 270.0f;
-                        hit = TRUE;
-                        if (!npcMarioNoticeable()) {
+                    } else {
+                        if (entry->territoryType != NPC_TERRITORY_TYPE_NOTHING && (state == NPC_EVENT_TYPE_MOVE || state == NPC_EVENT_TYPE_FIND)) {
                             hit = FALSE;
-                        } else {
-                            dist = sqrtf(dx * dx + dz * dz);
-                            if (dist > 0.25f * entry->searchRange) {
-                                if (dist > entry->searchRange) {
-                                    hit = FALSE;
-                                    goto found;
+                            if (entry->territoryType == NPC_TERRITORY_TYPE_CIRCLE) {
+                                f32 dx;
+                                f32 dz;
+
+                                dx = entry->territoryBase.x - entry->position.x;
+                                dz = entry->territoryBase.z - entry->position.z;
+                                dist = sqrtf(dx * dx + dz * dz);
+                                if (dist > (state == NPC_EVENT_TYPE_FIND ? entry->territoryHoming.x : entry->territoryHoming.x)) {
+                                    hit = TRUE;
                                 }
-                                angle = angleABf(0.0f, 0.0f, dx, dz);
-                                if (__fabsf(compAngle(dir, angle)) > 0.5f * entry->searchAngle) {
-                                    hit = FALSE;
-                                    goto found;
+                            } else if (entry->territoryType == NPC_TERRITORY_TYPE_SQUARE) {
+                                if (state == NPC_EVENT_TYPE_FIND) {
+                                    if (entry->position.x < entry->territoryBase.x - entry->territoryHoming.x ||
+                                        entry->position.x > entry->territoryBase.x + entry->territoryHoming.x ||
+                                        entry->position.z < entry->territoryBase.z - entry->territoryHoming.z ||
+                                        entry->position.z > entry->territoryBase.z + entry->territoryHoming.z) {
+                                        hit = TRUE;
+                                    }
+                                } else if (entry->position.x < entry->territoryBase.x - entry->territoryLoiter.x ||
+                                           entry->position.x > entry->territoryBase.x + entry->territoryLoiter.x ||
+                                           entry->position.z < entry->territoryBase.z - entry->territoryLoiter.z ||
+                                           entry->position.z > entry->territoryBase.z + entry->territoryLoiter.z) {
+                                    hit = TRUE;
                                 }
                             }
-                            if (dy > entry->territoryLoiter.y) {
+                            if (hit) {
+                                entry->interruptFlags |= 4;
+                                goto interrupt;
+                            }
+                        }
+
+                        if (state == NPC_EVENT_TYPE_FIND) {
+                            f32 dx;
+                            f32 dy;
+                            f32 dz;
+                            BOOL hit;
+
+                            mario = marioGetPtr();
+                            dx = mario->position.x - entry->position.x;
+                            dy = mario->position.y - entry->position.y;
+                            dz = mario->position.z - entry->position.z;
+                            PSVECSubtract(&entry->prevPosition, &entry->position, &moved);
+                            dir = entry->direction;
+                            if ((entry->jumpFlags & 2) && sqrtf(moved.x * moved.x + moved.z * moved.z) > 0.05f) {
+                                dir = entry->moveDir;
+                            }
+                            hit = FALSE;
+                            if (!npcMarioNoticeable()) {
+                                hit = TRUE;
+                            } else {
+                                dist = sqrtf(dx * dx + dz * dz);
+                                if (dist > 0.25f * entry->homingRange) {
+                                    if (dy > entry->territoryLoiter.y) {
+                                        hit = TRUE;
+                                    } else if (-dy > entry->territoryHoming.y) {
+                                        hit = TRUE;
+                                    } else if (dist > entry->homingRange) {
+                                        hit = TRUE;
+                                    } else if (angle = angleABf(0.0f, 0.0f, dx, dz),
+                                               __fabsf(compAngle(dir, angle)) > 0.5f * entry->homingAngle) {
+                                        hit = TRUE;
+                                    }
+                                }
+                            }
+                            if (hit) {
+                                entry->interruptFlags |= 2;
+                                goto interrupt;
+                            }
+                        }
+
+                        if (state == NPC_EVENT_TYPE_MOVE || state == NPC_EVENT_TYPE_RETURN) {
+                            f32 dx;
+                            f32 dist;
+                            f32 dy;
+                            f32 dz;
+                            f32 angle;
+                            BOOL hit;
+
+                            mario = marioGetPtr();
+                            dx = mario->position.x - entry->position.x;
+                            dy = mario->position.y - entry->position.y;
+                            dz = mario->position.z - entry->position.z;
+                            dist = sqrtf(dx * dx + dz * dz);
+                            PSVECSubtract(&entry->prevPosition, &entry->position, &back);
+                            dir = reviseAngle(entry->direction) < 180.0f ? 90.0f : 270.0f;
+                            hit = TRUE;
+                            if (!npcMarioNoticeable()) {
                                 hit = FALSE;
-                            } else if (-dy > entry->territoryHoming.y) {
-                                hit = FALSE;
-                            } else if (state == NPC_EVENT_TYPE_RETURN) {
-                                if (entry->territoryType == NPC_TERRITORY_TYPE_CIRCLE) {
-                                    dx = entry->territoryBase.x - entry->position.x;
-                                    dz = entry->territoryBase.z - entry->position.z;
-                                    if (sqrtf(dx * dx + dz * dz) > 0.75 * entry->territoryHoming.x) {
+                            } else {
+                                dist = sqrtf(dx * dx + dz * dz);
+                                if (dist > 0.25f * entry->searchRange) {
+                                    if (dist > entry->searchRange) {
+                                        hit = FALSE;
+                                        goto found;
+                                    }
+                                    angle = angleABf(0.0f, 0.0f, dx, dz);
+                                    if (__fabsf(compAngle(dir, angle)) > 0.5f * entry->searchAngle) {
+                                        hit = FALSE;
+                                        goto found;
+                                    }
+                                }
+                                if (dy > entry->territoryLoiter.y) {
+                                    hit = FALSE;
+                                } else if (-dy > entry->territoryHoming.y) {
+                                    hit = FALSE;
+                                } else if (state == NPC_EVENT_TYPE_RETURN) {
+                                    if (entry->territoryType == NPC_TERRITORY_TYPE_CIRCLE) {
+                                        dx = entry->territoryBase.x - entry->position.x;
+                                        dz = entry->territoryBase.z - entry->position.z;
+                                        if (sqrtf(dx * dx + dz * dz) > 0.75 * entry->territoryHoming.x) {
+                                            hit = FALSE;
+                                        }
+                                    } else if (entry->position.x < entry->territoryBase.x - 0.75f * entry->territoryHoming.x ||
+                                               entry->position.x > entry->territoryBase.x + 0.75f * entry->territoryHoming.x ||
+                                               entry->position.z < entry->territoryBase.z - 0.75f * entry->territoryHoming.z ||
+                                               entry->position.z > entry->territoryBase.z + 0.75f * entry->territoryHoming.z) {
                                         hit = FALSE;
                                     }
-                                } else if (entry->position.x < entry->territoryBase.x - 0.75f * entry->territoryHoming.x ||
-                                           entry->position.x > entry->territoryBase.x + 0.75f * entry->territoryHoming.x ||
-                                           entry->position.z < entry->territoryBase.z - 0.75f * entry->territoryHoming.z ||
-                                           entry->position.z > entry->territoryBase.z + 0.75f * entry->territoryHoming.z) {
-                                    hit = FALSE;
                                 }
                             }
-                        }
-                    found:
-                        if (hit) {
-                            entry->interruptFlags |= 1;
+                        found:
+                            if (hit) {
+                                entry->interruptFlags |= 1;
+                            }
                         }
                     }
                 }
