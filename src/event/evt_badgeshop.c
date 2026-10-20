@@ -146,12 +146,13 @@ s32 bottakuruComp(const void** sortA, const void** sortB) {
 }
 
 void badgeShop_bottakuruGeneration(void) {
-	// {item id, random rank} pairs; qqsort orders them by rank (second field).
+	// {item id, random rank} pairs; qqsort orders them by rank (second field). `n` is the fill count,
+	// then the index into badge_bottakuru_table.
 	s32 entries[0x11][2];
 	s32 (*base)[2] = entries;
 	s32 j;
 	s32 i;
-	u32 filled;
+	u32 n;
 	s32 count;
 	for (i = 0; i < sizeof(entries) / sizeof(entries[0]); i++) {
 		base = &entries[i];
@@ -160,23 +161,23 @@ void badgeShop_bottakuruGeneration(void) {
 	}
 
 	base = entries;
-	filled = 0;
+	n = 0;
 	for (i = 0; i < BADGE_MAX - KEY_ITEM_MIN; i++) {
 		count = badgeShop_get(bdsw->bottakuru_table, (s16)(i + KEY_ITEM_MIN)); //inline
 		for (j = 0; j < count; j++) {
-			entries[filled][1] = irand(100);
-			entries[filled++][0] = i + KEY_ITEM_MIN;
-			if (filled >= 0x10) break;
+			entries[n][1] = irand(100);
+			entries[n++][0] = i + KEY_ITEM_MIN;
+			if (n >= 0x10) break;
 		}
-		if (filled >= 0x10) break;
+		if (n >= 0x10) break;
 	}
 
 	qqsort(entries, 0x11, 8, (int (*)(void*, void*))bottakuruComp);
 
 	for (i = 0; i < 4; i++, base++) { //only 4 slots
-		for (filled = 0; filled < 0x11; filled++) {
-			if ((*base)[0] == badge_bottakuru_table[filled]) {
-				evtSetValue(NULL, i + GSW(118), filled);
+		for (n = 0; n < 0x11; n++) {
+			if ((*base)[0] == badge_bottakuru_table[n]) {
+				evtSetValue(NULL, i + GSW(118), n);
 			}
 		}
 	}
@@ -224,7 +225,7 @@ void badgeShop_bteresaGeneration(void) {
 
 #pragma inline_max_size(160) // keep badgeShop_get inlined but badgeShop_set a real `bl`
 void badgeShop_bargainGeneration(void) {
-	s16 badgeCount;
+	s16 slotValue;
 	s16 pickIndex;
 	s32 pickTarget;
 	int i;
@@ -296,14 +297,14 @@ void badgeShop_bargainGeneration(void) {
 	totalBadges = 0;
 	count2 = 0;
 	for (; i < 99; i++) {
-		badgeCount = 0;
+		slotValue = 0;
 		badge = badgeShop_get(bdsw->special_table, (s16)(i + BADGE_MIN)); //inline
 		if (badge) {
 			totalBadges++;
-			badgeCount |= 1;
+			slotValue |= 1;
 		}
-		if (badgeCount) {
-			badgeShop_set(remaining, (s16)(i + BADGE_MIN), badgeCount);
+		if (slotValue) {
+			badgeShop_set(remaining, (s16)(i + BADGE_MIN), slotValue);
 			count2++;
 		}
 	}

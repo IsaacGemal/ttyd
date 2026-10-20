@@ -9738,3 +9738,31 @@ position); `unk19C` is an f32 move direction set beside `directionView` everywhe
 airTimer at the jump peak; 0x1C4, 0x1DC, 0x1F0, 0x1FC, 0x2AC/0x2B0 (per-motion scratch: mot_bottomless speed and
 angle, marioLandOn's landing distance) keep field names; peach.c's `unk170 + 0xC` (0x17C) still overruns into
 riderDelta.
+### Readability: effects, battle_information, badge shop, evt_sub, sound and boss units from the DeepSeek cleanup swarm, wave 4 (2026-10-19, DeepSeek V4.1 Flash, n9-q-ds4; reviewed by Claude Opus 5.5)
+
+Thirty-four files, one DeepSeek V4.1 Flash agent each (a16e74b4). About 150 renames traced to their consumers;
+these were wrong and are fixed: gor evt_goki_sub_intpl_init's second pair is Z (the script feeds LW(0)/LW(1) to
+evt_mapobj_trans x and z), `startY`/`endY` -> `startZ`/`endZ`; evt_gor_villager_urouro_check_func moves the wander
+target (args 0/1) back to the home point (args 2/3) when it strays past args[4], so `newX`/`newZ`/`threshold`/
+`prevX`/`prevZ` are `homeX`/`homeZ`/`radius`/`x`/`z`; macho_gance wariai_enzan_*'s first argument is the script's
+LOOP counter, which counts down (`step` -> `remaining`), and wariai_enzan_1f_intpl(_w)'s args 5/6 are intplGetValue
+modes, 14..27 mirrored, not times (`time`/`time2` -> `mode`/`mode2`; the mirrored second ratio is computed from the
+first mode in retail, now said in a comment); eff_thunderflare's two RGB triplets feed GX_TEVREG0/1 (stage 1 blends
+them by the texture), `colorR/G/B`/`color2R/G/B` -> `tevReg0R/G/B`/`tevReg1R/G/B` and the inlines
+`flareSetTevReg0/1`; evt_badgeshop bottakuru's `filled` is also the badge_bottakuru_table index stored into the GSW
+(`n` again) and bargain's `badgeCount` is a 2-bit slot value, `slotValue`; evt_twoddisp's loop counter kept the name
+`offset` after it became an index, now `i`; eff_hagetaka_flush `color_index` -> `colorIndex`. Comments fixed:
+gor mario_and_party_sleep's countdowns are for dozing off (LW(1) puts Mario in M_N_5A with the snore loop), not
+waking; battle_information's drop table uses the first entry whose threshold is at or above the HP/FP percent.
+eff_toiki's GXSetNumChans takes a count, `GX_TRUE` -> 1. Struct copies removed: eff_damage_star's DamageStarAnim
+duplicated effdrv.c's EffectMayaAnim and eff_freeze's effFreezeSnowDustData the head of eff_snow_dust_n64.c's
+effSnowDustData; both structs (with EffectMayaAnimData) moved to effdrv.h / eff_snow_dust_n64.h and the copies
+deleted. Made consistent: effMissStarEntry's `lifetime` parameter is the spawn delay stored in `delay` (header
+too); sound.h's SoundSSPlayCh/Ex prototypes use the .c's `name`/`useAram`. Kept: GX enum swaps (each checked by value
+and family; snowfall's GXSetTevColor(1) is GX_TEVREG0), the unit enum constants, battle_information's drop-param
+names (threshold, overall chance, count, per-drop chance), stardust2's `velX`/`velY`/`accelY`/`age`/`life`/
+`vtxIndex`, evt_sub's SplineWork `knots`/`points`/`tangents` (spline_maketable's own names). Matching build 32
+files OK; all 36 touched C files compile to objects equivalent to the pre-batch ones without MUST_MATCH
+(tools/obj_equiv.py, old tree with old headers). Open: DamageStarData 0x24/0x3C/0x40 (life, displayed damage,
+last retrace), effFreezeData 0x24/0x25 (vertex index, flicker timer), thunderflare `field_0x00` (written, never
+read) and EffectMayaAnimData's fields stay unnamed; agents' proposals in tools/swarm/data/c4_logs.

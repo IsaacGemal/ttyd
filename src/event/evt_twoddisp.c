@@ -76,7 +76,7 @@ static inline void twoddisp_fontColor(GXColor color) {
 // site emits the original's zero-extension. Reported in REPORT.md; the header itself is not changed
 // because other call sites (ac_timing_wide) rely on the `s16` declaration.
 void twoddisp_disp(CameraId cameraId, void* param) {
-	s32 offset;
+	s32 i;
 	TwoDDisplayer* entry;
 	Vec pos;
 	GXColor color;
@@ -87,8 +87,8 @@ void twoddisp_disp(CameraId cameraId, void* param) {
 #endif
 	char text[0x100];
 
-	for (offset = 0; offset < 100; offset++) {
-		entry = &twodPtr[offset];
+	for (i = 0; i < 100; i++) {
+		entry = &twodPtr[i];
 		if ((s8)entry->name[0] == 0) {
 			continue;
 		}

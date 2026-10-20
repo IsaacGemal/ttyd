@@ -45,12 +45,12 @@ typedef struct EffThunderflareData {
 	f32 angle2;     // 0x24
 	f32 scale;      // 0x28
 	f32 radius;     // 0x2C
-	s32 colorR;     // 0x30
-	s32 colorG;     // 0x34
-	s32 colorB;     // 0x38
-	s32 color2R; // 0x3C
-	s32 color2G; // 0x40
-	s32 color2B; // 0x44
+	s32 tevReg0R;   // 0x30, GX_TEVREG0: stage 1's colour where the texture is dark (alpha from `alpha`)
+	s32 tevReg0G;   // 0x34
+	s32 tevReg0B;   // 0x38
+	s32 tevReg1R;   // 0x3C, GX_TEVREG1: stage 1's colour where the texture is bright
+	s32 tevReg1G;   // 0x40
+	s32 tevReg1B;   // 0x44
 } EffThunderflareData;
 
 // The element index-to-value expression must read `i + j - 1`, not `i - 1 + j`:
@@ -83,21 +83,21 @@ EffectEntry* effThunderflareN64Entry(s32 type, s32 timer, f32 x, f32 y, f32 z, f
 
 	switch (type) {
 	case 0:
-		data->colorR = 0xff;
-		data->colorG = 0;
-		data->colorB = 0xff;
-		data->color2R = 0xff;
-		data->color2G = 0xff;
-		data->color2B = 0xff;
+		data->tevReg0R = 0xff;
+		data->tevReg0G = 0;
+		data->tevReg0B = 0xff;
+		data->tevReg1R = 0xff;
+		data->tevReg1G = 0xff;
+		data->tevReg1B = 0xff;
 		break;
 	case 1:
 	default:
-		data->colorR = 0xff;
-		data->colorG = 0x14;
-		data->colorB = 0x21;
-		data->color2R = 0x32;
-		data->color2G = 0x14;
-		data->color2B = 0x0a;
+		data->tevReg0R = 0xff;
+		data->tevReg0G = 0x14;
+		data->tevReg0B = 0x21;
+		data->tevReg1R = 0x32;
+		data->tevReg1G = 0x14;
+		data->tevReg1B = 0x0a;
 		break;
 	}
 
@@ -114,7 +114,7 @@ EffectEntry* effThunderflareN64Entry(s32 type, s32 timer, f32 x, f32 y, f32 z, f
 	return entry;
 }
 
-static inline void flareSetColor1(s32 r, s32 g, s32 b) {
+static inline void flareSetTevReg1(s32 r, s32 g, s32 b) {
 	GXColor color = unk_804232a8;
 	color.r = r;
 	color.g = g;
@@ -122,7 +122,7 @@ static inline void flareSetColor1(s32 r, s32 g, s32 b) {
 	GXSetTevColor(GX_TEVREG1, color);
 }
 
-static inline void flareSetColor2(s32 r, s32 g, s32 b, s32 a) {
+static inline void flareSetTevReg0(s32 r, s32 g, s32 b, s32 a) {
 	GXColor color = unk_804232ac;
 	color.r = r;
 	color.g = g;
@@ -246,9 +246,9 @@ void effThunderflareDisp(CameraId camId, void* param) {
 
 	cam = camGetPtr(camId);
 	data = effect->userdata;
-	r = data->colorR;
-	g = data->colorG;
-	b = data->colorB;
+	r = data->tevReg0R;
+	g = data->tevReg0G;
+	b = data->tevReg0B;
 
 	PSMTXTrans(trans, data->x, data->y, data->z);
 	PSMTXRotRad(rot, 'y', float_deg2rad_80420080 * -camGetPtr(CAMERA_3D)->viewYaw);
@@ -268,7 +268,7 @@ void effThunderflareDisp(CameraId camId, void* param) {
 	GXSetTevColorIn(GX_TEVSTAGE1, GX_CC_C0, GX_CC_C1, GX_CC_CPREV, GX_CC_ZERO);
 	GXSetTevAlphaIn(GX_TEVSTAGE1, GX_CA_ZERO, GX_CA_A0, GX_CA_APREV, GX_CA_ZERO);
 
-	flareSetColor1(data->color2R, data->color2G, data->color2B);
+	flareSetTevReg1(data->tevReg1R, data->tevReg1G, data->tevReg1B);
 
 	data++;
 	effGetTexObjN64(0x55, &texObj);
@@ -283,7 +283,7 @@ void effThunderflareDisp(CameraId camId, void* param) {
 	for (i = 1; i < effect->count; i++, data++) {
 		scale = data->scale;
 		if (scale != float_0_80420088) {
-			flareSetColor2(r, g, b, data->alpha);
+			flareSetTevReg0(r, g, b, data->alpha);
 
 			PSMTXTrans(trans, data->x, data->y, data->z);
 			PSMTXScale(work, scale, scale, scale);

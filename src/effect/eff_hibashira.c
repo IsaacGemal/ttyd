@@ -24,8 +24,6 @@ static inline Vec makeHibashiraVec(f32 x, f32 y, f32 z) {
 // .rodata
 
 // .sdata2 white GXColor with zero alpha; the alpha byte is overwritten per pillar segment.
-
-// .sdata2
 extern const u32 dat_80422338;
 
 inline GXColor makeHibashiraColor(s32 alpha) {

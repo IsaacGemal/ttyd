@@ -15,14 +15,6 @@
 
 // Pooled double the compiler reuses for the u32->f32 conversion in effFreezeMain.
 
-// Leading fields of the snow-dust effect's userdata (see eff_snow_dust_n64.c).
-typedef struct effFreezeSnowDustData {
-	s32 type; // 0x00
-	f32 x;    // 0x04
-	f32 y;    // 0x08
-	f32 z;    // 0x0C
-} effFreezeSnowDustData;
-
 EffectEntry* effFreezeN64Entry(s32 type, s32 life, f32 x, f32 y, f32 z, f32 scale) {
 	EffectEntry* entry;
 	effFreezeData* data;
@@ -129,9 +121,9 @@ void effFreezeMain(EffectEntry* effect) {
 		effVaporN64Entry(2, 30, data->x, 40.0f * data->scale + data->y, data->z, data->scale);
 	}
 
-	((effFreezeSnowDustData*)data->snowDust->userdata)->x = data->x;
-	((effFreezeSnowDustData*)data->snowDust->userdata)->y = 10.0f + data->y;
-	((effFreezeSnowDustData*)data->snowDust->userdata)->z = data->z;
+	((effSnowDustData*)data->snowDust->userdata)->x = data->x;
+	((effSnowDustData*)data->snowDust->userdata)->y = 10.0f + data->y;
+	((effSnowDustData*)data->snowDust->userdata)->z = data->z;
 
 #ifdef MUST_MATCH
 	dispEntry(CAMERA_3D, dispCalcZ(&position), 2, effFreezeDisp, effect);

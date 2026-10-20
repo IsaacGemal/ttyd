@@ -1889,26 +1889,27 @@ EVT_END()
 
 // Event flags: sibling events set/wait on a flag so the script can resume once they finish.
 static s32 x_flag_data[2];
-// Interpolates between start and end; event args are (step, steps, start, end, out).
+// Interpolates between start and end; event args are (remaining, steps, start, end, out). `remaining` is the
+// script's LOOP counter, which counts down, so the result moves from start to end.
 static USER_FUNC(wariai_enzan_1) {
     s32* args = event->args;
-    f32 step = evtGetFloat(event, args[0]) - 1.0f;
+    f32 remaining = evtGetFloat(event, args[0]) - 1.0f;
     f32 steps = evtGetFloat(event, args[1]);
     f32 start = evtGetFloat(event, args[2]);
     f32 end = evtGetFloat(event, args[3]);
 
-    evtSetValue(event, args[4], (s32)((step * start + end * (steps - step)) / steps));
+    evtSetValue(event, args[4], (s32)((remaining * start + end * (steps - remaining)) / steps));
     return EVT_RETURN_DONE;
 }
 
 static USER_FUNC(wariai_enzan_1f) {
     s32* args = event->args;
-    f32 step = evtGetFloat(event, args[0]) - 1.0f;
+    f32 remaining = evtGetFloat(event, args[0]) - 1.0f;
     f32 steps = evtGetFloat(event, args[1]);
     f32 start = evtGetFloat(event, args[2]);
     f32 end = evtGetFloat(event, args[3]);
 
-    evtSetFloat(event, args[4], (step * start + end * (steps - step)) / steps);
+    evtSetFloat(event, args[4], (remaining * start + end * (steps - remaining)) / steps);
     return EVT_RETURN_DONE;
 }
 
@@ -1925,25 +1926,27 @@ static inline f32 gance_intpl(s32 mode, f32 start, f32 end, s32 step, s32 steps)
     return intplGetValue(mode, step, steps, start, end);
 }
 #endif
+// args[5] is an intplGetValue mode; 14..27 run mode - 14 mirrored (1 - its curve from 1 to 0), 28 and up
+// output start.
 static USER_FUNC(wariai_enzan_1f_intpl) {
     s32* args = event->args;
-    f32 step = evtGetFloat(event, args[0]) - 1.0f;
+    f32 remaining = evtGetFloat(event, args[0]) - 1.0f;
     f32 steps = evtGetFloat(event, args[1]);
     f32 start = evtGetFloat(event, args[2]);
     f32 end = evtGetFloat(event, args[3]);
     s32 out = args[4];
-    f32 time = evtGetFloat(event, args[5]);
+    f32 mode = evtGetFloat(event, args[5]);
     f32 ratio;
 
-    if (time >= 14.0f) {
-        time -= 14.0f;
-        if (time >= 14.0f) {
+    if (mode >= 14.0f) {
+        mode -= 14.0f;
+        if (mode >= 14.0f) {
             evtSetFloat(event, out, start);
             return EVT_RETURN_DONE;
         }
-        ratio = 1.0f - gance_intpl((s32)time, 1.0f, 0.0f, (s32)(steps - step), (s32)steps);
+        ratio = 1.0f - gance_intpl((s32)mode, 1.0f, 0.0f, (s32)(steps - remaining), (s32)steps);
     } else {
-        ratio = gance_intpl((s32)time, 0.0f, 1.0f, (s32)(steps - step), (s32)steps);
+        ratio = gance_intpl((s32)mode, 0.0f, 1.0f, (s32)(steps - remaining), (s32)steps);
     }
     evtSetFloat(event, out, (1.0f - ratio) * start + ratio * end);
     return EVT_RETURN_DONE;
@@ -1951,36 +1954,37 @@ static USER_FUNC(wariai_enzan_1f_intpl) {
 
 USER_FUNC(wariai_enzan_1f_intpl_w) {
     s32* args = event->args;
-    f32 step = evtGetFloat(event, args[0]) - 1.0f;
+    f32 remaining = evtGetFloat(event, args[0]) - 1.0f;
     f32 steps = evtGetFloat(event, args[1]);
     f32 start = evtGetFloat(event, args[2]);
     f32 end = evtGetFloat(event, args[3]);
     s32 out = args[4];
-    f32 time = evtGetFloat(event, args[5]);
-    f32 time2 = evtGetFloat(event, args[6]);
+    f32 mode = evtGetFloat(event, args[5]);
+    f32 mode2 = evtGetFloat(event, args[6]);
     f32 ratio1;
     f32 ratio2;
     f32 ratio;
 
-    if (time >= 14.0f) {
-        time -= 14.0f;
-        if (time >= 14.0f) {
+    if (mode >= 14.0f) {
+        mode -= 14.0f;
+        if (mode >= 14.0f) {
             evtSetFloat(event, out, start);
             return EVT_RETURN_DONE;
         }
-        ratio1 = 1.0f - gance_intpl((s32)time, 1.0f, 0.0f, (s32)(steps - step), (s32)steps);
+        ratio1 = 1.0f - gance_intpl((s32)mode, 1.0f, 0.0f, (s32)(steps - remaining), (s32)steps);
     } else {
-        ratio1 = gance_intpl((s32)time, 0.0f, 1.0f, (s32)(steps - step), (s32)steps);
+        ratio1 = gance_intpl((s32)mode, 0.0f, 1.0f, (s32)(steps - remaining), (s32)steps);
     }
-    if (time2 >= 14.0f) {
-        f32 timeOffset = time - 14.0f;
-        if (timeOffset >= 14.0f) {
+    if (mode2 >= 14.0f) {
+        // Retail derives this from the first mode, not mode2.
+        f32 reverseMode2 = mode - 14.0f;
+        if (reverseMode2 >= 14.0f) {
             evtSetFloat(event, out, start);
             return EVT_RETURN_DONE;
         }
-        ratio2 = 1.0f - gance_intpl((s32)timeOffset, 1.0f, 0.0f, (s32)(steps - step), (s32)steps);
+        ratio2 = 1.0f - gance_intpl((s32)reverseMode2, 1.0f, 0.0f, (s32)(steps - remaining), (s32)steps);
     } else {
-        ratio2 = gance_intpl((s32)time2, 0.0f, 1.0f, (s32)(steps - step), (s32)steps);
+        ratio2 = gance_intpl((s32)mode2, 0.0f, 1.0f, (s32)(steps - remaining), (s32)steps);
     }
     ratio = ratio1 * ratio2;
     evtSetFloat(event, out, start * (1.0f - ratio) + end * ratio);
@@ -1989,23 +1993,23 @@ USER_FUNC(wariai_enzan_1f_intpl_w) {
 
 static USER_FUNC(wariai_enzan_0) {
     s32* args = event->args;
-    f32 step = evtGetFloat(event, args[0]) - 1.0f;
+    f32 remaining = evtGetFloat(event, args[0]) - 1.0f;
     f32 lastStep = evtGetFloat(event, args[1]) - 1.0f;
     f32 start = evtGetFloat(event, args[2]);
     f32 end = evtGetFloat(event, args[3]);
 
-    evtSetValue(event, args[4], (s32)((step * start + end * (lastStep - step)) / lastStep));
+    evtSetValue(event, args[4], (s32)((remaining * start + end * (lastStep - remaining)) / lastStep));
     return EVT_RETURN_DONE;
 }
 
 static USER_FUNC(wariai_enzan_0f) {
     s32* args = event->args;
-    f32 step = evtGetFloat(event, args[0]) - 1.0f;
+    f32 remaining = evtGetFloat(event, args[0]) - 1.0f;
     f32 lastStep = evtGetFloat(event, args[1]) - 1.0f;
     f32 start = evtGetFloat(event, args[2]);
     f32 end = evtGetFloat(event, args[3]);
 
-    evtSetFloat(event, args[4], (step * start + end * (lastStep - step)) / lastStep);
+    evtSetFloat(event, args[4], (remaining * start + end * (lastStep - remaining)) / lastStep);
     return EVT_RETURN_DONE;
 }
 

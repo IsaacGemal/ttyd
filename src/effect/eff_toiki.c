@@ -180,7 +180,7 @@ void effToikiDisp(CameraId camId, void* param) {
 
 	effGetTexObj(0x5c, &texObj);
 	GXLoadTexObj(&texObj, GX_TEXMAP0);
-	GXSetNumChans(GX_TRUE);
+	GXSetNumChans(1);
 	GXSetChanCtrl(GX_COLOR0A0, GX_FALSE, GX_SRC_REG, GX_SRC_VTX, 0, GX_DF_NONE, GX_AF_NONE);
 #ifdef MUST_MATCH
 	toikiSetColor(data->field_0x28, color_tbl[type].b, color_tbl[type].g, color_tbl[type].r);

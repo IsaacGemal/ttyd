@@ -49,7 +49,7 @@ u32 BattleInformationGetResult(FieldBattleInfo* info) {
 }
 
 // One entry of a heart/flower drop parameter table (battle_heart_drop_param_default etc.),
-// tried in order while the stat is at or below the entry's threshold.
+// read in order; the first entry whose threshold is at or above the stat is used.
 typedef struct DropMaterialParam {
 	s32 statPercentThreshold; // 0x0, highest HP/FP percent this entry applies to
 	s32 dropChancePercent;    // 0x4, chance the entry drops anything at all

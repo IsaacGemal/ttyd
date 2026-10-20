@@ -35,12 +35,12 @@ static u32 size16x16_tex64x64_vtx[0x38 / 4] = {
 // picks for the by-value GXColor copy (local at 0x8, outgoing copy at 0xC). Its index
 // argument is computed with `%=` in the caller (as in eff_wangflush_n64.c) so the
 // remainder reuses the dividend register r7.
-static inline void hagetakaFlushSetColor(s32 color_index, s32 alpha) {
+static inline void hagetakaFlushSetColor(s32 colorIndex, s32 alpha) {
 	GXColor color = unk_80423130;
 
-	color.r = color_rotation_data[color_index];
-	color.g = color_rotation_data[color_index + 1];
-	color.b = color_rotation_data[color_index + 2];
+	color.r = color_rotation_data[colorIndex];
+	color.g = color_rotation_data[colorIndex + 1];
+	color.b = color_rotation_data[colorIndex + 2];
 	color.a = alpha;
 	GXSetTevColor(1, color);
 }
@@ -131,7 +131,7 @@ void effHagetakaFlushDisp(CameraId camId, void* param) {
 	Mtx mtxRot;
 	f32 scale;
 	s32 alpha;
-	s32 color_index;
+	s32 colorIndex;
 
 	cam = camGetPtr(camId);
 	data = effect->userdata;
@@ -160,13 +160,13 @@ void effHagetakaFlushDisp(CameraId camId, void* param) {
 	effGetTexObjN64(0x1c, &texObj);
 	GXLoadTexObj(&texObj, 0);
 
-	color_index = data->field_0x14 * 3;
+	colorIndex = data->field_0x14 * 3;
 #ifdef MUST_MATCH
-	color_index %= 24;
+	colorIndex %= 24;
 #else
-	color_index = color_index % 24;
+	colorIndex = colorIndex % 24;
 #endif
-	hagetakaFlushSetColor(color_index, alpha);
+	hagetakaFlushSetColor(colorIndex, alpha);
 
 	GXSetCullMode(0);
 	effSetVtxDescN64((effVtxArray*)size16x16_tex64x64_vtx);

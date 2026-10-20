@@ -28,13 +28,6 @@ extern const f32 float_0p03705_8041ca0c;
 extern const f32 float_0p4967_8041ca10;
 extern const f32 float_0p2_8041ca14;
 
-// View of the maya-animation object whose first two entries' matrices are
-// combined in effDamageStarDisp. The entries are 0x34 bytes apart.
-typedef struct DamageStarAnim {
-    u8 header[0x14];
-    EffectMayaAnimEntry entries[];
-} DamageStarAnim;
-
 // .sbss2 scratch object used by effDamageStarDisp's colour build. Declared in reverse
 // (the second is placed first) with the small-data section remapped to .sbss2.
 #pragma section ".sdata" ".sbss2"
@@ -581,10 +574,10 @@ void effDamageStarDisp(CameraId camId, void* param) {
     PSMTXTrans(mtx88, 10.0f, -1.5f, 0.0f);
     PSMTXConcat(mtx148, mtx88, mtx148);
     {
-        DamageStarAnim* anim = (DamageStarAnim*)data->anim;
+        EffectMayaAnim* anim = (EffectMayaAnim*)data->anim;
 
         PSMTXConcat(mtx148, anim->entries[0].mtx, mtx148);
-        anim = (DamageStarAnim*)data->anim;
+        anim = (EffectMayaAnim*)data->anim;
         PSMTXConcat(mtx148, anim->entries[1].mtx, mtx148);
     }
     GXSetCurrentMtx(0);

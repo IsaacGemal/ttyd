@@ -42,7 +42,7 @@ Vec scale_tbl[15] = {
     { 1.0f, 1.0f, 1.0f },    { 0.8f, 0.8f, 0.8f },    { 0.9f, 0.9f, 0.9f },
 };
 
-EffectEntry* effMissStarEntry(s32 type, f32 x, f32 y, f32 z, s32 lifetime, s32 angle) {
+EffectEntry* effMissStarEntry(s32 type, f32 x, f32 y, f32 z, s32 delay, s32 angle) {
     EffectEntry* entry;
     MissStarData* data;
     s32 i;
@@ -103,7 +103,7 @@ EffectEntry* effMissStarEntry(s32 type, f32 x, f32 y, f32 z, s32 lifetime, s32 a
         data->angleVel = (f32)(sign * 107);
         data->field_0x34 = -camGetPtr(CAMERA_3D)->viewYaw;
         data->moveTimer = 14;
-        data->delay = lifetime;
+        data->delay = delay;
         data->deleteTimer = 10;
         data->field_0x40 = 255.0f;
     }
