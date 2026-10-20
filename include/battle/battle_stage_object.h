@@ -13,6 +13,12 @@ typedef struct BattleStageObjectData {
 	u8 pad_16[2]; //0x16, TODO remove cuz compiler auto-pads
 } BattleStageObjectData;
 
+enum BattleStageObjectSpawnType {
+	BSO_SPAWN_TREE = 0, //spawns the tree unit (_entry_tree_data)
+	BSO_SPAWN_SWITCH = 1, //spawns the switch unit (_entry_switch_data)
+	BSO_SPAWN_NONE = 2, //no unit
+};
+
 enum BattleStageObjectFlags {
 	BSO_FLAG_MAP_GRP_ON = 0x1, //map group flag 1 of the map object is kept on while set
 	BSO_FLAG_DIRTY = 0x2, //transform changed: BattleStageObjectMain re-applies it to the map object, then clears this

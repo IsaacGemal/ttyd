@@ -263,21 +263,21 @@ void BattleStageObjectInit(void) {
 			obj->mLastPositionOffset2 = BSO_UNSET(3);
 			mapGrpFlagOff(obj->data->name, 1);
 			switch (data->mSpawnSpecialUnitType) {
-			case 0:
+			case BSO_SPAWN_TREE:
 				unit = BtlUnit_Entry((BattleUnitSetup*)_entry_tree_data);
 				*(s32*)((u8*)unit + 0xB2C) = obj->id;
 				obj->mBattleUnitIdx = unit->unitId;
 				BtlUnit_SetPos(unit, obj->mPosition.x, obj->mPosition.y, obj->mPosition.z);
 				BtlUnit_SetHomePos(unit, obj->mPosition.x, obj->mPosition.y, obj->mPosition.z);
 				break;
-			case 1:
+			case BSO_SPAWN_SWITCH:
 				unit = BtlUnit_Entry((BattleUnitSetup*)_entry_switch_data);
 				*(s32*)((u8*)unit + 0xB2C) = obj->id;
 				obj->mBattleUnitIdx = unit->unitId;
 				BtlUnit_SetPos(unit, obj->mPosition.x, obj->mPosition.y, obj->mPosition.z);
 				BtlUnit_SetHomePos(unit, obj->mPosition.x, obj->mPosition.y, obj->mPosition.z);
 				break;
-			case 2:
+			case BSO_SPAWN_NONE:
 				break;
 			}
 		}
