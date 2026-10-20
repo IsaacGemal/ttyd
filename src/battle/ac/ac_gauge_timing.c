@@ -246,7 +246,7 @@ s32 battleAcMain_GaugeTiming(BattleWork* work) {
                 if (dec->flashTimer > 0) {
                     dec->gauge = 0.0f;
                     dec->inZone = 0;
-                    goto tail;
+                    break;
                 }
 #ifdef MUST_MATCH
             } else {
@@ -269,7 +269,7 @@ s32 battleAcMain_GaugeTiming(BattleWork* work) {
                     } else {
                         dec->flashTimer = 0x1E;
                     }
-                    goto tail;
+                    break;
                 }
             }
         gaugeSkip1:
@@ -284,7 +284,7 @@ s32 battleAcMain_GaugeTiming(BattleWork* work) {
                 } else {
                     dec->flashTimer = 0x1E;
                 }
-                goto tail;
+                break;
             }
 #endif
             if (dec->gauge >= (f32)work->actionCommands.acParams[3]) {
@@ -300,7 +300,7 @@ s32 battleAcMain_GaugeTiming(BattleWork* work) {
                 if (dec->flashTimer > 0) {
                     dec->gauge = 0.0f;
                     dec->inZone = 0;
-                    goto tail;
+                    break;
                 }
             }
             {
@@ -328,7 +328,7 @@ s32 battleAcMain_GaugeTiming(BattleWork* work) {
                     } else {
                         dec->flashTimer = 0x1E;
                     }
-                    goto tail;
+                    break;
                 }
             gaugeMod2:
 #else
@@ -341,7 +341,7 @@ s32 battleAcMain_GaugeTiming(BattleWork* work) {
                     } else {
                         dec->flashTimer = 0x1E;
                     }
-                    goto tail;
+                    break;
                 }
 #endif
                 v %= 100;
@@ -355,7 +355,6 @@ s32 battleAcMain_GaugeTiming(BattleWork* work) {
             break;
         }
         }
-    tail:
         if (autoFlag != 0 && dec->inZone != 0) {
             dec->phase = 2;
         }
