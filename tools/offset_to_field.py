@@ -20,6 +20,12 @@ own layout, and `--skip-base TAG` to leave a struct's casts alone.
     ((Foo*)((u8*)p + 0x20))->x          ->  p->foo.x
     ((f32*)((u8*)p + 0x40))[i]          ->  p->arr[i]       (only when the field is an array of f32)
 
+Offset macros: a file-local `#define NAME(p, off) (*(T*)((u8*)(p) + (off)))` (WW_S32, WW_F32, WW_U16, WW_PTR, MW_S32,
+MF32, GND_PTR's `type` parameter, MWVEC, ...) is analysed as the cast it expands to, and a use such as
+`WW_S32(work, 0x214)` is rewritten to `work->field` under the same rules. The macro's type is its own cast's, so a
+field of any other type is never picked (no pointer retyping through a macro). A macro whose every use is rewritten
+has its #define dropped; a macro with any use left keeps it. Macros of other shapes are not recognised.
+
 Types and layouts come from clang (libclang, target powerpc-unknown-eabi, the project's include paths and
 defines), so the base expression's declared type is whatever the compiler sees, through typedefs, struct
 members, casts and calls, and field offsets are clang's record layout. That layout is the PowerPC EABI one
@@ -31,15 +37,16 @@ A site is rewritten only when all of these hold:
   `#if`/`#ifdef` block that mentions MUST_MATCH (either arm);
 - the byte cast is spelled `(u8*)` and the offset is an integer literal;
 - the base expression has type pointer to a complete struct/union;
-- the offset is the start of a field (descending into nested structs, arrays and unions) whose type is the
-  cast's pointee type, ignoring `const`, never `volatile`, never a bitfield; in a union exactly one member
-  path may match;
+- the offset is the start of a field (descending into nested structs and arrays) whose type is the cast's
+  pointee type, ignoring `const`, never `volatile`, never a bitfield;
+- the offset does not land inside a union (at any depth): such a site is listed as "union: needs a human" and no
+  member is picked, even when only one member matches;
 - the result is dereferenced (`*`), member-accessed (`->`), indexed into an array field, or used as a plain
   pointer value (`&base->field`); pointer arithmetic, `++`/`--`, compound assignment and storing the address
   in a variable (later code may stride past the field) are left alone;
 - the field's name is not a placeholder (`unk*`, `pad*`, `field_*`, leading `_`): those are left for naming passes.
-One deliberate type exception: a pointer read through a different pointer type, `*(T**)((u8*)p + 0x10)` on a
-`U* next` field, becomes `(T*)p->next` (same word loaded, cast kept), and only when it isn't written to.
+One deliberate type exception, for raw casts only: a pointer read through a different pointer type, `*(T**)((u8*)p + 0x10)`
+on a `U* next` field, becomes `(T*)p->next` (same word loaded, cast kept), and only when it isn't written to.
 """
 import argparse
 import atexit
@@ -81,6 +88,9 @@ INT_LIT = re.compile(r"(0[xX][0-9A-Fa-f]+|0|[1-9]\d*)[uUlL]*")  # no octal
 SIMPLE = re.compile(r"[A-Za-z_]\w*(\s*(->|\.)\s*[A-Za-z_]\w*|\s*\[[^\[\]]*\])*")
 PLACEHOLDER = re.compile(r"(unk|pad|field_|_)", re.I)
 ADDR_SIMPLE = re.compile(r"&\s*(" + SIMPLE.pattern + r")")
+# an offset macro's body: (*(T*)((u8*)(base) + (off))), T written out or a parameter (GND_PTR's `type`)
+MACRO_BODY = re.compile(r"\(\*\(\s*(?P<cast>[^()]+?)\s*\)\s*\(\(\s*u8\s*\*\s*\)\s*\(\s*(?P<base>\w+)\s*\)"
+                        r"\s*\+\s*\(\s*(?P<off>\w+)\s*\)\s*\)\s*\)")
 
 
 def pack_short_enums(text):
@@ -300,6 +310,158 @@ def define_mask(text):
     return masked
 
 
+class Mac:
+    """A file-local offset macro: its parameters and its body with whitespace normalised."""
+    def __init__(self, name, params, body):
+        self.name, self.params, self.body = name, params, body
+
+    def subst(self, args):
+        """The body with each parameter replaced by its argument, as the preprocessor does it (one pass)."""
+        m = dict(zip(self.params, args))
+        return re.sub(r"\b\w+\b", lambda t: m.get(t.group(0), t.group(0)), self.body)
+
+
+def parse_macros(text):
+    """{name: Mac} for the function-like #defines of one file whose body is an offset cast. A name defined twice is
+    dropped (its uses are then left alone)."""
+    lines = text.split("\n")
+    found, seen = {}, Counter()
+    i = 0
+    while i < len(lines):
+        mt = re.match(r"\s*#\s*define\s+(\w+)\(([^)]*)\)(.*)$", lines[i])
+        i += 1
+        if not mt:
+            continue
+        name = mt.group(1)
+        params = [p.strip() for p in mt.group(2).split(",") if p.strip()]
+        body = mt.group(3)
+        while body.rstrip().endswith("\\") and i < len(lines):
+            body = body.rstrip()[:-1] + " " + lines[i]
+            i += 1
+        seen[name] += 1
+        m = MACRO_BODY.fullmatch(re.sub(r"\s+", " ", body).strip())
+        if m and m.group("cast").endswith("*") and m.group("base") in params and m.group("off") in params:
+            found[name] = Mac(name, params, re.sub(r"\s+", " ", body).strip())
+    return {n: m for n, m in found.items() if seen[n] == 1}
+
+
+def match_args(text, open_idx):
+    """(args, index of the closing paren) for the call whose '(' is at open_idx, or None."""
+    depth, args, start = 0, [], open_idx + 1
+    for i in range(open_idx, len(text)):
+        ch = text[i]
+        if ch in "([{":
+            depth += 1
+        elif ch in ")]}":
+            depth -= 1
+            if depth == 0:
+                last = text[start:i].strip()
+                if args or last:
+                    args.append(last)
+                return args, i
+        elif ch == "," and depth == 1:
+            args.append(text[start:i].strip())
+            start = i + 1
+    return None
+
+
+class Exp:
+    """One offset-macro use in a file: its call text and the byte spans of the call (o0, o1) in the original and of
+    its expansion (s0, s1, with the body ending at body_end) in the expanded text."""
+    def __init__(self, name, line, call, s0, body_end, s1, o0, o1):
+        self.name, self.line, self.call = name, line, call
+        self.s0, self.body_end, self.s1, self.o0, self.o1 = s0, body_end, s1, o0, o1
+
+
+def expand_macros(text, macros):
+    """(expanded bytes, [Exp], [(line, call, name)] for uses on MUST_MATCH lines). Each use outside #define lines and
+    comments is replaced by its expansion; newlines of a multi-line call are kept so line numbers do not move."""
+    if not macros:
+        return text.encode("utf-8", errors="surrogateescape"), [], []
+    enc = functools.partial(str.encode, encoding="utf-8", errors="surrogateescape")
+    mm, defs = must_match_mask(text), define_mask(text)
+    pat = re.compile(r"\b(" + "|".join(sorted(map(re.escape, macros), key=len, reverse=True)) + r")\s*\(")
+    out, exps, masked = [], [], []
+    so = oo = done = 0
+    for m in pat.finditer(text):
+        i = m.start()
+        if i < done:
+            continue
+        line = text.count("\n", 0, i) + 1
+        if line in defs:
+            continue
+        pre = text[text.rfind("\n", 0, i) + 1:i]
+        if "//" in pre or pre.count('"') % 2:
+            continue
+        call = match_args(text, m.end() - 1)
+        if call is None:
+            continue
+        args, close = call
+        mac = macros[m.group(1)]
+        if len(args) != len(mac.params):
+            continue
+        ctext = text[i:close + 1]
+        if line in mm:
+            masked.append((line, ctext, mac.name))
+            continue
+        core = mac.subst(args)
+        body = core + "\n" * max(0, ctext.count("\n") - core.count("\n"))
+        seg, eb, ob = enc(text[done:i]), enc(body), enc(ctext)
+        out.append(seg)
+        so, oo = so + len(seg), oo + len(seg)
+        exps.append(Exp(mac.name, line, ctext, so, so + len(enc(core)), so + len(eb), oo, oo + len(ob)))
+        out.append(eb)
+        so, oo = so + len(eb), oo + len(ob)
+        done = close + 1
+    out.append(enc(text[done:]))
+    return b"".join(out), exps, masked
+
+
+def touches_union(t, off, depth=0):
+    """True when byte `off` of record t lies inside a union member, at any depth."""
+    if depth > 8:
+        return False
+    t = t.get_canonical()
+    union = t.get_declaration().kind == K.UNION_DECL
+    for name, foff, ftype, bitfield, bitrem in fields_of(t):
+        ct = ftype.get_canonical()
+        size = ct.get_size()
+        if size <= 0 or not (foff <= off < foff + size):
+            continue
+        if union:
+            return True
+        rel = off - foff
+        if ct.kind == ci.TypeKind.CONSTANTARRAY:
+            et = ct.get_array_element_type().get_canonical()
+            if et.get_size() <= 0:
+                continue
+            rel %= et.get_size()
+            ct = et
+        if is_record(ct) and touches_union(ct, rel, depth + 1):
+            return True
+    return False
+
+
+def drop_dead_macros(text, names):
+    """Remove the #define of each name in `names` that no longer appears outside #define lines. (new text, [names])."""
+    lines = text.split("\n")
+    blocks = {}
+    for idx, line in enumerate(lines):
+        mt = re.match(r"\s*#\s*define\s+(\w+)\(", line)
+        if mt and mt.group(1) in names:
+            end = idx
+            while lines[end].rstrip().endswith("\\") and end + 1 < len(lines):
+                end += 1
+            blocks[mt.group(1)] = (idx, end)
+    if not blocks:
+        return text, []
+    block_lines = {k for a, b in blocks.values() for k in range(a, b + 1)}
+    rest = "\n".join(l for k, l in enumerate(lines) if k not in block_lines)
+    dead = {n for n in blocks if not re.search(r"\b" + re.escape(n) + r"\b", rest)}
+    drop = {k for n in dead for k in range(blocks[n][0], blocks[n][1] + 1)}
+    return "\n".join(l for k, l in enumerate(lines) if k not in drop), sorted(dead)
+
+
 def strip_parens(c):
     while c.kind == K.PAREN_EXPR:
         kids = list(c.get_children())
@@ -504,13 +666,13 @@ class Site:
     """One (u8*) cast: outcome 'ok' (with replacement text `new` for the byte span `span`) or why it was skipped."""
     def __init__(self, path, line, text, outcome, new=None, span=None):
         self.path, self.line, self.text, self.outcome, self.new, self.span = path, line, text, outcome, new, span
+        self.macro = None  # the offset macro's name when the cast came from one
+        self.at = None     # byte offset of the cast in the analysed text
 
 
-def analyse(rel, text=None):
-    """Sites in one file: list of Site (outcome 'ok' carries the replacement)."""
+def analyse_text(rel, text, exps=()):
+    """Sites in one source text, with the offset-macro expansions `exps` already in it (see analyse)."""
     path = ROOT / rel
-    if text is None:
-        text = path.read_text(errors="replace")
     raw = text.encode("utf-8", errors="surrogateescape")
     tu = parse(rel, text)
     mm, defs = must_match_mask(text), define_mask(text)
@@ -529,8 +691,8 @@ def analyse(rel, text=None):
             t = src(c)
             if U8_CAST.match(t):
                 site = classify(c, parents)
-                if site:
-                    sites.append(site)
+                site.at = c.extent.start.offset
+                sites.append(site)
         parents.append(c)
         for ch in c.get_children():
             visit(ch, parents)
@@ -594,6 +756,8 @@ def analyse(rel, text=None):
         if is_volatile(want_t):
             return skip("volatile")
         want = unqual(want_t)
+        if touches_union(rec, off):
+            return skip("union: needs a human")
         base_text = src(base)
         # how the cast pointer is used (through parens and implicit conversions)
         k = j - 1
@@ -614,7 +778,7 @@ def analyse(rel, text=None):
                 return skip("pointer arithmetic")
             arr = array_field(rec, off, want)
             if len(arr) != 1:
-                return skip("indexed, no array field" if not arr else "ambiguous union")
+                return skip("indexed, no array field")
             if any(PLACEHOLDER.match(sg.lstrip(".")) for sg in arr[0] if sg.startswith(".")):
                 return skip("lands in padding/unk field")
             if check_layout(rel, rec, arr[0]) == "disagree":
@@ -625,7 +789,8 @@ def analyse(rel, text=None):
             return Site(rel, line, src(use), "ok", head, (start, end))
         paths = find_paths(rec, off, want)
         retype = None
-        if not paths and pt_is_ptr(want_t) and use is not None and use.kind == K.UNARY_OPERATOR \
+        in_macro = any(e.s0 <= u8cast.extent.start.offset < e.s1 for e in exps)
+        if not paths and not in_macro and pt_is_ptr(want_t) and use is not None and use.kind == K.UNARY_OPERATOR \
                 and usetxt == "*" and not is_lvalue(use, parents[:k]):
             # a pointer read through a different pointer type: `(T*)base->field` reads the same word
             paths = [p for p in find_paths(rec, off, lambda ct: ct.kind == ci.TypeKind.POINTER)
@@ -633,11 +798,8 @@ def analyse(rel, text=None):
             if paths:
                 retype = re.sub(r"\s+", " ", src(outer)[1:src(outer).index(")")]).strip()
                 retype = re.sub(r"\s*\*$", "", retype)
-        uniq = {"".join(p) for p, _ in paths}
         if not paths:
             return skip(classify_miss(rec, off, want))
-        if len(uniq) > 1:
-            return skip("ambiguous union")
         segs = paths[0][0]
         if not segs:
             return skip("offset 0 is the base itself")
@@ -691,6 +853,54 @@ def analyse(rel, text=None):
 
     visit(tu.cursor, [])
     return sites, raw
+
+
+def analyse(rel, text=None):
+    """Sites in one file, with the file's raw bytes. Offset-macro uses are analysed as their expansions, and a site
+    inside one is reported at the call (text, line, macro) and rewritten as a whole call, or left alone when its
+    span is only part of the expansion."""
+    if text is None:
+        text = (ROOT / rel).read_text(errors="replace")
+    raw = text.encode("utf-8", errors="surrogateescape")
+    shadow, exps, masked = expand_macros(text, parse_macros(text))
+    sites, _ = analyse_text(rel, shadow.decode("utf-8", errors="surrogateescape"), exps)
+
+    def owner(p):
+        return next((e for e in exps if e.s0 <= p < e.s1), None)
+
+    def orig_pos(p):
+        return p - sum((e.s1 - e.s0) - (e.o1 - e.o0) for e in exps if e.s1 <= p)
+
+    hit, out = set(), []
+    for s in sites:
+        e = owner(s.at)
+        if e is None:
+            if s.outcome == "ok":
+                a, b = s.span
+                if any(x.s0 < b and a < x.s1 for x in exps):
+                    s.outcome, s.new, s.span = "macro: partial use", None, None
+                else:
+                    s.span = (orig_pos(a), orig_pos(b))
+            out.append(s)
+            continue
+        hit.add(id(e))
+        s.line, s.text, s.macro = e.line, e.call, e.name
+        if s.outcome == "ok":
+            a, b = s.span
+            if e.s0 <= a < b <= e.s1 and shadow[e.s0:a].strip() in (b"", b"(") \
+                    and shadow[b:e.body_end].strip() in (b"", b")"):
+                s.span = (e.o0, e.o1)
+            else:
+                s.outcome, s.new, s.span = "macro: partial use", None, None
+        out.append(s)
+    for e in exps:
+        if id(e) not in hit:
+            out.append(Site(rel, e.line, e.call, "not analysed by clang"))
+            out[-1].macro = e.name
+    for line, call, name in masked:
+        out.append(Site(rel, line, call, "MUST_MATCH"))
+        out[-1].macro = name
+    return out, raw
 
 
 def classify_miss(rec, off, want):
@@ -768,7 +978,8 @@ def collect(paths):
 
 
 def fixpoint(rel, text):
-    """Rewrite until nothing more converts (inner rewrites can expose outer ones). (new text, applied sites)."""
+    """Rewrite until nothing more converts (inner rewrites can expose outer ones).
+    (new text, applied sites, names of offset macros whose #define was dropped)."""
     applied_all = []
     for _ in range(4):
         sites, raw = analyse(rel, text)
@@ -777,7 +988,8 @@ def fixpoint(rel, text):
             break
         applied_all += applied
         text = new.decode("utf-8", errors="surrogateescape")
-    return text, applied_all
+    text, dropped = drop_dead_macros(text, {s.macro for s in applied_all if s.macro})
+    return text, applied_all, dropped
 
 
 def run_build(cmd):
@@ -790,7 +1002,7 @@ def verify(files, cmd, log):
     orig, new, counts = {}, {}, {}
     for rel in files:
         text = (ROOT / rel).read_text(errors="surrogateescape")
-        nt, applied = fixpoint(rel, text)
+        nt, applied, _ = fixpoint(rel, text)
         if applied:
             orig[rel], new[rel], counts[rel] = text, nt, len(applied)
     log(f"{len(new)} files with rewrites, {sum(counts.values())} sites")
@@ -864,14 +1076,16 @@ def main():
         for r in bad:
             print(f"  {r} ({counts[r]} sites)")
         return
-    tally, per_file = Counter(), Counter()
+    tally, per_file, macro_tally = Counter(), Counter(), Counter()
     for rel in files:
         try:
             if a.apply:
                 text = (ROOT / rel).read_text(errors="surrogateescape")
-                nt, applied = fixpoint(rel, text)
+                nt, applied, dropped = fixpoint(rel, text)
                 if applied:
                     (ROOT / rel).write_text(nt, errors="surrogateescape")
+                    if dropped:
+                        print(f"{rel}: dropped #define {', '.join(dropped)}", flush=True)
                 sites, _ = analyse(rel, nt)
                 sites = applied + [s for s in sites if s.outcome != "ok"]
             else:
@@ -882,6 +1096,8 @@ def main():
             continue
         for s in sites:
             tally[s.outcome] += 1
+            if s.macro:
+                macro_tally[s.outcome] += 1
             if s.outcome == "ok":
                 per_file[rel] += 1
             if a.list and (not a.only or a.only == s.outcome):
@@ -893,6 +1109,10 @@ def main():
     for k, v in tally.most_common():
         if k != "ok":
             print(f"  {k:32} {v:6}")
+    if macro_tally:
+        print(f"  of which offset-macro uses ({sum(macro_tally.values())}):")
+        for k, v in macro_tally.most_common():
+            print(f"    {k:30} {v:6}")
     if per_file:
         print("  top files:")
         for r, n in per_file.most_common(15):
