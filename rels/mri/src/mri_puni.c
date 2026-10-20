@@ -1727,10 +1727,16 @@ s32 qrnd(s32 max) {
     Punigp->randSeedA += Punigp->randSeedB + 0x17340000 - 0x506F;
     Punigp->randSeedB += Punigp->randSeedA + 0x21270000 + 0x3F9C;
     v = Punigp->randSeedB;
+#ifdef MUST_MATCH
     // the cast keeps MWCC from folding this into its branchless abs idiom
     if (v < 0) {
         v = -(s32)(u32)v;
     }
+#else
+    if (v < 0) {
+        v = -v;
+    }
+#endif
     return v % max;
 }
 
@@ -3860,7 +3866,11 @@ void puniModeEscape(PuniData* punidat) {
     switch (punidat->state) {
     case 0:
         if (punidat->windPower > 10.0f) {
+#ifdef MUST_MATCH
             *(u16*)&punidat->prevMode = punidat->mode;
+#else
+            punidat->prevMode = punidat->mode;
+#endif
             punidat->target = Punigp->marioPuni;
             punidat->mode = PUNI_MODE_WIND;
             punidat->state = 0;
@@ -3934,9 +3944,13 @@ void puniModeRecover(PuniData* punidat) {
             return;
         }
         if (punidat->windPower > 10.0f) {
+#ifdef MUST_MATCH
             // An unsigned 16-bit access makes MWCC schedule `li r3, 0xd` before the store, as in
             // the target (the header declares `prevMode` as s16).
             *(u16*)&punidat->prevMode = punidat->mode;
+#else
+            punidat->prevMode = punidat->mode;
+#endif
             punidat->target = Punigp->marioPuni;
             punidat->mode = PUNI_MODE_WIND;
             punidat->state = 0;

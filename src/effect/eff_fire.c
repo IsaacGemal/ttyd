@@ -690,7 +690,7 @@ void effFireDisp2(CameraId camId, void* param) {
 //  - `third` (0.33333f) and `sixteen` (16.0f) are f32 locals so MWCC caches them in f29/f30, and the
 //    inner-loop GXPosition3f32/GXTexCoord2f32 y and texcoord values are inline expressions rather than
 //    hoisted locals; c0/c1 stay `const u8*`.
-//  - the four zero-vector copies below read through a volatile Vec: without it MWCC hoists all twelve
+//  - the four zero-vector copies below are MUST_MATCH volatile reads: without them MWCC hoists all twelve
 //    loads out of the outer loop, and without the explicit temp the frame loses 0x30.
 //  - the TevReg0 colour is built by the inline effFireDisp3KColor so GXSetTevColor gets the
 //    target's stack argument slot.
@@ -846,9 +846,13 @@ void effFireDisp3(CameraId camId, void* param) {
 
 		{
 			Vec tmp;
-			// The volatile read keeps the zero-vector copy inside the loop (with its temp+copy shape)
-			// instead of hoisting all twelve loads out of the outer loop.
+#ifdef MUST_MATCH
+			// Match-only: the volatile read keeps the zero-vector copy inside the loop (with its
+			// temp+copy shape) instead of hoisting all twelve loads out of the outer loop.
 			tmp = *(volatile Vec*)&vec3_802f8c1c;
+#else
+			tmp = vec3_802f8c1c;
+#endif
 			tmp.x = leftX;
 			tmp.y = 40.f;
 			v = tmp;
@@ -862,9 +866,13 @@ void effFireDisp3(CameraId camId, void* param) {
 
 		{
 			Vec tmp;
-			// The volatile read keeps the zero-vector copy inside the loop (with its temp+copy shape)
-			// instead of hoisting all twelve loads out of the outer loop.
+#ifdef MUST_MATCH
+			// Match-only: the volatile read keeps the zero-vector copy inside the loop (with its
+			// temp+copy shape) instead of hoisting all twelve loads out of the outer loop.
 			tmp = *(volatile Vec*)&vec3_802f8c28;
+#else
+			tmp = vec3_802f8c28;
+#endif
 			tmp.x = halfWidth;
 			tmp.y = 40.f;
 			v = tmp;
@@ -878,9 +886,13 @@ void effFireDisp3(CameraId camId, void* param) {
 
 		{
 			Vec tmp;
-			// The volatile read keeps the zero-vector copy inside the loop (with its temp+copy shape)
-			// instead of hoisting all twelve loads out of the outer loop.
+#ifdef MUST_MATCH
+			// Match-only: the volatile read keeps the zero-vector copy inside the loop (with its
+			// temp+copy shape) instead of hoisting all twelve loads out of the outer loop.
 			tmp = *(volatile Vec*)&vec3_802f8c34;
+#else
+			tmp = vec3_802f8c34;
+#endif
 			tmp.x = halfWidth;
 			v = tmp;
 		}
@@ -893,9 +905,13 @@ void effFireDisp3(CameraId camId, void* param) {
 
 		{
 			Vec tmp;
-			// The volatile read keeps the zero-vector copy inside the loop (with its temp+copy shape)
-			// instead of hoisting all twelve loads out of the outer loop.
+#ifdef MUST_MATCH
+			// Match-only: the volatile read keeps the zero-vector copy inside the loop (with its
+			// temp+copy shape) instead of hoisting all twelve loads out of the outer loop.
 			tmp = *(volatile Vec*)&vec3_802f8c40;
+#else
+			tmp = vec3_802f8c40;
+#endif
 			tmp.x = leftX;
 			v = tmp;
 		}
