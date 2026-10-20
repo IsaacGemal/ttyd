@@ -11074,3 +11074,17 @@ Kept, with the reason each failed: the Vec scratch copies around dispCalcZ in ef
 - The three `switch (party->useMotionId)` blocks fall through to each other, so every goto from one switch to the start of the next one is a `break`: 21 from the first, 10 from the second, 16 from the third. The `L_800CC620`, `L_800CCD8C` and `L_800CD8A8` labels are gone with them.
 - Early exits to the end of the function (1 from the prologue, 6 from the second switch, 4 from the third) are `return`, and the `L_800CD8BC` label is gone.
 - Kept: 7 gotos in `case 20`, which jump between the `marioChkKey()` test and the finish block. Three structured forms (one combined `||` condition with a `break`, its negated `&&` twin, and an `if`/`else` chain that duplicates the finish code) all changed the object, so the gotos stay.
+### Readability: party_yoshi gotos (2026-10-20, Claude Haiku 5.5, n9-q-gotoyoshi)
+
+party_yoshi.c: 33 gotos -> 8, no names added. Matched build 32 files OK, and the natural (#else) build of the
+file is obj_equiv-equivalent to the pre-branch natural object.
+- searchGround: the hit-null skip and the L_2804/L_2968 tail are one `if (hit != NULL)` wrap plus an if/else on
+  hit at the end; the three `goto end` became `return`. checkWall's `goto end` is a `return`. 8 gotos gone.
+- yoshi_use: case 7 is one block (the two L_30B0 entries and the L_312C exits became breaks); the L_312C, L_3588,
+  L_3754 and L_4188 switch-end jumps are breaks; case 0xD and the L_3354 section are an if/else on
+  `mario->flags & 0x20`, with the field_34 == 8 exit as a wrap. Unused labels removed. 15 gotos gone.
+- Left: yoshi_use's two `goto L_3588` (the grounded jump to 0x14 skips the rest of the section; a flat
+  `GROUNDED && (EVT ? frm >= 0 : btn & 0x100)` and an else-if chain both changed codegen) and the four
+  `goto L_3CE4` (skip the L_3C2C tail after searchGround2 or the airTimer exits; no shape without duplicating the
+  tail or a flag). marioYoshiForceCancel and yoshi_exit keep `goto not_toge` / `goto exit_not_toge`: duplicating the
+  field_34 block into the toge else changed the object size (+0x2C), and a flag was not added.
