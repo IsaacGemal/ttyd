@@ -10610,3 +10610,23 @@ battle_stage.c, battle_seq.c, seq_battle.c and battle_database_jon.c return 0. I
 - Verify: tower `ninja` (after `configure.py`) recreates build/G8MJ01/ok. Object check for the 15 edited files, per module, against the HEAD sources: all equivalent under obj_equiv.
 - Index: 33.298 per kLOC (23341 weighted over 700968 code lines) before, 33.239 (23295 over 700838) after.
 - Not committed: tools/ci.py cannot run in this worktree yet (the tower copy has no git metadata, and build/ci/accepted.json has no baseline for this branch), so the commit gate in CLAUDE.md is not met.
+## battle_stage: nine more stage tables typed as BattleStageData (2026-10-20, Claude Haiku 5.5, n9-q-stage2)
+
+- Header: `field_0x190`, `field_0x1A0` and `field_0x1B0` changed type, layout unchanged. `battle_stage_object.c` reads
+  0x190 and the layer events at 0x1A0/0x1A4/0x1A8/0x1AC through `BSO_STAGE_EVT` (a `void*` cast), and the stage blobs hold
+  event symbols there: `&stg_02_1_init_evt` / `&stg_08_1_init_event` / `&stg_08_6_init_event` at 0x190 (mri, las),
+  `&bgset_rsh_bg_event` at 0x1A8 (rsh), `&bgset_*_event` at 0x1AC (moo, muj, tou, las). So 0x190 is `void*`,
+  `field_0x1A0` is `void* field_0x1A0[4]`, and 0x1B0 is a `u32` (0x00010101 or 0x00010001 in some records; nothing in
+  src reads it). `field_0x190` keeps its name; the type says only what BSO_STAGE_EVT proves.
+- Converted, one commit each: moo (1 record), rsh (1), win (1), tou2 (2), tik (4), mri (4), muj (4), jin (6), las (10).
+  Each `u32 X_btlstage_data[N]` is now `BattleStageData X_btlstage_data[K]` in jon's layout: object pointers are
+  `&X_btlobject_data[i]`, strings and functions are written by name, the weapons use jon's field order, and the three
+  flag words are 8-digit hex. Every converted record has `icon` 0, `item` ITEM_NULL, `special` 0, `element` 0,
+  `acHelpMsg` NULL, `field_0x14` 0.0f and `targetWeightingFlags` 0, so those fields are unambiguous. The
+  `(struct BattleStageData*)` casts at the reference sites are gone: record 0 is the bare name, record k is
+  `&X_btlstage_data[k]`. `battle_database_tou.c` already included battle_stage.h; the rest gained the include.
+- Left: aji, bom, dou, eki, gon, gor, gra and hei keep `u32 X_btlstage_data[]`; their casts are untouched.
+- Verify: tower `ninja` recreates build/G8MJ01/ok after the header change and after each file. Natural (no
+  -DMUST_MATCH) and MUST_MATCH compiles of every converted file return 0. `tools/cleanup_index.py` 33.051 -> 32.258 per
+  kLOC (23185 -> 22776 weighted; `--rev a704ccf4` to HEAD). The non-blank line total rose 701484 -> 706068 because the
+  initializers are longer.
