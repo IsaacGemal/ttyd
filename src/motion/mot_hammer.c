@@ -24,7 +24,6 @@
 #define M_S16(m, off) (*(s16*)((u8*)(m) + (off)))
 #define M_U16(m, off) (*(u16*)((u8*)(m) + (off)))
 #define M_S32(m, off) (*(s32*)((u8*)(m) + (off)))
-#define M_F32(m, off) (*(f32*)((u8*)(m) + (off)))
 
 // .rodata
 const Vec vec3_802c5a80 = { 0.0f, 40.0f, 0.0f };
@@ -136,15 +135,15 @@ void mot_hammer(void) {
             } else {
                 ang2 = revise360(off);
             }
-            M_F32(mario, 0x2A4) = ang2;
+            mario->field_0x2A4 = ang2;
         }
         mario->multiTimer = 0;
         mario->airTimer = 0;
         M_S32(mario, 0x44) = 0;
         mario->baseSpeed = float_0_8041a9a8;
-        M_S32(mario, 0x200) = 0;
+        mario->field_0x200 = 0;
         hit = hitEstimate(&type);
-        M_S32(mario, 0x200) = (s32)hit;
+        mario->field_0x200 = (s32)hit;
         if (hit != NULL) {
             f30 = mario->unk1A8;
             {
@@ -174,7 +173,7 @@ void mot_hammer(void) {
                 } else {
                     ang2 = revise360(off);
                 }
-                M_F32(mario, 0x2A4) = ang2;
+                mario->field_0x2A4 = ang2;
             }
         }
         if (hitGetAttr(hit) & 0x80000000) {
@@ -237,11 +236,11 @@ void mot_hammer(void) {
         psndSFXOn_3D((const char*)sound, &mario2->position);
         M_S32(mario, 0x2A8) = type;
     }
-    mario->unk1A8 = (M_F32(mario, 0x2A4) >= 90.f && M_F32(mario, 0x2A4) <= 270.f)
+    mario->unk1A8 = (mario->field_0x2A4 >= 90.f && mario->field_0x2A4 <= 270.f)
                               ? 180.f
                               : float_0_8041a9a8;
     mario->dispReqDir = mario->unk1A8;
-    mario->moveDir = toMovedir(M_F32(mario, 0x2A4));
+    mario->moveDir = toMovedir(mario->field_0x2A4);
     mario->directionView = mario->moveDir;
     rp = 0;
     if (mario->flags & 0x800) {
@@ -275,7 +274,7 @@ void mot_hammer(void) {
             evtEntry(lv3quake_evt, 0, 0);
         }
         mario->currSubMotionId = 1;
-        M_S32(mario, 0x1FC) = M_S32(mario, 0x200);
+        M_S32(mario, 0x1FC) = mario->field_0x200;
         px = mario->position.x;
         f30 = mario->position.y;
         pz = mario->position.z;
@@ -346,17 +345,17 @@ void mot_hammer(void) {
         }
         i = 0;
         while (i < 10) {
-            if (pouchEquipCheckBadge(se_data[M_S8(mario3, 0x3A)]) != 0) {
-                sound = se_data[M_S8(mario3, 0x3A) + 1];
-                M_S8(mario3, 0x3A) = M_S8(mario3, 0x3A) + 2;
-                if (M_S8(mario3, 0x3A) >= 0xA) {
-                    M_S8(mario3, 0x3A) -= 0xA;
+            if (pouchEquipCheckBadge(se_data[mario3->field_0x3A]) != 0) {
+                sound = se_data[mario3->field_0x3A + 1];
+                mario3->field_0x3A = mario3->field_0x3A + 2;
+                if (mario3->field_0x3A >= 0xA) {
+                    mario3->field_0x3A -= 0xA;
                 }
                 break;
             } else {
-                M_S8(mario3, 0x3A) = M_S8(mario3, 0x3A) + 2;
-                if (M_S8(mario3, 0x3A) >= 0xA) {
-                    M_S8(mario3, 0x3A) -= 0xA;
+                mario3->field_0x3A = mario3->field_0x3A + 2;
+                if (mario3->field_0x3A >= 0xA) {
+                    mario3->field_0x3A -= 0xA;
                 }
                 i++;
             }
@@ -486,7 +485,7 @@ void mot_hammer2(void) {
             marioChgPose("M_H_9");
             break;
         }
-        M_S32(mario, 0x200) = 0;
+        mario->field_0x200 = 0;
         mario->currSubMotionId = 1;
         mario->multiTimer = 1;
         break;
@@ -504,9 +503,9 @@ void mot_hammer2(void) {
         marioChgPaper("P_H_1C");
         marioPaperLightOff();
         M_S32(mario, 0x2B8) = psndSFXOn_3D((const char*)0x162, &mario->position);
-        M_F32(mario, 0x2B0) = float_0_8041a9a8;
+        mario->field_0x2B0 = float_0_8041a9a8;
         mario->poseTime = 0;
-        animPoseSetLocalTime(mario->paperAnimGroupId[marioAnimeId()], M_F32(mario, 0x2B0));
+        animPoseSetLocalTime(mario->paperAnimGroupId[marioAnimeId()], mario->field_0x2B0);
         mario->currSubMotionId = 0xA;
         mario->multiTimer = 0x1E;
         /* fallthrough to case 0xA */
@@ -519,9 +518,9 @@ void mot_hammer2(void) {
             }
         }
         if (M_S8(mario, 0x41) >= 4) {
-            M_F32(mario, 0x2B0) += 6.0f;
-            if (M_F32(mario, 0x2B0) >= 72.0f) {
-                M_F32(mario, 0x2B0) = 72.0f;
+            mario->field_0x2B0 += 6.0f;
+            if (mario->field_0x2B0 >= 72.0f) {
+                mario->field_0x2B0 = 72.0f;
             }
             mario->currSubMotionId = 0xB;
             marioChgPaper("P_H_1B");
@@ -541,9 +540,9 @@ void mot_hammer2(void) {
             marioChgPaper("P_H_1A");
             level = M_S16(mario, 0x2B4);
             if (!(level & 1)) {
-                M_F32(mario, 0x2B0) += 6.0f;
-                if (M_F32(mario, 0x2B0) >= 54.0f) {
-                    M_F32(mario, 0x2B0) = 54.0f;
+                mario->field_0x2B0 += 6.0f;
+                if (mario->field_0x2B0 >= 54.0f) {
+                    mario->field_0x2B0 = 54.0f;
                     M_S16(mario, 0x2B4) |= 1;
                     M_S8(mario, 0x42) = 3;
                     m2 = marioGetPtr();
@@ -559,15 +558,15 @@ void mot_hammer2(void) {
                     M_S16(mario, 0x2B4) |= 0x1000;
                 }
             } else if (!(level & 0x10)) {
-                M_F32(mario, 0x2B0) += 1.0f;
-                if (M_F32(mario, 0x2B0) >= 54.0f) {
-                    M_F32(mario, 0x2B0) = 54.0f;
+                mario->field_0x2B0 += 1.0f;
+                if (mario->field_0x2B0 >= 54.0f) {
+                    mario->field_0x2B0 = 54.0f;
                     M_S16(mario, 0x2B4) |= 0x10;
                 }
             } else {
-                M_F32(mario, 0x2B0) -= 1.0f;
-                if (M_F32(mario, 0x2B0) <= 42.0f) {
-                    M_F32(mario, 0x2B0) = 42.0f;
+                mario->field_0x2B0 -= 1.0f;
+                if (mario->field_0x2B0 <= 42.0f) {
+                    mario->field_0x2B0 = 42.0f;
                     M_S16(mario, 0x2B4) &= ~0x10;
                 }
             }
@@ -575,9 +574,9 @@ void mot_hammer2(void) {
             marioChgPaper("P_H_1A");
             level = M_S16(mario, 0x2B4);
             if (!(level & 1)) {
-                M_F32(mario, 0x2B0) += 6.0f;
-                if (M_F32(mario, 0x2B0) >= 36.0f) {
-                    M_F32(mario, 0x2B0) = 36.0f;
+                mario->field_0x2B0 += 6.0f;
+                if (mario->field_0x2B0 >= 36.0f) {
+                    mario->field_0x2B0 = 36.0f;
                     M_S16(mario, 0x2B4) |= 1;
                     M_S8(mario, 0x42) = 2;
                     m2 = marioGetPtr();
@@ -593,15 +592,15 @@ void mot_hammer2(void) {
                     M_S16(mario, 0x2B4) |= 0x1000;
                 }
             } else if (!(level & 0x10)) {
-                M_F32(mario, 0x2B0) += 1.0f;
-                if (M_F32(mario, 0x2B0) >= 36.0f) {
-                    M_F32(mario, 0x2B0) = 36.0f;
+                mario->field_0x2B0 += 1.0f;
+                if (mario->field_0x2B0 >= 36.0f) {
+                    mario->field_0x2B0 = 36.0f;
                     M_S16(mario, 0x2B4) |= 0x10;
                 }
             } else {
-                M_F32(mario, 0x2B0) -= 1.0f;
-                if (M_F32(mario, 0x2B0) <= 30.f) {
-                    M_F32(mario, 0x2B0) = 30.f;
+                mario->field_0x2B0 -= 1.0f;
+                if (mario->field_0x2B0 <= 30.f) {
+                    mario->field_0x2B0 = 30.f;
                     M_S16(mario, 0x2B4) &= ~0x10;
                 }
             }
@@ -609,9 +608,9 @@ void mot_hammer2(void) {
             marioChgPaper("P_H_1A");
             level = M_S16(mario, 0x2B4);
             if (!(level & 1)) {
-                M_F32(mario, 0x2B0) += 6.0f;
-                if (M_F32(mario, 0x2B0) >= 18.0f) {
-                    M_F32(mario, 0x2B0) = 18.0f;
+                mario->field_0x2B0 += 6.0f;
+                if (mario->field_0x2B0 >= 18.0f) {
+                    mario->field_0x2B0 = 18.0f;
                     M_S16(mario, 0x2B4) |= 1;
                     M_S8(mario, 0x42) = 1;
                     m2 = marioGetPtr();
@@ -627,15 +626,15 @@ void mot_hammer2(void) {
                     M_S16(mario, 0x2B4) |= 0x1000;
                 }
             } else if (!(level & 0x10)) {
-                M_F32(mario, 0x2B0) += 1.0f;
-                if (M_F32(mario, 0x2B0) >= 24.0f) {
-                    M_F32(mario, 0x2B0) = 24.0f;
+                mario->field_0x2B0 += 1.0f;
+                if (mario->field_0x2B0 >= 24.0f) {
+                    mario->field_0x2B0 = 24.0f;
                     M_S16(mario, 0x2B4) |= 0x10;
                 }
             } else {
-                M_F32(mario, 0x2B0) -= 1.0f;
-                if (M_F32(mario, 0x2B0) <= 18.0f) {
-                    M_F32(mario, 0x2B0) = 18.0f;
+                mario->field_0x2B0 -= 1.0f;
+                if (mario->field_0x2B0 <= 18.0f) {
+                    mario->field_0x2B0 = 18.0f;
                     M_S16(mario, 0x2B4) &= ~0x10;
                 }
             }
@@ -658,7 +657,7 @@ void mot_hammer2(void) {
             }
         }
         if (strcmp(mario->paperAnimName, "P_H_1A") == 0) {
-            animPoseSetLocalTime(mario->paperAnimGroupId[marioAnimeId()], M_F32(mario, 0x2B0) / 6.0f);
+            animPoseSetLocalTime(mario->paperAnimGroupId[marioAnimeId()], mario->field_0x2B0 / 6.0f);
         }
     /* fallthrough to case 0xB */
     case 0xB:
@@ -703,7 +702,7 @@ void mot_hammer2(void) {
 #ifdef MUST_MATCH
         py__ = 20.f; px__ = mario->position.x; py__ += mario->position.y;
         pz__ = mario->position.z; one__ = 1.0f;
-        effUltraHammerEntry(M_S8(mario, 0x43) != 0, mario->multiTimer, px__, py__, pz__, one__);
+        effUltraHammerEntry(mario->dispHalfTurn != 0, mario->multiTimer, px__, py__, pz__, one__);
 #else
         effUltraHammerEntry(mario->dispHalfTurn != 0, mario->multiTimer, mario->position.x,
                             mario->position.y + 20.f, mario->position.z, 1.0f);
