@@ -26,30 +26,30 @@ extern const f32 float_0_8041c144;
 // InitSubMenuCommonProcess (0x124 bytes). Only the fields this file touches
 // are declared; the rest stay opaque.
 typedef struct BattleMenuWork {
-    BattleCursor* cursor;   // 0x0
-    void* field_0x4;        // 0x4
-    void* field_0x8;        // 0x8
-    s32 field_0xC;          // 0xC
-    s32 field_0x10;         // 0x10
-    u8 field_0x14;          // 0x14
+    BattleCursor* cursor;     // 0x0
+    void* mainIconTable;      // 0x4, passed as the table to DrawMainIcon (set from the Init argument)
+    void* weaponEntries;      // 0x8, BattleMenuWeaponEntry[] for the weapon menu (set from the Init argument)
+    s32 phase;                // 0xC, ring/scroll state: 0, 1, 2, 0xA, 0x14, 0x1E, 0x28
+    s32 field_0x10;           // 0x10
+    u8 inputReady;            // 0x14, read by BattleMenuKeyOKInACT
     u8 field_0x15[0x18 - 0x15];
-    s32 field_0x18;         // 0x18
-    s32 field_0x1C;         // 0x1C
-    s32 field_0x20[5];      // 0x20
-    s32 field_0x34[5];      // 0x34
-    s32 field_0x48[10];     // 0x48
-    s32 field_0x70[5];      // 0x70
-    s32 field_0x84[5];      // 0x84
-    f32 field_0x98;         // 0x98
-    f32 field_0x9C;         // 0x9C
-    f32 field_0xA0;         // 0xA0
-    s32 field_0xA4[7];      // 0xA4
-    s32 field_0xC0[7];      // 0xC0
-    s32 field_0xDC[7];      // 0xDC
-    s32 field_0xF8[7];      // 0xF8
+    s32 lastCursorPos;        // 0x18, cursor->field_0 when the ring last turned
+    s32 ringMoving;           // 0x1C, set while an icon is still moving; Hukidasi mirrors its bubble on it
+    s32 iconFlags[5];         // 0x20, bit 1: draw the icon, bit 2: speech-bubble style
+    s32 iconState[5];         // 0x34
+    s32 iconFrame[10];        // 0x48
+    s32 iconFromSlot[5];      // 0x70, slot the icon rotated from (start angle of kakutable)
+    s32 iconSlot[5];          // 0x84, ring slot index into kakutable
+    f32 scrollPos;            // 0x98, first visible item (fractional while scrolling)
+    f32 scrollFrom;           // 0x9C
+    f32 scrollTo;             // 0xA0
+    s32 slotFlags[7];         // 0xA4, bit 1: slot is drawn
+    s32 slotState[7];         // 0xC0
+    s32 slotFrame[7];         // 0xDC
+    s32 field_0xF8[7];        // 0xF8
     u8 field_0x114[0x11C - 0x114];
-    s32 field_0x11C;        // 0x11C
-    f32 field_0x120;        // 0x120
+    s32 bounceFrame;          // 0x11C, cursor arrow bounce, wraps at 12
+    f32 partyBtnAngle;        // 0x120, party change button angle (90 down to 0)
 } BattleMenuWork;
 
 
@@ -70,36 +70,48 @@ f32 kakutable[3][5] = {
 };
 
 typedef struct BattleMenuDispEntry {
-    s32 field_0x0;   // 0x0
-    s32 field_0x4;   // 0x4
-    void* field_0x8; // 0x8
-    u16 field_0xC;   // 0xC
-    u16 field_0xE;   // 0xE
-    s32 field_0x10;  // 0x10
-    s32 field_0x14;  // 0x14
+    s32 field_0x0;       // 0x0
+    s32 enabled;         // 0x4, 1: selectable (black label), otherwise greyed
+    const char* label;   // 0x8
+    u16 iconId;          // 0xC, 0 uses the default icon 0x18B
+    u16 field_0xE;       // 0xE
+    const char* helpMsg; // 0x10
+    s16 hp;              // 0x14
+    s16 maxHp;           // 0x16
 } BattleMenuDispEntry; // 0x18
 
+// The multi-item table uses the same 0x18 stride with its own layout.
+typedef struct BattleMenuMultiEntry {
+    s32 enabled;         // 0x0
+    const char* label;   // 0x4
+    const char* helpMsg; // 0x8
+    u16 iconId;          // 0xC
+    u16 field_0xE;       // 0xE
+    s32 fpCost;          // 0x10
+    s32 field_0x14;      // 0x14
+} BattleMenuMultiEntry; // 0x18
+
 typedef struct BattleMenuDispEntryOp {
-    s32 field_0x0;  // 0x0
-    s32 field_0x4;  // 0x4
-    s32 field_0x8;  // 0x8
-    s32 field_0xC;  // 0xC
-    u16 field_0x10; // 0x10
-    u16 field_0x12; // 0x12
-    s32 field_0x14; // 0x14
-    s32 field_0x18; // 0x18
+    s32 field_0x0;       // 0x0
+    s32 enabled;         // 0x4
+    s32 field_0x8;       // 0x8
+    const char* label;   // 0xC
+    u16 iconId;          // 0x10
+    u16 field_0x12;      // 0x12
+    const char* helpMsg; // 0x14
+    s32 fpCost;          // 0x18
 } BattleMenuDispEntryOp; // 0x1C
 
 // Per-weapon entries behind BattleMenuWork.field_8 (stride 0x1C).
 typedef struct BattleMenuWeaponEntry {
     BattleWeapon* weapon;  // 0x0
-    s32 field_0x4;         // 0x4
-    s32 field_0x8;         // 0x8
+    s32 enabled;           // 0x4
+    const char* label;     // 0x8
     s32 field_0xC;         // 0xC
     u16 field_0x10;        // 0x10
     u8 field_0x12;         // 0x12
     u8 field_0x13[0x14 - 0x13];
-    s32 field_0x14;        // 0x14
+    s32 itemId;            // 0x14
     s32 field_0x18;        // 0x18
 } BattleMenuWeaponEntry; // 0x1C
 
@@ -170,7 +182,7 @@ void SelectedItemCoordinateColorUpDate(void) {
 
 BOOL BattleMenuKeyOKInACT(BattleWork* wp) {
     if (wp->commandMenu.unk540[0x18] == 0 &&
-        ((BattleMenuWork*)wp->commandMenu.field_55C)->field_0x14 == 0) {
+        ((BattleMenuWork*)wp->commandMenu.field_55C)->inputReady == 0) {
         return FALSE;
     }
     return TRUE;
@@ -224,10 +236,10 @@ void DrawMainIcon(BattleMenuWork* window, void* table, Mtx* mtxA, Vec* vecB, f32
     s32 i;
     s32 j;
 
-    if (unit->currentKind == 0xDE) {
-        cursor = (BattleCursor*)((u8*)wp + 0x1bb4);
+    if (unit->currentKind == UNIT_MARIO) {
+        cursor = &wp->commandMenu.cursor[0];
     } else {
-        cursor = (BattleCursor*)((u8*)wp + 0x1bc0);
+        cursor = &wp->commandMenu.cursor[1];
     }
     for (i = 0; i < cursor->unk8; i++) {
         order[i] = i;
@@ -247,7 +259,7 @@ void DrawMainIcon(BattleMenuWork* window, void* table, Mtx* mtxA, Vec* vecB, f32
     }
     for (i = 0; i < cursor->unk8; i++) {
         s32 idx = order[i];
-        s32 flags = window->field_0x20[idx];
+        s32 flags = window->iconFlags[idx];
         if (flags & 1) {
             if (flags & 2) {
                 DrawMainIconHukidasi(window, (void*)((u8*)table + idx * 0x14), &mtxA[idx], scales[idx]);
@@ -302,7 +314,7 @@ void DrawMainIconHukidasi(BattleMenuWork* window, void* entryPtr, Mtx* mtx, f32 
         f30 = -4.0f + 8.0f * (scale - 180.0f) / 180.0f;
     }
 
-    if (window->field_0x1C == 0) {
+    if (window->ringMoving == 0) {
         btlDispGXQuads2D(64.0f + f30, 76.0f, -64.0f + f30, -4.0f, 0, 0, 0, 0x80);
         btlDispGXQuads2D(64.0f, 80.0f, -64.0f, float_0_8041c144, 0xFF, 0xFF, 0xFF, 0xFF);
     } else {
@@ -316,11 +328,11 @@ void DrawMainIconHukidasi(BattleMenuWork* window, void* entryPtr, Mtx* mtx, f32 
     PSMTXConcat(*mtx, rotMtx, resultMtx);
     PSMTXConcat(resultMtx, transMtx, resultMtx);
     PSMTXConcat(resultMtx, scaleMtx, resultMtx);
-    iconId = entry->field_0xC;
+    iconId = entry->iconId;
     if (iconId == 0) {
         iconId = 0x18B;
     }
-    if (entry->field_0x4 == 1) {
+    if (entry->enabled == 1) {
 #ifdef MUST_MATCH
         // iconDispGx2's header says s16 but the original reads a zero-extended u16 (no extsh).
         ((void (*)(Mtx, s16, u16))iconDispGx2)(resultMtx, 0x10, iconId);
@@ -335,7 +347,7 @@ void DrawMainIconHukidasi(BattleMenuWork* window, void* entryPtr, Mtx* mtx, f32 
 #endif
     }
 
-    msg = (const char*)entry->field_0x8;
+    msg = entry->label;
     PSMTXTrans(transMtx, float_0_8041c144, 52.5f, float_0_8041c144);
     PSMTXScale(scaleMtx, 0.9f, 0.9f, 0.9f);
     PSMTXRotRad(rotMtx, 'y', f31);
@@ -343,7 +355,7 @@ void DrawMainIconHukidasi(BattleMenuWork* window, void* entryPtr, Mtx* mtx, f32 
     PSMTXConcat(resultMtx, transMtx, resultMtx);
     PSMTXConcat(resultMtx, scaleMtx, resultMtx);
     FontDrawStart();
-    if (entry->field_0x4 == 1) {
+    if (entry->enabled == 1) {
         color = ((GXColor){ 0x00,0x00,0x00,0xFF });
     } else {
         color = ((GXColor){ 0x80,0x80,0x80,0xFF });
@@ -444,11 +456,11 @@ void DrawMainIconCircle(BattleMenuWork* window, void* entryPtr, Mtx* mtx, Vec* p
     PSMTXConcat(*mtx, rotMtx, resultMtx);
     PSMTXConcat(resultMtx, scaleMtx, resultMtx);
     PSMTXConcat(resultMtx, transMtx, resultMtx);
-    iconId = entry->field_0xC;
+    iconId = entry->iconId;
     if ((u16)iconId == 0) {
         iconId = 0x18B;
     }
-    if (entry->field_0x4 == 1) {
+    if (entry->enabled == 1) {
 #ifdef MUST_MATCH
         iconDispGxCol(resultMtx, 0x10, iconId, MainIconCircleColor(((GXColor){ 0x00,0x00,0x00,0xFF }), alpha));
 #else
@@ -483,12 +495,12 @@ void DrawSubIcon(BattleMenuWork* window, Mtx* mtxBase, s32* a, u16* b, s32* c, s
 
     BattleGetUnitPtr(wp, wp->activeUnitId);
     cursor = window->cursor;
-    f31 = window->field_0x98 - (f32)(s32)window->field_0x98;
+    f31 = window->scrollPos - (f32)(s32)window->scrollPos;
     f31 = f31 * 24.0f;
     for (i = 0; i < 7; i++) {
-        s32 idx = (s32)window->field_0x98 + i;
+        s32 idx = (s32)window->scrollPos + i;
         if (idx < cursor->unk8) {
-            if (window->field_0xA4[i] & 1) {
+            if (window->slotFlags[i] & 1) {
                 PSMTXTrans(mtx, 100.0f, 35.0f - 24.0f * (f32)i + f31, float_0_8041c144);
                 PSMTXConcat(mtx, mtxBase[i], result[i]);
                 DrawSubIconSub(window, i, result[i], a[i], b[i], c[i], d[i], e[i], table, flag);
@@ -538,7 +550,7 @@ void DrawSubIconSub(BattleMenuWork* window, s32 index, Mtx mtx, s32 a, u16 b, s3
     s32 i;
     s32 item;
 
-    frac = window->field_0x98 - (f32)(s32)window->field_0x98;
+    frac = window->scrollPos - (f32)(s32)window->scrollPos;
     alpha = 0xFF;
     if (index == 0) {
         alpha = (s32)(255.0f * (1.0f - frac));
@@ -546,7 +558,7 @@ void DrawSubIconSub(BattleMenuWork* window, s32 index, Mtx mtx, s32 a, u16 b, s3
     if (index == 6) {
         alpha = (s32)(255.0f * frac);
     }
-    item = (s32)window->field_0x98 + index;
+    item = (s32)window->scrollPos + index;
     if (item == cursor->field_0) {
         cr = seleItemCoordCol.r;
         cg = seleItemCoordCol.g;
@@ -724,7 +736,6 @@ void DrawSubIconSub(BattleMenuWork* window, s32 index, Mtx mtx, s32 a, u16 b, s3
     }
 
     if (table != 0) {
-        // HP and max HP are the two s16 halves of the entry's field_0x14 word.
         s32 count2;
         s16 hp;
         s16 maxHp;
@@ -737,13 +748,9 @@ void DrawSubIconSub(BattleMenuWork* window, s32 index, Mtx mtx, s32 a, u16 b, s3
         s32 t2;
         s32 o2;
         s32 rem2;
-        entry = (BattleMenuDispEntry*)((u8*)table + (index + (s32)window->field_0x98) * 0x18);
-        {
-            // field_0x14 holds HP in its low half and max HP in its high half as two s16s.
-            s16* halves = (s16*)entry;
-            hp = halves[10];
-            maxHp = halves[11];
-        }
+        entry = (BattleMenuDispEntry*)((u8*)table + (index + (s32)window->scrollPos) * 0x18);
+        hp = entry->hp;
+        maxHp = entry->maxHp;
         PSMTXTrans(mtxTrans, 30.0f, 22.0f, float_0_8041c144);
         PSMTXScale(mtxScale, 0.8f, 0.8f, 0.8f);
         PSMTXConcat(mtx, mtxTrans, mtxOut);
@@ -858,15 +865,15 @@ void DrawMenuPartyChangeButton(void) {
     if (party == 0) {
         BattleAudience_GetItemOn(&memberId, &itemX, &itemY, &itemZ, 0);
         if (memberId != -1) {
-            if (window->field_0x120 > float_0_8041c144) {
-                window->field_0x120 -= 5.0f;
+            if (window->partyBtnAngle > float_0_8041c144) {
+                window->partyBtnAngle -= 5.0f;
             } else {
-                window->field_0x120 = float_0_8041c144;
+                window->partyBtnAngle = float_0_8041c144;
             }
             btlGetScreenPoint(&mario->mPosition, &screen1);
-            DrawMenuPartyChangeButton_Sub(5, screen1.x, screen1.y - 20.0f, window->field_0x120);
+            DrawMenuPartyChangeButton_Sub(5, screen1.x, screen1.y - 20.0f, window->partyBtnAngle);
         } else {
-            window->field_0x120 = 90.0f;
+            window->partyBtnAngle = 90.0f;
         }
     } else {
         btlGetScreenPoint(&mario->mPosition, &screen1);
@@ -875,17 +882,17 @@ void DrawMenuPartyChangeButton(void) {
         f30 = screen1.y;
         BattleAudience_GetItemOn(&memberId, &itemX, &itemY, &itemZ, 0);
         if (memberId != -1) {
-            if (window->field_0x120 == 90.0f) {
+            if (window->partyBtnAngle == 90.0f) {
                 psndSFXOn("SFX_BTL_SYS_CAUTION_THROW1");
             }
-            if (window->field_0x120 > float_0_8041c144) {
-                window->field_0x120 -= 5.0f;
+            if (window->partyBtnAngle > float_0_8041c144) {
+                window->partyBtnAngle -= 5.0f;
             } else {
-                window->field_0x120 = float_0_8041c144;
+                window->partyBtnAngle = float_0_8041c144;
             }
-            DrawMenuPartyChangeButton_Sub(5, f31, f30 - 20.0f, window->field_0x120);
+            DrawMenuPartyChangeButton_Sub(5, f31, f30 - 20.0f, window->partyBtnAngle);
         } else {
-            window->field_0x120 = 90.0f;
+            window->partyBtnAngle = 90.0f;
             if (BattleCommandCheckChangePositionEnable(wp)) {
                 DrawMenuPartyChangeButton_Sub(4, f31, f30 - 20.0f, float_0_8041c144);
             }
@@ -1041,10 +1048,10 @@ void DrawMenuCursorAndScrollArrow(Vec pos) {
     f32 bounce;
     s32 n;
 
-    bounce = intplGetValue(4, window->field_0x11C, 6, float_0_8041c144, 10.0f);
-    window->field_0x11C++;
-    if (window->field_0x11C >= 12) {
-        window->field_0x11C = 0;
+    bounce = intplGetValue(4, window->bounceFrame, 6, float_0_8041c144, 10.0f);
+    window->bounceFrame++;
+    if (window->bounceFrame >= 12) {
+        window->bounceFrame = 0;
     }
     if (cursor->field_4 > 0) {
         vec.x = 155.0f + pos.x;
@@ -1082,23 +1089,23 @@ void InitSubMenuCommonProcess(BattleMenuWork** window, BattleCursor** cursor, Ba
     if (wp->commandMenu.field_55C) {
         BattleFree(wp->commandMenu.field_55C);
     }
-    wp->commandMenu.field_55C = BattleAlloc(0x124);
+    wp->commandMenu.field_55C = BattleAlloc(sizeof(BattleMenuWork));
     *window = wp->commandMenu.field_55C;
     (*window)->cursor = menu;
-    (*window)->field_0xC = 0;
+    (*window)->phase = 0;
     (*window)->field_0x10 = 0;
-    (*window)->field_0x14 = 0;
-    (*window)->field_0x18 = menu->field_0;
-    if (BattleGetUnitPtr(wp, wp->activeUnitId)->currentKind == 0xDE) {
+    (*window)->inputReady = 0;
+    (*window)->lastCursorPos = menu->field_0;
+    if (BattleGetUnitPtr(wp, wp->activeUnitId)->currentKind == UNIT_MARIO) {
         *cursor = &wp->commandMenu.cursor[0];
     } else {
         *cursor = &wp->commandMenu.cursor[1];
     }
-    (*window)->field_0x98 = float_0_8041c144;
+    (*window)->scrollPos = float_0_8041c144;
     for (i = 0; i < 7; i++) {
-        (*window)->field_0xA4[i] = 0;
-        (*window)->field_0xC0[i] = 1;
-        (*window)->field_0xDC[i] = -i;
+        (*window)->slotFlags[i] = 0;
+        (*window)->slotState[i] = 1;
+        (*window)->slotFrame[i] = -i;
         (*window)->field_0xF8[i] = 0;
     }
 }
@@ -1114,14 +1121,14 @@ void InitSubMenuCommonProcess2(BattleMenuWork* window, BattleCursor* cursor) {
         if (idx >= cursor->unk8) {
             idx = 0;
         }
-        window->field_0x48[idx] = 0;
-        window->field_0x84[idx] = i;
-        window->field_0x20[idx] = 0;
-        window->field_0x20[idx] |= 1;
+        window->iconFrame[idx] = 0;
+        window->iconSlot[idx] = i;
+        window->iconFlags[idx] = 0;
+        window->iconFlags[idx] |= 1;
         if (i == cursor->unk8 - 1) {
-            window->field_0x34[idx] = 0;
+            window->iconState[idx] = 0;
         } else {
-            window->field_0x34[idx] = 0xA;
+            window->iconState[idx] = 0xA;
         }
     }
 }
@@ -1137,14 +1144,14 @@ void InitSubMenuCommonProcess3(BattleMenuWork* window, BattleCursor* cursor) {
         if (idx >= cursor->unk8) {
             idx = 0;
         }
-        window->field_0x48[idx] = 0;
-        window->field_0x84[idx] = i;
-        window->field_0x20[idx] = 0;
-        window->field_0x20[idx] |= 1;
+        window->iconFrame[idx] = 0;
+        window->iconSlot[idx] = i;
+        window->iconFlags[idx] = 0;
+        window->iconFlags[idx] |= 1;
         if (i == cursor->unk8 - 1) {
-            window->field_0x34[idx] = 1;
+            window->iconState[idx] = 1;
         } else {
-            window->field_0x34[idx] = 0xB;
+            window->iconState[idx] = 0xB;
         }
     }
 }
@@ -1154,40 +1161,40 @@ void DrawSubMenuCommonProcessSub1(BattleMenuWork* window, BattleCursor* a, s32 i
     s32 i;
 
     if (mode == 6 && a->unk8 > 6 && idx == a->unk8 - 6 && a->field_4 == 0 && a->field_0 != 1) {
-        window->field_0xC = 0x1E;
+        window->phase = 0x1E;
         window->field_0x10 = 0;
-        window->field_0x9C = (f32)(a->unk8 - 6);
-        window->field_0xA0 = float_0_8041c144;
+        window->scrollFrom = (f32)(a->unk8 - 6);
+        window->scrollTo = float_0_8041c144;
         for (i = 0; i < 7; i++) {
-            window->field_0xC0[i] = 0x1E;
-            window->field_0xDC[i] = 0;
+            window->slotState[i] = 0x1E;
+            window->slotFrame[i] = 0;
         }
     } else if (mode == 6 && a->unk8 > 6 && idx == 0 && a->field_4 == a->unk8 - 6 && a->field_0 != 5) {
-        window->field_0xC = 0x28;
+        window->phase = 0x28;
         window->field_0x10 = 0;
-        window->field_0x9C = float_0_8041c144;
-        window->field_0xA0 = (f32)(a->unk8 - 6);
+        window->scrollFrom = float_0_8041c144;
+        window->scrollTo = (f32)(a->unk8 - 6);
         for (i = 0; i < 7; i++) {
-            window->field_0xC0[i] = 0x28;
-            window->field_0xDC[i] = 0;
+            window->slotState[i] = 0x28;
+            window->slotFrame[i] = 0;
         }
     } else if (a->field_4 == idx + 1) {
-        window->field_0xC = 0xA;
+        window->phase = 0xA;
         window->field_0x10 = 0;
-        window->field_0x9C = (f32)idx;
-        window->field_0xA0 = (f32)(idx + 1);
+        window->scrollFrom = (f32)idx;
+        window->scrollTo = (f32)(idx + 1);
         for (i = 0; i < 7; i++) {
-            window->field_0xC0[i] = 0xA;
-            window->field_0xDC[i] = 0;
+            window->slotState[i] = 0xA;
+            window->slotFrame[i] = 0;
         }
     } else if (a->field_4 == idx - 1) {
-        window->field_0xC = 0x14;
+        window->phase = 0x14;
         window->field_0x10 = 0;
-        window->field_0x9C = (f32)idx;
-        window->field_0xA0 = (f32)(idx - 1);
+        window->scrollFrom = (f32)idx;
+        window->scrollTo = (f32)(idx - 1);
         for (i = 0; i < 7; i++) {
-            window->field_0xC0[i] = 0x14;
-            window->field_0xDC[i] = 0;
+            window->slotState[i] = 0x14;
+            window->slotFrame[i] = 0;
         }
     }
 }
@@ -1208,10 +1215,10 @@ void DrawSubMenuCommonProcess(f32* outX, f32* outY, Mtx* mtxA, Vec* vecB, f32* s
     Mtx transMtx;
     Mtx scaleMtx;
 
-    if (BattleGetUnitPtr(wp, wp->activeUnitId)->currentKind == 0xDE) {
-        mainCursor = (BattleCursor*)((u8*)wp + 0x1bb4);
+    if (BattleGetUnitPtr(wp, wp->activeUnitId)->currentKind == UNIT_MARIO) {
+        mainCursor = &wp->commandMenu.cursor[0];
     } else {
-        mainCursor = (BattleCursor*)((u8*)wp + 0x1bc0);
+        mainCursor = &wp->commandMenu.cursor[1];
     }
     {
         s32 n = cursor->unk8;
@@ -1239,35 +1246,35 @@ void DrawSubMenuCommonProcess(f32* outX, f32* outY, Mtx* mtxA, Vec* vecB, f32* s
     *outY = (-100.0f);
 
     {
-    s32 type = window->field_0xC;
+    s32 type = window->phase;
     switch (type) {
     case 0:
-        window->field_0x14 = 1;
-        window->field_0x98 = (f32)cursor->field_4;
+        window->inputReady = 1;
+        window->scrollPos = (f32)cursor->field_4;
         {
             s32 c1 = 0;
             for (i = 0; i < mainCursor->unk8; i++) {
-                if (window->field_0x34[i] == 1 || window->field_0x34[i] == 0xB) {
+                if (window->iconState[i] == 1 || window->iconState[i] == 0xB) {
                     c1++;
                 }
             }
             {
                 s32 c2;
                 for (i = 0, c2 = 0; i < 7; i++) {
-                    if (window->field_0xC0[i] == 2) {
+                    if (window->slotState[i] == 2) {
                         c2++;
                     }
                 }
                 if (c1 == mainCursor->unk8 && c2 == 7) {
-                    window->field_0xC = 2;
+                    window->phase = 2;
                 }
             }
         }
         DrawSubMenuCommonProcessSub1(window, cursor, idx, maxCount);
         break;
     case 2:
-        window->field_0x14 = 1;
-        window->field_0x98 = (f32)cursor->field_4;
+        window->inputReady = 1;
+        window->scrollPos = (f32)cursor->field_4;
         DrawSubMenuCommonProcessSub1(window, cursor, idx, maxCount);
         break;
     case 0xA:
@@ -1275,18 +1282,18 @@ void DrawSubMenuCommonProcess(f32* outX, f32* outY, Mtx* mtxA, Vec* vecB, f32* s
     case 0x1E:
     case 0x28:
         if (type == 0xA || type == 0x14) {
-            window->field_0x14 = 1;
+            window->inputReady = 1;
         }
         {
             s32 c2 = 0;
             for (i = 0; i < 7; i++) {
-                if (window->field_0xC0[i] == 2) {
+                if (window->slotState[i] == 2) {
                     c2++;
                 }
             }
             if (c2 == 7) {
-                window->field_0xC = 2;
-                window->field_0x98 = (f32)cursor->field_4;
+                window->phase = 2;
+                window->scrollPos = (f32)cursor->field_4;
             }
         }
         DrawSubMenuCommonProcessSub1(window, cursor, idx, maxCount);
@@ -1294,87 +1301,87 @@ void DrawSubMenuCommonProcess(f32* outX, f32* outY, Mtx* mtxA, Vec* vecB, f32* s
     }
     }
 
-    window->field_0x1C = 0;
+    window->ringMoving = 0;
     for (i = 0; i < mainCursor->unk8; i++) {
-        switch (window->field_0x34[i]) {
+        switch (window->iconState[i]) {
         case 0:
-            window->field_0x20[i] |= 1;
-            window->field_0x20[i] |= 2;
+            window->iconFlags[i] |= 1;
+            window->iconFlags[i] |= 2;
             GetRingCenter(&vecB[i]);
-            vecB[i].x = intplGetValue(4, window->field_0x48[i], 12, vecB[i].x, (-60.0f));
-            vecB[i].y = intplGetValue(4, window->field_0x48[i], 12, vecB[i].y, 55.0f);
+            vecB[i].x = intplGetValue(4, window->iconFrame[i], 12, vecB[i].x, (-60.0f));
+            vecB[i].y = intplGetValue(4, window->iconFrame[i], 12, vecB[i].y, 55.0f);
             PSMTXTrans(mtxA[i], 20.0f + vecB[i].x, vecB[i].y, vecB[i].z);
-            scales[i] = intplGetValue(0, window->field_0x48[i], 12, float_0_8041c144, 360.0f);
+            scales[i] = intplGetValue(0, window->iconFrame[i], 12, float_0_8041c144, 360.0f);
             if (scales[i] > 360.0f) {
                 scales[i] -= 360.0f;
             }
-            if (window->field_0x48[i] >= 3) {
-                window->field_0x1C = 1;
+            if (window->iconFrame[i] >= 3) {
+                window->ringMoving = 1;
             }
-            window->field_0x48[i]++;
-            if (window->field_0x48[i] > 12) {
-                window->field_0x34[i] = 1;
+            window->iconFrame[i]++;
+            if (window->iconFrame[i] > 12) {
+                window->iconState[i] = 1;
             }
             break;
         case 1:
-            window->field_0x20[i] |= 1;
-            window->field_0x20[i] |= 2;
+            window->iconFlags[i] |= 1;
+            window->iconFlags[i] |= 2;
             PSMTXTrans(mtxA[i], (-40.0f), 55.0f, float_0_8041c144);
             scales[i] = 360.0f;
-            window->field_0x1C = 1;
+            window->ringMoving = 1;
             break;
         case 0xA:
-            window->field_0x20[i] |= 1;
-            window->field_0x20[i] &= ~2;
-            angle = 3.1415927f * kakutable[mainCursor->unk8 - 3][window->field_0x84[i]] / 180.0f;
+            window->iconFlags[i] |= 1;
+            window->iconFlags[i] &= ~2;
+            angle = 3.1415927f * kakutable[mainCursor->unk8 - 3][window->iconSlot[i]] / 180.0f;
             GetRingCenter(&vecB[i]);
             GetRingOffset(&ringX, &ringY, angle);
             vecB[i].x += ringX;
             vecB[i].y += ringY;
             vecB[i].z = ringY;
-            scale = 1.0f - 0.1f * (f32)window->field_0x48[i];
+            scale = 1.0f - 0.1f * (f32)window->iconFrame[i];
             if (scale <= float_0_8041c144) {
-                window->field_0x34[i] = 0xB;
+                window->iconState[i] = 0xB;
             }
             PSMTXScale(scaleMtx, scale, scale, 1.0f);
             PSMTXTrans(transMtx, vecB[i].x, vecB[i].y, vecB[i].z);
             PSMTXConcat(transMtx, scaleMtx, mtxA[i]);
             scales[i] = float_0_8041c144;
-            window->field_0x48[i]++;
+            window->iconFrame[i]++;
             break;
         case 0xB:
-            window->field_0x20[i] &= ~1;
+            window->iconFlags[i] &= ~1;
             break;
         }
     }
 
     for (i = 0; i < 7; i++) {
-        s32 state = window->field_0xC0[i];
+        s32 state = window->slotState[i];
         switch (state) {
         case 0:
-            window->field_0xA4[i] &= ~1;
+            window->slotFlags[i] &= ~1;
             window->field_0x114[i] = 0xFF;
             break;
         case 1:
-            window->field_0xA4[i] &= ~1;
+            window->slotFlags[i] &= ~1;
             window->field_0x114[i] = 0xFF;
-            if (window->field_0xDC[i] >= 0 && i != 6) {
-                f32 rad = intplGetValue(0, window->field_0xDC[i], 12, 90.0f, float_0_8041c144);
-                window->field_0xA4[i] |= 1;
+            if (window->slotFrame[i] >= 0 && i != 6) {
+                f32 rad = intplGetValue(0, window->slotFrame[i], 12, 90.0f, float_0_8041c144);
+                window->slotFlags[i] |= 1;
                 PSMTXRotRad(mtxC[i], 'y', 0.017453292f * rad);
             }
-            window->field_0xDC[i]++;
-            if (window->field_0xDC[i] > 12) {
-                window->field_0xC0[i] = 2;
+            window->slotFrame[i]++;
+            if (window->slotFrame[i] > 12) {
+                window->slotState[i] = 2;
             }
             break;
         case 2:
             window->field_0x114[i] = 0xFF;
             if (i != 6) {
-                window->field_0xA4[i] |= 1;
+                window->slotFlags[i] |= 1;
                 PSMTXIdentity(mtxC[i]);
             } else {
-                window->field_0xA4[i] &= ~1;
+                window->slotFlags[i] &= ~1;
             }
             break;
         case 0xA:
@@ -1389,13 +1396,13 @@ void DrawSubMenuCommonProcess(f32* outX, f32* outY, Mtx* mtxA, Vec* vecB, f32* s
                 if (state == 0x1E || state == 0x28) {
                     steps = (cursor->unk8 - 6) / 2 + 12;
                 }
-                window->field_0xA4[i] |= 1;
+                window->slotFlags[i] |= 1;
                 PSMTXIdentity(mtxC[i]);
-                window->field_0x98 = intplGetValue(4, window->field_0xDC[i], steps, window->field_0x9C, window->field_0xA0);
-                window->field_0xDC[i]++;
-                if (window->field_0xDC[i] > steps) {
-                    window->field_0xC0[i] = 2;
-                    window->field_0xDC[i] = 0;
+                window->scrollPos = intplGetValue(4, window->slotFrame[i], steps, window->scrollFrom, window->scrollTo);
+                window->slotFrame[i]++;
+                if (window->slotFrame[i] > steps) {
+                    window->slotState[i] = 2;
+                    window->slotFrame[i] = 0;
                 }
             }
             break;
@@ -1411,27 +1418,27 @@ void BattleMenuDisp_ActSelect_Init(BattleWork* wp, BattleCursor* a, void* b, u32
     if (wp->commandMenu.field_55C) {
         BattleFree(wp->commandMenu.field_55C);
     }
-    wp->commandMenu.field_55C = BattleAlloc(0x124);
+    wp->commandMenu.field_55C = BattleAlloc(sizeof(BattleMenuWork));
     if (flags & 1) {
         w = (BattleMenuWork*)wp->commandMenu.field_55C;
         w->cursor = a;
-        w->field_0x4 = b;
-        w->field_0xC = 0xA;
-        w->field_0x14 = 0;
-        w->field_0x18 = a->field_0;
+        w->mainIconTable = b;
+        w->phase = 0xA;
+        w->inputReady = 0;
+        w->lastCursorPos = a->field_0;
         idx = a->field_0;
         for (i = 0; i < a->unk8; i++) {
             if (idx == a->field_0) {
-                w->field_0x34[idx] = 0xA;
+                w->iconState[idx] = 0xA;
             } else {
-                w->field_0x34[idx] = 0xB;
+                w->iconState[idx] = 0xB;
             }
-            w->field_0x48[idx] = 0;
-            w->field_0x84[idx] = a->unk8 - 1 + i;
-            if (w->field_0x84[idx] >= a->unk8) {
-                w->field_0x84[idx] -= a->unk8;
+            w->iconFrame[idx] = 0;
+            w->iconSlot[idx] = a->unk8 - 1 + i;
+            if (w->iconSlot[idx] >= a->unk8) {
+                w->iconSlot[idx] -= a->unk8;
             }
-            w->field_0x20[idx] = 0;
+            w->iconFlags[idx] = 0;
             idx++;
             if (idx >= a->unk8) {
                 idx = 0;
@@ -1440,20 +1447,20 @@ void BattleMenuDisp_ActSelect_Init(BattleWork* wp, BattleCursor* a, void* b, u32
     } else {
         w = (BattleMenuWork*)wp->commandMenu.field_55C;
         w->cursor = a;
-        w->field_0x4 = b;
-        w->field_0xC = 0;
-        w->field_0x14 = 0;
-        w->field_0x18 = a->field_0;
+        w->mainIconTable = b;
+        w->phase = 0;
+        w->inputReady = 0;
+        w->lastCursorPos = a->field_0;
         idx = a->field_0;
         for (i = 0; i < a->unk8; i++) {
             idx++;
             if (idx >= a->unk8) {
                 idx = 0;
             }
-            w->field_0x34[idx] = 0;
-            w->field_0x48[idx] = i * 10 / 2;
-            w->field_0x84[idx] = i;
-            w->field_0x20[idx] = 0;
+            w->iconState[idx] = 0;
+            w->iconFrame[idx] = i * 10 / 2;
+            w->iconSlot[idx] = i;
+            w->iconFlags[idx] = 0;
         }
     }
 }
@@ -1472,7 +1479,7 @@ void BattleMenuDisp_ActSelect_End(BattleWork* wp) {
 
 // How far the cursor moved since the ring was last turned.
 static inline s32 menuCursorDelta(BattleMenuWork* w) {
-    return w->cursor->field_0 - w->field_0x18;
+    return w->cursor->field_0 - w->lastCursorPos;
 }
 
 void DrawMainMenu(void) {
@@ -1492,48 +1499,48 @@ void DrawMainMenu(void) {
     s32 i;
 
     camGetPtr(8);
-    switch (window->field_0xC) {
+    switch (window->phase) {
     case 0:
         {
             s32 count = 0;
             for (i = 0; i < cursor->unk8; i++) {
-                if (window->field_0x34[i] == 3) {
+                if (window->iconState[i] == 3) {
                     count++;
                 }
             }
             if (count == cursor->unk8) {
-                window->field_0xC = 1;
+                window->phase = 1;
             }
         }
         break;
     case 1:
-        window->field_0x14 = 1;
+        window->inputReady = 1;
         {
             s32 d = menuCursorDelta(window);
             if (d == 1 || -(window->cursor->unk8 - 1) == d) {
-                window->field_0xC = 2;
-                window->field_0x14 = 0;
-                window->field_0x18 = window->cursor->field_0;
+                window->phase = 2;
+                window->inputReady = 0;
+                window->lastCursorPos = window->cursor->field_0;
                 for (i = 0; i < cursor->unk8; i++) {
-                    window->field_0x34[i] = 4;
-                    window->field_0x48[i] = 0;
-                    window->field_0x70[i] = window->field_0x84[i];
-                    window->field_0x84[i]--;
-                    if (window->field_0x84[i] == -1) {
-                        window->field_0x84[i] = cursor->unk8 - 1;
+                    window->iconState[i] = 4;
+                    window->iconFrame[i] = 0;
+                    window->iconFromSlot[i] = window->iconSlot[i];
+                    window->iconSlot[i]--;
+                    if (window->iconSlot[i] == -1) {
+                        window->iconSlot[i] = cursor->unk8 - 1;
                     }
                 }
             } else if (d == -1 || window->cursor->unk8 - 1 == d) {
-                window->field_0xC = 2;
-                window->field_0x14 = 0;
-                window->field_0x18 = window->cursor->field_0;
+                window->phase = 2;
+                window->inputReady = 0;
+                window->lastCursorPos = window->cursor->field_0;
                 for (i = 0; i < cursor->unk8; i++) {
-                    window->field_0x34[i] = 5;
-                    window->field_0x48[i] = 0;
-                    window->field_0x70[i] = window->field_0x84[i];
-                    window->field_0x84[i]++;
-                    if (window->field_0x84[i] == cursor->unk8) {
-                        window->field_0x84[i] = 0;
+                    window->iconState[i] = 5;
+                    window->iconFrame[i] = 0;
+                    window->iconFromSlot[i] = window->iconSlot[i];
+                    window->iconSlot[i]++;
+                    if (window->iconSlot[i] == cursor->unk8) {
+                        window->iconSlot[i] = 0;
                     }
                 }
             }
@@ -1543,37 +1550,37 @@ void DrawMainMenu(void) {
         {
             s32 count = 0;
             for (i = 0; i < cursor->unk8; i++) {
-                if (window->field_0x34[i] == 3) {
+                if (window->iconState[i] == 3) {
                     count++;
                 }
             }
             if (count == cursor->unk8) {
-                window->field_0xC = 1;
+                window->phase = 1;
             }
         }
         break;
     case 0xA:
-        window->field_0xC = 1;
-        window->field_0x14 = 1;
+        window->phase = 1;
+        window->inputReady = 1;
         break;
     }
 
-    window->field_0x1C = 0;
+    window->ringMoving = 0;
     for (i = 0; i < cursor->unk8; i++) {
-        switch (window->field_0x34[i]) {
+        switch (window->iconState[i]) {
         case 0:
-            window->field_0x48[i]--;
-            if (window->field_0x48[i] <= 0) {
-                window->field_0x34[i] = 1;
-                window->field_0x48[i] = 0;
+            window->iconFrame[i]--;
+            if (window->iconFrame[i] <= 0) {
+                window->iconState[i] = 1;
+                window->iconFrame[i] = 0;
             }
             break;
         case 1:
-            window->field_0x20[i] |= 1;
+            window->iconFlags[i] |= 1;
             {
-                cur = 0.2f * (f32)window->field_0x48[i] + float_0_8041c144;
+                cur = 0.2f * (f32)window->iconFrame[i] + float_0_8041c144;
             }
-            angle = 3.1415927f * kakutable[cursor->unk8 - 3][window->field_0x84[i]] / 180.0f;
+            angle = 3.1415927f * kakutable[cursor->unk8 - 3][window->iconSlot[i]] / 180.0f;
             {
                 if (cur >= angle) {
                     cur = angle;
@@ -1584,16 +1591,16 @@ void DrawMainMenu(void) {
                 vecB[i].y += ringY;
                 vecB[i].z = ringY;
                 if (i == cursor->field_0) {
-                    f32 r = 90.0f * (f32)window->field_0x48[i] / 10.0f + 270.0f;
+                    f32 r = 90.0f * (f32)window->iconFrame[i] / 10.0f + 270.0f;
                     if (r >= 360.0f) {
                         r = float_0_8041c144;
                     }
                     PSMTXRotRad(rotMtx, 'x', 0.017453292f * r);
                     PSMTXTrans(transMtx, 20.0f + vecB[i].x, vecB[i].y, vecB[i].z);
                     PSMTXConcat(transMtx, rotMtx, mtxA[i]);
-                    window->field_0x20[i] |= 2;
+                    window->iconFlags[i] |= 2;
                 } else {
-                    f32 r = 90.0f * (f32)window->field_0x48[i] / 10.0f + 270.0f;
+                    f32 r = 90.0f * (f32)window->iconFrame[i] / 10.0f + 270.0f;
                     if (r >= 360.0f) {
                         r = float_0_8041c144;
                     }
@@ -1602,15 +1609,15 @@ void DrawMainMenu(void) {
                     PSMTXConcat(transMtx, rotMtx, mtxA[i]);
                 }
                 scales[i] = float_0_8041c144;
-                if (cur >= angle && window->field_0x48[i] >= 10) {
-                    window->field_0x34[i] = 3;
-                    window->field_0x48[i] = -1;
+                if (cur >= angle && window->iconFrame[i] >= 10) {
+                    window->iconState[i] = 3;
+                    window->iconFrame[i] = -1;
                 }
-                window->field_0x48[i]++;
+                window->iconFrame[i]++;
             }
             break;
         case 3:
-            angle = 3.1415927f * kakutable[cursor->unk8 - 3][window->field_0x84[i]] / 180.0f;
+            angle = 3.1415927f * kakutable[cursor->unk8 - 3][window->iconSlot[i]] / 180.0f;
             GetRingCenter(&vecB[i]);
             GetRingOffset(&ringX, &ringY, angle);
             vecB[i].x += ringX;
@@ -1618,7 +1625,7 @@ void DrawMainMenu(void) {
             vecB[i].z = ringY;
             if (i == cursor->field_0) {
                 PSMTXTrans(mtxA[i], 20.0f + vecB[i].x, vecB[i].y, vecB[i].z);
-                window->field_0x20[i] |= 2;
+                window->iconFlags[i] |= 2;
             } else {
                 PSMTXTrans(mtxA[i], vecB[i].x, vecB[i].y, vecB[i].z);
             }
@@ -1626,8 +1633,8 @@ void DrawMainMenu(void) {
             break;
         case 4:
             {
-                f32 v70 = kakutable[cursor->unk8 - 3][window->field_0x70[i]];
-                f32 v84 = kakutable[cursor->unk8 - 3][window->field_0x84[i]];
+                f32 v70 = kakutable[cursor->unk8 - 3][window->iconFromSlot[i]];
+                f32 v84 = kakutable[cursor->unk8 - 3][window->iconSlot[i]];
                 f32 cur;
 #ifdef MUST_MATCH
                 // Zero on the left: the original's fcmpu has the constant first.
@@ -1637,12 +1644,12 @@ void DrawMainMenu(void) {
 #endif
                     v84 = 360.0f;
                 }
-                cur = (f32)window->field_0x48[i] * 0.2f + 3.1415927f * v70 / 180.0f;
+                cur = (f32)window->iconFrame[i] * 0.2f + 3.1415927f * v70 / 180.0f;
                 angle = 3.1415927f * v84 / 180.0f;
                 if (cur >= angle) {
-                    window->field_0x34[i] = 3;
+                    window->iconState[i] = 3;
                     cur = angle;
-                    window->field_0x48[i] = -1;
+                    window->iconFrame[i] = -1;
                 }
                 GetRingCenter(&vecB[i]);
                 GetRingOffset(&ringX, &ringY, cur);
@@ -1651,8 +1658,8 @@ void DrawMainMenu(void) {
                 vecB[i].z = ringY;
                 PSMTXTrans(mtxA[i], vecB[i].x, vecB[i].y, vecB[i].z);
                 scales[i] = float_0_8041c144;
-                window->field_0x20[i] &= ~2;
-                window->field_0x48[i]++;
+                window->iconFlags[i] &= ~2;
+                window->iconFrame[i]++;
             }
             break;
         case 5:
@@ -1660,7 +1667,7 @@ void DrawMainMenu(void) {
                 f32 v70;
                 f32 v84;
                 f32 cur;
-                v70 = kakutable[cursor->unk8 - 3][window->field_0x70[i]];
+                v70 = kakutable[cursor->unk8 - 3][window->iconFromSlot[i]];
 #ifdef MUST_MATCH
                 // Zero on the left: the original's fcmpu has the constant first.
                 if (float_0_8041c144 == v70) {
@@ -1669,13 +1676,13 @@ void DrawMainMenu(void) {
 #endif
                     v70 = 360.0f;
                 }
-                v84 = kakutable[cursor->unk8 - 3][window->field_0x84[i]];
-                cur = 3.1415927f * v70 / 180.0f - (f32)window->field_0x48[i] * 0.2f;
+                v84 = kakutable[cursor->unk8 - 3][window->iconSlot[i]];
+                cur = 3.1415927f * v70 / 180.0f - (f32)window->iconFrame[i] * 0.2f;
                 angle = 3.1415927f * v84 / 180.0f;
                 if (cur <= angle) {
-                    window->field_0x34[i] = 3;
+                    window->iconState[i] = 3;
                     cur = angle;
-                    window->field_0x48[i] = -1;
+                    window->iconFrame[i] = -1;
                 }
                 GetRingCenter(&vecB[i]);
                 GetRingOffset(&ringX, &ringY, cur);
@@ -1684,31 +1691,31 @@ void DrawMainMenu(void) {
                 vecB[i].z = ringY;
                 PSMTXTrans(mtxA[i], vecB[i].x, vecB[i].y, vecB[i].z);
                 scales[i] = float_0_8041c144;
-                window->field_0x20[i] &= ~2;
-                window->field_0x48[i]++;
+                window->iconFlags[i] &= ~2;
+                window->iconFrame[i]++;
             }
             break;
         case 0xA:
-            window->field_0x20[i] |= 1;
-            window->field_0x20[i] |= 2;
+            window->iconFlags[i] |= 1;
+            window->iconFlags[i] |= 2;
             GetRingCenter(&vecB[i]);
             GetRingOffset(&ringX, &ringY, float_0_8041c144);
             vecB[i].x += ringX;
             vecB[i].y += ringY;
             vecB[i].z = ringY;
-            vecB[i].x = intplGetValue(4, window->field_0x48[i], 12, (-60.0f), vecB[i].x);
-            vecB[i].y = intplGetValue(4, window->field_0x48[i], 12, 55.0f, vecB[i].y);
+            vecB[i].x = intplGetValue(4, window->iconFrame[i], 12, (-60.0f), vecB[i].x);
+            vecB[i].y = intplGetValue(4, window->iconFrame[i], 12, 55.0f, vecB[i].y);
             PSMTXTrans(mtxA[i], 20.0f + vecB[i].x, vecB[i].y, vecB[i].z);
-            scales[i] = intplGetValue(0, window->field_0x48[i], 12, 360.0f, float_0_8041c144);
-            window->field_0x48[i]++;
-            if (window->field_0x48[i] > 12) {
-                window->field_0x34[i] = 3;
+            scales[i] = intplGetValue(0, window->iconFrame[i], 12, 360.0f, float_0_8041c144);
+            window->iconFrame[i]++;
+            if (window->iconFrame[i] > 12) {
+                window->iconState[i] = 3;
             }
             break;
         case 0xB:
-            window->field_0x20[i] |= 1;
-            window->field_0x20[i] &= ~2;
-            angle = 3.1415927f * kakutable[cursor->unk8 - 3][window->field_0x84[i]] / 180.0f;
+            window->iconFlags[i] |= 1;
+            window->iconFlags[i] &= ~2;
+            angle = 3.1415927f * kakutable[cursor->unk8 - 3][window->iconSlot[i]] / 180.0f;
             {
                 f32 s;
                 GetRingCenter(&vecB[i]);
@@ -1716,21 +1723,21 @@ void DrawMainMenu(void) {
                 vecB[i].x += ringX;
                 vecB[i].y += ringY;
                 vecB[i].z = ringY;
-                s = 0.1f * (f32)window->field_0x48[i];
+                s = 0.1f * (f32)window->iconFrame[i];
                 if (s >= 1.0f) {
-                    window->field_0x34[i] = 3;
+                    window->iconState[i] = 3;
                 }
                 PSMTXScale(scaleMtx, s, s, 1.0f);
                 PSMTXTrans(transMtx, vecB[i].x, vecB[i].y, vecB[i].z);
                 PSMTXConcat(transMtx, scaleMtx, mtxA[i]);
                 scales[i] = float_0_8041c144;
-                window->field_0x48[i]++;
+                window->iconFrame[i]++;
             }
             break;
         }
     }
 
-    DrawMainIcon(window, window->field_0x4, mtxA, vecB, scales);
+    DrawMainIcon(window, window->mainIconTable, mtxA, vecB, scales);
     DrawMenuPartyChangeButton();
     DrawMenuPinchMark();
 }
@@ -1739,7 +1746,7 @@ void BattleMenuDisp_WeaponSelect_Init(BattleWork* wp, BattleCursor* menu, void* 
     BattleMenuWork* window = 0;
     BattleCursor* cursor = 0;
     InitSubMenuCommonProcess(&window, &cursor, menu);
-    window->field_0x8 = arg;
+    window->weaponEntries = arg;
     if (flags & 1) {
         InitSubMenuCommonProcess2(window, cursor);
     } else {
@@ -1782,21 +1789,21 @@ void DrawWeaponWin(void) {
     const char* msg;
 
     unit = BattleGetUnitPtr(wp, wp->activeUnitId);
-    sel = ((BattleMenuWeaponEntry*)window->field_0x8)[cursor->field_0].weapon;
+    sel = ((BattleMenuWeaponEntry*)window->weaponEntries)[cursor->field_0].weapon;
     DrawSubMenuCommonProcess(&outX, &outY, mats, centers, scales, rot);
     for (i = 0; i < 7; i++) {
-        s32 idx = (s32)window->field_0x98 + i;
+        s32 idx = (s32)window->scrollPos + i;
         if (idx < cursor->unk8) {
-            arr88[i] = ((BattleMenuWeaponEntry*)window->field_0x8)[idx].field_0x4;
+            arr88[i] = ((BattleMenuWeaponEntry*)window->weaponEntries)[idx].enabled;
             arr24[i] = *(u16*)((u8*)cmd + idx * 0x1c + 0x8c);
-            arr6C[i] = ((BattleMenuWeaponEntry*)window->field_0x8)[idx].field_0x8;
-            if (((BattleMenuWeaponEntry*)window->field_0x8)[idx].weapon != 0) {
-                arr50[i] = BtlUnit_GetWeaponCost(unit, ((BattleMenuWeaponEntry*)window->field_0x8)[idx].weapon);
+            arr6C[i] = (s32)((BattleMenuWeaponEntry*)window->weaponEntries)[idx].label;
+            if (((BattleMenuWeaponEntry*)window->weaponEntries)[idx].weapon != 0) {
+                arr50[i] = BtlUnit_GetWeaponCost(unit, ((BattleMenuWeaponEntry*)window->weaponEntries)[idx].weapon);
             } else {
                 arr50[i] = 0;
             }
-            if (((BattleMenuWeaponEntry*)window->field_0x8)[idx].weapon != 0) {
-                arr34[i] = *(u8*)((u8*)((BattleMenuWeaponEntry*)window->field_0x8)[idx].weapon + 0x12);
+            if (((BattleMenuWeaponEntry*)window->weaponEntries)[idx].weapon != 0) {
+                arr34[i] = ((BattleMenuWeaponEntry*)window->weaponEntries)[idx].weapon->baseSpCost;
             } else {
                 arr34[i] = 0;
             }
@@ -1806,18 +1813,18 @@ void DrawWeaponWin(void) {
     DrawSubIcon(window, rot, arr88, arr24, arr6C, arr50, arr34, 0, 0);
     DrawMenuCursorAndScrollArrow((Vec){ -60.0f, 35.0f, 0.0f });
     if (sel != 0) {
-        s32 id = *(s32*)((u8*)sel + 0x8);
+        s32 id = sel->item;
         if (id != 0) {
             msg = itemDataTable[id].description;
         } else if (sel == &ItemWeaponData_CookingItem) {
-            BattleMenuWeaponEntry* entry = (BattleMenuWeaponEntry*)window->field_0x8;
-            msg = itemDataTable[entry[cursor->field_0].field_0x14].description;
+            BattleMenuWeaponEntry* entry = (BattleMenuWeaponEntry*)window->weaponEntries;
+            msg = itemDataTable[entry[cursor->field_0].itemId].description;
         } else {
-            msg = *(const char**)((u8*)sel + 0xC);
+            msg = sel->description;
         }
     } else {
-        BattleMenuWeaponEntry* entry = (BattleMenuWeaponEntry*)window->field_0x8;
-        msg = itemDataTable[entry[cursor->field_0].field_0x14].description;
+        BattleMenuWeaponEntry* entry = (BattleMenuWeaponEntry*)window->weaponEntries;
+        msg = itemDataTable[entry[cursor->field_0].itemId].description;
     }
     if (msg != 0) {
         DrawMenuHelpWin(msg, outX, outY);
@@ -1831,7 +1838,7 @@ void BattleMenuDisp_Operation_Init(BattleWork* wp, u32 flags) {
     BattleCursor* cursor;
     BattleCursor* menu;
 
-    if (unit->currentKind == 0xDE) {
+    if (unit->currentKind == UNIT_MARIO) {
         menu = &wp->commandMenu.cursor[8];
     } else {
         menu = &wp->commandMenu.cursor[9];
@@ -1883,25 +1890,25 @@ void DrawOperationWin(void) {
     entries = (BattleMenuDispEntryOp*)((u8*)wp + 0x19e8);
     DrawSubMenuCommonProcess(&outX, &outY, mats, centers, scales, rot);
     for (i = 0; i < 7; i++) {
-        s32 idx = (s32)window->field_0x98 + i;
+        s32 idx = (s32)window->scrollPos + i;
         if (idx < cursor->unk8) {
             entry = &entries[idx];
-            arr88[i] = entry->field_0x4;
-            if (entries[i].field_0x10 != 0) {
-                arr24[i] = entry->field_0x10;
+            arr88[i] = entry->enabled;
+            if (entries[i].iconId != 0) {
+                arr24[i] = entry->iconId;
             } else {
                 arr24[i] = 0x18B;
             }
-            arr6C[i] = entry->field_0xC;
-            arr50[i] = entry->field_0x18;
+            arr6C[i] = (s32)entry->label;
+            arr50[i] = entry->fpCost;
             arr34[i] = 0;
         }
     }
     DrawMainIcon(window, (void*)((u8*)wp + 0x1724), mats, centers, scales);
     DrawSubIcon(window, rot, arr88, arr24, arr6C, arr50, arr34, 0, 0);
     DrawMenuCursorAndScrollArrow((Vec){ -60.0f, 35.0f, 0.0f });
-    if ((u32)entries[cursor->field_0].field_0x14 != 0) {
-        DrawMenuHelpWin((const char*)entries[cursor->field_0].field_0x14, outX, outY);
+    if (entries[cursor->field_0].helpMsg != 0) {
+        DrawMenuHelpWin(entries[cursor->field_0].helpMsg, outX, outY);
     }
 }
 #pragma dont_inline reset
@@ -1957,16 +1964,16 @@ void DrawChangePartyWin(void) {
     entries = (BattleMenuDispEntry*)((u8*)wp + 0x1aac);
     DrawSubMenuCommonProcess(&outX, &outY, mats, centers, scales, rot);
     for (i = 0; i < 7; i++) {
-        s32 idx = (s32)window->field_0x98 + i;
+        s32 idx = (s32)window->scrollPos + i;
         if (idx < cursor->unk8) {
             BattleMenuDispEntry* entry = &entries[idx];
-            arr88[i] = entry->field_0x4;
-            if (entry->field_0xC != 0) {
-                arr24[i] = entry->field_0xC;
+            arr88[i] = entry->enabled;
+            if (entry->iconId != 0) {
+                arr24[i] = entry->iconId;
             } else {
                 arr24[i] = 0x18B;
             }
-            arr6C[i] = (s32)entry->field_0x8;
+            arr6C[i] = (s32)entry->label;
             arr50[i] = 0;
             arr34[i] = 0;
         }
@@ -1974,8 +1981,8 @@ void DrawChangePartyWin(void) {
     DrawMainIcon(window, (void*)((u8*)wp + 0x1724), mats, centers, scales);
     DrawSubIcon(window, rot, arr88, arr24, arr6C, arr50, arr34, (void*)entries, 1);
     DrawMenuCursorAndScrollArrow((Vec){ -60.0f, 35.0f, 0.0f });
-    if ((u32)entries[cursor->field_0].field_0x10 != 0) {
-        DrawMenuHelpWin((const char*)entries[cursor->field_0].field_0x10, outX, outY);
+    if (entries[cursor->field_0].helpMsg != 0) {
+        DrawMenuHelpWin(entries[cursor->field_0].helpMsg, outX, outY);
     }
 }
 #pragma dont_inline reset
@@ -2009,7 +2016,7 @@ void DrawMultiItemWin(void) {
     BattleWork* wp = _battleWorkPointer;
     BattleMenuWork* window = (BattleMenuWork*)wp->commandMenu.field_55C;
     BattleCursor* cursor = window->cursor;
-    BattleMenuDispEntry* entries;
+    BattleMenuMultiEntry* entries;
     f32 outX;
     f32 outY;
     u16 arr24[7];
@@ -2024,27 +2031,27 @@ void DrawMultiItemWin(void) {
     s32 i;
 
     BattleGetUnitPtr(wp, wp->activeUnitId);
-    entries = (BattleMenuDispEntry*)((u8*)wp + 0x1b6c);
+    entries = (BattleMenuMultiEntry*)((u8*)wp + 0x1b6c);
     DrawSubMenuCommonProcess(&outX, &outY, mats, centers, scales, rot);
     for (i = 0; i < 7; i++) {
-        s32 idx = (s32)window->field_0x98 + i;
+        s32 idx = (s32)window->scrollPos + i;
         if (idx < cursor->unk8) {
-            arr88[i] = entries[idx].field_0x0;
-            if (entries[idx].field_0xC != 0) {
-                arr24[i] = entries[idx].field_0xC;
+            arr88[i] = entries[idx].enabled;
+            if (entries[idx].iconId != 0) {
+                arr24[i] = entries[idx].iconId;
             } else {
                 arr24[i] = 0x18B;
             }
-            arr6C[i] = entries[idx].field_0x4;
-            arr50[i] = entries[idx].field_0x10;
+            arr6C[i] = (s32)entries[idx].label;
+            arr50[i] = entries[idx].fpCost;
             arr34[i] = 0;
         }
     }
     DrawMainIcon(window, (void*)((u8*)wp + 0x1724), mats, centers, scales);
     DrawSubIcon(window, rot, arr88, arr24, arr6C, arr50, arr34, 0, 0);
     DrawMenuCursorAndScrollArrow((Vec){ -60.0f, 35.0f, 0.0f });
-    if (entries[cursor->field_0].field_0x8 != 0) {
-        DrawMenuHelpWin((const char*)entries[cursor->field_0].field_0x8, outX, outY);
+    if (entries[cursor->field_0].helpMsg != 0) {
+        DrawMenuHelpWin(entries[cursor->field_0].helpMsg, outX, outY);
     }
 }
 #pragma dont_inline reset

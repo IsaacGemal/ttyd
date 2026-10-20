@@ -9090,3 +9090,17 @@ never read here), PuniWork `field_0x458` (an SFX handle evt_puni_force_se_off st
 PuniPose `field_0x24` stay unnamed; puniModeHagure still uses raw offsets (0x1E8, 0x220, 0x2AC..0x2B4) into
 `unk21C`; mri.c and mri_03.c set `modeFunc`/`moveFunc` as `*(void**)(p + 0x56C/0x570)`; `radius` doubles as the
 step length in puniModeAway and puniModeWind, which may mean a second role rather than a reuse.
+### Readability: battle_menu_disp (2026-10-19, Claude Haiku 5.5, n9-q-bmenu; reviewed by Claude Opus 5.5)
+
+battle_menu_disp.c's local BattleMenuWork (0x124 bytes, now allocated as `sizeof(BattleMenuWork)`) gets
+`mainIconTable`/`weaponEntries` (the Init arguments), `phase` (ring/scroll state 0, 1, 2, 0xA, 0x14, 0x1E, 0x28),
+`inputReady` (read by BattleMenuKeyOKInACT), `lastCursorPos`, `ringMoving`, the per-icon ring arrays
+`iconFlags`/`iconState`/`iconFrame`/`iconFromSlot`/`iconSlot` (slot indexes into kakutable), the sub-list scroll
+`scrollPos`/`scrollFrom`/`scrollTo` and per-slot `slotFlags`/`slotState`/`slotFrame`, `bounceFrame` (cursor arrow)
+and `partyBtnAngle`. Entry tables get `enabled`, `label`, `iconId`, `helpMsg`, `fpCost`, and the party table's
+`hp`/`maxHp` s16 pair replaces a `(s16*)entry` halves cast. The multi-item table at wp+0x1b6c has its own layout
+(enabled at 0x0, label 0x4, helpMsg 0x8), so it is a separate `BattleMenuMultiEntry`. Weapon reads use BattleWeapon
+`item`/`description`/`baseSpCost`; `wp + 0x1bb4/0x1bc0` is `&wp->commandMenu.cursor[0]/[1]`; `0xDE` is
+`UNIT_MARIO`. Weighted score 472 → 171. Open: the four tables (wp+0x1724, 0x19e8, 0x1aac, 0x1b6c) still sit
+inside BattleCommand.unk8 in the shared battle_seq_command.h, the main-icon table (stride 0x14) reuses
+BattleMenuDispEntry's leading fields, and `field_0x10`, `field_0xF8`, `field_0x114` stay unnamed.
