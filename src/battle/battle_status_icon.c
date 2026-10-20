@@ -18,8 +18,8 @@ typedef struct IconDispTableEntry IconDispTableEntry;
 struct IconDispTableEntry {
 	s32 id;
 	BOOL (*callback)(BattleUnit* unit, IconDispTableEntry* disp, BattleWorkStatusIconEntry* entry); //0x4
-	s32 something;
-	s32 something2;
+	s32 texId;
+	s32 flags;
 };
 
 // .rodata objects of this unit: 22 Vecs, then the int->float conversion doubles.
@@ -173,7 +173,7 @@ void BattleStatusIconDisp(CameraId camId, void* param) {
 		pos.z += icon->mScreenSpaceOffset.z;
 		pos.z -= (f32)(i * -2);
 
-		if (!(*(s32*)((u8*)entry + 0x40) & 1)) {
+		if (!(entry->flags & 1)) {
 			if (!(icon->mFlags & 1)) {
 #ifdef MUST_MATCH
 				((void (*)(u32, GXColor, f32, f32, f32, f32, f32, s32))btlDispTexPlane)(
@@ -192,23 +192,23 @@ void BattleStatusIconDisp(CameraId camId, void* param) {
 			}
 		}
 
-		if (*(u32*)((u8*)entry + 0x8) != 0) {
-			if (!(*(s32*)((u8*)entry + 0x40) & 2)) {
-				PSMTXTrans(mtxPos, pos.x + *(f32*)((u8*)entry + 0x30),
-				           pos.y + *(f32*)((u8*)entry + 0x34),
-				           pos.z + *(f32*)((u8*)entry + 0x38));
-				PSMTXScale(mtxScale, 0.8f * *(f32*)(entry->field_0x0 + 0xC),
-				           0.8f * *(f32*)(entry->field_0x0 + 0x10),
-				           *(f32*)((u8*)entry + 0x14));
-				PSMTXTrans(mtxTransNeg, -*(f32*)((u8*)entry + 0x18),
-				           -*(f32*)((u8*)entry + 0x1C),
-				           -*(f32*)((u8*)entry + 0x20));
-				PSMTXTrans(mtxTransPos, *(f32*)((u8*)entry + 0x18),
-				           *(f32*)((u8*)entry + 0x1C),
-				           *(f32*)((u8*)entry + 0x20));
-				PSMTXRotRad(mtxRotX, 'x', 0.017453292f * *(f32*)(entry->field_0x0 + 0x24));
-				PSMTXRotRad(mtxRotY, 'y', 0.017453292f * *(f32*)(entry->field_0x0 + 0x28));
-				PSMTXRotRad(mtxRotZ, 'z', 0.017453292f * *(f32*)(entry->field_0x0 + 0x2C));
+		if (entry->texId != 0) {
+			if (!(entry->flags & 2)) {
+				PSMTXTrans(mtxPos, pos.x + entry->offset.x,
+				           pos.y + entry->offset.y,
+				           pos.z + entry->offset.z);
+				PSMTXScale(mtxScale, 0.8f * entry->scale.x,
+				           0.8f * entry->scale.y,
+				           entry->scale.z);
+				PSMTXTrans(mtxTransNeg, -entry->pivot.x,
+				           -entry->pivot.y,
+				           -entry->pivot.z);
+				PSMTXTrans(mtxTransPos, entry->pivot.x,
+				           entry->pivot.y,
+				           entry->pivot.z);
+				PSMTXRotRad(mtxRotX, 'x', 0.017453292f * entry->rotation.x);
+				PSMTXRotRad(mtxRotY, 'y', 0.017453292f * entry->rotation.y);
+				PSMTXRotRad(mtxRotZ, 'z', 0.017453292f * entry->rotation.z);
 				PSMTXIdentity(mtx);
 				PSMTXConcat(mtxRotZ, mtxScale, mtx);
 				PSMTXConcat(mtxTransNeg, mtx, mtx);
@@ -217,16 +217,16 @@ void BattleStatusIconDisp(CameraId camId, void* param) {
 				PSMTXConcat(mtxRotX, mtx, mtx);
 				PSMTXConcat(mtxTransPos, mtx, mtx);
 				PSMTXConcat(mtxPos, mtx, mtx);
-				btlDispTexPlane2(mtx, *(u32*)((u8*)entry + 0x8), *(GXColor*)((u8*)entry + 0x3C), 0);
+				btlDispTexPlane2(mtx, entry->texId, entry->color, 0);
 			}
-			if (*(s32*)((u8*)entry + 0x4) != 0) {
+			if (entry->turnCount != 0) {
 				pos2 = pos;
 				pos2.x += 21.6f;
 				pos2.y -= 16.0f;
 				PSMTXIdentity(mtx2);
 				PSMTXTrans(mtxPos, pos2.x, pos2.y, pos2.z);
 				PSMTXConcat(mtxPos, mtx2, mtx2);
-				iconNumberDispGx(mtx2, *(s32*)((u8*)entry + 0x4), 1, dat_804221ec);
+				iconNumberDispGx(mtx2, entry->turnCount, 1, dat_804221ec);
 			}
 		}
 	}
@@ -278,7 +278,7 @@ BOOL _bsi_default_turn(BattleUnit* unit, IconDispTableEntry* disp, BattleWorkSta
 #else
 	BtlUnit_GetStatus(unit, type, &turns, &strength);
 #endif
-	*(s32*)((u8*)entry + 0x0) = type;
+	entry->type = type;
 #ifdef MUST_MATCH
 	turnCount = -turns;
 	if (turns >= 0) {
@@ -287,14 +287,14 @@ BOOL _bsi_default_turn(BattleUnit* unit, IconDispTableEntry* disp, BattleWorkSta
 #else
 	turnCount = turns < 0 ? -turns : turns;
 #endif
-	*(s32*)((u8*)entry + 0x4) = turnCount;
-	*(s32*)((u8*)entry + 0x8) = disp->something;
-	*(Vec*)((u8*)entry + 0xC) = vec[0];
-	*(Vec*)((u8*)entry + 0x18) = vec[1];
-	*(Vec*)((u8*)entry + 0x24) = vec[2];
-	*(s32*)((u8*)entry + 0x3C) = dat_804221f0;
-	*(s32*)((u8*)entry + 0x40) = disp->something2;
-	*(Vec*)((u8*)entry + 0x30) = vec[3];
+	entry->turnCount = turnCount;
+	entry->texId = disp->texId;
+	entry->scale = vec[0];
+	entry->pivot = vec[1];
+	entry->rotation = vec[2];
+	entry->color = *(GXColor*)&dat_804221f0;
+	entry->flags = disp->flags;
+	entry->offset = vec[3];
 	return TRUE;
 }
 
@@ -305,7 +305,7 @@ BOOL _bsi_guruguru(BattleUnit* unit, IconDispTableEntry* disp, BattleWorkStatusI
 	s8 strength;
 	s32 turnCount;
 	Vec tmp;
-	f32* counter = (f32*)unit->mStatusIconWork.field_0x790; //per-status time counter
+	f32* counter = &unit->mStatusIconWork.mGuruguruAngle;
 
 #ifdef MUST_MATCH
 	if (!((BOOL(*)(BattleUnit*, s8))BtlUnit_CheckStatus)(unit, type)) {
@@ -322,7 +322,7 @@ BOOL _bsi_guruguru(BattleUnit* unit, IconDispTableEntry* disp, BattleWorkStatusI
 #else
 	BtlUnit_GetStatus(unit, type, &turns, &strength);
 #endif
-	*(s32*)((u8*)entry + 0x0) = type;
+	entry->type = type;
 #ifdef MUST_MATCH
 	turnCount = -turns;
 	if (turns >= 0) {
@@ -331,10 +331,10 @@ BOOL _bsi_guruguru(BattleUnit* unit, IconDispTableEntry* disp, BattleWorkStatusI
 #else
 	turnCount = turns < 0 ? -turns : turns;
 #endif
-	*(s32*)((u8*)entry + 0x4) = turnCount;
-	*(s32*)((u8*)entry + 0x8) = disp->something;
-	*(Vec*)((u8*)entry + 0xC) = vec[4];
-	*(Vec*)((u8*)entry + 0x18) = vec[5];
+	entry->turnCount = turnCount;
+	entry->texId = disp->texId;
+	entry->scale = vec[4];
+	entry->pivot = vec[5];
 #ifdef MUST_MATCH
 	// MUST_MATCH: MWCC forwards vec[6].x/.y straight to the entry but keeps .z in a
 	// stack temporary which the counter store then reuses; the direct two-assignment
@@ -343,12 +343,12 @@ BOOL _bsi_guruguru(BattleUnit* unit, IconDispTableEntry* disp, BattleWorkStatusI
 	tmp.z = *counter;
 	*(Vec*)((u8*)entry + 0x24) = tmp;
 #else
-	*(Vec*)((u8*)entry + 0x24) = vec[6];
-	*(f32*)(entry->field_0x0 + 0x2C) = *counter;
+	entry->rotation = vec[6];
+	entry->rotation.z = *counter;
 #endif
-	*(s32*)((u8*)entry + 0x3C) = dat_804221f4;
-	*(s32*)((u8*)entry + 0x40) = disp->something2;
-	*(Vec*)((u8*)entry + 0x30) = vec[7];
+	entry->color = *(GXColor*)&dat_804221f4;
+	entry->flags = disp->flags;
+	entry->offset = vec[7];
 	return TRUE;
 }
 
@@ -358,7 +358,7 @@ BOOL _bsi_allergy(BattleUnit* unit, IconDispTableEntry* disp, BattleWorkStatusIc
 	s32 turnCount;
 	s8 turns;
 	s8 strength;
-	s16* counter = (s16*)unit->mStatusIconWork.field_0x796; //per-status tick counter
+	s16* counter = &unit->mStatusIconWork.mAllergyCounter;
 
 	// The header's BtlUnit_CheckStatus/BtlUnit_GetStatus take StatusEffectType (int), but the
 	// callee sign-extends it (battle_status_effect.h says it "should be an s8"). Calling through
@@ -377,7 +377,7 @@ BOOL _bsi_allergy(BattleUnit* unit, IconDispTableEntry* disp, BattleWorkStatusIc
 #else
 	BtlUnit_GetStatus(unit, type, &turns, &strength);
 #endif
-	*(s32*)((u8*)entry + 0x0) = type;
+	entry->type = type;
 #ifdef MUST_MATCH
 	// MUST_MATCH: MWCC computes the negation speculatively and selects with `neg; blt; mr`,
 	// which a ternary or abs() does not reproduce. Natural form is under #else.
@@ -388,18 +388,18 @@ BOOL _bsi_allergy(BattleUnit* unit, IconDispTableEntry* disp, BattleWorkStatusIc
 #else
 	turnCount = turns < 0 ? -turns : turns;
 #endif
-	*(s32*)((u8*)entry + 0x4) = turnCount;
-	*(s32*)((u8*)entry + 0x8) = disp->something;
-	*(Vec*)((u8*)entry + 0xC) = vec[8];
-	*(Vec*)((u8*)entry + 0x18) = vec[9];
-	*(Vec*)((u8*)entry + 0x24) = vec[10];
-	*(s32*)((u8*)entry + 0x3C) = dat_804221f8;
-	*(s32*)((u8*)entry + 0x40) = disp->something2;
-	*(Vec*)((u8*)entry + 0x30) = vec[11];
+	entry->turnCount = turnCount;
+	entry->texId = disp->texId;
+	entry->scale = vec[8];
+	entry->pivot = vec[9];
+	entry->rotation = vec[10];
+	entry->color = *(GXColor*)&dat_804221f8;
+	entry->flags = disp->flags;
+	entry->offset = vec[11];
 
 	*counter = *counter + 1;
 	if (*counter & 0x10) {
-		*(s32*)((u8*)entry + 0x40) |= 2;
+		entry->flags |= 2;
 	}
 	return TRUE;
 }
@@ -419,8 +419,8 @@ BOOL _bsi_biribiri(BattleUnit* unit, IconDispTableEntry* disp, BattleWorkStatusI
 	s32 turnCount;
 	s8 turns;
 	s8 strength;
-	s16* counter = (s16*)(unit->mStatusIconWork.field_0x796 + 6); //per-status animation state
-	s16* duration = (s16*)(unit->mStatusIconWork.field_0x796 + 8); //frames left in the state
+	s16* counter = &unit->mStatusIconWork.mBiribiriState;
+	s16* duration = &unit->mStatusIconWork.mBiribiriDuration;
 
 #ifdef MUST_MATCH
 	if (!((BOOL(*)(BattleUnit*, s8))BtlUnit_CheckStatus)(unit, type)) {
@@ -432,7 +432,7 @@ BOOL _bsi_biribiri(BattleUnit* unit, IconDispTableEntry* disp, BattleWorkStatusI
 		return FALSE;
 	}
 
-	*(Vec*)((u8*)entry + 0xC) = BIRI_VEC(12, vec3_80301278);
+	entry->scale = BIRI_VEC(12, vec3_80301278);
 
 	switch (*counter) {
 	case 0:
@@ -440,7 +440,7 @@ BOOL _bsi_biribiri(BattleUnit* unit, IconDispTableEntry* disp, BattleWorkStatusI
 		*duration = irand(6) + 4;
 		// fallthrough
 	case 1:
-		*(Vec*)((u8*)entry + 0xC) = BIRI_VEC(13, vec3_80301284);
+		entry->scale = BIRI_VEC(13, vec3_80301284);
 		*duration = *duration - 1;
 		if (*duration < 0) {
 			*counter = *counter + 1;
@@ -448,7 +448,7 @@ BOOL _bsi_biribiri(BattleUnit* unit, IconDispTableEntry* disp, BattleWorkStatusI
 		}
 		break;
 	case 2:
-		*(Vec*)((u8*)entry + 0xC) = BIRI_VEC(14, vec3_80301290);
+		entry->scale = BIRI_VEC(14, vec3_80301290);
 		*duration = *duration - 1;
 		if (*duration < 0) {
 			*duration = irand(6) + 4;
@@ -462,7 +462,7 @@ BOOL _bsi_biribiri(BattleUnit* unit, IconDispTableEntry* disp, BattleWorkStatusI
 #else
 	BtlUnit_GetStatus(unit, type, &turns, &strength);
 #endif
-	*(s32*)((u8*)entry + 0x0) = type;
+	entry->type = type;
 #ifdef MUST_MATCH
 	turnCount = -turns;
 	if (turns >= 0) {
@@ -471,13 +471,13 @@ BOOL _bsi_biribiri(BattleUnit* unit, IconDispTableEntry* disp, BattleWorkStatusI
 #else
 	turnCount = turns < 0 ? -turns : turns;
 #endif
-	*(s32*)((u8*)entry + 0x4) = turnCount;
-	*(s32*)((u8*)entry + 0x8) = disp->something;
-	*(Vec*)((u8*)entry + 0x18) = BIRI_VEC(15, vec3_8030129c);
-	*(Vec*)((u8*)entry + 0x24) = BIRI_VEC(16, vec3_803012a8);
-	*(s32*)((u8*)entry + 0x3C) = dat_804221fc;
-	*(s32*)((u8*)entry + 0x40) = disp->something2;
-	*(Vec*)((u8*)entry + 0x30) = BIRI_VEC(17, vec3_803012b4);
+	entry->turnCount = turnCount;
+	entry->texId = disp->texId;
+	entry->pivot = BIRI_VEC(15, vec3_8030129c);
+	entry->rotation = BIRI_VEC(16, vec3_803012a8);
+	entry->color = *(GXColor*)&dat_804221fc;
+	entry->flags = disp->flags;
+	entry->offset = BIRI_VEC(17, vec3_803012b4);
 	return TRUE;
 }
 
@@ -503,12 +503,12 @@ BOOL _bsi_regeneration(BattleUnit* unit, IconDispTableEntry* disp, BattleWorkSta
 	if (type == 0x17) {
 		startColor = *(GXColor*)&dat_80422200;
 		endColor = *(GXColor*)&dat_80422204;
-		counter = (s16*)(unit->mStatusIconWork.field_0x796 + 2);
+		counter = &unit->mStatusIconWork.mRegenHpCounter;
 	}
 	else if (type == 0x18) {
 		startColor = *(GXColor*)&float_0p10207_80422208;
 		endColor = *(GXColor*)&dat_8042220c;
-		counter = (s16*)(unit->mStatusIconWork.field_0x796 + 4);
+		counter = &unit->mStatusIconWork.mRegenFpCounter;
 	}
 	else {
 		return FALSE;
@@ -533,7 +533,7 @@ BOOL _bsi_regeneration(BattleUnit* unit, IconDispTableEntry* disp, BattleWorkSta
 #else
 	BtlUnit_GetStatus(unit, type, &turns, &strength);
 #endif
-	*(s32*)((u8*)entry + 0x0) = type;
+	entry->type = type;
 #ifdef MUST_MATCH
 	turnCount = -turns;
 	if (turns >= 0) {
@@ -542,18 +542,18 @@ BOOL _bsi_regeneration(BattleUnit* unit, IconDispTableEntry* disp, BattleWorkSta
 #else
 	turnCount = turns < 0 ? -turns : turns;
 #endif
-	*(s32*)((u8*)entry + 0x4) = turnCount;
-	*(s32*)((u8*)entry + 0x8) = disp->something;
-	*(Vec*)(entry->field_0x0 + 0xC) = vec3_803012c0;
-	*(Vec*)(entry->field_0x0 + 0x18) = vec3_803012cc;
-	*(Vec*)(entry->field_0x0 + 0x24) = vec3_803012d8;
+	entry->turnCount = turnCount;
+	entry->texId = disp->texId;
+	entry->scale = vec3_803012c0;
+	entry->pivot = vec3_803012cc;
+	entry->rotation = vec3_803012d8;
 	color = *(GXColor*)&dat_80422210;
 	color.r = intplGetValue(0xb, offset, 0x168, (f32)startColor.r, (f32)endColor.r);
 	color.g = intplGetValue(0xb, offset, 0x168, (f32)startColor.g, (f32)endColor.g);
 	color.b = intplGetValue(0xb, offset, 0x168, (f32)startColor.b, (f32)endColor.b);
-	*(GXColor*)((u8*)entry + 0x3C) = color;
-	*(s32*)((u8*)entry + 0x40) = disp->something2;
-	*(Vec*)(entry->field_0x0 + 0x30) = vec3_803012e4;
+	entry->color = color;
+	entry->flags = disp->flags;
+	entry->offset = vec3_803012e4;
 	return TRUE;
 }
 #pragma optimize_for_size reset
