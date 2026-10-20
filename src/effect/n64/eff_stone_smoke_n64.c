@@ -34,23 +34,23 @@ EffectEntry* effStoneSmokeN64Entry(s32 type, s32 duration, f32 x, f32 y, f32 z, 
 	effect->callback = effStoneSmokeMain;
 	effect->flags |= 2;
 	data->type = type;
-	data->field_0x14 = 0;
+	data->age = 0;
 	if (duration <= 0) {
 		data->life = 1000;
 	} else {
 		data->life = duration;
 	}
-	data->field_0x24 = 0xFF;
+	data->alpha = 0xFF;
 	data->x = x;
 	data->y = y;
 	data->z = z;
-	data->field_0x34 = scale;
-	data->field_0x18 = 0xFF;
-	data->field_0x1C = 0xFF;
-	data->field_0x20 = 0xFF;
-	data->field_0x28 = 10;
-	data->field_0x2C = 10;
-	data->field_0x30 = 0x78;
+	data->scale = scale;
+	data->color1R = 0xFF;
+	data->color1G = 0xFF;
+	data->color1B = 0xFF;
+	data->color2R = 10;
+	data->color2G = 10;
+	data->color2B = 0x78;
 	return effect;
 }
 
@@ -85,25 +85,25 @@ void effStoneSmokeMain(EffectEntry* effect) {
 	if (data->life < 1000) {
 		data->life--;
 	}
-	data->field_0x14++; // elapsed-frame counter, indexes the scale keyframes below
+	data->age++; // elapsed-frame counter, indexes the scale keyframes below
 
 	if (data->life < 0) {
 		effDelete(effect);
 		return;
 	}
 
-	frame = data->field_0x14;
+	frame = data->age;
 
 	if (data->life < 16) {
-		data->field_0x24 = data->life * 16;
+		data->alpha = data->life * 16;
 	}
 
 	data->y += 0.6f;
 
 	if (frame < 7) {
-		data->field_0x38 = 0.01f * (f32)scale_data[frame];
+		data->scaleKey = 0.01f * (f32)scale_data[frame];
 	} else {
-		data->field_0x38 = 0.01f * (f32)scale_data2[(frame - 7) % 7];
+		data->scaleKey = 0.01f * (f32)scale_data2[(frame - 7) % 7];
 	}
 
 #ifdef MUST_MATCH
@@ -116,17 +116,17 @@ void effStoneSmokeMain(EffectEntry* effect) {
 #ifdef MUST_MATCH
 static inline void effStoneSmokeSetColor0(effStoneSmokeN64Data* data, s32 alpha) {
 	GXColor c = unk_80423288;
-	c.r = data->field_0x18;
-	c.g = data->field_0x1C;
-	c.b = data->field_0x20;
+	c.r = data->color1R;
+	c.g = data->color1G;
+	c.b = data->color1B;
 	c.a = alpha;
 	GXSetTevColor(GX_TEVREG0, c);
 }
 static inline void effStoneSmokeSetColor1(effStoneSmokeN64Data* data) {
 	GXColor c = unk_8042328c;
-	c.r = data->field_0x28;
-	c.g = data->field_0x2C;
-	c.b = data->field_0x30;
+	c.r = data->color2R;
+	c.g = data->color2G;
+	c.b = data->color2B;
 	GXSetTevColor(GX_TEVREG1, c);
 }
 #endif
@@ -152,8 +152,8 @@ void effStoneSmokeDisp(CameraId camId, void* param) {
 
 	cam = camGetPtr(camId);
 	data = effect->userdata;
-	alpha = data->field_0x24;
-	scale = data->field_0x34 * data->field_0x38;
+	alpha = data->alpha;
+	scale = data->scale * data->scaleKey;
 	PSMTXTrans(mtx, data->x, data->y, data->z);
 	PSMTXScale(scaleMtx, scale, scale, scale);
 	PSMTXConcat(mtx, scaleMtx, mtx);
@@ -165,15 +165,15 @@ void effStoneSmokeDisp(CameraId camId, void* param) {
 	effStoneSmokeSetColor1(data);
 #else
 	color0 = unk_80423288;
-	color0.r = data->field_0x18;
-	color0.g = data->field_0x1C;
-	color0.b = data->field_0x20;
+	color0.r = data->color1R;
+	color0.g = data->color1G;
+	color0.b = data->color1B;
 	color0.a = alpha;
 	GXSetTevColor(GX_TEVREG0, color0);
 	color1 = unk_8042328c;
-	color1.r = data->field_0x28;
-	color1.g = data->field_0x2C;
-	color1.b = data->field_0x30;
+	color1.r = data->color2R;
+	color1.g = data->color2G;
+	color1.b = data->color2B;
 	GXSetTevColor(GX_TEVREG1, color1);
 #endif
 	GXSetNumChans(0);
