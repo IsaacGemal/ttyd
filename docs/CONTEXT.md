@@ -8905,3 +8905,14 @@ two-role; MoamoaWork `field_0x40` (frames in Mario motion 0x12) and `field_0x558
 three separate Vecs (`target0`-`target2`, indexed through `MOA_TARGET`) and `nearHits0`-`nearHits2`, because
 writing them as `Vec[3]`/`u16[3]` changes the compiled code and breaks the checksum; TeresaEntry `phase` doubles
 as state 0x15's lerp progress and `offsetX/Z` are relative to g_vecRotCenter while orbiting but to Mario once stuck.
+### Readability: evt_win names (2026-10-19, Claude Haiku 5.5, n9-q-evtwin; reviewed by Claude Opus 5.5)
+
+evt_win.c's local unit-window structs get names from their uses. UnitWinObj: `hitName` (compared with hitGetName)
+and `evtScript` (run when the object is used). UnitWinWork: `items`, `taken[6]` (bit 0 = sold or empty), `mainEvt`/
+`useEvt`, `hideTimer`, `dispCoin`/`dispNum` (counted toward the pouch value), `cursorRow`, `cursorX`/`cursorY`,
+`listY`, `excludeId` (a partner id in the party lists, a stat row in the stat list), `mode`, `freeState`,
+`rowCount`, `coinTick`, `winId[3]`, `selObj` and `useTaken`. party_id_table uses `PARTNER_*` (it indexes pouch
+partyData, like winmgr.c's table), Yoshi's colour lookup passes `PARTNER_YOSHI`, and badge ranges use
+`BADGE_MIN`/`BADGE_MAX`. gor_01.c's private UnitWinWork view uses the same names. evt_win.c 710 → 532 weighted.
+Kept raw: `*(u32*)obj & 1` on the MapObject, the `mode` values (no enum yet; 2-18 select the list), and the
+`flags` bits.
