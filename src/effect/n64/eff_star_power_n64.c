@@ -93,14 +93,14 @@ extern const f32 float_2p044_8041fe78;
 #ifdef MUST_MATCH
 // Non-const and forced into .rodata: with a plain `const` MWCC hoists two of the three
 // word loads into the prologue saves and the schedule no longer matches.
-__declspec(section ".rodata") Vec vec3_802fb718 = { 0.0f, 0.0f, 0.0f };
+__declspec(section ".rodata") Vec vec3Zero = { 0.0f, 0.0f, 0.0f };
 #else
-const Vec vec3_802fb718 = { 0.0f, 0.0f, 0.0f };
+const Vec vec3Zero = { 0.0f, 0.0f, 0.0f };
 #endif
 // Inline copy of the file-local helper: zero-fill a Vec from the rodata constant, then
 // overwrite it with the supplied position; the temporary is returned by value.
 inline Vec initializeVec(Vec* input) {
-    Vec temp = vec3_802fb718;
+    Vec temp = vec3Zero;
     temp.x = input->x;
     temp.y = input->y;
     temp.z = input->z;
@@ -119,7 +119,7 @@ EffectEntry* effStarPowerN64Entry(s32 type, s32 count, f32 x, f32 y, f32 z, f32 
     effect->flags |= 2;
     data->field_0x0 = 1;
     data->type = type;
-    data->field_0x14 = 0;
+    data->age = 0;
     if (count <= 0) {
         data->lifetime = 1000;
     } else {
@@ -128,26 +128,26 @@ EffectEntry* effStarPowerN64Entry(s32 type, s32 count, f32 x, f32 y, f32 z, f32 
     data->x = x;
     data->y = y;
     data->z = z;
-    data->field_0x38 = scale;
+    data->scale = scale;
     data->color1R = 0xFF;
     data->color1G = 0xFF;
     data->color1B = 0x78;
     data->color2R = 0xFF;
     data->color2G = 0x78;
-    data->field_0x30 = 0;
+    data->color2B = 0;
     data->color2A = 0xFF;
     data->color1A = 0xFF;
-    data->field_0x3C = float_0_8041fe2c;
-    data->field_0x40 = float_0_8041fe2c;
-    data->field_0x44 = float_0_8041fe2c;
+    data->angleX = float_0_8041fe2c;
+    data->angleY = float_0_8041fe2c;
+    data->angleZ = float_0_8041fe2c;
     return effect;
 }
 
 // The type==1 block's FP register allocation (retail keeps the counter fold in f2,
 // float_0p4953 in f3, the float_4*counter product in f7 and the counter*4 conversion in f4)
-// only comes out when the product assignment is folded into the field_0x40 multiply's first
+// only comes out when the product assignment is folded into the angleY multiply's first
 // operand; assigning f7 on its own line rotates them to f3/f2/f4/f3. The pool double is placed
-// after vec3_802fb718 only because "StarPowerN64" is written as a literal (a named const char[]
+// after vec3Zero only because "StarPowerN64" is written as a literal (a named const char[]
 // would be laid out before the compiler's pooled constants).
 void effStarPowerMain(EffectEntry* effect) {
     EffStarPowerData* data = effect->userdata;
@@ -163,11 +163,11 @@ void effStarPowerMain(EffectEntry* effect) {
     if (data->lifetime < 1000) {
         data->lifetime--;
     }
-    data->field_0x14++;
+    data->age++;
     if (data->lifetime < 0) {
         effDelete(effect);
     } else {
-        counter = data->field_0x14;
+        counter = data->age;
         if (data->lifetime < 16) {
             i = data->lifetime * 16;
             if (data->color1A > i) {
@@ -186,26 +186,26 @@ void effStarPowerMain(EffectEntry* effect) {
                 data->color2A = i;
             }
         }
-        // 0x48..0x54 keep the previous frame's x/y/z angles and scale (0x3C..0x44, 0x38), which Disp
+        // prevAngleX..prevScale keep the previous frame's angleX..angleZ and scale, which Disp
         // draws as an extra half-alpha star when color2A is nonzero.
-        *(f32*)&data->field_0x48 = data->field_0x3C;
-        *(f32*)&data->field_0x4C = data->field_0x40;
-        *(f32*)&data->field_0x50 = data->field_0x44;
-        *(f32*)&data->field_0x54 = data->field_0x38;
+        *(f32*)&data->prevAngleX = data->angleX;
+        *(f32*)&data->prevAngleY = data->angleY;
+        *(f32*)&data->prevAngleZ = data->angleZ;
+        *(f32*)&data->prevScale = data->scale;
         if (type == 1) {
 #ifdef MUST_MATCH
             /* MUST_MATCH: the embedded `f7 = ...` is allocator steering, not logic; the natural
                form under #else rotates the FPRs (fold f3, product f4, counter*4 f3). */
             f32 f7;
-            data->field_0x3C = (f32)(counter * 4);
-            data->field_0x40 = float_0p4953_8041fe38 * (f7 = float_4_8041fe3c * (f32)counter);
-            data->field_0x44 = float_0p2234_8041fe40 * f7;
+            data->angleX = (f32)(counter * 4);
+            data->angleY = float_0p4953_8041fe38 * (f7 = float_4_8041fe3c * (f32)counter);
+            data->angleZ = float_0p2234_8041fe40 * f7;
 #else
             f32 f7;
-            data->field_0x3C = (f32)(counter * 4);
+            data->angleX = (f32)(counter * 4);
             f7 = float_4_8041fe3c * (f32)counter;
-            data->field_0x40 = float_0p4953_8041fe38 * f7;
-            data->field_0x44 = float_0p2234_8041fe40 * f7;
+            data->angleY = float_0p4953_8041fe38 * f7;
+            data->angleZ = float_0p2234_8041fe40 * f7;
 #endif
             data->color1A = 0xFF;
             data->color2A = (u8)(float_127_8041fe54 * (f32)sin(float_6p2832_8041fe44 * (float_7p1234_8041fe48 * (f32)counter) / float_360_8041fe4c) + float_128_8041fe50);
@@ -214,14 +214,14 @@ void effStarPowerMain(EffectEntry* effect) {
             data->color1B = (u8)(float_127_8041fe54 * (f32)sin(float_6p2832_8041fe44 * (float_3p231_8041fe64 * (f32)counter) / float_360_8041fe4c) + float_215_8041fe5c);
             data->color2R = (u8)(float_127_8041fe54 * (f32)sin(float_6p2832_8041fe44 * (float_0p298_8041fe68 * (f32)counter) / float_360_8041fe4c) + float_188_8041fe6c);
             data->color2G = (u8)(float_127_8041fe54 * (f32)sin(float_6p2832_8041fe44 * (float_0p831_8041fe70 * (f32)counter) / float_360_8041fe4c) + float_188_8041fe6c);
-            data->field_0x30 = (u8)(float_127_8041fe54 * (f32)sin(float_6p2832_8041fe44 * (float_2p231_8041fe74 * (f32)counter) / float_360_8041fe4c) + float_188_8041fe6c);
-            data->field_0x38 = 0.3f * (f32)sin(float_6p2832_8041fe44 * (float_2p044_8041fe78 * (f32)counter) / float_360_8041fe4c) + 0.7f;
+            data->color2B = (u8)(float_127_8041fe54 * (f32)sin(float_6p2832_8041fe44 * (float_2p231_8041fe74 * (f32)counter) / float_360_8041fe4c) + float_188_8041fe6c);
+            data->scale = 0.3f * (f32)sin(float_6p2832_8041fe44 * (float_2p044_8041fe78 * (f32)counter) / float_360_8041fe4c) + 0.7f;
         }
         if (counter == 1) {
-            *(f32*)&data->field_0x48 = data->field_0x3C;
-            *(f32*)&data->field_0x4C = data->field_0x40;
-            *(f32*)&data->field_0x50 = data->field_0x44;
-            *(f32*)&data->field_0x54 = data->field_0x38;
+            *(f32*)&data->prevAngleX = data->angleX;
+            *(f32*)&data->prevAngleY = data->angleY;
+            *(f32*)&data->prevAngleZ = data->angleZ;
+            *(f32*)&data->prevScale = data->scale;
         }
         dispEntry(CAMERA_3D, dispCalcZ(&position), 2, effStarPowerDisp, effect);
     }
@@ -270,7 +270,7 @@ void effStarPowerDisp(CameraId camId, void* param) {
     color1A = data->color1A;
     color2R = data->color2R;
     color2G = data->color2G;
-    color2B = data->field_0x30;
+    color2B = data->color2B;
     color2A = data->color2A;
     if (color1R > 255) {
         color1R = 255;
@@ -333,15 +333,15 @@ void effStarPowerDisp(CameraId camId, void* param) {
     if (color2A != 0) {
         PSMTXTrans(trans, data->x, data->y, data->z);
         PSMTXRotRad(rot, 'y', float_deg2rad_8041fe30 * -camGetPtr(CAMERA_3D)->viewYaw);
-        scaleVal = float_0p4_8041fe34 * *(f32*)&data->field_0x54;
+        scaleVal = float_0p4_8041fe34 * *(f32*)&data->prevScale;
         PSMTXScale(scale, scaleVal, scaleVal, scaleVal);
         PSMTXConcat(trans, rot, trans);
         PSMTXConcat(trans, scale, trans);
-        PSMTXRotRad(rot, 'x', float_deg2rad_8041fe30 * *(f32*)&data->field_0x48);
+        PSMTXRotRad(rot, 'x', float_deg2rad_8041fe30 * *(f32*)&data->prevAngleX);
         PSMTXConcat(trans, rot, trans);
-        PSMTXRotRad(rot, 'y', float_deg2rad_8041fe30 * *(f32*)&data->field_0x4C);
+        PSMTXRotRad(rot, 'y', float_deg2rad_8041fe30 * *(f32*)&data->prevAngleY);
         PSMTXConcat(trans, rot, trans);
-        PSMTXRotRad(rot, 'z', float_deg2rad_8041fe30 * *(f32*)&data->field_0x50);
+        PSMTXRotRad(rot, 'z', float_deg2rad_8041fe30 * *(f32*)&data->prevAngleZ);
         PSMTXConcat(trans, rot, trans);
         PSMTXConcat(cam->view, trans, work);
         GXLoadPosMtxImm(work, 0);
@@ -388,15 +388,15 @@ void effStarPowerDisp(CameraId camId, void* param) {
 
     PSMTXTrans(trans, data->x, data->y, data->z);
     PSMTXRotRad(rot, 'y', float_deg2rad_8041fe30 * -camGetPtr(CAMERA_3D)->viewYaw);
-    scaleVal = float_0p4_8041fe34 * data->field_0x38;
+    scaleVal = float_0p4_8041fe34 * data->scale;
     PSMTXScale(scale, scaleVal, scaleVal, scaleVal);
     PSMTXConcat(trans, rot, trans);
     PSMTXConcat(trans, scale, trans);
-    PSMTXRotRad(rot, 'x', float_deg2rad_8041fe30 * data->field_0x3C);
+    PSMTXRotRad(rot, 'x', float_deg2rad_8041fe30 * data->angleX);
     PSMTXConcat(trans, rot, trans);
-    PSMTXRotRad(rot, 'y', float_deg2rad_8041fe30 * data->field_0x40);
+    PSMTXRotRad(rot, 'y', float_deg2rad_8041fe30 * data->angleY);
     PSMTXConcat(trans, rot, trans);
-    PSMTXRotRad(rot, 'z', float_deg2rad_8041fe30 * data->field_0x44);
+    PSMTXRotRad(rot, 'z', float_deg2rad_8041fe30 * data->angleZ);
     PSMTXConcat(trans, rot, trans);
     PSMTXConcat(cam->view, trans, work);
     GXLoadPosMtxImm(work, 0);
