@@ -140,10 +140,10 @@ USER_FUNC(evt_audience_move_position_frame) {
 	}
 	compare = member->targetPosX - member->startPosX;
 	if (compare > 0.0f) {
-		member->field_0xE8 = 180.0f;
+		member->yaw = 180.0f;
 	}
 	else if (compare < 0.0f) {
-		member->field_0xE8 = 0.0f;
+		member->yaw = 0.0f;
 	}
 	x = intplGetValue(
 		member->interpType,
@@ -223,10 +223,10 @@ USER_FUNC(evt_audience_move_position_speed) {
 
 	compare = member->interpDelta.x;
 	if (compare > 0.0f) {
-		member->field_0xE8 = 180.0f;
+		member->yaw = 180.0f;
 	}
 	else if (compare < 0.0f) {
-		member->field_0xE8 = 0.0f;
+		member->yaw = 0.0f;
 	}
 
 	BattleAudience_SetPosition(
@@ -390,8 +390,8 @@ USER_FUNC(evt_audience_reflesh_natural_all) {
 	i = 0;
 	member = BattleAudienceGetPtr(0);
 	for (; i < 200; i++, member++) {
-		if (member->flags & 1 && member->status == 13 && member->field_0x4 == 1 && irand(100) < chance) {
-			member->field_0x4 = 2;
+		if (member->flags & 1 && member->status == 13 && member->step == 1 && irand(100) < chance) {
+			member->step = 2;
 		}
 	}
 	return EVT_RETURN_DONE;

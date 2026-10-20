@@ -2070,7 +2070,7 @@ USER_FUNC(aud_suikomi) {
             aud->flags |= 0x10;
             BattleAudience_SetAnim(temp[i], 9, 0);
             aud->interpFramesTotal = 60 + i * 3;
-            *(s32*)aud->field_0x8 = 0;
+            aud->counter = 0;
             aud->mRotation.y = 0.0f;
             ((s32*)list[0])[i] = temp[i];
         }
@@ -2198,7 +2198,7 @@ USER_FUNC(aud_fire_hit) {
         position.z = posz;
         aud->position = position;
         aud->interpFramesTotal = 0;
-        *(s32*)aud->field_0x8 = 0;
+        aud->counter = 0;
         aud->mRotation.y = 0.0f;
         aud->baseSize.y = 1.0f;
         aud->baseSize.x = 1.0f;
@@ -2262,7 +2262,7 @@ USER_FUNC(aud_fire_no_hit) {
         position.z = posz;
         aud->position = position;
         aud->interpFramesTotal = 0;
-        *(s32*)aud->field_0x8 = 0;
+        aud->counter = 0;
         aud->mRotation.y = 0.0f;
         aud->baseSize.y = 1.0f;
         aud->baseSize.x = 1.0f;
