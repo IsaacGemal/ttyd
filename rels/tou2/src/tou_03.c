@@ -28,6 +28,8 @@
 #include "driver/itemdrv.h"
 #include "driver/mapdrv.h"
 #include "eff/eff_mahojin.h"
+#include "eff/eff_starstone.h"
+#include "eff/n64/eff_pokopi_pcharge_n64.h"
 #include "manager/evtmgr_cmd.h"
 #include "system.h"
 #include "mario/mariost.h"
@@ -50,18 +52,18 @@
 #pragma pool_data off
 
 typedef struct ScreenWork {
-    void* field_0x0; // 0x0 tex buffer
-    s32 field_0x4;   // 0x4
-    f32 field_0x8;   // 0x8
-    f32 field_0xC;   // 0xC
-    f32 field_0x10;  // 0x10
-    f32 field_0x14;  // 0x14
-    f32 field_0x18;  // 0x18
-    f32 field_0x1C;  // 0x1C
-    s32 field_0x20;  // 0x20
-    s32 field_0x24;  // 0x24
-    f32 field_0x28;  // 0x28
-    void* field_0x2C; // 0x2C
+    void* texBuf;          // 0x0, GXCopyTex destination for the captured frame
+    s32 captured;          // 0x4, set once screen_capture has run
+    f32 scale;             // 0x8, eased toward scaleTarget each frame
+    f32 scaleTarget;       // 0xC
+    f32 offsetX;           // 0x10, eased toward offsetXTarget
+    f32 offsetXTarget;     // 0x14
+    f32 offsetY;           // 0x18, eased toward offsetYTarget
+    f32 offsetYTarget;     // 0x1C
+    s32 frame;             // 0x20, counts frames; new targets every 200
+    s32 useNoise;          // 0x24, set when GSW(0) == 0xA3: draw noiseBuf instead of texBuf
+    f32 field_0x28;        // 0x28
+    void* noiseBuf;        // 0x2C, 64x64 generated texture
 } ScreenWork;
 
 typedef struct KyakuEntry {
@@ -69,9 +71,9 @@ typedef struct KyakuEntry {
     char name2[0x8];  // 0x10
     s16 field_0x18;   // 0x18
     u8 pad_0x1A[2];   // 0x1A
-    f32 field_0x1C;   // 0x1C
-    s32 field_0x20;   // 0x20
-    s32 field_0x24;   // 0x24
+    f32 cycleFrames;  // 0x1C, frames per animation cycle (pose_main)
+    s32 firstPose;    // 0x20, index of the group's first pose
+    s32 poseCount;    // 0x24
 } KyakuEntry;
 
 typedef struct KyakuState {
@@ -80,7 +82,7 @@ typedef struct KyakuState {
     Vec position;    // 0x4
     s16 poseId;      // 0x10
     u8 pad_0x12[6];  // 0x12
-    u64 field_0x18;  // 0x18
+    u64 cycleStart;  // 0x18, renderTime at the start of the current cycle
 } KyakuState;
 
 typedef struct KyakuWork {
@@ -225,8 +227,8 @@ EVT_END()
 s32 _firstattack_setting(EventEntry* event, BOOL isFirstCall) {
     FieldBattleData* fbat = fbatGetPointer();
     fbat->firstAttackKind = 0x10000000;
-    *(u32*)((u8*)fbat + 0x14) = 0x10;
-    *(u32*)((u8*)fbat + 0x1C) &= ~1;
+    *(u32*)fbat->field_14 = 0x10;
+    *(u32*)&fbat->field_14[8] &= ~1;
     fbatSetAttackAnnounce(0x10000000);
     fbatSetAttackAnnounceEnable();
     return EVT_RETURN_DONE;
@@ -260,9 +262,9 @@ static void pose_init(void) {
         }
         strcpy(kyaku_wp->entries[kyaku_wp->count2].name1, buf1);
         strcpy(kyaku_wp->entries[kyaku_wp->count2].name2, buf2);
-        kyaku_wp->entries[kyaku_wp->count2].field_0x20 = start;
-        kyaku_wp->entries[kyaku_wp->count2].field_0x24 = i - start + 1;
-        kyaku_wp->entries[kyaku_wp->count2].field_0x1C = data->value;
+        kyaku_wp->entries[kyaku_wp->count2].firstPose = start;
+        kyaku_wp->entries[kyaku_wp->count2].poseCount = i - start + 1;
+        kyaku_wp->entries[kyaku_wp->count2].cycleFrames = data->value;
         kyaku_wp->entries[kyaku_wp->count2].field_0x18 = 1;
         i++;
         data++;
@@ -283,15 +285,15 @@ static void pose_main(void) {
 
     for (i = 0; i < kyaku_wp->count1; i++, state++, pose++) {
         KyakuEntry* entry = &kyaku_wp->entries[state->poseId];
-        u64 delta = gp->renderTime - state->field_0x18;
+        u64 delta = gp->renderTime - state->cycleStart;
         u32 ticks = OS_TIMER_CLOCK / 1000;
 
-        ratio = 60.0f * (f32)(delta / ticks) / 1000.0f / entry->field_0x1C;
+        ratio = 60.0f * (f32)(delta / ticks) / 1000.0f / entry->cycleFrames;
         if (ratio >= 1.0f) {
-            state->field_0x18 = gp->renderTime;
+            state->cycleStart = gp->renderTime;
             ratio = 0.0f;
         }
-        pose->field_0x10 = entry->field_0x20 + (s32)((f32)(entry->field_0x24 - 1) * ratio);
+        pose->field_0x10 = entry->firstPose + (s32)((f32)(entry->poseCount - 1) * ratio);
     }
 }
 #pragma dont_inline reset
@@ -1250,7 +1252,7 @@ static void pose_change(KyakuState* state, const char* name1, const char* name2)
     }
     if (i < kyaku_wp->count2 && state->poseId != i) {
         state->poseId = i;
-        state->field_0x18 = gp->renderTime + (s64)rand();
+        state->cycleStart = gp->renderTime + (s64)rand();
     }
 }
 #pragma dont_inline reset
@@ -3177,9 +3179,9 @@ void ext_kyaku_dispent(void) {
 static void screen_capture(CameraId camId, void* param) {
     GXSetTexCopySrc(0, 0, 0x260, 0x1E0);
     GXSetTexCopyDst(0x130, 0xF0, 4, 1);
-    GXCopyTex(screen_wp->field_0x0, 0);
+    GXCopyTex(screen_wp->texBuf, 0);
     GXPixModeSync();
-    screen_wp->field_0x4 = 1;
+    screen_wp->captured = 1;
 }
 
 s32 screen_init(EventEntry* event, BOOL isFirstCall) {
@@ -3190,22 +3192,22 @@ s32 screen_init(EventEntry* event, BOOL isFirstCall) {
 
     size = GXGetTexBufferSize(0x260, 0x1E0, 0, 0, 0);
     screen_wp = _mapAlloc(0x30);
-    screen_wp->field_0x0 = _mapAlloc(size);
+    screen_wp->texBuf = _mapAlloc(size);
     one = 1.0f;
     zero = 0.0f;
     negOne = -1.0f;
-    screen_wp->field_0x4 = 0;
-    screen_wp->field_0xC = one;
-    screen_wp->field_0x8 = one;
-    screen_wp->field_0x14 = zero;
-    screen_wp->field_0x10 = zero;
-    screen_wp->field_0x1C = zero;
-    screen_wp->field_0x18 = zero;
-    screen_wp->field_0x20 = 0;
+    screen_wp->captured = 0;
+    screen_wp->scaleTarget = one;
+    screen_wp->scale = one;
+    screen_wp->offsetXTarget = zero;
+    screen_wp->offsetX = zero;
+    screen_wp->offsetYTarget = zero;
+    screen_wp->offsetY = zero;
+    screen_wp->frame = 0;
     screen_wp->field_0x28 = negOne;
-    screen_wp->field_0x2C = _mapAlloc(GXGetTexBufferSize(0x40, 0x40, 1, 0, 0));
+    screen_wp->noiseBuf = _mapAlloc(GXGetTexBufferSize(0x40, 0x40, 1, 0, 0));
     if (evtGetValue(event, GSW(0)) == 0xA3) {
-        screen_wp->field_0x24 = 1;
+        screen_wp->useNoise = 1;
     }
     return EVT_RETURN_DONE;
 }
@@ -4075,15 +4077,15 @@ void screen_tev(TevCallbackParam* param) {
     TevCallbackParam* tev = param;
 #endif
 
-    if (screen_wp->field_0x4 == 0) {
+    if (screen_wp->captured == 0) {
         return;
     }
 
-    if (screen_wp->field_0x24 != 0) {
+    if (screen_wp->useNoise != 0) {
 #ifdef MUST_MATCH
-        buf = (u8*)screen_wp->field_0x2C;
+        buf = (u8*)screen_wp->noiseBuf;
 #else
-        u8* buf = (u8*)screen_wp->field_0x2C;
+        u8* buf = (u8*)screen_wp->noiseBuf;
         s32 i;
         s32 j;
         s32 k;
@@ -4143,7 +4145,7 @@ void screen_tev(TevCallbackParam* param) {
         GXInitTexObjLOD(&texObj, 0, 0, 0.0f, 0.0f, 0.0f, 0, 0, 0);
         GXLoadTexObj(&texObj, 0);
     } else {
-        GXInitTexObj(&texObj, screen_wp->field_0x0, 0x130, 0xF0, 4, 0, 0, 0);
+        GXInitTexObj(&texObj, screen_wp->texBuf, 0x130, 0xF0, 4, 0, 0, 0);
         GXInitTexObjLOD(&texObj, 0, 0, 0.0f, 0.0f, 0.0f, 0, 0, 0);
     }
     GXLoadTexObj(&texObj, 0);
@@ -4163,33 +4165,33 @@ void screen_tev(TevCallbackParam* param) {
     GXSetTevColorIn(1, 0xF, 8, 0, 0xF);
     GXSetTevAlphaIn(1, 7, 7, 7, 6);
 
-    if (screen_wp->field_0x24 == 0) {
-        screen_wp->field_0x20++;
-        if (screen_wp->field_0x20 % 200 == 0) {
+    if (screen_wp->useNoise == 0) {
+        screen_wp->frame++;
+        if (screen_wp->frame % 200 == 0) {
             switch (rand() % 3) {
             case 0:
-                screen_wp->field_0x14 = randf(0.0f, (1.0f - screen_wp->field_0x8) / screen_wp->field_0x8);
-                screen_wp->field_0x1C = randf(0.0f, (1.0f - screen_wp->field_0x8) / screen_wp->field_0x8);
+                screen_wp->offsetXTarget = randf(0.0f, (1.0f - screen_wp->scale) / screen_wp->scale);
+                screen_wp->offsetYTarget = randf(0.0f, (1.0f - screen_wp->scale) / screen_wp->scale);
                 break;
             case 1:
-                screen_wp->field_0xC = randf(1.0f, 0.25f);
+                screen_wp->scaleTarget = randf(1.0f, 0.25f);
                 break;
             case 2:
                 break;
             }
         }
-        screen_wp->field_0x8 += (screen_wp->field_0xC - screen_wp->field_0x8) / 60.0f;
-        screen_wp->field_0x10 += (screen_wp->field_0x14 - screen_wp->field_0x10) / 60.0f;
-        screen_wp->field_0x18 += (screen_wp->field_0x1C - screen_wp->field_0x18) / 60.0f;
-        PSMTXScale(mtxScale, screen_wp->field_0x8, screen_wp->field_0x8, 1.0f);
+        screen_wp->scale += (screen_wp->scaleTarget - screen_wp->scale) / 60.0f;
+        screen_wp->offsetX += (screen_wp->offsetXTarget - screen_wp->offsetX) / 60.0f;
+        screen_wp->offsetY += (screen_wp->offsetYTarget - screen_wp->offsetY) / 60.0f;
+        PSMTXScale(mtxScale, screen_wp->scale, screen_wp->scale, 1.0f);
         {
             f32 x;
-            f32 ratio = (1.0f - screen_wp->field_0x8) / screen_wp->field_0x8;
-            f32 y = screen_wp->field_0x18;
+            f32 ratio = (1.0f - screen_wp->scale) / screen_wp->scale;
+            f32 y = screen_wp->offsetY;
             if (y > ratio) {
                 y = ratio;
             }
-            x = screen_wp->field_0x10;
+            x = screen_wp->offsetX;
             x = (x > ratio) ? ratio : x;
             PSMTXTrans(mtxTrans, x, y, 0.0f);
         }
@@ -4503,10 +4505,10 @@ s32 starstone_sound_onoff(EventEntry* event, BOOL isFirstCall) {
     EffectEntry* effect = itemNameToPtr("stone")->effect;
     if (effect != NULL) {
         if (val == 0) {
-            *(u16*)((u8*)effect->userdata + 0x4) &= ~4;
+            ((effStarStoneData*)effect->userdata)->field_0x4 &= ~4;
         }
         if (val == 1) {
-            *(u16*)((u8*)effect->userdata + 0x4) |= 4;
+            ((effStarStoneData*)effect->userdata)->field_0x4 |= 4;
         }
     }
     return EVT_RETURN_DONE;
@@ -4517,7 +4519,7 @@ s32 evt_boss_stone_r(EventEntry* event, BOOL isFirstCall) {
     EffectEntry* effect = itemNameToPtr("stone")->effect;
     f32 value;
     value = evtGetFloat(event, args[0]);
-    *(f32*)((u8*)effect->userdata + 0x1C) = value;
+    ((effStarStoneData*)effect->userdata)->field_0x1C = value;
     return EVT_RETURN_DONE;
 }
 
@@ -4527,14 +4529,14 @@ s32 eff_pos(EventEntry* event, BOOL isFirstCall) {
     EffectEntry* eff2 = effNameToPtr("eff_2");
     if (item != NULL) {
         if (eff1 != NULL) {
-            *(f32*)((u8*)eff1->userdata + 0x4) = item->position.x;
-            *(f32*)((u8*)eff1->userdata + 0x8) = 15.0f + item->position.y;
-            *(f32*)((u8*)eff1->userdata + 0xC) = item->position.z;
+            ((effPokopiPchargeData*)eff1->userdata)->x = item->position.x;
+            ((effPokopiPchargeData*)eff1->userdata)->y = 15.0f + item->position.y;
+            ((effPokopiPchargeData*)eff1->userdata)->z = item->position.z;
         }
         if (eff2 != NULL) {
-            *(f32*)((u8*)eff2->userdata + 0x4) = item->position.x;
-            *(f32*)((u8*)eff2->userdata + 0x8) = 15.0f + item->position.y;
-            *(f32*)((u8*)eff2->userdata + 0xC) = item->position.z;
+            ((effPokopiPchargeData*)eff2->userdata)->x = item->position.x;
+            ((effPokopiPchargeData*)eff2->userdata)->y = 15.0f + item->position.y;
+            ((effPokopiPchargeData*)eff2->userdata)->z = item->position.z;
         }
     }
     return EVT_RETURN_BLOCK;
