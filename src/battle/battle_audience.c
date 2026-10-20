@@ -2419,7 +2419,7 @@ void BattleAudienceWinCtrlProcess(void) {
 		f32 a = -160.0f;
 		f32 b = 0.0f;
 		window->posY = a;
-		*(f32*)((u8*)window + 0x10) = b;
+		window->field_0x10 = b;
 	}
 }
 #pragma dont_inline reset
@@ -2478,35 +2478,35 @@ void BattleAudienceAnimProcess(void) {
 		case -2:
 			member->texIndex = anim[1];
 			member->animWait = anim[2];
-			*(s32*)((u8*)member + 0x28) += 0xC;
+			member->animPos += 3;
 			break;
 		case -3:
 			member->animPos = member->animCur;
 			break;
 		case -4:
-			*(s32*)((u8*)member + 0x28) += 8;
+			member->animPos += 2;
 			break;
 		case -5:
 			target = anim[1];
 			member->animPos = member->animCur;
 			while (!(member->animPos[0] == -4 && member->animPos[1] == target)) {
-				*(s32*)((u8*)member + 0x28) += 4;
+				member->animPos += 1;
 			}
 			break;
 		case -6:
 			member->animLoop[member->animDepth] = anim[1];
 			member->animDepth += 1;
-			*(s32*)((u8*)member + 0x28) += 8;
+			member->animPos += 2;
 			break;
 		case -7:
 			member->animLoop[member->animDepth - 1] -= 1;
 			if (member->animLoop[member->animDepth - 1] <= 0) {
 				member->animDepth -= 1;
-				*(s32*)((u8*)member + 0x28) += 4;
+				member->animPos += 1;
 			} else {
 				depth = 1;
 				do {
-					*(s32*)((u8*)member + 0x28) -= 4;
+					member->animPos -= 1;
 					cmd = *member->animPos;
 					if (cmd == -6) {
 						depth--;
@@ -2515,12 +2515,12 @@ void BattleAudienceAnimProcess(void) {
 						depth++;
 					}
 				} while (depth > 0);
-				*(s32*)((u8*)member + 0x28) += 8;
+				member->animPos += 2;
 			}
 			break;
 		case -8:
 			member->animWait = anim[1];
-			*(s32*)((u8*)member + 0x28) += 8;
+			member->animPos += 2;
 			break;
 		case -1:
 			break;

@@ -156,7 +156,7 @@ typedef struct BattleAudienceWindow {
     u8 field_0x1[0x8 - 0x1];    // 0x1
     f32 posX;                   // 0x8, from slide: -500 closed, -280 open
     f32 posY;                   // 0xC, -160 each frame
-    u8 field_0x10[0x14 - 0x10]; // 0x10
+    f32 field_0x10;             // 0x10
     s32 slide;                  // 0x14, 0-15, moves toward open while mActive
     f32 count;                  // 0x18, number to display for audience count
 } BattleAudienceWindow;
