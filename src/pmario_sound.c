@@ -6775,14 +6775,9 @@ void psndENVMain(void) {
 					*(u16*)(env->unk6 + 8) = env->unk6[4] * 60;
 					*(u16*)(env->unk6 + 8) += irand(env->unk6[3]) * 60;
 					break;
-#ifdef MUST_MATCH
 				case 1:
 				case 3:
 					break;
-#else
-				default:
-					break;
-#endif
 				}
 				continue;
 			default:
@@ -6819,14 +6814,9 @@ void psndENVMain(void) {
 					*(u16*)(env->unk6 + 8) = env->unk6[4] * 60;
 					*(u16*)(env->unk6 + 8) += irand(env->unk6[3]) * 60;
 					break;
-#ifdef MUST_MATCH
 				case 1:
 				case 3:
 					break;
-#else
-				default:
-					break;
-#endif
 				}
 				continue;
 			default:
@@ -6869,14 +6859,9 @@ void psndENVMain(void) {
 					*(u16*)(env->unk6 + 8) = env->unk6[4] * 60;
 					*(u16*)(env->unk6 + 8) += irand(env->unk6[3]) * 60;
 					break;
-#ifdef MUST_MATCH
 				case 1:
 				case 3:
 					break;
-#else
-				default:
-					break;
-#endif
 				}
 				continue;
 			default:
@@ -6913,14 +6898,9 @@ void psndENVMain(void) {
 					*(u16*)(env->unk6 + 8) = env->unk6[4] * 60;
 					*(u16*)(env->unk6 + 8) += irand(env->unk6[3]) * 60;
 					break;
-#ifdef MUST_MATCH
 				case 1:
 				case 3:
 					break;
-#else
-				default:
-					break;
-#endif
 				}
 				continue;
 			default:
