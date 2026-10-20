@@ -212,10 +212,8 @@ const char party_name_msg5[] = "name_party5";
 const char party_name_msg2[] = "name_party2";
 const char party_name_msg6[] = "name_party6";
 
-#ifdef MUST_MATCH
-// MUST_MATCH: this inline keeps the descriptor 0x14 load before 0x10 with retail registers.
+// Keeps the descriptor 0x14 load before 0x10 with retail registers.
 static inline s32 get10(WinMgrDesc* d) { return d->y; }
-#endif
 
 static inline void winMgrDispWaku1(Mtx mtx, WinMgrEntry* entry, const GXColor* base) {
     GXColor color = *base;
@@ -461,15 +459,11 @@ void select_disp_luigi(WinMgrEntry* entry) {
     }
 
     fogColor = dat_80421a70;
-#ifdef MUST_MATCH
-    // MUST_MATCH: the original stores the fog colour in fogColor's own slot (0x18) and passes a
+    // The original stores the fog colour in fogColor's own slot (0x18) and passes a
     // pointer to it; with the by-value GXSetFog prototype MWCC copies it to a call temp at 0xc and
     // the loop/edge/title colour locals move to 0x18/0x14/0x10. The cast only changes the calling
     // convention (GXSetFog reads the colour, never writes it) and reproduces the original slots.
     ((void (*)(s32, f32, f32, f32, f32, GXColor*))GXSetFog)(GX_FOG_NONE, 0.0f, 0.0f, 0.0f, 0.0f, &fogColor);
-#else
-    GXSetFog(GX_FOG_NONE, 0.0f, 0.0f, 0.0f, 0.0f, fogColor);
-#endif
     GXGetScissor(&scissorLeft, &scissorTop, &scissorWidth, &scissorHeight);
     GXSetScissor(entry->x + 0x130, 0x112 - entry->y, entry->width, entry->height - 0x32);
 
@@ -631,11 +625,7 @@ void select_disp_mario(WinMgrEntry* entry) {
     }
 
     fogColor = dat_80421a60;
-#ifdef MUST_MATCH
     ((void (*)(s32, f32, f32, f32, f32, GXColor*))GXSetFog)(GX_FOG_NONE, 0.0f, 0.0f, 0.0f, 0.0f, &fogColor);
-#else
-    GXSetFog(GX_FOG_NONE, 0.0f, 0.0f, 0.0f, 0.0f, fogColor);
-#endif
     GXGetScissor(&scissorLeft, &scissorTop, &scissorWidth, &scissorHeight);
     GXSetScissor(entry->x + 0x130, 0x112 - entry->y, entry->width, entry->height - 0x32);
 
@@ -824,7 +814,7 @@ void select_disp_mario(WinMgrEntry* entry) {
 // through with the result variable uninitialised), and that is what makes MWCC materialise each
 // switch result in r23/r24/r25 (a `mr` per case plus the join `mr r3,r25`); merging case 6 with
 // default coalesces them away. (2) The target reloads several in-loop vec constants every
-// iteration where MWCC would hoist them: vec3_802ffb7c/88/94 are read through `const volatile` (assignments marked "anti-hoist"
+// iteration where MWCC would hoist them: vec3_802ffb88/94 are read through `const volatile` (assignments marked "anti-hoist"
 // below), which restores the reloads and the target's callee-saved set (stmw r17). The per-block
 // statement order is also chosen to match the target's schedule: the icon block computes
 // tmpIcon.x before rowY, the arrow block computes tmpArrow.x before rowY, the arrow loop declares
@@ -876,13 +866,9 @@ void select_disp_party(WinMgrEntry* entry) {
     }
 
     fogColor = dat_80421a50;
-#ifdef MUST_MATCH
-    // MUST_MATCH: the original stores the fog colour in fogColor's own slot and passes a pointer
+    // The original stores the fog colour in fogColor's own slot and passes a pointer
     // to it; with the by-value GXSetFog prototype MWCC copies it to a call temp. Same as select_disp.
     ((void (*)(s32, f32, f32, f32, f32, GXColor*))GXSetFog)(GX_FOG_NONE, 0.0f, 0.0f, 0.0f, 0.0f, &fogColor);
-#else
-    GXSetFog(GX_FOG_NONE, 0.0f, 0.0f, 0.0f, 0.0f, fogColor);
-#endif
     GXGetScissor(&scissorLeft, &scissorTop, &scissorWidth, &scissorHeight);
     GXSetScissor(entry->x + 0x130, 0x112 - entry->y, entry->width, entry->height - 0x32);
 
@@ -1022,12 +1008,7 @@ void select_disp_party(WinMgrEntry* entry) {
             rowY = (f32)(entry->y - 0x2c - i * 0x18);
             tmpIcon.y = select->baseY + (zero + rowY);
             posIcon = tmpIcon;
-#ifdef MUST_MATCH
-            // anti-hoist: retail reloads the Vec in the loop (see the note above select_disp_party)
-            scaleIcon = *(const volatile Vec*)&vec3_802ffb7c;
-#else
             scaleIcon = vec3_802ffb7c;
-#endif
 
             color = colorWhite;
             icon = party_icon_table[select->items[i].id];
@@ -1075,7 +1056,7 @@ void select_disp_party(WinMgrEntry* entry) {
                     f32 rowY;
 
 #ifdef MUST_MATCH
-                    // anti-hoist: as above
+                    // anti-hoist: retail reloads the Vec in the loop
                     scaleArrow = *(const volatile Vec*)&vec3_802ffb94;
                     tmpArrow = *(const volatile Vec*)&vec3_802ffb88;
 #else
@@ -1221,13 +1202,9 @@ void select_disp(WinMgrEntry* entry) {
     }
 
     fogColor = dat_80421a34;
-#ifdef MUST_MATCH
-    // MUST_MATCH: the original stores the fog colour in fogColor's own slot and passes a pointer
+    // The original stores the fog colour in fogColor's own slot and passes a pointer
     // to it; with the by-value GXSetFog prototype MWCC copies it to a call temp. Same as select_disp_luigi.
     ((void (*)(s32, f32, f32, f32, f32, GXColor*))GXSetFog)(GX_FOG_NONE, 0.0f, 0.0f, 0.0f, 0.0f, &fogColor);
-#else
-    GXSetFog(GX_FOG_NONE, 0.0f, 0.0f, 0.0f, 0.0f, fogColor);
-#endif
     GXGetScissor(&scissorLeft, &scissorTop, &scissorWidth, &scissorHeight);
     GXSetScissor(entry->x + 0x130, 0x112 - entry->y, entry->width, entry->height - 0x32);
 
@@ -2123,11 +2100,7 @@ WinMgrSelect* winMgrSelectEntry(s32 kind, s32 firstItem, BOOL canCancel) {
 
     if (select->numItems < 8) {
         s32 f20 = desc->width;
-#ifdef MUST_MATCH
         s32 f1C = get10(desc);
-#else
-        s32 f1C = desc->y;
-#endif
         s32 f18 = desc->x;
         s32 f24 = desc->height - (8 - select->numItems) * 0x18;
         WinMgrEntry* e = &wp->mEntries[select->descriptorId[0]];
@@ -2334,14 +2307,10 @@ s32 winMgrSelectOther(WinMgrSelect* select, EventEntry* event) {
 }
 
 void winMgrSelectDelete(WinMgrSelect* select) {
-#ifdef MUST_MATCH
     // The original took the pointer as `void*` and cast it to WinMgrSelect*; that cast makes the
     // compiler copy the incoming r3 through r0 before the first call (asm: mr r0, r3 / mr r31, r0).
     // Keep the header's WinMgrSelect* signature and reproduce the copy with the same no-op cast.
     WinMgrSelect* s = (WinMgrSelect*)(void*)select;
-#else
-    WinMgrSelect* s = select;
-#endif
     __memFree(HEAP_DEFAULT, s->items);
     __memFree(HEAP_DEFAULT, s);
 }
