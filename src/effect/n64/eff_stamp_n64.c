@@ -68,19 +68,19 @@ EffectEntry* effStampN64Entry(s32 type, f32 x, f32 y, f32 z) {
 
     switch (type) {
     case 0:
-        data->tevReg1R = data->tevReg2R = 20;
-        data->tevReg1G = data->tevReg2G = 21;
-        data->tevReg1B = data->tevReg2B = 242;
+        data->tevReg0R = data->tevReg1R = 20;
+        data->tevReg0G = data->tevReg1G = 21;
+        data->tevReg0B = data->tevReg1B = 242;
         break;
     case 1:
-        data->tevReg1R = data->tevReg2R = 200;
-        data->tevReg1G = data->tevReg2G = 21;
-        data->tevReg1B = data->tevReg2B = 212;
+        data->tevReg0R = data->tevReg1R = 200;
+        data->tevReg0G = data->tevReg1G = 21;
+        data->tevReg0B = data->tevReg1B = 212;
         break;
     case 2:
-        data->tevReg1R = data->tevReg2R = 255;
-        data->tevReg1G = data->tevReg2G = 181;
-        data->tevReg1B = data->tevReg2B = 218;
+        data->tevReg0R = data->tevReg1R = 255;
+        data->tevReg0G = data->tevReg1G = 181;
+        data->tevReg0B = data->tevReg1B = 218;
         break;
     }
 
@@ -148,21 +148,21 @@ void effStampMain(EffectEntry* effect) {
 // outgoing copy; writing the same code inline makes mwcc put the two slots the other way round
 // (see eff_ripple_n64.c).
 #ifdef MUST_MATCH
-static inline void effStampSetColor1(effStampData* data) {
+static inline void effStampSetTevReg0(effStampData* data) {
     GXColor color = unk_80423270;
+    color.r = data->tevReg0R;
+    color.g = data->tevReg0G;
+    color.b = data->tevReg0B;
+    color.a = data->alpha;
+    GXSetTevColor(GX_TEVREG0, color);
+}
+
+static inline void effStampSetTevReg1(effStampData* data) {
+    GXColor color = unk_80423274;
     color.r = data->tevReg1R;
     color.g = data->tevReg1G;
     color.b = data->tevReg1B;
-    color.a = data->alpha;
-    GXSetTevColor(1, color);
-}
-
-static inline void effStampSetColor2(effStampData* data) {
-    GXColor color = unk_80423274;
-    color.r = data->tevReg2R;
-    color.g = data->tevReg2G;
-    color.b = data->tevReg2B;
-    GXSetTevColor(2, color);
+    GXSetTevColor(GX_TEVREG1, color);
 }
 #endif
 
@@ -182,13 +182,13 @@ void effStampDisp(CameraId camId, void* param) {
     data = effect->userdata;
 
     GXSetNumChans(1);
-    GXSetChanCtrl(4, 0, 0, 1, 0, 0, 2);
+    GXSetChanCtrl(GX_COLOR0A0, GX_DISABLE, GX_SRC_REG, GX_SRC_VTX, 0, GX_DF_NONE, GX_AF_NONE);
     GXSetNumTevStages(1);
-    GXSetTevOrder(0, 0, 0, 4);
-    GXSetTevColorOp(0, 0, 0, 0, 1, 0);
-    GXSetTevAlphaOp(0, 0, 0, 0, 1, 0);
-    GXSetTevColorIn(0, 2, 4, 0xb, 0xf);
-    GXSetTevAlphaIn(0, 7, 1, 4, 7);
+    GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR0A0);
+    GXSetTevColorOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+    GXSetTevAlphaOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+    GXSetTevColorIn(GX_TEVSTAGE0, GX_CC_C0, GX_CC_C1, GX_CC_RASA, GX_CC_ZERO);
+    GXSetTevAlphaIn(GX_TEVSTAGE0, GX_CA_ZERO, GX_CA_A0, GX_CA_TEXA, GX_CA_ZERO);
 
     PSMTXTrans(mtx, data->x, data->y, data->z);
     PSMTXRotRad(rotMtx, 'y', -camGetPtr(CAMERA_3D)->viewYaw * float_deg2rad_8041fde0);
@@ -197,8 +197,8 @@ void effStampDisp(CameraId camId, void* param) {
 
     {
 #ifdef MUST_MATCH
-        effStampSetColor1(data);
-        effStampSetColor2(data);
+        effStampSetTevReg0(data);
+        effStampSetTevReg1(data);
 #else
         GXColor color;
         GXColor color2;
@@ -206,28 +206,28 @@ void effStampDisp(CameraId camId, void* param) {
 
         tmp = unk_80423270;
         color = tmp;
-        color.r = data->tevReg1R;
-        color.g = data->tevReg1G;
-        color.b = data->tevReg1B;
+        color.r = data->tevReg0R;
+        color.g = data->tevReg0G;
+        color.b = data->tevReg0B;
         color.a = data->alpha;
-        GXSetTevColor(1, color);
+        GXSetTevColor(GX_TEVREG0, color);
         tmp = unk_80423274;
         color2 = tmp;
-        color2.r = data->tevReg2R;
-        color2.g = data->tevReg2G;
-        color2.b = data->tevReg2B;
-        GXSetTevColor(2, color2);
+        color2.r = data->tevReg1R;
+        color2.g = data->tevReg1G;
+        color2.b = data->tevReg1B;
+        GXSetTevColor(GX_TEVREG1, color2);
 #endif
     }
 
     GXSetNumTexGens(1);
-    GXSetTexCoordGen2(0, 1, 4, 0x1e, 0, 0x7d);
+    GXSetTexCoordGen2(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_TEXMTX0, GX_FALSE, GX_PTIDENTITY);
     PSMTXScale(scaleMtx, float_0p03125_8041fde4, float_0p03125_8041fde4, float_0_8041fde8);
-    GXLoadTexMtxImm(scaleMtx, 0x1e, 1);
+    GXLoadTexMtxImm(scaleMtx, GX_TEXMTX0, GX_MTX2x4);
     effGetTexObjN64(0x2b, &texObj);
-    GXLoadTexObj(&texObj, 0);
+    GXLoadTexObj(&texObj, GX_TEXMAP0);
     data++;
-    GXSetCullMode(0);
+    GXSetCullMode(GX_CULL_NONE);
     effSetVtxDescN64((effVtxArray*)size16x16_tex64x32_vtx);
 
     deg2rad = float_deg2rad_8041fde0;
@@ -238,9 +238,9 @@ void effStampDisp(CameraId camId, void* param) {
         PSMTXConcat(mtx, rotMtx, mtx);
         PSMTXConcat(mtx, scaleMtx, mtx);
         PSMTXConcat(viewMtx, mtx, mtx);
-        GXLoadPosMtxImm(mtx, 0);
-        GXSetCurrentMtx(0);
-        GXBegin(0x90, 0, 6);
+        GXLoadPosMtxImm(mtx, GX_PNMTX0);
+        GXSetCurrentMtx(GX_PNMTX0);
+        GXBegin(GX_TRIANGLES, GX_VTXFMT0, 6);
         tri2(0, 1, 2, 0, 0, 2, 3, 0);
     }
 }

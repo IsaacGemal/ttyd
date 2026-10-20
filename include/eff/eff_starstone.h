@@ -31,10 +31,10 @@ typedef struct effStarStoneData {
 	f32 spreadBX;    // 0x50 x offset of tip pair B (opposite swing to A)
 	f32 spreadBZ;    // 0x54 z offset of tip pair B
 	f32 field_0x58;  // 0x58
-	u8 tevReg0R;     // 0x5C TEVREG0 colour, red
-	u8 tevReg0G;     // 0x5D TEVREG0 colour, green
-	u8 tevReg0B;     // 0x5E TEVREG0 colour, blue
-	u8 tevReg0A;     // 0x5F TEVREG0 colour, alpha; also the mode passed to U_shadowSetMode
+	u8 tevReg0R;     // 0x5C GX_TEVREG0 colour, multiplied into the vertex colours in TEV stage 1
+	u8 tevReg0G;     // 0x5D
+	u8 tevReg0B;     // 0x5E
+	u8 tevReg0A;     // 0x5F GX_TEVREG0 alpha: the star's opacity, also passed to U_shadowSetMode as the shadow alpha
 	s32 sfxHandle;   // 0x60 handle from psndSFXOn_3D for the shine loop
 } effStarStoneData;
 void effStarStoneDraw(CameraId camId, EffectEntry* entry);

@@ -520,12 +520,12 @@ void main_mario(void) {
             EffectEntry* eff;
             BtlUnit_GetPos(mario, &x, &y, &z);
             eff = effStampN64Entry(2, x, float_20_80421d78 + y, float_10_80421d54 + z);
+            ((effStampData*)eff->userdata)->tevReg0R = 0;
+            ((effStampData*)eff->userdata)->tevReg0G = 0xC8;
+            ((effStampData*)eff->userdata)->tevReg0B = 0;
             ((effStampData*)eff->userdata)->tevReg1R = 0;
-            ((effStampData*)eff->userdata)->tevReg1G = 0xC8;
+            ((effStampData*)eff->userdata)->tevReg1G = 0xA;
             ((effStampData*)eff->userdata)->tevReg1B = 0;
-            ((effStampData*)eff->userdata)->tevReg2R = 0;
-            ((effStampData*)eff->userdata)->tevReg2G = 0xA;
-            ((effStampData*)eff->userdata)->tevReg2B = 0;
         }
     case 4:
         genki->field_48++;

@@ -560,7 +560,7 @@ void effStarStoneDisp_1(CameraId camId, void* param) {
 	GXSetTevColorIn(GX_TEVSTAGE1, GX_CC_ZERO, GX_CC_C0, GX_CC_CPREV, GX_CC_ZERO);
 	GXSetTevAlphaIn(GX_TEVSTAGE1, GX_CA_ZERO, GX_CA_A0, GX_CA_APREV, GX_CA_ZERO);
 #ifdef MUST_MATCH
-	GXSetTevColor(1, starStoneTevColor(*(GXColor*)&unk_804232e0, data));
+	GXSetTevColor(GX_TEVREG0, starStoneTevColor(*(GXColor*)&unk_804232e0, data));
 #else
 	{
 		GXColor color = *(GXColor*)&unk_804232e0;
@@ -624,7 +624,7 @@ void effStarStoneDisp_1(CameraId camId, void* param) {
 	GXSetTevColorIn(GX_TEVSTAGE1, GX_CC_ZERO, GX_CC_C0, GX_CC_CPREV, GX_CC_ZERO);
 	GXSetTevAlphaIn(GX_TEVSTAGE1, GX_CA_ZERO, GX_CA_A0, GX_CA_APREV, GX_CA_ZERO);
 #ifdef MUST_MATCH
-	GXSetTevColor(1, starStoneTevColor(*(GXColor*)&unk_804232e4, data));
+	GXSetTevColor(GX_TEVREG0, starStoneTevColor(*(GXColor*)&unk_804232e4, data));
 #else
 	{
 		GXColor color = *(GXColor*)&unk_804232e4;
@@ -766,7 +766,7 @@ void effStarStoneDisp_2(CameraId camId, void* param) {
 	GXSetTevColorIn(GX_TEVSTAGE1, GX_CC_ZERO, GX_CC_C0, GX_CC_CPREV, GX_CC_ZERO);
 	GXSetTevAlphaIn(GX_TEVSTAGE1, GX_CA_ZERO, GX_CA_A0, GX_CA_APREV, GX_CA_ZERO);
 #ifdef MUST_MATCH
-	GXSetTevColor(1, starStoneTevColor2(*(GXColor*)&unk_804232e8, data));
+	GXSetTevColor(GX_TEVREG0, starStoneTevColor2(*(GXColor*)&unk_804232e8, data));
 #else
 	{
 		GXColor color = *(GXColor*)&unk_804232e8;
@@ -852,7 +852,7 @@ void effStarStoneDisp_2(CameraId camId, void* param) {
 	GXSetTevColorIn(GX_TEVSTAGE1, GX_CC_ZERO, GX_CC_C0, GX_CC_CPREV, GX_CC_ZERO);
 	GXSetTevAlphaIn(GX_TEVSTAGE1, GX_CA_ZERO, GX_CA_A0, GX_CA_APREV, GX_CA_ZERO);
 #ifdef MUST_MATCH
-	GXSetTevColor(1, starStoneTevColor2(*(GXColor*)&unk_804232ec, data));
+	GXSetTevColor(GX_TEVREG0, starStoneTevColor2(*(GXColor*)&unk_804232ec, data));
 #else
 	{
 		GXColor color = *(GXColor*)&unk_804232ec;

@@ -1002,15 +1002,15 @@ u8 _getRegistStatus(BattleUnit* unit, s32 type) {
 #pragma dont_inline reset
 
 
-// The six colour bytes the stamp effect reads (the tint and the fade-out tint).
+// The stamp effect's two TEV colours: GX_TEVREG0 (r0, g0, b0) and GX_TEVREG1 (r1, g1, b1).
 #define STAMP_COLOR(e, r0, g0, b0, r1, g1, b1)                           \
     {                                                                    \
-        ((effStampData*)(e)->userdata)->tevReg1R = r0;                 \
-        ((effStampData*)(e)->userdata)->tevReg1G = g0;                 \
-        ((effStampData*)(e)->userdata)->tevReg1B = b0;                 \
-        ((effStampData*)(e)->userdata)->tevReg2R = r1;                 \
-        ((effStampData*)(e)->userdata)->tevReg2G = g1;                 \
-        ((effStampData*)(e)->userdata)->tevReg2B = b1;                 \
+        ((effStampData*)(e)->userdata)->tevReg0R = r0;                 \
+        ((effStampData*)(e)->userdata)->tevReg0G = g0;                 \
+        ((effStampData*)(e)->userdata)->tevReg0B = b0;                 \
+        ((effStampData*)(e)->userdata)->tevReg1R = r1;                 \
+        ((effStampData*)(e)->userdata)->tevReg1G = g1;                 \
+        ((effStampData*)(e)->userdata)->tevReg1B = b1;                 \
     }
 
 // Applies one status (sleep, stop, poison, ...) to `unit` from an attack of `part`'s side: the immunity and
