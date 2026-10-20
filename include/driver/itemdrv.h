@@ -59,7 +59,7 @@ void itemSetPosition(ItemEntry* item, f32 x, f32 y, f32 z);
 void itemDelete(char* name);
 s32 N_itemPickUpFromFieldCheck(void);
 s32 itemGetNokoCheck(ItemEntry* item);
-ItemEntry* itemEntry(const char* name, ItemType type, u16 a3, s32 evtId, s32 a5, f32 a6, f32 a7, f32 a8);
+ItemEntry* itemEntry(const char* name, ItemType type, u16 a3, f32 a6, f32 a7, f32 a8, s32 evtId, s32 a5);
 void itemFlagOn(ItemEntry* item, u16 flag);
 s32 itemStatus(ItemEntry* item, u32 mask);
 void itemStatusOn(ItemEntry* item, u32 mask);

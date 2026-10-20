@@ -714,7 +714,7 @@ USER_FUNC(coin_entry) {
     s32 v1 = evtGetValue(event, args[1]);
     s32 v2 = evtGetValue(event, args[2]);
     s32 v3 = evtGetValue(event, args[3]);
-    ItemEntry* item = itemEntry(NULL, ITEM_COIN, 3, -1, 0, (f32)v0, (f32)v1, (f32)v2);
+    ItemEntry* item = itemEntry(NULL, ITEM_COIN, 3, (f32)v0, (f32)v1, (f32)v2, -1, 0);
 
     itemStatusOn(item, 0x10);
     item->boundRate = 0.8f;

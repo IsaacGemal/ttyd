@@ -3709,7 +3709,7 @@ USER_FUNC(btlevtcmd_DispItemIcon) {
     e = evtGetValue(event, args[4]);
     if (isFirstCall) {
         event->userdata[0] = e;
-        entry = itemEntry((const char*)0, (ItemType)d, 0x11, -1, 0, (f32)a, (f32)b, (f32)c);
+        entry = itemEntry((const char*)0, (ItemType)d, 0x11, (f32)a, (f32)b, (f32)c, -1, 0);
         event->userdata[1] = (s32)entry;
         return 0;
     }
@@ -3759,7 +3759,7 @@ USER_FUNC(btlevtcmd_CommandFlyItem) {
                 pos.y += unit->mSizeMultiplier * (f32)BtlUnit_GetHeight(unit);
             }
         }
-        event->userdata[1] = (s32)itemEntry(NULL, (ItemType)itemId, 0x11, -1, 0, pos.x, pos.y, pos.z);
+        event->userdata[1] = (s32)itemEntry(NULL, (ItemType)itemId, 0x11, pos.x, pos.y, pos.z, -1, 0);
         effItemGetEntry(0xA, pos.x, 12.0f + pos.y, pos.z - 5.0f);
         if (kind == UNIT_MARIO) {
             psndSFXOn_3D("SFX_ITEM_MARIO_USE1", &pos);

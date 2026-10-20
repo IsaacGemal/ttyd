@@ -2905,23 +2905,9 @@ s32 mobj_badgeblk(MapObjectEntry* obj) {
                     mobjRunEvent(obj, obj->eventCode);
                 } else if (*(s32*)obj->unk1A0 != 0x79) {
                     ItemEntry* item;
-#ifdef MUST_MATCH
-                    // Two-step sum loads the 0.04 constant into f2 (the target's register) instead of f1.
-                    f32 y = 40.0f;
-
-                    y += obj->position.y;
-#else
                     f32 y = 40.0f + obj->position.y;
-#endif
-#ifdef MUST_MATCH
-                    // Float arguments evaluate before evtId, as in mobj_kururing_floor (see the note there).
-                    ((ItemEntry* (*)(const char*, ItemType, u16, f32, f32, f32, s32, s32))itemEntry)(
-                        obj->name, (ItemType)(*(s32*)obj->unk1A0), 4, obj->position.x, y, obj->position.z,
-                        obj->flagVar, 0);
-#else
-                    itemEntry(obj->name, (ItemType)(*(s32*)obj->unk1A0), 4, obj->flagVar, 0,
-                              obj->position.x, y, obj->position.z);
-#endif
+                    itemEntry(obj->name, (ItemType)(*(s32*)obj->unk1A0), 4,
+                        obj->position.x, y, obj->position.z, obj->flagVar, 0);
                     item = itemNameToPtr(obj->name);
                     itemFlagOn(item, 0x10);
                     item->boundRate = 0.7f;
@@ -2931,8 +2917,7 @@ s32 mobj_badgeblk(MapObjectEntry* obj) {
                     psndSFXOn_3D((const char*)0x1BC, &obj->position);
                 } else {
                     pouchAddCoin(1);
-                    itemEntry(NULL, (ItemType)0x79, 0xf, -1, 0, obj->position.x, obj->position.y,
-                              obj->position.z);
+                    itemEntry(NULL, (ItemType)0x79, 0xf, obj->position.x, obj->position.y, obj->position.z, -1, 0);
                     evtSetValue(NULL, obj->flagVar, 1);
                     psndSFXOn_3D((const char*)0x5B, &obj->position);
                 }
@@ -3042,8 +3027,7 @@ s32 mobj_powerupblk(MapObjectEntry* obj) {
                     gp->systemLevelFlags |= 3;
                     psndSFXOn_3D((const char*)0x201C0, &obj->position);
                     animPoseSetAnim(obj->poseId, "A_1", 1);
-                    itemEntry(PB_BLK1, (ItemType)0x57, 0xf, -1, 0, obj->position.x,
-                              obj->position.y, obj->position.z);
+                    itemEntry(PB_BLK1, (ItemType)0x57, 0xf, obj->position.x, obj->position.y, obj->position.z, -1, 0);
                     obj->state++;
                 }
             }
@@ -3061,9 +3045,8 @@ s32 mobj_powerupblk(MapObjectEntry* obj) {
             if (*(s32*)&obj->unk1A0[4] != 0) {
                 (*(s32*)&obj->unk1A0[4])--;
             } else {
-                itemForceGet(itemEntry(PB_BLK2, (ItemType)0x57, 0x11, -1, 0,
-                                       obj->position.x, 40.0f + obj->position.y,
-                                       obj->position.z));
+                itemForceGet(itemEntry(PB_BLK2, (ItemType)0x57, 0x11,
+                    obj->position.x, 40.0f + obj->position.y, obj->position.z, -1, 0));
                 evtSetValue(NULL, obj->flagVar, 1);
                 marioKeyOn();
                 if (strcmp(gp->currentMapName, PB_DOU02) == 0) {
@@ -3247,8 +3230,7 @@ s32 mobj_10countblk(MapObjectEntry* obj) {
                     mobjRunEvent(obj, obj->eventCode);
                 } else {
                     pouchAddCoin(1);
-                    itemEntry(NULL, (ItemType)0x79, 0xf, -1, 0, obj->position.x, obj->position.y,
-                              obj->position.z);
+                    itemEntry(NULL, (ItemType)0x79, 0xf, obj->position.x, obj->position.y, obj->position.z, -1, 0);
                     obj->timer = 0xC8;
                 }
                 obj->state++;
@@ -3266,8 +3248,7 @@ s32 mobj_10countblk(MapObjectEntry* obj) {
             } else if (obj->flags & MOBJ_FLAG_TRIGGERED) {
                 psndSFXOn_3D((const char*)0x1BF, &obj->position);
                 pouchAddCoin(1);
-                itemEntry(NULL, (ItemType)0x79, 0xf, -1, 0, obj->position.x, obj->position.y,
-                          obj->position.z);
+                itemEntry(NULL, (ItemType)0x79, 0xf, obj->position.x, obj->position.y, obj->position.z, -1, 0);
                 obj->flags &= ~MOBJ_FLAG_TRIGGERED;
                 animPoseSetAnim(obj->poseId, "A_1", 1);
             }
@@ -3656,17 +3637,7 @@ s32 mobj_kururing_floor(MapObjectEntry* obj) {
                     f32 y = 30.0f;
 
                     y += obj->position.y;
-#ifdef MUST_MATCH
-                    // The target evaluates the floats before evtId: `itemEntry`'s declared parameter order must be
-                    // (name, type, a3, f32, f32, f32, evtId, a5), not the header's (name, type, a3, evtId, a5, f32...).
-                    // The registers are identical either way; only the evaluation order (and so the schedule)
-                    // differs. Reported in REPORT.md; this cast reproduces the target order until the header is fixed.
-                    if (((ItemEntry* (*)(const char*, ItemType, u16, f32, f32, f32, s32, s32))itemEntry)(
-                            obj->name, 0x7d, 4, obj->position.x, y, obj->position.z, obj->flagVar, 0) != NULL) {
-#else
-                    if (itemEntry(obj->name, 0x7d, 4, obj->flagVar, 0, obj->position.x,
-                                  y, obj->position.z) != NULL) {
-#endif
+                    if (itemEntry(obj->name, 0x7d, 4, obj->position.x, y, obj->position.z, obj->flagVar, 0) != NULL) {
                         item = itemNameToPtr(obj->name);
                         itemFlagOn(item, 0x10);
                         item->boundRate = 0.6f;
@@ -3936,9 +3907,8 @@ s32 mobj_koopa_ojama_blk_evt(MapObjectEntry* obj) {
             psndSFXOn_3D((const char*)0x1C4, &obj->position);
             effMObjBrokenEntry(5, obj->position.x, 25.0f + obj->position.y,
                                25.0f + obj->position.z);
-            if ((item = itemEntry(obj->name, (ItemType)0x59, 4, -1, (s32)kpa_powerup_evt,
-                                  obj->position.x, 25.0f + obj->position.y,
-                                  obj->position.z)) != NULL) {
+            if ((item = itemEntry(obj->name, (ItemType)0x59, 4,
+                obj->position.x, 25.0f + obj->position.y, obj->position.z, -1, (s32)kpa_powerup_evt)) != NULL) {
                 itemStatusOn(item, 0x10);
                 itemFlagOn(item, 0x14);
                 item->lifeTime = 0x2710;
@@ -4200,9 +4170,8 @@ s32 mobj_koopa_badgeblk(MapObjectEntry* obj) {
                     } else {
                         if (*(s32*)obj->unk1A0 == 0x59) {
                             ItemEntry* item;
-                            itemEntry(obj->name, (ItemType)(*(s32*)obj->unk1A0), 4, -1,
-                                      (s32)kpa_powerup_evt, obj->position.x,
-                                      12.5f + obj->position.y, obj->position.z);
+                            itemEntry(obj->name, (ItemType)(*(s32*)obj->unk1A0), 4,
+                                obj->position.x, 12.5f + obj->position.y, obj->position.z, -1, (s32)kpa_powerup_evt);
                             item = itemNameToPtr(obj->name);
                             itemStatusOn(item, 0x10);
                             itemFlagOn(item, 0x14);
@@ -4216,8 +4185,8 @@ s32 mobj_koopa_badgeblk(MapObjectEntry* obj) {
                             psndSFXOn_3D((const char*)0x836, &obj->position);
                         } else {
                             kpaAddCoin(1);
-                            itemEntry(NULL, (ItemType)0x79, 0xf, -1, 0, obj->position.x, obj->position.y,
-                                      obj->position.z);
+                            itemEntry(NULL, (ItemType)0x79, 0xf,
+                                obj->position.x, obj->position.y, obj->position.z, -1, 0);
                             evtSetValue(NULL, obj->flagVar, 1);
                             psndSFXOn_3D((const char*)0x5B, &obj->position);
                         }
