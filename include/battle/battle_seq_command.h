@@ -8,6 +8,8 @@ typedef struct BattleWeapon BattleWeapon;
 typedef struct BattleWork BattleWork;
 
 #include <dolphin/types.h>
+#include "battle/battle_unit.h"
+#include "mario/mario_pouch.h"
 
 typedef struct BattleCommandCursor {
     s32 field_0; // 0x0
@@ -15,14 +17,82 @@ typedef struct BattleCommandCursor {
     s32 unk8;    // 0x8
 } BattleCursor;
 
+// Element layouts of the battle command menu tables inside BattleCommand. Each mirrors the matching
+// BattleWorkCommand* entry in battle.h (same offsets and strides) and is named by the reader in
+// battle_seq_command.c that uses it.
+typedef struct BattleCommandAction {
+    u32 mType;          // 0x0, 0 jump, 1 hammer, 2 item, 4 super action, 5 operation, 6 tech/party, 0xD lecture end
+    BOOL mEnabled;      // 0x4
+    char* mName;        // 0x8
+    u16 mIcon;          // 0xC
+    u8 pad_0xE[2];      // 0xE
+    u32 mDisableReason; // 0x10, 3 when mEnabled is 0, 0 when it is 1
+} BattleCommandAction;  // 0x14
+
+typedef struct BattleCommandWeapon {
+    BattleWeapon* mWeaponParams; // 0x0
+    u32 field_0x4;               // 0x4
+    char* mName;                 // 0x8
+    u16 mIcon;                   // 0xC, read at commandMenu + idx * 0x1C + 0x8C by DrawWeaponWin
+    u8 pad_0xE[2];               // 0xE
+    u32 mIndex;                  // 0x10, -1 for the built-in Jump and Hammer weapons
+    ItemType mItem;              // 0x14
+    u32 field_0x18;              // 0x18
+} BattleCommandWeapon;           // 0x1C
+
+typedef struct BattleCommandOperation {
+    u32 mType;          // 0x0
+    BOOL mEnabled;      // 0x4
+    u32 field_0x8;      // 0x8
+    char* mName;        // 0xC
+    u16 mIcon;          // 0x10
+    u8 pad_0x12[2];     // 0x12
+    char* mDescription; // 0x14
+    u32 mWeaponCost;    // 0x18
+} BattleCommandOperation; // 0x1C
+
+typedef struct BattleCommandParty {
+    BattleUnitType mPartyId; // 0x0
+    BOOL mEnabled;           // 0x4
+    char* mName;             // 0x8
+    u16 mIcon;               // 0xC
+    u8 pad_0xE[2];           // 0xE
+    char* mDescription;      // 0x10
+    u16 mCurrentHP;          // 0x14
+    u16 mMaxHP;              // 0x16
+} BattleCommandParty;        // 0x18
+
+typedef struct BattleCommandMultiItem {
+    BOOL mEnabled;      // 0x0
+    char* mName;        // 0x4
+    char* mDescription; // 0x8
+    u16 mIcon;          // 0xC
+    u8 pad_0xE[2];      // 0xE
+    u32 mWeaponCost;    // 0x10
+    u32 field_0x14;     // 0x14
+} BattleCommandMultiItem; // 0x18
+
 typedef struct BattleCommand {
-    s32 unk0;                 // 0x0
-    s32 field_4;              // 0x4
-    u8 unk8[0x498 - 0x8];     // 0x8
-    BattleCursor cursor[14];  // 0x498
-    u8 unk540[0x55C - 0x540]; // 0x540
-    void* field_55C;          // 0x55C
-    u8 unk560[0x574 - 0x560]; // 0x560
+    s32 unk0;                                 // 0x0
+    s32 field_4;                              // 0x4
+    BattleCommandAction actionTable[6];       // 0x8
+    BattleCommandWeapon weaponTable[21];      // 0x80
+    BattleCommandOperation operationTable[7]; // 0x2CC
+    BattleCommandParty partyTable[8];         // 0x390
+    BattleCommandMultiItem multiItemTable[3]; // 0x450
+    BattleCursor cursor[14];                  // 0x498
+    s32 actKind;                              // 0x540, action mType (get_actkind reads it); _btlcmd_GetCursorPtr switches on it
+    s32 savedActKind;                         // 0x544, actKind saved when 0xC is set, restored by the restore path
+    s32 operationKind;                        // 0x548, operation mType, switched on in the operation menu
+    s32 partyChangeId;                        // 0x54C, party mPartyId; BattleWork 0x1C68, passed to BattlePartyAnimeLoad
+    u8 multiItemKind;                         // 0x550, multiItemTable[i].pad_0xE[0] of the confirmed item
+    u8 cancelled;                             // 0x551, set by the cancel path, read by the action setup
+    u8 pad_0x552[0x554 - 0x552];              // 0x552
+    s32 restoreId;                            // 0x554, compared with unk0 to clear the restore state
+    u8 restoreState;                          // 0x558, set to 1 or 2 when a sub-menu opens; tested by BattleMenuKeyOKInACT
+    u8 pad_0x559[0x55C - 0x559];              // 0x559
+    void* field_55C;                          // 0x55C
+    u8 unk560[0x574 - 0x560];                 // 0x560
 } BattleCommand;
 // The battle-command error event script. It is a .sdata object in battle_seq_command.c; the declspec
 // lets BattleCommandInput emit the target's `li r3, _btl_cmd_error_msg_event@sda21` address form.

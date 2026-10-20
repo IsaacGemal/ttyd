@@ -22,10 +22,8 @@
 USER_FUNC(_disable_restore_command_cursor) {
     BattleWork* wp = _battleWorkPointer;
 
-    // BattleCommand::unk540 spans 0x540..0x55C; commandMenu is at 0x171C, so
-    // offset 0x554 (s32) / 0x558 (u8) into it have no named field yet.
-    *(s32*)&wp->commandMenu.unk540[0x14] = 0;
-    wp->commandMenu.unk540[0x18] = 0;
+    wp->commandMenu.restoreId = 0;
+    wp->commandMenu.restoreState = 0;
     return EVT_RETURN_DONE;
 }
 

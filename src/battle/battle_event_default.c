@@ -86,13 +86,13 @@ USER_FUNC(_backfire) {
 
 
 static s32 _anime_load(EventEntry* event, BOOL isFirstCall) {
-    BattlePartyAnimeLoad(*(s32*)((u8*)_battleWorkPointer + 0x1C68));
+    BattlePartyAnimeLoad(_battleWorkPointer->commandMenu.partyChangeId);
     return EVT_RETURN_DONE;
 }
 
 
 static s32 _anime_load_wait(EventEntry* event, BOOL isFirstCall) {
-    return BattlePartyAnimeLoad(*(s32*)((u8*)_battleWorkPointer + 0x1C68)) ? EVT_RETURN_DONE
+    return BattlePartyAnimeLoad(_battleWorkPointer->commandMenu.partyChangeId) ? EVT_RETURN_DONE
                                                                             : EVT_RETURN_BLOCK;
 }
 

@@ -181,7 +181,7 @@ void SelectedItemCoordinateColorUpDate(void) {
 }
 
 BOOL BattleMenuKeyOKInACT(BattleWork* wp) {
-    if (wp->commandMenu.unk540[0x18] == 0 &&
+    if (wp->commandMenu.restoreState == 0 &&
         ((BattleMenuWork*)wp->commandMenu.field_55C)->inputReady == 0) {
         return FALSE;
     }
@@ -1795,7 +1795,7 @@ void DrawWeaponWin(void) {
         s32 idx = (s32)window->scrollPos + i;
         if (idx < cursor->unk8) {
             arr88[i] = ((BattleMenuWeaponEntry*)window->weaponEntries)[idx].enabled;
-            arr24[i] = *(u16*)((u8*)cmd + idx * 0x1c + 0x8c);
+            arr24[i] = cmd->weaponTable[idx].mIcon;
             arr6C[i] = (s32)((BattleMenuWeaponEntry*)window->weaponEntries)[idx].label;
             if (((BattleMenuWeaponEntry*)window->weaponEntries)[idx].weapon != 0) {
                 arr50[i] = BtlUnit_GetWeaponCost(unit, ((BattleMenuWeaponEntry*)window->weaponEntries)[idx].weapon);
@@ -1809,7 +1809,7 @@ void DrawWeaponWin(void) {
             }
         }
     }
-    DrawMainIcon(window, (void*)((u8*)wp + 0x1724), mats, centers, scales);
+    DrawMainIcon(window, (void*)wp->commandMenu.actionTable, mats, centers, scales);
     DrawSubIcon(window, rot, arr88, arr24, arr6C, arr50, arr34, 0, 0);
     DrawMenuCursorAndScrollArrow((Vec){ -60.0f, 35.0f, 0.0f });
     if (sel != 0) {
@@ -1887,7 +1887,7 @@ void DrawOperationWin(void) {
     BattleMenuDispEntryOp* entry;
     s32 i;
     BattleGetUnitPtr(wp, wp->activeUnitId);
-    entries = (BattleMenuDispEntryOp*)((u8*)wp + 0x19e8);
+    entries = (BattleMenuDispEntryOp*)wp->commandMenu.operationTable;
     DrawSubMenuCommonProcess(&outX, &outY, mats, centers, scales, rot);
     for (i = 0; i < 7; i++) {
         s32 idx = (s32)window->scrollPos + i;
@@ -1904,7 +1904,7 @@ void DrawOperationWin(void) {
             arr34[i] = 0;
         }
     }
-    DrawMainIcon(window, (void*)((u8*)wp + 0x1724), mats, centers, scales);
+    DrawMainIcon(window, (void*)wp->commandMenu.actionTable, mats, centers, scales);
     DrawSubIcon(window, rot, arr88, arr24, arr6C, arr50, arr34, 0, 0);
     DrawMenuCursorAndScrollArrow((Vec){ -60.0f, 35.0f, 0.0f });
     if (entries[cursor->field_0].helpMsg != 0) {
@@ -1961,7 +1961,7 @@ void DrawChangePartyWin(void) {
     window = (BattleMenuWork*)wp->commandMenu.field_55C;
     cursor = window->cursor;
     BattleGetUnitPtr(wp, wp->activeUnitId);
-    entries = (BattleMenuDispEntry*)((u8*)wp + 0x1aac);
+    entries = (BattleMenuDispEntry*)wp->commandMenu.partyTable;
     DrawSubMenuCommonProcess(&outX, &outY, mats, centers, scales, rot);
     for (i = 0; i < 7; i++) {
         s32 idx = (s32)window->scrollPos + i;
@@ -1978,7 +1978,7 @@ void DrawChangePartyWin(void) {
             arr34[i] = 0;
         }
     }
-    DrawMainIcon(window, (void*)((u8*)wp + 0x1724), mats, centers, scales);
+    DrawMainIcon(window, (void*)wp->commandMenu.actionTable, mats, centers, scales);
     DrawSubIcon(window, rot, arr88, arr24, arr6C, arr50, arr34, (void*)entries, 1);
     DrawMenuCursorAndScrollArrow((Vec){ -60.0f, 35.0f, 0.0f });
     if (entries[cursor->field_0].helpMsg != 0) {
@@ -2031,7 +2031,7 @@ void DrawMultiItemWin(void) {
     s32 i;
 
     BattleGetUnitPtr(wp, wp->activeUnitId);
-    entries = (BattleMenuMultiEntry*)((u8*)wp + 0x1b6c);
+    entries = (BattleMenuMultiEntry*)wp->commandMenu.multiItemTable;
     DrawSubMenuCommonProcess(&outX, &outY, mats, centers, scales, rot);
     for (i = 0; i < 7; i++) {
         s32 idx = (s32)window->scrollPos + i;
@@ -2047,7 +2047,7 @@ void DrawMultiItemWin(void) {
             arr34[i] = 0;
         }
     }
-    DrawMainIcon(window, (void*)((u8*)wp + 0x1724), mats, centers, scales);
+    DrawMainIcon(window, (void*)wp->commandMenu.actionTable, mats, centers, scales);
     DrawSubIcon(window, rot, arr88, arr24, arr6C, arr50, arr34, 0, 0);
     DrawMenuCursorAndScrollArrow((Vec){ -60.0f, 35.0f, 0.0f });
     if (entries[cursor->field_0].helpMsg != 0) {
