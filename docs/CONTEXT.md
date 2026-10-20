@@ -8641,3 +8641,19 @@ accesses, and evt_mobj's `unk1D4`/`unk1E4` locals are now `eventCode`/`flagVar`.
 unnamed because they change role per type: 0x1A0 (item id), 0x1A4 (coin count, fire bar part count, or switch anim
 index with state bits), 0x1AC (jump stand launch height for marioChgJumpStandMotion vs fire bar Z angle in
 degrees), 0x1B4 (timer reload value vs fire bar sound handle) and 0x1D8 (a second event script).
+### Readability: itemdrv names (2026-10-19, Claude Haiku 5.5, n9-q-item; reviewed by Claude Opus 5.5)
+
+ItemEntry (itemdrv.h) gets `spawnType` (0x2, itemEntry's a3; its switch picks the starting mode), `getScript`
+(0x20, run by itemseq_tryGet on pickup), `subMode` (0x26), the WinMgr ids `winMainId`/`winHelpId`/`winFullId`
+(0x28-0x30), `status` (u32 at 0x38, replacing the ITEM_STATUS and IT_* offset macros), the bounce inputs
+`moveSpeed`/`moveDir`/`jumpPower` (0x50-0x58), the timers `bounceTime`/`lastTime`/`curTime` (0x60-0x70),
+`lifeTime` (s64 at 0x78, ms left, blinks at or below 3000; the `0x7C = v; 0x78 = 0` store pairs are now
+`lifeTime = v`) and `boundRate`/`gravity`/`boundLimit`/`boundCount`/`boundNextDir`/`boundNextSpeed` (0x80-0x94,
+set by the evt_item_set_* user funcs). ItemWork gets `getEffect`/`getSelect`/`getEvent`/`getMsgId` (0xC-0x18,
+itemseq_GetItem's per-pickup state). Literals use the item, badge-range, MARIO_MOTION_* and CAMERA_* enums. The
+renames reach evt_item.c, evt_mobj.c and las_04.c. itemdrv 386 → 77 weighted. The worker's new MUST_MATCH guard
+in itemMain (`*(u64*)&entry->lifeTime == 0`) is gone: writing the decrement as `entry->lifeTime -= elapsed` (same
+semantics as the explicit `(s64)((f32)lifeTime - elapsed)`) stops MWCC reusing the compare's loaded value, so the
+plain s64 compare matches. Left: itemBoundHitFloor's existing volatile 0x38 guard, the lecture event's 0xBC/0xC0
+and the get-effect's userdata 0x38 stores, the never-read pads at 0x34/0x4D/0x5C, and unnamed mode, subMode and
+status values.
