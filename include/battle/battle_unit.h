@@ -308,7 +308,7 @@ typedef enum BattleUnitType {
     UNIT_VIVIAN,                          // 0xE4
     UNIT_BOBBERY,                         // 0xE5
     UNIT_MS_MOWZ,                         // 0xE6
-#define TYPE_PARTNER_MAX UNIT_MS_MOWZ + 1 // 0xE7
+#define TYPE_PARTNER_MAX (UNIT_MS_MOWZ + 1) // 0xE7, exclusive
     UNIT_MAX,                             // 0xE7
 } BattleUnitType;
 
@@ -361,16 +361,16 @@ typedef struct BattleWorkUnitPartBlur {
 // Move-sound state of a unit (BattleUnit 0x188) or part (BattleUnitPart 0xC0), set up by BtlUnit_LoadSeMode and
 // BtlUnit_SetSeMode and played by _MoveSoundControlCore.
 typedef struct BtlUnitSeMode {
-    s32 sfxA;         // 0x0, sound name; plays alone while sfxB is 0, else on odd beats
+    s32 sfxA;         // 0x0, sound name; looped at the unit's position while sfxB is 0, else played on odd beats
     s32 sfxB;         // 0x4, sound name for the even beats
     s16 param8;       // 0x8, written by BtlUnit_SetSeMode, never read in this tree
     s16 paramA;       // 0xA, written by BtlUnit_SetSeMode, never read in this tree
-    s16 delay;        // 0xC, countdown restart value
-    s16 intervalA;    // 0xE, frames between sfxA beats
-    s16 intervalB;    // 0x10, frames between sfxB beats
+    s16 delay;        // 0xC, frames before the first beat; LoadSeMode copies it into countdown
+    s16 intervalA;    // 0xE, frames after an sfxA beat
+    s16 intervalB;    // 0x10, frames after an sfxB beat
     s16 countdown;    // 0x12, frames left before the next beat
     s16 beat;         // 0x14, beat counter; its low bit picks sfxA (odd) or sfxB (even)
-    s32 sfxHandle;    // 0x18, handle of the looping sound, -1 when none
+    s32 sfxHandle;    // 0x18, handle of the looping sfxA, -1 when none
 } BtlUnitSeMode;
 
 // The four sound-mode presets BtlUnit_LoadSeMode copies from, selected by its `mode` argument. Mode 2 holds only the
@@ -442,7 +442,7 @@ typedef struct BattleWorkUnitPart {
     Vec mHitOffset;                                // 0x17C
     Vec mHitCursorBaseOffset;                      // 0x188, guess
     Vec mHitCursorOffset;                          // 0x194
-    s16 detectOffsetX;                             // 0x1A0, x offset of the part's search box, scaled by facing (battle_detect)
+    s16 detectOffsetX;                             // 0x1A0, x offset added to the part's sampling position, times facing (battle_detect)
     u8 field_0x1A2[0x1AC - 0x1A2];                 // 0x1A2
     PartsAttribute_Flags attributes;               // 0x1AC
     PartsCounterAttribute_Flags counterAttributes; // 0x1B0
@@ -454,8 +454,8 @@ typedef struct BattleWorkUnitPart {
     f32 field_0x208;                               // 0x208, 1.0 at entry
     f32 motionSpeed;                               // 0x20C, btlevtcmd_AnimeSetMotionSpeed
     void* dispCallback;                            // 0x210, called with (part, 0) and (part, 1) by btlUnitPartsDisp
-    u8 effectStopped;                              // 0x214
-    u8 statusPoseState;                            // 0x215, statusPoseControl's switch
+    u8 statusPoseStep;                             // 0x214, 0 until the status overlay is applied, then 1 (2 in a two-pattern's second stage)
+    u8 statusPoseKind;                             // 0x215, status overlay statusPoseControl draws: 0 none, 2/3/7 one-pattern, 4/5/6 two-pattern
     u8 pad_0x216[2];                               // 0x216
     GXColor evtColor;                              // 0x218, animPoseSetMaterialEvtColor's colour, RGB scaled by the owner's mMoveColorCur
     BattleWorkUnitPartBlur blurWork;               // 0x21C

@@ -63,14 +63,6 @@ typedef struct HpGaugeLocal {
     f32 field_18; // 0x18
 } HpGaugeLocal;
 
-typedef struct BattleWeaponFields {
-    u8 pad_0x0[0x8];
-    s32 itemId;    // 0x8
-    u8 pad_0xC[0x11 - 0xC];
-    u8 field_0x11; // 0x11
-    u8 field_0x12; // 0x12
-} BattleWeaponFields;
-
 BOOL BtlUnit_Init(void) {
     int i;
     BattleWork* wp = _battleWorkPointer;
@@ -232,8 +224,8 @@ BattleUnit* BtlUnit_Entry(BattleUnitSetup* setup) {
         *(u8*)((u8*)part + 0x1C4) = 0;
         part->field_0x208 = 1.0f;
         part->motionSpeed = 1.0f;
-        part->statusPoseState = 0;
-        part->effectStopped = 0;
+        part->statusPoseKind = 0;
+        part->statusPoseStep = 0;
         part->poseSoundEventId = -1;
         part->partName = part->mKindPartParams->partName;
 
@@ -1985,12 +1977,12 @@ void BtlUnit_SetMaxFp(BattleUnit* unit, s32 value) {
 // Keep BtlUnit_GetWeaponCost out of line: the original calls it rather than inlining its switch.
 #pragma dont_inline on
 s32 BtlUnit_GetWeaponCost(BattleUnit* unit, BattleWeapon* weapon) {
-    s32 cost = ((BattleWeaponFields*)weapon)->field_0x11;
+    s32 cost = weapon->baseFpCost;
     s32 badgeCount;
 
-    if (((BattleWeaponFields*)weapon)->itemId != 0) {
-        badgeCount = pouchEquipCheckBadge(((BattleWeaponFields*)weapon)->itemId);
-        switch (((BattleWeaponFields*)weapon)->itemId) {
+    if (weapon->item != 0) {
+        badgeCount = pouchEquipCheckBadge(weapon->item);
+        switch (weapon->item) {
             case 0xF0:
             case 0xF1:
             case 0xF2:
@@ -2043,9 +2035,9 @@ BOOL BtlUnit_CheckWeaponCost(BattleUnit* unit, BattleWeapon* weapon) {
 #ifdef MUST_MATCH
     /* Match-only: the header declares pouchGetAP as `s16`, but the target consumed the raw 32-bit
        return (no extsh). Call it through an s32-returning prototype, as evt_kinopio.c does. */
-    return (*(s32(*)(void))pouchGetAP)() >= (s32)((BattleWeaponFields*)weapon)->field_0x12 * 100;
+    return (*(s32(*)(void))pouchGetAP)() >= (s32)weapon->baseSpCost * 100;
 #else
-    return pouchGetAP() >= (s32)((BattleWeaponFields*)weapon)->field_0x12 * 100;
+    return pouchGetAP() >= (s32)weapon->baseSpCost * 100;
 #endif
 }
 
@@ -2067,9 +2059,9 @@ void BtlUnit_PayWeaponCost(BattleUnit* unit, BattleWeapon* weapon) {
 #ifdef MUST_MATCH
     /* Match-only: the header declares pouchAddAP as taking `s16`, but the target passed the full
        32-bit delta (no extsh). Call it through an s32-taking prototype. */
-    (*(void(*)(s32))pouchAddAP)(-((BattleWeaponFields*)weapon)->field_0x12 * 100);
+    (*(void(*)(s32))pouchAddAP)(-weapon->baseSpCost * 100);
 #else
-    pouchAddAP(-((BattleWeaponFields*)weapon)->field_0x12 * 100);
+    pouchAddAP(-weapon->baseSpCost * 100);
 #endif
 }
 
