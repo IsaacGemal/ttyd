@@ -10,18 +10,18 @@ typedef struct BattleWork BattleWork;
 
 // Scratch space for BattleCheckCounter, zeroed and flagged by BattleInitCounterPreCheckWork.
 typedef struct CounterPreCheckWork {
-	s32 field_0x0;  // 0x0
-	s32 field_0x4;  // 0x4
-	s32 field_0x8;  // 0x8
-	s32 field_0xC;  // 0xC
-	s32 field_0x10; // 0x10
-	s32 field_0x14; // 0x14
-	s32 field_0x18; // 0x18
-	s32 field_0x1C; // 0x1C
-	s32 field_0x20; // 0x20, counter type (0x2B..0x36)
-	s32 field_0x24; // 0x24, damage code (0x12B..0x136)
-	s32 field_0x28; // 0x28, counter count
-	s32 field_0x2C; // 0x2C, status id (0x1F..0x24)
+	s32 field_0x0;      // 0x0, guards the counter loop in BattleCheckDamage
+	s32 halfDamage;     // 0x4, set by payback and poison counters; adds half the hit damage
+	s32 inflictBurn;    // 0x8, fiery status counter: the attacker gets STATUS_BURN
+	s32 inflictPoison;  // 0xC, poison status counter: the attacker gets STATUS_POISON
+	s32 inflictElectric; // 0x10, electric status counter: the attacker gets STATUS_ELECTRIC
+	s32 inflictFreeze;  // 0x14, icy status counter: the attacker gets STATUS_FREEZE
+	s32 bombEffect;     // 0x18, hold fast counter: bomb effect and thunder sfx
+	s32 returnPostage;  // 0x1C, return postage badge: adds half the hit damage
+	s32 counterType;    // 0x20, counter kind (0x2B..0x36), the switch at the end of BattleCheckCounter returns 7..17 for it
+	s32 damageCode;     // 0x24, damage code (0x12B..0x136); nonzero once a counter matched
+	s32 counterDamage;  // 0x28, damage the counter deals
+	s32 hitEventCode;   // 0x2C, passed to BattleRunHitEvent (0x1F..0x24)
 } CounterPreCheckWork;
 
 typedef struct BattleVulnerableStatus {
