@@ -42,17 +42,17 @@ static USER_FUNC(next);
 
 typedef struct DemoWork {
     u32 field_0x00;
-    f32 field_0x04;
-    s32 field_0x08;
-    s32 field_0x0C;
-    f32 field_0x10;
-    f32 field_0x14;
-    f32 field_0x18;
-    f32 field_0x1C;
-    void* field_0x20;
-    FileEntry* field_0x24;
-    s32 field_0x28;
-    s32 field_0x2C;
+    f32 bookAngle;        // book_r; the book is turned by -bookAngle about y
+    s32 page;             // -1 = none; next() counts up, demo_cap captures at 4
+    s32 captured;         // set once demo_cap has copied the frame
+    f32 fade;             // adjust's angle; the picture alpha is 255 * (1 - fade)
+    f32 scale;            // demo_scale ramps 0.6 -> 1.5
+    f32 posX;
+    f32 posY;             // adjust: -105 * sin(pi/2 * fade)
+    void* captureBuf;     // GXCopyTex destination: *(void**)captureBuf is the buffer
+    FileEntry* tplFile;   // demo.tpl
+    s32 winOpen;          // demo_winonoff argument, nonzero = window opening
+    s32 winAlpha;         // 0..0xCC, steps of 10 per frame
 } DemoWork;
 static DemoWork work;
 u32 buf[128];
@@ -87,18 +87,18 @@ static DemoWork* wp = &work;
 USER_FUNC(demo_init) {
     if (isFirstCall) {
         memset(wp, 0, sizeof(DemoWork));
-        wp->field_0x04 = 0.0f;
-        wp->field_0x08 = -1;
-        wp->field_0x0C = 0;
-        wp->field_0x10 = 0.0f;
-        wp->field_0x14 = 1.0f;
-        wp->field_0x18 = 0.0f;
-        wp->field_0x1C = 0.0f;
+        wp->bookAngle = 0.0f;
+        wp->page = -1;
+        wp->captured = 0;
+        wp->fade = 0.0f;
+        wp->scale = 1.0f;
+        wp->posX = 0.0f;
+        wp->posY = 0.0f;
         statusWinDispOff();
         psndSetFlag(4);
     }
     if ((u32)fileAsyncf(FILE_TYPE_TPL, 0, "%s/demo.tpl", getMarioStDvdRoot()) != 0) {
-        wp->field_0x24 = fileAllocf(FILE_TYPE_TPL, "%s/demo.tpl", getMarioStDvdRoot());
+        wp->tplFile = fileAllocf(FILE_TYPE_TPL, "%s/demo.tpl", getMarioStDvdRoot());
         gp->areaFadeOutType = 9;
         gp->areaFadeOutDuration = 500;
         return EVT_RETURN_DONE;
@@ -108,8 +108,8 @@ USER_FUNC(demo_init) {
 
 void demo_exit(void) {
     CameraEntry* cam = camGetPtr(8);
-    if (wp->field_0x24 != 0) {
-        fileFree(wp->field_0x24);
+    if (wp->tplFile != 0) {
+        fileFree(wp->tplFile);
     }
     psndClearFlag(4);
     cam = camGetPtr(4);
@@ -121,17 +121,17 @@ void demo_exit(void) {
 }
 
 void demo_cap(void) {
-    if (wp->field_0x08 == 4) {
-        if (wp->field_0x0C == 0) {
+    if (wp->page == 4) {
+        if (wp->captured == 0) {
             GXSetTexCopySrc(0, 0, 608, 480);
             GXSetTexCopyDst(608, 480, 6, 0);
-            GXCopyTex(*(void**)wp->field_0x20, 0);
+            GXCopyTex(*(void**)wp->captureBuf, 0);
             GXTexModeSync();
-            wp->field_0x0C = 1;
-        } else if (wp->field_0x10 != 0.0f) {
+            wp->captured = 1;
+        } else if (wp->fade != 0.0f) {
             GXSetTexCopySrc(0, 0, 608, 480);
             GXSetTexCopyDst(608, 480, 6, 0);
-            GXCopyTex(*(void**)wp->field_0x20, 0);
+            GXCopyTex(*(void**)wp->captureBuf, 0);
             GXTexModeSync();
         }
     }
@@ -160,17 +160,17 @@ void demo_desk(CameraId cameraId, void* param) {
     GXSetZMode(0, 3, 0);
     GXSetNumChans(1);
     GXSetChanCtrl(4, 0, 0, 0, 0, 0, 2);
-    GXSetChanMatColor(4, (GXColor) { 0xFF, 0xFF, 0xFF, (u8)(255.0f * (1.0f - wp->field_0x10)) });
+    GXSetChanMatColor(4, (GXColor) { 0xFF, 0xFF, 0xFF, (u8)(255.0f * (1.0f - wp->fade)) });
     GXSetNumTexGens(1);
     GXSetTexCoordGen2(0, 1, 4, 0x3C, 0, 0x7D);
-    TEXGetGXTexObjFromPalette((TEXPalette*)wp->field_0x24->data[0], &texObj, 0);
+    TEXGetGXTexObjFromPalette((TEXPalette*)wp->tplFile->data[0], &texObj, 0);
     GXLoadTexObj(&texObj, 0);
     GXSetNumTevStages(1);
     GXSetTevOrder(0, 0, 0, 4);
     GXSetTevOp(0, 0);
     GXSetTevSwapMode(0, 0, 0);
-    PSMTXTrans(m1, wp->field_0x18, wp->field_0x1C, 0.0f);
-    PSMTXScale(m2, wp->field_0x14, wp->field_0x14, wp->field_0x14);
+    PSMTXTrans(m1, wp->posX, wp->posY, 0.0f);
+    PSMTXScale(m2, wp->scale, wp->scale, wp->scale);
     PSMTXConcat(m1, m2, m1);
     PSMTXConcat(cam->view, m1, m1);
     GXLoadPosMtxImm(m1, 0);
@@ -225,7 +225,7 @@ void demo_img(CameraId cameraId, void* param) {
     f32 topoff = 35.0f;
 #endif
 
-    if (wp->field_0x08 == -1) {
+    if (wp->page == -1) {
         return;
     }
     GXSetProjection(cam->projection, cam->projType);
@@ -236,8 +236,8 @@ void demo_img(CameraId cameraId, void* param) {
     GXSetZMode(0, 3, 0);
     GXSetNumChans(1);
     GXSetChanCtrl(4, 0, 0, 0, 0, 0, 2);
-    GXSetChanMatColor(4, (GXColor) { 0xFF, 0xFF, 0xFF, (u8)(255.0f * (1.0f - wp->field_0x10)) });
-    TEXGetGXTexObjFromPalette((TEXPalette*)wp->field_0x24->data[0], &texObj, wp->field_0x08 + 8);
+    GXSetChanMatColor(4, (GXColor) { 0xFF, 0xFF, 0xFF, (u8)(255.0f * (1.0f - wp->fade)) });
+    TEXGetGXTexObjFromPalette((TEXPalette*)wp->tplFile->data[0], &texObj, wp->page + 8);
     GXLoadTexObj(&texObj, 0);
     GXSetNumTexGens(1);
     GXSetTexCoordGen2(0, 1, 4, 0x3C, 0, 0x7D);
@@ -246,8 +246,8 @@ void demo_img(CameraId cameraId, void* param) {
     GXSetTevOp(0, 0);
     GXSetTevAlphaIn(0, 7, 7, 7, 5);
     GXSetTevSwapMode(0, 0, 0);
-    PSMTXTrans(m1, wp->field_0x18, wp->field_0x1C, 0.0f);
-    PSMTXScale(m2, wp->field_0x14, wp->field_0x14, wp->field_0x14);
+    PSMTXTrans(m1, wp->posX, wp->posY, 0.0f);
+    PSMTXScale(m2, wp->scale, wp->scale, wp->scale);
     PSMTXConcat(m1, m2, m1);
     PSMTXConcat(cam->view, m1, m1);
     GXLoadPosMtxImm(m1, 0);
@@ -310,10 +310,10 @@ void demo_book(CameraId cameraId, void* param) {
 
     GXSetProjection(cam->projection, cam->projType);
     GXSetViewport(0.0f, 0.0f, 608.0f, 480.0f, 0.0f, 1.0f);
-    TEXGetGXTexObjFromPalette((TEXPalette*)wp->field_0x24->data[0], &texObj, 2);
+    TEXGetGXTexObjFromPalette((TEXPalette*)wp->tplFile->data[0], &texObj, 2);
     w = (f32)(u16)GXGetTexObjWidth(&texObj);
-    PSMTXTrans(m1, wp->field_0x18, wp->field_0x1C, 0.0f);
-    PSMTXScale(m2, wp->field_0x14, wp->field_0x14, wp->field_0x14);
+    PSMTXTrans(m1, wp->posX, wp->posY, 0.0f);
+    PSMTXScale(m2, wp->scale, wp->scale, wp->scale);
     PSMTXConcat(m1, m2, m1);
     PSMTXConcat(cam->view, m1, m2);
     PSMTXTrans(m1, -w / 2.0f + 8.0f, 0.0f, 0.0f);
@@ -324,10 +324,10 @@ void demo_book(CameraId cameraId, void* param) {
     GXSetZMode(0, 3, 0);
     GXSetNumChans(1);
     GXSetChanCtrl(4, 0, 0, 0, 0, 0, 2);
-    GXSetChanMatColor(4, (GXColor) { 0xFF, 0xFF, 0xFF, (u8)(255.0f * (1.0f - wp->field_0x10)) });
+    GXSetChanMatColor(4, (GXColor) { 0xFF, 0xFF, 0xFF, (u8)(255.0f * (1.0f - wp->fade)) });
     GXSetNumTexGens(1);
     GXSetTexCoordGen2(0, 1, 4, 0x3C, 0, 0x7D);
-    TEXGetGXTexObjFromPalette((TEXPalette*)wp->field_0x24->data[0], &texObj, 1);
+    TEXGetGXTexObjFromPalette((TEXPalette*)wp->tplFile->data[0], &texObj, 1);
     GXLoadTexObj(&texObj, 0);
     GXSetNumTevStages(1);
     GXSetTevOrder(0, 0, 0, 4);
@@ -340,7 +340,7 @@ void demo_book(CameraId cameraId, void* param) {
     GXSetVtxDesc(0xD, 1);
     GXSetVtxAttrFmt(0, 9, 1, 4, 0);
     GXSetVtxAttrFmt(0, 0xD, 1, 4, 0);
-    TEXGetGXTexObjFromPalette((TEXPalette*)wp->field_0x24->data[0], &texObj, 2);
+    TEXGetGXTexObjFromPalette((TEXPalette*)wp->tplFile->data[0], &texObj, 2);
     GXLoadTexObj(&texObj, 0);
     w = (f32)(u16)GXGetTexObjWidth(&texObj);
     h = (f32)(u16)GXGetTexObjHeight(&texObj);
@@ -359,8 +359,8 @@ void demo_book(CameraId cameraId, void* param) {
     h = (f32)(u16)GXGetTexObjHeight(&texObj);
     GXLoadPosMtxImm(m1, 0);
     GXSetCurrentMtx(0);
-    if (wp->field_0x08 >= 0) {
-        TEXGetGXTexObjFromPalette((TEXPalette*)wp->field_0x24->data[0], &texObj, wp->field_0x08 + 3);
+    if (wp->page >= 0) {
+        TEXGetGXTexObjFromPalette((TEXPalette*)wp->tplFile->data[0], &texObj, wp->page + 3);
         GXLoadTexObj(&texObj, 0);
         GXBegin(0x80, 0, 4);
         h95 = h * 0.95f;
@@ -386,11 +386,11 @@ void demo_book(CameraId cameraId, void* param) {
     GXSetTevOrder(0, 0, 0, 0xFF);
     GXSetTevOp(0, 3);
     GXSetTevSwapMode(0, 0, 0);
-    PSMTXRotRad(m3, 'y', 0.017453292f * -wp->field_0x04);
+    PSMTXRotRad(m3, 'y', 0.017453292f * -wp->bookAngle);
     PSMTXConcat(m1, m3, m3);
     GXLoadPosMtxImm(m3, 0);
     GXSetCurrentMtx(0);
-    TEXGetGXTexObjFromPalette((TEXPalette*)wp->field_0x24->data[0], &texObj, 1);
+    TEXGetGXTexObjFromPalette((TEXPalette*)wp->tplFile->data[0], &texObj, 1);
     GXLoadTexObj(&texObj, 0);
     GXBegin(0x80, 0, 4);
     GXPosition3f32(0.0f, h / 2.0f, 0.0f);
@@ -402,7 +402,7 @@ void demo_book(CameraId cameraId, void* param) {
     GXPosition3f32(0.0f, -h / 2.0f, 0.0f);
     GXTexCoord2f32(0.0f, 1.0f);
     GXSetCullMode(1);
-    TEXGetGXTexObjFromPalette((TEXPalette*)wp->field_0x24->data[0], &texObj, 2);
+    TEXGetGXTexObjFromPalette((TEXPalette*)wp->tplFile->data[0], &texObj, 2);
     GXLoadTexObj(&texObj, 0);
     GXBegin(0x80, 0, 4);
     GXPosition3f32(0.0f, h / 2.0f, 0.0f);
@@ -426,28 +426,28 @@ void demo_window(CameraId cameraId, void* param) {
     f32 right;
     f32 top;
 
-    if (wp->field_0x28 != 0) {
-        wp->field_0x2C += 10;
+    if (wp->winOpen != 0) {
+        wp->winAlpha += 10;
     } else {
-        wp->field_0x2C -= 10;
+        wp->winAlpha -= 10;
     }
-    if (wp->field_0x2C > 0xCC) {
-        wp->field_0x2C = 0xCC;
+    if (wp->winAlpha > 0xCC) {
+        wp->winAlpha = 0xCC;
     }
-    if (wp->field_0x2C < 0) {
-        wp->field_0x2C = 0;
+    if (wp->winAlpha < 0) {
+        wp->winAlpha = 0;
     }
     GXSetBlendMode(1, 4, 5, 0);
     GXSetZCompLoc(1);
     GXSetAlphaCompare(7, 0, 0, 7, 0);
     GXSetZMode(0, 3, 0);
-    TEXGetGXTexObjFromPalette((TEXPalette*)wp->field_0x24->data[0], &texObj, 0xD);
+    TEXGetGXTexObjFromPalette((TEXPalette*)wp->tplFile->data[0], &texObj, 0xD);
     GXLoadTexObj(&texObj, 0);
     w = (f32)(u16)GXGetTexObjWidth(&texObj);
     h = (f32)(u16)GXGetTexObjHeight(&texObj);
     GXSetNumChans(1);
     GXSetChanCtrl(4, 0, 0, 0, 0, 0, 2);
-    GXSetChanMatColor(4, (GXColor) { 0xFF, 0xFF, 0xFF, (u8)(wp->field_0x2C * 255 / 255) });
+    GXSetChanMatColor(4, (GXColor) { 0xFF, 0xFF, 0xFF, (u8)(wp->winAlpha * 255 / 255) });
     GXSetNumTexGens(1);
     GXSetTexCoordGen2(0, 1, 4, 0x3C, 0, 0x7D);
     GXSetNumTevStages(1);
@@ -482,7 +482,7 @@ void demo_window(CameraId cameraId, void* param) {
 USER_FUNC(demo_draw) {
     dispEntry(4, 9.0f, 7, demo_desk, 0);
     dispEntry(4, 8.0f, 7, demo_book, 0);
-    if (wp->field_0x10 != 0.0f) {
+    if (wp->fade != 0.0f) {
         dispEntry(7, 0.0f, 7, demo_img, 0);
     }
     dispEntry(8, 0.0f, 3, demo_window, 0);
@@ -490,7 +490,7 @@ USER_FUNC(demo_draw) {
 }
 
 USER_FUNC(demo_winonoff) {
-    wp->field_0x28 = evtGetValue(event, event->args[0]);
+    wp->winOpen = evtGetValue(event, event->args[0]);
     return EVT_RETURN_DONE;
 }
 
@@ -501,22 +501,22 @@ USER_FUNC(demo_scale) {
         event->savedTime = time;
     }
     t = (f32)(s32)((u64)((s32)time - (s32)event->savedTime) / (OS_TIMER_CLOCK / 1000)) / 12000.0f;
-    wp->field_0x14 = 600.0f * (1.0f - t) + 1500.0f * t;
-    wp->field_0x14 /= 1000.0f;
-    if (wp->field_0x14 >= 1.5f) {
-        wp->field_0x14 = 1.5f;
+    wp->scale = 600.0f * (1.0f - t) + 1500.0f * t;
+    wp->scale /= 1000.0f;
+    if (wp->scale >= 1.5f) {
+        wp->scale = 1.5f;
         return EVT_RETURN_DONE;
     }
     return EVT_RETURN_BLOCK;
 }
 
 USER_FUNC(book_r) {
-    wp->field_0x04 = evtGetFloat(event, event->args[0]);
+    wp->bookAngle = evtGetFloat(event, event->args[0]);
     return EVT_RETURN_DONE;
 }
 
 static USER_FUNC(next) {
-    wp->field_0x08++;
+    wp->page++;
     return EVT_RETURN_DONE;
 }
 
@@ -526,14 +526,14 @@ USER_FUNC(adjust) {
     Mtx m1;
     Mtx m2;
 
-    wp->field_0x10 = angle;
+    wp->fade = angle;
     {
-        f32 s = (f32)sin(1.5707964f * wp->field_0x10);
-        wp->field_0x14 = 1.5f * s + 1.5f;
+        f32 s = (f32)sin(1.5707964f * wp->fade);
+        wp->scale = 1.5f * s + 1.5f;
     }
-    wp->field_0x1C = -105.0f * (f32)sin(1.5707964f * wp->field_0x10);
-    PSMTXTrans(m1, wp->field_0x18 / 10.0f, wp->field_0x1C / 10.0f, 0.0f);
-    PSMTXScale(m2, wp->field_0x14 / 1.5f, wp->field_0x14 / 1.5f, wp->field_0x14 / 1.5f);
+    wp->posY = -105.0f * (f32)sin(1.5707964f * wp->fade);
+    PSMTXTrans(m1, wp->posX / 10.0f, wp->posY / 10.0f, 0.0f);
+    PSMTXScale(m2, wp->scale / 1.5f, wp->scale / 1.5f, wp->scale / 1.5f);
     PSMTXConcat(m1, m2, img->field_0x120);
     return EVT_RETURN_DONE;
 }
