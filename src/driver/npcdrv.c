@@ -102,15 +102,10 @@ static inline f32 sqrtf(f32 x) {
         f64 guess = __frsqrte(x);
         guess = _half * guess * (_three - guess * guess * x);
         guess = _half * guess * (_three - guess * guess * x);
-#ifdef MUST_MATCH
         // The last refinement step stays an expression, as tik_05's sqrtf (Matching) has it: under
         // npcCheckHitMarioSide's opt_lifetimes off, a third `guess =` would keep guess's register.
         x = x * (_half * guess * (_three - guess * guess * x));
         return x;
-#else
-        guess = _half * guess * (_three - guess * guess * x);
-        return x * guess;
-#endif
     } else if (x < 0.0) {
         return NAN;
     } else if (isnan(x)) {
@@ -286,8 +281,7 @@ void mtx_setup(NpcEntry* entry, Mtx mtx, s32 history) {
     }
 }
 
-#ifdef MUST_MATCH
-// MUST_MATCH: the original does the colour + billboard work through an inlined helper. Inlining the
+// The colour + billboard work goes through an inlined helper. Inlining the
 // whole block makes MWCC put the GXColor local at r1+0x10 and its by-value copy at r1+0x14 (the
 // out-of-line shape swaps them), and allocates anim/animPose/i to retail's callee-saved registers
 // (r29/r30/r30) instead of emitting the extra `mr r0,r3` save.
@@ -397,7 +391,6 @@ static inline void npcOffscreenSetup2(NpcEntry* entry, GXColor* colorp) {
         }
     }
 }
-#endif
 
 void npcDisp_xlu(CameraId cameraId, void* param) {
     NpcEntry* entry = param; // cast to proper type
@@ -408,61 +401,7 @@ void npcDisp_xlu(CameraId cameraId, void* param) {
     rotY = reviseAngle(-entry->direction);
     mtx_setup(entry, mtx, -1);
 
-#ifdef MUST_MATCH
     npcOffscreenSetup2(entry, &color);
-#else
-    color = entry->color;
-    if (entry->jumpFlags & 0x400000) {
-        color.r /= 2;
-        color.g /= 2;
-        color.b /= 2;
-        animPoseSetMaterialEvtColor(entry->poseId, color);
-        animPoseSetMaterialFlagOn(entry->poseId, 0x40);
-    }
-
-    if (entry->flags & 0x800000) {
-        AnimTableEntry* anim;
-        AnimationPose* animPose;
-        CameraEntry* camera;
-        f32 dx, dz;
-        f32 angle;
-        u32 i;
-
-        anim = animPoseGetCurrentAnim(entry->poseId); //stale store
-        animPose = animPoseGetAnimPosePtr(entry->poseId);
-        anim = animPoseGetCurrentAnim(entry->poseId);
-
-        camera = camGetPtr(CAMERA_3D);
-        dx = camera->cameraAt.x - camera->cameraPos.x;
-        dz = camera->cameraAt.z - camera->cameraPos.z;
-        angle = reviseAngle(NPC_RAD2DEG((f32)atan2(-dx, -dz)));
-        if (angle < 0.0f) {
-            angle += 360.0f;
-        }
-        angle = reviseAngle((angle - animPose->rotationY));
-
-        
-        if ((angle > 90.0f && angle <= 270.0f) || (angle < -90.0f && angle >= -270.0f)) {
-            for (i = 0; i < 14; i++) {
-                if (!strcmp(luigi_pose[i][0], anim->name)) {
-                    break;
-                }
-            }
-            if (i < 14) {
-                animPoseSetAnim(entry->poseId, luigi_pose[i][1], FALSE);
-            }
-        } else {
-            for (i = 0; i < 14; i++) {
-                if (!strcmp(luigi_pose[i][1], anim->name)) {
-                    break;
-                }
-            }
-            if (i < 14) {
-                animPoseSetAnim(entry->poseId, luigi_pose[i][0], FALSE);
-            }
-        }
-    }
-#endif
     animPoseMain(entry->poseId);
     animPoseDrawMtx(entry->poseId, mtx, 1, rotY, 2.0f);
     animPoseDrawMtx(entry->poseId, mtx, 2, rotY, 2.0f);
@@ -482,59 +421,7 @@ void npcDisp(CameraId camId, void* param) {
     disp = dispGetCurWork();
     switch (disp->renderMode) {
         case 0:
-#ifdef MUST_MATCH
             npcOffscreenSetup2(entry, &color);
-#else
-            color = entry->color;
-            if (entry->jumpFlags & 0x400000) {
-                color.r /= 2;
-                color.g /= 2;
-                color.b /= 2;
-                animPoseSetMaterialEvtColor(entry->poseId, color);
-                animPoseSetMaterialFlagOn(entry->poseId, 0x40);
-            }
-            if (entry->flags & 0x800000) {
-                AnimTableEntry* anim;
-                AnimationPose* animPose;
-                CameraEntry* camera;
-                f32 dx, dz;
-                f32 angle;
-                u32 i;
-
-                anim = animPoseGetCurrentAnim(entry->poseId); // stale store
-                animPose = animPoseGetAnimPosePtr(entry->poseId);
-                anim = animPoseGetCurrentAnim(entry->poseId);
-
-                camera = camGetPtr(CAMERA_3D);
-                dx = camera->cameraAt.x - camera->cameraPos.x;
-                dz = camera->cameraAt.z - camera->cameraPos.z;
-                angle = reviseAngle(NPC_RAD2DEG((f32)atan2(-dx, -dz)));
-                if (angle < 0.0f) {
-                    angle += 360.0f;
-                }
-                angle = reviseAngle((angle - animPose->rotationY));
-
-                if ((angle > 90.0f && angle <= 270.0f) || (angle < -90.0f && angle >= -270.0f)) {
-                    for (i = 0; i < 14; i++) {
-                        if (!strcmp(luigi_pose[i][0], anim->name)) {
-                            break;
-                        }
-                    }
-                    if (i < 14) {
-                        animPoseSetAnim(entry->poseId, luigi_pose[i][1], FALSE);
-                    }
-                } else {
-                    for (i = 0; i < 14; i++) {
-                        if (!strcmp(luigi_pose[i][1], anim->name)) {
-                            break;
-                        }
-                    }
-                    if (i < 14) {
-                        animPoseSetAnim(entry->poseId, luigi_pose[i][0], FALSE);
-                    }
-                }
-            }
-#endif
             animPoseMain(entry->poseId);
             animPoseDrawMtx(entry->poseId, mtx, 1, rotY, 2.0f);
             break;
@@ -552,7 +439,6 @@ void npcDisp(CameraId camId, void* param) {
 void npcDisp_offscreen_xlu(CameraId camId, void* param) {
     NpcEntry* entry = param; // cast to proper type
     Mtx mtx;
-    GXColor color;
     f32 rotY;
     u16 left, top, right, bottom;
 
@@ -561,59 +447,7 @@ void npcDisp_offscreen_xlu(CameraId camId, void* param) {
     rotY = reviseAngle(-entry->direction);
     mtx_setup(entry, mtx, -1);
 
-#ifdef MUST_MATCH
     npcOffscreenSetup(entry);
-#else
-    color = entry->color;
-    if (entry->jumpFlags & 0x400000) {
-        color.r /= 2;
-        color.g /= 2;
-        color.b /= 2;
-        animPoseSetMaterialEvtColor(entry->poseId, color);
-        animPoseSetMaterialFlagOn(entry->poseId, 0x40);
-    }
-    if (entry->flags & 0x800000) {
-        AnimTableEntry* anim;
-        AnimationPose* animPose;
-        CameraEntry* camera;
-        f32 dx, dz;
-        f32 angle;
-        u32 i;
-
-        anim = animPoseGetCurrentAnim(entry->poseId); // stale store
-        animPose = animPoseGetAnimPosePtr(entry->poseId);
-        anim = animPoseGetCurrentAnim(entry->poseId);
-
-        camera = camGetPtr(CAMERA_3D);
-        dx = camera->cameraAt.x - camera->cameraPos.x;
-        dz = camera->cameraAt.z - camera->cameraPos.z;
-        angle = reviseAngle(NPC_RAD2DEG((f32)atan2(-dx, -dz)));
-        if (angle < 0.0f) {
-            angle += 360.0f;
-        }
-        angle = reviseAngle((angle - animPose->rotationY));
-
-        if ((angle > 90.0f && angle <= 270.0f) || (angle < -90.0f && angle >= -270.0f)) {
-            for (i = 0; i < 14; i++) {
-                if (!strcmp(luigi_pose[i][0], anim->name)) {
-                    break;
-                }
-            }
-            if (i < 14) {
-                animPoseSetAnim(entry->poseId, luigi_pose[i][1], FALSE);
-            }
-        } else {
-            for (i = 0; i < 14; i++) {
-                if (!strcmp(luigi_pose[i][1], anim->name)) {
-                    break;
-                }
-            }
-            if (i < 14) {
-                animPoseSetAnim(entry->poseId, luigi_pose[i][0], FALSE);
-            }
-        }
-    }
-#endif
     animPoseMain(entry->poseId);
     animPoseDrawMtx(entry->poseId, mtx, 1, rotY, 2.0f);
     animPoseDrawMtx(entry->poseId, mtx, 2, rotY, 2.0f);
@@ -627,7 +461,6 @@ void npcDisp_offscreen_xlu(CameraId camId, void* param) {
 void npcDisp_offscreen(CameraId camId, void* param) {
     NpcEntry* entry = param; // cast to proper type
     Mtx mtx;
-    GXColor color;
     f32 rotY;
     DispEntry* disp;
     u16 left, top, right, bottom;
@@ -640,59 +473,7 @@ void npcDisp_offscreen(CameraId camId, void* param) {
     disp = dispGetCurWork();
     switch (disp->renderMode) {
         case 0:
-#ifdef MUST_MATCH
             npcOffscreenSetup(entry);
-#else
-            color = entry->color;
-            if (entry->jumpFlags & 0x400000) {
-                color.r /= 2;
-                color.g /= 2;
-                color.b /= 2;
-                animPoseSetMaterialEvtColor(entry->poseId, color);
-                animPoseSetMaterialFlagOn(entry->poseId, 0x40);
-            }
-            if (entry->flags & 0x800000) {
-                AnimTableEntry* anim;
-                AnimationPose* animPose;
-                CameraEntry* camera;
-                f32 dx, dz;
-                f32 angle;
-                u32 i;
-
-                anim = animPoseGetCurrentAnim(entry->poseId); // stale store
-                animPose = animPoseGetAnimPosePtr(entry->poseId);
-                anim = animPoseGetCurrentAnim(entry->poseId);
-
-                camera = camGetPtr(CAMERA_3D);
-                dx = camera->cameraAt.x - camera->cameraPos.x;
-                dz = camera->cameraAt.z - camera->cameraPos.z;
-                angle = reviseAngle(NPC_RAD2DEG((f32)atan2(-dx, -dz)));
-                if (angle < 0.0f) {
-                    angle += 360.0f;
-                }
-                angle = reviseAngle((angle - animPose->rotationY));
-
-                if ((angle > 90.0f && angle <= 270.0f) || (angle < -90.0f && angle >= -270.0f)) {
-                    for (i = 0; i < 14; i++) {
-                        if (!strcmp(luigi_pose[i][0], anim->name)) {
-                            break;
-                        }
-                    }
-                    if (i < 14) {
-                        animPoseSetAnim(entry->poseId, luigi_pose[i][1], FALSE);
-                    }
-                } else {
-                    for (i = 0; i < 14; i++) {
-                        if (!strcmp(luigi_pose[i][1], anim->name)) {
-                            break;
-                        }
-                    }
-                    if (i < 14) {
-                        animPoseSetAnim(entry->poseId, luigi_pose[i][0], FALSE);
-                    }
-                }
-            }
-#endif
             animPoseMain(entry->poseId);
             animPoseDrawMtx(entry->poseId, mtx, 1, rotY, 2.0f);
             break;
@@ -1074,9 +855,7 @@ static inline void npcKoopaAttackCheck(void) {
 // once before PSVECSubtract and again once Mario is noticeable: the first sqrtf is dead, and its leftover compare
 // is retail's lone `fcmpo f30, 0`.
 void npcMain(void) {
-#ifdef MUST_MATCH
     const char* fallSfx;
-#endif
     NpcWork* npcwork;
     NpcEntry* entry;
     FieldBattleData* fbat;
@@ -1102,9 +881,7 @@ void npcMain(void) {
     marioGetPtr()->field_0x1D8 = 0;
     total = npcwork->total;
     npcMainCount++;
-#ifdef MUST_MATCH
     fallSfx = "SFX_KUPPA_3RD_WATER_FALL1";
-#endif
 
     for (i = 0, entry = npcwork->entries; i < total; i++, entry++) {
         if (!(entry->flags & 1) || !(entry->flags & 2)) {
@@ -1147,7 +924,6 @@ void npcMain(void) {
 
         if (entry->flags & 2) {
             // In Bowser's water level: splash on entering the water and move at half speed while in it.
-#ifdef MUST_MATCH
             // npcKoopaWaterCheck by hand: retail loads the splash SFX name once before the npc loop
             if (entry->jumpFlags & 0x100000) {
                 entry->jumpFlags |= 0x200000;
@@ -1161,9 +937,6 @@ void npcMain(void) {
                     psndSFXOn_3D(fallSfx, &entry->position);
                 }
             }
-#else
-            npcKoopaWaterCheck(entry);
-#endif
             if ((entry->jumpFlags & 0x100000) && !(entry->jumpFlags & 0x10000000)) {
                 entry->maxFallSpeed = 100.0f;
                 runScale = 0.5f;
@@ -1796,15 +1569,6 @@ static inline f32 npcHitSideCosf(f32 rad) {
     return cosv;
 }
 
-// Match-only shape: folding the radius product through this one-line inline makes MWCC keep the
-// `box.x + width + 5.0f` accumulator in the target's f2 instead of f0. The natural `* 0.5f` is under
-// the #else at the call site (rule 7).
-#ifdef MUST_MATCH
-static inline f32 npcHitSideMul(f32 a, f32 b) {
-    return a * b;
-}
-#endif
-
 // `opt_propagation off` stops MWCC rematerialising the sin/cos coefficients into every branch;
 // `opt_lifetimes off` is what puts the accumulator/pivot/scratch in the target's FPRs.
 #pragma opt_propagation off
@@ -1835,11 +1599,7 @@ s32 npcCheckHitMarioSide(NpcEntry* entry) {
     pos.z = mario->position.z;
     pos.y = entry->position.y;
     d1 = PSVECDistance(&pos, &entry->position);
-#ifdef MUST_MATCH
-    radius = npcHitSideMul(mario->wPlayerCollisionBox.x + entry->width + 5.0f, 0.5f);
-#else
-    radius = (mario->wPlayerCollisionBox.x + entry->width + 5.0f) * 0.5f;
-#endif
+    radius = (mario->wPlayerCollisionBox.x + entry->width + 5.0f) / 2.0f;
     if (d1 > radius) {
         return 0;
     }
@@ -2173,38 +1933,25 @@ void _fbatFirstAttackAnnouceDisp(CameraId camId, void* param) {
     f32 width;
     f32 frameX;
     f32 frameY;
-#ifdef MUST_MATCH
     // MWCC canonicalises `value * 0.1f` to `0.1f * value`; a named temp keeps the original's
     // value-first operand order, and `width / 2.0f` does the same for the 0.5 multiply.
     f32 k;
-#endif
 
-#ifdef MUST_MATCH
     k = 0.1f;
-#endif
     message = msgSearch(firstStrike->msg_tag);
     x = firstStrike->bannerX;
     y = firstStrike->bannerY;
     width = FontGetMessageWidth(message);
     frameX = x + (f32)(irand(10000) % 5);
     frameY = y + (f32)(irand(10000) % 5);
-#ifdef MUST_MATCH
     windowDispGX_Waku_col(0, firstStrike->color, 0.1f * (frameX - 10.0f - width / 2.0f), frameY * k,
                           (20.0f + width) * k, 3.2f, 1.0f);
-#else
-    windowDispGX_Waku_col(0, firstStrike->color, 0.1f * (frameX - 10.0f - width * 0.5f), frameY * 0.1f,
-                          (20.0f + width) * 0.1f, 3.2f, 1.0f);
-#endif
     FontDrawStart();
     FontDrawEdge();
     // Passing the colour as a compound literal makes MWCC place it in the original's stack slot.
     FontDrawColor(&(GXColor){0xFF, 0xFF, 0xFF, 0xFF});
     FontDrawScale(0.1f);
-#ifdef MUST_MATCH
     FontDrawStringShake(message, 0.1f * (x - width / 2.0f), (y - 3.0f) * k);
-#else
-    FontDrawStringShake(message, 0.1f * (x - width * 0.5f), 0.1f * (y - 3.0f));
-#endif
 }
 
 // 100%: control flow and the `mode == 3` test match. The two `regularEvtId` reads go through a fresh
@@ -4136,3 +3883,5 @@ s32 N_fbatPreventMarioEventChk(void) {
     }
     return FALSE;
 }
+
+
