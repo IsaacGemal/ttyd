@@ -227,8 +227,8 @@ EVT_BEGIN(nonride_waterfall)
 EVT_END()
 
 s32 cam_displacement(EventEntry* event, BOOL isFirstCall) {
-    void* work = camRoadGetWorkPtr();
-    *(f32*)((u8*)work + 0x1C4) = 1.7f;
+    CamRoadWork* work = camRoadGetWorkPtr();
+    work->cmpDistW = 1.7f;
     return EVT_RETURN_DONE;
 }
 

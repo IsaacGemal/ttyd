@@ -31,14 +31,14 @@ __declspec(section ".sdata2") u32 dat_8041c8f4 = 0xFFFFFFFF;
 __declspec(section ".sdata2") u32 dat_8041c8f8 = 0xFFFFFFFF;
 __declspec(section ".sdata2") u32 dat_8041c8fc = 0xFFFFFFFF;
 
-#define STATUS_WIN_OPEN_FRAMES 16.0f // ramp length at animSpeed 1 for opening, and for closing
+#define STATUS_WIN_OPEN_FRAMES 16.0f // open and close ramp lengths at animSpeed 1
 #define STATUS_WIN_CLOSE_FRAMES 28.0f
 #define ICON_SP_BANNER 466 // alwaysDt's blue star power banner; the draw loop stops here while no star power is owned
 #define STATUS_WIN_IDLE_SECONDS 10 // Mario standing still before the window opens; cooldown after an automatic toggle
 #define STATUS_WIN_CHANGE_SECONDS 2 // the window stays open this long after a value changes
 #define STATUS_WIN_BLINK_SECONDS 2 // blink length once a changed value settles
-#define STATUS_WIN_BLINK_PERIOD 16 // blink cycle in frames: the icon is hidden for the first BLINK_ON
-#define STATUS_WIN_BLINK_ON 6
+#define STATUS_WIN_BLINK_PERIOD 16 // blink cycle in frames; the icon is hidden while blinkTimer % PERIOD < HIDE_FRAMES
+#define STATUS_WIN_BLINK_HIDE_FRAMES 6
 #define STATUS_WIN_MAX_STAR_POINT 99
 #define STATUS_WIN_MAX_COIN 999
 
@@ -151,7 +151,6 @@ void statusWinInit(void) {
     wp->flags |= (STATUS_WIN_OPEN | STATUS_WIN_OPENING);
 }
 
-// TODO: #defines?
 void statusWinReInit(void) {
     wp->idleFrames = 0;
     wp->toggleCooldown = 0;
@@ -485,7 +484,7 @@ void statusWinDisp(CameraId camId, void* param) {
     v6 = 1;
     if (wp->blinkTimer > 0) {
         wp->blinkTimer--;
-        v6 = (wp->blinkTimer % STATUS_WIN_BLINK_PERIOD) >= STATUS_WIN_BLINK_ON;
+        v6 = (wp->blinkTimer % STATUS_WIN_BLINK_PERIOD) >= STATUS_WIN_BLINK_HIDE_FRAMES;
     }
 
     dtEntry = alwaysDt;
@@ -508,7 +507,7 @@ void statusWinDisp(CameraId camId, void* param) {
         SW_ICON_COL(mtx, 0x10, dtEntry->iconId, colAlways, *(GXColor*)&dat_8041c8e4);
     }
 
-    if (!(wp->blinkMask & 1) || v6 != 0) {
+    if (!(wp->blinkMask & STATUS_BLINK_MARIO_HP) || v6 != 0) {
         number = wp->hp;
         PSMTXTrans(hpMtx, baseX + 120.0f - 6.0f - 10.0f, baseY - 38.0f + 2.0f, float_0_8041c900);
         SW_NUM_GX(hpMtx, number, 0, numHp, *(GXColor*)&dat_8041c8e0);
@@ -519,7 +518,7 @@ void statusWinDisp(CameraId camId, void* param) {
     PSMTXTrans(maxHpMtx, tx, ty, float_0_8041c900);
     SW_NUM_GX(maxHpMtx, number, 1, numMaxHp, *(GXColor*)&dat_8041c8e0);
 
-    if (!(wp->blinkMask & 2) || v6 != 0) {
+    if (!(wp->blinkMask & STATUS_BLINK_FP) || v6 != 0) {
         number = wp->fp;
         PSMTXTrans(fpMtx, baseX + 292.0f - 6.0f, baseY - 38.0f + 2.0f, float_0_8041c900);
         SW_NUM_GX(fpMtx, number, 0, numFp, *(GXColor*)&dat_8041c8e0);
@@ -538,7 +537,7 @@ void statusWinDisp(CameraId camId, void* param) {
         SW_NUM_GX(coinMtx, number, 0, numCoin, *(GXColor*)&dat_8041c8e0);
     }
 
-    if (!(wp->blinkMask & 4) || v6 != 0) {
+    if (!(wp->blinkMask & STATUS_BLINK_AP) || v6 != 0) {
         gaugeDisp(wp->ap, baseX + 260.0f, baseY - 87.0f + 4.0f);
     }
 
@@ -582,7 +581,7 @@ void statusWinDisp(CameraId camId, void* param) {
             PSMTXConcat(mtx, scale, mtx);
             SW_ICON_COL(mtx, 0x10, dtEntry->iconId, colParty, *(GXColor*)&dat_8041c8e8);
         }
-        if (!(wp->blinkMask & 8) || v6 != 0) {
+        if (!(wp->blinkMask & STATUS_BLINK_PARTY_HP) || v6 != 0) {
             number = wp->partyHp;
             PSMTXTrans(partyHpMtx, baseX + 120.0f - 6.0f - 10.0f, baseY - 78.0f + 2.0f + 4.0f, float_0_8041c900);
             SW_NUM_GX(partyHpMtx, number, 0, numPartyHp, *(GXColor*)&dat_8041c8e0);
@@ -750,7 +749,7 @@ void valueUpdate(void) {
     }
 #endif
 #ifdef MUST_MATCH
-    curCoin = ((s16*)wp)[0x30];
+    curCoin = wp->coin;
     if (valueMoveAmount(curCoin, values.coin) != 0) {
 #else
     if (valueMoveAmount(wp->coin, values.coin) != 0) {
@@ -772,7 +771,7 @@ void valueUpdate(void) {
     wp->partyId = values.partyId;
     if (wp->partyId != 0) {
 #ifdef MUST_MATCH
-        valueMoveParty((s16*)((u8*)wp + 0x5A), &values.partyHp);
+        valueMoveParty(&wp->partyHp, &values.partyHp);
 #else
         valueMoveUpdate(&wp->partyHp, values.partyHp);
 #endif

@@ -3548,15 +3548,15 @@ USER_FUNC(get_camcurve_init) {
 
 USER_FUNC(get_camcurve) {
     s32* args = event->args;
-    struct CamRoadWork* road = camRoadGetWorkPtr();
+    CamRoadWork* road = camRoadGetWorkPtr();
     s32 flag = 0;
 
-    if (((s32*)road)[0xD8 / 4] != 0 && ((char**)road)[0xFC / 4] != NULL) {
-        if (strcmp(((char**)road)[0xFC / 4], "|MarioSt_CameraRoad|C_ground_ok") == 0 &&
+    if (road->previous.valid != 0 && road->previous.road != NULL) {
+        if (strcmp((char*)road->previous.road, "|MarioSt_CameraRoad|C_ground_ok") == 0 &&
             strcmp((char*)camstring[0], "|MarioSt_CameraRoad|C_ue") == 0) {
             flag = 1;
         }
-        strcpy((char*)camstring[0], ((char**)road)[0xFC / 4]);
+        strcpy((char*)camstring[0], (char*)road->previous.road);
     }
     evtSetValue(event, args[0], flag);
     return EVT_RETURN_DONE;
