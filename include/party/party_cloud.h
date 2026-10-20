@@ -9,7 +9,10 @@ typedef struct PartyCloud {
     f32 unk4; //0x4
     f32 unk8; //0x8
     f32 maxDist; //0xC, cap for unk8 in getHitBreatheout2, set to 120 at init
-    u8 field_0x10[0x20 - 0x10]; // 0x10
+    f32 sweepOffset1; //0x10, angle offset from unk4 for the first hit ray in getHitBreatheout2 (-20..20, 1 per frame)
+    s32 sweepDown1; //0x14, 1 while sweepOffset1 is decreasing
+    f32 sweepOffset2; //0x18, angle offset from unk4 for the second hit ray in getHitBreatheout2, same motion as sweepOffset1
+    s32 sweepDown2; //0x1C, 1 while sweepOffset2 is decreasing
     s32 unk20; //0x20
     s32 unk24; //0x24
     s32 unk28; //0x28
