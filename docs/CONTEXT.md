@@ -10011,3 +10011,29 @@ Also: the dead `aud` locals in BattleAudience_CheckReactionPerPhase/BattleAudien
 build OK; all 161 C files that changed or include battle.h/battle_audience.h/battle_audience_kind_data.h compile, with
 and without MUST_MATCH, to objects equivalent to the pre-branch ones (tools/obj_equiv.py --tree, old tree with old
 headers).
+### Readability: winmgr select/party names, win_root fb callbacks, Luigi book strings (2026-10-20, Claude Haiku 5.5, n9-q-winui; reviewed by Claude Opus 5.5)
+
+Renamed with tools/rename_symbol.py (symbols.txt, sources, headers, gor_02/tik_11): `unk_80237448` ->
+`winMgrSelectCursor` (returns `select->cursor`, read by evt_win_item_select), `unk_802379e4`/`unk_80237a2c` ->
+`winMgrSelectCmpTypeSort`/`winMgrSelectCmpStarPrice` (qqsort comparators on `type_sort_order` and
+`star_piece_price`), `unk_8014d5dc`/`unk_8014d338` -> `winRootFbCopy`/`winRootFbDraw` (copy the EFB to
+`work->fbCopy`, then draw it full-screen), `unk_800d06b4` -> `pouchHiraganaToKatakana` (SJIS 0x829F..0x82F1 shifted
+to katakana for the sort keys). The two USER_FUNCs map scripts call, by what they check: `unk_80239b2c` ->
+`party_can_rank_up` (some joined partner is below the rank cap: 1, or 2 once GSWF(1186) is set; gor_02's
+Merlon) and `unk_802399f8` -> `party_can_transfer_rank` (two or more partners, one with a rank to give and one
+below the cap; tik_11's shop moves a rank from one partner to another, `unitwin_setpartylank` +1/-1). Snake case
+after the gor USER_FUNCs `unitwin_set_taken`/`unitwin_lottery_disp_onoff`. Strings named by their table role, like
+`item_000_name`: `str_802F4CE8..` -> `luigi_book_{1-5}_page{1-12}` (the `luigi_book_N` entries),
+`party_labelname_table`/`mario_status_labelname_table` entries -> `labelname_<suffix>`, `mario_status_name_table`
+-> `status_name_hp/fp/bp`; `str_802FFD38..` -> `party_name_msg0..6` (the `name_party<N>` keys; the content name itself
+clashes with the literal), `dat_80421a14..24` -> `waku1_color`/`waku3a_color`/`waku3b_color`/`waku4_color`/
+`waku5_color` (the frame colours winMgrDisp passes to winMgrDispWaku1..5). win_root's
+`**(TEXPalette***)(work + 0x28 ... + 0xA0)` reads became `*(TEXPalette**)work->winTpl->data` and the anim clip read
+`anim->clip`. Review: the worker's names for winmgr's select-layout Vec/GXColor constants
+(`select_disp_tmpRow`, `select_luigi_colorWhite`, ...) only restated the one local each initialises, with a
+`select_luigi_` prefix for select_disp_luigi that reads like the `select_luigi_desc` table; they went back to their
+address names (`vec3_802ffa98..`, `dat_80421a28..74`), which addr_literals left named because they must stay named.
+`evtPartyTechMixed`/`Low`, `winMgrWakuColor*` and `partyNameMsg*` were respelled as above (winmgr's data is snake
+case; the evt prefix belongs to the evt core). Matching build OK; all seven changed C files natural-compile
+equivalent to the pre-branch objects (old tree with old headers), differing only in the renamed extern names.
+Landing needs `--allow-protected` (config/G8MJ01/symbols.txt).

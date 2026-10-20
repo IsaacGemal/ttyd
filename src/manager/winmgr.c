@@ -43,24 +43,24 @@ typedef struct WinMgrSelectTbl {
 // Retain the descriptor tables and constants referenced by other units.
 #pragma force_active on
 // Named read-only objects follow the original small-data order.
-const char str_804219B8[] = "_kur";
-const char str_804219C0[] = "_nok";
-const char str_804219C8[] = "_win";
-const char str_804219D0[] = "_yos";
-const char str_804219D8[] = "_viv";
-const char str_804219E0[] = "_bom";
-const char str_804219E8[] = "_chu";
-const char str_804219F0[] = "_hp";
-const char str_804219F4[] = "_fp";
-const char str_804219F8[] = "_bp";
-const char str_804219FC[] = "\x82\x67\x82\x6f";
-const char str_80421A04[] = "\x82\x65\x82\x6f";
-const char str_80421A0C[] = "\x82\x61\x82\x6f";
-const GXColor dat_80421a14 = { 0x2b, 0xa4, 0xff, 0x00 };
-const GXColor dat_80421a18 = { 0x2b, 0xa4, 0xff, 0x00 };
-const GXColor dat_80421a1c = { 0x2b, 0xa4, 0xff, 0x00 };
-const GXColor dat_80421a20 = { 0x2b, 0xa4, 0xff, 0x00 };
-const GXColor dat_80421a24 = { 0x2b, 0xa4, 0xff, 0x00 };
+const char labelname_kur[] = "_kur";
+const char labelname_nok[] = "_nok";
+const char labelname_win[] = "_win";
+const char labelname_yos[] = "_yos";
+const char labelname_viv[] = "_viv";
+const char labelname_bom[] = "_bom";
+const char labelname_chu[] = "_chu";
+const char labelname_hp[] = "_hp";
+const char labelname_fp[] = "_fp";
+const char labelname_bp[] = "_bp";
+const char status_name_hp[] = "\x82\x67\x82\x6f";
+const char status_name_fp[] = "\x82\x65\x82\x6f";
+const char status_name_bp[] = "\x82\x61\x82\x6f";
+const GXColor waku1_color = { 0x2b, 0xa4, 0xff, 0x00 };
+const GXColor waku3a_color = { 0x2b, 0xa4, 0xff, 0x00 };
+const GXColor waku3b_color = { 0x2b, 0xa4, 0xff, 0x00 };
+const GXColor waku4_color = { 0x2b, 0xa4, 0xff, 0x00 };
+const GXColor waku5_color = { 0x2b, 0xa4, 0xff, 0x00 };
 const GXColor dat_80421a28 = { 0x00, 0x00, 0x00, 0xFF };
 const GXColor dat_80421a2c = { 0xA0, 0xA0, 0xA0, 0xFF };
 const GXColor dat_80421a30 = { 0xFF, 0xFF, 0xFF, 0xFF };
@@ -87,10 +87,10 @@ static s16* mario_status_point_table[3];
 static WinMgrWork* wp = &work;
 u16 party_id_table[8] = { PARTNER_GOOMBELLA, PARTNER_KOOPS, PARTNER_FLURRIE, PARTNER_YOSHI, PARTNER_VIVIAN, PARTNER_BOBBERY, PARTNER_MSMOWZ, PARTNER_NONE };
 static u16 party_icon_table[8] = { 0x155, 0x156, 0x15F, 0x158, 0x160, 0x157, 0x161, 0 };
-static const char* party_labelname_table[7] = { str_804219B8, str_804219C0, str_804219C8, str_804219D0, str_804219D8, str_804219E0, str_804219E8 };
+static const char* party_labelname_table[7] = { labelname_kur, labelname_nok, labelname_win, labelname_yos, labelname_viv, labelname_bom, labelname_chu };
 static s32 mario_status_icon_table[3] = { 0x19F, 0x1A0, 0x1A1 };
-static const char* mario_status_labelname_table[3] = { str_804219F0, str_804219F4, str_804219F8 };
-static const char* mario_status_name_table[3] = { str_804219FC, str_80421A04, str_80421A0C };
+static const char* mario_status_labelname_table[3] = { labelname_hp, labelname_fp, labelname_bp };
+static const char* mario_status_name_table[3] = { status_name_hp, status_name_fp, status_name_bp };
 static s32 mario_status_henka_table[3] = { 5, 5, 3 };
 s32 mario_status_max_table[3] = { 200, 200, 99 };
 
@@ -205,12 +205,12 @@ const Vec vec3_802ffd08 = { 0, 0, 0 };
 const Vec vec3_802ffd14 = { 0, 0, 1 };
 const Vec vec3_802ffd20 = { 0, 0, 1 };
 const Vec vec3_802ffd2c = { 0, 0, 1 };
-const char str_802FFD38[] = "name_party0";
-const char str_802FFD44[] = "name_party1";
-const char str_802FFD50[] = "name_party4";
-const char str_802FFD5C[] = "name_party5";
-const char str_802FFD68[] = "name_party2";
-const char str_802FFD74[] = "name_party6";
+const char party_name_msg0[] = "name_party0";
+const char party_name_msg1[] = "name_party1";
+const char party_name_msg4[] = "name_party4";
+const char party_name_msg5[] = "name_party5";
+const char party_name_msg2[] = "name_party2";
+const char party_name_msg6[] = "name_party6";
 
 #ifdef MUST_MATCH
 // MUST_MATCH: this inline keeps the descriptor 0x14 load before 0x10 with retail registers.
@@ -925,25 +925,25 @@ void select_disp_party(WinMgrEntry* entry) {
 
             switch (select->items[i].id) {
             case 0:
-                n1 = msgSearch(str_802FFD38);
+                n1 = msgSearch(party_name_msg0);
                 break;
             case 1:
-                n1 = msgSearch(str_802FFD44);
+                n1 = msgSearch(party_name_msg1);
                 break;
             case 2:
-                n1 = msgSearch(str_802FFD50);
+                n1 = msgSearch(party_name_msg4);
                 break;
             case 3:
                 n1 = pouchGetYoshiName();
                 break;
             case 4:
-                n1 = msgSearch(str_802FFD5C);
+                n1 = msgSearch(party_name_msg5);
                 break;
             case 5:
-                n1 = msgSearch(str_802FFD68);
+                n1 = msgSearch(party_name_msg2);
                 break;
             case 6:
-                n1 = msgSearch(str_802FFD74);
+                n1 = msgSearch(party_name_msg6);
                 break;
             }
 
@@ -951,25 +951,25 @@ void select_disp_party(WinMgrEntry* entry) {
             if (w > 0xaa) {
                 switch (select->items[i].id) {
                 case 0:
-                    n2 = msgSearch(str_802FFD38);
+                    n2 = msgSearch(party_name_msg0);
                     break;
                 case 1:
-                    n2 = msgSearch(str_802FFD44);
+                    n2 = msgSearch(party_name_msg1);
                     break;
                 case 2:
-                    n2 = msgSearch(str_802FFD50);
+                    n2 = msgSearch(party_name_msg4);
                     break;
                 case 3:
                     n2 = pouchGetYoshiName();
                     break;
                 case 4:
-                    n2 = msgSearch(str_802FFD5C);
+                    n2 = msgSearch(party_name_msg5);
                     break;
                 case 5:
-                    n2 = msgSearch(str_802FFD68);
+                    n2 = msgSearch(party_name_msg2);
                     break;
                 case 6:
-                    n2 = msgSearch(str_802FFD74);
+                    n2 = msgSearch(party_name_msg6);
                     break;
                 }
                 scale = 170.0f / (f32)FontGetMessageWidth(n2);
@@ -983,25 +983,25 @@ void select_disp_party(WinMgrEntry* entry) {
 
             switch (select->items[i].id) {
             case 0:
-                n3 = msgSearch(str_802FFD38);
+                n3 = msgSearch(party_name_msg0);
                 break;
             case 1:
-                n3 = msgSearch(str_802FFD44);
+                n3 = msgSearch(party_name_msg1);
                 break;
             case 2:
-                n3 = msgSearch(str_802FFD50);
+                n3 = msgSearch(party_name_msg4);
                 break;
             case 3:
                 n3 = pouchGetYoshiName();
                 break;
             case 4:
-                n3 = msgSearch(str_802FFD5C);
+                n3 = msgSearch(party_name_msg5);
                 break;
             case 5:
-                n3 = msgSearch(str_802FFD68);
+                n3 = msgSearch(party_name_msg2);
                 break;
             case 6:
-                n3 = msgSearch(str_802FFD74);
+                n3 = msgSearch(party_name_msg6);
                 break;
             }
             winFontSet(&posName, &scaleName, &color, n3);
@@ -1478,16 +1478,16 @@ void winMgrDisp(CameraId camId, void* param) {
     case 2:
         break;
     case 1:
-        winMgrDispWaku1(scalemtx, entry, &dat_80421a14);
+        winMgrDispWaku1(scalemtx, entry, &waku1_color);
         break;
     case 3:
-        winMgrDispWaku3a(scalemtx, entry, &dat_80421a18);
-        winMgrDispWaku3b(scalemtx, entry, &dat_80421a1c);
+        winMgrDispWaku3a(scalemtx, entry, &waku3a_color);
+        winMgrDispWaku3b(scalemtx, entry, &waku3b_color);
         break;
     case 4:
     case 5:
-        winMgrDispWaku4(scalemtx, entry, &dat_80421a20);
-        winMgrDispWaku5(scalemtx, entry, &dat_80421a24);
+        winMgrDispWaku4(scalemtx, entry, &waku4_color);
+        winMgrDispWaku5(scalemtx, entry, &waku5_color);
         break;
     }
 
@@ -2022,7 +2022,7 @@ WinMgrSelect* winMgrSelectEntry(s32 kind, s32 firstItem, BOOL canCancel) {
                 select->items[select->numItems++].id = i + BADGE_MIN;
             }
         }
-        qqsort(select->items, select->numItems, 4, (int (*)(void*, void*))unk_802379e4);
+        qqsort(select->items, select->numItems, 4, (int (*)(void*, void*))winMgrSelectCmpTypeSort);
         break;
     case 13:
         {
@@ -2042,7 +2042,7 @@ WinMgrSelect* winMgrSelectEntry(s32 kind, s32 firstItem, BOOL canCancel) {
                     select->numItems++;
                 }
             }
-            qqsort(select->items, select->numItems, 4, (int (*)(void*, void*))unk_80237a2c);
+            qqsort(select->items, select->numItems, 4, (int (*)(void*, void*))winMgrSelectCmpStarPrice);
         }
         break;
     case 14:
@@ -2142,7 +2142,7 @@ WinMgrSelect* winMgrSelectEntry(s32 kind, s32 firstItem, BOOL canCancel) {
     return select;
 }
 
-s32 unk_80237a2c(void* a, void* b) {
+s32 winMgrSelectCmpStarPrice(void* a, void* b) {
     u32 va = itemDataTable[((WinMgrSelectItem*)a)->id].star_piece_price;
     u32 vb = itemDataTable[((WinMgrSelectItem*)b)->id].star_piece_price;
 
@@ -2152,7 +2152,7 @@ s32 unk_80237a2c(void* a, void* b) {
     return va < vb ? -1 : 0;
 }
 
-s32 unk_802379e4(void* a, void* b) {
+s32 winMgrSelectCmpTypeSort(void* a, void* b) {
     s32 va = itemDataTable[((WinMgrSelectItem*)a)->id].type_sort_order;
     s32 vb = itemDataTable[((WinMgrSelectItem*)b)->id].type_sort_order;
 
@@ -2202,25 +2202,25 @@ s32 winMgrSelectOther(WinMgrSelect* select, EventEntry* event) {
             event->lwData[1] = party_id_table[itemId];
             switch (itemId) {
             case 0:
-                msg = msgSearch(str_802FFD38);
+                msg = msgSearch(party_name_msg0);
                 break;
             case 1:
-                msg = msgSearch(str_802FFD44);
+                msg = msgSearch(party_name_msg1);
                 break;
             case 2:
-                msg = msgSearch(str_802FFD50);
+                msg = msgSearch(party_name_msg4);
                 break;
             case 3:
                 msg = pouchGetYoshiName();
                 break;
             case 4:
-                msg = msgSearch(str_802FFD5C);
+                msg = msgSearch(party_name_msg5);
                 break;
             case 5:
-                msg = msgSearch(str_802FFD68);
+                msg = msgSearch(party_name_msg2);
                 break;
             case 6:
-                msg = msgSearch(str_802FFD74);
+                msg = msgSearch(party_name_msg6);
                 break;
             }
             event->lwData[3] = (s32)msg;
@@ -2229,25 +2229,25 @@ s32 winMgrSelectOther(WinMgrSelect* select, EventEntry* event) {
             event->lwData[2] = party_id_table[itemId];
             switch (itemId) {
             case 0:
-                msg = msgSearch(str_802FFD38);
+                msg = msgSearch(party_name_msg0);
                 break;
             case 1:
-                msg = msgSearch(str_802FFD44);
+                msg = msgSearch(party_name_msg1);
                 break;
             case 2:
-                msg = msgSearch(str_802FFD50);
+                msg = msgSearch(party_name_msg4);
                 break;
             case 3:
                 msg = pouchGetYoshiName();
                 break;
             case 4:
-                msg = msgSearch(str_802FFD5C);
+                msg = msgSearch(party_name_msg5);
                 break;
             case 5:
-                msg = msgSearch(str_802FFD68);
+                msg = msgSearch(party_name_msg2);
                 break;
             case 6:
-                msg = msgSearch(str_802FFD74);
+                msg = msgSearch(party_name_msg6);
                 break;
             }
             event->lwData[4] = (s32)msg;
@@ -2346,7 +2346,7 @@ void winMgrSelectDelete(WinMgrSelect* select) {
     __memFree(HEAP_DEFAULT, s);
 }
 
-s32 unk_80237448(WinMgrSelect* select) {
+s32 winMgrSelectCursor(WinMgrSelect* select) {
     return select->cursor;
 }
 
@@ -2480,7 +2480,7 @@ void select_main(WinMgrEntry* entry) {
 }
 
 #pragma opt_common_subs reset
-s32 unk_802399f8(EventEntry* event) {
+s32 party_can_transfer_rank(EventEntry* event) {
     s32* args = event->args;
     PouchData* pouch = pouchGetPtr();
     s32 i;
@@ -2527,7 +2527,7 @@ s32 unk_802399f8(EventEntry* event) {
     return 2;
 }
 
-s32 unk_80239b2c(EventEntry* event) {
+s32 party_can_rank_up(EventEntry* event) {
     s32* args = event->args;
     PouchData* pouch = pouchGetPtr();
     s32 i;
