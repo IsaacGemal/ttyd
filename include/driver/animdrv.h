@@ -53,7 +53,18 @@ typedef struct AnimPoseShapeDraw {
 
 // all of these fall under "AnimPoseData"
 struct AnimData {
-    u8 field_0x0[0x44 - 0]; // 0x0
+    u8 field_0x0[0x8 - 0x0];   // 0x0
+    s32 frameCount;            // 0x8, keyframes in frames
+    u8 field_0xC[0x20 - 0xC];  // 0xC
+    s32 frame2Count;           // 0x20, events in frames2
+    s32* clip;                 // 0x24, [0] canLoop, [1] start and [2] end (f32)
+    u8* frames;                // 0x28, frame records of ANIM_FRAME_SIZE bytes
+    u8* posData;               // 0x2C
+    u8* nrmData;               // 0x30
+    u8* texData;               // 0x34
+    u8* visData;               // 0x38
+    u8* nodeData;              // 0x3C
+    u8* frames2;               // 0x40, event records of 8 bytes: f32 time, s32 value
 };
 
 struct AnimTableEntry {
@@ -140,12 +151,12 @@ typedef struct AnimationPoseData {
     u16* clr0Index;                // 0x168, finished name
     u16* texIndex[8];              // 0x16C, finished name
     f32* texVtxBuffer;             // 0x18C, finished name, pointer to list of [S, T]
-    void* field_0x190;             // 0x190, a file-relative pointer (filemgr relocates it)
+    AnimTexMtx* mBufferTexAnim;    // 0x190, texNum * 0x18 bytes
     AnimPoseTexEntry* texData;     // 0x194, TODO: rename
     AnimTexBind* texBinds;         // 0x198, TODO: rename
     AnimPoseShapeDraw* draws;      // 0x19C
-    void* field_0x1A0;             // 0x1A0, a file-relative pointer (filemgr relocates it)
-    void* field_0x1A4;             // 0x1A4, a file-relative pointer (filemgr relocates it)
+    u8* mBufferVisibility;         // 0x1A0, visNum bytes
+    u8* mBufferNode;               // 0x1A4, nodeNum * 4 bytes
     AnimPoseGroup* groups;         // 0x1A8
     AnimTableEntry* mpAnims;       // 0x1AC
 } AnimationPoseData;

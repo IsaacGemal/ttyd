@@ -180,12 +180,12 @@ void fileGarbageDataAdrClear(FileEntry* entry) {
 				FILE_UNRELOC(POSE(d)->texIndex[6], data);
 				FILE_UNRELOC(POSE(d)->texIndex[7], data);
 				FILE_UNRELOC(POSE(d)->texVtxBuffer, data);
-				FILE_UNRELOC(POSE(d)->field_0x190, data);
+				FILE_UNRELOC(POSE(d)->mBufferTexAnim, data);
 				FILE_UNRELOC(POSE(d)->texData, data);
 				FILE_UNRELOC(POSE(d)->texBinds, data);
 				FILE_UNRELOC(POSE(d)->draws, data);
-				FILE_UNRELOC(POSE(d)->field_0x1A0, data);
-				FILE_UNRELOC(POSE(d)->field_0x1A4, data);
+				FILE_UNRELOC(POSE(d)->mBufferVisibility, data);
+				FILE_UNRELOC(POSE(d)->mBufferNode, data);
 				FILE_UNRELOC(POSE(d)->groups, data);
 				FILE_UNRELOC(POSE(d)->mpAnims, data);
 			}
@@ -356,12 +356,12 @@ void fileGarbageDataAdrSet(void* data, s32 type) {
 				FILE_RELOC(POSE(data)->texIndex[6], data);
 				FILE_RELOC(POSE(data)->texIndex[7], data);
 				FILE_RELOC(POSE(data)->texVtxBuffer, data);
-				FILE_RELOC(POSE(data)->field_0x190, data);
+				FILE_RELOC(POSE(data)->mBufferTexAnim, data);
 				FILE_RELOC(POSE(data)->texData, data);
 				FILE_RELOC(POSE(data)->texBinds, data);
 				FILE_RELOC(POSE(data)->draws, data);
-				FILE_RELOC(POSE(data)->field_0x1A0, data);
-				FILE_RELOC(POSE(data)->field_0x1A4, data);
+				FILE_RELOC(POSE(data)->mBufferVisibility, data);
+				FILE_RELOC(POSE(data)->mBufferNode, data);
 				FILE_RELOC(POSE(data)->groups, data);
 				FILE_RELOC(POSE(data)->mpAnims, data);
 				count = POSE(data)->mAnimCount;
