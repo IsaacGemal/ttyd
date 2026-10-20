@@ -1784,33 +1784,32 @@ s32 BattleCommandDisplay_WeaponMultiItemCancelCheckMain(BattleWork* wp) {
 		wp->commandMenu.restoreState = 1;
 		return 0;
 	}
-	do {
-		if (cursor->field_0 < cursor->unk8 - 1) {
-			if ((s32)BattlePadCheckRepeat(0x20000)) {
-				cursor->field_0++;
-				psndSFXOn("SFX_BTL_CURSOR_MOVE2");
-				break;
-			}
-		} else {
-			if (BattlePadCheckTrigger(0x20000)) {
-				cursor->field_0 = 0;
-				psndSFXOn("SFX_BTL_CURSOR_MOVE2");
-				break;
-			}
+	if (cursor->field_0 < cursor->unk8 - 1) {
+		if ((s32)BattlePadCheckRepeat(0x20000)) {
+			cursor->field_0++;
+			psndSFXOn("SFX_BTL_CURSOR_MOVE2");
+			goto after;
 		}
-		if (cursor->field_0 > 0) {
-			if ((s32)BattlePadCheckRepeat(0x10000)) {
-				cursor->field_0--;
-				psndSFXOn("SFX_BTL_CURSOR_MOVE2");
-				break;
-			}
-		} else {
-			if (BattlePadCheckTrigger(0x10000)) {
-				cursor->field_0 = cursor->unk8 - 1;
-				psndSFXOn("SFX_BTL_CURSOR_MOVE2");
-			}
+	} else {
+		if (BattlePadCheckTrigger(0x20000)) {
+			cursor->field_0 = 0;
+			psndSFXOn("SFX_BTL_CURSOR_MOVE2");
+			goto after;
 		}
-	} while (0);
+	}
+	if (cursor->field_0 > 0) {
+		if ((s32)BattlePadCheckRepeat(0x10000)) {
+			cursor->field_0--;
+			psndSFXOn("SFX_BTL_CURSOR_MOVE2");
+			goto after;
+		}
+	} else {
+		if (BattlePadCheckTrigger(0x10000)) {
+			cursor->field_0 = cursor->unk8 - 1;
+			psndSFXOn("SFX_BTL_CURSOR_MOVE2");
+		}
+	}
+after:
 	if (BattlePadCheckTrigger(0x200)) {
 		done = 1;
 		cancel = 0;
@@ -1885,84 +1884,83 @@ s32 BattleCommandDisplay_OperationMenuMain(BattleWork* wp) {
 	}
 	if (BattleMenuKeyOKInACT(wp)) {
 		_btlcmd_GetCursorPtr(cmd, 5, &cursor);
-		do {
-			if (BattlePadCheckTrigger(0x100) || wp->commandMenu.restoreState != 0) {
-				if (cmd->operationTable[cursor->field_0].mEnabled) {
-					psndSFXOn((char*)0x9D8);
-					cmd->operationKind = cmd->operationTable[cursor->field_0].mType;
-					switch (cmd->operationKind) {
-					case 1:
-					case 2:
-					case 3:
-					case 5:
-					case 6:
-					case 7:
-					case 8:
-						BattleStageOffLightInCommand(0, 1);
-						cmd->commandState = 0x1D;
-						break;
-					case 0:
-						cmd->commandState = 0x18;
-						break;
-					case 4:
-						cmd->commandState = 0x1B;
-						break;
-					}
-					BattleCommandDisplay_OperationMenuEnd(wp);
-					result = 1;
+		if (BattlePadCheckTrigger(0x100) || wp->commandMenu.restoreState != 0) {
+			if (cmd->operationTable[cursor->field_0].mEnabled) {
+				psndSFXOn((char*)0x9D8);
+				cmd->operationKind = cmd->operationTable[cursor->field_0].mType;
+				switch (cmd->operationKind) {
+				case 1:
+				case 2:
+				case 3:
+				case 5:
+				case 6:
+				case 7:
+				case 8:
+					BattleStageOffLightInCommand(0, 1);
+					cmd->commandState = 0x1D;
+					break;
+				case 0:
+					cmd->commandState = 0x18;
+					break;
+				case 4:
+					cmd->commandState = 0x1B;
 					break;
 				}
-				if (wp->commandMenu.restoreState == 0) {
-					psndSFXOn("SFX_NOT_CHOICE1");
-				}
-				wp->commandMenu.restoreState = 0;
-				if ((s32)cmd->operationTable[cursor->field_0].mDisableReason != 0) {
-					BattleCommandDisplay_OperationMenuEnd(wp);
-					cmd->commandState = 0x16;
-					result = 1;
-					cmd->disableReason = cmd->operationTable[cursor->field_0].mDisableReason;
-				}
-				break;
-			}
-			if (cursor->field_0 < cursor->unk8 - 1) {
-				if (BattlePadCheckRepeat(0x20000)) {
-					cursor->field_0++;
-					psndSFXOn("SFX_BTL_CURSOR_MOVE2");
-					break;
-				}
-			} else {
-				if (BattlePadCheckTrigger(0x20000)) {
-					cursor->field_0 = 0;
-					psndSFXOn("SFX_BTL_CURSOR_MOVE2");
-					break;
-				}
-			}
-			if (cursor->field_0 > 0) {
-				if (BattlePadCheckRepeat(0x10000)) {
-					cursor->field_0--;
-					psndSFXOn("SFX_BTL_CURSOR_MOVE2");
-					break;
-				}
-			} else {
-				if (BattlePadCheckTrigger(0x10000)) {
-					cursor->field_0 = cursor->unk8 - 1;
-					psndSFXOn("SFX_BTL_CURSOR_MOVE2");
-					break;
-				}
-			}
-			if (BattlePadCheckTrigger(0x200)) {
-				psndSFXOn((char*)0x9D9);
 				BattleCommandDisplay_OperationMenuEnd(wp);
 				result = 1;
-				cmd->commandState = 1;
-				break;
+				goto end;
 			}
-			if (BattleCommandAttackAudienceCheck()) {
-				wp->commandMenu.restoreState = 1;
+			if (wp->commandMenu.restoreState == 0) {
+				psndSFXOn("SFX_NOT_CHOICE1");
+			}
+			wp->commandMenu.restoreState = 0;
+			if ((s32)cmd->operationTable[cursor->field_0].mDisableReason != 0) {
 				BattleCommandDisplay_OperationMenuEnd(wp);
+				cmd->commandState = 0x16;
+				result = 1;
+				cmd->disableReason = cmd->operationTable[cursor->field_0].mDisableReason;
 			}
-		} while (0);
+			goto end;
+		}
+		if (cursor->field_0 < cursor->unk8 - 1) {
+			if (BattlePadCheckRepeat(0x20000)) {
+				cursor->field_0++;
+				psndSFXOn("SFX_BTL_CURSOR_MOVE2");
+				goto end;
+			}
+		} else {
+			if (BattlePadCheckTrigger(0x20000)) {
+				cursor->field_0 = 0;
+				psndSFXOn("SFX_BTL_CURSOR_MOVE2");
+				goto end;
+			}
+		}
+		if (cursor->field_0 > 0) {
+			if (BattlePadCheckRepeat(0x10000)) {
+				cursor->field_0--;
+				psndSFXOn("SFX_BTL_CURSOR_MOVE2");
+				goto end;
+			}
+		} else {
+			if (BattlePadCheckTrigger(0x10000)) {
+				cursor->field_0 = cursor->unk8 - 1;
+				psndSFXOn("SFX_BTL_CURSOR_MOVE2");
+				goto end;
+			}
+		}
+		if (BattlePadCheckTrigger(0x200)) {
+			psndSFXOn((char*)0x9D9);
+			BattleCommandDisplay_OperationMenuEnd(wp);
+			result = 1;
+			cmd->commandState = 1;
+			goto end;
+		}
+		if (BattleCommandAttackAudienceCheck()) {
+			wp->commandMenu.restoreState = 1;
+			BattleCommandDisplay_OperationMenuEnd(wp);
+		}
 	}
+end:
 #ifdef MUST_MATCH
 	// MUST_MATCH: header declares BattleMenuDisp_Operation_Main(void), but the original passes wp in r3.
 	((void (*)(BattleWork*))BattleMenuDisp_Operation_Main)(wp);
@@ -1997,67 +1995,66 @@ s32 BattleCommandDisplay_MultiItemMenuMain(BattleWork* wp) {
 
 	if (BattleMenuKeyOKInACT(wp)) {
 		_btlcmd_GetCursorPtr(cmd, 3, &cursor);
-		do {
-			if (BattlePadCheckTrigger(0x100) || wp->commandMenu.restoreState != 0) {
-				if (cmd->multiItemTable[cursor->field_0].mEnabled) {
-					psndSFXOn((char*)0x9D8);
-					cmd->multiItemKind = cmd->multiItemTable[cursor->field_0].mKind;
-					cmd->commandState = 5;
-					BattleCommandDisplay_MultiItemMenuEnd(wp);
-					result = 1;
-					break;
-				}
-				if (wp->commandMenu.restoreState == 0) {
-					psndSFXOn("SFX_NOT_CHOICE1");
-				}
-				wp->commandMenu.restoreState = 0;
-				if ((s32)cmd->multiItemTable[cursor->field_0].mDisableReason != 0) {
-					BattleCommandDisplay_MultiItemMenuEnd(wp);
-					cmd->commandState = 0x11;
-					result = 1;
-					cmd->disableReason = cmd->multiItemTable[cursor->field_0].mDisableReason;
-				}
-				break;
-			}
-			if (cursor->field_0 < cursor->unk8 - 1) {
-				if (BattlePadCheckRepeat(0x20000)) {
-					cursor->field_0++;
-					psndSFXOn("SFX_BTL_CURSOR_MOVE2");
-					break;
-				}
-			} else {
-				if (BattlePadCheckTrigger(0x20000)) {
-					cursor->field_0 = 0;
-					psndSFXOn("SFX_BTL_CURSOR_MOVE2");
-					break;
-				}
-			}
-			if (cursor->field_0 > 0) {
-				if (BattlePadCheckRepeat(0x10000)) {
-					cursor->field_0--;
-					psndSFXOn("SFX_BTL_CURSOR_MOVE2");
-					break;
-				}
-			} else {
-				if (BattlePadCheckTrigger(0x10000)) {
-					cursor->field_0 = cursor->unk8 - 1;
-					psndSFXOn("SFX_BTL_CURSOR_MOVE2");
-					break;
-				}
-			}
-			if (BattlePadCheckTrigger(0x200)) {
-				psndSFXOn((char*)0x9D9);
+		if (BattlePadCheckTrigger(0x100) || wp->commandMenu.restoreState != 0) {
+			if (cmd->multiItemTable[cursor->field_0].mEnabled) {
+				psndSFXOn((char*)0x9D8);
+				cmd->multiItemKind = cmd->multiItemTable[cursor->field_0].mKind;
+				cmd->commandState = 5;
 				BattleCommandDisplay_MultiItemMenuEnd(wp);
 				result = 1;
-				cmd->commandState = 1;
-				break;
+				goto end;
 			}
-			if (BattleCommandAttackAudienceCheck()) {
-				wp->commandMenu.restoreState = 1;
+			if (wp->commandMenu.restoreState == 0) {
+				psndSFXOn("SFX_NOT_CHOICE1");
+			}
+			wp->commandMenu.restoreState = 0;
+			if ((s32)cmd->multiItemTable[cursor->field_0].mDisableReason != 0) {
 				BattleCommandDisplay_MultiItemMenuEnd(wp);
+				cmd->commandState = 0x11;
+				result = 1;
+				cmd->disableReason = cmd->multiItemTable[cursor->field_0].mDisableReason;
 			}
-		} while (0);
+			goto end;
+		}
+		if (cursor->field_0 < cursor->unk8 - 1) {
+			if (BattlePadCheckRepeat(0x20000)) {
+				cursor->field_0++;
+				psndSFXOn("SFX_BTL_CURSOR_MOVE2");
+				goto end;
+			}
+		} else {
+			if (BattlePadCheckTrigger(0x20000)) {
+				cursor->field_0 = 0;
+				psndSFXOn("SFX_BTL_CURSOR_MOVE2");
+				goto end;
+			}
+		}
+		if (cursor->field_0 > 0) {
+			if (BattlePadCheckRepeat(0x10000)) {
+				cursor->field_0--;
+				psndSFXOn("SFX_BTL_CURSOR_MOVE2");
+				goto end;
+			}
+		} else {
+			if (BattlePadCheckTrigger(0x10000)) {
+				cursor->field_0 = cursor->unk8 - 1;
+				psndSFXOn("SFX_BTL_CURSOR_MOVE2");
+				goto end;
+			}
+		}
+		if (BattlePadCheckTrigger(0x200)) {
+			psndSFXOn((char*)0x9D9);
+			BattleCommandDisplay_MultiItemMenuEnd(wp);
+			result = 1;
+			cmd->commandState = 1;
+			goto end;
+		}
+		if (BattleCommandAttackAudienceCheck()) {
+			wp->commandMenu.restoreState = 1;
+			BattleCommandDisplay_MultiItemMenuEnd(wp);
+		}
 	}
+end:
 #ifdef MUST_MATCH
 	// MUST_MATCH: header declares BattleMenuDisp_MultiItem_Main(void), but the original passes wp in r3.
 	((void (*)(BattleWork*))BattleMenuDisp_MultiItem_Main)(wp);
@@ -2089,61 +2086,60 @@ s32 BattleCommandDisplay_ChangePartySelectMenuMain(BattleWork* wp) {
 
 	if (BattleMenuKeyOKInACT(wp)) {
 		_btlcmd_GetCursorPtr(cmd, 0xA, &cursor);
-		do {
-			if (BattlePadCheckTrigger(0x100) || wp->commandMenu.restoreState != 0) {
-				if (cmd->partyTable[cursor->field_0].mEnabled) {
-					psndSFXOn((char*)0x9D8);
-					BattleStageOffLightInCommand(0, 1);
-					cmd->partyChangeId = cmd->partyTable[cursor->field_0].mPartyId;
-					cmd->commandState = 0x1D;
-					BattleCommandDisplay_ChangePartySelectMenuEnd(wp);
-					result = 1;
-					break;
-				}
-				if (wp->commandMenu.restoreState == 0) {
-					psndSFXOn("SFX_NOT_CHOICE1");
-				}
-				wp->commandMenu.restoreState = 0;
-			}
-			if (cursor->field_0 < cursor->unk8 - 1) {
-				if (BattlePadCheckRepeat(0x20000)) {
-					cursor->field_0++;
-					psndSFXOn("SFX_BTL_CURSOR_MOVE2");
-					break;
-				}
-			} else {
-				if (BattlePadCheckTrigger(0x20000)) {
-					cursor->field_0 = 0;
-					psndSFXOn("SFX_BTL_CURSOR_MOVE2");
-					break;
-				}
-			}
-			if (cursor->field_0 > 0) {
-				if (BattlePadCheckRepeat(0x10000)) {
-					cursor->field_0--;
-					psndSFXOn("SFX_BTL_CURSOR_MOVE2");
-					break;
-				}
-			} else {
-				if (BattlePadCheckTrigger(0x10000)) {
-					cursor->field_0 = cursor->unk8 - 1;
-					psndSFXOn("SFX_BTL_CURSOR_MOVE2");
-					break;
-				}
-			}
-			if (BattlePadCheckTrigger(0x200)) {
-				psndSFXOn((char*)0x9D9);
+		if (BattlePadCheckTrigger(0x100) || wp->commandMenu.restoreState != 0) {
+			if (cmd->partyTable[cursor->field_0].mEnabled) {
+				psndSFXOn((char*)0x9D8);
+				BattleStageOffLightInCommand(0, 1);
+				cmd->partyChangeId = cmd->partyTable[cursor->field_0].mPartyId;
+				cmd->commandState = 0x1D;
 				BattleCommandDisplay_ChangePartySelectMenuEnd(wp);
 				result = 1;
-				cmd->commandState = 0x14;
-				break;
+				goto end;
 			}
-			if (BattleCommandAttackAudienceCheck()) {
-				wp->commandMenu.restoreState = 1;
-				BattleCommandDisplay_ChangePartySelectMenuEnd(wp);
+			if (wp->commandMenu.restoreState == 0) {
+				psndSFXOn("SFX_NOT_CHOICE1");
 			}
-		} while (0);
+			wp->commandMenu.restoreState = 0;
+		}
+		if (cursor->field_0 < cursor->unk8 - 1) {
+			if (BattlePadCheckRepeat(0x20000)) {
+				cursor->field_0++;
+				psndSFXOn("SFX_BTL_CURSOR_MOVE2");
+				goto end;
+			}
+		} else {
+			if (BattlePadCheckTrigger(0x20000)) {
+				cursor->field_0 = 0;
+				psndSFXOn("SFX_BTL_CURSOR_MOVE2");
+				goto end;
+			}
+		}
+		if (cursor->field_0 > 0) {
+			if (BattlePadCheckRepeat(0x10000)) {
+				cursor->field_0--;
+				psndSFXOn("SFX_BTL_CURSOR_MOVE2");
+				goto end;
+			}
+		} else {
+			if (BattlePadCheckTrigger(0x10000)) {
+				cursor->field_0 = cursor->unk8 - 1;
+				psndSFXOn("SFX_BTL_CURSOR_MOVE2");
+				goto end;
+			}
+		}
+		if (BattlePadCheckTrigger(0x200)) {
+			psndSFXOn((char*)0x9D9);
+			BattleCommandDisplay_ChangePartySelectMenuEnd(wp);
+			result = 1;
+			cmd->commandState = 0x14;
+			goto end;
+		}
+		if (BattleCommandAttackAudienceCheck()) {
+			wp->commandMenu.restoreState = 1;
+			BattleCommandDisplay_ChangePartySelectMenuEnd(wp);
+		}
 	}
+end:
 #ifdef MUST_MATCH
 	// MUST_MATCH: header declares BattleMenuDisp_ChangePartySelect_Main(void), but the original passes wp in r3.
 	((void (*)(BattleWork*))BattleMenuDisp_ChangePartySelect_Main)(wp);
