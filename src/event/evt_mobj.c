@@ -4187,17 +4187,9 @@ s32 evt_mobj_koopa_brick(EventEntry* event, BOOL isFirstCall) {
     obj->state = 0;
     *(s32*)obj->unk1A0 = unk1A0;
     mobjCalcMtx(obj);
-#ifdef MUST_MATCH
     animPoseSetAnim(obj->poseId, "S_1", 1);
-#else
-    animPoseSetAnim(obj->poseId, "S_1", 1);
-#endif
     if (evtGetValue(event, flagVar) != 0) {
-#ifdef MUST_MATCH
         animPoseSetAnim(obj->poseId, "S_1", 1);
-#else
-        animPoseSetAnim(obj->poseId, "S_1", 1);
-#endif
         obj->state = 0x63;
     }
     return 2;
@@ -4524,9 +4516,6 @@ s32 mobj_koopa_dokan_evt(MapObjectEntry* obj) {
 
 // Pipe model names are literals; the position retains its prefix Vec template.
 s32 evt_mobj_koopa_dokan(EventEntry* event, BOOL isFirstCall) {
-#ifdef MUST_MATCH
-
-#endif
     s32* args = event->args;
     s32 type = evtGetValue(event, args[0]);
     const char* name = (const char*)evtGetValue(event, args[1]);
