@@ -106,7 +106,7 @@ EffectEntry* effPokopiThunderN64Entry(s32 type, s32 lifetime, f32 x, f32 y, f32 
 	} else {
 		data->lifetime = lifetime;
 	}
-	data->field_0x3C = 0xFF;
+	data->tev1A = 0xFF;
 
 	// The unnamed scratch fields the original keeps in the struct's reserved runs.
 	*(f32*)((u8*)data + 0x10) = x;
@@ -136,12 +136,12 @@ EffectEntry* effPokopiThunderN64Entry(s32 type, s32 lifetime, f32 x, f32 y, f32 
 		return NULL;
 	}
 	*(f32*)((u8*)data + 0x114) = 0.005f * *(f32*)((u8*)data + 0x114);
-	data->field_0x30 = 0xFF;
-	data->field_0x34 = 0xDC;
-	data->field_0x38 = 0x14;
-	data->field_0x40 = 0xFF;
-	data->field_0x44 = 0xFF;
-	data->field_0x48 = 0xFF;
+	data->tev1R = 0xFF;
+	data->tev1G = 0xDC;
+	data->tev1B = 0x14;
+	data->tev2R = 0xFF;
+	data->tev2G = 0xFF;
+	data->tev2B = 0xFF;
 	*(s32*)((u8*)data + 0x110) = rand() % 360;
 	return effect;
 }
@@ -182,11 +182,11 @@ void effPokopiThunderMain(EffectEntry* effect) {
 	// what reproduces the original's f2/f0 constant registers (a plain * 0.5f allocates f1/f2).
 	if (type == 2) {
 		if (timer >= 40) {
-			data->field_0x3C = (s32)((f32)data->field_0x3C / 2.0f);
+			data->tev1A = (s32)((f32)data->tev1A / 2.0f);
 		}
 	} else {
 		if (timer >= 11) {
-			data->field_0x3C = (s32)((f32)data->field_0x3C / 2.0f);
+			data->tev1A = (s32)((f32)data->tev1A / 2.0f);
 		}
 	}
 
@@ -272,18 +272,18 @@ typedef struct EffPokopiThunderVtx {
 #ifdef MUST_MATCH
 static inline void effPokopiThunderSetColor1(EffPokopiThunderData* data, s32 a) {
 	GXColor c = unk_80423220;
-	c.r = data->field_0x30;
-	c.g = data->field_0x34;
-	c.b = data->field_0x38;
+	c.r = data->tev1R;
+	c.g = data->tev1G;
+	c.b = data->tev1B;
 	c.a = a;
 	GXSetTevColor(1, c);
 }
 
 static inline void effPokopiThunderSetColor2(EffPokopiThunderData* data) {
 	GXColor c = *(GXColor*)&dat_8041fa20;
-	c.r = data->field_0x40;
-	c.g = data->field_0x44;
-	c.b = data->field_0x48;
+	c.r = data->tev2R;
+	c.g = data->tev2G;
+	c.b = data->tev2B;
 	GXSetTevColor(2, c);
 }
 #endif
@@ -336,7 +336,7 @@ void effPokopiThunderDisp(CameraId camId, void* param) {
 	cam = camGetPtr(camId);
 	data = effect->userdata;
 	timer = data->timer;
-	cr = data->field_0x3C;
+	cr = data->tev1A;
 	type = data->type;
 	scale = (*(f32*)((u8*)data + 0x4C));
 	if (data->cameraId != 4) {
@@ -353,9 +353,9 @@ void effPokopiThunderDisp(CameraId camId, void* param) {
 	effPokopiThunderSetColor1(data, cr);
 #else
 	color = unk_80423220;
-	color.r = data->field_0x30;
-	color.g = data->field_0x34;
-	color.b = data->field_0x38;
+	color.r = data->tev1R;
+	color.g = data->tev1G;
+	color.b = data->tev1B;
 	color.a = cr;
 	GXSetTevColor(1, color);
 #endif
@@ -363,9 +363,9 @@ void effPokopiThunderDisp(CameraId camId, void* param) {
 	effPokopiThunderSetColor2(data);
 #else
 	color2 = *(GXColor*)&dat_8041fa20;
-	color2.r = data->field_0x40;
-	color2.g = data->field_0x44;
-	color2.b = data->field_0x48;
+	color2.r = data->tev2R;
+	color2.g = data->tev2G;
+	color2.b = data->tev2B;
 	GXSetTevColor(2, color2);
 #endif
 	GXSetNumChans(0);

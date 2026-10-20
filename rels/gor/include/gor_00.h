@@ -5,6 +5,7 @@
 #include <dolphin/os.h>
 #include <dolphin/types.h>
 #include <dolphin/mtx.h>
+#include <dolphin/gx.h>
 
 typedef struct NanNpcEntry NanNpcEntry;
 
@@ -14,29 +15,39 @@ typedef struct NanNpcWork {
     s32 count;              // 0xC
 } NanNpcWork;
 
+// Layout and the generic names come from src/event/evt_nannpc.c, which owns these entries; the names that
+// differ are what gor_00's gundan1000tai and suifu100taikikan sequences use the slots for.
 struct NanNpcEntry {
-    u8 pad_0x00[0x18];              // 0x0
+    char name[16];                  // 0x0
+    void* pose;                     // 0x10
+    u16 flags;                      // 0x14
+    s16 field_0x16;                 // 0x16
     Vec position;                   // 0x18
     Vec hoseiPosition;              // 0x24
-    Vec field_0x30;                 // 0x30
-    u8 pad_0x3C[0x50 - 0x3C];       // 0x3C
-    OSTime field_0x50;              // 0x50
-    u8 pad_0x58[0x60 - 0x58];       // 0x58
-    f32 field_0x60;                 // 0x60
+    Vec basePos;                    // 0x30, evt_nannpc's homePosition; origin of the current move here
+    Vec field_0x3C;                 // 0x3C
+    f32 width;                      // 0x48
+    f32 field_0x4C;                 // 0x4C
+    OSTime startTime;               // 0x50, renderTime when the current state began
+    s16* animTable;                 // 0x58
+    s16 animCount;                  // 0x5C
+    s16 animCurrent;                // 0x5E
+    f32 facingAngle;                // 0x60, y rotation (evt_nannpc negates it into pose->field_0x4); 90 or 270 here
     void (*callback)(NanNpcEntry*); // 0x64
-    s32 field_0x68;                 // 0x68
-    s32 field_0x6C;                 // 0x6C
-    s32 field_0x70;                 // 0x70
-    s32 field_0x74;                 // 0x74
-    f32 field_0x78;                 // 0x78
-    f32 field_0x7C;                 // 0x7C
-    f32 field_0x80;                 // 0x80
-    f32 field_0x84;                 // 0x84
-    Vec field_0x88;                 // 0x88
-    u8 pad_0x94[0xA4 - 0x94];       // 0x94
-    s32 field_0xA4;                 // 0xA4
-    s32 field_0xA8;                 // 0xA8
-    u8 pad_0xAC[0xC0 - 0xAC];       // 0xAC
+    s32 state;                      // 0x68, switch selector of the seq functions
+    s32 timer;                      // 0x6C, wait or move duration in ms, or the step count of a seq00 move
+    s32 field_0x70;                 // 0x70, step total of a movePos move, or the state to enter after a jump/walk
+    s32 index;                      // 0x74, the entry number from gundan1000tai_init
+    f32 field_0x78;                 // 0x78, movePos step, jump arc term, sway right bound, or suifu speed
+    f32 field_0x7C;                 // 0x7C, movePos angle, jump arc term, or sway left bound
+    f32 stepX;                      // 0x80, +1 or -1 per frame in the sway state
+    s32 field_0x84;                 // 0x84, not used by gor_00
+    Vec targetPos;                  // 0x88
+    u8 field_0x94[0x10];            // 0x94
+    s32 moveDone;                   // 0xA4, evt_nannpc work[0]; 1 once a move has reached its target
+    s32 endFlag;                    // 0xA8, evt_nannpc work[1]; set by gundan1000tai_totsuend, nonzero moves to state 100
+    s32 work[4];                    // 0xAC, evt_nannpc work[2..5]
+    GXColor color;                  // 0xBC
 };
 
 extern NanNpcWork* nanNPCWork;

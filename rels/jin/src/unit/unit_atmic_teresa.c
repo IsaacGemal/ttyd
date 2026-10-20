@@ -25,17 +25,15 @@
 // One animated Teresian used by teresa_ext_main's state machine.
 typedef struct TeresaEntry {
     u8 state;        // 0x0
-    s8 field_0x1;    // 0x1
+    s8 animMode;     // 0x1, 0 loops frames 0-7, 1 plays frames 8-15 once (pose->field_0x10)
     u8 pad_0x2[2];   // 0x2
-    s32 field_0x4;   // 0x4
-    s32 field_0x8;   // 0x8
-    s32 field_0xC;   // 0xC
-    Vec field_0x10;  // 0x10
-    f32 field_0x1C;  // 0x1C
-    f32 field_0x20;  // 0x20
-    f32 field_0x24;  // 0x24
-    Vec field_0x28;  // 0x28
-    u8 field_0x34;   // 0x34
+    s32 timer;       // 0x4, animation frame clock; state 0x14 also waits on it
+    s32 delay;       // 0x8, frames to wait before the state machine runs
+    s32 counter;     // 0xC, per-state frame countdown, or the interpolation step in state 0x35
+    Vec velocity;    // 0x10, added to the matrix translation each frame
+    Vec startPos;    // 0x1C, interpolation start for state 0x35
+    Vec targetPos;   // 0x28
+    u8 easeMode;     // 0x34, intplGetValue mode
     u8 pad_0x35[3];  // 0x35
 } TeresaEntry;       // 0x38
 
@@ -1045,15 +1043,15 @@ void teresa_ext_init(void) {
         (*pose->matrix)[2][3] = 0.0f;
         pose->field_0x4 = 90.0f;
         teresa[i].state = 0;
-        teresa[i].field_0x1 = 0;
-        teresa[i].field_0x4 = 0;
-        teresa[i].field_0x10 = (Vec){0.0f, 0.0f, 0.0f};
+        teresa[i].animMode = 0;
+        teresa[i].timer = 0;
+        teresa[i].velocity = (Vec){0.0f, 0.0f, 0.0f};
     }
 }
 
 // The original intplGetValue prototype orders the float ranges before the integer step. That order is
 // ABI-identical to include/system.h's declaration (r3, f1, f2, r4, r5) but makes MWCC load the float args
-// before entry->field_0xC, as the retail bytes do; the cast selects it.
+// before entry->counter, as the retail bytes do; the cast selects it.
 #ifdef MUST_MATCH
 static inline f32 teresa_intpl(s32 mode, f32 start, f32 end, s32 step, s32 steps) {
     return ((f32 (*)(s32, f32, f32, s32, s32))intplGetValue)(mode, start, end, step, steps);
@@ -1118,32 +1116,32 @@ void teresa_ext_main(void) {
     for (i = 0; i < extGetPoseNum(); i++, pose++) {
         entry = &teresa[i];
 
-        switch (entry->field_0x1) {
+        switch (entry->animMode) {
         case 1:
-            entry->field_0x4++;
-            if (entry->field_0x4 <= 0x1E) {
+            entry->timer++;
+            if (entry->timer <= 0x1E) {
                 pose->field_0x10 = 8;
-            } else if (entry->field_0x4 < 0x2C) {
-                pose->field_0x10 = (entry->field_0x4 - 0x1E) / 2 + 9;
+            } else if (entry->timer < 0x2C) {
+                pose->field_0x10 = (entry->timer - 0x1E) / 2 + 9;
             } else {
                 pose->field_0x10 = 0xF;
             }
             break;
         default:
-            entry->field_0x4++;
-            if (entry->field_0x4 >= 0x18) {
-                entry->field_0x4 -= 0x18;
+            entry->timer++;
+            if (entry->timer >= 0x18) {
+                entry->timer -= 0x18;
             }
-            pose->field_0x10 = entry->field_0x4 / 3;
+            pose->field_0x10 = entry->timer / 3;
             break;
         }
-        if (entry->field_0x8 >= 1) {
-            entry->field_0x8--;
+        if (entry->delay >= 1) {
+            entry->delay--;
             continue;
         }
-        (*pose->matrix)[0][3] += entry->field_0x10.x;
-        (*pose->matrix)[1][3] += entry->field_0x10.y;
-        (*pose->matrix)[2][3] += entry->field_0x10.z;
+        (*pose->matrix)[0][3] += entry->velocity.x;
+        (*pose->matrix)[1][3] += entry->velocity.y;
+        (*pose->matrix)[2][3] += entry->velocity.z;
         if ((*pose->matrix)[1][3] < 0.0f) {
             (*pose->matrix)[1][3] = 0.0f;
         }
@@ -1164,16 +1162,16 @@ void teresa_ext_main(void) {
             (*pose->matrix)[0][0] = 0.0f;
             (*pose->matrix)[1][1] = 0.0f;
             angle = 0.785398f * (f32)i;
-            entry->field_0x10.x = 2.0f * (f32)cos(angle);
-            entry->field_0x10.y = 2.0f * (f32)sin(angle);
-            entry->field_0x10.z = 0.0f;
-            entry->field_0x8 = sp60[i];
-            entry->field_0xC = 0x32;
+            entry->velocity.x = 2.0f * (f32)cos(angle);
+            entry->velocity.y = 2.0f * (f32)sin(angle);
+            entry->velocity.z = 0.0f;
+            entry->delay = sp60[i];
+            entry->counter = 0x32;
             entry->state = 5;
             break;
         case 5:
-            entry->field_0xC--;
-            if (entry->field_0xC == 0x19) {
+            entry->counter--;
+            if (entry->counter == 0x19) {
                 atmic_teresa_scale -= 0.05f;
                 if (i % 2 == 0) {
                     Vec pos = {0.0f, 0.0f, 0.0f};
@@ -1185,13 +1183,13 @@ void teresa_ext_main(void) {
             }
             (*pose->matrix)[0][0] += 0.02f;
             (*pose->matrix)[1][1] += 0.02f;
-            if (entry->field_0xC <= 0) {
+            if (entry->counter <= 0) {
                 pose->flags |= 2;
                 entry->state = 0xA;
-                entry->field_0xC = 0x96;
-                entry->field_0x10.x = 0.0f;
-                entry->field_0x10.y = 0.0f;
-                entry->field_0x10.z = 0.0f;
+                entry->counter = 0x96;
+                entry->velocity.x = 0.0f;
+                entry->velocity.y = 0.0f;
+                entry->velocity.z = 0.0f;
                 if (i % 2 == 0) {
                     Vec pos = {0.0f, 0.0f, 0.0f};
                     pos.x = (*pose->matrix)[0][3];
@@ -1203,38 +1201,38 @@ void teresa_ext_main(void) {
             break;
         case 0xA:
             angle = 6.283184f * (0.125f * (f32)i + 2.0f * (f32)teresa_count / 360.0f);
-            entry->field_0x28.x = 90.0f * (f32)cos(angle) - 100.0f;
-            entry->field_0x28.y = 10.0f;
-            entry->field_0x28.z = 90.0f * (f32)sin(angle);
+            entry->targetPos.x = 90.0f * (f32)cos(angle) - 100.0f;
+            entry->targetPos.y = 10.0f;
+            entry->targetPos.z = 90.0f * (f32)sin(angle);
             if ((*pose->matrix)[0][3] >= -100.0f) {
                 pose->field_0x4 = 90.0f;
             } else {
                 pose->field_0x4 = 270.0f;
             }
-            entry->field_0x10.x = (entry->field_0x28.x - (*pose->matrix)[0][3]) / 20.0f;
-            entry->field_0x10.y = (entry->field_0x28.y - (*pose->matrix)[1][3]) / 20.0f;
-            entry->field_0x10.z = (entry->field_0x28.z - (*pose->matrix)[2][3]) / 20.0f;
-            if (entry->field_0xC <= 0) {
+            entry->velocity.x = (entry->targetPos.x - (*pose->matrix)[0][3]) / 20.0f;
+            entry->velocity.y = (entry->targetPos.y - (*pose->matrix)[1][3]) / 20.0f;
+            entry->velocity.z = (entry->targetPos.z - (*pose->matrix)[2][3]) / 20.0f;
+            if (entry->counter <= 0) {
                 entry->state = 0xF;
-                entry->field_0x10.x = 0.0f;
-                entry->field_0x10.y = 0.0f;
-                entry->field_0x10.z = 0.0f;
+                entry->velocity.x = 0.0f;
+                entry->velocity.y = 0.0f;
+                entry->velocity.z = 0.0f;
             }
-            entry->field_0xC--;
+            entry->counter--;
             break;
         case 0xF:
             angle = 6.283184f * (0.125f * (f32)i + 2.0f * (f32)teresa_count / 360.0f);
-            entry->field_0x28.x = 90.0f * (f32)cos(angle) - 100.0f;
-            entry->field_0x28.y = 10.0f;
-            entry->field_0x28.z = 90.0f * (f32)sin(angle);
+            entry->targetPos.x = 90.0f * (f32)cos(angle) - 100.0f;
+            entry->targetPos.y = 10.0f;
+            entry->targetPos.z = 90.0f * (f32)sin(angle);
             if ((*pose->matrix)[0][3] >= -100.0f) {
                 pose->field_0x4 = 90.0f;
             } else {
                 pose->field_0x4 = 270.0f;
             }
-            entry->field_0x10.x = (entry->field_0x28.x - (*pose->matrix)[0][3]) / 20.0f;
-            entry->field_0x10.y = (entry->field_0x28.y - (*pose->matrix)[1][3]) / 20.0f;
-            entry->field_0x10.z = (entry->field_0x28.z - (*pose->matrix)[2][3]) / 20.0f;
+            entry->velocity.x = (entry->targetPos.x - (*pose->matrix)[0][3]) / 20.0f;
+            entry->velocity.y = (entry->targetPos.y - (*pose->matrix)[1][3]) / 20.0f;
+            entry->velocity.z = (entry->targetPos.z - (*pose->matrix)[2][3]) / 20.0f;
             count = 0;
             for (j = 0; j < 8; j++) {
                 if (teresa[j].state == 0xF) {
@@ -1247,29 +1245,29 @@ void teresa_ext_main(void) {
                 for (j = 0; j < 8; j++) {
                     TeresaEntry* e = &teresa[j];
                     e->state = 0x14;
-                    e->field_0x1 = 1;
-                    e->field_0x4 = 0;
-                    e->field_0x10.x = 0.0f;
-                    e->field_0x10.y = 0.0f;
-                    e->field_0x10.z = 0.0f;
+                    e->animMode = 1;
+                    e->timer = 0;
+                    e->velocity.x = 0.0f;
+                    e->velocity.y = 0.0f;
+                    e->velocity.z = 0.0f;
                 }
             }
             break;
         case 0x14:
-            if (entry->field_0x4 >= 0xB4) {
+            if (entry->timer >= 0xB4) {
                 entry->state = 0x17;
-                entry->field_0x1 = 0;
-                entry->field_0x4 = 0;
-                entry->field_0xC = 0x3C;
-                entry->field_0x8 = sp60[i];
+                entry->animMode = 0;
+                entry->timer = 0;
+                entry->counter = 0x3C;
+                entry->delay = sp60[i];
                 pose->field_0x4 = 90.0f;
             }
             break;
         case 0x17:
-            entry->field_0x28.x = posX - 35.0f + (f32)irand(90);
-            entry->field_0x28.y = posY - 35.0f + (f32)irand(90);
-            entry->field_0x28.z = posZ - 30.0f - 0.05f * (f32)i;
-            entry->field_0xC = 0x3C;
+            entry->targetPos.x = posX - 35.0f + (f32)irand(90);
+            entry->targetPos.y = posY - 35.0f + (f32)irand(90);
+            entry->targetPos.z = posZ - 30.0f - 0.05f * (f32)i;
+            entry->counter = 0x3C;
             entry->state = 0x19;
             if (i % 2 == 0) {
                 Vec pos = {0.0f, 0.0f, 0.0f};
@@ -1280,17 +1278,17 @@ void teresa_ext_main(void) {
             }
             break;
         case 0x19:
-            entry->field_0x10.x = (entry->field_0x28.x - (*pose->matrix)[0][3]) / 20.0f;
-            entry->field_0x10.y = (entry->field_0x28.y - (*pose->matrix)[1][3]) / 20.0f;
-            entry->field_0x10.z = (entry->field_0x28.z - (*pose->matrix)[2][3]) / 20.0f;
-            if (entry->field_0xC <= 0) {
+            entry->velocity.x = (entry->targetPos.x - (*pose->matrix)[0][3]) / 20.0f;
+            entry->velocity.y = (entry->targetPos.y - (*pose->matrix)[1][3]) / 20.0f;
+            entry->velocity.z = (entry->targetPos.z - (*pose->matrix)[2][3]) / 20.0f;
+            if (entry->counter <= 0) {
                 entry->state = 0x1E;
-                entry->field_0x10.x = 0.0f;
-                entry->field_0x10.y = 0.0f;
-                entry->field_0x10.z = 0.0f;
+                entry->velocity.x = 0.0f;
+                entry->velocity.y = 0.0f;
+                entry->velocity.z = 0.0f;
                 pose->flags &= ~2;
             }
-            entry->field_0xC--;
+            entry->counter--;
             break;
         case 0x1F:
             (*pose->matrix)[0][0] -= 0.0125f;
@@ -1307,27 +1305,27 @@ void teresa_ext_main(void) {
             (*pose->matrix)[2][3] = posZ + 5.0f;
             (*pose->matrix)[1][1] = 0.0f;
             (*pose->matrix)[0][0] = 0.0f;
-            entry->field_0x10.x = 0.0f;
-            entry->field_0x10.y = 0.0f;
-            entry->field_0x10.z = 0.0f;
-            entry->field_0x1C = (*pose->matrix)[0][3];
-            entry->field_0x20 = (*pose->matrix)[1][3];
-            entry->field_0x24 = (*pose->matrix)[2][3];
+            entry->velocity.x = 0.0f;
+            entry->velocity.y = 0.0f;
+            entry->velocity.z = 0.0f;
+            entry->startPos.x = (*pose->matrix)[0][3];
+            entry->startPos.y = (*pose->matrix)[1][3];
+            entry->startPos.z = (*pose->matrix)[2][3];
             if (entry->state == 0x33) {
-                entry->field_0x28.x = hitX + sp80[i * 2] - 200.0f;
+                entry->targetPos.x = hitX + sp80[i * 2] - 200.0f;
             } else {
-                entry->field_0x28.x = hitX + sp80[i * 2] - 200.0f;
+                entry->targetPos.x = hitX + sp80[i * 2] - 200.0f;
             }
             if (entry->state == 0x33) {
-                entry->field_0x28.y = hitY + sp80[i * 2 + 1] - 50.0f;
+                entry->targetPos.y = hitY + sp80[i * 2 + 1] - 50.0f;
             } else {
-                entry->field_0x28.y = hitY + sp80[i * 2 + 1] - 50.0f;
+                entry->targetPos.y = hitY + sp80[i * 2 + 1] - 50.0f;
             }
-            entry->field_0x28.z = hitZ - 10.0f - 0.05f * (f32)i;
-            entry->field_0x8 = i * 3;
-            entry->field_0xC = 0;
+            entry->targetPos.z = hitZ - 10.0f - 0.05f * (f32)i;
+            entry->delay = i * 3;
+            entry->counter = 0;
             entry->state = 0x35;
-            entry->field_0x34 = sp2C[irand(7)];
+            entry->easeMode = sp2C[irand(7)];
             break;
         case 0x35:
             atmic_teresa_scale -= 0.015f;
@@ -1339,19 +1337,19 @@ void teresa_ext_main(void) {
                 (*pose->matrix)[0][0] = 1.0f;
             }
             (*pose->matrix)[1][1] = (*pose->matrix)[0][0];
-            (*pose->matrix)[0][3] = teresa_intpl(entry->field_0x34, entry->field_0x1C, entry->field_0x28.x, entry->field_0xC, 0x1E);
-            (*pose->matrix)[1][3] = teresa_intpl(entry->field_0x34, entry->field_0x20, entry->field_0x28.y, entry->field_0xC, 0x1E);
-            (*pose->matrix)[2][3] = teresa_intpl(entry->field_0x34, entry->field_0x24, entry->field_0x28.z, entry->field_0xC, 0x1E);
-            if (entry->field_0xC >= 0x1E) {
+            (*pose->matrix)[0][3] = teresa_intpl(entry->easeMode, entry->startPos.x, entry->targetPos.x, entry->counter, 0x1E);
+            (*pose->matrix)[1][3] = teresa_intpl(entry->easeMode, entry->startPos.y, entry->targetPos.y, entry->counter, 0x1E);
+            (*pose->matrix)[2][3] = teresa_intpl(entry->easeMode, entry->startPos.z, entry->targetPos.z, entry->counter, 0x1E);
+            if (entry->counter >= 0x1E) {
                 entry->state = 0x3C;
             }
-            entry->field_0xC++;
+            entry->counter++;
             break;
         case 0x3F:
-            entry->field_0x28.x = posX - 35.0f + (f32)irand(90);
-            entry->field_0x28.y = posY - 35.0f + (f32)irand(90);
-            entry->field_0x28.z = posZ - 30.0f - 0.05f * (f32)i;
-            entry->field_0xC = 0x3C;
+            entry->targetPos.x = posX - 35.0f + (f32)irand(90);
+            entry->targetPos.y = posY - 35.0f + (f32)irand(90);
+            entry->targetPos.z = posZ - 30.0f - 0.05f * (f32)i;
+            entry->counter = 0x3C;
             entry->state = 0x41;
             if (i % 2 == 0) {
                 Vec pos = {0.0f, 0.0f, 0.0f};
@@ -1362,16 +1360,16 @@ void teresa_ext_main(void) {
             }
             break;
         case 0x41:
-            entry->field_0x10.x = (entry->field_0x28.x - (*pose->matrix)[0][3]) / 15.0f;
-            entry->field_0x10.y = (entry->field_0x28.y - (*pose->matrix)[1][3]) / 15.0f;
-            entry->field_0x10.z = (entry->field_0x28.z - (*pose->matrix)[2][3]) / 15.0f;
-            if (entry->field_0xC <= 0) {
+            entry->velocity.x = (entry->targetPos.x - (*pose->matrix)[0][3]) / 15.0f;
+            entry->velocity.y = (entry->targetPos.y - (*pose->matrix)[1][3]) / 15.0f;
+            entry->velocity.z = (entry->targetPos.z - (*pose->matrix)[2][3]) / 15.0f;
+            if (entry->counter <= 0) {
                 entry->state = 0x46;
-                entry->field_0x10.x = 0.0f;
-                entry->field_0x10.y = 0.0f;
-                entry->field_0x10.z = 0.0f;
+                entry->velocity.x = 0.0f;
+                entry->velocity.y = 0.0f;
+                entry->velocity.z = 0.0f;
             }
-            entry->field_0xC--;
+            entry->counter--;
             break;
         case 0x47:
             (*pose->matrix)[0][0] -= 0.0125f;
@@ -1467,7 +1465,7 @@ s32 teresa_wait_breath(EventEntry* event, BOOL isFirstCall) {
     for (i = 0; i < 30; i++) {
         TeresaEntry* entry = &teresa[i];
         entry->state = 0x3F;
-        entry->field_0x8 = 30;
+        entry->delay = 30;
     }
     return EVT_RETURN_DONE;
 }

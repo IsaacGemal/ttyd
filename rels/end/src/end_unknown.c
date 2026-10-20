@@ -55,15 +55,15 @@ typedef struct CreditsPoseState {
 
 // "end" REL credits work block (the target of dat_ptr_end_00003218)
 typedef struct CreditsWork {
-    /* 0x00 */ void* image;
+    /* 0x00 */ FileEntry* image;  // ending.tpl; *data is its TEXPalette*
     /* 0x04 */ s32 mode;
-    /* 0x08 */ s32 field_08;
-    /* 0x0C */ s32 field_0C;
-    /* 0x10 */ s32 field_10;
+    /* 0x08 */ s32 matAlpha;      // channel material alpha (setChanMatColorGX) of the main image passes
+    /* 0x0C */ s32 overlayAlpha;  // material alpha of the last overlay pass, which runs only when > 0
+    /* 0x10 */ s32 tevAlpha;      // TEV colour 1 alpha for modes 1 and 2 (setTevColorGX)
     /* 0x14 */ s32 windowIdA[3];
     /* 0x20 */ s32 windowIdB[3];
-    /* 0x2C */ s32 field_2C;
-    /* 0x30 */ s32 entryIdx;
+    /* 0x2C */ s32 pad_0x2C;
+    /* 0x30 */ s32 layout;        // CreditsEndingRecord.layout of the record on screen
     /* 0x34 */ s32 eventId;
 } CreditsWork;
 
@@ -80,7 +80,7 @@ typedef struct CreditsPoseEntry {
     /* 0x04 */ s32 poseId;
     /* 0x08 */ f32 frame;
     /* 0x0C */ f32 endFrame;
-    /* 0x10 */ s32 field_10;
+    /* 0x10 */ s32 layout;
     /* 0x14 */ Mtx matrix;
 } CreditsPoseEntry;
 
@@ -440,11 +440,11 @@ s32 unk_end_00001d90(EventEntry* event, BOOL isFirstCall) {
         return EVT_RETURN_DONE;
     }
     if (isFirstCall) {
-        entry = _mapAlloc(0x44);
-        memset(entry, 0, 0x44);
+        entry = _mapAlloc(sizeof(CreditsPoseEntry));
+        memset(entry, 0, sizeof(CreditsPoseEntry));
         entry->state = 0;
-        entry->field_10 = ((CreditsWork*)dat_ptr_end_00003218[0])->entryIdx;
-        switch (entry->field_10) {
+        entry->layout = ((CreditsWork*)dat_ptr_end_00003218[0])->layout;
+        switch (entry->layout) {
             case 0:
                 entry->frame = -20.0f;
                 entry->endFrame = 30.0f + (90.0f + entry->frame);
@@ -469,7 +469,7 @@ s32 unk_end_00001d90(EventEntry* event, BOOL isFirstCall) {
         event->userdata[0] = (s32)entry;
     }
     entry = (CreditsPoseEntry*)event->userdata[0];
-    switch (entry->field_10) {
+    switch (entry->layout) {
         case 0:
             f31 = 304.0f;
             f30 = -240.0f;
@@ -622,7 +622,7 @@ void unk_end_00001324(CameraId cameraId, void* param) {
     if (WORK->image == NULL) {
         return;
     }
-    if ((u32)var1 >= (**(TEXPalette***)((u8*)WORK->image + 0xA0))->numDescriptors) {
+    if ((u32)var1 >= (*(TEXPalette**)WORK->image->data)->numDescriptors) {
         return;
     }
     if (var1 == 9 && swGet(0x5E7) != 0) {
@@ -638,25 +638,25 @@ void unk_end_00001324(CameraId cameraId, void* param) {
     GXSetNumChans(1);
     GXSetChanCtrl(4, 0, 0, 0, 0, 0, 2);
 
-    setChanMatColorGX(&dat_end_00002f2c, WORK->field_08);
+    setChanMatColorGX(&dat_end_00002f2c, WORK->matAlpha);
 
     switch (WORK->mode) {
         case 0:
-            TEXGetGXTexObjFromPalette(**(TEXPalette***)((u8*)WORK->image + 0xA0), &texObj, var1);
+            TEXGetGXTexObjFromPalette(*(TEXPalette**)WORK->image->data, &texObj, var1);
             GXLoadTexObj(&texObj, 0);
             break;
         case 1:
-            setTevColorGX(&zero_end_00002f30, WORK->field_10);
-            TEXGetGXTexObjFromPalette(**(TEXPalette***)((u8*)WORK->image + 0xA0), &texObj, 0x31);
+            setTevColorGX(&zero_end_00002f30, WORK->tevAlpha);
+            TEXGetGXTexObjFromPalette(*(TEXPalette**)WORK->image->data, &texObj, 0x31);
             GXLoadTexObj(&texObj, 0);
-            TEXGetGXTexObjFromPalette(**(TEXPalette***)((u8*)WORK->image + 0xA0), &texObj, 0x32);
+            TEXGetGXTexObjFromPalette(*(TEXPalette**)WORK->image->data, &texObj, 0x32);
             GXLoadTexObj(&texObj, 1);
             break;
         case 2:
-            setTevColorGX(&zero_end_00002f34, WORK->field_10);
-            TEXGetGXTexObjFromPalette(**(TEXPalette***)((u8*)WORK->image + 0xA0), &texObj, 0x32);
+            setTevColorGX(&zero_end_00002f34, WORK->tevAlpha);
+            TEXGetGXTexObjFromPalette(*(TEXPalette**)WORK->image->data, &texObj, 0x32);
             GXLoadTexObj(&texObj, 0);
-            TEXGetGXTexObjFromPalette(**(TEXPalette***)((u8*)WORK->image + 0xA0), &texObj, 0x33);
+            TEXGetGXTexObjFromPalette(*(TEXPalette**)WORK->image->data, &texObj, 0x33);
             GXLoadTexObj(&texObj, 1);
             break;
         default:
@@ -719,10 +719,10 @@ void unk_end_00001324(CameraId cameraId, void* param) {
 
     for (i = 0; i < 2; i++) {
         if (i == 0) {
-            setChanMatColorGX(&dat_end_00002f38, WORK->field_08);
+            setChanMatColorGX(&dat_end_00002f38, WORK->matAlpha);
             GXSetZMode(1, 3, 0);
         } else {
-            setChanMatColorGX(&zero_end_00002f3c, WORK->field_08);
+            setChanMatColorGX(&zero_end_00002f3c, WORK->matAlpha);
             GXSetZMode(1, 4, 0);
         }
         GXBegin(0x80, 0, 4);
@@ -738,7 +738,7 @@ void unk_end_00001324(CameraId cameraId, void* param) {
         GXTexCoord2f32(0.0f, 1.0f);
     }
 
-    if (WORK->field_0C > 0) {
+    if (WORK->overlayAlpha > 0) {
         Vec camPosBuild;
 
         camPosBuild = vec3_end_00002f40;
@@ -752,9 +752,9 @@ void unk_end_00001324(CameraId cameraId, void* param) {
         GXSetNumTevStages(1);
         GXSetTevOrder(0, 0, 0, 4);
         GXSetTevOp(0, 0);
-        TEXGetGXTexObjFromPalette(**(TEXPalette***)((u8*)WORK->image + 0xA0), &texObj, 0x34);
+        TEXGetGXTexObjFromPalette(*(TEXPalette**)WORK->image->data, &texObj, 0x34);
         GXLoadTexObj(&texObj, 0);
-        setChanMatColorGX(&dat_end_00002f64, WORK->field_0C);
+        setChanMatColorGX(&dat_end_00002f64, WORK->overlayAlpha);
         GXSetZMode(1, 3, 0);
         C_MTXLookAt(mtx3, &camPos, &camUp, &target);
         PSMTXTrans(mtx1, 0.0f, -138.0f, 0.0f);
@@ -837,12 +837,12 @@ s32 unk_end_000012e0(EventEntry* event, BOOL isFirstCall) {
 }
 
 s32 unk_end_000012a4(EventEntry* event, BOOL isFirstCall) {
-    ((CreditsWork*)dat_ptr_end_00003218[0])->field_08 = evtGetValue(event, event->args[0]);
+    ((CreditsWork*)dat_ptr_end_00003218[0])->matAlpha = evtGetValue(event, event->args[0]);
     return EVT_RETURN_DONE;
 }
 
 s32 unk_end_00001268(EventEntry* event, BOOL isFirstCall) {
-    ((CreditsWork*)dat_ptr_end_00003218[0])->field_0C = evtGetValue(event, event->args[0]);
+    ((CreditsWork*)dat_ptr_end_00003218[0])->overlayAlpha = evtGetValue(event, event->args[0]);
     return EVT_RETURN_DONE;
 }
 
@@ -852,7 +852,7 @@ s32 unk_end_0000122c(EventEntry* event, BOOL isFirstCall) {
 }
 
 s32 unk_end_000011f0(EventEntry* event, BOOL isFirstCall) {
-    ((CreditsWork*)dat_ptr_end_00003218[0])->field_10 = evtGetValue(event, event->args[0]);
+    ((CreditsWork*)dat_ptr_end_00003218[0])->tevAlpha = evtGetValue(event, event->args[0]);
     return EVT_RETURN_DONE;
 }
 
@@ -943,9 +943,10 @@ EVT_BEGIN(unk_evt_end_000042e0)
 EVT_END()
 
 typedef struct CreditsEndingRecord {
-    /* 0x00 */ s32 field_0;
-    /* 0x04 */ s32 field_4;
-    /* 0x08 */ s32 field_8;
+    /* 0x00 */ s32 field_0x00;  // 0 in all 50 records and never read
+    /* 0x04 */ s32 layout;      // screen placement 0-4: the text x/y in unk_end_00000bc8, the pose path in
+                                // unk_end_00001d90, and GW(12)
+    /* 0x08 */ s32 texId;       // GW(11), the texture index unk_end_00001324 draws
     /* 0x0C */ const char* msgA[3];
     /* 0x18 */ const char* msgB[3];
 } CreditsEndingRecord;
@@ -987,9 +988,9 @@ s32 unk_end_00000bc8(EventEntry* event, BOOL isFirstCall) {
 #else
     pEntry = (s32*)((u8*)unk_end_0000321c + index * 0x24);
 #endif
-    ((CreditsWork*)dat_ptr_end_00003218[0])->entryIdx = *++pEntry;
+    ((CreditsWork*)dat_ptr_end_00003218[0])->layout = *++pEntry;
     offset = index * 0x24;
-    switch (((CreditsWork*)dat_ptr_end_00003218[0])->entryIdx) {
+    switch (((CreditsWork*)dat_ptr_end_00003218[0])->layout) {
         case 0:
             x = -274;
             y = -24;
@@ -1067,7 +1068,7 @@ s32 unk_end_00000bc8(EventEntry* event, BOOL isFirstCall) {
                 }
             }
             evtSetValue(ev, GW(10), 1);
-            evtSetValue(ev, GW(11), ((CreditsEndingRecord*)((u8*)unk_end_0000321c + index * 0x24))->field_8);
+            evtSetValue(ev, GW(11), ((CreditsEndingRecord*)((u8*)unk_end_0000321c + index * 0x24))->texId);
             evtSetValue(ev, GW(12), *pEntry);
             state++;
             break;
@@ -1148,9 +1149,9 @@ s32 unk_end_00000a6c(EventEntry* event, BOOL isFirstCall) {
 
     if (isFirstCall) {
         ((CreditsWork*)dat_ptr_end_00003218[0])->image = NULL;
-        ((CreditsWork*)dat_ptr_end_00003218[0])->field_08 = 0;
+        ((CreditsWork*)dat_ptr_end_00003218[0])->matAlpha = 0;
         ((CreditsWork*)dat_ptr_end_00003218[0])->mode = 0;
-        ((CreditsWork*)dat_ptr_end_00003218[0])->entryIdx = 0;
+        ((CreditsWork*)dat_ptr_end_00003218[0])->layout = 0;
         psndSetFlag(4);
         gp->language = 1;
         JUTFont_Free();

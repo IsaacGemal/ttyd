@@ -18,12 +18,12 @@ typedef struct EffShockData {
 	f32 field_0x24;   // 0x24
 	f32 field_0x28;   // 0x28
 	f32 field_0x2C;   // 0x2C
-	s32 field_0x30;   // 0x30
-	s32 field_0x34;   // 0x34
-	s32 field_0x38;   // 0x38
-	s32 field_0x3C;   // 0x3C
-	s32 field_0x40;   // 0x40
-	s32 field_0x44;   // 0x44
+	s32 tev1R;   // 0x30
+	s32 tev1G;   // 0x34
+	s32 tev1B;   // 0x38
+	s32 tev2R;   // 0x3C
+	s32 tev2G;   // 0x40
+	s32 tev2B;   // 0x44
 } EffShockData;
 void effShockMain(EffectEntry* effect);
 #include "driver/camdrv.h"
