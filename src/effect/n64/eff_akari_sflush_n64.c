@@ -40,22 +40,22 @@ EffectEntry* effAkariSflushN64Entry(s32 type, s32 count, f32 x, f32 y, f32 z, f3
 	effect->callback = effAkariSflushMain;
 	effect->flags |= 2;
 	data->type = type;
-	data->field_0x14 = 0;
+	data->age = 0;
 	if (count <= 0) {
-		data->field_0x10 = 1000;
+		data->life = 1000;
 	} else {
-		data->field_0x10 = count;
+		data->life = count;
 	}
-	data->field_0x24 = 0xFF;
+	data->alpha = 0xFF;
 	data->x = x;
 	data->y = y;
 	data->z = z;
 	data->scale = scale;
-	data->field_0x18 = 0xFF;
-	data->field_0x1C = 0xE6;
-	data->field_0x20 = 0x32;
-	data->field_0x30 = 0;
-	data->field_0x2C = 1.0f;
+	data->color1R = 0xFF;
+	data->color1G = 0xE6;
+	data->color1B = 0x32;
+	data->lastRing = 0;
+	data->growScale = 1.0f;
 	return effect;
 }
 
@@ -80,31 +80,31 @@ void effAkariSflushMain(EffectEntry* effect) {
 
 	if (effect->flags & 4) {
 		effect->flags &= ~4;
-		data->field_0x10 = 16;
+		data->life = 16;
 	}
 
-	if (data->field_0x10 < 1000) {
-		data->field_0x10--;
+	if (data->life < 1000) {
+		data->life--;
 	}
-	data->field_0x14++;
+	data->age++;
 
-	life = data->field_0x10;
+	life = data->life;
 	if (life < 0) {
 		effDelete(effect);
 		return;
 	}
 
-	counter = data->field_0x14;
+	counter = data->age;
 
 	if (life < 8) {
-		data->field_0x2C += 0.3f * (8 - life);
+		data->growScale += 0.3f * (8 - life);
 	}
 
 	if (counter < 16) {
-		data->field_0x24 = counter * 16 + 15;
+		data->alpha = counter * 16 + 15;
 	}
 	if (life < 8) {
-		data->field_0x24 = life * 32 + 31;
+		data->alpha = life * 32 + 31;
 	}
 
 #ifdef MUST_MATCH
@@ -165,8 +165,8 @@ void effAkariSflushDisp(CameraId camId, void* param) {
 
 	cam = camGetPtr(camId);
 	data = effect->userdata;
-	age = data->field_0x14;
-	alpha = data->field_0x24;
+	age = data->age;
+	alpha = data->alpha;
 	PSMTXTrans(mtx, data->x, data->y, data->z);
 	PSMTXRotRad(rotMtx, 'y', -camGetPtr(CAMERA_3D)->viewYaw * float_deg2rad_8041e904);
 	PSMTXScale(scaleMtx, data->scale, data->scale, data->scale);
@@ -190,13 +190,13 @@ void effAkariSflushDisp(CameraId camId, void* param) {
 	GXSetNumTexGens(0);
 
 #ifdef MUST_MATCH
-	effAkariSflushColor1(data->field_0x18, data->field_0x1C, data->field_0x20, alpha);
+	effAkariSflushColor1(data->color1R, data->color1G, data->color1B, alpha);
 	effAkariSflushColor2();
 #else
 	color = unk_804230a0;
-	color.r = data->field_0x18;
-	color.g = data->field_0x1C;
-	color.b = data->field_0x20;
+	color.r = data->color1R;
+	color.g = data->color1G;
+	color.b = data->color1B;
 	color.a = alpha;
 	GXSetTevColor(1, color);
 	GXSetTevColor(2, dat_8041e900);
@@ -205,12 +205,12 @@ void effAkariSflushDisp(CameraId camId, void* param) {
 	GXSetCullMode(0);
 	effSetVtxDescN64((effVtxArray*)size16x16_tex32x32_vtx);
 
-	for (i = 0; i < data->field_0x30 + 1; i++) {
+	for (i = 0; i < data->lastRing + 1; i++) {
 		scaleVal = 0.1f * (f32)cos(float_6p2832_8041e908 *
-		                                        (f32)(age * 8 + i * 180 / (data->field_0x30 + 1)) /
+		                                        (f32)(age * 8 + i * 180 / (data->lastRing + 1)) /
 		                                        float_360_8041e90c) +
 		           (f32)(i + 1);
-		scaleVal *= data->field_0x2C;
+		scaleVal *= data->growScale;
 		PSMTXRotRad(rotMtx, 'z', float_deg2rad_8041e904 * (f32)(i * 36));
 		PSMTXScale(scaleMtx, scaleVal, scaleVal, scaleVal);
 		PSMTXConcat(rotMtx, scaleMtx, outerMtx);

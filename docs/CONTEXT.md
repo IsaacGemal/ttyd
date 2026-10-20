@@ -10317,3 +10317,13 @@ Left: `field_0x0` in both structs (the `type` argument is stored and never read)
 - Left: eff_mahorn's `unused` parameter and header field 0x0 (stored, never read; the only caller passes a script argument). The MUST_MATCH `volatile` pool constants and the `zero` / `negEight` locals stay as they are.
 - Cleanup index: total 34.850 -> 34.808 per kLOC; eff_mahorn.c 410.2 -> 304.7.
 - Verify: tower build recreates build/G8MJ01/ok.
+### Readability: eff_stone_smoke_n64 and eff_akari_sflush_n64 work-struct fields (2026-10-20, Claude Haiku 5.5, n9-q-effhdr2)
+
+`effStoneSmokeN64Data` (eff_stone_smoke_n64.h) and `EffAkariSflushData` (eff_akari_sflush_n64.h) had their `field_0x` names replaced by what each `.c` reads and writes. The GX colour names follow the GX enum: `GXSetTevColor(1, ...)` is GX_TEVREG0 and `(2, ...)` is GX_TEVREG1, so the 1 set is `color1*` and the 2 set `color2*`, as in effGlassData/effOpukuJetwData.
+
+- stone_smoke: 0x14 `age` (elapsed frames, the scale keyframe index), 0x18/0x1C/0x20 `color1R/G/B` (TEVREG0), 0x24 `alpha` (set to 0xFF, becomes life * 16 when life < 16), 0x28/0x2C/0x30 `color2R/G/B` (TEVREG1), 0x34 `scale` (the spawn scale argument, multiplied in Disp), 0x38 `scaleKey` (0.01 * scale_data/scale_data2, the keyframe factor). eff_dogabon_attack_n64.c's three writes to 0x28/0x2C/0x30 (100, 0, 0 on the smoke it spawns) are `color2R/G/B`, so that spawn sets TEVREG1 to (100, 0, 0).
+- akari_sflush: 0x10 `life` (the countdown, 1000 when no count is given, 16 on the restart flag), 0x14 `age`, 0x18/0x1C/0x20 `color1R/G/B` (GXSetTevColor(1)), 0x24 `alpha`, 0x2C `growScale` (starts at 1.0, grows by 0.3 * (8 - life) in the last 8 frames, multiplies each ring's scale), 0x30 `lastRing` (0; the ring loop runs i = 0..lastRing and spaces the rings with lastRing + 1). The header's existing `scale` (0x28) is unchanged.
+
+Left: eff_thunderflare's `field_0x00` (written in the reset loop, never read; the rule for never-read fields). eff_rappa's `field_0x1C`/`field_0x20` (effRappaData) are never referenced by eff_rappa_n64.c or any other user, so they stay. The `unk_804232xx`/`unk_8042328x`/`unk_804230a0` GXColor templates in thunderflare, timestamp, vapor, stone_smoke, rappa and akari_sflush are address-named data that is not a struct field, so they are not renamed here. Vapor's `timer` and timestamp's effTimestampVtx were already named.
+
+Matching build 32 files OK, and the tower build recreates build/G8MJ01/ok. The natural (no MUST_MATCH) and MUST_MATCH compiles with -maxerrors 50 of the four files that include the two headers (eff_stone_smoke_n64.c, eff_akari_sflush_n64.c, eff_dogabon_attack_n64.c, evt_eff.c) each exit 0 with no errors. Cleanup index 34.727 -> 34.614 per kLOC (field_0x 4,075 -> 3,996).

@@ -332,9 +332,9 @@ void effDogabonAttackMain(EffectEntry* effect) {
                 y = data->y + transMtx[1][3];
                 z = data->z + transMtx[2][3];
                 smokeEffect = effStoneSmokeN64Entry(0, 0x10, x, y, z, 1.0f);
-                ((effStoneSmokeN64Data*)smokeEffect->userdata)->field_0x28 = 100;
-                ((effStoneSmokeN64Data*)smokeEffect->userdata)->field_0x2C = 0;
-                ((effStoneSmokeN64Data*)smokeEffect->userdata)->field_0x30 = 0;
+                ((effStoneSmokeN64Data*)smokeEffect->userdata)->color2R = 100;
+                ((effStoneSmokeN64Data*)smokeEffect->userdata)->color2G = 0;
+                ((effStoneSmokeN64Data*)smokeEffect->userdata)->color2B = 0;
                 data->state[i] = 7;
             }
             break;
