@@ -48,7 +48,7 @@ struct ExtFanWork {
     PoseGroup groups[3];          // 0xC
     u8 field_0x84[0x50C - 0x84];  // 0x84
     s32 hammerFrames;             // 0x50C, frames Mario has been in MARIO_MOTION_HAMMER
-    s32 idleCount;                // 0x510, fans still wandering and not held by Mario
+    s32 idleCount;                // 0x510, fans in state 0 not pinned to Mario or the champion (flags bit 0)
     s32 sfxId;                    // 0x514
     u8 volume;                    // 0x518
     u8 field_0x519[3];            // 0x519

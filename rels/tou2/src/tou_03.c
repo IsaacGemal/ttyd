@@ -69,11 +69,11 @@ typedef struct ScreenWork {
 typedef struct KyakuEntry {
     char name1[0x10]; // 0x0
     char name2[0x8];  // 0x10
-    s16 field_0x18;   // 0x18
+    s16 enabled;      // 0x18, always 1 here (rsh_05's MoamoaGroup clears it for J-prefixed animations)
     u8 pad_0x1A[2];   // 0x1A
-    f32 cycleFrames;  // 0x1C, frames per animation cycle (pose_main)
+    f32 cycleFrames;  // 0x1C, frames for one pass through the group's poses
     s32 firstPose;    // 0x20, index of the group's first pose
-    s32 poseCount;    // 0x24
+    s32 numPoses;     // 0x24
 } KyakuEntry;
 
 typedef struct KyakuState {
@@ -263,9 +263,9 @@ static void pose_init(void) {
         strcpy(kyaku_wp->entries[kyaku_wp->count2].name1, buf1);
         strcpy(kyaku_wp->entries[kyaku_wp->count2].name2, buf2);
         kyaku_wp->entries[kyaku_wp->count2].firstPose = start;
-        kyaku_wp->entries[kyaku_wp->count2].poseCount = i - start + 1;
+        kyaku_wp->entries[kyaku_wp->count2].numPoses = i - start + 1;
         kyaku_wp->entries[kyaku_wp->count2].cycleFrames = data->value;
-        kyaku_wp->entries[kyaku_wp->count2].field_0x18 = 1;
+        kyaku_wp->entries[kyaku_wp->count2].enabled = 1;
         i++;
         data++;
     } while (data->name1 != NULL);
@@ -293,7 +293,7 @@ static void pose_main(void) {
             state->cycleStart = gp->renderTime;
             ratio = 0.0f;
         }
-        pose->field_0x10 = entry->firstPose + (s32)((f32)(entry->poseCount - 1) * ratio);
+        pose->field_0x10 = entry->firstPose + (s32)((f32)(entry->numPoses - 1) * ratio);
     }
 }
 #pragma dont_inline reset

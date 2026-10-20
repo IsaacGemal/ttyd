@@ -12,7 +12,7 @@ typedef struct SenkaronEntry {
     f32 velX;        // 0x8, per-frame step in X (also the wander/fly direction)
     f32 velY;        // 0xC, per-frame step in Y (starts at -5, -0.3 per frame of fall)
     f32 velZ;        // 0x10, per-frame step in Z
-    u32 flags;       // 0x14, bit 0 = facing flag, picked at random when a wander starts
+    u32 flags;       // 0x14, bit 0 = face away from Mario; set 1 time in 50 when a wander leg starts
 } SenkaronEntry;
 
 void nokotaro_callback(s32 index);
