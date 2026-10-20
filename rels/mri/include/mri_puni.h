@@ -91,7 +91,7 @@ typedef struct PuniData {
     Vec dispOffset;                     // 0x144, added to pos for npc->position (puniAnimation)
     u8 unk150[0x15C - 0x150];           // 0x150
     Vec vel;                            // 0x15C
-    u8 unk168[0x174 - 0x168];           // 0x168
+    Vec awayDir;                        // 0x168, escape direction; set to -hitNormal on a wall hit
     f32 maxSpeed;                   // 0x174, clamp on the vel magnitude (puniMoveLimitedNormal, puniMoveDecel)
     f32 gravity;                        // 0x178
     u8 unk17C[0x180 - 0x17C];           // 0x17C
@@ -104,7 +104,7 @@ typedef struct PuniData {
     f32 reach;                      // 0x198, extra range beyond radius + spacing (puniOption)
     u8 unk19C[0x1A0 - 0x19C];           // 0x19C
     f32 windPower;                  // 0x1A0, cloudGetBreathPower result; over 10 blows the puni into mode 13
-    f32 field_0x1A4;                    // 0x1A4
+    f32 marioDist;                      // 0x1A4, distance to Mario (1000 when far); puniAnimation reads it as the mode 2 frame
     f32 parentDist;                 // 0x1A8, distance to the parent, set each frame in puniModeParent
     f32 speed;                      // 0x1AC, distance moved last frame (puni_puni_main, from pos - prevPos)
     f32 parentDistPrev;             // 0x1B0, parentDist from the previous frame
