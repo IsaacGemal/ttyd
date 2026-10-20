@@ -2047,7 +2047,7 @@ void BattleAudienceItemCtrlProcess(void) {
 #else
 						memcpy(&audience->itemWeapon, weapon_data_akikan, 0xc0);
 #endif
-						*(s32*)(aud + 0x1381c) = *(s32*)(aud + 0x1381c) + audience->itemCombo - 1;
+						*(s32*)&audience->itemWeapon.hpDamageWork[0] = *(s32*)&audience->itemWeapon.hpDamageWork[0] + audience->itemCombo - 1;
 						break;
 					case 0xed:
 						#ifdef MUST_MATCH
@@ -2055,7 +2055,7 @@ void BattleAudienceItemCtrlProcess(void) {
 #else
 						memcpy(&audience->itemWeapon, weapon_data_brick, 0xc0);
 #endif
-						*(s32*)(aud + 0x1381c) = *(s32*)(aud + 0x1381c) + audience->itemCombo - 1;
+						*(s32*)&audience->itemWeapon.hpDamageWork[0] = *(s32*)&audience->itemWeapon.hpDamageWork[0] + audience->itemCombo - 1;
 						break;
 					case 0xee:
 						#ifdef MUST_MATCH
@@ -2063,7 +2063,7 @@ void BattleAudienceItemCtrlProcess(void) {
 #else
 						memcpy(&audience->itemWeapon, weapon_data_bone, 0xc0);
 #endif
-						*(s32*)(aud + 0x1381c) = *(s32*)(aud + 0x1381c) + audience->itemCombo - 1;
+						*(s32*)&audience->itemWeapon.hpDamageWork[0] = *(s32*)&audience->itemWeapon.hpDamageWork[0] + audience->itemCombo - 1;
 						break;
 					case 0xef:
 						#ifdef MUST_MATCH
@@ -2071,7 +2071,7 @@ void BattleAudienceItemCtrlProcess(void) {
 #else
 						memcpy(&audience->itemWeapon, weapon_data_hammer, 0xc0);
 #endif
-						*(s32*)(aud + 0x1381c) = *(s32*)(aud + 0x1381c) + audience->itemCombo - 1;
+						*(s32*)&audience->itemWeapon.hpDamageWork[0] = *(s32*)&audience->itemWeapon.hpDamageWork[0] + audience->itemCombo - 1;
 						break;
 					}
 					BattleAudience_SetPresentItemNo(item->mItemType);
