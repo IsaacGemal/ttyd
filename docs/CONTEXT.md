@@ -9708,3 +9708,33 @@ on the init values (1, 1, 1, 0, yaw, 0) and only rotY is read; eff_kemuri9 `star
 (0x3C) both hold a2 and only 0x3C is read; the rank-table views (A14/A74/AD4, PiantaParlorWork 0x14/0x74/0xD4) and
 the YuRankWork `field_10`/`field_14` names sit on single-line #defines; yuu_03.h fields (Yuuminigame4Data unk08..unk1C,
 RyushiEntry unk04..unk40) are still unkNN, with the agents' proposals in tools/swarm/data/c3_logs.
+### Readability: MarioWork pad overruns and raw offsets in src/mario (2026-10-19, Claude Haiku 5.5, n9-q-mario2; reviewed by Claude Opus 5.5)
+
+Pad overruns fixed: mobjdrv's `field_0x1DC + 4` is `hitobjFront`; mot_yoshi's clears are `hitobjFront`,
+`hitobjHead`, `hitobjUnder`; mot_damage's `field_0x1F0 + 0x14` is `hitobjDamageReturn`; mario.c's slope reads at
+`field_0x1F0 + 0x24/0x28/0x30` are `slopeAngle`/`slopeTiltX`/`slopeTiltZ`; mario_hit's two MUST_MATCH wallDist
+stores (`*(f32*)&field_0x1C0[8]`) are plain `wallDist` in both builds. About 160 raw MarioWork casts converted in
+evt_mario, mario_motion, mario_kemuri, mario_sbr, mario, mario_hit and mobjdrv. New names, each checked against its
+readers and writers: `airTimerPrev` (0x54) and `hitobjStandOnPrev` (0x208), copied at the end of every marioMain
+path, read by kemuri as the landing test; `peakYpos` (0x12C, marioSetPeakYpos); `floorY` (0x1C0, searchUnder's hit
+y or -3000, the rounded ground y in marioChkGnd, the shadow height); `touchNpc` (0x1D4, marioGetTouchNpcPtr only:
+no writer in C yet); `hitobjHead` (0x1F4, marioSearchHead*/kpaSearchHead results); `hitobjDamageReturn` (0x204,
+the stood-on hit with attr 0x40000000, whose hitGetDamageReturnPos mot_damage returns Mario to);
+`hitobjBalloon` (0x20C, chkBalloon hit from searchFrontWall, preferred for hitobjFront); `dirEventStart/Target/
+Msec/Frame` (0x290-0x29C, marioSetDirEventMain; the setter isn't in C); `reloadMapOnBottomless` (0x2C8 u32,
+N_marioReloadMapOnBottomlessOn/Off, marioBottomless). `field_0x11C` is a Vec (landing-distance reference in
+evt_mario/marioLandOn, y the overhead clamp in mario_hit). Fixed in review: splitting `field_0x2AC` and `unk104`
+left new overruns, now `field_0x2BC + 4` (the s16 coin-drop countdown in marioMain), `field_0x2B8` (yoshi's z
+rotation in the display matrix, also marioChgJumpStandMotion's argument), `*(f32*)field_0x130` (roll Y scale) in
+mario.c and `*(s32*)field_0x2B4` in peach.c; mot_damage's `field_0x28C + 0x14` (0x2A0) is `damageRootY`, an
+anonymous union with `spinSpeed` (set_damage_root_ypos writes it from mot_hip, mot_plane, party_yoshi and
+marioLandOn). Matching build 32 files OK; all ten changed C files natural-compile equivalent to the pre-branch
+objects (tools/obj_equiv.py), mario_hit included, so the removed `#ifdef MUST_MATCH` blocks were redundant in both
+builds. Open, MarioWork: the 0x98-0xC8 Vec block (party_vivian and mot_damage index `field_0x98` by byte; mario.c's
+display matrix reads 0x98-0xC4 through it); 0x2A4 (a motion flag word; party_yoshi adds it to spinSpeed as an
+f32); 0x2A8 `wCamVal1`, an f32 step in mot_damage but an s32 sfx handle in mot_hip; 0x114 and 0x164 (mario_hit's
+last GND_PTR use: 0x164 = 0x114 - position.y, and 0x114 is the y of the Vec at 0x110 marioInit and peach seed from
+position); `unk19C` is an f32 move direction set beside `directionView` everywhere but still a u8[4]; 0x52 holds
+airTimer at the jump peak; 0x1C4, 0x1DC, 0x1F0, 0x1FC, 0x2AC/0x2B0 (per-motion scratch: mot_bottomless speed and
+angle, marioLandOn's landing distance) keep field names; peach.c's `unk170 + 0xC` (0x17C) still overruns into
+riderDelta.

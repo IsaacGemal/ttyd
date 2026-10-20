@@ -1152,9 +1152,9 @@ void marioMain(void) {
 	if (wp->unk4C > 0) {
 		wp->unk4C--;
 	}
-	if (*(s16*)(wp->field_0x2AC + 0x14) > 0) {
-		*(s16*)(wp->field_0x2AC + 0x14) -= 1;
-		if (*(s16*)(wp->field_0x2AC + 0x14) % 30 == 0 && *(s16*)(wp->field_0x2AC + 0x14) > 0) {
+	if (*(s16*)(wp->field_0x2BC + 4) > 0) {
+		*(s16*)(wp->field_0x2BC + 4) -= 1;
+		if (*(s16*)(wp->field_0x2BC + 4) % 30 == 0 && *(s16*)(wp->field_0x2BC + 4) > 0) {
 			Vec pos = marioCoinPos(wp->position.x, wp->position.y + 30.0f, wp->position.z);
 
 			itemCoinDrop(&pos);
@@ -2487,12 +2487,12 @@ void marioDispBlurSub(s32* unused, s32 blurId) {
 	PSMTXConcat(temp, mtx, mtx);
 
 	if (wp->flags & 0x1000000) {
-		PSMTXScale(scale, 1.0f, *(f32*)(wp->unk104 + 0x2C), 1.0f);
+		PSMTXScale(scale, 1.0f, *(f32*)wp->field_0x130, 1.0f);
 		PSMTXConcat(scale, mtx, mtx);
 	}
 
 	if (wp->currMotionId == 0x1A) {
-		PSMTXRotRad(temp, 'z', 0.017453292f * *(f32*)(wp->field_0x2AC + 0x0C));
+		PSMTXRotRad(temp, 'z', 0.017453292f * wp->field_0x2B8);
 		PSMTXConcat(temp, mtx, mtx);
 	}
 
@@ -2697,7 +2697,7 @@ void marioDisp(CameraId camId, void* param) {
 	PSMTXConcat(temp, mtx, mtx);
 
 	if (wp->flags & 0x1000000) {
-		PSMTXScale(scale, 1.0f, *(f32*)(wp->unk104 + 0x2C), 1.0f);
+		PSMTXScale(scale, 1.0f, *(f32*)wp->field_0x130, 1.0f);
 		PSMTXConcat(scale, mtx, mtx);
 	}
 

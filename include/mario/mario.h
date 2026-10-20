@@ -194,7 +194,7 @@ typedef struct MarioWork {
     u8 field_0x1B0[0x1B4 - 0x1B0]; // 0x1B0
     Vec wPlayerCollisionBox;       // 0x1B4 JP, 0x1B8 US
     f32 floorY;                    // 0x1C0, floor height under Mario from searchUnder (-3000 when none; shadows)
-    f32 field_0x1C4;              // 0x1C4
+    f32 field_0x1C4;               // 0x1C4
     f32 wallDist;                  // 0x1C8, largest front-wall distance held for wallHoldTimer frames (marioCheckWall)
     f32 wallYaw;                   // 0x1CC, the wall angle that goes with wallDist (marioCheckWall)
     s32 wallHoldTimer;             // 0x1D0, counts down from 14 before wallDist can drop (marioCheckWall)
@@ -248,7 +248,10 @@ typedef struct MarioWork {
     f32 dirEventTarget;            // 0x294, target yaw is 270 minus this
     s32 dirEventMsec;              // 0x298
     s32 dirEventFrame;             // 0x29C, frames elapsed
-    f32 spinSpeed;                 // 0x2A0, added to unk1A8 each frame (mario_motion spin, mot_hip, evt_mario)
+    union {
+        f32 spinSpeed;             // 0x2A0, added to unk1A8 each frame (mario_motion spin, mot_hip, evt_mario)
+        f32 damageRootY;           // 0x2A0, surface height of the damage floor fallen into: splash height, start of the return arc (set_damage_root_ypos, mot_damage)
+    };
     u8 field_0x2A4[0x2A8 - 0x2A4]; // 0x2A4
     f32 wCamVal1;                  // 0x2A8, TODO: double check. mot_hip keeps an s32 SFX id here (per-motion scratch?)
     u8 field_0x2AC[4];             // 0x2AC

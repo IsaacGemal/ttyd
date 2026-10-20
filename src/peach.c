@@ -415,12 +415,12 @@ void peach_stay(void) {
                 marioChgPose(str_8042027C);
                 mp->multiTimer = 0;
                 mp->currSubMotionId = 0x14;
-                *(s32*)(mp->field_0x2AC + 8) = 0;
+                *(s32*)mp->field_0x2B4 = 0;
             }
             break;
         case 0x14:
-            if ((s32)(++*(s32*)(mp->field_0x2AC + 8)) >= sysMsec2Frame(0x2710)) {
-                *(s32*)(mp->field_0x2AC + 8) = sysMsec2Frame(0x2710);
+            if ((s32)(++*(s32*)mp->field_0x2B4) >= sysMsec2Frame(0x2710)) {
+                *(s32*)mp->field_0x2B4 = sysMsec2Frame(0x2710);
             }
             if ((s32)(++mp->multiTimer) >= 0x64) {
                 mp->multiTimer = 0;
