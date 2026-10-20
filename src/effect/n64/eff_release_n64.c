@@ -120,27 +120,27 @@ EffectEntry* effReleaseN64Entry(s32 type, s32 duration, f32 x, f32 y, f32 z, f32
     data = __memAlloc(HEAP_EFFECT, 0x78);
     effect->userdata = data;
     effect->callback = effReleaseMain;
-    data->field_0x0 = type & 0xFF00;
+    data->typeFlags = type & 0xFF00;
     typeLo = type & 0xFF;
-    data->field_0x4 = typeLo;
-    data->field_0x18 = 0;
+    data->type = typeLo;
+    data->counter = 0;
     if (duration <= 0) {
-        data->field_0x14 = 1000;
+        data->life = 1000;
     } else {
-        data->field_0x14 = duration;
+        data->life = duration;
     }
-    data->field_0x28 = 0xFF;
+    data->fade = 0xFF;
     data->x = x;
     data->y = y;
     data->z = z;
-    data->field_0x3C = scale;
-    data->field_0x1C = 0xFF;
-    data->field_0x20 = 0xFF;
-    data->field_0x24 = 0xFF;
-    data->field_0x2C = 0xFF;
-    data->field_0x30 = 0xFF;
-    data->field_0x34 = 0xFF;
-    data->field_0x38 = 0xFF;
+    data->scale = scale;
+    data->tevReg0R = 0xFF;
+    data->tevReg0G = 0xFF;
+    data->tevReg0B = 0xFF;
+    data->tevReg1R = 0xFF;
+    data->tevReg1G = 0xFF;
+    data->tevReg1B = 0xFF;
+    data->tevReg1A = 0xFF;
     data->field_0x60 = 0;
     data->field_0x64 = 0;
     data->field_0x68 = 0;
@@ -154,11 +154,11 @@ EffectEntry* effReleaseN64Entry(s32 type, s32 duration, f32 x, f32 y, f32 z, f32
     data->alphas[2] = 0;
     data->alphas[3] = 0;
     if (typeLo == 3) {
-        data->field_0x70 = 1;
+        data->state = 1;
     } else {
-        data->field_0x70 = 0;
+        data->state = 0;
     }
-    data->field_0x74 = 0;
+    data->stateFrame = 0;
     return effect;
 }
 
@@ -191,42 +191,42 @@ void effReleaseMain(EffectEntry* effect) {
     position.z = data->z;
 #endif
     position2 = position;
-    type = data->field_0x4;
+    type = data->type;
 
     if (effect->flags & 4) {
         effect->flags &= ~4;
-        data->field_0x14 = 16;
+        data->life = 16;
     }
-    if (data->field_0x14 < 1000) {
-        data->field_0x14--;
+    if (data->life < 1000) {
+        data->life--;
     }
-    data->field_0x18++;
-    if (data->field_0x14 < 0) {
+    data->counter++;
+    if (data->life < 0) {
         effDelete(effect);
         return;
     }
-    counter = data->field_0x18;
-    if (data->field_0x14 < 16) {
-        data->field_0x28 = data->field_0x14 << 4;
+    counter = data->counter;
+    if (data->life < 16) {
+        data->fade = data->life << 4;
     }
 
-    switch (data->field_0x70) {
+    switch (data->state) {
         case 0:
-            data->field_0x74++;
+            data->stateFrame++;
             data->alphas[0] = 200 + (counter & 3) * 30;
             {
                 f32 s = (f32)sin(6.2831855f * (f32)(counter * 20) / 360.f);
                 data->scales[0] = 0.04f * s + 0.5f;
             }
-            if ((s32)data->field_0x0 != 0) {
+            if ((s32)data->typeFlags != 0) {
                 data->x += (f32)sin(6.2831855f * (f32)counter / 360.f);
                 data->y += (f32)cos(6.2831855f * (1.235631f * (f32)counter) / 360.f);
-                if (data->field_0x74 > 50) {
-                    data->field_0x74 = 0;
+                if (data->stateFrame > 50) {
+                    data->stateFrame = 0;
                     if (type == 3) {
-                        data->field_0x70 = 100;
+                        data->state = 100;
                     } else {
-                        data->field_0x70 = 1;
+                        data->state = 1;
                     }
                 }
             }
@@ -235,7 +235,7 @@ void effReleaseMain(EffectEntry* effect) {
             u16 t;
             u8 b;
             f32 s;
-            switch (data->field_0x74) {
+            switch (data->stateFrame) {
                 case 0:
                     data->scales[3] = 4.0f;
                     data->alphas[3] = 0xFF;
@@ -249,23 +249,23 @@ void effReleaseMain(EffectEntry* effect) {
                     data->alphas[3] = 0;
                     break;
             }
-            if (data->field_0x74 < 30) {
+            if (data->stateFrame < 30) {
 #ifdef MUST_MATCH
                 // The element address is built from an explicit byte offset and read through an AnimeData
                 // pointer; that steers MWCC's allocation (index in r9, scratch pair r7/r8 instead of r6/r9).
-                u32 off = data->field_0x74 << 2;
-                t = ((AnimeData*)((u8*)anime_data + off))->field_0;
-                s = 0.3f * (f32)data->field_0x74 + 0.01f * (f32)t;
-                b = ((AnimeData*)((u8*)anime_data + off))->field_2;
+                u32 off = data->stateFrame << 2;
+                t = ((AnimeData*)((u8*)anime_data + off))->scale;
+                s = 0.3f * (f32)data->stateFrame + 0.01f * (f32)t;
+                b = ((AnimeData*)((u8*)anime_data + off))->alpha;
 #else
-                t = anime_data[data->field_0x74].field_0;
-                s = 0.3f * (f32)data->field_0x74 + 0.01f * (f32)t;
-                b = anime_data[data->field_0x74].field_2;
+                t = anime_data[data->stateFrame].scale;
+                s = 0.3f * (f32)data->stateFrame + 0.01f * (f32)t;
+                b = anime_data[data->stateFrame].alpha;
 #endif
             } else {
-                t = anime_data[29].field_0;
-                s = 0.01f * (f32)t + 0.3f * (f32)data->field_0x74;
-                b = anime_data[29].field_2;
+                t = anime_data[29].scale;
+                s = 0.01f * (f32)t + 0.3f * (f32)data->stateFrame;
+                b = anime_data[29].alpha;
             }
             data->alphas[0] = 0;
             data->scales[0] = 0.0f;
@@ -273,14 +273,14 @@ void effReleaseMain(EffectEntry* effect) {
             data->alphas[2] = b & 0xFF;
             data->scales[1] = s;
             data->scales[2] = 0.6f + s;
-            data->field_0x74++;
+            data->stateFrame++;
             break;
         }
         case 1: {
             u16 t;
             u8 a;
             f32 s;
-            switch (data->field_0x74) {
+            switch (data->stateFrame) {
                 case 0:
                     data->scales[3] = 4.0f;
                     data->alphas[3] = 0xFF;
@@ -294,19 +294,19 @@ void effReleaseMain(EffectEntry* effect) {
                     data->alphas[3] = 0;
                     break;
             }
-            t = anime_data[data->field_0x74].field_0;
+            t = anime_data[data->stateFrame].scale;
             s = 0.01f * (f32)t;
-            a = anime_data[data->field_0x74].field_2;
+            a = anime_data[data->stateFrame].alpha;
             data->alphas[0] = 0;
             data->alphas[1] = a;
             data->alphas[2] = a;
             data->scales[0] = 0.0f;
             data->scales[1] = s;
             data->scales[2] = 1.2f * s + 4.0f;
-            data->field_0x74++;
-            if (data->field_0x74 >= 30) {
-                data->field_0x74 = 0;
-                data->field_0x70 = 4;
+            data->stateFrame++;
+            if (data->stateFrame >= 30) {
+                data->stateFrame = 0;
+                data->state = 4;
             }
             break;
         }
@@ -314,7 +314,7 @@ void effReleaseMain(EffectEntry* effect) {
             u16 t;
             u8 a;
             f32 s;
-            switch (29 - data->field_0x74) {
+            switch (29 - data->stateFrame) {
                 case 0:
                     data->scales[3] = 4.0f;
                     data->alphas[3] = 0xFF;
@@ -328,19 +328,19 @@ void effReleaseMain(EffectEntry* effect) {
                     data->alphas[3] = 0;
                     break;
             }
-            t = anime_data_2[data->field_0x74].field_0;
+            t = anime_data_2[data->stateFrame].scale;
             s = 0.01f * (f32)t;
-            a = anime_data_2[data->field_0x74].field_2;
+            a = anime_data_2[data->stateFrame].alpha;
             data->alphas[0] = 0;
             data->scales[0] = 0.0f;
             data->alphas[1] = a;
             data->alphas[2] = 0;
             data->scales[1] = s;
             data->scales[2] = 0.0f;
-            data->field_0x74++;
-            if (data->field_0x74 >= 30) {
-                data->field_0x74 = 0;
-                data->field_0x70 = 5;
+            data->stateFrame++;
+            if (data->stateFrame >= 30) {
+                data->stateFrame = 0;
+                data->state = 5;
             }
             break;
         }
@@ -359,7 +359,7 @@ void effReleaseMain(EffectEntry* effect) {
             data->scales[3] = 0.0f;
             data->alphas[3] = 0;
             data->scales[3] = 0.0f;
-            data->field_0x74++;
+            data->stateFrame++;
             break;
     }
 
@@ -386,18 +386,18 @@ void effReleaseMain(EffectEntry* effect) {
 // local-plus-by-value-copy stack pair, as in the original.
 static inline void releaseSetColor1(effReleaseN64Data* data) {
     GXColor c = *(GXColor*)&unk_80423240;
-    c.r = data->field_0x2C;
-    c.g = data->field_0x30;
-    c.b = data->field_0x34;
-    c.a = data->field_0x38;
+    c.r = data->tevReg1R;
+    c.g = data->tevReg1G;
+    c.b = data->tevReg1B;
+    c.a = data->tevReg1A;
     GXSetTevColor(GX_TEVREG1, c);
 }
 
 static inline void releaseSetColor2(effReleaseN64Data* data, s32 i) {
     GXColor c = *(GXColor*)&unk_80423244;
-    c.r = data->field_0x1C;
-    c.g = data->field_0x20;
-    c.b = data->field_0x24;
+    c.r = data->tevReg0R;
+    c.g = data->tevReg0G;
+    c.b = data->tevReg0B;
     c.a = data->alphas[i];
     GXSetTevColor(GX_TEVREG0, c);
 }
@@ -428,11 +428,11 @@ void effReleaseDisp(CameraId camId, void* param) {
     s32 alpha;
 
     data = effect->userdata;
-    type = data->field_0x4;
+    type = data->type;
 
     PSMTXTrans(trans, data->x, data->y, data->z);
     PSMTXRotRad(rot, 'y', -camGetPtr(CAMERA_3D)->viewYaw * 0.017453292f);
-    PSMTXScale(scale, data->field_0x3C, data->field_0x3C, data->field_0x3C);
+    PSMTXScale(scale, data->scale, data->scale, data->scale);
     PSMTXConcat(trans, rot, trans);
     PSMTXConcat(trans, scale, mtx);
 
@@ -452,10 +452,10 @@ void effReleaseDisp(CameraId camId, void* param) {
 #else
     GXColor color;
     color = *(GXColor*)&unk_80423240;
-    color.r = data->field_0x2C;
-    color.g = data->field_0x30;
-    color.b = data->field_0x34;
-    color.a = data->field_0x38;
+    color.r = data->tevReg1R;
+    color.g = data->tevReg1G;
+    color.b = data->tevReg1B;
+    color.a = data->tevReg1A;
     GXSetTevColor(GX_TEVREG1, color);
 #endif
     }
@@ -483,9 +483,9 @@ void effReleaseDisp(CameraId camId, void* param) {
         releaseSetColor2(data, i);
 #else
         color2 = *(GXColor*)&unk_80423244;
-        color2.r = data->field_0x1C;
-        color2.g = data->field_0x20;
-        color2.b = data->field_0x24;
+        color2.r = data->tevReg0R;
+        color2.g = data->tevReg0G;
+        color2.b = data->tevReg0B;
         color2.a = data->alphas[i];
         GXSetTevColor(GX_TEVREG0, color2);
 #endif
@@ -577,14 +577,14 @@ void effReleaseDisp(CameraId camId, void* param) {
 
     if (type == 2 || type == 3) {
         alpha = 0;
-        if (data->field_0x70 == 1 || data->field_0x70 == 0x64) {
-            if (data->field_0x74 > 2 && data->field_0x74 <= 10) {
-                alpha = 0xFF - (data->field_0x74 - 2) * 30;
+        if (data->state == 1 || data->state == 0x64) {
+            if (data->stateFrame > 2 && data->stateFrame <= 10) {
+                alpha = 0xFF - (data->stateFrame - 2) * 30;
             }
         }
-        if (data->field_0x70 == 5) {
-            if (data->field_0x74 > 0 && data->field_0x74 <= 8) {
-                alpha = 0xFF - data->field_0x74 * 30;
+        if (data->state == 5) {
+            if (data->stateFrame > 0 && data->stateFrame <= 8) {
+                alpha = 0xFF - data->stateFrame * 30;
             }
         }
         if (alpha > 0) {
