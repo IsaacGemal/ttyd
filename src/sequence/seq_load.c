@@ -53,7 +53,7 @@ __declspec(section ".data") f32 lbl_80349DE8[2] = { -1.0f, 1.0f };
 // cursorTargetX/Y. printWindowId is the window id copied into the card-check event (unk_800f2398 sets it).
 typedef struct LoadWork {
     u16 flags; //0x0
-    u8 field_0x2[0x4 - 0x2];
+    u8 pad_0x2[0x4 - 0x2];
     FileEntry* file; //0x4
     f32 cursorX; //0x8
     f32 cursorY; //0xC
@@ -1066,19 +1066,17 @@ void loadDraw(void) {
         u16 mask;
         u16 flags;
         s32 level;
-        s32 field28;
-        u32 field2c;
-        s32 field17c;
+        OSTime playTime; // save play time: the OSTime that GlobalWork names retraceLocalTime
+        s32 mGSW0; // 0 on a new file (shows the start text instead of the play time)
         const char* name;
 
         card = cardGetFilePtr();
         slot = &card->saves[i];
         flags = slot->data.flags;
-        level = *(s16*)((u8*)slot + 0x146a);
-        field28 = *(u32*)((u8*)slot + 0x28);
-        field2c = *(u32*)((u8*)slot + 0x2c);
-        mask = *(u16*)((u8*)slot + 0x146c);
-        field17c = *(u32*)((u8*)slot + 0x17c);
+        level = slot->data.pouch.level;
+        playTime = slot->data.global.retraceLocalTime;
+        mask = slot->data.pouch.mStarPowersObtained;
+        mGSW0 = slot->data.global.mGSW0;
         name = slot->data.global.playerName;
         wd = &win_dt[i];
 
@@ -1122,7 +1120,7 @@ void loadDraw(void) {
             const char* s = "\203j\203\205\201[\203Q\201[\203\200";
 
             FontDrawString(s, wd->x - (f32)FontGetMessageWidth(s) / 2.0f, 12.0f + wd->y);
-        } else if (field17c == 0) {
+        } else if (mGSW0 == 0) {
             const char* s = "\202\315\202\266\202\337\202\251\202\347";
 
             FontDrawString(s, wd->x - (f32)FontGetMessageWidth(s) / 2.0f, 12.0f + wd->y);
@@ -1134,7 +1132,7 @@ void loadDraw(void) {
             u32 mins;
             u64 secs;
             f32 half;
-            s64 ticks = ((s64)field28 << 32) | field2c;
+            s64 ticks = playTime;
             Mtx mtx;
             f32 half2;
 
