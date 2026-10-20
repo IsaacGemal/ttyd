@@ -7,8 +7,10 @@
     uv run --with libclang tools/offset_to_field.py --verify --build-cmd CMD PATH...
                                                                            rewrite, build, keep only files whose
                                                                            build stays byte-identical
+    python3 tools/offset_to_field.py --dwarf-index OUT.json                 (on a built tree) MWCC layouts for --dwarf
 
-With no PATH the whole tree (src/, rels/*/src) is scanned. A PATH may be a file or a directory.
+With no PATH the whole tree (src/, rels/*/src) is scanned. A PATH may be a file or a directory inside the repo;
+only those .c files are ever written (relative include paths are resolved from the repo root, wherever it runs).
 Add `--compile-commands FILE` (configure.py's compile_commands.json from a built tree) for per-file include
 paths and defines, `--dwarf FILE` (from `--dwarf-index` on a built tree) to check every rewrite against MWCC's
 own layout, and `--skip-base TAG` to leave a struct's casts alone.
@@ -33,12 +35,22 @@ A site is rewritten only when all of these hold:
   cast's pointee type, ignoring `const`, never `volatile`, never a bitfield; in a union exactly one member
   path may match;
 - the result is dereferenced (`*`), member-accessed (`->`), indexed into an array field, or used as a plain
-  pointer value (`&base->field`); pointer arithmetic, `++`/`--` and compound assignment on it are left alone.
+  pointer value (`&base->field`); pointer arithmetic, `++`/`--`, compound assignment and storing the address
+  in a variable (later code may stride past the field) are left alone;
+- the field's name is not a placeholder (`unk*`, `pad*`, `field_*`, leading `_`): those are left for naming passes.
+One deliberate type exception: a pointer read through a different pointer type, `*(T**)((u8*)p + 0x10)` on a
+`U* next` field, becomes `(T*)p->next` (same word loaded, cast kept), and only when it isn't written to.
 """
 import argparse
+import atexit
+import functools
+import json
+import os
 import re
+import shutil
 import subprocess
 import sys
+import tempfile
 from collections import Counter
 from pathlib import Path
 
@@ -65,42 +77,39 @@ DEFAULT_FLAGS = [
 COMPILE_FLAGS = {}  # source path -> its -I/-D flags, from compile_commands.json
 STUB_DIR = None     # empty stand-ins for generated includes that aren't on this machine
 U8_CAST = re.compile(r"\(\s*u8\s*\*\s*\)")
-INT_LIT = re.compile(r"(0[xX][0-9A-Fa-f]+|\d+)[uUlL]*")
+INT_LIT = re.compile(r"(0[xX][0-9A-Fa-f]+|0|[1-9]\d*)[uUlL]*")  # no octal
 SIMPLE = re.compile(r"[A-Za-z_]\w*(\s*(->|\.)\s*[A-Za-z_]\w*|\s*\[[^\[\]]*\])*")
 PLACEHOLDER = re.compile(r"(unk|pad|field_|_)", re.I)
 ADDR_SIMPLE = re.compile(r"&\s*(" + SIMPLE.pattern + r")")
 
 
-_SHORT_ENUM_HEADERS = None
+def pack_short_enums(text):
+    """`enum __attribute__((packed))` for every enum definition in a `#pragma enumsalwaysint off` region."""
+    parts = re.split(r"(^[ \t]*#[ \t]*pragma[ \t]+enumsalwaysint[ \t]+\w+.*$)", text, flags=re.M)
+    off = False
+    for i, part in enumerate(parts):
+        m = re.match(r"\s*#\s*pragma\s+enumsalwaysint\s+(\w+)", part)
+        if m:
+            off = m.group(1) == "off"
+        elif off:
+            parts[i] = re.sub(r"\benum\b(?=\s*\w*\s*\{)", "enum __attribute__((packed))", part)
+    return "".join(parts)
 
 
+@functools.lru_cache(maxsize=None)
 def short_enum_headers():
     """MWCC's `#pragma enumsalwaysint off` sizes an enum to its values; clang ignores the pragma. Feed clang
-    copies of the headers that use it, with `__attribute__((packed))` on each enum in the off regions."""
-    global _SHORT_ENUM_HEADERS
-    if _SHORT_ENUM_HEADERS is None:
-        _SHORT_ENUM_HEADERS = []
-        dirs = [ROOT / "include", ROOT / "libs"] + sorted(ROOT.glob("rels/*/include"))
-        for d in dirs:
-            for h in sorted(d.rglob("*.h")):
-                t = h.read_text(errors="surrogateescape")
-                if "enumsalwaysint" not in t:
-                    continue
-                parts = re.split(r"(^[ \t]*#[ \t]*pragma[ \t]+enumsalwaysint[ \t]+\w+.*$)", t, flags=re.M)
-                off = False
-                for i, part in enumerate(parts):
-                    m = re.match(r"\s*#\s*pragma\s+enumsalwaysint\s+(\w+)", part)
-                    if m:
-                        off = m.group(1) == "off"
-                    elif off:
-                        parts[i] = re.sub(r"\benum\b(?=\s*\w*\s*\{)", "enum __attribute__((packed))", part)
-                out = ["".join(parts)]
-                _SHORT_ENUM_HEADERS.append((str(h), out[0]))
-    return _SHORT_ENUM_HEADERS
+    in-memory copies (unsaved files) of the headers that use it, with their enums packed."""
+    out = []
+    for d in [ROOT / "include", ROOT / "libs"] + sorted(ROOT.glob("rels/*/include")):
+        for h in sorted(d.rglob("*.h")):
+            t = h.read_text(errors="surrogateescape")
+            if "enumsalwaysint" in t:
+                out.append((str(h), pack_short_enums(t)))
+    return out
 
 
 def load_compile_commands(path):
-    import json
     for e in json.loads(Path(path).read_text()):
         d = Path(e["directory"])
         f = Path(e["file"])
@@ -135,7 +144,8 @@ def clang_args(rel):
 
 
 def parse(rel, text):
-    """libclang TU for one source; generated includes this machine lacks are stubbed empty and the parse retried."""
+    """libclang TU for one source; generated includes this machine lacks are stubbed empty (in a temp dir removed
+    at exit) and the parse retried."""
     global STUB_DIR
     path = ROOT / rel
     for _ in range(8):
@@ -146,12 +156,13 @@ def parse(rel, text):
         if not missing:
             return tu
         if STUB_DIR is None:
-            import tempfile
             STUB_DIR = tempfile.mkdtemp(prefix="offset_to_field-stubs-")
+            atexit.register(shutil.rmtree, STUB_DIR, True)
         made = False
         for name in missing:
             stub = Path(STUB_DIR) / name
             if not stub.exists():
+                print(f"{rel}: '{name}' not found, stubbed empty", file=sys.stderr)
                 stub.parent.mkdir(parents=True, exist_ok=True)
                 stub.write_text("")
                 made = True
@@ -199,12 +210,10 @@ def parse_dwarf_dump(text):
 def dwarf_index(out_path):
     """Run on a built tree: dump each compiled source's object DWARF with dtk and store the struct layouts as
     JSON {source path: {tag: {member path: offset}}}."""
-    import json
     ninja = (ROOT / "build.ninja").read_text().replace("$\n", " ")
     pairs = re.findall(r"^build (\S+\.o): mwcc\w* +(\S+\.c)\b", ninja, re.M)
     dtk = ROOT / "build/tools/dtk"
     res = {}
-    import tempfile
     with tempfile.TemporaryDirectory() as td:
         for obj, srcp in pairs:
             if not (ROOT / obj).exists():
@@ -293,16 +302,6 @@ def define_mask(text):
 
 def strip_parens(c):
     while c.kind == K.PAREN_EXPR:
-        kids = list(c.get_children())
-        if len(kids) != 1:
-            break
-        c = kids[0]
-    return c
-
-
-def unexposed(c):
-    """Look through implicit-cast wrappers (UNEXPOSED_EXPR with one child)."""
-    while c.kind == K.UNEXPOSED_EXPR:
         kids = list(c.get_children())
         if len(kids) != 1:
             break
@@ -502,9 +501,9 @@ def is_lvalue(node, parents):
 
 
 class Site:
-    def __init__(self, path, line, text, outcome, new=None, span=None, retyped=False):
+    """One (u8*) cast: outcome 'ok' (with replacement text `new` for the byte span `span`) or why it was skipped."""
+    def __init__(self, path, line, text, outcome, new=None, span=None):
         self.path, self.line, self.text, self.outcome, self.new, self.span = path, line, text, outcome, new, span
-        self.retyped = retyped
 
 
 def analyse(rel, text=None):
@@ -524,6 +523,8 @@ def analyse(rel, text=None):
     sites = []
 
     def visit(c, parents):
+        # Extents of code from a macro expansion cover the macro call, so a cast that comes from (or ends in) a
+        # macro never shows up as `(u8*)...` / `(T*)...` source text below and is skipped.
         if c.kind == K.CSTYLE_CAST_EXPR and c.location.file and c.location.file.name == main:
             t = src(c)
             if U8_CAST.match(t):
@@ -552,19 +553,18 @@ def analyse(rel, text=None):
             return skip("not a base + offset cast")
         binop = parents[i]
         kids = list(binop.get_children())
-        if len(kids) != 2 or strip_parens(kids[0]).hash != u8cast.hash and kids[0].hash != u8cast.hash:
+        if len(kids) != 2 or (strip_parens(kids[0]).hash != u8cast.hash and kids[0].hash != u8cast.hash):
             return skip("not a base + offset cast")
         op = raw[kids[0].extent.end.offset:kids[1].extent.start.offset].decode(errors="replace").strip()
         if op != "+":
             return skip("not a base + offset cast")
-        whole = src(binop)
         if line in mm or binop.extent.end.line in mm:
             return skip("MUST_MATCH")
         lit = src(kids[1]).strip()
         while lit.startswith("(") and lit.endswith(")"):
             lit = lit[1:-1].strip()
         m = INT_LIT.fullmatch(lit)
-        if not m or "+" not in whole:
+        if not m:
             return skip("offset not a literal")
         off = int(m.group(1), 0)
         base = last_child(u8cast)
@@ -595,9 +595,10 @@ def analyse(rel, text=None):
             return skip("volatile")
         want = unqual(want_t)
         base_text = src(base)
-        # how the cast pointer is used
+        # how the cast pointer is used (through parens and implicit conversions)
         k = j - 1
-        while k >= 0 and parents[k].kind == K.PAREN_EXPR:
+        while k >= 0 and (parents[k].kind == K.PAREN_EXPR
+                          or parents[k].kind == K.UNEXPOSED_EXPR and len(list(parents[k].get_children())) == 1):
             k -= 1
         use = parents[k] if k >= 0 else None
         usetxt = ""
@@ -653,12 +654,15 @@ def analyse(rel, text=None):
             if par is not None and par.kind in (K.UNARY_OPERATOR, K.ARRAY_SUBSCRIPT_EXPR, K.MEMBER_REF_EXPR,
                                                 K.CALL_EXPR, K.CXX_UNARY_EXPR):
                 new = f"({new})"
-            return Site(rel, line, src(use), "ok", new, (e.start.offset, e.end.offset), retyped=True)
+            return Site(rel, line, src(use), "ok", new, (e.start.offset, e.end.offset))
         if use is not None and use.kind == K.UNARY_OPERATOR and usetxt == "*":
             e = use.extent
             # (*(T*)(...))++  ->  base->field++ : a postfix expression needs no parens of its own
+            # (but keep them after a keyword or identifier: sizeof(*(T*)(...)))
             if k >= 1 and parents[k - 1].kind == K.PAREN_EXPR:
-                e = parents[k - 1].extent
+                before = raw[:parents[k - 1].extent.start.offset].rstrip()[-1:]
+                if not (before.isalnum() or before == b"_"):
+                    e = parents[k - 1].extent
             return Site(rel, line, src(use), "ok", acc, (e.start.offset, e.end.offset))
         if use is not None and use.kind == K.MEMBER_REF_EXPR:
             # ((T*)(...))->m  ->  base->field.m ; replace up to and including the arrow
@@ -670,16 +674,15 @@ def analyse(rel, text=None):
                 return skip("member access through '.'")
             return Site(rel, line, src(use), "ok", acc + ".",
                         (first.extent.start.offset, fe + mm_.end()))
+        binop_txt = ""
         if use is not None and use.kind in (K.BINARY_OPERATOR, K.COMPOUND_ASSIGNMENT_OPERATOR):
             ukids = list(use.get_children())
-            o = raw[ukids[0].extent.end.offset:ukids[1].extent.start.offset].decode(errors="replace").strip()
-            if o in ("+", "-", "+=", "-="):
+            binop_txt = raw[ukids[0].extent.end.offset:ukids[1].extent.start.offset].decode(errors="replace").strip()
+            if binop_txt in ("+", "-", "+=", "-="):
                 return skip("pointer arithmetic")
-        if use is not None and use.kind == K.UNARY_OPERATOR and usetxt in ("++", "--", "postfix", "&", "-", "!", "~"):
-            if usetxt != "!":
-                return skip("pointer arithmetic")
-        if use is not None and (use.kind == K.VAR_DECL or use.kind == K.BINARY_OPERATOR and is_lvalue(
-                list(use.get_children())[0], parents[:k + 1])):
+        if use is not None and use.kind == K.UNARY_OPERATOR and usetxt in ("++", "--", "postfix"):
+            return skip("pointer arithmetic")
+        if use is not None and (use.kind == K.VAR_DECL or binop_txt == "="):
             # p = (T*)(...): later code may step through it past the field (a strided table view)
             return skip("address stored in a variable")
         e = outer.extent
@@ -753,6 +756,10 @@ def collect(paths):
         paths = ["src"] + sorted(str(p.relative_to(ROOT)) for p in ROOT.glob("rels/*/src"))
     for p in paths:
         ap = (ROOT / p) if not Path(p).is_absolute() else Path(p)
+        if not ap.resolve().is_relative_to(ROOT):
+            sys.exit(f"{p}: not inside the repo ({ROOT})")
+        if not ap.exists():
+            sys.exit(f"{p}: not found")
         if ap.is_dir():
             files += sorted(ap.rglob("*.c"))
         elif ap.suffix == ".c":
@@ -847,8 +854,9 @@ def main():
     elif a.compile_commands:
         sys.exit(f"{cc} not found")
     if a.dwarf:
-        import json
         DWARF.update(json.loads(Path(a.dwarf).read_text()))
+    # PATHs are taken relative to the repo root, and so are the compile flags' relative -I paths
+    os.chdir(ROOT)
     files = collect(a.paths)
     if a.verify:
         good, bad, counts = verify(files, a.build_cmd, lambda s: print(s, flush=True))
