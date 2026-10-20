@@ -10959,3 +10959,13 @@ rate, trans adds it to position.x), `targetX` (0x28, the x that trans's state 1 
 wrapped at 360, feeds the sin() that sets the disp pass's alpha and shadow volume), and desc `angleSpeed` (0x10).
 Left as field_0x: desc 0x14 and entry 0x20 (desc 0x14 is copied to entry 0x20, which nothing reads), and desc 0x20,
 which is the initial angle for type 0 and the target x for type 1.
+### Readability: rsh_05 moamoa work (2026-10-20, Claude Haiku 5.5, n9-q-relfld)
+
+MoamoaWork in rsh_05.c: 0x40 is `motion12Frames` (frames Mario has stayed in motion 0x12; the sweep fires past 10),
+and 0x558 is `bounceCount` (bounces off the moamoa's head while Mario is airborne, capped at 2, reset when neither
+0x10000 nor 0x20000 is set on Mario's flags).
+Left as field_0x: MoamoaPose 0x14, 0x1C and 0x20, which carry different values per state. In a jump 0x14 is the
+vertical velocity (stepped by 0x20 as gravity), in the breath push (state 0x30) 0x14/0x20 are the x/z acceleration and
+0x1C the y acceleration, and in the wave states (0x33/0x34) 0x1C and 0x20 are the height and sideways amplitudes.
+MoamoaWork 0x2 and 0x48 are never read. rsh_06.c keeps its own MoamoaPose copy (chain at 0x48, a different layout)
+and is not touched here.
