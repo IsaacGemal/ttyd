@@ -107,9 +107,9 @@ static s32 fontlenpitch(const s8* msg, s32 pitch) {
 }
 
 // Draws a message centred at (x, y), scaled down horizontally to fit maxWidth.
-// Placed before disp_func so MWCC compiles disp first; unk_yuu's 0.0f then reuses the pool slot disp
+// Placed before disp_func so MWCC compiles disp first; yuu_draw_msg_fit's 0.0f then reuses the pool slot disp
 // already created at its target position instead of pre-empting it (MWCC emits functions in reverse source order).
-void unk_yuu_00008e40(const char* msg, s32 maxWidth, f32 x, f32 y, f32 scale) {
+void yuu_draw_msg_fit(const char* msg, s32 maxWidth, f32 x, f32 y, f32 scale) {
     Mtx trans;
     Mtx scaleMtx;
     Mtx mtx;
@@ -128,9 +128,9 @@ void unk_yuu_00008e40(const char* msg, s32 maxWidth, f32 x, f32 y, f32 scale) {
 
 // Per-minigame rank table in the shared yuugijou work (yuwp): six slots each for
 // the used slot flag, the score/time value, and the monte count.
-#define A14(i) (*(s32*)((unsigned char*)yuwp + work->mode * 24 + 0x14 + (i) * 4))
-#define A74(i) (*(s32*)((unsigned char*)yuwp + work->mode * 24 + 0x74 + (i) * 4))
-#define AD4(i) (*(s32*)((unsigned char*)yuwp + work->mode * 24 + 0xd4 + (i) * 4))
+#define A14(i) ((s32)yuwp->rankUsed[work->mode][i])
+#define A74(i) ((s32)yuwp->rankScore[work->mode][i])
+#define AD4(i) ((s32)yuwp->rankMonte[work->mode][i])
 
 #ifdef MUST_MATCH
 // Match-only: taking each by-value colour's address keeps all 20 GXColor locals in one contiguous stack block,
@@ -237,7 +237,7 @@ static void evt_yuuranking_disp_func(CameraId cameraId, void* param) {
         c3 = *(GXColor*)&dat_yuu_00014a8c;
         FontDrawColor(&c3);
         msg = msgSearch("menu_subtitle1_minigame1");
-        unk_yuu_00008e40(msg, 165, work->x + -150.4f, work->field_10 + 56.0f, 1.0f);
+        yuu_draw_msg_fit(msg, 165, work->x + -150.4f, work->field_10 + 56.0f, 1.0f);
         if (work->currentValue >= 0) {
             sprintf(buf, "%3d%s%02d", work->currentValue / 1000, msgSearch("menu_decimal_point"), (work->currentValue % 1000) / 10);
             FontDrawStringPitch(buf, work->x + (150.4f - (f32)fontlenpitch((s8*)buf, 18)), work->field_10 + 56.0f, 18.0f);
@@ -247,7 +247,7 @@ static void evt_yuuranking_disp_func(CameraId cameraId, void* param) {
                 c5 = *(GXColor*)&dat_yuu_00014a90;
                 FontDrawColor(&c5);
                 msg = msgSearch("menu_subtitle4_getmonte");
-                unk_yuu_00008e40(msg, 165, work->x + -150.4f, work->field_10 + 32.0f, 1.0f);
+                yuu_draw_msg_fit(msg, 165, work->x + -150.4f, work->field_10 + 32.0f, 1.0f);
                 sprintf(buf, "%4d", work->bonus);
                 FontDrawStringPitch(buf, work->x + (150.4f - (f32)fontlenpitch((s8*)buf, 18)), work->field_10 + 32.0f, 18.0f);
             }
@@ -258,7 +258,7 @@ static void evt_yuuranking_disp_func(CameraId cameraId, void* param) {
                 FontDrawColor(&c6);
                 if (work->mult > 1) {
                     msg = msgSearch("menu_subtitle2_minigame1");
-                    unk_yuu_00008e40(msg, 165, work->x + -150.4f, work->field_10 + 8.0f, 1.0f);
+                    yuu_draw_msg_fit(msg, 165, work->x + -150.4f, work->field_10 + 8.0f, 1.0f);
                     if (work->mult < 0x100) {
                         msg = msgSearch("menu_subtitle4_minigame1");
                         sprintf(buf, msg, work->mult);
@@ -268,7 +268,7 @@ static void evt_yuuranking_disp_func(CameraId cameraId, void* param) {
                     FontDrawStringPitch(buf, work->x + (150.4f - (f32)fontlenpitch((s8*)buf, 18)), work->field_10 + 8.0f, 18.0f);
                 } else if (work->mult < 0) {
                     msg = msgSearch("menu_subtitle5_minigame1");
-                    unk_yuu_00008e40(msg, 165, work->x + -150.4f, work->field_10 + 8.0f, 1.0f);
+                    yuu_draw_msg_fit(msg, 165, work->x + -150.4f, work->field_10 + 8.0f, 1.0f);
                     msg = msgSearch("menu_subtitle6_minigame1");
                     sprintf(buf, msg, -work->mult);
                     FontDrawStringPitch(buf, work->x + (150.4f - (f32)fontlenpitch((s8*)buf, 18)), work->field_10 + 8.0f, 18.0f);
@@ -296,7 +296,7 @@ static void evt_yuuranking_disp_func(CameraId cameraId, void* param) {
             msg2 = msgSearch("menu_subtitle1_minigame3");
             break;
         }
-        unk_yuu_00008e40(msg2, 165, work->x + -150.4f, work->field_10 + 56.0f, 1.0f);
+        yuu_draw_msg_fit(msg2, 165, work->x + -150.4f, work->field_10 + 56.0f, 1.0f);
         FontDrawScale(1.0f);
         if (work->currentValue >= 0) {
             s32 timeValue = work->currentValue;
@@ -320,7 +320,7 @@ static void evt_yuuranking_disp_func(CameraId cameraId, void* param) {
                     msg2 = msgSearch("menu_subtitle4_getmonte");
                     break;
                 }
-                unk_yuu_00008e40(msg2, 165, work->x + -150.4f, work->field_10 + 32.0f, 1.0f);
+                yuu_draw_msg_fit(msg2, 165, work->x + -150.4f, work->field_10 + 32.0f, 1.0f);
                 FontDrawScale(1.0f);
                 sprintf(buf, "%4d", work->bonus);
                 FontDrawStringPitch(buf, work->x + (150.4f - (f32)fontlenpitch((s8*)buf, 18)), work->field_10 + 32.0f, 18.0f);
@@ -338,7 +338,7 @@ static void evt_yuuranking_disp_func(CameraId cameraId, void* param) {
                         msg2 = msgSearch("menu_subtitle2_minigame3");
                         break;
                     }
-                    unk_yuu_00008e40(msg2, 165, work->x + -150.4f, work->field_10 + 8.0f, 1.0f);
+                    yuu_draw_msg_fit(msg2, 165, work->x + -150.4f, work->field_10 + 8.0f, 1.0f);
                     FontDrawScale(1.0f);
                     if (work->mult < 0x100) {
                         msg = msgSearch("menu_subtitle4_minigame1");
@@ -349,7 +349,7 @@ static void evt_yuuranking_disp_func(CameraId cameraId, void* param) {
                     FontDrawStringPitch(buf, work->x + (150.4f - (f32)fontlenpitch((s8*)buf, 18)), work->field_10 + 8.0f, 18.0f);
                 } else if (work->mult < 0) {
                     msg = msgSearch("menu_subtitle5_minigame1");
-                    unk_yuu_00008e40(msg, 165, work->x + -150.4f, work->field_10 + 8.0f, 1.0f);
+                    yuu_draw_msg_fit(msg, 165, work->x + -150.4f, work->field_10 + 8.0f, 1.0f);
                     FontDrawScale(1.0f);
                     msg = msgSearch("menu_subtitle6_minigame1");
                     sprintf(buf, msg, -work->mult);
@@ -374,7 +374,7 @@ static void evt_yuuranking_disp_func(CameraId cameraId, void* param) {
         c11 = *(GXColor*)&dat_yuu_00014aac;
         FontDrawColor(&c11);
         msg = msgSearch("menu_subtitle1_minigame4");
-        unk_yuu_00008e40(msg, 165, work->x + -150.4f, work->field_10 + 56.0f, 1.0f);
+        yuu_draw_msg_fit(msg, 165, work->x + -150.4f, work->field_10 + 56.0f, 1.0f);
         if (work->currentValue < work->maxValue) {
             sprintf(buf, "%4d", work->currentValue + 1);
             FontDrawStringPitch(buf, work->x + (150.4f - (f32)fontlenpitch((s8*)buf, 18)), work->field_10 + 56.0f, 18.0f);
@@ -385,7 +385,7 @@ static void evt_yuuranking_disp_func(CameraId cameraId, void* param) {
                 FontDrawColor(&c13);
                 if (work->mult > 1) {
                     msg = msgSearch("menu_subtitle2_minigame4");
-                    unk_yuu_00008e40(msg, 165, work->x + -150.4f, work->field_10 + 8.0f, 1.0f);
+                    yuu_draw_msg_fit(msg, 165, work->x + -150.4f, work->field_10 + 8.0f, 1.0f);
                     if (work->mult < 0x100) {
                         msg = msgSearch("menu_subtitle4_minigame1");
                         sprintf(buf, msg, work->mult);
@@ -395,7 +395,7 @@ static void evt_yuuranking_disp_func(CameraId cameraId, void* param) {
                     FontDrawStringPitch(buf, work->x + (150.4f - (f32)fontlenpitch((s8*)buf, 18)), work->field_10 + 8.0f, 18.0f);
                 } else if (work->mult < 0) {
                     msg = msgSearch("menu_subtitle5_minigame1");
-                    unk_yuu_00008e40(msg, 165, work->x + -150.4f, work->field_10 + 8.0f, 1.0f);
+                    yuu_draw_msg_fit(msg, 165, work->x + -150.4f, work->field_10 + 8.0f, 1.0f);
                     msg = msgSearch("menu_subtitle6_minigame1");
                     sprintf(buf, msg, -work->mult);
                     FontDrawStringPitch(buf, work->x + (150.4f - (f32)fontlenpitch((s8*)buf, 18)), work->field_10 + 8.0f, 18.0f);
@@ -419,7 +419,7 @@ end:
     c14 = *(GXColor*)&dat_yuu_00014ab8;
     FontDrawColor(&c14);
     msg = msgSearch("menu_subtitle3_totalmonte");
-    unk_yuu_00008e40(msg, 165, work->x + -150.4f, work->field_10 + -40.0f, 1.0f);
+    yuu_draw_msg_fit(msg, 165, work->x + -150.4f, work->field_10 + -40.0f, 1.0f);
     {
         Mtx m;
         s32 ix = (s32)(work->x + 10.399994f + 70.0f);

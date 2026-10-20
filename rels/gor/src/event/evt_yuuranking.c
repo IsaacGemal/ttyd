@@ -115,7 +115,7 @@ static s32 fontlenpitch(s8* text, s32 pitch) {
     }
 }
 
-void unk_gor_0000dfc4(const char* msg, s32 width, f32 x, f32 y, f32 z) {
+void gor_draw_msg_fit(const char* msg, s32 width, f32 x, f32 y, f32 z) {
     Mtx trans;
     Mtx scale;
     Mtx out;
@@ -132,9 +132,9 @@ void unk_gor_0000dfc4(const char* msg, s32 width, f32 x, f32 y, f32 z) {
     FontDrawMessageMtx(out, msg);
 }
 
-#define A14(i) (*(s32*)((unsigned char*)yuwp + work->field_14 * 24 + 0x14 + (i) * 4))
-#define A74(i) (*(s32*)((unsigned char*)yuwp + work->field_14 * 24 + 0x74 + (i) * 4))
-#define AD4(i) (*(s32*)((unsigned char*)yuwp + work->field_14 * 24 + 0xd4 + (i) * 4))
+#define A14(i) ((s32)yuwp->rankUsed[work->field_14][i])
+#define A74(i) ((s32)yuwp->rankScore[work->field_14][i])
+#define AD4(i) ((s32)yuwp->rankMonte[work->field_14][i])
 
 
 
@@ -261,7 +261,7 @@ static void evt_yuuranking_disp_func(CameraId cameraId, void* param) {
         c3 = *(GXColor*)&dat_gor_0001cd3c;
         FontDrawColor(&c3);
         msg = msgSearch("menu_subtitle1_minigame1");
-        unk_gor_0000dfc4(msg, 165, work->x + -150.4f, work->field_10 + 56.0f, 1.0f);
+        gor_draw_msg_fit(msg, 165, work->x + -150.4f, work->field_10 + 56.0f, 1.0f);
         if (work->currentValue >= 0) {
             sprintf(buf, "%3d%s%02d", work->currentValue / 1000, msgSearch("menu_decimal_point"), (work->currentValue % 1000) / 10);
             FontDrawStringPitch(buf, work->x + (150.4f - (f32)fontlenpitch((s8*)buf, 18)), work->field_10 + 56.0f, 18.0f);
@@ -271,7 +271,7 @@ static void evt_yuuranking_disp_func(CameraId cameraId, void* param) {
                 c5 = *(GXColor*)&dat_gor_0001cd40;
                 FontDrawColor(&c5);
                 msg = msgSearch("menu_subtitle4_getmonte");
-                unk_gor_0000dfc4(msg, 165, work->x + -150.4f, work->field_10 + 32.0f, 1.0f);
+                gor_draw_msg_fit(msg, 165, work->x + -150.4f, work->field_10 + 32.0f, 1.0f);
                 sprintf(buf, "%4d", work->bonus);
                 FontDrawStringPitch(buf, work->x + (150.4f - (f32)fontlenpitch((s8*)buf, 18)), work->field_10 + 32.0f, 18.0f);
             }
@@ -282,7 +282,7 @@ static void evt_yuuranking_disp_func(CameraId cameraId, void* param) {
                 FontDrawColor(&c6);
                 if (work->mult > 1) {
                     msg = msgSearch("menu_subtitle2_minigame1");
-                    unk_gor_0000dfc4(msg, 165, work->x + -150.4f, work->field_10 + 8.0f, 1.0f);
+                    gor_draw_msg_fit(msg, 165, work->x + -150.4f, work->field_10 + 8.0f, 1.0f);
                     if (work->mult < 0x100) {
                         msg = msgSearch("menu_subtitle4_minigame1");
                         sprintf(buf, msg, work->mult);
@@ -292,7 +292,7 @@ static void evt_yuuranking_disp_func(CameraId cameraId, void* param) {
                     FontDrawStringPitch(buf, work->x + (150.4f - (f32)fontlenpitch((s8*)buf, 18)), work->field_10 + 8.0f, 18.0f);
                 } else if (work->mult < 0) {
                     msg = msgSearch("menu_subtitle5_minigame1");
-                    unk_gor_0000dfc4(msg, 165, work->x + -150.4f, work->field_10 + 8.0f, 1.0f);
+                    gor_draw_msg_fit(msg, 165, work->x + -150.4f, work->field_10 + 8.0f, 1.0f);
                     msg = msgSearch("menu_subtitle6_minigame1");
                     sprintf(buf, msg, -work->mult);
                     FontDrawStringPitch(buf, work->x + (150.4f - (f32)fontlenpitch((s8*)buf, 18)), work->field_10 + 8.0f, 18.0f);
@@ -320,7 +320,7 @@ static void evt_yuuranking_disp_func(CameraId cameraId, void* param) {
             msg2 = msgSearch("menu_subtitle1_minigame3");
             break;
         }
-        unk_gor_0000dfc4(msg2, 165, work->x + -150.4f, work->field_10 + 56.0f, 1.0f);
+        gor_draw_msg_fit(msg2, 165, work->x + -150.4f, work->field_10 + 56.0f, 1.0f);
         FontDrawScale(1.0f);
         if (work->currentValue >= 0) {
             s32 timeValue = work->currentValue;
@@ -344,7 +344,7 @@ static void evt_yuuranking_disp_func(CameraId cameraId, void* param) {
                     msg2 = msgSearch("menu_subtitle4_getmonte");
                     break;
                 }
-                unk_gor_0000dfc4(msg2, 165, work->x + -150.4f, work->field_10 + 32.0f, 1.0f);
+                gor_draw_msg_fit(msg2, 165, work->x + -150.4f, work->field_10 + 32.0f, 1.0f);
                 FontDrawScale(1.0f);
                 sprintf(buf, "%4d", work->bonus);
                 FontDrawStringPitch(buf, work->x + (150.4f - (f32)fontlenpitch((s8*)buf, 18)), work->field_10 + 32.0f, 18.0f);
@@ -362,7 +362,7 @@ static void evt_yuuranking_disp_func(CameraId cameraId, void* param) {
                         msg2 = msgSearch("menu_subtitle2_minigame3");
                         break;
                     }
-                    unk_gor_0000dfc4(msg2, 165, work->x + -150.4f, work->field_10 + 8.0f, 1.0f);
+                    gor_draw_msg_fit(msg2, 165, work->x + -150.4f, work->field_10 + 8.0f, 1.0f);
                     FontDrawScale(1.0f);
                     if (work->mult < 0x100) {
                         msg = msgSearch("menu_subtitle4_minigame1");
@@ -373,7 +373,7 @@ static void evt_yuuranking_disp_func(CameraId cameraId, void* param) {
                     FontDrawStringPitch(buf, work->x + (150.4f - (f32)fontlenpitch((s8*)buf, 18)), work->field_10 + 8.0f, 18.0f);
                 } else if (work->mult < 0) {
                     msg = msgSearch("menu_subtitle5_minigame1");
-                    unk_gor_0000dfc4(msg, 165, work->x + -150.4f, work->field_10 + 8.0f, 1.0f);
+                    gor_draw_msg_fit(msg, 165, work->x + -150.4f, work->field_10 + 8.0f, 1.0f);
                     FontDrawScale(1.0f);
                     msg = msgSearch("menu_subtitle6_minigame1");
                     sprintf(buf, msg, -work->mult);
@@ -398,7 +398,7 @@ static void evt_yuuranking_disp_func(CameraId cameraId, void* param) {
         c11 = *(GXColor*)&dat_gor_0001cd5c;
         FontDrawColor(&c11);
         msg = msgSearch("menu_subtitle1_minigame4");
-        unk_gor_0000dfc4(msg, 165, work->x + -150.4f, work->field_10 + 56.0f, 1.0f);
+        gor_draw_msg_fit(msg, 165, work->x + -150.4f, work->field_10 + 56.0f, 1.0f);
         if (work->currentValue < work->maxValue) {
             sprintf(buf, "%4d", work->currentValue + 1);
             FontDrawStringPitch(buf, work->x + (150.4f - (f32)fontlenpitch((s8*)buf, 18)), work->field_10 + 56.0f, 18.0f);
@@ -409,7 +409,7 @@ static void evt_yuuranking_disp_func(CameraId cameraId, void* param) {
                 FontDrawColor(&c13);
                 if (work->mult > 1) {
                     msg = msgSearch("menu_subtitle2_minigame4");
-                    unk_gor_0000dfc4(msg, 165, work->x + -150.4f, work->field_10 + 8.0f, 1.0f);
+                    gor_draw_msg_fit(msg, 165, work->x + -150.4f, work->field_10 + 8.0f, 1.0f);
                     if (work->mult < 0x100) {
                         msg = msgSearch("menu_subtitle4_minigame1");
                         sprintf(buf, msg, work->mult);
@@ -419,7 +419,7 @@ static void evt_yuuranking_disp_func(CameraId cameraId, void* param) {
                     FontDrawStringPitch(buf, work->x + (150.4f - (f32)fontlenpitch((s8*)buf, 18)), work->field_10 + 8.0f, 18.0f);
                 } else if (work->mult < 0) {
                     msg = msgSearch("menu_subtitle5_minigame1");
-                    unk_gor_0000dfc4(msg, 165, work->x + -150.4f, work->field_10 + 8.0f, 1.0f);
+                    gor_draw_msg_fit(msg, 165, work->x + -150.4f, work->field_10 + 8.0f, 1.0f);
                     msg = msgSearch("menu_subtitle6_minigame1");
                     sprintf(buf, msg, -work->mult);
                     FontDrawStringPitch(buf, work->x + (150.4f - (f32)fontlenpitch((s8*)buf, 18)), work->field_10 + 8.0f, 18.0f);
@@ -443,7 +443,7 @@ end:
     c14 = *(GXColor*)&dat_gor_0001cd68;
     FontDrawColor(&c14);
     msg = msgSearch("menu_subtitle3_totalmonte");
-    unk_gor_0000dfc4(msg, 165, work->x + -150.4f, work->field_10 + -40.0f, 1.0f);
+    gor_draw_msg_fit(msg, 165, work->x + -150.4f, work->field_10 + -40.0f, 1.0f);
     {
         Mtx m;
         s32 ix = (s32)(work->x + 10.399994f + 70.0f);
