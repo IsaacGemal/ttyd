@@ -129,7 +129,7 @@ const Vec decay_tbl[] = {
 // position/rotation are Vec* but color is a by-value GXColor: the pointer params force the second
 // `*position` load for field_0x3C, while the by-value color is non-aliasing so its load hoists into the
 // position-setup block (color=r0, pos.x/pos.y=r6/r5, decay offset=r7), exactly as the target schedules it.
-s32 lightEntry(const char* name, s32 type, Vec* position, Vec* rotation, GXColor color, s32 attenType, s32 flags, f32 spotAngle, f32 attenAngle) {
+s32 lightEntry(const char* name, s32 type, Vec* position, Vec* rotation, GXColor color, f32 spotAngle, f32 attenAngle, s32 attenType, s32 flags) {
 	LightWork* wp = lightGetWork();
 	s32 i;
 	s32 k;

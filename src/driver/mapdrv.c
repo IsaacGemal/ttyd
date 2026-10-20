@@ -256,11 +256,8 @@ void mapInit(void) {
 	mapClipOffFlag = FALSE;
 }
 
-// The table walk below was moved into the inline helper so the deferred inliner emits the original's
-// `bne increment; b found` split.
-#ifdef MUST_MATCH
-// Moving the walk into an inline whose found path is a `return` makes the deferred inliner emit the
-// target's `bne increment; b found` split instead of a single `beq found`.
+// The table walk is an inline whose found path is a `return`, which makes the deferred inliner emit the
+// `bne increment; b found` split instead of a single `beq found`.
 static inline s32 mapSearchTextureIdx(void* table, u8** ref) {
 	const char** p;
 	const char* name;
@@ -278,7 +275,6 @@ static inline s32 mapSearchTextureIdx(void* table, u8** ref) {
 	}
 	return -1;
 }
-#endif
 void mapBuildTexture(MapObject* obj, TEXPalette* texture, void* table) {
 	int i;
 	int j;
@@ -290,25 +286,9 @@ void mapBuildTexture(MapObject* obj, TEXPalette* texture, void* table) {
 			u8** ref = *(u8***)(material + 0xC + j * 4);
 			s32 idx;
 			s32 use;
-			const char* name = *(const char**)(*ref);
 			TEXDescriptor* desc;
-			const char** p;
 
-			idx = 0;
-#ifdef MUST_MATCH
 			idx = mapSearchTextureIdx(table, ref);
-#else
-			p = (const char**)table;
-			while (idx < *(s32*)table) {
-				if (strcmp(p[1], name) == 0) {
-					goto found;
-				}
-				p++;
-				idx++;
-			}
-			idx = -1;
-		found:
-#endif
 			use = idx;
 			if (use == -1) {
 				use = 0;
@@ -574,13 +554,7 @@ void makeDisplayList(BOOL group) {
 				dest = wp->entries[group].dlData;
 			}
 			else {
-#ifdef MUST_MATCH
-				// MUST_MATCH: indexing the display-list pointers as a word array keeps the group offset live
-				// and gives the target's `add r3,wp,off; stw 0x16c(r3)` instead of an indexed store.
-				((void**)((u8*)wp + 0x16C))[group * (0x178 / 4)] = NULL;
-#else
 				wp->entries[group].dlData = NULL;
-#endif
 				break;
 			}
 		}
@@ -609,38 +583,29 @@ MapEntryAnimData* mapSearchAnmObj(const char* animName) {
 	return NULL;
 }
 
-// The search loop is inlined here instead of calling mapSearchAnmObj: MWCC's deferred inliner colors
-// the inlined wp/entry pair the other way when it inlines that function itself (99.47%). This copy,
-// with the loop pointer declared at function scope and j declared before i, reproduces the target's
-// registers. Natural form: `found = mapSearchAnmObj(animName);`.
-#ifdef MUST_MATCH
-static inline MapEntryAnimData* mapCheckAnimationSearch(const char* animName) {
+// Local copy of mapSearchAnmObj for the animation callers, with `entry` declared before `wp`: the inliner
+// allocates the helper's locals in declaration order, which puts wp in the higher register (r28).
+static inline MapEntryAnimData* mapFindAnm(const char* animName) {
 	MapEntry* entry;
 	MapWork* wp;
-	MapEntryAnimData* anim;
 	s32 j;
 	s32 i;
 
 	wp = &mapWork[activeGroup];
 	entry = &wp->entries[0];
 	for (i = 0; i < wp->entries[0].count; entry++, i++) {
-		anim = entry->animData;
+		MapEntryAnimData* anim = entry->animData;
 		for (j = 0; j < entry->animCount; j++, anim++) {
-			if ((*(u16*)anim & 0x1) && !strcmp(*(char**)*(void**)((u8*)anim + 0x18), animName)) {
+			if ((anim->flags & 0x1) && !strcmp(*(char**)anim->data, animName)) {
 				return anim;
 			}
 		}
 	}
 	return NULL;
 }
-#endif
 
 void mapCheckAnimation(const char* animName, BOOL* valid, f32* a3) {
-#ifdef MUST_MATCH
-	MapEntryAnimData* found = mapCheckAnimationSearch(animName);
-#else
-	MapEntryAnimData* found = mapSearchAnmObj(animName);
-#endif
+	MapEntryAnimData* found = mapFindAnm(animName);
 
 	*valid = FALSE;
 	*a3 = 0.0f;
@@ -740,50 +705,16 @@ void mapPlayAnimationLv(const char* name, s32 a2, s32 a3) {
 	}
 }
 
-#ifdef MUST_MATCH
-// Inline copy of mapSearchAnmObj with `entry` declared before `wp`: the inliner allocates the helper's
-// locals in declaration order, and that order puts wp in the higher register (r28) as in the target.
-// Natural form: `found = mapSearchAnmObj(name);`.
-static inline MapEntryAnimData* mapFindAnm(const char* animName) {
-	MapEntry* entry;
-	MapWork* wp;
-	s32 j;
-	s32 i;
-
-	wp = &mapWork[activeGroup];
-	entry = &wp->entries[0];
-	for (i = 0; i < wp->entries[0].count; entry++, i++) {
-		MapEntryAnimData* anim = entry->animData;
-		for (j = 0; j < entry->animCount; j++, anim++) {
-			if ((*(u16*)anim & 0x1) && !strcmp(*(char**)*(void**)((u8*)anim + 0x18), animName)) {
-				return anim;
-			}
-		}
-	}
-	return NULL;
-}
-#endif
-
 void mapPauseAnimation(const char* name) {
-#ifdef MUST_MATCH
 	MapEntryAnimData* found = mapFindAnm(name);
-#else
-	MapEntryAnimData* found = mapSearchAnmObj(name);
-#endif
 
 	if (found) {
 		found->flags |= 0x10;
 	}
 }
 
-// Matches via mapFindAnm: the inline copy's `entry`-before-`wp` declaration order puts wp in r28
-// (the higher register) in the target; inlining mapSearchAnmObj directly colors them the other way.
 void mapReStartAnimation(const char* name) {
-#ifdef MUST_MATCH
 	MapEntryAnimData* found = mapFindAnm(name);
-#else
-	MapEntryAnimData* found = mapSearchAnmObj(name);
-#endif
 
 	if (found) {
 		found->flags |= 0x20;
@@ -819,11 +750,7 @@ void mapReStartAnimationAll(void) {
 }
 
 void mapSetPlayRate(const char* name, f32 rate) {
-#ifdef MUST_MATCH
 	MapEntryAnimData* found = mapFindAnm(name);
-#else
-	MapEntryAnimData* found = mapSearchAnmObj(name);
-#endif
 
 	if (found) {
 		found->rate = rate;
@@ -1041,14 +968,7 @@ void _mapLoad(MapWork* wp, BOOL group, const char* map) {
 		if (light->field_0x40 == 0x12D60D8) {
 			flags = light->field_0x3C;
 		}
-#ifdef MUST_MATCH
-		// MUST_MATCH: the original evaluates the two f32 arguments before attenType/flags, so the
-		// floats are declared first in this cast; the header's declaration order differs but the
-		// register assignment is identical.
-		((s32 (*)(const char*, s32, Vec*, Vec*, GXColor, f32, f32, s32, s32))lightEntry)(light->name, type, &pos, &light->rotation, light->color, light->spotAngle, light->attenAngle, light->attenType, flags);
-#else
-		lightEntry(light->name, type, &pos, &light->rotation, light->color, light->attenType, flags, light->spotAngle, light->attenAngle);
-#endif
+		lightEntry(light->name, type, &pos, &light->rotation, light->color, light->spotAngle, light->attenAngle, light->attenType, flags);
 	}
 
 	mapResetPaperAmbColor();
@@ -1123,11 +1043,7 @@ void mapUnLoad(void) {
 	MapWork* wp;
 
 	sysWaitDrawSync();
-#ifdef MUST_MATCH
-	wp = (MapWork*)mapWork; // redundant cast: makes MWCC load mapWork into wp's home register r31
-#else
 	wp = mapWork;
-#endif
 	i = 0;
 	activeGroup = i;
 	entry = &wp->entries[0];
@@ -1361,17 +1277,11 @@ void mapCalcAnimMatrix(Mtx outMtx, Mtx inMtx, MapEntryAnimData* anim, void* join
 
 		for (k = 0; k < 9; k++) {
 			MapAnimChannel* ch = &key->chan[k];
-#ifdef MUST_MATCH
-			f32* outp = &out[k]; // MUST_MATCH: declared before chn so MWCC colours out=r4, chn=r5 like retail
-#endif
+			f32* outp = &out[k]; // declared before chn so MWCC colours out=r4, chn=r5
 			MapAnimChannel* chn = &next->chan[k];
 
 			if (ch->flag != 0) {
-#ifdef MUST_MATCH
 				*outp = ch->value;
-#else
-				out[k] = ch->value;
-#endif
 			}
 			else {
 				k0 = key->time;
@@ -1400,11 +1310,7 @@ void mapCalcAnimMatrix(Mtx outMtx, Mtx inMtx, MapEntryAnimData* anim, void* join
 				h10 = u + (u3 - 2.0f * u2);
 				h01 = -2.0f * u3 + a;
 				h11 = u3 - u2;
-#ifdef MUST_MATCH
 				*outp = value0 * h00
-#else
-				out[k] = value0 * h00
-#endif
 				       + tan0 * (d * h10)
 				       + value1 * h01
 				       + tan1 * (d * h11);
@@ -2394,19 +2300,11 @@ void _mapDispMapGrp_NoMaterial(MapObject* obj, void* a2) {
 	MapObject* o = (MapObject*)a2;
 
 	_mapDispMapObj_NoMaterial((s32)obj, o);
+	// the redundant casts colour the camera id to r30 and o to r31
 	if (o->child)
-#ifdef MUST_MATCH
-		// match-only: the redundant cast is what makes MWCC colour the camera id to r30 and o to r31
 		_mapDispMapGrp_NoMaterial((MapObject*)obj, o->child);
-#else
-		_mapDispMapGrp_NoMaterial(obj, o->child);
-#endif
 	if ((o->flags & MAPOBJ_FLAG_IN_GROUP) && o->next)
-#ifdef MUST_MATCH
 		_mapDispMapGrp_NoMaterial((MapObject*)obj, o->next);
-#else
-		_mapDispMapGrp_NoMaterial(obj, o->next);
-#endif
 }
 
 void mapDispMapObj_bbox(s32 camId, MapObject* obj) {

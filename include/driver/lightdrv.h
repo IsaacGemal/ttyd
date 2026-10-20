@@ -38,7 +38,7 @@ typedef struct LightWork {
 void lightInit(void);
 void lightReInit(void);
 void lightMain(void);
-s32 lightEntry(const char* name, s32 type, Vec* position, Vec* rotation, GXColor color, s32 attenType, s32 flags, f32 spotAngle, f32 attenAngle);
+s32 lightEntry(const char* name, s32 type, Vec* position, Vec* rotation, GXColor color, f32 spotAngle, f32 attenAngle, s32 attenType, s32 flags);
 LightEntry* lightNameToPtr(const char* name);
 s32 lightGetNearObj(Vec position, LightEntry** entries, s32 count, LightEntryFlags flags);
 
