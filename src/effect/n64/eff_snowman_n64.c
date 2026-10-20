@@ -78,14 +78,10 @@ void effSnowmanMain(EffectEntry* effect) {
 	Vec position2;
 	Vec position;
 	// The original keeps frame and velX in registers; reading the fields directly
-	// is equivalent behavior but allocates different registers, so the cached forms are match-only.
-#ifdef MUST_MATCH
+	// is equivalent behavior but allocates different registers.
 	s32 frame;
-#endif
 	f32 speed;
-#ifdef MUST_MATCH
 	f32 velX;
-#endif
 
 	data = effect->userdata;
 	position = (Vec){ 0.0f, 0.0f, 0.0f };
@@ -106,36 +102,20 @@ void effSnowmanMain(EffectEntry* effect) {
 		effDelete(effect);
 		return;
 	}
-#ifdef MUST_MATCH
 	frame = data->frame;
-#endif
 	if (data->lifetime < 16) {
 		data->alpha = data->lifetime << 4;
 	}
-#ifdef MUST_MATCH
 	if (frame < 16) {
 		data->alpha = frame * 16 + 15;
 	}
-#else
-	if (data->frame < 16) {
-		data->alpha = data->frame * 16 + 15;
-	}
-#endif
-#ifdef MUST_MATCH
 	velX = data->velX;
 	if (velX) {
-#else
-	if (data->velX) {
-#endif
 		speed = data->velY;
 		if (speed < 0.0f) {
 			speed = -speed;
 		}
-#ifdef MUST_MATCH
 		if (velX < 0.0f) {
-#else
-		if (data->velX < 0.0f) {
-#endif
 			data->rotY -= speed;
 		}
 		else {
@@ -229,11 +209,7 @@ void effSnowmanMain(EffectEntry* effect) {
 		}
 		break;
 	}
-#ifdef MUST_MATCH
 	if ((frame & 7) == 1) {
-#else
-	if ((data->frame & 7) == 1) {
-#endif
 		effVaporN64Entry(2, 0x28, data->x + data->offX + (f32)(rand() % 60) - 30.0f,
 		                 data->y + data->offY + (f32)(rand() % 100) + 50.0f,
 		                 data->z + data->offZ, 4.0f);

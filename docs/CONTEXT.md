@@ -11550,3 +11550,9 @@ files also compile without -DMUST_MATCH.
 - No new names. `eff_ibuki`: `DATA_AT` (anchor `lbl_803B4860` + offset) dropped for the tables themselves (same relocation targets), the `base` local removed. Colour helpers (`effIbukiColor0/1`) and the `sixteen` local are now the only version. The angle comma expression and the `opt_loop_invariants` pragma stay guarded (no other form matches).
 - `eff_akari_charge_n64`: `position` copy, `zero` local, `akariColorProj/Part` are now the only version; the comment-only MUST_MATCH block was removed. `eff_updown`: per-case `a = alpha`, the `k`/`t`/`wave` temps and the `p = &pos` alias are the only version (`#else` alone does not match). `eff_mizutama`: `position` copy is the only version; the volatile `float_0`/`float_1` externs and the chained `zero` assignment stay guarded.
 - MUST_MATCH lines before/after: akari 11/0, updown 11/0, mizutama 11/7, ibuki 11/4.
+
+## s-mmmix20: MUST_MATCH reduction (eff_stone_smoke, eff_snowman, eff_pokopi_pcharge, eff_crystal, eff_confetti N64)
+Structural only, no names added. Made the MUST_MATCH shape the only version (guards and #else arms dropped): the
+position scratch-copy Vec in Main, the cached frame/velX/timer locals, the per-colour GXSetTevColor inlines
+(stone_smoke, confetti colour0), the crystal sin temp, confetti makeConfettiVec. Still guarded: confetti
+makeConfettiColor1 (`*(GXColor*)&float_...` type-punned read). Build MATCH.

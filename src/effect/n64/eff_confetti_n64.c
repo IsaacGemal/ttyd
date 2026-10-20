@@ -210,10 +210,9 @@ EffectEntry* effConfettiN64Entry(s32 type, s32 lifetime, f32 x, f32 y, f32 z, f3
 
 #pragma opt_common_subs reset
 
-// MUST_MATCH: retail builds the position Vec in a scratch slot and copies it into a second local
+// Retail builds the position Vec in a scratch slot and copies it into a second local
 // before dispCalcZ.  The inline starts from a literal zero vector: a named zero vector's load is
 // scheduled before the prologue's stmw, which the original does not do.
-#ifdef MUST_MATCH
 static inline Vec makeConfettiVec(f32 x, f32 y, f32 z) {
 	Vec temp = (Vec){ 0.0f, 0.0f, 0.0f };
 	temp.x = x;
@@ -221,7 +220,6 @@ static inline Vec makeConfettiVec(f32 x, f32 y, f32 z) {
 	temp.z = z;
 	return temp;
 }
-#endif
 
 void effConfettiMain(EffectEntry* effect) {
 	s32 t;
@@ -233,14 +231,7 @@ void effConfettiMain(EffectEntry* effect) {
 	s32 count;
 	s32 camId;
 
-#ifdef MUST_MATCH
 	Vec position2 = makeConfettiVec(data->x, data->y, data->z);
-#else
-	Vec position2;
-	position2.x = data->x;
-	position2.y = data->y;
-	position2.z = data->z;
-#endif
 	position = position2;
 	camId = data->camId;
 	data->lifetime -= 1;
@@ -316,12 +307,11 @@ void effConfettiMain(EffectEntry* effect) {
 	}
 }
 
-// MUST_MATCH: retail builds each by-value GXColor in a scratch slot and word-copies it to the
+// Retail builds each by-value GXColor in a scratch slot and word-copies it to the
 // outgoing slot.  Building the caller's colour local directly lands it at 0x8 and the second call's
 // temp at 0xc (a downward 0x10->0xc copy); putting each GXSetTevColor inside an inlined helper makes
 // mwcc lay its locals out in the original's order (colour at 0xc, second temp at 0x8, outgoing 0x10).
-// The plain field assignments under #else are the natural form.  Same quirk as eff_thunder_n64.
-#ifdef MUST_MATCH
+// Same quirk as eff_thunder_n64.
 static inline void makeConfettiColor(u8 r, u8 g, u8 b, u8 a) {
 	GXColor c = unk_804230c8;
 	c.r = r;
@@ -331,6 +321,7 @@ static inline void makeConfettiColor(u8 r, u8 g, u8 b, u8 a) {
 	GXSetTevColor(GX_TEVREG0, c);
 }
 
+#ifdef MUST_MATCH
 static inline void makeConfettiColor1(void) {
 	GXColor c = *(GXColor*)&float_0p011489_8041ebf0;
 	GXSetTevColor(GX_TEVREG1, c);
@@ -354,7 +345,6 @@ void effConfettiDisp(CameraId camId, void* param) {
 	u8* clr;
 	CameraEntry* cam;
 	GXTexObj texObj;
-	GXColor color;
 	Mtx mtx0;
 	Mtx scaleMtx;
 	Mtx mtx1;
@@ -395,16 +385,7 @@ void effConfettiDisp(CameraId camId, void* param) {
 		PSMTXConcat(mtx2, mtx0, mtx0);
 		GXLoadPosMtxImm(mtx0, GX_PNMTX0);
 		GXSetCurrentMtx(GX_PNMTX0);
-#ifdef MUST_MATCH
 		makeConfettiColor(clr[0], clr[1], clr[2], alpha);
-#else
-		color = unk_804230c8;
-		color.r = clr[0];
-		color.g = clr[1];
-		color.b = clr[2];
-		color.a = alpha;
-		GXSetTevColor(GX_TEVREG0, color);
-#endif
 #ifdef MUST_MATCH
 		makeConfettiColor1();
 #else
