@@ -10421,3 +10421,35 @@ whole tree 34.468 -> 34.244; end_unknown.c 113.415 (weighted 175) -> 18.146 (wei
 
 Review (Claude Opus 5.5): every converted site checked against its motion. 0x2A4 is the frame count marioSetPaperAnimeLocalTime stores in poseTime and gives animPoseSetLocalTime, so `paperAnimeTime` stands; 0x9C/0x52/0x19C/0x11C/0x128 match their existing roles; the sweep fields match getHitBreatheout2 (the two rays start in opposite directions: sweepDown1 0, sweepDown2 1). MarioWork stays 0x2E0, PartyCloud's 0x10..0x20 span is unchanged. No changes.
 - Review follow-up: mot_ship's five `((void (*)(s32))marioSetPaperAnimeLocalTime)(...)` calls are now direct calls, and the stale "header declares (s16)" comment is gone; mario.h already declares the s32 prototype, and the build stays byte-identical. (Claude Opus 5.5)
+### Readability: battle raw offsets, battle_stage_object and battle_database_jon (2026-10-20, Claude Haiku 5.5, n9-q-rawbtl)
+
+BattleUnit gets `stageObjectId` (0xB2C, s32, the BattleStageObject id of a tree or switch unit: the spawn in
+battle_stage_object writes it and unit_object_tree/unit_object_switch read it through BattleGetObjectPtr;
+unit_object_tree's `field_0xAE4[0x48]` read is now `->stageObjectId`), `ceilFallEventCode` (0x2BC, void*, set by
+btlevtcmd_SetEventCeilFall, whose raw write in battle_event_cmd.c now uses it; _fall_frame_wait_unit_ready passes it to
+evtEntry) and `ceilFallEventId` (0x2C0, s32, set from the entry's eventId; _fall_frame_wait_unit_ready returns
+EVT_RETURN_BLOCK while evtCheckID holds it). The four `(u8*)event + 0x8C` nozzle SFX ids in _nozzle_work_effect are
+`event->userdataEx[1]` (evtmgr.h: userdataEx is s32[2] at 0x88). In battle_database_jon, the three
+`(u32)((u8*)&jon_btlobject_data + 0x30/0x60/0x90)` entries are `&jon_btlobject_data[2]/[4]/[6]`: sizeof
+BattleStageObjectData is 0x18 and 0x30/0x60/0x90 are 2/4/6 of those.
+
+Left, and why:
+- battle_database_jon's other 73 casts, `(u8*)jon_btlstage_data + 0x1B4 / 0x368 / 0x51C` (60/15/1 sites), are the
+  starts of stage blocks 1-3 in the u32[436] blob that still says `TODO: type`. The blocks are 0x1B4 bytes each (a
+  BattleStageData header followed by its inline objects and tables), so there is no field to name without typing
+  the whole blob. The same `(u8*)&X_btlobject_data + N` address-arithmetic shape is in 13 other battle_database_*.c
+  files (aji, dou, eki, gon, gor, gra, hei, jin, las, mri, muj, tik, tou); they were not changed here.
+- battle_stage_object: `base`/`w` pointers at wp + 0x20000 (the 0x20000-based `base - 0x7Fxx` reads, 26
+  "no outer cast" sites) and the stageData tail offsets 0x10/0xD0/0x194/0x198/0x19C stay raw; 0x180C4 (f32),
+  0x180F4/0x180F8 (nozzle and fall-object table pointers) and the fog pair 0x1829C (s32, counted down by
+  BattleFogEndCheck) / 0x182A0 (EffectEntry*, soft-deleted by both fog functions) are still unnamed; both fog
+  functions keep the raw offsets.
+- battle_stage_object's 2497/2498 MUST_MATCH casts stay.
+
+Build: tower ninja recreates build/G8MJ01/ok (all units 100% code, battle_stage_object 100%, battle_database_jon
+100%). Natural (no -DMUST_MATCH) compile of battle_stage_object.c, unit_object_tree.c, unit_object_switch.c and
+battle_database_jon.c returns 0.
+Index (`tools/cleanup_index.py`): 33.803 per kLOC (23696 weighted) before, 33.762 (23667) after.
+Review (Claude Opus 5.5): the 0x2BC/0x2C0 pair was `fallWaitEventCode`/`fallWaitEventId`; its writer is
+btlevtcmd_SetEventCeilFall, so it is `ceilFallEventCode`/`ceilFallEventId`, and that command's raw store now uses the field.
+The nozzle_l NOZZLE_WORK_BODY argument was a fourth `event + 0x8C` site.
