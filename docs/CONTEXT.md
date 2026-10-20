@@ -10481,3 +10481,31 @@ Codegen: `((s32*)((u8*)work + 0x214))[sel]` in winItemMain stays raw (comment at
 Left: the float positions at 0x224-0x252 (WW_F32; the book and mail slides share them), the Luigi book state at 0x2C8-0x2D0, the mail index pairs at 0x26E (the qqsort base), the sort-menu words at 0x174-0x184, and win_root's 0xC0-0x13C, 0x244-0x250 and 0xE94+ fields; their roles weren't proven.
 
 Verify: tower `ninja` recreates build/G8MJ01/ok. win_root.c, win_item.c and win_main.c compile without -DMUST_MATCH. Index: 33.311 -> 33.296 per kLOC.
+## battle_database_aji: btlobject data typed (2026-10-20, Claude Haiku 5.5)
+
+`aji_btlobject_data` is `BattleStageObjectData[27]` (was `u32[162]`, 0x288 bytes, matching the symbols.txt size).
+Each 0x18 record is decoded field by field: name pointer (string literal), the high and low halves of word 1 as
+mSpawnSpecialUnitType and mLayer (spawn is 2 for all 27), the three floats of word 2-4 as mPosition, and the first two
+bytes of word 5 as mNumFramesToStartFalling and mNumFramesToFall (pad bytes are zero). The six
+`(u32)((u8*)&aji_btlobject_data + N)` stage references are `(u32)&aji_btlobject_data[N/0x18]` (5, 8, 11, 14, 17, 20).
+The stage table stays `u32`, as in jon. Build: tower ninja recreates build/G8MJ01/ok; natural (no MUST_MATCH) compile
+of battle_database_aji.c returns 0. Index: 33.311 per kLOC (23351 weighted) before and after.
+
+## battle_database_gor: btlobject data typed (2026-10-20, Claude Haiku 5.5)
+
+`gor_btlobject_data` is `BattleStageObjectData[6]` (was `u32[36]`, 0x90 bytes per symbols.txt). Records are decoded
+the same way as battle_database_aji: name string, spawn (2 for all six) and layer from word 1, the position floats,
+and the frame counts from word 5 (start 0, fall 60 for every record). The one stage reference,
+`(u32)((u8*)&gor_btlobject_data + 0x60)`, is `(u32)&gor_btlobject_data[4]`. The file now includes
+battle/battle_stage_object.h, as jon does. Build: tower ninja recreates build/G8MJ01/ok; natural (no MUST_MATCH)
+compile of battle_database_gor.c returns 0.
+
+## battle_database_gra: btlobject data typed (2026-10-20, Claude Haiku 5.5)
+
+`gra_btlobject_data` is `BattleStageObjectData[22]` (was `u32[132]`, 0x210 bytes per symbols.txt). Decoded as in
+battle_database_aji: names are string literals, spawn is 2 for all 22, layer is the low half of word 1, positions
+are the three floats, and the frame counts come from word 5 (start 0/10/20/30, fall 60/50/40/30 in matching pairs).
+The one stage reference, `(u32)((u8*)&gra_btlobject_data + 0xF0)`, is `(u32)&gra_btlobject_data[10]`. The file now
+includes battle/battle_stage_object.h. Build: tower ninja recreates build/G8MJ01/ok; natural (no MUST_MATCH) compile
+of battle_database_gra.c returns 0. Index: 33.311 per kLOC (23351 weighted) at the start of this chapter, unchanged
+by the three typings.
