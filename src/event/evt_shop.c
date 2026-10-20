@@ -63,27 +63,27 @@ typedef struct ShopperData {
 } ShopperData;
 
 typedef struct ShopWork {
-	u16 flags;                 //0x0, bit 0: shop UI on (disp_off clears it), bit 1: purchase event running
-	u16 pad_02;                //0x2
-	ShopObj* objs;             //0x4, one per shop object: map object name and hit name
-	s32* field_0x8;            //0x8, item id / price pairs
-	ShopperData* shopper;      //0xC
-	ItemDbEntry* itemDbBackup; //0x10
-	u16 acquired[6];           //0x14, bit 0 set once the item is held or bought
-	s32 numItems;              //0x20
-	EventEntry* mainEvt;       //0x24
-	EventEntry* buyEvt;        //0x28
-	s32 field_0x2C;            //0x2C, selected item index
-	s32 field_0x30;            //0x30
-	s32 field_0x34;            //0x34
-	s32 shownPoints;           //0x38, shop points as drawn by point_disp
+	u16 flags;                    //0x0, bit 0: shop UI on (disp_off clears it), bit 1: purchase event running
+	u16 pad_02;                   //0x2
+	ShopObj* objs;                //0x4, one per shop object: map object name and hit name
+	s32* field_0x8;               //0x8, item id / price pairs
+	ShopperData* shopper;         //0xC
+	ItemDbEntry* itemDbOverrides; //0x10, id / sell price table applied by item_data_db_arrange
+	u16 acquired[6];              //0x14, bit 0 set once the item is held or bought
+	s32 numItems;                 //0x20
+	EventEntry* mainEvt;          //0x24
+	EventEntry* buyEvt;           //0x28
+	s32 field_0x2C;               //0x2C, selected item index
+	s32 field_0x30;               //0x30
+	s32 field_0x34;               //0x34
+	s32 shownPoints;              //0x38, shop points as drawn by point_disp
 	u8 pad_0x3C[0x50 - 0x3C];
-	s32 nameWin;               //0x50, window_desc[0]: item name
-	s32 helpWin;               //0x54, window_desc[1]: item description
-	s32 pointsWin;             //0x58, window_desc[2]: shop points
+	s32 nameWin;                  //0x50, window_desc[0]: item name
+	s32 helpWin;                  //0x54, window_desc[1]: item description
+	s32 pointsWin;                //0x58, window_desc[2]: shop points
 	u8 pad_0x5C[0xD0 - 0x5C];
-	s32 openIdx;               //0xD0, item whose windows are open, -1 when none
-	s32 buyItemId;             //0xD4
+	s32 openIdx;                  //0xD0, item whose windows are open, -1 when none
+	s32 buyItemId;                //0xD4
 } ShopWork;
 
 typedef struct ShopPointEntry {
@@ -364,7 +364,7 @@ USER_FUNC(keep_pouchcheck_func) {
 }
 
 s32 item_data_db_restore(void) {
-	ItemDbEntry* p = ((ShopWork*)_wp)->itemDbBackup;
+	ItemDbEntry* p = ((ShopWork*)_wp)->itemDbOverrides;
 	s32 id;
 
 	if (p != NULL) {
@@ -377,7 +377,7 @@ s32 item_data_db_restore(void) {
 }
 
 s32 item_data_db_arrange(void) {
-	ItemDbEntry* p = ((ShopWork*)_wp)->itemDbBackup;
+	ItemDbEntry* p = ((ShopWork*)_wp)->itemDbOverrides;
 	s32 id;
 
 	if (p != NULL) {
@@ -659,7 +659,7 @@ USER_FUNC(evt_shop_setup) {
 	wp->objs = (ShopObj*)v0;
 	wp->field_0x8 = (s32*)v1;
 	wp->shopper = (ShopperData*)v2;
-	wp->itemDbBackup = (ItemDbEntry*)v3;
+	wp->itemDbOverrides = (ItemDbEntry*)v3;
 	wp->numItems = 6;
 
 	for (i = 0; i < wp->numItems; i++) {
