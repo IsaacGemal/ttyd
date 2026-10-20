@@ -11312,3 +11312,14 @@ Left raw:
   here as u16.
 - `(u8*)effect->userdata + N` and the `EffectEntry*` userdata offsets: EffectEntry is outside this task's scope.
 - BattleWork 0x16F24 in _record_renzoku_count stays raw: indexing field_16F1C by an offset difference is not clearer.
+## strings: address-named string symbols renamed by content, four files (2026-10-20, Claude Haiku 5.5, n9-q-strteresa)
+
+Renamed `str_XXXXXXXX` to `str_` plus the literal's text (non-identifier characters to `_`, repeats collapsed, trailing `_` dropped). The name is the literal, so it can't mislead. Each content was read from the definition in the .c, or from the original dol's .rodata for extern symbols.
+- `rels/pik/src/unit/unit_purple_teresa.c`: 22 renamed (REL symbols, `--rel pik`). `str_00002628` is `str_btl_un_purple_teresa`; the 21 others are the SFX names (`str_SFX_ENM_TELESA_*`, `str_SFX_BTL_DAMAGE_*`), `str_c_teresa_p`, and the one-letter pose/attack ids (`str_N_1`, `str_Y_1`, ... `str_A_1`, `str_A_2`). Same-named symbols in dou, tou2 and mri keep their address names, as those are separate objects.
+- `src/event/evt_kinopio.c`: 16 renamed (dol). Includes `str_802ECE50` (`str_BGM_FF_GO_SLEEPING1`), the NPC model and motion names (`str_c_jugem_c`, `str_bom_02`, ..., `str_PM_S_3A`), `str_mario`, `str_M_S_1`. Skipped `str_802ECE64` and `str_802ECE84` (Shift-JIS bytes, not ASCII).
+- `src/effect/eff_recovery.c`: 13 renamed (dol, each a `#define` to its literal). `str_802F3558` is `str_SFX_HP_RECOVER_SHINE1`; `str_802F35E8` is `str_Recovery`.
+- `src/battle/battle_event_cmd.c`: 11 renamed (dol externs, read from the dol's .rodata). `str_802EE048` is `str_SFX_SYSTEM_NICE_25PERCENT1`.
+- Skipped: `str_000026BC` in pik (`"S_1"`): the name `str_S_1` already exists (`src/driver/mobjdrv.c`, dol symbol), so the rename would clash.
+- Non-ASCII skipped: `str_802ECE64`, `str_802ECE84`. No other skips: all candidate names were unique tree-wide, and none was over 40 characters.
+- Index: 20.675 -> 20.556 per kLOC (14709 -> 14624 weighted), address_name is the only category these renames touch.
+- Build: `build/G8MJ01/ok` recreated after each file group. The battle, eff and evt files also compile without `-DMUST_MATCH` (extern branch of the ACSE macros in battle).
