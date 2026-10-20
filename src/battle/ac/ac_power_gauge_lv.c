@@ -281,15 +281,15 @@ static void actionCommandDisp(f32 f1, f32 f2) {
     // coalescing the result with the numerator; it also produces the original's reload of disp->value
     // for the last argument. Plain `disp->value` (below) compiles to `fdivs f2, f2, f1`.
     ratio = *(volatile f32*)&disp->value;
-    BattleAcDrawGauge((s32)f1, (s32)f2, 0xb2, *(s32*)&work->actionCommands.field_34[8],
-                      *(s32*)&work->actionCommands.field_34[0xC],
-                      *(s32*)&work->actionCommands.field_34[0x10],
-                      *(s32*)&work->actionCommands.field_34[0x14], 0, ratio);
+    BattleAcDrawGauge((s32)f1, (s32)f2, 0xb2, work->actionCommands.acParams[1],
+                      work->actionCommands.acParams[2],
+                      work->actionCommands.acParams[3],
+                      work->actionCommands.acParams[4], 0, ratio);
 #else
-    BattleAcDrawGauge((s32)f1, (s32)f2, 0xb2, *(s32*)&work->actionCommands.field_34[8],
-                      *(s32*)&work->actionCommands.field_34[0xC],
-                      *(s32*)&work->actionCommands.field_34[0x10],
-                      *(s32*)&work->actionCommands.field_34[0x14], 0, disp->value);
+    BattleAcDrawGauge((s32)f1, (s32)f2, 0xb2, work->actionCommands.acParams[1],
+                      work->actionCommands.acParams[2],
+                      work->actionCommands.acParams[3],
+                      work->actionCommands.acParams[4], 0, disp->value);
 #endif
 
     switch (work->actionCommands.mAcState) {

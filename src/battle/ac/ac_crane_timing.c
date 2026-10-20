@@ -62,8 +62,8 @@ s32 battleAcMain_CraneTiming(BattleWork* work) {
 	if (work->actionCommands.mAcUnit->badgesEquipped.AutoCommand != 0) {
 		flag = 1;
 	}
-	unit = BattleGetUnitPtr(work, *(s32*)&work->actionCommands.field_34[0x08]);
-	BtlUnit_GetPartsPtr(unit, *(s32*)&work->actionCommands.field_34[0x0C]);
+	unit = BattleGetUnitPtr(work, work->actionCommands.acParams[1]);
+	BtlUnit_GetPartsPtr(unit, work->actionCommands.acParams[2]);
 
 	switch (work->actionCommands.mAcState) {
 	case 0:
@@ -72,16 +72,16 @@ s32 battleAcMain_CraneTiming(BattleWork* work) {
 		disp->iconY = MATCH_F32(float_0_80420b34);
 		disp->counter = 0x14;
 		dec->frame = 0;
-		dec->timer = *(s32*)&work->actionCommands.field_34[0x10];
-		dec->amplitude = (f32)irand(*(s32*)&work->actionCommands.field_34[0x14]);
+		dec->timer = work->actionCommands.acParams[3];
+		dec->amplitude = (f32)irand(work->actionCommands.acParams[4]);
 		dec->trigger = 0x100;
 		work->actionCommands.outputParams[0] = 0;
 		work->actionCommands.mAcState = 0x63;
 		work->actionCommands.result = 1;
 		break;
 	case 0x64:
-		unit = BattleGetUnitPtr(work, *(s32*)&work->actionCommands.field_34[0x08]);
-		BtlUnit_GetPartsPtr(unit, *(s32*)&work->actionCommands.field_34[0x0C]);
+		unit = BattleGetUnitPtr(work, work->actionCommands.acParams[1]);
+		BtlUnit_GetPartsPtr(unit, work->actionCommands.acParams[2]);
 		BtlUnit_GetPos(unit, &dec->current.x, &dec->current.y, &dec->current.z);
 		dec->center = dec->current;
 		dec->frame = 0;
@@ -98,11 +98,11 @@ s32 battleAcMain_CraneTiming(BattleWork* work) {
 
 		if (dec->current.x >= dec->center.x + dec->amplitude && dec->velocity > MATCH_F32(float_0_80420b34)) {
 			dec->velocity = dec->velocity * MATCH_F32(float_neg1_80420b40);
-			dec->amplitude = (f32)irand(*(s32*)&work->actionCommands.field_34[0x14]);
+			dec->amplitude = (f32)irand(work->actionCommands.acParams[4]);
 		}
 		if (dec->current.x <= dec->center.x - dec->amplitude && dec->velocity < MATCH_F32(float_0_80420b34)) {
 			dec->velocity = dec->velocity * MATCH_F32(float_neg1_80420b40);
-			dec->amplitude = (f32)irand(*(s32*)&work->actionCommands.field_34[0x14]);
+			dec->amplitude = (f32)irand(work->actionCommands.acParams[4]);
 		}
 		if (dec->velocity >= MATCH_F32(float_0_80420b34)) {
 			unit->faceDirection = 1;
@@ -129,7 +129,7 @@ s32 battleAcMain_CraneTiming(BattleWork* work) {
 			work->actionCommands.mAcState = 0x3EA;
 			break;
 		}
-		if (dec->frame >= *(s32*)&work->actionCommands.field_34[0x1C]) {
+		if (dec->frame >= work->actionCommands.acParams[6]) {
 			work->actionCommands.result = 0;
 			work->actionCommands.mAcState = 0x3EA;
 		}

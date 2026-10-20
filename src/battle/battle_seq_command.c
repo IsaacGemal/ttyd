@@ -45,25 +45,6 @@ extern BattleWeapon ItemWeaponData_Naniga_Okorukana;
 
 //TODO: move into battle/seq/?
 
-// Sampling work block lives inside BattleWork at offset 0x428 (same layout as the
-// local BattleSampling struct in battle_detect.c).
-typedef struct BattleTargetEntry {
-    s16 unitId;   // 0x0
-    s16 partId;   // 0x2
-    s16 x;        // 0x4
-    s16 y;        // 0x6
-    s16 z;        // 0x8
-    u8 pad_0xA[0x24 - 0xA];
-} BattleTargetEntry;
-
-typedef struct BattleTargetSampling {
-    BattleWeapon* weapon;           // 0x0
-    u8 entries[0xA6C - 0x4];        // 0x4, BattleTargetEntry[]
-    s8 count;                       // 0xA6C
-    s8 order[0xAB7 - 0xA6D];        // 0xA6D
-    s8 selectIdx;                   // 0xAB7
-} BattleTargetSampling;
-
 void BattleCommandInit(BattleWork* wp) {
 	wp->commandMenu.unk0 = 0;
 	wp->flags |= 0x80;
@@ -1003,11 +984,11 @@ s32 _btlcmd_MakePartyTable(BattleWork* wp) {
 	return count;
 }
 
-// Raw offsets into the enemy-sampling buffer `wp->field_428` (battle_detect owns the layout):
+// Raw offsets into the enemy-sampling buffer `wp->sampling` (battle_detect owns the layout):
 // 0xA6C sample count, 0xA6D.. unit-index codes, entry size 0x24 with s16 unitId at +4, 0xAB7 result.
 #pragma dont_inline on // the original calls _btlcmd_SelectWeaponDecide out of line from BattleSetConfuseAct
 s32 _btlcmd_SelectWeaponDecide(BattleWork* wp, s32 arg, s32 weaponIdx) {
-	u8* work = wp->field_428;
+	u8* work = (u8*)&wp->sampling;
 	BattleUnit* unit = BattleGetUnitPtr(wp, wp->activeUnitId);
 	BattleWeapon* weapon;
 	s32 selected;
@@ -1067,7 +1048,7 @@ s32 BattleCommandInput(BattleWork* wp) {
 	BattleWorkCommand* wcmd = (BattleWorkCommand*)cmd;
 	s32 result;
 	s32 action;
-	BattleTargetSampling* sampling;
+	BattleSampling* sampling;
 	BattleCursor* cursor;
 	EventEntry* event;
 	s32 state;
@@ -1203,17 +1184,17 @@ s32 BattleCommandInput(BattleWork* wp) {
 			break;
 		case 11:
 			action = *(s32*)&cmd->unk540[0];
-			sampling = (BattleTargetSampling*)wp->field_428;
+			sampling = &wp->sampling;
 			_btlcmd_GetCursorPtr(cmd, action, &cursor);
 			{
-				BattleTargetEntry* entry = (BattleTargetEntry*)(sampling->entries + sampling->order[sampling->selectIdx] * 0x24);
+				BattleSamplingEntry* entry = &sampling->entries[sampling->order[sampling->selectIdx]];
 
 				unitId = entry->unitId;
 				partId = entry->partId;
 			}
 			BattleSamplingEnemyUpdate((u8*)sampling);
 			for (i = 0; i < sampling->count; i++) {
-				BattleTargetEntry* entry = (BattleTargetEntry*)(sampling->entries + sampling->order[i] * 0x24);
+				BattleSamplingEntry* entry = &sampling->entries[sampling->order[i]];
 
 				if (entry->unitId == unitId && entry->partId == partId) {
 					break;
@@ -2217,16 +2198,16 @@ void BattleCommandDisplay_TargetSelectMenuDisp(CameraId camId, BattleWork* param
 	_btlcmd_GetCursorPtr(cmd, *(s32*)&cmd->unk540[0], &cursor);
 	weapon = wcmd->mWeaponTable[cursor->field_0].mWeaponParams;
 	if (weapon->targetClassFlags & 0x01000000) {
-		BattleTargetSampling* sampling = (BattleTargetSampling*)wp->field_428;
+		BattleSampling* sampling = &wp->sampling;
 		BattleUnit* unit;
 		BattleUnitPart* part;
-		BattleTargetEntry* entry;
+		BattleSamplingEntry* entry;
 		char* name;
 		f32 width;
 		Vec pos;
 		Vec screen;
 
-		entry = (BattleTargetEntry*)((u8*)sampling + 4 + sampling->order[sampling->selectIdx] * 0x24);
+		entry = &sampling->entries[sampling->order[sampling->selectIdx]];
 		unit = BattleGetUnitPtr(wp, entry->unitId);
 		part = BtlUnit_GetPartsPtr(unit, entry->partId);
 		pos.x = entry->x;
@@ -2266,10 +2247,10 @@ void BattleCommandDisplay_TargetSelectMenuDisp(CameraId camId, BattleWork* param
 			FontDrawString(name, -232.0f, 83.0f);
 		}
 	} else {
-		BattleTargetSampling* sampling = (BattleTargetSampling*)wp->field_428;
+		BattleSampling* sampling = &wp->sampling;
 		BattleUnit* unit;
 		BattleUnitPart* part;
-		BattleTargetEntry* entry;
+		BattleSamplingEntry* entry;
 		char* name;
 		f32 width;
 		Vec pos;
@@ -2278,7 +2259,7 @@ void BattleCommandDisplay_TargetSelectMenuDisp(CameraId camId, BattleWork* param
 		s32 yoff;
 
 		for (i = 0, yoff = 0; i < sampling->count; i++, yoff += 0x20) {
-			entry = (BattleTargetEntry*)((u8*)sampling + 4 + sampling->order[i] * 0x24);
+			entry = &sampling->entries[sampling->order[i]];
 			unit = BattleGetUnitPtr(wp, entry->unitId);
 			part = BtlUnit_GetPartsPtr(unit, entry->partId);
 			pos.x = entry->x;
@@ -2840,12 +2821,12 @@ void* BattleSetConfuseAct(BattleWork* wp, BattleUnit* unit) {
 			return subsetevt_confuse_flustered;
 		}
 		{
-			s8 numConfused = *(s8*)&wp->field_428[0xA6C]; // 0xE94
+			s8 numConfused = wp->sampling.count; // 0xE94
 
 			if (numConfused <= 0) {
 				return subsetevt_confuse_flustered;
 			}
-			*(u8*)&wp->field_428[0xAB7] = irand(numConfused); // 0xEDF
+			wp->sampling.selectIdx = irand(numConfused); // 0xEDF
 		}
 		wp->flags |= 4;
 		return weapon->mAttackEvtScript;

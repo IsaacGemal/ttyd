@@ -104,17 +104,17 @@ s32 battleAcMain_Shot(BattleWork* work) {
             case 0:
                 _ac_disp_init(work);
                 work->actionCommands.result = 1;
-                aw->field_0x0C = (f32)*(s32*)&work->actionCommands.field_34[0x0C];
-                aw->field_0x10 = (f32)*(s32*)&work->actionCommands.field_34[0x10];
-                aw->field_0x14 = (f32)*(s32*)&work->actionCommands.field_34[0x14];
-                aw->field_0x18 = (f32)*(s32*)&work->actionCommands.field_34[0x18];
+                aw->field_0x0C = (f32)work->actionCommands.acParams[2];
+                aw->field_0x10 = (f32)work->actionCommands.acParams[3];
+                aw->field_0x14 = (f32)work->actionCommands.acParams[4];
+                aw->field_0x18 = (f32)work->actionCommands.acParams[5];
                 aw->field_0x20 = 100.0f * aw->field_0x0C / aw->field_0x10;
                 aw->field_0x1C = aw->field_0x20;
                 aw->rotZ = aw->field_0x14 + (f32)irand((s32)(aw->field_0x18 - aw->field_0x14));
-                aw->field_0x28 = 0.1f * (f32)*(s32*)&work->actionCommands.field_34[0x1C];
+                aw->field_0x28 = 0.1f * (f32)work->actionCommands.acParams[6];
                 aw->index = 0;
                 work->actionCommands.field_0x8 = 0x1E;
-                unit = BattleGetUnitPtr(work, *(s32*)&work->actionCommands.field_34[0x04]);
+                unit = BattleGetUnitPtr(work, work->actionCommands.acParams[0]);
                 BtlUnit_GetPos(unit, &aw->x, &aw->y, &aw->z);
                 aw->y += 0.5 * ((f32)BtlUnit_GetHeight(unit) * unit->mSizeMultiplier);
                 work->actionCommands.outputParams[0] = 0;
@@ -158,7 +158,7 @@ s32 battleAcMain_Shot(BattleWork* work) {
                         work->actionCommands.outputParams[1] = (s32)aw->field_0x0C;
                     }
                     _acShotAppendHistory(aw, work);
-                    if (aw->index >= *(s32*)&work->actionCommands.field_34[0x08]) {
+                    if (aw->index >= work->actionCommands.acParams[1]) {
                         work->actionCommands.result = 2;
                         return 0;
                     }
@@ -168,7 +168,7 @@ s32 battleAcMain_Shot(BattleWork* work) {
                     break;
                 }
                 if (!(BattlePadCheckTrigger(0x100) != 0 || work->actionCommands.outputParams[0] != 0 ||
-                      *(s16*)&work->actionCommands.field_78[0x10] > 0)) {
+                      work->actionCommands.guardFrames > 0)) {
                     if (--aw->field_0x00 <= 0) {
                         work->actionCommands.outputParams[1] =
                             (s32)(aw->field_0x10 * aw->field_0x1C / 100.0f);
@@ -176,7 +176,7 @@ s32 battleAcMain_Shot(BattleWork* work) {
                             work->actionCommands.outputParams[1] = (s32)aw->field_0x0C;
                         }
                         _acShotAppendHistory(aw, work);
-                        if (aw->index >= *(s32*)&work->actionCommands.field_34[0x08]) {
+                        if (aw->index >= work->actionCommands.acParams[1]) {
                             work->actionCommands.result = 0;
                             work->actionCommands.mAcState = 0x3EA;
                         } else {
@@ -210,15 +210,15 @@ s32 battleAcMain_Shot(BattleWork* work) {
                 aw->field_0x2C += 8.0f;
                 break;
             case 0x3E9:
-                if (*(s16*)&work->actionCommands.field_78[0x10] > 0) {
+                if (work->actionCommands.guardFrames > 0) {
                     work->actionCommands.outputParams[1] =
                         (s32)(50.0f * aw->field_0x10 / 100.0f);
                     if ((f32)work->actionCommands.outputParams[1] < aw->field_0x0C) {
                         work->actionCommands.outputParams[1] = (s32)aw->field_0x0C;
                     }
                     _acShotAppendHistory(aw, work);
-                    if (aw->index >= *(s32*)&work->actionCommands.field_34[0x08]) {
-                        (*(s16*)&work->actionCommands.field_78[0x10])--;
+                    if (aw->index >= work->actionCommands.acParams[1]) {
+                        (work->actionCommands.guardFrames)--;
                         work->actionCommands.result = 2;
                         work->actionCommands.mAcState = 0x3EA;
                     } else {
@@ -234,14 +234,14 @@ s32 battleAcMain_Shot(BattleWork* work) {
                         aw->field_0x1C = 100.0f;
                     }
                 }
-                if (*(s32*)&work->actionCommands.field_34[0] & 1) {
+                if (work->actionCommands.acFlag & 1) {
                     {
                         f32 sum = aw->field_0x0C + aw->field_0x10;
                         f32 half = 0.5f;
                         work->actionCommands.outputParams[1] = (s32)(sum * half);
                     }
                     _acShotAppendHistory(aw, work);
-                    if (aw->index >= *(s32*)&work->actionCommands.field_34[0x08]) {
+                    if (aw->index >= work->actionCommands.acParams[1]) {
                         work->actionCommands.mAcState = 0x3EA;
                         work->actionCommands.result = 2;
                     } else {
@@ -255,7 +255,7 @@ s32 battleAcMain_Shot(BattleWork* work) {
                             work->actionCommands.outputParams[1] = (s32)aw->field_0x0C;
                         }
                         _acShotAppendHistory(aw, work);
-                        if (aw->index >= *(s32*)&work->actionCommands.field_34[0x08]) {
+                        if (aw->index >= work->actionCommands.acParams[1]) {
                             work->actionCommands.result = 2;
                             work->actionCommands.mAcState = 0x3EA;
                         } else {
@@ -382,7 +382,7 @@ static void actionCommandDisp(f32 x, f32 y) {
     f32 target;
     f32 baseX;
 
-    if (*(s32*)&work->actionCommands.field_34[0] & 1) {
+    if (work->actionCommands.acFlag & 1) {
         return;
     }
 

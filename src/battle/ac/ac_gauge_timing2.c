@@ -102,13 +102,13 @@ s32 battleAcMain_GaugeTiming2(BattleWork* work) {
 		dec->field_0x08 = 0;
 		work->actionCommands.mAcState = 0x63;
 		work->actionCommands.result = 1;
-		dec->maxFrame = *(s32*)&work->actionCommands.field_34[0x08];
+		dec->maxFrame = work->actionCommands.acParams[1];
 		dec->field_0x10 = 0;
 		dec->progress = 0.0f;
 		work->actionCommands.outputParams[0] = 0;
-		dec->total = *(s32*)&work->actionCommands.field_34[0x0C] * 0x3C;
-		for (i = 0; i < *(s32*)&work->actionCommands.field_34[0x0C]; i++) {
-			dec->value[i] = (f32)((100 / *(s32*)&work->actionCommands.field_34[0x0C]) * (i + 1));
+		dec->total = work->actionCommands.acParams[2] * 0x3C;
+		for (i = 0; i < work->actionCommands.acParams[2]; i++) {
+			dec->value[i] = (f32)((100 / work->actionCommands.acParams[2]) * (i + 1));
 			dec->value[i] -= 4.0f;
 			dec->state[i] = 0;
 			dec->flag[i] = 0;
@@ -146,7 +146,7 @@ s32 battleAcMain_GaugeTiming2(BattleWork* work) {
 		}
 
 		allSet = 1;
-		for (i = 0; i < *(s32*)&work->actionCommands.field_34[0x0C]; i++) {
+		for (i = 0; i < work->actionCommands.acParams[2]; i++) {
 			if (dec->state[i] == 0) {
 				allSet = 0;
 				break;
@@ -170,7 +170,7 @@ s32 battleAcMain_GaugeTiming2(BattleWork* work) {
 
 		{
 			{
-				for (m = 0; m < *(s32*)&work->actionCommands.field_34[0x0C]; m++) {
+				for (m = 0; m < work->actionCommands.acParams[2]; m++) {
 					if (dec->state[m] == 0) {
 						if (dec->progress > 6.0f + dec->value[m]) {
 							dec->state[m] = -1;
@@ -183,7 +183,7 @@ s32 battleAcMain_GaugeTiming2(BattleWork* work) {
 
 		dec->field_0x10 = 0;
 		{
-			for (i = 0; i < *(s32*)&work->actionCommands.field_34[0x0C]; i++) {
+			for (i = 0; i < work->actionCommands.acParams[2]; i++) {
 				if (dec->state[i] == 0) {
 					if (__fabs(dec->progress - dec->value[i]) <= 6.0) {
 						dec->field_0x10 = 1;
@@ -201,7 +201,7 @@ s32 battleAcMain_GaugeTiming2(BattleWork* work) {
 			found = 0;
 			{
 				s32 p;
-				for (p = 0; p < *(s32*)&work->actionCommands.field_34[0x0C]; p++) {
+				for (p = 0; p < work->actionCommands.acParams[2]; p++) {
 					if (dec->state[p] == 0 && __fabs(dec->progress - dec->value[p]) <= 6.0) {
 						found = 1;
 						break;
@@ -217,7 +217,7 @@ s32 battleAcMain_GaugeTiming2(BattleWork* work) {
 			s32 done = 0;
 			{
 				s32 q;
-				for (q = 0; q < *(s32*)&work->actionCommands.field_34[0x0C]; q++) {
+				for (q = 0; q < work->actionCommands.acParams[2]; q++) {
 					f64 diff;
 					if (dec->state[q] != 0) {
 						continue;
@@ -242,7 +242,7 @@ s32 battleAcMain_GaugeTiming2(BattleWork* work) {
 					else {
 						if (diff < __fabs(dec->value[1] - dec->value[0])) {
 							dec->flag[q] = 1;
-							if (q == *(s32*)&work->actionCommands.field_34[0x0C] - 1) {
+							if (q == work->actionCommands.acParams[2] - 1) {
 								dec->state[q] = -1;
 								psndSFXOn(GT2_SFX("SFX_AC_COMMAND_NG1"));
 								done = 1;
@@ -260,7 +260,7 @@ s32 battleAcMain_GaugeTiming2(BattleWork* work) {
 			if (dec->field_0x6A != 0) {
 				work->actionCommands.result = 2;
 				work->actionCommands.mResultCount++;
-				work->actionCommands.outputParams[0] = irand(*(s32*)&work->actionCommands.field_34[0x0C]) + 1;
+				work->actionCommands.outputParams[0] = irand(work->actionCommands.acParams[2]) + 1;
 			}
 			else {
 				work->actionCommands.result = 0;
@@ -443,7 +443,7 @@ static void actionCommandDisp(f32 x, f32 y) {
 
 	{
 		f32 iy = 23.0f + y;
-		s32 cnt = *(s32*)&ac->field_34[0x0C];
+		s32 cnt = ac->acParams[2];
 		for (i = 0; i < cnt; i++) {
 			f32 v = dec->value[i];
 			s32 icon;
@@ -505,7 +505,7 @@ static void actionCommandDisp(f32 x, f32 y) {
 		f32 sy = 25.0f + y;
 		ty = sy - 25.0f;
 
-		for (i = 0; i < *(s32*)&ac->field_34[0x0C]; i++) {
+		for (i = 0; i < ac->acParams[2]; i++) {
 			u16 icon;
 			switch (dec->state[i]) {
 			case 1:
@@ -530,7 +530,7 @@ static void actionCommandDisp(f32 x, f32 y) {
 			Mtx mtx2;
 			Mtx mtx;
 			Mtx scale;
-			s32 number = ac->outputParams[0] + *(s32*)&ac->field_34[0x10];
+			s32 number = ac->outputParams[0] + ac->acParams[3];
 			f32 tx = -200.f + x;
 			PSMTXTrans(mtx, tx + (f32)dec->total - 60.f, sy, 0.0f);
 			PSMTXScale(scale, 1.0f, 1.0f, 1.0f);

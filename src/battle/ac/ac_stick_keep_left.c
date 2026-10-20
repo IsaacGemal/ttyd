@@ -88,13 +88,13 @@ s32 battleAcMain_StickKeepLeft(BattleWork* work) {
         autoCommand = 1;
     }
 
-    *(s32*)&work->actionCommands.field_34[0x10] = 0;
+    work->actionCommands.acParams[3] = 0;
     if (work->actionCommands.mAcState != 0) {
-        if (*(s32*)&work->actionCommands.field_34[0xC] != 0) {
-            *(s32*)&work->actionCommands.field_34[0x10] = 1;
+        if (work->actionCommands.acParams[2] != 0) {
+            work->actionCommands.acParams[3] = 1;
         }
         else {
-            *(s32*)&work->actionCommands.field_34[0x10] = 0;
+            work->actionCommands.acParams[3] = 0;
         }
     }
 
@@ -103,7 +103,7 @@ s32 battleAcMain_StickKeepLeft(BattleWork* work) {
 
     for (;;) {
         stateChanged = 0;
-        if (*(s32*)&work->actionCommands.field_34[0x10] != 0) {
+        if (work->actionCommands.acParams[3] != 0) {
             break;
         }
 
@@ -116,9 +116,9 @@ s32 battleAcMain_StickKeepLeft(BattleWork* work) {
             disp->iconY = float_0_8041c420;
             disp->counter = 0x14;
             work->actionCommands.outputParams[0] = 0;
-            *(s32*)&work->actionCommands.field_34[0xC] = 0;
-            *(s32*)&work->actionCommands.field_34[0x10] = 0;
-            *(s32*)&work->actionCommands.field_34[0x14] = 0;
+            work->actionCommands.acParams[2] = 0;
+            work->actionCommands.acParams[3] = 0;
+            work->actionCommands.acParams[4] = 0;
             work->actionCommands.outputParams[2] = 0;
             for (i = 0; i < 12; i++) {
                 dec->sfx[i] = -1;
@@ -148,7 +148,7 @@ s32 battleAcMain_StickKeepLeft(BattleWork* work) {
                 }
                 return 0;
             }
-            if ((s32)BattlePadCheckNow(0x40000) == 0 && *(s16*)&work->actionCommands.field_78[0x10] <= 0 && !autoCommand) {
+            if ((s32)BattlePadCheckNow(0x40000) == 0 && work->actionCommands.guardFrames <= 0 && !autoCommand) {
                 if (--dec->field_0x00 <= 0) {
                     work->actionCommands.result = 0;
                     stateChanged = 1;
@@ -163,8 +163,8 @@ s32 battleAcMain_StickKeepLeft(BattleWork* work) {
             work->actionCommands.outputParams[1] = 0;
             break;
         case 0x3E9:
-            if (*(s16*)&work->actionCommands.field_78[0x10] > 0) {
-                (*(s16*)&work->actionCommands.field_78[0x10])--;
+            if (work->actionCommands.guardFrames > 0) {
+                (work->actionCommands.guardFrames)--;
                 work->actionCommands.result = 2;
                 stateChanged = 1;
                 work->actionCommands.mAcState = 0x3EB;
@@ -173,11 +173,11 @@ s32 battleAcMain_StickKeepLeft(BattleWork* work) {
             if (dec->field_0x00 < 0) {
                 dec->field_0x04++;
                 work->actionCommands.outputParams[1]++;
-                if (dec->field_0x04 >= *(s32*)&work->actionCommands.field_34[4] + 2) {
+                if (dec->field_0x04 >= work->actionCommands.acParams[0] + 2) {
                     work->actionCommands.result &= ~1;
                     work->actionCommands.mAcState = 0x3EB;
                     work->actionCommands.outputParams[2] = 2;
-                    if (*(s32*)&work->actionCommands.field_34[0] & 2) {
+                    if (work->actionCommands.acFlag & 2) {
                         work->actionCommands.result |= 2;
                         work->actionCommands.result &= ~1;
                     }
@@ -185,7 +185,7 @@ s32 battleAcMain_StickKeepLeft(BattleWork* work) {
                 }
                 else {
                     s32 idx = dec->field_0x04 - 2;
-                    if (idx < *(s32*)&work->actionCommands.field_34[4] - 1) {
+                    if (idx < work->actionCommands.acParams[0] - 1) {
                         if (dec->sfx[idx] == -1) {
                             dec->sfx[idx] = psndSFXOn(STICK_PI_NAME);
                         }
@@ -193,10 +193,10 @@ s32 battleAcMain_StickKeepLeft(BattleWork* work) {
                     else {
                         if (dec->sfx[idx] == -1) {
                             dec->sfx[idx] = psndSFXOn(STICK_PONE_NAME);
-                            *(s32*)&work->actionCommands.field_34[0x14] = 1;
+                            work->actionCommands.acParams[4] = 1;
                         }
                     }
-                    dec->field_0x00 = *(s32*)&work->actionCommands.field_34[8];
+                    dec->field_0x00 = work->actionCommands.acParams[1];
                 }
                 break;
             }
@@ -205,20 +205,20 @@ s32 battleAcMain_StickKeepLeft(BattleWork* work) {
             }
             {
                 s32 hit = 0;
-                if (dec->field_0x04 != *(s32*)&work->actionCommands.field_34[4] + 1) {
-                    if (!(*(s32*)&work->actionCommands.field_34[0] & 2)) {
+                if (dec->field_0x04 != work->actionCommands.acParams[0] + 1) {
+                    if (!(work->actionCommands.acFlag & 2)) {
                         work->actionCommands.outputParams[2] = 1;
                     }
                 }
                 else {
-                    s32 remain = *(s32*)&work->actionCommands.field_34[8] - dec->field_0x00;
+                    s32 remain = work->actionCommands.acParams[1] - dec->field_0x00;
 #ifdef MUST_MATCH
                     // Match-only: the callee really returns 4 bytes; the `s8` header would emit `extsb`.
                     if (remain > ac_stickkeepleft_ok_frame[((s32 (*)(BattleWork*))BattleActionCommandGetDifficulty)(work)]) {
 #else
                     if (remain > ac_stickkeepleft_ok_frame[BattleActionCommandGetDifficulty(work)]) {
 #endif
-                        if (!(*(s32*)&work->actionCommands.field_34[0] & 2)) {
+                        if (!(work->actionCommands.acFlag & 2)) {
                             work->actionCommands.outputParams[2] = 1;
                         }
                     }
@@ -241,7 +241,7 @@ s32 battleAcMain_StickKeepLeft(BattleWork* work) {
                     stateChanged = 1;
                     work->actionCommands.mAcState = 0x3EB;
                 }
-                else if (!(*(s32*)&work->actionCommands.field_34[0] & 2)) {
+                else if (!(work->actionCommands.acFlag & 2)) {
                     work->actionCommands.result &= ~1;
                     stateChanged = 1;
                     work->actionCommands.mAcState = 0x3EB;
@@ -314,7 +314,7 @@ void battleAcDisp_StickKeepLeft(CameraId camId, void* param) {
         disp->iconX = intplGetValue(4, 0x14 - disp->counter, 0x14, float_neg300_8041c418,
                                     float_30_8041c41c);
         actionCommandDisp(disp->iconX, disp->iconY, *(s32*)&disp->field_0x24[0]);
-        if (*(s32*)&ac->field_34[0x10] == 0 && disp->counter > 0) {
+        if (ac->acParams[3] == 0 && disp->counter > 0) {
             disp->counter--;
         }
         break;
@@ -323,7 +323,7 @@ void battleAcDisp_StickKeepLeft(CameraId camId, void* param) {
         disp->iconX = intplGetValue(4, 0x14 - disp->counter, 0x14, float_neg300_8041c418,
                                     float_30_8041c41c);
         actionCommandDisp(disp->iconX, disp->iconY, *(s32*)&disp->field_0x24[0]);
-        if (*(s32*)&ac->field_34[0x10] == 0 && disp->counter > 0) {
+        if (ac->acParams[3] == 0 && disp->counter > 0) {
             disp->counter--;
         }
         break;
@@ -342,7 +342,7 @@ void battleAcDisp_StickKeepLeft(CameraId camId, void* param) {
             disp->iconX = float_30_8041c41c;
         }
         actionCommandDisp(disp->iconX, disp->iconY, *(s32*)&disp->field_0x24[0]);
-        if (*(s32*)&ac->field_34[0x10] == 0 && disp->counter < 0x3C) {
+        if (ac->acParams[3] == 0 && disp->counter < 0x3C) {
             disp->counter++;
         }
         break;
@@ -378,7 +378,7 @@ static void actionCommandDisp(f32 x, f32 y, s32 type) {
     (void)type;
     camGetPtr(CAMERA_2D);
 
-    count = *(s32*)&ac->field_34[4];
+    count = ac->acParams[0];
     idx = ((StickKeepLeftWork*)&ac->field_0x2BC[0])->field_0x04 - 1;
 
     switch (ac->mAcState) {
@@ -424,13 +424,13 @@ static void actionCommandDisp(f32 x, f32 y, s32 type) {
     n = 10;
     if (count >= 4) {
         n = count * 2 + 3;
-        if (*(s32*)&ac->field_34[0] & 1) {
+        if (ac->acFlag & 1) {
             n += 2;
         }
     }
 
     step = float_16_8041c3f4;
-    if (*(s32*)&ac->field_34[0] & 1) {
+    if (ac->acFlag & 1) {
         step = float_12_8041c3f8;
     }
 
@@ -460,7 +460,7 @@ static void actionCommandDisp(f32 x, f32 y, s32 type) {
     }
 
     step = float_33_8041c404;
-    if (*(s32*)&ac->field_34[0] & 1) {
+    if (ac->acFlag & 1) {
         step = float_24p75_8041c408;
     }
 

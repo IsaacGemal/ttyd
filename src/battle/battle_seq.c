@@ -147,11 +147,6 @@ extern BattleWeapon marioDefaultWeapon_FirstAttackKaitenHammer;
 extern BattleWeapon marioDefaultWeapon_FirstAttackUltraHammer;
 extern BattleWeapon partyWeapon_NokotarouFirstAttack;
 extern BattleWeapon partyWeapon_SandersFirstAttack;
-typedef struct PhaseEvtEntry {
-	s32 unitIndex; //0x0
-	s32 value;     //0x4
-} PhaseEvtEntry;
-
 // clang-format off
 __declspec(section ".sdata") EVT_BEGIN(nanika_luck_event)
     BEGIN_SIBLING_EVENT_GET_ID(LW(15))
@@ -1988,7 +1983,7 @@ void btlseqMove(BattleWork* wp) {
 		case 0x5000006: {
 			s32 id;
 			for (j = 0; j < 64; j++) {
-				id = *(s32*)(wp->field_120 + 0x100 + j * 8);
+				id = wp->phaseEvtTable[j].unitIndex;
 				if (id == -1) {
 					continue;
 				}
@@ -1999,7 +1994,7 @@ void btlseqMove(BattleWork* wp) {
 			}
 			if (j < 64) {
 				BattleRunPhaseEvent(unit, FALSE);
-				*(s32*)(wp->field_120 + 0x100 + j * 8) = -1;
+				wp->phaseEvtTable[j].unitIndex = -1;
 				BattleIncSeq(wp, SEQ_MOVE);
 			}
 			else {
@@ -2039,7 +2034,7 @@ void btlseqMove(BattleWork* wp) {
 				}
 			}
 			for (i = 0; i < 64; i++) {
-				id = *(s32*)(wp->field_120 + i * 4);
+				id = wp->unitIdTable[i];
 				if (id == -1) {
 					continue;
 				}
@@ -2070,7 +2065,7 @@ void btlseqMove(BattleWork* wp) {
 			BattleIncSeq(wp, SEQ_MOVE);
 			BattleSetSeq(wp, SEQ_ACT, 0x6000000);
 			for (i = 0; i < 64; i++) {
-				id = *(s32*)(wp->field_120 + i * 4);
+				id = wp->unitIdTable[i];
 				if (id == -1) {
 					continue;
 				}
@@ -2172,7 +2167,7 @@ BOOL BattlePhaseEndCheck(void) { //1:1
 	s32 i;
 
 	for (i = 0; i < 64; i++) {
-		s32 id = *(s32*)((u8*)wp + 0x120 + i * 4);
+		s32 id = wp->unitIdTable[i];
 		if (id != -1) {
 			unit = BattleGetUnitPtr(wp, id);
 			if (unit != NULL && unit->moveState != 10 && unit->movesRemaining > 0 &&
@@ -2522,7 +2517,7 @@ void btlseqPhaseFirstProcess(BattleWork* wp) { //1:1
 	*(s32*)((u8*)wp + 0x1C70) = 0;
 	*(u8*)((u8*)wp + 0x1C74) = 0;
 	for (i = 0; i < 64; i++) {
-		*(s32*)((u8*)wp + 0x120 + i * 4) = -1;
+		wp->unitIdTable[i] = -1;
 	}
 	count = 0;
 	for (i = 0; i < 64; i++) {
@@ -2540,7 +2535,7 @@ void btlseqPhaseFirstProcess(BattleWork* wp) { //1:1
 			if (unit->mAttributeFlags & 0x80000) {
 				continue;
 			}
-			*(s32*)((u8*)wp + 0x120 + count * 4) = unit->unitId;
+			wp->unitIdTable[count] = unit->unitId;
 			unit->protectId = -1;
 			part = unit->mParts;
 			while (part) {
@@ -2569,7 +2564,7 @@ void battleSortPhaseMoveTable(BattleWork* wp, s32 count) { //1:1
 	if (count <= 0) {
 		count = 0;
 		for (i = 0; i < 64; i++) {
-			if (*(s32*)(work->field_120 + i * 4) == -1) {
+			if (work->unitIdTable[i] == -1) {
 				break;
 			}
 			count++;
@@ -2580,25 +2575,25 @@ void battleSortPhaseMoveTable(BattleWork* wp, s32 count) { //1:1
 		for (j = 0; j < count - i - 1; j++) {
 			f32 ax, ay, az;
 			f32 bx, by, bz;
-			a = BattleGetUnitPtr(work, *(s32*)(work->field_120 + j * 4));
-			b = BattleGetUnitPtr(work, *(s32*)(work->field_120 + j * 4 + 4));
+			a = BattleGetUnitPtr(work, work->unitIdTable[j]);
+			b = BattleGetUnitPtr(work, work->unitIdTable[j + 1]);
 			BtlUnit_GetHomePos(a, &ax, &ay, &az);
 			BtlUnit_GetHomePos(b, &bx, &by, &bz);
 			if (fabs(ax) > fabs(bx)) {
-				s32 tmp = *(s32*)(work->field_120 + j * 4);
-				*(s32*)(work->field_120 + j * 4) = *(s32*)(work->field_120 + j * 4 + 4);
-				*(s32*)(work->field_120 + j * 4 + 4) = tmp;
+				s32 tmp = work->unitIdTable[j];
+				work->unitIdTable[j] = work->unitIdTable[j + 1];
+				work->unitIdTable[j + 1] = tmp;
 			}
 		}
 	}
 	for (i = 0; i < count - 1; i++) {
 		for (j = 0; j < count - i - 1; j++) {
-			a = BattleGetUnitPtr(work, *(s32*)(work->field_120 + j * 4));
-			b = BattleGetUnitPtr(work, *(s32*)(work->field_120 + j * 4 + 4));
+			a = BattleGetUnitPtr(work, work->unitIdTable[j]);
+			b = BattleGetUnitPtr(work, work->unitIdTable[j + 1]);
 			if (*(s32*)(a->field_0x27 + 1) < *(s32*)(b->field_0x27 + 1)) {
-				s32 tmp = *(s32*)(work->field_120 + j * 4);
-				*(s32*)(work->field_120 + j * 4) = *(s32*)(work->field_120 + j * 4 + 4);
-				*(s32*)(work->field_120 + j * 4 + 4) = tmp;
+				s32 tmp = work->unitIdTable[j];
+				work->unitIdTable[j] = work->unitIdTable[j + 1];
+				work->unitIdTable[j + 1] = tmp;
 			}
 		}
 	}
@@ -2606,7 +2601,7 @@ void battleSortPhaseMoveTable(BattleWork* wp, s32 count) { //1:1
 #pragma opt_propagation reset
 
 void battleMakePhaseEvtTable(BattleWork* wp) { //1:1
-	PhaseEvtEntry* table = (PhaseEvtEntry*)((u8*)wp + 0x220);
+	PhaseEvtEntry* table = wp->phaseEvtTable;
 	BattleUnit* unit;
 	s32 count;
 	s32 i;

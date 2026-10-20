@@ -1322,7 +1322,7 @@ static USER_FUNC(barriern_wawawa_set_target) {
 
     args = event->args;
     i = 0;
-    _battleWorkPointer->field_428[0xab7] = 0;
+    _battleWorkPointer->sampling.selectIdx = 0;
     barriern_wawawa_get_target(&xs[0], &ys[0]);
     for (;;) {
         if (xs[i] == -1) {
@@ -1350,7 +1350,7 @@ static USER_FUNC(barriern_wawawa_set_target) {
 }
 
 static void barriern_wawawa_get_target(s32* out1, s32* out2) {
-    u8* sampling = _battleWorkPointer->field_428;
+    u8* sampling = (u8*)&_battleWorkPointer->sampling;
     u8* entry = sampling + (s8)sampling[0xa6d + (s8)sampling[0xab7]] * 0x24 + 4;
 
     *out1 = *(s16*)(entry + 0);
@@ -1358,7 +1358,7 @@ static void barriern_wawawa_get_target(s32* out1, s32* out2) {
 }
 
 static void barriern_wawawa_get_next_target(s32* out1, s32* out2) {
-    u8* sampling = _battleWorkPointer->field_428;
+    u8* sampling = (u8*)&_battleWorkPointer->sampling;
     s32 idx;
 
     sampling[0xab7]++;

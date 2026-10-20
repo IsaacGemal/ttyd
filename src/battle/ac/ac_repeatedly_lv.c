@@ -69,7 +69,7 @@ static void _init_param(BattleWork* work) {
     dec->padCheck = 0;
     dec->field_0x27 = 1;
 
-    switch (*(s32*)&ac->field_34[4]) {
+    switch (ac->acParams[0]) {
     case 2:
         dec->field_0x08 = 0x200;
         dec->field_0x04 = 0x200;
@@ -135,19 +135,19 @@ static void _init_param(BattleWork* work) {
 
     dec->field_0x22 = 0;
     {
-        s16 limit = *(s32*)&ac->field_34[0x08];
+        s16 limit = ac->acParams[1];
         dec->field_0x20 = limit;
         dec->field_0x1E = limit;
     }
     dec->field_0x18 = 0;
     dec->field_0x14 = 0.0f;
     dec->field_0x1C = 0;
-    dec->field_0x24 = *(s32*)&ac->field_34[0x0C];
-    dec->field_0x1A = *(s32*)&ac->field_34[0x10];
-    dec->field_0x10 = float_0p01_8041e814 * (f32)*(s32*)&ac->field_34[0x14];
-    dec->field_0x26 = *(s32*)&ac->field_34[0x18];
-    if (*(s16*)&ac->field_78[0x10] > 0) {
-        *(s16*)&ac->field_78[0x10] -= 1;
+    dec->field_0x24 = ac->acParams[2];
+    dec->field_0x1A = ac->acParams[3];
+    dec->field_0x10 = float_0p01_8041e814 * (f32)ac->acParams[4];
+    dec->field_0x26 = ac->acParams[5];
+    if (ac->guardFrames > 0) {
+        ac->guardFrames -= 1;
         dec->field_0x25 = 1;
     } else {
         dec->field_0x25 = 0;
@@ -240,7 +240,7 @@ s32 battleAcMain_RepeatedlyLv(BattleWork* work) {
             battleAcDelete_RepeatedlyLv(work);
             return 0;
         }
-        switch (*(s32*)&ac->field_34[4]) {
+        switch (ac->acParams[0]) {
         case 0xB:
         case 0xC:
         case 0xD:
@@ -254,7 +254,7 @@ s32 battleAcMain_RepeatedlyLv(BattleWork* work) {
             break;
         }
         if (dec->field_0x27 != 0) {
-            if (*(s32*)&ac->field_34[0] & 0x20) {
+            if (ac->acFlag & 0x20) {
                 if ((s32)BattlePadCheckNow(dec->field_0x00) != 0) {
                     stateChanged = 1;
                     dec->field_0x1C++;
@@ -280,7 +280,7 @@ s32 battleAcMain_RepeatedlyLv(BattleWork* work) {
                 if (v >= float_100_8041e80c) {
                     dec->field_0x14 = float_100_8041e80c;
                     dec->field_0x25 = 1;
-                    if (*(s32*)&ac->field_34[0] & 0x20) {
+                    if (ac->acFlag & 0x20) {
                         dec->field_0x25 = -1;
                     }
                 } else {
@@ -312,10 +312,10 @@ s32 battleAcMain_RepeatedlyLv(BattleWork* work) {
                 }
             }
         }
-        if (dec->field_0x18 == 0 && (*(s32*)&ac->field_34[0] & 0x40)) {
+        if (dec->field_0x18 == 0 && (ac->acFlag & 0x40)) {
             dec->field_0x18 = 1;
         }
-        if (dec->field_0x25 != 0 && !(*(s32*)&ac->field_34[0] & 1)) {
+        if (dec->field_0x25 != 0 && !(ac->acFlag & 1)) {
             dec->field_0x18++;
         }
         ac->outputParams[2] = dec->field_0x18;
@@ -328,7 +328,7 @@ s32 battleAcMain_RepeatedlyLv(BattleWork* work) {
             break;
         }
         ac->result &= ~1;
-        if (dec->field_0x14 >= (f32)*(s32*)&ac->field_34[0x1C]) {
+        if (dec->field_0x14 >= (f32)ac->acParams[6]) {
             ac->result |= 2;
         } else {
             ac->result &= ~2;
@@ -464,7 +464,7 @@ static void actionCommandDisp(f32 x, f32 y) {
         iconB = t;
     }
 
-    switch (*(s32*)&ac->field_34[4]) {
+    switch (ac->acParams[0]) {
     case 0xF:
         offA = -10;
         offB = 10;
@@ -536,24 +536,24 @@ static void actionCommandDisp(f32 x, f32 y) {
 
     target = dec->field_0x14 / float_100_8041e80c;
     if (disp->value <= target) {
-        if (*(s32*)&ac->field_34[0] & 8) {
+        if (ac->acFlag & 8) {
             disp->value += float_0p02_8041e810;
         } else {
             disp->value += float_0p01_8041e814;
         }
-        if (*(s32*)&ac->field_34[0] & 0x10) {
+        if (ac->acFlag & 0x10) {
             disp->value = target;
         }
         if (disp->value > target) {
             disp->value = target;
         }
     } else {
-        if (*(s32*)&ac->field_34[0] & 8) {
+        if (ac->acFlag & 8) {
             disp->value -= float_0p02_8041e810;
         } else {
             disp->value -= float_0p01_8041e814;
         }
-        if (*(s32*)&ac->field_34[0] & 0x10) {
+        if (ac->acFlag & 0x10) {
             disp->value = target;
         }
         if (disp->value < target) {
@@ -584,7 +584,7 @@ static void actionCommandDisp(f32 x, f32 y) {
         arr[i] = 100;
     }
     for (i = 0; i < 4; i++, count++) {
-        arr[i] = *(s32*)&ac->field_78[i * 4];
+        arr[i] = ac->acGaugeParams[i];
         if (i != 0 && arr[i] - arr[i - 1] <= 0) {
             break;
         }
@@ -593,19 +593,19 @@ static void actionCommandDisp(f32 x, f32 y) {
     BattleAcDrawGaugeFM((s32)x, (s32)y, dec->field_0x24, count, disp->value, arr[0], arr[1],
                         arr[2], flags);
 
-    if (*(s32*)&ac->field_34[0] & 2) {
+    if (ac->acFlag & 2) {
         Vec vec = vec3_802fa130;
         vec.x = float_neg288_8041e818 + x +
-                (f32)(*(s32*)&ac->field_34[0x1C] * 0xB0) / float_100_8041e80c;
+                (f32)(ac->acParams[6] * 0xB0) / float_100_8041e80c;
         vec.y = float_45_8041e81c + y;
         ICON_DISP(&vec, 0x10, 0x96, float_1_8041e800);
     }
 
-    if (*(s32*)&ac->field_34[0] & 4) {
+    if (ac->acFlag & 4) {
         Mtx mtx;
         Mtx trans;
         Mtx scale;
-        s32 num = ac->outputParams[2] + *(s32*)&ac->field_34[0x20];
+        s32 num = ac->outputParams[2] + ac->acParams[7];
 
         f32 tx = float_neg200_8041e7f8 + x;
 

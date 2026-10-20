@@ -262,9 +262,9 @@ f32 _GetGaugeDecValue(void) {
 	f32 max;
 
 #ifdef MUST_MATCH
-	type = *(s32*)&ac->field_34[0x20]; // BattleWork+0x1ce4
+	type = ac->acParams[7]; // BattleWork+0x1ce4
 #else
-	type = *(s32*)&work->actionCommands.field_34[0x20];
+	type = work->actionCommands.acParams[7];
 #endif
 	switch (type) {
 	case 0:
@@ -415,11 +415,11 @@ static void actionCommandDisp(f32 f1, f32 f2) {
 
 #ifdef MUST_MATCH
 	gv = *(volatile f32*)&disp->value;
-	BattleAcDrawGauge((s32)f1, (s32)f2, 0xb2, *(s32*)&work->actionCommands.field_34[0xC], *(s32*)&work->actionCommands.field_34[0x10],
-	                  *(s32*)&work->actionCommands.field_34[0x14], *(s32*)&work->actionCommands.field_34[0x18], 0, gv);
+	BattleAcDrawGauge((s32)f1, (s32)f2, 0xb2, work->actionCommands.acParams[2], work->actionCommands.acParams[3],
+	                  work->actionCommands.acParams[4], work->actionCommands.acParams[5], 0, gv);
 #else
-	BattleAcDrawGauge((s32)f1, (s32)f2, 0xb2, *(s32*)&work->actionCommands.field_34[0xC], *(s32*)&work->actionCommands.field_34[0x10],
-	                  *(s32*)&work->actionCommands.field_34[0x14], *(s32*)&work->actionCommands.field_34[0x18], 0, disp->value);
+	BattleAcDrawGauge((s32)f1, (s32)f2, 0xb2, work->actionCommands.acParams[2], work->actionCommands.acParams[3],
+	                  work->actionCommands.acParams[4], work->actionCommands.acParams[5], 0, disp->value);
 #endif
 	if (dec->flag != 0) {
 		Vec pos;

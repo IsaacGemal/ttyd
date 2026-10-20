@@ -64,7 +64,6 @@ extern const Vec vec3_802edeac;
 extern const Vec vec3_802edeb8;
 extern s32 psndSFX_pit(s32 id, s32 pit);
 
-#define BTLW_OFF(wp, off) ((u8*)(wp) + (off))
 extern s32 subsetevt_confuse_flustered[];
 #define NAN (*(f32*)__float_nan)
 #define FP_NAN 1
@@ -3582,7 +3581,7 @@ USER_FUNC(btlevtcmd_PartsFaceDirectionSub) {
 USER_FUNC(btlevtcmd_SamplingEnemy) {
     s32* args = event->args;
     BattleWork* wp = _battleWorkPointer;
-    u8* sampling = (u8*)wp + 0x428;
+    u8* sampling = (u8*)&wp->sampling;
     BattleWeapon* weapon;
     s32 id;
     s8 belong;
@@ -3604,7 +3603,7 @@ USER_FUNC(btlevtcmd_SamplingEnemy) {
 //s32* weaponIndex, s32 retIndex1, s32 retIndex2
 USER_FUNC(btlevtcmd_ChoiceSamplingEnemy) {
     s32* args = event->args;
-    u8* sampling = (u8*)_battleWorkPointer + 0x428;
+    u8* sampling = (u8*)&_battleWorkPointer->sampling;
     BattleWeapon* weapon;
     s32 index1;
     s32 index2;
@@ -3624,7 +3623,7 @@ USER_FUNC(btlevtcmd_ChoiceSamplingEnemy) {
 USER_FUNC(btlevtcmd_GetSelectEnemy) {
     s32* args = event->args;
     BattleWork* wp = _battleWorkPointer;
-    u8* sampling = wp->field_428;
+    u8* sampling = (u8*)&wp->sampling;
     s32 index1;
     s32 index2;
     s32 selectIdx;
@@ -3649,7 +3648,7 @@ USER_FUNC(btlevtcmd_GetSelectEnemy) {
 USER_FUNC(btlevtcmd_GetSelectNextEnemy) {
     s32* args = event->args;
     BattleWork* wp = _battleWorkPointer;
-    u8* sampling = wp->field_428;
+    u8* sampling = (u8*)&wp->sampling;
     s32 index1 = args[0];
     s32 index2 = args[1];
     s32 selectIdx;
@@ -5086,7 +5085,7 @@ USER_FUNC(btlevtcmd_AcGetDifficulty) {
 
 //s32 flag
 USER_FUNC(btlevtcmd_AcSetFlag) {
-    *(s32*)BTLW_OFF(_battleWorkPointer, 0x1CC4) = *event->args;
+    _battleWorkPointer->actionCommands.acFlag = *event->args;
     return EVT_RETURN_DONE;
 }
 
@@ -5099,7 +5098,7 @@ USER_FUNC(btlevtcmd_AcSetParamAll) {
     for (i = 0; i < 8; i++) {
         s32 v = evtGetValue(event, *args++);
         if (v != EVTDAT_POINTER_MAX) {
-            *(s32*)((u8*)wp + 0x1CC8 + i * 4) = v;
+            wp->actionCommands.acParams[i] = v;
         }
     }
     return EVT_RETURN_DONE;
@@ -5112,7 +5111,7 @@ USER_FUNC(btlevtcmd_AcSetParam) {
     s32 index = evtGetValue(event, args[0]);
     s32 value = evtGetValue(event, args[1]);
 
-    ((s32*)((u8*)wp + 0x1CC8))[index] = value;
+    wp->actionCommands.acParams[index] = value;
     return EVT_RETURN_DONE;
 }
 
@@ -5126,7 +5125,7 @@ USER_FUNC(btlevtcmd_AcGetParam) {
     args = event->args;
     wp = _battleWorkPointer;
     index = evtGetValue(event, args[0]);
-    value = ((s32*)((u8*)wp + 0x1CC8))[index];
+    value = wp->actionCommands.acParams[index];
 
     if (args[1] != EVTDAT_POINTER_MAX) {
         evtSetValue(event, args[1], value);
@@ -5139,10 +5138,10 @@ USER_FUNC(btlevtcmd_AcSetGaugeParam) {
     BattleWork* wp = _battleWorkPointer;
     s32* args = event->args;
 
-    *(s32*)((u8*)wp + 0x1D08) = evtGetValue(event, args[0]);
-    *(s32*)((u8*)wp + 0x1D0C) = evtGetValue(event, args[1]);
-    *(s32*)((u8*)wp + 0x1D10) = evtGetValue(event, args[2]);
-    *(s32*)((u8*)wp + 0x1D14) = evtGetValue(event, args[3]);
+    wp->actionCommands.acGaugeParams[0] = evtGetValue(event, args[0]);
+    wp->actionCommands.acGaugeParams[1] = evtGetValue(event, args[1]);
+    wp->actionCommands.acGaugeParams[2] = evtGetValue(event, args[2]);
+    wp->actionCommands.acGaugeParams[3] = evtGetValue(event, args[3]);
     return EVT_RETURN_DONE;
 }
 
@@ -5171,7 +5170,7 @@ USER_FUNC(btlevtcmd_AcSetOutputParam) {
     s32 index = evtGetValue(event, args[0]);
     s32 value = evtGetValue(event, args[1]);
 
-    ((s32*)((u8*)wp + 0x1CE8))[index] = value;
+    wp->actionCommands.outputParams[index] = value;
     return EVT_RETURN_DONE;
 }
 
@@ -6997,13 +6996,13 @@ USER_FUNC(btlevtcmd_StatusWindowOnOff) {
 
     switch (evtGetValue(event, *event->args)) {
     case 2:
-        *(s32*)((u8*)wp + 0x2744) = 1;
+        wp->statusWinSystem = 1;
         break;
     case 1:
-        *(s32*)((u8*)wp + 0x2748) = 1;
+        wp->statusWinEvent = 1;
         break;
     case 0:
-        *(s32*)((u8*)wp + 0x2748) = 0;
+        wp->statusWinEvent = 0;
         break;
     }
     BattleStatusWindowCheck();

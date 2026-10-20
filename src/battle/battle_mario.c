@@ -156,7 +156,7 @@ USER_FUNC(_jump_star_effect) {
 
 USER_FUNC(_bgset_iron_frame_check) {
     s32* args = event->args;
-    u8 flags = *(u8*)((u8*)_battleWorkPointer + 0x180DC);
+    u8 flags = _battleWorkPointer->stageFlags;
     s32 value = args[0];
 
     if (flags & 0x20) {

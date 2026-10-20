@@ -100,11 +100,11 @@ s32 battleAcMain_PowerGaugeLv2(BattleWork* work) {
 #ifdef MUST_MATCH
             // Match-only: the constant-first form is what makes the magic double land in f1
             // and 0.01f in f2 (the natural value-first form swaps them).
-            dec->field_0x10 = 0.01f * (f32)*(s32*)&work->actionCommands.field_34[8];
-            dec->field_0x14 = 0.01f * (f32)*(s32*)&work->actionCommands.field_34[0xC];
+            dec->field_0x10 = 0.01f * (f32)work->actionCommands.acParams[1];
+            dec->field_0x14 = 0.01f * (f32)work->actionCommands.acParams[2];
 #else
-            dec->field_0x10 = (f32)*(s32*)&work->actionCommands.field_34[8] * 0.01f;
-            dec->field_0x14 = (f32)*(s32*)&work->actionCommands.field_34[0xC] * 0.01f;
+            dec->field_0x10 = (f32)work->actionCommands.acParams[1] * 0.01f;
+            dec->field_0x14 = (f32)work->actionCommands.acParams[2] * 0.01f;
 #endif
             dec->flag = 0;
             dec->flag2 = 0;
@@ -125,7 +125,7 @@ s32 battleAcMain_PowerGaugeLv2(BattleWork* work) {
                 }
                 else {
                     work->actionCommands.outputParams[0] =
-                        (s32)irand(*(s32*)&work->actionCommands.field_34[0x10] - 1) + 1;
+                        (s32)irand(work->actionCommands.acParams[3] - 1) + 1;
                     work->actionCommands.field_0x8 = 0x1E;
                 }
                 work->actionCommands.mAcState = 0x3E9;
@@ -137,7 +137,7 @@ s32 battleAcMain_PowerGaugeLv2(BattleWork* work) {
         case 0x3E8:
             dec->frame++;
             if (dec->frame > dec->frameLimit) {
-                if (work->actionCommands.outputParams[0] < *(s32*)&work->actionCommands.field_34[0x14]) {
+                if (work->actionCommands.outputParams[0] < work->actionCommands.acParams[4]) {
                     work->actionCommands.result = 0;
                     work->actionCommands.result &= ~2;
                 }
@@ -200,18 +200,18 @@ s32 battleAcMain_PowerGaugeLv2(BattleWork* work) {
             }
             BattleAcGaugeSeUpdate(dec->gaugePercent);
             work->actionCommands.outputParams[0] =
-                (s32)(dec->gaugePercent * (f32)*(s32*)&work->actionCommands.field_34[0x10] / 100.0f);
-            if (work->actionCommands.outputParams[0] >= *(s32*)&work->actionCommands.field_34[0x10]) {
-                work->actionCommands.outputParams[0] = *(s32*)&work->actionCommands.field_34[0x10] - 1;
+                (s32)(dec->gaugePercent * (f32)work->actionCommands.acParams[3] / 100.0f);
+            if (work->actionCommands.outputParams[0] >= work->actionCommands.acParams[3]) {
+                work->actionCommands.outputParams[0] = work->actionCommands.acParams[3] - 1;
             }
-            if (!(*(u32*)&work->actionCommands.field_34[0] & 1) && dec->gaugePercent >= 100.0f) {
+            if (!(*(u32*)&work->actionCommands.acFlag & 1) && dec->gaugePercent >= 100.0f) {
                 work->actionCommands.outputParams[0]++;
             }
             break;
         case 0x3E9:
             work->actionCommands.field_0x8--;
             if (work->actionCommands.field_0x8 < 0) {
-                if (work->actionCommands.outputParams[0] >= *(s32*)&work->actionCommands.field_34[0x14]) {
+                if (work->actionCommands.outputParams[0] >= work->actionCommands.acParams[4]) {
                     work->actionCommands.result = 2;
                     work->actionCommands.mResultCount++;
                 }
@@ -323,7 +323,7 @@ void battleAcDelete_PowerGaugeLv2(BattleWork* work) {
 // symbol-only difference noted above and disappears when the unit links.
 static void actionCommandDisp(f32 x, f32 y) {
     Vec* vec = (Vec*)vec3_803001c0;
-    BattleActions* ac = (BattleActions*)((u8*)_battleWorkPointer + 0x1C90);
+    BattleActions* ac = &_battleWorkPointer->actionCommands;
     BattleACDispParams* disp = &ac->dispParams;
     PowerGaugeLv2DecWork* dec = (PowerGaugeLv2DecWork*)&ac->field_0x2BC[0];
     f32 f31;

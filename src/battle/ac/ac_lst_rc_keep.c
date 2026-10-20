@@ -13,7 +13,7 @@
 // It begins where BattleACDispParams ends (the header stops at 0x2BC in BattleActions).
 typedef struct LstRcKeepWork {
     s32 field_0x00; // 0x00, countdown timer / current timing window
-    s32 field_0x04; // 0x04, index into the field_34 timing array
+    s32 field_0x04; // 0x04, index into the acParams array
     s16 field_0x08; // 0x08, A-button (0x4) hold counter
     s16 field_0x0A; // 0x0A, B-button (0x80) hold counter
     s32 field_0x0C; // 0x0C, post-command timer
@@ -136,9 +136,9 @@ s32 battleAcMain_LstRcKeep(BattleWork* work) {
                 }
             }
             if ((dec->field_0x08 != 0 && dec->field_0x0A != 0) ||
-                *(s16*)&ac->field_78[0x10] > 0 || autoCommand) {
+                ac->guardFrames > 0 || autoCommand) {
                 ac->mAcState = 0x3E9;
-                dec->field_0x00 = *(s32*)&ac->field_34[4];
+                dec->field_0x00 = ac->acParams[0];
                 dec->field_0x04 = 0;
                 dec->field_0x08 = 0;
                 dec->field_0x0A = 0;
@@ -153,8 +153,8 @@ s32 battleAcMain_LstRcKeep(BattleWork* work) {
             }
             break;
         case 0x3E9:
-            if (*(s16*)&ac->field_78[0x10] > 0) {
-                (*(s16*)&ac->field_78[0x10])--;
+            if (ac->guardFrames > 0) {
+                (ac->guardFrames)--;
                 ac->result = 2;
                 stateChanged = 1;
                 ac->mAcState = 0x3EB;
@@ -187,13 +187,13 @@ s32 battleAcMain_LstRcKeep(BattleWork* work) {
                     ac->mAcState = 0x3EB;
                 }
                 else {
-                    dec->field_0x00 = *(s32*)(&ac->field_34[4] + dec->field_0x04 * 4);
+                    dec->field_0x00 = ac->acParams[dec->field_0x04];
                 }
             }
             else if ((dec->field_0x08 != 0 && dec->field_0x0A != 0) || autoCommand) {
                 s32 flag = 0;
                 if (dec->field_0x04 == 4) {
-                    s32 remaining = *(s32*)&ac->field_34[0x14] - cur;
+                    s32 remaining = ac->acParams[4] - cur;
 #ifdef MUST_MATCH
                     // Match-only: the header says `s8` but the callee returns a zero-extended 4-byte value.
                     if (remaining <= ac_lstrckeep_ok_frame[((s32 (*)(BattleWork*))BattleActionCommandGetDifficulty)(work)]) {

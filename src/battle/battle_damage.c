@@ -2067,7 +2067,7 @@ void __declare(s32 unitId, s32 partId, s32* out1, s32* out2) {
 
 void BattleAttackDeclareAll(BattleWork* wp) {
     s32 i;
-    u8* sampling = wp->field_428;
+    u8* sampling = (u8*)&wp->sampling;
 
     for (i = 0; i < (s8)sampling[0xa6c]; i++) {
         u8* entry = sampling + (s8)sampling[0xa6d + i] * 0x24 + 4;
