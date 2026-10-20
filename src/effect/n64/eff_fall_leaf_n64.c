@@ -8,15 +8,15 @@
 #include "memory.h"
 
 typedef struct effFallLeafParticle {
-	s32 field_0x00;       // 0x00
+	s32 type;             // 0x00 the header's type (effFallLeafData::type), read through a particle pointer in disp
 	f32 x;                // 0x04
 	f32 y;                // 0x08
 	f32 z;                // 0x0C
-	f32 field_0x10;       // 0x10
-	f32 field_0x14;       // 0x14
-	f32 field_0x18;       // 0x18
-	f32 field_0x1C;       // 0x1C
-	f32 field_0x20;       // 0x20
+	f32 velX;             // 0x10
+	f32 velY;             // 0x14
+	f32 rotZ;             // 0x18 degrees, the disp's 'z' rotation
+	f32 swayAngle;        // 0x1C degrees; drives the sway in rotZ and rotY
+	f32 rotY;             // 0x20 degrees, the disp's 'y' rotation
 	u8 field_0x24[0x0C];  // 0x24
 } effFallLeafParticle;
 
@@ -26,7 +26,7 @@ typedef struct effFallLeafData {
 	f32 y;                           // 0x08
 	f32 z;                           // 0x0C
 	u8 field_0x10[0x14];             // 0x10
-	s32 field_0x24;                  // 0x24
+	s32 alpha;                       // 0x24 fade alpha, ramps up over the first 10 frames and down over the last 10
 	s32 life;                        // 0x28
 	s32 counter;                     // 0x2C
 	effFallLeafParticle particle[4]; // 0x30
@@ -132,7 +132,7 @@ EffectEntry* effFallLeafN64Entry(s32 type, s32 life, f32 x, f32 y, f32 z) {
 	data->z = z;
 	data->life = life;
 	data->counter = 0;
-	data->field_0x24 = 0;
+	data->alpha = 0;
 	particle = data->particle;
 	for (i = 1; i < 5; i++, particle++) {
 		switch (type) {
@@ -143,21 +143,21 @@ EffectEntry* effFallLeafN64Entry(s32 type, s32 life, f32 x, f32 y, f32 z) {
 			particle->x = (f32)(rand() % 50 - 25);
 			particle->y = (f32)(rand() % 50 - 25);
 			particle->z = float_0_8041ee08;
-			particle->field_0x18 = (f32)(rand() % 360);
-			particle->field_0x20 = (f32)(rand() % 360);
-			particle->field_0x1C = (f32)(rand() % 100) / float_10_8041ee00;
-			particle->field_0x10 = float_0_8041ee08;
-			particle->field_0x14 = float_0_8041ee08;
+			particle->rotZ = (f32)(rand() % 360);
+			particle->rotY = (f32)(rand() % 360);
+			particle->swayAngle = (f32)(rand() % 100) / float_10_8041ee00;
+			particle->velX = float_0_8041ee08;
+			particle->velY = float_0_8041ee08;
 			break;
 		case 1:
 			particle->x = (f32)(rand() % 10 - 5);
 			particle->y = (f32)(rand() % 10 + 5);
 			particle->z = float_10_8041ee00;
-			particle->field_0x18 = (f32)(rand() % 360);
-			particle->field_0x20 = (f32)(rand() % 360);
-			particle->field_0x1C = (f32)(rand() % 100) / float_10_8041ee00;
-			particle->field_0x10 = float_0_8041ee08;
-			particle->field_0x14 = float_2_8041ede0;
+			particle->rotZ = (f32)(rand() % 360);
+			particle->rotY = (f32)(rand() % 360);
+			particle->swayAngle = (f32)(rand() % 100) / float_10_8041ee00;
+			particle->velX = float_0_8041ee08;
+			particle->velY = float_2_8041ede0;
 			break;
 		}
 	}
@@ -270,39 +270,39 @@ void effFallLeafMain(EffectEntry* effect) {
 	type = data->type;
 	life = data->life;
 	if (counter < 10) {
-		data->field_0x24 = (s32)(float_0p3_8041edd4 * (f32)(0xFF - data->field_0x24) + (f32)data->field_0x24);
+		data->alpha = (s32)(float_0p3_8041edd4 * (f32)(0xFF - data->alpha) + (f32)data->alpha);
 	}
 	if (life < 10) {
-		data->field_0x24 = (s32)((f32)data->field_0x24 * float_0p8_8041edd8);
+		data->alpha = (s32)((f32)data->alpha * float_0p8_8041edd8);
 	}
 	idx = counter + 20;
 	i = 1;
 	particle = &data->particle[0];
 	for (; i < effect->count; i++, particle++, idx += 20) {
-		s = (f32)sin(float_6p2832_8041eddc * (float_2_8041ede0 * particle->field_0x18) / float_360_8041ede4);
-		particle->field_0x14 += float_neg0p05_8041ede8;
+		s = (f32)sin(float_6p2832_8041eddc * (float_2_8041ede0 * particle->rotZ) / float_360_8041ede4);
+		particle->velY += float_neg0p05_8041ede8;
 		t = float_0p2_8041edec * s;
-		particle->field_0x10 += t;
+		particle->velX += t;
 		switch (type) {
 		case 0:
 		case 2:
 		case 3:
 		case 4:
-			particle->field_0x10 *= float_0p94_8041edf0;
-			particle->field_0x14 *= float_0p05_8041edf8 * (f32)sin(float_6p2832_8041eddc * particle->field_0x18 / float_360_8041ede4) + float_0p95_8041edf4;
+			particle->velX *= float_0p94_8041edf0;
+			particle->velY *= float_0p05_8041edf8 * (f32)sin(float_6p2832_8041eddc * particle->rotZ / float_360_8041ede4) + float_0p95_8041edf4;
 			break;
 		case 1:
-			particle->field_0x14 += float_neg0p05_8041ede8;
-			particle->field_0x10 *= float_0p92_8041edfc;
+			particle->velY += float_neg0p05_8041ede8;
+			particle->velX *= float_0p92_8041edfc;
 			break;
 		}
-		particle->field_0x1C += (f32)(s32)(effTblRandN64(50, idx) - 25);
-		particle->field_0x18 += float_10_8041ee00 * (f32)sin(float_6p2832_8041eddc * particle->field_0x1C / float_360_8041ede4);
-		particle->field_0x20 += float_10_8041ee00 * (f32)cos(float_6p2832_8041eddc * (particle->field_0x1C * float_0p5_8041ee04) / float_360_8041ede4);
-		particle->x += particle->field_0x10;
-		particle->y += particle->field_0x14;
+		particle->swayAngle += (f32)(s32)(effTblRandN64(50, idx) - 25);
+		particle->rotZ += float_10_8041ee00 * (f32)sin(float_6p2832_8041eddc * particle->swayAngle / float_360_8041ede4);
+		particle->rotY += float_10_8041ee00 * (f32)cos(float_6p2832_8041eddc * (particle->swayAngle * float_0p5_8041ee04) / float_360_8041ede4);
+		particle->x += particle->velX;
+		particle->y += particle->velY;
 	}
-	dispEntry(4, dispCalcZ(&position2), 2, effFallLeafDisp, effect);
+	dispEntry(CAMERA_3D, dispCalcZ(&position2), 2, effFallLeafDisp, effect);
 }
 #endif
 
@@ -321,7 +321,7 @@ void effFallLeafDisp(CameraId cameraId, void* param) {
 
 	cam = camGetPtr(cameraId);
 	data = effect->userdata;
-	type = data->field_0x00;
+	type = data->type;
 
 	PSMTXTrans(trans, data->x, data->y, data->z);
 	PSMTXRotRad(rot, 'y', float_deg2rad_8041edc0 * -camGetPtr(CAMERA_3D)->viewYaw);
@@ -331,16 +331,16 @@ void effFallLeafDisp(CameraId cameraId, void* param) {
 	switch (type) {
 	case 0:
 	case 1:
-		leafSetColor0(((effFallLeafData*)data)->field_0x24);
+		leafSetColor0(((effFallLeafData*)data)->alpha);
 		break;
 	case 2:
-		leafSetColor1(((effFallLeafData*)data)->field_0x24);
+		leafSetColor1(((effFallLeafData*)data)->alpha);
 		break;
 	case 3:
-		leafSetColor2(((effFallLeafData*)data)->field_0x24);
+		leafSetColor2(((effFallLeafData*)data)->alpha);
 		break;
 	case 4:
-		leafSetColor3(((effFallLeafData*)data)->field_0x24);
+		leafSetColor3(((effFallLeafData*)data)->alpha);
 		break;
 	}
 
@@ -382,9 +382,9 @@ void effFallLeafDisp(CameraId cameraId, void* param) {
 	deg2rad = float_deg2rad_8041edc0;
 	for (i = 1; i < effect->count; i++, data++) {
 		PSMTXTrans(trans, data->x, data->y, data->z);
-		PSMTXRotRad(rot, 'z', deg2rad * data->field_0x18);
+		PSMTXRotRad(rot, 'z', deg2rad * data->rotZ);
 		PSMTXConcat(trans, rot, trans);
-		PSMTXRotRad(rot, 'y', deg2rad * data->field_0x20);
+		PSMTXRotRad(rot, 'y', deg2rad * data->rotY);
 		PSMTXConcat(trans, rot, trans);
 		PSMTXConcat(work, trans, trans);
 		GXLoadPosMtxImm(trans, GX_PNMTX0);
