@@ -60,9 +60,9 @@ void psndSFX_pit(s32 id, s32 pitch);
 typedef struct DekaTiming {
     /*0x00*/ s32 state;
     /*0x04*/ s32 unk04;
-    /*0x08*/ s32 unk08;
+    /*0x08*/ s32 kind;  // 1: a press in the window scores; other kinds boo
     /*0x0C*/ f32 time;
-    /*0x10*/ Vec unk10;
+    /*0x10*/ Vec offset;  // added to the icon position, set on state 2
     /*0x1C*/ u8 pad1C[0x34 - 0x1C];
     /*0x34*/ u8 alpha;
     /*0x35*/ u8 flag;
@@ -96,7 +96,7 @@ typedef struct DekaWork {
     /*0x040*/ s32 beatCount;
     /*0x044*/ s32 combo;
     /*0x048*/ s32 unk48;
-    /*0x04C*/ f32 unk4C;
+    /*0x04C*/ f32 timingSlideY;  // -40 when timing icons appear, eased to 0 over 30 frames
     /*0x050*/ s32 gaugeState;
     /*0x054*/ s32 gaugeTimer;
     /*0x058*/ f32 gaugeWidth;
@@ -117,8 +117,8 @@ typedef struct DekaWork {
     /*0x428*/ u8 pad428[0x42C - 0x428];
     /*0x42C*/ Vec starScale;
     /*0x438*/ Vec starRot;
-    /*0x444*/ f32 starUnk44;
-    /*0x448*/ f32 starUnk48;
+    /*0x444*/ f32 starScaleFrom;
+    /*0x448*/ f32 starScaleTo;
     /*0x44C*/ EffectEntry* starEffect;
     /*0x450*/ s32 unitIds[10];
     /*0x478*/ struct { f32 x, y, z; } enemyVel[10];
@@ -476,7 +476,7 @@ static void main_base(void) {
                 else {
                     p->baseState = 4;
                     p->baseTimer = 30;
-                    p->unk4C = -40.f;
+                    p->timingSlideY = -40.f;
                     create_timing();
                 }
             }
@@ -503,7 +503,7 @@ static void main_base(void) {
                 DekaTiming* t = &p->timing[idx[i]];
                 if (t->state == 2 && p->beatPos >= t->time - 7.0f &&
                     p->beatPos <= 7.0f + t->time) {
-                    if (t->unk08 == 1) {
+                    if (t->kind == 1) {
                         t->state = 3;
                         t->flag = 1;
                         psndSFXOn("SFX_BTL_SAC_DOKKAN2");
@@ -526,7 +526,7 @@ static void main_base(void) {
                 found = 0;
                 for (i = 0; i < 8; i++) {
                     DekaTiming* t = &p->timing[idx[i]];
-                    if (t->state == 2 && t->unk08 == 1) {
+                    if (t->state == 2 && t->kind == 1) {
                         p->baseState = 5;
                         p->gaugeState = 4;
                         t->flag = 2;
@@ -545,7 +545,7 @@ static void main_base(void) {
 
         for (i = 0; i < 8; i++) {
             DekaTiming* t = &p->timing[idx[i]];
-            if (t->state == 2 && t->unk08 != 2 && p->beatPos > 7.0f + t->time) {
+            if (t->state == 2 && t->kind != 2 && p->beatPos > 7.0f + t->time) {
                 p->baseState = 5;
                 p->gaugeState = 4;
                 t->flag = 2;
@@ -558,7 +558,7 @@ static void main_base(void) {
         break;
     case 4:
         p->baseTimer--;
-        p->unk4C = intplGetValue(0, 30 - p->baseTimer, 30, -40.f, 0.0f);
+        p->timingSlideY = intplGetValue(0, 30 - p->baseTimer, 30, -40.f, 0.0f);
         if (p->baseTimer <= 0) {
             p->baseState = 3;
             p->sndHandle = psndSFXOn("SFX_BTL_SAC_DOKKAN1_1");
@@ -633,11 +633,11 @@ void main_timing(s32 idx) {
 
     switch (t->state) {
         case 0:
-            t->unk08 = 0;
+            t->kind = 0;
             break;
         case 2:
             t->alpha = 0xFF;
-            t->unk10 = vec3_80300534;
+            t->offset = vec3_80300534;
             break;
         case 3:
             t->state = 4;
@@ -717,8 +717,8 @@ static void main_star(void) {
     case 6:
         p->starState = 7;
         p->starTimer = 0;
-        p->starUnk44 = p->starUnk48 = p->starScale.x;
-        p->starUnk48 += 1.0f;
+        p->starScaleFrom = p->starScaleTo = p->starScale.x;
+        p->starScaleTo += 1.0f;
         psndSFXOn("SFX_BTL_SAC_DOKKAN4");
         if (audience >= 1 && audience <= 0x31) {
             BattleAudienceSoundCallKind(1);
@@ -741,7 +741,7 @@ static void main_star(void) {
         f32 s;
         tbl = dat_80300558;
         p->starTimer++;
-        s = intplGetValue(4, tbl.v[p->starTimer / 4], 5, p->starUnk44, p->starUnk48);
+        s = intplGetValue(4, tbl.v[p->starTimer / 4], 5, p->starScaleFrom, p->starScaleTo);
         p->starScale.z = s;
         p->starScale.y = s;
         p->starScale.x = s;
@@ -749,22 +749,22 @@ static void main_star(void) {
         if (p->starTimer >= 0x2B) {
             p->starState = 5;
             p->starTimer = 0;
-            p->starScale.x = p->starScale.y = p->starScale.z = p->starUnk48;
+            p->starScale.x = p->starScale.y = p->starScale.z = p->starScaleTo;
         }
         break;
     }
     case 8:
         p->starState = 9;
         p->starTimer = 0;
-        p->starUnk44 = p->starUnk48 = p->starScale.x;
-        p->starUnk48 = 2.0f;
+        p->starScaleFrom = p->starScaleTo = p->starScale.x;
+        p->starScaleTo = 2.0f;
         /* fallthrough */
     case 9: {
         DekaTableInt11 tbl;
         f32 s;
         tbl = dat_80300584;
         p->starTimer++;
-        s = intplGetValue(4, tbl.v[p->starTimer / 4], 5, p->starUnk44, p->starUnk48);
+        s = intplGetValue(4, tbl.v[p->starTimer / 4], 5, p->starScaleFrom, p->starScaleTo);
         p->starScale.z = s;
         p->starScale.y = s;
         p->starScale.x = s;
@@ -772,7 +772,7 @@ static void main_star(void) {
         if (p->starTimer >= 0x2B) {
             p->starState = 5;
             p->starTimer = 0;
-            p->starScale.x = p->starScale.y = p->starScale.z = p->starUnk48;
+            p->starScale.x = p->starScale.y = p->starScale.z = p->starScaleTo;
         }
         break;
     }
@@ -1153,10 +1153,10 @@ static void disp_2D(CameraId cameraId, void* param) {
             // `fmadds f2,f2,f29,f28` operand order; the natural form under #else is the same math.
             {
                 f32 ratio = t->time / p->beatPeriod;
-                x = ratio * width + left + t->unk10.x;
+                x = ratio * width + left + t->offset.x;
             }
 #else
-            x = t->time / p->beatPeriod * width + left + t->unk10.x;
+            x = t->time / p->beatPeriod * width + left + t->offset.x;
 #endif
 
 #ifdef MUST_MATCH
@@ -1167,7 +1167,7 @@ static void disp_2D(CameraId cameraId, void* param) {
 #endif
             color.a = color.a * (t->alpha / 255.0f);
 
-            if (t->unk08 == 1) {
+            if (t->kind == 1) {
                 PSMTXScale(scale, 0.75f, 0.75f, 0.75f);
 #ifdef MUST_MATCH
                 // Match shape: the explicit `y` temp makes MWCC emit the target's
@@ -1175,22 +1175,22 @@ static void disp_2D(CameraId cameraId, void* param) {
                 {
                     f32 y = p->gaugePos.y - 18.0f;
                     PSMTXTrans(trans, x,
-                        40.f + (p->unk4C + (y + t->unk10.y)),
-                        p->gaugePos.z + t->unk10.z);
+                        40.f + (p->timingSlideY + (y + t->offset.y)),
+                        p->gaugePos.z + t->offset.z);
                 }
 #else
                 PSMTXTrans(trans, x,
-                    40.f + (p->unk4C + (p->gaugePos.y - 18.0f + t->unk10.y)),
-                    p->gaugePos.z + t->unk10.z);
+                    40.f + (p->timingSlideY + (p->gaugePos.y - 18.0f + t->offset.y)),
+                    p->gaugePos.z + t->offset.z);
 #endif
                 PSMTXConcat(trans, scale, mtx);
                 iconDispGxCol(mtx, 0x10, 0x95, color);
             }
-            else if (t->unk08 == 2) {
+            else if (t->kind == 2) {
                 PSMTXScale(scale, 1.0f, 1.0f, 1.0f);
                 PSMTXTrans(trans, x,
-                    40.f + (p->unk4C + (p->gaugePos.y + t->unk10.y)),
-                    p->gaugePos.z + t->unk10.z);
+                    40.f + (p->timingSlideY + (p->gaugePos.y + t->offset.y)),
+                    p->gaugePos.z + t->offset.z);
                 PSMTXConcat(trans, scale, mtx);
                 btlDispTexPlane2(mtx, 0x2C, color, 0);
             }
@@ -1204,10 +1204,10 @@ static void disp_2D(CameraId cameraId, void* param) {
             // `fmadds f2,f2,f29,f28` operand order; the natural form under #else is the same math.
             {
                 f32 ratio = t->time / p->beatPeriod;
-                x = ratio * width + left + t->unk10.x;
+                x = ratio * width + left + t->offset.x;
             }
 #else
-            x = t->time / p->beatPeriod * width + left + t->unk10.x;
+            x = t->time / p->beatPeriod * width + left + t->offset.x;
 #endif
 
             if (t->state >= 2 && t->state <= 5) {
@@ -1219,20 +1219,20 @@ static void disp_2D(CameraId cameraId, void* param) {
 #endif
                 color.a = color.a * (t->alpha / 255.0f);
 
-                if (t->unk08 == 1) {
+                if (t->kind == 1) {
                     PSMTXScale(scale, 0.75f, 0.75f, 0.75f);
 #ifdef MUST_MATCH
                     // Match shape: same `y` temp as the first-loop note.
                     {
                         f32 y = p->gaugePos.y - 18.0f;
                         PSMTXTrans(trans, x,
-                            p->unk4C + (y + t->unk10.y),
-                            p->gaugePos.z + t->unk10.z);
+                            p->timingSlideY + (y + t->offset.y),
+                            p->gaugePos.z + t->offset.z);
                     }
 #else
                     PSMTXTrans(trans, x,
-                        p->unk4C + (p->gaugePos.y - 18.0f + t->unk10.y),
-                        p->gaugePos.z + t->unk10.z);
+                        p->timingSlideY + (p->gaugePos.y - 18.0f + t->offset.y),
+                        p->gaugePos.z + t->offset.z);
 #endif
                     PSMTXConcat(trans, scale, mtx);
                     id = p->beatPos >= t->time - 7.0f ? 0x95 : 0x91;
@@ -1241,8 +1241,8 @@ static void disp_2D(CameraId cameraId, void* param) {
                 else {
                     PSMTXScale(scale, 1.0f, 1.0f, 1.0f);
                     PSMTXTrans(trans, x,
-                        p->unk4C + (p->gaugePos.y + t->unk10.y),
-                        p->gaugePos.z + t->unk10.z);
+                        p->timingSlideY + (p->gaugePos.y + t->offset.y),
+                        p->gaugePos.z + t->offset.z);
                     PSMTXConcat(trans, scale, mtx);
                     btlDispTexPlane2(mtx, 0x2C, color, 0);
                 }
@@ -1250,8 +1250,8 @@ static void disp_2D(CameraId cameraId, void* param) {
 
             PSMTXScale(scale, 1.0f, 1.0f, 1.0f);
             PSMTXTrans(trans, x,
-                p->gaugePos.y + t->unk10.y - 40.f,
-                p->gaugePos.z + t->unk10.z);
+                p->gaugePos.y + t->offset.y - 40.f,
+                p->gaugePos.z + t->offset.z);
             PSMTXConcat(trans, scale, mtx);
             switch (t->flag) {
             case 0:
@@ -1426,7 +1426,7 @@ restart:
             f32 fr;
             f32 d;
 #endif
-            ti->unk08 = 1;
+            ti->kind = 1;
 #ifdef MUST_MATCH
             fr = (f32)rand();
             d = (p->beatPeriod - 40.f);
