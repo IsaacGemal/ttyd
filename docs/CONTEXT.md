@@ -10518,3 +10518,7 @@ by the three typings.
 - `gon_btlobject_data` is `BattleStageObjectData[10]` (was `u32[60]`). Each 0x18-byte record is name, spawn (high half of word 1), layer (low half), three position floats, start and fall frame counts (first two bytes of word 5), and a zero pad; the floats are the shortest decimal literal that round-trips the original bits. `battle/battle_stage_object.h` is included.
 - The four `(u8*)&gon_btlobject_data + N` references become `(u32)&gon_btlobject_data[N/0x18]` (0x30, 0x60, 0x90, 0xc0 → [2], [4], [6], [8]); the index-0 reference is unchanged.
 - Build: tower `ninja` recreates build/G8MJ01/ok. Natural (no -DMUST_MATCH) compile of battle_database_gon.c returns 0.
+### Readability: typed hei_btlobject_data (2026-10-20, Claude Haiku 5.5, n9-q-btltype2)
+- `hei_btlobject_data` is `BattleStageObjectData[59]` (was `u32[354]`). Each 0x18-byte record is name, spawn (high half of word 1), layer (low half), three position floats, start and fall frame counts (first two bytes of word 5), and a zero pad; the floats are the shortest decimal literal that round-trips the original bits. `battle/battle_stage_object.h` is included.
+- The ten `(u8*)&hei_btlobject_data + N` references become `(u32)&hei_btlobject_data[N/0x18]` (0x138 through 0x558 → [13], [19], [25], [31], [37], [43], [49], [52], [55], [57]); the index-0 reference is unchanged.
+- Build: tower `ninja` recreates build/G8MJ01/ok. Natural (no -DMUST_MATCH) compile of battle_database_hei.c returns 0.
