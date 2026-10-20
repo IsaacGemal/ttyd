@@ -3689,7 +3689,7 @@ USER_FUNC(btlevtcmd_GetFirstAttackTarget) {
 USER_FUNC(btlevtcmd_GetConsumeItem) {
     s32* args = event->args;
     BattleWork* wp = _battleWorkPointer;
-    s32 idx = *(s32*)((u8*)wp + 0x1C38);
+    s32 idx = wp->commandMenu.cursor[11].field_0;
     u8* tbl = (u8*)&wp->commandMenu;
     s32 index;
     u8* base;
@@ -3749,7 +3749,7 @@ USER_FUNC(btlevtcmd_CommandFlyItem) {
         tbl = (u8*)&wp->commandMenu;
         unit = BattleGetUnitPtr(wp, btlId);
         kind = unit->currentKind;
-        if (kind == 0xDE || (kind >= 0xE0 && kind < 0xE7)) {
+        if (kind == UNIT_MARIO || (kind >= TYPE_PARTNER_MIN && kind < TYPE_PARTNER_MAX)) {
             u8* base2 = tbl;
             s32 idx = *(s32*)(tbl + 0x51C);
             base2 += idx * 0x1C;
@@ -3769,9 +3769,9 @@ USER_FUNC(btlevtcmd_CommandFlyItem) {
         }
         event->userdata[1] = (s32)itemEntry(NULL, (ItemType)itemId, 0x11, -1, 0, pos.x, pos.y, pos.z);
         effItemGetEntry(0xA, pos.x, 12.0f + pos.y, pos.z - 5.0f);
-        if (kind == 0xDE) {
+        if (kind == UNIT_MARIO) {
             psndSFXOn_3D("SFX_ITEM_MARIO_USE1", &pos);
-        } else if (kind >= 0xE0 && kind < 0xE7) {
+        } else if (kind >= TYPE_PARTNER_MIN && kind < TYPE_PARTNER_MAX) {
             psndSFXOn_3D("SFX_ITEM_PARTY_USE1", &pos);
         } else {
             psndSFXOn_3D("SFX_ENM_ITEM_USE1", &pos);
