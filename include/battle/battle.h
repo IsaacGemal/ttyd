@@ -27,7 +27,10 @@ typedef struct BattleWorkCommandMultiItem BattleWorkCommandMultiItem;
 typedef struct BattleWorkCommandCursor BattleWorkCommandCursor;
 typedef struct BattleWorkCommandWindow BattleWorkCommandWindow;
 
-typedef enum BattleFlags { BATTLE_SEQ_END = 0x80000000 } BattleFlags;
+typedef enum BattleFlags {
+    BATTLE_SEQ_END = 0x80000000,
+    BATTLE_MAJINAI_END = 0x400000, // set by BattleMajinaiEndCheck when Merlee has no curse uses left
+} BattleFlags;
 
 typedef struct PhaseEvtEntry {
     s32 unitIndex; // 0x0

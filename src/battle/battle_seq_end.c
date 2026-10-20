@@ -767,7 +767,7 @@ void btlseqEnd(BattleWork* wp) {
             BattleSetSeq(wp, SEQ_END, 0x0700000B);
             break;
         }
-        if (!(wp->flags & 0x400000)) {
+        if (!(wp->flags & BATTLE_MAJINAI_END)) {
             BattleSetSeq(wp, SEQ_END, 0x07000019);
             break;
         }
@@ -832,7 +832,7 @@ void btlseqEnd(BattleWork* wp) {
         break;
 
     case 0x0700000E:
-        if (wp->flags & 0x400000) {
+        if (wp->flags & BATTLE_MAJINAI_END) {
             unit = BattleGetMarioPtr(wp);
             event = evtEntry(_event_MajinaiEnd, 0xA, 0);
             event->unitId = unit->unitId;

@@ -112,7 +112,7 @@ void BattleMajinaiEndCheck(void) {
     BattleWork* wp = _battleWorkPointer;
 
     if (pouchGetPtr()->mMerleeCurseUsesRemaining == 0) {
-        wp->flags |= 0x400000;
+        wp->flags |= BATTLE_MAJINAI_END;
     }
 }
 
