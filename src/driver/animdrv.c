@@ -1826,16 +1826,13 @@ void animSetMaterial_Texture(s32 texCount, s32* texIdRemap, AnimPoseTexEntry* pT
                 wrapS = desc->textureHeader->wrapS;
                 wrapT = desc->textureHeader->wrapT;
                 if (wrapFlags >= 0) {
-#ifdef MUST_MATCH // Mask in the destination to avoid an extra temporary/copy into GXInitTexObj's r8.
                     if (wrapFlags & 4) {
                         wrapS = GX_MIRROR;
                     } else {
+                        // Masking in the destination avoids an extra copy into GXInitTexObj's r8.
                         wrapS = wrapFlags;
                         wrapS &= 1;
                     }
-#else
-                    wrapS = (wrapFlags & 4) ? GX_MIRROR : ((wrapFlags & 1) ? GX_REPEAT : GX_CLAMP);
-#endif
                     wrapT = (wrapFlags & 8) ? GX_MIRROR : ((wrapFlags & 2) ? GX_REPEAT : GX_CLAMP);
                 }
 
@@ -1855,11 +1852,8 @@ void animSetMaterial_Texture(s32 texCount, s32* texIdRemap, AnimPoseTexEntry* pT
     for (i = 0; i < texCount; i++) {
         f32 scaleS, scaleT, transS, transT, rotate;
 
-#ifdef MUST_MATCH // `1u` keeps the original's `subf; subi 1; slwi` instead of folding it to `subf; slwi; subi 4`
+        // The unsigned 1 gives `subf; subi 1; slwi` instead of `subf; slwi; subi 4`.
         texId = texIdRemap[texCount - i - 1u];
-#else
-        texId = texIdRemap[texCount - i - 1];
-#endif
         anim = &animEntries[texId];
         flags = 0;
 
@@ -2353,13 +2347,8 @@ void dispProc(s32 parentGroupId, s32 groupId, s32 keyFrame1, s32 keyFrame2, f32 
     data = wp->mpCurPoseData;
     groups = data->groups;
     group = &groups[groupId];
-#ifdef MUST_MATCH
-    // MWCC picks the original registers only when the sign extension is a cast on the loaded element; the
-    // pointer form under #else is the natural equivalent (same exceptions, other registers).
+    // The sign extension is a cast on the loaded element, not on a pointer to the array.
     if ((s8)wp->mpCurPose->mpGroupVisibility[group->visibilityId] != 0) {
-#else
-    if (((s8*)wp->mpCurPose->mpGroupVisibility)[group->visibilityId] != 0) {
-#endif
         nodes = (f32*)wp->mpCurPose->mpNodes;
         node = &nodes[group->nodeId];
         if (group->useSSC) {
@@ -2981,23 +2970,18 @@ extern GXColor dat_80419a34;
 extern GXColor dat_80419a38;
 
 void animPaperPoseDispSub(s32 unused, AnimationPose* param) {
+    s32 max1; // Keeps the first bounds branch's maximum out of x's register web.
 #ifdef MUST_MATCH
-    s32 max1; // Keep each bounds branch's maximum in its own local web.
     // An explicit cast preserves the local working pointer instead of folding it into the parameter.
     AnimationPose* pose = (AnimationPose*)param;
 #else
     AnimationPose* pose = param;
 #endif
     s32 x;
-#ifdef MUST_MATCH
-    s32 max2;
-#endif
     AnimData* animData;
     s32 y;
     s32 margin1;
-#ifdef MUST_MATCH
-    s32 btmp; // Keep the second bounds branch's vertical margin separate from b.
-#endif
+    s32 btmp; // Keeps the second bounds branch's vertical margin separate from b.
     u16 w;
     s32 materialLightFlag;
     s32 flags;
@@ -3097,23 +3081,14 @@ void animPaperPoseDispSub(s32 unused, AnimationPose* param) {
         if (pose->flags & 4) {
             x = (DEMOGetRenderModeObj()->fbWidth / 2) - left;
             y = right - (DEMOGetRenderModeObj()->fbWidth / 2);
-#ifdef MUST_MATCH
-            // match-only temp: the natural `c = x; if (x < y) c = y;` coalesces c into x in this branch
+            // The maximum goes through its own local so c does not coalesce into x in this branch.
             max1 = x;
             if (max1 < y) max1 = y;
             c = max1;
-#else
-            c = x;
-            if (x < y) c = y;
-#endif
             x = (s32)(0.5f * (f32)c);
             margin1 = (s32)(0.14881f * (f32)(bottom - top));
             pose->paperLeft = (DEMOGetRenderModeObj()->fbWidth / 2) - c - x;
-#ifdef MUST_MATCH // Preserve the original's addition order after common-subexpression elimination.
             pose->paperRight = (DEMOGetRenderModeObj()->fbWidth / 2) + c + x;
-#else
-            pose->paperRight = (DEMOGetRenderModeObj()->fbWidth / 2) + x + c;
-#endif
             scale = 8.0f / f31;
             pose->paperTop = top - margin1;
             pose->paperBottom = bottom + margin1;
@@ -3125,35 +3100,15 @@ void animPaperPoseDispSub(s32 unused, AnimationPose* param) {
     } else {
         x = (DEMOGetRenderModeObj()->fbWidth / 2) - left;
         y = right - (DEMOGetRenderModeObj()->fbWidth / 2);
-#ifdef MUST_MATCH
-        // match-only temp: the natural `c = x; if (x < y) c = y;` coalesces c into x in this branch
-        max2 = x;
-        if (max2 < y) max2 = y;
-        c = max2;
-#else
         c = x;
         if (x < y) c = y;
-#endif
         x = (s32)(0.5f * (f32)c);
-#ifdef MUST_MATCH
         btmp = (s32)(0.14881f * (f32)(bottom - top));
-#else
-        b = (s32)(0.14881f * (f32)(bottom - top));
-#endif
         pose->paperLeft = (DEMOGetRenderModeObj()->fbWidth / 2) - c - x;
-#ifdef MUST_MATCH // Preserve the original's addition order after common-subexpression elimination.
         pose->paperRight = (DEMOGetRenderModeObj()->fbWidth / 2) + c + x;
-#else
-        pose->paperRight = (DEMOGetRenderModeObj()->fbWidth / 2) + x + c;
-#endif
         scale = 8.0f / f31;
-#ifdef MUST_MATCH
         pose->paperTop = top - btmp;
         pose->paperBottom = bottom + btmp;
-#else
-        pose->paperTop = top - b;
-        pose->paperBottom = bottom + b;
-#endif
         pose->paperScaleX = scale * ((f32)(pose->paperRight - pose->paperLeft) / 150.0f);
         pose->paperScaleY = scale * ((f32)(pose->paperBottom - pose->paperTop) / 215.0f);
         pose->paperOffsetY = ANIMDATA_F48(animData) + (f30 - (f32)bottom) / f31;
@@ -3169,18 +3124,10 @@ void animPaperPoseDispSub(s32 unused, AnimationPose* param) {
     bottom += bottom & 1;
     w = right - left;
     h = bottom - top;
-#ifdef MUST_MATCH
-    // match-only negation: the original emits -(left - paperLeft), not paperLeft - left
+    // Negates (left - paperLeft) rather than computing paperLeft - left.
     pose->paperTexTrans[0] = -((f32)left - (f32)pose->paperLeft) / (f32)(pose->paperRight - pose->paperLeft);
-#else
-    pose->paperTexTrans[0] = ((f32)pose->paperLeft - (f32)left) / (f32)(pose->paperRight - pose->paperLeft);
-#endif
-#ifdef MUST_MATCH
-    // match-only negation: the original emits -(top - paperTop), not paperTop - top
+    // Negates (top - paperTop) rather than computing paperTop - top.
     pose->paperTexTrans[1] = -((f32)top - (f32)pose->paperTop) / (f32)(pose->paperBottom - pose->paperTop);
-#else
-    pose->paperTexTrans[1] = ((f32)pose->paperTop - (f32)top) / (f32)(pose->paperBottom - pose->paperTop);
-#endif
     pose->paperTexScale[0] = (f32)(pose->paperRight - pose->paperLeft) / (f32)w;
     pose->paperTexScale[1] = (f32)(pose->paperBottom - pose->paperTop) / (f32)h;
     GXSetTexCopySrc(left, top, w, h);
@@ -3486,11 +3433,7 @@ void evalProc(s32 parentGroupId, s32 groupId) {
     groups = data->groups;
     group = &groups[groupId];
 
-#ifdef MUST_MATCH
     if ((s8)wp->mpCurPose->mpGroupVisibility[group->visibilityId] != 0) {
-#else
-    if (((s8*)wp->mpCurPose->mpGroupVisibility)[group->visibilityId] != 0) {
-#endif
         nodes = (f32*)wp->mpCurPose->mpNodes;
         node = &nodes[group->nodeId];
         if (group->useSSC) {
