@@ -10740,3 +10740,13 @@ Verified: tower `ninja` recreates `build/G8MJ01/ok` after each REL's renames (th
 (no MUST_MATCH) compiles of yuu_02.c, yuu_03.c, gor.c, gor_00.c and gor_02.c return 0. Index: whole tree
 31.420 per kLOC (22348 over 711268) -> 31.270 (22241 over 711268); unk_name 1169 -> 1062. Per file: yuu_02.c unk_name 30
 -> 2, yuu_03.c 26 -> 2, gor_02.c 30 -> 1, gor_00.c 20 -> 2, gor.c 16 -> 8.
+
+## memory: smart heap and map allocator fields named (2026-10-20, Claude Haiku 5.5, n9-q-memory)
+
+`smartEntry` (memory.h): `file` (0x8) is the FileEntry an entry backs. `_fileAlloc` and `fileAsync` set it on the smartAlloc'd entry, `smartGarbage` reads `file->state` and `file->entry` and moves its data with `fileGarbageMoveMem`, and `smartFree` clears it. `freeAfter` (0x10) is the free bytes between this entry and the next one in the heap: `smartAlloc` tests it to place a new entry right after, `smartGarbage` rewrites it while compacting, and `smartFree` folds the freed entry's size and gap into the previous entry's. Left as `field_0xC` (u16, written 1 on alloc and 0 on free) and `field_0xF` (u8, never touched): nothing reads them.
+
+`SmartWork` (memory.h): `usedHead` (0xE008) and `usedTail` (0xE00C) are the head and tail of the used list that `smartAutoFree`, `smartGarbage` and `smartAlloc` walk. The free list stays `head`/`tail`, which `smartAlloc` takes from and `smartFree` appends to.
+
+`MapAllocEntry` (memory.c): bytes 0xC-0x20 of the header are never read or written, so they are `pad_0xC`.
+
+Users: `src/manager/filemgr.c` `smart->file = newentry` in `_fileAlloc` and `fileAsync`. No rels/ file touches these fields. Verified: tower `ninja` recreates `build/G8MJ01/ok`; natural (no MUST_MATCH) compiles of memory.c and filemgr.c return 0. Index: 30.889 per kLOC (21979 weighted) -> 30.808 (21921); field_0x 3533 -> 3475.
