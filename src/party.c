@@ -1147,7 +1147,7 @@ void driveParty(PartyEntry* party) {
             break;
         case 1:
             if (!(party->flags & PARTY_FLAG_CTRL_OFF) || (party->flags & PARTY_FLAG_RUN_OFF)) {
-                partyNormalMain(party);
+                partyIdleMain(party);
             }
             break;
         case 2:

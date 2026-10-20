@@ -19,7 +19,7 @@ void party_motion_upstairs(PartyEntry* party);
 void party_motion_damage(PartyEntry* party);
 void party_motion_behind_mario(PartyEntry* party);
 void party_motion_behind_mario_fly(PartyEntry* party);
-void partyNormalGround(PartyEntry* party);
+void party_motion_idle(PartyEntry* party);
 void party_motion_stay(PartyEntry* party);
 void party_motion_homing_walk(PartyEntry* party);
 void party_motion_homing_fly(PartyEntry* party);

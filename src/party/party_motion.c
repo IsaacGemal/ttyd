@@ -74,8 +74,8 @@ static u32 gap_08_804189F4_sbss;
 #pragma force_active reset
 #endif
 f32 touch_wall_ct;
-s32 upstairsFrames;
-f32 upstairsStepY;
+s32 upstairs_frames;
+f32 upstairs_step_y;
 
 #ifdef MUST_MATCH
 // MUST_MATCH: retail reads these named .rodata objects (the compiler reaches them off the section base).
@@ -529,7 +529,7 @@ skip_target:
     }
 }
 
-void partyNormalGround(PartyEntry* party) {
+void party_motion_idle(PartyEntry* party) {
     MarioWork* mario = party->playerPtr;
 
     if (party->field_8 & 0x2) {
@@ -2227,7 +2227,7 @@ void party_motion_behind_mario_fly(PartyEntry* party) {
         party->flags = (party->flags | PARTY_FLAG_IS_BEHIND_MARIO);
         party->field_8 = (party->field_8 & ~0x100000);
         party->field_8 = (party->field_8 & ~0x40000);
-        partySetCamFacing(party);
+        partySetDispDirToMario(party);
         if (party->field_134 != NULL) {
             party->flags = (party->flags | PARTY_FLAG_IS_BEHIND_MARIO);
             partyChgMoveMode(party, 1);
@@ -2879,11 +2879,11 @@ void party_motion_upstairs(PartyEntry* party) {
     if (party->field_8 & 0x2) {
         party->field_8 = (party->field_8 & ~0x2);
         party->flags = (party->flags | PARTY_FLAG_IS_STEPPING);
-        upstairsFrames = 3;
-        upstairsStepY = (party->field_120 - party->position.y) / 3.0f;
+        upstairs_frames = 3;
+        upstairs_step_y = (party->field_120 - party->position.y) / 3.0f;
     }
-    party->position.y = party->position.y + upstairsStepY;
-    if (--upstairsFrames <= 0) {
+    party->position.y = party->position.y + upstairs_step_y;
+    if (--upstairs_frames <= 0) {
         party->flags = (party->flags & ~PARTY_FLAG_IS_STEPPING);
         partyChgMot(party, 1);
     }

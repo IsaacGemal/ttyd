@@ -1384,7 +1384,7 @@ USER_FUNC(evt_mario_party_bero_move) {
             party->flags &= ~PARTY_FLAG_DISABLE_FRONT_WALL_CHK;
             party->field_8 &= ~0x00200000;
             if (party->field_32 == 1) {
-                partySetCamFacing(party);
+                partySetDispDirToMario(party);
                 party->flags2 &= ~0x10;
             }
         }
@@ -1394,7 +1394,7 @@ USER_FUNC(evt_mario_party_bero_move) {
             party->flags &= ~PARTY_FLAG_DISABLE_FRONT_WALL_CHK;
             party->field_8 &= ~0x00200000;
             if (party->field_32 == 1) {
-                partySetCamFacing(party);
+                partySetDispDirToMario(party);
                 party->flags2 &= ~0x10;
             }
         }

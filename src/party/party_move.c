@@ -833,7 +833,7 @@ void partyChgSpeedPose(PartyEntry* party, f32 f1) {
 // Match note: without opt_propagation off, MWCC propagates the 270.0f literal and emits
 // `fadds f0, f1, f0`; keeping the sum in a named temp makes it emit the original `fadds f0, f0, f1`.
 #pragma opt_propagation off // keep the constant load scheduling so fadds takes its operands in the original order
-void partySetCamFacing(PartyEntry* party) {
+void partySetDispDirToMario(PartyEntry* party) {
     PartyEntry* work = party;
     MarioWork* mario = work->playerPtr;
     f32 angle = angleABf(party->position.x, party->position.z, mario->position.x, mario->position.z);
@@ -1379,7 +1379,7 @@ void partyChkWall(PartyEntry* party) {
     party->position.z = pos.z;
 }
 
-void partyNormalMain(PartyEntry* party) {
+void partyIdleMain(PartyEntry* party) {
     PartyEntry* work = party;
     s32 mot;
 
@@ -1388,15 +1388,15 @@ void partyNormalMain(PartyEntry* party) {
         partyChgPoseId(party, 1);
         party->flags &= ~PARTY_FLAG_IS_BEING_USED;
         if (party->currentMemberId == PARTY_MEMBER_FLURRIE) {
-            flurrieBobInit(party);
+            cloudBobInit(party);
         }
     }
     mot = work->field_36;
     switch (mot) {
     case 0:
-        partyNormalGround(party);
+        party_motion_idle(party);
         if (party->currentMemberId == PARTY_MEMBER_FLURRIE) {
-            flurrieBobUpdate(party);
+            cloudBobUpdate(party);
         }
         break;
     case 1:
@@ -1729,14 +1729,14 @@ void party_move_mode_stay(PartyEntry* party) {
         work->field_8 &= ~0x4;
         partyChgPoseId(party, 1);
         if (work->currentMemberId == PARTY_MEMBER_FLURRIE) {
-            flurrieBobInit(party);
+            cloudBobInit(party);
         }
     }
     switch (work->field_36) {
     case 0:
         party_motion_stay(party);
         if (work->currentMemberId == PARTY_MEMBER_FLURRIE) {
-            flurrieBobUpdate(party);
+            cloudBobUpdate(party);
         }
         break;
     case 1:
@@ -2221,14 +2221,14 @@ void walkMain(PartyEntry* party) {
             work->field_8 &= ~0x4;
             partyChgPoseId(party, 1);
             if (work->currentMemberId == PARTY_MEMBER_FLURRIE) {
-                flurrieBobInit(party);
+                cloudBobInit(party);
             }
         }
         switch (work->field_36) {
         case 0:
             party_motion_stay(party);
             if (work->currentMemberId == PARTY_MEMBER_FLURRIE) {
-                flurrieBobUpdate(party);
+                cloudBobUpdate(party);
             }
             break;
         case 1:
@@ -2420,14 +2420,14 @@ static void flyMain(PartyEntry* party) {
             work->field_8 &= ~0x4;
             partyChgPoseId(party, 1);
             if (work->currentMemberId == PARTY_MEMBER_FLURRIE) {
-                flurrieBobInit(party);
+                cloudBobInit(party);
             }
         }
         switch (work->field_36) {
         case 0:
             party_motion_stay(party);
             if (work->currentMemberId == PARTY_MEMBER_FLURRIE) {
-                flurrieBobUpdate(party);
+                cloudBobUpdate(party);
             }
             break;
         case 1:
