@@ -500,11 +500,7 @@ void effRecoveryMain2(EffectEntry* effect) {
 	Vec pos;
 	s32 i;
 
-#ifdef MUST_MATCH
 	pos = recoveryZeroVec6();
-#else
-	pos = recoveryZeroVec6();
-#endif
 	pos.x = ptr->x;
 	pos.y = ptr->y;
 	pos.z = ptr->z;
@@ -713,15 +709,11 @@ void effRecoveryDisp2(CameraId camId, void* param) {
 	PSMTXConcat(mtx, data->anim->mtx, mtx);
 	PSMTXScale(tmp, 0.035f, 0.035f, 0.035f);
 	PSMTXConcat(mtx, tmp, mtx);
-#ifdef MUST_MATCH
 	// split the x scale into a temp: keeps the int->float conversion and *24 in the original's registers
 	k24 = 24.0f;
 	k05 = 0.5f;
 	transX = k24 * (f32)(-(len - 1));
 	PSMTXTrans(tmp, transX * k05, 0.0f, 0.0f);
-#else
-	PSMTXTrans(tmp, 24.0f * -(len - 1) * 0.5f, 0.0f, 0.0f);
-#endif
 	PSMTXConcat(mtx, tmp, mtx);
 
 	switch (type) {
@@ -739,12 +731,10 @@ void effRecoveryDisp2(CameraId camId, void* param) {
 }
 
 // The f27/f28 declarations are reversed so the +-20 pair lands in the target's registers, and the +-20
-// assignments sit inside the loop under MUST_MATCH because above the loop they are hoisted into the preheader
-// and scheduled before the int->float magic load, which the target does not do.
-// The half-size block below is under MUST_MATCH: writing it as one expression makes the compiler load the pool
-// constant into f2 and negate into f1, swapping the target's f1/f2. Declaring the negated value and giving it
-// a dead use after the fadds extends its live range so the compiler uses the target's f1 (constant) / f2 (negated temp).
-// The dead store compiles away, so no extra instruction is emitted.
+// assignments sit inside the loop because above the loop they are hoisted into the preheader and scheduled
+// before the int->float magic load, which the target does not do.
+// The half-size block below declares the negated width and the half as locals: writing it as one expression
+// makes the compiler load the pool constant into f2 and negate into f1, swapping the target's f1/f2.
 void effRecoveryDisp3(CameraId camId, void* param) {
 	EffectEntry* entry = param;
 	RecoveryData* data = entry->userdata;
@@ -795,7 +785,6 @@ void effRecoveryDisp3(CameraId camId, void* param) {
 	GXSetVtxDesc(GX_VA_TEX0, GX_DIRECT);
 	GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_POS_XYZ, GX_F32, 0);
 	GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, GX_TEX_ST, GX_F32, 0);
-#ifdef MUST_MATCH
 	{
 		// The opaque width and local half preserve the original f1/f0/f2 allocation.
 		// The half shares the anonymous pool entry used by Disp4 and Disp2.
@@ -805,14 +794,6 @@ void effRecoveryDisp3(CameraId camId, void* param) {
 		f29 = f30 + float_108_8041cafc;
 		f27 = negHalf;
 	}
-#else
-	f30 = -108.0f * 0.5f;
-	f29 = f30 + 108.0f;
-#endif
-#ifndef MUST_MATCH
-	f27 = 20.0f;
-	f28 = -20.0f;
-#endif
 	for (i = 0; i < 2; i++) {
 		if (i == 0) {
 			effGetTexObj(0x8b, &tex);
@@ -831,13 +812,11 @@ void effRecoveryDisp3(CameraId camId, void* param) {
 		PSMTXConcat(base, mtx, mtx);
 		GXLoadPosMtxImm(mtx, GX_PNMTX0);
 		GXSetCurrentMtx(GX_PNMTX0);
-#ifdef MUST_MATCH
 		// Assigning the loop-invariant +-20 pair inside the loop (not above it) makes the compiler hoist it
 		// together with the int->float magic instead of into the loop preheader, matching the original's
 		// lfd/f27/f28 load order. It changes no value; without it only the load order differs.
 		f27 = 20.0f;
 		f28 = -20.0f;
-#endif
 		GXBegin(GX_QUADS, GX_VTXFMT0, 4);
 		GXPosition3f32(f30, f27, 0.0f);
 		GXTexCoord2f32(0.0f, 0.0f);
@@ -850,14 +829,13 @@ void effRecoveryDisp3(CameraId camId, void* param) {
 	}
 }
 
-#ifdef MUST_MATCH
-// Match-only: the original inlined both colour builders. Passing the GXColor by value through a
-// helper in this shape is what places the colour stack slots exactly as the original (else build
-// 0xc / outgoing copy 0x8, i==1 build 0x10 / outgoing copy 0x14).
+// The original inlined the colour builders. Passing the GXColor by value through a helper places the
+// colour stack slots as the original (i==1 build 0x10 / outgoing copy 0x14).
 static inline GXColor rcA(u8 a, GXColor c) {
 	c.a = a;
 	return c;
 }
+#ifdef MUST_MATCH
 static inline GXColor rcC(s32 idx, u8 a, GXColor c) {
 	c.r = color_rotation_data[idx * 3 + 0];
 	c.g = color_rotation_data[idx * 3 + 1];
@@ -891,12 +869,10 @@ void effRecoveryDisp4(CameraId camId, void* param) {
 	f32 s;
 	f32 t;
 	f32 one = 1.0f;
-#ifdef MUST_MATCH
-	// Match-only: naming the half-offset keeps the compiler from commuting the fadds that adds it to s.
+	// Naming the half-offset keeps the compiler from commuting the fadds that adds it to s.
 	f32 half;
 	f32 k05;
 	f32 k16;
-#endif
 
 	cam = camGetPtr(camId);
 	color = ptr->color;
@@ -927,18 +903,9 @@ void effRecoveryDisp4(CameraId camId, void* param) {
 			continue;
 		}
 		if (i == 1) {
-#ifdef MUST_MATCH
 			effGetTexObj(0x12, &tex);
 			GXLoadTexObj(&tex, GX_TEXMAP0);
 			GXSetChanMatColor(GX_COLOR0A0, rcA((color * ptr->color) / 255, *(GXColor*)&dat_8041cacc));
-#else
-			GXColor chanColor;
-			effGetTexObj(0x12, &tex);
-			GXLoadTexObj(&tex, GX_TEXMAP0);
-			*(u32*)&chanColor = dat_8041cacc;
-			chanColor.a = (color * ptr->color) / 255;
-			GXSetChanMatColor(GX_COLOR0A0, chanColor);
-#endif
 		} else {
 			s32 idx = (i + gp->retraceCount) % 12;
 #ifdef MUST_MATCH
@@ -979,7 +946,6 @@ void effRecoveryDisp4(CameraId camId, void* param) {
 		if (i != 1) {
 			t = 2.0f;
 		}
-#ifdef MUST_MATCH
 		k05 = 0.5f;
 		k16 = 16.0f;
 		GXPosition3f32(y * k05, k16 + s, 0.0f);
@@ -990,15 +956,6 @@ void effRecoveryDisp4(CameraId camId, void* param) {
 		GXPosition3f32(k16, half + s, 0.0f);
 		GXTexCoord2f32(t, one);
 		GXPosition3f32(half, half + s, 0.0f);
-#else
-		GXPosition3f32(y * 0.5f, 16.0f + s, 0.0f);
-		GXTexCoord2f32(0.0f, 0.0f);
-		GXPosition3f32(16.0f, 16.0f + s, 0.0f);
-		GXTexCoord2f32(t, 0.0f);
-		GXPosition3f32(16.0f, y * 0.5f + s, 0.0f);
-		GXTexCoord2f32(t, one);
-		GXPosition3f32(y * 0.5f, y * 0.5f + s, 0.0f);
-#endif
 		GXTexCoord2f32(0.0f, one);
 	}
 }

@@ -34,9 +34,8 @@ static u8 scale_data[16] = {
 	0x78, 0x4B, 0x00, 0x00,
 };
 
-#ifdef MUST_MATCH
-/* MUST_MATCH: returning the colour through an inline aggregate forces MWCC to build it in the return
-   temporary (r1+8) and copy it to the by-value argument slot (r1+0xC), as retail does. */
+/* Returning the colour through an inline aggregate makes MWCC build it in the return temporary (r1+8)
+   and copy it to the by-value argument slot (r1+0xC), as retail does. */
 static inline GXColor effSandarsColorAnim(u8 alpha) {
 	GXColor color = *(GXColor*)&dat_80421b98;
 	color.a = alpha;
@@ -48,13 +47,7 @@ static inline GXColor effSandarsColorDisp2(u8 alpha) {
 	color.a = alpha;
 	return color;
 }
-#endif
 
-// Under MUST_MATCH the zero literal stays `0.0f` rather than `0.0f` on purpose: `zero` is volatile for
-// effSandarsDisp2, and the literal lets MWCC treat it as rematerializable, which lands the loop-invariant
-// loads in retail's f27/f28/f29 (f27=0, f28=float_0p2, f29=float_51). It pools as an anonymous @NNN@ whose
-// bytes equal 0.0f; the int->float magic likewise pools anonymously instead of
-// double_to_int_80300168. Both relocations score the same in objdiff.
 #ifndef MUST_MATCH
 const Vec vec3_80300138 = { 0.0f, 0.0f, 0.0f }; // the zero vector the natural copy reads (MUST_MATCH uses a literal)
 #endif
@@ -116,23 +109,14 @@ EffectEntry* effSandarsEntry(s32 type, f32 x, f32 y, f32 z, f32 a) {
 	}
 
 	angle = (6.2831855f * a) / 360.0f;
-#ifdef MUST_MATCH
 	zero = 0.0f;
-#else
-	zero = 0.0f;
-#endif
 	data = &data[1];
 	for (i = 1; i < entry->count; i++, data++) {
 		data->x = (f32)(i * 10) * (f32)cos(angle);
 		data->y = (f32)(i * 10) * (f32)sin(angle);
 		data->z = zero;
-#ifdef MUST_MATCH
 		data->scaleRate = 0.2f * (f32)i;
 		data->scale = zero;
-#else
-		data->scale = zero;
-		data->scaleRate = 0.2f * (f32)i;
-#endif
 		data->alpha = (s32)(51.0f * (f32)i);
 		data->field_0x34 = (i - 1) * 5;
 		data->timer = 0;
@@ -252,9 +236,6 @@ void effSandarsMain(EffectEntry* effect) {
 void effSandarsDisp(CameraId camId, void* param) {
 	EffectEntry* effect = param;
 	effSandarsData* data = effect->userdata;
-#ifndef MUST_MATCH
-	GXColor color;
-#endif
 	Mtx mtxA0;
 	Mtx mtx70;
 	Mtx mtx40;
@@ -273,13 +254,7 @@ void effSandarsDisp(CameraId camId, void* param) {
 	PSMTXScale(mtx40, data->animScale, data->animScale, data->animScale);
 	PSMTXConcat(mtx10, mtx40, mtx10);
 	animPoseSetMaterialFlagOn(data->poseId, 0x40);
-#ifdef MUST_MATCH
 	animPoseSetMaterialEvtColor(data->poseId, effSandarsColorAnim(data->alpha));
-#else
-	color = *(GXColor*)&dat_80421b98;
-	color.a = data->alpha;
-	animPoseSetMaterialEvtColor(data->poseId, color);
-#endif
 	animPoseMain(data->poseId);
 	animPoseDrawMtx(data->poseId, mtx10, 1, 0.0f, 4.0f);
 	animPoseDrawMtx(data->poseId, mtx10, 2, 0.0f, 4.0f);
@@ -291,9 +266,6 @@ void effSandarsDisp2(CameraId camId, void* param) {
 	effSandarsData* data = effect->userdata;
 	CameraEntry* cam;
 	GXTexObj texObj;
-#ifndef MUST_MATCH
-	GXColor color;
-#endif
 	Mtx mtxC0;
 	Mtx mtx90;
 	Mtx mtx60;
@@ -330,16 +302,10 @@ void effSandarsDisp2(CameraId camId, void* param) {
 	GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_POS_XYZ, GX_F32, 0);
 	GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, GX_TEX_ST, GX_F32, 0);
 
-#ifdef MUST_MATCH
-	/* MUST_MATCH: retail materialises the quad half-size through the 32 and 0.5 pool entries. */
+	/* The quad half-size is materialised through the 32 and 0.5 pool entries. */
 	deg = float_deg2rad_80421ba0;
 	posSize = float_16_80421bac;
 	negSize = -float_32_80421ba4 * float_0p5_80421ba8;
-#else
-	deg = float_deg2rad_80421ba0;
-	posSize = 16.0f;
-	negSize = -16.0f;
-#endif
 
 	data = &data[1];
 	for (i = 1; i < effect->count; i++, data++) {
@@ -351,13 +317,7 @@ void effSandarsDisp2(CameraId camId, void* param) {
 		PSMTXConcat(mtx30, mtxC0, mtxC0);
 		GXLoadPosMtxImm(mtxC0, 0);
 		GXSetCurrentMtx(0);
-#ifdef MUST_MATCH
 		GXSetChanMatColor(GX_COLOR0A0, effSandarsColorDisp2(data->alpha));
-#else
-		color = *(GXColor*)&dat_80421b9c;
-		color.a = data->alpha;
-		GXSetChanMatColor(GX_COLOR0A0, color);
-#endif
 		GXBegin(GX_QUADS, GX_VTXFMT0, 4);
 		GXPosition3f32(negSize, posSize, 0.0f);
 		GXTexCoord2f32(0.0f, 0.0f);
