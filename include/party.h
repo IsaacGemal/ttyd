@@ -157,7 +157,7 @@ typedef struct PartyEntry {
         struct {                       // generic jump (party.c partyRideMain case 20-21, evt_party_jump_pos)
             f32 jumpAccel;             // 0x174, added to jumpPara1 each frame
         } jump;
-        struct {                       // Yoshi (party_yoshi.c jump, 0x174/0x178 at 0x1030-0x1082 and 0x1406-0x1542)
+        struct {                       // Yoshi (party_yoshi.c jump routines)
             f32 jumpVel;               // 0x174, added to jumpPara3 each frame
             f32 jumpAccel;             // 0x178, accumulates jumpPara2 each frame, added to jumpVel
         } yoshi;
@@ -180,7 +180,7 @@ typedef struct PartyEntry {
             struct ItemEntry* heldItem; // 0x174, item picked up by the shell search, returned by nokonoko_use_post
             f32 slideDecay;            // 0x178, set to 50.0f when a slide starts, -2.2 per frame down to 0
             s16 dashing;               // 0x17C, 1 while running (useMotionId 0x14-0x15): faster speed cap, 0x50 motion
-            s16 moveFlags;             // 0x17E, bit 0x1 mirrors unk16C during an event, bit 0x2 set by ccfloor
+            s16 moveFlags;             // 0x17E, bit 0x1 set during an event with unk16C > 0, bit 0x2 set by ccfloor
             s32 field_180;             // 0x180, zeroed only
         } koops;
         struct {                       // Vivian (party_vivian.c)
