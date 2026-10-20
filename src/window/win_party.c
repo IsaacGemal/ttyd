@@ -81,7 +81,7 @@ void winPartyInit(WindowWork* work) {
     const char* model;
     const char* anim;
 
-    WW_S32(work, 0x1E0) = 0;
+    work->listCount = 0;
 
     for (i = 0; i < 7; i++) {
         for (j = 0; j < 8; j++) {
@@ -122,50 +122,50 @@ void winPartyInit(WindowWork* work) {
             }
 
             pose = animPoseEntry(model, 0);
-            ((s32*)work)[WW_S32(work, 0x1E0) + 0x68] = pose;
-            animPoseSetAnim(((s32*)work)[WW_S32(work, 0x1E0) + 0x68], anim, 1);
-            animPoseSetMaterialFlagOn(((s32*)work)[WW_S32(work, 0x1E0) + 0x68], 0x1800);
-            ((s32*)work)[WW_S32(work, 0x1E0) + 0x6F] = j;
-            WW_S32(work, 0x1E0)++;
+            work->partyPose[work->listCount] = pose;
+            animPoseSetAnim(work->partyPose[work->listCount], anim, 1);
+            animPoseSetMaterialFlagOn(work->partyPose[work->listCount], 0x1800);
+            work->partyId[work->listCount] = j;
+            work->listCount++;
         }
     }
 
     i = 0;
-    WW_S32(work, 0x1DC) = i;
+    work->partySel = i;
 #ifdef MUST_MATCH
-    for (; i < WW_S32(work, 0x1E0); i++) {
+    for (; i < work->listCount; i++) {
 #else
-    for (p = (u8*)work; i < WW_S32(work, 0x1E0); i++, p += 4) {
+    for (p = (u8*)work; i < work->listCount; i++, p += 4) {
 #endif
         s32 party;
 
         party = !marioBgmodeChk() ? marioGetParty() : marioGetPtr()->prevPartyMemberId[0];
 #ifdef MUST_MATCH
-        if (party == ((s32*)work)[i + 0x6F]) {
+        if (party == work->partyId[i]) {
 #else
         if (party == *(s32*)(p + 0x1BC)) {
 #endif
-            WW_S32(work, 0x1DC) = i;
+            work->partySel = i;
             break;
         }
     }
 
     for (k = 0; k < 8; k++) {
-        if (((s32*)work)[WW_S32(work, 0x1DC) + 0x6F] == winPartyDt[k].partnerId) {
-            WW_S32(work, 0x1D8) = k;
+        if (work->partyId[work->partySel] == winPartyDt[k].partnerId) {
+            work->selPartyDt = k;
             break;
         }
     }
 
-    WW_S32(work, 0x1FC) = WW_S32(work, 0x1DC);
+    work->lastPartySel = work->partySel;
     {
-        f32 time = 360.0f / (f32)WW_S32(work, 0x1E0) * (f32)WW_S32(work, 0x1DC);
+        f32 time = 360.0f / (f32)work->listCount * (f32)work->partySel;
 
-        WW_F32(work, 0x1E8) = time;
-        WW_F32(work, 0x1E4) = time;
+        work->partyAngleTarget = time;
+        work->partyAngle = time;
     }
-    WW_S32(work, 0x200) = 0;
-    WW_S32(work, 0x204) = pouchGetPartyAttackLv(winPartyDt[WW_S32(work, 0x1D8)].partnerId) + 2;
+    work->partyState = 0;
+    work->wazaCount = pouchGetPartyAttackLv(winPartyDt[work->selPartyDt].partnerId) + 2;
 
     switch (pouchGetPartyColor(PARTNER_YOSHI)) {
     case 0: winPartyDt[3].iconId = 0x158; break;
@@ -180,21 +180,21 @@ void winPartyInit(WindowWork* work) {
 }
 
 void winPartyInit2(WindowWork* work) {
-    f32 time = 360.0f / (f32)WW_S32(work, 0x1E0) * (f32)WW_S32(work, 0x1DC);
+    f32 time = 360.0f / (f32)work->listCount * (f32)work->partySel;
 
-    WW_F32(work, 0x1E8) = time;
-    WW_F32(work, 0x1E4) = time;
-    WW_S32(work, 0x200) = 0;
+    work->partyAngleTarget = time;
+    work->partyAngle = time;
+    work->partyState = 0;
     work->targetX = -200.0f;
     work->targetY = 20.0f;
-    winMsgEntry(work, 0, winPartyDt[WW_S32(work, 0x1D8)].descMsg, 0);
+    winMsgEntry(work, 0, winPartyDt[work->selPartyDt].descMsg, 0);
 }
 
 void winPartyExit(WindowWork* work) {
     u8* p = (u8*)work;
     s32 i;
 
-    for (i = 0; i < WW_S32(work, 0x1E0); i++) {
+    for (i = 0; i < work->listCount; i++) {
         if (*(s32*)(p + 0x1A0) != -1) {
             animPoseRelease(*(s32*)(p + 0x1A0));
         }
@@ -205,11 +205,11 @@ void winPartyExit(WindowWork* work) {
 s32 winPartyMain(WindowWork* work) {
     s32 k;
 
-    if (WW_S32(work, 0x1E0) == 0) {
+    if (work->listCount == 0) {
         return -1;
     }
 
-    switch (WW_S32(work, 0x200)) {
+    switch (work->partyState) {
     case 0: {
         u32 button = WW_U32(work, 0x4);
         u32 dir;
@@ -219,8 +219,8 @@ s32 winPartyMain(WindowWork* work) {
             return -2;
         }
         if (button & 0x400) {
-            WW_S32(work, 0x200) = 1;
-            WW_S32(work, 0x208) = 0;
+            work->partyState = 1;
+            work->wazaSel = 0;
             psndSFXOn((const char*)0x20012);
             goto apply;
         }
@@ -236,44 +236,44 @@ s32 winPartyMain(WindowWork* work) {
 
         dir = WW_U32(work, 0x10);
         if (dir & 0x4000) {
-            s32 prev = WW_S32(work, 0x1DC);
+            s32 prev = work->partySel;
 
-            WW_S32(work, 0x1DC)--;
-            while (WW_S32(work, 0x1DC) < 0) {
-                WW_S32(work, 0x1DC) += WW_S32(work, 0x1E0);
+            work->partySel--;
+            while (work->partySel < 0) {
+                work->partySel += work->listCount;
             }
-            WW_F32(work, 0x1E8) = 360.0f / (f32)WW_S32(work, 0x1E0) * (f32)WW_S32(work, 0x1DC);
-            while (WW_F32(work, 0x1E4) < WW_F32(work, 0x1E8)) {
-                WW_F32(work, 0x1E4) += 360.0f;
+            work->partyAngleTarget = 360.0f / (f32)work->listCount * (f32)work->partySel;
+            while (work->partyAngle < work->partyAngleTarget) {
+                work->partyAngle += 360.0f;
             }
-            if (prev != WW_S32(work, 0x1DC)) {
+            if (prev != work->partySel) {
                 psndSFXOn((const char*)0x209D6);
             }
             for (k = 0; k < 8; k++) {
-                if (((s32*)work)[WW_S32(work, 0x1DC) + 0x6F] == winPartyDt[k].partnerId) {
-                    WW_S32(work, 0x1D8) = k;
+                if (work->partyId[work->partySel] == winPartyDt[k].partnerId) {
+                    work->selPartyDt = k;
                     break;
                 }
             }
             goto apply;
         }
         if (dir & 0x8000) {
-            s32 prev = WW_S32(work, 0x1DC);
+            s32 prev = work->partySel;
 
-            WW_S32(work, 0x1DC)++;
-            while (WW_S32(work, 0x1DC) > WW_S32(work, 0x1E0) - 1) {
-                WW_S32(work, 0x1DC) -= WW_S32(work, 0x1E0);
+            work->partySel++;
+            while (work->partySel > work->listCount - 1) {
+                work->partySel -= work->listCount;
             }
-            WW_F32(work, 0x1E8) = 360.0f / (f32)WW_S32(work, 0x1E0) * (f32)WW_S32(work, 0x1DC);
-            while (WW_F32(work, 0x1E4) > WW_F32(work, 0x1E8)) {
-                WW_F32(work, 0x1E4) -= 360.0f;
+            work->partyAngleTarget = 360.0f / (f32)work->listCount * (f32)work->partySel;
+            while (work->partyAngle > work->partyAngleTarget) {
+                work->partyAngle -= 360.0f;
             }
-            if (prev != WW_S32(work, 0x1DC)) {
+            if (prev != work->partySel) {
                 psndSFXOn((const char*)0x209D6);
             }
             for (k = 0; k < 8; k++) {
-                if (((s32*)work)[WW_S32(work, 0x1DC) + 0x6F] == winPartyDt[k].partnerId) {
-                    WW_S32(work, 0x1D8) = k;
+                if (work->partyId[work->partySel] == winPartyDt[k].partnerId) {
+                    work->selPartyDt = k;
                     break;
                 }
             }
@@ -282,30 +282,30 @@ s32 winPartyMain(WindowWork* work) {
     apply:
         work->targetX = -200.0f;
         work->targetY = 20.0f;
-        WW_S32(work, 0x204) = pouchGetPartyAttackLv(winPartyDt[WW_S32(work, 0x1D8)].partnerId) + 2;
-        winMsgEntry(work, 0, winPartyDt[WW_S32(work, 0x1D8)].descMsg, 0);
+        work->wazaCount = pouchGetPartyAttackLv(winPartyDt[work->selPartyDt].partnerId) + 2;
+        winMsgEntry(work, 0, winPartyDt[work->selPartyDt].descMsg, 0);
         break;
     }
     case 1: {
         u32 dir = WW_U32(work, 0x10);
 
         if (dir & 0x1000) {
-            WW_S32(work, 0x208)--;
-            if (WW_S32(work, 0x208) < 0) {
-                WW_S32(work, 0x208) = WW_S32(work, 0x204) - 1;
+            work->wazaSel--;
+            if (work->wazaSel < 0) {
+                work->wazaSel = work->wazaCount - 1;
             }
             psndSFXOn((const char*)0x20005);
         } else if (dir & 0x2000) {
-            WW_S32(work, 0x208)++;
-            if (WW_S32(work, 0x208) >= WW_S32(work, 0x204)) {
-                WW_S32(work, 0x208) = 0;
+            work->wazaSel++;
+            if (work->wazaSel >= work->wazaCount) {
+                work->wazaSel = 0;
             }
             psndSFXOn((const char*)0x20005);
         } else {
             u32 button = WW_U32(work, 0x4);
 
             if (button & 0x200) {
-                WW_S32(work, 0x200) = 0;
+                work->partyState = 0;
                 psndSFXOn((const char*)0x20013);
             } else if (button & 0x1000) {
                 WW_S32(work, 0x19C) = 0;
@@ -314,8 +314,8 @@ s32 winPartyMain(WindowWork* work) {
         }
 
         work->targetX = -10.0f;
-        work->targetY = -26.0f * (f32)WW_S32(work, 0x208) + 5.0f;
-        winMsgEntry(work, 0, *(const char**)((u8*)((void**)winPartyDt[WW_S32(work, 0x1D8)].waza)[WW_S32(work, 0x208)] + 0xC), 0);
+        work->targetY = -26.0f * (f32)work->wazaSel + 5.0f;
+        winMsgEntry(work, 0, *(const char**)((u8*)((void**)winPartyDt[work->selPartyDt].waza)[work->wazaSel] + 0xC), 0);
         break;
     }
     default:
@@ -327,9 +327,9 @@ s32 winPartyMain(WindowWork* work) {
 
 void winPartyMain2(WindowWork* work) {
     f32 factor = 0.25f;
-    f32 diff = WW_F32(work, 0x1E8) - WW_F32(work, 0x1E4);
+    f32 diff = work->partyAngleTarget - work->partyAngle;
 
-    WW_F32(work, 0x1E4) += diff * factor;
+    work->partyAngle += diff * factor;
 }
 
 
@@ -381,7 +381,7 @@ static inline void winIconSetV(s32 id, Vec pos, Vec scale, GXColor color) {
 
 #define WIN_PARTY_TEX(w) (**(TEXPalette***)(*(u8**)((u8*)(w) + 0x28) + 0xA0))
 // the party member shown in pose slot n, and its animation pose
-#define WIN_PARTY_ID(w, n) (((s32*)(w))[0x6F + (n)])
+#define WIN_PARTY_ID(w, n) (((WindowWork*)(w))->partyId[(n)])
 #define WIN_PARTY_POSE(w, n) (((s32*)(w))[0x68 + (n)])
 
 void winPartyDisp(CameraId camId, void* param, s32 partyIdx) {
@@ -415,10 +415,10 @@ void winPartyDisp(CameraId camId, void* param, s32 partyIdx) {
     y = ((f32*)((u8*)work + 0xC8))[partyIdx * 5];
 
     winBgGX(work, 1, x, y);
-    if (WW_S32(work, 0x1E0) == 0) {
+    if (work->listCount == 0) {
         return;
     }
-    party = &pouchGetPtr()->partyData[winPartyDt[WW_S32(work, 0x1D8)].partnerId];
+    party = &pouchGetPtr()->partyData[winPartyDt[work->selPartyDt].partnerId];
 
     // HP and rank bars
     winKirinukiGX(work, 0, x - 10.0f, 20.0f + (116.0f + y), 240.0f, 76.0f);
@@ -456,7 +456,7 @@ void winPartyDisp(CameraId camId, void* param, s32 partyIdx) {
         iconY = 4.0f + top;
         winIconSetV(0x19F, (Vec){starX, iconY, 0.0f}, (Vec){0.82f, 0.82f, 0.82f}, white);
         cy = 4.0f + (top - 32.0f);
-        for (i = 0; i < WW_S32(work, 0x204) - 2; i++) {
+        for (i = 0; i < work->wazaCount - 2; i++) {
             winIconSetV(((ItemDataView*)itemDataTable)[ITEM_SHINE_SPRITE].icon_id,
                         (Vec){starX + (f32)(i * 34), cy, 0.0f}, (Vec){0.8f, 0.8f, 0.8f}, loopWhite);
         }
@@ -473,20 +473,20 @@ void winPartyDisp(CameraId camId, void* param, s32 partyIdx) {
     winZClear();
 
     // the party on its turntable: shadows first, then the models
-    for (i = 0; i < WW_S32(work, 0x1E0); i++) {
+    for (i = 0; i < work->listCount; i++) {
         Vec pos = {0.0f, 0.0f, 80.0f};
         Mtx tilt, turn;
 
         PSMTXRotRad(tilt, 'x', 0.5235988f);
         PSMTXRotRad(turn, 'y',
-                    0.017453292f * (360.0f / (f32)WW_S32(work, 0x1E0) * (f32)i - WW_F32(work, 0x1E4)));
+                    0.017453292f * (360.0f / (f32)work->listCount * (f32)i - work->partyAngle));
         PSMTXMultVec(turn, &pos, &pos);
         PSMTXMultVec(tilt, &pos, &pos);
-        winKageGX(work, (x - 140.0f) + pos.x, 20.0f + (y + pos.y), pos.z, i == WW_S32(work, 0x1DC) ? 0.8f : 0.6f,
+        winKageGX(work, (x - 140.0f) + pos.x, 20.0f + (y + pos.y), pos.z, i == work->partySel ? 0.8f : 0.6f,
                   &(GXColor){0x00, 0x00, 0x00, 0x80});
     }
 
-    for (i = 0; i < WW_S32(work, 0x1E0); i++) {
+    for (i = 0; i < work->listCount; i++) {
         Vec pos = {0.0f, 0.0f, 80.0f};
         Mtx mtx, scaleMtx, tilt, turn;
         s32 pose = WIN_PARTY_POSE(work, i);
@@ -499,11 +499,11 @@ void winPartyDisp(CameraId camId, void* param, s32 partyIdx) {
         anim = animPoseGetAnimDataPtr(pose);
         PSMTXRotRad(tilt, 'x', 0.5235988f);
         PSMTXRotRad(turn, 'y',
-                    0.017453292f * (360.0f / (f32)WW_S32(work, 0x1E0) * (f32)i - WW_F32(work, 0x1E4)));
+                    0.017453292f * (360.0f / (f32)work->listCount * (f32)i - work->partyAngle));
         PSMTXMultVec(turn, &pos, &pos);
         PSMTXMultVec(tilt, &pos, &pos);
 
-        if (i == WW_S32(work, 0x1DC)) {
+        if (i == work->partySel) {
             // the selected member: full size, lit, animating
             PSMTXTrans(mtx, (x - 140.0f) + pos.x, 20.0f + (y + pos.y), pos.z);
             PSMTXScale(scaleMtx, 1.0f, 1.0f, -1.0f);
@@ -580,12 +580,12 @@ void winPartyDisp(CameraId camId, void* param, s32 partyIdx) {
     }
 
     // the selected member's name
-    if (WW_S32(work, 0x1E0) != 0) {
+    if (work->listCount != 0) {
         winNameGX(work, 0, x - 230.0f, (20.0f + (y - 50.0f)) - 10.0f, 200.0f, 32.0f);
         winFontInit();
         y2 = (20.0f + ((y - 50.0f) - 4.0f)) - 10.0f;
         for (n = 0; n < 7; n++) {
-            if (WIN_PARTY_ID(work, WW_S32(work, 0x1DC)) == winPartyDt[n].partnerId) {
+            if (WIN_PARTY_ID(work, work->partySel) == winPartyDt[n].partnerId) {
                 const char* name;
 
 #ifdef MUST_MATCH
@@ -605,7 +605,7 @@ void winPartyDisp(CameraId camId, void* param, s32 partyIdx) {
     }
 
     // "change partner" prompt and the turntable arrows
-    if (WW_S32(work, 0x1E0) > 1) {
+    if (work->listCount > 1) {
         winFontInit();
         w = 0.8f * FontGetMessageWidth(msgSearch("msg_menu_party_henkou"));
         x2 = (-230.0f - w) / 2.0f + x;
@@ -640,13 +640,13 @@ void winPartyDisp(CameraId camId, void* param, s32 partyIdx) {
         costX = (238.0f + x) - 20.0f;
         fpX = 2.0f + (2.0f + ((17.0f + x2) - 20.0f));
 
-        for (i = 0; i < WW_S32(work, 0x204); i++) {
+        for (i = 0; i < work->wazaCount; i++) {
             BattleWeapon* weapon;
             char buf[64];
 
             winFontSetLabelV((Vec){y, listY = (listTop - (f32)(i * 26)) - 30.0f, 0.0f}, (Vec){1.0f, 1.0f, 1.0f},
-                             loopBlack, ((BattleWeapon**)winPartyDt[WW_S32(work, 0x1D8)].waza)[i]->name);
-            weapon = ((BattleWeapon**)winPartyDt[WW_S32(work, 0x1D8)].waza)[i];
+                             loopBlack, ((BattleWeapon**)winPartyDt[work->selPartyDt].waza)[i]->name);
+            weapon = ((BattleWeapon**)winPartyDt[work->selPartyDt].waza)[i];
             sprintf(buf, "%s", winZenkakuStr(weapon->baseFpCost));
             winFontSetV((Vec){(costX - (f32)(FontGetMessageWidth(buf) >> 1)) - 2.0f, listY, 0.0f},
                         (Vec){1.0f, 1.0f, 1.0f}, loopBlack, buf);

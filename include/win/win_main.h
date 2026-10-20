@@ -24,7 +24,20 @@ typedef struct WindowWork {
     f32 targetY;                // 0x15C
     u8 field_160[0x188 - 0x160]; // 0x160
     s32 poseId;                 // 0x188, pose handle (win_mario, win_badge, win_log)
-    u8 field_18C[0x21C - 0x18C]; // 0x18C
+    u8 field_18C[0x1A0 - 0x18C]; // 0x18C
+    s32 partyPose[7];           // 0x1A0, win_party: pose handle per party slot
+    s32 partyId[7];             // 0x1BC, win_party: party member id per slot (PARTNER_* order)
+    s32 selPartyDt;             // 0x1D8, win_party: index into winPartyDt for the selected slot
+    s32 partySel;               // 0x1DC, win_party: selected slot
+    s32 listCount;              // 0x1E0, party slots (win_party, win_root) or item list length (win_item)
+    f32 partyAngle;             // 0x1E4, win_party: current ring angle
+    f32 partyAngleTarget;       // 0x1E8
+    u8 field_1EC[0x1FC - 0x1EC]; // 0x1EC
+    s32 lastPartySel;           // 0x1FC, win_party: slot before the last move (win_root compares it)
+    s32 partyState;             // 0x200, win_party: state machine switch
+    s32 wazaCount;              // 0x204, win_party: moves shown (attack level + 2)
+    s32 wazaSel;                // 0x208, win_party: cursor among the moves
+    u8 field_20C[0x21C - 0x20C]; // 0x20C
     s32 itemScrollRow[2];       // 0x21C, win_item: first visible row per tab
     u8 field_224[0x3DC - 0x224]; // 0x224
     s32 badgeState;             // 0x3DC, win_badge: state machine switch

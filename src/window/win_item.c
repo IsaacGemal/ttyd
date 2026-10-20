@@ -489,7 +489,7 @@ s32 winItemMain(WindowWork* work) {
                     psndSFXOn((const char*)0x20012);
                     entry = winMgrGetPtr(WW_S32(work, 0x1208));
                     winMgrSetSize(WW_S32(work, 0x1208), entry->x, entry->y, entry->width,
-                                  WW_S32(work, 0x1E0) * 0x1C + 0x44);
+                                  work->listCount * 0x1C + 0x44);
                     winMgrOpen(WW_S32(work, 0x1208));
                     winMgrOpen(WW_S32(work, 0x120C));
                 }
@@ -837,7 +837,7 @@ s32 winItemMain(WindowWork* work) {
             old = WW_S32(work, 0x2DC);
             WW_S32(work, 0x2DC) = old - 1;
             if (WW_S32(work, 0x2DC) < 0) {
-                WW_S32(work, 0x2DC) = WW_S32(work, 0x1E0);
+                WW_S32(work, 0x2DC) = work->listCount;
             }
             if (old != WW_S32(work, 0x2DC)) {
                 psndSFXOn((const char*)0x20005);
@@ -845,7 +845,7 @@ s32 winItemMain(WindowWork* work) {
         } else if (work->dirRep & 0x2000) {
             old = WW_S32(work, 0x2DC);
             WW_S32(work, 0x2DC) = old + 1;
-            if (WW_S32(work, 0x2DC) >= WW_S32(work, 0x1E0) + 1) {
+            if (WW_S32(work, 0x2DC) >= work->listCount + 1) {
                 WW_S32(work, 0x2DC) = 0;
             }
             if (old != WW_S32(work, 0x2DC)) {
@@ -1099,7 +1099,7 @@ void itemUseDisp(WinMgrEntry* entry) {
             }
         }
 
-        for (i = 0; i < WW_S32(work, 0x1E0) + 1; i++) {
+        for (i = 0; i < work->listCount + 1; i++) {
             if (i == 0) {
                 f31 = 0.0f;
             } else if (i == 1) {
@@ -1203,7 +1203,7 @@ void itemUseDisp(WinMgrEntry* entry) {
             }
         }
 
-        if (WW_S32(work, 0x1E0) > 1) {
+        if (work->listCount > 1) {
             winIconInit();
             for (n2 = 2; n2 < 0x1E; n2++) {
                 winIconSetV(0x1B7, (Vec){(f32)(entry->x + (entry->width / 31) * n2), (f32)(entry->y - 0x54), 0.0f},

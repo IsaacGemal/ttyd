@@ -419,7 +419,7 @@ s32 winRootMain(WindowWork* work) {
             break;
         }
         if (work->buttonTrg & 0x100) {
-            if (((WinRootTab*)((u8*)WROOT(work)->tabs + WW_S32(work, 0x40) * 0x18))->id != 1 || WW_S32(work, 0x1E0) != 0) {
+            if (((WinRootTab*)((u8*)WROOT(work)->tabs + WW_S32(work, 0x40) * 0x18))->id != 1 || work->listCount != 0) {
                 psndSFXOn((const char*)0x20012);
                 WW_S32(work, 0x24) = ((WinRootTab*)((u8*)WROOT(work)->tabs + WW_S32(work, 0x40) * 0x18))->id + 0xB;
                 switch (((WinRootTab*)((u8*)WROOT(work)->tabs + WW_S32(work, 0x40) * 0x18))->id) {
@@ -553,7 +553,7 @@ s32 winRootMain(WindowWork* work) {
             winBadgeExit();
 #endif
             winLogExit(work);
-            if (WW_S32(work, 0x19C) != 0 && WW_S32(work, 0x1DC) != WW_S32(work, 0x1FC)) {
+            if (WW_S32(work, 0x19C) != 0 && work->partySel != work->lastPartySel) {
                 return -2;
             }
             if (WW_S32(work, 0x2D4) != 0) {
