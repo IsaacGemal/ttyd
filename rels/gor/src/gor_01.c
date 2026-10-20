@@ -2292,11 +2292,11 @@ typedef struct UnitWinWork {
     u16 flags;        // 0x0
     u16 pad_02;       // 0x2
     void* objList;    // 0x4
-    s32* field_0x8;   // 0x8
-    u16 field_0xC[6]; // 0xC
+    s32* items;       // 0x8
+    u16 taken[6];     // 0xC
     s32 count;        // 0x18
-    void* field_0x1C; // 0x1C
-    void* field_0x20; // 0x20
+    void* mainEvt;    // 0x1C
+    void* useEvt;     // 0x20
     s32 index;        // 0x24
 } UnitWinWork;
 static USER_FUNC(disp_off) {
@@ -2310,10 +2310,10 @@ static USER_FUNC(get_value) {
     s32* args = event->args;
     UnitWinWork* work = (UnitWinWork*)evtGetValue(event, args[0]);
 
-    evtSetValue(event, args[1], (s32)itemDataTable[work->field_0x8[work->index]].id);
-    evtSetValue(event, args[2], work->field_0x8[work->index]);
-    evtSetValue(event, args[3], itemDataTable[work->field_0x8[work->index]].discount_price);
-    evtSetValue(event, args[4], itemDataTable[work->field_0x8[work->index]].bp_cost);
+    evtSetValue(event, args[1], (s32)itemDataTable[work->items[work->index]].id);
+    evtSetValue(event, args[2], work->items[work->index]);
+    evtSetValue(event, args[3], itemDataTable[work->items[work->index]].discount_price);
+    evtSetValue(event, args[4], itemDataTable[work->items[work->index]].bp_cost);
     return EVT_RETURN_DONE;
 }
 

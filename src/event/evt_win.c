@@ -169,42 +169,42 @@ extern BadgeShopWork* bdsw;
 // Work structure for the unit window, not yet extracted into a header.
 typedef struct UnitWinObj {
 	const char* name;      // 0x0
-	const char* field_0x4; // 0x4
-	void* field_0x8;       // 0x8, event script
-} UnitWinObj;              // size 0xC
+	const char* hitName;   // 0x4, compared with hitGetName()
+	void* evtScript;       // 0x8, event script run when the object is used
+} UnitWinObj;             // size 0xC
 
 typedef struct UnitWinWork {
 	u16 flags;                  // 0x0
 	u16 pad_02;                 // 0x2
 	UnitWinObj* objList;        // 0x4
-	s32* field_0x8;             // 0x8
-	u16 field_0xC[6];           // 0xC
+	s32* items;                 // 0x8, item id per object (0 = none)
+	u16 taken[6];               // 0xC, per object: bit 0 set once the object is done
 	s32 count;                  // 0x18
-	EventEntry* field_0x1C;      // 0x1C
-	EventEntry* field_0x20;      // 0x20
+	EventEntry* mainEvt;        // 0x1C
+	EventEntry* useEvt;         // 0x20
 	s32 index;                  // 0x24
-	s32 field_0x28;             // 0x28
-	s32 field_0x2C;             // 0x2C
-	s32 field_0x30;             // 0x30
-	f32 field_0x34;             // 0x34
+	s32 hideTimer;              // 0x28, frames until the box closes
+	s32 dispCoin;               // 0x2C, coin count shown (counts toward the pouch value)
+	s32 dispNum;                // 0x30, shop points / shine sprites shown
+	f32 cursorRow;              // 0x34, row under the cursor (compared with the list index)
 	u8 pad_0x38[0x4];           // 0x38
-	f32 field_0x3C;             // 0x3C
-	f32 field_0x40;             // 0x40
-	f32 field_0x44;             // 0x44
+	f32 cursorX;                // 0x3C
+	f32 cursorY;                // 0x40
+	f32 listY;                  // 0x44
 	u8 pad_0x48[0x4];           // 0x48
-	s32 field_0x4C;             // 0x4C
-	s32 field_0x50;             // 0x50
-	u16 field_0x54;             // 0x54
+	s32 excludeId;              // 0x4C, entry left out of the list (partner id, or stat row)
+	s32 mode;                   // 0x50, which list the window shows
+	u16 freeState;              // 0x54, bit 0 requests free, bit 1 is set once the event has run
 	u8 pad_0x56[2];             // 0x56
-	s32 field_0x58;             // 0x58
-	s32 field_0x5C;             // 0x5C
-	s32 field_0x60[3];          // 0x60
+	s32 rowCount;               // 0x58
+	s32 coinTick;               // 0x5C, animation counter for the coin count (mod 1200)
+	s32 winId[3];               // 0x60, winMgr entries
 	u8 pad_0x6C[0x74];          // 0x6C
-	s32 field_0xE0;             // 0xE0
-	s32 field_0xE4;             // 0xE4
+	s32 selObj;                 // 0xE0, selected object index (-1 = none)
+	s32 useTaken;               // 0xE4, set by the script when the use was accepted
 } UnitWinWork;
 
-static int party_id_table[8] = { 1, 2, 5, 4, 6, 3, 7, 0 };
+static int party_id_table[8] = { PARTNER_GOOMBELLA, PARTNER_KOOPS, PARTNER_FLURRIE, PARTNER_YOSHI, PARTNER_VIVIAN, PARTNER_BOBBERY, PARTNER_MSMOWZ, PARTNER_NONE };
 static u32 party_icon_table[7] = { 0x155, 0x156, 0x15F, 0x158, 0x160, 0x157, 0x161 };
 static const char* party_labelname_table[7] = { "_kur", "_nok", "_win", "_yos", "_viv", "_bom", "_chu" };
 static u32 mario_status_icon_table[3] = { 0x19F, 0x1A0, 0x1A1 };
@@ -343,8 +343,8 @@ void unk_8017599c(WinMgrEntry* entry) {
 	const char* msg;
 	s32 i;
 
-	msg = msgSearch(itemDataTable[wp->field_0x8[wp->index]].name);
-	if (winMgrAction(wp->field_0x60[0]) == 0) {
+	msg = msgSearch(itemDataTable[wp->items[wp->index]].name);
+	if (winMgrAction(wp->winId[0]) == 0) {
 		FontDrawStart();
 		FontDrawEdge();
 		*(u32*)&titleColor = dat_8041d9b4;
@@ -353,7 +353,7 @@ void unk_8017599c(WinMgrEntry* entry) {
 		FontDrawEdgeOff();
 	}
 	for (i = 0; i < wp->count; i++) {
-		if (wp->field_0xC[i] & 1) {
+		if (wp->taken[i] & 1) {
 			continue;
 		}
 		mapObjGetPos(wp->objList[i].name, &pos);
@@ -372,9 +372,9 @@ void unk_8017599c(WinMgrEntry* entry) {
 		pos.x *= (f32)gp->fbWidth * 0.5f;
 		pos.y *= (f32)gp->efbHeight * 0.5f;
 #endif
-		sprintf(buf, "%d", itemDataTable[wp->field_0x8[i]].discount_price);
+		sprintf(buf, "%d", itemDataTable[wp->items[i]].discount_price);
 		PSMTXTrans(mtx, 12.0f * (f32)(strlen(buf) - 1) + pos.x, pos.y, pos.z);
-		iconNumberDispGx(mtx, itemDataTable[wp->field_0x8[i]].discount_price, 0, *(GXColor*)&dat_8041d9b8);
+		iconNumberDispGx(mtx, itemDataTable[wp->items[i]].discount_price, 0, *(GXColor*)&dat_8041d9b8);
 	}
 }
 
@@ -388,9 +388,9 @@ void unk_8017597c(WinMgrEntry* entry) {
 void unk_801758fc(WinMgrEntry* entry) {
 	UnitWinWork* wp = _wp;
 	s32 offset = wp->index * 4;
-	s32* list = wp->field_0x8;
+	s32* list = wp->items;
 
-	if (!winMgrAction(wp->field_0x60[1])) {
+	if (!winMgrAction(wp->winId[1])) {
 		entry->message = msgSearch(itemDataTable[*(s32*)((u8*)list + offset)].description);
 		winMgrHelpDraw(entry);
 	}
@@ -415,16 +415,16 @@ void unk_80175710(WinMgrEntry* entry) {
 			iconDispGx2(mtx, 0x10, 0x20A);
 		}
 		PSMTXTrans(mtx, 124.0f + (f32)entry->x, (f32)entry->y - 38.0f, float_0_8041db00[0]);
-		iconNumberDispGx(mtx, wp->field_0x30, 0, *(GXColor*)&dat_8041d9bc);
+		iconNumberDispGx(mtx, wp->dispNum, 0, *(GXColor*)&dat_8041d9bc);
 		{
-			s32 delta = pouch->mShopPoints - wp->field_0x30;
+			s32 delta = pouch->mShopPoints - wp->dispNum;
 
 			if (delta != 0) {
 				delta /= 10;
 				if (delta == 0) {
-					delta = (pouch->mShopPoints > wp->field_0x30) ? 1 : -1;
+					delta = (pouch->mShopPoints > wp->dispNum) ? 1 : -1;
 				}
-				wp->field_0x30 += delta;
+				wp->dispNum += delta;
 			}
 		}
 	}
@@ -435,7 +435,7 @@ USER_FUNC(evt_unitwin_alloc) {
 	UnitWinWork* wp = _mapAlloc(0xE8);
 
 	memset(wp, 0, 0xE8);
-	wp->field_0x50 = 0;
+	wp->mode = 0;
 	_wp = wp;
 	if (flag) {
 		wp->flags |= 0x80;
@@ -446,8 +446,8 @@ USER_FUNC(evt_unitwin_alloc) {
 	iconFlagOn("yubicursor_2", 2);
 	iconFlagOn("yubicursor_2", 4);
 	if (!(wp->flags & 0x80)) {
-		wp->field_0x1C = evtEntry(main_evt, 0, 0);
-		wp->field_0x1C->lwData[0] = (s32)wp;
+		wp->mainEvt = evtEntry(main_evt, 0, 0);
+		wp->mainEvt->lwData[0] = (s32)wp;
 	}
 	mario_status_point_table[0] = &pouchGetPtr()->baseMaxHP;
 	mario_status_point_table[1] = &pouchGetPtr()->baseMaxFP;
@@ -463,9 +463,9 @@ USER_FUNC(evt_unitwin_free) {
 		return EVT_RETURN_DONE;
 	}
 	if (isFirstCall) {
-		wp->field_0x54 |= 1;
+		wp->freeState |= 1;
 	}
-	if (!(wp->field_0x54 & 2)) {
+	if (!(wp->freeState & 2)) {
 		return EVT_RETURN_BLOCK;
 	}
 	for (i = 0; i < wp->count; i++) {
@@ -477,7 +477,7 @@ USER_FUNC(evt_unitwin_free) {
 	}
 	if (wp->flags & 0x80) {
 		for (i = 0; i < 3; i++) {
-			winMgrDelete(wp->field_0x60[i]);
+			winMgrDelete(wp->winId[i]);
 		}
 	}
 	iconDelete("yubicursor_2");
@@ -496,7 +496,7 @@ USER_FUNC(evt_unitwin_selltable_setup) {
 
 	wp = _wp;
 	wp->objList = (UnitWinObj*)objList;
-	wp->field_0x8 = itemList;
+	wp->items = itemList;
 	wp->count = 0;
 	for (i = 0; wp->objList[i].name != NULL; i++) {
 		char name[32];
@@ -504,25 +504,25 @@ USER_FUNC(evt_unitwin_selltable_setup) {
 		wp->count++;
 		mapObjGetPos(wp->objList[i].name, &pos);
 		mapObjFlagOn(wp->objList[i].name, 0x4000);
-		if (wp->field_0x8[i] != 0) {
+		if (wp->items[i] != 0) {
 			sprintf(name, str_8041DAC0, i);
 #ifdef MUST_MATCH
-			iconEntry(name, *(u16*)&itemDataTable[wp->field_0x8[i]].icon_id);
+			iconEntry(name, *(u16*)&itemDataTable[wp->items[i]].icon_id);
 #else
-			iconEntry(name, (u16)itemDataTable[wp->field_0x8[i]].icon_id);
+			iconEntry(name, (u16)itemDataTable[wp->items[i]].icon_id);
 #endif
 			iconSetPos(name, pos.x, 6.0f + pos.y, pos.z);
 			iconFlagOn(name, 0x40);
 		} else {
-			wp->field_0xC[i] |= 1;
+			wp->taken[i] |= 1;
 		}
 	}
-	wp->field_0x1C = evtEntryType(select_evt, 0, 0x20, 0);
-	wp->field_0x1C->lwData[0] = (s32)wp;
+	wp->mainEvt = evtEntryType(select_evt, 0, 0x20, 0);
+	wp->mainEvt->lwData[0] = (s32)wp;
 	for (i = 0; i < 3; i++) {
-		wp->field_0x60[i] = winMgrEntry(&unk_80375478[i]);
+		wp->winId[i] = winMgrEntry(&unk_80375478[i]);
 	}
-	wp->field_0xE0 = -1;
+	wp->selObj = -1;
 	return EVT_RETURN_DONE;
 }
 
@@ -532,8 +532,8 @@ USER_FUNC(unitwincoin_disp_onoff) {
 
 	pouchGetPtr();
 	wp = _wp;
-	wp->field_0x2C = pouchGetCoin();
-	wp->field_0x5C = 0;
+	wp->dispCoin = pouchGetCoin();
+	wp->coinTick = 0;
 	if (on) {
 		wp->flags |= 0x1000;
 	} else {
@@ -548,7 +548,7 @@ USER_FUNC(unitwincoin_wait) {
 
 	pouchGetPtr();
 	coin = pouchGetCoin();
-	return (wp->field_0x2C != coin) ? EVT_RETURN_BLOCK : EVT_RETURN_DONE;
+	return (wp->dispCoin != coin) ? EVT_RETURN_BLOCK : EVT_RETURN_DONE;
 }
 
 USER_FUNC(unk_8017524c) {
@@ -567,7 +567,7 @@ USER_FUNC(unk_801751f8) {
 	s32* args = event->args;
 	UnitWinWork* wp = (UnitWinWork*)evtGetValue(event, args[0]);
 
-	wp->field_0xE4 = evtGetValue(event, args[1]);
+	wp->useTaken = evtGetValue(event, args[1]);
 	return EVT_RETURN_DONE;
 }
 
@@ -580,8 +580,8 @@ USER_FUNC(unk_80174e98) {
 	s32 buttons;
 	s32 i;
 
-	if (wp->field_0x54 & 1) {
-		wp->field_0x54 = wp->field_0x54 | 2;
+	if (wp->freeState & 1) {
+		wp->freeState = wp->freeState | 2;
 		return EVT_RETURN_DONE;
 	}
 	wp->flags &= ~1;
@@ -609,19 +609,19 @@ USER_FUNC(unk_80174e98) {
 #endif
 
 	if (party != NULL && (party->flags & PARTY_FLAG_IS_BEING_USED)) {
-		if (wp->field_0xE0 != -1) {
-			wp->field_0xE0 = -1;
-			winMgrClose(wp->field_0x60[0]);
-			winMgrClose(wp->field_0x60[1]);
+		if (wp->selObj != -1) {
+			wp->selObj = -1;
+			winMgrClose(wp->winId[0]);
+			winMgrClose(wp->winId[1]);
 		}
 		return EVT_RETURN_BLOCK;
 	}
 
 	if (winGhostDiaryChk() || N_itemPickUpFromFieldCheck()) {
-		if (wp->field_0xE0 != -1) {
-			wp->field_0xE0 = -1;
-			winMgrClose(wp->field_0x60[0]);
-			winMgrClose(wp->field_0x60[1]);
+		if (wp->selObj != -1) {
+			wp->selObj = -1;
+			winMgrClose(wp->winId[0]);
+			winMgrClose(wp->winId[1]);
 		}
 		return EVT_RETURN_BLOCK;
 	}
@@ -629,47 +629,47 @@ USER_FUNC(unk_80174e98) {
 	if (!(wp->flags & 2)) {
 		if (hit != NULL) {
 			for (i = 0; i < wp->count; i++) {
-				if (strcmp(wp->objList[i].field_0x4, hitGetName(hit)) == 0) {
+				if (strcmp(wp->objList[i].hitName, hitGetName(hit)) == 0) {
 					break;
 				}
 			}
-			if (!(wp->field_0xC[i] & 1) && i < wp->count) {
-				if (wp->field_0xE0 != i) {
-					if (wp->field_0xE0 == -1) {
-						winMgrOpen(wp->field_0x60[0]);
-						winMgrOpen(wp->field_0x60[1]);
+			if (!(wp->taken[i] & 1) && i < wp->count) {
+				if (wp->selObj != i) {
+					if (wp->selObj == -1) {
+						winMgrOpen(wp->winId[0]);
+						winMgrOpen(wp->winId[1]);
 					}
-					wp->field_0xE0 = i;
+					wp->selObj = i;
 					wp->index = i;
-					winMgrHelpInit(winMgrGetPtr(wp->field_0x60[1]));
+					winMgrHelpInit(winMgrGetPtr(wp->winId[1]));
 				}
 				selected = 1;
 			}
 		}
-		if (selected == 0 && wp->field_0xE0 != -1) {
-			wp->field_0xE0 = -1;
-			winMgrClose(wp->field_0x60[0]);
-			winMgrClose(wp->field_0x60[1]);
+		if (selected == 0 && wp->selObj != -1) {
+			wp->selObj = -1;
+			winMgrClose(wp->winId[0]);
+			winMgrClose(wp->winId[1]);
 		}
-		if (wp->field_0xE0 != -1) {
+		if (wp->selObj != -1) {
 			wp->flags |= 1;
 			if (buttons & 0x100) {
 				marioKeyOff();
-				wp->field_0x20 = evtEntry(wp->objList[wp->index].field_0x8, 0, 0);
-				wp->field_0x20->lwData[0] = (s32)wp;
+				wp->useEvt = evtEntry(wp->objList[wp->index].evtScript, 0, 0);
+				wp->useEvt->lwData[0] = (s32)wp;
 				wp->flags |= 2;
-				winMgrClose(wp->field_0x60[0]);
-				winMgrClose(wp->field_0x60[1]);
-				wp->field_0xE0 = -1;
-				wp->field_0xE4 = 0;
+				winMgrClose(wp->winId[0]);
+				winMgrClose(wp->winId[1]);
+				wp->selObj = -1;
+				wp->useTaken = 0;
 			}
 		}
 	} else {
-		if (evtCheckID(wp->field_0x20->eventId) == 0) {
+		if (evtCheckID(wp->useEvt->eventId) == 0) {
 			wp->flags &= ~2;
 			marioKeyOn();
-			if (wp->field_0xE4 != 0) {
-				wp->field_0xC[wp->index] |= 1;
+			if (wp->useTaken != 0) {
+				wp->taken[wp->index] |= 1;
 			}
 		}
 	}
@@ -680,9 +680,9 @@ USER_FUNC(unk_80174e98) {
 			char name[32];
 
 			sprintf(name, str_8041DAC0, i);
-			if (wp->field_0xC[i] & 1) {
+			if (wp->taken[i] & 1) {
 				iconFlagOn(name, 2);
-			} else if (*(u32*)((u8*)obj + 0x0) & 1) {
+			} else if (*(u32*)obj & 1) {
 				iconFlagOn(name, 2);
 			} else {
 				iconFlagOff(name, 2);
@@ -711,13 +711,13 @@ USER_FUNC(unitwin_icon_delete) {
 USER_FUNC(evt_unitwin_main_func) {
 	UnitWinWork* wp = (UnitWinWork*)event->lwData[0];
 
-	if (wp->field_0x54 & 1) {
-		wp->field_0x54 = wp->field_0x54 | 2;
+	if (wp->freeState & 1) {
+		wp->freeState = wp->freeState | 2;
 		return EVT_RETURN_DONE;
 	}
 
-	if (wp->field_0x28 > 0) {
-		wp->field_0x28--;
+	if (wp->hideTimer > 0) {
+		wp->hideTimer--;
 	} else {
 		wp->flags &= ~1;
 	}
@@ -728,7 +728,7 @@ USER_FUNC(evt_unitwin_main_func) {
 // Yoshi's icon follows the colour he hatched with.
 static inline s32 unitwin_party_icon(s32 iconId) {
 	if (iconId == 0x158) {
-		switch (pouchGetPartyColor(4)) {
+		switch (pouchGetPartyColor(PARTNER_YOSHI)) {
 		case 0: iconId = 0x158; break;
 		case 1: iconId = 0x159; break;
 		case 2: iconId = 0x15A; break;
@@ -772,7 +772,7 @@ void evt_unitwin_disp_func(CameraId cameraId, void* param) {
 	// --- flags & 1: selected item's name/description, plus the on-map price icons ---
 	if (wp->flags & 1) {
 		u32 len;
-		s32 sellItem = wp->field_0x8[wp->index];
+		s32 sellItem = wp->items[wp->index];
 		const char* sellName = itemDataTable[sellItem].id;
 		const char* sellDesc = itemDataTable[sellItem].description;
 
@@ -791,7 +791,7 @@ void evt_unitwin_disp_func(CameraId cameraId, void* param) {
 
 		for (i = 0; i < wp->count; i++) {
 
-			if (wp->field_0x8[i] != 0) {
+			if (wp->items[i] != 0) {
 				Mtx mtx;
 				f32 projv[7];
 				u8 price;
@@ -809,8 +809,8 @@ void evt_unitwin_disp_func(CameraId cameraId, void* param) {
 				cam = camGetPtr(cameraId);
 				GXSetProjection(cam->projection, cam->projType);
 				{
-					s32 item = wp->field_0x8[i];
-					if (item >= 0xF0 && item < 0x153) {
+					s32 item = wp->items[i];
+					if (item >= BADGE_MIN && item < BADGE_MAX) {
 						price = (u16)itemDataTable[item].discount_price;
 					} else {
 						price = ((ItemDataView*)&itemDataTable[item])->buy_price;
@@ -848,21 +848,21 @@ void evt_unitwin_disp_func(CameraId cameraId, void* param) {
 		PSMTXTrans(mtx, float_neg192_8041db20[0], float_neg113_8041db18[0], float_0_8041db00[0]);
 		iconDispGx2(mtx, 0x10, 0x1D6);
 		PSMTXTrans(mtx, float_neg126_8041db24[0], float_neg113_8041db18[0], float_0_8041db00[0]);
-		iconNumberDispGx(mtx, wp->field_0x2C, 0, *(GXColor*)&dat_8041d9d4);
+		iconNumberDispGx(mtx, wp->dispCoin, 0, *(GXColor*)&dat_8041d9d4);
 		{
-			s32 delta = cur - wp->field_0x2C;
+			s32 delta = cur - wp->dispCoin;
 
 			if (delta != 0) {
 				delta /= 10;
 				if (delta == 0) {
-					delta = (cur > wp->field_0x2C) ? 1 : -1;
+					delta = (cur > wp->dispCoin) ? 1 : -1;
 				}
-				if (wp->field_0x5C & 1) {
-					wp->field_0x2C += delta;
+				if (wp->coinTick & 1) {
+					wp->dispCoin += delta;
 					statusWinForceUpdateCoin();
 				}
-				wp->field_0x5C = wp->field_0x5C + 1;
-				wp->field_0x5C = wp->field_0x5C % 1200;
+				wp->coinTick = wp->coinTick + 1;
+				wp->coinTick = wp->coinTick % 1200;
 				if (unk_804189fc == 0) {
 					psndSFXOn("SFX_COUNT_COIN1");
 					unk_804189fc = 7;
@@ -886,16 +886,16 @@ void evt_unitwin_disp_func(CameraId cameraId, void* param) {
 		PSMTXConcat(mtx, scale, mtx);
 		iconDispGx2(mtx, 0x10, 0x1F1);
 		PSMTXTrans(mtx, float_neg126_8041db24[0], float_neg168_8041db34[0], float_0_8041db00[0]);
-		iconNumberDispGx(mtx, wp->field_0x30, 0, *(GXColor*)&dat_8041d9dc);
+		iconNumberDispGx(mtx, wp->dispNum, 0, *(GXColor*)&dat_8041d9dc);
 		if ((gp->retraceCount & 3) == 0) {
-			s32 delta = pouch->mShineSpriteCount - wp->field_0x30;
+			s32 delta = pouch->mShineSpriteCount - wp->dispNum;
 
 			if (delta != 0) {
 				delta /= 10;
 				if (delta == 0) {
-					delta = (pouch->mShineSpriteCount > wp->field_0x30) ? 1 : -1;
+					delta = (pouch->mShineSpriteCount > wp->dispNum) ? 1 : -1;
 				}
-				wp->field_0x30 += delta;
+				wp->dispNum += delta;
 			}
 		}
 	}
@@ -919,7 +919,7 @@ void evt_unitwin_disp_func(CameraId cameraId, void* param) {
 		}
 	}
 
-	switch (wp->field_0x50) {
+	switch (wp->mode) {
 	case 4: {
 		// Stored-item (keep) list.
 		s32 dispCnt = 0;
@@ -944,10 +944,10 @@ void evt_unitwin_disp_func(CameraId cameraId, void* param) {
 			ItemData* data = &itemDataTable[it];
 
 			if (it != 0) {
-				iconDispGxS(0.5f, &(Vec){ 11.0f, wp->field_0x44 + (f32)(0x38 - dispCnt * 0x18), 0.0f }, 0x10, ((ItemDataView*)data)->icon_id);
+				iconDispGxS(0.5f, &(Vec){ 11.0f, wp->listY + (f32)(0x38 - dispCnt * 0x18), 0.0f }, 0x10, ((ItemDataView*)data)->icon_id);
 				FontDrawStart();
-				FontDrawString(data->id, 36.0f, wp->field_0x44 + (f32)(0x50 - dispCnt * 0x18));
-				if ((f32)dispCnt == wp->field_0x34) {
+				FontDrawString(data->id, 36.0f, wp->listY + (f32)(0x50 - dispCnt * 0x18));
+				if ((f32)dispCnt == wp->cursorRow) {
 					selDesc = data->description;
 				}
 				dispCnt++;
@@ -979,7 +979,7 @@ void evt_unitwin_disp_func(CameraId cameraId, void* param) {
 		s32 dispCnt = 0;
 		const char* selDesc = 0;
 
-		s32 mode50 = wp->field_0x50;
+		s32 mode50 = wp->mode;
 		s32 cnt;
 		s32 limit;
 		if (mode50 == 2 || mode50 == 3) {
@@ -996,27 +996,27 @@ void evt_unitwin_disp_func(CameraId cameraId, void* param) {
 			xofs = 0x28;
 		} else if (mode50 == 14) {
 			limit = 0x152;
-			cnt = 8 - wp->field_0x58;
+			cnt = 8 - wp->rowCount;
 			cnt = (cnt > 0) ? cnt : 0;
 			listOff = cnt * 0x18;
 			title = msgSearch("msg_window_title_3");
 			xofs = 0x14;
 		} else if (mode50 == 15) {
-			limit = wp->field_0x58;
-			cnt = 8 - wp->field_0x58;
+			limit = wp->rowCount;
+			cnt = 8 - wp->rowCount;
 			cnt = (cnt > 0) ? cnt : 0;
 			listOff = cnt * 0x18;
 			title = msgSearch("msg_window_title_3");
 			xofs = 0x14;
 		} else if (mode50 == 16) {
 			limit = 0x152;
-			cnt = 8 - wp->field_0x58;
+			cnt = 8 - wp->rowCount;
 			cnt = (cnt > 0) ? cnt : 0;
 			listOff = cnt * 0x18;
 			title = msgSearch("msg_window_title_4");
 			xofs = 0x1E;
 		} else {
-			cnt = 8 - wp->field_0x58;
+			cnt = 8 - wp->rowCount;
 			cnt = (cnt > 0) ? cnt : 0;
 			listOff = cnt * 0x18;
 			limit = 0x63;
@@ -1034,7 +1034,7 @@ void evt_unitwin_disp_func(CameraId cameraId, void* param) {
 		FontDrawString(title, (f32)(xofs + 0x33), float_111_8041db5c[0]);
 		FontDrawEdgeOff();
 
-		if (wp->field_0x50 != 3) {
+		if (wp->mode != 3) {
 			Mtx mtx;
 			Mtx scale;
 			s32 iconId;
@@ -1043,9 +1043,9 @@ void evt_unitwin_disp_func(CameraId cameraId, void* param) {
 			PSMTXScale(scale, 0.6000000238418579f, 0.6000000238418579f, 0.6000000238418579f);
 			PSMTXConcat(mtx, scale, mtx);
 			iconDispGxCol(mtx, 0x10, 0x211, *(GXColor*)&dat_8041da04);
-			if (wp->field_0x50 == 0xD) {
+			if (wp->mode == 0xD) {
 				iconId = 0x18D;
-			} else if (wp->field_0x50 == 0x10) {
+			} else if (wp->mode == 0x10) {
 				iconId = 0x13F;
 			} else {
 				iconId = 0x18B;
@@ -1062,7 +1062,7 @@ void evt_unitwin_disp_func(CameraId cameraId, void* param) {
 			GXColor icolor = *(GXColor*)&dat_8041da08;
 			ItemData* data;
 
-			switch (wp->field_0x50) {
+			switch (wp->mode) {
 			case 2:
 			case 3:
 				item = pouchHaveItem(i);
@@ -1071,17 +1071,17 @@ void evt_unitwin_disp_func(CameraId cameraId, void* param) {
 				item = pouchHaveBadge(i);
 				break;
 			case 11: {
-				s32 got = badgeShop_get(bdsw->bargain_table, (s16)(i + 0xF0));
-				if (got - badgeShop_ThrowCheck(i + 0xF0) > 0) {
-					item = i + 0xF0;
+				s32 got = badgeShop_get(bdsw->bargain_table, (s16)(i + BADGE_MIN));
+				if (got - badgeShop_ThrowCheck(i + BADGE_MIN) > 0) {
+					item = i + BADGE_MIN;
 				} else {
 					item = 0;
 				}
 				break;
 			}
 			case 13:
-				if ((s16)badgeShop_get(bdsw->starmaniac_table, (s16)(i + 0xF0)) > 0) {
-					item = i + 0xF0;
+				if ((s16)badgeShop_get(bdsw->starmaniac_table, (s16)(i + BADGE_MIN)) > 0) {
+					item = i + BADGE_MIN;
 				} else {
 					item = 0;
 				}
@@ -1115,24 +1115,24 @@ void evt_unitwin_disp_func(CameraId cameraId, void* param) {
 				s32 price;
 				char buf[0x20];
 
-				if (wp->field_0x50 == 0xD) {
+				if (wp->mode == 0xD) {
 					if (data->star_piece_price > pouchGetStarPiece()) {
 						flag = 0x20;
 						icolor = *(GXColor*)&dat_8041da0c;
 					}
 				}
-				iconDispGxS(0.5f, &(Vec){ 11.0f, wp->field_0x44 + (f32)(0x38 - dispCnt * 0x18), 0.0f }, (u16)(flag | 0x10), ((ItemDataView*)data)->icon_id);
+				iconDispGxS(0.5f, &(Vec){ 11.0f, wp->listY + (f32)(0x38 - dispCnt * 0x18), 0.0f }, (u16)(flag | 0x10), ((ItemDataView*)data)->icon_id);
 				FontDrawStart();
 				FontDrawScale(0.800000011920929f);
 				{
 					FontDrawColorV(icolor);
 				}
-				FontDrawString(data->id, 36.0f, wp->field_0x44 + (f32)(0x50 - dispCnt * 0x18) - 2.0f);
-				if (wp->field_0x50 != 3) {
+				FontDrawString(data->id, 36.0f, wp->listY + (f32)(0x50 - dispCnt * 0x18) - 2.0f);
+				if (wp->mode != 3) {
 					f32 scale;
 					s32 x;
 
-					switch (wp->field_0x50) {
+					switch (wp->mode) {
 					case 0xE:
 						price = ((ItemDataView*)data)->buy_price * 12 / 10;
 						sprintf(buf, "%2d", price);
@@ -1172,9 +1172,9 @@ void evt_unitwin_disp_func(CameraId cameraId, void* param) {
 					{
 						FontDrawColorV(icolor);
 					}
-					FontDrawString(buf, (f32)(x + 0xE2), wp->field_0x44 + (f32)(0x50 - dispCnt * 0x18));
+					FontDrawString(buf, (f32)(x + 0xE2), wp->listY + (f32)(0x50 - dispCnt * 0x18));
 				}
-				if ((f32)dispCnt == wp->field_0x34) {
+				if ((f32)dispCnt == wp->cursorRow) {
 					selDesc = data->description;
 				}
 			}
@@ -1193,8 +1193,8 @@ void evt_unitwin_disp_func(CameraId cameraId, void* param) {
 	case 17:
 	case 18: {
 		const char* title;
-		s32 m8 = 8 - wp->field_0x58;
-		s32 mode50 = wp->field_0x50;
+		s32 m8 = 8 - wp->rowCount;
+		s32 mode50 = wp->mode;
 		u32 scX, scY, scW, scH;
 		InformantInfo* info;
 		const u8* prefix;
@@ -1218,7 +1218,7 @@ void evt_unitwin_disp_func(CameraId cameraId, void* param) {
 		FontDrawColorV(*(GXColor*)&dat_8041da1c);
 		FontDrawString(title, 71.0f, float_111_8041db5c[0]);
 		FontDrawEdgeOff();
-		if (wp->field_0x50 == 0x11) {
+		if (wp->mode == 0x11) {
 			Mtx mtx;
 			Mtx scale;
 
@@ -1232,7 +1232,7 @@ void evt_unitwin_disp_func(CameraId cameraId, void* param) {
 		GXSetScissor(0x120, 0xA2, 0x11C, 0xbe - listOff);
 
 		info = jdt->info;
-		for (i = 0; i < wp->field_0x58; i++, info++) {
+		for (i = 0; i < wp->rowCount; i++, info++) {
 			char buf[0x20];
 			char saved;
 			GXColor tcolor;
@@ -1249,12 +1249,12 @@ void evt_unitwin_disp_func(CameraId cameraId, void* param) {
 			((char*)info->initEndPos)[info->tagEndPos] = 0;
 			FontDrawColorV(tcolor);
 			FontDrawScale(0.800000011920929f);
-			FontDrawString((char*)info->initEndPos, 1.0f, wp->field_0x44 + (f32)(0x50 - i * 0x18));
+			FontDrawString((char*)info->initEndPos, 1.0f, wp->listY + (f32)(0x50 - i * 0x18));
 			((char*)info->initEndPos)[info->tagEndPos] = saved;
-			if (wp->field_0x50 == 0x11) {
+			if (wp->mode == 0x11) {
 				FontDrawStart();
 				FontDrawColorV(tcolor);
-				FontDrawString(buf, 221.0f, wp->field_0x44 + (f32)(0x50 - i * 0x18));
+				FontDrawString(buf, 221.0f, wp->listY + (f32)(0x50 - i * 0x18));
 			}
 		}
 		GXSetScissor(scX, scY, scW, scH);
@@ -1271,7 +1271,7 @@ void evt_unitwin_disp_func(CameraId cameraId, void* param) {
 		char help[0x40] = "";
 		s32 dispCnt = 0;
 
-		m8 = 8 - wp->field_0x58;
+		m8 = 8 - wp->rowCount;
 		listOff = ((m8 > 0) ? m8 : 0) * 0x18;
 		windowDispGX_Waku_col(0, *(GXColor*)&dat_8041da2c, float_neg24_8041db44[0], float_100_8041db48[0], float_300_8041dad0[0], (f32)(0xdc - listOff),
 		                      float_20_8041dad8[0]);
@@ -1292,13 +1292,13 @@ void evt_unitwin_disp_func(CameraId cameraId, void* param) {
 		GXGetScissor(&scX, &scY, &scW, &scH);
 		GXSetScissor(0x120, 0xA2, 0x11C, 0xbe - listOff);
 
-		for (i = 0; party_id_table[i] != 0; i++) {
+		for (i = 0; party_id_table[i] != PARTNER_NONE; i++) {
 			char buf[0x20];
 			const char* name;
 			s32 flag;
 			GXColor nameColor;
 
-			if (wp->field_0x50 == 5 || wp->field_0x50 == 6) {
+			if (wp->mode == 5 || wp->mode == 6) {
 				if (!partyChkJoin(party_id_table[i])) {
 					continue;
 				}
@@ -1324,7 +1324,7 @@ void evt_unitwin_disp_func(CameraId cameraId, void* param) {
 					}
 				}
 			} else {
-				if (!partyChkJoin(party_id_table[i]) || wp->field_0x4C == party_id_table[i]) {
+				if (!partyChkJoin(party_id_table[i]) || wp->excludeId == party_id_table[i]) {
 					continue;
 				}
 				if (pouch->partyData[party_id_table[i]].techLevel > 0) {
@@ -1338,15 +1338,15 @@ void evt_unitwin_disp_func(CameraId cameraId, void* param) {
 				}
 			}
 
-			iconDispGxS(0.5f, &(Vec){ 11.0f, wp->field_0x44 + (f32)(0x38 - dispCnt * 0x18), 0.0f }, flag | 0x10, unitwin_party_icon(party_icon_table[i]));
+			iconDispGxS(0.5f, &(Vec){ 11.0f, wp->listY + (f32)(0x38 - dispCnt * 0x18), 0.0f }, flag | 0x10, unitwin_party_icon(party_icon_table[i]));
 			FontDrawStart();
 			FontDrawColorV(nameColor);
 			name = unitwin_party_name(i);
-			FontDrawString(name, 36.0f, wp->field_0x44 + (f32)(0x50 - dispCnt * 0x18));
+			FontDrawString(name, 36.0f, wp->listY + (f32)(0x50 - dispCnt * 0x18));
 			sprintf(buf, "%d", pouch->partyData[party_id_table[i]].techLevel);
 			FontDrawStart();
-			FontDrawString(buf, 236.0f, wp->field_0x44 + (f32)(0x50 - dispCnt * 0x18));
-			if ((f32)dispCnt == wp->field_0x34) {
+			FontDrawString(buf, 236.0f, wp->listY + (f32)(0x50 - dispCnt * 0x18));
+			if ((f32)dispCnt == wp->cursorRow) {
 				char help2[0x10];
 				char lank[0x10];
 
@@ -1355,7 +1355,7 @@ void evt_unitwin_disp_func(CameraId cameraId, void* param) {
 				} else {
 					sprintf(help2, "helperr");
 				}
-				if (wp->field_0x50 == 5 || wp->field_0x50 == 6) {
+				if (wp->mode == 5 || wp->mode == 6) {
 					sprintf(lank, "lankup");
 				} else {
 					sprintf(lank, "lankdown");
@@ -1382,7 +1382,7 @@ void evt_unitwin_disp_func(CameraId cameraId, void* param) {
 		char num[0x20];
 		u32 scX, scY, scW, scH;
 		s32 m8;
-		m8 = 8 - wp->field_0x58;
+		m8 = 8 - wp->rowCount;
 		listOff = ((m8 > 0) ? m8 : 0) * 0x18;
 		windowDispGX_Waku_col(0, *(GXColor*)&dat_8041da5c, float_neg24_8041db44[0], float_100_8041db48[0], float_300_8041dad0[0], (f32)(0xdc - listOff),
 		                      float_20_8041dad8[0]);
@@ -1402,7 +1402,7 @@ void evt_unitwin_disp_func(CameraId cameraId, void* param) {
 		FontDrawEdgeOff();
 		GXGetScissor(&scX, &scY, &scW, &scH);
 		GXSetScissor(0x120, 0xA2, 0x11C, 0xbe - listOff);
-		for (i = 0; i < wp->field_0x58; i++) {
+		for (i = 0; i < wp->rowCount; i++) {
 			s32 j;
 			s32 cnt;
 			s32 numval;
@@ -1410,8 +1410,8 @@ void evt_unitwin_disp_func(CameraId cameraId, void* param) {
 			s32 arrow;
 			GXColor rowColor;
 			cnt = 0;
-			for (j = 0; j < wp->field_0x58; j++) {
-				if ((f32)j != wp->field_0x34 && mario_status_point_table[j][0] - mario_status_henka_table[j] <= 0) {
+			for (j = 0; j < wp->rowCount; j++) {
+				if ((f32)j != wp->cursorRow && mario_status_point_table[j][0] - mario_status_henka_table[j] <= 0) {
 					cnt = 1;
 				}
 			}
@@ -1424,13 +1424,13 @@ void evt_unitwin_disp_func(CameraId cameraId, void* param) {
 				changed = 1;
 				flag = 0x20;
 			}
-			iconDispGxS(0.5f, &(Vec){ 11.0f, wp->field_0x44 + (f32)(0x38 - dispCnt * 0x18), 0.0f }, flag | 0x10, mario_status_icon_table[i]);
+			iconDispGxS(0.5f, &(Vec){ 11.0f, wp->listY + (f32)(0x38 - dispCnt * 0x18), 0.0f }, flag | 0x10, mario_status_icon_table[i]);
 			FontDrawStart();
 			FontDrawColorV(rowColor);
 			sprintf(num, "%s%3d", mario_status_name_table[i], mario_status_point_table[i][0]);
-			FontDrawString(num, 36.0f, wp->field_0x44 + (f32)(0x50 - dispCnt * 0x18));
+			FontDrawString(num, 36.0f, wp->listY + (f32)(0x50 - dispCnt * 0x18));
 			blink = ((gp->retraceCount & 0xF) > 7) ? 0 : 2;
-			if ((f32)dispCnt == wp->field_0x34) {
+			if ((f32)dispCnt == wp->cursorRow) {
 				if (changed == 0) {
 					sprintf(help2, "help");
 				} else {
@@ -1444,8 +1444,8 @@ void evt_unitwin_disp_func(CameraId cameraId, void* param) {
 					arrow = 0x162;
 					blink = 0;
 				}
-				iconDispGxS(0.5f, &(Vec){ 166.0f, wp->field_0x44 + (f32)(0x38 - dispCnt * 0x18) + (f32)blink, 0.0f }, flag | 0x10, arrow);
-				iconDispGxS(0.5f, &(Vec){ 186.0f, wp->field_0x44 + (f32)(0x38 - dispCnt * 0x18) + (f32)blink, 0.0f }, flag | 0x10, arrow);
+				iconDispGxS(0.5f, &(Vec){ 166.0f, wp->listY + (f32)(0x38 - dispCnt * 0x18) + (f32)blink, 0.0f }, flag | 0x10, arrow);
+				iconDispGxS(0.5f, &(Vec){ 186.0f, wp->listY + (f32)(0x38 - dispCnt * 0x18) + (f32)blink, 0.0f }, flag | 0x10, arrow);
 			} else {
 				numval = mario_status_point_table[i][0] - mario_status_henka_table[i];
 				if (numval > 0) {
@@ -1454,7 +1454,7 @@ void evt_unitwin_disp_func(CameraId cameraId, void* param) {
 					arrow = 0x162;
 					blink = 0;
 				}
-				iconDispGxS(0.5f, &(Vec){ 176.0f, wp->field_0x44 + (f32)(0x38 - dispCnt * 0x18) - (f32)blink, 0.0f }, flag | 0x10, arrow);
+				iconDispGxS(0.5f, &(Vec){ 176.0f, wp->listY + (f32)(0x38 - dispCnt * 0x18) - (f32)blink, 0.0f }, flag | 0x10, arrow);
 			}
 			if (numval > 0) {
 				sprintf(num, "%3d", numval);
@@ -1462,7 +1462,7 @@ void evt_unitwin_disp_func(CameraId cameraId, void* param) {
 				sprintf(num, "  \x81H", numval);
 			}
 			FontDrawStart();
-			FontDrawString(num, 206.0f, wp->field_0x44 + (f32)(0x50 - dispCnt * 0x18));
+			FontDrawString(num, 206.0f, wp->listY + (f32)(0x50 - dispCnt * 0x18));
 			dispCnt++;
 		}
 		GXSetScissor(scX, scY, scW, scH);
@@ -1482,7 +1482,7 @@ void evt_unitwin_disp_func(CameraId cameraId, void* param) {
 		char num[0x20];
 		u32 scX, scY, scW, scH;
 		s32 m8;
-		m8 = 8 - wp->field_0x58;
+		m8 = 8 - wp->rowCount;
 		listOff = ((m8 > 0) ? m8 : 0) * 0x18;
 		windowDispGX_Waku_col(0, *(GXColor*)&dat_8041da7c, float_neg24_8041db44[0], float_100_8041db48[0], float_300_8041dad0[0], (f32)(0xdc - listOff),
 		                      float_20_8041dad8[0]);
@@ -1502,7 +1502,7 @@ void evt_unitwin_disp_func(CameraId cameraId, void* param) {
 		FontDrawEdgeOff();
 		GXGetScissor(&scX, &scY, &scW, &scH);
 		GXSetScissor(0x120, 0xA2, 0x11C, 0xbe - listOff);
-		for (i = 0; i < wp->field_0x58; i++) {
+		for (i = 0; i < wp->rowCount; i++) {
 			s32 j;
 			s32 cnt;
 			s32 numval;
@@ -1510,8 +1510,8 @@ void evt_unitwin_disp_func(CameraId cameraId, void* param) {
 			s32 arrow;
 			GXColor rowColor;
 			cnt = 0;
-			for (j = 0; j < wp->field_0x58; j++) {
-				if ((f32)j != wp->field_0x34 && mario_status_point_table[j][0] - mario_status_henka_table[j] <= 0) {
+			for (j = 0; j < wp->rowCount; j++) {
+				if ((f32)j != wp->cursorRow && mario_status_point_table[j][0] - mario_status_henka_table[j] <= 0) {
 					cnt += 1;
 				}
 			}
@@ -1524,13 +1524,13 @@ void evt_unitwin_disp_func(CameraId cameraId, void* param) {
 				changed = 1;
 				flag = 0x20;
 			}
-			iconDispGxS(0.5f, &(Vec){ 11.0f, wp->field_0x44 + (f32)(0x38 - dispCnt * 0x18), 0.0f }, flag | 0x10, mario_status_icon_table[i]);
+			iconDispGxS(0.5f, &(Vec){ 11.0f, wp->listY + (f32)(0x38 - dispCnt * 0x18), 0.0f }, flag | 0x10, mario_status_icon_table[i]);
 			FontDrawStart();
 			FontDrawColorV(rowColor);
 			sprintf(num, "%s%3d", mario_status_name_table[i], mario_status_point_table[i][0]);
-			FontDrawString(num, 36.0f, wp->field_0x44 + (f32)(0x50 - dispCnt * 0x18));
+			FontDrawString(num, 36.0f, wp->listY + (f32)(0x50 - dispCnt * 0x18));
 			blink = ((gp->retraceCount & 0xF) > 7) ? 0 : 2;
-			if ((f32)dispCnt == wp->field_0x34) {
+			if ((f32)dispCnt == wp->cursorRow) {
 				if (changed == 0) {
 					sprintf(help2, "help");
 				} else {
@@ -1544,7 +1544,7 @@ void evt_unitwin_disp_func(CameraId cameraId, void* param) {
 					sprintf(num, "  \x81H", numval);
 				}
 				FontDrawStart();
-				FontDrawString(num, 206.0f, wp->field_0x44 + (f32)(0x50 - dispCnt * 0x18));
+				FontDrawString(num, 206.0f, wp->listY + (f32)(0x50 - dispCnt * 0x18));
 			}
 			dispCnt++;
 		}
@@ -1565,7 +1565,7 @@ void evt_unitwin_disp_func(CameraId cameraId, void* param) {
 		char num[0x20];
 		u32 scX, scY, scW, scH;
 		s32 m8;
-		m8 = 8 - wp->field_0x58;
+		m8 = 8 - wp->rowCount;
 		listOff = ((m8 > 0) ? m8 : 0) * 0x18;
 		windowDispGX_Waku_col(0, *(GXColor*)&dat_8041da9c, float_neg24_8041db44[0], float_100_8041db48[0], float_300_8041dad0[0], (f32)(0xdc - listOff),
 		                      float_20_8041dad8[0]);
@@ -1591,7 +1591,7 @@ void evt_unitwin_disp_func(CameraId cameraId, void* param) {
 			s32 flag;
 			s32 arrow;
 			GXColor rowColor;
-			if (i == wp->field_0x4C) { continue; }
+			if (i == wp->excludeId) { continue; }
 			if (mario_status_point_table[i][0] - mario_status_henka_table[i] > 0) {
 				rowColor = *(GXColor*)&dat_8041dab0;
 				blocked = 0;
@@ -1601,13 +1601,13 @@ void evt_unitwin_disp_func(CameraId cameraId, void* param) {
 				blocked = 1;
 				flag = 0x20;
 			}
-			iconDispGxS(0.5f, &(Vec){ 11.0f, wp->field_0x44 + (f32)(0x38 - dispCnt * 0x18), 0.0f }, flag | 0x10, mario_status_icon_table[i]);
+			iconDispGxS(0.5f, &(Vec){ 11.0f, wp->listY + (f32)(0x38 - dispCnt * 0x18), 0.0f }, flag | 0x10, mario_status_icon_table[i]);
 			FontDrawStart();
 			FontDrawColorV(rowColor);
 			sprintf(num, "%s%3d", mario_status_name_table[i], mario_status_point_table[i][0]);
-			FontDrawString(num, 36.0f, wp->field_0x44 + (f32)(0x50 - dispCnt * 0x18));
+			FontDrawString(num, 36.0f, wp->listY + (f32)(0x50 - dispCnt * 0x18));
 			blink = ((gp->retraceCount & 0xF) > 7) ? 0 : 2;
-			if ((f32)dispCnt == wp->field_0x34) {
+			if ((f32)dispCnt == wp->cursorRow) {
 				if (blocked == 0) {
 					sprintf(help2, "help");
 				} else {
@@ -1621,7 +1621,7 @@ void evt_unitwin_disp_func(CameraId cameraId, void* param) {
 					sprintf(num, "  \x81H", numval);
 				}
 				FontDrawStart();
-				FontDrawString(num, 206.0f, wp->field_0x44 + (f32)(0x50 - dispCnt * 0x18));
+				FontDrawString(num, 206.0f, wp->listY + (f32)(0x50 - dispCnt * 0x18));
 			}
 			dispCnt++;
 		}
@@ -1639,14 +1639,14 @@ void evt_unitwin_disp_func(CameraId cameraId, void* param) {
 		break;
 	}
 
-	// --- common tail: title/help window selected by wp->field_0x50 ---
-	if (wp->field_0x50 != 0 && wp->field_0x50 != 1) {
+	// --- common tail: title/help window selected by wp->mode ---
+	if (wp->mode != 0 && wp->mode != 1) {
 		char* p;
 		char buf[0x88];
 		s32 lines;
 		char* second = NULL;
 
-		switch (wp->field_0x50) {
+		switch (wp->mode) {
 		case 11:
 		case 14:
 		case 15: strcpy(buf, msgSearch("msg_window_select_6")); break;
@@ -1707,7 +1707,7 @@ void evt_unitwin_disp_func(CameraId cameraId, void* param) {
 			}
 		}
 		iconFlagOff("yubicursor_2", 2);
-		iconSetPos("yubicursor_2", wp->field_0x3C, wp->field_0x40, float_0_8041db00[0]);
+		iconSetPos("yubicursor_2", wp->cursorX, wp->cursorY, float_0_8041db00[0]);
 	} else {
 		iconFlagOn("yubicursor_2", 2);
 	}
@@ -1721,7 +1721,7 @@ USER_FUNC(set_new_goods_list) {
 	s32 item = evtGetValue(event, args[1]);
 	char name[32];
 
-	wp->field_0x8[wp->index] = item;
+	wp->items[wp->index] = item;
 	if (wp->index < wp->count) {
 		sprintf(name, str_8041DAC0, wp->index);
 		if (item != 0) {
