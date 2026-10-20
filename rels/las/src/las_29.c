@@ -2289,8 +2289,8 @@ void _hikariEntry(const char* name, s32 type, f32 scale) {
 
     mapObjGetPos(name, &pos);
     effect = effFireEntry(type, 1000, pos.x, pos.y - 7.0f, pos.z, 1.0f);
-    ((effFireData*)effect->userdata)->field_0x78 = scale;
-    ((effFireData*)effect->userdata)->field_0x7C = scale;
+    ((effFireData*)effect->userdata)->scaleX = scale;
+    ((effFireData*)effect->userdata)->scaleY = scale;
     effSetName(effect, name);
 }
 
@@ -2310,8 +2310,8 @@ static USER_FUNC(rousoku_init) {
         mapGrpFlagOn(name, 1);
         mapObjGetPos(name, &pos);
         effect = effFireEntry(type, 1000, pos.x, pos.y - 7.0f, pos.z, 1.0f);
-        ((effFireData*)effect->userdata)->field_0x78 = 0.5f;
-        ((effFireData*)effect->userdata)->field_0x7C = 0.5f;
+        ((effFireData*)effect->userdata)->scaleX = 0.5f;
+        ((effFireData*)effect->userdata)->scaleY = 0.5f;
         effSetName(effect, name);
     }
     return EVT_RETURN_DONE;
@@ -2333,8 +2333,8 @@ USER_FUNC(rou_hikari_front_onoff) {
         flagFunc(name, 1);
         sprintf(name, "hi%d", i);
         effect = effNameToPtr(name);
-        ((effFireData*)effect->userdata)->field_0x78 = scale;
-        ((effFireData*)effect->userdata)->field_0x7C = scale;
+        ((effFireData*)effect->userdata)->scaleX = scale;
+        ((effFireData*)effect->userdata)->scaleY = scale;
     }
     return EVT_RETURN_DONE;
 }
@@ -2348,8 +2348,8 @@ USER_FUNC(hikari_set_scale) {
 
     sprintf(name, "hi%d", idx);
     effect = effNameToPtr(name);
-    ((effFireData*)effect->userdata)->field_0x78 = scale;
-    ((effFireData*)effect->userdata)->field_0x7C = scale;
+    ((effFireData*)effect->userdata)->scaleX = scale;
+    ((effFireData*)effect->userdata)->scaleY = scale;
     return EVT_RETURN_DONE;
 }
 
@@ -2366,8 +2366,8 @@ USER_FUNC(hikari_change) {
     effDelete(effNameToPtr(name));
     mapObjGetPos(name, &pos);
     effect = effFireEntry(type, 1000, pos.x, pos.y - 7.0f, pos.z, 1.0f);
-    ((effFireData*)effect->userdata)->field_0x78 = 0.0f;
-    ((effFireData*)effect->userdata)->field_0x7C = 0.0f;
+    ((effFireData*)effect->userdata)->scaleX = 0.0f;
+    ((effFireData*)effect->userdata)->scaleY = 0.0f;
     effSetName(effect, name);
     return EVT_RETURN_DONE;
 }
@@ -2443,8 +2443,8 @@ USER_FUNC(all_hikari_change_kuro) {
             effDelete(effNameToPtr(name));
             mapObjGetPos(name, &pos2);
             effect = effFireEntry(8, 1000, pos2.x, pos2.y - 7.0f, pos2.z, 1.0f);
-            ((effFireData*)effect->userdata)->field_0x78 = 0.5f;
-            ((effFireData*)effect->userdata)->field_0x7C = 0.5f;
+            ((effFireData*)effect->userdata)->scaleX = 0.5f;
+            ((effFireData*)effect->userdata)->scaleY = 0.5f;
             effSetName(effect, name);
             i++;
             value = (s32)hikari_data[i * 2];
@@ -2456,8 +2456,8 @@ USER_FUNC(all_hikari_change_kuro) {
         effDelete(effNameToPtr(name));
         mapObjGetPos(name, &pos);
         effect = effFireEntry(8, 1000, pos.x, pos.y - 7.0f, pos.z, 1.0f);
-        ((effFireData*)effect->userdata)->field_0x78 = 0.5f;
-        ((effFireData*)effect->userdata)->field_0x7C = 0.5f;
+        ((effFireData*)effect->userdata)->scaleX = 0.5f;
+        ((effFireData*)effect->userdata)->scaleY = 0.5f;
         effSetName(effect, name);
     }
     return EVT_RETURN_DONE;
@@ -2492,8 +2492,8 @@ USER_FUNC(all_hikari_onoff) {
 
         sprintf(name, "hi%d", i);
         effect = effNameToPtr(name);
-        ((effFireData*)effect->userdata)->field_0x78 = scale;
-        ((effFireData*)effect->userdata)->field_0x7C = scale;
+        ((effFireData*)effect->userdata)->scaleX = scale;
+        ((effFireData*)effect->userdata)->scaleY = scale;
     }
     return EVT_RETURN_DONE;
 }

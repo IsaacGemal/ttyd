@@ -110,7 +110,7 @@ u8 point_data[0x1E0] = {
 	0xEA, 0x32, 0x16, 0x00, 0x00, 0x3D, 0x03, 0xFD, 0xF0, 0xF0, 0xF0, 0x00,
 };
 
-// .data: the small quad the four drops draw; local to this file in the original.
+// .data: the small quad the four bubbles draw; local to this file in the original.
 static u32 size8x8_tex32x32_vtx[14] = {
 	0xFFFCFFFC, 0x00000000, 0x00000000, 0x00FF0004, 0xFFFC0000, 0x04000000, 0x000000FF,
 	0x00040004, 0x00000400, 0x04000000, 0x00FFFFFC, 0x00040000, 0x00000400, 0x000000FF,
@@ -126,30 +126,6 @@ inline Vec initializeVec(Vec* input) {
 	return temp;
 }
 
-// Local view of the userdata tail: five float arrays of 4 and a counter array of 4,
-// all interleaved (stride 4 bytes), which the original walks with a single moving base.
-typedef struct WprotectData {
-	s32 type;           // 0x00
-	f32 x;              // 0x04
-	f32 y;              // 0x08
-	f32 z;              // 0x0C
-	s32 field_0x10;     // 0x10
-	s32 field_0x14;     // 0x14
-	s32 field_0x18;     // 0x18
-	s32 field_0x1C;     // 0x1C
-	s32 field_0x20;     // 0x20
-	s32 field_0x24;     // 0x24
-	s32 field_0x28;     // 0x28
-	f32 scale;          // 0x2C
-	f32 field_0x30;     // 0x30
-	f32 field_0x34;     // 0x34
-	f32 field_0x38[4];  // 0x38
-	f32 field_0x48[4];  // 0x48
-	f32 field_0x58[4];  // 0x58
-	f32 field_0x68[4];  // 0x68
-	f32 field_0x78[4];  // 0x78
-	s32 field_0x88[4];  // 0x88
-} WprotectData; // 0x98
 EffectEntry* effOpukuWprotectN64Entry(s32 type, s32 duration, f32 x, f32 y, f32 z, f32 scale) {
 	EffectEntry* effect;
 	effOpukuWprotectData* data;
@@ -163,32 +139,32 @@ EffectEntry* effOpukuWprotectN64Entry(s32 type, s32 duration, f32 x, f32 y, f32 
 	effect->flags |= 2;
 
 	data->type = type;
-	data->field_0x14 = 0;
+	data->timer = 0;
 	if (duration <= 0) {
-		data->field_0x10 = 1000;
+		data->lifetime = 1000;
 	} else {
-		data->field_0x10 = duration;
+		data->lifetime = duration;
 	}
-	data->field_0x24 = 0;
+	data->alpha = 0;
 	data->x = x;
 	data->y = y;
 	data->z = z;
 	data->scale = scale;
-	data->field_0x18 = 0x2F;
-	data->field_0x1C = 0x7F;
-	data->field_0x20 = 0xFF;
+	data->colorR = 0x2F;
+	data->colorG = 0x7F;
+	data->colorB = 0xFF;
 	data->field_0x30 = float_0_8041f890;
 	data->field_0x34 = float_0_8041f890;
-	data->field_0x88 = -1;
-	data->field_0x8C = -5;
-	data->field_0x90 = -9;
-	data->field_0x94 = -0xD;
+	data->bubbleTimer[0] = -1;
+	data->bubbleTimer[1] = -5;
+	data->bubbleTimer[2] = -9;
+	data->bubbleTimer[3] = -0xD;
 
 	return effect;
 }
 // 0x98
 void effOpukuWprotectMain(EffectEntry* effect) {
-	WprotectData* data = effect->userdata;
+	effOpukuWprotectData* data = effect->userdata;
 	Vec pos = initializeVec((Vec*)&data->x);
 	s32 type = data->type;
 	s32 f14;
@@ -204,21 +180,21 @@ void effOpukuWprotectMain(EffectEntry* effect) {
 	if (effect->flags & 4) {
 		if (type == 1) {
 			effect->flags &= ~4;
-			data->field_0x10 = 4;
+			data->lifetime = 4;
 		} else {
 			effect->flags &= ~4;
-			data->field_0x10 = 0x10;
+			data->lifetime = 0x10;
 		}
 	}
-	if (data->field_0x10 < 1000) {
-		data->field_0x10--;
+	if (data->lifetime < 1000) {
+		data->lifetime--;
 	}
-	data->field_0x14++;
-	if (data->field_0x14 > 0x4F1A0) {
-		data->field_0x14 = 0x100;
+	data->timer++;
+	if (data->timer > 0x4F1A0) {
+		data->timer = 0x100;
 	}
 
-	if (data->field_0x10 < 0) {
+	if (data->lifetime < 0) {
 		if (type == 1) {
 			effWaterDamageN64Entry(0, 30, data->x, float_24_8041f8b0 + data->y, data->z, float_2_8041f8b4);
 			effWaterDamageN64Entry(1, 30, data->x, float_24_8041f8b0 + data->y, data->z, float_2_8041f8b4);
@@ -227,21 +203,21 @@ void effOpukuWprotectMain(EffectEntry* effect) {
 		return;
 	}
 
-	f14 = data->field_0x14;
+	f14 = data->timer;
 	if (type == 0) {
-		if (data->field_0x10 < 0x10) {
-			s32 v = data->field_0x10 << 4;
-			data->field_0x24 = v;
-			data->field_0x28 = v;
+		if (data->lifetime < 0x10) {
+			s32 v = data->lifetime << 4;
+			data->alpha = v;
+			data->baseAlpha = v;
 		}
 		if (f14 < 0x10) {
-			data->field_0x24 = (f14 << 4) + 0xf;
-			data->field_0x28 = (f14 << 4) + 0xf;
+			data->alpha = (f14 << 4) + 0xf;
+			data->baseAlpha = (f14 << 4) + 0xf;
 		}
 	} else {
 		if (f14 < 4) {
-			data->field_0x24 = (f14 << 6) + 0x3f;
-			data->field_0x28 = (f14 << 6) + 0x3f;
+			data->alpha = (f14 << 6) + 0x3f;
+			data->baseAlpha = (f14 << 6) + 0x3f;
 		}
 	}
 
@@ -251,7 +227,7 @@ void effOpukuWprotectMain(EffectEntry* effect) {
 #else
 	s = (f32)sin(float_6p2832_8041f8b8 * (f32)(f14 * 7) / float_360_8041f8bc);
 #endif
-	data->field_0x1C = (u8)(s32)(32.0f * s + 127.0f);
+	data->colorG = (u8)(s32)(32.0f * s + 127.0f);
 	t = 0.01f * (f32)f14;
 	a1 = float_6p2832_8041f8b8 * t / float_360_8041f8bc;
 	sin1 = (f32)sin(a1);
@@ -271,30 +247,30 @@ void effOpukuWprotectMain(EffectEntry* effect) {
 	}
 
 	for (i = 0; i < 4; i++) {
-		data->field_0x88[i]++;
-		if (data->field_0x88[i] < 0) {
+		data->bubbleTimer[i]++;
+		if (data->bubbleTimer[i] < 0) {
 			continue;
 		}
-		if (data->field_0x88[i] == 0) {
-			data->field_0x38[i] = float_0_8041f890;
-			data->field_0x48[i] = 240.0f;
-			data->field_0x58[i] = 0.2f * (f32)(rand() % 11 - 5);
-			data->field_0x68[i] = (f32)(rand() % 11 + 2);
-			data->field_0x78[i] = (f32)(rand() % 11 + 1);
+		if (data->bubbleTimer[i] == 0) {
+			data->bubbleX[i] = float_0_8041f890;
+			data->bubbleY[i] = 240.0f;
+			data->bubbleVelX[i] = 0.2f * (f32)(rand() % 11 - 5);
+			data->bubbleVelY[i] = (f32)(rand() % 11 + 2);
+			data->bubbleScale[i] = (f32)(rand() % 11 + 1);
 		}
-		data->field_0x38[i] += data->field_0x58[i];
-		data->field_0x48[i] += data->field_0x68[i];
-		data->field_0x58[i] *= 0.97f;
-		data->field_0x68[i] += float_0p1_8041f8a4 * (float_10_8041f898 - data->field_0x68[i]);
-		if (data->field_0x48[i] > 480.0f) {
-			data->field_0x88[i] = -(rand() % 11) - 1;
+		data->bubbleX[i] += data->bubbleVelX[i];
+		data->bubbleY[i] += data->bubbleVelY[i];
+		data->bubbleVelX[i] *= 0.97f;
+		data->bubbleVelY[i] += float_0p1_8041f8a4 * (float_10_8041f898 - data->bubbleVelY[i]);
+		if (data->bubbleY[i] > 480.0f) {
+			data->bubbleTimer[i] = -(rand() % 11) - 1;
 		}
 	}
 
 	dispEntry(CAMERA_3D, dispCalcZ(&pos), 2, effOpukuWprotectDisp, effect);
 }
 
-// The display pass: build the 40-point ring from point_data, draw the four drops,
+// The display pass: build the 40-point ring from point_data, draw the four bubbles,
 // then two indexed passes over the built vertices. Every coordinate conversion is
 // integer magic (fctiwz + lfd/fsubs), so no inline asm is needed.
 #ifdef MUST_MATCH
@@ -313,11 +289,11 @@ static inline void wprotectColor2(s32 a) {
 	GXSetTevColor(GX_TEVREG1, c);
 }
 
-static inline void wprotectColor3(WprotectData* data, s32 a) {
+static inline void wprotectColor3(effOpukuWprotectData* data, s32 a) {
 	GXColor c = unk_804231f0;
-	c.r = data->field_0x18;
-	c.g = data->field_0x1C;
-	c.b = data->field_0x20;
+	c.r = data->colorR;
+	c.g = data->colorG;
+	c.b = data->colorB;
 	c.a = a;
 	GXSetTevColor(GX_TEVREG0, c);
 }
@@ -326,14 +302,14 @@ static inline void wprotectColor3(WprotectData* data, s32 a) {
 void effOpukuWprotectDisp(CameraId camId, void* param) {
 	EffectEntry* effect = param;
 	CameraEntry* cam = camGetPtr(camId);
-	WprotectData* data = effect->userdata;
+	effOpukuWprotectData* data = effect->userdata;
 	s32 i;
 	s32 alpha;
 	WprotectVtx* vtx;
 	WprotectVtx* p;
 	WprotectPoint* point;
 	GXTexObj texObj;
-	Mtx drop;
+	Mtx bubble;
 	Mtx scale;
 	Mtx trans;
 #ifndef MUST_MATCH
@@ -353,7 +329,7 @@ void effOpukuWprotectDisp(CameraId camId, void* param) {
 	f32 d3;
 	f32 t2;
 
-	alpha = data->field_0x24;
+	alpha = data->alpha;
 	PSMTXTrans(trans, data->x, data->y, data->z);
 	PSMTXConcat(cam->view, trans, trans);
 
@@ -399,10 +375,10 @@ void effOpukuWprotectDisp(CameraId camId, void* param) {
 	GXSetTevColor(GX_TEVREG0, color1);
 #endif
 #ifdef MUST_MATCH
-	wprotectColor2(data->field_0x28);
+	wprotectColor2(data->baseAlpha);
 #else
 	color2 = dat_8041f88c;
-	color2.a = data->field_0x28;
+	color2.a = data->baseAlpha;
 	GXSetTevColor(GX_TEVREG1, color2);
 #endif
 	GXSetNumChans(0);
@@ -421,15 +397,15 @@ void effOpukuWprotectDisp(CameraId camId, void* param) {
 	GXSetCullMode(GX_CULL_NONE);
 
 	for (i = 0; i < 4; i++) {
-		if (data->field_0x88[i] >= 0) {
+		if (data->bubbleTimer[i] >= 0) {
 			PSMTXScale(scale, float_0p1_8041f8a4, float_0p1_8041f8a4, float_0p1_8041f8a4);
-			PSMTXTrans(drop, data->field_0x38[i], data->field_0x48[i], float_0_8041f890);
-			PSMTXConcat(scale, drop, drop);
-			PSMTXScale(scale, data->field_0x78[i], data->field_0x78[i], data->field_0x78[i]);
-			PSMTXConcat(drop, scale, drop);
-			PSMTXConcat(trans, drop, drop);
-			GXLoadPosMtxImm(drop, 0);
-			GXSetCurrentMtx(0);
+			PSMTXTrans(bubble, data->bubbleX[i], data->bubbleY[i], float_0_8041f890);
+			PSMTXConcat(scale, bubble, bubble);
+			PSMTXScale(scale, data->bubbleScale[i], data->bubbleScale[i], data->bubbleScale[i]);
+			PSMTXConcat(bubble, scale, bubble);
+			PSMTXConcat(trans, bubble, bubble);
+			GXLoadPosMtxImm(bubble, GX_PNMTX0);
+			GXSetCurrentMtx(GX_PNMTX0);
 			effSetVtxDescN64((effVtxArray*)size8x8_tex32x32_vtx);
 			GXBegin(GX_TRIANGLES, GX_VTXFMT0, 6);
 			tri2(0, 1, 2, 0, 0, 2, 3, 0);
@@ -437,7 +413,7 @@ void effOpukuWprotectDisp(CameraId camId, void* param) {
 	}
 
 	GXSetNumChans(1);
-	GXSetChanCtrl(GX_COLOR0A0, GX_FALSE, GX_SRC_REG, GX_SRC_VTX, 0, GX_DF_NONE, GX_AF_NONE);
+	GXSetChanCtrl(GX_COLOR0A0, GX_FALSE, GX_SRC_REG, GX_SRC_VTX, GX_LIGHT_NULL, GX_DF_NONE, GX_AF_NONE);
 	GXSetNumTevStages(2);
 	GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR0A0);
 	GXSetTevColorOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
@@ -459,9 +435,9 @@ void effOpukuWprotectDisp(CameraId camId, void* param) {
 	wprotectColor3(data, (s32)(float_0p3_8041f8ac * (f32)alpha));
 #else
 	color3 = unk_804231f0;
-	color3.r = data->field_0x18;
-	color3.g = data->field_0x1C;
-	color3.b = data->field_0x20;
+	color3.r = data->colorR;
+	color3.g = data->colorG;
+	color3.b = data->colorB;
 	color3.a = (s32)(float_0p3_8041f8ac * (f32)alpha);
 	GXSetTevColor(GX_TEVREG0, color3);
 #endif
@@ -471,8 +447,8 @@ void effOpukuWprotectDisp(CameraId camId, void* param) {
 	GXInvalidateVtxCache();
 	PSMTXScale(scale, float_0p1_8041f8a4, float_0p1_8041f8a4, float_0p1_8041f8a4);
 	PSMTXConcat(trans, scale, scale);
-	GXLoadPosMtxImm(scale, 0);
-	GXSetCurrentMtx(0);
+	GXLoadPosMtxImm(scale, GX_PNMTX0);
+	GXSetCurrentMtx(GX_PNMTX0);
 	effSetVtxDescN64((effVtxArray*)vtx);
 	GXBegin(GX_TRIANGLES, GX_VTXFMT0, 60);
 	tri2(0, 1, 2, 0, 0, 2, 3, 0);
@@ -485,7 +461,7 @@ void effOpukuWprotectDisp(CameraId camId, void* param) {
 	tri2(22, 23, 4, 0, 22, 4, 5, 0);
 	tri2(24, 25, 26, 0, 24, 26, 27, 0);
 	tri2(26, 28, 29, 0, 26, 29, 27, 0);
-	effSetVtxDescN64((effVtxArray*)((u8*)vtx + 0x188));
+	effSetVtxDescN64((effVtxArray*)(vtx + 28));
 	GXBegin(GX_TRIANGLES, GX_VTXFMT0, 24);
 	tri2(0, 2, 6, 0, 0, 6, 1, 0);
 	tri2(3, 7, 4, 0, 3, 4, 8, 0);

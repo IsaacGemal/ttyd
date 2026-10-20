@@ -35,7 +35,7 @@ typedef struct effFireData {
 	s32 colorIndex2;   // 0x2C
 	s32 counterMax;    // 0x30
 	s32 frameMax;      // 0x34
-	s32 field_0x38;    // 0x38
+	s32 frameBlend;    // 0x38: Disp2's crossfade weight from the colorIndex1 frame's alpha to the colorIndex2 frame's (TEVREG2 alpha; 0x80 = halfway)
 	s32 scaleIndex;    // 0x3C
 	s32 scaleCounter;  // 0x40
 	f32 curScale;      // 0x44
@@ -47,15 +47,15 @@ typedef struct effFireData {
 	f32 field_0x5C;    // 0x5C
 	f32 field_0x60;    // 0x60
 	s32 field_0x64;    // 0x64
-	s32 field_0x68;    // 0x68
-	s32 field_0x6C;    // 0x6C
-	s32 field_0x70;    // 0x70
-	s32 field_0x74;    // 0x74
-	f32 field_0x78;    // 0x78
-	f32 field_0x7C;    // 0x7C
+	s32 screenLeft;    // 0x68: Disp3's screen-pixel bounding box of the flame quads (608x480, y down), clamped to the screen
+	s32 screenRight;   // 0x6C
+	s32 screenTop;     // 0x70
+	s32 screenBottom;  // 0x74
+	f32 scaleX;        // 0x78: horizontal scale on top of scale (also widens the spark spread)
+	f32 scaleY;        // 0x7C: vertical scale on top of scale
 	s32 field_0x80;    // 0x80
 	s32 field_0x84;    // 0x84
-	s32 field_0x88;    // 0x88
+	s32 useMapBlend;   // 0x88: nonzero multiplies Disp3's flame by the map blend colour while the map's blend flag is set
 } effFireData;
 typedef struct ScaleEntry {
 	s32 threshold;
