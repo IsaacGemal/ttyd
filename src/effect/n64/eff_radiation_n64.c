@@ -462,8 +462,8 @@ void effRadiationDisp(CameraId camId, void* param) {
 		}
 
 		PSMTXConcat(cam->view, work, work);
-		GXLoadPosMtxImm(work, 0);
-		GXSetCurrentMtx(0);
+		GXLoadPosMtxImm(work, GX_PNMTX0);
+		GXSetCurrentMtx(GX_PNMTX0);
 		switch (type) {
 		case 0:
 		case 1:

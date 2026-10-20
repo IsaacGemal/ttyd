@@ -493,7 +493,7 @@ void effKemuri1Disp(CameraId camId, void* param) {
 				PSMTXTrans(mtxTmp, 2.0f + data->position.x,
 					data->position.y - 2.0f, data->position.z);
 				PSMTXConcat(mtxBase, mtxTmp, mtxTmp);
-				GXLoadPosMtxImm(mtxTmp, 0);
+				GXLoadPosMtxImm(mtxTmp, GX_PNMTX0);
 			}
 			else {
 #ifdef MUST_MATCH
@@ -508,7 +508,7 @@ void effKemuri1Disp(CameraId camId, void* param) {
 #endif
 				PSMTXTrans(mtxTmp, data->position.x, data->position.y, data->position.z);
 				PSMTXConcat(mtxBase, mtxTmp, mtxTmp);
-				GXLoadPosMtxImm(mtxTmp, 0);
+				GXLoadPosMtxImm(mtxTmp, GX_PNMTX0);
 			}
 
 			GXBegin(GX_QUADS, GX_VTXFMT0, 4);

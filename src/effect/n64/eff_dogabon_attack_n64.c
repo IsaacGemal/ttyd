@@ -346,7 +346,7 @@ void effDogabonAttackMain(EffectEntry* effect) {
 #ifdef MUST_MATCH
     dispEntry(4, dispCalcZ(&position), 1, effDogabonAttackDisp, effect);
 #else
-    dispEntry(4, dispCalcZ(&disp), 1, effDogabonAttackDisp, effect);
+    dispEntry(CAMERA_3D, dispCalcZ(&disp), 1, effDogabonAttackDisp, effect);
 #endif
 }
 
