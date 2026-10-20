@@ -9933,3 +9933,20 @@ OK; all 17 C files and the 16 users of their changed headers (plus eff_fire.c) n
 pre-batch objects (tools/obj_equiv.py, old tree with old headers). Open: msgdrv.h's `choiceState`/`choiceMade`/
 `choiceIndex` describe the 0xFFFE button-wait, not a choice; BattleWork field_18FF0 still wants named slots; the tou
 and tou2 RELs keep separate copies of RankEntry/FighterEntry/RuleEntry/DispWork.
+### Readability: address-named constants back to literals, tree-wide (2026-10-20, Claude Opus 5.5, n9-q-addrall)
+
+`tools/addr_literals.py --all --apply` over src/ and rels/*/src: 892 objects in 128 files became literals (462 f32,
+5 f64, 212 strings, 168 Vec and 45 GXColor compound literals), each kept only where its unit's matching object stays
+obj_equiv-equivalent. Address-named references 13,757 -> 10,928; cleanup index 41.05 -> 37.09. What stays named:
+objects a MUST_MATCH conditional names (match-only code is left alone), objects another source or header names,
+objects whose address or sizeof is taken (`STRING((char*)&float_0_...)` script arguments, `*(GXColor*)&dat_...`),
+volatile ones, and the ones whose literal pools or schedules differently from the named object (named objects come
+first in their section in definition order, literals in first-use order), which the per-candidate search rejects.
+Float spellings are the original initializers, so a few stay long where the shorter spelling is another value
+(0.29999998f is not 0.3f, 0.040000003f is not 0.04f); three strings keep alignment NULs the object needs.
+Review: all 128 files also compile without MUST_MATCH; 121 natural objects equal the pre-sweep ones, and the other 7
+(shadowdrv, evt_shop, winmgr, mot_hammer, mot_jabara, mot_stay, party_bomhei) differ only in pool layout, with every
+load reading the same bytes as before. The tool also rewrote retail names inside comments into literals (nonsense
+like "the named `30.0f`"); those comments in battle_disp, battle_event_cmd, sac_genki, eff_nice and himo were
+restored or reworded, two orphaned section headers went (imgdrv, eff_lensflare_n64), and the tool now leaves
+comments alone and drops a header that only headed removed declarations right before a function. Matching build OK.

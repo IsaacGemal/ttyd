@@ -15,16 +15,12 @@ __declspec(section ".sdata") GXColor unk_804232c0;
 extern const f32 float_deg2rad_80420114;
 extern const f32 float_0p03125_80420118;
 extern const f32 float_0_8042011c;
-extern const GXColor dat_80420110;
 extern const f32 float_0p5_80420120;
 extern const f32 float_0p78_80420124;
 extern const f32 float_0p29_80420128;
 extern const f32 float_0p93_8042012c;
 extern const f32 float_6p2832_80420130;
 extern const f32 float_360_80420134;
-extern const f32 float_0p9_80420138;
-extern const f32 float_144_8042013c;
-extern const f32 float_64_80420140;
 
 typedef struct effWangFlushData {
 	s32 type;         // 0x0
@@ -109,8 +105,8 @@ void effWangFlushMain(EffectEntry* effect) {
 	data->scaleSpeed += float_0p29_80420128;
 	data->rot += data->rotSpeed;
 	data->rotSpeed *= float_0p93_8042012c;
-	data->alphaScale = float_0p5_80420120 * (f32)sin(float_6p2832_80420130 * (f32)(duration * 50) / float_360_80420134) + float_0p9_80420138;
-	data->field_0x28 = float_64_80420140 * (f32)sin(float_6p2832_80420130 * (f32)(duration * 40) / float_360_80420134) + float_144_8042013c;
+	data->alphaScale = float_0p5_80420120 * (f32)sin(float_6p2832_80420130 * (f32)(duration * 50) / float_360_80420134) + 0.9f;
+	data->field_0x28 = 64.0f * (f32)sin(float_6p2832_80420130 * (f32)(duration * 40) / float_360_80420134) + 144.0f;
 
 #ifdef MUST_MATCH
 	dispEntry(CAMERA_3D, dispCalcZ(&position), 2, effWangFlushDisp, effect);
@@ -145,7 +141,7 @@ static inline void effWangFlushSetTypeColor(s32 idx, s32 alpha) {
 }
 
 static inline void effWangFlushSetAlphaColor(s32 alpha) {
-	GXColor color = dat_80420110;
+	GXColor color = (GXColor){ 0xFF, 0xFF, 0xFF, 0x00 };
 
 	color.a = alpha;
 	GXSetTevColor(1, color);
@@ -220,7 +216,6 @@ void effWangFlushDisp(CameraId camId, void* param) {
 }
 
 // The pool constants the code above loads by name, defined after it (defined first, the compiler folds them).
-const GXColor dat_80420110 = { 0xFF, 0xFF, 0xFF, 0x00 };
 const f32 float_deg2rad_80420114 = 0.017453292f;
 const f32 float_0p03125_80420118 = 0.03125f;
 const f32 float_0_8042011c = 0.0f;
@@ -230,6 +225,3 @@ const f32 float_0p29_80420128 = 0.29f;
 const f32 float_0p93_8042012c = 0.93f;
 const f32 float_6p2832_80420130 = 6.2831855f;
 const f32 float_360_80420134 = 360.0f;
-const f32 float_0p9_80420138 = 0.9f;
-const f32 float_144_8042013c = 144.0f;
-const f32 float_64_80420140 = 64.0f;

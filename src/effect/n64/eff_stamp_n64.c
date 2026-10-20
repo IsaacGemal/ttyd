@@ -14,9 +14,6 @@ __declspec(section ".sdata") GXColor unk_80423274;
 __declspec(section ".sdata") GXColor unk_80423270;
 
 
-// .rodata
-const Vec vec3_802fb6f0 = { 0.0f, 0.0f, 0.0f };
-
 // .sdata2 shared float pool
 extern const f32 float_deg2rad_8041fde0;
 extern const f32 float_0p03125_8041fde4;
@@ -110,7 +107,7 @@ void effStampMain(EffectEntry* effect) {
     s32 count;
 
     data = effect->userdata;
-    position = vec3_802fb6f0;
+    position = (Vec){ 0.0f, 0.0f, 0.0f };
     position.x = data->x;
     position.y = data->y;
     position.z = data->z;

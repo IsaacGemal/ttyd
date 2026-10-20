@@ -37,7 +37,6 @@ __declspec(section ".data") u32 gap_05_803A2270_data[4] = { 0, 0, 0, 0 };
 // .sbss2 colour scratch, global to this unit's asm
 
 const Vec vec3_802faa50 = { 0.0f, 0.0f, 0.0f };
-const char str_802FAA5C[] = "KumokumoChipN64";
 
 int __float_nan[];
 #define NAN (*(f32*)__float_nan)
@@ -112,7 +111,7 @@ EffectEntry* effKumokumoChipN64Entry(s32 type, f32 x, f32 y, f32 z, f32 x2, f32 
 	s32 count;
 
 	effect = effEntry();
-	effect->type = str_802FAA5C;
+	effect->type = "KumokumoChipN64";
 	effect->count = 1;
 	data = __memAlloc(HEAP_EFFECT, sizeof(effKumokumoChipData));
 	effect->userdata = data;

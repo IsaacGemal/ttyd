@@ -19,41 +19,15 @@ typedef struct LstRcKeepWork {
     s32 endTimer;   // 0x0C, post-command timer
 } LstRcKeepWork;
 
-// rodata strings, one per icon. They are the first objects of the unit's .rodata, so the compiler
-// uses str_802F94E0 as the section base for the vector constants that follow it.
-const char str_802F94E0[] = "_AcSkl1";
-const char str_802F94E8[] = "_AcSkl2";
-const char str_802F94F0[] = "_AcSkl3";
-const char str_802F94F8[] = "_AcSkl4";
-
-// rodata vectors. The original emitted one symbol per element (0x802F9500..0x802F9560).
-const Vec vec3_802f9500 = {0.0f, 0.0f, 0.0f};
-const Vec vec3_802f950c = {0.0f, 0.0f, 0.0f};
-const Vec vec3_802f9518 = {0.0f, 0.0f, 0.0f};
-const Vec vec3_802f9524 = {0.0f, 0.0f, 0.0f};
-const Vec vec3_802f9530 = {0.0f, 0.0f, 0.0f};
-const Vec vec3_802f953c = {0.0f, 0.0f, 0.0f};
-const Vec vec3_802f9548 = {0.0f, 0.0f, 0.0f};
-const Vec vec3_802f9554 = {0.0f, 0.0f, 0.0f};
-const Vec vec3_802f9560 = {0.0f, 0.0f, 0.0f};
-
 // sdata2 float constants.
 extern const f32 float_neg168_8041e5d8;
 extern const f32 float_70_8041e5dc;
 extern const f32 float_1_8041e5e0;
-extern const f32 float_neg232_8041e5e4;
-extern const f32 float_neg200_8041e5e8;
-extern const f32 float_25_8041e5ec;
-extern const f32 float_0p5_8041e5f0;
-extern const f32 float_neg151_8041e5f4;
-extern const f32 float_neg300_8041e5f8;
-extern const f32 float_30_8041e5fc;
-extern const f32 float_0_8041e600;
 
 // sdata tables.
 s32 ac_lstrckeep_ok_frame[7] = {0x50, 0x46, 0x3C, 0x28, 0x14, 0x0A, 0x05};
-char* ac_lstrckeep_iconname[4] = {(char*)str_802F94E0, (char*)str_802F94E8, (char*)str_802F94F0,
-                                   (char*)str_802F94F8};
+char* ac_lstrckeep_iconname[4] = {(char*)"_AcSkl1", (char*)"_AcSkl2", (char*)"_AcSkl3",
+                                   (char*)"_AcSkl4"};
 
 static void actionCommandDisp(f32 x, f32 y, s32 type);
 
@@ -82,8 +56,8 @@ s32 battleAcMain_LstRcKeep(BattleWork* work) {
             ac->result = 1;
             dec->stage = 0;
             memset(disp, 0, 0x2C);
-            disp->iconX = float_neg300_8041e5f8;
-            disp->iconY = float_0_8041e600;
+            disp->iconX = -300.0f;
+            disp->iconY = 0.0f;
             disp->counter = 0x14;
             ac->mAcState = 0x63;
             break;
@@ -284,8 +258,8 @@ void battleAcDisp_LstRcKeep(CameraId camId, void* param) {
     case 0x64:
     case 0x3E8:
         *(s32*)&disp->field_0x24[0] = -1;
-        disp->iconX = intplGetValue(4, 0x14 - disp->counter, 0x14, float_neg300_8041e5f8,
-                                    float_30_8041e5fc);
+        disp->iconX = intplGetValue(4, 0x14 - disp->counter, 0x14, -300.0f,
+                                    30.0f);
         actionCommandDisp(disp->iconX, disp->iconY, *(s32*)&disp->field_0x24[0]);
         if (disp->counter > 0) {
             disp->counter--;
@@ -293,8 +267,8 @@ void battleAcDisp_LstRcKeep(CameraId camId, void* param) {
         break;
     case 0x3E9:
         *(s32*)&disp->field_0x24[0] = dec->stage - 1;
-        disp->iconX = intplGetValue(4, 0x14 - disp->counter, 0x14, float_neg300_8041e5f8,
-                                    float_30_8041e5fc);
+        disp->iconX = intplGetValue(4, 0x14 - disp->counter, 0x14, -300.0f,
+                                    30.0f);
         actionCommandDisp(disp->iconX, disp->iconY, *(s32*)&disp->field_0x24[0]);
         if (disp->counter > 0) {
             disp->counter--;
@@ -303,16 +277,16 @@ void battleAcDisp_LstRcKeep(CameraId camId, void* param) {
     case 0x3EA:
     case 0x3EB:
     case 0x3EC:
-        actionCommandDisp(float_30_8041e5fc, float_0_8041e600, *(s32*)&disp->field_0x24[0]);
+        actionCommandDisp(30.0f, 0.0f, *(s32*)&disp->field_0x24[0]);
         break;
     case 0x3ED:
     case 0x3EE:
         if (disp->counter >= 0x28) {
-            disp->iconX = intplGetValue(4, disp->counter - 0x28, 0x14, float_30_8041e5fc,
-                                        float_neg300_8041e5f8);
+            disp->iconX = intplGetValue(4, disp->counter - 0x28, 0x14, 30.0f,
+                                        -300.0f);
         }
         else {
-            disp->iconX = float_30_8041e5fc;
+            disp->iconX = 30.0f;
         }
         actionCommandDisp(disp->iconX, disp->iconY, *(s32*)&disp->field_0x24[0]);
         if (disp->counter < 0x3C) {
@@ -340,42 +314,42 @@ static void actionCommandDisp(f32 x, f32 y, s32 type) {
     camGetPtr(CAMERA_2D);
 
     if (type < 3) {
-        Vec v = vec3_802f9500;
+        Vec v = (Vec){0.0f, 0.0f, 0.0f};
         v.x = float_neg168_8041e5d8 + x;
         v.y = float_70_8041e5dc + y;
         iconDispGx(float_1_8041e5e0, &v, 0x10, 0x71);
     }
     else {
-        Vec v = vec3_802f950c;
+        Vec v = (Vec){0.0f, 0.0f, 0.0f};
         v.x = float_neg168_8041e5d8 + x;
         v.y = float_70_8041e5dc + y;
         iconDispGx(float_1_8041e5e0, &v, 0x10, 0x70);
     }
 
     if (type < 3) {
-        Vec v = vec3_802f9518;
-        v.x = float_neg232_8041e5e4 + x;
+        Vec v = (Vec){0.0f, 0.0f, 0.0f};
+        v.x = -232.0f + x;
         v.y = float_70_8041e5dc + y;
         iconDispGx(float_1_8041e5e0, &v, 0x10, 0x78);
     }
     else {
-        Vec v = vec3_802f9524;
-        v.x = float_neg232_8041e5e4 + x;
+        Vec v = (Vec){0.0f, 0.0f, 0.0f};
+        v.x = -232.0f + x;
         v.y = float_70_8041e5dc + y;
         iconDispGx(float_1_8041e5e0, &v, 0x10, 0x79);
     }
 
     {
-        Vec v = vec3_802f9530;
-        v.x = float_neg200_8041e5e8 + x;
-        y = float_25_8041e5ec + y;
+        Vec v = (Vec){0.0f, 0.0f, 0.0f};
+        v.x = -200.0f + x;
+        y = 25.0f + y;
         v.y = y;
         iconDispGx(float_1_8041e5e0, &v, 0x10, 0x8E);
     }
 
     for (i = 0, off = 0; i < 3; i++, off += 0x21) {
         if (i <= type) {
-            Vec v = vec3_802f953c;
+            Vec v = (Vec){0.0f, 0.0f, 0.0f};
             v.x = x + (f32)(off - 0x102);
             v.y = y;
 #ifdef MUST_MATCH
@@ -386,22 +360,22 @@ static void actionCommandDisp(f32 x, f32 y, s32 type) {
 #endif
         }
         else {
-            Vec v = vec3_802f9548;
+            Vec v = (Vec){0.0f, 0.0f, 0.0f};
             v.x = x + (f32)(off - 0x102);
             v.y = y;
-            iconDispGx(float_0p5_8041e5f0, &v, 0x10, 0x91);
+            iconDispGx(0.5f, &v, 0x10, 0x91);
         }
     }
 
     if (type < 3) {
-        Vec v = vec3_802f9554;
-        v.x = float_neg151_8041e5f4 + x;
+        Vec v = (Vec){0.0f, 0.0f, 0.0f};
+        v.x = -151.0f + x;
         v.y = y;
         iconDispGx(float_1_8041e5e0, &v, 0x10, 0x91);
     }
     else {
-        Vec v = vec3_802f9560;
-        v.x = float_neg151_8041e5f4 + x;
+        Vec v = (Vec){0.0f, 0.0f, 0.0f};
+        v.x = -151.0f + x;
         v.y = y;
         iconDispGx(float_1_8041e5e0, &v, 0x10, 0x95);
     }
@@ -411,11 +385,3 @@ static void actionCommandDisp(f32 x, f32 y, s32 type) {
 const f32 float_neg168_8041e5d8 = -168.0f;
 const f32 float_70_8041e5dc = 70.0f;
 const f32 float_1_8041e5e0 = 1.0f;
-const f32 float_neg232_8041e5e4 = -232.0f;
-const f32 float_neg200_8041e5e8 = -200.0f;
-const f32 float_25_8041e5ec = 25.0f;
-const f32 float_0p5_8041e5f0 = 0.5f;
-const f32 float_neg151_8041e5f4 = -151.0f;
-const f32 float_neg300_8041e5f8 = -300.0f;
-const f32 float_30_8041e5fc = 30.0f;
-const f32 float_0_8041e600 = 0.0f;

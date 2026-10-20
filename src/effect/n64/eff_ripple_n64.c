@@ -11,17 +11,8 @@
 __declspec(section ".rodata") Vec vec3_802fb520 = { 0.0f, 0.0f, 0.0f };
 
 // .sdata2 constants owned by this unit (named after their original addresses).
-const GXColor dat_8041fb98;
 const f32 float_0p0625_8041fb9c;
 const f32 float_0_8041fba0;
-const f32 float_0p03125_8041fba4;
-const f32 float_deg2rad_8041fba8;
-const f32 float_1_8041fbac;
-const f32 float_0p3_8041fbb0;
-const f32 float_1p05_8041fbb4;
-const f32 float_0p1_8041fbb8;
-const f32 float_0p6_8041fbbc;
-const f32 float_10_8041fbc0;
 // .sbss2 TEV colour base (zero-initialised). The .sdata/.sbss2 pragma pair puts the object in
 // .sbss2; a plain tentative const definition would land in .sbss.
 #pragma section ".sdata" ".sbss2"
@@ -54,23 +45,23 @@ EffectEntry* effRippleN64Entry(s32 type, f32 x, f32 y, f32 z, f32 scale) {
 	data->age = 0;
 	data->rx = float_0_8041fba0;
 	data->rz = float_0_8041fba0;
-	data->field_0x14 = float_1_8041fbac;
+	data->field_0x14 = 1.0f;
 	data->camId = 4;
 	switch (type) {
 		case 1:
 		case 10:
-			data->scale = float_0p6_8041fbbc;
+			data->scale = 0.6f;
 			break;
 		case 2:
 		case 20:
-			data->scale = float_10_8041fbc0;
+			data->scale = 10.0f;
 			break;
 		case 3:
 		case 30:
-			data->scale = float_10_8041fbc0;
+			data->scale = 10.0f;
 			break;
 		default:
-			data->scale = float_1_8041fbac;
+			data->scale = 1.0f;
 			break;
 	}
 	data->timer = 0x20;
@@ -111,7 +102,7 @@ void effRippleMain(EffectEntry* effect) {
 	}
 
 	if (timer > 5) {
-		data->alpha = (s32)(float_0p3_8041fbb0 * (f32)(120 - data->alpha) + (f32)data->alpha);
+		data->alpha = (s32)(0.3f * (f32)(120 - data->alpha) + (f32)data->alpha);
 	}
 
 	if ((type == 1 || type == 2 || type == 3) && timer == 15) {
@@ -133,10 +124,10 @@ void effRippleMain(EffectEntry* effect) {
 	}
 
 	if (type == 2 || type == 20) {
-		data->scale *= float_1p05_8041fbb4;
+		data->scale *= 1.05f;
 	}
 	if (type == 3 || type == 30) {
-		data->scale *= float_1p05_8041fbb4;
+		data->scale *= 1.05f;
 	}
 
 	if (timer < 0x20) {
@@ -148,7 +139,7 @@ void effRippleMain(EffectEntry* effect) {
 		data->scrollV -= 0x20;
 	}
 
-	data->scale += float_0p1_8041fbb8;
+	data->scale += 0.1f;
 	dispEntry(data->camId, dispCalcZ(&dispPos), 2, effRippleDisp, effect);
 }
 #pragma pop
@@ -202,20 +193,20 @@ void effRippleDisp(CameraId camId, void* param) {
 	if (type == 1 || type == 10 || type == 3 || type == 30) {
 		effRippleSetColor(unk_80423248, data->alpha);
 	} else {
-		effRippleSetColor(dat_8041fb98, data->alpha);
+		effRippleSetColor((GXColor){ 0xFF, 0xFF, 0xFF, 0x00 }, data->alpha);
 	}
 
 	texScroll = data->scrollV;
-	PSMTXScale(scaleMtx, float_0p03125_8041fba4, float_0p03125_8041fba4, float_0_8041fba0);
+	PSMTXScale(scaleMtx, 0.03125f, 0.03125f, float_0_8041fba0);
 	PSMTXTrans(transMtx, float_0_8041fba0, (f32)texScroll, float_0_8041fba0);
 	PSMTXConcat(scaleMtx, transMtx, transMtx);
 	GXLoadTexMtxImm(transMtx, 0x21, 1);
 
 	PSMTXTrans(transMtx, data->x, data->y, data->z);
-	PSMTXRotRad(rotXMtx, 'x', float_deg2rad_8041fba8 * data->rx);
-	PSMTXRotRad(scaleMtx, 'z', float_deg2rad_8041fba8 * data->rz);
+	PSMTXRotRad(rotXMtx, 'x', 0.017453292f * data->rx);
+	PSMTXRotRad(scaleMtx, 'z', 0.017453292f * data->rz);
 	PSMTXConcat(rotXMtx, scaleMtx, rotXMtx);
-	PSMTXScale(scaleMtx, data->field_0x14 * data->scale, float_1_8041fbac,
+	PSMTXScale(scaleMtx, data->field_0x14 * data->scale, 1.0f,
 	           data->field_0x14 * data->scale);
 	PSMTXConcat(transMtx, rotXMtx, transMtx);
 	PSMTXConcat(transMtx, scaleMtx, transMtx);
@@ -235,14 +226,5 @@ void effRippleN64SetRxRz(EffectEntry* effect, f32 rx, f32 rz) {
 	data->field_0x30 = rz;
 }
 
-const GXColor dat_8041fb98 = { 0xFF, 0xFF, 0xFF, 0x00 };
 const f32 float_0p0625_8041fb9c = 0.0625f;
 const f32 float_0_8041fba0 = 0.0f;
-const f32 float_0p03125_8041fba4 = 0.03125f;
-const f32 float_deg2rad_8041fba8 = 0.017453292f;
-const f32 float_1_8041fbac = 1.0f;
-const f32 float_0p3_8041fbb0 = 0.3f;
-const f32 float_1p05_8041fbb4 = 1.05f;
-const f32 float_0p1_8041fbb8 = 0.1f;
-const f32 float_0p6_8041fbbc = 0.6f;
-const f32 float_10_8041fbc0 = 10.0f;

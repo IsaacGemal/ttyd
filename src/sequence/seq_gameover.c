@@ -25,7 +25,6 @@
 #include "evt/evt_snd.h"
 
 // object-local data
-static const char str_802C4960[7];
 static EventEntry* work;
 static EventEntry** wp = &work;
 
@@ -166,7 +165,7 @@ void seq_gameOverMain(SequenceWork* work) {
             gp->areaFadeInType = 10;
             gp->areaFadeInDuration = 300;
         }
-        mapPreLoad(str_802C4960);
+        mapPreLoad("sys_00");
         work->state++;
         break;
 
@@ -200,8 +199,8 @@ void seq_gameOverMain(SequenceWork* work) {
         break;
 
     case 2:
-        if (mapPreLoad(str_802C4960)) {
-            mapLoad(str_802C4960);
+        if (mapPreLoad("sys_00")) {
+            mapLoad("sys_00");
             cam = camGetPtr(CAMERA_3D);
             mario = marioGetPtr();
             cam->marioPos.x = 0.0f;
@@ -248,7 +247,7 @@ void seq_gameOverMain(SequenceWork* work) {
     case 6:
         if (fadeIsFinish()) {
             _relUnLoad();
-            _unload(str_802C4960, NULL, NULL);
+            _unload("sys_00", NULL, NULL);
             strcpy(gp->beroEnterName, "");
             strcpy(gp->currentMapName, "");
             strcpy(gp->currentAreaName, "");
@@ -264,4 +263,3 @@ void seq_gameOverMain(SequenceWork* work) {
     }
 }
 
-static const char str_802C4960[7] = "sys_00";

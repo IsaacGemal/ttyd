@@ -18,12 +18,6 @@
 
 // locals for symbols with no home header (see REPORT.md)
 
-// .rodata
-const char str_802FC8F8[] = "c_peach";
-const char str_802FC900[] = "c_zako_n\0\0\0";
-const char str_802FC90C[] = "P_T_13\0";
-const char str_802FC914[] = "P_T_14\0\0\0\0\0";
-
 // .sdata2
 const f32 float_0_80420250 = 0.0f;
 const char str_80420254[] = "P_T_1";
@@ -91,7 +85,7 @@ void peachSetStsNormal(void) {
             if (mp->paperAnimGroupId[0] >= 0) {
                 animPoseRelease(mp->paperAnimGroupId[0]);
             }
-            mp->paperAnimGroupId[0] = animPoseEntry(str_802FC8F8, 2);
+            mp->paperAnimGroupId[0] = animPoseEntry("c_peach", 2);
             npcSetMarioAutoTalkPose(str_8042026C, str_80420254);
             mp->wPlayerCollisionBox.y = MATCH_F32(float_47_80420284);
             mp->wPlayerCollisionBox.x = MATCH_F32(float_20_80420288);
@@ -238,7 +232,7 @@ void peachChgPose(const char* pose) {
         } else if (strcmp(pose, str_8042025C) == 0) {
             pose = str_8042038C;
         } else if (strcmp(pose, str_80420254) == 0) {
-            pose = str_802FC90C;
+            pose = "P_T_13";
         }
     } else if (mp->peachFlags & 0x400) {
         if (strcmp(pose, str_80420298) == 0) {
@@ -250,7 +244,7 @@ void peachChgPose(const char* pose) {
         } else if (strcmp(pose, str_8042025C) == 0) {
             pose = str_804203AC;
         } else if (strcmp(pose, str_80420254) == 0) {
-            pose = str_802FC914;
+            pose = "P_T_14\0\0\0\0\0";
         }
     }
     if (mp->animName == NULL || strcmp(mp->animName, pose) != 0) {
@@ -271,7 +265,7 @@ void peachTransformOn(void) {
         if (mp->paperAnimGroupId[0] >= 0) {
             animPoseRelease(mp->paperAnimGroupId[0]);
         }
-        mp->paperAnimGroupId[0] = animPoseEntry(str_802FC900, 2);
+        mp->paperAnimGroupId[0] = animPoseEntry("c_zako_n", 2);
         npcSetMarioAutoTalkPose(str_8042028C, str_80420290);
         {
             f32 f30 = MATCH_F32(float_30_80420294);
@@ -291,7 +285,7 @@ void peachTransformOff(void) {
         if (mp->paperAnimGroupId[0] >= 0) {
             animPoseRelease(mp->paperAnimGroupId[0]);
         }
-        mp->paperAnimGroupId[0] = animPoseEntry(str_802FC8F8, 2);
+        mp->paperAnimGroupId[0] = animPoseEntry("c_peach", 2);
         npcSetMarioAutoTalkPose(str_8042026C, str_80420254);
         mp->wPlayerCollisionBox.y = MATCH_F32(float_47_80420284);
         mp->wPlayerCollisionBox.x = MATCH_F32(float_20_80420288);

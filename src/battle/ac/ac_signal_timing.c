@@ -27,16 +27,6 @@ const Vec vec3_802fedc8 = {0.0f, 0.0f, 0.0f};
 const Vec vec3_802fedd4 = {0.0f, 0.0f, 0.0f};
 const Vec vec3_802fede0 = {0.0f, 0.0f, 0.0f};
 const Vec vec3_802fedec = {0.0f, 0.0f, 0.0f};
-const Vec vec3_802fedf8 = {0.0f, 0.0f, 0.0f};
-const Vec vec3_802fee04 = {0.0f, 0.0f, 0.0f};
-const Vec vec3_802fee10 = {0.0f, 0.0f, 0.0f};
-const Vec vec3_802fee1c = {0.0f, 0.0f, 0.0f};
-const Vec vec3_802fee28 = {0.0f, 0.0f, 0.0f};
-const Vec vec3_802fee34 = {0.0f, 0.0f, 0.0f};
-const Vec vec3_802fee40 = {0.0f, 0.0f, 0.0f};
-const Vec vec3_802fee4c = {0.0f, 0.0f, 0.0f};
-const Vec vec3_802fee58 = {0.0f, 0.0f, 0.0f};
-const Vec vec3_802fee64 = {0.0f, 0.0f, 0.0f};
 
 // Local to this file in the original (`.fn actionCommandDisp, local`).
 static void actionCommandDisp(f32 x, f32 y);
@@ -514,7 +504,7 @@ static void actionCommandDisp(f32 x, f32 y) {
             ICON_DISP(&t, 0x10, 0x8E, 1.0f);
         }
         {
-            Vec t = vec3_802fedf8;
+            Vec t = (Vec){0.0f, 0.0f, 0.0f};
             t.x = x + (f32)(i * 0x10 - 0x120);
             t.y = f31;
             ICON_DISP(&t, 0x10, 0x90, 1.0f);
@@ -550,19 +540,19 @@ static void actionCommandDisp(f32 x, f32 y) {
     for (i = 0; i < ac->acParams[6]; i++) {
         if (i < bd->signalCount) {
             if (i < ac->acParams[6]) {
-                Vec t = vec3_802fee04;
+                Vec t = (Vec){0.0f, 0.0f, 0.0f};
                 u16 id = (u16)(0x92 + i);
                 t.y = f31;
                 t.x = x + (f32)(i * 0x21 - 0x102);
                 ICON_DISP_B(&t, 0x10, id, 1.0f);
             } else {
-                Vec t = vec3_802fee10;
+                Vec t = (Vec){0.0f, 0.0f, 0.0f};
                 t.y = f31;
                 t.x = x + (f32)(i * 0x21 - 0x102);
                 ICON_DISP(&t, 0x10, 0x94, 1.0f);
             }
         } else {
-            Vec t = vec3_802fee1c;
+            Vec t = (Vec){0.0f, 0.0f, 0.0f};
             t.y = f31;
             t.x = x + (f32)(i * 0x21 - 0x102);
             ICON_DISP(&t, 0x10, 0x91, 0.5f);
@@ -572,12 +562,12 @@ static void actionCommandDisp(f32 x, f32 y) {
     if (!(ac->acFlag & 1)) {
         for (i = 0; i < num; i++) {
             if (i + ac->acParams[6] < count) {
-                Vec t = vec3_802fee28;
+                Vec t = (Vec){0.0f, 0.0f, 0.0f};
                 t.x = x + (f32)((i * 0x30 + (ac->acParams[6] * 0x21 - 0xfa)));
                 t.y = f31;
                 ICON_DISP(&t, 0x10, 0x95, 1.0f);
             } else {
-                Vec t = vec3_802fee34;
+                Vec t = (Vec){0.0f, 0.0f, 0.0f};
                 t.x = x + (f32)((i * 0x30 + (ac->acParams[6] * 0x21 - 0xfa)));
                 t.y = f31;
                 ICON_DISP(&t, 0x10, 0x91, 1.0f);
@@ -596,7 +586,7 @@ static void actionCommandDisp(f32 x, f32 y) {
 #endif
             if (bd->signalCount == t0 && bd->frame >= ac->acParams[2] * t0 - 5 &&
                 bd->frame < ac->acParams[2] * t0) {
-                Vec t = vec3_802fee40;
+                Vec t = (Vec){0.0f, 0.0f, 0.0f};
                 t.y = f28;
                 t.x = x + (f32)((i * 0x30 + (ac->acParams[6] * 0x21 - 0xfa)));
                 ICON_DISP(&t, 0x10, BattleACGetButtonIcon(bd->buttons[i], 0), 0.8f);
@@ -609,7 +599,7 @@ static void actionCommandDisp(f32 x, f32 y) {
                 } else {
                     delta = -0xa;
                 }
-                t = vec3_802fee4c;
+                t = (Vec){0.0f, 0.0f, 0.0f};
                 t.x = x + (f32)((i * 0x30 + (ac->acParams[6] * 0x21 - 0xfa)));
                 t.y = (f32)(delta + 0x19) + y;
                 ICON_DISP(&t, 0x10, BattleACGetButtonIcon(bd->buttons[i], 1), scale);
@@ -625,7 +615,7 @@ static void actionCommandDisp(f32 x, f32 y) {
 #endif
             if (bd->signalCount == t0 && bd->frame >= ac->acParams[2] * t0 - 0x14 &&
                 bd->frame <= ac->acParams[2] * t0) {
-                Vec t = vec3_802fee58;
+                Vec t = (Vec){0.0f, 0.0f, 0.0f};
                 t.x = x + (f32)((i * 0x30 + (ac->acParams[6] * 0x21 - 0xfa)));
                 t.y = f31;
                 ICON_DISP(&t, 0x10, BattleACGetButtonIcon(bd->buttons[i], 0), 0.8f);
@@ -646,7 +636,7 @@ static void actionCommandDisp(f32 x, f32 y) {
 #endif
                 }
             } else {
-                Vec t = vec3_802fee64;
+                Vec t = (Vec){0.0f, 0.0f, 0.0f};
                 t.x = x + (f32)((i * 0x30 + (ac->acParams[6] * 0x21 - 0xfa)));
                 t.y = f31;
                 ICON_DISP(&t, 0x10, BattleACGetButtonIcon(bd->buttons[i], 1), 0.8f);

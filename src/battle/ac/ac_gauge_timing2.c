@@ -35,7 +35,6 @@ const Vec vec3_8030001c = { 0.0f, 0.0f, 0.0f };
 const Vec vec3_80300028 = { 0.0f, 0.0f, 0.0f };
 const Vec vec3_80300034 = { 0.0f, 0.0f, 0.0f };
 const Vec vec3_80300040 = { 0.0f, 0.0f, 0.0f };
-const Vec vec3_8030004c = { 0.0f, 0.0f, 0.0f };
 
 // GaugeTiming2's per-battle action-command work area at BattleWork+0x1F4C. No header declares it.
 typedef struct GaugeTiming2Work {
@@ -489,7 +488,7 @@ static void actionCommandDisp(f32 x, f32 y) {
 				ICON_DISP(&t, 0x10, icon1, 1.0f);
 			}
 			else {
-				Vec t = vec3_8030004c;
+				Vec t = (Vec){ 0.0f, 0.0f, 0.0f };
 				t.x = -225.0f + x + 28.0f;
 				t.y = 55.0f + y;
 				ICON_DISP(&t, 0x10, icon0, 1.0f);

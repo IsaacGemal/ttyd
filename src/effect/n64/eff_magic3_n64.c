@@ -22,12 +22,7 @@ extern const f32 float_0p03125_8041f708;
 extern const f32 float_0_8041f70c;
 extern const f32 float_deg2rad_8041f710;
 extern const f32 float_1_8041f714;
-extern const f32 float_neg1_8041f738;
-extern const f32 float_18_8041f73c;
 // static const: folded into the pool at first use, so they keep the retail pool order.
-static const f32 float_100_8041f740 = 100.0f;
-static const f32 float_50_8041f748 = 50.0f;
-static const f32 float_0p5_8041f74c = 0.5f;
 
 // .rodata zero vectors (named after their original addresses).
 #ifdef MUST_MATCH
@@ -37,7 +32,6 @@ const volatile Vec vec3_802fab48 = { 0.0f, 0.0f, 0.0f };
 #else
 const Vec vec3_802fab48 = { 0.0f, 0.0f, 0.0f };
 #endif
-const Vec vec3_802fab54 = { 0.0f, 0.0f, 0.0f };
 
 // Inlined MetroWerks sqrtf (same shape as eff_blow_n64.c and eff_kemuri10_n64.c).
 int __float_nan[];
@@ -113,12 +107,12 @@ EffectEntry* effMagic3N64Entry(s32 type, s32 life, f32 x, f32 y, f32 z) {
 	effect = effEntry();
 	dirZ = float_0_8041f70c;
 	dirX = float_0_8041f70c;
-	dirY = float_neg1_8041f738;
+	dirY = -1.0f;
 	mag = dirX * dirX + float_1_8041f714 + dirZ;
 	if (mag == float_0_8041f70c) {
 		return NULL;
 	}
-	norm = float_neg1_8041f738 / sqrtf(mag);
+	norm = -1.0f / sqrtf(mag);
 	dirX *= norm;
 	dirY *= norm;
 	dirZ *= norm;
@@ -145,9 +139,9 @@ EffectEntry* effMagic3N64Entry(s32 type, s32 life, f32 x, f32 y, f32 z) {
 	perpX *= norm;
 	perpY *= norm;
 	perpZ *= norm;
-	dirX *= float_18_8041f73c;
-	dirY *= float_18_8041f73c;
-	dirZ *= float_18_8041f73c;
+	dirX *= 18.0f;
+	dirY *= 18.0f;
+	dirZ *= 18.0f;
 	effect->type = "Magic3N64";
 	effect->count = 5;
 	data = __memAlloc(HEAP_EFFECT, 0xF0);
@@ -160,7 +154,7 @@ EffectEntry* effMagic3N64Entry(s32 type, s32 life, f32 x, f32 y, f32 z) {
 		temp.x = (f32)sin(yaw);
 		temp.z = -(f32)cos(yaw);
 		axis = temp;
-		angle = (i == 1) ? float_0_8041f70c : float_100_8041f740 * i / 4.0f - float_50_8041f748;
+		angle = (i == 1) ? float_0_8041f70c : 100.0f * i / 4.0f - 50.0f;
 		PSMTXRotAxisRad(mtx, &axis, float_deg2rad_8041f710 * angle);
 		data->type = type;
 		data->x = x;
@@ -170,7 +164,7 @@ EffectEntry* effMagic3N64Entry(s32 type, s32 life, f32 x, f32 y, f32 z) {
 		data->vy = mtx[1][0] * dirX + mtx[1][1] * dirY + mtx[1][2] * dirZ;
 		data->vz = float_0p6_8041f72c * (mtx[2][0] * dirX + mtx[2][1] * dirY + mtx[2][2] * dirZ);
 		data->rot = (f32)(-(i * 100 / 4 - 50));
-		data->scale = float_0p5_8041f74c;
+		data->scale = 0.5f;
 		data->life = life;
 		data->timer = 0;
 		data->alpha = 0;
@@ -181,7 +175,7 @@ EffectEntry* effMagic3N64Entry(s32 type, s32 life, f32 x, f32 y, f32 z) {
 
 // Local copy of system.c's inline helper so it inlines here (as in eff_onpu.c).
 inline Vec initializeVec(Vec* input) {
-	Vec temp = vec3_802fab54;
+	Vec temp = (Vec){ 0.0f, 0.0f, 0.0f };
 	temp.x = input->x;
 	temp.y = input->y;
 	temp.z = input->z;
@@ -304,5 +298,3 @@ const f32 float_3_8041f728 = 3.0f;
 const f32 float_0p6_8041f72c = 0.6f;
 const f32 float_0p7_8041f730 = 0.7f;
 const f32 float_30_8041f734 = 30.0f;
-const f32 float_neg1_8041f738 = -1.0f;
-const f32 float_18_8041f73c = 18.0f;

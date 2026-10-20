@@ -9,8 +9,6 @@ extern const f32 float_deg2rad_80421ca8;
 extern const f32 float_16_80421cac;
 extern const f32 float_255_80421cb0;
 extern const f32 float_0p5_80421cb4;
-extern const f32 float_8_80421cb8;
-extern const Vec vec3_80300248;
 
 // .sbss2: the default .sbss2 is only used for compiler-generated pool
 // templates, so pair it with a small-data section and place it by hand.
@@ -96,7 +94,7 @@ EffectEntry* effMist2Entry(s32 type, s32 lifetime, f32 x, f32 y, f32 z, f32 rang
 void effMist2Main(EffectEntry* effect) {
 	EffMist2Data* data = effect->userdata;
 	Vec position;
-	Vec tmp = vec3_80300248;
+	Vec tmp = (Vec){ 0.0f, 0.0f, 0.0f };
 	s32 i;
 	s32 type;
 	f32 fAngle;
@@ -235,7 +233,7 @@ void effMist2Disp(CameraId cameraId, void* param) {
 		color.b = cb;
 		color.a = (u8)(s32)(work->unk2C * (f32)alpha / float_255_80421cb0);
 #endif
-		f27 = float_8_80421cb8;
+		f27 = 8.0f;
 		GXSetChanMatColor(GX_COLOR0A0, color);
 		GXBegin(GX_QUADS, GX_VTXFMT0, 4);
 		GXPosition3f32(f28, f27, 0.0f);
@@ -250,9 +248,7 @@ void effMist2Disp(CameraId cameraId, void* param) {
 }
 
 // The pool constants the code above loads by name, defined after it (defined first, the compiler folds them).
-const Vec vec3_80300248 = { 0.0f, 0.0f, 0.0f };
 const f32 float_deg2rad_80421ca8 = 0.017453292f;
 const f32 float_16_80421cac = 16.0f;
 const f32 float_255_80421cb0 = 255.0f;
 const f32 float_0p5_80421cb4 = 0.5f;
-const f32 float_8_80421cb8 = 8.0f;

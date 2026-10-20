@@ -17,7 +17,6 @@ extern const f32 float_deg2rad_80420080;
 extern const f32 float_0p03125_80420084;
 extern const f32 float_0_80420088;
 // .rodata objects owned by this unit.
-const Vec vec3_802fb890 = { 0.0f, 0.0f, 0.0f };
 // The pooled int->float conversion double, named so the `lfd` reloc resolves like the original.
 // .sbss2 data symbols owned by this unit.
 
@@ -134,7 +133,7 @@ static inline void flareSetTevReg0(s32 r, s32 g, s32 b, s32 a) {
 // Builds the effect position from a zero vector; kept as an inline so the
 // temporary schedules the way the original's does.
 static inline Vec thunderflareMakeVec(f32 x, f32 y, f32 z) {
-	Vec temp = vec3_802fb890;
+	Vec temp = (Vec){ 0.0f, 0.0f, 0.0f };
 	temp.x = x;
 	temp.y = y;
 	temp.z = z;

@@ -8,8 +8,6 @@
 #include <dolphin/gx.h>
 #include <dolphin/mtx.h>
 
-extern const f32 float_9_8041ea4c;
-
 // NB: when the f32 constants below are defined here the compiler folds every use to an anonymous
 // .sdata2 copy; declaring them extern keeps the original's named @sda21 references (the int->float
 // double is defined, its anonymous copy is an ignored reloc-label diff).
@@ -18,9 +16,6 @@ extern const f32 float_0p03125_8041ea30;
 extern const f32 float_0p0034722_8041ea34;
 extern const f32 float_0_8041ea38;
 extern const f32 float_32_8041ea3c;
-extern const f32 float_deg2rad_8041ea40;
-extern const f32 float_1_8041ea44;
-extern const f32 float_4_8041ea48;
 
 const GXColor dat_8041ea20 = { 0xFF, 0xFF, 0xFF, 0x7F };
 const GXColor dat_8041ea24 = { 0xFF, 0xFF, 0x80, 0x7F };
@@ -79,7 +74,7 @@ void effBomheiMain(EffectEntry* effect) {
 	e = effect;
 	data = e->userdata;
 	position = initializeVec((Vec*)&data->x);
-	data->field_0x20 = float_9_8041ea4c * (f32)data->field_0x18 / (f32)data->field_0x1C;
+	data->field_0x20 = 9.0f * (f32)data->field_0x18 / (f32)data->field_0x1C;
 	data->field_0x18++;
 	data->field_0x14--;
 	if (data->field_0x14 < 0) {
@@ -174,17 +169,17 @@ void effBomheiDisp(CameraId camId, void* param) {
 	effSetVtxDescN64((effVtxArray*)size32x32_tex32x32_vtx);
 
 	PSMTXTrans(trans, data->x, data->y, data->z);
-	PSMTXRotRad(rot, 'y', float_deg2rad_8041ea40 * -camGetPtr(CAMERA_3D)->viewYaw);
-	PSMTXScale(scale, data->field_0x10, data->field_0x10, float_1_8041ea44);
+	PSMTXRotRad(rot, 'y', 0.017453292f * -camGetPtr(CAMERA_3D)->viewYaw);
+	PSMTXScale(scale, data->field_0x10, data->field_0x10, 1.0f);
 	PSMTXConcat(trans, rot, trans);
 	PSMTXConcat(trans, scale, trans);
-	PSMTXRotRad(rot, 'z', float_deg2rad_8041ea40 * data->field_0x24);
+	PSMTXRotRad(rot, 'z', 0.017453292f * data->field_0x24);
 	PSMTXConcat(trans, rot, trans);
 	PSMTXConcat(cam->view, trans, trans);
 	GXLoadPosMtxImm(trans, 0);
 	GXSetCurrentMtx(0);
 
-	if (data->field_0x20 > float_4_8041ea48) {
+	if (data->field_0x20 > 4.0f) {
 		GXSetTevColor(1, dat_8041ea20);
 	}
 	else {
@@ -207,7 +202,3 @@ const f32 float_0p03125_8041ea30 = 0.03125f;
 const f32 float_0p0034722_8041ea34 = 0.0034722222f;
 const f32 float_0_8041ea38 = 0.0f;
 const f32 float_32_8041ea3c = 32.0f;
-const f32 float_deg2rad_8041ea40 = 0.017453292f;
-const f32 float_1_8041ea44 = 1.0f;
-const f32 float_4_8041ea48 = 4.0f;
-const f32 float_9_8041ea4c = 9.0f;

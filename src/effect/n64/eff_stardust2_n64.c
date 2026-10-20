@@ -11,8 +11,6 @@
 #include <dolphin/gx.h>
 #include <dolphin/mtx.h>
 
-extern const Vec vec3_802fb740;
-
 // .sdata2 constants the code reads by name (named after their original addresses).
 extern const GXColor dat_8041fe88;
 extern const f32 float_deg2rad_8041fe8c;
@@ -81,7 +79,7 @@ typedef struct EffStardust2Data {
 } EffStardust2Data;
 
 static inline Vec makeVec(f32 x, f32 y, f32 z) {
-    Vec temp = vec3_802fb740;
+    Vec temp = (Vec){ 0.0f, 0.0f, 0.0f };
     temp.x = x;
     temp.y = y;
     temp.z = z;
@@ -475,7 +473,6 @@ void effStardust2N64SetDrawCam(EffectEntry* entry, s32 cam) {
 }
 
 // The constants the code above loads by name, defined after it (defined first, the compiler folds them).
-const Vec vec3_802fb740 = { 0.0f, 0.0f, 0.0f };
 const GXColor dat_8041fe88 = { 0x00, 0x00, 0x00, 0xFF };
 const f32 float_deg2rad_8041fe8c = 0.017453292f;
 const f32 float_0p0056818_8041fe90 = 0.0056818184f;

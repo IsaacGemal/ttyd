@@ -21,18 +21,6 @@
 
 // First object of this unit's .data (the float pair that used to end the previous unit's .data).
 
-// sdata2 float constants live in this file's .sdata2 (see the original's data).
-extern const f32 float_30_8041dcfc;
-extern const f32 float_15_8041dd00;
-extern const f32 float_0_8041dd04;
-extern const f32 float_neg2_8041dd08;
-extern const f32 float_1_8041dd0c;
-extern const f32 float_180_8041dd10;
-extern const f32 float_neg10_8041dd14;
-extern const f32 float_25_8041dd18;
-extern const f32 float_2_8041dd1c;
-
-
 typedef struct ClaudaBreathEffectData {
     u8 pad_0x0[0x18];
     s32 field_0x18;
@@ -146,13 +134,13 @@ static s32 _clauda_breath_effect_ready(EventEntry* event, BOOL isFirstCall) {
     BtlUnit_GetPos(unit, &pos.x, &pos.y, &pos.z);
     dir = unit->faceDirection;
     pos.x += unit->mSizeMultiplier * (dir * 20);
-    pos.y += float_25_8041dd18 * unit->mSizeMultiplier;
+    pos.y += 25.0f * unit->mSizeMultiplier;
     if (dir >= 0) {
-        effect = effKumokumoN64Entry(0, 0x3C, pos.x, pos.y, pos.z, float_0_8041dd04, float_2_8041dd1c,
-                                     float_1_8041dd0c);
+        effect = effKumokumoN64Entry(0, 0x3C, pos.x, pos.y, pos.z, 0.0f, 2.0f,
+                                     1.0f);
     } else {
-        effect = effKumokumoN64Entry(0, 0x3C, pos.x, pos.y, pos.z, float_180_8041dd10, float_2_8041dd1c,
-                                     float_1_8041dd0c);
+        effect = effKumokumoN64Entry(0, 0x3C, pos.x, pos.y, pos.z, 180.0f, 2.0f,
+                                     1.0f);
     }
     ((ClaudaBreathEffectData*)effect->userdata)->field_0x18 = 0x4C;
     ((ClaudaBreathEffectData*)effect->userdata)->field_0x1C = 0xA7;
@@ -179,13 +167,13 @@ static s32 _clauda_breath_effect_fire(EventEntry* event, BOOL isFirstCall) {
     BtlUnit_GetPos(unit, &pos.x, &pos.y, &pos.z);
     dir = unit->faceDirection;
     pos.x += unit->mSizeMultiplier * (dir * 25);
-    pos.y += float_15_8041dd00 * unit->mSizeMultiplier;
+    pos.y += 15.0f * unit->mSizeMultiplier;
     if (dir >= 0) {
-        effect = effKumokumoN64Entry(0, 0, pos.x, pos.y, pos.z, float_0_8041dd04, float_neg2_8041dd08,
-                                     float_1_8041dd0c);
+        effect = effKumokumoN64Entry(0, 0, pos.x, pos.y, pos.z, 0.0f, -2.0f,
+                                     1.0f);
     } else {
-        effect = effKumokumoN64Entry(0, 0, pos.x, pos.y, pos.z, float_180_8041dd10, float_neg2_8041dd08,
-                                     float_1_8041dd0c);
+        effect = effKumokumoN64Entry(0, 0, pos.x, pos.y, pos.z, 180.0f, -2.0f,
+                                     1.0f);
     }
     ((ClaudaBreathEffectData*)effect->userdata)->field_0x18 = 0x4C;
     ((ClaudaBreathEffectData*)effect->userdata)->field_0x1C = 0xA7;
@@ -193,7 +181,7 @@ static s32 _clauda_breath_effect_fire(EventEntry* event, BOOL isFirstCall) {
     ((ClaudaBreathEffectData*)effect->userdata)->field_0x28 = 0x7D;
     ((ClaudaBreathEffectData*)effect->userdata)->field_0x2C = 0x1B;
     ((ClaudaBreathEffectData*)effect->userdata)->field_0x30 = 0xF5;
-    ((ClaudaBreathEffectData*)effect->userdata)->field_0x58 = float_neg10_8041dd14;
+    ((ClaudaBreathEffectData*)effect->userdata)->field_0x58 = -10.0f;
     evtSetValue(event, arg0, (s32)effect);
     return EVT_RETURN_DONE;
 }
@@ -268,7 +256,7 @@ USER_FUNC(_get_clauda_kiss_hit_position) {
     pos.x += (f32)dir * (unit2->kissHitOffset.x * unit2->mSizeMultiplier);
     pos.y += unit2->kissHitOffset.y * unit2->mSizeMultiplier;
     pos.z += unit2->kissHitOffset.z * unit2->mSizeMultiplier;
-    pos.y -= float_30_8041dcfc * unit1->mSizeMultiplier;
+    pos.y -= 30.0f * unit1->mSizeMultiplier;
     hit = pos;
     hit.y = BattleGetFloorHeight(work, hit.x, hit.y, hit.z);
     if (hit.y > pos.y) {
@@ -1377,17 +1365,6 @@ static EVT_BEGIN(party_win_reaction)
     RETURN
 EVT_END()
 // clang-format on
-
-// The pool constants the code above loads by name, defined after it (defined first, the compiler folds them).
-const f32 float_30_8041dcfc = 30.0f;
-const f32 float_15_8041dd00 = 15.0f;
-const f32 float_0_8041dd04 = 0.0f;
-const f32 float_neg2_8041dd08 = -2.0f;
-const f32 float_1_8041dd0c = 1.0f;
-const f32 float_180_8041dd10 = 180.0f;
-const f32 float_neg10_8041dd14 = -10.0f;
-const f32 float_25_8041dd18 = 25.0f;
-const f32 float_2_8041dd1c = 2.0f;
 
 // 4-byte zero word that ends the unit's .sdata: an all-zero object needs explicit_zero_data to stay in .sdata and force_active to survive the linker.
 #pragma explicit_zero_data on

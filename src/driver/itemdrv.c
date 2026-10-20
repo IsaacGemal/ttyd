@@ -112,7 +112,6 @@ __declspec(section ".rodata") Vec vec3_802cac1c = {0.0f, 0.0f, 0.0f};
 #else
 const Vec vec3_802cac1c = {0.0f, 0.0f, 0.0f};
 #endif
-extern const f64 double_20_802cac28;
 
 //.bss
 static ItemWork work[2];
@@ -466,7 +465,7 @@ void itemMain(void) {
                 xx = entry->position.x;
                 zz = entry->position.z;
                 d = __fabs(-1.0);
-                distance = (f32)(double_20_802cac28 + d);
+                distance = (f32)(20.0 + d);
                 yy = 20.0f + y;
                 hit = hitCheckFilter(NULL, xx, yy, zz, 0.0f, -1.0f, 0.0f, &hitX,
                                      &hitY, &hitZ, &distance,
@@ -2004,7 +2003,7 @@ HitEntry* itemBoundHitFloor(ItemEntry* item, f32 vy) {
         f32 pz = item->position.z;
 
         d = __fabs(vy);
-        dist = (f32)(double_20_802cac28 + d);
+        dist = (f32)(20.0 + d);
         hit = hitCheckFilter(NULL, px, py, pz, 0.0f, -1.0f, 0.0f, &hx, &hy, &hz, &dist, &hnx,
                              &hny, &hnz);
         if (hit != NULL) {
@@ -2030,7 +2029,7 @@ HitEntry* itemBoundHitCeiling(ItemEntry* item, f32 vy) {
         f32 pz = item->position.z;
 
         d = __fabs(vy);
-        dist = (f32)(double_20_802cac28 + d);
+        dist = (f32)(20.0 + d);
         hit = hitCheckFilter(NULL, px, py, pz, 0.0f, 1.0f, 0.0f, &hx, &hy, &hz, &dist, &hnx,
                              &hny, &hnz);
         if (hit != NULL) {
@@ -2041,7 +2040,7 @@ HitEntry* itemBoundHitCeiling(ItemEntry* item, f32 vy) {
             f32 pz = item->position.z;
 
             d = __fabs(vy);
-            dist = (f32)(double_20_802cac28 + d);
+            dist = (f32)(20.0 + d);
             hit = hitCheckFilter(NULL, px, py, pz, 0.0f, 1.0f, 0.0f, &hx, &hy, &hz, &dist, &hnx, &hny,
                                  &hnz);
             if (hit != NULL) {
@@ -2122,4 +2121,3 @@ __declspec(section ".sdata2") u32 dat_8041af90 = 0x000000FF;
 __declspec(section ".sdata2") u32 dat_8041af94 = 0x000000FF;
 __declspec(section ".sdata2") u32 dat_8041af98 = 0xFFFFFFFF;
 
-const f64 double_20_802cac28 = 20.0;

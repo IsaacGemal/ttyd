@@ -12,7 +12,6 @@
 // .sdata2
 extern u32 str_80421980;
 extern const u32 dat_80421984;
-extern const f32 float_deg2rad_80421988;
 
 // Builds the temporary position; the compiler emits the struct copy this way
 // (matches effVaporMain). The anonymous zero literal is deliberate: it must
@@ -235,7 +234,7 @@ void effBattenDisp(CameraId camId, void* param) {
 
 	PSMTXTrans(mtxBase, data->position.x, data->position.y, data->position.z);
 	PSMTXScale(mtxScale, data->scale, data->scale, data->scale);
-	PSMTXRotRad(mtxRot, 'y', -camGetPtr(camId)->viewYaw * float_deg2rad_80421988);
+	PSMTXRotRad(mtxRot, 'y', -camGetPtr(camId)->viewYaw * 0.017453292f);
 	PSMTXConcat(mtxBase, mtxScale, mtxScale);
 	PSMTXConcat(mtxScale, mtxRot, mtxFinal);
 	PSMTXConcat(cam->view, mtxFinal, mtxFinal);
@@ -283,7 +282,7 @@ void effBattenDisp2(CameraId camId, void* param) {
 	if (data->animPoseId != -1) {
 		PSMTXTrans(mtx, data->position.x, data->position.y, data->position.z);
 		PSMTXScale(scaleMtx, data->scale, data->scale, data->scale);
-		PSMTXRotRad(rotMtx, 'y', -camGetPtr(camId)->viewYaw * float_deg2rad_80421988);
+		PSMTXRotRad(rotMtx, 'y', -camGetPtr(camId)->viewYaw * 0.017453292f);
 		PSMTXConcat(mtx, rotMtx, mtx);
 		PSMTXConcat(mtx, scaleMtx, mtx);
 		PSMTXConcat(mtx, data->matrix, mtx);
@@ -307,4 +306,3 @@ void effBattenDisp2(CameraId camId, void* param) {
 // literal written at its use (see the / 2.0f and / 8.0f reciprocals).
 __declspec(section ".sdata2") u32 str_80421980 = 0xE8CD2600;
 const u32 dat_80421984 = 0xFFFFFF00;
-const f32 float_deg2rad_80421988 = 0.017453292f;

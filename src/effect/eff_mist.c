@@ -14,7 +14,6 @@ extern const f32 float_deg2rad_804214e0;
 extern const f32 float_32_804214e4;
 extern const f32 float_255_804214e8;
 extern const f32 float_0p5_804214ec;
-extern const f32 float_16_804214f0;
 
 // .sbss2 zero GXColor scratch. The original section holds unk_80423320 then the hidden
 // gap_10_80423324_sbss2; MWCC lays uninitialised globals out in reverse declaration order.
@@ -284,7 +283,7 @@ void effMistDisp(CameraId cameraId, void* param) {
 		color.b = work->b;
 		color.a = (s32)(work->alpha * (f32)alpha / float_255_804214e8);
 #endif
-		size = float_16_804214f0;
+		size = 16.0f;
 		half = -float_32_804214e4 * float_0p5_804214ec;
 		GXSetChanMatColor(GX_COLOR0A0, color);
 		GXBegin(GX_QUADS, GX_VTXFMT0, 4);
@@ -306,4 +305,3 @@ const f32 float_deg2rad_804214e0 = 0.017453292f;
 const f32 float_32_804214e4 = 32.0f;
 const f32 float_255_804214e8 = 255.0f;
 const f32 float_0p5_804214ec = 0.5f;
-const f32 float_16_804214f0 = 16.0f;

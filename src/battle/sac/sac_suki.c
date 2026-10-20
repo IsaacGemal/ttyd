@@ -33,26 +33,7 @@
 #include "party/party_motion.h"
 typedef struct SukiBtnTbl { s32 a[4]; } SukiBtnTbl;
 
-static const f32 float_30_804220d4 = 30.0f;
 static const f32 float_1_804220d8 = 1.0f;
-static const f32 float_80_804220e4 = 80.0f;
-static const f32 float_0_804220e8 = 0.0f;
-static const f32 float_60_804220ec = 60.0f;
-static const f32 float_neg1000_804220f8 = -1000.0f;
-static const f32 float_37_804220fc = 37.0f;
-static const f32 float_50_80422100 = 50.0f;
-static const f32 float_neg1_80422104 = -1.0f;
-static const f32 float_2_80422108 = 2.0f;
-static const f32 float_2160_8042210c = 2160.0f;
-static const f32 float_300_80422110 = 300.0f;
-static const f32 float_100_80422114 = 100.0f;
-static const f32 float_32_80422118 = 32.0f;
-static const f32 float_1440_8042211c = 1440.0f;
-static const f32 float_5_80422120 = 5.0f;
-static const f32 float_40_80422124 = 40.0f;
-static const f32 float_1p5_80422128 = 1.5f;
-static const f32 float_neg80_8042212c = -80.0f;
-static const f32 float_neg60_80422130 = -60.0f;
 extern s32 marioAttackEvent_Suki[];
 s32 flash_evt[182];
 s32 flash_main_evt[52];
@@ -137,28 +118,6 @@ __declspec(section ".rodata") Vec vec3_803009c0 = {0.0f, -45.0f, 0.0f};
 __declspec(section ".rodata") Vec vec3_803009cc = {0.0f, -45.0f, 0.0f};
 __declspec(section ".rodata") Vec vec3_803009d8 = {0.0f, -45.0f, 0.0f};
 const u32 dat_803009e4[4] = {0x100, 0x200, 0x400, 0x800};
-__declspec(section ".rodata") Vec vec3_803009f4 = {0.0f, -40.0f, 0.0f};
-__declspec(section ".rodata") Vec vec3_80300a00 = {0.0f, 0.0f, 0.0f};
-__declspec(section ".rodata") Vec vec3_80300a0c = {0.0f, 0.0f, 0.0f};
-__declspec(section ".rodata") Vec vec3_80300a18 = {0.0f, 300.0f, 0.0f};
-__declspec(section ".rodata") Vec vec3_80300a24 = {2.0f, 2.0f, 2.0f};
-__declspec(section ".rodata") Vec vec3_80300a30 = {0.0f, 0.0f, 0.0f};
-__declspec(section ".rodata") Vec vec3_80300a3c = {1.5f, 1.5f, 1.5f};
-__declspec(section ".rodata") Vec vec3_80300a48 = {0.0f, 0.0f, 0.0f};
-__declspec(section ".rodata") Vec vec3_80300a54 = {0.0f, 300.0f, 0.0f};
-__declspec(section ".rodata") Vec vec3_80300a60 = {2.0f, 2.0f, 2.0f};
-__declspec(section ".rodata") Vec vec3_80300a6c = {0.0f, 0.0f, 0.0f};
-__declspec(section ".rodata") Vec vec3_80300a78 = {0.0f, 0.0f, 0.0f};
-__declspec(section ".rodata") Vec vec3_80300a84 = {0.0f, 0.0f, 0.0f};
-__declspec(section ".rodata") Vec vec3_80300a90 = {0.0f, 0.0f, 0.0f};
-const char str_80300A9C[0x14] = "SFX_BTL_SAC_START1";
-const char str_80300AB0[0x14] = "SFX_BTL_SAC_START2";
-const char str_80300AC4[0x14] = "SFX_BTL_SAC_START3";
-const char str_80300AD8[0x14] = "OFF_d_yabu_small";
-const char str_80300AEC[0xC] = "indirect";
-const char str_80300AF8[0x18] = "SFX_BTL_SAC_SUKKIRI4";
-const char str_80300B10[0x18] = "SFX_BTL_SAC_SUKKIRI4_2";
-const char str_80300B28[0x18] = "SFX_BTL_SAC_SUKKIRI5";
 __declspec(section ".sdata2") const u8 N_ohko_rate_tbl[8] = { 0x32, 0x3C, 0x46, 0x50, 0x5A, 0x64, 0x00, 0x00 };
 extern u32 weapon_words[48];
 static u32 nice_event[8] = {
@@ -239,7 +198,7 @@ static void main_base(void) {
         if (work->count == 0) {
             Vec pos = vec3_803009c0;
 
-            pos.x = intplGetValue(4, work->counter, 15, float_neg1000_804220f8, float_0_804220e8);
+            pos.x = intplGetValue(4, work->counter, 15, -1000.0f, 0.0f);
             work->pos = pos;
         }
         if (work->counter == 0) {
@@ -269,7 +228,7 @@ static void main_base(void) {
                 }
             }
         }
-        work->alpha = intplGetValue(0, work->counter, 15, float_neg80_8042212c, float_0_804220e8);
+        work->alpha = intplGetValue(0, work->counter, 15, -80.0f, 0.0f);
         work->counter++;
         if (work->counter >= 15) {
             if (work->count >= 5) {
@@ -295,7 +254,7 @@ static void main_base(void) {
                 work->buttons[i].state = 0;
             }
         }
-        work->alpha = intplGetValue(0, work->counter, 15, float_neg60_80422130, float_0_804220e8);
+        work->alpha = intplGetValue(0, work->counter, 15, -60.0f, 0.0f);
         work->counter++;
         if (work->counter >= 15) {
             work->state = 5;
@@ -355,7 +314,7 @@ static void main_base(void) {
         if (work->counter <= 30) {
             Vec pos = vec3_803009d8;
 
-            pos.x = intplGetValue(4, work->counter, 30, float_0_804220e8, float_neg1000_804220f8);
+            pos.x = intplGetValue(4, work->counter, 30, 0.0f, -1000.0f);
             work->pos = pos;
         }
         break;
@@ -393,7 +352,7 @@ void main_button(s32 index) {
         break;
     case 1:
         button->state = 2;
-        pos = vec3_803009f4;
+        pos = (Vec){0.0f, -40.0f, 0.0f};
         pos.x = 60.0f * (f32)index - 30.0f * (f32)(work->max - 1);
         button->pos = pos;
         button->button = tbl.a[irand(4)];
@@ -419,15 +378,15 @@ static void main_star(void) {
     case 1:
         work->starState = 2;
         work->starCounter = 0;
-        work->effect = effStarStoneEntry(5, float_0_804220e8, float_neg1000_804220f8, float_0_804220e8, float_1_804220d8);
+        work->effect = effStarStoneEntry(5, 0.0f, -1000.0f, 0.0f, float_1_804220d8);
         BtlUnit_GetPos(mario, &work->starCur.x, &work->starCur.y, &work->starCur.z);
-        work->starCur.y += mario->mSizeMultiplier * (f32)mario->mHeight + float_37_804220fc;
+        work->starCur.y += mario->mSizeMultiplier * (f32)mario->mHeight + 37.0f;
         work->starStart = work->starCur;
         work->starEnd = work->starCur;
-        work->starEnd.y += float_50_80422100;
-        work->starEnd.z += float_neg1_80422104;
-        work->scale1 = vec3_80300a00;
-        work->scale2 = vec3_80300a0c;
+        work->starEnd.y += 50.0f;
+        work->starEnd.z += -1.0f;
+        work->scale1 = (Vec){0.0f, 0.0f, 0.0f};
+        work->scale2 = (Vec){0.0f, 0.0f, 0.0f};
         work->flag = 4;
         // fall through
     case 2:
@@ -437,7 +396,7 @@ static void main_star(void) {
             work->starCur.y = intplGetValue(0, work->starCounter, 100, work->starStart.y, work->starEnd.y);
             work->starCur.z = intplGetValue(0, work->starCounter, 100, work->starStart.z, work->starEnd.z);
             {
-                f32 s = intplGetValue(0, work->starCounter, 100, float_0_804220e8, float_2_80422108);
+                f32 s = intplGetValue(0, work->starCounter, 100, 0.0f, 2.0f);
 
                 work->scale1.z = s;
                 work->scale1.y = s;
@@ -448,16 +407,16 @@ static void main_star(void) {
             work->starCur.x = work->starEnd.x;
             work->starCur.y = work->starEnd.y;
             work->starCur.z = work->starEnd.z;
-            work->scale1.z = float_2_80422108;
-            work->scale1.y = float_2_80422108;
-            work->scale1.x = float_2_80422108;
+            work->scale1.z = 2.0f;
+            work->scale1.y = 2.0f;
+            work->scale1.x = 2.0f;
         }
-        work->scale2.y = intplGetValue(4, work->starCounter, 120, float_0_804220e8, float_2160_8042210c);
+        work->scale2.y = intplGetValue(4, work->starCounter, 120, 0.0f, 2160.0f);
         if (work->starCounter >= 120) {
             work->starState = 3;
             work->starCounter = 0;
             work->starStart = work->starCur;
-            work->starEnd.y = float_300_80422110;
+            work->starEnd.y = 300.0f;
         }
         break;
     case 3:
@@ -466,9 +425,9 @@ static void main_star(void) {
         if (work->starCounter >= 60) {
             work->starState = 4;
             work->starCounter = 0;
-            work->starCur = vec3_80300a18;
-            work->scale1 = vec3_80300a24;
-            work->scale2 = vec3_80300a30;
+            work->starCur = (Vec){0.0f, 300.0f, 0.0f};
+            work->scale1 = (Vec){2.0f, 2.0f, 2.0f};
+            work->scale2 = (Vec){0.0f, 0.0f, 0.0f};
         }
         break;
     case 4:
@@ -477,22 +436,22 @@ static void main_star(void) {
         work->starState = 6;
         work->starCounter = 0;
         BtlUnit_GetPos(mario, &work->starCur.x, &work->starCur.y, &work->starCur.z);
-        work->starCur.y += float_100_80422114;
-        work->scale1 = vec3_80300a3c;
-        work->scale2 = vec3_80300a48;
+        work->starCur.y += 100.0f;
+        work->scale1 = (Vec){1.5f, 1.5f, 1.5f};
+        work->scale2 = (Vec){0.0f, 0.0f, 0.0f};
         work->starStart.y = work->starCur.y;
-        work->starEnd.y = float_300_80422110;
-        effStardustN64Entry(0, work->starCur.x, work->starCur.y, work->starCur.z, float_32_80422118);
+        work->starEnd.y = 300.0f;
+        effStardustN64Entry(0, work->starCur.x, work->starCur.y, work->starCur.z, 32.0f);
         break;
     case 6:
         work->starCounter++;
-        work->scale2.y = intplGetValue(0, work->starCounter, 40, float_0_804220e8, float_1440_8042211c);
+        work->scale2.y = intplGetValue(0, work->starCounter, 40, 0.0f, 1440.0f);
         if (work->starCounter >= 40) {
             work->starState = 7;
             work->starCounter = 0;
-            effStardustN64Entry(4, work->starCur.x, work->starCur.y - float_5_80422120, work->starCur.z, float_40_80422124);
-            effStardustN64Entry(4, float_30_804220d4 + work->starCur.x, work->starCur.y, work->starCur.z, float_40_80422124);
-            effStardustN64Entry(4, work->starCur.x - float_30_804220d4, work->starCur.y, work->starCur.z, float_40_80422124);
+            effStardustN64Entry(4, work->starCur.x, work->starCur.y - 5.0f, work->starCur.z, 40.0f);
+            effStardustN64Entry(4, 30.0f + work->starCur.x, work->starCur.y, work->starCur.z, 40.0f);
+            effStardustN64Entry(4, work->starCur.x - 30.0f, work->starCur.y, work->starCur.z, 40.0f);
             psndSFXOn("SFX_BTL_SAC_SUKKIRI3");
         }
         break;
@@ -502,9 +461,9 @@ static void main_star(void) {
         if (work->starCounter >= 30) {
             work->starState = 4;
             work->starCounter = 0;
-            work->starCur = vec3_80300a54;
-            work->scale1 = vec3_80300a60;
-            work->scale2 = vec3_80300a6c;
+            work->starCur = (Vec){0.0f, 300.0f, 0.0f};
+            work->scale1 = (Vec){2.0f, 2.0f, 2.0f};
+            work->scale2 = (Vec){0.0f, 0.0f, 0.0f};
         }
         break;
     case 8:
@@ -536,7 +495,7 @@ static void main_star(void) {
         data->tipRotY = work->scale2.x;
         data->rotY = work->scale2.y;
         data->tipRotZ = work->scale2.z;
-        data->scale = float_1p5_80422128 * work->scale1.x;
+        data->scale = 1.5f * work->scale1.x;
         data->camId = work->flag;
     }
 }
@@ -561,13 +520,13 @@ static void disp_2D(CameraId camera, void* param) {
     PSMTXTransApply(mtx, mtx, work->pos.x, work->pos.y + 60.0f, work->pos.z);
     iconDispGx2(mtx, 0x10, 0x8E);
 
-    pos1 = vec3_80300a78;
+    pos1 = (Vec){0.0f, 0.0f, 0.0f};
     pos1.x = work->pos.x + 215.0f;
     pos1.y = work->pos.y + 60.0f;
     pos1.z = work->pos.z;
     iconDispGx(1.0f, &pos1, 0x10, 0x90);
 
-    pos2 = vec3_80300a84;
+    pos2 = (Vec){0.0f, 0.0f, 0.0f};
     pos2.x = work->pos.x - 215.0f;
     pos2.y = work->pos.y + 60.0f;
     pos2.z = work->pos.z;
@@ -596,12 +555,12 @@ void N__disp_2D(s32 type, s32 index) {
     if (type == 0) {
         button = &work->buttons2[index];
         selected = work->prevSelected;
-        yoff = float_80_804220e4;
+        yoff = 80.0f;
     }
     else {
         button = &work->buttons[index];
         selected = work->selected;
-        yoff = float_0_804220e8;
+        yoff = 0.0f;
     }
 
     if (type == 0 && button->state == 0) {
@@ -661,9 +620,9 @@ void N__disp_2D(s32 type, s32 index) {
         return;
     }
 
-    pos = vec3_80300a90;
+    pos = (Vec){0.0f, 0.0f, 0.0f};
     pos.x = button->pos.x;
-    pos.y = button->pos.y + yoff + work->alpha + float_60_804220ec;
+    pos.y = button->pos.y + yoff + work->alpha + 60.0f;
     pos.z = button->pos.z;
 #ifdef MUST_MATCH
     // MUST_MATCH: the original's iconDispGx takes an s32 icon id (iconDispGxAlpha's prologue is
@@ -934,16 +893,16 @@ EVT_BEGIN(marioAttackEvent_Suki)
     END_SIBLING_EVENT
     CALL_CHILD(sac_start_camera_evt)
     WAIT_MS(500)
-    CALL(btlevtcmd_snd_se, -2, STRING((char*)str_80300A9C), EVTDAT_POINTER_MAX, 0, EVTDAT_POINTER_MAX)
+    CALL(btlevtcmd_snd_se, -2, STRING((char*)"SFX_BTL_SAC_START1"), EVTDAT_POINTER_MAX, 0, EVTDAT_POINTER_MAX)
     CALL_CHILD(sac_mario_item_on_evt)
     WAIT_MS(500)
-    CALL(btlevtcmd_snd_se, -2, STRING((char*)str_80300AB0), EVTDAT_POINTER_MAX, 0, LW(11))
+    CALL(btlevtcmd_snd_se, -2, STRING((char*)"SFX_BTL_SAC_START2"), EVTDAT_POINTER_MAX, 0, LW(11))
     CALL(star_stone_appear)
     BEGIN_SIBLING_EVENT
         CALL_CHILD(sac_start_stardust)
     END_SIBLING_EVENT
     WAIT_FRAMES(100)
-    CALL(btlevtcmd_snd_se, -2, STRING((char*)str_80300AC4), EVTDAT_POINTER_MAX, 0, EVTDAT_POINTER_MAX)
+    CALL(btlevtcmd_snd_se, -2, STRING((char*)"SFX_BTL_SAC_START3"), EVTDAT_POINTER_MAX, 0, EVTDAT_POINTER_MAX)
     CALL(evt_snd_sfxoff, LW(11))
     WAIT_FRAMES(40)
     CALL_CHILD(sac_mario_item_on_end_evt)
@@ -966,12 +925,12 @@ EVT_BEGIN(marioAttackEvent_Suki)
     WAIT_MS(1000)
     SET_VALUE(LW(10), 0)
     SET_VALUE(LW(11), LW(0))
-    CALL(evt_paper_entry, STRING((char*)str_80300AD8))
+    CALL(evt_paper_entry, STRING((char*)"OFF_d_yabu_small"))
     LOOP(LW(11))
         CALL(star_stone_get_attack_point, LW(10), LW(1), LW(2), LW(3))
         CALL(get_img_name, LW(10), LW(13))
         CALL(evt_img_entry, LW(13))
-        CALL(evt_img_set_paper, LW(13), STRING((char*)str_80300AD8))
+        CALL(evt_img_set_paper, LW(13), STRING((char*)"OFF_d_yabu_small"))
         CALL(get_screen_point, LW(1), LW(2), LW(3), LW(4), LW(5))
         ADD(LW(4), 256)
         MULTIPLY(LW(5), -1)
@@ -985,9 +944,9 @@ EVT_BEGIN(marioAttackEvent_Suki)
             CALL(evt_btl_camera_shake_h, 0, 8, 0, 10, 0)
         END_SIBLING_EVENT
         CALL(eff_crystal, LW(1), LW(2))
-        CALL(evt_eff, STRING(""), STRING((char*)str_80300AEC), 0, LW(1), LW(2), 30, 60, 0, 0, 0, 0, 0, 0, 0)
-        CALL(evt_snd_sfxon, STRING((char*)str_80300AF8), 0)
-        CALL(evt_snd_sfxon, STRING((char*)str_80300B10), 0)
+        CALL(evt_eff, STRING(""), STRING((char*)"indirect"), 0, LW(1), LW(2), 30, 60, 0, 0, 0, 0, 0, 0, 0)
+        CALL(evt_snd_sfxon, STRING((char*)"SFX_BTL_SAC_SUKKIRI4"), 0)
+        CALL(evt_snd_sfxon, STRING((char*)"SFX_BTL_SAC_SUKKIRI4_2"), 0)
         IF_INT_EQUAL(LW(10), 0)
             CALL(btlevtcmd_GetEnemyBelong, -2, LW(1))
             CALL(btlevtcmd_SamplingEnemy, -2, LW(1), PTR(weapon_words))
@@ -1009,7 +968,7 @@ EVT_BEGIN(marioAttackEvent_Suki)
         CALL(wait_star_stone_attack_end)
         ADD(LW(10), 1)
     END_LOOP
-    CALL(evt_paper_delete, STRING((char*)str_80300AD8))
+    CALL(evt_paper_delete, STRING((char*)"OFF_d_yabu_small"))
     SET_VALUE(LW(10), 0)
     SET_VALUE(LW(11), LW(0))
     LOOP(LW(11))
@@ -1020,7 +979,7 @@ EVT_BEGIN(marioAttackEvent_Suki)
     CALL_CHILD(flash_evt)
     SET_VALUE(LW(10), 3)
     LOOP(4)
-        CALL(evt_snd_sfxon, STRING((char*)str_80300B28), 0)
+        CALL(evt_snd_sfxon, STRING((char*)"SFX_BTL_SAC_SUKKIRI5"), 0)
         LOOP(4)
             ADD(LW(10), 63)
             CALL(flash_update, LW(10))

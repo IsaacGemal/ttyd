@@ -24,20 +24,6 @@ extern const f32 float_0p03_8041ec10;
 extern const f32 float_5_8041ec14;
 extern const f32 float_neg1p7_8041ec18;
 extern const f32 float_0p01_8041ec1c;
-extern const f32 float_0p05_8041ec20;
-extern const f32 float_10_8041ec24;
-extern const f32 float_0p98_8041ec28;
-extern const f32 float_neg0p5_8041ec2c;
-extern const f32 float_3_8041ec30;
-extern const f32 float_4_8041ec34;
-extern const f32 float_0p5_8041ec38;
-extern const f32 float_6p2832_8041ec3c;
-extern const f32 float_360_8041ec40;
-extern const f32 float_1_8041ec44;
-extern const f32 float_neg0p02_8041ec48;
-extern const f32 float_0p02_8041ec4c;
-
-
 
 // .rodata effect name the original stores into EffectEntry::type.
 
@@ -147,11 +133,11 @@ EffectEntry* effConfettiN64Entry(s32 type, s32 lifetime, f32 x, f32 y, f32 z, f3
 	switch (type10) {
 	case 0:
 	case 4:
-		radius = float_3_8041ec30;
+		radius = 3.0f;
 		break;
 	case 1:
 	case 5:
-		radius = float_4_8041ec34;
+		radius = 4.0f;
 		break;
 	case 2:
 	case 3:
@@ -178,14 +164,14 @@ EffectEntry* effConfettiN64Entry(s32 type, s32 lifetime, f32 x, f32 y, f32 z, f3
 	data->camId = CAMERA_3D;
 
 	angle0 = rand() % 360;
-	half = float_0p5_8041ec38 * radius;
+	half = 0.5f * radius;
 	radius2 = half + half;
 
 	for (i = 0, timer = 0; i < count; timer += 3, i++, part++) {
 		randCount = (f32)(rand() % 101);
 		randRadius = float_0p01_8041ec1c * randCount * radius;
-		angle = float_6p2832_8041ec3c *
-			((f32)angle0 + float_360_8041ec40 * (f32)i / (f32)count) / float_360_8041ec40;
+		angle = 6.2831855f *
+			((f32)angle0 + 360.0f * (f32)i / (f32)count) / 360.0f;
 		part->type = type;
 		sinA = (f32)sin(angle);
 		cosA = (f32)cos(angle);
@@ -199,8 +185,8 @@ EffectEntry* effConfettiN64Entry(s32 type, s32 lifetime, f32 x, f32 y, f32 z, f3
 				(float_0p1_8041ec04 * (rand() % 101) + part->x - float_5_8041ec14);
 			part->velY = float_neg1p7_8041ec18 -
 				float_0p01_8041ec1c * (float_0p1_8041ec04 * (rand() % 801));
-			part->velZ = float_0p05_8041ec20 *
-				(float_0p1_8041ec04 * (rand() % 201) - float_10_8041ec24);
+			part->velZ = 0.05f *
+				(float_0p1_8041ec04 * (rand() % 201) - 10.0f);
 			part->lifetime = 0x78;
 			part->delay = timer;
 		} else {
@@ -208,11 +194,11 @@ EffectEntry* effConfettiN64Entry(s32 type, s32 lifetime, f32 x, f32 y, f32 z, f3
 			part->y = cosB * (randRadius * cosA);
 			part->z = randRadius * sinB;
 			part->velX = cosB * (radius2 * sinA);
-			part->velY = cosB * (radius2 * cosA) + float_1_8041ec44;
+			part->velY = cosB * (radius2 * cosA) + 1.0f;
 			part->velZ = radius2 * sinB;
 			if (type10 >= 4) {
-				part->accelY = float_neg0p02_8041ec48 -
-					float_0p02_8041ec4c * (f32)((i + 1) % 3);
+				part->accelY = -0.02f -
+					0.02f * (f32)((i + 1) % 3);
 			} else {
 				part->accelY = float_0_8041ec00;
 			}
@@ -292,8 +278,8 @@ void effConfettiMain(EffectEntry* effect) {
 					(float_0p1_8041ec04 * (rand() % 101) + data->x - float_5_8041ec14);
 				data->velY = float_neg1p7_8041ec18 -
 					float_0p01_8041ec1c * (float_0p1_8041ec04 * (rand() % 801));
-				data->velZ = float_0p05_8041ec20 *
-					(float_0p1_8041ec04 * (rand() % 201) - float_10_8041ec24);
+				data->velZ = 0.05f *
+					(float_0p1_8041ec04 * (rand() % 201) - 10.0f);
 				data->lifetime = 0x78;
 				data->lifetime -= 1;
 			}
@@ -306,11 +292,11 @@ void effConfettiMain(EffectEntry* effect) {
 				}
 			}
 			if (t >= 4) {
-				data->velX *= float_0p98_8041ec28;
-				data->velY *= float_0p98_8041ec28;
-				data->velZ *= float_0p98_8041ec28;
+				data->velX *= 0.98f;
+				data->velY *= 0.98f;
+				data->velZ *= 0.98f;
 				if (frame > 5) {
-					if (data->velY > float_neg0p5_8041ec2c) {
+					if (data->velY > -0.5f) {
 						data->velY += data->accelY;
 					}
 				}
@@ -462,15 +448,3 @@ const f32 float_0p03_8041ec10 = 0.03f;
 const f32 float_5_8041ec14 = 5.0f;
 const f32 float_neg1p7_8041ec18 = -1.7f;
 const f32 float_0p01_8041ec1c = 0.01f;
-const f32 float_0p05_8041ec20 = 0.05f;
-const f32 float_10_8041ec24 = 10.0f;
-const f32 float_0p98_8041ec28 = 0.98f;
-const f32 float_neg0p5_8041ec2c = -0.5f;
-const f32 float_3_8041ec30 = 3.0f;
-const f32 float_4_8041ec34 = 4.0f;
-const f32 float_0p5_8041ec38 = 0.5f;
-const f32 float_6p2832_8041ec3c = 6.2831855f;
-const f32 float_360_8041ec40 = 360.0f;
-const f32 float_1_8041ec44 = 1.0f;
-const f32 float_neg0p02_8041ec48 = -0.02f;
-const f32 float_0p02_8041ec4c = 0.02f;

@@ -54,14 +54,6 @@ extern const f64 double_to_int_mask_802ee170;
 // The original .rodata starts with six zero Vecs: the templates of the `Vec` copies in the functions
 // below, pooled while the source is read. The first five are named objects here (their users match
 // with the named reads); _MoveSoundControlCore's is its own compound literal's template.
-__declspec(section ".rodata") const Vec vec3_802ede88 = { 0.0f, 0.0f, 0.0f };
-__declspec(section ".rodata") const Vec vec3_802ede94 = { 0.0f, 0.0f, 0.0f };
-__declspec(section ".rodata") const Vec vec3_802edea0 = { 0.0f, 0.0f, 0.0f };
-__declspec(section ".rodata") const Vec vec3_802edeac = { 0.0f, 0.0f, 0.0f };
-__declspec(section ".rodata") const Vec vec3_802edeb8 = { 0.0f, 0.0f, 0.0f };
-extern const Vec vec3_802ede94;
-extern const Vec vec3_802edeac;
-extern const Vec vec3_802edeb8;
 extern s32 psndSFX_pit(s32 id, s32 pit);
 
 extern s32 subsetevt_confuse_flustered[];
@@ -2887,8 +2879,8 @@ USER_FUNC(btlevtcmd_JumpSetting) {
 }
 
 //s32* battleId, s32* tx, s32* ty, s32* tz, s32* frame, s32* a
-// The two psndSFXOn_3D calls each need two Vecs (source + argument copy) and distinct globals
-// vec3_802ede88 / vec3_802ede94, which is what fixes the frame; the declaration order
+// The two psndSFXOn_3D calls each need two Vecs (source + argument copy) and distinct zero Vec
+// literals (retail vec3_802ede88 / vec3_802ede94), which is what fixes the frame; the declaration order
 // `s32 btlId, id; s32* args; BattleUnit* unit; s32 frame, a;` fixes the args/id allocation. The tail is
 // written `if (frame <= 0) { SetPos(target); ...; return 1; } return 0;`.
 #pragma opt_common_subs off // keep the target's 0.5/3.0 literal load colouring (f4/f2) in both bodies
@@ -2950,7 +2942,7 @@ USER_FUNC(btlevtcmd_JumpPosition) {
                              unit->moveDist / (f32)unit->moveFrames;
         BtlUnit_LoadSeMode(2, a, &unit->seModeSrc, &unit->seMode);
         if (unit->seMode.sfxA != 0) {
-            pos = vec3_802ede88;
+            pos = (Vec){ 0.0f, 0.0f, 0.0f };
             pos.x = unit->mMoveCurrentPos.x;
             pos.y = unit->mMoveCurrentPos.y;
             pos.z = unit->mMoveCurrentPos.z;
@@ -2980,7 +2972,7 @@ USER_FUNC(btlevtcmd_JumpPosition) {
     if (unit->moveFrames <= 0) {
         BtlUnit_SetPos(unit, unit->mMoveTargetPos.x, unit->mMoveTargetPos.y, unit->mMoveTargetPos.z);
         if (unit->seMode.sfxB != 0) {
-            pos2 = vec3_802ede94;
+            pos2 = (Vec){ 0.0f, 0.0f, 0.0f };
             pos2.x = unit->mMoveTargetPos.x;
             pos2.y = unit->mMoveTargetPos.y;
             pos2.z = unit->mMoveTargetPos.z;
@@ -4377,7 +4369,7 @@ USER_FUNC(btlevtcmd_MarioJumpParam) {
 
 //s32* battleId, s32* tx, s32* ty, s32* tz, s32* frame, s32* type, s32* a
 // Type 1 skips the setup; 2 and 4 stretch the arc. The `h` temp holding each sin result and the two
-// `*=` forms pin the target's FPRs and load order; `pos` is the vec3_802edea0 object the target reads
+// `*=` forms pin the target's FPRs and load order; `pos` is the zero Vec (retail vec3_802edea0) the target reads
 // at vec3_802ede88+0x18 (0x18 is declared only as an unnamed gap in this unit's symbols).
 #pragma opt_common_subs off // without it the arc constants' FPRs and the 0x188 address colouring differ
 USER_FUNC(btlevtcmd_MarioJumpPosition) {
@@ -4471,7 +4463,7 @@ USER_FUNC(btlevtcmd_MarioJumpPosition) {
             }
             BtlUnit_LoadSeMode(2, a, &unit->seModeSrc, &unit->seMode);
             if (unit->seMode.sfxA != 0) {
-                pos = vec3_802edea0;
+                pos = (Vec){ 0.0f, 0.0f, 0.0f };
                 pos.x = unit->mMoveCurrentPos.x;
                 pos.y = unit->mMoveCurrentPos.y;
                 pos.z = unit->mMoveCurrentPos.z;
@@ -4720,7 +4712,7 @@ USER_FUNC(btlevtcmd_JumpPartsPosition) {
             part->moveDist / (f32)part->moveFrames;
         BtlUnit_LoadSeMode(2, a, &part->seModeSrc, &part->seMode);
         if (part->seMode.sfxA != 0) {
-            pos = vec3_802edeac;
+            pos = (Vec){ 0.0f, 0.0f, 0.0f };
             pos.x = part->mMoveCurrentPos.x;
             pos.y = part->mMoveCurrentPos.y;
             pos.z = part->mMoveCurrentPos.z;
@@ -4752,7 +4744,7 @@ USER_FUNC(btlevtcmd_JumpPartsPosition) {
         BtlUnit_SetPartsPos(part, part->mMoveTargetPos.x, part->mMoveTargetPos.y,
                             part->mMoveTargetPos.z);
         if (part->seMode.sfxB != 0) {
-            pos2 = vec3_802edeb8;
+            pos2 = (Vec){ 0.0f, 0.0f, 0.0f };
             pos2.x = part->mMoveTargetPos.x;
             pos2.y = part->mMoveTargetPos.y;
             pos2.z = part->mMoveTargetPos.z;
@@ -5346,7 +5338,7 @@ USER_FUNC(btlevtcmd_AudienceDeclareAcrobatResult) {
     return 2;
 }
 
-// The original addresses its sound names from the vec3_802ede88 base.
+// The original addresses its sound names from the retail vec3_802ede88 base.
 // The SFX_SYSTEM names are pooled string literals in the original (ACSuccessEffect reads them at
 // vec3+0x1c0..0x24c), so MUST_MATCH spells them as literals and the natural build uses the symbols.
 

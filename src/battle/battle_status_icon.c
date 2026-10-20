@@ -6,7 +6,6 @@
 #include <string.h>
 
 extern BattleWork* _battleWorkPointer;
-extern GXColor dat_804221e8;
 extern GXColor dat_804221ec;
 extern s32 dat_80422200;
 extern s32 dat_80422204;
@@ -162,7 +161,7 @@ void BattleStatusIconDisp(CameraId camId, void* param) {
 	GXColor color;
 	s32 i;
 
-	color = dat_804221e8;
+	color = (GXColor){ 0xff, 0xff, 0xff, 0xff };
 	btlGetScreenPoint(&icon->mPosition, &screenPos);
 	for (i = icon->mNumStatusIcons - 1; i >= 0; i--) {
 		entry = &icon->mIcons[i];
@@ -560,7 +559,6 @@ BOOL _bsi_regeneration(BattleUnit* unit, IconDispTableEntry* disp, BattleWorkSta
 
 // .sdata2 named objects this unit owns, in the original's address order.
 #pragma force_active on
-__declspec(section ".sdata2") GXColor dat_804221e8 = { 0xff, 0xff, 0xff, 0xff };
 __declspec(section ".sdata2") GXColor dat_804221ec = { 0xff, 0xff, 0xff, 0xff };
 __declspec(section ".sdata2") s32 dat_804221f0 = 0xffffffff;
 __declspec(section ".sdata2") s32 dat_804221f4 = 0xffffffff;

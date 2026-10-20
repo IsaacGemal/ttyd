@@ -45,8 +45,6 @@ const Vec vec3_802ff950[9] = {
     {0.0f, 0.0f, 0.0f},
 };
 
-const char str_802FF9BC[] = "SFX_AC_CURSOR_MOVE1";
-
 // The original reads the nine .rodata vectors through a single vec3_802ff950 base register.
 // MUST_MATCH reaches them through one `vecs` base; the natural form names each symbol.
 #ifdef MUST_MATCH
@@ -58,8 +56,6 @@ const char str_802FF9BC[] = "SFX_AC_CURSOR_MOVE1";
 // Data constants declared extern before use so MWCC references them by name instead of folding their
 // values into the instruction stream. They are defined at the bottom of this file. The original unit
 // emitted all of them; the definitions keep the .rodata/.sdata2 layout and byte values.
-extern const f64 double_3_802ff9d0;
-extern const f64 double_28_802ff9d8;
 extern const u32 dat_804218f8;
 extern const u32 dat_804218fc;
 extern const u32 dat_80421900;
@@ -113,7 +109,7 @@ s32 battleAcMain_ShotTarget(BattleWork* work) {
         // The name is a constant, so MWCC hoists this load into the loop preheader; writing it
         // here lands the hoisted `addi` between the rumble load and the two hoisted hit-address
         // temps, the order the original has.
-        sfx = str_802FF9BC;
+        sfx = "SFX_AC_CURSOR_MOVE1";
         switch (ac->mAcState) {
             case 0:
                 _ac_disp_init(work);
@@ -175,14 +171,14 @@ s32 battleAcMain_ShotTarget(BattleWork* work) {
                 st->pos.y += (f32)work->padWork[0].mPadData[0].stickY / float_10_80421940;
 
                 if (smooth) {
-                    if (fabsf(st->pos.x - st->target.x) < double_3_802ff9d0) {
+                    if (fabsf(st->pos.x - st->target.x) < 3.0) {
                         st->pos.x = st->target.x;
                     } else if (st->pos.x > st->target.x) {
                         st->pos.x -= float_3_8042193c;
                     } else {
                         st->pos.x += float_3_8042193c;
                     }
-                    if (fabsf(st->pos.y - st->target.y) < double_3_802ff9d0) {
+                    if (fabsf(st->pos.y - st->target.y) < 3.0) {
                         st->pos.y = st->target.y;
                     } else if (st->pos.y > st->target.y) {
                         st->pos.y -= float_3_8042193c;
@@ -190,7 +186,7 @@ s32 battleAcMain_ShotTarget(BattleWork* work) {
                         st->pos.y += float_3_8042193c;
                     }
                 }
-                if (fabsf(distABf(st->pos.x, st->pos.y, st->target.x, st->target.y)) <= double_28_802ff9d8) {
+                if (fabsf(distABf(st->pos.x, st->pos.y, st->target.x, st->target.y)) <= 28.0) {
                     st->inRange = 1;
                 } else {
                     st->inRange = 0;
@@ -445,8 +441,6 @@ static void actionCommandDisp(f32 x, f32 y) {
 #pragma opt_common_subs reset
 #pragma dont_inline reset
 
-const f64 double_3_802ff9d0 = 3.0;
-const f64 double_28_802ff9d8 = 28.0;
 const u32 dat_804218f8 = 0xFFFFFFFF;
 const u32 dat_804218fc = 0xFFFFFFFF;
 const u32 dat_80421900 = 0x808080FF;

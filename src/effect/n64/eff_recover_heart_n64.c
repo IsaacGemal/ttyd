@@ -28,20 +28,6 @@ extern const f64 double_to_int_802fb4d8;
 f32 scale_w_dat[7] = { 0.25f, 0.5f, 0.75f, 1.0f, 0.9f, 1.1f, 1.0f };
 f32 scale_h_dat[7] = { 0.25f, 0.5f, 0.75f, 1.0f, 1.2f, 0.9f, 1.0f };
 
-// .sdata2
-extern const f32 float_0_8041fb10;
-extern const f32 float_1_8041fb14;
-extern const f32 float_0p05_8041fb1c;
-extern const f32 float_6p2832_8041fb20;
-extern const f32 float_360_8041fb24;
-extern const f32 float_neg30_8041fb28;
-extern const f32 float_8_8041fb2c;
-extern const f32 float_0p9_8041fb30;
-extern const f32 float_1p4_8041fb34;
-extern const f32 float_deg2rad_8041fb08;
-extern const f32 float_0p03125_8041fb0c;
-extern const f32 float_0p0026042_8041fb18;
-
 // uninitialized GXColor (alpha is filled in per particle)
 // .sbss2: the default .sbss2 is only used for compiler-generated pool
 // templates, so pair it with a small-data section and place it by hand.
@@ -150,28 +136,28 @@ EffectEntry* effRecoverHeartN64Entry(s32 type, s32 time, f32 x, f32 y, f32 z) {
 
 		p = data + 1;
 		for (i = 1; i < 2; i++, p++) {
-			p->x = float_0_8041fb10;
-			p->y = float_0_8041fb10;
-			p->z = float_0_8041fb10;
-			p->scale = float_0_8041fb10;
-			p->vx = float_0_8041fb10;
-			p->vz = float_0_8041fb10;
-			p->field_0x20 = float_0_8041fb10;
-			p->angle = float_0_8041fb10;
+			p->x = 0.0f;
+			p->y = 0.0f;
+			p->z = 0.0f;
+			p->scale = 0.0f;
+			p->vx = 0.0f;
+			p->vz = 0.0f;
+			p->field_0x20 = 0.0f;
+			p->angle = 0.0f;
 			if (i == 1) {
-				p->x = float_0_8041fb10;
+				p->x = 0.0f;
 				p->delay = 0;
-				p->scaleW = float_0_8041fb10;
-				p->scaleH = float_0_8041fb10;
-				p->vy = float_1p4_8041fb34;
+				p->scaleW = 0.0f;
+				p->scaleH = 0.0f;
+				p->vy = 1.4f;
 			} else {
 				s32 m = (i & 1) * 2 - 1;
 				s32 v = m * ((i - 1) >> 1);
 				p->x = (f32)(v * 4);
-				p->vy = float_1p4_8041fb34;
+				p->vy = 1.4f;
 				p->delay = 11;
-				p->scaleW = float_0_8041fb10;
-				p->scaleH = float_0_8041fb10;
+				p->scaleW = 0.0f;
+				p->scaleH = 0.0f;
 			}
 		}
 	}
@@ -211,7 +197,7 @@ void effRecoverHeartMain(EffectEntry* effect) {
 	}
 	anglePhase = life * 12 + 38;
 	scaleBase = life * 25;
-	fade = float_0p05_8041fb1c * (f32)life;
+	fade = 0.05f * (f32)life;
 	data++;
 	for (i = 1; i < effect->count; anglePhase += 38, i++, data++) {
 		animFrame = data->timer;
@@ -222,8 +208,8 @@ void effRecoverHeartMain(EffectEntry* effect) {
 			}
 		}
 		if (animFrame >= 7) {
-			data->scaleH = float_1_8041fb14;
-			data->scaleW = float_1_8041fb14;
+			data->scaleH = 1.0f;
+			data->scaleW = 1.0f;
 		} else {
 			data->scaleW = scale_w_dat[animFrame];
 			data->scaleH = scale_h_dat[animFrame];
@@ -231,16 +217,16 @@ void effRecoverHeartMain(EffectEntry* effect) {
 		data->x += data->vx;
 		data->y += data->vy;
 		data->z += data->vz;
-		angle = float_6p2832_8041fb20 * (f32)anglePhase / float_360_8041fb24;
-		data->angle = float_neg30_8041fb28 * (f32)sin(angle);
-		data->scale = float_8_8041fb2c * (f32)cos(angle);
+		angle = 6.2831855f * (f32)anglePhase / 360.0f;
+		data->angle = -30.0f * (f32)sin(angle);
+		data->scale = 8.0f * (f32)cos(angle);
 		if (life < 20) {
 			data->scale *= fade;
 			data->angle *= fade;
 		}
 		if (life < 10) {
 			data->alpha = scaleBase;
-			data->vy *= float_0p9_8041fb30;
+			data->vy *= 0.9f;
 		}
 		data->timer++;
 	}
@@ -293,7 +279,7 @@ void effRecoverHeartDisp(CameraId camId, void* param) {
 	amountNegative = data->amountNegative;
 
 	PSMTXTrans(trans, data->x, data->y, data->z);
-	PSMTXRotRad(rot, 'y', float_deg2rad_8041fb08 * -camGetPtr(CAMERA_3D)->viewYaw);
+	PSMTXRotRad(rot, 'y', 0.017453292f * -camGetPtr(CAMERA_3D)->viewYaw);
 	PSMTXConcat(trans, rot, work);
 
 	type = data->type;
@@ -352,13 +338,13 @@ void effRecoverHeartDisp(CameraId camId, void* param) {
 		effGetTexObjN64(texId, &texObj);
 		GXLoadTexObj(&texObj, 0);
 
-		PSMTXScale(scale, float_0p03125_8041fb0c, float_0p03125_8041fb0c, float_0_8041fb10);
+		PSMTXScale(scale, 0.03125f, 0.03125f, 0.0f);
 		GXLoadTexMtxImm(scale, 0x1e, 1);
 		PSMTXTrans(trans, data->x + data->scale, data->y, data->z);
-		PSMTXScale(scale, data->scaleW, data->scaleH, float_1_8041fb14);
+		PSMTXScale(scale, data->scaleW, data->scaleH, 1.0f);
 		PSMTXConcat(trans, scale, trans);
 		PSMTXConcat(work, trans, mtx);
-		PSMTXRotRad(rot, 'z', float_deg2rad_8041fb08 * data->angle);
+		PSMTXRotRad(rot, 'z', 0.017453292f * data->angle);
 		PSMTXConcat(mtx, rot, finalMtx);
 
 		if (i == 1 && type != 2) {
@@ -379,8 +365,8 @@ void effRecoverHeartDisp(CameraId camId, void* param) {
 			if (life < 10 && amountNegative == 0) {
 				effGetTexObjN64(0x53, &texObj);
 				GXLoadTexObj(&texObj, 0);
-				PSMTXScale(scale, float_0p03125_8041fb0c, float_0p0026042_8041fb18, float_0_8041fb10);
-				PSMTXTrans(trans, float_0_8041fb10, (f32)stripOffset, float_0_8041fb10);
+				PSMTXScale(scale, 0.03125f, 0.0026041667f, 0.0f);
+				PSMTXTrans(trans, 0.0f, (f32)stripOffset, 0.0f);
 				PSMTXConcat(scale, trans, scale);
 				GXLoadTexMtxImm(scale, 0x1e, 1);
 				if (type == 0) {
@@ -397,8 +383,8 @@ void effRecoverHeartDisp(CameraId camId, void* param) {
 				stripe = amountNegative != 0 ? 10 : quotient;
 				effGetTexObjN64(0x53, &texObj);
 				GXLoadTexObj(&texObj, 0);
-				PSMTXScale(scale, float_0p03125_8041fb0c, float_0p0026042_8041fb18, float_0_8041fb10);
-				PSMTXTrans(trans, float_0_8041fb10, (f32)(0x160 - remainder * 32), float_0_8041fb10);
+				PSMTXScale(scale, 0.03125f, 0.0026041667f, 0.0f);
+				PSMTXTrans(trans, 0.0f, (f32)(0x160 - remainder * 32), 0.0f);
 				PSMTXConcat(scale, trans, scale);
 				GXLoadTexMtxImm(scale, 0x1e, 1);
 				if (type == 0) {
@@ -412,8 +398,8 @@ void effRecoverHeartDisp(CameraId camId, void* param) {
 				GXBegin(0x90, 0, 6);
 				tri2(0, 1, 2, 0, 0, 2, 3, 0);
 
-				PSMTXScale(scale, float_0p03125_8041fb0c, float_0p0026042_8041fb18, float_0_8041fb10);
-				PSMTXTrans(trans, float_0_8041fb10, (f32)(0x160 - stripe * 32), float_0_8041fb10);
+				PSMTXScale(scale, 0.03125f, 0.0026041667f, 0.0f);
+				PSMTXTrans(trans, 0.0f, (f32)(0x160 - stripe * 32), 0.0f);
 				PSMTXConcat(scale, trans, scale);
 				GXLoadTexMtxImm(scale, 0x1e, 1);
 				if (type == 0) {
@@ -435,16 +421,3 @@ void effRecoverHeartDisp(CameraId camId, void* param) {
 	}
 }
 
-// The pool constants the code above loads by name, defined after it (defined first, the compiler folds them).
-const f32 float_deg2rad_8041fb08 = 0.017453292f;
-const f32 float_0p03125_8041fb0c = 0.03125f;
-const f32 float_0_8041fb10 = 0.0f;
-const f32 float_1_8041fb14 = 1.0f;
-const f32 float_0p0026042_8041fb18 = 0.0026041667f;
-const f32 float_0p05_8041fb1c = 0.05f;
-const f32 float_6p2832_8041fb20 = 6.2831855f;
-const f32 float_360_8041fb24 = 360.0f;
-const f32 float_neg30_8041fb28 = -30.0f;
-const f32 float_8_8041fb2c = 8.0f;
-const f32 float_0p9_8041fb30 = 0.9f;
-const f32 float_1p4_8041fb34 = 1.4f;

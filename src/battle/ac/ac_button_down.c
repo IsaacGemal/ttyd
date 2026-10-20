@@ -10,15 +10,6 @@
 
 static void actionCommandDisp(s32 type, f32 x, f32 y);
 
-// Float literals the original unit emitted into .sdata2 (offsets listed in REPORT.md).
-extern const f32 float_neg200_804204e8;
-extern const f32 float_40_804204ec;
-extern const f32 float_70_804204f0;
-extern const f32 float_1_804204f4;
-extern const f32 float_16_804204f8;
-extern const f32 float_neg300_804204fc;
-extern const f32 float_0_80420500;
-
 // Vec literals the original unit emitted into .rodata (offsets listed in REPORT.md). The original .s
 // has five separate 0xC objects.
 const Vec vec3_802fd5d0 = {0.0f, 0.0f, -2.0f};
@@ -83,8 +74,8 @@ s32 battleAcMain_ButtonDown(BattleWork* work) {
             case 0: {
                 work->actionCommands.result = 1;
                 memset(disp, 0, 0x2C);
-                disp->iconX = float_neg300_804204fc;
-                disp->iconY = float_0_80420500;
+                disp->iconX = -300.0f;
+                disp->iconY = 0.0f;
                 disp->counter = 0x14;
                 memset(bd->buttons, 0, 0x34);
                 memset(bd->states, 1, 0x34);
@@ -293,11 +284,11 @@ void battleAcDisp_ButtonDown(CameraId camId, void* param) {
             if (disp->counter > 0) {
                 disp->counter--;
             }
-            x = intplGetValue(4, 20 - disp->counter, 20, float_neg300_804204fc, float_0_80420500);
-            y = float_0_80420500;
+            x = intplGetValue(4, 20 - disp->counter, 20, -300.0f, 0.0f);
+            y = 0.0f;
             break;
         default:
-            y = float_0_80420500;
+            y = 0.0f;
             x = y;
             break;
     }
@@ -324,12 +315,12 @@ static void actionCommandDisp(s32 type, f32 x, f32 y) {
     s32 i;
     s32 j;
     s32 limit;
-    f32 baseX = float_neg200_804204e8 + x;
+    f32 baseX = -200.0f + x;
     f32 iconY;
     f32 iconX;
 
-    iconX = baseX - float_40_804204ec;
-    iconY = float_70_804204f0 + y;
+    iconX = baseX - 40.0f;
+    iconY = 70.0f + y;
     limit = work->actionCommands.acParams[2] * 3 + 2;
     bd = (ButtonDownWork*)&work->actionCommands.field_0x2BC[0];
 
@@ -337,10 +328,10 @@ static void actionCommandDisp(s32 type, f32 x, f32 y) {
         Vec t = vec3_802fd5d0;
         t.x = iconX;
         t.y = iconY;
-        iconDispGx(float_1_804204f4, &t, 0x10, 0x8F);
+        iconDispGx(1.0f, &t, 0x10, 0x8F);
     }
 
-    iconX += float_16_804204f8;
+    iconX += 16.0f;
     for (j = 1; j < limit; j++) {
 #ifdef MUST_MATCH
         // volatile: stops MWCC hoisting the const vec3_802fd5dc load out of the loop, which the target does not do.
@@ -350,15 +341,15 @@ static void actionCommandDisp(s32 type, f32 x, f32 y) {
 #endif
         t.x = iconX;
         t.y = iconY;
-        iconDispGx(float_1_804204f4, &t, 0x10, 0x8E);
-        iconX += float_16_804204f8;
+        iconDispGx(1.0f, &t, 0x10, 0x8E);
+        iconX += 16.0f;
     }
 
     {
         Vec t = vec3_802fd5e8;
         t.x = iconX;
         t.y = iconY;
-        iconDispGx(float_1_804204f4, &t, 0x10, 0x90);
+        iconDispGx(1.0f, &t, 0x10, 0x90);
     }
 
     flags = work->actionCommands.acFlag;
@@ -423,23 +414,15 @@ static void actionCommandDisp(s32 type, f32 x, f32 y) {
             Vec v = vec3_802fd5f4;
             v.x = baseX + (f32)(i * 0x30);
             v.y = iconY;
-            iconDispGx(float_1_804204f4, &v, 0x10, pressed);
+            iconDispGx(1.0f, &v, 0x10, pressed);
         } else {
             Vec v = vec3_802fd600;
             v.x = baseX + (f32)(i * 0x30);
             v.y = iconY;
-            iconDispGx(float_1_804204f4, &v, 0x10, released);
+            iconDispGx(1.0f, &v, 0x10, released);
         }
     }
 }
 #pragma opt_propagation reset
 #pragma opt_lifetimes reset
 
-// The pool constants the code above loads by name, defined after it (defined first, the compiler folds them).
-const f32 float_neg200_804204e8 = -200.0f;
-const f32 float_40_804204ec = 40.0f;
-const f32 float_70_804204f0 = 70.0f;
-const f32 float_1_804204f4 = 1.0f;
-const f32 float_16_804204f8 = 16.0f;
-const f32 float_neg300_804204fc = -300.0f;
-const f32 float_0_80420500 = 0.0f;

@@ -131,11 +131,6 @@ struct BakuGameWork {
     u8 field_0x2B4[0x2B8 - 0x2B4];    // 0x2B4
 };
 
-// The weapon strings open .rodata. Every later entry is a local initializer's template (pooled where the
-// function is parsed), a named string defined after the code, or a literal pooled in .text order.
-const char str_802FEA98[20] = "btl_wn_sac_bakugame";
-const char str_802FEAAC[16] = "msg_bakugame\000\000\000";
-const char str_802FEABC[12] = "msg_sac_3\000\000";
 // bakuGameDisp3D's material colour, the first .sdata2 word; the floats and short strings are literals.
 const u32 dat_80421600 = 0x000000FF;
 
@@ -143,14 +138,14 @@ const u32 dat_80421600 = 0x000000FF;
 // the attack event script. Written as words because BattleWeapon's header leaves most of its fields unnamed.
 extern s32 marioAttackEvent_BakuGame[];
 static void* weapon[0xC0 / 4] = {
-    (void*)str_802FEA98, (void*)0x01980000, NULL, (void*)str_802FEAAC,
+    (void*)"btl_wn_sac_bakugame", (void*)0x01980000, NULL, (void*)"msg_bakugame",
     (void*)0x64000200, (void*)0x3F800000, (void*)0x01056432, NULL,
     NULL, NULL, NULL, NULL,
     NULL, NULL, NULL, NULL,
     NULL, NULL, NULL, NULL,
     NULL, NULL, NULL, NULL,
     NULL, (void*)0x02100060, (void*)0x20000000, (void*)0x00000302,
-    (void*)str_802FEABC, (void*)0x00020088, (void*)0x000007FF, NULL,
+    (void*)"msg_sac_3", (void*)0x00020088, (void*)0x000007FF, NULL,
     (void*)0x00006401, NULL, NULL, NULL,
     NULL, NULL, NULL, NULL,
     NULL, NULL, NULL, NULL,
@@ -1598,11 +1593,6 @@ void bakuGameDisp3D(CameraId camId, void* param) {
 void bakuGameDispStar(CameraId camId, void* param) {
 }
 
-// The attack event's sound names come after every function's templates in .rodata.
-const char str_802FECA8[20] = "SFX_BTL_SAC_START1\000";
-const char str_802FECBC[20] = "SFX_BTL_SAC_START2\000";
-const char str_802FECD0[20] = "SFX_BTL_SAC_START3\000";
-
 s32 marioAttackEvent_BakuGame[119] = {
     0x0001005B, (s32)(void*)btlevtcmd_WaitGuardMove, 0x0002005B, (s32)(void*)btlevtcmd_CommandPayWeaponCost,
     0xFFFFFFFE, 0x0003005B, (s32)(void*)btlevtcmd_CommandGetWeaponAddress, 0xFFFFFFFE,
@@ -1610,14 +1600,14 @@ s32 marioAttackEvent_BakuGame[119] = {
     0x0001005B, (s32)(void*)btlevtcmd_reset_move_color_lv_all, 0x0001005B, (s32)(void*)init_bakugame,
     0x0000006E, 0x0001005B, (s32)(void*)main_star, 0x00000070,
     0x0001005E, (s32)(void*)sac_start_camera_evt, 0x0001000A, 0x000001F4,
-    0x0006005B, (s32)(void*)btlevtcmd_snd_se, 0xFFFFFFFE, (s32)(void*)str_802FECA8,
+    0x0006005B, (s32)(void*)btlevtcmd_snd_se, 0xFFFFFFFE, (s32)(void*)"SFX_BTL_SAC_START1",
     0xF1194D80, 0x00000000, 0xF1194D80, 0x0001005E,
     (s32)(void*)sac_mario_item_on_evt, 0x0001000A, 0x000001F4, 0x0006005B,
-    (s32)(void*)btlevtcmd_snd_se, 0xFFFFFFFE, (s32)(void*)str_802FECBC, 0xF1194D80,
+    (s32)(void*)btlevtcmd_snd_se, 0xFFFFFFFE, (s32)(void*)"SFX_BTL_SAC_START2", 0xF1194D80,
     0x00000000, 0xFE363C8B, 0x0001005B, (s32)(void*)star_stone_appear,
     0x0000006E, 0x0001005E, (s32)(void*)sac_start_stardust, 0x00000070,
     0x00010009, 0x00000064, 0x0006005B, (s32)(void*)btlevtcmd_snd_se,
-    0xFFFFFFFE, (s32)(void*)str_802FECD0, 0xF1194D80, 0x00000000,
+    0xFFFFFFFE, (s32)(void*)"SFX_BTL_SAC_START3", 0xF1194D80, 0x00000000,
     0xF1194D80, 0x0002005B, (s32)(void*)evt_snd_sfxoff, 0xFE363C8B,
     0x0003005B, (s32)(void*)evt_btl_camera_set_mode, 0x00000000, 0x00000000,
     0x00010009, 0x00000028, 0x0001005E, (s32)(void*)sac_mario_item_on_end_evt,

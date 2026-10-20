@@ -13,40 +13,6 @@
 #pragma force_active on
 
 
-extern const char str_803019E0[24];
-extern const char str_803019F8[24];
-extern const char str_80301A10[28];
-extern const char str_80301A2C[28];
-extern const char str_80301A48[36];
-extern const char str_80301A6C[32];
-extern const char str_80301A8C[32];
-extern const char str_80301AAC[32];
-extern const char str_80301ACC[40];
-extern const char str_80301AF4[28];
-extern const char str_80301B10[96];
-
-const char str_803019E0[24] = "---- OS_ERROR_DSI ----\n";
-
-const char str_803019F8[24] = "---- OS_ERROR_ISI ----\n";
-
-const char str_80301A10[28] = "---- OS_ERROR_PROGRAM ----\n";
-
-const char str_80301A2C[28] = "---- Context 0x%08x ----\n\000\000";
-
-const char str_80301A48[36] = "r%-2d  = 0x%08x r%-2d  = 0x%08x\n\000\000\000";
-
-const char str_80301A6C[32] = "LR   = 0x%08x CR   = 0x%08x\n\000\000\000";
-
-const char str_80301A8C[32] = "SRR0 = 0x%08x SRR1 = 0x%08x\n\000\000\000";
-
-const char str_80301AAC[32] = "DSISR= 0x%08x DAR  = 0x%08x\n\000\000\000";
-
-const char str_80301ACC[40] = "Address:      Back Chain    LR Save\n\000\000\000";
-
-const char str_80301AF4[28] = "0x%08x:   0x%08x    0x%08x\n";
-
-const char str_80301B10[96] = "Instruction at 0x%x\n(read from SRR0) attempted to access\ninvalid address 0x%x (read from DAR)\n\000";
-
 #pragma force_active reset
 
 void N_setupErrorHandler(void) {
@@ -83,42 +49,42 @@ void N_systemErrorHandler(OSError error, OSContext* context, u32 dsisr, u32 dar)
 
 	switch (error) {
 		case OS_ERROR_DSI:
-			strcpy(print_buffer, str_803019E0);
+			strcpy(print_buffer, "---- OS_ERROR_DSI ----\n");
 			break;
 		case OS_ERROR_ISI:
-			strcpy(print_buffer, str_803019F8);
+			strcpy(print_buffer, "---- OS_ERROR_ISI ----\n");
 			break;
 		case OS_ERROR_PROGRAM:
-			strcpy(print_buffer, str_80301A10);
+			strcpy(print_buffer, "---- OS_ERROR_PROGRAM ----\n");
 			break;
 	}
-	sprintf(print_buffer2, str_80301A2C, context);
+	sprintf(print_buffer2, "---- Context 0x%08x ----\n", context);
 	strcat(print_buffer, print_buffer2);
 	for (i = 0; i < 16; i++) {
-		sprintf(print_buffer2, str_80301A48,
+		sprintf(print_buffer2, "r%-2d  = 0x%08x r%-2d  = 0x%08x\n",
 			i, context->gpr[i],
 			i + 16, context->gpr[i + 16]
 		);
 		strcat(print_buffer, print_buffer2);
 	}
-	sprintf(print_buffer2, str_80301A6C, context->lr, context->cr);
+	sprintf(print_buffer2, "LR   = 0x%08x CR   = 0x%08x\n", context->lr, context->cr);
 	strcat(print_buffer, print_buffer2);
-	sprintf(print_buffer2, str_80301A8C, context->srr0, context->srr1);
+	sprintf(print_buffer2, "SRR0 = 0x%08x SRR1 = 0x%08x\n", context->srr0, context->srr1);
 	strcat(print_buffer, print_buffer2);
-	sprintf(print_buffer2, str_80301AAC, dsisr, dar);
+	sprintf(print_buffer2, "DSISR= 0x%08x DAR  = 0x%08x\n", dsisr, dar);
 	strcat(print_buffer, print_buffer2);
 	strcat(print_buffer, "\n");
-	sprintf(print_buffer2, str_80301ACC);
+	sprintf(print_buffer2, "Address:      Back Chain    LR Save\n");
 	strcat(print_buffer, print_buffer2);
 	stack = context->gpr[1]; //get r1 (stack)
 	i = 0;
 	while ((stack != 0) && (stack != 0xFFFFFFFF) && (i++ < 16)) {
-		sprintf(print_buffer2, str_80301AF4, stack, *(u32*)stack, *(u32*)(stack + 4));
+		sprintf(print_buffer2, "0x%08x:   0x%08x    0x%08x\n", stack, *(u32*)stack, *(u32*)(stack + 4));
 		strcat(print_buffer, print_buffer2);
 		stack = *(u32*)stack;
 	}
 	strcat(print_buffer, "\n");
-	sprintf(print_buffer2, str_80301B10, context->srr0, dar);
+	sprintf(print_buffer2, "Instruction at 0x%x\n(read from SRR0) attempted to access\ninvalid address 0x%x (read from DAR)\n", context->srr0, dar);
 	strcat(print_buffer, print_buffer2);
 	psndExit();
 	OSFillFPUContext(context);

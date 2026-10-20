@@ -16,22 +16,9 @@ __declspec(section ".sdata2") GXColor dat_804214b0 = { 0xFF, 0xFF, 0xFF, 0x99 };
 __declspec(section ".sdata2") GXColor dat_804214b4 = { 0xFF, 0xFF, 0xFF, 0xFF };
 __declspec(section ".sdata2") GXColor dat_804214b8 = { 0xFF, 0xFF, 0xFF, 0xFF };
 __declspec(section ".sdata2") GXColor dat_804214bc = { 0xFF, 0xFF, 0xFF, 0xFF };
-__declspec(section ".sdata2") f32 float_neg288_804214c0 = -288.0f;
-__declspec(section ".sdata2") f32 float_200_804214c4 = 200.0f;
-__declspec(section ".sdata2") f32 float_44_804214c8 = 44.0f;
-__declspec(section ".sdata2") f32 float_16_804214cc = 16.0f;
-__declspec(section ".sdata2") f32 float_neg260_804214d0 = -260.0f;
 // explicit_zero_data: a zero float would otherwise be placed in .bss and dropped from .sdata2.
 #pragma explicit_zero_data on
-__declspec(section ".sdata2") f32 float_0_804214d4 = 0.0f;
 #pragma explicit_zero_data reset
-__declspec(section ".sdata2") f32 float_neg230_804214d8 = -230.0f;
-__declspec(section ".sdata2") f32 float_neg128_804214dc = -128.0f;
-
-const char str_802FE8C8[8] = "gor_03";
-const char str_802FE8D0[12] = "A_dokan_02";
-const char str_802FE8DC[16] = "sysyuu_all_01";
-const char str_802FE8EC[16] = "sysyuu_all_02";
 
 s32 minigame_end[] = {
 	0x00020032, 0xFD050F80, 0x00000002, 0x00020032,
@@ -39,8 +26,8 @@ s32 minigame_end[] = {
 	0x00000000, 0x00000000, 0xFFFFFC18, 0x00000000,
 	0x0005005B, (s32)evt_mario_set_prev_party_pos, 0x00000001, 0x00000000,
 	0xFFFFFC18, 0x00000000, 0x0002005B, (s32)evt_mario_set_enable_key,
-	0x00000000, 0x0003005B, (s32)evt_bero_mapchange, (s32)(char*)str_802FE8C8,
-	(s32)(char*)str_802FE8D0, 0x00000002, 0x00000001,
+	0x00000000, 0x0003005B, (s32)evt_bero_mapchange, (s32)(char*)"gor_03",
+	(s32)(char*)"A_dokan_02", 0x00000002, 0x00000001,
 };
 
 s32 window_open[] = {
@@ -51,8 +38,8 @@ s32 window_open[] = {
 	0xFE363C81, 0xFE363C82, 0xFE363C83, 0x00000006,
 	0x00000070, 0x0002005B, (s32)evt_yuu_get_window_evt, 0xFE363C80,
 	0x0001005E, 0xFE363C80, 0x0005005B, (s32)evt_msg_print,
-	0x00000000, (s32)(char*)str_802FE8DC, 0x00000000, 0x00000000,
-	0x0003005B, (s32)evt_msg_select, 0x00000000, (s32)(char*)str_802FE8EC,
+	0x00000000, (s32)(char*)"sysyuu_all_01", 0x00000000, 0x00000000,
+	0x0003005B, (s32)evt_msg_select, 0x00000000, (s32)(char*)"sysyuu_all_02",
 	0x0001005B, (s32)evt_msg_continue, 0x00020018, 0xFE363C80,
 	0x00000000, 0x0001005B, (s32)yuuminigame_end, 0x00000021,
 	0x0001005B, (s32)yuuminigame_window_end, 0x0002005B, (s32)evt_mario_cont_onoff,
@@ -175,15 +162,15 @@ void monteCountDisp(void) {
 		x = -120;
 	}
 	if ((yuwp->field_0x0 & 1) == 0 || (yuwp->field_0x0 & 2) == 0) return;
-	windowDispGX_Waku_col(0, *(GXColor*)&dat_804214b0, float_neg288_804214c0, (f32)(x + 44), float_200_804214c4, float_44_804214c8, float_16_804214cc);
+	windowDispGX_Waku_col(0, *(GXColor*)&dat_804214b0, -288.0f, (f32)(x + 44), 200.0f, 44.0f, 16.0f);
 
-	PSMTXTrans(mtx, float_neg260_804214d0, (f32)(x + 2), float_0_804214d4);
+	PSMTXTrans(mtx, -260.0f, (f32)(x + 2), 0.0f);
 	iconDispGxCol(mtx, 0x10, 0x13F, *(GXColor*)&dat_804214b4);
 
-	PSMTXTrans(mtx, float_neg230_804214d8, (f32)(x + 2), float_0_804214d4);
+	PSMTXTrans(mtx, -230.0f, (f32)(x + 2), 0.0f);
 	iconDispGxCol(mtx, 0x10, 0x1D6, *(GXColor*)&dat_804214b8);
 
-	PSMTXTrans(mtx, float_neg128_804214dc, (f32)(x + 2), float_0_804214d4);
+	PSMTXTrans(mtx, -128.0f, (f32)(x + 2), 0.0f);
 	iconNumberDispGx(mtx, yuwp->field_0x10, 0, *(GXColor*)&dat_804214bc);
 
 	yuwp->field_0xC++;

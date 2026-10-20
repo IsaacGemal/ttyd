@@ -28,18 +28,6 @@ extern const f32 float_0p25_8041f500;
 extern const f32 float_0p125_8041f504;
 extern const f32 float_0p8_8041f508;
 extern const f32 float_0p94_8041f50c;
-extern const f32 float_6p2832_8041f510;
-extern const f32 float_360_8041f514;
-extern const f32 float_0p5_8041f518;
-extern const f32 float_32_8041f51c;
-extern const f32 float_8_8041f520;
-extern const f32 float_16_8041f524;
-extern const f32 float_0p9_8041f528;
-extern const f32 float_0p75_8041f52c;
-extern const f32 float_0p99_8041f530;
-extern const f32 float_0p88_8041f534;
-extern const f32 float_0p98_8041f538;
-extern const f32 float_0p95_8041f53c;
 extern const f32 float_1p002_8041f540;
 extern const f32 float_128_8041f544;
 
@@ -330,72 +318,72 @@ void effKemuri11Main(EffectEntry* effect) {
             data->position.x = float_0_8041f4fc;
             data->position.y = float_0_8041f4fc;
             data->position.z = float_0_8041f4fc;
-            v = (f32)sin(float_6p2832_8041f510 * data->rotZ / float_360_8041f514);
-            data->dirX = float_0p5_8041f518 * -v;
-            v = (f32)cos(float_6p2832_8041f510 * data->rotZ / float_360_8041f514);
-            data->dirZ = float_0p5_8041f518 * v;
+            v = (f32)sin(6.2831855f * data->rotZ / 360.0f);
+            data->dirX = 0.5f * -v;
+            v = (f32)cos(6.2831855f * data->rotZ / 360.0f);
+            data->dirZ = 0.5f * v;
             data->field_0x18 = float_0_8041f4fc;
-            data->texScrollA = float_32_8041f51c;
-            data->texSpeedA = float_32_8041f51c;
-            data->texSpeedB = float_32_8041f51c;
-            data->scaleY = float_8_8041f520 - (f32)i;
+            data->texScrollA = 32.0f;
+            data->texSpeedA = 32.0f;
+            data->texSpeedB = 32.0f;
+            data->scaleY = 8.0f - (f32)i;
             switch (type) {
             case 0:
             case 1:
-                v = float_0p5_8041f518 + (f32)i;
+                v = 0.5f + (f32)i;
                 data->scaleX = v;
-                data->scaleZ = float_0p5_8041f518 * v;
+                data->scaleZ = 0.5f * v;
                 break;
             case 2:
             case 5:
                 data->scaleX = (f32)(i + 2);
-                data->scaleZ = float_0p5_8041f518 * (f32)(i + 2);
+                data->scaleZ = 0.5f * (f32)(i + 2);
                 break;
             case 3:
                 data->scaleX = (f32)(i + 3);
-                data->scaleZ = float_0p5_8041f518 * (f32)(i + 3);
-                data->texScrollA = float_16_8041f524;
-                data->texSpeedA = float_16_8041f524;
-                data->texSpeedB = float_16_8041f524;
+                data->scaleZ = 0.5f * (f32)(i + 3);
+                data->texScrollA = 16.0f;
+                data->texSpeedA = 16.0f;
+                data->texSpeedB = 16.0f;
                 break;
             default:
-                v = float_0p5_8041f518 * (f32)(i + 3);
+                v = 0.5f * (f32)(i + 3);
                 data->scaleX = v;
-                data->scaleZ = float_0p5_8041f518 * v;
+                data->scaleZ = 0.5f * v;
                 data->scaleY *= float_0p8_8041f508;
-                data->texScrollA = float_16_8041f524;
+                data->texScrollA = 16.0f;
                 if (type == 6 || type == 7) {
-                    data->texSpeedA = float_8_8041f520;
-                    data->texSpeedB = float_8_8041f520;
+                    data->texSpeedA = 8.0f;
+                    data->texSpeedB = 8.0f;
                 }
                 else {
-                    data->texSpeedA = float_16_8041f524;
-                    data->texSpeedB = float_16_8041f524;
+                    data->texSpeedA = 16.0f;
+                    data->texSpeedB = 16.0f;
                 }
                 break;
             }
-            data->texScrollB = float_32_8041f51c;
+            data->texScrollB = 32.0f;
         }
         data->texScrollA += data->texSpeedA;
         data->texScrollB += data->texSpeedB;
         switch (type) {
         case 0:
         case 1:
-            data->texSpeedA *= float_0p9_8041f528;
+            data->texSpeedA *= 0.9f;
             break;
         case 2:
         case 5:
-            data->texSpeedA *= float_0p75_8041f52c;
-            data->texSpeedB *= float_0p99_8041f530;
+            data->texSpeedA *= 0.75f;
+            data->texSpeedB *= 0.99f;
             break;
         default:
             if (type == 6 || type == 7) {
-                data->texSpeedA *= float_0p88_8041f534;
-                data->texSpeedB *= float_0p98_8041f538;
+                data->texSpeedA *= 0.88f;
+                data->texSpeedB *= 0.98f;
             }
             else {
-                data->texSpeedA *= float_0p75_8041f52c;
-                data->texSpeedB *= float_0p95_8041f53c;
+                data->texSpeedA *= 0.75f;
+                data->texSpeedB *= 0.95f;
             }
             break;
         }
@@ -605,15 +593,3 @@ const f32 float_0p25_8041f500 = 0.25f;
 const f32 float_0p125_8041f504 = 0.125f;
 const f32 float_0p8_8041f508 = 0.8f;
 const f32 float_0p94_8041f50c = 0.94f;
-const f32 float_6p2832_8041f510 = 6.2831855f;
-const f32 float_360_8041f514 = 360.0f;
-const f32 float_0p5_8041f518 = 0.5f;
-const f32 float_32_8041f51c = 32.0f;
-const f32 float_8_8041f520 = 8.0f;
-const f32 float_16_8041f524 = 16.0f;
-const f32 float_0p9_8041f528 = 0.9f;
-const f32 float_0p75_8041f52c = 0.75f;
-const f32 float_0p99_8041f530 = 0.99f;
-const f32 float_0p88_8041f534 = 0.88f;
-const f32 float_0p98_8041f538 = 0.98f;
-const f32 float_0p95_8041f53c = 0.95f;

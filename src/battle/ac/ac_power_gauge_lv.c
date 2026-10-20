@@ -11,17 +11,6 @@
 
 // --- Declarations that belong in a header (no ac_power_gauge_lv.h exists yet) ---
 
-// --- .rodata literals of this unit (offsets in REPORT.md) ---
-// The original object names the seven Vec3 literals individually at 0xC strides (0x802fea38..0x802fea80),
-// followed by the int->float magic double at 0x802fea90.
-const Vec vec3_802fea38 = {0.0f, 0.0f, 0.0f};
-const Vec vec3_802fea44 = {0.0f, 0.0f, 0.0f};
-const Vec vec3_802fea50 = {0.0f, 0.0f, 0.0f};
-const Vec vec3_802fea5c = {0.0f, 0.0f, 0.0f};
-const Vec vec3_802fea68 = {0.0f, 0.0f, 0.0f};
-const Vec vec3_802fea74 = {0.0f, 0.0f, 0.0f};
-const Vec vec3_802fea80 = {0.0f, 0.0f, 0.0f};
-
 // --- .sdata2 literals of this unit (offsets in REPORT.md) ---
 // The float constants are declared here and defined at the bottom so the compiler emits a reference to
 // the named symbol instead of folding the value into its own literal pool.
@@ -33,17 +22,6 @@ __declspec(section ".sdata2") s32 dat_804215d0 = -1;
 #else
 const s32 dat_804215d0 = -1;
 #endif
-extern const f32 float_neg200_804215d4;
-extern const f32 float_25_804215d8;
-extern const f32 float_1_804215dc;
-extern const f32 float_100_804215e0;
-extern const f32 float_neg220_804215e4;
-extern const f32 float_70_804215e8;
-extern const f32 float_56_804215ec;
-extern const f32 float_neg300_804215f0;
-extern const f32 float_30_804215f4;
-extern const f32 float_0_804215f8;
-extern const f32 float_101_804215fc;
 
 // The gauge runtime work area at BattleWork+0x1F4C. No header declares it yet.
 typedef struct PowerGaugeLvDecWork {
@@ -77,17 +55,17 @@ s32 battleAcMain_PowerGaugeLv(BattleWork* work) {
         break;
     case 0:
         memset(disp, 0, 0x2c);
-        disp->iconX = float_neg300_804215f0;
-        disp->iconY = float_0_804215f8;
+        disp->iconX = -300.0f;
+        disp->iconY = 0.0f;
         disp->counter = 0x14;
-        disp->value = float_0_804215f8;
+        disp->value = 0.0f;
         disp->field_0xC = dat_804215d0;
         dec->frame = 0;
         work->actionCommands.outputParams[0] = 0;
         work->actionCommands.mAcState = 0x63;
         work->actionCommands.result = 1;
         dec->value = 0x64;
-        dec->gaugePercent = float_0_804215f8;
+        dec->gaugePercent = 0.0f;
         break;
     case 0x64:
         if ((work->actionCommands.field_0x4 & 1) && (work->actionCommands.mAcUnit->mTokenFlags & 0x10)) {
@@ -110,10 +88,10 @@ s32 battleAcMain_PowerGaugeLv(BattleWork* work) {
         if (dec->frame > dec->value) {
             work->actionCommands.outputParams[0] = 0;
             work->actionCommands.result = 0;
-            dec->gaugePercent = float_101_804215fc;
+            dec->gaugePercent = 101.0f;
             return 0;
         }
-        dec->gaugePercent = intplGetValue(2, dec->frame, dec->value, float_0_804215f8, float_100_804215e0);
+        dec->gaugePercent = intplGetValue(2, dec->frame, dec->value, 0.0f, 100.0f);
         if (BattlePadGetNow() == 0x60) {
             if (dec->gaugePercent < (f32)work->actionCommands.acParams[2]) {
                 work->actionCommands.result = 0;
@@ -200,7 +178,7 @@ void battleAcDisp_PowerGaugeLv(CameraId camId, void* param) {
 
     switch (state) {
     case 0x63:
-        disp->iconX = intplGetValue(4, 0x14 - disp->counter, 0x14, float_neg300_804215f0, float_30_804215f4);
+        disp->iconX = intplGetValue(4, 0x14 - disp->counter, 0x14, -300.0f, 30.0f);
         // fallthrough
     case 0x64:
     case 0x3e8:
@@ -213,10 +191,10 @@ void battleAcDisp_PowerGaugeLv(CameraId camId, void* param) {
     case 0x3eb:
     case 0x3ec:
         if (disp->counter >= 0x28) {
-            disp->iconX = intplGetValue(4, disp->counter - 0x28, 0x14, float_30_804215f4, float_neg300_804215f0);
+            disp->iconX = intplGetValue(4, disp->counter - 0x28, 0x14, 30.0f, -300.0f);
         }
         else {
-            disp->iconX = float_30_804215f4;
+            disp->iconX = 30.0f;
         }
         actionCommandDisp(disp->iconX, disp->iconY);
         if (disp->counter < 0x3c) {
@@ -263,15 +241,15 @@ static void actionCommandDisp(f32 f1, f32 f2) {
 #endif
 
     {
-        Vec pos = vec3_802fea38;
-        pos.x = float_neg200_804215d4 + f1;
-        pos.y = float_25_804215d8 + f2;
-        iconDispGx(float_1_804215dc, &pos, 0x10, 0x8c);
+        Vec pos = (Vec){0.0f, 0.0f, 0.0f};
+        pos.x = -200.0f + f1;
+        pos.y = 25.0f + f2;
+        iconDispGx(1.0f, &pos, 0x10, 0x8c);
     }
 
-    ratio = dec->gaugePercent / float_100_804215e0;
-    if (ratio > float_1_804215dc) {
-        ratio = float_1_804215dc;
+    ratio = dec->gaugePercent / 100.0f;
+    if (ratio > 1.0f) {
+        ratio = 1.0f;
     }
     disp->value = ratio;
 
@@ -298,53 +276,53 @@ static void actionCommandDisp(f32 f1, f32 f2) {
     case 0x3ea:
     case 0x3eb:
     case 0x3ec:
-        f1 = float_neg220_804215e4 + f1;
-        f2 = float_70_804215e8 + f2;
+        f1 = -220.0f + f1;
+        f2 = 70.0f + f2;
         {
-            Vec pos = vec3_802fea44;
+            Vec pos = (Vec){0.0f, 0.0f, 0.0f};
             pos.x = f1;
             pos.y = f2;
-            iconDispGx(float_1_804215dc, &pos, 0x10, 0x7e);
+            iconDispGx(1.0f, &pos, 0x10, 0x7e);
         }
         {
-            Vec pos = vec3_802fea50;
-            pos.x = float_56_804215ec + f1;
+            Vec pos = (Vec){0.0f, 0.0f, 0.0f};
+            pos.x = 56.0f + f1;
             pos.y = f2;
-            iconDispGx(float_1_804215dc, &pos, 0x10, 0x80);
+            iconDispGx(1.0f, &pos, 0x10, 0x80);
         }
         break;
     case 0x3e8:
         if (dec->gaugePercent >= (f32)work->actionCommands.acParams[2] &&
-            dec->gaugePercent <= float_100_804215e0) {
-            f1 = float_neg220_804215e4 + f1;
-            f2 = float_70_804215e8 + f2;
+            dec->gaugePercent <= 100.0f) {
+            f1 = -220.0f + f1;
+            f2 = 70.0f + f2;
             {
-                Vec pos = vec3_802fea5c;
+                Vec pos = (Vec){0.0f, 0.0f, 0.0f};
                 pos.x = f1;
                 pos.y = f2;
-                iconDispGx(float_1_804215dc, &pos, 0x10, 0x7f);
+                iconDispGx(1.0f, &pos, 0x10, 0x7f);
             }
             {
-                Vec pos = vec3_802fea68;
-                pos.x = float_56_804215ec + f1;
+                Vec pos = (Vec){0.0f, 0.0f, 0.0f};
+                pos.x = 56.0f + f1;
                 pos.y = f2;
-                iconDispGx(float_1_804215dc, &pos, 0x10, 0x81);
+                iconDispGx(1.0f, &pos, 0x10, 0x81);
             }
         }
         else {
-            f1 = float_neg220_804215e4 + f1;
-            f2 = float_70_804215e8 + f2;
+            f1 = -220.0f + f1;
+            f2 = 70.0f + f2;
             {
-                Vec pos = vec3_802fea74;
+                Vec pos = (Vec){0.0f, 0.0f, 0.0f};
                 pos.x = f1;
                 pos.y = f2;
-                iconDispGx(float_1_804215dc, &pos, 0x10, 0x7e);
+                iconDispGx(1.0f, &pos, 0x10, 0x7e);
             }
             {
-                Vec pos = vec3_802fea80;
-                pos.x = float_56_804215ec + f1;
+                Vec pos = (Vec){0.0f, 0.0f, 0.0f};
+                pos.x = 56.0f + f1;
                 pos.y = f2;
-                iconDispGx(float_1_804215dc, &pos, 0x10, 0x80);
+                iconDispGx(1.0f, &pos, 0x10, 0x80);
             }
         }
         break;
@@ -355,15 +333,3 @@ static void actionCommandDisp(f32 f1, f32 f2) {
 
 // --- .sdata2 definitions (kept after the code, see note above) ---
 
-// The pool constants the code above loads by name, defined after it (defined first, the compiler folds them).
-const f32 float_neg200_804215d4 = -200.0f;
-const f32 float_25_804215d8 = 25.0f;
-const f32 float_1_804215dc = 1.0f;
-const f32 float_100_804215e0 = 100.0f;
-const f32 float_neg220_804215e4 = -220.0f;
-const f32 float_70_804215e8 = 70.0f;
-const f32 float_56_804215ec = 56.0f;
-const f32 float_neg300_804215f0 = -300.0f;
-const f32 float_30_804215f4 = 30.0f;
-const f32 float_0_804215f8 = 0.0f;
-const f32 float_101_804215fc = 101.0f;

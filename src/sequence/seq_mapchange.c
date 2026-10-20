@@ -55,12 +55,6 @@ extern BOOL dbg_lotteryinfo; // evt_lottery
 // It is also the base MWCC uses for every pooled .rodata string reference in this unit.
 static const char* const table_802C1028[2] = { "jp", "us" };
 
-// .sdata2 fade colours, emitted right after the "jp"/"us" pool entries of table_802C1028.
-const GXColor dat_804193f0 = { 0, 0, 0, 0xFF };
-const GXColor dat_804193f4 = { 0, 0, 0, 0xFF };
-const GXColor dat_804193f8 = { 0, 0, 0, 0xFF };
-const GXColor dat_804193fc = { 0, 0, 0, 0xFF };
-
 // .sbss, declared lowest address last (MWCC lays uninitialised globals out last-declared-first).
 char _next_area[0x20];
 char _next_map[0x20];
@@ -136,13 +130,13 @@ void seq_mapChangeMain(SequenceWork* work) {
     case 0:
         if (strcmp(_next_map, SMC_STR(0x88, "sys_01")) == 0) {
             if (gp->areaFadeInType != 10) {
-                fadeEntry(gp->areaFadeInType, gp->areaFadeInDuration, dat_804193f0);
+                fadeEntry(gp->areaFadeInType, gp->areaFadeInDuration, (GXColor){ 0, 0, 0, 0xFF });
             }
-            fadeEntry(0x11, 2000, dat_804193f4);
+            fadeEntry(0x11, 2000, (GXColor){ 0, 0, 0, 0xFF });
         } else if (!newarea) {
-            fadeEntry(gp->mapFadeInType, gp->mapFadeInDuration, dat_804193f8);
+            fadeEntry(gp->mapFadeInType, gp->mapFadeInDuration, (GXColor){ 0, 0, 0, 0xFF });
         } else {
-            fadeEntry(gp->areaFadeInType, gp->areaFadeInDuration, dat_804193fc);
+            fadeEntry(gp->areaFadeInType, gp->areaFadeInDuration, (GXColor){ 0, 0, 0, 0xFF });
         }
         gp->mapFadeInType = 10;
         gp->mapFadeInDuration = 300;

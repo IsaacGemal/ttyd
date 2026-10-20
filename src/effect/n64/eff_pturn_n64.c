@@ -15,7 +15,6 @@ extern const f32 float_0p0026042_8041fa70;
 extern const f32 float_6p2832_8041fa74;
 extern const f32 float_0p05_8041fa78;
 extern const f32 float_360_8041fa7c;
-extern const f32 float_4_8041fa80;
 
 // First object of this unit's .data (the float pair that used to end the previous unit's .data).
 __declspec(section ".data") u32 lbl_803A4790[2] = { 0xBF800000, 0x3F800000 };
@@ -27,9 +26,6 @@ f32 scale_dat[9] = { 5.0f, 4.5f, 4.0f, 3.0f, 2.0f, 1.0f, 0.7f, 1.2f, 1.0f };
 u32 gap_07_80413C9C_sdata = 0;
 #pragma force_active reset
 #pragma explicit_zero_data reset
-
-// .rodata: zero vector copied into the local position before the particle fields are set
-const Vec vec3_802fb450 = { 0.0f, 0.0f, 0.0f };
 
 // .sbss2 zero GXColor scratch objects (declared in reverse: placed in reverse of declaration order).
 #pragma section ".sdata" ".sbss2"
@@ -148,7 +144,7 @@ void effPturnMain(EffectEntry* effect) {
     Vec disp;
 
     data = effect->userdata;
-    disp = vec3_802fb450;
+    disp = (Vec){ 0.0f, 0.0f, 0.0f };
     disp.x = data->x;
     disp.y = data->y;
     disp.z = data->z;
@@ -210,12 +206,12 @@ void effPturnMain(EffectEntry* effect) {
         scale = (elemLife >= 9 || type == 10) ? float_1_8041fa64 : scale_dat[elemLife];
         data->scale = scale;
         data->scale *= scaleFactor;
-        data->bobY = (type == 0 || type == 1) ? float_4_8041fa80 * (f32)cos(f31 / float_360_8041fa7c) : float_0_8041fa68;
+        data->bobY = (type == 0 || type == 1) ? 4.0f * (f32)cos(f31 / float_360_8041fa7c) : float_0_8041fa68;
         data->x += data->velX;
         data->y += data->velY;
         data->z += data->velZ;
         if (life == 20) {
-            data->velY = float_4_8041fa80;
+            data->velY = 4.0f;
             data->velX = -2.0f;
         }
         if (life < 20) {
@@ -446,4 +442,3 @@ const f32 float_0p0026042_8041fa70 = 0.0026041667f;
 const f32 float_6p2832_8041fa74 = 6.2831855f;
 const f32 float_0p05_8041fa78 = 0.05f;
 const f32 float_360_8041fa7c = 360.0f;
-const f32 float_4_8041fa80 = 4.0f;

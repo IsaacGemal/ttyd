@@ -66,12 +66,6 @@ extern const f32 float_0_8041ea8c;
 extern const f32 float_deg2rad_8041ea90;
 extern const f32 float_4_8041ea94;
 extern const f32 float_10_8041ea98;
-extern const f32 float_0p05_8041ea9c;
-extern const f32 float_2p5_8041eaa0;
-extern const f32 float_0p01_8041eaa4;
-extern const f32 float_0p04_8041eaa8;
-extern const f32 float_0p1_8041eaac;
-extern const f32 float_0p2_8041eab0;
 
 // .rodata zero vector, int->float and mode-1 doubles are compiler-generated pool constants here.
 
@@ -103,10 +97,10 @@ EffectEntry* effBreathFireN64Entry(s32 kind, f32 x, f32 y, s32 children, f32 z, 
 	data->endY = endY;
 	data->endZ = endZ;
 	if (kind == 0) {
-		data->scale = float_0p05_8041ea9c;
+		data->scale = 0.05f;
 	}
 	else {
-		data->scale = float_0p04_8041eaa8;
+		data->scale = 0.040000003f;
 	}
 	data->baseScale = data->scale;
 	data->duration = duration;
@@ -114,17 +108,17 @@ EffectEntry* effBreathFireN64Entry(s32 kind, f32 x, f32 y, s32 children, f32 z, 
 	data->age = 0;
 	data->alpha = 0xFF;
 	data->texPos = float_0_8041ea8c;
-	data->scaleRate = float_0p1_8041eaac;
+	data->scaleRate = 0.1f;
 	data->endScale = data->baseScale;
 	if (kind == 0) {
-		data->bendX = float_0p2_8041eab0 * (endX - x) * (f32)(s32)(effTblRandN64(10, seed) - 5) * float_0p2_8041eab0;
-		data->bendY = float_0p2_8041eab0 * (endY - y) * (f32)(s32)(effTblRandN64(10, seed + 1) - 5) * float_0p2_8041eab0;
-		data->bendZ = float_0p2_8041eab0 * (endZ - z) * (f32)(s32)(effTblRandN64(10, seed + 2) - 5) * float_0p2_8041eab0;
+		data->bendX = 0.2f * (endX - x) * (f32)(s32)(effTblRandN64(10, seed) - 5) * 0.2f;
+		data->bendY = 0.2f * (endY - y) * (f32)(s32)(effTblRandN64(10, seed + 1) - 5) * 0.2f;
+		data->bendZ = 0.2f * (endZ - z) * (f32)(s32)(effTblRandN64(10, seed + 2) - 5) * 0.2f;
 	}
 	else {
-		data->bendX = float_0p2_8041eab0 * (endX - x) * (f32)(s32)(effTblRandN64(10, seed + 3) - 5);
-		data->bendY = float_0p2_8041eab0 * (endY - y) * (f32)(s32)(effTblRandN64(10, seed + 4) - 5);
-		data->bendZ = float_0p2_8041eab0 * (endZ - z) * (f32)(s32)(effTblRandN64(10, seed + 5) - 5);
+		data->bendX = 0.2f * (endX - x) * (f32)(s32)(effTblRandN64(10, seed + 3) - 5);
+		data->bendY = 0.2f * (endY - y) * (f32)(s32)(effTblRandN64(10, seed + 4) - 5);
+		data->bendZ = 0.2f * (endZ - z) * (f32)(s32)(effTblRandN64(10, seed + 5) - 5);
 	}
 	data->rise = float_0_8041ea8c;
 	data->color0R = 0xFF;
@@ -173,13 +167,13 @@ void effBreathFireMain(EffectEntry* effect) {
 	timer = data->age;
 	total = data->duration;
 	if (life > 5 && data->kind == 0) {
-		data->scale = data->scale + float_0p05_8041ea9c * (float_2p5_8041eaa0 - data->scale);
+		data->scale = data->scale + 0.05f * (2.5f - data->scale);
 	}
 	data->posX = data->startX + (f32)timer * (data->bendX + (data->endX - data->startX)) / (f32)total;
 	data->posY = data->startY + (f32)timer * (data->bendY + (data->endY - data->startY)) / (f32)total;
 	data->posZ = data->startZ + (f32)timer * (data->bendZ + (data->endZ - data->startZ)) / (f32)total;
 	if (data->kind == 1) {
-		data->rise = data->rise + float_0p01_8041eaa4 * (f32)timer;
+		data->rise = data->rise + 0.01f * (f32)timer;
 		data->posY = data->posY + data->rise;
 	}
 	if (timer == data->seed + 1 && data->childrenLeft > 0) {
@@ -325,9 +319,3 @@ const f32 float_0_8041ea8c = 0.0f;
 const f32 float_deg2rad_8041ea90 = 0.017453292f;
 const f32 float_4_8041ea94 = 4.0f;
 const f32 float_10_8041ea98 = 10.0f;
-const f32 float_0p05_8041ea9c = 0.05f;
-const f32 float_2p5_8041eaa0 = 2.5f;
-const f32 float_0p01_8041eaa4 = 0.01f;
-const f32 float_0p04_8041eaa8 = 0.040000003f;
-const f32 float_0p1_8041eaac = 0.1f;
-const f32 float_0p2_8041eab0 = 0.2f;

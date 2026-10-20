@@ -36,17 +36,8 @@ extern const f32 float_0p05_8041f914;
 extern const f32 float_0p1_8041f918;
 extern const f32 float_0p9_8041f91c;
 extern const f32 float_0p2_8041f920;
-extern const f32 float_neg0p6_8041f924;
-extern const f32 float_0p07_8041f928;
 extern const f32 float_6p2832_8041f8f0;
 extern const f32 float_360_8041f8f4;
-extern const f32 float_0p3_8041f92c;
-extern const f32 float_neg10_8041f930;
-extern const f32 float_5_8041f934;
-extern const f32 float_3_8041f938;
-extern const f32 float_2_8041f93c;
-extern const f32 float_neg45_8041f940;
-
 
 // Compiler-pooled int->double bias, named after its original address.
 
@@ -135,11 +126,11 @@ EffectEntry* effPacknBfireN64Entry(s32 type, s32 a1, s32 a2, f32 x, f32 y, f32 z
 		data->texScrollX = (f32)(rand() % 65);
 		data->texScrollY = (f32)(rand() % 65);
 		data->scaleX = float_0p2_8041f920;
-		data->scaleY = float_0p3_8041f92c;
+		data->scaleY = 0.3f;
 		data->texSpeedX = float_0_8041f8ec;
 		data->texSpeedY = float_0_8041f8ec;
 		data->rotZ = float_0_8041f8ec;
-		data->rotSpeed = float_neg10_8041f930;
+		data->rotSpeed = -10.0f;
 		break;
 	default:
 		data->colorR0 = 0xFF;
@@ -158,16 +149,16 @@ EffectEntry* effPacknBfireN64Entry(s32 type, s32 a1, s32 a2, f32 x, f32 y, f32 z
 			data->y = y;
 			data->z = z;
 			rad = float_6p2832_8041f8f0 * (base + (f32)(i * 360 / 8)) / float_360_8041f8f4;
-			data->velX = float_5_8041f934 * (f32)sin(rad);
-			data->velY = float_2_8041f93c * (f32)cos(rad) + float_3_8041f938;
+			data->velX = 5.0f * (f32)sin(rad);
+			data->velY = 2.0f * (f32)cos(rad) + 3.0f;
 			data->texScrollX = (f32)(rand() % 65);
 			data->texScrollY = (f32)(rand() % 65);
 			data->scaleX = float_1_8041f900;
 			data->scaleY = float_1_8041f900;
 			data->texSpeedX = float_0_8041f8ec;
 			data->texSpeedY = float_0_8041f8ec;
-			data->rotZ = float_neg45_8041f940;
-			data->rotSpeed = float_neg10_8041f930;
+			data->rotZ = -45.0f;
+			data->rotSpeed = -10.0f;
 		}
 		break;
 	}
@@ -245,10 +236,10 @@ void effPacknBfireMain(EffectEntry* effect) {
 			if (data->y < vz) {
 				data->y = vz;
 				if (data->velY < vz) {
-					data->velY *= float_neg0p6_8041f924;
+					data->velY *= -0.6f;
 				}
 			}
-			data->scaleX = float_0p07_8041f928 * -data->scaleX + data->scaleX;
+			data->scaleX = 0.07f * -data->scaleX + data->scaleX;
 			data->scaleY = float_0p05_8041f914 * -data->scaleY + data->scaleY;
 			data->rotZ += data->rotSpeed;
 		}
@@ -414,11 +405,3 @@ const f32 float_0p05_8041f914 = 0.05f;
 const f32 float_0p1_8041f918 = 0.1f;
 const f32 float_0p9_8041f91c = 0.9f;
 const f32 float_0p2_8041f920 = 0.2f;
-const f32 float_neg0p6_8041f924 = -0.6f;
-const f32 float_0p07_8041f928 = 0.07f;
-const f32 float_0p3_8041f92c = 0.3f;
-const f32 float_neg10_8041f930 = -10.0f;
-const f32 float_5_8041f934 = 5.0f;
-const f32 float_3_8041f938 = 3.0f;
-const f32 float_2_8041f93c = 2.0f;
-const f32 float_neg45_8041f940 = -45.0f;

@@ -1363,13 +1363,6 @@ s32 wait_star_standby(void) {
 // its own literal pool.
 // ---------------------------------------------------------------------------
 
-// .rodata (after the weapon tables' strings and the vector templates)
-const char str_802FF5D8[20] = "SFX_BTL_SAC_START1";
-const char str_802FF5EC[20] = "SFX_BTL_SAC_START2";
-const char str_802FF600[20] = "SFX_BTL_SAC_START3";
-const char str_802FF614[12] = "OFF_d_bom";
-const char str_802FF620[24] = "SFX_BTL_SAC_KAKONDEPON2";
-
 // .sdata2:0x0..0x1C (colour words and short strings)
 __declspec(section ".sdata2") u32 dat_80421718 = 0xFFFFFF00;
 __declspec(section ".sdata2") u32 dat_8042171c = 0x00FFFFFF;
@@ -1383,13 +1376,13 @@ u32 marioAttackEvent_Scissor[300] = {
     0x0001005B, (u32)(void*)&scissor_init, 0x0000006E, 0x0001005B,
     (u32)(void*)&star_control, 0x00000070, 0x0001005E, (u32)(void*)&sac_start_camera_evt,
     0x0001000A, 0x000001F4, 0x0006005B, (u32)(void*)&btlevtcmd_snd_se,
-    0xFFFFFFFE, (u32)(void*)str_802FF5D8, 0xF1194D80, 0x00000000,
+    0xFFFFFFFE, (u32)(void*)"SFX_BTL_SAC_START1", 0xF1194D80, 0x00000000,
     0xF1194D80, 0x0001005E, (u32)(void*)&sac_mario_item_on_evt, 0x0001000A,
     0x000001F4, 0x0006005B, (u32)(void*)&btlevtcmd_snd_se, 0xFFFFFFFE,
-    (u32)(void*)str_802FF5EC, 0xF1194D80, 0x00000000, 0xFE363C8B,
+    (u32)(void*)"SFX_BTL_SAC_START2", 0xF1194D80, 0x00000000, 0xFE363C8B,
     0x0001005B, (u32)(void*)&star_stone_appear, 0x0000006E, 0x0001005E,
     (u32)(void*)&sac_start_stardust, 0x00000070, 0x00010009, 0x00000064,
-    0x0006005B, (u32)(void*)&btlevtcmd_snd_se, 0xFFFFFFFE, (u32)(void*)str_802FF600,
+    0x0006005B, (u32)(void*)&btlevtcmd_snd_se, 0xFFFFFFFE, (u32)(void*)"SFX_BTL_SAC_START3",
     0xF1194D80, 0x00000000, 0xF1194D80, 0x0002005B,
     (u32)(void*)&evt_snd_sfxoff, 0xFE363C8B, 0x0003005B, (u32)(void*)&evt_btl_camera_set_mode,
     0x00000000, 0x00000000, 0x00010009, 0x00000028,
@@ -1404,7 +1397,7 @@ u32 marioAttackEvent_Scissor[300] = {
     (u32)(void*)&scissor_timer_main, 0x00000070, 0x0000006E, 0x0002005B,
     (u32)(void*)&sac_cheer, 0x00000001, 0x00000070, 0x0001005B,
     (u32)(void*)&sac_ac_help_on, 0x00010005, 0x00000000, 0x00020032,
-    0xFE363C8A, (u32)(void*)str_802FF614, 0x0002005B, (u32)(void*)&evt_paper_entry,
+    0xFE363C8A, (u32)(void*)"OFF_d_bom", 0x0002005B, (u32)(void*)&evt_paper_entry,
     0xFE363C8A, 0x0002005B, (u32)(void*)&evt_offscreen_entry, (u32)(void*)str_80421728,
     0x0002005B, (u32)(void*)&evt_img_entry, (u32)(void*)str_8042172C, 0x0003005B,
     (u32)(void*)&evt_img_set_paper, (u32)(void*)str_8042172C, 0xFE363C8A, 0x0003005B,
@@ -1422,7 +1415,7 @@ u32 marioAttackEvent_Scissor[300] = {
     0x00000001, 0x00000000, 0x00000000, 0x00000000,
     0x00000000, 0x00010009, 0x00000001, 0x0002005B,
     (u32)(void*)&scissor_ofscreen_ok, 0xFE363C80, 0x00020019, 0xFE363C80,
-    0x00000000, 0x0003005B, (u32)(void*)&evt_snd_sfxon, (u32)(void*)str_802FF620,
+    0x00000000, 0x0003005B, (u32)(void*)&evt_snd_sfxon, (u32)(void*)"SFX_BTL_SAC_KAKONDEPON2",
     0x00000000, 0x0003005B, (u32)(void*)&evt_img_onoff, (u32)(void*)str_8042172C,
     0x00000001, 0x0003005B, (u32)(void*)&evt_img_set_shadow, (u32)(void*)str_8042172C,
     0x00000002, 0x0002005B, (u32)(void*)&scissor_damage, 0xFE363C80,

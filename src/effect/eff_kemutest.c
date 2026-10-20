@@ -28,13 +28,9 @@ GXColor unk_804232d8;
    are ordinary pool literals, so this duplicates them (two extra .sdata2 words). */
 #endif
 
-extern const Vec vec3_802fdcf8;
 typedef struct {
 	f32 v[4];
 } effKemuTestQuad;
-
-const GXColor dat_80420ab0 = { 0x80, 0x80, 0x80, 0x80 };
-const GXColor dat_80420ab4 = { 0x00, 0x00, 0x00, 0x60 };
 
 static f32 bom_dir[10] = { 10.0f, 40.0f, 80.0f, 170.0f, 140.0f, 100.0f, 25.0f, 155.0f, 60.0f, 120.0f };
 static f32 bom_spd[10] = { 2.2f, 2.7f, 3.0f, 2.2f, 2.7f, 3.0f, 1.9f, 1.9f, 1.5f, 1.5f };
@@ -46,7 +42,6 @@ const Vec vec3_802fdcbc = { 0.0f, 120.0f, 240.0f };
 const Vec vec3_802fdcc8 = { 0.0f, 5.0f, -5.0f };
 const Vec vec3_802fdcd4 = { 5.0f, 0.0f, -2.0f };
 const Vec vec3_802fdce0 = { 0.0f, 1.0f, 2.0f };
-const Vec vec3_802fdcec = { 0.0f, 0.0f, 0.0f };
 // effKemuTestEntry: case 4/13 uses an explicit direction pointer under MUST_MATCH so MWCC
 // assigns bom_dir to r22 and bom_spd to r21 while retaining the original FP instruction order.
 EffectEntry* effKemuTestEntry(s32 type, f32 x, f32 y, f32 z, f32 scale) {
@@ -489,7 +484,7 @@ EffectEntry* effKemuTestEntry(s32 type, f32 x, f32 y, f32 z, f32 scale) {
 	}
 
 	if (type == 3) {
-		Vec position = vec3_802fdcec;
+		Vec position = (Vec){ 0.0f, 0.0f, 0.0f };
 
 		position.x = x;
 		position.y = y;
@@ -512,7 +507,7 @@ void effKemuTestMain(EffectEntry* effect) {
 	   dispCalcZ; a single local folds the copy away. */
 	Vec position;
 #endif
-	Vec disp = vec3_802fdcf8;
+	Vec disp = (Vec){ 0.0f, 0.0f, 0.0f };
 	effKemuTestData* data = effect->userdata;
 	s32 type;
 	s32 done = 0;
@@ -749,7 +744,7 @@ void effKemuTestDisp(CameraId camId, void* param) {
 	GXSetTevAlphaOp(GX_TEVSTAGE1, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
 	GXSetTevColorIn(GX_TEVSTAGE1, GX_CC_CPREV, GX_CC_TEXC, GX_CC_C0, GX_CC_ZERO);
 	GXSetTevAlphaIn(GX_TEVSTAGE1, GX_CA_APREV, GX_CA_TEXA, GX_CA_A0, GX_CA_ZERO);
-	GXSetTevColor(GX_TEVREG0, dat_80420ab0);
+	GXSetTevColor(GX_TEVREG0, (GXColor){ 0x80, 0x80, 0x80, 0x80 });
 	GXSetTevOrder(GX_TEVSTAGE2, GX_TEXCOORD_NULL, GX_TEXMAP_NULL, GX_COLOR0A0);
 	GXSetTevColorOp(GX_TEVSTAGE2, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
 	GXSetTevAlphaOp(GX_TEVSTAGE2, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
@@ -811,7 +806,7 @@ void effKemuTestDisp(CameraId camId, void* param) {
 
 				for (j = flag; j < 2; j++) {
 					if (j == 0) {
-						GXSetChanMatColor(GX_COLOR0A0, dat_80420ab4);
+						GXSetChanMatColor(GX_COLOR0A0, (GXColor){ 0x00, 0x00, 0x00, 0x60 });
 						PSMTXTrans(mtx, data->posX + 2.0f, data->posY - 2.0f, data->posZ);
 						PSMTXScale(scale, data->scale, data->scale, data->scale);
 						PSMTXConcat(view, mtx, mtx);
@@ -886,5 +881,3 @@ void effKemuTestSetRxRz(EffectEntry* effect, f32 rx, f32 rz) {
 #ifdef MUST_MATCH
 #endif
 
-// The pool constants the code above loads by name, defined after it (defined first, the compiler folds them).
-const Vec vec3_802fdcf8 = { 0.0f, 0.0f, 0.0f };

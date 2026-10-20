@@ -66,13 +66,6 @@ extern const f32 float_0_8041f4b8;
 extern const f32 float_0p3_8041f4bc;
 extern const f32 float_0p8_8041f4c0;
 extern const f32 float_0p6_8041f4c4;
-extern const f32 float_0p7_8041f4c8;
-extern const f32 float_1p05_8041f4cc;
-extern const f32 float_1_8041f4d0;
-extern const f32 float_4_8041f4d4;
-extern const f32 float_278_8041f4d8;
-extern const f32 float_32_8041f4dc;
-extern const f32 float_0p1_8041f4e0;
 extern const f32 float_0p015625_8041f4b0;
 extern const f32 float_0p03125_8041f4b4;
 
@@ -151,7 +144,7 @@ EffectEntry* effKemuri10N64Entry(s32 a1, f32 x, f32 y, f32 z, f32 dirX, f32 dirY
     if (mag == float_0_8041f4b8) {
         return NULL;
     }
-    norm1 = float_1_8041f4d0 / sqrtf(mag);
+    norm1 = 1.0f / sqrtf(mag);
     dirX = dirX * norm1;
     dirY = dirY * norm1;
     dirZ = dirZ * norm1;
@@ -162,7 +155,7 @@ EffectEntry* effKemuri10N64Entry(s32 a1, f32 x, f32 y, f32 z, f32 dirX, f32 dirY
         upZ = -dirX;
     }
     else {
-        upX = float_1_8041f4d0;
+        upX = 1.0f;
         upZ = float_0_8041f4b8;
         upY = float_0_8041f4b8;
     }
@@ -171,7 +164,7 @@ EffectEntry* effKemuri10N64Entry(s32 a1, f32 x, f32 y, f32 z, f32 dirX, f32 dirY
     if (mag == float_0_8041f4b8) {
         return NULL;
     }
-    norm2 = float_1_8041f4d0 / sqrtf(mag);
+    norm2 = 1.0f / sqrtf(mag);
     upX = upX * norm2;
     upZ = upZ * norm2;
     upY = upY * norm2;
@@ -184,7 +177,7 @@ EffectEntry* effKemuri10N64Entry(s32 a1, f32 x, f32 y, f32 z, f32 dirX, f32 dirY
     if (mag == float_0_8041f4b8) {
         return NULL;
     }
-    norm3 = float_1_8041f4d0 / sqrtf(mag);
+    norm3 = 1.0f / sqrtf(mag);
     sideX = sideX * norm3;
     sideY = sideY * norm3;
     sideZ = sideZ * norm3;
@@ -199,12 +192,12 @@ EffectEntry* effKemuri10N64Entry(s32 a1, f32 x, f32 y, f32 z, f32 dirX, f32 dirY
     data->position.x = x;
     data->position.y = y;
     data->position.z = z;
-    data->velX = float_4_8041f4d4 * -dirX;
-    data->velY = float_4_8041f4d4 * -dirY;
-    data->velZ = float_4_8041f4d4 * -dirZ;
+    data->velX = 4.0f * -dirX;
+    data->velY = 4.0f * -dirY;
+    data->velZ = 4.0f * -dirZ;
     data->life = 16;
-    data->texScroll = float_278_8041f4d8;
-    data->texScrollSpeed = float_32_8041f4dc;
+    data->texScroll = 278.0f;
+    data->texScrollSpeed = 32.0f;
     data->tevReg0A = 0;
     data->timer = 0;
     data->tevReg0R = 0xF8;
@@ -225,7 +218,7 @@ EffectEntry* effKemuri10N64Entry(s32 a1, f32 x, f32 y, f32 z, f32 dirX, f32 dirY
     data->orient[0][3] = float_0_8041f4b8;
     data->orient[1][3] = float_0_8041f4b8;
     data->orient[2][3] = float_0_8041f4b8;
-    data->scale = float_0p1_8041f4e0 * scale;
+    data->scale = 0.1f * scale;
     data->camId = CAMERA_3D;
 
     return effect;
@@ -269,15 +262,15 @@ void effKemuri10Main(EffectEntry* effect) {
         }
         if (phase < 5) {
             data->tevReg0A = (s32)((f32)data->tevReg0A * float_0p6_8041f4c4);
-            data->velX *= float_0p7_8041f4c8;
-            data->velY *= float_0p7_8041f4c8;
-            data->velZ *= float_0p7_8041f4c8;
+            data->velX *= 0.7f;
+            data->velY *= 0.7f;
+            data->velZ *= 0.7f;
         }
         data->position.x += data->velX;
         data->position.y += data->velY;
         data->position.z += data->velZ;
         data->texScroll += data->texScrollSpeed;
-        data->scale *= float_1p05_8041f4cc;
+        data->scale *= 1.05f;
     }
 
     dispEntry(camera, dispCalcZ(&position2), 2, effKemuri10Disp, effect);
@@ -379,10 +372,3 @@ const f32 float_0_8041f4b8 = 0.0f;
 const f32 float_0p3_8041f4bc = 0.3f;
 const f32 float_0p8_8041f4c0 = 0.8f;
 const f32 float_0p6_8041f4c4 = 0.6f;
-const f32 float_0p7_8041f4c8 = 0.7f;
-const f32 float_1p05_8041f4cc = 1.05f;
-const f32 float_1_8041f4d0 = 1.0f;
-const f32 float_4_8041f4d4 = 4.0f;
-const f32 float_278_8041f4d8 = 278.0f;
-const f32 float_32_8041f4dc = 32.0f;
-const f32 float_0p1_8041f4e0 = 0.1f;

@@ -23,16 +23,12 @@ u32 ice_s_vtx[14] = {
     0x00000800, 0x000000FF,
 };
 
-// .sdata2 colour the original copies and then overwrites the alpha byte of.
-extern const GXColor dat_8041f198;
 // .sdata2 angle/packing constants (named after their original addresses).
 extern const f32 float_deg2rad_8041f19c;
 extern const f32 float_0p015625_8041f1a0;
 extern const f32 float_0_8041f1a4;
 extern const f32 float_0p03125_8041f1a8;
 
-// effIceMain's .rodata origin vector and int->float conversion constant.
-extern const Vec vec3_802fa820;
 // effIceMain's .sdata2 particle-motion constants (named after their original addresses).
 extern const f32 float_0p3_8041f1ac;
 extern const f32 float_0p8_8041f1b0;
@@ -110,7 +106,7 @@ static void effIceMain(EffectEntry* effect) {
     f32 sway;
     f32 swayAccel;
 
-    position = vec3_802fa820;
+    position = (Vec){ 0.0f, 0.0f, 0.0f };
     position.x = data->x;
     position.y = data->y;
     position.z = data->z;
@@ -150,7 +146,7 @@ static void effIceMain(EffectEntry* effect) {
 }
 
 static inline void iceSetColor(u8 a) {
-    GXColor color = dat_8041f198;
+    GXColor color = (GXColor){0x14, 0x64, 0x14, 0x00};
     color.a = a;
     GXSetTevColor(GX_TEVREG0, color);
 }
@@ -221,8 +217,6 @@ static void effIceDisp(CameraId camId, void* param) {
 }
 
 // The pool constants the code above loads by name, defined after it (defined first, the compiler folds them).
-const Vec vec3_802fa820 = { 0.0f, 0.0f, 0.0f };
-const GXColor dat_8041f198 = {0x14, 0x64, 0x14, 0x00};
 const f32 float_deg2rad_8041f19c = 0.017453292f;
 const f32 float_0p015625_8041f1a0 = 0.015625f;
 const f32 float_0_8041f1a4 = 0.0f;

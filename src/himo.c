@@ -27,16 +27,12 @@ extern const f32 float_2p5_8041deec;
 extern const f32 float_3p1416_8041ded8;
 extern const f32 float_0p25_8041def0;
 extern const f32 float_10_8041ded0;
-extern const f32 float_0p33333_8041defc;
-extern const f32 float_0p2_8041def4;
-extern const f32 float_neg1_8041def8;
 extern const f32 float_0p066667_8041dec4;
 extern const f32 float_neg1p2881_8041dec8;
 extern const f32 float_1_8041ded4;
 extern const f32 float_0p82_8041dedc;
 extern const f32 float_1p2881_8041dee0;
 extern const f32 float_15_8041dee4;
-extern const f64 double_1p2881_802f8078;
 
 u8 Pos[] ATTRIBUTE_ALIGN(32) = {0x01, 0x00, 0x00, 0xFF, 0x00, 0x00};
 u8 Nrm[] ATTRIBUTE_ALIGN(32) = {0x00, 0x00, 0x7F};
@@ -93,8 +89,7 @@ static inline Vec himo_makeVec(f32 x, f32 y, f32 z) {
 }
 
 // Constant pool base: MWCC addresses the file's .rodata through vec3_802f8068 in r31 (see the
-// .rodata block in the original asm); math_ext.h avoids math.h's weak sqrtf/sqrt doubles and
-// double_1p2881_802f8078 is defined after the code so the pool lands in the original's order.
+// .rodata block in the original asm); math_ext.h avoids math.h's weak sqrtf/sqrt doubles.
 void vivihimo(Mtx mtxA, Mtx mtxB, f32 phase, f32 spread, f32 offA, f32 offB) {
     HimoWork work;
     HimoWork* wp = &work;
@@ -139,18 +134,18 @@ void vivihimo(Mtx mtxA, Mtx mtxB, f32 phase, f32 spread, f32 offA, f32 offB) {
             f32 off;
 
             if (i == 1) {
-                off = spread * (float_0p2_8041def4 * t);
+                off = spread * (0.2f * t);
             } else if (i == 2) {
                 off = spread * t;
             } else {
-                f32 f = float_neg1_8041def8 * (f32)(i & 1);
+                f32 f = -1.0f * (f32)(i & 1);
 
                 off = spread * (f * t);
             }
 
-            point->x = work.pos0.x + float_0p33333_8041defc * (diff.x * (f32)i) + normal.x * off;
-            point->y = work.pos0.y + float_0p33333_8041defc * (diff.y * (f32)i) + normal.y * off;
-            point->z = work.pos0.z + float_0p33333_8041defc * (diff.z * (f32)i) + normal.z * off;
+            point->x = work.pos0.x + 0.33333334f * (diff.x * (f32)i) + normal.x * off;
+            point->y = work.pos0.y + 0.33333334f * (diff.y * (f32)i) + normal.y * off;
+            point->z = work.pos0.z + 0.33333334f * (diff.z * (f32)i) + normal.z * off;
             point++;
         }
 
@@ -233,7 +228,7 @@ void vivihimoDisp(CameraId cameraId, void* data) {
     GXSetArray(GX_VA_NRM, Nrm, 3);
     GXSetArray(GX_VA_CLR0, Col, 4);
 
-    a = (f32)tan(double_1p2881_802f8078);
+    a = (f32)tan(1.288053035736084);
     t = float_0p066667_8041dec4;
     inv = float_0p5_8041dec0 / a;
     v0 = inv * (a + (f32)tan(float_neg1p2881_8041dec8));
@@ -332,8 +327,6 @@ void vivihimoDisp(CameraId cameraId, void* data) {
 #undef HIMO_C082
 #undef HIMO_C12881
 
-const f64 double_1p2881_802f8078 = 1.288053035736084;
-
 // The pool constants the code above loads by name, defined after it (defined first, the compiler folds them).
 const f32 float_0p5_8041dec0 = 0.5f;
 const f32 float_0p066667_8041dec4 = 0.06666667f;
@@ -348,6 +341,3 @@ const f32 float_15_8041dee4 = 15.0f;
 const f32 float_0p1_8041dee8 = 0.1f;
 const f32 float_2p5_8041deec = 2.5f;
 const f32 float_0p25_8041def0 = 0.25f;
-const f32 float_0p2_8041def4 = 0.2f;
-const f32 float_neg1_8041def8 = -1.0f;
-const f32 float_0p33333_8041defc = 0.33333334f;

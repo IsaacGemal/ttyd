@@ -6,9 +6,6 @@
 #include <dolphin/gx.h>
 #include <dolphin/mtx.h>
 
-// .sdata2 constants (named after their original addresses in the asm).
-extern const GXColor dat_8041f478;
-
 // .rodata: the zero Vec, the int->float conversion double and the "Kemuri9N64" string are all
 // compiler-generated pool entries (like effKemuri8's). Building them as compound/string literals
 // instead of named consts is what makes them land at the original addresses (0x802fa998, 0x802fa9a8,
@@ -183,7 +180,7 @@ void effKemuri9Disp(CameraId camId, void* param) {
     GXLoadTexObj(&texObj, 0);
     GXSetNumChans(1);
     GXSetChanCtrl(4, 0, 0, 0, 0, 0, 2);
-    GXSetChanMatColor(4, dat_8041f478);
+    GXSetChanMatColor(4, (GXColor){ 0xE6, 0xDE, 0xDE, 0xFF });
     GXSetNumTexGens(2);
     GXSetTexCoordGen2(0, 1, 4, 0x1E, 0, 0x7D);
     GXSetTexCoordGen2(1, 1, 4, 0x21, 0, 0x7D);
@@ -262,5 +259,3 @@ void effKemuri9Disp(CameraId camId, void* param) {
     }
 }
 
-// The pool constants the code above loads by name, defined after it (defined first, the compiler folds them).
-const GXColor dat_8041f478 = { 0xE6, 0xDE, 0xDE, 0xFF };

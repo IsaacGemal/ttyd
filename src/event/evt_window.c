@@ -37,10 +37,6 @@ typedef struct WinOneMsgWork {
 // .sbss
 s32 unk_80418b38;
 
-// .rodata
-const char str_802FDB78[] = "SFX_MAIL_RECEPTION1";
-const char str_802FDB8C[] = "msg_you_gotta_mail\0";
-
 // .sdata
 WinMgrDesc one_msg_desc = {
     0, 0,                     // openStyle, frameStyle
@@ -65,10 +61,6 @@ WinMgrDesc coin_desc = {
     NULL,                       // main
     (void*)coin_disp,           // disp
 };
-
-// .sdata2
-const GXColor dat_80420958 = {0xFF, 0x00, 0x00, 0xFF};
-const GXColor dat_8042095c = {0xFF, 0xFF, 0xFF, 0xFF};
 
 // NOTE: functions are deliberately written in reverse order. With the build's
 // `-inline auto,deferred`, mwcc emits functions in reverse source order, so
@@ -214,11 +206,11 @@ void oneMessageDisp(WinMgrEntry* entry) {
 
         switch (work->field_0x4) {
         case 0:
-            msg = msgSearch(str_802FDB8C);
+            msg = msgSearch("msg_you_gotta_mail\0");
             break;
         }
         FontDrawStart();
-        color = dat_80420958;
+        color = (GXColor){0xFF, 0x00, 0x00, 0xFF};
         FontDrawColor(&color);
         width = FontGetMessageWidth(msg);
         FontDrawMessage(-width / 2, entry->y - 8, msg);
@@ -252,7 +244,7 @@ USER_FUNC(evt_win_one_message) {
         if (keyGetButtonTrg(0) & 0x100) {
             switch (work->field_0x4) {
             case 0:
-                psndSFXOn_3D(str_802FDB78, &marioGetPtr()->position);
+                psndSFXOn_3D("SFX_MAIL_RECEPTION1", &marioGetPtr()->position);
                 break;
             }
             work->state++;
@@ -310,7 +302,7 @@ void coin_disp(WinMgrEntry* entry) {
     PSMTXTrans(mtx1, -192.0f, -113.0f, 0.0f);
     iconDispGx2(mtx1, 0x10, 0x1D6);
     PSMTXTrans(mtx1, -126.0f, -113.0f, 0.0f);
-    color = dat_8042095c;
+    color = (GXColor){0xFF, 0xFF, 0xFF, 0xFF};
     iconNumberDispGx(mtx1, work->count, 0, color);
     diff = pouchCount - work->count;
     if (diff != 0) {

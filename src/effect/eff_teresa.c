@@ -12,7 +12,6 @@
 __declspec(section ".sdata") GXColor unk_8042332c;
 __declspec(section ".sdata") GXColor unk_80423328;
 
-const Vec vec3_802fe920 = {0.0f, 0.0f, 0.0f};
 const GXColor dat_80421548 = { 0xFF, 0xFF, 0xFF, 0 };
 const f32 float_deg2rad_8042154c = 0.01745329252f;
 const f32 float_32_80421550 = 32.0f;
@@ -41,7 +40,7 @@ EffectEntry* effTeresaEntry(s32 type, f32 x, f32 y, f32 z) {
 	data->state = 0;
 
 	if (type == 0) {
-		pos = vec3_802fe920;
+		pos = (Vec){0.0f, 0.0f, 0.0f};
 		pos.x = data->x;
 		pos.y = data->y;
 		pos.z = data->z;

@@ -9,20 +9,8 @@
 #include <dolphin/mtx.h>
 #include <math_ext.h>
 
-const char str_802FA8E4[];
-
 extern const f32 float_0_8041f2f0;
 extern const f32 float_1_8041f2f4;
-extern const f32 float_0p85_8041f2fc;
-extern const f32 float_0p004_8041f300;
-extern const f32 float_neg100_8041f304;
-extern const f32 float_deg2rad_8041f308;
-extern const f32 float_0p3_8041f30c;
-extern const f32 float_1p75_8041f310;
-extern const f32 float_neg0p08_8041f314;
-extern const f32 float_neg3p9_8041f318;
-extern const f32 float_6p2832_8041f31c;
-extern const f32 float_360_8041f320;
 extern const f32 float_8_8041f2ec;
 extern const f32 float_neg8_8041f2f8;
 extern const u32 dat_8041f2e8;
@@ -63,7 +51,7 @@ EffectEntry* effKemuri3N64Entry(f32 x, f32 y, f32 z, f32 a4) {
     f32 angle;
 
     effect = effEntry();
-    effect->type = str_802FA8E4;
+    effect->type = "Kemuri3N64";
     effect->count = 5;
     data = __memAlloc(HEAP_EFFECT, sizeof(effKemuri3Data) * 5);
     effect->userdata = data;
@@ -71,7 +59,7 @@ EffectEntry* effKemuri3N64Entry(f32 x, f32 y, f32 z, f32 a4) {
 
     for (i = 0; i < 5; i++, data++) {
         data->type = 1;
-        data->field_64 = float_0p3_8041f30c;
+        data->field_64 = 0.29999998f;
         data->field_68 = float_0_8041f2f0;
         data->field_6C = float_0_8041f2f0;
         data->position.x = x;
@@ -86,13 +74,13 @@ EffectEntry* effKemuri3N64Entry(f32 x, f32 y, f32 z, f32 a4) {
         angle = a4 + (f32)(i * 72);
         data->field_28 = angle;
         data->field_2C = float_0_8041f2f0;
-        data->field_70 = float_1p75_8041f310;
-        data->field_74 = float_neg0p08_8041f314;
+        data->field_70 = 1.75f;
+        data->field_74 = -0.08f;
         data->field_78 = float_0_8041f2f0;
         data->field_7C = float_0_8041f2f0;
-        data->field_60 = float_neg3p9_8041f318;
+        data->field_60 = -3.9f;
         angle = reviseAngle(data->field_28);
-        angle = float_6p2832_8041f31c * angle / float_360_8041f320;
+        angle = 6.2831855f * angle / 360.0f;
         data->field_80 = sin(angle);
         data->field_84 = cos(angle);
     }
@@ -133,7 +121,7 @@ void effKemuri3Main(EffectEntry* effect) {
         }
         active = 1;
 
-        data->field_60 *= float_0p85_8041f2fc;
+        data->field_60 *= 0.85f;
         data->position.x += data->field_60 * data->field_80;
         data->position.z += data->field_60 * data->field_84;
 
@@ -143,17 +131,17 @@ void effKemuri3Main(EffectEntry* effect) {
         data->position.y += data->field_70;
 
         if (data->field_70 < float_0_8041f2f0) {
-            data->field_78 = float_0p004_8041f300;
+            data->field_78 = 0.004f;
         }
 
         data->field_24 -= float_1_8041f2f4;
-        if (data->field_24 < float_neg100_8041f304) {
-            data->field_24 = float_neg100_8041f304;
+        if (data->field_24 < -100.0f) {
+            data->field_24 = -100.0f;
         }
 
-        PSMTXRotRad(rotX, 'x', float_deg2rad_8041f308 * data->field_24);
-        PSMTXRotRad(rotY, 'y', float_deg2rad_8041f308 * data->field_28);
-        PSMTXRotRad(rotZ, 'z', float_deg2rad_8041f308 * data->field_2C);
+        PSMTXRotRad(rotX, 'x', 0.017453292f * data->field_24);
+        PSMTXRotRad(rotY, 'y', 0.017453292f * data->field_28);
+        PSMTXRotRad(rotZ, 'z', 0.017453292f * data->field_2C);
         PSMTXTrans(trans, data->position.x, data->position.y, data->position.z);
         PSMTXScale(scale, data->field_18, data->field_1C, data->field_20);
         PSMTXConcat(rotX, rotZ, rotZ);
@@ -267,21 +255,9 @@ void effKemuri3Disp(CameraId camId, void* param) {
     }
 }
 
-const char str_802FA8E4[] = "Kemuri3N64";
-
 // The pool constants the code above loads by name, defined after it (defined first, the compiler folds them).
 const u32 dat_8041f2e8 = 0x70601900;
 const f32 float_8_8041f2ec = 8.0f;
 const f32 float_0_8041f2f0 = 0.0f;
 const f32 float_1_8041f2f4 = 1.0f;
 const f32 float_neg8_8041f2f8 = -8.0f;
-const f32 float_0p85_8041f2fc = 0.85f;
-const f32 float_0p004_8041f300 = 0.004f;
-const f32 float_neg100_8041f304 = -100.0f;
-const f32 float_deg2rad_8041f308 = 0.017453292f;
-const f32 float_0p3_8041f30c = 0.29999998f;
-const f32 float_1p75_8041f310 = 1.75f;
-const f32 float_neg0p08_8041f314 = -0.08f;
-const f32 float_neg3p9_8041f318 = -3.9f;
-const f32 float_6p2832_8041f31c = 6.2831855f;
-const f32 float_360_8041f320 = 360.0f;

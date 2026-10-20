@@ -81,8 +81,6 @@ const GXColor dat_80421a68 = { 0xA0, 0xA0, 0xA0, 0xFF };
 const GXColor dat_80421a6c = { 0xFF, 0xFF, 0xFF, 0xFF };
 const GXColor dat_80421a70 = { 0xFF, 0xFF, 0xFF, 0xFF };
 const GXColor dat_80421a74 = { 0xF0, 0xF0, 0xF0, 0xFF };
-const char str_80421A78[] = "help";
-
 
 static WinMgrWork work;
 static s16* mario_status_point_table[3];
@@ -213,27 +211,6 @@ const char str_802FFD50[] = "name_party4";
 const char str_802FFD5C[] = "name_party5";
 const char str_802FFD68[] = "name_party2";
 const char str_802FFD74[] = "name_party6";
-const char str_802FFD80[] = "helperr2\000\000\000";
-const char str_802FFD8C[] = "helperr";
-const char str_802FFD94[] = "%s_levelup%s\000\000\000";
-const char str_802FFDA4[] = "%s_leveldown%s\000";
-const char str_802FFDB4[] = "lankup\000";
-const char str_802FFDBC[] = "lankdown\000\000\000";
-const char str_802FFDC8[] = "%s_%s_lank%d%s\000";
-const char str_802FFDD8[] = "msg_window_select_1";
-const char str_802FFDEC[] = "msg_window_select_2";
-const char str_802FFE00[] = "msg_window_select_3";
-const char str_802FFE14[] = "msg_window_select_4";
-const char str_802FFE28[] = "msg_window_select_11\000\000\000";
-const char str_802FFE40[] = "msg_window_select_12\000\000\000";
-const char str_802FFE58[] = "msg_window_select_9";
-const char str_802FFE6C[] = "msg_window_select_9_1\000\000";
-const char str_802FFE84[] = "msg_window_select_6";
-const char str_802FFE98[] = "msg_window_select_10\000\000\000";
-const char str_802FFEB0[] = "msg_window_select_8";
-const char str_802FFEC4[] = "msg_window_select_7";
-const char str_802FFED8[] = "msg_window_title_5\000";
-const char str_802FFEEC[] = "msg_window_title_6\000";
 
 #ifdef MUST_MATCH
 // MUST_MATCH: this inline keeps the descriptor 0x14 load before 0x10 with retail registers.
@@ -302,20 +279,20 @@ void select_disp3_mario(WinMgrEntry* entry) {
 
         if (items[select->cursor].flags & 2) {
             if (items[select->cursor].flags & 4) {
-                help = str_802FFD80;
+                help = "helperr2";
             } else {
-                help = str_802FFD8C;
+                help = "helperr";
             }
         } else {
-            help = str_80421A78;
+            help = "help";
         }
         switch (select->kind) {
         case 9:
-            sprintf(buf, str_802FFD94, help, mario_status_labelname_table[items[select->cursor].id]);
+            sprintf(buf, "%s_levelup%s", help, mario_status_labelname_table[items[select->cursor].id]);
             break;
         case 10:
         default:
-            sprintf(buf, str_802FFDA4, help, mario_status_labelname_table[items[select->cursor].id]);
+            sprintf(buf, "%s_leveldown%s", help, mario_status_labelname_table[items[select->cursor].id]);
             break;
         }
         entry->message = msgSearch(buf);
@@ -335,17 +312,17 @@ void select_disp3_party(WinMgrEntry* entry) {
         char buf[0x48];
 
         if (items[select->cursor].flags & 2) {
-            help = str_802FFD8C;
+            help = "helperr";
         } else {
-            help = str_80421A78;
+            help = "help";
         }
         if (select->kind == 6 || select->kind == 7) {
-            lank = str_802FFDB4;
+            lank = "lankup";
         } else {
-            lank = str_802FFDBC;
+            lank = "lankdown";
         }
         id = items[select->cursor].id;
-        sprintf(buf, str_802FFDC8, help, lank,
+        sprintf(buf, "%s_%s_lank%d%s", help, lank,
                 pouch->partyData[party_id_table[id]].techLevel + 1, party_labelname_table[id]);
         entry->message = msgSearch(buf);
         winMgrHelpDraw(entry);
@@ -394,45 +371,45 @@ void select_disp2(WinMgrEntry* entry) {
     u16 width;
     u16 x;
 
-    msg = msgSearch(str_802FFDD8);
+    msg = msgSearch("msg_window_select_1");
     switch (select->kind) {
     case 3:
     case 12:
-        msg = msgSearch(str_802FFDEC);
+        msg = msgSearch("msg_window_select_2");
         break;
     case 4:
-        msg = msgSearch(str_802FFE00);
+        msg = msgSearch("msg_window_select_3");
         break;
     case 5:
-        msg = msgSearch(str_802FFE14);
+        msg = msgSearch("msg_window_select_4");
         break;
     case 6:
     case 7:
-        msg = msgSearch(str_802FFE28);
+        msg = msgSearch("msg_window_select_11");
         break;
     case 8:
-        msg = msgSearch(str_802FFE40);
+        msg = msgSearch("msg_window_select_12");
         break;
     case 9:
-        msg = msgSearch(str_802FFE58);
+        msg = msgSearch("msg_window_select_9");
         break;
     case 10:
-        msg = msgSearch(str_802FFE6C);
+        msg = msgSearch("msg_window_select_9_1");
         break;
     case 11:
     case 14:
     case 15:
-        msg = msgSearch(str_802FFE84);
+        msg = msgSearch("msg_window_select_6");
         break;
     case 13:
     case 16:
-        msg = msgSearch(str_802FFE98);
+        msg = msgSearch("msg_window_select_10");
         break;
     case 17:
-        msg = msgSearch(str_802FFEB0);
+        msg = msgSearch("msg_window_select_8");
         break;
     case 18:
-        msg = msgSearch(str_802FFEC4);
+        msg = msgSearch("msg_window_select_7");
         break;
     }
     if (!(wp->mEntries[select->descriptorId[1]].flags & 4)) {
@@ -548,11 +525,11 @@ void select_disp_luigi(WinMgrEntry* entry) {
 
     switch (select->kind) {
     case 0x11:
-        msg = msgSearch(str_802FFED8);
+        msg = msgSearch("msg_window_title_5");
         break;
     case 0x12:
     default:
-        msg = msgSearch(str_802FFEEC);
+        msg = msgSearch("msg_window_title_6");
         break;
     }
 
@@ -603,11 +580,6 @@ void select_disp_luigi(WinMgrEntry* entry) {
         }
     }
 }
-
-const char str_802FFF08[] = "msg_window_title_9\000";
-const char str_802FFF1C[] = "msg_window_title_10";
-const char str_802FFF30[] = "msg_window_title_7\000";
-const char str_802FFF44[] = "msg_window_title_8\000";
 
 // Every call, constant, branch, stack slot and store order matches. The (f32)int conversion double
 // is pooled at .rodata+0x468 by select_disp_luigi's native conversion. The outer loop
@@ -780,7 +752,7 @@ void select_disp_mario(WinMgrEntry* entry) {
 
     GXSetScissor(scissorLeft, scissorTop, scissorWidth, scissorHeight);
 
-    msg = msgSearch(str_802FFF08);
+    msg = msgSearch("msg_window_title_9");
     width = FontGetMessageWidth(msg);
     x = (0x78 - width) / 2;
 #ifdef MUST_MATCH
@@ -802,7 +774,7 @@ void select_disp_mario(WinMgrEntry* entry) {
         winFontSetEdge(&posTitle, &scaleTitle, &color, msg);
     }
 
-    msg = msgSearch(str_802FFF1C);
+    msg = msgSearch("msg_window_title_10");
     width = FontGetMessageWidth(msg);
     x = (0x55 - width) / 2;
 #ifdef MUST_MATCH
@@ -1122,7 +1094,7 @@ void select_disp_party(WinMgrEntry* entry) {
 
     GXSetScissor(scissorLeft, scissorTop, scissorWidth, scissorHeight);
 
-    msg = msgSearch(str_802FFF30);
+    msg = msgSearch("msg_window_title_7");
     width = FontGetMessageWidth(msg);
     x = (0x78 - width) / 2;
 #ifdef MUST_MATCH
@@ -1144,7 +1116,7 @@ void select_disp_party(WinMgrEntry* entry) {
         winFontSetEdge(&posTitle, &scaleTitle, &color, msg);
     }
 
-    msg = msgSearch(str_802FFF44);
+    msg = msgSearch("msg_window_title_8");
     width = FontGetMessageWidth(msg);
     x = (0x55 - width) / 2;
 #ifdef MUST_MATCH
@@ -1186,16 +1158,6 @@ void select_disp_party(WinMgrEntry* entry) {
         }
     }
 }
-
-const char str_802FFF60[] = "msg_window_title_2\000";
-const char str_802FFF74[] = "msg_window_title_3\000";
-const char str_802FFF88[] = "msg_window_title_4\000";
-const char str_802FFF9C[] = "msg_window_title_1\000";
-const char str_802FFFB0[] = "%s_%04d";
-const char str_802FFFB8[] = "jperfect_title_%04d";
-const char str_802FFFCC[] = "msg_lottery_number\000";
-
-const char str_80421A9C[] = "%d";
 
 // The item loop matches register for register (entry r31, select r25, rodata r28, itemDataTable r29,
 // 0x4330 r30, counter r24, rowoff r26, itemoff r27, item r22, value r23). The dots loop matches too:
@@ -1353,7 +1315,7 @@ void select_disp(WinMgrEntry* entry) {
             f32 edgeX;
             f32 edgeY;
 
-            sprintf(buf, str_80421A9C, value);
+            sprintf(buf, "%d", value);
             textWidth = (f32)FontGetMessageWidth(buf);
             winFontInit();
             color = (select->items[i].flags & 1) ? colorGray : colorBlack;
@@ -1394,19 +1356,19 @@ void select_disp(WinMgrEntry* entry) {
     case 11:
     case 12:
     case 13:
-        msg = msgSearch(str_802FFF60);
+        msg = msgSearch("msg_window_title_2");
         break;
     case 14:
-        msg = msgSearch(str_802FFF74);
+        msg = msgSearch("msg_window_title_3");
         break;
     case 16:
-        msg = msgSearch(str_802FFF88);
+        msg = msgSearch("msg_window_title_4");
         break;
     case 17:
-        msg = msgSearch(str_802FFED8);
+        msg = msgSearch("msg_window_title_5");
         break;
     default:
-        msg = msgSearch(str_802FFF9C);
+        msg = msgSearch("msg_window_title_1");
         break;
     }
 
@@ -1789,7 +1751,7 @@ void winMgrHelpDraw(WinMgrEntry* entry) {
         return;
     }
     GXSetScissor(0, 0x180, 0x260, 0x38);
-    if (strcmp(entry->message, msgSearch(str_802FFFCC)) == 0) {
+    if (strcmp(entry->message, msgSearch("msg_lottery_number\000")) == 0) {
         lottery = lotteryGetPtr();
         n = lottery->mTicketNum;
         sprintf(buf, entry->message, n);
@@ -2340,8 +2302,8 @@ s32 winMgrSelectOther(WinMgrSelect* select, EventEntry* event) {
             event->lwData[4] = itemDataTable[itemId].bp_cost;
             break;
         case 17:
-            sprintf((char*)jdt->infoEnd, str_802FFFB0, jdt->prefix, jdt->info[itemId].storyId);
-            sprintf(buf, str_802FFFB8, jdt->info[itemId].storyId);
+            sprintf((char*)jdt->infoEnd, "%s_%04d", jdt->prefix, jdt->info[itemId].storyId);
+            sprintf(buf, "jperfect_title_%04d", jdt->info[itemId].storyId);
             *(s32*)&jdt->unk10 = itemId;
             msg = msgSearch(buf);
             event->lwData[1] = (s32)jdt->infoEnd;
@@ -2354,7 +2316,7 @@ s32 winMgrSelectOther(WinMgrSelect* select, EventEntry* event) {
             }
             break;
         case 18:
-            sprintf((char*)jdt->infoEnd, str_802FFFB0, jdt->prefix, jdt->info[itemId].storyId);
+            sprintf((char*)jdt->infoEnd, "%s_%04d", jdt->prefix, jdt->info[itemId].storyId);
             *(s32*)&jdt->unk10 = itemId;
             event->lwData[1] = (s32)jdt->infoEnd;
             event->lwData[2] = jdt->info[itemId].initEndPos;

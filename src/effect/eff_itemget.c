@@ -20,10 +20,6 @@ inline Vec initializeVec(Vec* input) {
 	return temp;
 }
 
-static const Vec vec3_802fddb4 = { 0.0f, 0.0f, 1000.0f };
-static const Vec vec3_802fddc0 = { 0.0f, 1.0f, 0.0f };
-static const Vec vec3_802fddcc = { 0.0f, 0.0f, 0.0f };
-
 static u8 scale_data[12] = {
 	0x00, 0x12, 0x26, 0x3B, 0x4E, 0x60, 0x6E, 0x78, 0x79, 0x72, 0x69, 0x64
 };
@@ -230,9 +226,9 @@ void effItemGetDisp(CameraId camId, void* param) {
 	f32 scale;
 
 	cam = camGetPtr(camId);
-	vecA = vec3_802fddb4;
-	vecB = vec3_802fddc0;
-	vecC = vec3_802fddcc;
+	vecA = (Vec){ 0.0f, 0.0f, 1000.0f };
+	vecB = (Vec){ 0.0f, 1.0f, 0.0f };
+	vecC = (Vec){ 0.0f, 0.0f, 0.0f };
 	scale = data->animScale * data->baseSize;
 	headAlpha = data->alpha;
 

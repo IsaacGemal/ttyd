@@ -15,10 +15,6 @@ __declspec(section ".sdata") GXColor unk_80423288;
 
 // .sbss2 scratch GXColors the original builds its TEV colours from.
 
-// .sdata2 constant referenced by the disp function.
-extern const f32 float_0p03125_8041ff50;
-extern const f32 float_0_8041ff54;
-
 // .data
 static u32 size16x16_tex32x32_vtx[14] = {
 	0xFFF8FFF8, 0x00000000, 0x00000000, 0x00FF0008, 0xFFF80000, 0x04000000, 0x000000FF,
@@ -57,10 +53,6 @@ EffectEntry* effStoneSmokeN64Entry(s32 type, s32 duration, f32 x, f32 y, f32 z, 
 	data->field_0x30 = 0x78;
 	return effect;
 }
-
-// .sdata2 (pool constants referenced by name so the symbol matches the original)
-extern const f32 float_0p6_8041ff58;
-extern const f32 float_0p01_8041ff5c;
 
 // .sdata
 // Scale keyframes in hundredths: scale_data for the first seven frames, then scale_data2 as a repeating seven-frame cycle.
@@ -106,12 +98,12 @@ void effStoneSmokeMain(EffectEntry* effect) {
 		data->field_0x24 = data->life * 16;
 	}
 
-	data->y += float_0p6_8041ff58;
+	data->y += 0.6f;
 
 	if (frame < 7) {
-		data->field_0x38 = float_0p01_8041ff5c * (f32)scale_data[frame];
+		data->field_0x38 = 0.01f * (f32)scale_data[frame];
 	} else {
-		data->field_0x38 = float_0p01_8041ff5c * (f32)scale_data2[(frame - 7) % 7];
+		data->field_0x38 = 0.01f * (f32)scale_data2[(frame - 7) % 7];
 	}
 
 #ifdef MUST_MATCH
@@ -187,7 +179,7 @@ void effStoneSmokeDisp(CameraId camId, void* param) {
 	GXSetNumChans(0);
 	GXSetNumTexGens(1);
 	GXSetTexCoordGen2(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_TEXMTX0, GX_FALSE, 0x7D);
-	PSMTXScale(scaleMtx, float_0p03125_8041ff50, float_0p03125_8041ff50, float_0_8041ff54);
+	PSMTXScale(scaleMtx, 0.03125f, 0.03125f, 0.0f);
 	GXLoadTexMtxImm(scaleMtx, GX_TEXMTX0, GX_MTX2x4);
 	GXSetNumTevStages(1);
 	GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR_NULL);
@@ -203,8 +195,3 @@ void effStoneSmokeDisp(CameraId camId, void* param) {
 	tri2(0, 1, 2, 0, 0, 2, 3, 0);
 }
 
-// The pool constants the code above loads by name, defined after it (defined first, the compiler folds them).
-const f32 float_0p03125_8041ff50 = 0.03125f;
-const f32 float_0_8041ff54 = 0.0f;
-const f32 float_0p6_8041ff58 = 0.6f;
-const f32 float_0p01_8041ff5c = 0.01f;

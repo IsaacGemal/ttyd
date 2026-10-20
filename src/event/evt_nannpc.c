@@ -87,8 +87,6 @@ __declspec(section ".rodata") Vec vec3_802f2ff8[6] = {
 // The original's `dat_8041c5xx` are global, read-only `.sdata2` constants; section is forced so
 // they get the exact symbol names and placement.
 __declspec(section ".sdata2") GXColor dat_8041c568 = {0xFF, 0xFF, 0xFF, 0xFF};
-__declspec(section ".sdata2") GXColor dat_8041c56c = {0xFF, 0xFF, 0xFF, 0xFF};
-__declspec(section ".sdata2") GXColor dat_8041c570 = {0xFF, 0xFF, 0xFF, 0xFF};
 
 // Look up an entry by numeric id (formatted as "%06x") or by the string the id
 // points at. Small enough that the original compiler inlined it everywhere.
@@ -484,7 +482,7 @@ USER_FUNC(evt_nannpc_init) {
         entry->animCurrent = 0;
         entry->field_0x60 = 0.0f;
         entry->callback = NULL;
-        entry->color = dat_8041c56c;
+        entry->color = (GXColor){0xFF, 0xFF, 0xFF, 0xFF};
     }
     if (src == NULL) {
         return EVT_RETURN_DONE;
@@ -586,7 +584,7 @@ USER_FUNC(evt_nannpc_entry) {
         entry->animCount = 0;
         entry->field_0x60 = 0.0f;
         entry->pose->heading = -entry->field_0x60;
-        entry->color = dat_8041c570;
+        entry->color = (GXColor){0xFF, 0xFF, 0xFF, 0xFF};
         break;
     }
     return EVT_RETURN_DONE;

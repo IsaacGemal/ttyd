@@ -15,10 +15,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-// .rodata
-const Vec vec3_802fdba0 = {0.0f, 0.0f, 0.0f};
-const Vec vec3_802fdbac = {0.0f, 0.0f, 0.0f};
-
 // .sdata
 typedef struct HpAngle {
 	u16 hp;    // 0x0
@@ -106,7 +102,7 @@ static void actionCommandDisp(f32 x, f32 y) {
 	camGetPtr(CAMERA_2D);
 
 	baseX = -200.0f + x;
-	v = vec3_802fdba0;
+	v = (Vec){0.0f, 0.0f, 0.0f};
 	v.x = baseX;
 	v.y = 25.0f + y;
 	iconDispGx(1.0f, &v, 0x10, 0x8C);
@@ -134,7 +130,7 @@ static void actionCommandDisp(f32 x, f32 y) {
 		                      (u8)(180 - (3 - abs(3 - i)) * 60), 0xFF);
 	}
 
-	v2 = vec3_802fdbac;
+	v2 = (Vec){0.0f, 0.0f, 0.0f};
 	v2.x = -288.0f + x + (f32)(dec->rate * 176) / 100.0f;
 	v2.y = 45.0f + y;
 	iconDispGx(1.0f, &v2, 0x10, 0x96);

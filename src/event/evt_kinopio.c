@@ -35,7 +35,6 @@ __declspec(section ".sdata2") f32 float_6p2832_8041bc70 = 6.2831855f;
 __declspec(section ".sdata2") f32 float_90_8041bc74 = 90.0f;
 __declspec(section ".sdata2") f32 float_360_8041bc78 = 360.0f;
 __declspec(section ".sdata2") char str_8041BC7C[8] = "M_S_1";
-__declspec(section ".sdata2") f32 float_0p2_8041bc84 = 0.2f;
 
 // force_active: these strings are referenced only through the unit's other data (and by other units), the linker would drop the rest.
 #pragma force_active on
@@ -490,18 +489,18 @@ static USER_FUNC(paper_on) {
             f32 s;
 
             c = cos(deg);
-            mario->position.x -= float_0p2_8041bc84 * c;
+            mario->position.x -= 0.2f * c;
             s = sin(deg);
-            mario->position.z -= float_0p2_8041bc84 * s;
+            mario->position.z -= 0.2f * s;
         } else {
             f32 deg = float_6p2832_8041bc70 * val / float_360_8041bc78;
             f32 c;
             f32 s;
 
             c = cos(deg);
-            mario->position.x += float_0p2_8041bc84 * c;
+            mario->position.x += 0.2f * c;
             s = sin(deg);
-            mario->position.z += float_0p2_8041bc84 * s;
+            mario->position.z += 0.2f * s;
         }
         event->userdata[0]++;
     }

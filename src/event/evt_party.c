@@ -33,15 +33,6 @@ extern const f32 float_0p5_8041bb14;
 extern const f32 float_20_8041bb18;
 extern const f32 float_0_8041bb1c;
 extern const f32 float_37_8041bb20;
-extern const f32 float_neg1000_8041bb24;
-extern const f32 float_180_8041bb28;
-extern const f32 float_270_8041bb2c;
-extern const f32 float_neg5000_8041bb30;
-extern const f32 float_100_8041bb34;
-extern const f32 float_50_8041bb38;
-
-// Data owned by this translation unit (see config/G8MJ01/splits.txt).
-const Vec vec3_802e9668 = {0.0f, -1.0f, 0.0f};
 
 // party_cloud.h declares cloudGetStatus as returning u8 (its definition masks the result), but the original
 // evt_party_cloud_breathout uses the result unmasked, as if this file saw it declared int.
@@ -169,9 +160,9 @@ USER_FUNC(evt_party_force_reset_outofscreen) {
     }
     partyClearFootmark();
     mario = party->playerPtr;
-    maxDist = float_100_8041bb34;
-    up = float_50_8041bb38;
-    dir = vec3_802e9668;
+    maxDist = 100.0f;
+    up = 50.0f;
+    dir = (Vec){0.0f, -1.0f, 0.0f};
     while (TRUE) {
         marioGetScreenPos(party->position, &sx, &sy, &sz);
         if (marioChkInScreen((s32)sx, (s32)sy)) {
@@ -237,9 +228,9 @@ USER_FUNC(evt_party_get_pos) {
 
     party = partyGetPtr(args[0] ? 1 : partyCtrlNo);
     if (!party) {
-        evtSetFloat(event, args[1], float_neg5000_8041bb30);
-        evtSetFloat(event, args[2], float_neg5000_8041bb30);
-        evtSetFloat(event, args[3], float_neg5000_8041bb30);
+        evtSetFloat(event, args[1], -5000.0f);
+        evtSetFloat(event, args[2], -5000.0f);
+        evtSetFloat(event, args[3], -5000.0f);
         return EVT_RETURN_DONE;
     }
     evtSetFloat(event, args[1], party->position.x);
@@ -279,7 +270,7 @@ USER_FUNC(evt_party_set_dir) {
         return EVT_RETURN_DONE;
     }
     if (frames > 0) {
-        dest = revise360(float_270_8041bb2c - target);
+        dest = revise360(270.0f - target);
         step = (dest - event->userdataf[1]) * ((f32)event->userdata[2] / (f32)frames);
         next = revise360(event->userdataf[1] + step);
         party->field_10C = next;
@@ -288,11 +279,11 @@ USER_FUNC(evt_party_set_dir) {
         return (++event->userdata[2] > frames) ? 1 : 0;
     }
     if (frames < 0) {
-        next = revise360(float_270_8041bb2c - target);
+        next = revise360(270.0f - target);
         party->field_110 = next;
         party->dir = toMovedirSimple(party->field_110);
     } else if (frames == 0) {
-        next = revise360(float_270_8041bb2c - target);
+        next = revise360(270.0f - target);
         party->field_10C = next;
         party->field_110 = party->field_10C;
         party->dir = toMovedirSimple(party->field_110);
@@ -324,7 +315,7 @@ USER_FUNC(evt_party_set_dir_npc) {
         yaw = camera->viewYaw;
         angle = angleABf(party->position.x, party->position.z, x, z);
         delta = revise360(angle - yaw);
-        party->field_110 = (delta < float_180_8041bb28) ? float_180_8041bb28 : float_0_8041bb1c;
+        party->field_110 = (delta < 180.0f) ? 180.0f : float_0_8041bb1c;
         party->dir = delta;
     }
     return EVT_RETURN_DONE;
@@ -347,7 +338,7 @@ USER_FUNC(evt_party_set_dir_pos) {
     yaw = camera->viewYaw;
     angle = angleABf(party->position.x, party->position.z, x, z);
     delta = revise360(angle - yaw);
-    party->field_110 = (delta < float_180_8041bb28) ? float_180_8041bb28 : float_0_8041bb1c;
+    party->field_110 = (delta < 180.0f) ? 180.0f : float_0_8041bb1c;
     party->dir = delta;
     return EVT_RETURN_DONE;
 }
@@ -545,7 +536,7 @@ USER_FUNC(evt_party_jump_pos) {
     msec = evtGetValue(event, args[3]);
     flag = evtGetValue(event, args[4]);
     d = evtGetFloat(event, args[5]);
-    if (d <= float_neg1000_8041bb24) {
+    if (d <= -1000.0f) {
         d = float_20_8041bb18;
     }
     frames = (f32)sysMsec2Frame(msec);
@@ -1074,10 +1065,4 @@ const f32 float_0p5_8041bb14 = 0.5f;
 const f32 float_20_8041bb18 = 20.0f;
 const f32 float_0_8041bb1c = 0.0f;
 const f32 float_37_8041bb20 = 37.0f;
-const f32 float_neg1000_8041bb24 = -1000.0f;
-const f32 float_180_8041bb28 = 180.0f;
-const f32 float_270_8041bb2c = 270.0f;
-const f32 float_neg5000_8041bb30 = -5000.0f;
-const f32 float_100_8041bb34 = 100.0f;
-const f32 float_50_8041bb38 = 50.0f;
 #pragma explicit_zero_data reset

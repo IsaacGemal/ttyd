@@ -11,32 +11,7 @@
 #include <stdlib.h>
 #include "math_ext.h"
 
-// .rodata: zero Vec copied into the local position before the particle fields are set.
-const Vec vec3_802fa560 = { 0.0f, 0.0f, 0.0f };
-
-
 // .rodata string used as the EffectEntry type name.
-
-// .sdata2 float constants (named after their original addresses).
-extern const f32 float_1_8041ee54;
-extern const f32 float_20_8041ee58;
-extern const f32 float_0p0056818_8041ee18;
-extern const f32 float_0p045455_8041ee1c;
-extern const f32 float_0_8041ee20;
-extern const f32 float_2p0944_8041ee24;
-extern const f32 float_neg2p0944_8041ee28;
-extern const f32 float_255_8041ee10;
-extern const f32 float_deg2rad_8041ee14;
-extern const f32 float_0p5_8041ee2c;
-extern const f32 float_6p2832_8041ee30;
-extern const f32 float_360_8041ee34;
-extern const f32 float_15_8041ee38;
-extern const f32 float_0p4_8041ee3c;
-extern const f32 float_2_8041ee40;
-extern const f32 float_4_8041ee44;
-extern const f32 float_0p2_8041ee48;
-extern const f32 float_0p6_8041ee4c;
-extern const f32 float_0p04_8041ee50;
 
 // .data particle scale table indexed by the per-particle frame counter (defined below).
 static f32 scale_data[20];
@@ -133,7 +108,7 @@ EffectEntry* effFireDustN64Entry(s32 type, s32 count, s32 life, f32 x, f32 y, f3
     data->x = x;
     data->y = y;
     data->z = z;
-    data->scale = float_1_8041ee54;
+    data->scale = 1.0f;
     data->spreadXZ = radius;
     data->spreadY = height;
     data->tev1R = 0xff;
@@ -145,7 +120,7 @@ EffectEntry* effFireDustN64Entry(s32 type, s32 count, s32 life, f32 x, f32 y, f3
     data->tev1A = 0xff;
 
     if (life < 0x14) {
-        ratio = float_20_8041ee58 / (f32)(count + 1);
+        ratio = 20.0f / (f32)(count + 1);
     } else {
         ratio = (f32)life / (f32)(count + 1);
     }
@@ -166,7 +141,7 @@ void effFireDustMain(EffectEntry* effect) {
        local before dispCalcZ; a single local folds the copy away. */
     Vec position;
 #endif
-    Vec disp = vec3_802fa560;
+    Vec disp = (Vec){ 0.0f, 0.0f, 0.0f };
     f32 half;
     f32 radius;
     f32 angle;
@@ -198,7 +173,7 @@ void effFireDustMain(EffectEntry* effect) {
     i = 1;
     radius = data->spreadXZ;
     ival = (s32)data->spreadY;
-    half = float_0p5_8041ee2c * data->spreadY;
+    half = 0.5f * data->spreadY;
     data++;
     for (; i < effect->count; i++, data++) {
         data->cycle++;
@@ -212,31 +187,31 @@ void effFireDustMain(EffectEntry* effect) {
             angle = (f32)(rand() % 360);
             /* The original discards a rand() result here; the RNG state feeds later particles. */
             (void)rand();
-            angle = float_6p2832_8041ee30 * angle / float_360_8041ee34;
+            angle = 6.2831855f * angle / 360.0f;
             data->x = radius * (f32)sin(angle);
             data->y = (f32)(rand() % ival) - half;
             data->z = radius * (f32)cos(angle);
-            data->velX = float_15_8041ee38 * (f32)sin(angle);
-            data->velY = float_0p4_8041ee3c * data->y;
-            data->velZ = float_15_8041ee38 * (f32)cos(angle);
-            data->velTargetX = float_0p5_8041ee2c * data->velX;
-            data->velTargetY = float_0p5_8041ee2c * data->velY;
-            data->velTargetZ = float_0p5_8041ee2c * data->velZ;
+            data->velX = 15.0f * (f32)sin(angle);
+            data->velY = 0.4f * data->y;
+            data->velZ = 15.0f * (f32)cos(angle);
+            data->velTargetX = 0.5f * data->velX;
+            data->velTargetY = 0.5f * data->velY;
+            data->velTargetZ = 0.5f * data->velZ;
             data->field_0x64 = (f32)(rand() % 15);
             data->field_0x68 = (f32)(rand() % 15);
-            data->rotZ = float_0_8041ee20;
+            data->rotZ = 0.0f;
             data->alpha = 0xff;
         }
-        data->scale = float_2_8041ee40 * scale_data[data->cycle];
-        data->rotZ += float_4_8041ee44;
+        data->scale = 2.0f * scale_data[data->cycle];
+        data->rotZ += 4.0f;
         data->x += data->velX;
         data->y += data->velY;
         data->z += data->velZ;
-        data->field_0x64 += float_0p2_8041ee48;
-        data->field_0x68 += float_0p6_8041ee4c;
-        data->velX += float_0p04_8041ee50 * (data->velTargetX - data->velX);
-        data->velY += float_0p04_8041ee50 * (data->velTargetY - data->velY);
-        data->velZ += float_0p04_8041ee50 * (data->velTargetZ - data->velZ);
+        data->field_0x64 += 0.2f;
+        data->field_0x68 += 0.6f;
+        data->velX += 0.04f * (data->velTargetX - data->velX);
+        data->velY += 0.04f * (data->velTargetY - data->velY);
+        data->velZ += 0.04f * (data->velTargetZ - data->velZ);
     }
 #ifdef MUST_MATCH
     dispEntry(CAMERA_3D, dispCalcZ(&position), 2, effFireDustDisp, effect);
@@ -271,7 +246,7 @@ void effFireDustDisp(CameraId camId, void* param) {
     GXSetNumChans(0);
     GXSetNumTexGens(1);
     GXSetTexCoordGen2(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_TEXMTX0, GX_FALSE, GX_PTIDENTITY);
-    PSMTXScale(scaleMtx, float_0p0056818_8041ee18, float_0p045455_8041ee1c, float_0_8041ee20);
+    PSMTXScale(scaleMtx, 0.0056818184f, 0.045454547f, 0.0f);
     GXLoadTexMtxImm(scaleMtx, GX_TEXMTX0, GX_MTX2x4);
     GXSetNumTevStages(1);
     GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR_NULL);
@@ -284,12 +259,12 @@ void effFireDustDisp(CameraId camId, void* param) {
     PSMTXConcat(cam->view, outMtx, dispMtx);
     main_dl(effect, dispMtx);
 
-    PSMTXRotRad(rotMtx, 'y', float_2p0944_8041ee24);
+    PSMTXRotRad(rotMtx, 'y', 2.0943952f);
     PSMTXConcat(outMtx, rotMtx, dispMtx);
     PSMTXConcat(cam->view, dispMtx, dispMtx);
     main_dl(effect, dispMtx);
 
-    PSMTXRotRad(rotMtx, 'y', float_neg2p0944_8041ee28);
+    PSMTXRotRad(rotMtx, 'y', -2.0943952f);
     PSMTXConcat(outMtx, rotMtx, dispMtx);
     PSMTXConcat(cam->view, dispMtx, dispMtx);
     main_dl(effect, dispMtx);
@@ -338,14 +313,14 @@ static void main_dl(EffectEntry* effect, Mtx matrix) {
     c0 = data->tev0R;
     c1 = data->tev0G;
     c2 = data->tev0B;
-    alphaScale = (f32)data->alpha / float_255_8041ee10;
+    alphaScale = (f32)data->alpha / 255.0f;
     data++;
     for (i = 1; i < effect->count; i++, data++) {
         if (data->cycle < 0) {
             continue;
         }
         PSMTXTrans(mtx, data->x, data->y, data->z);
-        PSMTXRotRad(rot, 'z', float_deg2rad_8041ee14 * data->rotZ);
+        PSMTXRotRad(rot, 'z', 0.017453292f * data->rotZ);
         v = data->scale * alphaScale;
         PSMTXScale(scale, v, v, v);
         PSMTXConcat(mtx, rot, mtx);
@@ -386,23 +361,3 @@ static void main_dl(EffectEntry* effect, Mtx matrix) {
     }
 }
 
-// The pool constants the code above loads by name, defined after it (defined first, the compiler folds them).
-const f32 float_255_8041ee10 = 255.0f;
-const f32 float_deg2rad_8041ee14 = 0.017453292f;
-const f32 float_0p0056818_8041ee18 = 0.0056818184f;
-const f32 float_0p045455_8041ee1c = 0.045454547f;
-const f32 float_0_8041ee20 = 0.0f;
-const f32 float_2p0944_8041ee24 = 2.0943952f;
-const f32 float_neg2p0944_8041ee28 = -2.0943952f;
-const f32 float_0p5_8041ee2c = 0.5f;
-const f32 float_6p2832_8041ee30 = 6.2831855f;
-const f32 float_360_8041ee34 = 360.0f;
-const f32 float_15_8041ee38 = 15.0f;
-const f32 float_0p4_8041ee3c = 0.4f;
-const f32 float_2_8041ee40 = 2.0f;
-const f32 float_4_8041ee44 = 4.0f;
-const f32 float_0p2_8041ee48 = 0.2f;
-const f32 float_0p6_8041ee4c = 0.6f;
-const f32 float_0p04_8041ee50 = 0.04f;
-const f32 float_1_8041ee54 = 1.0f;
-const f32 float_20_8041ee58 = 20.0f;

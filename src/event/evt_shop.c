@@ -113,14 +113,11 @@ extern const f32 float_124_8041bc50;
 extern const f32 float_38_8041bc54;
 extern WinMgrDesc list_desc[];
 extern WinMgrDesc window_desc[];
-extern const char str_802ECDE8[];
 extern const char str_8041BC1C[6];
 extern const f32 float_6_8041bc24;
 extern u32 shopper_talk_evt[];
 extern u32 main_evt[4];
 extern u32 evt_shoplist[10];
-extern const char str_802ECDF8[];
-extern const char str_802ECE10[];
 extern const char str_8041BC28[];
 extern u32 dat_8041bbf0;
 extern u32 dat_8041bbf4;
@@ -149,9 +146,6 @@ const char str_802ECDAC[12] = "rsh_03_c";
 const char str_802ECDB8[16] = "stg6_shop_04_1";
 const char str_802ECDC8[24] = "<scrl_auto><once_stop>";
 const char str_802ECDE0[8] = "rsh_03";
-const char str_802ECDE8[16] = "a_shop_keihin";
-const char str_802ECDF8[24] = "msg_shop_point_list5";
-const char str_802ECE10[24] = "msg_shop_point_list6";
 
 // .sdata2
 __declspec(section ".sdata2") u32 dat_8041bbe0 = 0xFFFFFFFF;
@@ -700,7 +694,7 @@ USER_FUNC(evt_shop_setup) {
 		(&wp->nameWin)[i] = winMgrEntry(&window_desc[i]);
 	}
 	wp->openIdx = -1;
-	evtRunCaseEntry(9, 1, (s32)str_802ECDE8, 0, (s32*)evt_shoplist, 0);
+	evtRunCaseEntry(9, 1, (s32)"a_shop_keihin", 0, (s32*)evt_shoplist, 0);
 	return EVT_RETURN_DONE;
 }
 
@@ -749,7 +743,7 @@ void list_disp(WinMgrEntry* entry) {
 	pouch = pouchGetPtr();
 	i = 0;
 
-	msg = msgSearch(str_802ECDF8);
+	msg = msgSearch("msg_shop_point_list5");
 	FontDrawStart();
 	FontDrawEdge();
 	*(u32*)&color0 = dat_8041bbf0;
@@ -757,7 +751,7 @@ void list_disp(WinMgrEntry* entry) {
 	FontDrawMessage((100 - FontGetMessageWidth(msg)) / 2 + (10 + entry->x), entry->y + 13, msg);
 	FontDrawEdgeOff();
 
-	msg = msgSearch(str_802ECE10);
+	msg = msgSearch("msg_shop_point_list6");
 	FontDrawStart();
 	FontDrawEdge();
 	*(u32*)&color1 = dat_8041bbf4;
@@ -789,7 +783,7 @@ void list_disp(WinMgrEntry* entry) {
 			*(u32*)&color5 = dat_8041bc04;
 			FontDrawColor(&color5);
 		}
-		sprintf(buf, str_8041BC28, msgSearch(str_802ECDF8));
+		sprintf(buf, str_8041BC28, msgSearch("msg_shop_point_list5"));
 		{
 			f32 w = FontGetMessageWidth(buf);
 			f32 x = (f32)(entry->width / 2) - SHOP_F32(float_0p6_8041bc2c) * w;

@@ -89,8 +89,6 @@ extern const f32 float_188_8041fe6c;
 extern const f32 float_0p831_8041fe70;
 extern const f32 float_2p231_8041fe74;
 extern const f32 float_2p044_8041fe78;
-extern const f32 float_0p7_8041fe7c;
-extern const f32 float_0p3_8041fe80;
 
 #ifdef MUST_MATCH
 // Non-const and forced into .rodata: with a plain `const` MWCC hoists two of the three
@@ -217,7 +215,7 @@ void effStarPowerMain(EffectEntry* effect) {
             data->color2R = (u8)(float_127_8041fe54 * (f32)sin(float_6p2832_8041fe44 * (float_0p298_8041fe68 * (f32)counter) / float_360_8041fe4c) + float_188_8041fe6c);
             data->color2G = (u8)(float_127_8041fe54 * (f32)sin(float_6p2832_8041fe44 * (float_0p831_8041fe70 * (f32)counter) / float_360_8041fe4c) + float_188_8041fe6c);
             data->field_0x30 = (u8)(float_127_8041fe54 * (f32)sin(float_6p2832_8041fe44 * (float_2p231_8041fe74 * (f32)counter) / float_360_8041fe4c) + float_188_8041fe6c);
-            data->field_0x38 = float_0p3_8041fe80 * (f32)sin(float_6p2832_8041fe44 * (float_2p044_8041fe78 * (f32)counter) / float_360_8041fe4c) + float_0p7_8041fe7c;
+            data->field_0x38 = 0.3f * (f32)sin(float_6p2832_8041fe44 * (float_2p044_8041fe78 * (f32)counter) / float_360_8041fe4c) + 0.7f;
         }
         if (counter == 1) {
             *(f32*)&data->field_0x48 = data->field_0x3C;
@@ -479,5 +477,3 @@ const f32 float_188_8041fe6c = 188.0f;
 const f32 float_0p831_8041fe70 = 0.831f;
 const f32 float_2p231_8041fe74 = 2.231f;
 const f32 float_2p044_8041fe78 = 2.044f;
-const f32 float_0p7_8041fe7c = 0.7f;
-const f32 float_0p3_8041fe80 = 0.3f;

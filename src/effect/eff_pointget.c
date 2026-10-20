@@ -14,12 +14,6 @@ const f32 float_32_80420edc;
 const f32 float_362_80420ee0;
 const f32 float_48_80420ee4;
 
-// .sdata2 explicit color globals
-const GXColor dat_80420ec8 = { 0x00, 0x00, 0x00, 0x80 };
-const GXColor dat_80420ecc = { 0xFF, 0xFF, 0xFF, 0xFF };
-const GXColor dat_80420ed0 = { 0x00, 0x00, 0x00, 0x80 };
-const GXColor dat_80420ed4 = { 0xFF, 0xFF, 0xFF, 0xFF };
-
 // .rodata
 #ifdef MUST_MATCH
 // MUST_MATCH: the original addresses this object with lis/addi (it is not in .sdata)
@@ -177,11 +171,11 @@ void effPointGetDisp(CameraId camId, void* param) {
 		if (i != 0) {
 			effGetTexObj(texid_tbl[gp->language != 0][3], &texObj);
 			GXLoadTexObj(&texObj, 0);
-			GXSetChanMatColor(4, dat_80420ec8);
+			GXSetChanMatColor(4, (GXColor){ 0x00, 0x00, 0x00, 0x80 });
 		} else {
 			effGetTexObj(texid_tbl[gp->language != 0][2], &texObj);
 			GXLoadTexObj(&texObj, 0);
-			GXSetChanMatColor(4, dat_80420ecc);
+			GXSetChanMatColor(4, (GXColor){ 0xFF, 0xFF, 0xFF, 0xFF });
 		}
 
 		{
@@ -214,11 +208,11 @@ void effPointGetDisp(CameraId camId, void* param) {
 		if (i != 0) {
 			effGetTexObj(texid_tbl[gp->language != 0][1], &texObj);
 			GXLoadTexObj(&texObj, 0);
-			GXSetChanMatColor(4, dat_80420ed0);
+			GXSetChanMatColor(4, (GXColor){ 0x00, 0x00, 0x00, 0x80 });
 		} else {
 			effGetTexObj(texid_tbl[gp->language != 0][0], &texObj);
 			GXLoadTexObj(&texObj, 0);
-			GXSetChanMatColor(4, dat_80420ed4);
+			GXSetChanMatColor(4, (GXColor){ 0xFF, 0xFF, 0xFF, 0xFF });
 		}
 
 		{

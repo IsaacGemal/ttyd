@@ -97,9 +97,6 @@ u8 ibuki_dl_0_size_tbl[4] = { 2, 2, 2, 2 };
 const GXColor dat_80421f00 = { 0xFF, 0xFF, 0xFF, 0x00 };
 const GXColor dat_80421f04 = { 0xFF, 0xFF, 0xFF, 0x00 };
 
-// .rodata
-const Vec vec3_803006c0 = { 0.0f, 0.0f, 0.0f };
-
 // The original reaches this file's tables from its .data section anchor, lbl_803B4860.
 #ifdef MUST_MATCH
 #define DATA_AT(off, sym) (base + (off))
@@ -193,7 +190,7 @@ void effIbukiMain(EffectEntry* effect) {
 	f32 angle;
 
 	data = effect->userdata;
-	pos = vec3_803006c0;
+	pos = (Vec){ 0.0f, 0.0f, 0.0f };
 	pos.x = data->positionX;
 	pos.y = data->positionY;
 	pos.z = data->positionZ;

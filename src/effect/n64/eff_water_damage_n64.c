@@ -24,9 +24,6 @@ typedef struct effWaterDamageData {
 	s32 isBig;       //0x38
 } effWaterDamageData; //0x3C
 
-static const f32 float_deg2rad_8042015c = 0.017453292f;
-static const f32 float_0p0625_80420160 = 0.0625f;
-static const f32 float_0_80420164 = 0.0f;
 static const f32 float_0p98_80420168 = 0.98f;
 static const f32 float_neg0p8_8042016c = -0.8f;
 static const f32 float_neg0p1_80420170 = -0.1f;
@@ -428,7 +425,7 @@ void effWaterDamageDisp2(CameraId camId, void* param) {
 	GXSetZMode(GX_TRUE, GX_LEQUAL, GX_FALSE);
 
 	PSMTXTrans(mtx, (f32)x, (f32)y, data->position.z);
-	PSMTXRotRad(rot, 'y', float_deg2rad_8042015c * -camGetPtr(CAMERA_3D)->viewYaw);
+	PSMTXRotRad(rot, 'y', 0.017453292f * -camGetPtr(CAMERA_3D)->viewYaw);
 	PSMTXScale(scale, data->scale, data->scale, data->scale);
 	PSMTXConcat(mtx, scale, mtx);
 	PSMTXConcat(mtx, rot, mtx);
@@ -453,7 +450,7 @@ void effWaterDamageDisp2(CameraId camId, void* param) {
 	GXSetTevAlphaIn(0, 7, 5, 4, 7);
 	GXSetNumTexGens(1);
 	GXSetTexCoordGen2(0, 1, 4, 30, 0, 125);
-	PSMTXScale(scale, float_0p0625_80420160, float_0p0625_80420160, float_0_80420164);
+	PSMTXScale(scale, 0.0625f, 0.0625f, 0.0f);
 	GXLoadTexMtxImm(scale, 30, 1);
 	effGetTexObjN64(0x89, &texObj);
 	GXLoadTexObj(&texObj, GX_TEXMAP0);

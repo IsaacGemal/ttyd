@@ -22,8 +22,6 @@ u32 size24x24_tex32x32_vtx[14] = {
 
 // .sdata2/.rodata/.data objects defined by the original unit's split map.
 
-extern const GXColor dat_8041fbc8;
-
 // The effect's userdata is two of these 0x34-byte records: the head (index 0) and one particle
 // (index 1). Only the particle uses dirX/velY/dirZ; only the head uses scale through animFrame.
 typedef struct effRotHammerFailRecord {
@@ -185,7 +183,7 @@ void effRotHammerFailDisp(CameraId cameraId, void* param) {
 	PSMTXConcat(trans, rot, trans);
 	PSMTXConcat(cam->view, trans, work);
 
-	GXSetTevColor(GX_TEVREG0, dat_8041fbc8);
+	GXSetTevColor(GX_TEVREG0, (GXColor){ 0xE6, 0xDE, 0xDE, 0x82 });
 	hammerSetColor(frameFrac);
 
 	frameOffset = frameIndex * 32;
@@ -220,4 +218,3 @@ void effRotHammerFailDisp(CameraId cameraId, void* param) {
 
 // The pool constants the code above loads by name, defined after it (defined first, the compiler folds them).
 
-const GXColor dat_8041fbc8 = { 0xE6, 0xDE, 0xDE, 0x82 };

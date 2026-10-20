@@ -10,9 +10,6 @@
 #include <dolphin/mtx.h>
 #include <stdlib.h>
 
-// .rodata
-const Vec vec3_802fa398 = { 0.0f, 0.0f, 0.0f };
-
 // .sdata2
 extern const u32 dat_8041eb68;
 extern const f32 float_0p3_8041eb6c;
@@ -21,11 +18,6 @@ extern const f32 float_0p02_8041eb74;
 extern const f32 float_0p03125_8041eb78;
 extern const f32 float_0p015625_8041eb7c;
 extern const f32 float_0_8041eb80;
-extern const f32 float_50_8041eb90;
-extern const f32 float_30_8041eb94;
-extern const f32 float_6p2832_8041eb84;
-extern const f32 float_360_8041eb88;
-extern const f32 float_1_8041eb8c;
 
 // .data / .sdata
 // One 0x54-byte block of but_02_v; the table holds 30 of them (630 words).
@@ -173,8 +165,8 @@ EffectEntry* effButterflyN64Entry(s32 type, f32 x, f32 y, f32 z) {
     data->age = 0;
     data->frame = 0;
     data->retargetTimer = 0;
-    data->wanderRadius = float_50_8041eb90;
-    data->wanderHeight = float_30_8041eb94;
+    data->wanderRadius = 50.0f;
+    data->wanderHeight = 30.0f;
     return effect;
 }
 
@@ -224,7 +216,7 @@ static inline f32 butterflySqrtf(f32 x) {
 }
 
 static inline Vec butterflyMakeVec(f32 x, f32 y, f32 z) {
-    Vec temp = vec3_802fa398;
+    Vec temp = (Vec){ 0.0f, 0.0f, 0.0f };
     temp.x = x;
     temp.y = y;
     temp.z = z;
@@ -271,7 +263,7 @@ void effButterflyMain(EffectEntry* effect) {
     }
     data->retargetTimer--;
     if (data->retargetTimer <= 0) {
-        angle = float_6p2832_8041eb84 * (f32)(rand() % 360) / float_360_8041eb88;
+        angle = 6.2831855f * (f32)(rand() % 360) / 360.0f;
         targetX = data->wanderRadius * (f32)sin(angle) + data->homePos.x;
         targetY = data->homePos.y + (f32)(rand() % (s32)data->wanderHeight);
         targetZ = data->wanderRadius * (f32)cos(angle) + data->homePos.z;
@@ -287,14 +279,14 @@ void effButterflyMain(EffectEntry* effect) {
             dy = data->homePos.y - py;
             dz = data->homePos.z - pz;
             if (float_0_8041eb80 == dx && float_0_8041eb80 == dy && float_0_8041eb80 == dz) {
-                dx = float_1_8041eb8c;
+                dx = 1.0f;
                 dy = float_0_8041eb80;
                 dz = float_0_8041eb80;
             }
         }
         mag = dx * dx + dy * dy + dz * dz;
         if (mag != float_0_8041eb80) {
-            mag = float_1_8041eb8c / butterflySqrtf(mag);
+            mag = 1.0f / butterflySqrtf(mag);
         }
         dx *= mag;
         dy *= mag;
@@ -389,8 +381,3 @@ const f32 float_0p02_8041eb74 = 0.02f;
 const f32 float_0p03125_8041eb78 = 0.03125f;
 const f32 float_0p015625_8041eb7c = 0.015625f;
 const f32 float_0_8041eb80 = 0.0f;
-const f32 float_6p2832_8041eb84 = 6.2831855f;
-const f32 float_360_8041eb88 = 360.0f;
-const f32 float_1_8041eb8c = 1.0f;
-const f32 float_50_8041eb90 = 50.0f;
-const f32 float_30_8041eb94 = 30.0f;

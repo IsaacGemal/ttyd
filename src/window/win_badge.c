@@ -25,16 +25,6 @@ typedef enum {
     WIN_TEX_BP_OFF = 0x1D,
 } WinBadgeTex;
 
-// .sdata2: the colours the two draw functions use
-const GXColor dat_8041d348 = { 0xFF, 0xFF, 0xFF, 0xFF };
-const GXColor dat_8041d34c = { 0x00, 0x00, 0x00, 0xFF };
-const GXColor dat_8041d350 = { 0x00, 0x00, 0x00, 0x80 };
-const GXColor dat_8041d354 = { 0x80, 0x80, 0x80, 0xFF };
-const GXColor dat_8041d358 = { 0xFF, 0xFF, 0xFF, 0xFF };
-const GXColor dat_8041d35c = { 0xFF, 0xFF, 0xFF, 0xFF };
-const GXColor dat_8041d360 = { 0x7F, 0x7F, 0x7F, 0xFF };
-const GXColor dat_8041d364 = { 0x00, 0x00, 0x00, 0xFF };
-
 extern ItemData itemDataTable[];
 
 // 288 B
@@ -377,8 +367,8 @@ static inline void winIconSetV(s32 id, Vec pos, Vec scale, GXColor color) {
 // Draws the badge screen: the "all"/"equipped" tabs, the BP panel with one pip per BP, then the list.
 void winBadgeDisp(CameraId camId, void* param, s32 idx) {
     WindowWork* work = param;
-    GXColor white = dat_8041d348;
-    GXColor color = dat_8041d34c;
+    GXColor white = (GXColor){ 0xFF, 0xFF, 0xFF, 0xFF };
+    GXColor color = (GXColor){ 0x00, 0x00, 0x00, 0xFF };
     PouchData* pouch = pouchGetPtr();
     f32 tabX;
     f32 tabY;
@@ -399,14 +389,14 @@ void winBadgeDisp(CameraId camId, void* param, s32 idx) {
         if (i == work->badgeTab) {
             winTexInit(WIN_BADGE_TEX(work));
             winTexSet(0xB4, (Vec){x - 190.0f, 20.0f + (tabTop - (f32)(i * 0x28)), 0.0f}, (Vec){1.0f, 1.0f, 1.0f},
-                      dat_8041d350);
+                      (GXColor){ 0x00, 0x00, 0x00, 0x80 });
             winTexInit_x2(WIN_BADGE_TEX(work));
             winTexSet_x2(i + 0x1A, 0xB4, (Vec){tabX, 20.0f + (tabY - (f32)(i * 0x28)), 0.0f}, (Vec){1.0f, 1.0f, 1.0f},
                          white);
         } else {
             winTexInit_x2(WIN_BADGE_TEX(work));
             winTexSet_x2(i + 0x1A, 0xB4, (Vec){x - 190.0f, 20.0f + (tabTop - (f32)(i * 0x28)), 0.0f},
-                         (Vec){1.0f, 1.0f, 1.0f}, dat_8041d354);
+                         (Vec){1.0f, 1.0f, 1.0f}, (GXColor){ 0x80, 0x80, 0x80, 0xFF });
         }
     }
 
@@ -446,7 +436,7 @@ void winBadgeDisp(CameraId camId, void* param, s32 idx) {
 // The badge list: per row the equipped marker, icon, name, BP cost and one pip per BP, then the scroll
 // arrows and the sort / BP-needed captions.
 void badge_disp(WindowWork* work, f32 x, f32 y) {
-    GXColor iconColor = dat_8041d358;
+    GXColor iconColor = (GXColor){ 0xFF, 0xFF, 0xFF, 0xFF };
     GXColor color;
     GXColor black;
     GXColor white;
@@ -502,15 +492,15 @@ void badge_disp(WindowWork* work, f32 x, f32 y) {
 
         if (equipped) {
             winTexInit(WIN_BADGE_TEX(work));
-            winTexSet(0x1E, (Vec){markX, drawY, 0.0f}, (Vec){44.0f, 1.0f, 1.0f}, dat_8041d35c);
+            winTexSet(0x1E, (Vec){markX, drawY, 0.0f}, (Vec){44.0f, 1.0f, 1.0f}, (GXColor){ 0xFF, 0xFF, 0xFF, 0xFF });
         }
 
         if (equipped == 0 && itemDataTable[badge].bp_cost > pouchGetPtr()->availableBP) {
             gray = 1;
-            color = dat_8041d360;
+            color = (GXColor){ 0x7F, 0x7F, 0x7F, 0xFF };
         } else {
             gray = 0;
-            color = dat_8041d364;
+            color = (GXColor){ 0x00, 0x00, 0x00, 0xFF };
         }
         if (!gray) {
             winIconInit();

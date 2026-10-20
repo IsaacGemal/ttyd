@@ -51,21 +51,6 @@ const s32 dat_80421870 = -1;
 // separate objects they make MWCC anchor the int->float pool entry to the first vec's base.
 const Vec vec3_802ff860 = {0.0f, 0.0f, 0.0f};
 const Vec vec3_802ff86c = {0.0f, 0.0f, 0.0f};
-const Vec vec3_802ff878 = {0.0f, 0.0f, 0.0f};
-const Vec vec3_802ff884 = {0.0f, 0.0f, 0.0f};
-const Vec vec3_802ff890 = {0.0f, 0.0f, 0.0f};
-const Vec vec3_802ff89c = {0.0f, 0.0f, 0.0f};
-const Vec vec3_802ff8a8 = {0.0f, 0.0f, 0.0f};
-const Vec vec3_802ff8b4 = {0.0f, 0.0f, 0.0f};
-const Vec vec3_802ff8c0 = {0.0f, 0.0f, 0.0f};
-const Vec vec3_802ff8cc = {0.0f, 0.0f, 0.0f};
-const Vec vec3_802ff8d8 = {0.0f, 0.0f, 0.0f};
-const Vec vec3_802ff8e4 = {0.0f, 0.0f, 0.0f};
-const Vec vec3_802ff8f0 = {0.0f, 0.0f, 0.0f};
-const Vec vec3_802ff8fc = {0.0f, 0.0f, 0.0f};
-const Vec vec3_802ff908 = {0.0f, 0.0f, 0.0f};
-const Vec vec3_802ff914 = {0.0f, 0.0f, 0.0f};
-const Vec vec3_802ff920 = {0.0f, 0.0f, 0.0f};
 
 // MATCH_F64: read the constant through a volatile pointer so mwcc loads it from its own symbol.
 #ifdef MUST_MATCH
@@ -628,19 +613,19 @@ static void actionCommandDisp(f32 x, f32 y) {
             baseX = float_neg228_804218b0 + x;
             baseY = float_55_804218b4 + y;
             {
-                Vec v = vec3_802ff878;
+                Vec v = (Vec){0.0f, 0.0f, 0.0f};
                 v.x = baseX;
                 v.y = baseY;
                 ICON_DISP(&v, 0x10, icon1, float_1_80421878);
             }
             {
-                Vec v = vec3_802ff884;
+                Vec v = (Vec){0.0f, 0.0f, 0.0f};
                 v.x = float_56_804218b8 + baseX;
                 v.y = baseY;
                 ICON_DISP(&v, 0x10, icon3, float_1_80421878);
             }
         } else {
-            Vec v = vec3_802ff890;
+            Vec v = (Vec){0.0f, 0.0f, 0.0f};
             v.x = float_28_804218bc + (float_neg228_804218b0 + x);
             v.y = float_55_804218b4 + y;
             ICON_DISP(&v, 0x10, icon1, float_1_80421878);
@@ -654,19 +639,19 @@ static void actionCommandDisp(f32 x, f32 y) {
                     baseX = float_neg228_804218b0 + x;
                     baseY = float_55_804218b4 + y;
                     {
-                        Vec v = vec3_802ff89c;
+                        Vec v = (Vec){0.0f, 0.0f, 0.0f};
                         v.x = baseX;
                         v.y = baseY;
                         ICON_DISP(&v, 0x10, icon0, float_1_80421878);
                     }
                     {
-                        Vec v = vec3_802ff8a8;
+                        Vec v = (Vec){0.0f, 0.0f, 0.0f};
                         v.x = float_56_804218b8 + baseX;
                         v.y = baseY;
                         ICON_DISP(&v, 0x10, icon2, float_1_80421878);
                     }
                 } else {
-                    Vec v = vec3_802ff8b4;
+                    Vec v = (Vec){0.0f, 0.0f, 0.0f};
                     v.x = float_28_804218bc + (float_neg228_804218b0 + x);
                     v.y = float_55_804218b4 + y;
                     ICON_DISP(&v, 0x10, icon0, float_1_80421878);
@@ -676,19 +661,19 @@ static void actionCommandDisp(f32 x, f32 y) {
                     baseX = float_neg228_804218b0 + x;
                     baseY = float_55_804218b4 + y;
                     {
-                        Vec v = vec3_802ff8c0;
+                        Vec v = (Vec){0.0f, 0.0f, 0.0f};
                         v.x = baseX;
                         v.y = baseY;
                         ICON_DISP(&v, 0x10, icon1, float_1_80421878);
                     }
                     {
-                        Vec v = vec3_802ff8cc;
+                        Vec v = (Vec){0.0f, 0.0f, 0.0f};
                         v.x = float_56_804218b8 + baseX;
                         v.y = baseY;
                         ICON_DISP(&v, 0x10, icon3, float_1_80421878);
                     }
                 } else {
-                    Vec v = vec3_802ff8d8;
+                    Vec v = (Vec){0.0f, 0.0f, 0.0f};
                     v.x = float_28_804218bc + (float_neg228_804218b0 + x);
                     v.y = float_55_804218b4 + y;
                     ICON_DISP(&v, 0x10, icon1, float_1_80421878);
@@ -700,19 +685,19 @@ static void actionCommandDisp(f32 x, f32 y) {
                     baseX = float_neg228_804218b0 + x;
                     baseY = float_55_804218b4 + y;
                     {
-                        Vec v = vec3_802ff8e4;
+                        Vec v = (Vec){0.0f, 0.0f, 0.0f};
                         v.x = baseX;
                         v.y = baseY;
                         ICON_DISP(&v, 0x10, icon1, float_1_80421878);
                     }
                     {
-                        Vec v = vec3_802ff8f0;
+                        Vec v = (Vec){0.0f, 0.0f, 0.0f};
                         v.x = float_56_804218b8 + baseX;
                         v.y = baseY;
                         ICON_DISP(&v, 0x10, icon3, float_1_80421878);
                     }
                 } else {
-                    Vec v = vec3_802ff8fc;
+                    Vec v = (Vec){0.0f, 0.0f, 0.0f};
                     v.x = float_28_804218bc + (float_neg228_804218b0 + x);
                     v.y = float_55_804218b4 + y;
                     ICON_DISP(&v, 0x10, icon1, float_1_80421878);
@@ -722,19 +707,19 @@ static void actionCommandDisp(f32 x, f32 y) {
                     baseX = float_neg228_804218b0 + x;
                     baseY = float_55_804218b4 + y;
                     {
-                        Vec v = vec3_802ff908;
+                        Vec v = (Vec){0.0f, 0.0f, 0.0f};
                         v.x = baseX;
                         v.y = baseY;
                         ICON_DISP(&v, 0x10, icon0, float_1_80421878);
                     }
                     {
-                        Vec v = vec3_802ff914;
+                        Vec v = (Vec){0.0f, 0.0f, 0.0f};
                         v.x = float_56_804218b8 + baseX;
                         v.y = baseY;
                         ICON_DISP(&v, 0x10, icon2, float_1_80421878);
                     }
                 } else {
-                    Vec v = vec3_802ff920;
+                    Vec v = (Vec){0.0f, 0.0f, 0.0f};
                     v.x = float_28_804218bc + (float_neg228_804218b0 + x);
                     v.y = float_55_804218b4 + y;
                     ICON_DISP(&v, 0x10, icon0, float_1_80421878);

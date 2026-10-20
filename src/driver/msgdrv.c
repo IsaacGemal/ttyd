@@ -456,12 +456,6 @@ s32 msgMain(smartEntry* smart) {
 // that the original unit does not have, shifting every later string (and msgInit's offsets) by
 // 0x20. It also has to come after msgInit, as it did before.
 #include "math_ext.h"
-extern const f32 float_0_8041a514;
-extern const f32 float_30_8041a518;
-extern const f32 float_40_8041a51c;
-extern const f32 float_25_8041a520;
-extern const f32 float_2_8041a524;
-extern const f32 float_0p3_8041a528;
 #pragma pool_data on // the original addresses its .rodata through one base register
 #ifdef MUST_MATCH
 // MUST_MATCH: retail passes these colours by value (MWCC copies the GXColor to a stack temp and passes
@@ -521,8 +515,8 @@ BOOL msgDisp(smartEntry* smart, u8 alpha, f32 x, f32 y) {
 			}
 			PSMTXTransApply(mtx, mtx,
 				x + (f32)entry->x,
-				y + (f32)data->scrollY + (f32)entry->y - float_40_8041a51c,
-				float_0_8041a514);
+				y + (f32)data->scrollY + (f32)entry->y - 40.f,
+				0.0f);
 			animPoseMain(entry->arg);
 			animPoseDrawMtx(entry->arg, mtx, 2,
 				entry->field_0x14, entry->scale);
@@ -622,8 +616,8 @@ BOOL msgDisp(smartEntry* smart, u8 alpha, f32 x, f32 y) {
 				GXColor color = FontGetDrawColor();
 				Vec pos;
 				pos.x = 20.f + (x + (f32)entry->x);
-				pos.y = (f32)entry->iconOffsetY + (((f32)entry->y + (y + (f32)data->scrollY)) - float_40_8041a51c);
-				pos.z = float_0_8041a514;
+				pos.y = (f32)entry->iconOffsetY + (((f32)entry->y + (y + (f32)data->scrollY)) - 40.f);
+				pos.z = 0.0f;
 				// MUST_MATCH: retail converts iconId as u16 (clrlwi, no extsh); cast the callee at the call site.
 #ifdef MUST_MATCH
 				((void (*)(Vec*, s16, u16, u8, f32))iconDispGxAlpha)(&pos, 0x10, (u16)(entry->arg),
@@ -672,11 +666,11 @@ BOOL msgDisp(smartEntry* smart, u8 alpha, f32 x, f32 y) {
 					fx = px + (f32)(irand(10000) % 3);
 					fy = py + (f32)(irand(10000) % 3);
 				}
-				PSMTXTrans(mtx, (f32)(-half), 12.0f, float_0_8041a514);
+				PSMTXTrans(mtx, (f32)(-half), 12.0f, 0.0f);
 				PSMTXScaleApply(mtx, mtx, entry->field_0x14, entry->field_0x14, entry->field_0x14);
-				PSMTXTransApply(mtx, mtx, (f32)half, -12.0f, float_0_8041a514);
+				PSMTXTransApply(mtx, mtx, (f32)half, -12.0f, 0.0f);
 				PSMTXScaleApply(mtx, mtx, entry->scale, entry->scale, entry->scale);
-				PSMTXTransApply(mtx, mtx, fx, fy, float_0_8041a514);
+				PSMTXTransApply(mtx, mtx, fx, fy, 0.0f);
 				FontDrawCodeMtx(mtx, entry->glyph);
 				entry->field_0x14 = 0.5f * ((entry->field_0x14) - 1.0f) + 1.0f;
 			}
@@ -828,7 +822,7 @@ void msgAnalize(smartEntry* smart, const char* msg) {
 	window = data->window;
 	flags = 0;
 	entry = &data->entries[data->entryId];
-	maxScale = float_0_8041a514;
+	maxScale = 0.0f;
 	scale = 1.0f;
 	if (window->type < 0) {
 		window->type = WINDOW_TYPE_NORMAL;
@@ -910,7 +904,7 @@ loop:
 		entry->glyph = 0xFFFB;
 		ex = 0;
 		entry->startTime = r24;
-		if (float_0_8041a514 == maxScale) {
+		if (0.0f == maxScale) {
 			maxScale = 1.0f;
 		}
 		{
@@ -923,7 +917,7 @@ loop:
 		msg++;
 		entry++;
 		data->entryId++;
-		maxScale = float_0_8041a514;
+		maxScale = 0.0f;
 		if (data->flags & 0x20) {
 			flags &= ~0xFF00;
 			flags |= 0x100 << (s8)data->selectCount;
@@ -1236,7 +1230,7 @@ loop:
 			entry->x = (s16)animA;
 			entry->y = (s16)((s32)var[2] - animB);
 			entry->scale = animF;
-			entry->field_0x14 = (animC == 0) ? float_0_8041a514 : 180.f;
+			entry->field_0x14 = (animC == 0) ? 0.0f : 180.f;
 			r24 += var54;
 			entry++;
 			data->entryId++;
@@ -1957,7 +1951,7 @@ void msgWindow_Disp(CameraId camId, void* param) {
 	BOOL drawn = FALSE;
 	Vec pos;
 
-	GXSetFog(GX_FOG_NONE, float_0_8041a514, float_0_8041a514, float_0_8041a514, float_0_8041a514, unk_80422fe0);
+	GXSetFog(GX_FOG_NONE, 0.0f, 0.0f, 0.0f, 0.0f, unk_80422fe0);
 
 	switch (window->type) {
 	case WINDOW_TYPE_NORMAL:
@@ -2019,7 +2013,7 @@ void msgWindow_Disp(CameraId camId, void* param) {
 			}
 			}
 		} else {
-			windowDispGX_Message(window->type, 0, (u8)window->alpha, window->x, window->y, window->height, window->width, float_0_8041a514, float_0_8041a514);
+			windowDispGX_Message(window->type, 0, (u8)window->alpha, window->x, window->y, window->height, window->width, 0.0f, 0.0f);
 			GXSetScissor(camera->scissor[0], (u32)(240.f - (window->y - 36.0f) - 8.0f), camera->scissor[2], 0x7E);
 			drawn = msgDisp(window->userdata, (u8)window->alpha, 62.0f + window->x, window->y - 36.0f);
 		}
@@ -2029,7 +2023,7 @@ void msgWindow_Disp(CameraId camId, void* param) {
 	case WINDOW_TYPE_KANBAN:
 	case WINDOW_TYPE_HOUSOU:
 		windowDispGX_Kanban(window->type, (u8)window->alpha, window->x, window->y, window->height, window->width);
-		GXSetScissor(camera->scissor[0], (u32)(240.f - (window->y - 36.0f) - float_2_8041a524), camera->scissor[2], 0x68);
+		GXSetScissor(camera->scissor[0], (u32)(240.f - (window->y - 36.0f) - 2.0f), camera->scissor[2], 0x68);
 		drawn = msgDisp(window->userdata, (u8)window->alpha, 62.0f + window->x, window->y - 36.0f);
 		break;
 	case WINDOW_TYPE_DIARY:
@@ -2056,7 +2050,7 @@ void msgWindow_Disp(CameraId camId, void* param) {
 			active = 1;
 		}
 		animPoseMain(msgw->poseId);
-		animPoseDraw(msgw->poseId, window->x + window->height - 52.0f, 31.0f + (window->y - window->width), float_0_8041a514, 180.f, 5.0f, 2);
+		animPoseDraw(msgw->poseId, window->x + window->height - 52.0f, 31.0f + (window->y - window->width), 0.0f, 180.f, 5.0f, 2);
 	}
 }
 
@@ -2157,21 +2151,21 @@ void selectWindow_Disp(CameraId camId, void* param) {
 #endif
 	Vec pos;
 
-	GXSetFog(0, float_0_8041a514, float_0_8041a514, float_0_8041a514, float_0_8041a514, unk_80422fe4);
+	GXSetFog(0, 0.0f, 0.0f, 0.0f, 0.0f, unk_80422fe4);
 
 #ifdef MUST_MATCH
 	color = selectWindowColor(window->alpha);
 #else
 	color.a = window->alpha;
 #endif
-	windowDispGX_Waku_col(0, color, window->x, window->y, window->height, window->width, float_30_8041a518);
+	windowDispGX_Waku_col(0, color, window->x, window->y, window->height, window->width, 30.f);
 
-	msgDisp(window->userdata, (u8)window->alpha, float_40_8041a51c + window->x, window->y - float_25_8041a520);
+	msgDisp(window->userdata, (u8)window->alpha, 40.f + window->x, window->y - 25.0f);
 
-	pos.x = float_2_8041a524 + window->x;
-	data->selectTopY += float_0p3_8041a528 * (window->y - (f32)((s8)data->selectCursor * 0x1F + 0x3A) - data->selectTopY);
+	pos.x = 2.0f + window->x;
+	data->selectTopY += 0.3f * (window->y - (f32)((s8)data->selectCursor * 0x1F + 0x3A) - data->selectTopY);
 	pos.y = data->selectTopY;
-	pos.z = float_0_8041a514;
+	pos.z = 0.0f;
 
 	iconDispGxAlpha(&pos, 0x14, 0x1F0, (u8)window->alpha, 1.0f);
 }
@@ -2189,11 +2183,5 @@ __declspec(section ".sdata2") GXColor dat_8041a510 = { 0xFF, 0xFF, 0xFF, 0x00 };
 
 // Named .sdata2 constants kept by tools/pool_plan.py, defined after the code in the original's order.
 #pragma explicit_zero_data on
-const f32 float_0_8041a514 = 0.0f;
 #pragma explicit_zero_data reset
-const f32 float_30_8041a518 = 30.f;
-const f32 float_40_8041a51c = 40.f;
-const f32 float_25_8041a520 = 25.0f;
-const f32 float_2_8041a524 = 2.0f;
-const f32 float_0p3_8041a528 = 0.3f;
 

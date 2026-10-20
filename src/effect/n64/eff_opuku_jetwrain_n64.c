@@ -11,12 +11,6 @@
 #include <dolphin/mtx.h>
 #include <dolphin/os/OSCache.h>
 
-// .rodata
-const Vec vec3_802fb248 = { 0.0f, 0.0f, 0.0f };
-const Vec vec3_802fb254 = { 0.0f, 1.0f, 0.0f };
-const Vec vec3_802fb260 = { 304.0f, 240.0f, 0.0f };
-const Vec vec3_802fb26c = { 304.0f, 240.0f, 100.0f };
-
 // .sdata2 float constants (named after their original addresses).
 static const f32 float_0_8041f7d8 = 0.0f;
 static const f32 float_480_8041f7dc = 480.0f;
@@ -24,15 +18,6 @@ static const f32 float_608_8041f7e0 = 608.0f;
 static const f32 float_1_8041f7e4 = 1.0f;
 static const f32 float_32768_8041f7e8 = 32768.0f;
 static const f32 float_0p0039062_8041f7ec = 0.00390625f;
-static const f32 float_255_8041f7f0 = 255.0f;
-static const f32 float_6p2832_8041f7f4 = 6.2831855f;
-static const f32 float_360_8041f7f8 = 360.0f;
-static const f32 float_neg64_8041f7fc = -64.0f;
-static const f32 float_4_8041f800 = 4.0f;
-static const f32 float_0p5_8041f804 = 0.5f;
-static const f32 float_0p7_8041f808 = 0.7f;
-static const f32 float_0p98_8041f80c = 0.98f;
-static const f32 float_0p02_8041f810 = 0.02f;
 
 // .data vertex array, modified in place by effOpukuJetwrainDisp.
 u32 opuku_jetwrain_vtx[56] = {
@@ -93,7 +78,7 @@ EffectEntry* effOpukuJetwrainN64Entry(s32 type, s32 duration, f32 x, f32 y, f32 
 }
 
 static inline Vec initializeVec(Vec* input) {
-	Vec temp = vec3_802fb248;
+	Vec temp = (Vec){ 0.0f, 0.0f, 0.0f };
 	temp.x = input->x;
 	temp.y = input->y;
 	temp.z = input->z;
@@ -150,13 +135,13 @@ void effOpukuJetwrainMain(EffectEntry* effect) {
 		alpha = counter * 16 + 15;
 	}
 	data->field_0x1F = alpha;
-	scale = (f32)alpha / float_255_8041f7f0;
+	scale = (f32)alpha / 255.0f;
 
 	// Seed the height field with a travelling sine wave.
 	for (j = 1; j < 18; j++) {
 		{
-			f32 s = (f32)sin(float_6p2832_8041f7f4 * (f32)((counter - j) * -20) / float_360_8041f7f8);
-			data->field_0x23[j][6] = (s8)(f32)(scale * (float_neg64_8041f7fc * s));
+			f32 s = (f32)sin(6.2831855f * (f32)((counter - j) * -20) / 360.0f);
+			data->field_0x23[j][6] = (s8)(f32)(scale * (-64.0f * s));
 		}
 	}
 
@@ -164,14 +149,14 @@ void effOpukuJetwrainMain(EffectEntry* effect) {
 	for (j = 1; j < 18; j++) {
 		for (i = 1; i < 12; i++) {
 			f32 center = (f32)(s8)data->field_0x23[j][i];
-			f32 fourCenter = float_4_8041f800 * center;
+			f32 fourCenter = 4.0f * center;
 			f32 corners = (f32)(s8)data->field_0x23[j + 1][i + 1] + (f32)(s8)data->field_0x23[j - 1][i + 1] + (f32)(s8)data->field_0x23[j + 1][i - 1] + (f32)(s8)data->field_0x23[j - 1][i - 1];
 			f32 edges = (f32)(s8)data->field_0x23[j + 1][i] + (f32)(s8)data->field_0x23[j - 1][i] + (f32)(s8)data->field_0x23[j][i + 1] + (f32)(s8)data->field_0x23[j][i - 1];
 			f32 v = (f32)data->field_0x11A[j][i];
-			f32 halfCorners = float_0p5_8041f804 * corners;
-			f32 t = halfCorners + (edges - fourCenter) - float_0p7_8041f808 * fourCenter;
+			f32 halfCorners = 0.5f * corners;
+			f32 t = halfCorners + (edges - fourCenter) - 0.7f * fourCenter;
 			data->field_0x11A[j][i] = (s16)(v + t);
-			data->field_0x11A[j][i] *= float_0p98_8041f80c;
+			data->field_0x11A[j][i] *= 0.98f;
 			if (lifetime < 0x20) {
 				data->field_0x23[j][i] = (s8)((f32)(s8)data->field_0x23[j][i] * scale);
 			}
@@ -187,7 +172,7 @@ void effOpukuJetwrainMain(EffectEntry* effect) {
 #else
 		for (i = 1; i < 12; i++) {
 #endif
-			data->field_0x23[j][i] = (s8)((f32)(s8)data->field_0x23[j][i] + float_0p02_8041f810 * (f32)data->field_0x11A[j][i]);
+			data->field_0x23[j][i] = (s8)((f32)(s8)data->field_0x23[j][i] + 0.02f * (f32)data->field_0x11A[j][i]);
 		}
 	}
 
@@ -274,9 +259,9 @@ void effOpukuJetwrainDisp(CameraId camId, void* param) {
 	GXSetTexCoordGen2(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_TEXMTX0, GX_FALSE, GX_PTIDENTITY);
 	GXSetCullMode(GX_CULL_NONE);
 	effSetVtxDescN64((effVtxArray*)opuku_jetwrain_vtx);
-	up = vec3_802fb254;
-	target = vec3_802fb260;
-	eye = vec3_802fb26c;
+	up = (Vec){ 0.0f, 1.0f, 0.0f };
+	target = (Vec){ 304.0f, 240.0f, 0.0f };
+	eye = (Vec){ 304.0f, 240.0f, 100.0f };
 	C_MTXLookAt(lookAtMtx, &eye, &up, &target);
 	GXLoadPosMtxImm(lookAtMtx, 0);
 	GXSetCurrentMtx(0);
