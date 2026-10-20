@@ -84,7 +84,7 @@ void effSnowmanMain(EffectEntry* effect) {
 #endif
 	f32 speed;
 #ifdef MUST_MATCH
-	f32 field3c;
+	f32 velX;
 #endif
 
 	data = effect->userdata;
@@ -122,8 +122,8 @@ void effSnowmanMain(EffectEntry* effect) {
 	}
 #endif
 #ifdef MUST_MATCH
-	field3c = data->velX;
-	if (field3c) {
+	velX = data->velX;
+	if (velX) {
 #else
 	if (data->velX) {
 #endif
@@ -132,7 +132,7 @@ void effSnowmanMain(EffectEntry* effect) {
 			speed = -speed;
 		}
 #ifdef MUST_MATCH
-		if (field3c < 0.0f) {
+		if (velX < 0.0f) {
 #else
 		if (data->velX < 0.0f) {
 #endif

@@ -34,10 +34,10 @@ typedef struct EffCrystalData {
 	s32 timer;      // 0x14, counts up every frame
 	s32 field_0x18; // 0x18
 	s32 variant;    // 0x1C, picks the colour and brightness case in effCrystalMain
-	s32 colorR;     // 0x20
-	s32 colorG;     // 0x24
-	s32 colorB;     // 0x28
-	s32 alpha;      // 0x2C, brightness scaled by the fade-in and fade-out
+	s32 tev0R;      // 0x20, GX_TEVREG0 colour (alpha below)
+	s32 tev0G;      // 0x24
+	s32 tev0B;      // 0x28
+	s32 alpha;      // 0x2C, GX_TEVREG0 alpha: per-variant level scaled by the fade-in and fade-out
 	f32 scale;      // 0x30
 	f32 scaleStep;  // 0x34, added to scale each frame in the default variant
 	s32 camId;      // 0x38, camera the display entry is drawn with (CAMERA_3D)
@@ -154,9 +154,9 @@ void effCrystalMain(EffectEntry* effect) {
 
 	switch (type) {
 	case 0:
-		data->colorR = 70;
-		data->colorG = 180;
-		data->colorB = 120;
+		data->tev0R = 70;
+		data->tev0G = 180;
+		data->tev0B = 120;
 #ifdef MUST_MATCH
 		{
 			f32 t = (f32)sin(6.2831855f * (f32)(timer * 2) / 360.0f);
@@ -168,16 +168,16 @@ void effCrystalMain(EffectEntry* effect) {
 		data->alpha = data->alpha * alpha / 255;
 		break;
 	case 1:
-		data->colorR = 70;
-		data->colorG = 255;
-		data->colorB = 230;
+		data->tev0R = 70;
+		data->tev0G = 255;
+		data->tev0B = 230;
 		data->alpha = 255;
 		data->alpha = data->alpha * alpha / 255;
 		break;
 	case 2:
-		data->colorR = 170;
-		data->colorG = 40;
-		data->colorB = 110;
+		data->tev0R = 170;
+		data->tev0G = 40;
+		data->tev0B = 110;
 #ifdef MUST_MATCH
 		{
 			f32 t = (f32)sin(6.2831855f * (f32)(timer * 2) / 360.0f);
@@ -189,16 +189,16 @@ void effCrystalMain(EffectEntry* effect) {
 		data->alpha = data->alpha * alpha / 255;
 		break;
 	case 3:
-		data->colorR = 220;
-		data->colorG = 40;
-		data->colorB = 170;
+		data->tev0R = 220;
+		data->tev0G = 40;
+		data->tev0B = 170;
 		data->alpha = 255;
 		data->alpha = data->alpha * alpha / 255;
 		break;
 	case 4:
-		data->colorR = 235;
-		data->colorG = 235;
-		data->colorB = 200;
+		data->tev0R = 235;
+		data->tev0G = 235;
+		data->tev0B = 200;
 #ifdef MUST_MATCH
 		{
 			f32 t = (f32)sin(6.2831855f * (f32)(timer * 2) / 360.0f);
@@ -210,48 +210,48 @@ void effCrystalMain(EffectEntry* effect) {
 		data->alpha = data->alpha * alpha / 255;
 		break;
 	case 5:
-		data->colorR = 235;
-		data->colorG = 235;
-		data->colorB = 200;
+		data->tev0R = 235;
+		data->tev0G = 235;
+		data->tev0B = 200;
 		data->alpha = 255;
 		data->alpha = data->alpha * alpha / 255;
 		break;
 	case 6:
-		data->colorR = 70;
-		data->colorG = 180;
-		data->colorB = 120;
+		data->tev0R = 70;
+		data->tev0G = 180;
+		data->tev0B = 120;
 		data->alpha = 127;
 		data->alpha = data->alpha * fade / 255;
 		data->scale *= 1.1f;
 		break;
 	case 7:
-		data->colorR = 162;
-		data->colorG = 189;
-		data->colorB = 174;
+		data->tev0R = 162;
+		data->tev0G = 189;
+		data->tev0B = 174;
 		data->alpha = 160;
 		data->alpha = data->alpha * fade / 255;
 		data->scale *= 1.1f;
 		break;
 	case 8:
-		data->colorR = 170;
-		data->colorG = 40;
-		data->colorB = 110;
+		data->tev0R = 170;
+		data->tev0G = 40;
+		data->tev0B = 110;
 		data->alpha = 127;
 		data->alpha = data->alpha * fade / 255;
 		data->scale *= 1.1f;
 		break;
 	case 9:
-		data->colorR = 180;
-		data->colorG = 178;
-		data->colorB = 174;
+		data->tev0R = 180;
+		data->tev0G = 178;
+		data->tev0B = 174;
 		data->alpha = 160;
 		data->alpha = data->alpha * fade / 255;
 		data->scale *= 1.1f;
 		break;
 	default:
-		data->colorR = 50;
-		data->colorG = 50;
-		data->colorB = 255;
+		data->tev0R = 50;
+		data->tev0G = 50;
+		data->tev0B = 255;
 		data->alpha = 160;
 		data->alpha = data->alpha * fade / 255;
 		data->scale += data->scaleStep;
@@ -268,9 +268,9 @@ void effCrystalMain(EffectEntry* effect) {
 // Helper keeps the GXColor build in a separate local (r1+0x8 → arg r1+0xc), as the original does.
 static inline void crystalSetColor(EffCrystalData* data, s32 alpha) {
 	GXColor color = (GXColor){ 0, 0, 0, 0 };
-	color.r = data->colorR;
-	color.g = data->colorG;
-	color.b = data->colorB;
+	color.r = data->tev0R;
+	color.g = data->tev0G;
+	color.b = data->tev0B;
 	color.a = alpha;
 	GXSetTevColor(GX_TEVREG0, color);
 }

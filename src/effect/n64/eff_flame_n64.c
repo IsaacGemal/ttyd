@@ -60,19 +60,19 @@ __declspec(section ".sdata") GXColor unk_80423110;
    colour2 temp/arg); building them in place leaves the temps grouped and the args below them. */
 static inline void effFlameSetColor1(effFlameData* data, s32 alpha) {
 	GXColor color = unk_80423110;
-	color.r = data->color0[0];
-	color.g = data->color0[1];
-	color.b = data->color0[2];
+	color.r = data->tev0Rgb[0];
+	color.g = data->tev0Rgb[1];
+	color.b = data->tev0Rgb[2];
 	color.a = alpha;
 	GXSetTevColor(GX_TEVREG0, color);
 }
 
 static inline void effFlameSetColor2(effFlameData* data) {
 	GXColor color = unk_80423114;
-	color.r = data->color1[0];
-	color.g = data->color1[1];
-	color.b = data->color1[2];
-	color.a = data->color1[3];
+	color.r = data->tev1Rgba[0];
+	color.g = data->tev1Rgba[1];
+	color.b = data->tev1Rgba[2];
+	color.a = data->tev1Rgba[3];
 	GXSetTevColor(GX_TEVREG1, color);
 }
 #endif
@@ -81,7 +81,7 @@ static inline void effFlameSetColor2(effFlameData* data) {
    the destination as a pointer (not `data` + `idx`) keeps the address out of a sixth callee-saved
    register; the table base is passed as a named table symbol. Addressing the source as `&tbl[idx]`
    directly (NOT through a named `src` local) is part of what lets `effFlameDisp` put the unit's
-   `.data` base in r27, retail's register — a named `src` local shifts it to r30. */
+   `.data` base in r27, retail's register - a named `src` local shifts it to r30. */
 static inline void effFlameSetVtx(effFlameVtx* dst, Mtx mtx, effFlameVtx* tbl, s32 idx) {
 	Vec v;
 	memcpy(dst, &tbl[idx], sizeof(effFlameVtx));
@@ -107,7 +107,7 @@ static inline void effFlameSetVtx(effFlameVtx* dst, Mtx mtx, effFlameVtx* tbl, s
 	dst->pos[2] = v.z;
 #endif
 }
-EffectEntry* effFlameN64Entry(s32 type, f32 x, f32 y, f32 z, f32 a5) {
+EffectEntry* effFlameN64Entry(s32 type, f32 x, f32 y, f32 z, f32 scale) {
 	EffectEntry* entry;
 	effFlameData* data;
 
@@ -140,16 +140,16 @@ EffectEntry* effFlameN64Entry(s32 type, f32 x, f32 y, f32 z, f32 a5) {
 
 	switch (type) {
 	case 0:
-		data->color0[0] = 0x4B;
-		data->color0[1] = 0x4B;
-		data->color0[2] = 0x4B;
-		data->color1[0] = 0xFF;
-		data->color1[1] = 0xF7;
-		data->color1[2] = 0x9B;
-		data->color1[3] = 0;
-		data->scaleX = 2.0f * a5;
-		data->scaleY = 0.6f * a5;
-		data->baseScale = a5;
+		data->tev0Rgb[0] = 0x4B;
+		data->tev0Rgb[1] = 0x4B;
+		data->tev0Rgb[2] = 0x4B;
+		data->tev1Rgba[0] = 0xFF;
+		data->tev1Rgba[1] = 0xF7;
+		data->tev1Rgba[2] = 0x9B;
+		data->tev1Rgba[3] = 0;
+		data->scaleX = 2.0f * scale;
+		data->scaleY = 0.6f * scale;
+		data->baseScale = scale;
 		data->scrollUSpeed = -0.9f;
 		data->scrollVSpeed = 0.04f;
 		data->scrollUSpeedTarget = 0.04f;
@@ -160,16 +160,16 @@ EffectEntry* effFlameN64Entry(s32 type, f32 x, f32 y, f32 z, f32 a5) {
 		data->scroll2VSpeedTarget = 0.9f;
 		break;
 	case 1:
-		data->color0[0] = 0x4B;
-		data->color0[1] = 0x4B;
-		data->color0[2] = 0x4B;
-		data->color1[0] = 0xFF;
-		data->color1[1] = 0;
-		data->color1[2] = 0;
-		data->color1[3] = 0;
-		data->scaleX = a5;
-		data->scaleY = a5;
-		data->baseScale = a5;
+		data->tev0Rgb[0] = 0x4B;
+		data->tev0Rgb[1] = 0x4B;
+		data->tev0Rgb[2] = 0x4B;
+		data->tev1Rgba[0] = 0xFF;
+		data->tev1Rgba[1] = 0;
+		data->tev1Rgba[2] = 0;
+		data->tev1Rgba[3] = 0;
+		data->scaleX = scale;
+		data->scaleY = scale;
+		data->baseScale = scale;
 		data->scrollUSpeed = 0.0f;
 		data->scrollVSpeed = 0.04f;
 		data->scrollUSpeedTarget = 0.04f;
@@ -180,16 +180,16 @@ EffectEntry* effFlameN64Entry(s32 type, f32 x, f32 y, f32 z, f32 a5) {
 		data->scroll2VSpeedTarget = 0.9f;
 		break;
 	case 2:
-		data->color0[0] = 0x19;
-		data->color0[1] = 0x79;
-		data->color0[2] = 0x8E;
-		data->color1[0] = 0x22;
-		data->color1[1] = 0;
-		data->color1[2] = 0xFF;
-		data->color1[3] = 0x51;
-		data->scaleX = a5;
-		data->scaleY = a5;
-		data->baseScale = a5;
+		data->tev0Rgb[0] = 0x19;
+		data->tev0Rgb[1] = 0x79;
+		data->tev0Rgb[2] = 0x8E;
+		data->tev1Rgba[0] = 0x22;
+		data->tev1Rgba[1] = 0;
+		data->tev1Rgba[2] = 0xFF;
+		data->tev1Rgba[3] = 0x51;
+		data->scaleX = scale;
+		data->scaleY = scale;
+		data->baseScale = scale;
 		data->scrollUSpeed = 0.0f;
 		data->scrollVSpeed = 0.04f;
 		data->scrollUSpeedTarget = 0.2f;
@@ -200,16 +200,16 @@ EffectEntry* effFlameN64Entry(s32 type, f32 x, f32 y, f32 z, f32 a5) {
 		data->scroll2VSpeedTarget = 1.04f;
 		break;
 	default:
-		data->color0[0] = 0xB3;
-		data->color0[1] = 0xA9;
-		data->color0[2] = 0x55;
-		data->color1[0] = 0x22;
-		data->color1[1] = 0;
-		data->color1[2] = 0xFF;
-		data->color1[3] = 0x3F;
-		data->scaleX = a5;
-		data->scaleY = a5;
-		data->baseScale = a5;
+		data->tev0Rgb[0] = 0xB3;
+		data->tev0Rgb[1] = 0xA9;
+		data->tev0Rgb[2] = 0x55;
+		data->tev1Rgba[0] = 0x22;
+		data->tev1Rgba[1] = 0;
+		data->tev1Rgba[2] = 0xFF;
+		data->tev1Rgba[3] = 0x3F;
+		data->scaleX = scale;
+		data->scaleY = scale;
+		data->baseScale = scale;
 		data->scrollUSpeed = 0.0f;
 		data->scrollVSpeed = 0.04f;
 		data->scrollUSpeedTarget = 0.1f;
@@ -520,17 +520,17 @@ void effFlameDisp(CameraId camId, void* param) {
 	effFlameSetColor2(data);
 #else
 	color = unk_80423110;
-	color.r = data->color0[0];
-	color.g = data->color0[1];
-	color.b = data->color0[2];
+	color.r = data->tev0Rgb[0];
+	color.g = data->tev0Rgb[1];
+	color.b = data->tev0Rgb[2];
 	color.a = alpha;
 	GXSetTevColor(GX_TEVREG0, color);
 
 	color = unk_80423114;
-	color.r = data->color1[0];
-	color.g = data->color1[1];
-	color.b = data->color1[2];
-	color.a = data->color1[3];
+	color.r = data->tev1Rgba[0];
+	color.g = data->tev1Rgba[1];
+	color.b = data->tev1Rgba[2];
+	color.a = data->tev1Rgba[3];
 	GXSetTevColor(GX_TEVREG1, color);
 #endif
 

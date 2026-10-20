@@ -402,7 +402,7 @@ void calc_pos(effFukidashiData* data, s32 index) {
 
 end:
 	data->tiltZ = data->angleBase - 20.0f + (f32)(index * 20);
-	data->scale = 0.5f * (data->height / 12.0f) + 0.5f;
+	data->field_0x2C = 0.5f * (data->height / 12.0f) + 0.5f;
 }
 
 // This unit is built with pool_data on: MWCC reaches all of its .rodata through one base register
@@ -684,7 +684,7 @@ void effFukidashiDisp(CameraId camId, void* param) {
 		PSMTXConcat(m2, m3, m3);
 		PSMTXConcat(m3, m4, m5);
 		PSMTXConcat(cam->view, m5, m5);
-		GXSetCurrentMtx(0);
+		GXSetCurrentMtx(GX_PNMTX0);
 		if (i == 0) {
 			GXSetCullMode(GX_CULL_BACK);
 		} else {
@@ -719,8 +719,8 @@ void effFukidashiDisp(CameraId camId, void* param) {
 				PSMTXConcat(m5, m0, m0);
 				PSMTXRotRad(m6, 'y', MTXDegToRad(data->spinY));
 				PSMTXConcat(m0, m6, m0);
-				GXLoadPosMtxImm(m0, 0);
-				GXSetCurrentMtx(0);
+				GXLoadPosMtxImm(m0, GX_PNMTX0);
+				GXSetCurrentMtx(GX_PNMTX0);
 			} else {
 				effGetTexObj(4, &tex);
 				GXLoadTexObj(&tex, GX_TEXMAP0);
@@ -733,8 +733,8 @@ void effFukidashiDisp(CameraId camId, void* param) {
 				PSMTXConcat(m5, m0, m0);
 				PSMTXRotRad(m6, 'y', MTXDegToRad(data->spinY));
 				PSMTXConcat(m0, m6, m0);
-				GXLoadPosMtxImm(m0, 0);
-				GXSetCurrentMtx(0);
+				GXLoadPosMtxImm(m0, GX_PNMTX0);
+				GXSetCurrentMtx(GX_PNMTX0);
 			}
 
 			GXBegin(GX_QUADS, GX_VTXFMT0, 4);
@@ -780,7 +780,7 @@ void effFukidashiDisp(CameraId camId, void* param) {
 				}
 				GXSetTevColor(GX_TEVREG0, fukidashiColor(alphaA, *(GXColor*)&unk_80422ffc));
 				PSMTXTransApply(m5, m8, 1.0f, -1.0f, 0.0f);
-				GXLoadPosMtxImm(m8, 0);
+				GXLoadPosMtxImm(m8, GX_PNMTX0);
 				if (data->type == 0) {
 					GXBegin(GX_QUADS, GX_VTXFMT0, 4);
 					GXPosition3f32(-4.0f, 8.0f, 0.0f);
@@ -807,7 +807,7 @@ void effFukidashiDisp(CameraId camId, void* param) {
 				} else {
 					GXSetTevColor(GX_TEVREG0, fukidashiColor(alphaB, *(GXColor*)&dat_8041c5bc));
 				}
-				GXLoadPosMtxImm(m5, 0);
+				GXLoadPosMtxImm(m5, GX_PNMTX0);
 				if (data->type == 0) {
 					GXBegin(GX_QUADS, GX_VTXFMT0, 4);
 					GXPosition3f32(-4.0f, 8.0f, 0.0f);
@@ -859,9 +859,9 @@ void effFukidashiDisp(CameraId camId, void* param) {
 				PSMTXConcat(m8, m7, m8);
 				PSMTXScale(m7, 0.15f, 0.15f, 0.15f);
 				PSMTXConcat(m8, m7, m8);
-				GXLoadPosMtxImm(m8, 0);
+				GXLoadPosMtxImm(m8, GX_PNMTX0);
 				PSMTXInvXpose(m8, m9);
-				GXLoadNrmMtxImm(m9, 0);
+				GXLoadNrmMtxImm(m9, GX_PNMTX0);
 				GXSetZMode(GX_FALSE, GX_LEQUAL, GX_FALSE);
 				GXClearVtxDesc();
 				GXSetVtxDesc(GX_VA_POS, GX_INDEX8);
@@ -918,7 +918,7 @@ void effFukidashiDisp(CameraId camId, void* param) {
 				GXLoadTexObj(&tex, GX_TEXMAP0);
 				for (j = 0; j < data->animCell; j++) {
 					PSMTXTransApply(m5, m8, -5.0f + 5.0f * (f32)j, 0.0f, 0.0f);
-					GXLoadPosMtxImm(m8, 0);
+					GXLoadPosMtxImm(m8, GX_PNMTX0);
 					GXBegin(GX_QUADS, GX_VTXFMT0, 4);
 					GXPosition3f32(-3.0f, 3.0f, 0.0f);
 					GXTexCoord2f32(0.0f, 0.0f);
@@ -945,7 +945,7 @@ void effFukidashiDisp(CameraId camId, void* param) {
 				PSMTXConcat(m3, m0, m3);
 				GXLoadTexMtxImm(m3, GX_TEXMTX0, GX_MTX2x4);
 				GXSetTevColor(GX_TEVREG0, fukidashiColor(alphaB, *(GXColor*)&unk_80423004));
-				GXLoadPosMtxImm(m5, 0);
+				GXLoadPosMtxImm(m5, GX_PNMTX0);
 				GXBegin(GX_QUADS, GX_VTXFMT0, 4);
 				GXPosition3f32(-7.0f, 7.0f, 0.0f);
 				GXTexCoord2f32(0.0f, 0.0f);
@@ -978,7 +978,7 @@ void effFukidashiDisp(CameraId camId, void* param) {
 					GXSetTevColor(GX_TEVREG0, fukidashiColor(alphaA, *(GXColor*)&unk_80423008));
 					PSMTXTransApply(m5, m8, 1.0f, -1.0f, 0.0f);
 					PSMTXConcat(m8, m0, m8);
-					GXLoadPosMtxImm(m8, 0);
+					GXLoadPosMtxImm(m8, GX_PNMTX0);
 					GXBegin(GX_QUADS, GX_VTXFMT0, 4);
 					GXPosition3f32(-8.0f, 16.0f, 0.0f);
 					GXTexCoord2f32(0.0f, 0.0f);
@@ -994,7 +994,7 @@ void effFukidashiDisp(CameraId camId, void* param) {
 						GXSetTevColor(GX_TEVREG0, fukidashiColor(alphaB, *(GXColor*)&dat_8041c5d4));
 					}
 					PSMTXConcat(m5, m0, m8);
-					GXLoadPosMtxImm(m8, 0);
+					GXLoadPosMtxImm(m8, GX_PNMTX0);
 					GXBegin(GX_QUADS, GX_VTXFMT0, 4);
 					GXPosition3f32(-8.0f, 16.0f, 0.0f);
 					GXTexCoord2f32(0.0f, 0.0f);

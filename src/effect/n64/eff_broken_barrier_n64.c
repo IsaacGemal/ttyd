@@ -64,8 +64,8 @@ typedef struct effBrokenBarrierData {
     f32 x;          // 0x4
     f32 y;          // 0x8
     f32 z;          // 0xC
-    f32 spreadX;    // 0x10, half-width of the scatter box (x and z); x4 for types 2 and 3
-    f32 spreadY;    // 0x14, scatter height
+    f32 spreadXZ;   // 0x10, base only: x/z scatter extent, radius (types 0, 2) or box width (1, 3); x4 for types 2 and 3
+    f32 spreadY;    // 0x14, base only: y scatter extent, same rules as spreadXZ
     f32 velX;       // 0x18, per-frame step, eased toward velTargetX
     f32 velY;       // 0x1C
     f32 velZ;       // 0x20
@@ -76,14 +76,14 @@ typedef struct effBrokenBarrierData {
     f32 rotZ;       // 0x34, spin in degrees, +4 per frame
     s32 life;       // 0x38
     s32 frame;      // 0x3C, counts up every frame
-    u32 baseR;      // 0x40, shared colour from the base element
-    u32 baseG;      // 0x44
-    u32 baseB;      // 0x48
-    s32 alpha;      // 0x4C, fade from life; 0xFF when a particle spawns
-    u32 colorR;     // 0x50, particle colour
-    u32 colorG;     // 0x54
-    u32 colorB;     // 0x58
-    u32 baseA;      // 0x5C
+    u32 tev1R;      // 0x40, base only: GX_TEVREG1 colour (the TEV stage never reads it)
+    u32 tev1G;      // 0x44
+    u32 tev1B;      // 0x48
+    s32 alpha;      // 0x4C, base: fades out over the last 8 frames of life; particles: 0xFF at spawn
+    u32 tev0R;      // 0x50, base only: GX_TEVREG0 colour; alpha is the particle's alpha * base alpha / 255
+    u32 tev0G;      // 0x54
+    u32 tev0B;      // 0x58
+    u32 tev1A;      // 0x5C, GX_TEVREG1 alpha
     f32 scale;      // 0x60, base: entry scale; particles: scale_data[cycle]
     f32 field_0x64; // 0x64
     f32 field_0x68; // 0x68
@@ -118,15 +118,15 @@ EffectEntry* effBrokenBarrierN64Entry(s32 type, s32 life, f32 x, f32 y, f32 z, f
     data->y = y;
     data->z = z;
     data->scale = scale;
-    data->spreadX = 30.0f;
+    data->spreadXZ = 30.0f;
     data->spreadY = 30.0f;
-    data->baseR = 0xff;
-    data->baseG = 0xff;
-    data->baseB = 0xff;
-    data->colorR = 0xd7;
-    data->colorG = 0xff;
-    data->colorB = 0xeb;
-    data->baseA = 0xff;
+    data->tev1R = 0xff;
+    data->tev1G = 0xff;
+    data->tev1B = 0xff;
+    data->tev0R = 0xd7;
+    data->tev0G = 0xff;
+    data->tev0B = 0xeb;
+    data->tev1A = 0xff;
     if (life < 20) {
         f6 = 0.33333334f;
     } else {
@@ -251,7 +251,7 @@ void effBrokenBarrierMain(EffectEntry* effect) {
         data->alpha = data->life << 5;
     }
 
-    spreadX = data->spreadX;
+    spreadX = data->spreadXZ;
     spreadY = data->spreadY;
     switch (type) {
     case 2:
@@ -398,14 +398,14 @@ void effBrokenBarrierDisp(CameraId camId, void* param) {
     PSMTXScale(scale, data->scale, data->scale, data->scale);
     PSMTXConcat(mtx, scale, work);
 #ifdef MUST_MATCH
-    color = effBrokenBarrierMakeColor(data->baseR, data->baseG, data->baseB,
-                                      data->baseA);
+    color = effBrokenBarrierMakeColor(data->tev1R, data->tev1G, data->tev1B,
+                                      data->tev1A);
 #else
     color = unk_804230b8;
-    color.r = data->baseR;
-    color.g = data->baseG;
-    color.b = data->baseB;
-    color.a = data->baseA;
+    color.r = data->tev1R;
+    color.g = data->tev1G;
+    color.b = data->tev1B;
+    color.a = data->tev1A;
 #endif
     GXSetTevColor(GX_TEVREG1, color);
     effGetTexObjN64(0x20, &texObj);
@@ -458,9 +458,9 @@ static void main_dl(EffectEntry* effect, Mtx matrix) {
     f32 v;
 
     data = effect->userdata;
-    c0 = data->colorR;
-    c1 = data->colorG;
-    c2 = data->colorB;
+    c0 = data->tev0R;
+    c1 = data->tev0G;
+    c2 = data->tev0B;
     alphaScale = (f32)data->alpha / 255.0f;
     data++;
     for (i = 1; i < effect->count; i++, data++) {

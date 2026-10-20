@@ -55,8 +55,8 @@ typedef struct effFireDustData {
     f32 x;          // 0x04
     f32 y;          // 0x08
     f32 z;          // 0x0C
-    f32 radius;     // 0x10, scatter radius around the centre
-    f32 height;     // 0x14, scatter height
+    f32 spreadXZ;   // 0x10, base only: scatter radius around the centre
+    f32 spreadY;    // 0x14, base only: height of the scatter band
     f32 velX;       // 0x18, per-frame step, eased toward velTargetX
     f32 velY;       // 0x1C
     f32 velZ;       // 0x20
@@ -67,14 +67,14 @@ typedef struct effFireDustData {
     f32 rotZ;       // 0x34, spin in degrees, +4 per frame
     s32 life;       // 0x38
     s32 frame;      // 0x3C, counts up every frame
-    s32 baseR;      // 0x40, shared colour from the base element
-    s32 baseG;      // 0x44
-    s32 baseB;      // 0x48
-    s32 alpha;      // 0x4C, fade from life; 0xFF when a particle spawns
-    s32 colorR;     // 0x50, particle colour
-    s32 colorG;     // 0x54
-    s32 colorB;     // 0x58
-    s32 baseA;      // 0x5C
+    s32 tev1R;      // 0x40, base only: GX_TEVREG1 colour (the TEV stage never reads it)
+    s32 tev1G;      // 0x44
+    s32 tev1B;      // 0x48
+    s32 alpha;      // 0x4C, base: fades out over the last 8 frames of life; particles: 0xFF at spawn
+    s32 tev0R;      // 0x50, base only: GX_TEVREG0 colour; alpha is the particle's alpha * base alpha / 255
+    s32 tev0G;      // 0x54
+    s32 tev0B;      // 0x58
+    s32 tev1A;      // 0x5C, GX_TEVREG1 alpha
     f32 scale;      // 0x60, base: entry scale; particles: scale_data[cycle] * 2
     f32 field_0x64; // 0x64
     f32 field_0x68; // 0x68
@@ -82,18 +82,18 @@ typedef struct effFireDustData {
 
 // Inlined in the original; keeping the TEV colour build in its own helper also reproduces
 // the stack slot the compiler picks for the by-value GXColor copy.
-static inline void effFireDustSetColor(effFireDustData* data) {
+static inline void effFireDustSetTev1Color(effFireDustData* data) {
     GXColor color = unk_804230f8;
-    color.r = data->baseR;
-    color.g = data->baseG;
-    color.b = data->baseB;
-    color.a = data->baseA;
+    color.r = data->tev1R;
+    color.g = data->tev1G;
+    color.b = data->tev1B;
+    color.a = data->tev1A;
     GXSetTevColor(GX_TEVREG1, color);
 }
 
 // Same by-value GXColor build, for the per-particle colour main_dl passes to
 // GXSetTevColor; the helper scope reproduces the original's stack slots.
-static inline void effFireDustSetVtxColor(s32 r, s32 g, s32 b, u8 a) {
+static inline void effFireDustSetTev0Color(s32 r, s32 g, s32 b, u8 a) {
     GXColor color = unk_804230fc;
     color.r = r;
     color.g = g;
@@ -134,15 +134,15 @@ EffectEntry* effFireDustN64Entry(s32 type, s32 count, s32 life, f32 x, f32 y, f3
     data->y = y;
     data->z = z;
     data->scale = float_1_8041ee54;
-    data->radius = radius;
-    data->height = height;
-    data->baseR = 0xff;
-    data->baseG = 0xff;
-    data->baseB = 0xff;
-    data->colorR = 0xff;
-    data->colorG = 0xff;
-    data->colorB = 0x7f;
-    data->baseA = 0xff;
+    data->spreadXZ = radius;
+    data->spreadY = height;
+    data->tev1R = 0xff;
+    data->tev1G = 0xff;
+    data->tev1B = 0xff;
+    data->tev0R = 0xff;
+    data->tev0G = 0xff;
+    data->tev0B = 0x7f;
+    data->tev1A = 0xff;
 
     if (life < 0x14) {
         ratio = float_20_8041ee58 / (f32)(count + 1);
@@ -196,9 +196,9 @@ void effFireDustMain(EffectEntry* effect) {
     }
 
     i = 1;
-    radius = data->radius;
-    ival = (s32)data->height;
-    half = float_0p5_8041ee2c * data->height;
+    radius = data->spreadXZ;
+    ival = (s32)data->spreadY;
+    half = float_0p5_8041ee2c * data->spreadY;
     data++;
     for (; i < effect->count; i++, data++) {
         data->cycle++;
@@ -264,7 +264,7 @@ void effFireDustDisp(CameraId camId, void* param) {
     PSMTXScale(scaleMtx, data->scale, data->scale, data->scale);
     PSMTXConcat(transMtx, scaleMtx, outMtx);
 
-    effFireDustSetColor(data);
+    effFireDustSetTev1Color(data);
 
     effGetTexObjN64(0x20, &texObj);
     GXLoadTexObj(&texObj, GX_TEXMAP0);
@@ -335,9 +335,9 @@ static void main_dl(EffectEntry* effect, Mtx matrix) {
     f32 v;
 
     data = effect->userdata;
-    c0 = data->colorR;
-    c1 = data->colorG;
-    c2 = data->colorB;
+    c0 = data->tev0R;
+    c1 = data->tev0G;
+    c2 = data->tev0B;
     alphaScale = (f32)data->alpha / float_255_8041ee10;
     data++;
     for (i = 1; i < effect->count; i++, data++) {
@@ -353,7 +353,7 @@ static void main_dl(EffectEntry* effect, Mtx matrix) {
         PSMTXConcat(matrix, mtx, mtx);
         GXLoadPosMtxImm(mtx, GX_PNMTX0);
         GXSetCurrentMtx(GX_PNMTX0);
-        effFireDustSetVtxColor(c0, c1, c2, (u8)((f32)data->alpha * alphaScale));
+        effFireDustSetTev0Color(c0, c1, c2, (u8)((f32)data->alpha * alphaScale));
         switch (i & 7) {
             case 0:
                 vtx = (effVtxArray*)((u8*)size8x8_tex22x22_vtx + 0xA8);

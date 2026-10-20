@@ -3,6 +3,7 @@
 #include <dolphin/types.h>
 #include "driver/effdrv.h"
 #include "driver/camdrv.h"
+// effSnowmanDisp is empty, so alpha, vScale and the 0x18-0x20 words are written but never read.
 typedef struct effSnowmanN64Data {
 	s32 type;        // 0x00
 	f32 x;           // 0x04
