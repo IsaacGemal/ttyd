@@ -20,7 +20,6 @@
 #include <string.h>
 
 // Raw accessors for MarioWork fields that are not named in mario.h yet; listed in REPORT.md.
-#define M_S8(m, off) (*(s8*)((u8*)(m) + (off)))
 #define M_S16(m, off) (*(s16*)((u8*)(m) + (off)))
 #define M_U16(m, off) (*(u16*)((u8*)(m) + (off)))
 #define M_S32(m, off) (*(s32*)((u8*)(m) + (off)))
@@ -127,7 +126,7 @@ void mot_hammer(void) {
         }
         mario->multiTimer = 0;
         mario->airTimer = 0;
-        M_S32(mario, 0x44) = 0;
+        mario->currSubMotionId = 0;
         mario->baseSpeed = float_0_8041a9a8;
         mario->field_0x200 = 0;
         hit = hitEstimate(&type);
@@ -236,7 +235,7 @@ void mot_hammer(void) {
         }
     } else {
         s32 b = mario->multiTimer;
-        s32 t = (b <= 10) ? M_S32(mario, 0x48) : 10;
+        s32 t = (b <= 10) ? mario->multiTimer : 10;
         r27 = t;
         if (b == 10) {
             rp = 1;
@@ -254,7 +253,7 @@ void mot_hammer(void) {
             evtEntry(lv3quake_evt, 0, 0);
         }
         mario->currSubMotionId = 1;
-        M_S32(mario, 0x1FC) = mario->field_0x200;
+        mario->hitobjHammer = (void*)mario->field_0x200;
         px = mario->position.x;
         f30 = mario->position.y;
         pz = mario->position.z;
@@ -439,15 +438,15 @@ void mot_hammer2(void) {
     case 0:
         mario->flags |= 0x80;
         mario->dispFlags |= 4;
-        M_S8(mario, 0x41) = 0;
-        M_S8(mario, 0x42) = 0;
+        mario->field_0x41 = 0;
+        mario->field_0x42 = 0;
         mario->baseSpeed = float_0_8041a9a8;
         mario->airTimer = 0;
         mario->currSubMotionId = 1;
         mario->multiTimer = 0x1E;
-        if (M_S8(mario, 0x42) == 3) {
+        if (mario->field_0x42 == 3) {
             mario->wCamVal1 = 38.0f;
-        } else if (M_S8(mario, 0x42) <= 2) {
+        } else if (mario->field_0x42 <= 2) {
             mario->wCamVal1 = 15.0f;
         } else {
             mario->wCamVal1 = 10.f;
@@ -490,19 +489,19 @@ void mot_hammer2(void) {
     case 0xA:
         if (marioGetRub(0x200, &rub1, &rub2, &rub3) == 1) {
             M_S16(mario, 0x2B4) = M_S16(mario, 0x2B4) & ~1;
-            M_S8(mario, 0x41)++;
-            if (M_S8(mario, 0x41) >= 0x14) {
-                M_S8(mario, 0x41) = 0x14;
+            mario->field_0x41++;
+            if (mario->field_0x41 >= 0x14) {
+                mario->field_0x41 = 0x14;
             }
         }
-        if (M_S8(mario, 0x41) >= 4) {
+        if (mario->field_0x41 >= 4) {
             mario->field_0x2B0 += 6.0f;
             if (mario->field_0x2B0 >= 72.0f) {
                 mario->field_0x2B0 = 72.0f;
             }
             mario->currSubMotionId = 0xB;
             marioChgPaper("P_H_1B");
-            M_S8(mario, 0x42) = 3;
+            mario->field_0x42 = 3;
             m2 = marioGetPtr();
             m2->unk148 = 0.4f;
             m2->unk150.z = 0.005f;
@@ -514,7 +513,7 @@ void mot_hammer2(void) {
             m2->field_6C = vec3_802c5a80;
 #endif
             M_S16(mario, 0x2B4) |= 0x1000;
-        } else if (M_S8(mario, 0x41) >= 3) {
+        } else if (mario->field_0x41 >= 3) {
             marioChgPaper("P_H_1A");
             level = M_S16(mario, 0x2B4);
             if (!(level & 1)) {
@@ -522,7 +521,7 @@ void mot_hammer2(void) {
                 if (mario->field_0x2B0 >= 54.0f) {
                     mario->field_0x2B0 = 54.0f;
                     M_S16(mario, 0x2B4) |= 1;
-                    M_S8(mario, 0x42) = 3;
+                    mario->field_0x42 = 3;
                     m2 = marioGetPtr();
                     m2->unk148 = 0.4f;
                     m2->unk150.z = 0.005f;
@@ -548,7 +547,7 @@ void mot_hammer2(void) {
                     M_S16(mario, 0x2B4) &= ~0x10;
                 }
             }
-        } else if (M_S8(mario, 0x41) >= 2) {
+        } else if (mario->field_0x41 >= 2) {
             marioChgPaper("P_H_1A");
             level = M_S16(mario, 0x2B4);
             if (!(level & 1)) {
@@ -556,7 +555,7 @@ void mot_hammer2(void) {
                 if (mario->field_0x2B0 >= 36.0f) {
                     mario->field_0x2B0 = 36.0f;
                     M_S16(mario, 0x2B4) |= 1;
-                    M_S8(mario, 0x42) = 2;
+                    mario->field_0x42 = 2;
                     m2 = marioGetPtr();
                     m2->unk148 = 0.3f;
                     m2->unk150.z = 0.005f;
@@ -590,7 +589,7 @@ void mot_hammer2(void) {
                 if (mario->field_0x2B0 >= 18.0f) {
                     mario->field_0x2B0 = 18.0f;
                     M_S16(mario, 0x2B4) |= 1;
-                    M_S8(mario, 0x42) = 1;
+                    mario->field_0x42 = 1;
                     m2 = marioGetPtr();
                     m2->unk148 = 0.2f;
                     m2->unk150.z = 0.005f;
@@ -662,19 +661,19 @@ void mot_hammer2(void) {
         }
         marioChgPaper("P_H_1C");
         mario->currSubMotionId = 0x14;
-        if (M_S8(mario, 0x42) == 3) {
+        if (mario->field_0x42 == 3) {
             mario->multiTimer = 0x30;
-        } else if (M_S8(mario, 0x42) == 2) {
+        } else if (mario->field_0x42 == 2) {
             mario->multiTimer = 0x42;
         } else {
             mario->multiTimer = 0x48;
         }
         M_U16(mario, 0x2A4) = 0;
-        if (M_S8(mario, 0x42) == 3) {
+        if (mario->field_0x42 == 3) {
             mario->wCamVal1 = 38.0f;
-        } else if (M_S8(mario, 0x42) == 2) {
+        } else if (mario->field_0x42 == 2) {
             mario->wCamVal1 = 22.0f;
-        } else if (M_S8(mario, 0x42) <= 1) {
+        } else if (mario->field_0x42 <= 1) {
             mario->wCamVal1 = 15.0f;
         }
         py__ = 20.f;
@@ -727,7 +726,7 @@ void mot_hammer2(void) {
             psndSFXOn_3D((const char*)0x163, &mario->position);
         }
         mario->multiTimer--;
-        if (M_S8(mario, 0x42) > 2 && mario->multiTimer == 0xA) {
+        if (mario->field_0x42 > 2 && mario->multiTimer == 0xA) {
             marioPaperOff();
             marioPaperLightOn();
             marioChgPose("M_S_1");
@@ -738,7 +737,7 @@ void mot_hammer2(void) {
         if (mario->multiTimer > 0) {
             break;
         }
-        if (M_S8(mario, 0x42) <= 2) {
+        if (mario->field_0x42 <= 2) {
             mario->multiTimer = sysMsec2Frame(0x12C);
         } else {
             mario->unk1A8 = revise360(mario->unk1A8);
@@ -751,7 +750,7 @@ void mot_hammer2(void) {
         if ((s32)--mario->multiTimer > 0) {
             break;
         }
-        if (M_S8(mario, 0x42) <= 2) {
+        if (mario->field_0x42 <= 2) {
             marioPaperOff();
             marioPaperLightOn();
             marioChgPose("M_S_1");

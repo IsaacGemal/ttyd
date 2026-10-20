@@ -150,7 +150,8 @@ typedef struct MarioWork {
     s8 colorId;                    // 0x3D
     u8 field_0x3E[0x40 - 0x3E];    // 0x3E
 	s8 wMotionTimer;               // 0x40
-    u8 field_0x41[0x43 - 0x41];    // 0x41
+    s8 field_0x41;                 // 0x41
+    s8 field_0x42;                 // 0x42
     s8 dispHalfTurn;               // 0x43, 0/1 half-turn flag: mot_roll adds 180 to its display target, mot_hammer sets it from marioGetRub's side
     u32 currSubMotionId;           // 0x44
     s32 multiTimer;                // 0x48, ???
