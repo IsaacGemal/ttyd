@@ -75,9 +75,9 @@ s32 jetCount[1];
 static u32 list[1];
 EffectEntry* eff_suikomi[1];
 s32 screamId[1];
-s32 screamFadeTimer[1];
-u8 screamStartVol;
-u8 screamVol;
+s32 scream_fade_timer[1];
+u8 scream_start_vol;
+u8 scream_vol;
 TargetWork* wp_target[1];
 u32 targetSoundId[1];
 static EffectEntry* eff_charge[1];
@@ -2126,20 +2126,20 @@ USER_FUNC(aud_suikomi_fade) {
     u8 vol;
 
     if (isFirstCall) {
-        screamFadeTimer[0] = 120;
-        screamStartVol = psndSFX_get_vol(screamId[0]);
+        scream_fade_timer[0] = 120;
+        scream_start_vol = psndSFX_get_vol(screamId[0]);
     }
-    timer = --screamFadeTimer[0];
-    v = intplGetValue(0, 120 - timer, 120, screamStartVol, 0.0f);
+    timer = --scream_fade_timer[0];
+    v = intplGetValue(0, 120 - timer, 120, scream_start_vol, 0.0f);
 #ifdef MUST_MATCH
-    screamVol = (u8)v;
-    psndSFX_vol(screamId[0], screamVol);
+    scream_vol = (u8)v;
+    psndSFX_vol(screamId[0], scream_vol);
 #else
     vol = (u8)(s32)v;
-    screamVol = vol;
+    scream_vol = vol;
     psndSFX_vol(screamId[0], vol);
 #endif
-    if (screamFadeTimer[0] <= 0) {
+    if (scream_fade_timer[0] <= 0) {
         return EVT_RETURN_DONE;
     }
     return EVT_RETURN_BLOCK;

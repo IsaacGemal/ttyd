@@ -10858,9 +10858,9 @@ shown) it starts the mouth script when it isn't running, so it is `sekizou_mouth
 That script (`UNK_0x00022c3c`, spawned by the callback) rotates the kuti and kuti2 mapobjs and is `sekizou_mouth_anim`.
 
 unit_boss_magnum_battender_mkII.c: `unk_aji_00007668` is the USER_FUNC run as a sibling of aud_suikomi. Its first call
-sets the countdown to 120 and reads the scream volume; each frame it ramps screamId's volume from `screamStartVol` to 0
-and stops when the countdown ends, so it is `aud_suikomi_fade`, with `screamFadeTimer`, `screamStartVol` and
-`screamVol` (the bss slots 0x168, 0x165 and 0x164).
+sets the countdown to 120 and reads the scream volume; each frame it ramps screamId's volume from `scream_start_vol` to 0
+and stops when the countdown ends, so it is `aud_suikomi_fade`, with `scream_fade_timer`, `scream_start_vol` and
+`scream_vol` (the bss slots 0x168, 0x165 and 0x164).
 
 ArmWork fields (the arm `work` entries): `prevPos` (0x00) and `pos` (0x0C), the previous and current unit positions
 (`w->prevPos = w->pos` before BtlUnit_GetPos fills pos); `rotZ` (0x18) and `targetRotZ` (0x1C), the eased and the
