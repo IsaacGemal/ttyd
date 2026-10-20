@@ -19,7 +19,7 @@ typedef struct effPokopiPchargeData {
 	u32 g2;         // 0x2C
 	u32 b2;         // 0x30
 	f32 scale;      // 0x34
-	f32 velX;       // 0x38: per-frame x step of a particle; on the root, the radial offset (vx_data[type]) added in Disp
+	f32 field_0x38; // 0x38: on a particle, the x step Main adds each frame; on the root, an x offset (vx_data[a]) Disp adds to every particle
 	f32 rot;        // 0x3C: degrees, the particle's rotation about z
 	f32 rotSpeed;   // 0x40: degrees added to rot each frame
 	f32 scaleMul;   // 0x44: root only, multiplies scale (1.0)

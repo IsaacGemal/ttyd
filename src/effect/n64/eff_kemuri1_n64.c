@@ -23,13 +23,13 @@ typedef struct effKemuri1Data {
 	u8 align_2[2]; //0x2, TODO: verify align
 	Vec position; //0x4
 	f32 speed; //0x10, horizontal speed along (dirX, dirZ) in types 0/1 and 4-7
-	f32 speedRate; //0x14, types 0/1: speed += speedRate each frame; types 4-7: speed *= speedRate
-	f32 speedRateVel; //0x18, types 0/1: speedRate += speedRateVel each frame
-	f32 speedRateAccel; //0x1C, types 0/1: speedRateVel += speedRateAccel each frame
+	f32 field_0x14; //0x14, types 0/1: added to speed each frame; types 4-7: speed *= field_0x14 each frame
+	f32 speedJerk; //0x18, types 0/1 only: added to field_0x14 (the speed's per-frame acceleration there) each frame
+	f32 speedSnap; //0x1C, types 0/1 only: added to speedJerk each frame
 	f32 velY; //0x20
 	f32 velYAccel; //0x24, added to velY every frame
-	f32 velYAccelRate; //0x28, types 0/1: velYAccel += velYAccelRate each frame; types 3-7: velYAccel *= velYAccelRate
-	f32 velYRate; //0x2C, types 0/1: velYAccelRate += velYRate each frame; types 4-7: velY *= velYRate
+	f32 field_0x28; //0x28, types 0/1: added to velYAccel each frame; types 3-7: velYAccel *= field_0x28 each frame
+	f32 field_0x2C; //0x2C, types 0/1: added to field_0x28 each frame; types 4-7: velY *= field_0x2C each frame
 	f32 dirX; //0x30, sin of the heading
 	f32 dirZ; //0x34, cos of the heading
 	s32 field_0x38; //0x38
@@ -130,13 +130,13 @@ EffectEntry* effKemuri1N64Entry(s32 type, f32 x, f32 y, f32 z, f32 a5) {
 		case 1:
 			for (i = 1; i < effCount; i++, entry++) {
 				entry->speed = -3.0f;
-				entry->speedRate = 0.29999998f;
-				entry->speedRateVel = 0.0f;
-				entry->speedRateAccel = 0.0f;
+				entry->field_0x14 = 0.29999998f;
+				entry->speedJerk = 0.0f;
+				entry->speedSnap = 0.0f;
 				entry->velY = 1.75f;
 				entry->velYAccel = -0.16f;
-				entry->velYAccelRate = 0.0f;
-				entry->velYRate = 0.0f;
+				entry->field_0x28 = 0.0f;
+				entry->field_0x2C = 0.0f;
 				entry->position.x = 0.0f;
 				entry->position.y = 0.0f;
 				entry->position.z = 4.0f;
@@ -175,7 +175,7 @@ EffectEntry* effKemuri1N64Entry(s32 type, f32 x, f32 y, f32 z, f32 a5) {
 					entry->velY = 0.95f;
 					entry->velYAccel = -0.04f;
 					k94 = 0.94f;
-				entry->velYAccelRate = k94;
+				entry->field_0x28 = k94;
 					break;
 				case 1:
 #ifdef MUST_MATCH
@@ -195,7 +195,7 @@ EffectEntry* effKemuri1N64Entry(s32 type, f32 x, f32 y, f32 z, f32 a5) {
 					entry->velY = 0.84999996f;
 					entry->velYAccel = -0.04f;
 					k94 = 0.94f;
-				entry->velYAccelRate = k94;
+				entry->field_0x28 = k94;
 					break;
 				case 2:
 #ifdef MUST_MATCH
@@ -215,7 +215,7 @@ EffectEntry* effKemuri1N64Entry(s32 type, f32 x, f32 y, f32 z, f32 a5) {
 					entry->velY = 0.75f;
 					entry->velYAccel = -0.04f;
 					k94 = 0.94f;
-				entry->velYAccelRate = k94;
+				entry->field_0x28 = k94;
 					break;
 				}
 				entry->dirX = 0.0f;
@@ -240,16 +240,16 @@ EffectEntry* effKemuri1N64Entry(s32 type, f32 x, f32 y, f32 z, f32 a5) {
 				f32 c34;
 #endif
 				entry->speed = -3.0f;
-				entry->speedRate = 0.93f;
+				entry->field_0x14 = 0.93f;
 				entry->velY = 0.0f;
 				entry->velYAccel = 0.099999994f;
 #ifdef MUST_MATCH
-				entry->velYAccelRate = 0.94f;
-				entry->velYRate = 0.94f;
+				entry->field_0x28 = 0.94f;
+				entry->field_0x2C = 0.94f;
 #else
 				k94 = 0.94f;
-				entry->velYAccelRate = k94;
-				entry->velYRate = k94;
+				entry->field_0x28 = k94;
+				entry->field_0x2C = k94;
 #endif
 				angle = 6.2831855f * (a5 + (f32)((i - 1) * 360 / (effCount - 1))) / 360.0f;
 				sinAngle = (f32)sin(angle);
@@ -330,20 +330,20 @@ void effKemuri1Main(EffectEntry* effect) {
 		switch (type) {
 		case 0:
 		case 1:
-			data->speedRateVel += data->speedRateAccel;
-			data->speedRate += data->speedRateVel;
-			data->speed += data->speedRate;
+			data->speedJerk += data->speedSnap;
+			data->field_0x14 += data->speedJerk;
+			data->speed += data->field_0x14;
 			data->position.x += data->speed * data->dirX;
 			data->position.z += data->speed * data->dirZ;
-			data->velYAccelRate += data->velYRate;
-			data->velYAccel += data->velYAccelRate;
+			data->field_0x28 += data->field_0x2C;
+			data->velYAccel += data->field_0x28;
 			data->velY += data->velYAccel;
 			data->position.y += data->velY;
 			break;
 		case 3:
 			data->position.y += data->velY;
 			data->velY += data->velYAccel;
-			data->velYAccel *= data->velYAccelRate;
+			data->velYAccel *= data->field_0x28;
 			break;
 		case 4:
 		case 5:
@@ -351,11 +351,11 @@ void effKemuri1Main(EffectEntry* effect) {
 		case 7:
 			data->position.x += data->speed * data->dirX;
 			data->position.z += data->speed * data->dirZ;
-			data->speed *= data->speedRate;
+			data->speed *= data->field_0x14;
 			data->position.y += data->velY;
 			data->velY += data->velYAccel;
-			data->velYAccel *= data->velYAccelRate;
-			data->velY *= data->velYRate;
+			data->velYAccel *= data->field_0x28;
+			data->velY *= data->field_0x2C;
 			break;
 		}
 	}
