@@ -312,7 +312,6 @@ void winMakeSkipList(WindowWork* work) {
 // original increments the pointer before the index, which is what settles MWCC's
 // register choice (pointer r5, index r3).
 void winItemInit(WindowWork* work) {
-    u8* p;
     s32 i;
     u16 item;
     s32 j;
@@ -343,15 +342,13 @@ void winItemInit(WindowWork* work) {
     WINITEM(work)->field_0x260 = 0.0f;
 
     {
-        p = (u8*)work;
         for (i = 0; i < work->mailCount; i++) {
             u8* pouch;
             s32 off;
-            p[0x26E] = work->mailCount - i - 1;
+            work->field_26E[i * 2] = work->mailCount - i - 1;
             pouch = (u8*)pouchGetPtr();
             off = 0x519 + (work->mailCount - i);
-            p[0x26F] = pouch[off];
-            p += 2;
+            work->field_26E[i * 2 + 1] = pouch[off];
         }
     }
 
@@ -652,21 +649,14 @@ s32 winItemMain(WindowWork* work) {
     case 200:
         if (work->buttonTrg & 0x100) {
             u8* mail;
-            u8* b;
 
-            b = (u8*)work;
-            b += work->mailSel * 2;
-            if ((s32)pouchCheckMail(b[0x26F]) == 1) {
-                b = (u8*)work;
-                b += work->mailSel * 2;
-                pouchOpenMail(b[0x26F]);
+            if ((s32)pouchCheckMail(work->field_26E[work->mailSel * 2 + 1]) == 1) {
+                pouchOpenMail(work->field_26E[work->mailSel * 2 + 1]);
             }
             swSet(0x26);
             psndSFXOn((const char*)0x20036);
             work->itemState = 201;
-            b = (u8*)work;
-            b += work->mailSel * 2;
-            mail = (u8*)mailGetPtr(b[0x26F]);
+            mail = (u8*)mailGetPtr(work->field_26E[work->mailSel * 2 + 1]);
             FontGetMessageWidthLine(msgSearch(*(const char**)(mail + 0xC)), winItemMailLine(work));
             work->mailLines += 1;
             work->mailScroll = 0;
@@ -737,11 +727,9 @@ s32 winItemMain(WindowWork* work) {
         break;
 
     case 201: {
-        u8* b = (u8*)work;
         u8* mail;
 
-        b += work->mailSel * 2;
-        mail = (u8*)mailGetPtr(b[0x26F]);
+        mail = (u8*)mailGetPtr(work->field_26E[work->mailSel * 2 + 1]);
 
         if (*(u16*)(mail + 0) & 0x1000) {
             WW_S32(work, 0x2C) = fileAsyncf(FILE_TYPE_TPL, NULL, STR_MAIL_TPL, getMarioStDvdRoot());
@@ -1016,7 +1004,7 @@ void item_disp(WindowWork* work, f32 x, f32 y) {
         } else {
             item = *(s16*)(entry + 0x2E8);
         }
-        scroll = *(f32*)((u8*)work + work->itemTab * 4 + 0x224);
+        scroll = (&WINITEM(work)->field_0x224)[work->itemTab];
 
         grayFlag = ((work->itemTab != 0) || (itemDataTable[item].usable_locations & 4)) == 0;
         drawY = scroll + (20.0f + ((rowY = base - (f32)(half * 0x26)) - 10.0f));
