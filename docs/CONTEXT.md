@@ -11104,3 +11104,24 @@ file is obj_equiv-equivalent to the pre-branch natural object.
 `src/driver/mobjdrv.c`: 14 gotos -> 9, no names changed, build stays MATCH.
 - Removed: the two `goto noShadow` in the shadow block of the entry loop, which became one `if (!(...) && !(...))` around the shadow code; and the three `goto apply` in the KPA (`else`) trigger branch (KPA_LV3, KPA_FLAME, 0x80000), which became an `else if` tail. The KPA_STAND_ON test was already last, so it is the final `else if`.
 - Kept: the nine `goto apply` in the non-KPA trigger chain (HAMMER, HEAD, STAND_ON, HIP_DROP, the 0x40000 front test, and the PARTY and BOBBERY blocks). Four forms all changed the object: a single `else if` ladder with the PARTY and BOBBERY tests duplicated; the same ladder with the PARTY/BOBBERY blocks as `v22 == 0`-guarded ifs; a fully flat `v22 == 0`-guarded sequence; and the first five as `else if` followed by guarded PARTY/BOBBERY blocks. The `apply:` label stays for those gotos.
+### Readability: win_root WindowWork band as the WinRoot overlay (2026-10-20, Claude Haiku 5.5, n9-q-offroot)
+
+win_root.c's `WW_S32/F32/PTR/U32(work, 0xNN)` reads (317 sites, all in the WindowWork bands win_main.h leaves opaque)
+now go through the file's existing `WinRoot` overlay (`WROOT(work)`, the same base pointer). The overlay grows from
+0x40-0x124 to cover every offset win_root.c reads, 0x128-0x1044 included, with members named only by offset
+(`field_0x128`, `field_0xE94`, ...) and gaps as `pad_0xNN`. Each member's type is the one every win_root.c site reads:
+F32 at 0x128/0x12C, 0x164-0x170, 0x244/0x24C/0x260, 0xEA0, 0xF9C; S32 elsewhere. The 0xE94-0x1044 members are the
+win_log band (LogWin's cardCnt/badgeCnt/charCnt names live in win_log.c and are not shared), so they stay offset-named.
+`WinRootRec` (the 0x14-byte records at 0xC0, names a..e unchanged) is retyped to match its reads: `a`, `d`, `e` are
+S32 and `b`, `c` are F32, as every `WW_*` site on those offsets reads them. The winRootDisp record loop now holds
+`WinRootRec* e = &WROOT(work)->recs[i]`, reads `e->a`/`e->d`, and its `base + 0xB8` read (the previous record's `d`,
+guarded by `i > 0`) is `WROOT(work)->recs[i - 1].d`. Other 0xC0-0x123 reads are `recs[k].a..e` by offset.
+
+Left raw: 0x13C/0x140/0x144 (14 sites). They are read or written as a pointer (PTR/const char*), as S32 (the `= 0` and
+`= a3` writes) and as U32 (`!= 0` at 0x13C), so no single member type fits; the offsets are not given a member. The
+`WW_S32/U32/PTR` defines stay for them; the unused `WW_F32` and `WW_U16` defines are gone.
+
+Index (`tools/cleanup_index.py --top 40`): total 22.080 -> 21.575 per kLOC; raw_offset 1693 -> 1390 sites;
+win_root.c 794 -> 435 weighted (298.4 -> 160.8 per kLOC). field_0x names rose 2754 -> 3001 (each offset-named member
+counts as one); the net is still down. Matching build recreated at every batch (MATCH after each of 8 batches of 40
+sites and the macro cleanup); win_root.c natural-compiles without MUST_MATCH.
