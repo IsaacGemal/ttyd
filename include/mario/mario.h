@@ -108,7 +108,6 @@ typedef enum MarioTrigFlags {
 } MarioTrigFlags;
 #pragma enumsalwaysint on
 
-// TODO: US struct is bigger, 0x2F8 vs 0x2E0
 #pragma enumsalwaysint off
 typedef enum PeachFlags {
     PEACH_FLAG_AFTERSHOWER = (1 << 4),
@@ -123,6 +122,7 @@ typedef enum PeachFlags {
 } PeachFlags;
 #pragma enumsalwaysint on
 
+// TODO: US struct is bigger, 0x2F8 vs 0x2E0
 typedef struct MarioWork {
     u32 flags;                     // 0x0
     s32 dispFlags;                 // 0x4
