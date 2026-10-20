@@ -2240,9 +2240,7 @@ USER_FUNC(_2d_get_dead_jump_offset) {
     s32 arg1;
     s32 name;
     f32 offset;
-#ifdef MUST_MATCH
     f32 t;
-#endif
 
     name = evtGetValue(event, args[0]);
     npc = evtNpcNameToPtr(event, (const char*)name);
@@ -2255,15 +2253,11 @@ USER_FUNC(_2d_get_dead_jump_offset) {
     } else {
         offset = 1.0f;
     }
-#ifdef MUST_MATCH
-    // MUST_MATCH: splitting the multiply into `t = 20.0f; t = t * offset;` colours offset to f0 and 20.0f to f1
-    // as the original does; the single expression `20.0f * offset` colours them the other way round.
+    // Splitting the multiply into `t = 20.0f; t = t * offset;` colours offset to f0 and 20.0f to f1, as the
+    // original does; the single expression `20.0f * offset` colours them the other way round.
     t = 20.0f;
     t = t * offset;
     evtSetValue(event, arg1, (s32)t);
-#else
-    evtSetValue(event, arg1, (s32)(20.0f * offset));
-#endif
     return EVT_RETURN_DONE;
 }
 

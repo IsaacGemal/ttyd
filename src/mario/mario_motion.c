@@ -614,12 +614,8 @@ void marioSetJumpPara(void) {
         mario->jumpJerkStepY = -0.003f;
         break;
     case MARIO_MOTION_ROLL: {
-#ifdef MUST_MATCH
-        // const pointer: pins the base-pointer setup ahead of the 1.0f load (see report)
+        // A const pointer pins the base-pointer setup ahead of the 1.0f load.
         f32* const q = marioJumpData;
-#else
-        f32* q = marioJumpData;
-#endif
         mario->jumpVelY = q[0];
         mario->jumpAccelY = q[1];
         mario->jumpJerkY = q[2];
@@ -1395,20 +1391,8 @@ s32 marioRollChgChk(void) {
     if ((s32)pouchCheckItem(3) == 0) {
         return 0;
     }
-    if (marioSlitChkWallAround() != 0) {
-#ifdef MUST_MATCH
-        // Original shares this failure with the crevice check's return-0 block; only a direct
-        // jump at that label gets mwcc to emit the single shared block.
-        goto fail;
-#else
-        return 0;
-#endif
-    }
     {
-        if (marioCreviceWallChk(mario->position) != 0) {
-#ifdef MUST_MATCH
-fail:
-#endif
+        if (marioSlitChkWallAround() != 0 || marioCreviceWallChk(mario->position) != 0) {
             return 0;
         }
         if (mario->buttonHeld & (1 << 5)) {
