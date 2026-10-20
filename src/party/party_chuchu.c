@@ -364,7 +364,7 @@ void chuchu_move(PartyEntry* party) {
         party->flags &= ~PARTY_FLAG_IS_BEING_USED;
         partyWalkInit(party, 1);
     }
-    unk_800c92c4(party);
+    partyStepSpeed(party);
     partyWalkMain(party);
 }
 

@@ -112,7 +112,7 @@ void nokonoko_move(PartyEntry* party) {
         party->field_8 &= ~0x8;
         partyWalkInit(party, 1);
     }
-    unk_800c92c4(party);
+    partyStepSpeed(party);
     partyRecordFootmark(party);
     switch (party->field_3B) {
     case 0:

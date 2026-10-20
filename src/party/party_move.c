@@ -249,7 +249,7 @@ f32 partyGetTargetDist3D(s32 id, Vec* pos) {
 
 #pragma opt_common_subs off // keeps MWCC from CSE-hoisting id != 0 across the two anotherPartyGetPtr calls
 #pragma opt_lifetimes off // needed with opt_common_subs off so id (r29) and flag (r28) keep the target's registers
-f32 unk_800c9f48(s32 id, f32 y) {
+f32 partyGetTargetDistYFrom(s32 id, f32 y) {
     MarioWork* mario = marioGetPtr();
     MarioWork* mario2;
     PartyEntry* target;
@@ -594,13 +594,13 @@ void partyClearJumpPara(PartyEntry* party) {
     work->jumpPara3 = 0.0f;
 }
 
-// Body written in the same idiom as the sibling `unk_800c92c4` (one accumulator f0/f1 per
+// Body written in the same idiom as the sibling `partyStepSpeed` (one accumulator f0/f1 per
 // branch, no separate rate temporaries). The f32 return keeps `value` live in f1 for the whole
 // function, which is what the original does: it reserves f1 and pushes every local FPR up one slot
 // (`speed` lands in f5 not f3, the gravity temp/rate in f2, the `0.0f` compare constant in f3).
 // The declaration is f32 in the header; a void declaration makes MWCC reuse f1 and miss by 18
 // instructions (and MWCC hangs if the header and the definition disagree on the return type).
-f32 unk_800c93d0(PartyEntry* party, f32 value) {
+f32 partySetTargetSpeed(PartyEntry* party, f32 value) {
     PartyEntry* work = party;
     MarioWork* mario;
     f32 f4;
@@ -659,7 +659,7 @@ f32 unk_800c93d0(PartyEntry* party, f32 value) {
 }
 
 // f32 return keeps the argument live in f1, so the product takes f2 as in the original.
-f32 unk_800c9398(PartyEntry* party, f32 value) {
+f32 partySetSpeed(PartyEntry* party, f32 value) {
     PartyEntry* work = party;
     f32 gravity = work->playerPtr->playerGravity;
     f32 speed = value * gravity;
@@ -674,7 +674,7 @@ f32 unk_800c9398(PartyEntry* party, f32 value) {
     return value;
 }
 
-f32 unk_800c92c4(PartyEntry* party) {
+f32 partyStepSpeed(PartyEntry* party) {
     PartyEntry* work = party;
     MarioWork* mario;
     f32 f3;
@@ -722,7 +722,7 @@ void N_partyPlaySfxPartyLanding1(PartyEntry* party) {
     psndSFXOn_3D((const char*)0x928, &party->position);
 }
 
-void unk_800c90d4(PartyEntry* party, s32 value) {
+void partyStepSfx(PartyEntry* party, s32 value) {
     PartyEntry* work = party;
     s32 lo;
     s32 hi;
@@ -783,7 +783,7 @@ void unk_800c90d4(PartyEntry* party, s32 value) {
     }
 }
 
-void unk_800c9044(PartyEntry* party) {
+void partyChgIdlePose(PartyEntry* party) {
     PartyEntry* work = party;
 
     if (work->field_34 == 0) {
@@ -798,7 +798,7 @@ void unk_800c9044(PartyEntry* party) {
     }
 }
 
-void unk_800c8f24(PartyEntry* party, f32 f1) {
+void partyChgSpeedPose(PartyEntry* party, f32 f1) {
     PartyEntry* work = party;
     MarioWork* mario;
     f32 f2;
@@ -806,7 +806,7 @@ void unk_800c8f24(PartyEntry* party, f32 f1) {
 
     if (party->flags2 & 0x100) {
         partyChgPoseId(party, 3);
-        unk_800c90d4(party, 1);
+        partyStepSfx(party, 1);
         return;
     }
     mario = work->playerPtr;
@@ -816,24 +816,24 @@ void unk_800c8f24(PartyEntry* party, f32 f1) {
     if (f2 - f3 < f1 && f1 < f1 + f3) {
         if (N_marioGetMovementSpeed() == 1) {
             partyChgPoseId(party, 2);
-            unk_800c90d4(party, 0);
+            partyStepSfx(party, 0);
         } else {
             partyChgPoseId(party, 3);
-            unk_800c90d4(party, 1);
+            partyStepSfx(party, 1);
         }
     } else if (f1 >= f2) {
         partyChgPoseId(party, 3);
-        unk_800c90d4(party, 1);
+        partyStepSfx(party, 1);
     } else {
         partyChgPoseId(party, 2);
-        unk_800c90d4(party, 0);
+        partyStepSfx(party, 0);
     }
 }
 
 // Match note: without opt_propagation off, MWCC propagates the 270.0f literal and emits
 // `fadds f0, f1, f0`; keeping the sum in a named temp makes it emit the original `fadds f0, f0, f1`.
 #pragma opt_propagation off // keep the constant load scheduling so fadds takes its operands in the original order
-void unk_800c8e74(PartyEntry* party) {
+void partySetDispDirToMario(PartyEntry* party) {
     PartyEntry* work = party;
     MarioWork* mario = work->playerPtr;
     f32 angle = angleABf(party->position.x, party->position.z, mario->position.x, mario->position.z);
@@ -887,7 +887,7 @@ static const char* boxNames[] = {
                      // weak-local `_half`/`_three` doubles at str_802CDB20+0x210, which shifts every
                      // function's pooled Vec/angle constants up by 0x24 and costs the whole unit
 
-s32 unk_800c8dd0(HitEntry* hit) {
+s32 partyHitIsBoxMobj(HitEntry* hit) {
     s32 found;
     const char** name;
     u8* obj;
@@ -1379,7 +1379,7 @@ void partyChkWall(PartyEntry* party) {
     party->position.z = pos.z;
 }
 
-void unk_800c7c98(PartyEntry* party) {
+void partyIdleMain(PartyEntry* party) {
     PartyEntry* work = party;
     s32 mot;
 
@@ -1388,15 +1388,15 @@ void unk_800c7c98(PartyEntry* party) {
         partyChgPoseId(party, 1);
         party->flags &= ~PARTY_FLAG_IS_BEING_USED;
         if (party->currentMemberId == PARTY_MEMBER_FLURRIE) {
-            unk_801820d0(party);
+            cloudBobInit(party);
         }
     }
     mot = work->field_36;
     switch (mot) {
     case 0:
-        unk_8014bbc8(party);
+        party_motion_idle(party);
         if (party->currentMemberId == PARTY_MEMBER_FLURRIE) {
-            unk_8018206c(party);
+            cloudBobUpdate(party);
         }
         break;
     case 1:
@@ -1729,14 +1729,14 @@ void party_move_mode_stay(PartyEntry* party) {
         work->field_8 &= ~0x4;
         partyChgPoseId(party, 1);
         if (work->currentMemberId == PARTY_MEMBER_FLURRIE) {
-            unk_801820d0(party);
+            cloudBobInit(party);
         }
     }
     switch (work->field_36) {
     case 0:
         party_motion_stay(party);
         if (work->currentMemberId == PARTY_MEMBER_FLURRIE) {
-            unk_8018206c(party);
+            cloudBobUpdate(party);
         }
         break;
     case 1:
@@ -1894,7 +1894,7 @@ void party_move_mode_beside_mario(PartyEntry* party) {
     work->field_FC = work->dir;
 }
 
-// MUST_MATCH: the original inlines unk_800c8f24's body here. Writing the call out by hand and holding the speed in a
+// MUST_MATCH: the original inlines partyChgSpeedPose's body here. Writing the call out by hand and holding the speed in a
 // local and opt_propagation off, MWCC colours speed f1, gravity/down f3 and up f2 as in retail.
 #pragma opt_propagation off // the constant loads/scheduling need to keep the original shape
 void partyForceWalk(PartyEntry* party) {
@@ -1928,7 +1928,7 @@ void partyForceWalk(PartyEntry* party) {
                 f32 spd = work->speed;
                 if (work->flags2 & 0x100) {
                     partyChgPoseId(work, 3);
-                    unk_800c90d4(work, 1);
+                    partyStepSfx(work, 1);
                 } else {
                     MarioWork* mario = work->playerPtr;
                     f32 up;
@@ -1940,22 +1940,22 @@ void partyForceWalk(PartyEntry* party) {
                     if (up - down < spd && spd < spd + down) {
                         if (N_marioGetMovementSpeed() == 1) {
                             partyChgPoseId(work, 2);
-                            unk_800c90d4(work, 0);
+                            partyStepSfx(work, 0);
                         } else {
                             partyChgPoseId(work, 3);
-                            unk_800c90d4(work, 1);
+                            partyStepSfx(work, 1);
                         }
                     } else if (spd >= up) {
                         partyChgPoseId(work, 3);
-                        unk_800c90d4(work, 1);
+                        partyStepSfx(work, 1);
                     } else {
                         partyChgPoseId(work, 2);
-                        unk_800c90d4(work, 0);
+                        partyStepSfx(work, 0);
                     }
                 }
             }
 #else
-            unk_800c8f24(work, work->speed);
+            partyChgSpeedPose(work, work->speed);
 #endif
             pos = work->position;
             wall = partySearchFrontWall(work, &pos, work->speed, work->dir);
@@ -2221,14 +2221,14 @@ void walkMain(PartyEntry* party) {
             work->field_8 &= ~0x4;
             partyChgPoseId(party, 1);
             if (work->currentMemberId == PARTY_MEMBER_FLURRIE) {
-                unk_801820d0(party);
+                cloudBobInit(party);
             }
         }
         switch (work->field_36) {
         case 0:
             party_motion_stay(party);
             if (work->currentMemberId == PARTY_MEMBER_FLURRIE) {
-                unk_8018206c(party);
+                cloudBobUpdate(party);
             }
             break;
         case 1:
@@ -2420,14 +2420,14 @@ static void flyMain(PartyEntry* party) {
             work->field_8 &= ~0x4;
             partyChgPoseId(party, 1);
             if (work->currentMemberId == PARTY_MEMBER_FLURRIE) {
-                unk_801820d0(party);
+                cloudBobInit(party);
             }
         }
         switch (work->field_36) {
         case 0:
             party_motion_stay(party);
             if (work->currentMemberId == PARTY_MEMBER_FLURRIE) {
-                unk_8018206c(party);
+                cloudBobUpdate(party);
             }
             break;
         case 1:
@@ -2676,7 +2676,7 @@ BOOL partyGetAppearPos(PartyEntry* party, Vec* position) {
                         proceed = FALSE;
                 } else if ((hitGetAttr(hit) & 0xA00) != 0) {
                         proceed = FALSE;
-                } else if (unk_800c8dd0(hit) != 0) {
+                } else if (partyHitIsBoxMobj(hit) != 0) {
                         proceed = FALSE;
                 } else {
                         proceed = TRUE;
@@ -2710,7 +2710,7 @@ BOOL partyGetAppearPos(PartyEntry* party, Vec* position) {
                         proceed = FALSE;
                 } else if ((hitGetAttr(hit) & 0xA00) != 0) {
                         proceed = FALSE;
-                } else if (unk_800c8dd0(hit) != 0) {
+                } else if (partyHitIsBoxMobj(hit) != 0) {
                         proceed = FALSE;
                 } else {
                         proceed = TRUE;
@@ -2748,7 +2748,7 @@ BOOL partyGetAppearPos(PartyEntry* party, Vec* position) {
                         proceed = FALSE;
                 } else if ((hitGetAttr(hit) & 0xA00) != 0) {
                         proceed = FALSE;
-                } else if (unk_800c8dd0(hit) != 0) {
+                } else if (partyHitIsBoxMobj(hit) != 0) {
                         proceed = FALSE;
                 } else {
                         proceed = TRUE;
@@ -2781,7 +2781,7 @@ BOOL partyGetAppearPos(PartyEntry* party, Vec* position) {
                         proceed = FALSE;
                 } else if ((hitGetAttr(hit) & 0xA00) != 0) {
                         proceed = FALSE;
-                } else if (unk_800c8dd0(hit) != 0) {
+                } else if (partyHitIsBoxMobj(hit) != 0) {
                         proceed = FALSE;
                 } else {
                         proceed = TRUE;
@@ -2814,7 +2814,7 @@ BOOL partyGetAppearPos(PartyEntry* party, Vec* position) {
                         proceed = FALSE;
                 } else if ((hitGetAttr(hit) & 0xA00) != 0) {
                         proceed = FALSE;
-                } else if (unk_800c8dd0(hit) != 0) {
+                } else if (partyHitIsBoxMobj(hit) != 0) {
                         proceed = FALSE;
                 } else {
                         proceed = TRUE;
@@ -2851,7 +2851,7 @@ BOOL partyGetAppearPos(PartyEntry* party, Vec* position) {
                         proceed = FALSE;
                 } else if ((hitGetAttr(hit) & 0xA00) != 0) {
                         proceed = FALSE;
-                } else if (unk_800c8dd0(hit) != 0) {
+                } else if (partyHitIsBoxMobj(hit) != 0) {
                         proceed = FALSE;
                 } else {
                         proceed = TRUE;
@@ -2884,7 +2884,7 @@ BOOL partyGetAppearPos(PartyEntry* party, Vec* position) {
                         proceed = FALSE;
                 } else if ((hitGetAttr(hit) & 0xA00) != 0) {
                         proceed = FALSE;
-                } else if (unk_800c8dd0(hit) != 0) {
+                } else if (partyHitIsBoxMobj(hit) != 0) {
                         proceed = FALSE;
                 } else {
                         proceed = TRUE;
@@ -2917,7 +2917,7 @@ BOOL partyGetAppearPos(PartyEntry* party, Vec* position) {
                         proceed = FALSE;
                 } else if ((hitGetAttr(hit) & 0xA00) != 0) {
                         proceed = FALSE;
-                } else if (unk_800c8dd0(hit) != 0) {
+                } else if (partyHitIsBoxMobj(hit) != 0) {
                         proceed = FALSE;
                 } else {
                         proceed = TRUE;
@@ -3115,7 +3115,7 @@ BOOL partyGetAppearPos3(PartyEntry* party, Vec* position) {
         if (hit == NULL) {
             continue;
         }
-        if (unk_800c8dd0(hit) != 0) {
+        if (partyHitIsBoxMobj(hit) != 0) {
             continue;
         }
         if (partyNrmToAngle(query.hitNormal) > 60.0f) {
@@ -3127,7 +3127,7 @@ BOOL partyGetAppearPos3(PartyEntry* party, Vec* position) {
                 proceed = FALSE;
             } else if ((hitGetAttr(hit) & 0xA00) != 0) {
                 proceed = FALSE;
-            } else if (unk_800c8dd0(hit) != 0) {
+            } else if (partyHitIsBoxMobj(hit) != 0) {
                 proceed = FALSE;
             } else {
                 proceed = TRUE;
@@ -3292,7 +3292,7 @@ BOOL partyGetAppearPos4(PartyEntry* party, Vec* position) {
                 proceed = FALSE;
             } else if ((hitGetAttr(hit) & 0xA00) != 0) {
                 proceed = FALSE;
-            } else if (unk_800c8dd0(hit) != 0) {
+            } else if (partyHitIsBoxMobj(hit) != 0) {
                 proceed = FALSE;
             } else {
                 proceed = TRUE;

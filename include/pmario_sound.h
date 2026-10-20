@@ -169,7 +169,7 @@ u32 calc3D(u32 flags, Vec* position, u8 volume, u16 span);
 
 s32 psndENV_LPF(s32 id, u16 freq);
 void psndSFX_dist(s32 id, u16 dist);
-BOOL unk_800d7270(s32 a, char* b, s32 c, s32 d);
+BOOL psndBGMOn_f(s32 a, char* b, s32 c, s32 d);
 extern PaperSoundBGM psbgm[2];
 extern SoundEnvList psenvlist[];
 void psndENV_stop(u32 id);
