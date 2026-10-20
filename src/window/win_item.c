@@ -305,9 +305,9 @@ void winItemInit(WindowWork* work) {
     WW_S32(work, 0x20C) = 0;
     WW_S32(work, 0x210) = 0;
     WW_S32(work, 0x214) = 0;
-    WW_S32(work, 0x21C) = 0;
+    work->itemScrollRow[0] = 0;
     WW_S32(work, 0x218) = 0;
-    WW_S32(work, 0x220) = 0;
+    work->itemScrollRow[1] = 0;
     WW_F32(work, 0x238) = 320.f;
     WW_F32(work, 0x234) = 320.f;
     WW_F32(work, 0x240) = -240.f;
@@ -317,8 +317,8 @@ void winItemInit(WindowWork* work) {
     WW_F32(work, 0x250) = -240.f;
     WW_F32(work, 0x24C) = -240.f;
 
-    if ((s32)pouchCheckItem(0x36) == 0) {
-        pouchGetItem(0x36);
+    if ((s32)pouchCheckItem(ITEM_MAILBOX_SP) == 0) {
+        pouchGetItem(ITEM_MAILBOX_SP);
     }
     WW_S32(work, 0x254) = pouchReceiveMailCount();
 
@@ -380,11 +380,11 @@ void winItemInit2(WindowWork* work) {
     WW_F32(work, 0x158) = -275.0f;
     WW_F32(work, 0x15C) = (f32)(0x7D - WW_S32(work, 0x210) * 0x28);
 
-    t = 190.f * (f32)WW_S32(work, 0x21C);
+    t = 190.f * (f32)work->itemScrollRow[0];
     WW_F32(work, 0x22C) = t;
     WW_F32(work, 0x224) = t;
 
-    t = 190.f * (f32)WW_S32(work, 0x220);
+    t = 190.f * (f32)work->itemScrollRow[1];
     WW_F32(work, 0x230) = t;
     WW_F32(work, 0x228) = t;
 
@@ -497,15 +497,15 @@ s32 winItemMain(WindowWork* work) {
                 idx = ((s32*)((u8*)work + 0x214))[sel];
                 idx2 = ((s16*)((u8*)work + 0x2E8))[idx];
                 item = idx2;
-                if ((u32)(item - 0x37) <= 3 || item == 0x3B) {
+                if ((u32)(item - ITEM_SUPER_LUIGI1) <= 3 || item == ITEM_SUPER_LUIGI5) {
                     const char** book;
 
                     WW_S32(work, 0x20C) = 100;
                     WW_F32(work, 0x238) = -170.f;
                     WW_F32(work, 0x240) = 160.f;
                     work->flags |= 0x8000;
-                    book = luigi_book_list[item - 0x37];
-                    WW_S32(work, 0x2C8) = item - 0x37;
+                    book = luigi_book_list[item - ITEM_SUPER_LUIGI1];
+                    WW_S32(work, 0x2C8) = item - ITEM_SUPER_LUIGI1;
                     WW_S32(work, 0x2D0) = 0;
                     WW_S32(work, 0x2CC) = 0;
                     while (book[WW_S32(work, 0x2CC)] != 0) {
@@ -513,7 +513,7 @@ s32 winItemMain(WindowWork* work) {
                     }
                     WW_S32(work, 0x2CC) = (WW_S32(work, 0x2CC) + 1) / 2;
                     psndSFXOn((const char*)0x20012);
-                } else if (item == 0x36 && pouchReceiveMailCount() != 0) {
+                } else if (item == ITEM_MAILBOX_SP && pouchReceiveMailCount() != 0) {
                     WW_S32(work, 0x20C) = 200;
                     WW_F32(work, 0x248) = -144.0f;
                     WW_F32(work, 0x250) = 180.f;
@@ -527,18 +527,18 @@ s32 winItemMain(WindowWork* work) {
             goto update10;
         }
         if (work->buttonRep & 0x40) {
-            ((s32*)((u8*)work + 0x21C))[sel] -= 1;
-            if (((s32*)((u8*)work + 0x21C))[sel] < 0) {
-                ((s32*)((u8*)work + 0x21C))[sel] = 0;
+            work->itemScrollRow[sel] -= 1;
+            if (work->itemScrollRow[sel] < 0) {
+                work->itemScrollRow[sel] = 0;
             }
-            ((s32*)((u8*)work + 0x214))[sel] = ((s32*)((u8*)work + 0x21C))[sel] * 10;
+            ((s32*)((u8*)work + 0x214))[sel] = work->itemScrollRow[sel] * 10;
             psndSFXOn((const char*)0x20035);
         } else if (work->buttonRep & 0x20) {
-            ((s32*)((u8*)work + 0x21C))[sel] += 1;
-            if (((s32*)((u8*)work + 0x21C))[sel] >= rows) {
-                ((s32*)((u8*)work + 0x21C))[sel] = rows - 1;
+            work->itemScrollRow[sel] += 1;
+            if (work->itemScrollRow[sel] >= rows) {
+                work->itemScrollRow[sel] = rows - 1;
             }
-            ((s32*)((u8*)work + 0x214))[sel] = ((s32*)((u8*)work + 0x21C))[sel] * 10;
+            ((s32*)((u8*)work + 0x214))[sel] = work->itemScrollRow[sel] * 10;
             psndSFXOn((const char*)0x20035);
         } else if (work->dirRep & 0xC000) {
             // A pointer to the element (rather than the array subscript repeated) is what makes
@@ -565,7 +565,7 @@ s32 winItemMain(WindowWork* work) {
                     ((s32*)((u8*)work + 0x214))[sel] = idx - 2;
                 }
             }
-            ((s32*)((u8*)work + 0x21C))[sel] = ((s32*)((u8*)work + 0x214))[sel] / 10;
+            work->itemScrollRow[sel] = ((s32*)((u8*)work + 0x214))[sel] / 10;
             psndSFXOn((const char*)0x20035);
         } else if (work->dirRep & 0x2000) {
             idx = ((s32*)((u8*)work + 0x214))[sel];
@@ -577,7 +577,7 @@ s32 winItemMain(WindowWork* work) {
                     ((s32*)((u8*)work + 0x214))[sel] = count - 1;
                 }
             }
-            ((s32*)((u8*)work + 0x21C))[sel] = ((s32*)((u8*)work + 0x214))[sel] / 10;
+            work->itemScrollRow[sel] = ((s32*)((u8*)work + 0x214))[sel] / 10;
             psndSFXOn((const char*)0x20035);
         } else if (work->buttonTrg & 0x10) {
             winSortEntry(work, WW_S32(work, 0x210) != 0, -310.f, 150.f);
@@ -911,9 +911,9 @@ s32 winItemMain(WindowWork* work) {
 }
 
 void winItemMain2(WindowWork* work) {
-    WW_F32(work, 0x22C) = 190.0f * (f32)WW_S32(work, 0x21C);
+    WW_F32(work, 0x22C) = 190.0f * (f32)work->itemScrollRow[0];
     WW_F32(work, 0x224) += (WW_F32(work, 0x22C) - WW_F32(work, 0x224)) / 4.0f;
-    WW_F32(work, 0x230) = 190.0f * (f32)WW_S32(work, 0x220);
+    WW_F32(work, 0x230) = 190.0f * (f32)work->itemScrollRow[1];
     WW_F32(work, 0x228) += (WW_F32(work, 0x230) - WW_F32(work, 0x228)) / 4.0f;
 
     WW_F32(work, 0x234) += (WW_F32(work, 0x238) - WW_F32(work, 0x234)) / 6.0f;
