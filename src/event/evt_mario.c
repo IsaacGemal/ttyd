@@ -262,7 +262,7 @@ USER_FUNC(evt_mario_paper_pose_dokan) {
         event->userdata[1] = 0;
         if (mario->currMotionId == 0x1d) {
             marioPaperOff();
-            *(Vec*)((u8*)mario + 0xC8) = EM_VEC(0x90, vec3_802e57c0);
+            mario->scale = EM_VEC(0x90, vec3_802e57c0);
             *(Vec*)((u8*)mario + 0xBC) = EM_VEC(0x9C, vec3_802e57cc);
             *(Vec*)((u8*)mario + 0xB0) = EM_VEC(0xA8, vec3_802e57d8);
             *(Vec*)((u8*)mario + 0x98) = EM_VEC(0xB4, vec3_802e57e4);
@@ -333,7 +333,7 @@ USER_FUNC(evt_mario_paper_pose_dokan) {
         marioChgPose(str_8041B750);
         mario->dispFlags |= 0x8;
         mario->dispFlags |= 0x100;
-        *(Vec*)((u8*)mario + 0xC8) = EM_VEC(0xCC, vec3_802e57fc);
+        mario->scale = EM_VEC(0xCC, vec3_802e57fc);
         mario->spinSpeed = 30.0f;
         event->userdata[0] = 8;
         event->userdata[1] = 3;
@@ -355,7 +355,7 @@ USER_FUNC(evt_mario_paper_pose_dokan) {
     case 0: {
         Vec pos;
 
-        *(Vec*)((u8*)mario + 0xC8) = EM_VEC(0xD8, vec3_802e5808);
+        mario->scale = EM_VEC(0xD8, vec3_802e5808);
         pos = EM_VEC(0xE4, vec3_802e5814);
         pos.z = (mario->flags & 0x02000000) ? -16.0f : 0.0f;
         *(Vec*)((u8*)mario + 0x98) = pos;
@@ -394,7 +394,7 @@ USER_FUNC(evt_mario_paper_pose_dokan) {
         }
         event->userdata[0]++;
         if (event->userdata[0] > 10) {
-            *(f32*)((u8*)mario + 0x1A8) += mario->spinSpeed;
+            mario->unk1A8 += mario->spinSpeed;
             mario->spinSpeed += 0.1f;
             if (mario->spinSpeed > 30.0f) {
                 mario->spinSpeed = 30.0f;
@@ -618,9 +618,9 @@ USER_FUNC(evt_mario_set_hosei_xyz) {
     MarioWork* mario = marioGetPtr();
     s32* args = event->args;
 
-    *(f32*)((u8*)mario + 0x174) = evtGetFloat(event, args[0]);
-    *(f32*)((u8*)mario + 0x178) = evtGetFloat(event, args[1]);
-    *(f32*)((u8*)mario + 0x17C) = evtGetFloat(event, args[2]);
+    mario->riderDelta.x = evtGetFloat(event, args[0]);
+    mario->riderDelta.y = evtGetFloat(event, args[1]);
+    mario->riderDelta.z = evtGetFloat(event, args[2]);
     return EVT_RETURN_DONE;
 }
 
@@ -1528,7 +1528,7 @@ USER_FUNC(evt_mario_jump_pos) {
                 if (mario->characterId == 2) {
                     dy += float_18p5_8041b8b0;
                 } else {
-                    dy = dy + float_0p5_8041b8c8 * *(f32*)((u8*)mario + 0x1B8);
+                    dy = dy + float_0p5_8041b8c8 * mario->wPlayerCollisionBox.y;
                 }
             } else {
 #ifdef MUST_MATCH
@@ -1634,8 +1634,8 @@ USER_FUNC(evt_mario_jump_pos) {
         mario->jumpAccelY = float_0_8041b8ac;
         mario->jumpJerkY = float_0_8041b8ac;
         mario->jumpJerkStepY = float_0_8041b8ac;
-        *(f32*)((u8*)mario + 0x180) = float_0_8041b8ac;
-        *(f32*)((u8*)mario + 0x180) = float_0_8041b8ac;
+        mario->baseSpeed = float_0_8041b8ac;
+        mario->baseSpeed = float_0_8041b8ac;
         camFollowYOn();
         if (!(mario->flags & MARIO_FLAG_TUBE_MODE)) {
             marioChgMot(0);
@@ -1690,7 +1690,7 @@ USER_FUNC(evt_mario_jump_jumpstand) {
             event->userdata[3] = 2;
         } else if (*(f32*)((u8*)mario + 0xD8) < mario->position.y) {
             event->userdata[3] = 2;
-        } else if (*(f32*)((u8*)mario + 0xD8) <= h + float_1p5_8041b8c4 * *(f32*)((u8*)mario + 0x1B8)) {
+        } else if (*(f32*)((u8*)mario + 0xD8) <= h + float_1p5_8041b8c4 * mario->wPlayerCollisionBox.y) {
             event->userdata[3] = 2;
         } else {
             event->userdata[3] = 1;
@@ -1727,7 +1727,7 @@ USER_FUNC(evt_mario_jump_jumpstand) {
         if (__fabsf(dy) < float_1_8041b8a8) {
             dy += float_20_8041b8cc;
         } else if (dy >= float_0_8041b8ac) {
-            dy = float_0p5_8041b8c8 * *(f32*)((u8*)mario + 0x1B8) + dy;
+            dy = float_0p5_8041b8c8 * mario->wPlayerCollisionBox.y + dy;
         } else {
             dy = float_20_8041b8cc;
         }
@@ -1786,7 +1786,7 @@ USER_FUNC(evt_mario_jump_jumpstand) {
             player->position.y = outY;
             player->flags &= ~0x000F0000;
             *(f32*)((u8*)player + 0x128) = __fabsf(distABf(player->position.x, player->position.z, *(f32*)((u8*)player + 0x11C), *(f32*)((u8*)player + 0x124)));
-            *(s16*)((u8*)player + 0x50) = 0;
+            player->airTimer = 0;
             *(s16*)((u8*)player + 0x52) = 0;
             player->flags &= ~0x80;
             camFollowYOn();
@@ -1872,7 +1872,7 @@ USER_FUNC(evt_mario_jump_jumpstand) {
             player->position.y = outY;
             player->flags &= ~0x000F0000;
             *(f32*)((u8*)player + 0x128) = __fabsf(distABf(player->position.x, player->position.z, *(f32*)((u8*)player + 0x11C), *(f32*)((u8*)player + 0x124)));
-            *(s16*)((u8*)player + 0x50) = 0;
+            player->airTimer = 0;
             *(s16*)((u8*)player + 0x52) = 0;
             player->flags &= ~0x80;
             camFollowYOn();

@@ -800,22 +800,22 @@ HitEntry* marioSearchGround(f32* outY, f32* outX, f32* outZ, f32 a, f32 b) {
     *outY = wp->position.y;
     *outX = -1.0f;
     if (wp->baseSpeed) {
-        angle = revise360(*(f32*)((u8*)wp + 0x1A0) - *(f32*)((u8*)wp + 0x198));
+        angle = revise360(wp->directionView - wp->targetYaw);
     } else {
-        angle = toMovedir(*(f32*)((u8*)wp + 0x1A8));
+        angle = toMovedir(wp->unk1A8);
     }
     if (wp->flags & 0x100000) {
         rad = 3.1415927f * angle / 180.f;
         s = (f32)sin(rad);
-        f24 = 0.425f * (*(f32*)((u8*)wp + 0x1B4) * s);
+        f24 = 0.425f * (wp->wPlayerCollisionBox.x * s);
         c = (f32)cos(rad);
-        f23 = 0.425f * (*(f32*)((u8*)wp + 0x1B4) * -c);
+        f23 = 0.425f * (wp->wPlayerCollisionBox.x * -c);
     } else {
         rad = 3.1415927f * angle / 180.f;
         s = (f32)sin(rad);
-        f24 = 0.375f * (*(f32*)((u8*)wp + 0x1B4) * s);
+        f24 = 0.375f * (wp->wPlayerCollisionBox.x * s);
         c = (f32)cos(rad);
-        f23 = 0.375f * (*(f32*)((u8*)wp + 0x1B4) * -c);
+        f23 = 0.375f * (wp->wPlayerCollisionBox.x * -c);
     }
     py = wp->position.y;
     px = wp->position.x;
@@ -1174,9 +1174,9 @@ void* marioLandonChk_old(f32* pos, f32 spd) {
     fa = 0.01f + __fabsf(spd);
     h = 0.75f * wp->wPlayerCollisionBox.y;
     if (wp->baseSpeed) {
-        angle = revise360(*(f32*)((u8*)wp + 0x1A0) - *(f32*)((u8*)wp + 0x198));
+        angle = revise360(wp->directionView - wp->targetYaw);
     } else {
-        angle = toMovedir(*(f32*)((u8*)wp + 0x1A8));
+        angle = toMovedir(wp->unk1A8);
     }
     rad = 3.1415927f * angle / 180.f;
     sn = (f32)sin(rad);
@@ -1277,9 +1277,9 @@ void* marioChkLandon2(f32* out, f32 a, f32 b) {
     fa = 0.1f + __fabsf(a);
     h = 0.5f * wp->wPlayerCollisionBox.y;
     if (wp->baseSpeed) {
-        angle = *(f32*)((u8*)wp + 0x1A0);
+        angle = wp->directionView;
     } else {
-        angle = toMovedir(*(f32*)((u8*)wp + 0x1A8));
+        angle = toMovedir(wp->unk1A8);
     }
     rad = 3.1415927f * angle / 180.f;
     sn = (f32)sin(rad);

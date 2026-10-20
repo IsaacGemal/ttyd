@@ -437,13 +437,13 @@ void N__cloud_use(PartyEntry* party) {
         MOVE_TO_MARIO();
         party->position = party->targetPos;
         partyUpdateKeyData(party);
-        *(f32*)((u8*)mario + 0x1A8) = *(f32*)((u8*)cloud + 0x4);
+        mario->unk1A8 = *(f32*)((u8*)cloud + 0x4);
         mario->dispReqDir = *(f32*)((u8*)cloud + 0x4);
         party->field_10C = *(f32*)((u8*)cloud + 0x4);
         party->field_110 = *(f32*)((u8*)cloud + 0x4);
         sx = mario->position.x;
         sz = mario->position.z;
-        f31 = *(f32*)((u8*)mario + 0x1A8);
+        f31 = mario->unk1A8;
         flag = 0;
         if (f31 < 90.0f || f31 >= 270.0f) { flag = 1; }
         f31 = toMovedir(f31 + (flag ? -90.0f : 90.0f));
