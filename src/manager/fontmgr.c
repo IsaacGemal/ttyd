@@ -67,8 +67,7 @@ static BinaryFontWidth* FontGetWidthPtr(u16 code) {
 	return NULL;
 }
 
-#ifdef MUST_MATCH
-// MUST_MATCH: inlining the scan with ptr declared before i gives header/i retail registers r8/r6.
+// Inlining the scan with ptr declared before i gives header/i retail registers r8/r6.
 static inline void fontmgrScanBlocks(BinaryFontHeader* header) {
 	BinaryFontBlock* ptr;
 	int i;
@@ -90,55 +89,22 @@ static inline void fontmgrScanBlocks(BinaryFontHeader* header) {
 		ptr = (BinaryFontBlock*)((u32)ptr + ptr->size);
 	}
 }
-#endif
 
 void fontmgrTexSetup(void) {
 	DVDEntry* dvd;
-#ifdef MUST_MATCH
 	u32 rounded;
-#endif
 	u32 size;
-#ifndef MUST_MATCH
-	BinaryFontBlock* ptr;
-#endif
 	char path[128];
-#ifndef MUST_MATCH
-	int i;
-#endif
 
 	if (!pfh) {
 		sprintf(path, "%s/f/%s.bfn", getMarioStDvdRoot(), fontname[0]);
 		dvd = DVDMgrOpen(path, 2, 0);
 		size = DVDMgrGetLength(dvd);
-#ifdef MUST_MATCH
 		// Keeping the assignment in the argument preserves size in r4 and allocates dvd/rounded to r31/r30.
 		pfh = __memAlloc(HEAP_DEFAULT, rounded = OSRoundUp32B(size));
 		DVDMgrRead(dvd, pfh, rounded, 0);
-#else
-		pfh = __memAlloc(HEAP_DEFAULT, OSRoundUp32B(size));
-		DVDMgrRead(dvd, pfh, OSRoundUp32B(size), 0);
-#endif
 		DVDMgrClose(dvd);
-#ifdef MUST_MATCH
 		fontmgrScanBlocks(pfh);
-#else
-		ptr = (BinaryFontBlock*)(pfh + 1);
-		for (i = 0; i < pfh->blockcount; i++) {
-			switch (ptr->magic) {
-				case 'INF1':
-					pfi = (BinaryFontInfo*)ptr;
-					break;
-				case 'GLY1':
-					blockGlyph = (BinaryFontGlyph*)ptr;
-					break;
-				case 'MAP1':
-				case 'WID1':
-				default:
-					break;
-			}
-			ptr = (BinaryFontBlock*)((u32)ptr + ptr->size);
-		}
-#endif
 		GXInitTexObj(
 			&fgTexObj,
 			&blockGlyph[1],
@@ -438,19 +404,12 @@ static inline void FontDrawPosEdge(u16 glyph, f32 x, f32 y) {
 	GXColor saved = fontColor;
 
 	FontDrawColorIDX(0);
-#ifdef MUST_MATCH
-	// MUST_MATCH: retail converts x and y once per pair. The `int` and `s32` conversions are two different
+	// Retail converts x and y once per pair. The `int` and `s32` conversions are two different
 	// expressions to MWCC's CSE, which keeps the pairs apart and numbers the second pair's temps last.
 	_JUTFont_DrawPos(glyph, (s16)x - 2, (int)(s16)y);
 	_JUTFont_DrawPos(glyph, (s16)x + 2, (int)(s16)y);
 	_JUTFont_DrawPos(glyph, (s32)(s16)x, (s32)(s16)y - 2);
 	_JUTFont_DrawPos(glyph, (s32)(s16)x, (s32)(s16)y + 2);
-#else
-	_JUTFont_DrawPos(glyph, (s16)x - 2, (s16)y);
-	_JUTFont_DrawPos(glyph, (s16)x + 2, (s16)y);
-	_JUTFont_DrawPos(glyph, (s16)x, (s16)y - 2);
-	_JUTFont_DrawPos(glyph, (s16)x, (s16)y + 2);
-#endif
 	FontDrawColor(saved);
 }
 
@@ -551,13 +510,11 @@ void FontDrawStringCenterMtx(Mtx mtx, const char* msg) {
 	}
 }
 
-#ifdef MUST_MATCH
-// MUST_MATCH: reading the width byte through this inline numbers its result after the inlined
-// FontGetWidthPtr temps, which gives the glyph width retail's r27; the plain direct read is under #else.
+// Reading the width byte through this inline numbers its result after the inlined
+// FontGetWidthPtr temps, which gives the glyph width retail's r27.
 static inline u16 FontDrawStringShake_Width(u16 glyph) {
 	return ((u8*)FontGetWidthPtr(glyph))[1];
 }
-#endif
 
 void FontDrawStringShake(const char* str, f32 x, f32 y) {
 	CameraEntry* cam;
@@ -580,11 +537,7 @@ void FontDrawStringShake(const char* str, f32 x, f32 y) {
 		}
 		offX = fontScale.x * (f32)(irand(10000) % 3) + x;
 		offY = fontScale.y * (f32)(irand(10000) % 3) + y;
-#ifdef MUST_MATCH
 		w = FontDrawStringShake_Width(glyph);
-#else
-		w = ((u8*)FontGetWidthPtr(glyph))[1];
-#endif
 		PSMTXTransApply(mtx, mtx2, offX, offY, 0.0f);
 		PSMTXConcat(cam->view, mtx2, mtx2);
 		GXLoadPosMtxImm(mtx2, GX_PNMTX0);
@@ -596,8 +549,7 @@ void FontDrawStringShake(const char* str, f32 x, f32 y) {
 	}
 }
 
-#ifdef MUST_MATCH
-// MUST_MATCH: routing the edge block through this inline makes the compiler allocate saved/c2 in the
+// Routing the edge block through this inline makes the compiler allocate saved/c2 in the
 // inline pass, i.e. after the inlined FontDrawStart_alpha `start`, which is retail's slot order.
 static inline void FontDrawMessage_Edge(u16 glyph, s32 x, s32 yy) {
 	GXColor c2;
@@ -618,7 +570,6 @@ static inline void FontDrawMessage_Edge(u16 glyph, s32 x, s32 yy) {
 	c2 = saved;
 	FontDrawColor(c2);
 }
-#endif
 
 // FontDrawMessage_Edge's second pair (the vertical offsets) narrows x and yy into fresh s16 locals in its own block:
 // the original sign-extends x again there and reuses the narrowed y.
@@ -722,30 +673,14 @@ void FontDrawMessage(s32 x0, s32 y, const char* msg) {
 			continue;
 		}
 		if (fontEdge) {
-#ifdef MUST_MATCH
 			FontDrawMessage_Edge(glyph, x, yy);
-#else
-			GXColor c2;
-			GXColor saved = fontColor;
-			s16 sx;
-			s16 sy;
-			FontDrawColorIDX(0);
-			sx = x;
-			sy = yy;
-			_JUTFont_DrawPos(glyph, sx - 2, sy);
-			_JUTFont_DrawPos(glyph, sx + 2, sy);
-			_JUTFont_DrawPos(glyph, (s16)x, (s16)(yy - 2));
-			_JUTFont_DrawPos(glyph, (s16)x, (s16)(yy + 2));
-			c2 = saved;
-			FontDrawColor(c2);
-#endif
 		}
 		_JUTFont_DrawPos(glyph, (s16)x, (s16)yy);
 		x += *(u8*)((u8*)FontGetWidthPtr(glyph) + 1) + charspace[gp->language];
 	}
 }
 
-// Icon scalars hoisted to function scope (MUST_MATCH). The unit's int->float pool order comes from
+// Icon scalars hoisted to function scope. The unit's int->float pool order comes from
 // _JUTFont_DrawPos, the first function emitted, where retail converts blk->cellheight (unsigned) before any signed
 // value: starting it with `fheight = (f32)blk->cellheight;` makes this function 100% but drops _JUTFont_DrawPos to ~61.
 void FontDrawMessageMtx(Mtx mtx, const char* msg) {
@@ -755,24 +690,17 @@ void FontDrawMessageMtx(Mtx mtx, const char* msg) {
 	u16 glyph;
 	s32 x;
 	s32 y;
-#ifdef MUST_MATCH
 	// Retail materialises the newline reset value with an fctiwz of 0.0f (r28), not a `li`.
 	f32 x0 = 0.0f;
-#else
-	s32 x0 = 0;
-#endif
 	char arg1[128];
 	char arg2[128];
-#ifdef MUST_MATCH
-	// MUST_MATCH: retail allocates these icon scalars before the colour-branch locals; declaring them at
-	// function scope puts them in the function's scalar block, above the branch colours (natural form is
-	// the block-scope declarations in the icon branch).
+	// Retail allocates these icon scalars before the colour-branch locals; declaring them at
+	// function scope puts them in the function's scalar block, above the branch colours.
 	s32 id;
 	s32 a1;
 	s32 a2;
 	s32 offset;
 	f32 scale;
-#endif
 
 	cam = camGetCurPtr();
 	x = 0;
@@ -802,13 +730,6 @@ void FontDrawMessageMtx(Mtx mtx, const char* msg) {
 					FontDrawColor(c);
 				}
 				else if (strcmp(arg1, "icon") == 0) {
-#ifndef MUST_MATCH
-					s32 id;
-					s32 a1;
-					s32 a2;
-					s32 offset;
-					f32 scale;
-#endif
 					char name[32];
 					u16 iw;
 					u16 ih;
@@ -832,16 +753,11 @@ void FontDrawMessageMtx(Mtx mtx, const char* msg) {
 					PSMTXMultVec(mtx, &ipos, &ipos);
 					iconDispGxAlpha(scale, &ipos, 0x10, id, fontAlpha);
 					FontDrawStart_alpha(fontAlpha);
-#ifdef MUST_MATCH
-					// MUST_MATCH: the explicit by-value GXColor temp is the shape that puts the post-icon colour at
-					// retail's 0x44 stack slot (natural form is the FontDrawColor_() call under the #else).
+					// The explicit by-value GXColor temp puts the post-icon colour at retail's 0x44 stack slot.
 					{
 						GXColor c = fontColor;
 						FontDrawColor(c);
 					}
-#else
-					FontDrawColor_();
-#endif
 					x = (s32)((f32)x + ((f32)iw * scale + (f32)offset));
 				}
 				// Retail's `/r` test is dead: the compiler compares the sign-extended
