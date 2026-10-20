@@ -9,15 +9,15 @@ typedef struct EffAkariSflushData {
 	f32 x;          //0x4
 	f32 y;          //0x8
 	f32 z;          //0xC
-	s32 field_0x10; //0x10
-	s32 field_0x14; //0x14
-	s32 field_0x18; //0x18
-	s32 field_0x1C; //0x1C
-	s32 field_0x20; //0x20
-	s32 field_0x24; //0x24
+	s32 life;       //0x10
+	s32 age;        //0x14
+	s32 color1R;    //0x18: TEVREG0 colour
+	s32 color1G;    //0x1C
+	s32 color1B;    //0x20
+	s32 alpha;      //0x24
 	f32 scale;      //0x28
-	f32 field_0x2C; //0x2C
-	s32 field_0x30; //0x30
+	f32 growScale;  //0x2C: ring size multiplier, starts at 1 and grows in the last 8 frames
+	s32 lastRing;   //0x30: index of the last ring (rings run 0..lastRing)
 } EffAkariSflushData;
 #include "driver/camdrv.h"
 void effAkariSflushDisp(CameraId camId, void* param);
