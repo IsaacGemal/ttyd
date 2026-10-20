@@ -1168,9 +1168,9 @@ void mapUnLoad(void) {
 			}
 			entry->tpl = NULL;
 		}
-		if (*(void**)entry->field_0x8C) {
-			_mapFree(*(void**)entry->field_0x8C);
-			*(void**)entry->field_0x8C = NULL;
+		if (entry->chunkBuf) {
+			_mapFree(entry->chunkBuf);
+			entry->chunkBuf = NULL;
 		}
 		strncpy(entry->name, "", 0x10);
 	}
@@ -1243,9 +1243,9 @@ void bmapUnLoad(void) {
 			}
 			entry->tpl = NULL;
 		}
-		if (*(void**)entry->field_0x8C) {
-			_mapFree(*(void**)entry->field_0x8C);
-			*(void**)entry->field_0x8C = NULL;
+		if (entry->chunkBuf) {
+			_mapFree(entry->chunkBuf);
+			entry->chunkBuf = NULL;
 		}
 		strncpy(entry->name, "", 0x10);
 	}
@@ -1265,14 +1265,14 @@ void bmapUnLoad(void) {
 			*(void**)((u8*)entry + 0x178) = NULL;
 		}
 		else {
-			*(void**)entry->field_0x8C = _mapAllocTail(*(u32*)(entry->field_0x8C + 4));
-			aramMgrToMram(*(void**)((u8*)entry + 0x174), *(void**)entry->field_0x8C);
+			entry->chunkBuf = _mapAllocTail(entry->chunkBufSize);
+			aramMgrToMram(*(void**)((u8*)entry + 0x174), entry->chunkBuf);
 			*(void**)((u8*)entry + 0x174) = NULL;
 		}
 		makeDisplayList(i);
 	}
-	if (*(void**)wp->entries[0].field_0x8C) {
-		arcEntry(1, *(void**)wp->entries[0].field_0x8C, *(u32*)(wp->entries[0].field_0x8C + 4));
+	if (wp->entries[0].chunkBuf) {
+		arcEntry(1, wp->entries[0].chunkBuf, wp->entries[0].chunkBufSize);
 	}
 }
 
@@ -2577,7 +2577,7 @@ s32 mapSetLight(MapObject* obj, LightEntry** entries) {
 			for (i = 0; i < 0x20; i++) {
 				if (*(u32*)(obj->joints->drawMode->unk2 + 2) & (1 << i)) {
 					MapEntry* entry = &mapWork[activeGroup].entries[obj->entryIdx];
-					void* list = *(void**)(entry->field_0x8C + 0x0C);
+					void* list = entry->lightTable;
 					LightEntry* l = lightNameToPtr(*(const char**)*(void**)((u8*)list + i * 4 + 4));
 
 					if (!(l->flags & LIGHT_AMBIENT)) {
@@ -2595,7 +2595,7 @@ s32 mapSetLight(MapObject* obj, LightEntry** entries) {
 			for (i = 0; i < 0x20; i++) {
 				if (*(u32*)(obj->joints->drawMode->unk2 + 2) & (1 << i)) {
 					MapEntry* entry = &mapWork[activeGroup].entries[obj->entryIdx];
-					void* list = *(void**)(entry->field_0x8C + 0x0C);
+					void* list = entry->lightTable;
 					LightEntry* l = lightNameToPtr(*(const char**)*(void**)((u8*)list + i * 4 + 4));
 
 					if (!(l->flags & LIGHT_AMBIENT)) {
@@ -3627,7 +3627,7 @@ void mapSetMaterial(MapObject* obj, void* materialPtr) {
 
 		wp = &mapWork[activeGroup];
 		desc = TEXGet(wp->entries[obj->entryIdx].tpl,
-		              mapMatSearchTex(*(s32**)(wp->entries[obj->entryIdx].field_0x8C + 8),
+		              mapMatSearchTex(wp->entries[obj->entryIdx].textureTable,
 		                              *(const char**)ref->field_0x0));
 		GXInitTexObj(&texObj, desc->textureHeader->data, desc->textureHeader->width, desc->textureHeader->height,
 		             desc->textureHeader->format, texwrap_tbl[ref->wrapS], texwrap_tbl[ref->wrapT],
@@ -3796,7 +3796,7 @@ void mapSetMaterialLight(s32 flags, Vec position) {
 
 // vertex layout of an unpacked display list (stride 0x18)
 
-// per-mesh vtx-format block (the value at entry->field_0x8C + 0x18)
+// per-mesh vtx-format block (entry->vcdTable)
 
 #pragma opt_common_subs off // MUST_MATCH: stop MWCC CSEing a shared base into the wp/nrm/pos slots
 // The vertex-loop `p = &vp->x` scratch is matched by reading z as `p[2]`.
@@ -3896,7 +3896,7 @@ void mapSetPolygon(MapObject* obj, MapFileMesh* mesh) {
 		for (i = 0; i < 8; i++) {
 			if (!(mask & (1 << (i + 4)))) break;
 			GXSetVtxDesc(GX_VA_TEX0 + i, GX_INDEX16);
-			fmt = (MapVtxFmt*)*(void**)(wp->entries[obj->entryIdx].field_0x8C + 0x18);
+			fmt = (MapVtxFmt*)wp->entries[obj->entryIdx].vcdTable;
 			GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0 + i, GX_TEX_ST, GX_S16, (u8)fmt->field_0x48[i]);
 			GXSetArray(GX_VA_TEX0 + i, (void*)(((u32*)mesh->vcdTableOffset)[6 + i] + 4), 4);
 		}
@@ -3953,7 +3953,7 @@ void mapSetPolygonVtxDesc(MapObject* obj, MapFileMesh* mesh) {
 			break;
 		}
 		GXSetVtxDesc(GX_VA_TEX0 + i, GX_INDEX16);
-		material = *(u8**)(wp->entries[obj->entryIdx].field_0x8C + 0x18);
+		material = (u8*)wp->entries[obj->entryIdx].vcdTable;
 		GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0 + i, GX_TEX_ST, GX_S16, (u8)*(u32*)(material + 0x48 + i * 4));
 		GXSetArray(GX_VA_TEX0 + i, (void*)(((u32*)mesh->vcdTableOffset)[6 + i] + 4), 4);
 	}

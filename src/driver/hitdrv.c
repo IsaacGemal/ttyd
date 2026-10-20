@@ -574,7 +574,7 @@ static inline void hitSetGQR5(u32 shift) {
 #endif
 
 // The map file's vertex fraction shift for this hit's map.
-#define HIT_VTX_FRAC(mw, hit) (*(u32*)(*(u8**)((mw)->entries[(hit)->mapIndex].field_0x8C + 0x18) + 0x44))
+#define HIT_VTX_FRAC(mw, hit) (*(u32*)((u8*)(mw)->entries[(hit)->mapIndex].vcdTable + 0x44))
 
 // The packed s16 vertex reads use the SDK __OSs16tof32 fast-cast inline, so they lower to retail's psq_lx
 // through GQR5, which retail reprograms per vertex from the map file's fraction shift (hitSetGQR5, MUST_MATCH;

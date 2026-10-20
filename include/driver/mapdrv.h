@@ -151,7 +151,8 @@ typedef struct MapEntry {
     u32 datSize;                   // 0x80
     void* tpl;                     // 0x84, ./map/%s/texture.tpl
     u32 tplSize;                   // 0x88
-    u8 field_0x8C[0x94 - 0x8C];    // 0x8C
+    void* chunkBuf;                // 0x8C, buffer for the chunk data, freed on unload
+    u32 chunkBufSize;              // 0x90
     void* textureTable;            // 0x94, "texture_table" chunk
     struct MapFileLightTable* lightTable; // 0x98, "light_table" chunk
     struct MapFileFog* fogTable;   // 0x9C, "fog_table" chunk
