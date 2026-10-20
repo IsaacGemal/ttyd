@@ -96,7 +96,7 @@ s32 battleAcMain_PowerGaugeLv(BattleWork* work) {
                 work->actionCommands.outputParams[0] = 0;
             }
             else {
-                s32 r = (s32)irand(*(s32*)((u8*)work + 0x1ccc) - 1) + 1;
+                s32 r = (s32)irand(work->actionCommands.acParams[1] - 1) + 1;
                 work->actionCommands.outputParams[0] = r;
                 work->actionCommands.field_0x8 = 0x1e;
             }
@@ -115,32 +115,32 @@ s32 battleAcMain_PowerGaugeLv(BattleWork* work) {
         }
         dec->gaugePercent = intplGetValue(2, dec->frame, dec->value, float_0_804215f8, float_100_804215e0);
         if (BattlePadGetNow() == 0x60) {
-            if (dec->gaugePercent < (f32)*(s32*)((u8*)work + 0x1cd0)) {
+            if (dec->gaugePercent < (f32)work->actionCommands.acParams[2]) {
                 work->actionCommands.result = 0;
                 work->actionCommands.result &= ~2;
             }
             else {
                 work->actionCommands.result = 2;
                 work->actionCommands.mResultCount++;
-                if (*(s32*)((u8*)work + 0x1ccc) <= 1) {
+                if (work->actionCommands.acParams[1] <= 1) {
                     work->actionCommands.outputParams[0] = 1;
                 }
-                else if (dec->gaugePercent < (f32)*(s32*)((u8*)work + 0x1cd4)) {
+                else if (dec->gaugePercent < (f32)work->actionCommands.acParams[3]) {
                     work->actionCommands.outputParams[0] = 1;
                 }
-                else if (*(s32*)((u8*)work + 0x1ccc) <= 2) {
+                else if (work->actionCommands.acParams[1] <= 2) {
                     work->actionCommands.outputParams[0] = 2;
                 }
-                else if (dec->gaugePercent < (f32)*(s32*)((u8*)work + 0x1cd8)) {
+                else if (dec->gaugePercent < (f32)work->actionCommands.acParams[4]) {
                     work->actionCommands.outputParams[0] = 2;
                 }
-                else if (*(s32*)((u8*)work + 0x1ccc) <= 3) {
+                else if (work->actionCommands.acParams[1] <= 3) {
                     work->actionCommands.outputParams[0] = 3;
                 }
-                else if (dec->gaugePercent < (f32)*(s32*)((u8*)work + 0x1cdc)) {
+                else if (dec->gaugePercent < (f32)work->actionCommands.acParams[5]) {
                     work->actionCommands.outputParams[0] = 3;
                 }
-                else if (*(s32*)((u8*)work + 0x1ccc) <= 4) {
+                else if (work->actionCommands.acParams[1] <= 4) {
                     work->actionCommands.outputParams[0] = 4;
                 }
                 else {
@@ -314,7 +314,7 @@ static void actionCommandDisp(f32 f1, f32 f2) {
         }
         break;
     case 0x3e8:
-        if (dec->gaugePercent >= (f32)*(s32*)((u8*)work + 0x1cd0) &&
+        if (dec->gaugePercent >= (f32)work->actionCommands.acParams[2] &&
             dec->gaugePercent <= float_100_804215e0) {
             f1 = float_neg220_804215e4 + f1;
             f2 = float_70_804215e8 + f2;

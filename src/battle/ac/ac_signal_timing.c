@@ -56,11 +56,11 @@ s32 ac_signaltiming_ok_frame_range_2[7] = {0x1E, 0x1E, 0x1E, 0x1E, 0x19, 0x14, 0
 s32 _get_ok_frame_range(s32 idx) {
     BattleWork* work = _battleWorkPointer;
 
-    switch (*(s32*)((u8*)work + 0x1ccc)) {
+    switch (work->actionCommands.acParams[1]) {
     case 1:
-        return *(s32*)((u8*)work + 0x1ce4) + ac_signaltiming_ok_frame_range_2[idx];
+        return work->actionCommands.acParams[7] + ac_signaltiming_ok_frame_range_2[idx];
     default:
-        return *(s32*)((u8*)work + 0x1ce4) + ac_signaltiming_ok_frame_range[idx];
+        return work->actionCommands.acParams[7] + ac_signaltiming_ok_frame_range[idx];
     }
 }
 #pragma dont_inline reset
