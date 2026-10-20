@@ -189,9 +189,9 @@ USER_FUNC(evt_mario_paper_pose_dokan) {
         if (mario->currMotionId == 0x1d) {
             marioPaperOff();
             mario->scale = EM_VEC(0x90, vec3_802e57c0);
-            *(Vec*)((u8*)mario + 0xBC) = EM_VEC(0x9C, vec3_802e57cc);
-            *(Vec*)((u8*)mario + 0xB0) = EM_VEC(0xA8, vec3_802e57d8);
-            *(Vec*)((u8*)mario + 0x98) = EM_VEC(0xB4, vec3_802e57e4);
+            mario->dispRot = EM_VEC(0x9C, vec3_802e57cc);
+            mario->dispPivot = EM_VEC(0xA8, vec3_802e57d8);
+            mario->dispOfs = EM_VEC(0xB4, vec3_802e57e4);
         } else {
             switch (type) {
             case 4:
@@ -237,7 +237,7 @@ USER_FUNC(evt_mario_paper_pose_dokan) {
         mario->spinSpeed = zero;
         pos = EM_VEC(0xC0, vec3_802e57f0);
         pos.z = (mario->flags & 0x02000000) ? -16.0f : zero;
-        *(Vec*)((u8*)mario + 0x98) = pos;
+        mario->dispOfs = pos;
         event->userdata[0] = 0;
         marioNoUpdateCamPos();
         if (!(mario->flags & 0x02000000)) {
@@ -284,7 +284,7 @@ USER_FUNC(evt_mario_paper_pose_dokan) {
         mario->scale = EM_VEC(0xD8, vec3_802e5808);
         pos = EM_VEC(0xE4, vec3_802e5814);
         pos.z = (mario->flags & 0x02000000) ? -16.0f : 0.0f;
-        *(Vec*)((u8*)mario + 0x98) = pos;
+        mario->dispOfs = pos;
         if (!(mario->flags & 0x02000000)) {
             mario->position.z += -8.0f;
         }
@@ -292,23 +292,23 @@ USER_FUNC(evt_mario_paper_pose_dokan) {
         if (party != NULL) {
             party->position = mario->position;
             party->field_70 = mario->scale;
-            *(Vec*)((u8*)party + 0x7C) = EM_VEC(0xF0, vec3_802e5820);
+            party->dispOffset = EM_VEC(0xF0, vec3_802e5820);
             *(Vec*)((u8*)party + 0x64) = EM_VEC(0xFC, vec3_802e582c);
-            *(Vec*)((u8*)party + 0x88) = EM_VEC(0x108, vec3_802e5838);
-            *(f32*)((u8*)party + 0x8C) = *(f32*)((u8*)mario + 0xB4);
-            *(f32*)((u8*)party + 0x80) = *(f32*)((u8*)mario + 0x9C);
-            *(f32*)((u8*)party + 0x84) = *(f32*)((u8*)mario + 0xA0);
+            party->spinPivot = EM_VEC(0x108, vec3_802e5838);
+            party->spinPivot.y = mario->dispPivot.y;
+            party->dispOffset.y = mario->dispOfs.y;
+            party->dispOffset.z = mario->dispOfs.z;
         }
         party = partyGetPtr(marioGetExtraPartyId());
         if (party != NULL) {
             party->position = mario->position;
             party->field_70 = mario->scale;
-            *(Vec*)((u8*)party + 0x7C) = EM_VEC(0x114, vec3_802e5844);
+            party->dispOffset = EM_VEC(0x114, vec3_802e5844);
             *(Vec*)((u8*)party + 0x64) = EM_VEC(0x120, vec3_802e5850);
-            *(Vec*)((u8*)party + 0x88) = EM_VEC(0x12C, vec3_802e585c);
-            *(f32*)((u8*)party + 0x8C) = *(f32*)((u8*)mario + 0xB4);
-            *(f32*)((u8*)party + 0x80) = *(f32*)((u8*)mario + 0x9C);
-            *(f32*)((u8*)party + 0x84) = *(f32*)((u8*)mario + 0xA0);
+            party->spinPivot = EM_VEC(0x12C, vec3_802e585c);
+            party->spinPivot.y = mario->dispPivot.y;
+            party->dispOffset.y = mario->dispOfs.y;
+            party->dispOffset.z = mario->dispOfs.z;
         }
         ret = 2;
         break;
@@ -1982,7 +1982,6 @@ USER_FUNC(evt_koopa_hip_attack) {
         break;
     case 2: {
         MarioWork* mario2;
-        u8* mp;
         void* ground;
         s32 landed;
 #ifdef MUST_MATCH
@@ -2000,9 +1999,8 @@ USER_FUNC(evt_koopa_hip_attack) {
         vy = mario->jumpVelY;
 #endif
         mario2 = marioGetPtr();
-        mp = (u8*)mario2;
         if (mario2->flags & MARIO_FLAG_TUBE_MODE) {
-            ground = (void*)marioSearchGroundRoll(&v0, &v1, &v2, 11.0f, *(f32*)(mp + 0x7C));
+            ground = (void*)marioSearchGroundRoll(&v0, &v1, &v2, 11.0f, mario2->jumpVelY);
         } else {
 #ifdef MUST_MATCH
             ground = (void*)marioSearchGround(&v0, &v1, &v2, y, y);
@@ -2020,10 +2018,10 @@ USER_FUNC(evt_koopa_hip_attack) {
             mario2->position.y = v0;
             mario2->flags &= ~(MARIO_FLAG_IS_JUMPING | MARIO_FLAG_IS_FALLING |
                               MARIO_FLAG_IS_STEPPING | MARIO_FLAG_HAS_INPUT_JUMP);
-            *(f32*)(mp + 0x128) = __fabsf(distABf(mario2->position.x, mario2->position.z,
-                                                         *(f32*)(mp + 0x11C), *(f32*)(mp + 0x124)));
+            mario2->field_0x128 = __fabsf(distABf(mario2->position.x, mario2->position.z,
+                                                  mario2->field_0x11C.x, mario2->field_0x11C.z));
             mario2->airTimer = 0;
-            *(s16*)(mp + 0x52) = 0;
+            mario2->airTimerPeak = 0;
             mario2->flags &= ~MARIO_FLAG_STOP_AIR_MOVEMENT;
             camFollowYOn();
             landed = 1;
