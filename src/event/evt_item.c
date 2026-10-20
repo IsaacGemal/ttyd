@@ -388,7 +388,7 @@ USER_FUNC(evt_item_get_important_item) {
 	ItemEntry* item = itemNameToPtr((char*)evtGetValue(event, args[0]));
 	MarioWork* mario = marioGetPtr();
 	f32 mx = mario->position.x;
-	f32 my = mario->position.y + *(f32*)((u8*)mario + 0x1B8);
+	f32 my = mario->position.y + mario->wPlayerCollisionBox.y;
 	f32 mz = mario->position.z;
 	f32 f2, f4, f5;
 	f32 t;

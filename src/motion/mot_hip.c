@@ -323,9 +323,9 @@ void mot_hip(void) {
 
     *(f32*)((u8*)mario + 0xC4) = *(f32*)((u8*)mario + 0x2A0);
     if (mario->airTimer != 0) {
-        *(f32*)((u8*)mario + 0x174) = 0.0f;
-        *(f32*)((u8*)mario + 0x17C) = 0.0f;
-        *(f32*)((u8*)mario + 0x178) = 0.0f;
+        mario->riderDelta.x = 0.0f;
+        mario->riderDelta.z = 0.0f;
+        mario->riderDelta.y = 0.0f;
     }
 }
 

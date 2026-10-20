@@ -120,8 +120,8 @@ USER_FUNC(hit_move) {
            (angleABf(pos.x, pos.z, mario->position.x, mario->position.z) + diff) / float_360_eki_00008ff8;
 #endif
 
-    *(f32*)((u8*)mario + 0x174) = (dist * (f32)sin(diff) + pos.x) - mario->position.x;
-    *(f32*)((u8*)mario + 0x17c) = (pos.z - dist * (f32)cos(diff)) - mario->position.z;
+    mario->riderDelta.x = (dist * (f32)sin(diff) + pos.x) - mario->position.x;
+    mario->riderDelta.z = (pos.z - dist * (f32)cos(diff)) - mario->position.z;
     event->userdataf[1] = angle;
     return EVT_RETURN_BLOCK;
 }

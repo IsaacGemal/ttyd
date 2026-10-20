@@ -637,14 +637,14 @@ s32 toge_searchParent(PuniData* puni, s16 id) {
 void togeModeParent(PuniData* puni) {
     Vec diff;
 
-    PSVECSubtract((Vec*)((u8*)*(u8**)((u8*)puni + 0x1D0) + 0x12C), (Vec*)((u8*)puni + 0x12C), &diff);
+    PSVECSubtract((Vec*)((u8*)*(u8**)((u8*)puni + 0x1D0) + 0x12C), &puni->pos, &diff);
     *(f32*)((u8*)puni + 0x1A8) = PSVECMag(&diff);
     if (*(f32*)((u8*)puni + 0x1A8) >
         2.0f + (*(f32*)((u8*)puni + 0x190) + *(f32*)((u8*)*(u8**)((u8*)puni + 0x1D0) + 0x190)) + 3.0f) {
         PSVECNormalize(&diff, &diff);
         diff.y = 0.0f;
         PSVECScale(&diff, &diff, 1.0f);
-        PSVECAdd((Vec*)((u8*)puni + 0x15C), &diff, (Vec*)((u8*)puni + 0x15C));
+        PSVECAdd(&puni->vel, &diff, &puni->vel);
         *(f32*)((u8*)puni + 0x174) = 3.0f;
     }
 }

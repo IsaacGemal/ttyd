@@ -66,9 +66,9 @@ USER_FUNC(_add_star_point_disp_offset) {
     zf = (f32)evtGetValue(event, arg3);
     // BattleUnitKind::field_0x10 spans 0x10..0xB8, so the display-offset Vec at
     // 0x90 is not declared in the header and is read raw.
-    x += *(f32*)((u8*)unit->mKindParams + 0x90);
-    y += *(f32*)((u8*)unit->mKindParams + 0x94);
-    zf += *(f32*)((u8*)unit->mKindParams + 0x98);
+    x += unit->mKindParams->starPointDispOffset.x;
+    y += unit->mKindParams->starPointDispOffset.y;
+    zf += unit->mKindParams->starPointDispOffset.z;
     evtSetValue(event, arg1, (s32)x);
     evtSetValue(event, arg2, (s32)y);
     evtSetValue(event, arg3, (s32)zf);

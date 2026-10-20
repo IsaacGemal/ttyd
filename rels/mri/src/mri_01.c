@@ -3095,7 +3095,7 @@ void mri_stg3_012_cb(s32 type, smartEntry* smart) {
 
     switch (type) {
     case 3:
-        if (*(u16*)((u8*)msg + 0x8) == 1) {
+        if (msg->choiceIndex == 1) {
             evtSetValue(NULL, LSWF(2), 1);
         }
         break;

@@ -446,7 +446,7 @@ USER_FUNC(yuka_anim_reverse_play) {
     if (isFirstCall) {
         yuka_anim[0] = (u32)mapSearchAnmObj("yuka");
         yuka_anim[1] = 0;
-        *(OSTime*)((u8*)(MapEntryAnimData*)yuka_anim[0] + 0x8) =
+        ((MapEntryAnimData*)yuka_anim[0])->startTime =
             OSTicksToMilliseconds(gp->inBattle ? gp->renderTime : gp->renderFieldTime);
         *(u16*)((u8*)(MapEntryAnimData*)yuka_anim[0]) |= 0x10;
         *(u16*)((u8*)(MapEntryAnimData*)yuka_anim[0]) &= ~0x20;
@@ -461,19 +461,19 @@ USER_FUNC(yuka_anim_reverse_play) {
 
         now = OSTicksToMilliseconds(gp->inBattle ? gp->renderTime : gp->renderFieldTime);
         anim = (MapEntryAnimData*)yuka_anim[0];
-        rate = *(f32*)((u8*)anim + 0x14);
-        frame = 60.0f * (f32)(u64)(now - *(OSTime*)((u8*)anim + 0x8)) / 1000.0f;
-        *(f32*)((u8*)anim + 0x10) -= frame * rate;
-        if (*(f32*)((u8*)(MapEntryAnimData*)yuka_anim[0] + 0x10) <= 0.0f) {
+        rate = anim->rate;
+        frame = 60.0f * (f32)(u64)(now - anim->startTime) / 1000.0f;
+        anim->frame -= frame * rate;
+        if (((MapEntryAnimData*)yuka_anim[0])->frame <= 0.0f) {
             MapEntryAnimData* anim = (MapEntryAnimData*)yuka_anim[0];
-            f32 localTime = *(f32*)((u8*)anim + 0x10);
+            f32 localTime = anim->frame;
             while (localTime < 0.0f) {
-                localTime += *(f32*)(*(u8**)((u8*)anim + 0x18) + 8);
+                localTime += *(f32*)((u8*)anim->data + 8);
             }
-            *(f32*)((u8*)anim + 0x10) = localTime;
+            anim->frame = localTime;
         }
     }
-    *(OSTime*)((u8*)(MapEntryAnimData*)yuka_anim[0] + 0x8) =
+    ((MapEntryAnimData*)yuka_anim[0])->startTime =
         OSTicksToMilliseconds(gp->inBattle ? gp->renderTime : gp->renderFieldTime);
     return EVT_RETURN_BLOCK;
 }

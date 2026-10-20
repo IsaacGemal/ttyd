@@ -2497,9 +2497,9 @@ void btlseqTurnFirstProcess(BattleWork* wp) { //1:1
 			unit->activeTurns++;
 			BtlUnit_ResetMoveStatus(unit);
 			kind = unit->mKindParams;
-			*(s32*)((u8*)unit + 0x28) = *(s8*)((u8*)kind + 0x88)
-				+ irand(*(s8*)((u8*)kind + 0x89))
-				- *(s8*)((u8*)kind + 0x89) / 2;
+			*(s32*)((u8*)unit + 0x28) = kind->turnOrder
+				+ irand(kind->turnOrderVariance)
+				- kind->turnOrderVariance / 2;
 			if (BtlUnit_CheckStatusFlag(unit, 0x01000000)) {
 				BtlUnit_OffStatusFlag(unit, 0x01000000);
 			}
@@ -2829,7 +2829,7 @@ void _mapobj_data_touch_scale(s32 kind) { //1:1
 
 	for (i = 0; i < 32; i++) {
 		BattleStageObject* obj = &wp->stageObjects[i];
-		if (obj->id > 0 && *(u16*)((u8*)obj->data + 6) == kind) {
+		if (obj->id > 0 && obj->data->mLayer == kind) {
 			obj->mFlags |= 2;
 		}
 	}
