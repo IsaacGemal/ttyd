@@ -93,13 +93,13 @@ void caseMain(void) {
 	partyGetPtr(marioGetPartyId());
 
 	hitStandOn = mario->hitobjStandOn;
-	hit1F8 = MW_PTR(mario, 0x1F8);
+	hit1F8 = mario->hitobjUnder;
 	hitJumpFrom = mario->hitobjJumpFrom;
-	hit1E0 = MW_PTR(mario, 0x1E0);
+	hit1E0 = mario->hitobjFront;
 	hitPush = mario->hitobjPush;
 	hit1FC = MW_PTR(mario, 0x1FC);
 	hit1F4 = MW_PTR(mario, 0x1F4);
-	val = *(u16*)&mario->field_0x245[3];
+	val = mario->buttonNew;
 
 	if ((u32)marioStGetSystemLevel() != 0) {
 		return;
@@ -177,7 +177,7 @@ void caseMain(void) {
 			break;
 		case 4:
 			if (hitJumpFrom != NULL && mario->airTimer == 1 && fbatNpcTalkCheck() == NULL &&
-			    strcmp(hitGetName(hitJumpFrom), entry->hitObjName) == 0 && (*(u16*)&mario->field_0x245[3] & 0x100) != 0) {
+			    strcmp(hitGetName(hitJumpFrom), entry->hitObjName) == 0 && (mario->buttonNew & 0x100) != 0) {
 				entry->flags |= 2;
 			}
 			break;

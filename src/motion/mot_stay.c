@@ -43,17 +43,17 @@ const char str_8041AF1C[] = "M_I_5";
 void marioVoiceGlareOn(void) {
     MarioWork* mario = marioGetPtr();
 
-    if (MW(mario, 0x27C) == 0xFFFFFFFFu) {
-        MW(mario, 0x27C) = psndSFXOn_3D((const char*)0xDC, &mario->position);
+    if (mario->sfxIds[1] == 0xFFFFFFFFu) {
+        mario->sfxIds[1] = psndSFXOn_3D((const char*)0xDC, &mario->position);
     }
 }
 
 void marioVoiceGlareOff(void) {
     MarioWork* mario = marioGetPtr();
 
-    if (MW(mario, 0x27C) != 0xFFFFFFFFu) {
-        psndSFXOff(MW(mario, 0x27C));
-        MW(mario, 0x27C) = 0xFFFFFFFFu;
+    if (mario->sfxIds[1] != 0xFFFFFFFFu) {
+        psndSFXOff(mario->sfxIds[1]);
+        mario->sfxIds[1] = 0xFFFFFFFFu;
     }
 }
 
@@ -186,10 +186,10 @@ void mot_stay(void) {
             MWS16(m, 0x58) = 0;
         }
         if (MWS16(m, 0x58) == 0xF) {
-            MW(m, 0x278) = psndSFXOn_3D((const char*)0xE1, &m->position);
+            m->sfxIds[0] = psndSFXOn_3D((const char*)0xE1, &m->position);
         }
         if (MWS16(m, 0x58) == 0x87) {
-            MW(m, 0x278) = psndSFXOn_3D((const char*)0xE2, &m->position);
+            m->sfxIds[0] = psndSFXOn_3D((const char*)0xE2, &m->position);
         }
     }
 
@@ -203,7 +203,7 @@ void mot_stay(void) {
     if (!flag && marioChkItemMotion()) {
         return;
     }
-    if (MWU16(mario, 0x246) & 0x200) {
+    if (mario->buttonHeld & 0x200) {
         return;
     }
     if (marioSlitAbilityChk() && marioSlitButton() == 1) {
@@ -224,12 +224,12 @@ void mot_stay(void) {
     {
         BOOL bail = FALSE;
 
-        if (MWU16(mario, 0x246) & 0x100) {
+        if (mario->buttonHeld & 0x100) {
             MWS32(mario, 0x2B8)++;
         } else {
             MWS32(mario, 0x2B8) = 0;
         }
-        if (MWU16(mario, 0x246) & 0x100) {
+        if (mario->buttonHeld & 0x100) {
             if (MWS32(mario, 0x2B8) < 0xA) {
                 bail = FALSE;
             } else {
@@ -281,7 +281,7 @@ void mot_stay(void) {
                 marioAdjustMoveDir();
                 {
                     MarioWork* m = marioGetPtr();
-                    MW(m, 0x278) = psndSFXOn_3D((const char*)0xEF, &m->position);
+                    m->sfxIds[0] = psndSFXOn_3D((const char*)0xEF, &m->position);
                 }
                 mario->multiTimer = 0x32;
                 mario->currSubMotionId = 2;
@@ -301,7 +301,7 @@ void mot_stay(void) {
                     MWS32(mario, 0x2B4) = 0;
                     {
                         MarioWork* m = marioGetPtr();
-                        MW(m, 0x278) = psndSFXOn_3D((const char*)0xE4, &m->position);
+                        m->sfxIds[0] = psndSFXOn_3D((const char*)0xE4, &m->position);
                     }
                 }
                 break;
@@ -313,7 +313,7 @@ void mot_stay(void) {
                     mario->multiTimer = 0;
                     {
                         MarioWork* m = marioGetPtr();
-                        MW(m, 0x278) = psndSFXOn_3D((const char*)0xE4, &m->position);
+                        m->sfxIds[0] = psndSFXOn_3D((const char*)0xE4, &m->position);
                     }
                 }
                 if (!(mario->flags & 0x8)) {
@@ -354,20 +354,20 @@ void mot_stay_post(void) {
 
     if (mario->currMotionId != MARIO_MOTION_HAMMER_2 && mario->currMotionId != MARIO_MOTION_JABARA) {
         mario = marioGetPtr();
-        if (MW(mario, 0x278) != 0xFFFFFFFFu) {
-            psndSFXOff(MW(mario, 0x278));
-            MW(mario, 0x278) = 0xFFFFFFFFu;
+        if (mario->sfxIds[0] != 0xFFFFFFFFu) {
+            psndSFXOff(mario->sfxIds[0]);
+            mario->sfxIds[0] = 0xFFFFFFFFu;
         }
         mario = marioGetPtr();
-        if (MW(mario, 0x27c) != 0xFFFFFFFFu) {
-            psndSFXOff(MW(mario, 0x27c));
-            MW(mario, 0x27c) = 0xFFFFFFFFu;
+        if (mario->sfxIds[1] != 0xFFFFFFFFu) {
+            psndSFXOff(mario->sfxIds[1]);
+            mario->sfxIds[1] = 0xFFFFFFFFu;
         }
     } else {
         mario = marioGetPtr();
-        if (MW(mario, 0x278) != 0xFFFFFFFFu) {
-            psndSFXOff(MW(mario, 0x278));
-            MW(mario, 0x278) = 0xFFFFFFFFu;
+        if (mario->sfxIds[0] != 0xFFFFFFFFu) {
+            psndSFXOff(mario->sfxIds[0]);
+            mario->sfxIds[0] = 0xFFFFFFFFu;
         }
     }
 }

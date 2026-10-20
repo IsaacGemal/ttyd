@@ -4362,7 +4362,7 @@ USER_FUNC(zakoEntryDokan) {
     if (hit != NULL && strcmp(hit, mobName) == 0) {
         return EVT_RETURN_DONE;
     }
-    hit = hitGetName(*(void**)((u8*)marioGetPtr() + 0x1E0));
+    hit = hitGetName(marioGetPtr()->hitobjFront);
     if (hit != NULL && strcmp(hit, mobName) == 0) {
         return EVT_RETURN_DONE;
     }

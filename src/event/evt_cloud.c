@@ -105,7 +105,7 @@ static USER_FUNC(evt_cloud_main) {
 		break;
 
 	case 1: {
-		f32 angle = *(f32*)((u8*)mario + 0x1AC);
+		f32 angle = mario->dispReqDir;
 
 		if (angle > 90.f && angle <= 270.f) {
 			strcpy(cp->animName, "P_oof_cloud_2");

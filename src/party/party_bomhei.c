@@ -484,7 +484,7 @@ void bomhei_use_main(PartyEntry* party) {
         /* fallthrough */
     case 1: {
         party->targetPos = mario->position;
-        movePos(&party->targetPos.x, &party->targetPos.z, -6.0f, toMovedirSimple(*(f32*)((u8*)mario + 0x1AC)));
+        movePos(&party->targetPos.x, &party->targetPos.z, -6.0f, toMovedirSimple(mario->dispReqDir));
         party->position.x += (party->targetPos.x - party->position.x) / (f32)party->timer;
         party->position.y += (party->targetPos.y - party->position.y) / (f32)party->timer;
         party->position.z += (party->targetPos.z - party->position.z) / (f32)party->timer;
@@ -494,7 +494,7 @@ void bomhei_use_main(PartyEntry* party) {
         party->timer = 9;
         targetX = mario->position.x;
         targetZ = mario->position.z;
-        movePos(&targetX, &targetZ, -6.0f, toMovedirSimple(*(f32*)((u8*)mario + 0x1AC)));
+        movePos(&targetX, &targetZ, -6.0f, toMovedirSimple(mario->dispReqDir));
         party->speed = distABf(party->position.x, party->position.z, targetX, targetZ) / 18.0f;
         party->dir = angleABf(party->position.x, party->position.z, targetX, targetZ);
         party->field_FC = party->dir;
@@ -545,15 +545,15 @@ void bomhei_use_main(PartyEntry* party) {
             party->position.x = pm->position.x;
             party->position.y = pm->position.y + f31;
             party->position.z = pm->position.z;
-            movePos(&party->position.x, &party->position.z, -6.0f, toMovedirSimple(*(f32*)((u8*)pm + 0x1AC)));
+            movePos(&party->position.x, &party->position.z, -6.0f, toMovedirSimple(pm->dispReqDir));
             party->position.z += 2.0f;
-            party->field_110 = *(f32*)((u8*)pm + 0x1AC);
+            party->field_110 = pm->dispReqDir;
             party->field_10C = pm->unk1A8;
         }
         bomhei_checkHit(party);
         if ((party->flags & PARTY_FLAG_IS_EVT_USE) != 0 ||
             (mario->hitobjStandOn != NULL && mario->airTimer == 0 &&
-             (*(u16*)((u8*)mario + 0x246) & 0x400) == 0)) {
+             (mario->buttonHeld & 0x400) == 0)) {
             party->useMotionId = 0x14;
         }
         break;
@@ -568,7 +568,7 @@ void bomhei_use_main(PartyEntry* party) {
         party->useMotionId = 0x15;
         targetX = party->position.x;
         targetZ = party->position.z;
-        movePos(&targetX, &targetZ, 38.0f, toMovedirSimple(*(f32*)((u8*)mario + 0x1AC)));
+        movePos(&targetX, &targetZ, 38.0f, toMovedirSimple(mario->dispReqDir));
         party->speed = distABf(party->position.x, party->position.z, targetX, targetZ) / 20.0f;
         party->dir = angleABf(party->position.x, party->position.z, targetX, targetZ);
         party->field_FC = party->dir;
@@ -783,9 +783,9 @@ void bomhei_use_main(PartyEntry* party) {
             party->position.x = pm->position.x;
             party->position.y = pm->position.y + f31;
             party->position.z = pm->position.z;
-            movePos(&party->position.x, &party->position.z, -6.0f, toMovedirSimple(*(f32*)((u8*)pm + 0x1AC)));
+            movePos(&party->position.x, &party->position.z, -6.0f, toMovedirSimple(pm->dispReqDir));
             party->position.z += 2.0f;
-            party->field_110 = *(f32*)((u8*)pm + 0x1AC);
+            party->field_110 = pm->dispReqDir;
             party->field_10C = pm->unk1A8;
         }
         if (--party->timer > 0) {
@@ -1142,7 +1142,7 @@ void partyGetReturnPos(Vec* pos) {
     pz = mario->position.z;
     dist = mario->wPlayerCollisionBox.x;
     {
-    ang = revise360(toMovedirSimple(*(f32*)mario->unk1AC) - 180.0f);
+    ang = revise360(toMovedirSimple(mario->dispReqDir) - 180.0f);
     sincosf(&sin, &cos, ang);
     hit = hitCheckFilter(NULL, px, radius, pz, sin, 0.0f, cos, &hx, &hy, &hz, &dist, &nx, &ny, &nz);
     if (hit == NULL) {
@@ -1179,7 +1179,7 @@ void partyGetReturnPos(Vec* pos) {
 
     // attempt 2: along Mario's movement direction
     { f32 ang;
-    ang = toMovedirSimple(*(f32*)mario->unk1AC);
+    ang = toMovedirSimple(mario->dispReqDir);
     sincosf(&sin, &cos, ang);
     hit = hitCheckFilter(NULL, px, radius, pz, sin, 0.0f, cos, &hx, &hy, &hz, &dist, &nx, &ny, &nz);
     if (hit == NULL) {
@@ -1224,7 +1224,7 @@ void partyGetReturnPos(Vec* pos) {
     pos->z = pz;
 }
 
-// Raw offsets used: MarioWork 0x246.  field_12C is a HitEntry* stored in a void* field.
+// field_12C is a HitEntry* stored in a void* field.
 
 // 100%. Requires the unit's data described above: the jump-stand strings are inline literals (pooled
 // after the compiler's own int->float magic double at .rodata+0x58), and the functions are listed in

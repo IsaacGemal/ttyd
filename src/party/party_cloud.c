@@ -242,7 +242,7 @@ static inline void cloudMoveToMario(PartyEntry* party) {
     f32 pa;
     s32 pf;
     party->targetPos = pm->position;
-    pa = *(f32*)pm->unk1AC;
+    pa = pm->dispReqDir;
     pf = (pa < 90.0f || pa >= 270.0f);
     pa = toMovedir(pa + (pf != 0 ? -90.0f : 90.0f));
     movePos(&party->targetPos.x, &party->targetPos.z, 3.3f, pa);
@@ -313,7 +313,7 @@ static inline void cloudMoveToMarioStep(PartyEntry* party) {
     f32 pa;
     s32 pf;
     *(Vec*)((u8*)party + 0x94) = pm->position;
-    pa = *(f32*)pm->unk1AC;
+    pa = pm->dispReqDir;
     pf = (pa < 90.0f || pa >= 270.0f);
     pa = toMovedir(pa + (pf != 0 ? -90.0f : 90.0f));
     movePos((f32*)((u8*)party + 0x94), (f32*)((u8*)party + 0x9C), 3.3f, pa);
@@ -326,7 +326,7 @@ static inline void cloudMoveToMarioStep(PartyEntry* party) {
     f32 pa; \
     s32 pf = 0; \
     party->targetPos = pm->position; \
-    pa = *(f32*)((u8*)pm + 0x1AC); \
+    pa = pm->dispReqDir; \
     if (pa < 90.0f || pa >= 270.0f) { pf = 1; } \
     pa = toMovedir(pa + (pf ? -90.0f : 90.0f)); \
     movePos(&party->targetPos.x, &party->targetPos.z, 3.3f, pa); \
@@ -383,7 +383,7 @@ void N__cloud_use(PartyEntry* party) {
     case 1:
         MOVE_TO_MARIO();
         party->field_10C = mario->unk1A8;
-        party->field_110 = *(f32*)((u8*)mario + 0x1AC);
+        party->field_110 = mario->dispReqDir;
         party->position.x += (party->targetPos.x - party->position.x) / (f32)party->timer;
         party->position.y += (party->targetPos.y - party->position.y) / (f32)party->timer;
         party->position.z += (party->targetPos.z - party->position.z) / (f32)party->timer;
@@ -417,7 +417,7 @@ void N__cloud_use(PartyEntry* party) {
         *(f32*)((u8*)cloud + 0x4) = mario->unk1A8;
         if ((party->flags & PARTY_FLAG_IS_EVT_USE) == 0) {
             mario->unk150.x = 0.03f;
-            mario->unk138 = 70.0f * ((revise360(270.0f - *(f32*)((u8*)mario + 0x1AC)) <= 180.0f) ? -1.0f : 1.0f);
+            mario->unk138 = 70.0f * ((revise360(270.0f - mario->dispReqDir) <= 180.0f) ? -1.0f : 1.0f);
         }
         if (party->useStruct != NULL && *(u32*)((u8*)party->useStruct + 0x34) == 0xFFFFFFFFu) {
             *(s32*)((u8*)party->useStruct + 0x34) = psndSFXOn_3D((char*)0x930, &party->playerPtr->position);
@@ -437,13 +437,13 @@ void N__cloud_use(PartyEntry* party) {
         MOVE_TO_MARIO();
         party->position = party->targetPos;
         partyUpdateKeyData(party);
-        *(f32*)((u8*)mario + 0x1A8) = *(f32*)((u8*)cloud + 0x4);
-        *(f32*)((u8*)mario + 0x1AC) = *(f32*)((u8*)cloud + 0x4);
+        mario->unk1A8 = *(f32*)((u8*)cloud + 0x4);
+        mario->dispReqDir = *(f32*)((u8*)cloud + 0x4);
         party->field_10C = *(f32*)((u8*)cloud + 0x4);
         party->field_110 = *(f32*)((u8*)cloud + 0x4);
         sx = mario->position.x;
         sz = mario->position.z;
-        f31 = *(f32*)((u8*)mario + 0x1A8);
+        f31 = mario->unk1A8;
         flag = 0;
         if (f31 < 90.0f || f31 >= 270.0f) { flag = 1; }
         f31 = toMovedir(f31 + (flag ? -90.0f : 90.0f));

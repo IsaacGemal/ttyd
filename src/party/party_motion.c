@@ -2826,7 +2826,7 @@ s32 party_motion_fall(PartyEntry* party) {
             party->jumpPara1 = 0.0f;
             party->jumpPara3 = 0.0f;
             party->dir = angleABf(party->position.x, party->position.z, mario->position.x, mario->position.z);
-            party->moveAngle = revise360(180.0f + toMovedir(*(f32*)((u8*)mario + 0x1AC)));
+            party->moveAngle = revise360(180.0f + toMovedir(mario->dispReqDir));
             partyGetAppearPos4(party, &party->position);
             party->position.y += 37.0f;
             partyChgMot(party, 0);

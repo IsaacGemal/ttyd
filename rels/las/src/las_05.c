@@ -790,9 +790,9 @@ static void senkaron_ext_main(void) {
 
     if (mario->currMotionId == MARIO_MOTION_HAMMER) {
         if (skwp->field_14 == 0xA) {
-            if (*(f32*)mario->unk1AC == 0.0f) {
+            if (mario->dispReqDir == 0.0f) {
                 dir = 1;
-            } else if (*(f32*)mario->unk1AC == 180.0f) {
+            } else if (mario->dispReqDir == 180.0f) {
                 dir = 2;
             } else if (mario->unk1A8 < 90.0f || 270.0f < mario->unk1A8) {
                 dir = 1;

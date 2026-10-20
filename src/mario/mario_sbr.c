@@ -202,7 +202,7 @@ s32 marioSetDirEventMain(void) {
         dir = revise360(270.0f - *(f32*)((u8*)p + 0x294));
         t = (dir - *(f32*)((u8*)p + 0x290)) * ((f32)(*(s32*)((u8*)p + 0x29C)) / (f32)frames);
         p->unk1A8 = revise360(*(f32*)((u8*)p + 0x290) + t);
-        *(f32*)((u8*)p + 0x1AC) = p->unk1A8;
+        p->dispReqDir = p->unk1A8;
         p->directionView = toMovedirSimple(p->unk1A8);
         *(f32*)((u8*)p + 0x19C) = p->directionView;
         if (++*(s32*)((u8*)p + 0x29C) > frames) {
@@ -212,7 +212,7 @@ s32 marioSetDirEventMain(void) {
         return 0;
     } else {
         p->unk1A8 = revise360(270.0f - *(f32*)((u8*)p + 0x294));
-        *(f32*)((u8*)p + 0x1AC) = p->unk1A8;
+        p->dispReqDir = p->unk1A8;
         p->directionView = toMovedirSimple(p->unk1A8);
         *(f32*)((u8*)p + 0x19C) = p->directionView;
         p->dispFlags &= ~0x8000;
@@ -250,12 +250,12 @@ void marioAdjustMoveDir(void) {
         *(f32*)((u8*)p + 0x19C) = toMovedir(90.0f);
         p->directionView = *(f32*)((u8*)p + 0x19C);
         p->unk1A8 = 180.0f;
-        *(f32*)((u8*)p + 0x1AC) = 180.0f;
+        p->dispReqDir = 180.0f;
     } else {
         *(f32*)((u8*)p + 0x19C) = toMovedir(90.0f);
         p->directionView = *(f32*)((u8*)p + 0x19C);
         p->unk1A8 = 0.0f;
-        *(f32*)((u8*)p + 0x1AC) = 0.0f;
+        p->dispReqDir = 0.0f;
     }
 }
 
@@ -454,62 +454,62 @@ void marioUpdateKeyData(void) {
 
     p->wStickDir1 = gp->stickX[0];
     p->wStickDir2 = -gp->stickY[0];
-    *(u8*)((u8*)p + 0x250) = gp->substickX[0];
-    *(u8*)((u8*)p + 0x251) = -gp->substickY[0];
-    *(u8*)((u8*)p + 0x252) = gp->triggerLeft[0];
-    *(u8*)((u8*)p + 0x253) = gp->triggerRight[0];
-    *(u8*)((u8*)p + 0x254) = 0;
-    *(u8*)((u8*)p + 0x255) = 0;
-    if (*(u32*)((u8*)p + 0x284) != 0) {
-        mask = *(u32*)((u8*)p + 0x284);
+    p->substickX = gp->substickX[0];
+    p->substickY = -gp->substickY[0];
+    p->triggerLeft = gp->triggerLeft[0];
+    p->triggerRight = gp->triggerRight[0];
+    p->unusedInput[0] = 0;
+    p->unusedInput[1] = 0;
+    if (p->inputMask != 0) {
+        mask = p->inputMask;
     } else {
         mask = -1;
     }
-    *(u16*)((u8*)p + 0x246) = gp->button[0] & mask;
-    *(u16*)((u8*)p + 0x248) = gp->buttonNew[0] & mask;
-    *(u16*)((u8*)p + 0x24A) = gp->buttonRepeat[0] & mask;
-    *(u16*)((u8*)p + 0x24C) = gp->buttonUp[0] & mask;
+    p->buttonHeld = gp->button[0] & mask;
+    p->buttonNew = gp->buttonNew[0] & mask;
+    p->buttonRepeat = gp->buttonRepeat[0] & mask;
+    p->buttonUp = gp->buttonUp[0] & mask;
     if (!(p->flags & 0x0E)) {
         if (p->trigFlags & MARIO_TRIG_FLAG_DISABLE_STICK) {
             p->wStickDir1 = 0;
             p->wStickDir2 = 0;
         }
         if (p->trigFlags & MARIO_TRIG_FLAG_DISABLE_SUB_STICK) {
-            *(u8*)((u8*)p + 0x250) = 0;
-            *(u8*)((u8*)p + 0x251) = 0;
+            p->substickX = 0;
+            p->substickY = 0;
         }
         if (p->trigFlags & MARIO_TRIG_FLAG_DISABLE_TRIGGERS) {
-            *(u8*)((u8*)p + 0x252) = 0;
-            *(u8*)((u8*)p + 0x253) = 0;
+            p->triggerLeft = 0;
+            p->triggerRight = 0;
         }
         if (p->trigFlags & MARIO_TRIG_FLAG_DISABLE_UNUSED_INPUT) {
-            *(u8*)((u8*)p + 0x254) = 0;
-            *(u8*)((u8*)p + 0x255) = 0;
+            p->unusedInput[0] = 0;
+            p->unusedInput[1] = 0;
         }
     }
     if ((p->flags & 0x0E) || !marioChkKey()) {
         p->wStickDir1 = 0;
         p->wStickDir2 = 0;
-        *(u8*)((u8*)p + 0x250) = 0;
-        *(u8*)((u8*)p + 0x251) = 0;
-        *(u8*)((u8*)p + 0x252) = 0;
-        *(u8*)((u8*)p + 0x253) = 0;
-        *(u8*)((u8*)p + 0x254) = 0;
-        *(u8*)((u8*)p + 0x255) = 0;
-        if (*(u32*)((u8*)p + 0x284) == 0) {
-            *(u16*)((u8*)p + 0x246) = 0;
-            *(u16*)((u8*)p + 0x248) = 0;
-            *(u16*)((u8*)p + 0x24A) = 0;
-            *(u16*)((u8*)p + 0x24C) = 0;
+        p->substickX = 0;
+        p->substickY = 0;
+        p->triggerLeft = 0;
+        p->triggerRight = 0;
+        p->unusedInput[0] = 0;
+        p->unusedInput[1] = 0;
+        if (p->inputMask == 0) {
+            p->buttonHeld = 0;
+            p->buttonNew = 0;
+            p->buttonRepeat = 0;
+            p->buttonUp = 0;
         }
         if (marioGetMotSlitCancel3() == 0 && (p->dispFlags & 0x01000000)) {
-            *(u16*)((u8*)p + 0x246) = 0x20;
+            p->buttonHeld = 0x20;
         }
     }
     dirs = DemoPad[0].dirs;
-    old = *(u32*)((u8*)p + 0x258);
-    *(u32*)((u8*)p + 0x25C) = dirs & (dirs ^ old);
-    *(u32*)((u8*)p + 0x258) = dirs;
+    old = p->padDirs;
+    p->padDirsPressed = dirs & (dirs ^ old);
+    p->padDirs = dirs;
 }
 
 void marioGetStick(f32* outAngle, f32* outMag) {
@@ -731,7 +731,7 @@ s32 marioGetRub(u32 mask, s32* out1, s32* out2, f32* out3) {
 
     p = marioGetPtr();
     w = &rubwork;
-    if (mask != 0 && (*(u16*)((u8*)p + 0x246) & mask) == 0) {
+    if (mask != 0 && (p->buttonHeld & mask) == 0) {
         memset(&rubwork, 0, 0x68);
         rubwork.unk20 = -1;
         *out1 = -1;

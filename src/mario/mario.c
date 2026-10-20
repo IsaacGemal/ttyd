@@ -744,17 +744,17 @@ void marioResetHitObj(const char* name) {
 	if (*(void**)((u8*)wp + 0x1dc) != NULL && !strcmp(hitGetName(*(HitEntry**)((u8*)wp + 0x1dc)), name)) {
 		*(void**)((u8*)wp + 0x1dc) = NULL;
 	}
-	if (*(void**)((u8*)wp + 0x1e0) != NULL && !strcmp(hitGetName(*(HitEntry**)((u8*)wp + 0x1e0)), name)) {
-		*(void**)((u8*)wp + 0x1e0) = NULL;
+	if (wp->hitobjFront != NULL && !strcmp(hitGetName(wp->hitobjFront), name)) {
+		wp->hitobjFront = NULL;
 	}
-	if (*(void**)((u8*)wp + 0x1e4) != NULL && !strcmp(hitGetName(*(HitEntry**)((u8*)wp + 0x1e4)), name)) {
-		*(void**)((u8*)wp + 0x1e4) = NULL;
+	if (wp->hitobjStandOn != NULL && !strcmp(hitGetName(wp->hitobjStandOn), name)) {
+		wp->hitobjStandOn = NULL;
 	}
-	if (*(void**)((u8*)wp + 0x1e8) != NULL && !strcmp(hitGetName(*(HitEntry**)((u8*)wp + 0x1e8)), name)) {
-		*(void**)((u8*)wp + 0x1e8) = NULL;
+	if (wp->hitobjJumpFrom != NULL && !strcmp(hitGetName(wp->hitobjJumpFrom), name)) {
+		wp->hitobjJumpFrom = NULL;
 	}
-	if (*(void**)((u8*)wp + 0x1ec) != NULL && !strcmp(hitGetName(*(HitEntry**)((u8*)wp + 0x1ec)), name)) {
-		*(void**)((u8*)wp + 0x1ec) = NULL;
+	if (wp->hitobjPush != NULL && !strcmp(hitGetName(wp->hitobjPush), name)) {
+		wp->hitobjPush = NULL;
 	}
 	if (*(void**)((u8*)wp + 0x1f0) != NULL && !strcmp(hitGetName(*(HitEntry**)((u8*)wp + 0x1f0)), name)) {
 		*(void**)((u8*)wp + 0x1f0) = NULL;
@@ -762,8 +762,8 @@ void marioResetHitObj(const char* name) {
 	if (*(void**)((u8*)wp + 0x1f4) != NULL && !strcmp(hitGetName(*(HitEntry**)((u8*)wp + 0x1f4)), name)) {
 		*(void**)((u8*)wp + 0x1f4) = NULL;
 	}
-	if (*(void**)((u8*)wp + 0x1f8) != NULL && !strcmp(hitGetName(*(HitEntry**)((u8*)wp + 0x1f8)), name)) {
-		*(void**)((u8*)wp + 0x1f8) = NULL;
+	if (wp->hitobjUnder != NULL && !strcmp(hitGetName(wp->hitobjUnder), name)) {
+		wp->hitobjUnder = NULL;
 	}
 	if (*(void**)((u8*)wp + 0x1fc) != NULL && !strcmp(hitGetName(*(HitEntry**)((u8*)wp + 0x1fc)), name)) {
 		*(void**)((u8*)wp + 0x1fc) = NULL;
@@ -839,7 +839,7 @@ void marioOfsRotReset(void) {
 }
 
 void marioSoundInit(void) {
-	s32* p = (s32*)(mp->field_0x250 + 0x28);
+	s32* p = mp->sfxIds;
 
 	p[0] = -1;
 	p[1] = -1;
@@ -864,9 +864,9 @@ void marioInit(void) {
 	mp = (MarioWork*)__memAlloc(HEAP_DEFAULT, 0x2e0);
 	memset(mp, 0, 0x2e0);
 	wp = mp;
-	*(s32*)((u8*)wp + 0x278) = -1;
-	*(s32*)((u8*)wp + 0x27c) = -1;
-	*(s32*)((u8*)wp + 0x280) = -1;
+	wp->sfxIds[0] = -1;
+	wp->sfxIds[1] = -1;
+	wp->sfxIds[2] = -1;
 	pouchInit();
 	marioResetGravity();
 	marioInitCamId();
@@ -950,7 +950,7 @@ void marioReInit(void) {
 	trigFlags = wp->trigFlags;
 	motionId = wp->currMotionId;
 	unk1A8 = wp->unk1A8;
-	unk1AC = *(f32*)wp->unk1AC;
+	unk1AC = wp->dispReqDir;
 	dirView = wp->directionView;
 	unk19C = *(f32*)wp->unk19C;
 	prevParty0 = wp->prevPartyMemberId[0];
@@ -980,7 +980,7 @@ void marioReInit(void) {
 	wp->trigFlags = trigFlags;
 	wp->currMotionId = motionId;
 	wp->unk1A8 = unk1A8;
-	*(f32*)wp->unk1AC = unk1AC;
+	wp->dispReqDir = unk1AC;
 	wp->directionView = dirView;
 	*(f32*)wp->unk19C = unk19C;
 	wp->prevPartyMemberId[0] = prevParty0;
@@ -1051,7 +1051,7 @@ void marioReInit(void) {
 		pouchGetItem(ITEM_HAMMER);
 	}
 
-	*(Vec*)(wp->field_0xD4 + 0xC) = vec3_802c36f8;
+	wp->field_0xE0 = vec3_802c36f8;
 }
 
 // MUST_MATCH: the original builds the coin position in an inlined struct return, so the
@@ -1227,7 +1227,7 @@ void marioMain(void) {
 			partyMain();
 			marioCamMain();
 			*(void**)((u8*)wp + 0x1f4) = NULL;
-			*(void**)((u8*)wp + 0x1e0) = NULL;
+			wp->hitobjFront = NULL;
 			*(void**)((u8*)wp + 0x1dc) = NULL;
 			wp->hitobjPush = NULL;
 			*(void**)((u8*)wp + 0x1f0) = NULL;
@@ -1666,9 +1666,9 @@ void marioMoveMain(void) {
 		if (wp->flags & 0x01000000) {
 			*(void**)((u8*)wp + 0x1F4) = NULL;
 		}
-		*(void**)((u8*)wp + 0x1E0) = NULL;
+		wp->hitobjFront = NULL;
 		*(void**)((u8*)wp + 0x1DC) = NULL;
-		*(void**)((u8*)wp + 0x1EC) = NULL;
+		wp->hitobjPush = NULL;
 		*(void**)((u8*)wp + 0x1F0) = NULL;
 	}
 	if (wp->flags & MARIO_FLAG_CTRL_OFF) {
@@ -1825,8 +1825,8 @@ void marioMoveMain(void) {
 		} else {
 			marioCheckWall_roll(f31, dirRes);
 		}
-		N_dou10_yoko_yari3((u8*)wp + 0x210);
-		hit = (HitEntry*)*(void**)((u8*)wp + 0x1E0);
+		N_dou10_yoko_yari3(&wp->frontWallDist);
+		hit = (HitEntry*)wp->hitobjFront;
 		if (hit != NULL && (hitGetAttr(hit) & 0x800)) {
 			set_damage_root_ypos(wp->position.y);
 			marioChgMot(MARIO_MOTION_DAMAGE_TOGE);

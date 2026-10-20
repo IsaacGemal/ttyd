@@ -123,11 +123,14 @@ typedef struct MarioWork {
     u8 field_0x2A[0x2E - 0x2A];    // 0x2A
     MarioMotion currMotionId;      // 0x2E
     MarioMotion prevMotionId;      // 0x30, TODO check
-    u8 field_0x32[0x3C - 0x32];    // 0x32
+    u8 field_0x32[0x3B - 0x32];    // 0x32
+    s8 partyUseTimer;              // 0x3B, set to 5 when the X press starts a partner use, cleared when it ends (mario_party, mario_motion)
     s8 characterId;                // 0x3C
     s8 colorId;                    // 0x3D
     u8 field_0x3E[0x40 - 0x3E];    // 0x3E
 	s8 wMotionTimer;               // 0x40
+    u8 field_0x41[0x43 - 0x41];    // 0x41
+    s8 dispHalfTurn;               // 0x43, 0/1 half-turn flag: mot_roll adds 180 to its display target, mot_hammer sets it from marioGetRub's side
     u32 currSubMotionId;           // 0x44
     s32 multiTimer;                // 0x48, ???
 	s16 unk4C;                     // 0x4C
@@ -143,11 +146,15 @@ typedef struct MarioWork {
     Vec field_6C;                  // 0x6C
     u8 unk78[0x7A - 0x78];         // 0x78
     s16 field_0x7A;                // 0x7A
-    u8 field_0x7C[0x8C - 0x7C];    // 0x7C
+    f32 jumpVelY;                  // 0x7C, per-frame Y step added to position.y (evt_mario, mot_roll, mot_ship)
+    f32 jumpAccelY;                // 0x80, added to jumpVelY each frame
+    f32 jumpJerkY;                 // 0x84, added to jumpAccelY each frame
+    f32 jumpJerkStepY;             // 0x88, added to jumpJerkY each frame (0 unless a jump sets it)
     Vec position;                  // 0x8C
     u8 field_0x98[0xC8 - 0x98];    // 0x98
     Vec scale;                     // 0xC8
-    u8 field_0xD4[0xEC - 0xD4];    // 0xD4
+    Vec lastGroundPos;             // 0xD4, position copied whenever airTimer is 0 (mot_jump, mot_roll)
+    Vec field_0xE0;                // 0xE0, bgTmp source in mot_damage
     Vec field_EC;                  // 0xEC
     Vec field_F8;                  // 0xF8
     u8 unk104[0x134 - 0x104];      // 0x104
@@ -176,15 +183,28 @@ typedef struct MarioWork {
 	f32 directionView;             // 0x1A0
 	f32 unk1A4;                    // 0x1A4
     f32 unk1A8;                    // 0x1A8
-    u8 unk1AC[0x1B4 - 0x1AC];      // 0x1AC
+    f32 dispReqDir;                // 0x1AC, requested display direction (get_mario_dispReqDir; party moves aim by it)
+    u8 field_0x1B0[0x1B4 - 0x1B0]; // 0x1B0
     Vec wPlayerCollisionBox;       // 0x1B4 JP, 0x1B8 US
-    u8 field_0x1C0[0x1D8 - 0x1C0]; // 0x1C0
+    u8 field_0x1C0[0x1C8 - 0x1C0]; // 0x1C0
+    f32 wallDist;                  // 0x1C8, largest front-wall distance held for wallHoldTimer frames (marioCheckWall)
+    f32 wallYaw;                   // 0x1CC, the wall angle that goes with wallDist (marioCheckWall)
+    s32 wallHoldTimer;             // 0x1D0, counts down from 14 before wallDist can drop (marioCheckWall)
+    u8 field_0x1D4[0x1D8 - 0x1D4]; // 0x1D4
     s32 field_0x1D8;               // 0x1D8
-    u8 field_0x1DC[0x1E4 - 0x1DC]; // 0x1DC
+    u8 field_0x1DC[0x1E0 - 0x1DC]; // 0x1DC
+    void* hitobjFront;             // 0x1E0, front-wall HitEntry from searchFrontWall (marioCheckWall, mot_roll)
 	void* hitobjStandOn;           // 0x1E4, 0x1E8 US HitEntry
 	void* hitobjJumpFrom;          // 0x1E8, 0x1EC US HitEntry
 	void* hitobjPush;              // 0x1EC JP, 0x1F0 US HitEntry
-	u8 field_0x1F0[0x224 - 0x1F0]; // 0x1F0
+    u8 field_0x1F0[0x1F8 - 0x1F0]; // 0x1F0
+    void* hitobjUnder;             // 0x1F8, marioSearchUnder result (mario_hit)
+    u8 field_0x1FC[0x210 - 0x1FC]; // 0x1FC
+    f32 frontWallDist;             // 0x210, searchFrontWall distance, reset to 1000 each check (marioCheckWall, dou10_yoko_yari)
+    f32 slopeAngle;                // 0x214, angle of the ground normal from vertical (mario_hit, mot_roll)
+    f32 slopeTiltX;                // 0x218, tilt about X: gndCentiPlain of the normal's z/y (mario_hit, mot_roll)
+    f32 slopeTiltY;                // 0x21C, zeroed beside the other two (mario_hit)
+    f32 slopeTiltZ;                // 0x220, tilt about Z: gndCentiPlain of the normal's x/y (mario_hit, mot_roll)
 	f32 playerGravity;             // 0x224 JP, 228 US
     s32 paperAnimGroupId[3];       // 0x228 JP, 0x22C US
     u8 field_0x234[0x23C - 0x234]; // 0x234
@@ -192,12 +212,27 @@ typedef struct MarioWork {
     u8 field_0x240[0x241 - 0x240]; // 0x240
     s8 currPartySlotId[2];         // 0x241 JP, 0x245 US
     s8 prevPartyMemberId[2];       // 0x243 JP, 0x247 US
-    u8 field_0x245[0x24E - 0x245]; // 0x245
-	u8 wStickDir1;                 // 0x24E JP, 0x252 US
-	u8 wStickDir2;                 // 0x24F JP, 0x253 US
-	u8 field_0x250[0x288 - 0x250]; // 0x250
+    u8 field_0x245;                // 0x245
+    u16 buttonHeld;                // 0x246, GC pad button bits copied from gp->button by marioUpdateKeyData
+    u16 buttonNew;                 // 0x248, gp->buttonNew; mot_roll also ORs 0x100/0x200 into it
+    u16 buttonRepeat;              // 0x24A, gp->buttonRepeat
+    u16 buttonUp;                  // 0x24C, gp->buttonUp
+	s8 wStickDir1;                 // 0x24E JP, 0x252 US
+	s8 wStickDir2;                 // 0x24F JP, 0x253 US
+    s8 substickX;                  // 0x250, gp->substickX
+    s8 substickY;                  // 0x251, -gp->substickY
+    u8 triggerLeft;                // 0x252, gp->triggerLeft
+    u8 triggerRight;               // 0x253, gp->triggerRight
+    u8 unusedInput[0x258 - 0x254]; // 0x254, cleared with the MARIO_TRIG_FLAG_DISABLE_UNUSED_INPUT case
+    u32 padDirs;                   // 0x258, DemoPad[0].dirs this frame
+    u32 padDirsPressed;            // 0x25C, dirs newly set since the previous frame
+    u8 field_0x260[0x278 - 0x260]; // 0x260
+    s32 sfxIds[3];                 // 0x278, sound handles, 0xFFFFFFFF when none (mot_jump, mot_stay, peach, marioSoundInit)
+    u32 inputMask;                 // 0x284, button mask set from evt_mario; 0 means unmasked (marioUpdateKeyData)
     void* motStruct;               // 0x288, motion userdata, TODO rename?
-    u8 field_0x28C[0x2A8 - 0x28C]; // 0x28C
+    u8 field_0x28C[0x2A0 - 0x28C]; // 0x28C
+    f32 spinSpeed;                 // 0x2A0, added to unk1A8 each frame (mario_motion spin, mot_hip, evt_mario)
+    u8 field_0x2A4[0x2A8 - 0x2A4]; // 0x2A4
     f32 wCamVal1;                  // 0x2A8, TODO: double check. mot_hip keeps an s32 SFX id here (per-motion scratch?)
     u8 field_0x2AC[0x2CC - 0x2AC]; // 0x2AC
     Vec bottomlessResetPosition;   // 0x2CC JP, 0x2E4 US

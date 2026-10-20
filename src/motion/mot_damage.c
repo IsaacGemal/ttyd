@@ -103,11 +103,11 @@ void mot_damage(void) {
 	mario = marioGetPtr();
 	if (mario->trigFlags & MARIO_TRIG_FLAG_IS_STARTING_NEW_MOTION) {
 		mario->trigFlags &= ~MARIO_TRIG_FLAG_IS_STARTING_NEW_MOTION;
-		if (*(f32*)mario->field_0x7C == 0.0f) {
-			*(f32*)mario->field_0x7C = -6.0f;
-			*(f32*)(mario->field_0x7C + 4) = 0.0f;
-			*(f32*)(mario->field_0x7C + 8) = 0.0f;
-			*(f32*)(mario->field_0x7C + 0xC) = 0.0f;
+		if (mario->jumpVelY == 0.0f) {
+			mario->jumpVelY = -6.0f;
+			mario->jumpAccelY = 0.0f;
+			mario->jumpJerkY = 0.0f;
+			mario->jumpJerkStepY = 0.0f;
 		}
 		marioClearSlitFloor();
 		marioOfsRotReset();
@@ -148,15 +148,15 @@ void mot_damage(void) {
 	case 0:
 		if (mario->position.y >= *(f32*)(mario->field_0x28C + 0x14) - 160.0f) {
 			marioMakeJumpPara();
-			if (*(f32*)mario->field_0x7C <= -6.0f) {
-				*(f32*)mario->field_0x7C = -6.0f;
-				*(f32*)(mario->field_0x7C + 4) = 0.0f;
-				*(f32*)(mario->field_0x7C + 8) = 0.0f;
-				*(f32*)(mario->field_0x7C + 0xC) = 0.0f;
+			if (mario->jumpVelY <= -6.0f) {
+				mario->jumpVelY = -6.0f;
+				mario->jumpAccelY = 0.0f;
+				mario->jumpJerkY = 0.0f;
+				mario->jumpJerkStepY = 0.0f;
 			}
-			mario->position.y = mario->position.y + *(f32*)mario->field_0x7C;
+			mario->position.y = mario->position.y + mario->jumpVelY;
 		} else {
-			*(f32*)mario->field_0x7C = 0.3f;
+			mario->jumpVelY = 0.3f;
 			mario->currSubMotionId = 1;
 			mario->multiTimer = 0x28;
 		}
@@ -225,9 +225,9 @@ void mot_damage(void) {
 		if (mario->flags & MARIO_FLAG_BG_MODE) {
 			Vec bgTmp = vec3_802f328c;
 
-			bgTmp.x = *(f32*)(mario->field_0xD4 + 0xC);
-			bgTmp.y = *(f32*)(mario->field_0xD4 + 0x10);
-			bgTmp.z = *(f32*)(mario->field_0xD4 + 0x14);
+			bgTmp.x = mario->field_0xE0.x;
+			bgTmp.y = mario->field_0xE0.y;
+			bgTmp.z = mario->field_0xE0.z;
 			target = bgTmp;
 		}
 		spd = target.z;

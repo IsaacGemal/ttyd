@@ -411,7 +411,7 @@ void chuchu_use(PartyEntry* party) {
         break;
     }
     case 10:
-        party->field_110 = *(f32*)((u8*)player + 0x1AC);
+        party->field_110 = player->dispReqDir;
         party->field_FC = toMovedir(party->field_110);
         party->dir = party->field_FC;
         party->useMotionId = 20;

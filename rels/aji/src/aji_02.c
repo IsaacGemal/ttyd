@@ -376,7 +376,7 @@ static USER_FUNC(ride_chk) {
             hit = mario->hitobjJumpFrom;
         }
     } else {
-        hit = *(HitEntry**)((u8*)mario + 0x1F8);
+        hit = mario->hitobjUnder;
     }
     for (i = 0; i < 0x1e; i++) {
         if (hit != NULL) {

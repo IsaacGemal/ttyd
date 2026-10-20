@@ -273,7 +273,7 @@ void kemuri(void) {
     } else {
         if (--ct552 <= 0) {
             sincosf(&sin, &cos, 6.2831855f * reviseAngle(-mario->directionView) / 360.0f);
-            sincosf(&sin, &cos, toMovedirSimple(180.0f + (kpaGetStageViewType() == 0 ? *(f32*)((u8*)mario + 0x1AC) : mario->unk1A8)));
+            sincosf(&sin, &cos, toMovedirSimple(180.0f + (kpaGetStageViewType() == 0 ? mario->dispReqDir : mario->unk1A8)));
             switch (kpaGetLevel()) {
                 case 0:
                     ct552 = 4;

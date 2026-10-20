@@ -1126,7 +1126,7 @@ L_3800:
                 }
                 {
                     MarioWork* m = marioGetPtr();
-                    *(f32*)((u8*)m + 0x2A0) = *(f32*)((u8*)m + 0x2A0) + *(f32*)((u8*)m + 0x2A4);
+                    m->spinSpeed = m->spinSpeed + *(f32*)((u8*)m + 0x2A4);
                 }
             }
             if (M_F(0x2A0) <= -10.0f) {
@@ -1429,10 +1429,10 @@ void searchGround(PartyEntry* party) {
             party->tail.yoshi.jumpAccel = 0.0f;
             party->jumpPara2 = 0.0f;
         }
-        *(f32*)((u8*)mario + 0x7C) = party->jumpPara3;
-        *(f32*)((u8*)mario + 0x80) = party->tail.yoshi.jumpVel;
-        *(f32*)((u8*)mario + 0x84) = party->tail.yoshi.jumpAccel;
-        *(f32*)((u8*)mario + 0x88) = party->jumpPara2;
+        mario->jumpVelY = party->jumpPara3;
+        mario->jumpAccelY = party->tail.yoshi.jumpVel;
+        mario->jumpJerkY = party->tail.yoshi.jumpAccel;
+        mario->jumpJerkStepY = party->jumpPara2;
         marioChgMot(0x1F);
         goto end;
     }
@@ -1664,15 +1664,15 @@ void checkWall(PartyEntry* party, f32 a, f32 b) {
 
     if (hit != NULL) {
         party->field_12C = hit;
-        *(HitEntry**)((u8*)mario + 0x1E0) = hit;
+        mario->hitobjFront = hit;
         if (a) {
             if ((party->flags & PARTY_FLAG_IS_BEING_USED) && marioChkBero(hit) == 1) {
                 party->field_134 = hit;
-                *(HitEntry**)((u8*)mario + 0x1EC) = hit;
+                mario->hitobjPush = hit;
                 *(HitEntry**)((u8*)mario + 0x1F0) = hit;
             } else {
                 party->field_134 = NULL;
-                *(HitEntry**)((u8*)mario + 0x1EC) = NULL;
+                mario->hitobjPush = NULL;
                 *(HitEntry**)((u8*)mario + 0x1F0) = NULL;
             }
         }
@@ -1716,14 +1716,14 @@ void checkWall(PartyEntry* party, f32 a, f32 b) {
             pos = party->position;
             hit = partySearchWallFront(party, &pos, a, party->dir);
             party->field_12C = hit;
-            *(HitEntry**)((u8*)mario + 0x1E0) = hit;
+            mario->hitobjFront = hit;
             if (hit == NULL) {
                 f32 dir = toMovedir(party->field_10C);
 
                 pos = party->position;
                 hit = partySearchWallFront(party, &pos, a, dir);
                 party->field_12C = hit;
-                *(HitEntry**)((u8*)mario + 0x1E0) = hit;
+                mario->hitobjFront = hit;
             }
             if (party->buttonNew & 0x100) {
                 HitEntry* h;
