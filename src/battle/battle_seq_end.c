@@ -129,13 +129,13 @@ extern const f32 float_neg38_80420d2c;
 extern const f32 float_neg40_80420d30;
 extern const f32 float_200_80420d34;
 extern const f32 float_neg200_80420d38;
-extern const char str_80420D3C[4];
+extern const char str_fmt_2d[4];
 extern const f32 float_neg160_80420d40;
 extern const f32 float_225_80420d44;
 extern const f32 float_neg163_80420d48;
 extern const f32 float_900_80420d4c;
 extern const f32 float_40_80420d50;
-extern const char str_80420D54[8];
+extern const char str_M_V_1[8];
 
 #ifdef MUST_MATCH
 // Keep zero at its point of use instead of adding a saved FP register across earlier calls.
@@ -157,10 +157,10 @@ RankUpData _rank_up_data[] = {
 
 // .sdata2 objects defined at the end of the file that the event scripts reference.
 extern const f32 float_0_80420c1c;
-extern const char str_80420C20[8];
+extern const char str_M_V_2[8];
 extern s32 _confetti_control_event[];
 
-const char str_802FDE74[] = "btl_msg_mj_last";
+const char str_btl_msg_mj_last[] = "btl_msg_mj_last";
 const Vec vec3_802fde84 = {0.0f, 0.0f, 0.0f};
 
 // clang-format off
@@ -280,7 +280,7 @@ EVT_BEGIN(_curtain_close_event)
     CALL(btlevtcmd_AnimeChangePoseType, -3, 1, 40)
     CALL(btlevtcmd_MovePosition, -3, 0, 0, 90, 75, -1, 0)
     CALL(btlevtcmd_snd_se, -3, STRING((char*)"SFX_VOICE_MARIO_PAUSE2"), EVTDAT_POINTER_MAX, 0, EVTDAT_POINTER_MAX)
-    CALL(btlevtcmd_AnimeChangePose, -3, 1, STRING((char*)str_80420C20))
+    CALL(btlevtcmd_AnimeChangePose, -3, 1, STRING((char*)str_M_V_2))
     CALL(evt_audience_sound_cheer, 180, 40)
     WAIT_MS(1000)
     CALL(_lvup_select_object_init)
@@ -343,7 +343,7 @@ EVT_BEGIN(_jump_event)
     CALL(btlevtcmd_SetFallAccel, -3, FLOAT(0.4f))
     CALL(btlevtcmd_JumpPosition, -3, LW(0), LW(1), LW(2), 30, -1)
     CALL(btlevtcmd_snd_se, -3, STRING((char*)"SFX_VOICE_MARIO_PAUSE2"), EVTDAT_POINTER_MAX, 0, EVTDAT_POINTER_MAX)
-    CALL(btlevtcmd_AnimeChangePose, -3, 1, STRING((char*)str_80420C20))
+    CALL(btlevtcmd_AnimeChangePose, -3, 1, STRING((char*)str_M_V_2))
     CALL(evt_audience_sound_cheer, 180, 40)
     RETURN
 EVT_END()
@@ -414,7 +414,7 @@ s32 _koura_delete_event[] = {
 
 // clang-format off
 __declspec(section ".sdata") EVT_BEGIN(_event_MajinaiEnd)
-    CALL(btlevtcmd_AnnounceMessage, 0, 0, -36, STRING((char*)str_802FDE74), 60)
+    CALL(btlevtcmd_AnnounceMessage, 0, 0, -36, STRING((char*)str_btl_msg_mj_last), 60)
     WAIT_FRAMES(60)
     RETURN
 EVT_END()
@@ -427,7 +427,7 @@ EVT_END()
 // clang-format on
 
 
-extern const char str_802FDDF0[];
+extern const char str_msg_menu_mario_name_0[];
 extern s32 marioAttackEvent_MajinaiExpUp[];
 extern BattleDispPose pose_table_nokotarou_stay[];
 
@@ -999,7 +999,7 @@ void btlseqEnd(BattleWork* wp) {
                 }
             }
         }
-        BtlUnit_SetBodyAnim(BattleGetMarioPtr(wp), str_80420C20);
+        BtlUnit_SetBodyAnim(BattleGetMarioPtr(wp), str_M_V_2);
         BattleAudienceSoundCheer(0xB4, 0x28);
         work->timer = 0xB4;
         BattleSetSeq(wp, SEQ_END, SEQ_END_LVUP_CHEER);
@@ -1074,7 +1074,7 @@ void btlseqEnd(BattleWork* wp) {
                 }
             }
         }
-        BtlUnit_SetBodyAnim(BattleGetMarioPtr(wp), str_80420D54);
+        BtlUnit_SetBodyAnim(BattleGetMarioPtr(wp), str_M_V_1);
         work->timer = 0x3C;
         BattleSetSeq(wp, SEQ_END, SEQ_END_WIN_POSE_WAIT);
         break;
@@ -1227,7 +1227,7 @@ void _MarioExpDisp(CameraId camId, void* param) {
     pos.y = float_neg200_80420d38;
     pos.z = float_0_80420c7c;
     if (work != NULL) {
-        sprintf(buf, str_80420D3C, work->expRemaining);
+        sprintf(buf, str_fmt_2d, work->expRemaining);
         len = strlen(buf);
 #ifdef MUST_MATCH
         // Retail builds the white colour after the width (float args first, as in battle_message.c's cast call).
@@ -1415,7 +1415,7 @@ void _GetExpIcon_Disp(CameraId camId, void* param) {
 
 // Keep named objects between the compiler colour templates, in retail order.
 __declspec(section ".sdata2") const f32 float_0_80420c1c = 0.0f;
-__declspec(section ".sdata2") const char str_80420C20[8] = "M_V_2";
+__declspec(section ".sdata2") const char str_M_V_2[8] = "M_V_2";
 
 void _GetExpIcon_End(BattleSeqEndWork* work) {
     s32 i;
@@ -2176,13 +2176,13 @@ __declspec(section ".sdata2") const f32 float_neg38_80420d2c = -38.0f;
 __declspec(section ".sdata2") const f32 float_neg40_80420d30 = -40.0f;
 __declspec(section ".sdata2") const f32 float_200_80420d34 = 200.0f;
 __declspec(section ".sdata2") const f32 float_neg200_80420d38 = -200.0f;
-__declspec(section ".sdata2") const char str_80420D3C[4] = "%2d";
+__declspec(section ".sdata2") const char str_fmt_2d[4] = "%2d";
 __declspec(section ".sdata2") const f32 float_neg160_80420d40 = -160.0f;
 __declspec(section ".sdata2") const f32 float_225_80420d44 = 225.0f;
 __declspec(section ".sdata2") const f32 float_neg163_80420d48 = -163.0f;
 __declspec(section ".sdata2") const f32 float_900_80420d4c = 900.0f;
 __declspec(section ".sdata2") const f32 float_40_80420d50 = 40.0f;
-__declspec(section ".sdata2") const char str_80420D54[8] = "M_V_1";
+__declspec(section ".sdata2") const char str_M_V_1[8] = "M_V_1";
 __declspec(section ".sdata2") const f32 float_0_80420d5c = 0.0f;
 __declspec(section ".sdata2") const u32 dat_80420d60 = 0xFFFFFF00;
 __declspec(section ".sdata2") const f32 float_0_80420d64 = 0.0f;

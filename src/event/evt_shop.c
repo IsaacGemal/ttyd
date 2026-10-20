@@ -92,13 +92,13 @@ typedef struct ShopPointEntry {
 
 extern ItemData itemDataTable[];
 extern ShopPointEntry shopPointList[];
-extern const char str_802ECD50[];
-extern const char str_802ECE38[];
+extern const char str_item_first_hit[];
+extern const char str_msg_shop_point_list4[];
 extern u32 shop_list_title_color;
 extern u32 shop_points_color;
 extern u32 shop_item_name_color;
 extern u32 shop_price_color;
-extern const char str_8041BC60[];
+extern const char str_fmt_d[];
 extern const f32 float_0p5_8041bc5c;
 extern const f32 shop_price_digit_width;
 extern const f32 shop_item_name_y;
@@ -117,7 +117,7 @@ extern const f32 shop_icon_y_offset;
 extern u32 shopper_talk_evt[];
 extern u32 main_evt[4];
 extern u32 evt_shoplist[10];
-extern const char str_8041BC28[];
+extern const char str_fmt_s[];
 extern u32 shop_list_points_head_color;
 extern u32 shop_list_item_head_color;
 extern u32 shop_list_price_exchanged_color;
@@ -134,7 +134,7 @@ extern const f32 float_0p64_8041bc38;
 // Named objects precede the real functions so immediate generation preserves their storage.
 
 // .rodata
-const char str_802ECD50[16] = "item_first_hit";
+const char str_item_first_hit[16] = "item_first_hit";
 const char shop_map_mri_07[8] = "mri_07";
 const char shop_msg_stg2_shop_04_1[16] = "stg2_shop_04_1";
 const char shop_map_usu_01[8] = "usu_01";
@@ -160,10 +160,10 @@ __declspec(section ".sdata2") u32 shop_list_unit_color = 0x000000FF;
 __declspec(section ".sdata2") u32 shop_list_item_exchanged_color = 0xF00000FF;
 __declspec(section ".sdata2") u32 shop_list_item_color = 0x000000FF;
 __declspec(section ".sdata2") const char str_8041BC10[8] = "mario";
-__declspec(section ".sdata2") const char str_8041BC18[4] = "me";
+__declspec(section ".sdata2") const char str_me[4] = "me";
 __declspec(section ".sdata2") const char shop_icon_name_fmt[6] = "shp%d";
 __declspec(section ".sdata2") const f32 shop_icon_y_offset = 6.0f;
-__declspec(section ".sdata2") const char str_8041BC28[4] = "%s";
+__declspec(section ".sdata2") const char str_fmt_s[4] = "%s";
 __declspec(section ".sdata2") const f32 float_0p6_8041bc2c = 0.6f;
 __declspec(section ".sdata2") const f32 float_40_8041bc30 = 40.0f;
 __declspec(section ".sdata2") const f32 float_0_8041bc34 = 0.0f;
@@ -177,7 +177,7 @@ __declspec(section ".sdata2") const f32 float_124_8041bc50 = 124.0f;
 __declspec(section ".sdata2") const f32 float_38_8041bc54 = 38.0f;
 __declspec(section ".sdata2") const f32 shop_item_name_y = 108.0f;
 __declspec(section ".sdata2") const f32 float_0p5_8041bc5c = 0.5f;
-__declspec(section ".sdata2") const char str_8041BC60[4] = "%d";
+__declspec(section ".sdata2") const char str_fmt_d[4] = "%d";
 __declspec(section ".sdata2") const f32 shop_price_digit_width = 12.0f;
 
 // Keep named scalar loads when definitions precede immediate code generation.
@@ -541,9 +541,9 @@ USER_FUNC(add_shop_point) {
 #ifdef MUST_MATCH
 	// MUST_MATCH: holding the string base as an integer reproduces the original's base+offset
 	// addressing (addi r4, r27, off); as a const char* MWCC rematerializes the base per use.
-	u32 str = (u32)str_802ECD50;
+	u32 str = (u32)str_item_first_hit;
 #else
-	const char* str = str_802ECD50;
+	const char* str = str_item_first_hit;
 #endif
 	s32* args = event->args;
 	s32 v0 = evtGetValue(event, args[0]);
@@ -770,7 +770,7 @@ void list_disp(WinMgrEntry* entry) {
 			*(u32*)&color3 = shop_list_price_color;
 			FontDrawColor(&color3);
 		}
-		sprintf(buf, str_8041BC28, winZenkakuStr(shopPointList[i].price));
+		sprintf(buf, str_fmt_s, winZenkakuStr(shopPointList[i].price));
 		FontDrawMessage(entry->width / 2 - FontGetMessageWidth(buf) + entry->x - 90, entry->y - 20 - i * 26, buf);
 
 		FontDrawStart();
@@ -782,7 +782,7 @@ void list_disp(WinMgrEntry* entry) {
 			*(u32*)&color5 = shop_list_unit_color;
 			FontDrawColor(&color5);
 		}
-		sprintf(buf, str_8041BC28, msgSearch("msg_shop_point_list5"));
+		sprintf(buf, str_fmt_s, msgSearch("msg_shop_point_list5"));
 		{
 			f32 w = FontGetMessageWidth(buf);
 			f32 x = (f32)(entry->width / 2) - SHOP_F32(float_0p6_8041bc2c) * w;
@@ -913,7 +913,7 @@ void name_disp(WinMgrEntry* entry) {
 		pos.x *= (f32)gp->fbWidth * SHOP_F32(float_0p5_8041bc5c);
 		pos.y *= (f32)gp->efbHeight * SHOP_F32(float_0p5_8041bc5c);
 #endif
-		sprintf(buf, str_8041BC60, wp->items[i * 2 + 1]);
+		sprintf(buf, str_fmt_d, wp->items[i * 2 + 1]);
 		PSMTXTrans(mtx, SHOP_F32(shop_price_digit_width) * (f32)(strlen(buf) - 1) + pos.x, pos.y, pos.z);
 		iconNumberDispGx(mtx, *(s32*)((u8*)wp->items + i * 8 + 4), 0, *(GXColor*)&shop_price_color);
 	}
@@ -965,7 +965,7 @@ u32 buy_evt[326] = {
     0x000000C8, 0x0002005B, (u32)(void*)evt_win_coin_off, 0xFE363C88, 0x0002005B, (u32)point_disp_onoff, 0x00000000, 0x0001005B,
     (u32)(void*)evt_msg_continue, 0x0002005B, (u32)(void*)evt_sub_get_system_flag, 0xFE363C80, 0x0002001F, 0xFE363C80, 0x00001000, 0x00020018,
     0xF8405C6B, 0x00000000, 0x00020032, 0xF8405C6B, 0x00000001, 0x0005005B, (u32)(void*)evt_msg_print, 0x00000000,
-    (u32)(void*)str_802ECD50, 0x00000000, 0x00000000, 0x00000021, 0x00000021, 0x00010005, 0x00000000, 0x0004005B,
+    (u32)(void*)str_item_first_hit, 0x00000000, 0x00000000, 0x00000021, 0x00000021, 0x00010005, 0x00000000, 0x0004005B,
     (u32)chk_shop_point, 0xFE363C80, 0xFE363C81, 0xFE363C82, 0x00020018, 0xFE363C80, 0xFFFFFFFF, 0x00010004,
     0x0000007B, 0x00000002, 0x00000021, 0x00020032, 0xFBD3E280, 0x00000000, 0x0002005B, (u32)get_shop_point,
     0xFE363C80, 0x00020019, 0xFE363C80, 0x0000012C, 0x0004005B, (u32)get_msg, 0xFE363C8A, 0x0000001A,
@@ -1051,12 +1051,12 @@ static u32 sell_evt[196] = {
     0xFE363C8E, 0x0003005B, (u32)(void*)evt_win_coin_on, 0x00000000, 0xFE363C88, 0x00010003, 0x00000000, 0x0001005B,
     (u32)item_data_db_arrange, 0x0005005B, (u32)(void*)evt_win_item_select, 0x00000001, 0x00000003, 0xFE363C81, 0xFE363C84, 0x0001005B,
     (u32)item_data_db_restore, 0x0002001C, 0xFE363C81, 0x00000000, 0x0004005B, (u32)get_msg, 0xFE363C8A, 0x00000016,
-    0xFE363C8E, 0x0005005B, (u32)(void*)evt_msg_print, 0x00000000, 0xFE363C8E, 0x00000000, (u32)(void*)str_8041BC18, 0x0002005B,
+    0xFE363C8E, 0x0005005B, (u32)(void*)evt_msg_print, 0x00000000, 0xFE363C8E, 0x00000000, (u32)(void*)str_me, 0x0002005B,
     (u32)(void*)evt_win_coin_off, 0xFE363C88, 0x00000002, 0x00000021, 0x0001005B, (u32)item_data_db_arrange, 0x0004005B, (u32)name_price,
     0xFE363C81, 0xFE363C82, 0xFE363C83, 0x0001005B, (u32)item_data_db_restore, 0x0004005B, (u32)get_msg, 0xFE363C8A,
     0x00000008, 0xFE363C8E, 0x0002005B, (u32)(void*)evt_sub_get_language, 0xFE363C80, 0x00020019, 0xFE363C80, 0x00000000,
-    0x0007005B, (u32)(void*)evt_msg_print_insert, 0x00000000, 0xFE363C8E, 0x00000000, (u32)(void*)str_8041BC18, 0xFE363C83, 0xFE363C82,
-    0x00000020, 0x0007005B, (u32)(void*)evt_msg_print_insert, 0x00000000, 0xFE363C8E, 0x00000000, (u32)(void*)str_8041BC18, 0xFE363C82,
+    0x0007005B, (u32)(void*)evt_msg_print_insert, 0x00000000, 0xFE363C8E, 0x00000000, (u32)(void*)str_me, 0xFE363C83, 0xFE363C82,
+    0x00000020, 0x0007005B, (u32)(void*)evt_msg_print_insert, 0x00000000, 0xFE363C8E, 0x00000000, (u32)(void*)str_me, 0xFE363C82,
     0xFE363C83, 0x00000021, 0x0004005B, (u32)get_msg, 0xFE363C8A, 0x00000018, 0xFE363C8E, 0x0003005B,
     (u32)(void*)evt_msg_select, 0x00000000, 0xFE363C8E, 0x00020018, 0xFE363C80, 0x00000001, 0x0004005B, (u32)get_msg,
     0xFE363C8A, 0x00000009, 0xFE363C8E, 0x0003005B, (u32)(void*)evt_msg_print_add, 0x00000000, 0xFE363C8E, 0x00010004,
@@ -1080,14 +1080,14 @@ static u32 keep_evt[148] = {
     0xFE363C8A, 0x0000000E, 0xFE363C8E, 0x0004005B, (u32)(void*)evt_msg_print_add_insert, 0x00000000, 0xFE363C8E, 0xFE363C81,
     0x00010003, 0x00000000, 0x0005005B, (u32)(void*)evt_win_item_select, 0x00000001, 0x00000004, 0xFE363C81, 0xFE363C84,
     0x0002001C, 0xFE363C81, 0x00000000, 0x0004005B, (u32)get_msg, 0xFE363C8A, 0x00000016, 0xFE363C8E,
-    0x0005005B, (u32)(void*)evt_msg_print, 0x00000000, 0xFE363C8E, 0x00000000, (u32)(void*)str_8041BC18, 0x00000002, 0x00000021,
+    0x0005005B, (u32)(void*)evt_msg_print, 0x00000000, 0xFE363C8E, 0x00000000, (u32)(void*)str_me, 0x00000002, 0x00000021,
     0x0004005B, (u32)(void*)N_evt_pouch_remove_item_index, 0xFE363C81, 0xFE363C84, 0xFE363C80, 0x0003005B, (u32)(void*)evt_pouch_add_keepitem, 0xFE363C81,
     0xFE363C80, 0x0001005B, (u32)keep_pouchcheck_func, 0x00020032, 0xFBD3E280, 0x00000000, 0x00020018, 0xFE363C80,
     0x00000000, 0x00020032, 0xFBD3E280, 0x00000001, 0x00000021, 0x00020018, 0xFE363C81, 0x00000000,
     0x00020032, 0xFBD3E280, 0x00000001, 0x00000021, 0x00020018, 0xFBD3E280, 0x00000001, 0x0004005B,
     (u32)get_msg, 0xFE363C8A, 0x0000000F, 0xFE363C8E, 0x0005005B, (u32)(void*)evt_msg_print, 0x00000000, 0xFE363C8E,
-    0x00000000, (u32)(void*)str_8041BC18, 0x00000002, 0x00000021, 0x0004005B, (u32)get_msg, 0xFE363C8A, 0x00000010,
-    0xFE363C8E, 0x0005005B, (u32)(void*)evt_msg_print, 0x00000000, 0xFE363C8E, 0x00000000, (u32)(void*)str_8041BC18, 0x0004005B,
+    0x00000000, (u32)(void*)str_me, 0x00000002, 0x00000021, 0x0004005B, (u32)get_msg, 0xFE363C8A, 0x00000010,
+    0xFE363C8E, 0x0005005B, (u32)(void*)evt_msg_print, 0x00000000, 0xFE363C8E, 0x00000000, (u32)(void*)str_me, 0x0004005B,
     (u32)get_msg, 0xFE363C8A, 0x00000018, 0xFE363C8E, 0x0003005B, (u32)(void*)evt_msg_select, 0x00000000, 0xFE363C8E,
     0x00020018, 0xFE363C80, 0x00000001, 0x0004005B, (u32)get_msg, 0xFE363C8A, 0x00000016, 0xFE363C8E,
     0x0003005B, (u32)(void*)evt_msg_print_add, 0x00000000, 0xFE363C8E, 0x00000002, 0x00000021, 0x0001005B, (u32)(void*)evt_msg_continue,
@@ -1102,14 +1102,14 @@ static u32 unkeep_evt[147] = {
     0xFE363C8A, 0x00000013, 0xFE363C8E, 0x0003005B, (u32)(void*)evt_msg_print_add, 0x00000000, 0xFE363C8E, 0x00010003,
     0x00000000, 0x0005005B, (u32)(void*)evt_win_item_select, 0x00000001, 0x00000005, 0xFE363C81, 0xFE363C84, 0x0002001C,
     0xFE363C81, 0x00000000, 0x0004005B, (u32)get_msg, 0xFE363C8A, 0x00000016, 0xFE363C8E, 0x0005005B,
-    (u32)(void*)evt_msg_print, 0x00000000, 0xFE363C8E, 0x00000000, (u32)(void*)str_8041BC18, 0x00000002, 0x00000021, 0x0004005B,
+    (u32)(void*)evt_msg_print, 0x00000000, 0xFE363C8E, 0x00000000, (u32)(void*)str_me, 0x00000002, 0x00000021, 0x0004005B,
     (u32)(void*)evt_pouch_remove_keepitem, 0xFE363C81, 0xFE363C84, 0xFE363C80, 0x0003005B, (u32)(void*)evt_pouch_add_item, 0xFE363C81, 0xFE363C80,
     0x0001005B, (u32)unkeep_pouchcheck_func, 0x00020032, 0xFBD3E280, 0x00000000, 0x00020018, 0xFE363C80, 0x00000000,
     0x00020032, 0xFBD3E280, 0x00000001, 0x00000021, 0x00020018, 0xFE363C81, 0x00000000, 0x00020032,
     0xFBD3E280, 0x00000001, 0x00000021, 0x00020018, 0xFBD3E280, 0x00000001, 0x0004005B, (u32)get_msg,
     0xFE363C8A, 0x00000014, 0xFE363C8E, 0x0005005B, (u32)(void*)evt_msg_print, 0x00000000, 0xFE363C8E, 0x00000000,
-    (u32)(void*)str_8041BC18, 0x00000002, 0x00000021, 0x0004005B, (u32)get_msg, 0xFE363C8A, 0x00000015, 0xFE363C8E,
-    0x0005005B, (u32)(void*)evt_msg_print, 0x00000000, 0xFE363C8E, 0x00000000, (u32)(void*)str_8041BC18, 0x0004005B, (u32)get_msg,
+    (u32)(void*)str_me, 0x00000002, 0x00000021, 0x0004005B, (u32)get_msg, 0xFE363C8A, 0x00000015, 0xFE363C8E,
+    0x0005005B, (u32)(void*)evt_msg_print, 0x00000000, 0xFE363C8E, 0x00000000, (u32)(void*)str_me, 0x0004005B, (u32)get_msg,
     0xFE363C8A, 0x00000018, 0xFE363C8E, 0x0003005B, (u32)(void*)evt_msg_select, 0x00000000, 0xFE363C8E, 0x00020018,
     0xFE363C80, 0x00000001, 0x0004005B, (u32)get_msg, 0xFE363C8A, 0x00000016, 0xFE363C8E, 0x0003005B,
     (u32)(void*)evt_msg_print_add, 0x00000000, 0xFE363C8E, 0x00000002, 0x00000021, 0x0001005B, (u32)(void*)evt_msg_continue, 0x00010004,

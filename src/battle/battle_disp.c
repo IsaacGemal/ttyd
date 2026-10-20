@@ -35,14 +35,14 @@ s32 _status_pose_table[] = {
 };
 
 
-extern const char str_802EDE38[];
-extern const char str_802EDE40[];
-extern const char str_802EDE48[];
-extern const char str_802EDE50[];
-extern const char str_802EDE58[];
-extern const char str_802EDE60[];
-extern const char str_802EDE68[];
-extern const char str_802EDE70[];
+extern const char str_p_b_st[];
+extern const char str_PM_Y_1B[];
+extern const char str_PM_C_1A[];
+extern const char str_PM_F_2[];
+extern const char str_PM_C_1B[];
+extern const char str_PM_F_1B[];
+extern const char str_PM_F_1A[];
+extern const char str_PM_Y_1A[];
 
 extern ItemData itemDataTable[];
 
@@ -1273,16 +1273,16 @@ void _pose_one_pattern(BattleUnitPart* part) {
 	part->statusPoseStep = 1;
 	switch (part->statusPoseKind) {
 	case 2:
-		animPoseSetEffect(*(s32*)((char*)part + 0x1c0), str_802EDE38, 1);
-		animPoseSetEffectAnim(*(s32*)((char*)part + 0x1c0), str_802EDE48, 1);
+		animPoseSetEffect(*(s32*)((char*)part + 0x1c0), str_p_b_st, 1);
+		animPoseSetEffectAnim(*(s32*)((char*)part + 0x1c0), str_PM_C_1A, 1);
 		break;
 	case 3:
-		animPoseSetEffect(*(s32*)((char*)part + 0x1c0), str_802EDE38, 1);
-		animPoseSetEffectAnim(*(s32*)((char*)part + 0x1c0), str_802EDE68, 1);
+		animPoseSetEffect(*(s32*)((char*)part + 0x1c0), str_p_b_st, 1);
+		animPoseSetEffectAnim(*(s32*)((char*)part + 0x1c0), str_PM_F_1A, 1);
 		break;
 	case 7:
-		animPoseSetEffect(*(s32*)((char*)part + 0x1c0), str_802EDE38, 1);
-		animPoseSetEffectAnim(*(s32*)((char*)part + 0x1c0), str_802EDE70, 1);
+		animPoseSetEffect(*(s32*)((char*)part + 0x1c0), str_p_b_st, 1);
+		animPoseSetEffectAnim(*(s32*)((char*)part + 0x1c0), str_PM_Y_1A, 1);
 		break;
 	}
 #endif

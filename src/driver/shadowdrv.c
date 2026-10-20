@@ -188,12 +188,12 @@ __declspec(section ".rodata") const Vec vec3_802c1acc = {0.0f, 0.0f, 0.0f};
 __declspec(section ".rodata") const Vec vec3_802c1ad8 = {0.0f, 0.0f, 0.0f};
 __declspec(section ".rodata") const Vec vec3_802c1ae4 = {0.0f, 0.0f, 0.0f};
 __declspec(section ".rodata") const Vec vec3_802c1af0 = {0.0f, 0.0f, 0.0f};
-__declspec(section ".rodata") const char str_802C1AFC[] = "result scene (8bit depth)";
-__declspec(section ".rodata") const char str_802C1B18[] = "actual depth from the light (8bit depth)";
-__declspec(section ".rodata") const char str_802C1B44[] = "projected shadow depth map (8bit depth)";
-__declspec(section ".rodata") const char str_802C1B6C[] = "result scene (16bit depth)";
+__declspec(section ".rodata") const char str_result_scene_8bit_depth[] = "result scene (8bit depth)";
+__declspec(section ".rodata") const char str_actual_depth_from_the_light_8bit_depth[] = "actual depth from the light (8bit depth)";
+__declspec(section ".rodata") const char str_projected_shadow_depth_map_8bit_depth[] = "projected shadow depth map (8bit depth)";
+__declspec(section ".rodata") const char str_result_scene_16bit_depth[] = "result scene (16bit depth)";
 __declspec(section ".rodata") const char str_802C1B88[] = "actual depth from the light (16bit depth)";
-__declspec(section ".rodata") const char str_802C1BB4[] = "projected shadow depth map (16bit depth)";
+__declspec(section ".rodata") const char str_projected_shadow_depth_map_16bit_depth[] = "projected shadow depth map (16bit depth)";
 #pragma force_active reset
 extern GXColor dat_804198e4;
 extern GXColor dat_804198e8;
