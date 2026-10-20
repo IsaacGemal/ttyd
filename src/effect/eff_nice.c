@@ -201,7 +201,7 @@ void effNiceMain(EffectEntry* effect) {
 		switch (type) {
 		case 0:
 		case 1:
-			end = *(f32*)((u8*)*(void**)((u8*)animData + 0x24) + 8);
+			end = *(f32*)((u8*)(void*)animData->clip + 8);
 			base = (u32)gp->language == 0 ? 32.0f : 34.0f;
 			time = pose->clipTime;
 			if (time > base) {
@@ -222,7 +222,7 @@ void effNiceMain(EffectEntry* effect) {
 			}
 			break;
 		case 2:
-			end2 = *(f32*)((u8*)*(void**)((u8*)animData + 0x24) + 8);
+			end2 = *(f32*)((u8*)(void*)animData->clip + 8);
 			base2 = (u32)gp->language == 0 ? 35.0f : 37.0f;
 			time2 = pose->clipTime;
 			if (time2 > base2) {
@@ -243,7 +243,7 @@ void effNiceMain(EffectEntry* effect) {
 			}
 			break;
 		case 3:
-			end3 = *(f32*)((u8*)*(void**)((u8*)animData + 0x24) + 8);
+			end3 = *(f32*)((u8*)(void*)animData->clip + 8);
 			base3 = (u32)gp->language == 0 ? 45.0f : 40.f;
 			time3 = pose->clipTime;
 			if (time3 > base3) {
@@ -264,7 +264,7 @@ void effNiceMain(EffectEntry* effect) {
 			}
 			break;
 		case 4:
-			end4 = *(f32*)((u8*)*(void**)((u8*)animData + 0x24) + 8);
+			end4 = *(f32*)((u8*)(void*)animData->clip + 8);
 			base4 = (u32)gp->language == 0 ? 48.0f : 40.f;
 			time4 = pose->clipTime;
 			if (time4 > base4) {

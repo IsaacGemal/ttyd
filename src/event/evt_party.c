@@ -24,7 +24,6 @@
 #define PS8(p, off) (*(s8*)((u8*)(p) + (off)))
 #define P16(p, off) (*(s16*)((u8*)(p) + (off)))
 #define P32(p, off) (*(u32*)((u8*)(p) + (off)))
-#define PF32(p, off) (*(f32*)((u8*)(p) + (off)))
 
 // local prototypes (not in headers yet)
 extern s32 partyCtrlNo;
@@ -216,9 +215,9 @@ USER_FUNC(evt_party_set_hosei_xyz) {
     if (!party) {
         return EVT_RETURN_DONE;
     }
-    PF32(party, 0xAC) = evtGetFloat(event, args[1]);
-    PF32(party, 0xB0) = evtGetFloat(event, args[2]);
-    PF32(party, 0xB4) = evtGetFloat(event, args[3]);
+    party->moveDelta.x = evtGetFloat(event, args[1]);
+    party->moveDelta.y = evtGetFloat(event, args[2]);
+    party->moveDelta.z = evtGetFloat(event, args[3]);
     return EVT_RETURN_DONE;
 }
 
@@ -655,7 +654,7 @@ USER_FUNC(evt_party_set_homing_dist) {
     if (!party) {
         return EVT_RETURN_DONE;
     }
-    PF32(party, 0x40) = (f32)evtGetValue(event, args[1]);
+    party->followDist = (f32)evtGetValue(event, args[1]);
     return EVT_RETURN_DONE;
 }
 

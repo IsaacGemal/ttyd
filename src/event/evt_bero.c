@@ -881,19 +881,19 @@ USER_FUNC(bero_set_disp_position_pipe) {
 	case 6:
 		if (!(event->lwData[4] & 0x1000)) {
 			wp = marioGetPtr();
-			*(f32*)((u8*)wp + 0x9C) += 3.0f;
+			wp->dispOfs.y += 3.0f;
 			wp = marioGetPtr();
-			*(f32*)((u8*)wp + 0xA0) -= 15.0f;
+			wp->dispOfs.z -= 15.0f;
 		}
 		break;
 	case 8:
 	case 9:
 		if (!(event->lwData[4] & 0x1000)) {
 			wp = marioGetPtr();
-			*(f32*)((u8*)wp + 0xA0) -= 13.0f;
+			wp->dispOfs.z -= 13.0f;
 		} else {
 			wp = marioGetPtr();
-			*(f32*)((u8*)wp + 0xA0) -= 20.0f;
+			wp->dispOfs.z -= 20.0f;
 		}
 		break;
 	case 7:
@@ -1027,11 +1027,11 @@ USER_FUNC(evt_bero_disppos_save) {
 	MarioWork* wp;
 
 	wp = marioGetPtr();
-	BeroOX = *(f32*)((u8*)wp + 0x98);
+	BeroOX = wp->dispOfs.x;
 	wp = marioGetPtr();
-	BeroOY = *(f32*)((u8*)wp + 0x9C);
+	BeroOY = wp->dispOfs.y;
 	wp = marioGetPtr();
-	BeroOZ = *(f32*)((u8*)wp + 0xA0);
+	BeroOZ = wp->dispOfs.z;
 	return EVT_RETURN_DONE;
 }
 
@@ -1041,13 +1041,13 @@ USER_FUNC(evt_bero_disppos_load) {
 
 	pos = BeroOX;
 	wp = marioGetPtr();
-	*(f32*)((u8*)wp + 0x98) = pos;
+	wp->dispOfs.x = pos;
 	pos = BeroOY;
 	wp = marioGetPtr();
-	*(f32*)((u8*)wp + 0x9C) = pos;
+	wp->dispOfs.y = pos;
 	pos = BeroOZ;
 	wp = marioGetPtr();
-	*(f32*)((u8*)wp + 0xA0) = pos;
+	wp->dispOfs.z = pos;
 	return EVT_RETURN_DONE;
 }
 

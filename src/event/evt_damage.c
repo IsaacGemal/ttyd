@@ -15,7 +15,7 @@
 USER_FUNC(camdir) {
     CameraEntry* cam = camGetPtr(CAMERA_3D);
     f32 yaw = cam->viewYaw;
-    HitEntry* hit = *(HitEntry**)((u8*)marioGetPtr() + 0x204);
+    HitEntry* hit = (HitEntry*)marioGetPtr()->hitobjDamageReturn;
     s32 dir = 1;
 
     if (hit != NULL) {
