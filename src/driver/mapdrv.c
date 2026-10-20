@@ -601,7 +601,7 @@ MapEntryAnimData* mapSearchAnmObj(const char* animName) {
 	for (i = 0; i < wp->entries[0].count; entry++, i++) {
 		MapEntryAnimData* anim = entry->animData;
 		for (j = 0; j < entry->animCount; j++, anim++) {
-			if ((*(u16*)anim & 0x1) && !strcmp(*(char**)*(void**)((u8*)anim + 0x18), animName)) {
+			if ((anim->flags & 0x1) && !strcmp(*(char**)anim->data, animName)) {
 				return anim;
 			}
 		}
@@ -645,10 +645,10 @@ void mapCheckAnimation(const char* animName, BOOL* valid, f32* a3) {
 	*valid = FALSE;
 	*a3 = 0.0f;
 	if (found) {
-		if (*(u16*)found & 0x2) {
+		if (found->flags & 0x2) {
 			*valid = TRUE;
 		}
-		*a3 = 1000.0f * (*(f32*)(*(u8**)((u8*)found + 0x18) + 8) - *(f32*)((u8*)found + 0x10)) / (f32)gp->framerate;
+		*a3 = 1000.0f * (*(f32*)((u8*)found->data + 8) - found->frame) / (f32)gp->framerate;
 	}
 	else {
 		*valid = TRUE;
@@ -675,7 +675,7 @@ void mapPlayAnimationLv(const char* name, s32 a2, s32 a3) {
 	for (i = 0; i < wp->entries[0].count; entry++, i++) {
 		found = entry->animData;
 		for (j = 0; j < entry->animCount; j++, found++) {
-			if (!strcmp(*(char**)*(void**)((u8*)found + 0x18), name)) {
+			if (!strcmp(*(char**)found->data, name)) {
 				valid = TRUE;
 				break;
 			}
@@ -691,34 +691,34 @@ void mapPlayAnimationLv(const char* name, s32 a2, s32 a3) {
 
 	found8 = (u8*)found;
 
-	*(u16*)found = 0;
+	found->flags = 0;
 	switch (a3) {
 	case 0:
 		break;
 	case 1:
-		*(u16*)found |= 0x100;
+		found->flags |= 0x100;
 		break;
 	case 2:
-		*(u16*)found |= 0x200;
+		found->flags |= 0x200;
 		break;
 	case 3:
-		*(u16*)found |= 0x400;
+		found->flags |= 0x400;
 		break;
 	case 4:
-		*(u16*)found |= 0x800;
+		found->flags |= 0x800;
 		break;
 	}
 
-	if (*(u16*)found & 0x100) {
+	if (found->flags & 0x100) {
 		time = gp->systemLv0Time;
 	}
-	else if (*(u16*)found & 0x200) {
+	else if (found->flags & 0x200) {
 		time = gp->systemLv1Time;
 	}
-	else if (*(u16*)found & 0x400) {
+	else if (found->flags & 0x400) {
 		time = gp->systemLv2Time;
 	}
-	else if (*(u16*)found & 0x800) {
+	else if (found->flags & 0x800) {
 		time = gp->systemLv3Time;
 	}
 	else if (gp->inBattle) {
@@ -731,9 +731,9 @@ void mapPlayAnimationLv(const char* name, s32 a2, s32 a3) {
 	*(OSTime*)(found8 + 0x8) = OSTicksToMilliseconds(time);
 	*(f32*)(found8 + 0x10) = 0.0f;
 	*(f32*)(found8 + 0x14) = 1.0f;
-	*(u16*)found |= 0x1;
+	found->flags |= 0x1;
 	if (a2 == 1) {
-		*(u16*)found |= 0x4;
+		found->flags |= 0x4;
 	}
 	if (a2 == 2) {
 		*(OSTime*)(found8 + 0x8) -= (u64)(1000.0f * *(f32*)(*(u8**)(found8 + 0x18) + 8) / (f32)gp->framerate);
@@ -772,7 +772,7 @@ void mapPauseAnimation(const char* name) {
 #endif
 
 	if (found) {
-		*(u16*)found |= 0x10;
+		found->flags |= 0x10;
 	}
 }
 
@@ -786,7 +786,7 @@ void mapReStartAnimation(const char* name) {
 #endif
 
 	if (found) {
-		*(u16*)found |= 0x20;
+		found->flags |= 0x20;
 	}
 }
 
@@ -799,7 +799,7 @@ void mapPauseAnimationAll(void) {
 	for (i = 0; i < wp->entries[0].count; entry++, i++) {
 		MapEntryAnimData* anim = entry->animData;
 		for (j = 0; j < entry->animCount; j++, anim++) {
-			*(u16*)anim |= 0x10;
+			anim->flags |= 0x10;
 		}
 	}
 }
@@ -813,7 +813,7 @@ void mapReStartAnimationAll(void) {
 	for (i = 0; i < wp->entries[0].count; entry++, i++) {
 		MapEntryAnimData* anim = entry->animData;
 		for (j = 0; j < entry->animCount; j++, anim++) {
-			*(u16*)anim |= 0x20;
+			anim->flags |= 0x20;
 		}
 	}
 }
@@ -826,7 +826,7 @@ void mapSetPlayRate(const char* name, f32 rate) {
 #endif
 
 	if (found) {
-		*(f32*)((u8*)found + 0x14) = rate;
+		found->rate = rate;
 	}
 }
 
@@ -1349,8 +1349,8 @@ void mapCalcAnimMatrix(Mtx outMtx, Mtx inMtx, MapEntryAnimData* anim, void* join
 	for (i = 1; i < count; i++) {
 		key = &joint->key[i - 1];
 		next = &joint->key[i];
-		if (*(f32*)((u8*)anim + 0x10) <= next->time) {
-			t = *(f32*)((u8*)anim + 0x10);
+		if (anim->frame <= next->time) {
+			t = anim->frame;
 		}
 		else if (i == count - 1) {
 			t = next->time;
