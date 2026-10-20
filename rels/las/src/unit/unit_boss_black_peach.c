@@ -26,6 +26,7 @@
 #include "driver/animdrv.h"
 #include "driver/dispdrv.h"
 #include "driver/effdrv.h"
+#include "eff/eff_queen.h"
 #include "eff/n64/eff_pokopi_thunder_n64.h"
 #include "eff/n64/eff_shock_n64.h"
 #include "driver/extdrv.h"
@@ -4882,7 +4883,7 @@ USER_FUNC(unk_las_0000af38) {
 USER_FUNC(eff_queen_set_alpha_evt) {
     s32 value = evtGetValue(event, event->args[0]);
     EffectEntry* eff = effNameToPtr("m_q2");
-    *(s32*)((u8*)eff->userdata + 0x28) = value;
+    ((effQueenData*)eff->userdata)->alphaCap = value;
     return EVT_RETURN_DONE;
 }
 

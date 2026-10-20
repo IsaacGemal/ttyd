@@ -32,21 +32,21 @@ EffectEntry* effQueenEntry(s32 type, s32 lifetime, f32 x, f32 y, f32 z, f32 scal
 	data->position.x = x;
 	data->position.y = y;
 	data->position.z = z;
-	data->field_0x14 = scale;
-	data->field_0x10 = 0.0f;
+	data->scale = scale;
+	data->widthScale = 0.0f;
 
 	// 1000 means no time limit; the main loop only counts down below it.
 	if (lifetime <= 0) {
-		data->field_0x20 = 1000;
+		data->lifetime = 1000;
 	} else {
-		data->field_0x20 = lifetime;
+		data->lifetime = lifetime;
 	}
 
 	data->field_0x1C = 0;
 	data->animId = -1;
-	data->field_0x24 = 0;
-	data->field_0x28 = 0xFF;
-	data->field_0x10 = 1.0f;
+	data->alpha = 0;
+	data->alphaCap = 0xFF;
+	data->widthScale = 1.0f;
 
 	return entry;
 }
@@ -63,7 +63,7 @@ void effQueenMain(EffectEntry* effect) {
 
 	if (effect->flags & 4) {
 		effect->flags &= ~4;
-		data->field_0x20 = 100; // forced removal: fade out over the last 100 ticks
+		data->lifetime = 100; // forced removal: fade out over the last 100 ticks
 	}
 
 	if (animGroupBaseAsync("MOBJ_EFF_queen_tornade", inBattle, NULL) == 0) {
@@ -75,11 +75,11 @@ void effQueenMain(EffectEntry* effect) {
 		animPoseSetAnim(data->animId, "S_1", 1);
 	}
 
-	if (data->field_0x20 < 1000) {
-		data->field_0x20--;
+	if (data->lifetime < 1000) {
+		data->lifetime--;
 	}
 
-	if (data->field_0x20 < 0) {
+	if (data->lifetime < 0) {
 		if (data->animId != -1) {
 			animPoseRelease(data->animId);
 		}
@@ -87,19 +87,19 @@ void effQueenMain(EffectEntry* effect) {
 		return;
 	}
 
-	if (data->field_0x20 < 100) {
-		data->field_0x24 -= 3;
+	if (data->lifetime < 100) {
+		data->alpha -= 3;
 	} else {
-		data->field_0x24 += 3;
+		data->alpha += 3;
 	}
 
-	maxAlpha = (s32)(0.8f * data->field_0x28);
-	if (data->field_0x24 > maxAlpha) {
-		data->field_0x24 = maxAlpha;
+	maxAlpha = (s32)(0.8f * data->alphaCap);
+	if (data->alpha > maxAlpha) {
+		data->alpha = maxAlpha;
 	}
 
-	if (data->field_0x24 < 0) {
-		data->field_0x24 = 0;
+	if (data->alpha < 0) {
+		data->alpha = 0;
 	}
 
 	dispEntry(CAMERA_3D, dispCalcZ(&disp), 2, effQueenDisp, effect);
@@ -115,7 +115,7 @@ void effQueenDisp(CameraId camId, void* param) {
 	}
 
 	PSMTXTrans(mtx0, data->position.x, data->position.y, data->position.z);
-	PSMTXScale(mtx1, data->field_0x10 * data->field_0x14, data->field_0x14, data->field_0x10 * data->field_0x14);
+	PSMTXScale(mtx1, data->widthScale * data->scale, data->scale, data->widthScale * data->scale);
 
 	PSMTXRotRad(rot, 'y', MTXDegToRad(-camGetPtr(camId)->viewYaw));
 
@@ -124,7 +124,7 @@ void effQueenDisp(CameraId camId, void* param) {
 
 	animPoseSetMaterialFlagOn(data->animId, 0x40);
 
-	animPoseSetMaterialEvtColor(data->animId, (GXColor){ 0xFF, 0xFF, 0xFF, data->field_0x24 });
+	animPoseSetMaterialEvtColor(data->animId, (GXColor){ 0xFF, 0xFF, 0xFF, data->alpha });
 
 	animPoseMain(data->animId);
 	animPoseDrawMtx(data->animId, mtx0, 1, 0.0f, 10.0f);
