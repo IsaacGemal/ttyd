@@ -8,7 +8,7 @@
 #include "driver/windowdrv.h"
 #include "manager/dvdmgr.h"
 #include "manager/fontmgr.h"
-void FontDrawColor(GXColor* color);
+void FontDrawColor(GXColor color);
 #include "mario/mariost.h"
 #include "pmario_sound.h"
 #include "memory.h"
@@ -341,21 +341,7 @@ s32 msgMain(smartEntry* smart) {
 		case 0xFFFD:
 			data->scrollTarget -= entry->y;
 			data->textTime = entry->startTime;
-#ifdef MUST_MATCH
-			// The original does this append with byte-offset arithmetic (addi/lwzx/stwx); the
-			// array form used in msgHistory comes out as add/displacement here.
-			{
-				MessageData* d = ((MessageData*)smart->address);
-				s32 value = data->scrollTarget;
-				if (!(d->flags & 0x200) && d->historyCount < 0x6e
-				    && (d->historyCount == 0
-				        || *(s32*)((u8*)d + 0x7840 + d->historyCount * 4) != value)) {
-					*(s32*)((u8*)d + 0x7844 + d->historyCount++ * 4) = value;
-				}
-			}
-#else
 			msgHistory(smart, data->scrollTarget);
-#endif
 			break;
 		case 0xFFFC:
 			data->entryPos = i + 1;
@@ -457,18 +443,10 @@ s32 msgMain(smartEntry* smart) {
 // 0x20. It also has to come after msgInit, as it did before.
 #include "math_ext.h"
 #pragma pool_data on // the original addresses its .rodata through one base register
-#ifdef MUST_MATCH
-// MUST_MATCH: retail passes these colours by value (MWCC copies the GXColor to a stack temp and passes
-// its address to FontDrawColor). This file declares it with a pointer, so the natural call is FontDrawColor(&c)
-// and it does not copy.
-static inline void msgDrawColor(GXColor color) {
-	FontDrawColor(&color);
-}
-#endif
 // Matching. The `idx`/`base` arithmetic is written inline at each array access (a `base` pointer local let the
 // allocator coalesce it the wrong way), and the `ca`/`sa` of the two cos/sin branches are one shared pair
 // hoisted to the default case so the allocator keeps them in the retail registers; `angle` stays local to
-// each branch. The by-value font colour comes from the msgDrawColor inline above.
+// each branch.
 BOOL msgDisp(smartEntry* smart, u8 alpha, f32 x, f32 y) {
 	MessageData* data = smart->address;
 	MsgDataEntry* entry = data->entries;
@@ -488,11 +466,7 @@ BOOL msgDisp(smartEntry* smart, u8 alpha, f32 x, f32 y) {
 			break;
 		case 0xFFF7: {
 			GXColor color = *(GXColor*)&entry->arg;
-#ifdef MUST_MATCH
-			msgDrawColor(color);
-#else
-			FontDrawColor(&color);
-#endif
+			FontDrawColor(color);
 			break;
 		}
 		case 0xFFF6:
@@ -521,11 +495,7 @@ BOOL msgDisp(smartEntry* smart, u8 alpha, f32 x, f32 y) {
 			animPoseDrawMtx(entry->arg, mtx, 2,
 				entry->field_0x14, entry->scale);
 			FontDrawStart_alpha(alpha);
-#ifdef MUST_MATCH
-			msgDrawColor(color);
-#else
-			FontDrawColor(&color);
-#endif
+			FontDrawColor(color);
 			break;
 		}
 		case 0xFFF5:
@@ -627,11 +597,7 @@ BOOL msgDisp(smartEntry* smart, u8 alpha, f32 x, f32 y) {
 					(u8)((fade * alpha) / 255), entry->scale);
 #endif
 				FontDrawStart_alpha(alpha);
-#ifdef MUST_MATCH
-				msgDrawColor(color);
-#else
-				FontDrawColor(&color);
-#endif
+				FontDrawColor(color);
 				break;
 			}
 
@@ -701,22 +667,14 @@ BOOL msgDisp(smartEntry* smart, u8 alpha, f32 x, f32 y) {
 				FontDrawScale(entry->scale);
 				{
 					GXColor color = *(GXColor*)&dat_8041a4f8;
-#ifdef MUST_MATCH
-					msgDrawColor(color);
-#else
-					FontDrawColor(&color);
-#endif
+					FontDrawColor(color);
 				}
 				FontDrawCode(entry->glyph, fx, fy);
 				FontDrawEdge();
 				FontDrawRainbowColor();
 				{
 					GXColor color2 = *(GXColor*)&dat_8041a4fc;
-#ifdef MUST_MATCH
-					msgDrawColor(color2);
-#else
-					FontDrawColor(&color2);
-#endif
+					FontDrawColor(color2);
 				}
 				FontDrawCode(entry->glyph, fx - 4.0f, fy + 4.0f);
 				FontDrawEdgeOff();
@@ -1630,9 +1588,7 @@ void msgWindow_ForceClose(const char* tag) {
 void msgWindow_Main(WindowEntry* window) {
 	smartEntry* smart = window->userdata;
 	MessageData* data = smart->address;
-#ifdef MUST_MATCH
 	s32 value;
-#endif
 
 	if (data->talkAnimTimer != 0) {
 		if (data->talkAnimOn == 0) {
@@ -1728,17 +1684,12 @@ void msgWindow_Main(WindowEntry* window) {
 		}
 		break;
 	case 3: {
-#ifdef MUST_MATCH
 		u32 mask;
 		u32 button;
 
 		mask = (((MessageData*)window->userdata->address)->flags & 0x100) ? 0x500 : 0x100;
 		button = keyGetButtonTrg(0);
 		if (button & (mask | 0x200)) {
-#else
-		u32 mask = (((MessageData*)window->userdata->address)->flags & 0x100) ? 0x500 : 0x100;
-		if (keyGetButtonTrg(0) & (mask | 0x200)) {
-#endif
 			window->state = 1;
 			data->choiceState = 2;
 			if (keyGetButtonTrg(0) & 0x200) {
@@ -1772,11 +1723,7 @@ void msgWindow_Main(WindowEntry* window) {
 	// The (MessageData*) cast here is a no-op that stops the compiler CSE-ing scrollY across the
 	// OSTicksToMilliseconds call; the original reloads it.
 	case 9: {
-#ifdef MUST_MATCH
 		value = data->history[data->historyCursor];
-#else
-		s32 value = data->history[data->historyCursor];
-#endif
 		if (data->scrollY < value) {
 			break;
 		}
@@ -1791,11 +1738,7 @@ void msgWindow_Main(WindowEntry* window) {
 	}
 	// Same no-op cast as case 9, on the scrollY update below.
 	case 10: {
-#ifdef MUST_MATCH
 		value = data->history[data->historyCursor];
-#else
-		s32 value = data->history[data->historyCursor];
-#endif
 		if (data->scrollY > value) {
 			break;
 		}
@@ -1815,17 +1758,12 @@ void msgWindow_Main(WindowEntry* window) {
 		break;
 	}
 	case 11: {
-#ifdef MUST_MATCH
 		u32 mask;
 		u32 button;
 
 		mask = (((MessageData*)window->userdata->address)->flags & 0x100) ? 0x500 : 0x100;
 		button = keyGetButtonTrg(0);
 		if (button & mask) {
-#else
-		u32 mask = (((MessageData*)window->userdata->address)->flags & 0x100) ? 0x500 : 0x100;
-		if (keyGetButtonTrg(0) & mask) {
-#endif
 			window->state = 0xa;
 			window->stateTime = gp->renderTime;
 			{
@@ -2134,20 +2072,12 @@ static inline GXColor selectWindowColor(u8 a) {
 void selectWindow_Disp(CameraId camId, void* param) {
 	WindowEntry* window = param; //cast to correct type
 	MessageData* data = window->userdata->address;
-#ifdef MUST_MATCH
 	GXColor color;
-#else
-	GXColor color = dat_8041a510;
-#endif
 	Vec pos;
 
 	GXSetFog(0, 0.0f, 0.0f, 0.0f, 0.0f, unk_80422fe4);
 
-#ifdef MUST_MATCH
 	color = selectWindowColor(window->alpha);
-#else
-	color.a = window->alpha;
-#endif
 	windowDispGX_Waku_col(0, color, window->x, window->y, window->height, window->width, 30.f);
 
 	msgDisp(window->userdata, (u8)window->alpha, 40.f + window->x, window->y - 25.0f);
