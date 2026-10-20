@@ -1902,7 +1902,7 @@ void bossrobot_batu(CameraId cameraId, void* param) {
     NpcEntry* robo = npcNameToPtr("ボスロボット");
     NpcEntry* batu = npcNameToPtr("ボスロボットバツ");
     AnimationPose* animPose = animPoseGetAnimPosePtr(robo->poseId);
-    Mtx* mtx = ((smartEntry*)*(void**)((u8*)animPose + 0x164))->address;
+    Mtx* mtx = ((smartEntry*)(void*)animPose->groupWorldMtx)->address;
     Mtx mtx2;
     Mtx mtx1;
     s32 idx = animPoseGetGroupIdx(robo->poseId, "locator23");
@@ -1948,13 +1948,13 @@ USER_FUNC(bossrobot) {
         bp = _mapAlloc(1);
         animPoseWorldMatrixEvalOn(robo->poseId);
         animPose = animPoseGetAnimPosePtr(robo->poseId);
-        mtx = ((smartEntry*)*(void**)((u8*)animPose + 0x164))->address;
-        for (i = 0; i < *(s32*)((u8*)animPose + 0x168); i++) {
+        mtx = ((smartEntry*)(void*)animPose->groupWorldMtx)->address;
+        for (i = 0; i < animPose->groupWorldMtxCount; i++) {
             PSMTXTrans(mtx[i], 0.0f, -1000.0f, 0.0f);
         }
     }
     animPose = animPoseGetAnimPosePtr(robo->poseId);
-    mtx = ((smartEntry*)*(void**)((u8*)animPose + 0x164))->address;
+    mtx = ((smartEntry*)(void*)animPose->groupWorldMtx)->address;
     idx = animPoseGetGroupIdx(robo->poseId, "locator17");
     pos = (Vec){ 0.0f, 0.0f, 0.0f };
     pos.x = mtx[idx][0][3];

@@ -1882,7 +1882,7 @@ static USER_FUNC(waku_main) {
     animPoseGetAnimBaseDataPtr(poseId);
     pose = animPoseGetAnimPosePtr(poseId);
     group = animPoseGetGroupIdx(poseId, "locator17");
-    tbl = *(u8**)((u8*)pose + 0x15C);
+    tbl = (u8*)pose->groupWorldPos;
     positions = (Vec*)(*(u8**)tbl);
     BtlUnit_SetPartsPos(part3, positions[group].x, positions[group].y, positions[group].z);
     {
