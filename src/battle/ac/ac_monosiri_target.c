@@ -120,8 +120,8 @@ s32 battleAcMain_MonosiriTarget(BattleWork* work) {
 		autoCommand = 1;
 	}
 
-	unit = BattleGetUnitPtr(work, *(s32*)((u8*)work + 0x1CC8));
-	part = BtlUnit_GetPartsPtr(unit, *(s32*)((u8*)work + 0x1CCC));
+	unit = BattleGetUnitPtr(work, work->actionCommands.acParams[0]);
+	part = BtlUnit_GetPartsPtr(unit, work->actionCommands.acParams[1]);
 
 	switch (work->actionCommands.mAcState) {
 	case 0:

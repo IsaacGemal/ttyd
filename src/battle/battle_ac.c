@@ -155,7 +155,7 @@ s32 BattleActionCommandCheckDefence(BattleUnit* unit, BattleWeapon* weapon) {
 	BattleWorkPad* pad = &work->actionCommands.pad;
 	GuardFrames normal;
 	GuardFrames super;
-	s16* guardFrames = (s16*)&work->actionCommands.field_78[0x10];
+	s16* guardFrames = &work->actionCommands.guardFrames;
 	s32 defended = 0;
 	s32 index;
 	s32 i;

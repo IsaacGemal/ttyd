@@ -34,7 +34,7 @@ u32 _button_table[7] = {0x100, 0x200, 0x400, 0x800, 0x40, 0x20, 0x10};
 // Button-down action-command work area at _battleWorkPointer + 0x1F4C. No header declares it yet;
 // two parallel per-button arrays and a timer.
 typedef struct ButtonDownWork {
-    s32 field_0x00;  // 0x00, countdown from ac field_34[4]
+    s32 field_0x00;  // 0x00, countdown from ac acParams[0]
     s32 field_0x04;  // 0x04, previous outputParams[0] (SFX edge detect)
     u32 buttons[13]; // 0x08, button masks
     s32 states[13];  // 0x3C, 0 = waiting, 1 = pressed
@@ -88,8 +88,8 @@ s32 battleAcMain_ButtonDown(BattleWork* work) {
                 disp->counter = 0x14;
                 memset(bd->buttons, 0, 0x34);
                 memset(bd->states, 1, 0x34);
-                for (i = 0; i < *(s32*)&work->actionCommands.field_34[0x0C]; i++) {
-                    switch (*(s32*)&work->actionCommands.field_34[0x10]) {
+                for (i = 0; i < work->actionCommands.acParams[2]; i++) {
+                    switch (work->actionCommands.acParams[3]) {
                         case -2:
                             bd->buttons[i] = (irand(100) < 50) ? 0x100 : 0x200;
                             bd->states[i] = 0;
@@ -99,7 +99,7 @@ s32 battleAcMain_ButtonDown(BattleWork* work) {
                             bd->states[i] = 0;
                             break;
                         case -3:
-                            if (*(s32*)&work->actionCommands.field_34[0x00] & 4) {
+                            if (work->actionCommands.acFlag & 4) {
                                 bd->buttons[i] = _button_table[irand(4)];
                                 bd->states[i] = 0;
                             } else {
@@ -152,7 +152,7 @@ s32 battleAcMain_ButtonDown(BattleWork* work) {
             case 100:
                 work->actionCommands.mAcState = 1000;
                 bd->field_0x04 = 0;
-                bd->field_0x00 = *(s32*)&work->actionCommands.field_34[4];
+                bd->field_0x00 = work->actionCommands.acParams[0];
                 // fallthrough
             case 1000:
                 if ((work->actionCommands.field_0x4 & 1) && (work->actionCommands.mAcUnit->mTokenFlags & 0x10)) {
@@ -170,8 +170,8 @@ s32 battleAcMain_ButtonDown(BattleWork* work) {
                     }
                     return 0;
                 }
-                if (*(s16*)&work->actionCommands.field_78[0x10] > 0) {
-                    (*(s16*)&work->actionCommands.field_78[0x10])--;
+                if (work->actionCommands.guardFrames > 0) {
+                    (work->actionCommands.guardFrames)--;
                     work->actionCommands.result = 2;
                     work->actionCommands.mAcState = 1001;
                     cont = 1;
@@ -180,7 +180,7 @@ s32 battleAcMain_ButtonDown(BattleWork* work) {
                 {
                     allDone = 1;
                     work->actionCommands.outputParams[0] = 0;
-                    for (i = 0; i < *(s32*)&work->actionCommands.field_34[0x0C]; i++) {
+                    for (i = 0; i < work->actionCommands.acParams[2]; i++) {
                         if (bd->buttons[i] == 0) {
                             continue;
                         }
@@ -191,8 +191,8 @@ s32 battleAcMain_ButtonDown(BattleWork* work) {
                         if (BattlePadGetTrigger() == bd->buttons[i] || smooth) {
                             bd->states[i] = 1;
                             work->actionCommands.outputParams[0]++;
-                            if (*(s32*)&work->actionCommands.field_34[8] == 1) {
-                                if (i + 1 < *(s32*)&work->actionCommands.field_34[0x0C]) {
+                            if (work->actionCommands.acParams[1] == 1) {
+                                if (i + 1 < work->actionCommands.acParams[2]) {
                                     allDone = 0;
                                 }
                                 goto check;
@@ -201,7 +201,7 @@ s32 battleAcMain_ButtonDown(BattleWork* work) {
                             if (BattlePadGetTrigger() != 0) {
                                 work->actionCommands.result = 0;
                                 work->actionCommands.mAcState = 1001;
-                                if ((*(s32*)&work->actionCommands.field_34[0x00] & 2) &&
+                                if ((work->actionCommands.acFlag & 2) &&
                                     work->actionCommands.outputParams[0] > 0) {
                                     cont = 1;
                                     work->actionCommands.result |= 2;
@@ -212,7 +212,7 @@ s32 battleAcMain_ButtonDown(BattleWork* work) {
                                 return 1;
                             }
                             allDone = 0;
-                            if (*(s32*)&work->actionCommands.field_34[8] == 1) {
+                            if (work->actionCommands.acParams[1] == 1) {
                                 goto check;
                             }
                         }
@@ -235,7 +235,7 @@ s32 battleAcMain_ButtonDown(BattleWork* work) {
                         work->actionCommands.result = 0;
                         cont = 1;
                         work->actionCommands.mAcState = 1001;
-                        if ((*(s32*)&work->actionCommands.field_34[0x00] & 2) &&
+                        if ((work->actionCommands.acFlag & 2) &&
                             work->actionCommands.outputParams[0] > 0) {
                             work->actionCommands.result |= 2;
                             work->actionCommands.result &= ~1;
@@ -330,7 +330,7 @@ static void actionCommandDisp(s32 type, f32 x, f32 y) {
 
     iconX = baseX - float_40_804204ec;
     iconY = float_70_804204f0 + y;
-    limit = *(s32*)&work->actionCommands.field_34[0x0C] * 3 + 2;
+    limit = work->actionCommands.acParams[2] * 3 + 2;
     bd = (ButtonDownWork*)((u8*)work + 0x1F4C);
 
     {
@@ -361,20 +361,20 @@ static void actionCommandDisp(s32 type, f32 x, f32 y) {
         iconDispGx(float_1_804204f4, &t, 0x10, 0x90);
     }
 
-    flags = *(s32*)&work->actionCommands.field_34[0x00];
+    flags = work->actionCommands.acFlag;
     if (flags & 1) {
         limit = 0;
-        for (i = 0; i < *(s32*)&work->actionCommands.field_34[0x0C]; i++) {
+        for (i = 0; i < work->actionCommands.acParams[2]; i++) {
             if (bd->states[i] == 0) {
                 break;
             }
             limit++;
         }
-        if (limit < *(s32*)&work->actionCommands.field_34[0x0C]) {
+        if (limit < work->actionCommands.acParams[2]) {
             limit++;
         }
     } else {
-        limit = *(s32*)&work->actionCommands.field_34[0x0C];
+        limit = work->actionCommands.acParams[2];
     }
 
     for (i = 0; i < limit; i++) {

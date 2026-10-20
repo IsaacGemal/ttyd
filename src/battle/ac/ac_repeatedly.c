@@ -77,7 +77,7 @@ static void _init_param(BattleWork* work) {
     dec->field_0x2C = 0;
     dec->field_0x0C = 0;
 
-    switch (*(s32*)&ac->field_34[0x04]) {
+    switch (ac->acParams[0]) {
     case 10:
         work->flags |= 0x20000000;
         break;
@@ -132,24 +132,24 @@ static void _init_param(BattleWork* work) {
         break;
     }
 
-    param = *(s32*)&ac->field_34[0x08];
+    param = ac->acParams[1];
     dec->field_0x28 = param;
     dec->field_0x26 = param;
-    dec->field_0x10 = (f32)*(s32*)&ac->field_34[0x0C];
-    dec->field_0x14 = (f32)*(s32*)&ac->field_34[0x10] / float_10_8041c7e0;
+    dec->field_0x10 = (f32)ac->acParams[2];
+    dec->field_0x14 = (f32)ac->acParams[3] / float_10_8041c7e0;
     if (dec->field_0x14 != float_0_8041c7d8) {
         dec->field_0x10 = (f32)irand(100);
     }
-    dec->field_0x18 = (f32)*(s32*)&ac->field_34[0x20];
+    dec->field_0x18 = (f32)ac->acParams[7];
     disp->value = float_0p01_8041c7c0 * dec->field_0x18;
     dec->field_0x20 = 0;
-    dec->field_0x24 = *(s32*)&ac->field_34[0x18];
-    dec->field_0x1C = float_0p01_8041c7c0 * (f32)*(s32*)&ac->field_34[0x1C];
+    dec->field_0x24 = ac->acParams[5];
+    dec->field_0x1C = float_0p01_8041c7c0 * (f32)ac->acParams[6];
     dec->field_0x2A = 0xB2;
 
-    timer = *(s16*)&ac->field_78[0x10];
+    timer = ac->guardFrames;
     if (timer > 0) {
-        *(s16*)&ac->field_78[0x10] = timer - 1;
+        ac->guardFrames = timer - 1;
         dec->field_0x2B = 1;
     } else {
         dec->field_0x2B = 0;
@@ -207,7 +207,7 @@ s32 battleAcMain_Repeatedly(BattleWork* work) {
         ac->outputParams[0] = 1;
         // fallthrough
     case 0x3E8:
-        switch (*(s32*)&ac->field_34[4]) {
+        switch (ac->acParams[0]) {
         case 0xA:
             if (dec->field_0x2C != 0) {
                 if (OSGetResetButtonState() == 0) {
@@ -409,7 +409,7 @@ void battleAcDisp_Repeatedly(CameraId camId, void* param) {
 // into battleAcMain_Repeatedly.
 #pragma dont_inline on
 void battleAcDelete_Repeatedly(BattleWork* work) {
-    switch (*(s32*)&work->actionCommands.field_34[0x04]) {
+    switch (work->actionCommands.acParams[0]) {
     case 0xA:
         work->flags &= ~0x20000000;
         break;
@@ -432,7 +432,7 @@ static void actionCommandDisp(f32 x, f32 y) {
 
     camGetPtr(CAMERA_2D);
 
-    if (*(s32*)&ac->field_34[4] != 0x10) {
+    if (ac->acParams[0] != 0x10) {
         s32 iconA;
         s32 iconB;
 
@@ -566,7 +566,7 @@ static void actionCommandDisp(f32 x, f32 y) {
 
     v = disp->value;
     BattleAcDrawGauge((s32)x, (s32)y, dec->field_0x2A, 2,
-                      (*(s32*)&ac->field_34[0] & 2) ? 100 : (s32)dec->field_0x10, 100, 100,
+                      (ac->acFlag & 2) ? 100 : (s32)dec->field_0x10, 100, 100,
                       flags, v);
     {
         Vec vec = vec3_802f3190;

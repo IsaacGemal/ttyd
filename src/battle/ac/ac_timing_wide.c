@@ -52,7 +52,7 @@ s32 battleAcMain_TimingWide(BattleWork* work) {
 		disp->counter = 0x14;
 		dec->field_0x0C = 0;
 		dec->field_0x08 = 0;
-		switch (*(s32*)&ac->field_34[4]) {
+		switch (ac->acParams[0]) {
 		case 5:
 			dec->field_0x00 = 0x100;
 			dec->field_0x04 = 1;
@@ -89,23 +89,23 @@ s32 battleAcMain_TimingWide(BattleWork* work) {
 		    (ac->mAcUnit->mTokenFlags & 0x10)) {
 			if ((s32)irand(100) >= 0) {
 				ac->field_0x8 = 0;
-				if (*(s32*)&ac->field_34[0x0C] > 0) {
-					ac->field_0x8 = irand(*(s32*)&ac->field_34[0x0C]);
+				if (ac->acParams[2] > 0) {
+					ac->field_0x8 = irand(ac->acParams[2]);
 				}
 				if (ac->field_0x8 <= 0) {
-					ac->field_0x8 = *(s32*)&ac->field_34[0x08] + 2;
+					ac->field_0x8 = ac->acParams[1] + 2;
 				}
 			}
 			else {
-				s32 r = (s32)irand(*(s32*)&ac->field_34[0x10] -
-				                   *(s32*)&ac->field_34[0x0C]);
-				ac->field_0x8 = *(s32*)&ac->field_34[0x0C] + r;
+				s32 r = (s32)irand(ac->acParams[3] -
+				                   ac->acParams[2]);
+				ac->field_0x8 = ac->acParams[2] + r;
 			}
 			ac->mAcState = 0x3EA;
 			dec->field_0x0C = 2;
 		}
 		else {
-			if (*(s32*)&ac->field_34[4] == 4) {
+			if (ac->acParams[0] == 4) {
 				ac->mAcState = 0x3E8;
 			}
 			else {
@@ -122,11 +122,11 @@ s32 battleAcMain_TimingWide(BattleWork* work) {
 		break;
 	case 0x3E9:
 		dec->field_0x08++;
-		if (dec->field_0x08 > *(s32*)&ac->field_34[0x08]) {
+		if (dec->field_0x08 > ac->acParams[1]) {
 			ac->result = 0;
 			ac->mAcState = 0x3EC;
 			dec->field_0x0C = 4;
-			if (*(s32*)&ac->field_34[0x00] & 8) {
+			if (ac->acFlag & 8) {
 				ac->mAcState = 0x3EB;
 				dec->field_0x0C = 3;
 			}
@@ -159,8 +159,8 @@ s32 battleAcMain_TimingWide(BattleWork* work) {
 			}
 			break;
 		}
-		if (dec->field_0x08 >= *(s32*)&ac->field_34[0x0C] &&
-		    dec->field_0x08 < *(s32*)&ac->field_34[0x10]) {
+		if (dec->field_0x08 >= ac->acParams[2] &&
+		    dec->field_0x08 < ac->acParams[3]) {
 			ac->outputParams[2] = 1;
 		}
 		else {
@@ -186,7 +186,7 @@ s32 battleAcMain_TimingWide(BattleWork* work) {
 			}
 			ac->mAcState = 0x3EC;
 			dec->field_0x0C = 4;
-			if (*(s32*)&ac->field_34[0x00] & 8) {
+			if (ac->acFlag & 8) {
 				ac->mAcState = 0x3EB;
 				dec->field_0x0C = 3;
 			}
@@ -195,13 +195,13 @@ s32 battleAcMain_TimingWide(BattleWork* work) {
 	case 0x3EA:
 		dec->field_0x08++;
 		ac->field_0x8--;
-		if (dec->field_0x08 > *(s32*)&ac->field_34[0x08]) {
+		if (dec->field_0x08 > ac->acParams[1]) {
 			ac->result = 0;
 			return 0;
 		}
 		if (ac->field_0x8 < 0) {
-			if (dec->field_0x08 >= *(s32*)&ac->field_34[0x0C] &&
-			    dec->field_0x08 < *(s32*)&ac->field_34[0x10]) {
+			if (dec->field_0x08 >= ac->acParams[2] &&
+			    dec->field_0x08 < ac->acParams[3]) {
 				ac->result = 2;
 				ac->mResultCount++;
 				ac->outputParams[0] = 1;
@@ -259,7 +259,7 @@ void battleAcDisp_TimingWide(CameraId camId, void* param) {
 	case 0:
 	case 1:
 	case 2:
-		if (*(s32*)&ac->field_34[0x00] & 1) {
+		if (ac->acFlag & 1) {
 			disp->iconX = 30.f;
 		}
 		else {
@@ -276,11 +276,11 @@ void battleAcDisp_TimingWide(CameraId camId, void* param) {
 	case 4:
 	case 5:
 		flag = 1;
-		if ((*(s32*)&ac->field_34[0x00] & 2) &&
+		if ((ac->acFlag & 2) &&
 		    (ac->result & 2)) {
 			flag = 0;
 		}
-		if ((*(s32*)&ac->field_34[0x00] & 4) &&
+		if ((ac->acFlag & 4) &&
 		    !(ac->result & 2)) {
 			flag = 0;
 		}
@@ -373,7 +373,7 @@ static void actionCommandDisp(f32 x, f32 y) {
 	case 4:
 	case 5:
 	case 6:
-		if (!(*(s32*)&ac->field_34[0x00] & 0x10)) {
+		if (!(ac->acFlag & 0x10)) {
 			if (dec->field_0x04 > 0) {
 				Vec v = vecs[2];
 				v.x = -200.f + x;
@@ -404,8 +404,8 @@ static void actionCommandDisp(f32 x, f32 y) {
 		break;
 	case 1:
 		if (dec->field_0x04 != -1) {
-			if (dec->field_0x08 >= *(s32*)&ac->field_34[0x0C] &&
-			    dec->field_0x08 < *(s32*)&ac->field_34[0x10]) {
+			if (dec->field_0x08 >= ac->acParams[2] &&
+			    dec->field_0x08 < ac->acParams[3]) {
 				if (dec->field_0x04 > 0) {
 					Vec v = vecs[6];
 					v.x = -200.f + x;
@@ -435,7 +435,7 @@ static void actionCommandDisp(f32 x, f32 y) {
 			}
 		}
 		else {
-			if (dec->field_0x08 >= *(s32*)&ac->field_34[0x0C]) {
+			if (dec->field_0x08 >= ac->acParams[2]) {
 				Vec v = vecs[10];
 				v.x = -200.f + x;
 				v.y = 50.f + y;

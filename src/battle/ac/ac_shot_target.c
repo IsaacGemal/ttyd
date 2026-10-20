@@ -15,7 +15,7 @@
 // Per-action-command work area at BattleWork + 0x1F4C (inside BattleActions.field_0x2BC).
 // No header declares it: the exact fields are only used by this file.
 typedef struct ShotTargetWork {
-    s32 field_0x00; // 0x00, countdown (loaded from field_34[0x0C])
+    s32 field_0x00; // 0x00, countdown (loaded from acParams[2])
     s32 field_0x04; // 0x04, end-of-AC countdown
     Vec target;     // 0x08, target hit position
     Vec pos;        // 0x14, animated cursor position
@@ -106,7 +106,7 @@ s32 battleAcMain_ShotTarget(BattleWork* work) {
     if (ac->mAcUnit->badgesEquipped.AutoCommand != 0) {
         smooth = 1;
     }
-    rumbleType = *(s32*)&ac->field_34[0x10];
+    rumbleType = ac->acParams[3];
 
     do {
         cont = 0;
@@ -118,8 +118,8 @@ s32 battleAcMain_ShotTarget(BattleWork* work) {
             case 0:
                 _ac_disp_init(work);
                 ac->result = 1;
-                unit = BattleGetUnitPtr(work, *(s32*)&ac->field_34[0x04]);
-                part = BtlUnit_GetPartsPtr(unit, *(s32*)&ac->field_34[0x08]);
+                unit = BattleGetUnitPtr(work, ac->acParams[0]);
+                part = BtlUnit_GetPartsPtr(unit, ac->acParams[1]);
                 BtlUnit_GetHitPos(unit, part, &hit.x, &hit.y, &hit.z);
 #ifdef MUST_MATCH
                 // Match-only: volatile keeps MWCC from reordering these four stores, which the
@@ -142,13 +142,13 @@ s32 battleAcMain_ShotTarget(BattleWork* work) {
             case 99:
                 break;
             case 100:
-                st->field_0x00 = *(s32*)&ac->field_34[0x0C];
+                st->field_0x00 = ac->acParams[2];
                 ac->mAcState = 1000;
                 st->field_0x38 = psndSFXOn(sfx);
                 // fallthrough
             case 1000:
-                if (*(s16*)&ac->field_78[0x10] > 0) {
-                    (*(s16*)&ac->field_78[0x10])--;
+                if (ac->guardFrames > 0) {
+                    (ac->guardFrames)--;
                     ac->result = 2;
                     ac->mResultCount++;
                     ac->mAcState = 1001;

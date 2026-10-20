@@ -95,9 +95,9 @@ s32 battleAcMain_PowerGauge(BattleWork* work) {
         work->actionCommands.outputParams[0] = 0;
         work->actionCommands.mAcState = 0x63;
         work->actionCommands.result = 1;
-        dec->value = *(s32*)((u8*)work + 0x1CCC) + *(s32*)((u8*)work + 0x1CD0);
+        dec->value = work->actionCommands.acParams[1] + work->actionCommands.acParams[2];
         dec->gaugePercent = 0.0f;
-        switch (*(s32*)((u8*)work + 0x1CC8)) {
+        switch (work->actionCommands.acParams[0]) {
         case 0:
             dec->flag2 = 1;
             dec->button = 0x60;
@@ -183,7 +183,7 @@ s32 battleAcMain_PowerGauge(BattleWork* work) {
             }
             break;
         }
-        if ((*(u32*)((u8*)work + 0x1CC4) & 1) == 0) {
+        if ((work->actionCommands.acFlag & 1) == 0) {
             dec->counter++;
         }
         else if (dec->state == 1) {
@@ -208,15 +208,15 @@ s32 battleAcMain_PowerGauge(BattleWork* work) {
                 break;
             }
         }
-        if (dec->frame <= *(s32*)((u8*)work + 0x1CCC)) {
-            dec->gaugePercent = intplGetValueFM(*(s32*)((u8*)work + 0x1CD4), 0.0f, 100.f, dec->counter, *(s32*)((u8*)work + 0x1CCC));
+        if (dec->frame <= work->actionCommands.acParams[1]) {
+            dec->gaugePercent = intplGetValueFM(work->actionCommands.acParams[3], 0.0f, 100.f, dec->counter, work->actionCommands.acParams[1]);
         }
         else {
             dec->gaugePercent = 100.f;
         }
         BattleAcGaugeSeUpdate(dec->gaugePercent);
         if (autoCommand != 0) {
-            if (dec->gaugePercent >= (f32)*(s32*)((u8*)work + 0x1CD8)) {
+            if (dec->gaugePercent >= (f32)work->actionCommands.acParams[4]) {
                 dec->state = 2;
             }
             else {
@@ -224,7 +224,7 @@ s32 battleAcMain_PowerGauge(BattleWork* work) {
             }
         }
         if (dec->state == 2) {
-            if (dec->gaugePercent < (f32)*(s32*)((u8*)work + 0x1CD8)) {
+            if (dec->gaugePercent < (f32)work->actionCommands.acParams[4]) {
                 work->actionCommands.result = 0;
                 work->actionCommands.result &= ~2;
             }
@@ -369,31 +369,31 @@ static void actionCommandDisp(f32 x, f32 y) {
     }
     disp->value = ratio;
 
-    if (*(s32*)&ac->field_34[0] & 2) {
+    if (ac->acFlag & 2) {
         BattleAcDrawGauge((s32)px, (s32)py, 0xb2, 1, 100, 100, 100, 0, ratio);
     }
     else {
-        BattleAcDrawGauge((s32)px, (s32)py, 0xb2, 2, *(s32*)&ac->field_34[0x14], 100, 100, 0, ratio);
+        BattleAcDrawGauge((s32)px, (s32)py, 0xb2, 2, ac->acParams[4], 100, 100, 0, ratio);
     }
 
-    if ((*(s32*)&ac->field_34[0] & 4) == 0) {
+    if ((ac->acFlag & 4) == 0) {
         Vec pos = vec3_802fe958;
         pos.x = -288.0f + px +
-                (f32)(*(s32*)&ac->field_34[0x14] * 0xb0) / 100.f;
+                (f32)(ac->acParams[4] * 0xb0) / 100.f;
         pos.y = 45.0f + py;
         ICON_DISP(&pos, 0x10, 0x96, 1.0f);
     }
     else {
         s32 color;
 
-        if (dec->gaugePercent >= (f32)*(s32*)&ac->field_34[0x14] &&
+        if (dec->gaugePercent >= (f32)ac->acParams[4] &&
             dec->gaugePercent <= 100.f) {
             color = 0x95;
         }
         else {
             color = 0x91;
         }
-        if (*(s32*)&ac->field_34[0] & 8) {
+        if (ac->acFlag & 8) {
             Vec pos = vec3_802fe964;
             pos.x = -200.f + px + 120.f - 12.0f;
             pos.y = 18.0f + py;
@@ -407,7 +407,7 @@ static void actionCommandDisp(f32 x, f32 y) {
         }
     }
 
-    switch (*(s32*)&ac->field_34[4]) {
+    switch (ac->acParams[0]) {
     case 0:
         iconA = 0x7f;
         iconB = 0x7e;
@@ -466,7 +466,7 @@ static void actionCommandDisp(f32 x, f32 y) {
     case 0x3e8:
     case 0x3e9:
         if (dec->flag2 != 0) {
-            if (dec->gaugePercent >= (f32)*(s32*)&ac->field_34[0x14] &&
+            if (dec->gaugePercent >= (f32)ac->acParams[4] &&
                 dec->gaugePercent <= 100.f) {
                 if ((iconC & 0xffff) != 0) {
                     px = -225.0f + px;
@@ -516,7 +516,7 @@ static void actionCommandDisp(f32 x, f32 y) {
                 }
             }
         }
-        else if ((dec->gaugePercent >= (f32)*(s32*)&ac->field_34[0x14] &&
+        else if ((dec->gaugePercent >= (f32)ac->acParams[4] &&
                   dec->gaugePercent <= 100.f) ||
                  ac->outputParams[0] == 0) {
             if ((iconC & 0xffff) != 0) {

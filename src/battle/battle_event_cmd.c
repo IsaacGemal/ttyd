@@ -5086,7 +5086,7 @@ USER_FUNC(btlevtcmd_AcGetDifficulty) {
 
 //s32 flag
 USER_FUNC(btlevtcmd_AcSetFlag) {
-    *(s32*)BTLW_OFF(_battleWorkPointer, 0x1CC4) = *event->args;
+    _battleWorkPointer->actionCommands.acFlag = *event->args;
     return EVT_RETURN_DONE;
 }
 
@@ -5099,7 +5099,7 @@ USER_FUNC(btlevtcmd_AcSetParamAll) {
     for (i = 0; i < 8; i++) {
         s32 v = evtGetValue(event, *args++);
         if (v != EVTDAT_POINTER_MAX) {
-            *(s32*)((u8*)wp + 0x1CC8 + i * 4) = v;
+            wp->actionCommands.acParams[i] = v;
         }
     }
     return EVT_RETURN_DONE;
@@ -5112,7 +5112,7 @@ USER_FUNC(btlevtcmd_AcSetParam) {
     s32 index = evtGetValue(event, args[0]);
     s32 value = evtGetValue(event, args[1]);
 
-    ((s32*)((u8*)wp + 0x1CC8))[index] = value;
+    wp->actionCommands.acParams[index] = value;
     return EVT_RETURN_DONE;
 }
 
@@ -5126,7 +5126,7 @@ USER_FUNC(btlevtcmd_AcGetParam) {
     args = event->args;
     wp = _battleWorkPointer;
     index = evtGetValue(event, args[0]);
-    value = ((s32*)((u8*)wp + 0x1CC8))[index];
+    value = wp->actionCommands.acParams[index];
 
     if (args[1] != EVTDAT_POINTER_MAX) {
         evtSetValue(event, args[1], value);
@@ -5139,10 +5139,10 @@ USER_FUNC(btlevtcmd_AcSetGaugeParam) {
     BattleWork* wp = _battleWorkPointer;
     s32* args = event->args;
 
-    *(s32*)((u8*)wp + 0x1D08) = evtGetValue(event, args[0]);
-    *(s32*)((u8*)wp + 0x1D0C) = evtGetValue(event, args[1]);
-    *(s32*)((u8*)wp + 0x1D10) = evtGetValue(event, args[2]);
-    *(s32*)((u8*)wp + 0x1D14) = evtGetValue(event, args[3]);
+    wp->actionCommands.acGaugeParams[0] = evtGetValue(event, args[0]);
+    wp->actionCommands.acGaugeParams[1] = evtGetValue(event, args[1]);
+    wp->actionCommands.acGaugeParams[2] = evtGetValue(event, args[2]);
+    wp->actionCommands.acGaugeParams[3] = evtGetValue(event, args[3]);
     return EVT_RETURN_DONE;
 }
 
@@ -5171,7 +5171,7 @@ USER_FUNC(btlevtcmd_AcSetOutputParam) {
     s32 index = evtGetValue(event, args[0]);
     s32 value = evtGetValue(event, args[1]);
 
-    ((s32*)((u8*)wp + 0x1CE8))[index] = value;
+    wp->actionCommands.outputParams[index] = value;
     return EVT_RETURN_DONE;
 }
 

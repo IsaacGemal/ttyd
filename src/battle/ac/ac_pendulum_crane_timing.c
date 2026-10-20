@@ -193,7 +193,7 @@ s32 battleAcResult_PendulumCraneTiming(BattleWork* work) {
 	return work->actionCommands.result;
 }
 
-// 100%: the action-command state machine. `span` holds field_34[0x14]*2 in one value to get the target's
+// 100%: the action-command state machine. `span` holds acParams[4]*2 in one value to get the target's
 // r4 allocation; `bw`/`delta` are read before the direction test so the global and 0.0f loads hoist as they do
 // in the target. The sfx-id and BattlePadCheckTrigger tests use a `(u32)`/`(s32)` cast to match the original's
 // `addis`/`cmplwi` and signed tests.
@@ -212,8 +212,8 @@ s32 battleAcMain_PendulumCraneTiming(BattleWork* work) {
 	if (work->actionCommands.mAcUnit->badgesEquipped.AutoCommand != 0) {
 		flag = 1;
 	}
-	unit = BattleGetUnitPtr(work, *(s32*)&work->actionCommands.field_34[0x08]);
-	BtlUnit_GetPartsPtr(unit, *(s32*)&work->actionCommands.field_34[0x0C]);
+	unit = BattleGetUnitPtr(work, work->actionCommands.acParams[1]);
+	BtlUnit_GetPartsPtr(unit, work->actionCommands.acParams[2]);
 
 	switch (work->actionCommands.mAcState) {
 	case 0:
@@ -223,7 +223,7 @@ s32 battleAcMain_PendulumCraneTiming(BattleWork* work) {
 		disp->counter = 0x14;
 		dec->frame = 0;
 		dec->angle = 0.0f;
-		dec->accum = *(s32*)&work->actionCommands.field_34[0x14];
+		dec->accum = work->actionCommands.acParams[4];
 		dec->accum2 = 0;
 		dec->amplitude = 3.0f;
 		dec->lastDir = -1;
@@ -237,9 +237,9 @@ s32 battleAcMain_PendulumCraneTiming(BattleWork* work) {
 		dec->sfxId = -1;
 		break;
 	case 0x64:
-		BtlUnit_SetRotateOffset(unit, 0.0f, (f32)*(s32*)&work->actionCommands.field_34[0x10], 0.0f);
-		unit = BattleGetUnitPtr(work, *(s32*)&work->actionCommands.field_34[0x08]);
-		BtlUnit_GetPartsPtr(unit, *(s32*)&work->actionCommands.field_34[0x0C]);
+		BtlUnit_SetRotateOffset(unit, 0.0f, (f32)work->actionCommands.acParams[3], 0.0f);
+		unit = BattleGetUnitPtr(work, work->actionCommands.acParams[1]);
+		BtlUnit_GetPartsPtr(unit, work->actionCommands.acParams[2]);
 		BtlUnit_GetPos(unit, &dec->position.x, &dec->position.y, &dec->position.z);
 		dec->center = dec->position;
 		dec->frame = 0;
@@ -254,7 +254,7 @@ s32 battleAcMain_PendulumCraneTiming(BattleWork* work) {
 		BattleWork* bw;
 
 		dec->frame++;
-		span = *(s32*)&work->actionCommands.field_34[0x14] * 2;
+		span = work->actionCommands.acParams[4] * 2;
 		rem = (dec->accum + dec->accum2) % span;
 		dec->angle2 = (f32)(rem * 360 / span);
 		dec->angle = reviseAngle(sinfd(dec->angle2) * 45.0f);
@@ -269,7 +269,7 @@ s32 battleAcMain_PendulumCraneTiming(BattleWork* work) {
 			dirF = 1.0f;
 		}
 
-		if (*(s32*)&work->actionCommands.field_34[0x00] & 1) {
+		if (work->actionCommands.acFlag & 1) {
 			PADStatus* pad = &bw->padWork[0].mPadData[0];
 			f32 t;
 			f32 one;
@@ -307,7 +307,7 @@ s32 battleAcMain_PendulumCraneTiming(BattleWork* work) {
 
 		dec->accum += dec->amplitude;
 
-		span = *(s32*)&work->actionCommands.field_34[0x14] * 2;
+		span = work->actionCommands.acParams[4] * 2;
 		rem = (dec->accum + dec->accum2) % span;
 		dec->angle2 = (f32)(rem * 360 / span);
 		dec->angle = reviseAngle(sinfd(dec->angle2) * 45.0f);
@@ -352,7 +352,7 @@ s32 battleAcMain_PendulumCraneTiming(BattleWork* work) {
 			work->actionCommands.mResultCount++;
 			work->actionCommands.mAcState = 0x3EA;
 		}
-		else if (dec->frame > *(s32*)&work->actionCommands.field_34[0x18]) {
+		else if (dec->frame > work->actionCommands.acParams[5]) {
 			work->actionCommands.result = 0;
 			work->actionCommands.mAcState = 0x3EA;
 		}

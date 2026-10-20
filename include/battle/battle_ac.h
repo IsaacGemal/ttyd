@@ -41,9 +41,12 @@ typedef struct BattleActions {
     u8 mAcDifficulty;                // 0x2D
     u8 field_0x2E[2];                // 0x2E
     s32 field_0x30;                  // 0x30
-    u8 field_34[0x58 - 0x34];        // 0x34
+    s32 acFlag;                      // 0x34 (BattleWork 0x1CC4), set by btlevtcmd_AcSetFlag, bit 0 read by ac_power_gauge
+    s32 acParams[8];                 // 0x38 (BattleWork 0x1CC8), set by btlevtcmd_AcSetParam(All)/AcGet
     s32 outputParams[8];             // 0x58
-    u8 field_78[0x8C - 0x78];        // 0x78
+    s32 acGaugeParams[4];            // 0x78 (BattleWork 0x1D08), set by btlevtcmd_AcSetGaugeParam
+    s16 guardFrames;                 // 0x88 (BattleWork 0x1D18), counted down by ac_button_down/ac_stick_rotate
+    u8 field_0x8A[0x8C - 0x8A];      // 0x8A
     BattleWorkPad pad;               // 0x8C
     s32 field_0x288;                 // 0x288
     u8 field_0x28C[0x290 - 0x28C];   // 0x28C

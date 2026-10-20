@@ -69,7 +69,7 @@ s32 _get_ok_frame_range(s32 idx) {
 // r31-r28 to r25-r28) and the function falls to ~95%. The rest of the shape is load-bearing too: the
 // `cont`/`pressed` resets at the top of the do/while, the selection `while (!found)` loop with
 // `unique = 1` after the `irand` call, the `switch`es for the range and in-window tests, the
-// `field_34[4] + field_34[0x1C]` association, and reading `bd->field_0x08` directly at each
+// `acParams[0] + acParams[6]` association, and reading `bd->field_0x08` directly at each
 // `bd->states[...]` index (a cached `idx` makes MWCC keep it in a register and miss).
 #pragma optimize_for_size on // needed: without it battleAcMain_SignalTiming 95.49%
 #ifdef MUST_MATCH
@@ -131,20 +131,20 @@ s32 battleAcMain_SignalTiming(BattleWork* work) {
             bd->field_0x0C = 0;
             bd->field_0x2C = ((s32 (*)(BattleWork*))BattleActionCommandGetDifficulty)(work);
             bd->field_0x30 = 0;
-            *(s32*)&ac->field_34[0x28] = 0;
+            ac->acParams[9] = 0;
             for (k = 0; k < 5; k++) {
                 bd->states[k] = 0;
             }
-            switch (*(s32*)&ac->field_34[0x14]) {
+            switch (ac->acParams[4]) {
             case 1:
             case 2:
-                for (i = 0; i < *(s32*)&ac->field_34[4];) {
+                for (i = 0; i < ac->acParams[0];) {
                     s32 found = 0;
                     u32 pick;
                     while (!found) {
                         s32 j;
                         s32 unique;
-                        if (*(s32*)&ac->field_34[0x14] == 1) {
+                        if (ac->acParams[4] == 1) {
                             pick = _button_table_4dir[irand(4)];
                         } else {
                             pick = _button_table_abxy[irand(4)];
@@ -166,7 +166,7 @@ s32 battleAcMain_SignalTiming(BattleWork* work) {
                 break;
             default:
                 bd->field_0x34 = 0x100;
-                for (i = 0; i < *(s32*)&ac->field_34[4]; i++) {
+                for (i = 0; i < ac->acParams[0]; i++) {
                     bd->buttons[i] = 0x100;
                 }
                 bd->field_0x34 = bd->buttons[0];
@@ -178,23 +178,23 @@ s32 battleAcMain_SignalTiming(BattleWork* work) {
         case 0x63:
             break;
         case 0x64:
-            if (*(s16*)&ac->field_78[0x10] > 0) {
-                (*(s16*)&ac->field_78[0x10])--;
+            if (ac->guardFrames > 0) {
+                (ac->guardFrames)--;
                 ac->result = 2;
                 cont = 1;
                 ac->mAcState = 0x3ea;
                 break;
             }
-            bd->field_0x14 = bd->field_0x08 * *(s32*)&ac->field_34[0xC];
-            bd->field_0x18 = (bd->field_0x08 + 1) * *(s32*)&ac->field_34[0xC] - 1;
+            bd->field_0x14 = bd->field_0x08 * ac->acParams[2];
+            bd->field_0x18 = (bd->field_0x08 + 1) * ac->acParams[2] - 1;
             bd->field_0x1C = bd->field_0x14;
             bd->field_0x20 = bd->field_0x1C + _get_ok_frame_range(bd->field_0x2C) - 1;
             ac->mAcState = 0x3e8;
             // fallthrough
         case 0x3e8:
-            bd->field_0x28 = (bd->field_0x0C + 1) * *(s32*)&ac->field_34[0xC] - 1;
+            bd->field_0x28 = (bd->field_0x0C + 1) * ac->acParams[2] - 1;
             bd->field_0x0C = bd->field_0x0C + 1;
-            if (bd->field_0x0C < *(s32*)&ac->field_34[0x1C] + 1) {
+            if (bd->field_0x0C < ac->acParams[6] + 1) {
                 if (!(ac->field_0x4 & 1) || !(ac->mAcUnit->mTokenFlags & 0x10)) {
                     psndSFXOn(sfxPi1);
                 }
@@ -211,7 +211,7 @@ s32 battleAcMain_SignalTiming(BattleWork* work) {
             bd->field_0x10 = bd->field_0x10 + 1;
             if (bd->field_0x24 != 0) {
                 bd->field_0x30 = 0;
-            } else if (bd->field_0x08 >= *(s32*)&ac->field_34[0x1C]) {
+            } else if (bd->field_0x08 >= ac->acParams[6]) {
                 if (bd->field_0x10 >= bd->field_0x1C && bd->field_0x10 <= bd->field_0x20) {
                     bd->field_0x30 = 1;
                 } else {
@@ -225,7 +225,7 @@ s32 battleAcMain_SignalTiming(BattleWork* work) {
                 pressed = 1;
             }
             if (pressed != 0) {
-                switch (*(s32*)&ac->field_34[0x14]) {
+                switch (ac->acParams[4]) {
                 case 2:
                     if (bd->field_0x34 == BattlePadGetTrigger()) {
                         inWindow = 1;
@@ -242,42 +242,42 @@ s32 battleAcMain_SignalTiming(BattleWork* work) {
                 pressed = 1;
                 inWindow = 1;
             }
-            if (bd->field_0x00 + bd->field_0x04 >= *(s32*)&ac->field_34[4]) {
+            if (bd->field_0x00 + bd->field_0x04 >= ac->acParams[0]) {
                 pressed = 0;
             }
-            if (bd->field_0x08 >= *(s32*)&ac->field_34[0x1C] && pressed != 0 && bd->field_0x24 == 0) {
+            if (bd->field_0x08 >= ac->acParams[6] && pressed != 0 && bd->field_0x24 == 0) {
                 bd->field_0x24 = 1;
                 if (bd->field_0x10 >= bd->field_0x1C && bd->field_0x10 <= bd->field_0x20 && inWindow != 0) {
                     s32 idx;
                     bd->field_0x00 = bd->field_0x00 + 1;
-                    *(s32*)&ac->field_34[0x28] = 1;
+                    ac->acParams[9] = 1;
                     idx = bd->field_0x08;
-                    if (idx >= *(s32*)&ac->field_34[0x1C] &&
-                        idx < *(s32*)&ac->field_34[4] + *(s32*)&ac->field_34[0x1C]) {
-                        bd->states[idx - *(s32*)&ac->field_34[0x1C]] = 1;
+                    if (idx >= ac->acParams[6] &&
+                        idx < ac->acParams[0] + ac->acParams[6]) {
+                        bd->states[idx - ac->acParams[6]] = 1;
                         if (!(ac->field_0x4 & 1) || !(ac->mAcUnit->mTokenFlags & 0x10)) {
                             psndSFXOn(sfxOk);
                         }
                     }
-                    if (*(s32*)&ac->field_34[0] & 0x10) {
-                        *(s32*)&ac->field_34[0x24] = bd->field_0x00;
+                    if (ac->acFlag & 0x10) {
+                        ac->acParams[8] = bd->field_0x00;
                         ac->result &= ~1;
-                        if (bd->field_0x00 >= *(s32*)&ac->field_34[0x10]) {
+                        if (bd->field_0x00 >= ac->acParams[3]) {
                             ac->result |= 2;
                         }
                         cont = 1;
                         ac->mAcState = 0x3ea;
                     }
                 } else {
-                    if (bd->field_0x08 >= *(s32*)&ac->field_34[0x1C] &&
-                        bd->field_0x08 < *(s32*)&ac->field_34[4] + *(s32*)&ac->field_34[0x1C]) {
+                    if (bd->field_0x08 >= ac->acParams[6] &&
+                        bd->field_0x08 < ac->acParams[0] + ac->acParams[6]) {
                         bd->field_0x04 = bd->field_0x04 + 1;
                         if (bd->field_0x10 >= bd->field_0x14) {
-                            bd->states[bd->field_0x08 - *(s32*)&ac->field_34[0x1C]] = -1;
+                            bd->states[bd->field_0x08 - ac->acParams[6]] = -1;
                             if (!(ac->field_0x4 & 1) || !(ac->mAcUnit->mTokenFlags & 0x10)) {
                                 psndSFXOn(sfxNg);
                             }
-                            *(s32*)&ac->field_34[0x28] = -1;
+                            ac->acParams[9] = -1;
                         } else {
                             bd->field_0x24 = 0;
                         }
@@ -286,39 +286,39 @@ s32 battleAcMain_SignalTiming(BattleWork* work) {
             }
             if (bd->field_0x24 == 0 && bd->field_0x10 > bd->field_0x20) {
                 bd->field_0x24 = 1;
-                *(s32*)&ac->field_34[0x28] = -1;
-                if (bd->field_0x08 >= *(s32*)&ac->field_34[0x1C] &&
-                    bd->field_0x08 < *(s32*)&ac->field_34[4] + *(s32*)&ac->field_34[0x1C]) {
+                ac->acParams[9] = -1;
+                if (bd->field_0x08 >= ac->acParams[6] &&
+                    bd->field_0x08 < ac->acParams[0] + ac->acParams[6]) {
                     bd->field_0x04 = bd->field_0x04 + 1;
-                    bd->states[bd->field_0x08 - *(s32*)&ac->field_34[0x1C]] = -1;
+                    bd->states[bd->field_0x08 - ac->acParams[6]] = -1;
                     if (!(ac->field_0x4 & 1) || !(ac->mAcUnit->mTokenFlags & 0x10)) {
                         psndSFXOn(sfxNg);
                     }
                 }
             }
             if (bd->field_0x24 != 0) {
-                if (bd->field_0x08 < *(s32*)&ac->field_34[4] + *(s32*)&ac->field_34[0x1C]) {
+                if (bd->field_0x08 < ac->acParams[0] + ac->acParams[6]) {
                     bd->field_0x08 = bd->field_0x08 + 1;
-                    if (bd->field_0x08 < *(s32*)&ac->field_34[4] + *(s32*)&ac->field_34[0x1C]) {
-                        bd->field_0x14 = bd->field_0x08 * *(s32*)&ac->field_34[0xC] - 0xa;
-                        bd->field_0x18 = (bd->field_0x08 + 1) * *(s32*)&ac->field_34[0xC] - 1;
-                        bd->field_0x1C = bd->field_0x08 * *(s32*)&ac->field_34[0xC];
+                    if (bd->field_0x08 < ac->acParams[0] + ac->acParams[6]) {
+                        bd->field_0x14 = bd->field_0x08 * ac->acParams[2] - 0xa;
+                        bd->field_0x18 = (bd->field_0x08 + 1) * ac->acParams[2] - 1;
+                        bd->field_0x1C = bd->field_0x08 * ac->acParams[2];
                         bd->field_0x20 = bd->field_0x1C + _get_ok_frame_range(bd->field_0x2C) - 1;
                         bd->field_0x24 = 0;
-                        if (bd->field_0x08 >= *(s32*)&ac->field_34[0x1C] &&
-                            bd->field_0x08 < *(s32*)&ac->field_34[4] + *(s32*)&ac->field_34[0x1C]) {
-                            bd->field_0x34 = bd->buttons[bd->field_0x08 - *(s32*)&ac->field_34[0x1C]];
+                        if (bd->field_0x08 >= ac->acParams[6] &&
+                            bd->field_0x08 < ac->acParams[0] + ac->acParams[6]) {
+                            bd->field_0x34 = bd->buttons[bd->field_0x08 - ac->acParams[6]];
                         }
                     }
                 }
             }
-            if (bd->field_0x10 >= bd->field_0x0C * *(s32*)&ac->field_34[0xC]) {
-                if (bd->field_0x0C < *(s32*)&ac->field_34[4] + *(s32*)&ac->field_34[0x1C]) {
+            if (bd->field_0x10 >= bd->field_0x0C * ac->acParams[2]) {
+                if (bd->field_0x0C < ac->acParams[0] + ac->acParams[6]) {
                     ac->mAcState = 0x3e8;
                 } else {
-                    *(s32*)&ac->field_34[0x24] = bd->field_0x00;
+                    ac->acParams[8] = bd->field_0x00;
                     ac->result &= ~1;
-                    if (bd->field_0x00 >= *(s32*)&ac->field_34[0x10]) {
+                    if (bd->field_0x00 >= ac->acParams[3]) {
                         ac->result |= 2;
                     }
                     cont = 1;
@@ -458,11 +458,11 @@ static void actionCommandDisp(f32 x, f32 y) {
     work = _battleWorkPointer;
     ac = &work->actionCommands;
     camGetPtr(CAMERA_2D);
-    num = *(s32*)&ac->field_34[4];
+    num = ac->acParams[0];
     bd = (AcSignalTimingWork*)&ac->field_0x2BC[0];
     count = bd->field_0x0C;
 
-    if (!(*(s32*)&ac->field_34[0] & 1)) {
+    if (!(ac->acFlag & 1)) {
         if (bd->field_0x30 != 0) {
             Vec t = vec3_802fedc8;
             t.x = -200.f + x;
@@ -480,19 +480,19 @@ static void actionCommandDisp(f32 x, f32 y) {
         s32 limit;
         switch (num) {
         case 1:
-            limit = *(s32*)&ac->field_34[0x1C] * 2 + 5;
+            limit = ac->acParams[6] * 2 + 5;
             break;
         case 3:
-            limit = *(s32*)&ac->field_34[0x1C] * 2 + 0xB;
+            limit = ac->acParams[6] * 2 + 0xB;
             break;
         case 4:
-            limit = *(s32*)&ac->field_34[0x1C] * 2 + 0xD;
+            limit = ac->acParams[6] * 2 + 0xD;
             break;
         case 5:
-            limit = *(s32*)&ac->field_34[0x1C] * 2 + 0xF;
+            limit = ac->acParams[6] * 2 + 0xF;
             break;
         default:
-            limit = *(s32*)&ac->field_34[0x1C] * 2 + 0xB;
+            limit = ac->acParams[6] * 2 + 0xB;
             break;
         }
         {
@@ -521,24 +521,24 @@ static void actionCommandDisp(f32 x, f32 y) {
         }
     }
 
-    if (!(*(s32*)&ac->field_34[0] & 4)) {
+    if (!(ac->acFlag & 4)) {
         Mtx mtx2;
         Mtx mtx;
         Mtx scale;
-        s32 number = bd->field_0x00 + *(s32*)&ac->field_34[0x18];
+        s32 number = bd->field_0x00 + ac->acParams[5];
         {
             s32 ioff;
-            if (*(s32*)&ac->field_34[0] & 1) {
-                ioff = (num * 0x30 - 0x1a + (*(s32*)&ac->field_34[0x1C] * 32));
+            if (ac->acFlag & 1) {
+                ioff = (num * 0x30 - 0x1a + (ac->acParams[6] * 32));
             } else {
-                ioff = (num * 0x30 - 0x1a + (*(s32*)&ac->field_34[0x1C] * 32));
+                ioff = (num * 0x30 - 0x1a + (ac->acParams[6] * 32));
             }
             {
                 f32 fneg = -200.f + x;
                 PSMTXTrans(mtx, fneg + (f32)ioff, f31, 0.0f);
             }
         }
-        if (*(s32*)&ac->field_34[0] & 8) {
+        if (ac->acFlag & 8) {
             PSMTXScale(scale, 1.5f, 1.5f, 1.5f);
         } else {
             PSMTXScale(scale, 1.0f, 1.0f, 1.0f);
@@ -547,9 +547,9 @@ static void actionCommandDisp(f32 x, f32 y) {
         iconNumberDispGx(mtx2, number, 0, *(GXColor*)&dat_804216d0);
     }
 
-    for (i = 0; i < *(s32*)&ac->field_34[0x1C]; i++) {
+    for (i = 0; i < ac->acParams[6]; i++) {
         if (i < bd->field_0x0C) {
-            if (i < *(s32*)&ac->field_34[0x1C]) {
+            if (i < ac->acParams[6]) {
                 Vec t = vec3_802fee04;
                 u16 id = (u16)(0x92 + i);
                 t.y = f31;
@@ -569,36 +569,36 @@ static void actionCommandDisp(f32 x, f32 y) {
         }
     }
 
-    if (!(*(s32*)&ac->field_34[0] & 1)) {
+    if (!(ac->acFlag & 1)) {
         for (i = 0; i < num; i++) {
-            if (i + *(s32*)&ac->field_34[0x1C] < count) {
+            if (i + ac->acParams[6] < count) {
                 Vec t = vec3_802fee28;
-                t.x = x + (f32)((i * 0x30 + (*(s32*)&ac->field_34[0x1C] * 0x21 - 0xfa)));
+                t.x = x + (f32)((i * 0x30 + (ac->acParams[6] * 0x21 - 0xfa)));
                 t.y = f31;
                 ICON_DISP(&t, 0x10, 0x95, 1.0f);
             } else {
                 Vec t = vec3_802fee34;
-                t.x = x + (f32)((i * 0x30 + (*(s32*)&ac->field_34[0x1C] * 0x21 - 0xfa)));
+                t.x = x + (f32)((i * 0x30 + (ac->acParams[6] * 0x21 - 0xfa)));
                 t.y = f31;
                 ICON_DISP(&t, 0x10, 0x91, 1.0f);
             }
         }
-    } else if (!(*(s32*)&ac->field_34[0] & 2)) {
+    } else if (!(ac->acFlag & 2)) {
         f28 = 15.0f + y;
         for (i = 0; i < num; i++) {
             f32 scale = 0.8f;
 #ifdef MUST_MATCH
             // The leading comma (a discarded second read of `i`) nudges the allocator to colour
             // t0 in r4 as the target; the natural form below colours it r7 and costs ~12 diffs.
-            s32 t0 = (i, i + *(s32*)&ac->field_34[0x1C]);
+            s32 t0 = (i, i + ac->acParams[6]);
 #else
-            s32 t0 = i + *(s32*)&ac->field_34[0x1C];
+            s32 t0 = i + ac->acParams[6];
 #endif
-            if (bd->field_0x0C == t0 && bd->field_0x10 >= *(s32*)&ac->field_34[0xC] * t0 - 5 &&
-                bd->field_0x10 < *(s32*)&ac->field_34[0xC] * t0) {
+            if (bd->field_0x0C == t0 && bd->field_0x10 >= ac->acParams[2] * t0 - 5 &&
+                bd->field_0x10 < ac->acParams[2] * t0) {
                 Vec t = vec3_802fee40;
                 t.y = f28;
-                t.x = x + (f32)((i * 0x30 + (*(s32*)&ac->field_34[0x1C] * 0x21 - 0xfa)));
+                t.x = x + (f32)((i * 0x30 + (ac->acParams[6] * 0x21 - 0xfa)));
                 ICON_DISP(&t, 0x10, BattleACGetButtonIcon(bd->buttons[i], 0), 0.8f);
             } else {
                 s32 delta;
@@ -610,7 +610,7 @@ static void actionCommandDisp(f32 x, f32 y) {
                     delta = -0xa;
                 }
                 t = vec3_802fee4c;
-                t.x = x + (f32)((i * 0x30 + (*(s32*)&ac->field_34[0x1C] * 0x21 - 0xfa)));
+                t.x = x + (f32)((i * 0x30 + (ac->acParams[6] * 0x21 - 0xfa)));
                 t.y = (f32)(delta + 0x19) + y;
                 ICON_DISP(&t, 0x10, BattleACGetButtonIcon(bd->buttons[i], 1), scale);
             }
@@ -619,14 +619,14 @@ static void actionCommandDisp(f32 x, f32 y) {
         f28 = 20.800001f + f31;
         for (i = 0; i < num; i++) {
 #ifdef MUST_MATCH
-            s32 t0 = (i, i + *(s32*)&ac->field_34[0x1C]); // see the note on the first t0 loop
+            s32 t0 = (i, i + ac->acParams[6]); // see the note on the first t0 loop
 #else
-            s32 t0 = i + *(s32*)&ac->field_34[0x1C];
+            s32 t0 = i + ac->acParams[6];
 #endif
-            if (bd->field_0x0C == t0 && bd->field_0x10 >= *(s32*)&ac->field_34[0xC] * t0 - 0x14 &&
-                bd->field_0x10 <= *(s32*)&ac->field_34[0xC] * t0) {
+            if (bd->field_0x0C == t0 && bd->field_0x10 >= ac->acParams[2] * t0 - 0x14 &&
+                bd->field_0x10 <= ac->acParams[2] * t0) {
                 Vec t = vec3_802fee58;
-                t.x = x + (f32)((i * 0x30 + (*(s32*)&ac->field_34[0x1C] * 0x21 - 0xfa)));
+                t.x = x + (f32)((i * 0x30 + (ac->acParams[6] * 0x21 - 0xfa)));
                 t.y = f31;
                 ICON_DISP(&t, 0x10, BattleACGetButtonIcon(bd->buttons[i], 0), 0.8f);
             } else if (bd->field_0x0C <= t0) {
@@ -636,18 +636,18 @@ static void actionCommandDisp(f32 x, f32 y) {
                     // battle_seq_end.c. The natural 7-argument call is under #else.
 #ifdef MUST_MATCH
                     ((void (*)(f32, f32, f32, f32, f32, s32, GXColor, s32))btlDispTexPlane)(
-                        x + (f32)((i * 0x30 + (*(s32*)&ac->field_34[0x1C] * 0x21 - 0xfa))),
+                        x + (f32)((i * 0x30 + (ac->acParams[6] * 0x21 - 0xfa))),
                         f28, 0.0f, 0.8f, 0.8f,
                         0x40, *(GXColor*)&dat_804216d4, 0);
 #else
                     btlDispTexPlane(0x40, *(GXColor*)&dat_804216d4,
-                                    x + (f32)((i * 0x30 + (*(s32*)&ac->field_34[0x1C] * 0x21 - 0xfa))),
+                                    x + (f32)((i * 0x30 + (ac->acParams[6] * 0x21 - 0xfa))),
                                     f28, 0.0f, 0.8f, 0.8f);
 #endif
                 }
             } else {
                 Vec t = vec3_802fee64;
-                t.x = x + (f32)((i * 0x30 + (*(s32*)&ac->field_34[0x1C] * 0x21 - 0xfa)));
+                t.x = x + (f32)((i * 0x30 + (ac->acParams[6] * 0x21 - 0xfa)));
                 t.y = f31;
                 ICON_DISP(&t, 0x10, BattleACGetButtonIcon(bd->buttons[i], 1), 0.8f);
             }
@@ -659,23 +659,23 @@ static void actionCommandDisp(f32 x, f32 y) {
         if (bd->states[i] == 1) {
 #ifdef MUST_MATCH
             ((void (*)(f32, f32, f32, f32, f32, s32, GXColor, s32))btlDispTexPlane)(
-                x + (f32)((i * 0x30 + (*(s32*)&ac->field_34[0x1C] * 0x21 - 0xfa))), f28,
+                x + (f32)((i * 0x30 + (ac->acParams[6] * 0x21 - 0xfa))), f28,
                 0.0f, 1.0f, 1.0f,
                 0x3E, *(GXColor*)&dat_804216d8, 0);
 #else
             btlDispTexPlane(0x3E, *(GXColor*)&dat_804216d8,
-                            x + (f32)((i * 0x30 + (*(s32*)&ac->field_34[0x1C] * 0x21 - 0xfa))), f28,
+                            x + (f32)((i * 0x30 + (ac->acParams[6] * 0x21 - 0xfa))), f28,
                             0.0f, 1.0f, 1.0f);
 #endif
         } else if (bd->states[i] == -1) {
 #ifdef MUST_MATCH
             ((void (*)(f32, f32, f32, f32, f32, s32, GXColor, s32))btlDispTexPlane)(
-                x + (f32)((i * 0x30 + (*(s32*)&ac->field_34[0x1C] * 0x21 - 0xfa))), f28,
+                x + (f32)((i * 0x30 + (ac->acParams[6] * 0x21 - 0xfa))), f28,
                 0.0f, 1.0f, 1.0f,
                 0x3F, *(GXColor*)&dat_804216dc, 0);
 #else
             btlDispTexPlane(0x3F, *(GXColor*)&dat_804216dc,
-                            x + (f32)((i * 0x30 + (*(s32*)&ac->field_34[0x1C] * 0x21 - 0xfa))), f28,
+                            x + (f32)((i * 0x30 + (ac->acParams[6] * 0x21 - 0xfa))), f28,
                             0.0f, 1.0f, 1.0f);
 #endif
         }

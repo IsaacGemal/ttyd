@@ -70,7 +70,7 @@ static void actionCommandDisp(f32 x, f32 y);
 #pragma dont_inline on
 s32 _GetInputDir(void) {
     BattleWork* work = _battleWorkPointer;
-    u32 mask = *(u32*)&work->actionCommands.field_34[0x0C];
+    u32 mask = *(u32*)&work->actionCommands.acParams[2];
     s32 p;
 
     if (mask != 0) {
@@ -175,7 +175,7 @@ s32 battleAcMain_StickRotate(BattleWork* work) {
                 sr->field_0x04 = 0;
                 sr->field_0x08 = 0;
                 work->actionCommands.outputParams[0] = 0;
-                if (*(s32*)&work->actionCommands.field_34[0x00] & 2) {
+                if (work->actionCommands.acFlag & 2) {
                     sr->field_0x02 = 3;
                     sr->field_0x03 = 2;
                 }
@@ -199,9 +199,9 @@ s32 battleAcMain_StickRotate(BattleWork* work) {
                 }
                 sr->field_0x00 = _GetInputDir();
                 if ((sr->field_0x00 == -1 ||
-                     (*(s32*)&work->actionCommands.field_34[0x0C] == 0 &&
+                     (work->actionCommands.acParams[2] == 0 &&
                       sr->field_0x00 <= 0)) &&
-                    *(s16*)&work->actionCommands.field_78[0x10] <= 0) {
+                    work->actionCommands.guardFrames <= 0) {
                     if (--sr->field_0x0C <= 0) {
                         work->actionCommands.result = 0;
                         work->actionCommands.mAcState = 0x3EA;
@@ -213,8 +213,8 @@ s32 battleAcMain_StickRotate(BattleWork* work) {
                 work->actionCommands.mAcState = 0x3E9;
                 sr->field_0x01 = 0;
                 work->actionCommands.outputParams[0]++;
-                sr->field_0x0C = *(s32*)&work->actionCommands.field_34[0x08];
-                if (*(s32*)&work->actionCommands.field_34[0x00] & 2) {
+                sr->field_0x0C = work->actionCommands.acParams[1];
+                if (work->actionCommands.acFlag & 2) {
                     sr->field_0x04 = -1;
                     sr->field_0x01 = 4;
                 }
@@ -228,26 +228,26 @@ s32 battleAcMain_StickRotate(BattleWork* work) {
 #else
                 s8 roll;
 #endif
-                if (*(s16*)&work->actionCommands.field_78[0x10] > 0) {
-                    (*(s16*)&work->actionCommands.field_78[0x10])--;
+                if (work->actionCommands.guardFrames > 0) {
+                    (work->actionCommands.guardFrames)--;
                     work->actionCommands.result = 2;
                     work->actionCommands.mAcState = 0x3EA;
                     work->actionCommands.outputParams[0] =
-                        *(s32*)&work->actionCommands.field_34[0x04];
+                        work->actionCommands.acParams[0];
                     cont = 1;
                 }
                 sr->field_0x0C--;
                 sr->field_0x05++;
-                if (*(s32*)&work->actionCommands.field_34[0x0C] != 0 &&
+                if (work->actionCommands.acParams[2] != 0 &&
                     !BattlePadCheckNow(
-                        *(s32*)&work->actionCommands.field_34[0x0C])) {
+                        work->actionCommands.acParams[2])) {
                     sr->field_0x0C = 0;
                 }
                 if (sr->field_0x0C < 0) {
                     if (work->actionCommands.outputParams[0] >=
-                            *(s32*)&work->actionCommands.field_34[0x10] &&
+                            work->actionCommands.acParams[3] &&
                         !BattlePadCheckNow(
-                            *(s32*)&work->actionCommands.field_34[0x0C])) {
+                            work->actionCommands.acParams[2])) {
                         work->actionCommands.result |= 2;
                     }
                     work->actionCommands.result &= ~1;
@@ -258,7 +258,7 @@ s32 battleAcMain_StickRotate(BattleWork* work) {
                 sr->field_0x00 = _GetInputDir();
                 if (sr->field_0x00 == -1) {
                     if (work->actionCommands.outputParams[0] >=
-                        *(s32*)&work->actionCommands.field_34[0x10]) {
+                        work->actionCommands.acParams[3]) {
                         work->actionCommands.result |= 2;
                     }
                     work->actionCommands.result &= ~1;
@@ -268,7 +268,7 @@ s32 battleAcMain_StickRotate(BattleWork* work) {
                 }
                 if (sr->field_0x00 == 0) {
                     sr->field_0x04 = 0;
-                    if ((*(s32*)&work->actionCommands.field_34[0x00] & 1) &&
+                    if ((work->actionCommands.acFlag & 1) &&
                         sr->field_0x01 != 0) {
                         work->actionCommands.result &= ~1;
                         work->actionCommands.mAcState = 0x3EA;
@@ -306,24 +306,24 @@ s32 battleAcMain_StickRotate(BattleWork* work) {
                 sr->field_0x08++;
                 work->actionCommands.outputParams[0] = (sr->field_0x08 + 7) / 8;
                 if (work->actionCommands.outputParams[0] >
-                    *(s32*)&work->actionCommands.field_34[0x04]) {
+                    work->actionCommands.acParams[0]) {
                     work->actionCommands.outputParams[0] =
-                        *(s32*)&work->actionCommands.field_34[0x04];
+                        work->actionCommands.acParams[0];
                 }
-                if (*(s32*)&work->actionCommands.field_34[0x00] & 1) {
+                if (work->actionCommands.acFlag & 1) {
                     if (sr->field_0x08 > 1) {
                         if (sr->field_0x05 >
-                            *(s32*)&work->actionCommands.field_34[0x18]) {
+                            work->actionCommands.acParams[5]) {
                             work->actionCommands.result &= ~1;
                             work->actionCommands.mAcState = 0x3EA;
                             cont = 1;
                             break;
                         }
                         if (sr->field_0x05 <
-                            *(s32*)&work->actionCommands.field_34[0x14]) {
+                            work->actionCommands.acParams[4]) {
                             sr->field_0x10++;
                             if (sr->field_0x10 >
-                                *(s32*)&work->actionCommands.field_34[0x1C]) {
+                                work->actionCommands.acParams[6]) {
                                 work->actionCommands.result &= ~1;
                                 work->actionCommands.mAcState = 0x3EA;
                                 cont = 1;
@@ -360,7 +360,7 @@ s32 battleAcMain_StickRotate(BattleWork* work) {
                     sr->field_0x03 = dir;
                 }
                 if (sr->field_0x08 <
-                    *(s32*)&work->actionCommands.field_34[0x10] * 8) {
+                    work->actionCommands.acParams[3] * 8) {
                     goto L_801FD700;
                 }
                 work->actionCommands.result |= 2;
@@ -369,9 +369,9 @@ s32 battleAcMain_StickRotate(BattleWork* work) {
                 cont = 1;
                 break;
                 }
-                if (*(s32*)&work->actionCommands.field_34[0x00] & 2) {
+                if (work->actionCommands.acFlag & 2) {
                     sr->field_0x04 = 0;
-                    if (*(s32*)&work->actionCommands.field_34[0x00] & 2) {
+                    if (work->actionCommands.acFlag & 2) {
                         work->actionCommands.result &= ~1;
                         work->actionCommands.mAcState = 0x3EA;
                         cont = 1;
@@ -427,7 +427,7 @@ void battleAcDisp_StickRotate(CameraId camId, void* param) {
     BattleACDispParams* disp;
 
     disp = &ac->dispParams;
-    disp_fn = (*(s32*)&ac->field_34[0x00] & 2) ? actionCommandDisp : actionCommandDisp2;
+    disp_fn = (ac->acFlag & 2) ? actionCommandDisp : actionCommandDisp2;
 
     switch (ac->mAcState) {
         case 0x63:
@@ -521,7 +521,7 @@ static void actionCommandDisp(f32 x, f32 y) {
         }
         case 0x3E9:
             if (sr->field_0x05 <
-                *(s32*)&work->actionCommands.field_34[0x14]) {
+                work->actionCommands.acParams[4]) {
                 if (sr->field_0x08 <= 1) {
                     Vec v = STICK_ZERO_VEC(2);
                     v.x = float_neg200_804204d0 + x;
@@ -581,8 +581,8 @@ void actionCommandDisp2(f32 x, f32 y) {
             Vec v;
             sr->field_0x07++;
             if (sr->field_0x07 >=
-                (*(s32*)&work->actionCommands.field_34[0x14] +
-                 *(s32*)&work->actionCommands.field_34[0x18]) /
+                (work->actionCommands.acParams[4] +
+                 work->actionCommands.acParams[5]) /
                     2) {
                 s32 roll;
                 sr->field_0x07 = 0;

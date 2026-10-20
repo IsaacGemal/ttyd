@@ -98,7 +98,7 @@ static void actionCommandDisp(f32 x, f32 y);
 
 // optimize_for_size: the original saves r28-r31 with `stmw` and keeps `work` in r29.
 #pragma optimize_for_size on
-// The default-case field_34[0x14]/100*field_0x08+50 conversion matches r4 (not r0) once the /100
+// The default-case acParams[4]/100*field_0x08+50 conversion matches r4 (not r0) once the /100
 // constant is read plainly instead of through MATCH_F32's volatile (float_50 stays volatile).
 s32 battleAcMain_GaugeTiming(BattleWork* work) {
 #ifdef MUST_MATCH
@@ -138,12 +138,12 @@ s32 battleAcMain_GaugeTiming(BattleWork* work) {
         work->actionCommands.outputParams[0] = 0;
         work->actionCommands.mAcState = 0x63;
         work->actionCommands.result = 1;
-        dec->field_0x0C = *(s32*)&work->actionCommands.field_34[0x08];
+        dec->field_0x0C = work->actionCommands.acParams[1];
         dec->field_0x10 = 0;
         dec->field_0x1C = 0;
         dec->field_0x20 = 0;
         dec->field_0x24 = -1;
-        switch (*(s32*)&work->actionCommands.field_34[0x04]) {
+        switch (work->actionCommands.acParams[0]) {
         case 0:
             dec->field_0x16 = 1;
             dec->field_0x18 = 0x20;
@@ -162,10 +162,10 @@ s32 battleAcMain_GaugeTiming(BattleWork* work) {
             work->actionCommands.outputParams[0] = 1;
             break;
         }
-        switch (*(s32*)&work->actionCommands.field_34[0x0C]) {
+        switch (work->actionCommands.acParams[2]) {
         case 1:
             dec->field_0x04 = 0.0f;
-            *(s32*)&work->actionCommands.field_34[0x14] &= ~1;
+            work->actionCommands.acParams[4] &= ~1;
             break;
         default:
             dec->field_0x04 = 50.0f;
@@ -239,10 +239,10 @@ s32 battleAcMain_GaugeTiming(BattleWork* work) {
         if (dec->field_0x1C <= 0) {
             dec->field_0x08++;
         }
-        switch (*(s32*)&work->actionCommands.field_34[0x0C]) {
+        switch (work->actionCommands.acParams[2]) {
         case 1: {
             f32 angle = reviseAngle(
-                (f32)(dec->field_0x08 * 0x168 / *(s32*)&work->actionCommands.field_34[0x14]));
+                (f32)(dec->field_0x08 * 0x168 / work->actionCommands.acParams[4]));
             if (angle <= float_90_804218cc) {
                 dec->field_0x04 =
                     intplGetValue(5, (s32)angle, 0x5A, 0.0f, 100.0f);
@@ -266,12 +266,12 @@ s32 battleAcMain_GaugeTiming(BattleWork* work) {
 #ifdef MUST_MATCH
             } else {
                 // The natural `A && B` (see the #else form) emits a single `beq skip`.  The original
-                // tests `field_34[0] & 2` twice, positive then negative, so MWCC emits the first as a
+                // tests `acFlag & 2` twice, positive then negative, so MWCC emits the first as a
                 // `bne` to the fallthrough label and the second as the `beq` skip.
-                if (*(s32*)&work->actionCommands.field_34[0x00] & 2) {
+                if (work->actionCommands.acFlag & 2) {
                     goto gaugeCheck1;
                 }
-                if (!(*(s32*)&work->actionCommands.field_34[0x00] & 2)) {
+                if (!(work->actionCommands.acFlag & 2)) {
                     goto gaugeSkip1;
                 }
             gaugeCheck1:
@@ -279,7 +279,7 @@ s32 battleAcMain_GaugeTiming(BattleWork* work) {
                     dec->field_0x20++;
                     dec->field_0x04 = 0.0f;
                     dec->field_0x10 = 0;
-                    if (*(s32*)&work->actionCommands.field_34[0x00] & 2) {
+                    if (work->actionCommands.acFlag & 2) {
                         dec->field_0x1C = 0xF;
                     } else {
                         dec->field_0x1C = 0x1E;
@@ -289,12 +289,12 @@ s32 battleAcMain_GaugeTiming(BattleWork* work) {
             }
         gaugeSkip1:
 #else
-            } else if ((*(s32*)&work->actionCommands.field_34[0x00] & 2) &&
+            } else if ((work->actionCommands.acFlag & 2) &&
                        ((s32)dec->field_0x04 <= 0)) {
                 dec->field_0x20++;
                 dec->field_0x04 = 0.0f;
                 dec->field_0x10 = 0;
-                if (*(s32*)&work->actionCommands.field_34[0x00] & 2) {
+                if (work->actionCommands.acFlag & 2) {
                     dec->field_0x1C = 0xF;
                 } else {
                     dec->field_0x1C = 0x1E;
@@ -302,7 +302,7 @@ s32 battleAcMain_GaugeTiming(BattleWork* work) {
                 goto tail;
             }
 #endif
-            if (dec->field_0x04 >= (f32)*(s32*)&work->actionCommands.field_34[0x10]) {
+            if (dec->field_0x04 >= (f32)work->actionCommands.acParams[3]) {
                 dec->field_0x10 = 1;
             } else {
                 dec->field_0x10 = 0;
@@ -319,18 +319,18 @@ s32 battleAcMain_GaugeTiming(BattleWork* work) {
                 }
             }
             {
-                s32 a = *(s32*)&work->actionCommands.field_34[0x14];
+                s32 a = work->actionCommands.acParams[4];
                 f32 f = (f32)a / float_100_80421874;
                 dec->field_0x04 = f * (f32)dec->field_0x08 + 50.0f;
             }
-            if (*(s32*)&work->actionCommands.field_34[0x00] & 1) {
+            if (work->actionCommands.acFlag & 1) {
                 s32 v = (s32)dec->field_0x04;
 #ifdef MUST_MATCH
                 // Same double-test trick as gaugeCheck1 above.
-                if (*(s32*)&work->actionCommands.field_34[0x00] & 2) {
+                if (work->actionCommands.acFlag & 2) {
                     goto gaugeCheck2;
                 }
-                if (!(*(s32*)&work->actionCommands.field_34[0x00] & 2)) {
+                if (!(work->actionCommands.acFlag & 2)) {
                     goto gaugeMod2;
                 }
             gaugeCheck2:
@@ -338,7 +338,7 @@ s32 battleAcMain_GaugeTiming(BattleWork* work) {
                     dec->field_0x20 = v / 100;
                     dec->field_0x04 = 0.0f;
                     dec->field_0x10 = 0;
-                    if (*(s32*)&work->actionCommands.field_34[0x00] & 2) {
+                    if (work->actionCommands.acFlag & 2) {
                         dec->field_0x1C = 0xF;
                     } else {
                         dec->field_0x1C = 0x1E;
@@ -347,11 +347,11 @@ s32 battleAcMain_GaugeTiming(BattleWork* work) {
                 }
             gaugeMod2:
 #else
-                if ((*(s32*)&work->actionCommands.field_34[0x00] & 2) && (v / 100 > dec->field_0x20)) {
+                if ((work->actionCommands.acFlag & 2) && (v / 100 > dec->field_0x20)) {
                     dec->field_0x20 = v / 100;
                     dec->field_0x04 = 0.0f;
                     dec->field_0x10 = 0;
-                    if (*(s32*)&work->actionCommands.field_34[0x00] & 2) {
+                    if (work->actionCommands.acFlag & 2) {
                         dec->field_0x1C = 0xF;
                     } else {
                         dec->field_0x1C = 0x1E;
@@ -491,7 +491,7 @@ void battleAcDelete_GaugeTiming(BattleWork* work) {
 // The ELSE rasta's two cross-call values live in `f32 q[2]` (not two scalars): as array elements
 // MWCC colours them f27/f28, exactly the target's registers (`fadds f28, f0, f31` / `fadds f27,
 // f2, f1`); with four scalars it used f25/f26 (the loop's v.x/v.y).
-// The top `if (field_34[0x0C] == 1)` is a switch (case 1 / default) that reproduces the target's
+// The top `if (acParams[2] == 1)` is a switch (case 1 / default) that reproduces the target's
 // `cmpwi; beq then; b else`.
 static void actionCommandDisp(f32 x, f32 y) {
     BattleWork* work = _battleWorkPointer;
@@ -530,9 +530,9 @@ static void actionCommandDisp(f32 x, f32 y) {
     }
     disp->value = value;
 
-    switch (*(s32*)&ac->field_34[0x0C]) {
+    switch (ac->acParams[2]) {
     case 1: {
-        f32 ratio = disp->value * float_100_80421874 / (f32)*(s32*)&ac->field_34[0x10];
+        f32 ratio = disp->value * float_100_80421874 / (f32)ac->acParams[3];
         if (ratio > float_100_80421874) {
             ratio = float_100_80421874;
         }
@@ -543,7 +543,7 @@ static void actionCommandDisp(f32 x, f32 y) {
         }
         {
             s32 icon =
-                (dec->field_0x04 >= (f32)*(s32*)&ac->field_34[0x10]) ? 0x95 : 0x91;
+                (dec->field_0x04 >= (f32)ac->acParams[3]) ? 0x95 : 0x91;
             Vec v = vec3_802ff860;
             v.x = float_16_80421880 + (float_176_80421884 + (float_neg288_80421888 + x));
             v.y = float_18_8042188c + y;
@@ -566,7 +566,7 @@ static void actionCommandDisp(f32 x, f32 y) {
             GXLoadPosMtxImm(cam->view, 0);
             btlDispGXQuads2DRasta(q[0], q[1], q[0] + float_10_804218a4, q[1] - float_16_80421880, 0, 0xFF, 0, 0xFF);
         }
-        count = *(s32*)&ac->field_34[0x10];
+        count = ac->acParams[3];
         for (i = 0; i < count; i++) {
             {
                 s32 icon;
@@ -594,7 +594,7 @@ static void actionCommandDisp(f32 x, f32 y) {
     }
     }
 
-    switch (*(s32*)&ac->field_34[0x04]) {
+    switch (ac->acParams[0]) {
     case 0:
         // icon2/icon3 are set in every case (rather than once after the switch) because the target
         // materialises `li r28,0; li r27,0` in each arm; without it MWCC propagates the 0 and the
