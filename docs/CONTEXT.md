@@ -10969,3 +10969,13 @@ vertical velocity (stepped by 0x20 as gravity), in the breath push (state 0x30) 
 0x1C the y acceleration, and in the wave states (0x33/0x34) 0x1C and 0x20 are the height and sideways amplitudes.
 MoamoaWork 0x2 and 0x48 are never read. rsh_06.c keeps its own MoamoaPose copy (chain at 0x48, a different layout)
 and is not touched here.
+### Readability: gor_00 NanNpcEntry slots (2026-10-20, Claude Haiku 5.5, n9-q-relfld)
+
+gor_00.c and gor_00.h: no renames. The 32 field_0x uses in gor_00.c are all NanNpcEntry 0x70, 0x78 and 0x7C, and each
+slot has more than one role across the seqs: 0x70 is the step total of a movePos move and the
+next state after a jump, walk or suifu's state 100 move; 0x78 is the movePos step, a jump's quadratic term, the
+sway's right bound and suifu's speed (140-260); 0x7C is the movePos angle, a jump's linear term and the sway's left
+bound. Per the rule these stay field_0x. The other header slots are already named or unread: 0x16 and 0x94 are never
+read by gor, and 0x84 is not used by gor_00 (it lies in evt_nannpc's per-entry scratch, as noted above). The header's
+0x68-0x6C (`state`, `timer`) and 0x74 (`index`) differ from evt_nannpc.c's jumpStartX/jumpStartY and field_0x74 by
+design: gor's sequences use those slots for their own roles. muj_00.h, muj_10.h and muj_20.h carry their own copies.
