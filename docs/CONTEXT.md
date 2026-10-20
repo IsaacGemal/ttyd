@@ -8626,3 +8626,18 @@ callers not checked), and the `*(f32*)(member->field_0xC0 + n)` reads, which run
 `jumpOffset` (+0xC..+0x14), `jumpVelY` (+0x1C) and `jumpAccelY` (+0x24) and want rewriting as those fields with a
 build check. battle_audience.c's raw `(u8*)member + 0x54/0x60/0x6C/0x78/0x84` resets and its 0x54 read in the disp
 code weren't forced by this rename and stay as they were.
+### Readability: map object names (2026-10-19, Claude Haiku 5.5, n9-q-mobj; reviewed by Claude Opus 5.5)
+
+MapObjectEntry (mobjdrv.h) gets `velocity` (Vec at 0x5C; mobjMain adds velocity.y to position.y), `gravity` and
+`bounce` (0x68/0x6C, evt_mobj_set_gravity_bound's two args; landing scales velocity.y by -0.5 * bounce),
+`msgWindowId` (0x1A8), `timer` (0x1B0, the per-frame countdown of the timed types), `childName[0x10]` (0x1B8,
+strcpy'd name of the object this one spawns), `effect` (0x1C8), `update` (0x1D0, per-type callback run by
+mobjMain), `eventCode` (0x1D4, the script mobjRunEvent starts), `state` (0x1DC, per-type step; 0x63 is done, which
+mobjCheckItemboxOpen tests), `triggerFlag` (0x1E0, the entry->flags bit that last hit Mario), `flagVar` (0x1E4, the
+script variable set on activation) and `paperTex` (0x208, the smartEntry GXCopyTex fills). Users in mobjdrv.c,
+evt_mobj.c, eki_06 and las_18 follow, the raw `(u8*)obj + 0x1A8/0x1AC/0x1B0/0x1B8/0x1C8/0x19C` casts are field
+accesses, and evt_mobj's `unk1D4`/`unk1E4` locals are now `eventCode`/`flagVar`. Three float-block functions need
+`&obj->childName[0]` rather than `obj->childName` to stay byte-identical. evt_mobj.c 438 → 356 weighted. Left
+unnamed because they change role per type: 0x1A0 (item id), 0x1A4 (coin count, fire bar part count, or switch anim
+index with state bits), 0x1AC (jump stand launch height for marioChgJumpStandMotion vs fire bar Z angle in
+degrees), 0x1B4 (timer reload value vs fire bar sound handle) and 0x1D8 (a second event script).
