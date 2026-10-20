@@ -197,9 +197,9 @@ static USER_FUNC(evt_cloud_main) {
 
 	case 4:
 		img = imgNameToPtr(cp->imgName, inBattle);
-		if (0.0f == cp->field_0xC4 || 1.0f + cp->field_0xC4 < img->field_0x118) {
+		if (0.0f == cp->field_0xC4 || 1.0f + cp->field_0xC4 < img->loopTimes) {
 			psndSFXOn_3D("SFX_OFF_CLAUD_WIND2", &mario->position);
-			cp->field_0xC4 = img->field_0x118;
+			cp->field_0xC4 = img->loopTimes;
 		}
 		if (mario->currMotionId != 0x1B) {
 			cp->mode = 0xA;

@@ -283,7 +283,7 @@ static USER_FUNC(set_depthPlaneOffset) {
     ImageEntry* entry = imgNameToPtr((const char*)name, gp->inBattle != 0);
     f32 offset = evtGetFloat(event, args[1]);
 
-    entry->field_0x11C = offset;
+    entry->depthPlaneOffset = offset;
     return EVT_RETURN_DONE;
 }
 

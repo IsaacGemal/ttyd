@@ -691,7 +691,7 @@ static USER_FUNC(eff_guruguru) {
     f32 d = evtGetFloat(event, args[4]);
     EffectEntry* effect = effGuruguruN64Entry(0, 3, a, b, c, d);
 
-    ((EffGuruguruData*)effect->userdata)->field_0x2C = 0.8f;
+    ((EffGuruguruData*)effect->userdata)->drawScale = 0.8f;
     effSetName(effect, (const char*)effectName);
     return EVT_RETURN_DONE;
 }

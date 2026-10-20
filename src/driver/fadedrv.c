@@ -650,7 +650,7 @@ void fadeMain(void) {
 						break;
 					}
 					case 1:
-						if (entry->image->field_0x118 >= 1.0f) {
+						if (entry->image->loopTimes >= 1.0f) {
 							entry->flags |= 2;
 							switch (entry->type) {
 								case 42:
@@ -730,7 +730,7 @@ void fadeMain(void) {
 								args[7] = 480;
 								evt_img_alloc_capture(&event, TRUE);
 								entry->image->camId = CAMERA_FADE2;
-								entry->image->field_0x154 = 10;
+								entry->image->captureCamId = 10;
 								psndSFXOn((const char*)0x403B4);
 								break;
 							}
@@ -751,7 +751,7 @@ void fadeMain(void) {
 								args[7] = 480;
 								evt_img_alloc_capture(&event, TRUE);
 								entry->image->camId = CAMERA_FADE;
-								entry->image->field_0x154 = 9;
+								entry->image->captureCamId = 9;
 								break;
 							}
 							default: {
@@ -774,7 +774,7 @@ void fadeMain(void) {
 						entry->step++;
 						break;
 					case 1:
-						if (entry->image->field_0x118 >= 1.0f) {
+						if (entry->image->loopTimes >= 1.0f) {
 							switch (entry->type) {
 								case 55:
 								case 57:
@@ -801,7 +801,7 @@ void fadeMain(void) {
 						}
 						break;
 					case 2:
-						if (entry->image->field_0x118 >= 1.0f) {
+						if (entry->image->loopTimes >= 1.0f) {
 							entry->flags |= 2;
 							entry->step++;
 						}
@@ -834,7 +834,7 @@ void fadeMain(void) {
 						entry->step++;
 						break;
 					case 1:
-						if (entry->image->field_0x118 >= 1.0f) {
+						if (entry->image->loopTimes >= 1.0f) {
 							entry->flags |= 2;
 							imgRelease(entry->image, entry->imageType);
 							animPaperPoseRelease(entry->paperPose);

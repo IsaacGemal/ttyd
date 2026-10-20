@@ -1160,7 +1160,7 @@ void _unresolved(void) {
 USER_FUNC(img_wait) {
     ImageEntry* img = imgNameToPtr("capture_img", gp->inBattle != 0);
 
-    if (!(img->flags & 2) && img->field_0x118 < 1.0f) {
+    if (!(img->flags & 2) && img->loopTimes < 1.0f) {
         return EVT_RETURN_BLOCK;
     }
     return EVT_RETURN_YIELD;

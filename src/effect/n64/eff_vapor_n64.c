@@ -25,7 +25,7 @@ EffectEntry* effVaporN64Entry(s32 type, s32 lifetime, f32 x, f32 y, f32 z, f32 s
 	effect->callback = effVaporMain;
 	effect->flags |= 2;
 	data->type = type;
-	data->field_0x14 = 0;
+	data->frame = 0;
 	if (lifetime <= 0) {
 		data->lifetime = 1000;
 	}
@@ -44,13 +44,13 @@ EffectEntry* effVaporN64Entry(s32 type, s32 lifetime, f32 x, f32 y, f32 z, f32 s
 	data->color2G = 0xff;
 	data->color2B = 0xff;
 	data->color2A = 0xff;
-	data->field_0x38 = float_0_804200e4;
-	data->field_0x3c = float_0_804200e4;
+	data->timer = float_0_804200e4;
+	data->velY = float_0_804200e4;
 	return effect;
 }
 
 // opt_common_subs off required: with CSE on MWCC reuses the 0.02f result register for
-// data->field_0x3c in the y integration below (f0/f1 swapped vs the target's f2/f1).
+// data->velY in the y integration below (f0/f1 swapped vs the target's f2/f1).
 #pragma opt_common_subs off
 
 inline Vec makeVec(f32 x, f32 y, f32 z) {
@@ -78,7 +78,7 @@ void effVaporMain(EffectEntry* effect) {
 	if (data->lifetime < 1000) {
 		data->lifetime--;
 	}
-	data->field_0x14++;
+	data->frame++;
 	if (data->lifetime < 0) {
 		effDelete(effect);
 		return;
@@ -89,17 +89,17 @@ void effVaporMain(EffectEntry* effect) {
 	switch (type) {
 	case 0:
 	case 1:
-		data->field_0x3c += float_0p02_80420100;
+		data->velY += float_0p02_80420100;
 		break;
 	}
-	data->y += data->field_0x3c;
-	if (data->field_0x3c > float_0p5_804200dc) {
-		data->field_0x3c = float_0p5_804200dc;
+	data->y += data->velY;
+	if (data->velY > float_0p5_804200dc) {
+		data->velY = float_0p5_804200dc;
 	}
-	if (data->field_0x3c < float_neg1p5_80420104) {
-		data->field_0x3c = float_neg1p5_80420104;
+	if (data->velY < float_neg1p5_80420104) {
+		data->velY = float_neg1p5_80420104;
 	}
-	data->field_0x38 += float_1_80420108;
+	data->timer += float_1_80420108;
 	dispEntry(CAMERA_3D, dispCalcZ(&position2), 2, effVaporDisp, effect);
 }
 #pragma opt_common_subs reset
@@ -237,7 +237,7 @@ void effVaporDisp(CameraId cameraId, void* param) {
 	effect = param;
 	cam = camGetPtr(cameraId);
 	data = effect->userdata;
-	frame = data->field_0x14;
+	frame = data->frame;
 	alpha1 = data->color1A;
 	type = data->type;
 	PSMTXTrans(mtxA, data->x, data->y, data->z);

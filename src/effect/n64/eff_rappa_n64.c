@@ -52,21 +52,21 @@ inline Vec initializeVec(Vec* input) {
 	return temp;
 }
 
-EffectEntry* effRappaN64Entry(s32 type, s32 count, f32 x, f32 y, f32 z, f32 a4, f32 a5) {
+EffectEntry* effRappaN64Entry(s32 type, s32 count, f32 x, f32 y, f32 z, f32 angle, f32 angleOffset) {
 	EffectEntry* effect;
 	effRappaData* data;
 	effRappaData* p;
 	s32 i;
 	f32 theta;
-	f32 scale;
+	f32 speed;
 	f32 sinTheta;
 	f32 phi;
 #ifdef MUST_MATCH
 	// MUST_MATCH: these temporaries pin MWCC's FPR assignment and commutative-operand order; the
 	// #else branch is the natural form and does not match.
 	f32 tmp;
-	f32 v;
-	f32 c;
+	f32 randValue;
+	f32 cosPhi;
 #endif
 
 	effect = effEntry();
@@ -79,9 +79,9 @@ EffectEntry* effRappaN64Entry(s32 type, s32 count, f32 x, f32 y, f32 z, f32 a4, 
 	effect->userdata = data;
 	effect->callback = effRappaMain;
 #ifdef MUST_MATCH
-	tmp = float_6p2832_8041faf8 * a4;
+	tmp = float_6p2832_8041faf8 * angle;
 #else
-	theta = float_6p2832_8041faf8 * a4 / float_360_8041fb04;
+	theta = float_6p2832_8041faf8 * angle / float_360_8041fb04;
 #endif
 	data->type = type;
 	data->position.x = x;
@@ -94,28 +94,28 @@ EffectEntry* effRappaN64Entry(s32 type, s32 count, f32 x, f32 y, f32 z, f32 a4, 
 	p = data + 1;
 	for (i = 1; i < count + 1; i++, p++) {
 #ifdef MUST_MATCH
-		v = (f32)(rand() % 10);
-		scale = v * float_0p25_8041fb00 + float_5_8041fafc;
+		randValue = (f32)(rand() % 10);
+		speed = randValue * float_0p25_8041fb00 + float_5_8041fafc;
 		theta = tmp / float_360_8041fb04;
 #else
-		scale = (f32)(rand() % 10) * float_0p25_8041fb00 + float_5_8041fafc;
+		speed = (f32)(rand() % 10) * float_0p25_8041fb00 + float_5_8041fafc;
 #endif
 		p->type = type;
 		p->position.x = x;
 		p->position.y = y;
 		p->position.z = z;
 		sinTheta = (f32)sin(theta);
-		phi = float_6p2832_8041faf8 * (a5 + (f32)((i & 2) * (i / 2) * 4)) / float_360_8041fb04;
+		phi = float_6p2832_8041faf8 * (angleOffset + (f32)((i & 2) * (i / 2) * 4)) / float_360_8041fb04;
 #ifdef MUST_MATCH
-		c = (f32)cos(phi);
-		p->field_0x10 = c * sinTheta;
+		cosPhi = (f32)cos(phi);
+		p->velX = cosPhi * sinTheta;
 #else
-		p->field_0x10 = (f32)cos(phi) * sinTheta;
+		p->velX = (f32)cos(phi) * sinTheta;
 #endif
-		p->field_0x14 = (f32)sin(phi);
-		p->field_0x18 = (f32)cos(phi) * (f32)cos(theta);
-		p->scale = scale;
-		p->field_0x24 = scale / float_10_8041faf4;
+		p->velY = (f32)sin(phi);
+		p->velZ = (f32)cos(phi) * (f32)cos(theta);
+		p->speed = speed;
+		p->scale = speed / float_10_8041faf4;
 	}
 	return effect;
 }
@@ -144,12 +144,12 @@ void effRappaMain(EffectEntry* effect) {
 
 	data++;
 	for (i = 1; i < e->count; i++, data++) {
-		data->position.x += data->scale * data->field_0x10;
-		data->position.y += data->scale * data->field_0x14;
-		data->position.z += data->scale * data->field_0x18;
-		data->scale *= float_0p9_8041faf0;
+		data->position.x += data->speed * data->velX;
+		data->position.y += data->speed * data->velY;
+		data->position.z += data->speed * data->velZ;
+		data->speed *= float_0p9_8041faf0;
 		if (life < 10) {
-			data->field_0x24 += data->scale / float_10_8041faf4;
+			data->scale += data->speed / float_10_8041faf4;
 		}
 	}
 
@@ -216,7 +216,7 @@ void effRappaDisp(CameraId camId, void* param) {
 
 		PSMTXTrans(mtx, data->position.x, data->position.y, data->position.z);
 		PSMTXRotRad(rotMtx, 'y', float_deg2rad_8041fae4 * -camGetPtr(CAMERA_3D)->viewYaw);
-		scale = data->field_0x24;
+		scale = data->scale;
 		PSMTXScale(scaleMtx, scale, scale, float_1_8041fae8);
 		PSMTXConcat(mtx, rotMtx, mtx);
 		PSMTXConcat(mtx, scaleMtx, mtx);

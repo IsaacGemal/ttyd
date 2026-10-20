@@ -121,7 +121,7 @@ void imgDisp(CameraId camId, void* param) {
 	f32 scale, z;
 	f32 y;
 	f32 dist;
-	f32 f26;
+	f32 focalLength;
 	f32 ra, rb, rc, rd;
 	int i;
 	int index;
@@ -137,24 +137,24 @@ void imgDisp(CameraId camId, void* param) {
 			texDatas[i] = NULL;
 		} else {
 			if (entry->flags & 4) {
-				a = (f32)*(u16*)&shadow->field_0x8[0];
-				b = (f32)*(u16*)&shadow->field_0x8[2];
-				c = (f32)*(u16*)&shadow->field_0x8[4];
-				d = (f32)*(u16*)&shadow->field_0x8[6];
+				a = (f32)shadow->bboxX;
+				b = (f32)shadow->bboxY;
+				c = (f32)shadow->bboxW;
+				d = (f32)shadow->bboxH;
 			} else {
-				a = (f32)shadow->field_0x4;
-				b = (f32)shadow->field_0x6;
-				c = (f32)entry->field_0xE4;
-				d = (f32)entry->field_0xE6;
+				a = (f32)shadow->left;
+				b = (f32)shadow->top;
+				c = (f32)entry->captureWidth;
+				d = (f32)entry->captureHeight;
 			}
 			PSMTXTrans(mtxT,
-			           -((f32)*(u16*)&shadow->field_0x8[0] - a) / (f32)*(u16*)&shadow->field_0x8[4],
-			           -((f32)*(u16*)&shadow->field_0x8[2] - b) / (f32)*(u16*)&shadow->field_0x8[6], 0.0f);
-			PSMTXScale(mtxS, c / (f32)*(u16*)&shadow->field_0x8[4],
-			           d / (f32)*(u16*)&shadow->field_0x8[6], 1.0f);
+			           -((f32)shadow->bboxX - a) / (f32)shadow->bboxW,
+			           -((f32)shadow->bboxY - b) / (f32)shadow->bboxH, 0.0f);
+			PSMTXScale(mtxS, c / (f32)shadow->bboxW,
+			           d / (f32)shadow->bboxH, 1.0f);
 			PSMTXConcat(mtxT, mtxS, mats[i]);
-			texObjs[i] = (GXTexObj*)shadow->field_0x1C;
-			texDatas[i] = shadow->field_0x3C;
+			texObjs[i] = (GXTexObj*)shadow->texObjData;
+			texDatas[i] = shadow->imageData;
 		}
 		if (texObjs[i] != NULL) {
 			matPtrs[i] = mats[i];
@@ -173,26 +173,26 @@ void imgDisp(CameraId camId, void* param) {
 	animSetPaperTexMtx(matPtrs[0], matPtrs[1], matPtrs[2]);
 #ifdef MUST_MATCH
 	animSetPaperTexObj(texObjs[0], texObjs[1], texObjs[2], texDatas[0], texDatas[1], texDatas[2],
-	                   entry->shadows[0].field_0x10 != -1 ? 1 : 0, entry->shadows[1].field_0x10 != -1 ? 1 : 0);
+	                   entry->shadows[0].offscreenId != -1 ? 1 : 0, entry->shadows[1].offscreenId != -1 ? 1 : 0);
 #else
 	animSetPaperTexObj(texObjs[0], texObjs[1], texObjs[2], texDatas[0], texDatas[1], texDatas[2],
-	                   entry->shadows[0].field_0x10 != -1, entry->shadows[1].field_0x10 != -1);
+	                   entry->shadows[0].offscreenId != -1, entry->shadows[1].offscreenId != -1);
 #endif
 
 	if (entry->animName != NULL) {
 		animPoseSetAnim(entry->poseId, entry->animName, 0);
 	}
-	animPoseSetStartTime(entry->poseId, *(OSTime*)(entry->field_0x10C + 4)); // 0x110/0x114: pose OSTime inside the 0x10C scratch area
+	animPoseSetStartTime(entry->poseId, entry->startTime);
 	animPoseMain(entry->poseId);
 	animPoseSetMaterialLightFlagOn(entry->poseId, 1);
-	entry->field_0x118 = animPoseGetLoopTimes(entry->poseId);
+	entry->loopTimes = animPoseGetLoopTimes(entry->poseId);
 
 	if (entry->flags & 8) {
 		zFill();
 		scale = 1.0f;
 		z = 0.0f;
 	} else {
-		f26 = 24.0f / (f32)tan(3.141592f * ((camGetPtr(CAMERA_3D)->fovY / 2.0f) / 180.0f));
+		focalLength = 24.0f / (f32)tan(3.141592f * ((camGetPtr(CAMERA_3D)->fovY / 2.0f) / 180.0f));
 		PSVECSubtract(&camGetPtr(CAMERA_3D)->cameraPos, &entry->point, &vec);
 		normal = *(Vec*)camGetPtr(CAMERA_3D)->view[2];
 		PSVECNormalize(&normal, &normal);
@@ -200,24 +200,24 @@ void imgDisp(CameraId camId, void* param) {
 		vec.y = vec.y * normal.y;
 		vec.z = vec.z * normal.z;
 		dist = PSVECMag(&vec);
-		scale = dist / f26;
-		z = f26 - dist;
+		scale = dist / focalLength;
+		z = focalLength - dist;
 	}
 
 	if (entry->flags & 4) {
-		ra = (f32)*(u16*)&entry->shadows[index].field_0x8[0];
-		rb = (f32)*(u16*)&entry->shadows[index].field_0x8[2];
-		rc = (f32)*(u16*)&entry->shadows[index].field_0x8[4];
-		rd = (f32)*(u16*)&entry->shadows[index].field_0x8[6];
+		ra = (f32)entry->shadows[index].bboxX;
+		rb = (f32)entry->shadows[index].bboxY;
+		rc = (f32)entry->shadows[index].bboxW;
+		rd = (f32)entry->shadows[index].bboxH;
 	} else {
-		ra = (f32)entry->shadows[index].field_0x4;
-		rb = (f32)entry->shadows[index].field_0x6;
-		rc = (f32)entry->field_0xE4;
-		rd = (f32)entry->field_0xE6;
+		ra = (f32)entry->shadows[index].left;
+		rb = (f32)entry->shadows[index].top;
+		rc = (f32)entry->captureWidth;
+		rd = (f32)entry->captureHeight;
 	}
 
-	PSMTXTrans(mtxT2, 64.0f * ((entry->field_0xE8 + ra) / (f32)DEMOGetRenderModeObj()->fbWidth),
-	           48.0f * ((-(entry->field_0xEC + rb)) / (f32)DEMOGetRenderModeObj()->efbHeight), z);
+	PSMTXTrans(mtxT2, 64.0f * ((entry->posX + ra) / (f32)DEMOGetRenderModeObj()->fbWidth),
+	           48.0f * ((-(entry->posY + rb)) / (f32)DEMOGetRenderModeObj()->efbHeight), z);
 	PSMTXTrans(mtxS2, -32.0f, 24.0f, 0.0f);
 	PSMTXConcat(mtxT2, mtxS2, mtxT2);
 
@@ -227,7 +227,7 @@ void imgDisp(CameraId camId, void* param) {
 	PSMTXConcat(mtxT2, mtxS2, mtxT2);
 	PSMTXTrans(mtxS2, 32.0f, -24.0f, 0.0f);
 	PSMTXConcat(mtxT2, mtxS2, mtxT2);
-	PSMTXConcat(entry->field_0x120, mtxT2, mtxT2);
+	PSMTXConcat(entry->matrix, mtxT2, mtxT2);
 
 	animPoseDrawMtx(entry->poseId, mtxT2, 1, 0.0f, scale);
 	animPoseDrawMtx(entry->poseId, mtxT2, 2, 0.0f, scale);
@@ -276,7 +276,7 @@ void imgDisp_ProjPlane(CameraId camId, void* param) {
 			break;
 		case 2:
 			flags = 0x40000;
-			PSMTXTrans(mtx, 0.0f, 0.0f, entry->field_0x11C);
+			PSMTXTrans(mtx, 0.0f, 0.0f, entry->depthPlaneOffset);
 			GXSetBlendMode(GX_BM_SUBTRACT, GX_BL_SRCALPHA, GX_BL_INVSRCALPHA, GX_LO_CLEAR);
 			break;
 	}
@@ -325,11 +325,11 @@ void imgCapture_Prim(ImageEntry* entry, s32 id) {
 		return;
 	}
 
-	pose = shadow->field_0x10;
+	pose = shadow->offscreenId;
 	shadow->flags |= 0x10;
 
 	if (pose != -1) {
-		if (shadow->field_0x40 != 0) {
+		if (shadow->captureMode != 0) {
 			if (shadow->flags & 0x100) {
 				GXTexObj* texObj;
 				smartEntry* imageA;
@@ -343,18 +343,18 @@ void imgCapture_Prim(ImageEntry* entry, s32 id) {
 					heightA = GXGetTexObjHeight(texObj);
 					fmtTexA = GXGetTexObjFmt(texObj);
 					sizeA = GXGetTexBufferSize(widthA, heightA, fmtTexA, GX_FALSE, 0);
-					if (shadow->field_0x40 == 1) {
-						shadow->field_0x3C = smartAlloc(sizeA, 1);
-					} else if (shadow->field_0x40 == 2) {
-						shadow->field_0x3C = smartAlloc(sizeA, 0);
+					if (shadow->captureMode == 1) {
+						shadow->imageData = smartAlloc(sizeA, 1);
+					} else if (shadow->captureMode == 2) {
+						shadow->imageData = smartAlloc(sizeA, 0);
 					}
-					memcpy(shadow->field_0x3C->address, imageA->address, sizeA);
-					DCFlushRange(shadow->field_0x3C->address, sizeA);
-					GXInitTexObj((GXTexObj*)&shadow->field_0x1C[0], shadow->field_0x3C->address, widthA, heightA, fmtTexA, GX_CLAMP, GX_CLAMP, GX_FALSE);
-					GXInitTexObjLOD((GXTexObj*)&shadow->field_0x1C[0], GX_NEAR, GX_NEAR, 0.0f, 0.0f, 0.0f, GX_FALSE, GX_FALSE, GX_ANISO_1);
-					offscreenGetBoundingBox(pose, (u16*)&shadow->field_0x8[0], (u16*)&shadow->field_0x8[2], (u16*)&shadow->field_0x8[4], (u16*)&shadow->field_0x8[6]);
-					*(u16*)&shadow->field_0x8[4] -= *(u16*)&shadow->field_0x8[0];
-					*(u16*)&shadow->field_0x8[6] -= *(u16*)&shadow->field_0x8[2];
+					memcpy(shadow->imageData->address, imageA->address, sizeA);
+					DCFlushRange(shadow->imageData->address, sizeA);
+					GXInitTexObj((GXTexObj*)&shadow->texObjData[0], shadow->imageData->address, widthA, heightA, fmtTexA, GX_CLAMP, GX_CLAMP, GX_FALSE);
+					GXInitTexObjLOD((GXTexObj*)&shadow->texObjData[0], GX_NEAR, GX_NEAR, 0.0f, 0.0f, 0.0f, GX_FALSE, GX_FALSE, GX_ANISO_1);
+					offscreenGetBoundingBox(pose, &shadow->bboxX, &shadow->bboxY, &shadow->bboxW, &shadow->bboxH);
+					shadow->bboxW -= shadow->bboxX;
+					shadow->bboxH -= shadow->bboxY;
 					shadow->flags &= ~0x100;
 				}
 			}
@@ -368,31 +368,31 @@ void imgCapture_Prim(ImageEntry* entry, s32 id) {
 
 			offscreenGetTexObj(pose, &texObj, &image);
 			if (texObj != NULL) {
-				*(GXTexObj*)&shadow->field_0x1C[0] = *texObj;
-				shadow->field_0x3C = image;
-				offscreenGetBoundingBox(pose, (u16*)&shadow->field_0x8[0], (u16*)&shadow->field_0x8[2], (u16*)&shadow->field_0x8[4], (u16*)&shadow->field_0x8[6]);
-				*(u16*)&shadow->field_0x8[4] -= *(u16*)&shadow->field_0x8[0];
-				*(u16*)&shadow->field_0x8[6] -= *(u16*)&shadow->field_0x8[2];
+				*(GXTexObj*)&shadow->texObjData[0] = *texObj;
+				shadow->imageData = image;
+				offscreenGetBoundingBox(pose, &shadow->bboxX, &shadow->bboxY, &shadow->bboxW, &shadow->bboxH);
+				shadow->bboxW -= shadow->bboxX;
+				shadow->bboxH -= shadow->bboxY;
 				shadow->flags &= ~0x10;
 			}
 		}
 	} else {
-		if (shadow->field_0x40 != 0) {
+		if (shadow->captureMode != 0) {
 			if (shadow->flags & 0x100) {
 				GXTexFmt fmtTex, fmtDst;
 				u32 size;
 				s32 mode;
 
-				*(u16*)&shadow->field_0x8[0] = shadow->field_0x4;
-				*(u16*)&shadow->field_0x8[2] = shadow->field_0x6;
-				*(u16*)&shadow->field_0x8[4] = entry->field_0xE4;
-				*(u16*)&shadow->field_0x8[6] = entry->field_0xE6;
-				height = *(u16*)&shadow->field_0x8[6];
-				width = *(u16*)&shadow->field_0x8[4];
-				fmtTex = shadow->field_0x18;
-				fmtDst = shadow->field_0x14;
-				mode = shadow->field_0x40;
-				GXSetTexCopySrc(*(u16*)&shadow->field_0x8[0], *(u16*)&shadow->field_0x8[2], width, height);
+				shadow->bboxX = shadow->left;
+				shadow->bboxY = shadow->top;
+				shadow->bboxW = entry->captureWidth;
+				shadow->bboxH = entry->captureHeight;
+				height = shadow->bboxH;
+				width = shadow->bboxW;
+				fmtTex = shadow->srcFormat;
+				fmtDst = shadow->dstFormat;
+				mode = shadow->captureMode;
+				GXSetTexCopySrc(shadow->bboxX, shadow->bboxY, width, height);
 				GXSetTexCopyDst(width, height, fmtDst, GX_FALSE);
 				size = GXGetTexBufferSize(width, height, fmtTex, GX_FALSE, 0);
 				if (mode == 1) {
@@ -405,9 +405,9 @@ void imgCapture_Prim(ImageEntry* entry, s32 id) {
 				GXSetZMode(GX_TRUE, GX_LEQUAL, GX_TRUE);
 				GXCopyTex(image->address, GX_FALSE);
 				GXPixModeSync();
-				GXInitTexObj((GXTexObj*)&shadow->field_0x1C[0], image->address, width, height, fmtTex, GX_CLAMP, GX_CLAMP, GX_FALSE);
-				GXInitTexObjLOD((GXTexObj*)&shadow->field_0x1C[0], GX_NEAR, GX_NEAR, 0.0f, 0.0f, 0.0f, GX_FALSE, GX_FALSE, GX_ANISO_1);
-				shadow->field_0x3C = image;
+				GXInitTexObj((GXTexObj*)&shadow->texObjData[0], image->address, width, height, fmtTex, GX_CLAMP, GX_CLAMP, GX_FALSE);
+				GXInitTexObjLOD((GXTexObj*)&shadow->texObjData[0], GX_NEAR, GX_NEAR, 0.0f, 0.0f, 0.0f, GX_FALSE, GX_FALSE, GX_ANISO_1);
+				shadow->imageData = image;
 				shadow->flags &= ~0x100;
 			}
 			if (shadow->flags & 0x100) {
@@ -421,16 +421,16 @@ void imgCapture_Prim(ImageEntry* entry, s32 id) {
 			s32 modeB;
 			GXTexFmt fmtDstB, fmtTexB;
 
-			*(u16*)&shadow->field_0x8[0] = shadow->field_0x4;
-			*(u16*)&shadow->field_0x8[2] = shadow->field_0x6;
-			*(u16*)&shadow->field_0x8[4] = entry->field_0xE4;
-			*(u16*)&shadow->field_0x8[6] = entry->field_0xE6;
-			heightB = *(u16*)&shadow->field_0x8[6];
-			widthB = *(u16*)&shadow->field_0x8[4];
-			fmtTexB = shadow->field_0x18;
-			fmtDstB = shadow->field_0x14;
-			modeB = shadow->field_0x40;
-			GXSetTexCopySrc(*(u16*)&shadow->field_0x8[0], *(u16*)&shadow->field_0x8[2], widthB, heightB);
+			shadow->bboxX = shadow->left;
+			shadow->bboxY = shadow->top;
+			shadow->bboxW = entry->captureWidth;
+			shadow->bboxH = entry->captureHeight;
+			heightB = shadow->bboxH;
+			widthB = shadow->bboxW;
+			fmtTexB = shadow->srcFormat;
+			fmtDstB = shadow->dstFormat;
+			modeB = shadow->captureMode;
+			GXSetTexCopySrc(shadow->bboxX, shadow->bboxY, widthB, heightB);
 			GXSetTexCopyDst(widthB, heightB, fmtDstB, GX_FALSE);
 			sizeB = GXGetTexBufferSize(widthB, heightB, fmtTexB, GX_FALSE, 0);
 			if (modeB == 1) {
@@ -443,9 +443,9 @@ void imgCapture_Prim(ImageEntry* entry, s32 id) {
 			GXSetZMode(GX_TRUE, GX_LEQUAL, GX_TRUE);
 			GXCopyTex(imageB->address, GX_FALSE);
 			GXPixModeSync();
-			GXInitTexObj((GXTexObj*)&shadow->field_0x1C[0], imageB->address, widthB, heightB, fmtTexB, GX_CLAMP, GX_CLAMP, GX_FALSE);
-			GXInitTexObjLOD((GXTexObj*)&shadow->field_0x1C[0], GX_NEAR, GX_NEAR, 0.0f, 0.0f, 0.0f, GX_FALSE, GX_FALSE, GX_ANISO_1);
-			shadow->field_0x3C = imageB;
+			GXInitTexObj((GXTexObj*)&shadow->texObjData[0], imageB->address, widthB, heightB, fmtTexB, GX_CLAMP, GX_CLAMP, GX_FALSE);
+			GXInitTexObjLOD((GXTexObj*)&shadow->texObjData[0], GX_NEAR, GX_NEAR, 0.0f, 0.0f, 0.0f, GX_FALSE, GX_FALSE, GX_ANISO_1);
+			shadow->imageData = imageB;
 			shadow->flags &= ~0x10;
 		}
 	}
@@ -460,7 +460,7 @@ void imgCapture(CameraId camId, void* param) {
 
 	for (i = 0, count = wp->count, entry = wp->entries; i < count; i++, entry++) {
 		if (entry->flags & 1 && entry->poseId != -1 && (entry->type == 2 || entry->type == type)) {
-			if (entry->field_0x154 == camId) {
+			if (entry->captureCamId == camId) {
 				for (shadow = 0; shadow < 3; shadow++) {
 					imgCapture_Prim(entry, shadow);
 				}
@@ -507,43 +507,43 @@ s32 imgEntry(const char* name, s32 type) { //1:1, needs variable names
 	strcpy(entry->name, name);
 	entry->poseId = -1;
 	entry->animName = NULL;
-	entry->field_0xE4 = 0;
-	entry->field_0xE6 = 0;
-	entry->field_0xE8 = 0.0f;
-	entry->field_0xEC = 0.0f;
+	entry->captureWidth = 0;
+	entry->captureHeight = 0;
+	entry->posX = 0.0f;
+	entry->posY = 0.0f;
 	entry->order = 0.0f;
-	entry->field_0x118 = 0.0f;
+	entry->loopTimes = 0.0f;
 	entry->shadowId = 0;
-	entry->field_0x11C = 0.0f;
-	MTXIdentity(entry->field_0x120);
+	entry->depthPlaneOffset = 0.0f;
+	MTXIdentity(entry->matrix);
 	entry->camId = CAMERA_3D_IMAGE;
-	entry->field_0x154 = 4;
+	entry->captureCamId = 4;
 
 	entry->shadows[0].flags = 0;
-	entry->shadows[0].field_0x4 = 0;
-	entry->shadows[0].field_0x6 = 0;
-	entry->shadows[0].field_0x10 = -1;
-	entry->shadows[0].field_0x14 = 6;
-	entry->shadows[0].field_0x18 = 6;
-	entry->shadows[0].field_0x40 = 0;
+	entry->shadows[0].left = 0;
+	entry->shadows[0].top = 0;
+	entry->shadows[0].offscreenId = -1;
+	entry->shadows[0].dstFormat = 6;
+	entry->shadows[0].srcFormat = 6;
+	entry->shadows[0].captureMode = 0;
 
 	entry->shadows[1].flags = 0;
-	entry->shadows[1].field_0x4 = 0;
-	entry->shadows[1].field_0x6 = 0;
-	entry->shadows[1].field_0x10 = -1;
-	entry->shadows[1].field_0x14 = 6;
-	entry->shadows[1].field_0x18 = 6;
-	entry->shadows[1].field_0x40 = 0;
+	entry->shadows[1].left = 0;
+	entry->shadows[1].top = 0;
+	entry->shadows[1].offscreenId = -1;
+	entry->shadows[1].dstFormat = 6;
+	entry->shadows[1].srcFormat = 6;
+	entry->shadows[1].captureMode = 0;
 
 	entry->shadows[2].flags = 0;
-	entry->shadows[2].field_0x4 = 0;
-	entry->shadows[2].field_0x6 = 0;
-	entry->shadows[2].field_0x10 = -1;
-	entry->shadows[2].field_0x14 = 6;
-	entry->shadows[2].field_0x18 = 6;
-	entry->shadows[2].field_0x40 = 0;
-	entry->shadows[2].field_0x14 = 39;
-	entry->shadows[2].field_0x18 = 1;
+	entry->shadows[2].left = 0;
+	entry->shadows[2].top = 0;
+	entry->shadows[2].offscreenId = -1;
+	entry->shadows[2].dstFormat = 6;
+	entry->shadows[2].srcFormat = 6;
+	entry->shadows[2].captureMode = 0;
+	entry->shadows[2].dstFormat = 39;
+	entry->shadows[2].srcFormat = 1;
 
 	return i;
 }
@@ -608,12 +608,12 @@ void imgFreeCapture(ImageEntry* entry, s32 shadowId) { //1:1, needs enums
 		if (shadow->flags & 0x100) {
 			shadow->flags = 0;
 		}
-		else if (!shadow->field_0x40) {
+		else if (!shadow->captureMode) {
 			shadow->flags = 0;
 		}
 		else {
 			shadow->flags = 0;
-			smartFree(shadow->field_0x3C);
+			smartFree(shadow->imageData);
 		}
 	}
 }
@@ -674,25 +674,25 @@ void imgShadowDisp(CameraId camId, void* param) {
 			else {
 				f32 v0;
 				if (entry->flags & 4) {
-					v0 = *(u16*)&shadow->field_0x8[0]; // field_0x8 is a byte array but holds four u16
-					v1 = *(u16*)&shadow->field_0x8[2];
-					v2 = *(u16*)&shadow->field_0x8[4];
-					v3 = *(u16*)&shadow->field_0x8[6];
+					v0 = shadow->bboxX; // capture bounds: x, y, width, height
+					v1 = shadow->bboxY;
+					v2 = shadow->bboxW;
+					v3 = shadow->bboxH;
 				}
 				else {
-					v0 = shadow->field_0x4;
-					v1 = shadow->field_0x6;
-					v2 = entry->field_0xE4;
-					v3 = entry->field_0xE6;
+					v0 = shadow->left;
+					v1 = shadow->top;
+					v2 = entry->captureWidth;
+					v3 = entry->captureHeight;
 				}
 				PSMTXTrans(mtxTrans,
-					-((f32)*(u16*)&shadow->field_0x8[0] - v0) / (f32)*(u16*)&shadow->field_0x8[4],
-					-((f32)*(u16*)&shadow->field_0x8[2] - v1) / (f32)*(u16*)&shadow->field_0x8[6],
+					-((f32)shadow->bboxX - v0) / (f32)shadow->bboxW,
+					-((f32)shadow->bboxY - v1) / (f32)shadow->bboxH,
 					0.0f);
-				PSMTXScale(mtxScale, v2 / (f32)*(u16*)&shadow->field_0x8[4], v3 / (f32)*(u16*)&shadow->field_0x8[6], 1.0f);
+				PSMTXScale(mtxScale, v2 / (f32)shadow->bboxW, v3 / (f32)shadow->bboxH, 1.0f);
 				PSMTXConcat(mtxTrans, mtxScale, mtx[i]);
-				texObj[i] = (GXTexObj*)shadow->field_0x1C;
-				texData[i] = shadow->field_0x3C;
+				texObj[i] = (GXTexObj*)shadow->texObjData;
+				texData[i] = shadow->imageData;
 			}
 		}
 		if (texObj[i] != NULL) {
@@ -718,19 +718,19 @@ void imgShadowDisp(CameraId camId, void* param) {
 	// comparison. The natural form is under #else.
 #ifdef MUST_MATCH
 	animSetPaperTexObj(texObj[0], texObj[1], texObj[2], texData[0], texData[1], texData[2],
-		(entry->shadows[0].field_0x10 != -1) ? 1 : 0, (entry->shadows[1].field_0x10 != -1) ? 1 : 0);
+		(entry->shadows[0].offscreenId != -1) ? 1 : 0, (entry->shadows[1].offscreenId != -1) ? 1 : 0);
 #else
 	animSetPaperTexObj(texObj[0], texObj[1], texObj[2], texData[0], texData[1], texData[2],
-		entry->shadows[0].field_0x10 != -1, entry->shadows[1].field_0x10 != -1);
+		entry->shadows[0].offscreenId != -1, entry->shadows[1].offscreenId != -1);
 #endif
 
 	if (entry->animName != NULL) {
 		animPoseSetAnim(entry->poseId, entry->animName, 0);
 	}
-	animPoseSetStartTime(entry->poseId, *(OSTime*)&entry->field_0x10C[4]); // 0x110, in the field_0x10C byte array
+	animPoseSetStartTime(entry->poseId, entry->startTime);
 	animPoseMain(entry->poseId);
 	animPoseSetMaterialLightFlagOn(entry->poseId, 1);
-	entry->field_0x118 = animPoseGetLoopTimes(entry->poseId);
+	entry->loopTimes = animPoseGetLoopTimes(entry->poseId);
 
 	// MUST_MATCH: the original keeps an if/else on flags bit 3 whose two arms assign the same
 	// constants, and the branch survives in the object; the natural form is under #else.
@@ -749,20 +749,20 @@ void imgShadowDisp(CameraId camId, void* param) {
 #endif
 
 	if (entry->flags & 4) {
-		w0 = *(u16*)&entry->shadows[firstShadow].field_0x8[0]; // field_0x8 holds four u16
-		w1 = *(u16*)&entry->shadows[firstShadow].field_0x8[2];
-		w2 = *(u16*)&entry->shadows[firstShadow].field_0x8[4];
-		w3 = *(u16*)&entry->shadows[firstShadow].field_0x8[6];
+		w0 = entry->shadows[firstShadow].bboxX; // capture bounds: x, y, width, height
+		w1 = entry->shadows[firstShadow].bboxY;
+		w2 = entry->shadows[firstShadow].bboxW;
+		w3 = entry->shadows[firstShadow].bboxH;
 	}
 	else {
-		w0 = entry->shadows[firstShadow].field_0x4;
-		w1 = entry->shadows[firstShadow].field_0x6;
-		w2 = entry->field_0xE4;
-		w3 = entry->field_0xE6;
+		w0 = entry->shadows[firstShadow].left;
+		w1 = entry->shadows[firstShadow].top;
+		w2 = entry->captureWidth;
+		w3 = entry->captureHeight;
 	}
 
-	PSMTXTrans(mtxTmpB, 64.0f * ((entry->field_0xE8 + w0) / (f32)DEMOGetRenderModeObj()->fbWidth),
-	           48.0f * (-(entry->field_0xEC + w1) / (f32)DEMOGetRenderModeObj()->efbHeight), z);
+	PSMTXTrans(mtxTmpB, 64.0f * ((entry->posX + w0) / (f32)DEMOGetRenderModeObj()->fbWidth),
+	           48.0f * (-(entry->posY + w1) / (f32)DEMOGetRenderModeObj()->efbHeight), z);
 	PSMTXTrans(mtxTmpA, -32.0f, 24.0f, 0.0f);
 	PSMTXConcat(mtxTmpB, mtxTmpA, mtxTmpB);
 	PSMTXScale(mtxTmpA, w2 / (f32)DEMOGetRenderModeObj()->fbWidth,

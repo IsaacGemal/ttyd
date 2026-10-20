@@ -50,8 +50,8 @@ EffectEntry* effRippleN64Entry(s32 type, f32 x, f32 y, f32 z, f32 scale) {
 	data->x = x;
 	data->y = y;
 	data->z = z;
-	data->field_0x18 = 0;
-	data->field_0x20 = 0;
+	data->alpha = 0;
+	data->age = 0;
 	data->rx = float_0_8041fba0;
 	data->rz = float_0_8041fba0;
 	data->field_0x14 = float_1_8041fbac;
@@ -59,29 +59,29 @@ EffectEntry* effRippleN64Entry(s32 type, f32 x, f32 y, f32 z, f32 scale) {
 	switch (type) {
 		case 1:
 		case 10:
-			data->field_0x10 = float_0p6_8041fbbc;
+			data->scale = float_0p6_8041fbbc;
 			break;
 		case 2:
 		case 20:
-			data->field_0x10 = float_10_8041fbc0;
+			data->scale = float_10_8041fbc0;
 			break;
 		case 3:
 		case 30:
-			data->field_0x10 = float_10_8041fbc0;
+			data->scale = float_10_8041fbc0;
 			break;
 		default:
-			data->field_0x10 = float_1_8041fbac;
+			data->scale = float_1_8041fbac;
 			break;
 	}
-	data->field_0x1C = 0x20;
-	data->field_0x24 = rand() % 32;
+	data->timer = 0x20;
+	data->scrollV = rand() % 32;
 	data->field_0x28 = y + scale;
 	return effect;
 }
 #pragma dont_inline reset
 
 
-// Retail keeps `field_0x1C--` before `field_0x20++` and colours `effect`/`timer`/`type` r28/r30/r29.
+// Retail keeps `timer--` before `age++` and colours `effect`/`timer`/`type` r28/r30/r29.
 // At -O4,p mwcc coalesces the two read-modify-writes the other way round and gives `effect` r30; at
 // -O2 it emits the retail order and colours with the same 0x50 frame. `position` is built from the
 // .rodata zero vector (`vec3_802fb520`, defined above); the direct field writes
@@ -101,17 +101,17 @@ void effRippleMain(EffectEntry* effect) {
 	position.z = data->z;
 	dispPos = position;
 
-	timer = data->field_0x1C;
+	timer = data->timer;
 	type = data->type;
-	data->field_0x1C--;
-	data->field_0x20++;
-	if (data->field_0x1C < 0) {
+	data->timer--;
+	data->age++;
+	if (data->timer < 0) {
 		effDelete(effect);
 		return;
 	}
 
 	if (timer > 5) {
-		data->field_0x18 = (s32)(float_0p3_8041fbb0 * (f32)(120 - data->field_0x18) + (f32)data->field_0x18);
+		data->alpha = (s32)(float_0p3_8041fbb0 * (f32)(120 - data->alpha) + (f32)data->alpha);
 	}
 
 	if ((type == 1 || type == 2 || type == 3) && timer == 15) {
@@ -133,22 +133,22 @@ void effRippleMain(EffectEntry* effect) {
 	}
 
 	if (type == 2 || type == 20) {
-		data->field_0x10 *= float_1p05_8041fbb4;
+		data->scale *= float_1p05_8041fbb4;
 	}
 	if (type == 3 || type == 30) {
-		data->field_0x10 *= float_1p05_8041fbb4;
+		data->scale *= float_1p05_8041fbb4;
 	}
 
 	if (timer < 0x20) {
-		data->field_0x18 = timer * 8;
+		data->alpha = timer * 8;
 	}
 
-	data->field_0x24++;
-	if (data->field_0x24 >= 0x20) {
-		data->field_0x24 -= 0x20;
+	data->scrollV++;
+	if (data->scrollV >= 0x20) {
+		data->scrollV -= 0x20;
 	}
 
-	data->field_0x10 += float_0p1_8041fbb8;
+	data->scale += float_0p1_8041fbb8;
 	dispEntry(data->camId, dispCalcZ(&dispPos), 2, effRippleDisp, effect);
 }
 #pragma pop
@@ -200,12 +200,12 @@ void effRippleDisp(CameraId camId, void* param) {
 	GXSetTevAlphaIn(0, 7, 4, 1, 7);
 
 	if (type == 1 || type == 10 || type == 3 || type == 30) {
-		effRippleSetColor(unk_80423248, data->field_0x18);
+		effRippleSetColor(unk_80423248, data->alpha);
 	} else {
-		effRippleSetColor(dat_8041fb98, data->field_0x18);
+		effRippleSetColor(dat_8041fb98, data->alpha);
 	}
 
-	texScroll = data->field_0x24;
+	texScroll = data->scrollV;
 	PSMTXScale(scaleMtx, float_0p03125_8041fba4, float_0p03125_8041fba4, float_0_8041fba0);
 	PSMTXTrans(transMtx, float_0_8041fba0, (f32)texScroll, float_0_8041fba0);
 	PSMTXConcat(scaleMtx, transMtx, transMtx);
@@ -215,8 +215,8 @@ void effRippleDisp(CameraId camId, void* param) {
 	PSMTXRotRad(rotXMtx, 'x', float_deg2rad_8041fba8 * data->rx);
 	PSMTXRotRad(scaleMtx, 'z', float_deg2rad_8041fba8 * data->rz);
 	PSMTXConcat(rotXMtx, scaleMtx, rotXMtx);
-	PSMTXScale(scaleMtx, data->field_0x14 * data->field_0x10, float_1_8041fbac,
-	           data->field_0x14 * data->field_0x10);
+	PSMTXScale(scaleMtx, data->field_0x14 * data->scale, float_1_8041fbac,
+	           data->field_0x14 * data->scale);
 	PSMTXConcat(transMtx, rotXMtx, transMtx);
 	PSMTXConcat(transMtx, scaleMtx, transMtx);
 	PSMTXConcat(cam->view, transMtx, transMtx);
