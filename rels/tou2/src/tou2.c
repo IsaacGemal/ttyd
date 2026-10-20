@@ -35,7 +35,7 @@ typedef struct RankEntry {
     u16 flags;
     // pad 2 bytes
     s32 id;
-    u8 points[2]; // TODO: see if there's a way to re-type this to s16 and keep rankingInit matching
+    u8 score[2]; // TODO: see if there's a way to re-type this to s16 and keep rankingInit matching
     // pad 2 bytes
 } RankEntry;
 
@@ -58,7 +58,7 @@ typedef struct FighterData {
     s32 setupId;
     const char* taunt;
     const char* victory;
-    s16 field_18; // priority, order, sortId?
+    s16 score; // initial ranking score
     // pad 2 bytes
 } FighterData;
 
@@ -270,16 +270,16 @@ void _unresolved(void) {
 // dont_inline: rankingInit is called from _prolog and must stay a real call
 #pragma dont_inline on
 static void rankingInit(void) {
-    s32 temp;
+    s32 progress;
     s32 count;
     int i;
     RankEntry* entry;
 
     memset(rank_wp, 0, sizeof(RankData));
     // We need to handle the excluded entries if we're doing rematches
-    temp = evtGetValue(NULL, GSW(0));
+    progress = evtGetValue(NULL, GSW(0));
     count = 21;
-    if (temp < 172) {
+    if (progress < 172) {
         count = 23;
     }
     rank_wp->count = count;
@@ -295,10 +295,10 @@ static void rankingInit(void) {
         if (swGet(2529)) {
             int j;
             for (j = 0; j < 2; j++) {
-                entry->points[j] = swByteGet(2 * entry->id + 519 + j);
+                entry->score[j] = swByteGet(2 * entry->id + 519 + j);
             }
         } else {
-            *(s16*)entry->points = fighterDt[entry->id].field_18;
+            *(s16*)entry->score = fighterDt[entry->id].score;
         }
         if (entry->id == FIGHTER_PLAYER) {
             entry->flags |= RANK_PLAYER;
@@ -353,7 +353,7 @@ static void rankingExit(void) {
             swClear(e->id + 0x9a1);
         }
         for (j = 0; j < 2; j++) {
-            swByteSet(e->id * 2 + 0x207 + j, ((u8*)e)[8 + j]);
+            swByteSet(e->id * 2 + 0x207 + j, e->score[j]);
         }
     }
     _mapFree(rank_wp->entries);
@@ -370,7 +370,7 @@ USER_FUNC(unk_tou2_00004b50) {
     s32 i;
 
     rankingExit();
-    pouchRemoveItem(0x41);
+    pouchRemoveItem(ITEM_CHAMPS_BELT);
     for (i = 0; i < 0x14; i++) {
         swClear(i + 0x9a1);
     }
@@ -438,7 +438,7 @@ static void rankingControll(void) {
     if (nAbove > 0) {
         for (i = 0; i < nAbove - 1; i++) {
             for (j = i + 1; j < nAbove; j++) {
-                if (*(s16*)rank_wp->entries[above[i]].points < *(s16*)rank_wp->entries[above[j]].points) {
+                if (*(s16*)rank_wp->entries[above[i]].score < *(s16*)rank_wp->entries[above[j]].score) {
                     tmp = above[i];
                     above[i] = above[j];
                     above[j] = tmp;
@@ -540,7 +540,7 @@ static void rankingControll(void) {
     if (nBelow > 0) {
         for (i = 0; i < nBelow - 1; i++) {
             for (j = i + 1; j < nBelow; j++) {
-                if (*(s16*)rank_wp->entries[below[i]].points < *(s16*)rank_wp->entries[below[j]].points) {
+                if (*(s16*)rank_wp->entries[below[i]].score < *(s16*)rank_wp->entries[below[j]].score) {
                     tmp = below[i];
                     below[i] = below[j];
                     below[j] = tmp;
@@ -611,18 +611,18 @@ static void rankingControll(void) {
     }
 #ifdef MUST_MATCH
     // MUST_MATCH: the original's flags store compiles to an indexed `sthx` at entry + nAbove*12;
-    // routing it through a u16 view (flags is at offset 0) reproduces that, while id/points go
+    // routing it through a u16 view (flags is at offset 0) reproduces that, while id/score go
     // through a materialised RankEntry*.
     ((u16*)entry)[nAbove * 6] = RANK_PLAYER;
     {
         RankEntry* p = entry + nAbove;
         p->id = FIGHTER_PLAYER;
-        *(s16*)p->points = 0;
+        *(s16*)p->score = 0;
     }
 #else
     entry[nAbove].flags = RANK_PLAYER;
     entry[nAbove].id = FIGHTER_PLAYER;
-    *(s16*)entry[nAbove].points = 0;
+    *(s16*)entry[nAbove].score = 0;
 #endif
     for (i = 0; i < nBelow; i++) {
 #ifdef MUST_MATCH
@@ -671,7 +671,7 @@ USER_FUNC(evt_tou_get_ranking_28_text_4048) {
 
 static USER_FUNC(evt_tou_get_next_match) {
     s32* args = event->args;
-    s32 x = evtGetValue(event, 0xf840650b);
+    s32 x = evtGetValue(event, GSWF(2443));
     s32 list[32];
     s32 i;
     s32 cnt = 0;
@@ -865,14 +865,14 @@ static USER_FUNC(evt_tou_get_rule_info) {
 
     if (type == 0) {
         for (i = 0; i < n; i++) {
-            if (dt[i].field_08 == 6) {
+            if (dt[i].kind == 6) {
                 break;
             }
         }
     } else if (type == 10) {
         for (;;) {
             i = rand() % n;
-            if (dt[i].field_08 != 0x30 && dt[i].field_08 != 0x20 && dt[i].field_08 != 0x40) {
+            if (dt[i].kind != 0x30 && dt[i].kind != 0x20 && dt[i].kind != 0x40) {
                 break;
             }
         }
@@ -880,9 +880,9 @@ static USER_FUNC(evt_tou_get_rule_info) {
         i = rand() % n;
     }
 
-    evtSetValue(event, args[1], (s32)dt[i].field_00);
-    evtSetValue(event, args[2], dt[i].field_08);
-    evtSetValue(event, args[3], dt[i].field_0C);
+    evtSetValue(event, args[1], (s32)dt[i].name);
+    evtSetValue(event, args[2], dt[i].kind);
+    evtSetValue(event, args[3], dt[i].param);
     evtSetValue(event, args[4], dt[i].field_10);
     return EVT_RETURN_DONE;
 }
@@ -920,7 +920,7 @@ static USER_FUNC(evt_tou_get_rule_msg2) {
     }
 
     for (i = 0; i < n; i++) {
-        if (ruleId == dt[i].field_08) {
+        if (ruleId == dt[i].kind) {
             break;
         }
     }
@@ -933,13 +933,13 @@ static USER_FUNC(evt_tou_get_rule_msg2) {
 
 USER_FUNC(evt_tou_set_ranking_win_lose_28_text_35C0) {
     s32* args = event->args;
-    s32 a = evtGetValue(event, args[0]);
+    s32 won = evtGetValue(event, args[0]);
     s32 id = evtGetValue(event, args[1]);
     s32 i;
     s16 min;
     s16 max;
 
-    if (a == 0) {
+    if (won == 0) {
         for (i = 0; i < rank_wp->count; i++) {
             if (rank_wp->entries[i].id == id) {
                 rank_wp->entries[i].flags |= RANK_BELOW;
@@ -965,12 +965,12 @@ USER_FUNC(evt_tou_set_ranking_win_lose_28_text_35C0) {
             d += rand() % 4;
             d += rand() % 4;
 
-            *(s16*)rank_wp->entries[i].points += d - 3;
-            if (*(s16*)rank_wp->entries[i].points < min) {
-                min = *(s16*)rank_wp->entries[i].points;
+            *(s16*)rank_wp->entries[i].score += d - 3;
+            if (*(s16*)rank_wp->entries[i].score < min) {
+                min = *(s16*)rank_wp->entries[i].score;
             }
-            if (*(s16*)rank_wp->entries[i].points > max) {
-                max = *(s16*)rank_wp->entries[i].points;
+            if (*(s16*)rank_wp->entries[i].score > max) {
+                max = *(s16*)rank_wp->entries[i].score;
             }
         }
     }
@@ -981,13 +981,13 @@ USER_FUNC(evt_tou_set_ranking_win_lose_28_text_35C0) {
 }
 
 USER_FUNC(evt_tou_set_rule_result_28_text_355C) {
-    s32 v = evtGetValue(event, event->args[0]);
+    s32 result = evtGetValue(event, event->args[0]);
 
-    if (v & 4) {
+    if (result & 4) {
         swSet(0x98b);
-    } else if (v & 2) {
+    } else if (result & 2) {
         swClear(0x98b);
-    } else if (v & 1) {
+    } else if (result & 1) {
         swClear(0x98b);
     }
     return EVT_RETURN_DONE;
@@ -1065,7 +1065,7 @@ static void disp_proc(CameraId cameraId, void* param) {
     for (; i < rank_wp->count; i++, off += 0xc) {
         f32 f27 = 10.0f + f31;
 
-        f26 = dwp->field_00 + ((f28 - (f32)y) - f30);
+        f26 = dwp->scrollY + ((f28 - (f32)y) - f30);
         if (!(((RankEntry*)((u8*)rank_wp->entries + off))->flags & RANK_HIDDEN)) {
             PSMTXScale(scale, 0.8f, 0.8f, 0.8f);
             if (rank != 0) {
@@ -1105,7 +1105,7 @@ static void disp_proc(CameraId cameraId, void* param) {
         GXSetScissor(scX, (u16)f137, scW, (u16)f228);
     }
     {
-        f32 yv = 95.0f + dwp->field_00;
+        f32 yv = 95.0f + dwp->scrollY;
         Vec pos = { 0.0f, 0.0f, 0.0f };
 
         pos.x = 15.0f + f31;
@@ -1113,7 +1113,7 @@ static void disp_proc(CameraId cameraId, void* param) {
         iconDispGx(0.8f, &pos, 0x10, 0x123);
     }
     GXSetScissor(0, 0, 0x260, 0x1e0);
-    if (dwp->field_08 > 0) {
+    if (dwp->page > 0) {
         Vec pos = { 0.0f, 125.0f, 0.0f };
 
         pos.x = f31 + c250;
@@ -1125,7 +1125,7 @@ static void disp_proc(CameraId cameraId, void* param) {
             iconDispGx(0.6f, &pos, 0x10, 0x7e);
         }
     }
-    if (dwp->field_08 < 1) {
+    if (dwp->page < 1) {
         Vec pos = { 0.0f, -140.0f, 0.0f };
 
         pos.x = f31 + c250;
@@ -1156,8 +1156,8 @@ static USER_FUNC(evt_tou_print_ranking) {
                 c++;
             }
         }
-        dwp->field_08 = c / 0xb;
-        dwp->field_00 = dwp->field_04 = (f32)(dwp->field_08 * 0xdc);
+        dwp->page = c / 0xb;
+        dwp->scrollY = dwp->targetY = (f32)(dwp->page * 0xdc);
         printRanking();
         return EVT_RETURN_BLOCK;
     }
@@ -1165,21 +1165,21 @@ static USER_FUNC(evt_tou_print_ranking) {
         psndSFXOn((const char*)0x13);
         return EVT_RETURN_YIELD;
     }
-    if (dwp->field_08 > 0 && (keyGetButtonTrg(0) & 0x40)) {
+    if (dwp->page > 0 && (keyGetButtonTrg(0) & 0x40)) {
         psndSFXOn((const char*)5);
-        dwp->field_08--;
+        dwp->page--;
     }
-    if (dwp->field_08 < 1 && (keyGetButtonTrg(0) & 0x20)) {
-        dwp->field_08++;
+    if (dwp->page < 1 && (keyGetButtonTrg(0) & 0x20)) {
+        dwp->page++;
         psndSFXOn((const char*)5);
     }
-    dwp->field_04 = (f32)(dwp->field_08 * 0xdc);
+    dwp->targetY = (f32)(dwp->page * 0xdc);
 #ifdef MUST_MATCH
     // MUST_MATCH: retail folds this interpolation step to `* 0.125f`; the `+=` over `/ 8.0f` form is
     // what makes MWCC keep 0.125 in f0 and the int-to-float temp in f2 (a literal `* 0.125f` swaps them).
-    dwp->field_00 += (dwp->field_04 - dwp->field_00) / 8.0f;
+    dwp->scrollY += (dwp->targetY - dwp->scrollY) / 8.0f;
 #else
-    dwp->field_00 = (dwp->field_04 - dwp->field_00) * 0.125f + dwp->field_00;
+    dwp->scrollY = (dwp->targetY - dwp->scrollY) * 0.125f + dwp->scrollY;
 #endif
     dispEntry((CameraId)8, 300.0f, 0, disp_proc, NULL);
     return EVT_RETURN_BLOCK;
@@ -1227,7 +1227,7 @@ USER_FUNC(tou_champion_belt_28_text_2A10) {
         champion_belt_onoff = 0;
     }
     pose = animPoseGetAnimPosePtr(npc->poseId);
-    loc = ((PoseUser*)*(void**)((u8*)pose + 0x15c))->locators;
+    loc = ((PoseUser*)pose->groupWorldPos)->locators;
     group = animPoseGetGroupIdx(npc->poseId, "locator8");
     angle = reviseAngle(camGetRy() - pose->rotationY);
     handle = (EffectEntry*)event->userdata[0];
@@ -1236,10 +1236,10 @@ USER_FUNC(tou_champion_belt_28_text_2A10) {
     ((BeltData*)*ud)->pos.y = loc[group].y;
     ((BeltData*)*ud)->pos.z = loc[group].z;
     if ((angle > 90.0f && angle <= 270.0f) || (angle < -90.0f && angle >= -270.0f)) {
-        ((BeltData*)*ud)->field_1C = 8.0f - (angle + camGetPtr(CAMERA_3D)->viewYaw);
+        ((BeltData*)*ud)->yaw = 8.0f - (angle + camGetPtr(CAMERA_3D)->viewYaw);
     } else {
         cam = camGetPtr(CAMERA_3D);
-        ((BeltData*)*ud)->field_1C = -(angle + cam->viewYaw) - 8.0f;
+        ((BeltData*)*ud)->yaw = -(angle + cam->viewYaw) - 8.0f;
     }
     if (npc->position.y <= -1000.0f) {
         ((BeltData*)*ud)->pos.x = 0.0f;

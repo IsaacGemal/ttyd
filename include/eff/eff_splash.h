@@ -15,11 +15,11 @@ typedef struct SplashData {
 	f32 scaleY;     // 0x1C
 	f32 scaleZ;     // 0x20
 	s32 counter;    // 0x24
-	s32 field_0x28; // 0x28
+	s32 delay;      // 0x28
 	f32 velocity;   // 0x2C
 	f32 decel;      // 0x30
 	s32 field_0x34; // 0x34
-	s32 field_0x38; // 0x38
+	s32 gotColor;   // 0x38
 	GXColor color;  // 0x3C
 } SplashData;
 void effSplashMain(EffectEntry* effect);

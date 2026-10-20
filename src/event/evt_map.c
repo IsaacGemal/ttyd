@@ -555,7 +555,7 @@ USER_FUNC(evt_map_entry_airport_harbor) {
         if (animGroupBaseAsync(str_802C1F08, 0, NULL) == 0) {
             return 0;
         }
-        if ((s32)pouchCheckItem(4) != 1) {
+        if ((s32)pouchCheckItem(ITEM_PLANE_CURSE) != 1) {
             break;
         }
         data[0] = name;
@@ -569,7 +569,7 @@ USER_FUNC(evt_map_entry_airport_harbor) {
         if (animGroupBaseAsync(str_802C1F14, 0, NULL) == 0) {
             return 0;
         }
-        if ((s32)pouchCheckItem(5) != 1) {
+        if ((s32)pouchCheckItem(ITEM_BOAT_CURSE) != 1) {
             break;
         }
         data[0] = name;
@@ -590,14 +590,14 @@ USER_FUNC(evt_map_replace_mapobj) {
     s32 type = evtGetValue(event, args[1]);
 
     mapObjGetPos((const char*)name, &pos);
-    mapObjFlagOn((const char*)name, 0x4000);
+    mapObjFlagOn((const char*)name, MAPOBJ_FLAG_NO_DISP);
     switch (type) {
     case 0:
         effTorchEntry(0, pos.x, pos.y - 3.0f, pos.z, 0.6f);
         break;
     case 1: {
         EffectEntry* eff = effFireEntry(5, 0, pos.x, pos.y, pos.z, 0.4f);
-        *(s32*)((u8*)eff->userdata + 0x88) = 1;
+        ((effFireData*)eff->userdata)->field_0x88 = 1; // effFireDisp then blends the flame with the map's blend colour
         break;
     }
     }
@@ -617,7 +617,7 @@ USER_FUNC(N_evt_mapdisp_onoff) {
 }
 
 EVT_BEGIN(evt_ride_airport)
-CALL(evt_mapobj_flag_onoff, 1, 0, LW(0), 0x100)
+CALL(evt_mapobj_flag_onoff, 1, 0, LW(0), MAPOBJ_FLAG_DISPLAY_LIST)
 LABEL(0)
 CALL(evt_map_get_flush_color, LW(0), LW(10), LW(11), LW(12), LW(13))
 ADD(LW(13), 2)

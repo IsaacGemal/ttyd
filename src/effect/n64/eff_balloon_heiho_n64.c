@@ -8,7 +8,7 @@
 #include <dolphin/mtx.h>
 #include <dolphin/gx.h>
 
-EffectEntry* effBalloonHeihoN64Entry(s32 type, s32 count, f32 x, f32 y, f32 z, f32 a4, f32 a5) {
+EffectEntry* effBalloonHeihoN64Entry(s32 type, s32 count, f32 x, f32 y, f32 z, f32 accel, f32 scale) {
 	EffectEntry* effect;
 	BalloonHeihoData* data;
 
@@ -22,11 +22,11 @@ EffectEntry* effBalloonHeihoN64Entry(s32 type, s32 count, f32 x, f32 y, f32 z, f
 	data->position.x = x;
 	data->position.y = y;
 	data->position.z = z;
-	data->field_0x10 = 0.0f;
+	data->velY = 0.0f;
 	data->life = count;
 	data->counter = 0;
-	data->field_0x14 = a4;
-	data->field_0x18 = a5;
+	data->accelY = accel;
+	data->scale = scale;
 	return effect;
 }
 
@@ -47,11 +47,11 @@ void effBalloonHeihoMain(EffectEntry* effect) {
 	if (data->life < 0) {
 		effDelete(effect);
 	} else {
-		data->field_0x10 += data->field_0x14;
-		if (data->field_0x10 > 2.0f) {
-			data->field_0x10 = 2.0f;
+		data->velY += data->accelY;
+		if (data->velY > 2.0f) {
+			data->velY = 2.0f;
 		}
-		data->position.y += data->field_0x10;
+		data->position.y += data->velY;
 		dispEntry(4, dispCalcZ(&position), 2, effBalloonHeihoDisp, effect);
 	}
 }
@@ -79,7 +79,7 @@ void effBalloonHeihoDisp(CameraId camId, void* param) {
 	mapSetMaterialFog();
 	PSMTXTrans(mtx, data->position.x, data->position.y, data->position.z);
 	PSMTXRotRad(rotMtx, 'y', 0.017453292f * -camGetPtr(CAMERA_3D)->viewYaw);
-	PSMTXScale(scaleMtx, data->field_0x18, data->field_0x18, 1.0f);
+	PSMTXScale(scaleMtx, data->scale, data->scale, 1.0f);
 	PSMTXConcat(mtx, rotMtx, mtx);
 	PSMTXConcat(mtx, scaleMtx, mtx);
 	PSMTXConcat(cam->view, mtx, mtx);

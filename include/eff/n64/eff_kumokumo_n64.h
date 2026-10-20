@@ -3,7 +3,7 @@
 typedef struct EffectEntry EffectEntry;
 
 #include <dolphin/types.h>
-EffectEntry* effKumokumoN64Entry(s32 type, s32 param, f32 x, f32 y, f32 z, f32 scale, f32 a6, f32 a7);
+EffectEntry* effKumokumoN64Entry(s32 type, s32 param, f32 x, f32 y, f32 z, f32 rotation, f32 a6, f32 scale);
 #include <dolphin/mtx.h>
 #include "driver/camdrv.h"
 typedef struct effKumokumoData {
@@ -12,7 +12,7 @@ typedef struct effKumokumoData {
 	f32 y;          //0x08
 	f32 z;          //0x0C
 	s32 lifetime;   //0x10
-	s32 field_0x14; //0x14
+	s32 frame;      //0x14
 	s32 color1R;    //0x18
 	s32 color1G;    //0x1C
 	s32 color1B;    //0x20

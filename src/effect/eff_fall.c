@@ -123,7 +123,7 @@ __declspec(section ".sdata") static u32 evt_shake[8] = {
 // `case 0`) reproduces the original's two dead `b`s. The sound name is a local set before the loop; the
 // `(s32)c` range is converted in the loop and hoisted by the compiler, which ranks it above `sfx` as the
 // original's colouring needs.
-EffectEntry* effFallEntry(s32 type, f32 x, f32 y, s32 a, f32 z, s32 b, f32 c, f32 d, f32 e) {
+EffectEntry* effFallEntry(s32 type, f32 x, f32 y, s32 num, f32 z, s32 timerMax, f32 radius, f32 height, f32 angle) {
 	const char* sfx;
 	EffectEntry* entry;
 	FallWork* elem;
@@ -131,18 +131,18 @@ EffectEntry* effFallEntry(s32 type, f32 x, f32 y, s32 a, f32 z, s32 b, f32 c, f3
 	Vec pos;
 	s32 count;
 	s32 i;
-	f32 angle;
-	f32 scale;
+	f32 rad;
+	f32 dist;
 
 	entry = effEntry();
-	count = a + 1;
+	count = num + 1;
 	switch (type) {
 	case 0:
-		count = a + 1;
+		count = num + 1;
 		break;
 	case 1: case 2: case 3: case 4:
 	case 5: case 6: case 7: case 8:
-		a = 1;
+		num = 1;
 		count = 2;
 		break;
 	}
@@ -158,64 +158,64 @@ EffectEntry* effFallEntry(s32 type, f32 x, f32 y, s32 a, f32 z, s32 b, f32 c, f3
 	data->x = x;
 	data->y = y;
 	data->z = z;
-	data->unk10 = c;
-	data->unk14 = d;
-	data->unk18 = e;
-	data->unk1C = a;
-	data->unk24 = 0;
-	data->unk28 = 0;
-	data->unk20 = b;
-	data->unk5C = -1;
-	data->unk60 = -1;
+	data->radius = radius;
+	data->height = height;
+	data->angle = angle;
+	data->num = num;
+	data->timer = 0;
+	data->texFrame = 0;
+	data->timerMax = timerMax;
+	data->poseId = -1;
+	data->poseId2 = -1;
 
 	elem = &data[1];
 	for (i = 1; i < entry->count; i++, elem++) {
-		angle = (f32)irand(360) * 3.1415927f / 180.f;
-		scale = (f32)irand((s32)c);
-		elem->x = scale * (f32)sin(angle);
+		rad = (f32)irand(360) * 3.1415927f / 180.f;
+		dist = (f32)irand((s32)radius);
+		elem->x = dist * (f32)sin(rad);
 		elem->y = 300.f + (f32)irand(entry->count);
-		elem->z = scale * (f32)cos(angle);
-		elem->unk24 = 0;
-		elem->unk28 = 0;
-		elem->unk3C = 0xFF;
-		elem->unk48 = 0.0f;
-		elem->unk18 = (f32)((irand(100) > 50) ? 0 : 180);
-		elem->unk38 = 0;
-		elem->unk5C = -1;
-		elem->unk60 = -1;
+		elem->z = dist * (f32)cos(rad);
+		elem->timer = 0;
+		elem->texFrame = 0;
+		elem->alpha = 0xFF;
+		elem->spin = 0.0f;
+		elem->angle = (f32)((irand(100) > 50) ? 0 : 180);
+		elem->state = 0;
+		elem->poseId = -1;
+		elem->poseId2 = -1;
 		switch (type) {
 		case 0:
 		case 1:
-			elem->unk34 = 0.0f;
-			elem->unk30 = 0.2f;
+			elem->velY = 0.0f;
+			elem->gravity = 0.2f;
 			if (i == 1) {
 				elem->x = 0.0f;
 				elem->z = 0.0f;
-				elem->unk24 = 0;
+				elem->timer = 0;
 			} else {
-				elem->unk24 = irand(entry->count) + 0x3c;
+				elem->timer = irand(entry->count) + 0x3c;
 			}
-			elem->unk2C = (type == 0) ? 0.5f : 1.2f;
+			elem->scale = (type == 0) ? 0.5f : 1.2f;
 			break;
 		case 2:
-			elem->unk34 = 0.0f;
-			elem->unk30 = 1.6f;
+			elem->velY = 0.0f;
+			elem->gravity = 1.6f;
 			elem->x = 0.0f;
 			elem->z = 0.0f;
-			elem->unk24 = 0;
-			elem->unk44 = 0.0f;
-			elem->unk2C = 0.5f;
+			elem->timer = 0;
+			elem->wave = 0.0f;
+			elem->scale = 0.5f;
 			break;
 		case 3:
-			elem->unk34 = 0.0f;
-			elem->unk30 = 0.1f;
+			elem->velY = 0.0f;
+			elem->gravity = 0.1f;
 			elem->x = 0.0f;
 			elem->y = 200.f;
 			elem->z = 0.0f;
 			elem->unk50 = 0.0f;
 			elem->unk54 = 0.0f;
 			elem->unk58 = 0.0f;
-			elem->unk2C = 1.0f;
+			elem->scale = 1.0f;
 			pos = (Vec){0.0f, 0.0f, 0.0f};
 			pos.x = x;
 			pos.y = y;
@@ -224,19 +224,19 @@ EffectEntry* effFallEntry(s32 type, f32 x, f32 y, s32 a, f32 z, s32 b, f32 c, f3
 			// MUST_MATCH: the s32 round trip pins the address materialisation into sfx's own callee-saved
 			// register (`addi r29, r5, ...`); a plain use leaves an `addi r6` / `mr r29, r6` copy (eff_nice's
 			// acrobatMain has the same idiom).
-			elem->unk64 = psndSFXOn_3D((const char*)(s32)sfx, &pos);
+			elem->sfxId = psndSFXOn_3D((const char*)(s32)sfx, &pos);
 #else
-			elem->unk64 = psndSFXOn_3D(sfx, &pos);
+			elem->sfxId = psndSFXOn_3D(sfx, &pos);
 #endif
 			break;
 		case 4:
 		case 5:
-			elem->unk34 = 0.0f;
-			elem->unk30 = 0.6f;
+			elem->velY = 0.0f;
+			elem->gravity = 0.6f;
 			elem->x = 0.0f;
 			elem->z = 0.0f;
-			elem->unk24 = 0;
-			elem->unk2C = 1.0f;
+			elem->timer = 0;
+			elem->scale = 1.0f;
 			break;
 		case 6:
 			elem->x = 0.0f;
@@ -245,23 +245,23 @@ EffectEntry* effFallEntry(s32 type, f32 x, f32 y, s32 a, f32 z, s32 b, f32 c, f3
 			elem->unk50 = -elem->x / 30.f;
 			elem->unk54 = -elem->y / 30.f;
 			elem->unk58 = -elem->z / 30.f;
-			elem->unk2C = 1.3f;
-			elem->unk48 = 30.f;
-			elem->unk4C = 0.0f;
+			elem->scale = 1.3f;
+			elem->spin = 30.f;
+			elem->roll = 0.0f;
 			break;
 		case 7:
 			elem->x = 400.f;
 			elem->y = 200.f;
 			elem->z = 0.0f;
-			elem->unk2C = 0.5f;
+			elem->scale = 0.5f;
 			break;
 		case 8:
-			elem->unk34 = 0.0f;
-			elem->unk30 = 0.25f;
+			elem->velY = 0.0f;
+			elem->gravity = 0.25f;
 			elem->x = 0.0f;
 			elem->y = 400.f;
 			elem->z = 0.0f;
-			elem->unk2C = 1.0f;
+			elem->scale = 1.0f;
 			break;
 		}
 	}
@@ -377,7 +377,7 @@ void effFallMain(EffectEntry* effect) {
 	FallWork* elem = effect->userdata;
 	s32 i;
 	s32 type;
-	s32 unk20;
+	s32 timerMax;
 	s32 flag = 0;
 	s32 done;
 	s32 inBattle;
@@ -386,53 +386,53 @@ void effFallMain(EffectEntry* effect) {
 	s32 j;
 	f32 y;
 	f32 f30;
-	f32 f29;
-	f32 unk10;
+	f32 landY;
+	f32 radius;
 	f32 floor;
-	f32 f26;
+	f32 rad;
 	f32 cs;
-	f32 unk18;
+	f32 angle;
 
 	pos = effFallMakePos(elem->x, elem->y, elem->z);
 
 	type = elem->type;
-	unk10 = elem->unk10;
+	radius = elem->radius;
 	y = elem->y;
-	floor = y + elem->unk14;
-	unk18 = elem->unk18;
+	floor = y + elem->height;
+	angle = elem->angle;
 	inBattle = gp->inBattle != 0;
-	unk20 = elem->unk20;
+	timerMax = elem->timerMax;
 
 	if (effect->flags & 4) {
 		effect->flags &= ~4;
 		for (j = 0, rel = effect->userdata; j < effect->count; j++, rel++) {
-			if (rel->unk5C != -1) {
-				animPoseRelease(rel->unk5C);
+			if (rel->poseId != -1) {
+				animPoseRelease(rel->poseId);
 			}
-			if (rel->unk60 != -1) {
-				animPoseRelease(rel->unk60);
+			if (rel->poseId2 != -1) {
+				animPoseRelease(rel->poseId2);
 			}
-			psndSFXOff(rel->unk64);
+			psndSFXOff(rel->sfxId);
 		}
 		effDelete(effect);
 		return;
 	}
 
-	f30 = 6.2831855f * unk18;
-	f29 = 30.f + y;
+	f30 = 6.2831855f * angle;
+	landY = 30.f + y;
 
 	done = 0;
 	for (i = 1, elem++; i < effect->count; i++, elem++) {
 		switch (type) {
 		case 0:
 		case 1:
-			switch (elem->unk38) {
+			switch (elem->state) {
 			case 0:
-				if (elem->unk24 != 0) {
-					elem->unk24--;
+				if (elem->timer != 0) {
+					elem->timer--;
 				}
-				if (elem->unk24 == 0) {
-					elem->unk38++;
+				if (elem->timer == 0) {
+					elem->state++;
 					if (type == 1) {
 						psndSFXOn_3D(FALL_SFX("SFX_BTL_STAGE_FALL_BUG1"), &pos);
 					} else if (i == 1) {
@@ -445,49 +445,49 @@ void effFallMain(EffectEntry* effect) {
 					psndSFXOn_3D(FALL_SFX("SFX_BTL_STAGE_FALL_BUG2"), &pos);
 					flag = 1;
 				}
-				elem->y += elem->unk34;
-				elem->unk34 -= elem->unk30;
-				if (distABf(elem->x, elem->z, 0.0f, 0.0f) < unk10 / 2.0f) {
+				elem->y += elem->velY;
+				elem->velY -= elem->gravity;
+				if (distABf(elem->x, elem->z, 0.0f, 0.0f) < radius / 2.0f) {
 					if (elem->y < floor) {
 						elem->y = floor;
-						elem->unk34 *= -0.3f;
-						elem->unk38++;
+						elem->velY *= -0.3f;
+						elem->state++;
 					}
 				} else {
 					if (elem->y < y) {
 						elem->y = y;
-						elem->unk34 *= -0.3f;
-						elem->unk38++;
+						elem->velY *= -0.3f;
+						elem->state++;
 					}
 				}
 				break;
 			case 2:
-				elem->y += elem->unk34;
-				elem->unk34 -= elem->unk30;
-				f26 = 6.2831855f * angleABf(0.0f, 0.0f, elem->x, elem->z) / 360.f;
+				elem->y += elem->velY;
+				elem->velY -= elem->gravity;
+				rad = 6.2831855f * angleABf(0.0f, 0.0f, elem->x, elem->z) / 360.f;
 				if (i == 1) {
-					f26 = f30 / 360.f;
+					rad = f30 / 360.f;
 				}
-				elem->x += 0.5f * (f32)sin(f26);
-				cs = cos(f26);
+				elem->x += 0.5f * (f32)sin(rad);
+				cs = cos(rad);
 				elem->z += 0.5f * -cs;
 				if (elem->y < y) {
 					elem->y = y;
-					elem->unk24 = 0;
-					elem->unk38++;
+					elem->timer = 0;
+					elem->state++;
 				}
 				break;
 			case 3:
-				elem->unk24++;
-				if (elem->unk24 > 30) {
-					elem->unk38++;
+				elem->timer++;
+				if (elem->timer > 30) {
+					elem->state++;
 				}
 				break;
 			case 4:
-				elem->unk3C -= 10;
-				if (elem->unk3C < 0) {
-					elem->unk3C = 0;
-					elem->unk38++;
+				elem->alpha -= 10;
+				if (elem->alpha < 0) {
+					elem->alpha = 0;
+					elem->state++;
 				}
 				break;
 			case 5:
@@ -495,45 +495,45 @@ void effFallMain(EffectEntry* effect) {
 				break;
 			}
 			if ((gp->retraceCount >> 2) & 1) {
-				elem->unk28++;
+				elem->texFrame++;
 			}
-			if (elem->unk28 >= 3) {
-				elem->unk28 = 0;
+			if (elem->texFrame >= 3) {
+				elem->texFrame = 0;
 			}
-			elem->unk48 = 35.0f * (f32)sin((f32)gp->retraceCount / 2.0f + (f32)i);
+			elem->spin = 35.0f * (f32)sin((f32)gp->retraceCount / 2.0f + (f32)i);
 			break;
 		case 2:
-			switch (elem->unk38) {
+			switch (elem->state) {
 			case 0:
-				elem->y += elem->unk34;
-				elem->unk34 -= elem->unk30;
+				elem->y += elem->velY;
+				elem->velY -= elem->gravity;
 				if (elem->y < y) {
 					elem->y = y;
-					elem->unk24 = 0;
-					elem->unk38++;
+					elem->timer = 0;
+					elem->state++;
 					psndSFXOn_3D(FALL_SFX("SFX_BTL_STAGE_DAMAGE_FORK1"), &pos);
 				}
 				break;
 			case 1: {
-				f32 wave = (f32)sin(62.831856f * (f32)elem->unk24 / 60.f);
-				elem->unk44 = (60.f - (f32)elem->unk24) * wave / 60.f;
-				elem->unk24++;
-				if (elem->unk24 > 60) {
-					elem->unk38++;
+				f32 wave = (f32)sin(62.831856f * (f32)elem->timer / 60.f);
+				elem->wave = (60.f - (f32)elem->timer) * wave / 60.f;
+				elem->timer++;
+				if (elem->timer > 60) {
+					elem->state++;
 				}
 				break;
 			}
 			case 2:
-				elem->unk24++;
-				if (elem->unk24 > 30) {
-					elem->unk38++;
+				elem->timer++;
+				if (elem->timer > 30) {
+					elem->state++;
 				}
 				break;
 			case 3:
-				elem->unk3C -= 10;
-				if (elem->unk3C < 0) {
-					elem->unk3C = 0;
-					elem->unk38++;
+				elem->alpha -= 10;
+				if (elem->alpha < 0) {
+					elem->alpha = 0;
+					elem->state++;
 				}
 				break;
 			case 4:
@@ -544,8 +544,8 @@ void effFallMain(EffectEntry* effect) {
 				s32 j;
 				f32* v;
 				f32* w;
-				*(smartEntry**)((u8*)elem + 0x40) = smartAlloc(0x280, 3);
-				v = (*(smartEntry**)((u8*)elem + 0x40))->address;
+				elem->vertexBuf = smartAlloc(0x280, 3);
+				v = elem->vertexBuf->address;
 				for (j = 0; j < 0x20; j++, v += 5) {
 					v[0] = (j & 1) ? 16.0f : -16.0f;
 					v[1] = 128.0f - 8.533334f * (f32)(j / 2);
@@ -553,123 +553,123 @@ void effFallMain(EffectEntry* effect) {
 					v[3] = (j & 1) ? 2.0f : 0.0f;
 					v[4] = 0.06666667f * (f32)(j / 2);
 				}
-				w = (*(smartEntry**)((u8*)elem + 0x40))->address;
+				w = elem->vertexBuf->address;
 				for (i = 0; i < 0x20; i++, w += 5) {
-					w[0] += elem->unk44 * (w[1] * w[1] / 600.f);
+					w[0] += elem->wave * (w[1] * w[1] / 600.f);
 				}
-				DCFlushRange((*(smartEntry**)((u8*)elem + 0x40))->address, 0x280);
+				DCFlushRange(elem->vertexBuf->address, 0x280);
 			}
 			break;
 		case 3:
-			switch (elem->unk38) {
+			switch (elem->state) {
 			case 0:
-				elem->y += elem->unk34;
-				elem->unk34 -= elem->unk30;
+				elem->y += elem->velY;
+				elem->velY -= elem->gravity;
 				if (elem->y < y) {
 					elem->y = y;
-					elem->unk24 = 0;
-					elem->unk38++;
+					elem->timer = 0;
+					elem->state++;
 				}
 				break;
 			case 1:
-				if (elem->unk24 % 10 == 0) {
+				if (elem->timer % 10 == 0) {
 					effWaterDamageN64Entry(4, 20, pos.x, pos.y, pos.z, 1.0f);
 				}
-				elem->unk24++;
-				if (elem->unk24 > unk20) {
-					elem->unk38++;
+				elem->timer++;
+				if (elem->timer > timerMax) {
+					elem->state++;
 				}
 				break;
 			case 2:
-				elem->unk3C *= 0.9f;
-				elem->unk2C *= 0.9f;
-				if (elem->unk2C < 0.01f) {
-					psndSFXOff(elem->unk64);
+				elem->alpha *= 0.9f;
+				elem->scale *= 0.9f;
+				if (elem->scale < 0.01f) {
+					psndSFXOff(elem->sfxId);
 					effDelete(effect);
 					return;
 				}
 				break;
 			}
-			elem->unk54 -= 0.2f;
+			elem->unk54 -= 0.2f; // pan value for the splash texture in effFallDispWater
 			break;
 		case 4:
 		case 5:
-			switch (elem->unk38) {
+			switch (elem->state) {
 			case 0:
 				if (type == 5) {
 					if (!animGroupBaseAsync("EFF_Baketu", inBattle, NULL)) {
 						break;
 					}
-					if (elem->unk5C == -1) {
-						elem->unk5C = animPoseEntry("EFF_Baketu", inBattle);
-						animPoseSetAnim(elem->unk5C, "Z_1", 1);
+					if (elem->poseId == -1) {
+						elem->poseId = animPoseEntry("EFF_Baketu", inBattle);
+						animPoseSetAnim(elem->poseId, "Z_1", 1);
 					}
 				} else {
 					if (!animGroupBaseAsync("EFF_Tarai", inBattle, NULL)) {
 						break;
 					}
-					if (elem->unk5C == -1) {
-						elem->unk5C = animPoseEntry("EFF_Tarai", inBattle);
-						animPoseSetAnim(elem->unk5C, "Z_1", 1);
+					if (elem->poseId == -1) {
+						elem->poseId = animPoseEntry("EFF_Tarai", inBattle);
+						animPoseSetAnim(elem->poseId, "Z_1", 1);
 					}
 				}
-				if (elem->unk24 != 0) {
-					elem->unk24--;
+				if (elem->timer != 0) {
+					elem->timer--;
 				}
-				if (elem->unk24 == 0) {
-					elem->unk38++;
+				if (elem->timer == 0) {
+					elem->state++;
 				}
 				break;
 			case 1:
-				elem->y += elem->unk34;
-				elem->unk34 -= elem->unk30;
-				if (distABf(elem->x, elem->z, 0.0f, 0.0f) < unk10 / 2.0f) {
+				elem->y += elem->velY;
+				elem->velY -= elem->gravity;
+				if (distABf(elem->x, elem->z, 0.0f, 0.0f) < radius / 2.0f) {
 					if (elem->y < floor) {
 						elem->y = floor;
-						elem->unk34 *= -0.3f;
-						elem->unk38++;
+						elem->velY *= -0.3f;
+						elem->state++;
 					}
 				} else {
 					if (elem->y < y) {
 						elem->y = y;
-						elem->unk34 *= -0.3f;
-						elem->unk38++;
+						elem->velY *= -0.3f;
+						elem->state++;
 					}
 				}
 				break;
 			case 2:
-				elem->y += elem->unk34;
-				elem->unk34 -= elem->unk30;
-				f26 = 6.2831855f * angleABf(0.0f, 0.0f, elem->x, elem->z) / 360.f;
+				elem->y += elem->velY;
+				elem->velY -= elem->gravity;
+				rad = 6.2831855f * angleABf(0.0f, 0.0f, elem->x, elem->z) / 360.f;
 				if (i == 1) {
-					f26 = f30 / 360.f;
+					rad = f30 / 360.f;
 				}
-				elem->x += 2.0f * (f32)sin(f26);
-				cs = cos(f26);
+				elem->x += 2.0f * (f32)sin(rad);
+				cs = cos(rad);
 				elem->z += 2.0f * -cs;
 				if (elem->y < y) {
 					elem->y = y;
-					elem->unk34 *= -0.5f;
+					elem->velY *= -0.5f;
 					elem->y = y;
-					elem->unk24 = 0;
-					if (elem->unk34 < 1.0f) {
-						elem->unk38++;
+					elem->timer = 0;
+					if (elem->velY < 1.0f) {
+						elem->state++;
 					}
 				}
 				break;
 			case 3:
-				elem->unk24++;
-				if (elem->unk24 > 30) {
-					elem->unk38++;
+				elem->timer++;
+				if (elem->timer > 30) {
+					elem->state++;
 				}
 				break;
 			case 4:
-				elem->unk3C -= 10;
-				if (elem->unk3C < 0) {
-					elem->unk3C = 0;
-					elem->unk38++;
-					animPoseRelease(elem->unk5C);
-					elem->unk5C = -1;
+				elem->alpha -= 10;
+				if (elem->alpha < 0) {
+					elem->alpha = 0;
+					elem->state++;
+					animPoseRelease(elem->poseId);
+					elem->poseId = -1;
 				}
 				break;
 			case 5:
@@ -678,92 +678,92 @@ void effFallMain(EffectEntry* effect) {
 			}
 			switch (type) {
 			case 4:
-				if (elem->unk38 > 1) {
-					elem->unk48 += (360.f - elem->unk48) / 10.f;
+				if (elem->state > 1) {
+					elem->spin += (360.f - elem->spin) / 10.f;
 				}
 				break;
 			case 5:
-				if (elem->unk38 > 1) {
-					elem->unk48 += (430.f - elem->unk48) / 10.f;
+				if (elem->state > 1) {
+					elem->spin += (430.f - elem->spin) / 10.f;
 				}
 				break;
 			}
-			if (elem->unk5C != -1) {
-				animPoseMain(elem->unk5C);
+			if (elem->poseId != -1) {
+				animPoseMain(elem->poseId);
 			}
 			break;
 		case 6:
-			switch (elem->unk38) {
+			switch (elem->state) {
 			case 0:
 				if (!animGroupBaseAsync("EFF_koopa", inBattle, NULL)) {
 					break;
 				}
-				if (elem->unk5C == -1) {
-					elem->unk5C = animPoseEntry("EFF_koopa", inBattle);
-					animPoseSetAnim(elem->unk5C, "Z_1", 1);
+				if (elem->poseId == -1) {
+					elem->poseId = animPoseEntry("EFF_koopa", inBattle);
+					animPoseSetAnim(elem->poseId, "Z_1", 1);
 					psndSFXOn_3D(FALL_SFX("SFX_BTL_STAGE_FALL_KOOPA1"), &pos);
 				}
 				elem->x += elem->unk50;
 				elem->y += elem->unk54;
 				elem->z += elem->unk58;
-				elem->unk24++;
-				if (elem->unk24 > 30) {
-					elem->unk24 = 0;
-					elem->unk38++;
+				elem->timer++;
+				if (elem->timer > 30) {
+					elem->timer = 0;
+					elem->state++;
 					effKemuri1N64Entry(4, pos.x + elem->x, pos.y + elem->y, pos.z + elem->z, 0.0f);
 					evtEntry(evt_shake, 0, 0);
 				}
 				break;
 			case 1:
-				elem->unk48 = intplGetValue(0xb, elem->unk24, 0xb4, 30.f, -27.0f);
-				if (elem->unk48 < 0.0f) {
-					elem->unk4C = elem->unk48;
-					elem->unk48 = 0.0f;
+				elem->spin = intplGetValue(0xb, elem->timer, 0xb4, 30.f, -27.0f);
+				if (elem->spin < 0.0f) {
+					elem->roll = elem->spin;
+					elem->spin = 0.0f;
 				}
-				elem->unk24++;
-				if (elem->unk24 > 0xb4) {
-					elem->unk24 = 0;
-					elem->unk38++;
+				elem->timer++;
+				if (elem->timer > 0xb4) {
+					elem->timer = 0;
+					elem->state++;
 				}
-				if (elem->unk24 == 0x64) {
+				if (elem->timer == 0x64) {
 					psndSFXOn_3D(FALL_SFX("SFX_BTL_STAGE_FALL_KOOPA1"), &pos);
 				}
 				break;
 			case 2:
-				elem->unk48 = intplGetValue(0xb, elem->unk24, 0xc8, -27.0f, 80.f);
-				if (elem->unk48 < 0.0f) {
-					elem->unk4C = elem->unk48;
-					elem->unk48 = 0.0f;
+				elem->spin = intplGetValue(0xb, elem->timer, 0xc8, -27.0f, 80.f);
+				if (elem->spin < 0.0f) {
+					elem->roll = elem->spin;
+					elem->spin = 0.0f;
 				}
-				elem->unk24++;
-				if (elem->unk24 > 0xc8) {
-					animPoseRelease(elem->unk5C);
-					elem->unk5C = -1;
+				elem->timer++;
+				if (elem->timer > 0xc8) {
+					animPoseRelease(elem->poseId);
+					elem->poseId = -1;
 					done++;
 				}
-				if (elem->unk24 == 0x46) {
+				if (elem->timer == 0x46) {
 					psndSFXOn_3D(FALL_SFX("SFX_BTL_STAGE_FALL_KOOPA1"), &pos);
 				}
 				break;
 			}
-			if (elem->unk5C != -1) {
-				animPoseMain(elem->unk5C);
+			if (elem->poseId != -1) {
+				animPoseMain(elem->poseId);
 			}
 			break;
 		case 7:
-			switch (elem->unk38) {
+			switch (elem->state) {
 			case 0:
 				if (!animGroupBaseAsync("EFF_inseki", inBattle, NULL)) {
 					break;
 				}
 				psndSFXOn_3D(FALL_SFX("SFX_BTL_STAGE_FALL_METEOR1"), &pos);
-				if (elem->unk5C == -1) {
-					elem->unk5C = animPoseEntry("EFF_inseki", inBattle);
-					animPoseSetAnim(elem->unk5C, "Z_1", 1);
+				if (elem->poseId == -1) {
+					elem->poseId = animPoseEntry("EFF_inseki", inBattle);
+					animPoseSetAnim(elem->poseId, "Z_1", 1);
 				}
-				if (elem->unk60 == -1) {
-					elem->unk60 = animPoseEntry("EFF_inseki", inBattle);
-					animPoseSetAnim(elem->unk60, "Z_2", 1);
+				if (elem->poseId2 == -1) {
+					elem->poseId2 = animPoseEntry("EFF_inseki", inBattle);
+					animPoseSetAnim(elem->poseId2, "Z_2", 1);
 				}
 				/* fallthrough */
 			case 2:
@@ -775,116 +775,116 @@ void effFallMain(EffectEntry* effect) {
 					{ -140.0f, 40.0f, -10.0f },
 					{ -400.0f, 40.0f, -40.0f },
 				};
-				elem->unk50 = tbl[elem->unk38 / 2].x;
-				elem->unk54 = tbl[elem->unk38 / 2].y;
-				elem->unk58 = tbl[elem->unk38 / 2].z;
-				elem->unk30 = 0.4f;
-				elem->unk24 = (s32)(distABf(elem->unk50, elem->unk58, elem->x, elem->z) / 5.0f);
-				elem->unk34 = (elem->unk54 - elem->y) / (f32)elem->unk24 +
-				              elem->unk30 * (f32)elem->unk24 / 2.0f;
-				elem->unk18 = angleABf(elem->x, elem->z, elem->unk50, elem->unk58);
-				elem->unk48 = 0.0f;
-				elem->unk38++;
+				elem->unk50 = tbl[elem->state / 2].x;
+				elem->unk54 = tbl[elem->state / 2].y;
+				elem->unk58 = tbl[elem->state / 2].z;
+				elem->gravity = 0.4f;
+				elem->timer = (s32)(distABf(elem->unk50, elem->unk58, elem->x, elem->z) / 5.0f);
+				elem->velY = (elem->unk54 - elem->y) / (f32)elem->timer +
+				              elem->gravity * (f32)elem->timer / 2.0f;
+				elem->angle = angleABf(elem->x, elem->z, elem->unk50, elem->unk58);
+				elem->spin = 0.0f;
+				elem->state++;
 				break;
 			}
 			case 1:
 			case 3:
 			case 5:
 			case 7: {
-				elem->y += elem->unk34;
-				elem->unk34 -= elem->unk30;
-				elem->x += 5.0f * effFallSinf(6.2831855f * elem->unk18 / 360.f);
-				elem->z += 5.0f * -effFallCosf(elem->unk18 * 6.2831855f / 360.f);
-				if (--elem->unk24 < 0) {
+				elem->y += elem->velY;
+				elem->velY -= elem->gravity;
+				elem->x += 5.0f * effFallSinf(6.2831855f * elem->angle / 360.f);
+				elem->z += 5.0f * -effFallCosf(elem->angle * 6.2831855f / 360.f);
+				if (--elem->timer < 0) {
 					elem->x = elem->unk50;
 					elem->y = elem->unk54;
 					elem->z = elem->unk58;
-					elem->unk38++;
-					if (elem->unk38 == 2) {
-						elem->unk64 = psndSFXOn_3D(FALL_SFX("SFX_BTL_STAGE_DAMAGE_METEOR2"), &pos);
+					elem->state++;
+					if (elem->state == 2) {
+						elem->sfxId = psndSFXOn_3D(FALL_SFX("SFX_BTL_STAGE_DAMAGE_METEOR2"), &pos);
 					}
-					if (elem->unk38 != 8) {
+					if (elem->state != 8) {
 						effKemuri1N64Entry(4, pos.x + elem->x, pos.y + elem->y - 40.f,
 						                   pos.z + elem->z, 0.0f);
 						evtEntry(evt_shake, 0, 0);
 					}
 				}
-				elem->unk48 += (360.f - elem->unk48) / 30.f;
+				elem->spin += (360.f - elem->spin) / 30.f;
 				break;
 			}
 			case 8:
-				psndSFXOff(elem->unk64);
-				animPoseRelease(elem->unk5C);
-				animPoseRelease(elem->unk60);
-				elem->unk5C = -1;
-				elem->unk60 = -1;
-				elem->unk38++;
+				psndSFXOff(elem->sfxId);
+				animPoseRelease(elem->poseId);
+				animPoseRelease(elem->poseId2);
+				elem->poseId = -1;
+				elem->poseId2 = -1;
+				elem->state++;
 				break;
 			case 9:
 				done++;
 				break;
 			}
-			if (elem->unk5C != -1) {
-				animPoseMain(elem->unk5C);
+			if (elem->poseId != -1) {
+				animPoseMain(elem->poseId);
 			}
-			if (elem->unk60 != -1) {
-				animPoseMain(elem->unk60);
+			if (elem->poseId2 != -1) {
+				animPoseMain(elem->poseId2);
 			}
 			break;
 		case 8:
-			switch (elem->unk38) {
+			switch (elem->state) {
 			case 0:
 				if (!animGroupBaseAsync("EFF_light", inBattle, NULL)) {
 					break;
 				}
-				elem->unk5C = animPoseEntry("EFF_light", inBattle);
-				animPoseSetAnim(elem->unk5C, "Z_1", 1);
-				elem->unk38++;
+				elem->poseId = animPoseEntry("EFF_light", inBattle);
+				animPoseSetAnim(elem->poseId, "Z_1", 1);
+				elem->state++;
 				break;
 			case 1:
 			case 2:
-				elem->y += elem->unk34;
-				elem->unk34 -= elem->unk30;
+				elem->y += elem->velY;
+				elem->velY -= elem->gravity;
 				if (elem->y < y) {
 					elem->y = y;
-					elem->unk24 = 0;
-					elem->unk38++;
+					elem->timer = 0;
+					elem->state++;
 				}
-				if (elem->unk38 == 1 && elem->y < f29) {
+				if (elem->state == 1 && elem->y < landY) {
 					effKemuri1N64Entry(4, pos.x + elem->x, pos.y + y, pos.z + elem->z, 0.0f);
 					evtEntry(evt_shake, 0, 0);
-					animPoseSetAnim(elem->unk5C, "A_1", 1);
-					elem->unk38++;
+					animPoseSetAnim(elem->poseId, "A_1", 1);
+					elem->state++;
 					psndSFXOn_3D(FALL_SFX("SFX_BTL_STAGE_DAMAGE_LIGHT1"), &pos);
 				}
 				break;
 			case 3:
-				if (animPoseGetLoopTimes(elem->unk5C) < 1.0f) {
+				if (animPoseGetLoopTimes(elem->poseId) < 1.0f) {
 					break;
 				}
-				elem->unk24++;
-				if (elem->unk24 > elem->unk20) {
-					elem->unk38++;
+				elem->timer++;
+				if (elem->timer > elem->timerMax) {
+					elem->state++;
 				}
 				break;
 			case 4:
-				elem->unk3C -= 10;
-				if (elem->unk3C < 0) {
-					elem->unk3C = 0;
-					elem->unk38++;
+				elem->alpha -= 10;
+				if (elem->alpha < 0) {
+					elem->alpha = 0;
+					elem->state++;
 				}
 				break;
 			case 5:
-				animPoseRelease(elem->unk5C);
-				elem->unk5C = -1;
-				elem->unk38++;
+				animPoseRelease(elem->poseId);
+				elem->poseId = -1;
+				elem->state++;
 				break;
 			case 6:
 				done++;
 				break;
 			}
-			if (elem->unk5C != -1) {
-				animPoseMain(elem->unk5C);
+			if (elem->poseId != -1) {
+				animPoseMain(elem->poseId);
 			}
 			break;
 		}
@@ -949,7 +949,7 @@ void effFallDisp(CameraId cameraId, void* param) {
 
 	camView = camGetPtr(cameraId);
 	type = elem->type;
-	f30 = elem->unk18;
+	f30 = elem->angle;
 	PSMTXTrans(mtxPos, elem->x, elem->y, elem->z);
 	cam = camGetPtr(cameraId);
 #ifdef MUST_MATCH
@@ -1004,31 +1004,31 @@ void effFallDisp(CameraId cameraId, void* param) {
 			f29 *= 0.5f;
 			f28 *= 0.5f;
 			PSMTXTrans(mtxPos, elem->x, elem->y, elem->z);
-			PSMTXRotRad(mtxRot, 'y', 0.017453292f * elem->unk18);
+			PSMTXRotRad(mtxRot, 'y', 0.017453292f * elem->angle);
 			PSMTXConcat(mtxPos, mtxRot, mtxPos);
 			ofs = f28 * half;
-			PSMTXTrans(mtxRot, 0.0f, ofs * elem->unk2C, 0.0f);
+			PSMTXTrans(mtxRot, 0.0f, ofs * elem->scale, 0.0f);
 			PSMTXConcat(mtxPos, mtxRot, mtxPos);
-			PSMTXRotRad(mtxRot, 'z', 0.017453292f * elem->unk48);
+			PSMTXRotRad(mtxRot, 'z', 0.017453292f * elem->spin);
 			PSMTXConcat(mtxPos, mtxRot, mtxPos);
 			ofs = -f28 * half;
-			PSMTXTrans(mtxRot, 0.0f, ofs * elem->unk2C, 0.0f);
+			PSMTXTrans(mtxRot, 0.0f, ofs * elem->scale, 0.0f);
 			PSMTXConcat(mtxPos, mtxRot, mtxPos);
-			PSMTXScale(mtxScale, elem->unk2C, elem->unk2C, elem->unk2C);
+			PSMTXScale(mtxScale, elem->scale, elem->scale, elem->scale);
 			PSMTXConcat(mtxPos, mtxScale, mtxPos);
 			PSMTXConcat(mtxView, mtxPos, mtxPos);
 			PSMTXConcat(camView->view, mtxPos, mtxPos);
 			GXLoadPosMtxImm(mtxPos, 0);
 			GXSetCurrentMtx(0);
 #ifdef MUST_MATCH
-			GXSetChanMatColor(4, effFallColA(elem->unk3C, dat_80420f48));
+			GXSetChanMatColor(4, effFallColA(elem->alpha, dat_80420f48));
 #else
 			color = dat_80420f48;
-			color.a = elem->unk3C;
+			color.a = elem->alpha;
 			GXSetChanMatColor(4, color);
 #endif
 			PSMTXScale(mtxScale, 1.0f, 0.33333334f, 1.0f);
-			PSMTXTrans(mtxPos, 0.0f, (f32)elem->unk28, 0.0f);
+			PSMTXTrans(mtxPos, 0.0f, (f32)elem->texFrame, 0.0f);
 			PSMTXConcat(mtxScale, mtxPos, mtxPos);
 			GXLoadTexMtxImm(mtxPos, 0x1e, 1);
 			GXBegin(0x80, 0, 4);
@@ -1049,23 +1049,23 @@ void effFallDisp(CameraId cameraId, void* param) {
 			s32 j;
 			f32* v;
 			PSMTXTrans(mtxPos, elem->x, elem->y, elem->z);
-			PSMTXScale(mtxScale, elem->unk2C, elem->unk2C, elem->unk2C);
+			PSMTXScale(mtxScale, elem->scale, elem->scale, elem->scale);
 			PSMTXConcat(mtxPos, mtxScale, mtxPos);
 			PSMTXConcat(mtxView, mtxPos, mtxPos);
 			PSMTXConcat(camView->view, mtxPos, mtxPos);
 			GXLoadPosMtxImm(mtxPos, 0);
 			GXSetCurrentMtx(0);
 #ifdef MUST_MATCH
-			GXSetChanMatColor(4, effFallColA(elem->unk3C, dat_80420f4c));
+			GXSetChanMatColor(4, effFallColA(elem->alpha, dat_80420f4c));
 #else
 			color = dat_80420f4c;
-			color.a = elem->unk3C;
+			color.a = elem->alpha;
 			GXSetChanMatColor(4, color);
 #endif
 			PSMTXIdentity(mtxPos);
 			GXLoadTexMtxImm(mtxPos, 0x1e, 1);
 			for (j = 0; j < 0x1e; j += 2) {
-				v = (f32*)(*(smartEntry**)((u8*)elem + 0x40))->address + j * 5;
+				v = (f32*)elem->vertexBuf->address + j * 5;
 				GXBegin(0x80, 0, 4);
 				GXPosition3f32(v[0], v[1], v[2]);
 				GXTexCoord2f32(v[3], v[4]);
@@ -1091,39 +1091,39 @@ void effFallDisp(CameraId cameraId, void* param) {
 			tmpAxis.z = (f32)sin(f28);
 			axis = tmpAxis;
 			PSMTXTrans(mtxPos, elem->x, elem->y, elem->z);
-			PSMTXScale(mtxScale, elem->unk2C, elem->unk2C, elem->unk2C);
+			PSMTXScale(mtxScale, elem->scale, elem->scale, elem->scale);
 			PSMTXConcat(mtxPos, mtxScale, mtxPos);
 			PSMTXTrans(mtxScale, 0.0f, (f32)(type == 4 ? 8 : 16), 0.0f);
 			PSMTXConcat(mtxPos, mtxScale, mtxPos);
-			PSMTXRotAxisRad(mtxRot, &axis, 0.017453292f * -elem->unk48);
+			PSMTXRotAxisRad(mtxRot, &axis, 0.017453292f * -elem->spin);
 			PSMTXConcat(mtxPos, mtxRot, mtxPos);
 			PSMTXTrans(mtxScale, 0.0f, (f32)-(type == 4 ? 8 : 16), 0.0f);
 			PSMTXConcat(mtxPos, mtxScale, mtxPos);
 			PSMTXConcat(mtxView, mtxPos, mtxPos);
-			if (elem->unk5C != -1) {
-				animPoseDrawMtx(elem->unk5C, mtxPos, 1, 0.0f, 10.f);
-				animPoseDrawMtx(elem->unk5C, mtxPos, 2, 0.0f, 10.f);
-				animPoseDrawMtx(elem->unk5C, mtxPos, 3, 0.0f, 10.f);
+			if (elem->poseId != -1) {
+				animPoseDrawMtx(elem->poseId, mtxPos, 1, 0.0f, 10.f);
+				animPoseDrawMtx(elem->poseId, mtxPos, 2, 0.0f, 10.f);
+				animPoseDrawMtx(elem->poseId, mtxPos, 3, 0.0f, 10.f);
 			}
 			break;
 		}
 		case 6: {
 			GXColor color;
-			if (elem->unk5C != -1) {
+			if (elem->poseId != -1) {
 				PSMTXTrans(mtxPos, elem->x, elem->y, elem->z);
 				if (f30 < 180.f) {
-					PSMTXScale(mtxScale, elem->unk2C, elem->unk2C, elem->unk2C);
+					PSMTXScale(mtxScale, elem->scale, elem->scale, elem->scale);
 				} else {
-					PSMTXScale(mtxScale, -elem->unk2C, elem->unk2C, elem->unk2C);
+					PSMTXScale(mtxScale, -elem->scale, elem->scale, elem->scale);
 				}
 				PSMTXConcat(mtxPos, mtxScale, mtxPos);
-				if (elem->unk48) {
-					PSMTXRotRad(mtxRot, 'z', 0.017453292f * -elem->unk48);
+				if (elem->spin) {
+					PSMTXRotRad(mtxRot, 'z', 0.017453292f * -elem->spin);
 					PSMTXConcat(mtxPos, mtxRot, mtxPos);
 				} else {
 					PSMTXTrans(mtxScale, -200.f, 0.0f, 0.0f);
 					PSMTXConcat(mtxPos, mtxScale, mtxPos);
-					PSMTXRotRad(mtxRot, 'z', 0.017453292f * -elem->unk4C);
+					PSMTXRotRad(mtxRot, 'z', 0.017453292f * -elem->roll);
 					PSMTXConcat(mtxPos, mtxRot, mtxPos);
 					PSMTXTrans(mtxScale, 200.f, 0.0f, 0.0f);
 					PSMTXConcat(mtxPos, mtxScale, mtxPos);
@@ -1135,39 +1135,39 @@ void effFallDisp(CameraId cameraId, void* param) {
 				PSMTXConcat(mtxScale, mtxRot, mtxRot);
 				PSMTXTrans(mtxScale, 82.655f, -88.8f, 0.0f);
 				PSMTXConcat(mtxRot, mtxScale, mtxScale);
-				animPoseSetMaterialFlagOn(elem->unk5C, 0x40);
+				animPoseSetMaterialFlagOn(elem->poseId, 0x40);
 				color = dat_80420f50;
-				animPoseSetMaterialEvtColor(elem->unk5C, color);
-				animPoseDrawMtx(elem->unk5C, mtxScale, 1, 0.0f, 10.f);
-				animPoseDrawMtx(elem->unk5C, mtxScale, 2, 0.0f, 10.f);
-				animPoseDrawMtx(elem->unk5C, mtxScale, 3, 0.0f, 10.f);
-				animPoseSetMaterialFlagOn(elem->unk5C, 0x40);
+				animPoseSetMaterialEvtColor(elem->poseId, color);
+				animPoseDrawMtx(elem->poseId, mtxScale, 1, 0.0f, 10.f);
+				animPoseDrawMtx(elem->poseId, mtxScale, 2, 0.0f, 10.f);
+				animPoseDrawMtx(elem->poseId, mtxScale, 3, 0.0f, 10.f);
+				animPoseSetMaterialFlagOn(elem->poseId, 0x40);
 				color = dat_80420f54;
-				animPoseSetMaterialEvtColor(elem->unk5C, color);
-				animPoseDrawMtx(elem->unk5C, mtxPos, 1, 0.0f, 10.f);
-				animPoseDrawMtx(elem->unk5C, mtxPos, 2, 0.0f, 10.f);
-				animPoseDrawMtx(elem->unk5C, mtxPos, 3, 0.0f, 10.f);
+				animPoseSetMaterialEvtColor(elem->poseId, color);
+				animPoseDrawMtx(elem->poseId, mtxPos, 1, 0.0f, 10.f);
+				animPoseDrawMtx(elem->poseId, mtxPos, 2, 0.0f, 10.f);
+				animPoseDrawMtx(elem->poseId, mtxPos, 3, 0.0f, 10.f);
 			}
 			break;
 		}
 		case 8: {
 			GXColor color;
-			if (elem->unk5C != -1) {
+			if (elem->poseId != -1) {
 				PSMTXTrans(mtxPos, elem->x, elem->y, elem->z);
-				PSMTXScale(mtxScale, elem->unk2C, elem->unk2C, elem->unk2C);
+				PSMTXScale(mtxScale, elem->scale, elem->scale, elem->scale);
 				PSMTXConcat(mtxPos, mtxScale, mtxPos);
 				PSMTXConcat(mtxView, mtxPos, mtxPos);
-				animPoseSetMaterialFlagOn(elem->unk5C, 0x40);
+				animPoseSetMaterialFlagOn(elem->poseId, 0x40);
 #ifdef MUST_MATCH
-				color = effFallCol8(elem->unk3C);
+				color = effFallCol8(elem->alpha);
 #else
 				color = dat_80420f58;
-				color.a = elem->unk3C;
+				color.a = elem->alpha;
 #endif
-				animPoseSetMaterialEvtColor(elem->unk5C, color);
-				animPoseDrawMtx(elem->unk5C, mtxPos, 1, 0.0f, 10.f);
-				animPoseDrawMtx(elem->unk5C, mtxPos, 2, 0.0f, 10.f);
-				animPoseDrawMtx(elem->unk5C, mtxPos, 3, 0.0f, 10.f);
+				animPoseSetMaterialEvtColor(elem->poseId, color);
+				animPoseDrawMtx(elem->poseId, mtxPos, 1, 0.0f, 10.f);
+				animPoseDrawMtx(elem->poseId, mtxPos, 2, 0.0f, 10.f);
+				animPoseDrawMtx(elem->poseId, mtxPos, 3, 0.0f, 10.f);
 			}
 			break;
 		}
@@ -1199,50 +1199,50 @@ void effFallDispInseki(CameraId cameraId, void* param) {
 #endif
 	PSMTXConcat(mtxA, mtxB, mtxC);
 
-	if (work[1].unk5C != -1 && work[1].unk60 != -1) {
+	if (work[1].poseId != -1 && work[1].poseId2 != -1) {
 		Vec tmpAxis;
 		tmpAxis = (Vec){0.0f, 0.0f, 0.0f};
-		tmpAxis.x = (f32)cos(6.2831855f * work[1].unk18 / 360.f);
-		tmpAxis.z = (f32)sin(6.2831855f * work[1].unk18 / 360.f);
+		tmpAxis.x = (f32)cos(6.2831855f * work[1].angle / 360.f);
+		tmpAxis.z = (f32)sin(6.2831855f * work[1].angle / 360.f);
 		axis = tmpAxis;
 
 		for (i = 0; i < 2; i++) {
 			if (i == 0) {
 				PSMTXTrans(mtxA, work[1].x, work[1].y, work[1].z);
-				PSMTXRotAxisRad(mtxB, &axis, 0.017453292f * -work[1].unk48);
-				PSMTXScale(mtxD, 2.05f * work[1].unk2C, 2.05f * work[1].unk2C,
-				           2.05f * work[1].unk2C);
+				PSMTXRotAxisRad(mtxB, &axis, 0.017453292f * -work[1].spin);
+				PSMTXScale(mtxD, 2.05f * work[1].scale, 2.05f * work[1].scale,
+				           2.05f * work[1].scale);
 				PSMTXConcat(mtxC, mtxA, mtxA);
 				PSMTXConcat(mtxA, mtxB, mtxA);
 				PSMTXConcat(mtxA, mtxD, mtxA);
-				animPoseSetMaterialFlagOn(work[1].unk5C, 0x40);
+				animPoseSetMaterialFlagOn(work[1].poseId, 0x40);
 				color = dat_80420f5c;
-				animPoseSetMaterialEvtColor(work[1].unk5C, color);
+				animPoseSetMaterialEvtColor(work[1].poseId, color);
 			} else {
 				PSMTXTrans(mtxA, work[1].x, work[1].y, work[1].z);
-				PSMTXRotAxisRad(mtxB, &axis, 0.017453292f * -work[1].unk48);
-				PSMTXScale(mtxD, 2.0f * work[1].unk2C, 2.0f * work[1].unk2C,
-				           2.0f * work[1].unk2C);
+				PSMTXRotAxisRad(mtxB, &axis, 0.017453292f * -work[1].spin);
+				PSMTXScale(mtxD, 2.0f * work[1].scale, 2.0f * work[1].scale,
+				           2.0f * work[1].scale);
 				PSMTXConcat(mtxC, mtxA, mtxA);
 				PSMTXConcat(mtxA, mtxB, mtxA);
 				PSMTXConcat(mtxA, mtxD, mtxA);
-				animPoseSetMaterialFlagOn(work[1].unk5C, 0x40);
+				animPoseSetMaterialFlagOn(work[1].poseId, 0x40);
 				color = dat_80420f60;
-				animPoseSetMaterialEvtColor(work[1].unk5C, color);
+				animPoseSetMaterialEvtColor(work[1].poseId, color);
 			}
-			animPoseDrawMtx(work[1].unk5C, mtxA, 1, 0.0f, 10.f);
-			animPoseDrawMtx(work[1].unk5C, mtxA, 2, 0.0f, 10.f);
-			animPoseDrawMtx(work[1].unk5C, mtxA, 3, 0.0f, 10.f);
+			animPoseDrawMtx(work[1].poseId, mtxA, 1, 0.0f, 10.f);
+			animPoseDrawMtx(work[1].poseId, mtxA, 2, 0.0f, 10.f);
+			animPoseDrawMtx(work[1].poseId, mtxA, 3, 0.0f, 10.f);
 		}
 
 		PSMTXTrans(mtxA, work[1].x, work[1].y, work[1].z);
-		PSMTXScale(mtxD, 2.1f * work[1].unk2C, 2.1f * work[1].unk2C,
-		           2.1f * work[1].unk2C);
+		PSMTXScale(mtxD, 2.1f * work[1].scale, 2.1f * work[1].scale,
+		           2.1f * work[1].scale);
 		PSMTXConcat(mtxC, mtxA, mtxA);
 		PSMTXConcat(mtxA, mtxD, mtxA);
-		animPoseDrawMtx(work[1].unk60, mtxA, 1, 0.0f, 10.f);
-		animPoseDrawMtx(work[1].unk60, mtxA, 2, 0.0f, 10.f);
-		animPoseDrawMtx(work[1].unk60, mtxA, 3, 0.0f, 10.f);
+		animPoseDrawMtx(work[1].poseId2, mtxA, 1, 0.0f, 10.f);
+		animPoseDrawMtx(work[1].poseId2, mtxA, 2, 0.0f, 10.f);
+		animPoseDrawMtx(work[1].poseId2, mtxA, 3, 0.0f, 10.f);
 	}
 }
 
@@ -1324,7 +1324,7 @@ void effFallDispWater(CameraId cameraId, void* param) {
 	PSMTXConcat(mtxPos, mtxScale, mtxPos);
 	GXLoadTexMtxImm(mtxPos, 0x1e, 1);
 	PSMTXTrans(mtxPos, work[1].x, work[1].y, work[1].z);
-	PSMTXScale(mtxScale, work[1].unk2C, 1.0f, 1.0f);
+	PSMTXScale(mtxScale, work[1].scale, 1.0f, 1.0f);
 	PSMTXConcat(mtxPos, mtxScale, mtxPos);
 	PSMTXConcat(mtxView, mtxPos, mtxPos);
 	GXLoadPosMtxImm(mtxPos, 0);
@@ -1360,7 +1360,7 @@ void effFallDispWater(CameraId cameraId, void* param) {
 	GXTexCoord2f32(0.0f, 1.0f);
 
 	work = effect->userdata;
-	if (work[1].unk38 > 0) {
+	if (work[1].state > 0) {
 		PSMTXTrans(mtxPos, work[1].x, work[1].y, work[1].z);
 		PSMTXScale(mtxScale, 0.56f, 0.4f, 0.8f);
 		PSMTXConcat(mtxView, mtxPos, mtxPos);
@@ -1372,10 +1372,10 @@ void effFallDispWater(CameraId cameraId, void* param) {
 		}
 		GXLoadTexMtxImm(mtxPos, 0x1e, 1);
 #ifdef MUST_MATCH
-		GXSetTevColor(1, effFallCol68(dat_80420f68, work[1].unk3C));
+		GXSetTevColor(1, effFallCol68(dat_80420f68, work[1].alpha));
 #else
 		color = dat_80420f68;
-		color.a = work[1].unk3C;
+		color.a = work[1].alpha;
 		GXSetTevColor(1, color);
 #endif
 		effGetTexObj(0x37, &texObj);
@@ -1400,7 +1400,7 @@ void effFallDispWater(CameraId cameraId, void* param) {
 		PSMTXTrans(mtxPos, work[1].x, work[1].y, work[1].z);
 		{
 			f32 k = 0.8f;
-			PSMTXScale(mtxScale, 0.7f * (work[1].unk2C * k), 0.5f * (work[1].unk2C * k), work[1].unk2C * k);
+			PSMTXScale(mtxScale, 0.7f * (work[1].scale * k), 0.5f * (work[1].scale * k), work[1].scale * k);
 		}
 		PSMTXConcat(mtxView, mtxPos, mtxPos);
 		PSMTXConcat(mtxPos, mtxScale, mtxPos);
@@ -1441,33 +1441,33 @@ s32 effFallCheckHit(EffectEntry* effect) {
 	case 1:
 	case 4:
 	case 5:
-		if (work[1].unk38 >= 2) {
+		if (work[1].state >= 2) {
 			return 1;
 		}
 		break;
 	case 2:
 	case 3:
-		if (work[1].unk38 >= 1) {
+		if (work[1].state >= 1) {
 			return 1;
 		}
 		break;
 	case 6:
-		if (work[1].unk38 < 2) {
-			if (work[1].unk38 != 1) {
+		if (work[1].state < 2) {
+			if (work[1].state != 1) {
 				break;
 			}
-			if (work[1].unk24 <= 90) {
+			if (work[1].timer <= 90) {
 				break;
 			}
 		}
 		return 1;
 	case 7:
-		if (work[1].unk38 >= 4) {
+		if (work[1].state >= 4) {
 			return 1;
 		}
 		break;
 	case 8:
-		if (work[1].unk38 >= 3) {
+		if (work[1].state >= 3) {
 			return 1;
 		}
 		break;

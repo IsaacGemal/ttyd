@@ -33,6 +33,7 @@ s32 mahojin_rate;
 
 static void callback(TevCallbackParam* param);
 
+// TEV colour callback: tints the circle purple, alpha fades with mahojin_rate
 static void callback(TevCallbackParam* param) {
     s32 stage = param->field_C;
     s32 field_10 = param->field_10;
@@ -61,6 +62,7 @@ EffectEntry* effMahojinEntry(s32 type, f32 x, f32 y, f32 z) {
     s32 count;
 
     effect = effEntry();
+    // data[0]/data[1] are the circle's two base layers, the rest are min(type, 7) rim pieces
     count = ((type < 8) ? type : 7) + 2;
     effect->type = "Mahojin";
     effect->count = count;
@@ -142,11 +144,13 @@ void effMahojinMain(EffectEntry* effect) {
         data = effect->userdata;
     }
 
+    // soft-delete flag set by effSoftDelete: jump straight to the fade-out
     if (effect->flags & 4) {
         effect->flags &= ~4;
         data[0].timer = 16;
     }
 
+    // 1000 means "no timeout"; alpha fades to 0 over the last 16 frames
     if (data[0].timer < 1000) {
         data[0].timer--;
     }
@@ -207,6 +211,7 @@ void effMahojinMain(EffectEntry* effect) {
     for (i = 2; i < effect->count; i++, entry++) {
         switch (entry->state) {
         case 0:
+            // the first type-1 pieces fade in lit, the rest stay dim
             if (i - 1 < type) {
                 if (loop > 0.6f) {
                     entry->animId[0] = animPoseEntry("MOBJ_EFF_mahojin_omote", inBattle);

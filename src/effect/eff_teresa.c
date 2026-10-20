@@ -38,7 +38,7 @@ EffectEntry* effTeresaEntry(s32 type, f32 x, f32 y, f32 z) {
 	data->field_0x30 = 0;
 	data->field_0x2C = 0;
 	data->alpha = (f32)((type == 0) ? 0 : 255);
-	data->field_0x3C = 0;
+	data->state = 0;
 
 	if (type == 0) {
 		pos = vec3_802fe920;
@@ -63,13 +63,14 @@ void effTeresaMain(EffectEntry* effect) {
 	position = disp;
 
 	if (data->type == 0) {
-		if (data->field_0x3C == 0) {
+		// state 0: shrink while spinning; once tiny, pop with a smoke puff and expand back out while fading
+		if (data->state == 0) {
 			if (data->scale > 0.1f) {
 				data->scale *= 0.8f;
 			} else {
 				Vec pos;
 
-				data->field_0x3C = 1;
+				data->state = 1;
 				effKemuTestEntry(8, data->x, data->y, data->z, 1.0f);
 				pos = (Vec){0.0f, 0.0f, 0.0f};
 				pos.x = data->x;

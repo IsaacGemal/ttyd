@@ -14,22 +14,22 @@
 
 // Local structs not yet in a shared header.
 typedef struct UranaiInfo {
-    s16 unk0;    // 0x0
+    s16 unk0;    // 0x0, never read or written by this file
     s16 labelId; // 0x2
-    s16 unk4;    // 0x4
+    s16 storyId; // 0x4
 } UranaiInfo;
 
 typedef struct UranaiWork {
-    UranaiInfo* info;   // 0x0
-    s32 count;          // 0x4
-    const char* prefix; // 0x8
-    char* label;        // 0xC
-    s32 index;          // 0x10
-    s32 type;           // 0x14
-    u8 starpiece[0xD];  // 0x18
-    u8 supercoin[0xD];  // 0x25
-    u8 pad_0x32[2];     // 0x32
-    s32 next;           // 0x34
+    UranaiInfo* info;      // 0x0
+    s32 count;             // 0x4
+    const char* prefix;    // 0x8
+    char* label;           // 0xC, "%s_%04d" buffer at the end of the info block
+    s32 index;             // 0x10, entry picked by the last makelabel
+    s32 mode;              // 0x14, 0=next, 1=starpiece, 2=supercoin
+    u8 starpieceFlags[0xD]; // 0x18, per-storyId read flags
+    u8 supercoinFlags[0xD]; // 0x25, per-storyId read flags
+    u8 pad_0x32[2];        // 0x32
+    s32 lastLabelId;       // 0x34, evt label id of the newest story batch
 } UranaiWork;
 
 typedef struct UranaiTableEntry {
@@ -199,9 +199,9 @@ USER_FUNC(uranaisi_data_alloc) {
     s32 count;
     const char* prefix;
 
-    _udt.type = evtGetValue(event, args[0]);
+    _udt.mode = evtGetValue(event, args[0]);
     _udt.prefix = (const char*)evtGetValue(event, args[1]);
-    switch (_udt.type) {
+    switch (_udt.mode) {
         case 0:
             count = uranaisi_data_make_next(_udt.prefix, 0);
             break;
@@ -216,11 +216,11 @@ USER_FUNC(uranaisi_data_alloc) {
             break;
     }
     wp->count = count;
-    wp->info = _mapAlloc(wp->count * 6 + 0x40);
-    memset(wp->info, 0, wp->count * 6 + 0x40);
-    wp->label = (char*)((u8*)wp->info + wp->count * 6);
+    wp->info = _mapAlloc(wp->count * sizeof(UranaiInfo) + 0x40);
+    memset(wp->info, 0, wp->count * sizeof(UranaiInfo) + 0x40);
+    wp->label = (char*)&wp->info[wp->count];
     prefix = wp->prefix;
-    switch (wp->type) {
+    switch (wp->mode) {
         case 0:
             uranaisi_data_make_next(prefix, 1);
             break;
@@ -252,8 +252,8 @@ USER_FUNC(uranaisi_data_free) {
 USER_FUNC(uranaisi_table_clear) {
     UranaiWork* wp = &_udt;
 
-    memset(wp->starpiece, 0, 0xD);
-    memset(wp->supercoin, 0, 6);
+    memset(wp->starpieceFlags, 0, 0xD);
+    memset(wp->supercoinFlags, 0, 6);
     return 2;
 }
 
@@ -269,7 +269,7 @@ USER_FUNC(uranaisi_next_makelabel) {
     s32* args = event->args;
     s32 idx = evtGetValue(event, args[0]);
 
-    sprintf(wp->label, "%s_%04d", wp->prefix, wp->info[idx].unk4);
+    sprintf(wp->label, "%s_%04d", wp->prefix, wp->info[idx].storyId);
     evtSetValue(event, args[1], (s32)wp->label);
     return 2;
 }
@@ -283,7 +283,7 @@ USER_FUNC(uranaisi_starpiece_check) {
     count = 0;
     i = 0;
     while (i < wp->count) {
-        if (johoya_get(wp->starpiece, wp->info[i].unk4) == 0) {
+        if (johoya_get(wp->starpieceFlags, wp->info[i].storyId) == 0) {
             count++;
         }
         i++;
@@ -302,9 +302,9 @@ USER_FUNC(uranaisi_starpiece_makelabel) {
     unread = 0;
     i = 0;
     while (i < wp->count) {
-        if (johoya_get(wp->starpiece, wp->info[i].unk4) == 0) {
+        if (johoya_get(wp->starpieceFlags, wp->info[i].storyId) == 0) {
             if (arg == unread) {
-                sprintf(wp->label, "%s_%04d", wp->prefix, wp->info[i].unk4);
+                sprintf(wp->label, "%s_%04d", wp->prefix, wp->info[i].storyId);
                 evtSetValue(event, args[1], (s32)wp->label);
                 wp->index = i;
                 return 2;
@@ -321,7 +321,7 @@ USER_FUNC(uranaisi_starpiece_makelabel) {
 USER_FUNC(uranaisi_starpiece_setreadflag) {
     UranaiWork* wp = &_udt;
 
-    johoya_set(wp->starpiece, wp->info[wp->index].unk4, 1);
+    johoya_set(wp->starpieceFlags, wp->info[wp->index].storyId, 1);
     return 2;
 }
 
@@ -334,7 +334,7 @@ USER_FUNC(uranaisi_supercoin_check) {
     count = 0;
     i = 0;
     while (i < wp->count) {
-        if (johoya_get(wp->supercoin, wp->info[i].unk4) == 0) {
+        if (johoya_get(wp->supercoinFlags, wp->info[i].storyId) == 0) {
             count++;
         }
         i++;
@@ -353,9 +353,9 @@ USER_FUNC(uranaisi_supercoin_makelabel) {
     unread = 0;
     i = 0;
     while (i < wp->count) {
-        if (johoya_get(wp->supercoin, wp->info[i].unk4) == 0) {
+        if (johoya_get(wp->supercoinFlags, wp->info[i].storyId) == 0) {
             if (arg == unread) {
-                sprintf(wp->label, "%s_%04d", wp->prefix, wp->info[i].unk4);
+                sprintf(wp->label, "%s_%04d", wp->prefix, wp->info[i].storyId);
                 evtSetValue(event, args[1], (s32)wp->label);
                 wp->index = i;
                 return 2;
@@ -372,7 +372,7 @@ USER_FUNC(uranaisi_supercoin_makelabel) {
 USER_FUNC(uranaisi_supercoin_setreadflag) {
     UranaiWork* wp = &_udt;
 
-    johoya_set(wp->supercoin, wp->info[wp->index].unk4, 1);
+    johoya_set(wp->supercoinFlags, wp->info[wp->index].storyId, 1);
     return 2;
 }
 
@@ -394,11 +394,11 @@ s32 uranaisi_data_make_next(const char* prefix, s32 type) {
 
     maxLabel = evtGetValue(0, -170000000);
     if (type & 1) {
-        if (wp->next == -1) {
+        if (wp->lastLabelId == -1) {
             return 0;
         }
     } else {
-        wp->next = -1;
+        wp->lastLabelId = -1;
     }
 
     count = 0;
@@ -458,20 +458,20 @@ s32 uranaisi_data_make_next(const char* prefix, s32 type) {
             labelId = search_evt_no(tag);
             if (labelId != -1) {
                 if (type & 1) {
-                    if (labelId != wp->next) {
+                    if (labelId != wp->lastLabelId) {
                         goto next;
                     }
                     wp->info[count].labelId = (s16)labelId;
-                    wp->info[count].unk4 = (s16)storyId;
+                    wp->info[count].storyId = (s16)storyId;
                 } else {
                     if (labelId > maxLabel) {
                         goto next;
                     }
-                    if (labelId < wp->next) {
+                    if (labelId < wp->lastLabelId) {
                         goto next;
                     }
-                    if (labelId > wp->next) {
-                        wp->next = labelId;
+                    if (labelId > wp->lastLabelId) {
+                        wp->lastLabelId = labelId;
                         count = 0;
                     }
                 }
@@ -606,10 +606,10 @@ s32 uranaisi_data_make_starpiece(const char* prefix, s32 type) {
 #ifdef MUST_MATCH
                         // Match-only: the entry offset in its own counter (offset == count * 6).
                         ((UranaiInfo*)((u8*)wp->info + offset))->labelId = (s16)labelId;
-                        ((UranaiInfo*)((u8*)wp->info + offset))->unk4 = (s16)storyId;
+                        ((UranaiInfo*)((u8*)wp->info + offset))->storyId = (s16)storyId;
 #else
                         wp->info[count].labelId = (s16)labelId;
-                        wp->info[count].unk4 = (s16)storyId;
+                        wp->info[count].storyId = (s16)storyId;
 #endif
                     }
 #ifdef MUST_MATCH
@@ -745,10 +745,10 @@ s32 uranaisi_data_make_supercoin(const char* prefix, s32 type) {
 #ifdef MUST_MATCH
                         // Match-only: the entry offset in its own counter (offset == count * 6).
                         ((UranaiInfo*)((u8*)wp->info + offset))->labelId = (s16)labelId;
-                        ((UranaiInfo*)((u8*)wp->info + offset))->unk4 = (s16)storyId;
+                        ((UranaiInfo*)((u8*)wp->info + offset))->storyId = (s16)storyId;
 #else
                         wp->info[count].labelId = (s16)labelId;
-                        wp->info[count].unk4 = (s16)storyId;
+                        wp->info[count].storyId = (s16)storyId;
 #endif
                     }
 #ifdef MUST_MATCH
