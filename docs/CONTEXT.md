@@ -10904,3 +10904,19 @@ Names from the reads and writes in `display_func` and the `display` user functio
 - No other file includes `SysWork`.
 
 Verified: tower `ninja` recreates `build/G8MJ01/ok` (game 100% matched, 8276/8276 functions); natural (no MUST_MATCH) compile of sys.c returns 0.
+
+### Readability: eki_00 MoamoaWork fields (2026-10-20, Claude Haiku 5.5, n9-q-relsys)
+
+Two `MoamoaWork` fields in rels/eki/src/eki_00.c, named from their reads and writes:
+
+- `hammerFrames` (0x40, s16): written by the per-frame update (`ext_moamoa_main`), +1 per frame while `mario->currMotionId == MARIO_MOTION_HAMMER`, else 0. `moamoa_hit_check` reads it as `> 10` next to motion 0x12.
+- `bounceCount` (0x558, s32): `moamoa_hit_check`'s stomp branch bounces Mario (`marioChgMot(5)`) and counts up while it is below 2. It is cleared while `mario->flags & 0x30000` is clear.
+
+The main comment's `MoamoaPose.field_0x02` is now `MoamoaPose.state`.
+
+Left as `field_0x`:
+
+- `MoamoaPose` 0x14, 0x1C and 0x20 are reused by state. In state 3 (`moamoa_jump`) they are vertical velocity, horizontal speed and gravity. In state 0x30 they are the per-frame changes to `target` x, y and z. In states 0x33 and 0x34, 0x1C is a height and 0x20 a radius.
+- Never read: `MoamoaPose` 0x06, 0x3E and 0x48; `MoamoaWork` 0x0C and 0x10.
+
+Verified: tower `ninja` recreates `build/G8MJ01/ok` (game 100% matched); natural (no MUST_MATCH) compile of eki_00.c returns 0. Index (tools/cleanup_index.py): 29.721 -> 29.710 per kLOC (21148 -> 21140 weighted); field_0x 2923 -> 2915.
