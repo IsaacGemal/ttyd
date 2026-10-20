@@ -8824,3 +8824,31 @@ who clears KPA_FLAG_NO_HIP; writers of `field_0x10`/`0x14`/`0x144`; the older `u
 escape the index; `(f32)MW_U16(mario, 0x28)` in kpa_walk/kpa_dash stays raw because `(f32)(u16)mario->poseTime` changes the
 codegen; the MarioWork 0x7C-0x88 jump parameters, 0x110, 0x120, 0x1AC, 0x214-0x220, 0x246/0x248, 0x2A0/0x2A2 and
 0x2C4 are still unnamed on main.
+### Readability: BattleUnit leftovers and SE mode (2026-10-19, Claude Haiku 5.5, n9-q-btlunit2; reviewed by Claude Opus 5.5)
+
+`BtlUnitSeMode` and `BtlUnitSeModeSrc` move from battle_unit.c into battle_unit.h and replace the pads at
+BattleUnit 0x188/0x1C0 and BattleUnitPart 0xC0/0xF8: the same two structs at both places (BtlUnit_LoadSeMode and
+_MoveSoundControlCore take unit+0x1C0/0x188 or part+0xF8/0xC0, and the 0x1C gap between them holds the unit's hop
+fields in both). SeMode: `sfxA`/`sfxB` (sfxA alone loops at the unit's position with its handle in `sfxHandle`;
+with sfxB set they alternate, odd `beat`s playing sfxA), `delay` (frames before the first beat, copied into
+`countdown`), `intervalA`/`intervalB` (frames after each), `param8`/`paramA` (written by BtlUnit_SetSeMode, never
+read). SeModeSrc holds the four presets LoadSeMode's `mode` picks; mode 2 is the two sound names only
+(btlevtcmd_SetRunSound writes them). BattleUnit gets `seqPhase` (0x2C, compared with SEQ_PHASE),
+`mMoveColorCur` (0x30E, eases toward mMoveColorLv), `mExtraWork`/`mExtraWorkFree`/`mSmartEntry` (0x310-0x318,
+freed by BtlUnit_Delete); BattleUnitPart gets `detectOffsetX` (0x1A0: only an x offset, added to the sampling
+entry's x in _btlSamplingEnemy and set by btl_hitoffsetx), `motionSpeed` (0x20C), `dispCallback` (0x210),
+`statusPoseStep`/`statusPoseKind` (0x214/0x215: statusPoseControl switches on the kind, 2/3/7 one-pattern and
+4/5/6 two-pattern overlays, and the _pose_* functions step 0x214 from 0 to 1 or 2) and `evtColor` (0x218).
+Literals use UNIT_MARIO, UNIT_SHELL_SHIELD, UNIT_VIVIAN and TYPE_PARTNER_MIN/MAX (0xE0 inclusive to 0xE7
+exclusive, as the old `>= 0xE0 && < 0xE7`; the MAX macro is now parenthesized), FlowerSaver is
+`badgesEquipped.FlowerSaver` (0x2DC + 0x15), and the unit-id loops use `wp->unitIdTable[]`. battle.c,
+battle_disp.c, battle_detect.c, battle_event_cmd.c and unit_boss_batten_leader.c change by pure renames. In
+review, the worker's `effectStopped`/`statusPoseState` became `statusPoseStep`/`statusPoseKind`, and battle_unit.c's
+local `BattleWeaponFields` is gone: BtlUnit_GetWeaponCost, CheckWeaponCost and PayWeaponCost read
+`weapon->item`/`baseFpCost`/`baseSpCost` from BattleWeapon, byte-identical. BtlUnit_Spawn's MUST_MATCH store
+keeps its `&((s32*)((u8*)wp + 0x120))[i]` form: `&wp->unitIdTable[i]` changes the addressing. battle_unit.c 302
+→ 148 weighted. The pinch-status literals 0x10000000/0x20000000 stay until the BattleUnitStatus_Flags enum lands.
+Open: the part pose block at 0x1C0 (anim handle at +0, flags at +0x44, bytes at +0x54/+0x55) is still
+byte-indexed in battle_disp; the attack event at unit 0x29C is written both as an s32 and as a void*; and the
+byte-stepped unit regions at 0x27, 0x264 and 0x2B4 stay pads. battle_event_cmd.c's LoadSeMode/SetSeMode callers
+and _MoveSoundControlCore still pass and read raw offsets.

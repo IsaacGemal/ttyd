@@ -357,7 +357,7 @@ USER_FUNC(btlevtcmd_ReplaceParts) {
         part->mHitBaseOffset.y = part->mKindPartParams->hitBaseOffset.y;
         part->mHitOffset.x = 0.0f;
         part->mHitOffset.y = 0.0f;
-        part->field_0x1A0 = 0;
+        part->detectOffsetX = 0;
     }
     btlDispEntAnime(unit);
     return EVT_RETURN_DONE;

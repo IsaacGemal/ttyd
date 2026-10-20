@@ -400,7 +400,7 @@ void btlDispMain(void) {
 			}
 		}
 
-		unk = unit->field_0x30E[0];
+		unk = unit->mMoveColorCur;
 		BtlUnit_OffUnitFlag(unit, 2);
 		if (unk != unit->mMoveColorLv) {
 			BtlUnit_OnUnitFlag(unit, 2);
@@ -416,7 +416,7 @@ void btlDispMain(void) {
 				}
 			}
 		}
-		unit->field_0x30E[0] = unk;
+		unit->mMoveColorCur = unk;
 
 		BtlUnit_HpGaugeMain(unit);
 		unit->mSizeMultiplier = 1.0f;

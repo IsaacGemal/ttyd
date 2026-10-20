@@ -63,47 +63,6 @@ typedef struct HpGaugeLocal {
     f32 field_18; // 0x18
 } HpGaugeLocal;
 
-typedef struct BtlUnitSeMode {
-    s32 field_0x0;  // 0x0
-    s32 field_0x4;  // 0x4
-    s16 field_0x8;  // 0x8
-    s16 field_0xA;  // 0xA
-    s16 field_0xC;  // 0xC
-    s16 field_0xE;  // 0xE
-    s16 field_0x10; // 0x10
-    s16 field_0x12; // 0x12
-    s16 field_0x14; // 0x14
-    s32 field_0x18; // 0x18
-} BtlUnitSeMode;
-typedef struct BtlUnitSeModeSrc {
-    s32 field_0x0;  // 0x0
-    s32 field_0x4;  // 0x4
-    s32 field_0x8;  // 0x8
-    s32 field_0xC;  // 0xC
-    s16 field_0x10; // 0x10
-    s16 field_0x12; // 0x12
-    s16 field_0x14; // 0x14
-    s16 field_0x16; // 0x16
-    s32 field_0x18; // 0x18
-    s32 field_0x1C; // 0x1C
-    s16 field_0x20; // 0x20
-    s16 field_0x22; // 0x22
-    s16 field_0x24; // 0x24
-    s16 field_0x26; // 0x26
-    s32 field_0x28; // 0x28
-    s32 field_0x2C; // 0x2C
-    s16 field_0x30; // 0x30
-    s16 field_0x32; // 0x32
-    s16 field_0x34; // 0x34
-} BtlUnitSeModeSrc;
-typedef struct BattleWeaponFields {
-    u8 pad_0x0[0x8];
-    s32 itemId;    // 0x8
-    u8 pad_0xC[0x11 - 0xC];
-    u8 field_0x11; // 0x11
-    u8 field_0x12; // 0x12
-} BattleWeaponFields;
-
 BOOL BtlUnit_Init(void) {
     int i;
     BattleWork* wp = _battleWorkPointer;
@@ -148,11 +107,11 @@ BattleUnit* BtlUnit_Entry(BattleUnitSetup* setup) {
     unit->groupSetupId = -1;
     unit->mAlliance = setup->alliance;
     unit->mLevel = unit->mKindParams->mLevel;
-    if (unit->currentKind == 0xDE || (unit->currentKind >= 0xE0 && unit->currentKind < 0xE7)) {
+    if (unit->currentKind == UNIT_MARIO || (unit->currentKind >= TYPE_PARTNER_MIN && unit->currentKind < TYPE_PARTNER_MAX)) {
         unit->mLevel = pouchGetPtr()->level;
     }
 
-    *(s32*)((u8*)unit + 0x2C) = setup->field_0x8;
+    unit->seqPhase = setup->field_0x8;
     unit->unisonPhaseEventCode = NULL;
     unit->phaseEventCode = NULL;
     unit->phaseEventId = 0;
@@ -259,14 +218,14 @@ BattleUnit* BtlUnit_Entry(BattleUnitSetup* setup) {
         part->mHitCursorOffset.y = 0.0f;
         part->mHitCursorOffset.z = 0.0f;
         part->color = dat_8041c3b8;
-        part->field_0x1A0 = setup->field_0x18;
+        part->detectOffsetX = setup->field_0x18;
         part->poseTable = kindPart->poseTable;
         *(s32*)((u8*)part + 0x1C0) = -1;
         *(u8*)((u8*)part + 0x1C4) = 0;
-        *(f32*)((u8*)part + 0x208) = 1.0f;
-        *(f32*)((u8*)part + 0x20C) = 1.0f;
-        *(u8*)((u8*)part + 0x215) = 0;
-        *(u8*)((u8*)part + 0x214) = 0;
+        part->field_0x208 = 1.0f;
+        part->motionSpeed = 1.0f;
+        part->statusPoseKind = 0;
+        part->statusPoseStep = 0;
         part->poseSoundEventId = -1;
         part->partName = part->mKindPartParams->partName;
 
@@ -286,16 +245,16 @@ BattleUnit* BtlUnit_Entry(BattleUnitSetup* setup) {
     unit->mStayPoseName = BtlUnit_GetPoseNameFromType(part, 0x2B);
 
     unit->mMoveColorLv = 0xFF;
-    *(u8*)((u8*)unit + 0x30E) = 0xFF;
+    unit->mMoveColorCur = 0xFF;
     btlDispEntAnime(unit);
-    *(void**)((u8*)unit + 0x310) = NULL;
-    *(void**)((u8*)unit + 0x314) = NULL;
+    unit->mExtraWork = NULL;
+    unit->mExtraWorkFree = NULL;
 
     switch (unit->currentKind) {
     case UNIT_MARIO:
         break;
     case UNIT_UNUSED_UFO:
-        *(void**)((u8*)unit + 0x310) = BattleAlloc(0x44);
+        unit->mExtraWork = BattleAlloc(0x44);
         break;
     }
 
@@ -345,8 +304,8 @@ BOOL BtlUnit_Delete(BattleUnit* unit) {
     }
     id = unit->unitId;
     for (j = 0; j < 64; j++) {
-        if (*(s32*)((u8*)wp + 0x120 + j * 4) == id) {
-            *(s32*)((u8*)wp + 0x120 + j * 4) = -1;
+        if (wp->unitIdTable[j] == id) {
+            wp->unitIdTable[j] = -1;
         }
     }
     if (unit->flags & 0x40000000) {
@@ -358,17 +317,16 @@ BOOL BtlUnit_Delete(BattleUnit* unit) {
     }
     BattleStatusEffectDelete(unit);
     BattleStatusIconDelete(unit);
-    // Cleanup hooks the header does not name: +0x310 buffer, +0x314 its destructor, +0x318 smart pointer.
-    if (*(void**)((u8*)unit + 0x310)) {
-        if (*(void**)((u8*)unit + 0x314)) {
-            ((void (*)(BattleUnit*)) * (void**)((u8*)unit + 0x314))(unit);
+    if (unit->mExtraWork) {
+        if (unit->mExtraWorkFree) {
+            ((void (*)(BattleUnit*)) unit->mExtraWorkFree)(unit);
         } else {
-            BattleFree(*(void**)((u8*)unit + 0x310));
+            BattleFree(unit->mExtraWork);
         }
     }
-    if (*(void**)((u8*)unit + 0x318)) {
-        smartFree(*(smartEntry**)((u8*)unit + 0x318));
-        *(void**)((u8*)unit + 0x318) = NULL;
+    if (unit->mSmartEntry) {
+        smartFree(unit->mSmartEntry);
+        unit->mSmartEntry = NULL;
     }
     part = unit->mParts;
     for (; part; part = part->mNextPart) {
@@ -406,17 +364,17 @@ BattleUnit* BtlUnit_Spawn(BattleUnitSetup* setup, s32 flags) {
             if (id == -1) {
                 break;
             }
-            if (*(s32*)((u8*)wp + 0x120 + i * 4) == -1) {
+            if (wp->unitIdTable[i] == -1) {
 #ifdef MUST_MATCH
                 { s32* pp = &((s32*)((u8*)wp + 0x120))[i]; *pp = id; }
 #else
-                *(s32*)((u8*)wp + 0x120 + i * 4) = id;
+                wp->unitIdTable[i] = id;
 #endif
                 break;
             }
             {
-                s32 prev = *(s32*)((u8*)wp + 0x120 + i * 4);
-                *(s32*)((u8*)wp + 0x120 + i * 4) = id;
+                s32 prev = wp->unitIdTable[i];
+                wp->unitIdTable[i] = id;
                 id = prev;
             }
         }
@@ -428,17 +386,17 @@ BattleUnit* BtlUnit_Spawn(BattleUnitSetup* setup, s32 flags) {
             if (id == -1) {
                 break;
             }
-            if (*(s32*)((u8*)wp + 0x120 + i * 4) == -1) {
+            if (wp->unitIdTable[i] == -1) {
 #ifdef MUST_MATCH
                 { s32* pp = &((s32*)((u8*)wp + 0x120))[i]; *pp = id; }
 #else
-                *(s32*)((u8*)wp + 0x120 + i * 4) = id;
+                wp->unitIdTable[i] = id;
 #endif
                 break;
             }
             {
-                s32 prev = *(s32*)((u8*)wp + 0x120 + i * 4);
-                *(s32*)((u8*)wp + 0x120 + i * 4) = id;
+                s32 prev = wp->unitIdTable[i];
+                wp->unitIdTable[i] = id;
                 id = prev;
             }
         }
@@ -1698,7 +1656,7 @@ s32 BtlUnit_GetACPossibility(BattleUnit* unit) {
     if (unit->mAlliance != 0) {
         return 0;
     }
-    if (unit->currentKind == 0xDF) {
+    if (unit->currentKind == UNIT_SHELL_SHIELD) {
         return 0;
     }
     if (BtlUnit_CheckStatus(unit, STATUS_SLEEP) || BtlUnit_CheckStatus(unit, STATUS_STOP) ||
@@ -1793,7 +1751,7 @@ void BtlUnit_SetParamFromPouch(BattleUnit* unit) {
 void BtlUnit_ReviseHpFp(BattleUnit* unit) {
     PouchData* pouch = pouchGetPtr();
 
-    if (unit->currentKind == 0xDE) {
+    if (unit->currentKind == UNIT_MARIO) {
         unit->baseMaxHp = pouch->baseMaxHP;
         unit->maxHp = pouch->baseMaxHP + unit->badgesEquipped.HpPlus * 5;
         unit->baseMaxFp = pouch->baseMaxFP;
@@ -1855,7 +1813,7 @@ void BtlUnit_CheckPinchStatus(BattleUnit* unit, BOOL a2) {
     if (unit->currentHp <= unit->mKindParams->mPerilHP && unit->currentHp < unit->maxHp) {
         if (!(unit->mStatusFlags & 0x20000000)) {
             unit->mStatusFlags |= 0x20000000;
-            if (!a2 && unit->currentKind == 0xDE) {
+            if (!a2 && unit->currentKind == UNIT_MARIO) {
                 BattleAudience_Case_MarioDanger();
             }
         }
@@ -1866,7 +1824,7 @@ void BtlUnit_CheckPinchStatus(BattleUnit* unit, BOOL a2) {
     if (unit->currentHp <= unit->mKindParams->mDangerHP && unit->currentHp < unit->maxHp) {
         if (!(unit->mStatusFlags & 0x10000000)) {
             unit->mStatusFlags |= 0x10000000;
-            if (!(unit->mStatusFlags & 0x20000000) && !a2 && unit->currentKind == 0xDE) {
+            if (!(unit->mStatusFlags & 0x20000000) && !a2 && unit->currentKind == UNIT_MARIO) {
                 BattleAudience_Case_MarioPinch();
             }
         }
@@ -2019,12 +1977,12 @@ void BtlUnit_SetMaxFp(BattleUnit* unit, s32 value) {
 // Keep BtlUnit_GetWeaponCost out of line: the original calls it rather than inlining its switch.
 #pragma dont_inline on
 s32 BtlUnit_GetWeaponCost(BattleUnit* unit, BattleWeapon* weapon) {
-    s32 cost = ((BattleWeaponFields*)weapon)->field_0x11;
+    s32 cost = weapon->baseFpCost;
     s32 badgeCount;
 
-    if (((BattleWeaponFields*)weapon)->itemId != 0) {
-        badgeCount = pouchEquipCheckBadge(((BattleWeaponFields*)weapon)->itemId);
-        switch (((BattleWeaponFields*)weapon)->itemId) {
+    if (weapon->item != 0) {
+        badgeCount = pouchEquipCheckBadge(weapon->item);
+        switch (weapon->item) {
             case 0xF0:
             case 0xF1:
             case 0xF2:
@@ -2054,7 +2012,7 @@ s32 BtlUnit_GetWeaponCost(BattleUnit* unit, BattleWeapon* weapon) {
         }
     }
     if (cost != 0) {
-        cost -= ((u8*)unit)[0x2F1];
+        cost -= unit->badgesEquipped.FlowerSaver;
         if (cost <= 0) {
             cost = 1;
         }
@@ -2077,9 +2035,9 @@ BOOL BtlUnit_CheckWeaponCost(BattleUnit* unit, BattleWeapon* weapon) {
 #ifdef MUST_MATCH
     /* Match-only: the header declares pouchGetAP as `s16`, but the target consumed the raw 32-bit
        return (no extsh). Call it through an s32-returning prototype, as evt_kinopio.c does. */
-    return (*(s32(*)(void))pouchGetAP)() >= (s32)((BattleWeaponFields*)weapon)->field_0x12 * 100;
+    return (*(s32(*)(void))pouchGetAP)() >= (s32)weapon->baseSpCost * 100;
 #else
-    return pouchGetAP() >= (s32)((BattleWeaponFields*)weapon)->field_0x12 * 100;
+    return pouchGetAP() >= (s32)weapon->baseSpCost * 100;
 #endif
 }
 
@@ -2101,9 +2059,9 @@ void BtlUnit_PayWeaponCost(BattleUnit* unit, BattleWeapon* weapon) {
 #ifdef MUST_MATCH
     /* Match-only: the header declares pouchAddAP as taking `s16`, but the target passed the full
        32-bit delta (no extsh). Call it through an s32-taking prototype. */
-    (*(void(*)(s32))pouchAddAP)(-((BattleWeaponFields*)weapon)->field_0x12 * 100);
+    (*(void(*)(s32))pouchAddAP)(-weapon->baseSpCost * 100);
 #else
-    pouchAddAP(-((BattleWeaponFields*)weapon)->field_0x12 * 100);
+    pouchAddAP(-weapon->baseSpCost * 100);
 #endif
 }
 
@@ -2115,7 +2073,7 @@ BattleUnit* BtlUnit_GetGuardKouraPtr(BattleUnit* unit) {
 
     for (i = 0; i < 64; i++) {
         other = BattleGetUnitPtr(wp, i);
-        if (other && other->currentKind == 0xDF && other->work[0] == id) {
+        if (other && other->currentKind == UNIT_SHELL_SHIELD && other->work[0] == id) {
             break;
         }
     }
@@ -2163,83 +2121,79 @@ void BtlUnit_ResetMoveStatus(BattleUnit* unit) {
 
 // `case 0` shares the default body: the original routes b == 0 through the same
 // zero-fill as any other unlisted value, and MWCC emits its fall-through branch.
-void BtlUnit_LoadSeMode(s32 a, s32 b, void* c, void* d) {
-    BtlUnitSeModeSrc* src = c;
-    BtlUnitSeMode* dst = d;
+void BtlUnit_LoadSeMode(s32 mode, s32 action, void* src, void* dst) {
+    BtlUnitSeModeSrc* s = src;
+    BtlUnitSeMode* d = dst;
 
-    dst->field_0x14 = 0;
-    dst->field_0x18 = -1;
-    switch (b) {
+    d->beat = 0;
+    d->sfxHandle = -1;
+    switch (action) {
         case -1:
-            switch (a) {
+            switch (mode) {
                 case 0:
-                    dst->field_0x0 = src->field_0x8;
-                    dst->field_0x4 = src->field_0xC;
-                    dst->field_0xC = src->field_0x10;
-                    dst->field_0xE = src->field_0x12;
-                    dst->field_0x10 = src->field_0x14;
+                    d->sfxA = s->mode0SfxA;
+                    d->sfxB = s->mode0SfxB;
+                    d->delay = s->mode0Delay;
+                    d->intervalA = s->mode0IntervalA;
+                    d->intervalB = s->mode0IntervalB;
                     break;
                 case 1:
-                    dst->field_0x0 = src->field_0x18;
-                    dst->field_0x4 = src->field_0x1C;
-                    dst->field_0xC = src->field_0x20;
-                    dst->field_0xE = src->field_0x22;
-                    dst->field_0x10 = src->field_0x24;
+                    d->sfxA = s->mode1SfxA;
+                    d->sfxB = s->mode1SfxB;
+                    d->delay = s->mode1Delay;
+                    d->intervalA = s->mode1IntervalA;
+                    d->intervalB = s->mode1IntervalB;
                     break;
                 case 2:
-                    dst->field_0x0 = src->field_0x0;
-                    dst->field_0x4 = src->field_0x4;
-                    dst->field_0xC = 0;
-                    dst->field_0xE = 0;
-                    dst->field_0x10 = 0;
+                    d->sfxA = s->mode2SfxA;
+                    d->sfxB = s->mode2SfxB;
+                    d->delay = 0;
+                    d->intervalA = 0;
+                    d->intervalB = 0;
                     break;
                 case 3:
-                    dst->field_0x0 = src->field_0x28;
-                    dst->field_0x4 = src->field_0x2C;
-                    dst->field_0xC = src->field_0x30;
-                    dst->field_0xE = src->field_0x32;
-                    dst->field_0x10 = src->field_0x34;
+                    d->sfxA = s->mode3SfxA;
+                    d->sfxB = s->mode3SfxB;
+                    d->delay = s->mode3Delay;
+                    d->intervalA = s->mode3IntervalA;
+                    d->intervalB = s->mode3IntervalB;
                     break;
                 default:
-                    dst->field_0x0 = 0;
-                    dst->field_0x4 = 0;
-                    dst->field_0xC = 0;
-                    dst->field_0xE = 0;
-                    dst->field_0x10 = 0;
+                    d->sfxA = 0;
+                    d->sfxB = 0;
+                    d->delay = 0;
+                    d->intervalA = 0;
+                    d->intervalB = 0;
                     break;
             }
-            dst->field_0x12 = dst->field_0xC;
+            d->countdown = d->delay;
             break;
         case -2:
-            dst->field_0x12 = dst->field_0xC;
+            d->countdown = d->delay;
             break;
         case 0:
         default:
-            dst->field_0x0 = 0;
-            dst->field_0x4 = 0;
-            dst->field_0xC = 0;
-            dst->field_0xE = 0;
-            dst->field_0x10 = 0;
-            dst->field_0x12 = dst->field_0xC;
+            d->sfxA = 0;
+            d->sfxB = 0;
+            d->delay = 0;
+            d->intervalA = 0;
+            d->intervalB = 0;
+            d->countdown = d->delay;
             break;
     }
 }
 
 
-// Source layout BtlUnit_LoadSeMode copies the four se-mode variants from. The
-// variants live at 0x0, 0x8, 0x18 and 0x28; the header leaves the owning regions
-// unnamed, so the fields are listed at their offsets.
-
-void BtlUnit_SetSeMode(BtlUnitSeMode* se, s32 a, s32 b, s16 c, s16 d, s16 e, s16 f, s16 g) {
-    se->field_0x0 = a;
-    se->field_0x4 = b;
-    se->field_0xC = c;
-    se->field_0xE = d;
-    se->field_0x10 = d;
-    se->field_0x14 = 0;
-    se->field_0x8 = f;
-    se->field_0xA = g;
-    se->field_0x18 = -1;
+void BtlUnit_SetSeMode(BtlUnitSeMode* se, s32 sfxA, s32 sfxB, s16 delay, s16 interval, s16 unused, s16 param8, s16 paramA) {
+    se->sfxA = sfxA;
+    se->sfxB = sfxB;
+    se->delay = delay;
+    se->intervalA = interval;
+    se->intervalB = interval;
+    se->beat = 0;
+    se->param8 = param8;
+    se->paramA = paramA;
+    se->sfxHandle = -1;
 }
 
 void BtlUnit_SetCommandAnimPose(BattleUnit* unit) {
@@ -2338,7 +2292,7 @@ void BtlUnit_ControlPoseSoundMain(BattleUnitPart* part) {
                 }
                 psndSFX_vol(soundId, 0x7F);
                 ps->count++;
-                if (*(s32*)((u8*)part->mOwner + 0x2C) != BattleGetSeq(wp, SEQ_PHASE)) {
+                if (part->mOwner->seqPhase != BattleGetSeq(wp, SEQ_PHASE)) {
                     u32 vol = 0x7F;
 #ifdef MUST_MATCH
                     // The address read preserves retail's load and multiply order.
@@ -2496,7 +2450,7 @@ BOOL BtlUnit_CheckShadowGuard(BattleUnit* unit) {
     if (unit->mAttributeFlags & kVeiled) {
         return TRUE;
     }
-    if (unit->currentKind == 0xE4 && unit->work[4] > 0) {
+    if (unit->currentKind == UNIT_VIVIAN && unit->work[4] > 0) {
         return TRUE;
     }
     return FALSE;
