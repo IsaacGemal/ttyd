@@ -37,17 +37,17 @@ extern const f32 float_10_8041a0cc;
 extern const f32 float_1_8041a0d0;
 extern const f32 float_neg1_8041a0d4;
 extern const f32 float_neg0p5_8041a0d8;
-extern const f32 float_deg2rad_8041a0dc;
-extern const char str_8041A0E0[8];
-extern const f32 float_2p5_8041a0e8;
+extern const f32 float_deg2rad;
+extern const char str_HOBJ_[8];
+extern const f32 float_2p5;
 extern const f32 float_5_8041a0ec;
 extern const f32 float_25_8041a0f0;
 extern const f32 float_20_8041a0f4;
 extern const f32 float_0p1_8041a0f8;
-extern const char str_8041A0FC[4];
+extern const char str_S_1[4];
 extern const f32 float_0p5_8041a100;
-extern const char str_8041A104[8];
-extern const char str_8041A10C[8];
+extern const char str_MOBJ_[8];
+extern const char str_MOBJ_tilde[8];
 
 #ifdef MUST_MATCH
 // MUST_MATCH: the original reaches the joint templates through the .data section base symbol (the
@@ -87,9 +87,9 @@ inline void calcMtx(MapObjectEntry* entry, Mtx dest, Vec position) { // guessing
 
     MTXTrans(trans, position.x, position.y, position.z);
     MTXScale(scale, entry->scale2.x, entry->scale2.y, entry->scale2.z);
-    MTXRotRad(xrot, 'x', (float_deg2rad_8041a0dc * (entry->rotation.x)));
-    MTXRotRad(yrot, 'y', (float_deg2rad_8041a0dc * (entry->rotation.y)));
-    MTXRotRad(zrot, 'z', (float_deg2rad_8041a0dc * (entry->rotation.z)));
+    MTXRotRad(xrot, 'x', (float_deg2rad * (entry->rotation.x)));
+    MTXRotRad(yrot, 'y', (float_deg2rad * (entry->rotation.y)));
+    MTXRotRad(zrot, 'z', (float_deg2rad * (entry->rotation.z)));
     MTXConcat(trans, zrot, trans);
     MTXConcat(trans, yrot, trans);
     MTXConcat(trans, xrot, trans);
@@ -243,9 +243,9 @@ void mobjHitEntry(MapObjectEntry* entry, s32 type) {
     entry->scale2.z = (float_10_8041a0cc) * (entry->scale.z * (f32)__fabs(bboxMax.z - bboxMin.z));
 #endif
 
-    if (strncmp(animData->fileName, str_8041A0E0, strlen(str_8041A0E0)) == 0) {
+    if (strncmp(animData->fileName, str_HOBJ_, strlen(str_HOBJ_)) == 0) {
         entry->translation.z = (float_0_8041a0c8);
-        entry->scale2.z = (float_10_8041a0cc) * ((float_2p5_8041a0e8) * entry->scale.z);
+        entry->scale2.z = (float_10_8041a0cc) * ((float_2p5) * entry->scale.z);
     }
 
     switch (type) {
@@ -259,9 +259,9 @@ void mobjHitEntry(MapObjectEntry* entry, s32 type) {
             PSVECAdd(&entry->position, &entry->translation, &position);
             MTXTrans(trans, position.x, position.y, position.z);
             MTXScale(scale, entry->scale2.x, entry->scale2.y, entry->scale2.z);
-            MTXRotRad(xrot, 'x', ((float_deg2rad_8041a0dc) * entry->rotation.x));
-            MTXRotRad(yrot, 'y', ((float_deg2rad_8041a0dc) * entry->rotation.y));
-            MTXRotRad(zrot, 'z', ((float_deg2rad_8041a0dc) * entry->rotation.z));
+            MTXRotRad(xrot, 'x', ((float_deg2rad) * entry->rotation.x));
+            MTXRotRad(yrot, 'y', ((float_deg2rad) * entry->rotation.y));
+            MTXRotRad(zrot, 'z', ((float_deg2rad) * entry->rotation.z));
             MTXConcat(trans, zrot, trans);
             MTXConcat(trans, yrot, trans);
             MTXConcat(trans, xrot, trans);
@@ -271,7 +271,7 @@ void mobjHitEntry(MapObjectEntry* entry, s32 type) {
 #else
             memcpy(&entry->hitObj[0].unk4[8], &cubeDJ, 0x68);
 #endif
-            strcpy(entry->hitObj[0].name, str_8041A104);
+            strcpy(entry->hitObj[0].name, str_MOBJ_);
             strcat(entry->hitObj[0].name, entry->name);
             ((MapFileJoint*)&entry->hitObj[0].unk4[8])->name = entry->hitObj[0].name;
             entry->hitObj[0].hitObject = hitEntryMOBJ((MapFileJoint*)&entry->hitObj[0].unk4[8], mtx);
@@ -288,9 +288,9 @@ void mobjHitEntry(MapObjectEntry* entry, s32 type) {
             PSVECAdd(&entry->position, &entry->translation, &position);
             MTXTrans(trans, position.x, position.y, position.z);
             MTXScale(scale, entry->scale2.x, entry->scale2.y, entry->scale2.z);
-            MTXRotRad(xrot, 'x', ((float_deg2rad_8041a0dc) * entry->rotation.x));
-            MTXRotRad(yrot, 'y', ((float_deg2rad_8041a0dc) * entry->rotation.y));
-            MTXRotRad(zrot, 'z', ((float_deg2rad_8041a0dc) * entry->rotation.z));
+            MTXRotRad(xrot, 'x', ((float_deg2rad) * entry->rotation.x));
+            MTXRotRad(yrot, 'y', ((float_deg2rad) * entry->rotation.y));
+            MTXRotRad(zrot, 'z', ((float_deg2rad) * entry->rotation.z));
             MTXConcat(trans, zrot, trans);
             MTXConcat(trans, yrot, trans);
             MTXConcat(trans, xrot, trans);
@@ -300,7 +300,7 @@ void mobjHitEntry(MapObjectEntry* entry, s32 type) {
 #else
             memcpy(&entry->hitObj[0].unk4[8], &headDJ, 0x68);
 #endif
-            strcpy(entry->hitObj[0].name, str_8041A104);
+            strcpy(entry->hitObj[0].name, str_MOBJ_);
             strcat(entry->hitObj[0].name, entry->name);
             ((MapFileJoint*)&entry->hitObj[0].unk4[8])->name = entry->hitObj[0].name;
             entry->hitObj[0].hitObject = hitEntryMOBJ((MapFileJoint*)&entry->hitObj[0].unk4[8], mtx);
@@ -317,9 +317,9 @@ void mobjHitEntry(MapObjectEntry* entry, s32 type) {
             PSVECAdd(&entry->position, &entry->translation, &position);
             MTXTrans(trans, position.x, position.y, position.z);
             MTXScale(scale, entry->scale2.x, entry->scale2.y, entry->scale2.z);
-            MTXRotRad(xrot, 'x', ((float_deg2rad_8041a0dc) * entry->rotation.x));
-            MTXRotRad(yrot, 'y', ((float_deg2rad_8041a0dc) * entry->rotation.y));
-            MTXRotRad(zrot, 'z', ((float_deg2rad_8041a0dc) * entry->rotation.z));
+            MTXRotRad(xrot, 'x', ((float_deg2rad) * entry->rotation.x));
+            MTXRotRad(yrot, 'y', ((float_deg2rad) * entry->rotation.y));
+            MTXRotRad(zrot, 'z', ((float_deg2rad) * entry->rotation.z));
             MTXConcat(trans, zrot, trans);
             MTXConcat(trans, yrot, trans);
             MTXConcat(trans, xrot, trans);
@@ -329,7 +329,7 @@ void mobjHitEntry(MapObjectEntry* entry, s32 type) {
 #else
             memcpy(&entry->hitObj[0].unk4[8], &frontDJ, 0x68);
 #endif
-            strcpy(entry->hitObj[0].name, str_8041A104);
+            strcpy(entry->hitObj[0].name, str_MOBJ_);
             strcat(entry->hitObj[0].name, entry->name);
             ((MapFileJoint*)&entry->hitObj[0].unk4[8])->name = entry->hitObj[0].name;
             entry->hitObj[0].hitObject = hitEntryMOBJ((MapFileJoint*)&entry->hitObj[0].unk4[8], mtx);
@@ -339,7 +339,7 @@ void mobjHitEntry(MapObjectEntry* entry, s32 type) {
 #else
             memcpy(&entry->hitObj[1].unk4[8], &front2DJ, 0x68);
 #endif
-            strcpy(entry->hitObj[1].name, str_8041A10C);
+            strcpy(entry->hitObj[1].name, str_MOBJ_tilde);
             strcat(entry->hitObj[1].name, entry->name);
             ((MapFileJoint*)&entry->hitObj[1].unk4[8])->name = entry->hitObj[1].name;
             entry->hitObj[1].hitObject = hitEntryMOBJ((MapFileJoint*)&entry->hitObj[1].unk4[8], mtx);
@@ -381,7 +381,7 @@ s32 mobjEntry(const char* name, const char* animPoseName) {
     entry->poseId = animPoseEntry(animPoseName, gp->inBattle != 0);
     animPosePeraOff(entry->poseId);
     strcpy(entry->animName, animPoseName);
-    animPoseSetAnim(entry->poseId, str_8041A0FC, 1);
+    animPoseSetAnim(entry->poseId, str_S_1, 1);
     animPoseSetMaterialLightFlagOn(entry->poseId, 2);
     mobjHitEntry(entry, 0);
     entry->offscreenId = -1;
@@ -435,8 +435,8 @@ void mobjSetPosition(const char* name, f32 x, f32 y, f32 z) {
 // scheduler/register allocator reproduce the original's scale2.x codegen only for this form, and
 // both mobjCalcMtx and the inlined mobjMainCalcMtx must reference these same objects so the unit
 // does not emit two extra Vecs and shift the rest of .rodata by 0x18.
-__declspec(section ".rodata") Vec vec3_802c3d10 = { 0.0f, 0.0f, 0.0f };
-__declspec(section ".rodata") Vec vec3_802c3d1c = { 0.0f, 0.0f, 0.0f };
+__declspec(section ".rodata") Vec vec3_zero0 = { 0.0f, 0.0f, 0.0f };
+__declspec(section ".rodata") Vec vec3_zero1 = { 0.0f, 0.0f, 0.0f };
 
 // Static inline duplicates of mobjCalcMtx/mobjCalcMtx2 so the compiler always inlines them into
 // mobjMain (the original's mobjMain has both bodies inlined).
@@ -459,12 +459,12 @@ static inline void mobjMainCalcMtx(MapObjectEntry* entry, Mtx mtx, BOOL calcBBox
     if (calcBBox) {
         animData = animPoseGetAnimBaseDataPtr(entry->poseId);
 
-        minTmp = vec3_802c3d10;
+        minTmp = vec3_zero0;
         minTmp.x = animData->bboxMin.x;
         minTmp.y = animData->bboxMin.y;
         minTmp.z = animData->bboxMin.z;
         bboxMin = minTmp;
-        maxTmp = vec3_802c3d1c;
+        maxTmp = vec3_zero1;
         maxTmp.x = animData->bboxMax.x;
         maxTmp.y = animData->bboxMax.y;
         maxTmp.z = animData->bboxMax.z;
@@ -474,17 +474,17 @@ static inline void mobjMainCalcMtx(MapObjectEntry* entry, Mtx mtx, BOOL calcBBox
         entry->scale2.y = float_10_8041a0cc * (entry->scale.y * (f32)__fabs(bboxMax.y));
         entry->scale2.z = float_10_8041a0cc * (entry->scale.z * (f32)__fabs(bboxMax.z - bboxMin.z));
 
-        if (strncmp(animData->fileName, str_8041A0E0, strlen(str_8041A0E0)) == 0) {
+        if (strncmp(animData->fileName, str_HOBJ_, strlen(str_HOBJ_)) == 0) {
             entry->translation.z = float_0_8041a0c8;
-            entry->scale2.z = float_10_8041a0cc * (float_2p5_8041a0e8 * entry->scale.z);
+            entry->scale2.z = float_10_8041a0cc * (float_2p5 * entry->scale.z);
         }
     }
 
     MTXTrans(trans, position.x, position.y, position.z);
     MTXScale(scale, entry->scale2.x, entry->scale2.y, entry->scale2.z);
-    MTXRotRad(xRot, 'x', (float_deg2rad_8041a0dc * (entry->rotation.x)));
-    MTXRotRad(yRot, 'y', (float_deg2rad_8041a0dc * (entry->rotation.y)));
-    MTXRotRad(zRot, 'z', (float_deg2rad_8041a0dc * (entry->rotation.z)));
+    MTXRotRad(xRot, 'x', (float_deg2rad * (entry->rotation.x)));
+    MTXRotRad(yRot, 'y', (float_deg2rad * (entry->rotation.y)));
+    MTXRotRad(zRot, 'z', (float_deg2rad * (entry->rotation.z)));
     MTXConcat(trans, zRot, trans);
     MTXConcat(trans, yRot, trans);
     MTXConcat(trans, xRot, trans);
@@ -497,7 +497,7 @@ static inline void mobjMainCalcMtx(MapObjectEntry* entry, Mtx mtx, BOOL calcBBox
 }
 
 // mobjMain's inlined mobjMainCalcMtx and the out-of-line mobjCalcMtx must reference the SAME zero Vecs
-// (vec3_802c3d10/vec3_802c3d1c, .rodata +0x48/+0x54). Written as two separate compound literals each, MWCC
+// (vec3_zero0/vec3_zero1, .rodata +0x48/+0x54). Written as two separate compound literals each, MWCC
 // emits two extra Vecs and every later .rodata offset (the MOBJ_* strings and doubles) shifts by 0x18. Sharing
 // the named globals fixes mobjMain, mobjCalcMtx, mobjNearDistCheck2 and mobjCheckItemboxOpen.
 void mobjMain(void) {
@@ -906,12 +906,12 @@ void mobjCalcMtx(MapObjectEntry* entry) {
     PSVECAdd(&entry->position, &entry->translation, &position);
     animData = animPoseGetAnimBaseDataPtr(entry->poseId);
 
-    minTmp = vec3_802c3d10;
+    minTmp = vec3_zero0;
     minTmp.x = animData->bboxMin.x;
     minTmp.y = animData->bboxMin.y;
     minTmp.z = animData->bboxMin.z;
     bboxMin = minTmp;
-    maxTmp = vec3_802c3d1c;
+    maxTmp = vec3_zero1;
     maxTmp.x = animData->bboxMax.x;
     maxTmp.y = animData->bboxMax.y;
     maxTmp.z = animData->bboxMax.z;
@@ -921,16 +921,16 @@ void mobjCalcMtx(MapObjectEntry* entry) {
     entry->scale2.y = float_10_8041a0cc * (entry->scale.y * (f32)__fabs(bboxMax.y));
     entry->scale2.z = float_10_8041a0cc * (entry->scale.z * (f32)__fabs(bboxMax.z - bboxMin.z));
 
-    if (strncmp(animData->fileName, str_8041A0E0, strlen(str_8041A0E0)) == 0) {
+    if (strncmp(animData->fileName, str_HOBJ_, strlen(str_HOBJ_)) == 0) {
         entry->translation.z = float_0_8041a0c8;
-        entry->scale2.z = float_10_8041a0cc * (float_2p5_8041a0e8 * entry->scale.z);
+        entry->scale2.z = float_10_8041a0cc * (float_2p5 * entry->scale.z);
     }
 
     MTXTrans(trans, position.x, position.y, position.z);
     MTXScale(scale, entry->scale2.x, entry->scale2.y, entry->scale2.z);
-    MTXRotRad(xRot, 'x', (float_deg2rad_8041a0dc * (entry->rotation.x)));
-    MTXRotRad(yRot, 'y', (float_deg2rad_8041a0dc * (entry->rotation.y)));
-    MTXRotRad(zRot, 'z', (float_deg2rad_8041a0dc * (entry->rotation.z)));
+    MTXRotRad(xRot, 'x', (float_deg2rad * (entry->rotation.x)));
+    MTXRotRad(yRot, 'y', (float_deg2rad * (entry->rotation.y)));
+    MTXRotRad(zRot, 'z', (float_deg2rad * (entry->rotation.z)));
     MTXConcat(trans, zRot, trans);
     MTXConcat(trans, yRot, trans);
     MTXConcat(trans, xRot, trans);
@@ -958,9 +958,9 @@ void mobjCalcMtx2(MapObjectEntry* entry) {
     // Matches fine here
     MTXTrans(trans, position.x, position.y, position.z);
     MTXScale(scale, entry->scale2.x, entry->scale2.y, entry->scale2.z);
-    MTXRotRad(xRot, 'x', (float_deg2rad_8041a0dc * (entry->rotation.x)));
-    MTXRotRad(yRot, 'y', (float_deg2rad_8041a0dc * (entry->rotation.y)));
-    MTXRotRad(zRot, 'z', (float_deg2rad_8041a0dc * (entry->rotation.z)));
+    MTXRotRad(xRot, 'x', (float_deg2rad * (entry->rotation.x)));
+    MTXRotRad(yRot, 'y', (float_deg2rad * (entry->rotation.y)));
+    MTXRotRad(zRot, 'z', (float_deg2rad * (entry->rotation.z)));
     MTXConcat(trans, zRot, trans);
     MTXConcat(trans, yRot, trans);
     MTXConcat(trans, xRot, trans);
@@ -1005,7 +1005,7 @@ s32 mobjCheckItemboxOpen(MapObjectEntry* entry) {
 
 // Unreferenced in the original, but its pool slot shifts the offsets mobjNearDistCheck2 reads.
 #pragma force_active on
-const Vec vec3_802c3d28 = { 0.0f, 0.0f, 0.0f };
+const Vec vec3_zero2 = { 0.0f, 0.0f, 0.0f };
 #pragma force_active reset
 
 static int mobjCheckKururingFloorItem(MapObjectEntry* entry);
@@ -1091,17 +1091,17 @@ __declspec(section ".sdata2") const f32 float_10_8041a0cc = 10.0f;
 __declspec(section ".sdata2") const f32 float_1_8041a0d0 = 1.0f;
 __declspec(section ".sdata2") const f32 float_neg1_8041a0d4 = -1.0f;
 __declspec(section ".sdata2") const f32 float_neg0p5_8041a0d8 = -0.5f;
-__declspec(section ".sdata2") const f32 float_deg2rad_8041a0dc = 0.017453292f;
-__declspec(section ".sdata2") const char str_8041A0E0[8] = "HOBJ_";
-__declspec(section ".sdata2") const f32 float_2p5_8041a0e8 = 2.5f;
+__declspec(section ".sdata2") const f32 float_deg2rad = 0.017453292f;
+__declspec(section ".sdata2") const char str_HOBJ_[8] = "HOBJ_";
+__declspec(section ".sdata2") const f32 float_2p5 = 2.5f;
 __declspec(section ".sdata2") const f32 float_5_8041a0ec = 5.0f;
 __declspec(section ".sdata2") const f32 float_25_8041a0f0 = 25.0f;
 __declspec(section ".sdata2") const f32 float_20_8041a0f4 = 20.0f;
 __declspec(section ".sdata2") const f32 float_0p1_8041a0f8 = 0.1f;
-__declspec(section ".sdata2") const char str_8041A0FC[4] = "S_1";
+__declspec(section ".sdata2") const char str_S_1[4] = "S_1";
 __declspec(section ".sdata2") const f32 float_0p5_8041a100 = 0.5f;
-__declspec(section ".sdata2") const char str_8041A104[8] = "MOBJ_";
-__declspec(section ".sdata2") const char str_8041A10C[8] = "MOBJ~";
+__declspec(section ".sdata2") const char str_MOBJ_[8] = "MOBJ_";
+__declspec(section ".sdata2") const char str_MOBJ_tilde[8] = "MOBJ~";
 #pragma explicit_zero_data on
 #pragma force_active on
 __declspec(section ".sdata2") u32 gap_09_8041A114_sdata2[1] = { 0 };

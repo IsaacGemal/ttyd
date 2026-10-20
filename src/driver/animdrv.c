@@ -18,8 +18,8 @@
 #include <string.h>
 
 // Data objects defined later in this file or in other units, declared before their first use.
-extern GXColor dat_80419a2c;
-extern GXColor dat_80419a30;
+extern GXColor animWhite0;
+extern GXColor animWhite1;
 
 #define TESTHEAP_SIZE (u32)(1.5 * 1024 * 1024)
 #define PI 3.14159265358979323846264338327950288419716939937510f
@@ -175,10 +175,10 @@ MoamoaChainEntry g_moamoa_chain_tbl[47] = {
     { "jointasi_D03", "jointasi_D04" },
     { "joint_00", "joint_core" },
 }; // filled in at runtime from a/vivian.bin
-__declspec(section ".rodata") Vec vec3_802c2db0[1] = { { 0.0f, 0.0f, 0.0f } };
-__declspec(section ".rodata") Vec vec3_802c2dbc[1] = { { 0.0f, 0.0f, 0.0f } };
-__declspec(section ".rodata") Vec vec3_802c2dc8[1] = { { 0.0f, 0.0f, 0.0f } };
-__declspec(section ".rodata") Vec vec3_802c2dd4[1] = { { 0.0f, 0.0f, 0.0f } };
+__declspec(section ".rodata") Vec vec3_zero3[1] = { { 0.0f, 0.0f, 0.0f } };
+__declspec(section ".rodata") Vec vec3_zero4[1] = { { 0.0f, 0.0f, 0.0f } };
+__declspec(section ".rodata") Vec vec3_zero5[1] = { { 0.0f, 0.0f, 0.0f } };
+__declspec(section ".rodata") Vec vec3_zero6[1] = { { 0.0f, 0.0f, 0.0f } };
 
 // An ordinary, immediately generated helper pools the unsigned-int->float conversion double
 // before the deferred functions' strings. Nothing calls it; the linker strips the body.
@@ -503,8 +503,8 @@ s32 animPoseEntry(const char* animName, s32 type) {
     pose->disableDraw = 0;
     pose->materialFlag = 0;
     pose->materialLightFlag = 0;
-    pose->materialColor = dat_80419a2c;
-    pose->materialColor2 = dat_80419a30;
+    pose->materialColor = animWhite0;
+    pose->materialColor2 = animWhite1;
     pose->paperScaleY = 1.0f;
     pose->paperScaleX = 1.0f;
     pose->paperOffsetY = 0.0f;
@@ -2011,7 +2011,7 @@ void materialProc(s32 shapeId, s32 keyFrame1) {
             for (i = 0; i < drawCount; i++, draw++) {
                 texCount = draw->texCount;
                 if ((u32)wp->mpCurPose->disableDraw == 0) {
-                    lightPos = vec3_802c2db0[0];
+                    lightPos = vec3_zero3[0];
                     MTXMultVec(*g_modeling_mtx, &lightPos, &lightPos);
                     lightPos2 = lightPos;
                     mapSetMaterialLight(wp->mpCurPose->materialLightFlag, lightPos2);
@@ -2168,7 +2168,7 @@ void renderProc(s32 shapeId, s32 keyFrame1) {
             for (i = 0; i < drawCount; i++, draw++) {
                 matTexCount = draw->texCount;
                 if ((u32)wp->mpCurPose->disableDraw == 0) {
-                    lightPos = vec3_802c2dbc[0];
+                    lightPos = vec3_zero4[0];
                     MTXMultVec(*g_modeling_mtx, &lightPos, &lightPos);
                     lightPos2 = lightPos;
                     mapSetMaterialLight(wp->mpCurPose->materialLightFlag, lightPos2);
@@ -2381,7 +2381,7 @@ void dispProc(s32 parentGroupId, s32 groupId, s32 keyFrame1, s32 keyFrame2, f32 
         }
 
         if (wp->mpCurPose->flags & 0x40) {
-            Vec pos = vec3_802c2dc8[0];
+            Vec pos = vec3_zero5[0];
             Vec* buffer = (Vec*)wp->mpCurPose->groupWorldPos->address;
             pos.x = (*g_modeling_mtx)[0][3];
             pos.y = (*g_modeling_mtx)[1][3];
@@ -2977,8 +2977,8 @@ void animPaperPoseDisp(CameraId camId, void* param) {
 #define ANIMDATA_F54(d) (*(f32*)((u8*)(d) + 0x54))
 // AnimationPose fields the header keeps as opaque padding.
 
-extern GXColor dat_80419a34;
-extern GXColor dat_80419a38;
+extern GXColor animWhite2;
+extern GXColor animWhite3;
 
 void animPaperPoseDispSub(s32 unused, AnimationPose* param) {
 #ifdef MUST_MATCH
@@ -3045,8 +3045,8 @@ void animPaperPoseDispSub(s32 unused, AnimationPose* param) {
     color0 = pose->materialColor;
     color1 = pose->materialColor2;
     pose->flags &= ~8;
-    pose->materialColor = dat_80419a34;
-    pose->materialColor2 = dat_80419a38;
+    pose->materialColor = animWhite2;
+    pose->materialColor2 = animWhite3;
     pose->materialLightFlag = 0;
 
     if (pose->vivianType != 0) {
@@ -3211,8 +3211,8 @@ static inline s32 animPoseSearchName(const char* name, s32 type) {
 
 u32 anim_ext_tex_size;
 
-extern GXColor dat_80419a3c;
-extern GXColor dat_80419a40;
+extern GXColor animWhite4;
+extern GXColor animWhite5;
 void animPoseDisp_MakeExtTexture(const char* name, f32 f1, void* animName, void* texObj, void* base,
                                  f32 f2, s32* out0, s32* out1, s32* out2, s32* out3) {
     s32 i;
@@ -3296,8 +3296,8 @@ void animPoseDisp_MakeExtTexture(const char* name, f32 f1, void* animName, void*
     materialFlag = pose->materialFlag;
     pose->flags &= ~8;
     pose->materialFlag = 0;
-    pose->materialColor = dat_80419a3c;
-    pose->materialColor2 = dat_80419a40;
+    pose->materialColor = animWhite4;
+    pose->materialColor2 = animWhite5;
     _animPoseDrawMtx(pose, mtx, 1, 0.0f, f2);
     _animPoseDrawMtx(pose, mtx, 2, 0.0f, f2);
     _animPoseDrawMtx(pose, mtx, 3, 0.0f, f2);
@@ -3512,7 +3512,7 @@ void evalProc(s32 parentGroupId, s32 groupId) {
         }
 
         if (wp->mpCurPose->flags & 0x40) {
-            pos = vec3_802c2dd4[0];
+            pos = vec3_zero6[0];
             pos.x = (*g_modeling_mtx)[0][3];
             pos.y = (*g_modeling_mtx)[1][3];
             pos.z = (*g_modeling_mtx)[2][3];
@@ -3715,11 +3715,11 @@ const char* animPoseGetGroupName(s32 poseId, s32 group) {
 // Named .sdata2 GXColor objects, defined after the code so the compiler keeps the loads.
 #pragma force_active on // dat_80419a28 has no reference and must still be emitted
 const s32 dat_80419a28 = 0x0000002f;
-__declspec(section ".sdata2") GXColor dat_80419a2c = { 0xff, 0xff, 0xff, 0xff };
-__declspec(section ".sdata2") GXColor dat_80419a30 = { 0xff, 0xff, 0xff, 0xff };
-__declspec(section ".sdata2") GXColor dat_80419a34 = { 0xff, 0xff, 0xff, 0xff };
-__declspec(section ".sdata2") GXColor dat_80419a38 = { 0xff, 0xff, 0xff, 0xff };
-__declspec(section ".sdata2") GXColor dat_80419a3c = { 0xff, 0xff, 0xff, 0xff };
-__declspec(section ".sdata2") GXColor dat_80419a40 = { 0xff, 0xff, 0xff, 0xff };
+__declspec(section ".sdata2") GXColor animWhite0 = { 0xff, 0xff, 0xff, 0xff };
+__declspec(section ".sdata2") GXColor animWhite1 = { 0xff, 0xff, 0xff, 0xff };
+__declspec(section ".sdata2") GXColor animWhite2 = { 0xff, 0xff, 0xff, 0xff };
+__declspec(section ".sdata2") GXColor animWhite3 = { 0xff, 0xff, 0xff, 0xff };
+__declspec(section ".sdata2") GXColor animWhite4 = { 0xff, 0xff, 0xff, 0xff };
+__declspec(section ".sdata2") GXColor animWhite5 = { 0xff, 0xff, 0xff, 0xff };
 #pragma force_active reset
 
