@@ -714,16 +714,15 @@ USER_FUNC(coin_entry) {
     s32 v1 = evtGetValue(event, args[1]);
     s32 v2 = evtGetValue(event, args[2]);
     s32 v3 = evtGetValue(event, args[3]);
-    ItemEntry* item = itemEntry(NULL, 0x79, 3, -1, 0, (f32)v0, (f32)v1, (f32)v2);
-    u8* itemBase = (u8*)item;
+    ItemEntry* item = itemEntry(NULL, ITEM_COIN, 3, -1, 0, (f32)v0, (f32)v1, (f32)v2);
 
     itemStatusOn(item, 0x10);
-    *(f32*)(itemBase + 0x80) = 0.8f;
-    *(f32*)(itemBase + 0x84) = 1.0f;
-    *(s32*)(itemBase + 0x88) = 5;
-    *(f32*)(itemBase + 0x58) = 550.0f;
-    *(f32*)(itemBase + 0x50) = 70.0f;
-    *(s32*)(itemBase + 0x54) = v3;
+    item->boundRate = 0.8f;
+    item->gravity = 1.0f;
+    item->boundLimit = 5;
+    item->jumpPower = 550.0f;
+    item->moveSpeed = 70.0f;
+    item->moveDir = v3;
     return EVT_RETURN_DONE;
 }
 
