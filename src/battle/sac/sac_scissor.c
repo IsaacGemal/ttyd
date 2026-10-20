@@ -60,57 +60,47 @@ typedef struct ScissorPoint {
 // Local view of the scissor action-command work area at _battleWorkPointer + 0x1F4C.
 // No header declares this struct yet.
 typedef struct ScissorWork {
-    u32 flags;                    // 0x00
+    u32 flags;                    // 0x00, bit 0: the capture has a visible bounding box
     u8 field_0x04[0x08];          // 0x04
-    s32 field_0x0C;               // 0x0C
-    s32 field_0x10;               // 0x10
-    s32 field_0x14;               // 0x14, vertex count
-    s32 field_0x18[16];           // 0x18, unit ids
-    s32 field_0x58[16];           // 0x58, accumulated power
-    u8 field_0x98;                // 0x98
+    s32 comboCount;               // 0x0C, allHit rounds so far (capped at 6 when shown)
+    s32 pulse;                    // 0x10, 0..0x3B frame counter for the line colour
+    s32 triCount;                 // 0x14, triangles in triBuf
+    s32 hitUnitIds[16];           // 0x18, unit ids
+    s32 hitPower[16];             // 0x58, damage each hit unit took
+    u8 audienceVol;               // 0x98, audience sound volume, raised 0x14 per damaging move
     u8 field_0x99[0x03];          // 0x99
-    s32 field_0x9C;               // 0x9C, point count
+    s32 pointCount;               // 0x9C, points in pointBuf (the StarTrail view starts here)
     s32 field_0xA0;               // 0xA0
-    f32 field_0xA4;               // 0xA4
-    f32 field_0xA8;               // 0xA8
-    f32 field_0xAC;               // 0xAC
-    f32 field_0xB0;               // 0xB0
-    f32 field_0xB4;               // 0xB4
-    f32 field_0xB8;               // 0xB8
-    f32 field_0xBC;               // 0xBC
-    f32 field_0xC0;               // 0xC0
+    f32 prevStickX;               // 0xA4
+    f32 prevStickY;               // 0xA8
+    f32 stickX;                   // 0xAC
+    f32 stickY;                   // 0xB0
+    f32 cursorX;                  // 0xB4, the StarTrail velX
+    f32 cursorY;                  // 0xB8, the StarTrail velY
+    f32 lastPointX;               // 0xBC, last point written to pointBuf
+    f32 lastPointY;               // 0xC0
     u8 field_0xC4[0x10];          // 0xC4
-    f32 field_0xD4;               // 0xD4
-    f32 field_0xD8;               // 0xD8
-    u8 field_0xDC[0x20];          // 0xDC
-    s32 field_0xFC;               // 0xFC
-    s32 field_0x100;              // 0x100
-    s32 field_0x104;              // 0x104
-    f32 field_0x108;              // 0x108
+    f32 cursorVelX;               // 0xD4
+    f32 cursorVelY;               // 0xD8
+    u8 field_0xDC[0x20];          // 0xDC, the StarTrail trailX/trailY arrays
+    s32 timerPhase;               // 0xFC, scissor_timer_main switch
+    s32 timerFrame;               // 0x100
+    s32 timeLeft;                 // 0x104, starts at 0x3BF
+    f32 timerPos;                 // 0x108, the timer's position (320 .. 120)
     f32 field_0x10C;              // 0x10C
     u8 field_0x110[0x04];         // 0x110
-    void* field_0x114;            // 0x114
-    void* field_0x118;            // 0x118
+    void* pointBuf;               // 0x114, 0x1000 bytes of ScissorPoint
+    void* triBuf;                 // 0x118, 0x3000 bytes of triangles (f32 x3, then y3 per triangle)
     s32 state;                    // 0x11C
-    s32 field_0x120;              // 0x120
-    f32 field_0x124;              // 0x124
-    f32 field_0x128;              // 0x128
-    f32 field_0x12C;              // 0x12C
-    f32 field_0x130;              // 0x130
-    f32 field_0x134;              // 0x134
-    f32 field_0x138;              // 0x138
-    f32 field_0x13C;              // 0x13C
-    f32 field_0x140;              // 0x140
-    f32 field_0x144;              // 0x144
+    s32 stateFrame;               // 0x120
+    Vec starPos;                  // 0x124
+    Vec starFrom;                 // 0x130, interpolation start of the star's rise
+    Vec starTo;                   // 0x13C, interpolation end of the star's rise
     u8 field_0x148[0x0C];         // 0x148
-    f32 field_0x154;              // 0x154
-    f32 field_0x158;              // 0x158
-    f32 field_0x15C;              // 0x15C
-    f32 field_0x160;              // 0x160
-    f32 field_0x164;              // 0x164
-    f32 field_0x168;              // 0x168
-    EffectEntry* field_0x16C;     // 0x16C
-    smartEntry* field_0x170;      // 0x170
+    Vec starScale;                // 0x154
+    Vec starRot;                  // 0x160
+    EffectEntry* starStone;       // 0x16C
+    smartEntry* captureBuf;       // 0x170, texture the scissor area is captured into
 } ScissorWork;
 
 // Star trail area reached through a work+0x9C pointer in the original.
@@ -531,12 +521,12 @@ s32 scissor_cross(f32* a, f32* b, f32* c, s32 n) {
 
 s32 scissor_tess(void) {
     ScissorWork* work = GetScissorPtr();
-    f32* points = BattleAlloc(work->field_0x9C << 3);
+    f32* points = BattleAlloc(work->pointCount << 3);
 
-    memcpy(points, work->field_0x114, work->field_0x9C << 3);
-    work->field_0x14 = 0;
-    tess(points, work->field_0x9C);
-    DCFlushRange(work->field_0x118, 0x3000);
+    memcpy(points, work->pointBuf, work->pointCount << 3);
+    work->triCount = 0;
+    tess(points, work->pointCount);
+    DCFlushRange(work->triBuf, 0x3000);
     return 2;
 }
 
@@ -547,12 +537,12 @@ s32 tess(f32* points, s32 count) {
     s32 k;
 
     if (count == 3) {
-        f32* dst = (f32*)((u8*)work->field_0x118 + work->field_0x14 * 0x18);
+        f32* dst = (f32*)((u8*)work->triBuf + work->triCount * 0x18);
         for (i = 0; i < 3; i++) {
             dst[i] = points[i * 2];
             dst[i + 3] = points[i * 2 + 1];
         }
-        work->field_0x14++;
+        work->triCount++;
         BattleFree(points);
     } else {
         ScissorPoint* p = (ScissorPoint*)points;
@@ -583,12 +573,12 @@ s32 tess(f32* points, s32 count) {
             }
         }
         {
-            f32* dst = (f32*)((u8*)work->field_0x118 + work->field_0x14 * 0x18);
+            f32* dst = (f32*)((u8*)work->triBuf + work->triCount * 0x18);
             for (i = 0; i < 3; i++) {
                 dst[i] = points[i * 2];
                 dst[i + 3] = points[i * 2 + 1];
             }
-            work->field_0x14++;
+            work->triCount++;
             BattleFree(points);
         }
     }
@@ -603,8 +593,8 @@ s32 weaponGetPower_Scissor(BattleUnit* unit1, BattleWeapon* weapon, BattleUnit* 
     }
     if (unit2->mAlliance == 1) {
         for (i = 0; i < 0x10; i++) {
-            if (work->field_0x18[i] == BtlUnit_GetUnitId(unit2)) {
-                return work->field_0x58[i];
+            if (work->hitUnitIds[i] == BtlUnit_GetUnitId(unit2)) {
+                return work->hitPower[i];
             }
         }
     }
@@ -646,7 +636,7 @@ u32 weapon_scissor_finish[48] = {
 };
 s32 star_control(void) {
     ScissorWork* work = GetScissorPtr();
-    StarTrail* star = (StarTrail*)((u8*)work + 0x9C);
+    StarTrail* star = (StarTrail*)&work->pointCount;
     BattleUnit* mario = BattleGetMarioPtr(_battleWorkPointer);
     f32 f;
     s32 i;
@@ -662,57 +652,57 @@ s32 star_control(void) {
     switch (work->state) {
     case 1:
         work->state = 2;
-        work->field_0x120 = 0;
-        work->field_0x16C = effStarStoneEntry(3, 0.0f, -1000.0f, 0.0f, 1.0f);
-        BtlUnit_GetPos(mario, &work->field_0x124, &work->field_0x128, &work->field_0x12C);
-        work->field_0x128 += mario->mSizeMultiplier * (f32)mario->mHeight + 37.0f;
-        *(Vec*)&work->field_0x130 = *(Vec*)&work->field_0x124;
-        *(Vec*)&work->field_0x13C = *(Vec*)&work->field_0x124;
-        work->field_0x140 += 50.0f;
-        work->field_0x144 += -1.0f;
-        *(Vec*)&work->field_0x154 = (Vec){0.0f, 0.0f, 0.0f};
-        *(Vec*)&work->field_0x160 = (Vec){0.0f, 0.0f, 0.0f};
+        work->stateFrame = 0;
+        work->starStone = effStarStoneEntry(3, 0.0f, -1000.0f, 0.0f, 1.0f);
+        BtlUnit_GetPos(mario, &work->starPos.x, &work->starPos.y, &work->starPos.z);
+        work->starPos.y += mario->mSizeMultiplier * (f32)mario->mHeight + 37.0f;
+        work->starFrom = work->starPos;
+        work->starTo = work->starPos;
+        work->starTo.y += 50.0f;
+        work->starTo.z += -1.0f;
+        work->starScale = (Vec){0.0f, 0.0f, 0.0f};
+        work->starRot = (Vec){0.0f, 0.0f, 0.0f};
         /* fallthrough */
     case 2:
-        work->field_0x120++;
-        if (work->field_0x120 <= 0x64) {
-            work->field_0x124 = intplGetValue(0, work->field_0x120, 0x64, work->field_0x130, work->field_0x13C);
-            work->field_0x128 = intplGetValue(0, work->field_0x120, 0x64, work->field_0x134, work->field_0x140);
-            work->field_0x12C = intplGetValue(0, work->field_0x120, 0x64, work->field_0x138, work->field_0x144);
-            f = intplGetValue(0, work->field_0x120, 0x64, 0.0f, 2.0f);
-            work->field_0x15C = f;
-            work->field_0x158 = f;
-            work->field_0x154 = f;
+        work->stateFrame++;
+        if (work->stateFrame <= 0x64) {
+            work->starPos.x = intplGetValue(0, work->stateFrame, 0x64, work->starFrom.x, work->starTo.x);
+            work->starPos.y = intplGetValue(0, work->stateFrame, 0x64, work->starFrom.y, work->starTo.y);
+            work->starPos.z = intplGetValue(0, work->stateFrame, 0x64, work->starFrom.z, work->starTo.z);
+            f = intplGetValue(0, work->stateFrame, 0x64, 0.0f, 2.0f);
+            work->starScale.z = f;
+            work->starScale.y = f;
+            work->starScale.x = f;
         } else {
-            work->field_0x124 = work->field_0x13C;
-            work->field_0x128 = work->field_0x140;
-            work->field_0x12C = work->field_0x144;
-            work->field_0x15C = 2.0f;
-            work->field_0x158 = 2.0f;
-            work->field_0x154 = 2.0f;
+            work->starPos.x = work->starTo.x;
+            work->starPos.y = work->starTo.y;
+            work->starPos.z = work->starTo.z;
+            work->starScale.z = 2.0f;
+            work->starScale.y = 2.0f;
+            work->starScale.x = 2.0f;
         }
-        work->field_0x164 = intplGetValue(4, work->field_0x120, 0x78, 0.0f, 2160.0f);
-        if (work->field_0x120 >= 0x78) {
+        work->starRot.y = intplGetValue(4, work->stateFrame, 0x78, 0.0f, 2160.0f);
+        if (work->stateFrame >= 0x78) {
             work->state = 3;
-            work->field_0x120 = 0;
-            *(Vec*)&work->field_0x130 = *(Vec*)&work->field_0x124;
-            work->field_0x140 = 300.0f;
+            work->stateFrame = 0;
+            work->starFrom = work->starPos;
+            work->starTo.y = 300.0f;
         }
         break;
     case 3:
-        work->field_0x120++;
-        work->field_0x128 = intplGetValue(1, work->field_0x120, 0x3C, work->field_0x134, work->field_0x140);
-        if (work->field_0x120 >= 0x3C) {
+        work->stateFrame++;
+        work->starPos.y = intplGetValue(1, work->stateFrame, 0x3C, work->starFrom.y, work->starTo.y);
+        if (work->stateFrame >= 0x3C) {
             work->state = 4;
-            work->field_0x120 = 0;
+            work->stateFrame = 0;
             {
-                *(Vec*)&work->field_0x124 = (Vec){0.0f, 300.0f, 0.0f};
-                *(Vec*)&work->field_0x154 = (Vec){1.0f, 1.0f, 1.0f};
-                *(Vec*)&work->field_0x160 = (Vec){0.0f, 0.0f, 0.0f};
-                work->field_0x134 = work->field_0x128;
-                work->field_0x140 = 0.0f;
-                star->velX = work->field_0x124;
-                star->velY = work->field_0x128;
+                work->starPos = (Vec){0.0f, 300.0f, 0.0f};
+                work->starScale = (Vec){1.0f, 1.0f, 1.0f};
+                work->starRot = (Vec){0.0f, 0.0f, 0.0f};
+                work->starFrom.y = work->starPos.y;
+                work->starTo.y = 0.0f;
+                star->velX = work->starPos.x;
+                star->velY = work->starPos.y;
                 for (i = 0; i < 4; i++) {
                     star->trailX[i] = 0.0f;
                     star->trailY[i] = -1000.0f;
@@ -721,21 +711,21 @@ s32 star_control(void) {
         }
         break;
     case 4:
-        work->field_0x120++;
-        work->field_0x128 = intplGetValue(4, work->field_0x120, 0x3C, work->field_0x134, work->field_0x140);
-        star->velX = work->field_0x124;
-        star->velY = work->field_0x128;
-        if (work->field_0x120 >= 0x3C) {
+        work->stateFrame++;
+        work->starPos.y = intplGetValue(4, work->stateFrame, 0x3C, work->starFrom.y, work->starTo.y);
+        star->velX = work->starPos.x;
+        star->velY = work->starPos.y;
+        if (work->stateFrame >= 0x3C) {
             work->state = 5;
-            work->field_0x120 = 0;
+            work->stateFrame = 0;
         }
         break;
     case 5:
     case 6:
         break;
     }
-    if (work->field_0x16C != NULL) {
-        ScissorEffectData* data = work->field_0x16C->userdata;
+    if (work->starStone != NULL) {
+        ScissorEffectData* data = work->starStone->userdata;
 
         if (work->state >= 4) {
             f32 zero = 0.0f;
@@ -744,17 +734,17 @@ s32 star_control(void) {
             data->posY = -1000.0f;
             data->posZ = zero;
         } else {
-            data->posX = work->field_0x124;
-            data->posY = work->field_0x128;
-            data->posZ = work->field_0x12C;
+            data->posX = work->starPos.x;
+            data->posY = work->starPos.y;
+            data->posZ = work->starPos.z;
         }
         {
             f32 s = 1.5f;
 
-            data->rotX = work->field_0x160;
-            data->rotY = work->field_0x164;
-            data->rotZ = work->field_0x168;
-            data->scale = s * work->field_0x154;
+            data->rotX = work->starRot.x;
+            data->rotY = work->starRot.y;
+            data->rotZ = work->starRot.z;
+            data->scale = s * work->starScale.x;
         }
     }
     if (work->state >= 4 && work->state <= 6) {
@@ -778,7 +768,7 @@ void star_disp2D(void) {
 #pragma dont_inline on
 void star_disp2D_sub(s32 index, s32 alpha) {
     ScissorWork* work = GetScissorPtr();
-    f32* points = (f32*)((u8*)work + 0x9C);
+    f32* points = (f32*)&work->pointCount;
     Mtx mTemp;
     Mtx mTrans;
     Mtx mRotX;
@@ -795,14 +785,14 @@ void star_disp2D_sub(s32 index, s32 alpha) {
         s32 step;
         f32 start;
 #endif
-        work->field_0x120++;
-        if (work->field_0x120 > 0x1E) {
-            work->field_0x120 = 0x1E;
+        work->stateFrame++;
+        if (work->stateFrame > 0x1E) {
+            work->stateFrame = 0x1E;
         }
 #ifdef MUST_MATCH
-        alpha = (s32)intplGetValue(0, (step = work->field_0x120, step), 0x1E, (start = (f32)(u32)(u8)alpha, start), 0.0f);
+        alpha = (s32)intplGetValue(0, (step = work->stateFrame, step), 0x1E, (start = (f32)(u32)(u8)alpha, start), 0.0f);
 #else
-        alpha = (s32)intplGetValue(0, work->field_0x120, 0x1E, (f32)(u32)(u8)alpha, 0.0f);
+        alpha = (s32)intplGetValue(0, work->stateFrame, 0x1E, (f32)(u32)(u8)alpha, 0.0f);
 #endif
     }
     *(u32*)&color = dat_80421718;
@@ -817,10 +807,10 @@ void star_disp2D_sub(s32 index, s32 alpha) {
         z = 0.0f;
     }
     PSMTXTrans(mTrans, x, y - 20.0f, z);
-    PSMTXScale(mScale, work->field_0x154, work->field_0x158, work->field_0x15C);
-    PSMTXRotRad(mRotX, 'x', 0.017453292f * work->field_0x160);
-    PSMTXRotRad(mRotY, 'y', 0.017453292f * work->field_0x164);
-    PSMTXRotRad(mRotZ, 'z', 0.017453292f * work->field_0x168);
+    PSMTXScale(mScale, work->starScale.x, work->starScale.y, work->starScale.z);
+    PSMTXRotRad(mRotX, 'x', 0.017453292f * work->starRot.x);
+    PSMTXRotRad(mRotY, 'y', 0.017453292f * work->starRot.y);
+    PSMTXRotRad(mRotZ, 'z', 0.017453292f * work->starRot.z);
     PSMTXConcat(mRotZ, mRotY, mTemp);
     PSMTXConcat(mRotX, mTemp, mTemp);
     PSMTXConcat(mScale, mTemp, mTemp);
@@ -833,54 +823,54 @@ s32 scissor_timer_get(EventEntry* event, BOOL isFirstCall) {
     ScissorWork* work = GetScissorPtr();
     s32* args = event->args;
 
-    if (work->field_0x104 <= 0x3B) {
+    if (work->timeLeft <= 0x3B) {
         work->state = 6;
     }
-    evtSetValue(event, args[0], work->field_0x104);
+    evtSetValue(event, args[0], work->timeLeft);
     return 2;
 }
 
 s32 scissor_timer_main(void) {
     ScissorWork* work = GetScissorPtr();
 
-    switch (work->field_0xFC) {
+    switch (work->timerPhase) {
         case 0:
         {
-            work->field_0x108 = 320.0f;
+            work->timerPos = 320.0f;
             work->field_0x10C = 185.0f;
-            work->field_0xFC = 5;
-            work->field_0x100 = 0;
+            work->timerPhase = 5;
+            work->timerFrame = 0;
         }
             // fallthrough
         case 5:
-            work->field_0x108 = intplGetValue(4, work->field_0x100, 0xF, 320.0f, 120.0f);
-            work->field_0x100++;
-            if (work->field_0x100 > 0xF) {
-                work->field_0xFC = 10;
+            work->timerPos = intplGetValue(4, work->timerFrame, 0xF, 320.0f, 120.0f);
+            work->timerFrame++;
+            if (work->timerFrame > 0xF) {
+                work->timerPhase = 10;
             }
             break;
         case 10:
-            work->field_0x104--;
-            if (work->field_0x104 <= 0x3B) {
-                work->field_0xFC = 0xF;
-                work->field_0x100 = 0;
+            work->timeLeft--;
+            if (work->timeLeft <= 0x3B) {
+                work->timerPhase = 0xF;
+                work->timerFrame = 0;
             }
             break;
         case 15:
-            work->field_0x108 = intplGetValue(4, work->field_0x100, 0xF, 120.0f, 320.0f);
-            work->field_0x100++;
-            if (work->field_0x100 > 0xF) {
-                work->field_0xFC = 0x14;
+            work->timerPos = intplGetValue(4, work->timerFrame, 0xF, 120.0f, 320.0f);
+            work->timerFrame++;
+            if (work->timerFrame > 0xF) {
+                work->timerPhase = 0x14;
             }
-            work->field_0x104--;
-            if (work->field_0x104 < 0) {
-                work->field_0x104 = 0;
+            work->timeLeft--;
+            if (work->timeLeft < 0) {
+                work->timeLeft = 0;
             }
             break;
         case 20:
-            work->field_0x104--;
-            if (work->field_0x104 < 0) {
-                work->field_0x104 = 0;
+            work->timeLeft--;
+            if (work->timeLeft < 0) {
+                work->timeLeft = 0;
                 return 2;
             }
             break;
@@ -892,90 +882,90 @@ s32 scissor_timer_main(void) {
 // (permuter). The natural build uses `p`.
 s32 scissor_control(s32 unused, s32 reset) {
     ScissorWork* work = GetScissorPtr();
-    ScissorPoint* points = (ScissorPoint*)work->field_0x114;
+    ScissorPoint* points = (ScissorPoint*)work->pointBuf;
     ScissorPoint* p;
     s32 i;
     s32 offset;
 
     if (reset != 0) {
-        work->field_0x9C = 0;
-        work->field_0xA8 = 0.0f;
-        work->field_0xA4 = 0.0f;
-        work->field_0xB0 = 0.0f;
-        work->field_0xAC = 0.0f;
+        work->pointCount = 0;
+        work->prevStickY = 0.0f;
+        work->prevStickX = 0.0f;
+        work->stickY = 0.0f;
+        work->stickX = 0.0f;
         work->field_0xA0 = 0;
-        work->field_0xD4 = 0.0f;
-        work->field_0xD8 = 0.0f;
+        work->cursorVelX = 0.0f;
+        work->cursorVelY = 0.0f;
         memset(points, 0, 0x1000);
         work->flags &= ~1;
     }
-    work->field_0xA4 = work->field_0xAC;
-    work->field_0xA8 = work->field_0xB0;
-    work->field_0xAC = (f32)keyGetStickX(0);
-    work->field_0xB0 = (f32)keyGetStickY(0);
+    work->prevStickX = work->stickX;
+    work->prevStickY = work->stickY;
+    work->stickX = (f32)keyGetStickX(0);
+    work->stickY = (f32)keyGetStickY(0);
     {
-        f32 mag = (f32)sqrt(work->field_0xA4 * work->field_0xA4 + work->field_0xA8 * work->field_0xA8);
-        mag = (f32)sqrt(work->field_0xAC * work->field_0xAC + work->field_0xB0 * work->field_0xB0);
+        f32 mag = (f32)sqrt(work->prevStickX * work->prevStickX + work->prevStickY * work->prevStickY);
+        mag = (f32)sqrt(work->stickX * work->stickX + work->stickY * work->stickY);
         if (mag > 42.0f) {
-            work->field_0xD4 += work->field_0xAC / 50.0f;
-            work->field_0xD8 += work->field_0xB0 / 50.0f;
+            work->cursorVelX += work->stickX / 50.0f;
+            work->cursorVelY += work->stickY / 50.0f;
         }
     }
-    work->field_0xD4 *= 0.86f;
-    work->field_0xD8 *= 0.86f;
-    work->field_0xB4 += work->field_0xD4;
-    work->field_0xB8 += work->field_0xD8;
-    if (work->field_0xB4 < -300.0f) {
-        work->field_0xB4 = -300.0f;
+    work->cursorVelX *= 0.86f;
+    work->cursorVelY *= 0.86f;
+    work->cursorX += work->cursorVelX;
+    work->cursorY += work->cursorVelY;
+    if (work->cursorX < -300.0f) {
+        work->cursorX = -300.0f;
     }
-    if (work->field_0xB4 > 300.0f) {
-        work->field_0xB4 = 300.0f;
+    if (work->cursorX > 300.0f) {
+        work->cursorX = 300.0f;
     }
-    if (work->field_0xB8 < -200.0f) {
-        work->field_0xB8 = -200.0f;
+    if (work->cursorY < -200.0f) {
+        work->cursorY = -200.0f;
     }
-    if (work->field_0xB8 > 200.0f) {
-        work->field_0xB8 = 200.0f;
+    if (work->cursorY > 200.0f) {
+        work->cursorY = 200.0f;
     }
-    if (work->field_0x104 <= 0x3B) {
+    if (work->timeLeft <= 0x3B) {
         work->state = 6;
         return 2;
     }
     if (gp->retraceCount % 6 == 0) {
-        if (work->field_0x9C < 0x200) {
-            if (work->field_0xBC != work->field_0xB4 || work->field_0xC0 != work->field_0xB8) {
-                if (__fabs(work->field_0xB4 - work->field_0xBC) >= 5.0 || __fabs(work->field_0xB8 - work->field_0xC0) >= 5.0) {
+        if (work->pointCount < 0x200) {
+            if (work->lastPointX != work->cursorX || work->lastPointY != work->cursorY) {
+                if (__fabs(work->cursorX - work->lastPointX) >= 5.0 || __fabs(work->cursorY - work->lastPointY) >= 5.0) {
                     psndSFXOn("SFX_BTL_SAC_KAKONDEPON1");
                 }
-                points[work->field_0x9C].x = work->field_0xB4;
-                points[work->field_0x9C].y = work->field_0xB8;
-                work->field_0xBC = work->field_0xB4;
-                work->field_0xC0 = work->field_0xB8;
-                work->field_0x9C++;
+                points[work->pointCount].x = work->cursorX;
+                points[work->pointCount].y = work->cursorY;
+                work->lastPointX = work->cursorX;
+                work->lastPointY = work->cursorY;
+                work->pointCount++;
             }
         }
     }
-    if (work->field_0x9C > 3) {
-        for (i = 0, offset = 0; i < work->field_0x9C - 3; i++, offset += 8) {
+    if (work->pointCount > 3) {
+        for (i = 0, offset = 0; i < work->pointCount - 3; i++, offset += 8) {
             f32 ox;
             f32 oy;
             p = &points[i];
 
             if (scissor_intersection(SC_P->x, SC_P->y, SC_P[1].x, SC_P[1].y,
-                                     points[work->field_0x9C - 2].x, points[work->field_0x9C - 2].y, points[work->field_0x9C - 1].x, points[work->field_0x9C - 1].y,
+                                     points[work->pointCount - 2].x, points[work->pointCount - 2].y, points[work->pointCount - 1].x, points[work->pointCount - 1].y,
                                      &ox, &oy) != 0) {
                 s32 k;
 
-                SC_P->x = points[work->field_0x9C - 1].x = ox;
-                SC_P->y = points[work->field_0x9C - 1].y = oy;
+                SC_P->x = points[work->pointCount - 1].x = ox;
+                SC_P->y = points[work->pointCount - 1].y = oy;
                 for (k = 0; k < i; k++) {
                     points[k] = *SC_P;
                 }
-                if (work->field_0x170 != NULL) {
-                    smartFree(work->field_0x170);
-                    work->field_0x170 = NULL;
+                if (work->captureBuf != NULL) {
+                    smartFree(work->captureBuf);
+                    work->captureBuf = NULL;
                 }
-                work->field_0x170 = smartAlloc(GXGetTexBufferSize(0x260, 0x1E0, 4, 0, 0), 1);
+                work->captureBuf = smartAlloc(GXGetTexBufferSize(0x260, 0x1E0, 4, 0, 0), 1);
                 dispEntry(8, 0.0f, 0, (DispCallback)scissor_capture, 0);
                 return 2;
             }
@@ -1030,8 +1020,8 @@ s32 scissor_damage(EventEntry* event, s32 unused) {
                 continue;
             }
             scissor_damage_sub(unit, &out);
-            work->field_0x18[count] = unitIndex;
-            work->field_0x58[count] = out;
+            work->hitUnitIds[count] = unitIndex;
+            work->hitPower[count] = out;
             count++;
             if (out < 1) {
                 allHit = 0;
@@ -1045,13 +1035,13 @@ s32 scissor_damage(EventEntry* event, s32 unused) {
         BattleUnit* target;
         BattleUnitPart* part;
 
-        if (work->field_0x18[i] == -1) {
+        if (work->hitUnitIds[i] == -1) {
             continue;
         }
-        if (work->field_0x58[i] < 1) {
+        if (work->hitPower[i] < 1) {
             continue;
         }
-        target = BattleGetUnitPtr(battleWork, work->field_0x18[i]);
+        target = BattleGetUnitPtr(battleWork, work->hitUnitIds[i]);
         part = BtlUnit_GetPartsPtr(target, BtlUnit_GetBodyPartsId(target));
         BattleCheckDamage(mario, target, part, (BattleWeapon*)weapon_scissor, 0);
         damage = 1;
@@ -1059,8 +1049,8 @@ s32 scissor_damage(EventEntry* event, s32 unused) {
     if (allHit == 1) {
         s32 value;
 
-        work->field_0x0C++;
-        value = work->field_0x0C + 1;
+        work->comboCount++;
+        value = work->comboCount + 1;
         if (value >= 7) {
             value = 6;
         }
@@ -1083,11 +1073,11 @@ s32 scissor_damage(EventEntry* event, s32 unused) {
             BattleAudienceSoundCallKind(2);
             BattleAudienceSoundHandBeat();
         }
-        work->field_0x98 += 0x14;
-        if (work->field_0x98 >= 0x64) {
-            work->field_0x98 = 0x64;
+        work->audienceVol += 0x14;
+        if (work->audienceVol >= 0x64) {
+            work->audienceVol = 0x64;
         }
-        BattleAudienceSoundSetVol(4, work->field_0x98, 0x1E);
+        BattleAudienceSoundSetVol(4, work->audienceVol, 0x1E);
     }
     return 2;
 }
@@ -1150,7 +1140,7 @@ void scissor_damage_sub(BattleUnit* unit, s32* out) {
 // Match note: taking `const Vec*` and reading point->x/point->y directly (no px/py
 // locals) is what lets MWCC hoist the two loads into f6/f3 and colour the float
 // temporaries as the original does; caching them in locals rotated py/ny/min.
-// Leaving the loop bound as work->field_0x14 (no `count` local) is what steers the
+// Leaving the loop bound as work->triCount (no `count` local) is what steers the
 // bound to r9 and the &tri[j] temp to r10.
 s32 scissor_damage_sub2(const Vec* point) {
     ScissorWork* work = GetScissorPtr();
@@ -1168,8 +1158,8 @@ s32 scissor_damage_sub2(const Vec* point) {
     s32 j;
 
     zero = 0.0f;
-    for (i = 0; i < work->field_0x14; i++) {
-        f32* tri = (f32*)((u8*)work->field_0x118 + i * 0x18);
+    for (i = 0; i < work->triCount; i++) {
+        f32* tri = (f32*)((u8*)work->triBuf + i * 0x18);
         for (j = 0; j < 3; j++) {
             s32 k = (j + 1) % 3;
 
@@ -1209,7 +1199,7 @@ void scissor_capture(void) {
 
     GXSetTexCopySrc(0, 0, 0x260, 0x1E0);
     GXSetTexCopyDst(0x260, 0x1E0, GX_TF_RGB565, GX_FALSE);
-    GXCopyTex(work->field_0x170->address, GX_FALSE);
+    GXCopyTex(work->captureBuf->address, GX_FALSE);
     GXPixModeSync();
 }
 
@@ -1235,18 +1225,18 @@ static inline void scissorSetHSVColor(GXColor* hsv) {
 
 void scissor_disp_control(CameraId cameraId, void* param) {
     ScissorWork* work = GetScissorPtr();
-    f32* points = work->field_0x114;
+    f32* points = work->pointBuf;
     GXColor hsv;
     s32 i;
 
-    work->field_0x10++;
-    if (work->field_0x10 >= 0x3C) {
-        work->field_0x10 -= 0x3C;
+    work->pulse++;
+    if (work->pulse >= 0x3C) {
+        work->pulse -= 0x3C;
     }
-    if (work->field_0x10 <= 0x1D) {
-        intplGetValue(0, work->field_0x10, 0x1D, 0.0f, 255.0f);
+    if (work->pulse <= 0x1D) {
+        intplGetValue(0, work->pulse, 0x1D, 0.0f, 255.0f);
     } else {
-        intplGetValue(0, work->field_0x10 - 0x1E, 0x3B, 255.0f, 0.0f);
+        intplGetValue(0, work->pulse - 0x1E, 0x3B, 255.0f, 0.0f);
     }
     GXSetCullMode(GX_CULL_NONE);
     GXClearVtxDesc();
@@ -1263,7 +1253,7 @@ void scissor_disp_control(CameraId cameraId, void* param) {
     GXLoadPosMtxImm(camGetPtr(cameraId)->view, GX_PNMTX0);
     GXSetCurrentMtx(GX_PNMTX0);
     GXSetLineWidth(0x10, GX_TO_ZERO);
-    for (i = 0; i < work->field_0x9C - 1; i++) {
+    for (i = 0; i < work->pointCount - 1; i++) {
         hsv = *(GXColor*)&dat_8042171c;
         hsv.r = (u8)(((gp->retraceCount + i * 2) % 0x7F) << 1);
 #ifdef MUST_MATCH
@@ -1301,7 +1291,7 @@ void scissor_disp_region(CameraId cameraId, void* param) {
     GXClearVtxDesc();
     GXSetVtxDesc(GX_VA_POS, GX_DIRECT);
     GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_POS_XYZ, GX_F32, 0);
-    GXInitTexObj(&texObj, work->field_0x170->address, 0x260, 0x1E0, GX_TF_RGB565, GX_CLAMP, GX_CLAMP, GX_FALSE);
+    GXInitTexObj(&texObj, work->captureBuf->address, 0x260, 0x1E0, GX_TF_RGB565, GX_CLAMP, GX_CLAMP, GX_FALSE);
     GXInitTexObjLOD(&texObj, GX_LINEAR, GX_LINEAR, 0.0f, 0.0f, 0.0f, GX_FALSE, GX_FALSE, GX_ANISO_1);
     GXLoadTexObj(&texObj, GX_TEXMAP0);
     GXSetNumChans(1);
@@ -1318,18 +1308,18 @@ void scissor_disp_region(CameraId cameraId, void* param) {
     GXSetTevAlphaIn(GX_TEVSTAGE0, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_KONST);
     GXSetTevKAlphaSel(GX_TEVSTAGE0, GX_TEV_KASEL_1);
     GXLoadPosMtxImm(camGetPtr(CAMERA_2D)->view, GX_PNMTX0);
-    tri = (f32*)work->field_0x118;
-    GXBegin(GX_TRIANGLES, GX_VTXFMT0, (u16)(work->field_0x14 * 3));
-    for (i = 0; i < work->field_0x14; i++) {
+    tri = (f32*)work->triBuf;
+    GXBegin(GX_TRIANGLES, GX_VTXFMT0, (u16)(work->triCount * 3));
+    for (i = 0; i < work->triCount; i++) {
         GXPosition3f32(tri[0], tri[3], 0.0f);
         GXPosition3f32(tri[1], tri[4], 0.0f);
         GXPosition3f32(tri[2], tri[5], 0.0f);
         tri += 6;
     }
     sysWaitDrawSync();
-    if (work->field_0x170 != NULL) {
-        smartFree(work->field_0x170);
-        work->field_0x170 = NULL;
+    if (work->captureBuf != NULL) {
+        smartFree(work->captureBuf);
+        work->captureBuf = NULL;
     }
     GXReadBoundingBox(&left, &top, &right, &bottom);
     if (left == 0x3FF && right == 0 && top == 0x3FF && bottom == 0) {
@@ -1344,27 +1334,27 @@ s32 scissor_init(void) {
     ScissorWork* work = GetScissorPtr();
 
     memset(work, 0, 0x174);
-    work->field_0x104 = 0x3BF;
-    work->field_0x114 = BattleAlloc(0x1000);
-    work->field_0x118 = BattleAlloc(0x3000);
-    work->field_0xB4 = 0.0f;
-    work->field_0xB8 = 0.0f;
-    work->field_0x0C = 0;
-    work->field_0x98 = 0;
+    work->timeLeft = 0x3BF;
+    work->pointBuf = BattleAlloc(0x1000);
+    work->triBuf = BattleAlloc(0x3000);
+    work->cursorX = 0.0f;
+    work->cursorY = 0.0f;
+    work->comboCount = 0;
+    work->audienceVol = 0;
     return 2;
 }
 
 s32 scissor_end(void) {
     ScissorWork* work = GetScissorPtr();
 
-    effDelete(*(EffectEntry**)((u8*)work->field_0x16C->userdata + 0x34));
-    effDelete(work->field_0x16C);
-    if (work->field_0x170 != NULL) {
-        smartFree(work->field_0x170);
-        work->field_0x170 = NULL;
+    effDelete(((effStarStoneData*)work->starStone->userdata)->field_0x34);
+    effDelete(work->starStone);
+    if (work->captureBuf != NULL) {
+        smartFree(work->captureBuf);
+        work->captureBuf = NULL;
     }
-    BattleFree(work->field_0x114);
-    BattleFree(work->field_0x118);
+    BattleFree(work->pointBuf);
+    BattleFree(work->triBuf);
     return 2;
 }
 

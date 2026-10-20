@@ -819,7 +819,7 @@ void main_weapon(s32 idx) {
 // allocation.
 void main_object(s32 idx) {
     GenkiWork* genki = get_ptr();
-    GenkiObject* obj = (GenkiObject*)((u8*)genki + 0x358 + idx * 0x2C);
+    GenkiObject* obj = &genki->objects[idx];
     BattleUnit* mario = BattleGetMarioPtr(_battleWorkPointer);
     s32 local[3];
     GenkiStar* star;
@@ -1190,17 +1190,17 @@ USER_FUNC(end_genki) {
     for (i = 0; i < 7; i++) {
         star = &genki->stars[i];
         if (star->field_60 != NULL) {
-            effDelete(*(EffectEntry**)((u8*)star->field_60->userdata + 0x34));
+            effDelete(((effStarStoneData*)star->field_60->userdata)->field_0x34);
             effDelete(star->field_60);
         }
     }
     for (i = 0; i < 7; i++) {
         weapon = &genki->weapon[i];
         if (weapon->field_44 != NULL) {
-            effDelete(*(EffectEntry**)((u8*)weapon->field_44->userdata + 0x34));
+            effDelete(((effStarStoneData*)weapon->field_44->userdata)->field_0x34);
             effDelete(weapon->field_44);
             for (j = 0; j < 3; j++) {
-                effDelete(*(EffectEntry**)((u8*)weapon->field_48[j]->userdata + 0x34));
+                effDelete(((effStarStoneData*)weapon->field_48[j]->userdata)->field_0x34);
                 effDelete(weapon->field_48[j]);
             }
         }

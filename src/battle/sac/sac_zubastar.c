@@ -60,13 +60,13 @@ typedef struct ZubaStarBomb {
     s32 state;       // 0x00
     s32 count;       // 0x04
     Vec* points;     // 0x08
-    Vec field_0x0C;  // 0x0C
-    Vec field_0x18;  // 0x18
-    Vec field_0x24;  // 0x24
-    Vec field_0x30;  // 0x30
-    f32 field_0x3C;  // 0x3C
-    f32 field_0x40;  // 0x40
-    f32 field_0x44;  // 0x44
+    Vec pos;         // 0x0C
+    Vec center;      // 0x18
+    Vec from;        // 0x24
+    Vec to;          // 0x30
+    f32 angle;       // 0x3C
+    f32 angleVel;    // 0x40
+    f32 velY;        // 0x44
     s32 timer;       // 0x48
     s32 maxTimer;    // 0x4C
 } ZubaStarBomb;
@@ -83,31 +83,31 @@ typedef struct ZubaStarStar {
 
 struct ZubaStarWork {
     u8 field_0x000[0x04];          // 0x000
-    s32 field_0x004;               // 0x004
-    s32 field_0x008;               // 0x008
-    s32 field_0x00C;               // 0x00C
-    s32 field_0x010;               // 0x010
+    s32 phase;                     // 0x004
+    s32 phaseTimer;                // 0x008
+    s32 timeLeft;                  // 0x00C
+    s32 hitCount;                  // 0x010
     s32 bombCount;                 // 0x014
-    s32 field_0x018;               // 0x018
-    s32 field_0x01C;               // 0x01C
-    Vec field_0x020;               // 0x020
-    Vec field_0x02C[4];            // 0x02C
-    Vec field_0x05C;               // 0x05C
-    Vec field_0x068;               // 0x068
-    s32 field_0x074;               // 0x074
-    s16 field_0x078;               // 0x078
+    s32 sequence;                  // 0x018
+    s32 sequenceTimer;             // 0x01C
+    Vec cursor;                    // 0x020
+    Vec cursorHistory[4];          // 0x02C
+    Vec cutStart;                  // 0x05C
+    Vec cutEnd;                    // 0x068
+    s32 cutFrame;                  // 0x074
+    s16 curStar;                   // 0x078
     u8 field_0x07A[0x02];          // 0x07A
-    s32 field_0x07C;               // 0x07C
-    s32 field_0x080;               // 0x080
-    f32 field_0x084;               // 0x084
-    f32 field_0x088;               // 0x088
-    f32 field_0x08C;               // 0x08C
+    s32 gaugePhase;                // 0x07C
+    s32 gaugeTimer;                // 0x080
+    f32 gauge;                     // 0x084
+    f32 gaugeBoost;                // 0x088
+    f32 gaugeDecay;                // 0x08C
     f32 field_0x090;               // 0x090
-    Vec field_0x094;               // 0x094
+    Vec gaugePos;                  // 0x094
     u8 field_0x0A0;                // 0x0A0
-    u8 field_0x0A1;                // 0x0A1
+    u8 iconFrame;                  // 0x0A1
     u8 field_0x0A2[0x02];          // 0x0A2
-    s32 field_0x0A4;               // 0x0A4
+    s32 gaugeSfx;                  // 0x0A4
     ZubaStarBomb* bombs[0xC8];     // 0x0A8
     ZubaStarStar stars[0x10];      // 0x3C8
     smartEntry* tex;               // 0x588
@@ -245,7 +245,7 @@ s32 weaponGetPower_ZubaStar(BattleUnit* unit1, BattleWeapon* weapon, BattleUnit*
                             BattleUnitPart* part) {
     ZubaStarWork* work = GetZubaStarPtr();
 
-    return weapon->hpDamageWork[work->field_0x010];
+    return weapon->hpDamageWork[work->hitCount];
 }
 
 const Vec vec3_802ff6b0 = { 0.0f, 0.0f, 0.0f };
@@ -269,10 +269,10 @@ void zubastar_create_takaku(s32 count, Vec* points) {
     // Volatile count store: a volatile access cannot move across the volatile struct copy below,
     // which keeps the count store before the copy's first load as the original schedules it.
     *(volatile s32*)&bomb->count = count;
-    *(volatile Vec*)&bomb->field_0x0C = *(const volatile Vec*)&vec3_802ff6b0;
+    *(volatile Vec*)&bomb->pos = *(const volatile Vec*)&vec3_802ff6b0;
 #else
     bomb->count = count;
-    bomb->field_0x0C = vec3_802ff6b0;
+    bomb->pos = vec3_802ff6b0;
 #endif
     bomb->timer = 0;
     bomb->maxTimer = 1;
@@ -374,11 +374,11 @@ void zubastar_bunkatu(Vec* a, Vec* b) {
                 }
             }
             bomb1->state = 0;
-            bomb1->field_0x0C = vec3_802ff6bc;
+            bomb1->pos = vec3_802ff6bc;
             bomb1->timer = irand(0x80);
             bomb1->maxTimer = irand(5) + 1;
             bomb2->state = 0;
-            bomb2->field_0x0C = vec3_802ff6c8;
+            bomb2->pos = vec3_802ff6c8;
             bomb2->timer = irand(0x80);
             bomb2->maxTimer = irand(5) + 1;
 
@@ -465,7 +465,7 @@ static const Vec zubastar_points_init[4] = {
 
 // .text:0x85C | 0x8022F128 | size: 0xDF8
 // Reconstruction of the SAC mini-game's main event callback. There are three state machines, each a
-// switch on work->field_0x004, work->field_0x018 and work->field_0x07C. Case 0x19 of the first
+// switch on work->phase, work->sequence and work->gaugePhase. Case 0x19 of the first
 // gathers the star endpoints, sorts them, finds the widest gap on each edge and randomly places a
 // split point in it before calling zubastar_bunkatu.
 s32 zubastar_main(EventEntry* event, BOOL isFirstCall) {
@@ -500,65 +500,65 @@ s32 zubastar_main(EventEntry* event, BOOL isFirstCall) {
         points[3] = vec3_802ff728;
         zubastar_create_takaku(4, points);
 #endif
-        work->field_0x020 = (Vec){ 0.0f, -1000.0f, 0.0f };
+        work->cursor = (Vec){ 0.0f, -1000.0f, 0.0f };
     }
 
-    switch (work->field_0x004) {
+    switch (work->phase) {
     case 0:
-        work->field_0x004 = 5;
-        work->field_0x018 = 5;
+        work->phase = 5;
+        work->sequence = 5;
         break;
     case 5:
-        work->field_0x004 = 6;
-        work->field_0x008 = 0;
-        if (work->field_0x07C == 0) {
-            work->field_0x07C = 5;
+        work->phase = 6;
+        work->phaseTimer = 0;
+        if (work->gaugePhase == 0) {
+            work->gaugePhase = 5;
         }
-        if (work->field_0x07C == 0xF) {
-            work->field_0x07C = 0x10;
+        if (work->gaugePhase == 0xF) {
+            work->gaugePhase = 0x10;
         }
         // fallthrough
     case 6:
-        if (work->field_0x018 == 0xA && work->field_0x07C == 0xA) {
-            work->field_0x004 = 0xA;
+        if (work->sequence == 0xA && work->gaugePhase == 0xA) {
+            work->phase = 0xA;
         }
         break;
     case 0xA:
-        work->field_0x004 = 0xB;
-        work->field_0x00C = 0x12C;
+        work->phase = 0xB;
+        work->timeLeft = 0x12C;
         // fallthrough
     case 0xB:
-        if (work->field_0x084 >= 100.0f) {
+        if (work->gauge >= 100.0f) {
             EventEntry* entry;
 
-            work->field_0x004 = 0x14;
-            work->field_0x010++;
+            work->phase = 0x14;
+            work->hitCount++;
             entry = evtEntry(nice_event, 0, 0x20);
             {
-                s32 n = work->field_0x010 + 1;
+                s32 n = work->hitCount + 1;
 
                 entry->lwData[0] = n < 6 ? n : 6;
             }
-            psndSFXOff(work->field_0x0A4);
+            psndSFXOff(work->gaugeSfx);
         } else {
-            work->field_0x00C--;
-            if (work->field_0x00C <= 0) {
-                work->field_0x004 = 0xF;
-                psndSFXOff(work->field_0x0A4);
+            work->timeLeft--;
+            if (work->timeLeft <= 0) {
+                work->phase = 0xF;
+                psndSFXOff(work->gaugeSfx);
             } else if (keyGetButtonTrg(0) & 0x100) {
-                work->field_0x088 = 2.8f;
+                work->gaugeBoost = 2.8f;
             }
         }
         break;
     case 0xF:
-        work->field_0x07C = 0x14;
-        psndSFXOff(work->field_0x0A4);
-        work->field_0x004 = 0x1E;
+        work->gaugePhase = 0x14;
+        psndSFXOff(work->gaugeSfx);
+        work->phase = 0x1E;
         break;
     case 0x14:
-        work->field_0x07C = 0xF;
-        work->field_0x080 = 0;
-        psndSFXOff(work->field_0x0A4);
+        work->gaugePhase = 0xF;
+        work->gaugeTimer = 0;
+        psndSFXOff(work->gaugeSfx);
         if (audienceNum >= 1 && audienceNum <= 0x31) {
             BattleAudienceSoundCallKind(1);
         }
@@ -574,13 +574,13 @@ s32 zubastar_main(EventEntry* event, BOOL isFirstCall) {
             BattleAudienceSoundCallKind(2);
             BattleAudienceSoundWhistleKind(3);
         }
-        work->field_0x004 = 0x15;
-        work->field_0x018 = 0xF;
+        work->phase = 0x15;
+        work->sequence = 0xF;
         // fallthrough
     case 0x15:
-        if (work->field_0x018 == 0x14) {
-            work->field_0x004 = 0x19;
-            work->field_0x008 = 0;
+        if (work->sequence == 0x14) {
+            work->phase = 0x19;
+            work->phaseTimer = 0;
         }
         break;
     case 0x19: {
@@ -590,14 +590,14 @@ s32 zubastar_main(EventEntry* event, BOOL isFirstCall) {
         f32 dy[17];
         s32 n;
 
-        work->field_0x004 = 0x1A;
-        work->field_0x018 = 0x19;
+        work->phase = 0x1A;
+        work->sequence = 0x19;
         if (irand(2) == 0) {
-            work->field_0x05C = (Vec){ 0.0f, 240.0f, 0.0f };
-            work->field_0x068 = (Vec){ 0.0f, -240.0f, 0.0f };
+            work->cutStart = (Vec){ 0.0f, 240.0f, 0.0f };
+            work->cutEnd = (Vec){ 0.0f, -240.0f, 0.0f };
         } else {
-            work->field_0x05C = (Vec){ 0.0f, -240.0f, 0.0f };
-            work->field_0x068 = (Vec){ 0.0f, 240.0f, 0.0f };
+            work->cutStart = (Vec){ 0.0f, -240.0f, 0.0f };
+            work->cutEnd = (Vec){ 0.0f, 240.0f, 0.0f };
         }
         y[0] = -96.0f;
         x[0] = -96.0f;
@@ -658,19 +658,19 @@ s32 zubastar_main(EventEntry* event, BOOL isFirstCall) {
             {
                 f32 v = x[ix] + dx[ix] * (f32)rand() / 32767.0f;
 
-                if (work->field_0x05C.y == 240.0f) {
-                    work->field_0x05C.x = v;
+                if (work->cutStart.y == 240.0f) {
+                    work->cutStart.x = v;
                 } else {
-                    work->field_0x068.x = v;
+                    work->cutEnd.x = v;
                 }
             }
             {
                 f32 v = x[iy] + dx[iy] * (f32)rand() / 32767.0f;
 
-                if (work->field_0x05C.y == -240.0f) {
-                    work->field_0x05C.x = v;
+                if (work->cutStart.y == -240.0f) {
+                    work->cutStart.x = v;
                 } else {
-                    work->field_0x068.x = v;
+                    work->cutEnd.x = v;
                 }
             }
         }
@@ -678,55 +678,55 @@ s32 zubastar_main(EventEntry* event, BOOL isFirstCall) {
             Vec a;
             Vec b;
 
-            b = work->field_0x068;
-            a = work->field_0x05C;
+            b = work->cutEnd;
+            a = work->cutStart;
             zubastar_bunkatu(&a, &b);
         }
         // fallthrough
     }
     case 0x1A:
-        if (work->field_0x018 == 0x1E) {
-            work->field_0x008++;
-            if (work->field_0x008 >= 3) {
-                work->field_0x004 = 0x21;
+        if (work->sequence == 0x1E) {
+            work->phaseTimer++;
+            if (work->phaseTimer >= 3) {
+                work->phase = 0x21;
             } else {
-                work->field_0x004 = 0x19;
+                work->phase = 0x19;
             }
         }
         break;
     case 0x1E:
-        work->field_0x004 = 0x1F;
-        work->field_0x018 = 0xF;
+        work->phase = 0x1F;
+        work->sequence = 0xF;
         // fallthrough
     case 0x1F:
-        if (work->field_0x018 == 0x14) {
-            work->field_0x004 = 0x23;
+        if (work->sequence == 0x14) {
+            work->phase = 0x23;
         }
         break;
     case 0x21:
-        if (work->field_0x010 >= 5) {
-            work->field_0x004 = 0x23;
+        if (work->hitCount >= 5) {
+            work->phase = 0x23;
         } else {
-            work->field_0x004 = 0;
+            work->phase = 0;
         }
         break;
     case 0x23:
-        work->field_0x004 = 0x24;
-        work->field_0x018 = 0x19;
-        work->field_0x05C = (Vec){ -96.0f, 240.0f, 0.0f };
-        work->field_0x068 = (Vec){ -96.0f, -240.0f, 0.0f };
+        work->phase = 0x24;
+        work->sequence = 0x19;
+        work->cutStart = (Vec){ -96.0f, 240.0f, 0.0f };
+        work->cutEnd = (Vec){ -96.0f, -240.0f, 0.0f };
         break;
     case 0x24:
-        if (work->field_0x018 == 0x1E) {
-            work->field_0x004 = 0x26;
-            work->field_0x008 = 0x3C;
+        if (work->sequence == 0x1E) {
+            work->phase = 0x26;
+            work->phaseTimer = 0x3C;
             btl_camera_shake_h(0, 0x3C, 0, 5.0f, 5.0f);
         }
         break;
     case 0x26:
-        work->field_0x008--;
-        if (work->field_0x008 <= 0) {
-            work->field_0x004 = 0x28;
+        work->phaseTimer--;
+        if (work->phaseTimer <= 0) {
+            work->phase = 0x28;
         }
         break;
     case 0x28: {
@@ -741,56 +741,56 @@ s32 zubastar_main(EventEntry* event, BOOL isFirstCall) {
         break;
     }
 
-    switch (work->field_0x018) {
+    switch (work->sequence) {
     case 0:
         break;
     case 5:
-        work->field_0x018 = 6;
-        work->field_0x01C = 0;
+        work->sequence = 6;
+        work->sequenceTimer = 0;
         // fallthrough
     case 6:
-        work->field_0x01C++;
-        work->field_0x020.x = 0.0f;
-        work->field_0x020.y = intplGetValue(4, work->field_0x01C, 0xF, 300.0f, 300.0f);
-        work->field_0x020.z = 0.0f;
-        if (work->field_0x01C >= 0xF) {
-            work->field_0x018 = 0xA;
+        work->sequenceTimer++;
+        work->cursor.x = 0.0f;
+        work->cursor.y = intplGetValue(4, work->sequenceTimer, 0xF, 300.0f, 300.0f);
+        work->cursor.z = 0.0f;
+        if (work->sequenceTimer >= 0xF) {
+            work->sequence = 0xA;
         }
         break;
     case 0xA:
-        work->field_0x020 = (Vec){ 0.0f, 300.0f, 0.0f };
+        work->cursor = (Vec){ 0.0f, 300.0f, 0.0f };
         break;
     case 0xF:
-        work->field_0x018 = 0x10;
-        work->field_0x01C = 0;
+        work->sequence = 0x10;
+        work->sequenceTimer = 0;
         // fallthrough
     case 0x10:
-        work->field_0x01C++;
-        work->field_0x020.x = 0.0f;
-        work->field_0x020.y = intplGetValue(4, work->field_0x01C, 0xF, 300.0f, 300.0f);
-        work->field_0x020.z = 0.0f;
-        if (work->field_0x01C >= 0xF) {
-            work->field_0x018 = 0x14;
+        work->sequenceTimer++;
+        work->cursor.x = 0.0f;
+        work->cursor.y = intplGetValue(4, work->sequenceTimer, 0xF, 300.0f, 300.0f);
+        work->cursor.z = 0.0f;
+        if (work->sequenceTimer >= 0xF) {
+            work->sequence = 0x14;
         }
         break;
     case 0x19:
-        work->field_0x018 = 0x1A;
-        work->field_0x074 = 0;
+        work->sequence = 0x1A;
+        work->cutFrame = 0;
         for (i = 0; i < 0x10; i++) {
             ZubaStarStar* star = &work->stars[i];
 
             if (star->state == 0) {
-                work->field_0x078 = i;
+                work->curStar = i;
                 star->state = 5;
                 star->field_0x04 = 0;
                 {
-                    f32 px = work->field_0x05C.x;
+                    f32 px = work->cutStart.x;
 
                     star->x1 = px;
                     star->x0 = px;
                 }
                 {
-                    f32 py = work->field_0x05C.y;
+                    f32 py = work->cutStart.y;
 
                     star->y1 = py;
                     star->y0 = py;
@@ -802,126 +802,126 @@ s32 zubastar_main(EventEntry* event, BOOL isFirstCall) {
         psndSFXOn("SFX_BTL_SAC_ZUBA_STAR2");
         // fallthrough
     case 0x1A:
-        work->field_0x074++;
-        work->field_0x020.x =
-            intplGetValue(0, work->field_0x074, 0xF, work->field_0x05C.x, work->field_0x068.x);
-        work->field_0x020.y =
-            intplGetValue(0, work->field_0x074, 0xF, work->field_0x05C.y, work->field_0x068.y);
+        work->cutFrame++;
+        work->cursor.x =
+            intplGetValue(0, work->cutFrame, 0xF, work->cutStart.x, work->cutEnd.x);
+        work->cursor.y =
+            intplGetValue(0, work->cutFrame, 0xF, work->cutStart.y, work->cutEnd.y);
         {
-            ZubaStarStar* star = &work->stars[work->field_0x078];
+            ZubaStarStar* star = &work->stars[work->curStar];
 
-            star->x1 = work->field_0x020.x;
-            star->y1 = work->field_0x020.y;
+            star->x1 = work->cursor.x;
+            star->y1 = work->cursor.y;
         }
-        if (work->field_0x074 >= 0xF) {
-            work->field_0x018 = 0x1B;
-            work->field_0x01C = 0;
+        if (work->cutFrame >= 0xF) {
+            work->sequence = 0x1B;
+            work->sequenceTimer = 0;
             btl_camera_shake_h(0, 0x1E, 0, 8.0f, 0.0f);
         }
         break;
     case 0x1B:
-        work->field_0x01C++;
-        if (work->field_0x01C >= 5) {
-            work->field_0x018 = 0x1C;
+        work->sequenceTimer++;
+        if (work->sequenceTimer >= 5) {
+            work->sequence = 0x1C;
         }
         break;
     case 0x1C:
-        work->field_0x018 = 0x1E;
+        work->sequence = 0x1E;
         // fallthrough
     case 0x1E:
-        work->field_0x020 = (Vec){ 0.0f, -1000.0f, 0.0f };
+        work->cursor = (Vec){ 0.0f, -1000.0f, 0.0f };
         break;
     default:
         break;
     }
 
-    work->field_0x02C[3] = work->field_0x02C[2];
-    work->field_0x02C[2] = work->field_0x02C[1];
-    work->field_0x02C[1] = work->field_0x02C[0];
-    work->field_0x02C[0] = work->field_0x020;
+    work->cursorHistory[3] = work->cursorHistory[2];
+    work->cursorHistory[2] = work->cursorHistory[1];
+    work->cursorHistory[1] = work->cursorHistory[0];
+    work->cursorHistory[0] = work->cursor;
 
-    switch (work->field_0x07C) {
+    switch (work->gaugePhase) {
     case 0:
         break;
     case 5:
-        work->field_0x07C = 6;
-        work->field_0x080 = 0;
-        work->field_0x094 = (Vec){ -1000.0f, 0.0f, 0.0f };
+        work->gaugePhase = 6;
+        work->gaugeTimer = 0;
+        work->gaugePos = (Vec){ -1000.0f, 0.0f, 0.0f };
         work->field_0x090 = 200.0f;
-        work->field_0x084 = 0.0f;
-        work->field_0x088 = 0.0f;
-        work->field_0x08C = -1.0f;
+        work->gauge = 0.0f;
+        work->gaugeBoost = 0.0f;
+        work->gaugeDecay = -1.0f;
         work->field_0x0A0 = 0xFF;
-        work->field_0x0A1 = 0;
+        work->iconFrame = 0;
         break;
     case 6:
-        work->field_0x080++;
-        work->field_0x094.x = intplGetValue(4, work->field_0x080, 0x1E, -1000.0f, 50.0f);
-        if (work->field_0x080 >= 0x1E) {
-            work->field_0x07C = 0xA;
+        work->gaugeTimer++;
+        work->gaugePos.x = intplGetValue(4, work->gaugeTimer, 0x1E, -1000.0f, 50.0f);
+        if (work->gaugeTimer >= 0x1E) {
+            work->gaugePhase = 0xA;
         }
         break;
     case 0xA:
-        work->field_0x084 += work->field_0x088;
-        work->field_0x084 += work->field_0x08C;
-        if (work->field_0x084 > 100.0f) {
-            work->field_0x084 = 100.0f;
+        work->gauge += work->gaugeBoost;
+        work->gauge += work->gaugeDecay;
+        if (work->gauge > 100.0f) {
+            work->gauge = 100.0f;
         }
-        if (work->field_0x084 < 0.0f) {
-            work->field_0x084 = 0.0f;
+        if (work->gauge < 0.0f) {
+            work->gauge = 0.0f;
         }
-        work->field_0x088 -= 0.25f;
-        if (work->field_0x088 < 0.0f) {
-            work->field_0x088 = 0.0f;
+        work->gaugeBoost -= 0.25f;
+        if (work->gaugeBoost < 0.0f) {
+            work->gaugeBoost = 0.0f;
         }
-        work->field_0x0A1++;
-        if (work->field_0x0A1 >= 8) {
-            work->field_0x0A1 = 0;
+        work->iconFrame++;
+        if (work->iconFrame >= 8) {
+            work->iconFrame = 0;
         }
-        if (work->field_0x084 <= 0.0f) {
-            work->field_0x084 = 0.0f;
-            if (psndSFXChk(work->field_0x0A4) == 0) {
-                psndSFXOff(work->field_0x0A4);
+        if (work->gauge <= 0.0f) {
+            work->gauge = 0.0f;
+            if (psndSFXChk(work->gaugeSfx) == 0) {
+                psndSFXOff(work->gaugeSfx);
             }
         }
-        if (work->field_0x084 > 0.0f) {
-            if (psndSFXChk(work->field_0x0A4) == -1) {
-                work->field_0x0A4 = psndSFXOn("SFX_BTL_SAC_ZUBA_STAR1");
+        if (work->gauge > 0.0f) {
+            if (psndSFXChk(work->gaugeSfx) == -1) {
+                work->gaugeSfx = psndSFXOn("SFX_BTL_SAC_ZUBA_STAR1");
             }
         }
-        if (psndSFXChk(work->field_0x0A4) == 0) {
-            psndSFX_pit(work->field_0x0A4,
-                        (s32)(683.0f * (f32)work->field_0x010 +
-                              4096.0f * work->field_0x084 / 100.0f));
+        if (psndSFXChk(work->gaugeSfx) == 0) {
+            psndSFX_pit(work->gaugeSfx,
+                        (s32)(683.0f * (f32)work->hitCount +
+                              4096.0f * work->gauge / 100.0f));
         }
         break;
     case 0xF:
-        work->field_0x084 = 100.0f;
-        work->field_0x088 = 0.0f;
-        work->field_0x08C = 0.0f;
-        work->field_0x0A1 = 0;
-        work->field_0x080++;
-        work->field_0x094.x = intplGetValue(4, work->field_0x080, 0x1E, 50.0f, -1000.0f);
-        if (work->field_0x080 >= 0x1E) {
-            work->field_0x080 = 0x1E;
+        work->gauge = 100.0f;
+        work->gaugeBoost = 0.0f;
+        work->gaugeDecay = 0.0f;
+        work->iconFrame = 0;
+        work->gaugeTimer++;
+        work->gaugePos.x = intplGetValue(4, work->gaugeTimer, 0x1E, 50.0f, -1000.0f);
+        if (work->gaugeTimer >= 0x1E) {
+            work->gaugeTimer = 0x1E;
         }
         break;
     case 0x10:
-        work->field_0x07C = 6;
-        work->field_0x080 = 0;
-        work->field_0x084 = 0.0f;
-        work->field_0x088 = 0.0f;
-        work->field_0x08C = -0.9f - 0.1f * (f32)work->field_0x010;
+        work->gaugePhase = 6;
+        work->gaugeTimer = 0;
+        work->gauge = 0.0f;
+        work->gaugeBoost = 0.0f;
+        work->gaugeDecay = -0.9f - 0.1f * (f32)work->hitCount;
         break;
     case 0x14:
-        work->field_0x07C = 0x15;
-        work->field_0x080 = 0;
+        work->gaugePhase = 0x15;
+        work->gaugeTimer = 0;
         break;
     case 0x15:
-        work->field_0x080++;
-        work->field_0x094.x = intplGetValue(4, work->field_0x080, 0x1E, 50.0f, -1000.0f);
-        if (work->field_0x080 >= 0x1E) {
-            work->field_0x080 = 0x1E;
+        work->gaugeTimer++;
+        work->gaugePos.x = intplGetValue(4, work->gaugeTimer, 0x1E, 50.0f, -1000.0f);
+        if (work->gaugeTimer >= 0x1E) {
+            work->gaugeTimer = 0x1E;
         }
         break;
     default:
@@ -968,17 +968,17 @@ s32 zubastar_bomb(EventEntry* event, BOOL isFirstCall) {
 
     if (isFirstCall) {
         dispEntry(8, 0.0f, 0, zubastar_capture, NULL);
-        work->field_0x004 = 0;
+        work->phase = 0;
         return 0;
     }
     // A single-case `switch` (rather than `if`) is what makes MWCC lay the guard out as
     // `beq body; b main_loop` like the original; an `if` collapses it to `bne skip`. Semantically
     // identical, so the natural form is the #else arm.
 #ifdef MUST_MATCH
-    switch (work->field_0x004) {
+    switch (work->phase) {
     case 0: {
 #else
-    if (work->field_0x004 == 0) {
+    if (work->phase == 0) {
 #endif
         s32 count = 0;
 
@@ -1019,23 +1019,23 @@ s32 zubastar_bomb(EventEntry* event, BOOL isFirstCall) {
             s32 j;
 
             bomb->maxTimer = maxTimer;
-            bomb->field_0x24 = (Vec){ 0.0f, 0.0f, 0.0f };
-            bomb->field_0x30 = (Vec){ 0.0f, -1000.0f, 200.0f };
+            bomb->from = (Vec){ 0.0f, 0.0f, 0.0f };
+            bomb->to = (Vec){ 0.0f, -1000.0f, 200.0f };
             for (j = 0; j < bomb->count; j++) {
                 sx += bomb->points[j].x;
                 sy += bomb->points[j].y;
                 sz += bomb->points[j].z;
             }
-            bomb->field_0x18.x = sx / (f32)bomb->count;
-            bomb->field_0x18.y = sy / (f32)bomb->count;
-            bomb->field_0x18.z = sz / (f32)bomb->count;
-            bomb->field_0x30.x +=
-                (bomb->field_0x18.x - 104.0f) * 600.0f / 200.0f;
-            bomb->field_0x3C = 0.0f;
-            bomb->field_0x40 = 70.0f * (f32)rand() / 32767.0f - 35.0f;
+            bomb->center.x = sx / (f32)bomb->count;
+            bomb->center.y = sy / (f32)bomb->count;
+            bomb->center.z = sz / (f32)bomb->count;
+            bomb->to.x +=
+                (bomb->center.x - 104.0f) * 600.0f / 200.0f;
+            bomb->angle = 0.0f;
+            bomb->angleVel = 70.0f * (f32)rand() / 32767.0f - 35.0f;
             // (f32)maxTimer is cast at each use: the original converts it three times, so a temp
             // here would fold them into one and change the schedule.
-            bomb->field_0x44 = (2.0f * (bomb->field_0x30.y - bomb->field_0x24.y) -
+            bomb->velY = (2.0f * (bomb->to.y - bomb->from.y) -
                                 ((f32)maxTimer * (-1.25f * (f32)maxTimer))) /
                                (2.0f * (f32)maxTimer);
             bomb->timer = 0;
@@ -1048,13 +1048,13 @@ s32 zubastar_bomb(EventEntry* event, BOOL isFirstCall) {
             break;
         }
         case 5:
-            bomb->field_0x0C.x =
-                intplGetValue(0, bomb->timer, bomb->maxTimer, bomb->field_0x24.x, bomb->field_0x30.x);
-            bomb->field_0x0C.z =
-                intplGetValue(0, bomb->timer, bomb->maxTimer, bomb->field_0x24.z, bomb->field_0x30.z);
-            bomb->field_0x0C.y += bomb->field_0x44;
-            bomb->field_0x3C += bomb->field_0x40;
-            bomb->field_0x44 += -1.25f;
+            bomb->pos.x =
+                intplGetValue(0, bomb->timer, bomb->maxTimer, bomb->from.x, bomb->to.x);
+            bomb->pos.z =
+                intplGetValue(0, bomb->timer, bomb->maxTimer, bomb->from.z, bomb->to.z);
+            bomb->pos.y += bomb->velY;
+            bomb->angle += bomb->angleVel;
+            bomb->velY += -1.25f;
             bomb->timer++;
             if (bomb->timer > bomb->maxTimer) {
                 bomb->state = 0xA;
@@ -1082,7 +1082,7 @@ s32 zubastar_end(EventEntry* event, BOOL isFirstCall) {
     ZubaStarWork* work = GetZubaStarPtr();
     s32 i;
 
-    effDelete(*(EffectEntry**)((u8*)work->effect->userdata + 0x34));
+    effDelete(((effStarStoneData*)work->effect->userdata)->field_0x34);
     effDelete(work->effect);
     for (i = 0; i < 0xC8; i++) {
         if (work->bombs[i] != NULL) {
@@ -1163,10 +1163,10 @@ void zubastar_disp_bomb(CameraId cameraId, void* param) {
     for (i = 0; i < work->bombCount; i++) {
         bomb = work->bombs[i];
 
-        PSMTXTrans(m1, bomb->field_0x18.x, bomb->field_0x18.y, bomb->field_0x18.z);
-        PSMTXTrans(m2, -bomb->field_0x18.x, -bomb->field_0x18.y, -bomb->field_0x18.z);
-        PSMTXTrans(m3, bomb->field_0x0C.x, bomb->field_0x0C.y, bomb->field_0x0C.z);
-        PSMTXRotRad(m4, 'z', cdeg * bomb->field_0x3C);
+        PSMTXTrans(m1, bomb->center.x, bomb->center.y, bomb->center.z);
+        PSMTXTrans(m2, -bomb->center.x, -bomb->center.y, -bomb->center.z);
+        PSMTXTrans(m3, bomb->pos.x, bomb->pos.y, bomb->pos.z);
+        PSMTXRotRad(m4, 'z', cdeg * bomb->angle);
         PSMTXConcat(m4, m2, mtx);
         PSMTXConcat(m1, mtx, mtx);
         PSMTXConcat(m3, mtx, mtx);
@@ -1187,7 +1187,7 @@ void zubastar_disp_bomb(CameraId cameraId, void* param) {
 #pragma opt_propagation reset
 
 // .text:0x0 | 0x8022E590 | size: 0x368
-// The original holds work+0x18 in r30 and reaches field_0x018, field_0x020 and field_0x02C
+// The original holds work+0x18 in r30 and reaches sequence, cursor and cursorHistory
 // through it (the compiler CSEs the base). MWCC here does not, so under MUST_MATCH a local
 // u8* b18 = (u8*)work + 0x18 with Z18/Z20/Z2C(i) forces the same base; the natural struct-field
 // accesses are under #else. All of disp2D's named float constants are now literals (200.0f, 60.0f, ...),
@@ -1202,22 +1202,22 @@ void zubastar_disp2D(CameraId cameraId, void* param) {
 #define Z20 ((Vec*)(b18 + 8))
 #define Z2C(i) (((Vec*)(b18 + 0x14)) + (i))
 #else
-#define Z18 (work->field_0x018)
-#define Z20 (&work->field_0x020)
-#define Z2C(i) (&work->field_0x02C[i])
+#define Z18 (work->sequence)
+#define Z20 (&work->cursor)
+#define Z2C(i) (&work->cursorHistory[i])
 #endif
     ZubaStarStar* star;
     s32 i;
     s32 alpha;
     Vec pos;
 
-    if (work->field_0x07C >= 5) {
+    if (work->gaugePhase >= 5) {
         s32 icon;
 
-        icon = (work->field_0x0A1 <= 3) ? 0x64 : 0x65;
+        icon = (work->iconFrame <= 3) ? 0x64 : 0x65;
         pos = (Vec){ 0.0f, 0.0f, 0.0f };
-        pos.x = work->field_0x094.x - 200.0f;
-        pos.y = 60.0f + work->field_0x094.y;
+        pos.x = work->gaugePos.x - 200.0f;
+        pos.y = 60.0f + work->gaugePos.y;
 #ifdef MUST_MATCH
         // Cast only to drop the s32->s16 `extsh` the original does not emit: the id is 0x64/0x65,
         // so the upper bits are already clear. The natural declared call is under #else.
@@ -1225,8 +1225,8 @@ void zubastar_disp2D(CameraId cameraId, void* param) {
 #else
         iconDispGx(1.0f, &pos, 0x10, icon);
 #endif
-        BattleAcDrawGauge((s32)work->field_0x094.x, (s32)work->field_0x094.y, 0xB1, 4, 0x1A, 0x34, 0x4E,
-                          0, 0.01f * work->field_0x084);
+        BattleAcDrawGauge((s32)work->gaugePos.x, (s32)work->gaugePos.y, 0xB1, 4, 0x1A, 0x34, 0x4E,
+                          0, 0.01f * work->gauge);
     }
     GXSetCullMode(GX_CULL_NONE);
     GXClearVtxDesc();

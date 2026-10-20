@@ -42,67 +42,93 @@ extern s32 sac_ac_help_off[];
 extern BattleWork* _battleWorkPointer;
 
 typedef struct BakuGameWorkEntry {
-    s32 field_0x0;   // 0x0
-    s32 field_0x4;   // 0x4
+    s32 state;       // 0x0, 0 / 5 / 10 / 12 / 15 / 20: per-button phase in bakuGameMain
+    s32 frame;       // 0x4, counter for the state 12 fade-in
     s32 type;        // 0x8, 0x100/0x200/0x400
-    s32 index;       // 0xC
-    u8 field_0x10[0x14 - 0x10];
+    s32 index;       // 0xC, which team this button points at (0 Mario, 1 enemy, 2 audience)
+    f32 meter;       // 0x10, starts at 100 and drops; the button fires when it reaches 0
     Vec pos;         // 0x14
-    f32 field_0x20;  // 0x20
+    f32 iconScale;   // 0x20, passed as the icon alpha/scale to iconDispGx
 } BakuGameWorkEntry;
 
-// Bounce-arrow counters living inside BattleWork at 0x1F2C (bytes 0..4 unsigned, 5..6 signed).
-typedef struct BakuGameBouncePos {
-    u8 field_0x0;
-    u8 field_0x1;
-    u8 field_0x2;
-    u8 field_0x3;
+// Flash colour the gauge is tinted with once it is full, living inside BattleWork at 0x1F2C.
+// BattleAcDrawGauge reads bytes 0..3 as RGBA; bakuGameDisp2D sweeps g and b between 0x80 and 0xF5.
+typedef struct BakuGameGaugeColor {
+    u8 r;
+    u8 g;
+    u8 b;
+    u8 a;
     u8 field_0x4;
-    s8 field_0x5;
-    s8 field_0x6;
-} BakuGameBouncePos;
+    s8 dg;
+    s8 db;
+} BakuGameGaugeColor;
 
 struct BakuGameWork {
-    s32 flags;                        // 0x0
-    u8 field_0x4[0xC - 0x4];          // 0x4
+    s32 flags;                        // 0x0, bit 0: heiho enabled (bakuGameHeihoReturn), bit 1: audience can throw
+    s32 phase;                        // 0x4, outer switch in bakuGameMain
+    s32 phaseTimer;                   // 0x8
     BakuGameWorkEntry entries[3];     // 0xC
-    u8 field_0x78[0x88 - 0x78];       // 0x78
+    u8 field_0x78[0x7C - 0x78];       // 0x78
+    s32 stage;                        // 0x7C, inner switch in bakuGameMain
+    s32 counter;                      // 0x80, frames into the current stage
+    s32 duration;                     // 0x84, frames the current stage runs for
     Vec position;                     // 0x88
-    u8 field_0x94[0xC4 - 0x94];       // 0x94
-    f32 field_0xC4;                   // 0xC4
-    u8 field_0xC8[0xD0 - 0xC8];       // 0xC8
-    f32 field_0xD0;                   // 0xD0
-    u8 field_0xD4[0xDC - 0xD4];       // 0xD4
-    f32 field_0xDC;                   // 0xDC
-    f32 field_0xE0;                   // 0xE0
+    Vec fromPos;                      // 0x94, Mario's drop start (y is 0x98)
+    Vec landPos;                      // 0xA0, Mario's drop end (y is 0xA4)
+    u8 field_0xAC[0xB0 - 0xAC];       // 0xAC
+    f32 fallSpeed;                    // 0xB0, drop speed, decays by 0.5 a frame
+    u8 field_0xB4[0xC0 - 0xB4];       // 0xB4
+    f32 field_0xC0;                   // 0xC0, set to 90 and 70 by the stage code, never read
+    f32 intensity;                    // 0xC4, time-gauge intensity: camera shake and animPoseDrawMtx
+    f32 field_0xC8;                   // 0xC8, always written with intensity
+    u8 team;                          // 0xCC, team being surprised (0 Mario, 1 enemy, 2 audience)
+    u8 selTeam;                       // 0xCD, team the player picked (copied from entries[i].index)
+    u8 field_0xCE[0xD0 - 0xCE];       // 0xCE
+    f32 gauge;                        // 0xD0, 0..110 time gauge; 100 is full
+    f32 gaugeBoost;                   // 0xD4, added to gauge each frame, +1.5 on a button press
+    f32 gaugeDecay;                   // 0xD8, -0.3 a frame
+    f32 field_0xDC;                   // 0xDC, first BattleAcDrawGauge argument
+    f32 field_0xE0;                   // 0xE0, second BattleAcDrawGauge argument
     u8 field_0xE4[0xE8 - 0xE4];       // 0xE4
-    f32 field_0xE8;                   // 0xE8
-    s32 field_0xEC;                   // 0xEC
-    u8 field_0xF0[0xF4 - 0xF0];       // 0xF0
-    s32 field_0xF4;                   // 0xF4
+    f32 gaugeFill;                    // 0xE8, gauge / 100 clamped to 1, last BattleAcDrawGauge argument
+    s32 animPose;                     // 0xEC, c_star_bom pose id, -1 when released
+    s32 countdown;                    // 0xF0, frames left in the round
+    s32 cooldown;                     // 0xF4, frames before the next button press counts
     BattleWeapon weapon;              // 0xF8
-    u8 field_0x1B8[0x1C0 - 0x1B8];    // 0x1B8
-    s32 field_0x1C0;                  // 0x1C0
-    s32 field_0x1C4;                  // 0x1C4
-    s32 field_0x1C8;                  // 0x1C8
-    s8 field_0x1CC;                   // 0x1CC
+    s32 gaugeSfx;                     // 0x1B8, SFX_BTL_SAC_TIME1 handle
+    s32 reactionSfx;                  // 0x1BC, SFX_BTL_SAC_TIME3 handle
+    s32 heihoState;                   // 0x1C0, phase of bakuGameHeihoReturn and the heiho in main
+    s32 heihoTimer;                   // 0x1C4
+    s32 heihoDuration;                // 0x1C8
+    s8 texSet;                        // 0x1CC, -1 or 1; 1 selects the second half of the UVs in bakuGameDisp3D
     u8 field_0x1CD[0x1D0 - 0x1CD];    // 0x1CD
-    Vec field_0x1D0;                  // 0x1D0
-    Vec field_0x1DC;                  // 0x1DC
-    Vec field_0x1E8;                  // 0x1E8
+    Vec heihoPos;                     // 0x1D0, y is the bounce height
+    Vec heihoFrom;                    // 0x1DC
+    Vec heihoTo;                      // 0x1E8
     f32 field_0x1F4;                  // 0x1F4
-    f32 field_0x1F8;                  // 0x1F8
+    f32 heihoVelY;                    // 0x1F8
     u8 field_0x1FC[0x200 - 0x1FC];    // 0x1FC
-    s32 field_0x200;                  // 0x200
-    s32 state;                        // 0x204
+    s32 texIndex;                     // 0x200, texture index passed to TEXGetGXTexObjFromPalette
+    s32 state;                        // 0x204, starStone phase in main_star
     s32 frame;                        // 0x208
-    Vec field_0x20C;                  // 0x20C
-    Vec field_0x218;                  // 0x218
-    Vec field_0x224;                  // 0x224
+    Vec starPos;                      // 0x20C
+    Vec starFrom;                     // 0x218
+    Vec starTo;                       // 0x224
     u8 field_0x230[0xC];              // 0x230
-    Vec field_0x23C;                  // 0x23C
-    Vec field_0x248;                  // 0x248
+    Vec starScale;                    // 0x23C
+    Vec starRot;                      // 0x248
     EffectEntry* starStone;           // 0x254
+    Vec marioFrom;                    // 0x258, Mario's surprise start (y 0x25C, z 0x260)
+    Vec marioTo;                      // 0x264, Mario's surprise end (y 0x268, z 0x26C)
+    u8 field_0x270[0x274 - 0x270];    // 0x270
+    f32 marioVelY;                    // 0x274
+    u8 field_0x278[0x298 - 0x278];    // 0x278
+    f32 partyVelY;                    // 0x298
+    u8 field_0x29C[0x2A4 - 0x29C];    // 0x29C
+    f32 audienceY;                    // 0x2A4, height offset applied to the audience and the throw
+    u8 field_0x2A8[0x2B0 - 0x2A8];    // 0x2A8
+    f32 audienceVelY;                 // 0x2B0
+    u8 field_0x2B4[0x2B8 - 0x2B4];    // 0x2B4
 };
 
 // The weapon strings open .rodata. Every later entry is a local initializer's template (pooled where the
@@ -169,45 +195,45 @@ static USER_FUNC(main_star) {
 
                 baku->starStone = effStarStoneEntry(1, zero, -1000.0f, zero, 1.0f);
             }
-            BtlUnit_GetPos(mario, &baku->field_0x20C.x, &baku->field_0x20C.y, &baku->field_0x20C.z);
-            baku->field_0x20C.y += mario->mSizeMultiplier * (f32)mario->mHeight + 37.0f;
-            baku->field_0x218 = baku->field_0x20C;
-            baku->field_0x224 = baku->field_0x20C;
-            baku->field_0x224.y += 50.0f;
-            baku->field_0x224.z += -1.0f;
-            baku->field_0x23C = (Vec){ 0.0f, 0.0f, 0.0f };
-            baku->field_0x248 = (Vec){ 0.0f, 0.0f, 0.0f };
+            BtlUnit_GetPos(mario, &baku->starPos.x, &baku->starPos.y, &baku->starPos.z);
+            baku->starPos.y += mario->mSizeMultiplier * (f32)mario->mHeight + 37.0f;
+            baku->starFrom = baku->starPos;
+            baku->starTo = baku->starPos;
+            baku->starTo.y += 50.0f;
+            baku->starTo.z += -1.0f;
+            baku->starScale = (Vec){ 0.0f, 0.0f, 0.0f };
+            baku->starRot = (Vec){ 0.0f, 0.0f, 0.0f };
         }
             // fall through
         case 2:
             baku->frame++;
             if (baku->frame <= 100) {
-                baku->field_0x20C.x = intplGetValue(0, baku->frame, 100, baku->field_0x218.x, baku->field_0x224.x);
-                baku->field_0x20C.y = intplGetValue(0, baku->frame, 100, baku->field_0x218.y, baku->field_0x224.y);
-                baku->field_0x20C.z = intplGetValue(0, baku->frame, 100, baku->field_0x218.z, baku->field_0x224.z);
+                baku->starPos.x = intplGetValue(0, baku->frame, 100, baku->starFrom.x, baku->starTo.x);
+                baku->starPos.y = intplGetValue(0, baku->frame, 100, baku->starFrom.y, baku->starTo.y);
+                baku->starPos.z = intplGetValue(0, baku->frame, 100, baku->starFrom.z, baku->starTo.z);
                 scale = intplGetValue(0, baku->frame, 100, 0.0f, 2.0f);
-                baku->field_0x23C.z = scale;
-                baku->field_0x23C.y = scale;
-                baku->field_0x23C.x = scale;
+                baku->starScale.z = scale;
+                baku->starScale.y = scale;
+                baku->starScale.x = scale;
             } else {
-                baku->field_0x20C.x = baku->field_0x224.x;
-                baku->field_0x20C.y = baku->field_0x224.y;
-                baku->field_0x20C.z = baku->field_0x224.z;
-                baku->field_0x23C.z = 2.0f;
-                baku->field_0x23C.y = 2.0f;
-                baku->field_0x23C.x = 2.0f;
+                baku->starPos.x = baku->starTo.x;
+                baku->starPos.y = baku->starTo.y;
+                baku->starPos.z = baku->starTo.z;
+                baku->starScale.z = 2.0f;
+                baku->starScale.y = 2.0f;
+                baku->starScale.x = 2.0f;
             }
-            baku->field_0x248.y = intplGetValue(4, baku->frame, 0x78, 0.0f, 2160.0f);
+            baku->starRot.y = intplGetValue(4, baku->frame, 0x78, 0.0f, 2160.0f);
             if (baku->frame >= 0x78) {
                 baku->state = 3;
                 baku->frame = 0;
-                baku->field_0x218 = baku->field_0x20C;
-                baku->field_0x224.y = 300.0f;
+                baku->starFrom = baku->starPos;
+                baku->starTo.y = 300.0f;
             }
             break;
         case 3:
             baku->frame++;
-            baku->field_0x20C.y = intplGetValue(1, baku->frame, 0x3C, baku->field_0x218.y, baku->field_0x224.y);
+            baku->starPos.y = intplGetValue(1, baku->frame, 0x3C, baku->starFrom.y, baku->starTo.y);
             if (baku->frame >= 0x3C) {
                 baku->state = 4;
                 baku->frame = 0;
@@ -215,15 +241,15 @@ static USER_FUNC(main_star) {
             break;
     }
     if (baku->starStone != NULL) {
-        f32* e = baku->starStone->userdata;
+        effStarStoneData* data = baku->starStone->userdata;
 
-        e[2] = baku->field_0x20C.x;
-        e[3] = baku->field_0x20C.y;
-        e[4] = baku->field_0x20C.z;
-        e[6] = baku->field_0x248.x;
-        e[7] = baku->field_0x248.y;
-        e[8] = baku->field_0x248.z;
-        e[5] = 1.5f * baku->field_0x23C.x;
+        data->field_0x8 = baku->starPos.x;
+        data->field_0xC = baku->starPos.y;
+        data->field_0x10 = baku->starPos.z;
+        data->field_0x18 = baku->starRot.x;
+        data->field_0x1C = baku->starRot.y;
+        data->field_0x20 = baku->starRot.z;
+        data->field_0x14 = 1.5f * baku->starScale.x;
     }
     dispEntry(4, 0.0f, 2, bakuGameDispStar, NULL);
     return EVT_RETURN_BLOCK;
@@ -236,8 +262,7 @@ s32 init_bakugame(EventEntry* event, BOOL isFirstCall) {
 
 s32 end_bakugame(EventEntry* event, BOOL isFirstCall) {
     BakuGameWork* baku = GetBakuGamePtr();
-    void* q = baku->starStone->userdata;
-    effDelete(*(EffectEntry**)((u8*)q + 0x34));
+    effDelete(((effStarStoneData*)baku->starStone->userdata)->field_0x34);
     effDelete(baku->starStone);
     return EVT_RETURN_DONE;
 }
@@ -266,7 +291,7 @@ s32 bakuGameDecideWeapon(EventEntry* event, BOOL isFirstCall) {
     memcpy(&baku->weapon, &weapon, sizeof(BattleWeapon));
     p[2] = 100;
     if (v != -1) {
-        if (baku->field_0xD0 >= 100.0f) {
+        if (baku->gauge >= 100.0f) {
             p[2] = 0x7F;
         } else {
             p[2] = 100;
@@ -286,8 +311,8 @@ s32 bakuGameBombEntry(EventEntry* event, BOOL isFirstCall) {
     if (animGroupBaseAsync("c_star_bom", 2, 0) == 0) {
         return 0;
     }
-    baku->field_0xEC = animPoseEntry("c_star_bom", 2);
-    animPoseSetAnim(baku->field_0xEC, "Z_1", 1);
+    baku->animPose = animPoseEntry("c_star_bom", 2);
+    animPoseSetAnim(baku->animPose, "Z_1", 1);
     return 2;
 }
 
@@ -333,13 +358,13 @@ s32 bakuGameMain(EventEntry* event, BOOL isFirstCall) {
     args = event->args;
 
     if (isFirstCall) {
-        *(s32*)((u8*)baku + 0x4) = 0;
+        baku->phase = 0;
         bakuGameDecideButton(1);
         for (i = 0; i < 3; i++) {
             BakuGameWorkEntry* entry = &baku->entries[i];
             entry->type = tbl[i];
-            *(f32*)&entry->field_0x10[0] = 100.0f;
-            entry->field_0x20 = 0.0f;
+            entry->meter = 100.0f;
+            entry->iconScale = 0.0f;
         }
         memcpy(&baku->weapon, &weapon, 0xC0);
 
@@ -377,57 +402,57 @@ s32 bakuGameMain(EventEntry* event, BOOL isFirstCall) {
         }
     }
 
-    switch (*(s32*)((u8*)baku + 0x4)) {
+    switch (baku->phase) {
         case 0:
             for (i = 0; i < 3; i++) {
                 BakuGameWorkEntry* entry = &baku->entries[i];
-                if (entry->field_0x0 != 5) goto first_done;
+                if (entry->state != 5) goto first_done;
             }
-            if (*(s32*)((u8*)baku + 0x7C) != 8) break;
-            if ((baku->flags & 1) && baku->field_0x1C0 != 5) break;
-            *(s32*)((u8*)baku + 0x4) = 5;
+            if (baku->stage != 8) break;
+            if ((baku->flags & 1) && baku->heihoState != 5) break;
+            baku->phase = 5;
             break;
         case 5:
-            *(s32*)((u8*)baku + 0x4) = 10;
-            *(s32*)((u8*)baku + 0x8) = 0;
+            baku->phase = 10;
+            baku->phaseTimer = 0;
             for (i = 0; i < 3; i++) {
                 BakuGameWorkEntry* entry = &baku->entries[i];
-                entry->field_0x0 = 10;
-                entry->field_0x4 = 0;
+                entry->state = 10;
+                entry->frame = 0;
             }
-            *(s32*)((u8*)baku + 0x7C) = 10;
-            *(s32*)((u8*)baku + 0xF0) = irand(0x78) + 0x21C;
+            baku->stage = 10;
+            baku->countdown = irand(0x78) + 0x21C;
             /* fall through */
         case 10:
-            (*(s32*)((u8*)baku + 0x8))++;
-            if (*(s32*)((u8*)baku + 0x8) > 0x3C && irand(0x96) == 0) {
+            baku->phaseTimer++;
+            if (baku->phaseTimer > 0x3C && irand(0x96) == 0) {
                 for (i = 0; i < 3; i++) {
                     BakuGameWorkEntry* entry = &baku->entries[i];
-                    entry->field_0x0 = 10;
+                    entry->state = 10;
                 }
                 bakuGameDecideButton(0);
-                *(s32*)((u8*)baku + 0x8) = 0;
+                baku->phaseTimer = 0;
             }
-            if (*(s32*)((u8*)baku + 0x8) == 0xB4) {
-                *(s32*)((u8*)baku + 0x8) = 0xB4;
+            if (baku->phaseTimer == 0xB4) {
+                baku->phaseTimer = 0xB4;
                 for (i = 0; i < 3; i++) {
                     BakuGameWorkEntry* entry = &baku->entries[i];
-                    entry->field_0x0 = 10;
+                    entry->state = 10;
                 }
                 bakuGameDecideButton(0);
-                *(s32*)((u8*)baku + 0x8) = 0;
+                baku->phaseTimer = 0;
             }
             {
                 BakuGameWorkEntry* entry;
                 s32 sel = -1;
-                if (*(u8*)((u8*)baku + 0xCC) == 1) {
+                if (baku->team == 1) {
                     if (irand(2) == 0) {
                         sel = 0;
                     } else {
                         sel = 2;
                     }
                 }
-                if (*(u8*)((u8*)baku + 0xCC) == 2) {
+                if (baku->team == 2) {
                     if (irand(2) == 0) {
                         sel = 0;
                     } else {
@@ -438,7 +463,7 @@ s32 bakuGameMain(EventEntry* event, BOOL isFirstCall) {
                     for (i = 0; i < 3; i++) {
                         entry = &baku->entries[i];
                         if (entry->index == sel) {
-                            *(f32*)&entry->field_0x10[0] -= 5.0f;
+                            entry->meter -= 5.0f;
                         }
                     }
                 }
@@ -447,31 +472,31 @@ s32 bakuGameMain(EventEntry* event, BOOL isFirstCall) {
         case 20:
             for (i = 0; i < 3; i++) {
                 BakuGameWorkEntry* entry = &baku->entries[i];
-                entry->field_0x0 = 0x14;
+                entry->state = 0x14;
             }
-            *(s32*)((u8*)baku + 0x7C) = 0x28;
-            *(s32*)((u8*)baku + 0x80) = 0x3C;
-            *(s32*)((u8*)baku + 0x4) = 0x19;
+            baku->stage = 0x28;
+            baku->counter = 0x3C;
+            baku->phase = 0x19;
             break;
         case 25:
-            if (*(s32*)((u8*)baku + 0x7C) == 0x32) {
-                *(s32*)((u8*)baku + 0x4) = 0x1E;
+            if (baku->stage == 0x32) {
+                baku->phase = 0x1E;
             }
             break;
         case 30:
-            animPoseRelease(baku->field_0xEC);
-            baku->field_0xEC = -1;
-            evtSetValue(event, args[0], *(u8*)((u8*)baku + 0xCC));
-            evtSetFloat(event, args[1], baku->field_0xD0);
+            animPoseRelease(baku->animPose);
+            baku->animPose = -1;
+            evtSetValue(event, args[0], baku->team);
+            evtSetFloat(event, args[1], baku->gauge);
             {
                 s32 r = -1;
-                if (baku->field_0xD0 > 0.0f && baku->field_0xD0 < 33.0f) {
+                if (baku->gauge > 0.0f && baku->gauge < 33.0f) {
                     r = 2;
                 }
-                if (baku->field_0xD0 >= 33.0f && baku->field_0xD0 < 66.0f) {
+                if (baku->gauge >= 33.0f && baku->gauge < 66.0f) {
                     r = 3;
                 }
-                if (baku->field_0xD0 >= 66.0f) {
+                if (baku->gauge >= 66.0f) {
                     r = 4;
                 }
                 evtSetValue(event, args[2], (r < 4) ? r : 4);
@@ -484,24 +509,24 @@ first_done:
 
     for (i = 0; i < 3; i++) {
         e = &baku->entries[i];
-        switch (e->field_0x0) {
+        switch (e->state) {
             case 0:
-                e->field_0x0 = 5;
+                e->state = 5;
                 break;
             case 10:
-                e->field_0x0 = 15;
-                e->field_0x20 = 1.0f;
+                e->state = 15;
+                e->iconScale = 1.0f;
                 break;
             case 12:
-                e->field_0x20 = intplGetValue(4, e->field_0x4, 0x1E, 0.0f, 1.0f);
-                e->field_0x4++;
-                if (e->field_0x4 > 0x1E) {
-                    e->field_0x0 = 15;
+                e->iconScale = intplGetValue(4, e->frame, 0x1E, 0.0f, 1.0f);
+                e->frame++;
+                if (e->frame > 0x1E) {
+                    e->state = 15;
                 }
                 break;
             case 15:
-                if ((keyGetButtonTrg(0) & e->type) != 0 && baku->field_0xF4 == 0) {
-                    *(f32*)&e->field_0x10[0] -= 100.0f;
+                if ((keyGetButtonTrg(0) & e->type) != 0 && baku->cooldown == 0) {
+                    e->meter -= 100.0f;
                 }
                 break;
             case 20:
@@ -515,40 +540,40 @@ first_done:
     {
         Vec home = { 125.0f, 0.0f, -30.0f };
     }
-    switch (baku->field_0x1C0) {
+    switch (baku->heihoState) {
         case 0:
             if (!(baku->flags & 1)) break;
-            baku->field_0x1C0 = 2;
-            baku->field_0x1CC = -1;
-            baku->field_0x200 = 0x5A;
-            baku->field_0x1D0 = (Vec){ 125.0f, 0.0f, 100.0f };
-            baku->field_0x1DC = baku->field_0x1D0;
-            baku->field_0x1D0.x = 300.0f;
-            baku->field_0x1DC.x = 300.0f;
-            baku->field_0x1E8 = (Vec){ 125.0f, 0.0f, 100.0f };
-            baku->field_0x1C4 = 0;
-            baku->field_0x1C8 = 0x1E;
+            baku->heihoState = 2;
+            baku->texSet = -1;
+            baku->texIndex = 0x5A;
+            baku->heihoPos = (Vec){ 125.0f, 0.0f, 100.0f };
+            baku->heihoFrom = baku->heihoPos;
+            baku->heihoPos.x = 300.0f;
+            baku->heihoFrom.x = 300.0f;
+            baku->heihoTo = (Vec){ 125.0f, 0.0f, 100.0f };
+            baku->heihoTimer = 0;
+            baku->heihoDuration = 0x1E;
             /* fall through */
         case 2:
-            baku->field_0x1D0.x = intplGetValue(0, baku->field_0x1C4, baku->field_0x1C8, baku->field_0x1DC.x,
-                                                baku->field_0x1E8.x);
+            baku->heihoPos.x = intplGetValue(0, baku->heihoTimer, baku->heihoDuration, baku->heihoFrom.x,
+                                                baku->heihoTo.x);
             {
-                s32 m = baku->field_0x1C4 % 12;
-                if (m >= 0 && m <= 3) baku->field_0x200 = 0x5A;
-                if (m >= 4 && m <= 7) baku->field_0x200 = 0x5B;
-                if (m >= 8 && m <= 0xB) baku->field_0x200 = 0x5C;
+                s32 m = baku->heihoTimer % 12;
+                if (m >= 0 && m <= 3) baku->texIndex = 0x5A;
+                if (m >= 4 && m <= 7) baku->texIndex = 0x5B;
+                if (m >= 8 && m <= 0xB) baku->texIndex = 0x5C;
             }
-            baku->field_0x1C4++;
-            if (baku->field_0x1C4 > baku->field_0x1C8) {
-                baku->field_0x1C0 = 5;
-                baku->field_0x1D0 = baku->field_0x1E8;
+            baku->heihoTimer++;
+            if (baku->heihoTimer > baku->heihoDuration) {
+                baku->heihoState = 5;
+                baku->heihoPos = baku->heihoTo;
             }
             break;
         case 5:
-            baku->field_0x200 = 0x52;
+            baku->texIndex = 0x52;
             break;
         case 10:
-            baku->field_0x200 = 0x54;
+            baku->texIndex = 0x54;
             break;
         case 15:
             break;
@@ -556,10 +581,10 @@ first_done:
             break;
     }
 
-    if (*(s32*)((u8*)baku + 0x7C) >= 0xA && *(s32*)((u8*)baku + 0x7C) <= 0x14 &&
-        *(s32*)((u8*)baku + 0xF0) <= 0) {
-        *(s32*)((u8*)baku + 0x4) = 0x14;
-        switch (*(u8*)((u8*)baku + 0xCC)) {
+    if (baku->stage >= 0xA && baku->stage <= 0x14 &&
+        baku->countdown <= 0) {
+        baku->phase = 0x14;
+        switch (baku->team) {
             case 0:
                 bakuGameMarioSurpriseReset(mario, party);
                 break;
@@ -574,140 +599,133 @@ first_done:
         }
     }
 
-    if (*(s32*)((u8*)baku + 0x7C) >= 0xA && *(s32*)((u8*)baku + 0x7C) <= 0x1E) {
+    if (baku->stage >= 0xA && baku->stage <= 0x1E) {
         if ((keyGetButtonTrg(0) & 0x700) != 0) {
-            *(f32*)((u8*)baku + 0xD4) = 1.5f;
+            baku->gaugeBoost = 1.5f;
         }
-        *(f32*)((u8*)baku + 0xD8) = -0.3f;
-        baku->field_0xD0 += *(f32*)((u8*)baku + 0xD4);
-        baku->field_0xD0 += *(f32*)((u8*)baku + 0xD8);
-        if (baku->field_0xD0 > 110.0f) {
-            baku->field_0xD0 = 110.0f;
+        baku->gaugeDecay = -0.3f;
+        baku->gauge += baku->gaugeBoost;
+        baku->gauge += baku->gaugeDecay;
+        if (baku->gauge > 110.0f) {
+            baku->gauge = 110.0f;
         }
-        if (baku->field_0xD0 < 0.0f) {
-            baku->field_0xD0 = 0.0f;
-            if (psndSFXChk(*(s32*)((u8*)baku + 0x1B8)) == 0) {
-                psndSFXOff(*(s32*)((u8*)baku + 0x1B8));
+        if (baku->gauge < 0.0f) {
+            baku->gauge = 0.0f;
+            if (psndSFXChk(baku->gaugeSfx) == 0) {
+                psndSFXOff(baku->gaugeSfx);
             }
         }
-        if (baku->field_0xD0 > 0.0f && psndSFXChk(*(s32*)((u8*)baku + 0x1B8)) == -1) {
-            *(s32*)((u8*)baku + 0x1B8) = psndSFXOn("SFX_BTL_SAC_TIME1");
+        if (baku->gauge > 0.0f && psndSFXChk(baku->gaugeSfx) == -1) {
+            baku->gaugeSfx = psndSFXOn("SFX_BTL_SAC_TIME1");
         }
-        if (psndSFXChk(*(s32*)((u8*)baku + 0x1B8)) == 0) {
-            psndSFX_pit(*(s32*)((u8*)baku + 0x1B8),
-                        (s32)(4096.0f * baku->field_0xD0 / 100.0f));
+        if (psndSFXChk(baku->gaugeSfx) == 0) {
+            psndSFX_pit(baku->gaugeSfx,
+                        (s32)(4096.0f * baku->gauge / 100.0f));
         }
-        *(f32*)((u8*)baku + 0xD4) -= 0.25f;
-        if (*(f32*)((u8*)baku + 0xD4) < 0.0f) {
-            *(f32*)((u8*)baku + 0xD4) = 0.0f;
+        baku->gaugeBoost -= 0.25f;
+        if (baku->gaugeBoost < 0.0f) {
+            baku->gaugeBoost = 0.0f;
         }
         {
             f32 v;
-            if (baku->field_0xD0 >= 100.0f) {
+            if (baku->gauge >= 100.0f) {
                 v = 1.0f;
             } else {
-                v = baku->field_0xD0 / 100.0f;
+                v = baku->gauge / 100.0f;
             }
-            baku->field_0xE8 = v;
+            baku->gaugeFill = v;
         }
-        (*(s32*)((u8*)baku + 0xF0))--;
-        (baku->field_0xF4)--;
-        if (baku->field_0xF4 < 0) {
-            baku->field_0xF4 = 0;
+        baku->countdown--;
+        baku->cooldown--;
+        if (baku->cooldown < 0) {
+            baku->cooldown = 0;
         }
-        if (*(s32*)((u8*)baku + 0xF0) == 0x1E0) {
+        if (baku->countdown == 0x1E0) {
             psndSFXOn("SFX_BTL_SAC_TIME4");
         }
-        if (*(s32*)((u8*)baku + 0xF0) >= 0x1E0 && *(s32*)((u8*)baku + 0xF0) < 0x1EA) {
-            f32 v = intplGetValue(0, 0x1E9 - *(s32*)((u8*)baku + 0xF0), 0xA, 2.0f, 3.0f);
-            *(f32*)((u8*)baku + 0xC8) = v;
-            baku->field_0xC4 = v;
+        if (baku->countdown >= 0x1E0 && baku->countdown < 0x1EA) {
+            f32 v = intplGetValue(0, 0x1E9 - baku->countdown, 0xA, 2.0f, 3.0f);
+            baku->field_0xC8 = v;
+            baku->intensity = v;
         }
-        if (*(s32*)((u8*)baku + 0xF0) == 0x168) {
+        if (baku->countdown == 0x168) {
             psndSFXOn("SFX_BTL_SAC_TIME4");
         }
-        if (*(s32*)((u8*)baku + 0xF0) >= 0x168 && *(s32*)((u8*)baku + 0xF0) < 0x172) {
-            f32 v = intplGetValue(0, 0x171 - *(s32*)((u8*)baku + 0xF0), 0xA, 3.0f, 4.0f);
-            *(f32*)((u8*)baku + 0xC8) = v;
-            baku->field_0xC4 = v;
+        if (baku->countdown >= 0x168 && baku->countdown < 0x172) {
+            f32 v = intplGetValue(0, 0x171 - baku->countdown, 0xA, 3.0f, 4.0f);
+            baku->field_0xC8 = v;
+            baku->intensity = v;
         }
-        if (*(s32*)((u8*)baku + 0xF0) == 0xF0) {
+        if (baku->countdown == 0xF0) {
             psndSFXOn("SFX_BTL_SAC_TIME4");
         }
-        if (*(s32*)((u8*)baku + 0xF0) >= 0xF0 && *(s32*)((u8*)baku + 0xF0) < 0xFA) {
-            f32 v = intplGetValue(0, 0xF9 - *(s32*)((u8*)baku + 0xF0), 0xA, 4.0f, 5.0f);
-            *(f32*)((u8*)baku + 0xC8) = v;
-            baku->field_0xC4 = v;
+        if (baku->countdown >= 0xF0 && baku->countdown < 0xFA) {
+            f32 v = intplGetValue(0, 0xF9 - baku->countdown, 0xA, 4.0f, 5.0f);
+            baku->field_0xC8 = v;
+            baku->intensity = v;
         }
-        if (*(s32*)((u8*)baku + 0xF0) == 0x78) {
+        if (baku->countdown == 0x78) {
             psndSFXOn("SFX_BTL_SAC_TIME4");
         }
-        if (*(s32*)((u8*)baku + 0xF0) >= 0x78 && *(s32*)((u8*)baku + 0xF0) < 0x82) {
-            f32 v = intplGetValue(0, 0x81 - *(s32*)((u8*)baku + 0xF0), 0xA, 5.0f, 6.0f);
-            *(f32*)((u8*)baku + 0xC8) = v;
-            baku->field_0xC4 = v;
+        if (baku->countdown >= 0x78 && baku->countdown < 0x82) {
+            f32 v = intplGetValue(0, 0x81 - baku->countdown, 0xA, 5.0f, 6.0f);
+            baku->field_0xC8 = v;
+            baku->intensity = v;
         }
-        if (*(s32*)((u8*)baku + 0xF0) == 0x257) {
-            animPoseSetAnim(baku->field_0xEC, "S_1", 0);
+        if (baku->countdown == 0x257) {
+            animPoseSetAnim(baku->animPose, "S_1", 0);
         }
-        if (*(s32*)((u8*)baku + 0xF0) == 0x190) {
-            animPoseSetAnim(baku->field_0xEC, "S_2", 0);
+        if (baku->countdown == 0x190) {
+            animPoseSetAnim(baku->animPose, "S_2", 0);
         }
-        if (*(s32*)((u8*)baku + 0xF0) == 0xC8) {
-            animPoseSetAnim(baku->field_0xEC, "S_3", 0);
+        if (baku->countdown == 0xC8) {
+            animPoseSetAnim(baku->animPose, "S_3", 0);
         }
     }
 
-    switch (*(s32*)((u8*)baku + 0x7C)) {
+    switch (baku->stage) {
         case 0:
-            *(s32*)((u8*)baku + 0x7C) = 2;
+            baku->stage = 2;
             baku->field_0xE0 = 50.0f;
-            *(s32*)((u8*)baku + 0x80) = 0;
+            baku->counter = 0;
             baku->position = (Vec){ 0.0f, -1000.0f, 0.0f };
-            {
-                s32* pF0 = (s32*)((u8*)baku + 0xF0);
-                *pF0 = -1;
-            }
-            *(f32*)((u8*)baku + 0xC8) = 2.0f;
-            baku->field_0xC4 = 2.0f;
-            *(f32*)((u8*)baku + 0xC0) = 90.0f;
+            baku->countdown = -1;
+            baku->field_0xC8 = 2.0f;
+            baku->intensity = 2.0f;
+            baku->field_0xC0 = 90.0f;
             /* fall through */
         case 2:
             baku->field_0xDC =
-                intplGetValue(4, *(s32*)((u8*)baku + 0x80), 0x1E, -1000.0f, 50.0f);
-            (*(s32*)((u8*)baku + 0x80))++;
-            if (*(s32*)((u8*)baku + 0x80) > 0x1E) {
-                *(s32*)((u8*)baku + 0x7C) = 4;
+                intplGetValue(4, baku->counter, 0x1E, -1000.0f, 50.0f);
+            baku->counter++;
+            if (baku->counter > 0x1E) {
+                baku->stage = 4;
             }
             break;
         case 4:
             c2v = 2.0f;
             cnv = -800.0f;
             c80v = 80.0f;
-            *(s32*)((u8*)baku + 0x7C) = 5;
+            baku->stage = 5;
             baku->position = (Vec){ -125.0f, 500.0f, -30.0f };
             {
-                Vec* p94 = (Vec*)((u8*)baku + 0x94);
-                *p94 = baku->position;
+                baku->fromPos = baku->position;
             }
-            *(Vec*)((u8*)baku + 0xA0) = (Vec){ -125.0f, 0.0f, -30.0f };
+            baku->landPos = (Vec){ -125.0f, 0.0f, -30.0f };
             {
-                f32* pA4 = (f32*)((u8*)baku + 0xA4);
-                f32* p98 = (f32*)((u8*)baku + 0x98);
-                f32* pB0 = (f32*)((u8*)baku + 0xB0);
-                *pB0 = (c2v * (*pA4 - *p98) - cnv) / c80v;
+                baku->fallSpeed = (c2v * (baku->landPos.y - baku->fromPos.y) - cnv) / c80v;
             }
-            *(s32*)((u8*)baku + 0x80) = 0x28;
-            *(s32*)((u8*)baku + 0x84) = 0x28;
+            baku->counter = 0x28;
+            baku->duration = 0x28;
             /* fall through */
         case 5:
-            baku->position.y += *(f32*)((u8*)baku + 0xB0);
-            *(f32*)((u8*)baku + 0xB0) += -0.5f;
-            (*(s32*)((u8*)baku + 0x80))--;
-            if (*(s32*)((u8*)baku + 0x80) < 0) {
-                *(s32*)((u8*)baku + 0x7C) = 8;
-                baku->position.y = *(f32*)((u8*)baku + 0xA4);
-                *(u8*)((u8*)baku + 0xCC) = 0;
+            baku->position.y += baku->fallSpeed;
+            baku->fallSpeed += -0.5f;
+            baku->counter--;
+            if (baku->counter < 0) {
+                baku->stage = 8;
+                baku->position.y = baku->landPos.y;
+                baku->team = 0;
                 bakuGameMarioSurprise(mario, party);
                 btl_camera_shake_h(0, 0xA, 4, 4.0f, 0.0f);
                 psndSFXOn("SFX_BTL_SAC_TIME2");
@@ -715,24 +733,24 @@ first_done:
             }
             break;
         case 10:
-            *(s32*)((u8*)baku + 0x7C) = 0xB;
-            *(s32*)((u8*)baku + 0x80) = 0;
-            *(f32*)((u8*)baku + 0xC0) = 70.0f;
+            baku->stage = 0xB;
+            baku->counter = 0;
+            baku->field_0xC0 = 70.0f;
             /* fall through */
         case 11:
             {
             f32 zero = 0.0f;
             for (i = 0; i < 3; i++) {
                 BakuGameWorkEntry* entry = &baku->entries[i];
-                if (*(f32*)&entry->field_0x10[0] <= zero) {
-                    *(s32*)((u8*)baku + 0x7C) = 0x14;
-                    *(s32*)((u8*)baku + 0x80) = 0;
-                    *(u8*)((u8*)baku + 0xCD) = (u8)entry->index;
+                if (entry->meter <= zero) {
+                    baku->stage = 0x14;
+                    baku->counter = 0;
+                    baku->selTeam = (u8)entry->index;
                     break;
                 }
             }
             }
-            if (*(u8*)((u8*)baku + 0xCC) != 0) break;
+            if (baku->team != 0) break;
             BtlUnit_GetPos(mario, &px, &py, &pz);
             BtlUnit_GetHomePos(mario, &hx, &hy, &hz);
             mario->faceDirection = -1;
@@ -740,13 +758,13 @@ first_done:
                 if (irand(0x50) == 0) {
                     {
                         f32 h = -200.0f;
-                        *(f32*)((u8*)baku + 0x274) = -h / 20.0f;
+                        baku->marioVelY = -h / 20.0f;
                     }
                     BtlUnit_SetPos(mario, px, py + 0.1f, pz);
                 }
             } else {
-                py += *(f32*)((u8*)baku + 0x274);
-                *(f32*)((u8*)baku + 0x274) += -2.0f;
+                py += baku->marioVelY;
+                baku->marioVelY += -2.0f;
                 if (py < hy) py = hy;
                 BtlUnit_SetPos(mario, px, py, pz);
             }
@@ -757,26 +775,26 @@ first_done:
                     if (irand(0x50) == 0) {
                         {
                             f32 h = -200.0f;
-                            *(f32*)((u8*)baku + 0x298) = -h / 20.0f;
+                            baku->partyVelY = -h / 20.0f;
                         }
                         BtlUnit_SetPos(party, px, py + 0.1f, pz);
                     }
                 } else {
-                    py += *(f32*)((u8*)baku + 0x298);
-                    *(f32*)((u8*)baku + 0x298) += -2.0f;
+                    py += baku->partyVelY;
+                    baku->partyVelY += -2.0f;
                     if (py < hy) py = hy;
                     BtlUnit_SetPos(party, px, py, pz);
                 }
             }
             break;
         case 20:
-            if (*(u8*)((u8*)baku + 0xCC) == *(u8*)((u8*)baku + 0xCD)) {
-                *(s32*)((u8*)baku + 0x7C) = 0x1E;
+            if (baku->team == baku->selTeam) {
+                baku->stage = 0x1E;
                 break;
             }
-            switch (*(u8*)((u8*)baku + 0xCC)) {
+            switch (baku->team) {
                 case 0:
-                    if (*(s32*)((u8*)baku + 0x80) == 0) {
+                    if (baku->counter == 0) {
                         BtlUnit_GetPos(mario, &px, &py, &pz);
                         BtlUnit_GetHomePos(mario, &hx, &hy, &hz);
                         BtlUnit_SetPos(mario, hx, hy, hz);
@@ -785,7 +803,7 @@ first_done:
                             v.x = px;
                             v.y = hy;
                             v.z = pz;
-                            *(Vec*)((u8*)baku + 0x258) = v;
+                            baku->marioFrom = v;
                         }
                         {
                             Vec v;
@@ -793,7 +811,7 @@ first_done:
                             v.x = baku->position.x;
                             v.y = hy;
                             v.z = 7.0f + baku->position.z;
-                            *(Vec*)((u8*)baku + 0x264) = v;
+                            baku->marioTo = v;
                         }
                         mario->faceDirection = -1;
                         if (bakuGamePartyExist(party) == 1) {
@@ -804,89 +822,89 @@ first_done:
                         BtlUnit_SetBodyAnim(mario, "M_W_1");
                     }
                     {
-                        s32 d = *(s32*)((u8*)baku + 0x80);
+                        s32 d = baku->counter;
                         if (d >= 0 && d < 8) {
-                            px = intplGetValue(0, d, 7, *(f32*)((u8*)baku + 0x258),
-                                               *(f32*)((u8*)baku + 0x264));
-                            py = *(f32*)((u8*)baku + 0x25C);
-                            pz = intplGetValue(0, *(s32*)((u8*)baku + 0x80), 7, *(f32*)((u8*)baku + 0x260),
-                                               *(f32*)((u8*)baku + 0x26C));
+                            px = intplGetValue(0, d, 7, baku->marioFrom.x,
+                                               baku->marioTo.x);
+                            py = baku->marioFrom.y;
+                            pz = intplGetValue(0, baku->counter, 7, baku->marioFrom.z,
+                                               baku->marioTo.z);
                             BtlUnit_SetPos(mario, px, py, pz);
                         }
                     }
-                    if (*(s32*)((u8*)baku + 0x80) == 8) {
+                    if (baku->counter == 8) {
                         BtlUnit_SetBodyAnim(mario, "M_U_2");
                         mario->faceDirection = 1;
-                        *(Vec*)((u8*)baku + 0xA0) = baku->position;
-                        *(Vec*)((u8*)baku + 0x94) = *(Vec*)((u8*)baku + 0xA0);
-                        *(f32*)((u8*)baku + 0xA4) += 30.0f * mario->mSizeMultiplier;
+                        baku->landPos = baku->position;
+                        baku->fromPos = baku->landPos;
+                        baku->landPos.y += 30.0f * mario->mSizeMultiplier;
                     }
                     {
-                        s32 d = *(s32*)((u8*)baku + 0x80);
+                        s32 d = baku->counter;
                         if (d >= 8 && d < 0xD) {
                             baku->position.y = intplGetValue(4, d - 8, 4,
-                                                                       *(f32*)((u8*)baku + 0x98),
-                                                                       *(f32*)((u8*)baku + 0xA4));
+                                                                       baku->fromPos.y,
+                                                                       baku->landPos.y);
                         }
                     }
-                    if (*(s32*)((u8*)baku + 0x80) > 0xF) {
-                        *(s32*)((u8*)baku + 0x7C) = 0x16;
+                    if (baku->counter > 0xF) {
+                        baku->stage = 0x16;
                     }
                     break;
                 case 1:
                     if (!(baku->flags & 1)) {
-                        if (*(s32*)((u8*)baku + 0x80) == 0x1A) {
+                        if (baku->counter == 0x1A) {
                             {
                                 f32 h = -100.0f;
-                                baku->field_0x1F8 = -h / 20.0f;
+                                baku->heihoVelY = -h / 20.0f;
                             }
-                            baku->field_0x1D0.y = 0.0f;
+                            baku->heihoPos.y = 0.0f;
                         }
-                        if (*(s32*)((u8*)baku + 0x80) >= 0x1A) {
-                            baku->field_0x1D0.y += baku->field_0x1F8;
-                            baku->field_0x1F8 += -1.0f;
+                        if (baku->counter >= 0x1A) {
+                            baku->heihoPos.y += baku->heihoVelY;
+                            baku->heihoVelY += -1.0f;
                         }
-                        if (*(s32*)((u8*)baku + 0x80) > 0x1E) {
-                            *(s32*)((u8*)baku + 0x7C) = 0x16;
+                        if (baku->counter > 0x1E) {
+                            baku->stage = 0x16;
                         }
                         for (i = 0; i < 64; i++) {
                             unit = BattleGetUnitPtr(wp, i);
                             if (unit != NULL && !(unit->mAttributeFlags & 0x20000) &&
                                 !BtlUnit_CheckStatus(unit, 0x1B) && unit->mAlliance == 1 &&
                                 BtlUnit_CanActStatus(unit)) {
-                                if (*(s32*)((u8*)baku + 0x80) == 0) {
+                                if (baku->counter == 0) {
                                     BtlUnit_SetBodyAnimType(unit, 0x41);
                                 }
-                                if (*(s32*)((u8*)baku + 0x80) == 0x1A) {
+                                if (baku->counter == 0x1A) {
                                     btlDispPoseAnime(BtlUnit_GetPartsPtr(unit, BtlUnit_GetBodyPartsId(unit)));
                                     if (!(unit->mAttributeFlags & 4) && !(unit->mAttributeFlags & 2)) {
                                         BtlUnit_GetHomePos(unit, &hx, &hy, &hz);
                                         BtlUnit_SetPos(unit, hx, hy, hz);
                                     }
                                 }
-                                if (*(s32*)((u8*)baku + 0x80) >= 0x1A &&
+                                if (baku->counter >= 0x1A &&
                                     !(unit->mAttributeFlags & 4) && !(unit->mAttributeFlags & 2)) {
                                     BtlUnit_GetHomePos(unit, &hx, &hy, &hz);
-                                    BtlUnit_SetPos(unit, hx, hy + baku->field_0x1D0.y, hz);
+                                    BtlUnit_SetPos(unit, hx, hy + baku->heihoPos.y, hz);
                                 }
                             }
                         }
                     } else {
-                        baku->field_0x1C0 = 0xF;
-                        if (*(s32*)((u8*)baku + 0x80) == 0x1A) {
+                        baku->heihoState = 0xF;
+                        if (baku->counter == 0x1A) {
                             {
                                 f32 h = -200.0f;
-                                baku->field_0x1F8 = -h / 20.0f;
+                                baku->heihoVelY = -h / 20.0f;
                             }
                             neg2 = -2.0f;
                         }
-                        if (*(s32*)((u8*)baku + 0x80) >= 0x1A) {
-                            baku->field_0x1D0.y += baku->field_0x1F8;
-                            baku->field_0x1F8 += neg2;
-                            baku->position.y = 30.0f + baku->field_0x1D0.y;
+                        if (baku->counter >= 0x1A) {
+                            baku->heihoPos.y += baku->heihoVelY;
+                            baku->heihoVelY += neg2;
+                            baku->position.y = 30.0f + baku->heihoPos.y;
                         }
-                        if (*(s32*)((u8*)baku + 0x80) > 0x1E) {
-                            *(s32*)((u8*)baku + 0x7C) = 0x16;
+                        if (baku->counter > 0x1E) {
+                            baku->stage = 0x16;
                         }
                     }
                     break;
@@ -894,38 +912,38 @@ first_done:
                     f32 lim;
                     f32 scale;
 
-                    if (*(u8*)((u8*)baku + 0xCD) == 1) {
+                    if (baku->selTeam == 1) {
                         scale = 2.0f;
                     } else {
                         scale = 1.0f;
                     }
                     if (baku->flags & 2) {
-                        *(s32*)((u8*)baku + 0x7C) = 0x1E;
+                        baku->stage = 0x1E;
                         goto state_done;
                     }
                     lim = 26.0f / scale;
-                    if ((f32)*(s32*)((u8*)baku + 0x80) == lim) {
-                        *(f32*)((u8*)baku + 0x2A4) = 0.0f;
+                    if ((f32)baku->counter == lim) {
+                        baku->audienceY = 0.0f;
                         {
                             f32 h = -200.0f;
-                            *(f32*)((u8*)baku + 0x2B0) = -h / 20.0f;
+                            baku->audienceVelY = -h / 20.0f;
                         }
                     }
-                    if ((f32)*(s32*)((u8*)baku + 0x80) >= lim) {
-                        *(f32*)((u8*)baku + 0x2A4) += *(f32*)((u8*)baku + 0x2B0);
-                        *(f32*)((u8*)baku + 0x2B0) += -2.0f;
+                    if ((f32)baku->counter >= lim) {
+                        baku->audienceY += baku->audienceVelY;
+                        baku->audienceVelY += -2.0f;
                     }
-                    if ((f32)*(s32*)((u8*)baku + 0x80) > 30.0f / scale) {
-                        *(s32*)((u8*)baku + 0x7C) = 0x16;
+                    if ((f32)baku->counter > 30.0f / scale) {
+                        baku->stage = 0x16;
                     }
                     for (i = 0; i < 0xC8; i++) {
                         BattleAudienceMember* m = BattleAudienceGetPtr(i);
                         if (bakuGameAudienceCanThrowPos(i) == 1 && (u8)BattleAudience_GetExist(i) &&
                             (m->flags & 0x10)) {
                             BattleAudience_GetHomePosition(i, &px, &py, &pz);
-                            BattleAudience_SetPosition(i, px, py + *(f32*)((u8*)baku + 0x2A4), pz);
+                            BattleAudience_SetPosition(i, px, py + baku->audienceY, pz);
                             baku->position.y =
-                                py + *(f32*)((u8*)baku + 0x2A4) + 20.0f;
+                                py + baku->audienceY + 20.0f;
                         }
                     }
                     break;
@@ -933,26 +951,25 @@ first_done:
                 default:
                     break;
             }
-            (*(s32*)((u8*)baku + 0x80))++;
+            baku->counter++;
             if ((keyGetButtonTrg(0) & 0x400) != 0) {
-                *(u8*)((u8*)baku + 0xCD) = (u8)baku->entries[2].index;
+                baku->selTeam = (u8)baku->entries[2].index;
             }
             if ((keyGetButtonTrg(0) & 0x200) != 0) {
-                *(u8*)((u8*)baku + 0xCD) = (u8)baku->entries[1].index;
+                baku->selTeam = (u8)baku->entries[1].index;
             }
             if ((keyGetButtonTrg(0) & 0x100) != 0) {
-                *(u8*)((u8*)baku + 0xCD) = (u8)baku->entries[0].index;
+                baku->selTeam = (u8)baku->entries[0].index;
             }
             break;
         case 22:
-            switch (*(u8*)((u8*)baku + 0xCC)) {
+            switch (baku->team) {
                 case 0:
                     f30v = 30.0f;
                     baku->position = (Vec){ -125.0f, 0.0f, -30.0f };
-                    *(Vec*)((u8*)baku + 0x94) = baku->position;
+                    baku->fromPos = baku->position;
                     {
-                        f32* p98 = (f32*)((u8*)baku + 0x98);
-                        *p98 += f30v;
+                        baku->fromPos.y += f30v;
                     }
                     baku->position.y += f30v;
                     bakuGameMarioSurpriseReset(mario, party);
@@ -960,69 +977,69 @@ first_done:
                     break;
                 case 1:
                     baku->position = (Vec){ 125.0f, 0.0f, -30.0f };
-                    *(Vec*)((u8*)baku + 0x94) = baku->position;
+                    baku->fromPos = baku->position;
                     if (baku->flags & 1) {
-                        baku->position = baku->field_0x1D0;
-                        *(Vec*)((u8*)baku + 0x94) = baku->position;
+                        baku->position = baku->heihoPos;
+                        baku->fromPos = baku->position;
                         {
-                            f32 t = 30.0f + baku->field_0x1D0.y;
+                            f32 t = 30.0f + baku->heihoPos.y;
                             baku->position.y = t;
-                            *(f32*)((u8*)baku + 0x98) = t;
+                            baku->fromPos.y = t;
                         }
                     }
                     bakuGameEnemySurpriseReset();
                     break;
                 case 2:
                     baku->position = (Vec){ 0.0f, -50.0f, 150.0f };
-                    *(Vec*)((u8*)baku + 0x94) = baku->position;
-                    *(f32*)((u8*)baku + 0x98) += 30.0f;
+                    baku->fromPos = baku->position;
+                    baku->fromPos.y += 30.0f;
                     baku->position.y += 20.0f;
                     bakuGameAudienceSurpriseReset();
                     break;
                 default:
                     break;
             }
-            switch (*(u8*)((u8*)baku + 0xCD)) {
+            switch (baku->selTeam) {
                 case 0:
-                    *(Vec*)((u8*)baku + 0xA0) = (Vec){ -125.0f, 0.0f, -30.0f };
+                    baku->landPos = (Vec){ -125.0f, 0.0f, -30.0f };
                     bakuGameMarioSurprise(mario, party);
                     break;
                 case 1:
-                    *(Vec*)((u8*)baku + 0xA0) = (Vec){ 125.0f, 0.0f, -30.0f };
+                    baku->landPos = (Vec){ 125.0f, 0.0f, -30.0f };
                     if (baku->flags & 1) {
-                        *(Vec*)((u8*)baku + 0xA0) = (Vec){ 125.0f, 0.0f, 100.0f };
-                        *(f32*)((u8*)baku + 0xA4) += 30.0f;
+                        baku->landPos = (Vec){ 125.0f, 0.0f, 100.0f };
+                        baku->landPos.y += 30.0f;
                     }
                     bakuGameEnemySurprise();
                     break;
                 case 2:
                     if (baku->flags & 2) {
-                        *(Vec*)((u8*)baku + 0xA0) = (Vec){ 0.0f, -50.0f, 150.0f };
+                        baku->landPos = (Vec){ 0.0f, -50.0f, 150.0f };
                     } else {
-                        *(Vec*)((u8*)baku + 0xA0) = (Vec){ 0.0f, -50.0f, 150.0f };
-                        *(f32*)((u8*)baku + 0xA4) += 20.0f;
+                        baku->landPos = (Vec){ 0.0f, -50.0f, 150.0f };
+                        baku->landPos.y += 20.0f;
                     }
                     bakuGameAudienceSurprise();
                     break;
                 default:
                     break;
             }
-            *(s32*)((u8*)baku + 0x7C) = 0x19;
+            baku->stage = 0x19;
             {
                 f32 t = 40.0f;
 
-                *(f32*)((u8*)baku + 0xB0) =
-                    (2.0f * (*(f32*)((u8*)baku + 0xA4) - *(f32*)((u8*)baku + 0x98)) - -800.0f) / 80.0f;
-                *(s32*)((u8*)baku + 0x80) = *(s32*)((u8*)baku + 0x84) = (s32)t;
+                baku->fallSpeed =
+                    (2.0f * (baku->landPos.y - baku->fromPos.y) - -800.0f) / 80.0f;
+                baku->counter = baku->duration = (s32)t;
             }
-            if (*(u8*)((u8*)baku + 0xCC) == 0) {
+            if (baku->team == 0) {
                 BtlUnit_GetPos(mario, &px, &py, &pz);
                 {
                     Vec v = { 0.0f, 0.0f, 0.0f };
                     v.x = px;
                     v.y = py;
                     v.z = pz;
-                    *(Vec*)((u8*)baku + 0x258) = v;
+                    baku->marioFrom = v;
                 }
                 BtlUnit_GetHomePos(mario, &px, &py, &pz);
                 {
@@ -1030,13 +1047,13 @@ first_done:
                     v.x = px;
                     v.y = py;
                     v.z = pz;
-                    *(Vec*)((u8*)baku + 0x264) = v;
+                    baku->marioTo = v;
                 }
             }
-            *(s32*)((u8*)baku + 0x1BC) = psndSFXOn("SFX_BTL_SAC_TIME3");
+            baku->reactionSfx = psndSFXOn("SFX_BTL_SAC_TIME3");
             {
                 s32 num = BattleAudience_GetAudienceNum();
-                switch (*(u8*)((u8*)baku + 0xCD)) {
+                switch (baku->selTeam) {
                     case 0:
                         BattleAudienceSoundBooing();
                         break;
@@ -1068,39 +1085,39 @@ first_done:
             /* fall through */
         case 25:
             baku->position.x =
-                intplGetValue(0, *(s32*)((u8*)baku + 0x84) - *(s32*)((u8*)baku + 0x80),
-                              *(s32*)((u8*)baku + 0x84), *(f32*)((u8*)baku + 0x94),
-                              *(f32*)((u8*)baku + 0xA0));
+                intplGetValue(0, baku->duration - baku->counter,
+                              baku->duration, baku->fromPos.x,
+                              baku->landPos.x);
             baku->position.z =
-                intplGetValue(0, *(s32*)((u8*)baku + 0x84) - *(s32*)((u8*)baku + 0x80),
-                              *(s32*)((u8*)baku + 0x84), *(f32*)((u8*)baku + 0x9C),
-                              *(f32*)((u8*)baku + 0xA8));
-            baku->position.y += *(f32*)((u8*)baku + 0xB0);
-            *(f32*)((u8*)baku + 0xB0) += -0.5f;
-            switch (*(u8*)((u8*)baku + 0xCC)) {
+                intplGetValue(0, baku->duration - baku->counter,
+                              baku->duration, baku->fromPos.z,
+                              baku->landPos.z);
+            baku->position.y += baku->fallSpeed;
+            baku->fallSpeed += -0.5f;
+            switch (baku->team) {
                 case 0:
-                    if (*(s32*)((u8*)baku + 0x84) - *(s32*)((u8*)baku + 0x80) == 0x14) {
+                    if (baku->duration - baku->counter == 0x14) {
                         BtlUnit_SetBodyAnim(mario, "M_W_1");
                     }
-                    if ((d = *(s32*)((u8*)baku + 0x84) - *(s32*)((u8*)baku + 0x80)) >= 0x14 && d <= 0x22) {
+                    if ((d = baku->duration - baku->counter) >= 0x14 && d <= 0x22) {
                         px = intplGetValue(0, d - 0x14, 0xE,
-                                           *(f32*)((u8*)baku + 0x258), *(f32*)((u8*)baku + 0x264));
-                        py = *(f32*)((u8*)baku + 0x25C);
-                        pz = intplGetValue(0, *(s32*)((u8*)baku + 0x84) - *(s32*)((u8*)baku + 0x80) - 0x14, 0xE,
-                                           *(f32*)((u8*)baku + 0x260), *(f32*)((u8*)baku + 0x26C));
+                                           baku->marioFrom.x, baku->marioTo.x);
+                        py = baku->marioFrom.y;
+                        pz = intplGetValue(0, baku->duration - baku->counter - 0x14, 0xE,
+                                           baku->marioFrom.z, baku->marioTo.z);
                         BtlUnit_SetPos(mario, px, py, pz);
                     }
-                    if (*(s32*)((u8*)baku + 0x84) - *(s32*)((u8*)baku + 0x80) == 0x22) {
+                    if (baku->duration - baku->counter == 0x22) {
                         btlDispPoseAnime(BtlUnit_GetPartsPtr(mario, BtlUnit_GetBodyPartsId(mario)));
                     }
                     break;
                 case 1:
-                    if (baku->field_0x1D0.y != 0.0) {
-                        baku->field_0x1D0.y += baku->field_0x1F8;
-                        baku->field_0x1F8 += -1.0f;
+                    if (baku->heihoPos.y != 0.0) {
+                        baku->heihoPos.y += baku->heihoVelY;
+                        baku->heihoVelY += -1.0f;
                     }
-                    if (baku->field_0x1D0.y < 0.0f) {
-                        baku->field_0x1D0.y = 0.0f;
+                    if (baku->heihoPos.y < 0.0f) {
+                        baku->heihoPos.y = 0.0f;
                     }
                     if (!(baku->flags & 1)) {
                         for (i = 0; i < 64; i++) {
@@ -1109,79 +1126,79 @@ first_done:
                                 !(unit->mAttributeFlags & 0x20000) && !BtlUnit_CheckStatus(unit, 0x1B) &&
                                 !(unit->mAttributeFlags & 4) && !(unit->mAttributeFlags & 2)) {
                                 BtlUnit_GetHomePos(unit, &hx, &hy, &hz);
-                                BtlUnit_SetPos(unit, hx, hy + baku->field_0x1D0.y, hz);
+                                BtlUnit_SetPos(unit, hx, hy + baku->heihoPos.y, hz);
                             }
                         }
                     } else {
 
-                        baku->field_0x1C0 = 0xF;
-                        if (baku->field_0x1D0.y != 0.0f) {
-                            baku->field_0x1D0.y += baku->field_0x1F8;
-                            baku->field_0x1F8 += -2.0f;
+                        baku->heihoState = 0xF;
+                        if (baku->heihoPos.y != 0.0f) {
+                            baku->heihoPos.y += baku->heihoVelY;
+                            baku->heihoVelY += -2.0f;
                         }
-                        if (baku->field_0x1D0.y <= 0.0f) {
-                            baku->field_0x1D0.y = 0.0f;
-                            baku->field_0x1C0 = 5;
+                        if (baku->heihoPos.y <= 0.0f) {
+                            baku->heihoPos.y = 0.0f;
+                            baku->heihoState = 5;
                         }
                     }
                     break;
                 case 2:
-                    if (*(f32*)((u8*)baku + 0x2A4) != 0.0f) {
-                        *(f32*)((u8*)baku + 0x2A4) += *(f32*)((u8*)baku + 0x2B0);
-                        *(f32*)((u8*)baku + 0x2B0) += -2.0f;
+                    if (baku->audienceY != 0.0f) {
+                        baku->audienceY += baku->audienceVelY;
+                        baku->audienceVelY += -2.0f;
                     }
-                    if (*(f32*)((u8*)baku + 0x2A4) <= 0.0f) {
-                        *(f32*)((u8*)baku + 0x2A4) = 0.0f;
+                    if (baku->audienceY <= 0.0f) {
+                        baku->audienceY = 0.0f;
                     }
                     for (i = 0; i < 0xC8; i++) {
                         BattleAudienceMember* m = BattleAudienceGetPtr(i);
                         if (bakuGameAudienceCanThrowPos(i) == 1 && (u8)BattleAudience_GetExist(i) &&
                             (m->flags & 0x10)) {
                             BattleAudience_GetHomePosition(i, &px, &py, &pz);
-                            BattleAudience_SetPosition(i, px, py + *(f32*)((u8*)baku + 0x2A4), pz);
+                            BattleAudience_SetPosition(i, px, py + baku->audienceY, pz);
                         }
                     }
                     break;
                 default:
                     break;
             }
-            (*(s32*)((u8*)baku + 0x80))--;
-            if (*(s32*)((u8*)baku + 0x80) < 0) {
-                *(s32*)((u8*)baku + 0x7C) = 0x1E;
-                baku->position = *(Vec*)((u8*)baku + 0xA0);
-                *(u8*)((u8*)baku + 0xCC) = *(u8*)((u8*)baku + 0xCD);
-                btl_camera_shake_h(0, 0xA, 4, baku->field_0xC4, 0.0f);
+            baku->counter--;
+            if (baku->counter < 0) {
+                baku->stage = 0x1E;
+                baku->position = baku->landPos;
+                baku->team = baku->selTeam;
+                btl_camera_shake_h(0, 0xA, 4, baku->intensity, 0.0f);
                 psndSFXOn("SFX_BTL_SAC_TIME2");
-                if (psndSFXChk(*(s32*)((u8*)baku + 0x1BC)) == 0) {
-                    psndSFXOff(*(s32*)((u8*)baku + 0x1BC));
+                if (psndSFXChk(baku->reactionSfx) == 0) {
+                    psndSFXOff(baku->reactionSfx);
                 }
             }
             break;
         case 30:
-            *(s32*)((u8*)baku + 0x7C) = 0xA;
+            baku->stage = 0xA;
             for (i = 0; i < 3; i++) {
                 BakuGameWorkEntry* entry = &baku->entries[i];
-                *(f32*)&entry->field_0x10[0] = 100.0f;
+                entry->meter = 100.0f;
             }
-            if (*(u8*)((u8*)baku + 0xCC) == 1 && (baku->flags & 1)) {
-                baku->field_0x1C0 = 0xA;
+            if (baku->team == 1 && (baku->flags & 1)) {
+                baku->heihoState = 0xA;
             }
-            if (*(u8*)((u8*)baku + 0xCD) == 0) {
+            if (baku->selTeam == 0) {
                 BtlUnit_snd_se_pos(mario, "SFX_VOICE_MARIO_SURPRISED1", 0x7F, 0, &mario->mPosition);
             }
             break;
         case 40:
             effSandarsEntry(3, baku->position.x, baku->position.y,
                             baku->position.z, 0.0f);
-            btl_camera_shake_h(0, 0x1E, 4, baku->field_0xC4, 0.0f);
+            btl_camera_shake_h(0, 0x1E, 4, baku->intensity, 0.0f);
             psndSFXOn("SFX_BTL_SAC_TIME5");
-            if (psndSFXChk(*(s32*)((u8*)baku + 0x1B8)) == 0) {
-                psndSFXOff(*(s32*)((u8*)baku + 0x1B8));
+            if (psndSFXChk(baku->gaugeSfx) == 0) {
+                psndSFXOff(baku->gaugeSfx);
             }
-            if (psndSFXChk(*(s32*)((u8*)baku + 0x1BC)) == 0) {
-                psndSFXOff(*(s32*)((u8*)baku + 0x1BC));
+            if (psndSFXChk(baku->reactionSfx) == 0) {
+                psndSFXOff(baku->reactionSfx);
             }
-            *(s32*)((u8*)baku + 0x7C) = 0x32;
+            baku->stage = 0x32;
             for (i = 0; i < 0xC8; i++) {
                 BattleAudienceMember* m = BattleAudienceGetPtr(i);
                 m->flags &= ~0x10;
@@ -1198,8 +1215,8 @@ first_done:
     }
 state_done:
 
-    if (baku->field_0xEC != -1) {
-        animPoseMain(baku->field_0xEC);
+    if (baku->animPose != -1) {
+        animPoseMain(baku->animPose);
     }
     dispEntry(8, 900.0f, 1, (DispCallback)bakuGameDisp2D, NULL);
     dispEntry(4, 0.0f, 1, bakuGameDisp3D, NULL);
@@ -1214,49 +1231,49 @@ s32 bakuGameHeihoReturn(EventEntry* event, BOOL isFirstCall) {
         return 2;
     }
     if (isFirstCall) {
-        baku->field_0x1C0 = 0;
+        baku->heihoState = 0;
     }
-    switch (baku->field_0x1C0) {
+    switch (baku->heihoState) {
         case 0:
-            if (0.0f != baku->field_0x1D0.y) {
-                baku->field_0x1D0.y += baku->field_0x1F8;
-                baku->field_0x1F8 += -2.0f;
+            if (0.0f != baku->heihoPos.y) {
+                baku->heihoPos.y += baku->heihoVelY;
+                baku->heihoVelY += -2.0f;
             }
-            if (baku->field_0x1D0.y <= (zero = 0.0f)) {
-                baku->field_0x1D0.y = zero;
-                baku->field_0x1C0 = 5;
+            if (baku->heihoPos.y <= (zero = 0.0f)) {
+                baku->heihoPos.y = zero;
+                baku->heihoState = 5;
             }
             break;
         case 5: {
             Vec v;
 
-            baku->field_0x1C0 = 10;
-            baku->field_0x1CC = 1;
-            baku->field_0x1DC = baku->field_0x1D0;
+            baku->heihoState = 10;
+            baku->texSet = 1;
+            baku->heihoFrom = baku->heihoPos;
             v = (Vec){ 300.0f, 0.0f, 0.0f };
-            v.z = baku->field_0x1D0.z;
-            baku->field_0x1E8 = v;
-            baku->field_0x1C4 = 0;
-            baku->field_0x1C8 = 0x1E;
+            v.z = baku->heihoPos.z;
+            baku->heihoTo = v;
+            baku->heihoTimer = 0;
+            baku->heihoDuration = 0x1E;
             // fall through
         }
         case 10: {
             s32 m;
 
-            baku->field_0x1D0.x = intplGetValue(0, baku->field_0x1C4, baku->field_0x1C8, baku->field_0x1DC.x,
-                                                baku->field_0x1E8.x);
-            m = baku->field_0x1C4 % 12;
+            baku->heihoPos.x = intplGetValue(0, baku->heihoTimer, baku->heihoDuration, baku->heihoFrom.x,
+                                                baku->heihoTo.x);
+            m = baku->heihoTimer % 12;
             if (m >= 0 && m <= 3) {
-                baku->field_0x200 = 0x5A;
+                baku->texIndex = 0x5A;
             }
             if (m >= 4 && m <= 7) {
-                baku->field_0x200 = 0x5B;
+                baku->texIndex = 0x5B;
             }
             if (m >= 8 && m <= 0xB) {
-                baku->field_0x200 = 0x5C;
+                baku->texIndex = 0x5C;
             }
-            baku->field_0x1C4++;
-            if (baku->field_0x1C4 > baku->field_0x1C8) {
+            baku->heihoTimer++;
+            if (baku->heihoTimer > baku->heihoDuration) {
                 return 2;
             }
             break;
@@ -1296,7 +1313,7 @@ void bakuGameDecideButton(s32 arg) {
         entry->pos = positions[perms[rnd][i]];
     }
     if (arg == 0) {
-        baku->field_0xF4 = 0x3C;
+        baku->cooldown = 0x3C;
     }
 }
 #pragma dont_inline reset
@@ -1490,28 +1507,28 @@ void bakuGameDisp2D(void) {
             Vec screen;
 
             btlGetScreenPoint(&entry->pos, &screen);
-            iconDispGx(entry->field_0x20, &screen, 0x10, icon);
+            iconDispGx(entry->iconScale, &screen, 0x10, icon);
         }
     }
     flag = 0;
-    if (baku->field_0xD0 >= 100.0f) {
-        BakuGameBouncePos* p = (BakuGameBouncePos*)((u8*)wp + 0x1F2C);
+    if (baku->gauge >= 100.0f) {
+        BakuGameGaugeColor* p = (BakuGameGaugeColor*)((u8*)wp + 0x1F2C);
 
         flag = 1;
-        p->field_0x0 = 0;
-        p->field_0x3 = 0xFF;
-        p->field_0x1 += p->field_0x5;
-        p->field_0x2 += p->field_0x6;
-        if (p->field_0x1 <= 0x80 && p->field_0x5 <= 0) {
-            p->field_0x6 = 0x10;
-            p->field_0x5 = 0x10;
+        p->r = 0;
+        p->a = 0xFF;
+        p->g += p->dg;
+        p->b += p->db;
+        if (p->g <= 0x80 && p->dg <= 0) {
+            p->db = 0x10;
+            p->dg = 0x10;
         }
-        if (p->field_0x1 >= 0xF5 && p->field_0x5 >= 0) {
-            p->field_0x6 = -0x10;
-            p->field_0x5 = -0x10;
+        if (p->g >= 0xF5 && p->dg >= 0) {
+            p->db = -0x10;
+            p->dg = -0x10;
         }
     }
-    BattleAcDrawGauge((s32)baku->field_0xDC, (s32)baku->field_0xE0, 0xB1, 3, 0x21, 0x42, 0x64, flag, baku->field_0xE8);
+    BattleAcDrawGauge((s32)baku->field_0xDC, (s32)baku->field_0xE0, 0xB1, 3, 0x21, 0x42, 0x64, flag, baku->gaugeFill);
 }
 
 void bakuGameDisp3D(CameraId camId, void* param) {
@@ -1526,8 +1543,8 @@ void bakuGameDisp3D(CameraId camId, void* param) {
     PSMTXScale(scale, -1.0f, 1.0f, 1.0f);
     PSMTXTrans(trans, baku->position.x, baku->position.y, baku->position.z);
     PSMTXConcat(trans, scale, mtx);
-    if (baku->field_0xEC != -1) {
-        animPoseDrawMtx(baku->field_0xEC, mtx, 2, 180.0f, baku->field_0xC4);
+    if (baku->animPose != -1) {
+        animPoseDrawMtx(baku->animPose, mtx, 2, 180.0f, baku->intensity);
     }
     if (baku->flags & 1) {
         void* file;
@@ -1552,9 +1569,9 @@ void bakuGameDisp3D(CameraId camId, void* param) {
         GXSetTevOrder(0, 0, 0, 4);
         file = BattleAudienceBaseGetPtr()->normalTex;
         pal = *(TEXPalette**)(*(u8**)((u8*)file + 0xA0));
-        TEXGetGXTexObjFromPalette(pal, &texObj, baku->field_0x200);
+        TEXGetGXTexObjFromPalette(pal, &texObj, baku->texIndex);
         GXLoadTexObj(&texObj, 0);
-        PSMTXTrans(trans, baku->field_0x1D0.x, baku->field_0x1D0.y, baku->field_0x1D0.z);
+        PSMTXTrans(trans, baku->heihoPos.x, baku->heihoPos.y, baku->heihoPos.z);
         PSMTXConcat(cam->view, trans, mtx);
         GXLoadPosMtxImm(mtx, 0);
         {
@@ -1563,7 +1580,7 @@ void bakuGameDisp3D(CameraId camId, void* param) {
                 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 1.0f, 1.0f,
             };
 
-            idx = (baku->field_0x1CC == 1) ? 4 : 0;
+            idx = (baku->texSet == 1) ? 4 : 0;
             GXBegin(0x80, 0, 4);
             GXPosition3f32(-20.0f, 40.0f, 0.0f);
             GXTexCoord2f32(texCoords[(idx + 0) * 2], texCoords[(idx + 0) * 2 + 1]);
