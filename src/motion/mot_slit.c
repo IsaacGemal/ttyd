@@ -21,10 +21,6 @@
 // Raw accessors for MarioWork fields that are not named in include/mario/mario.h.
 #define MW_U8(m, off) (*(u8*)((u8*)(m) + (off)))
 #define MW_U16(m, off) (*(u16*)((u8*)(m) + (off)))
-#define MW_S16(m, off) (*(s16*)((u8*)(m) + (off)))
-#define MW_S32(m, off) (*(s32*)((u8*)(m) + (off)))
-#define MW_U32(m, off) (*(u32*)((u8*)(m) + (off)))
-#define MW_F32(m, off) (*(f32*)((u8*)(m) + (off)))
 
 // .sdata2: the base {0, 0, 0, 255} colour both mapSetPaperAmbColor callers start from.
 __declspec(section ".sdata2") const u32 dat_8041ae80 = 0x000000FF;
@@ -788,17 +784,17 @@ void mot_slit(void) {
                 marioChgPaper("PM_S_1B");
             }
         } else {
-            s16 flags2B8;
+            s16 flags;
             f32 turn;
 
             if (strcmp(mario->animName, "M_I_Y") == 0) {
                 marioChgPose("M_W_1");
             }
-            flags2B8 = mario->slitFlags;
-            if (!(flags2B8 & 1)) {
+            flags = mario->slitFlags;
+            if (!(flags & 1)) {
                 slitResetBounce();
             } else {
-                mario->slitFlags = (s16)(flags2B8 & 0xFFFFFFFE);
+                mario->slitFlags = (s16)(flags & 0xFFFFFFFE);
                 slitResetBounce();
             }
             slitSetWalkSpeed(mario);
