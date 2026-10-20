@@ -141,20 +141,20 @@ EffectEntry* effOpukuJetwN64Entry(s32 type, s32 duration, f32 x, f32 y, f32 z, f
         data->lifetime = duration;
     }
 
-    data->field_0x24 = 0xFF;
+    data->alpha = 0xFF;
     data->position.x = x;
     data->position.y = y;
     data->position.z = z;
     data->scale = scale;
-    data->field_0x18 = 0x46;
-    data->field_0x1C = 0xB4;
-    data->field_0x20 = 0xFF;
-    data->field_0x28 = 0xFF;
-    data->field_0x2C = 0xFF;
-    data->field_0x30 = 0xFF;
-    data->field_0x38 = 0.0f;
-    data->field_0x3C = 1.0f;
-    data->field_0x40 = 1.0f;
+    data->color1R = 0x46;
+    data->color1G = 0xB4;
+    data->color1B = 0xFF;
+    data->color2R = 0xFF;
+    data->color2G = 0xFF;
+    data->color2B = 0xFF;
+    data->rot = 0.0f;
+    data->scaleX = 1.0f;
+    data->scaleY = 1.0f;
 
     return effect;
 }
@@ -175,7 +175,7 @@ void effOpukuJetwMain(EffectEntry* effect) {
         effDelete(effect);
     } else {
         if (data->counter < 8) {
-            data->field_0x24 = data->counter * 32 + 31;
+            data->alpha = data->counter * 32 + 31;
         }
         dispEntry(CAMERA_3D, dispCalcZ(&position), 2, effOpukuJetwDisp, effect);
     }
@@ -197,9 +197,9 @@ void effOpukuJetwMain(EffectEntry* effect) {
 // colour's build slot and its by-value argument copy together, matching the original's slots.
 static inline void effOpukuJetwSetTev1(effOpukuJetwData* data, s32 alpha) {
     GXColor color = unk_804231c8;
-    color.r = data->field_0x28;
-    color.g = data->field_0x2C;
-    color.b = data->field_0x30;
+    color.r = data->color2R;
+    color.g = data->color2G;
+    color.b = data->color2B;
     color.a = alpha;
     GXSetTevColor(GX_TEVREG1, color);
 }
@@ -231,7 +231,7 @@ static inline void effOpukuJetwSetTev0b(s32 red, s32 green, s32 blue, s32 alpha)
 // induction and hoists columns*10; these two pragmas stop that.
 // The Mtx declarations keep `scale` before `rot` so the two temporaries land in the original's 0x70/0xa0
 // slots (the allocator places Mtx locals in reverse declaration order), the field assignments load
-// field_0x24 before the other colours as the original does, `dat_ry[(j + i) & 7]` gives the original's
+// alpha before the other colours as the original does, `dat_ry[(j + i) & 7]` gives the original's
 // operand order in the run-angle sum, and `for (j = 0, rowOffset = 0; ...)` gives its loop-init order.
 // `rowOffset` is declared first and `colOffset` after `colPtr`: with the shared `&table[col]` CSE temp
 // MWCC colours that temp above `rowOffset` (col*10/colPtr in r19, rowOffset in r15); naming the byte
@@ -273,10 +273,10 @@ void effOpukuJetwDisp(CameraId camId, void* param) {
     data = effect->userdata;
     counter = data->counter;
     lifetime = data->lifetime;
-    alpha = data->field_0x24;
-    red = data->field_0x18;
-    green = data->field_0x1C;
-    blue = data->field_0x20;
+    alpha = data->alpha;
+    red = data->color1R;
+    green = data->color1G;
+    blue = data->color1B;
     switch (data->type) {
         case 0:
             table = (effOpukuJetwPoint*)adata;
@@ -312,8 +312,8 @@ void effOpukuJetwDisp(CameraId camId, void* param) {
     GXLoadTexMtxImm(scale, GX_TEXMTX0, GX_MTX2x4);
     GXSetCullMode(GX_CULL_NONE);
 
-    PSMTXRotRad(rot, 'z', 0.017453292f * data->field_0x38);
-    PSMTXScale(scale, data->field_0x3C, data->field_0x40, 1.0f);
+    PSMTXRotRad(rot, 'z', 0.017453292f * data->rot);
+    PSMTXScale(scale, data->scaleX, data->scaleY, 1.0f);
     PSMTXConcat(rot, scale, scale);
     PSMTXConcat(work, scale, work);
 
@@ -343,16 +343,16 @@ void effOpukuJetwDisp(CameraId camId, void* param) {
             }
             colOffset = col * 10;
             ptr = (effOpukuJetwPoint*)((u8*)rowPtr + colOffset);
-            PSMTXTrans(trans, (f32)ptr->field_0x0, 10.f + (f32)ptr->field_0x1, 0.0f);
+            PSMTXTrans(trans, (f32)ptr->posX, 10.f + (f32)ptr->posY, 0.0f);
             colPtr = (effOpukuJetwPoint*)((u8*)table + colOffset);
-            PSMTXScale(scale, (f32)colPtr->field_0x2 * 0.01f, (f32)colPtr->field_0x4 * 0.01f, 1.0f);
+            PSMTXScale(scale, (f32)colPtr->scaleX * 0.01f, (f32)colPtr->scaleY * 0.01f, 1.0f);
             PSMTXConcat(trans, scale, trans);
-            PSMTXRotRad(rot, 'z', 0.017453292f * ((f32)ptr->field_0x6 + (f32)dat_ry[(j + i) & 7]));
+            PSMTXRotRad(rot, 'z', 0.017453292f * ((f32)ptr->rot + (f32)dat_ry[(j + i) & 7]));
             PSMTXConcat(trans, rot, trans);
             PSMTXConcat(work, trans, trans);
             GXLoadPosMtxImm(trans, 0);
             GXSetCurrentMtx(0);
-            effOpukuJetwSetTev0b(red, green, blue, (alpha * colPtr->field_0x8) >> 8);
+            effOpukuJetwSetTev0b(red, green, blue, (alpha * colPtr->alphaScale) >> 8);
             effSetVtxDescN64((effVtxArray*)size16x16_tex32x32_vtx);
             GXBegin(GX_TRIANGLES, GX_VTXFMT0, 6);
             tri2(0, 1, 2, 0, 0, 2, 3, 0);

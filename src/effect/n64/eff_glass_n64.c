@@ -52,22 +52,22 @@ EffectEntry* effGlassN64Entry(s32 type, s32 life, f32 x, f32 y, f32 z, f32 scale
 	switch (type) {
 	case 0:
 	case 1:
-		data->field_0x18 = 0xff;
-		data->field_0x1C = 0xff;
-		data->field_0x20 = 0xff;
-		data->field_0x28 = 0xff;
-		data->field_0x2C = 0xff;
-		data->field_0x30 = 0xff;
+		data->color1R = 0xff;
+		data->color1G = 0xff;
+		data->color1B = 0xff;
+		data->color2R = 0xff;
+		data->color2G = 0xff;
+		data->color2B = 0xff;
 		data->field_0x34 = 0xff;
 		break;
 	case 2:
 	case 3:
-		data->field_0x18 = 0;
-		data->field_0x1C = 0xff;
-		data->field_0x20 = 0;
-		data->field_0x28 = 0;
-		data->field_0x2C = 0xff;
-		data->field_0x30 = 0;
+		data->color1R = 0;
+		data->color1G = 0xff;
+		data->color1B = 0;
+		data->color2R = 0;
+		data->color2G = 0xff;
+		data->color2B = 0;
 		data->field_0x34 = 0xff;
 		break;
 	}
@@ -148,25 +148,25 @@ void effGlassMain(EffectEntry* effect) {
    (same shape as effHitDisp). */
 static inline void effGlassSetColor1(effGlassData* data, s32 a) {
 	GXColor color = unk_80423120;
-	color.r = data->field_0x18;
-	color.g = data->field_0x1C;
-	color.b = data->field_0x20;
+	color.r = data->color1R;
+	color.g = data->color1G;
+	color.b = data->color1B;
 	color.a = a;
 	GXSetTevColor(GX_TEVREG0, color);
 }
 static inline void effGlassSetColor2(effGlassData* data, s32 a) {
 	GXColor color = unk_80423124;
-	color.r = data->field_0x28;
-	color.g = data->field_0x2C;
-	color.b = data->field_0x30;
+	color.r = data->color2R;
+	color.g = data->color2G;
+	color.b = data->color2B;
 	color.a = a;
 	GXSetTevColor(GX_TEVREG1, color);
 }
 static inline void effGlassSetColor3(effGlassData* data, s32 a) {
 	GXColor color = unk_80423128;
-	color.r = data->field_0x18;
-	color.g = data->field_0x1C;
-	color.b = data->field_0x20;
+	color.r = data->color1R;
+	color.g = data->color1G;
+	color.b = data->color1B;
 	color.a = a;
 	GXSetTevColor(GX_TEVREG0, color);
 }
@@ -259,15 +259,15 @@ void effGlassDisp(CameraId camId, void* param) {
 	effGlassSetColor2(data, tileAlpha);
 #else
 	color1 = unk_80423120;
-	color1.r = data->field_0x18;
-	color1.g = data->field_0x1C;
-	color1.b = data->field_0x20;
+	color1.r = data->color1R;
+	color1.g = data->color1G;
+	color1.b = data->color1B;
 	color1.a = dataAlpha;
 	GXSetTevColor(GX_TEVREG0, color1);
 	color2 = unk_80423124;
-	color2.r = data->field_0x28;
-	color2.g = data->field_0x2C;
-	color2.b = data->field_0x30;
+	color2.r = data->color2R;
+	color2.g = data->color2G;
+	color2.b = data->color2B;
 	color2.a = tileAlpha;
 	GXSetTevColor(GX_TEVREG1, color2);
 #endif
@@ -281,9 +281,9 @@ void effGlassDisp(CameraId camId, void* param) {
 		effGlassSetColor3(data, dataAlpha * tileAlpha / 255);
 #else
 		color3 = unk_80423128;
-		color3.r = data->field_0x18;
-		color3.g = data->field_0x1C;
-		color3.b = data->field_0x20;
+		color3.r = data->color1R;
+		color3.g = data->color1G;
+		color3.b = data->color1B;
 		color3.a = dataAlpha * tileAlpha / 255;
 		GXSetTevColor(GX_TEVREG0, color3);
 #endif
