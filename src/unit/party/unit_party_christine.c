@@ -28,7 +28,7 @@ extern s32 evt_audience_acrobat_notry[];
 extern s32 negone_one[];
 extern s32 one_negone[];
 extern s32 subset_attack_ready_jump_event[];
-extern s32 unk_evt_803510ec[];
+extern s32 subsetevt_check_no_status[];
 extern s32 weaponGetPowerFromPartyAttackLv[];
 static s32 krb_get_dir(EventEntry* event, BOOL isFirstCall);
 static void __makeTechMenuFunc(BattleWorkCommand* cmd, s32* count);
@@ -1102,7 +1102,7 @@ EVT_BEGIN(partyChristineAttack_Kiss)
     CALL(evt_btl_camera_set_zoom, 0, 250)
     CALL(btlevtcmd_CalculateFaceDirection, -2, -1, LW(3), LW(4), 16, LW(15))
     CALL(btlevtcmd_ChangeFaceDirection, -2, LW(15))
-    CALL_CHILD(unk_evt_803510ec)
+    CALL_CHILD(subsetevt_check_no_status)
     IF_INT_NOT_EQUAL(LW(0), 0)
         CALL(btlevtcmd_CalculateFaceDirection, LW(3), LW(4), -2, -1, 16, LW(15))
         CALL(btlevtcmd_ChangeFaceDirection, LW(3), LW(15))
@@ -1174,7 +1174,7 @@ EVT_BEGIN(partyChristineAttack_Kiss)
     CALL(evt_eff, STRING(""), STRING("kiss"), 1, LW(0), LW(1), LW(2), LW(14), 0, 0, 0, 0, 0, 0, 0)
     BEGIN_INLINE_EVENT_GET_ID(LW(15))
         IF_BITS_SET(LW(6), 2)
-            CALL_CHILD(unk_evt_803510ec)
+            CALL_CHILD(subsetevt_check_no_status)
             IF_INT_NOT_EQUAL(LW(0), 0)
                 CALL(btlevtcmd_AnimeChangePoseType, LW(3), LW(4), 58)
             END_IF
@@ -1223,7 +1223,7 @@ EVT_BEGIN(partyChristineAttack_Kiss)
     CALL(btlevtcmd_ResetFaceDirection, -2)
     CALL(evt_audience_ap_recovery)
     CALL(btlevtcmd_InviteApInfoReport)
-    CALL_CHILD(unk_evt_803510ec)
+    CALL_CHILD(subsetevt_check_no_status)
     IF_INT_NOT_EQUAL(LW(0), 0)
         CALL(btlevtcmd_ResetFaceDirection, LW(3))
         CALL(btlevtcmd_StartWaitEvent, LW(3))
