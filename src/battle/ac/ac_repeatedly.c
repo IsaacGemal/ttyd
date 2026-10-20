@@ -51,17 +51,17 @@ typedef struct AcRepeatedlyWork {
     u32 maskA;       // 0x4
     u32 maskB;       // 0x8
     u32 holdMask;    // 0xC, nonzero: the button that must stay held (BattlePadCheckNow) for the command to run
-    f32 gauge;       // 0x10, needle position 0..100 (bounces with gaugeStep)
-    f32 gaugeStep;   // 0x14, needle speed per frame; 0 when the needle is fixed
+    f32 goal;        // 0x10, mark 0..100 the power must reach when the timer runs out (bounces by goalStep)
+    f32 goalStep;    // 0x14, goal speed per frame, sign flips at 0 and 100; 0 when the goal is fixed
     f32 power;       // 0x18, accumulated power 0..100; each press adds powerStep * table value
     f32 decay;       // 0x1C, subtracted from power every frame (acParams[6] / 100)
-    u16 presses;     // 0x20, counts the inputs that stop the needle (button, probe edge, reset edge, auto)
+    u16 presses;     // 0x20, inputs counted (button, probe edge, reset edge, auto); bit 0 picks the mask in modes 0xB/0xC
     u16 swapTimer;   // 0x22, frames until curMask switches to the other mask (mode 0x10)
     s16 powerStep;   // 0x24, multiplier applied to the press power (acParams[5])
     s16 initTimer;   // 0x26, copy of the start timer (acParams[1]); written in _init_param, never read
     s16 timer;       // 0x28, frames left before the command ends; reset to 0 when holdMask is released
     u8 gaugeWidth;   // 0x2A, 0xB2 at init; the width argument of BattleAcDrawGauge
-    s8 full;         // 0x2B, 1 once power reaches 100 (or is pre-filled from the token timer); draws test 1 and -1
+    s8 full;         // 0x2B, 1 once power reaches 100 (or when guardFrames was still running at init); draws test 1 and -1
     u8 probeHeld;    // 0x2C, toggled by the reset button (mode 0xA) or the SI probe (mode 9)
     u8 pad_0x2D[3];  // 0x2D
     s32 endDelay;    // 0x30, frames the result display waits in states 0x3EA/0x3EB
@@ -135,10 +135,10 @@ static void _init_param(BattleWork* work) {
     param = ac->acParams[1];
     dec->timer = param;
     dec->initTimer = param;
-    dec->gauge = (f32)ac->acParams[2];
-    dec->gaugeStep = (f32)ac->acParams[3] / float_10_8041c7e0;
-    if (dec->gaugeStep != float_0_8041c7d8) {
-        dec->gauge = (f32)irand(100);
+    dec->goal = (f32)ac->acParams[2];
+    dec->goalStep = (f32)ac->acParams[3] / float_10_8041c7e0;
+    if (dec->goalStep != float_0_8041c7d8) {
+        dec->goal = (f32)irand(100);
     }
     dec->power = (f32)ac->acParams[7];
     disp->value = float_0p01_8041c7c0 * dec->power;
@@ -314,26 +314,26 @@ s32 battleAcMain_Repeatedly(BattleWork* work) {
             }
 #endif
         }
-        if (float_0_8041c7d8 != dec->gaugeStep) {
-            dec->gauge += dec->gaugeStep;
-            if (dec->gauge <= float_0_8041c7d8) {
-                dec->gauge = float_0_8041c7d8;
-                dec->gaugeStep = dec->gaugeStep * float_neg1_8041c7dc;
+        if (float_0_8041c7d8 != dec->goalStep) {
+            dec->goal += dec->goalStep;
+            if (dec->goal <= float_0_8041c7d8) {
+                dec->goal = float_0_8041c7d8;
+                dec->goalStep = dec->goalStep * float_neg1_8041c7dc;
             }
 #ifdef MUST_MATCH
             {
                 // Match-only: the volatile read forces the reload into f1 the target has;
                 // the natural form reuses f0 and swaps the compare operands.
-                f32 g = *(volatile f32*)&dec->gauge;
+                f32 g = *(volatile f32*)&dec->goal;
                 if (g >= float_100_8041c7bc) {
-                    dec->gauge = float_100_8041c7bc;
-                    dec->gaugeStep = dec->gaugeStep * float_neg1_8041c7dc;
+                    dec->goal = float_100_8041c7bc;
+                    dec->goalStep = dec->goalStep * float_neg1_8041c7dc;
                 }
             }
 #else
-            if (dec->gauge >= float_100_8041c7bc) {
-                dec->gauge = float_100_8041c7bc;
-                dec->gaugeStep = dec->gaugeStep * float_neg1_8041c7dc;
+            if (dec->goal >= float_100_8041c7bc) {
+                dec->goal = float_100_8041c7bc;
+                dec->goalStep = dec->goalStep * float_neg1_8041c7dc;
             }
 #endif
         }
@@ -345,7 +345,7 @@ s32 battleAcMain_Repeatedly(BattleWork* work) {
             dec->timer--;
         } else {
             ac->result &= ~1;
-            if (dec->power >= dec->gauge || dec->full != 0) {
+            if (dec->power >= dec->goal || dec->full != 0) {
                 ac->result |= 2;
             }
             battleAcDelete_Repeatedly(work);
@@ -566,11 +566,11 @@ static void actionCommandDisp(f32 x, f32 y) {
 
     v = disp->value;
     BattleAcDrawGauge((s32)x, (s32)y, dec->gaugeWidth, 2,
-                      (ac->acFlag & 2) ? 100 : (s32)dec->gauge, 100, 100,
+                      (ac->acFlag & 2) ? 100 : (s32)dec->goal, 100, 100,
                       flags, v);
     {
         Vec vec = vec3_802f3190;
-        vec.x = float_neg288_8041c7c4 + x + (float_176_8041c7c8 * dec->gauge) / float_100_8041c7bc;
+        vec.x = float_neg288_8041c7c4 + x + (float_176_8041c7c8 * dec->goal) / float_100_8041c7bc;
         vec.y = float_45_8041c7cc + y;
         iconDispGx(float_1_8041c7b4, &vec, 0x10, 0x96);
     }

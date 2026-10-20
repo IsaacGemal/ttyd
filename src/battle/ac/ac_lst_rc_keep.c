@@ -12,11 +12,11 @@
 // LstRcKeep action-command work area at _battleWorkPointer + 0x1F4C. No header declares it.
 // It begins where BattleACDispParams ends (the header stops at 0x2BC in BattleActions).
 typedef struct LstRcKeepWork {
-    s32 countdown; // 0x00, frames left in the current timing window; reloaded from acParams[stage] when it runs out
-    s32 stage;     // 0x04, index into the acParams timing array (0..4)
-    s16 aHold;     // 0x08, frames the 0x40000 button has been held (0 when released)
-    s16 bHold;     // 0x0A, frames the 0x800000 button has been held (0 when released)
-    s32 endTimer;  // 0x0C, post-command timer
+    s32 countdown;  // 0x00, frames left in the current timing window; reloaded from acParams[stage] when it runs out
+    s32 stage;      // 0x04, index into the acParams timing array (0..4)
+    s16 leftHold;   // 0x08, frames the stick has been held left (pad bit 0x40000), 0 when released
+    s16 cRightHold; // 0x0A, frames the C-stick has been held right (pad bit 0x800000), 0 when released
+    s32 endTimer;   // 0x0C, post-command timer
 } LstRcKeepWork;
 
 // rodata strings, one per icon. They are the first objects of the unit's .rodata, so the compiler
@@ -92,8 +92,8 @@ s32 battleAcMain_LstRcKeep(BattleWork* work) {
         case 0x64:
             dec->countdown = 0x78;
             ac->mAcState = 0x3E8;
-            dec->aHold = 0;
-            dec->bHold = 0;
+            dec->leftHold = 0;
+            dec->cRightHold = 0;
             // fall through
         case 0x3E8:
             if ((ac->field_0x4 & 1) &&
@@ -113,35 +113,35 @@ s32 battleAcMain_LstRcKeep(BattleWork* work) {
                 }
                 return 0;
             }
-            if (dec->aHold == 0) {
+            if (dec->leftHold == 0) {
                 if (BattlePadCheckTrigger(0x40000) != 0) {
-                    dec->aHold = 1;
+                    dec->leftHold = 1;
                 }
             }
             else {
-                dec->aHold++;
+                dec->leftHold++;
                 if ((s32)BattlePadCheckNow(0x40000) == 0) {
-                    dec->aHold = 0;
+                    dec->leftHold = 0;
                 }
             }
-            if (dec->bHold == 0) {
+            if (dec->cRightHold == 0) {
                 if (BattlePadCheckTrigger(0x800000) != 0) {
-                    dec->bHold = 1;
+                    dec->cRightHold = 1;
                 }
             }
             else {
-                dec->bHold++;
+                dec->cRightHold++;
                 if ((s32)BattlePadCheckNow(0x800000) == 0) {
-                    dec->bHold = 0;
+                    dec->cRightHold = 0;
                 }
             }
-            if ((dec->aHold != 0 && dec->bHold != 0) ||
+            if ((dec->leftHold != 0 && dec->cRightHold != 0) ||
                 ac->guardFrames > 0 || autoCommand) {
                 ac->mAcState = 0x3E9;
                 dec->countdown = ac->acParams[0];
                 dec->stage = 0;
-                dec->aHold = 0;
-                dec->bHold = 0;
+                dec->leftHold = 0;
+                dec->cRightHold = 0;
             }
             else {
                 dec->countdown--;
@@ -160,19 +160,19 @@ s32 battleAcMain_LstRcKeep(BattleWork* work) {
                 ac->mAcState = 0x3EB;
             }
             dec->countdown--;
-            if (dec->aHold > 0) {
-                dec->aHold++;
+            if (dec->leftHold > 0) {
+                dec->leftHold++;
             }
             else if ((s32)BattlePadCheckNow(0x40000) == 0) {
-                dec->aHold = 1;
+                dec->leftHold = 1;
             }
-            if (dec->bHold > 0) {
-                dec->bHold++;
+            if (dec->cRightHold > 0) {
+                dec->cRightHold++;
             }
             else if ((s32)BattlePadCheckNow(0x800000) == 0) {
-                dec->bHold = 1;
+                dec->cRightHold = 1;
             }
-            if (!autoCommand && (dec->aHold > 5 || dec->bHold > 5)) {
+            if (!autoCommand && (dec->leftHold > 5 || dec->cRightHold > 5)) {
                 ac->result &= ~1;
                 stateChanged = 1;
                 ac->mAcState = 0x3EB;
@@ -190,7 +190,7 @@ s32 battleAcMain_LstRcKeep(BattleWork* work) {
                     dec->countdown = ac->acParams[dec->stage];
                 }
             }
-            else if ((dec->aHold != 0 && dec->bHold != 0) || autoCommand) {
+            else if ((dec->leftHold != 0 && dec->cRightHold != 0) || autoCommand) {
                 s32 flag = 0;
                 if (dec->stage == 4) {
                     s32 remaining = ac->acParams[4] - cur;

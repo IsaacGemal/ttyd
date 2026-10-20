@@ -12,10 +12,10 @@
 // Action-command work area for TimingWide, at _battleWorkPointer + 0x1F4C. No header declares it.
 typedef struct TimingWideDecWork {
 	s32 buttonMask;   // 0x00, BattlePad mask of the button (0x100, 0x40000 or 0x80000)
-	s8 pressState;    // 0x04, press mode: 1 checks the trigger, -1 checks the release (CheckUp), 0 checks the button is not held
+	s8 pressMode;     // 0x04, 1 checks the trigger, -1 checks the release (CheckUp), 0 checks the button is not held
 	u8 pad_0x05[3];   // 0x05
-	s32 frame;        // 0x08, timing counter, compared with acParams[1], [0x0C] and [0x10]
-	s32 phase;        // 0x0C, display sub-state (1..6)
+	s32 frame;        // 0x08, timing counter, compared with acParams[1] (limit) and acParams[2..3] (ok window)
+	s32 phase;        // 0x0C, display sub-state (0..6)
 	s32 endTimer;     // 0x10, end timer
 } TimingWideDecWork;
 
@@ -55,27 +55,27 @@ s32 battleAcMain_TimingWide(BattleWork* work) {
 		switch (ac->acParams[0]) {
 		case 5:
 			dec->buttonMask = 0x100;
-			dec->pressState = 1;
+			dec->pressMode = 1;
 			break;
 		case 0:
 			dec->buttonMask = 0x40000;
-			dec->pressState = 0;
+			dec->pressMode = 0;
 			break;
 		case 1:
 			dec->buttonMask = 0x80000;
-			dec->pressState = 0;
+			dec->pressMode = 0;
 			break;
 		case 2:
 			dec->buttonMask = 0x40000;
-			dec->pressState = -1;
+			dec->pressMode = -1;
 			break;
 		case 3:
 			dec->buttonMask = 0x80000;
-			dec->pressState = -1;
+			dec->pressMode = -1;
 			break;
 		default:
 			dec->buttonMask = 0x40000;
-			dec->pressState = 0;
+			dec->pressMode = 0;
 			break;
 		}
 		ac->outputParams[0] = 0;
@@ -133,7 +133,7 @@ s32 battleAcMain_TimingWide(BattleWork* work) {
 			break;
 		}
 		cond = 0;
-		switch (dec->pressState) {
+		switch (dec->pressMode) {
 		case 1:
 			if (BattlePadCheckTrigger(dec->buttonMask)) {
 				cond = 1;
@@ -355,7 +355,7 @@ static void actionCommandDisp(f32 x, f32 y) {
 
 	switch (dec->phase) {
 	case 0:
-		if (dec->pressState > 0) {
+		if (dec->pressMode > 0) {
 			Vec v = vecs[0];
 			v.x = -200.f + x;
 			v.y = 50.f + y;
@@ -374,7 +374,7 @@ static void actionCommandDisp(f32 x, f32 y) {
 	case 5:
 	case 6:
 		if (!(ac->acFlag & 0x10)) {
-			if (dec->pressState > 0) {
+			if (dec->pressMode > 0) {
 				Vec v = vecs[2];
 				v.x = -200.f + x;
 				v.y = 50.f + y;
@@ -388,7 +388,7 @@ static void actionCommandDisp(f32 x, f32 y) {
 			}
 		}
 		else {
-			if (dec->pressState > 0) {
+			if (dec->pressMode > 0) {
 				Vec v = vecs[4];
 				v.x = -200.f + x;
 				v.y = 50.f + y;
@@ -403,10 +403,10 @@ static void actionCommandDisp(f32 x, f32 y) {
 		}
 		break;
 	case 1:
-		if (dec->pressState != -1) {
+		if (dec->pressMode != -1) {
 			if (dec->frame >= ac->acParams[2] &&
 			    dec->frame < ac->acParams[3]) {
-				if (dec->pressState > 0) {
+				if (dec->pressMode > 0) {
 					Vec v = vecs[6];
 					v.x = -200.f + x;
 					v.y = 50.f + y;
@@ -420,7 +420,7 @@ static void actionCommandDisp(f32 x, f32 y) {
 				}
 			}
 			else {
-				if (dec->pressState > 0) {
+				if (dec->pressMode > 0) {
 					Vec v = vecs[8];
 					v.x = -200.f + x;
 					v.y = 50.f + y;

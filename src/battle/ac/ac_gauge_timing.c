@@ -84,7 +84,7 @@ typedef struct GaugeTimingWork {
     s32 inZone;     // 0x10, needle is inside the target; drives the icon and the result
     s8 tokenHit;    // 0x14, outcome rolled up front when the unit has the token badge
     s8 phase;       // 0x15, 0 waiting for the button, 1 button down, 2 input done
-    s8 holdMode;    // 0x16, 1: stop on a press (state 0x3E9); 0: stop on release (state 0x3E8)
+    s8 tapMode;     // 0x16, 1: a press stops the needle (state 0x3E9); 0: hold the button, release stops it (0x3E8 until held)
     u8 pad_0x17;    // 0x17
     s32 buttonMask; // 0x18, BattlePad mask for the button (acParams[0] picks it)
     s32 flashTimer; // 0x1C, frames the stopped needle flashes before the sweep resumes
@@ -145,18 +145,18 @@ s32 battleAcMain_GaugeTiming(BattleWork* work) {
         dec->sfxId = -1;
         switch (work->actionCommands.acParams[0]) {
         case 0:
-            dec->holdMode = 1;
+            dec->tapMode = 1;
             dec->buttonMask = 0x20;
             dec->phase = 1;
             work->actionCommands.outputParams[0] = 1;
             break;
         case 2:
-            dec->holdMode = 0;
+            dec->tapMode = 0;
             dec->buttonMask = 0x40000;
             dec->phase = 0;
             break;
         default:
-            dec->holdMode = 1;
+            dec->tapMode = 1;
             dec->buttonMask = 0x100;
             dec->phase = 1;
             work->actionCommands.outputParams[0] = 1;
@@ -184,7 +184,7 @@ s32 battleAcMain_GaugeTiming(BattleWork* work) {
             work->actionCommands.mAcState = 0x3EA;
             break;
         }
-        if (dec->holdMode != 0) {
+        if (dec->tapMode != 0) {
             work->actionCommands.mAcState = 0x3E9;
         } else {
             work->actionCommands.mAcState = 0x3E8;
@@ -195,7 +195,7 @@ s32 battleAcMain_GaugeTiming(BattleWork* work) {
         dec->frame++;
         switch (dec->phase) {
         case 0:
-            if (dec->holdMode == 0) {
+            if (dec->tapMode == 0) {
                 if ((s32)BattlePadCheckNow(dec->buttonMask) != 0) {
                     dec->phase = 1;
                     work->actionCommands.mAcState = 0x3E9;
@@ -205,7 +205,7 @@ s32 battleAcMain_GaugeTiming(BattleWork* work) {
             }
             break;
         case 1:
-            if (dec->holdMode != 0) {
+            if (dec->tapMode != 0) {
                 if ((u32)BattlePadGetNow() == (u32)dec->buttonMask) {
                     if (BattlePadCheckTrigger(dec->buttonMask) != 0) {
                         dec->phase = 2;
@@ -648,7 +648,7 @@ static void actionCommandDisp(f32 x, f32 y) {
         break;
     case 0x3E8:
     case 0x3E9:
-        if (dec->holdMode != 0) {
+        if (dec->tapMode != 0) {
             if (dec->inZone != 0) {
                 if ((icon2 & 0xffff) != 0) {
                     baseX = float_neg228_804218b0 + x;

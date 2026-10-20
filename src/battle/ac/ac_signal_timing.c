@@ -277,7 +277,7 @@ s32 battleAcMain_SignalTiming(BattleWork* work) {
                             if (!(ac->field_0x4 & 1) || !(ac->mAcUnit->mTokenFlags & 0x10)) {
                                 psndSFXOn(sfxNg);
                             }
-                            ac->acParams[9] = -1;
+                            ac->outputParams[1] = -1;
                         } else {
                             bd->latched = 0;
                         }
