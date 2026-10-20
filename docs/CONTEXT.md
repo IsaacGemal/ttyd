@@ -10408,3 +10408,13 @@ credits_ending_records and R_credits_npc_info is still open and needs a per-step
 Verified: tower `ninja` recreates `build/G8MJ01/ok` after the end renames and again after the moamoa rename (32 files OK);
 end_unknown.c compiles without MUST_MATCH (the ci.natural command run by hand). Index (tools/cleanup_index.py):
 whole tree 34.468 -> 34.244; end_unknown.c 113.415 (weighted 175) -> 18.146 (weighted 28).
+
+### Readability: mot_ship, party_cloud offset casts (2026-10-20, Claude Haiku 5.5, n9-q-rawmot)
+- offset_to_field `--apply` on mot_ship.c, party_cloud.c and party_yoshi.c. mot_ship: 0x9C is `dispOfs.y`, 0x52 is `airTimerPeak`, 0x19C is `moveDir`.
+- mot_ship's 0x2A4 is an s32 paper animation time: marioReInit_ship sets it to 0x58, it is passed to marioSetPaperAnimeLocalTime each frame, and the landing counts it down to 0x2C. It is `paperAnimeTime`, a new member of the 0x2A4 union in mario.h beside `motionSfxId0` (mot_hip's sound handle), not `motionSfxId0`.
+- mot_ship's f32 0x2B0 is the jump speed added to `dispOfs.y` and is now `field_0x2B0`. Its 0x11C/0x124/0x128 landing reference are `field_0x11C.x`, `field_0x11C.z` and `field_0x128`, the evt_mario names.
+- party_cloud: PartyCloud 0x10/0x14/0x18/0x1C are `sweepOffset1`, `sweepDown1`, `sweepOffset2`, `sweepDown2` (replacing `field_0x10[16]`). getHitBreatheout2 sweeps two hit rays from `unk4` by an offset that moves 1 per frame between -20 and 20, and the flag is 1 while the offset decreases. 0x4 and 0x8 are `unk4` and `unk8`.
+- party_yoshi's 0x2B4 is the f32 inertia z component (inertia() accumulates it from the stick, L_yoshiFlyMove negates it). It stays raw: `jabaraAccel` is mot_jabara's accel and does not fit.
+- Left: party_cloud 0x17C/0x180 (`= 0` integer stores into the flurrie union's f32 `bobAngle`/`bobStep`, a float name would change codegen), 0x2E (u16 read of the `currMotionId` enum, the header's MarioMotion), 0x3D (nested cast), 0x94 (MUST_MATCH); mot_ship 0x7C/0x80 (MUST_MATCH), 0x1F0 (HitEntry), 0x18C (pad); party_yoshi 0x18C, 0x1F0, 0x39 and 0x2B4 as above.
+- Index 33.803 -> 33.596 per kLOC (`tools/cleanup_index.py`).
+- Build: tower `ninja` recreates build/G8MJ01/ok. mot_ship.c and party_cloud.c natural-compile without -DMUST_MATCH (rc 0).
