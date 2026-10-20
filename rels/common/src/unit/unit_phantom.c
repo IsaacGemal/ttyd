@@ -631,8 +631,8 @@ static USER_FUNC(eff_fire) {
     part = BtlUnit_GetPartsPtr(unit, 2);
     if (isFirstCall) {
         eff[0] = effFireEntry(7, 106, 0.0f, -1000.0f, 0.0f, 1.0f);
-        ((effFireData*)eff[0]->userdata)->field_0x78 = 0.0f;
-        ((effFireData*)eff[0]->userdata)->field_0x7C = 0.0f;
+        ((effFireData*)eff[0]->userdata)->scaleX = 0.0f;
+        ((effFireData*)eff[0]->userdata)->scaleY = 0.0f;
     }
     data = eff[0]->userdata;
     if (data != NULL) {
@@ -643,13 +643,13 @@ static USER_FUNC(eff_fire) {
         pos.y = y;
         pos.z = z;
         data->position = pos;
-        data->field_0x78 += 0.1f * unit->mSizeMultiplier;
-        if (data->field_0x78 >= unit->mSizeMultiplier) {
-            data->field_0x78 = unit->mSizeMultiplier;
+        data->scaleX += 0.1f * unit->mSizeMultiplier;
+        if (data->scaleX >= unit->mSizeMultiplier) {
+            data->scaleX = unit->mSizeMultiplier;
         }
-        data->field_0x7C += 0.1f * unit->mSizeMultiplier;
-        if (data->field_0x7C >= unit->mSizeMultiplier) {
-            data->field_0x7C = unit->mSizeMultiplier;
+        data->scaleY += 0.1f * unit->mSizeMultiplier;
+        if (data->scaleY >= unit->mSizeMultiplier) {
+            data->scaleY = unit->mSizeMultiplier;
         }
         }
     }
@@ -775,8 +775,8 @@ static USER_FUNC(eff_all_fire) {
     f32 scale[10] = { 1.0f, 1.25f, 1.5f, 1.75f, 2.0f, 2.25f, 2.0f, 1.75f, 1.5f, 1.25f };
     if (isFirstCall) {
         eff2[index] = effFireEntry(7, 120, 0.0f, -1000.0f, 0.0f, 1.0f);
-        ((effFireData*)eff2[index]->userdata)->field_0x78 = 2.0f;
-        ((effFireData*)eff2[index]->userdata)->field_0x7C = unit->mSizeMultiplier * scale[index];
+        ((effFireData*)eff2[index]->userdata)->scaleX = 2.0f;
+        ((effFireData*)eff2[index]->userdata)->scaleY = unit->mSizeMultiplier * scale[index];
     }
     data = eff2[index]->userdata;
     if (data != NULL) {

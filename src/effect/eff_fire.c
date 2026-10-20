@@ -129,8 +129,8 @@ EffectEntry* effFireEntry(s32 type, s32 lifetime, f32 x, f32 y, f32 z, f32 scale
 	data->scale = scale;
 	data->lifetime = lifetime;
 	data->counter = 0;
-	data->field_0x78 = 1.0f;
-	data->field_0x7C = 1.0f;
+	data->scaleX = 1.0f;
+	data->scaleY = 1.0f;
 	data->sparkTimer = 0;
 	data->sparkInterval = rand() % 30 + 30;
 	data->colorIndex1 = 0;
@@ -177,7 +177,7 @@ EffectEntry* effFireEntry(s32 type, s32 lifetime, f32 x, f32 y, f32 z, f32 scale
 	data->curScale = 0.0f;
 	data->field_0x80 = 0;
 	data->field_0x84 = 0;
-	data->field_0x88 = 0;
+	data->useMapBlend = 0;
 	return entry;
 }
 
@@ -228,7 +228,7 @@ void effFireMain(EffectEntry* effect) {
 		if (data->colorIndex2 >= data->frameMax) {
 			data->colorIndex2 = 0;
 		}
-		data->field_0x38 = 0x80;
+		data->intensity = 0x80;
 		break;
 	}
 	data->counter++;
@@ -275,7 +275,7 @@ void effFireMain(EffectEntry* effect) {
 		data->sparkTimer++;
 		if (data->sparkTimer > data->sparkInterval) {
 			effFireSparkN64Entry(type, 2, 200, data->position.x, data->position.y + 10.f * data->scale,
-				data->position.z, 30.f * data->field_0x78, 30.f,
+				data->position.z, 30.f * data->scaleX, 30.f,
 				data->scale, 1.0f, 1.0f);
 			data->sparkTimer = 0;
 			data->sparkInterval = rand() % 30 + 30;
@@ -407,13 +407,13 @@ void effFireDisp(CameraId camId, void* param) {
 	GXSetNumChans(1);
 	GXSetChanCtrl(GX_COLOR0A0, GX_FALSE, GX_SRC_REG, GX_SRC_VTX, GX_LIGHT_NULL, GX_DF_NONE, GX_AF_NONE);
 	GXSetNumTexGens(1);
-	GXSetTexCoordGen2(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, 0x1E, GX_FALSE, 0x7D);
+	GXSetTexCoordGen2(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_TEXMTX0, GX_FALSE, GX_PTIDENTITY);
 
 	frame = (data->counter >> 1) % frameCount;
 	PSMTXScale(scaleMtx, 1.0f / (f32)frameCount, 1.0f, 1.0f);
 	PSMTXTrans(transMtx, (f32)frame, 0.0f, 0.0f);
 	PSMTXConcat(scaleMtx, transMtx, mtx);
-	GXLoadTexMtxImm(mtx, 0x1E, GX_MTX2x4);
+	GXLoadTexMtxImm(mtx, GX_TEXMTX0, GX_MTX2x4);
 
 	PSMTXTrans(transMtx, data->position.x, data->position.y, data->position.z);
 	PSMTXRotRad(rotMtx, 'y', -camGetPtr(camId)->viewYaw * 0.017453292f);
@@ -424,11 +424,11 @@ void effFireDisp(CameraId camId, void* param) {
 #else
 	scale *= 0.03125f;
 #endif
-	PSMTXScale(scaleMtx, scale * data->field_0x78, scale * data->field_0x7C, scale);
+	PSMTXScale(scaleMtx, scale * data->scaleX, scale * data->scaleY, scale);
 	PSMTXConcat(transMtx, rotMtx, mtx);
 	PSMTXConcat(mtx, scaleMtx, mtx);
 	PSMTXConcat(camera->view, mtx, mtx);
-	GXSetCurrentMtx(0);
+	GXSetCurrentMtx(GX_PNMTX0);
 	GXClearVtxDesc();
 	GXSetVtxDesc(GX_VA_POS, GX_DIRECT);
 	GXSetVtxDesc(GX_VA_CLR0, GX_DIRECT);
@@ -438,13 +438,13 @@ void effFireDisp(CameraId camId, void* param) {
 	GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, GX_TEX_ST, GX_F32, 0);
 	PSMTXTrans(offsetMtx, 0.01f, -0.01f, 0.0f);
 	PSMTXConcat(mtx, offsetMtx, offsetMtx);
-	GXLoadPosMtxImm(offsetMtx, 0);
+	GXLoadPosMtxImm(offsetMtx, GX_PNMTX0);
 	GXSetNumTevStages(1);
 	GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR_NULL);
 	GXSetTevColorOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
 	GXSetTevAlphaOp(GX_TEVSTAGE0, (GXTevOp)0xE, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
 	GXSetTevColorIn(GX_TEVSTAGE0, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ZERO, GX_CC_KONST);
-	GXSetTevAlphaIn(GX_TEVSTAGE0, (GXTevAlphaArg)4, (GXTevAlphaArg)1, (GXTevAlphaArg)6, (GXTevAlphaArg)7);
+	GXSetTevAlphaIn(GX_TEVSTAGE0, GX_CA_TEXA, GX_CA_A0, (GXTevAlphaArg)6, GX_CA_ZERO);
 	GXSetTevKColorSel(GX_TEVSTAGE0, GX_TEV_KCSEL_K0);
 	GXSetTevKAlphaSel(GX_TEVSTAGE0, GX_TEV_KASEL_K0_A);
 	GXSetTevKColor(GX_KCOLOR0, *(GXColor*)&dat_8041e0bc);
@@ -468,34 +468,34 @@ void effFireDisp(CameraId camId, void* param) {
 		GXColor4u8(0, 0, 0, 0xFF);
 		GXTexCoord2f32(0.0f, 1.0f);
 	}
-	GXLoadPosMtxImm(mtx, 0);
+	GXLoadPosMtxImm(mtx, GX_PNMTX0);
 	GXSetNumTevStages(4);
 	GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD_NULL, GX_TEXMAP_NULL, GX_COLOR0A0);
 	GXSetTevColorOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVREG0);
 	GXSetTevAlphaOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVREG0);
-	GXSetTevColorIn(GX_TEVSTAGE0, 0xC, 0xE, 0xA, 0xF);
-	GXSetTevAlphaIn(GX_TEVSTAGE0, 7, 7, 7, 7);
-	GXSetTevKColorSel(GX_TEVSTAGE0, 0xC);
+	GXSetTevColorIn(GX_TEVSTAGE0, GX_CC_ONE, GX_CC_KONST, GX_CC_RASC, GX_CC_ZERO);
+	GXSetTevAlphaIn(GX_TEVSTAGE0, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO);
+	GXSetTevKColorSel(GX_TEVSTAGE0, GX_TEV_KCSEL_K0);
 	GXSetTevKColor(GX_KCOLOR0, *(GXColor*)&dat_8041e0c4);
 	GXSetTevOrder(GX_TEVSTAGE1, GX_TEXCOORD_NULL, GX_TEXMAP_NULL, GX_COLOR0A0);
 	GXSetTevColorOp(GX_TEVSTAGE1, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVREG1);
 	GXSetTevAlphaOp(GX_TEVSTAGE1, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVREG1);
-	GXSetTevColorIn(GX_TEVSTAGE1, 0xC, 0xE, 0xA, 0xF);
-	GXSetTevAlphaIn(GX_TEVSTAGE1, 7, 7, 7, 7);
-	GXSetTevKColorSel(GX_TEVSTAGE1, 0xD);
+	GXSetTevColorIn(GX_TEVSTAGE1, GX_CC_ONE, GX_CC_KONST, GX_CC_RASC, GX_CC_ZERO);
+	GXSetTevAlphaIn(GX_TEVSTAGE1, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO);
+	GXSetTevKColorSel(GX_TEVSTAGE1, GX_TEV_KCSEL_K1);
 	GXSetTevKColor(GX_KCOLOR1, *(GXColor*)&dat_8041e0c8);
 	GXSetTevOrder(GX_TEVSTAGE2, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR_NULL);
 	GXSetTevColorOp(GX_TEVSTAGE2, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
 	GXSetTevAlphaOp(GX_TEVSTAGE2, (GXTevOp)0xE, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
-	GXSetTevColorIn(GX_TEVSTAGE2, 0xF, 0xF, 0xF, 2);
-	GXSetTevAlphaIn(GX_TEVSTAGE2, 4, 3, 6, 7);
-	GXSetTevKAlphaSel(GX_TEVSTAGE2, 0);
-	GXSetTevColor((GXTevRegID)3, *(GXColor*)&dat_8041e0cc);
+	GXSetTevColorIn(GX_TEVSTAGE2, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ZERO, GX_CC_C0);
+	GXSetTevAlphaIn(GX_TEVSTAGE2, GX_CA_TEXA, GX_CA_A2, (GXTevAlphaArg)6, GX_CA_ZERO);
+	GXSetTevKAlphaSel(GX_TEVSTAGE2, GX_TEV_KASEL_1);
+	GXSetTevColor(GX_TEVREG2, *(GXColor*)&dat_8041e0cc);
 	GXSetTevOrder(GX_TEVSTAGE3, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR_NULL);
 	GXSetTevColorOp(GX_TEVSTAGE3, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
 	GXSetTevAlphaOp(GX_TEVSTAGE3, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
-	GXSetTevColorIn(GX_TEVSTAGE3, 4, 0, 1, 0xF);
-	GXSetTevAlphaIn(GX_TEVSTAGE3, 4, 7, 0, 0);
+	GXSetTevColorIn(GX_TEVSTAGE3, GX_CC_C1, GX_CC_CPREV, GX_CC_APREV, GX_CC_ZERO);
+	GXSetTevAlphaIn(GX_TEVSTAGE3, GX_CA_TEXA, GX_CA_ZERO, GX_CA_APREV, GX_CA_APREV);
 	GXBegin(GX_QUADS, GX_VTXFMT0, 4);
 	{
 		f32 w = (f32)texWidth;
@@ -568,27 +568,27 @@ void effFireDisp2(CameraId camId, void* param) {
 	GXSetNumChans(1);
 	GXSetChanCtrl(GX_COLOR0A0, GX_FALSE, GX_SRC_REG, GX_SRC_VTX, GX_LIGHT_NULL, GX_DF_NONE, GX_AF_NONE);
 	GXSetNumTexGens(2);
-	GXSetTexCoordGen2(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, 0x1E, GX_FALSE, 0x7D);
-	GXSetTexCoordGen2(GX_TEXCOORD1, GX_TG_MTX2x4, GX_TG_TEX0, 0x21, GX_FALSE, 0x7D);
+	GXSetTexCoordGen2(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_TEXMTX0, GX_FALSE, GX_PTIDENTITY);
+	GXSetTexCoordGen2(GX_TEXCOORD1, GX_TG_MTX2x4, GX_TG_TEX0, GX_TEXMTX1, GX_FALSE, GX_PTIDENTITY);
 
 	PSMTXScale(scaleMtx, 1.0f / (f32)data->frameMax, 1.0f, 1.0f);
 	PSMTXTrans(transMtx, (f32)data->colorIndex1, 0.0f, 0.0f);
 	PSMTXConcat(scaleMtx, transMtx, transMtx);
-	GXLoadTexMtxImm(transMtx, 0x1E, GX_MTX2x4);
+	GXLoadTexMtxImm(transMtx, GX_TEXMTX0, GX_MTX2x4);
 
 	PSMTXScale(scaleMtx, 1.0f / (f32)data->frameMax, 1.0f, 1.0f);
 	PSMTXTrans(transMtx, (f32)data->colorIndex2, 0.0f, 0.0f);
 	PSMTXConcat(scaleMtx, transMtx, transMtx);
-	GXLoadTexMtxImm(transMtx, 0x21, GX_MTX2x4);
+	GXLoadTexMtxImm(transMtx, GX_TEXMTX1, GX_MTX2x4);
 
 	PSMTXTrans(transMtx, data->position.x, data->position.y, data->position.z);
 	PSMTXRotRad(rotMtx, 'y', -camGetPtr(camId)->viewYaw * 0.017453292f);
-	PSMTXScale(scaleMtx, data->scale * data->field_0x78, data->scale * data->field_0x7C, data->scale);
+	PSMTXScale(scaleMtx, data->scale * data->scaleX, data->scale * data->scaleY, data->scale);
 	PSMTXConcat(transMtx, rotMtx, mtx);
 	PSMTXConcat(mtx, scaleMtx, mtx);
 	PSMTXConcat(camera->view, mtx, mtx);
-	GXLoadPosMtxImm(mtx, 0);
-	GXSetCurrentMtx(0);
+	GXLoadPosMtxImm(mtx, GX_PNMTX0);
+	GXSetCurrentMtx(GX_PNMTX0);
 	GXClearVtxDesc();
 	GXSetVtxDesc(GX_VA_POS, GX_DIRECT);
 	GXSetVtxDesc(GX_VA_CLR0, GX_DIRECT);
@@ -600,8 +600,8 @@ void effFireDisp2(CameraId camId, void* param) {
 	GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR0A0);
 	GXSetTevColorOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
 	GXSetTevAlphaOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
-	GXSetTevColorIn(GX_TEVSTAGE0, (GXTevColorArg)4, (GXTevColorArg)2, (GXTevColorArg)0xA, (GXTevColorArg)0xF);
-	GXSetTevAlphaIn(GX_TEVSTAGE0, (GXTevAlphaArg)7, (GXTevAlphaArg)7, (GXTevAlphaArg)7, (GXTevAlphaArg)4);
+	GXSetTevColorIn(GX_TEVSTAGE0, GX_CC_C1, GX_CC_C0, GX_CC_RASC, GX_CC_ZERO);
+	GXSetTevAlphaIn(GX_TEVSTAGE0, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_TEXA);
 	switch (type) {
 	case 3:
 	case 4:
@@ -616,25 +616,25 @@ void effFireDisp2(CameraId camId, void* param) {
 	GXSetTevOrder(GX_TEVSTAGE1, GX_TEXCOORD1, GX_TEXMAP0, GX_COLOR_NULL);
 	GXSetTevColorOp(GX_TEVSTAGE1, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
 	GXSetTevAlphaOp(GX_TEVSTAGE1, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
-	GXSetTevColorIn(GX_TEVSTAGE1, (GXTevColorArg)0xF, (GXTevColorArg)0xF, (GXTevColorArg)0xF, (GXTevColorArg)0);
-	GXSetTevAlphaIn(GX_TEVSTAGE1, (GXTevAlphaArg)0, (GXTevAlphaArg)4, (GXTevAlphaArg)3, (GXTevAlphaArg)7);
+	GXSetTevColorIn(GX_TEVSTAGE1, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ZERO, GX_CC_CPREV);
+	GXSetTevAlphaIn(GX_TEVSTAGE1, GX_CA_APREV, GX_CA_TEXA, GX_CA_A2, GX_CA_ZERO);
 #ifdef MUST_MATCH
 	tevColor = *(GXColor*)&unk_80423058;
-	GXSetTevColor((GXTevRegID)3, effFireDisp2Color(tevColor, data->field_0x38));
+	GXSetTevColor(GX_TEVREG2, effFireDisp2Color(tevColor, data->intensity));
 #else
 	tevColor = *(GXColor*)&unk_80423058;
-	tevColor.r = data->field_0x38;
-	tevColor.g = data->field_0x38;
-	tevColor.b = data->field_0x38;
-	tevColor.a = data->field_0x38;
-	GXSetTevColor((GXTevRegID)3, tevColor);
+	tevColor.r = data->intensity;
+	tevColor.g = data->intensity;
+	tevColor.b = data->intensity;
+	tevColor.a = data->intensity;
+	GXSetTevColor(GX_TEVREG2, tevColor);
 #endif
 	GXSetTevOrder(GX_TEVSTAGE2, GX_TEXCOORD_NULL, GX_TEXMAP_NULL, GX_COLOR_NULL);
 	GXSetTevColorOp(GX_TEVSTAGE2, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
 	GXSetTevAlphaOp(GX_TEVSTAGE2, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
-	GXSetTevColorIn(GX_TEVSTAGE2, (GXTevColorArg)0xF, (GXTevColorArg)0xF, (GXTevColorArg)0xF, (GXTevColorArg)0);
-	GXSetTevAlphaIn(GX_TEVSTAGE2, (GXTevAlphaArg)7, (GXTevAlphaArg)0, (GXTevAlphaArg)6, (GXTevAlphaArg)7);
-	GXSetTevKAlphaSel(GX_TEVSTAGE2, (GXTevKAlphaSel)0x1C);
+	GXSetTevColorIn(GX_TEVSTAGE2, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ZERO, GX_CC_CPREV);
+	GXSetTevAlphaIn(GX_TEVSTAGE2, GX_CA_ZERO, GX_CA_APREV, (GXTevAlphaArg)6, GX_CA_ZERO);
+	GXSetTevKAlphaSel(GX_TEVSTAGE2, GX_TEV_KASEL_K0_A);
 #ifdef MUST_MATCH
 	tevKColor = *(GXColor*)&unk_8042305c;
 	GXSetTevKColor(GX_KCOLOR0, effFireDisp2KColor(tevKColor, data->alpha));
@@ -675,8 +675,8 @@ void effFireDisp2(CameraId camId, void* param) {
 		PSMTXConcat(transMtx, rotMtx, transMtx);
 	}
 	PSMTXConcat(mtx, transMtx, transMtx);
-	GXLoadPosMtxImm(transMtx, 0);
-	GXSetCurrentMtx(0);
+	GXLoadPosMtxImm(transMtx, GX_PNMTX0);
+	GXSetCurrentMtx(GX_PNMTX0);
 	GXSetNumChans(1);
 	GXSetChanCtrl(GX_COLOR0A0, GX_FALSE, GX_SRC_REG, GX_SRC_REG, GX_LIGHT_NULL, GX_DF_NONE, GX_AF_NONE);
 	switch (type) {
@@ -691,7 +691,7 @@ void effFireDisp2(CameraId camId, void* param) {
 		break;
 	}
 	GXSetNumTexGens(1);
-	GXSetTexCoordGen2(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, 0x3C, GX_FALSE, 0x7D);
+	GXSetTexCoordGen2(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_IDENTITY, GX_FALSE, GX_PTIDENTITY);
 	GXClearVtxDesc();
 	GXSetVtxDesc(GX_VA_POS, GX_DIRECT);
 	GXSetVtxDesc(GX_VA_TEX0, GX_DIRECT);
@@ -700,7 +700,7 @@ void effFireDisp2(CameraId camId, void* param) {
 	GXSetNumTevStages(1);
 	GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR0A0);
 	GXSetTevOp(GX_TEVSTAGE0, GX_MODULATE);
-	GXSetTevColorIn(GX_TEVSTAGE0, (GXTevColorArg)0xF, (GXTevColorArg)0xF, (GXTevColorArg)0xF, (GXTevColorArg)0xA);
+	GXSetTevColorIn(GX_TEVSTAGE0, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ZERO, GX_CC_RASC);
 	switch (type) {
 	case 3:
 	case 8:
@@ -802,41 +802,41 @@ void effFireDisp3(CameraId camId, void* param) {
 	GXSetNumChans(1);
 	GXSetChanCtrl(GX_COLOR0A0, GX_FALSE, GX_SRC_REG, GX_SRC_VTX, GX_LIGHT_NULL, GX_DF_NONE, GX_AF_NONE);
 	GXSetNumTexGens(2);
-	GXSetTexCoordGen2(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, 0x1E, GX_FALSE, 0x7D);
-	GXSetTexCoordGen2(GX_TEXCOORD1, GX_TG_MTX2x4, GX_TG_TEX0, 0x21, GX_FALSE, 0x7D);
+	GXSetTexCoordGen2(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_TEXMTX0, GX_FALSE, GX_PTIDENTITY);
+	GXSetTexCoordGen2(GX_TEXCOORD1, GX_TG_MTX2x4, GX_TG_TEX0, GX_TEXMTX1, GX_FALSE, GX_PTIDENTITY);
 
 	PSMTXScale(scaleMtx, 1.0f / (f32)data->frameMax, 1.0f, 1.0f);
 	PSMTXTrans(transMtx, (f32)data->colorIndex1, 0.0f, 0.0f);
 	PSMTXConcat(scaleMtx, transMtx, transMtx);
-	GXLoadTexMtxImm(transMtx, 0x1E, GX_MTX2x4);
+	GXLoadTexMtxImm(transMtx, GX_TEXMTX0, GX_MTX2x4);
 
 	PSMTXScale(scaleMtx, 1.0f / (f32)data->frameMax, 1.0f, 1.0f);
 	PSMTXTrans(transMtx, (f32)data->colorIndex2, 0.0f, 0.0f);
 	PSMTXConcat(scaleMtx, transMtx, transMtx);
-	GXLoadTexMtxImm(transMtx, 0x21, GX_MTX2x4);
+	GXLoadTexMtxImm(transMtx, GX_TEXMTX1, GX_MTX2x4);
 
 	PSMTXTrans(transMtx, data->position.x, data->position.y, data->position.z);
 	PSMTXRotRad(rotMtx, 'y', -camGetPtr(camId)->viewYaw * 0.017453292f);
-	PSMTXScale(scaleMtx, data->scale * data->field_0x78, data->scale * data->field_0x7C, data->scale);
+	PSMTXScale(scaleMtx, data->scale * data->scaleX, data->scale * data->scaleY, data->scale);
 	PSMTXConcat(transMtx, rotMtx, mtx);
 	PSMTXConcat(mtx, scaleMtx, mtx);
 	GXSetNumTevStages(3);
 	GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR_NULL);
 	GXSetTevColorOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
 	GXSetTevAlphaOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
-	GXSetTevColorIn(GX_TEVSTAGE0, (GXTevColorArg)0xF, (GXTevColorArg)0xF, (GXTevColorArg)0xF, (GXTevColorArg)0xF);
-	GXSetTevAlphaIn(GX_TEVSTAGE0, (GXTevAlphaArg)7, (GXTevAlphaArg)7, (GXTevAlphaArg)7, (GXTevAlphaArg)4);
+	GXSetTevColorIn(GX_TEVSTAGE0, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ZERO);
+	GXSetTevAlphaIn(GX_TEVSTAGE0, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_TEXA);
 	GXSetTevOrder(GX_TEVSTAGE1, GX_TEXCOORD1, GX_TEXMAP1, GX_COLOR0A0);
 	GXSetTevColorOp(GX_TEVSTAGE1, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
-	GXSetTevAlphaOp(GX_TEVSTAGE1, GX_TEV_ADD, GX_TB_ZERO, (GXTevScale)3, GX_TRUE, GX_TEVPREV);
-	GXSetTevColorIn(GX_TEVSTAGE1, (GXTevColorArg)0xF, (GXTevColorArg)0xF, (GXTevColorArg)0xF, (GXTevColorArg)0xA);
-	GXSetTevAlphaIn(GX_TEVSTAGE1, (GXTevAlphaArg)0, (GXTevAlphaArg)7, (GXTevAlphaArg)7, (GXTevAlphaArg)4);
+	GXSetTevAlphaOp(GX_TEVSTAGE1, GX_TEV_ADD, GX_TB_ZERO, GX_CS_DIVIDE_2, GX_TRUE, GX_TEVPREV);
+	GXSetTevColorIn(GX_TEVSTAGE1, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ZERO, GX_CC_RASC);
+	GXSetTevAlphaIn(GX_TEVSTAGE1, GX_CA_APREV, GX_CA_ZERO, GX_CA_ZERO, GX_CA_TEXA);
 	GXSetTevOrder(GX_TEVSTAGE2, GX_TEXCOORD_NULL, GX_TEXMAP_NULL, GX_COLOR_NULL);
 	GXSetTevColorOp(GX_TEVSTAGE2, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
 	GXSetTevAlphaOp(GX_TEVSTAGE2, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
-	GXSetTevColorIn(GX_TEVSTAGE2, (GXTevColorArg)0xF, (GXTevColorArg)0xF, (GXTevColorArg)0xF, (GXTevColorArg)0);
-	GXSetTevAlphaIn(GX_TEVSTAGE2, (GXTevAlphaArg)7, (GXTevAlphaArg)0, (GXTevAlphaArg)1, (GXTevAlphaArg)7);
-	if (data->field_0x88) {
+	GXSetTevColorIn(GX_TEVSTAGE2, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ZERO, GX_CC_CPREV);
+	GXSetTevAlphaIn(GX_TEVSTAGE2, GX_CA_ZERO, GX_CA_APREV, GX_CA_A0, GX_CA_ZERO);
+	if (data->useMapBlend) {
 		work = mapGetWork();
 		if (work->entries[0].flags & 2) {
 			mapGetBlend(&blend);
@@ -844,8 +844,8 @@ void effFireDisp3(CameraId camId, void* param) {
 			GXSetTevOrder(GX_TEVSTAGE3, GX_TEXCOORD_NULL, GX_TEXMAP_NULL, GX_COLOR_NULL);
 			GXSetTevColorOp(GX_TEVSTAGE3, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
 			GXSetTevAlphaOp(GX_TEVSTAGE3, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
-			GXSetTevColorIn(GX_TEVSTAGE3, (GXTevColorArg)0xF, (GXTevColorArg)0, (GXTevColorArg)4, (GXTevColorArg)0xF);
-			GXSetTevAlphaIn(GX_TEVSTAGE3, (GXTevAlphaArg)7, (GXTevAlphaArg)0, (GXTevAlphaArg)2, (GXTevAlphaArg)7);
+			GXSetTevColorIn(GX_TEVSTAGE3, GX_CC_ZERO, GX_CC_CPREV, GX_CC_C1, GX_CC_ZERO);
+			GXSetTevAlphaIn(GX_TEVSTAGE3, GX_CA_ZERO, GX_CA_APREV, GX_CA_A1, GX_CA_ZERO);
 			GXSetTevColor(GX_TEVREG1, blend);
 		}
 	}
@@ -866,10 +866,10 @@ void effFireDisp3(CameraId camId, void* param) {
 	GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, GX_TEX_ST, GX_F32, 0);
 
 	// Accumulate the screen-space bounds of both quads.
-	data->field_0x68 = 0x2710;
-	data->field_0x70 = -0x2710;
-	data->field_0x6C = -0x2710;
-	data->field_0x74 = 0x2710;
+	data->screenMinX = 0x2710;
+	data->screenMaxY = -0x2710;
+	data->screenMaxX = -0x2710;
+	data->screenMinY = 0x2710;
 
 	leftX = -width * half;
 	rowHeight = 13.333333f;
@@ -888,8 +888,8 @@ void effFireDisp3(CameraId camId, void* param) {
 		}
 		PSMTXConcat(mtx, scaleMtx, modelMtx);
 		PSMTXConcat(camera->view, modelMtx, scaleMtx);
-		GXLoadPosMtxImm(scaleMtx, 0);
-		GXSetCurrentMtx(0);
+		GXLoadPosMtxImm(scaleMtx, GX_PNMTX0);
+		GXSetCurrentMtx(GX_PNMTX0);
 		GXBegin(GX_QUADS, GX_VTXFMT0, 0xC);
 		for (j = 0; j < 3; j++) {
 			const u8* color0 = colorEntry + j * 4;
@@ -923,10 +923,10 @@ void effFireDisp3(CameraId camId, void* param) {
 		}
 		PSMTXMultVec(modelMtx, &v, &v);
 		getScreenPoint(&v, &screen);
-		if (screen.x < (f32)data->field_0x68) data->field_0x68 = (s32)screen.x;
-		if (screen.x > (f32)data->field_0x6C) data->field_0x6C = (s32)screen.x;
-		if (screen.y > (f32)data->field_0x70) data->field_0x70 = (s32)screen.y;
-		if (screen.y < (f32)data->field_0x74) data->field_0x74 = (s32)screen.y;
+		if (screen.x < (f32)data->screenMinX) data->screenMinX = (s32)screen.x;
+		if (screen.x > (f32)data->screenMaxX) data->screenMaxX = (s32)screen.x;
+		if (screen.y > (f32)data->screenMaxY) data->screenMaxY = (s32)screen.y;
+		if (screen.y < (f32)data->screenMinY) data->screenMinY = (s32)screen.y;
 
 		{
 			Vec tmp;
@@ -943,10 +943,10 @@ void effFireDisp3(CameraId camId, void* param) {
 		}
 		PSMTXMultVec(modelMtx, &v, &v);
 		getScreenPoint(&v, &screen);
-		if (screen.x < (f32)data->field_0x68) data->field_0x68 = (s32)screen.x;
-		if (screen.x > (f32)data->field_0x6C) data->field_0x6C = (s32)screen.x;
-		if (screen.y > (f32)data->field_0x70) data->field_0x70 = (s32)screen.y;
-		if (screen.y < (f32)data->field_0x74) data->field_0x74 = (s32)screen.y;
+		if (screen.x < (f32)data->screenMinX) data->screenMinX = (s32)screen.x;
+		if (screen.x > (f32)data->screenMaxX) data->screenMaxX = (s32)screen.x;
+		if (screen.y > (f32)data->screenMaxY) data->screenMaxY = (s32)screen.y;
+		if (screen.y < (f32)data->screenMinY) data->screenMinY = (s32)screen.y;
 
 		{
 			Vec tmp;
@@ -962,10 +962,10 @@ void effFireDisp3(CameraId camId, void* param) {
 		}
 		PSMTXMultVec(modelMtx, &v, &v);
 		getScreenPoint(&v, &screen);
-		if (screen.x < (f32)data->field_0x68) data->field_0x68 = (s32)screen.x;
-		if (screen.x > (f32)data->field_0x6C) data->field_0x6C = (s32)screen.x;
-		if (screen.y > (f32)data->field_0x70) data->field_0x70 = (s32)screen.y;
-		if (screen.y < (f32)data->field_0x74) data->field_0x74 = (s32)screen.y;
+		if (screen.x < (f32)data->screenMinX) data->screenMinX = (s32)screen.x;
+		if (screen.x > (f32)data->screenMaxX) data->screenMaxX = (s32)screen.x;
+		if (screen.y > (f32)data->screenMaxY) data->screenMaxY = (s32)screen.y;
+		if (screen.y < (f32)data->screenMinY) data->screenMinY = (s32)screen.y;
 
 		{
 			Vec tmp;
@@ -981,22 +981,22 @@ void effFireDisp3(CameraId camId, void* param) {
 		}
 		PSMTXMultVec(modelMtx, &v, &v);
 		getScreenPoint(&v, &screen);
-		if (screen.x < (f32)data->field_0x68) data->field_0x68 = (s32)screen.x;
-		if (screen.x > (f32)data->field_0x6C) data->field_0x6C = (s32)screen.x;
-		if (screen.y > (f32)data->field_0x70) data->field_0x70 = (s32)screen.y;
-		if (screen.y < (f32)data->field_0x74) data->field_0x74 = (s32)screen.y;
+		if (screen.x < (f32)data->screenMinX) data->screenMinX = (s32)screen.x;
+		if (screen.x > (f32)data->screenMaxX) data->screenMaxX = (s32)screen.x;
+		if (screen.y > (f32)data->screenMaxY) data->screenMaxY = (s32)screen.y;
+		if (screen.y < (f32)data->screenMinY) data->screenMinY = (s32)screen.y;
 
 		colorEntry += 0x10;
 	}
 
-	data->field_0x68 += 0x130;
-	data->field_0x6C += 0x130;
-	data->field_0x70 = 0xF0 - data->field_0x70;
-	data->field_0x74 = 0xF0 - data->field_0x74;
-	if (data->field_0x68 < 0) data->field_0x68 = 0;
-	if (data->field_0x6C > 0x260) data->field_0x6C = 0x260;
-	if (data->field_0x70 < 0) data->field_0x70 = 0;
-	if (data->field_0x74 > 0x1E0) data->field_0x74 = 0x1E0;
+	data->screenMinX += 0x130;
+	data->screenMaxX += 0x130;
+	data->screenMaxY = 0xF0 - data->screenMaxY;
+	data->screenMinY = 0xF0 - data->screenMinY;
+	if (data->screenMinX < 0) data->screenMinX = 0;
+	if (data->screenMaxX > 0x260) data->screenMaxX = 0x260;
+	if (data->screenMaxY < 0) data->screenMaxY = 0;
+	if (data->screenMinY > 0x1E0) data->screenMinY = 0x1E0;
 	data->field_0x64 = 1;
 }
 
@@ -1111,7 +1111,7 @@ void effFireSmokeDisp(CameraId camId, void* param) {
 #endif
 	GXSetChanMatColor(GX_COLOR0A0, color);
 	GXSetNumTexGens(1);
-	GXSetTexCoordGen2(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_IDENTITY, GX_FALSE, 0x7D);
+	GXSetTexCoordGen2(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_IDENTITY, GX_FALSE, GX_PTIDENTITY);
 
 	PSMTXTrans(posMtx, data->position.x, data->position.y, data->position.z);
 	PSMTXRotRad(rotMtx, 'y', -camGetPtr(camId)->viewYaw * 0.017453292f);
@@ -1122,8 +1122,8 @@ void effFireSmokeDisp(CameraId camId, void* param) {
 	PSMTXRotRad(rotMtx, 'z', 0.017453292f * data->angle);
 	PSMTXConcat(mtx, rotMtx, mtx);
 	PSMTXConcat(camera->view, mtx, mtx);
-	GXLoadPosMtxImm(mtx, 0);
-	GXSetCurrentMtx(0);
+	GXLoadPosMtxImm(mtx, GX_PNMTX0);
+	GXSetCurrentMtx(GX_PNMTX0);
 	GXClearVtxDesc();
 	GXSetVtxDesc(GX_VA_POS, GX_DIRECT);
 	GXSetVtxDesc(GX_VA_TEX0, GX_DIRECT);
