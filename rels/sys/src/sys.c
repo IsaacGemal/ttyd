@@ -680,8 +680,8 @@ USER_FUNC(display) {
     g_wp = work;
     switch (work->state) {
         case 0:
-            if ((u32)fileAsyncf(4, 0, "%s/e/%s/effect_sys.tpl", getMarioStDvdRoot(), lang_prefix[gp->language]) != 0) {
-                work->handle = fileAllocf(4, "%s/e/%s/effect_sys.tpl", getMarioStDvdRoot(), lang_prefix[gp->language]);
+            if ((u32)fileAsyncf(FILE_TYPE_TPL, 0, "%s/e/%s/effect_sys.tpl", getMarioStDvdRoot(), lang_prefix[gp->language]) != 0) {
+                work->handle = fileAllocf(FILE_TYPE_TPL, "%s/e/%s/effect_sys.tpl", getMarioStDvdRoot(), lang_prefix[gp->language]);
                 work->state++;
             }
             break;

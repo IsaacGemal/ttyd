@@ -52,7 +52,7 @@ static LogoWork* wp = &work;
 
 void seq_logoInit(SequenceWork* work) {
 	memset(wp, 0, sizeof(LogoWork));
-	wp->texture = fileAllocf(4, "%s/mariost.tpl", getMarioStDvdRoot());
+	wp->texture = fileAllocf(FILE_TYPE_TPL, "%s/mariost.tpl", getMarioStDvdRoot());
 	if (!OSIsRestart() || OSGetResetCode() & OS_RESET_SHUTDOWN) {
 		if (VIGetDTVStatus()) {
 			if (OSGetProgressiveMode() == 1) {
@@ -74,7 +74,7 @@ void seq_logoInit(SequenceWork* work) {
 			wp->progressive = FALSE;
 		}
 	}
-	fileAsyncf(0, 0, "%s/b/first", getMarioStDvdRoot()); //unused
+	fileAsyncf(FILE_TYPE_RAW, 0, "%s/b/first", getMarioStDvdRoot()); //unused
 	if (!OSIsRestart() || OSGetResetCode() & OS_RESET_SHUTDOWN) {
 		VIConfigure(&sRMObjHReso);
 		VIFlush();
@@ -237,7 +237,7 @@ void seq_logoMain(SequenceWork* work) {
 		case 10:
 			VISetBlack(FALSE);
 			VIWaitForRetrace();
-			asyncResult = fileAsyncf(0, 0, "%s/b/first", getMarioStDvdRoot());
+			asyncResult = fileAsyncf(FILE_TYPE_RAW, 0, "%s/b/first", getMarioStDvdRoot());
 #ifdef MUST_MATCH
 			// Reproduce the original's boolean materialization (0 / 1 / 1): the redundant -1 branch is kept.
 			if ((u32)asyncResult == 0) {
@@ -253,7 +253,7 @@ void seq_logoMain(SequenceWork* work) {
 			result = ((u32)asyncResult != 0);
 #endif
 			if (result) {
-				first = fileAllocf(0, "%s/b/first", getMarioStDvdRoot());
+				first = fileAllocf(FILE_TYPE_RAW, "%s/b/first", getMarioStDvdRoot());
 				if (first) {
 					// Pins decode's live range ahead of the byte swap so the two locals colour as the original.
 					decode = (u8*)0;

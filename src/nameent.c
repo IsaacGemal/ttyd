@@ -90,7 +90,7 @@ void nameEntReInit(void) {
 }
 
 BOOL nameEntPrepare(void) {
-	return fileAsyncf(4, NULL, "%s/w/jp/name.tpl\0\0\0", getMarioStDvdRoot()) != 0;
+	return fileAsyncf(FILE_TYPE_TPL, NULL, "%s/w/jp/name.tpl\0\0\0", getMarioStDvdRoot()) != 0;
 }
 
 // The integer expression is written in the original's operand order under MUST_MATCH; the natural form
@@ -174,8 +174,8 @@ void nameEntMain(void) {
 	case 0:
 		break;
 	case 1:
-		if (fileAsyncf(4, NULL, "%s/w/jp/name.tpl\0\0\0", getMarioStDvdRoot()) != 0U) {
-			wp->field_0x60 = fileAllocf(4, "%s/w/jp/name.tpl\0\0\0", getMarioStDvdRoot());
+		if (fileAsyncf(FILE_TYPE_TPL, NULL, "%s/w/jp/name.tpl\0\0\0", getMarioStDvdRoot()) != 0U) {
+			wp->field_0x60 = fileAllocf(FILE_TYPE_TPL, "%s/w/jp/name.tpl\0\0\0", getMarioStDvdRoot());
 			loaded = TRUE;
 		} else {
 			loaded = FALSE;

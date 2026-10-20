@@ -2014,12 +2014,12 @@ USER_FUNC(logo) {
         event->userdata[0] = (s32)work;
     }
     work = (LogoWork*)event->userdata[0];
-    if ((u32)fileAsyncf(4, NULL, "%s/mariost.tpl", getMarioStDvdRoot()) == 0) {
+    if ((u32)fileAsyncf(FILE_TYPE_TPL, NULL, "%s/mariost.tpl", getMarioStDvdRoot()) == 0) {
         return EVT_RETURN_BLOCK;
     }
     switch (work->state) {
     case 0:
-        work->data = fileAllocf(4, "%s/mariost.tpl", getMarioStDvdRoot());
+        work->data = fileAllocf(FILE_TYPE_TPL, "%s/mariost.tpl", getMarioStDvdRoot());
         work->field_0x8 = 0;
         work->alpha = 0.0f;
         work->field_0x10 = 0;

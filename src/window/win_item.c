@@ -371,7 +371,7 @@ void winItemInit(WindowWork* work) {
     WW_S32(work, 0x120C) = winMgrEntry(&window_desc[1]);
     winMgrSetPriority(WW_S32(work, 0x1208), -0xC8);
     winMgrSetPriority(WW_S32(work, 0x120C), -0x64);
-    fileAsyncf(4, NULL, STR_MAIL_TPL, getMarioStDvdRoot());
+    fileAsyncf(FILE_TYPE_TPL, NULL, STR_MAIL_TPL, getMarioStDvdRoot());
 }
 
 void winItemInit2(WindowWork* work) {
@@ -728,9 +728,9 @@ s32 winItemMain(WindowWork* work) {
         mail = (u8*)mailGetPtr(b[0x26F]);
 
         if (*(u16*)(mail + 0) & 0x1000) {
-            WW_S32(work, 0x2C) = fileAsyncf(4, NULL, STR_MAIL_TPL, getMarioStDvdRoot());
+            WW_S32(work, 0x2C) = fileAsyncf(FILE_TYPE_TPL, NULL, STR_MAIL_TPL, getMarioStDvdRoot());
             if ((u32)WW_S32(work, 0x2C) != 0) {
-                WW_S32(work, 0x2C) = (s32)fileAllocf(4, STR_MAIL_TPL, getMarioStDvdRoot());
+                WW_S32(work, 0x2C) = (s32)fileAllocf(FILE_TYPE_TPL, STR_MAIL_TPL, getMarioStDvdRoot());
                 WW_S32(work, 0x20C) += 1;
             }
         } else {
