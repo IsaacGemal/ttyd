@@ -13,32 +13,32 @@ void calcHokanCamRoad(s32 flag, struct CamRoadState* a, struct CamRoadState* b, 
 void calcCurrentCamState(f32* dst);
 typedef struct CollisionCurveData {
     /* 0x00 */ u8 pad_00[0x40];
-    /* 0x40 */ s32 unk_40;
-    /* 0x44 */ s32 unk_44;
-    /* 0x48 */ f32 unk_48;
-    /* 0x4C */ f32 unk_4C;
+    /* 0x40 */ s32 firstSeg;
+    /* 0x44 */ s32 lastSeg;
+    /* 0x48 */ f32 limitA;
+    /* 0x4C */ f32 limitB;
     /* 0x50 */ u8 pad_50[0x10];
-    /* 0x60 */ s32 unk_60;
-    /* 0x64 */ s32 unk_64;
+    /* 0x60 */ s32 curvePtsStart;
+    /* 0x64 */ s32 curvePtsCount;
     /* 0x68 */ u8 pad_68[0x1C];
-    /* 0x84 */ s32 unk_84;
+    /* 0x84 */ s32 clampEnds;
     /* 0x88 */ u8 pad_88[0x18];
-    /* 0xA0 */ s32 unk_A0;
-    /* 0xA4 */ s32 unk_A4;
+    /* 0xA0 */ s32 ptsStart;
+    /* 0xA4 */ s32 ptsCount;
 } CollisionCurveData;
 
 typedef struct CollisionCurveHit {
-    /* 0x00 */ f32 unk_00;
-    /* 0x04 */ f32 unk_04;
-    /* 0x08 */ f32 unk_08;
-    /* 0x0C */ f32 unk_0C;
+    /* 0x00 */ f32 y;
+    /* 0x04 */ u8 pad_04[0x4];
+    /* 0x08 */ f32 startY;
+    /* 0x0C */ f32 x;
     /* 0x10 */ f32 unk_10;
-    /* 0x14 */ f32 unk_14;
-    /* 0x18 */ f32 unk_18;
-    /* 0x1C */ f32 unk_1C;
-    /* 0x20 */ f32 unk_20;
-    /* 0x24 */ s32 unk_24;
-    /* 0x28 */ s32 unk_28;
+    /* 0x14 */ f32 z;
+    /* 0x18 */ f32 normX;
+    /* 0x1C */ f32 normY;
+    /* 0x20 */ f32 normZ;
+    /* 0x24 */ s32 segment;
+    /* 0x28 */ s32 flags;
 } CollisionCurveHit;
 
 BOOL collisionCurve(s32 mode, CollisionCurveData* data, Vec p, CollisionCurveHit* out);
