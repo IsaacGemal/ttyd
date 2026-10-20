@@ -13,7 +13,6 @@
 #include "matching.h"
 
 // .sdata2 / .rodata constants (defined by the original unit's data).
-extern const Vec vec3_802fe628;
 extern const Vec vec3_802fe634;
 extern const Vec vec3_802fe640;
 extern const f32 float_deg2rad_804210e8;
@@ -41,7 +40,6 @@ extern const f32 float_0p5_80421144;
 extern const f32 float_0p0625_80421148;
 extern const GXColor dat_804210e0;
 extern const GXColor dat_804210e4;
-extern const GXColor dat_804210d8;
 extern const GXColor dat_804210dc;
 
 // .rodata (0x802FE628..0x802FE670)
@@ -203,7 +201,7 @@ void effMObjBrokenMain(EffectEntry* effect) {
 	s32 done = 0;
 	f32 remain;
 
-	disp = vec3_802fe628;
+	disp = (Vec){ 0.0f, 0.0f, 0.0f };
 	disp.x = data->posX;
 	disp.y = data->posY;
 	disp.z = data->posZ;
@@ -408,7 +406,7 @@ void effMObjBrokenDisp(CameraId camId, void* param) {
 		effGetTexObj(0x3B, &tex);
 		GXLoadTexObj(&tex, 0);
 	}
-	GXSetChanMatColor(4, dat_804210d8);
+	GXSetChanMatColor(4, (GXColor){ 0x00, 0x00, 0x00, 0x80 });
 	zeroAxis = &vec3_802fe634;
 	data = effect->userdata;
 	data++;
@@ -530,7 +528,6 @@ void effMObjBrokenDisp2(CameraId camId, void* param) {
 }
 
 // Original data objects of this unit, in address order.
-const GXColor dat_804210d8 = { 0x00, 0x00, 0x00, 0x80 };
 const GXColor dat_804210dc = { 0xFF, 0xFF, 0xFF, 0xFF };
 const GXColor dat_804210e0 = { 0x00, 0x00, 0x00, 0x80 };
 const GXColor dat_804210e4 = { 0xFF, 0xFF, 0xFF, 0xFE };
@@ -559,6 +556,5 @@ const f32 float_6p25_8042113c = 6.25f;
 const f32 float_12p5_80421140 = 12.5f;
 const f32 float_0p5_80421144 = 0.5f;
 const f32 float_0p0625_80421148 = 0.0625f;
-const Vec vec3_802fe628 = { 0.0f, 0.0f, 0.0f };
 const Vec vec3_802fe634 = { 0.0f, 0.0f, 0.0f };
 const Vec vec3_802fe640 = { 0.0f, 0.0f, 0.0f };

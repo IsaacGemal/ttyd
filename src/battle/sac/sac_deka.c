@@ -162,10 +162,6 @@ const DekaTableInt11 dat_80300558 = { { 1, 2, 0, 2, 3, 1, 3, 4, 2, 4, 5 } };
 const DekaTableInt11 dat_80300584 = { { 1, 2, 0, 2, 3, 1, 3, 4, 2, 4, 5 } };
 const DekaTableF32x6 dat_803005b0 = { { 1.0f, 1.3f, 2.0f, 2.6f, 3.3f, 3.8f } };
 const DekaTableF32x6 dat_803005c8 = { { 1.0f, 1.3f, 2.0f, 2.6f, 3.3f, 3.8f } };
-__declspec(section ".rodata") Vec vec3_803005e0 = { 0.0f, 0.0f, -1.0f };
-const char str_803005EC[0x14] = "SFX_BTL_SAC_START1";
-const char str_80300600[0x14] = "SFX_BTL_SAC_START2";
-const char str_80300614[0x14] = "SFX_BTL_SAC_START3";
 
 // Vertex data allocated by yuka_init into matEntry->address (0x3870 bytes).
 typedef struct DekaYukaMesh {
@@ -185,7 +181,6 @@ static s32 nice_event[8] = { 0x0005005B, (s32)btlevtcmd_ACSuccessEffect, 0xFE363
 const GXColor dat_80421e40 = { 0xFF, 0xFF, 0xFF, 0x00 };
 __declspec(section ".sdata2") GXColor dat_80421e44 = { 0xFF, 0xFF, 0xFF, 0x00 };
 const GXColor dat_80421e48 = { 0xFF, 0xFF, 0xFF, 0x00 };
-__declspec(section ".sdata2") const char str_80421E4C[8] = "M_I_Y";
 
 #ifdef MUST_MATCH
 // The original builds each GXColor in a helper that returns it by value: the
@@ -1293,7 +1288,7 @@ void yuka_capture(CameraId cameraId) {
     target.y = sy / 2.0f;
     target.z = sz / 2.0f;
 
-    cam->cameraUp = vec3_803005e0;
+    cam->cameraUp = (Vec){ 0.0f, 0.0f, -1.0f };
     cam->cameraPos = target;
     cam->cameraAt = cam->cameraPos;
 
@@ -1634,13 +1629,13 @@ u32 marioAttackEvent_Deka[396] = {
     0x0000006E, 0x0002005B, (u32)(void*)main_deka, 0xFE363C8E,
     0x00000070, 0x0001005E, (u32)(void*)sac_start_camera_evt, 0x0001000A,
     0x000001F4, 0x0006005B, (u32)(void*)btlevtcmd_snd_se, 0xFFFFFFFE,
-    (u32)(void*)str_803005EC, 0xF1194D80, 0x00000000, 0xF1194D80,
+    (u32)(void*)"SFX_BTL_SAC_START1", 0xF1194D80, 0x00000000, 0xF1194D80,
     0x0001005E, (u32)(void*)sac_mario_item_on_evt, 0x0001000A, 0x000001F4,
-    0x0006005B, (u32)(void*)btlevtcmd_snd_se, 0xFFFFFFFE, (u32)(void*)str_80300600,
+    0x0006005B, (u32)(void*)btlevtcmd_snd_se, 0xFFFFFFFE, (u32)(void*)"SFX_BTL_SAC_START2",
     0xF1194D80, 0x00000000, 0xFE363C8B, 0x0001005B,
     (u32)(void*)star_stone_appear, 0x0000006E, 0x0001005E, (u32)(void*)sac_start_stardust,
     0x00000070, 0x00010009, 0x00000064, 0x0006005B,
-    (u32)(void*)btlevtcmd_snd_se, 0xFFFFFFFE, (u32)(void*)str_80300614, 0xF1194D80,
+    (u32)(void*)btlevtcmd_snd_se, 0xFFFFFFFE, (u32)(void*)"SFX_BTL_SAC_START3", 0xF1194D80,
     0x00000000, 0xF1194D80, 0x0002005B, (u32)(void*)evt_snd_sfxoff,
     0xFE363C8B, 0x0003005B, (u32)(void*)evt_btl_camera_set_mode, 0x00000000,
     0x00000000, 0x00010009, 0x00000028, 0x0001005E,
@@ -1653,7 +1648,7 @@ u32 marioAttackEvent_Deka[396] = {
     0x00000000, 0xF24A7C19, 0x0007005B, (u32)(void*)btlevtcmd_JumpPosition,
     0xFFFFFFFE, 0xFE363C80, 0xFE363C81, 0xFE363C82,
     0x0000001E, 0xFFFFFFFF, 0x0004005B, (u32)(void*)btlevtcmd_AnimeChangePose,
-    0xFFFFFFFE, 0x00000001, (u32)(void*)str_80421E4C, 0x00000070,
+    0xFFFFFFFE, 0x00000001, (u32)(void*)"M_I_Y", 0x00000070,
     0x0000006E, 0x00020019, 0xFE363C8E, 0xFFFFFFFF,
     0x0003005B, (u32)(void*)btlevtcmd_GetUnitKind, 0xFFFFFFFC, 0xFE363C80,
     0x00020018, 0xFE363C80, 0x000000E4, 0x00010005,

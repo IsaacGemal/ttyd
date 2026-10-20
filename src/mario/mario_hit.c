@@ -43,14 +43,11 @@ static const Vec vec3_802c588c;
 static const Vec vec3_802c5898;
 static const Vec vec3_802c58a4;
 static const Vec vec3_802c58b0;
-static const Vec vec3_802c58bc;
 MEM_VEC vec3_802c57f0;
 MEM_VEC vec3_802c57fc;
 MEM_VEC vec3_802c5808;
 static const Vec vec3_802c5814;
 static const Vec vec3_802c5820;
-static const Vec vec3_802c582c;
-static const Vec vec3_802c5838;
 static const Vec vec3_802c5874;
 static const Vec vec3_802c5868;
 
@@ -1874,9 +1871,6 @@ void* marioSearchHead_jabara(Vec* pos, f32* outY, s32* out, f32 a) {
     return NULL;
 }
 
-static const Vec vec3_802c582c = { 0.0f, 1.0f, 0.0f };
-static const Vec vec3_802c5838 = { 0.0f, 0.0f, 0.0f };
-
 // prototypes for in-file functions
 
 void marioCheckWall(f32 a, f32 b) {
@@ -2067,7 +2061,7 @@ void marioCheckWall_roll(f32 a, f32 b) {
         HitEntry* headHit;
 
         v2 = wp->position;
-        dir = vec3_802c582c;
+        dir = (Vec){ 0.0f, 1.0f, 0.0f };
         f31 = 30.f;
         query.targetPos = v2;
         query.targetDir = dir;
@@ -2167,7 +2161,7 @@ void* marioChkFront(f32* out, Vec pos, f32 angle, f32 dist) {
     f32 c;
 
     sincosf(&s, &c, angle);
-    dir = vec3_802c5838;
+    dir = (Vec){ 0.0f, 0.0f, 0.0f };
     dir.x = s;
     dir.z = c;
     distance = dist;
@@ -2350,7 +2344,6 @@ static const Vec vec3_802c588c = { 0.0f, 0.0f, 0.0f };
 static const Vec vec3_802c5898 = { 0.0f, 0.0f, 0.0f };
 static const Vec vec3_802c58a4 = { 0.0f, 0.0f, 0.0f };
 static const Vec vec3_802c58b0 = { 0.0f, 0.0f, 0.0f };
-static const Vec vec3_802c58bc = { 0.0f, -1.0f, 0.0f };
 
 // MATCHING: `goto out` gives the single shared `mr r3,r28` exit the original has; the
 // rounding is the same MUST_MATCH reload form as dou10_yoko_yari2.
@@ -2603,7 +2596,7 @@ HitEntry* marioChkFrontStep(f32* outY, f32* outDist, f32* outAngle) {
         t = off * -c;
         v.z = pz + t;
     }
-    dir = vec3_802c58bc;
+    dir = (Vec){ 0.0f, -1.0f, 0.0f };
     dist = 0.1f + (11.0f + h);
     hit = marioHitCheckVec(&v, &dir, &hitPos, &n, &dist);
     if (hit != NULL) {

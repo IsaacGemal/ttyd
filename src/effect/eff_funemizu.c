@@ -39,15 +39,6 @@ extern const f32 float_0_80421478;
 extern const f32 float_0p5_8042147c;
 extern const f32 float_1p5_80421480;
 extern const f32 float_1_80421484;
-extern const f32 float_neg15_80421488;
-extern const f32 float_2_8042148c;
-extern const f32 float_10_80421490;
-extern const f32 float_0p05_80421494;
-extern const f32 float_0p1_80421498;
-extern const f32 float_6p2832_8042149c;
-extern const f32 float_360_804214a0;
-extern const f32 float_14_804214a4;
-extern const f32 float_100_804214a8;
 extern const s32 dat_80421468;
 extern const u32 dat_8042146c;
 
@@ -133,7 +124,7 @@ EffectEntry* effFunemizuEntry(s32 type, f32 a, f32 b, f32 c, f32 d, f32 e) {
 #endif
 		data->yaw = e;
 		data->velY = data->speed + (f32)irand(2);
-		data->gravity = (f32)irand(10) / float_100_804214a8 + float_0p1_80421498;
+		data->gravity = (f32)irand(10) / 100.0f + 0.1f;
 		data->delay = irand(5);
 		data->alpha = 255;
 	}
@@ -189,11 +180,11 @@ void effFunemizuMain(EffectEntry* effect) {
 		if (b > float_1_80421484) {
 			b = float_1_80421484;
 		}
-		data->scaleA += (a - data->scaleA) / float_10_80421490;
-		data->scaleB += (b - data->scaleB) / float_10_80421490;
+		data->scaleA += (a - data->scaleA) / 10.0f;
+		data->scaleB += (b - data->scaleB) / 10.0f;
 		if (data->speed > float_1_80421484) {
-			data->scaleAY += (a - data->scaleAY) / float_10_80421490;
-			data->scaleBY += (b - data->scaleBY) / float_10_80421490;
+			data->scaleAY += (a - data->scaleAY) / 10.0f;
+			data->scaleBY += (b - data->scaleBY) / 10.0f;
 		}
 		else {
 			f32 d;
@@ -203,19 +194,19 @@ void effFunemizuMain(EffectEntry* effect) {
 			d = b - data->scaleBY;
 			data->scaleBY += d * float_0p5_8042147c;
 		}
-		data->texScrollA += float_0p05_80421494 * data->scaleA;
-		data->texScrollB += float_0p1_80421498 * data->scaleB;
-		if (data->speed > float_0p1_80421498) {
+		data->texScrollA += 0.05f * data->scaleA;
+		data->texScrollB += 0.1f * data->scaleB;
+		if (data->speed > 0.1f) {
 			if (data->timer % 10 == 0) {
 				f32 sn;
 				f32 cs;
 				f32 angle;
 
-				angle = float_6p2832_8042149c * (data->yaw - camGetPtr(CAMERA_3D)->viewYaw) / float_360_804214a0;
+				angle = 6.2831855f * (data->yaw - camGetPtr(CAMERA_3D)->viewYaw) / 360.0f;
 				sn = (f32)sin(angle);
 				cs = (f32)cos(angle);
-				effFunemizuEntry(1, data->x - float_14_804214a4 * cs, data->y,
-				                 data->z - float_14_804214a4 * sn, data->speed,
+				effFunemizuEntry(1, data->x - 14.0f * cs, data->y,
+				                 data->z - 14.0f * sn, data->speed,
 				                 data->yaw);
 			}
 		}
@@ -233,8 +224,8 @@ void effFunemizuMain(EffectEntry* effect) {
 				data->delay--;
 				continue;
 			}
-			data->x += data->speed * (f32)cos(float_6p2832_8042149c * data->yaw / float_360_804214a0);
-			s = (f32)sin(float_6p2832_8042149c * data->yaw / float_360_804214a0);
+			data->x += data->speed * (f32)cos(6.2831855f * data->yaw / 360.0f);
+			s = (f32)sin(6.2831855f * data->yaw / 360.0f);
 			data->z += data->speed * -s;
 			data->y += data->velY;
 			data->velY -= data->gravity;
@@ -372,7 +363,7 @@ found:
 	PSMTXConcat(mtxC0, mtx60, mtxC0);
 	PSMTXConcat(mtxC0, mtx90, mtxC0);
 	zero = float_0_80421478;
-	PSMTXTrans(mtx60, float_neg15_80421488, zero, zero);
+	PSMTXTrans(mtx60, -15.0f, zero, zero);
 	PSMTXConcat(mtxC0, mtx60, mtxC0);
 	PSMTXConcat(cam->view, mtxC0, mtx30);
 
@@ -397,7 +388,7 @@ found:
 		else {
 			GXSetCullMode(GX_CULL_FRONT);
 		}
-		scale = float_1_80421484 - float_2_8042148c * (f32)i;
+		scale = float_1_80421484 - 2.0f * (f32)i;
 		oneR = float_0_80421478;
 		PSMTXTrans(mtxC0, oneR, oneR, scale);
 		PSMTXConcat(mtx30, mtxC0, mtxC0);
@@ -841,14 +832,4 @@ const f32 float_0_80421478 = 0.0f;
 const f32 float_0p5_8042147c = 0.5f;
 const f32 float_1p5_80421480 = 1.5f;
 const f32 float_1_80421484 = 1.0f;
-const f32 float_neg15_80421488 = -15.0f;
-const f32 float_2_8042148c = 2.0f;
-const f32 float_10_80421490 = 10.0f;
-const f32 float_0p05_80421494 = 0.05f;
-const f32 float_0p1_80421498 = 0.1f;
-const f32 float_6p2832_8042149c = 6.2831855f;
-const f32 float_360_804214a0 = 360.0f;
-const f32 float_14_804214a4 = 14.0f;
-const f32 float_100_804214a8 = 100.0f;
-
 

@@ -27,18 +27,9 @@
 #define MWVEC(m, off) (*(Vec*)((u8*)(m) + (off)))
 #define MW_ZERO MATCH_F32(float_0_8041aef8)
 
-// .rodata
-const char str_802C5F28[] = "M_S_1R";
-const char str_802C5F30[] = "M_N_5A";
-
 // .sdata2
 const char str_8041AEF0[] = "M_S_1";
 const f32 float_0_8041aef8 = 0.0f;
-const char str_8041AEFC[] = "M_I_S";
-const char str_8041AF04[] = "M_S_3";
-const char str_8041AF0C[] = "M_I_Y";
-const char str_8041AF14[] = "M_U_2";
-const char str_8041AF1C[] = "M_I_5";
 
 void marioVoiceGlareOn(void) {
     MarioWork* mario = marioGetPtr();
@@ -115,21 +106,21 @@ void mot_stay(void) {
             }
             if (!(mario->flags & MARIO_FLAG_IS_CARRYING_BOBBERY)) {
                 if (pouchGetHP() == 0) {
-                    marioChgPose(str_8041AEFC);
+                    marioChgPose("M_I_S");
                     psndSFXOn_3D((const char*)0x173, &mario->position);
                 } else {
                     s32 low = pouchGetHP() <= 5;
 
                     if (low && marioChkKey()) {
                         mario->dispFlags |= 4;
-                        marioChgPose(str_8041AF04);
+                        marioChgPose("M_S_3");
                         MWS16(mario, 0x58) = 0;
-                    } else if (strcmp(mario->animName, str_8041AF0C) != 0) {
+                    } else if (strcmp(mario->animName, "M_I_Y") != 0) {
                         marioChgPose(str_8041AEF0);
                     }
                 }
             } else {
-                marioChgPoseTime(str_8041AF14, 0xA);
+                marioChgPoseTime("M_U_2", 0xA);
             }
         }
         if (!(mario->flags & 0x20)) {
@@ -162,15 +153,15 @@ void mot_stay(void) {
             s32 low = pouchGetHP() <= 5;
 
             if (low) {
-                if (strcmp(mario->animName, str_8041AF04) != 0) {
+                if (strcmp(mario->animName, "M_S_3") != 0) {
                     MWS16(mario, 0x58) = 0;
                 }
                 mario->dispFlags |= 4;
-                marioChgPose(str_8041AF04);
+                marioChgPose("M_S_3");
             } else {
                 if ((s32)mario->currSubMotionId == 0 && MWS16(mario, 0x5A) != 0) {
                     MWS16(mario, 0x5A) = 0;
-                    if (strcmp(mario->animName, str_8041AF0C) != 0) {
+                    if (strcmp(mario->animName, "M_I_Y") != 0) {
                         marioChgPose(str_8041AEF0);
                     }
                 }
@@ -178,7 +169,7 @@ void mot_stay(void) {
         }
     }
 
-    if (strcmp(mario->animName, str_8041AF04) == 0 && marioChkKey()) {
+    if (strcmp(mario->animName, "M_S_3") == 0 && marioChkKey()) {
         MarioWork* m = marioGetPtr();
 
         MWS16(m, 0x58)++;
@@ -256,7 +247,7 @@ void mot_stay(void) {
     if ((mario->flags & 0x8) || (mario->dispFlags & 0x40000000)) {
         if ((s32)mario->currSubMotionId > 0) {
             if (strcmp(mario->animName, str_8041AEF0) != 0
-                && strcmp(mario->animName, str_802C5F28) != 0) {
+                && strcmp(mario->animName, "M_S_1R") != 0) {
                 marioChgPose(str_8041AEF0);
                 mario->currSubMotionId = 0;
             }
@@ -277,7 +268,7 @@ void mot_stay(void) {
                 }
                 break;
             case 1:
-                marioChgEvtPose(str_8041AF1C);
+                marioChgEvtPose("M_I_5");
                 marioAdjustMoveDir();
                 {
                     MarioWork* m = marioGetPtr();
@@ -295,7 +286,7 @@ void mot_stay(void) {
                 break;
             case 3:
                 if ((s32)--mario->multiTimer < 0) {
-                    marioChgEvtPose(str_802C5F30);
+                    marioChgEvtPose("M_N_5A");
                     mario->multiTimer = 0;
                     mario->currSubMotionId = 4;
                     MWS32(mario, 0x2B4) = 0;

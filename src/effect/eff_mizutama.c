@@ -44,8 +44,6 @@ extern const f32 float_0_80421280;
 extern const f32 float_1_80421284;
 #endif
 
-extern const char str_802FE6E4[12];
-
 EffectEntry* effMizutamaEntry(s32 type, f32 x, f32 y, f32 z, f32 angle) {
 	s32 timer;
 	s32 radius;
@@ -74,7 +72,7 @@ EffectEntry* effMizutamaEntry(s32 type, f32 x, f32 y, f32 z, f32 angle) {
 		break;
 	}
 
-	entry->type = str_802FE6E4;
+	entry->type = "mizutama";
 	entry->count = count;
 	data = __memAlloc(HEAP_EFFECT, entry->count * sizeof(MizutamaData));
 	entry->userdata = data;
@@ -274,5 +272,3 @@ const f32 float_100_804212a0 = 100.0f;
 const f32 float_225_804212a4 = 225.0f;
 const f32 float_135_804212a8 = 135.0f;
 
-// Defined after the code: the zero Vec template of effMizutamaMain comes first in .rodata in the target.
-const char str_802FE6E4[12] = "mizutama";

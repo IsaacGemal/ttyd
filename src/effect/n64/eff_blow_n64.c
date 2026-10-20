@@ -87,7 +87,6 @@ extern const f32 float_neg1_8041e9bc;
 extern const f32 float_1_8041e9c0;
 extern const f32 float_2_8041e9c4;
 extern const f32 float_0p05_8041e9c8;
-extern const f32 float_0p1_8041e9cc;
 
 // Inlined MetroWerks sqrtf (copy of the shape used in eff_kemuri10_n64.c / eff_sstar_n64.c).
 int __float_nan[];
@@ -268,9 +267,9 @@ EffectEntry* effBlowN64Entry(s32 type, s32 count, f32 x, f32 y, f32 z, f32 dirX,
 		work->accX = accX;
 		work->accY = accY;
 		work->accZ = accZ;
-		work->burstAx = float_4_8041e994 * (float_0p1_8041e9cc * (mtx[0][0] * px + mtx[0][1] * py + mtx[0][2] * pz));
-		work->burstAy = float_4_8041e994 * (float_0p1_8041e9cc * (mtx[1][0] * px + mtx[1][1] * py + mtx[1][2] * pz));
-		work->burstAz = float_4_8041e994 * (float_0p1_8041e9cc * (mtx[2][0] * px + mtx[2][1] * py + mtx[2][2] * pz));
+		work->burstAx = float_4_8041e994 * (0.1f * (mtx[0][0] * px + mtx[0][1] * py + mtx[0][2] * pz));
+		work->burstAy = float_4_8041e994 * (0.1f * (mtx[1][0] * px + mtx[1][1] * py + mtx[1][2] * pz));
+		work->burstAz = float_4_8041e994 * (0.1f * (mtx[2][0] * px + mtx[2][1] * py + mtx[2][2] * pz));
 
 		work->scaleX = float_0p5_8041e990;
 		work->scaleY = float_4_8041e994;
@@ -461,4 +460,3 @@ const f32 float_neg1_8041e9bc = -1.0f;
 const f32 float_1_8041e9c0 = 1.0f;
 const f32 float_2_8041e9c4 = 2.0f;
 const f32 float_0p05_8041e9c8 = 0.05f;
-const f32 float_0p1_8041e9cc = 0.1f;

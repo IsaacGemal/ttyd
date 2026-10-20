@@ -26,11 +26,6 @@ extern const f32 float_deg2rad_8041f3fc;
 extern const f32 float_30_8041f400;
 extern const f32 float_15_8041f404;
 extern const f32 float_180_8041f408;
-extern const f32 float_6p2832_8041f40c;
-extern const f32 float_360_8041f410;
-extern const f32 float_45_8041f414;
-extern const f32 float_5_8041f418;
-
 
 // .data vertex array defined by this unit.
 
@@ -113,15 +108,15 @@ EffectEntry* effKemuri7N64Entry(f32 x, f32 y, f32 z, f32 angleDeg, f32 direction
 
         sideAngle = float_180_8041f408 * direction;
         baseAngle = reviseAngle(angleDeg);
-        baseRad = float_6p2832_8041f40c * baseAngle / float_360_8041f410;
+        baseRad = 6.2831855f * baseAngle / 360.0f;
         data->sinAngle = (f32)sin(baseRad);
         data->cosAngle = (f32)cos(baseRad);
 
         // Spawn 5 units out at 45 degrees to the facing direction, moved to the
         // opposite side when direction is set.
-        offsetRad = float_6p2832_8041f40c * (float_45_8041f414 + baseAngle - sideAngle) / float_360_8041f410;
-        data->position.x += float_5_8041f418 * (f32)sin(offsetRad);
-        data->position.z += float_5_8041f418 * (f32)cos(offsetRad);
+        offsetRad = 6.2831855f * (45.0f + baseAngle - sideAngle) / 360.0f;
+        data->position.x += 5.0f * (f32)sin(offsetRad);
+        data->position.z += 5.0f * (f32)cos(offsetRad);
         data->alpha = 0xFF;
     }
     return effect;
@@ -215,7 +210,3 @@ const f32 float_deg2rad_8041f3fc = 0.017453292f;
 const f32 float_30_8041f400 = 30.0f;
 const f32 float_15_8041f404 = 15.0f;
 const f32 float_180_8041f408 = 180.0f;
-const f32 float_6p2832_8041f40c = 6.2831855f;
-const f32 float_360_8041f410 = 360.0f;
-const f32 float_45_8041f414 = 45.0f;
-const f32 float_5_8041f418 = 5.0f;

@@ -14,7 +14,6 @@ void FontDrawColor(GXColor* color);
 
 const Vec vec3_802fdc28 = { 0.0f, 0.0f, 0.0f };
 const char dat_802fdc34[0x20] = { 0x81, 0x7E };
-const char str_802FDC54[] = "PeachFukidashi";
 
 EffectEntry* effPeachFukidashiEntry(s32 type, NpcEntry* npc, s32 lifetime, f32 a, f32 b, f32 c, f32 radius, f32 angle) {
     EffectEntry* entry;
@@ -29,7 +28,7 @@ EffectEntry* effPeachFukidashiEntry(s32 type, NpcEntry* npc, s32 lifetime, f32 a
     f32 y;
 
     entry = effEntry();
-    entry->type = str_802FDC54;
+    entry->type = "PeachFukidashi";
     entry->count = 1;
     data = __memAlloc(HEAP_EFFECT, sizeof(EffPeachFukidashiData) * entry->count);
     entry->userdata = data;

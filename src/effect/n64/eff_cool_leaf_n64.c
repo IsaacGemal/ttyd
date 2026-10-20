@@ -9,12 +9,7 @@
 
 extern const f32 float_0_8041ec60;
 extern const f32 float_0p1_8041ecb0;
-extern const f32 float_neg3_8041ecb4;
-extern const f32 float_3_8041ecb8;
 extern const f32 float_2_8041ec70;
-extern const f32 float_neg6_8041ecbc;
-extern const f32 float_6_8041ecc0;
-extern const f32 float_0p008_8041ecc4;
 extern const f32 float_0p05_8041ec88;
 extern const f32 float_deg2rad_8041ec54;
 extern const f32 float_4_8041ec58;
@@ -116,22 +111,22 @@ EffectEntry* effCoolLeafN64Entry(s32 type, f32 x, f32 y, f32 z) {
                 ptr->spin = float_0p1_8041ecb0 * (f32)rnd101;
                 ptr->velX = float_0_8041ec60;
                 ptr->velY = float_0_8041ec60;
-                ptr->driftX = float_neg3_8041ecb4;
+                ptr->driftX = -3.0f;
                 ptr->driftY = float_0_8041ec60;
-                ptr->driftZ = float_3_8041ecb8;
+                ptr->driftZ = 3.0f;
                 break;
             case 1:
                 ptr->spin = float_0p1_8041ecb0 * (f32)rnd101 * float_2_8041ec70;
                 ptr->velX = float_0_8041ec60;
                 ptr->velY = float_0_8041ec60;
-                ptr->driftX = float_neg6_8041ecbc;
+                ptr->driftX = -6.0f;
                 ptr->driftY = float_0_8041ec60;
-                ptr->driftZ = float_6_8041ecc0;
+                ptr->driftZ = 6.0f;
                 break;
             case 2:
                 ptr->spin = float_0p1_8041ecb0 * (f32)rnd101 * float_2_8041ec70;
-                ptr->velX = -ptr->x * (float_0p008_8041ecc4 * (f32)(rand() % 11) + float_0p05_8041ec88);
-                ptr->velY = -ptr->y * (float_0p008_8041ecc4 * (f32)(rand() % 11) + float_0p05_8041ec88);
+                ptr->velX = -ptr->x * (0.008f * (f32)(rand() % 11) + float_0p05_8041ec88);
+                ptr->velY = -ptr->y * (0.008f * (f32)(rand() % 11) + float_0p05_8041ec88);
                 break;
             default:
                 break;
@@ -440,8 +435,3 @@ const f32 float_0p98_8041eca4 = 0.98f;
 const f32 float_0p8464_8041eca8 = 0.8464f;
 const f32 float_0p9604_8041ecac = 0.96040004f;
 const f32 float_0p1_8041ecb0 = 0.1f;
-const f32 float_neg3_8041ecb4 = -3.0f;
-const f32 float_3_8041ecb8 = 3.0f;
-const f32 float_neg6_8041ecbc = -6.0f;
-const f32 float_6_8041ecc0 = 6.0f;
-const f32 float_0p008_8041ecc4 = 0.008f;

@@ -14,13 +14,6 @@
 
 static void actionCommandDisp(f32 x, f32 y);
 
-// .rodata vectors and .sdata2 constants actionCommandDisp reads.
-extern const Vec vec3_802efbc8;
-extern const Vec vec3_802efbd4;
-extern const f32 float_neg200_8041c428;
-extern const f32 float_50_8041c42c;
-extern const f32 float_1_8041c430;
-
 // TimingA's action-command work area at BattleWork+0x1F4C. No header declares it.
 typedef struct AcTimingADecWork {
 	s32 pad_0x00;   // 0x0, never accessed
@@ -37,11 +30,6 @@ typedef struct AcTimingAEntry {
 // One window table per difficulty level (indexed by BattleActionCommandGetDifficulty).
 extern AcTimingAEntry* _ac_timing_a_timing_tbl[7];
 
-// .sdata2 interpolation endpoints.
-extern const f32 float_neg300_8041c434;
-extern const f32 float_30_8041c438;
-extern const f32 float_0_8041c43c;
-
 // clang-format off
 // opt_propagation off: with copy propagation on MWCC folds the dec pointer into `work+0x1F54`
 // and never materialises it; the original keeps `dec` in r4 (`addi r4, r30, 0x1f4c`) for the
@@ -54,8 +42,8 @@ s32 battleAcMain_TimingA(BattleWork* work) {
 	switch (ac->mAcState) {
 	case 0:
 		memset(disp, 0, 0x2C);
-		disp->iconX = float_neg300_8041c434;
-		disp->iconY = float_0_8041c43c;
+		disp->iconX = -300.0f;
+		disp->iconY = 0.0f;
 		disp->counter = 0x14;
 		ac->mAcState = 0x63;
 #ifdef MUST_MATCH
@@ -213,10 +201,10 @@ void battleAcDisp_TimingA(CameraId camId, void* param) {
 
 	switch (state) {
 	case 0x63:
-		disp->iconX = intplGetValue(4, 0x14 - disp->counter, 0x14, float_neg300_8041c434, float_30_8041c438);
+		disp->iconX = intplGetValue(4, 0x14 - disp->counter, 0x14, -300.0f, 30.0f);
 		// fallthrough
 	case 0x64:
-		disp->iconX = float_30_8041c438;
+		disp->iconX = 30.0f;
 		actionCommandDisp(disp->iconX, disp->iconY);
 		if (disp->counter > 0) {
 			disp->counter--;
@@ -225,10 +213,10 @@ void battleAcDisp_TimingA(CameraId camId, void* param) {
 	case 0x3E8:
 	case 0x3E9:
 		if (disp->counter >= 0x28) {
-			disp->iconX = intplGetValue(4, disp->counter - 0x28, 0x14, float_30_8041c438, float_neg300_8041c434);
+			disp->iconX = intplGetValue(4, disp->counter - 0x28, 0x14, 30.0f, -300.0f);
 		}
 		else {
-			disp->iconX = float_30_8041c438;
+			disp->iconX = 30.0f;
 		}
 		actionCommandDisp(disp->iconX, disp->iconY);
 		if (disp->counter < 0x3C) {
@@ -255,16 +243,16 @@ static void actionCommandDisp(f32 x, f32 y) {
 	camGetPtr(CAMERA_2D);
 
 	if (dec->flags & 1) {
-		Vec v = vec3_802efbc8;
-		v.x = float_neg200_8041c428 + x;
-		v.y = float_50_8041c42c + y;
-		iconDispGx(float_1_8041c430, &v, 0x10, 0x65);
+		Vec v = (Vec){ 0.0f, 0.0f, 0.0f };
+		v.x = -200.0f + x;
+		v.y = 50.0f + y;
+		iconDispGx(1.0f, &v, 0x10, 0x65);
 	}
 	else {
-		Vec v = vec3_802efbd4;
-		v.x = float_neg200_8041c428 + x;
-		v.y = float_50_8041c42c + y;
-		iconDispGx(float_1_8041c430, &v, 0x10, 0x64);
+		Vec v = (Vec){ 0.0f, 0.0f, 0.0f };
+		v.x = -200.0f + x;
+		v.y = 50.0f + y;
+		iconDispGx(1.0f, &v, 0x10, 0x64);
 	}
 
 	(*(s32*)&disp->field_0x0[0])++;
@@ -341,12 +329,3 @@ AcTimingAEntry* _ac_timing_a_timing_tbl[7] = {
 
 #pragma dont_inline reset
 
-// The pool constants the code above loads by name, defined after it (defined first, the compiler folds them).
-const Vec vec3_802efbc8 = { 0.0f, 0.0f, 0.0f };
-const Vec vec3_802efbd4 = { 0.0f, 0.0f, 0.0f };
-const f32 float_neg200_8041c428 = -200.0f;
-const f32 float_50_8041c42c = 50.0f;
-const f32 float_1_8041c430 = 1.0f;
-const f32 float_neg300_8041c434 = -300.0f;
-const f32 float_30_8041c438 = 30.0f;
-const f32 float_0_8041c43c = 0.0f;

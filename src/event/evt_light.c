@@ -10,9 +10,6 @@
 #include "party.h"
 #include <dolphin/mtx.h>
 
-const Vec vec3_802f3148 = {0.0f, 0.0f, 0.0f};
-const Vec vec3_802f3154 = {0.0f, 0.0f, 0.0f};
-
 USER_FUNC(evt_light_charalight_all_onoff) {
 	s32* args = event->args;
 	LightEntry* entry;
@@ -100,7 +97,7 @@ USER_FUNC(evt_light_bind_mapobj) {
 	light = lightNameToPtr((const char*)name);
 	mapObj = mapGetMapObj((const char*)mapName);
 	if (isFirstCall) {
-		pos = vec3_802f3148;
+		pos = (Vec){0.0f, 0.0f, 0.0f};
 		PSMTXMultVec(mapObj->modelWorldMtx, &pos, &pos);
 		PSVECSubtract(&light->field_0x3C, &pos, &pos);
 		event->userdataf[0] = pos.x;
@@ -119,7 +116,7 @@ USER_FUNC(evt_light_bind_mapobj) {
 		PSMTXMultVec(mtx, &pos, &pos);
 		break;
 	}
-	v = vec3_802f3154;
+	v = (Vec){0.0f, 0.0f, 0.0f};
 	PSMTXMultVec(mapObj->modelWorldMtx, &v, &v);
 	PSVECAdd(&v, &pos, &light->position);
 	return EVT_RETURN_BLOCK;

@@ -21,15 +21,6 @@ extern const f32 float_0p03125_8041eb9c;
 extern const f32 float_0_8041eba0;
 extern const f32 float_6p2832_8041eba4;
 extern const f32 float_360_8041eba8;
-extern const f32 float_255_8041ebac;
-extern const f32 float_180_8041ebb0;
-extern const f32 float_neg180_8041ebb4;
-extern const f32 float_0p5_8041ebb8;
-extern const f32 float_16_8041ebbc;
-extern const f32 float_3_8041ebc0;
-extern const f32 float_24_8041ebc4;
-extern const f32 float_0p8_8041ebc8;
-extern const f32 float_0p4_8041ebcc;
 
 // .sbss2: the default .sbss2 is only used for compiler-generated pool templates, so pair it with a small-data section.
 #pragma section ".sdata" ".sbss2"
@@ -460,7 +451,7 @@ void effCloudDisp(CameraId cameraId, void* param) {
 		for (i = 0; i < 30; i++) {
 			cloudVtx* vtx = ((cloudVtx*)base) + i * 2;
 			j = (1 + data->trailHead + i) % 30;
-			alpha = (s32)(float_255_8041ebac * (f32)sin((f32)((deg * 180) / (count - 1)) * float_6p2832_8041eba4 / float_360_8041eba8));
+			alpha = (s32)(255.0f * (f32)sin((f32)((deg * 180) / (count - 1)) * float_6p2832_8041eba4 / float_360_8041eba8));
 			if (alpha > 200) {
 				alpha = 200;
 			}
@@ -483,13 +474,13 @@ void effCloudDisp(CameraId cameraId, void* param) {
 					}
 					a = -angleABf(data->trailY[k], -data->trailX[k], data->trailY[j], -data->trailX[j]);
 					b = -angleABf(data->trailY[j], -data->trailX[j], data->trailY[prev], -data->trailX[prev]);
-					if (b - a > float_180_8041ebb0) {
+					if (b - a > 180.0f) {
 						a += float_360_8041eba8;
-					} else if (b - a < float_neg180_8041ebb4) {
+					} else if (b - a < -180.0f) {
 						b += float_360_8041eba8;
 					}
 					dir = a + b;
-					dir *= float_0p5_8041ebb8;
+					dir *= 0.5f;
 				}
 
 				age = frame - data->trailFrame[j];
@@ -497,14 +488,14 @@ void effCloudDisp(CameraId cameraId, void* param) {
 				py = data->trailY[j];
 				pz = data->trailZ[j];
 				wobble = (f32)sin((f32)((frame - data->trailFrame[j] * 80) * 4) * float_6p2832_8041eba4 / float_360_8041eba8);
-				width = (f32)age + (float_3_8041ebc0 * wobble + float_16_8041ebbc);
+				width = (f32)age + (3.0f * wobble + 16.0f);
 				width *= fscale;
 
 				if (type == 0) {
-					s32 t = (s32)(float_24_8041ebc4 * data->trailLength[j]);
+					s32 t = (s32)(24.0f * data->trailLength[j]);
 					texU = t + texBase;
 				} else {
-					s32 t = (s32)(float_24_8041ebc4 * data->trailLength[j]);
+					s32 t = (s32)(24.0f * data->trailLength[j]);
 					texU = t + texBase;
 				}
 
@@ -512,10 +503,10 @@ void effCloudDisp(CameraId cameraId, void* param) {
 				fadeG = 0xff;
 				fadeB = 0xff - age * 100;
 				if (fadeB < 0) {
-					fadeG = (s32)(float_0p8_8041ebc8 * (f32)fadeB) + 0xff;
+					fadeG = (s32)(0.8f * (f32)fadeB) + 0xff;
 					fadeB = 0;
 					if (fadeG < 0) {
-						fadeR = (s32)(float_0p4_8041ebcc * (f32)fadeG) + 0xff;
+						fadeR = (s32)(0.4f * (f32)fadeG) + 0xff;
 						fadeG = 0;
 						if (fadeR < 0) {
 							fadeR = 0;
@@ -566,12 +557,3 @@ const f32 float_0p03125_8041eb9c = 0.03125f;
 const f32 float_0_8041eba0 = 0.0f;
 const f32 float_6p2832_8041eba4 = 6.2831855f;
 const f32 float_360_8041eba8 = 360.0f;
-const f32 float_255_8041ebac = 255.0f;
-const f32 float_180_8041ebb0 = 180.0f;
-const f32 float_neg180_8041ebb4 = -180.0f;
-const f32 float_0p5_8041ebb8 = 0.5f;
-const f32 float_16_8041ebbc = 16.0f;
-const f32 float_3_8041ebc0 = 3.0f;
-const f32 float_24_8041ebc4 = 24.0f;
-const f32 float_0p8_8041ebc8 = 0.8f;
-const f32 float_0p4_8041ebcc = 0.4f;

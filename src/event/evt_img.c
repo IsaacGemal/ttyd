@@ -16,9 +16,6 @@
 #pragma section ".sdata" ".sbss2"
 __declspec(section ".sdata") GXColor unk_80422fd0;
 
-extern const Vec vec3_802c47f8;
-extern const f32 float_1_8041a270;
-
 // Inlined into their callers; `inline` keeps the compiler from emitting a
 // standalone copy (the original object has no such symbols).
 static inline GXColor makeColor(u8 r, u8 g, u8 b, u8 a) {
@@ -31,7 +28,7 @@ static inline GXColor makeColor(u8 r, u8 g, u8 b, u8 a) {
 }
 
 static inline Vec makeVec(f32 x, f32 y, f32 z) {
-	Vec point = vec3_802c47f8;
+	Vec point = (Vec){0.0f, 0.0f, 0.0f};
 	point.x = x;
 	point.y = y;
 	point.z = z;
@@ -229,7 +226,7 @@ USER_FUNC(evt_img_wait_animend) {
 	if (isFirstCall) {
 		return EVT_RETURN_BLOCK;
 	}
-	if (entry->loopTimes < float_1_8041a270) {
+	if (entry->loopTimes < 1.0f) {
 		return EVT_RETURN_BLOCK;
 	}
 	return EVT_RETURN_DONE;
@@ -279,8 +276,3 @@ USER_FUNC(N_evt_img_set_z) {
 }
 
 
-// .rodata
-const Vec vec3_802c47f8 = {0.0f, 0.0f, 0.0f};
-
-// .sdata2
-const f32 float_1_8041a270 = 1.0f;

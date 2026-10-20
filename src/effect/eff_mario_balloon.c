@@ -9,14 +9,12 @@
 #include <dolphin/gx.h>
 #include <dolphin/mtx.h>
 
-extern const char str_802F3484[];
-
 EffectEntry* effMarioBalloonEntry(s32 type, NpcEntry* npc) {
 	EffectEntry* entry;
 	EffMarioBalloonData* data;
 
 	entry = effEntry();
-	entry->type = str_802F3484;
+	entry->type = "MarioBalloon";
 	entry->count = 1;
 	data = __memAlloc(3, entry->count << 5);
 	entry->userdata = data;
@@ -256,5 +254,3 @@ void effMarioBalloonDisp(CameraId camId, void* param) {
 	}
 }
 
-// .rodata
-const char str_802F3484[] = "MarioBalloon";

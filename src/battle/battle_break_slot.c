@@ -69,11 +69,6 @@ struct BattleBreakSlot {
 #pragma dont_inline on
 
 const char str_802FD6C0[] = "recovery";
-const char str_802FD6CC[] = "msg_slot_HP_max";
-const char str_802FD6DC[] = "msg_slot_FP_max";
-const char str_802FD6EC[] = "msg_slot_SP_max";
-const char str_802FD6FC[] = "msg_slot_HPFPSP_max";
-const char str_802FD710[] = "msg_slot_HPFPSP_half";
 
 // The original has these constants in .sdata2. They are declared extern const in the unit's header and defined
 // at the end of the file: a const object defined before its use is folded into MWCC's own literal pool, while an
@@ -89,31 +84,31 @@ __declspec(section ".sdata") u32 star_effect[2] = {
 // 0x24 bytes
 __declspec(section ".sdata") u32 msg_hp_max[9] = {
     0x0006005B, (u32)(void*)btlevtcmd_AnnounceMessage, 0x00000000, 0x00000000,
-    0xFFFFFF33, (u32)(void*)str_802FD6CC, 0x00000078, 0x00000002,
+    0xFFFFFF33, (u32)(void*)"msg_slot_HP_max", 0x00000078, 0x00000002,
     0x00000001,
 };
 // 0x24 bytes
 __declspec(section ".sdata") u32 msg_fp_max[9] = {
     0x0006005B, (u32)(void*)btlevtcmd_AnnounceMessage, 0x00000000, 0x00000000,
-    0xFFFFFF33, (u32)(void*)str_802FD6DC, 0x00000078, 0x00000002,
+    0xFFFFFF33, (u32)(void*)"msg_slot_FP_max", 0x00000078, 0x00000002,
     0x00000001,
 };
 // 0x24 bytes
 __declspec(section ".sdata") u32 msg_star_max[9] = {
     0x0006005B, (u32)(void*)btlevtcmd_AnnounceMessage, 0x00000000, 0x00000000,
-    0xFFFFFF33, (u32)(void*)str_802FD6EC, 0x00000078, 0x00000002,
+    0xFFFFFF33, (u32)(void*)"msg_slot_SP_max", 0x00000078, 0x00000002,
     0x00000001,
 };
 // 0x24 bytes
 __declspec(section ".sdata") u32 msg_super_max[9] = {
     0x0006005B, (u32)(void*)btlevtcmd_AnnounceMessage, 0x00000000, 0x00000000,
-    0xFFFFFF33, (u32)(void*)str_802FD6FC, 0x00000078, 0x00000002,
+    0xFFFFFF33, (u32)(void*)"msg_slot_HPFPSP_max", 0x00000078, 0x00000002,
     0x00000001,
 };
 // 0x24 bytes
 __declspec(section ".sdata") u32 msg_fault[9] = {
     0x0006005B, (u32)(void*)btlevtcmd_AnnounceMessage, 0x00000000, 0x00000000,
-    0xFFFFFF33, (u32)(void*)str_802FD710, 0x00000078, 0x00000002,
+    0xFFFFFF33, (u32)(void*)"msg_slot_HPFPSP_half", 0x00000078, 0x00000002,
     0x00000001,
 };
 // trailing 4-byte gap the original has at the end of this unit's .sdata

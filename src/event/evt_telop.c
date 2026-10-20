@@ -14,8 +14,6 @@ void FontDrawColor(GXColor* color);
 #include <stdlib.h>
 
 // .sdata2 constants this translation unit owns (named by their original address).
-extern const GXColor dat_8041e7b8;
-extern const GXColor dat_8041e7bc;
 extern const GXColor dat_8041e7c0;
 #ifdef MUST_MATCH
 // volatile: the quad loop reloads the FP constants; non-volatile scored 92% vs 99.6%.
@@ -32,9 +30,6 @@ extern const f32 float_neg105_8041e7d4;
 extern const f32 float_100_8041e7d8;
 extern const f32 float_0p5_8041e7dc;
 extern const f32 float_24_8041e7e0;
-extern const f32 float_neg256_8041e7e4;
-extern const f32 float_256_8041e7e8;
-extern const f32 float_300_8041e7ec;
 
 // The telop's private work. Only the fields this file uses are named.
 typedef struct TelopWork {
@@ -57,7 +52,6 @@ static const char* msg_tbl[] = {
 
 // .rodata objects this translation unit owns, after the message strings.
 const GXColorS10 zero_802fa0c4 = { 0, 0, 0, 0 };
-const char str_802FA0CC[] = "\201H\201H\201H";
 
 #ifdef MUST_MATCH
 // Reproduce the original's by-value struct temporaries (local below, copy above).
@@ -104,12 +98,12 @@ USER_FUNC(evt_telop_entry) {
             u32 elapsed = ((s32)event->lifetime - (s32)wp->start) / (OS_TIMER_CLOCK / 1000);
 
             if (elapsed < 1000) {
-                wp->alpha = (s32)intplGetValue(0xB, elapsed, 1000, float_neg256_8041e7e4, float_256_8041e7e8);
+                wp->alpha = (s32)intplGetValue(0xB, elapsed, 1000, -256.0f, 256.0f);
             } else {
                 wp->start = event->lifetime;
                 event->userdata[0]++;
             }
-            dispEntry(CAMERA_2D, float_300_8041e7ec, 0, telop, NULL);
+            dispEntry(CAMERA_2D, 300.0f, 0, telop, NULL);
             break;
         }
 
@@ -120,7 +114,7 @@ USER_FUNC(evt_telop_entry) {
                 wp->start = event->lifetime;
                 event->userdata[0]++;
             }
-            dispEntry(CAMERA_2D, float_300_8041e7ec, 0, telop, NULL);
+            dispEntry(CAMERA_2D, 300.0f, 0, telop, NULL);
             break;
         }
 
@@ -128,11 +122,11 @@ USER_FUNC(evt_telop_entry) {
             u32 elapsed = ((s32)event->lifetime - (s32)wp->start) / (OS_TIMER_CLOCK / 1000);
 
             if (elapsed < 1000) {
-                wp->alpha = (s32)intplGetValue(0xB, elapsed, 1000, float_256_8041e7e8, float_neg256_8041e7e4);
+                wp->alpha = (s32)intplGetValue(0xB, elapsed, 1000, 256.0f, -256.0f);
             } else {
                 event->userdata[0]++;
             }
-            dispEntry(CAMERA_2D, float_300_8041e7ec, 0, telop, NULL);
+            dispEntry(CAMERA_2D, 300.0f, 0, telop, NULL);
             break;
         }
 
@@ -251,9 +245,9 @@ void telop(CameraId cameraId, void* param) {
     y = 5;
     while (i >= 0) {
         if (i != 0) {
-            GXSetTevColor(GX_TEVREG1, dat_8041e7b8);
+            GXSetTevColor(GX_TEVREG1, (GXColor){ 0x00, 0x00, 0x00, 0x60 });
         } else {
-            GXSetTevColor(GX_TEVREG1, dat_8041e7bc);
+            GXSetTevColor(GX_TEVREG1, (GXColor){ 0xFF, 0xFF, 0xFF, 0xFF });
         }
 
         PSMTXTrans(texTrans, float_neg15_8041e7d0 + (f32)y, float_neg105_8041e7d4 - (f32)y, float_0_8041e7c4);
@@ -279,7 +273,7 @@ void telop(CameraId cameraId, void* param) {
     if (msg != NULL) {
         msg = msgSearch(msg);
     } else {
-        msg = str_802FA0CC;
+        msg = "\201H\201H\201H";
     }
 
     {
@@ -351,8 +345,6 @@ void telop(CameraId cameraId, void* param) {
 #pragma opt_common_subs reset
 
 // The pool constants the code above loads by name, defined after it (defined first, the compiler folds them).
-const GXColor dat_8041e7b8 = { 0x00, 0x00, 0x00, 0x60 };
-const GXColor dat_8041e7bc = { 0xFF, 0xFF, 0xFF, 0xFF };
 const GXColor dat_8041e7c0 = { 0xFF, 0xFF, 0xFF, 0x00 };
 #ifdef MUST_MATCH
 const volatile f32 float_0_8041e7c4 = 0.0f;
@@ -374,6 +366,3 @@ const f32 float_neg105_8041e7d4 = -105.0f;
 const f32 float_100_8041e7d8 = 100.0f;
 const f32 float_0p5_8041e7dc = 0.5f;
 const f32 float_24_8041e7e0 = 24.0f;
-const f32 float_neg256_8041e7e4 = -256.0f;
-const f32 float_256_8041e7e8 = 256.0f;
-const f32 float_300_8041e7ec = 300.0f;

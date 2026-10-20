@@ -18,9 +18,6 @@ SDATA2_CONST char str_804213F0[4] = "<<<";
 SDATA2_CONST char str_804213F4[4] = "<<<";
 SDATA2_CONST u32 dat_804213f8 = 0xFFB5DA00;
 
-// .rodata
-const Vec vec3_802fe780 = { 0.0f, 0.0f, 0.0f };
-
 // .data
 // Each record is 3 bytes: radius, scaleX, scaleY (divided by 32 by the reader).
 u8 kuri_kiss[] = {
@@ -184,7 +181,7 @@ void effKissMain(EffectEntry* effect) {
 	   dispCalcZ; a single local folds the copy away. */
 	Vec position;
 #endif
-	Vec disp = vec3_802fe780;
+	Vec disp = (Vec){ 0.0f, 0.0f, 0.0f };
 	s32 type;
 	s32 i;
 	f32 angle;

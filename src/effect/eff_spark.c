@@ -25,15 +25,6 @@ extern const volatile f32 float_1_8041e288;
 #else
 extern const f32 float_1_8041e288;
 #endif
-extern const f32 float_0p1_8041e28c;
-extern const f32 float_0p2_8041e290;
-extern const f32 float_360_8041e294;
-extern const f32 float_6p2832_8041e298;
-extern const char str_8041E29C[6];
-extern const f32 float_0p9_8041e2a4;
-extern const f32 float_neg1_8041e2a8;
-
-const Vec vec3_802f8e20 = { 0.0f, 0.0f, 0.0f };
 
 // .data
 static f32 scale_data[24] = {
@@ -86,7 +77,7 @@ EffectEntry* effSparkEntry(s32 type, s32 a2, f32 x, f32 y, f32 z, f32 a6) {
 	effSparkData* p;
 
 	entry = effEntry();
-	entry->type = str_8041E29C;
+	entry->type = "Spark";
 	entry->count = 6;
 	data = __memAlloc(HEAP_EFFECT, 0x150);
 	entry->userdata = data;
@@ -97,7 +88,7 @@ EffectEntry* effSparkEntry(s32 type, s32 a2, f32 x, f32 y, f32 z, f32 a6) {
 	data->counter = 0;
 	data->life = 1000;
 	data->alpha = 0xff;
-	scale = float_0p9_8041e2a4;
+	scale = 0.9f;
 	data->position.x = x;
 	data->position.y = y;
 	data->position.z = z;
@@ -111,7 +102,7 @@ EffectEntry* effSparkEntry(s32 type, s32 a2, f32 x, f32 y, f32 z, f32 a6) {
 #endif
 	p = data + 1;
 	for (i = 1; i < 6; i++, p++) {
-		p->seq = (s32)(float_neg1_8041e2a8 - half * (f32)(i & 1));
+		p->seq = (s32)(-1.0f - half * (f32)(i & 1));
 	}
 
 	return entry;
@@ -136,7 +127,7 @@ void effSparkMain(EffectEntry* effect) {
 	f32 f29;
 	f32 f28;
 
-	position = vec3_802f8e20;
+	position = (Vec){ 0.0f, 0.0f, 0.0f };
 	position.x = data->position.x;
 	position.y = data->position.y;
 	position.z = data->position.z;
@@ -164,11 +155,11 @@ void effSparkMain(EffectEntry* effect) {
 
 	switch (type) {
 	case 0:
-		f31 = float_0p1_8041e28c;
-		f30 = float_0p2_8041e290;
+		f31 = 0.1f;
+		f30 = 0.2f;
 		break;
 	default:
-		f31 = float_0p2_8041e290;
+		f31 = 0.2f;
 		f30 = f31;
 		break;
 	}
@@ -182,8 +173,8 @@ void effSparkMain(EffectEntry* effect) {
 			continue;
 		}
 		if (data->seq == 0) {
-			f28 = float_360_8041e294 * (f32)i / (f32)(effect->count - 1);
-			f29 = float_6p2832_8041e298 * f28 / float_360_8041e294;
+			f28 = 360.0f * (f32)i / (f32)(effect->count - 1);
+			f29 = 6.2831855f * f28 / 360.0f;
 			data->position.x = float_16_8041e278 * (f32)sin(f29);
 			data->position.y = float_16_8041e278 * (f32)cos(f29);
 			data->vx = data->position.x * f31;
@@ -207,8 +198,8 @@ void effSparkMain(EffectEntry* effect) {
 			data->position.x += data->vx;
 			data->position.y += data->vy;
 		} else {
-			data->position.x += float_0p2_8041e290 * data->vx;
-			data->position.y += float_0p2_8041e290 * data->vy;
+			data->position.x += 0.2f * data->vx;
+			data->position.y += 0.2f * data->vy;
 		}
 		data->vx += f30 * (data->targetVx - data->vx);
 		data->vy += f30 * (data->targetVy - data->vy);
@@ -327,13 +318,6 @@ const volatile f32 float_1_8041e288 = 1.0f;
 #else
 const f32 float_1_8041e288 = 1.0f;
 #endif
-const f32 float_0p1_8041e28c = 0.1f;
-const f32 float_0p2_8041e290 = 0.2f;
-const f32 float_360_8041e294 = 360.0f;
-const f32 float_6p2832_8041e298 = 6.2831855f;
-const char str_8041E29C[6] = "Spark";
-const f32 float_0p9_8041e2a4 = 0.9f;
-const f32 float_neg1_8041e2a8 = -1.0f;
 
 // the 4 zero bytes after the unit's last .sdata object (gap_07_*_sdata)
 #pragma explicit_zero_data on

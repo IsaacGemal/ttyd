@@ -37,7 +37,6 @@ static u32 size10x10_tex32x32_vtx[0xE0 / 4] = {
 };
 
 // .rodata
-const Vec vec3_802faac8 = { 0.0f, 0.0f, 0.0f };
 EffectEntry* effLensflareN64Entry(s32 type, s32 a1, f32 x, f32 y, f32 z, f32 a2) {
     EffectEntry* effect;
     LensflareData* data;
@@ -85,7 +84,7 @@ void effLensflareMain(EffectEntry* effect) {
        second local before dispCalcZ; a single local folds the copy away. */
     Vec position;
 #endif
-    Vec disp = vec3_802faac8;
+    Vec disp = (Vec){ 0.0f, 0.0f, 0.0f };
     f32 angle;
     f32 c;
     s32 i;

@@ -16,19 +16,8 @@ extern const f32 float_0p02_8041e810;
 extern const f32 float_neg288_8041e818;
 extern const f32 float_45_8041e81c;
 extern const f32 float_108_8041e820;
-extern const f32 float_25_8041e824;
 extern s32 dat_8041e7f0;
 extern u32 dat_8041e7f4;
-
-// .rodata zero vectors actionCommandDisp copies onto the stack per icon; the original pools every
-// access through the vec3_802fa0e8 base and indexes the rest by offset.
-const Vec vec3_802fa0e8 = {0.0f, 0.0f, 0.0f};
-const Vec vec3_802fa0f4 = {0.0f, 0.0f, 0.0f};
-const Vec vec3_802fa100 = {0.0f, 0.0f, 0.0f};
-const Vec vec3_802fa10c = {0.0f, 0.0f, 0.0f};
-const Vec vec3_802fa118 = {0.0f, 0.0f, 0.0f};
-const Vec vec3_802fa124 = {0.0f, 0.0f, 0.0f};
-const Vec vec3_802fa130 = {0.0f, 0.0f, 0.0f};
 
 static void actionCommandDisp(f32 x, f32 y);
 
@@ -490,12 +479,12 @@ static void actionCommandDisp(f32 x, f32 y) {
     div7 = *(s32*)&disp->field_0x0[0] / 7;
     if (numIcons == 1) {
         if ((div7 & 1) == 1) {
-            Vec vec = vec3_802fa0e8;
+            Vec vec = (Vec){0.0f, 0.0f, 0.0f};
             vec.x = float_neg200_8041e7f8 + x;
             vec.y = float_70_8041e7fc + y;
             ICON_DISP(&vec, 0x10, iconB, float_1_8041e800);
         } else {
-            Vec vec = vec3_802fa0f4;
+            Vec vec = (Vec){0.0f, 0.0f, 0.0f};
             vec.x = float_neg200_8041e7f8 + x;
             vec.y = float_70_8041e7fc + y;
             ICON_DISP(&vec, 0x10, iconA, float_1_8041e800);
@@ -504,14 +493,14 @@ static void actionCommandDisp(f32 x, f32 y) {
         if ((div7 & 1) == 1) {
             f32 x0 = float_neg225_8041e804 + x;
             f32 y0;
-            Vec vec = vec3_802fa100;
+            Vec vec = (Vec){0.0f, 0.0f, 0.0f};
             vec.x = x0 + (f32)offA;
             y0 = float_70_8041e7fc + y;
             vec.y = y0;
             ICON_DISP(&vec, 0x10, iconB, float_1_8041e800);
             {
                 f32 x1 = float_neg175_8041e808 + x;
-                Vec vec2 = vec3_802fa10c;
+                Vec vec2 = (Vec){0.0f, 0.0f, 0.0f};
                 vec2.x = x1 + (f32)offB;
                 vec2.y = y0;
                 ICON_DISP(&vec2, 0x10, iconC, float_1_8041e800);
@@ -519,14 +508,14 @@ static void actionCommandDisp(f32 x, f32 y) {
         } else {
             f32 x0 = float_neg225_8041e804 + x;
             f32 y0;
-            Vec vec = vec3_802fa118;
+            Vec vec = (Vec){0.0f, 0.0f, 0.0f};
             vec.x = x0 + (f32)offA;
             y0 = float_70_8041e7fc + y;
             vec.y = y0;
             ICON_DISP(&vec, 0x10, iconA, float_1_8041e800);
             {
                 f32 x1 = float_neg175_8041e808 + x;
-                Vec vec2 = vec3_802fa124;
+                Vec vec2 = (Vec){0.0f, 0.0f, 0.0f};
                 vec2.x = x1 + (f32)offB;
                 vec2.y = y0;
                 ICON_DISP(&vec2, 0x10, iconD, float_1_8041e800);
@@ -594,7 +583,7 @@ static void actionCommandDisp(f32 x, f32 y) {
                         arr[2], flags);
 
     if (ac->acFlag & 2) {
-        Vec vec = vec3_802fa130;
+        Vec vec = (Vec){0.0f, 0.0f, 0.0f};
         vec.x = float_neg288_8041e818 + x +
                 (f32)(ac->acParams[6] * 0xB0) / float_100_8041e80c;
         vec.y = float_45_8041e81c + y;
@@ -609,7 +598,7 @@ static void actionCommandDisp(f32 x, f32 y) {
 
         f32 tx = float_neg200_8041e7f8 + x;
 
-        PSMTXTrans(trans, tx + float_108_8041e820, float_25_8041e824 + y,
+        PSMTXTrans(trans, tx + float_108_8041e820, 25.0f + y,
                    0.0f);
         PSMTXScale(scale, float_1_8041e800, float_1_8041e800, float_1_8041e800);
         PSMTXConcat(trans, scale, mtx);
@@ -632,5 +621,4 @@ const f32 float_0p01_8041e814 = 0.01f;
 const f32 float_neg288_8041e818 = -288.0f;
 const f32 float_45_8041e81c = 45.0f;
 const f32 float_108_8041e820 = 108.0f;
-const f32 float_25_8041e824 = 25.0f;
 

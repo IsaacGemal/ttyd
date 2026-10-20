@@ -15,10 +15,7 @@
 extern const u32 dat_80422568;
 extern const u32 dat_8042256c;
 extern const u32 dat_80422570;
-extern const f32 float_deg2rad_80422578;
 extern const u32 dat_80422574;
-extern const f32 float_0_8042257c;
-extern const f32 float_10_80422580;
 EffectEntry* effMajinaiEntry(s32 type, f32 x, f32 y, f32 z) {
     EffectEntry* effect;
     MajinaiWork* work;
@@ -202,15 +199,15 @@ void effMajinaiDisp(CameraId cameraId, void* param) {
     if (work->animPose != -1) {
         PSMTXTrans(trans, work->x, work->y, work->z);
         PSMTXScale(scale, work->field_0x10, work->field_0x10, work->field_0x10);
-        PSMTXRotRad(rot, 'y', float_deg2rad_80422578 * -camGetPtr(cameraId)->viewYaw);
+        PSMTXRotRad(rot, 'y', 0.017453292f * -camGetPtr(cameraId)->viewYaw);
         PSMTXConcat(trans, rot, trans);
         PSMTXConcat(trans, scale, trans);
         animPoseSetMaterialFlagOn(work->animPose, 0x840);
         majinaiSetColor(work);
         animPoseMain(work->animPose);
-        animPoseDrawMtx(work->animPose, trans, 1, float_0_8042257c, float_10_80422580);
-        animPoseDrawMtx(work->animPose, trans, 2, float_0_8042257c, float_10_80422580);
-        animPoseDrawMtx(work->animPose, trans, 3, float_0_8042257c, float_10_80422580);
+        animPoseDrawMtx(work->animPose, trans, 1, 0.0f, 10.0f);
+        animPoseDrawMtx(work->animPose, trans, 2, 0.0f, 10.0f);
+        animPoseDrawMtx(work->animPose, trans, 3, 0.0f, 10.0f);
     }
 }
 
@@ -219,6 +216,3 @@ const u32 dat_80422568 = 0xFFFFFFFF;
 const u32 dat_8042256c = 0x000000FF;
 const u32 dat_80422570 = 0x000000FF;
 const u32 dat_80422574 = 0xFFFFFF00;
-const f32 float_deg2rad_80422578 = 0.017453292f;
-const f32 float_0_8042257c = 0.0f;
-const f32 float_10_80422580 = 10.0f;

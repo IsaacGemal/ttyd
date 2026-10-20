@@ -18,31 +18,12 @@ const Vec vec3_802f34b0 = { 0.0f, 0.0f, 0.0f };
 const char str_802F34BC[12] = "EFF_Hana";
 const char str_802F34C8[12] = "EFF_Mugi";
 const f64 double_0p005_802f34d8 = 0.005;
-const char str_802F34E0[12] = "MugiKemuri2";
 
 // .sdata2 constants.
-extern const char str_8041CA7C[4];
-extern const char str_8041CA80[4];
 extern const GXColor dat_8041ca68;
 extern const GXColor dat_8041ca6c;
 extern const f32 float_deg2rad_8041ca70;
 extern const f32 float_0_8041ca74;
-extern const f32 float_15_8041ca78;
-extern const f32 float_0p85_8041ca84;
-extern const f32 float_0p004_8041ca88;
-extern const f32 float_1_8041ca8c;
-extern const f32 float_neg100_8041ca90;
-extern const f32 float_0p7_8041ca94;
-extern const f32 float_5p4_8041ca98;
-extern const f32 float_0p5_8041ca9c;
-extern const f32 float_neg0p07_8041caa0;
-extern const f32 float_0p003_8041caa4;
-extern const f32 float_6p2832_8041caa8;
-extern const f32 float_360_8041caac;
-extern const f32 float_0p3_8041cab0;
-extern const f32 float_1p75_8041cab4;
-extern const f32 float_neg0p08_8041cab8;
-extern const f32 float_neg3p9_8041cabc;
 
 // 100%: initialises five smoke puffs. The original's callee-saved FPR band is
 // f19-f27 for the pooled constants and f28-f31 for the four arguments; MWCC only
@@ -67,27 +48,27 @@ EffectEntry* effMugiKemuriEntry(f32 x, f32 y, f32 z, f32 baseAngle) {
 
 	for (i = 0; i < 5; i++, work++) {
 		work->active = 1;
-		work->scale = float_0p3_8041cab0;
+		work->scale = 0.29999998f;
 		work->speed = float_0_8041ca74;
 		work->unk38 = float_0_8041ca74;
 		work->x = x;
 		work->y = y;
 		work->z = z;
-		work->scaleX = float_0p7_8041ca94;
-		work->scaleY = float_0p7_8041ca94;
-		work->scaleZ = float_0p7_8041ca94;
+		work->scaleX = 0.7f;
+		work->scaleY = 0.7f;
+		work->scaleZ = 0.7f;
 		work->alpha = 0xFF;
 		work->lifetime = 60;
 		work->rotX = float_0_8041ca74;
 		work->rotY = baseAngle + (f32)(i * 72);
 		work->rotZ = float_0_8041ca74;
-		work->time = float_1p75_8041cab4;
-		work->timeAdd = float_neg0p08_8041cab8;
+		work->time = 1.75f;
+		work->timeAdd = -0.08f;
 		work->timeVel = float_0_8041ca74;
 		work->timeVelAdd = float_0_8041ca74;
-		work->scaleSpeed = float_neg3p9_8041cabc;
+		work->scaleSpeed = -3.9f;
 		angle = reviseAngle(work->rotY);
-		angle = float_6p2832_8041caa8 * angle / float_360_8041caac;
+		angle = 6.2831855f * angle / 360.0f;
 #ifdef MUST_MATCH
 		// Match-only: holding the sin() result in a temp first gives the original's
 		// callee-saved FPR allocation (args f28-f31, constants f19-f27); without it
@@ -115,7 +96,7 @@ EffectEntry* effMugiKemuri2Entry(s32 type, f32 x, f32 y, f32 z, f32 baseAngle, f
 	f32 angle;
 	s32 i;
 
-	entry->type = str_802F34E0;
+	entry->type = "MugiKemuri2";
 	entry->count = 5;
 	work = __memAlloc(HEAP_EFFECT, sizeof(MugiKemuriWork) * 5);
 	entry->userdata = work;
@@ -130,16 +111,16 @@ EffectEntry* effMugiKemuri2Entry(s32 type, f32 x, f32 y, f32 z, f32 baseAngle, f
 		work->x = x;
 		work->y = y;
 		work->z = z;
-		work->scaleX = float_0p7_8041ca94;
-		work->scaleY = float_0p7_8041ca94;
-		work->scaleZ = float_0p7_8041ca94;
+		work->scaleX = 0.7f;
+		work->scaleY = 0.7f;
+		work->scaleZ = 0.7f;
 		work->alpha = 0xFF;
-		work->speed = float_1_8041ca8c;
-		work->scale = float_5p4_8041ca98;
+		work->speed = 1.0f;
+		work->scale = 5.4f;
 		work->scaleSpeed = (f32)((dirSign != float_0_8041ca74) ? -10 : 10);
-		work->time = float_0p5_8041ca9c;
-		work->timeAdd = float_neg0p07_8041caa0;
-		work->timeVel = float_0p003_8041caa4;
+		work->time = 0.5f;
+		work->timeAdd = -0.07f;
+		work->timeVel = 0.003f;
 		work->timeVelAdd = float_0_8041ca74;
 		work->lifetime = 15;
 		work->rotY = baseAngle;
@@ -147,7 +128,7 @@ EffectEntry* effMugiKemuri2Entry(s32 type, f32 x, f32 y, f32 z, f32 baseAngle, f
 		work->rotZ = float_0_8041ca74;
 		work->randOff = (f32)(((rand() % 100) >> 4) & 1);
 		angle = reviseAngle(baseAngle + (f32)((dirSign != float_0_8041ca74) ? -90 : 90));
-		angle = float_6p2832_8041caa8 * angle / float_360_8041caac;
+		angle = 6.2831855f * angle / 360.0f;
 		work->sinA = sin(angle);
 		work->cosA = cos(angle);
 		work->animPose = -1;
@@ -207,12 +188,12 @@ void effMugiKemuriMain(EffectEntry* effect) {
 	w = work;
 	for (i = 0; i < effect->count; i++, w++) {
 		if (w->animPose == -1) {
-			name = strncmp(gp->currentMapName, str_8041CA7C, 3) == 0 ? str_802F34BC : str_802F34C8;
+			name = strncmp(gp->currentMapName, "win", 3) == 0 ? str_802F34BC : str_802F34C8;
 			if (!animGroupBaseAsync(name, inBattle, 0)) {
 				return;
 			}
 			w->animPose = animPoseEntry(name, inBattle);
-			animPoseSetAnim(w->animPose, str_8041CA80, 1);
+			animPoseSetAnim(w->animPose, "Z_1", 1);
 		}
 	}
 
@@ -227,7 +208,7 @@ void effMugiKemuriMain(EffectEntry* effect) {
 			continue;
 		}
 		anyActive = TRUE;
-		w->scaleSpeed *= float_0p85_8041ca84;
+		w->scaleSpeed *= 0.85f;
 		w->x += w->scaleSpeed * w->sinA;
 		w->z += w->scaleSpeed * w->cosA;
 		w->timeVel += w->timeVelAdd;
@@ -235,11 +216,11 @@ void effMugiKemuriMain(EffectEntry* effect) {
 		w->time += w->timeAdd;
 		w->y += w->time;
 		if (w->time < float_0_8041ca74) {
-			w->timeVel = float_0p004_8041ca88;
+			w->timeVel = 0.004f;
 		}
-		w->rotX -= float_1_8041ca8c;
-		if (w->rotX < float_neg100_8041ca90) {
-			w->rotX = float_neg100_8041ca90;
+		w->rotX -= 1.0f;
+		if (w->rotX < -100.0f) {
+			w->rotX = -100.0f;
 		}
 	}
 
@@ -307,12 +288,12 @@ void effMugiKemuri2Main(EffectEntry* effect) {
 	w = work;
 	for (i = 0; i < effect->count; i++, w++) {
 		if (w->animPose == -1) {
-			name = strncmp(gp->currentMapName, str_8041CA7C, 3) == 0 ? str_802F34BC : str_802F34C8;
+			name = strncmp(gp->currentMapName, "win", 3) == 0 ? str_802F34BC : str_802F34C8;
 			if (!animGroupBaseAsync(name, inBattle, 0)) {
 				return;
 			}
 			w->animPose = animPoseEntry(name, inBattle);
-			animPoseSetAnim(w->animPose, str_8041CA80, 1);
+			animPoseSetAnim(w->animPose, "Z_1", 1);
 		}
 	}
 
@@ -419,9 +400,9 @@ void effMugiKemuriDisp(CameraId cameraId, void* param) {
 #endif
 			animPoseSetMaterialEvtColor(work->animPose, color);
 			animPoseMain(work->animPose);
-			animPoseDrawMtx(work->animPose, trans, 1, float_0_8041ca74, float_15_8041ca78);
-			animPoseDrawMtx(work->animPose, trans, 2, float_0_8041ca74, float_15_8041ca78);
-			animPoseDrawMtx(work->animPose, trans, 3, float_0_8041ca74, float_15_8041ca78);
+			animPoseDrawMtx(work->animPose, trans, 1, float_0_8041ca74, 15.0f);
+			animPoseDrawMtx(work->animPose, trans, 2, float_0_8041ca74, 15.0f);
+			animPoseDrawMtx(work->animPose, trans, 3, float_0_8041ca74, 15.0f);
 		}
 	}
 }
@@ -456,9 +437,9 @@ void effMugiKemuri2Disp(CameraId cameraId, void* param) {
 #endif
 			animPoseSetMaterialEvtColor(work->animPose, color);
 			animPoseMain(work->animPose);
-			animPoseDrawMtx(work->animPose, trans, 1, float_0_8041ca74, float_15_8041ca78);
-			animPoseDrawMtx(work->animPose, trans, 2, float_0_8041ca74, float_15_8041ca78);
-			animPoseDrawMtx(work->animPose, trans, 3, float_0_8041ca74, float_15_8041ca78);
+			animPoseDrawMtx(work->animPose, trans, 1, float_0_8041ca74, 15.0f);
+			animPoseDrawMtx(work->animPose, trans, 2, float_0_8041ca74, 15.0f);
+			animPoseDrawMtx(work->animPose, trans, 3, float_0_8041ca74, 15.0f);
 		}
 	}
 }
@@ -468,21 +449,3 @@ const GXColor dat_8041ca68 = { 0xFF, 0xFF, 0xFF, 0x00 };
 const GXColor dat_8041ca6c = { 0xFF, 0xFF, 0xFF, 0x00 };
 const f32 float_deg2rad_8041ca70 = 0.017453292f;
 const f32 float_0_8041ca74 = 0.0f;
-const f32 float_15_8041ca78 = 15.0f;
-const char str_8041CA7C[4] = "win";
-const char str_8041CA80[4] = "Z_1";
-const f32 float_0p85_8041ca84 = 0.85f;
-const f32 float_0p004_8041ca88 = 0.004f;
-const f32 float_1_8041ca8c = 1.0f;
-const f32 float_neg100_8041ca90 = -100.0f;
-const f32 float_0p7_8041ca94 = 0.7f;
-const f32 float_5p4_8041ca98 = 5.4f;
-const f32 float_0p5_8041ca9c = 0.5f;
-const f32 float_neg0p07_8041caa0 = -0.07f;
-const f32 float_0p003_8041caa4 = 0.003f;
-const f32 float_6p2832_8041caa8 = 6.2831855f;
-const f32 float_360_8041caac = 360.0f;
-const f32 float_0p3_8041cab0 = 0.29999998f;
-const f32 float_1p75_8041cab4 = 1.75f;
-const f32 float_neg0p08_8041cab8 = -0.08f;
-const f32 float_neg3p9_8041cabc = -3.9f;

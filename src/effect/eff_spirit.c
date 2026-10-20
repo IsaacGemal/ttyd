@@ -22,15 +22,6 @@ extern const f32 float_2_80422288;
 extern const f32 float_0p95_8042228c;
 extern const f32 float_0p1_80422290;
 extern const f32 float_3p1416_80422294;
-extern const f32 float_50_80422298;
-extern const f32 float_1_8042229c;
-extern const f32 float_255_804222a0;
-extern const f32 float_37_804222a4;
-extern const f32 float_242_804222a8;
-extern const f32 float_254_804222ac;
-extern const f32 float_246_804222b0;
-extern const f32 float_226_804222b4;
-extern const f32 float_65_804222b8;
 
 // .sbss2: the default .sbss2 is only used for compiler-generated pool
 // templates, so pair it with a small-data section and place it by hand.
@@ -54,7 +45,7 @@ EffectEntry* effSpiritEntry(s32 type, s32 duration, f32 x, f32 y, f32 z, f32 tar
     data->y = y;
     data->z = z;
     data->scale = scale;
-    data->scaleBase = float_1_8042229c;
+    data->scaleBase = 1.0f;
     data->tick = 0;
     data->lifetime = 1000;
     data->state = 0;
@@ -140,9 +131,9 @@ void effSpiritMain(EffectEntry* effect) {
             data->x = intplGetValueFM(0xB, data->startX, data->targetX, data->step, data->duration);
             data->y = intplGetValueFM(0xB, data->startY, data->targetY, data->step, data->duration);
             data->z = intplGetValueFM(0xB, data->startZ, data->targetZ, data->step, data->duration);
-            data->y += float_50_80422298 *
+            data->y += 50.0f *
                        (f32)sin(float_3p1416_80422294 * ((f32)data->step / (f32)data->duration));
-            data->scaleBase = intplGetValueFM(0xB, float_1_8042229c, float_0_80422284, data->step, data->duration);
+            data->scaleBase = intplGetValueFM(0xB, 1.0f, float_0_80422284, data->step, data->duration);
         } else {
             effDelete(effect);
             return;
@@ -152,9 +143,9 @@ void effSpiritMain(EffectEntry* effect) {
 
     switch (data->colorState) {
     case 0:
-        data->colorR = intplGetValueFM(0xB, float_255_804222a0, float_37_804222a4, data->colorStep, 0x20);
-        data->colorG = intplGetValueFM(0xB, float_242_804222a8, float_254_804222ac, data->colorStep, 0x20);
-        data->colorB = intplGetValueFM(0xB, float_0_80422284, float_246_804222b0, data->colorStep, 0x20);
+        data->colorR = intplGetValueFM(0xB, 255.0f, 37.0f, data->colorStep, 0x20);
+        data->colorG = intplGetValueFM(0xB, 242.0f, 254.0f, data->colorStep, 0x20);
+        data->colorB = intplGetValueFM(0xB, float_0_80422284, 246.0f, data->colorStep, 0x20);
         data->colorStep++;
         if (data->colorStep >= 0x20) {
             data->colorState = 1;
@@ -162,9 +153,9 @@ void effSpiritMain(EffectEntry* effect) {
         }
         break;
     case 1:
-        data->colorR = intplGetValueFM(0xB, float_37_804222a4, float_226_804222b4, data->colorStep, 0x20);
-        data->colorG = intplGetValueFM(0xB, float_254_804222ac, float_65_804222b8, data->colorStep, 0x20);
-        data->colorB = intplGetValueFM(0xB, float_246_804222b0, float_255_804222a0, data->colorStep, 0x20);
+        data->colorR = intplGetValueFM(0xB, 37.0f, 226.0f, data->colorStep, 0x20);
+        data->colorG = intplGetValueFM(0xB, 254.0f, 65.0f, data->colorStep, 0x20);
+        data->colorB = intplGetValueFM(0xB, 246.0f, 255.0f, data->colorStep, 0x20);
         data->colorStep++;
         if (data->colorStep >= 0x20) {
             data->colorState = 2;
@@ -172,9 +163,9 @@ void effSpiritMain(EffectEntry* effect) {
         }
         break;
     case 2:
-        data->colorR = intplGetValueFM(0xB, float_226_804222b4, float_255_804222a0, data->colorStep, 0x20);
-        data->colorG = intplGetValueFM(0xB, float_65_804222b8, float_242_804222a8, data->colorStep, 0x20);
-        data->colorB = intplGetValueFM(0xB, float_255_804222a0, float_0_80422284, data->colorStep, 0x20);
+        data->colorR = intplGetValueFM(0xB, 226.0f, 255.0f, data->colorStep, 0x20);
+        data->colorG = intplGetValueFM(0xB, 65.0f, 242.0f, data->colorStep, 0x20);
+        data->colorB = intplGetValueFM(0xB, 255.0f, float_0_80422284, data->colorStep, 0x20);
         data->colorStep++;
         if (data->colorStep >= 0x20) {
             data->colorState = 0;
@@ -304,12 +295,3 @@ const f32 float_2_80422288 = 2.0f;
 const f32 float_0p95_8042228c = 0.95f;
 const f32 float_0p1_80422290 = 0.1f;
 const f32 float_3p1416_80422294 = 3.1415927f;
-const f32 float_50_80422298 = 50.0f;
-const f32 float_1_8042229c = 1.0f;
-const f32 float_255_804222a0 = 255.0f;
-const f32 float_37_804222a4 = 37.0f;
-const f32 float_242_804222a8 = 242.0f;
-const f32 float_254_804222ac = 254.0f;
-const f32 float_246_804222b0 = 246.0f;
-const f32 float_226_804222b4 = 226.0f;
-const f32 float_65_804222b8 = 65.0f;

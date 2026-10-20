@@ -251,11 +251,7 @@ void imgDisp(CameraId camId, void* param) {
 	}
 }
 
-// The unit's first .rodata object (math_ext.h instead of <math.h> keeps the inline sqrt statics out of .rodata).
-const Vec vec3_802c4808 = { 0.0f, 0.0f, 0.0f };
 // Objects the original unit defines in .sdata2/.rodata.
-const GXColor dat_8041a278 = {0xFF, 0xFF, 0xFF, 0xFF};
-const GXColor dat_8041a27c = {0xFF, 0xFF, 0xFF, 0xFF};
 void imgDisp_ProjPlane(CameraId camId, void* param) {
 	ImageEntry* entry = param;
 	Mtx mtx;
@@ -281,11 +277,11 @@ void imgDisp_ProjPlane(CameraId camId, void* param) {
 			break;
 	}
 
-	lightPos = vec3_802c4808;
+	lightPos = (Vec){ 0.0f, 0.0f, 0.0f };
 	PSMTXMultVec(mtx, &lightPos, &lightPos);
 	mapSetMaterialLight(0, lightPos);
-	color1 = dat_8041a278;
-	color2 = dat_8041a27c;
+	color1 = (GXColor){0xFF, 0xFF, 0xFF, 0xFF};
+	color2 = (GXColor){0xFF, 0xFF, 0xFF, 0xFF};
 	mapSetMaterialLastStageBlend(flags, color1, color2);
 	mapSetMaterialTev(0, 0, flags, mtx);
 	camera = camGetCurPtr();

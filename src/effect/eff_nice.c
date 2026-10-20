@@ -12,7 +12,7 @@ extern GlobalWork* gp;
 
 // acrobatMain mixes the two local Vecs: `disp` is zeroed then overwritten from the
 // first entry, and a second `position` local is copied from it before dispCalcZ.
-// vec3_802f3748 is this unit's data (retail .rodata:0xb0); the compiler pools the zero
+// (Vec){ 0.0f, 0.0f, 0.0f } is this unit's data (retail .rodata:0xb0); the compiler pools the zero
 // for `disp` and the int->float 2^52 double right behind it, so define it to keep those
 // pool entries at vec3_802f3754 (0xbc), "SFX_SYSTEM_ACROBAT1" (0xc8) and double_to_int (0xe0).
 
@@ -56,9 +56,6 @@ s32* acrobat_tbl[2] = { acrobat_jp, acrobat_us };
 __declspec(section ".sdata") u32 gap_07_80411CDC_sdata = 0;
 #pragma force_active reset
 #pragma explicit_zero_data reset
-
-// retail effNiceMain's zero Vec (it is not decompiled yet); defined here for the .rodata layout.
-const Vec vec3_802f3748 = { 0.0f, 0.0f, 0.0f };
 
 //forward declarations
 static void rendermodeFunc(s32 wXluStage);
@@ -177,7 +174,7 @@ void effNiceMain(EffectEntry* effect) {
 	AnimationPose* pose;
 	AnimData* animData;
 	Vec position;
-	Vec disp = vec3_802f3748;
+	Vec disp = (Vec){ 0.0f, 0.0f, 0.0f };
 	s32 type;
 	f32 time, end, base, alpha;
 	f32 time2, end2, base2;

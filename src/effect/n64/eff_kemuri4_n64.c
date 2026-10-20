@@ -58,14 +58,6 @@ typedef struct Kemuri4Vertex {
 
 extern const f32 float_0p0625_8041f32c;
 extern const f32 float_0_8041f330;
-extern const f32 float_1_8041f338;
-extern const f32 float_5p4_8041f33c;
-extern const f32 float_0p5_8041f340;
-extern const f32 float_neg0p07_8041f344;
-extern const f32 float_0p003_8041f348;
-extern const f32 float_6p2832_8041f34c;
-extern const f32 float_360_8041f350;
-extern const f32 float_deg2rad_8041f334;
 // .sdata2 word constant (named after its original address).
 extern const u32 dat_8041f328;
 // .data vertex array of this unit (named after its original symbol).
@@ -90,16 +82,16 @@ EffectEntry* effKemuri4N64Entry(s32 type, f32 x, f32 y, f32 z, f32 angleDeg, f32
 		data->position.x = x;
 		data->position.y = y;
 		data->position.z = z;
-		data->scaleX = float_1_8041f338;
-		data->scaleY = float_1_8041f338;
-		data->scaleZ = float_1_8041f338;
+		data->scaleX = 1.0f;
+		data->scaleY = 1.0f;
+		data->scaleZ = 1.0f;
 		data->field_0x08 = 0xFF;
-		data->floating = float_1_8041f338;
-		data->driftScale = float_5p4_8041f33c;
+		data->floating = 1.0f;
+		data->driftScale = 5.4f;
 		data->spin = (f32)(direction != float_0_8041f330 ? -10 : 10);
-		data->swirl = float_0p5_8041f340;
-		data->swirlVelocity = float_neg0p07_8041f344;
-		data->swirlAccel = float_0p003_8041f348;
+		data->swirl = 0.5f;
+		data->swirlVelocity = -0.07f;
+		data->swirlAccel = 0.003f;
 		data->swirlJerk = float_0_8041f330;
 		data->lifetime = 15;
 		data->rotY = angleDeg;
@@ -107,7 +99,7 @@ EffectEntry* effKemuri4N64Entry(s32 type, f32 x, f32 y, f32 z, f32 angleDeg, f32
 		data->rotZ = float_0_8041f330;
 		data->textureIndex = ((rand() % 100) >> 4) & 1;
 		angle = reviseAngle(angleDeg + (f32)(direction != float_0_8041f330 ? -90 : 90));
-		angle = float_6p2832_8041f34c * angle / float_360_8041f350;
+		angle = 6.2831855f * angle / 360.0f;
 		data->sinAngle = (f32)sin(angle);
 		data->cosAngle = (f32)cos(angle);
 	}
@@ -166,9 +158,9 @@ void effKemuri4Main(EffectEntry* effect) {
 			}
 		}
 
-		PSMTXRotRad(rotX, 'x', float_deg2rad_8041f334 * data->rotX);
-		PSMTXRotRad(rotY, 'y', float_deg2rad_8041f334 * data->rotY);
-		PSMTXRotRad(rotZ, 'z', float_deg2rad_8041f334 * data->rotZ);
+		PSMTXRotRad(rotX, 'x', 0.017453292f * data->rotX);
+		PSMTXRotRad(rotY, 'y', 0.017453292f * data->rotY);
+		PSMTXRotRad(rotZ, 'z', 0.017453292f * data->rotZ);
 		PSMTXTrans(trans, data->position.x, data->position.y, data->position.z);
 		PSMTXScale(scale, data->scaleX, data->scaleY, data->scaleZ);
 		PSMTXConcat(rotX, rotZ, rotZ);
@@ -250,11 +242,3 @@ void effKemuri4Disp(CameraId camId, void* param) {
 const u32 dat_8041f328 = 0xF0F0F0FF;
 const f32 float_0p0625_8041f32c = 0.0625f;
 const f32 float_0_8041f330 = 0.0f;
-const f32 float_deg2rad_8041f334 = 0.017453292f;
-const f32 float_1_8041f338 = 1.0f;
-const f32 float_5p4_8041f33c = 5.4f;
-const f32 float_0p5_8041f340 = 0.5f;
-const f32 float_neg0p07_8041f344 = -0.07f;
-const f32 float_0p003_8041f348 = 0.003f;
-const f32 float_6p2832_8041f34c = 6.2831855f;
-const f32 float_360_8041f350 = 360.0f;

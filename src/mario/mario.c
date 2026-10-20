@@ -39,20 +39,6 @@ const char* marioAnimeGroupData[4][3] = {
 	{"a_mario_wl", "a_mario_wlr", "e_mario_wl"}
 };
 
-// The non-const `__declspec(section ".rodata")` Vecs are read by marioOfsRotReset, marioInit and
-// marioReInit; see marioInit.
-__declspec(section ".rodata") Vec vec3_802c3698 = {0.0f, 0.0f, 0.0f};
-__declspec(section ".rodata") Vec vec3_802c36a4 = {0.0f, 0.0f, 0.0f};
-__declspec(section ".rodata") Vec vec3_802c36b0 = {0.0f, 0.0f, 0.0f};
-__declspec(section ".rodata") Vec vec3_802c36bc = {0.0f, 0.0f, 0.0f};
-__declspec(section ".rodata") Vec vec3_802c36c8 = {1.0f, 1.0f, 1.0f};
-__declspec(section ".rodata") Vec vec3_802c36d4 = {0.0f, 74.0f, 0.0f};
-__declspec(section ".rodata") Vec vec3_802c36e0 = {1.0f, 1.0f, 1.0f};
-__declspec(section ".rodata") Vec vec3_802c36ec = {0.0f, 74.0f, 0.0f};
-__declspec(section ".rodata") Vec vec3_802c36f8 = {0.0f, -10000.0f, 0.0f};
-const Vec vec3_802c3704 = {0.0f, 0.0f, 0.0f};
-
-
 //.bss
 Vec blurPos[8];
 
@@ -832,10 +818,10 @@ void marioReset(void) {
 void marioOfsRotReset(void) {
 	MarioWork* wp = mp;
 
-	wp->dispRot = vec3_802c3698;
-	wp->dispPivot = vec3_802c36a4;
-	wp->dispOfs = vec3_802c36b0;
-	wp->dispOfs2 = vec3_802c36bc;
+	wp->dispRot = (Vec){0.0f, 0.0f, 0.0f};
+	wp->dispPivot = (Vec){0.0f, 0.0f, 0.0f};
+	wp->dispOfs = (Vec){0.0f, 0.0f, 0.0f};
+	wp->dispOfs2 = (Vec){0.0f, 0.0f, 0.0f};
 }
 
 void marioSoundInit(void) {
@@ -890,12 +876,12 @@ void marioInit(void) {
 	mp->currPartySlotId[1] = -1;
 	mp->wPlayerCollisionBox.x = 20.0f;
 	mp->wPlayerCollisionBox.y = 37.0f;
-	mp->scale = vec3_802c36c8;
+	mp->scale = (Vec){1.0f, 1.0f, 1.0f};
 	*(Vec*)(mp->unk104 + 0xC) = mp->position;
 	mp->wPlayerCollisionBox.z = 20.0f;
 	marioChgPose("M_S_1");
 	*(s32*)mp->field_0x20 = 0;
-	mp->bottomlessResetPosition = vec3_802c36d4;
+	mp->bottomlessResetPosition = (Vec){0.0f, 74.0f, 0.0f};
 	marioChgMot(0);
 	marioBaloonInit();
 	marioGetRubInit();
@@ -1024,8 +1010,8 @@ void marioReInit(void) {
 		animPoseSetMaterialLightFlagOn(wp->paperAnimGroupId[2], 2);
 	}
 
-	wp->scale = vec3_802c36e0;
-	wp->bottomlessResetPosition = vec3_802c36ec;
+	wp->scale = (Vec){1.0f, 1.0f, 1.0f};
+	wp->bottomlessResetPosition = (Vec){0.0f, 74.0f, 0.0f};
 
 	partyReInit();
 	marioBaloonInit();
@@ -1051,13 +1037,13 @@ void marioReInit(void) {
 		pouchGetItem(ITEM_HAMMER);
 	}
 
-	wp->field_0xE0 = vec3_802c36f8;
+	wp->field_0xE0 = (Vec){0.0f, -10000.0f, 0.0f};
 }
 
 // MUST_MATCH: the original builds the coin position in an inlined struct return, so the
 // temporary lives at r1+0x14 and the by-pointer argument copy at r1+0x20.
 static inline Vec marioCoinPos(f32 x, f32 y, f32 z) {
-	Vec v = vec3_802c3704;
+	Vec v = (Vec){0.0f, 0.0f, 0.0f};
 
 	v.x = x;
 	v.y = y;

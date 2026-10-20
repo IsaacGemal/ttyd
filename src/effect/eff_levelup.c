@@ -31,10 +31,6 @@ static s32 evt_shake[8] = {
 	EVT_CMD(0, OPCODE_END_EVENT), OPCODE_END_SCRIPT
 };
 
-const GXColor dat_80421080 = { 0x00, 0x00, 0x00, 0x80 };
-const GXColor dat_80421084 = { 0xFF, 0xFF, 0xFF, 0xFF };
-
-
 EffectEntry* effLevelupEntry(s32 type, s32 count, f32 x, f32 y, f32 z) {
 	EffectEntry* entry;
 	effLevelupData* data;
@@ -222,11 +218,11 @@ void effLevelupDisp(CameraId camId, void* param) {
 			if (layer != 0) {
 				effGetTexObj(texid_tbl[gp->language != 0][i + 2], &texObj);
 				GXLoadTexObj(&texObj, 0);
-				GXSetChanMatColor(4, dat_80421080);
+				GXSetChanMatColor(4, (GXColor){ 0x00, 0x00, 0x00, 0x80 });
 			} else {
 				effGetTexObj(texid_tbl[gp->language != 0][i - 1], &texObj);
 				GXLoadTexObj(&texObj, 0);
-				GXSetChanMatColor(4, dat_80421084);
+				GXSetChanMatColor(4, (GXColor){ 0xFF, 0xFF, 0xFF, 0xFF });
 			}
 
 			PSMTXTrans(mtxTrans, xBase + (elem->position.x + elem->xOffset), elem->position.y + yBase, elem->position.z);

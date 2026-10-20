@@ -42,7 +42,6 @@ const Vec vec3_802fe320 = { 0.0f, 0.0f, 0.0f };
 const Vec vec3_802fe32c = { 0.0f, 0.0f, 0.0f };
 const Vec vec3_802fe338 = { 0.0f, 0.0f, 0.0f };
 const char str_802FE344[] = "MOBJ_HiddenHatenaBlock";
-const char str_802FE35C[] = "MOBJ_Block";
 
 // Reusing the work pointer as the node cursor (`root++` here and in the for-increment) makes mwcc schedule the
 // preheader `li r29,1` before `addi r30,r30,0x50`; a separate `node` pointer emits them in the opposite order.
@@ -679,7 +678,7 @@ BOOL kpaFlameHitFilter(HitCheckQuery* query, HitEntry* entry) {
     if (strcmp(obj->animName, str_802FE344) == 0) {
         return FALSE;
     }
-    return strcmp(obj->animName, str_802FE35C) != 0;
+    return strcmp(obj->animName, "MOBJ_Block") != 0;
 }
 
 void* kpaFlameHitCheck(f32 x, f32 y, f32 z, f32 rad) {

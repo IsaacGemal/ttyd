@@ -76,15 +76,6 @@ typedef struct MobjNameTemplate {
 extern Vec lv_block_position[];
 
 // Data objects defined later in this file or in other units, declared before their first use.
-extern const char str_802C3DE0[];
-extern const char str_802C3DF8[];
-extern const char str_802C3E68[];
-extern const char str_802C3E7C[];
-extern const char str_802C3E98[];
-extern const char str_802C3EAC[];
-extern const char str_802C41A0[];
-extern const char str_802C41B0[];
-extern const char str_802C41BC[];
 extern Vec vec3_802c40d0[];
 
 // Prototypes for functions in other, not-yet-decompiled units (koopa / hit / etc.)
@@ -141,8 +132,6 @@ __declspec(section ".rodata") Vec mobj_vec3_802c3dc8_template[1] = {{0.0f, 0.0f,
 // vec3_802c3dd4: placeholder for the object the code copies (defining it hangs MWCC)
 __declspec(section ".rodata") Vec mobj_vec3_802c3dd4_template[1] = {{0.0f, 0.0f, 0.0f}};
 #pragma force_active reset
-const char str_802C3DE0[0x18] = "MOBJ_BlueTimerSwitch";
-const char str_802C3DF8[0x14] = "MOBJ_RedTimerSwitch";
 static u32 evt_shake[] = {
     0x0005005B, (u32)evt_cam_shake, 0x00000004, 0xF24A7A80,
     0xF24A7A8A, 0x000000C8, 0x00000002, 0x00000001,
@@ -933,7 +922,7 @@ s32 mobj_timerswitch(MapObjectEntry* obj) {
                     break;
                 }
                 mobjRunEvent(obj, obj->eventCode);
-                if (strcmp(obj->animName, str_802C3DF8) == 0) {
+                if (strcmp(obj->animName, "MOBJ_RedTimerSwitch") == 0) {
                     obj->flags &= ~MOBJ_FLAG_TRIGGERED;
                     child->flags &= ~MOBJ_FLAG_TRIGGERED;
                     animPoseSetAnim(obj->poseId, "S_1", 1);
@@ -972,7 +961,7 @@ s32 evt_mobj_timerswitch(EventEntry* event, BOOL isFirstCall) {
     const char* asyncName;
 
     {
-        const char* jumptable[2] = {str_802C3DE0, str_802C3DF8};
+        const char* jumptable[2] = {"MOBJ_BlueTimerSwitch", "MOBJ_RedTimerSwitch"};
         asyncName = jumptable[type];
     }
     names[0] = (const char*)evtGetValue(event, args[1]);
@@ -1277,7 +1266,7 @@ s32 mobj_jumpstand_red(MapObjectEntry* obj) {
                     evt->lwData[0] = flag;
                 }
                 if (mario->characterId != 2) {
-                    if (strcmp(obj->animName, str_802C3E68) == 0) {
+                    if (strcmp(obj->animName, "MOBJ_RedJumpStand") == 0) {
                         psndSFXOn_3D((const char*)0x1eb, &obj->position);
                     } else {
                         psndSFXOn_3D((const char*)0x1ec, &obj->position);
@@ -1299,7 +1288,7 @@ s32 mobj_jumpstand_red(MapObjectEntry* obj) {
                             psndSFXOn_3D((const char*)0xaf, &obj->position);
                             break;
                     }
-                } else if (strcmp(obj->animName, str_802C3E68) == 0) {
+                } else if (strcmp(obj->animName, "MOBJ_RedJumpStand") == 0) {
                     psndSFXOn((const char*)0x1eb);
                 } else {
                     psndSFXOn((const char*)0x1ec);
@@ -1339,8 +1328,6 @@ __declspec(section ".rodata") Vec vec3_802c3e38[1] = {{0.0f, 0.0f, 0.0f}};
 __declspec(section ".rodata") Vec vec3_802c3e44[1] = {{0.0f, 0.0f, 0.0f}};
 __declspec(section ".rodata") Vec vec3_802c3e50[1] = {{0.0f, 0.0f, 0.0f}};
 __declspec(section ".rodata") Vec vec3_802c3e5c[1] = {{0.0f, 0.0f, 0.0f}};
-const char str_802C3E68[0x14] = "MOBJ_RedJumpStand";
-const char str_802C3E7C[0x14] = "MOBJ_RedJumpStand2";
 #pragma force_active reset
 
 s32 evt_mobj_jumpstand_red(EventEntry* event, BOOL isFirstCall) {
@@ -1357,7 +1344,7 @@ s32 evt_mobj_jumpstand_red(EventEntry* event, BOOL isFirstCall) {
     s32 inBattle;
     inBattle = gp->inBattle != 0;
     {
-        const char* jumptable[2] = {str_802C3E68, str_802C3E7C};
+        const char* jumptable[2] = {"MOBJ_RedJumpStand", "MOBJ_RedJumpStand2"};
 #ifdef MUST_MATCH
         // match-only: the byte-offset indexing reproduces retail's gp-before-slwi schedule
         asyncName = *(const char**)((u8*)jumptable + (type << 2));
@@ -1393,7 +1380,7 @@ s32 mobj_jumpstand_blue(MapObjectEntry* obj) {
                     marioChgJumpStandMotion(obj->unk1AC);
                 }
                 if (mario->characterId != 2) {
-                    if (strcmp(obj->animName, str_802C3E98) == 0) {
+                    if (strcmp(obj->animName, "MOBJ_BlueJumpStand") == 0) {
                         psndSFXOn_3D((const char*)0x1eb, &obj->position);
                     } else {
                         psndSFXOn_3D((const char*)0x1ec, &obj->position);
@@ -1415,7 +1402,7 @@ s32 mobj_jumpstand_blue(MapObjectEntry* obj) {
                             psndSFXOn_3D((const char*)0xaf, &obj->position);
                             break;
                     }
-                } else if (strcmp(obj->animName, str_802C3E98) == 0) {
+                } else if (strcmp(obj->animName, "MOBJ_BlueJumpStand") == 0) {
                     psndSFXOn((const char*)0x1eb);
                 } else {
                     psndSFXOn((const char*)0x1ec);
@@ -1444,8 +1431,6 @@ s32 mobj_jumpstand_blue(MapObjectEntry* obj) {
 
 // .rodata (part B)
 #pragma force_active on
-const char str_802C3E98[0x14] = "MOBJ_BlueJumpStand";
-const char str_802C3EAC[0x14] = "MOBJ_BlueJumpStand2";
 #pragma force_active reset
 
 s32 evt_mobj_jumpstand_blue(EventEntry* event, BOOL isFirstCall) {
@@ -1463,7 +1448,7 @@ s32 evt_mobj_jumpstand_blue(EventEntry* event, BOOL isFirstCall) {
     s32 inBattle;
     inBattle = gp->inBattle != 0;
     {
-        const char* jumptable[2] = {str_802C3E98, str_802C3EAC};
+        const char* jumptable[2] = {"MOBJ_BlueJumpStand", "MOBJ_BlueJumpStand2"};
 #ifdef MUST_MATCH
         // match-only: the byte-offset indexing reproduces retail's gp-before-slwi schedule
         asyncName = *(const char**)((u8*)jumptable + (type << 2));
@@ -4883,13 +4868,13 @@ s32 evt_mobj_koopa_fireber_dodai(EventEntry* event, BOOL isFirstCall) {
     s32 i;
     char buf[32];
 
-    if (!animGroupBaseAsync(str_802C41A0, inBattle, NULL)) {
+    if (!animGroupBaseAsync("MOBJ_fire_dodai", inBattle, NULL)) {
         return 0;
     }
-    if (!animGroupBaseAsync(str_802C41B0, inBattle, NULL)) {
+    if (!animGroupBaseAsync("c_fireber", inBattle, NULL)) {
         return 0;
     }
-    mobjEntry(name, str_802C41A0);
+    mobjEntry(name, "MOBJ_fire_dodai");
     obj = mobjNameToPtr(name);
     obj->flags |= MOBJ_FLAG_RECALC_MTX;
     pos = vec3_802c40d0[0];
@@ -4918,14 +4903,14 @@ s32 evt_mobj_koopa_fireber_dodai(EventEntry* event, BOOL isFirstCall) {
         NpcEntry* npc;
 
         sprintf(buf, "%s%2x", name, i);
-        npcEntry(buf, str_802C41B0);
+        npcEntry(buf, "c_fireber");
         npc = npcNameToPtr(buf);
         npc->flags |= 0x08000000;
         npc->hazardImmuneFlags |= 0xF;
         npc->position.x = x;
         npc->position.y = 25.0f * (f32)i + y;
         npc->position.z = z;
-        animPoseSetAnim(npc->poseId, str_802C41BC, 1);
+        animPoseSetAnim(npc->poseId, "FRB_S_1", 1);
         npc->flags |= 0x40000;
     }
     return 2;
@@ -5328,9 +5313,6 @@ __declspec(section ".rodata") Vec vec3_802c4168[1] = {{0.0f, 0.0f, 0.0f}};
 __declspec(section ".rodata") Vec vec3_802c4174[1] = {{0.0f, 0.0f, 0.0f}};
 const char str_802C4180[0x10] = "MOBJ_goal_pole";
 const char str_802C4190[0x10] = "MOBJ_goal_hata";
-const char str_802C41A0[0x10] = "MOBJ_fire_dodai";
-const char str_802C41B0[0xC] = "c_fireber";
-const char str_802C41BC[0x8] = "FRB_S_1";
 // double_to_int_802c41c8: compiler int->float conversion constant, emitted at the first conversion
 // double_to_int_mask_802c42e0: compiler int->float conversion constant, emitted at the first conversion
 #pragma force_active reset

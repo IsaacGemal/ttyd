@@ -11,7 +11,6 @@
 static void actionCommandDisp(f32 x, f32 y);
 
 // Float literals this unit emitted into .sdata2.
-extern const f32 float_10_8041c7e0;
 extern const f32 float_0_8041c7d8;
 extern const f32 float_0p01_8041c7c0;
 extern const f32 float_neg300_8041c7d0;
@@ -25,13 +24,6 @@ extern const f32 float_0p5_8041c7b8;
 extern const f32 float_neg288_8041c7c4;
 extern const f32 float_176_8041c7c8;
 extern const f32 float_45_8041c7cc;
-
-// .rodata zero vectors this unit emitted; the original pools every access through the vec3_802f3160 base.
-const Vec vec3_802f3160 = {0.0f, 0.0f, 0.0f};
-const Vec vec3_802f316c = {0.0f, 0.0f, 0.0f};
-const Vec vec3_802f3178 = {0.0f, 0.0f, 0.0f};
-const Vec vec3_802f3184 = {0.0f, 0.0f, 0.0f};
-const Vec vec3_802f3190 = {0.0f, 0.0f, 0.0f};
 
 // sdata2 word this unit emitted; the original symbol is undefined elsewhere.
 __declspec(section ".sdata2") s32 dat_8041c7a8 = -1;
@@ -136,7 +128,7 @@ static void _init_param(BattleWork* work) {
     dec->timer = param;
     dec->initTimer = param;
     dec->goal = (f32)ac->acParams[2];
-    dec->goalStep = (f32)ac->acParams[3] / float_10_8041c7e0;
+    dec->goalStep = (f32)ac->acParams[3] / 10.0f;
     if (dec->goalStep != float_0_8041c7d8) {
         dec->goal = (f32)irand(100);
     }
@@ -460,7 +452,7 @@ static void actionCommandDisp(f32 x, f32 y) {
             break;
         }
         if (((*(s32*)&disp->field_0x0[0] / 7) & 1) == 1) {
-            Vec vec = vec3_802f3160;
+            Vec vec = (Vec){0.0f, 0.0f, 0.0f};
             vec.x = float_neg200_8041c7ac + x;
             vec.y = float_70_8041c7b0 + y;
 #ifdef MUST_MATCH
@@ -469,7 +461,7 @@ static void actionCommandDisp(f32 x, f32 y) {
             iconDispGx(float_1_8041c7b4, &vec, 0x10, iconB);
 #endif
         } else {
-            Vec vec = vec3_802f316c;
+            Vec vec = (Vec){0.0f, 0.0f, 0.0f};
             vec.x = float_neg200_8041c7ac + x;
             vec.y = float_70_8041c7b0 + y;
 #ifdef MUST_MATCH
@@ -509,7 +501,7 @@ static void actionCommandDisp(f32 x, f32 y) {
             }
             if (match) {
                 s32 icon = (alt == 1) ? iconB : iconA;
-                Vec vec = vec3_802f3178;
+                Vec vec = (Vec){0.0f, 0.0f, 0.0f};
                 vec.x = baseX + (f32)off;
                 vec.y = baseY;
 #ifdef MUST_MATCH
@@ -519,7 +511,7 @@ static void actionCommandDisp(f32 x, f32 y) {
                 iconDispGx(float_1_8041c7b4, &vec, 0x10, icon);
 #endif
             } else {
-                Vec vec = vec3_802f3184;
+                Vec vec = (Vec){0.0f, 0.0f, 0.0f};
                 vec.x = baseX + (f32)off;
                 vec.y = baseY;
 #ifdef MUST_MATCH
@@ -569,7 +561,7 @@ static void actionCommandDisp(f32 x, f32 y) {
                       (ac->acFlag & 2) ? 100 : (s32)dec->goal, 100, 100,
                       flags, v);
     {
-        Vec vec = vec3_802f3190;
+        Vec vec = (Vec){0.0f, 0.0f, 0.0f};
         vec.x = float_neg288_8041c7c4 + x + (float_176_8041c7c8 * dec->goal) / float_100_8041c7bc;
         vec.y = float_45_8041c7cc + y;
         iconDispGx(float_1_8041c7b4, &vec, 0x10, 0x96);
@@ -592,7 +584,6 @@ const f32 float_neg300_8041c7d0 = -300.0f;
 const f32 float_30_8041c7d4 = 30.0f;
 const f32 float_0_8041c7d8 = 0.0f;
 const f32 float_neg1_8041c7dc = -1.0f;
-const f32 float_10_8041c7e0 = 10.0f;
 
 // 20 zero bytes that end the unit's .sdata: an all-zero object needs explicit_zero_data to be emitted and force_active to survive the linker.
 #pragma explicit_zero_data on

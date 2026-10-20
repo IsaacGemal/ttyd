@@ -15,7 +15,6 @@ extern const f32 float_0_8041f0f0;
 extern const f32 float_96_8041f0f4;
 extern const f32 float_deg2rad_8041f0f8;
 extern const f32 float_0p0039062_8041f100;
-extern const f32 float_1_8041f104;
 extern const f32 float_256_8041f0fc;
 
 // Declared as an incomplete array so MWCC addresses this .rodata Vec with lis/addi instead of sda21
@@ -198,7 +197,7 @@ void effHitMain(EffectEntry* effect) {
 	if (timer <= cnt_table[type]) {
 		data->frameProgress = (f32)anim_data[timer - 1] * float_0p0039062_8041f100;
 	} else {
-		data->frameProgress = float_1_8041f104;
+		data->frameProgress = 1.0f;
 	}
 
 	for (i = 1, data++; i < effect->count; i++, data++) {
@@ -415,5 +414,4 @@ const f32 float_96_8041f0f4 = 96.0f;
 const f32 float_deg2rad_8041f0f8 = 0.017453292f;
 const f32 float_256_8041f0fc = 256.0f;
 const f32 float_0p0039062_8041f100 = 0.00390625f;
-const f32 float_1_8041f104 = 1.0f;
 VEC_CV Vec vec3_802fa784[1] = { { 1.0f, 1.0f, 1.0f } };

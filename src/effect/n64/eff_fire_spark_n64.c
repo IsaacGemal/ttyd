@@ -60,12 +60,6 @@ typedef struct effFireSparkData {
     f32 velYTargetScale;  // 0x6C, scales the random velYTarget
 } effFireSparkData;
 
-// .sdata2 and .rodata constants named after their original addresses (defined by the split map).
-extern const f32 float_deg2rad_8041ee9c;
-extern const f32 float_0p03125_8041eea0;
-extern const f32 float_0p0078125_8041eea4;
-extern const Vec vec3_802fa5b0;
-
 extern const GXColor dat_8041ee98;
 
 EffectEntry* effFireSparkN64Entry(s32 type, s32 count, s32 life, f32 a4, f32 a5, f32 a6, f32 a7, f32 a8, f32 a9, f32 a10, f32 a11) {
@@ -126,7 +120,7 @@ void effFireSparkMain(EffectEntry* effect) {
        local before dispCalcZ; a single local folds the copy away (same idiom as effBushMain). */
     Vec position;
 #endif
-    Vec disp = vec3_802fa5b0;
+    Vec disp = (Vec){ 0.0f, 0.0f, 0.0f };
     s32 i;
     s32 life;
     s32 counter;
@@ -260,7 +254,7 @@ void effFireSparkDisp(CameraId camId, void* param) {
     alpha = data->alpha;
 
     PSMTXTrans(m0, data->posX, data->posY, data->posZ);
-    PSMTXRotRad(m1, 'y', -camGetPtr(CAMERA_3D)->viewYaw * float_deg2rad_8041ee9c);
+    PSMTXRotRad(m1, 'y', -camGetPtr(CAMERA_3D)->viewYaw * 0.017453292f);
     PSMTXScale(m2, data->scale, data->scale, data->scale);
     PSMTXConcat(m0, m1, m0);
     PSMTXConcat(m0, m2, m0);
@@ -326,7 +320,7 @@ void effFireSparkDisp(CameraId camId, void* param) {
         PSMTXConcat(viewMtx, m0, m0);
         GXLoadPosMtxImm(m0, GX_PNMTX0);
         GXSetCurrentMtx(GX_PNMTX0);
-        PSMTXScale(m2, float_0p03125_8041eea0, float_0p0078125_8041eea4, 0.0f);
+        PSMTXScale(m2, 0.03125f, 0.0078125f, 0.0f);
 #ifdef MUST_MATCH
         // Match-only: literal 0.0f instead of the named 0.0f makes the signed i%4*32 conversion
         // schedule its constant loads as the original does. It adds an anonymous 0.0 to .sdata2.
@@ -336,7 +330,7 @@ void effFireSparkDisp(CameraId camId, void* param) {
 #endif
         PSMTXConcat(m2, m0, m2);
         GXLoadTexMtxImm(m2, GX_TEXMTX0, GX_MTX2x4);
-        PSMTXScale(m2, float_0p03125_8041eea0, float_0p03125_8041eea0, 0.0f);
+        PSMTXScale(m2, 0.03125f, 0.03125f, 0.0f);
         PSMTXTrans(m0, data->texScrollU, data->texScrollV, 0.0f);
         PSMTXConcat(m2, m0, m2);
         GXLoadTexMtxImm(m2, GX_TEXMTX1, GX_MTX2x4);
@@ -346,8 +340,4 @@ void effFireSparkDisp(CameraId camId, void* param) {
 }
 
 // The pool constants the code above loads by name, defined after it (defined first, the compiler folds them).
-const Vec vec3_802fa5b0 = { 0.0f, 0.0f, 0.0f };
 const GXColor dat_8041ee98 = { 0x7F, 0x7F, 0x7F, 0x00 };
-const f32 float_deg2rad_8041ee9c = 0.017453292f;
-const f32 float_0p03125_8041eea0 = 0.03125f;
-const f32 float_0p0078125_8041eea4 = 0.0078125f;

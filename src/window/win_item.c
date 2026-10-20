@@ -91,7 +91,6 @@ static inline void winFontSetPitchV(Vec pos, Vec scale, GXColor color, f32 pitch
 extern u16 menu_skip_list[18];
 extern const char** luigi_book_list[5];
 extern WindowPartyDt winPartyDt[];
-extern const GXColor dat_8041d468;
 extern const GXColor dat_8041d46c;
 extern const GXColor dat_8041d470;
 extern const GXColor dat_8041d474;
@@ -934,7 +933,7 @@ void winItemDisp(CameraId camId, void* param, s32 idx) {
     f32 a;
     f32 x = WW_F32((u8*)w + idx * 0x14, 0xC4);
     f32 y = WW_F32((u8*)w + idx * 0x14, 0xC8);
-    GXColor color = dat_8041d468;
+    GXColor color = (GXColor){ 0xFF, 0xFF, 0xFF, 0xFF };
     s32 i;
 
     winBgGX(w, 2, x, y);
@@ -1308,9 +1307,6 @@ u16 menu_skip_list[18] = {
     0x0009, 0x000A, 0x000B, 0x0006, 0x0007, 0x0008, 0x0005, 0x0003, 0x0002,
     0x0004, 0x0032, 0x0072, 0x0073, 0x0074, 0x0075, 0x0076, 0x0077, 0x0078,
 };
-
-// .sdata2:0x0 | 0x8041D468 | size 0x4
-__declspec(section ".sdata2") const GXColor dat_8041d468 = { 0xFF, 0xFF, 0xFF, 0xFF };
 
 // .sdata2:0x4 | 0x8041D46C | size 0x4
 __declspec(section ".sdata2") const GXColor dat_8041d46c = { 0x00, 0x00, 0x00, 0x80 };

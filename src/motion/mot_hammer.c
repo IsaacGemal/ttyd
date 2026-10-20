@@ -38,16 +38,6 @@ const char str_802C5AE0[] = "MOBJ_Lv2Block";
 const char str_802C5AF0[] = "MOBJ_Lv2BigBlock";
 const char str_802C5B04[] = "MOBJ_Lv3Block";
 const char str_802C5B14[] = "MOBJ_Lv3BigBlock";
-const char str_802C5B28[] = "p_kaiten_h";
-const char str_802C5B34[] = "P_H_1C";
-const char str_802C5B3C[] = "P_H_1B";
-const char str_802C5B44[] = "P_H_1A";
-const char str_802C5B4C[] = "M_H_3A";
-const char str_802C5B54[] = "M_H_6A";
-const char str_802C5B5C[] = "M_H_9A";
-const char str_802C5B64[] = "M_H_3B";
-const char str_802C5B6C[] = "M_H_6B";
-const char str_802C5B74[] = "M_H_9B";
 
 // .sdata
 s32 se_data[10] = {
@@ -510,8 +500,8 @@ void mot_hammer2(void) {
         if (float_0_8041a9a8 == mario->dispReqDir && mario->dispHalfTurn == 0) {
             mario->dispFlags |= 0x10;
         }
-        marioPaperOn(str_802C5B28);
-        marioChgPaper(str_802C5B34);
+        marioPaperOn("p_kaiten_h");
+        marioChgPaper("P_H_1C");
         marioPaperLightOff();
         M_S32(mario, 0x2B8) = psndSFXOn_3D((const char*)0x162, &mario->position);
         M_F32(mario, 0x2B0) = float_0_8041a9a8;
@@ -536,7 +526,7 @@ void mot_hammer2(void) {
             M_F32(mario, 0x2B0) = 72.0f;
         }
         mario->currSubMotionId = 0xB;
-        marioChgPaper(str_802C5B3C);
+        marioChgPaper("P_H_1B");
         M_S8(mario, 0x42) = 3;
         m2 = marioGetPtr();
         m2->unk148 = 0.4f;
@@ -554,7 +544,7 @@ void mot_hammer2(void) {
         if (M_S8(mario, 0x41) < 3) {
             goto level_1;
         }
-        marioChgPaper(str_802C5B44);
+        marioChgPaper("P_H_1A");
         level = M_S16(mario, 0x2B4);
         if (!(level & 1)) {
             M_F32(mario, 0x2B0) += 6.0f;
@@ -594,7 +584,7 @@ void mot_hammer2(void) {
         if (M_S8(mario, 0x41) < 2) {
             goto level_0;
         }
-        marioChgPaper(str_802C5B44);
+        marioChgPaper("P_H_1A");
         level = M_S16(mario, 0x2B4);
         if (!(level & 1)) {
             M_F32(mario, 0x2B0) += 6.0f;
@@ -631,7 +621,7 @@ void mot_hammer2(void) {
             goto common_6320;
         }
     level_0:
-        marioChgPaper(str_802C5B44);
+        marioChgPaper("P_H_1A");
         level = M_S16(mario, 0x2B4);
         if (!(level & 1)) {
             M_F32(mario, 0x2B0) += 6.0f;
@@ -676,18 +666,18 @@ void mot_hammer2(void) {
                 M_S16(mario, 0x2B4) |= 0x2000;
                 switch (pouchGetHammerLv()) {
                 case 1:
-                    marioChgPose(str_802C5B4C);
+                    marioChgPose("M_H_3A");
                     break;
                 case 2:
-                    marioChgPose(str_802C5B54);
+                    marioChgPose("M_H_6A");
                     break;
                 case 3:
-                    marioChgPose(str_802C5B5C);
+                    marioChgPose("M_H_9A");
                     break;
                 }
             }
         }
-        if (strcmp(mario->paperAnimName, str_802C5B44) == 0) {
+        if (strcmp(mario->paperAnimName, "P_H_1A") == 0) {
             animPoseSetLocalTime(mario->paperAnimGroupId[marioAnimeId()], M_F32(mario, 0x2B0) / 6.0f);
         }
     common_63C4:
@@ -703,16 +693,16 @@ void mot_hammer2(void) {
         m2->unk150.z = 0.01f;
         switch (pouchGetHammerLv()) {
         case 1:
-            marioChgPose(str_802C5B64);
+            marioChgPose("M_H_3B");
             break;
         case 2:
-            marioChgPose(str_802C5B6C);
+            marioChgPose("M_H_6B");
             break;
         case 3:
-            marioChgPose(str_802C5B74);
+            marioChgPose("M_H_9B");
             break;
         }
-        marioChgPaper(str_802C5B34);
+        marioChgPaper("P_H_1C");
         mario->currSubMotionId = 0x14;
         if (M_S8(mario, 0x42) == 3) {
             mario->multiTimer = 0x30;

@@ -128,28 +128,23 @@ extern s32 psndSFX_pit(s32 id, s32 pit);
 extern void psndSFX_vol(s32 id, s32 vol);
 
 
-const char str_802F9578[] = "btl_msg_audience_puni_escape";
-const char str_802F9598[] = "btl_msg_audience_puni_meeting";
-const char str_802F95B8[] = "btl_msg_audience_pansy_sleep";
-const char str_802F95D8[] = "btl_msg_audience_heavybomb_dynamite";
-
 // Small event scripts that announce an audience reaction; the retail objects sit in .sdata (too large for
 // automatic small-data placement, so the section is requested explicitly).
 __declspec(section ".sdata") s32 msg_puni_all_escape[9] = {
 	0x0006005B, (s32)(void*)btlevtcmd_AnnounceMessage, 0x00000000, 0x00000000, 0xFFFFFF1F,
-	(s32)(void*)str_802F9578, 0x00000078, 0x00000002, 0x00000001,
+	(s32)(void*)"btl_msg_audience_puni_escape", 0x00000078, 0x00000002, 0x00000001,
 };
 __declspec(section ".sdata") s32 msg_puni_all_enter[9] = {
 	0x0006005B, (s32)(void*)btlevtcmd_AnnounceMessage, 0x00000000, 0x00000000, 0xFFFFFF1F,
-	(s32)(void*)str_802F9598, 0x00000078, 0x00000002, 0x00000001,
+	(s32)(void*)"btl_msg_audience_puni_meeting", 0x00000078, 0x00000002, 0x00000001,
 };
 __declspec(section ".sdata") s32 msg_pansy_sing[9] = {
 	0x0006005B, (s32)(void*)btlevtcmd_AnnounceMessage, 0x00000000, 0x00000000, 0xFFFFFF1F,
-	(s32)(void*)str_802F95B8, 0x00000078, 0x00000002, 0x00000001,
+	(s32)(void*)"btl_msg_audience_pansy_sleep", 0x00000078, 0x00000002, 0x00000001,
 };
 __declspec(section ".sdata") s32 msg_heavy_bomb_fire[9] = {
 	0x0006005B, (s32)(void*)btlevtcmd_AnnounceMessage, 0x00000000, 0x00000000, 0xFFFFFF1F,
-	(s32)(void*)str_802F95D8, 0x00000078, 0x00000002, 0x00000001,
+	(s32)(void*)"btl_msg_audience_heavybomb_dynamite", 0x00000078, 0x00000002, 0x00000001,
 };
 
 const f32 R_audience_delta_multiplier[] = {
@@ -201,8 +196,6 @@ const f32 dat_802f9774[] = {
 	0.0f, 1.075f, 0.0f, 0.075f, 1.0f, 0.075f, 1.0f, 1.075f,
 	0.0f, 0.075f, 0.0f, 1.075f, 1.0f, 1.075f, 0.0f, 1.075f,
 };
-const Vec vec3_802f97f4 = { 0.0f, 0.0f, 0.0f };
-
 
 __declspec(section ".sdata2") u32 dat_8041e608 = 0xFFFFFF00;
 __declspec(section ".sdata2") u32 dat_8041e60c = 0xFFFFFFCF;
@@ -2966,7 +2959,7 @@ void BattleAudienceDispWin(CameraId camId, void* param) {
 	windowDispGX_Waku_col(0, color, win->posX, win->posY, 90.0f,
 	                      40.0f, 10.0f);
 
-	pos = vec3_802f97f4;
+	pos = (Vec){ 0.0f, 0.0f, 0.0f };
 	pos.x = 17.0f + win->posX;
 	pos.y = win->posY - 40.0f;
 	iconDispGx(0.8f, &pos, 0x10, 0x209);

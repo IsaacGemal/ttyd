@@ -18,10 +18,6 @@
 //   0x264: NpcEntry* the balloon is attached to.
 #define MW_U32(m, off) (*(u32*)((u8*)(m) + (off)))
 
-// Strings referenced by the two itembox checks.
-const char str_802F2FD0[] = "MOBJ_TreasureBox";
-const char str_802F2FE4[] = "MOBJ_BigTreasureBox";
-
 // opt_propagation off: keeps the 0 in r31 across the marioGetPtr call, as the original does,
 // instead of rematerialising it after the call.
 #pragma opt_propagation off
@@ -188,7 +184,7 @@ void marioBalloonMain(void) {
             valid = -1;
         } else {
             obj = mobjHitObjPtrToPtr((HitEntry*)hit4);
-            if (strcmp(obj->animName, str_802F2FD0) == 0 || strcmp(obj->animName, str_802F2FE4) == 0) {
+            if (strcmp(obj->animName, "MOBJ_TreasureBox") == 0 || strcmp(obj->animName, "MOBJ_BigTreasureBox") == 0) {
                 valid = 1;
                 if (mobjCheckItemboxOpen(obj) != 1) {
                     valid = 0;
@@ -206,7 +202,7 @@ void marioBalloonMain(void) {
                 valid = -1;
             } else {
                 obj = mobjHitObjPtrToPtr((HitEntry*)hit4);
-                if (strcmp(obj->animName, str_802F2FD0) == 0 || strcmp(obj->animName, str_802F2FE4) == 0) {
+                if (strcmp(obj->animName, "MOBJ_TreasureBox") == 0 || strcmp(obj->animName, "MOBJ_BigTreasureBox") == 0) {
                     valid = 1;
                     if (mobjCheckItemboxOpen(obj) != 1) {
                         valid = 0;

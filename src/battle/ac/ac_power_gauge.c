@@ -22,26 +22,6 @@ __declspec(section ".sdata2") s32 dat_80421588 = -1;
 const s32 dat_80421588 = -1;
 #endif
 
-// .rodata zero vectors used as icon positions by actionCommandDisp.
-extern const Vec vec3_802fe958;
-extern const Vec vec3_802fe964;
-extern const Vec vec3_802fe970;
-extern const Vec vec3_802fe97c;
-extern const Vec vec3_802fe988;
-extern const Vec vec3_802fe994;
-extern const Vec vec3_802fe9a0;
-extern const Vec vec3_802fe9ac;
-extern const Vec vec3_802fe9b8;
-extern const Vec vec3_802fe9c4;
-extern const Vec vec3_802fe9d0;
-extern const Vec vec3_802fe9dc;
-extern const Vec vec3_802fe9e8;
-extern const Vec vec3_802fe9f4;
-extern const Vec vec3_802fea00;
-extern const Vec vec3_802fea0c;
-extern const Vec vec3_802fea18;
-extern const Vec vec3_802fea24;
-
 // Runtime work area of the power gauge action command, at BattleWork+0x1F4C (inside
 // BattleActions.field_0x2BC). No header declares it yet.
 typedef struct PowerGaugeDecWork {
@@ -377,7 +357,7 @@ static void actionCommandDisp(f32 x, f32 y) {
     }
 
     if ((ac->acFlag & 4) == 0) {
-        Vec pos = vec3_802fe958;
+        Vec pos = (Vec){0.0f, 0.0f, 0.0f};
         pos.x = -288.0f + px +
                 (f32)(ac->acParams[4] * 0xb0) / 100.f;
         pos.y = 45.0f + py;
@@ -394,13 +374,13 @@ static void actionCommandDisp(f32 x, f32 y) {
             color = 0x91;
         }
         if (ac->acFlag & 8) {
-            Vec pos = vec3_802fe964;
+            Vec pos = (Vec){0.0f, 0.0f, 0.0f};
             pos.x = -200.f + px + 120.f - 12.0f;
             pos.y = 18.0f + py;
             ICON_DISP(&pos, 0x10, color, 1.0f);
         }
         else {
-            Vec pos = vec3_802fe970;
+            Vec pos = (Vec){0.0f, 0.0f, 0.0f};
             pos.x = -200.f + px + 120.f;
             pos.y = 18.0f + py;
             ICON_DISP(&pos, 0x10, color, 1.0f);
@@ -444,20 +424,20 @@ static void actionCommandDisp(f32 x, f32 y) {
             px = -225.0f + px;
             py = 80.f + py;
             {
-                Vec pos = vec3_802fe97c;
+                Vec pos = (Vec){0.0f, 0.0f, 0.0f};
                 pos.x = px;
                 pos.y = py;
                 ICON_DISP(&pos, 0x10, iconB, 1.0f);
             }
             {
-                Vec pos = vec3_802fe988;
+                Vec pos = (Vec){0.0f, 0.0f, 0.0f};
                 pos.x = 56.0f + px;
                 pos.y = py;
                 ICON_DISP(&pos, 0x10, iconD, 1.0f);
             }
         }
         else {
-            Vec pos = vec3_802fe994;
+            Vec pos = (Vec){0.0f, 0.0f, 0.0f};
             pos.x = -225.0f + px + 28.0f;
             pos.y = 80.f + py;
             ICON_DISP(&pos, 0x10, iconB, 1.0f);
@@ -472,20 +452,20 @@ static void actionCommandDisp(f32 x, f32 y) {
                     px = -225.0f + px;
                     py = 80.f + py;
                     {
-                        Vec pos = vec3_802fe9a0;
+                        Vec pos = (Vec){0.0f, 0.0f, 0.0f};
                         pos.x = px;
                         pos.y = py;
                         ICON_DISP(&pos, 0x10, iconA, 1.0f);
                     }
                     {
-                        Vec pos = vec3_802fe9ac;
+                        Vec pos = (Vec){0.0f, 0.0f, 0.0f};
                         pos.x = 56.0f + px;
                         pos.y = py;
                         ICON_DISP(&pos, 0x10, iconC, 1.0f);
                     }
                 }
                 else {
-                    Vec pos = vec3_802fe9b8;
+                    Vec pos = (Vec){0.0f, 0.0f, 0.0f};
                     pos.x = -225.0f + px + 28.0f;
                     pos.y = 80.f + py;
                     ICON_DISP(&pos, 0x10, iconA, 1.0f);
@@ -496,20 +476,20 @@ static void actionCommandDisp(f32 x, f32 y) {
                     px = -225.0f + px;
                     py = 80.f + py;
                     {
-                        Vec pos = vec3_802fe9c4;
+                        Vec pos = (Vec){0.0f, 0.0f, 0.0f};
                         pos.x = px;
                         pos.y = py;
                         ICON_DISP(&pos, 0x10, iconB, 1.0f);
                     }
                     {
-                        Vec pos = vec3_802fe9d0;
+                        Vec pos = (Vec){0.0f, 0.0f, 0.0f};
                         pos.x = 56.0f + px;
                         pos.y = py;
                         ICON_DISP(&pos, 0x10, iconD, 1.0f);
                     }
                 }
                 else {
-                    Vec pos = vec3_802fe9dc;
+                    Vec pos = (Vec){0.0f, 0.0f, 0.0f};
                     pos.x = -225.0f + px + 28.0f;
                     pos.y = 80.f + py;
                     ICON_DISP(&pos, 0x10, iconB, 1.0f);
@@ -523,20 +503,20 @@ static void actionCommandDisp(f32 x, f32 y) {
                 px = -225.0f + px;
                 py = 80.f + py;
                 {
-                    Vec pos = vec3_802fe9e8;
+                    Vec pos = (Vec){0.0f, 0.0f, 0.0f};
                     pos.x = px;
                     pos.y = py;
                     ICON_DISP(&pos, 0x10, iconB, 1.0f);
                 }
                 {
-                    Vec pos = vec3_802fe9f4;
+                    Vec pos = (Vec){0.0f, 0.0f, 0.0f};
                     pos.x = 56.0f + px;
                     pos.y = py;
                     ICON_DISP(&pos, 0x10, iconD, 1.0f);
                 }
             }
             else {
-                Vec pos = vec3_802fea00;
+                Vec pos = (Vec){0.0f, 0.0f, 0.0f};
                 pos.x = -225.0f + px + 28.0f;
                 pos.y = 80.f + py;
                 ICON_DISP(&pos, 0x10, iconB, 1.0f);
@@ -547,20 +527,20 @@ static void actionCommandDisp(f32 x, f32 y) {
                 px = -225.0f + px;
                 py = 80.f + py;
                 {
-                    Vec pos = vec3_802fea0c;
+                    Vec pos = (Vec){0.0f, 0.0f, 0.0f};
                     pos.x = px;
                     pos.y = py;
                     ICON_DISP(&pos, 0x10, iconA, 1.0f);
                 }
                 {
-                    Vec pos = vec3_802fea18;
+                    Vec pos = (Vec){0.0f, 0.0f, 0.0f};
                     pos.x = 56.0f + px;
                     pos.y = py;
                     ICON_DISP(&pos, 0x10, iconC, 1.0f);
                 }
             }
             else {
-                Vec pos = vec3_802fea24;
+                Vec pos = (Vec){0.0f, 0.0f, 0.0f};
                 pos.x = -225.0f + px + 28.0f;
                 pos.y = 80.f + py;
                 ICON_DISP(&pos, 0x10, iconA, 1.0f);
@@ -569,25 +549,5 @@ static void actionCommandDisp(f32 x, f32 y) {
         break;
     }
 }
-
-// .rodata definitions of this unit, in the original's order.
-const Vec vec3_802fe958 = {0.0f, 0.0f, 0.0f};
-const Vec vec3_802fe964 = {0.0f, 0.0f, 0.0f};
-const Vec vec3_802fe970 = {0.0f, 0.0f, 0.0f};
-const Vec vec3_802fe97c = {0.0f, 0.0f, 0.0f};
-const Vec vec3_802fe988 = {0.0f, 0.0f, 0.0f};
-const Vec vec3_802fe994 = {0.0f, 0.0f, 0.0f};
-const Vec vec3_802fe9a0 = {0.0f, 0.0f, 0.0f};
-const Vec vec3_802fe9ac = {0.0f, 0.0f, 0.0f};
-const Vec vec3_802fe9b8 = {0.0f, 0.0f, 0.0f};
-const Vec vec3_802fe9c4 = {0.0f, 0.0f, 0.0f};
-const Vec vec3_802fe9d0 = {0.0f, 0.0f, 0.0f};
-const Vec vec3_802fe9dc = {0.0f, 0.0f, 0.0f};
-const Vec vec3_802fe9e8 = {0.0f, 0.0f, 0.0f};
-const Vec vec3_802fe9f4 = {0.0f, 0.0f, 0.0f};
-const Vec vec3_802fea00 = {0.0f, 0.0f, 0.0f};
-const Vec vec3_802fea0c = {0.0f, 0.0f, 0.0f};
-const Vec vec3_802fea18 = {0.0f, 0.0f, 0.0f};
-const Vec vec3_802fea24 = {0.0f, 0.0f, 0.0f};
 
 // .sdata2 definitions of this unit, in the original's order.

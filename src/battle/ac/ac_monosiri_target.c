@@ -61,13 +61,10 @@ extern const Vec vec3_803008f8;
 
 // .rodata scalars/strings in the original unit.
 extern const f64 double_15_80300908;
-extern const f64 double_28_80300928;
-extern const char str_80300910[];
 
 // .sdata frame table, indexed by BattleActionCommandGetDifficulty().
 
 // .sdata2 constants.
-extern const GXColor dat_80422058; // 0xFFFFFFFF
 extern const GXColor dat_8042205c; // 0x808080FF
 extern const GXColor dat_80422060; // 0xFFFFFFFF
 extern const GXColor dat_80422064; // 0xFFFFFFFF
@@ -80,9 +77,6 @@ extern const f32 float_100_8042207c;
 extern const f32 float_neg200_80422080;
 extern const f32 float_50_80422084;
 extern const f32 float_1_80422088;
-extern const f32 float_neg300_8042208c;
-extern const f32 float_80_80422090;
-extern const f32 float_160_80422094;
 
 static void actionCommandDisp(f32 x, f32 y);
 
@@ -126,7 +120,7 @@ s32 battleAcMain_MonosiriTarget(BattleWork* work) {
 	switch (work->actionCommands.mAcState) {
 	case 0:
 		memset(disp, 0, 0x2C);
-		disp->iconX = float_neg300_8042208c;
+		disp->iconX = -300.0f;
 		disp->iconY = float_0_8042206c;
 		disp->counter = 0x14;
 		mt->frame = 0;
@@ -142,14 +136,14 @@ s32 battleAcMain_MonosiriTarget(BattleWork* work) {
 		break;
 	case 0x64:
 		mt->frame = 0;
-		mt->sfxId = psndSFXOn(str_80300910);
+		mt->sfxId = psndSFXOn("SFX_AC_CURSOR_MOVE1");
 		work->actionCommands.mAcState = 0x3E8;
 		// fallthrough
 	case 0x3E8:
 		mt->frame++;
-		mt->curPos.x = (mt->hitPos.x - float_80_80422090) +
-		               intplGetValue(0, mt->frame, mt->maxcount, float_0_8042206c, float_160_80422094);
-		if (fabs(mt->curPos.x - mt->startPos.x) < double_28_80300928) {
+		mt->curPos.x = (mt->hitPos.x - 80.0f) +
+		               intplGetValue(0, mt->frame, mt->maxcount, float_0_8042206c, 160.0f);
+		if (fabs(mt->curPos.x - mt->startPos.x) < 28.0) {
 			mt->hitFlag = 1;
 		}
 		else {
@@ -239,7 +233,7 @@ static void actionCommandDisp(f32 x, f32 y) {
 		Vec scale;
 		Vec rot;
 		GXColor color;
-		color = dat_80422058;
+		color = (GXColor){ 0xFF, 0xFF, 0xFF, 0xFF };
 		rot = RODATA_VEC(1, vec3_8030088c);
 		scale = RODATA_VEC(0, vec3_80300880);
 		trans = screen;
@@ -379,9 +373,6 @@ const Vec vec3_803008f8 = { 0.0f, 0.0f, 0.0f };
 #pragma force_active on
 const f64 double_15_80300908 = 15.0;
 #pragma force_active reset
-const char str_80300910[] = "SFX_AC_CURSOR_MOVE1";
-const f64 double_28_80300928 = 28.0;
-const GXColor dat_80422058 = { 0xFF, 0xFF, 0xFF, 0xFF };
 const GXColor dat_8042205c = { 0x80, 0x80, 0x80, 0xFF };
 const GXColor dat_80422060 = { 0xFF, 0xFF, 0xFF, 0xFF };
 const GXColor dat_80422064 = { 0xFF, 0xFF, 0xFF, 0xFF };
@@ -394,6 +385,3 @@ const f32 float_100_8042207c = 100.0f;
 const f32 float_neg200_80422080 = -200.0f;
 const f32 float_50_80422084 = 50.0f;
 const f32 float_1_80422088 = 1.0f;
-const f32 float_neg300_8042208c = -300.0f;
-const f32 float_80_80422090 = 80.0f;
-const f32 float_160_80422094 = 160.0f;

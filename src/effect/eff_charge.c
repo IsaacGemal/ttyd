@@ -7,7 +7,6 @@
 #include <dolphin/gx.h>
 #include <dolphin/mtx.h>
 
-const Vec vec3_802f8e60 = { 0.0f, 0.0f, 0.0f };
 // .sbss2: the default .sbss2 is only used for compiler-generated pool
 // templates, so pair it with a small-data section and place it by hand.
 #pragma section ".sdata" ".sbss2"
@@ -97,7 +96,7 @@ void effChargeMain(EffectEntry* effect) {
     f32 radius;
     s32 i;
 
-    disp = vec3_802f8e60;
+    disp = (Vec){ 0.0f, 0.0f, 0.0f };
     disp.x = data->x;
     disp.y = data->y;
     disp.z = data->z;

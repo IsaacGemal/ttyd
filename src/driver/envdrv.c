@@ -42,7 +42,6 @@ const EnvTevMtxData dat_802f9338 = {
 const GXColor dat_8041e510 = { 0xFF, 0xFF, 0xFF, 0xFF };
 const GXColor dat_8041e514 = { 0xFF, 0xFF, 0xFF, 0x00 };
 const GXColor dat_8041e518 = { 0xFF, 0xFF, 0xFF, 0xA0 };
-const GXColor dat_8041e51c = { 0x7F, 0x7F, 0x7F, 0x00 };
 
 //.data
 static EnvironmentGlare envGlare0 = {
@@ -1499,7 +1498,7 @@ void envAddTev(s32 type, void* param) {
             GXSetTevColorIn(tevStage, GX_CC_CPREV, GX_CC_TEXC, GX_CC_KONST, GX_CC_ZERO);
             GXSetTevAlphaIn(tevStage, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_APREV);
             GXSetTevKColorSel(tevStage, GX_TEV_KCSEL_K1);
-            kColor = dat_8041e51c;
+            kColor = (GXColor){ 0x7F, 0x7F, 0x7F, 0x00 };
             GXSetTevKColor(GX_KCOLOR1, kColor);
             envLoadTevTexture(9, texMap, &texObj9, &tlut9);
             GXSetTexCoordGen2(texCoord, GX_TG_MTX3x4, GX_TG_NRM, dat_802f9338.tbl[texMap], GX_FALSE, GX_PTTEXMTX0);

@@ -197,7 +197,6 @@ __declspec(section ".rodata") const char str_802C1BB4[] = "projected shadow dept
 #pragma force_active reset
 extern GXColor dat_804198e4;
 extern GXColor dat_804198e8;
-extern const f32 float_1000_8041992c;
 extern const f32 float_0_804198f4;
 extern const f32 float_0p5_804198f8;
 extern const f32 float_0p2_8041990c;
@@ -210,7 +209,6 @@ extern const f32 float_256_804198fc;
 extern const f32 float_16_80419900;
 extern const f32 float_neg1_80419908;
 
-extern GXColor dat_804198e0;
 extern GXColor dat_804198ec;
 extern GXColor dat_804198f0;
 extern const f32 float_20_80419928;
@@ -296,7 +294,7 @@ void shadowInit(void) { //almost 1:1, minor regalloc
     cswp->flags = 0;
     cswp->drawCount = 0;
     cswp->configIdx = 1;
-    cswp->color = dat_804198e0;
+    cswp->color = (GXColor){0, 0, 0, 0x6E};
     cswp->projectionEnabled = 1;
     cswp->defaultKind = 2;
     cswp->defaultYScale = float_20_80419928;
@@ -500,7 +498,7 @@ void shadowDisp(CameraId cameraId, void* param) {
                 CameraEntry* cam = camGetPtr(CAMERA_3D);
 
                 config->camPos.x = cam->cameraAt.x;
-                config->camPos.y = float_1000_8041992c + cam->cameraAt.y;
+                config->camPos.y = 1000.0f + cam->cameraAt.y;
                 config->camPos.z = cam->cameraAt.z;
                 config->up.x = float_0_804198f4;
                 config->up.y = float_0_804198f4;
@@ -1511,7 +1509,6 @@ void depthShadowEnd(s32 arg0, DepthShadowWork* work) {
 // .sdata2 objects, in the original's address order. Named objects are emitted before the compiler's
 // pooled literals, so they are defined after the code; float_0 and float_1 are non-const because the
 // original reloads them between uses in one basic block.
-__declspec(section ".sdata2") GXColor dat_804198e0 = {0, 0, 0, 0x6E};
 __declspec(section ".sdata2") GXColor dat_804198e4 = {0xFF, 0xFF, 0xFF, 0xFF};
 __declspec(section ".sdata2") GXColor dat_804198e8 = {0, 0, 0, 0xFF};
 __declspec(section ".sdata2") GXColor dat_804198ec = {0, 0, 0, 0x40};
@@ -1532,4 +1529,3 @@ __declspec(section ".sdata2") const f32 float_1p25_8041991c = 1.25f;
 __declspec(section ".sdata2") const f32 float_150_80419920 = 150.0f;
 __declspec(section ".sdata2") const f32 float_1p5_80419924 = 1.5f;
 __declspec(section ".sdata2") const f32 float_20_80419928 = 20.0f;
-__declspec(section ".sdata2") const f32 float_1000_8041992c = 1000.0f;

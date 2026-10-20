@@ -113,8 +113,6 @@ const char* paper_plane[4] = {
 const Vec vec3_802c5cd8 = { 0.0f, 0.0f, 0.0f };
 const Vec vec3_802c5ce4 = { 0.0f, 0.0f, 0.0f };
 const Vec vec3_802c5cf0 = { 0.0f, 0.0f, 0.0f };
-const Vec vec3_802c5cfc = { 0.0f, 0.0f, 0.0f };
-const Vec vec3_802c5d08 = { 0.0f, 0.0f, 0.0f };
 // .rodata:0x90: the int->float conversion magic. Do NOT define it here: MWCC pools its own anonymous copy
 // for the compiler-generated `(f32)(s8)...` conversions, and defining a named object too emits a second copy
 // at 0x98 that shifts every following string by 8. Left undefined so the pooled copy lands at 0x90.
@@ -1155,7 +1153,7 @@ s32 chkCollision(f32* out) {
 	sincosf(&sinA, &cosA, 90.0f + MF32(DATA, 0x4));
 	sincosf(&sinC, &cosC, MF32(DATA, 0x8));
 
-	v3C = vec3_802c5cfc;
+	v3C = (Vec){ 0.0f, 0.0f, 0.0f };
 	{
 		f32 t0,t1,t2,t3,t4,t5,t6,t7,t8,t9,t10,t11,t12,t13,t14,t15;
 		t1 = mario->dispOfs.x;
@@ -1201,7 +1199,7 @@ s32 chkCollision(f32* out) {
 		sincosf(&sinA, &cosA, MF32(DATA, 0x4) - 90.0f);
 		vx = vx + (planeData[39] * (cosA * sinC) - planeData[39] * (sinR * cosC));
 		vy = vy + planeData[39] * (sinA * cosR);
-		v30 = vec3_802c5d08;
+		v30 = (Vec){ 0.0f, 0.0f, 0.0f };
 		v30.x = vx;
 		v30.y = vy;
 		vz = vz + (planeData[39] * (cosA * cosC) - planeData[39] * (sinR * sinC));

@@ -13,9 +13,6 @@
 __declspec(section ".data") u8 lbl_803ABCE0[8] = { 0xBF, 0x80, 0x00, 0x00, 0x3F, 0x80, 0x00, 0x00 };
 
 
-const Vec vec3_802fdc68 = {0.0f, 0.0f, 0.0f};
-const Vec vec3_802fdc74 = {0.0f, 0.0f, 0.0f};
-
 // Match-only: dat_80420a70 must be non-const (but still in .sdata2) so MWCC loads it at its use
 // instead of folding -1 into `li r5, -1` / hoisting a const load above the disp stores; the original
 // emits `lwz r5, dat_80420a70` late in battleAcMain_AirGauge's case 0. The natural form is under #else.
@@ -423,14 +420,14 @@ static void actionCommandDisp(f32 f1, f32 f2) {
 #endif
 	if (dec->flag != 0) {
 		Vec pos;
-		pos = vec3_802fdc68;
+		pos = (Vec){0.0f, 0.0f, 0.0f};
 		pos.x = -200.0f + f1;
 		pos.y = 58.0f + f2;
 		iconDispGx(1.0f, &pos, 0x10, 0x65);
 	}
 	else {
 		Vec pos;
-		pos = vec3_802fdc74;
+		pos = (Vec){0.0f, 0.0f, 0.0f};
 		pos.x = -200.0f + f1;
 		pos.y = 58.0f + f2;
 		iconDispGx(1.0f, &pos, 0x10, 0x64);

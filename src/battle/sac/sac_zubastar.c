@@ -1295,12 +1295,6 @@ void zubastar_disp2D(CameraId cameraId, void* param) {
 #undef Z20
 #undef Z2C
 
-// Keep these startup sound names after the vector templates and before the compiler's
-// function-literal pool. The original marioAttackEvent_ZubaStar script references them.
-const char str_802FF7D0[20] = "SFX_BTL_SAC_START1";
-const char str_802FF7E4[20] = "SFX_BTL_SAC_START2";
-const char str_802FF7F8[20] = "SFX_BTL_SAC_START3";
-
 s32 marioAttackEvent_ZubaStar[177];
 
 BattleWeapon weapon_zubastar = {
@@ -1388,16 +1382,16 @@ EVT_BEGIN(marioAttackEvent_ZubaStar)
     END_SIBLING_EVENT
     CALL_CHILD(sac_start_camera_evt)
     WAIT_MS(500)
-    CALL(btlevtcmd_snd_se, -2, STRING((void*)str_802FF7D0), EVTDAT_POINTER_MAX, 0, EVTDAT_POINTER_MAX)
+    CALL(btlevtcmd_snd_se, -2, STRING((void*)"SFX_BTL_SAC_START1"), EVTDAT_POINTER_MAX, 0, EVTDAT_POINTER_MAX)
     CALL_CHILD(sac_mario_item_on_evt)
     WAIT_MS(500)
-    CALL(btlevtcmd_snd_se, -2, STRING((void*)str_802FF7E4), EVTDAT_POINTER_MAX, 0, LW(11))
+    CALL(btlevtcmd_snd_se, -2, STRING((void*)"SFX_BTL_SAC_START2"), EVTDAT_POINTER_MAX, 0, LW(11))
     CALL(star_stone_appear)
     BEGIN_SIBLING_EVENT
         CALL_CHILD(sac_start_stardust)
     END_SIBLING_EVENT
     WAIT_FRAMES(100)
-    CALL(btlevtcmd_snd_se, -2, STRING((void*)str_802FF7F8), EVTDAT_POINTER_MAX, 0, EVTDAT_POINTER_MAX)
+    CALL(btlevtcmd_snd_se, -2, STRING((void*)"SFX_BTL_SAC_START3"), EVTDAT_POINTER_MAX, 0, EVTDAT_POINTER_MAX)
     CALL(evt_snd_sfxoff, LW(11))
     CALL(evt_btl_camera_set_mode, 0, 0)
     WAIT_FRAMES(40)

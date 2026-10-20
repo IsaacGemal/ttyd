@@ -95,13 +95,6 @@ extern const f32 float_75_80420e44;
 extern const f32 float_neg0p526_80420e48;
 extern const f32 float_neg0p02_80420e4c;
 extern const f32 float_70_80420e50;
-extern const f32 float_neg0p2_80420e54;
-extern const f32 float_neg0p7_80420e58;
-extern const f32 float_0p2_80420e5c;
-extern const f32 float_1p3_80420e60;
-extern const f32 float_0p633_80420e64;
-extern const f32 float_2p3_80420e68;
-extern const f32 float_0p002_80420e6c;
 
 s32 kpaHipAttackOk(void) {
     MarioWork* mario = marioGetPtr();
@@ -131,9 +124,9 @@ f32 kpaStickSpd(s32 arg) {
     }
     f30 = MW_F32(mario, 0x2C4);
     if (stick == float_0_80420da0) {
-        f32 decel = float_neg0p2_80420e54;
+        f32 decel = -0.2f;
         if (*(void**)((u8*)mario + 0x1F0) != NULL) {
-            decel = float_neg0p7_80420e58;
+            decel = -0.7f;
         }
         f30 += f30 * decel;
         if (__fabsf(f30) < float_0p01_80420e14) {
@@ -141,12 +134,12 @@ f32 kpaStickSpd(s32 arg) {
         }
     } else {
         if (arg == 0) {
-            f2 = (kpaGetBodyStatus() == 2) ? float_0p2_80420e5c : float_1p3_80420e60;
+            f2 = (kpaGetBodyStatus() == 2) ? 0.2f : 1.3f;
         } else {
-            f2 = (kpaGetBodyStatus() == 2) ? float_0p633_80420e64 : float_2p3_80420e68;
+            f2 = (kpaGetBodyStatus() == 2) ? 0.633f : 2.3f;
         }
         if (stick * f30 > float_0_80420da0) {
-            f30 = float_0p002_80420e6c * stick + f30;
+            f30 = 0.002f * stick + f30;
             if (f30 >= f2) {
                 f30 = f2;
             }
@@ -154,7 +147,7 @@ f32 kpaStickSpd(s32 arg) {
                 f30 = -f2;
             }
         } else {
-            f30 = float_0p002_80420e6c * stick + f30;
+            f30 = 0.002f * stick + f30;
             if (f30 >= f2) {
                 f30 = f2;
             }
@@ -1203,10 +1196,3 @@ const f32 float_75_80420e44 = 75.0f;
 const f32 float_neg0p526_80420e48 = -0.526f;
 const f32 float_neg0p02_80420e4c = -0.02f;
 const f32 float_70_80420e50 = 70.0f;
-const f32 float_neg0p2_80420e54 = -0.2f;
-const f32 float_neg0p7_80420e58 = -0.7f;
-const f32 float_0p2_80420e5c = 0.2f;
-const f32 float_1p3_80420e60 = 1.3f;
-const f32 float_0p633_80420e64 = 0.633f;
-const f32 float_2p3_80420e68 = 2.3f;
-const f32 float_0p002_80420e6c = 0.002f;

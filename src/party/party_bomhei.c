@@ -34,7 +34,6 @@ const Vec vec3_802ccf54 = {0.0f, -1.0f, 0.0f};
 // Layout padding only, nothing references it: fills the original's slot between the two Vecs.
 const s32 dat_802ccf60[8] = {0, 45, -45, 90, -90, 135, -135, 180};
 #endif
-const Vec vec3_802ccf80 = {0.0f, -1.0f, 0.0f};
 
 // .data / .sdata objects bomhei_use_main references.  m_w_7_sync is the frame table the
 // M_W_7 pose follows; the two evt scripts are the short/long camera shakes.
@@ -1331,7 +1330,7 @@ HitEntry* check_front(PartyEntry* party) {
         }
     }
     query.targetPos = party->position;
-    query.targetDir = vec3_802ccf80;
+    query.targetDir = (Vec){0.0f, -1.0f, 0.0f};
     query.targetDistance = 2.0f + f29;
     hit2 = hitCheckVecFilter(&query, NULL);
     if (hit2 != NULL) {

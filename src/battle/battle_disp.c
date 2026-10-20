@@ -35,13 +35,6 @@ s32 _status_pose_table[] = {
 };
 
 
-//.rodata
-const Vec vec3_802eddd0 = { 0.0f, 0.0f, 0.0f };
-const Vec vec3_802edddc = { 1.0f, 1.0f, 1.0f };
-const Vec vec3_802edde8 = { -1.0f, 1.0f, 1.0f };
-const Vec vec3_802eddf4 = { -1.0f, -1.0f, 1.0f };
-const Vec vec3_802ede00 = { 1.0f, -1.0f, 1.0f };
-
 extern const char str_802EDE38[];
 extern const char str_802EDE40[];
 extern const char str_802EDE48[];
@@ -528,7 +521,7 @@ void btlDispMain(void) {
 			statusPoseControl(part);
 			BtlUnit_GetPartsWorldPos(part, &wx, &wy, &wz);
 			animPoseMain(part->poseId);
-			v = vec3_802eddd0;
+			v = (Vec){ 0.0f, 0.0f, 0.0f };
 			v.x = wx;
 			v.y = wy;
 			v.z = wz + *(f32*)(part->field_0x4F4 + 4);
@@ -1249,7 +1242,7 @@ void _pose_def(BattleUnitPart* part) {
 #pragma dont_inline reset
 
 // _pose_one_pattern matches 100% once the strings are referenced as literals: MWCC pools
-// them and common-bases the .rodata references off vec3_802eddd0.
+// them and common-bases the .rodata references off (Vec){ 0.0f, 0.0f, 0.0f }.
 #pragma dont_inline on
 void _pose_one_pattern(BattleUnitPart* part) {
 #ifdef MUST_MATCH
@@ -1422,19 +1415,19 @@ void btlDispTex4(s32 id, Vec trans, Vec scale, Vec rot, GXColor color) {
 
 	pos.x = -halfW;
 	pos.y = halfH;
-	_btlDispTex4(id, trans, scale, rot, pos, vec3_802edddc, color);
+	_btlDispTex4(id, trans, scale, rot, pos, (Vec){ 1.0f, 1.0f, 1.0f }, color);
 
 	pos.x = halfW;
 	pos.y = halfH;
-	_btlDispTex4(id, trans, scale, rot, pos, vec3_802edde8, color);
+	_btlDispTex4(id, trans, scale, rot, pos, (Vec){ -1.0f, 1.0f, 1.0f }, color);
 
 	pos.x = halfW;
 	pos.y = -halfH;
-	_btlDispTex4(id, trans, scale, rot, pos, vec3_802eddf4, color);
+	_btlDispTex4(id, trans, scale, rot, pos, (Vec){ -1.0f, -1.0f, 1.0f }, color);
 
 	pos.x = -halfW;
 	pos.y = -halfH;
-	_btlDispTex4(id, trans, scale, rot, pos, vec3_802ede00, color);
+	_btlDispTex4(id, trans, scale, rot, pos, (Vec){ 1.0f, -1.0f, 1.0f }, color);
 }
 
 // Keep _btlDispTex4 out of line: the original calls it rather than inlining.

@@ -346,7 +346,6 @@ const char str_802C5C14[] = "PM_J_1G";
 const char str_802C5C1C[] = "PM_J_1H";
 __declspec(section ".rodata") const u32 gap_04_802C5C24_rodata = 0;
 const f64 double_1p5708_802c5c28 = 1.5707963705062866;
-const char str_802C5C30[] = "M_J_1B";
 
 // .sdata2 words defined after mot_jabara (they follow its pooled literals).
 extern const f32 float_480_8041ab18;
@@ -1013,7 +1012,7 @@ block_121:
 block_177:
                         switch (mario->currSubMotionId) {
                         case 0x5A:
-                            marioChgPose(RSTR(0xA8, str_802C5C30));
+                            marioChgPose(RSTR(0xA8, "M_J_1B"));
                             mario->currSubMotionId = 0x5B;
                             mario->dispFlags |= 4;
                             marioAdjustMoveDir();

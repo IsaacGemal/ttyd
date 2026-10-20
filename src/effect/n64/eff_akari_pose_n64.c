@@ -37,7 +37,6 @@ extern const f32 float_16_8041e8ec;
 extern const f32 float_45_8041e8f0;
 extern const f32 float_1_8041e8f4;
 extern const f32 float_0p5_8041e8f8;
-extern const f32 float_neg1_8041e8fc;
 
 // .rodata string and the pooled int->float conversion double (named after their original addresses).
 // The compiler only references this by name if it is non-const; a const definition is constant-folded
@@ -146,7 +145,7 @@ EffectEntry* effAkariPoseN64Entry(s32 type, s32 count, s32 lifetime, f32 x, f32 
     seqStep = (f32)max_seq_num[type] * float_0p5_8041e8f8;
 #endif
     for (i = 1, part = data->part; i < count + 1; i++, part++) {
-        part->seqIndex = (s32)(float_neg1_8041e8fc - seqStep * (f32)(i & 1));
+        part->seqIndex = (s32)(-1.0f - seqStep * (f32)(i & 1));
     }
     return effect;
 }
@@ -331,7 +330,6 @@ const f32 float_16_8041e8ec = 16.0f;
 const f32 float_45_8041e8f0 = 45.0f;
 const f32 float_1_8041e8f4 = 1.0f;
 const f32 float_0p5_8041e8f8 = 0.5f;
-const f32 float_neg1_8041e8fc = -1.0f;
 
 // 16 zero bytes that end the unit's .sdata: an all-zero object needs explicit_zero_data to be emitted and force_active to survive the linker.
 #pragma explicit_zero_data on

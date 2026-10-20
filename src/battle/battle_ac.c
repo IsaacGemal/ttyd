@@ -10,12 +10,6 @@
 
 extern ActionCommandEntry ActionCommandList[];
 extern BattleWork* _battleWorkPointer;
-extern const Vec vec3_802eda58;
-extern GXColor dat_8041be98;
-extern GXColor dat_8041be9c;
-
-__declspec(section ".sdata2") GXColor dat_8041be98 = { 0x00, 0xE4, 0x86, 0xFF };
-__declspec(section ".sdata2") GXColor dat_8041be9c = { 0xFF, 0x00, 0x00, 0xFF };
 
 //local prototypes
 void psndSFX_pit(s32 id, s32 pitch);
@@ -142,8 +136,6 @@ extern const GuardFrames N_superguard_frames[];
 const GuardFrames N_normal_guard_frames[1] = { { 0x0A, 0x09, 0x08, 0x08, 0x07, 0x06, 0x05 } };
 const GuardFrames N_superguard_frames[1] = { { 0x05, 0x04, 0x03, 0x03, 0x02, 0x01, 0x01 } };
 #endif
-
-__declspec(section ".rodata") const Vec vec3_802eda58 = { 0.0f, 0.0f, 0.0f };
 
 #pragma dont_inline on // retail keeps the BattleACPadCheckRecordTrigger call instead of inlining it
 // Every instruction matches. The two guard-frame tables are independent global copies, so the
@@ -522,12 +514,12 @@ static inline void gaugeHighlight(CameraEntry* cam, s32 x, s32 y, s32 type, s32 
 void BattleAcDrawGauge(s32 x, s32 y, s32 type, s32 count, s32 t0, s32 t1, s32 t2, s32 flags, f32 ratio) {
 	BattleWork* work = getWorkPointer();
 	CameraEntry* cam;
-	GXColor color = dat_8041be98;
+	GXColor color = (GXColor){ 0x00, 0xE4, 0x86, 0xFF };
 	Vec pos;
 
 	cam = camGetPtr(CAMERA_2D);
 
-	pos = vec3_802eda58;
+	pos = (Vec){ 0.0f, 0.0f, 0.0f };
 	pos.x = (f32)(x - 200);
 	pos.y = (f32)(y + 25);
 	iconDispGx(1.0f, &pos, 0x10, 0x8C);
@@ -566,7 +558,7 @@ void BattleAcDrawGauge(s32 x, s32 y, s32 type, s32 count, s32 t0, s32 t1, s32 t2
 				color.b = (u8)(color.b * ((u8*)work)[0x1F2E] / 255);
 				color.a = (u8)(color.a * ((u8*)work)[0x1F2F] / 255);
 			} else {
-				color = dat_8041be9c;
+				color = (GXColor){ 0xFF, 0x00, 0x00, 0xFF };
 			}
 			if (ratio > 0.0f) {
 				struct { f32 xa, yb, xb, yt; } e;

@@ -32,14 +32,6 @@ extern s32 evt_gazigazi[];
 // .rodata named constants.
 const Vec vec3_802f3238 = { 0.0f, 0.0f, 0.0f };
 const Vec vec3_802f3244 = { 0.0f, 0.0f, 0.0f };
-const Vec vec3_802f3250 = { 0.0f, 0.0f, 0.0f };
-const Vec vec3_802f325c = { 0.0f, 0.0f, 0.0f };
-const Vec vec3_802f3268 = { 400.0f, 35.0f, -100.0f };
-const Vec vec3_802f3274 = { 0.0f, 0.0f, -200.0f };
-const Vec vec3_802f3280 = { 146.0f, 0.0f, 146.0f };
-const Vec vec3_802f328c = { 0.0f, 0.0f, 0.0f };
-const Vec vec3_802f3298 = { 0.0f, 0.0f, 0.0f };
-const Vec vec3_802f32a4 = { 0.0f, 0.0f, 0.0f };
 
 // marioDmgRetQuakeOn
 void marioDmgRetQuakeOn(void) {
@@ -204,26 +196,26 @@ void mot_damage(void) {
 		hit = (HitEntry*)mario->hitobjDamageReturn;
 		if (hit != NULL) {
 			Vec* p = hitGetDamageReturnPos(hit);
-			Vec tmp = vec3_802f3250;
+			Vec tmp = (Vec){ 0.0f, 0.0f, 0.0f };
 
 			tmp.x = p->x;
 			tmp.y = p->y;
 			tmp.z = p->z;
 			target = tmp;
 		} else {
-			target = vec3_802f325c;
+			target = (Vec){ 0.0f, 0.0f, 0.0f };
 			if (strcmp(gp->currentMapName, "muj_00") == 0) {
-				target = vec3_802f3268;
+				target = (Vec){ 400.0f, 35.0f, -100.0f };
 			}
 			if (strcmp(gp->currentMapName, "gor_00") == 0) {
-				target = vec3_802f3274;
+				target = (Vec){ 0.0f, 0.0f, -200.0f };
 			}
 			if (strcmp(gp->currentMapName, "gor_04") == 0) {
-				target = vec3_802f3280;
+				target = (Vec){ 146.0f, 0.0f, 146.0f };
 			}
 		}
 		if (mario->flags & MARIO_FLAG_BG_MODE) {
-			Vec bgTmp = vec3_802f328c;
+			Vec bgTmp = (Vec){ 0.0f, 0.0f, 0.0f };
 
 			bgTmp.x = mario->field_0xE0.x;
 			bgTmp.y = mario->field_0xE0.y;
@@ -414,12 +406,12 @@ void mot_damageToge(void) {
 		hit = (HitEntry*)mario->hitobjDamageReturn;
 		if (hit != NULL) {
 			Vec* p = hitGetDamageReturnPos(hit);
-			Vec tmp = vec3_802f3298;
+			Vec tmp = (Vec){ 0.0f, 0.0f, 0.0f };
 			tmp.x = p->x;			tmp.y = p->y;
 			tmp.z = p->z;
 			position = tmp;
 		} else {
-			position = vec3_802f32a4;
+			position = (Vec){ 0.0f, 0.0f, 0.0f };
 		}
 		spd = position.z;
 		mario->baseSpeed = 8.0f;

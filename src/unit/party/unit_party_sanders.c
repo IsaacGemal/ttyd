@@ -24,16 +24,6 @@
 #include "evt/evt_sub.h"
 #include "party/party_motion.h"
 
-// float constants defined in this file's .sdata2
-extern const f32 float_40_8041de58;
-extern const f32 float_0p1_8041de5c;
-extern const f32 float_0_8041de60;
-extern const f32 float_1_8041de64;
-extern const f32 float_0p2_8041de68;
-extern const f32 float_0p8_8041de6c;
-extern const f32 float_0p9_8041de70;
-extern const f32 float_0p75_8041de74;
-
 extern s32 btldefaultevt_avoid_counter_event[];
 extern s32 evt_audience_acrobat_notry[];
 extern s32 subset_attack_ready_jump_event[];
@@ -182,7 +172,7 @@ USER_FUNC(_shot_move) {
     val = evtGetValue(event, args[0]);
     id = BattleTransID(event, val);
     angleArg = evtGetValue(event, args[1]);
-    speed = float_0p1_8041de5c * (f32)evtGetValue(event, args[2]);
+    speed = 0.1f * (f32)evtGetValue(event, args[2]);
     outX = args[3];
     outY = args[4];
     outZ = args[5];
@@ -194,10 +184,10 @@ USER_FUNC(_shot_move) {
         unit->mMoveCurrentPos.y = y;
         unit->mMoveCurrentPos.z = z;
         unit->moveAngle =
-            angleABf(float_0_8041de60, float_0_8041de60, float_1_8041de64, float_0_8041de60);
-        unit->mFallAccel = float_0p2_8041de68;
-        unit->mMoveSpeedY = float_0p8_8041de6c * (float_0p9_8041de70 * (speed * cosfd((f32)angleArg)));
-        unit->mMoveSpeedXZ = float_0p8_8041de6c * (float_0p75_8041de74 * (speed * sinfd((f32)angleArg)));
+            angleABf(0.0f, 0.0f, 1.0f, 0.0f);
+        unit->mFallAccel = 0.2f;
+        unit->mMoveSpeedY = 0.8f * (0.9f * (speed * cosfd((f32)angleArg)));
+        unit->mMoveSpeedXZ = 0.8f * (0.75f * (speed * sinfd((f32)angleArg)));
     }
     unit->mMoveCurrentPos.y += unit->mMoveSpeedY;
     unit->mMoveSpeedY -= unit->mFallAccel;
@@ -233,7 +223,7 @@ USER_FUNC(_judge_on_stage) {
     outIndex = args[1];
     unit = BattleGetUnitPtr(work, id);
     BtlUnit_GetPos(unit, &x, &y, &z);
-    if (fabs(x) < float_40_8041de58 + stage->stageSize.x) {
+    if (fabs(x) < 40.0f + stage->stageSize.x) {
         evtSetValue(event, outIndex, 1);
     } else {
         evtSetValue(event, outIndex, 0);
@@ -1461,12 +1451,3 @@ static EVT_BEGIN(party_win_reaction)
 EVT_END()
 // clang-format on
 
-// The pool constants the code above loads by name, defined after it (defined first, the compiler folds them).
-const f32 float_40_8041de58 = 40.0f;
-const f32 float_0p1_8041de5c = 0.1f;
-const f32 float_0_8041de60 = 0.0f;
-const f32 float_1_8041de64 = 1.0f;
-const f32 float_0p2_8041de68 = 0.2f;
-const f32 float_0p8_8041de6c = 0.8f;
-const f32 float_0p9_8041de70 = 0.9f;
-const f32 float_0p75_8041de74 = 0.75f;

@@ -86,12 +86,6 @@ const f32 vec3_803003c4[3] = {0.0f, 0.0f, 0.0f};
 const f32 vec3_803003d0[3] = {0.0f, 0.0f, 0.0f};
 const f32 vec3_803003dc[3] = {0.5f, 0.5f, 1.0f};
 const f32 vec3_803003e8[3] = {0.0f, 0.0f, 0.0f};
-const char str_803003F4[] = "SFX_BTL_SAC_START1";
-const char str_80300408[] = "SFX_BTL_SAC_START2";
-const char str_8030041C[] = "SFX_BTL_SAC_HEART_SHOOT1";
-const char str_80300438[] = "SFX_HP_RECOVER_SHINE2";
-const char str_80300450[] = "stardust";
-const char str_8030045C[] = "M_C_2C";
 
 // .sdata2 objects, in the original's address order. Only the seven icon colours, the
 // M_I_Y animation name and the .data-referenced zero are real objects; the float
@@ -107,59 +101,13 @@ const GXColor dat_80421d34 = {0xFF, 0xFF, 0xFF, 0xFF};
 const GXColor dat_80421d38 = {0xFF, 0xFF, 0xFF, 0xFF};
 const char str_80421D3C[] = "M_I_Y";
 const f32 float_0_80421d44 = 0.0f;
-static const f32 float_3p1416_80421d48 = 3.141592f;
-static const f32 float_180_80421d4c = 180.0f;
-static const f32 float_60_80421d50 = 60.0f;
-static const f32 float_10_80421d54 = 10.0f;
-static const f32 float_5_80421d58 = 5.0f;
-static const f32 float_6_80421d5c = 6.0f;
-static const f32 float_8_80421d60 = 8.0f;
-static const f32 float_0p5_80421d64 = 0.5f;
-static const f32 float_90_80421d68 = 90.0f;
-static const f32 float_1p25_80421d6c = 1.25f;
-static const f32 float_2_80421d70 = 2.0f;
-static const f32 float_1_80421d74 = 1.0f;
-static const f32 float_20_80421d78 = 20.0f;
-static const f32 float_85_80421d7c = 85.0f;
-static const f32 float_30_80421d80 = 30.0f;
 static const f32 float_0_80421d84 = 0.0f;
 static const f32 float_neg1000_80421d88 = -1000.0f;
-static const f32 float_37_80421d8c = 37.0f;
-static const f32 float_50_80421d90 = 50.0f;
-static const f32 float_neg1_80421d94 = -1.0f;
-static const f32 float_2160_80421d98 = 2160.0f;
-static const f32 float_200_80421d9c = 200.0f;
-static const f32 float_32767_80421da0 = 32767.0f;
-static const f32 float_720_80421da4 = 720.0f;
-static const f32 float_120_80421da8 = 120.0f;
-static const f32 float_0p2_80421dac = 0.2f;
-static const f32 float_neg2_80421db0 = -2.0f;
-static const f32 float_3_80421db4 = 3.0f;
-static const f32 float_neg3_80421db8 = -3.0f;
-static const f32 float_0p1_80421dbc = 0.1f;
-static const f32 float_6p2832_80421dc0 = 6.283184f;
-static const f32 float_1p5_80421dc4 = 1.5f;
 static const f32 float_7_80421dc8 = 7.0f;
 static const f32 float_40_80421dcc = 40.0f;
 static const f32 float_0p75_80421dd0 = 0.75f;
 static const f32 float_0p01_80421dd4 = 0.01f;
 static const f32 float_0p05_80421dd8 = 0.05f;
-static const f32 float_1p32_80421ddc = 1.32f;
-static const f32 float_1p98_80421de0 = 1.98f;
-static const f32 float_15_80421de4 = 15.0f;
-static const f32 float_360_80421de8 = 360.0f;
-static const f32 float_28_80421dec = 28.0f;
-static const f32 float_0p15_80421df0 = 0.15f;
-static const f32 float_250_80421df4 = 250.0f;
-static const f32 float_1E07_80421df8 = 10000000.0f;
-static const f32 float_344_80421dfc = 344.0f;
-static const f32 float_576_80421e00 = 576.0f;
-static const f32 float_1296_80421e04 = 1296.0f;
-static const f32 float_1p125_80421e08 = 1.125f;
-static const f32 float_neg1p25_80421e0c = -1.25f;
-
-
-
 
 typedef struct GenkiStar {
     s32 field_0;                // 0x0
@@ -305,11 +253,11 @@ s32 main_genki(EventEntry* event, BOOL isFirstCall) {
 #endif
         for (i = 0; i < 7; i++) {
             genki->weapon[i].field_44 = effStarStoneEntry(i, float_0_80421d84, float_neg1000_80421d88,
-                                                          float_0_80421d84, float_1_80421d74);
+                                                          float_0_80421d84, 1.0f);
             for (j = 0; j < 3; j++) {
                 genki->weapon[i].field_48[j] = effStarStoneEntry(i + 7, float_0_80421d84,
                                                                  float_neg1000_80421d88,
-                                                                 float_0_80421d84, float_1_80421d74);
+                                                                 float_0_80421d84, 1.0f);
             }
         }
     }
@@ -338,27 +286,27 @@ static void main_base(void) {
     s32 k;
 
     if (genki->field_1C > (f32)genki->score[0]) {
-        genki->field_1C -= float_1_80421d74;
+        genki->field_1C -= 1.0f;
         genki->field_28 = 0x3C;
     }
     if (genki->field_1C < (f32)genki->score[0]) {
-        genki->field_1C += float_1_80421d74;
+        genki->field_1C += 1.0f;
         genki->field_28 = 0x3C;
     }
     if (genki->field_20 > (f32)genki->score[1]) {
-        genki->field_20 -= float_1_80421d74;
+        genki->field_20 -= 1.0f;
         genki->field_2C = 0x3C;
     }
     if (genki->field_20 < (f32)genki->score[1]) {
-        genki->field_20 += float_1_80421d74;
+        genki->field_20 += 1.0f;
         genki->field_2C = 0x3C;
     }
     if (genki->field_24 > (f32)genki->score[2]) {
-        genki->field_24 -= float_1_80421d74;
+        genki->field_24 -= 1.0f;
         genki->field_30 = 0x3C;
     }
     if (genki->field_24 < (f32)genki->score[2]) {
-        genki->field_24 += float_1_80421d74;
+        genki->field_24 += 1.0f;
         genki->field_30 = 0x3C;
     }
     if (genki->field_28 > 0) {
@@ -519,7 +467,7 @@ void main_mario(void) {
             f32 x, y, z;
             EffectEntry* eff;
             BtlUnit_GetPos(mario, &x, &y, &z);
-            eff = effStampN64Entry(2, x, float_20_80421d78 + y, float_10_80421d54 + z);
+            eff = effStampN64Entry(2, x, 20.0f + y, 10.0f + z);
             ((effStampData*)eff->userdata)->tevReg0R = 0;
             ((effStampData*)eff->userdata)->tevReg0G = 0xC8;
             ((effStampData*)eff->userdata)->tevReg0B = 0;
@@ -551,30 +499,30 @@ void main_target(void) {
         break;
     case 1:
         genki->field_68 = 0;
-        genki->field_6C = float_30_80421d80;
-        genki->field_70 = float_1p25_80421d6c;
+        genki->field_6C = 30.0f;
+        genki->field_70 = 1.25f;
         genki->field_64 = 2;
     case 2:
         genki->field_68++;
         if (genki->field_68 >= 0x168) {
-            genki->field_68 = (s32)((f32)genki->field_68 - float_360_80421de8);
+            genki->field_68 = (s32)((f32)genki->field_68 - 360.0f);
         }
         genki->field_6C += genki->field_70;
-        if (genki->field_6C >= float_60_80421d50) {
-            genki->field_6C = float_60_80421d50;
-            genki->field_70 = float_neg1p25_80421e0c;
+        if (genki->field_6C >= 60.0f) {
+            genki->field_6C = 60.0f;
+            genki->field_70 = -1.25f;
             genki->field_64 = 3;
         }
         break;
     case 3:
         genki->field_68++;
         if (genki->field_68 >= 0x168) {
-            genki->field_68 = (s32)((f32)genki->field_68 - float_360_80421de8);
+            genki->field_68 = (s32)((f32)genki->field_68 - 360.0f);
         }
         genki->field_6C += genki->field_70;
         if (genki->field_6C <= float_0_80421d84) {
             genki->field_6C = float_0_80421d84;
-            genki->field_70 = float_1p25_80421d6c;
+            genki->field_70 = 1.25f;
             genki->field_64 = 2;
         }
         break;
@@ -590,7 +538,7 @@ void main_weapon(s32 idx) {
     GenkiWork* genki = get_ptr();
     GenkiWeapon* weapon = &genki->weapon[idx];
     BattleUnit* mario = BattleGetMarioPtr(_battleWorkPointer);
-    f32 angle = float_3p1416_80421d48 * (float_2_80421d70 * genki->field_6C) / float_360_80421de8;
+    f32 angle = 3.141592f * (2.0f * genki->field_6C) / 360.0f;
     s32 audienceNum = BattleAudience_GetAudienceNum();
     s32 i;
 
@@ -610,13 +558,13 @@ void main_weapon(s32 idx) {
         }
         weapon->field_0 = 2;
         BtlUnit_GetPos(mario, &weapon->pos[0].x, &weapon->pos[0].y, &weapon->pos[0].z);
-        weapon->pos[0].x += float_20_80421d78 * mario->mSizeMultiplier;
-        weapon->pos[0].y += float_28_80421dec * mario->mSizeMultiplier;
+        weapon->pos[0].x += 20.0f * mario->mSizeMultiplier;
+        weapon->pos[0].y += 28.0f * mario->mSizeMultiplier;
         {
             Vec vel = *(const Vec*)vec3_803002bc;
 
-            vel.x = float_10_80421d54 * (f32)cos(angle);
-            vel.y = float_10_80421d54 * (f32)sin(angle);
+            vel.x = 10.0f * (f32)cos(angle);
+            vel.y = 10.0f * (f32)sin(angle);
             weapon->vel = vel;
         }
         for (i = 0; i < 7; i++) {
@@ -625,7 +573,7 @@ void main_weapon(s32 idx) {
             if (eff->field_0 <= 0) {
                 eff->field_0 = 0x1E;
                 eff->pos = genki->field_74;
-                eff->field_10 = float_2_80421d70 * (f32)genki->field_68;
+                eff->field_10 = 2.0f * (f32)genki->field_68;
                 break;
             }
         }
@@ -634,19 +582,19 @@ void main_weapon(s32 idx) {
     case 2:
         weapon->pos[0].x += weapon->vel.x;
         weapon->pos[0].y += weapon->vel.y;
-        weapon->vel.y -= float_0p15_80421df0;
+        weapon->vel.y -= 0.15f;
         {
             f32 x, y, z;
 
             BtlUnit_GetPos(mario, &x, &y, &z);
-            if (weapon->pos[0].x >= float_250_80421df4 || weapon->pos[0].y >= float_180_80421d4c ||
+            if (weapon->pos[0].x >= 250.0f || weapon->pos[0].y >= 180.0f ||
                 weapon->pos[0].y <= y) {
                 weapon->field_0 = 3;
                 break;
             }
             {
                 GenkiObject* obj;
-                f32 best = float_1E07_80421df8;
+                f32 best = 10000000.0f;
                 s32 found = -1;
                 f32 wx = weapon->pos[0].x;
                 f32 wy = weapon->pos[0].y;
@@ -674,23 +622,23 @@ void main_weapon(s32 idx) {
 
                     switch (obj->field_8) {
                     case 6:
-                        threshold = float_344_80421dfc;
+                        threshold = 344.0f;
                         break;
                     case 0:
                     case 2:
                     case 4:
-                        threshold = float_576_80421e00;
+                        threshold = 576.0f;
                         break;
                     default:
-                        threshold = float_1296_80421e04;
+                        threshold = 1296.0f;
                         break;
                     }
-                    if (best <= threshold && obj->field_10 <= float_200_80421d9c) {
+                    if (best <= threshold && obj->field_10 <= 200.0f) {
                         weapon->field_0 = 3;
                         obj->field_0 = 3;
                 effStardustN64Entry(5, obj->field_C, obj->field_10, obj->field_14,
-                                    float_10_80421d54);
-                effHitEntry(0, 5, obj->field_C, obj->field_10, obj->field_14, float_1_80421d74);
+                                    10.0f);
+                effHitEntry(0, 5, obj->field_C, obj->field_10, obj->field_14, 1.0f);
                 switch (obj->field_8) {
                 case 0:
                     psndSFXOn_3D((const char*)0xA64, &weapon->pos[0]);
@@ -787,7 +735,7 @@ void main_weapon(s32 idx) {
     }
 
     {
-        f32 scale = float_1p125_80421e08;
+        f32 scale = 1.125f;
 
         if (weapon->field_44 != NULL) {
             effStarStoneData* data = (effStarStoneData*)weapon->field_44->userdata;
@@ -812,8 +760,8 @@ void main_weapon(s32 idx) {
 
 // Matches. The int->float loads read the anonymous pool double (now at vec3_803002b0+0x1B8,
 // like retail's double_to_int_80300468) with an absolute `lis`, and the 30.0f literal as
-// `@NNN` instead of the named `float_30_80421d80`; objdiff does not score those symbol names. The
-// `30.0f` literal, rather than the named `float_30_80421d80` (same value), is what makes MWCC emit
+// `@NNN` instead of the named `30.0f`; objdiff does not score those symbol names. The
+// `30.0f` literal, rather than the named `30.0f` (same value), is what makes MWCC emit
 // the original's interleaved `li`/`lfs` argument setup. Keeping `fifteen` in a variable fixed the
 // compare's f1/f2 assignment; the if/else that builds `limit` fixed the case-1 integer register
 // allocation.
@@ -890,14 +838,14 @@ void main_object(s32 idx) {
         }
     case 2:
         if (genki->field_C == 0) {
-            obj->field_10 -= float_1p32_80421ddc;
+            obj->field_10 -= 1.32f;
         } else {
-            obj->field_10 -= float_1p98_80421de0;
+            obj->field_10 -= 1.98f;
         }
         {
             BtlUnit_GetPos(mario, &x, &y, &z);
             {
-                f32 fifteen = float_15_80421de4;
+                f32 fifteen = 15.0f;
                 if (obj->field_10 <= fifteen + y) {
                     f32 thirty = 30.0f;
                     obj->field_0 = 3;
@@ -1078,14 +1026,14 @@ void main_star1(void) {
     case 1:
         star->field_0 = 2;
         star->field_4 = 0;
-        star->field_60 = effStarStoneEntry(4, float_0_80421d84, float_neg1000_80421d88, float_0_80421d84, float_1_80421d74);
+        star->field_60 = effStarStoneEntry(4, float_0_80421d84, float_neg1000_80421d88, float_0_80421d84, 1.0f);
         BtlUnit_GetPos(mario, &star->field_C, &star->field_10, &star->field_14);
         star->field_10 = star->field_10 +
-            (mario->mSizeMultiplier * (f32)mario->mHeight + float_37_80421d8c);
+            (mario->mSizeMultiplier * (f32)mario->mHeight + 37.0f);
         *(Vec*)&star->field_18 = *(Vec*)&star->field_C;
         *(Vec*)&star->field_24 = *(Vec*)&star->field_C;
-        star->field_28 += float_50_80421d90;
-        star->field_2C += float_neg1_80421d94;
+        star->field_28 += 50.0f;
+        star->field_2C += -1.0f;
         *(Vec*)&star->field_3C = *(const Vec*)&vec3_80300310[0];
         *(Vec*)&star->field_48 = *(const Vec*)&vec3_8030031c[0];
         /* fallthrough */
@@ -1095,7 +1043,7 @@ void main_star1(void) {
             star->field_C = intplGetValue(0, star->field_4, 0x64, star->field_18, star->field_24);
             star->field_10 = intplGetValue(0, star->field_4, 0x64, star->field_1C, star->field_28);
             star->field_14 = intplGetValue(0, star->field_4, 0x64, star->field_20, star->field_2C);
-            f = intplGetValue(0, star->field_4, 0x64, float_0_80421d84, float_2_80421d70);
+            f = intplGetValue(0, star->field_4, 0x64, float_0_80421d84, 2.0f);
             star->field_44 = f;
             star->field_40 = f;
             star->field_3C = f;
@@ -1103,12 +1051,12 @@ void main_star1(void) {
             star->field_C = star->field_24;
             star->field_10 = star->field_28;
             star->field_14 = star->field_2C;
-            star->field_44 = float_2_80421d70;
-            star->field_40 = float_2_80421d70;
-            star->field_3C = float_2_80421d70;
+            star->field_44 = 2.0f;
+            star->field_40 = 2.0f;
+            star->field_3C = 2.0f;
         }
         star->field_4C = intplGetValue(4, star->field_4, 0x78, float_0_80421d84,
-                                       float_2160_80421d98);
+                                       2160.0f);
         if (star->field_4 >= 0x78) {
             Vec v;
 
@@ -1116,46 +1064,46 @@ void main_star1(void) {
             star->field_4 = 0;
             *(Vec*)&star->field_18 = *(Vec*)&star->field_C;
             v = *(const Vec*)&vec3_80300328[0];
-            v.x = float_200_80421d9c * (f32)rand() / float_32767_80421da0;
+            v.x = 200.0f * (f32)rand() / 32767.0f;
             v.z = star->field_20;
             *(Vec*)&star->field_24 = v;
             *(Vec*)&star->field_30 = *(const Vec*)&vec3_80300334[0];
-            star->field_34 = (float_2_80421d70 * (star->field_28 - star->field_1C) -
-                              float_720_80421da4) / float_120_80421da8;
+            star->field_34 = (2.0f * (star->field_28 - star->field_1C) -
+                              720.0f) / 120.0f;
         }
         break;
     case 3:
         star->field_4++;
         star->field_C = intplGetValue(4, star->field_4, 0x3C, star->field_18, star->field_24);
         star->field_10 += star->field_34;
-        star->field_34 += float_0p2_80421dac;
+        star->field_34 += 0.2f;
         star->field_4C = float_0_80421d84;
-        star->field_44 = float_2_80421d70;
-        star->field_40 = float_2_80421d70;
-        star->field_3C = float_2_80421d70;
+        star->field_44 = 2.0f;
+        star->field_40 = 2.0f;
+        star->field_3C = 2.0f;
         if (star->field_4 >= 0x3C) {
             star->field_0 = 4;
             star->field_4 = 0;
             if (irand(2) == 0) {
-                star->field_30 = float_neg2_80421db0;
+                star->field_30 = -2.0f;
             }
-            star->field_30 = float_2_80421d70;
+            star->field_30 = 2.0f;
             star->field_34 = float_0_80421d84;
         }
         break;
     case 4:
         star->field_C += star->field_30;
         if (star->field_C < float_0_80421d84) {
-            star->field_30 = float_3_80421db4;
+            star->field_30 = 3.0f;
         }
-        if (star->field_C > float_200_80421d9c) {
-            star->field_30 = float_neg3_80421db8;
+        if (star->field_C > 200.0f) {
+            star->field_30 = -3.0f;
         }
-        star->field_34 += float_0p1_80421dbc;
-        if (star->field_34 >= float_6p2832_80421dc0) {
-            star->field_34 -= float_6p2832_80421dc0;
+        star->field_34 += 0.1f;
+        if (star->field_34 >= 6.283184f) {
+            star->field_34 -= 6.283184f;
         }
-        star->field_10 = float_10_80421d54 * (f32)sin(star->field_34) + float_180_80421d4c;
+        star->field_10 = 10.0f * (f32)sin(star->field_34) + 180.0f;
         if (genki->field_40 <= 0) {
             star->field_0 = 5;
             star->field_4 = 0;
@@ -1174,7 +1122,7 @@ void main_star1(void) {
         p->tipRotY = star->field_48;
         p->rotY = star->field_4C;
         p->tipRotZ = star->field_50;
-        p->scale = float_1p5_80421dc4 * star->field_3C;
+        p->scale = 1.5f * star->field_3C;
     }
 }
 
@@ -1226,7 +1174,7 @@ static void disp_3D(CameraId cameraId, void* param) {
     GenkiWork* genki = get_ptr();
     BattleUnit* mario = BattleGetMarioPtr(_battleWorkPointer);
     BattleUnit* party = BattleGetPartyPtr(_battleWorkPointer);
-    f32 angle = float_3p1416_80421d48 * genki->field_6C / float_180_80421d4c;
+    f32 angle = 3.141592f * genki->field_6C / 180.0f;
     Mtx mtx;
     Vec pos;
     Vec pos2;
@@ -1248,26 +1196,26 @@ static void disp_3D(CameraId cameraId, void* param) {
 
     if (genki->field_4 != 0) {
         BtlUnit_GetHomePos(mario, &x, &y, &z);
-        y += float_60_80421d50;
+        y += 60.0f;
         {
             f32* ud = (f32*)genki->field_34->userdata;
             ud[2] = x;
-            ud[3] = y - float_10_80421d54;
-            ud[4] = z + float_5_80421d58;
+            ud[3] = y - 10.0f;
+            ud[4] = z + 5.0f;
         }
         {
             s32 frame;
-            if (genki->field_1C >= float_10_80421d54) {
+            if (genki->field_1C >= 10.0f) {
                 Vec v = *(const Vec*)vec3_8030034c;
-                v.x = x + float_6_80421d5c;
+                v.x = x + 6.0f;
                 v.y = y;
-                v.z = z + float_8_80421d60;
+                v.z = z + 8.0f;
                 pos = v;
             } else {
                 Vec v = *(const Vec*)vec3_80300358;
                 v.x = x;
                 v.y = y;
-                v.z = z + float_8_80421d60;
+                v.z = z + 8.0f;
                 pos = v;
             }
             PSMTXTrans(mtx, pos.x, pos.y, pos.z);
@@ -1284,26 +1232,26 @@ static void disp_3D(CameraId cameraId, void* param) {
         }
         if (genki->field_50 != -1) {
             BtlUnit_GetHomePos(party, &px, &py, &pz);
-            py += float_60_80421d50;
+            py += 60.0f;
             {
                 f32* ud = (f32*)genki->field_38->userdata;
                 ud[2] = px;
-                ud[3] = py - float_10_80421d54;
-                ud[4] = pz + float_5_80421d58;
+                ud[3] = py - 10.0f;
+                ud[4] = pz + 5.0f;
             }
             {
                 s32 frame;
-                if (genki->field_20 >= float_10_80421d54) {
+                if (genki->field_20 >= 10.0f) {
                     Vec v = *(const Vec*)vec3_80300364;
-                    v.x = px + float_6_80421d5c;
+                    v.x = px + 6.0f;
                     v.y = py;
-                    v.z = pz + float_8_80421d60;
+                    v.z = pz + 8.0f;
                     pos2 = v;
                 } else {
                     Vec v = *(const Vec*)vec3_80300370;
                     v.x = px;
                     v.y = py;
-                    v.z = pz + float_8_80421d60;
+                    v.z = pz + 8.0f;
                     pos2 = v;
                 }
                 PSMTXTrans(mtx, pos2.x, pos2.y, pos2.z);
@@ -1320,27 +1268,27 @@ static void disp_3D(CameraId cameraId, void* param) {
             }
             BtlUnit_GetHomePos(mario, &x, &y, &z);
             BtlUnit_GetHomePos(party, &px, &py, &pz);
-            x = float_0p5_80421d64 * (x + px);
-            y += float_90_80421d68;
+            x = 0.5f * (x + px);
+            y += 90.0f;
             {
                 f32* ud = (f32*)genki->field_3C->userdata;
                 ud[2] = x;
-                ud[3] = y - float_10_80421d54;
-                ud[4] = z + float_5_80421d58;
+                ud[3] = y - 10.0f;
+                ud[4] = z + 5.0f;
             }
             {
                 s32 frame;
-                if (genki->field_24 >= float_10_80421d54) {
+                if (genki->field_24 >= 10.0f) {
                     Vec v = *(const Vec*)vec3_8030037c;
-                    v.x = x + float_6_80421d5c;
+                    v.x = x + 6.0f;
                     v.y = y;
-                    v.z = z + float_8_80421d60;
+                    v.z = z + 8.0f;
                     pos = v;
                 } else {
                     Vec v = *(const Vec*)vec3_80300388;
                     v.x = x;
                     v.y = y;
-                    v.z = z + float_8_80421d60;
+                    v.z = z + 8.0f;
                     pos = v;
                 }
                 PSMTXTrans(mtx, pos.x, pos.y, pos.z);
@@ -1357,26 +1305,26 @@ static void disp_3D(CameraId cameraId, void* param) {
             }
         } else {
             BtlUnit_GetHomePos(mario, &x, &y, &z);
-            y += float_90_80421d68;
+            y += 90.0f;
             {
                 f32* ud = (f32*)genki->field_3C->userdata;
                 ud[2] = x;
-                ud[3] = y - float_10_80421d54;
-                ud[4] = z + float_5_80421d58;
+                ud[3] = y - 10.0f;
+                ud[4] = z + 5.0f;
             }
             {
                 s32 frame;
-                if (genki->field_24 >= float_10_80421d54) {
+                if (genki->field_24 >= 10.0f) {
                     Vec v = *(const Vec*)vec3_80300394;
-                    v.x = x + float_6_80421d5c;
+                    v.x = x + 6.0f;
                     v.y = y;
-                    v.z = z + float_8_80421d60;
+                    v.z = z + 8.0f;
                     pos = v;
                 } else {
                     Vec v = *(const Vec*)vec3_803003a0;
                     v.x = x;
                     v.y = y;
-                    v.z = z + float_8_80421d60;
+                    v.z = z + 8.0f;
                     pos = v;
                 }
                 PSMTXTrans(mtx, pos.x, pos.y, pos.z);
@@ -1402,7 +1350,7 @@ static void disp_3D(CameraId cameraId, void* param) {
         }
         flags = 0;
         {
-            f32 scale = float_1p25_80421d6c;
+            f32 scale = 1.25f;
             s32 icon;
             s32 frame;
 
@@ -1411,7 +1359,7 @@ static void disp_3D(CameraId cameraId, void* param) {
             case 1:
                 icon = 0x1A3;
                 if (obj->field_8 == 1) {
-                    scale = float_2_80421d70;
+                    scale = 2.0f;
                     frame = obj->field_4 % 12;
                     if (frame >= 0 && frame <= 5) {
                         flags |= 0x20;
@@ -1469,7 +1417,7 @@ static void disp_3D(CameraId cameraId, void* param) {
                     break;
                 }
                 if (obj->field_8 == 3) {
-                    scale = float_2_80421d70;
+                    scale = 2.0f;
                     frame = obj->field_4 % 12;
                     if (frame >= 0 && frame <= 5) {
                         flags |= 0x20;
@@ -1480,7 +1428,7 @@ static void disp_3D(CameraId cameraId, void* param) {
             case 5:
                 icon = 0x1B1;
                 if (obj->field_8 == 5) {
-                    scale = float_2_80421d70;
+                    scale = 2.0f;
                     frame = obj->field_4 % 12;
                     if (frame >= 0 && frame <= 5) {
                         flags |= 0x20;
@@ -1491,9 +1439,9 @@ static void disp_3D(CameraId cameraId, void* param) {
                 icon = 0x143;
                 break;
             }
-            PSMTXScale(mtx, scale, scale, float_1_80421d74);
+            PSMTXScale(mtx, scale, scale, 1.0f);
             PSMTXTransApply(mtx, mtx, obj->field_C,
-                            obj->field_10 - float_20_80421d78 * scale, obj->field_14);
+                            obj->field_10 - 20.0f * scale, obj->field_14);
 #ifdef MUST_MATCH
             // The original passes `flags` without a sign extension; with the header's s16
             // parameter MWCC emits `extsh`, so call it through a u16 prototype. The named
@@ -1509,10 +1457,10 @@ static void disp_3D(CameraId cameraId, void* param) {
     if (genki->field_64 >= 2 && genki->field_64 <= 3) {
         Mtx mtx2;
 
-        PSMTXScale(mtx2, float_0p5_80421d64, float_0p5_80421d64, float_0p5_80421d64);
+        PSMTXScale(mtx2, 0.5f, 0.5f, 0.5f);
         BtlUnit_GetPos(mario, &x, &y, &z);
-        x += float_85_80421d7c * (f32)cos(angle);
-        y += float_85_80421d7c * (f32)sin(angle);
+        x += 85.0f * (f32)cos(angle);
+        y += 85.0f * (f32)sin(angle);
         {
             Vec trans;
             Vec pos;
@@ -1521,12 +1469,12 @@ static void disp_3D(CameraId cameraId, void* param) {
             Vec tmp;
             GXColor color;
 
-            x += float_10_80421d54;
-            y += float_30_80421d80;
-            z += float_10_80421d54;
+            x += 10.0f;
+            y += 30.0f;
+            z += 10.0f;
             color = *(GXColor*)&dat_80421d34;
             tmp = *(const Vec*)vec3_803003c4;
-            tmp.z = float_6_80421d5c * (f32)genki->field_68;
+            tmp.z = 6.0f * (f32)genki->field_68;
             rot = tmp;
             scale = *(const Vec*)vec3_803003b8;
             pos = *(const Vec*)vec3_803003ac;
@@ -1546,7 +1494,7 @@ static void disp_3D(CameraId cameraId, void* param) {
 
             color = *(GXColor*)&dat_80421d38;
             tmp = *(const Vec*)vec3_803003e8;
-            tmp.z = float_6_80421d5c * -(f32)genki->field_68;
+            tmp.z = 6.0f * -(f32)genki->field_68;
             rot = tmp;
             scale = *(const Vec*)vec3_803003dc;
             pos = *(const Vec*)vec3_803003d0;
@@ -1626,7 +1574,7 @@ void weapon_entry(void) {
                 wep->field_0 = 1;
                 wep->field_4 = 7;
             }
-            BtlUnit_SetAnim(parts, str_8030045C);
+            BtlUnit_SetAnim(parts, "M_C_2C");
         }
     }
 }
@@ -1733,15 +1681,15 @@ s32 genki_evt_common[345] = {
     0xFE363C8D, 0xFE363C8F, 0x00000070, 0x0001005E,
     (s32)(void*)sac_start_camera_evt, 0x0001000A, 0x000001F4, 0x0001005B,
     (s32)(void*)sac_enemy_slide_go, 0x0006005B, (s32)(void*)btlevtcmd_snd_se, 0xFFFFFFFE,
-    (s32)(void*)str_803003F4, 0xF1194D80, 0x00000000, 0xF1194D80,
+    (s32)(void*)"SFX_BTL_SAC_START1", 0xF1194D80, 0x00000000, 0xF1194D80,
     0x0001005E, (s32)(void*)sac_mario_item_on_evt, 0x0001000A, 0x000001F4,
-    0x0006005B, (s32)(void*)btlevtcmd_snd_se, 0xFFFFFFFE, (s32)(void*)str_80300408,
+    0x0006005B, (s32)(void*)btlevtcmd_snd_se, 0xFFFFFFFE, (s32)(void*)"SFX_BTL_SAC_START2",
     0xF1194D80, 0x00000000, 0xFE363C8B, 0x00020018,
     0xFE363C8F, 0x00000000, 0x0001005B, (s32)(void*)star_appear,
     0x00000020, 0x0001005B, (s32)(void*)star_stone_appear, 0x00000021,
     0x0000006E, 0x0001005E, (s32)(void*)sac_start_stardust, 0x00000070,
     0x00010009, 0x00000064, 0x0006005B, (s32)(void*)btlevtcmd_snd_se,
-    0xFFFFFFFE, (s32)(void*)str_8030041C, 0xF1194D80, 0x00000000,
+    0xFFFFFFFE, (s32)(void*)"SFX_BTL_SAC_HEART_SHOOT1", 0xF1194D80, 0x00000000,
     0xFE363C8A, 0x0002005B, (s32)(void*)evt_snd_sfxoff, 0xFE363C8B,
     0x0003005B, (s32)(void*)evt_btl_camera_set_mode, 0x00000000, 0x00000000,
     0x00010009, 0x00000028, 0x0001005E, (s32)(void*)sac_mario_item_on_end_evt,
@@ -1775,12 +1723,12 @@ s32 genki_evt_common[345] = {
     0xFE363C8F, 0xFE363C8C, 0x0002001D, 0xFE363C8F,
     0x00000001, 0x0001005B, (s32)(void*)sac_wao, 0x00000021,
     0x00020019, 0xFE363C8D, 0xFFFFFFFF, 0x0003005B,
-    (s32)(void*)evt_snd_sfxon, (s32)(void*)str_80300438, 0x00000000, 0x00020032,
+    (s32)(void*)evt_snd_sfxon, (s32)(void*)"SFX_HP_RECOVER_SHINE2", 0x00000000, 0x00020032,
     0xFE363C89, 0xFFFFFFFE, 0x0001005E, (s32)(void*)status_recover_evt,
     0x0004005B, (s32)(void*)btlevtcmd_RecoverHp, 0xFFFFFFFE, 0x00000001,
     0xFE363C8A, 0x0005005B, (s32)(void*)btlevtcmd_GetPos, 0xFFFFFFFE,
     0xFE363C80, 0xFE363C81, 0xFE363C82, 0x000F005B,
-    (s32)(void*)evt_eff, (s32)(void*)&float_0_80421d44, (s32)(void*)str_80300450, 0x00000002,
+    (s32)(void*)evt_eff, (s32)(void*)&float_0_80421d44, (s32)(void*)"stardust", 0x00000002,
     0xFE363C80, 0xFE363C81, 0xFE363C82, 0x00000032,
     0x00000032, 0x00000032, 0x00000064, 0x00000000,
     0x00000000, 0x00000000, 0x00000000, 0x00020032,
@@ -1789,17 +1737,17 @@ s32 genki_evt_common[345] = {
     (s32)(void*)btlevtcmd_RecoverHp, 0xFE363C8D, 0xFE363C8E, 0xFE363C8B,
     0x0005005B, (s32)(void*)btlevtcmd_GetPos, 0xFE363C8D, 0xFE363C80,
     0xFE363C81, 0xFE363C82, 0x000F005B, (s32)(void*)evt_eff,
-    (s32)(void*)&float_0_80421d44, (s32)(void*)str_80300450, 0x00000002, 0xFE363C80,
+    (s32)(void*)&float_0_80421d44, (s32)(void*)"stardust", 0x00000002, 0xFE363C80,
     0xFE363C81, 0xFE363C82, 0x00000032, 0x00000032,
     0x00000032, 0x00000064, 0x00000000, 0x00000000,
     0x00000000, 0x00000000, 0x0004005B, (s32)(void*)btlevtcmd_RecoverFp,
     0xFFFFFFFE, 0x00000001, 0xFE363C8C, 0x00000020,
-    0x0003005B, (s32)(void*)evt_snd_sfxon, (s32)(void*)str_80300438, 0x00000000,
+    0x0003005B, (s32)(void*)evt_snd_sfxon, (s32)(void*)"SFX_HP_RECOVER_SHINE2", 0x00000000,
     0x00020032, 0xFE363C89, 0xFFFFFFFE, 0x0001005E,
     (s32)(void*)status_recover_evt, 0x0004005B, (s32)(void*)btlevtcmd_RecoverHp, 0xFFFFFFFE,
     0x00000001, 0xFE363C8A, 0x0005005B, (s32)(void*)btlevtcmd_GetPos,
     0xFFFFFFFE, 0xFE363C80, 0xFE363C81, 0xFE363C82,
-    0x000F005B, (s32)(void*)evt_eff, (s32)(void*)&float_0_80421d44, (s32)(void*)str_80300450,
+    0x000F005B, (s32)(void*)evt_eff, (s32)(void*)&float_0_80421d44, (s32)(void*)"stardust",
     0x00000002, 0xFE363C80, 0xFE363C81, 0xFE363C82,
     0x00000032, 0x00000032, 0x00000032, 0x00000064,
     0x00000000, 0x00000000, 0x00000000, 0x00000000,

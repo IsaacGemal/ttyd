@@ -17,7 +17,6 @@ extern const GXColor dat_8041e900;
 extern const f32 float_deg2rad_8041e904;
 extern const f32 float_6p2832_8041e908;
 extern const f32 float_360_8041e90c;
-extern const f32 float_0p1_8041e910;
 
 // .sbss2 scratch GXColor the original builds its TEV colour from.
 // .rodata integer-to-float conversion constant.
@@ -207,7 +206,7 @@ void effAkariSflushDisp(CameraId camId, void* param) {
 	effSetVtxDescN64((effVtxArray*)size16x16_tex32x32_vtx);
 
 	for (i = 0; i < data->field_0x30 + 1; i++) {
-		scaleVal = float_0p1_8041e910 * (f32)cos(float_6p2832_8041e908 *
+		scaleVal = 0.1f * (f32)cos(float_6p2832_8041e908 *
 		                                        (f32)(age * 8 + i * 180 / (data->field_0x30 + 1)) /
 		                                        float_360_8041e90c) +
 		           (f32)(i + 1);
@@ -241,4 +240,3 @@ const GXColor dat_8041e900 = { 0xFF, 0xFF, 0xFF, 0x00 };
 const f32 float_deg2rad_8041e904 = 0.017453292f;
 const f32 float_6p2832_8041e908 = 6.2831855f;
 const f32 float_360_8041e90c = 360.0f;
-const f32 float_0p1_8041e910 = 0.1f;

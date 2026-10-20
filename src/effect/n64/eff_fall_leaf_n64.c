@@ -74,8 +74,6 @@ extern const f32 float_0p05_8041edf8;
 extern const f32 float_0p92_8041edfc;
 extern const f32 float_10_8041ee00;
 extern const f32 float_0p5_8041ee04;
-extern const f32 float_0_8041ee08;
-
 
 const Vec vec3_802fa538 = { 0.0f, 0.0f, 0.0f };
 
@@ -142,12 +140,12 @@ EffectEntry* effFallLeafN64Entry(s32 type, s32 life, f32 x, f32 y, f32 z) {
 		case 4:
 			particle->x = (f32)(rand() % 50 - 25);
 			particle->y = (f32)(rand() % 50 - 25);
-			particle->z = float_0_8041ee08;
+			particle->z = 0.0f;
 			particle->rotZ = (f32)(rand() % 360);
 			particle->rotY = (f32)(rand() % 360);
 			particle->swayAngle = (f32)(rand() % 100) / float_10_8041ee00;
-			particle->velX = float_0_8041ee08;
-			particle->velY = float_0_8041ee08;
+			particle->velX = 0.0f;
+			particle->velY = 0.0f;
 			break;
 		case 1:
 			particle->x = (f32)(rand() % 10 - 5);
@@ -156,7 +154,7 @@ EffectEntry* effFallLeafN64Entry(s32 type, s32 life, f32 x, f32 y, f32 z) {
 			particle->rotZ = (f32)(rand() % 360);
 			particle->rotY = (f32)(rand() % 360);
 			particle->swayAngle = (f32)(rand() % 100) / float_10_8041ee00;
-			particle->velX = float_0_8041ee08;
+			particle->velX = 0.0f;
 			particle->velY = float_2_8041ede0;
 			break;
 		}
@@ -418,4 +416,3 @@ const f32 float_0p05_8041edf8 = 0.05f;
 const f32 float_0p92_8041edfc = 0.92f;
 const f32 float_10_8041ee00 = 10.0f;
 const f32 float_0p5_8041ee04 = 0.5f;
-const f32 float_0_8041ee08 = 0.0f;

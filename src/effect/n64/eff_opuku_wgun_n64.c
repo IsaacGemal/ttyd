@@ -11,8 +11,6 @@
 #include "math_ext.h"
 #include <dolphin/os/OSFastCast.h>
 
-// .rodata
-const Vec vec3_802fb2c0 = { 0.0f, 0.0f, 0.0f };
 // The compiler's int->float magic double (0x4330000080000000) and the "OpukuWgunN64"
 // string literal are pooled by the compiler, in .text order; defining them here
 // duplicates the pool (eff_opuku_wprotect_n64's recipe).
@@ -38,7 +36,7 @@ __declspec(section ".sdata") GXColor unk_804231e8;
 
 // Local copy of system.c's inline helper so it inlines here (as in eff_kemuri11.c).
 inline Vec initializeVec(Vec* input) {
-	Vec temp = vec3_802fb2c0;
+	Vec temp = (Vec){ 0.0f, 0.0f, 0.0f };
 	temp.x = input->x;
 	temp.y = input->y;
 	temp.z = input->z;
