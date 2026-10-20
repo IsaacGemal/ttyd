@@ -9142,3 +9142,28 @@ All renames are byte-identical. Open: the two `ENC(&info, s32, 0) = 0x400000` ha
 MUST_MATCH (writing `info.kind` in both arms lets MWCC if-convert to a select); `field_10C`, `field_170`,
 `field_184`, the flag bits 0x20/0x100000/0x20000000 and the `ENC(mario, NpcEntry*, 0x1D4)` MarioWork store stay
 as they are.
+### Readability: statuswindow and cam_road (2026-10-19, Claude Haiku 5.5, n9-q-statcam; reviewed by Claude Opus 5.5)
+
+StatusWindowWork (statuswindow.h) gets `flags` with a `StatusWindowFlag` enum (`STATUS_WIN_OPEN`/`CLOSED` wanted
+state, `OPENING`/`CLOSING` ramps waiting to start, `FORCE_OPEN`/`FORCE_CLOSE` holds and their `FORCE_*ING` ramps,
+`BADGES`, `DISP_OFF`), the open ramp (`animTime`, `animDuration`, `animSpeed`, `openAmount`, `openFrom`,
+`openTarget`), the icon origin lerped between `openX/Y` and `closedX/Y`, the displayed stat copies (`hp` through
+`maxAp`, 0x50-0x64), `marioPos`/`idleFrames`/`toggleCooldown`/`manualToggle` for the idle auto-open, and
+`blinkMask`/`changedMask`/`blinkTimer` with a `StatusWindowBlink` enum. statuswindow.c adds timing and clamp
+constants (`STATUS_WIN_IDLE_SECONDS`, `STATUS_WIN_BLINK_PERIOD`, `STATUS_WIN_MAX_COIN`...), `ICON_SP_BANNER` and
+the `STATUS_DT_*` alwaysDt indices. MUST_MATCH blocks only swap identifiers for the same loads (`*(f32*)wp->field_0x14`
+→ `wp->openFrom`); their `0x11`/`0xA`/`5` literals stay raw. cam_road: CamRoadState (`valid`, `onRoad`, `flags`,
+the raw inputs, `road`, `dir*`, `radius`, `yaw`, `roll`, `segment`, `shiftXRate`) and CamRoadWork (`blended`,
+`current`, `previous`, `hokanFrom`, the hokan blend fields, distance/side rates and weights, `cmp*W` compare
+weights, `mapKind` with `CAM_ROAD_MAP_101`/`OTHER`, the `noRoad*` and `cam*` input copies) now live in cam_road.h,
+so gor_02 get_camcurve reads `previous.valid`/`previous.road` and dou_05 cam_displacement writes `cmpDistW` instead
+of raw offsets. The duplicate CamRoadNode overlay is folded into CamRoadCurve; CamRoadMap gets `subs`, `lists`,
+`curvePts`, `verts`, `indices`; CollisionCurveData/CollisionCurveHit get segment ranges, point ranges, the hit
+`x/y/z`, normal and `segment`/`flags`, and `param` (0x00, interpolated from the curve points' .y channel, clamped to
+0..1 by calcCamRoad and otherwise unread). Index: statuswindow 424 → 104, cam_road 471 → 38 weighted.
+Open: CamRoadMap `unk_E8`, `unk_104`, `unk_108`, CamRoadWork `unk_204`/`unk_208`, the CamRoadCurve pads.
+Observations, not changed: calcCamRoad indexes `unk_104` as `CamRoadSub*` (0x68 stride) and then reads the record
+as CollisionCurveData's mode-1 fields at 0x60/0x64, so the 0x68 stride is real but the record is a curve-point
+range rather than a CamRoadSub; it wants its own type. statusWinMain calls `psndSFXOn((const char*)0x2A)` and
+`0x2B` with integer sound ids; psndSFXOn forwards the pointer to `__psndSFXOn` as an s32, and the cast pattern
+appears at about 200 sites repo-wide, so it reads as an id-or-name parameter typed too narrowly, not a statuswindow bug.
