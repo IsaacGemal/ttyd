@@ -716,19 +716,13 @@ void mobjMain(void) {
                     if ((entry->flags & MOBJ_FLAG_TRIGGER_KPA_LV3) && kpaGetHitobj() == (void*)hitObj && kpaGetLevel() == 3) {
                         v22 = 1;
                         entry->triggerFlag = MOBJ_FLAG_TRIGGER_KPA_LV3;
-                        goto apply;
-                    }
-                    if ((entry->flags & MOBJ_FLAG_TRIGGER_KPA_FLAME) && kpaGetHitFlame() == (void*)hitObj) {
+                    } else if ((entry->flags & MOBJ_FLAG_TRIGGER_KPA_FLAME) && kpaGetHitFlame() == (void*)hitObj) {
                         v22 = 1;
                         entry->triggerFlag = MOBJ_FLAG_TRIGGER_KPA_FLAME;
-                        goto apply;
-                    }
-                    if ((entry->flags & 0x80000) && mario->hitobjFront == (void*)hitObj) {
+                    } else if ((entry->flags & 0x80000) && mario->hitobjFront == (void*)hitObj) {
                         v22 = 1;
                         entry->triggerFlag = 0x80000;
-                        goto apply;
-                    }
-                    if ((entry->flags & MOBJ_FLAG_TRIGGER_STAND_ON) && mario->hitobjStandOn == hitObj) {
+                    } else if ((entry->flags & MOBJ_FLAG_TRIGGER_STAND_ON) && mario->hitobjStandOn == hitObj) {
                         v22 = 1;
                         entry->triggerFlag = MOBJ_FLAG_TRIGGER_STAND_ON;
                     }
@@ -768,18 +762,14 @@ void mobjMain(void) {
             mapEntry = &mapGetWork()->entries[0];
             mapGetBlend(&blend);
             mapGetBlend2(&blend2);
-            if ((mapEntry->flags & 2) && !(animPoseGetMaterialFlag(entry->poseId) & 0x800) && blend.a != 0xff) {
-                goto noShadow;
+            if (!((mapEntry->flags & 2) && !(animPoseGetMaterialFlag(entry->poseId) & 0x800) && blend.a != 0xff) &&
+                !((mapEntry->flags & 4) && !(animPoseGetMaterialFlag(entry->poseId) & 0x1000) && blend2.a != 0xff)) {
+                { f32 sz = float_10_8041a0cc * entry->scale.x; shadow = shadowEntry(entry->position.x, entry->position.y, entry->position.z, sz * entry->scale2.x / float_25_8041a0f0); }
+                if (entry->flags & MOBJ_FLAG_TRIGGER_HEAD) {
+                    shadowSetType(shadow, 1);
+                    { f32 ts = float_10_8041a0cc * entry->scale.x; shadowSetSize(shadow, ts * entry->scale2.x / float_20_8041a0f4); }
+                }
             }
-            if ((mapEntry->flags & 4) && !(animPoseGetMaterialFlag(entry->poseId) & 0x1000) && blend2.a != 0xff) {
-                goto noShadow;
-            }
-            { f32 sz = float_10_8041a0cc * entry->scale.x; shadow = shadowEntry(entry->position.x, entry->position.y, entry->position.z, sz * entry->scale2.x / float_25_8041a0f0); }
-            if (entry->flags & MOBJ_FLAG_TRIGGER_HEAD) {
-                shadowSetType(shadow, 1);
-                { f32 ts = float_10_8041a0cc * entry->scale.x; shadowSetSize(shadow, ts * entry->scale2.x / float_20_8041a0f4); }
-            }
-        noShadow:;
         }
 
         animPoseMain(entry->poseId);
