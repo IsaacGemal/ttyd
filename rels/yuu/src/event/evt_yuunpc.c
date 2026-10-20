@@ -1771,675 +1771,599 @@ void yuunpc_pose_minigame4_main(void) {
                 }
             }
         }
-        if (!(entry->flags & 2)) {
-            goto pose_sub;
-        }
-        if (yuunpc_yuuminigame4_ptr == NULL) {
-            continue;
-        }
-        if (entry->flags & 0x80) {
-            continue;
-        }
-        data = (Yuuminigame4Data*)((YuuminigameWork*)yuunpc_yuuminigame4_ptr)->data;
-        switch (entry->flags & 0x18) {
-        case 0:
-        case 0x18:
-            break;
-        case 8:
-            if (entry->field_50 == 0) {
-                entry->flags |= 0x18;
+        if (entry->flags & 2) {
+            if (yuunpc_yuuminigame4_ptr == NULL) {
+                continue;
             }
-            break;
-        case 0x10:
-            if (entry->field_50 == 0) {
-                entry->flags &= ~0x18;
-                entry->field_44 = 0.0f;
-                entry->field_4C = 0;
-                yuunpc_pose_change(entry, entry->field_56, 1.0f, (f32)rand() / 32767.0f);
-                entry->field_3C = 0.0f;
+            if (entry->flags & 0x80) {
+                continue;
             }
-            break;
-        }
-        n = entry->field_4C;
-        switch (n) {
-        case 0:
-        case 1:
-        case 2:
-            if (!(entry->flags & 0x20)) {
-                entry->field_4C = 3;
-                yuunpc_pose_change(entry, entry->field_5C, 0.0f, yuunpc_wp->poseEntries[entry->field_5C].field_20 / yuunpc_wp->poseEntries[entry->field_5C].field_1C);
-                entry->field_40 = 0.0f;
-            }
-            break;
-        case 3:
-        case 4:
-            if (entry->flags & 0x20) {
-                entry->field_4C = 0;
-                yuunpc_pose_change(entry, entry->field_56, 1.0f, (f32)rand() / 32767.0f);
-                entry->field_3C = 0.0f;
-            }
-            break;
-        }
-    height_switch:
-        n = entry->field_4C;
-        if (n == 3) {
-            goto flags_switch2;
-        }
-        if (n == 4) {
-            goto flags_switch2;
-        }
-        f0 = entry->field_24;
-        mode = 1;
-        h = (f0 < -1800.0f || f0 >= 1800.0f) ? 0
-            : yuunpc_wp->map[432 + (s32)((f0 - -1800.0f) / 50.0f)];
-        hh = h;
-        switch (h) {
-        case 0:
-        case 1:
-            *(Vec*)&entry->field_18 = *&entry->field_C;
-            if (entry->field_24 < 1500.0f) {
-                f32 d = entry->field_2C - entry->field_20;
-                if (d < 0.0f) {
-                    d = -d;
+            data = (Yuuminigame4Data*)((YuuminigameWork*)yuunpc_yuuminigame4_ptr)->data;
+            switch (entry->flags & 0x18) {
+            case 0:
+            case 0x18:
+                break;
+            case 8:
+                if (entry->field_50 == 0) {
+                    entry->flags |= 0x18;
                 }
-                if (d > 16.666666f) {
-                    entry->field_18 = (300.0f * (1.0f - d / 300.0f)) / 2.0f + entry->field_24;
+                break;
+            case 0x10:
+                if (entry->field_50 == 0) {
+                    entry->flags &= ~0x18;
+                    entry->field_44 = 0.0f;
+                    entry->field_4C = 0;
+                    yuunpc_pose_change(entry, entry->field_56, 1.0f, (f32)rand() / 32767.0f);
+                    entry->field_3C = 0.0f;
                 }
+                break;
             }
-            break;
-        case 24:
-        case 25:
-        case 26:
-        case 27:
-        case 28:
-            mode = 2;
-            hh -= 22;
-            /* fallthrough */
-        case 2:
-        case 3:
-        case 4:
-        case 5:
-        case 6:
-        {
-            f32 f1;
-            f32 t;
-            if (hh == 6) {
-                f1 = 0.0f;
-            } else {
-                f1 = 50.0f * (f32)(3 - (hh - 2));
-            }
-            t = 3600.0f + (f0 + f1);
-            f0 = f0 + f1;
-            n = (s32)(t / 50.0f) + 1;
-            entry->field_18 = 50.0f * (f32)n - 3600.0f;
-            {
-                f32 v = (f32)((s32)(entry->field_0 % 101) - 50) / 50.0f;
-                f1 = v * (10.0f + 50.0f * (f32)(mode - 1) / 2.0f);
-            }
-            {
-                f32 fp20;
-                if (entry->field_2C >= 0.0f) {
-                    fp20 = (150.0f - 50.0f * (f32)mode / 2.0f) + f1;
-                } else {
-                    fp20 = (-150.0f + 50.0f * (f32)mode / 2.0f) + f1;
+            n = entry->field_4C;
+            switch (n) {
+            case 0:
+            case 1:
+            case 2:
+                if (!(entry->flags & 0x20)) {
+                    entry->field_4C = 3;
+                    yuunpc_pose_change(entry, entry->field_5C, 0.0f, yuunpc_wp->poseEntries[entry->field_5C].field_20 / yuunpc_wp->poseEntries[entry->field_5C].field_1C);
+                    entry->field_40 = 0.0f;
                 }
-                entry->field_20 = fp20;
+                break;
+            case 3:
+            case 4:
+                if (entry->flags & 0x20) {
+                    entry->field_4C = 0;
+                    yuunpc_pose_change(entry, entry->field_56, 1.0f, (f32)rand() / 32767.0f);
+                    entry->field_3C = 0.0f;
+                }
+                break;
             }
-            entry->field_1C = entry->field_28;
-            break;
-        }
-        case 7:
-        case 8:
-        case 9:
-        case 10:
-        {
-            f32 t;
-            f32 f1;
-            f1 = 50.0f * (f32)(3 - (h - 7));
-            t = 3600.0f + (f0 + f1);
-            f0 = f0 + f1;
-            n = (s32)(t / 50.0f) + 1;
-            entry->field_18 = 50.0f * (f32)n - 3600.0f;
-            entry->field_20 = 0.65f * entry->field_C.z;
-            entry->field_1C = entry->field_28;
-            break;
-        }
-        case 11:
-        {
-            f32 t;
-            f0 = f0 + 50.0f;
-            t = 3600.0f + f0;
-            n = (s32)(t / 50.0f) + 1;
-            entry->field_18 = 50.0f * (f32)n - 3600.0f;
-            entry->field_20 = entry->field_2C;
-            entry->field_1C = entry->field_28;
-            break;
-        }
-        case 12:
-        case 13:
-        case 14:
-        case 15:
-        {
-            f32 t;
-            if (entry->field_0 & 3) {
-                n = 3 - (h - 12);
-                { f32 q = 50.0f * (f32)n; f0 = f0 + q; }
-                t = 3600.0f + f0;
-                n = (s32)(t / 50.0f) + 1;
-                entry->field_18 = 50.0f * (f32)n - 3600.0f;
-                { f32 vw = (f32)((s32)(entry->field_0 % 101) - 50) / 50.0f;
-                  f32 ww = 10.0f * vw;
-                  entry->field_20 = -(75.0f + ww); }
-                entry->field_1C = entry->field_28;
-            } else {
-                f0 = f0 + 50.0f;
-                t = 3600.0f + f0;
-                n = (s32)(t / 50.0f) + 1;
-                entry->field_18 = 50.0f * (f32)n - 3600.0f;
-                entry->field_20 = entry->field_2C;
-                entry->field_1C = entry->field_28;
-            }
-            break;
-        }
-        case 16:
-        case 17:
-        case 18:
-        case 19:
-        {
-            f32 t;
-            if (entry->field_0 & 3) {
-                n = 3 - (h - 16);
-                { f32 q = 50.0f * (f32)n; f0 = f0 + q; }
-                t = 3600.0f + f0;
-                n = (s32)(t / 50.0f) + 1;
-                entry->field_18 = 50.0f * (f32)n - 3600.0f;
-                { f32 vw = (f32)((s32)(entry->field_0 % 101) - 50) / 50.0f;
-                  f32 ww = 10.0f * vw;
-                  entry->field_20 = -25.0f + ww; }
-                entry->field_1C = entry->field_28;
-            } else {
-                f0 = f0 + 50.0f;
-                t = 3600.0f + f0;
-                n = (s32)(t / 50.0f) + 1;
-                entry->field_18 = 50.0f * (f32)n - 3600.0f;
-                entry->field_20 = entry->field_2C;
-                entry->field_1C = entry->field_28;
-            }
-            break;
-        }
-        case 20:
-        case 21:
-        case 22:
-        case 23:
-        {
-            f32 t;
-            if (entry->field_0 & 3) {
-                n = 3 - (h - 20);
-                { f32 q = 50.0f * (f32)n; f0 = f0 + q; }
-                t = 3600.0f + f0;
-                n = (s32)(t / 50.0f) + 1;
-                entry->field_18 = 50.0f * (f32)n - 3600.0f;
-                { f32 vw = (f32)((s32)(entry->field_0 % 101) - 50) / 50.0f;
-                  f32 ww = 10.0f * vw;
-                  entry->field_20 = 75.0f + ww; }
-                entry->field_1C = entry->field_28;
-            } else {
-                f0 = f0 + 50.0f;
-                t = 3600.0f + f0;
-                n = (s32)(t / 50.0f) + 1;
-                entry->field_18 = 50.0f * (f32)n - 3600.0f;
-                entry->field_20 = entry->field_2C;
-                entry->field_1C = entry->field_28;
-            }
-            break;
-        }
-        }
-    region5:
-        PSVECSubtract((Vec*)&entry->field_18, (Vec*)&entry->field_24, &entry->field_30);
-        entry->field_30.y = 0.0f;
-        PSVECNormalize(&entry->field_30, &entry->field_30);
-        f0 = 150.0f * entry->field_8;
-        switch (data->unk10) {
-        default:
-            f31 = 0.0f;
-            break;
-        case 1:
-        case 2:
-        case 3:
-        case 4:
-            switch (h) {
+            n = entry->field_4C;
+            if (n != 3 && n != 4) {
+                f0 = entry->field_24;
+                mode = 1;
+                h = (f0 < -1800.0f || f0 >= 1800.0f) ? 0
+                    : yuunpc_wp->map[432 + (s32)((f0 - -1800.0f) / 50.0f)];
+                hh = h;
+                switch (h) {
                 case 0:
-                case 2:
-                case 3:
-                case 4:
-                case 7:
-                case 8:
-                case 9:
-                case 12:
-                case 13:
-                case 14:
-                case 16:
-                case 17:
-                case 18:
-                case 20:
-                case 21:
-                case 22:
+                case 1:
+                    *(Vec*)&entry->field_18 = *&entry->field_C;
+                    if (entry->field_24 < 1500.0f) {
+                        f32 d = entry->field_2C - entry->field_20;
+                        if (d < 0.0f) {
+                            d = -d;
+                        }
+                        if (d > 16.666666f) {
+                            entry->field_18 = (300.0f * (1.0f - d / 300.0f)) / 2.0f + entry->field_24;
+                        }
+                    }
+                    break;
                 case 24:
                 case 25:
                 case 26:
-                {
-                    if (entry->field_2C >= -150.0f && entry->field_2C < 150.0f + f0) {
-                        f31 = (150.0f + f0) - entry->field_2C;
-                    } else {
-                        f31 = 0.0f;
-                    }
-                    break;
-                }
-                case 1:
-                case 10:
-                    f31 = 0.0f;
-                    break;
-                case 5:
-                case 6:
                 case 27:
                 case 28:
+                    mode = 2;
+                    hh -= 22;
+                    /* fallthrough */
+                case 2:
+                case 3:
+                case 4:
+                case 5:
+                case 6:
                 {
-                    f32 f2;
-                    f32 f3;
-                    if (entry->field_2C >= -150.0f && entry->field_2C < 150.0f) {
-                        f2 = 50.0f * (f32)mode;
-                        f3 = (-150.0f + f2) + f0;
-                        if (entry->field_2C >= f3 && entry->field_2C < 150.0f - f2) {
-                            f31 = 0.0f;
-                        } else if (entry->field_2C > 0.0f) {
-                            f31 = (150.0f + f0) - entry->field_2C;
-                        } else {
-                            f31 = f3 - entry->field_2C;
-                        }
+                    f32 f1;
+                    f32 t;
+                    if (hh == 6) {
+                        f1 = 0.0f;
                     } else {
-                        f31 = 0.0f;
+                        f1 = 50.0f * (f32)(3 - (hh - 2));
                     }
+                    t = 3600.0f + (f0 + f1);
+                    f0 = f0 + f1;
+                    n = (s32)(t / 50.0f) + 1;
+                    entry->field_18 = 50.0f * (f32)n - 3600.0f;
+                    {
+                        f32 v = (f32)((s32)(entry->field_0 % 101) - 50) / 50.0f;
+                        f1 = v * (10.0f + 50.0f * (f32)(mode - 1) / 2.0f);
+                    }
+                    {
+                        f32 fp20;
+                        if (entry->field_2C >= 0.0f) {
+                            fp20 = (150.0f - 50.0f * (f32)mode / 2.0f) + f1;
+                        } else {
+                            fp20 = (-150.0f + 50.0f * (f32)mode / 2.0f) + f1;
+                        }
+                        entry->field_20 = fp20;
+                    }
+                    entry->field_1C = entry->field_28;
+                    break;
+                }
+                case 7:
+                case 8:
+                case 9:
+                case 10:
+                {
+                    f32 t;
+                    f32 f1;
+                    f1 = 50.0f * (f32)(3 - (h - 7));
+                    t = 3600.0f + (f0 + f1);
+                    f0 = f0 + f1;
+                    n = (s32)(t / 50.0f) + 1;
+                    entry->field_18 = 50.0f * (f32)n - 3600.0f;
+                    entry->field_20 = 0.65f * entry->field_C.z;
+                    entry->field_1C = entry->field_28;
                     break;
                 }
                 case 11:
-                case 15:
-                case 19:
-                case 23:
+                {
+                    f32 t;
+                    f0 = f0 + 50.0f;
+                    t = 3600.0f + f0;
+                    n = (s32)(t / 50.0f) + 1;
+                    entry->field_18 = 50.0f * (f32)n - 3600.0f;
+                    entry->field_20 = entry->field_2C;
+                    entry->field_1C = entry->field_28;
                     break;
                 }
-            break;
-        case 5:
-        case 6:
-        case 7:
-        case 8:
-            switch (h) {
-                case 0:
-                case 2:
-                case 3:
-                case 4:
-                case 7:
-                case 8:
-                case 9:
                 case 12:
                 case 13:
                 case 14:
+                case 15:
+                {
+                    f32 t;
+                    if (entry->field_0 & 3) {
+                        n = 3 - (h - 12);
+                        { f32 q = 50.0f * (f32)n; f0 = f0 + q; }
+                        t = 3600.0f + f0;
+                        n = (s32)(t / 50.0f) + 1;
+                        entry->field_18 = 50.0f * (f32)n - 3600.0f;
+                        { f32 vw = (f32)((s32)(entry->field_0 % 101) - 50) / 50.0f;
+                          f32 ww = 10.0f * vw;
+                          entry->field_20 = -(75.0f + ww); }
+                        entry->field_1C = entry->field_28;
+                    } else {
+                        f0 = f0 + 50.0f;
+                        t = 3600.0f + f0;
+                        n = (s32)(t / 50.0f) + 1;
+                        entry->field_18 = 50.0f * (f32)n - 3600.0f;
+                        entry->field_20 = entry->field_2C;
+                        entry->field_1C = entry->field_28;
+                    }
+                    break;
+                }
                 case 16:
                 case 17:
                 case 18:
+                case 19:
+                {
+                    f32 t;
+                    if (entry->field_0 & 3) {
+                        n = 3 - (h - 16);
+                        { f32 q = 50.0f * (f32)n; f0 = f0 + q; }
+                        t = 3600.0f + f0;
+                        n = (s32)(t / 50.0f) + 1;
+                        entry->field_18 = 50.0f * (f32)n - 3600.0f;
+                        { f32 vw = (f32)((s32)(entry->field_0 % 101) - 50) / 50.0f;
+                          f32 ww = 10.0f * vw;
+                          entry->field_20 = -25.0f + ww; }
+                        entry->field_1C = entry->field_28;
+                    } else {
+                        f0 = f0 + 50.0f;
+                        t = 3600.0f + f0;
+                        n = (s32)(t / 50.0f) + 1;
+                        entry->field_18 = 50.0f * (f32)n - 3600.0f;
+                        entry->field_20 = entry->field_2C;
+                        entry->field_1C = entry->field_28;
+                    }
+                    break;
+                }
                 case 20:
                 case 21:
                 case 22:
-                case 24:
-                case 25:
-                case 26:
-                    {
-                        f32 f1 = -150.0f + f0;
-                        if (entry->field_2C >= f1 && entry->field_2C < 150.0f) {
-                            f31 = -f1 + entry->field_2C;
-                        } else {
-                            f31 = 0.0f;
-                        }
+                case 23:
+                {
+                    f32 t;
+                    if (entry->field_0 & 3) {
+                        n = 3 - (h - 20);
+                        { f32 q = 50.0f * (f32)n; f0 = f0 + q; }
+                        t = 3600.0f + f0;
+                        n = (s32)(t / 50.0f) + 1;
+                        entry->field_18 = 50.0f * (f32)n - 3600.0f;
+                        { f32 vw = (f32)((s32)(entry->field_0 % 101) - 50) / 50.0f;
+                          f32 ww = 10.0f * vw;
+                          entry->field_20 = 75.0f + ww; }
+                        entry->field_1C = entry->field_28;
+                    } else {
+                        f0 = f0 + 50.0f;
+                        t = 3600.0f + f0;
+                        n = (s32)(t / 50.0f) + 1;
+                        entry->field_18 = 50.0f * (f32)n - 3600.0f;
+                        entry->field_20 = entry->field_2C;
+                        entry->field_1C = entry->field_28;
                     }
                     break;
-                case 1:
-                case 10:
+                }
+                }
+                PSVECSubtract((Vec*)&entry->field_18, (Vec*)&entry->field_24, &entry->field_30);
+                entry->field_30.y = 0.0f;
+                PSVECNormalize(&entry->field_30, &entry->field_30);
+                f0 = 150.0f * entry->field_8;
+                switch (data->unk10) {
+                default:
                     f31 = 0.0f;
                     break;
-                case 5:
-                case 6:
-                case 27:
-                case 28:
-                {
-                    f32 f7 = -150.0f + f0;
-                    f32 f2;
-                    if (entry->field_2C >= f7 && entry->field_2C < 150.0f) {
-                        f2 = 50.0f * (f32)mode;
-                        if (entry->field_2C >= -150.0f + f2 && entry->field_2C < (150.0f - f2) + f0) {
-                            f31 = 0.0f;
-                        } else if (entry->field_2C > 0.0f) {
-                            f31 = entry->field_2C - ((150.0f - f2) + f0);
-                        } else {
-                            f31 = -f7 + entry->field_2C;
-                        }
-                    } else {
-                        f31 = 0.0f;
-                    }
-                    break;
-                }
-            }
-            break;
-        }
-        f31 -= 17.0f;
-        if (f31 < 0.0f) {
-            f31 = 0.0f;
-        }
-        n = (s32)(f31 / 0.0f);
-        switch (entry->flags & 0x18) {
-        case 8:
-        case 0x10:
-            break;
-        case 0:
-            if (data->unk10 == 0) {
-                n = 1;
-            } else {
-                switch (data->unk10) {
                 case 1:
-                case 5:
-                    if (n >= 0x3c) {
-                        n = n + 0x3c;
-                    } else {
-                        n = n + n;
-                    }
-                    break;
                 case 2:
-                case 6:
-                    if (n >= data->unk14) {
-                        n = n + data->unk14;
-                    } else {
-                        n = n + n;
-                    }
-                    break;
-                }
-                if (n < 0x1e) {
-                    n = 0;
-                } else {
-                    n = (s32)(f31 / 2.9166667f);
-                }
-            }
-            if (!(yuunpc_wp->flags & 1) && entry->field_C.x > entry->field_24 && n <= 0) {
-                entry->flags |= 8;
-                entry->field_50 = 0x1e;
-                entry->field_44 = pose->heading;
-                entry->field_4C = 0;
-                yuunpc_pose_change(entry, entry->field_56, 1.0f, (f32)rand() / 32767.0f);
-                entry->field_3C = 0.0f;
-                switch (entry->field_4) {
-                case 0:
-                case 2:
-                case 4:
-                    entry->field_8 = 2.0f * (0.25f * ((f32)rand() / 32767.0f)) + (-0.25f);
-                    break;
-                case 1:
                 case 3:
-                case 5:
-                    entry->field_8 = 2.0f * (0.25f * ((f32)rand() / 32767.0f)) + (-0.25f);
-                    break;
-                case -1:
-                case 6:
-                    entry->field_8 = 2.0f * (0.25f * ((f32)rand() / 32767.0f)) + (-0.25f);
-                    break;
-                default:
-                    entry->field_8 = 2.0f * (0.1f * ((f32)rand() / 32767.0f)) + (-0.1f);
-                    break;
-                }
-            }
-            break;
-        case 0x18:
-        {
-            s32 r3v;
-            if (n < 0x1e) {
-                r3v = 0;
-            } else {
-                n = 0x1e;
-                r3v = (s32)(f31 / 2.9166667f);
-            }
-            if (entry->field_C.x != entry->field_24 && data->unk10 != 0) {
-                if (data->unk10 == 4 || data->unk10 == 8) {
-                    if (n + r3v < data->unk14) {
-                        break;
-                    }
-                } else {
-                    break;
-                }
-            }
-            entry->flags &= ~0x8;
-            entry->field_50 = 0x1e;
-            switch (entry->field_4) {
-            case 0:
-            case 2:
-            case 4:
-                entry->field_8 = 2.0f * (0.25f * ((f32)rand() / 32767.0f)) + (-0.25f);
-                break;
-            case 1:
-            case 3:
-            case 5:
-                entry->field_8 = 2.0f * (0.25f * ((f32)rand() / 32767.0f)) + (-0.25f);
-                break;
-            case -1:
-            case 6:
-                entry->field_8 = 2.0f * (0.25f * ((f32)rand() / 32767.0f)) + (-0.25f);
-                break;
-            default:
-                entry->field_8 = 2.0f * (0.1f * ((f32)rand() / 32767.0f)) + (-0.1f);
-                break;
-            }
-            break;
-        }
-        }
-    flags_switch2:
-        switch (entry->flags & 0x18) {
-        case 0:
-            break;
-        case 8:
-        {
-            f32 v;
-            entry->field_50 -= 1;
-            pose->heading = (-450.0f) * (1.0f - (f32)entry->field_50 / 30.0f) + entry->field_44;
-            v = pose->heading + 3600.0f;
-            pose->heading = v - (f32)((s32)(v / 360.0f) * 360);
-            break;
-        }
-        case 0x18:
-        {
-            s32 r3v = (s32)gp->retraceCount + entry->field_0;
-            s32 r4v;
-            f32 v;
-            if (r3v & 0x20) {
-                r4v = 15 - (r3v & 0x1f);
-            } else {
-                r4v = (r3v & 0x1f) - 15;
-            }
-            pose->heading = 2.0f * (f32)r4v + (-450.0f + entry->field_44);
-            v = pose->heading + 3600.0f;
-            pose->heading = v - (f32)((s32)(v / 360.0f) * 360);
-            break;
-        }
-        case 0x10:
-        {
-            f32 v;
-            entry->field_50 -= 1;
-            pose->heading = (-450.0f) * (1.0f - (f32)entry->field_50 / 30.0f) + (-180.0f + (-450.0f + entry->field_44));
-            v = pose->heading + 3600.0f;
-            pose->heading = v - (f32)((s32)(v / 360.0f) * 360);
-            break;
-        }
-        default:
-            break;
-        }
-        entry->field_48 = 0.0f;
-        if (entry->field_24 < 1500.0f) {
-            f32 f3 = 0.0f;
-            switch (data->unk10) {
-            case 5:
-                break;
-            case 2:
-            case 3:
-            case 4:
-                switch (entry->flags & 0x18) {
-                case 0x18:
-                    f3 = 0.0f;
-                    break;
-                case 8:
-                case 0x10:
-                    f3 = 0.0f;
-                    break;
-                case 0:
-                    f3 = 2.9166667f;
-                    break;
-                }
-                break;
-            case 6:
-            case 7:
-            case 8:
-                switch (entry->flags & 0x18) {
-                case 0x18:
-                    f3 = -0.0f;
-                    break;
-                case 8:
-                case 0x10:
-                    f3 = -0.0f;
-                    break;
-                case 0:
-                    f3 = -2.9166667f;
-                    break;
-                }
-                break;
-            }
-            switch (data->unk10) {
-            case 2:
-            case 6:
-                f3 = f3 * (f32)(60 - data->unk14) / 60.0f;
-                break;
-            }
-            entry->field_48 = entry->field_48 + f3;
-        }
-        (void)n;
-        {
-            s32 st;
-            do {
-                mode = 0;
-                st = entry->field_4C;
-                switch (st) {
-                case 0: {
-                    s32 r0v;
-                    r0v = goalincheck((YuunpcMapWork*)entry);
-                    if (r0v == -1 || (yuunpc_wp->flags & 1) ||
-                        (entry->field_4 < 2 && !(entry->field_4 <= 1 && irand(0x24) == 0))) {
-                        break;
-                    }
-                    {
-                                                s32 h1, h2;
-                        h1 = ((25.0f + entry->field_24) < -1800.0f || (25.0f + entry->field_24) >= 1800.0f || entry->field_2C < -150.0f || entry->field_2C >= 150.0f) ? -500 : (s16)yuunpc_wp->map[(s32)(((25.0f + entry->field_24) - (-1800.0f)) / 50.0f) + 0x48 * (s32)((entry->field_2C - (-150.0f)) / 50.0f)];
-                        f27 = (f32)h1;
-                        h2 = ((75.0f + entry->field_24) < -1800.0f || (75.0f + entry->field_24) >= 1800.0f || entry->field_2C < -150.0f || entry->field_2C >= 150.0f) ? -500 : (s16)yuunpc_wp->map[(s32)(((75.0f + entry->field_24) - (-1800.0f)) / 50.0f) + 0x48 * (s32)((entry->field_2C - (-150.0f)) / 50.0f)];
-                        f28 = (f32)h2;
-                        if (entry->field_4 <= 3 && irand(2) != 0) {
-                            if (f27 >= entry->field_28) {
-                                entry->field_4C = 1;
-                                yuunpc_pose_change(entry, entry->field_58,
-                                    yuunpc_wp->poseEntries[entry->field_58].field_30,
-                                    (f32)rand() / 32767.0f);
-                                if (entry->flags & 0x18) {
-                                    entry->field_3C = 0.5f;
-                                } else {
-                                    entry->field_3C = 1.0f;
-                                }
-                                mode = 1;
-                            }
-                        } else {
-                            if ((entry->flags & 0x18) == 0) {
-                                goto bf30;
-                            }
-                            if ((entry->flags & 0x18) == 0) {
-                                break;
-                            }
-                            if (f27 >= entry->field_28) {
-                                goto bf30;
-                            }
-                            if (!(f27 < entry->field_28)) {
-                                break;
-                            }
-                            if (!(f28 < entry->field_28)) {
-                                break;
-                            }
-                        bf30:
-                            entry->field_4C = 2;
-                            yuunpc_pose_change(entry, entry->field_5A, 1.0f, (f32)rand() / 32767.0f);
-                            if (entry->flags & 0x18) {
-                                entry->field_3C = 1.0f;
+                case 4:
+                    switch (h) {
+                        case 0:
+                        case 2:
+                        case 3:
+                        case 4:
+                        case 7:
+                        case 8:
+                        case 9:
+                        case 12:
+                        case 13:
+                        case 14:
+                        case 16:
+                        case 17:
+                        case 18:
+                        case 20:
+                        case 21:
+                        case 22:
+                        case 24:
+                        case 25:
+                        case 26:
+                        {
+                            if (entry->field_2C >= -150.0f && entry->field_2C < 150.0f + f0) {
+                                f31 = (150.0f + f0) - entry->field_2C;
                             } else {
-                                entry->field_3C = 2.25f;
+                                f31 = 0.0f;
                             }
-                            mode = 1;
+                            break;
+                        }
+                        case 1:
+                        case 10:
+                            f31 = 0.0f;
+                            break;
+                        case 5:
+                        case 6:
+                        case 27:
+                        case 28:
+                        {
+                            f32 f2;
+                            f32 f3;
+                            if (entry->field_2C >= -150.0f && entry->field_2C < 150.0f) {
+                                f2 = 50.0f * (f32)mode;
+                                f3 = (-150.0f + f2) + f0;
+                                if (entry->field_2C >= f3 && entry->field_2C < 150.0f - f2) {
+                                    f31 = 0.0f;
+                                } else if (entry->field_2C > 0.0f) {
+                                    f31 = (150.0f + f0) - entry->field_2C;
+                                } else {
+                                    f31 = f3 - entry->field_2C;
+                                }
+                            } else {
+                                f31 = 0.0f;
+                            }
+                            break;
+                        }
+                        case 11:
+                        case 15:
+                        case 19:
+                        case 23:
+                            break;
+                        }
+                    break;
+                case 5:
+                case 6:
+                case 7:
+                case 8:
+                    switch (h) {
+                        case 0:
+                        case 2:
+                        case 3:
+                        case 4:
+                        case 7:
+                        case 8:
+                        case 9:
+                        case 12:
+                        case 13:
+                        case 14:
+                        case 16:
+                        case 17:
+                        case 18:
+                        case 20:
+                        case 21:
+                        case 22:
+                        case 24:
+                        case 25:
+                        case 26:
+                            {
+                                f32 f1 = -150.0f + f0;
+                                if (entry->field_2C >= f1 && entry->field_2C < 150.0f) {
+                                    f31 = -f1 + entry->field_2C;
+                                } else {
+                                    f31 = 0.0f;
+                                }
+                            }
+                            break;
+                        case 1:
+                        case 10:
+                            f31 = 0.0f;
+                            break;
+                        case 5:
+                        case 6:
+                        case 27:
+                        case 28:
+                        {
+                            f32 f7 = -150.0f + f0;
+                            f32 f2;
+                            if (entry->field_2C >= f7 && entry->field_2C < 150.0f) {
+                                f2 = 50.0f * (f32)mode;
+                                if (entry->field_2C >= -150.0f + f2 && entry->field_2C < (150.0f - f2) + f0) {
+                                    f31 = 0.0f;
+                                } else if (entry->field_2C > 0.0f) {
+                                    f31 = entry->field_2C - ((150.0f - f2) + f0);
+                                } else {
+                                    f31 = -f7 + entry->field_2C;
+                                }
+                            } else {
+                                f31 = 0.0f;
+                            }
+                            break;
                         }
                     }
-                } break;
-                case 1: {
-                    s32 r0v;
-                    Vec va1, va2;
-                    Vec vb1, vb2;
-                    s32 s1, s2, s3;
-                    r0v = goalincheck((YuunpcMapWork*)entry);
-                    if (r0v == -1) {
+                    break;
+                }
+                f31 -= 17.0f;
+                if (f31 < 0.0f) {
+                    f31 = 0.0f;
+                }
+                n = (s32)(f31 / 0.0f);
+                switch (entry->flags & 0x18) {
+                case 8:
+                case 0x10:
+                    break;
+                case 0:
+                    if (data->unk10 == 0) {
+                        n = 1;
+                    } else {
+                        switch (data->unk10) {
+                        case 1:
+                        case 5:
+                            if (n >= 0x3c) {
+                                n = n + 0x3c;
+                            } else {
+                                n = n + n;
+                            }
+                            break;
+                        case 2:
+                        case 6:
+                            if (n >= data->unk14) {
+                                n = n + data->unk14;
+                            } else {
+                                n = n + n;
+                            }
+                            break;
+                        }
+                        if (n < 0x1e) {
+                            n = 0;
+                        } else {
+                            n = (s32)(f31 / 2.9166667f);
+                        }
+                    }
+                    if (!(yuunpc_wp->flags & 1) && entry->field_C.x > entry->field_24 && n <= 0) {
+                        entry->flags |= 8;
+                        entry->field_50 = 0x1e;
+                        entry->field_44 = pose->heading;
                         entry->field_4C = 0;
                         yuunpc_pose_change(entry, entry->field_56, 1.0f, (f32)rand() / 32767.0f);
                         entry->field_3C = 0.0f;
-                        goto loop_test;
+                        switch (entry->field_4) {
+                        case 0:
+                        case 2:
+                        case 4:
+                            entry->field_8 = 2.0f * (0.25f * ((f32)rand() / 32767.0f)) + (-0.25f);
+                            break;
+                        case 1:
+                        case 3:
+                        case 5:
+                            entry->field_8 = 2.0f * (0.25f * ((f32)rand() / 32767.0f)) + (-0.25f);
+                            break;
+                        case -1:
+                        case 6:
+                            entry->field_8 = 2.0f * (0.25f * ((f32)rand() / 32767.0f)) + (-0.25f);
+                            break;
+                        default:
+                            entry->field_8 = 2.0f * (0.1f * ((f32)rand() / 32767.0f)) + (-0.1f);
+                            break;
+                        }
                     }
-                    if (entry->flags & 0x18) {
-                        PSVECSubtract((Vec*)&entry->field_18, (Vec*)&entry->field_24, &va1);
-                        PSVECNormalize(&va1, &va1);
-                        PSVECScale(&va1, &va2, 10.0f);
-                        { f32 hx = entry->field_24 + va2.x;
-                          oob = hx < -1800.0f || hx >= 1800.0f || entry->field_2C + va2.z < -150.0f || entry->field_2C + va2.z >= 150.0f;
-                          s1 = oob ? -500 : yuunpc_wp->map[(s32)((hx - (-1800.0f)) / 50.0f) + 0x48 * (s32)((entry->field_2C + va2.z - (-150.0f)) / 50.0f)]; }
-                        f28 = (f32)s1;
-                        PSVECScale(&va1, &va2, 25.0f);
-                        { f32 hx = entry->field_24 + va2.x;
-                          oob = hx < -1800.0f || hx >= 1800.0f || entry->field_2C + va2.z < -150.0f || entry->field_2C + va2.z >= 150.0f;
-                          s2 = oob ? -500 : yuunpc_wp->map[(s32)((hx - (-1800.0f)) / 50.0f) + 0x48 * (s32)((entry->field_2C + va2.z - (-150.0f)) / 50.0f)]; }
-                        f27 = (f32)s2;
-                        PSVECScale(&va1, &va2, 75.0f);
-                        { f32 hx = entry->field_24 + va2.x;
-                          oob = hx < -1800.0f || hx >= 1800.0f || entry->field_2C + va2.z < -150.0f || entry->field_2C + va2.z >= 150.0f;
-                          s3 = oob ? -500 : yuunpc_wp->map[(s32)((hx - (-1800.0f)) / 50.0f) + 0x48 * (s32)((entry->field_2C + va2.z - (-150.0f)) / 50.0f)]; }
-                        f0 = (f32)s3;
-                        if (f28 > entry->field_28) {
-                            entry->field_4C = 4;
-                            yuunpc_pose_change(entry, entry->field_5C, 0.0f, yuunpc_wp->poseEntries[entry->field_5C].field_20 / yuunpc_wp->poseEntries[entry->field_5C].field_1C);
-                            entry->field_40 = 6.5f;
-                            entry->field_30.x = 1.0f;
-                            entry->field_30.z = 0.0f;
-                            if ((r26 & 0x1f) == 0) {
-                                psndSFXOn_3D((const char*)0x8e0, (Vec*)&entry->field_24);
+                    break;
+                case 0x18:
+                {
+                    s32 r3v;
+                    if (n < 0x1e) {
+                        r3v = 0;
+                    } else {
+                        n = 0x1e;
+                        r3v = (s32)(f31 / 2.9166667f);
+                    }
+                    if (entry->field_C.x != entry->field_24 && data->unk10 != 0) {
+                        if (data->unk10 == 4 || data->unk10 == 8) {
+                            if (n + r3v < data->unk14) {
+                                break;
                             }
-                            r26++;
-                            goto cbec;
+                        } else {
+                            break;
                         }
-                        if (f27 < entry->field_28 && f0 == entry->field_28) {
-                            entry->field_4C = 0;
-                            yuunpc_pose_change(entry, entry->field_56, 1.0f, (f32)rand() / 32767.0f);
-                            entry->field_3C = 0.0f;
-                            goto cbec;
+                    }
+                    entry->flags &= ~0x8;
+                    entry->field_50 = 0x1e;
+                    switch (entry->field_4) {
+                    case 0:
+                    case 2:
+                    case 4:
+                        entry->field_8 = 2.0f * (0.25f * ((f32)rand() / 32767.0f)) + (-0.25f);
+                        break;
+                    case 1:
+                    case 3:
+                    case 5:
+                        entry->field_8 = 2.0f * (0.25f * ((f32)rand() / 32767.0f)) + (-0.25f);
+                        break;
+                    case -1:
+                    case 6:
+                        entry->field_8 = 2.0f * (0.25f * ((f32)rand() / 32767.0f)) + (-0.25f);
+                        break;
+                    default:
+                        entry->field_8 = 2.0f * (0.1f * ((f32)rand() / 32767.0f)) + (-0.1f);
+                        break;
+                    }
+                    break;
+                }
+                }
+            }
+            switch (entry->flags & 0x18) {
+            case 0:
+                break;
+            case 8:
+            {
+                f32 v;
+                entry->field_50 -= 1;
+                pose->heading = (-450.0f) * (1.0f - (f32)entry->field_50 / 30.0f) + entry->field_44;
+                v = pose->heading + 3600.0f;
+                pose->heading = v - (f32)((s32)(v / 360.0f) * 360);
+                break;
+            }
+            case 0x18:
+            {
+                s32 r3v = (s32)gp->retraceCount + entry->field_0;
+                s32 r4v;
+                f32 v;
+                if (r3v & 0x20) {
+                    r4v = 15 - (r3v & 0x1f);
+                } else {
+                    r4v = (r3v & 0x1f) - 15;
+                }
+                pose->heading = 2.0f * (f32)r4v + (-450.0f + entry->field_44);
+                v = pose->heading + 3600.0f;
+                pose->heading = v - (f32)((s32)(v / 360.0f) * 360);
+                break;
+            }
+            case 0x10:
+            {
+                f32 v;
+                entry->field_50 -= 1;
+                pose->heading = (-450.0f) * (1.0f - (f32)entry->field_50 / 30.0f) + (-180.0f + (-450.0f + entry->field_44));
+                v = pose->heading + 3600.0f;
+                pose->heading = v - (f32)((s32)(v / 360.0f) * 360);
+                break;
+            }
+            default:
+                break;
+            }
+            entry->field_48 = 0.0f;
+            if (entry->field_24 < 1500.0f) {
+                f32 f3 = 0.0f;
+                switch (data->unk10) {
+                case 5:
+                    break;
+                case 2:
+                case 3:
+                case 4:
+                    switch (entry->flags & 0x18) {
+                    case 0x18:
+                        f3 = 0.0f;
+                        break;
+                    case 8:
+                    case 0x10:
+                        f3 = 0.0f;
+                        break;
+                    case 0:
+                        f3 = 2.9166667f;
+                        break;
+                    }
+                    break;
+                case 6:
+                case 7:
+                case 8:
+                    switch (entry->flags & 0x18) {
+                    case 0x18:
+                        f3 = -0.0f;
+                        break;
+                    case 8:
+                    case 0x10:
+                        f3 = -0.0f;
+                        break;
+                    case 0:
+                        f3 = -2.9166667f;
+                        break;
+                    }
+                    break;
+                }
+                switch (data->unk10) {
+                case 2:
+                case 6:
+                    f3 = f3 * (f32)(60 - data->unk14) / 60.0f;
+                    break;
+                }
+                entry->field_48 = entry->field_48 + f3;
+            }
+            (void)n;
+            {
+                s32 st;
+                do {
+                    mode = 0;
+                    st = entry->field_4C;
+                    switch (st) {
+                    case 0: {
+                        s32 r0v;
+                        r0v = goalincheck((YuunpcMapWork*)entry);
+                        if (r0v == -1 || (yuunpc_wp->flags & 1) ||
+                            (entry->field_4 < 2 && !(entry->field_4 <= 1 && irand(0x24) == 0))) {
+                            break;
                         }
-                        if (irand(0x3c) == 0) {
-                            if (entry->field_4 <= 1 && irand(3) == 0) {
-                                entry->field_4C = 0;
-                                yuunpc_pose_change(entry, entry->field_56, 1.0f, (f32)rand() / 32767.0f);
-                                entry->field_3C = 0.0f;
-                                goto cbec;
-                            }
-                            if (f27 >= entry->field_28) {
+                        {
+                                                    s32 h1, h2;
+                            h1 = ((25.0f + entry->field_24) < -1800.0f || (25.0f + entry->field_24) >= 1800.0f || entry->field_2C < -150.0f || entry->field_2C >= 150.0f) ? -500 : (s16)yuunpc_wp->map[(s32)(((25.0f + entry->field_24) - (-1800.0f)) / 50.0f) + 0x48 * (s32)((entry->field_2C - (-150.0f)) / 50.0f)];
+                            f27 = (f32)h1;
+                            h2 = ((75.0f + entry->field_24) < -1800.0f || (75.0f + entry->field_24) >= 1800.0f || entry->field_2C < -150.0f || entry->field_2C >= 150.0f) ? -500 : (s16)yuunpc_wp->map[(s32)(((75.0f + entry->field_24) - (-1800.0f)) / 50.0f) + 0x48 * (s32)((entry->field_2C - (-150.0f)) / 50.0f)];
+                            f28 = (f32)h2;
+                            if (entry->field_4 <= 3 && irand(2) != 0) {
+                                if (f27 >= entry->field_28) {
+                                    entry->field_4C = 1;
+                                    yuunpc_pose_change(entry, entry->field_58,
+                                        yuunpc_wp->poseEntries[entry->field_58].field_30,
+                                        (f32)rand() / 32767.0f);
+                                    if (entry->flags & 0x18) {
+                                        entry->field_3C = 0.5f;
+                                    } else {
+                                        entry->field_3C = 1.0f;
+                                    }
+                                    mode = 1;
+                                }
+                            } else {
+                                if ((entry->flags & 0x18) == 0) {
+                                    goto bf30;
+                                }
+                                if ((entry->flags & 0x18) == 0) {
+                                    break;
+                                }
+                                if (f27 >= entry->field_28) {
+                                    goto bf30;
+                                }
+                                if (!(f27 < entry->field_28)) {
+                                    break;
+                                }
+                                if (!(f28 < entry->field_28)) {
+                                    break;
+                                }
+                            bf30:
                                 entry->field_4C = 2;
                                 yuunpc_pose_change(entry, entry->field_5A, 1.0f, (f32)rand() / 32767.0f);
                                 if (entry->flags & 0x18) {
@@ -2447,28 +2371,41 @@ void yuunpc_pose_minigame4_main(void) {
                                 } else {
                                     entry->field_3C = 2.25f;
                                 }
+                                mode = 1;
                             }
                         }
-                    } else {
-                        PSVECSubtract((Vec*)&entry->field_18, (Vec*)&entry->field_24, &vb1);
-                        PSVECNormalize(&vb1, &vb1);
-                        PSVECScale(&vb1, &vb2, 20.0f);
-                        { f32 hx = entry->field_24 + vb2.x;
-                          oob = hx < -1800.0f || hx >= 1800.0f || entry->field_2C + vb2.z < -150.0f || entry->field_2C + vb2.z >= 150.0f;
-                          s1 = oob ? -500 : yuunpc_wp->map[(s32)((hx - (-1800.0f)) / 50.0f) + 0x48 * (s32)((entry->field_2C + vb2.z - (-150.0f)) / 50.0f)]; }
-                        f28 = (f32)s1;
-                        PSVECScale(&vb1, &vb2, 25.0f);
-                        { f32 hx = entry->field_24 + vb2.x;
-                          oob = hx < -1800.0f || hx >= 1800.0f || entry->field_2C + vb2.z < -150.0f || entry->field_2C + vb2.z >= 150.0f;
-                          s2 = oob ? -500 : yuunpc_wp->map[(s32)((hx - (-1800.0f)) / 50.0f) + 0x48 * (s32)((entry->field_2C + vb2.z - (-150.0f)) / 50.0f)]; }
-                        f27 = (f32)s2;
-                        PSVECScale(&vb1, &vb2, 75.0f);
-                        { f32 hx = entry->field_24 + vb2.x;
-                          oob = hx < -1800.0f || hx >= 1800.0f || entry->field_2C + vb2.z < -150.0f || entry->field_2C + vb2.z >= 150.0f;
-                          s3 = oob ? -500 : yuunpc_wp->map[(s32)((hx - (-1800.0f)) / 50.0f) + 0x48 * (s32)((entry->field_2C + vb2.z - (-150.0f)) / 50.0f)]; }
-                        f0 = (f32)s3;
-                        if (f28 > entry->field_28) {
-                            if (data->unk10 == 0) {
+                    } break;
+                    case 1: {
+                        s32 r0v;
+                        Vec va1, va2;
+                        Vec vb1, vb2;
+                        s32 s1, s2, s3;
+                        r0v = goalincheck((YuunpcMapWork*)entry);
+                        if (r0v == -1) {
+                            entry->field_4C = 0;
+                            yuunpc_pose_change(entry, entry->field_56, 1.0f, (f32)rand() / 32767.0f);
+                            entry->field_3C = 0.0f;
+                            break;
+                        }
+                        if (entry->flags & 0x18) {
+                            PSVECSubtract((Vec*)&entry->field_18, (Vec*)&entry->field_24, &va1);
+                            PSVECNormalize(&va1, &va1);
+                            PSVECScale(&va1, &va2, 10.0f);
+                            { f32 hx = entry->field_24 + va2.x;
+                              oob = hx < -1800.0f || hx >= 1800.0f || entry->field_2C + va2.z < -150.0f || entry->field_2C + va2.z >= 150.0f;
+                              s1 = oob ? -500 : yuunpc_wp->map[(s32)((hx - (-1800.0f)) / 50.0f) + 0x48 * (s32)((entry->field_2C + va2.z - (-150.0f)) / 50.0f)]; }
+                            f28 = (f32)s1;
+                            PSVECScale(&va1, &va2, 25.0f);
+                            { f32 hx = entry->field_24 + va2.x;
+                              oob = hx < -1800.0f || hx >= 1800.0f || entry->field_2C + va2.z < -150.0f || entry->field_2C + va2.z >= 150.0f;
+                              s2 = oob ? -500 : yuunpc_wp->map[(s32)((hx - (-1800.0f)) / 50.0f) + 0x48 * (s32)((entry->field_2C + va2.z - (-150.0f)) / 50.0f)]; }
+                            f27 = (f32)s2;
+                            PSVECScale(&va1, &va2, 75.0f);
+                            { f32 hx = entry->field_24 + va2.x;
+                              oob = hx < -1800.0f || hx >= 1800.0f || entry->field_2C + va2.z < -150.0f || entry->field_2C + va2.z >= 150.0f;
+                              s3 = oob ? -500 : yuunpc_wp->map[(s32)((hx - (-1800.0f)) / 50.0f) + 0x48 * (s32)((entry->field_2C + va2.z - (-150.0f)) / 50.0f)]; }
+                            f0 = (f32)s3;
+                            if (f28 > entry->field_28) {
                                 entry->field_4C = 4;
                                 yuunpc_pose_change(entry, entry->field_5C, 0.0f, yuunpc_wp->poseEntries[entry->field_5C].field_20 / yuunpc_wp->poseEntries[entry->field_5C].field_1C);
                                 entry->field_40 = 6.5f;
@@ -2478,232 +2415,252 @@ void yuunpc_pose_minigame4_main(void) {
                                     psndSFXOn_3D((const char*)0x8e0, (Vec*)&entry->field_24);
                                 }
                                 r26++;
-                                goto cbec;
-                            } else {
+                            } else if (f27 < entry->field_28 && f0 == entry->field_28) {
                                 entry->field_4C = 0;
                                 yuunpc_pose_change(entry, entry->field_56, 1.0f, (f32)rand() / 32767.0f);
                                 entry->field_3C = 0.0f;
-                                goto cbec;
+                            } else if (irand(0x3c) == 0) {
+                                if (entry->field_4 <= 1 && irand(3) == 0) {
+                                    entry->field_4C = 0;
+                                    yuunpc_pose_change(entry, entry->field_56, 1.0f, (f32)rand() / 32767.0f);
+                                    entry->field_3C = 0.0f;
+                                } else if (f27 >= entry->field_28) {
+                                    entry->field_4C = 2;
+                                    yuunpc_pose_change(entry, entry->field_5A, 1.0f, (f32)rand() / 32767.0f);
+                                    if (entry->flags & 0x18) {
+                                        entry->field_3C = 1.0f;
+                                    } else {
+                                        entry->field_3C = 2.25f;
+                                    }
+                                }
+                            }
+                        } else {
+                            PSVECSubtract((Vec*)&entry->field_18, (Vec*)&entry->field_24, &vb1);
+                            PSVECNormalize(&vb1, &vb1);
+                            PSVECScale(&vb1, &vb2, 20.0f);
+                            { f32 hx = entry->field_24 + vb2.x;
+                              oob = hx < -1800.0f || hx >= 1800.0f || entry->field_2C + vb2.z < -150.0f || entry->field_2C + vb2.z >= 150.0f;
+                              s1 = oob ? -500 : yuunpc_wp->map[(s32)((hx - (-1800.0f)) / 50.0f) + 0x48 * (s32)((entry->field_2C + vb2.z - (-150.0f)) / 50.0f)]; }
+                            f28 = (f32)s1;
+                            PSVECScale(&vb1, &vb2, 25.0f);
+                            { f32 hx = entry->field_24 + vb2.x;
+                              oob = hx < -1800.0f || hx >= 1800.0f || entry->field_2C + vb2.z < -150.0f || entry->field_2C + vb2.z >= 150.0f;
+                              s2 = oob ? -500 : yuunpc_wp->map[(s32)((hx - (-1800.0f)) / 50.0f) + 0x48 * (s32)((entry->field_2C + vb2.z - (-150.0f)) / 50.0f)]; }
+                            f27 = (f32)s2;
+                            PSVECScale(&vb1, &vb2, 75.0f);
+                            { f32 hx = entry->field_24 + vb2.x;
+                              oob = hx < -1800.0f || hx >= 1800.0f || entry->field_2C + vb2.z < -150.0f || entry->field_2C + vb2.z >= 150.0f;
+                              s3 = oob ? -500 : yuunpc_wp->map[(s32)((hx - (-1800.0f)) / 50.0f) + 0x48 * (s32)((entry->field_2C + vb2.z - (-150.0f)) / 50.0f)]; }
+                            f0 = (f32)s3;
+                            if (f28 > entry->field_28) {
+                                if (data->unk10 == 0) {
+                                    entry->field_4C = 4;
+                                    yuunpc_pose_change(entry, entry->field_5C, 0.0f, yuunpc_wp->poseEntries[entry->field_5C].field_20 / yuunpc_wp->poseEntries[entry->field_5C].field_1C);
+                                    entry->field_40 = 6.5f;
+                                    entry->field_30.x = 1.0f;
+                                    entry->field_30.z = 0.0f;
+                                    if ((r26 & 0x1f) == 0) {
+                                        psndSFXOn_3D((const char*)0x8e0, (Vec*)&entry->field_24);
+                                    }
+                                    r26++;
+                                } else {
+                                    entry->field_4C = 0;
+                                    yuunpc_pose_change(entry, entry->field_56, 1.0f, (f32)rand() / 32767.0f);
+                                    entry->field_3C = 0.0f;
+                                }
+                            } else if ((f27 < entry->field_28 && f0 == entry->field_28) || (entry->field_4 <= 3 && irand(0x3c) == 0)) {
+                                if (entry->field_4 <= 1 && irand(3) == 0) {
+                                    entry->field_4C = 0;
+                                    yuunpc_pose_change(entry, entry->field_56, 1.0f, (f32)rand() / 32767.0f);
+                                    entry->field_3C = 0.0f;
+                                } else {
+                                    entry->field_4C = 2;
+                                    yuunpc_pose_change(entry, entry->field_5A, 1.0f, (f32)rand() / 32767.0f);
+                                    if (entry->flags & 0x18) {
+                                        entry->field_3C = 1.0f;
+                                    } else {
+                                        entry->field_3C = 2.25f;
+                                    }
+                                }
                             }
                         }
-                        if (!(f27 < entry->field_28 && f0 == entry->field_28)) {
-                            if (!(entry->field_4 <= 3 && irand(0x3c) == 0)) {
-                                goto cbec;
+                        if ((r28 & 0x3f) == 0) {
+                            s32 t = (s32)gp->retraceCount + i;
+                            if ((t & 0xf) == 0) {
+                                if (t & 0x10) {
+                                    psndSFXOn_3D((const char*)0x8de, (Vec*)&entry->field_24);
+                                } else {
+                                    psndSFXOn_3D((const char*)0x8df, (Vec*)&entry->field_24);
+                                }
                             }
                         }
-                        if (entry->field_4 <= 1 && irand(3) == 0) {
+                        r28++;
+                    } break;
+                    case 2: {
+                        s32 r0v;
+                        Vec wa1, wa2;
+                        Vec wb1, wb2;
+                        s32 s1, s2, s3;
+                        r0v = goalincheck((YuunpcMapWork*)entry);
+                        if (r0v == -1) {
                             entry->field_4C = 0;
                             yuunpc_pose_change(entry, entry->field_56, 1.0f, (f32)rand() / 32767.0f);
                             entry->field_3C = 0.0f;
-                            goto cbec;
+                            break;
                         }
-                        entry->field_4C = 2;
-                        yuunpc_pose_change(entry, entry->field_5A, 1.0f, (f32)rand() / 32767.0f);
                         if (entry->flags & 0x18) {
-                            entry->field_3C = 1.0f;
-                        } else {
-                            entry->field_3C = 2.25f;
-                        }
-                    }
-                cbec:
-                    if ((r28 & 0x3f) == 0) {
-                        s32 t = (s32)gp->retraceCount + i;
-                        if ((t & 0xf) == 0) {
-                            if (t & 0x10) {
-                                psndSFXOn_3D((const char*)0x8de, (Vec*)&entry->field_24);
-                            } else {
-                                psndSFXOn_3D((const char*)0x8df, (Vec*)&entry->field_24);
-                            }
-                        }
-                    }
-                    r28++;
-                } break;
-                case 2: {
-                    s32 r0v;
-                    Vec wa1, wa2;
-                    Vec wb1, wb2;
-                    s32 s1, s2, s3;
-                    r0v = goalincheck((YuunpcMapWork*)entry);
-                    if (r0v == -1) {
-                        entry->field_4C = 0;
-                        yuunpc_pose_change(entry, entry->field_56, 1.0f, (f32)rand() / 32767.0f);
-                        entry->field_3C = 0.0f;
-                        goto loop_test;
-                    }
-                    if (entry->flags & 0x18) {
-                        PSVECSubtract((Vec*)&entry->field_18, (Vec*)&entry->field_24, &wa1);
-                        PSVECNormalize(&wa1, &wa1);
-                        PSVECScale(&wa1, &wa2, 20.0f);
-                        { f32 hx = entry->field_24 + wa2.x;
-                          oob = hx < -1800.0f || hx >= 1800.0f || entry->field_2C + wa2.z < -150.0f || entry->field_2C + wa2.z >= 150.0f;
-                          s1 = oob ? -500 : yuunpc_wp->map[(s32)((hx - (-1800.0f)) / 50.0f) + 0x48 * (s32)((entry->field_2C + wa2.z - (-150.0f)) / 50.0f)]; }
-                        f28 = (f32)s1;
-                        PSVECScale(&wa1, &wa2, 25.0f);
-                        { f32 hx = entry->field_24 + wa2.x;
-                          oob = hx < -1800.0f || hx >= 1800.0f || entry->field_2C + wa2.z < -150.0f || entry->field_2C + wa2.z >= 150.0f;
-                          s2 = oob ? -500 : yuunpc_wp->map[(s32)((hx - (-1800.0f)) / 50.0f) + 0x48 * (s32)((entry->field_2C + wa2.z - (-150.0f)) / 50.0f)]; }
-                        f27 = (f32)s2;
-                        PSVECScale(&wa1, &wa2, 75.0f);
-                        { f32 hx = entry->field_24 + wa2.x;
-                          oob = hx < -1800.0f || hx >= 1800.0f || entry->field_2C + wa2.z < -150.0f || entry->field_2C + wa2.z >= 150.0f;
-                          s3 = oob ? -500 : yuunpc_wp->map[(s32)((hx - (-1800.0f)) / 50.0f) + 0x48 * (s32)((entry->field_2C + wa2.z - (-150.0f)) / 50.0f)]; }
-                        f0 = (f32)s3;
-                        if (f28 > entry->field_28) {
-                            entry->field_4C = 4;
-                            yuunpc_pose_change(entry, entry->field_5C, 0.0f, yuunpc_wp->poseEntries[entry->field_5C].field_20 / yuunpc_wp->poseEntries[entry->field_5C].field_1C);
-                            entry->field_40 = 6.5f;
-                            entry->field_30.x = 1.0f;
-                            entry->field_30.z = 0.0f;
-                            if ((r26 & 0x1f) == 0) {
-                                psndSFXOn_3D((const char*)0x8e0, (Vec*)&entry->field_24);
-                            }
-                            r26++;
-                            goto cbec2;
-                        }
-                        if (f27 < entry->field_28 && f0 == entry->field_28) {
-                            entry->field_4C = 0;
-                            yuunpc_pose_change(entry, entry->field_56, 1.0f, (f32)rand() / 32767.0f);
-                            entry->field_3C = 0.0f;
-                            goto cbec2;
-                        }
-                        if (entry->field_4 <= 3 && irand(0x3c) == 0) {
-                            if (entry->field_4 <= 1) {
-                                if (irand(3) == 0) {
+                            PSVECSubtract((Vec*)&entry->field_18, (Vec*)&entry->field_24, &wa1);
+                            PSVECNormalize(&wa1, &wa1);
+                            PSVECScale(&wa1, &wa2, 20.0f);
+                            { f32 hx = entry->field_24 + wa2.x;
+                              oob = hx < -1800.0f || hx >= 1800.0f || entry->field_2C + wa2.z < -150.0f || entry->field_2C + wa2.z >= 150.0f;
+                              s1 = oob ? -500 : yuunpc_wp->map[(s32)((hx - (-1800.0f)) / 50.0f) + 0x48 * (s32)((entry->field_2C + wa2.z - (-150.0f)) / 50.0f)]; }
+                            f28 = (f32)s1;
+                            PSVECScale(&wa1, &wa2, 25.0f);
+                            { f32 hx = entry->field_24 + wa2.x;
+                              oob = hx < -1800.0f || hx >= 1800.0f || entry->field_2C + wa2.z < -150.0f || entry->field_2C + wa2.z >= 150.0f;
+                              s2 = oob ? -500 : yuunpc_wp->map[(s32)((hx - (-1800.0f)) / 50.0f) + 0x48 * (s32)((entry->field_2C + wa2.z - (-150.0f)) / 50.0f)]; }
+                            f27 = (f32)s2;
+                            PSVECScale(&wa1, &wa2, 75.0f);
+                            { f32 hx = entry->field_24 + wa2.x;
+                              oob = hx < -1800.0f || hx >= 1800.0f || entry->field_2C + wa2.z < -150.0f || entry->field_2C + wa2.z >= 150.0f;
+                              s3 = oob ? -500 : yuunpc_wp->map[(s32)((hx - (-1800.0f)) / 50.0f) + 0x48 * (s32)((entry->field_2C + wa2.z - (-150.0f)) / 50.0f)]; }
+                            f0 = (f32)s3;
+                            if (f28 > entry->field_28) {
+                                entry->field_4C = 4;
+                                yuunpc_pose_change(entry, entry->field_5C, 0.0f, yuunpc_wp->poseEntries[entry->field_5C].field_20 / yuunpc_wp->poseEntries[entry->field_5C].field_1C);
+                                entry->field_40 = 6.5f;
+                                entry->field_30.x = 1.0f;
+                                entry->field_30.z = 0.0f;
+                                if ((r26 & 0x1f) == 0) {
+                                    psndSFXOn_3D((const char*)0x8e0, (Vec*)&entry->field_24);
+                                }
+                                r26++;
+                            } else if (f27 < entry->field_28 && f0 == entry->field_28) {
+                                entry->field_4C = 0;
+                                yuunpc_pose_change(entry, entry->field_56, 1.0f, (f32)rand() / 32767.0f);
+                                entry->field_3C = 0.0f;
+                            } else if (entry->field_4 <= 3 && irand(0x3c) == 0) {
+                                if (entry->field_4 <= 1 && irand(3) == 0) {
                                     entry->field_4C = 0;
                                     yuunpc_pose_change(entry, entry->field_56, 1.0f, (f32)rand() / 32767.0f);
                                     entry->field_3C = 0.0f;
-                                    goto cbec2;
+                                } else if (f27 >= entry->field_28) {
+                                    entry->field_4C = 1;
+                                    yuunpc_pose_change(entry, entry->field_58, yuunpc_wp->poseEntries[entry->field_58].field_30, (f32)rand() / 32767.0f);
+                                    if (entry->flags & 0x18) {
+                                        entry->field_3C = 0.5f;
+                                    } else {
+                                        entry->field_3C = 1.0f;
+                                    }
                                 }
                             }
-                            if (f27 >= entry->field_28) {
-                                entry->field_4C = 1;
-                                yuunpc_pose_change(entry, entry->field_58, yuunpc_wp->poseEntries[entry->field_58].field_30, (f32)rand() / 32767.0f);
-                                if (entry->flags & 0x18) {
-                                    entry->field_3C = 0.5f;
-                                } else {
-                                    entry->field_3C = 1.0f;
-                                }
-                            }
-                        }
-                    } else {
-                        PSVECSubtract((Vec*)&entry->field_18, (Vec*)&entry->field_24, &wb1);
-                        PSVECNormalize(&wb1, &wb1);
-                        PSVECScale(&wb1, &wb2, 5.0f);
-                        { f32 hx = entry->field_24 + wb2.x;
-                          oob = hx < -1800.0f || hx >= 1800.0f || entry->field_2C + wb2.z < -150.0f || entry->field_2C + wb2.z >= 150.0f;
-                          s1 = oob ? -500 : yuunpc_wp->map[(s32)((hx - (-1800.0f)) / 50.0f) + 0x48 * (s32)((entry->field_2C + wb2.z - (-150.0f)) / 50.0f)]; }
-                        f28 = (f32)s1;
-                        PSVECScale(&wb1, &wb2, 45.0f);
-                        { f32 hx = entry->field_24 + wb2.x;
-                          oob = hx < -1800.0f || hx >= 1800.0f || entry->field_2C + wb2.z < -150.0f || entry->field_2C + wb2.z >= 150.0f;
-                          s2 = oob ? -500 : yuunpc_wp->map[(s32)((hx - (-1800.0f)) / 50.0f) + 0x48 * (s32)((entry->field_2C + wb2.z - (-150.0f)) / 50.0f)]; }
-                        f27 = (f32)s2;
-                        PSVECScale(&wb1, &wb2, 55.0f);
-                        { f32 hx = entry->field_24 + wb2.x;
-                          oob = hx < -1800.0f || hx >= 1800.0f || entry->field_2C + wb2.z < -150.0f || entry->field_2C + wb2.z >= 150.0f;
-                          s3 = oob ? -500 : yuunpc_wp->map[(s32)((hx - (-1800.0f)) / 50.0f) + 0x48 * (s32)((entry->field_2C + wb2.z - (-150.0f)) / 50.0f)]; }
-                        f0 = (f32)s3;
-                        if (f28 < entry->field_28) {
-                            if (f0 == entry->field_28) {
-                                goto d670;
-                            }
-                        }
-                        if (!(f27 > entry->field_28)) goto d764;
-                    d670:
-                        if (data->unk10 == 0) {
-                            entry->field_4C = 4;
-                            yuunpc_pose_change(entry, entry->field_5C, 0.0f, yuunpc_wp->poseEntries[entry->field_5C].field_20 / yuunpc_wp->poseEntries[entry->field_5C].field_1C);
-                            entry->field_40 = 6.5f;
-                            entry->field_30.x = 1.0f;
-                            entry->field_30.z = 0.0f;
-                            if ((r26 & 0x1f) == 0) {
-                                psndSFXOn_3D((const char*)0x8e0, (Vec*)&entry->field_24);
-                            }
-                            r26++;
-                            goto cbec2;
                         } else {
-                            entry->field_4C = 0;
-                            yuunpc_pose_change(entry, entry->field_56, 1.0f, (f32)rand() / 32767.0f);
-                            entry->field_3C = 0.0f;
-                            goto cbec2;
-                        }
-                    d764:
-                        if (entry->field_4 <= 3 && irand(0x3c) == 0) {
-                            if (entry->field_4 <= 1) {
-                                if (irand(3) == 0) {
+                            PSVECSubtract((Vec*)&entry->field_18, (Vec*)&entry->field_24, &wb1);
+                            PSVECNormalize(&wb1, &wb1);
+                            PSVECScale(&wb1, &wb2, 5.0f);
+                            { f32 hx = entry->field_24 + wb2.x;
+                              oob = hx < -1800.0f || hx >= 1800.0f || entry->field_2C + wb2.z < -150.0f || entry->field_2C + wb2.z >= 150.0f;
+                              s1 = oob ? -500 : yuunpc_wp->map[(s32)((hx - (-1800.0f)) / 50.0f) + 0x48 * (s32)((entry->field_2C + wb2.z - (-150.0f)) / 50.0f)]; }
+                            f28 = (f32)s1;
+                            PSVECScale(&wb1, &wb2, 45.0f);
+                            { f32 hx = entry->field_24 + wb2.x;
+                              oob = hx < -1800.0f || hx >= 1800.0f || entry->field_2C + wb2.z < -150.0f || entry->field_2C + wb2.z >= 150.0f;
+                              s2 = oob ? -500 : yuunpc_wp->map[(s32)((hx - (-1800.0f)) / 50.0f) + 0x48 * (s32)((entry->field_2C + wb2.z - (-150.0f)) / 50.0f)]; }
+                            f27 = (f32)s2;
+                            PSVECScale(&wb1, &wb2, 55.0f);
+                            { f32 hx = entry->field_24 + wb2.x;
+                              oob = hx < -1800.0f || hx >= 1800.0f || entry->field_2C + wb2.z < -150.0f || entry->field_2C + wb2.z >= 150.0f;
+                              s3 = oob ? -500 : yuunpc_wp->map[(s32)((hx - (-1800.0f)) / 50.0f) + 0x48 * (s32)((entry->field_2C + wb2.z - (-150.0f)) / 50.0f)]; }
+                            f0 = (f32)s3;
+                            if ((f28 < entry->field_28 && f0 == entry->field_28) || f27 > entry->field_28) {
+                                if (data->unk10 == 0) {
+                                    entry->field_4C = 4;
+                                    yuunpc_pose_change(entry, entry->field_5C, 0.0f, yuunpc_wp->poseEntries[entry->field_5C].field_20 / yuunpc_wp->poseEntries[entry->field_5C].field_1C);
+                                    entry->field_40 = 6.5f;
+                                    entry->field_30.x = 1.0f;
+                                    entry->field_30.z = 0.0f;
+                                    if ((r26 & 0x1f) == 0) {
+                                        psndSFXOn_3D((const char*)0x8e0, (Vec*)&entry->field_24);
+                                    }
+                                    r26++;
+                                } else {
                                     entry->field_4C = 0;
                                     yuunpc_pose_change(entry, entry->field_56, 1.0f, (f32)rand() / 32767.0f);
                                     entry->field_3C = 0.0f;
-                                    goto cbec2;
                                 }
-                            }
-                            { f32 hx = 25.0f + entry->field_24;
-                              oob = hx < -1800.0f || hx >= 1800.0f || entry->field_2C < -150.0f || entry->field_2C >= 150.0f;
-                              s1 = oob ? -500 : yuunpc_wp->map[(s32)((hx - (-1800.0f)) / 50.0f) + 0x48 * (s32)((entry->field_2C - (-150.0f)) / 50.0f)]; }
-                            f0 = (f32)s1;
-                            if (f0 >= entry->field_28) {
-                                entry->field_4C = 1;
-                                yuunpc_pose_change(entry, entry->field_58, yuunpc_wp->poseEntries[entry->field_58].field_30, (f32)rand() / 32767.0f);
-                                if (entry->flags & 0x18) {
-                                    entry->field_3C = 0.5f;
+                            } else if (entry->field_4 <= 3 && irand(0x3c) == 0) {
+                                if (entry->field_4 <= 1 && irand(3) == 0) {
+                                    entry->field_4C = 0;
+                                    yuunpc_pose_change(entry, entry->field_56, 1.0f, (f32)rand() / 32767.0f);
+                                    entry->field_3C = 0.0f;
                                 } else {
-                                    entry->field_3C = 1.0f;
+                                    { f32 hx = 25.0f + entry->field_24;
+                                      oob = hx < -1800.0f || hx >= 1800.0f || entry->field_2C < -150.0f || entry->field_2C >= 150.0f;
+                                      s1 = oob ? -500 : yuunpc_wp->map[(s32)((hx - (-1800.0f)) / 50.0f) + 0x48 * (s32)((entry->field_2C - (-150.0f)) / 50.0f)]; }
+                                    f0 = (f32)s1;
+                                    if (f0 >= entry->field_28) {
+                                        entry->field_4C = 1;
+                                        yuunpc_pose_change(entry, entry->field_58, yuunpc_wp->poseEntries[entry->field_58].field_30, (f32)rand() / 32767.0f);
+                                        if (entry->flags & 0x18) {
+                                            entry->field_3C = 0.5f;
+                                        } else {
+                                            entry->field_3C = 1.0f;
+                                        }
+                                    }
                                 }
                             }
                         }
-                    }
-                cbec2:
-                    if ((r27 & 0x3f) == 0) {
-                        s32 t = (s32)gp->retraceCount + i;
-                        if ((t & 0x7) == 0) {
-                            if (t & 0x8) {
-                                psndSFXOn_3D((const char*)0x8de, (Vec*)&entry->field_24);
-                            } else {
-                                psndSFXOn_3D((const char*)0x8df, (Vec*)&entry->field_24);
+                        if ((r27 & 0x3f) == 0) {
+                            s32 t = (s32)gp->retraceCount + i;
+                            if ((t & 0x7) == 0) {
+                                if (t & 0x8) {
+                                    psndSFXOn_3D((const char*)0x8de, (Vec*)&entry->field_24);
+                                } else {
+                                    psndSFXOn_3D((const char*)0x8df, (Vec*)&entry->field_24);
+                                }
                             }
                         }
+                        r27++;
                     }
-                    r27++;
+                case 3:
+                case 4:
+                    break;
                 }
+                } while (mode);
+            }
+            n = entry->field_4C;
+            switch (n) {
+            case 0:
+            case 1:
+            case 2:
+                if (hitcheck((YuunpcMapWork*)entry) == -1) {
+                    entry->flags &= ~0x20;
+                } else {
+                    entry->flags |= 0x20;
+                }
+                break;
             case 3:
             case 4:
+                hitcheck((YuunpcMapWork*)entry);
+                if (fallcheck((YuunpcMapWork*)entry) == -1) {
+                    entry->flags |= 0x20;
+                } else {
+                    entry->flags &= ~0x20;
+                }
+                if (entry->field_28 <= -100.0f) {
+                    entry->flags |= 0x40;
+                }
+                if (entry->field_28 <= -500.0f) {
+                    entry->flags |= 0x80;
+                    pose->flags &= ~EXT_POSE_VISIBLE;
+                }
                 break;
             }
-            loop_test:;
-            } while (mode);
+            ((MtxPtr)pose->matrix)[0][3] = entry->field_24;
+            ((MtxPtr)pose->matrix)[1][3] = entry->field_28;
+            ((MtxPtr)pose->matrix)[2][3] = entry->field_2C;
         }
-        n = entry->field_4C;
-        switch (n) {
-        case 0:
-        case 1:
-        case 2:
-            if (hitcheck((YuunpcMapWork*)entry) == -1) {
-                entry->flags &= ~0x20;
-            } else {
-                entry->flags |= 0x20;
-            }
-            break;
-        case 3:
-        case 4:
-            hitcheck((YuunpcMapWork*)entry);
-            if (fallcheck((YuunpcMapWork*)entry) == -1) {
-                entry->flags |= 0x20;
-            } else {
-                entry->flags &= ~0x20;
-            }
-            if (entry->field_28 <= -100.0f) {
-                entry->flags |= 0x40;
-            }
-            if (entry->field_28 <= -500.0f) {
-                entry->flags |= 0x80;
-                pose->flags &= ~EXT_POSE_VISIBLE;
-            }
-            break;
-        }
-        ((MtxPtr)pose->matrix)[0][3] = entry->field_24;
-        ((MtxPtr)pose->matrix)[1][3] = entry->field_28;
-        ((MtxPtr)pose->matrix)[2][3] = entry->field_2C;
-    pose_sub:
         yuunpc_pose_sub(pose, entry);
     }
 }
