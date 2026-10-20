@@ -270,9 +270,9 @@ void cloud_use(PartyEntry* party) {
         party->flags &= ~(1 << 8);
 
         if (party->useStruct != NULL) {
-            if (*(u32*)((u8*)party->useStruct + 0x34) != 0xFFFFFFFFu) {
-                psndSFXOff(*(s32*)((u8*)party->useStruct + 0x34));
-                *(u32*)((u8*)party->useStruct + 0x34) = 0xFFFFFFFFu;
+            if (((PartyCloud*)party->useStruct)->sfxId != 0xFFFFFFFFu) {
+                psndSFXOff(((PartyCloud*)party->useStruct)->sfxId);
+                ((PartyCloud*)party->useStruct)->sfxId = 0xFFFFFFFFu;
             }
         }
 
@@ -360,17 +360,17 @@ void N__cloud_use(PartyEntry* party) {
         party->useStruct = __memAlloc(HEAP_DEFAULT, 0x48);
         memset(party->useStruct, 0, 0x48);
         cloud->unk0 = 100.0f;
-        *(f32*)((u8*)cloud + 0xC) = 120.0f;
+        cloud->maxDist = 120.0f;
         *(f32*)((u8*)cloud + 0x10) = 0.0f;
         *(s32*)((u8*)cloud + 0x14) = 0;
         *(f32*)((u8*)cloud + 0x18) = 0.0f;
         *(s32*)((u8*)cloud + 0x1C) = 1;
         party->tail.flurrie.breathFx = NULL;
         if (party->useStruct != NULL) {
-            *(u32*)((u8*)party->useStruct + 0x34) = 0xFFFFFFFFu;
+            ((PartyCloud*)party->useStruct)->sfxId = 0xFFFFFFFFu;
         }
         if ((party->flags & PARTY_FLAG_IS_EVT_USE) != 0) {
-            *(s32*)((u8*)party->useStruct + 0x30) = sysMsec2Frame(party->unk16C);
+            ((PartyCloud*)party->useStruct)->useTimer = sysMsec2Frame(party->unk16C);
         }
     }
 
@@ -419,8 +419,8 @@ void N__cloud_use(PartyEntry* party) {
             mario->unk150.x = 0.03f;
             mario->unk138 = 70.0f * ((revise360(270.0f - mario->dispReqDir) <= 180.0f) ? -1.0f : 1.0f);
         }
-        if (party->useStruct != NULL && *(u32*)((u8*)party->useStruct + 0x34) == 0xFFFFFFFFu) {
-            *(s32*)((u8*)party->useStruct + 0x34) = psndSFXOn_3D((char*)0x930, &party->playerPtr->position);
+        if (party->useStruct != NULL && ((PartyCloud*)party->useStruct)->sfxId == 0xFFFFFFFFu) {
+            ((PartyCloud*)party->useStruct)->sfxId = psndSFXOn_3D((char*)0x930, &party->playerPtr->position);
         }
         /* fallthrough */
     case 0xB:
@@ -455,18 +455,18 @@ void N__cloud_use(PartyEntry* party) {
         *(f32*)((u8*)cloud + 0x8) += 2.0f;
         RELOAD_MARIO();
 #ifdef MUST_MATCH
-        // Match-only: the original loads cloud->unk8 (0x8) before cloud->field_0xC; assigning mx
+        // Match-only: the original loads cloud->unk8 (0x8) before cloud->maxDist; assigning mx
         // inside the comparison forces that emission order. The natural form is under #else.
         {
             f32 a = cloud->unk8;
             f32 mx;
-            if (a >= (mx = *(f32*)cloud->field_0xC)) {
+            if (a >= (mx = cloud->maxDist)) {
                 cloud->unk8 = mx;
             }
         }
 #else
-        if (cloud->unk8 >= *(f32*)cloud->field_0xC) {
-            cloud->unk8 = *(f32*)cloud->field_0xC;
+        if (cloud->unk8 >= cloud->maxDist) {
+            cloud->unk8 = cloud->maxDist;
         }
 #endif
         angle = toMovedir(cloud->unk4);
@@ -481,15 +481,15 @@ void N__cloud_use(PartyEntry* party) {
         }
         cloud->unk24 = (s32)hit;
         getHitBreatheout2(party, 0.0f);
-        if (++*(s16*)(cloud->field_0x30 + 8) > 2) {
-            *(s16*)(cloud->field_0x30 + 8) = 0;
+        if (++cloud->mode > 2) {
+            cloud->mode = 0;
         }
         if ((party->flags & PARTY_FLAG_IS_EVT_USE) == 0) {
             if ((party->button & 0x400) != 0 && marioKeyOffChk() == 0) {
                 break;
             }
         } else {
-            if (--*(s32*)((u8*)cloud + 0x30) > 0) {
+            if (--cloud->useTimer > 0) {
                 break;
             }
         }
@@ -502,9 +502,9 @@ void N__cloud_use(PartyEntry* party) {
         if ((party->flags & PARTY_FLAG_IS_EVT_USE) != 0) {
             party->useMotionId = 0x14;
         }
-        if (party->useStruct != NULL && *(u32*)((u8*)party->useStruct + 0x34) != 0xFFFFFFFFu) {
-            psndSFXOff(*(s32*)((u8*)party->useStruct + 0x34));
-            *(u32*)((u8*)party->useStruct + 0x34) = 0xFFFFFFFFu;
+        if (party->useStruct != NULL && ((PartyCloud*)party->useStruct)->sfxId != 0xFFFFFFFFu) {
+            psndSFXOff(((PartyCloud*)party->useStruct)->sfxId);
+            ((PartyCloud*)party->useStruct)->sfxId = 0xFFFFFFFFu;
         }
         break;
     case 0xD:
@@ -526,9 +526,9 @@ void N__cloud_use(PartyEntry* party) {
         /* fallthrough */
     case 0x14:
         party->flags &= ~(1 << 8);
-        if (party->useStruct != NULL && *(u32*)((u8*)party->useStruct + 0x34) != 0xFFFFFFFFu) {
-            psndSFXOff(*(s32*)((u8*)party->useStruct + 0x34));
-            *(u32*)((u8*)party->useStruct + 0x34) = 0xFFFFFFFFu;
+        if (party->useStruct != NULL && ((PartyCloud*)party->useStruct)->sfxId != 0xFFFFFFFFu) {
+            psndSFXOff(((PartyCloud*)party->useStruct)->sfxId);
+            ((PartyCloud*)party->useStruct)->sfxId = 0xFFFFFFFFu;
         }
         if (party->tail.flurrie.breathFx != NULL) {
             effSoftDelete((EffectEntry*)party->tail.flurrie.breathFx);
@@ -572,9 +572,9 @@ void cloud_exit(PartyEntry* party) {
     MarioWork* mario = party->playerPtr;
 
     if (party->useStruct != NULL) {
-        if (*(u32*)((u8*)party->useStruct + 0x34) != 0xFFFFFFFFu) {
-            psndSFXOff(*(s32*)((u8*)party->useStruct + 0x34));
-            *(u32*)((u8*)party->useStruct + 0x34) = 0xFFFFFFFFu;
+        if (((PartyCloud*)party->useStruct)->sfxId != 0xFFFFFFFFu) {
+            psndSFXOff(((PartyCloud*)party->useStruct)->sfxId);
+            ((PartyCloud*)party->useStruct)->sfxId = 0xFFFFFFFFu;
         }
     }
 
@@ -601,7 +601,7 @@ void cloud_exit(PartyEntry* party) {
 // Match-only: reading the mode through an inline gives the original's register allocation
 // (cloud in r4, mode in r3); the plain dereference in the #else compiles the same but swaps them.
 static inline s16 getHitBreatheout2_mode(PartyEntry* party) {
-    return *(s16*)((u8*)((PartyCloud*)party->useStruct) + 0x38);
+    return ((PartyCloud*)party->useStruct)->mode;
 }
 #endif
 
@@ -623,7 +623,7 @@ void getHitBreatheout2(PartyEntry* party, f32 angle) {
 #ifdef MUST_MATCH
     mode = getHitBreatheout2_mode(party);
 #else
-    mode = *(s16*)((u8*)cloud + 0x38);
+    mode = cloud->mode;
 #endif
     mario = party->playerPtr;
     if (mode == 0) {
@@ -634,8 +634,8 @@ void getHitBreatheout2(PartyEntry* party, f32 angle) {
         f30 = 40.0f;
     }
 
-    if (cloud->unk8 >= *(f32*)((u8*)cloud + 0xC)) {
-        cloud->unk8 = *(f32*)((u8*)cloud + 0xC);
+    if (cloud->unk8 >= cloud->maxDist) {
+        cloud->unk8 = cloud->maxDist;
     }
 
     sincosf(&sin1, &cos1, angle);
@@ -659,7 +659,7 @@ void getHitBreatheout2(PartyEntry* party, f32 angle) {
         *(f32*)((u8*)((EffectEntry*)party->tail.flurrie.breathFx)->userdata + 0x8) = 18.0f + party->position.y;
         *(f32*)((u8*)((EffectEntry*)party->tail.flurrie.breathFx)->userdata + 0xC) = party->position.z + dz;
         *(f32*)((u8*)((EffectEntry*)party->tail.flurrie.breathFx)->userdata + 0x5C) =
-            0.6f * (cloud->unk8 / *(f32*)((u8*)cloud + 0xC));
+            0.6f * (cloud->unk8 / cloud->maxDist);
 
         if (cloud->unk4 >= 90.0f && cloud->unk4 <= 270.0f) {
             *(f32*)((u8*)((EffectEntry*)party->tail.flurrie.breathFx)->userdata + 0x58) = -25.0f;
