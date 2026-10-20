@@ -36,27 +36,27 @@ u32 eff_whirlwind_v[0x16C / 4] = {
 };
 
 typedef struct EffWhirlwindData {
-	s32 type;         //0x0
-	MarioWork* field_0x4;  //0x4
-	f32 x;            //0x8
-	f32 y;            //0xC
-	f32 z;            //0x10
-	f32 field_0x14;   //0x14
-	f32 field_0x18;   //0x18
-	s32 field_0x1C;   //0x1C
-	s32 field_0x20;   //0x20
-	s32 field_0x24;   //0x24
-	s32 field_0x28;   //0x28
-	f32 field_0x2C;   //0x2C
-	f32 field_0x30;   //0x30
-	f32 field_0x34;   //0x34
-	f32 field_0x38;   //0x38
-	f32 field_0x3C;   //0x3C
-	f32 field_0x40;   //0x40
-	u8 field_0x44;    //0x44
-	u8 field_0x45;    //0x45
-	u8 field_0x46;    //0x46
-	u8 field_0x47;    //0x47
+	s32 type;             //0x0
+	MarioWork* mario;     //0x4 followed each frame (NULL keeps the spawn point)
+	f32 x;                //0x8
+	f32 y;                //0xC
+	f32 z;                //0x10
+	f32 scale;            //0x14 current scale (header and particles)
+	f32 baseScale;        //0x18 1.2 * the size argument; the header's scale eases toward 2x this
+	s32 alpha;            //0x1C
+	s32 lifetime;         //0x20 total frames (divides the header's scale ramp)
+	s32 life;             //0x24 frames left
+	s32 timer;            //0x28 frames elapsed
+	f32 rotX;             //0x2C degrees
+	f32 rotY;             //0x30 degrees
+	f32 rotZ;             //0x34 degrees
+	f32 rotXVel;          //0x38 degrees per frame added to rotX
+	f32 rotYVel;          //0x3C degrees per frame added to rotY
+	f32 rotZVel;          //0x40 degrees per frame added to rotZ
+	u8 tevReg0R;          //0x44 particle colour, TEVREG0 red
+	u8 tevReg0G;          //0x45 TEVREG0 green
+	u8 tevReg0B;          //0x46 TEVREG0 blue
+	u8 field_0x47;        //0x47
 } EffWhirlwindData; //0x48
 
 // Note: under MUST_MATCH the `(f32)(i - 1) / 4.0f` is exact and compiles to a multiply by 0.25; writing it as
@@ -80,13 +80,13 @@ EffectEntry* effWhirlwindN64Entry(s32 a1, s32 a2, s32 a3, f32 a4) {
 	effect->callback = effWhirlwindMain;
 	f = 1.2f * a4;
 	data->type = a1;
-	data->field_0x4 = (MarioWork*)a2;
-	data->field_0x14 = f;
-	data->field_0x18 = f;
-	data->field_0x20 = a3;
-	data->field_0x24 = a3;
-	data->field_0x1C = 0;
-	data->field_0x28 = 0;
+	data->mario = (MarioWork*)a2;
+	data->scale = f;
+	data->baseScale = f;
+	data->lifetime = a3;
+	data->life = a3;
+	data->alpha = 0;
+	data->timer = 0;
 
 	p = data + 1;
 	i = 1;
@@ -103,13 +103,13 @@ EffectEntry* effWhirlwindN64Entry(s32 a1, s32 a2, s32 a3, f32 a4) {
 			p->x = 0.0f;
 			p->y = (f32)v31;
 			p->z = 0.0f;
-			p->field_0x38 = 0.0f;
-			p->field_0x3C = 60.0f;
-			p->field_0x40 = 0.0f;
-			p->field_0x2C = 0.0f;
-			p->field_0x30 = (f32)v30;
-			p->field_0x34 = 0.0f;
-			p->field_0x14 = 1.0f;
+			p->rotXVel = 0.0f;
+			p->rotYVel = 60.0f;
+			p->rotZVel = 0.0f;
+			p->rotX = 0.0f;
+			p->rotY = (f32)v30;
+			p->rotZ = 0.0f;
+			p->scale = 1.0f;
 			break;
 		case 1:
 		case 3:
@@ -118,32 +118,32 @@ EffectEntry* effWhirlwindN64Entry(s32 a1, s32 a2, s32 a3, f32 a4) {
 			p->x = 0.0f;
 			p->y = (f32)v31;
 			p->z = 0.0f;
-			p->field_0x38 = 0.0f;
-			p->field_0x3C = -60.0f;
-			p->field_0x40 = 0.0f;
-			p->field_0x2C = 0.0f;
-			p->field_0x30 = (f32)v30;
-			p->field_0x34 = 0.0f;
-			p->field_0x14 = 1.0f;
-			p->field_0x46 = 0xFF;
-			p->field_0x45 = 0xFF;
-			p->field_0x44 = 0xFF;
+			p->rotXVel = 0.0f;
+			p->rotYVel = -60.0f;
+			p->rotZVel = 0.0f;
+			p->rotX = 0.0f;
+			p->rotY = (f32)v30;
+			p->rotZ = 0.0f;
+			p->scale = 1.0f;
+			p->tevReg0B = 0xFF;
+			p->tevReg0G = 0xFF;
+			p->tevReg0R = 0xFF;
 			break;
 		default:
 			p->x = 0.0f;
 			p->y = 0.5f * ((MarioWork*)a2)->wPlayerCollisionBox.y;
 			p->z = 0.0f;
-			p->field_0x38 = (f32)(((rand() % 2) * 2 - 1) * 4);
-			p->field_0x3C = 0.0f;
-			p->field_0x40 = (f32)(((rand() % 2) * 2 - 1) * 4);
+			p->rotXVel = (f32)(((rand() % 2) * 2 - 1) * 4);
+			p->rotYVel = 0.0f;
+			p->rotZVel = (f32)(((rand() % 2) * 2 - 1) * 4);
 #ifdef MUST_MATCH
-			p->field_0x14 = ((f32)(i - 1) / 4.0f) * 0.5f + 0.5f;
+			p->scale = ((f32)(i - 1) / 4.0f) * 0.5f + 0.5f;
 #else
-			p->field_0x14 = 0.5f * ((f32)(i - 1) * 0.25f) + 0.5f;
+			p->scale = 0.5f * ((f32)(i - 1) * 0.25f) + 0.5f;
 #endif
-			p->field_0x2C = (f32)v29;
-			p->field_0x30 = (f32)((i - 1) * 360 / 4);
-			p->field_0x34 = (f32)(360 - v28);
+			p->rotX = (f32)v29;
+			p->rotY = (f32)((i - 1) * 360 / 4);
+			p->rotZ = (f32)(360 - v28);
 			break;
 		}
 
@@ -164,9 +164,9 @@ EffectEntry* effWhirlwindN64Entry(s32 a1, s32 a2, s32 a3, f32 a4) {
 			color = 0;
 			break;
 		}
-		p->field_0x44 = col_r[color];
-		p->field_0x45 = col_g[color];
-		p->field_0x46 = col_b[color];
+		p->tevReg0R = col_r[color];
+		p->tevReg0G = col_g[color];
+		p->tevReg0B = col_b[color];
 
 		v31 += 7;
 		v30 += 120;
@@ -190,9 +190,9 @@ void effWhirlwindMain(EffectEntry* effect) {
 	pos.z = data->z;
 	pos2 = pos;
 
-	data->field_0x24--;
-	data->field_0x28++;
-	life = data->field_0x24;
+	data->life--;
+	data->timer++;
+	life = data->life;
 	if (life < 0) {
 		effDelete(effect);
 		return;
@@ -202,26 +202,26 @@ void effWhirlwindMain(EffectEntry* effect) {
 	switch (type) {
 	case 8:
 		if (life > 5) {
-			data->field_0x1C = (s32)(0.05f * (255 - data->field_0x1C) + data->field_0x1C);
+			data->alpha = (s32)(0.05f * (255 - data->alpha) + data->alpha);
 		}
-		data->field_0x14 = data->field_0x18 * (f32)life / (f32)data->field_0x20;
+		data->scale = data->baseScale * (f32)life / (f32)data->lifetime;
 		if (life < 10) {
-			data->field_0x1C = life * 25;
+			data->alpha = life * 25;
 		}
 		break;
 	default:
 		if (life > 5) {
-			data->field_0x1C = (s32)(0.3f * (100 - data->field_0x1C) + data->field_0x1C);
+			data->alpha = (s32)(0.3f * (100 - data->alpha) + data->alpha);
 		}
 		if (life < 10) {
-			data->field_0x1C *= 0.8f;
-			data->field_0x14 += 0.1f * (2.0f * data->field_0x18 - data->field_0x14);
+			data->alpha *= 0.8f;
+			data->scale += 0.1f * (2.0f * data->baseScale - data->scale);
 		}
 		break;
 	}
 
-	if (data->field_0x4 != NULL) {
-		MarioWork* ptr = data->field_0x4;
+	if (data->mario != NULL) {
+		MarioWork* ptr = data->mario;
 		data->x = ptr->position.x;
 		data->y = ptr->position.y;
 		data->z = ptr->position.z;
@@ -231,19 +231,19 @@ void effWhirlwindMain(EffectEntry* effect) {
 		switch (type) {
 		case 8:
 			if (i & 1) {
-				data->field_0x3C += 0.2f * (40.0f - data->field_0x3C);
+				data->rotYVel += 0.2f * (40.0f - data->rotYVel);
 			} else {
-				data->field_0x3C += 0.2f * (-40.0f - data->field_0x3C);
+				data->rotYVel += 0.2f * (-40.0f - data->rotYVel);
 			}
-			data->field_0x2C += data->field_0x38;
-			data->field_0x30 += data->field_0x3C;
-			data->field_0x34 += data->field_0x40;
+			data->rotX += data->rotXVel;
+			data->rotY += data->rotYVel;
+			data->rotZ += data->rotZVel;
 			break;
 		default:
 			if (life < 10) {
-				data->field_0x30 += data->field_0x3C * (f32)life / 10.0f;
+				data->rotY += data->rotYVel * (f32)life / 10.0f;
 			} else {
-				data->field_0x30 += data->field_0x3C;
+				data->rotY += data->rotYVel;
 			}
 			break;
 		}
@@ -260,7 +260,7 @@ static inline void whirlwindSetColor(u8 r, u8 g, u8 b, u8 a) {
 	color.g = g;
 	color.b = b;
 	color.a = a;
-	GXSetTevColor(1, color);
+	GXSetTevColor(GX_TEVREG0, color);
 }
 
 void effWhirlwindDisp(CameraId camId, void* param) {
@@ -278,43 +278,43 @@ void effWhirlwindDisp(CameraId camId, void* param) {
 	f32 scaleB;
 	s32 i;
 
-	alpha = data->field_0x1C;
-	scaleA = data->field_0x14;
-	scaleB = data->field_0x18;
+	alpha = data->alpha;
+	scaleA = data->scale;
+	scaleB = data->baseScale;
 	type = data->type;
 
 	GXSetNumChans(0);
 	GXSetNumTexGens(1);
-	GXSetTexCoordGen2(0, 1, 4, 0x1e, 0, 0x7d);
+	GXSetTexCoordGen2(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_TEXMTX0, GX_FALSE, GX_PTIDENTITY);
 	PSMTXScale(scale, 0.03125f, 0.03125f, 0.0f);
-	GXLoadTexMtxImm(scale, 0x1e, 1);
+	GXLoadTexMtxImm(scale, GX_TEXMTX0, GX_MTX2x4);
 	effGetTexObjN64(0x58, &texObj);
-	GXLoadTexObj(&texObj, 0);
+	GXLoadTexObj(&texObj, GX_TEXMAP0);
 	GXSetNumTevStages(1);
-	GXSetTevOrder(0, 0, 0, 0xff);
-	GXSetTevColorOp(0, 0, 0, 0, 1, 0);
-	GXSetTevAlphaOp(0, 0, 0, 0, 1, 0);
-	GXSetTevColorIn(0, 0xf, 0xf, 0xf, 2);
-	GXSetTevAlphaIn(0, 7, 4, 1, 7);
+	GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR_NULL);
+	GXSetTevColorOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+	GXSetTevAlphaOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+	GXSetTevColorIn(GX_TEVSTAGE0, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ZERO, GX_CC_C0);
+	GXSetTevAlphaIn(GX_TEVSTAGE0, GX_CA_ZERO, GX_CA_TEXA, GX_CA_A0, GX_CA_ZERO);
 
 	PSMTXTrans(trans, data->x, data->y, data->z);
 	PSMTXRotRad(rot, 'y', 0.017453292f * -camGetPtr(CAMERA_3D)->viewYaw);
 	PSMTXConcat(trans, rot, work);
 	PSMTXConcat(cam->view, work, work);
 
-	GXSetCullMode(0);
+	GXSetCullMode(GX_CULL_NONE);
 	effSetVtxDescN64((effVtxArray*)eff_whirlwind_v);
 
 	data++;
 	for (i = 1; i < effect->count; i++, data++) {
 		PSMTXTrans(trans, data->x, data->y, data->z);
-		PSMTXRotRad(rot, 'x', 0.017453292f * data->field_0x2C);
+		PSMTXRotRad(rot, 'x', 0.017453292f * data->rotX);
 		PSMTXConcat(trans, rot, trans);
-		PSMTXRotRad(rot, 'z', 0.017453292f * data->field_0x34);
+		PSMTXRotRad(rot, 'z', 0.017453292f * data->rotZ);
 		PSMTXConcat(trans, rot, trans);
-		PSMTXScale(scale, scaleA * data->field_0x14, scaleA * data->field_0x14, scaleA * data->field_0x14);
+		PSMTXScale(scale, scaleA * data->scale, scaleA * data->scale, scaleA * data->scale);
 		PSMTXConcat(trans, scale, trans);
-		PSMTXRotRad(rot, 'y', 0.017453292f * data->field_0x30);
+		PSMTXRotRad(rot, 'y', 0.017453292f * data->rotY);
 		PSMTXConcat(trans, rot, rot);
 
 		if (type < 8) {
@@ -326,11 +326,11 @@ void effWhirlwindDisp(CameraId camId, void* param) {
 		}
 		PSMTXConcat(work, trans, trans);
 
-		GXLoadPosMtxImm(trans, 0);
-		GXSetCurrentMtx(0);
+		GXLoadPosMtxImm(trans, GX_PNMTX0);
+		GXSetCurrentMtx(GX_PNMTX0);
 
-		whirlwindSetColor(data->field_0x44, data->field_0x45, data->field_0x46, alpha);
-		GXBegin(0x90, 0, 0x48);
+		whirlwindSetColor(data->tevReg0R, data->tevReg0G, data->tevReg0B, alpha);
+		GXBegin(GX_TRIANGLES, GX_VTXFMT0, 0x48);
 		tri2(0, 1, 2, 0, 0, 2, 3, 0);
 		tri2(4, 5, 1, 0, 4, 1, 0, 0);
 		tri2(3, 2, 6, 0, 3, 6, 7, 0);
