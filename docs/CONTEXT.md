@@ -10843,3 +10843,11 @@ Left: `field_0x10` (written, never read), `field_0x18[12]` and `field_0x26[2]` (
 
 Verified: tower `ninja` recreates `build/G8MJ01/ok`; natural and MUST_MATCH compiles of unit_party_yoshi.c return 0 with
 no diagnostics. Index (tools/cleanup_index.py): 30.279 -> 30.197 per kLOC (21545 -> 21486 weighted); field_0x 3208 -> 3149.
+### Work struct field names: eff_opuku_jetwrain, eff_fireflower (2026-10-20, Claude Haiku 5.5, n9-q-effn64b)
+- `effOpukuJetwrainData`: 0x14 `counter` (Main's frame count; the sine phase and the fade-in below 16). 0x1C/0x1D/0x1E are `color1R/G/B` (10, 110, 255) and 0x20/0x21/0x22 are `color2R/G/B` (190, 220, 255), both u8 and read by Disp. 0x1F is `alpha` (Main's fade, halved into the TEVREG0 alpha in Disp). 0x23 is `height[19][13]` (s8 wave heights, the grid Disp draws) and 0x11A is `velocity[19][13]` (s16, relaxed each frame with the 0.98 damping, then added into height).
+- `effFireFlowerData`: per-piece 0x20 is `velYAccel` (added to velY each frame), 0x24 is `rot` (degrees about z in Disp) and 0x4C is `delay` (frames before the piece moves). Head 0x28 is `angle` (degrees about y, +18 per frame in state 6 up to 720), 0x2C is `offsetX` (the x offset Disp applies), 0x34 is `texFrame` (0-3, the sprite row), 0x38 is `color2A` (TEVREG1 alpha) and 0x3C is `color1A` (TEVREG0 alpha, scaled by 0.9 in state 6). The head's 0x3C and the pieces' 0x3C share the field; Disp reads only the head's.
+- Left: fireflower 0x48 (written by Entry and Main, never read). eff_radiation_n64 is unchanged: its remaining field_0x are 0x1C/0x20 (the `a5` argument, written and never read) and the 0x34-0x54 accumulator group, which Main updates only from its own step fields and which never reaches Disp, so no name is proven.
+
+Verified: tower `ninja` recreates `build/G8MJ01/ok` (32 files OK); natural (no MUST_MATCH) compiles of both changed C files
+return 0. Index (tools/cleanup_index.py): 30.279 -> 30.139 per kLOC (21545 -> 21445 weighted over 711538 code lines);
+field_0x 3208 -> 3108.
