@@ -611,8 +611,8 @@ BOOL BattleAudience_CheckReactionPerPhase(void) {
 			member = BattleAudienceGetPtr(i);
 			if ((u8)BattleAudience_GetSysCtrl(i) == 1 && member->type == AUDIENCE_BULKY_BOBOMB &&
 					member->status == 18) {
-				member->field_0x12C--;
-				if (member->field_0x12C <= 0) {
+				member->timer--;
+				if (member->timer <= 0) {
 					BattleAudience_ChangeStatus(i, 19);
 					count++;
 				}
@@ -836,7 +836,7 @@ BOOL BattleAudience_CheckReactionPerPhase(void) {
 				if ((u8)check_exe_phase_evt_status(i, 8)) {
 					if (BattleAudienceGetPtr(i)->status != 0x11) {
 						BattleAudience_ChangeStatus(i, 0x11);
-						BattleAudienceGetPtr(i)->field_0x12C = 5;
+						BattleAudienceGetPtr(i)->timer = 5;
 					}
 				}
 			}
@@ -1023,7 +1023,7 @@ BOOL BattleAudience_CheckReactionPerPhase(void) {
 			idx = evtList[irand(count)];
 			member = BattleAudienceGetPtr(idx);
 			BattleAudience_ChangeStatus(idx, 0x12);
-			member->field_0x12C = 5;
+			member->timer = 5;
 			audience->phaseEvtCount = 0;
 			break;
 		case 12:
@@ -1088,8 +1088,8 @@ BOOL BattleAudience_CheckReactionPerPhase(void) {
 			member = BattleAudienceGetPtr(i);
 			if ((u8)BattleAudience_GetSysCtrl(i) == 1 && member->type == 8 &&
 					member->status == 0x11) {
-				member->field_0x12C--;
-				if (member->field_0x12C <= 0) {
+				member->timer--;
+				if (member->timer <= 0) {
 					member->field_0x4 = 4;
 				}
 			}
@@ -2708,13 +2708,13 @@ void BattleAudienceDispAudience(CameraId camId, void* param) {
 				f32 w = (f32)GXGetTexObjWidth(&texObj);
 				f32 k = audience_kind[member->type].field_0x18;
 				w = k * w / 64.0f;
-				*(f32*)member->field_0x54 = *(f32*)(member->field_0x54 + 0xC) * w;
+				member->scale.x = member->baseSize.x * w;
 			}
 			{
 				f32 h = (f32)GXGetTexObjHeight(&texObj);
 				f32 k = audience_kind[member->type].field_0x1C;
 				h = k * h / 64.0f;
-				*(f32*)(member->field_0x54 + 4) = *(f32*)(member->field_0x54 + 0x10) * h;
+				member->scale.y = member->baseSize.y * h;
 			}
 		}
 		else {
@@ -2727,13 +2727,13 @@ void BattleAudienceDispAudience(CameraId camId, void* param) {
 						f32 w = (f32)GXGetTexObjWidth(&texObj);
 						f32 k = audience_kind[member->type].field_0x18;
 						w = k * w / 64.0f;
-						*(f32*)member->field_0x54 = *(f32*)(member->field_0x54 + 0xC) * w;
+						member->scale.x = member->baseSize.x * w;
 					}
 					{
 						f32 h = (f32)GXGetTexObjHeight(&texObj);
 						f32 k = audience_kind[member->type].field_0x1C;
 						h = k * h / 64.0f;
-						*(f32*)(member->field_0x54 + 4) = *(f32*)(member->field_0x54 + 0x10) * h;
+						member->scale.y = member->baseSize.y * h;
 					}
 					break;
 				}
@@ -2792,7 +2792,7 @@ void BattleAudienceDispAudience(CameraId camId, void* param) {
 			mtxScale[1][3] = mtxScale[1][3] + (member->jumpOffset.y + (-offsetY + member->position.y));
 		}
 		else {
-			mtxScale[1][3] = mtxScale[1][3] + (*(f32*)((u8*)member + 0x130) +
+			mtxScale[1][3] = mtxScale[1][3] + (member->bobOffsetY +
 			                                      (member->jumpOffset.y + (-offsetY + member->position.y)));
 		}
 
@@ -2849,11 +2849,11 @@ void BattleAudienceDispAudience(CameraId camId, void* param) {
 		GXSetChanMatColor(GX_COLOR0A0, color);
 
 		GXBegin(GX_QUADS, GX_VTXFMT0, 4);
-		GXPosition3f32(neg20 + *(f32*)(member->field_0x54 + 0x18), 40.0f + *(f32*)(member->field_0x54 + 0x1C),
-		               *(f32*)(member->field_0x54 + 0x20));
+		GXPosition3f32(neg20 + member->drawOffset.x, 40.0f + member->drawOffset.y,
+		               member->drawOffset.z);
 		GXTexCoord2f32(texCoords.v[texBase * 2], texCoords.v[texBase * 2 + 1]);
-		GXPosition3f32(w + *(f32*)(member->field_0x54 + 0x18), 40.0f + *(f32*)(member->field_0x54 + 0x1C),
-		               *(f32*)(member->field_0x54 + 0x20));
+		GXPosition3f32(w + member->drawOffset.x, 40.0f + member->drawOffset.y,
+		               member->drawOffset.z);
 		GXTexCoord2f32(texCoords.v[(texBase + 1) * 2], texCoords.v[(texBase + 1) * 2 + 1]);
 		GXPosition3f32(w, 0.0f, 0.0f);
 		GXTexCoord2f32(texCoords.v[(texBase + 2) * 2], texCoords.v[(texBase + 2) * 2 + 1]);

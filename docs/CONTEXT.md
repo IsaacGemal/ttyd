@@ -8607,3 +8607,22 @@ Open: ShopWork `field_0x8` (item id / price pairs, also read through a byte offs
 0x20C-0x2E8 (the rest of WindowWork's item-window tail, which needs a layout shared with the other win_* files
 before naming); PouchData `field_0x5B4` (per-slot shop point reward bits, set in evt_shop but a header field outside
 this pass).
+### Readability: audience members for kinopio (2026-10-19, Claude Haiku 5.5, n9-q-kino; reviewed by Claude Opus 5.5)
+
+BattleAudienceMember's 0x54-0x8F block becomes five Vecs: `scale` (the drawn scale, `baseSize` times the texture
+size in BattleAudienceDispAudience), `baseSize` (reset to 1; kinopio squashes and stretches x/y, the Magnum
+Battender Mk II suck-in shrinks it), `drawOffset` (added to the quad's top corners; kinopio sways x and lifts y),
+`velocity` and `accel` (kinopio's per-frame integration). 0x12C is a union because it really is reused per type and
+status: `timer` (the BULKY_BOBOMB fuse and the KOOPA shell countdown, both set to 5 in battle_audience.c; the shell's
+last case clears it, matching the KOOPA countdown that drives it), `targetId` (the member a Pakkun eats), `evtId`
+(polled with evtCheckID after the fall-object and nozzle checks) and the f32 `bobAngle` (AUDIENCE_BOO); 0x130 is
+`bobOffsetY`, 5·sin(bobAngle), added to the quad's y. The renames reach battle_audience.c, the mkII rel and one
+`#ifdef MUST_MATCH` block in BattleAudienceCtrlProcessKinopioFire (identifiers only). In review, 32 more
+velocity/accel sites written as `*(f32*)(member->field_0x8 + 0x70..0x80)` (in the intrude cases) moved to the
+fields too.
+Left: kinopio's `field_0x4` (the per-status step counter), `field_0x8` (per-status scratch: an s32 counter, f32s at
++4/+8/+0xC, a u8 at +0x10) and `field_0x30` (an s32 frame counter), `field_0xE8` (facing, set to 90/270 from the sign of velocity.x; other
+callers not checked), and the `*(f32*)(member->field_0xC0 + n)` reads, which run past the 12-byte pad into
+`jumpOffset` (+0xC..+0x14), `jumpVelY` (+0x1C) and `jumpAccelY` (+0x24) and want rewriting as those fields with a
+build check. battle_audience.c's raw `(u8*)member + 0x54/0x60/0x6C/0x78/0x84` resets and its 0x54 read in the disp
+code weren't forced by this rename and stay as they were.

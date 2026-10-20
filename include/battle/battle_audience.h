@@ -56,7 +56,11 @@ typedef struct BattleAudienceMember {
     u8 colorA;                     // 0x44, 0xFF after a reset
     u8 field_0x45[0x48 - 0x45];    // 0x45
     Vec position;                  // 0x48
-    u8 field_0x54[0x90 - 0x54];    // 0x54
+    Vec scale;                     // 0x54, drawn scale: baseSize times the texture size (BattleAudienceDispAudience)
+    Vec baseSize;                  // 0x60, reset to 1; kinopio squashes and stretches x and y
+    Vec drawOffset;                // 0x6C, added to the quad corners (BattleAudienceDispAudience); kinopio sways x and lifts y
+    Vec velocity;                  // 0x78, added to position each frame (kinopio); reset to 0
+    Vec accel;                     // 0x84, added to velocity each frame (kinopio); reset to 0
     Vec normal;                    // 0x90, rotated by the member's matrix in the draw code (0,0,-1) after a reset
     Vec mRotation;                 // 0x9C
     Vec mRotationOffset;           // 0xA8
@@ -80,8 +84,13 @@ typedef struct BattleAudienceMember {
     Vec interpDelta;               // 0x118
     f32 interpGravity;             // 0x124
     s32 interpType;                // 0x128
-    s32 field_0x12C;               // 0x12C, some counter
-    u8 field_0x130[0x134 - 0x130]; // 0x130
+    union {
+        s32 timer;                 // 0x12C, countdown: BULKY_BOBOMB fuse and KOOPA (battle_audience.c sets 5); kinopio shell clears it
+        s32 targetId;              // 0x12C, member index a Pakkun eats (kinopio)
+        s32 evtId;                 // 0x12C, evt id polled with evtCheckID (fall objects, nozzle work; kinopio)
+        f32 bobAngle;              // 0x12C, radians, AUDIENCE_BOO bob phase (kinopio)
+    };
+    f32 bobOffsetY;                // 0x130, 5 * sin(bobAngle) for AUDIENCE_BOO; added to the quad's y in the draw code
 } BattleAudienceMember;
 
 typedef struct BattleAudienceItem {

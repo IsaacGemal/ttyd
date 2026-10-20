@@ -235,19 +235,16 @@ void BattleAudienceCtrlProcessKinopio(s32 index) {
 	}
 	{
 	f32 zero = 0.0f;
-	member->position.x += *(f32*)(member->field_0x54 + 0x24);
-	*(f32*)(member->field_0x54 + 0x24) +=
-	    *(f32*)(member->field_0x54 + 0x30);
-	member->position.y += *(f32*)(member->field_0x54 + 0x28);
-	*(f32*)(member->field_0x54 + 0x28) +=
-	    *(f32*)(member->field_0x54 + 0x34);
-	member->position.z += *(f32*)(member->field_0x54 + 0x2c);
-	*(f32*)(member->field_0x54 + 0x2c) +=
-	    *(f32*)(member->field_0x54 + 0x38);
-	if (*(f32*)(member->field_0x54 + 0x24) > zero) {
+	member->position.x += member->velocity.x;
+	member->velocity.x += member->accel.x;
+	member->position.y += member->velocity.y;
+	member->velocity.y += member->accel.y;
+	member->position.z += member->velocity.z;
+	member->velocity.z += member->accel.z;
+	if (member->velocity.x > zero) {
 		member->field_0xE8 = 90.0f;
 	}
-	else if (*(f32*)(member->field_0x54 + 0x24) < zero) {
+	else if (member->velocity.x < zero) {
 		member->field_0xE8 = 270.0f;
 	}
 	if (*(f32*)(member->field_0xC0 + 0x10) < zero) {
@@ -268,20 +265,19 @@ void BattleAudienceCtrlProcessKinopio(s32 index) {
 	}
 	}
 	if (member->type == 2) {
-		f32 c = 0.05f;
-		f32 tau = 6.283184f;
-		f32 angle = *(f32*)&member->field_0x12C;
-		*(f32*)&member->field_0x12C = angle + c;
-		if (*(f32*)&member->field_0x12C >= tau) {
-			*(f32*)&member->field_0x12C = *(f32*)&member->field_0x12C - tau;
+		f32 step = 0.05f;
+		f32 twoPi = 6.283184f;
+		f32 angle = member->bobAngle;
+		member->bobAngle = angle + step;
+		if (member->bobAngle >= twoPi) {
+			member->bobAngle = member->bobAngle - twoPi;
 		}
-		*(f32*)((u8*)member + 0x130) =
-		    5.0f * (f32)sin(*(f32*)(&member->field_0x12C));
+		member->bobOffsetY = 5.0f * (f32)sin(member->bobAngle);
 		*(f32*)(member->field_0xC0 + 0x0) =
 		    member->position.x + *(f32*)(member->field_0xC0 + 0xc);
 		*(f32*)(member->field_0xC0 + 0x4) = member->position.y +
 		                              *(f32*)(member->field_0xC0 + 0x10) +
-		                              *(f32*)((u8*)member + 0x130);
+		                              member->bobOffsetY;
 		*(f32*)(member->field_0xC0 + 0x8) =
 		    member->position.z + *(f32*)(member->field_0xC0 + 0x14);
 	}
@@ -357,30 +353,30 @@ void BattleAudienceCtrlProcessKinopioWait(s32 index, s32 kind) {
 	case 4:
 		if (*(s32*)(member->field_0x30) > 0xb4) {
 			if (*(s32*)(member->field_0x30) <= 0xbc) {
-				*(f32*)(member->field_0x54 + 0x10) += 0.005f * step;
+				member->baseSize.y += 0.005f * step;
 			}
 			else if ((f32)(*(s32*)(member->field_0x30)) <=
 			         8.0f * level + 188.0f) {
-				*(f32*)(member->field_0x54 + 0x10) -= 0.005f * step;
+				member->baseSize.y -= 0.005f * step;
 			}
 			else if ((f32)(*(s32*)(member->field_0x30)) <=
 			         16.0f * level + 188.0f) {
-				*(f32*)(member->field_0x54 + 0x10) += 0.005f * step;
+				member->baseSize.y += 0.005f * step;
 			}
 			else if ((f32)(*(s32*)(member->field_0x30)) <=
 			         24.0f * level + 188.0f) {
-				*(f32*)(member->field_0x54 + 0x10) -= 0.005f * step;
+				member->baseSize.y -= 0.005f * step;
 			}
 			else if ((f32)(*(s32*)(member->field_0x30)) <=
 			         32.0f * level + 188.0f) {
-				*(f32*)(member->field_0x54 + 0x10) += 0.005f * step;
+				member->baseSize.y += 0.005f * step;
 			}
 			else if ((f32)(*(s32*)(member->field_0x30)) <=
 			         40.0f * level + 188.0f) {
-				*(f32*)(member->field_0x54 + 0x10) -= 0.005f * step;
+				member->baseSize.y -= 0.005f * step;
 			}
 			else {
-				*(f32*)(member->field_0x54 + 0x10) = 1.0f;
+				member->baseSize.y = 1.0f;
 				*(s32*)(member->field_0x30) = 0;
 			}
 		}
@@ -388,40 +384,40 @@ void BattleAudienceCtrlProcessKinopioWait(s32 index, s32 kind) {
 		break;
 	case 6:
 		if ((f32)(*(s32*)(member->field_0x30)) >= 36.0f * level) {
-			*(f32*)(member->field_0x54 + 0x10) = 1.0f;
+			member->baseSize.y = 1.0f;
 			*(s32*)(member->field_0x30) = 0;
 		}
 		if ((f32)(*(s32*)(member->field_0x30)) <= 17.0f * level) {
-			*(f32*)(member->field_0x54 + 0x10) += 0.00175f * step;
+			member->baseSize.y += 0.00175f * step;
 		}
 		else {
-			*(f32*)(member->field_0x54 + 0x10) -= 0.00175f * step;
+			member->baseSize.y -= 0.00175f * step;
 		}
 		(*(s32*)(member->field_0x30))++;
 		break;
 	case 7:
 		if ((f32)(*(s32*)(member->field_0x30)) >= 22.0f * level) {
-			*(f32*)(member->field_0x54 + 0x10) = 1.0f;
+			member->baseSize.y = 1.0f;
 			*(s32*)(member->field_0x30) = 0;
 		}
 		if ((f32)(*(s32*)(member->field_0x30)) <= 10.0f * level) {
-			*(f32*)(member->field_0x54 + 0x10) += 0.00375f * step;
+			member->baseSize.y += 0.00375f * step;
 		}
 		else {
-			*(f32*)(member->field_0x54 + 0x10) -= 0.00375f * step;
+			member->baseSize.y -= 0.00375f * step;
 		}
 		(*(s32*)(member->field_0x30))++;
 		break;
 	case 9:
 		if ((f32)(*(s32*)(member->field_0x30)) >= 64.0f * level) {
-			*(f32*)(member->field_0x54 + 0x10) = 1.0f;
+			member->baseSize.y = 1.0f;
 			*(s32*)(member->field_0x30) = 0;
 		}
 		if ((f32)(*(s32*)(member->field_0x30)) <= 31.0f * level) {
-			*(f32*)(member->field_0x54 + 0x10) += 0.00125f * step;
+			member->baseSize.y += 0.00125f * step;
 		}
 		else {
-			*(f32*)(member->field_0x54 + 0x10) -= 0.00125f * step;
+			member->baseSize.y -= 0.00125f * step;
 		}
 		(*(s32*)(member->field_0x30))++;
 		break;
@@ -429,14 +425,14 @@ void BattleAudienceCtrlProcessKinopioWait(s32 index, s32 kind) {
 		break;
 	default:
 		if ((f32)(*(s32*)(member->field_0x30)) >= 32.0f * level) {
-			*(f32*)(member->field_0x54 + 0x10) = 1.0f;
+			member->baseSize.y = 1.0f;
 			*(s32*)(member->field_0x30) = 0;
 		}
 		if ((f32)(*(s32*)(member->field_0x30)) <= 15.0f * level) {
-			*(f32*)(member->field_0x54 + 0x10) += 0.0025f * step;
+			member->baseSize.y += 0.0025f * step;
 		}
 		else {
-			*(f32*)(member->field_0x54 + 0x10) -= 0.0025f * step;
+			member->baseSize.y -= 0.0025f * step;
 		}
 		(*(s32*)(member->field_0x30))++;
 		break;
@@ -542,14 +538,14 @@ void BattleAudienceCtrlProcessKinopioWaitKubiKatamuke(s32 index, s32 kind) {
 		BattleAudience_SetAnim(index, 1, 0);
 	}
 	if (*(s32*)(member->field_0x30) >= 0 && *(s32*)(member->field_0x30) <= 0xa) {
-		*(f32*)(member->field_0x54 + 0x18) =
+		member->drawOffset.x =
 		    1.5f * (f32)(*(s32*)(member->field_0x30));
 	}
 	if (*(s32*)(member->field_0x30) >= 0x14 && *(s32*)(member->field_0x30) <= 0x28) {
-		*(f32*)(member->field_0x54 + 0x18) -= 1.5f;
+		member->drawOffset.x -= 1.5f;
 	}
 	if (*(s32*)(member->field_0x30) >= 0x32 && *(s32*)(member->field_0x30) <= 0x3c) {
-		*(f32*)(member->field_0x54 + 0x18) += 1.5f;
+		member->drawOffset.x += 1.5f;
 	}
 	if (*(s32*)(member->field_0x30) > 0x3c) {
 		BattleAudience_ChangeStatus(index, 0);
@@ -625,7 +621,7 @@ void BattleAudienceCtrlProcessKinopioJoyRaiseArm(s32 index, s32 kind) {
 		member->field_0x4++;
 		// fallthrough
 	case 1:
-		*(f32*)(member->field_0x54 + 0x1c) = intplGetValue(4, *(s32*)member->field_0x8, 0xf, 0.0f, 10.0f);
+		member->drawOffset.y = intplGetValue(4, *(s32*)member->field_0x8, 0xf, 0.0f, 10.0f);
 		(*(s32*)member->field_0x8)++;
 		if (*(s32*)member->field_0x8 > 0x1e) {
 			f32 one = 1.0f;
@@ -792,7 +788,7 @@ void BattleAudienceCtrlProcessKinopioBooing(s32 index) {
 		member->field_0x4++;
 		// fallthrough
 	case 1:
-		*(f32*)(member->field_0x54 + 0x1c) = intplGetValue(4, *(s32*)member->field_0x8, 0xf, 0.0f, 10.0f);
+		member->drawOffset.y = intplGetValue(4, *(s32*)member->field_0x8, 0xf, 0.0f, 10.0f);
 		(*(s32*)member->field_0x8)++;
 		if (*(s32*)member->field_0x8 > 0x1e) {
 			f32 one = 1.0f;
@@ -840,18 +836,18 @@ void BattleAudienceCtrlProcessKinopioDamage(s32 index) {
 		// fallthrough
 	case 1:
 		if (*(s32*)(member->field_0x30) >= 8) {
-			*(f32*)(member->field_0x54 + 0x10) = 1.0f;
+			member->baseSize.y = 1.0f;
 			*(s32*)(member->field_0x30) = 0;
 		}
 		if (*(s32*)(member->field_0x30) <= 4) {
-			*(f32*)(member->field_0x54 + 0x10) -= 0.1f;
+			member->baseSize.y -= 0.1f;
 		}
 		else {
-			*(f32*)(member->field_0x54 + 0x10) += 0.1f;
+			member->baseSize.y += 0.1f;
 		}
 		(*(s32*)(member->field_0x30))++;
 		if (BattleAudience_GetAnimEnd(index) == 1) {
-			*(f32*)(member->field_0x54 + 0x10) = 1.0f;
+			member->baseSize.y = 1.0f;
 			*(s32*)(member->field_0x30) = 0;
 			if ((u8)BattleAudience_GetEscapeChangeOK(index) == 1) {
 				BattleAudience_ChangeStatus(index, 0xc);
@@ -880,9 +876,9 @@ void BattleAudienceCtrlProcessKinopioEnter(s32 index) {
 			member->position.x = member->mHomePosition.x;
 			member->position.y = -100.0f;
 			member->position.z = member->mHomePosition.z;
-			*(f32*)(member->field_0x54 + 0x24) = zero;
-			*(f32*)(member->field_0x54 + 0x28) = zero;
-			*(f32*)(member->field_0x54 + 0x2c) = zero;
+			member->velocity.x = zero;
+			member->velocity.y = zero;
+			member->velocity.z = zero;
 			{
 				s32 t = irand(0x3c);
 				t = t + *(s32*)member->field_0x8;
@@ -896,9 +892,9 @@ void BattleAudienceCtrlProcessKinopioEnter(s32 index) {
 			if (*(s32*)member->field_0x8 <= 0) {
 				f32 one = 1.0f;
 				f32 zero = 0.0f;
-				*(f32*)(member->field_0x54 + 0x24) = zero;
-				*(f32*)(member->field_0x54 + 0x28) = one;
-				*(f32*)(member->field_0x54 + 0x2c) = zero;
+				member->velocity.x = zero;
+				member->velocity.y = one;
+				member->velocity.z = zero;
 				member->field_0x4++;
 			}
 			break;
@@ -921,9 +917,9 @@ void BattleAudienceCtrlProcessKinopioEnter(s32 index) {
 			member->position.z = thousand;
 			{
 				f32 zero = 0.0f;
-				*(f32*)(member->field_0x54 + 0x24) = zero;
-				*(f32*)(member->field_0x54 + 0x28) = zero;
-				*(f32*)(member->field_0x54 + 0x2c) = zero;
+				member->velocity.x = zero;
+				member->velocity.y = zero;
+				member->velocity.z = zero;
 			}
 			{
 				s32 t = irand(0x3c);
@@ -941,9 +937,9 @@ void BattleAudienceCtrlProcessKinopioEnter(s32 index) {
 				f32 len = (f32)sqrt(dx * dx + dz * dz);
 				f32 zero = 0.0f;
 				f32 ten = 10.0f;
-				*(f32*)(member->field_0x54 + 0x24) = ten * (dx / len);
-				*(f32*)(member->field_0x54 + 0x28) = zero;
-				*(f32*)(member->field_0x54 + 0x2c) = ten * (dz / len);
+				member->velocity.x = ten * (dx / len);
+				member->velocity.y = zero;
+				member->velocity.z = ten * (dz / len);
 				*(f32*)(member->field_0x8 + 0x4) = ten;
 				*(f32*)(member->field_0x8 + 0x8) = ten;
 				*(f32*)(member->field_0x8 + 0xc) = len;
@@ -974,9 +970,9 @@ void BattleAudienceCtrlProcessKinopioEscape(s32 index) {
 		case 0:
 			(*(s32*)member->field_0x8)--;
 			if (*(s32*)member->field_0x8 <= 0) {
-				*(f32*)(member->field_0x54 + 0x24) = 0.0f;
-				*(f32*)(member->field_0x54 + 0x28) = -1.0f;
-				*(f32*)(member->field_0x54 + 0x2c) = 0.0f;
+				member->velocity.x = 0.0f;
+				member->velocity.y = -1.0f;
+				member->velocity.z = 0.0f;
 				member->field_0x4++;
 			}
 			break;
@@ -1001,9 +997,9 @@ void BattleAudienceCtrlProcessKinopioEscape(s32 index) {
 					f32 eight = 8.0f;
 					f32 six = 6.0f;
 					f32 neg0p5 = -0.5f;
-					*(f32*)(member->field_0x54 + 0x24) = v;
-					*(f32*)(member->field_0x54 + 0x28) = zero;
-					*(f32*)(member->field_0x54 + 0x2c) = eight;
+					member->velocity.x = v;
+					member->velocity.y = zero;
+					member->velocity.z = eight;
 					*(f32*)(member->field_0xC0 + 0x1c) = six;
 					*(f32*)(member->field_0xC0 + 0x24) = neg0p5;
 				}
@@ -1038,14 +1034,14 @@ void BattleAudienceCtrlProcessKinopioSleep(s32 index, s32 kind) {
 			BattleAudience_SetAnim(index, 0xb, 0);
 		}
 		if (*(s32*)(member->field_0x30) >= 0x140) {
-			*(f32*)(member->field_0x54 + 0x10) = 1.0f;
+			member->baseSize.y = 1.0f;
 			*(s32*)(member->field_0x30) = 0;
 		}
 		if (*(s32*)(member->field_0x30) <= 0xa0) {
-			*(f32*)(member->field_0x54 + 0x10) -= 0.0025f;
+			member->baseSize.y -= 0.0025f;
 		}
 		else {
-			*(f32*)(member->field_0x54 + 0x10) += 0.0025f;
+			member->baseSize.y += 0.0025f;
 		}
 		(*(s32*)(member->field_0x30))++;
 		member->colorB = member->colorB + *(u8*)(member->field_0x8 + 0x10);
@@ -1078,7 +1074,7 @@ void BattleAudienceCtrlProcessKinopioSleep(s32 index, s32 kind) {
 		else {
 			BattleAudience_SetAnim(index, 1, 0);
 		}
-		*(f32*)(member->field_0x54 + 0x10) = 1.0f;
+		member->baseSize.y = 1.0f;
 		member->colorB = 0;
 		member->field_0x4++;
 		// fallthrough
@@ -1205,10 +1201,10 @@ void BattleAudienceCtrlProcessKinopioIntrude(s32 index) {
 		len = (f32)sqrt(dx * dx + dz * dz);
 		vx = 5.0f * (dx / len);
 		vz = 5.0f * (dz / len);
-		*(f32*)(member->field_0x8 + 0x70) = vx;
-		*(f32*)(member->field_0x8 + 0x74) = 0.0f;
-		*(f32*)(member->field_0x8 + 0x80) = 0.0f;
-		*(f32*)(member->field_0x8 + 0x78) = vz;
+		member->velocity.x = vx;
+		member->velocity.y = 0.0f;
+		member->accel.y = 0.0f;
+		member->velocity.z = vz;
 		intrudeSound = psndSFXOn(str_802F8D68);
 	}
 		// fallthrough
@@ -1216,23 +1212,23 @@ void BattleAudienceCtrlProcessKinopioIntrude(s32 index) {
 		if (member->position.z <= 110.0f) {
 			member->field_0x4 = 0xa;
 			member->position.z = 110.0f;
-			*(f32*)(member->field_0x8 + 0x70) = 0.0f;
-			*(f32*)(member->field_0x8 + 0x74) = 10.0f;
-			*(f32*)(member->field_0x8 + 0x80) = -0.7f;
-			*(f32*)(member->field_0x8 + 0x78) = -1.5f;
+			member->velocity.x = 0.0f;
+			member->velocity.y = 10.0f;
+			member->accel.y = -0.7f;
+			member->velocity.z = -1.5f;
 			psndSFXOff(intrudeSound);
 		}
 		break;
 	case 0xa: {
 		f32 zero = 0.0f;
-		if (*(f32*)(member->field_0x8 + 0x74) <= zero &&
+		if (member->velocity.y <= zero &&
 		    member->position.y <= zero) {
 			f32 dz;
 			f32 dx;
 			member->field_0x4 = 0xf;
 			member->position.y = zero;
-			*(f32*)(member->field_0x8 + 0x74) = zero;
-			*(f32*)(member->field_0x8 + 0x80) = zero;
+			member->velocity.y = zero;
+			member->accel.y = zero;
 			dir = *(f32*)(member->field_0x8 + 4);
 			t = 300.0f * dir;
 			dx = t - member->position.x;
@@ -1240,9 +1236,9 @@ void BattleAudienceCtrlProcessKinopioIntrude(s32 index) {
 			len = (f32)sqrt(dx * dx + dz * dz);
 			vx = 5.0f * (dx / len);
 			vz = 5.0f * (dz / len);
-			*(f32*)(member->field_0x8 + 0x70) = vx;
-			*(f32*)(member->field_0x8 + 0x74) = zero;
-			*(f32*)(member->field_0x8 + 0x78) = vz;
+			member->velocity.x = vx;
+			member->velocity.y = zero;
+			member->velocity.z = vz;
 			btl_camera_set_mode(0, 3);
 			btl_camera_set_moveto(0, 0x1e, 4, 698.0f * *(f32*)(member->field_0x8 + 4),
 			    100.0f, zero, zero,
@@ -1261,7 +1257,7 @@ void BattleAudienceCtrlProcessKinopioIntrude(s32 index) {
 #endif
 			member->field_0x4 = 0x10;
 			*(s32*)member->field_0x8 = 0x23;
-			*(Vec*)(member->field_0x8 + 0x70) = vec3_802f8c84;
+			member->velocity = vec3_802f8c84;
 		}
 		break;
 	case 0x10:
@@ -1293,11 +1289,11 @@ void BattleAudienceCtrlProcessKinopioIntrude(s32 index) {
 		}
 		// fallthrough
 	case 0x14:
-		member->field_0x12C = BattleStage_ObjectFallCheck();
+		member->evtId = BattleStage_ObjectFallCheck();
 		member->field_0x4 = 0x19;
 		break;
 	case 0x19:
-		if (!evtCheckID(member->field_0x12C)) {
+		if (!evtCheckID(member->evtId)) {
 			member->field_0x4 = 0x1e;
 			member->mRotation.y = 0.0f;
 		}
@@ -1316,10 +1312,10 @@ void BattleAudienceCtrlProcessKinopioIntrude(s32 index) {
 		len = (f32)sqrt(dx * dx + dz * dz);
 		vx = 5.0f * (dx / len);
 		vz = 5.0f * (dz / len);
-		*(f32*)(member->field_0x8 + 0x70) = vx;
-		*(f32*)(member->field_0x8 + 0x74) = 0.0f;
-		*(f32*)(member->field_0x8 + 0x80) = 0.0f;
-		*(f32*)(member->field_0x8 + 0x78) = vz;
+		member->velocity.x = vx;
+		member->velocity.y = 0.0f;
+		member->accel.y = 0.0f;
+		member->velocity.z = vz;
 		intrudeSound = psndSFXOn(str_802F8D68);
 	}
 		// fallthrough
@@ -1327,24 +1323,24 @@ void BattleAudienceCtrlProcessKinopioIntrude(s32 index) {
 		if (member->position.z <= 110.0f) {
 			member->field_0x4 = 0x3c;
 			member->position.z = 110.0f;
-			*(f32*)(member->field_0x8 + 0x70) = 0.0f;
-			*(f32*)(member->field_0x8 + 0x74) = 10.0f;
-			*(f32*)(member->field_0x8 + 0x80) = -0.7f;
-			*(f32*)(member->field_0x8 + 0x78) = -1.5f;
+			member->velocity.x = 0.0f;
+			member->velocity.y = 10.0f;
+			member->accel.y = -0.7f;
+			member->velocity.z = -1.5f;
 			psndSFXOff(intrudeSound);
 		}
 		break;
 	case 0x3c:
-		if (*(f32*)(member->field_0x8 + 0x74) <= 0.0f &&
+		if (member->velocity.y <= 0.0f &&
 		    member->position.y <= 0.0f) {
 			f32 zero = 0.0f;
 			member->field_0x4 = 0x41;
 			*(s32*)member->field_0x8 = 0;
 			member->position.y = zero;
-			*(f32*)(member->field_0x8 + 0x70) = zero;
-			*(f32*)(member->field_0x8 + 0x74) = zero;
-			*(f32*)(member->field_0x8 + 0x80) = zero;
-			*(f32*)(member->field_0x8 + 0x78) = zero;
+			member->velocity.x = zero;
+			member->velocity.y = zero;
+			member->accel.y = zero;
+			member->velocity.z = zero;
 			intrudeSound = psndSFXOn(str_802F8D68);
 		}
 		break;
@@ -1383,7 +1379,7 @@ void BattleAudienceCtrlProcessKinopioIntrude(s32 index) {
 		f32 dz;
 		f32 dx;
 		BattleStage_NozzleWorkCheck(1);
-		member->field_0x12C = *(s32*)((u8*)work + 0x18298);
+		member->evtId = *(s32*)((u8*)work + 0x18298);
 		member->field_0x4 = 0x4b;
 		dir = *(f32*)(member->field_0x8 + 4);
 		t = 300.0f * dir;
@@ -1392,9 +1388,9 @@ void BattleAudienceCtrlProcessKinopioIntrude(s32 index) {
 		len = (f32)sqrt(dx * dx + dz * dz);
 		vx = 5.0f * (dx / len);
 		vz = 5.0f * (dz / len);
-		*(f32*)(member->field_0x8 + 0x70) = vx;
-		*(f32*)(member->field_0x8 + 0x74) = zero;
-		*(f32*)(member->field_0x8 + 0x78) = vz;
+		member->velocity.x = vx;
+		member->velocity.y = zero;
+		member->velocity.z = vz;
 	}
 		break;
 	case 0x4b:
@@ -1405,12 +1401,12 @@ void BattleAudienceCtrlProcessKinopioIntrude(s32 index) {
 		if (__fabs(member->position.x) >= double_300_802f8d90) {
 #endif
 			member->field_0x4 = 0x50;
-			*(Vec*)(member->field_0x8 + 0x70) = vec3_802f8c90;
+			member->velocity = vec3_802f8c90;
 			psndSFXOff(intrudeSound);
 		}
 		break;
 	case 0x50:
-		if (!evtCheckID(member->field_0x12C)) {
+		if (!evtCheckID(member->evtId)) {
 			member->field_0x4 = 0x55;
 		}
 		break;
@@ -1547,7 +1543,7 @@ void BattleAudienceCtrlProcessKinopioShell(s32 index) {
 		if (*(s32*)member->field_0x8 <= 0) {
 			BattleAudience_ChangeStatus(index, 0);
 		}
-		member->field_0x12C = 0;
+		member->timer = 0;
 		break;
 	}
 }
@@ -1608,15 +1604,15 @@ void BattleAudienceCtrlProcessKinopioFire(s32 index, s32 kind) {
 	case 1:
 #ifdef MUST_MATCH
 		{
-			f32 v = *(f32*)(member->field_0x54 + 0xc);
+			f32 v = member->baseSize.x;
 			f32 step = 0.05f;
-			*(f32*)(member->field_0x54 + 0xc) = v + step;
-			v = *(f32*)(member->field_0x54 + 0x10);
-			*(f32*)(member->field_0x54 + 0x10) = v + step;
+			member->baseSize.x = v + step;
+			v = member->baseSize.y;
+			member->baseSize.y = v + step;
 		}
 #else
-		*(f32*)(member->field_0x54 + 0xc) += 0.05f;
-		*(f32*)(member->field_0x54 + 0x10) += 0.05f;
+		member->baseSize.x += 0.05f;
+		member->baseSize.y += 0.05f;
 #endif
 		(*(s32*)member->field_0x8)--;
 		if (*(s32*)member->field_0x8 <= 0) {
@@ -1734,13 +1730,13 @@ void BattleAudienceCtrlProcessKinopioEat(s32 index) {
 	case 3:
 		target = BattleAudienceGetPtr(*(s16*)(member->field_0xEC + 4));
 		if (member->position.x >= target->position.x) {
-			*(f32*)(member->field_0x54 + 0x18) -= 6.0f;
+			member->drawOffset.x -= 6.0f;
 		}
 		else {
-			*(f32*)(member->field_0x54 + 0x18) += 6.0f;
+			member->drawOffset.x += 6.0f;
 		}
-		if (*(f32*)(member->field_0x54 + 0x18) <= -60.0f ||
-		    *(f32*)(member->field_0x54 + 0x18) >= 60.0f) {
+		if (member->drawOffset.x <= -60.0f ||
+		    member->drawOffset.x >= 60.0f) {
 			member->field_0x4++;
 		}
 		break;
@@ -1753,15 +1749,15 @@ void BattleAudienceCtrlProcessKinopioEat(s32 index) {
 		break;
 	case 5: {
 		f32 zero = 0.0f;
-		if (*(f32*)(member->field_0x54 + 0x18) > zero) {
-			*(f32*)(member->field_0x54 + 0x18) -= 6.0f;
-			if (*(f32*)(member->field_0x54 + 0x18) <= zero) {
+		if (member->drawOffset.x > zero) {
+			member->drawOffset.x -= 6.0f;
+			if (member->drawOffset.x <= zero) {
 				member->field_0x4 = 7;
 			}
 		}
 		else {
-			*(f32*)(member->field_0x54 + 0x18) += 6.0f;
-			if (*(f32*)(member->field_0x54 + 0x18) >= zero) {
+			member->drawOffset.x += 6.0f;
+			if (member->drawOffset.x >= zero) {
 				member->field_0x4 = 7;
 			}
 		}
@@ -1783,7 +1779,7 @@ void BattleAudienceCtrlProcessKinopioEat(s32 index) {
 		}
 		if (count >= 1) {
 			member->field_0x4 = 8;
-			member->field_0x12C = candidates[irand(count)];
+			member->targetId = candidates[irand(count)];
 		}
 		else if (i == 0x3c) {
 			member->field_0x4 = 0x63;
@@ -1793,9 +1789,9 @@ void BattleAudienceCtrlProcessKinopioEat(s32 index) {
 	case 8: {
 		f32 zero = 0.0f;
 		f32 neg1 = -1.0f;
-		*(f32*)(member->field_0x54 + 0x24) = zero;
-		*(f32*)(member->field_0x54 + 0x28) = neg1;
-		*(f32*)(member->field_0x54 + 0x2c) = zero;
+		member->velocity.x = zero;
+		member->velocity.y = neg1;
+		member->velocity.z = zero;
 		member->field_0x4++;
 		break;
 	}
@@ -1807,7 +1803,7 @@ void BattleAudienceCtrlProcessKinopioEat(s32 index) {
 			f32 x;
 			f32 z;
 
-			id = member->field_0x12C;
+			id = member->targetId;
 			r = rand() * 10 / 0x7fff;
 			col = id / 0x14;
 			row = id % 0x14;
@@ -1823,9 +1819,9 @@ void BattleAudienceCtrlProcessKinopioEat(s32 index) {
 	case 0xa: {
 		f32 zero = 0.0f;
 		f32 one = 1.0f;
-		*(f32*)(member->field_0x54 + 0x24) = zero;
-		*(f32*)(member->field_0x54 + 0x28) = one;
-		*(f32*)(member->field_0x54 + 0x2c) = zero;
+		member->velocity.x = zero;
+		member->velocity.y = one;
+		member->velocity.z = zero;
 		member->field_0x4++;
 		break;
 	}
@@ -1835,10 +1831,10 @@ void BattleAudienceCtrlProcessKinopioEat(s32 index) {
 			stageY = *(f32*)((u8*)stage + 0xb34);
 			member->mHomePosition.y = stageY;
 			member->position.y = stageY;
-			*(f32*)(member->field_0x54 + 0x28) = 0.0f;
+			member->velocity.y = 0.0f;
 			member->field_0x4 = 0x63;
 			*(s32*)member->field_0x8 = 0xa;
-			target = BattleAudienceGetPtr(member->field_0x12C);
+			target = BattleAudienceGetPtr(member->targetId);
 			memcpy(target, member, 0x134);
 			BattleAudience_Delete(index);
 		}
