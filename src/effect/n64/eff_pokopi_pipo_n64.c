@@ -199,12 +199,8 @@ void effPokopiPipoDisp(CameraId camId, void* param) {
 	scaleXZ = 0.71428573f * data->scale;
 	PSMTXTrans(mtx, data->x, data->y, data->z);
 	camera3d = camGetPtr(CAMERA_3D);
-#ifdef MUST_MATCH
 	angle = -camera3d->viewYaw;
 	angle = 0.017453292f * angle;
-#else
-	angle = -camera3d->viewYaw * 0.017453292f;
-#endif
 	PSMTXRotRad(rot, 'y', angle);
 	PSMTXScale(scale, scaleXZ * data->scaleX, scaleXZ * data->scaleY, scaleXZ);
 	PSMTXConcat(mtx, rot, mtx);

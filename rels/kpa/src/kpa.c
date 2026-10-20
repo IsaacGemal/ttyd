@@ -635,13 +635,7 @@ void kpa_status_disp(CameraId cameraId, void* param) {
     pos.x += 30.0f;
     iconDispGx(1.0f, &pos, 0x10, 0x1D5);
 
-#ifdef MUST_MATCH
-    // pouchGetKpaCoin's header says u8, but the original does not zero-extend the result
-    // (no clrlwi before the division); call through a u32-returning pointer to match.
-    value = ((u32 (*)(void))pouchGetKpaCoin)();
-#else
     value = pouchGetKpaCoin();
-#endif
     pos.x += 20.0f;
     digits[0] = value / 10;
     digits[1] = value % 10;

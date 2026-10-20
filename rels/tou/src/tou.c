@@ -2951,16 +2951,8 @@ void gans_tex(CameraId cameraId, void* param) {
     GXGetProjectionv(proj);
     GXGetScissor(&x, &y, &wd, &ht);
     {
-        // match-only: naming the viewport constants forces the original load order
-#ifdef MUST_MATCH
-        f32 z = 0.0f;
-        f32 w = 128.0f;
-
-        GXSetViewport(z, z, w, w, z, 1.0f);
-#else
         GXSetViewport(0.0f, 0.0f, 128.0f, 128.0f,
                       0.0f, 1.0f);
-#endif
     }
     GXSetScissor(1, 1, 0x7e, 0x7e);
     C_MTXPerspective(persp, 25.0f, 1.0f, 1.0f,
@@ -3038,13 +3030,9 @@ static USER_FUNC(evt_tou_print_ranking) {
     ((DispWork*)dwp[0])->targetScroll = (f32)(((DispWork*)dwp[0])->page * 0xdc);
     {
         DispWork* w = (DispWork*)dwp[0];
-#ifdef MUST_MATCH
-        // match-only: reading scroll through dwp[0] again instead of w keeps MWCC from reordering
+        // Reading scroll through dwp[0] again instead of w keeps MWCC from reordering
         // the two field loads (the natural w->scroll form lands scroll in f3 before f2's targetScroll)
         f32 t = w->targetScroll - ((DispWork*)dwp[0])->scroll;
-#else
-        f32 t = w->targetScroll - w->scroll;
-#endif
 
         w->scroll = t * TOU_F32(float_0p125_tou_0000a888) + w->scroll;
     }
