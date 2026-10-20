@@ -214,16 +214,16 @@ static s32 mario_status_henka_table[3] = { 5, 5, 3 };
 extern const char str_8041DB3C[];
 static u32 main_evt[] = { 0x0001005B, (u32)evt_unitwin_main_func, 0x2, 0x1 };
 u32 select_evt[] = { 0x0001005B, (u32)evt_unitwin_select_func, 0x2, 0x1 };
-WinMgrDesc unitwinWinDesc[3] = {
-	{ 0, 0, 8, -150, 120, 300, 50, { 0x2B, 0xA4, 0xFF, 0xFF }, NULL, unitwinSellTableDisp },
-	{ 0, 0, 8, -240, -130, 500, 80, { 0xF0, 0xF0, 0xF0, 0xFF }, unitwinHelpMain, unitwinHelpDisp },
-	{ 2, 0, 8, -250, -130, 150, 45, { 0xF0, 0xF0, 0xF0, 0xFF }, NULL, unitwinShopPointDisp },
+WinMgrDesc unitwin_window_desc[3] = {
+	{ 0, 0, 8, -150, 120, 300, 50, { 0x2B, 0xA4, 0xFF, 0xFF }, NULL, unitwin_selltable_disp },
+	{ 0, 0, 8, -240, -130, 500, 80, { 0xF0, 0xF0, 0xF0, 0xFF }, unitwin_help_main, unitwin_help_disp },
+	{ 2, 0, 8, -250, -130, 150, 45, { 0xF0, 0xF0, 0xF0, 0xFF }, NULL, unitwin_point_disp },
 };
 #pragma force_active on
 u32 gap_08_80418A0C_sbss;
 #pragma force_active reset
 static s16* mario_status_point_table[3];
-s32 coinCountSfxTimer;
+s32 coin_count_sfx_timer;
 static UnitWinWork* _wp;
 
 // .sdata2 objects, in the original's order.
@@ -334,7 +334,7 @@ __declspec(section ".sdata2") const f32 float_81_8041db58[1] = { 81.0f };
 __declspec(section ".sdata2") const f32 float_111_8041db5c[1] = { 111.0f };
 
 #pragma pool_data on // the original addresses its .rodata through one base register
-void unitwinSellTableDisp(WinMgrEntry* entry) {
+void unitwin_selltable_disp(WinMgrEntry* entry) {
 	UnitWinWork* wp = _wp;
 	Mtx mtx;
 	Vec pos;
@@ -378,14 +378,14 @@ void unitwinSellTableDisp(WinMgrEntry* entry) {
 	}
 }
 
-void unitwinHelpMain(WinMgrEntry* entry) {
+void unitwin_help_main(WinMgrEntry* entry) {
 	winMgrHelpMain(entry);
 }
 
 // The original keeps the byte offset (index*4) in a register across winMgrAction
 // and indexes with lwzx; writing `list[wp->index]` makes the compiler defer the
 // shift past the call, so compute the byte offset explicitly.
-void unitwinHelpDisp(WinMgrEntry* entry) {
+void unitwin_help_disp(WinMgrEntry* entry) {
 	UnitWinWork* wp = _wp;
 	s32 offset = wp->index * 4;
 	s32* list = wp->items;
@@ -396,7 +396,7 @@ void unitwinHelpDisp(WinMgrEntry* entry) {
 	}
 }
 
-void unitwinShopPointDisp(WinMgrEntry* entry) {
+void unitwin_point_disp(WinMgrEntry* entry) {
 	UnitWinWork* wp = _wp;
 	PouchData* pouch = pouchGetPtr();
 
@@ -520,7 +520,7 @@ USER_FUNC(evt_unitwin_selltable_setup) {
 	wp->mainEvt = evtEntryType(select_evt, 0, 0x20, 0);
 	wp->mainEvt->lwData[0] = (s32)wp;
 	for (i = 0; i < 3; i++) {
-		wp->winId[i] = winMgrEntry(&unitwinWinDesc[i]);
+		wp->winId[i] = winMgrEntry(&unitwin_window_desc[i]);
 	}
 	wp->selObj = -1;
 	return EVT_RETURN_DONE;
@@ -551,7 +551,7 @@ USER_FUNC(unitwincoin_wait) {
 	return (wp->dispCoin != coin) ? EVT_RETURN_BLOCK : EVT_RETURN_DONE;
 }
 
-USER_FUNC(unk_8017524c) {
+USER_FUNC(unitwin_lottery_disp_onoff) {
 	s32 on = evtGetValue(event, event->args[0]);
 	UnitWinWork* wp = _wp;
 
@@ -563,7 +563,7 @@ USER_FUNC(unk_8017524c) {
 	return EVT_RETURN_DONE;
 }
 
-USER_FUNC(unk_801751f8) {
+USER_FUNC(unitwin_set_taken) {
 	s32* args = event->args;
 	UnitWinWork* wp = (UnitWinWork*)evtGetValue(event, args[0]);
 
@@ -863,14 +863,14 @@ void evt_unitwin_disp_func(CameraId cameraId, void* param) {
 				}
 				wp->coinTick = wp->coinTick + 1;
 				wp->coinTick = wp->coinTick % 1200;
-				if (coinCountSfxTimer == 0) {
+				if (coin_count_sfx_timer == 0) {
 					psndSFXOn("SFX_COUNT_COIN1");
-					coinCountSfxTimer = 7;
+					coin_count_sfx_timer = 7;
 				}
 			}
 		}
-		if (coinCountSfxTimer > 0) {
-			coinCountSfxTimer--;
+		if (coin_count_sfx_timer > 0) {
+			coin_count_sfx_timer--;
 		}
 	}
 
