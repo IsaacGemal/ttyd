@@ -479,22 +479,22 @@ void effStarStoneMain(EffectEntry* effect) {
 
 #define STARSTONE_VTX_COMMON(pos, nrm, tex) \
 	GXClearVtxDesc(); \
-	GXSetVtxDesc(9, 2); \
-	GXSetVtxAttrFmt(0, 9, 1, 3, 0xb); \
-	GXSetArray(9, base + (pos), 6); \
-	GXSetVtxDesc(0xa, 2); \
-	GXSetVtxAttrFmt(0, 0xa, 0, 1, 6); \
-	GXSetArray(0xa, base + (nrm), 3)
+	GXSetVtxDesc(GX_VA_POS, GX_INDEX8); \
+	GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_POS_XYZ, GX_S16, 0xb); \
+	GXSetArray(GX_VA_POS, base + (pos), 6); \
+	GXSetVtxDesc(GX_VA_NRM, GX_INDEX8); \
+	GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_NRM, GX_NRM_XYZ, GX_S8, 6); \
+	GXSetArray(GX_VA_NRM, base + (nrm), 3)
 
 #define STARSTONE_VTX_CLR(clr) \
-	GXSetVtxDesc(0xb, 2); \
-	GXSetVtxAttrFmt(0, 0xb, 1, 5, 0); \
-	GXSetArray(0xb, base + (clr), 4)
+	GXSetVtxDesc(GX_VA_CLR0, GX_INDEX8); \
+	GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_CLR0, GX_CLR_RGBA, GX_RGBA8, 0); \
+	GXSetArray(GX_VA_CLR0, base + (clr), 4)
 
 #define STARSTONE_VTX_TAIL(tex) \
-	GXSetVtxDesc(0xd, 2); \
-	GXSetVtxAttrFmt(0, 0xd, 1, 3, 0xd); \
-	GXSetArray(0xd, base + (tex), 4)
+	GXSetVtxDesc(GX_VA_TEX0, GX_INDEX8); \
+	GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, GX_TEX_ST, GX_S16, 0xd); \
+	GXSetArray(GX_VA_TEX0, base + (tex), 4)
 
 // The original walks both tables with pointer increments: i first, then dl, then the size pointer in
 // the branch delay slot, with the counter in r27 and dl/sz in r25/r26. The block-scoped pointers and
@@ -546,19 +546,19 @@ void effStarStoneDisp_1(CameraId camId, void* param) {
 	Mtx rotMtx;
 	GXTexObj texObj;
 	mapSetMaterialFog();
-	GXSetArray(0xb, color_tbl[data->field_0x0], 4);
+	GXSetArray(GX_VA_CLR0, color_tbl[data->field_0x0], 4);
 	GXSetNumChans(1);
-	GXSetChanCtrl(4, 0, 0, 0, 0, 0, 2);
-	GXSetChanMatColor(4, *(GXColor*)&data->field_0x30);
+	GXSetChanCtrl(GX_COLOR0A0, GX_DISABLE, GX_SRC_REG, GX_SRC_REG, 0, GX_DF_NONE, GX_AF_NONE);
+	GXSetChanMatColor(GX_COLOR0A0, *(GXColor*)&data->field_0x30);
 	GXSetNumTexGens(0);
 	GXSetNumTevStages(2);
-	GXSetTevOrder(0, 0xff, 0xff, 4);
-	GXSetTevOp(0, 4);
-	GXSetTevOrder(1, 0xff, 0xff, 0xff);
-	GXSetTevColorOp(1, 0, 0, 0, 1, 0);
-	GXSetTevAlphaOp(1, 0, 0, 0, 1, 0);
-	GXSetTevColorIn(1, 0xf, 2, 0, 0xf);
-	GXSetTevAlphaIn(1, 7, 1, 0, 7);
+	GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD_NULL, GX_TEXMAP_NULL, GX_COLOR0A0);
+	GXSetTevOp(GX_TEVSTAGE0, GX_PASSCLR);
+	GXSetTevOrder(GX_TEVSTAGE1, GX_TEXCOORD_NULL, GX_TEXMAP_NULL, GX_COLOR_NULL);
+	GXSetTevColorOp(GX_TEVSTAGE1, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+	GXSetTevAlphaOp(GX_TEVSTAGE1, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+	GXSetTevColorIn(GX_TEVSTAGE1, GX_CC_ZERO, GX_CC_C0, GX_CC_CPREV, GX_CC_ZERO);
+	GXSetTevAlphaIn(GX_TEVSTAGE1, GX_CA_ZERO, GX_CA_A0, GX_CA_APREV, GX_CA_ZERO);
 #ifdef MUST_MATCH
 	GXSetTevColor(1, starStoneTevColor(*(GXColor*)&unk_804232e0, data));
 #else
@@ -568,7 +568,7 @@ void effStarStoneDisp_1(CameraId camId, void* param) {
 		color.g = data->tintG;
 		color.b = data->tintB;
 		color.a = data->field_0x5F;
-		GXSetTevColor(1, color);
+		GXSetTevColor(GX_TEVREG0, color);
 	}
 #endif
 
@@ -578,13 +578,13 @@ void effStarStoneDisp_1(CameraId camId, void* param) {
 	PSMTXRotRad(rotMtx, 'y', float_deg2rad_80420b50 * data->field_0x1C);
 	PSMTXConcat(mtx, rotMtx, mtx);
 	PSMTXConcat(cam->view, mtx, mtx);
-	GXLoadPosMtxImm(mtx, 0);
-	GXSetCurrentMtx(0);
-	GXSetBlendMode(1, 4, 5, 0);
-	GXSetZCompLoc(1);
-	GXSetAlphaCompare(7, 0, 0, 7, 0);
-	GXSetZMode(1, 3, 0);
-	GXSetCullMode(2);
+	GXLoadPosMtxImm(mtx, GX_PNMTX0);
+	GXSetCurrentMtx(GX_PNMTX0);
+	GXSetBlendMode(GX_BM_BLEND, GX_BL_SRCALPHA, GX_BL_INVSRCALPHA, GX_LO_CLEAR);
+	GXSetZCompLoc(GX_TRUE);
+	GXSetAlphaCompare(GX_ALWAYS, 0, GX_AOP_AND, GX_ALWAYS, 0);
+	GXSetZMode(GX_TRUE, GX_LEQUAL, GX_FALSE);
+	GXSetCullMode(GX_CULL_BACK);
 
 	if (type == 0) {
 		STARSTONE_VTX_COMMON(0x40, 0x140, 0x1c0);
@@ -592,8 +592,8 @@ void effStarStoneDisp_1(CameraId camId, void* param) {
 		STARSTONE_VTX_TAIL(0x1c0);
 		STARSTONE_DL_LOOP(0x2a4, diamond_1_dl_0_size_tbl, 0x22);
 		STARSTONE_VTX_COMMON(0x40, 0x140, 0x1c0);
-		GXSetVtxDesc(0xb, 2);
-		GXSetVtxAttrFmt(0, 0xb, 1, 5, 0);
+		GXSetVtxDesc(GX_VA_CLR0, GX_INDEX8);
+		GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_CLR0, GX_CLR_RGBA, GX_RGBA8, 0);
 		STARSTONE_VTX_TAIL(0x1c0);
 		STARSTONE_DL_LOOP(0x32c, diamond_1_dl_1_size_tbl, 0x22);
 	} else {
@@ -608,21 +608,21 @@ void effStarStoneDisp_1(CameraId camId, void* param) {
 	}
 
 	GXSetNumChans(1);
-	GXSetChanCtrl(4, 0, 0, 1, 0, 0, 2);
+	GXSetChanCtrl(GX_COLOR0A0, GX_DISABLE, GX_SRC_REG, GX_SRC_VTX, 0, GX_DF_NONE, GX_AF_NONE);
 	GXSetNumTexGens(1);
-	GXSetTexCoordGen2(0, 1, 4, 0x1e, 0, 0x7d);
+	GXSetTexCoordGen2(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_TEXMTX0, GX_FALSE, GX_PTIDENTITY);
 	PSMTXTrans(mtx, data->field_0x24, data->field_0x28, float_0_80420b54);
-	GXLoadTexMtxImm(mtx, 0x1e, 1);
+	GXLoadTexMtxImm(mtx, GX_TEXMTX0, GX_MTX2x4);
 	GXSetNumTevStages(2);
-	GXSetTevOrder(0, 0, 0, 4);
-	GXSetTevColorOp(0, 0, 0, 0, 1, 0);
-	GXSetTevAlphaOp(0, 0, 0, 0, 1, 0);
-	GXSetTevOp(0, 0);
-	GXSetTevOrder(1, 0xff, 0xff, 0xff);
-	GXSetTevColorOp(1, 0, 0, 0, 1, 0);
-	GXSetTevAlphaOp(1, 0, 0, 0, 1, 0);
-	GXSetTevColorIn(1, 0xf, 2, 0, 0xf);
-	GXSetTevAlphaIn(1, 7, 1, 0, 7);
+	GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR0A0);
+	GXSetTevColorOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+	GXSetTevAlphaOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+	GXSetTevOp(GX_TEVSTAGE0, GX_MODULATE);
+	GXSetTevOrder(GX_TEVSTAGE1, GX_TEXCOORD_NULL, GX_TEXMAP_NULL, GX_COLOR_NULL);
+	GXSetTevColorOp(GX_TEVSTAGE1, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+	GXSetTevAlphaOp(GX_TEVSTAGE1, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+	GXSetTevColorIn(GX_TEVSTAGE1, GX_CC_ZERO, GX_CC_C0, GX_CC_CPREV, GX_CC_ZERO);
+	GXSetTevAlphaIn(GX_TEVSTAGE1, GX_CA_ZERO, GX_CA_A0, GX_CA_APREV, GX_CA_ZERO);
 #ifdef MUST_MATCH
 	GXSetTevColor(1, starStoneTevColor(*(GXColor*)&unk_804232e4, data));
 #else
@@ -632,7 +632,7 @@ void effStarStoneDisp_1(CameraId camId, void* param) {
 		color.g = data->tintG;
 		color.b = data->tintB;
 		color.a = data->field_0x5F;
-		GXSetTevColor(1, color);
+		GXSetTevColor(GX_TEVREG0, color);
 	}
 #endif
 
@@ -642,19 +642,19 @@ void effStarStoneDisp_1(CameraId camId, void* param) {
 	PSMTXRotRad(rotMtx, 'y', float_deg2rad_80420b50 * data->field_0x1C);
 	PSMTXConcat(mtx, rotMtx, mtx);
 	PSMTXConcat(cam->view, mtx, mtx);
-	GXLoadPosMtxImm(mtx, 0);
-	GXSetCurrentMtx(0);
+	GXLoadPosMtxImm(mtx, GX_PNMTX0);
+	GXSetCurrentMtx(GX_PNMTX0);
 	if (type == 0) {
 		effGetTexObj(0x2e, &texObj);
-		GXLoadTexObj(&texObj, 0);
+		GXLoadTexObj(&texObj, GX_TEXMAP0);
 	} else {
 		effGetTexObj(0x2f, &texObj);
-		GXLoadTexObj(&texObj, 0);
+		GXLoadTexObj(&texObj, GX_TEXMAP0);
 	}
-	GXSetBlendMode(1, 4, 5, 0);
-	GXSetZCompLoc(1);
-	GXSetAlphaCompare(7, 0, 0, 7, 0);
-	GXSetZMode(1, 3, 0);
+	GXSetBlendMode(GX_BM_BLEND, GX_BL_SRCALPHA, GX_BL_INVSRCALPHA, GX_LO_CLEAR);
+	GXSetZCompLoc(GX_TRUE);
+	GXSetAlphaCompare(GX_ALWAYS, 0, GX_AOP_AND, GX_ALWAYS, 0);
+	GXSetZMode(GX_TRUE, GX_LEQUAL, GX_FALSE);
 
 	if (type == 0) {
 		STARSTONE_VTX_COMMON(0x40, 0x140, 0x1c0);
@@ -669,16 +669,16 @@ void effStarStoneDisp_1(CameraId camId, void* param) {
 	}
 
 	effGetTexObj(0x2d, &texObj);
-	GXLoadTexObj(&texObj, 0);
-	GXSetBlendMode(1, 4, 5, 0);
-	GXSetZCompLoc(1);
-	GXSetAlphaCompare(7, 0, 0, 7, 0);
-	GXSetZMode(1, 3, 0);
+	GXLoadTexObj(&texObj, GX_TEXMAP0);
+	GXSetBlendMode(GX_BM_BLEND, GX_BL_SRCALPHA, GX_BL_INVSRCALPHA, GX_LO_CLEAR);
+	GXSetZCompLoc(GX_TRUE);
+	GXSetAlphaCompare(GX_ALWAYS, 0, GX_AOP_AND, GX_ALWAYS, 0);
+	GXSetZMode(GX_TRUE, GX_LEQUAL, GX_FALSE);
 
 	if (type == 0) {
 		STARSTONE_VTX_COMMON(0x40, 0x140, 0x1c0);
-		GXSetVtxDesc(0xb, 2);
-		GXSetVtxAttrFmt(0, 0xb, 1, 5, 0);
+		GXSetVtxDesc(GX_VA_CLR0, GX_INDEX8);
+		GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_CLR0, GX_CLR_RGBA, GX_RGBA8, 0);
 		STARSTONE_VTX_TAIL(0x1c0);
 		STARSTONE_DL_LOOP(0x32c, diamond_1_dl_1_size_tbl, 0x22);
 	} else {
@@ -752,19 +752,19 @@ void effStarStoneDisp_2(CameraId camId, void* param) {
 	GXTexObj texObj;
 
 	mapSetMaterialFog();
-	GXSetArray(0xb, color_tbl[data->field_0x0], 4);
+	GXSetArray(GX_VA_CLR0, color_tbl[data->field_0x0], 4);
 	GXSetNumChans(1);
-	GXSetChanCtrl(4, 0, 0, 0, 0, 0, 2);
-	GXSetChanMatColor(4, *(GXColor*)&data->field_0x30);
+	GXSetChanCtrl(GX_COLOR0A0, GX_DISABLE, GX_SRC_REG, GX_SRC_REG, 0, GX_DF_NONE, GX_AF_NONE);
+	GXSetChanMatColor(GX_COLOR0A0, *(GXColor*)&data->field_0x30);
 	GXSetNumTexGens(0);
 	GXSetNumTevStages(2);
-	GXSetTevOrder(0, 0xff, 0xff, 4);
-	GXSetTevOp(0, 4);
-	GXSetTevOrder(1, 0xff, 0xff, 0xff);
-	GXSetTevColorOp(1, 0, 0, 0, 1, 0);
-	GXSetTevAlphaOp(1, 0, 0, 0, 1, 0);
-	GXSetTevColorIn(1, 0xf, 2, 0, 0xf);
-	GXSetTevAlphaIn(1, 7, 1, 0, 7);
+	GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD_NULL, GX_TEXMAP_NULL, GX_COLOR0A0);
+	GXSetTevOp(GX_TEVSTAGE0, GX_PASSCLR);
+	GXSetTevOrder(GX_TEVSTAGE1, GX_TEXCOORD_NULL, GX_TEXMAP_NULL, GX_COLOR_NULL);
+	GXSetTevColorOp(GX_TEVSTAGE1, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+	GXSetTevAlphaOp(GX_TEVSTAGE1, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+	GXSetTevColorIn(GX_TEVSTAGE1, GX_CC_ZERO, GX_CC_C0, GX_CC_CPREV, GX_CC_ZERO);
+	GXSetTevAlphaIn(GX_TEVSTAGE1, GX_CA_ZERO, GX_CA_A0, GX_CA_APREV, GX_CA_ZERO);
 #ifdef MUST_MATCH
 	GXSetTevColor(1, starStoneTevColor2(*(GXColor*)&unk_804232e8, data));
 #else
@@ -774,14 +774,14 @@ void effStarStoneDisp_2(CameraId camId, void* param) {
 		color.g = data->tintG;
 		color.b = data->tintB;
 		color.a = data->field_0x5F;
-		GXSetTevColor(1, color);
+		GXSetTevColor(GX_TEVREG0, color);
 	}
 #endif
-	GXSetBlendMode(1, 4, 5, 0);
-	GXSetZCompLoc(1);
-	GXSetAlphaCompare(7, 0, 0, 7, 0);
-	GXSetZMode(1, 3, 0);
-	GXSetCullMode(2);
+	GXSetBlendMode(GX_BM_BLEND, GX_BL_SRCALPHA, GX_BL_INVSRCALPHA, GX_LO_CLEAR);
+	GXSetZCompLoc(GX_TRUE);
+	GXSetAlphaCompare(GX_ALWAYS, 0, GX_AOP_AND, GX_ALWAYS, 0);
+	GXSetZMode(GX_TRUE, GX_LEQUAL, GX_FALSE);
+	GXSetCullMode(GX_CULL_BACK);
 
 	PSMTXTrans(mtx, data->field_0x8 + data->field_0x48, data->field_0xC, data->field_0x10 + data->spreadAZ);
 	PSMTXScale(scaleMtx, float_1p1_80420b4c * data->field_0x14, float_1p1_80420b4c * data->field_0x14, float_1p1_80420b4c * data->field_0x14);
@@ -793,20 +793,20 @@ void effStarStoneDisp_2(CameraId camId, void* param) {
 	PSMTXRotRad(rotMtx, 'y', float_deg2rad_80420b50 * data->field_0x18);
 	PSMTXConcat(mtx, rotMtx, mtx);
 	PSMTXConcat(cam->view, mtx, mtx);
-	GXLoadPosMtxImm(mtx, 0);
-	GXSetCurrentMtx(0);
+	GXLoadPosMtxImm(mtx, GX_PNMTX0);
+	GXSetCurrentMtx(GX_PNMTX0);
 	GXClearVtxDesc();
-	GXSetVtxDesc(9, 2);
-	GXSetVtxAttrFmt(0, 9, 1, 3, 0xb);
-	GXSetArray(9, base + 0x3c0, 6);
-	GXSetVtxDesc(0xa, 2);
-	GXSetVtxAttrFmt(0, 0xa, 0, 1, 6);
-	GXSetArray(0xa, base + 0x480, 3);
-	GXSetVtxDesc(0xb, 2);
-	GXSetVtxAttrFmt(0, 0xb, 1, 5, 0);
-	GXSetVtxDesc(0xd, 2);
-	GXSetVtxAttrFmt(0, 0xd, 1, 3, 0xe);
-	GXSetArray(0xd, base + 0x520, 4);
+	GXSetVtxDesc(GX_VA_POS, GX_INDEX8);
+	GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_POS_XYZ, GX_S16, 0xb);
+	GXSetArray(GX_VA_POS, base + 0x3c0, 6);
+	GXSetVtxDesc(GX_VA_NRM, GX_INDEX8);
+	GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_NRM, GX_NRM_XYZ, GX_S8, 6);
+	GXSetArray(GX_VA_NRM, base + 0x480, 3);
+	GXSetVtxDesc(GX_VA_CLR0, GX_INDEX8);
+	GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_CLR0, GX_CLR_RGBA, GX_RGBA8, 0);
+	GXSetVtxDesc(GX_VA_TEX0, GX_INDEX8);
+	GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, GX_TEX_ST, GX_S16, 0xe);
+	GXSetArray(GX_VA_TEX0, base + 0x520, 4);
 	starStoneDLLoop(base, data, 0x590, diamond_2_2_dl_0_size_tbl, 0x13);
 
 	PSMTXTrans(mtx, data->field_0x8 + data->spreadBX, data->field_0xC, data->field_0x10 + data->spreadBZ);
@@ -819,38 +819,38 @@ void effStarStoneDisp_2(CameraId camId, void* param) {
 	PSMTXRotRad(rotMtx, 'y', float_deg2rad_80420b50 * -data->field_0x18);
 	PSMTXConcat(mtx, rotMtx, mtx);
 	PSMTXConcat(cam->view, mtx, mtx);
-	GXLoadPosMtxImm(mtx, 0);
-	GXSetCurrentMtx(0);
+	GXLoadPosMtxImm(mtx, GX_PNMTX0);
+	GXSetCurrentMtx(GX_PNMTX0);
 	GXClearVtxDesc();
-	GXSetVtxDesc(9, 2);
-	GXSetVtxAttrFmt(0, 9, 1, 3, 0xb);
-	GXSetArray(9, base + 0x3c0, 6);
-	GXSetVtxDesc(0xa, 2);
-	GXSetVtxAttrFmt(0, 0xa, 0, 1, 6);
-	GXSetArray(0xa, base + 0x480, 3);
-	GXSetVtxDesc(0xb, 2);
-	GXSetVtxAttrFmt(0, 0xb, 1, 5, 0);
-	GXSetVtxDesc(0xd, 2);
-	GXSetVtxAttrFmt(0, 0xd, 1, 3, 0xe);
-	GXSetArray(0xd, base + 0x520, 4);
+	GXSetVtxDesc(GX_VA_POS, GX_INDEX8);
+	GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_POS_XYZ, GX_S16, 0xb);
+	GXSetArray(GX_VA_POS, base + 0x3c0, 6);
+	GXSetVtxDesc(GX_VA_NRM, GX_INDEX8);
+	GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_NRM, GX_NRM_XYZ, GX_S8, 6);
+	GXSetArray(GX_VA_NRM, base + 0x480, 3);
+	GXSetVtxDesc(GX_VA_CLR0, GX_INDEX8);
+	GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_CLR0, GX_CLR_RGBA, GX_RGBA8, 0);
+	GXSetVtxDesc(GX_VA_TEX0, GX_INDEX8);
+	GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, GX_TEX_ST, GX_S16, 0xe);
+	GXSetArray(GX_VA_TEX0, base + 0x520, 4);
 	starStoneDLLoop(base, data, 0x5dc, diamond_2_2_dl_1_size_tbl, 0x13);
 
 	GXSetNumChans(1);
-	GXSetChanCtrl(4, 0, 0, 1, 0, 0, 2);
+	GXSetChanCtrl(GX_COLOR0A0, GX_DISABLE, GX_SRC_REG, GX_SRC_VTX, 0, GX_DF_NONE, GX_AF_NONE);
 	GXSetNumTexGens(1);
-	GXSetTexCoordGen2(0, 1, 4, 0x1e, 0, 0x7d);
+	GXSetTexCoordGen2(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_TEXMTX0, GX_FALSE, GX_PTIDENTITY);
 	PSMTXTrans(mtx, data->field_0x24, data->field_0x28, float_0_80420b54);
-	GXLoadTexMtxImm(mtx, 0x1e, 1);
+	GXLoadTexMtxImm(mtx, GX_TEXMTX0, GX_MTX2x4);
 	GXSetNumTevStages(2);
-	GXSetTevOrder(0, 0, 0, 4);
-	GXSetTevColorOp(0, 0, 0, 0, 1, 0);
-	GXSetTevAlphaOp(0, 0, 0, 0, 1, 0);
-	GXSetTevOp(0, 0);
-	GXSetTevOrder(1, 0xff, 0xff, 0xff);
-	GXSetTevColorOp(1, 0, 0, 0, 1, 0);
-	GXSetTevAlphaOp(1, 0, 0, 0, 1, 0);
-	GXSetTevColorIn(1, 0xf, 2, 0, 0xf);
-	GXSetTevAlphaIn(1, 7, 1, 0, 7);
+	GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR0A0);
+	GXSetTevColorOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+	GXSetTevAlphaOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+	GXSetTevOp(GX_TEVSTAGE0, GX_MODULATE);
+	GXSetTevOrder(GX_TEVSTAGE1, GX_TEXCOORD_NULL, GX_TEXMAP_NULL, GX_COLOR_NULL);
+	GXSetTevColorOp(GX_TEVSTAGE1, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+	GXSetTevAlphaOp(GX_TEVSTAGE1, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+	GXSetTevColorIn(GX_TEVSTAGE1, GX_CC_ZERO, GX_CC_C0, GX_CC_CPREV, GX_CC_ZERO);
+	GXSetTevAlphaIn(GX_TEVSTAGE1, GX_CA_ZERO, GX_CA_A0, GX_CA_APREV, GX_CA_ZERO);
 #ifdef MUST_MATCH
 	GXSetTevColor(1, starStoneTevColor2(*(GXColor*)&unk_804232ec, data));
 #else
@@ -860,20 +860,20 @@ void effStarStoneDisp_2(CameraId camId, void* param) {
 		color.g = data->tintG;
 		color.b = data->tintB;
 		color.a = data->field_0x5F;
-		GXSetTevColor(1, color);
+		GXSetTevColor(GX_TEVREG0, color);
 	}
 #endif
 	if (type != 2) {
 		effGetTexObj(0x29, &texObj);
-		GXLoadTexObj(&texObj, 0);
+		GXLoadTexObj(&texObj, GX_TEXMAP0);
 	} else {
 		effGetTexObj(0x2e, &texObj);
-		GXLoadTexObj(&texObj, 0);
+		GXLoadTexObj(&texObj, GX_TEXMAP0);
 	}
-	GXSetBlendMode(1, 4, 5, 0);
-	GXSetZCompLoc(1);
-	GXSetAlphaCompare(7, 0, 0, 7, 0);
-	GXSetZMode(1, 3, 0);
+	GXSetBlendMode(GX_BM_BLEND, GX_BL_SRCALPHA, GX_BL_INVSRCALPHA, GX_LO_CLEAR);
+	GXSetZCompLoc(GX_TRUE);
+	GXSetAlphaCompare(GX_ALWAYS, 0, GX_AOP_AND, GX_ALWAYS, 0);
+	GXSetZMode(GX_TRUE, GX_LEQUAL, GX_FALSE);
 
 	PSMTXTrans(mtx, data->field_0x8 + data->field_0x48, data->field_0xC, data->field_0x10 + data->spreadAZ);
 	PSMTXScale(scaleMtx, data->field_0x14, data->field_0x14, data->field_0x14);
@@ -885,20 +885,20 @@ void effStarStoneDisp_2(CameraId camId, void* param) {
 	PSMTXRotRad(rotMtx, 'y', float_deg2rad_80420b50 * data->field_0x18);
 	PSMTXConcat(mtx, rotMtx, mtx);
 	PSMTXConcat(cam->view, mtx, mtx);
-	GXLoadPosMtxImm(mtx, 0);
-	GXSetCurrentMtx(0);
+	GXLoadPosMtxImm(mtx, GX_PNMTX0);
+	GXSetCurrentMtx(GX_PNMTX0);
 	GXClearVtxDesc();
-	GXSetVtxDesc(9, 2);
-	GXSetVtxAttrFmt(0, 9, 1, 3, 0xb);
-	GXSetArray(9, base + 0x3c0, 6);
-	GXSetVtxDesc(0xa, 2);
-	GXSetVtxAttrFmt(0, 0xa, 0, 1, 6);
-	GXSetArray(0xa, base + 0x480, 3);
-	GXSetVtxDesc(0xb, 2);
-	GXSetVtxAttrFmt(0, 0xb, 1, 5, 0);
-	GXSetVtxDesc(0xd, 2);
-	GXSetVtxAttrFmt(0, 0xd, 1, 3, 0xe);
-	GXSetArray(0xd, base + 0x520, 4);
+	GXSetVtxDesc(GX_VA_POS, GX_INDEX8);
+	GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_POS_XYZ, GX_S16, 0xb);
+	GXSetArray(GX_VA_POS, base + 0x3c0, 6);
+	GXSetVtxDesc(GX_VA_NRM, GX_INDEX8);
+	GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_NRM, GX_NRM_XYZ, GX_S8, 6);
+	GXSetArray(GX_VA_NRM, base + 0x480, 3);
+	GXSetVtxDesc(GX_VA_CLR0, GX_INDEX8);
+	GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_CLR0, GX_CLR_RGBA, GX_RGBA8, 0);
+	GXSetVtxDesc(GX_VA_TEX0, GX_INDEX8);
+	GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, GX_TEX_ST, GX_S16, 0xe);
+	GXSetArray(GX_VA_TEX0, base + 0x520, 4);
 	starStoneDLLoop(base, data, 0x590, diamond_2_2_dl_0_size_tbl, 0x13);
 
 	PSMTXTrans(mtx, data->field_0x8 + data->spreadBX, data->field_0xC, data->field_0x10 + data->spreadBZ);
@@ -911,20 +911,20 @@ void effStarStoneDisp_2(CameraId camId, void* param) {
 	PSMTXRotRad(rotMtx, 'y', float_deg2rad_80420b50 * -data->field_0x18);
 	PSMTXConcat(mtx, rotMtx, mtx);
 	PSMTXConcat(cam->view, mtx, mtx);
-	GXLoadPosMtxImm(mtx, 0);
-	GXSetCurrentMtx(0);
+	GXLoadPosMtxImm(mtx, GX_PNMTX0);
+	GXSetCurrentMtx(GX_PNMTX0);
 	GXClearVtxDesc();
-	GXSetVtxDesc(9, 2);
-	GXSetVtxAttrFmt(0, 9, 1, 3, 0xb);
-	GXSetArray(9, base + 0x3c0, 6);
-	GXSetVtxDesc(0xa, 2);
-	GXSetVtxAttrFmt(0, 0xa, 0, 1, 6);
-	GXSetArray(0xa, base + 0x480, 3);
-	GXSetVtxDesc(0xb, 2);
-	GXSetVtxAttrFmt(0, 0xb, 1, 5, 0);
-	GXSetVtxDesc(0xd, 2);
-	GXSetVtxAttrFmt(0, 0xd, 1, 3, 0xe);
-	GXSetArray(0xd, base + 0x520, 4);
+	GXSetVtxDesc(GX_VA_POS, GX_INDEX8);
+	GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_POS_XYZ, GX_S16, 0xb);
+	GXSetArray(GX_VA_POS, base + 0x3c0, 6);
+	GXSetVtxDesc(GX_VA_NRM, GX_INDEX8);
+	GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_NRM, GX_NRM_XYZ, GX_S8, 6);
+	GXSetArray(GX_VA_NRM, base + 0x480, 3);
+	GXSetVtxDesc(GX_VA_CLR0, GX_INDEX8);
+	GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_CLR0, GX_CLR_RGBA, GX_RGBA8, 0);
+	GXSetVtxDesc(GX_VA_TEX0, GX_INDEX8);
+	GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, GX_TEX_ST, GX_S16, 0xe);
+	GXSetArray(GX_VA_TEX0, base + 0x520, 4);
 	starStoneDLLoop(base, data, 0x5dc, diamond_2_2_dl_1_size_tbl, 0x13);
 }
 
