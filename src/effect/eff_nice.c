@@ -414,9 +414,6 @@ void acrobatMain(EffectEntry* effect) {
 	}
 }
 
-// The `i - 1` texid index makes the compiler synthesise a second induction (r29). With the natural
-// `[i - 1]` its latch increment is scheduled after data++ (99.91%); an explicit texIdx gives the
-// original's order.
 void effAcrobatDisp(CameraId camId, void* param) {
 	EffectEntry* effect = param;
 	NiceEffectWork* data = effect->userdata;
@@ -427,9 +424,6 @@ void effAcrobatDisp(CameraId camId, void* param) {
 	Mtx mtxFinal;
 	GXTexObj texObj;
 	s32 i;
-#ifdef MUST_MATCH
-	s32 texIdx;
-#endif
 	f32 max, negSize, min;
 	f32 offsetX, offsetY;
 
@@ -460,19 +454,10 @@ void effAcrobatDisp(CameraId camId, void* param) {
 
 	negSize = -float_20_8041cba8;
 	min = negSize * float_0p5_8041cbac;
-#ifndef MUST_MATCH
 	max = 10.0f;
-#endif
 	i = 1;
-#ifdef MUST_MATCH
-	texIdx = 1;
-#endif
 	data = data + 1;
-#ifdef MUST_MATCH
-	for (; i < effect->count; i++, texIdx++, data++) {
-#else
 	for (; i < effect->count; i++, data++) {
-#endif
 		if (data->state < 6) {
 			offsetX = negSize * float_0p5_8041cbac;
 			offsetY = 0.0f;
@@ -481,11 +466,6 @@ void effAcrobatDisp(CameraId camId, void* param) {
 			offsetX = 0.0f;
 			offsetY = negSize * float_0p5_8041cbac;
 		}
-#ifdef MUST_MATCH
-		// The original pools 10.0f after the loop's own 0.0f, so assign it here; the loop-invariant
-		// load is still hoisted into the preheader. The plain form is assigned before the loop.
-		max = 10.f;
-#endif
 		PSMTXTrans(mtxTrans, data->position.x, data->position.y, data->position.z);
 		PSMTXTrans(mtxRot, offsetX, offsetY, 0.0f);
 		PSMTXScale(mtxScale, data->scaleX, data->scaleY, data->scaleZ);
@@ -498,11 +478,7 @@ void effAcrobatDisp(CameraId camId, void* param) {
 		GXLoadPosMtxImm(mtxScale, GX_PNMTX0);
 		GXSetCurrentMtx(GX_PNMTX0);
 
-#ifdef MUST_MATCH
-		effGetTexObj(acrobat_tbl[gp->language][texIdx - 1], &texObj);
-#else
 		effGetTexObj(acrobat_tbl[gp->language][i - 1], &texObj);
-#endif
 		GXLoadTexObj(&texObj, GX_TEXMAP0);
 		GXBegin(GX_QUADS, GX_VTXFMT0, 4);
 		GXPosition3f32(min, max, 0.0f);
