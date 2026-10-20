@@ -9183,3 +9183,5 @@ Top/Bottom`, replacing the POSE_* macros) and the world-eval buffers `groupWorld
 (0x15C-0x168), used raw before in npcdrv, end_unknown, rsh_06, evt_mobj, win_log, bom, battle_unit, eff_nice and
 unit_mario. animdrv 366 → 179 weighted. Open: `paperAnim` holds either a name or a search index (typed
 `const char*`); 0x16C and the AnimData/ANIMDATA_F44-F54 tail are still unnamed; eff_nice reads AnimData clip raw.
+The layout fix was merged with #884's (filemgr), which had closed the same gap with `void*` fields: the typed
+names above win, and filemgr's relocation calls use them.
