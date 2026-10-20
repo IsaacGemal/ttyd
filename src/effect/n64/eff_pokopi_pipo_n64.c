@@ -12,24 +12,24 @@ typedef struct effPokopiPipoData {
 	f32 x;              // 0x4
 	f32 y;              // 0x8
 	f32 z;              // 0xC
-	f32 field_0x10[6];  // 0x10
+	f32 field_0x10[6];  // 0x10 the entry's x,y,z then x2,y2,z2; written at init, never read
 	s32 lifetime;       // 0x28
 	s32 timer;          // 0x2C
-	s32 field_0x30;     // 0x30
-	s32 field_0x34;     // 0x34
-	s32 field_0x38;     // 0x38
-	u32 field_0x3C;     // 0x3C
-	f32 field_0x40;     // 0x40
-	f32 field_0x44;     // 0x44
-	f32 field_0x48;     // 0x48
-	f32 field_0x4C;     // 0x4C
-	f32 field_0x50;     // 0x50
-	f32 field_0x54;     // 0x54
-	f32 field_0x58;     // 0x58
-	f32 field_0x5C;     // 0x5C
-	s32 field_0x60;     // 0x60
-	s32 field_0x64;     // 0x64
-	s32 field_0x68;     // 0x68
+	s32 tevReg0R;       // 0x30 TEVREG0 red
+	s32 tevReg0G;       // 0x34 TEVREG0 green
+	s32 tevReg0B;       // 0x38 TEVREG0 blue
+	u32 tevReg0A;       // 0x3C TEVREG0 alpha (0xFF)
+	f32 scale;          // 0x40
+	f32 velX;           // 0x44
+	f32 velY;           // 0x48
+	f32 velZ;           // 0x4C
+	f32 rotZ;           // 0x50 degrees, the disp's 'z' rotation
+	f32 spinVel;        // 0x54 degrees per frame added to rotZ
+	f32 scaleX;         // 0x58 w_scale_data / 100
+	f32 scaleY;         // 0x5C h_scale_data / 100
+	s32 scaleFrame;     // 0x60 index into the scale tables: -1 in the air, 0-6 while squashing, parked at 7
+	s32 field_0x64;     // 0x64 1 when y2 < y, else 0; written at init, never read
+	s32 flightFrames;   // 0x68 frames until the bounce (the count argument)
 } effPokopiPipoData;
 
 // .sdata2 (pool constants referenced by name so the symbol matches the original)
@@ -65,8 +65,8 @@ EffectEntry* effPokopiPipoN64Entry(s32 type, s32 count, f32 x, f32 y, f32 z, f32
 	} else {
 		data->lifetime = count + 60;
 	}
-	data->field_0x68 = count;
-	data->field_0x3C = 0xff;
+	data->flightFrames = count;
+	data->tevReg0A = 0xff;
 	data->field_0x10[0] = x;
 	data->field_0x10[1] = y;
 	data->field_0x10[2] = z;
@@ -76,23 +76,23 @@ EffectEntry* effPokopiPipoN64Entry(s32 type, s32 count, f32 x, f32 y, f32 z, f32
 	data->x = x;
 	data->y = y;
 	data->z = z;
-	data->field_0x44 = (x2 - x) / (f32)count;
-	data->field_0x48 = (y2 - y) / (f32)count - -0.1f * (f32)count;
-	data->field_0x4C = (z2 - z) / (f32)count;
+	data->velX = (x2 - x) / (f32)count;
+	data->velY = (y2 - y) / (f32)count - -0.1f * (f32)count;
+	data->velZ = (z2 - z) / (f32)count;
 	if (y2 - y < 0.0f) {
 		data->field_0x64 = 1;
 	} else {
 		data->field_0x64 = 0;
 	}
-	data->field_0x40 = scale;
-	data->field_0x30 = 0x46;
-	data->field_0x34 = 0xb4;
-	data->field_0x38 = 0x78;
-	data->field_0x50 = (f32)(rand() % 360);
-	data->field_0x54 = (f32)(rand() % 10 + 5);
-	data->field_0x60 = -1;
-	data->field_0x58 = 1.0f;
-	data->field_0x5C = 1.0f;
+	data->scale = scale;
+	data->tevReg0R = 0x46;
+	data->tevReg0G = 0xb4;
+	data->tevReg0B = 0x78;
+	data->rotZ = (f32)(rand() % 360);
+	data->spinVel = (f32)(rand() % 10 + 5);
+	data->scaleFrame = -1;
+	data->scaleX = 1.0f;
+	data->scaleY = 1.0f;
 	return effect;
 }
 
@@ -126,38 +126,38 @@ void effPokopiPipoMain(EffectEntry* effect) {
 		effDelete(effect);
 		return;
 	}
-	frame = data->field_0x60;
+	frame = data->scaleFrame;
 	timer = data->timer;
 	if (frame >= 0 && frame < 7) {
-		data->field_0x58 = 0.01f * (f32)w_scale_data[frame];
-		data->field_0x5C = 0.01f * (f32)h_scale_data[frame];
-		data->field_0x50 -= 40.f;
-		data->field_0x60++;
+		data->scaleX = 0.01f * (f32)w_scale_data[frame];
+		data->scaleY = 0.01f * (f32)h_scale_data[frame];
+		data->rotZ -= 40.f;
+		data->scaleFrame++;
 	} else {
-		data->field_0x48 += -0.2f;
-		data->x += data->field_0x44;
-		data->y += data->field_0x48;
-		data->z += data->field_0x4C;
-		data->field_0x50 += data->field_0x54;
+		data->velY += -0.2f;
+		data->x += data->velX;
+		data->y += data->velY;
+		data->z += data->velZ;
+		data->rotZ += data->spinVel;
 	}
-	if (timer - 1 == data->field_0x68) {
+	if (timer - 1 == data->flightFrames) {
 #ifdef MUST_MATCH
 		f32 k = -1.0f;
-		data->field_0x48 = data->field_0x48 * k;
+		data->velY = data->velY * k;
 #else
-		data->field_0x48 = data->field_0x48 * -1.0f;
+		data->velY = data->velY * -1.0f;
 #endif
-		data->field_0x54 = -4.0f;
-		data->field_0x60 = 0;
-	} else if (data->field_0x48 < 0.0f && data->y < 14.285715f) {
+		data->spinVel = -4.0f;
+		data->scaleFrame = 0;
+	} else if (data->velY < 0.0f && data->y < 14.285715f) {
 #ifdef MUST_MATCH
 		/* MUST_MATCH: the original computes f - f rather than loading the 0.0f pool entry. */
-		data->field_0x48 = data->field_0x48 - data->field_0x48;
+		data->velY = data->velY - data->velY;
 #else
-		data->field_0x48 = 0.0f;
+		data->velY = 0.0f;
 #endif
 		data->y = 14.285715f;
-		data->field_0x54 = -20.f;
+		data->spinVel = -20.f;
 	}
 #ifdef MUST_MATCH
 	dispEntry(CAMERA_3D, dispCalcZ(&position), 2, effPokopiPipoDisp, effect);
@@ -168,12 +168,12 @@ void effPokopiPipoMain(EffectEntry* effect) {
 
 // The original builds the TEV colour inside an inlined helper; keeping that helper (and
 // passing the alpha byte) is what reproduces the stack slot the by-value GXColor copy lands in.
-static inline void effPokopiPipoSetColor(effPokopiPipoData* data, s32 a) {
+static inline void effPokopiPipoSetColor(effPokopiPipoData* data, s32 alpha) {
 	GXColor color = (GXColor){ 0, 0, 0, 0 };
-	color.r = data->field_0x30;
-	color.g = data->field_0x34;
-	color.b = data->field_0x38;
-	color.a = a;
+	color.r = data->tevReg0R;
+	color.g = data->tevReg0G;
+	color.b = data->tevReg0B;
+	color.a = alpha;
 	GXSetTevColor(GX_TEVREG0, color);
 }
 
@@ -186,7 +186,7 @@ void effPokopiPipoDisp(CameraId camId, void* param) {
 	Mtx scale;
 	Mtx rot;
 	GXTexObj tex;
-	s32 a;
+	s32 alpha;
 	s32 type;
 	s32 texId;
 	f32 scaleXZ;
@@ -194,9 +194,9 @@ void effPokopiPipoDisp(CameraId camId, void* param) {
 
 	camera = camGetPtr(camId);
 	data = effect->userdata;
-	a = data->field_0x3C;
+	alpha = data->tevReg0A;
 	type = data->type;
-	scaleXZ = 0.71428573f * data->field_0x40;
+	scaleXZ = 0.71428573f * data->scale;
 	PSMTXTrans(mtx, data->x, data->y, data->z);
 	camera3d = camGetPtr(CAMERA_3D);
 #ifdef MUST_MATCH
@@ -206,23 +206,23 @@ void effPokopiPipoDisp(CameraId camId, void* param) {
 	angle = -camera3d->viewYaw * 0.017453292f;
 #endif
 	PSMTXRotRad(rot, 'y', angle);
-	PSMTXScale(scale, scaleXZ * data->field_0x58, scaleXZ * data->field_0x5C, scaleXZ);
+	PSMTXScale(scale, scaleXZ * data->scaleX, scaleXZ * data->scaleY, scaleXZ);
 	PSMTXConcat(mtx, rot, mtx);
 	PSMTXConcat(mtx, scale, mtx);
-	PSMTXRotRad(rot, 'z', 0.017453292f * data->field_0x50);
+	PSMTXRotRad(rot, 'z', 0.017453292f * data->rotZ);
 	PSMTXConcat(mtx, rot, mtx);
 	PSMTXConcat(camera->view, mtx, mtx);
-	GXLoadPosMtxImm(mtx, 0);
-	GXSetCurrentMtx(0);
+	GXLoadPosMtxImm(mtx, GX_PNMTX0);
+	GXSetCurrentMtx(GX_PNMTX0);
 
-	effPokopiPipoSetColor(data, a);
+	effPokopiPipoSetColor(data, alpha);
 
 	GXSetNumChans(0);
 	GXSetNumTevStages(1);
 	GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR_NULL);
 	GXSetTevOp(GX_TEVSTAGE0, GX_REPLACE);
 	GXSetNumTexGens(1);
-	GXSetTexCoordGen2(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_TEXMTX0, GX_FALSE, 0x7d);
+	GXSetTexCoordGen2(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_TEXMTX0, GX_FALSE, GX_PTIDENTITY);
 	PSMTXScale(scale, 0.03125f, 0.03125f, 0.0f);
 	GXLoadTexMtxImm(scale, GX_TEXMTX0, GX_MTX2x4);
 	texId = 0x96;

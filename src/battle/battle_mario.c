@@ -104,9 +104,9 @@ USER_FUNC(_whirlwind_effect) {
     unit = BattleGetUnitPtr(wp, BattleTransID(event, value0));
     BtlUnit_GetPos(unit, &pos.x, &pos.y, &pos.z);
     effect = effWhirlwindN64Entry((u32)unit->faceDirection >> 31, 0, value1, unit->mSizeMultiplier);
-    *(f32*)((u8*)effect->userdata + 8) = pos.x;
-    *(f32*)((u8*)effect->userdata + 0xC) = pos.y;
-    *(f32*)((u8*)effect->userdata + 0x10) = pos.z;
+    ((EffWhirlwindData*)effect->userdata)->x = pos.x;
+    ((EffWhirlwindData*)effect->userdata)->y = pos.y;
+    ((EffWhirlwindData*)effect->userdata)->z = pos.z;
     return EVT_RETURN_DONE;
 }
 

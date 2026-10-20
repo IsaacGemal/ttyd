@@ -10,6 +10,8 @@
 #include "eff/eff_itemget.h"
 #include "eff/eff_mist2.h"
 #include "eff/eff_starstone.h"
+#include "eff/eff_treasure_map.h"
+#include "eff/n64/eff_crystal_n64.h"
 #include "eff/n64/eff_pokopi_pcharge_n64.h"
 #include "eff/n64/eff_stardust2_n64.h"
 #include "eff/n64/eff_stardust_n64.h"
@@ -2671,7 +2673,7 @@ USER_FUNC(crystal_bgmode) {
     s32 name = evtGetValue(event, args[0]);
     EffectEntry* entry = effNameToPtr((char*)name);
 
-    ((effItemGetData*)entry->userdata)->field_0x38 = 5;
+    ((EffCrystalData*)entry->userdata)->camId = CAMERA_3D_EFFECTA;
     return EVT_RETURN_DONE;
 }
 
@@ -2681,11 +2683,11 @@ USER_FUNC(map_bgmode) {
     s32 name2 = evtGetValue(event, args[1]);
     EffectEntry* entry = effNameToPtr((char*)name1);
 
-    ((effItemGetData*)entry->userdata)->field_0x38 = 5;
-    ((effItemGetData*)entry->userdata)->field_0x14 = 4.3f;
+    ((effItemGetData*)entry->userdata)->camId = CAMERA_3D_EFFECTA;
+    ((effItemGetData*)entry->userdata)->baseSize = 4.3f;
     entry = effNameToPtr((char*)name2);
-    *(s32*)&((effItemGetData*)entry->userdata)->field_0x28 = 5;
-    marioSetCamId(5);
+    ((EffTreasureMapData*)entry->userdata)->cameraId = CAMERA_3D_EFFECTA;
+    marioSetCamId(CAMERA_3D_EFFECTA);
     return EVT_RETURN_DONE;
 }
 
@@ -2696,10 +2698,10 @@ USER_FUNC(map_bgmode_end) {
     EffectEntry* entry = effNameToPtr((char*)name1);
     effItemGetData* data = entry->userdata;
 
-    data->field_0x38 = 4;
+    data->camId = CAMERA_3D;
     entry = effNameToPtr((char*)name2);
-    *(s32*)&((effItemGetData*)entry->userdata)->field_0x28 = 4;
-    marioSetCamId(4);
+    ((EffTreasureMapData*)entry->userdata)->cameraId = CAMERA_3D;
+    marioSetCamId(CAMERA_3D);
     return EVT_RETURN_DONE;
 }
 
