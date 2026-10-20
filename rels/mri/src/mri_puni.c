@@ -1662,17 +1662,13 @@ void puniswSetindex(u32 base, s32 index, s32* out, Vec* pos) {
     b[0] = *out;
     b[1] = x & 0xFF;
     b[2] = (x >> 8) & 0xFF;
-#ifdef MUST_MATCH
     // Redundant re-masks: the second definitions of b[2]/b[4] make MWCC compute the x and y high bytes up front in
     // callee-saved registers (z's stays at its call), as the original does. Without them every byte is computed at
     // its _swByteSet (88.5%; s16/u16 locals, implicit u8 truncation and `& 0xFF00` forms score lower).
     b[2] = b[2] & 0xFF;
-#endif
     b[3] = y & 0xFF;
     b[4] = (y >> 8) & 0xFF;
-#ifdef MUST_MATCH
     b[4] = b[4] & 0xFF;
-#endif
     b[5] = z & 0xFF;
     b[6] = (z >> 8) & 0xFF;
     _swByteSet(base + index * 7 + 0x8F0D180, b[0]);
@@ -2116,7 +2112,6 @@ void puniMoveDecel(PuniData* puni) {
 
     mag = PSVECMag(&puni->vel);
 
-#ifdef MUST_MATCH
     // named zero forces the original's fcmpu operand order (f1=mag, f0=zero)
     {
         f32 zero = 0.0f;
@@ -2125,11 +2120,6 @@ void puniMoveDecel(PuniData* puni) {
             return;
         }
     }
-#else
-    if (mag == 0.0f) {
-        return;
-    }
-#endif
     if (mag > 1.0f) {
         if (puni->vel.x < 0.0f) {
             puni->direction = 270.0f;
@@ -2285,7 +2275,6 @@ void puniMoveNormal(PuniData* puni) {
     f32 scale;
     f32 k;
 
-#ifdef MUST_MATCH
     // named zero forces the original's fcmpu operand order (f1=mag, f0=zero)
     {
         f32 zero = 0.0f;
@@ -2294,11 +2283,6 @@ void puniMoveNormal(PuniData* puni) {
             return;
         }
     }
-#else
-    if (mag == 0.0f) {
-        return;
-    }
-#endif
 
     up = puni->pos;
     up.y += 1.0f;
@@ -2351,14 +2335,10 @@ void puniMoveNormal(PuniData* puni) {
 
 void puniMoveSimple(PuniData* puni) {
     f32 mag = PSVECMag(&puni->vel);
-#ifdef MUST_MATCH
     // named zero forces the original's fcmpu operand order (f1=mag, f0=zero)
     f32 zero = 0.0f;
 
     if (mag != zero) {
-#else
-    if (mag != 0.0f) {
-#endif
         PSVECAdd(&puni->pos, &puni->vel, &puni->pos);
     }
 }
@@ -2379,7 +2359,6 @@ void puniParaAttack(PuniData* puni, PuniData* other) {
         return;
     }
 
-#ifdef MUST_MATCH
     // `base` makes MWCC keep the original's mr chance<-base before the add
     if (other->mode != PUNI_MODE_ESCAPE) {
         base = puni->fightWeight;
@@ -2390,17 +2369,7 @@ void puniParaAttack(PuniData* puni, PuniData* other) {
         chance = base;
         span = base + (100 - other->chaseWeight);
     }
-#else
-    if (other->mode != PUNI_MODE_ESCAPE) {
-        chance = puni->fightWeight;
-        span = chance + other->fightWeight;
-    } else {
-        chance = puni->chaseWeight;
-        span = chance + (100 - other->chaseWeight);
-    }
-#endif
 
-#ifdef MUST_MATCH
     // splitting the `||` makes MWCC keep the original's branchless compare + li form;
     // writing it as `roll < chance` (not `chance > roll`) is what keeps chance in r6
     flag = (s16)puni_rnd(span) < chance;
@@ -2408,9 +2377,6 @@ void puniParaAttack(PuniData* puni, PuniData* other) {
         flag = 1;
     }
     if (flag) {
-#else
-    if (chance > (s16)puni_rnd(span) || (other->flags & 0x08000000)) {
-#endif
         if (puni->foughtThisFrame == 0) {
             other->damage = puni->attack - other->defense;
             other->vel = (Vec){0.0f, 0.0f, 0.0f};
@@ -3424,14 +3390,10 @@ void puniModeMass(PuniData* punidat) {
     u8* target;
     s32 idx = ((PuniData*)p)->nearAttractIdx;
 
-#ifdef MUST_MATCH
     // Reloading nearAttractIdx here (instead of using `idx`) makes MWCC materialise `*Punigp` with
     // `lis; addi; lwz` into r3 and put the `mulli idx*0x14` in r4, as the target does; with the
     // `idx` variable it folds the load to `lwz r8, Punigp@l(r3)`.
     target = (u8*)Punigp + 0x374 + ((PuniData*)p)->nearAttractIdx * 0x14;
-#else
-    target = (u8*)Punigp + 0x374 + idx * 0x14;
-#endif
 
     if (idx == -1) {
         if (*(u16*)&((PuniData*)p)->prevMode == PUNI_MODE_TRAP)
@@ -3755,17 +3717,9 @@ void puniModeAttack(PuniData* punidat) {
         }
         if ((s32)(gp->retraceCount & 3) == (punidat->angle & 3)) {
             if (punidat->flags & 1) {
-#ifdef MUST_MATCH
                 punidat->target = puniSearchTekiInline(punidat);
-#else
-                punidat->target = searchBattleTeki(punidat);
-#endif
             } else {
-#ifdef MUST_MATCH
                 punidat->target = puniSearchMikataInline(punidat);
-#else
-                punidat->target = searchBattleMikata(punidat);
-#endif
             }
         }
         if (punidat->target != NULL) {
@@ -3930,17 +3884,9 @@ void puniModeEscape(PuniData* punidat) {
         }
         if ((s32)(gp->retraceCount & 3) == (punidat->angle & 3)) {
             if (punidat->flags & 1) {
-#ifdef MUST_MATCH
                 punidat->target = puniSearchTekiInline(punidat);
-#else
-                punidat->target = searchBattleTeki(punidat);
-#endif
             } else {
-#ifdef MUST_MATCH
                 punidat->target = puniSearchMikataInline(punidat);
-#else
-                punidat->target = searchBattleMikata(punidat);
-#endif
             }
         }
         found = punidat->target;
@@ -4012,17 +3958,9 @@ void puniModeRecover(PuniData* punidat) {
         }
         if ((s32)(gp->retraceCount & 3) == (punidat->angle & 3)) {
             if (punidat->flags & 1) {
-#ifdef MUST_MATCH
                 punidat->target = puniSearchTekiInline(punidat);
-#else
-                punidat->target = searchBattleTeki(punidat);
-#endif
             } else {
-#ifdef MUST_MATCH
                 punidat->target = puniSearchMikataInline(punidat);
-#else
-                punidat->target = searchBattleMikata(punidat);
-#endif
             }
         }
         found = punidat->target;
@@ -4315,20 +4253,12 @@ void puniModeFall(PuniData* punidat) {
                 found = 0;
                 for (i = 0; i < 2; i++, targets++) {
                     if (targets->hit != NULL) {
-#ifdef MUST_MATCH
                         if (actor210 == targets->hit) {
-#else
-                        if (targets->hit == actor210) {
-#endif
                             punidat->accel = targets->position;
                             found = 1;
                             break;
                         }
-#ifdef MUST_MATCH
                         if (actor214 == targets->hit) {
-#else
-                        if (targets->hit == actor214) {
-#endif
                             punidat->accel = targets->position;
                             found = 1;
                             break;
@@ -4444,16 +4374,11 @@ void puniModeUpdraft(PuniData* punidat) {
         case 1:
             PSVECScale(&punidat->accel, &dir, punidat->height);
             PSVECAdd(&punidat->vel, &dir, &punidat->vel);
-#ifdef MUST_MATCH
             {
                 f32 inc = 0.06f;
                 punidat->height = punidat->height + punidat->vertVel;
                 punidat->vertVel = punidat->vertVel + inc;
             }
-#else
-            punidat->height = punidat->height + punidat->vertVel;
-            punidat->vertVel = punidat->vertVel + 0.06f;
-#endif
             if (punidat->height >= punidat->jumpVelStart) {
                 punidat->height = punidat->jumpVelStart;
             }
@@ -4461,16 +4386,11 @@ void puniModeUpdraft(PuniData* punidat) {
         case 2:
             PSVECScale(&punidat->accel, &dir, punidat->height);
             PSVECAdd(&punidat->vel, &dir, &punidat->vel);
-#ifdef MUST_MATCH
             {
                 f32 inc = 0.03f;
                 punidat->height = punidat->height - punidat->vertVel;
                 punidat->vertVel = punidat->vertVel + inc;
             }
-#else
-            punidat->height = punidat->height - punidat->vertVel;
-            punidat->vertVel = punidat->vertVel + 0.03f;
-#endif
             if (punidat->height < 0.0f) {
                 punidat->state = 0;
             }
@@ -5063,18 +4983,11 @@ void puniModeEnter(PuniData* puni) {
             for (i = 0; i < PUNI_DATA_MAX; i++) {
                 if ((data->flags & 0x80000) && data->rightPuni == NULL &&
                     (data->leftPuni == NULL || data->depth < 2) && (u8*)data != p) {
-#ifdef MUST_MATCH
                     s16 val = data->depth;
                     if ((s16)best > val) {
                         parent = (u8*)data;
                         best = val + 1;
                     }
-#else
-                    if ((s16)best > data->depth) {
-                        parent = (u8*)data;
-                        best = data->depth + 1;
-                    }
-#endif
                 }
                 data++;
             }
@@ -5554,12 +5467,7 @@ void unk_mri_00012d58(PuniData* self) {
     case PUNI_MODE_CUSTOM:
         self->flags &= ~0x8000;
         if (self->modeFunc != NULL) {
-#ifdef MUST_MATCH
-            // the original call passes no argument, so r3 is not set up from self here
-            ((void (*)(void))self->modeFunc)();
-#else
             self->modeFunc(self);
-#endif
         }
         break;
     default:

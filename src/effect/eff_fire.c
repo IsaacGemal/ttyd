@@ -115,13 +115,7 @@ EffectEntry* effFireEntry(s32 type, s32 lifetime, f32 x, f32 y, f32 z, f32 scale
 	}
 	data->type = type;
 	data->alpha = 0xFF;
-#ifdef MUST_MATCH
-	// Match-only: an anonymous zero literal instead of the named vec3_802f8c10 makes MWCC schedule the
-	// alpha store before the position copy, as the target does (same shape as effFireworksMakeVec).
 	position = vec3_802f8c10;
-#else
-	position = vec3_802f8c10;
-#endif
 	position.x = x;
 	position.y = y;
 	position.z = z;
@@ -187,14 +181,9 @@ void effFireMain(EffectEntry* effect) {
 	s32 tableCount;
 	const ScaleEntry* scaleTable;
 	f32 interp;
-#ifdef MUST_MATCH
-	// Match-only: Non-const scale factors preserve the original FP register allocation.
+	// Non-const scale factors preserve the original FP register allocation.
 	f32 stretch = 1.4f;
 	f32 widen = 1.2f;
-#else
-	const f32 stretch = 1.4f;
-	const f32 widen = 1.2f;
-#endif
 	EffectEntry* smokeEntry;
 	data = effect->userdata;
 	type = data->type;
@@ -286,28 +275,18 @@ void effFireMain(EffectEntry* effect) {
 		if (data->sparkTimer > data->sparkInterval) {
 			// Per-type vertical spawn offsets packed into one word.
 			u32 packedYOffsets = dat_8041e0b8;
-#ifdef MUST_MATCH
-			// Match-only: declaring px/py/pz/sc uninitialised and assigning them in the target's computation
-			// order (pz, sc, px, py) makes MWCC colour pz=f29 and px=f31 as the original. Declaring them with
-			// initialisers in this order colours pz=f31 and px=f29.
+			// px/py/pz/sc are declared uninitialised and assigned in the order pz, sc, px, py, which colours
+			// pz=f29 and px=f31; declaring them with initialisers in this order gives pz=f31 and px=f29.
 			f32 px;
 			f32 py;
 			f32 pz;
 			f32 sc;
-#else
-			f32 pz = data->position.z - 5.0f;
-			f32 py = data->position.y + (f32)((u8*)&packedYOffsets)[type];
-			f32 px = data->position.x;
-			f32 sc = data->scale;
-#endif
 			Vec smokePos;
 			effFireSmokeData* smoke;
-#ifdef MUST_MATCH
 			pz = data->position.z - 5.0f;
 			sc = data->scale;
 			px = data->position.x;
 			py = data->position.y + (f32)((u8*)&packedYOffsets)[type];
-#endif
 
 			smokeEntry = effEntry();
 			smokeEntry->type = "FireSmoke";
@@ -418,12 +397,7 @@ void effFireDisp(CameraId camId, void* param) {
 	PSMTXTrans(transMtx, data->position.x, data->position.y, data->position.z);
 	PSMTXRotRad(rotMtx, 'y', -camGetPtr(camId)->viewYaw * 0.017453292f);
 	scale = 20.f * data->scale;
-#ifdef MUST_MATCH
-	// Match-only: division gives the original multiply operand order after strength reduction.
-	scale = scale / 32.0f;
-#else
 	scale *= 0.03125f;
-#endif
 	PSMTXScale(scaleMtx, scale * data->scaleX, scale * data->scaleY, scale);
 	PSMTXConcat(transMtx, rotMtx, mtx);
 	PSMTXConcat(mtx, scaleMtx, mtx);
@@ -516,7 +490,6 @@ void effFireDisp(CameraId camId, void* param) {
 	}
 }
 
-#ifdef MUST_MATCH
 static inline GXColor effFireDisp2Color(GXColor tevColor, u8 a) {
 	tevColor.r = a;
 	tevColor.g = a;
@@ -529,7 +502,6 @@ static inline GXColor effFireDisp2KColor(GXColor tevKColor, u8 a) {
 	tevKColor.a = a;
 	return tevKColor;
 }
-#endif
 
 void effFireDisp2(CameraId camId, void* param) {
 	EffectEntry* effect = param;
@@ -544,22 +516,13 @@ void effFireDisp2(CameraId camId, void* param) {
 	GXColor tevKColor;
 	s32 type;
 	f32 negHalf;
-#ifdef MUST_MATCH
-	// Match-only: Non-const dimensions retain runtime negation and the cached quad coordinates.
+	// Non-const dimensions retain runtime negation and the cached quad coordinates.
 	f32 width = 24.0f;
 	f32 half = 0.5f;
 	f32 halfWidth = 12.0f;
 	f32 quadSize = 32.0f;
 	f32 height = 40.0f;
 	f32 halfSize = 16.0f;
-#else
-	const f32 width = 24.0f;
-	const f32 half = 0.5f;
-	const f32 halfWidth = 12.0f;
-	const f32 quadSize = 32.0f;
-	const f32 height = 40.0f;
-	const f32 halfSize = 16.0f;
-#endif
 
 	camera = camGetPtr(camId);
 	type = data->type;
@@ -618,31 +581,16 @@ void effFireDisp2(CameraId camId, void* param) {
 	GXSetTevAlphaOp(GX_TEVSTAGE1, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
 	GXSetTevColorIn(GX_TEVSTAGE1, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ZERO, GX_CC_CPREV);
 	GXSetTevAlphaIn(GX_TEVSTAGE1, GX_CA_APREV, GX_CA_TEXA, GX_CA_A2, GX_CA_ZERO);
-#ifdef MUST_MATCH
 	tevColor = *(GXColor*)&unk_80423058;
 	GXSetTevColor(GX_TEVREG2, effFireDisp2Color(tevColor, data->frameBlend));
-#else
-	tevColor = *(GXColor*)&unk_80423058;
-	tevColor.r = data->frameBlend;
-	tevColor.g = data->frameBlend;
-	tevColor.b = data->frameBlend;
-	tevColor.a = data->frameBlend;
-	GXSetTevColor(GX_TEVREG2, tevColor);
-#endif
 	GXSetTevOrder(GX_TEVSTAGE2, GX_TEXCOORD_NULL, GX_TEXMAP_NULL, GX_COLOR_NULL);
 	GXSetTevColorOp(GX_TEVSTAGE2, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
 	GXSetTevAlphaOp(GX_TEVSTAGE2, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
 	GXSetTevColorIn(GX_TEVSTAGE2, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ZERO, GX_CC_CPREV);
 	GXSetTevAlphaIn(GX_TEVSTAGE2, GX_CA_ZERO, GX_CA_APREV, GX_CA_KONST, GX_CA_ZERO);
 	GXSetTevKAlphaSel(GX_TEVSTAGE2, GX_TEV_KASEL_K0_A);
-#ifdef MUST_MATCH
 	tevKColor = *(GXColor*)&unk_8042305c;
 	GXSetTevKColor(GX_KCOLOR0, effFireDisp2KColor(tevKColor, data->alpha));
-#else
-	tevKColor = *(GXColor*)&unk_8042305c;
-	tevKColor.a = data->alpha;
-	GXSetTevKColor(GX_KCOLOR0, tevKColor);
-#endif
 
 	GXBegin(GX_QUADS, GX_VTXFMT0, 4);
 	negHalf = -width * half;
@@ -742,21 +690,21 @@ void effFireDisp2(CameraId camId, void* param) {
 //  - `third` (0.33333f) and `sixteen` (16.0f) are f32 locals so MWCC caches them in f29/f30, and the
 //    inner-loop GXPosition3f32/GXTexCoord2f32 y and texcoord values are inline expressions rather than
 //    hoisted locals; c0/c1 stay `const u8*`.
-//  - the four zero-vector copies below are MUST_MATCH: without the volatile read MWCC hoists all twelve
+//  - the four zero-vector copies below are MUST_MATCH volatile reads: without them MWCC hoists all twelve
 //    loads out of the outer loop, and without the explicit temp the frame loses 0x30.
-//  - the TevReg0 colour is built by the MUST_MATCH inline effFireDisp3KColor so GXSetTevColor gets the
+//  - the TevReg0 colour is built by the inline effFireDisp3KColor so GXSetTevColor gets the
 //    target's stack argument slot.
 //  - vec3_802f8c10 is a non-const object forced into .rodata so effFireEntry copies it with integer
 //    lwz/stw as the target does (a const object is folded into lfsu).
-#ifdef MUST_MATCH
-// Match-only: building the TevReg0 colour in an inline returning GXColor gives the target's
+
+// Building the TevReg0 colour in an inline returning GXColor gives the target's
 // GXSetTevColor stack argument slot; a plain assignment lands in a different one.
 static inline GXColor effFireDisp3KColor(u8 a) {
 	GXColor c = *(GXColor*)&unk_80423060;
 	c.a = a;
 	return c;
 }
-#endif
+
 void effFireDisp3(CameraId camId, void* param) {
 	EffectEntry* effect = param;
 	CameraEntry* camera;
@@ -778,18 +726,11 @@ void effFireDisp3(CameraId camId, void* param) {
 	s32 j;
 	f32 rowHeight;
 	f32 leftX;
-#ifdef MUST_MATCH
-	// Match-only: Non-const dimensions retain runtime negation and the original loop FP registers.
+	// Non-const dimensions retain runtime negation and the original loop FP registers.
 	f32 width = 32.0f;
 	f32 half = 0.5f;
 	f32 third = 0.33333334f;
 	f32 halfWidth = 16.0f;
-#else
-	const f32 width = 32.0f;
-	const f32 half = 0.5f;
-	const f32 third = 0.33333334f;
-	const f32 halfWidth = 16.0f;
-#endif
 
 	data = effect->userdata;
 	camera = camGetPtr(camId);
@@ -849,12 +790,7 @@ void effFireDisp3(CameraId camId, void* param) {
 			GXSetTevColor(GX_TEVREG1, blend);
 		}
 	}
-#ifdef MUST_MATCH
 	tevColor = effFireDisp3KColor(data->alpha);
-#else
-	tevColor = *(GXColor*)&unk_80423060;
-	tevColor.a = data->alpha;
-#endif
 	GXSetTevColor(GX_TEVREG0, tevColor);
 	GXSetCullMode(GX_CULL_NONE);
 	GXClearVtxDesc();
@@ -1010,12 +946,8 @@ static f32 effFire_pool_smoke_speed(void) {
 
 void effFireSmokeMain(EffectEntry* effect) {
 	effFireSmokeData* data = effect->userdata;
-#ifdef MUST_MATCH
-	// Match-only: The non-const fade factor keeps the conversion double and multiplier in their original registers.
+	// The non-const fade factor keeps the conversion double and multiplier in their original registers.
 	f32 fade = 0.99f;
-#else
-	const f32 fade = 0.99f;
-#endif
 
 	if (effect->flags & 4) {
 		effect->flags &= ~4;
@@ -1045,7 +977,6 @@ void effFireSmokeMain(EffectEntry* effect) {
 	dispEntry(CAMERA_3D, dispCalcZ(&data->position), 2, effFireSmokeDisp, effect);
 }
 
-#ifdef MUST_MATCH
 static inline GXColor effFireSmokeColor(effFireSmokeData* data) {
 	GXColor c = unk_80423064;
 	c.r = data->color.r;
@@ -1054,7 +985,6 @@ static inline GXColor effFireSmokeColor(effFireSmokeData* data) {
 	c.a = data->color.a;
 	return c;
 }
-#endif
 
 // MATCH: writing the scale as / 128.0f (the same value as * 0.0078125f) makes MWCC strength-reduce
 // it to the fmuls with the original's FP register colouring (mask f3, quotient f2, constant f1);
@@ -1073,24 +1003,14 @@ void effFireSmokeDisp(CameraId camId, void* param) {
 	f32 scaleY;
 	f32 scale;
 	f32 negHalf;
-#ifdef MUST_MATCH
-	// Match-only: Non-const factors retain the runtime negation and cached half-size coordinate.
+	// Non-const factors retain the runtime negation and cached half-size coordinate.
 	f32 one = 1.0f;
 	f32 half = 0.5f;
-#else
-	const f32 one = 1.0f;
-	const f32 half = 0.5f;
-#endif
 
 	camera = camGetPtr(camId);
 	if ((u32)data->counter * 2 < 0x3C) {
-#ifdef MUST_MATCH
 		scaleX = scale_dt[data->counter * 2] / 128.0f;
 		scaleY = scale_dt[data->counter * 2 + 1] / 128.0f;
-#else
-		scaleX = scale_dt[data->counter * 2] * 0.0078125f;
-		scaleY = scale_dt[data->counter * 2 + 1] * 0.0078125f;
-#endif
 	} else {
 		scaleX = 1.5f;
 		scaleY = 0.8f;
@@ -1100,15 +1020,7 @@ void effFireSmokeDisp(CameraId camId, void* param) {
 	GXLoadTexObj(&tex, GX_TEXMAP0);
 	GXSetNumChans(1);
 	GXSetChanCtrl(GX_COLOR0A0, GX_FALSE, GX_SRC_REG, GX_SRC_REG, GX_LIGHT_NULL, GX_DF_NONE, GX_AF_NONE);
-#ifdef MUST_MATCH
 	color = effFireSmokeColor(data);
-#else
-	color = unk_80423064;
-	color.r = data->color.r;
-	color.g = data->color.g;
-	color.b = data->color.b;
-	color.a = data->color.a;
-#endif
 	GXSetChanMatColor(GX_COLOR0A0, color);
 	GXSetNumTexGens(1);
 	GXSetTexCoordGen2(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_IDENTITY, GX_FALSE, GX_PTIDENTITY);
