@@ -1357,43 +1357,167 @@ void searchGround(PartyEntry* party) {
         f31 = party->groundY;
     }
 
-    if (hit == NULL) {
-        goto L_2804;
-    }
-
-    attr = hitGetAttr(hit);
-    {
-        u32 id = party->yoshiPsndSFXId;
-        if (id != 0xFFFFFFFFu) {
-            psndSFXOff(id);
-            party->yoshiPsndSFXId = -1;
-        }
-    }
-
-    if (attr & 0x200) {
-        u32 changed;
-
-        if (party->useMotionId == 5) {
-            changed = 0;
-        } else {
-            party->useMotionId = 0x46;
-            changed = 1;
-        }
-        if (changed == 0) {
-            goto end;
-        }
+    if (hit != NULL) {
+        attr = hitGetAttr(hit);
         {
-            Vec pos = party->position;
-
-            marioSetSplash(0, &pos);
-        }
-        party->groundHit = NULL;
-        if (yoshiGetStatus() == 1) {
-            MarioWork* pl = party->playerPtr;
-            if ((pl->flags & 0xF0000) == 0) {
-                pl->hitobjStandOn = NULL;
+            u32 id = party->yoshiPsndSFXId;
+            if (id != 0xFFFFFFFFu) {
+                psndSFXOff(id);
+                party->yoshiPsndSFXId = -1;
             }
         }
+
+        if (attr & 0x200) {
+            u32 changed;
+
+            if (party->useMotionId == 5) {
+                changed = 0;
+            } else {
+                party->useMotionId = 0x46;
+                changed = 1;
+            }
+            if (changed == 0) {
+                return;
+            }
+            {
+                Vec pos = party->position;
+
+                marioSetSplash(0, &pos);
+            }
+            party->groundHit = NULL;
+            if (yoshiGetStatus() == 1) {
+                MarioWork* pl = party->playerPtr;
+                if ((pl->flags & 0xF0000) == 0) {
+                    pl->hitobjStandOn = NULL;
+                }
+            }
+            if (!(party->flags & PARTY_FLAG_IS_FALLING)) {
+                party->flags |= PARTY_FLAG_IS_FALLING;
+                party->jumpPara3 = -0.4f;
+                party->tail.yoshi.jumpVel = -0.4f;
+                party->tail.yoshi.jumpAccel = 0.0f;
+                party->jumpPara2 = 0.0f;
+            }
+            party->tail.yoshi.jumpAccel = party->tail.yoshi.jumpAccel + party->jumpPara2;
+            party->tail.yoshi.jumpVel = party->tail.yoshi.jumpVel + party->tail.yoshi.jumpAccel;
+            party->jumpPara3 = party->jumpPara3 + party->tail.yoshi.jumpVel;
+            if (party->jumpPara3 < -15.0f) {
+                party->jumpPara3 = -15.0f;
+            }
+            party->position.y += party->jumpPara3;
+            set_damage_root_ypos(mario->position.y - 8.0f);
+            {
+                MarioWork* pl = party->playerPtr;
+                Vec* dst = (Vec*)((u8*)pl + 0x98);
+
+                dst[0] = vec[0];
+                dst[1] = vec[1];
+            }
+            {
+                PartyEntry* extra = partyGetPtr(marioGetExtraPartyId());
+                if (extra != NULL) {
+                    extra->dispOffset = vec[2];
+                }
+            }
+            party->flags |= PARTY_FLAG_FORCE_FALL;
+            if (party->jumpPara3 <= -6.0f) {
+                party->jumpPara3 = -6.0f;
+                party->tail.yoshi.jumpVel = 0.0f;
+                party->tail.yoshi.jumpAccel = 0.0f;
+                party->jumpPara2 = 0.0f;
+            }
+            mario->jumpVelY = party->jumpPara3;
+            mario->jumpAccelY = party->tail.yoshi.jumpVel;
+            mario->jumpJerkY = party->tail.yoshi.jumpAccel;
+            mario->jumpJerkStepY = party->jumpPara2;
+            marioChgMot(0x1F);
+            return;
+        }
+
+        if (attr & 0xC00) {
+            MarioWork* m = marioGetPtr();
+
+            party->groundHit = NULL;
+            if (yoshiGetStatus() == 1) {
+                MarioWork* pl = party->playerPtr;
+                if ((pl->flags & 0xF0000) == 0) {
+                    pl->hitobjStandOn = NULL;
+                }
+            }
+            marioChgMot(0x20);
+            party->useMotionId = 0xA;
+    #ifdef MUST_MATCH
+            // The pool places PYS_S_2 at vec3+0x30; the original reuses the vec3
+            // base register (r31) for it instead of a fresh lis.
+            partyChgPose(party, (char*)vec + 0x30);
+    #else
+            partyChgPose(party, YOSHI_S_2);
+    #endif
+            marioChgPose("M_Y_2");
+            m->field_0x2B0 = 0.0f;
+            *(f32*)((u8*)m + 0x2B4) = 0.0f;
+            partyChgRunMode(party, 0xD);
+            {
+                PartyEntry* extra = partyGetPtr(marioGetExtraPartyId());
+                if (extra != NULL) {
+                    partyChgRunMode(extra, 0xD);
+                }
+            }
+            partyChgRunMode(party, 0xD);
+            {
+                PartyEntry* extra = partyGetPtr(marioGetExtraPartyId());
+                if (extra != NULL) {
+                    partyChgRunMode(extra, 0xD);
+                }
+            }
+            return;
+        }
+
+        if (hit != NULL) {
+            if (hitGetAttr(hit) & 0x40000000) {
+                mario->hitobjDamageReturn = hit;
+            }
+        }
+
+        if (!(party->flags & 0x30)) {
+            f32 out1;
+            f32 out2;
+            f32 out3;
+            u32 r = partyChkFrontStep(party, 11.0f, &out1, &out2, &out3);
+            f32 d = out1 - party->position.y;
+
+            if (r != 0 && d <= 11.0f && d >= 5.0f && party->groundSlope <= 30.0f) {
+                party->field_120 = out1;
+                {
+                    f32 zero = 0.0f;
+
+                    if (party->speed != zero) {
+                        u32 changed;
+
+                        if (party->useMotionId == 5) {
+                            changed = 0;
+                        } else {
+                            party->useMotionId = 0x28;
+                            changed = 1;
+                        }
+                        if (changed != 0) {
+                            return;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    party->groundHit = hit;
+    if (yoshiGetStatus() == 1) {
+        MarioWork* pl = party->playerPtr;
+        if ((pl->flags & 0xF0000) == 0) {
+            pl->hitobjStandOn = hit;
+        }
+    }
+    if (hit == NULL) {
+        party->flags &= ~PARTY_FLAG_IS_GROUNDED;
         if (!(party->flags & PARTY_FLAG_IS_FALLING)) {
             party->flags |= PARTY_FLAG_IS_FALLING;
             party->jumpPara3 = -0.4f;
@@ -1408,159 +1532,25 @@ void searchGround(PartyEntry* party) {
             party->jumpPara3 = -15.0f;
         }
         party->position.y += party->jumpPara3;
-        set_damage_root_ypos(mario->position.y - 8.0f);
-        {
-            MarioWork* pl = party->playerPtr;
-            Vec* dst = (Vec*)((u8*)pl + 0x98);
-
-            dst[0] = vec[0];
-            dst[1] = vec[1];
-        }
-        {
-            PartyEntry* extra = partyGetPtr(marioGetExtraPartyId());
-            if (extra != NULL) {
-                extra->dispOffset = vec[2];
-            }
-        }
-        party->flags |= PARTY_FLAG_FORCE_FALL;
-        if (party->jumpPara3 <= -6.0f) {
-            party->jumpPara3 = -6.0f;
-            party->tail.yoshi.jumpVel = 0.0f;
-            party->tail.yoshi.jumpAccel = 0.0f;
-            party->jumpPara2 = 0.0f;
-        }
-        mario->jumpVelY = party->jumpPara3;
-        mario->jumpAccelY = party->tail.yoshi.jumpVel;
-        mario->jumpJerkY = party->tail.yoshi.jumpAccel;
-        mario->jumpJerkStepY = party->jumpPara2;
-        marioChgMot(0x1F);
-        goto end;
-    }
-
-    if (attr & 0xC00) {
-        MarioWork* m = marioGetPtr();
-
-        party->groundHit = NULL;
-        if (yoshiGetStatus() == 1) {
-            MarioWork* pl = party->playerPtr;
-            if ((pl->flags & 0xF0000) == 0) {
-                pl->hitobjStandOn = NULL;
-            }
-        }
-        marioChgMot(0x20);
-        party->useMotionId = 0xA;
-#ifdef MUST_MATCH
-        // The pool places PYS_S_2 at vec3+0x30; the original reuses the vec3
-        // base register (r31) for it instead of a fresh lis.
-        partyChgPose(party, (char*)vec + 0x30);
-#else
-        partyChgPose(party, YOSHI_S_2);
-#endif
-        marioChgPose("M_Y_2");
-        m->field_0x2B0 = 0.0f;
-        *(f32*)((u8*)m + 0x2B4) = 0.0f;
-        partyChgRunMode(party, 0xD);
-        {
-            PartyEntry* extra = partyGetPtr(marioGetExtraPartyId());
-            if (extra != NULL) {
-                partyChgRunMode(extra, 0xD);
-            }
-        }
-        partyChgRunMode(party, 0xD);
-        {
-            PartyEntry* extra = partyGetPtr(marioGetExtraPartyId());
-            if (extra != NULL) {
-                partyChgRunMode(extra, 0xD);
-            }
-        }
-        goto end;
-    }
-
-    if (hit != NULL) {
-        if (hitGetAttr(hit) & 0x40000000) {
-            mario->hitobjDamageReturn = hit;
-        }
-    }
-
-    if (!(party->flags & 0x30)) {
-        f32 out1;
-        f32 out2;
-        f32 out3;
-        u32 r = partyChkFrontStep(party, 11.0f, &out1, &out2, &out3);
-        f32 d = out1 - party->position.y;
-
-        if (r != 0 && d <= 11.0f && d >= 5.0f && party->groundSlope <= 30.0f) {
-            party->field_120 = out1;
+    } else {
+        party->flags |= PARTY_FLAG_IS_GROUNDED;
+        if (party->flags & PARTY_FLAG_IS_FALLING) {
+            party->flags &= ~0x70;
+            mario->flags &= ~0xF0000;
+            party->jumpPara1 = 0.0f;
+            party->position.y = f31;
             {
-                f32 zero = 0.0f;
-
-                if (party->speed != zero) {
-                    u32 changed;
-
-                    if (party->useMotionId == 5) {
-                        changed = 0;
-                    } else {
-                        party->useMotionId = 0x28;
-                        changed = 1;
-                    }
-                    if (changed != 0) {
-                        goto end;
-                    }
+                u32 id = party->yoshiPsndSFXId;
+                if (id != 0xFFFFFFFFu) {
+                    psndSFXOff(id);
+                    party->yoshiPsndSFXId = -1;
                 }
             }
+        } else {
+            party->position.y = f31;
         }
     }
-
-L_2804:
-    party->groundHit = hit;
-    if (yoshiGetStatus() == 1) {
-        MarioWork* pl = party->playerPtr;
-        if ((pl->flags & 0xF0000) == 0) {
-            pl->hitobjStandOn = hit;
-        }
-    }
-    if (hit != NULL) {
-        goto L_2968;
-    }
-
-    party->flags &= ~PARTY_FLAG_IS_GROUNDED;
-    if (!(party->flags & PARTY_FLAG_IS_FALLING)) {
-        party->flags |= PARTY_FLAG_IS_FALLING;
-        party->jumpPara3 = -0.4f;
-        party->tail.yoshi.jumpVel = -0.4f;
-        party->tail.yoshi.jumpAccel = 0.0f;
-        party->jumpPara2 = 0.0f;
-    }
-    party->tail.yoshi.jumpAccel = party->tail.yoshi.jumpAccel + party->jumpPara2;
-    party->tail.yoshi.jumpVel = party->tail.yoshi.jumpVel + party->tail.yoshi.jumpAccel;
-    party->jumpPara3 = party->jumpPara3 + party->tail.yoshi.jumpVel;
-    if (party->jumpPara3 < -15.0f) {
-        party->jumpPara3 = -15.0f;
-    }
-    party->position.y += party->jumpPara3;
-    goto end;
-
-L_2968:
-    party->flags |= PARTY_FLAG_IS_GROUNDED;
-    if (party->flags & PARTY_FLAG_IS_FALLING) {
-        party->flags &= ~0x70;
-        mario->flags &= ~0xF0000;
-        party->jumpPara1 = 0.0f;
-        party->position.y = f31;
-        {
-            u32 id = party->yoshiPsndSFXId;
-            if (id != 0xFFFFFFFFu) {
-                psndSFXOff(id);
-                party->yoshiPsndSFXId = -1;
-            }
-        }
-    } else {
-        party->position.y = f31;
-    }
-
-end: ;
 }
-
 
 void searchGround2(PartyEntry* party) {
     HitEntry* hit = NULL;
@@ -1707,7 +1697,7 @@ void checkWall(PartyEntry* party, f32 a, f32 b) {
 
             if ((attr & 0x00800004) != 0 && (attr & 0x00080080) == 0) {
                 movePos(&party->position.x, &party->position.z, a, b);
-                goto end;
+                return;
             }
         }
         party->position = pos;
@@ -1802,8 +1792,6 @@ void checkWall(PartyEntry* party, f32 a, f32 b) {
     marioChkWallAround(&pos, 1, a, b, party->radius, mario->wPlayerCollisionBox.y);
     party->position.x = pos.x;
     party->position.z = pos.z;
-
-end: ;
 }
 
 
