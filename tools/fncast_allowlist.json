@@ -73,7 +73,7 @@
   },
   {
     "file": "src/battle/ac/ac_signal_timing.c",
-    "context": "bd->field_0x2C = ((s32 (*)(BattleWork*))BattleActionCommandGetDifficulty)(work);",
+    "context": "bd->difficulty = ((s32 (*)(BattleWork*))BattleActionCommandGetDifficulty)(work);",
     "reason": "Prototype disagreement with the header declaration of BattleActionCommandGetDifficulty: fix the header, or guard under MUST_MATCH.",
     "date": "2026-10-05"
   },
