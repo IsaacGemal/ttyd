@@ -1509,7 +1509,7 @@ s32 _disable_enemy_unit_disp(EventEntry* event, BOOL isFirstCall) {
 
         if (obj != NULL) {
             wp->stageFlags |= 0x20;
-            obj->mFlags |= 1;
+            obj->mFlags |= BSO_FLAG_HIDDEN;
             mapGrpFlagOn("if_body", 1);
             mapGrpFlagOn("if_wire", 1);
         }

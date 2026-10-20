@@ -20,7 +20,7 @@ enum BattleStageObjectSpawnType {
 };
 
 enum BattleStageObjectFlags {
-	BSO_FLAG_MAP_GRP_ON = 0x1, //map group flag 1 of the map object is kept on while set
+	BSO_FLAG_HIDDEN = 0x1, //keeps map group flag 1 (hidden: the map draw loop skips it) on for the map object while set
 	BSO_FLAG_DIRTY = 0x2, //transform changed: BattleStageObjectMain re-applies it to the map object, then clears this
 };
 

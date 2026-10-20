@@ -328,7 +328,7 @@ void BattleStageObjectInit(void) {
 	obj->mLastRotation = BSO_UNSET(10);
 	obj->mLastPositionOffset2 = BSO_UNSET(11);
 	mapGrpFlagOn(obj->data->name, 1);
-	obj->mFlags |= BSO_FLAG_MAP_GRP_ON;
+	obj->mFlags |= BSO_FLAG_HIDDEN;
 	id++;
 
 	// the spotlights, up to the entry with no name
@@ -353,7 +353,7 @@ void BattleStageObjectInit(void) {
 		obj->mLastRotation = BSO_UNSET(14);
 		obj->mLastPositionOffset2 = BSO_UNSET(15);
 		mapGrpFlagOn(obj->data->name, 1);
-		obj->mFlags |= BSO_FLAG_MAP_GRP_ON;
+		obj->mFlags |= BSO_FLAG_HIDDEN;
 	}
 
 	// the stage's events; each layer with objects gets its own
@@ -1426,7 +1426,7 @@ void BattleStageObjectMain(void) {
 				break;
 		}
 
-		if (obj->mFlags & BSO_FLAG_MAP_GRP_ON) {
+		if (obj->mFlags & BSO_FLAG_HIDDEN) {
 			if (!(mapGetMapObj(obj->data->name)->flags & 1)) {
 				mapGrpFlagOn(obj->data->name, 1);
 			}
@@ -1658,7 +1658,7 @@ USER_FUNC(_mobj_destroy) {
 	for (i = 0; i < 32; i++) {
 		obj = &wp->stageObjects[i];
 		if (obj->id > 0 && obj->data->mLayer == layer) {
-			obj->mFlags |= BSO_FLAG_MAP_GRP_ON;
+			obj->mFlags |= BSO_FLAG_HIDDEN;
 			unit = BattleGetUnitPtr(wp, obj->mBattleUnitIdx);
 			if (unit != NULL) {
 				BattleUnitPart* p = unit->mParts;
