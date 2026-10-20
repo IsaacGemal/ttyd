@@ -47,24 +47,24 @@ static s32 _power_table[7] = {0x37, 0x32, 0x2D, 0x28, 0x23, 0x1E, 0x19};
 
 // Repeatedly's action-command work area at BattleWork+0x1F4C. No header declares it.
 typedef struct AcRepeatedlyWork {
-    u32 field_0x00; // 0x0
-    u32 field_0x04; // 0x4
-    u32 field_0x08; // 0x8
-    u32 field_0x0C; // 0xC
-    f32 field_0x10; // 0x10
-    f32 field_0x14; // 0x14
-    f32 field_0x18; // 0x18
-    f32 field_0x1C; // 0x1C
-    u16 field_0x20; // 0x20
-    u16 field_0x22; // 0x22
-    s16 field_0x24; // 0x24
-    s16 field_0x26; // 0x26
-    s16 field_0x28; // 0x28
-    u8 field_0x2A;  // 0x2A
-    s8 field_0x2B;  // 0x2B
-    u8 field_0x2C;  // 0x2C
-    u8 field_0x2D[3]; // 0x2D
-    s32 field_0x30; // 0x30
+    u32 curMask;     // 0x0, button mask being checked; swapped between maskA and maskB (mode 0xB/0xC, 0x10)
+    u32 maskA;       // 0x4
+    u32 maskB;       // 0x8
+    u32 holdMask;    // 0xC, nonzero: the button that must stay held (BattlePadCheckNow) for the command to run
+    f32 gauge;       // 0x10, needle position 0..100 (bounces with gaugeStep)
+    f32 gaugeStep;   // 0x14, needle speed per frame; 0 when the needle is fixed
+    f32 power;       // 0x18, accumulated power 0..100; each press adds powerStep * table value
+    f32 decay;       // 0x1C, subtracted from power every frame (acParams[6] / 100)
+    u16 presses;     // 0x20, counts the inputs that stop the needle (button, probe edge, reset edge, auto)
+    u16 swapTimer;   // 0x22, frames until curMask switches to the other mask (mode 0x10)
+    s16 powerStep;   // 0x24, multiplier applied to the press power (acParams[5])
+    s16 initTimer;   // 0x26, copy of the start timer (acParams[1]); written in _init_param, never read
+    s16 timer;       // 0x28, frames left before the command ends; reset to 0 when holdMask is released
+    u8 gaugeWidth;   // 0x2A, 0xB2 at init; the width argument of BattleAcDrawGauge
+    s8 full;         // 0x2B, 1 once power reaches 100 (or is pre-filled from the token timer); draws test 1 and -1
+    u8 probeHeld;    // 0x2C, toggled by the reset button (mode 0xA) or the SI probe (mode 9)
+    u8 pad_0x2D[3];  // 0x2D
+    s32 endDelay;    // 0x30, frames the result display waits in states 0x3EA/0x3EB
 } AcRepeatedlyWork;
 
 static void _init_param(BattleWork* work) {
@@ -74,85 +74,85 @@ static void _init_param(BattleWork* work) {
     s32 param;
     s32 timer;
 
-    dec->field_0x2C = 0;
-    dec->field_0x0C = 0;
+    dec->probeHeld = 0;
+    dec->holdMask = 0;
 
     switch (ac->acParams[0]) {
     case 10:
         work->flags |= 0x20000000;
         break;
     case 8:
-        dec->field_0x0C = 0x100;
+        dec->holdMask = 0x100;
         // fallthrough
     case 6:
-        dec->field_0x08 = 0x40000;
-        dec->field_0x04 = 0x40000;
-        dec->field_0x00 = 0x40000;
+        dec->maskB = 0x40000;
+        dec->maskA = 0x40000;
+        dec->curMask = 0x40000;
         break;
     case 2:
-        dec->field_0x08 = 0x200;
-        dec->field_0x04 = 0x200;
-        dec->field_0x00 = 0x200;
+        dec->maskB = 0x200;
+        dec->maskA = 0x200;
+        dec->curMask = 0x200;
         break;
     case 3:
-        dec->field_0x08 = 0x400;
-        dec->field_0x04 = 0x400;
-        dec->field_0x00 = 0x400;
+        dec->maskB = 0x400;
+        dec->maskA = 0x400;
+        dec->curMask = 0x400;
         break;
     case 4:
-        dec->field_0x08 = 0x800;
-        dec->field_0x04 = 0x800;
-        dec->field_0x00 = 0x800;
+        dec->maskB = 0x800;
+        dec->maskA = 0x800;
+        dec->curMask = 0x800;
         break;
     case 5:
-        dec->field_0x08 = 0x20;
-        dec->field_0x04 = 0x20;
-        dec->field_0x00 = 0x20;
+        dec->maskB = 0x20;
+        dec->maskA = 0x20;
+        dec->curMask = 0x20;
         break;
     case 11:
-        dec->field_0x04 = 0x100;
-        dec->field_0x00 = 0x100;
-        dec->field_0x08 = 0x200;
+        dec->maskA = 0x100;
+        dec->curMask = 0x100;
+        dec->maskB = 0x200;
         break;
     case 16:
-        dec->field_0x04 = 0x100;
-        dec->field_0x00 = 0x100;
-        dec->field_0x08 = 0x200;
-        dec->field_0x22 = irand(0x1E) + 0x3C;
+        dec->maskA = 0x100;
+        dec->curMask = 0x100;
+        dec->maskB = 0x200;
+        dec->swapTimer = irand(0x1E) + 0x3C;
         break;
     case 12:
-        dec->field_0x04 = 0x400;
-        dec->field_0x00 = 0x400;
-        dec->field_0x08 = 0x800;
+        dec->maskA = 0x400;
+        dec->curMask = 0x400;
+        dec->maskB = 0x800;
         break;
     default:
-        dec->field_0x08 = 0x100;
-        dec->field_0x04 = 0x100;
-        dec->field_0x00 = 0x100;
+        dec->maskB = 0x100;
+        dec->maskA = 0x100;
+        dec->curMask = 0x100;
         break;
     }
 
     param = ac->acParams[1];
-    dec->field_0x28 = param;
-    dec->field_0x26 = param;
-    dec->field_0x10 = (f32)ac->acParams[2];
-    dec->field_0x14 = (f32)ac->acParams[3] / float_10_8041c7e0;
-    if (dec->field_0x14 != float_0_8041c7d8) {
-        dec->field_0x10 = (f32)irand(100);
+    dec->timer = param;
+    dec->initTimer = param;
+    dec->gauge = (f32)ac->acParams[2];
+    dec->gaugeStep = (f32)ac->acParams[3] / float_10_8041c7e0;
+    if (dec->gaugeStep != float_0_8041c7d8) {
+        dec->gauge = (f32)irand(100);
     }
-    dec->field_0x18 = (f32)ac->acParams[7];
-    disp->value = float_0p01_8041c7c0 * dec->field_0x18;
-    dec->field_0x20 = 0;
-    dec->field_0x24 = ac->acParams[5];
-    dec->field_0x1C = float_0p01_8041c7c0 * (f32)ac->acParams[6];
-    dec->field_0x2A = 0xB2;
+    dec->power = (f32)ac->acParams[7];
+    disp->value = float_0p01_8041c7c0 * dec->power;
+    dec->presses = 0;
+    dec->powerStep = ac->acParams[5];
+    dec->decay = float_0p01_8041c7c0 * (f32)ac->acParams[6];
+    dec->gaugeWidth = 0xB2;
 
     timer = ac->guardFrames;
     if (timer > 0) {
         ac->guardFrames = timer - 1;
-        dec->field_0x2B = 1;
+        dec->full = 1;
     } else {
-        dec->field_0x2B = 0;
+        dec->full = 0;
     }
     ac->outputParams[0] = 0;
 }
@@ -190,7 +190,7 @@ s32 battleAcMain_Repeatedly(BattleWork* work) {
         disp->field_0x10[3] = 0;
         disp->value = float_0_8041c7d8;
         ac->result = 1;
-        dec->field_0x28 = 0;
+        dec->timer = 0;
         _init_param(work);
         ac->mAcState = 0x63;
         break;
@@ -198,8 +198,8 @@ s32 battleAcMain_Repeatedly(BattleWork* work) {
         break;
     case 0x64:
         if (!((ac->field_0x4 & 1) && (ac->mAcUnit->mTokenFlags & 0x10)) &&
-            dec->field_0x0C != 0 &&
-            (s32)BattlePadCheckNow(dec->field_0x0C) == 0) {
+            dec->holdMask != 0 &&
+            (s32)BattlePadCheckNow(dec->holdMask) == 0) {
             break;
         }
         BattleAcGaugeSeInit();
@@ -209,143 +209,143 @@ s32 battleAcMain_Repeatedly(BattleWork* work) {
     case 0x3E8:
         switch (ac->acParams[0]) {
         case 0xA:
-            if (dec->field_0x2C != 0) {
+            if (dec->probeHeld != 0) {
                 if (OSGetResetButtonState() == 0) {
-                    dec->field_0x2C = 0;
+                    dec->probeHeld = 0;
                     stateChanged = 1;
-                    dec->field_0x20++;
+                    dec->presses++;
                 }
             } else if (OSGetResetButtonState() != 0) {
-                dec->field_0x2C = 1;
+                dec->probeHeld = 1;
                 stateChanged = 1;
-                dec->field_0x20++;
+                dec->presses++;
             }
             break;
         case 9:
-            if (dec->field_0x2C != 0) {
+            if (dec->probeHeld != 0) {
                 if (SIProbe(0) == 8) {
-                    dec->field_0x2C = 0;
+                    dec->probeHeld = 0;
                     stateChanged = 1;
-                    dec->field_0x20++;
+                    dec->presses++;
                 }
             } else if (SIProbe(0) != 8 && SIProbe(0) != 0x80) {
-                dec->field_0x2C = 1;
+                dec->probeHeld = 1;
                 stateChanged = 1;
-                dec->field_0x20++;
+                dec->presses++;
             }
             break;
         case 0x10:
-            dec->field_0x22--;
-            if (dec->field_0x22 == 0) {
-                dec->field_0x22 = irand(0x1E) + 0x3C;
-                if (dec->field_0x00 == dec->field_0x04) {
-                    dec->field_0x00 = dec->field_0x08;
+            dec->swapTimer--;
+            if (dec->swapTimer == 0) {
+                dec->swapTimer = irand(0x1E) + 0x3C;
+                if (dec->curMask == dec->maskA) {
+                    dec->curMask = dec->maskB;
                 } else {
-                    dec->field_0x00 = dec->field_0x04;
+                    dec->curMask = dec->maskA;
                 }
             }
-            if (BattlePadCheckTrigger(dec->field_0x00) != 0) {
+            if (BattlePadCheckTrigger(dec->curMask) != 0) {
                 stateChanged = 1;
-                dec->field_0x20++;
+                dec->presses++;
             }
             break;
         case 0xB:
         case 0xC:
-            if (dec->field_0x20 & 1) {
-                dec->field_0x00 = dec->field_0x08;
+            if (dec->presses & 1) {
+                dec->curMask = dec->maskB;
             } else {
-                dec->field_0x00 = dec->field_0x04;
+                dec->curMask = dec->maskA;
             }
             // fallthrough
         default:
-            if (BattlePadCheckTrigger(dec->field_0x00) != 0) {
+            if (BattlePadCheckTrigger(dec->curMask) != 0) {
                 stateChanged = 1;
-                dec->field_0x20++;
+                dec->presses++;
             }
             break;
         }
 
         if (autoCommand && !stateChanged) {
             stateChanged = 1;
-            dec->field_0x20++;
+            dec->presses++;
         }
-        if (dec->field_0x2B == 0) {
+        if (dec->full == 0) {
             if (stateChanged) {
-                dec->field_0x18 += float_0p01_8041c7c0 * (_power_table[difficulty] * (f32)dec->field_0x24);
+                dec->power += float_0p01_8041c7c0 * (_power_table[difficulty] * (f32)dec->powerStep);
             }
 #ifdef MUST_MATCH
             // Volatile reads: retail reloads both fields here after the store above.
-            target = *(volatile f32*)&dec->field_0x18;
-            v = *(volatile f32*)&dec->field_0x1C;
+            target = *(volatile f32*)&dec->power;
+            v = *(volatile f32*)&dec->decay;
 #else
-            target = dec->field_0x18;
-            v = dec->field_0x1C;
+            target = dec->power;
+            v = dec->decay;
 #endif
             v = target - v;
-            dec->field_0x18 = v;
+            dec->power = v;
 #ifdef MUST_MATCH
             {
                 // Match-only: the volatile read forces the reload into f1 the target has;
                 // the natural form reuses f0 and swaps the compare operands.
-                f32 g = *(volatile f32*)&dec->field_0x18;
+                f32 g = *(volatile f32*)&dec->power;
                 if (g <= float_0_8041c7d8) {
-                    dec->field_0x18 = float_0_8041c7d8;
+                    dec->power = float_0_8041c7d8;
                 }
             }
 #else
-            if (dec->field_0x18 <= float_0_8041c7d8) {
-                dec->field_0x18 = float_0_8041c7d8;
+            if (dec->power <= float_0_8041c7d8) {
+                dec->power = float_0_8041c7d8;
             }
 #endif
 #ifdef MUST_MATCH
             {
                 // Match-only: the volatile read forces the reload into f1 the target has;
                 // the natural form reuses f0 and swaps the compare operands.
-                f32 g = *(volatile f32*)&dec->field_0x18;
+                f32 g = *(volatile f32*)&dec->power;
                 if (g >= float_100_8041c7bc) {
-                    dec->field_0x18 = float_100_8041c7bc;
-                    dec->field_0x2B = 1;
+                    dec->power = float_100_8041c7bc;
+                    dec->full = 1;
                 }
             }
 #else
-            if (dec->field_0x18 >= float_100_8041c7bc) {
-                dec->field_0x18 = float_100_8041c7bc;
-                dec->field_0x2B = 1;
+            if (dec->power >= float_100_8041c7bc) {
+                dec->power = float_100_8041c7bc;
+                dec->full = 1;
             }
 #endif
         }
-        if (float_0_8041c7d8 != dec->field_0x14) {
-            dec->field_0x10 += dec->field_0x14;
-            if (dec->field_0x10 <= float_0_8041c7d8) {
-                dec->field_0x10 = float_0_8041c7d8;
-                dec->field_0x14 = dec->field_0x14 * float_neg1_8041c7dc;
+        if (float_0_8041c7d8 != dec->gaugeStep) {
+            dec->gauge += dec->gaugeStep;
+            if (dec->gauge <= float_0_8041c7d8) {
+                dec->gauge = float_0_8041c7d8;
+                dec->gaugeStep = dec->gaugeStep * float_neg1_8041c7dc;
             }
 #ifdef MUST_MATCH
             {
                 // Match-only: the volatile read forces the reload into f1 the target has;
                 // the natural form reuses f0 and swaps the compare operands.
-                f32 g = *(volatile f32*)&dec->field_0x10;
+                f32 g = *(volatile f32*)&dec->gauge;
                 if (g >= float_100_8041c7bc) {
-                    dec->field_0x10 = float_100_8041c7bc;
-                    dec->field_0x14 = dec->field_0x14 * float_neg1_8041c7dc;
+                    dec->gauge = float_100_8041c7bc;
+                    dec->gaugeStep = dec->gaugeStep * float_neg1_8041c7dc;
                 }
             }
 #else
-            if (dec->field_0x10 >= float_100_8041c7bc) {
-                dec->field_0x10 = float_100_8041c7bc;
-                dec->field_0x14 = dec->field_0x14 * float_neg1_8041c7dc;
+            if (dec->gauge >= float_100_8041c7bc) {
+                dec->gauge = float_100_8041c7bc;
+                dec->gaugeStep = dec->gaugeStep * float_neg1_8041c7dc;
             }
 #endif
         }
-        if (dec->field_0x0C != 0 && (s32)BattlePadCheckNow(dec->field_0x0C) == 0) {
-            dec->field_0x28 = 0;
+        if (dec->holdMask != 0 && (s32)BattlePadCheckNow(dec->holdMask) == 0) {
+            dec->timer = 0;
         }
-        BattleAcGaugeSeUpdate(dec->field_0x18);
-        if (dec->field_0x28 > 0) {
-            dec->field_0x28--;
+        BattleAcGaugeSeUpdate(dec->power);
+        if (dec->timer > 0) {
+            dec->timer--;
         } else {
             ac->result &= ~1;
-            if (dec->field_0x18 >= dec->field_0x10 || dec->field_0x2B != 0) {
+            if (dec->power >= dec->gauge || dec->full != 0) {
                 ac->result |= 2;
             }
             battleAcDelete_Repeatedly(work);
@@ -353,12 +353,12 @@ s32 battleAcMain_Repeatedly(BattleWork* work) {
         }
         break;
     case 0x3EA:
-        dec->field_0x30 = 0x3C;
+        dec->endDelay = 0x3C;
         ac->mAcState = 0x3EB;
         break;
     case 0x3EB:
-        dec->field_0x30--;
-        if (dec->field_0x30 <= 0) {
+        dec->endDelay--;
+        if (dec->endDelay <= 0) {
             ac->mAcState = 0x3EC;
         }
         break;
@@ -436,7 +436,7 @@ static void actionCommandDisp(f32 x, f32 y) {
         s32 iconA;
         s32 iconB;
 
-        switch (dec->field_0x00) {
+        switch (dec->curMask) {
         case 0x100:
             iconA = 0x65;
             iconB = 0x64;
@@ -493,7 +493,7 @@ static void actionCommandDisp(f32 x, f32 y) {
             if (i == 0) {
                 iconA = 0x65;
                 iconB = 0x64;
-                if (dec->field_0x00 == dec->field_0x04) {
+                if (dec->curMask == dec->maskA) {
                     match = 1;
                 } else {
                     match = 0;
@@ -501,7 +501,7 @@ static void actionCommandDisp(f32 x, f32 y) {
             } else {
                 iconA = 0x67;
                 iconB = 0x66;
-                if (dec->field_0x00 == dec->field_0x08) {
+                if (dec->curMask == dec->maskB) {
                     match = 1;
                 } else {
                     match = 0;
@@ -531,7 +531,7 @@ static void actionCommandDisp(f32 x, f32 y) {
         }
     }
 
-    target = dec->field_0x18;
+    target = dec->power;
     target = target / float_100_8041c7bc;
     v = disp->value;
     if (v <= target) {
@@ -547,7 +547,7 @@ static void actionCommandDisp(f32 x, f32 y) {
     }
 
     flags = 0;
-    if ((s8)dec->field_0x2B == 1 && disp->value >= float_1_8041c7b4) {
+    if ((s8)dec->full == 1 && disp->value >= float_1_8041c7b4) {
         flags |= 1;
         p[0xD] += p[0x11];
         p[0xE] += p[0x12];
@@ -560,17 +560,17 @@ static void actionCommandDisp(f32 x, f32 y) {
             *(s8*)&p[0x11] = -0x10;
         }
     }
-    if ((s8)dec->field_0x2B == -1) {
+    if ((s8)dec->full == -1) {
         flags |= 2;
     }
 
     v = disp->value;
-    BattleAcDrawGauge((s32)x, (s32)y, dec->field_0x2A, 2,
-                      (ac->acFlag & 2) ? 100 : (s32)dec->field_0x10, 100, 100,
+    BattleAcDrawGauge((s32)x, (s32)y, dec->gaugeWidth, 2,
+                      (ac->acFlag & 2) ? 100 : (s32)dec->gauge, 100, 100,
                       flags, v);
     {
         Vec vec = vec3_802f3190;
-        vec.x = float_neg288_8041c7c4 + x + (float_176_8041c7c8 * dec->field_0x10) / float_100_8041c7bc;
+        vec.x = float_neg288_8041c7c4 + x + (float_176_8041c7c8 * dec->gauge) / float_100_8041c7bc;
         vec.y = float_45_8041c7cc + y;
         iconDispGx(float_1_8041c7b4, &vec, 0x10, 0x96);
     }
