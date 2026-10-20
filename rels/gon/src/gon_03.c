@@ -666,8 +666,8 @@ static void senkaron_ext_init(void) {
         (*pose->matrix)[2][3] = randf(-125.0f, 140.0f);
         pose->field_0x4 = 90.0f;
         senkaron[i].state = 0;
-        senkaron[i].field_0x4 = (s32)randf(1.0f, 50.0f);
-        senkaron[i].field_0xC = -5.0f;
+        senkaron[i].timer = (s32)randf(1.0f, 50.0f);
+        senkaron[i].velY = -5.0f;
         i--;
         pose++;
     }
@@ -730,19 +730,19 @@ static void senkaron_ext_main(void) {
         switch (senkaron[i].state) {
             case 0:
                 pose->field_0x10 = (gp->retraceCount + i * i) % 0x18;
-                if (senkaron[i].field_0x4 > 0) {
+                if (senkaron[i].timer > 0) {
                     if (senkaronEscapeFlag == 1) {
                         senkaron[i].state = 0x62;
                     } else if (senkaronAttackStartFlag == 1) {
-                        senkaron[i].field_0x4--;
+                        senkaron[i].timer--;
                     }
                 } else {
-                    (*pose->matrix)[1][3] += senkaron[i].field_0xC;
-                    senkaron[i].field_0xC -= 0.3f;
+                    (*pose->matrix)[1][3] += senkaron[i].velY;
+                    senkaron[i].velY -= 0.3f;
                     if ((*pose->matrix)[1][3] < 0.0f) {
                         (*pose->matrix)[1][3] = 0.0f;
                         senkaron[i].state = 1;
-                        senkaron[i].field_0x4 = 0;
+                        senkaron[i].timer = 0;
                         senkaron[i].flags &= 0x0000FFFE;
                         if (i % 8 == 0) {
                             Vec v = {0.0f, 0.0f, 0.0f};
@@ -761,21 +761,21 @@ static void senkaron_ext_main(void) {
                     f32 len;
 
                     if ((*pose->matrix)[0][3] == 0.0f && (*pose->matrix)[2][3] == 0.0f) {
-                        senkaron[i].field_0x8 = 1.0f;
-                        senkaron[i].field_0x10 = 1.0f;
+                        senkaron[i].velX = 1.0f;
+                        senkaron[i].velZ = 1.0f;
                     } else {
                         len = (f32)sqrt((*pose->matrix)[0][3] * (*pose->matrix)[0][3]
                                         + (*pose->matrix)[2][3] * (*pose->matrix)[2][3]);
-                        senkaron[i].field_0x8 = 4.0f * (*pose->matrix)[0][3] / len;
-                        senkaron[i].field_0x10 = 4.0f * (*pose->matrix)[2][3] / len;
+                        senkaron[i].velX = 4.0f * (*pose->matrix)[0][3] / len;
+                        senkaron[i].velZ = 4.0f * (*pose->matrix)[2][3] / len;
                     }
-                    if (senkaron[i].field_0x8 < 0.0f) {
+                    if (senkaron[i].velX < 0.0f) {
                         pose->field_0x4 = 90.0f;
                     } else {
                         pose->field_0x4 = 270.0f;
                     }
                     senkaron[i].state = 0x62;
-                    senkaron[i].field_0x4 = 300;
+                    senkaron[i].timer = 300;
                 } else {
                     if (senkaronMesPushingFlag == 1) {
                         break;
@@ -788,9 +788,9 @@ static void senkaron_ext_main(void) {
                                     f32 dz = (*pose->matrix)[2][3] - mario->position.z;
                                     f32 len = (f32)sqrt(dx * dx + dz * dz);
 
-                                    senkaron[i].field_0x8 = 3.0f * dx / len - 1.0f;
-                                    senkaron[i].field_0xC = randf(5.0f, 10.0f);
-                                    senkaron[i].field_0x10 = randf(-5.0f, 10.0f);
+                                    senkaron[i].velX = 3.0f * dx / len - 1.0f;
+                                    senkaron[i].velY = randf(5.0f, 10.0f);
+                                    senkaron[i].velZ = randf(-5.0f, 10.0f);
                                     senkaron[i].state = 0x61;
                                     {
                                         Vec v = {0.0f, 0.0f, 0.0f};
@@ -806,9 +806,9 @@ static void senkaron_ext_main(void) {
                                 f32 dz = (*pose->matrix)[2][3] - mario->position.z;
                                 f32 len = (f32)sqrt(dx * dx + dz * dz);
 
-                                senkaron[i].field_0x8 = 1.0f + 3.0f * dx / len;
-                                senkaron[i].field_0xC = randf(5.0f, 10.0f);
-                                senkaron[i].field_0x10 = randf(-5.0f, 10.0f);
+                                senkaron[i].velX = 1.0f + 3.0f * dx / len;
+                                senkaron[i].velY = randf(5.0f, 10.0f);
+                                senkaron[i].velZ = randf(-5.0f, 10.0f);
                                 senkaron[i].state = 0x61;
                                 {
                                     Vec v = {0.0f, 0.0f, 0.0f};
@@ -847,27 +847,27 @@ static void senkaron_ext_main(void) {
                             pose->field_0x4 = 270.0f;
                         }
                     }
-                    if (senkaron[i].field_0x4 == 0) {
+                    if (senkaron[i].timer == 0) {
                         f32 dx = (*pose->matrix)[0][3] - mario->position.x;
                         f32 dz = (*pose->matrix)[2][3] - mario->position.z;
                         f32 len = (f32)sqrt(dx * dx + dz * dz);
                         f32 d = 10.0f * len;
                         s32 r = (s32)randf(0.0f, 50.0f);
 
-                        senkaron[i].field_0x8 = randf(-0.5f, 0.5f);
-                        senkaron[i].field_0x10 = randf(-0.5f, 0.5f);
-                        senkaron[i].field_0x8 -= dx / d;
-                        senkaron[i].field_0x10 -= dz / d;
+                        senkaron[i].velX = randf(-0.5f, 0.5f);
+                        senkaron[i].velZ = randf(-0.5f, 0.5f);
+                        senkaron[i].velX -= dx / d;
+                        senkaron[i].velZ -= dz / d;
                         if (r == 1) {
                             senkaron[i].flags |= 1;
                         } else {
                             senkaron[i].flags &= 0x0000FFFE;
                         }
-                        senkaron[i].field_0x4 = 60;
+                        senkaron[i].timer = 60;
                     }
-                    senkaron[i].field_0x4--;
-                    (*pose->matrix)[0][3] += senkaron[i].field_0x8;
-                    (*pose->matrix)[2][3] += senkaron[i].field_0x10;
+                    senkaron[i].timer--;
+                    (*pose->matrix)[0][3] += senkaron[i].velX;
+                    (*pose->matrix)[2][3] += senkaron[i].velZ;
                     if ((*pose->matrix)[0][3] > 375.0f) {
                         (*pose->matrix)[0][3] = 375.0f;
                     }
@@ -885,13 +885,13 @@ static void senkaron_ext_main(void) {
             case 0x61:
                 pose->flags |= 4;
                 if ((*pose->matrix)[1][3] > -100.0f) {
-                    (*pose->matrix)[0][3] += senkaron[i].field_0x8;
-                    (*pose->matrix)[1][3] += senkaron[i].field_0xC;
-                    (*pose->matrix)[2][3] += senkaron[i].field_0x10;
+                    (*pose->matrix)[0][3] += senkaron[i].velX;
+                    (*pose->matrix)[1][3] += senkaron[i].velY;
+                    (*pose->matrix)[2][3] += senkaron[i].velZ;
                     if ((*pose->matrix)[2][3] <= -125.0f) {
                         (*pose->matrix)[2][3] = -125.0f;
                     }
-                    senkaron[i].field_0xC -= 0.3f;
+                    senkaron[i].velY -= 0.3f;
                     pose->field_0x10 = 0x18;
                 } else {
                     marioGetPtr();
@@ -901,15 +901,15 @@ static void senkaron_ext_main(void) {
                     pose->field_0x4 = randf(0.0f, 360.0f);
                     pose->flags &= ~4;
                     senkaron[i].state = 0;
-                    senkaron[i].field_0x4 = (s32)randf(1.0f, 1000.0f);
-                    senkaron[i].field_0xC = 0.0f;
+                    senkaron[i].timer = (s32)randf(1.0f, 1000.0f);
+                    senkaron[i].velY = 0.0f;
                 }
                 break;
             case 0x62:
-                if (senkaron[i].field_0x4 > 0) {
-                    (*pose->matrix)[0][3] += senkaron[i].field_0x8;
-                    (*pose->matrix)[2][3] += senkaron[i].field_0x10;
-                    senkaron[i].field_0x4--;
+                if (senkaron[i].timer > 0) {
+                    (*pose->matrix)[0][3] += senkaron[i].velX;
+                    (*pose->matrix)[2][3] += senkaron[i].velZ;
+                    senkaron[i].timer--;
                 } else {
                     senkaron[i].state = 0x63;
                 }
