@@ -430,7 +430,7 @@ void shadowMain(void) {
 // inline puts them the other way round. The independent form is under #else.
 static inline void shadowDispMatColor(void) {
     GXColor c = cswp->color;
-    GXSetChanMatColor(GX_COLOR0A0, c);
+    GXSetChanMatColor(4, c);
 }
 #endif
 
@@ -823,7 +823,7 @@ void shadowCharShadowDisp_Projection(CameraId camId, void* param) {
 // colour inline puts them the other way round. The independent form is under #else.
 static inline void shadowPolyMatColor(void) {
     GXColor c = cswp->color;
-    GXSetChanMatColor(GX_COLOR0A0, c);
+    GXSetChanMatColor(4, c);
 }
 #endif
 
@@ -907,7 +907,7 @@ void shadowCharShadowDisp_Polygon(CameraId camId, void* param) {
 // colour inline puts them the other way round. The independent form is under #else.
 static inline void shadowTexMatColor(void) {
     GXColor c = cswp->color;
-    GXSetChanMatColor(GX_COLOR0A0, c);
+    GXSetChanMatColor(4, c);
 }
 #endif
 
@@ -1094,11 +1094,11 @@ void cylinder(ShadowEntry* entry) {
 static inline void shadowTevColor(u8 a) {
     GXColor c = unk_80422fa0;
     c.a = a;
-    GXSetTevColor(GX_TEVREG0, c);
+    GXSetTevColor(1, c);
 }
 
 static inline void shadowMatColor(GXColor c) {
-    GXSetChanMatColor(GX_COLOR0A0, c);
+    GXSetChanMatColor(4, c);
 }
 #endif
 
