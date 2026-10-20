@@ -369,15 +369,15 @@ void effKemuriDisp(CameraId camId, void* param) {
 	switch (type) {
 	case 0:
 		effGetTexObj(0x23, &texobj);
-		GXLoadTexObj(&texobj, 0);
+		GXLoadTexObj(&texobj, GX_TEXMAP0);
 		break;
 	case 1:
 		effGetTexObj(0x24, &texobj);
-		GXLoadTexObj(&texobj, 0);
+		GXLoadTexObj(&texobj, GX_TEXMAP0);
 		break;
 	case 2:
 		effGetTexObj(0x23, &texobj);
-		GXLoadTexObj(&texobj, 0);
+		GXLoadTexObj(&texobj, GX_TEXMAP0);
 		break;
 	}
 
@@ -388,35 +388,35 @@ void effKemuriDisp(CameraId camId, void* param) {
 	PSMTXConcat(outMtx, scaleMtx, outMtx);
 	PSMTXConcat(camera->view, outMtx, outMtx);
 
-	GXSetCurrentMtx(0);
+	GXSetCurrentMtx(GX_PNMTX0);
 	GXSetNumChans(1);
-	GXSetChanCtrl(4, 0, 0, 0, 0, 0, 2);
-	GXSetChanMatColor(4, dat_8041c670);
+	GXSetChanCtrl(GX_COLOR0A0, GX_DISABLE, GX_SRC_REG, GX_SRC_REG, 0, GX_DF_NONE, GX_AF_NONE);
+	GXSetChanMatColor(GX_COLOR0A0, dat_8041c670);
 	GXSetNumTevStages(3);
-	GXSetTevOrder(0, 0, 0, 0xFF);
-	GXSetTevColorOp(0, 0, 0, 0, 1, 0);
-	GXSetTevAlphaOp(0, 0, 0, 0, 1, 0);
-	GXSetTevColorIn(0, 0xF, 0xF, 0xF, 8);
-	GXSetTevAlphaIn(0, 7, 7, 7, 4);
-	GXSetTevOrder(1, 1, 0, 0xFF);
-	GXSetTevColorOp(1, 0, 0, 0, 1, 0);
-	GXSetTevAlphaOp(1, 0, 0, 0, 1, 0);
-	GXSetTevColorIn(1, 0, 8, 2, 0xF);
-	GXSetTevAlphaIn(1, 0, 4, 1, 7);
-	GXSetTevColor(1, dat_8041c674);
-	GXSetTevOrder(2, 0xFF, 0xFF, 4);
-	GXSetTevColorOp(2, 0, 0, 0, 1, 0);
-	GXSetTevAlphaOp(2, 0, 0, 0, 1, 0);
-	GXSetTevColorIn(2, 0xF, 0, 0xA, 0xF);
-	GXSetTevAlphaIn(2, 7, 0, 5, 7);
+	GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR_NULL);
+	GXSetTevColorOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+	GXSetTevAlphaOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+	GXSetTevColorIn(GX_TEVSTAGE0, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ZERO, GX_CC_TEXC);
+	GXSetTevAlphaIn(GX_TEVSTAGE0, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_TEXA);
+	GXSetTevOrder(GX_TEVSTAGE1, GX_TEXCOORD1, GX_TEXMAP0, GX_COLOR_NULL);
+	GXSetTevColorOp(GX_TEVSTAGE1, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+	GXSetTevAlphaOp(GX_TEVSTAGE1, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+	GXSetTevColorIn(GX_TEVSTAGE1, GX_CC_CPREV, GX_CC_TEXC, GX_CC_C0, GX_CC_ZERO);
+	GXSetTevAlphaIn(GX_TEVSTAGE1, GX_CA_APREV, GX_CA_TEXA, GX_CA_A0, GX_CA_ZERO);
+	GXSetTevColor(GX_TEVREG0, dat_8041c674);
+	GXSetTevOrder(GX_TEVSTAGE2, GX_TEXCOORD_NULL, GX_TEXMAP_NULL, GX_COLOR0A0);
+	GXSetTevColorOp(GX_TEVSTAGE2, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+	GXSetTevAlphaOp(GX_TEVSTAGE2, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+	GXSetTevColorIn(GX_TEVSTAGE2, GX_CC_ZERO, GX_CC_CPREV, GX_CC_RASC, GX_CC_ZERO);
+	GXSetTevAlphaIn(GX_TEVSTAGE2, GX_CA_ZERO, GX_CA_APREV, GX_CA_RASA, GX_CA_ZERO);
 	GXSetNumTexGens(2);
-	GXSetTexCoordGen2(0, 1, 4, 0x1E, 0, 0x7D);
-	GXSetTexCoordGen2(1, 1, 4, 0x21, 0, 0x7D);
+	GXSetTexCoordGen2(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_TEXMTX0, GX_FALSE, GX_PTIDENTITY);
+	GXSetTexCoordGen2(GX_TEXCOORD1, GX_TG_MTX2x4, GX_TG_TEX0, GX_TEXMTX1, GX_FALSE, GX_PTIDENTITY);
 	GXClearVtxDesc();
-	GXSetVtxDesc(9, 1);
-	GXSetVtxDesc(0xD, 1);
-	GXSetVtxAttrFmt(0, 9, 1, 4, 0);
-	GXSetVtxAttrFmt(0, 0xD, 1, 4, 0);
+	GXSetVtxDesc(GX_VA_POS, GX_DIRECT);
+	GXSetVtxDesc(GX_VA_TEX0, GX_DIRECT);
+	GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_POS_XYZ, GX_F32, 0);
+	GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, GX_TEX_ST, GX_F32, 0);
 
 #ifdef MUST_MATCH
 	one = float_1_8041c6b0;
@@ -427,11 +427,11 @@ void effKemuriDisp(CameraId camId, void* param) {
 			if (j == 0) {
 				GXColor color = dat_8041c678;
 
-				GXSetChanMatColor(4, color);
+				GXSetChanMatColor(GX_COLOR0A0, color);
 			} else {
 				GXColor color = dat_8041c67c;
 
-				GXSetChanMatColor(4, color);
+				GXSetChanMatColor(GX_COLOR0A0, color);
 			}
 
 			{
@@ -442,7 +442,7 @@ void effKemuriDisp(CameraId camId, void* param) {
 			PSMTXScale(scaleMtx, float_20_8041c694 * data->scaleX, float_20_8041c694 * data->scaleY, float_20_8041c694);
 			PSMTXConcat(outMtx, transMtx, tmpMtx);
 			PSMTXConcat(tmpMtx, scaleMtx, tmpMtx);
-			GXLoadPosMtxImm(tmpMtx, 0);
+			GXLoadPosMtxImm(tmpMtx, GX_PNMTX0);
 
 #ifdef MUST_MATCH
 			{ f32 unity = MATCH_F32(float_1_8041c6b0); PSMTXScale(scaleMtx, float_0p0625_8041c6d8, unity, unity); }
@@ -451,7 +451,7 @@ void effKemuriDisp(CameraId camId, void* param) {
 #endif
 			PSMTXTrans(transMtx, (f32)data->sheetU0, float_neg0p2_8041c6dc, float_0_8041c6bc);
 			PSMTXConcat(scaleMtx, transMtx, transMtx);
-			GXLoadTexMtxImm(transMtx, 0x1E, 1);
+			GXLoadTexMtxImm(transMtx, GX_TEXMTX0, GX_MTX2x4);
 
 #ifdef MUST_MATCH
 			{ f32 unity = MATCH_F32(float_1_8041c6b0); PSMTXScale(scaleMtx, float_0p0625_8041c6d8, unity, unity); }
@@ -460,9 +460,9 @@ void effKemuriDisp(CameraId camId, void* param) {
 #endif
 			PSMTXTrans(transMtx, (f32)data->sheetU1, float_neg0p2_8041c6dc, float_0_8041c6bc);
 			PSMTXConcat(scaleMtx, transMtx, transMtx);
-			GXLoadTexMtxImm(transMtx, 0x21, 1);
+			GXLoadTexMtxImm(transMtx, GX_TEXMTX1, GX_MTX2x4);
 
-			GXBegin(0x80, 0, 4);
+			GXBegin(GX_QUADS, GX_VTXFMT0, 4);
 #ifdef MUST_MATCH
 			left = -one * float_0p5_8041c6cc;
 			GXParam1f32(left);
@@ -560,26 +560,26 @@ static void effKemuri2Disp(CameraId cameraId, void* param) {
 	camera = camGetPtr(cameraId);
 
 	GXSetNumChans(0);
-	GXSetChanCtrl(4, 0, 0, 0, 0, 0, 2);
-	GXSetBlendMode(1, 4, 5, 0);
-	GXSetZCompLoc(1);
-	GXSetAlphaCompare(7, 0, 0, 7, 0);
-	GXSetZMode(1, 3, 0);
+	GXSetChanCtrl(GX_COLOR0A0, GX_DISABLE, GX_SRC_REG, GX_SRC_REG, 0, GX_DF_NONE, GX_AF_NONE);
+	GXSetBlendMode(GX_BM_BLEND, GX_BL_SRCALPHA, GX_BL_INVSRCALPHA, GX_LO_CLEAR);
+	GXSetZCompLoc(GX_TRUE);
+	GXSetAlphaCompare(GX_ALWAYS, 0, GX_AOP_AND, GX_ALWAYS, 0);
+	GXSetZMode(GX_TRUE, GX_LEQUAL, GX_FALSE);
 	GXSetNumTevStages(1);
-	GXSetTevOrder(0, 0, 0, 0xFF);
-	GXSetTevColorOp(0, 0, 0, 0, 1, 0);
-	GXSetTevAlphaOp(0, 0, 0, 0, 1, 0);
-	GXSetTevColorIn(0, 0xF, 2, 8, 0xF);
-	GXSetTevAlphaIn(0, 7, 1, 4, 7);
+	GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR_NULL);
+	GXSetTevColorOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+	GXSetTevAlphaOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+	GXSetTevColorIn(GX_TEVSTAGE0, GX_CC_ZERO, GX_CC_C0, GX_CC_TEXC, GX_CC_ZERO);
+	GXSetTevAlphaIn(GX_TEVSTAGE0, GX_CA_ZERO, GX_CA_A0, GX_CA_TEXA, GX_CA_ZERO);
 	GXSetNumTexGens(1);
-	GXSetTexCoordGen2(0, 1, 4, 0x3C, 0, 0x7D);
-	GXSetCullMode(0);
+	GXSetTexCoordGen2(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_IDENTITY, GX_FALSE, GX_PTIDENTITY);
+	GXSetCullMode(GX_CULL_NONE);
 	mapSetMaterialFog();
 	GXClearVtxDesc();
-	GXSetVtxDesc(9, 1);
-	GXSetVtxDesc(0xD, 1);
-	GXSetVtxAttrFmt(0, 9, 1, 4, 0);
-	GXSetVtxAttrFmt(0, 0xD, 1, 4, 0);
+	GXSetVtxDesc(GX_VA_POS, GX_DIRECT);
+	GXSetVtxDesc(GX_VA_TEX0, GX_DIRECT);
+	GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_POS_XYZ, GX_F32, 0);
+	GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, GX_TEX_ST, GX_F32, 0);
 
 #ifdef MUST_MATCH
 	n12p8 = -float_12p8_8041c690;
@@ -627,10 +627,10 @@ static void effKemuri2Disp(CameraId cameraId, void* param) {
 			PSMTXConcat(camera->view, outMtx, outMtx);
 			PSMTXTrans(transMtx, float_6_8041c6c4, float_neg4_8041c6c8, float_0_8041c6bc);
 			PSMTXConcat(outMtx, transMtx, outMtx);
-			GXLoadPosMtxImm(outMtx, 0);
-			GXSetCurrentMtx(0);
+			GXLoadPosMtxImm(outMtx, GX_PNMTX0);
+			GXSetCurrentMtx(GX_PNMTX0);
 			effGetTexObj(0xD, &texobj);
-			GXLoadTexObj(&texobj, 0);
+			GXLoadTexObj(&texobj, GX_TEXMAP0);
 			if (i == 0) {
 #ifdef MUST_MATCH
 				GXSetTevColor(GX_TEVREG0, kemuriTevColor(data->alpha, unk_80423010));
@@ -650,7 +650,7 @@ static void effKemuri2Disp(CameraId cameraId, void* param) {
 				GXSetTevColor(GX_TEVREG0, color);
 #endif
 			}
-			GXBegin(0x80, 0, 4);
+			GXBegin(GX_QUADS, GX_VTXFMT0, 4);
 #ifdef MUST_MATCH
 			px = negSizeX * float_0p5_8041c6cc;
 			py = negSizeY * float_0p5_8041c6cc;
@@ -706,11 +706,11 @@ static void effKemuri2Disp(CameraId cameraId, void* param) {
 		PSMTXConcat(outMtx, rotMtx2, outMtx);
 		PSMTXConcat(outMtx, scaleMtx, outMtx);
 		PSMTXConcat(camera->view, outMtx, outMtx);
-		GXLoadPosMtxImm(outMtx, 0);
-		GXSetCurrentMtx(0);
+		GXLoadPosMtxImm(outMtx, GX_PNMTX0);
+		GXSetCurrentMtx(GX_PNMTX0);
 		if (i == 0) {
 			effGetTexObj(0xC, &texobj);
-			GXLoadTexObj(&texobj, 0);
+			GXLoadTexObj(&texobj, GX_TEXMAP0);
 #ifdef MUST_MATCH
 			GXSetTevColor(GX_TEVREG0, kemuriTevColor(data->alpha, unk_80423014));
 #else
@@ -723,7 +723,7 @@ static void effKemuri2Disp(CameraId cameraId, void* param) {
 #endif
 		} else {
 			effGetTexObj(0xB, &texobj);
-			GXLoadTexObj(&texobj, 0);
+			GXLoadTexObj(&texobj, GX_TEXMAP0);
 #ifdef MUST_MATCH
 			GXSetTevColor(GX_TEVREG0, kemuriTevColor(data->alpha, dat_8041c684));
 #else
@@ -735,7 +735,7 @@ static void effKemuri2Disp(CameraId cameraId, void* param) {
 			}
 #endif
 		}
-		GXBegin(0x80, 0, 4);
+		GXBegin(GX_QUADS, GX_VTXFMT0, 4);
 #ifdef MUST_MATCH
 		GXWGFifo.f32 = negSize2;
 		GXWGFifo.f32 = KEMURI_SIXP4;
