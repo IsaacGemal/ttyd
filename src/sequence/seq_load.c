@@ -1156,15 +1156,15 @@ void loadDraw(void) {
             sprintf(timeBuf, "\203\214\203x\203\213\201@%s", winZenkakuStr(level));
             FontDrawString(timeBuf, wd->x - (f32)FontGetMessageWidth(timeBuf) / 2.0f, 30.0f + wd->y);
             strcpy(timeBuf, "\203v\203\214\203C\202\266\202\251\202\361\201@");
-            strcat(timeBuf, unk_8016af5c(hours, 2));
+            strcat(timeBuf, winZenkakuPadStr(hours, 2));
             strcat(timeBuf, " ");
-            strcat(timeBuf, unk_8016af5c(mins, 2));
+            strcat(timeBuf, winZenkakuPadStr(mins, 2));
             {
                 f32 w = (f32)FontGetMessageWidth(timeBuf);
                 FontDrawString(timeBuf, wd->x - (half = w / 2.0f), wd->y);
             }
             strcpy(timeBuf, "\203v\203\214\203C\202\266\202\251\202\361\201@");
-            strcat(timeBuf, unk_8016af5c(hours, 2));
+            strcat(timeBuf, winZenkakuPadStr(hours, 2));
             half2 = (f32)FontGetMessageWidth(timeBuf);
             {
                 Mtx mtx2;
