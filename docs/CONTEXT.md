@@ -11035,3 +11035,27 @@ battle_seq_command.c: 14 of 37 `goto` removed, no names changed (37 -> 23 in the
 ### Readability: party_kuribo goto removal (2026-10-20, Claude Haiku 5.5, n9-q-gotokuribo)
 - `src/party/party_kuribo.c` (28 -> 0 gotos): all 28 were in `pre_kurio_use`. The three `goto found` hit checks (hitobjPush, hitobjFront, hitobjStandOn) are nested null/attr-flag tests falling through to the single `obj` lookup; the 25 `goto done` branches of the animName `strcmp` chain are an `if / else if` chain ending in the `msg_kuri_map` default, followed by the unchanged `if (msg != NULL)` poke block. No names changed. Build stays MATCH on the tower; natural and MUST_MATCH mwcc compiles of the file are clean.
 - Repo-wide `goto` category: 485 -> 457 (`tools/cleanup_index.py`, 23.183 -> 23.106 per kLOC).
+
+### Cleanup guide from Melee practice (2026-10-20, Isaac; written up by Claude Opus 5.5, n9-q-guide)
+- New `docs/CLEANUP_GUIDE.md`: the rules cleanup workers and reviewers follow, each tagged as Melee practice, our
+  precedent or both: what to fix first, naming, placeholders, types and tables, casts, match hacks, inlines and
+  macros, a don't list, a review checklist and a Melee-vs-us table. Sources: `~/melee-cleanup` pulled to f0cdbb0a
+  (2026-10-16), sparse checkout widened to docs/, tools/, .github/ and samples of src/melee/{lb,gr,mn,it,ft}; its
+  CONTRIBUTING, docs, cleanup_index.py and template; the rendered index; recent cleanup PRs (#3620-#3677).
+- Licence: Isaac relayed that Melee is CC0. Not confirmed at f0cdbb0a: no LICENSE/COPYING at the repo root, GitHub's
+  licence field is null and `repos/doldecomp/melee/license` returns 404, and no CC0 text appears in the tree. Only
+  bundled tools carry their own licences (dat-cli, flags, replace-symbols AGPL-3.0; m2ctx MIT; table-typer
+  Unlicense). So the "study, don't copy" note under "Cleanup index" (parked 2026-10-02) still stands; the guide is in
+  our own words and copies no Melee code. If Melee adds a CC0 file, adapting its index logic becomes an option.
+- Melee's index at f0cdbb0a: 5,718 sites in 592 files. pad-stack 2075, struct-ptr-cast 1609, prim-ptr-cast 524,
+  deref-cast 411, must-match 225 (data order 104, code 99, helper 15, asm 5, macro 2), cast+offset 215, ptr-to-int
+  194, goto 171, cast+index 140, longjmp 75, pragma 42, raw-offset 35, abs-address 2, m2c-field 0. No weights, no
+  names counted. Melee's script run unmodified over our src/, include/ and rels/*/src at 7ee724b0: 20,871 sites
+  (37,242 at b8ab226c): cast+offset 2193, cast+index 457, raw-offset 162, abs-address 28, struct-ptr-cast 2686,
+  prim-ptr-cast 2793, deref-cast 3716, ptr-to-int 2360, must-match 2264, pragma 3726 (440 of them `#pragma once`,
+  which Melee would also count), goto 486. Ours on the same tree: 23.362 per kLOC.
+- Biggest differences: their index ignores names and ours is mostly names; our index doesn't see their retype family
+  (about 11,500 casts here, only fn_ptr_cast counted); their field style is snake_case with `xNN` placeholders, ours
+  camelCase with `field_0xNN` (keep ours: TTYD's own symbols are camelCase); their policy discourages AI naming of
+  fields and globals, and the one AI-named set they kept (itflipper) is backed by a debugger-evidence doc and marked
+  tentative, which is the standard our CONTEXT evidence lines aim at.
