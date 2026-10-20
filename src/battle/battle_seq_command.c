@@ -1529,7 +1529,7 @@ s32 BattleCommandDisplay_ActMenuMain(BattleWork* wp) {
 					break;
 				}
 				BattleCommandDisplay_ActMenuEnd(wp);
-				goto end;
+				break;
 			}
 			if (wp->commandMenu.restoreState == 0) {
 				psndSFXOn("SFX_NOT_CHOICE1");
@@ -1540,31 +1540,31 @@ s32 BattleCommandDisplay_ActMenuMain(BattleWork* wp) {
 				cmd->commandState = 3;
 				result = 1;
 				cmd->disableReason = cmd->actionTable[cursor->field_0].mDisableReason;
-				goto end;
+				break;
 			}
 		}
 		if ((s32)BattlePadCheckRepeat(0x80000)) {
 			if (cursor->field_0 < cursor->unk8 - 1) {
 				cursor->field_0++;
 				psndSFXOn("SFX_BTL_CURSOR_MOVE1");
-				goto end;
+				break;
 			}
 			psndSFXOn("SFX_BTL_CURSOR_MOVE1");
 			cursor->field_0 = 0;
-			goto end;
+			break;
 		}
 		if ((s32)BattlePadCheckRepeat(0x40000)) {
 			if (cursor->field_0 > 0) {
 				cursor->field_0--;
 				psndSFXOn("SFX_BTL_CURSOR_MOVE1");
-				goto end;
+				break;
 			}
 			psndSFXOn("SFX_BTL_CURSOR_MOVE1");
 			cursor->field_0 = cursor->unk8 - 1;
-			goto end;
+			break;
 		}
 		if (BattleCommandAttackAudienceCheck()) {
-			goto end;
+			break;
 		}
 		if (BattlePadCheckTrigger(0x800) && BattleCommandCheckChangePositionEnable(wp)) {
 			psndSFXOn((char*)0x9D8);
@@ -1575,7 +1575,6 @@ s32 BattleCommandDisplay_ActMenuMain(BattleWork* wp) {
 		}
 		break;
 	}
-end:
 #ifdef MUST_MATCH
 	((void (*)(BattleWork*))BattleMenuDisp_ActSelect_Main)(wp);
 #else
@@ -1680,7 +1679,7 @@ s32 BattleCommandDisplay_WeaponSelectMenuMain(BattleWork* wp, s32 arg) {
 					BattleStageOnLightEnemyInCommand();
 				}
 				result = 1;
-				goto end;
+				break;
 			}
 			if (wp->commandMenu.restoreState == 0) {
 				psndSFXOn("SFX_NOT_CHOICE1");
@@ -1692,32 +1691,32 @@ s32 BattleCommandDisplay_WeaponSelectMenuMain(BattleWork* wp, s32 arg) {
 				cmd->commandState = 8;
 				cmd->disableReason = cmd->weaponTable[cursor->field_0].mDisableReason;
 			}
-			goto end;
+			break;
 		}
 		if (cursor->field_0 < cursor->unk8 - 1) {
 			if (BattlePadCheckRepeat(0x20000)) {
 				cursor->field_0++;
 				psndSFXOn("SFX_BTL_CURSOR_MOVE2");
-				goto end;
+				break;
 			}
 		} else {
 			if (BattlePadCheckTrigger(0x20000)) {
 				cursor->field_0 = 0;
 				psndSFXOn("SFX_BTL_CURSOR_MOVE2");
-				goto end;
+				break;
 			}
 		}
 		if (cursor->field_0 > 0) {
 			if (BattlePadCheckRepeat(0x10000)) {
 				cursor->field_0--;
 				psndSFXOn("SFX_BTL_CURSOR_MOVE2");
-				goto end;
+				break;
 			}
 		} else {
 			if (BattlePadCheckTrigger(0x10000)) {
 				cursor->field_0 = cursor->unk8 - 1;
 				psndSFXOn("SFX_BTL_CURSOR_MOVE2");
-				goto end;
+				break;
 			}
 		}
 		if (BattlePadCheckTrigger(0x200)) {
@@ -1736,7 +1735,7 @@ s32 BattleCommandDisplay_WeaponSelectMenuMain(BattleWork* wp, s32 arg) {
 				cmd->commandState = 1;
 			}
 			result = 1;
-			goto end;
+			break;
 		}
 		if (BattleCommandAttackAudienceCheck()) {
 			BattleCommandDisplay_WeaponSelectMenuEnd(wp);
@@ -1744,7 +1743,6 @@ s32 BattleCommandDisplay_WeaponSelectMenuMain(BattleWork* wp, s32 arg) {
 		}
 		break;
 	}
-end:
 #ifdef MUST_MATCH
 	// MUST_MATCH: header declares BattleMenuDisp_WeaponSelect_Main(void), but the original passes wp in r3.
 	((void (*)(BattleWork*))BattleMenuDisp_WeaponSelect_Main)(wp);
