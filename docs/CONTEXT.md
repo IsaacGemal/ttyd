@@ -10453,3 +10453,11 @@ Index (`tools/cleanup_index.py`): 33.803 per kLOC (23696 weighted) before, 33.76
 Review (Claude Opus 5.5): the 0x2BC/0x2C0 pair was `fallWaitEventCode`/`fallWaitEventId`; its writer is
 btlevtcmd_SetEventCeilFall, so it is `ceilFallEventCode`/`ceilFallEventId`, and that command's raw store now uses the field.
 The nozzle_l NOZZLE_WORK_BODY argument was a fourth `event + 0x8C` site.
+
+### Readability: typed btlobject arrays indexed instead of byte offsets (2026-10-20, Claude Haiku 5.5, n9-q-btldb)
+- `(u8*)&X_btlobject_data + N` becomes `(u32)&X_btlobject_data[N / 0x18]` where X_btlobject_data is declared `BattleStageObjectData[...]`. Same addresses; the outer `(u32)` cast stays.
+- Converted (21 sites): eki 3 (`[8]`, `[12]`, `[16]`), las 9, mri 3 (`[11]`, `[22]`, `[33]`), muj 3, tik 3 (`[8]`, `[13]`, `[15]`).
+- Left: the u32-declared `X_btlobject_data[]` blobs marked `// TODO: type` in aji (8 refs), bom (2 refs, no offsets), dou (7), gon (6), gor (3), gra (3), hei (12), jin (7), tou (tou2 rel, 3). Retyping them means rewriting each initializer from u32 words into struct form (floats as bit patterns), which is more than an access-expression change, so they are not touched here.
+- Already typed with no offset sites: moo, rsh, win. jon was done in cf1918eb.
+- Index unchanged: 33.358 per kLOC before and after (`tools/cleanup_index.py --rev`), since the tool does not count these expressions.
+- Build: tower `ninja` recreates build/G8MJ01/ok.
