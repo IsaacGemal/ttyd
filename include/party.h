@@ -138,7 +138,46 @@ typedef struct PartyEntry {
     s32 yoshiPsndSFXId;          // 0x168
     s32 unk16C;                  // 0x16C
     void* useStruct;             // 0x170
-    u8 field_174[0x188 - 0x174]; // 0x174
+    // 0x174-0x187: scratch that each partner uses for its own state; read the member for the active partner.
+    union {
+        struct {                       // generic jump (party.c partyRideMain case 20-21, evt_party_jump_pos)
+            f32 jumpAccel;             // 0x174, added to jumpPara1 each frame
+        } jump;
+        struct {                       // Yoshi (party_yoshi.c jump, 0x174/0x178 at 0x1030-0x1082 and 0x1406-0x1542)
+            f32 jumpVel;               // 0x174, added to jumpPara3 each frame
+            f32 jumpAccel;             // 0x178, accumulates jumpPara2 each frame, added to jumpVel
+        } yoshi;
+        struct {                       // Bobbery (party_bomhei.c)
+            u8 field_174[4];           // 0x174
+            s16 motionTimer;           // 0x178, countdown in mario_controll (states 0x28, 0x1F, 0x20, 0x24)
+            u8 marioMotion;            // 0x17A, mario_controll state (0xA, 0x14-0x15, 0x1E-0x24, 0x28-0x29, 0x64-0x66)
+            u8 syncFrame;              // 0x17B, index into m_w_7_sync and the M_W_7 pose frame (state 0x15)
+            s32 field_17C;             // 0x17C, set to -1 at init, never read
+            s32 countdownSfxId;        // 0x180, sound 0x93C started at the 2500 ms mark, stopped at the splash (0x28)
+            s32 alarmSfxId;            // 0x184, sound 0x93D started in state 0x32, stopped at bye
+        } bobbery;
+        struct {                       // Flurrie (party_cloud.c; cloud_move bobs the body with bobAngle)
+            s32 field_174;             // 0x174, zeroed at init only
+            void* breathFx;            // 0x178, effKumokumoN64Entry effect while the breath is held, NULL otherwise
+            f32 bobAngle;              // 0x17C, degrees, revise360'd by bobStep each frame
+            f32 bobStep;               // 0x180, 4.25 per frame
+        } flurrie;
+        struct {                       // Koops (party_nokonoko.c)
+            struct ItemEntry* heldItem; // 0x174, item picked up by the shell search, returned by nokonoko_use_post
+            f32 slideDecay;            // 0x178, set to 50.0f when a slide starts, -2.2 per frame down to 0
+            s16 dashing;               // 0x17C, 1 while running (useMotionId 0x14-0x15): faster speed cap, 0x50 motion
+            s16 moveFlags;             // 0x17E, bit 0x1 mirrors unk16C during an event, bit 0x2 set by ccfloor
+            s32 field_180;             // 0x180, zeroed only
+        } koops;
+        struct {                       // Vivian (party_vivian.c)
+            f32 charge;                // 0x174, 10.0f at rest, +1 per frame to 20 while held (party.c shadow size)
+            u8 field_178[4];           // 0x178
+            f32 moveSpeed;             // 0x17C, movePos speed toward Mario, -13 to 0
+            u8 field_180[2];           // 0x180
+            s16 poseTime;              // 0x182, set to 0x18, fed to animPoseSetLocalTime
+            struct EffectEntry* ripple; // 0x184, ripple effect (effRippleEntry), NULL when gone
+        } vivian;
+    } tail;
 } PartyEntry;
 
 PartyEntry* partyGetPtr(s32 index);

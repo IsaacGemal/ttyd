@@ -2012,7 +2012,7 @@ s32 partyRideChk(PartyEntry* party) {
 }
 
 // Raw offsets used: 0x24 frame counter, 0x38 ride mode, 0x80 scale, 0x94 ride target Vec, 0x124
-// rotation speed, 0x128 distance, 0x174 jump accel, 0xF0 vertical assist. Player fields
+// rotation speed, 0x128 distance, 0xF0 vertical assist. Player fields
 // 0x1AC/0x1B8 are read via the file's PF32 macro.
 // The `case 22:` leaf (state 22, set by case 21) is needed to balance the switch tree even though
 // it shares the default body.
@@ -2104,11 +2104,11 @@ void partyRideMain(PartyEntry* party) {
             party->motionStep = 21;
             party->timer = 16;
             party->jumpPara1 = 16.0f;
-            PF32(party, 0x174) = 0.5f;
+            party->tail.jump.jumpAccel = 0.5f;
             /* fallthrough */
         case 21:
             party->position.y = party->position.y + party->jumpPara1;
-            party->jumpPara1 = party->jumpPara1 + PF32(party, 0x174);
+            party->jumpPara1 = party->jumpPara1 + party->tail.jump.jumpAccel;
             if ((party->timer = party->timer - 1) <= 0) {
                 party->motionStep = 22;
                 party->flags |= PARTY_FLAG_FORCE_FALL;
@@ -2955,7 +2955,7 @@ void partyPreDisp(PartyEntry* party) {
                 party->field_B8 = party->position;
             }
             if (party->flags & PARTY_FLAG_IS_BEING_USED) {
-                size = PF32(party, 0x174);
+                size = party->tail.vivian.charge;
                 if (party->flags & PARTY_FLAG_IS_EVT_USE) {
                     shadowMode = 1;
                 }

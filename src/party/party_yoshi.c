@@ -570,8 +570,8 @@ void yoshi_use(PartyEntry* party) {
         party->timer = 4;
         party->jumpPara1 = 0.0f;
         party->jumpPara3 = 0.0f;
-        P_F(0x174) = 0.0f;
-        P_F(0x178) = 0.0f;
+        party->tail.yoshi.jumpVel = 0.0f;
+        party->tail.yoshi.jumpAccel = 0.0f;
         party->jumpPara2 = 0.0f;
         party->dir = angleABf(party->position.x, party->position.z, party->targetPos.x, party->targetPos.z);
         party->speed = distABf(party->position.x, party->position.z, party->targetPos.x, party->targetPos.z) / (f32)party->timer;
@@ -1028,16 +1028,16 @@ L_3800:
             party->useMotionId = 0x3D;
             party->timer = 0;
             party->jumpPara3 = marioJumpStandData[0];
-            P_F(0x174) = marioJumpStandData[1];
-            P_F(0x178) = marioJumpStandData[2];
+            party->tail.yoshi.jumpVel = marioJumpStandData[1];
+            party->tail.yoshi.jumpAccel = marioJumpStandData[2];
             party->jumpPara2 = marioJumpStandData[3];
             /* fallthrough */
         case 0x3D:
             {
                 f32 old = party->jumpPara3;
-                P_F(0x178) = P_F(0x178) + party->jumpPara2;
-                P_F(0x174) = P_F(0x174) + P_F(0x178);
-                party->jumpPara3 = party->jumpPara3 + P_F(0x174);
+                party->tail.yoshi.jumpAccel = party->tail.yoshi.jumpAccel + party->jumpPara2;
+                party->tail.yoshi.jumpVel = party->tail.yoshi.jumpVel + party->tail.yoshi.jumpAccel;
+                party->jumpPara3 = party->jumpPara3 + party->tail.yoshi.jumpVel;
                 if (old >= party->jumpPara3) {
                     party->useMotionId = 0x3E;
                 }
@@ -1063,8 +1063,8 @@ L_3800:
                 party->useMotionId = 0x40;
                 marioSetPeakYpos();
                 party->jumpPara3 = -0.4f;
-                P_F(0x174) = -0.4f;
-                P_F(0x178) = 0.0f;
+                party->tail.yoshi.jumpVel = -0.4f;
+                party->tail.yoshi.jumpAccel = 0.0f;
                 party->jumpPara2 = 0.0f;
                 party->flags &= ~PARTY_FLAG_IS_JUMPING;
                 party->flags |= PARTY_FLAG_IS_FALLING;
@@ -1072,14 +1072,14 @@ L_3800:
             }
             goto L_4188;
         case 0x40:
-            P_F(0x178) = P_F(0x178) + party->jumpPara2;
-            P_F(0x174) = P_F(0x174) + P_F(0x178);
-            party->jumpPara3 = party->jumpPara3 + P_F(0x174);
+            party->tail.yoshi.jumpAccel = party->tail.yoshi.jumpAccel + party->jumpPara2;
+            party->tail.yoshi.jumpVel = party->tail.yoshi.jumpVel + party->tail.yoshi.jumpAccel;
+            party->jumpPara3 = party->jumpPara3 + party->tail.yoshi.jumpVel;
             if (party->jumpPara3 <= 0.0f) {
                 marioSetPeakYpos();
                 party->jumpPara3 = -0.4f;
-                P_F(0x174) = -0.4f;
-                P_F(0x178) = 0.0f;
+                party->tail.yoshi.jumpVel = -0.4f;
+                party->tail.yoshi.jumpAccel = 0.0f;
                 party->jumpPara2 = 0.0f;
                 party->flags &= ~PARTY_FLAG_IS_JUMPING;
                 party->flags |= PARTY_FLAG_IS_FALLING;
@@ -1403,13 +1403,13 @@ void searchGround(PartyEntry* party) {
         if (!(party->flags & PARTY_FLAG_IS_FALLING)) {
             party->flags |= PARTY_FLAG_IS_FALLING;
             party->jumpPara3 = -0.4f;
-            *(f32*)((u8*)party + 0x174) = -0.4f;
-            *(f32*)((u8*)party + 0x178) = 0.0f;
+            party->tail.yoshi.jumpVel = -0.4f;
+            party->tail.yoshi.jumpAccel = 0.0f;
             party->jumpPara2 = 0.0f;
         }
-        *(f32*)((u8*)party + 0x178) = *(f32*)((u8*)party + 0x178) + party->jumpPara2;
-        *(f32*)((u8*)party + 0x174) = *(f32*)((u8*)party + 0x174) + *(f32*)((u8*)party + 0x178);
-        party->jumpPara3 = party->jumpPara3 + *(f32*)((u8*)party + 0x174);
+        party->tail.yoshi.jumpAccel = party->tail.yoshi.jumpAccel + party->jumpPara2;
+        party->tail.yoshi.jumpVel = party->tail.yoshi.jumpVel + party->tail.yoshi.jumpAccel;
+        party->jumpPara3 = party->jumpPara3 + party->tail.yoshi.jumpVel;
         if (party->jumpPara3 < -15.0f) {
             party->jumpPara3 = -15.0f;
         }
@@ -1431,13 +1431,13 @@ void searchGround(PartyEntry* party) {
         party->flags |= PARTY_FLAG_FORCE_FALL;
         if (party->jumpPara3 <= -6.0f) {
             party->jumpPara3 = -6.0f;
-            *(f32*)((u8*)party + 0x174) = 0.0f;
-            *(f32*)((u8*)party + 0x178) = 0.0f;
+            party->tail.yoshi.jumpVel = 0.0f;
+            party->tail.yoshi.jumpAccel = 0.0f;
             party->jumpPara2 = 0.0f;
         }
         *(f32*)((u8*)mario + 0x7C) = party->jumpPara3;
-        *(f32*)((u8*)mario + 0x80) = *(f32*)((u8*)party + 0x174);
-        *(f32*)((u8*)mario + 0x84) = *(f32*)((u8*)party + 0x178);
+        *(f32*)((u8*)mario + 0x80) = party->tail.yoshi.jumpVel;
+        *(f32*)((u8*)mario + 0x84) = party->tail.yoshi.jumpAccel;
         *(f32*)((u8*)mario + 0x88) = party->jumpPara2;
         marioChgMot(0x1F);
         goto end;
@@ -1533,13 +1533,13 @@ L_2804:
     if (!(party->flags & PARTY_FLAG_IS_FALLING)) {
         party->flags |= PARTY_FLAG_IS_FALLING;
         party->jumpPara3 = -0.4f;
-        *(f32*)((u8*)party + 0x174) = -0.4f;
-        *(f32*)((u8*)party + 0x178) = 0.0f;
+        party->tail.yoshi.jumpVel = -0.4f;
+        party->tail.yoshi.jumpAccel = 0.0f;
         party->jumpPara2 = 0.0f;
     }
-    *(f32*)((u8*)party + 0x178) = *(f32*)((u8*)party + 0x178) + party->jumpPara2;
-    *(f32*)((u8*)party + 0x174) = *(f32*)((u8*)party + 0x174) + *(f32*)((u8*)party + 0x178);
-    party->jumpPara3 = party->jumpPara3 + *(f32*)((u8*)party + 0x174);
+    party->tail.yoshi.jumpAccel = party->tail.yoshi.jumpAccel + party->jumpPara2;
+    party->tail.yoshi.jumpVel = party->tail.yoshi.jumpVel + party->tail.yoshi.jumpAccel;
+    party->jumpPara3 = party->jumpPara3 + party->tail.yoshi.jumpVel;
     if (party->jumpPara3 < -15.0f) {
         party->jumpPara3 = -15.0f;
     }
@@ -1602,12 +1602,12 @@ void searchGround2(PartyEntry* party) {
             }
         }
         party->jumpPara3 = -0.4f;
-        *(f32*)((u8*)party + 0x174) = -0.4f;
-        *(f32*)((u8*)party + 0x178) = 0.0f;
+        party->tail.yoshi.jumpVel = -0.4f;
+        party->tail.yoshi.jumpAccel = 0.0f;
         party->jumpPara2 = 0.0f;
-        *(f32*)((u8*)party + 0x178) = *(f32*)((u8*)party + 0x178) + party->jumpPara2;
-        *(f32*)((u8*)party + 0x174) = *(f32*)((u8*)party + 0x174) + *(f32*)((u8*)party + 0x178);
-        party->jumpPara3 = party->jumpPara3 + *(f32*)((u8*)party + 0x174);
+        party->tail.yoshi.jumpAccel = party->tail.yoshi.jumpAccel + party->jumpPara2;
+        party->tail.yoshi.jumpVel = party->tail.yoshi.jumpVel + party->tail.yoshi.jumpAccel;
+        party->jumpPara3 = party->jumpPara3 + party->tail.yoshi.jumpVel;
         if (party->jumpPara3 < -15.0f) {
             party->jumpPara3 = -15.0f;
         }
