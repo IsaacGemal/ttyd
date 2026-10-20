@@ -73,12 +73,12 @@ typedef struct PuniData {
     s32 flags;                          // 0x4
     s32 field_0x8;                      // 0x8
     u16 mode;                           // 0xC
-    s16 field_0xE;                      // 0xE
+    s16 prevMode;                   // 0xE, mode to return to after an interruption (puniModeNormal and puniModeParent set it before the wind mode 13)
     u8 unk10[0x114 - 0x10];             // 0x10
     u16 state;                          // 0x114
     s16 angle;                          // 0x116
-    s16 field_0x118;                    // 0x118
-    s16 field_0x11A;                    // 0x11A
+    s16 treeId;                     // 0x118, tree the puni belongs to; -1 when unlinked, copied from the parent (searchParent)
+    s16 depth;// 0x11A, searchParent sets parent depth + 1; PuniDokuritsu and _daime_change decrement
     u16 animIdx;                        // 0x11C
     u16 prevAnimIdx;                    // 0x11E
     u8 unk120[0x121 - 0x120];           // 0x120
@@ -94,26 +94,26 @@ typedef struct PuniData {
     u8 unk150[0x15C - 0x150];           // 0x150
     Vec vel;                            // 0x15C
     u8 unk168[0x174 - 0x168];           // 0x168
-    f32 field_0x174;                    // 0x174
+    f32 maxSpeed;                   // 0x174, clamp on the vel magnitude (puniMoveLimitedNormal, puniMoveDecel)
     f32 gravity;                        // 0x178
     u8 unk17C[0x180 - 0x17C];           // 0x17C
     f32 direction;                      // 0x180
     f32 field_0x184;                    // 0x184
     f32 field_0x188;                    // 0x188
     f32 scale;                          // 0x18C
-    f32 field_0x190;                    // 0x190
-    f32 field_0x194;                    // 0x194
-    f32 field_0x198;                    // 0x198
+    f32 radius;                     // 0x190, collision radius (puniOption adds two); also scales vel in puniModeAway and puniModeWind
+    f32 spacing;                    // 0x194, gap kept beyond radius (puniOption, puniModeParent's leash test)
+    f32 reach;                      // 0x198, extra range beyond radius + spacing (puniOption)
     u8 unk19C[0x1A0 - 0x19C];           // 0x19C
-    f32 field_0x1A0;                    // 0x1A0
+    f32 windPower;                  // 0x1A0, cloudGetBreathPower result; over 10 blows the puni into mode 13
     f32 field_0x1A4;                    // 0x1A4
-    f32 field_0x1A8;                    // 0x1A8
-    f32 field_0x1AC;                    // 0x1AC
-    f32 field_0x1B0;                    // 0x1B0
-    s32 field_0x1B4;                    // 0x1B4
-    f32 field_0x1B8;                    // 0x1B8
-    s32 field_0x1BC;                    // 0x1BC
-    f32 field_0x1C0;                    // 0x1C0
+    f32 parentDist;                 // 0x1A8, distance to the parent, set each frame in puniModeParent
+    f32 speed;                      // 0x1AC, distance moved last frame (puni_puni_main, from pos - prevPos)
+    f32 parentDistPrev;             // 0x1B0, parentDist from the previous frame
+    s32 nearFlag2Idx;               // 0x1B4, nearest PuniTarget with flag 2 (puniTargetSearch), -1 for none
+    f32 nearFlag2DistSq;            // 0x1B8, squared distance to nearFlag2Idx
+    s32 nearFlag4Idx;               // 0x1BC, nearest PuniTarget with flag 4 (puniTargetSearch), -1 for none
+    f32 nearFlag4DistSq;            // 0x1C0, squared distance to nearFlag4Idx
     u8 unk1C4[0x1C8 - 0x1C4];           // 0x1C4
     OSTime modeStartTime;               // 0x1C8
     s32 parentPuni;                     // 0x1D0
