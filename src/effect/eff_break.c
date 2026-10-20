@@ -24,7 +24,7 @@ static u32 tex_jp[6] = { 0xAD, 0xAE, 0xAF, 0xB0, 0xB1, 0xB2 };
 static u32 tex_us[6] = { 0xB1, 0xB2, 0xB3, 0xB4, 0xB5, 0xB6 };
 static u32* texid_tbl[2] = { tex_jp, tex_us };
 
-extern const char str_804210C4[];
+extern const char str_Break[];
 extern const f32 float_0_804210b0;
 extern const f32 float_2_804210cc;
 extern const f32 float_10_804210d0;
@@ -51,7 +51,7 @@ EffectEntry* effBreakEntry(s32 type, s32 maxTimer, f32 x, f32 y, f32 z) {
 #else
     count = 7;
 #endif
-    entry->type = str_804210C4;
+    entry->type = str_Break;
     entry->count = count;
     data = __memAlloc(HEAP_EFFECT, count * sizeof(BreakEffect));
     entry->userdata = data;
@@ -299,7 +299,7 @@ const volatile f32 float_1_804210bc = 1.0f;
 const f32 float_1_804210bc = 1.0f;
 #endif
 const f32 float_20_804210c0 = 20.0f;
-const char str_804210C4[] = "Break";
+const char str_Break[] = "Break";
 const f32 float_2_804210cc = 2.0f;
 const f32 float_10_804210d0 = 10.0f;
 

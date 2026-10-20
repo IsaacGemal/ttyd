@@ -51,7 +51,7 @@ extern const GXColor dat_804210dc;
 #define ZERO0 float_0_804210ec
 #define ONE1 float_1_80421100
 #endif
-extern const char str_80421104[];
+extern const char str_Z_2[];
 extern const char str_80421108[];
 
 EffectEntry* effMObjBrokenEntry(s32 type, f32 x, f32 y, f32 z) {
@@ -242,7 +242,7 @@ void effMObjBrokenMain(EffectEntry* effect) {
 		case 7:
 			if (data->poseId == -1) {
 				data->poseId = animPoseEntry("EFF_sango", inBattle);
-				animPoseSetAnim(data->poseId, (i & 1) ? str_80421104 : str_80421108, TRUE);
+				animPoseSetAnim(data->poseId, (i & 1) ? str_Z_2 : str_80421108, TRUE);
 			}
 			break;
 		}
@@ -538,7 +538,7 @@ const f32 float_6p2832_804210f4 = 6.2831855f;
 const f32 float_360_804210f8 = 360.0f;
 const f32 float_5_804210fc = 5.0f;
 const f32 float_1_80421100 = 1.0f;
-const char str_80421104[] = "Z_2";
+const char str_Z_2[] = "Z_2";
 const char str_80421108[] = "Z_1";
 const f32 float_0p00761_8042110c = 0.00761f;
 const f32 float_0p16605_80421110 = 0.16605f;

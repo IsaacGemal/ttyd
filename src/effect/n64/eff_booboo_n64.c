@@ -20,7 +20,7 @@ static f32 booboo_pool_i2f(s32 v) {
 #endif
 
 // .rodata
-const char str_802FA2E0[12] = "BoobooN64";
+const char str_BoobooN64[12] = "BoobooN64";
 
 // 4-byte zero word ending the unit's .rodata
 #pragma explicit_zero_data on
@@ -819,7 +819,7 @@ EffectEntry* effBoobooN64Entry(void) {
 	s32 i;
 
 	effect = effEntry();
-	effect->type = str_802FA2E0;
+	effect->type = str_BoobooN64;
 	effect->count = 1;
 	data = __memAlloc(HEAP_EFFECT, 0x148);
 	effect->userdata = data;

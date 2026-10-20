@@ -52,7 +52,7 @@ typedef struct effKemuri1Data {
 // allocator colours the ten-value loop-invariant clique (nine constants + the a5 parameter) with a5 in f24 and
 // the constants rotated (99.69%); with them a5 lands in f31 and neg3..10 in f22..f30 as the original. Scoping
 // `angle` to the loop (shadow of the function-scope `angle`) keeps the angle temp in f20. objdiff names the
-// pooled "Kemuri1N64" string and int->float double anonymous @NNN@ instead of str_802FA8A0/
+// pooled "Kemuri1N64" string and int->float double anonymous @NNN@ instead of str_Kemuri1N64/
 // double_to_int_802fa898; those are unscored.
 EffectEntry* effKemuri1N64Entry(s32 type, f32 x, f32 y, f32 z, f32 a5) {
 	EffectEntry* effect;

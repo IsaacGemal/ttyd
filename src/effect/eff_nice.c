@@ -327,7 +327,7 @@ void effNiceDisp(CameraId camId, void* param) {
 // +4 / +0xC per step: the same progression as the named `x`/`y` locals the disassembly suggests).
 // As expressions MWCC keeps them in strength-reduced compiler temps, which is what colours them
 // r31/r30. The `s32` round trip on the string at its only use pins the address materialisation into
-// the string's own callee-saved register (`addi r29, r3, str_802F3760@l`); a plain use leaves an
+// the string's own callee-saved register (`addi r29, r3, str_SFX_SYSTEM_ACROBAT1@l`); a plain use leaves an
 // `addi r0`/`mr r29` scratch copy, and the comma form that removes that copy colours the string r31.
 void acrobatMain(EffectEntry* effect) {
 #ifdef MUST_MATCH

@@ -145,7 +145,7 @@ extern const f32 float_24_tou_0000a8e8;
 extern const f32 float_neg1_tou_0000a8ec;
 
 static const char str_00001F74[12];
-static const char str_00001FA0[8];
+static const char str_fmt_ss[8];
 
 typedef void (*voidfunctionptr)(void);
 
@@ -3066,7 +3066,7 @@ const f32 float_10_tou_0000a8c0 = 10.0f;
 const f32 float_40_tou_0000a8c4 = 40.0f;
 const f32 float_0p8_tou_0000a8c8 = 0.8f;
 const f32 zero_tou_0000a8cc = 0.0f;
-static const char str_00001FA0[8] = "%s%s";
+static const char str_fmt_ss[8] = "%s%s";
 const f32 float_137_tou_0000a8d8 = 137.0f;
 const f32 float_228_tou_0000a8dc = 228.0f;
 const f32 float_95_tou_0000a8e0 = 95.0f;
@@ -3129,7 +3129,7 @@ static void disp_proc(CameraId cameraId, void* param) {
             if (rank != 0) {
                 const char* p1 = (rank / 10) ? suuji[rank / 10] : (const char*)&(*(f32*)&TOU_F32(zero_tou_0000a8cc));
 
-                sprintf(buf, str_00001FA0, p1, suuji[rank % 10]);
+                sprintf(buf, str_fmt_ss, p1, suuji[rank % 10]);
                 FontDrawStart();
                 {
                     GXColor color = *(GXColor*)&dat_tou_00009908;

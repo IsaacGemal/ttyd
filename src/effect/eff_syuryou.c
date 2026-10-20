@@ -16,8 +16,8 @@ const u32 dat_804222f8 = 0xFFFFFF00;
 #pragma force_active on
 // .rodata anchor used to build the effect's world position.
 const Vec vec3_80301358 = { 0.0f, 0.0f, 0.0f };
-const char str_80301364[16] = "EFF_batug_tue";
-const char str_80301374[16] = "MOBJ_EFF_baria";
+const char str_EFF_batug_tue[16] = "EFF_batug_tue";
+const char str_MOBJ_EFF_baria[16] = "MOBJ_EFF_baria";
 #pragma force_active reset
 
 /* The original resolves the two .rodata group names as offsets from
@@ -87,11 +87,11 @@ void effSyuryouMain(EffectEntry* effect) {
 
 	switch (type) {
 		case 0:
-			if (!animGroupBaseAsync(SYU_STR(base, 0xC, str_80301364), inBattle, NULL)) {
+			if (!animGroupBaseAsync(SYU_STR(base, 0xC, str_EFF_batug_tue), inBattle, NULL)) {
 				return;
 			}
 			if (data->poseId == -1) {
-				data->poseId = animPoseEntry(SYU_STR(base, 0xC, str_80301364), inBattle);
+				data->poseId = animPoseEntry(SYU_STR(base, 0xC, str_EFF_batug_tue), inBattle);
 				animPoseSetAnim(data->poseId, "A_1", TRUE);
 			}
 			if (animPoseGetLoopTimes(data->poseId) >= 1.0f) {
@@ -101,11 +101,11 @@ void effSyuryouMain(EffectEntry* effect) {
 			}
 			break;
 		case 1:
-			if (!animGroupBaseAsync(SYU_STR(base, 0x1C, str_80301374), inBattle, NULL)) {
+			if (!animGroupBaseAsync(SYU_STR(base, 0x1C, str_MOBJ_EFF_baria), inBattle, NULL)) {
 				return;
 			}
 			if (data->poseId == -1) {
-				data->poseId = animPoseEntry(SYU_STR(base, 0x1C, str_80301374), inBattle);
+				data->poseId = animPoseEntry(SYU_STR(base, 0x1C, str_MOBJ_EFF_baria), inBattle);
 				animPoseSetAnim(data->poseId, "A_1", TRUE);
 			}
 			if (animPoseGetLoopTimes(data->poseId) >= 1.0f) {
