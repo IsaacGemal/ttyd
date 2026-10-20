@@ -1004,9 +1004,7 @@ void kpaFireMain(void) {
     f32 rootScale;
     f32 py;
     f32 off;
-#ifdef MUST_MATCH
     MarioWork* mp2;
-#endif
 
     KPA(mp)->hitFlame = NULL;
     if (fireefp == NULL) {
@@ -1016,17 +1014,12 @@ void kpaFireMain(void) {
     level = kpaGetLevel();
     scale = baseScaleTbl[level];
     x = 40.0f * sign * scale + mp->position.x;
-#ifdef MUST_MATCH
-    // MUST_MATCH: taking the flags pointer into a named temp and loading position.y between that call and
+    // Taking the flags pointer into a named temp and loading position.y between that call and
     // the ternary keeps the 0x90 load and 20.0f in the pre-branch block, as the original does; the inline
     // form pulls both after the branch.
     mp2 = marioGetPtr();
     py = mp->position.y;
     off = (((MW_S32(mp2, 0x14) & 1) ^ 1) == 1) ? 6.0f : 0.0f;
-#else
-    off = (((MW_S32(marioGetPtr(), 0x14) & 1) ^ 1) == 1) ? 6.0f : 0.0f;
-    py = mp->position.y;
-#endif
     y = py + (20.0f * scale + off);
     z = mp->position.z;
     ((KpaFireNode*)((EffectEntry*)fireefp)->userdata)->pos.x = x;
