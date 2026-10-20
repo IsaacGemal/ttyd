@@ -321,7 +321,7 @@ void BattleStageObjectInit(void) {
 	obj->id = id;
 	obj->mBattleUnitIdx = -1;
 	obj->mPosition = data->mPosition;
-	obj->mPosition.y = *(f32*)((u8*)BattleStageGetPtr() + 0xB28);
+	obj->mPosition.y = BattleStageGetPtr()->stageLimits.y;
 	obj->mRotation.x = obj->mRotation.y = obj->mRotation.z = 0.0f;
 	obj->field_0x34 = BSO_UNSET(8);
 	obj->field_0x40 = BSO_UNSET(9);
@@ -2799,7 +2799,7 @@ USER_FUNC(_object_fall_attack) {
 			break;
 		case 1:
 			spawnPos.x = (f32)((entry->unitId % 20) * 25 - 230);
-			spawnPos.y = *(f32*)((u8*)BattleStageGetPtr() + 0xB34);
+			spawnPos.y = BattleStageGetPtr()->floorPos.y;
 			spawnPos.z = 0.1f * (f32)(entry->unitId % 20)
 			             + (f32)((entry->unitId / 20) * 30 + 115);
 			btl_camera_set_mode(0, 6);
