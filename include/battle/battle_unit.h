@@ -460,10 +460,10 @@ typedef struct BattleWorkUnitPart {
     u32 partFlags;                                 // 0x204, bit 0x10 and 0x80 are set and cleared by battle_unit.c
     f32 field_0x208;                               // 0x208, 1.0 at entry
     f32 motionSpeed;                               // 0x20C, btlevtcmd_AnimeSetMotionSpeed
-    void* dispCallback;                            // 0x210, called with (part, 0) and (part, 1) by btlUnitPartsDisp
+    void (*dispCallback)(struct BattleWorkUnitPart* part, s32 mode); // 0x210, called with mode 0 and 1 by btlUnitPartsDisp
     u8 statusPoseStep;                             // 0x214, 0 until the status overlay is applied, then 1 (2 in a two-pattern's second stage)
     u8 statusPoseKind;                             // 0x215, status overlay statusPoseControl draws: 0 none, 2/3/7 one-pattern, 4/5/6 two-pattern
-    u8 pad_0x216[2];                               // 0x216
+    u16 statusPoseTimer;                           // 0x216, frames left in the current statusPoseControl stage
     GXColor evtColor;                              // 0x218, animPoseSetMaterialEvtColor's colour, RGB scaled by the owner's mMoveColorCur
     BattleWorkUnitPartBlur blurWork;               // 0x21C
     BtlUnitPartPoseSound poseSound;                // 0x4D0

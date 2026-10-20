@@ -9407,3 +9407,32 @@ in group 2 (#890); on rebase group 2's names were kept. GX literals became enums
 parameter type (GXSetTevColor 1/2 = GX_TEVREG0/1, texgen 0x3C = GX_IDENTITY, 0x7D = GX_PTIDENTITY); camera 4 is
 CAMERA_3D in the confetti and funemizu entries. Open: the `float_*_8xxxxxxx` pool constants in these files stay
 (MUST_MATCH references them by address).
+### Readability: battle_disp and battle_detect (2026-10-19, Claude Haiku 5.5, n9-q-bdisp; reviewed by Claude Opus 5.5)
+
+BattleSampling's two filter words are `targetClassFlags`/`targetPropertyFlags` (0xAC0/0xAC4): every caller passes
+the weapon's fields of those names, and BattleSamplingEnemy's parameters now carry them too. BattleSamplingEntry
+gets `baseX/baseY/baseZ` (0xC-0x14: the part's world position before the hit-cursor offset, x plus `xBias`, z plus
+5; the worker's `hitX` had it backwards, x/y/z at 0x4 are the cursor position), `xBias` (0x18, the attack-direction
+and `detectOffsetX` push, weighted x10 in the sort), `forwardLv` (0x1C) and `zSide` (0x1D, 0 when baseZ < -30).
+Status, unit-kind and attribute literals are named where the enum value and the use agree: STATUS_INSTANT_KILL as
+the usual "defeated" check, STATUS_TINY/HUGE/FAST/SLOW/HOLD_FAST, STATUS_INVALID for _GetStatusPoseType's "no
+status" result, kInactive/kFloating/kCeiling/kShellShielded/kVeiled on units, the CannotTarget/kUntattleable part
+bits, the Shadow Siren kinds (and Doopliss as Vivian) that run animPoseVivianMain, TYPE_PARTNER_MIN/MAX. The
+worker's `kUnknown_0x10`/`kUnknown_0x40000` substitutions went back to hex. battle_disp reads BattleUnitPart's
+`partFlags`, `statusPoseStep`/`statusPoseKind`, `evtColor` (scaled by the owner's `mMoveColorCur`) and
+`dispCallback` (now typed `void (*)(part, mode)`) by name; 0x216 is `statusPoseTimer`, the u16 countdown of each
+statusPoseControl stage. The `#pragma dont_inline` pairs around btlDispEntAnime, btlDispChangeAnime,
+btlDispChangePeraAnime, btlDispPoseAnime and btlGetScreenPoint are gone: nothing in the file calls them, the
+matching build is byte-identical, and the natural (`--non-matching`) battle_disp.o disassembles identically
+with and without them (only the anonymous `@NNNN` literal numbers shift). battle_detect.c 115 → 55 weighted,
+battle_detect.h 9 → 1, battle_disp.c 141 → 131; overall 63.441 → 63.330.
+Open: the target class/property bits stay hex (worth an enum shared with BattleWeapon: class 0x10000 is Mario
+only, property 0x1000000 keeps only the front-most candidate per zSide row); part attributes 0x10, 0x20000,
+0x40000, 0x2000000 and unit attributes 0x40, 0x1000000 are unnamed; why STATUS_HOLD_FAST suppresses the
+mStatusFlags 0x20000000/0x10000000 poses in btlDispMain is unknown; BattleSamplingEntry.field_0x20 (set to -1,
+no reader here) is unnamed; the unit-kind range checks use the first kind of the next block (UNIT_UNUSED_TREE,
+UNIT_UNUSED_TESTNPC) as bounds rather than category macros. battle_disp still reads the pose handle and pose flags
+as `*(s32*)(part + 0x1C0)` / `+ 0x44` (field_0x1C0 is one array), the float-bob counters at 0x1A6/0x1A8 and the
+0x4F4/0x4FC bytes raw, and btlDispAnimeSpeed/btlDispAnimeSpeedReset take a `BattleUnit*` that is really a part
+(callers cast `(BattleUnit*)part`; it writes the part's `field_0x208` and multiplies by `motionSpeed` through `unit->hpGauge`). battle_seq.c
+tests the part-attribute `kUnknown_0x40000` against a unit's mAttributeFlags.
