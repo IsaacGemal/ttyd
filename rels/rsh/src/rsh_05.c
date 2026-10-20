@@ -47,7 +47,7 @@ typedef struct MoamoaPose {
     s16 state;          // 0x2, switch key in ext_moamoa_main (0x0 wander, 0x1 settle, 0x32-0x34 fusion, ...)
     s16 stateTimer;     // 0x4, frames left in the current state (counts down or up per state)
     u8 pad_0x6[2];      // 0x6
-    Vec field_0x8;      // 0x8
+    Vec position;       // 0x8, landing target while jumping, position while gliding
     f32 field_0x14;     // 0x14
     s16 frames;         // 0x18, frames left in the current jump or glide (counts down to 0)
     u8 pad_0x1A[2];     // 0x1A
@@ -55,8 +55,8 @@ typedef struct MoamoaPose {
     f32 field_0x20;     // 0x20
     s16 queuedState;    // 0x24, state to enter when the current jump lands (set by moamoa_jump)
     u8 pad_0x26[2];     // 0x26
-    f32 field_0x28;     // 0x28
-    f32 field_0x2C;     // 0x2C
+    f32 savedX;         // 0x28, position saved when a glide starts
+    f32 savedZ;         // 0x2C
     Vec field_0x30;     // 0x30
     s16 groupIndex;     // 0x3C, index into MoamoaWork.groups (the animation group)
     u8 pad_0x3E[2];     // 0x3E
@@ -1211,14 +1211,14 @@ static void moamoa_jump(ExtPose* pose, MoamoaPose* entry, f32 x, f32 y, f32 z, f
         pos.x = x;
         pos.y = y;
         pos.z = z;
-        entry->field_0x8 = pos;
+        entry->position = pos;
     }
     entry->field_0x1C = p4;
     entry->field_0x20 = p5;
     {
-        f32 dy = entry->field_0x8.y - (*pose->matrix)[1][3];
-        f32 d = distABf((*pose->matrix)[0][3], (*pose->matrix)[2][3], entry->field_0x8.x, entry->field_0x8.z);
-        f32 ang = angleABf((*pose->matrix)[0][3], (*pose->matrix)[2][3], entry->field_0x8.x, entry->field_0x8.z);
+        f32 dy = entry->position.y - (*pose->matrix)[1][3];
+        f32 d = distABf((*pose->matrix)[0][3], (*pose->matrix)[2][3], entry->position.x, entry->position.z);
+        f32 ang = angleABf((*pose->matrix)[0][3], (*pose->matrix)[2][3], entry->position.x, entry->position.z);
         s32 frames;
 
         frames = (s32)(d / entry->field_0x1C);
@@ -1360,8 +1360,8 @@ static s32 moamoa_hit_check(ExtPose* pose, MoamoaPose* entry) {
 #ifdef MUST_MATCH
             // Match-only volatile accesses: they keep the pvec base copy below the two matrix
             // stores, the order the target has.
-            *(volatile f32*)&(*pose->matrix)[0][3] = entry->field_0x28;
-            *(volatile f32*)&(*pose->matrix)[2][3] = entry->field_0x2C;
+            *(volatile f32*)&(*pose->matrix)[0][3] = entry->savedX;
+            *(volatile f32*)&(*pose->matrix)[2][3] = entry->savedZ;
             {
                 Mtx* pm = *(Mtx* volatile*)&pose->matrix;
 
@@ -1370,8 +1370,8 @@ static s32 moamoa_hit_check(ExtPose* pose, MoamoaPose* entry) {
                 f29 = PSVECDistance(&mpos, &pvec);
             }
 #else
-            (*pose->matrix)[0][3] = entry->field_0x28;
-            (*pose->matrix)[2][3] = entry->field_0x2C;
+            (*pose->matrix)[0][3] = entry->savedX;
+            (*pose->matrix)[2][3] = entry->savedZ;
             {
                 pvec = moamoa_vec((*pose->matrix)[0][3], (*pose->matrix)[1][3], (*pose->matrix)[2][3],
                                   &vec3_rsh_00013734);
@@ -1568,7 +1568,7 @@ static void ext_moamoa_main(void) {
                 f = (wp->breathDir + wp->angleToMario) / 2.0f;
                 entry->flags |= 0x84;
                 entry->state = 0x30;
-                entry->field_0x8 = vec3_rsh_00013740;
+                entry->position = vec3_rsh_00013740;
                 dist = randf(0.1f, 0.2f);
                 rad = 6.2831855f * f / 360.0f;
                 entry->field_0x14 = dist * moamoa_sin(rad);
@@ -1744,14 +1744,14 @@ static void ext_moamoa_main(void) {
 
             (*ep->matrix)[1][3] += entry->field_0x14;
             entry->field_0x14 -= entry->field_0x20;
-            rad = 6.2831855f * angleABf((*ep->matrix)[0][3], (*ep->matrix)[2][3], entry->field_0x8.x, entry->field_0x8.z) /
+            rad = 6.2831855f * angleABf((*ep->matrix)[0][3], (*ep->matrix)[2][3], entry->position.x, entry->position.z) /
                    360.0f;
             (*ep->matrix)[0][3] = entry->field_0x1C * moamoa_sin(rad) + (*ep->matrix)[0][3];
             (*ep->matrix)[2][3] = entry->field_0x1C * -moamoa_cos(rad) + (*ep->matrix)[2][3];
             if (--entry->frames < 0) {
-                (*ep->matrix)[0][3] = entry->field_0x8.x;
-                (*ep->matrix)[1][3] = entry->field_0x8.y;
-                (*ep->matrix)[2][3] = entry->field_0x8.z;
+                (*ep->matrix)[0][3] = entry->position.x;
+                (*ep->matrix)[1][3] = entry->position.y;
+                (*ep->matrix)[2][3] = entry->position.z;
                 entry->flags &= ~0x2;
                 ep->flags &= ~0x10;
                 entry->stateTimer = 0;
@@ -1834,12 +1834,12 @@ static void ext_moamoa_main(void) {
         }
         case 0x30:
             if (--entry->frames > 0) {
-                entry->field_0x8.x += entry->field_0x14;
-                entry->field_0x8.y += entry->field_0x1C;
-                entry->field_0x8.z += entry->field_0x20;
-                (*ep->matrix)[0][3] += entry->field_0x8.x;
-                (*ep->matrix)[1][3] += entry->field_0x8.y;
-                (*ep->matrix)[2][3] += entry->field_0x8.z;
+                entry->position.x += entry->field_0x14;
+                entry->position.y += entry->field_0x1C;
+                entry->position.z += entry->field_0x20;
+                (*ep->matrix)[0][3] += entry->position.x;
+                (*ep->matrix)[1][3] += entry->position.y;
+                (*ep->matrix)[2][3] += entry->position.z;
             } else {
                 entry->state = 0x31;
             }
@@ -1935,9 +1935,9 @@ static void ext_moamoa_main(void) {
             f = randf(2.0f, 3.0f);
             entry->stateTimer = irand(i / 2);
             rad = 6.2831855f * (r1 * randRange(225.0f, 315.0f) + 225.0f) / 360.0f;
-            entry->field_0x8.x = f * moamoa_sin(rad);
-            entry->field_0x8.y = randf(1.0f, 2.0f);
-            entry->field_0x8.z = f * -moamoa_cos(rad);
+            entry->position.x = f * moamoa_sin(rad);
+            entry->position.y = randf(1.0f, 2.0f);
+            entry->position.z = f * -moamoa_cos(rad);
             entry->state++;
             break;
         }
@@ -1949,12 +1949,12 @@ static void ext_moamoa_main(void) {
         case 0x41: {
             Mtx rot41;
 
-            entry->field_0x8.x *= 1.1f;
-            entry->field_0x8.y *= 1.02f;
-            entry->field_0x8.z *= 1.1f;
-            (*ep->matrix)[0][3] += entry->field_0x8.x;
-            (*ep->matrix)[1][3] += entry->field_0x8.y;
-            (*ep->matrix)[2][3] += entry->field_0x8.z;
+            entry->position.x *= 1.1f;
+            entry->position.y *= 1.02f;
+            entry->position.z *= 1.1f;
+            (*ep->matrix)[0][3] += entry->position.x;
+            (*ep->matrix)[1][3] += entry->position.y;
+            (*ep->matrix)[2][3] += entry->position.z;
             PSMTXRotRad(rot41, 'y', 0.20943952f);
             PSMTXConcat(*ep->matrix, rot41, *ep->matrix);
             ep->flags &= ~0x2;
@@ -1979,8 +1979,8 @@ static void ext_moamoa_main(void) {
             }
         }
         (*ep->matrix)[1][3] += *(f32*)((u8*)wp->train + 0x38) - wp->prevTrainY;
-        entry->field_0x28 = (*ep->matrix)[0][3];
-        entry->field_0x2C = (*ep->matrix)[2][3];
+        entry->savedX = (*ep->matrix)[0][3];
+        entry->savedZ = (*ep->matrix)[2][3];
     }
     ((void (*)(void))moamoa_pose_main)();
     wp->prevTrainY = *(f32*)((u8*)wp->train + 0x38);
