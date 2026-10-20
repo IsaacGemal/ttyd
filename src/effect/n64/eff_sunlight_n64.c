@@ -57,13 +57,13 @@ EffectEntry* effSunlightN64Entry(s32 type, s32 life, f32 x, f32 y, f32 z, f32 sc
 	data->g1 = 0xff;
 	data->b1 = 0xff;
 	data->a1 = 0xff;
-	data->field_0x20 = float_0_8041ff80;
-	data->field_0x24 = float_0_8041ff80;
-	data->field_0x28 = float_0_8041ff80;
-	data->field_0x2C = float_0_8041ff80;
-	data->field_0x30 = float_0_8041ff80;
-	data->field_0x3C = 0xff;
-	data->field_0x38 = 0;
+	data->offset[0] = float_0_8041ff80;
+	data->offset[1] = float_0_8041ff80;
+	data->offset[2] = float_0_8041ff80;
+	data->offset[3] = float_0_8041ff80;
+	data->offset[4] = float_0_8041ff80;
+	data->alphaTarget = 0xff;
+	data->alpha = 0;
 
 	return entry;
 }
@@ -109,29 +109,29 @@ void effSunlightMain(EffectEntry* effect) {
 	counter = data->counter;
 
 	if (data->life < 16) {
-		data->field_0x38 -= 16;
-		if (data->field_0x38 < 0) {
-			data->field_0x38 = 0;
+		data->alpha -= 16;
+		if (data->alpha < 0) {
+			data->alpha = 0;
 		}
 	}
 
-	if (data->field_0x3C < 0) {
-		data->field_0x3C = 0;
+	if (data->alphaTarget < 0) {
+		data->alphaTarget = 0;
 	}
-	else if (data->field_0x3C > 255) {
-		data->field_0x3C = 255;
+	else if (data->alphaTarget > 255) {
+		data->alphaTarget = 255;
 	}
 
-	if (data->field_0x38 > data->field_0x3C) {
-		data->field_0x38 -= 8;
-		if (data->field_0x38 < data->field_0x3C) {
-			data->field_0x38 = data->field_0x3C;
+	if (data->alpha > data->alphaTarget) {
+		data->alpha -= 8;
+		if (data->alpha < data->alphaTarget) {
+			data->alpha = data->alphaTarget;
 		}
 	}
-	else if (data->field_0x38 < data->field_0x3C) {
-		data->field_0x38 += 8;
-		if (data->field_0x38 > data->field_0x3C) {
-			data->field_0x38 = data->field_0x3C;
+	else if (data->alpha < data->alphaTarget) {
+		data->alpha += 8;
+		if (data->alpha > data->alphaTarget) {
+			data->alpha = data->alphaTarget;
 		}
 	}
 
@@ -149,16 +149,16 @@ void effSunlightMain(EffectEntry* effect) {
 		   `fnmsubs f0, f1, f22, f0`. */
 		{
 			f32 inc = float_4_8041ff98 * (float_0p01_8041ffa0 * s2 + float_0p05_8041ff9c);
-			(&data->field_0x20)[i] -= inc * s1;
+			data->offset[i] -= inc * s1;
 		}
 #else
-		(&data->field_0x20)[i] -= float_4_8041ff98 * (float_0p01_8041ffa0 * s2 + float_0p05_8041ff9c) * s1;
+		data->offset[i] -= float_4_8041ff98 * (float_0p01_8041ffa0 * s2 + float_0p05_8041ff9c) * s1;
 #endif
-		if ((&data->field_0x20)[i] < float_0_8041ff80) {
-			(&data->field_0x20)[i] += 256.0f;
+		if (data->offset[i] < float_0_8041ff80) {
+			data->offset[i] += 256.0f;
 		}
-		if ((&data->field_0x20)[i] > 256.0f) {
-			(&data->field_0x20)[i] -= 256.0f;
+		if (data->offset[i] > 256.0f) {
+			data->offset[i] -= 256.0f;
 		}
 	}
 
@@ -223,7 +223,7 @@ void effSunlightDisp(CameraId cameraId, void* param) {
 	camGetPtr(cameraId);
 	data = effect->userdata;
 	type = data->type;
-	alpha = data->field_0x38;
+	alpha = data->alpha;
 
 	target = vec3_802fb7d4;
 	eye = vec3_802fb7e0;
@@ -301,10 +301,10 @@ void effSunlightDisp(CameraId cameraId, void* param) {
 		   volatile read keeps the natural one-load-plus-fmr code. */
 		{
 			f32 zero = *(volatile f32*)&float_0_8041ff80;
-			PSMTXTrans(mtx2, (&data->field_0x20)[i] + (f32)(i * 11), zero, zero);
+			PSMTXTrans(mtx2, data->offset[i] + (f32)(i * 11), zero, zero);
 		}
 #else
-		PSMTXTrans(mtx2, (&data->field_0x20)[i] + (f32)(i * 11), float_0_8041ff80, float_0_8041ff80);
+		PSMTXTrans(mtx2, data->offset[i] + (f32)(i * 11), float_0_8041ff80, float_0_8041ff80);
 #endif
 		PSMTXConcat(mtx, mtx2, mtx);
 		GXLoadTexMtxImm(mtx, GX_TEXMTX1, GX_MTX2x4);

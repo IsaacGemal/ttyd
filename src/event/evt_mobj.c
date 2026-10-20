@@ -1573,9 +1573,7 @@ s32 mobj_lv_blk_evt(MapObjectEntry* obj) {
             img = imgNameToPtr(imgName, inBattle);
             img->poseId = animPaperPoseGetId("P_box_y", inBattle);
             img->animName = "A_1";
-            // ImageEntry declares no field at 0x110 (it falls 4 bytes into the field_0x10C padding,
-            // 0x10C..0x118); the same location is written by evt_img.c, evt_cloud.c and fadedrv.c.
-            *(OSTime*)(img->field_0x10C + 4) = animTimeGetTime(inBattle);
+            img->startTime = animTimeGetTime(inBattle);
             imgSetShadow(img, 2);
             if (strcmp(obj->animName, "MOBJ_Lv1Block") == 0 ||
                 strcmp(obj->animName, "MOBJ_Lv2Block") == 0) {
@@ -1592,7 +1590,7 @@ s32 mobj_lv_blk_evt(MapObjectEntry* obj) {
         }
         case 0xb:
             img = imgNameToPtr(imgName, inBattle);
-            if (img->field_0x118 >= 1.0f) {
+            if (img->loopTimes >= 1.0f) {
                 obj->state = 0xc;
             }
             if (img->flags & 0x10000000) {
@@ -3229,7 +3227,7 @@ s32 mobj_brickblk(MapObjectEntry* obj) {
             img = imgNameToPtr(imgName, inBattle);
             img->poseId = animPaperPoseGetId("P_box_y", inBattle);
             img->animName = "A_1";
-            *(OSTime*)((u8*)img + 0x110) = animTimeGetTime(inBattle);
+            img->startTime = animTimeGetTime(inBattle);
             imgSetShadow(img, 2);
             psndSFXOn_3D((const char*)0x1B8, &obj->position);
             obj->state = 0xb;
@@ -3237,7 +3235,7 @@ s32 mobj_brickblk(MapObjectEntry* obj) {
         }
         case 0xb:
             img = imgNameToPtr(imgName, inBattle);
-            if (img->field_0x118 >= 1.0f) {
+            if (img->loopTimes >= 1.0f) {
                 obj->state = 0xc;
             }
             if (img->flags & 0x10000000) {

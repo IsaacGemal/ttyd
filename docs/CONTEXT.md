@@ -9873,3 +9873,37 @@ names after both land. Open, MarioWork: raw 0x52 in koopa_motion, mot_ship, mot_
 (evt_koopa_hip_attack); raw 0x19C in mot_hammer, party.c, party_yoshi; the 0x2A4-0x2AC raw users above; 0x18C (unk18C: a speed
 copied from baseSpeed in mot_plane, mot_ship and party_yoshi) is still a pad; 0x114/0x164, 0x1C4, 0x1DC, 0x1F0,
 0x1FC, 0x2B0/0x2B4/0x2B8 keep field names; peach.c's `unk170 + 0xC` still overruns into riderDelta.
+
+### Readability: DeepSeek swarm wave 5, own-header mode (2026-10-19, DeepSeek V4.1 Flash agents; reviewed by Claude Opus 5.5, n9-q-ds5)
+
+Eleven agents each cleaned one file plus its own header: imgdrv (ImageShadow, ImageEntry), pmario_sound
+(SoundEnvList, SoundEffectEntry, BGMListEntry, PaperSoundBGM), and the eff_laser, eff_ripple, fireworks, guruguru,
+magic_horao, sunlight, snow, vapor and rappa effect structs. The agents' checker compiled only 12 header users, so
+the batch left the full build broken; the review carried the imgdrv renames through the rest: dmo_00 (`matrix`),
+evt_img (`posX/posY`, `captureWidth/Height`, shadow `left/top/dstFormat/texFormat/offscreenId/captureMode`,
+`loopTimes`, `startTime`), evt_mobj, evt_cloud and fadedrv (the raw `*(OSTime*)((u8*)img + 0x110)` writes are now
+`startTime`) and gor_02's `set_depthPlaneOffset` (raw `+ 0x11C`). Found by compiling all 312 users of the changed
+headers by hand with `-maxerrors 50`, with and without MUST_MATCH; only these files failed.
+
+Names corrected in review:
+- ImageShadow 0x18 `srcFormat` -> `texFormat`: it is the GXInitTexObj/GXGetTexBufferSize texture format (the
+  copy's destination format is `dstFormat`, 0x14); nothing is a source format.
+- PaperSoundBGM 0x10 `fadeTimer` -> `scopeTimer`: psndBGMScope sets 0xFF (in scope, level 100), 0 (out of scope,
+  the BGM follows psnd.unk58) or 0x1E (frames until out of scope); psndBGMMain counts it down. No fade.
+- EffGuruguruData 0x10/0x14 `scale`/`targetScale` -> `radius`/`targetRadius` (the particles' orbit radius;
+  `drawScale` is the matrix scale), and the entry's last parameter likewise.
+- effRappaN64Entry's `angle`/`angleOffset` -> `yaw`/`pitch`: theta and phi of the direction
+  (cos phi sin theta, sin phi, cos phi cos theta); phi sweeps from `pitch`.
+- PaperSoundEffectDetail (pre-existing names, exposed by the agent's `slot->pan = entry->volume`): 0x9 is the
+  entry's base volume (`vol * baseVol / 127`), so `pan` -> `baseVol`, and 0xA, passed to SoundEfxSetPan /
+  SoundSSSetPanCh, `unkA` -> `pan`. Its `padB[3]`/`pad16`/`pad1C` pointer views became `reverb` (0xB), `unkC` (u16,
+  SoundEffectEntry.field_0x10, compared when a slot is evicted), `unk16` and `Vec position` (0x1C).
+Checked and kept: `depthPlaneOffset` (map name `set_depthPlaneOffset`, scope:local in mri and gor), SoundEnvList
+`span` (calc3D's parameter), `startTime` (OSTime at 0x110; ImageEntry and PaperSoundBGM become 8-aligned, sizes
+0x158/0x38 unchanged and psbgm sits at 0x803D9C48). `#include <dolphin/os.h>` in imgdrv.h supplies OSTime. Grade:
+121 new names checked, 5 wrong (srcFormat, fadeTimer, guruguru scale/targetScale, rappa angleOffset), about 4%.
+
+Matching build 32 files OK. Natural (no MUST_MATCH) objects of all 312 header users equal the pre-batch ones
+(284 byte-identical, 28 obj_equiv-equivalent). Cleanup index 45.810 -> 44.786 (field_0x 6,684 -> 6,059, raw
+offsets 2,309 -> 2,262). Open: SoundEnvList 0x5, SoundEffectEntry 0xE/0x10/0x11, effMagicHorao 0x14/0x1C,
+effRappa 0x1C/0x20, EffRipple 0x14/0x28 and effLaser 0x24 stay field_0x; SoundEnvList positions are still u32.

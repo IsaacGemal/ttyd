@@ -311,7 +311,7 @@ static USER_FUNC(evt_cloud_main) {
         imgEntry(cp->imgName, inBattle);
         img = imgNameToPtr(cp->imgName, inBattle);
         img->poseId = animPaperPoseGetId(cp->animName, inBattle);
-        *(OSTime*)&img->field_0x10C[4] = animTimeGetTime(inBattle);
+        img->startTime = animTimeGetTime(inBattle);
         imgClearVirtualPoint(img);
         imgSetShadow(img, 2);
         img->flags |= 2;
@@ -355,7 +355,7 @@ static USER_FUNC(evt_cloud_main) {
     case 3:
         img = imgNameToPtr(cp->imgName, inBattle);
         img->animName = "A_1";
-        *(OSTime*)&img->field_0x10C[4] = animTimeGetTime(inBattle);
+        img->startTime = animTimeGetTime(inBattle);
         img->flags &= ~2;
         cp->timer = 0x1E;
         cp->lastTime = 0.0f;
@@ -363,9 +363,9 @@ static USER_FUNC(evt_cloud_main) {
         break;
     case 4:
         img = imgNameToPtr(cp->imgName, inBattle);
-        if (cp->lastTime == 0.0f || 1.0f + cp->lastTime < img->field_0x118) {
+        if (cp->lastTime == 0.0f || 1.0f + cp->lastTime < img->loopTimes) {
             psndSFXOn_3D("SFX_OFF_CLAUD_WIND2", &mario->position);
-            cp->lastTime = img->field_0x118;
+            cp->lastTime = img->loopTimes;
         }
         if (mario->currMotionId != MARIO_MOTION_CLOUD) {
             cp->mode = 0xA;
@@ -397,7 +397,7 @@ static USER_FUNC(evt_cloud_main) {
         }
         img = imgNameToPtr(cp->imgName, inBattle);
         img->animName = "A_2";
-        *(OSTime*)&img->field_0x10C[4] = animTimeGetTime(inBattle);
+        img->startTime = animTimeGetTime(inBattle);
         cp->timer = 0x3C;
         cp->mode++;
         break;

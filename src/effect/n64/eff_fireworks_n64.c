@@ -62,7 +62,7 @@ __declspec(section ".sdata") GXColor unk_8042310c;
 __declspec(section ".sdata") GXColor unk_80423108;
 #pragma section ".sdata" ".sbss"
 
-EffectEntry* effFireworksN64Entry(s32 type, s32 life, f32 x, f32 y, f32 z, f32 a5, f32 a6, f32 a7, f32 a8) {
+EffectEntry* effFireworksN64Entry(s32 type, s32 life, f32 x, f32 y, f32 z, f32 velX, f32 velY, f32 velZ, f32 targetRadius) {
 	EffectEntry* entry;
 	effFireworksData* data;
 	s32 i;
@@ -81,16 +81,16 @@ EffectEntry* effFireworksN64Entry(s32 type, s32 life, f32 x, f32 y, f32 z, f32 a
 	else {
 		data->life = life + 0x20;
 	}
-	data->field_0x4C = 0;
+	data->mode = 0;
 	data->color0[3] = 0xff;
 	data->x = x;
 	data->y = y;
 	data->z = z;
-	data->field_0x44 = 0.0f;
-	data->field_0x10 = a5;
-	data->field_0x14 = a6;
-	data->field_0x18 = a7;
-	data->field_0x48 = a8;
+	data->radius = 0.0f;
+	data->velX = velX;
+	data->velY = velY;
+	data->velZ = velZ;
+	data->targetRadius = targetRadius;
 	data->color0[0] = 0xff;
 	data->color0[1] = 0xff;
 	data->color0[2] = 0x64;
@@ -99,12 +99,12 @@ EffectEntry* effFireworksN64Entry(s32 type, s32 life, f32 x, f32 y, f32 z, f32 a
 	data->color1[2] = 0x96;
 	data->color1[3] = 0xff;
 	for (i = 0; i < 4; i++) {
-		data->field_0x50[i] = data->x;
-		data->field_0x60[i] = data->y - 1000.0f;
-		data->field_0x70[i] = data->z;
-		data->field_0x80[i] = 0.0f;
-		data->field_0x90[i] = 0.0f;
-		data->field_0xA0[i] = 0.0f;
+		data->trailX[i] = data->x;
+		data->trailY[i] = data->y - 1000.0f;
+		data->trailZ[i] = data->z;
+		data->trailVelX[i] = 0.0f;
+		data->trailVelY[i] = 0.0f;
+		data->trailVelZ[i] = 0.0f;
 	}
 	return entry;
 }
@@ -159,46 +159,46 @@ void effFireworksMain(EffectEntry* effect) {
 		data->color0[3] = data->life << 3;
 	}
 
-	if (data->field_0x4C == 1) {
-		data->x += data->field_0x10;
-		data->y += data->field_0x14;
-		data->z += data->field_0x18;
-		data->field_0x10 *= 0.95f;
-		data->field_0x14 *= 0.95f;
-		data->field_0x18 *= 0.95f;
-		data->field_0x14 -= 0.15f;
-		data->field_0x44 += 0.11f * (data->field_0x48 - data->field_0x44);
+	if (data->mode == 1) {
+		data->x += data->velX;
+		data->y += data->velY;
+		data->z += data->velZ;
+		data->velX *= 0.95f;
+		data->velY *= 0.95f;
+		data->velZ *= 0.95f;
+		data->velY -= 0.15f;
+		data->radius += 0.11f * (data->targetRadius - data->radius);
 	}
 	else {
 		b = 32 - counter;
-		data->field_0x50[counter & 3] = data->x - data->field_0x10 * (f32)b;
+		data->trailX[counter & 3] = data->x - data->velX * (f32)b;
 		angle = float_6p2832_8041ef28 * (f32)(counter * 90 >> 5) / float_360_8041ef2c;
 		sinAngle = (f32)sin(angle);
 #ifdef MUST_MATCH
 		// The literal 80.0f (not 80.f) lets MWCC keep the constant in f0 for both fnmsubs
 		// operands; the named extern leaves it in a third FPR and rotates the conversion/constant
 		// registers (f0/f1/f6 vs f1/f0/f5). It adds an anonymous 80.0 to .sdata2 next to the named one.
-		data->field_0x60[counter & 3] =
-			data->y - data->field_0x14 * (f32)b - (80.0f - 80.0f * sinAngle);
+		data->trailY[counter & 3] =
+			data->y - data->velY * (f32)b - (80.0f - 80.0f * sinAngle);
 #else
-		data->field_0x60[counter & 3] =
-			data->y - data->field_0x14 * (f32)b - (80.f - 80.f * sinAngle);
+		data->trailY[counter & 3] =
+			data->y - data->velY * (f32)b - (80.f - 80.f * sinAngle);
 #endif
-		data->field_0x70[counter & 3] = data->z - data->field_0x18 * (f32)b;
-		data->field_0x80[counter & 3] = (f32)(rand() % 11 - 5) * 0.1f;
-		data->field_0x90[counter & 3] = (f32)(rand() % 11 - 5) * 0.1f;
-		data->field_0xA0[counter & 3] = (f32)(rand() % 11 - 5) * 0.1f;
+		data->trailZ[counter & 3] = data->z - data->velZ * (f32)b;
+		data->trailVelX[counter & 3] = (f32)(rand() % 11 - 5) * 0.1f;
+		data->trailVelY[counter & 3] = (f32)(rand() % 11 - 5) * 0.1f;
+		data->trailVelZ[counter & 3] = (f32)(rand() % 11 - 5) * 0.1f;
 		for (i = 0; i < 4; i++) {
-			data->field_0x50[i] += data->field_0x80[i];
-			data->field_0x60[i] += data->field_0x90[i];
-			data->field_0x70[i] += data->field_0xA0[i];
-			data->field_0x90[i] -= 0.15f;
+			data->trailX[i] += data->trailVelX[i];
+			data->trailY[i] += data->trailVelY[i];
+			data->trailZ[i] += data->trailVelZ[i];
+			data->trailVelY[i] -= 0.15f;
 			if (counter >= 27) {
-				data->field_0x60[i] = -1000.f;
+				data->trailY[i] = -1000.f;
 			}
 		}
 		if (counter >= 0x20) {
-			data->field_0x4C = 1;
+			data->mode = 1;
 			data->counter = 1;
 		}
 	}
@@ -319,7 +319,7 @@ void effFireworksDisp(CameraId camId, void* param) {
 	angle = float_6p2832_8041ef28 * -camGetPtr(CAMERA_3D)->viewYaw / float_360_8041ef2c;
 	sinA = (f32)sin(angle);
 	cosA = (f32)cos(angle);
-	mode = data->field_0x4C;
+	mode = data->mode;
 	if (sflag != gp->retraceCount) {
 		sflag = gp->retraceCount;
 		salpha = 0;
@@ -349,7 +349,7 @@ void effFireworksDisp(CameraId camId, void* param) {
 	baseX = data->x;
 	baseY = data->y;
 	baseZ = data->z;
-	radius = data->field_0x44;
+	radius = data->radius;
 #ifdef MUST_MATCH
 	effFireworksSetColor0(data, alpha);
 	effFireworksSetColor1(data);
@@ -389,9 +389,9 @@ void effFireworksDisp(CameraId camId, void* param) {
 			pz = baseZ + radius * ((f32)(-s0) * sinA + (f32)s2 * cosA);
 		}
 		else {
-			px = data->field_0x50[i];
-			py = data->field_0x60[i];
-			pz = data->field_0x70[i];
+			px = data->trailX[i];
+			py = data->trailY[i];
+			pz = data->trailZ[i];
 		}
 
 		position = effFireworksPos(px, py, pz);

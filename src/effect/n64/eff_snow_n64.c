@@ -29,13 +29,13 @@ EffectEntry* effSnowN64Entry(s32 type, f32 x, f32 y, f32 z) {
 	data->x = x;
 	data->y = y;
 	data->z = z;
-	data->field_0x0C = 0.0f;
-	data->field_0x10 = -1.5f;
-	data->field_0x14 = 0.0f;
-	data->field_0x18 = 0.0f;
-	data->field_0x1C = 0.0f;
-	data->field_0x20 = 1.5f;
-	data->field_0x24 = kaiten != 0 ? -5.0f : 5.0f;
+	data->velX = 0.0f;
+	data->velY = -1.5f;
+	data->velZ = 0.0f;
+	data->rotX = 0.0f;
+	data->rotY = 0.0f;
+	data->rotXVel = 1.5f;
+	data->rotYVel = kaiten != 0 ? -5.0f : 5.0f;
 	data->type = type;
 	kaiten++;
 	if (kaiten > 1) {
@@ -56,19 +56,19 @@ void effSnowMain(EffectEntry* effect) {
 	} else {
 		MarioWork* mario;
 
-		data->x += data->field_0x0C;
-		data->y += data->field_0x10;
-		data->z += data->field_0x14;
-		data->field_0x18 += data->field_0x20;
-		if (data->field_0x18 < 10.0f) {
-			data->field_0x18 = 10.0f;
-			data->field_0x20 = -data->field_0x20;
+		data->x += data->velX;
+		data->y += data->velY;
+		data->z += data->velZ;
+		data->rotX += data->rotXVel;
+		if (data->rotX < 10.0f) {
+			data->rotX = 10.0f;
+			data->rotXVel = -data->rotXVel;
 		}
-		if (data->field_0x18 > 45.0f) {
-			data->field_0x18 = 45.0f;
-			data->field_0x20 = -data->field_0x20;
+		if (data->rotX > 45.0f) {
+			data->rotX = 45.0f;
+			data->rotXVel = -data->rotXVel;
 		}
-		data->field_0x1C += data->field_0x24;
+		data->rotY += data->rotYVel;
 		mario = marioGetPtr();
 		if (data->x - mario->position.x > 200.0f) {
 			data->x -= 400.0f;
@@ -99,9 +99,9 @@ void effSnowDisp(CameraId camId, void* param) {
 	PSMTXRotRad(rotMtx, 'y', -camGetPtr(camId)->viewYaw * 0.017453292f);
 	PSMTXConcat(mtx, rotMtx, destMtx);
 	PSMTXConcat(cam->view, destMtx, destMtx);
-	PSMTXRotRad(rotMtx, 'x', data->field_0x18 * 0.017453292f);
+	PSMTXRotRad(rotMtx, 'x', data->rotX * 0.017453292f);
 	PSMTXConcat(destMtx, rotMtx, destMtx);
-	PSMTXRotRad(rotMtx, 'y', data->field_0x1C * 0.017453292f);
+	PSMTXRotRad(rotMtx, 'y', data->rotY * 0.017453292f);
 	PSMTXConcat(destMtx, rotMtx, destMtx);
 	GXLoadPosMtxImm(destMtx, 0);
 	GXSetCurrentMtx(0);

@@ -18,13 +18,13 @@ EffectEntry* effLaserEntry(s32 type, f32 x, f32 y, f32 z) {
 	entry->userdata = data;
 	entry->callback = effLaserMain;
 	entry->flags |= 2;
-	data->field_0x0 = type;
-	data->field_0x10 = x;
-	data->field_0x14 = y;
-	data->field_0x18 = z;
-	data->position.x = data->field_0x10;
-	data->position.y = 1000.0f + data->field_0x14;
-	data->position.z = data->field_0x18;
+	data->type = type;
+	data->originX = x;
+	data->originY = y;
+	data->originZ = z;
+	data->position.x = data->originX;
+	data->position.y = 1000.0f + data->originY;
+	data->position.z = data->originZ;
 	data->scale = 1.0f;
 	data->field_0x24 = 0;
 	data->timer = 0;
@@ -69,7 +69,7 @@ void effLaserMain(EffectEntry* effect) {
 		break;
 	case 1:
 		data->timer++;
-		data->position.y = intplGetValue(1, data->timer, 0x3c, 500.0f + data->field_0x14, data->field_0x14);
+		data->position.y = intplGetValue(1, data->timer, 0x3c, 500.0f + data->originY, data->originY);
 		if (data->timer >= 0x3c) {
 			animPoseSetAnim(data->animId, "A_1", TRUE);
 			animPoseSetLocalTimeRate(data->animId, 0.5f);

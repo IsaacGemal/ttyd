@@ -534,7 +534,7 @@ USER_FUNC(adjust) {
     wp->posY = -105.0f * (f32)sin(1.5707964f * wp->fade);
     PSMTXTrans(m1, wp->posX / 10.0f, wp->posY / 10.0f, 0.0f);
     PSMTXScale(m2, wp->scale / 1.5f, wp->scale / 1.5f, wp->scale / 1.5f);
-    PSMTXConcat(m1, m2, img->field_0x120);
+    PSMTXConcat(m1, m2, img->matrix);
     return EVT_RETURN_DONE;
 }
 

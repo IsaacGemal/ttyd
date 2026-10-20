@@ -18,14 +18,10 @@ typedef struct effSunlightData {
 	/* 0x1D */ u8 b1;
 	/* 0x1E */ u8 a1;
 	/* 0x1F */ u8 pad0;
-	/* 0x20 */ f32 field_0x20;
-	/* 0x24 */ f32 field_0x24;
-	/* 0x28 */ f32 field_0x28;
-	/* 0x2C */ f32 field_0x2C;
-	/* 0x30 */ f32 field_0x30;
+	/* 0x20 */ f32 offset[5];
 	/* 0x34 */ f32 scale;
-	/* 0x38 */ s32 field_0x38;
-	/* 0x3C */ s32 field_0x3C;
+	/* 0x38 */ s32 alpha;
+	/* 0x3C */ s32 alphaTarget;
 } effSunlightData;
 EffectEntry* effSunlightN64Entry(s32 type, s32 life, f32 x, f32 y, f32 z, f32 scale);
 void effSunlightMain(EffectEntry* effect);

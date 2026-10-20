@@ -10,7 +10,7 @@ typedef struct effVaporN64Data {
 	f32 y;          // 0x8
 	f32 z;          // 0xc
 	s32 lifetime;   // 0x10
-	s32 field_0x14; // 0x14
+	s32 frame;      // 0x14: animation frame, counts up each update
 	u32 color1R;    // 0x18
 	u32 color1G;    // 0x1c
 	u32 color1B;    // 0x20
@@ -19,8 +19,8 @@ typedef struct effVaporN64Data {
 	u32 color2G;    // 0x2c
 	u32 color2B;    // 0x30
 	u32 color2A;    // 0x34
-	f32 field_0x38; // 0x38
-	f32 field_0x3c; // 0x3c
+	f32 timer;      // 0x38: float frame timer, incremented but never read
+	f32 velY;       // 0x3c: vertical velocity, added to y each update
 	f32 scale;      // 0x40
 } effVaporN64Data;
 #include <dolphin/mtx.h>

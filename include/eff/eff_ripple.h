@@ -10,12 +10,12 @@ typedef struct EffRippleData {
     f32 x;          // 0x04
     f32 y;          // 0x08
     f32 z;          // 0x0C
-    f32 field_0x10; // 0x10
+    f32 scale;      // 0x10, grows every frame and is multiplied into the drawn XZ scale
     f32 field_0x14; // 0x14
-    s32 field_0x18; // 0x18
-    s32 field_0x1C; // 0x1C
-    s32 field_0x20; // 0x20
-    s32 field_0x24; // 0x24
+    s32 alpha;      // 0x18, GX_TEVREG0 alpha
+    s32 timer;      // 0x1C, counts down; the effect is deleted below zero
+    s32 age;        // 0x20, counts up every frame
+    s32 scrollV;    // 0x24, texture V offset, wraps at 32
     f32 field_0x28; // 0x28
     f32 rx;         // 0x2C
     f32 rz;         // 0x30

@@ -52,8 +52,8 @@ USER_FUNC(evt_img_set_position) {
 	f32 y = evtGetFloat(event, args[2]);
 	ImageEntry* entry = imgNameToPtr((const char*)name, gp->inBattle != 0);
 
-	entry->field_0xE8 = x;
-	entry->field_0xEC = y;
+	entry->posX = x;
+	entry->posY = y;
 	return EVT_RETURN_DONE;
 }
 
@@ -65,7 +65,7 @@ USER_FUNC(evt_img_set_paper) {
 	ImageEntry* entry = imgNameToPtr((const char*)name, type);
 
 	entry->poseId = animPaperPoseGetId((const char*)animName, type);
-	*(OSTime*)((u8*)entry + 0x110) = animTimeGetTime(type);
+	entry->startTime = animTimeGetTime(type);
 	animPoseSetMaterialFlagOn(entry->poseId, 0x1800);
 	return EVT_RETURN_DONE;
 }
@@ -78,7 +78,7 @@ USER_FUNC(evt_img_set_paper_anim) {
 	ImageEntry* entry = imgNameToPtr((const char*)name, type);
 
 	entry->animName = (const char*)animName;
-	*(OSTime*)((u8*)entry + 0x110) = animTimeGetTime(type);
+	entry->startTime = animTimeGetTime(type);
 	return EVT_RETURN_DONE;
 }
 
@@ -115,24 +115,24 @@ USER_FUNC(evt_img_alloc_capture) {
 
 	for (i = 0; i < 3; i++) {
 		if (i != shadowIndex && (entry->shadows[i].flags & 4)) {
-			if (entry->field_0xE4 != (u16)width || entry->field_0xE6 != (u16)height) {
+			if (entry->captureWidth != (u16)width || entry->captureHeight != (u16)height) {
 				return EVT_RETURN_DONE;
 			}
 		}
 	}
 
 	if (left == 0 && top == 0 && width == 0 && height == 0 && offscreenId != -1) {
-		entry->field_0xE4 = 0;
-		entry->field_0xE6 = 0;
-		shadow->field_0x4 = 0;
-		shadow->field_0x6 = 0;
+		entry->captureWidth = 0;
+		entry->captureHeight = 0;
+		shadow->left = 0;
+		shadow->top = 0;
 		if (shadowIndex == 2) {
-			shadow->field_0x14 = 0x27;
-			shadow->field_0x18 = 1;
+			shadow->dstFormat = 0x27;
+			shadow->texFormat = 1;
 		}
 		else {
-			shadow->field_0x14 = 6;
-			shadow->field_0x18 = 6;
+			shadow->dstFormat = 6;
+			shadow->texFormat = 6;
 		}
 		entry->flags |= 4;
 	}
@@ -142,23 +142,23 @@ USER_FUNC(evt_img_alloc_capture) {
 			|| top + height > DEMOGetRenderModeObj()->efbHeight) {
 			return EVT_RETURN_DONE;
 		}
-		entry->field_0xE4 = width;
-		entry->field_0xE6 = height;
-		shadow->field_0x4 = left;
-		shadow->field_0x6 = top;
+		entry->captureWidth = width;
+		entry->captureHeight = height;
+		shadow->left = left;
+		shadow->top = top;
 		if (shadowIndex == 2) {
-			shadow->field_0x14 = 0x27;
-			shadow->field_0x18 = 1;
+			shadow->dstFormat = 0x27;
+			shadow->texFormat = 1;
 		}
 		else {
-			shadow->field_0x14 = 6;
-			shadow->field_0x18 = 6;
+			shadow->dstFormat = 6;
+			shadow->texFormat = 6;
 		}
 	}
 
-	shadow->field_0x10 = offscreenId;
+	shadow->offscreenId = offscreenId;
 	shadow->flags = 0x14;
-	shadow->field_0x40 = flag;
+	shadow->captureMode = flag;
 	if (flag != 0) {
 		shadow->flags |= 0x100;
 	}
@@ -229,7 +229,7 @@ USER_FUNC(evt_img_wait_animend) {
 	if (isFirstCall) {
 		return EVT_RETURN_BLOCK;
 	}
-	if (entry->field_0x118 < float_1_8041a270) {
+	if (entry->loopTimes < float_1_8041a270) {
 		return EVT_RETURN_BLOCK;
 	}
 	return EVT_RETURN_DONE;

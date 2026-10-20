@@ -168,7 +168,7 @@ static USER_FUNC(evt_cloud_main) {
 		img = imgNameToPtr(cp->imgName, inBattle);
 		img->flags |= 2;
 		img->poseId = animPaperPoseGetId(cp->animName, inBattle);
-		*(OSTime*)((u8*)img + 0x110) = animTimeGetTime(inBattle);
+		img->startTime = animTimeGetTime(inBattle);
 		tmpEvent.args = captureArgs;
 		captureArgs[0] = (s32)cp->imgName;
 		captureArgs[1] = 0;
@@ -188,7 +188,7 @@ static USER_FUNC(evt_cloud_main) {
 		img = imgNameToPtr(cp->imgName, inBattle);
 		img->flags &= ~2;
 		img->animName = "A_1";
-		*(OSTime*)((u8*)img + 0x110) = animTimeGetTime(inBattle);
+		img->startTime = animTimeGetTime(inBattle);
 		mapGrpFlagOn(cp->mapGrpName, 1);
 		cp->field_0xB8 = 0x1E;
 		cp->mode++;
@@ -197,9 +197,9 @@ static USER_FUNC(evt_cloud_main) {
 
 	case 4:
 		img = imgNameToPtr(cp->imgName, inBattle);
-		if (0.0f == cp->field_0xC4 || 1.0f + cp->field_0xC4 < img->field_0x118) {
+		if (0.0f == cp->field_0xC4 || 1.0f + cp->field_0xC4 < img->loopTimes) {
 			psndSFXOn_3D("SFX_OFF_CLAUD_WIND2", &mario->position);
-			cp->field_0xC4 = img->field_0x118;
+			cp->field_0xC4 = img->loopTimes;
 		}
 		if (mario->currMotionId != 0x1B) {
 			cp->mode = 0xA;
@@ -234,7 +234,7 @@ static USER_FUNC(evt_cloud_main) {
 		}
 		img = imgNameToPtr(cp->imgName, inBattle);
 		img->animName = "A_2";
-		*(OSTime*)((u8*)img + 0x110) = animTimeGetTime(inBattle);
+		img->startTime = animTimeGetTime(inBattle);
 		hitObjFlagOn(cp->hitName, 1);
 		cp->field_0xB8 = 0x3C;
 		cp->mode++;

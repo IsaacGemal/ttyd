@@ -2300,7 +2300,7 @@ USER_FUNC(img_alpha) {
     PSMTXScale(scale, 0.9f, 0.9f, 0.9f);
     PSMTXRotRad(rot, 'x', -0.5235988f);
     PSMTXConcat(trans, scale, trans);
-    PSMTXConcat(trans, rot, entry->field_0x120);
+    PSMTXConcat(trans, rot, entry->matrix);
     return EVT_RETURN_DONE;
 }
 

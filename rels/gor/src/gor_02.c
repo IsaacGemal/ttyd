@@ -3456,9 +3456,9 @@ static USER_FUNC(evt_StatusClose) {
 
 static USER_FUNC(set_depthPlaneOffset) {
     s32* args = event->args;
-    u8* obj = (u8*)imgNameToPtr((const char*)evtGetValue(event, args[0]), gp->inBattle != 0);
+    ImageEntry* entry = imgNameToPtr((const char*)evtGetValue(event, args[0]), gp->inBattle != 0);
 
-    *(f32*)(obj + 0x11C) = evtGetFloat(event, args[1]);
+    entry->depthPlaneOffset = evtGetFloat(event, args[1]);
     return EVT_RETURN_DONE;
 }
 

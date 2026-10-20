@@ -8,19 +8,19 @@
 } SoundData; */
 
 typedef struct SoundEnvList {
-    u16 field_0x0;  // 0x0
-    u16 field_0x2;  // 0x2
-    u8 field_0x4;   // 0x4
-    u8 field_0x5;   // 0x5
-    u8 field_0x6;   // 0x6
-    u8 field_0x7;   // 0x7
-    u8 field_0x8;   // 0x8
-    u32 field_0xC;  // 0xC
-    u32 field_0x10; // 0x10
-    u32 field_0x14; // 0x14
-    u8 field_0x18;  // 0x18
-    u8 field_0x19;  // 0x19
-    u8 field_0x1A;  // 0x1A
+    u16 nameId;        // 0x0
+    u16 flags;         // 0x2
+    u8 volume;         // 0x4
+    u8 field_0x5;      // 0x5
+    u8 mode;           // 0x6
+    u8 intervalRand;   // 0x7
+    u8 interval;       // 0x8
+    u32 posX;          // 0xC
+    u32 posY;          // 0x10
+    u32 posZ;          // 0x14
+    u8 radius;         // 0x18
+    u8 radiusRand;     // 0x19
+    u8 span;           // 0x1A
     // pad 1 byte
 } SoundEnvList;
 
@@ -32,24 +32,31 @@ typedef enum SoundEffectFlags {
 
 // most are translated in __psndSFXOn, TODO
 typedef struct SoundEffectEntry {
-    const char* name;      // 0x0, sfx name
-    u32 field_0x4;         // 0x4, lower 2 bytes are SND_FXID
-    const char* field_0x8; // 0x8, .stm name
-    u8 field_0xC;          // 0xC
-    u8 field_0xD;          // 0xD
-    u8 field_0xE;          // 0xE
-    u8 field_0xF;          // 0xF, reverb
-    u8 field_0x10;         // 0x10
-    u8 field_0x11;         // 0x11
-    u16 field_0x12;        // 0x12
+    const char* name;       // 0x0, sfx name
+    u32 flags;              // 0x4, lower 2 bytes are SND_FXID
+    const char* streamName; // 0x8, .stm name
+    u8 volume;              // 0xC
+    u8 pan;                 // 0xD
+    u8 field_0xE;           // 0xE
+    u8 reverb;              // 0xF, reverb
+    u8 field_0x10;          // 0x10
+    u8 field_0x11;          // 0x11
+    u16 pitch;              // 0x12
 } SoundEffectEntry;
 
 typedef struct PaperSoundBGM {
     s32 unk0;              // 0x0
     s32 streamId;          // 0x4, TODO verify re: seq_title
-    u8 unk8[0x20 - 0x8];   // 0x8
+    u32 flags;             // 0x8
+    u8 unkC;               // 0xC
+    u8 reverb;             // 0xD
+    u8 volume;             // 0xE
+    u8 pan;                // 0xF
+    u8 scopeTimer;         // 0x10, psndBGMScope: 0xFF in scope (level 100), 0 out (follows psnd.unk58), else frames left
+    u8 unk11[0x20 - 0x11]; // 0x11
     s8 unk20;              // 0x20
-    u8 unk21[0x38 - 0x21]; // 0x21
+    u8 unk21[0x30 - 0x21]; // 0x21
+    s64 startTime;         // 0x30
 } PaperSoundBGM;
 
 typedef struct PaperSoundEffect {
@@ -67,17 +74,18 @@ typedef struct PaperSoundEffectDetail {
     s32 unk0;              // 0x0
     u16 unk4;              // 0x4
     u16 unk6;              // 0x6
-    u8 vol;                // 0x8
-    u8 pan;                // 0x9
-    u8 unkA;               // 0xA
-    u8 padB[3];            // 0xB
+    u8 vol;                // 0x8, the caller's volume
+    u8 baseVol;            // 0x9, SoundEffectEntry.volume; played volume is vol * baseVol / 127
+    u8 pan;                // 0xA
+    u8 reverb;             // 0xB
+    u16 unkC;              // 0xC, SoundEffectEntry.field_0x10; compared when a slot is evicted
     u16 unkE;              // 0xE
     u16 unk10;             // 0x10
     u16 unk12;             // 0x12
-    s16 unk14;             // 0x14
-    u8 pad16[2];           // 0x16
+    s16 unk14;             // 0x14, pitch
+    u16 unk16;             // 0x16
     s32 unk18;             // 0x18
-    u8 pad1C[0x28 - 0x1C]; // 0x1C
+    Vec position;          // 0x1C
 } PaperSoundEffectDetail;
 
 typedef struct PaperSoundEnv {
@@ -170,8 +178,8 @@ BOOL psndBGMChk(s32 id);
 BOOL psndBGMChkSilent(s32 id);
 // 16-byte BGM table entry: two name/flag pairs (main BGM name and stream path).
 typedef struct BGMListEntry {
-    const char* field_0x0; // 0x0
-    u32 field_0x4;         // 0x4
-    const char* field_0x8; // 0x8
-    u32 field_0xC;         // 0xC
+    const char* name;       // 0x0
+    u32 flags;              // 0x4
+    const char* streamName; // 0x8
+    u32 params;             // 0xC, packed volume/pan/reverb bytes
 } BGMListEntry;
