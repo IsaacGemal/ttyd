@@ -10935,3 +10935,18 @@ Verified: tower `ninja` recreates `build/G8MJ01/ok`; natural (no MUST_MATCH) com
 - Category counts, new script on origin/main: raw_offset 1970 (was 917), address_name 3443 (was 10079), field_0x 2959, must_match 2417, opt_pragma 1461, goto 485, unk_name 775, fn_ptr_cast 334, inline_asm 7, pool_constant 6027 (weight 0, not in the index).
 - Tests: tools/tests/test_cleanup_index.py covers pool/unk separation, offset macro calls (including a continuation-line macro) and the duplicate-define rule. Macro detection agrees with offset_to_field.parse_macros on every tree file (70 macros, no mismatch).
 - No C files changed, so no build verification was needed.
+
+### Cleanup index review: offset macros with a fixed base or an index, reference points under both definitions (2026-10-20, Claude Opus 5.5, n9-q-idxtool)
+- Review of the entry above. Pool and unk_ split checked against the tree: every float_/double_/zero_ name in source is an .sdata2/.rodata pool constant (double_to_int_ is the 0x4330000080000000 int-to-double constant); no one_/negone_/half_/two_ address name is in source today; dat_, vec3_, str_, lbl_, L_, jumptable_ and suffixed function names (kuribo_init_800C23B4) still count as address_name.
+- Offset macro rule widened: a parameter in the offset, or in an index applied to the result, makes an offset macro, so fixed-base macros (NKF(off), M_F(off), WM_S32(off)), WW_F32X(w, idx, off) and evt_yuuranking's A14L(i)/A74F(i) now count per call instead of once at the #define. A macro whose parameter is only the base (ANIM_FRAME_TIME(f), WIN_BADGE_TEX(w)) is a named accessor and still counts once; a statement macro with a raw offset somewhere in its body (WIN_KIRINUKI_SCALE) is not an offset macro. On main: 88 offset macros (was 70), raw_offset 2024 (strict-shape rule 1970).
+- Old script = origin/main's tools/cleanup_index.py; new = this branch. Index per kLOC (weighted):
+
+| revision | old | new |
+|---|---|---|
+| aea79288 (100% matched, 2026-10-17) | 77.719 (54562) | 75.054 (52691) |
+| 2d92902a (start of overnight 9, 2026-10-19) | 70.097 (49212) | 66.342 (46576) |
+| 627515e5 (origin/main) | 29.710 (21140) | 23.495 (16718) |
+
+- New-definition counts. aea79288: field_0x 20942, raw_offset 9433, address_name 5137, must_match 2414, unk_name 2012, opt_pragma 1591, goto 491, fn_ptr_cast 363, inline_asm 7, pool_constant 7955. 2d92902a: field_0x 18317, raw_offset 7760, address_name 5141, must_match 2438, unk_name 1982, opt_pragma 1471, goto 491, fn_ptr_cast 352, inline_asm 7, pool_constant 7958. 627515e5: raw_offset 2024, address_name 3443, field_0x 2915, must_match 2417, opt_pragma 1461, goto 485, unk_name 775, fn_ptr_cast 334, inline_asm 7, pool_constant 6027.
+- Not covered by either definition: REL-local address names (dat_gor_0001a46c, vec3_..._00012340, float_..._0000xxxx; about 900 in rels/, besides unk_ ones that unk_name still counts) end in a section offset, not an 8xxxxxxx address, so address_name and pool_constant miss them.
+- tools/ci.py runs the same script on HEAD and base, so its delta compares like with like. tools/tests passes (unittest discover).
