@@ -272,7 +272,7 @@ void winMakeSkipList(WindowWork* work) {
     s32 i;
     s32 j;
 
-    WW_S16(work, 0x3DA) = 0;
+    work->skipCount = 0;
     for (i = 0; i < 0x79; i++) {
         u16 item = pouchKeyItem(i);
 
@@ -301,11 +301,11 @@ void winItemInit(WindowWork* work) {
     u16 item;
     s32 j;
 
-    WW_S32(work, 0x20C) = 0;
-    WW_S32(work, 0x210) = 0;
-    WW_S32(work, 0x214) = 0;
+    work->itemState = 0;
+    work->itemTab = 0;
+    work->itemSel[0] = 0;
     work->itemScrollRow[0] = 0;
-    WW_S32(work, 0x218) = 0;
+    work->itemSel[1] = 0;
     work->itemScrollRow[1] = 0;
     WW_F32(work, 0x238) = 320.f;
     WW_F32(work, 0x234) = 320.f;
@@ -319,28 +319,28 @@ void winItemInit(WindowWork* work) {
     if ((s32)pouchCheckItem(ITEM_MAILBOX_SP) == 0) {
         pouchGetItem(ITEM_MAILBOX_SP);
     }
-    WW_S32(work, 0x254) = pouchReceiveMailCount();
+    work->mailCount = pouchReceiveMailCount();
 
-    WW_S32(work, 0x258) = 0;
-    WW_S32(work, 0x25C) = 0;
+    work->mailSel = 0;
+    work->mailPage = 0;
     WW_F32(work, 0x264) = 0.0f;
     WW_F32(work, 0x260) = 0.0f;
 
     {
         p = (u8*)work;
-        for (i = 0; i < WW_S32(work, 0x254); i++) {
+        for (i = 0; i < work->mailCount; i++) {
             u8* pouch;
             s32 off;
-            p[0x26E] = WW_S32(work, 0x254) - i - 1;
+            p[0x26E] = work->mailCount - i - 1;
             pouch = (u8*)pouchGetPtr();
-            off = 0x519 + (WW_S32(work, 0x254) - i);
+            off = 0x519 + (work->mailCount - i);
             p[0x26F] = pouch[off];
             p += 2;
         }
     }
 
-    WW_S32(work, 0x2D4) = 0;
-    WW_S16(work, 0x3DA) = 0;
+    work->useItemId = 0;
+    work->skipCount = 0;
     for (i = 0; i < 0x79; i++) {
         item = pouchKeyItem(i);
 
@@ -377,7 +377,7 @@ void winItemInit2(WindowWork* work) {
     f32 t;
 
     work->targetX = -275.0f;
-    work->targetY = (f32)(0x7D - WW_S32(work, 0x210) * 0x28);
+    work->targetY = (f32)(0x7D - work->itemTab * 0x28);
 
     t = 190.f * (f32)work->itemScrollRow[0];
     WW_F32(work, 0x22C) = t;
@@ -396,12 +396,12 @@ void winItemInit2(WindowWork* work) {
     WW_F32(work, 0x250) = -240.f;
     WW_F32(work, 0x24C) = -240.f;
 
-    t = (f32)(WW_S32(work, 0x258) * 0xC8);
+    t = (f32)(work->mailSel * 0xC8);
     WW_F32(work, 0x264) = t;
     WW_F32(work, 0x260) = t;
 
-    winMsgEntry(work, 0, WW_S32(work, 0x210) == 0 ? STR_MOCHI_ITEM : STR_MOCHI_DAIJI, 0);
-    WW_S32(work, 0x2D4) = 0;
+    winMsgEntry(work, 0, work->itemTab == 0 ? STR_MOCHI_ITEM : STR_MOCHI_DAIJI, 0);
+    work->useItemId = 0;
 }
 
 void winItemExit(WindowWork* work) {
@@ -424,7 +424,7 @@ s32 winItemMain(WindowWork* work) {
     WindowPartyDt* list[9];
     s32 leader;
 
-    switch (WW_S32(work, 0x20C)) {
+    switch (work->itemState) {
     case 0:
         if (work->buttonTrg & 0x200) {
             psndSFXOn((const char*)0x20013);
@@ -434,57 +434,57 @@ s32 winItemMain(WindowWork* work) {
             return -2;
         }
         if (work->dirRep & 0x3000) {
-            WW_S32(work, 0x210) = 1 - WW_S32(work, 0x210);
+            work->itemTab = 1 - work->itemTab;
             psndSFXOn((const char*)0x20005);
         } else if (work->buttonTrg & 0x100) {
-            if (WW_S32(work, 0x210) == 0) {
+            if (work->itemTab == 0) {
                 if (pouchGetHaveItemCnt() == 0) {
                     break;
                 }
             }
-            if (WW_S32(work, 0x210) == 1) {
-                if (WW_S16(work, 0x3DA) == 0) {
+            if (work->itemTab == 1) {
+                if (work->skipCount == 0) {
                     break;
                 }
             }
-            WW_S32(work, 0x20C) = 10;
+            work->itemState = 10;
             psndSFXOn((const char*)0x20012);
             break;
         } else if (work->buttonTrg & 0x10) {
-            winSortEntry(work, WW_S32(work, 0x210) != 0, -310.f, 150.f);
-            work->savedState = WW_S32(work, 0x20C);
+            winSortEntry(work, work->itemTab != 0, -310.f, 150.f);
+            work->savedState = work->itemState;
             psndSFXOn((const char*)0x20012);
-            WW_S32(work, 0x20C) = 1000;
+            work->itemState = 1000;
         }
         work->targetX = -275.0f;
-        work->targetY = (f32)(0x7D - WW_S32(work, 0x210) * 0x28);
-        winMsgEntry(work, 0, WW_S32(work, 0x210) == 0 ? STR_MOCHI_ITEM : STR_MOCHI_DAIJI, 0);
+        work->targetY = (f32)(0x7D - work->itemTab * 0x28);
+        winMsgEntry(work, 0, work->itemTab == 0 ? STR_MOCHI_ITEM : STR_MOCHI_DAIJI, 0);
         break;
 
     case 10:
-        if (WW_S32(work, 0x210) == 0) {
+        if (work->itemTab == 0) {
             count = pouchGetHaveItemCnt();
         } else {
-            count = WW_S16(work, 0x3DA);
+            count = work->skipCount;
         }
-        sel = WW_S32(work, 0x210);
+        sel = work->itemTab;
         rows = (count + 9) / 10;
 
         if (work->buttonTrg & 0x200) {
             psndSFXOn((const char*)0x20013);
-            WW_S32(work, 0x20C) = 0;
+            work->itemState = 0;
         }
         if (work->buttonTrg & 0x100) {
-            if (WW_S32(work, 0x210) == 0) {
+            if (work->itemTab == 0) {
                 item = pouchHaveItem(((s32*)((u8*)work + 0x214))[sel]);
                 if (itemDataTable[item].usable_locations & 4) {
                     WinMgrEntry* entry;
 
-                    WW_S32(work, 0x2D4) = item;
-                    WW_S32(work, 0x2D8) = ((s32*)((u8*)work + 0x214))[sel];
-                    WW_S32(work, 0x20C) = 300;
-                    WW_S32(work, 0x2DC) = 0;
-                    WW_S32(work, 0x2E0) = 0;
+                    work->useItemId = item;
+                    work->useItemSlot = ((s32*)((u8*)work + 0x214))[sel];
+                    work->itemState = 300;
+                    work->useTargetSel = 0;
+                    work->useTimer = 0;
                     psndSFXOn((const char*)0x20012);
                     entry = winMgrGetPtr(work->useTargetWin[0]);
                     winMgrSetSize(work->useTargetWin[0], entry->x, entry->y, entry->width,
@@ -499,7 +499,7 @@ s32 winItemMain(WindowWork* work) {
                 if ((u32)(item - ITEM_SUPER_LUIGI1) <= 3 || item == ITEM_SUPER_LUIGI5) {
                     const char** book;
 
-                    WW_S32(work, 0x20C) = 100;
+                    work->itemState = 100;
                     WW_F32(work, 0x238) = -170.f;
                     WW_F32(work, 0x240) = 160.f;
                     work->flags |= 0x8000;
@@ -513,12 +513,12 @@ s32 winItemMain(WindowWork* work) {
                     WW_S32(work, 0x2CC) = (WW_S32(work, 0x2CC) + 1) / 2;
                     psndSFXOn((const char*)0x20012);
                 } else if (item == ITEM_MAILBOX_SP && pouchReceiveMailCount() != 0) {
-                    WW_S32(work, 0x20C) = 200;
+                    work->itemState = 200;
                     WW_F32(work, 0x248) = -144.0f;
                     WW_F32(work, 0x250) = 180.f;
                     psndSFXOn((const char*)0x20012);
                 } else if (item == 0x4E) {
-                    WW_S32(work, 0x2D4) = item;
+                    work->useItemId = item;
                     psndSFXOn((const char*)0x20012);
                     return -2;
                 }
@@ -579,17 +579,17 @@ s32 winItemMain(WindowWork* work) {
             work->itemScrollRow[sel] = ((s32*)((u8*)work + 0x214))[sel] / 10;
             psndSFXOn((const char*)0x20035);
         } else if (work->buttonTrg & 0x10) {
-            winSortEntry(work, WW_S32(work, 0x210) != 0, -310.f, 150.f);
-            work->savedState = WW_S32(work, 0x20C);
+            winSortEntry(work, work->itemTab != 0, -310.f, 150.f);
+            work->savedState = work->itemState;
             psndSFXOn((const char*)0x20012);
-            WW_S32(work, 0x20C) = 1000;
+            work->itemState = 1000;
         } else if (work->buttonTrg & 0x1000) {
             return -2;
         }
     update10: {
         work->targetX = (f32)((((s32*)((u8*)work + 0x214))[sel] % 10 % 2) * 0xCC - 0x9B);
         work->targetY = (f32)(0x6E - (((s32*)((u8*)work + 0x214))[sel] % 10 / 2) * 0x26);
-        item = (WW_S32(work, 0x210) == 0) ? pouchHaveItem(((s32*)((u8*)work + 0x214))[sel])
+        item = (work->itemTab == 0) ? pouchHaveItem(((s32*)((u8*)work + 0x214))[sel])
                                           : (s32)((s16*)((u8*)work + 0x2E8))[((s32*)((u8*)work + 0x214))[sel]];
         winMsgEntry(work, item, itemDataTable[item].description, 0);
     }
@@ -601,7 +601,7 @@ s32 winItemMain(WindowWork* work) {
             WW_S32(work, 0x2D0) += 1;
             if (WW_S32(work, 0x2D0) >= WW_S32(work, 0x2CC)) {
                 WW_S32(work, 0x2D0) = WW_S32(work, 0x2CC) - 1;
-                WW_S32(work, 0x20C) = 10;
+                work->itemState = 10;
                 WW_F32(work, 0x238) = 320.f;
                 WW_F32(work, 0x240) = -240.f;
                 work->flags &= ~0x8000;
@@ -613,7 +613,7 @@ s32 winItemMain(WindowWork* work) {
             WW_S32(work, 0x2D0) -= 1;
             if (WW_S32(work, 0x2D0) < 0) {
                 WW_S32(work, 0x2D0) = 0;
-                WW_S32(work, 0x20C) = 10;
+                work->itemState = 10;
                 WW_F32(work, 0x238) = 320.f;
                 WW_F32(work, 0x240) = -240.f;
                 work->flags &= ~0x8000;
@@ -638,116 +638,116 @@ s32 winItemMain(WindowWork* work) {
             u8* b;
 
             b = (u8*)work;
-            b += WW_S32(work, 0x258) * 2;
+            b += work->mailSel * 2;
             if ((s32)pouchCheckMail(b[0x26F]) == 1) {
                 b = (u8*)work;
-                b += WW_S32(work, 0x258) * 2;
+                b += work->mailSel * 2;
                 pouchOpenMail(b[0x26F]);
             }
             swSet(0x26);
             psndSFXOn((const char*)0x20036);
-            WW_S32(work, 0x20C) = 201;
+            work->itemState = 201;
             b = (u8*)work;
-            b += WW_S32(work, 0x258) * 2;
+            b += work->mailSel * 2;
             mail = (u8*)mailGetPtr(b[0x26F]);
             FontGetMessageWidthLine(msgSearch(*(const char**)(mail + 0xC)), winItemMailLine(work));
-            WW_U16(work, 0x26C) += 1;
-            WW_S32(work, 0x268) = 0;
+            work->mailLines += 1;
+            work->mailScroll = 0;
             if (*(u16*)(mail + 0) & 0x1000) {
-                WW_U16(work, 0x26C) += 0xA;
+                work->mailLines += 0xA;
             }
         } else if (work->buttonTrg & 0x200) {
             psndSFXOn((const char*)0x20013);
-            WW_S32(work, 0x20C) = 10;
+            work->itemState = 10;
             WW_F32(work, 0x248) = 320.f;
             WW_F32(work, 0x250) = -240.f;
         } else if (work->dirRep & 0x1000) {
-            old = WW_S32(work, 0x258);
-            WW_S32(work, 0x258) = old - 1;
-            if (WW_S32(work, 0x258) < 0) {
-                WW_S32(work, 0x258) = 0;
+            old = work->mailSel;
+            work->mailSel = old - 1;
+            if (work->mailSel < 0) {
+                work->mailSel = 0;
             }
-            WW_S32(work, 0x25C) = WW_S32(work, 0x258) / 5;
-            WW_S32(work, 0x268) = 0;
-            if (old != WW_S32(work, 0x258)) {
+            work->mailPage = work->mailSel / 5;
+            work->mailScroll = 0;
+            if (old != work->mailSel) {
                 psndSFXOn((const char*)0x20036);
             }
         } else if (work->dirRep & 0x2000) {
-            old = WW_S32(work, 0x258);
-            WW_S32(work, 0x258) = old + 1;
-            if (WW_S32(work, 0x258) >= WW_S32(work, 0x254)) {
-                WW_S32(work, 0x258) = WW_S32(work, 0x254) - 1;
+            old = work->mailSel;
+            work->mailSel = old + 1;
+            if (work->mailSel >= work->mailCount) {
+                work->mailSel = work->mailCount - 1;
             }
-            WW_S32(work, 0x25C) = WW_S32(work, 0x258) / 5;
-            WW_S32(work, 0x268) = 0;
-            if (old != WW_S32(work, 0x258)) {
+            work->mailPage = work->mailSel / 5;
+            work->mailScroll = 0;
+            if (old != work->mailSel) {
                 psndSFXOn((const char*)0x20036);
             }
         } else if (work->buttonRep & 0x40) {
-            old = WW_S32(work, 0x25C);
-            WW_S32(work, 0x25C) = old - 1;
-            if (WW_S32(work, 0x25C) < 0) {
-                WW_S32(work, 0x25C) = 0;
+            old = work->mailPage;
+            work->mailPage = old - 1;
+            if (work->mailPage < 0) {
+                work->mailPage = 0;
             }
-            WW_S32(work, 0x258) = WW_S32(work, 0x25C) * 5;
-            if (old != WW_S32(work, 0x25C)) {
+            work->mailSel = work->mailPage * 5;
+            if (old != work->mailPage) {
                 psndSFXOn((const char*)0x20036);
             }
         } else if (work->buttonRep & 0x20) {
-            page = WW_S32(work, 0x254);
-            old = WW_S32(work, 0x25C);
-            WW_S32(work, 0x25C) = old + 1;
+            page = work->mailCount;
+            old = work->mailPage;
+            work->mailPage = old + 1;
             page = (page + 4) / 5;
-            if (WW_S32(work, 0x25C) >= page) {
-                WW_S32(work, 0x25C) = page - 1;
+            if (work->mailPage >= page) {
+                work->mailPage = page - 1;
             }
-            WW_S32(work, 0x258) = WW_S32(work, 0x25C) * 5;
-            if (old != WW_S32(work, 0x25C)) {
+            work->mailSel = work->mailPage * 5;
+            if (old != work->mailPage) {
                 psndSFXOn((const char*)0x20036);
             }
         } else if (work->buttonTrg & 0x10) {
             winSortEntry(work, 7, WW_F32(work, 0x248), WW_F32(work, 0x250) - 60.f);
-            work->savedState = WW_S32(work, 0x20C);
+            work->savedState = work->itemState;
             psndSFXOn((const char*)0x20012);
-            WW_S32(work, 0x20C) = 1000;
+            work->itemState = 1000;
         } else if (work->buttonTrg & 0x1000) {
             WW_F32(work, 0x248) = 320.f;
             WW_F32(work, 0x250) = -240.f;
             return -2;
         }
         work->targetX = -96.0f;
-        work->targetY = 120.f - (f32)((WW_S32(work, 0x258) % 5) * 0x28);
+        work->targetY = 120.f - (f32)((work->mailSel % 5) * 0x28);
         break;
 
     case 201: {
         u8* b = (u8*)work;
         u8* mail;
 
-        b += WW_S32(work, 0x258) * 2;
+        b += work->mailSel * 2;
         mail = (u8*)mailGetPtr(b[0x26F]);
 
         if (*(u16*)(mail + 0) & 0x1000) {
             WW_S32(work, 0x2C) = fileAsyncf(FILE_TYPE_TPL, NULL, STR_MAIL_TPL, getMarioStDvdRoot());
             if ((u32)WW_S32(work, 0x2C) != 0) {
                 WW_S32(work, 0x2C) = (s32)fileAllocf(FILE_TYPE_TPL, STR_MAIL_TPL, getMarioStDvdRoot());
-                WW_S32(work, 0x20C) += 1;
+                work->itemState += 1;
             }
         } else {
             WW_S32(work, 0x2C) = 0;
-            WW_S32(work, 0x20C) += 1;
+            work->itemState += 1;
         }
         break;
     }
 
     case 202:
-        if ((u32)WW_U16(work, 0x26C) > 8) {
+        if ((u32)work->mailLines > 8) {
             if (keyGetDirRep(0) & 0x100) {
-                if (WW_S32(work, 0x268) > 0) {
-                    WW_S32(work, 0x268) -= 1;
+                if (work->mailScroll > 0) {
+                    work->mailScroll -= 1;
                 }
             } else if (keyGetDirRep(0) & 0x200) {
-                if (WW_S32(work, 0x268) + 6 < (s32)WW_U16(work, 0x26C)) {
-                    WW_S32(work, 0x268) += 1;
+                if (work->mailScroll + 6 < (s32)work->mailLines) {
+                    work->mailScroll += 1;
                 }
             }
         }
@@ -756,7 +756,7 @@ s32 winItemMain(WindowWork* work) {
             if ((u32)WW_S32(work, 0x2C) != 0) {
                 fileFree((FileEntry*)WW_S32(work, 0x2C));
             }
-            WW_S32(work, 0x20C) = 200;
+            work->itemState = 200;
         } else if (work->buttonTrg & 0x1000) {
             if ((u32)WW_S32(work, 0x2C) != 0) {
                 fileFree((FileEntry*)WW_S32(work, 0x2C));
@@ -772,8 +772,8 @@ s32 winItemMain(WindowWork* work) {
     case 300:
         if (work->buttonTrg & 0x200) {
             psndSFXOn((const char*)0x20013);
-            WW_S32(work, 0x20C) = 10;
-            WW_S32(work, 0x2D4) = 0;
+            work->itemState = 10;
+            work->useItemId = 0;
             winMgrClose(work->useTargetWin[0]);
             winMgrClose(work->useTargetWin[1]);
         } else if (work->buttonTrg & 0x100) {
@@ -787,12 +787,12 @@ s32 winItemMain(WindowWork* work) {
             if (unk_8009fcbc() || U_marioSlitContinueChk()) {
                 ok = 1;
             }
-            if (WW_S32(work, 0x2DC) > 0) {
+            if (work->useTargetSel > 0) {
                 if (marioBgmodeChk()) {
                     ok = 1;
                 }
             }
-            if (WW_S32(work, 0x2DC) > 1) {
+            if (work->useTargetSel > 1) {
                 if (!marioBgmodeChk()) {
                     ok = 1;
                 }
@@ -818,40 +818,40 @@ s32 winItemMain(WindowWork* work) {
                     list[n++] = &winPartyDt[i];
                 }
             }
-            if (WW_S32(work, 0x2DC) < 1) {
-                pouchSetHP(pouchGetHP() + itemDataTable[WW_S32(work, 0x2D4)].hp_restored);
-                pouchSetFP((*(s32(*)(void))pouchGetFP)() + itemDataTable[WW_S32(work, 0x2D4)].fp_restored);
-                pouchSetAP((*(s32(*)(void))pouchGetAP)() + itemDataTable[WW_S32(work, 0x2D4)].sp_restored);
+            if (work->useTargetSel < 1) {
+                pouchSetHP(pouchGetHP() + itemDataTable[work->useItemId].hp_restored);
+                pouchSetFP((*(s32(*)(void))pouchGetFP)() + itemDataTable[work->useItemId].fp_restored);
+                pouchSetAP((*(s32(*)(void))pouchGetAP)() + itemDataTable[work->useItemId].sp_restored);
             } else {
-                PartyId pid = list[WW_S32(work, 0x2DC) - 1]->partnerId;
+                PartyId pid = list[work->useTargetSel - 1]->partnerId;
 
-                (*(void(*)(PartyId, s32))pouchSetPartyHP)(pid, (*(s32(*)(PartyId))pouchGetPartyHP)(pid) + itemDataTable[WW_S32(work, 0x2D4)].hp_restored);
-                pouchSetFP((*(s32(*)(void))pouchGetFP)() + itemDataTable[WW_S32(work, 0x2D4)].fp_restored);
-                pouchSetAP((*(s32(*)(void))pouchGetAP)() + itemDataTable[WW_S32(work, 0x2D4)].sp_restored);
+                (*(void(*)(PartyId, s32))pouchSetPartyHP)(pid, (*(s32(*)(PartyId))pouchGetPartyHP)(pid) + itemDataTable[work->useItemId].hp_restored);
+                pouchSetFP((*(s32(*)(void))pouchGetFP)() + itemDataTable[work->useItemId].fp_restored);
+                pouchSetAP((*(s32(*)(void))pouchGetAP)() + itemDataTable[work->useItemId].sp_restored);
             }
-            WW_S32(work, 0x2E0) = 0;
-            WW_S32(work, 0x20C) = 301;
+            work->useTimer = 0;
+            work->itemState = 301;
             break;
         } else if (work->dirRep & 0x1000) {
-            old = WW_S32(work, 0x2DC);
-            WW_S32(work, 0x2DC) = old - 1;
-            if (WW_S32(work, 0x2DC) < 0) {
-                WW_S32(work, 0x2DC) = work->partyCount;
+            old = work->useTargetSel;
+            work->useTargetSel = old - 1;
+            if (work->useTargetSel < 0) {
+                work->useTargetSel = work->partyCount;
             }
-            if (old != WW_S32(work, 0x2DC)) {
+            if (old != work->useTargetSel) {
                 psndSFXOn((const char*)0x20005);
             }
         } else if (work->dirRep & 0x2000) {
-            old = WW_S32(work, 0x2DC);
-            WW_S32(work, 0x2DC) = old + 1;
-            if (WW_S32(work, 0x2DC) >= work->partyCount + 1) {
-                WW_S32(work, 0x2DC) = 0;
+            old = work->useTargetSel;
+            work->useTargetSel = old + 1;
+            if (work->useTargetSel >= work->partyCount + 1) {
+                work->useTargetSel = 0;
             }
-            if (old != WW_S32(work, 0x2DC)) {
+            if (old != work->useTargetSel) {
                 psndSFXOn((const char*)0x20005);
             }
         } else if (work->buttonTrg & 0x1000) {
-            WW_S32(work, 0x2D4) = 0;
+            work->useItemId = 0;
             winMgrClose(work->useTargetWin[0]);
             winMgrClose(work->useTargetWin[1]);
             return -2;
@@ -859,7 +859,7 @@ s32 winItemMain(WindowWork* work) {
         work->targetX = -80.f;
         {
             f32 f4;
-            s32 t = WW_S32(work, 0x2DC);
+            s32 t = work->useTargetSel;
 
             if (t == 0) {
                 f4 = 0.0f;
@@ -877,16 +877,16 @@ s32 winItemMain(WindowWork* work) {
         break;
 
     case 301:
-        WW_S32(work, 0x2E0) += 1;
-        if (WW_S32(work, 0x2E0) > gp->framerate * 2) {
-            WW_S32(work, 0x2E0) = 0;
-            pouchRemoveItemIndex(WW_S32(work, 0x2D4), WW_S32(work, 0x2D8));
-            WW_S32(work, 0x20C) = 10;
-            WW_S32(work, 0x2D4) = 0;
+        work->useTimer += 1;
+        if (work->useTimer > gp->framerate * 2) {
+            work->useTimer = 0;
+            pouchRemoveItemIndex(work->useItemId, work->useItemSlot);
+            work->itemState = 10;
+            work->useItemId = 0;
             if (pouchGetHaveItemCnt() == 0) {
-                WW_S32(work, 0x20C) = 0;
-            } else if (WW_S32(work, 0x214) >= pouchGetHaveItemCnt()) {
-                WW_S32(work, 0x214) = pouchGetHaveItemCnt() - 1;
+                work->itemState = 0;
+            } else if (work->itemSel[0] >= pouchGetHaveItemCnt()) {
+                work->itemSel[0] = pouchGetHaveItemCnt() - 1;
             }
             winMgrClose(work->useTargetWin[0]);
             winMgrClose(work->useTargetWin[1]);
@@ -895,7 +895,7 @@ s32 winItemMain(WindowWork* work) {
 
     case 1000:
         if (!winSortWait(work)) {
-            WW_S32(work, 0x20C) = work->savedState;
+            work->itemState = work->savedState;
         }
         if (work->buttonTrg & 0x1000) {
             return -2;
@@ -920,7 +920,7 @@ void winItemMain2(WindowWork* work) {
     WW_F32(work, 0x244) += (WW_F32(work, 0x248) - WW_F32(work, 0x244)) / 6.0f;
     WW_F32(work, 0x24C) += (WW_F32(work, 0x250) - WW_F32(work, 0x24C)) / 6.0f;
 
-    WW_F32(work, 0x264) = (f32)(WW_S32(work, 0x25C) * 200);
+    WW_F32(work, 0x264) = (f32)(work->mailPage * 200);
     WW_F32(work, 0x260) += (WW_F32(work, 0x264) - WW_F32(work, 0x260)) / 4.0f;
 }
 
@@ -945,7 +945,7 @@ void winItemDisp(CameraId camId, void* param, s32 idx) {
     b = 4.0f + a;
 
     for (i = 0; i < 2; i++) {
-        if (i == WW_S32(w, 0x210)) {
+        if (i == w->itemTab) {
             winTexInit(*(TEXPalette**)w->winTpl->data);
             winTexSet(0xB3, (Vec){x - 215.0f, 20.0f + (a - (f32)(i * 0x28)), 0.0f}, (Vec){1.0f, 1.0f, 1.0f}, dat_8041d46c);
             winTexInit_x2(*(TEXPalette**)w->winTpl->data);
@@ -981,10 +981,10 @@ void item_disp(WindowWork* work, f32 x, f32 y) {
 
     white = dat_8041d474;
     iconColor = dat_8041d474;
-    if (WW_S32(work, 0x210) == 0) {
+    if (work->itemTab == 0) {
         count = pouchGetHaveItemCnt();
     } else {
-        count = WW_S16(work, 0x3DA);
+        count = work->skipCount;
     }
 
     GXSetScissor(0, 0x6D, 0x260, 0xC0);
@@ -994,14 +994,14 @@ void item_disp(WindowWork* work, f32 x, f32 y) {
         parity = i % 2;
         half = i / 2;
 
-        if (WW_S32(work, 0x210) == 0) {
+        if (work->itemTab == 0) {
             item = pouchHaveItem(i);
         } else {
             item = *(s16*)(entry + 0x2E8);
         }
-        scroll = *(f32*)((u8*)work + WW_S32(work, 0x210) * 4 + 0x224);
+        scroll = *(f32*)((u8*)work + work->itemTab * 4 + 0x224);
 
-        grayFlag = ((WW_S32(work, 0x210) != 0) || (itemDataTable[item].usable_locations & 4)) == 0;
+        grayFlag = ((work->itemTab != 0) || (itemDataTable[item].usable_locations & 4)) == 0;
         drawY = scroll + (20.0f + ((rowY = base - (f32)(half * 0x26)) - 10.0f));
         if (drawY > 240.0f) {
             continue;
@@ -1016,7 +1016,7 @@ void item_disp(WindowWork* work, f32 x, f32 y) {
             winIconInit();
         }
         winIconSetV(*(u16*)&itemDataTable[item].icon_id, (Vec){(x - 125.0f) + (f32)(colX = parity * 0xCC), drawY, 0.0f},
-                    WW_S32(work, 0x210) == 0 ? (Vec){0.8f, 0.8f, 0.8f} : (Vec){0.6666667f, 0.6666667f, 0.6666667f},
+                    work->itemTab == 0 ? (Vec){0.8f, 0.8f, 0.8f} : (Vec){0.6666667f, 0.6666667f, 0.6666667f},
                     iconColor);
         winFontInit();
         winFontSetPitchV((Vec){(x - 105.0f) + (f32)colX, scroll + (20.0f + rowY), 0.0f},
@@ -1024,7 +1024,7 @@ void item_disp(WindowWork* work, f32 x, f32 y) {
     }
 
     GXSetScissor(0, 0, 0x260, 0x1E0);
-    if (work->itemScrollRow[WW_S32(work, 0x210)] > 0) {
+    if (work->itemScrollRow[work->itemTab] > 0) {
         f32 arrowX;
 
         winTexInit(*(TEXPalette**)work->winTpl->data);
@@ -1033,7 +1033,7 @@ void item_disp(WindowWork* work, f32 x, f32 y) {
         winIconInit();
         winIconSetV(0x7E, (Vec){arrowX, 20.0f + (113.0f + y), 0.0f}, (Vec){0.6f, 0.6f, 0.6f}, white);
     }
-    if (count > work->itemScrollRow[WW_S32(work, 0x210)] * 10 + 10) {
+    if (count > work->itemScrollRow[work->itemTab] * 10 + 10) {
         f32 arrowX;
 
         winTexInit(*(TEXPalette**)work->winTpl->data);
@@ -1107,10 +1107,10 @@ void itemUseDisp(WinMgrEntry* entry) {
                 f31 = -28.0f;
             }
 
-            sel2e0 = WW_S32(work, 0x2E0);
+            sel2e0 = work->useTimer;
             gray = 0;
             if (sel2e0 != 0) {
-                if (i == WW_S32(work, 0x2DC)) {
+                if (i == work->useTargetSel) {
                     color = dat_8041d488;
                 } else {
                     color = dat_8041d48c;
@@ -1119,7 +1119,7 @@ void itemUseDisp(WinMgrEntry* entry) {
             }
 
             if (i == 0) {
-                if (sel2e0 % 20 > 15 && i == WW_S32(work, 0x2DC)) {
+                if (sel2e0 % 20 > 15 && i == work->useTargetSel) {
                     continue;
                 }
                 if (gray) {
@@ -1151,8 +1151,8 @@ void itemUseDisp(WinMgrEntry* entry) {
                              (Vec){0.8f, 0.8f, 0.8f}, color, "\201^");
                 winFontSetV((Vec){(f32)(entry->x + 0x136), (f32)(entry->y - 0xA - i * 0x16), 0.0f},
                             (Vec){0.8f, 0.8f, 0.8f}, color, "%d", pouchGetMaxHP());
-                if (itemDataTable[WW_S32(work, 0x2D4)].fp_restored != 0) {
-                    if (WW_S32(work, 0x2E0) % 20 > 15) {
+                if (itemDataTable[work->useItemId].fp_restored != 0) {
+                    if (work->useTimer % 20 > 15) {
                         continue;
                     }
                     color = dat_8041d498;
@@ -1168,7 +1168,7 @@ void itemUseDisp(WinMgrEntry* entry) {
                             (Vec){0.8f, 0.8f, 0.8f}, color, "%d", pouchGetMaxFP());
             } else {
                 name = list[i - 1]->partnerId != 4 ? msgSearch(list[i - 1]->nameMsg) : pouchGetYoshiName();
-                if (WW_S32(work, 0x2E0) % 20 > 15 && i == WW_S32(work, 0x2DC)) {
+                if (work->useTimer % 20 > 15 && i == work->useTargetSel) {
                     continue;
                 }
                 winTexInit(*(TEXPalette**)work->winTpl->data);
