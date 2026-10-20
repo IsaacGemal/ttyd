@@ -11184,3 +11184,9 @@ empty item table, a null target, the timer-zero case 6) and the MUST_MATCH `goto
 `remove` tails are shared by five jump sites; a structured form needs either the four-statement tail duplicated or a
 flag local, and the flag is a new name. The MUST_MATCH goto is the case-3 hit-to-case-4 jump the comment above the
 function already calls load-bearing.
+### Readability: evt_yuuranking goto removal (2026-10-20, Claude Haiku 5.5, n9-q-gotoyrank)
+- `rels/yuu/src/event/evt_yuuranking.c` and `rels/gor/src/event/evt_yuuranking.c`: 9 gotos each -> 0, same change in both. No names changed.
+- `evt_yuuranking_disp_func`: the `displayMode != 0` jump to `rank` became `if (work->displayMode == 0) { ... } else { ... }` around the mode switch, the end block and the rank block (the bodies are re-indented; `git diff -w` shows the real change). The four `goto end` became `break` at case level (the switch is followed by the end block). The `goto finish` and `finish:` tail were dropped with the else.
+- `YUU_RANK_SETUP` / its gor twin: the three `goto done` became `break` (two inside the slot-search `for`) and the trailing one in the `else` branch was dropped (it was the last statement before `done:`). The `done:` label is gone.
+- Verified: tower `ninja` recreates build/G8MJ01/ok (MUST_MATCH build); both files compile without `-DMUST_MATCH` (mwcc rc 0).
+- Index (tools/cleanup_index.py): 21.584 -> 21.534 per kLOC (15355 -> 15319 weighted); goto category 307 -> 289.
