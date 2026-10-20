@@ -3029,7 +3029,7 @@ void puniModeNormal(PuniData* punidat) {
     if (punidat->field_0x1A0 > 10.0f) {
         punidat->field_0xE = punidat->mode;
         PuniDokuritsu(punidat);
-        punidat->target = Punigp->field_0x360;
+        punidat->target = Punigp->marioPuni;
         punidat->mode = 13;
         punidat->state = 0;
     } else if (punidat->field_0x1A4 < 150.0f) {
@@ -3174,7 +3174,7 @@ void puniModeParent(PuniData* punidat) {
         if (punidat->field_0x1A0 > 10.0f) {
             punidat->field_0xE = punidat->mode;
             PuniDokuritsu(punidat);
-            punidat->target = Punigp->field_0x360;
+            punidat->target = Punigp->marioPuni;
             punidat->mode = 13;
             punidat->state = 0;
             return;
@@ -3255,7 +3255,7 @@ void puniModeSearch(PuniData* puni) {
     if (puni->field_0x1A0 > 10.0f) {
         puni->field_0xE = puni->mode;
         PuniDokuritsu(puni);
-        puni->target = Punigp->field_0x360;
+        puni->target = Punigp->marioPuni;
         puni->mode = 13;
         puni->state = 0;
         return;
@@ -3477,7 +3477,7 @@ void puniModeMass(PuniData* punidat) {
             a = b;
         if (a == b && *(f32*)(p + 0x1A0) > 10.0f) {
             PuniDokuritsu(punidat);
-            *(s32*)(p + 0x1DC) = Punigp->field_0x360;
+            *(s32*)(p + 0x1DC) = Punigp->marioPuni;
             punidat->mode = 0xD;
             punidat->state = 0;
             return;
@@ -3658,7 +3658,7 @@ void puniModeAway(PuniData* punidat) {
     }
     if (punidat->field_0x1A0 > 10.0f) {
         punidat->field_0xE = punidat->mode;
-        punidat->target = Punigp->field_0x360;
+        punidat->target = Punigp->marioPuni;
         punidat->mode = 13;
         punidat->state = 0;
         return;
@@ -3769,7 +3769,7 @@ void puniModeAttack(PuniData* punidat) {
         if (punidat->field_0x1A0 > 10.0f) {
             punidat->field_0xE = punidat->mode;
             PuniDokuritsu(punidat);
-            punidat->target = Punigp->field_0x360;
+            punidat->target = Punigp->marioPuni;
             punidat->mode = 13;
             punidat->state = 0;
             return;
@@ -3872,7 +3872,7 @@ void puniModePiyori(PuniData* punidat) {
     if (punidat->field_0x1A0 > 10.0f) {
         punidat->field_0xE = punidat->mode;
         PuniDokuritsu(punidat);
-        punidat->target = Punigp->field_0x360;
+        punidat->target = Punigp->marioPuni;
         punidat->flags &= ~0x08000000;
         punidat->field_0x8 &= ~0x2;
         punidat->mode = 13;
@@ -3938,7 +3938,7 @@ void puniModeEscape(PuniData* punidat) {
 #else
             punidat->field_0xE = punidat->mode;
 #endif
-            punidat->target = Punigp->field_0x360;
+            punidat->target = Punigp->marioPuni;
             punidat->mode = 13;
             punidat->state = 0;
             return;
@@ -4026,7 +4026,7 @@ void puniModeRecover(PuniData* punidat) {
 #else
             punidat->field_0xE = punidat->mode;
 #endif
-            punidat->target = Punigp->field_0x360;
+            punidat->target = Punigp->marioPuni;
             punidat->mode = 13;
             punidat->state = 0;
             return;
@@ -4447,7 +4447,7 @@ void puniModeUpdraft(PuniData* punidat) {
     switch (punidat->state) {
         case 0:
             if (punidat->field_0x1A0 > 10.0f) {
-                punidat->target = Punigp->field_0x360;
+                punidat->target = Punigp->marioPuni;
                 PSVECSubtract(&punidat->pos, &mario->position, &dir);
                 if (PSVECMag(&dir) != 0.0f) {
                     PSVECNormalize(&dir, &dir);
@@ -4810,7 +4810,7 @@ void puniModeHagure(PuniData* puni) {
         }
     } else if (((PuniData*)p)->field_0x1A0 > 10.0f) {
         PuniDokuritsu(puni);
-        ((PuniData*)p)->target = Punigp->field_0x360;
+        ((PuniData*)p)->target = Punigp->marioPuni;
         ((PuniData*)p)->mode = 0xD;
         ((PuniData*)p)->state = 0;
         if (*(u32*)(p + 0x218) != 0) {
@@ -4947,7 +4947,7 @@ void puniModeTrap(PuniData* puni) {
             npc->position.z = 0.0f;
         }
         PuniDokuritsu(puni);
-        ((PuniData*)p)->target = Punigp->field_0x360;
+        ((PuniData*)p)->target = Punigp->marioPuni;
         *(u16*)(p + 0xE) = ((PuniData*)p)->mode;
         ((PuniData*)p)->mode = 13;
         ((PuniData*)p)->state = 0;
@@ -5368,7 +5368,7 @@ void puni_puni_init(void) {
     Punigp->randSeedA = (s32)gp->renderTime + rnd + 0x3A3B01F9;
     Punigp->randSeedB = 0x21708331;
     pd = Punidat;
-    *(PuniData**)&Punigp->field_0x360 = pd;
+    *(PuniData**)&Punigp->marioPuni = pd;
     pd->flags |= 0x180404;
     pd->pos = mario->position;
     *(Vec*)&pd->field_0x138 = pd->pos;
@@ -5462,7 +5462,7 @@ void unk_mri_00012d58(PuniData* self) {
             if (self->field_0x1A0 > 10.0f) {
                 self->field_0xE = self->mode;
                 PuniDokuritsu(self);
-                *(PuniData**)((u8*)self + 0x1DC) = (PuniData*)(s32)Punigp->field_0x360;  // PuniData 0x1DC
+                *(PuniData**)((u8*)self + 0x1DC) = (PuniData*)(s32)Punigp->marioPuni;  // PuniData 0x1DC
                 self->mode = 0xD;
                 self->state = 0;
             } else {
@@ -6259,7 +6259,7 @@ void puni_puni_main(void) {
     Vec tmp3;
 
     mario = marioGetPtr();
-    p0 = *(PuniData**)&Punigp->field_0x360;
+    p0 = *(PuniData**)&Punigp->marioPuni;
     p0->pos = mario->position;
     tmp = p0->pos;
     puniMapFindbuff(&tmp);
@@ -6308,7 +6308,7 @@ void puni_puni_main(void) {
                     }
                     party = partyGetPtr(marioGetPartyId());
                     pd2->field_0x1A0 = 0.0f;
-                    if (Punigp->field_0x4CC == 0 && party != NULL) {
+                    if (Punigp->windDisabled == 0 && party != NULL) {
                         tmp2 = pd2->pos;
                         pd2->field_0x1A0 = cloudGetBreathPower(10.0f, &tmp2);
                     }
@@ -6355,7 +6355,7 @@ void puni_puni_main(void) {
             if ((pd->flags & 0x400) != 0) {
                 party = partyGetPtr(marioGetPartyId());
                 pd->field_0x1A0 = 0.0f;
-                if (Punigp->field_0x4CC == 0 && party != NULL) {
+                if (Punigp->windDisabled == 0 && party != NULL) {
                     tmp3 = pd->pos;
                     pd->field_0x1A0 = cloudGetBreathPower(10.0f, &tmp3);
                 }
@@ -7917,7 +7917,7 @@ USER_FUNC(evt_puni_puninum_alpha) {
 }
 
 USER_FUNC(evt_puni_winddisable_onoff) {
-    Punigp->field_0x4CC = evtGetValue(event, event->args[0]);
+    Punigp->windDisabled = evtGetValue(event, event->args[0]);
     return EVT_RETURN_DONE;
 }
 

@@ -36,7 +36,7 @@ typedef struct PuniWork {
     f32 bandBottom0;                    // 0x354
     f32 bandTop1;                       // 0x358
     f32 bandBottom1;                    // 0x35C
-    s32 field_0x360;                    // 0x360
+    s32 marioPuni;                      // 0x360, the PuniData* of Mario's puni (stored as s32; Punidat[0])
     struct PuniData* switchPuni[4];     // 0x364, the puni bound to SW 0xB3C..0xB3F
     PuniTarget targets[10];             // 0x374
     s32 phase;                          // 0x43C, set to 2/3/5 by mode changes, 0 when idle
@@ -65,7 +65,7 @@ typedef struct PuniWork {
     s32 fightSfxCount0;                 // 0x4C0, SFX_STG2_FIGHT_TOGE1 plays
     s32 fightSfxCount1;                 // 0x4C4, SFX_STG2_FIGHT_TOGE2 plays
     u8 unk4C8[0x4CC - 0x4C8];           // 0x4C8
-    s32 field_0x4CC;                    // 0x4CC
+    s32 windDisabled;                   // 0x4CC, evt_puni_winddisable_onoff; nonzero skips the cloudGetBreathPower wind
 } PuniWork;  // 0x4D0
 
 typedef struct PuniData {
