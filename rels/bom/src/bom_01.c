@@ -203,7 +203,7 @@ void drawBG(s32 id, f32 x, f32 y, f32 scaleX, f32 scaleY, f32 rot) {
     s16 h;
 
     cam = camGetPtr(CAMERA_2D);
-    TEXGetGXTexObjFromPalette(**(TEXPalette***)((u8*)((SightWork*)sight_wp)->file + 0xA0), &texObj, id);
+    TEXGetGXTexObjFromPalette((TEXPalette*)((SightWork*)sight_wp)->file->data[0], &texObj, id);
     GXLoadTexObj(&texObj, 0);
     GXSetBlendMode(1, 4, 5, 0);
     GXSetZCompLoc(1);
@@ -254,13 +254,13 @@ void drawNum(s32 num, s32 count, f32 a, f32 b, f32 c) {
     GXColor color = {0xFF, 0xFF, 0xFF, 0xFF};
     s32 n = num < 0 ? -num : num;
 
-    winTexInit(**(TEXPalette***)((u8*)((SightWork*)sight_wp)->file + 0xA0));
+    winTexInit((TEXPalette*)((SightWork*)sight_wp)->file->data[0]);
     for (i = 0; i < count; i++) {
         s32 texId = n % 10 + 0xd;
         u16 w;
         f32 step;
 
-        TEXGetGXTexObjFromPalette(**(TEXPalette***)((u8*)((SightWork*)sight_wp)->file + 0xA0), &texObj, texId);
+        TEXGetGXTexObjFromPalette((TEXPalette*)((SightWork*)sight_wp)->file->data[0], &texObj, texId);
         w = GXGetTexObjWidth(&texObj);
         step = (f32)w;
         step = c * step;
@@ -303,7 +303,7 @@ void disp_sight(CameraId cameraId, void* param) {
         SIGHT_ROT(sight_wp) += 1.0f;
     }
 
-    winTexInit(**(TEXPalette***)((u8*)sight_wp->file + 0xA0));
+    winTexInit((TEXPalette*)sight_wp->file->data[0]);
     winTexSet(5, (Vec){0.0f, 0.0f, 0.0f}, (Vec){1.0f, 1.0f, 1.0f}, colorB);
 
     for (i = 0; i < 3; i++) {
@@ -317,7 +317,7 @@ void disp_sight(CameraId cameraId, void* param) {
         }
     }
 
-    winTexInit(**(TEXPalette***)((u8*)sight_wp->file + 0xA0));
+    winTexInit((TEXPalette*)sight_wp->file->data[0]);
     winTexSet(0x17, (Vec){-200.0f, 150.0f, 0.0f}, (Vec){1.0f, 1.0f, 1.0f}, colorA);
 
     drawNum((s32)(gp->renderTime / 100 / 1000), 10, 90.0f, 180.0f, 0.6f);
@@ -370,7 +370,7 @@ void disp_sight(CameraId cameraId, void* param) {
         }
     }
 
-    winTexInit(**(TEXPalette***)((u8*)sight_wp->file + 0xA0));
+    winTexInit((TEXPalette*)sight_wp->file->data[0]);
     for (i = 0; i < 4; i++) {
         s32 flag = sightBlink(i);
         s32 id = flag ? SIGHT_ARROW_ACTIVE : SIGHT_ARROW_INACTIVE;
@@ -608,8 +608,7 @@ USER_FUNC(bom_fall) {
     PoseEntry* e;
     PoseData* pd;
 
-    // 0x4 of PoseData is the pose count written by ext_init; the header keeps it as padding
-    for (i = 0; i < *(s32*)((u8*)data + 0x4); i++, pose++) {
+    for (i = 0; i < data->field_0x4; i++, pose++) {
         data->states[i].field_0 = 0x7f;
         pose->matrix[0][0][3] = 600.0f * rand() / 32767.0f;
         pose->matrix[0][1][3] = 300.0f + 3700.0f * rand() / 32767.0f;
@@ -660,7 +659,7 @@ static void pose_main(void) {
     ExtPose* pose;
 
     pose = extGetPosePtr();
-    for (i = 0; i < *(s32*)((u8*)pd + 0x4); i++) { // 0x4 of PoseData is the pose count (the header keeps it as padding)
+    for (i = 0; i < pd->field_0x4; i++) {
         PoseEntry* entry = &pd->entries[pd->states[i].field_20];
         f32 t = 60.0f * (f32)OSTicksToMilliseconds(gp->renderTime - pd->states[i].time) / 1000.0f / entry->field_8;
 
@@ -733,10 +732,10 @@ static void ext_init(void) {
     lp[0] = (u32)smartAlloc(0xBC30, 1);
     pd = ((PoseRoot*)lp[0])->data;
     memset(pd, 0, 0xBC30);
-    *(s32*)((u8*)pd + 4) = extGetPoseNum();
+    pd->field_0x4 = extGetPoseNum();
     pose_init();
     pose = extGetPosePtr();
-    for (i = 0; i < *(s32*)((u8*)pd + 4); i++, pose++) {
+    for (i = 0; i < pd->field_0x4; i++, pose++) {
         pd->states[i].field_1C = 0.0f;
         pd->states[i].field_14 = 0.0f;
         pd->states[i].field_0 = 0;
@@ -864,7 +863,7 @@ static void ext_main(void) {
     PoseData* pd = ((PoseRoot*)lp[0])->data;
     ExtPose* pose = extGetPosePtr();
 
-    for (i = 0; i < *(s32*)((u8*)pd + 0x4); i++, pose++) {  // 0x4 of PoseData is the pose count
+    for (i = 0; i < pd->field_0x4; i++, pose++) {
         Vec zero1 = {0.0f, 0.0f, 0.0f};
         Vec pos = (Vec){pose->matrix[0][0][3], pose->matrix[0][1][3], pose->matrix[0][2][3]};
         Vec zero2 = {0.0f, 0.0f, 0.0f};
@@ -2320,11 +2319,10 @@ void ext_init_minnnanokoe(void) {
     lp[0] = (u32)smartAlloc(0xBC30, 1);
     data = ((PoseRoot*)lp[0])->data;
     memset(data, 0, 0xBC30);
-    // 0x4 of PoseData is the pose count; the header keeps it as padding
-    *(s32*)((u8*)data + 0x4) = extGetPoseNum();
+    data->field_0x4 = extGetPoseNum();
     pose_init_minnnanokoe_copy();
     pose = extGetPosePtr();
-    for (i = 0; i < *(s32*)((u8*)data + 0x4); i++, pose++) {
+    for (i = 0; i < data->field_0x4; i++, pose++) {
         data->states[i].field_1C = 0.0f;
         data->states[i].field_14 = 0.0f;
         data->states[i].field_0 = 5;
@@ -2433,7 +2431,7 @@ USER_FUNC(bom1000_msg) {
 // bom1000_jump(): kick a random pose's state and occasionally play a 3D SFX.
 USER_FUNC(bom1000_jump) {
     PoseData* pd = ((PoseRoot*)lp[0])->data;
-    s32 idx = rand() % *(s32*)((u8*)pd + 0x4);  // 0x4 of PoseData is the pose count
+    s32 idx = rand() % pd->field_0x4;
 
     if ((s32)pd->states[idx].field_0 != 100) {
         jump_minnnanokoe(idx, 10.0f);
