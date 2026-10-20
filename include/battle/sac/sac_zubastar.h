@@ -22,9 +22,9 @@ extern const Vec vec3_802ff77c;
 extern const Vec vec3_802ff788;
 extern const Vec vec3_802ff794;
 extern const Vec vec3_802ff7a0;
-extern const char str_802FF830[];
-extern const char str_802FF848[];
-extern const char str_802FF668[];
+extern const char str_SFX_BTL_SAC_ZUBA_STAR2[];
+extern const char str_SFX_BTL_SAC_ZUBA_STAR1[];
+extern const char str_btl_wn_sac_zubastar[];
 
 ZubaStarWork* GetZubaStarPtr(void);
 void zubastar_create_takaku(s32 count, Vec* points);

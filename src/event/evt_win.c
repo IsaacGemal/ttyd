@@ -61,7 +61,7 @@ extern u32 dat_8041d9bc;
 extern u32 dat_8041d9b4;
 extern u32 dat_8041d9b8;
 extern const f32 float_108_8041dadc[1];
-extern char str_8041DAC0[];
+extern char str_uwn_d[];
 
 // The .sdata2 objects the unit names (floats up to the first pooled one, colour words, a few strings) are defined as one-element
 // const arrays and read as name[0] (a plain const f32 would be folded to an anonymous pool entry), in the original's order, in
@@ -211,7 +211,7 @@ static u32 mario_status_icon_table[3] = { 0x19F, 0x1A0, 0x1A1 };
 static const char* mario_status_labelname_table[3] = { "_hp", "_fp", "_bp" };
 static const char* mario_status_name_table[3] = { "\x82\x67\x82\x6F", "\x82\x65\x82\x6F", "\x82\x61\x82\x6F" };
 static s32 mario_status_henka_table[3] = { 5, 5, 3 };
-extern const char str_8041DB3C[];
+extern const char str_fmt_04d[];
 static u32 main_evt[] = { 0x0001005B, (u32)evt_unitwin_main_func, 0x2, 0x1 };
 u32 select_evt[] = { 0x0001005B, (u32)evt_unitwin_select_func, 0x2, 0x1 };
 WinMgrDesc unitwin_window_desc[3] = {
@@ -294,7 +294,7 @@ __declspec(section ".sdata2") u32 dat_8041dab0 = 0x000000FF;
 __declspec(section ".sdata2") u32 dat_8041dab4 = 0xA0A0A0FF;
 __declspec(section ".sdata2") u32 dat_8041dab8 = 0xFFFFFFFF;
 __declspec(section ".sdata2") u32 dat_8041dabc = 0xFFFFFFFF;
-__declspec(section ".sdata2") char str_8041DAC0[] = "uwn%d";
+__declspec(section ".sdata2") char str_uwn_d[] = "uwn%d";
 __declspec(section ".sdata2") const f32 float_neg150_8041dac8[1] = { -150.0f };
 __declspec(section ".sdata2") const f32 float_120_8041dacc[1] = { 120.0f };
 __declspec(section ".sdata2") const f32 float_300_8041dad0[1] = { 300.0f };
@@ -324,7 +324,7 @@ __declspec(section ".sdata2") const f32 float_neg166_8041db2c[1] = { -166.0f };
 __declspec(section ".sdata2") const f32 float_1p1_8041db30[1] = { 1.100000023841858f };
 __declspec(section ".sdata2") const f32 float_neg168_8041db34[1] = { -168.0f };
 __declspec(section ".sdata2") const f32 float_neg172_8041db38[1] = { -172.0f };
-__declspec(section ".sdata2") const char str_8041DB3C[] = "%04d";
+__declspec(section ".sdata2") const char str_fmt_04d[] = "%04d";
 __declspec(section ".sdata2") const f32 float_neg24_8041db44[1] = { -24.0f };
 __declspec(section ".sdata2") const f32 float_100_8041db48[1] = { 100.0f };
 __declspec(section ".sdata2") const f32 float_51_8041db4c[1] = { 51.0f };
@@ -472,7 +472,7 @@ USER_FUNC(evt_unitwin_free) {
 		char name[32];
 
 		mapObjFlagOff(wp->objList[i].name, 0x4000);
-		sprintf(name, str_8041DAC0, i);
+		sprintf(name, str_uwn_d, i);
 		iconDelete(name);
 	}
 	if (wp->flags & 0x80) {
@@ -505,7 +505,7 @@ USER_FUNC(evt_unitwin_selltable_setup) {
 		mapObjGetPos(wp->objList[i].name, &pos);
 		mapObjFlagOn(wp->objList[i].name, 0x4000);
 		if (wp->items[i] != 0) {
-			sprintf(name, str_8041DAC0, i);
+			sprintf(name, str_uwn_d, i);
 #ifdef MUST_MATCH
 			iconEntry(name, *(u16*)&itemDataTable[wp->items[i]].icon_id);
 #else
@@ -679,7 +679,7 @@ USER_FUNC(evt_unitwin_select_func) {
 		if (obj != NULL) {
 			char name[32];
 
-			sprintf(name, str_8041DAC0, i);
+			sprintf(name, str_uwn_d, i);
 			if (wp->taken[i] & 1) {
 				iconFlagOn(name, 2);
 			} else if (*(u32*)obj & 1) {
@@ -692,7 +692,7 @@ USER_FUNC(evt_unitwin_select_func) {
 	return EVT_RETURN_BLOCK;
 }
 
-/// @todo reconstructed: retail's evt_win .rodata has "%s_%04d" (str_802F68B0), which no retail function references,
+/// @todo reconstructed: retail's evt_win .rodata has "%s_%04d" (str_s_04d), which no retail function references,
 /// between the signed and unsigned conversion doubles, at this slot. Invented: the name, the arguments and the body
 /// (deletes the icon named "<name>_<no>").
 #ifdef MUST_MATCH
@@ -910,7 +910,7 @@ void evt_unitwin_disp_func(CameraId cameraId, void* param) {
 			                      float_20_8041dad8[0]);
 			PSMTXTrans(mtx, float_neg220_8041db14[0], float_neg172_8041db38[0], float_0_8041db00[0]);
 			iconDispGx2(mtx, 0x10, 0x140);
-			sprintf(buf, str_8041DB3C, lotteryGetPtr()->mTicketNum);
+			sprintf(buf, str_fmt_04d, lotteryGetPtr()->mTicketNum);
 			for (i = 0; i < 4; i++) {
 				PSMTXTrans(mtx, float_20_8041dad8[0] * (f32)i + float_neg126_8041db24[0] - float_60_8041dafc[0],
 				           float_neg168_8041db34[0], float_0_8041db00[0]);
@@ -1723,7 +1723,7 @@ USER_FUNC(set_new_goods_list) {
 
 	wp->items[wp->index] = item;
 	if (wp->index < wp->count) {
-		sprintf(name, str_8041DAC0, wp->index);
+		sprintf(name, str_uwn_d, wp->index);
 		if (item != 0) {
 #ifdef MUST_MATCH
 			u16* p = (u16*)&itemDataTable[0].icon_id;

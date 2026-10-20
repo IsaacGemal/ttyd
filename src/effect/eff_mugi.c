@@ -15,8 +15,8 @@
 const Vec vec3_802f3498 = { 0.0f, 0.0f, 0.0f };
 const Vec vec3_802f34a4 = { 0.0f, 0.0f, 0.0f };
 const Vec vec3_802f34b0 = { 0.0f, 0.0f, 0.0f };
-const char str_802F34BC[12] = "EFF_Hana";
-const char str_802F34C8[12] = "EFF_Mugi";
+const char str_EFF_Hana[12] = "EFF_Hana";
+const char str_EFF_Mugi[12] = "EFF_Mugi";
 const f64 double_0p005_802f34d8 = 0.005;
 
 // .sdata2 constants.
@@ -188,7 +188,7 @@ void effMugiKemuriMain(EffectEntry* effect) {
 	w = work;
 	for (i = 0; i < effect->count; i++, w++) {
 		if (w->animPose == -1) {
-			name = strncmp(gp->currentMapName, "win", 3) == 0 ? str_802F34BC : str_802F34C8;
+			name = strncmp(gp->currentMapName, "win", 3) == 0 ? str_EFF_Hana : str_EFF_Mugi;
 			if (!animGroupBaseAsync(name, inBattle, 0)) {
 				return;
 			}
@@ -288,7 +288,7 @@ void effMugiKemuri2Main(EffectEntry* effect) {
 	w = work;
 	for (i = 0; i < effect->count; i++, w++) {
 		if (w->animPose == -1) {
-			name = strncmp(gp->currentMapName, "win", 3) == 0 ? str_802F34BC : str_802F34C8;
+			name = strncmp(gp->currentMapName, "win", 3) == 0 ? str_EFF_Hana : str_EFF_Mugi;
 			if (!animGroupBaseAsync(name, inBattle, 0)) {
 				return;
 			}

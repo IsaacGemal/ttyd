@@ -59,7 +59,7 @@ s32 battleAcMain_ButtonDown(BattleWork* work) {
     if (work->actionCommands.mAcUnit->badgesEquipped.AutoCommand != 0) {
         smooth = 1;
     }
-    // Literal, not a named str_802FD618: the compiler pools it after actionCommandDisp's
+    // Literal, not a named str_SFX_AC_BUTTON_PUSH1: the compiler pools it after actionCommandDisp's
     // generated int->float double, which is what puts the double at vec+0x40 (see below).
 #ifdef MUST_MATCH
     // (0, ...) is the allocator nudge described above; the value of the left operand is discarded.
@@ -303,7 +303,7 @@ void battleAcDelete_ButtonDown(BattleWork* work) {
 // then does MWCC anchor its generated int->float 2^52 pool double at vec+0x40 and reach it as
 // `lfd f1, 0x40(r31)`; with one array it emits a fresh lis/addi and the score is 95.17%. The banner
 // string battleAcMain uses must pool after that double, so battleAcMain writes it as a literal (a
-// declared str_802FD618 emits first and pushes the double to +0x50, 99.99%).
+// declared str_SFX_AC_BUTTON_PUSH1 emits first and pushes the double to +0x50, 99.99%).
 // Using bd->buttons[i] directly in the zero test and the switch (no `button` temp) is what gives the
 // target's r3 = button / r4 = row base split through the switch.
 #pragma opt_lifetimes off // needed: the default lifetime pass assigns limit/i/work to different callee-saved GPRs than the target

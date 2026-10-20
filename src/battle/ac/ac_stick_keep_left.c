@@ -23,11 +23,11 @@ extern const f32 float_25_8041c400;
 
 // actionCommandDisp's .rodata: the five "_AcSklN" name strings are the compiler's zero-vector
 // literal pool anchor, so they must be .rodata (not the default small-data .sdata).
-__declspec(section ".rodata") const char str_802EFAD8[] = "_AcSkl1";
-__declspec(section ".rodata") const char str_802EFAE0[] = "_AcSkl2";
-__declspec(section ".rodata") const char str_802EFAE8[] = "_AcSkl3";
-__declspec(section ".rodata") const char str_802EFAF0[] = "_AcSkl4";
-__declspec(section ".rodata") const char str_802EFAF8[] = "_AcSkl5";
+__declspec(section ".rodata") const char str_AcSkl1[] = "_AcSkl1";
+__declspec(section ".rodata") const char str_AcSkl2[] = "_AcSkl2";
+__declspec(section ".rodata") const char str_AcSkl3[] = "_AcSkl3";
+__declspec(section ".rodata") const char str_AcSkl4[] = "_AcSkl4";
+__declspec(section ".rodata") const char str_AcSkl5[] = "_AcSkl5";
 
 // sdata table of per-difficulty hit windows, indexed by BattleActionCommandGetDifficulty.
 s32 ac_stickkeepleft_ok_frame[7] = {0x50, 0x46, 0x3C, 0x28, 0x14, 0x0A, 0x05};

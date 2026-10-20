@@ -11,7 +11,7 @@
 #include "evt/evt_cmd.h"
 
 // .rodata
-extern const char str_802FB674[];
+extern const char str_SnowfallN64[];
 extern const f64 double_to_int_802fb680;
 
 // .data vertex array (32 vertices, 14 bytes each)
@@ -141,7 +141,7 @@ EffectEntry* effSnowfallN64Entry(s32 type, s32 count) {
 
 	effect = effEntry();
 	num = count + 1;
-	effect->type = str_802FB674;
+	effect->type = str_SnowfallN64;
 	effect->count = num;
 	data = __memAlloc(HEAP_EFFECT, num * sizeof(effSnowfallData));
 	effect->userdata = data;
@@ -359,4 +359,4 @@ const f32 float_10_8041fd30 = 10.0f;
 const f32 float_neg1p2_8041fd34 = -1.2f;
 const f32 float_0p01_8041fd38 = 0.01f;
 
-const char str_802FB674[] = "SnowfallN64";
+const char str_SnowfallN64[] = "SnowfallN64";

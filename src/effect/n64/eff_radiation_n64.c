@@ -80,7 +80,7 @@ EffectEntry* effRadiationN64Entry(s32 type, f32 x, f32 y, f32 z, f32 a5) {
 	}
 
 #ifdef MUST_MATCH
-	// str_802FB490: the original object is 16 bytes, i.e. the 12-character text plus the
+	// str_RadiationN64: the original object is 16 bytes, i.e. the 12-character text plus the
 	// terminator plus three zero pad bytes, so the literal spells the pad out.
 	effect->type = "RadiationN64\0\0\0";
 #else

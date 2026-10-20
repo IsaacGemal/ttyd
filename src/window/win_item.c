@@ -26,21 +26,21 @@
 // breaks the base+offset operands of itemUseDisp2/winItemDisp. They belong inline in the
 // functions that use them (owned by the other agents working on this file).
 // The pool doubles themselves need no declaration: the compiler emits its own @NNN@ entries.
-// str_802F55F4 ("msg_menu_sort_narabikae") is used as an inline literal in item_disp instead:
+// str_msg_menu_sort_narabikae ("msg_menu_sort_narabikae") is used as an inline literal in item_disp instead:
 // pooling it there puts it at 0x90c, between itemUseDisp's name_mario and winItemMain's three
 // strings, so winItemMain's displacements come out right.
-extern const char str_802F560C[];
-extern const char str_802F5620[];
-extern const char str_802F5638[];
+extern const char str_msg_menu_mochi_item[];
+extern const char str_msg_menu_mochi_daiji[];
+extern const char str_s_w_jp_mail_tpl[];
 #ifdef MUST_MATCH
 // The original reaches these through the luigi_book_1_page1 base register; inline literals pool so that the base folds.
 #define STR_MOCHI_ITEM "msg_menu_mochi_item"
 #define STR_MOCHI_DAIJI "msg_menu_mochi_daiji"
 #define STR_MAIL_TPL "%s/w/jp/mail.tpl\0\0\0"
 #else
-#define STR_MOCHI_ITEM str_802F560C
-#define STR_MOCHI_DAIJI str_802F5620
-#define STR_MAIL_TPL str_802F5638
+#define STR_MOCHI_ITEM str_msg_menu_mochi_item
+#define STR_MOCHI_DAIJI str_msg_menu_mochi_daiji
+#define STR_MAIL_TPL str_s_w_jp_mail_tpl
 #endif
 
 // Extended fields of WindowWork used by this unit. win_main.h only declares the
@@ -265,7 +265,7 @@ static WinMgrDesc window_desc[2];
 // Item window state machine: the held-item grid, the key-item list, the Luigi book
 // (case 100) and the received-mail viewer (cases 200/201/202). Transliterated from the
 // original assembly; every call, branch, loop and store is present.
-// The original keeps luigi_book_1_page1 in r30 and reaches str_802F560C/20/38 as r30+0x924/0x938/
+// The original keeps luigi_book_1_page1 in r30 and reaches str_msg_menu_mochi_item/20/38 as r30+0x924/0x938/
 // 0x950 (one lis/addi + displacement). Our object pools the string literals used here, in the
 // same order (name_mario 0x900, msg_menu_sort_narabikae 0x90c, then the three below), so the
 // base register folds correctly. The frame (0x60), the int->float scratch doubles

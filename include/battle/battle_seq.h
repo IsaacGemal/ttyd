@@ -27,5 +27,5 @@ void btlseqPhase(BattleWork* wp);
 void _rule_disp(void);
 s32 _set_effect_luck(void);
 struct BattleWeapon* _GetFirstAttackWeapon(s32 id);
-extern const char str_802EF598[];
-extern const char str_802EF5AC[];
+extern const char str_SFX_REST_CONDITION1[];
+extern const char str_SFX_CONDITION_BREAK_ICE1[];

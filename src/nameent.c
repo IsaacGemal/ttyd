@@ -12,7 +12,7 @@ void FontDrawColor(GXColor* color);
 #include <string.h>
 #include "math_ext.h"
 
-// The original .rodata pads str_802FDB64 ("%s/w/jp/name.tpl") to 20 bytes with
+// The original .rodata pads str_s_w_jp_name_tpl ("%s/w/jp/name.tpl") to 20 bytes with
 // three trailing NULs, so the fixed string is written with them and pools to the
 // same length.
 
@@ -574,7 +574,7 @@ void nameEntDisp(CameraId cameraId, void* param) {
 // The scale is the original's (f32)__fabs(<double literal>) / GXGetTexObj*; the separate f64
 // temporaries per quad keep the pool in instruction order. Depends on the file using math_ext.h
 // instead of <math.h>: math.h's extern inline sqrtf/sqrt put _half/_three at the start of
-// .rodata and stop the compiler anchoring the pool to str_802FD9A8.
+// .rodata and stop the compiler anchoring the pool to str_msg_nameent_1.
 // .rodata pool note: the double_480/32/544 displacements are set by the unit's .text/.rodata order,
 // not by this function. The 20 file-scope vec3_* objects above must stay declared between msg_tbl and
 // the functions (they occupy .rodata 0x40..0x12F), and the functions must stay in reverse .s order

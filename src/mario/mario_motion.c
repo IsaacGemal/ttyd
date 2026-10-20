@@ -65,9 +65,9 @@ const Vec vec3_802c59f0 = { 0.0f, 0.0f, 0.0f };
 #ifdef MUST_MATCH
 // The three map names that BOTTOMLESS_* reads at vec3_802c59f0 + 0xC/0x14/0x1C (8 bytes each); nothing else names them.
 #pragma force_active on
-const char str_802C59FC[8] = "win_03";
-const char str_802C5A04[8] = "win_01";
-const char str_802C5A0C[8] = "tik_01";
+const char str_win_03[8] = "win_03";
+const char str_win_01[8] = "win_01";
+const char str_tik_01[8] = "tik_01";
 #pragma force_active reset
 #endif
 extern f32 marioJumpSwData[];

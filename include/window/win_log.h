@@ -27,9 +27,9 @@ void winLogInit(WindowWork* work);
 // The win_log unit's read-only rodata base. Match-only non-const declaration: it stops MWCC hoisting the
 // vec3 loads out of monoshiriGX's and winLogDisp's loops (the data is in fact read-only).
 #ifdef MUST_MATCH
-extern char str_802F5EB8[];
+extern char str_msg_menu_kiroku_map[];
 #else
-extern const char str_802F5EB8[];
+extern const char str_msg_menu_kiroku_map[];
 #endif
 
 // The 4-byte "S_1" anim name in .sdata2, addressed with @sda21 by the original. Declared with its real size

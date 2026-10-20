@@ -305,7 +305,7 @@ USER_FUNC(evt_cam3d_evt_set_rel) {
 
 /// @todo reconstructed: retail's .rodata has two unreferenced zero Vec templates at 0x30/0x3C (vec3_802c5f68/74),
 /// between evt_cam3d_evt_set's and evt_cam3d_evt_set_npc_rel's, and an unreferenced "%f%f%f%f%f%f%d%s"
-/// (str_802C5FF8) after the conversion double. Invented: the name and the body (an evt_cam3d_evt_set_npc_rel that
+/// (str_fmt_ffffffds) after the conversion double. Invented: the name and the body (an evt_cam3d_evt_set_npc_rel that
 /// sscanfs its offsets, time and NPC name from one string).
 #ifdef MUST_MATCH
 USER_FUNC(evt_cam3d_evt_set_npc_rel_str) {

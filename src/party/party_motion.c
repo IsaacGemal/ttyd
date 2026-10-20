@@ -49,10 +49,10 @@ PM_RODATA Vec vec3_802f3edc = { 0.0f, -1.0f, 0.0f };
 PM_RODATA Vec vec3_802f3ee8 = { 0.0f, -1.0f, 0.0f };
 PM_RODATA Vec vec3_802f3ef4 = { 0.0f, -1.0f, 0.0f };
 PM_RODATA Vec vec3_802f3f00 = { 122.0f, 130.0f, -313.0f };
-PM_RODATA char str_802F3F0C[12] = "PCH_A2_1";
+PM_RODATA char str_PCH_A2_1[12] = "PCH_A2_1";
 PM_RODATA char str_802F3F18[8] = "gor_01";
-PM_RODATA char str_802F3F20[20] = "A_ie_03_yuka_f1_C";
-PM_RODATA char str_802F3F34[20] = "A_ie_03_yuka_f2_C";
+PM_RODATA char str_A_ie_03_yuka_f1_C[20] = "A_ie_03_yuka_f1_C";
+PM_RODATA char str_A_ie_03_yuka_f2_C[20] = "A_ie_03_yuka_f2_C";
 
 #pragma pool_data on // the original addresses its .rodata through one base register
 
@@ -521,7 +521,7 @@ skip_target:
         case 0:
 #endif
         default:
-            partyChgPose(party, FB(str_802F3F0C, "PCH_A2_1"));
+            partyChgPose(party, FB(str_PCH_A2_1, "PCH_A2_1"));
             party->useMotionId = 1;
             party->timer = 0x1e;
             break;
@@ -579,7 +579,7 @@ void party_motion_idle(PartyEntry* party) {
                 case 0:
 #endif
                 default:
-                    partyChgPose(party, FB(str_802F3F0C, "PCH_A2_1"));
+                    partyChgPose(party, FB(str_PCH_A2_1, "PCH_A2_1"));
                     party->useMotionId = 1;
                     party->timer = 0x1E;
                     break;
@@ -1295,8 +1295,8 @@ void party_motion_homing_walk(PartyEntry* party) {
     mm = party->playerPtr;
     if (strcmp(gp->currentMapName, FB(str_802F3F18, "gor_01")) == 0) {
         if (mm->hitobjStandOn != NULL && party->groundHit != NULL) {
-            if (strcmp(hitGetName(mm->hitobjStandOn), FB(str_802F3F20, "A_ie_03_yuka_f1_C")) == 0 &&
-                strcmp(hitGetName(party->groundHit), FB(str_802F3F34, "A_ie_03_yuka_f2_C")) == 0) {
+            if (strcmp(hitGetName(mm->hitobjStandOn), FB(str_A_ie_03_yuka_f1_C, "A_ie_03_yuka_f1_C")) == 0 &&
+                strcmp(hitGetName(party->groundHit), FB(str_A_ie_03_yuka_f2_C, "A_ie_03_yuka_f2_C")) == 0) {
                 party->position = FV(vec3_802f3f00, ((Vec){122.0f, 130.0f, -313.0f}));
             }
         }

@@ -4,9 +4,9 @@
 
 #include <dolphin/types.h>
 
-extern const char str_80300470[];
-extern const char str_8030048C[];
-extern const char str_80300494[];
+extern const char str_SFX_BTL_SAC_HEART_SHOOT2[];
+extern const char str_M_C_2A[];
+extern const char str_M_C_2B[];
 void main_star0(s32 idx);
 void main_star1(void);
 void main_weapon(s32 idx);

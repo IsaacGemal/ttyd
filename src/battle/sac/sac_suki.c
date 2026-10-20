@@ -101,10 +101,10 @@ typedef struct SukiTevParam {
 } SukiTevParam;
 
 // File .rodata, in the original object's address order (main_suki reaches dat_8030096c at +0x3C,
-// vec3_803009b4 at +0x84 and the img strings at +0x260 through the str_80300930 base).
-const char str_80300930[0x1C] = "btl_wn_sac_sukkari_sukkiri";
-const char str_8030094C[0x14] = "msg_sukkari_sukkiri";
-const char str_80300960[0xC] = "msg_sac_7";
+// vec3_803009b4 at +0x84 and the img strings at +0x260 through the str_btl_wn_sac_sukkari_sukkiri base).
+const char str_btl_wn_sac_sukkari_sukkiri[0x1C] = "btl_wn_sac_sukkari_sukkiri";
+const char str_msg_sukkari_sukkiri[0x14] = "msg_sukkari_sukkiri";
+const char str_msg_sac_7[0xC] = "msg_sac_7";
 __declspec(section ".rodata") Vec dat_8030096c[6] = {
     {95.0f, 35.0f, -150.0f},
     {180.0f, 80.0f, -150.0f},
@@ -856,14 +856,14 @@ static void main_base(void);
 
 #pragma force_active on
 u32 weapon_words[48] = {
-    (u32)(void*)str_80300930, 0x01990000, 0x00000000, (u32)(void*)str_8030094C,
+    (u32)(void*)str_btl_wn_sac_sukkari_sukkiri, 0x01990000, 0x00000000, (u32)(void*)str_msg_sukkari_sukkiri,
     0x64000200, 0x3F800000, 0x01056432, 0x00000000,
     0x00000000, 0x00000000, 0x00000000, 0x00000000,
     0x00000000, 0x00000000, 0x00000000, 0x00000000,
     0x00000000, 0x00000000, 0x00000000, 0x00000000,
     0x00000000, 0x00000000, 0x00000000, 0x00000000,
     0x00000000, 0x02101260, 0x20000000, 0x00000302,
-    (u32)(void*)str_80300960, 0x00020008, 0x000007FF, 0x00000000,
+    (u32)(void*)str_msg_sac_7, 0x00020008, 0x000007FF, 0x00000000,
     0x00000000, 0x00000000, 0x00000000, 0x00000000,
     0x00000000, 0x00000000, 0x00000000, 0x00006400,
     0x00000000, 0x00000000, 0x00000000, 0x00000000,
