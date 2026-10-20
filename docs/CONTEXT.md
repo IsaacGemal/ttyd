@@ -11244,3 +11244,12 @@ Left in npcdrv.c (8 gotos). Each form below was built and the DOL checksum faile
 - Not touched: party_yoshi.c `P_P(0x13C)` could become `party->field_0x13C` in that file.
 - Index (tools/cleanup_index.py): src/party.c raw_offset 69 -> 14, weighted 182 -> 95 (36.426/kLOC); tree raw_offset 1693 -> 1638; tree 22.159 -> 22.045 per kLOC (15767 -> 15686 weighted).
 - Verify: tower `ninja` recreates build/G8MJ01/ok (MATCH) after the header commit and after the party.c commit; natural compile of party.c without MUST_MATCH produces an object with no errors.
+
+### Readability: function-pointer casts, battle/mario/evt (2026-10-20, Claude Haiku 5.5, n9-q-fnbattle)
+- `src/battle/battle_menu_disp.c`: `FontDrawColor` is declared locally as `void FontDrawColor(GXColor color)`, matching `fontmgr.c`. The MUST_MATCH cast and the `&color` / `&c` calls became `FontDrawColor(color)`; the MUST_MATCH/#else split collapsed. `fn_ptr_cast` 8 -> 7.
+- Left, with the reason each one stays:
+  - `battle_seq_command.c` (11): six `BattleMenuDisp_*_Main` calls pass `wp` through a `void (*)(BattleWork*)` cast, but the definitions are `void f(void) {}` stubs, and those casts sit in MUST_MATCH blocks. `windowDispGX_Waku_col` (MUST_MATCH, float-first order), three `btlDispTexPlane` calls with an extra `s32` argument (the definition has 7 parameters), and `BtlUnit_GetData` returning a runtime `void*` are also argument-changing.
+  - `battle_menu_disp.c` (7): `iconDispGx2` and `iconDispGxCol` pass a `u16` icon id where the definitions take `s16`/`s32`; `btlDispGXQuads2D` passes an `s32` alpha where the definition takes `u8`. Each cast changes an argument type, so each stays.
+  - `mario_pouch.c` (8) and `evt_nannpc.c` (1 of 7): `qqsort` comparators. `comp_aiueo`/`comp_kind` take `s16*`, `nannpc_zcompare` takes `ExtSortEntry*`, and `qqsort` takes `int (*)(void*, void*)`. No single signature is shared, and the definitions are not to be changed.
+  - `evt_nannpc.c` (6 more): `evtGetValue` returns `s32` that is converted to a function pointer (`a2`, `a3`, `subfunc0..2`, `callback`).
+- Verified: tower `ninja` recreates build/G8MJ01/ok; `battle_menu_disp.c` compiles without `-DMUST_MATCH` (clang -fsyntax-only, 0 errors).
