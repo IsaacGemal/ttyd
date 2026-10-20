@@ -10750,3 +10750,17 @@ Verified: tower `ninja` recreates `build/G8MJ01/ok` after each REL's renames (th
 `MapAllocEntry` (memory.c): bytes 0xC-0x20 of the header are never read or written, so they are `pad_0xC`.
 
 Users: `src/manager/filemgr.c` `smart->file = newentry` in `_fileAlloc` and `fileAsync`. No rels/ file touches these fields. Verified: tower `ninja` recreates `build/G8MJ01/ok`; natural (no MUST_MATCH) compiles of memory.c and filemgr.c return 0. Index: 30.889 per kLOC (21979 weighted) -> 30.808 (21921); field_0x 3533 -> 3475.
+### Readability: evt_memcard and cam_road unk_ names (2026-10-20, Claude Haiku 5.5, n9-q-memcam)
+
+evt_memcard: the three address-named event functions are `memcard_watch_begin` (0x80256490), `memcard_watch_changed`
+(0x80256428, stores 1/0 into its argument from `cardWatchChanged`) and `memcard_watch_end` (0x80256404). Their callees
+in cardmgr.c are `cardWatchBegin` (0x800B0ED0), `cardWatchChanged` (0x800B0E80) and `cardWatchEnd` (0x800B0EAC). The
+card watch is the CardWork flags pair: begin snapshots `chan` into `unkE4`, sets `unkEC` to 10 (cardIsExec stays busy
+while it counts down) and sets 0x8000; cardMain sets 0x4000 when the probe result differs from the snapshot; end clears
+0x8000 and 0xC000. The event scripts call begin after the "different card"/"save miss"/"damage" messages and end after
+the matching yes/no, and check changed after the yes/no selects. cam_road: CamRoadMap `unk_104` is `curveRanges`, the
+0x68-byte record base that CamRoadCurve::curveIdx indexes; calcCamRoad hands each record to collisionCurve in mode 1,
+which reads `curvePtsStart`/`curvePtsCount` at 0x60/0x64. Left as they were: CamRoadMap `unk_E8` (calcCamRoad reads its
+first float as an angle, calcCurrentCamState reads it as a Vec, so the element type is not settled), `unk_108` (only the
+load fixup touches it), and CamRoadWork `unk_204`/`unk_208` (no reader outside camRoadSetup/camRoadReset; unk_204 is
+kept across reset). Index: whole tree 30.889 -> 30.815 per kLOC (21979 -> 21926 weighted).
