@@ -249,9 +249,13 @@ struct BattleWork {
     s32 field_180E8;                    // 0x180E8
     s32 field_180EC;                    // 0x180EC
     s32 field_180F0;                    // 0x180F0
-    u8 field_180F4[0x1829C - 0x180F4];  // 0x180F4, pointer slots read with several pointer types
+    u8 field_180F4[0x18298 - 0x180F4];  // 0x180F4, pointer slots read with several pointer types
+    s32 field_18298;                    // 0x18298
     s32 field_1829C;                    // 0x1829C
-    u8 field_182A0[0x182B0 - 0x182A0];  // 0x182A0, pointer or s32 depending on the user
+    u8 field_182A0[0x182A4 - 0x182A0];  // 0x182A0, pointer or s32 depending on the user
+    s32 field_182A4;                    // 0x182A4
+    s32 field_182A8;                    // 0x182A8
+    s32 field_182AC;                    // 0x182AC
     BattleIcon icons[16];               // 0x182B0
     u8 field_18C70[0x18D88 - 0x18C70];  // 0x18C70
     BattleStatusChangeMsgWork statusChangeMsg; // 0x18D88

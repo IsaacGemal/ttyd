@@ -547,7 +547,7 @@ void btlseqFirstAct(BattleWork* wp) {
 		break;
 
 	case 0x2000009: {
-		s32* p = (s32*)((u8*)wp + 0x182A4);
+		s32* p = &wp->field_182A4;
 		if (*p) {
 			if (!evtCheckID(*p)) {
 				*p = 0;
