@@ -9394,3 +9394,16 @@ eff_thunder still writes EffAkariChargeData's `field_0x18`..`field_0x30`, waitin
 read or unused: release 0x60-0x6C (zeroed at init), kemuri10 0x0 and the second RGB copy at 0x67-0x69,
 whirlwind 0x47, fall_leaf's header 0x10-0x23 and particle 0x24-0x2F; the itemget particles reuse
 effItemGetData, so `velX`..`angle` mean nothing on the header and `type`/`scaleMode`/`camId` nothing on a particle.
+
+### Readability: effects, group 3 (2026-10-19, Claude Haiku 5.5, n9-q-eff3; reviewed by Claude Opus 5.5)
+
+Two work structs named and one entry's parameters. effCloudData: `frame`, `color0` RGB + `alpha` (GX_TEVREG0) and
+`color1` RGB (GX_TEVREG1), the moving `head`/`vel` XYZ and a 30-entry trail ring (`trailX/Y/Z`, `trailFrame`,
+`trailActive`, `trailHead`, `trailLength` = cumulative path length driving texture U). effConfettiN64Data's
+`unk_0x10[0x24]` is now `velX/Y/Z`, `accelY`, `lifetime`, `delay` and the head-only `frame`/`alpha`/`count`.
+effBreathFireN64Entry's parameters take the group 2 field names (`kind, x, y, children, z, seed, endX, duration,
+endY, endZ`). The breath fire, kemuri11, funemizu and minigame structs this branch also named had already landed
+in group 2 (#890); on rebase group 2's names were kept. GX literals became enums, checked against GXEnum.h per
+parameter type (GXSetTevColor 1/2 = GX_TEVREG0/1, texgen 0x3C = GX_IDENTITY, 0x7D = GX_PTIDENTITY); camera 4 is
+CAMERA_3D in the confetti and funemizu entries. Open: the `float_*_8xxxxxxx` pool constants in these files stay
+(MUST_MATCH references them by address).

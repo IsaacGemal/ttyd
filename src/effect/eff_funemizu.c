@@ -119,7 +119,7 @@ EffectEntry* effFunemizuEntry(s32 type, f32 a, f32 b, f32 c, f32 d, f32 e) {
 	data->texScrollA = float_0_80421478;
 	data->timer = 0;
 	data->scale = float_1_80421484;
-	data->camId = 4;
+	data->camId = CAMERA_3D;
 
 	for (i = 1, data = data + 1; i < entry->count; i++, data++) {
 		data->x = float_0_80421478;

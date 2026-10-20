@@ -1,6 +1,6 @@
 #pragma once
 #include "driver/effdrv.h"
-EffectEntry* effBreathFireN64Entry(s32 a, f32 b, f32 c, s32 d, f32 e, s32 f, f32 g, s32 h, f32 i, f32 j);
+EffectEntry* effBreathFireN64Entry(s32 kind, f32 x, f32 y, s32 children, f32 z, s32 seed, f32 endX, s32 duration, f32 endY, f32 endZ);
 void effBreathFireMain(EffectEntry* effect);
 #include "driver/camdrv.h"
 void effBreathFireDisp(CameraId camId, void* param);

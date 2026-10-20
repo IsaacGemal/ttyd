@@ -170,12 +170,12 @@ EffectEntry* effConfettiN64Entry(s32 type, s32 lifetime, f32 x, f32 y, f32 z, f3
 	data->x = x;
 	data->y = y;
 	data->z = z;
-	*(s32*)((u8*)data + 0x24) = 0;
-	*(s32*)((u8*)data + 0x20) = lifetime;
+	data->frame = 0;
+	data->lifetime = lifetime;
 	data->type = type;
-	*(s32*)((u8*)data + 0x2c) = count;
-	*(s32*)((u8*)data + 0x28) = 0xff;
-	data->camId = 4;
+	data->count = count;
+	data->alpha = 0xff;
+	data->camId = CAMERA_3D;
 
 	angle0 = rand() % 360;
 	half = float_0p5_8041ec38 * radius;
@@ -195,28 +195,28 @@ EffectEntry* effConfettiN64Entry(s32 type, s32 lifetime, f32 x, f32 y, f32 z, f3
 			part->x = float_0p1_8041ec04 * (rand() % 701) - float_35_8041ec08;
 			part->y = float_0_8041ec00;
 			part->z = float_0p1_8041ec04 * (rand() % 301) - float_15_8041ec0c;
-			*(f32*)((u8*)part + 0x10) = float_0p03_8041ec10 *
+			part->velX = float_0p03_8041ec10 *
 				(float_0p1_8041ec04 * (rand() % 101) + part->x - float_5_8041ec14);
-			*(f32*)((u8*)part + 0x14) = float_neg1p7_8041ec18 -
+			part->velY = float_neg1p7_8041ec18 -
 				float_0p01_8041ec1c * (float_0p1_8041ec04 * (rand() % 801));
-			*(f32*)((u8*)part + 0x18) = float_0p05_8041ec20 *
+			part->velZ = float_0p05_8041ec20 *
 				(float_0p1_8041ec04 * (rand() % 201) - float_10_8041ec24);
-			*(s32*)((u8*)part + 0x20) = 0x78;
-			*(s32*)((u8*)part + 0x30) = timer;
+			part->lifetime = 0x78;
+			part->delay = timer;
 		} else {
 			part->x = cosB * (randRadius * sinA);
 			part->y = cosB * (randRadius * cosA);
 			part->z = randRadius * sinB;
-			*(f32*)((u8*)part + 0x10) = cosB * (radius2 * sinA);
-			*(f32*)((u8*)part + 0x14) = cosB * (radius2 * cosA) + float_1_8041ec44;
-			*(f32*)((u8*)part + 0x18) = radius2 * sinB;
+			part->velX = cosB * (radius2 * sinA);
+			part->velY = cosB * (radius2 * cosA) + float_1_8041ec44;
+			part->velZ = radius2 * sinB;
 			if (type10 >= 4) {
-				*(f32*)((u8*)part + 0x1c) = float_neg0p02_8041ec48 -
+				part->accelY = float_neg0p02_8041ec48 -
 					float_0p02_8041ec4c * (f32)((i + 1) % 3);
 			} else {
-				*(f32*)((u8*)part + 0x1c) = float_0_8041ec00;
+				part->accelY = float_0_8041ec00;
 			}
-			*(s32*)((u8*)part + 0x30) = i & 3;
+			part->delay = i & 3;
 		}
 	}
 	return effect;
@@ -257,69 +257,69 @@ void effConfettiMain(EffectEntry* effect) {
 #endif
 	position = position2;
 	camId = data->camId;
-	*(s32*)((u8*)data + 0x20) -= 1;
-	if (*(s32*)((u8*)data + 0x20) < 0) {
+	data->lifetime -= 1;
+	if (data->lifetime < 0) {
 		effDelete(effect);
 		return;
 	}
-	*(s32*)((u8*)data + 0x24) += 1;
-	if (*(s32*)((u8*)data + 0x24) > 0x4F1A0) {
-		*(s32*)((u8*)data + 0x24) = 10;
+	data->frame += 1;
+	if (data->frame > 0x4F1A0) {
+		data->frame = 10;
 	}
-	frame = *(s32*)((u8*)data + 0x24);
+	frame = data->frame;
 	type = data->type;
-	count = *(s32*)((u8*)data + 0x2C);
-	if (*(s32*)((u8*)data + 0x20) < 10) {
-		*(s32*)((u8*)data + 0x28) = *(s32*)((u8*)data + 0x20) * 25;
+	count = data->count;
+	if (data->lifetime < 10) {
+		data->alpha = data->lifetime * 25;
 	}
 	t = type % 10;
 	data++;
 	for (i = 0; i < count; i++, data++) {
 		switch (t) {
 		case 3:
-			if (*(s32*)((u8*)data + 0x30) > 0) {
-				*(s32*)((u8*)data + 0x30) -= 1;
-				if (*(s32*)((u8*)data + 0x30) > 0) {
+			if (data->delay > 0) {
+				data->delay -= 1;
+				if (data->delay > 0) {
 					continue;
 				}
 			}
-			*(s32*)((u8*)data + 0x20) -= 1;
-			if (*(s32*)((u8*)data + 0x20) < 0) {
+			data->lifetime -= 1;
+			if (data->lifetime < 0) {
 				data->x = float_0p1_8041ec04 * (rand() % 701) - float_35_8041ec08;
 				data->y = float_0_8041ec00;
 				data->z = float_0p1_8041ec04 * (rand() % 301) - float_15_8041ec0c;
-				*(f32*)((u8*)data + 0x10) = float_0p03_8041ec10 *
+				data->velX = float_0p03_8041ec10 *
 					(float_0p1_8041ec04 * (rand() % 101) + data->x - float_5_8041ec14);
-				*(f32*)((u8*)data + 0x14) = float_neg1p7_8041ec18 -
+				data->velY = float_neg1p7_8041ec18 -
 					float_0p01_8041ec1c * (float_0p1_8041ec04 * (rand() % 801));
-				*(f32*)((u8*)data + 0x18) = float_0p05_8041ec20 *
+				data->velZ = float_0p05_8041ec20 *
 					(float_0p1_8041ec04 * (rand() % 201) - float_10_8041ec24);
-				*(s32*)((u8*)data + 0x20) = 0x78;
-				*(s32*)((u8*)data + 0x20) -= 1;
+				data->lifetime = 0x78;
+				data->lifetime -= 1;
 			}
 			break;
 		default:
-			if (*(s32*)((u8*)data + 0x30) > 0) {
-				*(s32*)((u8*)data + 0x30) -= 1;
-				if (*(s32*)((u8*)data + 0x30) > 0) {
+			if (data->delay > 0) {
+				data->delay -= 1;
+				if (data->delay > 0) {
 					continue;
 				}
 			}
 			if (t >= 4) {
-				*(f32*)((u8*)data + 0x10) *= float_0p98_8041ec28;
-				*(f32*)((u8*)data + 0x14) *= float_0p98_8041ec28;
-				*(f32*)((u8*)data + 0x18) *= float_0p98_8041ec28;
+				data->velX *= float_0p98_8041ec28;
+				data->velY *= float_0p98_8041ec28;
+				data->velZ *= float_0p98_8041ec28;
 				if (frame > 5) {
-					if (*(f32*)((u8*)data + 0x14) > float_neg0p5_8041ec2c) {
-						*(f32*)((u8*)data + 0x14) += *(f32*)((u8*)data + 0x1C);
+					if (data->velY > float_neg0p5_8041ec2c) {
+						data->velY += data->accelY;
 					}
 				}
 			}
 			break;
 		}
-		data->x += *(f32*)((u8*)data + 0x10);
-		data->y += *(f32*)((u8*)data + 0x14);
-		data->z += *(f32*)((u8*)data + 0x18);
+		data->x += data->velX;
+		data->y += data->velY;
+		data->z += data->velZ;
 	}
 	if (type < 10) {
 		dispEntry(camId, dispCalcZ(&position), 2, effConfettiDisp, effect);
@@ -377,10 +377,10 @@ void effConfettiDisp(CameraId camId, void* param) {
 	effect = param;
 	cam = camGetPtr(camId);
 	data = effect->userdata;
-	seq = *(s32*)((u8*)data + 0x24);
+	seq = data->frame;
 	type = data->type;
-	count = *(s32*)((u8*)data + 0x2C);
-	alpha = *(s32*)((u8*)data + 0x28);
+	count = data->count;
+	alpha = data->alpha;
 	PSMTXTrans(mtx0, data->x, data->y, data->z);
 	PSMTXRotRad(mtx1, 'y', float_deg2rad_8041ebf4 * -camGetPtr(CAMERA_3D)->viewYaw);
 	PSMTXConcat(mtx0, mtx1, mtx2);
@@ -397,12 +397,12 @@ void effConfettiDisp(CameraId camId, void* param) {
 	GXSetTevColorIn(GX_TEVSTAGE0, GX_CC_ZERO, GX_CC_C0, GX_CC_TEXC, GX_CC_C1);
 	GXSetTevAlphaIn(GX_TEVSTAGE0, GX_CA_ZERO, GX_CA_A0, GX_CA_TEXA, GX_CA_ZERO);
 	GXSetNumTexGens(1);
-	GXSetTexCoordGen2(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_TEXMTX0, GX_FALSE, 0x7D);
+	GXSetTexCoordGen2(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_TEXMTX0, GX_FALSE, GX_PTIDENTITY);
 	seq2 = (seq >> 1) % 6;
 	i = 0;
 	for (; i < count; i++, data++) {
 		clr = &color_table[(i % 12) * 3];
-		if (*(s32*)((u8*)data + 0x30) > 0) {
+		if (data->delay > 0) {
 			continue;
 		}
 		PSMTXTrans(mtx0, data->x, data->y, data->z);
