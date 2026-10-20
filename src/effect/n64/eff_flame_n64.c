@@ -4,9 +4,7 @@
 #include "driver/dispdrv.h"
 #include "memory.h"
 #include <dolphin/mtx.h>
-#ifdef MUST_MATCH
 #include <dolphin/os/OSFastCast.h>
-#endif
 #include <string.h>
 
 // The unit's .data in address order. `lbl_8039CDA8` is the section's first object and the compiler's
@@ -54,7 +52,6 @@ __declspec(section ".sdata") GXColor unk_80423110;
 #pragma section ".sdata" ".sbss"
 #pragma force_active reset
 
-#ifdef MUST_MATCH
 /* Void helpers that build the colour and call GXSetTevColor inside: this is the shape that makes MWCC
    give the two by-value GXColor temporaries the original's interleaved slots (colour1 temp/arg, then
    colour2 temp/arg); building them in place leaves the temps grouped and the args below them. */
@@ -75,9 +72,8 @@ static inline void effFlameSetColor2(effFlameData* data) {
 	color.a = data->tev1Rgba[3];
 	GXSetTevColor(GX_TEVREG1, color);
 }
-#endif
 
-/* MUST_MATCH: retail inlines a per-vertex helper; each inlining gets its own Vec slot. Passing
+/* Retail inlines a per-vertex helper; each inlining gets its own Vec slot. Passing
    the destination as a pointer (not `data` + `idx`) keeps the address out of a sixth callee-saved
    register; the table base is passed as a named table symbol. Addressing the source as `&tbl[idx]`
    directly (NOT through a named `src` local) is part of what lets `effFlameDisp` put the unit's
@@ -87,7 +83,6 @@ static inline void effFlameSetVtx(effFlameVtx* dst, Mtx mtx, effFlameVtx* tbl, s
 	memcpy(dst, &tbl[idx], sizeof(effFlameVtx));
 
 
-#ifdef MUST_MATCH
 	OSInitFastCast();
 	OSs16tof32(&dst->pos[0], &v.x);
 	OSs16tof32(&dst->pos[1], &v.y);
@@ -97,15 +92,6 @@ static inline void effFlameSetVtx(effFlameVtx* dst, Mtx mtx, effFlameVtx* tbl, s
 	OSf32tos16(&v.x, &dst->pos[0]);
 	OSf32tos16(&v.y, &dst->pos[1]);
 	OSf32tos16(&v.z, &dst->pos[2]);
-#else
-	v.x = dst->pos[0];
-	v.y = dst->pos[1];
-	v.z = dst->pos[2];
-	PSMTXMultVec(mtx, &v, &v);
-	dst->pos[0] = v.x;
-	dst->pos[1] = v.y;
-	dst->pos[2] = v.z;
-#endif
 }
 EffectEntry* effFlameN64Entry(s32 type, f32 x, f32 y, f32 z, f32 scale) {
 	EffectEntry* entry;
@@ -361,7 +347,6 @@ void effFlameDisp(CameraId camId, void* param) {
 	Mtx mtx1;
 	Mtx mtx3;
 	GXTexObj texObj;
-	GXColor color;
 
 	alpha = data->alpha;
 	GXSetNumChans(0);
@@ -515,24 +500,8 @@ void effFlameDisp(CameraId camId, void* param) {
 	GXLoadPosMtxImm(cam->view, GX_PNMTX0);
 	GXSetCurrentMtx(GX_PNMTX0);
 
-#ifdef MUST_MATCH
 	effFlameSetColor1(data, alpha);
 	effFlameSetColor2(data);
-#else
-	color = unk_80423110;
-	color.r = data->tev0Rgb[0];
-	color.g = data->tev0Rgb[1];
-	color.b = data->tev0Rgb[2];
-	color.a = alpha;
-	GXSetTevColor(GX_TEVREG0, color);
-
-	color = unk_80423114;
-	color.r = data->tev1Rgba[0];
-	color.g = data->tev1Rgba[1];
-	color.b = data->tev1Rgba[2];
-	color.a = data->tev1Rgba[3];
-	GXSetTevColor(GX_TEVREG1, color);
-#endif
 
 	PSMTXScale(mtx2, 0.03125f, 0.03125f, 0.0f);
 	GXLoadTexMtxImm(mtx2, GX_TEXMTX0, GX_MTX2x4);

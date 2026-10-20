@@ -241,42 +241,6 @@ static inline void hitUpdateActiveList(void) {
     }
 }
 
-// Same active-list rebuild as hitUpdateActiveList. Both pool the two zero initialisations
-// separately (`li r5, 0` for prev instead of coalescing prev onto i's zero `mr r5, r8`);
-// chaining `prev = hitActiveHead = NULL;` and letting i follow keeps them apart and schedules
-// both `li`s before the store, as retail does in both hitMain and hitDelete.
-#ifdef MUST_MATCH
-static inline void hitDeleteUpdateActiveList(void) {
-    MapWork* wp = mapGetWork();
-    MapEntry* map;
-    s32 i;
-    s32 j;
-    HitEntry* hit;
-    HitEntry* prev;
-
-    prev = hitActiveHead = NULL;
-    i = 0;
-    map = wp->entries;
-    for (; i < wp->entries->count; map++, i++) {
-        hit = map->hitEntries;
-        for (j = 0; j < map->hitNumJoints; j++, hit++) {
-            if (hit->joint->partCount != 0 && !(hit->flags & 0x81)) {
-                if (prev == NULL) {
-                    hitActiveHead = hit;
-                    prev = hit;
-                } else {
-                    prev->nextActive = hit;
-                    prev = hit;
-                }
-            }
-        }
-    }
-    if (prev != NULL) {
-        prev->nextActive = NULL;
-    }
-}
-#endif
-
 void hitDelete(const char* name) {
     MapEntry* map;
     MapWork* wp = mapGetWork();
@@ -289,11 +253,7 @@ void hitDelete(const char* name) {
         for (j = 0; j < map->hitNumJoints; j++, hit++) {
             if (!(hit->flags & HIT_FLAG_DELETED) && !strcmp(name, hit->joint->name)) {
                 hit->flags |= HIT_FLAG_DELETED;
-#ifdef MUST_MATCH
-                hitDeleteUpdateActiveList();
-#else
                 hitUpdateActiveList();
-#endif
                 return;
             }
         }

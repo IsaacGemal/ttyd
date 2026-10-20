@@ -11556,3 +11556,12 @@ Structural only, no names added. Made the MUST_MATCH shape the only version (gua
 position scratch-copy Vec in Main, the cached frame/velX/timer locals, the per-colour GXSetTevColor inlines
 (stone_smoke, confetti colour0), the crystal sin temp, confetti makeConfettiVec. Still guarded: confetti
 makeConfettiColor1 (`*(GXColor*)&float_...` type-punned read). Build MATCH.
+## MUST_MATCH reduction (s-mmmix13)
+- eff_opuku_jetwrain_n64 (10 -> 0 lines): all guards gone, MUST_MATCH shapes are the only version (makeTevColor inline,
+  `12 > i` loop, innerEdge/x2 declaration order, xBase/fieldBase/fieldEnd placement, `x = jPos + x`); none of the #else arms matched.
+- eff_flame_n64 (10 -> 5): OSFastCast include, OSs16tof32/OSf32tos16 vertex transform, and effFlameSetColor1/2 are unconditional
+  (unused `color` local removed). Guarded: the "FlameN64" string padding, the position copy in effFlameMain (single local does not match).
+- eff_balloon_n64 (10 -> 9): the OSf32tos16 `out` local is unconditional. Guarded: the two embedded-assignment `wave` blocks
+  (split or #else forms differ), and the tri1WithUnused function-pointer cast.
+- hitdrv (10 -> 8): hitDeleteUpdateActiveList removed, hitDelete calls hitUpdateActiveList (matches). Guarded: hitFindElem
+  (dead locals, void* name punning), hitSetGQR5 inline asm, and the MapWork* cast in the ray-query return path.

@@ -85,7 +85,6 @@ static inline Vec initializeVec(Vec* input) {
 	return temp;
 }
 
-#ifdef MUST_MATCH
 // Build the tev colour in an inline so mwcc keeps the temporary at 0x8(r1) and copies it to the
 // outgoing argument slot at 0xc(r1); with the channels set on a plain local the two slots swap.
 static inline GXColor makeTevColor(u8 r, u8 g, u8 b, u8 a) {
@@ -96,13 +95,12 @@ static inline GXColor makeTevColor(u8 r, u8 g, u8 b, u8 a) {
 	c.a = a;
 	return c;
 }
-#endif
 
 // Matching this function was allocator work only. Three source details move mwcc's coloring onto the
 // original's registers: `counter` is declared after `j` (so the allocator gives j r27 and counter r28,
 // the original's pair, and stmw/lmw drop from r24..r31 to r25..r31); the second loop names the shared
 // halfCorners = 0.5*corners (f7) while leaving `- 0.7*fourCenter` inline so mwcc emits the original's
-// fnmsubs; and the third loop compares `12 > i` (see the MUST_MATCH note at the loop).
+// fnmsubs; and the third loop compares `12 > i` (see the note at the loop).
 void effOpukuJetwrainMain(EffectEntry* effect) {
 	s32 lifetime;
 	effOpukuJetwrainData* data = effect->userdata;
@@ -165,13 +163,9 @@ void effOpukuJetwrainMain(EffectEntry* effect) {
 
 	// Integrate the velocity field back into the heights.
 	for (j = 1; j < 18; j++) {
-#ifdef MUST_MATCH
 		// `12 > i` (not `i < 12`): the reversed comparison makes mwcc hoist the loop's constants out
 		// of the j loop and drop the entry guard, matching the original's code; see the report.
 		for (i = 1; 12 > i; i++) {
-#else
-		for (i = 1; i < 12; i++) {
-#endif
 			data->height[j][i] = (s8)((f32)(s8)data->height[j][i] + 0.02f * (f32)data->velocity[j][i]);
 		}
 	}
@@ -179,10 +173,10 @@ void effOpukuJetwrainMain(EffectEntry* effect) {
 	dispEntry(CAMERA_3D, dispCalcZ(&position), 2, effOpukuJetwrainDisp, effect);
 }
 
-// Match-only: mwcc's allocator gives xBase r3 and xEnd r4 only when the field offsets are
-// computed as the target does. The natural form (fieldBase/fieldEnd assigned after the loop
-// update, under #else) makes mwcc swap them into r0/r3. Under MUST_MATCH, fieldBase/fieldEnd
-// are assigned in the inner-loop body (hoisted) and fieldEnd is built inline as
+// mwcc's allocator gives xBase r3 and xEnd r4 only when the field offsets are computed as the
+// target does. Assigning fieldBase/fieldEnd after the loop update makes mwcc swap them into
+// r0/r3. Instead fieldBase/fieldEnd are assigned in the inner-loop body (hoisted) and fieldEnd is
+// built inline as
 // (iPos + xEnd + 0x10) << 2, which keeps xEnd a pure source and yields the target's
 // addi r0,r4,0x10 / add r3,r24,r3 / add r0,r24,r0 sequence. All callee-saved registers
 // (vtx=r31, magic 0x4330=r29, xoris=r30, iPos=r24, fieldBase=r26, fieldEnd=r25) match.
@@ -202,13 +196,8 @@ void effOpukuJetwrainDisp(CameraId camId, void* param) {
 	s32 i;
 	s32 outerEdge;
 	s32 xEnd;
-#ifdef MUST_MATCH
 	s32 x2;
 	s32 innerEdge;
-#else
-	s32 innerEdge;
-	s32 x2;
-#endif
 	s32 base;
 	smartEntry* entry;
 	Mtx transMtx;
@@ -245,15 +234,7 @@ void effOpukuJetwrainDisp(CameraId camId, void* param) {
 	GXSetTevAlphaOp(0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
 	GXSetTevColorIn(0, GX_CC_ZERO, GX_CC_C0, GX_CC_A0, GX_CC_TEXC);
 	GXSetTevAlphaIn(0, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_RASA);
-#ifdef MUST_MATCH
 	color = makeTevColor(data->color1R, data->color1G, data->color1B, alpha >> 1);
-#else
-	color = (GXColor){ 0, 0, 0, 0 };
-	color.r = data->color1R;
-	color.g = data->color1G;
-	color.b = data->color1B;
-	color.a = alpha >> 1;
-#endif
 	GXSetTevColor(GX_TEVREG0, color);
 	GXSetNumTexGens(1);
 	GXSetTexCoordGen2(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_TEXMTX0, GX_FALSE, GX_PTIDENTITY);
@@ -280,21 +261,10 @@ void effOpukuJetwrainDisp(CameraId camId, void* param) {
 			xEnd = 0;
 		}
 		iPos = 0x18 + i * 0x10;
-#ifdef MUST_MATCH
 		xBase = iPos + xBase;
-#else
-		xBase += iPos;
-		xEnd += iPos + 0x10;
-#endif
-#ifndef MUST_MATCH
-		fieldBase = xBase << 2;
-		fieldEnd = xEnd << 2;
-#endif
 		for (j = 0; j < 18; j++) {
-#ifdef MUST_MATCH
 			fieldBase = xBase << 2;
 			fieldEnd = (iPos + xEnd + 0x10) << 2;
-#endif
 			innerEdge = 0;
 			if (j == 0) {
 				x = -4;
@@ -311,11 +281,7 @@ void effOpukuJetwrainDisp(CameraId camId, void* param) {
 			jPos = 0x10 + j * 0x10;
 
 			PSMTXScale(texMtx, 0.00390625f, 0.00390625f, 1.0f);
-#ifdef MUST_MATCH
 			x = jPos + x;
-#else
-			x += jPos;
-#endif
 			PSMTXTrans(transMtx, (f32)x, (f32)xBase, 0.0f);
 			PSMTXConcat(texMtx, transMtx, texMtx);
 			GXLoadTexMtxImm(texMtx, GX_TEXMTX0, GX_MTX2x4);
