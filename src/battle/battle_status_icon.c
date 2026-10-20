@@ -66,28 +66,28 @@ const Vec vec3_803012e4 = {0.0f, 0.0f, 0.0f};
 #endif
 
 IconDispTableEntry _disp_table[] = {
-	{1, _bsi_default_turn, 15, 1},
-	{4, _bsi_default_turn, 13, 1},
-	{0x15, _bsi_default_turn, 14, 1},
-	{2, _bsi_default_turn, 16, 1},
-	{8, _bsi_default_turn, 17, 1},
-	{9, _bsi_default_turn, 18, 1},
-	{0x13, _bsi_default_turn, 19, 1},
-	{0x14, _bsi_default_turn, 20, 1},
-	{0xe, _bsi_default_turn, 21, 1},
-	{0xf, _bsi_default_turn, 22, 1},
-	{7, _bsi_default_turn, 28, 1},
-	{0xa, _bsi_default_turn, 29, 1},
-	{0xb, _bsi_default_turn, 30, 1},
-	{5, _bsi_default_turn, 31, 1},
-	{0xc, _bsi_default_turn, 32, 1},
-	{0xd, _bsi_default_turn, 33, 1},
-	{0x12, _bsi_default_turn, 34, 1},
-	{3, _bsi_guruguru, 26, 0},
-	{6, _bsi_biribiri, 25, 0},
-	{0, _bsi_allergy, 27, 0},
-	{0x17, _bsi_regeneration, 23, 0},
-	{0x18, _bsi_regeneration, 24, 0},
+	{STATUS_SLEEP, _bsi_default_turn, 15, 1},
+	{STATUS_POISON, _bsi_default_turn, 13, 1},
+	{STATUS_PAYBACK, _bsi_default_turn, 14, 1},
+	{STATUS_STOP, _bsi_default_turn, 16, 1},
+	{STATUS_BURN, _bsi_default_turn, 17, 1},
+	{STATUS_FREEZE, _bsi_default_turn, 18, 1},
+	{STATUS_FAST, _bsi_default_turn, 19, 1},
+	{STATUS_SLOW, _bsi_default_turn, 20, 1},
+	{STATUS_DEFENSE_UP, _bsi_default_turn, 21, 1},
+	{STATUS_DEFENSE_DOWN, _bsi_default_turn, 22, 1},
+	{STATUS_DODGY, _bsi_default_turn, 28, 1},
+	{STATUS_HUGE, _bsi_default_turn, 29, 1},
+	{STATUS_TINY, _bsi_default_turn, 30, 1},
+	{STATUS_CONFUSE, _bsi_default_turn, 31, 1},
+	{STATUS_ATTACK_UP, _bsi_default_turn, 32, 1},
+	{STATUS_ATTACK_DOWN, _bsi_default_turn, 33, 1},
+	{STATUS_INVISIBLE, _bsi_default_turn, 34, 1},
+	{STATUS_DIZZY, _bsi_guruguru, 26, 0},
+	{STATUS_ELECTRIC, _bsi_biribiri, 25, 0},
+	{STATUS_ALLERGIC, _bsi_allergy, 27, 0},
+	{STATUS_HP_REGEN, _bsi_regeneration, 23, 0},
+	{STATUS_FP_REGEN, _bsi_regeneration, 24, 0},
 	{-1, NULL, 0, 0},
 };
 
@@ -341,7 +341,7 @@ BOOL _bsi_guruguru(BattleUnit* unit, IconDispTableEntry* disp, BattleWorkStatusI
 	// form below omits that temporary.
 	tmp = vec[6];
 	tmp.z = *counter;
-	*(Vec*)((u8*)entry + 0x24) = tmp;
+	entry->rotation = tmp;
 #else
 	entry->rotation = vec[6];
 	entry->rotation.z = *counter;
@@ -500,12 +500,12 @@ BOOL _bsi_regeneration(BattleUnit* unit, IconDispTableEntry* disp, BattleWorkSta
 	GXColor endColor;
 	GXColor color;
 
-	if (type == 0x17) {
+	if (type == STATUS_HP_REGEN) {
 		startColor = *(GXColor*)&dat_80422200;
 		endColor = *(GXColor*)&dat_80422204;
 		counter = &unit->mStatusIconWork.mRegenHpCounter;
 	}
-	else if (type == 0x18) {
+	else if (type == STATUS_FP_REGEN) {
 		startColor = *(GXColor*)&float_0p10207_80422208;
 		endColor = *(GXColor*)&dat_8042220c;
 		counter = &unit->mStatusIconWork.mRegenFpCounter;

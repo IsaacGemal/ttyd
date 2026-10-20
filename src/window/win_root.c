@@ -1034,8 +1034,7 @@ void winMsgDisp(WindowWork* work, f32 x, f32 y) {
     if (WW_U32(work, 0x13C) != 0) {
         GXSetScissor(0, (u32)(240.0f - (fy -= 14.0f)), 0x260, 0x38);
         if (strcmp((const char*)WW_PTR(work, 0x13C), "msg_lottery_number") == 0) {
-            // lottery_info has no declared field at 0x20; the original loads an s16 there.
-            sprintf(buf, msgSearch((const char*)WW_PTR(work, 0x13C)), *(s16*)((u8*)lotteryGetPtr() + 0x20));
+            sprintf(buf, msgSearch((const char*)WW_PTR(work, 0x13C)), lotteryGetPtr()->mTicketNum);
             winFontInit();
             winMsgFontV((Vec){ (40.0f + (x - 250.0f)) - 10.0f, fy + (f32)(WW_S32(work, 0x148) * 0x1C), 0.0f }, (Vec){ 1.0f, 1.0f, 1.0f }, fontColor, buf);
         } else {
