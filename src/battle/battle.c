@@ -156,7 +156,7 @@ s32 BattleMajinaiCheck(void) {
 
     pouch->mTurnsUntilMerleeActivation = 0;
 
-    if (wp->fbatInfo->setup->field_4 & 0x20) {
+    if (wp->fbatInfo->setup->flags & 0x20) {
         roll = irand(100);
         if (roll < 45) {
             pouch->mMerleeNextCurseType = 1;

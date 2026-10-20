@@ -8751,3 +8751,26 @@ mapCalcAnimMatrix still step the anim cursor as a `u8*` with byte offsets; mapSe
 `mapWork + activeGroup * 0x2F4 + 0x110` byte store because an indexed `tevCallback[idx]` store changes codegen;
 MapObject.unkAC (the mapObjRotate/Translate/Scale matrix, read in hitdrv, evt_door, evt_light, aji_13, dou_11) and
 the GXReadBoundingBox shorts at 0xEC stay unnamed.
+### Readability: NpcBattleInfo (2026-10-19, Claude Haiku 5.5, n9-q-npcbi; reviewed by Claude Opus 5.5)
+
+NpcBattleInfo's head and tail get names: `stageData` (0x0, the selected loadout's BattleStageData; six
+battle_stage_object casts and seq_battle's `target + 0x230` read become `->stageData`), `flags` (0x4), `fixDropItem`
+(0x8, an item the npc_event dead event always drops when nonzero, read by evt_npc_get_drop_fixitem),
+`audienceMode` (0xAC), `audienceWeights[16]` (0xB0, s8, rolled from the setup's min/max pairs; battle_audience
+reads them as s8 weights for kinds 0-11), `music` (0xC0, the BGM seq_battleInit starts) and `battleRules[3]` (0xC4).
+The tail split that the npcdrv entry above lists as blocked now matches. The rules are the Glitz Pit match
+conditions: tou_03 passes GSW 502-504 to evt_npc_set_battle_rule, and battle_init (seq_battle.c) copies the three bytes to
+FieldBattleInfo+0x18/+0x1A/+0x1B, where `_rule_disp` uses the first as the `_rule_msg_table_*` index and prints
+the second. BattleSetupData gets `mapName`, `fixDropItem`, `flags`, `audienceMode` and `audienceRanges[16][2]`. The
+memsets use sizeof. The new `NpcBattleFlags` enum names the bits the code proves: 0x1/0x2/0x4/0x8 zero the coin,
+heart, flower and item drops; 0x10 disables Run Away (btlseqFirstAct also runs the wall-close check on it); 0x40
+turns a loss into a return to the field at 1 HP instead of seqSetSeq(5) (game over); 0x100 adds 1 to the coin
+multiplier; 0x01000000/0x02000000/0x04000000 disable Jump, Hammer and partner change (set by jon's trap events);
+and 0x10000000 stops Bump Attack and First Attack from winning outright.
+Open: `BattleAudienceSettingAudience` keeps its raw `setupBase` pointer (now written as `+ offsetof(NpcBattleInfo,
+audienceMode)`); reading `setup->audienceMode`/`audienceWeights` directly drops it to 99.83%. Flag bits 0x20 (a
+Merlee curse table without curse type 4), 0x100000 (btlseqFirstAct skips Mario-kind units) and 0x20000000 (Mario's
+end-of-battle voice) stay hex. `battleRules[2]` (copied to FieldBattleInfo+0x1B) has no reader found yet;
+FieldBattleInfo's `field_0x14` bytes want names to match. `field_9C` (0x9C-0xAC) and `field_C7` are unnamed.
+npcRollBattleParams still reads the setup's pairs through a byte pointer instead of `audienceRanges`.
+battle_seq_end's `seqSetSeq(SEQ_MOVE, ...)` passes battle enum SEQ_MOVE (5) where SequenceType SEQ_GAME_OVER is meant.

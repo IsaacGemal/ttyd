@@ -2581,7 +2581,7 @@ s32 enemy_info(EventEntry* event, BOOL isFirstCall) {
 s32 yattukeFlag(EventEntry* event, BOOL isFirstCall) {
     NpcEntry* npc = npcNameToPtr("敵");
 
-    npc->battleInfo.field_4 |= 0x10000000;
+    npc->battleInfo.flags |= NPC_BATTLE_NO_FIRST_STRIKE_WIN;
     return EVT_RETURN_DONE;
 }
 
@@ -2612,16 +2612,16 @@ s32 shikakeFlag(EventEntry* event, BOOL isFirstCall) {
 
     switch (flag) {
     case 0:
-        npc->battleInfo.field_4 |= 0x04000000;
+        npc->battleInfo.flags |= NPC_BATTLE_NO_PARTY_CHANGE;
         break;
     case 1:
-        npc->battleInfo.field_4 |= 0x02000000;
+        npc->battleInfo.flags |= NPC_BATTLE_NO_HAMMER;
         break;
     case 2:
-        npc->battleInfo.field_4 |= 0x01000000;
+        npc->battleInfo.flags |= NPC_BATTLE_NO_JUMP;
         break;
     case 3:
-        npc->battleInfo.field_4 |= 0x00000100;
+        npc->battleInfo.flags |= NPC_BATTLE_COIN_BONUS;
         break;
     }
     return EVT_RETURN_DONE;

@@ -2609,7 +2609,7 @@ void fbatBattleMode(void) {
                 fbatData->target->interruptFlags &= 0xF00;
                 evtStopID(fbatData->target->regularEvtId);
                 info0 = (FieldBattleInfo*)((u8*)fbatData + 0x20);
-                if (!(entry->battleInfo.field_4 & 0x10000000)) {
+                if (!(entry->battleInfo.flags & NPC_BATTLE_NO_FIRST_STRIKE_WIN)) {
                     if (pouchEquipCheckBadge(ITEM_BUMP_ATTACK) &&
                         entry->battleInfo.groupSetup->enemyData->mUnitKindParams->mLevel < pouch->level) {
                         flagA = TRUE;
@@ -2744,7 +2744,7 @@ void fbatBattleMode(void) {
                     if (pouchEquipCheckBadge(ITEM_MONEY_MONEY)) {
                         mult += pouchEquipCheckBadge(ITEM_MONEY_MONEY);
                     }
-                    if (entry->battleInfo.field_4 & 0x100) {
+                    if (entry->battleInfo.flags & NPC_BATTLE_COIN_BONUS) {
                         mult++;
                     }
                 after:
@@ -3510,14 +3510,13 @@ static inline void npcRollBattleParams(NpcBattleInfo* info, BattleSetupData* set
     s32 i;
 
     for (i = 0, p = (u8*)setup; i < 0x10; i++) {
-        info->field_9C[0x14 + i] = p[0x20] + irand((s8)p[0x21] - (s8)p[0x20] + 1);
+        info->audienceWeights[i] = p[0x20] + irand((s8)p[0x21] - (s8)p[0x20] + 1);
         p += 2;
     }
 }
 
-// The 0xB0 roll store uses the declared `field_9C` (MWCC then leaves it indexed with `stbx`). The level test is a
-// switch (levels 1 and 2 skip the roll; 0 and everything else roll), whose lowering is retail's
-// `beq/blt; cmpwi 3; bge roll; b body`. The held-item pick stores and breaks inside its `for (;;)` (retail's
+// The audience-mode test is a switch (modes 1 and 2 skip the roll; 0 and everything else roll), whose lowering
+// is retail's `beq/blt; cmpwi 3; bge roll; b body`. The held-item pick stores and breaks inside its `for (;;)` (retail's
 // bcc->b shape). The loadout weight sum keeps the weight it tests in `weight` (retail adds the loaded value, no
 // reload). The roll loop is its own inline (its i/p are inliner locals, which number above the held-items loop's
 // induction pointer and leave num, i and that pointer in retail's r30/r28/r27).
@@ -3535,16 +3534,16 @@ void npcSetupBattleInfo(NpcEntry* npc, BattleSetupData* setup) {
     s32 sum;
     s32 weight;
 
-    memset(info, 0, 0xC8);
-    memset(info->recoveredItems, 0, 0x20);
+    memset(info, 0, sizeof(*info));
+    memset(info->recoveredItems, 0, sizeof(info->recoveredItems));
     if (setup == NULL) {
         return;
     }
     if ((u32)setup->name == 0) {
         return;
     }
-    *(s32*)&info->field_9C[0x10] = setup->field_0x1C;
-    switch (*(s32*)&info->field_9C[0x10]) {
+    info->audienceMode = setup->audienceMode;
+    switch (info->audienceMode) {
     case 1:
     case 2:
         break;
@@ -3553,12 +3552,12 @@ void npcSetupBattleInfo(NpcEntry* npc, BattleSetupData* setup) {
         npcRollBattleParams(info, setup);
         break;
     }
-    info->field_4 = setup->field_0x18;
-    *(s32*)info->field_8 = setup->field_0x8;
+    info->flags = setup->flags;
+    info->fixDropItem = setup->fixDropItem;
     info->itemDropped = 0;
     info->heartsDropped = 0;
     info->flowersDropped = 0;
-    *(s32*)&info->field_9C[0x24] = (s32)setup->music;
+    info->music = setup->music;
     evt = setup->flag;
     if (evt >= GSWF(0) && evt <= EVTDAT_GSWF_MAX) {
         if (swGet(evt + EVTDAT_GSWF_BASE)) {
@@ -3587,13 +3586,13 @@ void npcSetupBattleInfo(NpcEntry* npc, BattleSetupData* setup) {
                 sel++;
             }
             info->groupSetup = sel->setup;
-            *(s32*)info = (s32)sel->stageData;
+            info->stageData = sel->stageData;
         }
     }
     if (info->groupSetup != NULL) {
         num = info->groupSetup->numEnemies;
         enemy = info->groupSetup->enemyData;
-        memset(info->heldItems, 0, 0x20);
+        memset(info->heldItems, 0, sizeof(info->heldItems));
         for (i = 0; i < num; enemy++, i++) {
             list = enemy->itemDropTable;
             if (list != NULL) {

@@ -617,7 +617,7 @@ void btlseqEnd(BattleWork* wp) {
         if (!fadeIsFinish()) {
             break;
         }
-        if (!(wp->fbatInfo->setup->field_4 & 0x40)) {
+        if (!(wp->fbatInfo->setup->flags & NPC_BATTLE_LOSS_RETURNS_TO_FIELD)) {
             seqSetSeq(SEQ_MOVE, (char*)1, NULL);
         } else {
             BattleSetSeq(wp, SEQ_END, 0x0700001F);
@@ -1012,7 +1012,7 @@ void btlseqEnd(BattleWork* wp) {
                 }
             }
             if (flag != 0) {
-                if (su->field_4 & 0x20000000) {
+                if (su->flags & 0x20000000) {
                     BtlUnit_snd_se(uu, "SFX_VOICE_MARIO_PAUSE3", 0xF1194D80, 0);
                 } else {
                     BtlUnit_snd_se(uu, "SFX_VOICE_MARIO_PAUSE1", 0xF1194D80, 0);
@@ -1087,7 +1087,7 @@ void btlseqEnd(BattleWork* wp) {
                 }
             }
             if (flag == 0) {
-                if (su->field_4 & 0x20000000) {
+                if (su->flags & 0x20000000) {
                     BtlUnit_snd_se(uu, "SFX_VOICE_MARIO_RELIEF1", 0xF1194D80, 0);
                 } else {
                     BtlUnit_snd_se(uu, "SFX_VOICE_MARIO_RELIEF2", 0xF1194D80, 0);
@@ -1151,7 +1151,7 @@ void btlseqEnd(BattleWork* wp) {
             id = BattleTransPartyId((BattleUnitType)flag);
             su = wp->fbatInfo->setup;
             uu = BattleGetMarioPtr(wp);
-            if ((su->field_4 & 0x40) && uu->currentHp <= 0) {
+            if ((su->flags & NPC_BATTLE_LOSS_RETURNS_TO_FIELD) && uu->currentHp <= 0) {
                 uu->currentHp = 1;
             }
             BattleSetMarioParamToFieldBattle(wp);

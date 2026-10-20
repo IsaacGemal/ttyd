@@ -363,7 +363,7 @@ void btlseqFirstAct(BattleWork* wp) {
 				if (*(void**)unit->field_0x2B4 == NULL) {
 					continue;
 				}
-				if (setup->field_4 & 0x00100000) {
+				if (setup->flags & 0x00100000) {
 					if (unit->currentKind == 0xDE) {
 						continue;
 					}
@@ -538,7 +538,7 @@ void btlseqFirstAct(BattleWork* wp) {
 		if (!BattleWaitAllActiveEvtEnd(wp)) {
 			break;
 		}
-		if (wp->fbatInfo->setup->field_4 & 0x10) {
+		if (wp->fbatInfo->setup->flags & NPC_BATTLE_NO_ESCAPE) {
 			BattleSetSeq(wp, 2, 0x2000009);
 			BattleStage_WallCloseCheck();
 			break;
