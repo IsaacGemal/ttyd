@@ -648,7 +648,7 @@ BattleUnit* BattleChangeParty(BattleWork* wp) {
     s32 i;
     f32 y2, x, y, z;
 
-    newKind = *(s32*)((u8*)wp + 0x1C68); // 0x1C68 is inside commandMenu, not yet named
+    newKind = wp->commandMenu.partyChangeId;
     oldParty = BattleGetPartyPtr(wp);
     oldId = oldParty->unitId;
 

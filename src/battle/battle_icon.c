@@ -329,7 +329,7 @@ USER_FUNC(btlevtcmd_BtlIconJumpPosition) {
 	if (icon->moveSpeedY < float_0_8041e7a8 && icon->moveCurrentPos.y < icon->moveTargetPos.y) {
 		icon->moveCurrentPos.y = icon->moveTargetPos.y;
 	}
-	btlMovePos((f32*)((u8*)icon + 0x2C), (f32*)((u8*)icon + 0x34), icon->moveSpeedXZ, icon->moveAngle);
+	btlMovePos(&icon->moveCurrentPos.x, &icon->moveCurrentPos.z, icon->moveSpeedXZ, icon->moveAngle);
 #ifdef MUST_MATCH
 	// Match-only: see the fresh-base-pointer comment above p's declaration.
 	icon->position.x = p->moveCurrentPos.x;
