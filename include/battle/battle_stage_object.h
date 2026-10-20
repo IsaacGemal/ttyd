@@ -13,16 +13,21 @@ typedef struct BattleStageObjectData {
 	u8 pad_16[2]; //0x16, TODO remove cuz compiler auto-pads
 } BattleStageObjectData;
 
+enum BattleStageObjectFlags {
+	BSO_FLAG_MAP_GRP_ON = 0x1, //map group flag 1 of the map object is kept on while set
+	BSO_FLAG_DIRTY = 0x2, //transform changed: BattleStageObjectMain re-applies it to the map object, then clears this
+};
+
 typedef struct BattleStageObject {
 	s32 id; //0x0
 	Vec mPosition; //0x4
-	Vec field_0x10; //0x10, mPositionOffset1?
+	Vec mPositionOffset1; //0x10, added to mPosition on every layer (layer 2 pivots about its y)
 	Vec mRotation; //0x1C
-	Vec field_0x28; //0x28, mPositionOffset2?
-	Vec field_0x34; //0x34, mPositionTemp?
-	Vec field_0x40; //0x40, mPositionOffset1Temp?
-	Vec field_0x4C; //0x4C, mRotationTemp?
-	Vec field_0x58; //0x58, mPositionOffset2Temp?
+	Vec mPositionOffset2; //0x28, added to mPosition on every layer
+	Vec mLastPosition; //0x34, mPosition as last applied to the map object
+	Vec mLastPositionOffset1; //0x40, mPositionOffset1 as last applied
+	Vec mLastRotation; //0x4C, mRotation as last applied
+	Vec mLastPositionOffset2; //0x58, mPositionOffset2 as last applied
 	BattleStageObjectData* data; //0x64
 	u32 mFlags; //0x68
 	u32 mBattleUnitIdx; //0x6C
@@ -31,7 +36,7 @@ typedef struct BattleStageObject {
 	u8 field_0x72; //0x72
 	u8 mShakePeriodLength; //0x73
 	u8 mShakePeriodPosition; //0x74
-	u8 field_0x75[3]; //0x75
+	u8 pad_75[3]; //0x75
 	f32 mShakeAngle; //0x78
 } BattleStageObject;
 

@@ -148,7 +148,7 @@ s32 _set_offset(EventEntry* event, BOOL isFirstCall) {
     s32 d = evtGetValue(event, args[4]);
     BattleStageObject* obj = BattleSearchObjectPtr((const char*)id);
 
-    obj->field_0x10.x = c + (d * a) / b;
+    obj->mPositionOffset1.x = c + (d * a) / b;
     a = a - 1;
     if (a < 0) {
         a = b;

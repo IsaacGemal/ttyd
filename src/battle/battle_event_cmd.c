@@ -6887,7 +6887,7 @@ USER_FUNC(btlevtcmd_SacBgsetMove) {
                         move = -intplGetValue(mode, event->userdata[0], 45, 0.0f, 450.f);
                     }
                 }
-                obj->field_0x28.x = move;
+                obj->mPositionOffset2.x = move;
                 break;
             case 2:
                 if (value != 0) {
@@ -6895,7 +6895,7 @@ USER_FUNC(btlevtcmd_SacBgsetMove) {
                 } else {
                     move = intplGetValue(mode, event->userdata[0], 45, 0.0f, 260.f);
                 }
-                obj->field_0x28.y = move;
+                obj->mPositionOffset2.y = move;
                 break;
             }
         }

@@ -1456,7 +1456,7 @@ s32 _nozzle_set_offset(EventEntry* event, BOOL isFirstCall) {
     BattleStageObject* obj = BattleSearchObjectPtr((const char*)id);
 
     if (obj != NULL) {
-        obj->field_0x10.y = offset;
+        obj->mPositionOffset1.y = offset;
     }
     return 2;
 }
