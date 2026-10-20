@@ -947,12 +947,12 @@ void winItemDisp(CameraId camId, void* param, s32 idx) {
 
     for (i = 0; i < 2; i++) {
         if (i == WW_S32(w, 0x210)) {
-            winTexInit(**(TEXPalette***)(*(u8**)((u8*)w + 0x28) + 0xA0));
+            winTexInit(*(TEXPalette**)w->winTpl->data);
             winTexSet(0xB3, (Vec){x - 215.0f, 20.0f + (a - (f32)(i * 0x28)), 0.0f}, (Vec){1.0f, 1.0f, 1.0f}, dat_8041d46c);
-            winTexInit_x2(**(TEXPalette***)(*(u8**)((u8*)w + 0x28) + 0xA0));
+            winTexInit_x2(*(TEXPalette**)w->winTpl->data);
             winTexSet_x2(i + 0x18, 0xB3, (Vec){c, 20.0f + (b - (f32)(i * 0x28)), 0.0f}, (Vec){1.0f, 1.0f, 1.0f}, color);
         } else {
-            winTexInit_x2(**(TEXPalette***)(*(u8**)((u8*)w + 0x28) + 0xA0));
+            winTexInit_x2(*(TEXPalette**)w->winTpl->data);
             winTexSet_x2(i + 0x18, 0xB3, (Vec){x - 215.0f, 20.0f + (a - (f32)(i * 0x28)), 0.0f}, (Vec){1.0f, 1.0f, 1.0f},
                          dat_8041d470);
         }
@@ -1028,7 +1028,7 @@ void item_disp(WindowWork* work, f32 x, f32 y) {
     if (work->itemScrollRow[WW_S32(work, 0x210)] > 0) {
         f32 arrowX;
 
-        winTexInit(**(TEXPalette***)(*(u8**)((u8*)work + 0x28) + 0xA0));
+        winTexInit(*(TEXPalette**)work->winTpl->data);
         arrowX = 250.0f + x;
         winTexSet(0x17, (Vec){arrowX, 20.0f + (18.0f + (110.0f + y)), 0.0f}, (Vec){-1.0f, -1.0f, -1.0f}, white);
         winIconInit();
@@ -1037,7 +1037,7 @@ void item_disp(WindowWork* work, f32 x, f32 y) {
     if (count > work->itemScrollRow[WW_S32(work, 0x210)] * 10 + 10) {
         f32 arrowX;
 
-        winTexInit(**(TEXPalette***)(*(u8**)((u8*)work + 0x28) + 0xA0));
+        winTexInit(*(TEXPalette**)work->winTpl->data);
         arrowX = 250.0f + x;
         winTexSet(0x17, (Vec){arrowX, 20.0f + ((y - 90.0f) - 15.0f), 0.0f}, (Vec){1.0f, 1.0f, 1.0f}, white);
         winIconInit();
@@ -1130,7 +1130,7 @@ void itemUseDisp(WinMgrEntry* entry) {
                 }
                 winIconSetV(0x19E, (Vec){(f32)(entry->x + 0x1E), (f32)(entry->y - 0x14 - i * 0x16), 0.0f},
                             (Vec){0.65f, 0.65f, 0.65f}, iconColor);
-                winTexInit(**(TEXPalette***)(*(u8**)((u8*)work + 0x28) + 0xA0));
+                winTexInit(*(TEXPalette**)work->winTpl->data);
                 GXSetTevColorIn(0, 0xF, 0xF, 0xF, 2);
                 GXSetTevAlphaIn(0, 7, 1, 4, 7);
                 winTexSet(0xAF,
@@ -1172,7 +1172,7 @@ void itemUseDisp(WinMgrEntry* entry) {
                 if (WW_S32(work, 0x2E0) % 20 > 15 && i == WW_S32(work, 0x2DC)) {
                     continue;
                 }
-                winTexInit(**(TEXPalette***)(*(u8**)((u8*)work + 0x28) + 0xA0));
+                winTexInit(*(TEXPalette**)work->winTpl->data);
                 GXSetTevColorIn(0, 0xF, 0xF, 0xF, 2);
                 GXSetTevAlphaIn(0, 7, 1, 4, 7);
                 winTexSet(0xAF,
@@ -1211,7 +1211,7 @@ void itemUseDisp(WinMgrEntry* entry) {
             }
         }
     }
-    winTexInit(**(TEXPalette***)(*(u8**)((u8*)work + 0x28) + 0xA0));
+    winTexInit(*(TEXPalette**)work->winTpl->data);
     winTexSet(0, (Vec){2.0f + work->posX, work->posY - 2.0f, 0.0f}, (Vec){1.0f, 1.0f, 1.0f},
               dat_8041d4a0);
     winTexSet(0, (Vec){work->posX, work->posY, 0.0f}, (Vec){1.0f, 1.0f, 1.0f}, white);

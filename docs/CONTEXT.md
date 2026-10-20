@@ -9304,11 +9304,14 @@ require "32 files OK". `--verify --build-cmd CMD` builds and bisects, reverting 
 `--skip-base TAG` to leave alone a struct another branch is editing.
 
 Results. The pilot's dry run found 189 convertible casts out of about 4650 (u8*) casts. 133 were applied in 34
-files, and on the rebased tree 24 more landed in BattleWork's newly named `acParams`. Every one was
-byte-identical. The whole-tree table now reads 79 convertible out of 5131. Most of the rest land on unnamed
-space: 2721 casts hit padding or `unk`/`field_` names, and 950 have a `void*`/`u8*` base. Rerun the tool
-after each naming pass: a field that gets named turns its casts convertible. Regenerate the DWARF index too,
-since a stale one blocks the newly named fields as "layouts disagree".
+files, and 24 more landed in BattleWork's newly named `acParams`. After the readability branches of 2026-10-19
+landed, about 110 of those survive; on the files they rewrote, main's version was kept. A rerun on that tree,
+with a fresh DWARF index, found 195 convertible casts, and then 163 after a second rebase. Of those, 139 were
+applied in 29 files through `--verify`, and all were byte-identical. The whole-tree table now reads 108
+convertible out of 4021. Most of the rest land on unnamed space: 1823 casts hit padding or `unk`/`field_`
+names, and 884 have a `void*`/`u8*` base. Rerun the tool after each naming pass: a field that gets named turns
+its casts convertible. Regenerate the DWARF index too, since a stale one blocks the newly named fields as
+"layouts disagree".
 
 The enumsalwaysint fix. MWCC's `#pragma enumsalwaysint off` sizes an enum to its values, and clang ignores
 the pragma. Without a fix, every struct holding such an enum came out with int-sized members and wrong
@@ -9320,5 +9323,6 @@ for a struct goes unchecked, so the byte-identical build is the real verdict. Ge
 the Mac (`assets/*.inc`, `texPalette.h`) are stubbed empty, with a note on stderr. About 25 files still parse
 with clang errors (declaration conflicts inside function scope, none of them in struct layouts). The tool
 never names fields itself, and it leaves pointer arithmetic, non-literal offsets and casts on untyped bases
-alone. Open: 55 casts that were already convertible are still unapplied, mostly in battle_audience,
-evt_mario, mario and mario_hit. Check those files' claims before running `--apply` on them.
+alone. Open: the 108 convertible casts are in files that open branches were editing at the time:
+battle_event_cmd (48), evt_mario (19), win_root (15), mario, mario_hit, mario_motion, evt_mobj, battle_seq and
+evt_lect_win. Check those files' claims before running `--apply` on them.

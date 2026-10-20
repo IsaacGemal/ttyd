@@ -167,11 +167,11 @@ USER_FUNC(uranai_init_func) {
     for (i = 0; i < 9; i++) {
         sprintf(name, "card_omote_%d", i + 1);
         if (mapGetMapObj(name) != NULL) {
-            *(u8*)((u8*)mapGetMapObj(name) + 5) = 5;
+            mapGetMapObj(name)->cameraId = 5;
         }
         sprintf(name, "card_ura_%d", i + 1);
         if (mapGetMapObj(name) != NULL) {
-            *(u8*)((u8*)mapGetMapObj(name) + 5) = 5;
+            mapGetMapObj(name)->cameraId = 5;
         }
     }
     uranai_wp->field_0xE8 = evtEntry(evt_uranai_cap, 0, 0);
@@ -481,7 +481,7 @@ USER_FUNC(card_camid) {
     s32 value = evtGetValue(event, args[1]);
 
     if (mapGetMapObj(name) != NULL) {
-        *(u8*)((u8*)mapGetMapObj(name) + 5) = value;
+        mapGetMapObj(name)->cameraId = value;
     }
     return EVT_RETURN_DONE;
 }
@@ -490,7 +490,7 @@ USER_FUNC(card_camid) {
 USER_FUNC(unk_tik_000005e8) {
     MapObject* obj = mapGetMapObj("supotto");
 
-    *(u8*)((u8*)obj + 4) = 10;
+    obj->renderMode = 10;
     return EVT_RETURN_DONE;
 }
 

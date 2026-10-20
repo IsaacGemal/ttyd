@@ -1336,7 +1336,7 @@ USER_FUNC(_make_cortez_work_area) {
     unit = BattleGetUnitPtr(work, BattleTransID(event, id));
     args = BattleAlloc(0xE14);
     area = args;
-    *(void**)((u8*)unit + 0x310) = area;
+    unit->mExtraWork = area;
     return EVT_RETURN_DONE;
 }
 
@@ -1361,7 +1361,7 @@ USER_FUNC(_cortez_check_drain_audience) {
     id = evtGetValue(event, args[0]);
     arg1 = args[1];
     unit = BattleGetUnitPtr(work, BattleTransID(event, id));
-    area = *(CortezWork**)((u8*)unit + 0x310);
+    area = (CortezWork*)unit->mExtraWork;
     area->count = 0;
     for (i = 0; i < 100; i++) {
         s32 audienceId;
@@ -1392,7 +1392,7 @@ USER_FUNC(_cortez_collect_energy) {
     id = evtGetValue(event, args[0]);
     args = (s32*)BattleGetUnitPtr(work, BattleTransID(event, id));
     unit = (BattleUnit*)args;
-    area = *(CortezWork**)((u8*)unit + 0x310);
+    area = (CortezWork*)unit->mExtraWork;
     if (isFirstCall) {
         area->state = 0;
     }
@@ -1487,7 +1487,7 @@ USER_FUNC(_cortez_drain_energy) {
     id = evtGetValue(event, args[0]);
     arg1 = args[1];
     unit = BattleGetUnitPtr(work, BattleTransID(event, id));
-    area = *(CortezWork**)((u8*)unit + 0x310);
+    area = (CortezWork*)unit->mExtraWork;
     for (i = 0; i < 100; i++) {
         if (area->effects[i] != NULL) {
             effDelete(area->effects[i]);
@@ -1510,7 +1510,7 @@ USER_FUNC(_cortez_recovery_audience) {
     id = evtGetValue(event, args[0]);
     args = (s32*)BattleGetUnitPtr(work, BattleTransID(event, id));
     unit = (BattleUnit*)args;
-    area = *(CortezWork**)((u8*)unit + 0x310);
+    area = (CortezWork*)unit->mExtraWork;
     if (isFirstCall) {
         area->state = 0;
     }

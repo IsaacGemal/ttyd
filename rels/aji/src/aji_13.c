@@ -725,8 +725,8 @@ static USER_FUNC(mario_chk) {
         party = partyGetPtr(0);
         if (hit3 != NULL && party != NULL && party->groundHit != NULL &&
             hitIsGroup((HitEntry*)party->groundHit, hit3) != 0) {
-            *(f32*)((u8*)party + 0xAC) = area[j].diff.x * 10.0f;
-            *(f32*)((u8*)party + 0xB4) = area[j].diff.z * 10.0f;
+            party->moveDelta.x = area[j].diff.x * 10.0f;
+            party->moveDelta.z = area[j].diff.z * 10.0f;
             break;
         }
     }
@@ -740,7 +740,7 @@ static USER_FUNC(mario_chk) {
         }
         if (party != NULL && *(void**)((u8*)party + 0x144) != NULL &&
             hitIsGroup((HitEntry*)party->groundHit, hitNameToPtr("A_bel")) != 0) {
-            *(f32*)((u8*)party + 0xAC) = 0.6f;
+            party->moveDelta.x = 0.6f;
         }
     }
 

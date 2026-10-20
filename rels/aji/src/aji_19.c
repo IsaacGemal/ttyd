@@ -147,20 +147,20 @@ static USER_FUNC(mario_chk) {
     party = partyGetPtr(marioGetPartyId());
     if (party != NULL && party->groundHit != NULL) {
         if (hitIsGroup(party->groundHit, hitNameToPtr("A_b_ue"))) {
-            *(f32*)((u8*)party + 0xAC) = 1.0f;
+            party->moveDelta.x = 1.0f;
         }
         if (hitIsGroup(party->groundHit, hitNameToPtr("A_b_shita"))) {
-            *(f32*)((u8*)party + 0xAC) = -1.0f;
+            party->moveDelta.x = -1.0f;
         }
     }
 
     party = partyGetPtr(marioGetExtraPartyId());
     if (party != NULL && party->groundHit != NULL) {
         if (hitIsGroup(party->groundHit, hitNameToPtr("A_b_ue"))) {
-            *(f32*)((u8*)party + 0xAC) = 1.0f;
+            party->moveDelta.x = 1.0f;
         }
         if (hitIsGroup(party->groundHit, hitNameToPtr("A_b_shita"))) {
-            *(f32*)((u8*)party + 0xAC) = -1.0f;
+            party->moveDelta.x = -1.0f;
         }
     }
 

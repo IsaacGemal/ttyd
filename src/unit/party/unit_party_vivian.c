@@ -1237,7 +1237,7 @@ USER_FUNC(_vivian_make_extra_work_area) {
 
     id = BattleTransID(event, -2);
     unit = BattleGetUnitPtr(work, id);
-    *(void**)((u8*)unit + 0x310) = BattleAlloc(0xC0);
+    unit->mExtraWork = BattleAlloc(0xC0);
     return EVT_RETURN_DONE;
 }
 
@@ -1429,7 +1429,7 @@ USER_FUNC(_make_kagenuke_weapon) {
 
     id = BattleTransID(event, -2);
     unit = BattleGetUnitPtr(work, id);
-    area = *(void**)((u8*)unit + 0x310);
+    area = unit->mExtraWork;
     arg0 = args[0];
     value = evtGetValue(event, arg0);
     value2 = evtGetValue(event, args[1]);

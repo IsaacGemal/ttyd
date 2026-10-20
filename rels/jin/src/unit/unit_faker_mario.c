@@ -559,7 +559,7 @@ USER_FUNC(_gullible_party_info_init) {
     id = BattleTransID(event, -2);
     unit = BattleGetUnitPtr(_battleWorkPointer, id);
     info = (BattleUnitParam*)BattleAlloc(0xC0);
-    *(void**)((u8*)unit + 0x310) = info;
+    unit->mExtraWork = info;
     memset(info, 0, 0xC0);
     for (i = 0; i < 4; i++) {
         BattleUnitParam* p = &info[i];
@@ -682,7 +682,7 @@ USER_FUNC(_load_param) {
     id1 = evtGetValue(event, args[1]);
     src = BattleGetUnitPtr(work, BattleTransID(event, id0));
     dst = BattleGetUnitPtr(work, BattleTransID(event, id1));
-    info = *(BattleUnitParam**)((u8*)src + 0x310);
+    info = (BattleUnitParam*)src->mExtraWork;
     switch (dst->currentKind) {
         case UNIT_GOOMBELLA_CHAPTER4:
             slot = info;
@@ -1334,7 +1334,7 @@ USER_FUNC(_save_param) {
     id1 = evtGetValue(event, args[1]);
     dst = BattleGetUnitPtr(work, BattleTransID(event, id0));
     src = BattleGetUnitPtr(work, BattleTransID(event, id1));
-    info = *(BattleUnitParam**)((u8*)dst + 0x310);
+    info = (BattleUnitParam*)dst->mExtraWork;
     switch (src->currentKind) {
         case UNIT_GOOMBELLA_CHAPTER4:
             slot = info;

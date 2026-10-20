@@ -628,8 +628,8 @@ s32 toge_searchParent(PuniData* puni, s16 id) {
         return 0;
     }
     *(void**)((u8*)puni + 0x1D0) = parent;
-    *(s16*)((u8*)puni + 0x11A) = best;
-    *(s16*)((u8*)puni + 0x118) = *(s16*)((u8*)parent + 0x118);
+    puni->depth = best;
+    puni->treeId = parent->treeId;
     *(void**)((u8*)parent + 0x1D4) = puni;
     return 1;
 }
@@ -637,15 +637,15 @@ s32 toge_searchParent(PuniData* puni, s16 id) {
 void togeModeParent(PuniData* puni) {
     Vec diff;
 
-    PSVECSubtract((Vec*)((u8*)*(u8**)((u8*)puni + 0x1D0) + 0x12C), &puni->pos, &diff);
-    *(f32*)((u8*)puni + 0x1A8) = PSVECMag(&diff);
-    if (*(f32*)((u8*)puni + 0x1A8) >
-        2.0f + (*(f32*)((u8*)puni + 0x190) + *(f32*)((u8*)*(u8**)((u8*)puni + 0x1D0) + 0x190)) + 3.0f) {
+    PSVECSubtract((Vec*)((u8*)(u8*)puni->parentPuni + 0x12C), &puni->pos, &diff);
+    puni->parentDist = PSVECMag(&diff);
+    if (puni->parentDist >
+        2.0f + (puni->radius + *(f32*)((u8*)(u8*)puni->parentPuni + 0x190)) + 3.0f) {
         PSVECNormalize(&diff, &diff);
         diff.y = 0.0f;
         PSVECScale(&diff, &diff, 1.0f);
         PSVECAdd(&puni->vel, &diff, &puni->vel);
-        *(f32*)((u8*)puni + 0x174) = 3.0f;
+        puni->maxSpeed = 3.0f;
     }
 }
 

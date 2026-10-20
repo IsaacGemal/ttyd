@@ -39,7 +39,7 @@ USER_FUNC(_chuchu_make_extra_work_area) {
 
     id = BattleTransID(event, -2);
     unit = BattleGetUnitPtr(work, id);
-    *(void**)((u8*)unit + 0x310) = BattleAlloc(0xC0);
+    unit->mExtraWork = BattleAlloc(0xC0);
     return EVT_RETURN_DONE;
 }
 
@@ -133,7 +133,7 @@ USER_FUNC(_make_madowase_weapon) {
     id = BattleTransID(event, -2);
     unit = BattleGetUnitPtr(work, id);
     dst = args[0];
-    area = *(BattleWeapon**)((u8*)unit + 0x310);
+    area = (BattleWeapon*)unit->mExtraWork;
     src = evtGetValue(event, dst);
     val = evtGetValue(event, args[1]);
     memcpy(area, (void*)src, 0xC0);
@@ -351,7 +351,7 @@ void mono_capture(CameraId cameraId, void* param) {
     *(smartEntry**)((u8*)unit + 0x318) = smartAlloc(GXGetTexBufferSize(0x260, 0x1E0, 1, 0, 0), 1);
     GXSetTexCopySrc(0, 0, 0x260, 0x1E0);
     GXSetTexCopyDst(0x260, 0x1E0, 1, 0);
-    GXCopyTex((*(smartEntry**)((u8*)unit + 0x318))->address, 0);
+    GXCopyTex(((smartEntry*)unit->mSmartEntry)->address, 0);
     GXPixModeSync();
     parts->partFlags &= ~0x100;
 }
@@ -377,7 +377,7 @@ void mono_disp(CameraId cameraId, void* param) {
     CameraId prev;
 
     camera = camGetPtr(cameraId);
-    entry = *(smartEntry**)((u8*)unit + 0x318);
+    entry = (smartEntry*)unit->mSmartEntry;
     tex = NULL;
     if (entry != NULL) {
         tex = entry->address;
@@ -473,8 +473,8 @@ USER_FUNC(mono_off) {
     if (mono_alpha < 0) {
         mono_alpha = 0;
         BtlUnit_GetPartsPtr(unit, 1);
-        if (*(smartEntry**)((u8*)unit + 0x318) != NULL) {
-            smartFree(*(smartEntry**)((u8*)unit + 0x318));
+        if ((smartEntry*)unit->mSmartEntry != NULL) {
+            smartFree((smartEntry*)unit->mSmartEntry);
         }
         *(smartEntry**)((u8*)unit + 0x318) = NULL;
         return EVT_RETURN_DONE;

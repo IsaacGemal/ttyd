@@ -84,7 +84,7 @@ USER_FUNC(_sanders_make_extra_work_area) {
 
     id = BattleTransID(event, -2);
     unit = BattleGetUnitPtr(work, id);
-    *(void**)((u8*)unit + 0x310) = BattleAlloc(0xC0);
+    unit->mExtraWork = BattleAlloc(0xC0);
     return EVT_RETURN_DONE;
 }
 
@@ -152,7 +152,7 @@ USER_FUNC(_make_counterset_weapon) {
     id = BattleTransID(event, -2);
     unit = BattleGetUnitPtr(work, id);
     arg0 = args[0];
-    area = *(void**)((u8*)unit + 0x310);
+    area = unit->mExtraWork;
     value = evtGetValue(event, arg0);
     value2 = evtGetValue(event, args[1]);
     memcpy(area, (void*)value, 0xC0);
@@ -233,7 +233,7 @@ USER_FUNC(_judge_on_stage) {
     outIndex = args[1];
     unit = BattleGetUnitPtr(work, id);
     BtlUnit_GetPos(unit, &x, &y, &z);
-    if (fabs(x) < float_40_8041de58 + *(f32*)((u8*)stage + 0xB24)) {
+    if (fabs(x) < float_40_8041de58 + stage->stageSize.x) {
         evtSetValue(event, outIndex, 1);
     } else {
         evtSetValue(event, outIndex, 0);

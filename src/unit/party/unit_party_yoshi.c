@@ -2078,7 +2078,7 @@ USER_FUNC(_wait_yoshig_run) {
 
     val = evtGetValue(event, event->args[0]);
     unit = BattleGetUnitPtr(_battleWorkPointer, BattleTransID(event, val));
-    area = *(f32**)((u8*)unit + 0x310);
+    area = (f32*)unit->mExtraWork;
     if (area == NULL) {
         return 0;
     }
@@ -2095,7 +2095,7 @@ USER_FUNC(_wait_yoshig_complete) {
 
     val = evtGetValue(event, event->args[0]);
     unit = BattleGetUnitPtr(_battleWorkPointer, BattleTransID(event, val));
-    return *(void**)((u8*)unit + 0x310) ? 0 : EVT_RETURN_DONE;
+    return unit->mExtraWork ? 0 : EVT_RETURN_DONE;
 }
 
 
@@ -2127,7 +2127,7 @@ USER_FUNC(_gundan_yoshi_run_effect) {
         event->userdata[0] = 0;
         event->userdata[1] = psndSFXOn("SFX_BTL_YOSHI_TAIGUN1");
     } else {
-        area = *(YoshiGundanArea**)((u8*)unit + 0x310);
+        area = (YoshiGundanArea*)unit->mExtraWork;
     }
     switch (area->state) {
     case 0:
@@ -2215,7 +2215,7 @@ USER_FUNC(_gundan_yoshi_run_effect) {
         break;
     case 999:
         psndSFXOff(event->userdata[1]);
-        BattleFree(*(YoshiGundanArea**)((u8*)unit + 0x310));
+        BattleFree((YoshiGundanArea*)unit->mExtraWork);
         *(YoshiGundanArea**)((u8*)unit + 0x310) = NULL;
         return 2;
     default:
