@@ -7,7 +7,7 @@
 #include "battle/battle_menu_disp.h"
 #include "system.h"
 #include "manager/fontmgr.h"
-void FontDrawColor(GXColor* color);
+void FontDrawColor(GXColor color);
 #include "battle/battle_disp.h"
 #include "driver/icondrv.h"
 #include "driver/icondrv_gx.h"
@@ -360,13 +360,7 @@ void DrawMainIconHukidasi(BattleMenuWork* window, void* entryPtr, Mtx* mtx, f32 
     } else {
         color = ((GXColor){ 0x80,0x80,0x80,0xFF });
     }
-#ifdef MUST_MATCH
-    // FontDrawColor's header says GXColor* but the original takes GXColor by value (which MWCC
-    // lowers to a caller-allocated copy); the cast restores that ABI.
-    ((void (*)(GXColor))FontDrawColor)(color);
-#else
-    FontDrawColor(&color);
-#endif
+    FontDrawColor(color);
     FontDrawStringCenterMtx(resultMtx, msg);
 }
 
@@ -518,7 +512,7 @@ static inline GXColor SubIconFontColor(GXColor c, s32 alpha) {
 
 // Sets the label colour; the colour is passed by value.
 static inline void SubIconDrawColor(GXColor c) {
-    FontDrawColor(&c);
+    FontDrawColor(c);
 }
 
 #pragma dont_inline on
