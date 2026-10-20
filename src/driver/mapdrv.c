@@ -568,10 +568,10 @@ void makeDisplayList(BOOL group) {
 			}
 		}
 		if (pass == 0) {
-			*(u32*)(wp->entries[group].field_0x168) = total;
-			if (*(u32*)(wp->entries[group].field_0x168) != 0) {
-				*(void**)(wp->entries[group].field_0x168 + 4) = _mapAllocTail(*(u32*)(wp->entries[group].field_0x168));
-				dest = *(u8**)(wp->entries[group].field_0x168 + 4);
+			wp->entries[group].dlTotal = total;
+			if (wp->entries[group].dlTotal != 0) {
+				wp->entries[group].dlData = _mapAllocTail(wp->entries[group].dlTotal);
+				dest = wp->entries[group].dlData;
 			}
 			else {
 #ifdef MUST_MATCH
@@ -579,7 +579,7 @@ void makeDisplayList(BOOL group) {
 				// and gives the target's `add r3,wp,off; stw 0x16c(r3)` instead of an indexed store.
 				((void**)((u8*)wp + 0x16C))[group * (0x178 / 4)] = NULL;
 #else
-				*(void**)(wp->entries[group].field_0x168 + 4) = NULL;
+				wp->entries[group].dlData = NULL;
 #endif
 				break;
 			}
@@ -1142,10 +1142,10 @@ void mapUnLoad(void) {
 			entry->animCount = 0;
 			entry->animData = NULL;
 		}
-		if (*(void**)((u8*)entry + 0x16C)) {
-			_mapFree(*(void**)((u8*)entry + 0x16C));
-			*(void**)((u8*)entry + 0x16C) = NULL;
-			*(void**)((u8*)entry + 0x168) = NULL;
+		if (entry->dlData) {
+			_mapFree(entry->dlData);
+			entry->dlData = NULL;
+			entry->dlTotal = 0;
 		}
 	}
 	unk_80418458 = 0;
@@ -1219,10 +1219,10 @@ void bmapUnLoad(void) {
 			entry->animCount = 0;
 			entry->animData = NULL;
 		}
-		if (*(void**)((u8*)entry + 0x16C)) {
-			_mapFree(*(void**)((u8*)entry + 0x16C));
-			*(void**)((u8*)entry + 0x16C) = NULL;
-			*(void**)((u8*)entry + 0x168) = NULL;
+		if (entry->dlData) {
+			_mapFree(entry->dlData);
+			entry->dlData = NULL;
+			entry->dlTotal = 0;
 		}
 	}
 	unk_80418458 = 0;
@@ -1266,8 +1266,8 @@ void bmapUnLoad(void) {
 		}
 		else {
 			*(void**)entry->field_0x8C = _mapAllocTail(*(u32*)(entry->field_0x8C + 4));
-			aramMgrToMram(*(void**)(entry->field_0x168 + 0xC), *(void**)entry->field_0x8C);
-			*(void**)(entry->field_0x168 + 0xC) = NULL;
+			aramMgrToMram(*(void**)((u8*)entry + 0x174), *(void**)entry->field_0x8C);
+			*(void**)((u8*)entry + 0x174) = NULL;
 		}
 		makeDisplayList(i);
 	}
@@ -1287,11 +1287,11 @@ void bmapLoad(const char* map1, const char* map2) {
 	wp = mapGetWork();
 	for (i = 0; i < wp->entries[0].count; i++) {
 		entry = &mapGetWork()->entries[i];
-		if (*(void**)((u8*)entry + 0x16C)) {
-			_mapFree(*(void**)((u8*)entry + 0x16C));
+		if (entry->dlData) {
+			_mapFree(entry->dlData);
 		}
-		*(s32*)((u8*)entry + 0x168) = 0;
-		*(s32*)((u8*)entry + 0x16C) = 0;
+		entry->dlTotal = 0;
+		entry->dlData = NULL;
 		p = (u8*)&wp->entries[i];
 		*(s32*)(p + 0x170) = 0;
 		*(s32*)(p + 0x178) = 0;
@@ -2480,10 +2480,10 @@ void mapDisp(void) {
 				if (obj->joints->partCount < 1) continue;
 			}
 			if (!(OBJ_FLAGS & 0x800)) {
-				if ((entry->flags & 2) && entry->field_0x16[3] == 0) continue;
+				if ((entry->flags & 2) && entry->blend[0].a == 0) continue;
 			}
 			if (!(OBJ_FLAGS & 0x1000)) {
-				if ((entry->flags & 4) && entry->field_0x16[7] == 0) continue;
+				if ((entry->flags & 4) && entry->blend[1].a == 0) continue;
 			}
 			PSMTXConcat(cam->view, obj->modelWorldMtx, mtx);
 			if ((OBJ_FLAGS & 0x2) && !mapClipOffFlag) {
@@ -3344,7 +3344,7 @@ void mapSetMaterialTev(s32 texCount, s32 drawMode, s32 flags, Mtx mtx) {
 		workPtr->texCoord = texCoord;
 		workPtr->numIndStage = 0;
 		cbIndex = (u32)(flags & 0xF000000) >> 22 & 0x3FC;
-		cbBase = (u8*)&mapWork[activeGroup].entries[0] + 0x110;
+		cbBase = (u8*)mapWork[activeGroup].entries[0].tevCallback;
 		callback = *(void**)(cbBase + cbIndex);
 		if (callback != NULL) {
 			callback(workPtr);
@@ -3373,22 +3373,22 @@ void mapSetMaterialLastStageBlend(s32 flags, GXColor color1, GXColor color2) {
 		color.a = color.a * color2.r / 255;
 	}
 	if ((wp->entries[0].flags & 0x2) && !(flags & 0x800)) {
-		color.r = color.r * wp->entries[0].field_0x16[0] / 255;
-		color.g = color.g * wp->entries[0].field_0x16[1] / 255;
-		color.b = color.b * wp->entries[0].field_0x16[2] / 255;
-		color.a = color.a * wp->entries[0].field_0x16[3] / 255;
+		color.r = color.r * wp->entries[0].blend[0].r / 255;
+		color.g = color.g * wp->entries[0].blend[0].g / 255;
+		color.b = color.b * wp->entries[0].blend[0].b / 255;
+		color.a = color.a * wp->entries[0].blend[0].a / 255;
 	}
 	if ((wp->entries[0].flags & 0x4) && !(flags & 0x1000)) {
-		color.r = color.r * wp->entries[0].field_0x16[4] / 255;
-		color.g = color.g * wp->entries[0].field_0x16[5] / 255;
-		color.b = color.b * wp->entries[0].field_0x16[6] / 255;
-		color.a = color.a * wp->entries[0].field_0x16[7] / 255;
+		color.r = color.r * wp->entries[0].blend[1].r / 255;
+		color.g = color.g * wp->entries[0].blend[1].g / 255;
+		color.b = color.b * wp->entries[0].blend[1].b / 255;
+		color.a = color.a * wp->entries[0].blend[1].a / 255;
 	}
 	if ((wp->entries[0].flags & 0x8) && !(flags & 0x800)) {
-		color.r = color.r * wp->entries[0].field_0x16[8] / 255;
-		color.g = color.g * wp->entries[0].field_0x16[9] / 255;
-		color.b = color.b * wp->entries[0].field_0x16[10] / 255;
-		color.a = color.a * wp->entries[0].field_0x16[11] / 255;
+		color.r = color.r * wp->entries[0].blend[2].r / 255;
+		color.g = color.g * wp->entries[0].blend[2].g / 255;
+		color.b = color.b * wp->entries[0].blend[2].b / 255;
+		color.a = color.a * wp->entries[0].blend[2].a / 255;
 	}
 	GXSetTevKColor(GX_KCOLOR0, color);
 }
@@ -4587,10 +4587,10 @@ BOOL mapTestXLU(u32 flags, GXColor* a, GXColor* b) {
 	if (b->a != 0xFF) {
 		return TRUE;
 	}
-	if (!(flags & 0x800) && (mapWork[activeGroup].entries[0].flags & 0x2) && mapWork[activeGroup].entries[0].field_0x16[3] != 0xFF) {
+	if (!(flags & 0x800) && (mapWork[activeGroup].entries[0].flags & 0x2) && mapWork[activeGroup].entries[0].blend[0].a != 0xFF) {
 		return TRUE;
 	}
-	if (!(flags & 0x1000) && (mapWork[activeGroup].entries[0].flags & 0x4) && mapWork[activeGroup].entries[0].field_0x16[7] != 0xFF) {
+	if (!(flags & 0x1000) && (mapWork[activeGroup].entries[0].flags & 0x4) && mapWork[activeGroup].entries[0].blend[1].a != 0xFF) {
 		return TRUE;
 	}
 	return FALSE;

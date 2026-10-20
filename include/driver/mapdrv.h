@@ -139,7 +139,8 @@ typedef struct MapEntry {
     s32 count;                     // 0x0
     u16 flags;                     // 0x4
     char name[16];                 // 0x6
-    u8 field_0x16[0x24 - 0x16];    // 0x16, the blend colours (mapSetBlend, mapSetBlend2)
+    GXColor blend[3];              // 0x16, colour scales for flags 0x2 / 0x4 / 0x8 (mapSetBlend, mapSetBlend2)
+    u8 field_0x22[0x24 - 0x22];    // 0x22
     s32 fogEnable;                 // 0x24
     s32 fogType;                   // 0x28, index into fog_type
     f32 fogStart;                  // 0x2C
@@ -159,14 +160,16 @@ typedef struct MapEntry {
     MapObject* rootMapObj;         // 0xA8
     struct HitEntry* rootHitObj;     // 0xAC
     Vec bbox[8];                   // 0xB0
-    u8 field_110[0x150 - 0x110];   // 0x110
+    void* tevCallback[16];         // 0x110, TEV-stage callbacks (mapSetTevCallback)
     s32 numJoints;                 // 0x150, TODO: rename? see: hitNumJoints
     MapObject* objects;            // 0x154, TODO: rename? see: hitNumJoints
     s32 hitNumJoints;              // 0x158
     struct HitEntry* hitEntries;     // 0x15C
     s32 animCount;                 // 0x160, entries in animData
     MapEntryAnimData* animData;    // 0x164
-    u8 field_0x168[0x178 - 0x168]; // 0x168
+    u32 dlTotal;                   // 0x168, total size of the display lists (makeDisplayList)
+    void* dlData;                  // 0x16C, buffer the display lists are copied into
+    u8 field_0x170[0x178 - 0x170]; // 0x170, ARAM copies (bmapLoad, mapLoad)
 } MapEntry;
 
 typedef struct MapWork {
