@@ -9059,3 +9059,34 @@ AnimationPose handle) and the AnimationPose +0x15C (world-position vertex smartE
 animPoseWorldPositionEvalOn) and +0x160 (its count) raw offsets wait on BattleUnitPart/AnimationPose names.
 MoamoaPoseArg duplicates MoamoaWorkPose's offsets. ZakogunEntry 0x0 and ZakogunWork 0x1C-0x33 and 0x40-0x47 are
 unnamed.
+### Readability: mri_puni, part 2 (2026-10-19, Claude Haiku 5.5, n9-q-puni2; reviewed by Claude Opus 5.5)
+
+PuniMap gets `yMax`/`yMin`, `width`/`height`, `dataSize`, `hasData`, `gridSrc`, `valid` and `grid` (the cells
+puniMapFindbuff flood-fills from Mario's cell each frame; `valid` is 0 when Mario is off the map). PuniWork gets
+`windDisabled`, and `marioPuni` is now a `PuniData*`. PuniData's named fields cover the para fight (`hp`, `maxHp`,
+`hpRegen`, `regenTimer`/`regenInterval`, `attack`/`defense`/`damage`), the swarm tree (`treeId`, `depth`,
+`parentDist`/`parentDistPrev`), motion and display (`prevPos`, `speed` = |pos - prevPos|, `maxSpeed`,
+`dispOffset`, `rotZ`, `rotOffsetY`, `moveTarget`, `awayDir`, `hitVel`/`hitDir`/`hitNormal`, `windPower`,
+`marioDist`), `statusFlags` and `animDebounce`. The review renamed what the uses contradicted: `hitChance`/
+`hitChanceAlt` are contest weights, not chances (`fightWeight`: the attacker wins with odds own / (own +
+defender's); `chaseWeight`: against a PUNI_MODE_ESCAPE defender, own / (own + 100 - defender's)); `engaged` is
+`foughtThisFrame` (puni_puni_main clears it every frame); `nearFlag2*`/`nearFlag4*` are `nearAttract*`/
+`nearRepel*`, after the target flags. `marioDist` keeps its name: it has one role, and puniAnimation only offsets
+the PARENT animation phase by marioDist / 8. More fields came out of the review: `pose` (0x0, the PuniPose this
+entry drives, so the `*(u32*)(*(u32**)(p + 0x0))` writes are `pose->flags`), `attackRange` (0x19C), `modeFunc`
+(0x56C, the PUNI_MODE_CUSTOM handler beside `moveFunc`), `waterPos` (0x150), `counter` (0x1E4), and the
+recovery block `recoverType`/`lostPos`/`recoveredPos` (0x58C..0x5A7). `parentPuni`/`leftPuni`/`rightPuni`/`target`
+are `PuniData*`, which removes the `(PuniData*)`/`(s32)`/`*(PuniData**)&` casts. The header now has
+`enum PuniMode` (the 31 values, read from the unk_mri_00012d58 dispatcher; 14 and 30 have no case),
+PUNI_TARGET_ACTIVE/ATTRACT/REPEL (the Piders are REPEL targets, ATTRACT is where puniModeMass gathers) and
+PUNI_STATUS_*, used throughout mri_puni.c. PuniSearchEntry and PuniFallTarget were local copies of PuniTarget,
+and PuniFallActor was HitEntry, so all three are gone. puniModeMass reads its fields by name. In punidrv.h,
+PuniPose gets `facing`, `rotZ`, `rotOffsetY`, `shadowY`, `scale`, `texId`, `billboardYaw`/`billboardYawTarget`
+and PUNI_POSE_VISIBLE/EASE_TURN/NO_SHADOW/SHADOW_Y; PuniSortEntry gets `poseId`/`key`, and PuniDrvWork gets
+`shadowMtx`/`fadeOff`. The PUNI_MODE_CUSTOM call keeps its zero-argument cast under MUST_MATCH, with
+`modeFunc(self)` in the #else. Weighted: mri_puni.c 822 → 84, punidrv.c 56 → 14. Open: PuniData `flags` (0x4) bits
+and the PuniWork `phase` values (2/3/5, read by puniModeALLCheck) are still literals; `field_0x582` (set to 10,
+never read here), PuniWork `field_0x458` (an SFX handle evt_puni_force_se_off stops) and `field_0x47C`, and
+PuniPose `field_0x24` stay unnamed; puniModeHagure still uses raw offsets (0x1E8, 0x220, 0x2AC..0x2B4) into
+`unk21C`; mri.c and mri_03.c set `modeFunc`/`moveFunc` as `*(void**)(p + 0x56C/0x570)`; `radius` doubles as the
+step length in puniModeAway and puniModeWind, which may mean a second role rather than a reuse.
