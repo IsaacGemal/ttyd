@@ -2385,7 +2385,7 @@ void yuunpc_pose_minigame4_main(void) {
                             entry->field_4C = 0;
                             yuunpc_pose_change(entry, entry->field_56, 1.0f, (f32)rand() / 32767.0f);
                             entry->field_3C = 0.0f;
-                            goto loop_test;
+                            break;
                         }
                         if (entry->flags & 0x18) {
                             PSVECSubtract((Vec*)&entry->field_18, (Vec*)&entry->field_24, &va1);
@@ -2519,7 +2519,7 @@ void yuunpc_pose_minigame4_main(void) {
                             entry->field_4C = 0;
                             yuunpc_pose_change(entry, entry->field_56, 1.0f, (f32)rand() / 32767.0f);
                             entry->field_3C = 0.0f;
-                            goto loop_test;
+                            break;
                         }
                         if (entry->flags & 0x18) {
                             PSVECSubtract((Vec*)&entry->field_18, (Vec*)&entry->field_24, &wa1);
@@ -2660,7 +2660,6 @@ void yuunpc_pose_minigame4_main(void) {
                 case 4:
                     break;
                 }
-                loop_test:;
                 } while (mode);
             }
             n = entry->field_4C;
