@@ -8916,3 +8916,21 @@ partyData, like winmgr.c's table), Yoshi's colour lookup passes `PARTNER_YOSHI`,
 `BADGE_MIN`/`BADGE_MAX`. gor_01.c's private UnitWinWork view uses the same names. evt_win.c 710 → 532 weighted.
 Kept raw: `*(u32*)obj & 1` on the MapObject, the `mode` values (no enum yet; 2-18 select the list), and the
 `flags` bits.
+### Readability: fadedrv and battle_stage (2026-10-19, Claude Haiku 5.5, n9-q-fade; reviewed by Claude Opus 5.5)
+
+FadeEntry (0xA8 bytes, fadedrv.h) gets `step` (0x8, the per-type state machine in fadeMain), `alpha` (0x24, 0..1),
+`angle` (0x28, degrees for the texture rotation), `texMtx` (Mtx at 0x2C, built by disp_texture and loaded into
+`GX_TEXMTX0`), `elapsed` (0x5C, +16.67 ms per frame), `groupName`/`animName` (0x60/0x64), `pose`/`paperPose`
+(0x6C/0x70, -1 = none), `poseColor` (GXColor at 0x74, animPoseSetMaterialEvtColor), `scale` (0x90), `frameCount`
+(0x94), `sfxHandle` (0x98, replaces `*(s32*)&field_0x94[4]`) and `delayFrames` (0xA4). FadeWork gets `activeEntry`
+(0x350, -1 = none) and `softAmount` (0x354, fadeTecSoftOn/Off). fadeEntry's white remaps use `FADE_IN_BLACK`,
+`FADE_OUT_BLACK`, `FADE_OUT_WHITE`, `FADE_IN_WHITE2` (9/10/17/18); 16, 11 and 19+ have no enum names yet.
+BattleStage (0xB3C) is now the real struct in battle_stage.h (the .c's BattleStageWork, lights and BattleStageDark
+moved there): BattleStageDark has two eased ramps, `alpha` (drawn by BattleStageDispDark) and `baseAlpha` (what
+the reset helpers ramp back to), each with From/To/Frames/FramesTotal/Ease. The 0xB24 and 0xB30 Vecs are
+`stageSize` and `audienceAreaSize`, named after btlevtcmd_GetStageSize / GetStageAudienceAreaSize, which return
+them; stageSize.y is the stage object spawn height, stageSize.z the depth up to which BattleGetFloorHeight returns
+0, and audienceAreaSize.y the audience floor height (battle_audience, the fall attack). BattleSpotEntry gets
+`pos`/`rot`/`scale`/`color`, and ScreenWork (0x2C, `_mapAlloc(sizeof(ScreenWork))`) `texBuffer`, `captured`,
+eased `scale`/`offsetX`/`offsetY` with targets, `tick` and `noiseMode`; its never-read 0x28 stays `field_0x28`.
+fadedrv.c 189.6 -> 18.0 per kLOC (worker's measurement before review).
