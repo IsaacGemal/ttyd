@@ -50,7 +50,7 @@ __declspec(section ".data") f32 lbl_80349DE8[2] = { -1.0f, 1.0f };
 // soundCursor 0 mono, 1 stereo, 2 surround; rumbleCursor 0 on, 1 off.
 // prevCardCode is last frame's cardGetCode(); button input is ignored when it changes (card inserted or removed).
 // copySrc/copyDst are the copy event's source and destination (lwData[0], [1]). cursorX/Y ease toward
-// cursorTargetX/Y. printWindowId is the window id copied into the card-check event (unk_800f2398 sets it).
+// cursorTargetX/Y. printWindowId is the window id copied into the card-check event (seqLoadCardCheckFade sets it).
 typedef struct LoadWork {
     u16 flags; //0x0
     u8 pad_0x2[0x4 - 0x2];
@@ -151,13 +151,13 @@ WinDt win_dt3[4] = {
     { 140.0f, -65.0f, -120.0f, 60.0f, 10, 0, 1, 1, 2, 2 },
 };
 
-const GXColor dat_8041bd68 = {0, 0, 0, 0xFF};
-const GXColor dat_8041bd6c = {0, 0, 0, 0xFF};
-const GXColor dat_8041bd70 = {0, 0, 0, 0xFF};
-const GXColor dat_8041bd74 = {0, 0, 0, 0xFF};
-const GXColor dat_8041bd78 = {0, 0, 0, 0xFF};
-const GXColor dat_8041bd7c = {0, 0, 0, 0xFF};
-const GXColor dat_8041bd80 = {0, 0, 0, 0xFF};
+const GXColor fade_color_start = {0, 0, 0, 0xFF};
+const GXColor fade_color_title = {0, 0, 0, 0xFF};
+const GXColor fade_color_continue = {0, 0, 0, 0xFF};
+const GXColor fade_color_name_entry = {0, 0, 0, 0xFF};
+const GXColor fade_color_name_on = {0, 0, 0, 0xFF};
+const GXColor fade_color_name_done = {0, 0, 0, 0xFF};
+const GXColor fade_color_name_cancel = {0, 0, 0, 0xFF};
 // Colors/data the loadDraw screen reads by name (the original's .sdata2 block).
 const GXColor dat_8041bd84 = {0xFF, 0xFF, 0xFF, 0xFF};
 const GXColor dat_8041bd88 = {0xA0, 0xA0, 0xA0, 0xFF};
@@ -208,7 +208,7 @@ const Vec vec3_802ed778 = {-4, 0, 0};
 const Vec vec3_802ed784 = {1, 1, 1};
 const Vec vec3_802ed790 = {0, 0, 0};
 const Vec vec3_802ed79c = {1, 1, 1};
-const u32 dat_802ed7a8[] = {0x00000000, 0xC2B40000, 0xC3340000, 0xC3070000, 0x42B40000, 0x00000000, 0x43070000, 0x43340000, 0x00000000, 0xC2340000, 0x00000000, 0xC2B40000, 0x42340000, 0x00000000, 0x42B40000, 0x00000000};
+const u32 copy_angles[] = {0x00000000, 0xC2B40000, 0xC3340000, 0xC3070000, 0x42B40000, 0x00000000, 0x43070000, 0x43340000, 0x00000000, 0xC2340000, 0x00000000, 0xC2B40000, 0x42340000, 0x00000000, 0x42B40000, 0x00000000};
 const Vec vec3_802ed7e8 = {0, 0, 0};
 const Vec vec3_802ed7f4 = {1, 1, 1};
 const Vec vec3_802ed800 = {0, 0, 0};
@@ -217,31 +217,31 @@ const Vec vec3_802ed818 = {0, 0, 0};
 const Vec vec3_802ed824 = {1, 1, 1};
 const Vec vec3_802ed830 = {0, 0, 0};
 const Vec vec3_802ed83c = {1, 1, 1};
-const char str_802ED848[] = "OFF_f_in_out_mario\000";
-const char str_802ED85C[] = "OFF_f_in_out_kuppa\000";
-const char str_802ED870[] = "OFF_f_in_out_peach\000";
-const char str_802ED884[] = "aji_10\000";
-const char str_802ED88C[] = "kpa_00\000";
-const char str_802ED894[] = "nok_01\000";
-const char str_802ED89C[] = "nokotarou\000\000";
-const char str_802ED8A8[] = "hei_00\000";
-const char str_802ED8B0[] = "mri_00\000";
-const char str_802ED8B8[] = "mri_01\000";
-const char str_802ED8C0[] = "tou_02\000";
-const char str_802ED8C8[] = "usu_00\000";
-const char str_802ED8D0[] = "gor_04\000";
-const char str_802ED8D8[] = "muj_12\000";
-const char str_802ED8E0[] = "muj_00\000";
-const char str_802ED8E8[] = "pik_03\000";
-const char str_802ED8F0[] = "gor_01\000";
-const char str_802ED8F8[] = "resha_return\000\000\000";
-const char str_802ED908[] = "pik_01\000";
-const char str_802ED910[] = "aji_18\000";
-const char str_802ED918[] = "e_bero\000";
-const char str_802ED920[] = "gor_00\000";
-const char str_802ED928[] = "jin_04\000";
-const char str_802ED930[] = "aaa_00\000";
-const char str_802ED938[] = "prologue\000\000\000";
+const char animgroup_OFF_f_in_out_mario[] = "OFF_f_in_out_mario\000";
+const char animgroup_OFF_f_in_out_kuppa[] = "OFF_f_in_out_kuppa\000";
+const char animgroup_OFF_f_in_out_peach[] = "OFF_f_in_out_peach\000";
+const char map_aji_10[] = "aji_10\000";
+const char map_kpa_00[] = "kpa_00\000";
+const char map_nok_01[] = "nok_01\000";
+const char bero_nokotarou[] = "nokotarou\000\000";
+const char map_hei_00[] = "hei_00\000";
+const char map_mri_00[] = "mri_00\000";
+const char map_mri_01[] = "mri_01\000";
+const char map_tou_02[] = "tou_02\000";
+const char map_usu_00[] = "usu_00\000";
+const char map_gor_04[] = "gor_04\000";
+const char map_muj_12[] = "muj_12\000";
+const char map_muj_00[] = "muj_00\000";
+const char map_pik_03[] = "pik_03\000";
+const char map_gor_01[] = "gor_01\000";
+const char bero_resha_return[] = "resha_return\000\000\000";
+const char map_pik_01[] = "pik_01\000";
+const char map_aji_18[] = "aji_18\000";
+const char bero_e_bero[] = "e_bero\000";
+const char map_gor_00[] = "gor_00\000";
+const char map_jin_04[] = "jin_04\000";
+const char map_aaa_00[] = "aaa_00\000";
+const char bero_prologue[] = "prologue\000\000\000";
 const f64 double_480_802ed948 = 480;
 const f64 double_32_802ed950 = 32;
 const f64 double_544_802ed958 = 544;
@@ -256,14 +256,14 @@ static EVT_BEGIN(evt_shake)
 EVT_END()
 
 EVT_BEGIN(evt_continue)
-    CALL(evt_sub_animgroup_async, PTR((char*)str_802ED848))
-    CALL(evt_sub_animgroup_async, PTR((char*)str_802ED85C))
-    CALL(evt_sub_animgroup_async, PTR((char*)str_802ED870))
+    CALL(evt_sub_animgroup_async, PTR((char*)animgroup_OFF_f_in_out_mario))
+    CALL(evt_sub_animgroup_async, PTR((char*)animgroup_OFF_f_in_out_kuppa))
+    CALL(evt_sub_animgroup_async, PTR((char*)animgroup_OFF_f_in_out_peach))
     RETURN
 EVT_END()
 
 
-s32 unk_800f2398(EventEntry* event, BOOL isFirstCall) {
+s32 seqLoadCardCheckFade(EventEntry* event, BOOL isFirstCall) {
     fadeReset(4);
     wp->printWindowId = event->printWindowId;
     return 2;
@@ -336,7 +336,7 @@ void seq_loadMain(SequenceWork* workArg) {
             }
             break;
         case 3: {
-            GXColor color = *(GXColor*)&dat_8041bd68;
+            GXColor color = *(GXColor*)&fade_color_start;
             fadeEntry(0x1C, 0, color);
             workArg->state++;
             break;
@@ -519,7 +519,7 @@ void loadMain(SequenceWork* workArg) {
             break;
 
         case 0xa:
-            fadeEntry(0x1b, 0, *(GXColor*)&dat_8041bd6c);
+            fadeEntry(0x1b, 0, *(GXColor*)&fade_color_title);
             wp->step++;
             break;
 
@@ -548,7 +548,7 @@ void loadMain(SequenceWork* workArg) {
             break;
 
         case 0x16:
-            fadeEntry(0x1b, 0, *(GXColor*)&dat_8041bd70);
+            fadeEntry(0x1b, 0, *(GXColor*)&fade_color_continue);
             psndBGMOff_f_d(0x200, 0x7d0, 0);
             wp->step++;
             break;
@@ -569,7 +569,7 @@ void loadMain(SequenceWork* workArg) {
             break;
 
         case 0x1e:
-            fadeEntry(0x1b, 0, *(GXColor*)&dat_8041bd74);
+            fadeEntry(0x1b, 0, *(GXColor*)&fade_color_name_entry);
             wp->step++;
             break;
 
@@ -582,14 +582,14 @@ void loadMain(SequenceWork* workArg) {
         case 0x20:
             if (nameEntPrepare()) {
                 nameEntOn(0);
-                fadeEntry(0x1c, 0, *(GXColor*)&dat_8041bd78);
+                fadeEntry(0x1c, 0, *(GXColor*)&fade_color_name_on);
                 wp->step++;
             }
             break;
 
         case 0x21:
             if (fadeIsFinish() && !nameEntWait()) {
-                fadeEntry(0x18, 0, *(GXColor*)&dat_8041bd7c);
+                fadeEntry(0x18, 0, *(GXColor*)&fade_color_name_done);
                 if (!nameEntIsCancel()) {
                     psndBGMOff_f_d(0x200, 0xbb8, 0);
                 }
@@ -601,7 +601,7 @@ void loadMain(SequenceWork* workArg) {
             if (fadeIsFinish()) {
                 nameEntOff();
                 if (nameEntIsCancel()) {
-                    fadeEntry(0x1c, 0, *(GXColor*)&dat_8041bd80);
+                    fadeEntry(0x1c, 0, *(GXColor*)&fade_color_name_cancel);
                     wp->step = 1;
                 } else {
                     strcpy(gp->playerName, nameEntGetName());
@@ -622,7 +622,7 @@ void loadMain(SequenceWork* workArg) {
                         wp->menuEvt->lwData[0] = 0x17;
                         wp->step++;
                     } else {
-                        seqSetSeq(SEQ_MAP_CHANGE, str_802ED930, str_802ED938);
+                        seqSetSeq(SEQ_MAP_CHANGE, map_aaa_00, bero_prologue);
                     }
                 }
             }
@@ -630,7 +630,7 @@ void loadMain(SequenceWork* workArg) {
 
         case 0x23:
             if (!evtCheckID(wp->menuEvt->eventId)) {
-                seqSetSeq(SEQ_MAP_CHANGE, str_802ED930, str_802ED938);
+                seqSetSeq(SEQ_MAP_CHANGE, map_aaa_00, bero_prologue);
             }
             break;
 
@@ -1239,7 +1239,7 @@ void loadDraw(void) {
     }
 
     if (wp->step == 0x33 && wp->copyDst < 4) {
-        struct LoadAngleTable angles = *(struct LoadAngleTable*)dat_802ed7a8;
+        struct LoadAngleTable angles = *(struct LoadAngleTable*)copy_angles;
         f32 f29;
         f32 f30;
 
@@ -1308,112 +1308,112 @@ void continueGame(void) {
         case 1:
             gp->areaFadeInType = 0x3D;
             gp->areaFadeOutType = 0x38;
-            seqSetSeq(SEQ_MAP_CHANGE, str_802ED884, NULL);
+            seqSetSeq(SEQ_MAP_CHANGE, map_aji_10, NULL);
             break;
         case 2:
             gp->areaFadeInType = 0x3E;
             gp->areaFadeOutType = 0x3A;
-            seqSetSeq(SEQ_MAP_CHANGE, str_802ED88C, NULL);
+            seqSetSeq(SEQ_MAP_CHANGE, map_kpa_00, NULL);
             break;
         case 3:
             gp->areaFadeInType = 0x3C;
             gp->areaFadeOutType = 0x36;
-            seqSetSeq(SEQ_MAP_CHANGE, str_802ED894, str_802ED89C);
+            seqSetSeq(SEQ_MAP_CHANGE, map_nok_01, bero_nokotarou);
             break;
         case 4:
             gp->areaFadeInType = 0x3D;
             gp->areaFadeOutType = 0x38;
-            seqSetSeq(SEQ_MAP_CHANGE, str_802ED884, NULL);
+            seqSetSeq(SEQ_MAP_CHANGE, map_aji_10, NULL);
             break;
         case 5:
             gp->areaFadeInType = 0x3E;
             gp->areaFadeOutType = 0x3A;
-            seqSetSeq(SEQ_MAP_CHANGE, str_802ED8A8, NULL);
+            seqSetSeq(SEQ_MAP_CHANGE, map_hei_00, NULL);
             break;
         case 6:
             gp->areaFadeInType = 0x3C;
             gp->areaFadeOutType = 0x36;
-            seqSetSeq(SEQ_MAP_CHANGE, str_802ED8B0, NULL);
+            seqSetSeq(SEQ_MAP_CHANGE, map_mri_00, NULL);
             break;
         case 7:
             gp->areaFadeInType = 0x3D;
             gp->areaFadeOutType = 0x38;
-            seqSetSeq(SEQ_MAP_CHANGE, str_802ED884, NULL);
+            seqSetSeq(SEQ_MAP_CHANGE, map_aji_10, NULL);
             break;
         case 8:
             gp->areaFadeInType = 0x3E;
             gp->areaFadeOutType = 0x3A;
-            seqSetSeq(SEQ_MAP_CHANGE, str_802ED8B8, NULL);
+            seqSetSeq(SEQ_MAP_CHANGE, map_mri_01, NULL);
             break;
         case 9:
             gp->areaFadeInType = 0x3C;
             gp->areaFadeOutType = 0x36;
-            seqSetSeq(SEQ_MAP_CHANGE, str_802ED8C0, NULL);
+            seqSetSeq(SEQ_MAP_CHANGE, map_tou_02, NULL);
             break;
         case 10:
             gp->areaFadeInType = 0;
             gp->areaFadeOutType = 0x1C;
-            seqSetSeq(SEQ_MAP_CHANGE, str_802ED8C8, NULL);
+            seqSetSeq(SEQ_MAP_CHANGE, map_usu_00, NULL);
             break;
         case 11:
             gp->areaFadeInType = 0x3E;
             gp->areaFadeOutType = 0x3A;
-            seqSetSeq(SEQ_MAP_CHANGE, str_802ED8D0, NULL);
+            seqSetSeq(SEQ_MAP_CHANGE, map_gor_04, NULL);
             break;
         case 12:
             gp->areaFadeInType = 0x3C;
             gp->areaFadeOutType = 0x36;
-            seqSetSeq(SEQ_MAP_CHANGE, str_802ED8C8, NULL);
+            seqSetSeq(SEQ_MAP_CHANGE, map_usu_00, NULL);
             break;
         case 13:
             gp->areaFadeInType = 0;
             gp->areaFadeOutType = 0x1C;
-            seqSetSeq(SEQ_MAP_CHANGE, str_802ED8D8, NULL);
+            seqSetSeq(SEQ_MAP_CHANGE, map_muj_12, NULL);
             break;
         case 14:
             gp->areaFadeInType = 0x3E;
             gp->areaFadeOutType = 0x3A;
-            seqSetSeq(SEQ_MAP_CHANGE, str_802ED8C8, NULL);
+            seqSetSeq(SEQ_MAP_CHANGE, map_usu_00, NULL);
             break;
         case 15:
             gp->areaFadeInType = 0x3C;
             gp->areaFadeOutType = 0x36;
-            seqSetSeq(SEQ_MAP_CHANGE, str_802ED8E0, NULL);
+            seqSetSeq(SEQ_MAP_CHANGE, map_muj_00, NULL);
             break;
         case 16:
             gp->areaFadeInType = 0;
             gp->areaFadeOutType = 0x1C;
-            seqSetSeq(SEQ_MAP_CHANGE, str_802ED8E8, "next");
+            seqSetSeq(SEQ_MAP_CHANGE, map_pik_03, "next");
             break;
         case 17:
             gp->areaFadeInType = 0x3E;
             gp->areaFadeOutType = 0x3A;
-            seqSetSeq(SEQ_MAP_CHANGE, str_802ED8F0, NULL);
+            seqSetSeq(SEQ_MAP_CHANGE, map_gor_01, NULL);
             break;
         case 18:
             gp->areaFadeInType = 0x3C;
             gp->areaFadeOutType = 0x36;
-            seqSetSeq(SEQ_MAP_CHANGE, str_802ED8D0, str_802ED8F8);
+            seqSetSeq(SEQ_MAP_CHANGE, map_gor_04, bero_resha_return);
             break;
         case 19:
             gp->areaFadeInType = 0x3E;
             gp->areaFadeOutType = 0x3A;
-            seqSetSeq(SEQ_MAP_CHANGE, str_802ED908, NULL);
+            seqSetSeq(SEQ_MAP_CHANGE, map_pik_01, NULL);
             break;
         case 20:
             gp->areaFadeInType = 0x3C;
             gp->areaFadeOutType = 0x36;
-            seqSetSeq(SEQ_MAP_CHANGE, str_802ED910, str_802ED918);
+            seqSetSeq(SEQ_MAP_CHANGE, map_aji_18, bero_e_bero);
             break;
         case 21:
             gp->areaFadeInType = 0x3C;
             gp->areaFadeOutType = 0x36;
-            seqSetSeq(SEQ_MAP_CHANGE, str_802ED920, NULL);
+            seqSetSeq(SEQ_MAP_CHANGE, map_gor_00, NULL);
             break;
         case 22:
             gp->areaFadeInType = 0;
             gp->areaFadeOutType = 0x1C;
-            seqSetSeq(SEQ_MAP_CHANGE, str_802ED928, NULL);
+            seqSetSeq(SEQ_MAP_CHANGE, map_jin_04, NULL);
             break;
         case 23:
             stg0_00_init();
@@ -1426,12 +1426,12 @@ void continueGame(void) {
             gp->areaFadeOutType = 0x19;
             swInit();
             swByteSet(0, 0);
-            seqSetSeq(SEQ_MAP_CHANGE, str_802ED930, str_802ED938);
+            seqSetSeq(SEQ_MAP_CHANGE, map_aaa_00, bero_prologue);
             break;
         case 24:
             gp->areaFadeInType = 0x3D;
             gp->areaFadeOutType = 0x38;
-            seqSetSeq(SEQ_MAP_CHANGE, str_802ED884, NULL);
+            seqSetSeq(SEQ_MAP_CHANGE, map_aji_10, NULL);
             break;
     }
 }
