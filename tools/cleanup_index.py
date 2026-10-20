@@ -11,7 +11,7 @@ the weighted count per 1000 non-blank code lines, so growing the tree does not b
 better. Comments are ignored. Nothing here is a build or pass/fail check: tools/ci.py only reports the index and
 its delta, with a warning when it gets worse.
 
-Categories (definition changed 2026-10-20, n9-q-idxtool; the index on main (627515e5) went 29.710 -> 23.495, so compare
+Categories (definition changed 2026-10-20, n9-q-idxtool; the index on main (1e542f53) went 29.577 -> 23.362, so compare
 numbers only within one definition: tools/ci.py measures HEAD and its base with the same script, and docs/CONTEXT.md
 records old and new values for main and the reference points):
 - address_name (1): a symbol named by its address: dat_, vec3_, str_, lbl_, L_, jumptable_, kuribo_init_800C23B4
