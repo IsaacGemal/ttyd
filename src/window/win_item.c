@@ -45,7 +45,6 @@ extern const char str_s_w_jp_mail_tpl[];
 
 // Extended fields of WindowWork used by this unit. win_main.h only declares the
 // first 0x1210 bytes, so the rest are reached through raw offsets below.
-#define WW_S32(w, off) (*(s32*)((u8*)(w) + (off)))
 #define WW_F32(w, off) (*(f32*)((u8*)(w) + (off)))
 
 // win_item's float positions and Luigi book state, in WindowWork's opaque field_224/field_260/field_26E bands.
@@ -479,8 +478,8 @@ s32 winItemMain(WindowWork* work) {
         } else {
             count = work->skipCount;
         }
-        // itemSel[sel] stays `((s32*)((u8*)work + 0x214))[sel]`: the original indexes off a computed
-        // base (lwzx/stwx), which `work->itemSel[sel]` doesn't reproduce.
+        // The remaining `((s32*)((u8*)work + 0x214))[sel]` sites index off a computed base
+        // (lwzx/stwx); `work->itemSel[sel]` doesn't reproduce them.
         sel = work->itemTab;
         rows = (count + 9) / 10;
 
@@ -507,7 +506,7 @@ s32 winItemMain(WindowWork* work) {
                     winMgrOpen(work->useTargetWin[1]);
                 }
             } else {
-                idx = ((s32*)((u8*)work + 0x214))[sel];
+                idx = work->itemSel[sel];
                 idx2 = work->skipList[idx];
                 item = idx2;
                 if ((u32)(item - ITEM_SUPER_LUIGI1) <= 3 || item == ITEM_SUPER_LUIGI5) {
@@ -544,14 +543,14 @@ s32 winItemMain(WindowWork* work) {
             if (work->itemScrollRow[sel] < 0) {
                 work->itemScrollRow[sel] = 0;
             }
-            ((s32*)((u8*)work + 0x214))[sel] = work->itemScrollRow[sel] * 10;
+            work->itemSel[sel] = work->itemScrollRow[sel] * 10;
             psndSFXOn((const char*)0x20035);
         } else if (work->buttonRep & 0x20) {
             work->itemScrollRow[sel] += 1;
             if (work->itemScrollRow[sel] >= rows) {
                 work->itemScrollRow[sel] = rows - 1;
             }
-            ((s32*)((u8*)work + 0x214))[sel] = work->itemScrollRow[sel] * 10;
+            work->itemSel[sel] = work->itemScrollRow[sel] * 10;
             psndSFXOn((const char*)0x20035);
         } else if (work->dirRep & 0xC000) {
             // A pointer to the element (rather than the array subscript repeated) is what makes
@@ -575,7 +574,7 @@ s32 winItemMain(WindowWork* work) {
             {
                 s32 v = idx - 2;
                 if (v >= 0 && v < count) {
-                    ((s32*)((u8*)work + 0x214))[sel] = idx - 2;
+                    work->itemSel[sel] = idx - 2;
                 }
             }
             work->itemScrollRow[sel] = ((s32*)((u8*)work + 0x214))[sel] / 10;
@@ -585,7 +584,7 @@ s32 winItemMain(WindowWork* work) {
             {
                 s32 v = idx + 2;
                 if (v >= 0 && v < count) {
-                    ((s32*)((u8*)work + 0x214))[sel] = idx + 2;
+                    work->itemSel[sel] = idx + 2;
                 } else if (idx + (idx & 1) < count) {
                     ((s32*)((u8*)work + 0x214))[sel] = count - 1;
                 }
@@ -601,10 +600,10 @@ s32 winItemMain(WindowWork* work) {
             return -2;
         }
     update10: {
-        work->targetX = (f32)((((s32*)((u8*)work + 0x214))[sel] % 10 % 2) * 0xCC - 0x9B);
-        work->targetY = (f32)(0x6E - (((s32*)((u8*)work + 0x214))[sel] % 10 / 2) * 0x26);
-        item = (work->itemTab == 0) ? pouchHaveItem(((s32*)((u8*)work + 0x214))[sel])
-                                          : (s32)work->skipList[((s32*)((u8*)work + 0x214))[sel]];
+        work->targetX = (f32)((work->itemSel[sel] % 10 % 2) * 0xCC - 0x9B);
+        work->targetY = (f32)(0x6E - (work->itemSel[sel] % 10 / 2) * 0x26);
+        item = (work->itemTab == 0) ? pouchHaveItem(work->itemSel[sel])
+                                          : (s32)work->skipList[work->itemSel[sel]];
         winMsgEntry(work, item, itemDataTable[item].description, 0);
     }
         break;
