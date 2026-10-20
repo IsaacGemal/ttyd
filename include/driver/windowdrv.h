@@ -33,9 +33,9 @@ struct WindowEntry {
 	f32 height; //0x14
 	f32 width; //0x18
 	u8 pad_0x1C[0x20 - 0x1C]; //0x1C, never read
-	OSTime stateTime; //0x20, renderTime of the last state change (fade and scroll ramps)
+	OSTime stateTime; //0x20, renderTime base for the fade ramps (stamped on state change) and history scroll (re-stamped each frame)
 	smartEntry* userdata; //0x28, TODO: verify? could be wrong
-	s16 dispFlags; //0x2C, windowDispGX_Message flags (0x10 anchor already in screen space, 0x8 y = pos.y - 80 instead of pos.y + 60)
+	s16 dispFlags; //0x2C, passed to windowDispGX_Message (0x1 draw tail, 0x4/0x8 tail placement); msgWindow_Disp: 0x10 anchor already in screen space, 0x8 y = pos.y - 80 instead of pos.y + 60
 	u8 pad_0x2E[0x30 - 0x2E]; //0x2E
 	Vec anchor; //0x30, world point the message window hangs from
 	void (*main)(WindowEntry* entry); //0x3C
