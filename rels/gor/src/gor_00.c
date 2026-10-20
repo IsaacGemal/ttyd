@@ -74,7 +74,7 @@ static s32* itemsel_table_ram;
 static f32* ckp0;
 static f32* ckp1;
 static f32* ckpw;
-u32 unk_gor_bss00000004;
+u32 inemuri_sfx_id;
 u32 unk_gor_bss00000000;
 s32 tentyou_talk[14];
 s32 tenin_talk[14];
@@ -85,9 +85,9 @@ s32 gundan1000tai_beforebattle[524];
 s32 gundan1000tai_afterbattle[1201];
 s32 mony_peton_after[37];
 s32 shukko_event[498];
-s32 unk_evt_gor_00028704[108];
-s32 unk_evt_gor_000288b4[88];
-s32 unk_evt_gor_00028a14[61];
+s32 mony_leave[108];
+s32 peton_leave[88];
+s32 mony_peton_restart[61];
 static s32 peach_mail[209];
 static s32 option_ship_mario[139];
 s32 gor_muj_ship_start[258];
@@ -197,10 +197,10 @@ static EVT_BEGIN(mony_init)
     RETURN
 EVT_END()
 
-EVT_BEGIN(unk_evt_gor_0001f4b4)
+EVT_BEGIN(gor_00_mony_regl)
     SWITCH(GSW(0))
         CASE_EQUAL(278)
-        CALL_CHILD(unk_evt_gor_00028704)
+        CALL_CHILD(mony_leave)
     END_SWITCH
     RETURN
 EVT_END()
@@ -298,10 +298,10 @@ static EVT_BEGIN(peton_init)
     RETURN
 EVT_END()
 
-EVT_BEGIN(unk_evt_gor_0001fa08)
+EVT_BEGIN(gor_00_peton_regl)
     SWITCH(GSW(0))
         CASE_EQUAL(278)
-        CALL_CHILD(unk_evt_gor_000288b4)
+        CALL_CHILD(peton_leave)
     END_SWITCH
     RETURN
 EVT_END()
@@ -332,7 +332,7 @@ static EVT_BEGIN(marco_init)
     RETURN
 EVT_END()
 
-EVT_BEGIN(unk_evt_gor_0001fb1c)
+EVT_BEGIN(marco_party_move)
     CALL(evt_party_stop, 0)
     CALL(evt_party_force_reset_outofscreen, 0)
     CALL(evt_party_get_pos, 0, LW(10), LW(11), LW(12))
@@ -464,7 +464,7 @@ static EVT_BEGIN(marco_talk)
         CASE_LESS(227)
         CALL(evt_msg_print, 0, STRING("mac_4_045_02"), 0, STRING("me"))
         CASE_EQUAL(228)
-        SPAWN_EVENT(unk_evt_gor_0001fb1c)
+        SPAWN_EVENT(marco_party_move)
         IF_INT_EQUAL(GSWF(1177), 1)
             CALL(evt_msg_print, 0, STRING("mac_4_091"), 0, STRING("me"))
             GOTO(100)
@@ -1429,12 +1429,12 @@ u32 rakganEnt[46] = {
 // TODO: type
 static u32 npcEnt[391] = {
     (u32)"モニー", 0x00080600, 0x00000000, (u32)&mony_init,
-    (u32)&unk_evt_gor_0001f4b4, (u32)&mony_talk, 0x00000000, 0x00000000,
+    (u32)&gor_00_mony_regl, (u32)&mony_talk, 0x00000000, 0x00000000,
     0x00000000, 0x00000000, 0x00000000, 0x00000000,
     0x00000000, 0x00000000, 0x00000000, 0x00000000,
     0x00000000, 0x00000000, 0x00000000, 0x00000000,
     0x00000000, 0x00000000, 0x00000000, (u32)"ピートン",
-    0x00080600, 0x00000000, (u32)&peton_init, (u32)&unk_evt_gor_0001fa08,
+    0x00080600, 0x00000000, (u32)&peton_init, (u32)&gor_00_peton_regl,
     (u32)&peton_talk, 0x00000000, 0x00000000, 0x00000000,
     0x00000000, 0x00000000, 0x00000000, 0x00000000,
     0x00000000, 0x00000000, 0x00000000, 0x00000000,
@@ -3094,7 +3094,7 @@ EVT_BEGIN(into_gor_ship)
     CALL(evt_party_cont_onoff, 0, 1)
     CALL(evt_party_cont_onoff, 1, 1)
     IF_INT_EQUAL(GSW(0), 277)
-        CALL_CHILD(unk_evt_gor_00028a14)
+        CALL_CHILD(mony_peton_restart)
     END_IF
     DELETE_EVENT(LW(9))
     CALL(evt_cam3d_evt_off, 500, 11)
@@ -3103,7 +3103,7 @@ EVT_BEGIN(into_gor_ship)
     RETURN
 EVT_END()
 
-EVT_BEGIN(unk_evt_gor_00028704)
+EVT_BEGIN(mony_leave)
     CALL(evt_npc_jump_position_nohit, STRING("モニー"), 145, 15, 225, 400, 20)
     CALL(evt_npc_set_ry, STRING("モニー"), 270)
     CALL(evt_npc_move_position, STRING("モニー"), -130, 200, 0, FLOAT(240.0f), 0)
@@ -3122,7 +3122,7 @@ EVT_BEGIN(unk_evt_gor_00028704)
     RETURN
 EVT_END()
 
-EVT_BEGIN(unk_evt_gor_000288b4)
+EVT_BEGIN(peton_leave)
     CALL(evt_npc_move_position, STRING("ピートン"), -230, -170, 0, FLOAT(240.0f), 0)
     CALL(evt_npc_move_position, STRING("ピートン"), -230, -400, 0, FLOAT(240.0f), 0)
     CALL(evt_npc_set_ry, STRING("ピートン"), 90)
@@ -3138,7 +3138,7 @@ EVT_BEGIN(unk_evt_gor_000288b4)
     RETURN
 EVT_END()
 
-EVT_BEGIN(unk_evt_gor_00028a14)
+EVT_BEGIN(mony_peton_restart)
     SET_VALUE(GSW(0), 278)
     CALL(evt_msg_print, 0, STRING("mac_5_038"), 0, STRING("モニー"))
     CALL(evt_msg_print, 0, STRING("mac_5_039"), 0, STRING("ピートン"))
@@ -3828,7 +3828,7 @@ static EVT_BEGIN(mobj_box00)
 EVT_END()
 
 static EVT_BEGIN(epilogue_npc_entry)
-    CALL(unk_gor_000006d8)
+    CALL(epilogue_npc_clear)
     CALL(evt_npc_entry, STRING("ピーチ姫"), STRING("c_peach"))
     CALL(evt_npc_set_tribe, STRING("ピーチ姫"), STRING("ピーチ姫"))
     CALL(evt_npc_set_position, STRING("ピーチ姫"), 125, 15, 235)
@@ -5799,7 +5799,7 @@ static USER_FUNC(get_yoshi_color) {
     return EVT_RETURN_DONE;
 }
 
-USER_FUNC(unk_gor_000006d8) {
+USER_FUNC(epilogue_npc_clear) {
     NpcWork* work = npcGetWorkPtr();
     s32 i;
     s32 count = work->total;

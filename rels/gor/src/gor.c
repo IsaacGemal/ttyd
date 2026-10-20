@@ -64,11 +64,11 @@ EVT_BEGIN(gor_villager_urouro)
 EVT_END()
 
 EVT_BEGIN(inemuri_snd)
-    CALL(unk_gor_00000104, -1)
+    CALL(inemuri_sfx_set, -1)
     LABEL(0)
     CALL(evt_mario_get_pos, 0, LW(0), LW(1), LW(2))
     CALL(evt_snd_sfxon_3d, STRING("SFX_VOICE_MARIO_SLEEP1"), LW(0), LW(1), LW(2), LW(3))
-    CALL(unk_gor_00000104, LW(3))
+    CALL(inemuri_sfx_set, LW(3))
     WAIT_FRAMES(140)
     GOTO(0)
     RETURN
@@ -135,7 +135,7 @@ EVT_BEGIN(mario_and_party_sleep)
     END_LOOP
     IF_INT_NOT_EQUAL(LW(15), -1)
         DELETE_EVENT(LW(15))
-        CALL(unk_gor_000000cc)
+        CALL(inemuri_sfx_stop)
     END_IF
     IF_INT_LESS_OR_EQUAL(LW(2), 0)
         CALL(evt_mario_get_party, LW(0))
@@ -369,16 +369,16 @@ s32 evt_goki_sub_intpl_get_value(EventEntry* event, BOOL isFirstCall) {
     return EVT_RETURN_DONE;
 }
 
-// Stores the sound-effect id that unk_gor_000000cc stops later.
-s32 unk_gor_00000104(EventEntry* event, BOOL isFirstCall) {
-    unk_gor_bss00000004[0] = evtGetValue(event, event->args[0]);
+// Stores the sound-effect id that inemuri_sfx_stop stops later.
+s32 inemuri_sfx_set(EventEntry* event, BOOL isFirstCall) {
+    inemuri_sfx_id[0] = evtGetValue(event, event->args[0]);
     return EVT_RETURN_DONE;
 }
 
-// Stops the sound effect remembered by unk_gor_00000104.
-s32 unk_gor_000000cc(EventEntry* event, BOOL isFirstCall) {
-    if (unk_gor_bss00000004[0] != -1) {
-        psndSFXOff(unk_gor_bss00000004[0]);
+// Stops the sound effect remembered by inemuri_sfx_set.
+s32 inemuri_sfx_stop(EventEntry* event, BOOL isFirstCall) {
+    if (inemuri_sfx_id[0] != -1) {
+        psndSFXOff(inemuri_sfx_id[0]);
     }
     return EVT_RETURN_DONE;
 }

@@ -52,7 +52,7 @@ struct NanNpcEntry {
 
 extern NanNpcWork* nanNPCWork;
 
-USER_FUNC(unk_gor_000006d8);
+USER_FUNC(epilogue_npc_clear);
 USER_FUNC(funechange_func);
 USER_FUNC(funeflag_load);
 USER_FUNC(funeflag_reset);
@@ -77,10 +77,10 @@ USER_FUNC(fune_yure_func);
 USER_FUNC(fune_yure_func_init);
 f32 lineardec_type(s32 target, s32 count, f32 start, f32 end);
 EVT_DEF(no00_custom);
-EVT_DEF(unk_evt_gor_0001f4b4);
+EVT_DEF(gor_00_mony_regl);
 EVT_DEF(mony_peton_talk);
-EVT_DEF(unk_evt_gor_0001fa08);
-EVT_DEF(unk_evt_gor_0001fb1c);
+EVT_DEF(gor_00_peton_regl);
+EVT_DEF(marco_party_move);
 EVT_DEF(garawaru_urouro2);
 EVT_DEF(garawaru_regl);
 EVT_DEF(megane_regl);
@@ -135,9 +135,9 @@ EVT_DEF(shukko_event);
 EVT_DEF(unk_evt_gor_000277f4);
 EVT_DEF(gorotsuki_kikan);
 EVT_DEF(into_gor_ship);
-EVT_DEF(unk_evt_gor_00028704);
-EVT_DEF(unk_evt_gor_000288b4);
-EVT_DEF(unk_evt_gor_00028a14);
+EVT_DEF(mony_leave);
+EVT_DEF(peton_leave);
+EVT_DEF(mony_peton_restart);
 EVT_DEF(gor_00_koopa_evt);
 EVT_DEF(gor_ship_puka);
 EVT_DEF(gor_muj_ship_sub);
