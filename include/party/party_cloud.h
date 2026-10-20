@@ -41,3 +41,5 @@ void getHitBreatheout2(PartyEntry* party, f32 angle);
 #ifdef MUST_MATCH
 void cloudSetMarioSpeed(s32 dir);
 #endif
+
+void mot_cloud(void);

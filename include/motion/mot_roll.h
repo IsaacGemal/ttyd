@@ -27,3 +27,5 @@ typedef struct MotRoll {
     f32 unk10;  // 0x10
 } MotRoll;
 void roll_upstairs(void);
+void mot_roll(void);
+void mot_roll_post(void);

@@ -17,3 +17,5 @@ void marioSetSwirlPower(s32 msec, f32 a, f32 b);
 void marioShipSetDispDir(void);
 s32 marioChkShipMoveMode(void);
 void marioShipChgFall(void);
+void mot_ship(void);
+void mot_ship_post(void);

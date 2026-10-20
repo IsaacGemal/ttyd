@@ -8,3 +8,5 @@ void marioSetSplash(s32 a, Vec* pos);
 s32 marioWaitDamageTogeReturnFall(void);
 s32 marioChkDamageSink(void);
 s32 marioWaitDamageReturnFall(void);
+void mot_damage(void);
+void mot_damageToge(void);
