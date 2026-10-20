@@ -11068,3 +11068,9 @@ Kept, with the reason each failed: the Vec scratch copies around dispCalcZ in ef
 ### Readability: mot_hammer2 goto removal (2026-10-20, Claude Haiku 5.5, n9-q-gotohammer)
 - `src/motion/mot_hammer.c`: 14 gotos -> 0, no names changed. In `mot_hammer2`, the `level_low`/`level_1`/`level_0` chain became an `if / else if` ladder on `M_S8(mario, 0x41)` (>= 4, >= 3, >= 2, else), with each branch's trailing `goto common_6320` dropped. `case 0xA` now falls through the `common_6320` block into `case 0xB`, and the old `case 0xB: goto common_63C4` became that fallthrough label. Labels `level_low`, `level_1`, `level_0`, `common_6320`, `common_63C4` are gone.
 - Verified: tower `ninja` recreates build/G8MJ01/ok (MUST_MATCH build); the natural compile without MUST_MATCH succeeds. Index (tools/cleanup_index.py): 22.162 -> 22.123 per kLOC (15769 -> 15741 weighted); mot_hammer 310 -> 282 weighted.
+### Cleanup: party_nokonoko goto removal (2026-10-20, Claude Haiku 5.5, n9-q-gotonoko)
+
+`nokonoko_use` had 65 gotos (the only ones in the file). 58 are gone, the build stays MATCH after each commit. No names changed.
+- The three `switch (party->useMotionId)` blocks fall through to each other, so every goto from one switch to the start of the next one is a `break`: 21 from the first, 10 from the second, 16 from the third. The `L_800CC620`, `L_800CCD8C` and `L_800CD8A8` labels are gone with them.
+- Early exits to the end of the function (1 from the prologue, 6 from the second switch, 4 from the third) are `return`, and the `L_800CD8BC` label is gone.
+- Kept: 7 gotos in `case 20`, which jump between the `marioChkKey()` test and the finish block. Three structured forms (one combined `||` condition with a `break`, its negated `&&` twin, and an `if`/`else` chain that duplicates the finish code) all changed the object, so the gotos stay.
