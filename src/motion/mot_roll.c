@@ -131,9 +131,9 @@ void marioResetRollSpd(void) {
     if (mario->currMotionId == 0x16) {
         if (marioGetPtr()->motStruct != NULL) {
             zero = 0.0f;
-            *(f32*)((u8*)marioGetPtr()->motStruct + 0x0) = zero;
+            ((MotRoll*)marioGetPtr()->motStruct)->velX = zero;
             zero = 0.0f;
-            *(f32*)((u8*)marioGetPtr()->motStruct + 0x4) = zero;
+            ((MotRoll*)marioGetPtr()->motStruct)->velY = zero;
         }
         mario->baseSpeed = 0.0f;
     }
@@ -456,8 +456,8 @@ void marioReInit_roll(void) {
     mario->wPlayerCollisionBox.x = 14.8f;
     mario->wPlayerCollisionBox.y = 14.8f;
     mario->mBaseDashSpeed = rollData[0];
-    *(f32*)((u8*)marioGetPtr()->motStruct + 0x0) = 0.0f;
-    *(f32*)((u8*)marioGetPtr()->motStruct + 0x4) = 0.0f;
+    ((MotRoll*)marioGetPtr()->motStruct)->velX = 0.0f;
+    ((MotRoll*)marioGetPtr()->motStruct)->velY = 0.0f;
     *(f32*)((u8*)mario + 0xB0) = -6.0f;
     *(f32*)((u8*)mario + 0xB4) = 6.0f;
     *(f32*)((u8*)mario + 0x98) = 6.0f;
