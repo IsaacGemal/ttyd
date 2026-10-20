@@ -16,7 +16,7 @@ inline Vec initializeVec(Vec* input) {
 	return temp;
 }
 
-EffectEntry* effQueenEntry(s32 arg0, s32 lifetime, f32 x, f32 y, f32 z, f32 scale) {
+EffectEntry* effQueenEntry(s32 type, s32 lifetime, f32 x, f32 y, f32 z, f32 scale) {
 	EffectEntry* entry;
 	effQueenData* data;
 
@@ -28,13 +28,14 @@ EffectEntry* effQueenEntry(s32 arg0, s32 lifetime, f32 x, f32 y, f32 z, f32 scal
 	entry->callback = effQueenMain;
 	entry->flags |= 2;
 
-	data->field_0x0 = arg0;
+	data->field_0x0 = type;
 	data->position.x = x;
 	data->position.y = y;
 	data->position.z = z;
 	data->field_0x14 = scale;
 	data->field_0x10 = 0.0f;
 
+	// 1000 means no time limit; the main loop only counts down below it.
 	if (lifetime <= 0) {
 		data->field_0x20 = 1000;
 	} else {
@@ -62,7 +63,7 @@ void effQueenMain(EffectEntry* effect) {
 
 	if (effect->flags & 4) {
 		effect->flags &= ~4;
-		data->field_0x20 = 100;
+		data->field_0x20 = 100; // forced removal: fade out over the last 100 ticks
 	}
 
 	if (animGroupBaseAsync("MOBJ_EFF_queen_tornade", inBattle, NULL) == 0) {

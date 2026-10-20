@@ -61,11 +61,11 @@ typedef struct effHitData {
 	s32 type;
 	Vec position;
 	u8 pad_0x10[0x28 - 0x10];
-	f32 field_0x28;
-	s32 field_0x2c;
+	f32 scale;
+	s32 color1Alpha;
 	s32 lifetime;
 	s32 timer;
-	f32 field_0x38;
+	f32 frameProgress;
 	u8 color[6];
 	u8 pad_0x42[0x44 - 0x42];
 } effHitData;
@@ -119,7 +119,7 @@ EffectEntry* effHitN64Entry(s32 type, s32 duration, f32 x, f32 y, f32 z, f32 sca
 	data->position.z = z;
 	data->lifetime = cnt_table[type];
 	data->timer = 0;
-	data->field_0x38 = float_0_8041f0f0;
+	data->frameProgress = float_0_8041f0f0;
 
 	switch (type) {
 	case 0:
@@ -157,7 +157,7 @@ EffectEntry* effHitN64Entry(s32 type, s32 duration, f32 x, f32 y, f32 z, f32 sca
 		break;
 	}
 
-	data->field_0x28 = scale;
+	data->scale = scale;
 
 	part = (effHitParticle*)(data + 1);
 	for (i = 1; i < count; i++, part++) {
@@ -196,9 +196,9 @@ void effHitMain(EffectEntry* effect) {
 	}
 	timer = data->timer;
 	if (timer <= cnt_table[type]) {
-		data->field_0x38 = (f32)anim_data[timer - 1] * float_0p0039062_8041f100;
+		data->frameProgress = (f32)anim_data[timer - 1] * float_0p0039062_8041f100;
 	} else {
-		data->field_0x38 = float_1_8041f104;
+		data->frameProgress = float_1_8041f104;
 	}
 
 	for (i = 1, data++; i < effect->count; i++, data++) {
@@ -261,13 +261,13 @@ void effHitDisp(CameraId camId, void* param) {
 	data = effect->userdata;
 	timer = data->timer;
 	type = data->type;
-	frames = float_5_8041f0e0 * data->field_0x38;
+	frames = float_5_8041f0e0 * data->frameProgress;
 	frame = (s32)frames;
 	if (frame > 4) {
 		return;
 	}
 
-	scale = data->field_0x28;
+	scale = data->scale;
 	PSMTXTrans(mtxA, data->position.x, data->position.y, data->position.z);
 	PSMTXRotRad(mtxB, 'y', float_deg2rad_8041f0f8 * -camGetPtr(CAMERA_3D)->viewYaw);
 	PSMTXScale(mtxC, scale, scale, scale);
@@ -275,7 +275,7 @@ void effHitDisp(CameraId camId, void* param) {
 	PSMTXConcat(mtxA, mtxC, mtx);
 
 	alpha = (s32)((frames - (f32)frame) * float_256_8041f0fc);
-	c1a = data->field_0x2c;
+	c1a = data->color1Alpha;
 
 	switch (type) {
 	case 1:
@@ -365,7 +365,7 @@ static void main_dl(EffectEntry* effect, Mtx matrix) {
 	f32 f;
 
 	data = effect->userdata;
-	f = float_5_8041f0e0 * data->field_0x38;
+	f = float_5_8041f0e0 * data->frameProgress;
 	frame = (s32)f;
 	flag = (f >= float_4_8041f0e4) ? 1 : 0;
 

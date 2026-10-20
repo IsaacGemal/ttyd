@@ -150,22 +150,22 @@ void effNanigaDisp(CameraId camId, void* param) {
 	u32 scissorWidth;
 	u32 scissorHeight;
 	f32 half;
-	f32 forty;
-	f32 onePointFive;
+	f32 iconSize;
+	f32 scaleBoost;
 	u32 centerX;
 	u32 centerY;
-	u32 size;
+	u32 scissorSize;
 	f32 extent;
-	f32 pos20;
-	f32 halfSize;
+	f32 quadHalf;
+	f32 negQuadHalf;
 	f32 savedScale;
 	f32 sizeScale;
 	s32 i;
 
 	camera = camGetPtr(camId);
 	savedScale = data->scale;
-	onePointFive = 1.5f;
-	data->scale = savedScale * onePointFive;
+	scaleBoost = 1.5f;
+	data->scale = savedScale * scaleBoost;
 	PSMTXTrans(mtx, data->field_0x10, data->field_0x14, data->field_0x18);
 	PSMTXRotRad(rot, 'y', 0.017453292f * -camGetPtr(camId)->viewYaw);
 	PSMTXScale(scale, data->scale, data->scale, data->scale);
@@ -173,13 +173,13 @@ void effNanigaDisp(CameraId camId, void* param) {
 	PSMTXConcat(mtx, scale, base);
 	GXGetScissor(&scissorLeft, &scissorTop, &scissorWidth, &scissorHeight);
 	sizeScale = data->scale;
-	forty = 40.0f;
-	size = (u32)(forty * sizeScale);
+	iconSize = 40.0f;
+	scissorSize = (u32)(iconSize * sizeScale);
 	extent = 20.f * sizeScale;
 	half = 0.5f;
 	centerY = (u32)((f32)gp->efbHeight * half - data->field_0x14);
 	centerX = (u32)((f32)gp->fbWidth * half + data->field_0x10);
-	GXSetScissor((u32)((f32)centerX - extent), (u32)((f32)centerY - extent), size, size);
+	GXSetScissor((u32)((f32)centerX - extent), (u32)((f32)centerY - extent), scissorSize, scissorSize);
 
 	effGetTexObj(0x57, &tex);
 	GXLoadTexObj(&tex, 0);
@@ -199,15 +199,15 @@ void effNanigaDisp(CameraId camId, void* param) {
 	GXLoadPosMtxImm(mtx, 0);
 	GXSetCurrentMtx(0);
 	GXBegin(0x80, 0, 4);
-	pos20 = 20.f;
-	halfSize = -forty * half;
-	GXPosition3f32(halfSize, pos20, 0.0f);
+	quadHalf = 20.f;
+	negQuadHalf = -iconSize * half;
+	GXPosition3f32(negQuadHalf, quadHalf, 0.0f);
 	GXTexCoord2f32(0.0f, 0.0f);
-	GXPosition3f32(pos20, pos20, 0.0f);
+	GXPosition3f32(quadHalf, quadHalf, 0.0f);
 	GXTexCoord2f32(1.0f, 0.0f);
-	GXPosition3f32(pos20, halfSize, 0.0f);
+	GXPosition3f32(quadHalf, negQuadHalf, 0.0f);
 	GXTexCoord2f32(1.0f, 1.0f);
-	GXPosition3f32(halfSize, halfSize, 0.0f);
+	GXPosition3f32(negQuadHalf, negQuadHalf, 0.0f);
 	GXTexCoord2f32(0.0f, 1.0f);
 
 	for (i = 0; i < data->count + 5; i++) {
@@ -221,13 +221,13 @@ void effNanigaDisp(CameraId camId, void* param) {
 		GXLoadPosMtxImm(mtx, 0);
 		GXSetCurrentMtx(0);
 		GXBegin(0x80, 0, 4);
-		GXPosition3f32(halfSize, pos20, 0.0f);
+		GXPosition3f32(negQuadHalf, quadHalf, 0.0f);
 		GXTexCoord2f32(0.0f, 0.0f);
-		GXPosition3f32(pos20, pos20, 0.0f);
+		GXPosition3f32(quadHalf, quadHalf, 0.0f);
 		GXTexCoord2f32(1.0f, 0.0f);
-		GXPosition3f32(pos20, halfSize, 0.0f);
+		GXPosition3f32(quadHalf, negQuadHalf, 0.0f);
 		GXTexCoord2f32(1.0f, 1.0f);
-		GXPosition3f32(halfSize, halfSize, 0.0f);
+		GXPosition3f32(negQuadHalf, negQuadHalf, 0.0f);
 		GXTexCoord2f32(0.0f, 1.0f);
 	}
 

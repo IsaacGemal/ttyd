@@ -22,22 +22,22 @@ static void main_dl(s32 type);
 static void effKemuri2Disp(CameraId cameraId, void* param);
 
 typedef struct effKemuri2Data {
-	u32 field_0x0;             // 0x0
-	u16 type;                  // 0x4
-	u8 pad_6[2];               // 0x6
-	Vec position;              // 0x8
+	u32 active;                 // 0x0
+	u16 type;                   // 0x4
+	u8 pad_6[2];                // 0x6
+	Vec position;               // 0x8
 	u8 field_0x14[0x44 - 0x14]; // 0x14
-	f32 field_0x44;            // 0x44
-	f32 field_0x48;            // 0x48
-	f32 field_0x4c;            // 0x4c
-	f32 field_0x50;            // 0x50
-	f32 field_0x54;            // 0x54
-	s32 field_0x58;            // 0x58
-	s32 field_0x5c;            // 0x5c
-	s32 field_0x60;            // 0x60
+	f32 driftScale;             // 0x44: scales the horizontal drift per frame
+	f32 velocityY;              // 0x48: vertical velocity, updated by gravity
+	f32 gravity;                // 0x4c
+	f32 driftX;                 // 0x50
+	f32 driftZ;                 // 0x54
+	s32 animIndex;              // 0x58: selects an entry of anim_data_table
+	s32 animCursor;             // 0x5c: next byte in the selected animation sequence
+	s32 animFrame;              // 0x60: current frame, selects the texture tile
 } effKemuri2Data;
 
-EffectEntry* effKemuri2N64Entry(s32 type, f32 x, f32 y, f32 z, f32 a5, f32 a6) {
+EffectEntry* effKemuri2N64Entry(s32 type, f32 x, f32 y, f32 z, f32 driftX, f32 driftZ) {
 	EffectEntry* entry;
 	effKemuri2Data* data;
 
@@ -48,18 +48,18 @@ EffectEntry* effKemuri2N64Entry(s32 type, f32 x, f32 y, f32 z, f32 a5, f32 a6) {
 	entry->userdata = data;
 	entry->callback = effKemuri2Main;
 
-	data->field_0x58 = (type == 2);
-	data->field_0x5c = 0;
+	data->animIndex = (type == 2);
+	data->animCursor = 0;
 	data->type = type;
-	data->field_0x0 = 1;
-	data->field_0x50 = a5;
-	data->field_0x54 = a6;
+	data->active = 1;
+	data->driftX = driftX;
+	data->driftZ = driftZ;
 	data->position.x = x;
 	data->position.y = y;
 	data->position.z = z;
-	data->field_0x44 = 0.33333334f;
-	data->field_0x48 = 1.75f;
-	data->field_0x4c = -0.16f;
+	data->driftScale = 0.33333334f;
+	data->velocityY = 1.75f;
+	data->gravity = -0.16f;
 	return entry;
 }
 
@@ -75,16 +75,16 @@ static void effKemuri2Main(EffectEntry* effect) {
 	position.y = data->position.y;
 	position.z = data->position.z;
 	position2 = position;
-	if ((data->field_0x60 = ((s8*)anim_data_table[data->field_0x58])[data->field_0x5c++]) < 0) {
+	if ((data->animFrame = ((s8*)anim_data_table[data->animIndex])[data->animCursor++]) < 0) {
 		effDelete(effect);
 		return;
 	}
 
 	for (i = 0; i < effect->count; i++, data++) {
-		data->position.x += data->field_0x44 * data->field_0x50;
-		data->position.z += data->field_0x44 * data->field_0x54;
-		data->field_0x48 += data->field_0x4c;
-		data->position.y += data->field_0x48;
+		data->position.x += data->driftScale * data->driftX;
+		data->position.z += data->driftScale * data->driftZ;
+		data->velocityY += data->gravity;
+		data->position.y += data->velocityY;
 	}
 
 	dispEntry(CAMERA_3D, dispCalcZ(&position2), 2, effKemuri2Disp, effect);
@@ -188,10 +188,10 @@ static void effKemuri2Disp(CameraId cameraId, void* param) {
 	camera = camGetPtr(cameraId);
 	data = effect->userdata;
 	flag = 0;
-	frame = data->field_0x60;
+	frame = data->animFrame;
 	type = data->type;
-	if ((data->field_0x58 == 0 && frame == 6) ||
-	    (data->field_0x58 == 1 && frame == 7)) {
+	if ((data->animIndex == 0 && frame == 6) ||
+	    (data->animIndex == 1 && frame == 7)) {
 		flag = 1;
 	}
 	GXSetTevColor(GX_TEVREG0, (GXColor){ 0xE6, 0xDE, 0xDE, 0x6E });

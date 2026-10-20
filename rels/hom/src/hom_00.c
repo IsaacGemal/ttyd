@@ -624,17 +624,17 @@ s32 tokei(EventEntry* event, BOOL isFirstCall) {
 
 static s32 test_glare(EventEntry* event, BOOL isFirstCall) {
     MapObject* obj = mapGetMapObj("sun");
+    // field_0xEC holds the four u16 screen bounds (left, top, right, bottom).
+    u16* bounds = (u16*)obj->field_0xEC;
 
     if (isFirstCall) {
-        *(u32*)obj |= 0x20000000;
+        obj->flags |= MAPOBJ_FLAG_BBOX;
         return 0;
     }
-    if (*(u16*)((u8*)obj + 0xEC) == 0x3FF || *(u16*)((u8*)obj + 0xEE) == 0x3FF ||
-        *(u16*)((u8*)obj + 0xF0) == 0x3FF || *(u16*)((u8*)obj + 0xF2) == 0x3FF) {
+    if (bounds[0] == 0x3FF || bounds[1] == 0x3FF || bounds[2] == 0x3FF || bounds[3] == 0x3FF) {
         envGlareFilter(0, 0, 0, 0, 0);
     }
-    else if (*(u16*)((u8*)obj + 0xEC) == 0 && *(u16*)((u8*)obj + 0xEE) == 0 &&
-             *(u16*)((u8*)obj + 0xF0) == 0 && *(u16*)((u8*)obj + 0xF2) == 0) {
+    else if (bounds[0] == 0 && bounds[1] == 0 && bounds[2] == 0 && bounds[3] == 0) {
         envGlareFilter(0, 0, 0, 0, 0);
     }
     else if (evtGetValue(event, 0xFAA2B58F) != 0) {
@@ -644,11 +644,11 @@ static s32 test_glare(EventEntry* event, BOOL isFirstCall) {
 #ifdef MUST_MATCH
         // MUST_MATCH: the volatile pointer holds the four halfword loads in the original's order; without it
         // the scheduler moves the y0 `subi` one slot ahead of the y1 load.
-        volatile u16* p = (volatile u16*)((u8*)obj + 0xEC);
+        volatile u16* p = (volatile u16*)bounds;
         envGlareFilter(1, (s16)(p[1] - 0x32), (s16)(p[0] - 0x32), (s16)(p[3] + 0x32), (s16)(p[2] + 0x32));
 #else
-        envGlareFilter(1, (s16)(*(u16*)((u8*)obj + 0xEE) - 0x32), (s16)(*(u16*)((u8*)obj + 0xEC) - 0x32),
-                       (s16)(*(u16*)((u8*)obj + 0xF2) + 0x32), (s16)(*(u16*)((u8*)obj + 0xF0) + 0x32));
+        envGlareFilter(1, (s16)(bounds[1] - 0x32), (s16)(bounds[0] - 0x32),
+                       (s16)(bounds[3] + 0x32), (s16)(bounds[2] + 0x32));
 #endif
     }
     return 0;
@@ -658,9 +658,9 @@ static s32 test_glare(EventEntry* event, BOOL isFirstCall) {
 // callee-saved colouring it induces are sensitive to the front-end expression tree here.
 static void sun_tev(TevCallbackParam* param) {
     s32 field_C = param->field_C;
-    s32 field_10 = param->field_10;
+    s32 texMapId = param->field_10;
     s32 field_14 = param->field_14;
-    s32 field_18 = param->field_18;
+    s32 indTexStage = param->field_18;
     u8* buf;
     GXTexObj texObj;
     f32 mtx[2][3];
@@ -694,7 +694,7 @@ static void sun_tev(TevCallbackParam* param) {
     DCFlushRange(buf, 0x2000);
     GXInitTexObj(&texObj, buf, 0x40, 0x40, GX_TF_IA8, GX_REPEAT, GX_REPEAT, GX_FALSE);
     GXInitTexObjLOD(&texObj, GX_NEAR, GX_NEAR, 0.0f, 0.0f, 0.0f, GX_FALSE, GX_FALSE, GX_ANISO_1);
-    GXLoadTexObj(&texObj, field_10);
+    GXLoadTexObj(&texObj, texMapId);
     mtx[0][0] = 0.5f;
     mtx[0][1] = 0.0f;
     mtx[0][2] = 0.0f;
@@ -702,13 +702,13 @@ static void sun_tev(TevCallbackParam* param) {
     mtx[1][1] = 0.5f;
     mtx[1][2] = 0.0f;
     GXSetIndTexMtx(GX_ITM_0, mtx, 1);
-    GXSetIndTexOrder(field_18, GX_TEXCOORD0, field_10);
-    GXSetIndTexCoordScale(field_18, GX_ITS_1, GX_ITS_1);
-    GXSetTevIndWarp(GX_TEVSTAGE0, field_18, 1, 0, GX_ITM_0);
+    GXSetIndTexOrder(indTexStage, GX_TEXCOORD0, texMapId);
+    GXSetIndTexCoordScale(indTexStage, GX_ITS_1, GX_ITS_1);
+    GXSetTevIndWarp(GX_TEVSTAGE0, indTexStage, 1, 0, GX_ITM_0);
     param->field_C = field_C;
     param->field_14 = field_14;
-    param->field_18 = field_18 + 1;
-    param->field_10 = field_10 + 1;
+    param->field_18 = indTexStage + 1;
+    param->field_10 = texMapId + 1;
 }
 
 EVT_BEGIN(hom_00_init_evt)
@@ -740,7 +740,7 @@ EVT_BEGIN(hom_00_init_evt)
     END_IF
     CALL(evt_map_set_tevcallback, 2, PTR(sun_tev))
     CALL(evt_mapobj_flag_onoff, 1, 1, STRING("sun"), 33554432)
-    CALL(evt_mapobj_flag_onoff, 1, 0, STRING("sun"), 256)
+    CALL(evt_mapobj_flag_onoff, 1, 0, STRING("sun"), MAPOBJ_FLAG_DISPLAY_LIST)
     CALL(evt_mapobj_flag_onoff, 1, 1, STRING("sun"), 268435456)
     BEGIN_INLINE_EVENT
         CALL(test_glare)

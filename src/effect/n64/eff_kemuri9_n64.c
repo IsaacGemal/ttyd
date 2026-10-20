@@ -19,9 +19,9 @@ typedef struct effKemuri9Particle {
     f32 x;                                       // 0x04
     f32 y;                                       // 0x08
     f32 z;                                       // 0x0C
-    f32 field_0x10;                              // 0x10
-    f32 field_0x14;                              // 0x14
-    f32 field_0x18;                              // 0x18
+    f32 dirX;                                    // 0x10
+    f32 yVelocity;                               // 0x14
+    f32 dirZ;                                    // 0x18
     u8 pad_1C[0x40 - 0x1C];                      // 0x1C
 } effKemuri9Particle;
 
@@ -31,18 +31,18 @@ typedef struct effKemuri9Data {
     f32 x;         // 0x04
     f32 y;         // 0x08
     f32 z;         // 0x0C
-    f32 field_0x10; // 0x10
-    f32 field_0x14; // 0x14
-    f32 field_0x18; // 0x18
+    f32 dirX;      // 0x10
+    f32 yVelocity; // 0x14
+    f32 dirZ;      // 0x18
     f32 scale;      // 0x1C
     f32 targetScale; // 0x20
     s32 life;       // 0x24
     s32 age;        // 0x28
-    s32 field_0x2C; // 0x2C
-    s32 field_0x30; // 0x30
-    s32 field_0x34; // 0x34
-    s32 field_0x38; // 0x38
-    s32 field_0x3C; // 0x3C
+    s32 startLife;   // 0x2C
+    s32 texFrame;    // 0x30
+    s32 nextTexFrame; // 0x34
+    s32 frame;       // 0x38
+    s32 lifetime;    // 0x3C
 } effKemuri9Data;
 
 EffectEntry* effKemuri9N64Entry(s32 type, s32 count, s32 a2, f32 x, f32 y, f32 z, f32 a6, f32 a7) {
@@ -61,18 +61,18 @@ EffectEntry* effKemuri9N64Entry(s32 type, s32 count, s32 a2, f32 x, f32 y, f32 z
 
     data->life = a2;
     data->age = 0;
-    data->field_0x2C = a2;
-    data->field_0x30 = 0;
+    data->startLife = a2;
+    data->texFrame = 0;
     data->type = type;
     data->x = x;
     data->y = y;
     data->z = z;
     data->scale = 10.f;
     data->targetScale = a6;
-    data->field_0x30 = 0;
-    data->field_0x34 = 0;
-    data->field_0x3C = a2;
-    data->field_0x38 = 0;
+    data->texFrame = 0;
+    data->nextTexFrame = 0;
+    data->lifetime = a2;
+    data->frame = 0;
 
     p = (effKemuri9Particle*)(data + 1);
     for (i = 1; i < count + 1; i++, p++) {
@@ -80,9 +80,9 @@ EffectEntry* effKemuri9N64Entry(s32 type, s32 count, s32 a2, f32 x, f32 y, f32 z
         p->y = 0.0f;
         p->z = 0.0f;
         angle = 6.2831855f * (a7 + (f32)(((i - 1) * 360) / count)) / 360.f;
-        p->field_0x10 = sin(angle);
-        p->field_0x14 = 0.0f;
-        p->field_0x18 = cos(angle);
+        p->dirX = sin(angle);
+        p->yVelocity = 0.0f;
+        p->dirZ = cos(angle);
     }
     return effect;
 }
@@ -104,24 +104,24 @@ void effKemuri9Main(EffectEntry* effect) {
     effKemuri9Data* data;
     Vec position;
     s32 scale;
-    s32 field30;
-    s32 field34;
+    s32 texFrame;
+    s32 nextTexFrame;
     s32 i;
 
     data = effect->userdata;
     position = kemuri9InitializeVec(data);
 
-    field30 = (s32)(16.0f * (f32)data->field_0x38 / (f32)data->field_0x3C);
-    field34 = (s32)(16.0f * (f32)(data->field_0x38 + 1) / (f32)data->field_0x3C);
-    data->field_0x38++;
-    if (field34 > 15) {
-        field34 = 15;
+    texFrame = (s32)(16.0f * (f32)data->frame / (f32)data->lifetime);
+    nextTexFrame = (s32)(16.0f * (f32)(data->frame + 1) / (f32)data->lifetime);
+    data->frame++;
+    if (nextTexFrame > 15) {
+        nextTexFrame = 15;
     }
-    if (field30 > 15) {
-        field30 = 15;
+    if (texFrame > 15) {
+        texFrame = 15;
     }
-    data->field_0x30 = field30;
-    data->field_0x34 = field34;
+    data->texFrame = texFrame;
+    data->nextTexFrame = nextTexFrame;
 
     data->age++;
     data->life--;
@@ -134,11 +134,11 @@ void effKemuri9Main(EffectEntry* effect) {
     scale = (s32)data->scale;
 
     for (i = 1, data++; i < effect->count; i++, data++) {
-        data->field_0x14 += 0.04f;
-        data->field_0x14 *= 0.9f;
-        data->x = (f32)scale * data->field_0x10;
-        data->y = data->y + data->field_0x14;
-        data->z = (f32)scale * data->field_0x18;
+        data->yVelocity += 0.04f;
+        data->yVelocity *= 0.9f;
+        data->x = (f32)scale * data->dirX;
+        data->y = data->y + data->yVelocity;
+        data->z = (f32)scale * data->dirZ;
     }
 
     dispEntry(4, dispCalcZ(&position), 2, effKemuri9Disp, effect);
@@ -159,17 +159,17 @@ void effKemuri9Disp(CameraId camId, void* param) {
     Mtx mtxScale;
     Mtx mtxRot;
     Mtx mtxView;
-    s32 field30;
+    s32 texFrame;
     s32 type;
     s32 i;
     f32 size;
     f32 size2;
-    s32 field34;
+    s32 nextTexFrame;
 
     cam = camGetPtr(camId);
     data = effect->userdata;
-    field30 = data->field_0x30;
-    field34 = data->field_0x34;
+    texFrame = data->texFrame;
+    nextTexFrame = data->nextTexFrame;
     type = data->type;
 
     PSMTXTrans(mtxWork, data->x, data->y, data->z);
@@ -188,12 +188,12 @@ void effKemuri9Disp(CameraId camId, void* param) {
     GXSetTexCoordGen2(0, 1, 4, 0x1E, 0, 0x7D);
     GXSetTexCoordGen2(1, 1, 4, 0x21, 0, 0x7D);
 
-    PSMTXTrans(mtxWork, 0.0625f * (f32)field30, 0.0f, 0.0f);
+    PSMTXTrans(mtxWork, 0.0625f * (f32)texFrame, 0.0f, 0.0f);
     PSMTXScale(mtxScale, 0.0625f, 1.0f, 1.0f);
     PSMTXConcat(mtxWork, mtxScale, mtxWork);
     GXLoadTexMtxImm(mtxWork, 0x1E, 1);
 
-    PSMTXTrans(mtxWork, 0.0625f * (f32)field34, 0.0f, 0.0f);
+    PSMTXTrans(mtxWork, 0.0625f * (f32)nextTexFrame, 0.0f, 0.0f);
     PSMTXScale(mtxScale, 0.0625f, 1.0f, 1.0f);
     PSMTXConcat(mtxWork, mtxScale, mtxWork);
     GXLoadTexMtxImm(mtxWork, 0x21, 1);

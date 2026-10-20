@@ -91,16 +91,17 @@ EVT_BEGIN(unk_evt_yuu_00015fe0)
     RETURN
 EVT_END()
 void unk_yuu_0000365c(CameraId cameraId, void* param) {
-    Yuuminigame4Work* work = param;
+    Yuuminigame4Work* entries = param;
     s32 i;
-    if (work != NULL) {
-        for (i = 0; i < work->count; i++) {
-            if (work[i].unk0 == 0) {
-                Vec pos = work[i].position;
+    if (entries != NULL) {
+        // The icon bobs during the first 9 frames of each 32-frame cycle.
+        for (i = 0; i < entries->count; i++) {
+            if (entries[i].unk0 == 0) {
+                Vec iconPos = entries[i].position;
                 if ((gp->retraceCount & 0x1F) < 9) {
-                    pos.y += 5.0f;
+                    iconPos.y += 5.0f;
                 }
-                iconDispGx(1.0f, &pos, 0, 0x1B6);
+                iconDispGx(1.0f, &iconPos, 0, 0x1B6);
             }
         }
     }
@@ -111,60 +112,60 @@ void unk_yuu_0000365c(CameraId cameraId, void* param) {
 // work global inside the loop condition keeps its reload per iteration (and the base pointer in r5).
 static inline void yuu4_init_work(MarioWork* mario) {
     s32 i;
-    f32* base;
-    Yuuminigame4Work* arr;
-    MarioWork* m;
-    m = mario;
-    for (i = 0; i < (arr = unk_yuu_bss00000010)->count; i++) {
-        base = (f32*)((u8*)&arr[i] + 8);
-        *(Vec*)&base[1] = m->position;
-        base[2] += 40.0f;
-        base[4] = 1.0f;
+    f32* entryFields;
+    Yuuminigame4Work* entries;
+    MarioWork* marioData;
+    marioData = mario;
+    for (i = 0; i < (entries = unk_yuu_bss00000010)->count; i++) {
+        entryFields = (f32*)((u8*)&entries[i] + 8);
+        *(Vec*)&entryFields[1] = marioData->position;
+        entryFields[2] += 40.0f;
+        entryFields[4] = 1.0f;
     }
 }
 #endif
 #pragma opt_propagation off // keep count*sizeof as the target's li/mulli sequence
 USER_FUNC(unk_yuu_000034bc) {
-    s32 prev = 0;
-    s32 num;
+    s32 wasAllocated = 0;
+    s32 entryCount;
     YuuminigameWork* work2 = (YuuminigameWork*)event->lwData[0];
     MarioWork* mario = marioGetPtr();
     if (isFirstCall) {
         s32 i;
         if (unk_yuu_bss00000010 != NULL) {
-            prev = 1;
+            wasAllocated = 1;
         }
-        num = 1;
-        unk_yuu_bss00000010 = _mapAlloc(num * sizeof(Yuuminigame4Work));
-        memset(unk_yuu_bss00000010, 0, num * sizeof(Yuuminigame4Work));
-        unk_yuu_bss00000010->count = num;
+        entryCount = 1;
+        unk_yuu_bss00000010 = _mapAlloc(entryCount * sizeof(Yuuminigame4Work));
+        memset(unk_yuu_bss00000010, 0, entryCount * sizeof(Yuuminigame4Work));
+        unk_yuu_bss00000010->count = entryCount;
         unk_yuu_bss00000010->work = work2;
 #ifdef MUST_MATCH
         yuu4_init_work(mario);
 #else
         for (i = 0; i < unk_yuu_bss00000010->count; i++) {
-            Yuuminigame4Work* e = &unk_yuu_bss00000010[i];
-            e->position = mario->position;
-            e->position.y += 40.0f;
-            e->unk18 = 1.0f;
+            Yuuminigame4Work* entry = &unk_yuu_bss00000010[i];
+            entry->position = mario->position;
+            entry->position.y += 40.0f;
+            entry->unk18 = 1.0f;
         }
 #endif
     }
     {
         s32 i;
         for (i = 0; i < unk_yuu_bss00000010->count; i++) {
-            Yuuminigame4Work* e = &unk_yuu_bss00000010[i];
-            switch (e->unk4) {
+            Yuuminigame4Work* entry = &unk_yuu_bss00000010[i];
+            switch (entry->unk4) {
             case 0:
-                e->position = mario->position;
-                e->position.y += 40.0f;
+                entry->position = mario->position;
+                entry->position.y += 40.0f;
                 break;
             case 1:
                 break;
             }
         }
     }
-    if (prev == 0) {
+    if (wasAllocated == 0) {
         dispEntry(4, 0.0f, 1, unk_yuu_0000365c, unk_yuu_bss00000010);
     }
     return EVT_RETURN_BLOCK;
@@ -243,9 +244,9 @@ EVT_BEGIN(yuu_03_kaijo_init2)
     RETURN
 EVT_END()
 USER_FUNC(unk_yuu_0000341c) {
-    Yuuminigame4Work* work = unk_yuu_bss00000010;
-    if (work != NULL) {
-        YuuminigameWork* work2 = work->work;
+    Yuuminigame4Work* entries = unk_yuu_bss00000010;
+    if (entries != NULL) {
+        YuuminigameWork* work2 = entries->work;
         Yuuminigame4Data* data = work2->data;
         if (data->subEvent != NULL) {
             evtDeleteID(data->subEvent->eventId);
@@ -536,34 +537,34 @@ static inline GXColor ryushiColor1(u32 r, u32 g, u32 b, u32 a) {
 // The colour helpers and the angle expression are written to reproduce the original's stack slots and
 // instruction schedule; the plain forms are under #else (see the comments in the body).
 void ryushi_disp(CameraId cameraId, void* param) {
-    RyushiEntry* wp = xwp;
-    s32 unk30 = xwp->unk30;
-    s32 unk34 = xwp->unk34;
+    RyushiEntry* entry = xwp;
+    s32 colorG = xwp->unk30;
+    s32 colorB = xwp->unk34;
     Mtx trans;
     Mtx rot;
     Mtx scale;
     Mtx out;
     Mtx mtx;
     GXTexObj texObj;
-    f32 f31;
-    f32 f30;
-    f32 f29;
+    f32 zeroScale;
+    f32 entryScale;
+    f32 swayAmplitude;
     s32 i;
 
-    PSMTXScale(mtx, wp->scale, wp->scale, 1.0f);
-    PSMTXTransApply(mtx, mtx, wp->x, wp->y, wp->z);
+    PSMTXScale(mtx, entry->scale, entry->scale, 1.0f);
+    PSMTXTransApply(mtx, mtx, entry->x, entry->y, entry->z);
     PSMTXRotRad(rot, 'y', 0.017453292f * -camGetPtr(cameraId)->viewYaw);
     PSMTXConcat(mtx, rot, mtx);
     effGetTexObj(0x1E, &texObj);
     GXLoadTexObj(&texObj, 0);
 #ifdef MUST_MATCH
-    GXSetTevColor(2, ryushiColor0(*(GXColor*)&zero_yuu_00014160, wp->unk38, wp->unk3C, wp->unk40));
+    GXSetTevColor(2, ryushiColor0(*(GXColor*)&zero_yuu_00014160, entry->unk38, entry->unk3C, entry->unk40));
 #else
     {
         GXColor color = *(GXColor*)&zero_yuu_00014160;
-        color.r = wp->unk38;
-        color.g = wp->unk3C;
-        color.b = wp->unk40;
+        color.r = entry->unk38;
+        color.g = entry->unk3C;
+        color.b = entry->unk40;
         GXSetTevColor(2, color);
     }
 #endif
@@ -589,22 +590,22 @@ void ryushi_disp(CameraId cameraId, void* param) {
     GXSetVtxAttrFmt(0, 9, 1, 4, 0);
     GXSetVtxAttrFmt(0, 0xD, 1, 4, 0);
 
-    f31 = 0.0f;
-    wp = &wp[1];
-    for (i = 1; i < ryuwp; i++, wp++) {
-        f30 = wp->scale;
-        if (f30 == f31) {
+    zeroScale = 0.0f;
+    entry = &entry[1];
+    for (i = 1; i < ryuwp; i++, entry++) {
+        entryScale = entry->scale;
+        if (entryScale == zeroScale) {
             continue;
         }
 #ifdef MUST_MATCH
-        GXSetTevColor(1, ryushiColor1((s32)f29, unk30, unk34, wp->unk20));
+        GXSetTevColor(1, ryushiColor1((s32)swayAmplitude, colorG, colorB, entry->unk20));
 #else
         {
             GXColor color = *(GXColor*)&zero_yuu_00014164;
-            color.r = (s32)f29;
-            color.g = unk30;
-            color.b = unk34;
-            color.a = wp->unk20;
+            color.r = (s32)swayAmplitude;
+            color.g = colorG;
+            color.b = colorB;
+            color.a = entry->unk20;
             GXSetTevColor(1, color);
         }
 #endif
@@ -612,9 +613,9 @@ void ryushi_disp(CameraId cameraId, void* param) {
             // The target computes these as reciprocals of powers of two; the divisions schedule the constant
             // loads the way the original does. The result is identical to z*0.125 and 3.14*i*0.25.
 #ifdef MUST_MATCH
-            f32 t = (wp->z / 8.0f + 3.14f * (f32)i / 4.0f) / 3.14f;
+            f32 t = (entry->z / 8.0f + 3.14f * (f32)i / 4.0f) / 3.14f;
 #else
-            f32 t = (3.14f * (f32)i * 0.25f + wp->z * 0.125f) / 3.14f;
+            f32 t = (3.14f * (f32)i * 0.25f + entry->z * 0.125f) / 3.14f;
 #endif
             f32 d = 180.0f * t;
             s32 k = (s32)(d / 360.0f);
@@ -627,11 +628,11 @@ void ryushi_disp(CameraId cameraId, void* param) {
                 d = d - (f32)(k * 360);
                 idx = (s32)d;
                 s = *(f32*)&yuusintbl[idx];
-                f29 = 3.0f;
-                PSMTXTrans(trans, f29 * s + wp->x, wp->y, wp->z);
+                swayAmplitude = 3.0f;
+                PSMTXTrans(trans, swayAmplitude * s + entry->x, entry->y, entry->z);
             }
         }
-        PSMTXScale(scale, f30, f30, f30);
+        PSMTXScale(scale, entryScale, entryScale, entryScale);
         PSMTXConcat(trans, scale, trans);
         PSMTXConcat(mtx, trans, trans);
         PSMTXConcat(camGetPtr(cameraId)->view, trans, out);
@@ -676,61 +677,61 @@ USER_FUNC(evt_ryushi_init) {
 
 USER_FUNC(evt_ryushi_clr) {
     s32* args = event->args;
-    RyushiEntry* wp = xwp;
+    RyushiEntry* entry = xwp;
     s32 i;
-    s32 n = ryuwp;
+    s32 entryCount = ryuwp;
 #ifdef MUST_MATCH
     f32 half = 0.5f;
 #endif
 
-    wp->unk04 = evtGetValue(event, *args++);
-    wp->unk24 = 0;
-    wp->unk20 = 0;
-    wp->x = 0.0f;
-    wp->y = 0.0f;
-    wp->z = 0.0f;
+    entry->unk04 = evtGetValue(event, *args++);
+    entry->unk24 = 0;
+    entry->unk20 = 0;
+    entry->x = 0.0f;
+    entry->y = 0.0f;
+    entry->z = 0.0f;
     xwp->unk08 = 50.0f;
     xwp->unk0C = 50.0f;
     xwp->unk10 = 100.0f;
-    wp = &wp[1];
-    for (i = 1; i < n; i++, wp++) {
-        s32 a;
-        s32 b;
-        s32 c;
+    entry = &entry[1];
+    for (i = 1; i < entryCount; i++, entry++) {
+        s32 gridX;
+        s32 gridY;
+        s32 gridZ;
         f32 hi;
         f32 lo;
-        f32 va;
+        f32 zSpacing;
 
-        wp->unk0 = 0;
-        a = (i - 1) % 10;
-        b = ((i - 1) / 10) % 6;
-        c = (i - 1) / 60;
+        entry->unk0 = 0;
+        gridX = (i - 1) % 10;
+        gridY = ((i - 1) / 10) % 6;
+        gridZ = (i - 1) / 60;
 #ifdef MUST_MATCH
-        wp->unk08 = xwp->unk08 * half * ((b + c) & 1) + ((f32)a * xwp->unk08 - xwp->unk08 * 4.5f);
+        entry->unk08 = xwp->unk08 * half * ((gridY + gridZ) & 1) + ((f32)gridX * xwp->unk08 - xwp->unk08 * 4.5f);
 #else
-        wp->unk08 = xwp->unk08 * 0.5f * ((b + c) & 1) + ((f32)a * xwp->unk08 - xwp->unk08 * 4.5f);
+        entry->unk08 = xwp->unk08 * 0.5f * ((gridY + gridZ) & 1) + ((f32)gridX * xwp->unk08 - xwp->unk08 * 4.5f);
 #endif
-        wp->unk0C = (f32)b * xwp->unk0C - xwp->unk0C * 2.5f;
-        wp->unk10 = (f32)c * xwp->unk10 - xwp->unk10 * 1.5f;
+        entry->unk0C = (f32)gridY * xwp->unk0C - xwp->unk0C * 2.5f;
+        entry->unk10 = (f32)gridZ * xwp->unk10 - xwp->unk10 * 1.5f;
         hi = 0.3f * xwp->unk08;
         lo = 0.3f * -xwp->unk08;
-        wp->x = wp->unk08 + randf(lo, hi);
+        entry->x = entry->unk08 + randf(lo, hi);
         hi = 0.3f * xwp->unk0C;
         lo = 0.3f * -xwp->unk0C;
-        wp->y = wp->unk0C + randf(lo, hi);
+        entry->y = entry->unk0C + randf(lo, hi);
 #ifdef MUST_MATCH
-        // Match-only dependency: folding the negation through `va` makes MWCC emit both
+        // Match-only dependency: folding the negation through `zSpacing` makes MWCC emit both
         // 0.3f products before the rand call (the natural form defers the max product).
-        va = xwp->unk10;
-        hi = 0.3f * va;
-        va = -va;
-        lo = 0.3f * va;
+        zSpacing = xwp->unk10;
+        hi = 0.3f * zSpacing;
+        zSpacing = -zSpacing;
+        lo = 0.3f * zSpacing;
 #else
         hi = 0.3f * xwp->unk10;
         lo = 0.3f * -xwp->unk10;
 #endif
-        wp->z = wp->unk10 + randf(lo, hi);
-        wp->scale = 0.5f;
+        entry->z = entry->unk10 + randf(lo, hi);
+        entry->scale = 0.5f;
     }
     return EVT_RETURN_DONE;
 }
@@ -763,8 +764,8 @@ static inline Vec makeVecB(f32 x, f32 y, f32 z) {
 USER_FUNC(evt_ryushi) {
     YuuminigameWork* work2;
     Yuuminigame4Data* data;
-    RyushiEntry* wp = xwp;
-    Vec pos;
+    RyushiEntry* emitter = xwp;
+    Vec emitterPos;
 #ifdef MUST_MATCH
     // Allocation-steering locals. MWCC colours callee-saved FP registers by the order
     // locals are declared, and the inlined randf scratches need names to land in
@@ -775,121 +776,121 @@ USER_FUNC(evt_ryushi) {
     f32 t0;
     f32 t3;
 #endif
-    f32 f23;
+    f32 entryScale;
 #ifdef MUST_MATCH
     f32 half;
     f32 t1;
 #endif
-    f32 f22;
-    f32 f21;
-    f32 f20;
-    RyushiEntry* e;
+    f32 zSpeed;
+    f32 alphaFactor;
+    f32 cameraX;
+    RyushiEntry* entry;
     s32 i;
 
 #ifdef MUST_MATCH
-    pos = makeVecB(wp->x, wp->y, wp->z);
+    emitterPos = makeVecB(emitter->x, emitter->y, emitter->z);
 #else
-    pos.x = wp->x;
-    pos.y = wp->y;
-    pos.z = wp->z;
+    emitterPos.x = emitter->x;
+    emitterPos.y = emitter->y;
+    emitterPos.z = emitter->z;
 #endif
 
-    f22 = 0.0f;
-    f21 = f22;
-    f23 = 1.0f;
+    zSpeed = 0.0f;
+    alphaFactor = zSpeed;
+    entryScale = 1.0f;
     work2 = (YuuminigameWork*)event->lwData[0];
     data = work2->data;
-    f20 = camGetPtr(4)->cameraAt.x;
+    cameraX = camGetPtr(4)->cameraAt.x;
     switch (data->unk10) {
     case 2:
     case 3:
     case 4:
-        f22 = 2.9166667f;
-        f21 = 1.0f;
+        zSpeed = 2.9166667f;
+        alphaFactor = 1.0f;
         break;
     case 6:
     case 7:
     case 8:
-        f22 = 2.9166667f;
-        f21 = 1.0f;
+        zSpeed = 2.9166667f;
+        alphaFactor = 1.0f;
         break;
     }
     switch (data->unk10) {
     case 1:
     case 5:
-        f21 = (f32)(0x3C - data->unk14) / 60.0f;
-        f23 = f21;
+        alphaFactor = (f32)(0x3C - data->unk14) / 60.0f;
+        entryScale = alphaFactor;
         break;
     case 2:
     case 6:
-        f22 = f22 * (f32)(0x3C - data->unk14) / 60.0f;
+        zSpeed = zSpeed * (f32)(0x3C - data->unk14) / 60.0f;
         break;
     case 4:
     case 8:
-        f21 = (f32)data->unk14 / 48.0f;
+        alphaFactor = (f32)data->unk14 / 48.0f;
         break;
     }
 
-    wp->unk24++;
+    emitter->unk24++;
     {
-        s32 n = wp->unk24;
-        if (n <= 0x14) {
-            wp->unk20 = n * 12;
+        s32 age = emitter->unk24;
+        if (age <= 0x14) {
+            emitter->unk20 = age * 12;
         } else {
-            wp->unk20 = 0xFF;
+            emitter->unk20 = 0xFF;
         }
-        if (n & 1) {
-            wp->unk20 /= 2;
+        if (age & 1) {
+            emitter->unk20 /= 2;
         }
     }
 #ifdef MUST_MATCH
     half = 0.5f;
-    f23 = half * f23;
+    entryScale = half * entryScale;
 #else
-    f23 = 0.5f * f23;
+    entryScale = 0.5f * entryScale;
 #endif
 
     {
-    e = &wp[1];
-    for (i = 1; i < ryuwp; i++, e++) {
+    entry = &emitter[1];
+    for (i = 1; i < ryuwp; i++, entry++) {
         switch (xwp->unk04) {
         case 0:
-            e->z -= f22;
-            if (e->z < -200.0f) {
+            entry->z -= zSpeed;
+            if (entry->z < -200.0f) {
 #ifdef MUST_MATCH
                 t1 = 0.3f * xwp->unk08;
                 t0 = 0.3f * -xwp->unk08;
-                e->x = e->unk08 + randf(t0, t1);
+                entry->x = entry->unk08 + randf(t0, t1);
                 t2 = 0.3f * xwp->unk0C;
                 t1 = 0.3f * -xwp->unk0C;
-                e->y = e->unk0C + randf(t1, t2);
+                entry->y = entry->unk0C + randf(t1, t2);
                 t2 = 0.3f * xwp->unk10;
                 t3 = 0.3f * -xwp->unk10;
-                e->z = 200.0f + randf(t3, t2);
+                entry->z = 200.0f + randf(t3, t2);
 #else
-                e->x = e->unk08 + randf(0.3f * -xwp->unk08, 0.3f * xwp->unk08);
-                e->y = e->unk0C + randf(0.3f * -xwp->unk0C, 0.3f * xwp->unk0C);
-                e->z = 200.0f + randf(0.3f * -xwp->unk10, 0.3f * xwp->unk10);
+                entry->x = entry->unk08 + randf(0.3f * -xwp->unk08, 0.3f * xwp->unk08);
+                entry->y = entry->unk0C + randf(0.3f * -xwp->unk0C, 0.3f * xwp->unk0C);
+                entry->z = 200.0f + randf(0.3f * -xwp->unk10, 0.3f * xwp->unk10);
 #endif
             }
             break;
         case 1:
-            e->z += f22;
-            if (e->z > 200.0f) {
+            entry->z += zSpeed;
+            if (entry->z > 200.0f) {
 #ifdef MUST_MATCH
                 t0 = 0.3f * xwp->unk08;
                 t3 = 0.3f * -xwp->unk08;
-                e->x = e->unk08 + randf(t3, t0);
+                entry->x = entry->unk08 + randf(t3, t0);
                 t0 = 0.3f * xwp->unk0C;
                 t1 = 0.3f * -xwp->unk0C;
-                e->y = e->unk0C + randf(t1, t0);
+                entry->y = entry->unk0C + randf(t1, t0);
                 t2 = 0.3f * xwp->unk10;
                 t1 = 0.3f * -xwp->unk10;
-                e->z = -200.0f + randf(t1, t2);
+                entry->z = -200.0f + randf(t1, t2);
 #else
-                e->x = e->unk08 + randf(0.3f * -xwp->unk08, 0.3f * xwp->unk08);
-                e->y = e->unk0C + randf(0.3f * -xwp->unk0C, 0.3f * xwp->unk0C);
-                e->z = -200.0f + randf(0.3f * -xwp->unk10, 0.3f * xwp->unk10);
+                entry->x = entry->unk08 + randf(0.3f * -xwp->unk08, 0.3f * xwp->unk08);
+                entry->y = entry->unk0C + randf(0.3f * -xwp->unk0C, 0.3f * xwp->unk0C);
+                entry->z = -200.0f + randf(0.3f * -xwp->unk10, 0.3f * xwp->unk10);
 #endif
             }
             break;
@@ -897,47 +898,47 @@ USER_FUNC(evt_ryushi) {
         {
             f32 step = 10.0f * xwp->unk08;
 #ifdef MUST_MATCH
-            f32 ex = *(volatile f32*)&e->x;
+            f32 entryX = *(volatile f32*)&entry->x;
 #else
-            f32 ex = e->x;
+            f32 entryX = entry->x;
 #endif
 #ifdef MUST_MATCH
-            f32 t = (ex - f20) / (step * half);
+            f32 cellOffset = (entryX - cameraX) / (step * half);
 #else
-            f32 t = (ex - f20) / (step * 0.5f);
+            f32 cellOffset = (entryX - cameraX) / (step * 0.5f);
 #endif
-            s32 n = (s32)t;
-            if (n != 0) {
-                if (n > 0) {
-                    n += 1;
+            s32 wrapOffset = (s32)cellOffset;
+            if (wrapOffset != 0) {
+                if (wrapOffset > 0) {
+                    wrapOffset += 1;
                 } else {
-                    n -= 1;
+                    wrapOffset -= 1;
                 }
-                n = -n;
-                n /= 2;
-                e->x = e->x + (f32)n * step;
+                wrapOffset = -wrapOffset;
+                wrapOffset /= 2;
+                entry->x = entry->x + (f32)wrapOffset * step;
             }
         }
         {
-            f32 a;
-            if (e->z < 0.0f) {
-                a = -e->z;
+            f32 fadeDistance;
+            if (entry->z < 0.0f) {
+                fadeDistance = -entry->z;
             } else {
-                a = e->z;
+                fadeDistance = entry->z;
             }
-            a = a - 100.0f;
-            if (a < 0.0f) {
-                a = 0.0f;
-            } else if (a > 100.0f) {
-                a = 100.0f;
+            fadeDistance = fadeDistance - 100.0f;
+            if (fadeDistance < 0.0f) {
+                fadeDistance = 0.0f;
+            } else if (fadeDistance > 100.0f) {
+                fadeDistance = 100.0f;
             }
-            e->unk20 = (s32)(0.7 * (255.0f * ((100.0f - a) / 100.0f) * f21));
+            entry->unk20 = (s32)(0.7 * (255.0f * ((100.0f - fadeDistance) / 100.0f) * alphaFactor));
         }
-        e->scale = f23;
+        entry->scale = entryScale;
     }
     }
 
-    dispEntry(4, dispCalcZ(&pos), 2, ryushi_disp, NULL);
+    dispEntry(4, dispCalcZ(&emitterPos), 2, ryushi_disp, NULL);
     return EVT_RETURN_DONE;
 }
 
@@ -946,7 +947,7 @@ USER_FUNC(evt_ryushi) {
 void yuuminigame_init_4slit(EventEntry* event, BOOL isFirstCall) {
     YuuminigameWork* work = (YuuminigameWork*)event->lwData[0];
     Yuuminigame4Data* data = work->data;
-    RyushiEntry* wp;
+    RyushiEntry* entry;
     s32 i;
 
     data->subEvent = evtEntryType(unk_evt_yuu_00015fe0, 0, 0, 0);
@@ -954,25 +955,25 @@ void yuuminigame_init_4slit(EventEntry* event, BOOL isFirstCall) {
     data->flags |= 1;
 
     ryuwp = 0xF1;
-    wp = _mapAlloc(0x4004);
-    xwp = wp;
-    wp->unk04 = 0;
-    wp->unk24 = 0;
-    wp->unk20 = 0;
-    wp->x = 0.0f;
-    wp->y = 0.0f;
-    wp->z = 0.0f;
-    wp->scale = 1.0f;
-    wp->unk2C = 0xFF;
-    wp->unk30 = 0;
-    wp->unk34 = 0xFF;
-    wp->unk38 = 0xFF;
-    wp->unk3C = 0x80;
-    wp->unk40 = 0xFF;
-    wp = &wp[1];
+    entry = _mapAlloc(0x4004);
+    xwp = entry;
+    entry->unk04 = 0;
+    entry->unk24 = 0;
+    entry->unk20 = 0;
+    entry->x = 0.0f;
+    entry->y = 0.0f;
+    entry->z = 0.0f;
+    entry->scale = 1.0f;
+    entry->unk2C = 0xFF;
+    entry->unk30 = 0;
+    entry->unk34 = 0xFF;
+    entry->unk38 = 0xFF;
+    entry->unk3C = 0x80;
+    entry->unk40 = 0xFF;
+    entry = &entry[1];
     for (i = 0xF0; i != 0; i--) {
-        wp->unk0 = 0;
-        wp++;
+        entry->unk0 = 0;
+        entry++;
     }
 }
 
@@ -1077,11 +1078,12 @@ void yuuminigame_disp_4slit(CameraId cameraId, void* param) {
 
 s32 yuuminigame4_gamerule(EventEntry* event, BOOL isFirstCall, void* work, Yuuminigame4Data* data) {
     MarioWork* mario = marioGetPtr();
-    EventEntry* e;
-    f32 f;
+    EventEntry* childEvent;
+    f32 riderDeltaZ;
 
     data->unk14--;
 
+    // Timed state machine: states 1-4 drive unk18, states 5-8 drive unk1C.
     switch (data->unk10) {
     case 0:
         if (data->unk14 != 0) {
@@ -1089,14 +1091,14 @@ s32 yuuminigame4_gamerule(EventEntry* event, BOOL isFirstCall, void* work, Yuumi
         }
         if (irand(2) != 0) {
             data->unk10 = 1;
-            e = evtEntryType(ryushi_event, 0, 0, 0);
-            e->lwData[0] = (s32)work;
-            e->lwData[1] = 1;
+            childEvent = evtEntryType(ryushi_event, 0, 0, 0);
+            childEvent->lwData[0] = (s32)work;
+            childEvent->lwData[1] = 1;
         } else {
             data->unk10 = 5;
-            e = evtEntryType(ryushi_event, 0, 0, 0);
-            e->lwData[0] = (s32)work;
-            e->lwData[1] = 0;
+            childEvent = evtEntryType(ryushi_event, 0, 0, 0);
+            childEvent->lwData[0] = (s32)work;
+            childEvent->lwData[1] = 0;
         }
         data->unk14 = 0x3C;
         break;
@@ -1126,7 +1128,7 @@ s32 yuuminigame4_gamerule(EventEntry* event, BOOL isFirstCall, void* work, Yuumi
         }
         data->unk10 = 0;
         data->unk14 = (irand(0xF3D) + 100) * 0x3C / 1000;
-        evtSetValue(event, 0xFD050F80, 1);
+        evtSetValue(event, GW(0), 1);
         break;
     case 5:
         if (data->unk14 != 0) {
@@ -1155,10 +1157,11 @@ s32 yuuminigame4_gamerule(EventEntry* event, BOOL isFirstCall, void* work, Yuumi
         }
         data->unk10 = 0;
         data->unk14 = (irand(0xF3D) + 100) * 0x3C / 1000;
-        evtSetValue(event, 0xFD050F80, 1);
+        evtSetValue(event, GW(0), 1);
         break;
     }
 
+    // Spin the active set of map objects (unk18: puro_*, unk1C: pera_*) and wrap the angle to [0, 360).
     switch (data->unk10) {
     case 0:
         break;
@@ -1190,21 +1193,22 @@ s32 yuuminigame4_gamerule(EventEntry* event, BOOL isFirstCall, void* work, Yuumi
         break;
     }
 
+    // States 2-4 and 6-8 push Mario along z at the particle stream speed (ramping up in states 2 and 6).
     if (mario->position.x < 1500.0f) {
-        s32 unk10 = data->unk10;
-        f = 0.0f;
-        switch (unk10) {
+        s32 state = data->unk10;
+        riderDeltaZ = 0.0f;
+        switch (state) {
         case 2:
         case 3:
         case 4:
             if (mario->dispFlags & 0x01000000) {
                 if (mario->flags & 0x00100000) {
-                    f = 0.0f;
+                    riderDeltaZ = 0.0f;
                 } else {
-                    f = 0.0f;
+                    riderDeltaZ = 0.0f;
                 }
             } else {
-                f = 2.9166667f;
+                riderDeltaZ = 2.9166667f;
             }
             break;
         case 6:
@@ -1212,22 +1216,22 @@ s32 yuuminigame4_gamerule(EventEntry* event, BOOL isFirstCall, void* work, Yuumi
         case 8:
             if (mario->dispFlags & 0x01000000) {
                 if (mario->flags & 0x00100000) {
-                    f = -0.0f;
+                    riderDeltaZ = -0.0f;
                 } else {
-                    f = -0.0f;
+                    riderDeltaZ = -0.0f;
                 }
             } else {
-                f = -2.9166667f;
+                riderDeltaZ = -2.9166667f;
             }
             break;
         }
-        switch (unk10) {
+        switch (state) {
         case 2:
         case 6:
-            f = f * (f32)(0x3C - data->unk14) / 60.0f;
+            riderDeltaZ = riderDeltaZ * (f32)(0x3C - data->unk14) / 60.0f;
             break;
         }
-        mario->riderDelta.z += f;
+        mario->riderDelta.z += riderDeltaZ;
     }
 
     if (mario->position.y <= -100.0f || mario->position.x >= 1500.0f) {

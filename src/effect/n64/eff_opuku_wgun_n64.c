@@ -121,8 +121,8 @@ void effOpukuWgunMain(EffectEntry* effect) {
 	s32 i;
 	s32 type = data->type;
 	s32 duration;
-	f32 t;
-	s32 value;
+	f32 progress;
+	s32 elapsed;
 
 	if (effect->flags & 4) {
 		effect->flags &= ~4;
@@ -150,26 +150,26 @@ void effOpukuWgunMain(EffectEntry* effect) {
 			}
 		}
 		data->counter2[i]++;
-		value = data->counter2[i];
-		if (value >= duration) {
-			value = duration;
+		elapsed = data->counter2[i];
+		if (elapsed >= duration) {
+			elapsed = duration;
 		}
-		t = (f32)value / (f32)duration;
+		progress = (f32)elapsed / (f32)duration;
 		if (type == 0) {
-			data->x[i] = data->start.x + t * (data->end.x - data->start.x);
-			data->y[i] = data->start.y + t * (data->end.y - data->start.y);
-			data->z[i] = data->start.z + t * (data->end.z - data->start.z);
+			data->x[i] = data->start.x + progress * (data->end.x - data->start.x);
+			data->y[i] = data->start.y + progress * (data->end.y - data->start.y);
+			data->z[i] = data->start.z + progress * (data->end.z - data->start.z);
 		}
 		else {
-			data->x[i] = data->start.x + t * (data->end.x - data->start.x);
+			data->x[i] = data->start.x + progress * (data->end.x - data->start.x);
 #ifdef MUST_MATCH
-			data->y[i] = data->start.y + t * (data->end.y - data->start.y) + 120.0f * opukuWgunSin(t);
+			data->y[i] = data->start.y + progress * (data->end.y - data->start.y) + 120.0f * opukuWgunSin(progress);
 #else
-			data->y[i] = data->start.y + t * (data->end.y - data->start.y)
-			           + 120.0f * (f32)sin(6.2831855f * (180.0f * t) / 360.0f);
+			data->y[i] = data->start.y + progress * (data->end.y - data->start.y)
+			           + 120.0f * (f32)sin(6.2831855f * (180.0f * progress) / 360.0f);
 #endif
-			data->z[i] = data->start.z + t * (data->end.z - data->start.z);
-			data->alpha[i] = (u8)(255.0f - 255.0f * t);
+			data->z[i] = data->start.z + progress * (data->end.z - data->start.z);
+			data->alpha[i] = (u8)(255.0f - 255.0f * progress);
 		}
 	}
 
@@ -197,13 +197,13 @@ static inline void opukuWgunColor2(u8 r, u8 g, u8 b) {
 // paired-single psq_l/psq_st conversions with the SDK's __OSs16tof32 / __OSf32tos16 inlines (plain casts
 // would lower to lha/fctiwz). The `zero` local keeps `data->z[i] + 0.0f` from folding away, which lands the
 // 0.0 in f31 and the 2pi/360/20/scale constants in retail's f28/f29/f30/f24; the `angle`/`rad` split gives
-// angle f22, rad/s f23 and t f21; `alpha` is an s32 so a_data*data->alpha/255 stores with a plain stb (no
+// angle f22, rad/offX f23 and size f21; `alpha` is an s32 so a_data*data->alpha/255 stores with a plain stb (no
 // clrlwi); and the triangle loop's `if (j >= 0)` guard reproduces retail's always-taken test. The two TEV
 // colours are built inside the inline (the eff_opuku_wprotect pattern) so each colour local and its by-value
 // copy land in retail's stack slots (temp/arg 0x1c/0x20 and 0x14/0x18); returning the GXColor and calling
 // outside packed them differently. The f32->s16 temporaries land 4 apart (OSFastCast.h's temp is an f32).
 // The dispatch's redundant `beq` is restored by the MUST_MATCH goto pair below. The triangle loop reuses
-// `j` as its counter with `x = j * 2` in the body: MWCC strength-reduces that multiply to an induction
+// `j` as its counter with `vert = j * 2` in the body: MWCC strength-reduces that multiply to an induction
 // variable initialised as `mr r23, r24` (not `li r23,0`), which is what puts the preheader in retail's
 // order `li r24,0; subi r22; mr r23,r24`.
 void effOpukuWgunDisp(CameraId camId, void* param) {
@@ -217,18 +217,18 @@ void effOpukuWgunDisp(CameraId camId, void* param) {
 #define OW_VEC (&v)
 	GXColor color;
 	f32 scale;
-	f32 t;
-	f32 s;
+	f32 size;
+	f32 offX;
+	f32 offY;
 	f32 angle;
 	f32 rad;
 	f32 zero = 0.0f;
-	f32 c;
 	s32 i;
 	s32 type;
 	OpukuWgunVtx* p;
 	OpukuWgunVtx* vtx;
 	s32 alpha;
-	s32 x;
+	s32 vert;
 	s32 j;
 
 	type = data->type;
@@ -291,24 +291,24 @@ void effOpukuWgunDisp(CameraId camId, void* param) {
 		}
 #endif
 		if (data->type == 0) {
-			t = 0.5f * (f32)data->counter2[i] + 2.0f;
-			if (t > 6.0f) {
-				t = 6.0f;
+			size = 0.5f * (f32)data->counter2[i] + 2.0f;
+			if (size > 6.0f) {
+				size = 6.0f;
 			}
 			alpha = a_data[i];
 		} else {
-			t = 0.5f * (f32)data->counter2[i] + 1.0f;
-			if (t > 30.0f) {
-				t = 30.0f;
+			size = 0.5f * (f32)data->counter2[i] + 1.0f;
+			if (size > 30.0f) {
+				size = 30.0f;
 			}
 			alpha = a_data[i] * data->alpha[i] / 255;
 		}
-		t *= scale;
+		size *= scale;
 		rad = 6.2831855f * angle / 360.0f;
-		s = t * (f32)sin(rad);
-		c = t * (f32)cos(rad);
-		vtx[0].x = (s16)(20.0f * (data->x[i] + s));
-		vtx[0].y = (s16)(20.0f * (data->y[i] + c));
+		offX = size * (f32)sin(rad);
+		offY = size * (f32)cos(rad);
+		vtx[0].x = (s16)(20.0f * (data->x[i] + offX));
+		vtx[0].y = (s16)(20.0f * (data->y[i] + offY));
 		vtx[0].z = (s16)(20.0f * (data->z[i] + zero));
 		vtx[0].s = (i * 5) << 6;
 		vtx[0].t = 0;
@@ -316,8 +316,8 @@ void effOpukuWgunDisp(CameraId camId, void* param) {
 		vtx[0].g = ((i >> 1) & 1) * 255;
 		vtx[0].b = ((i >> 2) & 1) * 255;
 		vtx[0].a = alpha;
-		vtx[1].x = (s16)(20.0f * (data->x[i] - s));
-		vtx[1].y = (s16)(20.0f * (data->y[i] - c));
+		vtx[1].x = (s16)(20.0f * (data->x[i] - offX));
+		vtx[1].y = (s16)(20.0f * (data->y[i] - offY));
 		vtx[1].z = (s16)(20.0f * (data->z[i] + zero));
 		vtx[1].s = (i * 5) << 6;
 		vtx[1].t = 0x400;
@@ -391,10 +391,10 @@ void effOpukuWgunDisp(CameraId camId, void* param) {
 	}
 
 	for (j = 0; j < i - 1; j++) {
-		x = j * 2;
+		vert = j * 2;
 		if (j >= 0) {
 			GXBegin(GX_TRIANGLES, GX_VTXFMT0, 6);
-			tri2(x, x + 2, x + 1, x, x + 1, x + 2, x + 3, x);
+			tri2(vert, vert + 2, vert + 1, vert, vert + 1, vert + 2, vert + 3, vert);
 		}
 	}
 }

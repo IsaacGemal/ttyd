@@ -60,11 +60,11 @@ USER_FUNC(evt_img_set_position) {
 USER_FUNC(evt_img_set_paper) {
 	s32* args = event->args;
 	s32 name = evtGetValue(event, args[0]);
-	s32 anim = evtGetValue(event, args[1]);
+	s32 animName = evtGetValue(event, args[1]);
 	s32 type = gp->inBattle != 0;
 	ImageEntry* entry = imgNameToPtr((const char*)name, type);
 
-	entry->poseId = animPaperPoseGetId((const char*)anim, type);
+	entry->poseId = animPaperPoseGetId((const char*)animName, type);
 	*(OSTime*)((u8*)entry + 0x110) = animTimeGetTime(type);
 	animPoseSetMaterialFlagOn(entry->poseId, 0x1800);
 	return EVT_RETURN_DONE;
@@ -73,11 +73,11 @@ USER_FUNC(evt_img_set_paper) {
 USER_FUNC(evt_img_set_paper_anim) {
 	s32* args = event->args;
 	s32 name = evtGetValue(event, args[0]);
-	s32 anim = evtGetValue(event, args[1]);
+	s32 animName = evtGetValue(event, args[1]);
 	s32 type = gp->inBattle != 0;
 	ImageEntry* entry = imgNameToPtr((const char*)name, type);
 
-	entry->animName = (const char*)anim;
+	entry->animName = (const char*)animName;
 	*(OSTime*)((u8*)entry + 0x110) = animTimeGetTime(type);
 	return EVT_RETURN_DONE;
 }

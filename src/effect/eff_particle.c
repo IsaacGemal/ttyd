@@ -144,7 +144,7 @@ void effParticleDisp(CameraId camId, void* param) {
 	GXSetNumChans(1);
 	GXSetChanCtrl(GX_COLOR0A0, GX_FALSE, GX_SRC_REG, GX_SRC_REG, 0, GX_DF_NONE, GX_AF_NONE);
 	GXSetNumTexGens(1);
-	GXSetTexCoordGen2(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, 0x3C, GX_FALSE, 0x7D);
+	GXSetTexCoordGen2(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_IDENTITY, GX_FALSE, GX_PTIDENTITY);
 	GXSetNumTevStages(1);
 	GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR0A0);
 	GXSetTevColorOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
@@ -292,7 +292,7 @@ EffectEntry* effParticleEntry(s32 type, s32 count, s32 life, f32 x, f32 y, f32 z
 	work->scale = 1.0f;
 	work->alpha = 0xFF;
 	work->count = count;
-	work->particles = (ParticleEntry*)((u8*)work + entry->count * 0xB0);
+	work->particles = (ParticleEntry*)((ParticleWork*)work + entry->count);
 	work->field_0xAC = 4.0f;
 	{
 		ParticleWork* w2 = entry->userdata;

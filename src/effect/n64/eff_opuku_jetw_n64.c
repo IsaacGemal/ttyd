@@ -195,29 +195,29 @@ void effOpukuJetwMain(EffectEntry* effect) {
 // identical code; GC/3.0 is worse. This is a permuter colouring tie.
 // Building each TEV colour and calling GXSetTevColor inside one inline makes mwcc allocate the
 // colour's build slot and its by-value argument copy together, matching the original's slots.
-static inline void effOpukuJetwSetTev1(effOpukuJetwData* data, s32 field24) {
+static inline void effOpukuJetwSetTev1(effOpukuJetwData* data, s32 alpha) {
     GXColor color = unk_804231c8;
     color.r = data->field_0x28;
     color.g = data->field_0x2C;
     color.b = data->field_0x30;
-    color.a = field24;
+    color.a = alpha;
     GXSetTevColor(GX_TEVREG1, color);
 }
 
-static inline void effOpukuJetwSetTev0a(s32 field18, s32 field1c, s32 field20, s32 field24) {
+static inline void effOpukuJetwSetTev0a(s32 red, s32 green, s32 blue, s32 alpha) {
     GXColor color = unk_804231cc;
-    color.r = field18;
-    color.g = field1c;
-    color.b = field20;
-    color.a = field24;
+    color.r = red;
+    color.g = green;
+    color.b = blue;
+    color.a = alpha;
     GXSetTevColor(GX_TEVREG0, color);
 }
 
-static inline void effOpukuJetwSetTev0b(s32 field18, s32 field1c, s32 field20, s32 alpha) {
+static inline void effOpukuJetwSetTev0b(s32 red, s32 green, s32 blue, s32 alpha) {
     GXColor color = unk_804231d0;
-    color.r = field18;
-    color.g = field1c;
-    color.b = field20;
+    color.r = red;
+    color.g = green;
+    color.b = blue;
     color.a = alpha;
     GXSetTevColor(GX_TEVREG0, color);
 }
@@ -237,8 +237,8 @@ static inline void effOpukuJetwSetTev0b(s32 field18, s32 field1c, s32 field20, s
 // MWCC colours that temp above `rowOffset` (col*10/colPtr in r19, rowOffset in r15); naming the byte
 // offset makes it a local ranked after `colPtr`, which frees r19 for `rowOffset` and puts colPtr in r15.
 // The rest of the declaration order holds the callee-saved GPR map (rowOffset r19, counterCurrent r18,
-// threshold r17, ptr r16, colPtr r15, col r21, table r22, rows r23, columns r24, field20 r25,
-// field1c r26, field18 r27, field24 r28, i r29, j r30, lifetime r31; counter reuses r14).
+// threshold r17, ptr r16, colPtr r15, col r21, table r22, rows r23, columns r24, blue r25,
+// green r26, red r27, alpha r28, i r29, j r30, lifetime r31; counter reuses r14).
 void effOpukuJetwDisp(CameraId camId, void* param) {
     s32 rowOffset;
     s32 counter;
@@ -254,11 +254,11 @@ void effOpukuJetwDisp(CameraId camId, void* param) {
     s32 j;
     Mtx scale;
     s32 i;
-    s32 field24;
-    s32 field18;
+    s32 alpha;
+    s32 red;
     Mtx rot;
-    s32 field1c;
-    s32 field20;
+    s32 green;
+    s32 blue;
     s32 columns;
     s32 rows;
     effOpukuJetwData* data;
@@ -273,10 +273,10 @@ void effOpukuJetwDisp(CameraId camId, void* param) {
     data = effect->userdata;
     counter = data->counter;
     lifetime = data->lifetime;
-    field24 = data->field_0x24;
-    field18 = data->field_0x18;
-    field1c = data->field_0x1C;
-    field20 = data->field_0x20;
+    alpha = data->field_0x24;
+    red = data->field_0x18;
+    green = data->field_0x1C;
+    blue = data->field_0x20;
     switch (data->type) {
         case 0:
             table = (effOpukuJetwPoint*)adata;
@@ -317,10 +317,10 @@ void effOpukuJetwDisp(CameraId camId, void* param) {
     PSMTXConcat(rot, scale, scale);
     PSMTXConcat(work, scale, work);
 
-    effOpukuJetwSetTev1(data, field24);
+    effOpukuJetwSetTev1(data, alpha);
 
     if (columns - 1 <= lifetime) {
-        effOpukuJetwSetTev0a(field18, field1c, field20, field24);
+        effOpukuJetwSetTev0a(red, green, blue, alpha);
         GXLoadPosMtxImm(work, 0);
         GXSetCurrentMtx(0);
         effSetVtxDescN64((effVtxArray*)size16x16_tex32x32_vtx);
@@ -352,7 +352,7 @@ void effOpukuJetwDisp(CameraId camId, void* param) {
             PSMTXConcat(work, trans, trans);
             GXLoadPosMtxImm(trans, 0);
             GXSetCurrentMtx(0);
-            effOpukuJetwSetTev0b(field18, field1c, field20, (field24 * colPtr->field_0x8) >> 8);
+            effOpukuJetwSetTev0b(red, green, blue, (alpha * colPtr->field_0x8) >> 8);
             effSetVtxDescN64((effVtxArray*)size16x16_tex32x32_vtx);
             GXBegin(GX_TRIANGLES, GX_VTXFMT0, 6);
             tri2(0, 1, 2, 0, 0, 2, 3, 0);

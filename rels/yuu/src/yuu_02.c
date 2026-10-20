@@ -153,16 +153,16 @@ USER_FUNC(unk_yuu_00001160) {
 }
 
 void unk_yuu_00001054(CameraId cameraId, void* param) {
-    MonteEntry* board = (MonteEntry*)param;
+    MonteEntry* entries = (MonteEntry*)param;
     MarioWork* mario;
     s32 i;
 
     mario = marioGetPtr();
-    if (board != NULL) {
-        for (i = 0; i < board->count; i++) {
+    if (entries != NULL) {
+        for (i = 0; i < entries->count; i++) {
             f32 dir = mario->position.z >= 0.0f ? 1.0f : -1.0f;
-            if (board[i].active == 0) {
-                Vec pos = board[i].pos;
+            if (entries[i].active == 0) {
+                Vec pos = entries[i].pos;
                 if ((gp->retraceCount & 0x1F) < 9) {
                     pos.x -= 5.0f * dir;
                 }
@@ -198,20 +198,20 @@ static inline void monte_fill(void) {
 // count*sizeof(MonteEntry) (count==1) to li 0x44 and drops the target's li r28,1 /
 // mulli r29,r28,0x44 / mr r3,r29 sequence and the r28 save.
 USER_FUNC(unk_yuu_00000f1c) {
-    s32 already = 0;
-    s32 count;
+    s32 wasAllocated = 0;
+    s32 entryCount;
     YuuminigameWork* work = (YuuminigameWork*)event->lwData[0];
     s32 i;
 
     marioGetPtr();
     if (isFirstCall) {
         if (monte_p != NULL) {
-            already = 1;
+            wasAllocated = 1;
         }
-        count = 1;
-        monte_p = (MonteEntry*)_mapAlloc(count * sizeof(MonteEntry));
-        memset(monte_p, 0, count * sizeof(MonteEntry));
-        monte_p->count = count;
+        entryCount = 1;
+        monte_p = (MonteEntry*)_mapAlloc(entryCount * sizeof(MonteEntry));
+        memset(monte_p, 0, entryCount * sizeof(MonteEntry));
+        monte_p->count = entryCount;
         monte_p->work = work;
 #ifdef MUST_MATCH
         monte_fill();
@@ -226,7 +226,7 @@ USER_FUNC(unk_yuu_00000f1c) {
     }
     for (i = 0; i < monte_p->count; i++) {
     }
-    if (already == 0) {
+    if (wasAllocated == 0) {
         dispEntry(8, 0.0f, 0, unk_yuu_00001054, monte_p);
     }
     return EVT_RETURN_BLOCK;
@@ -241,13 +241,13 @@ static s32 get_monte_check(Vec* a, Vec* b) {
 }
 
 static void monte_disp(CameraId cameraId, void* param) {
-    MonteEntry* board = (MonteEntry*)param;
+    MonteEntry* entries = (MonteEntry*)param;
     s32 i;
 
-    if (board != NULL) {
-        for (i = 0; i < board->count; i++) {
-            if (board[i].active == 0) {
-                iconDispGx(1.0f, &board[i].pos, 0, 0x13F);
+    if (entries != NULL) {
+        for (i = 0; i < entries->count; i++) {
+            if (entries[i].active == 0) {
+                iconDispGx(1.0f, &entries[i].pos, 0, 0x13F);
             }
         }
     }
@@ -265,7 +265,7 @@ USER_FUNC(fall_rtn) {
     s32 i;
     s32 tableIdx;
     s32 pointIdx;
-    s32 placed;
+    s32 placedThisTable;
     s32 allocSize;
 
     if (isFirstCall) {
@@ -287,18 +287,18 @@ USER_FUNC(fall_rtn) {
 
         tableIdx = 0;
         pointIdx = 0;
-        placed = 0;
+        placedThisTable = 0;
         for (i = 0; i < unk_yuu_bss00000004->count; i++) {
             s32 k;
             s32 j;
             f32* base = (f32*)((u8*)&unk_yuu_bss00000004[i] + 8);
             f32 min;
             f32 max;
-            Vec d;
-            Vec cur;
-            Vec prev;
+            Vec delta;
+            Vec candidatePos;
+            Vec prevPos;
             HitCheckQuery query;
-            Vec hit;
+            Vec firstHit;
 
             base[2] = 210.0f;
             j = 0;
@@ -326,14 +326,14 @@ USER_FUNC(fall_rtn) {
                 max = max - min;
                 base[3] = min + (f32)irand((s32)(100.0f * max)) / 100.0f;
 
-                cur = *(Vec*)(base + 1);
-                cur.y = 0.0f;
+                candidatePos = *(Vec*)(base + 1);
+                candidatePos.y = 0.0f;
                 for (k = 0; k < pointIdx; k++) {
                     u8* prevp = (u8*)base - (k + 1) * 0x38 + 4;
-                    prev = *(Vec*)prevp;
-                    prev.y = 0.0f;
-                    PSVECSubtract(&cur, &prev, &d);
-                    if (PSVECMag(&d) < 20.0f) {
+                    prevPos = *(Vec*)prevp;
+                    prevPos.y = 0.0f;
+                    PSVECSubtract(&candidatePos, &prevPos, &delta);
+                    if (PSVECMag(&delta) < 20.0f) {
                         break;
                     }
                 }
@@ -350,9 +350,9 @@ USER_FUNC(fall_rtn) {
                         continue;
                     }
                     q->targetPos.x -= 9.0f;
-                    hit = q->hitPos;
+                    firstHit = q->hitPos;
                     if (hitCheckVecFilter(q, NULL) != NULL) {
-                        if (q->hitPos.y > hit.y + 1.0f) {
+                        if (q->hitPos.y > firstHit.y + 1.0f) {
                             continue;
                         }
                     }
@@ -361,25 +361,25 @@ USER_FUNC(fall_rtn) {
                 break;
             } while (1);
             pointIdx++;
-            placed++;
+            placedThisTable++;
             if (pointIdx >= montetable[tableIdx].count) {
                 if (montetable[tableIdx].type == 2) {
                     s32 n;
                     s32 r;
-                    for (n = 0; n < placed; n++) {
+                    for (n = 0; n < placedThisTable; n++) {
                         unk_yuu_bss00000004[i - n].active = 1;
                         unk_yuu_bss00000004[i - n].hit = 1;
                     }
                     n = 0;
                     while (n < montetable[tableIdx].count) {
                         do {
-                            r = irand(placed);
+                            r = irand(placedThisTable);
                         } while (unk_yuu_bss00000004[i - r].active == 0);
                         unk_yuu_bss00000004[i - r].active = 0;
                         unk_yuu_bss00000004[i - r].hit = 0;
                         n++;
                     }
-                    placed = 0;
+                    placedThisTable = 0;
                 }
                 pointIdx = 0;
                 tableIdx++;
@@ -549,15 +549,15 @@ USER_FUNC(yuu_roll_reset) {
 
 s32 yuuminigame3_gamerule(EventEntry* event, BOOL isFirstCall, void* work, YuuMinigame3Data* data) {
     MarioWork* mario = marioGetPtr();
-    s32 adj;
+    s32 xOffset;
 
     if (!(data->flags & 2) && mario->position.y <= -50.0f) {
         data->flags |= 2;
         data->event = evtEntry(yuu_02_jumpret, 0, 0);
-        adj = fukkipoint[data->index * 3 + 2] >= 0.0f ? 5 : -5;
+        xOffset = fukkipoint[data->index * 3 + 2] >= 0.0f ? 5 : -5;
         {
-            s32 v = (s32)fukkipoint[data->index * 3 + 0];
-            data->event->lwData[0] = v + adj;
+            s32 landingX = (s32)fukkipoint[data->index * 3 + 0];
+            data->event->lwData[0] = landingX + xOffset;
         }
         data->event->lwData[1] = (s32)fukkipoint[data->index * 3 + 1] + 200;
         data->event->lwData[2] = (s32)fukkipoint[data->index * 3 + 2];
@@ -566,49 +566,32 @@ s32 yuuminigame3_gamerule(EventEntry* event, BOOL isFirstCall, void* work, YuuMi
     }
 
     if (!(data->flags & 2)) {
+        // Crossing a gate line moves one step through the fukkipoint course and toggles the visible monte.
         if (mario->position.z * fukkipoint[data->index * 3 + 5] >= 0.0f &&
-            mario->position.y >= fukkipoint[data->index * 3 + 4] - 1.0f) {
-            if (mario->position.z >= 0.0f) {
-                if (data->position.x < fukkipoint[data->index * 3 + 3] &&
-                    mario->position.x >= fukkipoint[data->index * 3 + 3]) {
-                    goto advance;
-                }
+            mario->position.y >= fukkipoint[data->index * 3 + 4] - 1.0f &&
+            ((mario->position.z >= 0.0f &&
+              data->position.x < fukkipoint[data->index * 3 + 3] &&
+              mario->position.x >= fukkipoint[data->index * 3 + 3]) ||
+             (mario->position.z < 0.0f &&
+              data->position.x > fukkipoint[data->index * 3 + 3] &&
+              mario->position.x <= fukkipoint[data->index * 3 + 3]))) {
+            if (data->index < 0xE) {
+                data->index++;
             }
-            if (mario->position.z < 0.0f) {
-                if (data->position.x > fukkipoint[data->index * 3 + 3] &&
-                    mario->position.x <= fukkipoint[data->index * 3 + 3]) {
-                    goto advance;
-                }
+            monte_p->active = 1;
+        }
+        if (mario->position.z * fukkipoint[data->index * 3 + 2] >= 0.0f &&
+            ((mario->position.z < 0.0f &&
+              data->position.x < fukkipoint[data->index * 3 + 0] &&
+              mario->position.x >= fukkipoint[data->index * 3 + 0]) ||
+             (mario->position.z >= 0.0f &&
+              data->position.x > fukkipoint[data->index * 3 + 0] &&
+              mario->position.x <= fukkipoint[data->index * 3 + 0]))) {
+            if (data->index > 0) {
+                data->index--;
             }
+            monte_p->active = 0;
         }
-        goto check_back;
-    advance:
-        if (data->index < 0xE) {
-            data->index++;
-        }
-        monte_p->active = 1;
-    check_back:
-        if (mario->position.z * fukkipoint[data->index * 3 + 2] >= 0.0f) {
-            if (mario->position.z < 0.0f) {
-                if (data->position.x < fukkipoint[data->index * 3 + 0] &&
-                    mario->position.x >= fukkipoint[data->index * 3 + 0]) {
-                    goto retreat;
-                }
-            }
-            if (mario->position.z >= 0.0f) {
-                if (data->position.x > fukkipoint[data->index * 3 + 0] &&
-                    mario->position.x <= fukkipoint[data->index * 3 + 0]) {
-                    goto retreat;
-                }
-            }
-        }
-        goto finish;
-    retreat:
-        if (data->index > 0) {
-            data->index--;
-        }
-        monte_p->active = 0;
-    finish:
         data->position = mario->position;
         if (yuucounter_get_data() < 0 || data->index >= 0xD) {
             data->counter = yuucounter_get_data();
