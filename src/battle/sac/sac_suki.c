@@ -323,8 +323,7 @@ static void main_base(void) {
     }
 }
 
-#ifdef MUST_MATCH
-// MUST_MATCH: building the colour in a helper that returns GXColor makes MWCC place the local at
+// Building the colour in a helper that returns GXColor makes MWCC place the local at
 // 0x8(r1) and the by-value parameter copy at 0xC(r1), as the retail build does; building it inline
 // in set_tev swaps those two slots.
 static inline GXColor make_tev_color(u8 flash) {
@@ -335,7 +334,6 @@ static inline GXColor make_tev_color(u8 flash) {
     color.b = flash;
     return color;
 }
-#endif
 
 // dont_inline: MWCC would otherwise inline main_button's switch into main_suki's loop
 // (the original keeps the bl).
@@ -834,18 +832,7 @@ void set_tev(SukiTevParam* param) {
     GXSetTevAlphaOp(0, 0, 0, 0, 1, 0);
     GXSetTevColorIn(0, 0xF, 0xF, 0xF, 2);
     GXSetTevAlphaIn(0, 7, 7, 7, 1);
-#ifdef MUST_MATCH
     GXSetTevColor(1, make_tev_color(flash));
-#else
-    {
-        GXColor color;
-        color = dat_804220a0;
-        color.r = flash;
-        color.g = flash;
-        color.b = flash;
-        GXSetTevColor(1, color);
-    }
-#endif
     param->field_C = 1;
     param->field_14 = 0;
     param->field_10 = 0;
