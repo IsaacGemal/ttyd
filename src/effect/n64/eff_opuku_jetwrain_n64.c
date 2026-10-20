@@ -50,28 +50,28 @@ EffectEntry* effOpukuJetwrainN64Entry(s32 type, s32 duration, f32 x, f32 y, f32 
 	effect->callback = effOpukuJetwrainMain;
 	effect->flags |= 2;
 	data->type = type;
-	data->field_0x14 = 0;
+	data->counter = 0;
 	if (duration <= 0) {
 		data->lifetime = 1000;
 	}
 	else {
 		data->lifetime = duration;
 	}
-	data->field_0x1F = 0;
+	data->alpha = 0;
 	data->x = x;
 	data->y = y;
 	data->z = z;
 	data->scale = scale;
-	data->field_0x1C = 10;
-	data->field_0x1D = 0x6e;
-	data->field_0x1E = 0xff;
-	data->field_0x20 = 0xbe;
-	data->field_0x21 = 0xdc;
-	data->field_0x22 = 0xff;
+	data->color1R = 10;
+	data->color1G = 0x6e;
+	data->color1B = 0xff;
+	data->color2R = 0xbe;
+	data->color2G = 0xdc;
+	data->color2B = 0xff;
 	for (i = 0; i < 19; i++) {
 		for (j = 0; 13 > j; j++) {
-			data->field_0x23[i][j] = 0;
-			data->field_0x11A[i][j] = 0;
+			data->height[i][j] = 0;
+			data->velocity[i][j] = 0;
 		}
 	}
 	return effect;
@@ -120,13 +120,13 @@ void effOpukuJetwrainMain(EffectEntry* effect) {
 	if (data->lifetime < 1000) {
 		data->lifetime--;
 	}
-	data->field_0x14++;
+	data->counter++;
 	lifetime = data->lifetime;
 	if (lifetime < 0) {
 		effDelete(effect);
 		return;
 	}
-	counter = data->field_0x14;
+	counter = data->counter;
 	alpha = 0xff;
 	if (lifetime < 0x20) {
 		alpha = lifetime * 8;
@@ -134,31 +134,31 @@ void effOpukuJetwrainMain(EffectEntry* effect) {
 	if (counter < 0x10) {
 		alpha = counter * 16 + 15;
 	}
-	data->field_0x1F = alpha;
+	data->alpha = alpha;
 	scale = (f32)alpha / 255.0f;
 
 	// Seed the height field with a travelling sine wave.
 	for (j = 1; j < 18; j++) {
 		{
 			f32 s = (f32)sin(6.2831855f * (f32)((counter - j) * -20) / 360.0f);
-			data->field_0x23[j][6] = (s8)(f32)(scale * (-64.0f * s));
+			data->height[j][6] = (s8)(f32)(scale * (-64.0f * s));
 		}
 	}
 
 	// Relax each height into the velocity field (weighted neighbour sum minus the centre), damped by 0.98.
 	for (j = 1; j < 18; j++) {
 		for (i = 1; i < 12; i++) {
-			f32 center = (f32)(s8)data->field_0x23[j][i];
+			f32 center = (f32)(s8)data->height[j][i];
 			f32 fourCenter = 4.0f * center;
-			f32 corners = (f32)(s8)data->field_0x23[j + 1][i + 1] + (f32)(s8)data->field_0x23[j - 1][i + 1] + (f32)(s8)data->field_0x23[j + 1][i - 1] + (f32)(s8)data->field_0x23[j - 1][i - 1];
-			f32 edges = (f32)(s8)data->field_0x23[j + 1][i] + (f32)(s8)data->field_0x23[j - 1][i] + (f32)(s8)data->field_0x23[j][i + 1] + (f32)(s8)data->field_0x23[j][i - 1];
-			f32 v = (f32)data->field_0x11A[j][i];
+			f32 corners = (f32)(s8)data->height[j + 1][i + 1] + (f32)(s8)data->height[j - 1][i + 1] + (f32)(s8)data->height[j + 1][i - 1] + (f32)(s8)data->height[j - 1][i - 1];
+			f32 edges = (f32)(s8)data->height[j + 1][i] + (f32)(s8)data->height[j - 1][i] + (f32)(s8)data->height[j][i + 1] + (f32)(s8)data->height[j][i - 1];
+			f32 v = (f32)data->velocity[j][i];
 			f32 halfCorners = 0.5f * corners;
 			f32 t = halfCorners + (edges - fourCenter) - 0.7f * fourCenter;
-			data->field_0x11A[j][i] = (s16)(v + t);
-			data->field_0x11A[j][i] *= 0.98f;
+			data->velocity[j][i] = (s16)(v + t);
+			data->velocity[j][i] *= 0.98f;
 			if (lifetime < 0x20) {
-				data->field_0x23[j][i] = (s8)((f32)(s8)data->field_0x23[j][i] * scale);
+				data->height[j][i] = (s8)((f32)(s8)data->height[j][i] * scale);
 			}
 		}
 	}
@@ -172,7 +172,7 @@ void effOpukuJetwrainMain(EffectEntry* effect) {
 #else
 		for (i = 1; i < 12; i++) {
 #endif
-			data->field_0x23[j][i] = (s8)((f32)(s8)data->field_0x23[j][i] + 0.02f * (f32)data->field_0x11A[j][i]);
+			data->height[j][i] = (s8)((f32)(s8)data->height[j][i] + 0.02f * (f32)data->velocity[j][i]);
 		}
 	}
 
@@ -223,7 +223,7 @@ void effOpukuJetwrainDisp(CameraId camId, void* param) {
 	GXColor color;
 	camGetPtr(camId);
 	data = effect->userdata;
-	alpha = data->field_0x1F;
+	alpha = data->alpha;
 	GXGetProjectionv(proj);
 	C_MTXOrtho(orthoMtx, 0.0f, 480.f, 0.0f, 608.0f, 1.0f, 32768.0f);
 	GXSetProjection(orthoMtx, GX_ORTHOGRAPHIC);
@@ -246,12 +246,12 @@ void effOpukuJetwrainDisp(CameraId camId, void* param) {
 	GXSetTevColorIn(0, GX_CC_ZERO, GX_CC_C0, GX_CC_A0, GX_CC_TEXC);
 	GXSetTevAlphaIn(0, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_RASA);
 #ifdef MUST_MATCH
-	color = makeTevColor(data->field_0x1C, data->field_0x1D, data->field_0x1E, alpha >> 1);
+	color = makeTevColor(data->color1R, data->color1G, data->color1B, alpha >> 1);
 #else
 	color = (GXColor){ 0, 0, 0, 0 };
-	color.r = data->field_0x1C;
-	color.g = data->field_0x1D;
-	color.b = data->field_0x1E;
+	color.r = data->color1R;
+	color.g = data->color1G;
+	color.b = data->color1B;
 	color.a = alpha >> 1;
 #endif
 	GXSetTevColor(GX_TEVREG0, color);
@@ -332,13 +332,13 @@ void effOpukuJetwrainDisp(CameraId camId, void* param) {
 
 			vtx = (effOpukuJetwrainVtx*)opuku_jetwrain_vtx;
 			vtx[base + 0].x = x << 2;
-			vtx[base + 0].y = (s8)data->field_0x23[j][i] + fieldBase;
+			vtx[base + 0].y = (s8)data->height[j][i] + fieldBase;
 			vtx[base + 1].x = (jPos + x2 + 0x10) << 2;
-			vtx[base + 1].y = (s8)data->field_0x23[j + 1][i] + fieldBase;
+			vtx[base + 1].y = (s8)data->height[j + 1][i] + fieldBase;
 			vtx[base + 2].x = x << 2;
-			vtx[base + 2].y = (s8)data->field_0x23[j][i + 1] + fieldEnd;
+			vtx[base + 2].y = (s8)data->height[j][i + 1] + fieldEnd;
 			vtx[base + 3].x = (jPos + x2 + 0x10) << 2;
-			vtx[base + 3].y = (s8)data->field_0x23[j + 1][i + 1] + fieldEnd;
+			vtx[base + 3].y = (s8)data->height[j + 1][i + 1] + fieldEnd;
 			DCFlushRange(opuku_jetwrain_vtx, 0xE0);
 			GXInvalidateVtxCache();
 			GXBegin(GX_TRIANGLES, GX_VTXFMT0, 6);
