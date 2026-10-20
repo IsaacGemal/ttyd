@@ -174,9 +174,7 @@ void marioReInit_ship(void) {
     marioChgPose("M_Z_1");
     mario->dispFlags |= 0x8;
     mario->paperAnimeTime = 0x58;
-    // Header declares marioSetPaperAnimeLocalTime(s16); the original caller passes the full word
-    // without sign-extending, so call through an s32 prototype to reproduce the codegen
-    ((void (*)(s32))marioSetPaperAnimeLocalTime)(mario->paperAnimeTime);
+    marioSetPaperAnimeLocalTime(mario->paperAnimeTime);
     ((MotionShipData*)marioGetPtr()->motStruct)->sfxId = 0xFFFFFFFFu;
     ((MotionShipData*)marioGetPtr()->motStruct)->flags = 0;
     ((MotionShipData*)marioGetPtr()->motStruct)->unk04 = 0.0f;
@@ -592,7 +590,7 @@ void mot_ship(void) {
             marioChgPaper("PM_H_1A");
             marioChgPose("M_Z_1");
             mario->paperAnimeTime = 0x58;
-            ((void (*)(s32))marioSetPaperAnimeLocalTime)(mario->paperAnimeTime);
+            marioSetPaperAnimeLocalTime(mario->paperAnimeTime);
             SHIP_DATA->unk1C = 0.0f;
             mario->dispFlags |= 0x100;
             marioAdjustMoveDir();
@@ -612,7 +610,7 @@ void mot_ship(void) {
         if (mario->dispOfs.y > 0.0f) {
             mario->dispOfs.y = 0.0f;
         }
-        ((void (*)(s32))marioSetPaperAnimeLocalTime)(mario->paperAnimeTime);
+        marioSetPaperAnimeLocalTime(mario->paperAnimeTime);
         if (--mario->paperAnimeTime >= 0x2C) {
             f30 = (SHIP_DATA->flags & 1) ? 20.0f : -20.0f;
             SHIP_DATA->unk1C += 0.125f * (f30 - SHIP_DATA->unk1C);
@@ -637,7 +635,7 @@ void mot_ship(void) {
         if (mario->dispOfs.y > 0.0f) {
             mario->dispOfs.y = 0.0f;
         }
-        ((void (*)(s32))marioSetPaperAnimeLocalTime)(mario->paperAnimeTime);
+        marioSetPaperAnimeLocalTime(mario->paperAnimeTime);
         if (--mario->paperAnimeTime <= 0) {
             mario->paperAnimeTime = 0;
             mario->currSubMotionId = 0x2D;
@@ -650,7 +648,7 @@ void mot_ship(void) {
         mario->unk1A8 += SHIP_DATA->unk1C;
         break;
     case 45:
-        ((void (*)(s32))marioSetPaperAnimeLocalTime)(mario->paperAnimeTime);
+        marioSetPaperAnimeLocalTime(mario->paperAnimeTime);
         f30 = SHIP_DATA->unk20 * ((SHIP_DATA->flags & 1) ? 1.0f : -1.0f);
         {
             SHIP_DATA->unk1C += 0.05f * (f30 - SHIP_DATA->unk1C);

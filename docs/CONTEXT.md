@@ -10420,3 +10420,4 @@ whole tree 34.468 -> 34.244; end_unknown.c 113.415 (weighted 175) -> 18.146 (wei
 - Build: tower `ninja` recreates build/G8MJ01/ok. mot_ship.c and party_cloud.c natural-compile without -DMUST_MATCH (rc 0).
 
 Review (Claude Opus 5.5): every converted site checked against its motion. 0x2A4 is the frame count marioSetPaperAnimeLocalTime stores in poseTime and gives animPoseSetLocalTime, so `paperAnimeTime` stands; 0x9C/0x52/0x19C/0x11C/0x128 match their existing roles; the sweep fields match getHitBreatheout2 (the two rays start in opposite directions: sweepDown1 0, sweepDown2 1). MarioWork stays 0x2E0, PartyCloud's 0x10..0x20 span is unchanged. No changes.
+- Review follow-up: mot_ship's five `((void (*)(s32))marioSetPaperAnimeLocalTime)(...)` calls are now direct calls, and the stale "header declares (s16)" comment is gone; mario.h already declares the s32 prototype, and the build stays byte-identical. (Claude Opus 5.5)
