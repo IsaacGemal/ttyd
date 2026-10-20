@@ -23,13 +23,13 @@ typedef struct effKemuri1Data {
 	u8 align_2[2]; //0x2, TODO: verify align
 	Vec position; //0x4
 	f32 speed; //0x10, horizontal speed along (dirX, dirZ) in types 0/1 and 4-7
-	f32 field_0x14; //0x14
-	f32 field_0x18; //0x18
-	f32 field_0x1C; //0x1C
+	f32 field_0x14; //0x14, types 0/1: added to speed each frame; types 4-7: speed *= field_0x14 each frame
+	f32 speedJerk; //0x18, types 0/1 only: added to field_0x14 (the speed's per-frame acceleration there) each frame
+	f32 speedSnap; //0x1C, types 0/1 only: added to speedJerk each frame
 	f32 velY; //0x20
 	f32 velYAccel; //0x24, added to velY every frame
-	f32 field_0x28; //0x28
-	f32 field_0x2C; //0x2C
+	f32 field_0x28; //0x28, types 0/1: added to velYAccel each frame; types 3-7: velYAccel *= field_0x28 each frame
+	f32 field_0x2C; //0x2C, types 0/1: added to field_0x28 each frame; types 4-7: velY *= field_0x2C each frame
 	f32 dirX; //0x30, sin of the heading
 	f32 dirZ; //0x34, cos of the heading
 	s32 field_0x38; //0x38
@@ -131,8 +131,8 @@ EffectEntry* effKemuri1N64Entry(s32 type, f32 x, f32 y, f32 z, f32 a5) {
 			for (i = 1; i < effCount; i++, entry++) {
 				entry->speed = -3.0f;
 				entry->field_0x14 = 0.29999998f;
-				entry->field_0x18 = 0.0f;
-				entry->field_0x1C = 0.0f;
+				entry->speedJerk = 0.0f;
+				entry->speedSnap = 0.0f;
 				entry->velY = 1.75f;
 				entry->velYAccel = -0.16f;
 				entry->field_0x28 = 0.0f;
@@ -330,8 +330,8 @@ void effKemuri1Main(EffectEntry* effect) {
 		switch (type) {
 		case 0:
 		case 1:
-			data->field_0x18 += data->field_0x1C;
-			data->field_0x14 += data->field_0x18;
+			data->speedJerk += data->speedSnap;
+			data->field_0x14 += data->speedJerk;
 			data->speed += data->field_0x14;
 			data->position.x += data->speed * data->dirX;
 			data->position.z += data->speed * data->dirZ;
