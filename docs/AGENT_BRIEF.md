@@ -58,7 +58,8 @@ Each of these compiled to the right bytes, or looked close enough, and was still
 5. **Copies of existing structs.** Don't define a local struct overlaying one from `include/`. If you need a
    field that isn't named yet, list it in your report with its offset and type.
 6. **Raw offsets where the header already names the field.** `*(f32*)((u8*)mario + 0x8C)` is `mario->position.x`.
-   Raw offsets are fine only where the header has padding there; list those in your report.
+   Raw offsets are fine only where the header has padding there; list those in your report. `tools/offset_to_field.py`
+   finds and rewrites the ones that already land on a named field (docs/CONTEXT.md, "Tooling: offset_to_field.py").
 7. **Match-only tricks left unmarked.** Code that exists only to reproduce the original bytes (a fake cast or
    temporary, an odd expression order, stack padding) goes inside `#ifdef MUST_MATCH`, with the natural form
    under `#else` where there is one; use `PAD_STACK(n)` from `matching.h` for padding. Unmarked tricks look like
