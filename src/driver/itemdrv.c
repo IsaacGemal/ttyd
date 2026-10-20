@@ -146,13 +146,8 @@ void itemInit(void) { // 1:1
     wp->currId = 0;
 }
 
-#define ITEM_STATUS(item) (*(u32*)((u8*)(item) + 0x38))
 extern WinMgrDesc itemdrv_window_desc[];
 extern s32 all_juyoitem_lecture[];
-#define IT_S32(i, off) (*(s32*)((u8*)(i) + (off)))
-#define IT_U32(i, off) (*(u32*)((u8*)(i) + (off)))
-#define IT_F32(i, off) (*(f32*)((u8*)(i) + (off)))
-#define IT_S64(i, off) (*(s64*)((u8*)(i) + (off)))
 
 void itemReInit(void) {
     ItemWork* wp = itemGetWork();
@@ -182,7 +177,7 @@ void itemCoinDrop(Vec* pos) {
         pouchAddCoin(-1);
         item = itemEntry(NULL, 0x79, 8, -1, 0, pos->x, pos->y, pos->z);
         if (item != NULL) {
-            ITEM_STATUS(item) |= 0x40;
+            item->status |= 0x40;
         }
     }
 }
@@ -255,7 +250,7 @@ s32 itemGetCheck(ItemEntry* entry) {
     switch (entry->mode) {
     case 5:
     case 6:
-        if (entry->field_0x26 != 0 && !itemStatus(entry, 0x4) && !itemStatus(entry, 0x8)) {
+        if (entry->subMode != 0 && !itemStatus(entry, 0x4) && !itemStatus(entry, 0x8)) {
             return 1;
         }
         break;
@@ -384,7 +379,7 @@ void itemMain(void) {
                            0.5f * mario->wPlayerCollisionBox.x + 12.0f);
     if (itemGetCheck(itemHit)) {
         itemHit->mode = 2;
-        itemHit->field_0x26 = 0;
+        itemHit->subMode = 0;
     }
 
     for (entry = wp->entries, i = 0; i < wp->count; i++, entry++) {
@@ -411,30 +406,35 @@ void itemMain(void) {
         }
 
         if (!active) {
-            entry->field_0x68 = gp->renderTime;
+            entry->lastTime = gp->renderTime;
             continue;
         }
 
         if (mode != 2) {
-            if (*(u64*)((u8*)entry + 0x78) == 0) {
-                *(u32*)((u8*)entry + 0x38) &= ~0x100;
-            } else if (*(u32*)((u8*)entry + 0x38) & 0x4000) {
-                *(u32*)((u8*)entry + 0x38) &= ~0x100;
+#ifdef MUST_MATCH
+            // The original tests the timer as u64; the s64 member compiles to a different load sequence.
+            if (*(u64*)&entry->lifeTime == 0) {
+#else
+            if (entry->lifeTime == 0) {
+#endif
+                entry->status &= ~0x100;
+            } else if (entry->status & 0x4000) {
+                entry->status &= ~0x100;
             } else {
-                f32 elapsed = (f32)OSTicksToMicroseconds(gp->renderTime - entry->field_0x68) / 1000.0f;
+                f32 elapsed = (f32)OSTicksToMicroseconds(gp->renderTime - entry->lastTime) / 1000.0f;
 
-                *(s64*)((u8*)entry + 0x78)
-                    = (s64)((f32) * (s64*)((u8*)entry + 0x78) - elapsed);
-                if (*(s64*)((u8*)entry + 0x78) <= 0) {
+                entry->lifeTime
+                    = (s64)((f32) entry->lifeTime - elapsed);
+                if (entry->lifeTime <= 0) {
                     entry->mode = 9;
-                    entry->field_0x26 = 0;
-                } else if (*(s64*)((u8*)entry + 0x78) <= 3000
-                           && ((*(s64*)((u8*)entry + 0x78) >> 4) & 1)) {
-                    *(u32*)((u8*)entry + 0x38) ^= 0x100;
+                    entry->subMode = 0;
+                } else if (entry->lifeTime <= 3000
+                           && ((entry->lifeTime >> 4) & 1)) {
+                    entry->status ^= 0x100;
                 }
             }
         } else {
-            *(u32*)((u8*)entry + 0x38) &= ~0x100;
+            entry->status &= ~0x100;
         }
 
         switch (entry->mode) {
@@ -460,7 +460,7 @@ void itemMain(void) {
             f32 hitX;
             f32 newY;
 
-            if (*(u32*)((u8*)entry + 0x38) & 0x100000) {
+            if (entry->status & 0x100000) {
                 hit = NULL;
                 newY = y + vy;
             } else {
@@ -486,7 +486,7 @@ void itemMain(void) {
             }
             if (hit == NULL) {
                 entry->mode = 3;
-                entry->field_0x26 = 0;
+                entry->subMode = 0;
             } else {
                 entry->position.y = newY;
             }
@@ -508,8 +508,8 @@ void itemMain(void) {
                 entry->position.z = z;
             } else {
                 entry->mode = 3;
-                entry->field_0x26 = 0;
-                *(u32*)((u8*)entry + 0x38) &= ~0x1000;
+                entry->subMode = 0;
+                entry->status &= ~0x1000;
             }
         }
         break;
@@ -532,7 +532,7 @@ void itemMain(void) {
         case 0x76:
         case 0x77:
         case 0x78:
-            if (!(*(u32*)((u8*)entry + 0x38) & 0x100)) {
+            if (!(entry->status & 0x100)) {
                 ((f32*)((u8*)entry->effect->userdata + 0x8))[0] = entry->position.x;
                 ((f32*)((u8*)entry->effect->userdata + 0x8))[1]
                     = 16.0f + entry->position.y;
@@ -544,7 +544,7 @@ void itemMain(void) {
             }
             break;
         default:
-            if (!(*(u32*)((u8*)entry + 0x38) & 0x100)) {
+            if (!(entry->status & 0x100)) {
                 iconSetPos(entry->name, entry->position.x, entry->position.y, entry->position.z);
                 iconSetScale(entry->name, entry->scale);
                 iconSetAlpha(entry->name, entry->alpha);
@@ -554,7 +554,7 @@ void itemMain(void) {
             break;
         }
 
-        entry->field_0x68 = gp->renderTime;
+        entry->lastTime = gp->renderTime;
 
         if (entry->itemId == 0x79 || entry->itemId == 0x7a) {
             if (irand(1000) < 0x1e) {
@@ -574,7 +574,7 @@ void itemMain(void) {
 
         for (e = wp2->entries, j = 0; j < wp2->count; j++, e++) {
             if (e->flags & 1) {
-                e->field_0x68 = gp->renderTime;
+                e->lastTime = gp->renderTime;
             }
         }
     }
@@ -582,7 +582,7 @@ void itemMain(void) {
 
 void itemModeChange(ItemEntry* item, u16 mode) {
     item->mode = mode;
-    item->field_0x26 = 0;
+    item->subMode = 0;
 }
 
 ItemEntry* itemEntry(const char* name, ItemType type, u16 a3, s32 evtId, s32 a5, f32 a6, f32 a7, f32 a8) {
@@ -665,8 +665,8 @@ ItemEntry* itemEntry(const char* name, ItemType type, u16 a3, s32 evtId, s32 a5,
 	entry->position.y = a7;
 	entry->position.z = a8;
 	entry->itemId = type;
-	entry->field_0x2 = a3;
-	*(s32*)((u8*)entry + 0x20) = a5;
+	entry->spawnType = a3;
+	entry->getScript = (void*)a5;
 	entry->flags |= 1;
 	entry->scale = 1.0f;
 	entry->alpha = 0xFF;
@@ -708,9 +708,9 @@ ItemEntry* itemEntry(const char* name, ItemType type, u16 a3, s32 evtId, s32 a5,
 		break;
 	}
 
-	*(f32*)((u8*)entry + 0x84) = 1.0f;
-	*(f32*)((u8*)entry + 0x80) = 1.0f;
-	entry->field_0x68 = gp->renderTime;
+	entry->gravity = 1.0f;
+	entry->boundRate = 1.0f;
+	entry->lastTime = gp->renderTime;
 
 	switch (entry->itemId) {
 	default:
@@ -728,82 +728,82 @@ ItemEntry* itemEntry(const char* name, ItemType type, u16 a3, s32 evtId, s32 a5,
 		entry->flags |= 2;
 	case 16:
 		entry->mode = 7;
-		entry->field_0x26 = 0;
+		entry->subMode = 0;
 		break;
 	case 0:
 		entry->mode = 1;
-		entry->field_0x26 = 0;
+		entry->subMode = 0;
 		break;
 	case 1:
 		entry->mode = 1;
-		entry->field_0x26 = 0;
+		entry->subMode = 0;
 		entry->flags |= 2;
 		break;
 	case 4:
 		entry->mode = 6;
-		entry->field_0x26 = 0;
+		entry->subMode = 0;
 		break;
 	case 3:
-		*(s64*)((u8*)entry + 0x78) = 5000;
+		entry->lifeTime = 5000;
 		entry->mode = 5;
-		entry->field_0x26 = 0;
+		entry->subMode = 0;
 		break;
 	case 11:
-		*(u32*)((u8*)entry + 0x38) |= 0x4000;
-		*(s64*)((u8*)entry + 0x78) = 20000;
+		entry->status |= 0x4000;
+		entry->lifeTime = 20000;
 		entry->mode = 6;
-		entry->field_0x26 = 0;
+		entry->subMode = 0;
 		break;
 	case 12:
-		*(u32*)((u8*)entry + 0x38) |= 0x4000;
-		*(s64*)((u8*)entry + 0x78) = 20000;
+		entry->status |= 0x4000;
+		entry->lifeTime = 20000;
 		entry->mode = 6;
-		entry->field_0x26 = 0;
+		entry->subMode = 0;
 		entry->flags |= 0x400;
 		break;
 	case 9:
 		entry->flags |= 0x100;
 	case 8:
-		*(u32*)((u8*)entry + 0x38) |= 0x4000;
-		*(s64*)((u8*)entry + 0x78) = 8000;
+		entry->status |= 0x4000;
+		entry->lifeTime = 8000;
 		entry->mode = 6;
-		entry->field_0x26 = 0;
+		entry->subMode = 0;
 		break;
 	case 10:
-		*(u32*)((u8*)entry + 0x38) |= 0x4000;
-		*(s64*)((u8*)entry + 0x78) = 8000;
+		entry->status |= 0x4000;
+		entry->lifeTime = 8000;
 		entry->mode = 6;
-		entry->field_0x26 = 0;
+		entry->subMode = 0;
 		entry->flags |= 0x400;
 		break;
 	case 7:
-		*(u32*)((u8*)entry + 0x38) |= 0x4000;
+		entry->status |= 0x4000;
 	case 5:
-		*(s64*)((u8*)entry + 0x78) = 5000;
+		entry->lifeTime = 5000;
 		entry->mode = 6;
-		entry->field_0x26 = 0;
+		entry->subMode = 0;
 		break;
 	case 6:
-		*(s64*)((u8*)entry + 0x78) = 5000;
-		*(u32*)((u8*)entry + 0x38) |= 0x40;
+		entry->lifeTime = 5000;
+		entry->status |= 0x40;
 		entry->mode = 6;
-		entry->field_0x26 = 0;
+		entry->subMode = 0;
 		break;
 	case 2:
 		entry->mode = 5;
-		entry->field_0x26 = 0;
+		entry->subMode = 0;
 		break;
 	case 13:
 		entry->mode = 3;
-		entry->field_0x26 = 0;
+		entry->subMode = 0;
 		break;
 	case 14:
 		entry->mode = 4;
-		entry->field_0x26 = 0;
+		entry->subMode = 0;
 		break;
 	case 15:
 		entry->mode = 10;
-		entry->field_0x26 = 0;
+		entry->subMode = 0;
 		break;
 	}
 	return entry;
@@ -988,7 +988,7 @@ void winNameDisp(WinMgrEntry* entry) {
         entry->x = -entry->width / 2;
     }
 
-    if (!winMgrAction(*(s32*)((u8*)item + 0x28))) {
+    if (!winMgrAction(item->winMainId)) {
         GXColor color;
 
         FontDrawStart();
@@ -1015,7 +1015,7 @@ void winNameDisp2(WinMgrEntry* entry) {
         entry->x = -entry->width / 2;
     }
 
-    if (!winMgrAction(*(s32*)((u8*)item + 0x28))) {
+    if (!winMgrAction(item->winMainId)) {
         GXColor color;
 
         FontDrawStart();
@@ -1032,7 +1032,7 @@ void winHelpMain(WinMgrEntry* entry) {
 void winHelpDisp(WinMgrEntry* entry) {
     ItemEntry* item = entry->param;
 
-    if (!winMgrAction(*(s32*)((u8*)item + 0x2c))) {
+    if (!winMgrAction(item->winHelpId)) {
         entry->message = msgSearch(itemDataTable[item->itemId].description);
         winMgrHelpDraw(entry);
     }
@@ -1051,7 +1051,7 @@ void winFullDisp(WinMgrEntry* entry) {
         entry->x = -entry->width / 2;
     }
 
-    if (!winMgrAction(*(s32*)((u8*)item + 0x30))) {
+    if (!winMgrAction(item->winFullId)) {
         GXColor color;
 
         FontDrawStart();
@@ -1062,8 +1062,6 @@ void winFullDisp(WinMgrEntry* entry) {
         FontDrawEdgeOff();
     }
 }
-
-// item status lives at 0x38 (u32, not yet declared in the header)
 
 
 // Removes every live entry in the current item work whose name matches `item`'s,
@@ -1105,14 +1103,14 @@ static inline s32 itemseq_tryGet(ItemEntry* item) {
     } else if (item->flags & 0x40) {
         _swSet(item->evtId);
     }
-    if (*(void**)((u8*)item + 0x20) != NULL) {
-        EventEntry* evt = evtEntry(*(void**)((u8*)item + 0x20), 0, 0x20);
+    if (item->getScript != NULL) {
+        EventEntry* evt = evtEntry(item->getScript, 0, 0x20);
 
         evt->lwData[0] = (s32)(1024.0f * item->position.x) - 0x0DB58580;
         evt->lwData[1] = (s32)(1024.0f * item->position.y) - 0x0DB58580;
         evt->lwData[2] = (s32)(1024.0f * item->position.z) - 0x0DB58580;
     }
-    *(u32*)((u8*)item + 0x38) |= 1;
+    item->status |= 1;
     return 1;
 }
 
@@ -1128,31 +1126,29 @@ void itemseq_GetItem(ItemEntry* item) {
     s32 sel;
     u32 motion;
 
-    switch (item->field_0x26) {
+    switch (item->subMode) {
     case 0:
-        *(u32*)((u8*)item + 0x38) &= ~0x10000;
+        item->status &= ~0x10000;
         if (item->flags & 0x100) {
-            *(u32*)((u8*)item + 0x38) |= 0x4000000;
+            item->status |= 0x4000000;
         } else {
-            *(u32*)((u8*)item + 0x38) &= ~0x4000000;
+            item->status &= ~0x4000000;
         }
         item->flags &= ~0x100;
         if (item->flags & 4) {
             got = itemseq_tryGet(item);
             if (got != 0) {
-                *(s32*)((u8*)item + 0x7C) = 0;
-                *(s32*)((u8*)item + 0x78) = 0;
+                item->lifeTime = 0;
                 itemseq_sfxGet(item);
                 itemseq_deleteMatching(item);
             } else {
                 item->mode = 4;
-                item->field_0x26 = 0;
+                item->subMode = 0;
             }
             break;
         }
-        item->field_0x26 = 1;
-        *(s32*)((u8*)item + 0x7C) = 0;
-        *(s32*)((u8*)item + 0x78) = 0;
+        item->subMode = 1;
+        item->lifeTime = 0;
         camGetPtr(8)->flags |= 0x200;
         marioKeyOff();
         marioStSystemLevel(2);
@@ -1175,7 +1171,7 @@ void itemseq_GetItem(ItemEntry* item) {
             goto state1;
         }
     itemseq_setFlag:
-        *(u32*)((u8*)item + 0x38) |= 0x2000;
+        item->status |= 0x2000;
         goto state1;
 
     case 1:
@@ -1183,11 +1179,11 @@ void itemseq_GetItem(ItemEntry* item) {
         if (!(((item->flags & 0x1000) && !(item->flags & 0x4000)) || marioChkItemGetMotion())) {
             motion = mario->currMotionId;
             if (motion == 5 || (u16)(motion - 6) <= 2 || motion == 0xF || motion == 0xE) {
-                item->field_0x26 = 8;
+                item->subMode = 8;
             }
             break;
         }
-        item->field_0x26 = 2;
+        item->subMode = 2;
         marioChgGetItemMotion();
         effType = 7;
         bgmType = -1;
@@ -1223,16 +1219,16 @@ void itemseq_GetItem(ItemEntry* item) {
             effType = 5;
             bgmType = 2;
         }
-        *(EffectEntry**)(wp->field_0xC) = effItemGetEntry(effType, mario->position.x,
+        wp->getEffect = effItemGetEntry(effType, mario->position.x,
                                                           62.0f + mario->position.y, mario->position.z);
-        if (*(u32*)((u8*)item + 0x38) & 0x2000) {
-            EffectEntry* eff = *(EffectEntry**)(wp->field_0xC);
+        if (item->status & 0x2000) {
+            EffectEntry* eff = wp->getEffect;
 
             *(s32*)((u8*)eff->userdata + 0x38) = 5;
             iconFlagOn(item->name, 0x200);
             marioSetCamId(7);
         } else {
-            EffectEntry* eff = *(EffectEntry**)(wp->field_0xC);
+            EffectEntry* eff = wp->getEffect;
 
             *(s32*)((u8*)eff->userdata + 0x38) = 5;
             iconFlagOn(item->name, 0x100);
@@ -1286,19 +1282,19 @@ void itemseq_GetItem(ItemEntry* item) {
         }
         item->flags &= ~0x2000;
         itemseq_sfxGet(item);
-        *(s32*)((u8*)item + 0x28) = winMgrEntry(&itemdrv_window_desc[0]);
-        winMgrOpen(*(s32*)((u8*)item + 0x28));
-        winMgrSetParam(*(s32*)((u8*)item + 0x28), item);
-        if (!(*(u32*)((u8*)item + 0x38) & 0x2000)) {
-            *(s32*)((u8*)item + 0x2C) = winMgrEntry(&itemdrv_window_desc[1]);
-            winMgrOpen(*(s32*)((u8*)item + 0x2C));
-            winMgrSetParam(*(s32*)((u8*)item + 0x2C), item);
+        item->winMainId = winMgrEntry(&itemdrv_window_desc[0]);
+        winMgrOpen(item->winMainId);
+        winMgrSetParam(item->winMainId, item);
+        if (!(item->status & 0x2000)) {
+            item->winHelpId = winMgrEntry(&itemdrv_window_desc[1]);
+            winMgrOpen(item->winHelpId);
+            winMgrSetParam(item->winHelpId, item);
         }
         got = itemseq_tryGet(item);
         if (got == 0) {
-            *(s32*)((u8*)item + 0x30) = winMgrEntry(&itemdrv_window_desc[2]);
-            winMgrOpen(*(s32*)((u8*)item + 0x30));
-            winMgrSetParam(*(s32*)((u8*)item + 0x30), item);
+            item->winFullId = winMgrEntry(&itemdrv_window_desc[2]);
+            winMgrOpen(item->winFullId);
+            winMgrSetParam(item->winFullId, item);
         }
         if (item->itemId == 0x49) {
             iconChange(item->name, 0x114);
@@ -1309,11 +1305,11 @@ void itemseq_GetItem(ItemEntry* item) {
         break;
 
     case 2:
-        if (!(*(u32*)((u8*)item + 0x38) & 0x2000)) {
+        if (!(item->status & 0x2000)) {
             marioCtrlOff();
-            *(u32*)((u8*)item + 0x38) |= 0x1000000;
+            item->status |= 0x1000000;
         }
-        item->field_0x26 = 3;
+        item->subMode = 3;
         /* fallthrough */
     case 3:
         if (!(item->flags & 0x8000) && !(item->flags & 0x2000)) {
@@ -1325,15 +1321,15 @@ void itemseq_GetItem(ItemEntry* item) {
                 }
             }
         }
-        if (winMgrAction(*(s32*)((u8*)item + 0x28))) {
+        if (winMgrAction(item->winMainId)) {
             break;
         }
         if (!(keyGetButtonTrg(0) & 0x300)) {
             break;
         }
-        winMgrCloseAutoDelete(*(s32*)((u8*)item + 0x28));
-        if (!(*(u32*)((u8*)item + 0x38) & 0x2000)) {
-            winMgrCloseAutoDelete(*(s32*)((u8*)item + 0x2C));
+        winMgrCloseAutoDelete(item->winMainId);
+        if (!(item->status & 0x2000)) {
+            winMgrCloseAutoDelete(item->winHelpId);
         }
         if (!(item->flags & 0x8000) && !(item->flags & 0x2000)) {
             psndBGMOff(0x201);
@@ -1341,17 +1337,17 @@ void itemseq_GetItem(ItemEntry* item) {
                 psndBGMOn(0xA0, NULL);
             }
         }
-        if (*(u32*)((u8*)item + 0x38) & 0x2000) {
-            item->field_0x26 = 6;
+        if (item->status & 0x2000) {
+            item->subMode = 6;
             break;
         }
         if (item->itemId >= 0x79 && item->itemId < 0xEC && item->itemId != 0x7D && !swGet(0xEB) && !(gp->flags & 0x1000)) {
             swSet(0xEB);
-            item->field_0x26 = 4;
-            *(s32*)((wp->field_0xC + 0xC)) = msgWindow_Entry(msgSearch("item_first_hit"), 0, 0);
+            item->subMode = 4;
+            wp->getMsgId = msgWindow_Entry(msgSearch("item_first_hit"), 0, 0);
             break;
         }
-        effSoftDelete(*(EffectEntry**)(wp->field_0xC));
+        effSoftDelete(wp->getEffect);
         marioSetCamId(4);
         iconFlagOff(item->name, 0x100);
         if (item->itemId == 0x49) {
@@ -1360,11 +1356,11 @@ void itemseq_GetItem(ItemEntry* item) {
         if (item->effect == NULL) {
             iconNameToPtr(item->name)->flags &= ~0x80;
         }
-        if (*(u32*)((u8*)item + 0x38) & 1) {
+        if (item->status & 1) {
             marioStSystemLevel(0);
             psndClearFlag(0x80);
-            if (*(u32*)((u8*)item + 0x38) & 0x1000000) {
-                *(u32*)((u8*)item + 0x38) &= ~0x1000000;
+            if (item->status & 0x1000000) {
+                item->status &= ~0x1000000;
                 marioCtrlOn();
             }
             marioKeyOn();
@@ -1373,29 +1369,29 @@ void itemseq_GetItem(ItemEntry* item) {
             itemseq_deleteMatching(item);
             break;
         }
-        item->field_0x26 = 5;
-        winMgrCloseAutoDelete(*(s32*)((u8*)item + 0x30));
+        item->subMode = 5;
+        winMgrCloseAutoDelete(item->winFullId);
         marioChgStayMotion();
         iconFlagOn(item->name, 2);
         id = item->itemId;
         if (id >= 0xF0 && id < 0x153) {
-            *(WinMgrSelect**)((wp->field_0xC + 4)) = winMgrSelectEntry(2, id, 1);
+            wp->getSelect = winMgrSelectEntry(2, id, 1);
         } else {
-            *(WinMgrSelect**)((wp->field_0xC + 4)) = winMgrSelectEntry(1, id, 1);
+            wp->getSelect = winMgrSelectEntry(1, id, 1);
         }
         break;
 
     case 4:
-        if (windowCheckID(*(s32*)((wp->field_0xC + 0xC)))) {
+        if (windowCheckID(wp->getMsgId)) {
             break;
         }
-        effSoftDelete(*(EffectEntry**)(wp->field_0xC));
+        effSoftDelete(wp->getEffect);
         marioSetCamId(4);
         iconFlagOff(item->name, 0x100);
         marioStSystemLevel(0);
         psndClearFlag(0x80);
-        if (*(u32*)((u8*)item + 0x38) & 0x1000000) {
-            *(u32*)((u8*)item + 0x38) &= ~0x1000000;
+        if (item->status & 0x1000000) {
+            item->status &= ~0x1000000;
             marioCtrlOn();
         }
         marioKeyOn();
@@ -1405,22 +1401,22 @@ void itemseq_GetItem(ItemEntry* item) {
         break;
 
     case 5:
-        sel = (s32)winMgrSelect(*(WinMgrSelect**)((wp->field_0xC + 4)));
+        sel = (s32)winMgrSelect(wp->getSelect);
         if (sel == 0) {
             break;
         }
-        winMgrSelectDelete(*(WinMgrSelect**)((wp->field_0xC + 4)));
+        winMgrSelectDelete(wp->getSelect);
         if (sel < 0) {
-            if (*(u32*)((u8*)item + 0x38) & 0x4000000) {
+            if (item->status & 0x4000000) {
                 item->flags |= 0x100;
             }
             goto state5Tail;
         }
         pouchRemoveItem(sel);
         itemseq_tryGet(item);
-        *(u32*)((u8*)item + 0x38) &= ~1;
+        item->status &= ~1;
         item->itemId = sel;
-        *(void**)((u8*)item + 0x20) = NULL;
+        item->getScript = NULL;
         item->evtId = 0;
         item->flags &= ~0x60;
         {
@@ -1440,32 +1436,32 @@ void itemseq_GetItem(ItemEntry* item) {
         item->flags |= 0x100;
     state5Tail:
         item->flags &= ~0x1000;
-        *(f32*)((u8*)item + 0x50) = 85.0f;
-        *(f32*)((u8*)item + 0x58) = 120.0f;
-        *(f32*)((u8*)item + 0x80) = 0.7f;
-        *(f32*)((u8*)item + 0x84) = 1.0f;
-        *(s32*)((u8*)item + 0x28) = winMgrEntry(&itemdrv_window_desc[3]);
-        winMgrOpen(*(s32*)((u8*)item + 0x28));
-        winMgrSetParam(*(s32*)((u8*)item + 0x28), item);
+        item->moveSpeed = 85.0f;
+        item->jumpPower = 120.0f;
+        item->boundRate = 0.7f;
+        item->gravity = 1.0f;
+        item->winMainId = winMgrEntry(&itemdrv_window_desc[3]);
+        winMgrOpen(item->winMainId);
+        winMgrSetParam(item->winMainId, item);
         marioChgGetItemMotion();
         iconFlagOff(item->name, 2);
         if (mario->flags & 0x2000000) {
-            *(u32*)((u8*)item + 0x38) |= 0x8000;
+            item->status |= 0x8000;
         }
-        item->field_0x26 = 9;
+        item->subMode = 9;
         break;
 
     case 6:
-        *(EventEntry**)((wp->field_0xC + 8)) = evtEntryType(all_juyoitem_lecture, 0, 0, 0);
-        *(ItemEntry**)((u8*)*(EventEntry**)((wp->field_0xC + 8)) + 0xBC) = item;
-        *(EffectEntry**)((u8*)*(EventEntry**)((wp->field_0xC + 8)) + 0xC0) = *(EffectEntry**)(wp->field_0xC);
+        wp->getEvent = evtEntryType(all_juyoitem_lecture, 0, 0, 0);
+        *(ItemEntry**)((u8*)wp->getEvent + 0xBC) = item;
+        *(EffectEntry**)((u8*)wp->getEvent + 0xC0) = wp->getEffect;
         psndClearFlag(0x80);
-        item->field_0x26 = 7;
+        item->subMode = 7;
         break;
 
     case 7:
         {
-            EventEntry* evt = *(EventEntry**)((wp->field_0xC + 8));
+            EventEntry* evt = wp->getEvent;
 
             if (evtCheckID(evt->eventId)) {
                 break;
@@ -1473,8 +1469,8 @@ void itemseq_GetItem(ItemEntry* item) {
         }
         marioStSystemLevel(0);
         psndClearFlag(0x80);
-        if (*(u32*)((u8*)item + 0x38) & 0x1000000) {
-            *(u32*)((u8*)item + 0x38) &= ~0x1000000;
+        if (item->status & 0x1000000) {
+            item->status &= ~0x1000000;
             marioCtrlOn();
         }
         marioKeyOn();
@@ -1487,29 +1483,26 @@ void itemseq_GetItem(ItemEntry* item) {
         if (!(keyGetButtonTrg(0) & 0x100)) {
             break;
         }
-        winMgrCloseAutoDelete(*(s32*)((u8*)item + 0x28));
-        *(u32*)((u8*)item + 0x38) |= 8;
+        winMgrCloseAutoDelete(item->winMainId);
+        item->status |= 8;
         item->mode = 6;
-        item->field_0x26 = 0;
+        item->subMode = 0;
         item->flags &= ~0x10;
         id = item->itemId;
         if (id >= 1 && id < 0x79) {
-            *(s32*)((u8*)item + 0x7C) = 0;
-            *(s32*)((u8*)item + 0x78) = 0;
+            item->lifeTime = 0;
         } else if (id >= 0xF0 && id < 0x153) {
-            *(s32*)((u8*)item + 0x7C) = 0;
-            *(s32*)((u8*)item + 0x78) = 0;
+            item->lifeTime = 0;
         } else {
-            *(s32*)((u8*)item + 0x7C) = 0x4E20;
-            *(s32*)((u8*)item + 0x78) = 0;
+            item->lifeTime = 0x4E20;
         }
-        *(u32*)((u8*)item + 0x38) |= 0x10000;
-        *(u32*)((u8*)item + 0x38) &= ~0x1000;
+        item->status |= 0x10000;
+        item->status &= ~0x1000;
         item->flags &= ~0x2;
         marioStSystemLevel(0);
         psndClearFlag(0x80);
-        if (*(u32*)((u8*)item + 0x38) & 0x1000000) {
-            *(u32*)((u8*)item + 0x38) &= ~0x1000000;
+        if (item->status & 0x1000000) {
+            item->status &= ~0x1000000;
             marioCtrlOn();
         }
         marioKeyOn();
@@ -1519,35 +1512,34 @@ void itemseq_GetItem(ItemEntry* item) {
 
     case 8:
         if (mario->flags & 0x2000000) {
-            *(u32*)((u8*)item + 0x38) |= 0x8000;
+            item->status |= 0x8000;
         }
-        *(s32*)((u8*)item + 0x7C) = 0;
-        *(s32*)((u8*)item + 0x78) = 0;
-        if (*(u32*)((u8*)item + 0x38) & 0x1000) {
+        item->lifeTime = 0;
+        if (item->status & 0x1000) {
             item->mode = 1;
-            item->field_0x26 = 0;
-            *(u32*)((u8*)item + 0x38) &= ~0x4;
-            *(u32*)((u8*)item + 0x38) &= ~0x8;
-            *(u32*)((u8*)item + 0x38) &= ~0x4000;
-            *(u32*)((u8*)item + 0x38) &= ~0x1000;
+            item->subMode = 0;
+            item->status &= ~0x4;
+            item->status &= ~0x8;
+            item->status &= ~0x4000;
+            item->status &= ~0x1000;
             item->flags &= ~0x1000;
         } else {
-            *(f32*)((u8*)item + 0x50) = 85.0f;
-            *(f32*)((u8*)item + 0x58) = 120.0f;
-            *(f32*)((u8*)item + 0x80) = 0.7f;
-            *(f32*)((u8*)item + 0x84) = 1.0f;
-            *(u32*)((u8*)item + 0x38) |= 8;
+            item->moveSpeed = 85.0f;
+            item->jumpPower = 120.0f;
+            item->boundRate = 0.7f;
+            item->gravity = 1.0f;
+            item->status |= 8;
             item->mode = 6;
-            item->field_0x26 = 0;
+            item->subMode = 0;
             item->flags &= ~0x10;
-            *(u32*)((u8*)item + 0x38) &= ~0x1000;
+            item->status &= ~0x1000;
             item->flags &= ~0x2;
             item->flags &= ~0x1000;
         }
         marioStSystemLevel(0);
         psndClearFlag(0x80);
-        if (*(u32*)((u8*)item + 0x38) & 0x1000000) {
-            *(u32*)((u8*)item + 0x38) &= ~0x1000000;
+        if (item->status & 0x1000000) {
+            item->status &= ~0x1000000;
             marioCtrlOn();
         }
         marioKeyOn();
@@ -1563,7 +1555,7 @@ static s32 _move_dir;
 // Falling/bouncing motion of a dropped item: gravity from the elapsed time, the side/floor/ceiling hit checks, the
 // bounce sounds and the water splash. The bounce float polynomial is split into locals so MWCC does not contract it
 // into `fmsubs`/`fnmadds`; the itemId range test is written as explicit switch cases (0x72..0x78) so the branch
-// layout matches; hardHit is zeroed after the switch; the two identical `IT_S64(item,0x60) += d1` tails and the two
+// layout matches; hardHit is zeroed after the switch; the two identical `item->bounceTime += d1` tails and the two
 // `bounce = 0` tails are reached through a label/goto so MWCC keeps one shared out-of-line copy, as the target does.
 // The ceiling/floor rays, the bounce SFX and the badge-delete loop (itemDelete) are out-of-line functions,
 // auto-inlined here; the rays return from each branch, which keeps the hit pointer out of the floor ray's saved
@@ -1574,77 +1566,77 @@ void itemseq_Bound(ItemEntry* item) {
     MarioWork* mario = marioGetPtr();
     CameraEntry* camera = camGetPtr(CAMERA_3D);
 
-    switch (item->field_0x26) {
+    switch (item->subMode) {
     case 0:
-        item->field_0x26 = 1;
-        IT_S64(item, 0x60) = 0;
-        IT_S64(item, 0x68) = gp->renderTime;
-        IT_S64(item, 0x70) = gp->renderTime;
-        IT_S32(item, 0x8C) = 0;
-        if (!(IT_U32(item, 0x38) & 0x10)) {
+        item->subMode = 1;
+        item->bounceTime = 0;
+        item->lastTime = gp->renderTime;
+        item->curTime = gp->renderTime;
+        item->boundCount = 0;
+        if (!(item->status & 0x10)) {
             switch (item->mode) {
             case 6:
-                IT_U32(item, 0x38) |= 4;
+                item->status |= 4;
             case 5:
                 if (!(item->flags & 0x10)) {
-                    IT_F32(item, 0x80) = 1.0f;
-                    IT_F32(item, 0x84) = 1.0f;
-                    IT_S32(item, 0x88) = 0;
-                    IT_F32(item, 0x58) = 500.0f;
+                    item->boundRate = 1.0f;
+                    item->gravity = 1.0f;
+                    item->boundLimit = 0;
+                    item->jumpPower = 500.0f;
                 }
-                if (!(IT_U32(item, 0x38) & 0x40)) {
+                if (!(item->status & 0x40)) {
                     s32 id = item->itemId;
 
                     switch (id) {
                     case 0x79:
                     case 0x7B:
                     case 0x7C:
-                        IT_F32(item, 0x50) = (f32)(irand(0x1E) + 0x2D);
+                        item->moveSpeed = (f32)(irand(0x1E) + 0x2D);
                         if (irand(0x64) < 0x32) {
-                            IT_S32(item, 0x54) = (s32)((90.0f + camera->viewYaw + (f32)irand(0x3C)) - 30.0f);
+                            item->moveDir = (s32)((90.0f + camera->viewYaw + (f32)irand(0x3C)) - 30.0f);
                         } else {
-                            IT_S32(item, 0x54) = (s32)(((camera->viewYaw - 90.0f) + (f32)irand(0x3C)) - 30.0f);
+                            item->moveDir = (s32)(((camera->viewYaw - 90.0f) + (f32)irand(0x3C)) - 30.0f);
                         }
                         break;
                     default:
-                        IT_F32(item, 0x50) = 100.0f;
+                        item->moveSpeed = 100.0f;
                         if (irand(0x64) < 0x32) {
-                            IT_S32(item, 0x54) = (s32)((90.0f + camera->viewYaw + (f32)irand(0x1E)) - 15.0f);
+                            item->moveDir = (s32)((90.0f + camera->viewYaw + (f32)irand(0x1E)) - 15.0f);
                         } else {
-                            IT_S32(item, 0x54) = (s32)(((camera->viewYaw - 90.0f) + (f32)irand(0x1E)) - 15.0f);
+                            item->moveDir = (s32)(((camera->viewYaw - 90.0f) + (f32)irand(0x1E)) - 15.0f);
                         }
                         break;
                     }
                 } else {
-                    IT_S32(item, 0x54) = _move_dir;
+                    item->moveDir = _move_dir;
                     _move_dir += 0x84;
                     if (_move_dir >= 0x168) {
                         _move_dir -= 0x168;
                     }
-                    IT_F32(item, 0x50) = 0.67f * (f32)(irand(0x1E) + 0x41);
+                    item->moveSpeed = 0.67f * (f32)(irand(0x1E) + 0x41);
                 }
                 break;
             case 4:
-                IT_U32(item, 0x38) |= 8;
+                item->status |= 8;
             case 3:
                 if (!(item->flags & 0x10)) {
-                    IT_F32(item, 0x80) = 1.0f;
-                    IT_F32(item, 0x84) = 1.0f;
-                    IT_S32(item, 0x88) = 0;
+                    item->boundRate = 1.0f;
+                    item->gravity = 1.0f;
+                    item->boundLimit = 0;
                 }
-                IT_F32(item, 0x50) = 0.0f;
-                IT_S32(item, 0x54) = 0;
-                IT_F32(item, 0x58) = 0.0f;
+                item->moveSpeed = 0.0f;
+                item->moveDir = 0;
+                item->jumpPower = 0.0f;
                 break;
             case 10:
-                IT_F32(item, 0x80) = 1.0f;
-                IT_F32(item, 0x84) = 1.0f;
-                IT_S32(item, 0x88) = 0;
-                IT_F32(item, 0x58) = 500.0f;
-                IT_F32(item, 0x50) = 0.0f;
-                IT_S32(item, 0x54) = 0;
-                IT_U32(item, 0x38) |= 0x20;
-                IT_U32(item, 0x38) |= 4;
+                item->boundRate = 1.0f;
+                item->gravity = 1.0f;
+                item->boundLimit = 0;
+                item->jumpPower = 500.0f;
+                item->moveSpeed = 0.0f;
+                item->moveDir = 0;
+                item->status |= 0x20;
+                item->status |= 4;
                 break;
             }
         }
@@ -1664,73 +1656,73 @@ void itemseq_Bound(ItemEntry* item) {
         HitEntry* hit;
         Vec p1;
 
-        IT_S64(item, 0x70) = gp->renderTime;
-        d1 = IT_S64(item, 0x70) - IT_S64(item, 0x68);
+        item->curTime = gp->renderTime;
+        d1 = item->curTime - item->lastTime;
         t1 = (f32)OSTicksToMicroseconds(d1) / 1000000.0f;
-        t2 = (f32)OSTicksToMicroseconds(IT_S64(item, 0x60)) / 1000000.0f;
-        t3 = (f32)OSTicksToMicroseconds(IT_S64(item, 0x60) + d1) / 1000000.0f;
-        vx = t1 * (IT_F32(item, 0x50) * (f32)sin((6.2831855f * (f32)IT_S32(item, 0x54)) / 360.0f));
+        t2 = (f32)OSTicksToMicroseconds(item->bounceTime) / 1000000.0f;
+        t3 = (f32)OSTicksToMicroseconds(item->bounceTime + d1) / 1000000.0f;
+        vx = t1 * (item->moveSpeed * (f32)sin((6.2831855f * (f32)item->moveDir) / 360.0f));
         {
-            f32 c = (f32)cos((6.2831855f * (f32)IT_S32(item, 0x54)) / 360.0f);
+            f32 c = (f32)cos((6.2831855f * (f32)item->moveDir) / 360.0f);
 
-            vz = t1 * (IT_F32(item, 0x50) * -c);
+            vz = t1 * (item->moveSpeed * -c);
         }
-        if (IT_U32(item, 0x38) & 0x8000) {
+        if (item->status & 0x8000) {
             vz = 0.0f;
         }
         y2 = t3 * t3;
-        vy = IT_F32(item, 0x58) * t1 + (-980.0f * IT_F32(item, 0x84) * -((t2 * t2) - y2));
-        if ((IT_U32(item, 0x38) & 4) && (IT_S32(item, 0x8C) != 0 || vy < 0.0f)) {
-            IT_U32(item, 0x38) &= ~4;
+        vy = item->jumpPower * t1 + (-980.0f * item->gravity * -((t2 * t2) - y2));
+        if ((item->status & 4) && (item->boundCount != 0 || vy < 0.0f)) {
+            item->status &= ~4;
         }
-        if ((IT_U32(item, 0x38) & 8) && IT_S32(item, 0x8C) != 0) {
-            IT_U32(item, 0x38) &= ~8;
+        if ((item->status & 8) && item->boundCount != 0) {
+            item->status &= ~8;
         }
-        if ((IT_U32(item, 0x38) & 0x20) && vy < 0.0f) {
+        if ((item->status & 0x20) && vy < 0.0f) {
             effStardustEntry(1, 3, 0x1E, item->position.x, item->position.y, item->position.z, 16.0f, 16.0f);
             itemDelete(item->name);
             return;
         }
-        angle = IT_S32(item, 0x54);
+        angle = item->moveDir;
         hit = itemHitCheckSide(item, &nx, &nz, &angle, vx, vz);
         item->position.x = nx;
         item->position.z = nz;
-        IT_S32(item, 0x54) = angle;
+        item->moveDir = angle;
         if (hit != NULL) {
             f32 k = 0.25f;
-            IT_F32(item, 0x50) = IT_F32(item, 0x50) * k;
+            item->moveSpeed = item->moveSpeed * k;
         }
-        if (!(IT_U32(item, 0x38) & 0x20) && !(item->flags & 0x800)) {
+        if (!(item->status & 0x20) && !(item->flags & 0x800)) {
             hit = itemBoundHitCeiling(item, vy);
             if (hit != NULL) {
                 vy = 0.0f;
                 {
                     f32 k = 0.25f;
 
-                    IT_F32(item, 0x58) = -IT_F32(item, 0x58) * k;
+                    item->jumpPower = -item->jumpPower * k;
                 }
-                IT_S64(item, 0x60) = 0;
-                IT_S64(item, 0x68) = IT_S64(item, 0x70);
+                item->bounceTime = 0;
+                item->lastTime = item->curTime;
             }
         }
-        if ((IT_U32(item, 0x38) & 0x100000) && item->position.y <= -1000.0f) {
+        if ((item->status & 0x100000) && item->position.y <= -1000.0f) {
             s32 id;
 
             item->mode = 7;
-            item->field_0x26 = 0;
-            IT_U32(item, 0x38) &= ~4;
-            IT_U32(item, 0x38) &= ~8;
-            IT_U32(item, 0x38) &= ~0x4000;
+            item->subMode = 0;
+            item->status &= ~4;
+            item->status &= ~8;
+            item->status &= ~0x4000;
             id = item->itemId;
             if (id >= 1 && id < 0x79) {
-                IT_S64(item, 0x78) = 0;
+                item->lifeTime = 0;
             } else if (id >= 0xF0 && id < 0x153) {
-                IT_S64(item, 0x78) = 0;
+                item->lifeTime = 0;
             } else {
-                IT_S64(item, 0x78) = 20000;
+                item->lifeTime = 20000;
             }
-            IT_U32(item, 0x38) |= 0x10000;
-            IT_U32(item, 0x38) &= ~0x1000;
+            item->status |= 0x10000;
+            item->status &= ~0x1000;
             item->flags |= 0x100;
         } else {
             hit = itemBoundHitFloor(item, vy);
@@ -1738,7 +1730,7 @@ void itemseq_Bound(ItemEntry* item) {
                 if (hitGetAttr(hit) & 0x600) {
                     Vec pos;
 
-                    IT_U32(item, 0x38) |= 0x100000;
+                    item->status |= 0x100000;
                     pos = vec3_802cac04;
                     pos.x = item->position.x;
                     pos.y = item->position.y;
@@ -1748,15 +1740,15 @@ void itemseq_Bound(ItemEntry* item) {
                     item->flags |= 2;
                     goto bound_add_time;
                 } else {
-                    s32 cnt = IT_S32(item, 0x8C);
+                    s32 cnt = item->boundCount;
 
-                    IT_S32(item, 0x8C) = cnt + 1;
-                    if (!(hitGetAttr(hit) & 0x80000000) && IT_S32(item, 0x88) != 0 && IT_S32(item, 0x8C) >= IT_S32(item, 0x88)) {
+                    item->boundCount = cnt + 1;
+                    if (!(hitGetAttr(hit) & 0x80000000) && item->boundLimit != 0 && item->boundCount >= item->boundLimit) {
                         item->mode = 1;
-                        item->field_0x26 = 0;
-                        IT_U32(item, 0x38) &= ~4;
-                        IT_U32(item, 0x38) &= ~8;
-                        IT_U32(item, 0x38) &= ~0x4000;
+                        item->subMode = 0;
+                        item->status &= ~4;
+                        item->status &= ~8;
+                        item->status &= ~0x4000;
                     } else {
                         int hardHit;
                         int bounce;
@@ -1764,9 +1756,9 @@ void itemseq_Bound(ItemEntry* item) {
 
                         itemseq_sfxBound(item, &p1);
                         hardHit = 0;
-                        if ((item->flags & 0x80) && IT_F32(item, 0x58) != 0.0f) {
+                        if ((item->flags & 0x80) && item->jumpPower != 0.0f) {
                             bounce = 1;
-                        } else if ((hitGetAttr(hit) & 0x80000000) && IT_F32(item, 0x58) != 0.0f) {
+                        } else if ((hitGetAttr(hit) & 0x80000000) && item->jumpPower != 0.0f) {
                             MapObjectEntry* obj = mobjHitObjPtrToPtr(hit);
 
                             if (mario->characterId == 2) {
@@ -1789,48 +1781,48 @@ void itemseq_Bound(ItemEntry* item) {
 
                             tt = t3 + t1;
                             tt2 = tt * tt;
-                            gg = -980.0f * IT_F32(item, 0x84);
+                            gg = -980.0f * item->gravity;
                             ee = gg * (tt2 - y2);
-                            ff = IT_F32(item, 0x58) * t1 + ee;
-                            IT_F32(item, 0x58) = 0.7f * (IT_F32(item, 0x80) * (-ff / t1));
+                            ff = item->jumpPower * t1 + ee;
+                            item->jumpPower = 0.7f * (item->boundRate * (-ff / t1));
                         }
                         {
-                            f64 a = __fabs(0.5f * (IT_F32(item, 0x58) / (-980.0f * IT_F32(item, 0x84))));
+                            f64 a = __fabs(0.5f * (item->jumpPower / (-980.0f * item->gravity)));
 
                             dd = (f32)a;
                         }
                         {
-                            f32 hitval = IT_F32(item, 0x58) * dd + dd * ((-980.0f * IT_F32(item, 0x84)) * dd);
+                            f32 hitval = item->jumpPower * dd + dd * ((-980.0f * item->gravity) * dd);
 
                             if (hardHit == 0) {
                                 if (hitval <= 8.0f) {
                                     item->mode = 1;
-                                    item->field_0x26 = 0;
-                                    IT_U32(item, 0x38) &= ~4;
-                                    IT_U32(item, 0x38) &= ~8;
-                                    IT_U32(item, 0x38) &= ~0x4000;
+                                    item->subMode = 0;
+                                    item->status &= ~4;
+                                    item->status &= ~8;
+                                    item->status &= ~0x4000;
                                 }
                             }
                         }
-                        if ((item->flags & 0x200) && IT_S32(item, 0x8C) <= 1) {
-                            IT_S32(item, 0x54) = IT_S32(item, 0x90);
-                            IT_F32(item, 0x50) = IT_F32(item, 0x94);
+                        if ((item->flags & 0x200) && item->boundCount <= 1) {
+                            item->moveDir = item->boundNextDir;
+                            item->moveSpeed = item->boundNextSpeed;
                             item->flags &= ~0x200;
                         }
-                        IT_S64(item, 0x60) = 0;
-                        IT_S64(item, 0x68) = gp->renderTime;
+                        item->bounceTime = 0;
+                        item->lastTime = gp->renderTime;
                     }
                 }
             } else {
             bound_add_time:
-                IT_S64(item, 0x60) += d1;
-                IT_S64(item, 0x68) = IT_S64(item, 0x70);
+                item->bounceTime += d1;
+                item->lastTime = item->curTime;
             }
         }
         break;
     }
     }
-    IT_U32(item, 0x38) &= ~0x10;
+    item->status &= ~0x10;
 }
 
 // Plays the bounce SFX for the item id at the item's position, which it also leaves in *p.
@@ -2008,7 +2000,7 @@ HitEntry* itemBoundHitFloor(ItemEntry* item, f32 vy) {
 #ifdef MUST_MATCH
     if (*(volatile u32*)((u8*)item + 0x38) & 0x100000) {
 #else
-    if (IT_U32(item, 0x38) & 0x100000) {
+    if (item->status & 0x100000) {
 #endif
         item->position.y += vy;
         return NULL;
@@ -2069,32 +2061,29 @@ HitEntry* itemBoundHitCeiling(ItemEntry* item, f32 vy) {
 }
 
 void itemForceGet(ItemEntry* item) {
-    *(s32*)((u8*)item + 0x7c) = 0;
-    *(s32*)((u8*)item + 0x78) = 0;
+    item->lifeTime = 0;
     item->mode = 2;
-    item->field_0x26 = 0;
+    item->subMode = 0;
     item->flags |= 0x1000;
-    ITEM_STATUS(item) &= ~0x10000;
+    item->status &= ~0x10000;
 }
 
 void itemNokoForceGet(ItemEntry* item) {
     if (itemGetNokoCheck(item)) {
-        *(s32*)((u8*)item + 0x7c) = 0;
-        *(s32*)((u8*)item + 0x78) = 0;
+        item->lifeTime = 0;
         item->mode = 2;
-        item->field_0x26 = 0;
+        item->subMode = 0;
         item->flags |= 0x5000;
-        ITEM_STATUS(item) &= ~0x10000;
+        item->status &= ~0x10000;
     }
     else {
-        *(s32*)((u8*)item + 0x7c) = 0;
-        *(s32*)((u8*)item + 0x78) = 0;
+        item->lifeTime = 0;
         item->mode = 1;
-        item->field_0x26 = 0;
-        ITEM_STATUS(item) &= ~0x4;
-        ITEM_STATUS(item) &= ~0x8;
-        ITEM_STATUS(item) &= ~0x4000;
-        ITEM_STATUS(item) &= ~0x1000;
+        item->subMode = 0;
+        item->status &= ~0x4;
+        item->status &= ~0x8;
+        item->status &= ~0x4000;
+        item->status &= ~0x1000;
     }
 }
 
@@ -2111,20 +2100,19 @@ u16 itemFlag(ItemEntry* item, u16 flag) {
 }
 
 void itemStatusOn(ItemEntry* item, u32 mask) {
-    ITEM_STATUS(item) |= mask;
+    item->status |= mask;
 }
 
 s32 itemStatus(ItemEntry* item, u32 mask) {
-    return ITEM_STATUS(item) & mask;
+    return item->status & mask;
 }
 
 void itemPickUp(ItemEntry* item) {
-    ITEM_STATUS(item) |= 0x1000;
+    item->status |= 0x1000;
     item->mode = 8;
-    item->field_0x26 = 0;
-    *(s32*)((u8*)item + 0x7c) = 0;
-    *(s32*)((u8*)item + 0x78) = 0;
-    ITEM_STATUS(item) &= ~0x100;
+    item->subMode = 0;
+    item->lifeTime = 0;
+    item->status &= ~0x100;
 }
 
 // Window descriptions for the item windows. Referenced by name in itemseq_GetItem.

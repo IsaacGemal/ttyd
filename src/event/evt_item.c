@@ -162,8 +162,8 @@ USER_FUNC(evt_item_set_move_dir_speed) {
 	if (item == NULL) {
 		return EVT_RETURN_DONE;
 	}
-	*(s32*)((u8*)item + 0x54) = dir;
-	*(f32*)((u8*)item + 0x50) = speed;
+	item->moveDir = dir;
+	item->moveSpeed = speed;
 	return EVT_RETURN_DONE;
 }
 USER_FUNC(evt_item_set_jump_power) {
@@ -174,7 +174,7 @@ USER_FUNC(evt_item_set_jump_power) {
 	if (item == NULL) {
 		return EVT_RETURN_DONE;
 	}
-	*(f32*)((u8*)item + 0x58) = power;
+	item->jumpPower = power;
 	return EVT_RETURN_DONE;
 }
 USER_FUNC(evt_item_set_gravity) {
@@ -185,7 +185,7 @@ USER_FUNC(evt_item_set_gravity) {
 	if (item == NULL) {
 		return EVT_RETURN_DONE;
 	}
-	*(f32*)((u8*)item + 0x84) = gravity;
+	item->gravity = gravity;
 	return EVT_RETURN_DONE;
 }
 USER_FUNC(evt_item_set_bound_rate) {
@@ -196,7 +196,7 @@ USER_FUNC(evt_item_set_bound_rate) {
 	if (item == NULL) {
 		return EVT_RETURN_DONE;
 	}
-	*(f32*)((u8*)item + 0x80) = rate;
+	item->boundRate = rate;
 	return EVT_RETURN_DONE;
 }
 USER_FUNC(evt_item_set_bound_limit) {
@@ -207,7 +207,7 @@ USER_FUNC(evt_item_set_bound_limit) {
 	if (item == NULL) {
 		return EVT_RETURN_DONE;
 	}
-	*(s32*)((u8*)item + 0x88) = limit;
+	item->boundLimit = limit;
 	return EVT_RETURN_DONE;
 }
 USER_FUNC(evt_item_get_item) {
@@ -262,7 +262,7 @@ USER_FUNC(evt_item_set_bound_next_speed) {
 	if (item == NULL) {
 		return EVT_RETURN_DONE;
 	}
-	*(f32*)((u8*)item + 0x94) = speed;
+	item->boundNextSpeed = speed;
 	return EVT_RETURN_DONE;
 }
 USER_FUNC(evt_item_set_bound_next_dir) {
@@ -273,7 +273,7 @@ USER_FUNC(evt_item_set_bound_next_dir) {
 	if (item == NULL) {
 		return EVT_RETURN_DONE;
 	}
-	*(s32*)((u8*)item + 0x90) = dir;
+	item->boundNextDir = dir;
 	return EVT_RETURN_DONE;
 }
 USER_FUNC(evt_item_set_position) {
