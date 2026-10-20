@@ -8774,3 +8774,35 @@ end-of-battle voice) stay hex. `battleRules[2]` (copied to FieldBattleInfo+0x1B)
 FieldBattleInfo's `field_0x14` bytes want names to match. `field_9C` (0x9C-0xAC) and `field_C7` are unnamed.
 npcRollBattleParams still reads the setup's pairs through a byte pointer instead of `audienceRanges`.
 battle_seq_end's `seqSetSeq(SEQ_MOVE, ...)` passes battle enum SEQ_MOVE (5) where SequenceType SEQ_GAME_OVER is meant.
+### Readability: REL group 2 — Shadow Queen, atmic teresa, gor_00, end credits (2026-10-19, Claude Haiku 5.5, n9-q-rels2; reviewed by Claude Opus 5.5)
+
+unit_boss_black_peach.c: HandElem gets `mirror`, `poseIdx`, `startTime`, `stagger` (random 0..20 subtracted from
+phase·speed), `wavePhase` (wraps at 0x870 in the 1000-hand wave), `speed` and `posX/Y/Z` (the pose matrix
+translation); HandPose gets `duration` (frames), `firstFrame` and `frameCount` (the run of same-name hand_data
+rows); HandWork gets `phase`, `poseCount`, `frameTimer` (a 30-frame countdown hold in the drag events, a count up
+to 200 in queen_hand_small_1000hand_1_evt) and `state`. ShadowQueenData names the three part pose handles and the
+two "locator12" group indices. The queen's thunder/shock setup writes go through EffShockData and
+EffPokopiThunderData; in review those shared fields were named from the effects' own Disp code: shock 0x30-0x44 are
+`tev1R/G/B` and `tev2R/G/B` (GXSetTevColor 1 and 2), pokopi thunder 0x30-0x38 `tev1R/G/B`, 0x3C `tev1A` (halved as
+the bolt ages) and 0x40-0x48 `tev2R/G/B`, renamed across both effect files, las_29 and the queen.
+unit_atmic_teresa.c: TeresaEntry gets `animMode` (0 loops frames 0-7, 1 plays 8-15 once), `timer` (the animation
+clock), `delay`, `counter`, `velocity`, `startPos` (one Vec replacing three floats, byte-identical), `targetPos` and
+`easeMode` (the intplGetValue mode).
+gor_00.h: NanNpcEntry now mirrors src/event/evt_nannpc.c's layout (name, pose, flags at 0x0-0x17 instead of a
+leading pad; width, animTable etc.) with gor's names where its sequences use a slot: `basePos` (nannpc's
+homePosition), `startTime`, `facingAngle`, `state`, `timer`, `index`, `stepX`, `targetPos`, `moveDone` and
+`endFlag` (nannpc work[0]/work[1]). 0x84 is `field_0x84`: gor never touches it, but it lies in nannpc's per-entry
+scratch, so it isn't padding.
+end_unknown.c: CreditsWork's 0x08/0x0C/0x10 are alphas (setChanMatColorGX/setTevColorGX take them as the u8 alpha
+of a fixed colour), so they are `matAlpha`, `overlayAlpha` (the overlay pass runs when > 0) and `tevAlpha`.
+`image` is the FileEntry* fileAllocf returns, and the palette reads are `*(TEXPalette**)WORK->image->data`
+rather than a local CreditsImage struct. The record word at 0x04 is `layout` (placement 0-4, copied into
+CreditsWork and CreditsPoseEntry and into GW(12)); `texId` (0x08) runs 0..49; 0x00 is 0 in all 50 records and
+unread. `_mapAlloc(sizeof(CreditsPoseEntry))` is 0x44 as before.
+Index 68.554 (origin/main) → 68.534.
+Open: NanNpcEntry 0x70/0x78/0x7C stay field_ names because each sequence uses them differently (step total vs next
+state; movePos step/angle vs jump-arc terms vs sway bounds vs suifu speed), and `timer` is ms in some states and a
+step count in seq00's walk. end_unknown's functions and data still carry address names (unk_end_*, dat_end_*,
+unk_end_0000321c is still a u32 array rather than CreditsEndingRecord[50]). Swapping a literal for sizeof() is free
+for a constant like the 0x44 alloc, but where the size multiplies an index MWCC can switch to unsigned-multiply
+codegen (size_t); build-check every such swap.

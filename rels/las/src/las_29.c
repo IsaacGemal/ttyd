@@ -2505,12 +2505,12 @@ USER_FUNC(b_peach_thunder) {
     f32 z = evtGetFloat(event, args[2]);
     EffectEntry* effect = effPokopiThunderN64Entry(0, 0x96, 35.0f + x, 160.0f + y, z, x, y, z, 2.0f);
 
-    ((EffPokopiThunderData*)effect->userdata)->field_0x30 = 0xFF;
-    ((EffPokopiThunderData*)effect->userdata)->field_0x34 = 0xA0;
-    ((EffPokopiThunderData*)effect->userdata)->field_0x38 = 0xC0;
-    ((EffPokopiThunderData*)effect->userdata)->field_0x40 = 0x14;
-    ((EffPokopiThunderData*)effect->userdata)->field_0x44 = 0x14;
-    ((EffPokopiThunderData*)effect->userdata)->field_0x48 = 0x14;
+    ((EffPokopiThunderData*)effect->userdata)->tev1R = 0xFF;
+    ((EffPokopiThunderData*)effect->userdata)->tev1G = 0xA0;
+    ((EffPokopiThunderData*)effect->userdata)->tev1B = 0xC0;
+    ((EffPokopiThunderData*)effect->userdata)->tev2R = 0x14;
+    ((EffPokopiThunderData*)effect->userdata)->tev2G = 0x14;
+    ((EffPokopiThunderData*)effect->userdata)->tev2B = 0x14;
     return EVT_RETURN_DONE;
 }
 

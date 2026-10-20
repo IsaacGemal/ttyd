@@ -25,17 +25,17 @@
 // One animated Teresian used by teresa_ext_main's state machine.
 typedef struct TeresaEntry {
     u8 state;        // 0x0
-    s8 spinMode;     // 0x1, 1 selects the fast spin-in frame steps in teresa_ext_main
+    s8 animMode;     // 0x1, 0 loops frames 0-7, 1 plays frames 8-15 once (pose->field_0x10)
     u8 pad_0x2[2];   // 0x2
-    s32 timer;       // 0x4
+    s32 timer;       // 0x4, animation frame clock; state 0x14 also waits on it
     s32 delay;       // 0x8, frames to wait before the state machine runs
-    s32 counter;     // 0xC
+    s32 counter;     // 0xC, per-state frame countdown, or the interpolation step in state 0x35
     Vec velocity;    // 0x10, added to the matrix translation each frame
-    Vec startPos;    // 0x1C, interpolation start for easeMode (state 0x37)
+    Vec startPos;    // 0x1C, interpolation start for state 0x35
     Vec targetPos;   // 0x28
     u8 easeMode;     // 0x34, intplGetValue mode
     u8 pad_0x35[3];  // 0x35
-} TeresaEntry;       // 0x38       // 0x38
+} TeresaEntry;       // 0x38
 
 // Defined later in the original's data block; forward-declared so the functions above can use them.
 s32 atmic_teresa_id;
@@ -1043,7 +1043,7 @@ void teresa_ext_init(void) {
         (*pose->matrix)[2][3] = 0.0f;
         pose->field_0x4 = 90.0f;
         teresa[i].state = 0;
-        teresa[i].spinMode = 0;
+        teresa[i].animMode = 0;
         teresa[i].timer = 0;
         teresa[i].velocity = (Vec){0.0f, 0.0f, 0.0f};
     }
@@ -1116,7 +1116,7 @@ void teresa_ext_main(void) {
     for (i = 0; i < extGetPoseNum(); i++, pose++) {
         entry = &teresa[i];
 
-        switch (entry->spinMode) {
+        switch (entry->animMode) {
         case 1:
             entry->timer++;
             if (entry->timer <= 0x1E) {
@@ -1245,7 +1245,7 @@ void teresa_ext_main(void) {
                 for (j = 0; j < 8; j++) {
                     TeresaEntry* e = &teresa[j];
                     e->state = 0x14;
-                    e->spinMode = 1;
+                    e->animMode = 1;
                     e->timer = 0;
                     e->velocity.x = 0.0f;
                     e->velocity.y = 0.0f;
@@ -1256,7 +1256,7 @@ void teresa_ext_main(void) {
         case 0x14:
             if (entry->timer >= 0xB4) {
                 entry->state = 0x17;
-                entry->spinMode = 0;
+                entry->animMode = 0;
                 entry->timer = 0;
                 entry->counter = 0x3C;
                 entry->delay = sp60[i];

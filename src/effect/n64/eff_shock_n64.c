@@ -140,20 +140,20 @@ EffectEntry* effShockN64Entry(s32 type, f32 x, f32 y, f32 z, f32 a5, f32 a6) {
 	case 0:
 	case 1:
 	case 3:
-		data->field_0x30 = 0xFF;
-		data->field_0x34 = 0xFF;
-		data->field_0x38 = 0;
-		data->field_0x3C = 0xFF;
-		data->field_0x40 = 0xFF;
-		data->field_0x44 = 0xFF;
+		data->tev1R = 0xFF;
+		data->tev1G = 0xFF;
+		data->tev1B = 0;
+		data->tev2R = 0xFF;
+		data->tev2G = 0xFF;
+		data->tev2B = 0xFF;
 		break;
 	default:
-		data->field_0x30 = 0x46;
-		data->field_0x34 = 0xB4;
-		data->field_0x38 = 0x78;
-		data->field_0x3C = 0xFF;
-		data->field_0x40 = 0xFF;
-		data->field_0x44 = 0xFF;
+		data->tev1R = 0x46;
+		data->tev1G = 0xB4;
+		data->tev1B = 0x78;
+		data->tev2R = 0xFF;
+		data->tev2G = 0xFF;
+		data->tev2B = 0xFF;
 		break;
 	}
 
@@ -217,17 +217,17 @@ void effShockMain(EffectEntry* effect) {
    (same shape as effGlassDisp). */
 static inline void effShockSetColor1(EffShockData* data) {
 	GXColor color = unk_80423258;
-	color.r = data->field_0x30;
-	color.g = data->field_0x34;
-	color.b = data->field_0x38;
+	color.r = data->tev1R;
+	color.g = data->tev1G;
+	color.b = data->tev1B;
 	color.a = data->field_0x18;
 	GXSetTevColor(1, color);
 }
 static inline void effShockSetColor2(EffShockData* data) {
 	GXColor color = unk_8042325c;
-	color.r = data->field_0x3C;
-	color.g = data->field_0x40;
-	color.b = data->field_0x44;
+	color.r = data->tev2R;
+	color.g = data->tev2G;
+	color.b = data->tev2B;
 	GXSetTevColor(2, color);
 }
 static inline void effShockSetColor3(EffShockData* data) {
@@ -264,16 +264,16 @@ void effShockDisp(CameraId cameraId, void* param) {
 	effShockSetColor2(data);
 #else
 	color1 = unk_80423258;
-	color1.r = data->field_0x30;
-	color1.g = data->field_0x34;
-	color1.b = data->field_0x38;
+	color1.r = data->tev1R;
+	color1.g = data->tev1G;
+	color1.b = data->tev1B;
 	color1.a = data->field_0x18;
 	GXSetTevColor(1, color1);
 
 	color2 = unk_8042325c;
-	color2.r = data->field_0x3C;
-	color2.g = data->field_0x40;
-	color2.b = data->field_0x44;
+	color2.r = data->tev2R;
+	color2.g = data->tev2G;
+	color2.b = data->tev2B;
 	GXSetTevColor(2, color2);
 #endif
 
