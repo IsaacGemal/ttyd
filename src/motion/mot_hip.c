@@ -34,7 +34,7 @@ s32 marioChkHipAttack(void) {
 
     res = 0;
     mario = marioGetPtr();
-    if (*(s16*)((u8*)mario + 0x52) >= 10 && (mario->buttonNew & 0x100) && pouchGetJumpLv() >= 2) {
+    if (mario->airTimerPeak >= 10 && (mario->buttonNew & 0x100) && pouchGetJumpLv() >= 2) {
         res = 1;
     }
     return res;
@@ -52,7 +52,7 @@ s32 marioChkHipBump(void) {
 }
 
 // NONMATCHING (99.98%): the trigFlags init emits the commuted `fmuls f2, f2, f3` where the
-// original has `fmuls f2, f3, f2` (0x0B4 += (14.0f * scale) * 0.5f); every source shape tried
+// original has `fmuls f2, f3, f2` (dispPivot.y += (14.0f * scale) * 0.5f); every source shape tried
 // either keeps the commuted form or moves the product to f1. All other instructions match.
 void mot_hip(void) {
     MarioWork* mario = marioGetPtr();
@@ -87,8 +87,8 @@ void mot_hip(void) {
         } else {
             angle = 0.0f;
         }
-        *(f32*)((u8*)mario + 0x19C) = toMovedir(angle);
-        mario->directionView = *(f32*)((u8*)mario + 0x19C);
+        mario->moveDir = toMovedir(angle);
+        mario->directionView = mario->moveDir;
         marioChgPose("M_A_1A");
         mario->jumpVelY = 5.2f;
         mario->jumpAccelY = 0.0f;
@@ -98,17 +98,17 @@ void mot_hip(void) {
         dy *= 0.5f;
         mario->position.y += dy;
         dx = 14.0f * marioGetScale() / 2.0f;
-        *(f32*)((u8*)mario + 0xB4) += dx;
-        *(f32*)((u8*)mario + 0xA8) = 0.0f;
+        mario->dispPivot.y += dx;
+        mario->dispOfs2.y = 0.0f;
         mario->currSubMotionId = 0;
-        *(s32*)((u8*)mario + 0x2A4) = -1;
-        *(s32*)((u8*)mario + 0x2A8) = -1;
+        mario->sfxId2A4 = -1;
+        mario->sfxId2A8 = -1;
     }
 
     switch (mario->currSubMotionId) {
     case 0:
-        *(s32*)((u8*)mario + 0x2A4) = psndSFXOn_3D((char*)0x158, &mario->position);
-        *(s32*)((u8*)mario + 0x2A8) = psndSFXOn_3D((char*)0xDB, &mario->position);
+        mario->sfxId2A4 = psndSFXOn_3D((char*)0x158, &mario->position);
+        mario->sfxId2A8 = psndSFXOn_3D((char*)0xDB, &mario->position);
         mario->spinSpeed = 0.0f;
         mario->baseSpeed = 0.0f;
         mario->currSubMotionId = 1;
@@ -122,8 +122,8 @@ void mot_hip(void) {
             mario->spinSpeed = 360.0f;
         }
         mario->jumpVelY -= 0.42f;
-        if (*(void**)((u8*)mario + 0x1F4) == NULL) {
-            *(f32*)((u8*)mario + 0xA8) += mario->jumpVelY;
+        if (mario->hitobjHead == NULL) {
+            mario->dispOfs2.y += mario->jumpVelY;
         }
         if (mario->spinSpeed == 360.0f && mario->jumpVelY <= 0.0f) {
             mario->multiTimer = 5;
@@ -138,14 +138,14 @@ void mot_hip(void) {
             m2 = marioGetPtr();
             marioOfsRotReset();
             m2->airTimer = 0;
-            *(s16*)((u8*)m2 + 0x52) = 0;
-            if (*(u32*)((u8*)m2 + 0x2A4) != 0xFFFFFFFF) {
-                psndSFXOff(*(s32*)((u8*)m2 + 0x2A4));
-                *(s32*)((u8*)m2 + 0x2A4) = -1;
+            m2->airTimerPeak = 0;
+            if ((u32)m2->sfxId2A4 != 0xFFFFFFFF) {
+                psndSFXOff(m2->sfxId2A4);
+                m2->sfxId2A4 = -1;
             }
-            if (*(u32*)((u8*)m2 + 0x2A8) != 0xFFFFFFFF) {
-                psndSFXOff(*(s32*)((u8*)m2 + 0x2A8));
-                *(s32*)((u8*)m2 + 0x2A8) = -1;
+            if ((u32)m2->sfxId2A8 != 0xFFFFFFFF) {
+                psndSFXOff(m2->sfxId2A8);
+                m2->sfxId2A8 = -1;
             }
             return;
         }
@@ -153,8 +153,8 @@ void mot_hip(void) {
     case 2:
         if (mario->jumpVelY >= 0.0f) {
             mario->jumpVelY -= 1.4f;
-            if (*(void**)((u8*)mario + 0x1F4) == NULL) {
-                *(f32*)((u8*)mario + 0xA8) += mario->jumpVelY;
+            if (mario->hitobjHead == NULL) {
+                mario->dispOfs2.y += mario->jumpVelY;
             }
         }
         if ((s32)--mario->multiTimer <= 0) {
@@ -168,14 +168,14 @@ void mot_hip(void) {
             m2 = marioGetPtr();
             marioOfsRotReset();
             m2->airTimer = 0;
-            *(s16*)((u8*)m2 + 0x52) = 0;
-            if (*(u32*)((u8*)m2 + 0x2A4) != 0xFFFFFFFF) {
-                psndSFXOff(*(s32*)((u8*)m2 + 0x2A4));
-                *(s32*)((u8*)m2 + 0x2A4) = -1;
+            m2->airTimerPeak = 0;
+            if ((u32)m2->sfxId2A4 != 0xFFFFFFFF) {
+                psndSFXOff(m2->sfxId2A4);
+                m2->sfxId2A4 = -1;
             }
-            if (*(u32*)((u8*)m2 + 0x2A8) != 0xFFFFFFFF) {
-                psndSFXOff(*(s32*)((u8*)m2 + 0x2A8));
-                *(s32*)((u8*)m2 + 0x2A8) = -1;
+            if ((u32)m2->sfxId2A8 != 0xFFFFFFFF) {
+                psndSFXOff(m2->sfxId2A8);
+                m2->sfxId2A8 = -1;
             }
             return;
         }
@@ -204,14 +204,14 @@ void mot_hip(void) {
             m2 = marioGetPtr();
             marioOfsRotReset();
             m2->airTimer = 0;
-            *(s16*)((u8*)m2 + 0x52) = 0;
-            if (*(u32*)((u8*)m2 + 0x2A4) != 0xFFFFFFFF) {
-                psndSFXOff(*(s32*)((u8*)m2 + 0x2A4));
-                *(s32*)((u8*)m2 + 0x2A4) = -1;
+            m2->airTimerPeak = 0;
+            if ((u32)m2->sfxId2A4 != 0xFFFFFFFF) {
+                psndSFXOff(m2->sfxId2A4);
+                m2->sfxId2A4 = -1;
             }
-            if (*(u32*)((u8*)m2 + 0x2A8) != 0xFFFFFFFF) {
-                psndSFXOff(*(s32*)((u8*)m2 + 0x2A8));
-                *(s32*)((u8*)m2 + 0x2A8) = -1;
+            if ((u32)m2->sfxId2A8 != 0xFFFFFFFF) {
+                psndSFXOff(m2->sfxId2A8);
+                m2->sfxId2A8 = -1;
             }
             return;
         }
@@ -239,10 +239,10 @@ void mot_hip(void) {
                 mario->hitobjJumpFrom = NULL;
                 mario->position.y = landY;
                 mario->spinSpeed = 0.0f;
-                *(f32*)((u8*)mario + 0xB4) = 0.0f;
+                mario->dispPivot.y = 0.0f;
                 mario->airTimer = 0;
-                *(s16*)((u8*)mario + 0x52) = 0;
-                *(f32*)((u8*)mario + 0xA8) = 0.0f;
+                mario->airTimerPeak = 0;
+                mario->dispOfs2.y = 0.0f;
                 marioChgPose("M_A_1B");
                 {
                     s32 attr = hitGetAttr((HitEntry*)hit);
@@ -298,14 +298,14 @@ void mot_hip(void) {
             m2 = marioGetPtr();
             marioOfsRotReset();
             m2->airTimer = 0;
-            *(s16*)((u8*)m2 + 0x52) = 0;
-            if (*(u32*)((u8*)m2 + 0x2A4) != 0xFFFFFFFF) {
-                psndSFXOff(*(s32*)((u8*)m2 + 0x2A4));
-                *(s32*)((u8*)m2 + 0x2A4) = -1;
+            m2->airTimerPeak = 0;
+            if ((u32)m2->sfxId2A4 != 0xFFFFFFFF) {
+                psndSFXOff(m2->sfxId2A4);
+                m2->sfxId2A4 = -1;
             }
-            if (*(u32*)((u8*)m2 + 0x2A8) != 0xFFFFFFFF) {
-                psndSFXOff(*(s32*)((u8*)m2 + 0x2A8));
-                *(s32*)((u8*)m2 + 0x2A8) = -1;
+            if ((u32)m2->sfxId2A8 != 0xFFFFFFFF) {
+                psndSFXOff(m2->sfxId2A8);
+                m2->sfxId2A8 = -1;
             }
         }
         break;
@@ -321,7 +321,7 @@ void mot_hip(void) {
         break;
     }
 
-    *(f32*)((u8*)mario + 0xC4) = mario->spinSpeed;
+    mario->dispRot.z = mario->spinSpeed;
     if (mario->airTimer != 0) {
         mario->riderDelta.x = 0.0f;
         mario->riderDelta.z = 0.0f;
@@ -343,10 +343,10 @@ s32 U_chkground(void) {
         mario->hitobjJumpFrom = NULL;
         mario->position.y = landY;
         mario->spinSpeed = 0.0f;
-        *(f32*)((u8*)mario + 0xB4) = 0.0f;
-        *(f32*)((u8*)mario + 0xA8) = 0.0f;
+        mario->dispPivot.y = 0.0f;
+        mario->dispOfs2.y = 0.0f;
         mario->airTimer = 0;
-        *(s16*)((u8*)mario + 0x52) = 0;
+        mario->airTimerPeak = 0;
         mario->dispFlags &= ~4;
         mario->flags &= ~0x80;
         camFollowYOn();
@@ -376,14 +376,14 @@ void mot_hip_post(void) {
 
     marioOfsRotReset();
     mario->airTimer = 0;
-    *(s16*)((u8*)mario + 0x52) = 0;
-    if (*(u32*)((u8*)mario + 0x2A4) != 0xFFFFFFFF) {
-        psndSFXOff(*(s32*)((u8*)mario + 0x2A4));
-        *(s32*)((u8*)mario + 0x2A4) = -1;
+    mario->airTimerPeak = 0;
+    if ((u32)mario->sfxId2A4 != 0xFFFFFFFF) {
+        psndSFXOff(mario->sfxId2A4);
+        mario->sfxId2A4 = -1;
     }
-    if (*(u32*)((u8*)mario + 0x2A8) != 0xFFFFFFFF) {
-        psndSFXOff(*(s32*)((u8*)mario + 0x2A8));
-        *(s32*)((u8*)mario + 0x2A8) = -1;
+    if ((u32)mario->sfxId2A8 != 0xFFFFFFFF) {
+        psndSFXOff(mario->sfxId2A8);
+        mario->sfxId2A8 = -1;
     }
 }
 
