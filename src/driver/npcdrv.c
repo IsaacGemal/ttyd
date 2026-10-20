@@ -2288,31 +2288,31 @@ void fbatEncountCheck(void) {
                 case 0x20000:
                     marioChgMotJump2();
                     if (dbg_battleskip != 1) {
-                        animPoseSetAnim(hit->poseId, ENC(hit->tribe, const char*, 0x20), 1);
+                        animPoseSetAnim(hit->poseId, hit->tribe->damageAnimation, 1);
                     }
                     break;
                 case 0x100000:
                 case 0x400000:
                 case 0x200000:
                     if (dbg_battleskip != 1) {
-                        animPoseSetAnim(hit->poseId, ENC(hit->tribe, const char*, 0x20), 1);
+                        animPoseSetAnim(hit->poseId, hit->tribe->damageAnimation, 1);
                     }
                     break;
                 case 0x800000:
                     if (dbg_battleskip != 1) {
-                        animPoseSetAnim(hit->poseId, ENC(hit->tribe, const char*, 0x20), 1);
+                        animPoseSetAnim(hit->poseId, hit->tribe->damageAnimation, 1);
                     }
                     break;
                 case 0x1000000:
                     if (dbg_battleskip != 1) {
-                        animPoseSetAnim(hit->poseId, ENC(hit->tribe, const char*, 0x20), 1);
+                        animPoseSetAnim(hit->poseId, hit->tribe->damageAnimation, 1);
                     }
                     break;
                 case 0x10000:
                     break;
             }
             pose = animPoseGetAnimPosePtr(hit->poseId);
-            ENC(hit, f32, 0x148) = hit->direction;
+            hit->savedDirection = hit->direction;
             hit->direction = angleABf(hit->position.x, hit->position.z, mario->position.x, mario->position.z);
             rel = reviseAngle(-hit->direction);
             rel += -90.0f;
@@ -2452,7 +2452,7 @@ void fbatEncountCheck(void) {
                         MarioWork* m2 = marioGetPtr();
 
                         npc->jumpFlags |= 0x20000000;
-                        ENC(npc, f32, 0x148) = npc->direction;
+                        npc->savedDirection = npc->direction;
                         evtStopID(npc->regularEvtId);
                         if (!(npc->flags & 0x1000000)) {
                             npc->direction = reviseAngle(angleABf(npc->position.x, npc->position.z, m2->position.x, m2->position.z));
@@ -2461,10 +2461,10 @@ void fbatEncountCheck(void) {
                 } else if (npc->jumpFlags & 0x20000000) {
                     npc->jumpFlags &= ~0x20000000;
                     if (npc->flags & 0x400000) {
-                        npc->direction = ENC(npc, f32, 0x148);
+                        npc->direction = npc->savedDirection;
                         evtStartID(npc->regularEvtId);
                     } else {
-                        ENC(npc, s32, 0x140) |= 0x10000000;
+                        npc->interruptFlags |= 0x10000000;
                     }
                 }
             }
@@ -2549,7 +2549,7 @@ void fbatTalkMode(void) {
             if (!evtCheckID(fbatData->talkEvtId)) {
                 if (!(entry->jumpFlags & 0x20000000)) {
                     evtStartID(fbatData->talkNpc->regularEvtId);
-                    entry->direction = *(f32*)entry->field_148;
+                    entry->direction = entry->savedDirection;
                 }
                 if (entry->flags & 0x400) {
                     entry->gait = 0;

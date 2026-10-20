@@ -162,7 +162,7 @@ typedef struct NpcEntry {
     void* blowEvent;                // 0x13C, verified
     u32 interruptFlags;             // 0x140, pending reactions: 1 found Mario, 2 lost, 4 returned, 8 blown, 0x10 dead, 0x10000000 move
     f32 direction;                  // 0x144, angle we're facing at, verified
-    u8 field_148[0x14C - 0x148];    // 0x148
+    f32 savedDirection;             // 0x148, direction kept while the npc is turned for a hit or a jump, restored after
     f32 width;                      // 0x14C
     f32 height;                     // 0x150
     f32 field_154;                  // 0x154

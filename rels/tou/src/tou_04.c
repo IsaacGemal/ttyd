@@ -552,7 +552,7 @@ EVT_END()
 USER_FUNC(memoryRY) {
     NpcEntry* npc = evtNpcNameToPtr(event, "me");
 
-    *(f32*)npc->field_148 = npc->direction;
+    npc->savedDirection = npc->direction;
     return 2;
 }
 
