@@ -10509,3 +10509,24 @@ The one stage reference, `(u32)((u8*)&gra_btlobject_data + 0xF0)`, is `(u32)&gra
 includes battle/battle_stage_object.h. Build: tower ninja recreates build/G8MJ01/ok; natural (no MUST_MATCH) compile
 of battle_database_gra.c returns 0. Index: 33.311 per kLOC (23351 weighted) at the start of this chapter, unchanged
 by the three typings.
+
+### Readability: typed dou_btlobject_data (2026-10-20, Claude Haiku 5.5, n9-q-btltype2)
+- `dou_btlobject_data` is `BattleStageObjectData[51]` (was `u32[306]`). Each 0x18-byte record is name, spawn (high half of word 1), layer (low half), three position floats, start and fall frame counts (first two bytes of word 5), and a zero pad; the floats are the shortest decimal literal that round-trips the original bits.
+- The five `(u8*)&dou_btlobject_data + N` references become `(u32)&dou_btlobject_data[N/0x18]` (0x78, 0xa8, 0x168, 0x2a0, 0x3c0 → [5], [7], [15], [28], [40]); the index-0 reference is unchanged.
+- Build: tower `ninja` recreates build/G8MJ01/ok. Natural (no -DMUST_MATCH) compile of battle_database_dou.c returns 0.
+### Readability: typed gon_btlobject_data (2026-10-20, Claude Haiku 5.5, n9-q-btltype2)
+- `gon_btlobject_data` is `BattleStageObjectData[10]` (was `u32[60]`). Each 0x18-byte record is name, spawn (high half of word 1), layer (low half), three position floats, start and fall frame counts (first two bytes of word 5), and a zero pad; the floats are the shortest decimal literal that round-trips the original bits. `battle/battle_stage_object.h` is included.
+- The four `(u8*)&gon_btlobject_data + N` references become `(u32)&gon_btlobject_data[N/0x18]` (0x30, 0x60, 0x90, 0xc0 → [2], [4], [6], [8]); the index-0 reference is unchanged.
+- Build: tower `ninja` recreates build/G8MJ01/ok. Natural (no -DMUST_MATCH) compile of battle_database_gon.c returns 0.
+### Readability: typed hei_btlobject_data (2026-10-20, Claude Haiku 5.5, n9-q-btltype2)
+- `hei_btlobject_data` is `BattleStageObjectData[59]` (was `u32[354]`). Each 0x18-byte record is name, spawn (high half of word 1), layer (low half), three position floats, start and fall frame counts (first two bytes of word 5), and a zero pad; the floats are the shortest decimal literal that round-trips the original bits. `battle/battle_stage_object.h` is included.
+- The ten `(u8*)&hei_btlobject_data + N` references become `(u32)&hei_btlobject_data[N/0x18]` (0x138 through 0x558 → [13], [19], [25], [31], [37], [43], [49], [52], [55], [57]); the index-0 reference is unchanged.
+- Build: tower `ninja` recreates build/G8MJ01/ok. Natural (no -DMUST_MATCH) compile of battle_database_hei.c returns 0.
+### Readability: typed jin_btlobject_data (2026-10-20, Claude Haiku 5.5, n9-q-btltype2)
+- `jin_btlobject_data` is `BattleStageObjectData[18]` (was `u32[108]`). Each 0x18-byte record is name, spawn (high half of word 1), layer (low half), three position floats, start and fall frame counts (first two bytes of word 5), and a zero pad; the floats are the shortest decimal literal that round-trips the original bits. `battle/battle_stage_object.h` is included.
+- The five `(u8*)&jin_btlobject_data + N` references become `(u32)&jin_btlobject_data[N/0x18]` (0x30, 0x90, 0xc0, 0x150, 0x180 → [2], [6], [8], [14], [16]); the index-0 reference is unchanged.
+- Build: tower `ninja` recreates build/G8MJ01/ok. Natural (no -DMUST_MATCH) compile of battle_database_jin.c returns 0.
+### Readability: typed tou_btlobject_data (2026-10-20, Claude Haiku 5.5, n9-q-btltype2)
+- `tou_btlobject_data` (tou2 rel) is `BattleStageObjectData[14]` (was `u32[84]`). Each 0x18-byte record is name, spawn (high half of word 1), layer (low half), three position floats, start and fall frame counts (first two bytes of word 5), and a zero pad; the floats are the shortest decimal literal that round-trips the original bits. `battle/battle_stage_object.h` is included.
+- The `(u8*)&tou_btlobject_data + 0x90` reference becomes `(u32)&tou_btlobject_data[6]`; the index-0 reference is unchanged.
+- Build: tower `ninja` recreates build/G8MJ01/ok. Natural (no -DMUST_MATCH) compile of battle_database_tou.c returns 0.
