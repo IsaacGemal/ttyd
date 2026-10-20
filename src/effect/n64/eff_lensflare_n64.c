@@ -36,7 +36,6 @@ static u32 size10x10_tex32x32_vtx[0xE0 / 4] = {
     0x00000400, 0x10000000, 0x00FFFFFB, 0x00050000, 0x00001000, 0x000000FF,
 };
 
-// .rodata
 EffectEntry* effLensflareN64Entry(s32 type, s32 a1, f32 x, f32 y, f32 z, f32 a2) {
     EffectEntry* effect;
     LensflareData* data;

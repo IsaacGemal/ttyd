@@ -760,8 +760,8 @@ void main_weapon(s32 idx) {
 
 // Matches. The int->float loads read the anonymous pool double (now at vec3_803002b0+0x1B8,
 // like retail's double_to_int_80300468) with an absolute `lis`, and the 30.0f literal as
-// `@NNN` instead of the named `30.0f`; objdiff does not score those symbol names. The
-// `30.0f` literal, rather than the named `30.0f` (same value), is what makes MWCC emit
+// `@NNN` instead of retail's `float_30_80421d80`; objdiff does not score those symbol names. The
+// `30.0f` literal, rather than a named constant (same value), is what makes MWCC emit
 // the original's interleaved `li`/`lfs` argument setup. Keeping `fifteen` in a variable fixed the
 // compare's f1/f2 assignment; the if/else that builds `limit` fixed the case-1 integer register
 // allocation.

@@ -1242,7 +1242,7 @@ void _pose_def(BattleUnitPart* part) {
 #pragma dont_inline reset
 
 // _pose_one_pattern matches 100% once the strings are referenced as literals: MWCC pools
-// them and common-bases the .rodata references off (Vec){ 0.0f, 0.0f, 0.0f }.
+// them and common-bases the .rodata references off its first zero Vec (retail vec3_802eddd0).
 #pragma dont_inline on
 void _pose_one_pattern(BattleUnitPart* part) {
 #ifdef MUST_MATCH

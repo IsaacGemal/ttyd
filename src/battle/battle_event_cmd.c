@@ -2879,8 +2879,8 @@ USER_FUNC(btlevtcmd_JumpSetting) {
 }
 
 //s32* battleId, s32* tx, s32* ty, s32* tz, s32* frame, s32* a
-// The two psndSFXOn_3D calls each need two Vecs (source + argument copy) and distinct globals
-// (Vec){ 0.0f, 0.0f, 0.0f } / (Vec){ 0.0f, 0.0f, 0.0f }, which is what fixes the frame; the declaration order
+// The two psndSFXOn_3D calls each need two Vecs (source + argument copy) and distinct zero Vec
+// literals (retail vec3_802ede88 / vec3_802ede94), which is what fixes the frame; the declaration order
 // `s32 btlId, id; s32* args; BattleUnit* unit; s32 frame, a;` fixes the args/id allocation. The tail is
 // written `if (frame <= 0) { SetPos(target); ...; return 1; } return 0;`.
 #pragma opt_common_subs off // keep the target's 0.5/3.0 literal load colouring (f4/f2) in both bodies
@@ -4369,8 +4369,8 @@ USER_FUNC(btlevtcmd_MarioJumpParam) {
 
 //s32* battleId, s32* tx, s32* ty, s32* tz, s32* frame, s32* type, s32* a
 // Type 1 skips the setup; 2 and 4 stretch the arc. The `h` temp holding each sin result and the two
-// `*=` forms pin the target's FPRs and load order; `pos` is the (Vec){ 0.0f, 0.0f, 0.0f } object the target reads
-// at (Vec){ 0.0f, 0.0f, 0.0f }+0x18 (0x18 is declared only as an unnamed gap in this unit's symbols).
+// `*=` forms pin the target's FPRs and load order; `pos` is the zero Vec (retail vec3_802edea0) the target reads
+// at vec3_802ede88+0x18 (0x18 is declared only as an unnamed gap in this unit's symbols).
 #pragma opt_common_subs off // without it the arc constants' FPRs and the 0x188 address colouring differ
 USER_FUNC(btlevtcmd_MarioJumpPosition) {
     s32* args = event->args;
@@ -5338,7 +5338,7 @@ USER_FUNC(btlevtcmd_AudienceDeclareAcrobatResult) {
     return 2;
 }
 
-// The original addresses its sound names from the (Vec){ 0.0f, 0.0f, 0.0f } base.
+// The original addresses its sound names from the retail vec3_802ede88 base.
 // The SFX_SYSTEM names are pooled string literals in the original (ACSuccessEffect reads them at
 // vec3+0x1c0..0x24c), so MUST_MATCH spells them as literals and the natural build uses the symbols.
 

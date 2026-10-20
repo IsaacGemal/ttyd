@@ -89,8 +89,7 @@ static inline Vec himo_makeVec(f32 x, f32 y, f32 z) {
 }
 
 // Constant pool base: MWCC addresses the file's .rodata through vec3_802f8068 in r31 (see the
-// .rodata block in the original asm); math_ext.h avoids math.h's weak sqrtf/sqrt doubles and
-// 1.288053035736084 is defined after the code so the pool lands in the original's order.
+// .rodata block in the original asm); math_ext.h avoids math.h's weak sqrtf/sqrt doubles.
 void vivihimo(Mtx mtxA, Mtx mtxB, f32 phase, f32 spread, f32 offA, f32 offB) {
     HimoWork work;
     HimoWork* wp = &work;

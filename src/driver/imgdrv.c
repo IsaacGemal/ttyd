@@ -251,7 +251,6 @@ void imgDisp(CameraId camId, void* param) {
 	}
 }
 
-// Objects the original unit defines in .sdata2/.rodata.
 void imgDisp_ProjPlane(CameraId camId, void* param) {
 	ImageEntry* entry = param;
 	Mtx mtx;

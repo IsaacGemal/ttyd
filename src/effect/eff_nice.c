@@ -12,9 +12,9 @@ extern GlobalWork* gp;
 
 // acrobatMain mixes the two local Vecs: `disp` is zeroed then overwritten from the
 // first entry, and a second `position` local is copied from it before dispCalcZ.
-// (Vec){ 0.0f, 0.0f, 0.0f } is this unit's data (retail .rodata:0xb0); the compiler pools the zero
-// for `disp` and the int->float 2^52 double right behind it, so define it to keep those
-// pool entries at vec3_802f3754 (0xbc), "SFX_SYSTEM_ACROBAT1" (0xc8) and double_to_int (0xe0).
+// `disp`'s zero Vec literal is this unit's first .rodata entry (retail vec3_802f3748, .rodata:0xb0); the
+// compiler pools the entries behind it at vec3_802f3754 (0xbc), "SFX_SYSTEM_ACROBAT1" (0xc8) and
+// double_to_int (0xe0).
 
 // .sdata2 named float constants
 extern const f32 float_0p017453_8041cba4;
