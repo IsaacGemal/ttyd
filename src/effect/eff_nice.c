@@ -295,11 +295,9 @@ void effNiceDisp(CameraId camId, void* param) {
 // the string's own callee-saved register (`addi r29, r3, str_SFX_SYSTEM_ACROBAT1@l`); a plain use leaves an
 // `addi r0`/`mr r29` scratch copy, and the comma form that removes that copy colours the string r31.
 void acrobatMain(EffectEntry* effect) {
-#ifdef MUST_MATCH
-	/* MUST_MATCH: retail builds the Vec in a scratch and copies it into a second local
-	   before dispCalcZ; a single local folds the copy away. */
+	/* The Vec is built in `disp` and copied into this second local before dispCalcZ; a single local
+	   folds the copy away. */
 	Vec position;
-#endif
 	Vec disp = { 0 };
 	const char* sfx = "SFX_SYSTEM_ACROBAT1";
 	NiceEffectWork* data = effect->userdata;
@@ -309,9 +307,7 @@ void acrobatMain(EffectEntry* effect) {
 	disp.x = data->position.x;
 	disp.y = data->position.y;
 	disp.z = data->position.z;
-#ifdef MUST_MATCH
 	position = disp;
-#endif
 
 	data++;
 	for (i = 1; i < effect->count; i++, data++) {
@@ -406,11 +402,7 @@ void acrobatMain(EffectEntry* effect) {
 		effDelete(effect);
 	}
 	else {
-#ifdef MUST_MATCH
 		dispEntry(CAMERA_3D, dispCalcZ(&position), 8, effAcrobatDisp, effect);
-#else
-		dispEntry(CAMERA_3D, dispCalcZ(&disp), 8, effAcrobatDisp, effect);
-#endif
 	}
 }
 
