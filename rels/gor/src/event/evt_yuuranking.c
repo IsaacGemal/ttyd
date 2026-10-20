@@ -815,12 +815,9 @@ static s32 yuu_kesan_chk_copy(s32 mode, s32 value, s32 bonus, s32 mult, s32 maxV
 }
 #endif
 
-#define YBASE_A ((s32(*)[6])((u8*)yuwp + 0x14))
-#define YBASE_B ((s32(*)[6])((u8*)yuwp + 0x74))
-#define YBASE_C ((s32(*)[6])((u8*)yuwp + 0xd4))
-#define A14(i) YBASE_A[work->field_14][i]
-#define A74(i) YBASE_B[work->field_14][i]
-#define AD4(i) YBASE_C[work->field_14][i]
+#define A14(i) yuwp->rankUsed[work->field_14][i]
+#define A74(i) yuwp->rankScore[work->field_14][i]
+#define AD4(i) yuwp->rankMonte[work->field_14][i]
 // shift-loop copies: the `yuwp + mode*24` base plus the constant index folds the offset into the add order
 // (mode*24 + running offset, then + yuwp) exactly as the target; the array view above associates it the other way.
 #define A14L(i) (((s32*)((u8*)yuwp + work->field_14 * 24))[5 + (i)])
@@ -947,9 +944,6 @@ USER_FUNC(evt_yuuranking_alloc_10_text_A47C) {
 #undef A74L
 #undef AD4L
 #undef A74F
-#undef YBASE_A
-#undef YBASE_B
-#undef YBASE_C
 USER_FUNC(evt_yuuranking_free_10_text_A3F8) {
     YuRankWork* wp = (YuRankWork*)_wp;
 
