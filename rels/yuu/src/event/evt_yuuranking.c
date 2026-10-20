@@ -128,9 +128,9 @@ void yuu_draw_msg_fit(const char* msg, s32 maxWidth, f32 x, f32 y, f32 scale) {
 
 // Per-minigame rank table in the shared yuugijou work (yuwp): six slots each for
 // the used slot flag, the score/time value, and the monte count.
-#define A14(i) (*(s32*)((unsigned char*)yuwp + work->mode * 24 + 0x14 + (i) * 4))
-#define A74(i) (*(s32*)((unsigned char*)yuwp + work->mode * 24 + 0x74 + (i) * 4))
-#define AD4(i) (*(s32*)((unsigned char*)yuwp + work->mode * 24 + 0xd4 + (i) * 4))
+#define A14(i) ((s32)yuwp->rankUsed[work->mode][i])
+#define A74(i) ((s32)yuwp->rankScore[work->mode][i])
+#define AD4(i) ((s32)yuwp->rankMonte[work->mode][i])
 
 #ifdef MUST_MATCH
 // Match-only: taking each by-value colour's address keeps all 20 GXColor locals in one contiguous stack block,
