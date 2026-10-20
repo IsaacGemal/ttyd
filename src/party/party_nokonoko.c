@@ -376,7 +376,7 @@ void nokonoko_use(PartyEntry* party) {
         }
         party->speed = 0.0f;
         if (!(party->flags & PARTY_FLAG_IS_EVT_USE)) {
-            if (*(u16*)(mario->field_0x245 + 1) & 0x400) {
+            if (mario->buttonHeld & 0x400) {
                 party->useMotionId = 0xD;
                 party->timer = 0;
             } else {
@@ -467,7 +467,7 @@ void nokonoko_use(PartyEntry* party) {
             }
             goto L_800CC620;
         L_800CC514:
-            if (*(u16*)(mario->field_0x245 + 1) & 0x400) {
+            if (mario->buttonHeld & 0x400) {
                 goto L_800CC620;
             }
             party->useMotionId = (party->tail.koops.dashing != 0) ? 0x50 : 0x32;

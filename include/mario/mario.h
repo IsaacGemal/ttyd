@@ -195,10 +195,21 @@ typedef struct MarioWork {
     u8 field_0x240[0x241 - 0x240]; // 0x240
     s8 currPartySlotId[2];         // 0x241 JP, 0x245 US
     s8 prevPartyMemberId[2];       // 0x243 JP, 0x247 US
-    u8 field_0x245[0x24E - 0x245]; // 0x245
-	u8 wStickDir1;                 // 0x24E JP, 0x252 US
-	u8 wStickDir2;                 // 0x24F JP, 0x253 US
-	u8 field_0x250[0x288 - 0x250]; // 0x250
+    u8 field_0x245;                // 0x245
+    u16 buttonHeld;                // 0x246, GC pad button bits copied from gp->button by marioUpdateKeyData
+    u16 buttonNew;                 // 0x248, gp->buttonNew; mot_roll also ORs 0x100/0x200 into it
+    u16 buttonRepeat;              // 0x24A, gp->buttonRepeat
+    u16 buttonUp;                  // 0x24C, gp->buttonUp
+	s8 wStickDir1;                 // 0x24E JP, 0x252 US
+	s8 wStickDir2;                 // 0x24F JP, 0x253 US
+    u8 substickX;                  // 0x250, gp->substickX
+    u8 substickY;                  // 0x251, -gp->substickY
+    u8 triggerLeft;                // 0x252, gp->triggerLeft
+    u8 triggerRight;               // 0x253, gp->triggerRight
+    u8 unusedInput[0x258 - 0x254]; // 0x254, cleared with the MARIO_TRIG_FLAG_DISABLE_UNUSED_INPUT case
+    u32 padDirs;                   // 0x258, DemoPad[0].dirs this frame
+    u32 padDirsPressed;            // 0x25C, dirs newly set since the previous frame
+    u8 field_0x260[0x288 - 0x260]; // 0x260
     void* motStruct;               // 0x288, motion userdata, TODO rename?
     u8 field_0x28C[0x2A8 - 0x28C]; // 0x28C
     f32 wCamVal1;                  // 0x2A8, TODO: double check. mot_hip keeps an s32 SFX id here (per-motion scratch?)

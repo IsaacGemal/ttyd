@@ -658,7 +658,7 @@ void mobjMain(void) {
                         goto apply;
                     }
                     if (unk_8005bb80() != 0 && (entry->flags & 0x40000) &&
-                        *(void**)(mario->field_0x1DC + 4) == (void*)hitObj && (*(u16*)(mario->field_0x245 + 3) & 0x100) &&
+                        *(void**)(mario->field_0x1DC + 4) == (void*)hitObj && (mario->buttonNew & 0x100) &&
                         v25 == 0) {
                         v22 = 1;
                         entry->triggerFlag = 0x40000;

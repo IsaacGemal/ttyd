@@ -553,7 +553,7 @@ void bomhei_use_main(PartyEntry* party) {
         bomhei_checkHit(party);
         if ((party->flags & PARTY_FLAG_IS_EVT_USE) != 0 ||
             (mario->hitobjStandOn != NULL && mario->airTimer == 0 &&
-             (*(u16*)((u8*)mario + 0x246) & 0x400) == 0)) {
+             (mario->buttonHeld & 0x400) == 0)) {
             party->useMotionId = 0x14;
         }
         break;

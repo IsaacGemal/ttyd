@@ -825,7 +825,7 @@ void mot_ship(void) {
             mario->currSubMotionId = 0x32;
         }
         shipWakeUpdate(mario->baseSpeed);
-        if ((*(u16*)((u8*)mario + 0x248) & 0xA00) != 0) {
+        if ((mario->buttonNew & 0xA00) != 0) {
             if (checkHarbor(&SHIP_DATA->unk3C)) {
                 mario->currSubMotionId = 0x1E;
             }

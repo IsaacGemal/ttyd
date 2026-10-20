@@ -251,7 +251,7 @@ void statusWinMain(void) {
                             }
 #endif
                         }
-                        if (*(u16*)(mario->field_0x245 + 3) & 0x10) {
+                        if (mario->buttonNew & 0x10) {
 #ifdef MUST_MATCH
                             if (!(wp->flags & 0x11 ? 1 : 0)) {
 #else

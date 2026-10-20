@@ -435,7 +435,7 @@ void marioBoots(void) {
         if (kpaHipAttackOk() == 0) {
             return;
         }
-        if (!(*(u16*)((u8*)mario + 0x248) & (1 << 8))) {
+        if (!(mario->buttonNew & (1 << 8))) {
             return;
         }
         mario = marioGetPtr();
@@ -743,7 +743,7 @@ void marioJump(void) {
     mario2->jumpVelY += mario2->jumpAccelY / grav;
 
     if (mario->jumpVelY > 0.0f) {
-        if (mario->airTimer >= 4 && !(*(u16*)((u8*)mario + 0x246) & (1 << 8))) {
+        if (mario->airTimer >= 4 && !(mario->buttonHeld & (1 << 8))) {
             mario->jumpVelY += -0.526f;
         }
     }
@@ -1190,7 +1190,7 @@ BOOL marioChkJump(void) {
     MarioWork* mario = marioGetPtr();
     CaseEntry* caseEntry;
 
-    if (!(*(u16*)((u8*)mario + 0x248) & (1 << 8))) {
+    if (!(mario->buttonNew & (1 << 8))) {
         return FALSE;
     }
     if (mario->currMotionId == MARIO_MOTION_YOSHI) {
@@ -1264,7 +1264,7 @@ BOOL marioChkJump(void) {
 BOOL marioChkTransform(void) {
     MarioWork* mario = marioGetPtr();
 
-    if (!(*(u16*)((u8*)mario + 0x248) & (1 << 11))) {
+    if (!(mario->buttonNew & (1 << 11))) {
         return FALSE;
     }
     if (!(mario->trigFlags & (1 << 2)) && (s8)*(u8*)((u8*)mario + 0x3B) != 0) {
@@ -1350,13 +1350,13 @@ BOOL marioChkItemMotion(void) {
         }
         return TRUE;
     }
-    if ((*(u16*)((u8*)mario + 0x248) & (1 << 9)) == 0) {
+    if ((mario->buttonNew & (1 << 9)) == 0) {
         return FALSE;
     }
     if (mario->flags & (MARIO_FLAG_TUBE_MODE | MARIO_FLAG_PAPER_MODE)) {
         return FALSE;
     }
-    if ((u32)(*(u16*)((u8*)mario + 0x248) & (1 << 9)) == 0) {
+    if ((u32)(mario->buttonNew & (1 << 9)) == 0) {
         return FALSE;
     }
     mario = marioGetPtr();
@@ -1394,7 +1394,7 @@ s32 marioRollChgChk(void) {
     if (mario->flags & MARIO_FLAG_IS_8_BIT) {
         return 0;
     }
-    if (!(*(u16*)((u8*)mario + 0x246) & (1 << 5))) {
+    if (!(mario->buttonHeld & (1 << 5))) {
         return 0;
     }
     if (marioGetRub(0x20, &unk0C, &unk10, (f32*)&unk08) != 1) {
@@ -1422,7 +1422,7 @@ fail:
 #endif
             return 0;
         }
-        if (*(u16*)((u8*)mario + 0x246) & (1 << 5)) {
+        if (mario->buttonHeld & (1 << 5)) {
             mario = marioGetPtr();
             if (!(mario->flags & MARIO_FLAG_CHG_MOT_DISABLED)) {
                 if (mario->prevMotionId == MARIO_MOTION_HIP || mario->prevMotionId == MARIO_MOTION_HIP_2) {
@@ -1495,7 +1495,7 @@ void mot_kaze(void) {
             *(f32*)((u8*)mario + 0x2A0) = 60.0f;
         }
         mario->unk1A8 = revise360(mario->unk1A8 + *(f32*)((u8*)mario + 0x2A0));
-        if (!(*(u16*)((u8*)mario + 0x246) & (1 << 4))) {
+        if (!(mario->buttonHeld & (1 << 4))) {
             flag = FALSE;
             if (mario->unk1A8 > 90.0f && mario->unk1A8 < 270.0f) {
                 flag = TRUE;
@@ -1559,7 +1559,7 @@ void mot_shadow(void) {
     default:
         return;
     }
-    if (!(*(u16*)((u8*)mario + 0x248) & (1 << 9))) {
+    if (!(mario->buttonNew & (1 << 9))) {
         return;
     }
     *(f32*)((u8*)mario + 0xBC) = 0.0f;

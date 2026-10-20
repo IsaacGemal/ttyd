@@ -839,7 +839,7 @@ void marioOfsRotReset(void) {
 }
 
 void marioSoundInit(void) {
-	s32* p = (s32*)(mp->field_0x250 + 0x28);
+	s32* p = (s32*)((u8*)mp + 0x278);
 
 	p[0] = -1;
 	p[1] = -1;

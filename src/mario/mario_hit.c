@@ -729,8 +729,8 @@ void marioChkGnd2(void) {
 
         if (wp->characterId == 2) {
             if (wp->controlStickSensitivity || kpaFireAttackCheck() == 0) {
-                if (*(s8*)((u8*)wp + 0x24E) * *(s8*)((u8*)wp + 0x24E) +
-                        *(s8*)((u8*)wp + 0x24F) * *(s8*)((u8*)wp + 0x24F) >
+                if (wp->wStickDir1 * wp->wStickDir1 +
+                        wp->wStickDir2 * wp->wStickDir2 >
                     0xBD1) {
                     marioChgMot(2);
                 } else {
@@ -2015,7 +2015,7 @@ void marioSearchFrontWall_staying(f32 a) {
         *(f32*)((u8*)wp + 0x210) = f8;
     }
 
-    if (*(u16*)((u8*)wp + 0x248) & 0x100) {
+    if (wp->buttonNew & 0x100) {
         *(void**)((u8*)wp + 0x1DC) = NULL;
         v = wp->position;
         hit = searchFrontWall(&v, &f8, halfx, wp->directionView, wp->wPlayerCollisionBox.z);

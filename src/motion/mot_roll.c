@@ -806,7 +806,7 @@ void mot_roll(void) {
         return;
     }
 
-    if (*(u16*)((u8*)mario + 0x248) & 0x200) {
+    if (mario->buttonNew & 0x200) {
         MarioWork* m = marioGetPtr();
 
         if (*(u32*)((u8*)m + 0x2A4) & 0x200) {
@@ -824,7 +824,7 @@ void mot_roll(void) {
             mario->currSubMotionId = 0x14;
             camGetPtr(CAMERA_2D)->flags |= 0x200;
         } else {
-            *(u16*)((u8*)mario + 0x248) |= 0x100;
+            mario->buttonNew |= 0x100;
         }
     }
 
@@ -888,7 +888,7 @@ void mot_roll(void) {
 
     if (mario->hitobjStandOn != NULL) {
         if (!(hitGetAttr(mario->hitobjStandOn) & 0xA00) && mario->airTimer == 0 &&
-            (*(u16*)((u8*)mario + 0x248) & 0x100) &&
+            (mario->buttonNew & 0x100) &&
             (strcmp(gp->currentMapName, "eki_04\0") != 0 ||
              !(fabsf(*(f32*)((u8*)mario + 0x214)) >= 40.0f))) {
             MarioWork* m = marioGetPtr();

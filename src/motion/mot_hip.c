@@ -34,7 +34,7 @@ s32 marioChkHipAttack(void) {
 
     res = 0;
     mario = marioGetPtr();
-    if (*(s16*)((u8*)mario + 0x52) >= 10 && (*(u16*)((u8*)mario + 0x248) & 0x100) && pouchGetJumpLv() >= 2) {
+    if (*(s16*)((u8*)mario + 0x52) >= 10 && (mario->buttonNew & 0x100) && pouchGetJumpLv() >= 2) {
         res = 1;
     }
     return res;

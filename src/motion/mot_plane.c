@@ -743,12 +743,12 @@ static void flyMain(void) {
 	if ((s32)mario->currSubMotionId != 0xF) {
 		return;
 	}
-	if (*(u16*)&mario->field_0x245[0x248 - 0x245] & 0x100) {
+	if (mario->buttonNew & 0x100) {
 		mario->currSubMotionId = 0x33;
 		MF32(mario, 0x2AC) = mario->position.y;
 		return;
 	}
-	if (*(u16*)&mario->field_0x245[0x248 - 0x245] & 0x200) {
+	if (mario->buttonNew & 0x200) {
 		mario->currSubMotionId = 0x33;
 		MF32(mario, 0x2AC) = mario->position.y;
 		return;

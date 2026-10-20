@@ -9,7 +9,6 @@
 s32 marioUseParty(void) {
     MarioWork* wp = marioGetPtr();
     PartyEntry* party;
-    u16* field248 = (u16*)((u8*)wp + 0x248);
     s8* timer = (s8*)((u8*)wp + 0x3B);
 
     if (N_marioChkUseParty()) {
@@ -70,7 +69,7 @@ s32 marioUseParty(void) {
 #endif
         return 0;
     }
-    if (!(wp->trigFlags & MARIO_TRIG_FLAG_USE_PARTNER) && (*field248 & 0x400)) {
+    if (!(wp->trigFlags & MARIO_TRIG_FLAG_USE_PARTNER) && (wp->buttonNew & 0x400)) {
         wp->trigFlags |= MARIO_TRIG_FLAG_USE_PARTNER;
         *timer = 5;
     }
