@@ -18,7 +18,7 @@ typedef struct effKemuTestData {
 	s32 age;        //0x28: frames elapsed
 	s32 field_0x2C; //0x2C
 	s32 life;       //0x30: frames until the particle is done
-	f32 speed;      //0x34: per-frame motion (added to posY, or to the orbit radius in types 10/12/14)
+	f32 speed;      //0x34: per-frame motion (added to posY, or along the particle's fan direction in types 10/12/14)
 	f32 accel;      //0x38: added to speed each frame
 	f32 damp;       //0x3C: speed and accel are multiplied by this each frame
 	s32 field_0x40; //0x40

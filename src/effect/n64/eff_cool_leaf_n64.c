@@ -55,7 +55,7 @@ typedef struct effCoolLeafData {
     f32 x;           // 0x04
     f32 y;           // 0x08
     f32 z;           // 0x0C
-    f32 velX;        // 0x10: added to x each frame (type 2 sets it outward from x)
+    f32 velX;        // 0x10: added to x each frame (type 2 starts it pointing back toward x = 0)
     f32 velY;        // 0x14: added to y each frame, minus 0.05 gravity
     f32 rotZ;        // 0x18: tilt, drawn with PSMTXRotRad 'z'
     f32 spin;        // 0x1C: random-walk rate that drives rotZ through sin
@@ -63,7 +63,7 @@ typedef struct effCoolLeafData {
     s32 alpha;       // 0x24: TEVREG0 alpha, fades in over 10 frames and out near the end
     s32 life;        // 0x28: frames left; the leaf is deleted when it goes below 0
     s32 age;         // 0x2C: frames since spawn
-    f32 driftX;      // 0x30: per-frame x drift, damped by 0.98 and nudged toward x = 0
+    f32 driftX;      // 0x30: per-frame x drift, damped each frame and nudged toward x = 0 (x = -200 below y = 30)
     f32 driftY;      // 0x34: per-frame y drift (always 0 in the original)
     f32 driftZ;      // 0x38: per-frame z drift, damped like driftX
 } effCoolLeafData;
