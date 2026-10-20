@@ -77,20 +77,20 @@ const Vec vec3_802ff920 = {0.0f, 0.0f, 0.0f};
 
 // GaugeTiming work area at BattleWork+0x1F4C (inside BattleActions.field_0x2BC). No header declares it.
 typedef struct GaugeTimingWork {
-    s32 frame;      // 0x00
-    f32 field_0x04; // 0x04
-    s32 field_0x08; // 0x08
-    s32 field_0x0C; // 0x0C
-    s32 field_0x10; // 0x10
-    s8 field_0x14;  // 0x14
-    s8 field_0x15;  // 0x15
-    s8 field_0x16;  // 0x16
+    s32 frame;      // 0x00, frames since the state started
+    f32 gauge;      // 0x04, needle position 0..100 (battleAcDisp reads it / 100 as the value)
+    s32 sweep;      // 0x08, frames the needle has moved; scales the angle in the sweep modes
+    s32 timeLimit;  // 0x0C, frames allowed before the sweep fails (copied from acParams[1])
+    s32 inZone;     // 0x10, needle is inside the target; drives the icon and the result
+    s8 tokenHit;    // 0x14, outcome rolled up front when the unit has the token badge
+    s8 phase;       // 0x15, 0 waiting for the button, 1 button down, 2 input done
+    s8 holdMode;    // 0x16, 1: stop on a press (state 0x3E9); 0: stop on release (state 0x3E8)
     u8 pad_0x17;    // 0x17
-    s32 field_0x18; // 0x18
-    s32 field_0x1C; // 0x1C
-    s32 field_0x20; // 0x20
-    s32 field_0x24; // 0x24
-    s32 field_0x28; // 0x28
+    s32 buttonMask; // 0x18, BattlePad mask for the button (acParams[0] picks it)
+    s32 flashTimer; // 0x1C, frames the stopped needle flashes before the sweep resumes
+    s32 laps;       // 0x20, whole hundreds passed by the needle (the 100-step modes)
+    s32 sfxId;      // 0x24, looping gauge sound handle, -1 when none
+    s32 endTimer;   // 0x28, frames before the action command ends
 } GaugeTimingWork;
 
 // Local to this file in the original (`.fn actionCommandDisp, local`).
@@ -108,7 +108,7 @@ s32 battleAcMain_GaugeTiming(BattleWork* work) {
     GaugeTimingWork* dec = (GaugeTimingWork*)&ac->field_0x2BC[0];
     BattleACDispParams* disp = &ac->dispParams;
 #else
-    GaugeTimingWork* dec = (GaugeTimingWork*)((u8*)work + 0x1F4C);
+    GaugeTimingWork* dec = (GaugeTimingWork*)&work->actionCommands.field_0x2BC[0];
     BattleACDispParams* disp = &work->actionCommands.dispParams;
 #endif
     s32 autoFlag = 0;
@@ -134,41 +134,41 @@ s32 battleAcMain_GaugeTiming(BattleWork* work) {
         }
         disp->field_0xC = dat_80421870;
         dec->frame = 0;
-        dec->field_0x08 = 0;
+        dec->sweep = 0;
         work->actionCommands.outputParams[0] = 0;
         work->actionCommands.mAcState = 0x63;
         work->actionCommands.result = 1;
-        dec->field_0x0C = work->actionCommands.acParams[1];
-        dec->field_0x10 = 0;
-        dec->field_0x1C = 0;
-        dec->field_0x20 = 0;
-        dec->field_0x24 = -1;
+        dec->timeLimit = work->actionCommands.acParams[1];
+        dec->inZone = 0;
+        dec->flashTimer = 0;
+        dec->laps = 0;
+        dec->sfxId = -1;
         switch (work->actionCommands.acParams[0]) {
         case 0:
-            dec->field_0x16 = 1;
-            dec->field_0x18 = 0x20;
-            dec->field_0x15 = 1;
+            dec->holdMode = 1;
+            dec->buttonMask = 0x20;
+            dec->phase = 1;
             work->actionCommands.outputParams[0] = 1;
             break;
         case 2:
-            dec->field_0x16 = 0;
-            dec->field_0x18 = 0x40000;
-            dec->field_0x15 = 0;
+            dec->holdMode = 0;
+            dec->buttonMask = 0x40000;
+            dec->phase = 0;
             break;
         default:
-            dec->field_0x16 = 1;
-            dec->field_0x18 = 0x100;
-            dec->field_0x15 = 1;
+            dec->holdMode = 1;
+            dec->buttonMask = 0x100;
+            dec->phase = 1;
             work->actionCommands.outputParams[0] = 1;
             break;
         }
         switch (work->actionCommands.acParams[2]) {
         case 1:
-            dec->field_0x04 = 0.0f;
+            dec->gauge = 0.0f;
             work->actionCommands.acParams[4] &= ~1;
             break;
         default:
-            dec->field_0x04 = 50.0f;
+            dec->gauge = 50.0f;
             break;
         }
         break;
@@ -176,15 +176,15 @@ s32 battleAcMain_GaugeTiming(BattleWork* work) {
         if ((work->actionCommands.field_0x4 & 1) && (work->actionCommands.mAcUnit->mTokenFlags & 0x10)) {
             if ((s32)irand(100) >= 0) {
                 work->actionCommands.field_0x8 = 0x1E;
-                dec->field_0x14 = 0;
+                dec->tokenHit = 0;
             } else {
-                dec->field_0x14 = 1;
+                dec->tokenHit = 1;
                 work->actionCommands.field_0x8 = 0x1E;
             }
             work->actionCommands.mAcState = 0x3EA;
             break;
         }
-        if (dec->field_0x16 != 0) {
+        if (dec->holdMode != 0) {
             work->actionCommands.mAcState = 0x3E9;
         } else {
             work->actionCommands.mAcState = 0x3E8;
@@ -193,11 +193,11 @@ s32 battleAcMain_GaugeTiming(BattleWork* work) {
     case 0x3E8:
     case 0x3E9:
         dec->frame++;
-        switch (dec->field_0x15) {
+        switch (dec->phase) {
         case 0:
-            if (dec->field_0x16 == 0) {
-                if ((s32)BattlePadCheckNow(dec->field_0x18) != 0) {
-                    dec->field_0x15 = 1;
+            if (dec->holdMode == 0) {
+                if ((s32)BattlePadCheckNow(dec->buttonMask) != 0) {
+                    dec->phase = 1;
                     work->actionCommands.mAcState = 0x3E9;
                     dec->frame = 0;
                     work->actionCommands.outputParams[0] = 1;
@@ -205,16 +205,16 @@ s32 battleAcMain_GaugeTiming(BattleWork* work) {
             }
             break;
         case 1:
-            if (dec->field_0x16 != 0) {
-                if ((u32)BattlePadGetNow() == (u32)dec->field_0x18) {
-                    if (BattlePadCheckTrigger(dec->field_0x18) != 0) {
-                        dec->field_0x15 = 2;
+            if (dec->holdMode != 0) {
+                if ((u32)BattlePadGetNow() == (u32)dec->buttonMask) {
+                    if (BattlePadCheckTrigger(dec->buttonMask) != 0) {
+                        dec->phase = 2;
                     }
                 }
             } else {
-                if ((s32)BattlePadCheckNow(dec->field_0x18) == 0) {
-                    if ((s32)BattlePadCheckUp(dec->field_0x18) != 0) {
-                        dec->field_0x15 = 2;
+                if ((s32)BattlePadCheckNow(dec->buttonMask) == 0) {
+                    if ((s32)BattlePadCheckUp(dec->buttonMask) != 0) {
+                        dec->phase = 2;
                     }
                 }
             }
@@ -223,12 +223,12 @@ s32 battleAcMain_GaugeTiming(BattleWork* work) {
         if (work->actionCommands.mAcState == 0x3E8) {
             if (dec->frame > 0x78) {
                 work->actionCommands.result = 0;
-                dec->field_0x04 = 0.0f;
+                dec->gauge = 0.0f;
                 work->actionCommands.mAcState = 0x3EB;
                 work->actionCommands.outputParams[0] = 2;
                 break;
             }
-        } else if (dec->frame > dec->field_0x0C) {
+        } else if (dec->frame > dec->timeLimit) {
             work->actionCommands.result = 0;
             work->actionCommands.mAcState = 0x3EB;
             break;
@@ -236,31 +236,31 @@ s32 battleAcMain_GaugeTiming(BattleWork* work) {
         if (work->actionCommands.mAcState == 0x3E8) {
             break;
         }
-        if (dec->field_0x1C <= 0) {
-            dec->field_0x08++;
+        if (dec->flashTimer <= 0) {
+            dec->sweep++;
         }
         switch (work->actionCommands.acParams[2]) {
         case 1: {
             f32 angle = reviseAngle(
-                (f32)(dec->field_0x08 * 0x168 / work->actionCommands.acParams[4]));
+                (f32)(dec->sweep * 0x168 / work->actionCommands.acParams[4]));
             if (angle <= float_90_804218cc) {
-                dec->field_0x04 =
+                dec->gauge =
                     intplGetValue(5, (s32)angle, 0x5A, 0.0f, 100.0f);
             } else if (angle <= float_180_804218d0) {
-                dec->field_0x04 = intplGetValue(2, (s32)(angle - float_90_804218cc), 0x5A, 100.0f,
+                dec->gauge = intplGetValue(2, (s32)(angle - float_90_804218cc), 0x5A, 100.0f,
                                                 0.0f);
             } else if (angle <= float_270_804218d4) {
-                dec->field_0x04 = intplGetValue(5, (s32)(angle - float_180_804218d0), 0x5A, 0.0f,
+                dec->gauge = intplGetValue(5, (s32)(angle - float_180_804218d0), 0x5A, 0.0f,
                                                 100.0f);
             } else {
-                dec->field_0x04 = intplGetValue(2, (s32)(angle - float_270_804218d4), 0x5A, 100.0f,
+                dec->gauge = intplGetValue(2, (s32)(angle - float_270_804218d4), 0x5A, 100.0f,
                                                 0.0f);
             }
-            if (dec->field_0x1C > 0) {
-                dec->field_0x1C--;
-                if (dec->field_0x1C > 0) {
-                    dec->field_0x04 = 0.0f;
-                    dec->field_0x10 = 0;
+            if (dec->flashTimer > 0) {
+                dec->flashTimer--;
+                if (dec->flashTimer > 0) {
+                    dec->gauge = 0.0f;
+                    dec->inZone = 0;
                     goto tail;
                 }
 #ifdef MUST_MATCH
@@ -275,14 +275,14 @@ s32 battleAcMain_GaugeTiming(BattleWork* work) {
                     goto gaugeSkip1;
                 }
             gaugeCheck1:
-                if ((s32)dec->field_0x04 <= 0) {
-                    dec->field_0x20++;
-                    dec->field_0x04 = 0.0f;
-                    dec->field_0x10 = 0;
+                if ((s32)dec->gauge <= 0) {
+                    dec->laps++;
+                    dec->gauge = 0.0f;
+                    dec->inZone = 0;
                     if (work->actionCommands.acFlag & 2) {
-                        dec->field_0x1C = 0xF;
+                        dec->flashTimer = 0xF;
                     } else {
-                        dec->field_0x1C = 0x1E;
+                        dec->flashTimer = 0x1E;
                     }
                     goto tail;
                 }
@@ -290,41 +290,41 @@ s32 battleAcMain_GaugeTiming(BattleWork* work) {
         gaugeSkip1:
 #else
             } else if ((work->actionCommands.acFlag & 2) &&
-                       ((s32)dec->field_0x04 <= 0)) {
-                dec->field_0x20++;
-                dec->field_0x04 = 0.0f;
-                dec->field_0x10 = 0;
+                       ((s32)dec->gauge <= 0)) {
+                dec->laps++;
+                dec->gauge = 0.0f;
+                dec->inZone = 0;
                 if (work->actionCommands.acFlag & 2) {
-                    dec->field_0x1C = 0xF;
+                    dec->flashTimer = 0xF;
                 } else {
-                    dec->field_0x1C = 0x1E;
+                    dec->flashTimer = 0x1E;
                 }
                 goto tail;
             }
 #endif
-            if (dec->field_0x04 >= (f32)work->actionCommands.acParams[3]) {
-                dec->field_0x10 = 1;
+            if (dec->gauge >= (f32)work->actionCommands.acParams[3]) {
+                dec->inZone = 1;
             } else {
-                dec->field_0x10 = 0;
+                dec->inZone = 0;
             }
             break;
         }
         default: {
-            if (dec->field_0x1C > 0) {
-                dec->field_0x1C--;
-                if (dec->field_0x1C > 0) {
-                    dec->field_0x04 = 0.0f;
-                    dec->field_0x10 = 0;
+            if (dec->flashTimer > 0) {
+                dec->flashTimer--;
+                if (dec->flashTimer > 0) {
+                    dec->gauge = 0.0f;
+                    dec->inZone = 0;
                     goto tail;
                 }
             }
             {
                 s32 a = work->actionCommands.acParams[4];
                 f32 f = (f32)a / float_100_80421874;
-                dec->field_0x04 = f * (f32)dec->field_0x08 + 50.0f;
+                dec->gauge = f * (f32)dec->sweep + 50.0f;
             }
             if (work->actionCommands.acFlag & 1) {
-                s32 v = (s32)dec->field_0x04;
+                s32 v = (s32)dec->gauge;
 #ifdef MUST_MATCH
                 // Same double-test trick as gaugeCheck1 above.
                 if (work->actionCommands.acFlag & 2) {
@@ -334,48 +334,48 @@ s32 battleAcMain_GaugeTiming(BattleWork* work) {
                     goto gaugeMod2;
                 }
             gaugeCheck2:
-                if (v / 100 > dec->field_0x20) {
-                    dec->field_0x20 = v / 100;
-                    dec->field_0x04 = 0.0f;
-                    dec->field_0x10 = 0;
+                if (v / 100 > dec->laps) {
+                    dec->laps = v / 100;
+                    dec->gauge = 0.0f;
+                    dec->inZone = 0;
                     if (work->actionCommands.acFlag & 2) {
-                        dec->field_0x1C = 0xF;
+                        dec->flashTimer = 0xF;
                     } else {
-                        dec->field_0x1C = 0x1E;
+                        dec->flashTimer = 0x1E;
                     }
                     goto tail;
                 }
             gaugeMod2:
 #else
-                if ((work->actionCommands.acFlag & 2) && (v / 100 > dec->field_0x20)) {
-                    dec->field_0x20 = v / 100;
-                    dec->field_0x04 = 0.0f;
-                    dec->field_0x10 = 0;
+                if ((work->actionCommands.acFlag & 2) && (v / 100 > dec->laps)) {
+                    dec->laps = v / 100;
+                    dec->gauge = 0.0f;
+                    dec->inZone = 0;
                     if (work->actionCommands.acFlag & 2) {
-                        dec->field_0x1C = 0xF;
+                        dec->flashTimer = 0xF;
                     } else {
-                        dec->field_0x1C = 0x1E;
+                        dec->flashTimer = 0x1E;
                     }
                     goto tail;
                 }
 #endif
                 v %= 100;
-                dec->field_0x04 = (f32)v;
+                dec->gauge = (f32)v;
             }
-            if (__fabsf(dec->field_0x04 - 50.0f) <= 12.0) {
-                dec->field_0x10 = 1;
+            if (__fabsf(dec->gauge - 50.0f) <= 12.0) {
+                dec->inZone = 1;
             } else {
-                dec->field_0x10 = 0;
+                dec->inZone = 0;
             }
             break;
         }
         }
     tail:
-        if (autoFlag != 0 && dec->field_0x10 != 0) {
-            dec->field_0x15 = 2;
+        if (autoFlag != 0 && dec->inZone != 0) {
+            dec->phase = 2;
         }
-        if (dec->field_0x15 == 2) {
-            if (dec->field_0x10 != 0) {
+        if (dec->phase == 2) {
+            if (dec->inZone != 0) {
                 work->actionCommands.result = 2;
                 work->actionCommands.mResultCount++;
             } else {
@@ -388,7 +388,7 @@ s32 battleAcMain_GaugeTiming(BattleWork* work) {
     case 0x3EA:
         work->actionCommands.field_0x8--;
         if (work->actionCommands.field_0x8 < 0) {
-            if (dec->field_0x14 != 0) {
+            if (dec->tokenHit != 0) {
                 work->actionCommands.result = 2;
                 work->actionCommands.mResultCount++;
             } else {
@@ -403,15 +403,15 @@ s32 battleAcMain_GaugeTiming(BattleWork* work) {
         // fallthrough
     case 0x3EC:
         work->actionCommands.field_0x30 |= 1;
-        dec->field_0x28 = 0x3C;
+        dec->endTimer = 0x3C;
         work->actionCommands.mAcState = 0x3ED;
-        if ((u32)dec->field_0x24 != 0xFFFFFFFF) {
-            psndSFXOff(dec->field_0x24);
+        if ((u32)dec->sfxId != 0xFFFFFFFF) {
+            psndSFXOff(dec->sfxId);
         }
         // fallthrough
     case 0x3ED:
-        dec->field_0x28--;
-        if (dec->field_0x28 <= 0) {
+        dec->endTimer--;
+        if (dec->endTimer <= 0) {
             work->actionCommands.mAcState = 0x3EE;
         }
         break;
@@ -521,10 +521,10 @@ static void actionCommandDisp(f32 x, f32 y) {
 #ifdef MUST_MATCH
     dec = (GaugeTimingWork*)&ac->field_0x2BC[0];
 #else
-    dec = (GaugeTimingWork*)((u8*)work + 0x1F4C);
+    dec = (GaugeTimingWork*)&ac->field_0x2BC[0];
 #endif
 
-    value = dec->field_0x04 / float_100_80421874;
+    value = dec->gauge / float_100_80421874;
     if (value > float_1_80421878) {
         value = float_1_80421878;
     }
@@ -536,14 +536,14 @@ static void actionCommandDisp(f32 x, f32 y) {
         if (ratio > float_100_80421874) {
             ratio = float_100_80421874;
         }
-        if (dec->field_0x1C > 0) {
+        if (dec->flashTimer > 0) {
             BattleAcDrawGauge((s32)x, (s32)y, 0xB2, 0x64, 0x64, 0x64, 0x64, 0, float_neg1_8042187c);
         } else {
             BattleAcDrawGauge((s32)x, (s32)y, 0xB2, 0x64, 0x64, 0x64, 0x64, 0, ratio);
         }
         {
             s32 icon =
-                (dec->field_0x04 >= (f32)ac->acParams[3]) ? 0x95 : 0x91;
+                (dec->gauge >= (f32)ac->acParams[3]) ? 0x95 : 0x91;
             Vec v = vec3_802ff860;
             v.x = float_16_80421880 + (float_176_80421884 + (float_neg288_80421888 + x));
             v.y = float_18_8042188c + y;
@@ -553,12 +553,12 @@ static void actionCommandDisp(f32 x, f32 y) {
     }
     default: {
         BattleAcDrawGauge((s32)x, (s32)y, 0xB2, 0x64, 0x64, 0x64, 0x64, 0, float_0_80421890);
-        if (dec->field_0x1C <= 0) {
+        if (dec->flashTimer <= 0) {
             f32 a;
             f32 px;
             f32 q[2];
             cam = camGetPtr(CAMERA_2D);
-            a = dec->field_0x04 * float_173_8042189c / float_100_80421874;
+            a = dec->gauge * float_173_8042189c / float_100_80421874;
             px = (float_neg200_80421894 + x) - float_88_80421898;
             q[0] = px + a;
             q[1] = float_49_804218a0 + y;
@@ -575,7 +575,7 @@ static void actionCommandDisp(f32 x, f32 y) {
                 f32 bx;
                 f32 t = float_100_80421874 / (f32)(count + 1);
                 u = t * (f32)(i + 1);
-                icon = (dec->field_0x10 != 0) ? 0x95 : 0x91;
+                icon = (dec->inZone != 0) ? 0x95 : 0x91;
                 u = float_176_80421884 * u;
                 u = u / float_100_80421874;
 #ifdef MUST_MATCH
@@ -648,8 +648,8 @@ static void actionCommandDisp(f32 x, f32 y) {
         break;
     case 0x3E8:
     case 0x3E9:
-        if (dec->field_0x16 != 0) {
-            if (dec->field_0x10 != 0) {
+        if (dec->holdMode != 0) {
+            if (dec->inZone != 0) {
                 if ((icon2 & 0xffff) != 0) {
                     baseX = float_neg228_804218b0 + x;
                     baseY = float_55_804218b4 + y;
@@ -695,7 +695,7 @@ static void actionCommandDisp(f32 x, f32 y) {
                 }
             }
         } else {
-            if (dec->field_0x10 != 0) {
+            if (dec->inZone != 0) {
                 if ((icon2 & 0xffff) != 0) {
                     baseX = float_neg228_804218b0 + x;
                     baseY = float_55_804218b4 + y;
