@@ -1390,7 +1390,7 @@ s32 mobj_jumpstand_blue(MapObjectEntry* obj) {
                 gp->systemLevelFlags |= 0x10;
                 mobjRunEvent(obj, obj->eventCode);
                 if (obj->triggerFlag == 0x200000) {
-                    marioChgJumpStandMotion(obj->tiltAngle);
+                    marioChgJumpStandMotion(obj->unk1AC);
                 }
                 if (mario->characterId != 2) {
                     if (strcmp(obj->animName, str_802C3E98) == 0) {
@@ -1483,7 +1483,7 @@ s32 evt_mobj_jumpstand_blue(EventEntry* event, BOOL isFirstCall) {
     obj->flags |= 0x200000;
     obj->flagVar = flagVar;
     obj->state = 0;
-    obj->tiltAngle = f31;
+    obj->unk1AC = f31;
     mobjCalcMtx(obj);
     return 2;
 }
@@ -4773,7 +4773,7 @@ s32 mobj_koopa_fireber_dodai_evt(MapObjectEntry* obj) {
         }
         PSMTXIdentity(mtx);
         PSMTXTransApply(mtx, mtx, -obj->position.x, -obj->position.y, -obj->position.z);
-        PSMTXRotRad(rotMtx, 'Z', 0.017453292f * obj->tiltAngle);
+        PSMTXRotRad(rotMtx, 'Z', 0.017453292f * obj->unk1AC);
         PSMTXConcat(rotMtx, mtx, mtx);
         PSMTXTransApply(mtx, mtx, obj->position.x, obj->position.y, obj->position.z);
         for (i = 0; i < *(s32*)((u8*)obj + 0x1A4); i++) {
@@ -4914,7 +4914,7 @@ s32 evt_mobj_koopa_fireber_dodai(EventEntry* event, BOOL isFirstCall) {
         f27 = 1.0f;
     }
     *(s32*)((u8*)obj + 0x1A4) = count;
-    obj->tiltAngle = (sign != 0) ? __fabsf(f27) : -__fabsf(f27);
+    obj->unk1AC = (sign != 0) ? __fabsf(f27) : -__fabsf(f27);
     *(s32*)((u8*)obj + 0x1B4) = 0;
     y = 25.0f + y;
     z = 175.0f + z;
