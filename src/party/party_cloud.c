@@ -525,7 +525,7 @@ void N__cloud_use(PartyEntry* party) {
         MOVE_TO_MARIO();
         party->position = party->targetPos;
         party->flags2 &= ~0x10;
-        if (*(u16*)((u8*)mario + 0x2E) == 0x1B) {
+        if (mario->currMotionId == 0x1B) {
             mario->dispFlags &= ~(1 << 8);
             mario->dispFlags &= ~(1 << 2);
             marioAdjustMoveDir();

@@ -91,7 +91,7 @@ typedef struct NpcBattleInfo {
     ItemDropData* itemDropLists[8];    // 0x3C
     ItemType stolenItems[8];           // 0x5C
     ItemType recoveredItems[8];        // 0x7C
-    u8 field_9C[0xAC - 0x9C];          // 0x9C
+    void* field_0x9C[4];               // 0x9C
     s32 audienceMode;                  // 0xAC, copied from BattleSetupData.audienceMode; battle_audience switches on it
     s8 audienceWeights[16];            // 0xB0, rolled from BattleSetupData.audienceRanges; battle_audience reads kinds 0-11
     const char* music;                 // 0xC0, copied from BattleSetupData.music
@@ -270,7 +270,9 @@ typedef struct FieldBattleData {
     s32 field_44;                // 0x44
     s32 majinaiEvtId;            // 0x48, event waited on in state 3 (the Merlee curse coin-up effect)
     NpcDeadInfo deadInfo[64];    // 0x4C
-    u8 field_54C[0x550 - 0x54C]; // 0x54C
+    u8 field_0x54C;              // 0x54C
+    u8 field_0x54D;              // 0x54D
+    u8 field_54E[0x550 - 0x54E]; // 0x54E
     FirstStrikeInfo firstStrike; // 0x550
     u8 field_570[0x574 - 0x570]; // 0x570
     s32 field_574;               // 0x574
