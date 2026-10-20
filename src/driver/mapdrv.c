@@ -1161,18 +1161,18 @@ void bmapUnLoad(void) {
 	activeGroup = 0;
 	entry = (wp = mapWork)->entries;
 	for (i = 0; i < wp->entries[0].count; entry++, i++) {
-		if (*(void**)((u8*)entry + 0x170)) {
+		if (entry->field_0x170) {
 			entry->dat = _mapAllocTail(entry->datSize);
 			entry->tpl = _mapAllocTail(entry->tplSize);
-			aramMgrToMram(*(void**)((u8*)entry + 0x170), entry->dat);
+			aramMgrToMram(entry->field_0x170, entry->dat);
 			aramMgrToMram(*(void**)((u8*)entry + 0x178), entry->tpl);
-			*(void**)((u8*)entry + 0x170) = NULL;
+			entry->field_0x170 = NULL;
 			*(void**)((u8*)entry + 0x178) = NULL;
 		}
 		else {
 			entry->chunkBuf = _mapAllocTail(entry->chunkBufSize);
-			aramMgrToMram(*(void**)((u8*)entry + 0x174), entry->chunkBuf);
-			*(void**)((u8*)entry + 0x174) = NULL;
+			aramMgrToMram(entry->field_0x174, entry->chunkBuf);
+			entry->field_0x174 = NULL;
 		}
 		makeDisplayList(i);
 	}
@@ -1198,12 +1198,12 @@ void bmapLoad(const char* map1, const char* map2) {
 		entry->dlTotal = 0;
 		entry->dlData = NULL;
 		p = (u8*)&wp->entries[i];
-		*(s32*)(p + 0x170) = 0;
+		((MapEntry*)p)->field_0x170 = NULL;
 		*(s32*)(p + 0x178) = 0;
-		*(s32*)(p + 0x174) = 0;
+		((MapEntry*)p)->field_0x174 = NULL;
 		if (((MapEntry*)p)->dat) {
 			if (!arcDataCheck(((MapEntry*)p)->dat)) {
-				*(void**)(p + 0x170) = aramMgrToAram(((MapEntry*)p)->dat, ((MapEntry*)p)->datSize);
+				((MapEntry*)p)->field_0x170 = aramMgrToAram(((MapEntry*)p)->dat, ((MapEntry*)p)->datSize);
 				*(void**)(p + 0x178) = aramMgrToAram(((MapEntry*)p)->tpl, ((MapEntry*)p)->tplSize);
 				_mapFree(((MapEntry*)p)->tpl);
 				_mapFree(((MapEntry*)p)->dat);
@@ -1211,9 +1211,9 @@ void bmapLoad(const char* map1, const char* map2) {
 				((MapEntry*)p)->dat = NULL;
 			}
 			else {
-				*(void**)(p + 0x174) = aramMgrToAram(*(void**)(p + 0x8C), *(u32*)(p + 0x90));
-				_mapFree(*(void**)(p + 0x8C));
-				*(void**)(p + 0x8C) = NULL;
+				((MapEntry*)p)->field_0x174 = aramMgrToAram(((MapEntry*)p)->chunkBuf, ((MapEntry*)p)->chunkBufSize);
+				_mapFree(((MapEntry*)p)->chunkBuf);
+				((MapEntry*)p)->chunkBuf = NULL;
 			}
 		}
 	}

@@ -191,7 +191,8 @@ typedef struct MapEntry {
     MapEntryAnimData* animData;    // 0x164
     u32 dlTotal;                   // 0x168, total size of the display lists (makeDisplayList)
     void* dlData;                  // 0x16C, buffer the display lists are copied into
-    u8 field_0x170[0x178 - 0x170]; // 0x170, ARAM copies (bmapLoad, mapLoad)
+    void* field_0x170;             // 0x170, ARAM copies (bmapLoad, mapLoad)
+    void* field_0x174;             // 0x174
 } MapEntry;
 
 typedef struct MapWork {
