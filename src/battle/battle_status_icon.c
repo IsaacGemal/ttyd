@@ -172,13 +172,15 @@ void BattleStatusIconDisp(CameraId camId, void* param) {
 		pos.z += icon->mScreenSpaceOffset.z;
 		pos.z -= (f32)(i * -2);
 
+		// btlDispTexPlane is called through a pointer type with an extra trailing s32 argument (0).
 		if (!(entry->flags & 1)) {
 			if (!(icon->mFlags & 1)) {
 #ifdef MUST_MATCH
 				((void (*)(u32, GXColor, f32, f32, f32, f32, f32, s32))btlDispTexPlane)(
 				    0x23, color, pos.x, pos.y, pos.z, 0.8f, 0.8f, 0);
 #else
-				btlDispTexPlane(0x23, color, pos.x, pos.y, pos.z, 0.8f, 0.8f);
+				btlDispTexPlane(
+				    0x23, color, pos.x, pos.y, pos.z, 0.8f, 0.8f);
 #endif
 			}
 			else {
@@ -186,7 +188,8 @@ void BattleStatusIconDisp(CameraId camId, void* param) {
 				((void (*)(u32, GXColor, f32, f32, f32, f32, f32, s32))btlDispTexPlane)(
 				    0x23, color, pos.x, pos.y, pos.z, 0.8f, -0.8f, 0);
 #else
-				btlDispTexPlane(0x23, color, pos.x, pos.y, pos.z, 0.8f, -0.8f);
+				btlDispTexPlane(
+				    0x23, color, pos.x, pos.y, pos.z, 0.8f, -0.8f);
 #endif
 			}
 		}
@@ -278,14 +281,7 @@ BOOL _bsi_default_turn(BattleUnit* unit, IconDispTableEntry* disp, BattleWorkSta
 	BtlUnit_GetStatus(unit, type, &turns, &strength);
 #endif
 	entry->type = type;
-#ifdef MUST_MATCH
-	turnCount = -turns;
-	if (turns >= 0) {
-		turnCount = turns;
-	}
-#else
-	turnCount = turns < 0 ? -turns : turns;
-#endif
+	turnCount = turns >= 0 ? turns : -turns;
 	entry->turnCount = turnCount;
 	entry->texId = disp->texId;
 	entry->scale = vec[0];
@@ -322,29 +318,16 @@ BOOL _bsi_guruguru(BattleUnit* unit, IconDispTableEntry* disp, BattleWorkStatusI
 	BtlUnit_GetStatus(unit, type, &turns, &strength);
 #endif
 	entry->type = type;
-#ifdef MUST_MATCH
-	turnCount = -turns;
-	if (turns >= 0) {
-		turnCount = turns;
-	}
-#else
-	turnCount = turns < 0 ? -turns : turns;
-#endif
+	turnCount = turns >= 0 ? turns : -turns;
 	entry->turnCount = turnCount;
 	entry->texId = disp->texId;
 	entry->scale = vec[4];
 	entry->pivot = vec[5];
-#ifdef MUST_MATCH
-	// MUST_MATCH: MWCC forwards vec[6].x/.y straight to the entry but keeps .z in a
-	// stack temporary which the counter store then reuses; the direct two-assignment
-	// form below omits that temporary.
+	// MWCC forwards vec[6].x/.y straight to the entry but keeps .z in a stack temporary which the
+	// counter store then reuses; assigning entry->rotation and then .z omits that temporary.
 	tmp = vec[6];
 	tmp.z = *counter;
 	entry->rotation = tmp;
-#else
-	entry->rotation = vec[6];
-	entry->rotation.z = *counter;
-#endif
 	entry->color = *(GXColor*)&dat_804221f4;
 	entry->flags = disp->flags;
 	entry->offset = vec[7];
@@ -359,10 +342,12 @@ BOOL _bsi_allergy(BattleUnit* unit, IconDispTableEntry* disp, BattleWorkStatusIc
 	s8 strength;
 	s16* counter = &unit->mStatusIconWork.mAllergyCounter;
 
+#ifdef MUST_MATCH
 	// The header's BtlUnit_CheckStatus/BtlUnit_GetStatus take StatusEffectType (int), but the
 	// callee sign-extends it (battle_status_effect.h says it "should be an s8"). Calling through
-	// a matching function pointer makes MWCC coerce the argument like the original.
-#ifdef MUST_MATCH
+	// an s8-typed function pointer makes MWCC coerce the argument at each call like the original;
+	// an (s8) cast on the argument is hoisted into its own register and does not match.
+	// The same casts are used in every _bsi_* function below.
 	if (!((BOOL(*)(BattleUnit*, s8))BtlUnit_CheckStatus)(unit, type)) {
 #else
 	if (!BtlUnit_CheckStatus(unit, type)) {
@@ -377,16 +362,7 @@ BOOL _bsi_allergy(BattleUnit* unit, IconDispTableEntry* disp, BattleWorkStatusIc
 	BtlUnit_GetStatus(unit, type, &turns, &strength);
 #endif
 	entry->type = type;
-#ifdef MUST_MATCH
-	// MUST_MATCH: MWCC computes the negation speculatively and selects with `neg; blt; mr`,
-	// which a ternary or abs() does not reproduce. Natural form is under #else.
-	turnCount = -turns;
-	if (turns >= 0) {
-		turnCount = turns;
-	}
-#else
-	turnCount = turns < 0 ? -turns : turns;
-#endif
+	turnCount = turns >= 0 ? turns : -turns;
 	entry->turnCount = turnCount;
 	entry->texId = disp->texId;
 	entry->scale = vec[8];
@@ -403,17 +379,8 @@ BOOL _bsi_allergy(BattleUnit* unit, IconDispTableEntry* disp, BattleWorkStatusIc
 	return TRUE;
 }
 
-// MUST_MATCH: the original reaches these six Vecs as offsets from vec3_803011e8.
-#ifdef MUST_MATCH
-#define BIRI_VEC(k, sym) vec[k]
-#else
-#define BIRI_VEC(k, sym) (sym)
-#endif
-
 BOOL _bsi_biribiri(BattleUnit* unit, IconDispTableEntry* disp, BattleWorkStatusIconEntry* entry) {
-#ifdef MUST_MATCH
 	const Vec* vec = &vec3_803011e8;
-#endif
 	s32 type = disp->id;
 	s32 turnCount;
 	s8 turns;
@@ -431,7 +398,7 @@ BOOL _bsi_biribiri(BattleUnit* unit, IconDispTableEntry* disp, BattleWorkStatusI
 		return FALSE;
 	}
 
-	entry->scale = BIRI_VEC(12, vec3_80301278);
+	entry->scale = vec[12];
 
 	switch (*counter) {
 	case 0:
@@ -439,7 +406,7 @@ BOOL _bsi_biribiri(BattleUnit* unit, IconDispTableEntry* disp, BattleWorkStatusI
 		*duration = irand(6) + 4;
 		// fallthrough
 	case 1:
-		entry->scale = BIRI_VEC(13, vec3_80301284);
+		entry->scale = vec[13];
 		*duration = *duration - 1;
 		if (*duration < 0) {
 			*counter = *counter + 1;
@@ -447,7 +414,7 @@ BOOL _bsi_biribiri(BattleUnit* unit, IconDispTableEntry* disp, BattleWorkStatusI
 		}
 		break;
 	case 2:
-		entry->scale = BIRI_VEC(14, vec3_80301290);
+		entry->scale = vec[14];
 		*duration = *duration - 1;
 		if (*duration < 0) {
 			*duration = irand(6) + 4;
@@ -462,21 +429,14 @@ BOOL _bsi_biribiri(BattleUnit* unit, IconDispTableEntry* disp, BattleWorkStatusI
 	BtlUnit_GetStatus(unit, type, &turns, &strength);
 #endif
 	entry->type = type;
-#ifdef MUST_MATCH
-	turnCount = -turns;
-	if (turns >= 0) {
-		turnCount = turns;
-	}
-#else
-	turnCount = turns < 0 ? -turns : turns;
-#endif
+	turnCount = turns >= 0 ? turns : -turns;
 	entry->turnCount = turnCount;
 	entry->texId = disp->texId;
-	entry->pivot = BIRI_VEC(15, vec3_8030129c);
-	entry->rotation = BIRI_VEC(16, vec3_803012a8);
+	entry->pivot = vec[15];
+	entry->rotation = vec[16];
 	entry->color = *(GXColor*)&dat_804221fc;
 	entry->flags = disp->flags;
-	entry->offset = BIRI_VEC(17, vec3_803012b4);
+	entry->offset = vec[17];
 	return TRUE;
 }
 
@@ -533,14 +493,7 @@ BOOL _bsi_regeneration(BattleUnit* unit, IconDispTableEntry* disp, BattleWorkSta
 	BtlUnit_GetStatus(unit, type, &turns, &strength);
 #endif
 	entry->type = type;
-#ifdef MUST_MATCH
-	turnCount = -turns;
-	if (turns >= 0) {
-		turnCount = turns;
-	}
-#else
-	turnCount = turns < 0 ? -turns : turns;
-#endif
+	turnCount = turns >= 0 ? turns : -turns;
 	entry->turnCount = turnCount;
 	entry->texId = disp->texId;
 	entry->scale = vec3_803012c0;
