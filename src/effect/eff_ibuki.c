@@ -10,9 +10,7 @@
 #include "matching.h"
 #include <stdlib.h>
 
-// The unit's data, in the original's address order. The functions reach the vertex/texcoord tables
-// through the lbl_803B4860 anchor below/plus an offset, not by name, so force the linker to keep
-// every object.
+// The unit's data, in the original's address order. Force the linker to keep every object.
 #pragma force_active on
 
 // .data
@@ -96,13 +94,6 @@ u8 ibuki_dl_0_size_tbl[4] = { 2, 2, 2, 2 };
 // .sdata2
 const GXColor dat_80421f00 = { 0xFF, 0xFF, 0xFF, 0x00 };
 const GXColor dat_80421f04 = { 0xFF, 0xFF, 0xFF, 0x00 };
-
-// The original reaches this file's tables from its .data section anchor, lbl_803B4860.
-#ifdef MUST_MATCH
-#define DATA_AT(off, sym) (base + (off))
-#else
-#define DATA_AT(off, sym) ((u8*)(sym))
-#endif
 
 // The int->float magic pools as an anonymous @N rather than double_to_int_803006d0 (does not affect the
 // match score). The angle normalization needs the match shape guarded by MUST_MATCH below, which keeps
@@ -284,8 +275,7 @@ void effIbukiMain(EffectEntry* effect) {
 	dispEntry(CAMERA_3D, dispCalcZ(&dispPos), 2, effIbukiDisp, effect);
 }
 
-#ifdef MUST_MATCH
-// MUST_MATCH: the first colour is built in a helper that takes the base colour as a parameter and is called
+// The first colour is built in a helper that takes the base colour as a parameter and is called
 // directly in GXSetTevColor (the second reads its base global inside the helper and is stored in `color2`).
 // This is what makes mwcc place the inline local and the outgoing argument copy in retail's stack slots
 // (0x10/0x14 for the first colour vs 0x8/0xc for the second); reading the global inside the first helper
@@ -300,7 +290,6 @@ static inline GXColor effIbukiColor1(u8 a) {
 	c.a = a;
 	return c;
 }
-#endif
 
 // Matches. Beyond the straightforward port, three source shapes were needed: (1) the final loop reuses
 // `data` as the element pointer (data = &data[1]; ...; i++, data++) like effIbukiMain, which keeps `effect`
@@ -321,7 +310,6 @@ void effIbukiDisp(CameraId cameraId, void* param) {
 	EffectEntry* effect = param;
 	effIbukiData* data = effect->userdata;
 	s32 j;
-	GXColor color;
 	GXColor color2;
 	GXTexObj tex;
 	Mtx mtx;
@@ -329,20 +317,16 @@ void effIbukiDisp(CameraId cameraId, void* param) {
 	void** dlTbl;
 	Mtx rot;
 	s32 alpha;
-	u8* base;
 	s32 i;
 	Mtx scale;
 	f32 tmp;
-#ifdef MUST_MATCH
 	f32 sixteen;
-#endif
 	f32 eight;
 	f32 half;
 	s32 alpha2;
 	Mtx out;
 	CameraEntry* camera;
 
-	base = lbl_803B4860;
 	camera = camGetPtr(cameraId);
 	alpha = data->alpha;
 	alpha2 = data->alpha2;
@@ -373,13 +357,7 @@ void effIbukiDisp(CameraId cameraId, void* param) {
 	GXSetTevColorIn(GX_TEVSTAGE3, GX_CC_ZERO, GX_CC_CPREV, GX_CC_C0, GX_CC_ZERO);
 	GXSetTevAlphaIn(GX_TEVSTAGE3, GX_CA_ZERO, GX_CA_APREV, GX_CA_A0, GX_CA_ZERO);
 
-#ifdef MUST_MATCH
 	GXSetTevColor(GX_TEVREG0, effIbukiColor0(dat_80421f00, (alpha * alpha2) / 255));
-#else
-	color = dat_80421f00;
-	color.a = (alpha * alpha2) / 255;
-	GXSetTevColor(GX_TEVREG0, color);
-#endif
 
 	PSMTXTrans(mtx, data->texU0, data->texV0, 0.0f);
 	GXLoadTexMtxImm(mtx, GX_TEXMTX0, GX_MTX2x4);
@@ -405,7 +383,7 @@ void effIbukiDisp(CameraId cameraId, void* param) {
 	GXClearVtxDesc();
 	GXSetVtxDesc(GX_VA_POS, GX_INDEX8);
 	GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_POS_XYZ, GX_S16, 6);
-	GXSetArray(GX_VA_POS, DATA_AT(0x40, ibuki_vertex_tbl), 6);
+	GXSetArray(GX_VA_POS, ibuki_vertex_tbl, 6);
 	GXSetVtxDesc(GX_VA_NRM, GX_INDEX8);
 	GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_NRM, GX_NRM_XYZ, GX_S8, 6);
 	GXSetArray(GX_VA_NRM, ibuki_normal_tbl, 3);
@@ -414,10 +392,10 @@ void effIbukiDisp(CameraId cameraId, void* param) {
 	GXSetArray(GX_VA_CLR0, ibuki_color0_tbl, 4);
 	GXSetVtxDesc(GX_VA_TEX0, GX_INDEX8);
 	GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, GX_TEX_ST, GX_S16, 0xe);
-	GXSetArray(GX_VA_TEX0, DATA_AT(0xa0, ibuki_texcoord0_tbl), 4);
+	GXSetArray(GX_VA_TEX0, ibuki_texcoord0_tbl, 4);
 	GXSetVtxDesc(GX_VA_TEX1, GX_INDEX8);
 	GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX1, GX_TEX_ST, GX_S16, 0xe);
-	GXSetArray(GX_VA_TEX1, DATA_AT(0xe0, ibuki_texcoord1_tbl), 4);
+	GXSetArray(GX_VA_TEX1, ibuki_texcoord1_tbl, 4);
 	j = 0;
 	dlSize = ibuki_dl_0_size_tbl;
 	dlTbl = ibuki_dl_0_tbl;
@@ -442,14 +420,10 @@ void effIbukiDisp(CameraId cameraId, void* param) {
 	GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, GX_TEX_ST, GX_F32, 0);
 	effGetTexObj(0x63, &tex);
 	GXLoadTexObj(&tex, GX_TEXMAP0);
-#ifdef MUST_MATCH
 	// `-16.0f` as one expression gets constant-folded (and then `tmp * 0.5f` with it),
 	// dropping the 16/0.5 pool pair retail keeps; an opaque local keeps both alive.
 	sixteen = 16.0f;
 	tmp = -sixteen;
-#else
-	tmp = -16.0f;
-#endif
 	i = 1;
 	data = &data[1];
 	for (; i < effect->count; i++, data++) {
@@ -465,12 +439,7 @@ void effIbukiDisp(CameraId cameraId, void* param) {
 			PSMTXConcat(out, mtx, mtx);
 			GXLoadPosMtxImm(mtx, 0);
 			GXSetCurrentMtx(0);
-#ifdef MUST_MATCH
 			color2 = effIbukiColor1(alpha2);
-#else
-			color2 = dat_80421f04;
-			color2.a = alpha2;
-#endif
 			GXSetChanMatColor(GX_COLOR0A0, color2);
 			GXBegin(GX_QUADS, GX_VTXFMT0, 4);
 			// Local constants: retail keeps 8.0f in f1 across the strip and reloads 0.5f

@@ -24,13 +24,6 @@ u32 size2x8_tex8x16_vtx[14] = {
     0x00000400, 0xFF0000FF,
 };
 
-// .sdata2 float constants (named after their original addresses).
-#ifdef MUST_MATCH
-// Match-only: defining 0.0f here makes the compiler fold its uses to 0.0 immediates, as the
-// original's code does, and objdiff pairs the named object. The original has one 0.0 in .sdata2; this
-// adds an anonymous duplicate next to it.
-#endif
-
 // .rodata double used for the integer-to-float conversion.
 
 // .rodata zero vector and the double constants the inlined sqrtf pools after it.
@@ -188,12 +181,9 @@ EffectEntry* effAkariChargeN64Entry(s32 type, s32 a2, f32 a3, f32 a4, f32 a5, f3
 // the loop cursor r29. The two fcmpu instructions compare against a local copy of the zero constant so the
 // register (dx/dy) operand comes first.
 void effAkariChargeMain(EffectEntry* effect) {
-#ifdef MUST_MATCH
-	/* MUST_MATCH: retail builds the Vec in a scratch slot and copies it into a second
-	   local before dispCalcZ; a single local folds the copy away (same idiom as
-	   effAkariSflushMain/effNokotarouMain). */
+	/* Retail builds the Vec in a scratch slot and copies it into a second local before dispCalcZ; a
+	   single local folds the copy away (same idiom as effAkariSflushMain/effNokotarouMain). */
 	Vec position;
-#endif
 	Vec disp = { 0 };
 	EffAkariChargeParticle* p;
 	s32 i;
@@ -205,18 +195,14 @@ void effAkariChargeMain(EffectEntry* effect) {
 	f32 dx;
 	f32 dy;
 	f32 s;
-#ifdef MUST_MATCH
 	f32 zero;
-#endif
 
 	p = effect->userdata;
 
 	disp.x = p->x;
 	disp.y = p->y;
 	disp.z = p->z;
-#ifdef MUST_MATCH
 	position = disp;
-#endif
 
 	type = p->type;
 
@@ -262,14 +248,10 @@ void effAkariChargeMain(EffectEntry* effect) {
 			p->x = x + dx;
 			p->y = y + dy;
 			p->angle = angleABf(0.0f, 0.0f, dx, dy);
-#ifdef MUST_MATCH
-			// Match-only: comparing against a local copy of the constant makes mwcc put dx/dy first in
-			// the fcmpu, as the original does; the named constant is compared the other way round.
+			// Comparing against a local copy of the constant makes mwcc put dx/dy first in the fcmpu, as the
+			// original does; the literal is compared the other way round.
 			zero = 0.0f;
 			if (dx != zero || dy != zero) {
-#else
-			if (dx != 0.0f || dy != 0.0f) {
-#endif
 				p->scale = sqrtf(dx * dx + dy * dy);
 			} else {
 				p->scale = 0.0f;
@@ -290,17 +272,9 @@ void effAkariChargeMain(EffectEntry* effect) {
 	}
 
 	if (type == 0) {
-#ifdef MUST_MATCH
 		dispEntry(CAMERA_3D, dispCalcZ(&position), 2, effAkariChargeDisp, effect);
-#else
-		dispEntry(CAMERA_3D, dispCalcZ(&disp), 2, effAkariChargeDisp, effect);
-#endif
 	} else {
-#ifdef MUST_MATCH
 		dispEntry(CAMERA_2D, dispCalcZ(&position), 2, effAkariChargeDisp, effect);
-#else
-		dispEntry(CAMERA_2D, dispCalcZ(&disp), 2, effAkariChargeDisp, effect);
-#endif
 	}
 }
 
@@ -308,7 +282,6 @@ void effAkariChargeMain(EffectEntry* effect) {
 // slot.  Returning the colour from an inline makes mwcc lay those two slots out the same way it did
 // in the original; building them inline in the caller puts the local/outgoing pair the wrong way
 // round (the same quirk eff_akari_pose_n64.c documents).
-#ifdef MUST_MATCH
 static inline GXColor akariColorProj(GXColor c, s32 r, s32 g, s32 b) {
 	c.r = r;
 	c.g = g;
@@ -324,7 +297,6 @@ static inline GXColor akariColorPart(s32 r, s32 g, s32 b, s32 a) {
 	c.a = a;
 	return c;
 }
-#endif
 
 // Naming 0.0f in the two integer-to-float PSMTXTrans calls would make mwcc hoist it into a fourth
 // fpr, which grows the frame and shifts every local, so they use 0.0f literals.
@@ -336,7 +308,6 @@ void effAkariChargeDisp(CameraId camId, void* param) {
 	EffAkariChargeWork* data;
 	CameraEntry* cam;
 	GXTexObj texObj;
-	GXColor color;
 	Mtx mtx;
 	Mtx scaleMtx;
 	Mtx rotMtx;
@@ -374,15 +345,7 @@ void effAkariChargeDisp(CameraId camId, void* param) {
 	PSMTXConcat(mtx, scaleMtx, viewMtx);
 	PSMTXConcat(cam->view, viewMtx, viewMtx);
 
-#ifdef MUST_MATCH
 	GXSetTevColor(GX_TEVREG1, akariColorProj(unk_80423090, data->reg1R, data->reg1G, data->reg1B));
-#else
-	color = unk_80423090;
-	color.r = data->reg1R;
-	color.g = data->reg1G;
-	color.b = data->reg1B;
-	GXSetTevColor(GX_TEVREG1, color);
-#endif
 	GXSetNumChans(0);
 	GXSetNumTevStages(2);
 	GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR_NULL);
@@ -406,15 +369,7 @@ void effAkariChargeDisp(CameraId camId, void* param) {
 	for (i = 1; i < effect->count; i++, data++) {
 		EffAkariChargeParticle* part = (EffAkariChargeParticle*)data;
 		GXColor color2;
-#ifdef MUST_MATCH
 		color2 = akariColorPart(colR, colG, colB, (part->alpha * alpha) / 255);
-#else
-		color2 = unk_80423094;
-		color2.r = colR;
-		color2.g = colG;
-		color2.b = colB;
-		color2.a = (part->alpha * alpha) / 255;
-#endif
 		GXSetTevColor(GX_TEVREG0, color2);
 
 		PSMTXTrans(mtx, part->x, part->y, 0.0f);
