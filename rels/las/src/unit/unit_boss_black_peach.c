@@ -4697,7 +4697,7 @@ EVT_END()
                         s32 v = irand(0xf) + (i / 10) * -0xf;                                             \
                         elem->posZ = (f32)(v + 0x46);                                                     \
                     }                                                                                     \
-                    pose->heading = (f32)(irand(0x14) - 0xa);                                           \
+                    pose->heading = (f32)(irand(0x14) - 0xa);                                             \
                     ((f32*)pose->matrix)[0] = 50.0f / (50.0f + (f32)irand(0x32));                         \
                     ((f32*)pose->matrix)[5] = 50.0f / (50.0f + (f32)irand(0x32));                         \
                     if (elem->mirror != 0) {                                                              \

@@ -29,7 +29,7 @@ typedef struct ExtTexture {
 	GXTexRegion region; //0x24
 } ExtTexture;
 
-// 0xC-byte entry `param` points at in extMakeTexture/extEntry (name, argument, scale).
+// 0xC-byte entry `param` points at in extMakeTexture/extEntry (name, animName, scale).
 typedef struct ExtMakeTextureEntry {
 	const char* name; //0x0
 	void* animName;   //0x4
