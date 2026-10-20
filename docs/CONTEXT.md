@@ -8676,3 +8676,17 @@ sac_deka has its own DekaStarEffectData overlay. Naming them is a pass over thos
 fields are misnamed), 0x24/0x28 `scrollU`/`scrollV` (texture-matrix translation, U cycling by 0.01), 0x2C `timer`
 (mod 60; a sparkle every 10), 0x30 `edgeColor` (from edge_color[], the channel material colour), 0x34
 `dustEffect` (effSnowDustN64Entry), 0x38 `camId`, 0x3C `state`, 0x40 `gravity`, 0x44 `velY`, 0x5F `alpha`.
+### Readability: shadowdrv names (2026-10-19, Claude Haiku 5.5, n9-q-shadow; reviewed by Claude Opus 5.5)
+
+The char, proj and depth shadow work blocks (shadowdrv.h) share one named layout up to 0x100: `flags` (0x1 texture
+valid, 0x2 allocate the texture buffer at draw time, 0x4 half-resolution copy), `drawCount`, `configIdx`, `lookAt`,
+`projection` (Mtx44 at 0x3C), `projTexMtx`, `depthMtx`, `texObj`, `texBuffer`, `color`; CharShadowWork adds
+`entryCount`, `projectionEnabled`, `defaultKind`, `defaultYScale`, `defaultCollision`. ShadowEntry gets `kind` (0
+polygon, 1 texture, 2 cylinder, 3 projected-texture caster), `yScale`, `offscreenId`, and `camId` becomes s16 (the
+`*(s16*)&entry->camId` casts are gone). ShadowConfigFields moves to the header with `followCamera`,
+`halfWidth`/`halfHeight`, `nearZ`/`farZ`, `isOrtho`, `depthMode`, `sizeIdx`, `depthBias`; the config getters
+return it, so mapdrv's two `*(s32*)((u8*)config + 0x3C)` reads are `config->depthMode`. GX literals are GXEnum.h
+names throughout (the MUST_MATCH colour helpers included), `camId == 1` is `CAMERA_OFFSCREEN2` and new entries
+default to `CAMERA_3D`. shadowDispProjMtx is now under `#ifdef MUST_MATCH` because the plain-C #else reads
+`w->projection` directly and no longer needs it. Open: the SHADOW_MAT_COLOR/SHADOW_FOG_COLOR fn-cast macro bodies
+keep their literals, and the MUST_MATCH double spelling of the projection matrix stays.
