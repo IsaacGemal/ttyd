@@ -61,13 +61,10 @@ EffectEntry* effRappaN64Entry(s32 type, s32 count, f32 x, f32 y, f32 z, f32 yaw,
 	f32 speed;
 	f32 sinTheta;
 	f32 phi;
-#ifdef MUST_MATCH
-	// MUST_MATCH: these temporaries pin MWCC's FPR assignment and commutative-operand order; the
-	// #else branch is the natural form and does not match.
+	// These temporaries pin MWCC's FPR assignment and commutative-operand order.
 	f32 tmp;
 	f32 randValue;
 	f32 cosPhi;
-#endif
 
 	effect = effEntry();
 	if (count == 0) {
@@ -78,11 +75,7 @@ EffectEntry* effRappaN64Entry(s32 type, s32 count, f32 x, f32 y, f32 z, f32 yaw,
 	data = __memAlloc(HEAP_EFFECT, (count + 1) * sizeof(effRappaData));
 	effect->userdata = data;
 	effect->callback = effRappaMain;
-#ifdef MUST_MATCH
 	tmp = float_6p2832_8041faf8 * yaw;
-#else
-	theta = float_6p2832_8041faf8 * yaw / float_360_8041fb04;
-#endif
 	data->type = type;
 	data->position.x = x;
 	data->position.y = y;
@@ -93,25 +86,17 @@ EffectEntry* effRappaN64Entry(s32 type, s32 count, f32 x, f32 y, f32 z, f32 yaw,
 
 	p = data + 1;
 	for (i = 1; i < count + 1; i++, p++) {
-#ifdef MUST_MATCH
 		randValue = (f32)(rand() % 10);
 		speed = randValue * float_0p25_8041fb00 + float_5_8041fafc;
 		theta = tmp / float_360_8041fb04;
-#else
-		speed = (f32)(rand() % 10) * float_0p25_8041fb00 + float_5_8041fafc;
-#endif
 		p->type = type;
 		p->position.x = x;
 		p->position.y = y;
 		p->position.z = z;
 		sinTheta = (f32)sin(theta);
 		phi = float_6p2832_8041faf8 * (pitch + (f32)((i & 2) * (i / 2) * 4)) / float_360_8041fb04;
-#ifdef MUST_MATCH
 		cosPhi = (f32)cos(phi);
 		p->velX = cosPhi * sinTheta;
-#else
-		p->velX = (f32)cos(phi) * sinTheta;
-#endif
 		p->velY = (f32)sin(phi);
 		p->velZ = (f32)cos(phi) * (f32)cos(theta);
 		p->speed = speed;
