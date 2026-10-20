@@ -9476,12 +9476,11 @@ and ext_fan_main use `MARIO_MOTION_HAMMER`/`HAMMER_2` (0x12/0x13) and `PARTY_MEM
 (`texBuf`, `captured`, eased `scale`/`offsetX`/`offsetY` with their targets, `frame`, `useNoise`, `noiseBuf`);
 KyakuEntry follows rsh_05's MoamoaGroup (#885): `enabled` (always 1 here), `cycleFrames`, `firstPose`, `numPoses`;
 KyakuState `cycleStart`. starstone_sound_onoff/evt_boss_stone_r and eff_pos go through `effStarStoneData` and
-`effPokopiPchargeData` instead of byte offsets; _firstattack_setting writes FieldBattleData `field_10` and
-`field_14` instead of `(u8*)fbat + 0x10/0x14/0x1C`. evt_yuunpc and evt_yuuranking unchanged. Review: removed two
+`effPokopiPchargeData` instead of byte offsets (effStarStoneData `flags` bit 4, `rotY`); _firstattack_setting
+writes FieldBattleData `firstAttackKind` and `field_14` instead of `(u8*)fbat + 0x10/0x14/0x1C`. evt_yuunpc and evt_yuuranking unchanged. Review: removed two
 committed `.c-e` sed backups, renamed KyakuEntry `poseCount` -> `numPoses` and named `enabled` to match MoamoaGroup,
 tightened the gon_03 flag and idleCount comments. Natural compile of all four files is clean. Index 54.714 -> 54.363.
-Open: tou_03 still reads `effStarStoneData.field_0x4`/`field_0x1C` and FieldBattleData `field_10`/`field_14[8]`;
-take the names from n9-q-starstone (0x4 `flags`, 0x1C `rotY`) and n9-q-muj (0x10 `firstAttackKind`) once they land.
+Open: FieldBattleData 0x14/0x1C (`field_14`, `field_14[8]`),
 DemoWork `field_0x00`, ScreenWork `field_0x28` (set to -1, otherwise unread), FanPose `field_0x6`/`0x38`-`0x40`/
 `0x46`. The next shared-struct target is ExtPose `field_0x4` (yaw) and `field_0x10` (pose/frame index), which
 gon_03, tou_02, tou_03, rsh_05 and the other ext users write (about 20 REL sources).

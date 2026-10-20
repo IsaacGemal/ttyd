@@ -4505,10 +4505,10 @@ s32 starstone_sound_onoff(EventEntry* event, BOOL isFirstCall) {
     EffectEntry* effect = itemNameToPtr("stone")->effect;
     if (effect != NULL) {
         if (val == 0) {
-            ((effStarStoneData*)effect->userdata)->field_0x4 &= ~4;
+            ((effStarStoneData*)effect->userdata)->flags &= ~4;
         }
         if (val == 1) {
-            ((effStarStoneData*)effect->userdata)->field_0x4 |= 4;
+            ((effStarStoneData*)effect->userdata)->flags |= 4;
         }
     }
     return EVT_RETURN_DONE;
@@ -4519,7 +4519,7 @@ s32 evt_boss_stone_r(EventEntry* event, BOOL isFirstCall) {
     EffectEntry* effect = itemNameToPtr("stone")->effect;
     f32 value;
     value = evtGetFloat(event, args[0]);
-    ((effStarStoneData*)effect->userdata)->field_0x1C = value;
+    ((effStarStoneData*)effect->userdata)->rotY = value;
     return EVT_RETURN_DONE;
 }
 
