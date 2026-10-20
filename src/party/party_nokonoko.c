@@ -186,6 +186,8 @@ void nokonoko_use_post(PartyEntry* party) {
     *(s32*)((u8*)party + 0x180) = 0;
 }
 
+// The `NKF(0x10C) = revise360(50.0f * f2 + NKF(0x10C))` updates stay raw: `party->field_10C` there
+// schedules the add differently.
 #define NKF(off) (*(f32*)((u8*)party + (off)))
 #define NKS(off) (*(s32*)((u8*)party + (off)))
 #define NKM(off) (*(f32*)((u8*)mario + (off)))
@@ -270,7 +272,7 @@ void nokonoko_use(PartyEntry* party) {
         party->jumpPara1 = 0.0f;
         party->dir = angleABf(party->position.x, party->position.z, party->targetPos.x, party->targetPos.z);
         party->speed = distABf(party->position.x, party->position.z, party->targetPos.x, party->targetPos.z) / (f32)party->timer;
-        NKF(0x10C) = revise360(45.0f + NKF(0x10C));
+        party->field_10C = revise360(45.0f + party->field_10C);
         party->useMotionId = 1;
         marioChgSmallJumpMotion();
         mario->trigFlags |= 0x20000;
@@ -282,7 +284,7 @@ void nokonoko_use(PartyEntry* party) {
             party->useMotionId = 0x46;
             goto L_800CC620;
         }
-        NKF(0x10C) = revise360(45.0f + NKF(0x10C));
+        party->field_10C = revise360(45.0f + party->field_10C);
         party->position.x += (party->targetPos.x - party->position.x) / (f32)party->timer;
         party->position.y += (party->targetPos.y - party->position.y) / (f32)party->timer;
         party->position.z += (party->targetPos.z - party->position.z) / (f32)party->timer;
@@ -292,7 +294,7 @@ void nokonoko_use(PartyEntry* party) {
         party->position = party->targetPos;
         party->speed = 0.0f;
         party->field_110 = mario->dispReqDir;
-        NKF(0x10C) = mario->dispReqDir;
+        party->field_10C = mario->dispReqDir;
         party->useMotionId = 2;
         partyChgPose(party, NK_STR(0x20, "PNK_A_1"));
         /* fallthrough */
@@ -570,7 +572,7 @@ L_800CC620:
         f2 = (party->tail.koops.dashing != 0) ? 0.2f : 0.1f;
 #ifdef MUST_MATCH
         // Volatile re-read of the speed, as retail reloads it after the f3/f2 setup.
-        party->speed = f3 * f2 + *(volatile f32*)((u8*)party + 0x104);
+        party->speed = f3 * f2 + *(volatile f32*)&party->speed;
 #else
         party->speed = f3 * f2 + party->speed;
 #endif
@@ -649,7 +651,7 @@ L_800CC620:
         f2 = (party->tail.koops.dashing != 0) ? 0.2f : 0.1f;
 #ifdef MUST_MATCH
         // Volatile re-read of the speed, as retail reloads it after the f3/f2 setup.
-        party->speed = f3 * f2 + *(volatile f32*)((u8*)party + 0x104);
+        party->speed = f3 * f2 + *(volatile f32*)&party->speed;
 #else
         party->speed = f3 * f2 + party->speed;
 #endif
@@ -962,7 +964,7 @@ L_800CCD8C:
         }
         if (party->groundHit != NULL) {
             party->field_110 = mario->dispReqDir;
-            NKF(0x10C) = NKF(0x110);
+            party->field_10C = party->field_110;
             if (((hitGetAttr((HitEntry*)party->groundHit) >> 9) & 1) == 0) {
                 party->useMotionId = 0x72;
                 party->timer = 30;
