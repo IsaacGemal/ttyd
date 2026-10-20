@@ -8934,3 +8934,28 @@ them; stageSize.y is the stage object spawn height, stageSize.z the depth up to 
 `pos`/`rot`/`scale`/`color`, and ScreenWork (0x2C, `_mapAlloc(sizeof(ScreenWork))`) `texBuffer`, `captured`,
 eased `scale`/`offsetX`/`offsetY` with targets, `tick` and `noiseMode`; its never-read 0x28 stays `field_0x28`.
 fadedrv.c 189.6 -> 18.0 per kLOC (worker's measurement before review).
+### Readability: effects, group 5 (2026-10-19, Claude Haiku 5.5, n9-q-eff5; reviewed by Claude Opus 5.5)
+
+Work structs named in eff_snowman_n64 (`frame`, `alpha`, `rotY`, `offX/Y/Z`, `velX/Y/Z`, `hScale`/`vScale` from the
+hscale tables, `gravity`, `animIdx`, `bounceCount`), eff_crystal_n64 (`timer`, `variant`, `tev0R/G/B` + `alpha` for
+GX_TEVREG0, `scaleStep`, `camId`), eff_broken_barrier_n64 and eff_fire_dust_n64 (same 0x6C layout, same names:
+`spreadXZ`/`spreadY`, `velX/Y/Z` eased toward `velTargetX/Y/Z`, `cycle` indexing scale_data, `rotZ`, `tev1R/G/B/A`
+for GX_TEVREG1 and `tev0R/G/B` for GX_TEVREG0, all read from the base element), eff_flame_n64 (`lagX/Y/Z`,
+`scaleX/Y` and `baseScale`, `scrollU/V` and `scroll2U/V` with `...Speed` eased at 0.02 toward `...SpeedTarget`;
+both pairs translate GX_TEXMTX1, one per quad; `tev0Rgb`/`tev1Rgba`) and eff_fukidashi (`type`, `offset`,
+`angleBase`, `height`, `spinY`, `tiltZ`, `timer`, `animFrame`, `animCell`, `number`, `duration`, `target`, `alpha`,
+`camId`, `phase`; `camId` also renamed in the usu/win evt_lect copies). Entry params named for crystal, fire_dust
+and flame. GX literals use their enums (0x7D is `GX_PTIDENTITY`, 0x1E/0x21 `GX_TEXMTX0/1`, GXSetChanCtrl's light
+mask 1 `GX_LIGHT0`, 0 `GX_LIGHT_NULL`). Review: every swap checked by value and enum type against GXEnum.h,
+including the non-MUST_MATCH `#else` branches (none of the swapped lines sits in one; flame's natural-build
+GXSetTevColor pair is TEVREG0/TEVREG1 as in its MUST_MATCH helpers). Fixed in review: barrier/fire_dust 0x10/0x14
+shared names (`spreadX` vs `radius`/`height`), TEV colour fields renamed after their registers (`base*`/`color*`
+did not say which register they load), fukidashi `duration` comment had the two anim tables swapped, `target`
+sentinels spelled out (-2 partner, -3 extra party member, NULL absolute), fukidashi 0x2C back to `field_0x2C`
+(never read), flame scroll comments (both go to GX_TEXMTX1), fukidashi's remaining PNMTX literals.
+Index 64.833 -> 63.884.
+Open: fukidashi's entry params are still `a`..`i`; `field_0x50` (fukidashi), `field_0x64`/`field_0x68`
+(barrier/fire_dust, written each frame, never read) and snowman's 0x18-0x20 have no reader. flame's `lagX/Y/Z` and
+snowman's `alpha`/`vScale` are written but never read (snowman's Disp is empty). crystal's Disp branches on `type`
+while Main uses `variant`; barrier and fire_dust load GX_TEVREG1 but their single TEV stage never reads C1/A1.
+barrier keeps u32 colour fields where fire_dust has s32.

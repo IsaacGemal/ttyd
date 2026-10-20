@@ -366,43 +366,43 @@ void calc_pos(effFukidashiData* data, s32 index) {
 	temp.z = -(f32)cos(MTXDegToRad(cam->viewYaw));
 	axis = temp;
 
-	PSMTXRotAxisRad(mtx, &axis, MTXDegToRad(-(data->field_0x1C - 20.0f + (f32)(index * 20))));
+	PSMTXRotAxisRad(mtx, &axis, MTXDegToRad(-(data->angleBase - 20.0f + (f32)(index * 20))));
 
-	if ((s32)data->field_0x44 == -1) {
+	if ((s32)data->target == -1) {
 		mario = marioGetPtr();
-		data->position.x = mario->position.x + data->field_0x10.x + mtx[0][1] * (16.0f + data->field_0x20);
-		data->position.y = mario->position.y + data->field_0x10.y + mtx[1][1] * (16.0f + data->field_0x20);
-		data->position.z = mario->position.z + data->field_0x10.z + mtx[2][1] * (16.0f + data->field_0x20);
-	} else if ((s32)data->field_0x44 == -2) {
+		data->position.x = mario->position.x + data->offset.x + mtx[0][1] * (16.0f + data->height);
+		data->position.y = mario->position.y + data->offset.y + mtx[1][1] * (16.0f + data->height);
+		data->position.z = mario->position.z + data->offset.z + mtx[2][1] * (16.0f + data->height);
+	} else if ((s32)data->target == -2) {
 		party = partyGetPtr(marioGetPartyId());
 		if (party == NULL) {
 			goto end;
 		}
-		data->position.x = party->position.x + data->field_0x10.x + mtx[0][1] * (16.0f + data->field_0x20);
-		data->position.y = party->position.y + data->field_0x10.y + mtx[1][1] * (16.0f + data->field_0x20);
-		data->position.z = party->position.z + data->field_0x10.z + mtx[2][1] * (16.0f + data->field_0x20);
-	} else if ((s32)data->field_0x44 == -3) {
+		data->position.x = party->position.x + data->offset.x + mtx[0][1] * (16.0f + data->height);
+		data->position.y = party->position.y + data->offset.y + mtx[1][1] * (16.0f + data->height);
+		data->position.z = party->position.z + data->offset.z + mtx[2][1] * (16.0f + data->height);
+	} else if ((s32)data->target == -3) {
 		party = partyGetPtr(marioGetExtraPartyId());
 		if (party == NULL) {
 			goto end;
 		}
-		data->position.x = party->position.x + data->field_0x10.x + mtx[0][1] * (16.0f + data->field_0x20);
-		data->position.y = party->position.y + data->field_0x10.y + mtx[1][1] * (16.0f + data->field_0x20);
-		data->position.z = party->position.z + data->field_0x10.z + mtx[2][1] * (16.0f + data->field_0x20);
-	} else if (data->field_0x44) {
-		mario = (MarioWork*)data->field_0x44;
-		data->position.x = mario->position.x + data->field_0x10.x + mtx[0][1] * (16.0f + data->field_0x20);
-		data->position.y = mario->position.y + data->field_0x10.y + mtx[1][1] * (16.0f + data->field_0x20);
-		data->position.z = mario->position.z + data->field_0x10.z + mtx[2][1] * (16.0f + data->field_0x20);
+		data->position.x = party->position.x + data->offset.x + mtx[0][1] * (16.0f + data->height);
+		data->position.y = party->position.y + data->offset.y + mtx[1][1] * (16.0f + data->height);
+		data->position.z = party->position.z + data->offset.z + mtx[2][1] * (16.0f + data->height);
+	} else if (data->target) {
+		mario = (MarioWork*)data->target;
+		data->position.x = mario->position.x + data->offset.x + mtx[0][1] * (16.0f + data->height);
+		data->position.y = mario->position.y + data->offset.y + mtx[1][1] * (16.0f + data->height);
+		data->position.z = mario->position.z + data->offset.z + mtx[2][1] * (16.0f + data->height);
 	} else {
-		data->position.x = data->field_0x10.x + mtx[0][1] * (16.0f + data->field_0x20);
-		data->position.y = data->field_0x10.y + mtx[1][1] * (16.0f + data->field_0x20);
-		data->position.z = data->field_0x10.z + mtx[2][1] * (16.0f + data->field_0x20);
+		data->position.x = data->offset.x + mtx[0][1] * (16.0f + data->height);
+		data->position.y = data->offset.y + mtx[1][1] * (16.0f + data->height);
+		data->position.z = data->offset.z + mtx[2][1] * (16.0f + data->height);
 	}
 
 end:
-	data->field_0x28 = data->field_0x1C - 20.0f + (f32)(index * 20);
-	data->field_0x2C = 0.5f * (data->field_0x20 / 12.0f) + 0.5f;
+	data->tiltZ = data->angleBase - 20.0f + (f32)(index * 20);
+	data->field_0x2C = 0.5f * (data->height / 12.0f) + 0.5f;
 }
 
 // This unit is built with pool_data on: MWCC reaches all of its .rodata through one base register
@@ -430,52 +430,52 @@ EffectEntry* effFukidashiEntry(s32 a, s32 b, s32 c, s32 d, f32 e, f32 f, f32 g, 
 	entry->userdata = data;
 	entry->callback = effFukidashiMain;
 
-	data->field_0x0 = a;
-	data->field_0x3C = b;
+	data->type = a;
+	data->number = b;
 	if (d < 0) {
 		d = 10000;
 	}
-	data->field_0x40 = d;
-	data->field_0x30 = d;
-	data->field_0x34 = 0;
-	data->field_0x44 = (void*)c;
-	data->field_0x24 = 0.0f;
-	data->field_0x48 = 0xFF;
-	data->field_0x4C = 4;
-	data->field_0x10.x = e;
-	data->field_0x10.y = 3.0f + f;
-	data->field_0x10.z = g;
-	data->field_0x1C = i;
-	data->field_0x20 = h;
-	data->field_0x54 = 0;
+	data->duration = d;
+	data->timer = d;
+	data->animFrame = 0;
+	data->target = (void*)c;
+	data->spinY = 0.0f;
+	data->alpha = 0xFF;
+	data->camId = CAMERA_3D;
+	data->offset.x = e;
+	data->offset.y = 3.0f + f;
+	data->offset.z = g;
+	data->angleBase = i;
+	data->height = h;
+	data->phase = 0;
 
 	calc_pos(data, 1);
 
 	if (a == 6) {
-		data->field_0x24 = -450.0f;
+		data->spinY = -450.0f;
 	}
 
-	if ((s32)data->field_0x44 == -1) {
+	if ((s32)data->target == -1) {
 		MarioWork* mario = marioGetPtr();
 		e += mario->position.x;
 		f += mario->position.y;
 		g += mario->position.z;
-	} else if ((s32)data->field_0x44 == -2) {
+	} else if ((s32)data->target == -2) {
 		PartyEntry* party = partyGetPtr(marioGetPartyId());
 		if (party != NULL) {
 			e += party->position.x;
 			f += party->position.y;
 			g += party->position.z;
 		}
-	} else if ((s32)data->field_0x44 == -3) {
+	} else if ((s32)data->target == -3) {
 		PartyEntry* party = partyGetPtr(marioGetExtraPartyId());
 		if (party != NULL) {
 			e += party->position.x;
 			f += party->position.y;
 			g += party->position.z;
 		}
-	} else if (data->field_0x44 != NULL) {
-		MarioWork* mario = (MarioWork*)data->field_0x44;
+	} else if (data->target != NULL) {
+		MarioWork* mario = (MarioWork*)data->target;
 		e = mario->position.x;
 		f = mario->position.y;
 		g = mario->position.z;
@@ -531,71 +531,71 @@ void effFukidashiMain(EffectEntry* effect) {
 	s32 anim;
 
 	disp = initializeVec(&data->position);
-	type = data->field_0x0;
+	type = data->type;
 
-	if (data->field_0x40 == 0) {
-		anim = ((s8*)anim_data_table[type])[data->field_0x34 / 2];
+	if (data->duration == 0) {
+		anim = ((s8*)anim_data_table[type])[data->animFrame / 2];
 	} else {
-		anim = ((s8*)anim_data_table_2[type])[data->field_0x34 / 2];
+		anim = ((s8*)anim_data_table_2[type])[data->animFrame / 2];
 	}
-	data->field_0x34++;
-	data->field_0x38 = anim;
+	data->animFrame++;
+	data->animCell = anim;
 
 	if (anim < 0) {
 		if (anim == -1) {
 			effDelete(effect);
 			return;
 		}
-		data->field_0x34 = (-10 - anim) * 2;
-		if (data->field_0x40 == 0) {
-			anim = ((s8*)anim_data_table[type])[data->field_0x34 / 2];
+		data->animFrame = (-10 - anim) * 2;
+		if (data->duration == 0) {
+			anim = ((s8*)anim_data_table[type])[data->animFrame / 2];
 		} else {
-			anim = ((s8*)anim_data_table_2[type])[data->field_0x34 / 2];
+			anim = ((s8*)anim_data_table_2[type])[data->animFrame / 2];
 		}
-		data->field_0x34++;
-		data->field_0x38 = anim;
+		data->animFrame++;
+		data->animCell = anim;
 	}
 
 	if (type == 6) {
-		switch (data->field_0x54) {
+		switch (data->phase) {
 			case 0:
-				data->field_0x24 += 22.5f;
-				if (data->field_0x24 >= 0.0f) {
-					data->field_0x24 = 0.0f;
-					data->field_0x54++;
+				data->spinY += 22.5f;
+				if (data->spinY >= 0.0f) {
+					data->spinY = 0.0f;
+					data->phase++;
 				}
 				break;
 			case 0x78:
-				data->field_0x24 -= 9.0f;
-				if (data->field_0x24 <= -90.0f) {
+				data->spinY -= 9.0f;
+				if (data->spinY <= -90.0f) {
 					effDelete(effect);
 					return;
 				}
 				break;
 			default:
-				data->field_0x54++;
+				data->phase++;
 				break;
 		}
 	} else {
-		if (data->field_0x40 > 0) {
-			if (data->field_0x30 < 10000) {
-				data->field_0x30--;
+		if (data->duration > 0) {
+			if (data->timer < 10000) {
+				data->timer--;
 			}
-			if (data->field_0x30 < 0) {
+			if (data->timer < 0) {
 				effDelete(effect);
 				return;
 			}
 		}
 	}
 
-	if (data->field_0x44) {
+	if (data->target) {
 		calc_pos(data, 1);
 	}
 
-	if (data->field_0x0 == 4) {
-		dispEntry(data->field_0x4C, dispCalcZ(&disp), 2, effFukidashiDisp, effect);
+	if (data->type == 4) {
+		dispEntry(data->camId, dispCalcZ(&disp), 2, effFukidashiDisp, effect);
 	} else {
-		dispEntry(data->field_0x4C, dispCalcZ(&disp), 8, effFukidashiDisp, effect);
+		dispEntry(data->camId, dispCalcZ(&disp), 8, effFukidashiDisp, effect);
 	}
 }
 
@@ -624,7 +624,7 @@ static inline GXColor fukidashiColor(u8 a, GXColor c) {
 //    GXSet* argument (no separate `color` local). That makes the compiler reserve the by-value call
 //    argument slot first and the source copy below it, so the colours land as the original's
 //    interleaved 8-byte [source,copy] pairs instead of two 4-byte banks.
-//  - loading `cam = camGetPtr(camId)` before `alpha = data->field_0x48` makes the compiler hoist the
+//  - loading `cam = camGetPtr(camId)` before `alpha = data->alpha` makes the compiler hoist the
 //    .data base `lis r5, lbl_8036BEA0@ha` ahead of the userdata load (`lwz r26, 0xc(r4)`), as retail;
 //  - computing `count = 1` before the `mapSetMaterialFog()` call matches retail's `li r23, 0x1`;
 //  - the display-list loop lives in its own `static inline` (MWCC colours a loop's induction variables
@@ -659,14 +659,14 @@ void effFukidashiDisp(CameraId camId, void* param) {
 	char buf[0x20];
 
 	cam = camGetPtr(camId);
-	alpha = data->field_0x48;
+	alpha = data->alpha;
 	count = 1;
 	mapSetMaterialFog();
 
-	if (data->field_0x24 != 0.0f) {
+	if (data->spinY != 0.0f) {
 		count = 2;
 	}
-	if (data->field_0x0 == 2) {
+	if (data->type == 2) {
 		count = 2;
 	}
 
@@ -680,11 +680,11 @@ void effFukidashiDisp(CameraId camId, void* param) {
 		PSMTXScale(m3, 0.8f, 0.8f, 0.8f);
 		PSMTXConcat(m2, m3, m2);
 		PSMTXScale(m3, 1.0f, 0.8f, 1.0f);
-		PSMTXRotRad(m4, 'z', MTXDegToRad(data->field_0x28));
+		PSMTXRotRad(m4, 'z', MTXDegToRad(data->tiltZ));
 		PSMTXConcat(m2, m3, m3);
 		PSMTXConcat(m3, m4, m5);
 		PSMTXConcat(cam->view, m5, m5);
-		GXSetCurrentMtx(0);
+		GXSetCurrentMtx(GX_PNMTX0);
 		if (i == 0) {
 			GXSetCullMode(GX_CULL_BACK);
 		} else {
@@ -692,9 +692,9 @@ void effFukidashiDisp(CameraId camId, void* param) {
 		}
 
 		PSMTXIdentity(m0);
-		GXLoadTexMtxImm(m0, 0x1E, 1);
+		GXLoadTexMtxImm(m0, GX_TEXMTX0, GX_MTX2x4);
 		GXSetNumTevStages(1);
-		GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, 4);
+		GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR0A0);
 		GXSetTevOp(GX_TEVSTAGE0, GX_MODULATE);
 		GXSetBlendMode(GX_BM_BLEND, GX_BL_SRCALPHA, GX_BL_INVSRCALPHA, GX_LO_CLEAR);
 		GXSetZCompLoc(GX_TRUE);
@@ -706,9 +706,9 @@ void effFukidashiDisp(CameraId camId, void* param) {
 		GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_POS_XYZ, GX_F32, 0);
 		GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, GX_TEX_ST, GX_F32, 0);
 		GXSetNumChans(1);
-		GXSetChanCtrl(4, 0, 0, 0, 0, 2, 2);
+		GXSetChanCtrl(GX_COLOR0A0, GX_FALSE, GX_SRC_REG, GX_SRC_REG, GX_LIGHT_NULL, GX_DF_CLAMP, GX_AF_NONE);
 		GXSetNumTexGens(1);
-		GXSetTexCoordGen2(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, 0x1E, GX_FALSE, 0x7D);
+		GXSetTexCoordGen2(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_TEXMTX0, GX_FALSE, GX_PTIDENTITY);
 
 		for (j = 0; j < 2; j++) {
 			if (j == 0) {
@@ -717,10 +717,10 @@ void effFukidashiDisp(CameraId camId, void* param) {
 				GXSetChanMatColor(GX_COLOR0A0, fukidashiColor(alpha, *(GXColor*)&unk_80422ff8));
 				PSMTXTrans(m0, 1.3f, -1.3f, 0.0f);
 				PSMTXConcat(m5, m0, m0);
-				PSMTXRotRad(m6, 'y', MTXDegToRad(data->field_0x24));
+				PSMTXRotRad(m6, 'y', MTXDegToRad(data->spinY));
 				PSMTXConcat(m0, m6, m0);
-				GXLoadPosMtxImm(m0, 0);
-				GXSetCurrentMtx(0);
+				GXLoadPosMtxImm(m0, GX_PNMTX0);
+				GXSetCurrentMtx(GX_PNMTX0);
 			} else {
 				effGetTexObj(4, &tex);
 				GXLoadTexObj(&tex, GX_TEXMAP0);
@@ -731,10 +731,10 @@ void effFukidashiDisp(CameraId camId, void* param) {
 				}
 				PSMTXTrans(m0, 0.0f, 0.0f, 0.0f);
 				PSMTXConcat(m5, m0, m0);
-				PSMTXRotRad(m6, 'y', MTXDegToRad(data->field_0x24));
+				PSMTXRotRad(m6, 'y', MTXDegToRad(data->spinY));
 				PSMTXConcat(m0, m6, m0);
-				GXLoadPosMtxImm(m0, 0);
-				GXSetCurrentMtx(0);
+				GXLoadPosMtxImm(m0, GX_PNMTX0);
+				GXSetCurrentMtx(GX_PNMTX0);
 			}
 
 			GXBegin(GX_QUADS, GX_VTXFMT0, 4);
@@ -751,7 +751,7 @@ void effFukidashiDisp(CameraId camId, void* param) {
 		PSMTXScale(m8, 1.3f, 1.3f, 1.3f);
 		PSMTXConcat(m5, m8, m5);
 
-		switch (data->field_0x0) {
+		switch (data->type) {
 			case 0:
 			case 1:
 				GXSetNumTevStages(1);
@@ -760,28 +760,28 @@ void effFukidashiDisp(CameraId camId, void* param) {
 				GXSetTevAlphaOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
 				GXSetTevColorIn(GX_TEVSTAGE0, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ZERO, GX_CC_C0);
 				GXSetTevAlphaIn(GX_TEVSTAGE0, GX_CA_ZERO, GX_CA_A0, GX_CA_TEXA, GX_CA_ZERO);
-				switch (data->field_0x0) {
+				switch (data->type) {
 					case 0:
 						effGetTexObj(6, &tex);
 						GXLoadTexObj(&tex, GX_TEXMAP0);
 						PSMTXScale(m3, 0.16666667f, 1.0f, 1.0f);
-						PSMTXTrans(m0, (f32)data->field_0x38, 0.0f, 0.0f);
+						PSMTXTrans(m0, (f32)data->animCell, 0.0f, 0.0f);
 						PSMTXConcat(m3, m0, m0);
-						GXLoadTexMtxImm(m0, 0x1E, 1);
+						GXLoadTexMtxImm(m0, GX_TEXMTX0, GX_MTX2x4);
 						break;
 					case 1:
 						effGetTexObj(7, &tex);
 						GXLoadTexObj(&tex, GX_TEXMAP0);
 						PSMTXScale(m3, 0.25f, 1.0f, 1.0f);
-						PSMTXTrans(m0, (f32)data->field_0x38, 0.0f, 0.0f);
+						PSMTXTrans(m0, (f32)data->animCell, 0.0f, 0.0f);
 						PSMTXConcat(m3, m0, m0);
-						GXLoadTexMtxImm(m0, 0x1E, 1);
+						GXLoadTexMtxImm(m0, GX_TEXMTX0, GX_MTX2x4);
 						break;
 				}
 				GXSetTevColor(GX_TEVREG0, fukidashiColor(alphaA, *(GXColor*)&unk_80422ffc));
 				PSMTXTransApply(m5, m8, 1.0f, -1.0f, 0.0f);
-				GXLoadPosMtxImm(m8, 0);
-				if (data->field_0x0 == 0) {
+				GXLoadPosMtxImm(m8, GX_PNMTX0);
+				if (data->type == 0) {
 					GXBegin(GX_QUADS, GX_VTXFMT0, 4);
 					GXPosition3f32(-4.0f, 8.0f, 0.0f);
 					GXTexCoord2f32(0.0f, 0.0f);
@@ -807,8 +807,8 @@ void effFukidashiDisp(CameraId camId, void* param) {
 				} else {
 					GXSetTevColor(GX_TEVREG0, fukidashiColor(alphaB, *(GXColor*)&dat_8041c5bc));
 				}
-				GXLoadPosMtxImm(m5, 0);
-				if (data->field_0x0 == 0) {
+				GXLoadPosMtxImm(m5, GX_PNMTX0);
+				if (data->type == 0) {
 					GXBegin(GX_QUADS, GX_VTXFMT0, 4);
 					GXPosition3f32(-4.0f, 8.0f, 0.0f);
 					GXTexCoord2f32(0.0f, 0.0f);
@@ -833,13 +833,13 @@ void effFukidashiDisp(CameraId camId, void* param) {
 
 			case 2:
 				GXSetNumTevStages(1);
-				GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD_NULL, GX_TEXMAP_NULL, 4);
+				GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD_NULL, GX_TEXMAP_NULL, GX_COLOR0A0);
 				GXSetTevColorOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
 				GXSetTevAlphaOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
 				GXSetTevColorIn(GX_TEVSTAGE0, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ZERO, GX_CC_RASC);
 				GXSetTevAlphaIn(GX_TEVSTAGE0, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_RASA);
 				GXSetNumChans(1);
-				GXSetChanCtrl(4, GX_TRUE, GX_SRC_REG, GX_SRC_VTX, 1, 2, 2);
+				GXSetChanCtrl(GX_COLOR0A0, GX_TRUE, GX_SRC_REG, GX_SRC_VTX, GX_LIGHT0, GX_DF_CLAMP, GX_AF_NONE);
 				GXSetChanAmbColor(GX_COLOR0A0, fukidashiColor(alphaB, *(GXColor*)&dat_8041c5c0));
 				v2 = (Vec){ 0.0f, 0.0f, 0.0f };
 				v2.x = data->position.x + 10.0f * (f32)cos((f32)gp->retraceCount / 10.0f);
@@ -859,9 +859,9 @@ void effFukidashiDisp(CameraId camId, void* param) {
 				PSMTXConcat(m8, m7, m8);
 				PSMTXScale(m7, 0.15f, 0.15f, 0.15f);
 				PSMTXConcat(m8, m7, m8);
-				GXLoadPosMtxImm(m8, 0);
+				GXLoadPosMtxImm(m8, GX_PNMTX0);
 				PSMTXInvXpose(m8, m9);
-				GXLoadNrmMtxImm(m9, 0);
+				GXLoadNrmMtxImm(m9, GX_PNMTX0);
 				GXSetZMode(GX_FALSE, GX_LEQUAL, GX_FALSE);
 				GXClearVtxDesc();
 				GXSetVtxDesc(GX_VA_POS, GX_INDEX8);
@@ -877,10 +877,10 @@ void effFukidashiDisp(CameraId camId, void* param) {
 				break;
 
 			case 3:
-				if (data->field_0x3C >= 0 && data->field_0x3C <= 0x63) {
-					sprintf(buf, "%d", data->field_0x3C);
+				if (data->number >= 0 && data->number <= 0x63) {
+					sprintf(buf, "%d", data->number);
 					width = 10.0f + (f32)FontGetMessageWidth(buf);
-					PSMTXRotRad(m6, 'y', MTXDegToRad(data->field_0x24));
+					PSMTXRotRad(m6, 'y', MTXDegToRad(data->spinY));
 					PSMTXScale(m3, 0.5f, 0.5f, 0.5f);
 					PSMTXTrans(m0, -width / 2.0f, -10.0f, 0.0f);
 					PSMTXConcat(m2, m6, m8);
@@ -906,7 +906,7 @@ void effFukidashiDisp(CameraId camId, void* param) {
 
 			case 4:
 				PSMTXIdentity(m0);
-				GXLoadTexMtxImm(m0, 0x1E, 1);
+				GXLoadTexMtxImm(m0, GX_TEXMTX0, GX_MTX2x4);
 				GXSetNumTevStages(1);
 				GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR_NULL);
 				GXSetTevColorOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
@@ -916,9 +916,9 @@ void effFukidashiDisp(CameraId camId, void* param) {
 				GXSetTevColor(GX_TEVREG0, fukidashiColor(alphaB, *(GXColor*)&unk_80423000));
 				effGetTexObj(8, &tex);
 				GXLoadTexObj(&tex, GX_TEXMAP0);
-				for (j = 0; j < data->field_0x38; j++) {
+				for (j = 0; j < data->animCell; j++) {
 					PSMTXTransApply(m5, m8, -5.0f + 5.0f * (f32)j, 0.0f, 0.0f);
-					GXLoadPosMtxImm(m8, 0);
+					GXLoadPosMtxImm(m8, GX_PNMTX0);
 					GXBegin(GX_QUADS, GX_VTXFMT0, 4);
 					GXPosition3f32(-3.0f, 3.0f, 0.0f);
 					GXTexCoord2f32(0.0f, 0.0f);
@@ -941,11 +941,11 @@ void effFukidashiDisp(CameraId camId, void* param) {
 				effGetTexObj(9, &tex);
 				GXLoadTexObj(&tex, GX_TEXMAP0);
 				PSMTXScale(m3, 0.25f, 1.0f, 1.0f);
-				PSMTXTrans(m0, (f32)data->field_0x38, 0.0f, 0.0f);
+				PSMTXTrans(m0, (f32)data->animCell, 0.0f, 0.0f);
 				PSMTXConcat(m3, m0, m3);
-				GXLoadTexMtxImm(m3, 0x1E, 1);
+				GXLoadTexMtxImm(m3, GX_TEXMTX0, GX_MTX2x4);
 				GXSetTevColor(GX_TEVREG0, fukidashiColor(alphaB, *(GXColor*)&unk_80423004));
-				GXLoadPosMtxImm(m5, 0);
+				GXLoadPosMtxImm(m5, GX_PNMTX0);
 				GXBegin(GX_QUADS, GX_VTXFMT0, 4);
 				GXPosition3f32(-7.0f, 7.0f, 0.0f);
 				GXTexCoord2f32(0.0f, 0.0f);
@@ -960,10 +960,10 @@ void effFukidashiDisp(CameraId camId, void* param) {
 			case 6:
 				lang = gp->retraceCount % 15;
 				PSMTXIdentity(m0);
-				GXLoadTexMtxImm(m0, 0x1E, 1);
+				GXLoadTexMtxImm(m0, GX_TEXMTX0, GX_MTX2x4);
 				PSMTXTrans(m0, 0.0f, ((f32*)chuchu_dt)[lang * 3 + 0], 0.0f);
 				PSMTXScale(m3, 0.7f * ((f32*)chuchu_dt)[lang * 3 + 1], 0.7f * ((f32*)chuchu_dt)[lang * 3 + 2], 0.7f);
-				PSMTXRotRad(m6, 'y', MTXDegToRad(data->field_0x24));
+				PSMTXRotRad(m6, 'y', MTXDegToRad(data->spinY));
 				PSMTXConcat(m0, m6, m0);
 				PSMTXConcat(m0, m3, m0);
 				GXSetNumTevStages(1);
@@ -978,7 +978,7 @@ void effFukidashiDisp(CameraId camId, void* param) {
 					GXSetTevColor(GX_TEVREG0, fukidashiColor(alphaA, *(GXColor*)&unk_80423008));
 					PSMTXTransApply(m5, m8, 1.0f, -1.0f, 0.0f);
 					PSMTXConcat(m8, m0, m8);
-					GXLoadPosMtxImm(m8, 0);
+					GXLoadPosMtxImm(m8, GX_PNMTX0);
 					GXBegin(GX_QUADS, GX_VTXFMT0, 4);
 					GXPosition3f32(-8.0f, 16.0f, 0.0f);
 					GXTexCoord2f32(0.0f, 0.0f);
@@ -994,7 +994,7 @@ void effFukidashiDisp(CameraId camId, void* param) {
 						GXSetTevColor(GX_TEVREG0, fukidashiColor(alphaB, *(GXColor*)&dat_8041c5d4));
 					}
 					PSMTXConcat(m5, m0, m8);
-					GXLoadPosMtxImm(m8, 0);
+					GXLoadPosMtxImm(m8, GX_PNMTX0);
 					GXBegin(GX_QUADS, GX_VTXFMT0, 4);
 					GXPosition3f32(-8.0f, 16.0f, 0.0f);
 					GXTexCoord2f32(0.0f, 0.0f);
