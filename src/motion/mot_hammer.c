@@ -241,8 +241,8 @@ void mot_hammer(void) {
                               ? 180.f
                               : float_0_8041a9a8;
     mario->dispReqDir = mario->unk1A8;
-    M_F32(mario, 0x19C) = toMovedir(M_F32(mario, 0x2A4));
-    mario->directionView = M_F32(mario, 0x19C);
+    mario->moveDir = toMovedir(M_F32(mario, 0x2A4));
+    mario->directionView = mario->moveDir;
     rp = 0;
     if (mario->flags & 0x800) {
         s32 b = mario->multiTimer;
