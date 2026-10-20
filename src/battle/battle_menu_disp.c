@@ -71,7 +71,7 @@ f32 kakutable[3][5] = {
 
 typedef struct BattleMenuDispEntry {
     s32 field_0x0;       // 0x0
-    s32 enabled;         // 0x4, 1: selectable (black label, icon at 0x10), otherwise greyed
+    s32 enabled;         // 0x4, 1: selectable (black label), otherwise greyed
     const char* label;   // 0x8
     u16 iconId;          // 0xC, 0 uses the default icon 0x18B
     u16 field_0xE;       // 0xE
