@@ -11013,3 +11013,14 @@ design: gor's sequences use those slots for their own roles. muj_00.h, muj_10.h 
 - Not touched: the `x1028`..`x104C` LogWin names (no raw offset), and the card/badge icon arrays.
 
 Verified: tower build recreates build/G8MJ01/ok (1231/1231 files matched); natural (no MUST_MATCH) compile of win_log.c with -maxerrors 50 returns 0. Index (tools/cleanup_index.py): win_log.c 292 -> 32 weighted (134.562 -> 14.753/kLOC); tree 23.362 -> 22.997 per kLOC (16623 -> 16363 weighted).
+### Readability: battle_seq_command goto removal (2026-10-20, Claude Haiku 5.5, n9-q-gotobseq)
+
+battle_seq_command.c: all 37 `goto` removed, no names changed (build stays matched, unit 100%). The index's goto
+count goes 485 -> 448 (file-level 37 -> 0); the headline index 23.307 -> 23.203 per kLOC.
+- ActMenuMain, WeaponSelectMenuMain: `goto end` inside the `while (BattleMenuKeyOKInACT)` body became `break`; the
+  `end:` label went (the loop's trailing `break` falls through to the same code).
+- WeaponMultiItemCancelCheckMain: the cursor-step chain that jumped to `after:` is wrapped in `do { ... } while (0);`
+  and its `goto after` became `break`.
+- OperationMenuMain, MultiItemMenuMain, ChangePartySelectMenuMain: the body of `if (BattleMenuKeyOKInACT(wp))` is
+  wrapped in `do { ... } while (0);` with `goto end` as `break`. Converting that `if` to `while (key) { ...; break; }`
+  instead changed the object (95.4-96.0% for these three), so the `do` form is the one that matches.
