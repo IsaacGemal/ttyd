@@ -877,7 +877,7 @@ s32 evt_mobj_tornadoswitch_red(EventEntry* event, BOOL isFirstCall) {
 #endif
 
 s32 mobj_timerswitch(MapObjectEntry* obj) {
-    MapObjectEntry* child = mobjNameToPtr((char*)((u8*)obj + 0x1B8));
+    MapObjectEntry* child = mobjNameToPtr(&obj->childName[0]);
 
     switch (obj->state) {
         case 0:
@@ -995,7 +995,7 @@ s32 evt_mobj_timerswitch(EventEntry* event, BOOL isFirstCall) {
     for (i = 0; i < 2; i++) {
         mobjEntry(names[i], asyncName);
         obj[i] = mobjNameToPtr(names[i]);
-        strcpy((char*)((u8*)obj[i] + 0x1B8), (i == 0) ? names[1] : names[0]);
+        strcpy(&obj[i]->childName[0], (i == 0) ? names[1] : names[0]);
         mobjSetPosition(names[i], xs[i], ys[i], zs[i]);
         obj[i]->update = mobj_timerswitch;
         obj[i]->eventCode = (s32*)eventCode;
@@ -1390,7 +1390,7 @@ s32 mobj_jumpstand_blue(MapObjectEntry* obj) {
                 gp->systemLevelFlags |= 0x10;
                 mobjRunEvent(obj, obj->eventCode);
                 if (obj->triggerFlag == 0x200000) {
-                    marioChgJumpStandMotion(*(f32*)((u8*)obj + 0x1AC));
+                    marioChgJumpStandMotion(obj->tiltAngle);
                 }
                 if (mario->characterId != 2) {
                     if (strcmp(obj->animName, str_802C3E98) == 0) {
@@ -1483,7 +1483,7 @@ s32 evt_mobj_jumpstand_blue(EventEntry* event, BOOL isFirstCall) {
     obj->flags |= 0x200000;
     obj->flagVar = flagVar;
     obj->state = 0;
-    *(f32*)((u8*)obj + 0x1AC) = f31;
+    obj->tiltAngle = f31;
     mobjCalcMtx(obj);
     return 2;
 }
@@ -4773,7 +4773,7 @@ s32 mobj_koopa_fireber_dodai_evt(MapObjectEntry* obj) {
         }
         PSMTXIdentity(mtx);
         PSMTXTransApply(mtx, mtx, -obj->position.x, -obj->position.y, -obj->position.z);
-        PSMTXRotRad(rotMtx, 'Z', 0.017453292f * *(f32*)((u8*)obj + 0x1AC));
+        PSMTXRotRad(rotMtx, 'Z', 0.017453292f * obj->tiltAngle);
         PSMTXConcat(rotMtx, mtx, mtx);
         PSMTXTransApply(mtx, mtx, obj->position.x, obj->position.y, obj->position.z);
         for (i = 0; i < *(s32*)((u8*)obj + 0x1A4); i++) {
@@ -4914,7 +4914,7 @@ s32 evt_mobj_koopa_fireber_dodai(EventEntry* event, BOOL isFirstCall) {
         f27 = 1.0f;
     }
     *(s32*)((u8*)obj + 0x1A4) = count;
-    *(f32*)((u8*)obj + 0x1AC) = (sign != 0) ? __fabsf(f27) : -__fabsf(f27);
+    obj->tiltAngle = (sign != 0) ? __fabsf(f27) : -__fabsf(f27);
     *(s32*)((u8*)obj + 0x1B4) = 0;
     y = 25.0f + y;
     z = 175.0f + z;
