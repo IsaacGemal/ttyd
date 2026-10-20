@@ -2160,7 +2160,7 @@ static void outSplineTableSet_Sub(BattleUnit* unit, s32 index, void* spline) {
     BtlUnit_GetPartsPtr(satellite, 1)->work[2] = (s32)spline;
 }
 
-// 100%: retail's second loop schedules the args+=2 before the second evtSetValue; the MUST_MATCH block reproduces that order.
+// 100%: retail's second loop schedules the args+=2 before the second evtSetValue, so the store reads args[-1].
 static USER_FUNC(barriern_wawawa_set_target) {
     s32 xs[12];
     s32 ys[10];
@@ -2184,16 +2184,8 @@ static USER_FUNC(barriern_wawawa_set_target) {
     for (count = 0; count < 5; count++) {
         n = irand(total);
         evtSetValue(event, args[0], xs[n]);
-#ifdef MUST_MATCH
-        {
-            s32* a = args;
-            args += 2;
-            evtSetValue(event, a[1], ys[n]);
-        }
-#else
-        evtSetValue(event, args[1], ys[n]);
         args += 2;
-#endif
+        evtSetValue(event, args[-1], ys[n]);
     }
     return EVT_RETURN_DONE;
 }

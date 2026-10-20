@@ -625,13 +625,9 @@ static void rankingControll(void) {
     *(s16*)entry[nAbove].score = 0;
 #endif
     for (i = 0; i < nBelow; i++) {
-#ifdef MUST_MATCH
-        // MUST_MATCH: MWCC reassociates the natural `nAbove + i + 1` to `nAbove + (i + 1)`; writing
-        // the `+ 1` first makes it emit the original's `(nAbove + i) + 1` grouping instead.
+        // `1 +` first: MWCC reassociates `nAbove + i + 1` to `nAbove + (i + 1)`, but the original
+        // groups it as `(nAbove + i) + 1`.
         j = 1 + nAbove + i;
-#else
-        j = nAbove + i + 1;
-#endif
         entry[j] = rank_wp->entries[below[i]];
     }
     memcpy(rank_wp->entries, entry, sizeof(RankEntry) * rank_wp->count);
@@ -1174,13 +1170,9 @@ static USER_FUNC(evt_tou_print_ranking) {
         psndSFXOn((const char*)5);
     }
     dwp->targetScroll = (f32)(dwp->page * 0xdc);
-#ifdef MUST_MATCH
-    // MUST_MATCH: retail folds this interpolation step to `* 0.125f`; the `+=` over `/ 8.0f` form is
-    // what makes MWCC keep 0.125 in f0 and the int-to-float temp in f2 (a literal `* 0.125f` swaps them).
+    // Retail folds this interpolation step to `* 0.125f`; the `+=` over `/ 8.0f` form is what makes
+    // MWCC keep 0.125 in f0 and the int-to-float temp in f2 (a literal `* 0.125f` swaps them).
     dwp->scroll += (dwp->targetScroll - dwp->scroll) / 8.0f;
-#else
-    dwp->scroll = (dwp->targetScroll - dwp->scroll) * 0.125f + dwp->scroll;
-#endif
     dispEntry((CameraId)8, 300.0f, 0, disp_proc, NULL);
     return EVT_RETURN_BLOCK;
 }
