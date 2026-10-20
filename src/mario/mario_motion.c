@@ -1147,8 +1147,8 @@ void mot_talk(void) {
         }
         {
             FieldBattleData* fbat = fbatGetPointer();
-            if (*(void**)((u8*)fbat + 0x4) != NULL) {
-                marioChgPose(*(const char**)((u8*)*(void**)((u8*)fbat + 0x4) + 0x10C));
+            if (fbat->talkNpc != NULL) {
+                marioChgPose(fbat->talkNpc->field_10C);
             }
         }
         if (strcmp(mario->animName, "M_I_2") == 0) {
@@ -1549,9 +1549,9 @@ void mot_shadow(void) {
         mario->multiTimer = 0;
         mario->currSubMotionId = 0;
         marioChgPose("M_S_1");
-        *(f32*)((u8*)mario + 0xBC) = 90.0f;
-        *(f32*)((u8*)mario + 0xC0) = 0.0f;
-        *(f32*)((u8*)mario + 0xC4) = 0.0f;
+        mario->dispRot.x = 90.0f;
+        mario->dispRot.y = 0.0f;
+        mario->dispRot.z = 0.0f;
     }
     switch (mario->currSubMotionId) {
     case 0:
@@ -1562,8 +1562,8 @@ void mot_shadow(void) {
     if (!(mario->buttonNew & (1 << 9))) {
         return;
     }
-    *(f32*)((u8*)mario + 0xBC) = 0.0f;
-    *(f32*)((u8*)mario + 0xC4) = 0.0f;
+    mario->dispRot.x = 0.0f;
+    mario->dispRot.z = 0.0f;
     mario->multiTimer = 0;
     mario = marioGetPtr();
     if (!(mario->flags & MARIO_FLAG_CHG_MOT_DISABLED)) {
