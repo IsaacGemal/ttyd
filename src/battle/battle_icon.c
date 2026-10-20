@@ -245,8 +245,6 @@ USER_FUNC(btlevtcmd_BtlIconSetFallAccel) {
 
 // `icon->fallAccel * (f32)count / 2.0f` (not `(f32)count * icon->fallAccel * 0.5f`)
 // is what makes MWCC pick the original's fmuls/fmadds register allocation.
-// The 0x2C/0x34 move-position reads after btlMovePos use a fresh base pointer to keep the
-// size optimiser from caching the two argument addresses (see the MUST_MATCH note on p).
 USER_FUNC(btlevtcmd_BtlIconJumpPosition) {
 	s32* args = event->args;
 	BattleIcon* icon;
@@ -255,16 +253,9 @@ USER_FUNC(btlevtcmd_BtlIconJumpPosition) {
 	f32 x, y, z;
 	f32 dy;
 	s32 count;
-#ifdef MUST_MATCH
-	// Match-only: computing x - vx into a local makes MWCC put the fsubs result in f2 and the named
+	// Computing x - vx into a local makes MWCC put the fsubs result in f2 and the named
 	// float_0 load in f0, as the original does; writing x - vx inline swaps those two registers.
 	f32 d;
-	// Match-only: a second, separately-created base pointer for the post-btlMovePos reads. Reading
-	// through the same base expression used by btlMovePos' arguments makes the -O4,s size optimiser
-	// cache both argument addresses in r29/r30 across the call; the fresh pointer keeps the
-	// original's `lfs f0, 0x2c(r31)` displacement form.
-	BattleIcon* p;
-#endif
 
 	index = evtGetValue(event, args[0]);
 	x = (f32)evtGetValue(event, args[1]);
@@ -272,9 +263,6 @@ USER_FUNC(btlevtcmd_BtlIconJumpPosition) {
 	z = (f32)evtGetValue(event, args[3]);
 	count = evtGetValue(event, args[4]);
 	icon = BtlIconGetPtr(index);
-#ifdef MUST_MATCH
-	p = icon;
-#endif
 	if (isFirstCall) {
 		event->blocked = 1;
 		if (count != 0) {
@@ -294,19 +282,11 @@ USER_FUNC(btlevtcmd_BtlIconJumpPosition) {
 		icon->moveStartPos.z = vz;
 		icon->moveAngle = angleABf(vx, vz, x, z);
 		icon->moveDist = distABf(vx, vz, x, z);
-#ifdef MUST_MATCH
 		d = x - vx;
 		if (d > float_0_8041e7a8) {
-#else
-		if (x - vx > float_0_8041e7a8) {
-#endif
 			icon->moveDirection = 1;
 		}
-#ifdef MUST_MATCH
 		else if (d < float_0_8041e7a8) {
-#else
-		else if (x - vx < float_0_8041e7a8) {
-#endif
 			icon->moveDirection = -1;
 		}
 		dy = y - vy;
@@ -330,16 +310,9 @@ USER_FUNC(btlevtcmd_BtlIconJumpPosition) {
 		icon->moveCurrentPos.y = icon->moveTargetPos.y;
 	}
 	btlMovePos(&icon->moveCurrentPos.x, &icon->moveCurrentPos.z, icon->moveSpeedXZ, icon->moveAngle);
-#ifdef MUST_MATCH
-	// Match-only: see the fresh-base-pointer comment above p's declaration.
-	icon->position.x = p->moveCurrentPos.x;
-	icon->position.y = p->moveCurrentPos.y;
-	icon->position.z = p->moveCurrentPos.z;
-#else
-	icon->position.x = *(f32*)((u8*)icon + 0x2C);
-	icon->position.y = *(f32*)((u8*)icon + 0x30);
-	icon->position.z = *(f32*)((u8*)icon + 0x34);
-#endif
+	icon->position.x = icon->moveCurrentPos.x;
+	icon->position.y = icon->moveCurrentPos.y;
+	icon->position.z = icon->moveCurrentPos.z;
 	icon->moveFrames = icon->moveFrames - 1;
 	if (icon->moveFrames <= 0) {
 		icon->position.x = icon->moveTargetPos.x;

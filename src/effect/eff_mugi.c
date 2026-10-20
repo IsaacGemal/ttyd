@@ -28,14 +28,12 @@ extern const f32 float_0_8041ca74;
 // 100%: initialises five smoke puffs. The original's callee-saved FPR band is
 // f19-f27 for the pooled constants and f28-f31 for the four arguments; MWCC only
 // colours it that way when the sin() result is held in a temp before the store
-// (see the MUST_MATCH block below).
+// (see the sinAngle temp below).
 EffectEntry* effMugiKemuriEntry(f32 x, f32 y, f32 z, f32 baseAngle) {
 	EffectEntry* entry = effEntry();
 	MugiKemuriWork* work;
 	f32 angle;
-#ifdef MUST_MATCH
 	f32 sinAngle;
-#endif
 	s32 i;
 
 	entry->type = "MugiKemuri";
@@ -69,16 +67,11 @@ EffectEntry* effMugiKemuriEntry(f32 x, f32 y, f32 z, f32 baseAngle) {
 		work->scaleSpeed = -3.9f;
 		angle = reviseAngle(work->rotY);
 		angle = 6.2831855f * angle / 360.0f;
-#ifdef MUST_MATCH
-		// Match-only: holding the sin() result in a temp first gives the original's
-		// callee-saved FPR allocation (args f28-f31, constants f19-f27); without it
-		// MWCC rotates the whole band by four (args f24-f27). The natural form is
-		// under #else.
+		// Holding the sin() result in a temp first gives the original's
+		// callee-saved FPR allocation (args f28-f31, constants f19-f27); storing it
+		// directly makes MWCC rotate the whole band by four (args f24-f27).
 		sinAngle = sin(angle);
 		work->sinA = sinAngle;
-#else
-		work->sinA = sin(angle);
-#endif
 		work->cosA = cos(angle);
 		work->animPose = -1;
 	}
@@ -138,7 +131,7 @@ EffectEntry* effMugiKemuri2Entry(s32 type, f32 x, f32 y, f32 z, f32 baseAngle, f
 
 // opt_common_subs off, for the rest of the file (the functions after this one need it too): with it on,
 // MWCC colours the rotX update block's FPRs f1/f0/f2 instead of the original's f2/f1/f0. The volatile reads in the
-// MUST_MATCH block below pin the prologue's load order.
+// MUST_MATCH volatile reads below pin the prologue's load order.
 #pragma opt_common_subs off
 void effMugiKemuriMain(EffectEntry* effect) {
 	MugiKemuriWork* work;
@@ -146,9 +139,7 @@ void effMugiKemuriMain(EffectEntry* effect) {
 	Vec disp;
 	Vec pos;
 	s32 i;
-#ifdef MUST_MATCH
 	s32 j;
-#endif
 	s32 inBattle;
 	BOOL anyActive;
 	const char* name;
@@ -171,12 +162,8 @@ void effMugiKemuriMain(EffectEntry* effect) {
 	if (effect->flags & 4) {
 		effect->flags &= ~4;
 		w = effect->userdata;
-#ifdef MUST_MATCH
 		// A separate index keeps i and w in the original's registers; reusing i swaps them.
 		for (j = 0; j < effect->count; j++, w++) {
-#else
-		for (i = 0; i < effect->count; i++, w++) {
-#endif
 			if (w->animPose != -1) {
 				animPoseRelease(w->animPose);
 			}
@@ -247,9 +234,7 @@ void effMugiKemuri2Main(EffectEntry* effect) {
 	Vec disp;
 	Vec pos;
 	s32 i;
-#ifdef MUST_MATCH
 	s32 j;
-#endif
 	BOOL anyActive;
 	s32 inBattle;
 	const char* name;
@@ -271,12 +256,8 @@ void effMugiKemuri2Main(EffectEntry* effect) {
 	if (effect->flags & 4) {
 		effect->flags &= ~4;
 		w = effect->userdata;
-#ifdef MUST_MATCH
 		// A separate index keeps i and w in the original's registers; reusing i swaps them.
 		for (j = 0; j < effect->count; j++, w++) {
-#else
-		for (i = 0; i < effect->count; i++, w++) {
-#endif
 			if (w->animPose != -1) {
 				animPoseRelease(w->animPose);
 			}
@@ -351,7 +332,6 @@ void effMugiKemuri2Main(EffectEntry* effect) {
 	dispEntry(CAMERA_3D, dispCalcZ(&disp), 2, effMugiKemuri2Disp, effect);
 }
 
-#ifdef MUST_MATCH
 // Returning the colour from an inline makes mwcc put the local GXColor at r1+0x8 and the
 // outgoing-argument copy at r1+0xc, the way the original does; building it inline in the caller
 // puts that pair the other way round.
@@ -368,7 +348,6 @@ static inline GXColor mugiKemuri2Color(u8 alpha) {
 	c.a = alpha;
 	return c;
 }
-#endif
 
 void effMugiKemuriDisp(CameraId cameraId, void* param) {
 	EffectEntry* entry = param;
@@ -392,12 +371,7 @@ void effMugiKemuriDisp(CameraId cameraId, void* param) {
 		PSMTXConcat(trans, scale, trans);
 		if (work->animPose != -1) {
 			animPoseSetMaterialFlagOn(work->animPose, 0x40);
-#ifdef MUST_MATCH
 			color = mugiKemuriColor(work->alpha);
-#else
-			color = dat_8041ca68;
-			color.a = work->alpha;
-#endif
 			animPoseSetMaterialEvtColor(work->animPose, color);
 			animPoseMain(work->animPose);
 			animPoseDrawMtx(work->animPose, trans, 1, float_0_8041ca74, 15.0f);
@@ -429,12 +403,7 @@ void effMugiKemuri2Disp(CameraId cameraId, void* param) {
 		PSMTXConcat(trans, scale, trans);
 		if (work->animPose != -1) {
 			animPoseSetMaterialFlagOn(work->animPose, 0x40);
-#ifdef MUST_MATCH
 			color = mugiKemuri2Color(work->alpha);
-#else
-			color = dat_8041ca6c;
-			color.a = work->alpha;
-#endif
 			animPoseSetMaterialEvtColor(work->animPose, color);
 			animPoseMain(work->animPose);
 			animPoseDrawMtx(work->animPose, trans, 1, float_0_8041ca74, 15.0f);
