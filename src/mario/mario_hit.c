@@ -481,12 +481,6 @@ HitEntry* marioSearchUnder(void) {
     HitEntry* hit;
     f32 dist;
     f32 y;
-#ifdef MUST_MATCH
-    // Passing the out-pointers through locals makes the inliner's null tests on c/d
-    // use registers (and lands them at the offsets the original uses); the natural
-    // call is under #else.
-    Vec* php;
-#endif
 
     y = wp->wPlayerCollisionBox.y;
     if (wp->flags & 0x1000000) {
@@ -1398,10 +1392,7 @@ f32 marioChkOverhead(void) {
         MarioWork* wp2;
         s32 ok;
 
-#ifdef MUST_MATCH
-        // Original folds the redundant hit test and the attr test into short-circuit
-        // value branches (`bne then; li r0,0; b join`), so write them as inverted ifs.
-        if (!(hit != NULL)) {
+        if (hit == NULL) {
             ok = 0;
         } else if (!(hitGetAttr(hit) & 0x80000000)) {
             ok = 0;
@@ -1417,22 +1408,6 @@ f32 marioChkOverhead(void) {
                 ok = 0;
             }
         }
-#else
-        if (hitGetAttr(hit) & 0x80000000) {
-            u8* obj = (u8*)mobjHitObjPtrToPtr(hit);
-
-            if (strcmp((const char*)(obj + 0x15), "MOBJ_PowerUpBlock") == 0 ||
-                strcmp((const char*)(obj + 0x15), "MOBJ_SaveBlock") == 0 ||
-                strcmp((const char*)(obj + 0x15), "MOBJ_RecoveryBlock") == 0 ||
-                strcmp((const char*)(obj + 0x15), "MOBJ_CoinTakenRecoveryBlock") == 0) {
-                ok = 1;
-            } else {
-                ok = 0;
-            }
-        } else {
-            ok = 0;
-        }
-#endif
         if (ok) {
             wp->baseSpeed = 0.0f;
             wp->flags |= 0x80;
@@ -1735,13 +1710,8 @@ void* marioSearchHead_roll(Vec* pos, f32* outY, f32 a) {
             movePos(&ox, &oz, 3.0f, 180.f + wp->directionView);
             break;
         }
-#ifdef MUST_MATCH
         p = vec3_802c5808;
         dir = (Vec){ 0.0f, 1.0f, 0.0f };
-#else
-        p = vec3_802c5808;
-        dir = vec3_802c5814;
-#endif
         p.x = pos->x + ox;
         p.y = 1.0f + pos->y;
         p.z = pos->z + oz;
@@ -1814,7 +1784,7 @@ void* marioSearchHead_roll(Vec* pos, f32* outY, f32 a) {
 
 // 100%. `up` must be built as a compound literal (not the named vec3_802c5820 read) so MWCC
 // schedules its loads after y = a2 + a; the named read starts the copy one slot early and
-// costs the prologue interleave (96.55%). The literal is the MUST_MATCH spelling.
+// costs the prologue interleave (96.55%). The literal is the spelling that matches.
 void* marioSearchHead_jabara(Vec* pos, f32* outY, s32* out, f32 a) {
     MarioWork* wp = marioGetPtr();
     Vec p;
@@ -1833,11 +1803,7 @@ void* marioSearchHead_jabara(Vec* pos, f32* outY, s32* out, f32 a) {
     radius = -23.7f;
     *outY = -1.0f;
     y = a2 + a;
-#ifdef MUST_MATCH
     up = (Vec){ 0.0f, 1.0f, 0.0f };
-#else
-    up = vec3_802c5820;
-#endif
 
     for (i = 0; i < 8; i++) {
         outF = y;
@@ -2346,7 +2312,7 @@ static const Vec vec3_802c58a4 = { 0.0f, 0.0f, 0.0f };
 static const Vec vec3_802c58b0 = { 0.0f, 0.0f, 0.0f };
 
 // MATCHING: `goto out` gives the single shared `mr r3,r28` exit the original has; the
-// rounding is the same MUST_MATCH reload form as dou10_yoko_yari2.
+// rounding is the same reload form as dou10_yoko_yari2.
 HitEntry* dou10_yoko_yari(f32* out) {
     MarioWork* wp = marioGetPtr();
     Vec pos;
@@ -2583,11 +2549,7 @@ HitEntry* marioChkFrontStep(f32* outY, f32* outDist, f32* outAngle) {
     c = (f32)cos((f64)rad);
     px = wp->position.x;
     py = wp->position.y;
-#ifdef MUST_MATCH
     v = vec3_802c58b0;
-#else
-    v = vec3_802c58b0;
-#endif
     {
         f32 t = off * s;
         v.x = px + t;
@@ -3044,7 +3006,7 @@ void marioCheckWallShip(f32 a, f32 b) {
 }
 
 #ifndef MUST_MATCH
-// The match build gets these three from compound-literal templates; the natural build names them.
+// The match build gets these four from compound-literal templates; the natural build names them.
 static const Vec vec3_802c5760 = { 0.0f, 0.0f, 0.0f };
 static const Vec vec3_802c576c = { 0.0f, -1.0f, 0.0f };
 static const Vec vec3_802c5814 = { 0.0f, 1.0f, 0.0f };
