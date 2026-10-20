@@ -112,5 +112,5 @@ void select_disp_mario(WinMgrEntry* entry);
 void select_disp_party(WinMgrEntry* entry);
 void select_disp(WinMgrEntry* entry);
 void select_main(WinMgrEntry* entry);
-s32 evtPartyTechMixed(EventEntry* event);
-s32 evtPartyTechLow(EventEntry* event);
+s32 party_can_transfer_rank(EventEntry* event);
+s32 party_can_rank_up(EventEntry* event);

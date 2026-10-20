@@ -56,31 +56,31 @@ const char labelname_bp[] = "_bp";
 const char status_name_hp[] = "\x82\x67\x82\x6f";
 const char status_name_fp[] = "\x82\x65\x82\x6f";
 const char status_name_bp[] = "\x82\x61\x82\x6f";
-const GXColor winMgrWakuColor1 = { 0x2b, 0xa4, 0xff, 0x00 };
-const GXColor winMgrWakuColor3a = { 0x2b, 0xa4, 0xff, 0x00 };
-const GXColor winMgrWakuColor3b = { 0x2b, 0xa4, 0xff, 0x00 };
-const GXColor winMgrWakuColor4 = { 0x2b, 0xa4, 0xff, 0x00 };
-const GXColor winMgrWakuColor5 = { 0x2b, 0xa4, 0xff, 0x00 };
-const GXColor select_disp_colorBlack = { 0x00, 0x00, 0x00, 0xFF };
-const GXColor select_disp_colorGray = { 0xA0, 0xA0, 0xA0, 0xFF };
-const GXColor select_disp_colorWhite = { 0xFF, 0xFF, 0xFF, 0xFF };
-const GXColor select_disp_fogColor = { 0xFF, 0xFF, 0xFF, 0xFF };
+const GXColor waku1_color = { 0x2b, 0xa4, 0xff, 0x00 };
+const GXColor waku3a_color = { 0x2b, 0xa4, 0xff, 0x00 };
+const GXColor waku3b_color = { 0x2b, 0xa4, 0xff, 0x00 };
+const GXColor waku4_color = { 0x2b, 0xa4, 0xff, 0x00 };
+const GXColor waku5_color = { 0x2b, 0xa4, 0xff, 0x00 };
+const GXColor dat_80421a28 = { 0x00, 0x00, 0x00, 0xFF };
+const GXColor dat_80421a2c = { 0xA0, 0xA0, 0xA0, 0xFF };
+const GXColor dat_80421a30 = { 0xFF, 0xFF, 0xFF, 0xFF };
+const GXColor dat_80421a34 = { 0xFF, 0xFF, 0xFF, 0xFF };
 const GXColor dat_80421a38 = { 0xF0, 0xF0, 0xF0, 0xFF };
 const GXColor dat_80421a3c = { 0xF0, 0xF0, 0xF0, 0xFF };
 const GXColor dat_80421a40 = { 0xF0, 0xF0, 0xF0, 0xFF };
-const GXColor select_party_colorBlack = { 0x00, 0x00, 0x00, 0xFF };
-const GXColor select_party_colorGray = { 0xA0, 0xA0, 0xA0, 0xFF };
-const GXColor select_party_colorWhite = { 0xFF, 0xFF, 0xFF, 0xFF };
-const GXColor select_party_fogColor = { 0xFF, 0xFF, 0xFF, 0xFF };
-const GXColor select_mario_colorBlack = { 0x00, 0x00, 0x00, 0xFF };
-const GXColor select_mario_colorGray = { 0xA0, 0xA0, 0xA0, 0xFF };
-const GXColor select_mario_colorWhite = { 0xFF, 0xFF, 0xFF, 0xFF };
-const GXColor select_mario_fogColor = { 0xFF, 0xFF, 0xFF, 0xFF };
-const GXColor select_luigi_colorBlack = { 0x00, 0x00, 0x00, 0xFF };
-const GXColor select_luigi_colorGray = { 0xA0, 0xA0, 0xA0, 0xFF };
-const GXColor select_luigi_colorWhite = { 0xFF, 0xFF, 0xFF, 0xFF };
-const GXColor select_luigi_fogColor = { 0xFF, 0xFF, 0xFF, 0xFF };
-const GXColor select_luigi_iconColor = { 0xF0, 0xF0, 0xF0, 0xFF };
+const GXColor dat_80421a44 = { 0x00, 0x00, 0x00, 0xFF };
+const GXColor dat_80421a48 = { 0xA0, 0xA0, 0xA0, 0xFF };
+const GXColor dat_80421a4c = { 0xFF, 0xFF, 0xFF, 0xFF };
+const GXColor dat_80421a50 = { 0xFF, 0xFF, 0xFF, 0xFF };
+const GXColor dat_80421a54 = { 0x00, 0x00, 0x00, 0xFF };
+const GXColor dat_80421a58 = { 0xA0, 0xA0, 0xA0, 0xFF };
+const GXColor dat_80421a5c = { 0xFF, 0xFF, 0xFF, 0xFF };
+const GXColor dat_80421a60 = { 0xFF, 0xFF, 0xFF, 0xFF };
+const GXColor dat_80421a64 = { 0x00, 0x00, 0x00, 0xFF };
+const GXColor dat_80421a68 = { 0xA0, 0xA0, 0xA0, 0xFF };
+const GXColor dat_80421a6c = { 0xFF, 0xFF, 0xFF, 0xFF };
+const GXColor dat_80421a70 = { 0xFF, 0xFF, 0xFF, 0xFF };
+const GXColor dat_80421a74 = { 0xF0, 0xF0, 0xF0, 0xFF };
 
 static WinMgrWork work;
 static s16* mario_status_point_table[3];
@@ -148,69 +148,69 @@ static WinMgrSelectTbl select_desc_tbl[] = {
 };
 
 // Vector and message data share the retail rodata base.
-const Vec select_disp_tmpRow = { 0, 0, 0 };
-const Vec select_disp_scaleRow = { 0.5, 0.5, 0.5 };
-const Vec select_disp_tmpName = { 0, 0, 0 };
-const Vec select_disp_scaleName = { 1, 1, 1 };
-const Vec select_disp_tmpEdge = { 0, 0, 0 };
-const Vec select_disp_scaleEdge = { 1, 1, 1 };
+const Vec vec3_802ffa98 = { 0, 0, 0 };
+const Vec vec3_802ffaa4 = { 0.5, 0.5, 0.5 };
+const Vec vec3_802ffab0 = { 0, 0, 0 };
+const Vec vec3_802ffabc = { 1, 1, 1 };
+const Vec vec3_802ffac8 = { 0, 0, 0 };
+const Vec vec3_802ffad4 = { 1, 1, 1 };
 // Keep these existing non-const vectors in rodata: retail reloads them after winIconSet in each loop.
-__declspec(section ".rodata") Vec select_disp_tmpDot = { 0, 0, 0 };
-__declspec(section ".rodata") Vec select_disp_scaleDot = { 0.15, 0.15, 0.15 };
-const Vec select_disp_tmpTitle = { 0, 0, 0 };
-const Vec select_disp_scaleTitle = { 1, 1, 1 };
-const Vec select_disp_posIcon3 = { 0, 0, 0 };
-const Vec select_disp_posIcon13 = { 0, 0, 0 };
-const Vec select_disp_posIcon16 = { 0, 0, 0 };
-const Vec select_disp_posMain = { 0, 0, 1 };
-const Vec select_disp_posUp = { 0, 0, 1 };
-const Vec select_disp_posDown = { 0, 0, 1 };
-const Vec select_party_tmpName = { 0, 0, 0 };
-const Vec select_party_scaleTmp = { 0, 1, 1 };
-const Vec select_party_tmpIcon = { 0, 0, 0 };
-const Vec select_party_scaleIcon = { 0.55, 0.55, 0.55 };
-const Vec select_party_tmpArrow = { 0, 0, 0 };
-const Vec select_party_scaleArrow = { 0.55, 0.55, 0.55 };
-const Vec select_party_tmpTitle = { 0, 0, 0 };
-const Vec select_party_scaleTitle = { 1, 1, 1 };
-const Vec select_party_tmpTitle2 = { 0, 0, 0 };
-const Vec select_party_scaleTitle2 = { 1, 1, 1 };
-const Vec select_party_posMain = { 0, 0, 1 };
-const Vec select_party_posUp = { 0, 0, 1 };
-const Vec select_party_posDown = { 0, 0, 1 };
-const Vec select_mario_tmpName = { 0, 0, 0 };
-const Vec select_mario_scaleName = { 1, 1, 1 };
-const Vec select_mario_tmpIcon = { 0, 0, 0 };
-const Vec select_mario_scaleIcon = { 0.55, 0.55, 0.55 };
-const Vec select_mario_tmpPoint = { 0, 0, 0 };
-const Vec select_mario_scalePoint = { 1, 1, 1 };
-const Vec select_mario_tmpHenka = { 0, 0, 0 };
-const Vec select_mario_scaleHenka = { 1, 1, 1 };
-const Vec select_mario_tmpIcon2 = { 0, 0, 0 };
-const Vec select_mario_scaleIcon2 = { -0.55, 0.55, 0.55 };
-const Vec select_mario_tmpTitle = { 0, 0, 0 };
-const Vec select_mario_scaleTitle = { 1, 1, 1 };
-const Vec select_mario_tmpTitle2 = { 0, 0, 0 };
-const Vec select_mario_scaleTitle2 = { 1, 1, 1 };
-const Vec select_mario_posMain = { 0, 0, 1 };
-const Vec select_mario_posUp = { 0, 0, 1 };
-const Vec select_mario_posDown = { 0, 0, 1 };
-const Vec select_luigi_tmpRow = { 0, 0, 0 };
-const Vec select_luigi_scaleRow = { 0.8, 0.8, 0.8 };
-const Vec select_luigi_tmpEdge = { 0, 0, 0 };
-const Vec select_luigi_scaleEdge = { 1, 1, 1 };
-const Vec select_luigi_tmpTitle = { 0, 0, 0 };
-const Vec select_luigi_scaleTitle = { 1, 1, 1 };
-const Vec select_luigi_posLuigi = { 0, 0, 0 };
-const Vec select_luigi_posMain = { 0, 0, 1 };
-const Vec select_luigi_posUp = { 0, 0, 1 };
-const Vec select_luigi_posDown = { 0, 0, 1 };
-const char partyNameMsg0[] = "name_party0";
-const char partyNameMsg1[] = "name_party1";
-const char partyNameMsg4[] = "name_party4";
-const char partyNameMsg5[] = "name_party5";
-const char partyNameMsg2[] = "name_party2";
-const char partyNameMsg6[] = "name_party6";
+__declspec(section ".rodata") Vec vec3_802ffae0 = { 0, 0, 0 };
+__declspec(section ".rodata") Vec vec3_802ffaec = { 0.15, 0.15, 0.15 };
+const Vec vec3_802ffaf8 = { 0, 0, 0 };
+const Vec vec3_802ffb04 = { 1, 1, 1 };
+const Vec vec3_802ffb10 = { 0, 0, 0 };
+const Vec vec3_802ffb1c = { 0, 0, 0 };
+const Vec vec3_802ffb28 = { 0, 0, 0 };
+const Vec vec3_802ffb34 = { 0, 0, 1 };
+const Vec vec3_802ffb40 = { 0, 0, 1 };
+const Vec vec3_802ffb4c = { 0, 0, 1 };
+const Vec vec3_802ffb58 = { 0, 0, 0 };
+const Vec vec3_802ffb64 = { 0, 1, 1 };
+const Vec vec3_802ffb70 = { 0, 0, 0 };
+const Vec vec3_802ffb7c = { 0.55, 0.55, 0.55 };
+const Vec vec3_802ffb88 = { 0, 0, 0 };
+const Vec vec3_802ffb94 = { 0.55, 0.55, 0.55 };
+const Vec vec3_802ffba0 = { 0, 0, 0 };
+const Vec vec3_802ffbac = { 1, 1, 1 };
+const Vec vec3_802ffbb8 = { 0, 0, 0 };
+const Vec vec3_802ffbc4 = { 1, 1, 1 };
+const Vec vec3_802ffbd0 = { 0, 0, 1 };
+const Vec vec3_802ffbdc = { 0, 0, 1 };
+const Vec vec3_802ffbe8 = { 0, 0, 1 };
+const Vec vec3_802ffbf4 = { 0, 0, 0 };
+const Vec vec3_802ffc00 = { 1, 1, 1 };
+const Vec vec3_802ffc0c = { 0, 0, 0 };
+const Vec vec3_802ffc18 = { 0.55, 0.55, 0.55 };
+const Vec vec3_802ffc24 = { 0, 0, 0 };
+const Vec vec3_802ffc30 = { 1, 1, 1 };
+const Vec vec3_802ffc3c = { 0, 0, 0 };
+const Vec vec3_802ffc48 = { 1, 1, 1 };
+const Vec vec3_802ffc54 = { 0, 0, 0 };
+const Vec vec3_802ffc60 = { -0.55, 0.55, 0.55 };
+const Vec vec3_802ffc6c = { 0, 0, 0 };
+const Vec vec3_802ffc78 = { 1, 1, 1 };
+const Vec vec3_802ffc84 = { 0, 0, 0 };
+const Vec vec3_802ffc90 = { 1, 1, 1 };
+const Vec vec3_802ffc9c = { 0, 0, 1 };
+const Vec vec3_802ffca8 = { 0, 0, 1 };
+const Vec vec3_802ffcb4 = { 0, 0, 1 };
+const Vec vec3_802ffcc0 = { 0, 0, 0 };
+const Vec vec3_802ffccc = { 0.8, 0.8, 0.8 };
+const Vec vec3_802ffcd8 = { 0, 0, 0 };
+const Vec vec3_802ffce4 = { 1, 1, 1 };
+const Vec vec3_802ffcf0 = { 0, 0, 0 };
+const Vec vec3_802ffcfc = { 1, 1, 1 };
+const Vec vec3_802ffd08 = { 0, 0, 0 };
+const Vec vec3_802ffd14 = { 0, 0, 1 };
+const Vec vec3_802ffd20 = { 0, 0, 1 };
+const Vec vec3_802ffd2c = { 0, 0, 1 };
+const char party_name_msg0[] = "name_party0";
+const char party_name_msg1[] = "name_party1";
+const char party_name_msg4[] = "name_party4";
+const char party_name_msg5[] = "name_party5";
+const char party_name_msg2[] = "name_party2";
+const char party_name_msg6[] = "name_party6";
 
 #ifdef MUST_MATCH
 // MUST_MATCH: this inline keeps the descriptor 0x14 load before 0x10 with retail registers.
@@ -446,9 +446,9 @@ void select_disp_luigi(WinMgrEntry* entry) {
     u32 scissorTop;
     u32 scissorWidth;
     u32 scissorHeight;
-    GXColor colorBlack = select_luigi_colorBlack;
-    GXColor colorGray = select_luigi_colorGray;
-    GXColor colorWhite = select_luigi_colorWhite;
+    GXColor colorBlack = dat_80421a64;
+    GXColor colorGray = dat_80421a68;
+    GXColor colorWhite = dat_80421a6c;
     GXColor fogColor;
     InformantWork* jdt = &_jdt;
     const char* msg;
@@ -460,7 +460,7 @@ void select_disp_luigi(WinMgrEntry* entry) {
         return;
     }
 
-    fogColor = select_luigi_fogColor;
+    fogColor = dat_80421a70;
 #ifdef MUST_MATCH
     // MUST_MATCH: the original stores the fog colour in fogColor's own slot (0x18) and passes a
     // pointer to it; with the by-value GXSetFog prototype MWCC copies it to a call temp at 0xc and
@@ -494,8 +494,8 @@ void select_disp_luigi(WinMgrEntry* entry) {
             GXColor color = (select->items[i].flags & 1) ? colorGray : colorBlack;
             f32 rowY;
 
-            tmpRow = select_luigi_tmpRow;
-            scaleRow = select_luigi_scaleRow;
+            tmpRow = vec3_802ffcc0;
+            scaleRow = vec3_802ffccc;
             tmpRow.x = (f32)(entry->x + 0x19);
             rowY = (f32)(entry->y - 0x20 - i * 0x18);
             tmpRow.y = select->baseY + (zero + rowY);
@@ -511,8 +511,8 @@ void select_disp_luigi(WinMgrEntry* entry) {
             sprintf(buf, "%3d", info->unkA);
             winFontInit();
             color = (select->items[i].flags & 1) ? colorGray : colorBlack;
-            tmpEdge = select_luigi_tmpEdge;
-            scaleEdge = select_luigi_scaleEdge;
+            tmpEdge = vec3_802ffcd8;
+            scaleEdge = vec3_802ffce4;
             tmpEdge.x = (f32)(entry->x + 0xf5);
             edgeY = (f32)(entry->y - 0x20 - i * 0x18);
             tmpEdge.y = select->baseY + (zero + edgeY);
@@ -538,8 +538,8 @@ void select_disp_luigi(WinMgrEntry* entry) {
     winFontInit();
     {
         GXColor color = colorWhite;
-        tmpTitle = select_luigi_tmpTitle;
-        scaleTitle = select_luigi_scaleTitle;
+        tmpTitle = vec3_802ffcf0;
+        scaleTitle = vec3_802ffcfc;
         tmpTitle.x = (f32)(entry->x + x);
         tmpTitle.y = (f32)(entry->y + 0xe);
         posTitle = tmpTitle;
@@ -551,29 +551,29 @@ void select_disp_luigi(WinMgrEntry* entry) {
         PSMTXTrans(mtx1, (f32)(entry->x + 0x10c), (f32)(entry->y - 0x12), 0.0f);
         PSMTXScale(mtx2, 0.6f, 0.6f, 0.6f);
         PSMTXConcat(mtx1, mtx2, mtx1);
-        iconDispGxCol(mtx1, 0x10, 0x211, select_luigi_iconColor);
-        posLuigi = select_luigi_posLuigi;
+        iconDispGxCol(mtx1, 0x10, 0x211, dat_80421a74);
+        posLuigi = vec3_802ffd08;
         posLuigi.x = (f32)(entry->x + 0x10c);
         posLuigi.y = (f32)(entry->y - 0xc);
         iconDispGx(0.6f, &posLuigi, 0x10, 0x18b);
         break;
     }
 
-    posMain = select_luigi_posMain;
+    posMain = vec3_802ffd14;
     posMain.x = select->iconX;
     posMain.y = select->iconY;
     iconDispGx(1.0f, &posMain, 0x14, 0x1f0);
 
     if (select->numItems > 8 && (gp->retraceCount & 0x1F) < 20) {
         if (select->scrollTop != 0) {
-            posUp = select_luigi_posUp;
+            posUp = vec3_802ffd20;
             // Division by two pools 0.5f while preserving retail multiplication operand order.
             posUp.x = (f32)entry->x + (f32)entry->width / 2.0f;
             posUp.y = (f32)(entry->y - 0x24);
             iconDispGx(0.6f, &posUp, 0x10, 0x1b5);
         }
         if (select->scrollTop != select->numItems - 8) {
-            posDown = select_luigi_posDown;
+            posDown = vec3_802ffd2c;
             posDown.x = (f32)entry->x + (f32)entry->width / 2.0f;
             posDown.y = (f32)(entry->y - entry->height - 0xc);
             iconDispGx(0.6f, &posDown, 0x10, 0x1b6);
@@ -620,17 +620,17 @@ void select_disp_mario(WinMgrEntry* entry) {
     s32 status;
 
     pouchGetPtr();
-    colorBlack = select_mario_colorBlack;
-    colorGray = select_mario_colorGray;
-    colorWhite = select_mario_colorWhite;
-    colorTitle = select_mario_colorWhite;
-    colorIcon = select_mario_colorWhite;
+    colorBlack = dat_80421a54;
+    colorGray = dat_80421a58;
+    colorWhite = dat_80421a5c;
+    colorTitle = dat_80421a5c;
+    colorIcon = dat_80421a5c;
 
     if (wp->mEntries[select->descriptorId[0]].flags & 4) {
         return;
     }
 
-    fogColor = select_mario_fogColor;
+    fogColor = dat_80421a60;
 #ifdef MUST_MATCH
     ((void (*)(s32, f32, f32, f32, f32, GXColor*))GXSetFog)(GX_FOG_NONE, 0.0f, 0.0f, 0.0f, 0.0f, &fogColor);
 #else
@@ -666,8 +666,8 @@ void select_disp_mario(WinMgrEntry* entry) {
             GXColor color = (select->items[i].flags & 1) ? colorGray : colorBlack;
             f32 rowY;
 
-            tmpName = select_mario_tmpName;
-            scaleName = select_mario_scaleName;
+            tmpName = vec3_802ffbf4;
+            scaleName = vec3_802ffc00;
             tmpName.x = (f32)(entry->x + 0x3c);
             rowY = (f32)(entry->y - 0x20 - i * 0x18);
             tmpName.y = select->baseY + (zero + rowY);
@@ -684,8 +684,8 @@ void select_disp_mario(WinMgrEntry* entry) {
             GXColor color = colorIcon;
             f32 rowY;
 
-            tmpIcon = select_mario_tmpIcon;
-            scaleIcon = select_mario_scaleIcon;
+            tmpIcon = vec3_802ffc0c;
+            scaleIcon = vec3_802ffc18;
             tmpIcon.x = (f32)(entry->x + 0x23);
             rowY = (f32)(entry->y - 0x2c - i * 0x18);
             tmpIcon.y = select->baseY + (zero + rowY);
@@ -700,8 +700,8 @@ void select_disp_mario(WinMgrEntry* entry) {
             GXColor color = (select->items[i].flags & 1) ? colorGray : colorBlack;
             f32 rowY;
 
-            tmpPoint = select_mario_tmpPoint;
-            scalePoint = select_mario_scalePoint;
+            tmpPoint = vec3_802ffc24;
+            scalePoint = vec3_802ffc30;
             tmpPoint.x = (f32)(entry->x + 0xa0);
             rowY = (f32)(entry->y - 0x20 - i * 0x18);
             tmpPoint.y = select->baseY + (zero + rowY);
@@ -725,8 +725,8 @@ void select_disp_mario(WinMgrEntry* entry) {
                 GXColor color = (select->items[i].flags & 1) ? colorGray : colorBlack;
                 f32 rowY;
 
-                tmpHenka = select_mario_tmpHenka;
-                scaleHenka = select_mario_scaleHenka;
+                tmpHenka = vec3_802ffc3c;
+                scaleHenka = vec3_802ffc48;
                 tmpHenka.x = (f32)(entry->x + 0xf0);
                 rowY = (f32)(entry->y - 0x20 - i * 0x18);
                 tmpHenka.y = select->baseY + (zero + rowY);
@@ -739,8 +739,8 @@ void select_disp_mario(WinMgrEntry* entry) {
                 GXColor color = colorIcon;
                 f32 rowY;
 
-                tmpIcon2 = select_mario_tmpIcon2;
-                scaleIcon2 = select_mario_scaleIcon2;
+                tmpIcon2 = vec3_802ffc54;
+                scaleIcon2 = vec3_802ffc60;
                 tmpIcon2.x = (f32)(entry->x + 0xdc);
                 rowY = (f32)(entry->y - 0x2c - i * 0x18);
                 tmpIcon2.y = select->baseY + (zero + rowY);
@@ -766,8 +766,8 @@ void select_disp_mario(WinMgrEntry* entry) {
     {
         GXColor color = colorTitle;
 
-        tmpTitle = select_mario_tmpTitle;
-        scaleTitle = select_mario_scaleTitle;
+        tmpTitle = vec3_802ffc6c;
+        scaleTitle = vec3_802ffc78;
         tmpTitle.x = (f32)(entry->x + (entry->width * 3 / 5 - 0x78) * 2 / 3 + x);
         tmpTitle.y = (f32)(entry->y + 0xe);
         posTitle = tmpTitle;
@@ -788,28 +788,28 @@ void select_disp_mario(WinMgrEntry* entry) {
     {
         GXColor color = colorTitle;
 
-        tmpTitle2 = select_mario_tmpTitle2;
-        scaleTitle2 = select_mario_scaleTitle2;
+        tmpTitle2 = vec3_802ffc84;
+        scaleTitle2 = vec3_802ffc90;
         tmpTitle2.x = (f32)(entry->x + entry->width * 3 / 5 + (entry->width * 2 / 5 - 0x55) / 3 + x);
         tmpTitle2.y = (f32)(entry->y + 0xe);
         posTitle2 = tmpTitle2;
         winFontSetEdge(&posTitle2, &scaleTitle2, &color, msg);
     }
 
-    posMain = select_mario_posMain;
+    posMain = vec3_802ffc9c;
     posMain.x = select->iconX;
     posMain.y = select->iconY;
     iconDispGx(1.0f, &posMain, 0x14, 0x1f0);
 
     if (select->numItems > 8 && (gp->retraceCount & 0x1F) < 20) {
         if (select->scrollTop != 0) {
-            posUp = select_mario_posUp;
+            posUp = vec3_802ffca8;
             posUp.x = (f32)entry->x + (f32)entry->width / 2.0f;
             posUp.y = (f32)(entry->y - 0x24);
             iconDispGx(0.6f, &posUp, 0x10, 0x1b5);
         }
         if (select->scrollTop != select->numItems - 8) {
-            posDown = select_mario_posDown;
+            posDown = vec3_802ffcb4;
             posDown.x = (f32)entry->x + (f32)entry->width / 2.0f;
             posDown.y = (f32)(entry->y - entry->height - 0xc);
             iconDispGx(0.6f, &posDown, 0x10, 0x1b6);
@@ -824,7 +824,7 @@ void select_disp_mario(WinMgrEntry* entry) {
 // through with the result variable uninitialised), and that is what makes MWCC materialise each
 // switch result in r23/r24/r25 (a `mr` per case plus the join `mr r3,r25`); merging case 6 with
 // default coalesces them away. (2) The target reloads several in-loop vec constants every
-// iteration where MWCC would hoist them: select_party_scaleIcon/88/94 are read through `const volatile` (assignments marked "anti-hoist"
+// iteration where MWCC would hoist them: vec3_802ffb7c/88/94 are read through `const volatile` (assignments marked "anti-hoist"
 // below), which restores the reloads and the target's callee-saved set (stmw r17). The per-block
 // statement order is also chosen to match the target's schedule: the icon block computes
 // tmpIcon.x before rowY, the arrow block computes tmpArrow.x before rowY, the arrow loop declares
@@ -858,8 +858,8 @@ void select_disp_party(WinMgrEntry* entry) {
     u32 scissorTop;
     u32 scissorWidth;
     u32 scissorHeight;
-    GXColor colorBlack = select_party_colorBlack;
-    GXColor colorGray = select_party_colorGray;
+    GXColor colorBlack = dat_80421a44;
+    GXColor colorGray = dat_80421a48;
     GXColor colorWhite;
     GXColor colorWhite2;
     GXColor fogColor;
@@ -869,13 +869,13 @@ void select_disp_party(WinMgrEntry* entry) {
     f32 zero;
     f32 scale;
 
-    colorWhite2 = select_party_colorWhite;
-    colorWhite = select_party_colorWhite;
+    colorWhite2 = dat_80421a4c;
+    colorWhite = dat_80421a4c;
     if (wp->mEntries[select->descriptorId[0]].flags & 4) {
         return;
     }
 
-    fogColor = select_party_fogColor;
+    fogColor = dat_80421a50;
 #ifdef MUST_MATCH
     // MUST_MATCH: the original stores the fog colour in fogColor's own slot and passes a pointer
     // to it; with the by-value GXSetFog prototype MWCC copies it to a call temp. Same as select_disp.
@@ -916,34 +916,34 @@ void select_disp_party(WinMgrEntry* entry) {
             const char* n2;
             const char* n3;
 
-            tmpName = select_party_tmpName;
+            tmpName = vec3_802ffb58;
             tmpName.x = (f32)(entry->x + 0x3c);
             rowY = (f32)(entry->y - 0x20 - i * 0x18);
             tmpName.y = select->baseY + (zero + rowY);
             posName = tmpName;
-            scaleTmp = select_party_scaleTmp;
+            scaleTmp = vec3_802ffb64;
 
             switch (select->items[i].id) {
             case 0:
-                n1 = msgSearch(partyNameMsg0);
+                n1 = msgSearch(party_name_msg0);
                 break;
             case 1:
-                n1 = msgSearch(partyNameMsg1);
+                n1 = msgSearch(party_name_msg1);
                 break;
             case 2:
-                n1 = msgSearch(partyNameMsg4);
+                n1 = msgSearch(party_name_msg4);
                 break;
             case 3:
                 n1 = pouchGetYoshiName();
                 break;
             case 4:
-                n1 = msgSearch(partyNameMsg5);
+                n1 = msgSearch(party_name_msg5);
                 break;
             case 5:
-                n1 = msgSearch(partyNameMsg2);
+                n1 = msgSearch(party_name_msg2);
                 break;
             case 6:
-                n1 = msgSearch(partyNameMsg6);
+                n1 = msgSearch(party_name_msg6);
                 break;
             }
 
@@ -951,25 +951,25 @@ void select_disp_party(WinMgrEntry* entry) {
             if (w > 0xaa) {
                 switch (select->items[i].id) {
                 case 0:
-                    n2 = msgSearch(partyNameMsg0);
+                    n2 = msgSearch(party_name_msg0);
                     break;
                 case 1:
-                    n2 = msgSearch(partyNameMsg1);
+                    n2 = msgSearch(party_name_msg1);
                     break;
                 case 2:
-                    n2 = msgSearch(partyNameMsg4);
+                    n2 = msgSearch(party_name_msg4);
                     break;
                 case 3:
                     n2 = pouchGetYoshiName();
                     break;
                 case 4:
-                    n2 = msgSearch(partyNameMsg5);
+                    n2 = msgSearch(party_name_msg5);
                     break;
                 case 5:
-                    n2 = msgSearch(partyNameMsg2);
+                    n2 = msgSearch(party_name_msg2);
                     break;
                 case 6:
-                    n2 = msgSearch(partyNameMsg6);
+                    n2 = msgSearch(party_name_msg6);
                     break;
                 }
                 scale = 170.0f / (f32)FontGetMessageWidth(n2);
@@ -983,25 +983,25 @@ void select_disp_party(WinMgrEntry* entry) {
 
             switch (select->items[i].id) {
             case 0:
-                n3 = msgSearch(partyNameMsg0);
+                n3 = msgSearch(party_name_msg0);
                 break;
             case 1:
-                n3 = msgSearch(partyNameMsg1);
+                n3 = msgSearch(party_name_msg1);
                 break;
             case 2:
-                n3 = msgSearch(partyNameMsg4);
+                n3 = msgSearch(party_name_msg4);
                 break;
             case 3:
                 n3 = pouchGetYoshiName();
                 break;
             case 4:
-                n3 = msgSearch(partyNameMsg5);
+                n3 = msgSearch(party_name_msg5);
                 break;
             case 5:
-                n3 = msgSearch(partyNameMsg2);
+                n3 = msgSearch(party_name_msg2);
                 break;
             case 6:
-                n3 = msgSearch(partyNameMsg6);
+                n3 = msgSearch(party_name_msg6);
                 break;
             }
             winFontSet(&posName, &scaleName, &color, n3);
@@ -1017,16 +1017,16 @@ void select_disp_party(WinMgrEntry* entry) {
             s32 icon;
             GXColor color;
 
-            tmpIcon = select_party_tmpIcon;
+            tmpIcon = vec3_802ffb70;
             tmpIcon.x = (f32)(entry->x + 0x23);
             rowY = (f32)(entry->y - 0x2c - i * 0x18);
             tmpIcon.y = select->baseY + (zero + rowY);
             posIcon = tmpIcon;
 #ifdef MUST_MATCH
             // anti-hoist: retail reloads the Vec in the loop (see the note above select_disp_party)
-            scaleIcon = *(const volatile Vec*)&select_party_scaleIcon;
+            scaleIcon = *(const volatile Vec*)&vec3_802ffb7c;
 #else
-            scaleIcon = select_party_scaleIcon;
+            scaleIcon = vec3_802ffb7c;
 #endif
 
             color = colorWhite;
@@ -1076,11 +1076,11 @@ void select_disp_party(WinMgrEntry* entry) {
 
 #ifdef MUST_MATCH
                     // anti-hoist: as above
-                    scaleArrow = *(const volatile Vec*)&select_party_scaleArrow;
-                    tmpArrow = *(const volatile Vec*)&select_party_tmpArrow;
+                    scaleArrow = *(const volatile Vec*)&vec3_802ffb94;
+                    tmpArrow = *(const volatile Vec*)&vec3_802ffb88;
 #else
-                    scaleArrow = select_party_scaleArrow;
-                    tmpArrow = select_party_tmpArrow;
+                    scaleArrow = vec3_802ffb94;
+                    tmpArrow = vec3_802ffb88;
 #endif
                     tmpArrow.x = (f32)(entry->x + 0xfd + off);
                     rowY = (f32)(entry->y - 0x2c - i * 0x18);
@@ -1108,8 +1108,8 @@ void select_disp_party(WinMgrEntry* entry) {
     {
         GXColor color = colorWhite2;
 
-        tmpTitle = select_party_tmpTitle;
-        scaleTitle = select_party_scaleTitle;
+        tmpTitle = vec3_802ffba0;
+        scaleTitle = vec3_802ffbac;
         tmpTitle.x = (f32)(entry->x + (entry->width * 3 / 5 - 0x78) * 2 / 3 + x);
         tmpTitle.y = (f32)(entry->y + 0xe);
         posTitle = tmpTitle;
@@ -1130,28 +1130,28 @@ void select_disp_party(WinMgrEntry* entry) {
     {
         GXColor color = colorWhite2;
 
-        tmpTitle2 = select_party_tmpTitle2;
-        scaleTitle2 = select_party_scaleTitle2;
+        tmpTitle2 = vec3_802ffbb8;
+        scaleTitle2 = vec3_802ffbc4;
         tmpTitle2.x = (f32)(entry->x + entry->width * 3 / 5 + (entry->width * 2 / 5 - 0x55) / 3 + x);
         tmpTitle2.y = (f32)(entry->y + 0xe);
         posTitle2 = tmpTitle2;
         winFontSetEdge(&posTitle2, &scaleTitle2, &color, msg);
     }
 
-    posMain = select_party_posMain;
+    posMain = vec3_802ffbd0;
     posMain.x = select->iconX;
     posMain.y = select->iconY;
     iconDispGx(1.0f, &posMain, 0x14, 0x1f0);
 
     if (select->numItems > 8 && (gp->retraceCount & 0x1F) < 20) {
         if (select->scrollTop != 0) {
-            posUp = select_party_posUp;
+            posUp = vec3_802ffbdc;
             posUp.x = (f32)entry->x + (f32)entry->width / 2.0f;
             posUp.y = (f32)(entry->y - 0x24);
             iconDispGx(0.6f, &posUp, 0x10, 0x1b5);
         }
         if (select->scrollTop != select->numItems - 8) {
-            posDown = select_party_posDown;
+            posDown = vec3_802ffbe8;
             posDown.x = (f32)entry->x + (f32)entry->width / 2.0f;
             posDown.y = (f32)(entry->y - entry->height - 0xc);
             iconDispGx(0.6f, &posDown, 0x10, 0x1b6);
@@ -1161,7 +1161,7 @@ void select_disp_party(WinMgrEntry* entry) {
 
 // The item loop matches register for register (entry r31, select r25, rodata r28, itemDataTable r29,
 // 0x4330 r30, counter r24, rowoff r26, itemoff r27, item r22, value r23). The dots loop matches too:
-// select_disp_tmpDot/select_disp_scaleDot are declared non-const (section ".rodata") above so MWCC cannot prove
+// vec3_802ffae0/vec3_802ffaec are declared non-const (section ".rodata") above so MWCC cannot prove
 // the winIconSet call leaves them alone and therefore reloads them inside the loop in caller-saved
 // registers (r10/r11/r12) instead of hoisting them into callee-saved r21/r27/r29 and pulling r20/r21
 // into the frame; the scaleDot/tmpDot assignments also have to sit before the dotX/dotY computation
@@ -1203,8 +1203,8 @@ void select_disp(WinMgrEntry* entry) {
     u32 scissorTop;
     u32 scissorWidth;
     u32 scissorHeight;
-    GXColor colorBlack = select_disp_colorBlack;
-    GXColor colorGray = select_disp_colorGray;
+    GXColor colorBlack = dat_80421a28;
+    GXColor colorGray = dat_80421a2c;
     GXColor colorWhite;
     GXColor colorWhite2;
     GXColor fogColor;
@@ -1214,13 +1214,13 @@ void select_disp(WinMgrEntry* entry) {
     f32 zero;
     f32 textWidth;
 
-    colorWhite2 = select_disp_colorWhite;
-    colorWhite = select_disp_colorWhite;
+    colorWhite2 = dat_80421a30;
+    colorWhite = dat_80421a30;
     if (wp->mEntries[select->descriptorId[0]].flags & 4) {
         return;
     }
 
-    fogColor = select_disp_fogColor;
+    fogColor = dat_80421a34;
 #ifdef MUST_MATCH
     // MUST_MATCH: the original stores the fog colour in fogColor's own slot and passes a pointer
     // to it; with the by-value GXSetFog prototype MWCC copies it to a call temp. Same as select_disp_luigi.
@@ -1260,8 +1260,8 @@ void select_disp(WinMgrEntry* entry) {
             GXColor color = colorWhite;
             f32 rowY;
 
-            tmpRow = select_disp_tmpRow;
-            scaleRow = select_disp_scaleRow;
+            tmpRow = vec3_802ffa98;
+            scaleRow = vec3_802ffaa4;
             tmpRow.x = (f32)(entry->x + 0x23);
             rowY = (f32)(entry->y - 0x2c - i * 0x18);
             tmpRow.y = select->baseY + (zero + rowY);
@@ -1273,8 +1273,8 @@ void select_disp(WinMgrEntry* entry) {
             GXColor color = (select->items[i].flags & 1) ? colorGray : colorBlack;
             f32 nameY;
 
-            tmpName = select_disp_tmpName;
-            scaleName = select_disp_scaleName;
+            tmpName = vec3_802ffab0;
+            scaleName = vec3_802ffabc;
             tmpName.x = (f32)(entry->x + 0x3c);
             nameY = (f32)(entry->y - 0x20 - i * 0x18);
             tmpName.y = select->baseY + (zero + nameY);
@@ -1319,8 +1319,8 @@ void select_disp(WinMgrEntry* entry) {
             textWidth = (f32)FontGetMessageWidth(buf);
             winFontInit();
             color = (select->items[i].flags & 1) ? colorGray : colorBlack;
-            scaleEdge = select_disp_scaleEdge;
-            tmpEdge = select_disp_tmpEdge;
+            scaleEdge = vec3_802ffad4;
+            tmpEdge = vec3_802ffac8;
             edgeX = (f32)(entry->x + entry->width - 0xa) - textWidth;
             edgeY = (f32)(entry->y - 0x20 - i * 0x18);
             tmpEdge.x = edgeX;
@@ -1338,8 +1338,8 @@ void select_disp(WinMgrEntry* entry) {
             f32 dotX;
             f32 dotY;
 
-            scaleDot = select_disp_scaleDot;
-            tmpDot = select_disp_tmpDot;
+            scaleDot = vec3_802ffaec;
+            tmpDot = vec3_802ffae0;
             dotX = (f32)(entry->x + (i * entry->width) / 31);
             dotY = (f32)(entry->y - 0x38) + select->baseY;
             tmpDot.x = dotX;
@@ -1378,8 +1378,8 @@ void select_disp(WinMgrEntry* entry) {
     {
         GXColor color = colorWhite2;
 
-        tmpTitle = select_disp_tmpTitle;
-        scaleTitle = select_disp_scaleTitle;
+        tmpTitle = vec3_802ffaf8;
+        scaleTitle = vec3_802ffb04;
         tmpTitle.x = (f32)(entry->x + x);
         tmpTitle.y = (f32)(entry->y + 0xe);
         posTitle = tmpTitle;
@@ -1396,7 +1396,7 @@ void select_disp(WinMgrEntry* entry) {
             PSMTXScale(mtx2, 0.6f, 0.6f, 0.6f);
             PSMTXConcat(mtx1, mtx2, mtx1);
             iconDispGxCol(mtx1, 0x10, 0x211, dat_80421a38);
-            posIcon3 = select_disp_posIcon3;
+            posIcon3 = vec3_802ffb10;
             posIcon3.x = (f32)(entry->x + 0x10c);
             posIcon3.y = (f32)(entry->y - 0xc);
             iconDispGx(0.6f, &posIcon3, 0x10, 0x18b);
@@ -1406,7 +1406,7 @@ void select_disp(WinMgrEntry* entry) {
             PSMTXScale(mtx2, 0.6f, 0.6f, 0.6f);
             PSMTXConcat(mtx1, mtx2, mtx1);
             iconDispGxCol(mtx1, 0x10, 0x211, dat_80421a3c);
-            posIcon13 = select_disp_posIcon13;
+            posIcon13 = vec3_802ffb1c;
             posIcon13.x = (f32)(entry->x + 0x10c);
             posIcon13.y = (f32)(entry->y - 0xc);
             iconDispGx(0.6f, &posIcon13, 0x10, 0x18d);
@@ -1416,27 +1416,27 @@ void select_disp(WinMgrEntry* entry) {
             PSMTXScale(mtx2, 0.6f, 0.6f, 0.6f);
             PSMTXConcat(mtx1, mtx2, mtx1);
             iconDispGxCol(mtx1, 0x10, 0x211, dat_80421a40);
-            posIcon16 = select_disp_posIcon16;
+            posIcon16 = vec3_802ffb28;
             posIcon16.x = (f32)(entry->x + 0x10c);
             posIcon16.y = (f32)(entry->y - 0xc);
             iconDispGx(0.6f, &posIcon16, 0x10, 0x13f);
             break;
         }
 
-    posMain = select_disp_posMain;
+    posMain = vec3_802ffb34;
     posMain.x = select->iconX;
     posMain.y = select->iconY;
     iconDispGx(1.0f, &posMain, 0x14, 0x1f0);
 
     if (select->numItems > 8 && (gp->retraceCount & 0x1F) < 20) {
         if (select->scrollTop != 0) {
-            posUp = select_disp_posUp;
+            posUp = vec3_802ffb40;
             posUp.x = (f32)entry->x + (f32)entry->width / 2.0f;
             posUp.y = (f32)(entry->y - 0x24);
             iconDispGx(0.6f, &posUp, 0x10, 0x1b5);
         }
         if (select->scrollTop != select->numItems - 8) {
-            posDown = select_disp_posDown;
+            posDown = vec3_802ffb4c;
             posDown.x = (f32)entry->x + (f32)entry->width / 2.0f;
             posDown.y = (f32)(entry->y - entry->height - 0xc);
             iconDispGx(0.6f, &posDown, 0x10, 0x1b6);
@@ -1478,16 +1478,16 @@ void winMgrDisp(CameraId camId, void* param) {
     case 2:
         break;
     case 1:
-        winMgrDispWaku1(scalemtx, entry, &winMgrWakuColor1);
+        winMgrDispWaku1(scalemtx, entry, &waku1_color);
         break;
     case 3:
-        winMgrDispWaku3a(scalemtx, entry, &winMgrWakuColor3a);
-        winMgrDispWaku3b(scalemtx, entry, &winMgrWakuColor3b);
+        winMgrDispWaku3a(scalemtx, entry, &waku3a_color);
+        winMgrDispWaku3b(scalemtx, entry, &waku3b_color);
         break;
     case 4:
     case 5:
-        winMgrDispWaku4(scalemtx, entry, &winMgrWakuColor4);
-        winMgrDispWaku5(scalemtx, entry, &winMgrWakuColor5);
+        winMgrDispWaku4(scalemtx, entry, &waku4_color);
+        winMgrDispWaku5(scalemtx, entry, &waku5_color);
         break;
     }
 
@@ -2202,25 +2202,25 @@ s32 winMgrSelectOther(WinMgrSelect* select, EventEntry* event) {
             event->lwData[1] = party_id_table[itemId];
             switch (itemId) {
             case 0:
-                msg = msgSearch(partyNameMsg0);
+                msg = msgSearch(party_name_msg0);
                 break;
             case 1:
-                msg = msgSearch(partyNameMsg1);
+                msg = msgSearch(party_name_msg1);
                 break;
             case 2:
-                msg = msgSearch(partyNameMsg4);
+                msg = msgSearch(party_name_msg4);
                 break;
             case 3:
                 msg = pouchGetYoshiName();
                 break;
             case 4:
-                msg = msgSearch(partyNameMsg5);
+                msg = msgSearch(party_name_msg5);
                 break;
             case 5:
-                msg = msgSearch(partyNameMsg2);
+                msg = msgSearch(party_name_msg2);
                 break;
             case 6:
-                msg = msgSearch(partyNameMsg6);
+                msg = msgSearch(party_name_msg6);
                 break;
             }
             event->lwData[3] = (s32)msg;
@@ -2229,25 +2229,25 @@ s32 winMgrSelectOther(WinMgrSelect* select, EventEntry* event) {
             event->lwData[2] = party_id_table[itemId];
             switch (itemId) {
             case 0:
-                msg = msgSearch(partyNameMsg0);
+                msg = msgSearch(party_name_msg0);
                 break;
             case 1:
-                msg = msgSearch(partyNameMsg1);
+                msg = msgSearch(party_name_msg1);
                 break;
             case 2:
-                msg = msgSearch(partyNameMsg4);
+                msg = msgSearch(party_name_msg4);
                 break;
             case 3:
                 msg = pouchGetYoshiName();
                 break;
             case 4:
-                msg = msgSearch(partyNameMsg5);
+                msg = msgSearch(party_name_msg5);
                 break;
             case 5:
-                msg = msgSearch(partyNameMsg2);
+                msg = msgSearch(party_name_msg2);
                 break;
             case 6:
-                msg = msgSearch(partyNameMsg6);
+                msg = msgSearch(party_name_msg6);
                 break;
             }
             event->lwData[4] = (s32)msg;
@@ -2480,7 +2480,7 @@ void select_main(WinMgrEntry* entry) {
 }
 
 #pragma opt_common_subs reset
-s32 evtPartyTechMixed(EventEntry* event) {
+s32 party_can_transfer_rank(EventEntry* event) {
     s32* args = event->args;
     PouchData* pouch = pouchGetPtr();
     s32 i;
@@ -2527,7 +2527,7 @@ s32 evtPartyTechMixed(EventEntry* event) {
     return 2;
 }
 
-s32 evtPartyTechLow(EventEntry* event) {
+s32 party_can_rank_up(EventEntry* event) {
     s32* args = event->args;
     PouchData* pouch = pouchGetPtr();
     s32 i;
