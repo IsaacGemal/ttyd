@@ -8,6 +8,7 @@ Compares every allocated section's size, alignment and bytes, and every relocati
 place: a symbol the object defines becomes (section, offset), so `float_0_8041fcac` and the compiler's `@123` pool entry
 at the same offset are the same target; an undefined symbol stays a name. Symbol names are otherwise ignored, so a
 renamed static, a renamed object or a named constant turned into a literal that pools to the same slot all pass.
+A global both objects define must sit at the same place with the same size (other units reach it by name).
 
 Also listed (not a failure on their own): global symbols the new object no longer defines or defines anew. A removed
 global that another unit references breaks the link, and a renamed function or object no longer lines up with
@@ -52,7 +53,7 @@ def load(path):
             for r in s.iter_relocations():
                 sym = syms[r["r_info_sym"]]
                 rel.append((r["r_offset"], r["r_info_type"], target(sym, r["r_addend"] if r.is_RELA() else 0)))
-    glob = {s.name for s in syms if s["st_info"]["bind"] in ("STB_GLOBAL", "STB_WEAK")
+    glob = {s.name: (target(s, 0), s["st_size"]) for s in syms if s["st_info"]["bind"] in ("STB_GLOBAL", "STB_WEAK")
             and isinstance(s["st_shndx"], int) and s["st_shndx"] != 0}
     return out, glob
 
@@ -77,7 +78,12 @@ def compare(a_path, b_path):
         if rx != ry:
             first = next((p for p in zip(rx, ry) if p[0] != p[1]), None)
             diffs.append(f"{key}: relocations differ ({len(rx)} vs {len(ry)}){': %s vs %s' % first if first else ''}")
-    return diffs, sorted(ga - gb), sorted(gb - ga)
+    for name in sorted(ga.keys() & gb.keys()):
+        if ga[name] != gb[name]:
+            (sa, oa), za = ga[name]
+            (sb, ob), zb = gb[name]
+            diffs.append(f"global {name}: {sa}+{oa:#x} size {za:#x} -> {sb}+{ob:#x} size {zb:#x}")
+    return diffs, sorted(ga.keys() - gb.keys()), sorted(gb.keys() - ga.keys())
 
 
 def main():

@@ -266,7 +266,8 @@ def renamed_functions(worse, changes):
         for f in u.get("functions") or []:
             if "to" in f and "from" not in f:
                 addr = (f.get("metadata") or {}).get("virtual_address")
-                gained[(u["name"], addr)] = (f["name"], f["to"].get("fuzzy_match_percent") or 0.0)
+                if addr is not None:
+                    gained[(u["name"], addr)] = (f["name"], f["to"].get("fuzzy_match_percent") or 0.0)
     lost = {}
     for u in changes.get("units") or []:
         for f in u.get("functions") or []:
@@ -275,10 +276,11 @@ def renamed_functions(worse, changes):
     out = []
     for w in worse:
         name, key, a, b = w
-        if key != "fuzzy_match_percent" or name not in lost or b != 0:
+        if key != "fuzzy_match_percent" or name not in lost or b != 0 or lost[name][1] is None:
             continue
         new = gained.get(lost[name])
-        if lost[name][1] is not None and new and new[1] >= a:
+        if new and new[1] >= a:
+            del gained[lost[name]]  # one successor excuses one lost function
             out.append((w, new[0], new[1]))
     return out
 

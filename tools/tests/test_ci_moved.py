@@ -50,6 +50,40 @@ class Renamed(unittest.TestCase):
         self.assertEqual(ci.renamed_functions(worse, changes("A", [("unk_80001000", "1", 100.0)],
                                                              [("goodName", "1", 90.0)])), [])
 
+    def test_vanished_without_a_successor_still_fails(self):
+        worse = [("A:unk_80001000", "fuzzy_match_percent", 100.0, 0.0)]
+        self.assertEqual(ci.renamed_functions(worse, changes("A", [("unk_80001000", "1", 100.0)], [])), [])
+
+    def test_same_address_in_another_unit_is_not_a_rename(self):
+        worse = [("A:unk_80001000", "fuzzy_match_percent", 100.0, 0.0)]
+        data = changes("A", [("unk_80001000", "1", 100.0)], [])
+        data["units"] += changes("B", [], [("goodName", "1", 100.0)])["units"]
+        self.assertEqual(ci.renamed_functions(worse, data), [])
+
+    def test_a_score_drop_that_keeps_the_name_still_fails(self):
+        worse = [("A:fn", "fuzzy_match_percent", 100.0, 90.0)]
+        data = {"units": [{"name": "A", "functions": [{"name": "fn", "from": {"fuzzy_match_percent": 100.0},
+                                                       "to": {"fuzzy_match_percent": 90.0},
+                                                       "metadata": {"virtual_address": "1"}}]}]}
+        self.assertEqual(ci.renamed_functions(worse, data), [])
+
+    def test_no_address_is_not_a_rename(self):
+        worse = [("A:unk_80001000", "fuzzy_match_percent", 100.0, 0.0)]
+        fns = [{"name": "unk_80001000", "from": {"fuzzy_match_percent": 100.0}},
+               {"name": "goodName", "to": {"fuzzy_match_percent": 100.0}}]
+        self.assertEqual(ci.renamed_functions(worse, {"units": [{"name": "A", "functions": fns}]}), [])
+
+    def test_one_successor_excuses_one_lost_function(self):
+        worse = [("A:x", "fuzzy_match_percent", 100.0, 0.0), ("A:y", "fuzzy_match_percent", 100.0, 0.0)]
+        got = ci.renamed_functions(worse, changes("A", [("x", "1", 100.0), ("y", "1", 100.0)],
+                                                  [("goodName", "1", 100.0)]))
+        self.assertEqual(len(got), 1)
+
+    def test_unit_and_section_measures_are_never_excused(self):
+        worse = [("A", "fuzzy_match_percent", 100.0, 0.0), ("A[.data]", "fuzzy_match_percent", 100.0, 0.0)]
+        self.assertEqual(ci.renamed_functions(worse, changes("A", [("unk_80001000", "1", 100.0)],
+                                                             [("goodName", "1", 100.0)])), [])
+
 
 if __name__ == "__main__":
     unittest.main()

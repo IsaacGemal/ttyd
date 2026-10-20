@@ -10,8 +10,8 @@ Symbol names never reach the dol, but three things read them, so a rename has to
   - the dol's FORCEACTIVE list, which dtk writes from symbols.txt for the dol symbols that RELs reference.
 Data objects score by their bytes, so for them the symbols.txt edit only keeps the names in step.
 
-Refuses when NEW is already spelled anywhere in those places (a clash would break the link or pair the wrong symbol)
-or OLD isn't found. Rebuild afterwards (`python3 configure.py && ninja`: the checksum must hold) and run tools/ci.py
+Refuses when NEW is already spelled anywhere in those places or in a REL's symbols.txt (a clash would break the link
+or pair the wrong symbol), when two pairs share a NEW, when OLD is also a REL symbol, or when OLD isn't found. Rebuild afterwards (`python3 configure.py && ninja`: the checksum must hold) and run tools/ci.py
 with --allow-protected (symbols.txt); its ratchet reads a function renamed in place as a rename, not a regression.
 """
 import re
@@ -31,6 +31,11 @@ def files():
     yield SYMBOLS
 
 
+def word(name):
+    """NAME as a whole symbol: `foo` doesn't match `foo_bar` or the static `foo$123`."""
+    return re.compile(r"(?<![\w$])" + re.escape(name) + r"(?![\w$])")
+
+
 def main():
     args = [a for a in sys.argv[1:] if a != "--dry-run"]
     dry = "--dry-run" in sys.argv
@@ -38,16 +43,22 @@ def main():
         sys.exit(__doc__)
     pairs = list(zip(args[::2], args[1::2]))
     texts = {p: p.read_text(errors="surrogateescape") for p in files()}
+    rel_symbols = {p: p.read_text(errors="surrogateescape") for p in SYMBOLS.parent.glob("*/symbols.txt")}
+    news = [new for _, new in pairs]
+    if len(set(news)) != len(news):
+        sys.exit("the same NEW name is given twice")
     for old, new in pairs:
         if not re.fullmatch(r"[A-Za-z_]\w*", new):
             sys.exit(f"{new}: not an identifier")
-        rx_new = re.compile(r"\b" + re.escape(new) + r"\b")
-        clash = [p for p, t in texts.items() if rx_new.search(t)]
+        clash = [p for p, t in (texts | rel_symbols).items() if word(new).search(t)]
         if clash:
             sys.exit(f"{new} is already used in {', '.join(str(p.relative_to(ROOT)) for p in clash[:5])}")
+        rel = [p for p, t in rel_symbols.items() if word(old).search(t)]
+        if rel:
+            sys.exit(f"{old} is also a REL symbol ({rel[0].relative_to(ROOT)}): rename it by hand")
     changed = {}
     for old, new in pairs:
-        rx = re.compile(r"\b" + re.escape(old) + r"\b")
+        rx = word(old)
         hits = 0
         for p, t in texts.items():
             t2, n = rx.subn(new, t)

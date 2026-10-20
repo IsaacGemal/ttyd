@@ -7,7 +7,8 @@ where that changes no byte.
 
 Kinds: `float` (f32/f64 objects), `str` (const char arrays), `agg` (const Vec/GXColor objects, as compound literals); all three
 by default. Candidates are the objects a .c defines itself that no other source or header names, that the code
-never takes the address or sizeof of and that aren't volatile.
+never takes the address or sizeof of, that aren't volatile and that no `#ifdef MUST_MATCH`/`#ifndef MUST_MATCH`
+conditional (either branch) names: match-only code is left alone.
 
 Named objects and literals don't pool in the same place (named ones first, in definition order; literals in first-use
 order, in text order), and a named constant is sometimes loaded or scheduled differently from a literal, so each
@@ -66,6 +67,21 @@ def float_literal(kind, init):
     return body + ("f" if kind in ("f32", "float") else "")
 
 
+def must_match_regions(text):
+    """The text of every `#if...MUST_MATCH` conditional (all its branches, nested ones included)."""
+    out, depth, inside = [], [], 0
+    for line in text.splitlines(keepends=True):
+        s = line.strip()
+        if re.match(r"#\s*if", s):
+            depth.append("MUST_MATCH" in s)
+            inside += depth[-1]
+        if inside:
+            out.append(line)
+        if re.match(r"#\s*endif", s) and depth:
+            inside -= depth.pop()
+    return "".join(out)
+
+
 def candidates(path, text, refs, kinds):
     """[(addr, name, literal)] in address order: the constants of KINDS ('float', 'str') this file alone names."""
     found = []
@@ -76,7 +92,10 @@ def candidates(path, text, refs, kinds):
     if "agg" in kinds:
         found += [(m.group(4), m.group(3), f"({m.group(2)}){m.group(5)}") for m in AGG_DEF.finditer(text)]
     out = []
+    match_only = must_match_regions(text)
     for addr, name, lit in found:
+        if re.search(r"\b" + name + r"\b", match_only):
+            continue  # match-only code is left as it is
         if lit is None or refs.get(name, {path}) != {path} or len(re.findall(r"\b" + name + r"\b", text)) < 2:
             continue
         if re.search(r"(&|sizeof)\s*\(?\s*" + name + r"\b", text) or re.search(r"volatile[^;\n]*\b" + name + r"\b", text):
