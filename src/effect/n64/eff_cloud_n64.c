@@ -114,39 +114,39 @@ EffectEntry* effCloudN64Entry(s32 type, s32 lifetime, f32 x, f32 y, f32 z, f32 s
 	data->scale = scale;
 	switch (type) {
 		case 0:
-			data->color1R = 0xff;
-			data->color1G = 0xff;
-			data->color1B = 0xff;
-			data->color2R = 0xe1;
-			data->color2G = 0xe1;
-			data->color2B = 0xe1;
+			data->color0R = 0xff;
+			data->color0G = 0xff;
+			data->color0B = 0xff;
+			data->color1R = 0xe1;
+			data->color1G = 0xe1;
+			data->color1B = 0xe1;
 			data->alpha = 0xff;
 			break;
 		case 1:
-			data->color1R = 0xff;
-			data->color1G = 0xf5;
-			data->color1B = 0xe6;
-			data->color2R = 0x2d;
-			data->color2G = 0x23;
-			data->color2B = 0x0f;
+			data->color0R = 0xff;
+			data->color0G = 0xf5;
+			data->color0B = 0xe6;
+			data->color1R = 0x2d;
+			data->color1G = 0x23;
+			data->color1B = 0x0f;
 			data->alpha = 0xff;
 			break;
 		case 2:
-			data->color1R = 0xff;
-			data->color1G = 0;
-			data->color1B = 0;
-			data->color2R = 0x9b;
-			data->color2G = 0x7d;
-			data->color2B = 0x7d;
+			data->color0R = 0xff;
+			data->color0G = 0;
+			data->color0B = 0;
+			data->color1R = 0x9b;
+			data->color1G = 0x7d;
+			data->color1B = 0x7d;
 			data->alpha = 0xff;
 			break;
 		case 3:
+			data->color0R = 0xff;
+			data->color0G = 0xff;
+			data->color0B = 0xff;
 			data->color1R = 0xff;
-			data->color1G = 0xff;
-			data->color1B = 0xff;
-			data->color2R = 0xff;
-			data->color2G = 0x41;
-			data->color2B = 0x14;
+			data->color1G = 0x41;
+			data->color1B = 0x14;
 			data->alpha = 0xff;
 			break;
 		default:
@@ -308,7 +308,7 @@ void effCloudMain(EffectEntry* effect) {
 // colour stack slots where the target has them (local r1+0x10, first copy r1+0x14, second copy r1+0xc).
 // The plain assignment shape lands them 4 bytes lower and shifts mtx/texObj down too.
 #ifdef MUST_MATCH
-static inline void effCloudTevColor1(s32 r, s32 g, s32 b, s32 a) {
+static inline void effCloudTevColor0(s32 r, s32 g, s32 b, s32 a) {
 	GXColor c = unk_804230c0;
 	c.r = r;
 	c.g = g;
@@ -317,7 +317,7 @@ static inline void effCloudTevColor1(s32 r, s32 g, s32 b, s32 a) {
 	GXSetTevColor(GX_TEVREG0, c);
 }
 
-static inline void effCloudTevColor2(s32 r, s32 g, s32 b) {
+static inline void effCloudTevColor1(s32 r, s32 g, s32 b) {
 	GXColor c = unk_804230c4;
 	c.r = r;
 	c.g = g;
@@ -418,21 +418,21 @@ void effCloudDisp(CameraId cameraId, void* param) {
 	GXLoadTexObj(&texObj, GX_TEXMAP0);
 
 #ifdef MUST_MATCH
-	effCloudTevColor1(data->color1R, data->color1G, data->color1B, alpha0);
+	effCloudTevColor0(data->color0R, data->color0G, data->color0B, alpha0);
 
-	effCloudTevColor2(data->color2R, data->color2G, data->color2B);
+	effCloudTevColor1(data->color1R, data->color1G, data->color1B);
 #else
 	color = unk_804230c0;
-	color.r = data->color1R;
-	color.g = data->color1G;
-	color.b = data->color1B;
+	color.r = data->color0R;
+	color.g = data->color0G;
+	color.b = data->color0B;
 	color.a = alpha0;
 	GXSetTevColor(GX_TEVREG0, color);
 
 	color = unk_804230c4;
-	color.r = data->color2R;
-	color.g = data->color2G;
-	color.b = data->color2B;
+	color.r = data->color1R;
+	color.g = data->color1G;
+	color.b = data->color1B;
 	GXSetTevColor(GX_TEVREG1, color);
 #endif
 

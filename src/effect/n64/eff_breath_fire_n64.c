@@ -80,7 +80,7 @@ extern const f32 float_0p2_8041eab0;
 // .data vertex array of this unit; the original hands a 0x46-byte slice to effSetVtxDescN64.
 
 #pragma opt_common_subs off // without it MWCC CSEs the two 0.2f pool loads across the rand call into a callee-saved FPR
-EffectEntry* effBreathFireN64Entry(s32 a, f32 b, f32 c, s32 d, f32 e, s32 f, f32 g, s32 h, f32 i, f32 j) {
+EffectEntry* effBreathFireN64Entry(s32 kind, f32 x, f32 y, s32 children, f32 z, s32 seed, f32 endX, s32 duration, f32 endY, f32 endZ) {
 	EffectEntry* entry;
 	effBreathFireData* data;
 
@@ -90,41 +90,41 @@ EffectEntry* effBreathFireN64Entry(s32 a, f32 b, f32 c, s32 d, f32 e, s32 f, f32
 	data = __memAlloc(HEAP_EFFECT, sizeof(effBreathFireData));
 	entry->userdata = data;
 	entry->callback = effBreathFireMain;
-	data->kind = a;
-	data->childrenLeft = d;
-	data->seed = f;
-	data->posX = b;
-	data->posY = c;
-	data->posZ = e;
-	data->startX = b;
-	data->startY = c;
-	data->startZ = e;
-	data->endX = g;
-	data->endY = i;
-	data->endZ = j;
-	if (a == 0) {
+	data->kind = kind;
+	data->childrenLeft = children;
+	data->seed = seed;
+	data->posX = x;
+	data->posY = y;
+	data->posZ = z;
+	data->startX = x;
+	data->startY = y;
+	data->startZ = z;
+	data->endX = endX;
+	data->endY = endY;
+	data->endZ = endZ;
+	if (kind == 0) {
 		data->scale = float_0p05_8041ea9c;
 	}
 	else {
 		data->scale = float_0p04_8041eaa8;
 	}
 	data->baseScale = data->scale;
-	data->duration = h;
-	data->life = h;
+	data->duration = duration;
+	data->life = duration;
 	data->age = 0;
 	data->alpha = 0xFF;
 	data->texPos = float_0_8041ea8c;
 	data->scaleRate = float_0p1_8041eaac;
 	data->endScale = data->baseScale;
-	if (a == 0) {
-		data->bendX = float_0p2_8041eab0 * (g - b) * (f32)(s32)(effTblRandN64(10, f) - 5) * float_0p2_8041eab0;
-		data->bendY = float_0p2_8041eab0 * (i - c) * (f32)(s32)(effTblRandN64(10, f + 1) - 5) * float_0p2_8041eab0;
-		data->bendZ = float_0p2_8041eab0 * (j - e) * (f32)(s32)(effTblRandN64(10, f + 2) - 5) * float_0p2_8041eab0;
+	if (kind == 0) {
+		data->bendX = float_0p2_8041eab0 * (endX - x) * (f32)(s32)(effTblRandN64(10, seed) - 5) * float_0p2_8041eab0;
+		data->bendY = float_0p2_8041eab0 * (endY - y) * (f32)(s32)(effTblRandN64(10, seed + 1) - 5) * float_0p2_8041eab0;
+		data->bendZ = float_0p2_8041eab0 * (endZ - z) * (f32)(s32)(effTblRandN64(10, seed + 2) - 5) * float_0p2_8041eab0;
 	}
 	else {
-		data->bendX = float_0p2_8041eab0 * (g - b) * (f32)(s32)(effTblRandN64(10, f + 3) - 5);
-		data->bendY = float_0p2_8041eab0 * (i - c) * (f32)(s32)(effTblRandN64(10, f + 4) - 5);
-		data->bendZ = float_0p2_8041eab0 * (j - e) * (f32)(s32)(effTblRandN64(10, f + 5) - 5);
+		data->bendX = float_0p2_8041eab0 * (endX - x) * (f32)(s32)(effTblRandN64(10, seed + 3) - 5);
+		data->bendY = float_0p2_8041eab0 * (endY - y) * (f32)(s32)(effTblRandN64(10, seed + 4) - 5);
+		data->bendZ = float_0p2_8041eab0 * (endZ - z) * (f32)(s32)(effTblRandN64(10, seed + 5) - 5);
 	}
 	data->rise = float_0_8041ea8c;
 	data->color0R = 0xFF;
