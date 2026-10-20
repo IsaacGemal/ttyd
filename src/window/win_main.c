@@ -103,20 +103,16 @@ const Vec vec3_802f68cc = { 1.0f, 1.0f, 1.0f };
 // Building the fog colour in an inlined helper puts the fog by-value temp in the
 // lower stack slot and winTexSet's later colour temp in the higher one; written
 // inline the two temps swap slots.
-#ifdef MUST_MATCH
 static inline void winDispKoopaSetFog(void) {
     GXSetFog(GX_FOG_NONE, 0.0f, 0.0f, 0.0f, 0.0f, dat_8041dc90);
 }
-#endif
 
 // Building the fog colour inside an inlined helper gives the fog by-value temp the
 // lower stack slot and the later GXSetTevColor temp the higher one, matching the target;
 // written inline the two temps swap slots.
-#ifdef MUST_MATCH
 static inline void winIconGraySetFog(void) {
     GXSetFog(GX_FOG_NONE, 0.0f, 0.0f, 0.0f, 0.0f, dat_8041dc90);
 }
-#endif
 
 WindowWork* winGetPtr(void) {
     return wp;
@@ -472,11 +468,7 @@ void winDisp(CameraId camId, void* param) {
 void winDispKoopa(CameraId camId, void* param) {
     winTexTpl = (TEXPalette*)*wp->winTpl->data;
     GXSetCullMode(GX_CULL_NONE);
-#ifdef MUST_MATCH
     winDispKoopaSetFog();
-#else
-    GXSetFog(GX_FOG_NONE, 0.0f, 0.0f, 0.0f, 0.0f, dat_8041dc90);
-#endif
     GXSetNumChans(0);
     GXSetChanCtrl(GX_COLOR0A0, GX_FALSE, GX_SRC_REG, GX_SRC_REG, 0, GX_DF_NONE, GX_AF_NONE);
     GXSetNumTevStages(1);
@@ -989,11 +981,7 @@ void winIconInit(void) {
 void winIconGrayInit(void) {
     winTexTpl = NULL;
     GXSetCullMode(GX_CULL_NONE);
-#ifdef MUST_MATCH
     winIconGraySetFog();
-#else
-    GXSetFog(GX_FOG_NONE, 0.0f, 0.0f, 0.0f, 0.0f, dat_8041dc90);
-#endif
     GXSetNumChans(0);
     GXSetChanCtrl(GX_COLOR0A0, GX_FALSE, GX_SRC_REG, GX_SRC_REG, 0, GX_DF_NONE, GX_AF_NONE);
     GXSetNumTevStages(1);

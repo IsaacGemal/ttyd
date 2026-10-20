@@ -360,7 +360,6 @@ void unitwin_selltable_disp(WinMgrEntry* entry) {
 		pos.y += 30.0f;
 		PSMTXMultVec(camGetPtr(4)->view, &pos, &pos);
 		PSMTX44MultVec(camGetPtr(4)->projection, &pos, &pos);
-#ifdef MUST_MATCH
 		{
 			// The named local keeps 0.5f in f2 and the int->float mask in f3; with the
 			// literal (or the named float symbol) the two swap (cf. envdrv.c).
@@ -368,10 +367,6 @@ void unitwin_selltable_disp(WinMgrEntry* entry) {
 			pos.x *= (f32)gp->fbWidth * half;
 			pos.y *= (f32)gp->efbHeight * half;
 		}
-#else
-		pos.x *= (f32)gp->fbWidth * 0.5f;
-		pos.y *= (f32)gp->efbHeight * 0.5f;
-#endif
 		sprintf(buf, "%d", itemDataTable[wp->items[i]].discount_price);
 		PSMTXTrans(mtx, 12.0f * (f32)(strlen(buf) - 1) + pos.x, pos.y, pos.z);
 		iconNumberDispGx(mtx, itemDataTable[wp->items[i]].discount_price, 0, *(GXColor*)&dat_8041d9b8);
