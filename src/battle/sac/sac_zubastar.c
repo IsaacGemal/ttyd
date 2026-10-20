@@ -60,13 +60,13 @@ typedef struct ZubaStarBomb {
     s32 state;       // 0x00
     s32 count;       // 0x04
     Vec* points;     // 0x08
-    Vec pos;  // 0x0C
-    Vec center;  // 0x18
-    Vec from;  // 0x24
-    Vec to;  // 0x30
-    f32 angle;  // 0x3C
-    f32 angleVel;  // 0x40
-    f32 velY;  // 0x44
+    Vec pos;         // 0x0C
+    Vec center;      // 0x18
+    Vec from;        // 0x24
+    Vec to;          // 0x30
+    f32 angle;       // 0x3C
+    f32 angleVel;    // 0x40
+    f32 velY;        // 0x44
     s32 timer;       // 0x48
     s32 maxTimer;    // 0x4C
 } ZubaStarBomb;
@@ -83,31 +83,31 @@ typedef struct ZubaStarStar {
 
 struct ZubaStarWork {
     u8 field_0x000[0x04];          // 0x000
-    s32 phase;               // 0x004
-    s32 phaseTimer;               // 0x008
-    s32 timeLeft;               // 0x00C
-    s32 hitCount;               // 0x010
+    s32 phase;                     // 0x004
+    s32 phaseTimer;                // 0x008
+    s32 timeLeft;                  // 0x00C
+    s32 hitCount;                  // 0x010
     s32 bombCount;                 // 0x014
-    s32 sequence;               // 0x018
-    s32 sequenceTimer;               // 0x01C
-    Vec cursor;               // 0x020
-    Vec cursorHistory[4];            // 0x02C
-    Vec cutStart;               // 0x05C
-    Vec cutEnd;               // 0x068
-    s32 cutFrame;               // 0x074
-    s16 curStar;               // 0x078
+    s32 sequence;                  // 0x018
+    s32 sequenceTimer;             // 0x01C
+    Vec cursor;                    // 0x020
+    Vec cursorHistory[4];          // 0x02C
+    Vec cutStart;                  // 0x05C
+    Vec cutEnd;                    // 0x068
+    s32 cutFrame;                  // 0x074
+    s16 curStar;                   // 0x078
     u8 field_0x07A[0x02];          // 0x07A
-    s32 gaugePhase;               // 0x07C
-    s32 gaugeTimer;               // 0x080
-    f32 gauge;               // 0x084
-    f32 gaugeBoost;               // 0x088
-    f32 gaugeDecay;               // 0x08C
+    s32 gaugePhase;                // 0x07C
+    s32 gaugeTimer;                // 0x080
+    f32 gauge;                     // 0x084
+    f32 gaugeBoost;                // 0x088
+    f32 gaugeDecay;                // 0x08C
     f32 field_0x090;               // 0x090
-    Vec gaugePos;               // 0x094
+    Vec gaugePos;                  // 0x094
     u8 field_0x0A0;                // 0x0A0
-    u8 iconFrame;                // 0x0A1
+    u8 iconFrame;                  // 0x0A1
     u8 field_0x0A2[0x02];          // 0x0A2
-    s32 gaugeSfx;               // 0x0A4
+    s32 gaugeSfx;                  // 0x0A4
     ZubaStarBomb* bombs[0xC8];     // 0x0A8
     ZubaStarStar stars[0x10];      // 0x3C8
     smartEntry* tex;               // 0x588

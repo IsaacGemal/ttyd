@@ -51,16 +51,17 @@ typedef struct BakuGameWorkEntry {
     f32 iconScale;   // 0x20, passed as the icon alpha/scale to iconDispGx
 } BakuGameWorkEntry;
 
-// Bounce-arrow state living inside BattleWork at 0x1F2C (x and y bounce between 0x80 and 0xF5).
-typedef struct BakuGameBouncePos {
-    u8 field_0x0;
-    u8 x;
-    u8 y;
-    u8 field_0x3;
+// Flash colour the gauge is tinted with once it is full, living inside BattleWork at 0x1F2C.
+// BattleAcDrawGauge reads bytes 0..3 as RGBA; bakuGameDisp2D sweeps g and b between 0x80 and 0xF5.
+typedef struct BakuGameGaugeColor {
+    u8 r;
+    u8 g;
+    u8 b;
+    u8 a;
     u8 field_0x4;
-    s8 vx;
-    s8 vy;
-} BakuGameBouncePos;
+    s8 dg;
+    s8 db;
+} BakuGameGaugeColor;
 
 struct BakuGameWork {
     s32 flags;                        // 0x0, bit 0: heiho enabled (bakuGameHeihoReturn), bit 1: audience can throw
@@ -1511,20 +1512,20 @@ void bakuGameDisp2D(void) {
     }
     flag = 0;
     if (baku->gauge >= 100.0f) {
-        BakuGameBouncePos* p = (BakuGameBouncePos*)((u8*)wp + 0x1F2C);
+        BakuGameGaugeColor* p = (BakuGameGaugeColor*)((u8*)wp + 0x1F2C);
 
         flag = 1;
-        p->field_0x0 = 0;
-        p->field_0x3 = 0xFF;
-        p->x += p->vx;
-        p->y += p->vy;
-        if (p->x <= 0x80 && p->vx <= 0) {
-            p->vy = 0x10;
-            p->vx = 0x10;
+        p->r = 0;
+        p->a = 0xFF;
+        p->g += p->dg;
+        p->b += p->db;
+        if (p->g <= 0x80 && p->dg <= 0) {
+            p->db = 0x10;
+            p->dg = 0x10;
         }
-        if (p->x >= 0xF5 && p->vx >= 0) {
-            p->vy = -0x10;
-            p->vx = -0x10;
+        if (p->g >= 0xF5 && p->dg >= 0) {
+            p->db = -0x10;
+            p->dg = -0x10;
         }
     }
     BattleAcDrawGauge((s32)baku->field_0xDC, (s32)baku->field_0xE0, 0xB1, 3, 0x21, 0x42, 0x64, flag, baku->gaugeFill);
