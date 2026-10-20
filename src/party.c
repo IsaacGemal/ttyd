@@ -809,7 +809,7 @@ void partyReInit(void) {
         if (playSound) {
             partyPoseEntry(party);
         }
-        if (!(party->currentMemberId == PARTY_MEMBER_YOSHI && P8(party, 0x34) == 3)) {
+        if (!(party->currentMemberId == PARTY_MEMBER_YOSHI && party->field_34 == 3)) {
             MarioWork* mario = marioGetPtr();
 
             if (!(mario->flags & 0x400000)) {
@@ -1103,7 +1103,7 @@ void driveParty(PartyEntry* party) {
     if (party->field_2A > 0) {
         party->field_2A--;
     }
-    switch (P8(party, 0x34)) {
+    switch (party->field_34) {
         case 4:
         case 5:
         case 6:
@@ -1131,7 +1131,7 @@ void driveParty(PartyEntry* party) {
     party->headHit = NULL;
     party->field_134 = NULL;
     P32(party, 0x130) = 0;
-    switch (P8(party, 0x34)) {
+    switch (party->field_34) {
         case 0:
             if (!(party->flags & PARTY_FLAG_CTRL_OFF) || (party->flags & PARTY_FLAG_RUN_OFF)) {
                 if (party->field_8 & 8) {
@@ -1416,7 +1416,7 @@ s32 partyHelloMain(PartyEntry* party) {
                 }
             }
             party->flags2 &= ~0x10;
-            P8(party, 0x34) = 1;
+            party->field_34 = 1;
             ret = 1;
             psndSFXOn_3D((const char*)0x20920, &player->position);
             break;
@@ -1449,7 +1449,7 @@ s32 partyHelloMain(PartyEntry* party) {
                     party->field_8 |= 0x2000;
                 }
             }
-            P8(party, 0x34) = 1;
+            party->field_34 = 1;
             ret = 1;
             break;
         }
@@ -1479,7 +1479,7 @@ s32 partyHelloMain(PartyEntry* party) {
                     party->field_8 |= 0x2000;
                 }
             }
-            P8(party, 0x34) = 0;
+            party->field_34 = 0;
             ret = 1;
             break;
         }
