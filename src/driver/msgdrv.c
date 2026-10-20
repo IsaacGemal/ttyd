@@ -856,21 +856,478 @@ void msgAnalize(smartEntry* smart, const char* msg) {
 		break;
 	}
 
-loop:
-	check = (u8)*msg;
-	if (_ismbblead(check)) {
-		glyph = kanjiSearch(*(const u16*)msg);
+	for (;;) {
+		check = (u8)*msg;
+		if (_ismbblead(check)) {
+			glyph = kanjiSearch(*(const u16*)msg);
+			{
+			s32 exinc = (s32)(scale * (f32)(kanjiGetWidth((u16)glyph) + 4));
+			entry->glyph = glyph;
+			entry->x = ex;
+			entry->y = (s16)((s32)ey - (s32)(10.f * scale));
+			entry->scale = scale;
+			entry->arg = flags;
+			if (*(const u16*)msg == 0x8145) {
+				entry->arg |= 0x10;
+			}
+			else if (*(const u16*)msg != 0x8140 && *(const u16*)msg != 0x8151) {
+				entry->arg |= 8;
+			}
+			if (flags & 1) {
+				entry->field_0x14 = dyn;
+			}
+			if (maxScale < scale) {
+				maxScale = scale;
+			}
+			entry->startTime = r24;
+			ex = (s16)((s32)ex + exinc);
+			}
+			r24 += var54;
+			msg += 2;
+			entry++;
+			data->entryId++;
+			continue;
+		}
+
+		switch ((s8)check) {
+		case 0:
+			entry->glyph = 0xFFFF;
+			entry->startTime = r24;
+			data->timeCursor = r24;
+			data->penX = ex;
+			data->penY = ey;
+			data->savedX = var[1];
+			data->savedY = var[0];
+			return;
+
+		case '\n':
+			entry->glyph = 0xFFFB;
+			ex = 0;
+			entry->startTime = r24;
+			if (0.0f == maxScale) {
+				maxScale = 1.0f;
+			}
+			{
+				f32 dy = 32.0f * maxScale;
+
+				ey = (s16)((f32)ey - dy);
+				var[0] = (s16)((f32)var[0] - dy);
+			}
+			r24 += var54;
+			msg++;
+			entry++;
+			data->entryId++;
+			maxScale = 0.0f;
+			if (data->flags & 0x20) {
+				flags &= ~0xFF00;
+				flags |= 0x100 << (s8)data->selectCount;
+				data->selectCount++;
+			}
+			continue;
+
+		case '<':
+			q = (char*)msg + 1;
+			pn = tagName;
+			pa = tagArg;
+			mode = 0;
+			for (n = 0x80; n != 0; n--) {
+				tchc = *q;
+				tch = tchc;
+				switch (tch) {
+				case '>':
+					if (mode == 0) {
+						*pn = 0;
+					}
+					else {
+						*pa = 0;
+					}
+					after = q + 1;
+					goto parsed;
+				case ' ':
+					if (mode == 0) {
+						*pn = 0;
+						mode = 1;
+					}
+					else {
+						*pa++ = tchc;
+					}
+					break;
+				default:
+					if (mode == 0) {
+						*pn++ = tchc;
+					}
+					else {
+						*pa++ = tchc;
+					}
+					break;
+				}
+				q++;
+			}
+			after = NULL;
+		parsed:
+			msg = after;
+
+			if (strcmp(tagName, "k") == 0 || strcmp(tagName, "key") == 0) {
+				entry->glyph = 0xFFFE;
+				entry->x = var[1];
+				entry->startTime = r24;
+				r24 += 100;
+				entry++;
+				data->entryId++;
+				var[1]++;
+			}
+			else if (strcmp(tagName, "keyxon") == 0) {
+				data->flags |= 0x100;
+			}
+			else if (strcmp(tagName, "p") == 0 || strcmp(tagName, "scrl_auto") == 0) {
+				if (var[0] != 0) {
+					entry->glyph = 0xFFFD;
+					entry->y = (s16)(var[0] - 3);
+					ey -= 3;
+					entry->startTime = r24;
+					r24 += 50;
+					entry++;
+					data->entryId++;
+					var[2] = (s16)(ey - 3);
+					var[0] = 0;
+				}
+			}
+			else if (strcmp(tagName, "o") == 0 || strcmp(tagName, "once_stop") == 0) {
+				entry->glyph = 0xFFFC;
+				entry->startTime = r24;
+				r24 += 50;
+				entry++;
+				data->entryId++;
+			}
+			else if (strcmp(tagName, "pos") == 0) {
+				sscanf(tagArg, "%d%d", &posX, &posY);
+				{
+					s32 y = posY;
+
+					ex = (s16)posX;
+					if (y != 999) {
+						ey = (s16)(var[2] - y);
+					}
+					var[0] = (s16)(-y);
+				}
+			}
+			else if (strcmp(tagName, "scale") == 0) {
+				sscanf(tagArg, "%f", &scale);
+			}
+			else if (strcmp(tagName, "/scale") == 0) {
+				scale = 1.0f;
+			}
+			else if (strcmp(tagName, "wait") == 0) {
+				sscanf(tagArg, "%d", &wait);
+				r24 += wait;
+			}
+			else if (strcmp(tagName, "speed") == 0) {
+				sscanf(tagArg, "%d", &var54);
+			}
+			else if (strcmp(tagName, "/speed") == 0) {
+				var54 = data->charDelay;
+			}
+			else if (strcmp(tagName, "dynamic") == 0) {
+				sscanf(tagArg, "%f", &dyn);
+				flags |= 1;
+			}
+			else if (strcmp(tagName, "/dynamic") == 0) {
+				flags &= ~1;
+			}
+			else if (strcmp(tagName, "shake") == 0) {
+				flags |= 2;
+			}
+			else if (strcmp(tagName, "/shake") == 0) {
+				flags &= ~2;
+			}
+			else if (strcmp(tagName, "wave") == 0) {
+				flags |= 4;
+			}
+			else if (strcmp(tagName, "/wave") == 0) {
+				flags &= ~4;
+			}
+			else if (strcmp(tagName, "col") == 0) {
+				sscanf(tagArg, "%x", &entry->arg);
+				entry->glyph = 0xFFF7;
+				entry->startTime = r24;
+				entry++;
+				data->entryId++;
+			}
+			else if (strcmp(tagName, "/col") == 0) {
+				entry->arg = 0xFF;
+				entry->glyph = 0xFFF7;
+				entry->startTime = r24;
+				entry++;
+				data->entryId++;
+			}
+			else if (strcmp(tagName, "noise") == 0) {
+				entry->arg = 1;
+				entry->glyph = 0xFFF6;
+				entry->startTime = r24;
+				entry++;
+				data->entryId++;
+			}
+			else if (strcmp(tagName, "/noise") == 0) {
+				entry->arg = 0;
+				entry->glyph = 0xFFF6;
+				entry++;
+				data->entryId++;
+			}
+			else if (strcmp(tagName, "dkey") == 0) {
+				entry->arg = 1;
+				entry->glyph = 0xFFF5;
+				entry->startTime = r24;
+				entry++;
+				data->entryId++;
+			}
+			else if (strcmp(tagName, "/dkey") == 0) {
+				entry->arg = 0;
+				entry->glyph = 0xFFF5;
+				entry->startTime = r24;
+				entry++;
+				data->entryId++;
+			}
+			else if (strcmp(tagName, "plate") == 0) {
+				window->type = WINDOW_TYPE_PLATE;
+				var54 = 0;
+				data->charDelay = 0;
+			}
+			else if (strcmp(tagName, "system") == 0) {
+				window->type = WINDOW_TYPE_SYSTEM;
+				entry->arg = dat_8041a508;
+				entry->glyph = 0xFFF7;
+				entry->startTime = r24;
+				entry++;
+				data->entryId++;
+			}
+			else if (strcmp(tagName, "tec") == 0) {
+				window->type = WINDOW_TYPE_TEC;
+				entry->arg = dat_8041a50c;
+				entry->glyph = 0xFFF7;
+				entry->startTime = r24;
+				entry++;
+				data->entryId++;
+			}
+			else if (strcmp(tagName, "majo") == 0) {
+				window->type = WINDOW_TYPE_MAJO;
+			}
+			else if (strcmp(tagName, "diary") == 0) {
+				window->type = WINDOW_TYPE_DIARY;
+			}
+			else if (strcmp(tagName, "housou") == 0) {
+				window->type = WINDOW_TYPE_HOUSOU;
+			}
+			else if (strcmp(tagName, "boss") == 0) {
+				window->type = WINDOW_TYPE_BOSS;
+			}
+			else if (strcmp(tagName, "kanban") == 0) {
+				window->type = WINDOW_TYPE_KANBAN;
+				var54 = 0;
+				data->charDelay = 0;
+			}
+			else if (strcmp(tagName, "small") == 0) {
+				window->type = WINDOW_TYPE_SMALL;
+				data->flags |= 0x10;
+			}
+			else if (strcmp(tagName, "clear") == 0) {
+				window->type = WINDOW_TYPE_CLEAR;
+			}
+			else if (strcmp(tagName, "wpos") == 0) {
+				sscanf(tagArg, "%hd%hd%hd%hd", &wposX, &wposY, &wposH, &wposW);
+				window->flags |= 4;
+				window->x = (f32)wposX;
+				window->y = (f32)wposY;
+				window->height = (f32)wposH;
+				window->width = (f32)wposW;
+			}
+			else if (strcmp(tagName, "select") == 0) {
+				window->type = WINDOW_TYPE_SELECT;
+				data->flags |= 0x20;
+				sscanf(tagArg, "%hd%hd%hd%hd%hd", &sel2, &sel1, &data->selectWidth, &data->selectY);
+				data->selectInit = (s8)sel2;
+				data->field_0x7A42 = (s8)sel1;
+				data->selectCount = 1;
+				flags |= 0x100;
+				var54 = 0;
+			}
+			else if (strcmp(tagName, "se") == 0) {
+				sscanf(tagArg, "%d", &entry->arg);
+				entry->glyph = 0xFFFA;
+				entry++;
+				data->entryId++;
+			}
+			else if (strcmp(tagName, "vol") == 0) {
+				sscanf(tagArg, "%d", &entry->arg);
+				entry->glyph = 0xFFF9;
+				entry++;
+				data->entryId++;
+			}
+			else if (strcmp(tagName, "nowinse") == 0) {
+				window->flags |= 8;
+			}
+			else if (strcmp(tagName, "icon") == 0) {
+				s32 isHM = 0;
+
+				if ((s8)tagArg[0] >= '0' && (s8)tagArg[0] <= '9') {
+					sscanf(tagArg, "%d%f%d%d%d", &iconId, &iconScale, &icon3, &icon4, &icon5);
+				}
+				else {
+					sscanf(tagArg, "%s%f%d%d%d", buf4, &iconScale, &icon3, &icon4, &icon5);
+					if (strcmp(buf4, "HM") == 0) {
+						isHM = 1;
+					}
+					iconId = msgIconStr2ID(buf4);
+					if (iconId < 0) {
+						iconId = 0;
+					}
+				}
+				if (isHM == 0) {
+					s16 oldEx = ex;
+
+					entry->arg = (u32)iconId;
+					iconGetWidthHight(&w, &h, (u16)iconId);
+					entry->glyph = 0xFFF8;
+					ex += 40;
+					entry->x = (s16)((f32)icon3 + (0.5f * (f32)w * iconScale + (f32)oldEx));
+					entry->y = (s16)((f32)ey - (f32)h * iconScale);
+					entry->iconOffsetY = (s16)icon4;
+					entry->scale = iconScale;
+					entry->startTime = r24;
+					r24 += var54;
+					entry++;
+					data->entryId++;
+				}
+				else {
+					glyph = kanjiSearch(0x94B5);
+					w = (u16)(s32)(scale * (f32)(kanjiGetWidth((u16)glyph) + 4));
+					entry->glyph = glyph;
+					entry->x = ex;
+					entry->y = (s16)((s32)ey - (s32)(10.f * scale));
+					entry->scale = scale;
+					entry->arg = flags;
+					entry->arg |= 8;
+					if (flags & 1) {
+						entry->field_0x14 = dyn;
+					}
+					if (maxScale < scale) {
+						maxScale = scale;
+					}
+					entry->startTime = r24;
+					ex = (s16)(ex + w);
+					r24 += var54;
+					entry++;
+					data->entryId++;
+				}
+			}
+			else if (strcmp(tagName, "anim") == 0) {
+				sscanf(tagArg, "%s%s%d%d%f%d", buf3, buf2, &animA, &animB, &animF, &animC);
+				entry->arg = animPoseEntry(buf3, 2);
+				animPoseSetAnim(entry->arg, buf2, 1);
+				animPoseSetMaterialFlagOn(entry->arg, 0x1800);
+				animPoseSetMaterialFlagOff(entry->arg, 0x40);
+				animPoseSetGXFunc(msgw->poseId, msgDispKeyWait_render, 0);
+				entry->glyph = 0xFFF4;
+				entry->x = (s16)animA;
+				entry->y = (s16)((s32)var[2] - animB);
+				entry->scale = animF;
+				entry->field_0x14 = (animC == 0) ? 0.0f : 180.f;
+				r24 += var54;
+				entry++;
+				data->entryId++;
+			}
+			else if (strcmp(tagName, "paper") == 0) {
+				sscanf(tagArg, "%s%d", buf1, &paperId);
+				if (strcmp(buf1, "me") != 0) {
+					npc = npcNameToPtr(buf1);
+				}
+				else {
+					npc = NULL;
+				}
+				entry->arg = (u32)npc;
+				entry->glyph = 0xFFF3;
+				entry->startTime = paperId;
+				entry++;
+				data->entryId++;
+			}
+			else if (strcmp(tagName, "/paper") == 0) {
+				sscanf(tagArg, "%s", buf0);
+				if (strcmp(buf0, "me") != 0) {
+					npc = npcNameToPtr(buf0);
+				}
+				else {
+					npc = NULL;
+				}
+				entry->arg = (u32)npc;
+				entry->glyph = 0xFFF2;
+				entry++;
+				data->entryId++;
+			}
+			else if (strcmp(tagName, "r") == 0) {
+				if (data->window->type != WINDOW_TYPE_SMALL) {
+					r25 = ex;
+				}
+			}
+			else if (*(s8*)tagName == 'R' || (*(s8*)tagName == '/' && *(s8*)tagName == '/r')) {
+				skip = 1;
+				if (*(s8*)tagName != 'R') {
+					skip = 2;
+				}
+				if (data->window->type == WINDOW_TYPE_SMALL) {
+					continue;
+				}
+				len = strlen(tagName + skip);
+				half = len / 2;
+				total = 0;
+				for (i = 0; (s32)i < half; i++) {
+					u16 g = msgGetKanji(tagName, skip + i * 2);
+					f32 fw = scale * (f32)(kanjiGetWidth((u16)g) + 4);
+
+					total += (s32)(0.55f * fw);
+				}
+				base = 4.0f * scale;
+				total = (s32)((f32)(u16)total - 0.55f * base);
+				r25 = ((f32)(r25 + ex) - base - (f32)(u16)total) / 2.0f;
+
+				for (j = 0; (s32)j < half; j++) {
+					u16 g = msgGetKanji(tagName, skip + j * 2);
+					f32 fw = scale * (f32)(kanjiGetWidth((u16)g) + 4);
+					s32 rinc = (s32)(0.55f * fw);
+
+					entry->glyph = g;
+					entry->x = (s16)r25;
+					entry->y = (s32)ey;
+					entry->scale = 0.55f * scale;
+					entry->arg = flags;
+					if (flags & 1) {
+						entry->field_0x14 = dyn;
+					}
+					entry->startTime = 0;
+					r25 += rinc;
+					entry++;
+					data->entryId++;
+				}
+				continue;
+			}
+			if ((s8)*after == '\n') {
+				msg++;
+			}
+			continue;
+		}
+
+		if ((u32)gp->language == 0 && (s8)check >= '0' && (s8)check <= '9') {
+			glyph = kanjiSearch((u16)(check + 0x10000 - 0x7DE1));
+		}
+		else {
+			glyph = hankakuSearch(check);
+		}
 		{
-		s32 exinc = (s32)(scale * (f32)(kanjiGetWidth((u16)glyph) + 4));
+		s32 exinc = (s32)(scale * (f32)(kanjiGetWidth((u16)glyph) + 2));
 		entry->glyph = glyph;
 		entry->x = ex;
 		entry->y = (s16)((s32)ey - (s32)(10.f * scale));
 		entry->scale = scale;
 		entry->arg = flags;
-		if (*(const u16*)msg == 0x8145) {
-			entry->arg |= 0x10;
-		}
-		else if (*(const u16*)msg != 0x8140 && *(const u16*)msg != 0x8151) {
+		if ((s8)*msg != ' ') {
 			entry->arg |= 8;
 		}
 		if (flags & 1) {
@@ -883,477 +1340,10 @@ loop:
 		ex = (s16)((s32)ex + exinc);
 		}
 		r24 += var54;
-		msg += 2;
-		entry++;
-		data->entryId++;
-		goto loop;
-	}
-
-	switch ((s8)check) {
-	case 0:
-		entry->glyph = 0xFFFF;
-		entry->startTime = r24;
-		data->timeCursor = r24;
-		data->penX = ex;
-		data->penY = ey;
-		data->savedX = var[1];
-		data->savedY = var[0];
-		goto done;
-
-	case '\n':
-		entry->glyph = 0xFFFB;
-		ex = 0;
-		entry->startTime = r24;
-		if (0.0f == maxScale) {
-			maxScale = 1.0f;
-		}
-		{
-			f32 dy = 32.0f * maxScale;
-
-			ey = (s16)((f32)ey - dy);
-			var[0] = (s16)((f32)var[0] - dy);
-		}
-		r24 += var54;
 		msg++;
 		entry++;
 		data->entryId++;
-		maxScale = 0.0f;
-		if (data->flags & 0x20) {
-			flags &= ~0xFF00;
-			flags |= 0x100 << (s8)data->selectCount;
-			data->selectCount++;
-		}
-		goto loop;
-
-	case '<':
-		q = (char*)msg + 1;
-		pn = tagName;
-		pa = tagArg;
-		mode = 0;
-		for (n = 0x80; n != 0; n--) {
-			tchc = *q;
-			tch = tchc;
-			switch (tch) {
-			case '>':
-				if (mode == 0) {
-					*pn = 0;
-				}
-				else {
-					*pa = 0;
-				}
-				after = q + 1;
-				goto parsed;
-			case ' ':
-				if (mode == 0) {
-					*pn = 0;
-					mode = 1;
-				}
-				else {
-					*pa++ = tchc;
-				}
-				break;
-			default:
-				if (mode == 0) {
-					*pn++ = tchc;
-				}
-				else {
-					*pa++ = tchc;
-				}
-				break;
-			}
-			q++;
-		}
-		after = NULL;
-	parsed:
-		msg = after;
-
-		if (strcmp(tagName, "k") == 0 || strcmp(tagName, "key") == 0) {
-			entry->glyph = 0xFFFE;
-			entry->x = var[1];
-			entry->startTime = r24;
-			r24 += 100;
-			entry++;
-			data->entryId++;
-			var[1]++;
-		}
-		else if (strcmp(tagName, "keyxon") == 0) {
-			data->flags |= 0x100;
-		}
-		else if (strcmp(tagName, "p") == 0 || strcmp(tagName, "scrl_auto") == 0) {
-			if (var[0] != 0) {
-				entry->glyph = 0xFFFD;
-				entry->y = (s16)(var[0] - 3);
-				ey -= 3;
-				entry->startTime = r24;
-				r24 += 50;
-				entry++;
-				data->entryId++;
-				var[2] = (s16)(ey - 3);
-				var[0] = 0;
-			}
-		}
-		else if (strcmp(tagName, "o") == 0 || strcmp(tagName, "once_stop") == 0) {
-			entry->glyph = 0xFFFC;
-			entry->startTime = r24;
-			r24 += 50;
-			entry++;
-			data->entryId++;
-		}
-		else if (strcmp(tagName, "pos") == 0) {
-			sscanf(tagArg, "%d%d", &posX, &posY);
-			{
-				s32 y = posY;
-
-				ex = (s16)posX;
-				if (y != 999) {
-					ey = (s16)(var[2] - y);
-				}
-				var[0] = (s16)(-y);
-			}
-		}
-		else if (strcmp(tagName, "scale") == 0) {
-			sscanf(tagArg, "%f", &scale);
-		}
-		else if (strcmp(tagName, "/scale") == 0) {
-			scale = 1.0f;
-		}
-		else if (strcmp(tagName, "wait") == 0) {
-			sscanf(tagArg, "%d", &wait);
-			r24 += wait;
-		}
-		else if (strcmp(tagName, "speed") == 0) {
-			sscanf(tagArg, "%d", &var54);
-		}
-		else if (strcmp(tagName, "/speed") == 0) {
-			var54 = data->charDelay;
-		}
-		else if (strcmp(tagName, "dynamic") == 0) {
-			sscanf(tagArg, "%f", &dyn);
-			flags |= 1;
-		}
-		else if (strcmp(tagName, "/dynamic") == 0) {
-			flags &= ~1;
-		}
-		else if (strcmp(tagName, "shake") == 0) {
-			flags |= 2;
-		}
-		else if (strcmp(tagName, "/shake") == 0) {
-			flags &= ~2;
-		}
-		else if (strcmp(tagName, "wave") == 0) {
-			flags |= 4;
-		}
-		else if (strcmp(tagName, "/wave") == 0) {
-			flags &= ~4;
-		}
-		else if (strcmp(tagName, "col") == 0) {
-			sscanf(tagArg, "%x", &entry->arg);
-			entry->glyph = 0xFFF7;
-			entry->startTime = r24;
-			entry++;
-			data->entryId++;
-		}
-		else if (strcmp(tagName, "/col") == 0) {
-			entry->arg = 0xFF;
-			entry->glyph = 0xFFF7;
-			entry->startTime = r24;
-			entry++;
-			data->entryId++;
-		}
-		else if (strcmp(tagName, "noise") == 0) {
-			entry->arg = 1;
-			entry->glyph = 0xFFF6;
-			entry->startTime = r24;
-			entry++;
-			data->entryId++;
-		}
-		else if (strcmp(tagName, "/noise") == 0) {
-			entry->arg = 0;
-			entry->glyph = 0xFFF6;
-			entry++;
-			data->entryId++;
-		}
-		else if (strcmp(tagName, "dkey") == 0) {
-			entry->arg = 1;
-			entry->glyph = 0xFFF5;
-			entry->startTime = r24;
-			entry++;
-			data->entryId++;
-		}
-		else if (strcmp(tagName, "/dkey") == 0) {
-			entry->arg = 0;
-			entry->glyph = 0xFFF5;
-			entry->startTime = r24;
-			entry++;
-			data->entryId++;
-		}
-		else if (strcmp(tagName, "plate") == 0) {
-			window->type = WINDOW_TYPE_PLATE;
-			var54 = 0;
-			data->charDelay = 0;
-		}
-		else if (strcmp(tagName, "system") == 0) {
-			window->type = WINDOW_TYPE_SYSTEM;
-			entry->arg = dat_8041a508;
-			entry->glyph = 0xFFF7;
-			entry->startTime = r24;
-			entry++;
-			data->entryId++;
-		}
-		else if (strcmp(tagName, "tec") == 0) {
-			window->type = WINDOW_TYPE_TEC;
-			entry->arg = dat_8041a50c;
-			entry->glyph = 0xFFF7;
-			entry->startTime = r24;
-			entry++;
-			data->entryId++;
-		}
-		else if (strcmp(tagName, "majo") == 0) {
-			window->type = WINDOW_TYPE_MAJO;
-		}
-		else if (strcmp(tagName, "diary") == 0) {
-			window->type = WINDOW_TYPE_DIARY;
-		}
-		else if (strcmp(tagName, "housou") == 0) {
-			window->type = WINDOW_TYPE_HOUSOU;
-		}
-		else if (strcmp(tagName, "boss") == 0) {
-			window->type = WINDOW_TYPE_BOSS;
-		}
-		else if (strcmp(tagName, "kanban") == 0) {
-			window->type = WINDOW_TYPE_KANBAN;
-			var54 = 0;
-			data->charDelay = 0;
-		}
-		else if (strcmp(tagName, "small") == 0) {
-			window->type = WINDOW_TYPE_SMALL;
-			data->flags |= 0x10;
-		}
-		else if (strcmp(tagName, "clear") == 0) {
-			window->type = WINDOW_TYPE_CLEAR;
-		}
-		else if (strcmp(tagName, "wpos") == 0) {
-			sscanf(tagArg, "%hd%hd%hd%hd", &wposX, &wposY, &wposH, &wposW);
-			window->flags |= 4;
-			window->x = (f32)wposX;
-			window->y = (f32)wposY;
-			window->height = (f32)wposH;
-			window->width = (f32)wposW;
-		}
-		else if (strcmp(tagName, "select") == 0) {
-			window->type = WINDOW_TYPE_SELECT;
-			data->flags |= 0x20;
-			sscanf(tagArg, "%hd%hd%hd%hd%hd", &sel2, &sel1, &data->selectWidth, &data->selectY);
-			data->selectInit = (s8)sel2;
-			data->field_0x7A42 = (s8)sel1;
-			data->selectCount = 1;
-			flags |= 0x100;
-			var54 = 0;
-		}
-		else if (strcmp(tagName, "se") == 0) {
-			sscanf(tagArg, "%d", &entry->arg);
-			entry->glyph = 0xFFFA;
-			entry++;
-			data->entryId++;
-		}
-		else if (strcmp(tagName, "vol") == 0) {
-			sscanf(tagArg, "%d", &entry->arg);
-			entry->glyph = 0xFFF9;
-			entry++;
-			data->entryId++;
-		}
-		else if (strcmp(tagName, "nowinse") == 0) {
-			window->flags |= 8;
-		}
-		else if (strcmp(tagName, "icon") == 0) {
-			s32 isHM = 0;
-
-			if ((s8)tagArg[0] >= '0' && (s8)tagArg[0] <= '9') {
-				sscanf(tagArg, "%d%f%d%d%d", &iconId, &iconScale, &icon3, &icon4, &icon5);
-			}
-			else {
-				sscanf(tagArg, "%s%f%d%d%d", buf4, &iconScale, &icon3, &icon4, &icon5);
-				if (strcmp(buf4, "HM") == 0) {
-					isHM = 1;
-				}
-				iconId = msgIconStr2ID(buf4);
-				if (iconId < 0) {
-					iconId = 0;
-				}
-			}
-			if (isHM == 0) {
-				s16 oldEx = ex;
-
-				entry->arg = (u32)iconId;
-				iconGetWidthHight(&w, &h, (u16)iconId);
-				entry->glyph = 0xFFF8;
-				ex += 40;
-				entry->x = (s16)((f32)icon3 + (0.5f * (f32)w * iconScale + (f32)oldEx));
-				entry->y = (s16)((f32)ey - (f32)h * iconScale);
-				entry->iconOffsetY = (s16)icon4;
-				entry->scale = iconScale;
-				entry->startTime = r24;
-				r24 += var54;
-				entry++;
-				data->entryId++;
-			}
-			else {
-				glyph = kanjiSearch(0x94B5);
-				w = (u16)(s32)(scale * (f32)(kanjiGetWidth((u16)glyph) + 4));
-				entry->glyph = glyph;
-				entry->x = ex;
-				entry->y = (s16)((s32)ey - (s32)(10.f * scale));
-				entry->scale = scale;
-				entry->arg = flags;
-				entry->arg |= 8;
-				if (flags & 1) {
-					entry->field_0x14 = dyn;
-				}
-				if (maxScale < scale) {
-					maxScale = scale;
-				}
-				entry->startTime = r24;
-				ex = (s16)(ex + w);
-				r24 += var54;
-				entry++;
-				data->entryId++;
-			}
-		}
-		else if (strcmp(tagName, "anim") == 0) {
-			sscanf(tagArg, "%s%s%d%d%f%d", buf3, buf2, &animA, &animB, &animF, &animC);
-			entry->arg = animPoseEntry(buf3, 2);
-			animPoseSetAnim(entry->arg, buf2, 1);
-			animPoseSetMaterialFlagOn(entry->arg, 0x1800);
-			animPoseSetMaterialFlagOff(entry->arg, 0x40);
-			animPoseSetGXFunc(msgw->poseId, msgDispKeyWait_render, 0);
-			entry->glyph = 0xFFF4;
-			entry->x = (s16)animA;
-			entry->y = (s16)((s32)var[2] - animB);
-			entry->scale = animF;
-			entry->field_0x14 = (animC == 0) ? 0.0f : 180.f;
-			r24 += var54;
-			entry++;
-			data->entryId++;
-		}
-		else if (strcmp(tagName, "paper") == 0) {
-			sscanf(tagArg, "%s%d", buf1, &paperId);
-			if (strcmp(buf1, "me") != 0) {
-				npc = npcNameToPtr(buf1);
-			}
-			else {
-				npc = NULL;
-			}
-			entry->arg = (u32)npc;
-			entry->glyph = 0xFFF3;
-			entry->startTime = paperId;
-			entry++;
-			data->entryId++;
-		}
-		else if (strcmp(tagName, "/paper") == 0) {
-			sscanf(tagArg, "%s", buf0);
-			if (strcmp(buf0, "me") != 0) {
-				npc = npcNameToPtr(buf0);
-			}
-			else {
-				npc = NULL;
-			}
-			entry->arg = (u32)npc;
-			entry->glyph = 0xFFF2;
-			entry++;
-			data->entryId++;
-		}
-		else if (strcmp(tagName, "r") == 0) {
-			if (data->window->type != WINDOW_TYPE_SMALL) {
-				r25 = ex;
-			}
-		}
-		else if (*(s8*)tagName == 'R' || (*(s8*)tagName == '/' && *(s8*)tagName == '/r')) {
-			skip = 1;
-			if (*(s8*)tagName != 'R') {
-				skip = 2;
-			}
-			if (data->window->type == WINDOW_TYPE_SMALL) {
-				goto loop;
-			}
-			len = strlen(tagName + skip);
-			half = len / 2;
-			total = 0;
-			for (i = 0; (s32)i < half; i++) {
-				u16 g = msgGetKanji(tagName, skip + i * 2);
-				f32 fw = scale * (f32)(kanjiGetWidth((u16)g) + 4);
-
-				total += (s32)(0.55f * fw);
-			}
-			base = 4.0f * scale;
-			total = (s32)((f32)(u16)total - 0.55f * base);
-			r25 = ((f32)(r25 + ex) - base - (f32)(u16)total) / 2.0f;
-
-			for (j = 0; (s32)j < half; j++) {
-				u16 g = msgGetKanji(tagName, skip + j * 2);
-				f32 fw = scale * (f32)(kanjiGetWidth((u16)g) + 4);
-				s32 rinc = (s32)(0.55f * fw);
-
-				entry->glyph = g;
-				entry->x = (s16)r25;
-				entry->y = (s32)ey;
-				entry->scale = 0.55f * scale;
-				entry->arg = flags;
-				if (flags & 1) {
-					entry->field_0x14 = dyn;
-				}
-				entry->startTime = 0;
-				r25 += rinc;
-				entry++;
-				data->entryId++;
-			}
-			goto loop;
-		}
-		goto aftertag;
-
-	default:
-		goto defaultchar;
 	}
-
-aftertag:
-	if ((s8)*after == '\n') {
-		msg++;
-	}
-	goto loop;
-
-defaultchar:
-	if ((u32)gp->language == 0 && (s8)check >= '0' && (s8)check <= '9') {
-		glyph = kanjiSearch((u16)(check + 0x10000 - 0x7DE1));
-	}
-	else {
-		glyph = hankakuSearch(check);
-	}
-	{
-	s32 exinc = (s32)(scale * (f32)(kanjiGetWidth((u16)glyph) + 2));
-	entry->glyph = glyph;
-	entry->x = ex;
-	entry->y = (s16)((s32)ey - (s32)(10.f * scale));
-	entry->scale = scale;
-	entry->arg = flags;
-	if ((s8)*msg != ' ') {
-		entry->arg |= 8;
-	}
-	if (flags & 1) {
-		entry->field_0x14 = dyn;
-	}
-	if (maxScale < scale) {
-		maxScale = scale;
-	}
-	entry->startTime = r24;
-	ex = (s16)((s32)ex + exinc);
-	}
-	r24 += var54;
-	msg++;
-	entry++;
-	data->entryId++;
-	goto loop;
-
-done:
-	return;
 }
 #pragma opt_lifetimes reset
 
