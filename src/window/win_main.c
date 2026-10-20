@@ -214,91 +214,83 @@ void winMain(void) {
         switch (wp->menuState) {
             case 0:
                 if (!(wp->flags & 0x1000)) {
-                    if ((u32)marioStGetSystemLevel() == 0 && !marioCheckMenuDisable() && !mobjCheckExec() && fadeIsFinish()) {
-                        if (mario->characterId == 2) {
-                            if (wp->buttonTrg & 0x1000) {
-                                wp->openTabId = 0;
-                                goto check_open;
-                            }
-                        } else {
-                            if (wp->buttonTrg & 0x1000) {
-                                wp->openTabId = 0;
-                                goto check_open;
-                            }
-                            if (!(keyGetButton(0) & 0x10) && strcmp(gp->currentAreaName, "yuu") != 0) {
-                                if ((wp->buttonTrg & 1) && (swByteGet(0) >= 7 || partyChkJoin(1))) {
-                                    wp->openTabId = 1;
-                                    goto check_open;
-                                }
-                                if (wp->buttonTrg & 8) {
-                                    wp->openTabId = 2;
-                                    goto check_open;
-                                }
-                                if ((wp->buttonTrg & 2) && (swByteGet(0) >= 0x14 || pouchGetHaveBadgeCnt())) {
-                                    wp->openTabId = 3;
-                                    goto check_open;
-                                }
-                                if (wp->buttonTrg & 4) {
-                                    wp->openTabId = 4;
-                                check_open:
-                                    if (keyGetButton(0) & 0x40) {
-                                        break;
-                                    }
-                                    goto open_menu;
-                                }
-                            }
+                    if (!((u32)marioStGetSystemLevel() == 0 && !marioCheckMenuDisable() && !mobjCheckExec() && fadeIsFinish())) {
+                        break;
+                    }
+                    if (mario->characterId == 2) {
+                        if (!(wp->buttonTrg & 0x1000)) {
+                            break;
                         }
+                        wp->openTabId = 0;
+                    } else if (wp->buttonTrg & 0x1000) {
+                        wp->openTabId = 0;
+                    } else if (!(keyGetButton(0) & 0x10) && strcmp(gp->currentAreaName, "yuu") != 0) {
+                        if ((wp->buttonTrg & 1) && (swByteGet(0) >= 7 || partyChkJoin(1))) {
+                            wp->openTabId = 1;
+                        } else if (wp->buttonTrg & 8) {
+                            wp->openTabId = 2;
+                        } else if ((wp->buttonTrg & 2) && (swByteGet(0) >= 0x14 || pouchGetHaveBadgeCnt())) {
+                            wp->openTabId = 3;
+                        } else if (wp->buttonTrg & 4) {
+                            wp->openTabId = 4;
+                        } else {
+                            break;
+                        }
+                    } else {
+                        break;
+                    }
+                    if (keyGetButton(0) & 0x40) {
+                        break;
                     }
                 } else {
                     wp->openTabId = 0;
-                open_menu:
-                    *(u16*)camGetPtr(CAMERA_2D) |= 0x200;
-                    if (gp->flags & 0x1000) {
-                        wp->openTabId = 1;
-                    }
-                    if (!(wp->flags & 0x1000)) {
-                        marioStSystemLevel(4);
-                    } else {
-                        npcStopForEvent();
-                    }
-                    fbatChangeMode(7);
-                    if (mario->characterId == 2) {
-                        if (kpaGetStageViewType() == 0) {
-                            marioCtrlOff();
-                        } else {
-                            marioCtrlOff2();
-                        }
+                }
+                *(u16*)camGetPtr(CAMERA_2D) |= 0x200;
+                if (gp->flags & 0x1000) {
+                    wp->openTabId = 1;
+                }
+                if (!(wp->flags & 0x1000)) {
+                    marioStSystemLevel(4);
+                } else {
+                    npcStopForEvent();
+                }
+                fbatChangeMode(7);
+                if (mario->characterId == 2) {
+                    if (kpaGetStageViewType() == 0) {
+                        marioCtrlOff();
                     } else {
                         marioCtrlOff2();
                     }
-                    partyCtrlOff();
-                    psndSetFlag(0x80);
-                    if (mario->characterId == 2) {
-                        kpaPauseSE2();
-                    }
-                    if (mario->flags & 0x80000000) {
-                        wp->flags |= 0x2000;
-                    } else {
-                        wp->flags &= ~0x2000;
-                    }
-                    {
-                        s32 i = 0;
-                        do {
-                            padRumbleHardOff(i);
-                            i++;
-                        } while (i < 4);
-                    }
-                    fileAsyncf(FILE_TYPE_TPL, 0, "%s/w/jp/mail.tpl", getMarioStDvdRoot());
-                    {
-                        const char* tpl = winGetMapTplName();
-                        fileAsyncf(FILE_TYPE_TPL, 0, "%s/w/jp/%s", getMarioStDvdRoot(), tpl);
-                    }
-                    WM_S32(0x24) = 0;
-                    if (strncmp(gp->currentMapName, "yuu_", 4) == 0) {
-                        wp->menuState = 0x190;
-                    } else {
-                        wp->menuState += 1;
-                    }
+                } else {
+                    marioCtrlOff2();
+                }
+                partyCtrlOff();
+                psndSetFlag(0x80);
+                if (mario->characterId == 2) {
+                    kpaPauseSE2();
+                }
+                if (mario->flags & 0x80000000) {
+                    wp->flags |= 0x2000;
+                } else {
+                    wp->flags &= ~0x2000;
+                }
+                {
+                    s32 i = 0;
+                    do {
+                        padRumbleHardOff(i);
+                        i++;
+                    } while (i < 4);
+                }
+                fileAsyncf(FILE_TYPE_TPL, 0, "%s/w/jp/mail.tpl", getMarioStDvdRoot());
+                {
+                    const char* tpl = winGetMapTplName();
+                    fileAsyncf(FILE_TYPE_TPL, 0, "%s/w/jp/%s", getMarioStDvdRoot(), tpl);
+                }
+                WM_S32(0x24) = 0;
+                if (strncmp(gp->currentMapName, "yuu_", 4) == 0) {
+                    wp->menuState = 0x190;
+                } else {
+                    wp->menuState += 1;
                 }
                 break;
 

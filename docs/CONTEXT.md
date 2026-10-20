@@ -11352,3 +11352,38 @@ Verified: tower build recreates build/G8MJ01/ok. `tools/cleanup_index.py` addres
 - The rest of the matching arms were small enough to read normally (an extra `ytmp`/`readId`/`w` local, `angle += 180.0f; angle = revise360(angle)`, `case 0:` ahead of `default`, `!party->speed`, the one-compound-test angle check, the `-3.0f` staging, the recomputed 1.4 product, the `Vec pos` copies of the named rodata vectors) and now stand alone without `#ifdef`. The jump targetPos stores keep `Vec pos = FV(...)` but one assignment per line.
 - Left under `MUST_MATCH`: the data-layout pieces (PM_RODATA, the reverse-order `.sbss` dummy, the FB/FV macros), the `(f32*)(u32)(s64)(s32)&vA0.z` movePos argument (px/pz locals, `s32` casts, and swapped store order all change the object), the nested `f0 = ... (f1 = ... (f6 = ...))` travel-time expression and the `party->targetDist = (f6 = party->targetDist)` self-store in party_motion_jump (the plain form shifts the f5/f6 colouring), and the three `hitFlag` redundant-NULL re-tests (party_motion_damage, two in the hit-height probe loop; ternary, `&&` and single-expression rewrites all move branch targets).
 - Verified: tower `ninja` recreates build/G8MJ01/ok; party_motion.c also compiles without `-DMUST_MATCH` (`-maxerrors 50`).
+
+### Readability: gotos left by the first goto pass (2026-10-20, Claude Sonnet 5.5, n9-q-s-gotohard1)
+
+Removed 7 gotos, build MATCH (tower `ninja` recreates `build/G8MJ01/ok`):
+- win_main.c `winMain` case 0 (6 gotos: 5 `check_open`, 1 `open_menu`): the 40-line open body is no longer the `else` arm of the
+  `flags & 0x1000` test. The `else` arm is just `openTabId = 0`; the non-flag arm does the system-level / menu-disable / fade
+  gate, then picks `openTabId` with an else-if chain (each failed gate or unmatched button is a `break`), then the
+  `keyGetButton(0) & 0x40` `break`; the open body follows both arms at the case's own indent. Identical object on the first try.
+- npcdrv.c `npcMain` (1 of 3 `interrupt` gotos): the blow check is `if (blow) { interruptFlags |= 8; } else { territory,
+  find and move stages }`.
+
+Left, with what was built (each differs from retail):
+- npcMain `interrupt` (2 gotos, territory and find stages). Territory stage: a nested `else` needs the later stages after
+  both the hit and no-hit exits, so the stage has to be hoisted: `hit = FALSE;` before `if (territoryType != NOTHING &&
+  ...)` then `if (hit) {|= 4} else if (state == FIND) {...} else if (MOVE || RETURN) {...}` gives 99.84 (one extra `li r5,0`
+  ahead of the territory test; retail sets `hit` only inside it). Find stage: `if (hit) {|= 2} } else if (MOVE || RETURN)`
+  (valid since the states are exclusive) is 99.97 and moves the move stage's `hit` from r25 to r26; swapping the local
+  declaration order in that block, or dropping the find stage's own `BOOL hit` (99.94), did not fix it.
+- npcMain `found` (2 gotos): not retried (the earlier folded else-if changed codegen; the dy/range checks that follow are
+  reached from both the near and the in-angle paths, so a nested form duplicates them).
+- fbatBattleMode `afterStrike` (2 gotos): retail shares one `dbg_battleskip == 2` tail between the first-strike-win
+  failure, the badge checks failing, and the not-attempted path. `if (!NO_WIN) { if (A) TT else if (B) TT else if (dbg==2)
+  TT else FF } else if (dbg==2) TT else FF` (duplicated tail) is 97.78: MWCC does not merge the two copies.
+- fbatBattleMode `after` (1 goto): not retried beyond the earlier guard; the only goto-free shapes repeat the three bonus ifs
+  in two arms or test `mult` again.
+- battle_detect.c `_btlSamplingEnemy` ac4 keep chain (13 gotos): the "goto shape is load-bearing" comment holds. Retail
+  tests `targetPropertyFlags & 1` once, then three separate `li r0,0; b end` exits (untattleable, no monosiri, no tattle tag),
+  then the rest. Full else-if chain with three `(flags & 1) && X` arms: 99.31 (the flag is retested and reloaded after each
+  call). `(flags & 1) && (A || B || C)` as the first arm and the rest as else-ifs: 99.44 (the three exits merge into one
+  `keep = 0` block). `keep = 1; if (flags & 1) { if A keep = 0; else if B ...; }` then a guarded chain: 99.26
+  (`li`/`cmpwi keep` added). The flag test must dominate three distinct exits and fall through to the rest, which needs a goto
+  or a duplicated rest-of-chain.
+- `dedup_keep_done` (1 goto): `if (noDup == 0) keep = 0; else keep = 1; } else keep = 1;` is 99.72 (two `keep = 1` copies,
+  one extra `b`); `keep = 1;` before the test (99.52) and `noDup = 1;` hoisted above the flag test (99.04) change the
+  registers and the order.
