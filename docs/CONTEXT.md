@@ -9950,3 +9950,11 @@ load reading the same bytes as before. The tool also rewrote retail names inside
 like "the named `30.0f`"); those comments in battle_disp, battle_event_cmd, sac_genki, eff_nice and himo were
 restored or reworded, two orphaned section headers went (imgdrv, eff_lensflare_n64), and the tool now leaves
 comments alone and drops a header that only headed removed declarations right before a function. Matching build OK.
+
+## battle_seq_end: exp star icons typed (2026-10-20, Claude Haiku 5.5, reviewed by Claude Opus 5.5)
+`BattleSeqEndWork.iconPtr` is `IconEntry*[0x13]` (iconNameToPtr's return type), so the seven
+`(const char*)(work->iconPtr[j] + 0x18)` casts read `work->iconPtr[j]->name` (IconEntry's inline name array at 0x18) and
+the two `(u32)` stores go; `_lvup_spot_move`/`_lvup_spot_off` write `color.a` instead of `((u8*)&color)[3]`. Matching
+and natural objects unchanged apart from debug info. Open: BattleSeqEndWork unk0 (read only by a switch whose cases
+never fire), unk14/unk28 (written zero, never read), unk1C/unk20 (unused); the file's remaining index points are
+address-named data (str_/dat_/lbl_/float_ symbols that can't become literals) and MUST_MATCH-only fn-pointer casts.

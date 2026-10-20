@@ -1328,7 +1328,7 @@ void _GetExpIcon_Init(BattleSeqEndWork* arg) {
     for (i = 0; i < 10; i++) {
         sprintf(name, "_Bgsp%d", i);
         iconEntry2D(name, 0x18C);
-        work->iconPtr[i] = (u32)iconNameToPtr(name);
+        work->iconPtr[i] = iconNameToPtr(name);
         iconSetScale(name, float_0p9_80420ce8);
         iconFlagOn(name, 2);
         work->iconFrames[i] = 0;
@@ -1342,7 +1342,7 @@ void _GetExpIcon_Init(BattleSeqEndWork* arg) {
     for (i = 10; i < 0x13; i++) {
         sprintf(name, "_Bgsp%d", i);
         iconEntry2D(name, 0x18C);
-        work->iconPtr[i] = (u32)iconNameToPtr(name);
+        work->iconPtr[i] = iconNameToPtr(name);
         iconSetScale(name, float_0p45_80420cec);
         iconFlagOn(name, 2);
         work->iconFrames[i] = 0;
@@ -1361,7 +1361,7 @@ void _GetExpIcon_Main(BattleWork* wp) {
     s32 j;
 
     for (j = 0; j < exp / 10; j++) {
-        iconFlagOff((const char*)(work->iconPtr[j] + 0x18), 2);
+        iconFlagOff(work->iconPtr[j]->name, 2);
         if (work->iconAlpha[j] <= 0) {
             work->iconAlpha[j] = 0x40;
         } else {
@@ -1377,13 +1377,13 @@ void _GetExpIcon_Main(BattleWork* wp) {
             float_36_80420ce4 * (f32)j + (float_24_80420cdc - float_18_80420ce0 * (f32)(work->expRemaining / 10));
     }
     for (; j < 10; j++) {
-        iconFlagOn((const char*)(work->iconPtr[j] + 0x18), 2);
+        iconFlagOn(work->iconPtr[j]->name, 2);
         work->iconAlpha[j] = 0;
         work->iconFrames[j] = 0;
     }
     {
         for (j = 10; j - 10 < exp % 10; j++) {
-            iconFlagOff((const char*)(work->iconPtr[j] + 0x18), 2);
+            iconFlagOff(work->iconPtr[j]->name, 2);
             if (work->iconAlpha[j] <= 0) {
                 work->iconAlpha[j] = 0x40;
             } else {
@@ -1394,14 +1394,14 @@ void _GetExpIcon_Main(BattleWork* wp) {
             }
         }
         for (; j < 0x13; j++) {
-            iconFlagOn((const char*)(work->iconPtr[j] + 0x18), 2);
+            iconFlagOn(work->iconPtr[j]->name, 2);
             work->iconAlpha[j] = 0;
         }
     }
     for (j = 0; j < 0x13; j++) {
-        iconSetAlpha((const char*)(work->iconPtr[j] + 0x18),
+        iconSetAlpha(work->iconPtr[j]->name,
                      (u8)work->iconAlpha[j]);
-        iconSetPos((const char*)(work->iconPtr[j] + 0x18),
+        iconSetPos(work->iconPtr[j]->name,
                    work->iconPos[j].x, work->iconPos[j].y + float_0_80420c7c,
                    work->iconPos[j].z);
     }
@@ -1422,7 +1422,7 @@ void _GetExpIcon_End(BattleSeqEndWork* work) {
 
     work->dispFlags &= ~SEQEND_DISP_EXP_ICONS;
     for (i = 0; i < 0x13; i++) {
-        iconDelete((const char*)(work->iconPtr[i] + 0x18));
+        iconDelete(work->iconPtr[i]->name);
     }
 }
 
@@ -1651,7 +1651,7 @@ s32 _lvup_spot_move(EventEntry* event, BOOL isFirstCall) {
         {
             GXColor color = {0xFF, 0xFF, 0xFF, 0x00};
 
-            ((u8*)&color)[3] = (s32)intplGetValue(0, event->userdataEx[0], 21, float_255_80420c88, float_128_80420cc0);
+            color.a = (s32)intplGetValue(0, event->userdataEx[0], 21, float_255_80420c88, float_128_80420cc0);
             entry->color = color;
         }
         if (event->userdataEx[0] <= 0) {
@@ -1681,7 +1681,7 @@ s32 _lvup_spot_off(EventEntry* event, BOOL isFirstCall) {
         entry = &spot->entries[i];
         color = (GXColor){0xFF, 0xFF, 0xFF, 0x00};
 
-        ((u8*)&color)[3] = (s32)intplGetValue(2, event->userdata[1], event->userdata[0], float_0_80420c7c, (f32)event->userdata[2]);
+        color.a = (s32)intplGetValue(2, event->userdata[1], event->userdata[0], float_0_80420c7c, (f32)event->userdata[2]);
         entry->color = color;
         if (entry->color.a == 0) {
             entry->flags &= ~2;
