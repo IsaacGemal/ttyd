@@ -46,7 +46,7 @@ extern s32 sac_ac_help_off[];
 
 extern u32 dat_80421718;
 extern u32 dat_8042171c;
-extern char str_80421728[4];
+extern char str_ofs[4];
 extern u32 weapon_scissor[];
 
 // Double constants emitted in this translation unit's .sdata2.
@@ -1314,7 +1314,7 @@ void scissor_disp_region(CameraId cameraId, void* param) {
     } else {
         work->flags |= 1;
     }
-    offscreenAddBoundingBox(offscreenNameToId(str_80421728), left, top, right, bottom);
+    offscreenAddBoundingBox(offscreenNameToId(str_ofs), left, top, right, bottom);
 }
 
 s32 scissor_init(void) {
@@ -1367,8 +1367,8 @@ s32 wait_star_standby(void) {
 __declspec(section ".sdata2") u32 dat_80421718 = 0xFFFFFF00;
 __declspec(section ".sdata2") u32 dat_8042171c = 0x00FFFFFF;
 __declspec(section ".sdata2") char str_80421720[8] = "M_I_Y";
-__declspec(section ".sdata2") char str_80421728[4] = "ofs";
-__declspec(section ".sdata2") char str_8042172C[4] = "img";
+__declspec(section ".sdata2") char str_ofs[4] = "ofs";
+__declspec(section ".sdata2") char str_img[4] = "img";
 __declspec(section ".sdata2") char str_80421730[4] = "A_1";
 
 // .data:0x180..0x630
@@ -1398,36 +1398,36 @@ u32 marioAttackEvent_Scissor[300] = {
     (u32)(void*)&sac_cheer, 0x00000001, 0x00000070, 0x0001005B,
     (u32)(void*)&sac_ac_help_on, 0x00010005, 0x00000000, 0x00020032,
     0xFE363C8A, (u32)(void*)"OFF_d_bom", 0x0002005B, (u32)(void*)&evt_paper_entry,
-    0xFE363C8A, 0x0002005B, (u32)(void*)&evt_offscreen_entry, (u32)(void*)str_80421728,
-    0x0002005B, (u32)(void*)&evt_img_entry, (u32)(void*)str_8042172C, 0x0003005B,
-    (u32)(void*)&evt_img_set_paper, (u32)(void*)str_8042172C, 0xFE363C8A, 0x0003005B,
-    (u32)(void*)&evt_img_onoff, (u32)(void*)str_8042172C, 0x00000000, 0x0001005B,
+    0xFE363C8A, 0x0002005B, (u32)(void*)&evt_offscreen_entry, (u32)(void*)str_ofs,
+    0x0002005B, (u32)(void*)&evt_img_entry, (u32)(void*)str_img, 0x0003005B,
+    (u32)(void*)&evt_img_set_paper, (u32)(void*)str_img, 0xFE363C8A, 0x0003005B,
+    (u32)(void*)&evt_img_onoff, (u32)(void*)str_img, 0x00000000, 0x0001005B,
     (u32)(void*)&scissor_control, 0x0002005B, (u32)(void*)&scissor_timer_get, 0xFE363C80,
     0x0002001C, 0xFE363C80, 0x0000003B, 0x0003005B,
-    (u32)(void*)&evt_img_onoff, (u32)(void*)str_8042172C, 0x00000000, 0x0003005B,
-    (u32)(void*)&evt_img_set_shadow, (u32)(void*)str_8042172C, 0x00000000, 0x0002005B,
-    (u32)(void*)&evt_img_release, (u32)(void*)str_8042172C, 0x0002005B, (u32)(void*)&evt_offscreen_delete,
-    (u32)(void*)str_80421728, 0x0002005B, (u32)(void*)&evt_paper_delete, 0xFE363C8A,
+    (u32)(void*)&evt_img_onoff, (u32)(void*)str_img, 0x00000000, 0x0003005B,
+    (u32)(void*)&evt_img_set_shadow, (u32)(void*)str_img, 0x00000000, 0x0002005B,
+    (u32)(void*)&evt_img_release, (u32)(void*)str_img, 0x0002005B, (u32)(void*)&evt_offscreen_delete,
+    (u32)(void*)str_ofs, 0x0002005B, (u32)(void*)&evt_paper_delete, 0xFE363C8A,
     0x00010004, 0x0000005A, 0x00000021, 0x00010009,
     0x00000001, 0x0001005B, (u32)(void*)&scissor_tess, 0x00010009,
     0x00000001, 0x0001005B, (u32)(void*)&scissor_offscreen, 0x0009005B,
-    (u32)(void*)&evt_img_alloc_capture, (u32)(void*)str_8042172C, 0x00000000, (u32)(void*)str_80421728,
+    (u32)(void*)&evt_img_alloc_capture, (u32)(void*)str_img, 0x00000000, (u32)(void*)str_ofs,
     0x00000001, 0x00000000, 0x00000000, 0x00000000,
     0x00000000, 0x00010009, 0x00000001, 0x0002005B,
     (u32)(void*)&scissor_ofscreen_ok, 0xFE363C80, 0x00020019, 0xFE363C80,
     0x00000000, 0x0003005B, (u32)(void*)&evt_snd_sfxon, (u32)(void*)"SFX_BTL_SAC_KAKONDEPON2",
-    0x00000000, 0x0003005B, (u32)(void*)&evt_img_onoff, (u32)(void*)str_8042172C,
-    0x00000001, 0x0003005B, (u32)(void*)&evt_img_set_shadow, (u32)(void*)str_8042172C,
+    0x00000000, 0x0003005B, (u32)(void*)&evt_img_onoff, (u32)(void*)str_img,
+    0x00000001, 0x0003005B, (u32)(void*)&evt_img_set_shadow, (u32)(void*)str_img,
     0x00000002, 0x0002005B, (u32)(void*)&scissor_damage, 0xFE363C80,
     0x0002001D, 0xFE363C80, 0x00000002, 0x0005005B,
     (u32)(void*)&btlevtcmd_ACSuccessEffect, 0xFE363C80, 0x0000004B, 0x00000064,
     0xFFFFFF9C, 0x00000021, 0x0003005B, (u32)(void*)&evt_img_set_paper_anim,
-    (u32)(void*)str_8042172C, (u32)(void*)str_80421730, 0x0002005B, (u32)(void*)&evt_img_clear_virtual_point,
-    (u32)(void*)str_8042172C, 0x00010009, 0x0000003C, 0x00000021,
-    0x0003005B, (u32)(void*)&evt_img_onoff, (u32)(void*)str_8042172C, 0x00000000,
-    0x0003005B, (u32)(void*)&evt_img_set_shadow, (u32)(void*)str_8042172C, 0x00000000,
-    0x0002005B, (u32)(void*)&evt_img_release, (u32)(void*)str_8042172C, 0x0002005B,
-    (u32)(void*)&evt_offscreen_delete, (u32)(void*)str_80421728, 0x0002005B, (u32)(void*)&evt_paper_delete,
+    (u32)(void*)str_img, (u32)(void*)str_80421730, 0x0002005B, (u32)(void*)&evt_img_clear_virtual_point,
+    (u32)(void*)str_img, 0x00010009, 0x0000003C, 0x00000021,
+    0x0003005B, (u32)(void*)&evt_img_onoff, (u32)(void*)str_img, 0x00000000,
+    0x0003005B, (u32)(void*)&evt_img_set_shadow, (u32)(void*)str_img, 0x00000000,
+    0x0002005B, (u32)(void*)&evt_img_release, (u32)(void*)str_img, 0x0002005B,
+    (u32)(void*)&evt_offscreen_delete, (u32)(void*)str_ofs, 0x0002005B, (u32)(void*)&evt_paper_delete,
     0xFE363C8A, 0x0002005B, (u32)(void*)&scissor_timer_get, 0xFE363C80,
     0x0002001C, 0xFE363C80, 0x0000003B, 0x00010004,
     0x0000005A, 0x00000021, 0x00000006, 0x00010003,

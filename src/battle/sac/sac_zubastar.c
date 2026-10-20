@@ -33,9 +33,9 @@ extern BattleWork* _battleWorkPointer;
 
 #pragma force_active on // the original keeps these .rodata objects; nothing in the code references
                        // them yet, so the linker would otherwise drop them
-const char str_802FF668[] = "btl_wn_sac_zubastar";
-const char str_802FF67C[] = "msg_zubastar";
-const char str_802FF68C[] = "msg_sac_8";
+const char str_btl_wn_sac_zubastar[] = "btl_wn_sac_zubastar";
+const char str_msg_zubastar[] = "msg_zubastar";
+const char str_msg_sac_8[] = "msg_sac_8";
 #pragma force_active reset
 
 extern const Vec vec3_802ff6b0;
@@ -44,7 +44,7 @@ extern const Vec vec3_802ff6a4;
 extern const Vec vec3_802ff7ac;
 extern const Vec vec3_802ff7b8;
 extern const Vec vec3_802ff7c4;
-extern const char str_802FF80C[];
+extern const char str_SFX_BTL_SAC_ZUBA_STAR3[];
 
 // LOCAL_PROTO(psndSFX_pit): the retail callers disagree on the pitch width and
 // signedness; this file passes a full 32-bit signed pitch.
@@ -1298,10 +1298,10 @@ void zubastar_disp2D(CameraId cameraId, void* param) {
 s32 marioAttackEvent_ZubaStar[177];
 
 BattleWeapon weapon_zubastar = {
-    /* name */ str_802FF668,
+    /* name */ str_btl_wn_sac_zubastar,
     /* icon */ 0x19B,
     /* item */ 0,
-    /* description */ str_802FF67C,
+    /* description */ str_msg_zubastar,
     /* baseAccuracy */ 100,
     /* baseFpCost */ 0,
     /* baseSpCost */ 6,
@@ -1321,7 +1321,7 @@ BattleWeapon weapon_zubastar = {
     /* field_0x6D */ 0,
     /* actionLevel */ 3,
     /* field_0x6F */ 2,
-    /* acHelpMsg */ str_802FF68C,
+    /* acHelpMsg */ str_msg_sac_8,
     /* special */ (BattleWeaponSpecialFlags)0x000200C8,
     /* counterResistanceFlags */ 0x7FF,
     /* targetWeightingFlags */ 0,
