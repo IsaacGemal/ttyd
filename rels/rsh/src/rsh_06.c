@@ -1863,7 +1863,7 @@ static inline Vec moamoa_vec_v(f32 x, f32 y, f32 z, const Vec* base) {
 // pins the mpos/pvec lane registers (retail pose x -> f3, z -> f1; without it they swap).
 // The first ang/rad block matches by splitting `ang = reviseAngle(...)` from `rad = TWO_PI * ang / 360`
 // and inlining `camGetPtr(4)` (check_hammer's shape), and the two `(20+box.x)*0.5` sites match by
-// writing `(box.x + 20) / 2` (folded to the same fmuls, under MUST_MATCH).
+// writing `(box.x + 20) / 2` (folded to the same fmuls).
 #pragma opt_lifetimes off // keeps the sin/cos coefficients in the target's FPRs
 #pragma opt_propagation off // hoist the sin/cos coefficient loads out of the inline branches
 static s32 moamoa_hit_check(ExtPose* pose, MoamoaPose* entry) {
@@ -1880,12 +1880,8 @@ static s32 moamoa_hit_check(ExtPose* pose, MoamoaPose* entry) {
     {
         f32 d = distABf((*pose->matrix)[0][3], (*pose->matrix)[2][3], mario->position.x, mario->position.z);
 
-#ifdef MUST_MATCH
-        // (x + 20) / 2 folds to the same * 0.5 but colours the operands like retail.
+        // (x + 20) / 2 folds to the same * 0.5 but orders the operands as the target does.
         if (d < (mario->wPlayerCollisionBox.x + 20.0f) / 2.0f) {
-#else
-        if (d < (20.0f + mario->wPlayerCollisionBox.x) * 0.5f) {
-#endif
             if (mario->position.y > 10.0f + (*pose->matrix)[1][3] && (mario->flags & 0x20000) &&
                 !(mario->flags & 0x10000) && wp->field_0x558 < 2) {
                 if (mario->currMotionId != 0x16 && mario->currMotionId != 0x1A)
@@ -1954,23 +1950,14 @@ static s32 moamoa_hit_check(ExtPose* pose, MoamoaPose* entry) {
     {
         mpos = moamoa_vec(mario->position.x, (*pose->matrix)[1][3], mario->position.z,
                               &vec3_rsh_00013d64);
-#ifdef MUST_MATCH
         {
-            // Matching temp: giving the pvec's x lane a name pins the mpos/pvec lane registers
+            // Giving the pvec's x lane a name pins the mpos/pvec lane registers
             // (retail pose.x -> f3, pose.z -> f1; without it MWCC loads them the other way round).
             f32 px = (*pose->matrix)[0][3];
             pvec = moamoa_vec(px, (*pose->matrix)[1][3], (*pose->matrix)[2][3], &vec3_rsh_00013d70);
         }
-#else
-        pvec = moamoa_vec((*pose->matrix)[0][3], (*pose->matrix)[1][3], (*pose->matrix)[2][3],
-                              &vec3_rsh_00013d70);
-#endif
 
-#ifdef MUST_MATCH
         f31 = (mario->wPlayerCollisionBox.x + 20.0f) / 2.0f;
-#else
-        f31 = (20.0f + mario->wPlayerCollisionBox.x) * 0.5f;
-#endif
         if (PSVECDistance(&mpos, &pvec) < f31) {
 #ifdef MUST_MATCH
             // Match-only volatile accesses: they keep the pvec base copy below the two matrix
@@ -1998,8 +1985,7 @@ static s32 moamoa_hit_check(ExtPose* pose, MoamoaPose* entry) {
                 f30 = angleABf(mario->position.x, mario->position.z, (*pose->matrix)[0][3],
                                (*pose->matrix)[2][3]);
                 if (__fabsf(compAngle(f30, mario->directionView)) < 40.0f) {
-#ifdef MUST_MATCH
-                    // Matching shapes: inlining the sine argument (no `rad` local) lets the reduced
+                    // Inlining the sine argument (no `rad` local) lets the reduced
                     // angle coalesce into the argument FPR, and naming the box delta once fixes the
                     // operand order of the two `d * s` / `d * c` fmuls.
                     f32 s, c, d;
@@ -2009,15 +1995,6 @@ static s32 moamoa_hit_check(ExtPose* pose, MoamoaPose* entry) {
                     mario->riderDelta.x = -(d * s);
                     c = moamoa_cos(6.2831855f * mario->directionView / 360.0f);
                     mario->riderDelta.z = d * c;
-#else
-                    f32 rad, s, c;
-
-                    rad = 6.2831855f * mario->directionView / 360.0f;
-                    s = moamoa_sin(rad);
-                    mario->riderDelta.x = -((f31 - f29) * s);
-                    c = moamoa_cos(6.2831855f * mario->directionView / 360.0f);
-                    mario->riderDelta.z = (f31 - f29) * c;
-#endif
                 } else {
                     f32 rad, s, c;
 
@@ -2182,7 +2159,6 @@ static void ext_moamoa_main(void) {
         }
         if ((wp->flags & 0x1) && !(entry->flags & 0x444) && (u32)i == gp->retraceCount % wp->poseNum
             && irand(1000) < 200) {
-#ifdef MUST_MATCH
             {
                 Vec t = vec3_rsh_00013d94;
 
@@ -2191,9 +2167,6 @@ static void ext_moamoa_main(void) {
                 t.z = (*ep->matrix)[2][3];
                 v3 = t;
             }
-#else
-            v3 = moamoa_vec((*ep->matrix)[0][3], (*ep->matrix)[1][3], (*ep->matrix)[2][3], &vec3_rsh_00013d94);
-#endif
 #ifdef MUST_MATCH
             psndSFXOn_3D((const char*)(u32)sv.p, &v3);
 #else
@@ -2278,8 +2251,7 @@ static void ext_moamoa_main(void) {
             entry->stateTimer = 0;
             /* fallthrough */
         case 0x34: {
-#ifdef MUST_MATCH
-            // The branch keeps its result in a temp and copies it to f at the join (as in eki_00).
+            // The branch keeps its result in a temp and copies it to f at the join.
             f32 ft;
 
             if (entry->stateTimer < 200) {
@@ -2292,17 +2264,6 @@ static void ext_moamoa_main(void) {
                 f = 0.0f;
                 entry->flags |= 0x200;
             }
-#else
-            if (entry->stateTimer < 200) {
-                f = 1.0f;
-            } else {
-                f = (f32)(800 - entry->stateTimer) / 600.0f;
-            }
-            if (f < 0.0f) {
-                f = 0.0f;
-                entry->flags |= 0x200;
-            }
-#endif
             tx = MOA_TARGET(i).x;
             ty = MOA_TARGET(i).y;
             tz = MOA_TARGET(i).z;
