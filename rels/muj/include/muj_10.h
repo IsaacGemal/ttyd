@@ -20,9 +20,9 @@ struct NanNpcEntry {
     Vec position;                   // 0x18
     Vec hoseiPosition;              // 0x24
     Vec homePosition;               // 0x30, tobikakari: landing spot of the current jump
-    Vec field_0x3C;                 // 0x3C
+    Vec velocity;                   // 0x3C
     f32 width;                      // 0x48
-    f32 field_0x4C;                 // 0x4C
+    f32 range;                      // 0x4C
     OSTime startTime;               // 0x50, renderTime when the current state began
     s16* animTable;                 // 0x58
     s16 animCount;                  // 0x5C
@@ -36,7 +36,7 @@ struct NanNpcEntry {
     f32 jumpQuad;                   // 0x78, tobikakari jump arc: y = hoseiPosition.y + t * (jumpQuad * t + jumpLinear)
     f32 jumpLinear;                 // 0x7C
     u8 field_0x80[0x8];             // 0x80
-    Vec field_0x88;                 // 0x88, start position of an evt_nannpc_move_position2 move
+    Vec moveStart;                  // 0x88, start position of an evt_nannpc_move_position2 move
     u8 field_0x94[0xC];             // 0x94
     TobikakariSpot* spot;           // 0xA0, tobikakari: this entry's home record in Tobidat
     s32 work[6];                    // 0xA4

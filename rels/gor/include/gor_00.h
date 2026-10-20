@@ -25,9 +25,9 @@ struct NanNpcEntry {
     Vec position;                   // 0x18
     Vec hoseiPosition;              // 0x24
     Vec basePos;                    // 0x30, evt_nannpc's homePosition; origin of the current move here
-    Vec field_0x3C;                 // 0x3C
+    Vec velocity;                   // 0x3C
     f32 width;                      // 0x48
-    f32 field_0x4C;                 // 0x4C
+    f32 range;                      // 0x4C
     OSTime startTime;               // 0x50, renderTime when the current state began
     s16* animTable;                 // 0x58
     s16 animCount;                  // 0x5C
