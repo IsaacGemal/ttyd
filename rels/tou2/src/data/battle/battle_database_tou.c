@@ -113,63 +113,339 @@ BattleStageObjectData tou_btlobject_data[14] = {
     { "if_body", 5, 6, { 0.0f, 130.0f, 0.0f }, 0, 0, { 0, 0 } },
 };
 
-// TODO: type
-u32 tou_btlstage_data[218] = {
-    (u32)"bti_01", (u32)"stg_03_0", 0x00000006, (u32)&tou_btlobject_data,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x64000002, 0x00000000, 0x00000000, (u32)weaponGetPowerDefault,
-    0x00000001, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x02100060, 0x20000000, 0x001A0302,
-    0x00000000, 0x00000000, 0x000007FF, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000064, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x64000002, 0x00000000, 0x00000000, (u32)weaponGetPowerDefault,
-    0x00000001, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x02100060, 0x20000000, 0x001A0302,
-    0x00000000, 0x00000000, 0x000007FF, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000064, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)&bgset_tou_screen_evt,
-    0x00010101, (u32)"bti_01", (u32)"stg_03_0", 0x00000008,
-    (u32)&tou_btlobject_data[6], 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x64000002, 0x00000000, 0x00000000,
-    (u32)weaponGetPowerDefault, 0x00000001, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x02100060, 0x20000000,
-    0x001A0302, 0x00000000, 0x00000000, 0x000007FF,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000064, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x64000002, 0x00000000, 0x00000000,
-    (u32)weaponGetPowerDefault, 0x00000001, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x02100060, 0x20000000,
-    0x001A0302, 0x00000000, 0x00000000, 0x000007FF,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000064, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    (u32)&bgset_tou_screen_evt, 0x00010101,
+BattleStageData tou_btlstage_data[2] = {
+    {
+        "bti_01",                                   // mGlobalStageDataDir
+        "stg_03_0",                                 // mSpecificStageDataDir
+        6,                                          // mNumObjects
+        &tou_btlobject_data[0],                     // mObjects
+        {  // bgsetAttackA1
+            NULL,                                       // name
+            0,                                          // icon
+            ITEM_NULL,                                  // item
+            NULL,                                       // description
+            100,                                        // baseAccuracy
+            0,                                          // baseFpCost
+            0,                                          // baseSpCost
+            2,                                          // superguardType
+            0.0f,                                       // field_0x14
+            0,                                          // mStylishCommandMultiplier
+            0,                                          // field_0x19
+            0,                                          // mBingoSlotChance
+            0,                                          // field_0x1B
+            weaponGetPowerDefault,                      // hpDamageFn
+            { 1, 0, 0, 0, 0, 0, 0, 0 },                 // hpDamageWork
+            NULL,                                       // fpDamageFn
+            { 0, 0, 0, 0, 0, 0, 0, 0 },                 // fpDamageWork
+            0x02100060,                                 // targetClassFlags
+            0x20000000,                                 // targetPropertyFlags
+            0,                                          // element
+            26,                                         // field_0x6D
+            3,                                          // actionLevel
+            2,                                          // field_0x6F
+            NULL,                                       // acHelpMsg
+            0,                                          // special
+            0x000007FF,                                 // counterResistanceFlags
+            0,                                          // targetWeightingFlags
+            0,                                          // sleepChance
+            0,                                          // sleepTime
+            0,                                          // stopChance
+            0,                                          // stopTime
+            0,                                          // dizzyChance
+            0,                                          // dizzyTime
+            0,                                          // poisonChance
+            0,                                          // poisonTime
+            0,                                          // poisonStrength
+            0,                                          // confuseChance
+            0,                                          // confuseTime
+            0,                                          // electricChance
+            0,                                          // electricTime
+            0,                                          // dodgyChance
+            0,                                          // dodgyTime
+            0,                                          // burnChance
+            0,                                          // burnTime
+            0,                                          // freezeChance
+            0,                                          // freezeTime
+            0,                                          // sizeChangeChance
+            0,                                          // sizeChangeTime
+            0,                                          // sizeChangeStrength
+            0,                                          // atkChangeChance
+            0,                                          // atkChangeTime
+            0,                                          // atkChangeStrength
+            0,                                          // defChangeChance
+            0,                                          // defChangeTime
+            0,                                          // defChangeStrength
+            0,                                          // allergicChance
+            0,                                          // allergicTime
+            0,                                          // ohkoChance
+            0,                                          // chargeStrength
+            0,                                          // fastChance
+            0,                                          // fastTime
+            0,                                          // slowChance
+            0,                                          // slowTime
+            0,                                          // frightChance
+            0,                                          // galeForceChance
+            0,                                          // paybackTime
+            0,                                          // holdFastTime
+            0,                                          // invisibleChance
+            0,                                          // invisibleTime
+            0,                                          // hpRegenTime
+            0,                                          // hpRegenStrength
+            0,                                          // fpRegenTime
+            0,                                          // fpRegenStrength
+            NULL,                                       // mAttackEvtScript
+            { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 },   // field_B4
+        },
+        {  // bgsetAttackB
+            NULL,                                       // name
+            0,                                          // icon
+            ITEM_NULL,                                  // item
+            NULL,                                       // description
+            100,                                        // baseAccuracy
+            0,                                          // baseFpCost
+            0,                                          // baseSpCost
+            2,                                          // superguardType
+            0.0f,                                       // field_0x14
+            0,                                          // mStylishCommandMultiplier
+            0,                                          // field_0x19
+            0,                                          // mBingoSlotChance
+            0,                                          // field_0x1B
+            weaponGetPowerDefault,                      // hpDamageFn
+            { 1, 0, 0, 0, 0, 0, 0, 0 },                 // hpDamageWork
+            NULL,                                       // fpDamageFn
+            { 0, 0, 0, 0, 0, 0, 0, 0 },                 // fpDamageWork
+            0x02100060,                                 // targetClassFlags
+            0x20000000,                                 // targetPropertyFlags
+            0,                                          // element
+            26,                                         // field_0x6D
+            3,                                          // actionLevel
+            2,                                          // field_0x6F
+            NULL,                                       // acHelpMsg
+            0,                                          // special
+            0x000007FF,                                 // counterResistanceFlags
+            0,                                          // targetWeightingFlags
+            0,                                          // sleepChance
+            0,                                          // sleepTime
+            0,                                          // stopChance
+            0,                                          // stopTime
+            0,                                          // dizzyChance
+            0,                                          // dizzyTime
+            0,                                          // poisonChance
+            0,                                          // poisonTime
+            0,                                          // poisonStrength
+            0,                                          // confuseChance
+            0,                                          // confuseTime
+            0,                                          // electricChance
+            0,                                          // electricTime
+            0,                                          // dodgyChance
+            0,                                          // dodgyTime
+            0,                                          // burnChance
+            0,                                          // burnTime
+            0,                                          // freezeChance
+            0,                                          // freezeTime
+            0,                                          // sizeChangeChance
+            0,                                          // sizeChangeTime
+            0,                                          // sizeChangeStrength
+            0,                                          // atkChangeChance
+            0,                                          // atkChangeTime
+            0,                                          // atkChangeStrength
+            0,                                          // defChangeChance
+            0,                                          // defChangeTime
+            0,                                          // defChangeStrength
+            0,                                          // allergicChance
+            0,                                          // allergicTime
+            0,                                          // ohkoChance
+            0,                                          // chargeStrength
+            0,                                          // fastChance
+            0,                                          // fastTime
+            0,                                          // slowChance
+            0,                                          // slowTime
+            0,                                          // frightChance
+            0,                                          // galeForceChance
+            0,                                          // paybackTime
+            0,                                          // holdFastTime
+            0,                                          // invisibleChance
+            0,                                          // invisibleTime
+            0,                                          // hpRegenTime
+            0,                                          // hpRegenStrength
+            0,                                          // fpRegenTime
+            0,                                          // fpRegenStrength
+            NULL,                                       // mAttackEvtScript
+            { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 },   // field_B4
+        },
+        NULL,                                       // field_0x190
+        NULL,                                       // objectTurnEventA1
+        NULL,                                       // objectTurnEventA2
+        NULL,                                       // objectTurnEventB
+        { NULL, NULL, NULL, &bgset_tou_screen_evt }, // field_0x1A0
+        0x00010101,                                 // field_0x1B0
+    },
+    {
+        "bti_01",                                   // mGlobalStageDataDir
+        "stg_03_0",                                 // mSpecificStageDataDir
+        8,                                          // mNumObjects
+        &tou_btlobject_data[6],                     // mObjects
+        {  // bgsetAttackA1
+            NULL,                                       // name
+            0,                                          // icon
+            ITEM_NULL,                                  // item
+            NULL,                                       // description
+            100,                                        // baseAccuracy
+            0,                                          // baseFpCost
+            0,                                          // baseSpCost
+            2,                                          // superguardType
+            0.0f,                                       // field_0x14
+            0,                                          // mStylishCommandMultiplier
+            0,                                          // field_0x19
+            0,                                          // mBingoSlotChance
+            0,                                          // field_0x1B
+            weaponGetPowerDefault,                      // hpDamageFn
+            { 1, 0, 0, 0, 0, 0, 0, 0 },                 // hpDamageWork
+            NULL,                                       // fpDamageFn
+            { 0, 0, 0, 0, 0, 0, 0, 0 },                 // fpDamageWork
+            0x02100060,                                 // targetClassFlags
+            0x20000000,                                 // targetPropertyFlags
+            0,                                          // element
+            26,                                         // field_0x6D
+            3,                                          // actionLevel
+            2,                                          // field_0x6F
+            NULL,                                       // acHelpMsg
+            0,                                          // special
+            0x000007FF,                                 // counterResistanceFlags
+            0,                                          // targetWeightingFlags
+            0,                                          // sleepChance
+            0,                                          // sleepTime
+            0,                                          // stopChance
+            0,                                          // stopTime
+            0,                                          // dizzyChance
+            0,                                          // dizzyTime
+            0,                                          // poisonChance
+            0,                                          // poisonTime
+            0,                                          // poisonStrength
+            0,                                          // confuseChance
+            0,                                          // confuseTime
+            0,                                          // electricChance
+            0,                                          // electricTime
+            0,                                          // dodgyChance
+            0,                                          // dodgyTime
+            0,                                          // burnChance
+            0,                                          // burnTime
+            0,                                          // freezeChance
+            0,                                          // freezeTime
+            0,                                          // sizeChangeChance
+            0,                                          // sizeChangeTime
+            0,                                          // sizeChangeStrength
+            0,                                          // atkChangeChance
+            0,                                          // atkChangeTime
+            0,                                          // atkChangeStrength
+            0,                                          // defChangeChance
+            0,                                          // defChangeTime
+            0,                                          // defChangeStrength
+            0,                                          // allergicChance
+            0,                                          // allergicTime
+            0,                                          // ohkoChance
+            0,                                          // chargeStrength
+            0,                                          // fastChance
+            0,                                          // fastTime
+            0,                                          // slowChance
+            0,                                          // slowTime
+            0,                                          // frightChance
+            0,                                          // galeForceChance
+            0,                                          // paybackTime
+            0,                                          // holdFastTime
+            0,                                          // invisibleChance
+            0,                                          // invisibleTime
+            0,                                          // hpRegenTime
+            0,                                          // hpRegenStrength
+            0,                                          // fpRegenTime
+            0,                                          // fpRegenStrength
+            NULL,                                       // mAttackEvtScript
+            { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 },   // field_B4
+        },
+        {  // bgsetAttackB
+            NULL,                                       // name
+            0,                                          // icon
+            ITEM_NULL,                                  // item
+            NULL,                                       // description
+            100,                                        // baseAccuracy
+            0,                                          // baseFpCost
+            0,                                          // baseSpCost
+            2,                                          // superguardType
+            0.0f,                                       // field_0x14
+            0,                                          // mStylishCommandMultiplier
+            0,                                          // field_0x19
+            0,                                          // mBingoSlotChance
+            0,                                          // field_0x1B
+            weaponGetPowerDefault,                      // hpDamageFn
+            { 1, 0, 0, 0, 0, 0, 0, 0 },                 // hpDamageWork
+            NULL,                                       // fpDamageFn
+            { 0, 0, 0, 0, 0, 0, 0, 0 },                 // fpDamageWork
+            0x02100060,                                 // targetClassFlags
+            0x20000000,                                 // targetPropertyFlags
+            0,                                          // element
+            26,                                         // field_0x6D
+            3,                                          // actionLevel
+            2,                                          // field_0x6F
+            NULL,                                       // acHelpMsg
+            0,                                          // special
+            0x000007FF,                                 // counterResistanceFlags
+            0,                                          // targetWeightingFlags
+            0,                                          // sleepChance
+            0,                                          // sleepTime
+            0,                                          // stopChance
+            0,                                          // stopTime
+            0,                                          // dizzyChance
+            0,                                          // dizzyTime
+            0,                                          // poisonChance
+            0,                                          // poisonTime
+            0,                                          // poisonStrength
+            0,                                          // confuseChance
+            0,                                          // confuseTime
+            0,                                          // electricChance
+            0,                                          // electricTime
+            0,                                          // dodgyChance
+            0,                                          // dodgyTime
+            0,                                          // burnChance
+            0,                                          // burnTime
+            0,                                          // freezeChance
+            0,                                          // freezeTime
+            0,                                          // sizeChangeChance
+            0,                                          // sizeChangeTime
+            0,                                          // sizeChangeStrength
+            0,                                          // atkChangeChance
+            0,                                          // atkChangeTime
+            0,                                          // atkChangeStrength
+            0,                                          // defChangeChance
+            0,                                          // defChangeTime
+            0,                                          // defChangeStrength
+            0,                                          // allergicChance
+            0,                                          // allergicTime
+            0,                                          // ohkoChance
+            0,                                          // chargeStrength
+            0,                                          // fastChance
+            0,                                          // fastTime
+            0,                                          // slowChance
+            0,                                          // slowTime
+            0,                                          // frightChance
+            0,                                          // galeForceChance
+            0,                                          // paybackTime
+            0,                                          // holdFastTime
+            0,                                          // invisibleChance
+            0,                                          // invisibleTime
+            0,                                          // hpRegenTime
+            0,                                          // hpRegenStrength
+            0,                                          // fpRegenTime
+            0,                                          // fpRegenStrength
+            NULL,                                       // mAttackEvtScript
+            { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 },   // field_B4
+        },
+        NULL,                                       // field_0x190
+        NULL,                                       // objectTurnEventA1
+        NULL,                                       // objectTurnEventA2
+        NULL,                                       // objectTurnEventB
+        { NULL, NULL, NULL, &bgset_tou_screen_evt }, // field_0x1A0
+        0x00010101,                                 // field_0x1B0
+    },
 };
 
 BattleUnitSetup btlparty_tou_tou_rank_19[5] = {
@@ -357,127 +633,127 @@ BattleUnitSetup btlparty_tou_tou_koopa[1] = {
 BattleGroupSetup btlgrp_tou_tou_koopa = { 1, btlparty_tou_tou_koopa, 0, 0, 100, battle_heart_drop_param_default, battle_heart_drop_param_default, 5 };
 
 NpcBattleSetupEntry btlgrpsel_tou_btlno_tou_test1_off[2] = {
-    { 50, &btlgrp_tou_tou_rank_19, (struct BattleStageData*)tou_btlstage_data },
+    { 50, &btlgrp_tou_tou_rank_19, tou_btlstage_data },
     { 0, NULL, NULL },
 };
 
 NpcBattleSetupEntry btlgrpsel_tou_btlno_tou_01_01_off[2] = {
-    { 50, &btlgrp_tou_tou_rank_19, (struct BattleStageData*)tou_btlstage_data },
+    { 50, &btlgrp_tou_tou_rank_19, tou_btlstage_data },
     { 0, NULL, NULL },
 };
 
 NpcBattleSetupEntry btlgrpsel_tou_btlno_tou_01_02_off[2] = {
-    { 50, &btlgrp_tou_tou_rank_18, (struct BattleStageData*)tou_btlstage_data },
+    { 50, &btlgrp_tou_tou_rank_18, tou_btlstage_data },
     { 0, NULL, NULL },
 };
 
 NpcBattleSetupEntry btlgrpsel_tou_btlno_tou_01_03_off[2] = {
-    { 50, &btlgrp_tou_tou_rank_17, (struct BattleStageData*)tou_btlstage_data },
+    { 50, &btlgrp_tou_tou_rank_17, tou_btlstage_data },
     { 0, NULL, NULL },
 };
 
 NpcBattleSetupEntry btlgrpsel_tou_btlno_tou_01_04_off[2] = {
-    { 50, &btlgrp_tou_tou_rank_16, (struct BattleStageData*)tou_btlstage_data },
+    { 50, &btlgrp_tou_tou_rank_16, tou_btlstage_data },
     { 0, NULL, NULL },
 };
 
 NpcBattleSetupEntry btlgrpsel_tou_btlno_tou_01_05_off[2] = {
-    { 50, &btlgrp_tou_tou_rank_15, (struct BattleStageData*)tou_btlstage_data },
+    { 50, &btlgrp_tou_tou_rank_15, tou_btlstage_data },
     { 0, NULL, NULL },
 };
 
 NpcBattleSetupEntry btlgrpsel_tou_btlno_tou_01_06_off[2] = {
-    { 50, &btlgrp_tou_tou_rank_14, (struct BattleStageData*)tou_btlstage_data },
+    { 50, &btlgrp_tou_tou_rank_14, tou_btlstage_data },
     { 0, NULL, NULL },
 };
 
 NpcBattleSetupEntry btlgrpsel_tou_btlno_tou_01_07_off[2] = {
-    { 50, &btlgrp_tou_tou_rank_13, (struct BattleStageData*)tou_btlstage_data },
+    { 50, &btlgrp_tou_tou_rank_13, tou_btlstage_data },
     { 0, NULL, NULL },
 };
 
 NpcBattleSetupEntry btlgrpsel_tou_btlno_tou_01_08_off[2] = {
-    { 50, &btlgrp_tou_tou_rank_12, (struct BattleStageData*)tou_btlstage_data },
+    { 50, &btlgrp_tou_tou_rank_12, tou_btlstage_data },
     { 0, NULL, NULL },
 };
 
 NpcBattleSetupEntry btlgrpsel_tou_btlno_tou_01_09_off[2] = {
-    { 50, &btlgrp_tou_tou_rank_11, (struct BattleStageData*)tou_btlstage_data },
+    { 50, &btlgrp_tou_tou_rank_11, tou_btlstage_data },
     { 0, NULL, NULL },
 };
 
 NpcBattleSetupEntry btlgrpsel_tou_btlno_tou_01_10_off[2] = {
-    { 50, &btlgrp_tou_tou_rank_10, (struct BattleStageData*)tou_btlstage_data },
+    { 50, &btlgrp_tou_tou_rank_10, tou_btlstage_data },
     { 0, NULL, NULL },
 };
 
 NpcBattleSetupEntry btlgrpsel_tou_btlno_tou_01_11_off[2] = {
-    { 50, &btlgrp_tou_tou_rank_9, (struct BattleStageData*)tou_btlstage_data },
+    { 50, &btlgrp_tou_tou_rank_9, tou_btlstage_data },
     { 0, NULL, NULL },
 };
 
 NpcBattleSetupEntry btlgrpsel_tou_btlno_tou_01_12_off[2] = {
-    { 50, &btlgrp_tou_tou_rank_8, (struct BattleStageData*)tou_btlstage_data },
+    { 50, &btlgrp_tou_tou_rank_8, tou_btlstage_data },
     { 0, NULL, NULL },
 };
 
 NpcBattleSetupEntry btlgrpsel_tou_btlno_tou_01_13_off[2] = {
-    { 50, &btlgrp_tou_tou_rank_7, (struct BattleStageData*)tou_btlstage_data },
+    { 50, &btlgrp_tou_tou_rank_7, tou_btlstage_data },
     { 0, NULL, NULL },
 };
 
 NpcBattleSetupEntry btlgrpsel_tou_btlno_tou_01_14_off[2] = {
-    { 50, &btlgrp_tou_tou_rank_6, (struct BattleStageData*)tou_btlstage_data },
+    { 50, &btlgrp_tou_tou_rank_6, tou_btlstage_data },
     { 0, NULL, NULL },
 };
 
 NpcBattleSetupEntry btlgrpsel_tou_btlno_tou_01_15_off[2] = {
-    { 50, &btlgrp_tou_tou_rank_5, (struct BattleStageData*)tou_btlstage_data },
+    { 50, &btlgrp_tou_tou_rank_5, tou_btlstage_data },
     { 0, NULL, NULL },
 };
 
 NpcBattleSetupEntry btlgrpsel_tou_btlno_tou_01_16_off[2] = {
-    { 50, &btlgrp_tou_tou_rank_4, (struct BattleStageData*)tou_btlstage_data },
+    { 50, &btlgrp_tou_tou_rank_4, tou_btlstage_data },
     { 0, NULL, NULL },
 };
 
 NpcBattleSetupEntry btlgrpsel_tou_btlno_tou_01_17_off[2] = {
-    { 50, &btlgrp_tou_tou_rank_3, (struct BattleStageData*)tou_btlstage_data },
+    { 50, &btlgrp_tou_tou_rank_3, tou_btlstage_data },
     { 0, NULL, NULL },
 };
 
 NpcBattleSetupEntry btlgrpsel_tou_btlno_tou_01_18_off[2] = {
-    { 50, &btlgrp_tou_tou_rank_2, (struct BattleStageData*)tou_btlstage_data },
+    { 50, &btlgrp_tou_tou_rank_2, tou_btlstage_data },
     { 0, NULL, NULL },
 };
 
 NpcBattleSetupEntry btlgrpsel_tou_btlno_tou_01_19_off[2] = {
-    { 50, &btlgrp_tou_tou_rank_1, (struct BattleStageData*)tou_btlstage_data },
+    { 50, &btlgrp_tou_tou_rank_1, tou_btlstage_data },
     { 0, NULL, NULL },
 };
 
 NpcBattleSetupEntry btlgrpsel_tou_btlno_tou_01_20_off[2] = {
-    { 50, &btlgrp_tou_tou_add_1, (struct BattleStageData*)tou_btlstage_data },
+    { 50, &btlgrp_tou_tou_add_1, tou_btlstage_data },
     { 0, NULL, NULL },
 };
 
 NpcBattleSetupEntry btlgrpsel_tou_btlno_tou_01_21_off[2] = {
-    { 50, &btlgrp_tou_tou_add_2, (struct BattleStageData*)tou_btlstage_data },
+    { 50, &btlgrp_tou_tou_add_2, tou_btlstage_data },
     { 0, NULL, NULL },
 };
 
 NpcBattleSetupEntry btlgrpsel_tou_btlno_tou_01_22_off[2] = {
-    { 50, &btlgrp_tou_tou_champ, (struct BattleStageData*)(void*)((u8*)tou_btlstage_data + 0x1B4) },
+    { 50, &btlgrp_tou_tou_champ, &tou_btlstage_data[1] },
     { 0, NULL, NULL },
 };
 
 NpcBattleSetupEntry btlgrpsel_tou_btlno_tou_01_23_off[2] = {
-    { 50, &btlgrp_tou_tou_boss, (struct BattleStageData*)tou_btlstage_data },
+    { 50, &btlgrp_tou_tou_boss, tou_btlstage_data },
     { 0, NULL, NULL },
 };
 
 NpcBattleSetupEntry btlgrpsel_tou_btlno_tou_01_24_off[2] = {
-    { 50, &btlgrp_tou_tou_koopa, (struct BattleStageData*)tou_btlstage_data },
+    { 50, &btlgrp_tou_tou_koopa, tou_btlstage_data },
     { 0, NULL, NULL },
 };
 
