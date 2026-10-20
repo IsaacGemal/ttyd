@@ -8879,3 +8879,29 @@ AnimData words at 0x24-0x40 (AnimData is still an opaque `u8[0x44]`), the FileEn
 allocated, 2 garbage, 3 async pending, as SPM's FILE_EMPTY/ALLOC_CALLED/WAITING_GARBAGE/ASYNC_CALLED), and
 seq_load's seven save-flag reads `*(u16*)((u8*)card + (cursor << 14) + 0x2000)`: as `card->saves[cursor].data.flags`
 the build fails (checked again for the three `wp->cursor` sites).
+### Readability: rsh/eki/jin map RELs (2026-10-19, Claude Haiku 5.5, n9-q-rsh; reviewed by Claude Opus 5.5)
+
+jin_00's `TeresaEntry` (the 200 boo boxes of senteresa_ext_main) gets `velX/Y/Z`, `angle` (degrees, computePos),
+`offsetX/Y/Z`, `phase`, `spinSpeed`, `startX..Z`/`endX..Z` (senteresa_syugo's lerp), `timer`, `alpha` and `state`.
+The moamoa swarm in rsh_05, rsh_06 and eki_00 (near-duplicate code) now uses one set of names in all three files:
+the per-moamoa `MoamoaPose` (0x50) has `state`, `stateTimer`, `target` (0x8), `frames`, `queuedState`,
+`savedX`/`savedZ`, `offset` (0x30, only rsh_06 reads it), `groupIndex` (0x3C, index into `MoamoaWork.groups`),
+`poseTime` and `kind` (0x4C, index into group_tbl); the animation-group table is `MoamoaGroup` (`name`, `anim`,
+`enabled`, `cycleFrames`, `firstPose`, `numPoses`) built from `MoamoaGroupDef`; `MoamoaWork` has `poses`/`poseNum`,
+`targets` (the three gathering points, moamoa i heads for i % 3), `nearHits`, `hitCount`, `idleFrames`,
+`groups`/`groupCount`, `angleToMario`/`distToMario` and the cloud-breath fields; rsh_05 adds `train`/`prevTrainY`
+and `escapeEvt`, rsh_06 the chain fields (`chain`, `chainSlot`, `chainSlots`, `chainGroup`). In review, rsh_06's
+types and arrays were renamed to match (its group-table type had been `MoamoaPose` and the entry type
+`MoamoaEntry`; `MoamoaGroup` there was group_tbl's name pair and is now `MoamoaKind`), eki_00's `animId`/`groupIndex`
+became `groupIndex`/`kind` (eki's `groupIndex` had meant the field rsh calls `kind`), and the 0x8 Vec went from
+`position` to `target`: it is never the moamoa's position, it is moamoa_jump's landing target and a per-frame
+velocity in the fly-off states. Party checks use `PARTY_MEMBER_BOBBERY`, `PARTY_MEMBER_FLURRIE` and
+`PARTY_FLAG_IS_BEING_USED` (party.h). Overall 69.467 -> 68.666 per kLOC.
+Open: the struct layouts still differ slightly (rsh_05 `nearHits` is `s16[3]`, rsh_06 `u16[2]` plus padding, eki
+three `u16`s; rsh_06's `groups[1]` is padded out to 0x550), so a shared header needs those types reconciled and a
+rebuild of all three; MoamoaPose 0x14/0x1C/0x20 change meaning per state (jump vertical speed / horizontal step /
+gravity, the fly-off velocity's per-frame change, the wander radius) and stay unnamed, and `target` is itself
+two-role; MoamoaWork `field_0x40` (frames in Mario motion 0x12) and `field_0x558`; eki_00's gathering points stay
+three separate Vecs (`target0`-`target2`, indexed through `MOA_TARGET`) and `nearHits0`-`nearHits2`, because
+writing them as `Vec[3]`/`u16[3]` changes the compiled code and breaks the checksum; TeresaEntry `phase` doubles
+as state 0x15's lerp progress and `offsetX/Z` are relative to g_vecRotCenter while orbiting but to Mario once stuck.
