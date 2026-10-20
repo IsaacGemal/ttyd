@@ -10490,3 +10490,12 @@ bytes of word 5 as mNumFramesToStartFalling and mNumFramesToFall (pad bytes are 
 `(u32)((u8*)&aji_btlobject_data + N)` stage references are `(u32)&aji_btlobject_data[N/0x18]` (5, 8, 11, 14, 17, 20).
 The stage table stays `u32`, as in jon. Build: tower ninja recreates build/G8MJ01/ok; natural (no MUST_MATCH) compile
 of battle_database_aji.c returns 0. Index: 33.311 per kLOC (23351 weighted) before and after.
+
+## battle_database_gor: btlobject data typed (2026-10-20, Claude Haiku 5.5)
+
+`gor_btlobject_data` is `BattleStageObjectData[6]` (was `u32[36]`, 0x90 bytes per symbols.txt). Records are decoded
+the same way as battle_database_aji: name string, spawn (2 for all six) and layer from word 1, the position floats,
+and the frame counts from word 5 (start 0, fall 60 for every record). The one stage reference,
+`(u32)((u8*)&gor_btlobject_data + 0x60)`, is `(u32)&gor_btlobject_data[4]`. The file now includes
+battle/battle_stage_object.h, as jon does. Build: tower ninja recreates build/G8MJ01/ok; natural (no MUST_MATCH)
+compile of battle_database_gor.c returns 0.
