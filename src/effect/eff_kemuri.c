@@ -323,8 +323,10 @@ static void effKemuri2Main(EffectEntry* effect) {
 #pragma opt_common_subs off
 #endif
 void effKemuriDisp(CameraId camId, void* param) {
+#ifdef MUST_MATCH
 	f32 one;
 	f32 left;
+#endif
 	EffectEntry* effect = param;
 	effKemuriData* data = effect->userdata;
 	s32 i;
@@ -392,7 +394,9 @@ void effKemuriDisp(CameraId camId, void* param) {
 	GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_POS_XYZ, GX_F32, 0);
 	GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, GX_TEX_ST, GX_F32, 0);
 
+#ifdef MUST_MATCH
 	one = float_1_8041c6b0;
+#endif
 	data++;
 	for (i = 1; i < effect->count; i++, data++) {
 		for (j = 0; j < 2; j++) {
@@ -416,48 +420,78 @@ void effKemuriDisp(CameraId camId, void* param) {
 			PSMTXConcat(tmpMtx, scaleMtx, tmpMtx);
 			GXLoadPosMtxImm(tmpMtx, GX_PNMTX0);
 
-			{
-				f32 unity = MATCH_F32(float_1_8041c6b0);
-
-				PSMTXScale(scaleMtx, float_0p0625_8041c6d8, unity, unity);
-			}
+#ifdef MUST_MATCH
+			{ f32 unity = MATCH_F32(float_1_8041c6b0); PSMTXScale(scaleMtx, float_0p0625_8041c6d8, unity, unity); }
+#else
+			PSMTXScale(scaleMtx, float_0p0625_8041c6d8, float_1_8041c6b0, float_1_8041c6b0);
+#endif
 			PSMTXTrans(transMtx, (f32)data->sheetU0, float_neg0p2_8041c6dc, float_0_8041c6bc);
 			PSMTXConcat(scaleMtx, transMtx, transMtx);
 			GXLoadTexMtxImm(transMtx, GX_TEXMTX0, GX_MTX2x4);
 
-			{
-				f32 unity = MATCH_F32(float_1_8041c6b0);
-
-				PSMTXScale(scaleMtx, float_0p0625_8041c6d8, unity, unity);
-			}
+#ifdef MUST_MATCH
+			{ f32 unity = MATCH_F32(float_1_8041c6b0); PSMTXScale(scaleMtx, float_0p0625_8041c6d8, unity, unity); }
+#else
+			PSMTXScale(scaleMtx, float_0p0625_8041c6d8, float_1_8041c6b0, float_1_8041c6b0);
+#endif
 			PSMTXTrans(transMtx, (f32)data->sheetU1, float_neg0p2_8041c6dc, float_0_8041c6bc);
 			PSMTXConcat(scaleMtx, transMtx, transMtx);
 			GXLoadTexMtxImm(transMtx, GX_TEXMTX1, GX_MTX2x4);
 
 			GXBegin(GX_QUADS, GX_VTXFMT0, 4);
-			// Each vertex is a position (x, y, z) followed by a texcoord (s, t), written straight to the FIFO
-			// so the constants load from their own symbols.
+#ifdef MUST_MATCH
 			left = -one * float_0p5_8041c6cc;
 			GXParam1f32(left);
 			GXParam1f32(one);
 			GXWGFifo.f32 = MATCH_F32(float_0_8041c6bc);
+#else
+			GXPosition3f32(-float_1_8041c6b0 * float_0p5_8041c6cc, float_1_8041c6b0, float_0_8041c6bc);
+#endif
+#ifdef MUST_MATCH
 			GXWGFifo.f32 = MATCH_F32(float_0_8041c6bc);
 			GXWGFifo.f32 = MATCH_F32(float_0_8041c6bc);
+#else
+			GXTexCoord2f32(float_0_8041c6bc, float_0_8041c6bc);
+#endif
+#ifdef MUST_MATCH
 			GXParam1f32(float_0p5_8041c6cc);
 			GXParam1f32(one);
 			GXWGFifo.f32 = MATCH_F32(float_0_8041c6bc);
+#else
+			GXPosition3f32(float_0p5_8041c6cc, float_1_8041c6b0, float_0_8041c6bc);
+#endif
+#ifdef MUST_MATCH
 			GXWGFifo.f32 = MATCH_F32(float_1_8041c6b0);
 			GXWGFifo.f32 = MATCH_F32(float_0_8041c6bc);
+#else
+			GXTexCoord2f32(float_1_8041c6b0, float_0_8041c6bc);
+#endif
+#ifdef MUST_MATCH
 			GXParam1f32(float_0p5_8041c6cc);
 			GXParam1f32(MATCH_F32(float_0_8041c6bc));
 			GXWGFifo.f32 = MATCH_F32(float_0_8041c6bc);
+#else
+			GXPosition3f32(float_0p5_8041c6cc, float_0_8041c6bc, float_0_8041c6bc);
+#endif
+#ifdef MUST_MATCH
 			GXWGFifo.f32 = MATCH_F32(float_1_8041c6b0);
 			GXWGFifo.f32 = MATCH_F32(float_1_8041c6b0);
+#else
+			GXTexCoord2f32(float_1_8041c6b0, float_1_8041c6b0);
+#endif
+#ifdef MUST_MATCH
 			GXParam1f32(left);
 			GXParam1f32(MATCH_F32(float_0_8041c6bc));
 			GXWGFifo.f32 = MATCH_F32(float_0_8041c6bc);
+#else
+			GXPosition3f32(-float_1_8041c6b0 * float_0p5_8041c6cc, float_0_8041c6bc, float_0_8041c6bc);
+#endif
+#ifdef MUST_MATCH
 			GXWGFifo.f32 = MATCH_F32(float_0_8041c6bc);
 			GXWGFifo.f32 = MATCH_F32(float_1_8041c6b0);
+#else
+			GXTexCoord2f32(float_0_8041c6bc, float_1_8041c6b0);
+#endif
 		}
 	}
 }
