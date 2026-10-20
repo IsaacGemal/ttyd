@@ -396,13 +396,13 @@ void winLogInit(WindowWork* work) {
         } else {
             e = w->stones[i] = effStarStoneEntry(i + 7, 0.0f, -1000.f, 0.0f,
                                                  2.0f);
-            ((u8*)e->userdata)[0x5C] = 0x20;
-            ((u8*)e->userdata)[0x5D] = 0x20;
-            ((u8*)e->userdata)[0x5E] = 0x20;
+            ((effStarStoneData*)e->userdata)->tevReg0R = 0x20;
+            ((effStarStoneData*)e->userdata)->tevReg0G = 0x20;
+            ((effStarStoneData*)e->userdata)->tevReg0B = 0x20;
         }
-        *(s32*)((u8*)e->userdata + 0x38) = 8;
-        *(u16*)((u8*)e->userdata + 4) &= ~4;
-        *(u16*)((u8*)e->userdata + 4) |= 0x20;
+        ((effStarStoneData*)e->userdata)->camId = 8;
+        ((effStarStoneData*)e->userdata)->flags &= ~4;
+        ((effStarStoneData*)e->userdata)->flags |= 0x20;
     }
     w->mapTpl = NULL;
     w->mapMarioPose = -1;
@@ -1544,9 +1544,9 @@ void winLogDisp(CameraId camId, WindowWork* work, s32 idx) {
             PSMTXMultVec(rx, &p, &p);
             winKageGX(work, p.x + (x + w->e68), (p.y + (y + w->e70)) - 30.f, p.z,
                       1.0f, &(GXColor){0x00, 0x00, 0x00, 0x80});
-            ((f32*)w->stones[i]->userdata)[2] = p.x + (x + w->e68);
-            ((f32*)w->stones[i]->userdata)[3] = 20.f + (p.y + (y + w->e70));
-            ((f32*)w->stones[i]->userdata)[4] = p.z;
+            ((effStarStoneData*)w->stones[i]->userdata)->x = p.x + (x + w->e68);
+            ((effStarStoneData*)w->stones[i]->userdata)->y = 20.f + (p.y + (y + w->e70));
+            ((effStarStoneData*)w->stones[i]->userdata)->z = p.z;
         }
         for (i = 0; i < 7; i++) {
             effStarStoneDraw(8, w->stones[i]);

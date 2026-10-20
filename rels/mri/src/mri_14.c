@@ -241,7 +241,7 @@ USER_FUNC(starstone_rotate_func) {
     s32 a = evtGetValue(event, args[0]);
     f32 f = (f32)evtGetValue(event, args[1]);
     ItemEntry* item = itemNameToPtr((char*)a);
-    ((effStarStoneData*)item->effect->userdata)->field_0x1C = f;
+    ((effStarStoneData*)item->effect->userdata)->rotY = f;
     return EVT_RETURN_BLOCK;
 }
 

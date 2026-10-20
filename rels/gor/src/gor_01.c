@@ -4078,8 +4078,8 @@ static USER_FUNC(starstone_entry) {
         pz = z - 140.0f * c;
         eff = effStarStoneEntry(i, px, y, pz, 1.0f);
         effSetName(eff, name);
-        *(u16*)((u8*)eff->userdata + 0x4) &= ~4;
-        *(u16*)((u8*)eff->userdata + 0x4) |= 0x20;
+        ((effStarStoneData*)eff->userdata)->flags &= ~4;
+        ((effStarStoneData*)eff->userdata)->flags |= 0x20;
         *(EffectEntry**)((u8*)effNameToPtr("mahojin")->userdata + offset + 0x88) = eff;
         *(void**)((u8*)effNameToPtr("mahojin")->userdata + offset + 0x8C) = (void*)effStarStoneDraw;
     }
@@ -4104,9 +4104,9 @@ static USER_FUNC(starstone_set_pos) {
         c = cos(angle);
         sprintf(name, "starstone%d", i);
         eff = effNameToPtr(name);
-        *(f32*)((u8*)eff->userdata + 0x8) = 140.0f * s + x;
-        *(f32*)((u8*)eff->userdata + 0xC) = y;
-        *(f32*)((u8*)eff->userdata + 0x10) = z - 140.0f * c;
+        ((effStarStoneData*)eff->userdata)->x = 140.0f * s + x;
+        ((effStarStoneData*)eff->userdata)->y = y;
+        ((effStarStoneData*)eff->userdata)->z = z - 140.0f * c;
     }
     return EVT_RETURN_DONE;
 }
@@ -4118,7 +4118,7 @@ static USER_FUNC(starstone_set_ry) {
 
     for (i = 0; i < 7; i++) {
         sprintf(name, "starstone%d", i);
-        *(f32*)((u8*)effNameToPtr(name)->userdata + 0x1C) = ry;
+        ((effStarStoneData*)effNameToPtr(name)->userdata)->rotY = ry;
     }
     return EVT_RETURN_DONE;
 }

@@ -1918,9 +1918,9 @@ USER_FUNC(starstone_set_position) {
     f32 z = evtGetFloat(event, args[3]);
     EffectEntry* entry = effNameToPtr((char*)name);
 
-    ((effStarStoneData*)entry->userdata)->field_0x8 = x;
-    ((effStarStoneData*)entry->userdata)->field_0xC = y;
-    ((effStarStoneData*)entry->userdata)->field_0x10 = z;
+    ((effStarStoneData*)entry->userdata)->x = x;
+    ((effStarStoneData*)entry->userdata)->y = y;
+    ((effStarStoneData*)entry->userdata)->z = z;
     return EVT_RETURN_DONE;
 }
 
@@ -1928,10 +1928,10 @@ USER_FUNC(starstone_get_position) {
     s32* args = event->args;
     s32 name = evtGetValue(event, args[0]);
     effStarStoneData* data = ((EffectEntry*)effNameToPtr((char*)name))->userdata;
-    f32 y = data->field_0xC;
-    f32 z = data->field_0x10;
+    f32 y = data->y;
+    f32 z = data->z;
 
-    evtSetFloat(event, args[1], data->field_0x8);
+    evtSetFloat(event, args[1], data->x);
     evtSetFloat(event, args[2], y);
     evtSetFloat(event, args[3], z);
     return EVT_RETURN_DONE;
@@ -1944,7 +1944,7 @@ static USER_FUNC(starstone_set_ry) {
     EffectEntry* entry = effNameToPtr((char*)name);
     effStarStoneData* data = entry->userdata;
 
-    data->field_0x1C = ry - 360.0f * (s32)((s32)ry / 360);
+    data->rotY = ry - 360.0f * (s32)((s32)ry / 360);
     return EVT_RETURN_DONE;
 }
 
@@ -1954,7 +1954,7 @@ USER_FUNC(starstone_set_alpha) {
     u8 alpha = evtGetValue(event, args[1]);
     effStarStoneData* data = ((EffectEntry*)effNameToPtr((char*)name))->userdata;
 
-    data->field_0x5F = alpha;
+    data->tevReg0A = alpha;
     return EVT_RETURN_DONE;
 }
 
@@ -1964,7 +1964,7 @@ USER_FUNC(starstone_set_scale) {
     f32 scale = evtGetFloat(event, args[1]);
     effStarStoneData* data = ((EffectEntry*)effNameToPtr((char*)name))->userdata;
 
-    data->field_0x14 = scale;
+    data->scale = scale;
     return EVT_RETURN_DONE;
 }
 
@@ -1984,9 +1984,9 @@ USER_FUNC(starstone_circle_link_func) {
     f32 s = (f32)sin(rad);
     f32 c = (f32)cos(rad);
 
-    ((effStarStoneData*)entry->userdata)->field_0x8 = s * radius + x;
-    ((effStarStoneData*)entry->userdata)->field_0xC = y;
-    ((effStarStoneData*)entry->userdata)->field_0x10 = -c * radius + z;
+    ((effStarStoneData*)entry->userdata)->x = s * radius + x;
+    ((effStarStoneData*)entry->userdata)->y = y;
+    ((effStarStoneData*)entry->userdata)->z = -c * radius + z;
     return EVT_RETURN_DONE;
 }
 #pragma opt_propagation reset
@@ -1996,7 +1996,7 @@ USER_FUNC(eff_starstone_sound_off) {
     s32 name = evtGetValue(event, args[0]);
     effStarStoneData* data = ((EffectEntry*)effNameToPtr((char*)name))->userdata;
 
-    data->field_0x4 &= ~4;
+    data->flags &= ~4;
     return EVT_RETURN_DONE;
 }
 
@@ -2315,9 +2315,9 @@ USER_FUNC(tiz_stone) {
     }
     entry = effNameToPtr("tiz_stone");
     if (entry != NULL) {
-        ((effStarStoneData*)entry->userdata)->field_0x38 = 7;
-        ((effStarStoneData*)entry->userdata)->field_0x5F = (u8)(255.0f * t);
-        ((effStarStoneData*)entry->userdata)->field_0x1C = 5.0f * (360.0f * t);
+        ((effStarStoneData*)entry->userdata)->camId = 7;
+        ((effStarStoneData*)entry->userdata)->tevReg0A = (u8)(255.0f * t);
+        ((effStarStoneData*)entry->userdata)->rotY = 5.0f * (360.0f * t);
     }
     entry = effNameToPtr("tiz_dust2");
     if (entry != NULL) {
@@ -2767,7 +2767,7 @@ USER_FUNC(starstone_setting) {
     EffectEntry* e2 = effNameToPtr("mahojin");
     effStarStoneData* d1 = e1->userdata;
 
-    d1->field_0x4 |= 0x20;
+    d1->flags |= 0x20;
     ((MahojinWork*)e2->userdata)[index + 2].field_0x28 = e1;
     ((MahojinWork*)e2->userdata)[index + 2].field_0x2C = (void (*)(CameraId, void*))effStarStoneDraw;
     return EVT_RETURN_DONE;

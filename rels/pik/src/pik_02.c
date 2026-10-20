@@ -275,7 +275,7 @@ USER_FUNC(hoshi_delete) {
 USER_FUNC(hoshi_r) {
     EffectEntry* entry = (EffectEntry*)event->lwData[10];
 
-    ((effStarStoneData*)entry->userdata)->field_0x1C = (f32)evtGetValue(event, event->args[0]);
+    ((effStarStoneData*)entry->userdata)->rotY = (f32)evtGetValue(event, event->args[0]);
     return EVT_RETURN_DONE;
 }
 
@@ -387,16 +387,16 @@ USER_FUNC(hoshi_jump) {
 #endif
     if (isFirstCall) {
 #ifdef MUST_MATCH
-        d = distABf(nx, nz, data->field_0x8, data->field_0x10) / scale;
-        f4 = ny - data->field_0xC;
+        d = distABf(nx, nz, data->x, data->z) / scale;
+        f4 = ny - data->y;
         f2 = 0.1f * d;
         t = f2 * MATCH_F32(half_sym) + f4 / d;
         event->userdata[0] = *(s32*)&d;
         event->userdata[1] = *(s32*)&t;
         event->userdata[2] = *(s32*)&scale;
 #else
-        d = distABf(nx, nz, data->field_0x8, data->field_0x10) / 0.5f;
-        t = 0.1f * d * 0.5f + (ny - data->field_0xC) / d;
+        d = distABf(nx, nz, data->x, data->z) / 0.5f;
+        t = 0.1f * d * 0.5f + (ny - data->y) / d;
         event->userdataf[0] = d;
         event->userdataf[1] = t;
         event->userdataf[2] = 0.5f;
@@ -408,18 +408,18 @@ USER_FUNC(hoshi_jump) {
     t = event->userdataf[1];
     scale = event->userdataf[2];
 
-    f2 = 6.2831855f * angleABf(data->field_0x8, data->field_0x10, nx, nz);
+    f2 = 6.2831855f * angleABf(data->x, data->z, nx, nz);
     f5 = f2 / 360.0f;
-    data->field_0x8 = scale * hoshi_sin_approx(f5) + data->field_0x8;
-    data->field_0x10 = data->field_0x10 - scale * hoshi_cos_approx(f5);
-    data->field_0xC = data->field_0xC + t;
+    data->x = scale * hoshi_sin_approx(f5) + data->x;
+    data->z = data->z - scale * hoshi_cos_approx(f5);
+    data->y = data->y + t;
 
     t = t - 0.1f;
     d = d - 1.0f;
     if (d < 0.0f) {
-        data->field_0x8 = nx;
-        data->field_0xC = ny;
-        data->field_0x10 = nz;
+        data->x = nx;
+        data->y = ny;
+        data->z = nz;
         return EVT_RETURN_DONE;
     }
 #ifdef MUST_MATCH
@@ -627,14 +627,14 @@ USER_FUNC(get_starstone_seq) {
     s32* args = event->args;
     effStarStoneData* data = effNameToPtr((const char*)evtGetValue(event, args[0]))->userdata;
 
-    evtSetValue(event, args[1], data->field_0x3C);
+    evtSetValue(event, args[1], data->state);
     return EVT_RETURN_DONE;
 }
 
 static USER_FUNC(starstone_fall) {
     effStarStoneData* data = effNameToPtr((const char*)evtGetValue(event, event->args[0]))->userdata;
 
-    data->field_0x3C = 1;
+    data->state = 1;
     return EVT_RETURN_DONE;
 }
 
@@ -646,9 +646,9 @@ static USER_FUNC(set_starstone_pos) {
     f32 z = evtGetFloat(event, args[3]);
     EffectEntry* entry = effNameToPtr((const char*)name);
 
-    ((effStarStoneData*)entry->userdata)->field_0x8 = x;
-    ((effStarStoneData*)entry->userdata)->field_0xC = y;
-    ((effStarStoneData*)entry->userdata)->field_0x10 = z;
+    ((effStarStoneData*)entry->userdata)->x = x;
+    ((effStarStoneData*)entry->userdata)->y = y;
+    ((effStarStoneData*)entry->userdata)->z = z;
     return EVT_RETURN_DONE;
 }
 
@@ -656,9 +656,9 @@ static USER_FUNC(get_starstone_pos) {
     s32* args = event->args;
     EffectEntry* entry = effNameToPtr((const char*)evtGetValue(event, args[0]));
 
-    evtSetFloat(event, args[1], ((effStarStoneData*)entry->userdata)->field_0x8);
-    evtSetFloat(event, args[2], ((effStarStoneData*)entry->userdata)->field_0xC);
-    evtSetFloat(event, args[3], ((effStarStoneData*)entry->userdata)->field_0x10);
+    evtSetFloat(event, args[1], ((effStarStoneData*)entry->userdata)->x);
+    evtSetFloat(event, args[2], ((effStarStoneData*)entry->userdata)->y);
+    evtSetFloat(event, args[3], ((effStarStoneData*)entry->userdata)->z);
     return EVT_RETURN_DONE;
 }
 
@@ -673,16 +673,16 @@ static USER_FUNC(starstone_entry) {
     EffectEntry* entry = effStarStoneEntry(idx, x, y, z, scale);
 
     effSetName(entry, (const char*)name);
-    ((effStarStoneData*)entry->userdata)->field_0x4 |= 0x10;
+    ((effStarStoneData*)entry->userdata)->flags |= 0x10;
     return EVT_RETURN_DONE;
 }
 
 static USER_FUNC(stone_bg) {
     effStarStoneData* data = effNameToPtr("sub_bg")->userdata;
 
-    data->field_0x38 = 5;
+    data->camId = 5;
     data = effNameToPtr("nise")->userdata;
-    data->field_0x38 = 5;
+    data->camId = 5;
     marioSetCamId(5);
     return EVT_RETURN_DONE;
 }
@@ -690,7 +690,7 @@ static USER_FUNC(stone_bg) {
 USER_FUNC(reset_stone_cam) {
     effStarStoneData* data = effNameToPtr("nise")->userdata;
 
-    data->field_0x38 = 4;
+    data->camId = 4;
     return EVT_RETURN_DONE;
 }
 

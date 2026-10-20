@@ -520,12 +520,12 @@ void main_mario(void) {
             EffectEntry* eff;
             BtlUnit_GetPos(mario, &x, &y, &z);
             eff = effStampN64Entry(2, x, float_20_80421d78 + y, float_10_80421d54 + z);
-            ((u8*)eff->userdata)[0x38] = 0;
-            ((u8*)eff->userdata)[0x39] = 0xC8;
-            ((u8*)eff->userdata)[0x3A] = 0;
-            ((u8*)eff->userdata)[0x3B] = 0;
-            ((u8*)eff->userdata)[0x3C] = 0xA;
-            ((u8*)eff->userdata)[0x3D] = 0;
+            ((effStampData*)eff->userdata)->tevReg0R = 0;
+            ((effStampData*)eff->userdata)->tevReg0G = 0xC8;
+            ((effStampData*)eff->userdata)->tevReg0B = 0;
+            ((effStampData*)eff->userdata)->tevReg1R = 0;
+            ((effStampData*)eff->userdata)->tevReg1G = 0xA;
+            ((effStampData*)eff->userdata)->tevReg1B = 0;
         }
     case 4:
         genki->field_48++;
@@ -792,20 +792,20 @@ void main_weapon(s32 idx) {
         if (weapon->field_44 != NULL) {
             effStarStoneData* data = (effStarStoneData*)weapon->field_44->userdata;
 
-            data->field_0x8 = weapon->pos[0].x;
-            data->field_0xC = weapon->pos[0].y;
-            data->field_0x10 = weapon->pos[0].z;
-            data->field_0x14 = scale;
-            data->field_0x5F = 0xFF;
+            data->x = weapon->pos[0].x;
+            data->y = weapon->pos[0].y;
+            data->z = weapon->pos[0].z;
+            data->scale = scale;
+            data->tevReg0A = 0xFF;
         }
         for (i = 0; i < 3; i++) {
             effStarStoneData* data = (effStarStoneData*)weapon->field_48[i]->userdata;
 
-            data->field_0x8 = weapon->pos[i + 1].x;
-            data->field_0xC = weapon->pos[i + 1].y;
-            data->field_0x10 = weapon->pos[i + 1].z;
-            data->field_0x14 = scale;
-            data->field_0x5F = 0xFF - (i + 1) * 0x32;
+            data->x = weapon->pos[i + 1].x;
+            data->y = weapon->pos[i + 1].y;
+            data->z = weapon->pos[i + 1].z;
+            data->scale = scale;
+            data->tevReg0A = 0xFF - (i + 1) * 0x32;
         }
     }
 }
@@ -1050,14 +1050,14 @@ void main_star0(s32 idx) {
     }
 
     if (star->field_60 != NULL) {
-        f32* p = (f32*)star->field_60->userdata;
-        p[0x8 / 4] = star->field_C;
-        p[0xC / 4] = star->field_10;
-        p[0x10 / 4] = star->field_14;
-        p[0x18 / 4] = star->field_48;
-        p[0x1C / 4] = star->field_4C;
-        p[0x20 / 4] = star->field_50;
-        p[0x14 / 4] = 1.5f * star->field_3C;
+        effStarStoneData* p = star->field_60->userdata;
+        p->x = star->field_C;
+        p->y = star->field_10;
+        p->z = star->field_14;
+        p->tipRotY = star->field_48;
+        p->rotY = star->field_4C;
+        p->tipRotZ = star->field_50;
+        p->scale = 1.5f * star->field_3C;
     }
 }
 
@@ -1167,14 +1167,14 @@ void main_star1(void) {
     }
 
     if (star->field_60 != NULL) {
-        f32* p = (f32*)star->field_60->userdata;
-        p[0x8 / 4] = star->field_C;
-        p[0xC / 4] = star->field_10;
-        p[0x10 / 4] = star->field_14;
-        p[0x18 / 4] = star->field_48;
-        p[0x1C / 4] = star->field_4C;
-        p[0x20 / 4] = star->field_50;
-        p[0x14 / 4] = float_1p5_80421dc4 * star->field_3C;
+        effStarStoneData* p = star->field_60->userdata;
+        p->x = star->field_C;
+        p->y = star->field_10;
+        p->z = star->field_14;
+        p->tipRotY = star->field_48;
+        p->rotY = star->field_4C;
+        p->tipRotZ = star->field_50;
+        p->scale = float_1p5_80421dc4 * star->field_3C;
     }
 }
 
@@ -1190,17 +1190,17 @@ USER_FUNC(end_genki) {
     for (i = 0; i < 7; i++) {
         star = &genki->stars[i];
         if (star->field_60 != NULL) {
-            effDelete(((effStarStoneData*)star->field_60->userdata)->field_0x34);
+            effDelete(((effStarStoneData*)star->field_60->userdata)->dustEffect);
             effDelete(star->field_60);
         }
     }
     for (i = 0; i < 7; i++) {
         weapon = &genki->weapon[i];
         if (weapon->field_44 != NULL) {
-            effDelete(((effStarStoneData*)weapon->field_44->userdata)->field_0x34);
+            effDelete(((effStarStoneData*)weapon->field_44->userdata)->dustEffect);
             effDelete(weapon->field_44);
             for (j = 0; j < 3; j++) {
-                effDelete(((effStarStoneData*)weapon->field_48[j]->userdata)->field_0x34);
+                effDelete(((effStarStoneData*)weapon->field_48[j]->userdata)->dustEffect);
                 effDelete(weapon->field_48[j]);
             }
         }

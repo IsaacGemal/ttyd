@@ -530,14 +530,14 @@ static void main_star(void) {
     if (work->effect != NULL) {
         effStarStoneData* data = work->effect->userdata;
 
-        data->field_0x8 = work->starCur.x;
-        data->field_0xC = work->starCur.y;
-        data->field_0x10 = work->starCur.z;
-        data->field_0x18 = work->scale2.x;
-        data->field_0x1C = work->scale2.y;
-        data->field_0x20 = work->scale2.z;
-        data->field_0x14 = float_1p5_80422128 * work->scale1.x;
-        data->field_0x38 = work->flag;
+        data->x = work->starCur.x;
+        data->y = work->starCur.y;
+        data->z = work->starCur.z;
+        data->tipRotY = work->scale2.x;
+        data->rotY = work->scale2.y;
+        data->tipRotZ = work->scale2.z;
+        data->scale = float_1p5_80422128 * work->scale1.x;
+        data->camId = work->flag;
     }
 }
 
@@ -545,7 +545,7 @@ static void main_star(void) {
 s32 end_suki(EventEntry* event, BOOL isFirstCall) {
     SukiWork* work = get_ptr();
 
-    effDelete(((effStarStoneData*)work->effect->userdata)->field_0x34);
+    effDelete(((effStarStoneData*)work->effect->userdata)->dustEffect);
     effDelete(work->effect);
     return 2;
 }

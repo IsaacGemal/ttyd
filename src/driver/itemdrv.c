@@ -527,14 +527,14 @@ void itemMain(void) {
         case ITEM_GARNET_STAR:
         case ITEM_CRYSTAL_STAR:
             if (!(entry->status & 0x100)) {
-                ((f32*)((u8*)entry->effect->userdata + 0x8))[0] = entry->position.x;
-                ((f32*)((u8*)entry->effect->userdata + 0x8))[1]
-                    = 16.0f + entry->position.y;
-                ((f32*)((u8*)entry->effect->userdata + 0x8))[2] = entry->position.z;
+                ((effStarStoneData*)entry->effect->userdata)->x = entry->position.x;
+                ((effStarStoneData*)entry->effect->userdata)->y =
+                    16.0f + entry->position.y;
+                ((effStarStoneData*)entry->effect->userdata)->z = entry->position.z;
             } else {
-                ((f32*)((u8*)entry->effect->userdata + 0x8))[0] = entry->position.x;
-                ((f32*)((u8*)entry->effect->userdata + 0x8))[1] = -1000.0f;
-                ((f32*)((u8*)entry->effect->userdata + 0x8))[2] = entry->position.z;
+                ((effStarStoneData*)entry->effect->userdata)->x = entry->position.x;
+                ((effStarStoneData*)entry->effect->userdata)->y = -1000.0f;
+                ((effStarStoneData*)entry->effect->userdata)->z = entry->position.z;
             }
             break;
         default:
