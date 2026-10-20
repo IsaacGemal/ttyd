@@ -175,7 +175,7 @@ EffectEntry* effConfettiN64Entry(s32 type, s32 lifetime, f32 x, f32 y, f32 z, f3
 	data->type = type;
 	data->count = count;
 	data->alpha = 0xff;
-	data->camId = 4;
+	data->camId = CAMERA_3D;
 
 	angle0 = rand() % 360;
 	half = float_0p5_8041ec38 * radius;
