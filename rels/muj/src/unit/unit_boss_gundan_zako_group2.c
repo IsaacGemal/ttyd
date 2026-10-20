@@ -337,7 +337,7 @@ BattleWeapon weapon_gundan_zako_group2_yusuri_attack = {
 
 
 s32 down_ceil_20_text_9C8C(EventEntry* event, BOOL isFirstCall) {
-    u8* flag = (u8*)_battleWorkPointer + 0x180DC;
+    u8* flag = &_battleWorkPointer->stageFlags;
     BattleStageObject* obj = BattleSearchObjectPtr("if_body");
     BattleStageObject* obj2 = BattleSearchObjectPtr("if_wire");
     s32 id;
@@ -365,7 +365,7 @@ s32 down_ceil_20_text_9C8C(EventEntry* event, BOOL isFirstCall) {
 }
 
 s32 up_ceil(EventEntry* event, BOOL isFirstCall) {
-    u8* flag = (u8*)_battleWorkPointer + 0x180DC;
+    u8* flag = &_battleWorkPointer->stageFlags;
     BattleStageObject* obj = BattleSearchObjectPtr("if_body");
     BattleStageObject* obj2 = BattleSearchObjectPtr("if_wire");
     f32 value;

@@ -311,7 +311,7 @@ static USER_FUNC(pakkun_ceil_exist) {
     s32* args;
 
     args = event->args;
-    if (*(u8*)((u8*)_battleWorkPointer + 0x180DC) & 0x20) {
+    if (_battleWorkPointer->stageFlags & 0x20) {
         evtSetValue(event, args[0], 0);
     } else {
         evtSetValue(event, args[0], 1);

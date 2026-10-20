@@ -200,7 +200,10 @@ struct BattleWork {
     u8 field_16F1C[0x16F40 - 0x16F1C];  // 0x16F1C
     BattleAfterReactionWork afterReaction[64]; // 0x16F40
     BattleStageObject stageObjects[32]; // 0x17140
-    u8 field_180C0[0x182B0 - 0x180C0];  // 0x180C0
+    u8 field_180C0[0x180DC - 0x180C0];  // 0x180C0
+    u8 stageFlags;                      // 0x180DC, bits 0x2/0x4/0x8 set by the layer switches (battle_stage_object.c),
+                                        // 0x20 set by init_ceil, _disable_enemy_unit_disp and read by ceil_exist
+    u8 field_180DD[0x182B0 - 0x180DD];  // 0x180DD
     BattleIcon icons[16];               // 0x182B0
     u8 field_18C70[0x18FE0 - 0x18C70];  // 0x18C70
     s8 alertTick;                       // 0x18FE0

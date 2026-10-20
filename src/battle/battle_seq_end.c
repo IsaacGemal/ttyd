@@ -1508,7 +1508,7 @@ s32 _disable_enemy_unit_disp(EventEntry* event, BOOL isFirstCall) {
         BattleStageObject* obj = BattleSearchObjectPtr("if_body");
 
         if (obj != NULL) {
-            *(u8*)((u8*)wp + 0x180DC) |= 0x20;
+            wp->stageFlags |= 0x20;
             obj->mFlags |= 1;
             mapGrpFlagOn("if_body", 1);
             mapGrpFlagOn("if_wire", 1);

@@ -374,25 +374,25 @@ void BattleStageObjectInit(void) {
 		BSO_WP_S32(wp, 0x180F0) = evtEntry(BSO_STAGE_EVT(stage, 0x1AC), 10, 0)->eventId;
 	}
 	if (layer0 == 0) {
-		BSO_WP_U8(wp, 0x180DC) |= 2;
+		wp->stageFlags |= 2;
 	}
 	if (layer1 == 0) {
-		BSO_WP_U8(wp, 0x180DC) |= 4;
+		wp->stageFlags |= 4;
 	}
 	if (layer2 == 0) {
-		BSO_WP_U8(wp, 0x180DC) |= 8;
+		wp->stageFlags |= 8;
 	}
 	if (BSO_STAGE_S8(stage, 0x1B1)) {
-		BSO_WP_U8(wp, 0x180DC) |= 2;
+		wp->stageFlags |= 2;
 	}
 	if (BSO_STAGE_S8(stage, 0x1B2)) {
-		BSO_WP_U8(wp, 0x180DC) |= 4;
+		wp->stageFlags |= 4;
 	}
 	if (BSO_STAGE_S8(stage, 0x1B3)) {
-		BSO_WP_U8(wp, 0x180DC) |= 8;
+		wp->stageFlags |= 8;
 	}
 	if (!hasLayer6) {
-		BSO_WP_U8(wp, 0x180DC) |= 0x20;
+		wp->stageFlags |= 0x20;
 		mapGrpFlagOn(BSO_STR_IF_BODY, 1);
 		mapGrpFlagOn(BSO_STR_IF_WIRE, 1);
 	}
@@ -1672,13 +1672,13 @@ USER_FUNC(_mobj_destroy) {
 	}
 	switch (layer) {
 		case 0:
-			*(u8*)((u8*)wp + 0x180DC) |= 0x2;
+			wp->stageFlags |= 0x2;
 			break;
 		case 1:
-			*(u8*)((u8*)wp + 0x180DC) |= 0x4;
+			wp->stageFlags |= 0x4;
 			break;
 		case 2:
-			*(u8*)((u8*)wp + 0x180DC) |= 0x8;
+			wp->stageFlags |= 0x8;
 			break;
 	}
 	return EVT_RETURN_DONE;

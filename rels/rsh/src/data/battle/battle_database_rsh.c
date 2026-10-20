@@ -160,7 +160,7 @@ s32 _set_offset(EventEntry* event, BOOL isFirstCall) {
 s32 _set_destroy_flag(EventEntry* event, BOOL isFirstCall) {
     BattleWork* wp = _battleWorkPointer;
 
-    *(u8*)((u8*)wp + 0x180DC) |= 0x8;
+    wp->stageFlags |= 0x8;
     return 2;
 }
 
