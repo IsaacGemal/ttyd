@@ -69,9 +69,9 @@ typedef struct FighterEntry {
 typedef struct RuleEntry {
     const char* name; // 0x00 rule title msg id
     const char* msg;  // 0x04 rule description msg id
-    s32 type;         // 0x08 rule type
-    s32 field_0C;     // 0x0C
-    s32 field_10;     // 0x10
+    s32 kind;         // 0x08 rule kind: the _rule_msg_table index (NpcBattleInfo.battleRules[0])
+    s32 param;        // 0x0C the value printed by the rule display (battleRules[1])
+    s32 field_10;     // 0x10 battleRules[2]
 } RuleEntry;
 
 typedef struct RankEntry {
@@ -2879,13 +2879,13 @@ void monitor_tev(void* param) {
         GXSetTevAlphaOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
         GXSetTevColorIn(GX_TEVSTAGE0, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ZERO, GX_CC_TEXC);
         GXSetTevAlphaIn(GX_TEVSTAGE0, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_TEXA);
-        GXSetTevSwapMode(GX_TEVSTAGE0, GX_CH_RED, GX_CH_RED);
+        GXSetTevSwapMode(GX_TEVSTAGE0, GX_TEV_SWAP0, GX_TEV_SWAP0);
         GXSetTevOrder(GX_TEVSTAGE1, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR_NULL);
         GXSetTevColorOp(GX_TEVSTAGE1, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
         GXSetTevAlphaOp(GX_TEVSTAGE1, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
         GXSetTevColorIn(GX_TEVSTAGE1, GX_CC_TEXC, GX_CC_CPREV, GX_CC_A0, GX_CC_ZERO);
         GXSetTevAlphaIn(GX_TEVSTAGE1, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_TEXA);
-        GXSetTevSwapMode(GX_TEVSTAGE1, GX_CH_RED, GX_CH_RED);
+        GXSetTevSwapMode(GX_TEVSTAGE1, GX_TEV_SWAP0, GX_TEV_SWAP0);
 #ifdef MUST_MATCH
         color = monitorColor(((GansWork*)gans_wp[0])->alpha);
 #else
@@ -3295,7 +3295,7 @@ USER_FUNC(evt_tou_get_rule_msg2_27_text_182C) {
     }
 
     for (i = 0; i < n; i++) {
-        if (ruleId == dt[i].type) {
+        if (ruleId == dt[i].kind) {
             break;
         }
     }
@@ -3340,14 +3340,14 @@ static USER_FUNC(evt_tou_get_rule_info) {
 
     if (type == 0) {
         for (i = 0; i < n; i++) {
-            if (dt[i].type == 6) {
+            if (dt[i].kind == 6) {
                 break;
             }
         }
     } else if (type == 10) {
         for (;;) {
             i = rand() % n;
-            if (dt[i].type != 0x30 && dt[i].type != 0x20 && dt[i].type != 0x40) {
+            if (dt[i].kind != 0x30 && dt[i].kind != 0x20 && dt[i].kind != 0x40) {
                 break;
             }
         }
@@ -3356,8 +3356,8 @@ static USER_FUNC(evt_tou_get_rule_info) {
     }
 
     evtSetValue(event, args[1], (s32)dt[i].name);
-    evtSetValue(event, args[2], dt[i].type);
-    evtSetValue(event, args[3], dt[i].field_0C);
+    evtSetValue(event, args[2], dt[i].kind);
+    evtSetValue(event, args[3], dt[i].param);
     evtSetValue(event, args[4], dt[i].field_10);
     return EVT_RETURN_DONE;
 }

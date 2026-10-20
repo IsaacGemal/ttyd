@@ -67,7 +67,8 @@ static u32 color_rotation_data[] = {
 	0xFEB4FED5, 0xB4FEB4D5, 0xFEB4FEFE, 0xB4FED5AC,
 };
 
-// .sbss2: four zeroed colour words (black RGB; only the alpha byte is ever set, at draw time).
+// .sbss2: four zeroed GXColor templates, copied before each draw: 0x80423310/18 keep their black RGB and get
+// only an alpha, 0x80423314/1c get RGB from color_rotation_data as well.
 // Declared in reverse: MWCC places them in reverse of declaration order.
 #pragma section ".sdata" ".sbss2"
 __declspec(section ".sdata") u32 unk_8042331c;

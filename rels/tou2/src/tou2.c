@@ -58,7 +58,7 @@ typedef struct FighterData {
     s32 setupId;
     const char* taunt;
     const char* victory;
-    s16 score; // initial ranking score
+    s16 defaultScore; // starting ranking score
     // pad 2 bytes
 } FighterData;
 
@@ -298,7 +298,7 @@ static void rankingInit(void) {
                 entry->score[j] = swByteGet(2 * entry->id + 519 + j);
             }
         } else {
-            *(s16*)entry->score = fighterDt[entry->id].score;
+            *(s16*)entry->score = fighterDt[entry->id].defaultScore;
         }
         if (entry->id == FIGHTER_PLAYER) {
             entry->flags |= RANK_PLAYER;
@@ -933,13 +933,13 @@ static USER_FUNC(evt_tou_get_rule_msg2) {
 
 USER_FUNC(evt_tou_set_ranking_win_lose_28_text_35C0) {
     s32* args = event->args;
-    s32 won = evtGetValue(event, args[0]);
+    s32 lost = evtGetValue(event, args[0]);
     s32 id = evtGetValue(event, args[1]);
     s32 i;
     s16 min;
     s16 max;
 
-    if (won == 0) {
+    if (lost == 0) {
         for (i = 0; i < rank_wp->count; i++) {
             if (rank_wp->entries[i].id == id) {
                 rank_wp->entries[i].flags |= RANK_BELOW;
@@ -1065,7 +1065,7 @@ static void disp_proc(CameraId cameraId, void* param) {
     for (; i < rank_wp->count; i++, off += 0xc) {
         f32 f27 = 10.0f + f31;
 
-        f26 = dwp->scrollY + ((f28 - (f32)y) - f30);
+        f26 = dwp->scroll + ((f28 - (f32)y) - f30);
         if (!(((RankEntry*)((u8*)rank_wp->entries + off))->flags & RANK_HIDDEN)) {
             PSMTXScale(scale, 0.8f, 0.8f, 0.8f);
             if (rank != 0) {
@@ -1105,7 +1105,7 @@ static void disp_proc(CameraId cameraId, void* param) {
         GXSetScissor(scX, (u16)f137, scW, (u16)f228);
     }
     {
-        f32 yv = 95.0f + dwp->scrollY;
+        f32 yv = 95.0f + dwp->scroll;
         Vec pos = { 0.0f, 0.0f, 0.0f };
 
         pos.x = 15.0f + f31;
@@ -1157,7 +1157,7 @@ static USER_FUNC(evt_tou_print_ranking) {
             }
         }
         dwp->page = c / 0xb;
-        dwp->scrollY = dwp->targetY = (f32)(dwp->page * 0xdc);
+        dwp->scroll = dwp->targetScroll = (f32)(dwp->page * 0xdc);
         printRanking();
         return EVT_RETURN_BLOCK;
     }
@@ -1173,13 +1173,13 @@ static USER_FUNC(evt_tou_print_ranking) {
         dwp->page++;
         psndSFXOn((const char*)5);
     }
-    dwp->targetY = (f32)(dwp->page * 0xdc);
+    dwp->targetScroll = (f32)(dwp->page * 0xdc);
 #ifdef MUST_MATCH
     // MUST_MATCH: retail folds this interpolation step to `* 0.125f`; the `+=` over `/ 8.0f` form is
     // what makes MWCC keep 0.125 in f0 and the int-to-float temp in f2 (a literal `* 0.125f` swaps them).
-    dwp->scrollY += (dwp->targetY - dwp->scrollY) / 8.0f;
+    dwp->scroll += (dwp->targetScroll - dwp->scroll) / 8.0f;
 #else
-    dwp->scrollY = (dwp->targetY - dwp->scrollY) * 0.125f + dwp->scrollY;
+    dwp->scroll = (dwp->targetScroll - dwp->scroll) * 0.125f + dwp->scroll;
 #endif
     dispEntry((CameraId)8, 300.0f, 0, disp_proc, NULL);
     return EVT_RETURN_BLOCK;
@@ -1232,24 +1232,24 @@ USER_FUNC(tou_champion_belt_28_text_2A10) {
     angle = reviseAngle(camGetRy() - pose->rotationY);
     handle = (EffectEntry*)event->userdata[0];
     ud = &handle->userdata;
-    ((BeltData*)*ud)->pos.x = loc[group].x;
-    ((BeltData*)*ud)->pos.y = loc[group].y;
-    ((BeltData*)*ud)->pos.z = loc[group].z;
+    ((effStarStoneData*)*ud)->x = loc[group].x;
+    ((effStarStoneData*)*ud)->y = loc[group].y;
+    ((effStarStoneData*)*ud)->z = loc[group].z;
     if ((angle > 90.0f && angle <= 270.0f) || (angle < -90.0f && angle >= -270.0f)) {
-        ((BeltData*)*ud)->yaw = 8.0f - (angle + camGetPtr(CAMERA_3D)->viewYaw);
+        ((effStarStoneData*)*ud)->rotY = 8.0f - (angle + camGetPtr(CAMERA_3D)->viewYaw);
     } else {
         cam = camGetPtr(CAMERA_3D);
-        ((BeltData*)*ud)->yaw = -(angle + cam->viewYaw) - 8.0f;
+        ((effStarStoneData*)*ud)->rotY = -(angle + cam->viewYaw) - 8.0f;
     }
     if (npc->position.y <= -1000.0f) {
-        ((BeltData*)*ud)->pos.x = 0.0f;
-        ((BeltData*)*ud)->pos.y = -1000.0f;
-        ((BeltData*)*ud)->pos.z = 0.0f;
+        ((effStarStoneData*)*ud)->x = 0.0f;
+        ((effStarStoneData*)*ud)->y = -1000.0f;
+        ((effStarStoneData*)*ud)->z = 0.0f;
     }
     if (champion_belt_onoff != 0) {
-        ((BeltData*)*ud)->pos.x = 0.0f;
-        ((BeltData*)*ud)->pos.y = -1000.0f;
-        ((BeltData*)*ud)->pos.z = 0.0f;
+        ((effStarStoneData*)*ud)->x = 0.0f;
+        ((effStarStoneData*)*ud)->y = -1000.0f;
+        ((effStarStoneData*)*ud)->z = 0.0f;
     }
     return EVT_RETURN_BLOCK;
 }

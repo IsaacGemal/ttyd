@@ -16,17 +16,10 @@ typedef struct RuleEntry {
 } RuleEntry;
 
 typedef struct DispWork {
-    f32 scrollY; // 0x0, eases toward targetY
-    f32 targetY; // 0x4, page * 220
-    s32 page;    // 0x8, which page of the ranking is shown
+    f32 scroll;       // 0x0, eases toward targetScroll
+    f32 targetScroll; // 0x4, page * 220
+    s32 page;         // 0x8, which page of the ranking is shown
 } DispWork;
-
-typedef struct BeltData {
-    u8 pad_00[8]; // 0x0
-    Vec pos;      // 0x8
-    u8 pad_14[8]; // 0x14
-    f32 yaw;      // 0x1C, world yaw so the belt faces the camera
-} BeltData;
 
 typedef struct PoseUser {
     Vec* locators; // 0x0

@@ -33,7 +33,7 @@ s32 mahojin_rate;
 
 static void callback(TevCallbackParam* param);
 
-// TEV colour callback: tints the circle purple, alpha fades with mahojin_rate
+// TEV colour callback: blends the colour toward purple (E8,00,E8) by mahojin_rate/255; alpha passes through
 static void callback(TevCallbackParam* param) {
     s32 stage = param->field_C;
     s32 field_10 = param->field_10;
@@ -211,7 +211,7 @@ void effMahojinMain(EffectEntry* effect) {
     for (i = 2; i < effect->count; i++, entry++) {
         switch (entry->state) {
         case 0:
-            // the first type-1 pieces fade in lit, the rest stay dim
+            // the first type-1 pieces fade in on S_3_n (S_2_n for types 7/8); the rest play A_2_n then S_2_n at full alpha
             if (i - 1 < type) {
                 if (loop > 0.6f) {
                     entry->animId[0] = animPoseEntry("MOBJ_EFF_mahojin_omote", inBattle);

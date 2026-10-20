@@ -362,7 +362,7 @@ static void callback(s32 state, smartEntry* smart) {
 
     data = smart->address;
     event = data->event;
-    // state 3 = a choice was made; lwData[5] counts the choices in this message
+    // state 3 = A/B pressed at a 0xFFFE wait point (msgdrv choiceState 2); lwData[5] counts the waits passed
     if (strcmp(data->tag, "stg7_aji_06") == 0) {
         if (state == 3) {
             event->lwData[5]++;

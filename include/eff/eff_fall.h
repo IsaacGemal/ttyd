@@ -11,7 +11,7 @@ typedef struct FallWork {
 	f32 y;                   // 0x08
 	f32 z;                   // 0x0C
 	f32 radius;              // 0x10 spawn radius (entry's radius, the caller's unit width)
-	f32 height;              // 0x14 drop height above the base y (entry's height)
+	f32 height;              // 0x14 target hit position above the floor y; elements within radius/2 land at y + height
 	f32 angle;               // 0x18 heading in degrees (entry's angle)
 	s32 num;                 // 0x1C number of particle elements (count - 1)
 	s32 timerMax;            // 0x20 frame count the per-element timer runs up to (entry's timerMax)
@@ -25,7 +25,7 @@ typedef struct FallWork {
 	smartEntry* vertexBuf;   // 0x40 smartAlloc'd strip vertices (type 2)
 	f32 wave;                // 0x44 type-2 impact wobble amplitude
 	f32 spin;                // 0x48 rotation angle in degrees
-	f32 roll;                // 0x4C type-6 shell-rim roll angle, used while spin is clamped to 0
+	f32 roll;                // 0x4C type-6 rotation about the pivot at x = -200, used while spin is clamped to 0
 	f32 unk50;               // 0x50 per-type vector: type 3 texture pan, type 6 velocity, type 7 waypoint
 	f32 unk54;               // 0x54
 	f32 unk58;               // 0x58

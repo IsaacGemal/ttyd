@@ -597,7 +597,7 @@ USER_FUNC(evt_map_replace_mapobj) {
         break;
     case 1: {
         EffectEntry* eff = effFireEntry(5, 0, pos.x, pos.y, pos.z, 0.4f);
-        ((effFireData*)eff->userdata)->field_0x88 = 1; // effFireDisp then blends the flame with the map's blend colour
+        ((effFireData*)eff->userdata)->field_0x88 = 1; // effFireDisp then multiplies the flame by the map's blend colour (when map blending is on)
         break;
     }
     }

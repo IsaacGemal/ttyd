@@ -114,8 +114,8 @@ void effRotHammerSuccessDisp(CameraId camId, void* param) {
 
     cam = camGetPtr(camId);
     data = effect->userdata;
-    GXSetNumChans(GX_COLOR0);
-    GXSetNumTexGens(GX_TEXCOORD1);
+    GXSetNumChans(0);
+    GXSetNumTexGens(1);
     GXSetTexCoordGen2(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_IDENTITY, GX_FALSE, GX_PTIDENTITY);
     effGetTexObjN64(0x1D, &texObj);
     GXLoadTexObj(&texObj, GX_TEXMAP0);
