@@ -71,7 +71,7 @@ typedef struct PuniWork {
 typedef struct PuniData {
     s32 field_0x0;                      // 0x0
     s32 flags;                          // 0x4
-    s32 field_0x8;                      // 0x8
+    s32 statusFlags;                    // 0x8, bits: 0x1 heal icon timer (puniParaRecover), 0x2 icon 0x14D (puniModePiyori), 0x4 set while puniModeAway/Wind move along awayDir, 0x10 defeated (hp at 0), 0x20 solid obstacle (puniOption pushes off it)
     u16 mode;                           // 0xC
     s16 prevMode;                   // 0xE, mode to return to after an interruption (puniModeNormal and puniModeParent set it before the wind mode 13)
     u8 unk10[0x114 - 0x10];             // 0x10

@@ -399,14 +399,14 @@ void evt_icon_disp_func(CameraId camId, void* param) {
             Vec pos2;
 
             pos = dat->pos;
-            if (dat->field_0x8 & 1) {
+            if (dat->statusFlags & 1) {
                 (dat->healIconTime)++;
                 if (*(s8*)((u8*)dat + 0x121) > 30) {
                     dat->healIconTime = 0;
-                    dat->field_0x8 &= ~1;
+                    dat->statusFlags &= ~1;
                 }
             }
-            if (dat->field_0x8 & 2) {
+            if (dat->statusFlags & 2) {
                 pos2 = pos;
                 puniSinCosRet(dat->angle + gp->retraceCount * 10, &pos.z, &pos.x, 9.0f, 9.0f);
                 pos.y += 13.0f;
@@ -810,11 +810,11 @@ void _ymode_mri_09(PuniData* dat) {
         puni->pos.y = 10.0f * t + (base);                                                                      \
     } while (0)
 void _ymode_mri_16_00(PuniData* puni) {
-    u32 entry = *(u32*)((u8*)puni + 0x8); // PuniData 0x8
+    u32 entry = *(u32*)&puni->statusFlags; // PuniData 0x8
     u32 flags;
     f32 x, z;
 
-    *(u32*)((u8*)puni + 0x8) = entry & ~0x8; // PuniData 0x8
+    *(u32*)&puni->statusFlags = entry & ~0x8; // PuniData 0x8
 
     if (puni->pos.y <= -200.0f && puni->pos.y >= -400.0f) {
         x = puni->pos.x;
@@ -841,7 +841,7 @@ void _ymode_mri_16_00(PuniData* puni) {
                 puni->pos.y = -400.0f;
             }
             if (puni->pos.y < -320.0f && puni->pos.y > -400.0f) {
-                *(u32*)((u8*)puni + 0x8) |= 0x8; // PuniData 0x8
+                *(u32*)&puni->statusFlags |= 0x8; // PuniData 0x8
             }
         }
         if (puni->pos.x <= 40.0f && puni->pos.x >= -200.0f && puni->pos.z > -76.46314f &&
@@ -850,7 +850,7 @@ void _ymode_mri_16_00(PuniData* puni) {
         }
     }
 
-    flags = *(u32*)((u8*)puni + 0x8); // PuniData 0x8
+    flags = *(u32*)&puni->statusFlags; // PuniData 0x8
     if (flags & 0x4) {
         return;
     }
@@ -872,11 +872,11 @@ void _ymode_mri_16_00(PuniData* puni) {
 }
 
 void _ymode_mri_16_01(PuniData* puni) {
-    u32 entry = *(u32*)((u8*)puni + 0x8); // PuniData 0x8
+    u32 entry = *(u32*)&puni->statusFlags; // PuniData 0x8
     u32 flags;
     f32 x, z;
 
-    *(u32*)((u8*)puni + 0x8) = entry & ~0x8; // PuniData 0x8
+    *(u32*)&puni->statusFlags = entry & ~0x8; // PuniData 0x8
 
     if (puni->pos.y <= 100.0f && puni->pos.y >= 0.0f) {
         if (puni->pos.x <= 40.0f && puni->pos.x >= -200.0f && puni->pos.z > -200.0f &&
@@ -908,12 +908,12 @@ void _ymode_mri_16_01(PuniData* puni) {
                 puni->pos.y = 0.0f;
             }
             if (puni->pos.y < 80.0f && puni->pos.y > 0.0f) {
-                *(u32*)((u8*)puni + 0x8) |= 0x8; // PuniData 0x8
+                *(u32*)&puni->statusFlags |= 0x8; // PuniData 0x8
             }
         }
     }
 
-    flags = *(u32*)((u8*)puni + 0x8); // PuniData 0x8
+    flags = *(u32*)&puni->statusFlags; // PuniData 0x8
     if (flags & 0x4) {
         return;
     }
@@ -2435,7 +2435,7 @@ void puniParaAttack(PuniData* puni, PuniData* other) {
             other->target = (s32)puni;
             other->flags |= 0x2000;
             other->flags &= ~0x08000000;
-            other->field_0x8 &= ~0x2;
+            other->statusFlags &= ~0x2;
             other->mode = 9;
             other->state = 0;
             other->flags &= ~0x02000000;
@@ -2446,7 +2446,7 @@ void puniParaAttack(PuniData* puni, PuniData* other) {
         puni->target = (s32)other;
         puni->flags |= 0x2000;
         puni->flags &= ~0x08000000;
-        puni->field_0x8 &= ~0x2;
+        puni->statusFlags &= ~0x2;
         puni->mode = 9;
         puni->state = 0;
         puni->flags &= ~0x02000000;
@@ -2463,7 +2463,7 @@ void puniParaDamage(PuniData* puni) {
     if (*hp <= 0) {
         *hp = 0;
         puni->flags |= 0x4000;
-        puni->field_0x8 |= 0x10;
+        puni->statusFlags |= 0x10;
     }
 }
 
@@ -2491,7 +2491,7 @@ void puniParaRecover(PuniData* puni) {
             puni->hp = puni->maxHp;
         }
         if (puni->hp > before) {
-            puni->field_0x8 |= 1;
+            puni->statusFlags |= 1;
             puni->healIconTime = 0;
         }
     }
@@ -3674,7 +3674,7 @@ void puniModeAway(PuniData* punidat) {
         }
         break;
     case 1:
-        punidat->field_0x8 |= 4;
+        punidat->statusFlags |= 4;
         PSVECNormalize(&punidat->awayDir, &vec);  // PuniData 0x168
         PSVECScale(&vec, &punidat->vel, punidat->radius);
         PSVECAdd(&punidat->pos, &punidat->vel, &punidat->pos);
@@ -3850,7 +3850,7 @@ void puniModeDamage(PuniData* punidat) {
             if (punidat->hp <= 0) {
                 punidat->hp = 0;
                 punidat->flags |= 0x4000;
-                punidat->field_0x8 |= 0x10;
+                punidat->statusFlags |= 0x10;
             }
             if (punidat->hp * 100 / punidat->maxHp <= 30) {
                 punidat->mode = 8;
@@ -3872,7 +3872,7 @@ void puniModePiyori(PuniData* punidat) {
         PuniDokuritsu(punidat);
         punidat->target = Punigp->marioPuni;
         punidat->flags &= ~0x08000000;
-        punidat->field_0x8 &= ~0x2;
+        punidat->statusFlags &= ~0x2;
         punidat->mode = 13;
         punidat->state = 0;
         return;
@@ -3883,7 +3883,7 @@ void puniModePiyori(PuniData* punidat) {
             punidat->timer = 600;
             punidat->animIdx = 4;
             punidat->flags |= 0x08100000;
-            punidat->field_0x8 |= 0x2;
+            punidat->statusFlags |= 0x2;
             punidat->state = 2;
         } else {
             punidat->state = 10;
@@ -3892,7 +3892,7 @@ void puniModePiyori(PuniData* punidat) {
     case 2:
         if (punidat->timer-- == 0) {
             punidat->flags &= ~0x08000000;
-            punidat->field_0x8 &= ~0x2;
+            punidat->statusFlags &= ~0x2;
             punidat->state = 10;
         }
         break;
@@ -4216,7 +4216,7 @@ void puniModeWind(PuniData* punidat) {
         }
         break;
     case 3:
-        punidat->field_0x8 |= 4;
+        punidat->statusFlags |= 4;
         PSVECNormalize(&punidat->awayDir, &vec);  // PuniData 0x168
         PSVECScale(&vec, &punidat->vel, punidat->radius);  // PuniData 0x15C, 0x190
         punidat->state = 4;
@@ -5967,7 +5967,7 @@ void puniOption(void) {
             dist = PSVECDistance(&puni->pos, &puni2->pos);
             radius = puni->radius + puni2->radius;
             range = puni->reach + (radius + puni->spacing);
-            if (puni2->field_0x8 & 0x20) {
+            if (puni2->statusFlags & 0x20) {
                 if (dist < radius) {
                     PSVECSubtract(&puni->pos, &puni2->pos, &tmp);
                     if (PSVECMag(&tmp) == 0.0f) {
@@ -6051,7 +6051,7 @@ void unk_mri_00014ad4(void) {
             dist = PSVECDistance(&puni->pos, &puni2->pos);
             radius = puni->radius + puni2->radius;
             range = puni->reach + (radius + puni->spacing);
-            if (puni2->field_0x8 & 0x20) {
+            if (puni2->statusFlags & 0x20) {
                 if (dist < radius) {
                     PSVECSubtract(&puni->pos, &puni2->pos, &tmp);
                     if (PSVECMag(&tmp) == 0.0f) {
@@ -6271,7 +6271,7 @@ void puni_puni_main(void) {
             pd->speed = PSVECMag(&v);
             if ((pd->flags & 0x400) != 0) {
                 pd->flags &= ~0x06000000;
-                pd->field_0x8 &= ~0x4;
+                pd->statusFlags &= ~0x4;
                 *(u16*)((u8*)pd + 0x586) = 0;
                 puniParaRecover(pd);
             }
@@ -6299,8 +6299,8 @@ void puni_puni_main(void) {
                     }
                     if ((pd2->flags & 0x04000000) == 0) {
                     pd2->flags |= 0x04000000;
-                    if ((pd2->field_0x8 & 0x10) != 0) {
-                        pd2->field_0x8 &= ~0x10;
+                    if ((pd2->statusFlags & 0x10) != 0) {
+                        pd2->statusFlags &= ~0x10;
                         pd2->mode = 0xC;
                         pd2->state = 0;
                     }
@@ -6846,7 +6846,7 @@ USER_FUNC(evt_puni_setup) {
             continue;
         }
         if (i >= 0x67) {
-            p->field_0x8 |= 0x20;
+            p->statusFlags |= 0x20;
             continue;
         }
         puniswGetindex(0xF70F2E80, i - 1, &c0, &pos);
