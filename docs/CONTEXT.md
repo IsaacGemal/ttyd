@@ -11387,3 +11387,9 @@ Left, with what was built (each differs from retail):
 - `dedup_keep_done` (1 goto): `if (noDup == 0) keep = 0; else keep = 1; } else keep = 1;` is 99.72 (two `keep = 1` copies,
   one extra `b`); `keep = 1;` before the test (99.52) and `noDup = 1;` hoisted above the flag test (99.04) change the
   registers and the order.
+## evt_mobj: MUST_MATCH cleanup (2026-10-20, Claude Sonnet 5.5, n9-q-s-mmmobj)
+
+`src/event/evt_mobj.c` MUST_MATCH lines 47 -> 26. No names added.
+- `itemEntry` is now declared `(name, type, a3, a6, a7, a8, evtId, a5)` (header, itemdrv.c definition, all callers in src and `rels/las/src/las_04.c` reordered). The old order made the two `((ItemEntry* (*)(..., f32, f32, f32, s32, s32))itemEntry)` casts in evt_mobj (badgeblk, kururing_floor) necessary; both casts and badgeblk's two-step `y` sum are gone. Every other caller still matches.
+- Kept as the only version, no `#ifdef`: `LVB_TEMPLATE` typed 16-byte copy (strcpy and memcpy both mismatch), the red/white switch `switch`, the koopa block `switch (kpaGetLevel())` with the empty `case 2`, `case 0x5f:` ahead of `default` in the pole state machine, `mobj_rideswitch_lightblue`'s switch-scope `Vec v` plus a `Vec w` temporary in case 2, and the `mobjSwitchAnimIndex` inline in `mobj_switch_float_blk`. Duplicate arms (two `animPoseSetAnim "S_1"`) and an empty block removed.
+- Left (26 lines): `#pragma pool_data`, the `.data`/`.rodata` anchors (`negone_one_374`, `mobj_vec3_*_template` and their uses), the string padding in `evt_mobj_switch_blue`, the six invented string-pool functions (tornadoswitch_red, rideswitch_a/b, arrow, trap, bombrock), the `base + offset` accesses to `kpa_pole`/`kpa_pole_move`/`kpa_move_to_toride` and the `base` in `evt_mobj_koopa_pole`, and the two `jumptable` indexings (`jumptable[type]` mismatches: the explicit `type << 2` form changes the gp-load/slwi schedule).
