@@ -55,27 +55,27 @@ typedef struct effFireDustData {
     f32 x;          // 0x04
     f32 y;          // 0x08
     f32 z;          // 0x0C
-    f32 field_0x10; // 0x10
-    f32 field_0x14; // 0x14
-    f32 field_0x18; // 0x18
-    f32 field_0x1C; // 0x1C
-    f32 field_0x20; // 0x20
-    f32 field_0x24; // 0x24
-    f32 field_0x28; // 0x28
-    f32 field_0x2C; // 0x2C
-    s32 field_0x30; // 0x30
-    f32 field_0x34; // 0x34
-    s32 field_0x38; // 0x38
-    s32 field_0x3C; // 0x3C
-    s32 field_0x40; // 0x40
-    s32 field_0x44; // 0x44
-    s32 field_0x48; // 0x48
-    s32 field_0x4C; // 0x4C
-    s32 field_0x50; // 0x50
-    s32 field_0x54; // 0x54
-    s32 field_0x58; // 0x58
-    s32 field_0x5C; // 0x5C
-    f32 field_0x60; // 0x60
+    f32 radius;     // 0x10, scatter radius around the centre
+    f32 height;     // 0x14, scatter height
+    f32 velX;       // 0x18, per-frame step, eased toward velTargetX
+    f32 velY;       // 0x1C
+    f32 velZ;       // 0x20
+    f32 velTargetX; // 0x24
+    f32 velTargetY; // 0x28
+    f32 velTargetZ; // 0x2C
+    s32 cycle;      // 0x30, 0..19 (indexes scale_data); negative while waiting to start
+    f32 rotZ;       // 0x34, spin in degrees, +4 per frame
+    s32 life;       // 0x38
+    s32 frame;      // 0x3C, counts up every frame
+    s32 baseR;      // 0x40, shared colour from the base element
+    s32 baseG;      // 0x44
+    s32 baseB;      // 0x48
+    s32 alpha;      // 0x4C, fade from life; 0xFF when a particle spawns
+    s32 colorR;     // 0x50, particle colour
+    s32 colorG;     // 0x54
+    s32 colorB;     // 0x58
+    s32 baseA;      // 0x5C
+    f32 scale;      // 0x60, base: entry scale; particles: scale_data[cycle] * 2
     f32 field_0x64; // 0x64
     f32 field_0x68; // 0x68
 } effFireDustData;
@@ -84,10 +84,10 @@ typedef struct effFireDustData {
 // the stack slot the compiler picks for the by-value GXColor copy.
 static inline void effFireDustSetColor(effFireDustData* data) {
     GXColor color = unk_804230f8;
-    color.r = data->field_0x40;
-    color.g = data->field_0x44;
-    color.b = data->field_0x48;
-    color.a = data->field_0x5C;
+    color.r = data->baseR;
+    color.g = data->baseG;
+    color.b = data->baseB;
+    color.a = data->baseA;
     GXSetTevColor(GX_TEVREG1, color);
 }
 
@@ -106,7 +106,7 @@ static inline void effFireDustSetVtxColor(s32 r, s32 g, s32 b, u8 a) {
 // order is main_dl, effFireDustDisp, effFireDustMain, effFireDustN64Entry; Entry is here,
 // the not-yet-written Main belongs below it, and main_dl is last.
 
-EffectEntry* effFireDustN64Entry(s32 type, s32 a2, s32 a3, f32 x, f32 y, f32 z, f32 a7, f32 a8) {
+EffectEntry* effFireDustN64Entry(s32 type, s32 count, s32 life, f32 x, f32 y, f32 z, f32 radius, f32 height) {
     EffectEntry* effect;
     effFireDustData* data;
     effFireDustData* d;
@@ -115,43 +115,43 @@ EffectEntry* effFireDustN64Entry(s32 type, s32 a2, s32 a3, f32 x, f32 y, f32 z, 
 
     effect = effEntry();
     effect->type = "FireDustN64";
-    effect->count = a2 + 2;
-    data = __memAlloc(3, (a2 + 2) * 0x6c);
+    effect->count = count + 2;
+    data = __memAlloc(3, (count + 2) * 0x6c);
     effect->userdata = data;
     effect->callback = effFireDustMain;
     effect->flags |= 2;
 
     data->type = type;
-    data->field_0x3C = 0;
-    if (a3 <= 0) {
-        data->field_0x38 = 1000;
+    data->frame = 0;
+    if (life <= 0) {
+        data->life = 1000;
     } else {
-        data->field_0x38 = a3;
+        data->life = life;
     }
     d = data + 1;
-    data->field_0x4C = 0xff;
+    data->alpha = 0xff;
     data->x = x;
     data->y = y;
     data->z = z;
-    data->field_0x60 = float_1_8041ee54;
-    data->field_0x10 = a7;
-    data->field_0x14 = a8;
-    data->field_0x40 = 0xff;
-    data->field_0x44 = 0xff;
-    data->field_0x48 = 0xff;
-    data->field_0x50 = 0xff;
-    data->field_0x54 = 0xff;
-    data->field_0x58 = 0x7f;
-    data->field_0x5C = 0xff;
+    data->scale = float_1_8041ee54;
+    data->radius = radius;
+    data->height = height;
+    data->baseR = 0xff;
+    data->baseG = 0xff;
+    data->baseB = 0xff;
+    data->colorR = 0xff;
+    data->colorG = 0xff;
+    data->colorB = 0x7f;
+    data->baseA = 0xff;
 
-    if (a3 < 0x14) {
-        ratio = float_20_8041ee58 / (f32)(a2 + 1);
+    if (life < 0x14) {
+        ratio = float_20_8041ee58 / (f32)(count + 1);
     } else {
-        ratio = (f32)a3 / (f32)(a2 + 1);
+        ratio = (f32)life / (f32)(count + 1);
     }
 
-    for (i = 1; i < a2 + 2; i++, d++) {
-        d->field_0x30 = (s32)(-(f32)i * ratio) - 1;
+    for (i = 1; i < count + 2; i++, d++) {
+        d->cycle = (s32)(-(f32)i * ratio) - 1;
     }
 
     return effect;
@@ -181,34 +181,34 @@ void effFireDustMain(EffectEntry* effect) {
 
     if (effect->flags & 4) {
         effect->flags &= ~4;
-        data->field_0x38 = 16;
+        data->life = 16;
     }
-    if (data->field_0x38 < 1000) {
-        data->field_0x38--;
+    if (data->life < 1000) {
+        data->life--;
     }
-    data->field_0x3C++;
-    if (data->field_0x38 < 0) {
+    data->frame++;
+    if (data->life < 0) {
         effDelete(effect);
         return;
     }
-    if (data->field_0x38 < 8) {
-        data->field_0x4C = data->field_0x38 << 5;
+    if (data->life < 8) {
+        data->alpha = data->life << 5;
     }
 
     i = 1;
-    radius = data->field_0x10;
-    ival = (s32)data->field_0x14;
-    half = float_0p5_8041ee2c * data->field_0x14;
+    radius = data->radius;
+    ival = (s32)data->height;
+    half = float_0p5_8041ee2c * data->height;
     data++;
     for (; i < effect->count; i++, data++) {
-        data->field_0x30++;
-        if (data->field_0x30 >= 20) {
-            data->field_0x30 = 0;
+        data->cycle++;
+        if (data->cycle >= 20) {
+            data->cycle = 0;
         }
-        if (data->field_0x30 < 0) {
+        if (data->cycle < 0) {
             continue;
         }
-        if (data->field_0x30 == 0) {
+        if (data->cycle == 0) {
             angle = (f32)(rand() % 360);
             /* The original discards a rand() result here; the RNG state feeds later particles. */
             (void)rand();
@@ -216,27 +216,27 @@ void effFireDustMain(EffectEntry* effect) {
             data->x = radius * (f32)sin(angle);
             data->y = (f32)(rand() % ival) - half;
             data->z = radius * (f32)cos(angle);
-            data->field_0x18 = float_15_8041ee38 * (f32)sin(angle);
-            data->field_0x1C = float_0p4_8041ee3c * data->y;
-            data->field_0x20 = float_15_8041ee38 * (f32)cos(angle);
-            data->field_0x24 = float_0p5_8041ee2c * data->field_0x18;
-            data->field_0x28 = float_0p5_8041ee2c * data->field_0x1C;
-            data->field_0x2C = float_0p5_8041ee2c * data->field_0x20;
+            data->velX = float_15_8041ee38 * (f32)sin(angle);
+            data->velY = float_0p4_8041ee3c * data->y;
+            data->velZ = float_15_8041ee38 * (f32)cos(angle);
+            data->velTargetX = float_0p5_8041ee2c * data->velX;
+            data->velTargetY = float_0p5_8041ee2c * data->velY;
+            data->velTargetZ = float_0p5_8041ee2c * data->velZ;
             data->field_0x64 = (f32)(rand() % 15);
             data->field_0x68 = (f32)(rand() % 15);
-            data->field_0x34 = float_0_8041ee20;
-            data->field_0x4C = 0xff;
+            data->rotZ = float_0_8041ee20;
+            data->alpha = 0xff;
         }
-        data->field_0x60 = float_2_8041ee40 * scale_data[data->field_0x30];
-        data->field_0x34 += float_4_8041ee44;
-        data->x += data->field_0x18;
-        data->y += data->field_0x1C;
-        data->z += data->field_0x20;
+        data->scale = float_2_8041ee40 * scale_data[data->cycle];
+        data->rotZ += float_4_8041ee44;
+        data->x += data->velX;
+        data->y += data->velY;
+        data->z += data->velZ;
         data->field_0x64 += float_0p2_8041ee48;
         data->field_0x68 += float_0p6_8041ee4c;
-        data->field_0x18 += float_0p04_8041ee50 * (data->field_0x24 - data->field_0x18);
-        data->field_0x1C += float_0p04_8041ee50 * (data->field_0x28 - data->field_0x1C);
-        data->field_0x20 += float_0p04_8041ee50 * (data->field_0x2C - data->field_0x20);
+        data->velX += float_0p04_8041ee50 * (data->velTargetX - data->velX);
+        data->velY += float_0p04_8041ee50 * (data->velTargetY - data->velY);
+        data->velZ += float_0p04_8041ee50 * (data->velTargetZ - data->velZ);
     }
 #ifdef MUST_MATCH
     dispEntry(CAMERA_3D, dispCalcZ(&position), 2, effFireDustDisp, effect);
@@ -261,7 +261,7 @@ void effFireDustDisp(CameraId camId, void* param) {
     data = effect->userdata;
 
     PSMTXTrans(transMtx, data->x, data->y, data->z);
-    PSMTXScale(scaleMtx, data->field_0x60, data->field_0x60, data->field_0x60);
+    PSMTXScale(scaleMtx, data->scale, data->scale, data->scale);
     PSMTXConcat(transMtx, scaleMtx, outMtx);
 
     effFireDustSetColor(data);
@@ -270,7 +270,7 @@ void effFireDustDisp(CameraId camId, void* param) {
     GXLoadTexObj(&texObj, GX_TEXMAP0);
     GXSetNumChans(0);
     GXSetNumTexGens(1);
-    GXSetTexCoordGen2(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_TEXMTX0, GX_FALSE, 0x7D);
+    GXSetTexCoordGen2(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_TEXMTX0, GX_FALSE, GX_PTIDENTITY);
     PSMTXScale(scaleMtx, float_0p0056818_8041ee18, float_0p045455_8041ee1c, float_0_8041ee20);
     GXLoadTexMtxImm(scaleMtx, GX_TEXMTX0, GX_MTX2x4);
     GXSetNumTevStages(1);
@@ -335,25 +335,25 @@ static void main_dl(EffectEntry* effect, Mtx matrix) {
     f32 v;
 
     data = effect->userdata;
-    c0 = data->field_0x50;
-    c1 = data->field_0x54;
-    c2 = data->field_0x58;
-    alphaScale = (f32)data->field_0x4C / float_255_8041ee10;
+    c0 = data->colorR;
+    c1 = data->colorG;
+    c2 = data->colorB;
+    alphaScale = (f32)data->alpha / float_255_8041ee10;
     data++;
     for (i = 1; i < effect->count; i++, data++) {
-        if (data->field_0x30 < 0) {
+        if (data->cycle < 0) {
             continue;
         }
         PSMTXTrans(mtx, data->x, data->y, data->z);
-        PSMTXRotRad(rot, 'z', float_deg2rad_8041ee14 * data->field_0x34);
-        v = data->field_0x60 * alphaScale;
+        PSMTXRotRad(rot, 'z', float_deg2rad_8041ee14 * data->rotZ);
+        v = data->scale * alphaScale;
         PSMTXScale(scale, v, v, v);
         PSMTXConcat(mtx, rot, mtx);
         PSMTXConcat(mtx, scale, mtx);
         PSMTXConcat(matrix, mtx, mtx);
         GXLoadPosMtxImm(mtx, GX_PNMTX0);
         GXSetCurrentMtx(GX_PNMTX0);
-        effFireDustSetVtxColor(c0, c1, c2, (u8)((f32)data->field_0x4C * alphaScale));
+        effFireDustSetVtxColor(c0, c1, c2, (u8)((f32)data->alpha * alphaScale));
         switch (i & 7) {
             case 0:
                 vtx = (effVtxArray*)((u8*)size8x8_tex22x22_vtx + 0xA8);
