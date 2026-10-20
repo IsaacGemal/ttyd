@@ -103,7 +103,8 @@ typedef struct PartyEntry {
     u8 field_64[0x6C - 0x64];    // 0x64
     f32 spinAngle;               // 0x6C, revise360'd every frame while rolling (p_roll)
     Vec field_70;                // 0x70
-    u8 field_7C[0x94 - 0x7C];    // 0x7C
+    Vec dispOffset;              // 0x7C, added to position for the draw matrix (party.c), y bobbed by cloud and Vivian
+    u8 field_88[0x94 - 0x88];    // 0x88
     Vec targetPos;               // 0x94, destination of the appear/jump/fly routines; distABf'd against position
     u8 field_A0[0xAC - 0xA0];    // 0xA0
     Vec moveDelta;               // 0xAC, per-frame offset added to position: set by evt_party_set_hosei_xyz, mario->riderDelta in yoshi_use, zeroed in driveParty

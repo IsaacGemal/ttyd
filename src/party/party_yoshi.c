@@ -265,7 +265,7 @@ void marioYoshiForceCancel(void) {
 #ifdef MUST_MATCH
                 *(volatile Vec*)((u8*)extra + 0x7C) = *(const volatile Vec*)&vec[2];
 #else
-                *(Vec*)((u8*)extra + 0x7C) = vec[2];
+                extra->dispOffset = vec[2];
 #endif
             }
         }
@@ -341,7 +341,7 @@ void yoshi_exit(PartyEntry* arg) {
 #ifdef MUST_MATCH
                 *(volatile Vec*)((u8*)extra + 0x7C) = *(const volatile Vec*)&vec[2];
 #else
-                *(Vec*)((u8*)extra + 0x7C) = vec[2];
+                extra->dispOffset = vec[2];
 #endif
             }
         }
@@ -788,7 +788,7 @@ L_3588:
 #ifdef MUST_MATCH
             *(volatile Vec*)((u8*)extra + 0x7C) = *(const volatile Vec*)&vec3_802ccce8;
 #else
-            *(Vec*)((u8*)extra + 0x7C) = vec3_802ccce8;
+            extra->dispOffset = vec3_802ccce8;
 #endif
         }
         marioChgSmallJumpMotion();
@@ -1219,7 +1219,7 @@ L_3800:
 #ifdef MUST_MATCH
                 *(volatile Vec*)((u8*)extra + 0x7C) = *(const volatile Vec*)&vec3_802ccce8;
 #else
-                *(Vec*)((u8*)extra + 0x7C) = vec3_802ccce8;
+                extra->dispOffset = vec3_802ccce8;
 #endif
             }
             return;
@@ -1425,7 +1425,7 @@ void searchGround(PartyEntry* party) {
         {
             PartyEntry* extra = partyGetPtr(marioGetExtraPartyId());
             if (extra != NULL) {
-                *(Vec*)((u8*)extra + 0x7C) = vec[2];
+                extra->dispOffset = vec[2];
             }
         }
         party->flags |= PARTY_FLAG_FORCE_FALL;

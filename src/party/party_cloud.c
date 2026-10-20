@@ -196,7 +196,7 @@ void unk_8018206c(PartyEntry* party) {
 
     party->tail.flurrie.bobAngle = revise360(party->tail.flurrie.bobAngle - party->tail.flurrie.bobStep);
     bob = sin((3.1415927f * party->tail.flurrie.bobAngle) / 180.0f);
-    *(f32*)((u8*)party + 0x80) = 3.0f + 3.0f * bob;
+    party->dispOffset.y = 3.0f + 3.0f * bob;
 }
 
 void cloud_move(PartyEntry* party) {
@@ -213,7 +213,7 @@ void cloud_move(PartyEntry* party) {
 
     party->tail.flurrie.bobAngle = revise360(party->tail.flurrie.bobAngle - party->tail.flurrie.bobStep);
     bob = sin((3.1415927f * party->tail.flurrie.bobAngle) / 180.0f);
-    *(f32*)((u8*)party + 0x80) = 3.0f + 3.0f * bob;
+    party->dispOffset.y = 3.0f + 3.0f * bob;
 
     if (party->field_3B != 2) {
         party->field_8 &= ~0x40000;
@@ -451,7 +451,7 @@ void N__cloud_use(PartyEntry* party) {
         party->position.x = sx;
         party->position.z = sz;
         party->position.y = mario->position.y + 10.0f;
-        *(Vec*)party->field_7C = (Vec){0.0f, 0.0f, 0.0f};
+        party->dispOffset = (Vec){0.0f, 0.0f, 0.0f};
         *(f32*)((u8*)cloud + 0x8) += 2.0f;
         RELOAD_MARIO();
 #ifdef MUST_MATCH

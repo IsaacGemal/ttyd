@@ -3268,7 +3268,7 @@ s32 party_roll(PartyEntry* party) {
     f32 target;
     f32 next;
     f32 rate = 0.1f;
-    // byte view of party for the 0x7C/0x88 fields the PartyEntry header leaves as padding
+    // byte view of party for the 0x88 field, which the PartyEntry header leaves as padding
     u8* partyBytes = (u8*)party;
 
     if (party->field_37 != 2) {
@@ -3281,8 +3281,8 @@ s32 party_roll(PartyEntry* party) {
         partyChgPoseId(party, 0);
         *(f32*)((u8*)party + 0x88) = -6.0f;
         *(f32*)((u8*)party + 0x8C) = 6.0f;
-        *(f32*)((u8*)party + 0x7C) = 6.0f;
-        *(f32*)((u8*)party + 0x80) = 2.0f;
+        party->dispOffset.x = 6.0f;
+        party->dispOffset.y = 2.0f;
         party->timer = 0x41;
         party->field_3A = 0;
         unk_800c9398(party, 0.0f);
@@ -3311,8 +3311,8 @@ s32 party_roll(PartyEntry* party) {
         party->spinAngle = 0.0f;
         *(f32*)((u8*)party + 0x88) = 0.0f;
         *(f32*)((u8*)party + 0x8C) = 0.0f;
-        *(f32*)(partyBytes + 0x7C) = (party->dir < 180.0f) ? 3.0f : -3.0f;
-        *(f32*)((u8*)party + 0x80) = 0.0f;
+        party->dispOffset.x = (party->dir < 180.0f) ? 3.0f : -3.0f;
+        party->dispOffset.y = 0.0f;
         party->timer = 0x41;
         party->field_3A = 0x65;
         partyChgPaper(party, (void*)"PM_R_1C");
@@ -3356,7 +3356,7 @@ s32 party_roll(PartyEntry* party) {
             party->dir = 90.0f;
         }
         *(Vec*)(partyBytes + 0x88) = FV(vec3_802f3e88, ((Vec){0.0f, 0.0f, 0.0f}));
-        *(Vec*)(partyBytes + 0x7C) = FV(vec3_802f3e94, ((Vec){0.0f, 0.0f, 0.0f}));
+        party->dispOffset = FV(vec3_802f3e94, ((Vec){0.0f, 0.0f, 0.0f}));
         party->field_37 = 0;
         party->flags = (party->flags & ~PARTY_FLAG_PAPER_MODE);
         party->flags2 = (party->flags2 & ~0x100);
