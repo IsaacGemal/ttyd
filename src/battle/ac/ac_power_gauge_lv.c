@@ -49,10 +49,10 @@ extern const f32 float_101_804215fc;
 typedef struct PowerGaugeLvDecWork {
     s32 frame;        // 0x0
     f32 gaugePercent; // 0x4
-    u32 field_0x8;    // 0x8
+    u32 pad_0x8;      // 0x8, never accessed
     s32 value;        // 0xC
     s32 flag;         // 0x10
-    s32 field_0x14;   // 0x14
+    s32 pad_0x14;     // 0x14, never accessed
 } PowerGaugeLvDecWork;
 
 static void actionCommandDisp(f32, f32);
