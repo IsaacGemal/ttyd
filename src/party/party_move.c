@@ -1272,7 +1272,7 @@ void partyGetMoveDirSpd(PartyEntry* party, f32* angle, f32* speed) {
         hosei = 0;
     }
     if (hosei >= 0x1E) {
-        *(s16*)((u8*)work + 0x52) = 0;
+        work->touchCount = 0;
         if (!(work->currentMemberId == PARTY_MEMBER_YOSHI && work->field_34 == 3)) {
             work->field_3C[1] = 0;
             partyChgMoveMode(work, 2);
@@ -1339,8 +1339,8 @@ s32 partyMarioHosei(PartyEntry* party) {
                     angle -= float_90_8041b470;
                 }
             }
-            if (++*(s16*)((u8*)work + 0x52) > 100) {
-                *(s16*)((u8*)work + 0x52) = 100;
+            if (++work->touchCount > 100) {
+                work->touchCount = 100;
             }
             f30 = 1.0f;
         } else {
@@ -1353,10 +1353,10 @@ s32 partyMarioHosei(PartyEntry* party) {
         f31 = 3.1415927f * angle / 180.0f;
         work->velX = f30 * (f32)sin(f31);
         work->velZ = f30 * -(f32)cos(f31);
-    } else if (*(s16*)((u8*)work + 0x52) > 0) {
-        *(s16*)((u8*)work + 0x52) -= 1;
+    } else if (work->touchCount > 0) {
+        work->touchCount -= 1;
     }
-    return *(s16*)((u8*)work + 0x52);
+    return work->touchCount;
 }
 
 void partyChkWall(PartyEntry* party) {
@@ -1487,10 +1487,10 @@ void partyWalkInit(PartyEntry* party, s32 mode) {
         writeId[1] = 0;
         readId[1] = 0;
     }
-    *(u8*)((u8*)work + 0x3D) = 0;
+    work->field_3C[1] = 0;
     *(u32*)((u8*)work + 0x44) = 0x10;
     work->followDist = float_50_8041b468;
-    *(u8*)((u8*)work + 0x3E) = 0;
+    work->field_3C[2] = 0;
     work->jumpPara2 = 1.8f;
     work->jumpPara1 = 0.0f;
     if (!(mario->flags & 0x400000)) {
@@ -1554,10 +1554,10 @@ void partyMoveWalk(PartyEntry* party) {
             writeId[1] = 0;
             readId[1] = 0;
         }
-        *(u8*)((u8*)work + 0x3D) = 0;
+        work->field_3C[1] = 0;
         *(u32*)((u8*)work + 0x44) = 0x10;
         work->followDist = float_50_8041b468;
-        *(u8*)((u8*)work + 0x3E) = 0;
+        work->field_3C[2] = 0;
         work->jumpPara2 = 1.8f;
         work->jumpPara1 = 0.0f;
         if (!(mario->flags & 0x400000)) {
@@ -2081,19 +2081,19 @@ void partyMoveFlyInit(PartyEntry* party, s32 mode) {
     if (work->field_3B == 2) {
         work->followDist = float_50_8041b468;
     } else {
-        *(u8*)((u8*)work + 0x3D) = (mode == 0) ? 0 : 2;
+        work->field_3C[1] = (mode == 0) ? 0 : 2;
         partyChgMoveMode(party, 0);
-        if (*(s8*)((u8*)work + 0x3F) == 1 || *(s8*)((u8*)work + 0x3F) == 3) {
-            *(u8*)((u8*)work + 0x3F) = 0;
-            *(u8*)((u8*)work + 0x3D) = 0;
+        if ((s8)work->field_3C[3] == 1 || (s8)work->field_3C[3] == 3) {
+            work->field_3C[3] = 0;
+            work->field_3C[1] = 0;
             partyChgMoveMode(party, 1);
-        } else if (*(s8*)((u8*)work + 0x3F) == 2) {
-            *(u8*)((u8*)work + 0x3D) = 0;
+        } else if ((s8)work->field_3C[3] == 2) {
+            work->field_3C[1] = 0;
             partyChgMoveMode(party, 0x3C);
         }
         *(u32*)((u8*)work + 0x44) = 0x10;
         work->followDist = float_50_8041b468;
-        *(u8*)((u8*)work + 0x3E) = 0;
+        work->field_3C[2] = 0;
         partyChgPoseId(party, 1);
         partyChgMoveMode(party, 1);
         if (work->field_36 == 3) {

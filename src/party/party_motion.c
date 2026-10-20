@@ -1342,7 +1342,7 @@ void party_motion_homing_fly(PartyEntry* party) {
     if (party->field_8 & 0x2) {
         party->field_8 = (party->field_8 & ~0x2);
         party->flags = (party->flags & ~PARTY_FLAG_IS_BEHIND_MARIO);
-        *(u8*)((u8*)party + 0x4E) = 0;
+        party->noFloorCount = 0;
     }
     if (party->field_28 != 0) {
         f31 = 28.0f;
@@ -1580,7 +1580,7 @@ void party_motion_homing_fly(PartyEntry* party) {
     } else {
         partyChgMot(party, 0);
     }
-    if ((s8)*(u8*)((u8*)party + 0x4E) > 0xa) {
+    if ((s8)party->noFloorCount > 0xa) {
         angle = angleABf(party->position.x, party->position.z, mario->position.x, mario->position.z);
     }
     if (flag != 0) {
@@ -1630,7 +1630,7 @@ void party_motion_homing_fly(PartyEntry* party) {
             party->position.y = 0.05f * (y - party->position.y) + party->position.y;
         }
         }
-        *(u8*)((u8*)party + 0x4E) = 0;
+        party->noFloorCount = 0;
         if (party->speed != zero) {
             f32* pz = &p.z;
             p.x = party->position.x;
@@ -1676,7 +1676,7 @@ void party_motion_homing_fly(PartyEntry* party) {
                 if (f25 > -2000.0f) {
                     party->position.y = 0.05f * ((f25 + party->height) - party->position.y) + party->position.y;
                 } else {
-                    *(u8*)((u8*)party + 0x4E) = *(u8*)((u8*)party + 0x4E) + 1;
+                    party->noFloorCount = party->noFloorCount + 1;
                     if (unk_800c9f48(id, party->position.y) >= 1.0f) {
                         if (fabsf(mario->position.y - party->position.y) >= 10.0f) {
                             party->position.y = 0.1f * ((10.0f + mario->position.y) - party->position.y) + party->position.y;
@@ -3268,8 +3268,6 @@ s32 party_roll(PartyEntry* party) {
     f32 target;
     f32 next;
     f32 rate = 0.1f;
-    // byte view of party for the 0x88 field, which the PartyEntry header leaves as padding
-    u8* partyBytes = (u8*)party;
 
     if (party->field_37 != 2) {
         return 1;
@@ -3279,8 +3277,8 @@ s32 party_roll(PartyEntry* party) {
         partyPaperOn(party, "p_roll");
         partyChgPaper(party, (void*)"PM_R_1A");
         partyChgPoseId(party, 0);
-        *(f32*)((u8*)party + 0x88) = -6.0f;
-        *(f32*)((u8*)party + 0x8C) = 6.0f;
+        party->spinPivot.x = -6.0f;
+        party->spinPivot.y = 6.0f;
         party->dispOffset.x = 6.0f;
         party->dispOffset.y = 2.0f;
         party->timer = 0x41;
@@ -3307,10 +3305,10 @@ s32 party_roll(PartyEntry* party) {
     switch (party->field_3A) {
     case 0x64:
         party->speed = 0.0f;
-        *(f32*)((u8*)party + 0x64) = 0.0f;
+        party->tiltX = 0.0f;
         party->spinAngle = 0.0f;
-        *(f32*)((u8*)party + 0x88) = 0.0f;
-        *(f32*)((u8*)party + 0x8C) = 0.0f;
+        party->spinPivot.x = 0.0f;
+        party->spinPivot.y = 0.0f;
         party->dispOffset.x = (party->dir < 180.0f) ? 3.0f : -3.0f;
         party->dispOffset.y = 0.0f;
         party->timer = 0x41;
@@ -3355,7 +3353,7 @@ s32 party_roll(PartyEntry* party) {
             party->field_FC = 90.0f;
             party->dir = 90.0f;
         }
-        *(Vec*)(partyBytes + 0x88) = FV(vec3_802f3e88, ((Vec){0.0f, 0.0f, 0.0f}));
+        party->spinPivot = FV(vec3_802f3e88, ((Vec){0.0f, 0.0f, 0.0f}));
         party->dispOffset = FV(vec3_802f3e94, ((Vec){0.0f, 0.0f, 0.0f}));
         party->field_37 = 0;
         party->flags = (party->flags & ~PARTY_FLAG_PAPER_MODE);

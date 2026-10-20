@@ -99,14 +99,18 @@ typedef struct PartyEntry {
     f32 followDist;              // 0x40, distance from Mario at which a standing partner starts walking after him (party_motion_stay)
     u8 field_44[0x4C - 0x44];    // 0x44
     s8 field_4C;                 // 0x4C
-    u8 field_4D[0x54 - 0x4D];    // 0x4D
+    u8 field_4D[0x4E - 0x4D];    // 0x4D
+    u8 noFloorCount;             // 0x4E, frames the partner walked with no floor under it; party_motion_stay turns it toward Mario past 10
+    u8 field_4F[0x52 - 0x4F];    // 0x4F
+    s16 touchCount;              // 0x52, contact counter partyMarioHosei returns: up to 100 while touching Mario, decays after
     f32 moveAngle;               // 0x54, heading passed to movePos
     Vec position;                // 0x58
-    u8 field_64[0x6C - 0x64];    // 0x64
+    f32 tiltX;                   // 0x64, x-axis tilt in degrees for the roll (party.c's draw matrix rotates by it)
+    u8 field_68[0x6C - 0x68];    // 0x68
     f32 spinAngle;               // 0x6C, revise360'd every frame while rolling (p_roll)
     Vec field_70;                // 0x70
     Vec dispOffset;              // 0x7C, added to position for the draw matrix (party.c), y bobbed by cloud and Vivian
-    u8 field_88[0x94 - 0x88];    // 0x88
+    Vec spinPivot;               // 0x88, pivot of the roll spin (party.c translates by -spinPivot before the z and x rotations, +spinPivot after)
     Vec targetPos;               // 0x94, destination of the appear/jump/fly routines; distABf'd against position
     f32 velX;                    // 0xA0, x of the push velocity (partyMarioHosei sets it, partyGetMoveDirSpd adds it to moveDelta.x)
     u8 field_A4[0xA8 - 0xA4];    // 0xA4
