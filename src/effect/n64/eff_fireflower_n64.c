@@ -47,9 +47,7 @@ static u32 size32x32_tex32x32_vtx[14] = {
 };
 #pragma force_active reset
 
-#ifdef MUST_MATCH
 // The original reaches the three vertex arrays from the address 8 bytes before its .data.
-#endif
 
 // .sdata scale table indexed by data->timer in state 1 (signed bytes: loaded with extsb).
 static s8 scale_data[] = "27<AFKPUZ_dgigd";
@@ -125,7 +123,7 @@ EffectEntry* effFireFlowerN64Entry(s32 type, s32 duration, f32 x, f32 y, f32 z) 
 	return effect;
 }
 
-// Both near-misses are handled under MUST_MATCH:
+// Two near-misses:
 // (1) case 0: the original's prototype listed `count` between `y` and `z`, so MWCC evaluates the
 // call's arguments in the order r3, f1, f2, r4, f3, r5.  The shared header keeps the semantically
 // ordered prototype, so the call is made through the reordered signature (same registers); without
@@ -134,26 +132,20 @@ EffectEntry* effFireFlowerN64Entry(s32 type, s32 duration, f32 x, f32 y, f32 z) 
 // and 0.9f in f1, matching retail.
 void effFireFlowerMain(EffectEntry* effect) {
 	effFireFlowerData* data = effect->userdata;
-#ifdef MUST_MATCH
-	/* MUST_MATCH: retail builds the Vec in a scratch and copies it to a second local before
+	/* Retail builds the Vec in a scratch and copies it to a second local before
 	   dispCalcZ; a single local folds the copy away. */
 	Vec position;
-#endif
 	Vec disp = { 0.0f, 0.0f, 0.0f };
 	s32 i;
 	s32 timer;
 	s32 state;
 	f32 spawnX;
-#ifdef MUST_MATCH
 	f32 fadeScale;
-#endif
 
 	disp.x = data->x;
 	disp.y = data->y;
 	disp.z = data->z;
-#ifdef MUST_MATCH
 	position = disp;
-#endif
 
 	data->timer++;
 	data->field_0x48++;
@@ -235,14 +227,9 @@ void effFireFlowerMain(EffectEntry* effect) {
 		break;
 	case 6:
 		data->texFrame = 0;
-#ifdef MUST_MATCH
 		fadeScale = 0.9f;
 		data->angle += 18.0f;
 		data->color1A = (s32)((f32)data->color1A * fadeScale);
-#else
-		data->angle += 18.0f;
-		data->color1A = (s32)((f32)data->color1A * 0.9f);
-#endif
 		if (data->angle >= 720.0f) {
 			data->angle = 720.0f;
 			data->state++;
@@ -273,11 +260,7 @@ void effFireFlowerMain(EffectEntry* effect) {
 		}
 	}
 
-#ifdef MUST_MATCH
 	dispEntry(CAMERA_3D, dispCalcZ(&position), 2, effFireFlowerDisp, effect);
-#else
-	dispEntry(CAMERA_3D, dispCalcZ(&disp), 2, effFireFlowerDisp, effect);
-#endif
 }
 
 void effFireFlowerDisp(CameraId camId, void* param) {
