@@ -4585,14 +4585,14 @@ EVT_END()
 
 EVT_BEGIN(kuzi_keiziban_entry)
     CALL(evt_unitwin_alloc, 0)
-    CALL(unk_8017524c, 1)
+    CALL(unitwin_lottery_disp_onoff, 1)
     CALL(evt_lottery, 1, LW(0), LW(1))
     IF_BITS_SET(LW(0), 4)
         CALL_CHILD(kuzi_keiziban_husei)
     ELSE
         CALL_CHILD(kuzi_keiziban_normal)
     END_IF
-    CALL(unk_8017524c, 0)
+    CALL(unitwin_lottery_disp_onoff, 0)
     CALL(evt_unitwin_free)
     RETURN
 EVT_END()

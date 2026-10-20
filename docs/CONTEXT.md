@@ -9958,3 +9958,17 @@ the two `(u32)` stores go; `_lvup_spot_move`/`_lvup_spot_off` write `color.a` in
 and natural objects unchanged apart from debug info. Open: BattleSeqEndWork unk0 (read only by a switch whose cases
 never fire), unk14/unk28 (written zero, never read), unk1C/unk20 (unused); the file's remaining index points are
 address-named data (str_/dat_/lbl_/float_ symbols that can't become literals) and MUST_MATCH-only fn-pointer casts.
+### Readability: evt_win unit-window symbols named (2026-10-20, Claude Haiku 5.5 + Claude Opus 5.5, n9-q-evtwin2)
+
+Nine `unk_` symbols in evt_win named with tools/rename_symbol.py (symbols.txt, evt_win.c/.h, gor_01/gor_03). The
+three WinMgr callbacks and their descriptor table are clones of evt_shop's `point_disp`/`help_disp`/
+`help_main`/`window_desc` (same sizes, same bodies), so they take those names under the file's `unitwin_` prefix:
+`unitwin_point_disp` (shop-point counter), `unitwin_help_disp`, `unitwin_help_main`, `unitwin_window_desc`; the
+fourth callback, which draws the item name and a price over each object, is `unitwin_selltable_disp` after
+`evt_unitwin_selltable_setup`. `evt_unitwin_select_func` is `select_evt`'s user func (pairs with
+`evt_unitwin_main_func`/`main_evt`); `coin_count_sfx_timer` throttles SFX_COUNT_COIN1 to one per 7 frames. The two
+USER_FUNCs the gor RELs call: `unitwin_set_taken` (gor_01's badge shop passes the bought item; a nonzero value marks
+the object taken when its use event ends) and `unitwin_lottery_disp_onoff` (gor_03's lottery board; flag 0x100 shows
+the ticket-number window), named like `unitwincoin_disp_onoff`. Haiku's first pass used camelCase (`unitwinHelpDisp`,
+`coinCountSfxTimer`, ...); the file's names are snake_case, so the review respelled them. Matching build OK; the three
+changed C files compile without MUST_MATCH. Landing needs `--allow-protected` (config/G8MJ01/symbols.txt).

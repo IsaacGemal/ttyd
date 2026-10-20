@@ -2351,7 +2351,7 @@ EVT_BEGIN(evt_badge_dummy)
     END_IF
     CALL(set_new_goods_list, LW(10), 0)
     CALL(evt_badgeShop_special_dec, LW(12))
-    CALL(unk_801751f8, LW(10), LW(12))
+    CALL(unitwin_set_taken, LW(10), LW(12))
     MULTIPLY(LW(13), -1)
     CALL(evt_pouch_add_coin, LW(13))
     CALL(evt_win_coin_wait, LW(8))
