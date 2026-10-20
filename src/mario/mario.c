@@ -68,8 +68,7 @@ s32 marioGetColor(void) {
 	return mp->colorId;
 }
 
-#ifdef MUST_MATCH
-// MUST_MATCH: folding the colour selection into a helper keeps the value in r3, as the original does.
+// Folding the colour selection into a helper keeps the value in r3, as the original does.
 static inline s32 marioCharModeColor(BOOL badge1, BOOL badge2) {
 	if (badge1 && !badge2) {
 		return 1;
@@ -82,7 +81,6 @@ static inline s32 marioCharModeColor(BOOL badge1, BOOL badge2) {
 	}
 	return 0;
 }
-#endif
 
 void marioSetCharMode(s32 mode) {
 	MarioWork* wp = mp;
@@ -168,24 +166,7 @@ void marioSetCharMode(s32 mode) {
 		if (mp->characterId == 0) {
 			BOOL badge1 = pouchEquipCheckBadge(0x147);
 			BOOL badge2 = pouchEquipCheckBadge(0x148);
-#ifdef MUST_MATCH
 			s32 color = marioCharModeColor(badge1, badge2);
-#else
-			s32 color;
-
-			if (badge1 && !badge2) {
-				color = 1;
-			}
-			else if (!badge1 && badge2) {
-				color = 2;
-			}
-			else if (badge1 && badge2) {
-				color = 3;
-			}
-			else {
-				color = 0;
-			}
-#endif
 
 			if (mp->characterId == 0 && mp->colorId != color) {
 				mp->colorId = color;
@@ -1040,7 +1021,7 @@ void marioReInit(void) {
 	wp->field_0xE0 = (Vec){0.0f, -10000.0f, 0.0f};
 }
 
-// MUST_MATCH: the original builds the coin position in an inlined struct return, so the
+// The original builds the coin position in an inlined struct return, so the
 // temporary lives at r1+0x14 and the by-pointer argument copy at r1+0x20.
 static inline Vec marioCoinPos(f32 x, f32 y, f32 z) {
 	Vec v = (Vec){0.0f, 0.0f, 0.0f};
@@ -1051,7 +1032,7 @@ static inline Vec marioCoinPos(f32 x, f32 y, f32 z) {
 	return v;
 }
 
-// MUST_MATCH: the blur history update is inlined in the original, and every copy re-reads mp.
+// The blur history update is inlined in the original, and every copy re-reads mp.
 static inline void marioUpdateBlurPos(void) {
 	if ((mp->field_0x34 & 1) && (mp->dispFlags & 0x08000000)) {
 		Vec* p = &blurPos[blurPosId];
@@ -1078,24 +1059,7 @@ void marioMain(void) {
 		if (wp->characterId == 0) {
 			BOOL badge1 = pouchEquipCheckBadge(0x147);
 			BOOL badge2 = pouchEquipCheckBadge(0x148);
-#ifdef MUST_MATCH
 			s32 color = marioCharModeColor(badge1, badge2);
-#else
-			s32 color;
-
-			if (badge1 && !badge2) {
-				color = 1;
-			}
-			else if (!badge1 && badge2) {
-				color = 2;
-			}
-			else if (badge1 && badge2) {
-				color = 3;
-			}
-			else {
-				color = 0;
-			}
-#endif
 
 			if (mp->characterId == 0 && mp->colorId != color) {
 				mp->colorId = color;
@@ -1499,13 +1463,11 @@ void marioCtrlOff2Main(void) {
 }
 
 
-#ifdef MUST_MATCH
 // The original expands the first marioGetScreenPos call in an earlier inlining phase, so its frame sits at the
 // low addresses (0x44/0x60); routing it through this static inline reproduces that split. Plain call is natural.
 static inline void marioScreenPos(Vec position, f32* x, f32* y, f32* z) {
 	marioGetScreenPos(position, x, y, z);
 }
-#endif
 
 void marioMove(void) {
 	MarioWork* wp = mp;
@@ -1527,11 +1489,7 @@ void marioMove(void) {
 	{
 		MarioWork* wp2 = mp;
 
-#ifdef MUST_MATCH
 		marioScreenPos(wp2->position, &x, &y, &z);
-#else
-		marioGetScreenPos(wp2->position, &x, &y, &z);
-#endif
 		wp2->unk168 = x;
 		wp2->unk16C = y;
 		*(s32*)wp2->unk170 = z;

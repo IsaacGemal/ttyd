@@ -11528,3 +11528,9 @@ files also compile without -DMUST_MATCH.
   deleted (none of them matched).
 - sac_suki: make_tev_color is unconditional. Guarded: SukiTable6 and SukiBytes6 type-punned copies, the memcpy #ifndef,
   and the iconDispGx function-pointer cast (callers elsewhere pass s16/u16/s32, so no single header prototype fits).
+
+## s-mmmix9: battle_camera.c / mario.c / eff_sunlight_n64.c / eff_glass_n64.c MUST_MATCH reduction (2026-10-20, Claude Sonnet 5.5, n9-q-s-mmmix9)
+
+- MUST_MATCH lines: `src/battle/battle_camera.c` 12 -> 6, `src/mario/mario.c` 11 -> 3, `src/effect/n64/eff_sunlight_n64.c` 11 -> 6, `src/effect/n64/eff_glass_n64.c` 11 -> 4. No names added. Each block was tried with its `#else` alone (grouped where blocks pair up) against the baseline object with `tools/obj_equiv.py`; none matched, so the matching shape became the only version where it reads as normal C. The full tower `ninja` recreates build/G8MJ01/ok; all four files also compile without `-DMUST_MATCH`; `tools/fncast_lint.py` passes.
+- MUST_MATCH shape became the only version: battle_camera's `bcam_get_unit` inline, the two `_t` product temporaries for `base` and the split `cy` subtraction; mario's `marioCharModeColor` helper (both uses) and the `marioScreenPos` inline; eff_sunlight's `inc * s1` temporary and `effSunlightSetColor1/2`; eff_glass's `effGlassSetColor1/2/3` and `effGlassFrame`. The now-unused `color1`/`color2`/`color3` locals went with them.
+- Left under MUST_MATCH: battle_camera's `.rodata` Vec declspec objects (section declspecs), the `dxc` copy through `_t`, the `#ifndef` `yc = mid` read of an uninitialised register and the `zero`/`tmp` adds; mario's `yuu_true`/`yuu_false` goto pair, the comma-assigned `notKey` (plain `!marioChkKey()` forms all change the size) and the one-case `switch`; eff_sunlight's and eff_glass's `position = disp` copy before `dispCalcZ`, and eff_sunlight's `volatile` read of `float_0_8041ff80`.

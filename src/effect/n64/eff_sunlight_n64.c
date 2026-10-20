@@ -143,17 +143,13 @@ void effSunlightMain(EffectEntry* effect) {
 
 		s1 = (f32)sin((base + (f32)(i * i * 20)) * float_6p2832_8041ff90 / float_360_8041ff94);
 		s2 = (f32)sin(float_6p2832_8041ff90 * (f32)(counter * 2 + i * 20) / float_360_8041ff94);
-#ifdef MUST_MATCH
-		/* MUST_MATCH: the factor has to be materialized first and multiplied as `inc * s1`,
+		/* The factor has to be materialized first and multiplied as `inc * s1`,
 		   otherwise MWCC emits `fnmsubs f0, f22, f1, f0` (s1 first) instead of the retail
 		   `fnmsubs f0, f1, f22, f0`. */
 		{
 			f32 inc = float_4_8041ff98 * (float_0p01_8041ffa0 * s2 + float_0p05_8041ff9c);
 			data->offset[i] -= inc * s1;
 		}
-#else
-		data->offset[i] -= float_4_8041ff98 * (float_0p01_8041ffa0 * s2 + float_0p05_8041ff9c) * s1;
-#endif
 		if (data->offset[i] < float_0_8041ff80) {
 			data->offset[i] += 256.0f;
 		}
@@ -179,8 +175,7 @@ const Vec vec3_802fb7d4 = { 0.0f, 0.0f, 0.0f };
 const Vec vec3_802fb7e0 = { 0.0f, 0.0f, 100.0f };
 const Vec vec3_802fb7ec = { 0.0f, 1.0f, 0.0f };
 
-#ifdef MUST_MATCH
-/* MUST_MATCH: inlining the whole call keeps the colour and its by-value copy in the target's two
+/* Inlining the whole call keeps the colour and its by-value copy in the target's two
    stack slots; a helper that returns the GXColor puts them the other way round and mis-matches
    when the function passes two colours. */
 static inline void effSunlightSetColor1(GXTevRegID id, effSunlightData* data, s32 alpha) {
@@ -199,7 +194,6 @@ static inline void effSunlightSetColor2(GXTevRegID id, effSunlightData* data) {
 	c.a = data->a1;
 	GXSetTevColor(id, c);
 }
-#endif
 
 void effSunlightDisp(CameraId cameraId, void* param) {
 	EffectEntry* effect;
@@ -213,8 +207,6 @@ void effSunlightDisp(CameraId cameraId, void* param) {
 	Vec target;
 	Vec eye;
 	Vec up;
-	GXColor color1;
-	GXColor color2;
 	s32 alpha;
 	s32 type;
 	s32 i;
@@ -245,23 +237,8 @@ void effSunlightDisp(CameraId cameraId, void* param) {
 	GXLoadPosMtxImm(lookAt, GX_PNMTX0);
 	GXSetCurrentMtx(GX_PNMTX0);
 
-#ifdef MUST_MATCH
 	effSunlightSetColor1(GX_TEVREG0, data, alpha);
 	effSunlightSetColor2(GX_TEVREG1, data);
-#else
-	color1 = unk_80423290;
-	color1.r = data->r0;
-	color1.g = data->g0;
-	color1.b = data->b0;
-	color1.a = alpha >> 1;
-	GXSetTevColor(GX_TEVREG0, color1);
-	color2 = unk_80423294;
-	color2.r = data->r1;
-	color2.g = data->g1;
-	color2.b = data->b1;
-	color2.a = data->a1;
-	GXSetTevColor(GX_TEVREG1, color2);
-#endif
 
 	GXSetNumChans(1);
 	GXSetChanCtrl(GX_COLOR0A0, GX_FALSE, GX_SRC_REG, GX_SRC_VTX, 0, GX_DF_NONE, GX_AF_NONE);
