@@ -11716,3 +11716,9 @@ water_damage everything (the colour inlines, the hoisted data++, the unused `col
 colour inlines); wgun opukuWgunSin and opukuWgunColor1. Still guarded: pokopi_thunder SetColor2 (`*(GXColor*)&`
 type-punned read), peach_dust scalePtr (a redundant alias pointer), wgun Color2 (type-punned read) and the dispatch
 goto pair (the switch does not match). Block counts (lines naming MUST_MATCH) 30 -> 9. Build MATCH.
+
+### Readability: effect userdata in evt_lect_usu, evt_lect_tou, evt_lect_muj (2026-10-20, Claude Sonnet 5.5, n9-q-s-offlect)
+
+raw_offset total 779 -> 773. Build byte-identical (build/G8MJ01/ok recreated); the three files also compile without `-DMUST_MATCH`. No names added.
+- `effitemgetchange_cam` and `effitemget_open` (the by-name helpers, whose scripts create the "sub_bg" effect with `evt_eff ... "itemget"`) go through `effItemGetData` (`camId`, `scaleMode`). `eff/eff_itemget.h` is included in tou and muj.
+- Left raw: the `_ptr` helpers in usu, tou and muj, and both itemget helper pairs in evt_lect_mri.c (the mri script never creates the effect; its `LW(9)` effect comes from the item pickup in itemdrv, not from this file). The `efffukidashichange_cam` 0x4C store in tou and muj stays: no script in those files creates a fukidashi effect (usu's already uses `effFukidashiData.camId`). The `(u8*)&lbtn[i]` / `(u8*)b` / `(u8*)ppos` sites are under MUST_MATCH.

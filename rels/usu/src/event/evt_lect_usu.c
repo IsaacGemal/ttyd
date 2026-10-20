@@ -407,7 +407,7 @@ static USER_FUNC(effitemgetchange_cam) {
     s32 camId = evtGetValue(event, args[1]);
     EffectEntry* eff = effNameToPtr((const char*)name);
 
-    *(s32*)((u8*)eff->userdata + 0x38) = camId;
+    ((effItemGetData*)eff->userdata)->camId = camId;
     return EVT_RETURN_DONE;
 }
 
@@ -424,7 +424,7 @@ static USER_FUNC(effitemget_open) {
     s32 name = evtGetValue(event, event->args[0]);
     EffectEntry* eff = effNameToPtr((const char*)name);
 
-    *(s32*)((u8*)eff->userdata + 0x20) = 1;
+    ((effItemGetData*)eff->userdata)->scaleMode = 1;
     return EVT_RETURN_DONE;
 }
 
