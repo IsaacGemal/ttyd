@@ -15,25 +15,25 @@ typedef struct CamKaiten {
 } CamKaiten;
 
 typedef struct BrokenEntry {
-    s32 field_0x0;   // 0x00
-    s32 field_0x4;   // 0x04
-    s32 field_0x8;   // 0x08
-    f32 field_0xC;   // 0x0C
-    f32 field_0x10;  // 0x10
-    f32 field_0x14;  // 0x14
-    f32 x;           // 0x18
-    f32 y;           // 0x1C
-    f32 z;           // 0x20
-    f32 field_0x24;  // 0x24
-    f32 field_0x28;  // 0x28
-    f32 field_0x2C;  // 0x2C
-    f32 field_0x30;  // 0x30
+    s32 state;     // 0x00, 0 while flying, 1 once it has left the screen
+    s32 timer;     // 0x04, frames to wait before the piece moves and draws
+    s32 quadrant;  // 0x08, 0-3: diagonal the piece is drawn turned to
+    f32 impulseX;  // 0x0C, decays by param_tbl[2] each frame
+    f32 impulseY;  // 0x10, decays by param_tbl[2] each frame
+    f32 impulseZ;  // 0x14, decays by param_tbl[2] each frame
+    f32 x;         // 0x18
+    f32 y;         // 0x1C
+    f32 z;         // 0x20
+    f32 spinAngle; // 0x24, degrees about y
+    f32 spinSpeed; // 0x28, grows by param_tbl[4] each frame
+    f32 velX;      // 0x2C, constant per-frame x
+    f32 velY;      // 0x30, constant per-frame y
 } BrokenEntry;
 
 typedef struct BrokenWork {
-    s32 field_0x0;         // 0x00
-    smartEntry* field_0x4; // 0x04
-    smartEntry* field_0x8; // 0x08
+    s32 texCopied;           // 0x00, set once the frame has been copied into texBuffer
+    smartEntry* texBuffer;   // 0x04
+    smartEntry* entryBuffer; // 0x08, the BrokenEntry array
 } BrokenWork;
 
 USER_FUNC(is_dol_viewer);
@@ -46,7 +46,7 @@ USER_FUNC(cam_mahojin_kaiten_main);
 USER_FUNC(map_bgmode_end);
 USER_FUNC(map_bgmode);
 USER_FUNC(crystal_bgmode);
-USER_FUNC(unk_tik_0000247c);
+USER_FUNC(map_disp_set);
 USER_FUNC(tiz_broken);
 void tiz_broken_draw(CameraId cameraId, void* param);
 USER_FUNC(tiz_stone);

@@ -11,8 +11,8 @@ typedef struct MahojinWork {
     s32 animId[2];   // 0x18
     s32 alpha;       // 0x20
     s32 state;       // 0x24
-    void* field_0x28;                          // 0x28, argument for field_0x2C
-    void (*field_0x2C)(CameraId camId, void* arg); // 0x2C
+    void* drawArg;                               // 0x28, argument for drawFunc
+    void (*drawFunc)(CameraId camId, void* arg); // 0x2C
 } MahojinWork;
 // param block passed to the TEV callback registered by effMahojinMain
 typedef struct TevCallbackParam {

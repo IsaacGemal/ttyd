@@ -4,7 +4,7 @@
 #include "battle/battle_disp.h"
 #include "battle/battle_unit.h"
 
-EVT_DEF(unk_evt_tik_00029068);
+EVT_DEF(gesso_right_arm_counter_damage_event);
 EVT_DEF(gesso_arm_dead_event);
 EVT_DEF(gesso_fall_check);
 EVT_DEF(gesso_arm_damage_pose_event);

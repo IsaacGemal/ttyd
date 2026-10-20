@@ -4,9 +4,9 @@
 #include "eff/eff_mahojin.h"
 
 USER_FUNC(mario_key_onoff_wait);
-USER_FUNC(unk_tik_00000598);
-USER_FUNC(unk_tik_000005c0);
-USER_FUNC(unk_tik_000005e8);
+USER_FUNC(starmaniac_snd_on);
+USER_FUNC(starmaniac_snd_off);
+USER_FUNC(uranai_supotto_mode);
 USER_FUNC(card_camid);
 USER_FUNC(card_xlu);
 USER_FUNC(uranai_bbox);
@@ -28,7 +28,7 @@ EVT_DEF(uranai_exit);
 EVT_DEF(uranaisi_table_talk);
 EVT_DEF(uranaisi_direct_talk);
 EVT_DEF(uranaisi_init);
-EVT_DEF(unk_evt_tik_0000f438);
+EVT_DEF(starmaniac_init);
 EVT_DEF(starmaniac_get_event);
 EVT_DEF(starmaniac_talk);
 EVT_DEF(johoyaketi_talk);

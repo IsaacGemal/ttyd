@@ -609,7 +609,7 @@ EVT_BEGIN(evt_mapwrite)
     WAIT_MS(200)
     CALL(evt_fade_entry, 21, 3200, 0, 0, 0)
     CALL(evt_fade_end_wait)
-    CALL(unk_tik_0000247c, 0)
+    CALL(map_disp_set, 0)
     WAIT_FRAMES(1)
     CALL(evt_paper_entry, STRING("OFF_d_tizu_tex"))
     CALL(evt_img_entry, STRING("img"))
@@ -763,7 +763,7 @@ EVT_BEGIN(evt_mapwrite)
         CALL(evt_snd_sfxon, STRING("SFX_EVT_MAP_KAKAGERU1_2"), 0)
         CASE_END
     END_SWITCH
-    CALL(unk_tik_0000247c, 1)
+    CALL(map_disp_set, 1)
     WAIT_FRAMES(1)
     CALL(evt_fade_entry, 20, 1000, 0, 0, 0)
     CALL(evt_fade_end_wait)
@@ -2213,11 +2213,11 @@ USER_FUNC(disp_treasure_map_func) {
     u8 alpha = evtGetValue(event, args[5]);
     EffectEntry* entry = effNameToPtr((char*)name);
 
-    ((MahojinWork*)entry->userdata)->position.x = x;
-    ((MahojinWork*)entry->userdata)->position.y = y;
-    ((MahojinWork*)entry->userdata)->position.z = z;
-    *(f32*)&((MahojinWork*)entry->userdata)->alpha = 180.0f + angle;
-    ((MahojinWork*)entry->userdata)->field_0x14 = alpha;
+    ((EffTreasureMapData*)entry->userdata)->x = x;
+    ((EffTreasureMapData*)entry->userdata)->y = y;
+    ((EffTreasureMapData*)entry->userdata)->z = z;
+    ((EffTreasureMapData*)entry->userdata)->angle = 180.0f + angle;
+    ((EffTreasureMapData*)entry->userdata)->alpha = alpha;
     return EVT_RETURN_DONE;
 }
 
@@ -2341,16 +2341,16 @@ void tiz_broken_draw(CameraId camId, void* param) {
     s32 i;
     BrokenEntry* entry;
 
-    if (((BrokenWork*)broken_wp[0])->field_0x0 == 0) {
+    if (((BrokenWork*)broken_wp[0])->texCopied == 0) {
         GXSetTexCopySrc(0, 0, 0x260, 0x1E0);
         GXSetTexCopyDst(0x130, 0xF0, 5, 1);
-        GXCopyTex(((BrokenWork*)broken_wp[0])->field_0x4->address, 0);
+        GXCopyTex(((BrokenWork*)broken_wp[0])->texBuffer->address, 0);
         GXPixModeSync();
-        ((BrokenWork*)broken_wp[0])->field_0x0 = 1;
+        ((BrokenWork*)broken_wp[0])->texCopied = 1;
     }
 
     GXSetNumChans(0);
-    GXInitTexObj(&texObj, ((BrokenWork*)broken_wp[0])->field_0x4->address, 0x130, 0xF0, 5, 0, 0, 0);
+    GXInitTexObj(&texObj, ((BrokenWork*)broken_wp[0])->texBuffer->address, 0x130, 0xF0, 5, 0, 0, 0);
     GXLoadTexObj(&texObj, 0);
     GXSetNumTexGens(1);
     GXSetTexCoordGen2(0, 1, 4, 0x1E, 0, 0x7D);
@@ -2370,17 +2370,17 @@ void tiz_broken_draw(CameraId camId, void* param) {
     GXSetCurrentMtx(0);
     PSMTXIdentity(mtx);
 
-    entry = (BrokenEntry*)((BrokenWork*)broken_wp[0])->field_0x8->address;
+    entry = (BrokenEntry*)((BrokenWork*)broken_wp[0])->entryBuffer->address;
     for (i = 0; i < 0x1E; i++, entry++) {
         y = 232.0f - (f32)(i * 0x10);
         for (j = 0; j < 0x26; j++, entry++) {
-            if (entry->field_0x4 == 0) {
+            if (entry->timer == 0) {
                 PSMTXScale(m0, 0.026315789f, 0.033333335f, 1.0f);
                 PSMTXTrans(m1, (f32)j, (f32)i, 0.0f);
                 PSMTXConcat(m0, m1, m1);
                 GXLoadTexMtxImm(m1, 0x1E, 1);
                 PSMTXTrans(m1, -296.0f + (f32)(j * 0x10), y, 0.0f);
-                switch (entry->field_0x8) {
+                switch (entry->quadrant) {
                 case 0:
                     angle = -45.0f;
                     break;
@@ -2398,7 +2398,7 @@ void tiz_broken_draw(CameraId camId, void* param) {
                 PSMTXConcat(m1, m2, m1);
                 PSMTXRotRad(m2, 'z', 0.017453292f * angle);
                 PSMTXConcat(m1, m2, m1);
-                PSMTXRotRad(m2, 'y', 0.017453292f * entry->field_0x24);
+                PSMTXRotRad(m2, 'y', 0.017453292f * entry->spinAngle);
                 PSMTXConcat(m1, m2, m1);
                 PSMTXRotRad(m2, 'z', 0.017453292f * -angle);
                 PSMTXConcat(m1, m2, m1);
@@ -2513,26 +2513,26 @@ USER_FUNC(tiz_broken) {
 
     if (isFirstCall) {
         memset((void*)broken_wp[0], 0, 0xC);
-        ((BrokenWork*)broken_wp[0])->field_0x4 = smartAlloc(GXGetTexBufferSize(0x130, 0xF0, 5, 0, 0), 1);
-        ((BrokenWork*)broken_wp[0])->field_0x8 = smartAlloc(0xF594, 1);
-        ((BrokenWork*)broken_wp[0])->field_0x0 = 0;
+        ((BrokenWork*)broken_wp[0])->texBuffer = smartAlloc(GXGetTexBufferSize(0x130, 0xF0, 5, 0, 0), 1);
+        ((BrokenWork*)broken_wp[0])->entryBuffer = smartAlloc(0xF594, 1);
+        ((BrokenWork*)broken_wp[0])->texCopied = 0;
 
-        entry = (BrokenEntry*)((BrokenWork*)broken_wp[0])->field_0x8->address;
+        entry = (BrokenEntry*)((BrokenWork*)broken_wp[0])->entryBuffer->address;
         for (i = 0; i < 0x1E; i++) {
             for (j = 0; j < 0x26; j++) {
                 f3 = (f32)j / 37.0f - 0.5f;
                 f4 = 0.5f + (f32)(-i) / 29.0f;
                 if (f4 > 0.0f) {
                     if (f3 < 0.0f) {
-                        entry->field_0x8 = 0;
+                        entry->quadrant = 0;
                     } else {
-                        entry->field_0x8 = 1;
+                        entry->quadrant = 1;
                     }
                 } else {
                     if (f3 < 0.0f) {
-                        entry->field_0x8 = 2;
+                        entry->quadrant = 2;
                     } else {
-                        entry->field_0x8 = 3;
+                        entry->quadrant = 3;
                     }
                 }
                 if (f3 || f4) {
@@ -2545,47 +2545,47 @@ USER_FUNC(tiz_broken) {
                     f0 = 0.0f;
                     f2 = 0.0f;
                 }
-                entry->field_0x0 = 0;
-                entry->field_0x4 = (s32)(param_tbl[0] * f7);
+                entry->state = 0;
+                entry->timer = (s32)(param_tbl[0] * f7);
                 entry->x = 0.0f;
                 entry->y = 0.0f;
                 entry->z = 0.0f;
-                entry->field_0x28 = 0.0f;
-                entry->field_0x24 = 0.0f;
-                entry->field_0xC = -f0 * param_tbl[1];
-                entry->field_0x10 = -f2 * param_tbl[1];
-                entry->field_0x14 = 10.0f;
+                entry->spinSpeed = 0.0f;
+                entry->spinAngle = 0.0f;
+                entry->impulseX = -f0 * param_tbl[1];
+                entry->impulseY = -f2 * param_tbl[1];
+                entry->impulseZ = 10.0f;
                 angle = angleABf(0.0f, 0.0f, f3, f4);
                 rad = 6.2831855f * angle / 360.0f;
                 k = param_tbl[3];
-                entry->field_0x2C = k * tikSinf(rad);
-                entry->field_0x30 = k * -tikCosf(rad);
+                entry->velX = k * tikSinf(rad);
+                entry->velY = k * -tikCosf(rad);
                 entry++;
             }
             entry++;
         }
     }
 
-    entry2 = (BrokenEntry*)((BrokenWork*)broken_wp[0])->field_0x8->address;
+    entry2 = (BrokenEntry*)((BrokenWork*)broken_wp[0])->entryBuffer->address;
     for (i2 = 0; i2 < 0x1E; i2++) {
         for (j = 0; j < 0x26; j++) {
-            switch (entry2->field_0x0) {
+            switch (entry2->state) {
             case 0:
-                if (entry2->field_0x4 != 0) {
-                    entry2->field_0x4--;
+                if (entry2->timer != 0) {
+                    entry2->timer--;
                 } else {
-                    entry2->x += entry2->field_0x2C;
-                    entry2->y += entry2->field_0x30;
-                    entry2->x += entry2->field_0xC;
-                    entry2->y += entry2->field_0x10;
-                    entry2->z += entry2->field_0x14;
-                    entry2->field_0xC *= param_tbl[2];
-                    entry2->field_0x10 *= param_tbl[2];
-                    entry2->field_0x14 *= param_tbl[2];
-                    entry2->field_0x28 += param_tbl[4];
-                    entry2->field_0x24 += entry2->field_0x28;
+                    entry2->x += entry2->velX;
+                    entry2->y += entry2->velY;
+                    entry2->x += entry2->impulseX;
+                    entry2->y += entry2->impulseY;
+                    entry2->z += entry2->impulseZ;
+                    entry2->impulseX *= param_tbl[2];
+                    entry2->impulseY *= param_tbl[2];
+                    entry2->impulseZ *= param_tbl[2];
+                    entry2->spinSpeed += param_tbl[4];
+                    entry2->spinAngle += entry2->spinSpeed;
                     if (__fabsf(entry2->x) > 340.0 || __fabsf(entry2->y) > 260.0) {
-                        entry2->field_0x0++;
+                        entry2->state++;
                     }
                 }
                 break;
@@ -2599,8 +2599,8 @@ USER_FUNC(tiz_broken) {
     }
 
     if (active >= 0x474) {
-        smartFree(((BrokenWork*)broken_wp[0])->field_0x4);
-        smartFree(((BrokenWork*)broken_wp[0])->field_0x8);
+        smartFree(((BrokenWork*)broken_wp[0])->texBuffer);
+        smartFree(((BrokenWork*)broken_wp[0])->entryBuffer);
         return EVT_RETURN_DONE;
     }
     dispEntry(8, 0.0f, 0, tiz_broken_draw, NULL);
@@ -2658,7 +2658,7 @@ static USER_FUNC(evtflash) {
     }
 }
 
-USER_FUNC(unk_tik_0000247c) {
+USER_FUNC(map_disp_set) {
     s32* args = event->args;
     if (evtGetValue(event, args[0]) != 0) {
         N_mapDispOn();
@@ -2770,8 +2770,8 @@ USER_FUNC(starstone_setting) {
     effStarStoneData* d1 = e1->userdata;
 
     d1->flags |= 0x20;
-    ((MahojinWork*)e2->userdata)[index + 2].field_0x28 = e1;
-    ((MahojinWork*)e2->userdata)[index + 2].field_0x2C = (void (*)(CameraId, void*))effStarStoneDraw;
+    ((MahojinWork*)e2->userdata)[index + 2].drawArg = e1;
+    ((MahojinWork*)e2->userdata)[index + 2].drawFunc = (void (*)(CameraId, void*))effStarStoneDraw;
     return EVT_RETURN_DONE;
 }
 

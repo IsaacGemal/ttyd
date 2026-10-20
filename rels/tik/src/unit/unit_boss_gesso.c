@@ -326,7 +326,7 @@ USER_FUNC(_test_rtn) {
     return EVT_RETURN_BLOCK;
 }
 
-EVT_BEGIN(unk_evt_tik_000243c8)
+EVT_BEGIN(test_rtn_event)
     CALL(_test_rtn)
     RETURN
 EVT_END()
@@ -384,7 +384,7 @@ static EVT_BEGIN(battle_entry_event)
         CALL(btlevtcmd_AnimeWaitPlayComplete, LW(3), 1)
         CALL(btlevtcmd_StartWaitEvent, LW(3))
     END_INLINE_EVENT
-    SPAWN_EVENT(unk_evt_tik_000243c8)
+    SPAWN_EVENT(test_rtn_event)
     CALL(btlevtcmd_WaitEventEnd, LW(14))
     CALL(btlevtcmd_WaitEventEnd, LW(15))
     CALL(evt_btl_camera_set_mode, 0, 3)
