@@ -8572,3 +8572,21 @@ msgWindow_Disp also tests 0x10 for an anchor already in screen space). evt_msg.c
 favour of `window->anchor`, and `type == 1` uses `WINDOW_TYPE_SMALL`. Never-read bytes are `pad_0x1C`, `pad_0x2E`,
 `pad_0x44`. WindowEntry field_0x uses 77 → 0. Open: `userdata` still carries its "verify?" TODO, and
 windowDispGX_Message's `a2` parameter keeps its raw name (renaming the windowdrv.c drawing code is a separate pass).
+
+### Readability: BattleWork names (2026-10-19, Claude Haiku 5.5, n9-q-bwork; reviewed by Claude Opus 5.5)
+
+The earlier backlog note that BattleWork's `actionCommands` has the wrong size is false: BattleActions is 0x30C
+bytes (0x1C90-0x1F9C), and `field_1F9C` pads exactly to the stylish fields at 0x271C. The accesses at 0x1CC8-0x1D14
+land in BattleActions' own padding, which now has names: `acFlag` (0x34, BattleWork 0x1CC4, btlevtcmd_AcSetFlag),
+`acParams[8]` (0x38, btlevtcmd_AcSetParam/AcSetParamAll/AcGetParam), `acGaugeParams[4]` (0x78,
+btlevtcmd_AcSetGaugeParam) and `guardFrames` (s16 at 0x88, counted down by ac_button_down/ac_stick_rotate).
+0x2744/0x2748 lie past it, in the status-window block. BattleWork gets `unitIdTable[64]` (0x120),
+`phaseEvtTable[64]` (0x220, `PhaseEvtEntry` moved from battle_seq.c), `sampling` (0x428, `BattleSampling`/
+`BattleSamplingEntry` moved from battle_detect.c into battle_detect.h; battle_seq_command.c's partial
+`BattleTargetSampling` copy is gone), `stockExp` (0xF00), the status-window hide/show flags `statusWinScriptOff`
+(0x273C, nok `_status_window_off`), `statusWinLectureOff` (0x2740, gor `_set_lecture_mode`), `statusWinSystem`,
+`statusWinEvent`, `statusWinAPRecovery` (0x2744-0x274C), `afterReaction[64]` (0x16F40) and `stageFlags` (u8 at
+0x180DC: 0x2/0x4/0x8 from the stage layer switches, 0x20 for the ceiling). battle.c's `BattleWorkOverlay`/`BW_OVL`
+is gone. `BATTLE_MAJINAI_END` (0x400000) joins BattleFlags. Raw BattleWork casts 1548 → 1474. Open: flags
+0x40/0x100/0x40000000, `field_EFC`, `partyChangeId` at 0x1C68 (inside commandMenu, read raw in BattleChangeParty),
+and the byte-stepped `u8* sampling` reads in the barriern/battle_event_cmd helpers.
