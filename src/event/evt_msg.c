@@ -14,14 +14,6 @@
 #include <string.h>
 #include <stdio.h>
 
-
-
-// Window position fields (0x30..0x38) are not declared in windowdrv.h yet.
-typedef struct WindowVec {
-    u8 pad_0x0[0x30];
-    Vec position;                     // 0x30
-} WindowVec;
-
 // event->unk184/unk18C form a Vec not declared in evtmgr.h.
 typedef struct EventVec {
     u8 pad_0x0[0x184];
@@ -83,12 +75,12 @@ s32 _evt_msg_print(EventEntry* event, BOOL isFirstCall, s32 flags, const char* m
                     PartyEntry* party = partyGetPtr(marioGetPartyId());
 
                     if (!party) {
-                        ((WindowVec*)window)->position = marioGetPtr()->position;
-                        ((WindowVec*)window)->position.y += marioGetPtr()->wPlayerCollisionBox.y;
+                        window->anchor = marioGetPtr()->position;
+                        window->anchor.y += marioGetPtr()->wPlayerCollisionBox.y;
                     }
                     else {
-                        ((WindowVec*)window)->position = party->position;
-                        ((WindowVec*)window)->position.y += party->height;
+                        window->anchor = party->position;
+                        window->anchor.y += party->height;
                     }
                 }
                 strcpy(MSGWORK(window)->text, npcName);
@@ -98,27 +90,27 @@ s32 _evt_msg_print(EventEntry* event, BOOL isFirstCall, s32 flags, const char* m
                     PartyEntry* party = partyGetPtr(marioGetExtraPartyId());
 
                     if (!party) {
-                        ((WindowVec*)window)->position = marioGetPtr()->position;
-                        ((WindowVec*)window)->position.y += marioGetPtr()->wPlayerCollisionBox.y;
+                        window->anchor = marioGetPtr()->position;
+                        window->anchor.y += marioGetPtr()->wPlayerCollisionBox.y;
                     }
                     else {
-                        ((WindowVec*)window)->position = party->position;
-                        ((WindowVec*)window)->position.y += party->height;
+                        window->anchor = party->position;
+                        window->anchor.y += party->height;
                     }
                 }
                 strcpy(MSGWORK(window)->text, npcName);
             }
             else if (npc == (NpcEntry*)-3) {
                 if ((event->printWindowFlags & 0x1EFFFFFF) == 0) {
-                    ((WindowVec*)window)->position = marioGetPtr()->position;
-                    ((WindowVec*)window)->position.y += marioGetPtr()->wPlayerCollisionBox.y;
+                    window->anchor = marioGetPtr()->position;
+                    window->anchor.y += marioGetPtr()->wPlayerCollisionBox.y;
                 }
                 strcpy(MSGWORK(window)->text, npcName);
             }
             else if (npc) {
                 if ((event->printWindowFlags & 0x1EFFFFFF) == 0) {
-                    ((WindowVec*)window)->position = npc->position;
-                    ((WindowVec*)window)->position.y += npc->height;
+                    window->anchor = npc->position;
+                    window->anchor.y += npc->height;
                 }
                 strcpy(MSGWORK(window)->text, npc->description);
             }
@@ -126,8 +118,8 @@ s32 _evt_msg_print(EventEntry* event, BOOL isFirstCall, s32 flags, const char* m
         else {
             MSGWORK(window)->flags |= 8;
             MSGWORK(window)->battleUnitId = BattleTransID(event, (s32)npcName);
-            BtlUnit_GetTalkTogePos(MSGWORK(window)->battleUnitId, &((WindowVec*)window)->position.x,
-                                   &((WindowVec*)window)->position.y, &((WindowVec*)window)->position.z);
+            BtlUnit_GetTalkTogePos(MSGWORK(window)->battleUnitId, &window->anchor.x,
+                                   &window->anchor.y, &window->anchor.z);
             window->dispFlags = 3;
         }
 
@@ -139,8 +131,8 @@ s32 _evt_msg_print(EventEntry* event, BOOL isFirstCall, s32 flags, const char* m
                 Vec sp8;
 
                 marioGetPtr();
-                getScreenPoint(&((WindowVec*)window)->position, &sp14);
-                if (window->type == 1) {
+                getScreenPoint(&window->anchor, &sp14);
+                if (window->type == WINDOW_TYPE_SMALL) {
                     window->dispFlags = 7;
                 }
                 else if (__fabsf(sp14.x) >= 300.0f) {
@@ -162,11 +154,11 @@ s32 _evt_msg_print(EventEntry* event, BOOL isFirstCall, s32 flags, const char* m
             break;
         case 2:
             window->dispFlags = 7;
-            ((WindowVec*)window)->position = ((EventVec*)event)->vec;
+            window->anchor = ((EventVec*)event)->vec;
             break;
         case 3:
             window->dispFlags = 2;
-            ((WindowVec*)window)->position = ((EventVec*)event)->vec;
+            window->anchor = ((EventVec*)event)->vec;
             break;
         }
 
