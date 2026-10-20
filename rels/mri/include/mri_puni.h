@@ -9,12 +9,60 @@
 #define PUNI_DATA_MAX 211
 #define PUNI_TEX_INFO_MAX 200
 
+// PuniTarget flags. Only ACTIVE entries within 32 units of height are searched (puniTargetSearch).
+#define PUNI_TARGET_ACTIVE  0x1
+#define PUNI_TARGET_ATTRACT 0x2 // gathering point: puniModeMass walks toward it, puniModeFunbari jumps at it
+#define PUNI_TARGET_REPEL   0x4 // threat: puniModeAway runs from it (puni_piders_check_func marks the Piders)
+
 // One entry of PuniWork's target table at 0x374.
 typedef struct PuniTarget {
-    s32 flags;                          // 0x0
-    Vec position;            // 0x4
-    struct HitEntry* hit;    // 0x10
+    s32 flags;             // 0x0, PUNI_TARGET_*
+    Vec position;          // 0x4
+    struct HitEntry* hit;  // 0x10, evt_target_set_soko; puniModeFall matches it against the landing hit
 } PuniTarget; // 0x14
+
+// PuniData.statusFlags
+#define PUNI_STATUS_HEAL_ICON 0x1  // heal icon up (puniParaRecover, timed by healIconTime)
+#define PUNI_STATUS_STUN_ICON 0x2  // stun icon 0x14D circles the puni (puniModePiyori)
+#define PUNI_STATUS_AWAY_MOVE 0x4  // stepping along awayDir (puniModeAway, puniModeWind); cleared each frame
+#define PUNI_STATUS_ON_SLOPE  0x8  // on the mri_16 slope (_ymode_mri_16_00/01)
+#define PUNI_STATUS_DEFEATED  0x10 // hp reached 0 (puniParaDamage); puni_puni_main turns it into PUNI_MODE_DEAD
+#define PUNI_STATUS_SOLID     0x20 // treated as a fixed obstacle by puniOption
+
+// PuniData.mode, one per unk_mri_00012d58 case.
+enum PuniMode {
+    PUNI_MODE_NORMAL = 0,
+    PUNI_MODE_PARENTPRE = 1, // attach to a parent (searchParent in the dispatcher), then PARENT
+    PUNI_MODE_PARENT = 2,    // follow the parent in the swarm tree
+    PUNI_MODE_SEARCH = 3,
+    PUNI_MODE_MASS = 4,      // gather at the nearest PUNI_TARGET_ATTRACT
+    PUNI_MODE_AWAYJUMP = 5,
+    PUNI_MODE_AWAY = 6,      // run from the nearest PUNI_TARGET_REPEL
+    PUNI_MODE_ATTACK = 7,    // puniModeAttack's logic, written inline in the dispatcher
+    PUNI_MODE_ESCAPE = 8,
+    PUNI_MODE_DAMAGE = 9,
+    PUNI_MODE_PIYORI = 10,   // stunned
+    PUNI_MODE_RECOVER = 11,
+    PUNI_MODE_DEAD = 12,
+    PUNI_MODE_WIND = 13,     // blown by Flurrie (windPower over 10)
+    PUNI_MODE_EXITED = 14,   // evt_puni_exit; no dispatcher case, so the puni does nothing
+    PUNI_MODE_PREHAGURE = 15,
+    PUNI_MODE_HAGURE = 16,   // strayed from the swarm
+    PUNI_MODE_FALL = 17,
+    PUNI_MODE_PREUPDRAFT = 18,
+    PUNI_MODE_UPDRAFT = 19,
+    PUNI_MODE_WONDER = 20,
+    PUNI_MODE_FUNBARI = 21,
+    PUNI_MODE_WATER = 22,
+    PUNI_MODE_DODAI = 23,
+    PUNI_MODE_TRAP = 24,
+    PUNI_MODE_ENTER = 25,
+    PUNI_MODE_EXIT = 26,
+    PUNI_MODE_POINT = 27,
+    PUNI_MODE_DOKAN = 28,
+    PUNI_MODE_CUSTOM = 29,   // calls modeFunc
+    PUNI_MODE_NONE = 30,     // no dispatcher case; Mario's entry (Punidat[0]) and finished exits
+};
 
 typedef struct MriPuniAnimSet {
     s16* unk0[10]; // 0x00
@@ -30,13 +78,13 @@ typedef struct PuniWork {
     s32 area;                           // 0x328, set by evt_puni_setup (args[0] + 1), also written to SW 0x299
     f32 levelY[4];                      // 0x32C, the four heights puniSetYPosition chooses between
     s32 yMode;                          // 0x33C, switch in puniSetYPosition
-    s32 mapKind;                        // 0x340, 0 none, 1 MRI_06 grid, 2 table-driven grid
+    s32 mapKind;                        // 0x340, which puniMapdata_*_getidx to use: 0 none, 1 MRI_06, 2 MRI_09, 3 MRI_16
     Vec respawnPos;                     // 0x344
     f32 bandTop0;                       // 0x350
     f32 bandBottom0;                    // 0x354
     f32 bandTop1;                       // 0x358
     f32 bandBottom1;                    // 0x35C
-    s32 field_0x360;                    // 0x360
+    struct PuniData* marioPuni;         // 0x360, Punidat[0], the entry that tracks Mario
     struct PuniData* switchPuni[4];     // 0x364, the puni bound to SW 0xB3C..0xB3F
     PuniTarget targets[10];             // 0x374
     s32 phase;                          // 0x43C, set to 2/3/5 by mode changes, 0 when idle
@@ -65,107 +113,101 @@ typedef struct PuniWork {
     s32 fightSfxCount0;                 // 0x4C0, SFX_STG2_FIGHT_TOGE1 plays
     s32 fightSfxCount1;                 // 0x4C4, SFX_STG2_FIGHT_TOGE2 plays
     u8 unk4C8[0x4CC - 0x4C8];           // 0x4C8
-    s32 field_0x4CC;                    // 0x4CC
+    s32 windDisabled;                   // 0x4CC, evt_puni_winddisable_onoff; nonzero skips the cloudGetBreathPower wind
 } PuniWork;  // 0x4D0
 
 typedef struct PuniData {
-    s32 field_0x0;                      // 0x0
+    PuniPose* pose;                     // 0x0, the punidrv pose this entry drives (puni_puni_init)
     s32 flags;                          // 0x4
-    s32 field_0x8;                      // 0x8
-    u16 mode;                           // 0xC
-    s16 field_0xE;                      // 0xE
+    u32 statusFlags;                    // 0x8, PUNI_STATUS_*
+    u16 mode;                           // 0xC, PuniMode
+    s16 prevMode;                       // 0xE, mode to return to after an interruption such as PUNI_MODE_WIND
     u8 unk10[0x114 - 0x10];             // 0x10
     u16 state;                          // 0x114
     s16 angle;                          // 0x116
-    s16 field_0x118;                    // 0x118
-    s16 field_0x11A;                    // 0x11A
+    s16 treeId;                         // 0x118, swarm tree the puni belongs to, copied from the parent (searchParent); -1 when unlinked
+    s16 depth;                          // 0x11A, parent depth + 1 (searchParent); PuniDokuritsu and _daime_change decrement it
     u16 animIdx;                        // 0x11C
     u16 prevAnimIdx;                    // 0x11E
-    u8 unk120[0x121 - 0x120];           // 0x120
-    u8 field_0x121;                     // 0x121
+    u8 animDebounce;                    // 0x120, frames a new animIdx waits before it sticks (puniModeParent, counts to 8)
+    u8 healIconTime;                    // 0x121, frames the heal icon (statusFlags 0x1) has been up; cleared after 30 (evt_icon_disp_func)
     u8 unk122[0x124 - 0x122];           // 0x122
     s32 animTime;                       // 0x124
     s32 timer;                          // 0x128
     Vec pos;                            // 0x12C
-    Vec field_0x138;                    // 0x138
-    f32 field_0x144;                    // 0x144
-    f32 field_0x148;                    // 0x148
-    f32 field_0x14C;                    // 0x14C
-    u8 unk150[0x15C - 0x150];           // 0x150
+    Vec prevPos;                        // 0x138, pos at the end of the last frame (puni_puni_main)
+    Vec dispOffset;                     // 0x144, added to pos for the drawn position (puniAnimation)
+    Vec waterPos;                       // 0x150, where puniModeWind_sub hit water; puniModeWater keeps y as the surface and sets x/z to the landing point
     Vec vel;                            // 0x15C
-    u8 unk168[0x174 - 0x168];           // 0x168
-    f32 field_0x174;                    // 0x174
+    Vec awayDir;                        // 0x168, escape direction; -hitNormal after a wall or water hit
+    f32 maxSpeed;                       // 0x174, clamp on the vel magnitude (puniMoveLimitedNormal, puniMoveDecel)
     f32 gravity;                        // 0x178
     u8 unk17C[0x180 - 0x17C];           // 0x17C
     f32 direction;                      // 0x180
-    f32 field_0x184;                    // 0x184
-    f32 field_0x188;                    // 0x188
+    f32 rotZ;                           // 0x184, npc->rotation.z / PuniPose rotZ; evt_puni_korokoro spins it
+    f32 rotOffsetY;                     // 0x188, npc->rotationOffset.y / PuniPose rotOffsetY, the spin pivot (8.0 while korokoro spins)
     f32 scale;                          // 0x18C
-    f32 field_0x190;                    // 0x190
-    f32 field_0x194;                    // 0x194
-    f32 field_0x198;                    // 0x198
-    u8 unk19C[0x1A0 - 0x19C];           // 0x19C
-    f32 field_0x1A0;                    // 0x1A0
-    f32 field_0x1A4;                    // 0x1A4
-    f32 field_0x1A8;                    // 0x1A8
-    f32 field_0x1AC;                    // 0x1AC
-    f32 field_0x1B0;                    // 0x1B0
-    s32 field_0x1B4;                    // 0x1B4
-    f32 field_0x1B8;                    // 0x1B8
-    s32 field_0x1BC;                    // 0x1BC
-    f32 field_0x1C0;                    // 0x1C0
+    f32 radius;                         // 0x190, body radius: two punis touch at radius + radius (puniOption); Away and Wind also use it as the step length along awayDir
+    f32 spacing;                        // 0x194, puniOption: two punis that touched push apart out to radii + reach + spacing; the push latch clears once nothing is within radii + reach
+    f32 reach;                          // 0x198, see spacing; puniModeParent pulls toward the parent past radii + spacing + reach
+    f32 attackRange;                    // 0x19C, an attacker closes in until within the target's attackRange, then calls puniParaAttack (10.0)
+    f32 windPower;                      // 0x1A0, cloudGetBreathPower result; over 10 blows the puni into PUNI_MODE_WIND
+    f32 marioDist;                      // 0x1A4, distance to Mario, 1000 when more than 32 units apart in height; puniAnimation offsets the PARENT animation phase by marioDist / 8
+    f32 parentDist;                     // 0x1A8, distance to the parent, set each frame in puniModeParent
+    f32 speed;                          // 0x1AC, |pos - prevPos|, distance moved last frame (puni_puni_main)
+    f32 parentDistPrev;                 // 0x1B0, parentDist from the previous frame
+    s32 nearAttractIdx;                 // 0x1B4, nearest PUNI_TARGET_ATTRACT entry in Punigp->targets (puniTargetSearch), -1 for none
+    f32 nearAttractDistSq;              // 0x1B8, squared distance to it
+    s32 nearRepelIdx;                   // 0x1BC, nearest PUNI_TARGET_REPEL entry, -1 for none
+    f32 nearRepelDistSq;                // 0x1C0, squared distance to it
     u8 unk1C4[0x1C8 - 0x1C4];           // 0x1C4
     OSTime modeStartTime;               // 0x1C8
-    s32 parentPuni;                     // 0x1D0
-    s32 leftPuni;                       // 0x1D4
-    s32 rightPuni;                      // 0x1D8
-    s32 target;                         // 0x1DC
+    struct PuniData* parentPuni;        // 0x1D0
+    struct PuniData* leftPuni;          // 0x1D4
+    struct PuniData* rightPuni;         // 0x1D8
+    struct PuniData* target;            // 0x1DC, fight opponent, or Punigp->marioPuni while blown
     s32 subState;                       // 0x1E0
-    s32 field_0x1E4;                    // 0x1E4
+    s32 counter;                        // 0x1E4, per-mode scratch: Mass push frames (to 30), Awayjump's second-animation latch, Hagure's random 5..10 repeat count
     u8 unk1E8[0x1EC - 0x1E8];           // 0x1E8
     f32 height;                         // 0x1EC
     f32 vertVel;                        // 0x1F0
     f32 jumpVelStart;                   // 0x1F4
     Vec accel;                          // 0x1F8
-    Vec field_0x204;                    // 0x204
-    struct HitEntry* field_0x210;       // 0x210
-    struct HitEntry* field_0x214;       // 0x214
+    Vec moveTarget;                     // 0x204, destination of evt_puni_move_position (x and z; y keeps the start height)
+    struct HitEntry* hitVel;            // 0x210, HitEntry from puniMoveAtari's first check, along vel
+    struct HitEntry* hitDir;            // 0x214, HitEntry from puniMoveAtari's second check, from the start point
     s32 effect;                         // 0x218
     u8 unk21C[0x560 - 0x21C];           // 0x21C
-    Vec field_0x560;                    // 0x560
-    s32 field_0x56C;                    // 0x56C
-    s32 field_0x570;                    // 0x570
-    s16 field_0x574;                    // 0x574
-    s16 field_0x576;                    // 0x576
-    s16 field_0x578;                    // 0x578
-    s16 field_0x57A;                    // 0x57A
-    s16 field_0x57C;                    // 0x57C
-    s16 field_0x57E;                    // 0x57E
-    s16 field_0x580;                    // 0x580
-    s16 field_0x582;                    // 0x582
-    s16 field_0x584;                    // 0x584
-    s16 field_0x586;                    // 0x586
-    s16 field_0x588;                    // 0x588
-    s16 field_0x58A;                    // 0x58A
-    s32 field_0x58C;                    // 0x58C
-    s32 field_0x590;                    // 0x590
-    s32 field_0x594;                    // 0x594
-    s32 field_0x598;                    // 0x598
-    s32 field_0x59C;                    // 0x59C
-    s32 field_0x5A0;                    // 0x5A0
-    s32 field_0x5A4;                    // 0x5A4
+    Vec hitNormal;                      // 0x560, surface normal of the last puniMoveAtari hit
+    void (*modeFunc)(struct PuniData*); // 0x56C, PUNI_MODE_CUSTOM handler (puniModeCustom), set by the map RELs
+    void (*moveFunc)(struct PuniData*); // 0x570, per-puni move callback (puniMoveCustom), set by the map RELs
+    s16 hp;                             // 0x574, puniParaRecover, puniParaDamage
+    s16 maxHp;                          // 0x576, the danger and self checks divide hp by it
+    s16 hpRegen;                        // 0x578, hp added per regen tick (puniParaRecover)
+    s16 regenTimer;                     // 0x57A, frames until the next regen tick; reset while moving, blown or stunned
+    s16 regenInterval;                  // 0x57C, regenTimer reloads to this (60 frames)
+    s16 attack;                         // 0x57E, the loser of puniParaAttack takes the winner's attack - its own defense
+    s16 defense;                        // 0x580
+    s16 field_0x582;                    // 0x582, set to 10 at init, never read here
+    s16 damage;                         // 0x584, pending damage, applied in puniParaDamage
+    s16 foughtThisFrame;                // 0x586, set by puniParaAttack on both sides; puni_puni_main clears it each frame
+    s16 fightWeight;                    // 0x588, puniParaAttack: the attacker wins with odds own / (own + defender's) (50)
+    s16 chaseWeight;                    // 0x58A, puniParaAttack against a PUNI_MODE_ESCAPE defender: odds own / (own + 100 - defender's) (70)
+    s32 recoverType;                    // 0x58C, puniPositionCheck result that sent the puni to puniPositionRecover
+    Vec lostPos;                        // 0x590, pos before puniPositionRecover
+    Vec recoveredPos;                   // 0x59C, pos after puniPositionRecover
 } PuniData;  // 0x5A8
 
 typedef struct PuniMap {
-    f32 field_0x0;       // 0x0
-    f32 field_0x4;       // 0x4
-    s32 field_0x8;       // 0x8
-    s32 field_0xC;       // 0xC
-    s32 field_0x10;      // 0x10
-    s32 field_0x14;      // 0x14
-    void* field_0x18;    // 0x18
-    s32 field_0x1C;      // 0x1C
-    u16* field_0x20;     // 0x20
+    f32 yMax;       // 0x0, puniMapFindbuff: Mario above this is off the map
+    f32 yMin;       // 0x4, puniMapFindbuff: Mario below this is off the map
+    s32 width;      // 0x8
+    s32 height;     // 0xC
+    s32 dataSize;   // 0x10, width * height * 4 bytes (twice what the u16 grid needs)
+    s32 hasData;    // 0x14, 0 until puniMapDataSet gets a grid
+    void* gridSrc;  // 0x18, the source grid memcpy'd into grid on each refresh
+    s32 valid;      // 0x1C, set by puniMapFindbuff; 0 when Mario is off the map
+    u16* grid;      // 0x20, cells puniMapFindbuff flood-fills outward from Mario's cell each frame
 } PuniMap; // 0x24
 
 typedef struct PuniTexInfo {

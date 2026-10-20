@@ -173,7 +173,7 @@ void puniInit(void) {
     work = wp;
     wp->poseNum = 0;
     wp->poses = NULL;
-    wp->field_0x70 = 1;
+    wp->fadeOff = 1;
 }
 
 void puniEntry(s32 count, void* param, void (*callback)(void), void (*cb0)(void), void (*cb1)(void)) {
@@ -211,12 +211,12 @@ void puniEntry(s32 count, void* param, void (*callback)(void), void (*cb0)(void)
     memset(wp->poses, 0, wp->poseNum * sizeof(PuniPose));
 
     for (i = 0; i < count; i++) {
-        wp->sortList[i].field_0x0 = i;
+        wp->sortList[i].poseId = i;
         wp->poses[i].matrix = &wp->mtx[i];
-        wp->poses[i].field_0x14 = 1.0f;
+        wp->poses[i].scale = 1.0f;
     }
 
-    PSMTXIdentity(wp->field_0x3C);
+    PSMTXIdentity(wp->shadowMtx);
     dispEntry(CAMERA_OFFSCREEN, 0.0f, 1, puniMakeTexture, param);
     if (callback != NULL) {
         callback();
@@ -352,7 +352,7 @@ void puniReset(void) {
 }
 
 void puniFadeOff(s32 fadeOff) {
-    work->field_0x70 = fadeOff;
+    work->fadeOff = fadeOff;
 }
 
 void puniMain(void) {
@@ -379,12 +379,12 @@ void puniMain(void) {
     for (i = wp->poseNum - 1; i >= 0; i--) {
         u32 flags = pose->flags;
 
-        sort->field_0x0 = i;
-        if (flags & 1) {
-            sort->field_0x4 = (f32)pose->field_0x1C;
+        sort->poseId = i;
+        if (flags & PUNI_POSE_VISIBLE) {
+            sort->key = (f32)pose->texId;
         }
         {
-            f32 diff = 90.0f + (angle - pose->field_0x4);
+            f32 diff = 90.0f + (angle - pose->facing);
 
             while (diff < -360.0f) {
                 diff += 360.0f;
@@ -393,26 +393,26 @@ void puniMain(void) {
                 diff -= 360.0f;
             }
             if ((diff > 90.0f && diff <= 270.0f) || (diff < -90.0f && diff >= -270.0f)) {
-                pose->field_0x28 = target;
+                pose->billboardYawTarget = target;
             } else {
-                pose->field_0x28 = camGetRy();
+                pose->billboardYawTarget = camGetRy();
             }
         }
-        while ((pose->field_0x28 - pose->field_0x20) > 180.0f) {
-            pose->field_0x20 += 360.0f;
+        while ((pose->billboardYawTarget - pose->billboardYaw) > 180.0f) {
+            pose->billboardYaw += 360.0f;
         }
-        while ((pose->field_0x28 - pose->field_0x20) < -180.0f) {
-            pose->field_0x20 -= 360.0f;
+        while ((pose->billboardYawTarget - pose->billboardYaw) < -180.0f) {
+            pose->billboardYaw -= 360.0f;
         }
-        if (flags & 2) {
-            f32 diff = pose->field_0x28 - pose->field_0x20;
+        if (flags & PUNI_POSE_EASE_TURN) {
+            f32 diff = pose->billboardYawTarget - pose->billboardYaw;
 
-            pose->field_0x20 = 0.1f * diff + pose->field_0x20;
+            pose->billboardYaw = 0.1f * diff + pose->billboardYaw;
         } else {
-            pose->field_0x20 = pose->field_0x28;
+            pose->billboardYaw = pose->billboardYawTarget;
         }
         {
-            f32 a = pose->field_0x20;
+            f32 a = pose->billboardYaw;
             f32 c;
             f32 s;
             s32 idx;
@@ -443,10 +443,10 @@ void puniMain(void) {
 }
 
 static int compare(void* a, void* b) {
-    if (((PuniSortEntry*)a)->field_0x4 > ((PuniSortEntry*)b)->field_0x4) {
+    if (((PuniSortEntry*)a)->key > ((PuniSortEntry*)b)->key) {
         return 1;
     }
-    if (((PuniSortEntry*)a)->field_0x4 < ((PuniSortEntry*)b)->field_0x4) {
+    if (((PuniSortEntry*)a)->key < ((PuniSortEntry*)b)->key) {
         return -1;
     }
     return 0;
@@ -464,8 +464,8 @@ void puniPoseDraw(s32 poseId) {
     PuniDrvWork* wp = work;
     PuniPose* pose = &wp->poses[poseId];
 
-    if (pose->flags & 1) {
-        s32 texId = pose->field_0x1C;
+    if (pose->flags & PUNI_POSE_VISIBLE) {
+        s32 texId = pose->texId;
 
         if (wp->lastTex != texId) {
             PuniTexture* tex = &wp->textures[texId];
@@ -479,7 +479,7 @@ void puniPoseDraw(s32 poseId) {
             PSMTXConcat(camGetCurPtr()->view, *pose->matrix, m);
             GXLoadPosMtxImm(m, 0);
             GXSetCurrentMtx(0);
-            GXCallDisplayList((u8*)wp->dlBuffer + pose->field_0x1C * 0x80, wp->dlSizes[pose->field_0x1C]);
+            GXCallDisplayList((u8*)wp->dlBuffer + pose->texId * 0x80, wp->dlSizes[pose->texId]);
         }
     }
 }
@@ -490,10 +490,10 @@ void puniDraw(void) {
     PuniSortEntry* sort = wp->sortList;
 
     for (i = wp->poseNum - 1; i >= 0; i--, sort++) {
-        PuniPose* pose = &wp->poses[sort->field_0x0];
+        PuniPose* pose = &wp->poses[sort->poseId];
 
-        if (pose->flags & 1) {
-            s32 texId = pose->field_0x1C;
+        if (pose->flags & PUNI_POSE_VISIBLE) {
+            s32 texId = pose->texId;
 
             if (texId != wp->lastTex) {
                 PuniTexture* tex = &wp->textures[texId];
@@ -507,9 +507,9 @@ void puniDraw(void) {
                 Mtx rot;
                 Mtx trans;
 
-                PSMTXTrans(trans, 0.0f, pose->field_0xC, 0.0f);
-                PSMTXRotRad(rot, 'Z', 0.017453292f * pose->field_0x8);
-                PSMTXScale(scale, pose->field_0x14, pose->field_0x14, 1.0f);
+                PSMTXTrans(trans, 0.0f, pose->rotOffsetY, 0.0f);
+                PSMTXRotRad(rot, 'Z', 0.017453292f * pose->rotZ);
+                PSMTXScale(scale, pose->scale, pose->scale, 1.0f);
                 PSMTXConcat(*pose->matrix, trans, m);
                 PSMTXConcat(m, rot, m);
                 PSMTXConcat(m, scale, m);
@@ -581,7 +581,7 @@ void puniLoadTev(void) {
     GXColor blend;
     GXColor color = dat_mri_000252f8;
 
-    if (work->field_0x70 == 0) {
+    if (work->fadeOff == 0) {
         mapGetBlend(&blend);
         GXSetTevColor(1, blend);
         GXSetTevOrder(0, 0, 0, 0xFF);
@@ -679,7 +679,7 @@ void puniLoadShadowRenderMode(void) {
 }
 
 void puniLoadShadowMtx(Mtx mtx) {
-    PSMTXCopy(mtx, work->field_0x3C);
+    PSMTXCopy(mtx, work->shadowMtx);
 }
 
 void puniDrawShadow(void) {
@@ -688,15 +688,15 @@ void puniDrawShadow(void) {
     PuniSortEntry* sort = &wp->sortList[wp->poseNum - 1];
 
     for (i = wp->poseNum - 1; i >= 0; i--, sort--) {
-        PuniPose* pose = &wp->poses[sort->field_0x0];
+        PuniPose* pose = &wp->poses[sort->poseId];
 
-        if (!(pose->flags & 4)) {
+        if (!(pose->flags & PUNI_POSE_NO_SHADOW)) {
             Mtx m;
 
             PSMTXConcat(camGetCurPtr()->view, *pose->matrix, m);
-            PSMTXConcat(m, wp->field_0x3C, m);
-            if (pose->flags & 0x10) {
-                PSMTXTransApply(m, m, 0.0f, -(*pose->matrix)[1][3] + pose->field_0x10, 0.0f);
+            PSMTXConcat(m, wp->shadowMtx, m);
+            if (pose->flags & PUNI_POSE_SHADOW_Y) {
+                PSMTXTransApply(m, m, 0.0f, -(*pose->matrix)[1][3] + pose->shadowY, 0.0f);
             }
             GXLoadPosMtxImm(m, 0);
             GXSetCurrentMtx(0);
