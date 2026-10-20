@@ -165,7 +165,7 @@ void marioReInit_ship(void) {
     marioGetPtr()->motStruct = data;
     memset(marioGetPtr()->motStruct, 0, 0x48);
     mario->currMotionId = MARIO_MOTION_SHIP;
-    *(f32*)((u8*)mario + 0x9C) = -15.0f;
+    mario->dispOfs.y = -15.0f;
     mario->currSubMotionId = 0x32;
     mario->wPlayerCollisionBox.x = 40.0f;
     mario->wPlayerCollisionBox.y = 40.0f;
@@ -173,10 +173,10 @@ void marioReInit_ship(void) {
     marioChgPaper("PM_H_1A");
     marioChgPose("M_Z_1");
     mario->dispFlags |= 0x8;
-    *(s32*)((u8*)mario + 0x2A4) = 0x58;
+    mario->paperAnimeTime = 0x58;
     // Header declares marioSetPaperAnimeLocalTime(s16); the original caller passes the full word
     // without sign-extending, so call through an s32 prototype to reproduce the codegen
-    ((void (*)(s32))marioSetPaperAnimeLocalTime)(*(s32*)((u8*)mario + 0x2A4));
+    ((void (*)(s32))marioSetPaperAnimeLocalTime)(mario->paperAnimeTime);
     ((MotionShipData*)marioGetPtr()->motStruct)->sfxId = 0xFFFFFFFFu;
     ((MotionShipData*)marioGetPtr()->motStruct)->flags = 0;
     ((MotionShipData*)marioGetPtr()->motStruct)->unk04 = 0.0f;
@@ -288,7 +288,7 @@ void mot_ship(void) {
         mario->multiTimer = 0;
         mario->currSubMotionId = 1;
         mario->airTimer = 0;
-        *(s16*)((u8*)mario + 0x52) = 0;
+        mario->airTimerPeak = 0;
         mario->baseSpeed = 0.0f;
         SHIP_DATA->unk1C = 0.0f;
         N_marioSetBottomlessRespawnPosOnBeroEntry(mario->position.x, mario->position.y, mario->position.z);
@@ -380,10 +380,10 @@ void mot_ship(void) {
         if (--mario->multiTimer <= 0) {
             mario->currSubMotionId = 4;
         }
-        if (*(f32*)((u8*)mario + 0x9C) > -15.0f) {
-            *(f32*)((u8*)mario + 0x9C) -= 1.0f;
-            if (*(f32*)((u8*)mario + 0x9C) <= -15.0f) {
-                *(f32*)((u8*)mario + 0x9C) = -15.0f;
+        if (mario->dispOfs.y > -15.0f) {
+            mario->dispOfs.y -= 1.0f;
+            if (mario->dispOfs.y <= -15.0f) {
+                mario->dispOfs.y = -15.0f;
             }
         }
         /* fall through */
@@ -443,7 +443,7 @@ void mot_ship(void) {
             f32 dy;
             mario->baseSpeed = distABf(mario->position.x, mario->position.z, SHIP_DATA->unk3C.x, SHIP_DATA->unk3C.z) / 36.0f;
             mario->directionView = angleABf(mario->position.x, mario->position.z, SHIP_DATA->unk3C.x, SHIP_DATA->unk3C.z);
-            *(f32*)((u8*)mario + 0x19C) = mario->directionView;
+            mario->moveDir = mario->directionView;
             f30 = SHIP_DATA->unk3C.y;
             SHIP_DATA->unk04 = f30;
 #ifdef MUST_MATCH
@@ -485,11 +485,11 @@ void mot_ship(void) {
                 m->hitobjStandOn = hit;
                 m->position.y = sp0C;
                 m->flags &= ~0x000F0000;
-                dist = distABf(m->position.x, m->position.z, *(f32*)((u8*)m + 0x11C), *(f32*)((u8*)m + 0x124));
-                *(f32*)((u8*)m + 0x128) = __fabsf(dist);
+                dist = distABf(m->position.x, m->position.z, m->field_0x11C.x, m->field_0x11C.z);
+                m->field_0x128 = __fabsf(dist);
                 m->flags &= ~0x80;
                 m->airTimer = 0;
-                *(s16*)((u8*)m + 0x52) = 0;
+                m->airTimerPeak = 0;
                 camFollowYOn();
                 landed = 1;
             } else {
@@ -507,7 +507,7 @@ void mot_ship(void) {
             mario->unk1A8 = revise360(mario->unk1A8);
             mario->dispReqDir = mario->unk1A8;
             mario->directionView = toMovedir(mario->unk1A8);
-            *(f32*)((u8*)mario + 0x19C) = mario->directionView;
+            mario->moveDir = mario->directionView;
             mario->dispFlags &= ~0x100;
             mario->dispFlags |= 0x1000;
             psndSFXOn_3D((char*)0x18F, &mario->position);
@@ -529,8 +529,8 @@ void mot_ship(void) {
         mario->currSubMotionId = 0x1F;
         /* fall through */
     case 31:
-        *(f32*)((u8*)mario + 0x9C) += -0.4f;
-        if (*(f32*)((u8*)mario + 0x9C) <= -18.0f) {
+        mario->dispOfs.y += -0.4f;
+        if (mario->dispOfs.y <= -18.0f) {
             mario->multiTimer = 4;
             mario->currSubMotionId = 0x20;
         }
@@ -564,7 +564,7 @@ void mot_ship(void) {
 #endif
                 f32 f6;
                 mario->directionView = angleABf(mario->position.x, mario->position.z, SHIP_DATA->unk3C.x, SHIP_DATA->unk3C.z);
-                *(f32*)((u8*)mario + 0x19C) = mario->directionView;
+                mario->moveDir = mario->directionView;
                 SHIP_DATA->flags = ((mario->trigFlags & 0x200) ? 1 : 0) + 1;
                 f6 = 0.5f * (f32)n;
                 f30 = 80.0f / (f6 * f6 - f6);
@@ -574,7 +574,7 @@ void mot_ship(void) {
                 mario->jumpJerkStepY = 0.0f;
                 mario->multiTimer = (s16)(s32)(0.5f + f6);
                 mario->currSubMotionId = 0x29;
-                *(f32*)((u8*)mario + 0x2B0) = __fabsf(*(f32*)((u8*)mario + 0x9C) / (f32)(mario->multiTimer + 0x58));
+                mario->field_0x2B0 = __fabsf(mario->dispOfs.y / (f32)(mario->multiTimer + 0x58));
                 effDelete(SHIP_DATA->eff);
             }
         }
@@ -584,15 +584,15 @@ void mot_ship(void) {
         movePos(&mario->position.x, &mario->position.z, mario->baseSpeed, mario->directionView);
         mario->position.y += mario->jumpVelY;
         marioMakeJumpPara();
-        *(f32*)((u8*)mario + 0x9C) += *(f32*)((u8*)mario + 0x2B0);
-        if (*(f32*)((u8*)mario + 0x9C) > 0.0f) {
-            *(f32*)((u8*)mario + 0x9C) = 0.0f;
+        mario->dispOfs.y += mario->field_0x2B0;
+        if (mario->dispOfs.y > 0.0f) {
+            mario->dispOfs.y = 0.0f;
         }
         if (--mario->multiTimer <= 0) {
             marioChgPaper("PM_H_1A");
             marioChgPose("M_Z_1");
-            *(s32*)((u8*)mario + 0x2A4) = 0x58;
-            ((void (*)(s32))marioSetPaperAnimeLocalTime)(*(s32*)((u8*)mario + 0x2A4));
+            mario->paperAnimeTime = 0x58;
+            ((void (*)(s32))marioSetPaperAnimeLocalTime)(mario->paperAnimeTime);
             SHIP_DATA->unk1C = 0.0f;
             mario->dispFlags |= 0x100;
             marioAdjustMoveDir();
@@ -608,12 +608,12 @@ void mot_ship(void) {
         break;
     }
     case 43: {
-        *(f32*)((u8*)mario + 0x9C) += *(f32*)((u8*)mario + 0x2B0);
-        if (*(f32*)((u8*)mario + 0x9C) > 0.0f) {
-            *(f32*)((u8*)mario + 0x9C) = 0.0f;
+        mario->dispOfs.y += mario->field_0x2B0;
+        if (mario->dispOfs.y > 0.0f) {
+            mario->dispOfs.y = 0.0f;
         }
-        ((void (*)(s32))marioSetPaperAnimeLocalTime)(*(s32*)((u8*)mario + 0x2A4));
-        if (--*(s32*)((u8*)mario + 0x2A4) >= 0x2C) {
+        ((void (*)(s32))marioSetPaperAnimeLocalTime)(mario->paperAnimeTime);
+        if (--mario->paperAnimeTime >= 0x2C) {
             f30 = (SHIP_DATA->flags & 1) ? 20.0f : -20.0f;
             SHIP_DATA->unk1C += 0.125f * (f30 - SHIP_DATA->unk1C);
             if (SHIP_DATA->flags & 1) {
@@ -626,20 +626,20 @@ void mot_ship(void) {
                 }
             }
             mario->unk1A8 += SHIP_DATA->unk1C;
-            if (*(s32*)((u8*)mario + 0x2A4) == 0x2C) {
+            if (mario->paperAnimeTime == 0x2C) {
                 mario->currSubMotionId = 0x2C;
             }
         }
         break;
     }
     case 44:
-        *(f32*)((u8*)mario + 0x9C) += *(f32*)((u8*)mario + 0x2B0);
-        if (*(f32*)((u8*)mario + 0x9C) > 0.0f) {
-            *(f32*)((u8*)mario + 0x9C) = 0.0f;
+        mario->dispOfs.y += mario->field_0x2B0;
+        if (mario->dispOfs.y > 0.0f) {
+            mario->dispOfs.y = 0.0f;
         }
-        ((void (*)(s32))marioSetPaperAnimeLocalTime)(*(s32*)((u8*)mario + 0x2A4));
-        if (--*(s32*)((u8*)mario + 0x2A4) <= 0) {
-            *(s32*)((u8*)mario + 0x2A4) = 0;
+        ((void (*)(s32))marioSetPaperAnimeLocalTime)(mario->paperAnimeTime);
+        if (--mario->paperAnimeTime <= 0) {
+            mario->paperAnimeTime = 0;
             mario->currSubMotionId = 0x2D;
             mario->multiTimer = 6;
             mario->unk1A8 = revise360(mario->unk1A8);
@@ -650,7 +650,7 @@ void mot_ship(void) {
         mario->unk1A8 += SHIP_DATA->unk1C;
         break;
     case 45:
-        ((void (*)(s32))marioSetPaperAnimeLocalTime)(*(s32*)((u8*)mario + 0x2A4));
+        ((void (*)(s32))marioSetPaperAnimeLocalTime)(mario->paperAnimeTime);
         f30 = SHIP_DATA->unk20 * ((SHIP_DATA->flags & 1) ? 1.0f : -1.0f);
         {
             SHIP_DATA->unk1C += 0.05f * (f30 - SHIP_DATA->unk1C);
@@ -735,7 +735,7 @@ void mot_ship(void) {
             mario->jumpJerkStepY = 0.0f;
             mario->baseSpeed = 0.0f;
             mario->flags &= ~0x000F0000;
-            *(f32*)((u8*)mario + 0x9C) = 0.0f;
+            mario->dispOfs.y = 0.0f;
             marioChgMot(0xA);
             marioSetFallPara();
             allPartyRideOff();
@@ -758,7 +758,7 @@ void mot_ship(void) {
         if (mario->hitobjStandOn != NULL) {
             f31 = revise360(SHIP_DATA->unk08 - SHIP_DATA->unk0C);
             SHIP_DATA->unk08 = f31;
-            *(f32*)((u8*)mario + 0x9C) = 3.0f * (f32)sin(3.1415927f * SHIP_DATA->unk08 / 180.0f) + -13.0f;
+            mario->dispOfs.y = 3.0f * (f32)sin(3.1415927f * SHIP_DATA->unk08 / 180.0f) + -13.0f;
         }
         if (mario->flags & 0x20) {
             shipWakeUpdate(mario->baseSpeed);
@@ -792,11 +792,11 @@ void mot_ship(void) {
                     m->hitobjStandOn = hit;
                     m->position.y = sp08;
                     m->flags &= ~0x000F0000;
-                    dist = distABf(m->position.x, m->position.z, *(f32*)((u8*)m + 0x11C), *(f32*)((u8*)m + 0x124));
-                    *(f32*)((u8*)m + 0x128) = __fabsf(dist);
+                    dist = distABf(m->position.x, m->position.z, m->field_0x11C.x, m->field_0x11C.z);
+                    m->field_0x128 = __fabsf(dist);
                     m->flags &= ~0x80;
                     m->airTimer = 0;
-                    *(s16*)((u8*)m + 0x52) = 0;
+                    m->airTimerPeak = 0;
                     camFollowYOn();
                     landed = 1;
                 } else {
