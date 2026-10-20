@@ -34,24 +34,24 @@ static void actionCommandDisp(f32 x, f32 y);
 
 // RepeatedlyLv's action-command work area at BattleWork+0x1F4C (inside BattleActions.field_0x2BC).
 typedef struct RepeatedlyLvWork {
-    s32 field_0x00; // 0x00
-    s32 field_0x04; // 0x04
-    s32 field_0x08; // 0x08
-    u32 padCheck;   // 0x0C, BattlePadCheck mask
-    f32 field_0x10; // 0x10
-    f32 field_0x14; // 0x14
-    s16 field_0x18; // 0x18
-    s16 field_0x1A; // 0x1A
-    s16 field_0x1C; // 0x1C
-    s16 field_0x1E; // 0x1E
-    s16 field_0x20; // 0x20
-    s16 field_0x22; // 0x22
-    u8 field_0x24;  // 0x24
-    s8 field_0x25;  // 0x25
-    u8 field_0x26;  // 0x26
-    u8 field_0x27;  // 0x27
+    s32 curMask;     // 0x00, button mask being checked; modes 0xB-0xF alternate it between maskA and maskB by presses
+    s32 maskA;       // 0x04
+    s32 maskB;       // 0x08
+    u32 padCheck;    // 0x0C, BattlePadCheck mask
+    f32 drain;       // 0x10, gauge lost per frame (acParams[4] / 100)
+    f32 gauge;       // 0x14, 0..100; a press adds pressRate * 0.4, the frame drains it
+    s16 level;       // 0x18, segments of segmentSize filled by the gauge (outputParams[2]); rolled in the token case
+    s16 pressRate;   // 0x1A, press gain multiplier (acParams[3])
+    s16 presses;     // 0x1C, presses so far; parity picks the alternating mask in modes 0xB-0xF
+    s16 initTimer;   // 0x1E, copy of the start timer (acParams[1]); written in _init_param, never read
+    s16 timer;       // 0x20, frames left before the command ends; reset to 0 when padCheck is released
+    s16 waitFrames;  // 0x22, frames spent in state 0x64 without the padCheck button; cancels at 150
+    u8 gaugeType;    // 0x24, acParams[2] (the type argument of BattleAcDrawGauge)
+    s8 fillState;    // 0x25, 0 filling, 1 full (holds), -1 draining at 1.5x drain
+    u8 segmentSize;  // 0x26, gauge units per level (acParams[5]; 0 means 100)
+    u8 releaseMode;  // 0x27, 0 stops on BattlePadCheckUp; 1 stops on a press (Now if acFlag & 0x20, else Trigger)
     u8 pad_0x28[0x30 - 0x28]; // 0x28
-    s32 field_0x30; // 0x30, delay timer
+    s32 endDelay;    // 0x30, frames the result display waits in states 0x3EA/0x3EB
 } RepeatedlyLvWork;
 
 // Local to this file (.fn _init_param, local in ac_repeatedly_lv.s).
@@ -67,90 +67,90 @@ static void _init_param(BattleWork* work) {
     RepeatedlyLvWork* dec = (RepeatedlyLvWork*)&ac->field_0x2BC[0];
 
     dec->padCheck = 0;
-    dec->field_0x27 = 1;
+    dec->releaseMode = 1;
 
     switch (ac->acParams[0]) {
     case 2:
-        dec->field_0x08 = 0x200;
-        dec->field_0x04 = 0x200;
-        dec->field_0x00 = 0x200;
+        dec->maskB = 0x200;
+        dec->maskA = 0x200;
+        dec->curMask = 0x200;
         break;
     case 3:
-        dec->field_0x08 = 0x400;
-        dec->field_0x04 = 0x400;
-        dec->field_0x00 = 0x400;
+        dec->maskB = 0x400;
+        dec->maskA = 0x400;
+        dec->curMask = 0x400;
         break;
     case 4:
-        dec->field_0x08 = 0x800;
-        dec->field_0x04 = 0x800;
-        dec->field_0x00 = 0x800;
+        dec->maskB = 0x800;
+        dec->maskA = 0x800;
+        dec->curMask = 0x800;
         break;
     case 5:
-        dec->field_0x08 = 0x20;
-        dec->field_0x04 = 0x20;
-        dec->field_0x00 = 0x20;
+        dec->maskB = 0x20;
+        dec->maskA = 0x20;
+        dec->curMask = 0x20;
         break;
     case 8:
         dec->padCheck = 0x100;
         // fall through
     case 7:
-        dec->field_0x27 = 0;
+        dec->releaseMode = 0;
         // fall through
     case 6:
-        dec->field_0x08 = 0x40000;
-        dec->field_0x04 = 0x40000;
-        dec->field_0x00 = 0x40000;
+        dec->maskB = 0x40000;
+        dec->maskA = 0x40000;
+        dec->curMask = 0x40000;
         break;
     case 11:
-        dec->field_0x04 = 0x100;
-        dec->field_0x00 = 0x100;
-        dec->field_0x08 = 0x200;
+        dec->maskA = 0x100;
+        dec->curMask = 0x100;
+        dec->maskB = 0x200;
         break;
     case 12:
-        dec->field_0x04 = 0x400;
-        dec->field_0x00 = 0x400;
-        dec->field_0x08 = 0x800;
+        dec->maskA = 0x400;
+        dec->curMask = 0x400;
+        dec->maskB = 0x800;
         break;
     case 13:
-        dec->field_0x04 = 0x10000;
-        dec->field_0x00 = 0x10000;
-        dec->field_0x08 = 0x20000;
+        dec->maskA = 0x10000;
+        dec->curMask = 0x10000;
+        dec->maskB = 0x20000;
         break;
     case 14:
-        dec->field_0x04 = 0x40000;
-        dec->field_0x00 = 0x40000;
-        dec->field_0x08 = 0x80000;
+        dec->maskA = 0x40000;
+        dec->curMask = 0x40000;
+        dec->maskB = 0x80000;
         break;
     case 15:
-        dec->field_0x04 = 0x40;
-        dec->field_0x00 = 0x40;
-        dec->field_0x08 = 0x20;
+        dec->maskA = 0x40;
+        dec->curMask = 0x40;
+        dec->maskB = 0x20;
         break;
     default:
-        dec->field_0x08 = 0x100;
-        dec->field_0x04 = 0x100;
-        dec->field_0x00 = 0x100;
+        dec->maskB = 0x100;
+        dec->maskA = 0x100;
+        dec->curMask = 0x100;
         break;
     }
 
-    dec->field_0x22 = 0;
+    dec->waitFrames = 0;
     {
         s16 limit = ac->acParams[1];
-        dec->field_0x20 = limit;
-        dec->field_0x1E = limit;
+        dec->timer = limit;
+        dec->initTimer = limit;
     }
-    dec->field_0x18 = 0;
-    dec->field_0x14 = 0.0f;
-    dec->field_0x1C = 0;
-    dec->field_0x24 = ac->acParams[2];
-    dec->field_0x1A = ac->acParams[3];
-    dec->field_0x10 = float_0p01_8041e814 * (f32)ac->acParams[4];
-    dec->field_0x26 = ac->acParams[5];
+    dec->level = 0;
+    dec->gauge = 0.0f;
+    dec->presses = 0;
+    dec->gaugeType = ac->acParams[2];
+    dec->pressRate = ac->acParams[3];
+    dec->drain = float_0p01_8041e814 * (f32)ac->acParams[4];
+    dec->segmentSize = ac->acParams[5];
     if (ac->guardFrames > 0) {
         ac->guardFrames -= 1;
-        dec->field_0x25 = 1;
+        dec->fillState = 1;
     } else {
-        dec->field_0x25 = 0;
+        dec->fillState = 0;
     }
     ac->outputParams[2] = 0;
     ac->outputParams[0] = 0;
@@ -200,8 +200,8 @@ s32 battleAcMain_RepeatedlyLv(BattleWork* work) {
             dec->padCheck != 0 &&
             (s32)BattlePadCheckNow(dec->padCheck) == 0 &&
             autoCommand == 0) {
-            dec->field_0x22++;
-            if (dec->field_0x22 >= 0x96) {
+            dec->waitFrames++;
+            if (dec->waitFrames >= 0x96) {
                 ac->outputParams[2] = 0;
                 ac->result &= ~1;
                 ac->result |= 2;
@@ -226,16 +226,16 @@ s32 battleAcMain_RepeatedlyLv(BattleWork* work) {
             {
                 s32 r = irand(100);
 
-                dec->field_0x18 = 0;
+                dec->level = 0;
                 while (r < 0) {
-                    r -= dec->field_0x26;
+                    r -= dec->segmentSize;
                     if (r < 0) {
                         break;
                     }
-                    dec->field_0x18++;
+                    dec->level++;
                 }
             }
-            ac->outputParams[2] = dec->field_0x18;
+            ac->outputParams[2] = dec->level;
             ac->mResultCount++;
             battleAcDelete_RepeatedlyLv(work);
             return 0;
@@ -246,89 +246,89 @@ s32 battleAcMain_RepeatedlyLv(BattleWork* work) {
         case 0xD:
         case 0xE:
         case 0xF:
-            if (dec->field_0x1C & 1) {
-                dec->field_0x00 = dec->field_0x08;
+            if (dec->presses & 1) {
+                dec->curMask = dec->maskB;
             } else {
-                dec->field_0x00 = dec->field_0x04;
+                dec->curMask = dec->maskA;
             }
             break;
         }
-        if (dec->field_0x27 != 0) {
+        if (dec->releaseMode != 0) {
             if (ac->acFlag & 0x20) {
-                if ((s32)BattlePadCheckNow(dec->field_0x00) != 0) {
+                if ((s32)BattlePadCheckNow(dec->curMask) != 0) {
                     stateChanged = 1;
-                    dec->field_0x1C++;
+                    dec->presses++;
                 }
-            } else if ((s32)BattlePadCheckTrigger(dec->field_0x00) != 0) {
+            } else if ((s32)BattlePadCheckTrigger(dec->curMask) != 0) {
                 stateChanged = 1;
-                dec->field_0x1C++;
+                dec->presses++;
             }
-        } else if ((s32)BattlePadCheckUp(dec->field_0x00) != 0) {
+        } else if ((s32)BattlePadCheckUp(dec->curMask) != 0) {
             stateChanged = 1;
-            dec->field_0x1C++;
+            dec->presses++;
         }
         if (autoCommand && !stateChanged) {
             stateChanged = 1;
-            dec->field_0x1C++;
+            dec->presses++;
         }
-        if (dec->field_0x25 == 0) {
+        if (dec->fillState == 0) {
             if (stateChanged) {
-                dec->field_0x14 += 0.4f * (f32)dec->field_0x1A;
+                dec->gauge += 0.4f * (f32)dec->pressRate;
             }
             {
-                f32 v = dec->field_0x14;
+                f32 v = dec->gauge;
                 if (v >= float_100_8041e80c) {
-                    dec->field_0x14 = float_100_8041e80c;
-                    dec->field_0x25 = 1;
+                    dec->gauge = float_100_8041e80c;
+                    dec->fillState = 1;
                     if (ac->acFlag & 0x20) {
-                        dec->field_0x25 = -1;
+                        dec->fillState = -1;
                     }
                 } else {
-                    dec->field_0x14 = v - dec->field_0x10;
-                    if (dec->field_0x14 <= 0.0f) {
-                        dec->field_0x14 = 0.0f;
+                    dec->gauge = v - dec->drain;
+                    if (dec->gauge <= 0.0f) {
+                        dec->gauge = 0.0f;
                     }
                 }
             }
-        } else if (dec->field_0x25 == -1) {
-            dec->field_0x14 = dec->field_0x14 - 1.5f * dec->field_0x10;
-            if (dec->field_0x14 <= 0.0f) {
-                dec->field_0x14 = 0.0f;
-                dec->field_0x25 = 0;
+        } else if (dec->fillState == -1) {
+            dec->gauge = dec->gauge - 1.5f * dec->drain;
+            if (dec->gauge <= 0.0f) {
+                dec->gauge = 0.0f;
+                dec->fillState = 0;
             }
         }
-        ac->outputParams[1] = (s32)dec->field_0x14;
+        ac->outputParams[1] = (s32)dec->gauge;
         {
-            s32 r = (s32)dec->field_0x14;
-            if (dec->field_0x26 == 0) {
-                dec->field_0x26 = 100;
+            s32 r = (s32)dec->gauge;
+            if (dec->segmentSize == 0) {
+                dec->segmentSize = 100;
             }
-            dec->field_0x18 = 0;
+            dec->level = 0;
             while (r > 0) {
-                r -= dec->field_0x26;
-                dec->field_0x18++;
+                r -= dec->segmentSize;
+                dec->level++;
                 if (r <= 0) {
                     break;
                 }
             }
         }
-        if (dec->field_0x18 == 0 && (ac->acFlag & 0x40)) {
-            dec->field_0x18 = 1;
+        if (dec->level == 0 && (ac->acFlag & 0x40)) {
+            dec->level = 1;
         }
-        if (dec->field_0x25 != 0 && !(ac->acFlag & 1)) {
-            dec->field_0x18++;
+        if (dec->fillState != 0 && !(ac->acFlag & 1)) {
+            dec->level++;
         }
-        ac->outputParams[2] = dec->field_0x18;
+        ac->outputParams[2] = dec->level;
         if (dec->padCheck != 0 && (s32)BattlePadCheckNow(dec->padCheck) == 0) {
-            dec->field_0x20 = 0;
+            dec->timer = 0;
         }
-        BattleAcGaugeSeUpdate(dec->field_0x14);
-        if (dec->field_0x20 > 0) {
-            dec->field_0x20--;
+        BattleAcGaugeSeUpdate(dec->gauge);
+        if (dec->timer > 0) {
+            dec->timer--;
             break;
         }
         ac->result &= ~1;
-        if (dec->field_0x14 >= (f32)ac->acParams[6]) {
+        if (dec->gauge >= (f32)ac->acParams[6]) {
             ac->result |= 2;
         } else {
             ac->result &= ~2;
@@ -337,12 +337,12 @@ s32 battleAcMain_RepeatedlyLv(BattleWork* work) {
         ac->mAcState = 0x3EA;
         break;
     case 0x3EA:
-        dec->field_0x30 = 0x3C;
+        dec->endDelay = 0x3C;
         ac->mAcState = 0x3EB;
         break;
     case 0x3EB:
-        dec->field_0x30--;
-        if (dec->field_0x30 <= 0) {
+        dec->endDelay--;
+        if (dec->endDelay <= 0) {
             ac->mAcState = 0x3EC;
         }
         break;
@@ -458,9 +458,9 @@ static void actionCommandDisp(f32 x, f32 y) {
     offA = 0;
     (*(s32*)&disp->field_0x0[0])++;
 
-    iconA = BattleACGetButtonIcon(dec->field_0x00, 1);
+    iconA = BattleACGetButtonIcon(dec->curMask, 1);
     {
-        s32 t = BattleACGetButtonIcon(dec->field_0x00, 0);
+        s32 t = BattleACGetButtonIcon(dec->curMask, 0);
         iconB = t;
     }
 
@@ -471,10 +471,10 @@ static void actionCommandDisp(f32 x, f32 y) {
         // fall through
     case 0xB:
     case 0xC:
-        iconA = BattleACGetButtonIcon(dec->field_0x04, 1);
-        iconB = BattleACGetButtonIcon(dec->field_0x04, 0);
-        iconC = BattleACGetButtonIcon(dec->field_0x08, 1);
-        iconD = BattleACGetButtonIcon(dec->field_0x08, 0);
+        iconA = BattleACGetButtonIcon(dec->maskA, 1);
+        iconB = BattleACGetButtonIcon(dec->maskA, 0);
+        iconC = BattleACGetButtonIcon(dec->maskB, 1);
+        iconD = BattleACGetButtonIcon(dec->maskB, 0);
         numIcons = 2;
         break;
     case 0xD:
@@ -534,7 +534,7 @@ static void actionCommandDisp(f32 x, f32 y) {
         }
     }
 
-    target = dec->field_0x14 / float_100_8041e80c;
+    target = dec->gauge / float_100_8041e80c;
     if (disp->value <= target) {
         if (ac->acFlag & 8) {
             disp->value += float_0p02_8041e810;
@@ -563,7 +563,7 @@ static void actionCommandDisp(f32 x, f32 y) {
 
     count = 0;
     flags = 0;
-    if ((s8)dec->field_0x25 == 1 && disp->value >= float_1_8041e800) {
+    if ((s8)dec->fillState == 1 && disp->value >= float_1_8041e800) {
         flags |= 1;
         p[0xD] += p[0x11];
         p[0xE] += p[0x12];
@@ -576,7 +576,7 @@ static void actionCommandDisp(f32 x, f32 y) {
             *(s8*)&p[0x11] = -0x10;
         }
     }
-    if ((s8)dec->field_0x25 == -1) {
+    if ((s8)dec->fillState == -1) {
         flags |= 2;
     }
 
@@ -590,7 +590,7 @@ static void actionCommandDisp(f32 x, f32 y) {
         }
     }
 
-    BattleAcDrawGaugeFM((s32)x, (s32)y, dec->field_0x24, count, disp->value, arr[0], arr[1],
+    BattleAcDrawGaugeFM((s32)x, (s32)y, dec->gaugeType, count, disp->value, arr[0], arr[1],
                         arr[2], flags);
 
     if (ac->acFlag & 2) {
