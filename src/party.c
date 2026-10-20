@@ -584,7 +584,7 @@ s32 partyEntryMain(s32 memberId) {
     setAnimPoseMaterialFlag(party);
     partyChgPose(party, partyChgPoseId(party, 1));
     party->field_1C = 0;
-    ((void (*)(PartyEntry*))party_dp->init_func)(party);
+    party_dp->init_func(party);
     return slotId;
 }
 
@@ -623,7 +623,7 @@ s32 partyEntry2(s32 memberId) {
     setAnimPoseMaterialFlag(party);
     partyChgPose(party, partyChgPoseId(party, 1));
     party->field_1C = 0;
-    ((void (*)(PartyEntry*))party_dp->init_func)(party);
+    party_dp->init_func(party);
     party->position = player->position;
     party->field_B8 = party->position;
     {
@@ -668,7 +668,7 @@ s32 partyEntry2Hello(s32 memberId) {
     setAnimPoseMaterialFlag(party);
     partyChgPose(party, partyChgPoseId(party, 1));
     party->field_1C = 0;
-    ((void (*)(PartyEntry*))party_dp->init_func)(party);
+    party_dp->init_func(party);
     partyChgRunMode(party, 4);
     return slotId;
 }
@@ -708,7 +708,7 @@ s32 partyEntry2Pos(s32 memberId, f32 x, f32 y, f32 z) {
     setAnimPoseMaterialFlag(party);
     partyChgPose(party, partyChgPoseId(party, 1));
     party->field_1C = 0;
-    ((void (*)(PartyEntry*))party_dp->init_func)(party);
+    party_dp->init_func(party);
     partyChgRunMode(party, 2);
     {
         Vec pos = {0.0f, 0.0f, 0.0f};
@@ -1138,7 +1138,7 @@ void driveParty(PartyEntry* party) {
                     partyChgMot(party, 0);
                 }
                 party_dp = &partyDataTbl[party->currentMemberId];
-                ((void (*)(PartyEntry*))party_dp->move_func)(party);
+                party_dp->move_func(party);
             }
             break;
         case 1:
@@ -1149,7 +1149,7 @@ void driveParty(PartyEntry* party) {
         case 2:
             if (!(party->flags & PARTY_FLAG_CTRL_OFF) || (party->flags & PARTY_FLAG_RUN_OFF)) {
                 party_dp = &partyDataTbl[party->currentMemberId];
-                ((void (*)(PartyEntry*))party_dp->move_func)(party);
+                party_dp->move_func(party);
             }
             break;
         case 9:
@@ -1159,12 +1159,12 @@ void driveParty(PartyEntry* party) {
             break;
         case 3:
             if (!(party->flags & PARTY_FLAG_CTRL_OFF) || (party->flags & PARTY_FLAG_RUN_OFF)) {
-                void* fn;
+                void (*fn)(PartyEntry*);
 
                 party_dp = &partyDataTbl[party->currentMemberId];
                 fn = party_dp->use_func;
                 party->flags |= PARTY_FLAG_IS_BEING_USED;
-                ((void (*)(PartyEntry*))fn)(party);
+                fn(party);
             }
             break;
         case 4:
@@ -1175,7 +1175,7 @@ void driveParty(PartyEntry* party) {
             break;
         case 8:
             party_dp = &partyDataTbl[party->currentMemberId];
-            ((void (*)(PartyEntry*))party_dp->bye_func)(party);
+            party_dp->bye_func(party);
             break;
         case 10:
             if (party->field_8 & 8) {
@@ -1488,13 +1488,12 @@ s32 partyHelloMain(PartyEntry* party) {
 }
 
 BOOL partyGoodbyeInit(PartyEntry* party) {
-    typedef void (*PartyFunc)(PartyEntry*);
     u16 v;
 
     party->motionStep = 10;
     party_dp = &partyDataTbl[party->currentMemberId];
     if (party_dp->init_func) {
-        ((PartyFunc)party_dp->init_func)(party);
+        party_dp->init_func(party);
     }
     if (party->flags & PARTY_FLAG_IS_BEING_USED) {
         if (party->currentMemberId == PARTY_MEMBER_VIVIAN) {
@@ -1515,7 +1514,6 @@ BOOL partyGoodbyeInit(PartyEntry* party) {
 
 #pragma opt_propagation off // without it the case-10 drop/speed arithmetic puts drop in f1 and rotates f1-f5; off reproduces the original's f5/f4/f1/f3/f2 set
 BOOL partyGoodbyeMain(PartyEntry* party) {
-    typedef void (*PartyFunc)(PartyEntry*);
     MarioWork* mario = marioGetPtr();
     char* pose;
     s32 index;
@@ -1523,7 +1521,7 @@ BOOL partyGoodbyeMain(PartyEntry* party) {
     switch (party->motionStep) {
         case 0:
             party_dp = &partyDataTbl[party->currentMemberId];
-            ((PartyFunc)party_dp->use_func)(party);
+            party_dp->use_func(party);
             if (party->currentMemberId == PARTY_MEMBER_VIVIAN) {
                 if (vivianGetStatus() == 0) {
                     party->motionStep = 10;

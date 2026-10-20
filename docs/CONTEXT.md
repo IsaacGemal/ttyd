@@ -11253,3 +11253,17 @@ Left in npcdrv.c (8 gotos). Each form below was built and the DOL checksum faile
   - `mario_pouch.c` (8) and `evt_nannpc.c` (1 of 7): `qqsort` comparators. `comp_aiueo`/`comp_kind` take `s16*`, `nannpc_zcompare` takes `ExtSortEntry*`, and `qqsort` takes `int (*)(void*, void*)`. No single signature is shared, and the definitions are not to be changed.
   - `evt_nannpc.c` (6 more): `evtGetValue` returns `s32` that is converted to a function pointer (`a2`, `a3`, `subfunc0..2`, `callback`).
 - Verified: tower `ninja` recreates build/G8MJ01/ok; `battle_menu_disp.c` compiles without `-DMUST_MATCH` (clang -fsyntax-only, 0 errors).
+
+### Cleanup: function-pointer casts in win_main, party and PartyData (2026-10-20, Claude Haiku 5.5, q-fnwin)
+
+`PartyData` (include/party.h) types `init_func`, `move_func`, `use_func` and `bye_func` as `void (*)(PartyEntry* party)`. Every function the table in src/data/party_data.c stores in those four fields has that prototype, so the `((void (*)(PartyEntry*))party_dp->...)(party)` casts in party.c are gone and `driveParty`'s `case 3` holds the use function in a `void (*fn)(PartyEntry*)` local. `post_func` and `exit_func` stay `void*`: their `(PartyFunc)` casts are unchanged. In `partyGoodbyeInit`/`partyGoodbyeMain` the now-redundant `(PartyFunc)` casts and their local typedefs went.
+
+In win_main.c, the `POUCH_GETHP`/`POUCH_SETHP`/`POUCH_SETFP`/`POUCH_SETAP` macros are gone; their callers use `pouchGetHP`/`pouchSetHP`/`pouchSetFP`/`pouchSetAP` directly, because the real prototypes already match. `iconGetTexObj` is called without its cast (`GXTexObj*, u16` matches). The `POUCH_GETFP`/`POUCH_GETAP`/`POUCH_GETPARTYHP`/`POUCH_SETPARTYHP` casts stay: their callees return or take `s16`, and the casts widen them to `s32`, which the comment above them describes.
+
+Left in these four files, with reasons:
+- win_root.c (14): the `winMailLabelV`, `winFontSetLabelV`, `winFontSetV` and `winBadgeExit` casts sit under `MUST_MATCH` and change the call (by-value `Vec` against pointer parameters, or an extra argument). The ten `qqsort` comparator casts go from `int (*)(const void*, const void*)` to qqsort's `int (*)(void*, void*)`; every qqsort caller in the tree uses that cast, and removing it needs a change to the `qqsort` definition in src/system.c.
+- win_item.c (11): the four `winFontSetV`/`winFontSetRV`/`winIconSetV`/`winFontSetPitchV` macros are `MUST_MATCH`-only by-value casts. The seven `pouch` casts widen `s16` returns and `PartyId, s16` arguments to `s32`.
+- party.c (3): `pouchSetPartyColor` is called with `(s32, s32)` against `(PartyId, u16)`; `marioGetScreenPos` is called with `Vec*` against a by-value `Vec`; `animPoseSetPaperAnim` takes an extra `BOOL` argument.
+- win_main.c (4): the `POUCH_GET*`/`POUCH_SETPARTYHP` widening casts above.
+
+Verified: tower `ninja` recreates build/G8MJ01/ok; party.c, win_main.c and src/data/party_data.c compile by hand without `-DMUST_MATCH` (`-maxerrors 20`). Index (tools/cleanup_index.py) fn_ptr_cast: win_root 14 -> 14, win_item 11 -> 11, party 11 -> 3, win_main 9 -> 4; total 334 -> 321.

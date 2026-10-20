@@ -287,11 +287,11 @@ void partyUpdateKeyData(PartyEntry* party);
 
 typedef struct PartyData {
     char* name;       // 0, TODO: modelname? animname?
-    void* init_func;  // 1
-    void* move_func;  // 2
-    void* use_func;   // 3
+    void (*init_func)(PartyEntry* party);  // 1
+    void (*move_func)(PartyEntry* party);  // 2
+    void (*use_func)(PartyEntry* party);   // 3
     void* post_func;  // 4
-    void* bye_func;   // 5
+    void (*bye_func)(PartyEntry* party);   // 5
     void* unk_6_func; // 6
     void* unk_7_func; // 7
     void* unk_8_func; // 8
