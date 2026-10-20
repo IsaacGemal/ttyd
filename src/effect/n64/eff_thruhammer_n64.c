@@ -20,29 +20,6 @@ __declspec(section ".sdata") u32 unk_80423298;
 
 static void main_dl(EffectEntry* effect, Mtx matrix);
 
-// Per-particle work data; same layout as EffThruHammerData in the header.
-typedef struct ThruHammerWork {
-	s16 type;        //0x00
-	Vec position;    //0x04
-	f32 dirX;        //0x10
-	f32 dirZ;        //0x14
-	f32 field_0x18;  //0x18
-	f32 scaleX;      //0x1C
-	f32 scaleY;      //0x20
-	f32 scaleZ;      //0x24
-	s32 life;        //0x28
-	s32 age;         //0x2C
-	f32 rotY;        //0x30
-	f32 rotZ;        //0x34
-	s32 alpha;       //0x38
-	f32 texScrollA;  //0x3C
-	f32 texSpeedA;   //0x40
-	f32 texScrollB;  //0x44
-	f32 texSpeedB;   //0x48
-	s32 delay;       //0x4C
-	u8 color[6];     //0x50
-} ThruHammerWork;    //0x58
-
 
 
 static u32 stg_thruhammer_v[0x118 / 4] = {
@@ -60,7 +37,7 @@ static u32 stg_thruhammer_v[0x118 / 4] = {
 
 EffectEntry* effThruHammerN64Entry(s32 type, f32 x, f32 y, f32 z, f32 angle) {
 	EffectEntry* effect;
-	ThruHammerWork* data;
+	EffThruHammerData* data;
 	s32 count;
 	s32 i;
 
@@ -88,12 +65,12 @@ EffectEntry* effThruHammerN64Entry(s32 type, f32 x, f32 y, f32 z, f32 angle) {
 	data->position.y = y;
 	data->position.z = z;
 	data->alpha = 0xFF;
-	data->color[0] = 0;
-	data->color[1] = 0xFF;
-	data->color[2] = 0x7A;
-	data->color[3] = 0xF0;
-	data->color[4] = 0xFF;
-	data->color[5] = 0xFA;
+	data->tevReg0R = 0;
+	data->tevReg0G = 0xFF;
+	data->tevReg0B = 0x7A;
+	data->tevReg1R = 0xF0;
+	data->tevReg1G = 0xFF;
+	data->tevReg1B = 0xFA;
 
 	for (i = 1, data++; i < count + 1; i++, data++) {
 		data->delay = -1 - (i - 1) * 4;
@@ -118,7 +95,7 @@ static inline Vec initializeVec(Vec* input) {
 // (retail: frsp f1,f1 / fneg f1,f1 / fmuls f1,f3,f1); the inline expression
 // makes MWCC move it to f3 and load 0.5f into f1 instead.
 void effThruHammerMain(EffectEntry* effect) {
-	ThruHammerWork* data = effect->userdata;
+	EffThruHammerData* data = effect->userdata;
 	Vec disp;
 	s32 i;
 
@@ -150,8 +127,8 @@ void effThruHammerMain(EffectEntry* effect) {
 #else
 			data->dirX = -(f32)sin(6.2831855f * data->rotZ / 360.0f) * 0.5f;
 #endif
-			data->dirZ = 0.5f * (f32)cos(6.2831855f * data->rotZ / 360.0f);
-			data->field_0x18 = 0.0f;
+			data->dirY = 0.5f * (f32)cos(6.2831855f * data->rotZ / 360.0f);
+			data->dirZ = 0.0f;
 			data->texScrollA = 32.0f;
 			data->texSpeedA = 32.0f;
 			data->texSpeedB = 32.0f;
@@ -200,18 +177,18 @@ static inline void thruColor3(s32 reg, u32* base, u8 r, u8 g, u8 b) {
 void effThruHammerDisp(CameraId camId, void* param) {
 	CameraEntry* cam = camGetPtr(camId);
 	EffectEntry* effect = param;
-	ThruHammerWork* data = effect->userdata;
+	EffThruHammerData* data = effect->userdata;
 	GXTexObj texObj;
 	Mtx trans;
 	Mtx rot;
 	Mtx work;
 	s32 alpha;
-	u8 cr = data->color[0];
-	u8 cg = data->color[1];
-	u8 cb = data->color[2];
-	u8 cr2 = data->color[3];
-	u8 cg2 = data->color[4];
-	u8 cb2 = data->color[5];
+	u8 cr = data->tevReg0R;
+	u8 cg = data->tevReg0G;
+	u8 cb = data->tevReg0B;
+	u8 cr2 = data->tevReg1R;
+	u8 cg2 = data->tevReg1G;
+	u8 cb2 = data->tevReg1B;
 
 	GXSetNumChans(0);
 	GXSetNumTexGens(2);
@@ -297,7 +274,7 @@ void effThruHammerDisp(CameraId camId, void* param) {
 }
 
 static void main_dl(EffectEntry* effect, Mtx matrix) {
-	ThruHammerWork* data = effect->userdata;
+	EffThruHammerData* data = effect->userdata;
 	Mtx trans;
 	Mtx work;
 	Mtx rot;

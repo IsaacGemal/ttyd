@@ -6,26 +6,6 @@
 #include <dolphin/mtx.h>
 #include <stdlib.h>
 
-// Work data for one FlowerN64 effect; same layout as effFlowerData in the header.
-typedef struct effFlowerWork {
-    s32 type;        // 0x00
-    Vec position;    // 0x04
-    f32 velX;        // 0x10
-    f32 velY;        // 0x14
-    f32 velZ;        // 0x18
-    f32 accelY;      // 0x1C
-    f32 accelYDelta; // 0x20
-    f32 angleX;      // 0x24
-    f32 angleY;      // 0x28
-    f32 angleXVel;   // 0x2C
-    f32 angleYVel;   // 0x30
-    s32 life;        // 0x34
-    s32 age;         // 0x38
-    s32 field_0x3C;  // 0x3C
-    s32 field_0x40;  // 0x40
-    s32 field_0x44;  // 0x44
-} effFlowerWork;
-
 // .sdata2: effFlowerDisp's TEV colour, first in the original unit's .sdata2.
 const u32 dat_8041efc8 = 0x000000FF;
 
@@ -41,12 +21,12 @@ static inline Vec initializeVec(Vec* input) {
 EffectEntry* effFlowerN64Entry(s32 type, s32 lifetime, f32 x, f32 y, f32 z) {
     static s32 kaiten;
     EffectEntry* effect;
-    effFlowerWork* data;
+    effFlowerData* data;
 
     effect = effEntry();
     effect->type = "FlowerN64";
     effect->count = 1;
-    data = __memAlloc(HEAP_EFFECT, sizeof(effFlowerWork));
+    data = __memAlloc(HEAP_EFFECT, sizeof(effFlowerData));
     effect->userdata = data;
     effect->callback = effFlowerMain;
 
@@ -89,7 +69,7 @@ EffectEntry* effFlowerN64Entry(s32 type, s32 lifetime, f32 x, f32 y, f32 z) {
 }
 
 void effFlowerMain(EffectEntry* effect) {
-    effFlowerWork* data;
+    effFlowerData* data;
     Vec position;
     s32 type;
 
@@ -152,7 +132,7 @@ void effFlowerMain(EffectEntry* effect) {
 void effFlowerDisp(CameraId camId, void* param) {
     EffectEntry* effect;
     CameraEntry* cam;
-    effFlowerWork* data;
+    effFlowerData* data;
     GXTexObj texObj;
     GXColor color;
     Mtx trans;

@@ -115,30 +115,10 @@ typedef struct BattleEffectPosScale {
 	f32 mFireScale; // 0x24
 } BattleEffectPosScale;
 
-typedef struct BattleStatusChangeEntry {
-	s8 type;           // 0x0
-	u8 mFlags;         // 0x1
-	u8 mCounter;       // 0x2
-	u8 mDisplayOffset; // 0x3
-	s32 mUnitId;       // 0x4
-	s32 mMsgVariant;   // 0x8
-} BattleStatusChangeEntry;
-
 typedef struct BattleUnitStatusChangeFields {
 	u8 pad_0[0xAE4];
 	BattleStatusChangeEntry mStatusChange[6]; // 0xAE4
 } BattleUnitStatusChangeFields;
-
-typedef struct BattleStatusChangeMsgWork {
-	BattleStatusChangeEntry entries[0x1C]; // 0x0
-	char message[0x100];                   // 0x150
-	u64 mAnnouncedFlags;                   // 0x250
-} BattleStatusChangeMsgWork;
-
-typedef struct BattleWorkStatusChangeMsg {
-	u8 pad_0[0x18D88];
-	BattleStatusChangeMsgWork mWork; // 0x18D88
-} BattleWorkStatusChangeMsg;
 
 void BattleStatusEffectInit(BattleUnit* unit) {
 	; //stubbed in retail
@@ -575,7 +555,7 @@ BOOL BattleStatusChangeAnnouceMain_Unit(BattleUnit* unit) {
 #pragma dont_inline reset
 
 void BattleStatusChangeMsgWorkInit(void) {
-	BattleStatusChangeMsgWork* work = &((BattleWorkStatusChangeMsg*)_battleWorkPointer)->mWork;
+	BattleStatusChangeMsgWork* work = &_battleWorkPointer->statusChangeMsg;
 	s32 i;
 
 	memset(work, 0, sizeof(BattleStatusChangeMsgWork));
@@ -588,7 +568,9 @@ void BattleStatusChangeMsgWorkInit(void) {
 // Keep BattleStatusChangeMsgSetAnnouce out of line: the original calls it rather than inlining.
 #pragma dont_inline on
 void BattleStatusChangeMsgSetAnnouce(BattleUnit* unit, s32 type, s32 msg) {
-	BattleStatusChangeEntry* entry = &((BattleStatusChangeMsgWork*)((char*)_battleWorkPointer + offsetof(BattleWorkStatusChangeMsg, mWork)))->entries[type];
+	// Retail adds the work offset to the raw pointer; &_battleWorkPointer->statusChangeMsg.entries[type]
+	// compiles 8 bytes longer.
+	BattleStatusChangeEntry* entry = &((BattleStatusChangeMsgWork*)((char*)_battleWorkPointer + offsetof(BattleWork, statusChangeMsg)))->entries[type];
 
 	entry->mUnitId = unit->unitId;
 	entry->type = type;
@@ -609,7 +591,7 @@ void BattleStatusChangeMsgSetAnnouce(BattleUnit* unit, s32 type, s32 msg) {
 #pragma dont_inline reset
 
 void BattleStatusChangeMsgAdjust(BattleWork* wp) {
-	BattleStatusChangeMsgWork* work = &((BattleWorkStatusChangeMsg*)wp)->mWork;
+	BattleStatusChangeMsgWork* work = &wp->statusChangeMsg;
 	s8 i;
 
 	for (i = 0; i < 0x1C; i++) {
@@ -651,7 +633,7 @@ void BattleStatusChangeMsgAdjust(BattleWork* wp) {
 }
 
 BOOL BattleStatusChangeMsgMain(BattleWork* wp) {
-	BattleStatusChangeMsgWork* work = &((BattleWorkStatusChangeMsg*)wp)->mWork;
+	BattleStatusChangeMsgWork* work = &wp->statusChangeMsg;
 	BattleStatusChangeEntry* entry;
 	BOOL shown = FALSE;
 	s8* pri;
@@ -719,7 +701,7 @@ BOOL BattleStatusChangeMsgMain(BattleWork* wp) {
 // of the swapped set (same trick as battle_message.c _disp).
 void _st_chg_msg_disp(CameraId camera, void* param) {
 	BattleWork* wp = _battleWorkPointer;
-	BattleStatusChangeMsgWork* work = &((BattleWorkStatusChangeMsg*)wp)->mWork;
+	BattleStatusChangeMsgWork* work = &wp->statusChangeMsg;
 	u16 lines;
 	u16 width;
 	f32 x;

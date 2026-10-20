@@ -24,52 +24,17 @@ u32 size24x24_tex32x32_vtx[14] = {
 
 extern const GXColor dat_8041fbc8;
 
-typedef struct effRotHammerFailParticle {
-	u16 type;        // 0x00
-	u8 pad_0x02[2];  // 0x02
-	f32 x;           // 0x04
-	f32 y;           // 0x08
-	f32 z;           // 0x0C
-	f32 dirX;        // 0x10
-	f32 velY;        // 0x14
-	f32 dirZ;        // 0x18
-	f32 scale;       // 0x1C
-	f32 scaleTarget; // 0x20
-	s32 life;        // 0x24
-	s32 frame;       // 0x28
-	s32 lifeMax;     // 0x2C
-	f32 animFrame;   // 0x30
-} effRotHammerFailParticle; // 0x34
-
-typedef struct effRotHammerFailData {
-	u16 type;                          // 0x00
-	u8 pad_0x02[2];                    // 0x02
-	f32 x;                             // 0x04
-	f32 y;                             // 0x08
-	f32 z;                             // 0x0C
-	f32 dirX;                          // 0x10, header copy is unused
-	f32 velY;                          // 0x14
-	f32 dirZ;                          // 0x18
-	f32 scale;                         // 0x1C, eased toward scaleTarget
-	f32 scaleTarget;                   // 0x20
-	s32 life;                          // 0x24, counts down
-	s32 frame;                         // 0x28, counts up
-	s32 lifeMax;                       // 0x2C, initial life
-	f32 animFrame;                     // 0x30, 7 * frame / lifeMax
-	effRotHammerFailParticle particle; // 0x34
-} effRotHammerFailData;
-
-// The original walks the effect's two 0x34-byte records as an array; this is the record view the
-// Main callback iterates (the combined effRotHammerFailData above is the Entry allocation view).
+// The effect's userdata is two of these 0x34-byte records: the head (index 0) and one particle
+// (index 1). Only the particle uses dirX/velY/dirZ; only the head uses scale through animFrame.
 typedef struct effRotHammerFailRecord {
 	u16 type;        // 0x00
 	u8 pad_0x02[2];  // 0x02
 	f32 x;           // 0x04
 	f32 y;           // 0x08
 	f32 z;           // 0x0C
-	f32 dirX;        // 0x10, horizontal direction component
+	f32 dirX;        // 0x10, x = head scale * dirX
 	f32 velY;        // 0x14
-	f32 dirZ;        // 0x18, horizontal direction component
+	f32 dirZ;        // 0x18, z = head scale * dirZ
 	f32 scale;       // 0x1C, eased toward scaleTarget
 	f32 scaleTarget; // 0x20
 	s32 life;        // 0x24, counts down
@@ -91,7 +56,7 @@ EffectEntry* effRotHammerFailN64Entry(s32 type, s32 life, f32 x, f32 y, f32 z, f
 	effect = effEntry();
 	effect->type = "RotHammerFailN64";
 	effect->count = 2;
-	data = __memAlloc(HEAP_EFFECT, sizeof(effRotHammerFailData));
+	data = __memAlloc(HEAP_EFFECT, 2 * sizeof(effRotHammerFailRecord));
 	effect->userdata = data;
 	effect->callback = effRotHammerFailMain;
 	zero = 0.0f;

@@ -10,27 +10,6 @@
 
 extern BattleWork* _battleWorkPointer;
 
-// Movement state stored after BattleIcon's public fields (same layout as BattleUnit's move fields).
-typedef struct BattleIconMove {
-	s16 flags;              // 0x00
-	s16 iconId;             // 0x02
-	s32 index;              // 0x04
-	Vec position;           // 0x08
-	u8 pad_0x14[0x0C];      // 0x14, scale factors and base pointer
-	Vec moveStartPos;       // 0x20
-	Vec moveCurrentPos;     // 0x2C
-	Vec moveTargetPos;      // 0x38
-	s32 moveFrames;         // 0x44
-	f32 moveSpeedXZ;        // 0x48
-	f32 fallAccel;          // 0x4C
-	f32 moveSpeedY;         // 0x50
-	f32 moveAngle;          // 0x54
-	f32 moveDist;           // 0x58
-	f32 moveProgress;       // 0x5C
-	s8 moveDirection;       // 0x60
-	u8 pad_0x61[0x9C - 0x61];
-} BattleIconMove;
-
 // .sdata2: float_1 is a real (extern) object defined at the bottom of the file, so MWCC emits it before
 // the 0.5 it pools for the `/ 2.0f` below; that puts .sdata2 in the original's 0, 1, 0.5 order. float_0 is
 // read by name at the x-vx/fallAccel comparisons; as a real object it lands before float_1.
@@ -270,7 +249,7 @@ USER_FUNC(btlevtcmd_BtlIconSetFallAccel) {
 // size optimiser from caching the two argument addresses (see the MUST_MATCH note on p).
 USER_FUNC(btlevtcmd_BtlIconJumpPosition) {
 	s32* args = event->args;
-	BattleIconMove* icon;
+	BattleIcon* icon;
 	s32 index;
 	f32 vx, vy, vz;
 	f32 x, y, z;
@@ -284,7 +263,7 @@ USER_FUNC(btlevtcmd_BtlIconJumpPosition) {
 	// through the same base expression used by btlMovePos' arguments makes the -O4,s size optimiser
 	// cache both argument addresses in r29/r30 across the call; the fresh pointer keeps the
 	// original's `lfs f0, 0x2c(r31)` displacement form.
-	BattleIconMove* p;
+	BattleIcon* p;
 #endif
 
 	index = evtGetValue(event, args[0]);
@@ -292,9 +271,9 @@ USER_FUNC(btlevtcmd_BtlIconJumpPosition) {
 	y = (f32)evtGetValue(event, args[2]);
 	z = (f32)evtGetValue(event, args[3]);
 	count = evtGetValue(event, args[4]);
-	icon = (BattleIconMove*)BtlIconGetPtr(index);
+	icon = BtlIconGetPtr(index);
 #ifdef MUST_MATCH
-	p = (BattleIconMove*)((u8*)icon);
+	p = icon;
 #endif
 	if (isFirstCall) {
 		event->blocked = 1;

@@ -128,7 +128,7 @@ u32 but_02_v[630] = {
 
 
 // .sdata
-static s8 bobOffsets[32] = {
+static s8 y_data[32] = {
     -1, -2, -3, -4, -5, -6, -7, -8,
     -9, -10, -11, -12, -13, -14, -15, -16,
     -17, -18, -19, -17, -15, -13, -11, -9,
@@ -343,7 +343,7 @@ void effButterflyDisp(CameraId camId, void* param) {
     type = data->type;
 
     PSMTXTrans(trans, data->position.x,
-               float_0p3_8041eb6c * (f32)bobOffsets[data->frame] + data->position.y, data->position.z);
+               float_0p3_8041eb6c * (f32)y_data[data->frame] + data->position.y, data->position.z);
     PSMTXRotRad(rot, 'y', float_deg2rad_8041eb70 * data->heading);
     PSMTXConcat(trans, rot, trans);
     PSMTXScale(scale, float_0p02_8041eb74, float_0p02_8041eb74, float_0p02_8041eb74);

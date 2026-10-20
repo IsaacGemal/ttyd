@@ -7,22 +7,6 @@
 #include <dolphin/mtx.h>
 #include "math_ext.h"
 
-typedef struct TogeFlushData {
-	s32 type;            // 0x00
-	f32 x;               // 0x04
-	f32 y;               // 0x08
-	f32 z;               // 0x0C
-	f32 angle;           // 0x10, degrees
-	f32 angleSpeed;      // 0x14, degrees per frame
-	f32 innerScale;      // 0x18
-	f32 innerScaleSpeed; // 0x1C
-	f32 outerScale;      // 0x20
-	s32 innerAlpha;      // 0x24
-	s32 outerAlpha;      // 0x28
-	s32 life;            // 0x2C
-	s32 frame;           // 0x30
-} TogeFlushData;
-
 // .sbss2: the default .sbss2 is only used for compiler-generated pool templates, so pair it with a small-data section.
 #pragma section ".sdata" ".sbss2"
 __declspec(section ".sdata") GXColor unk_80423070;
@@ -52,7 +36,7 @@ const Vec vec3_802f8e80 = { 0.0f, 0.0f, 0.0f };
 
 EffectEntry* effTogeFlushEntry(s32 type, f32 x, f32 y, f32 z, s32 life) {
 	EffectEntry* entry;
-	TogeFlushData* data;
+	effTogeFlushData* data;
 
 	entry = effEntry();
 	entry->type = "TogeFlush";
@@ -82,7 +66,7 @@ EffectEntry* effTogeFlushEntry(s32 type, f32 x, f32 y, f32 z, s32 life) {
 
 void effTogeFlushMain(EffectEntry* effect) {
 	s32 life;
-	TogeFlushData* data = effect->userdata;
+	effTogeFlushData* data = effect->userdata;
 	s32 frame;
 	Vec pos;
 	f32 angle;
@@ -182,7 +166,7 @@ static inline void togeSetColorAD(s32 a) {
 
 void effTogeFlushDisp(CameraId cameraId, void* param) {
 	EffectEntry* effect = param;
-	TogeFlushData* data = effect->userdata;
+	effTogeFlushData* data = effect->userdata;
 #ifndef MUST_MATCH
 	GXColor color;
 #endif

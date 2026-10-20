@@ -42,6 +42,21 @@ typedef enum StatusEffectType {
 	STATUS_INVALID //0x1C
 } StatusEffectType;
 
+typedef struct BattleStatusChangeEntry {
+	s8 type;           // 0x0
+	u8 mFlags;         // 0x1
+	u8 mCounter;       // 0x2
+	u8 mDisplayOffset; // 0x3
+	s32 mUnitId;       // 0x4
+	s32 mMsgVariant;   // 0x8
+} BattleStatusChangeEntry;
+
+typedef struct BattleStatusChangeMsgWork {
+	BattleStatusChangeEntry entries[0x1C]; // 0x0
+	char message[0x100];                   // 0x150
+	u64 mAnnouncedFlags;                   // 0x250
+} BattleStatusChangeMsgWork;
+
 void BattleStatusEffectInit(struct BattleUnit* unit);
 void BattleStatusEffectMain(struct BattleUnit* unit);
 void BSE_TurnFirstProcessEffectEntry(struct BattleUnit* unit, s16 active);

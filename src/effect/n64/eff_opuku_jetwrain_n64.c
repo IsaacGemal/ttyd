@@ -17,22 +17,22 @@ const Vec vec3_802fb254 = { 0.0f, 1.0f, 0.0f };
 const Vec vec3_802fb260 = { 304.0f, 240.0f, 0.0f };
 const Vec vec3_802fb26c = { 304.0f, 240.0f, 100.0f };
 
-// .sdata2 float constants.
-static const f32 zero = 0.0f;
-static const f32 screenHeight = 480.0f;
-static const f32 screenWidth = 608.0f;
-static const f32 one = 1.0f;
-static const f32 orthoFar = 32768.0f;
-static const f32 texCoordScale = 0.00390625f;
-static const f32 alphaMax = 255.0f;
-static const f32 twoPi = 6.2831855f;
-static const f32 fullTurn = 360.0f;
-static const f32 waveAmplitude = -64.0f;
-static const f32 centerWeight = 4.0f;
-static const f32 cornerWeight = 0.5f;
-static const f32 centerDamping = 0.7f;
-static const f32 heightDamping = 0.98f;
-static const f32 rippleSpeed = 0.02f;
+// .sdata2 float constants (named after their original addresses).
+static const f32 float_0_8041f7d8 = 0.0f;
+static const f32 float_480_8041f7dc = 480.0f;
+static const f32 float_608_8041f7e0 = 608.0f;
+static const f32 float_1_8041f7e4 = 1.0f;
+static const f32 float_32768_8041f7e8 = 32768.0f;
+static const f32 float_0p0039062_8041f7ec = 0.00390625f;
+static const f32 float_255_8041f7f0 = 255.0f;
+static const f32 float_6p2832_8041f7f4 = 6.2831855f;
+static const f32 float_360_8041f7f8 = 360.0f;
+static const f32 float_neg64_8041f7fc = -64.0f;
+static const f32 float_4_8041f800 = 4.0f;
+static const f32 float_0p5_8041f804 = 0.5f;
+static const f32 float_0p7_8041f808 = 0.7f;
+static const f32 float_0p98_8041f80c = 0.98f;
+static const f32 float_0p02_8041f810 = 0.02f;
 
 // .data vertex array, modified in place by effOpukuJetwrainDisp.
 u32 opuku_jetwrain_vtx[56] = {
@@ -150,28 +150,28 @@ void effOpukuJetwrainMain(EffectEntry* effect) {
 		alpha = counter * 16 + 15;
 	}
 	data->field_0x1F = alpha;
-	scale = (f32)alpha / alphaMax;
+	scale = (f32)alpha / float_255_8041f7f0;
 
 	// Seed the height field with a travelling sine wave.
 	for (j = 1; j < 18; j++) {
 		{
-			f32 s = (f32)sin(twoPi * (f32)((counter - j) * -20) / fullTurn);
-			data->field_0x23[j][6] = (s8)(f32)(scale * (waveAmplitude * s));
+			f32 s = (f32)sin(float_6p2832_8041f7f4 * (f32)((counter - j) * -20) / float_360_8041f7f8);
+			data->field_0x23[j][6] = (s8)(f32)(scale * (float_neg64_8041f7fc * s));
 		}
 	}
 
-	// Relax each height into the velocity field (neighbour average minus the centre).
+	// Relax each height into the velocity field (weighted neighbour sum minus the centre), damped by 0.98.
 	for (j = 1; j < 18; j++) {
 		for (i = 1; i < 12; i++) {
 			f32 center = (f32)(s8)data->field_0x23[j][i];
-			f32 fourCenter = centerWeight * center;
+			f32 fourCenter = float_4_8041f800 * center;
 			f32 corners = (f32)(s8)data->field_0x23[j + 1][i + 1] + (f32)(s8)data->field_0x23[j - 1][i + 1] + (f32)(s8)data->field_0x23[j + 1][i - 1] + (f32)(s8)data->field_0x23[j - 1][i - 1];
 			f32 edges = (f32)(s8)data->field_0x23[j + 1][i] + (f32)(s8)data->field_0x23[j - 1][i] + (f32)(s8)data->field_0x23[j][i + 1] + (f32)(s8)data->field_0x23[j][i - 1];
 			f32 v = (f32)data->field_0x11A[j][i];
-			f32 halfCorners = cornerWeight * corners;
-			f32 t = halfCorners + (edges - fourCenter) - centerDamping * fourCenter;
+			f32 halfCorners = float_0p5_8041f804 * corners;
+			f32 t = halfCorners + (edges - fourCenter) - float_0p7_8041f808 * fourCenter;
 			data->field_0x11A[j][i] = (s16)(v + t);
-			data->field_0x11A[j][i] *= heightDamping;
+			data->field_0x11A[j][i] *= float_0p98_8041f80c;
 			if (lifetime < 0x20) {
 				data->field_0x23[j][i] = (s8)((f32)(s8)data->field_0x23[j][i] * scale);
 			}
@@ -187,7 +187,7 @@ void effOpukuJetwrainMain(EffectEntry* effect) {
 #else
 		for (i = 1; i < 12; i++) {
 #endif
-			data->field_0x23[j][i] = (s8)((f32)(s8)data->field_0x23[j][i] + rippleSpeed * (f32)data->field_0x11A[j][i]);
+			data->field_0x23[j][i] = (s8)((f32)(s8)data->field_0x23[j][i] + float_0p02_8041f810 * (f32)data->field_0x11A[j][i]);
 		}
 	}
 

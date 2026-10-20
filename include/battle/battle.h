@@ -245,7 +245,8 @@ struct BattleWork {
                                         // 0x20 set by init_ceil, _disable_enemy_unit_disp and read by ceil_exist
     u8 field_180DD[0x182B0 - 0x180DD];  // 0x180DD
     BattleIcon icons[16];               // 0x182B0
-    u8 field_18C70[0x18FE0 - 0x18C70];  // 0x18C70
+    u8 field_18C70[0x18D88 - 0x18C70];  // 0x18C70
+    BattleStatusChangeMsgWork statusChangeMsg; // 0x18D88
     s8 alertTick;                       // 0x18FE0
     u8 field_18FE1[0x18FE4 - 0x18FE1];  // 0x18FE1
     StarPowerInfo impendingBonuses;     // 0x18FE4

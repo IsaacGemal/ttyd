@@ -6,27 +6,6 @@
 #include <dolphin/gx.h>
 #include <dolphin/mtx.h>
 
-typedef struct HokoriParticle {
-	s32 type;         // 0x00
-	f32 x;            // 0x04
-	f32 y;            // 0x08
-	f32 z;            // 0x0C
-	f32 velY;         // 0x10
-	f32 accelY;       // 0x14
-	s32 alpha;        // 0x18
-	f32 scaleY;       // 0x1C
-	f32 scaleXZ;      // 0x20
-	f32 scaleYStep;   // 0x24
-	f32 scaleXZStep;  // 0x28
-	s32 life;         // 0x2C
-	s32 color1R;      // 0x30
-	s32 color1G;      // 0x34
-	s32 color1B;      // 0x38
-	s32 color2R;      // 0x3C
-	s32 color2G;      // 0x40
-	s32 color2B;      // 0x44
-} HokoriParticle;
-
 // .sdata2 / .rodata constants used only by effHokoriN64Entry, named after their
 // original addresses. The string lives in this unit's own .rodata.
 
@@ -70,8 +49,8 @@ static u32 size8x8_tex32x32_vtx[14] = {
 
 EffectEntry* effHokoriN64Entry(s32 type, s32 count, f32 x, f32 y, f32 z) {
 	EffectEntry* effect;
-	HokoriParticle* data;
-	HokoriParticle* p;
+	effHokoriData* data;
+	effHokoriData* p;
 	s32 num;
 	s32 i;
 
@@ -88,12 +67,12 @@ EffectEntry* effHokoriN64Entry(s32 type, s32 count, f32 x, f32 y, f32 z) {
 	data->z = z;
 	data->life = count;
 	data->alpha = 0xff;
-	data->color1R = 0xa0;
-	data->color1G = 0xa0;
-	data->color1B = 0x8c;
-	data->color2R = 0xa0;
-	data->color2G = 0xa0;
-	data->color2B = 0x8c;
+	data->tevReg0R = 0xa0;
+	data->tevReg0G = 0xa0;
+	data->tevReg0B = 0x8c;
+	data->tevReg1R = 0xa0;
+	data->tevReg1G = 0xa0;
+	data->tevReg1B = 0x8c;
 
 	for (i = 1, p = data + 1; i < num; i++, p++) {
 		p->x = (f32)(rand() % 200 - 100);
@@ -132,7 +111,7 @@ inline Vec makeVec(f32 x, f32 y, f32 z) {
 }
 
 void effHokoriMain(EffectEntry* effect) {
-	HokoriParticle* data;
+	effHokoriData* data;
 	Vec position2;
 	Vec position;
 	s32 type;
@@ -178,26 +157,26 @@ void effHokoriMain(EffectEntry* effect) {
 	}
 }
 
-static inline void hokoriSetColor1(HokoriParticle* data) {
+static inline void hokoriSetColor1(effHokoriData* data) {
 	GXColor color = (GXColor){ 0, 0, 0, 0 };
-	color.r = data->color1R;
-	color.g = data->color1G;
-	color.b = data->color1B;
+	color.r = data->tevReg0R;
+	color.g = data->tevReg0G;
+	color.b = data->tevReg0B;
 	color.a = data->alpha;
 	GXSetTevColor(1, color);
 }
 
-static inline void hokoriSetColor2(HokoriParticle* data) {
+static inline void hokoriSetColor2(effHokoriData* data) {
 	GXColor color = (GXColor){ 0, 0, 0, 0 };
-	color.r = data->color2R;
-	color.g = data->color2G;
-	color.b = data->color2B;
+	color.r = data->tevReg1R;
+	color.g = data->tevReg1G;
+	color.b = data->tevReg1B;
 	GXSetTevColor(2, color);
 }
 
 void effHokoriDisp(CameraId cameraId, void* param) {
 	EffectEntry* effect = param;
-	HokoriParticle* data;
+	effHokoriData* data;
 	CameraEntry* cam;
 	GXTexObj texObj;
 	Mtx trans;
@@ -214,7 +193,7 @@ void effHokoriDisp(CameraId cameraId, void* param) {
 	cam = camGetPtr(cameraId);
 	data = effect->userdata;
 
-	GXSetNumChans(GX_FALSE);
+	GXSetNumChans(0);
 	GXSetNumTexGens(1);
 	GXSetTexCoordGen2(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_TEXMTX0, GX_FALSE, GX_PTIDENTITY);
 	PSMTXScale(scale, 0.03125f, 0.010416667f, 0.0f);

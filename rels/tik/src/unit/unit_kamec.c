@@ -1149,7 +1149,7 @@ static USER_FUNC(eff_magic) {
     z += 5.0f;
     effect = effMagic1N64Entry(0, a4, x, y, z, a1, a2, a3);
     unit->work[5] = (s32)effect;
-    ((effMagic1Data*)effect->userdata)->field_0x28 = unit->mSizeMultiplier;
+    ((effMagic1Data*)effect->userdata)->scale = unit->mSizeMultiplier;
     return EVT_RETURN_DONE;
 }
 
@@ -1164,7 +1164,7 @@ static USER_FUNC(eff_magic_get_posX) {
     work = _battleWorkPointer;
     unit = BattleGetUnitPtr(work, id);
     effect = (EffectEntry*)unit->work[5];
-    evtSetFloat(event, args[1], ((effMagic1Data*)effect->userdata)->field_0x10);
+    evtSetFloat(event, args[1], ((effMagic1Data*)effect->userdata)->offsetX);
     return EVT_RETURN_DONE;
 }
 

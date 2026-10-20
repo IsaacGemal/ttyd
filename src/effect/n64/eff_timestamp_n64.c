@@ -10,27 +10,27 @@
 #include "math_ext.h"
 
 typedef struct effTimestampN64Data {
-	s32 type;            // 0x0
-	f32 x;               // 0x4
-	f32 y;               // 0x8
-	f32 z;               // 0xC
-	s32 life;      // 0x10
-	s32 timer;      // 0x14
-	s32 colorR;      // 0x18
-	s32 colorG;      // 0x1C
-	s32 colorB;      // 0x20
-	s32 alpha;      // 0x24
-	f32 scale;           // 0x28
-	s32 colorAlpha;      // 0x2C
+	s32 type;           // 0x0
+	f32 x;              // 0x4
+	f32 y;              // 0x8
+	f32 z;              // 0xC
+	s32 life;           // 0x10
+	s32 timer;          // 0x14
+	s32 colorR;         // 0x18, set to 70/180/120 and not read in this unit
+	s32 colorG;         // 0x1C
+	s32 colorB;         // 0x20
+	s32 alpha;          // 0x24
+	f32 scale;          // 0x28
+	s32 whiteFade;      // 0x2C, GX_TEVREG1 alpha: TEV stage 1 lerps the colour toward white by it
 	f32 waveScale;      // 0x30
-	f32 posX[10];        // 0x34
-	f32 posY[10];        // 0x5C
-	f32 posZ[10];        // 0x84
-	f32 rotX[10];        // 0xAC
-	f32 rotY[10];        // 0xD4
-	f32 rotZ[10];        // 0xFC
-	s32 vertexAlpha[10]; // 0x124
-	s32 delay[10]; // 0x14C
+	f32 posX[10];       // 0x34
+	f32 posY[10];       // 0x5C
+	f32 posZ[10];       // 0x84
+	f32 rotX[10];       // 0xAC
+	f32 rotY[10];       // 0xD4
+	f32 rotZ[10];       // 0xFC
+	s32 pieceAlpha[10]; // 0x124, per-piece GX_TEVREG0 alpha, scaled by alpha
+	s32 delay[10];      // 0x14C, frames before the piece starts fading in
 } effTimestampN64Data;
 
 // .rodata / .sdata2 constants (float constants referenced through the linker)
@@ -106,7 +106,7 @@ EffectEntry* effTimestampN64Entry(s32 type, s32 time, f32 x, f32 y, f32 z, f32 s
 	data->colorR = 70;
 	data->colorG = 180;
 	data->colorB = 120;
-	data->colorAlpha = 0;
+	data->whiteFade = 0;
 	data->waveScale = 1.0f;
 
 	for (i = 0; i < 10; i++) {
@@ -116,7 +116,7 @@ EffectEntry* effTimestampN64Entry(s32 type, s32 time, f32 x, f32 y, f32 z, f32 s
 		data->rotX[i] = 0.0f;
 		data->rotY[i] = 0.0f;
 		data->rotZ[i] = 0.0f;
-		data->vertexAlpha[i] = 0;
+		data->pieceAlpha[i] = 0;
 		data->delay[i] = pos_data[i][2];
 	}
 	return effect;
@@ -162,9 +162,9 @@ void effTimestampMain(EffectEntry* effect) {
 		}
 	}
 	if (life < 32) {
-		data->colorAlpha += 0x80;
-		if (data->colorAlpha > 255) {
-			data->colorAlpha = 255;
+		data->whiteFade += 0x80;
+		if (data->whiteFade > 255) {
+			data->whiteFade = 255;
 		}
 		data->waveScale = 0.0f;
 	}
@@ -181,9 +181,9 @@ void effTimestampMain(EffectEntry* effect) {
 				continue;
 			}
 		}
-		data->vertexAlpha[i] += 8;
-		if (data->vertexAlpha[i] > 255) {
-			data->vertexAlpha[i] = 255;
+		data->pieceAlpha[i] += 8;
+		if (data->pieceAlpha[i] > 255) {
+			data->pieceAlpha[i] = 255;
 		}
 	}
 
@@ -198,7 +198,7 @@ void effTimestampMain(EffectEntry* effect) {
 // same stack slots as the original (same shape as effFireDustSetColor/effFireDustSetVtxColor).
 static inline void effTimestampSetColor(effTimestampN64Data* data) {
 	GXColor color = unk_804232b0;
-	color.a = data->colorAlpha;
+	color.a = data->whiteFade;
 	GXSetTevColor(GX_TEVREG1, color);
 }
 
@@ -207,7 +207,7 @@ static inline void effTimestampSetVtxColor(effTimestampN64Data* data, s32 counte
 	color.r = colr[i];
 	color.g = colg[i];
 	color.b = colb[i];
-	color.a = (counter * data->vertexAlpha[i]) / 255;
+	color.a = (counter * data->pieceAlpha[i]) / 255;
 	GXSetTevColor(GX_TEVREG0, color);
 }
 

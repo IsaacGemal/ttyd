@@ -9,40 +9,22 @@
 #include <dolphin/gx.h>
 #include <dolphin/mtx.h>
 
-// .sdata animation table used by effMagic1Draw (originally local to this unit).
+// .sdata animation table used by main_dl (originally local to this unit).
 static u8 anime_data[12] = {
     0x00, 0xFF, 0xD0, 0x1A, 0x78, 0x4D, 0xD0, 0xFE, 0xF0, 0xFE, 0x4C, 0x6E,
 };
-
-// File-local description of the effect's per-instance data.
-typedef struct effMagic1Work {
-    s32 type;      // 0x00
-    f32 x;         // 0x04
-    f32 y;         // 0x08
-    f32 z;         // 0x0C
-    f32 offsetX;   // 0x10, accumulated offset from the base position
-    f32 offsetY;   // 0x14
-    f32 offsetZ;   // 0x18
-    f32 velX;      // 0x1C, per-frame offset delta
-    f32 velY;      // 0x20
-    f32 velZ;      // 0x24
-    f32 scale;     // 0x28
-    s32 age;       // 0x2C, frames since spawn
-    s32 timer;     // 0x30, remaining frames / segment count
-    s32 alpha;     // 0x34
-} effMagic1Work;
 
 extern u32 dat_8041f650;
 extern GXColor unk_804231a8;
 EffectEntry* effMagic1N64Entry(s32 type, s32 count, f32 x0, f32 y0, f32 z0, f32 x1, f32 y1, f32 z1) {
     EffectEntry* effect;
-    effMagic1Work* data;
+    effMagic1Data* data;
     f32 scale;
 
     effect = effEntry();
     effect->type = "Magic1N64\0\0";
     effect->count = 1;
-    data = __memAlloc(HEAP_EFFECT, sizeof(effMagic1Work));
+    data = __memAlloc(HEAP_EFFECT, sizeof(effMagic1Data));
     effect->userdata = data;
     effect->callback = effMagic1Main;
     effect->flags |= 2;
@@ -77,7 +59,7 @@ EffectEntry* effMagic1N64Entry(s32 type, s32 count, f32 x0, f32 y0, f32 z0, f32 
     return effect;
 }
 void effMagic1Main(EffectEntry* effect) {
-    effMagic1Work* data = effect->userdata;
+    effMagic1Data* data = effect->userdata;
 #ifdef MUST_MATCH
     /* MUST_MATCH: retail builds the Vec in a scratch slot and copies it into a second
        local before dispCalcZ; a single local folds the copy away (same idiom as
@@ -117,7 +99,7 @@ void effMagic1Main(EffectEntry* effect) {
         if (type == 0 && data->timer == 0) {
             EffectEntry* newEffect = effMagic1N64Entry(1, 0x30, data->x + data->offsetX,
                 data->y + data->offsetY, data->z + data->offsetZ, 0.0f, 0.0f, 0.0f);
-            ((effMagic1Work*)newEffect->userdata)->scale = data->scale;
+            ((effMagic1Data*)newEffect->userdata)->scale = data->scale;
         }
         if (type == 1) {
             f32 k83 = 0.83f;
@@ -137,7 +119,7 @@ void effMagic1Main(EffectEntry* effect) {
     }
 }
 
-// Per-channel animation sine used by effMagic1Draw. The original recomputes the
+// Per-channel animation sine used by main_dl. The original recomputes the
 // phase for every channel, so this stays a macro instead of a shared local.
 // MUST_MATCH: spelling the *32 as a shift and putting the +180 before the anime byte is
 // what puts the phase sum's registers where the original has them (the natural form
@@ -207,10 +189,10 @@ static inline GXColor magic1Color1(GXColor c, u8* anime, s32 alpha) {
 #endif
 
 // Details are in REPORT.md.
-static void effMagic1Draw(EffectEntry* effect, Mtx mtx) {
+static void main_dl(EffectEntry* effect, Mtx mtx) {
     u8* anime;
     s32 size;
-    effMagic1Work* data;
+    effMagic1Data* data;
     s32 type;
     s32 alpha;
     s32 i;
@@ -357,7 +339,7 @@ static void effMagic1Draw(EffectEntry* effect, Mtx mtx) {
     }
 }
 void effMagic1Disp(CameraId camId, EffectEntry* effect) {
-    effMagic1Work* data;
+    effMagic1Data* data;
     CameraEntry* camera;
     s32 type;
     s32 i;
@@ -384,13 +366,13 @@ void effMagic1Disp(CameraId camId, EffectEntry* effect) {
     PSMTXConcat(camera->view, mtxC, mtxC);
     switch (type) {
     case 0:
-        effMagic1Draw(effect, mtxC);
+        main_dl(effect, mtxC);
         break;
     case 1:
         for (i = 0; i < 12; i++) {
             PSMTXRotRad(mtxD, 'z', 0.017453292f * (f32)(i * 30));
             PSMTXConcat(mtxC, mtxD, mtxD);
-            effMagic1Draw(effect, mtxD);
+            main_dl(effect, mtxD);
         }
         break;
     }

@@ -13,9 +13,18 @@ typedef struct BattleWorkIcon {
 	f32 field_0x14; //0x14, prob X, TODO
 	f32 field_0x18; //0x18
 	IconEntry* base; //0x1C
-	u8 field_0x20[0x4C - 0x20]; //0x20
+	Vec moveStartPos; //0x20, btlevtcmd_BtlIconJumpPosition's move state (laid out like BattleUnit's)
+	Vec moveCurrentPos; //0x2C
+	Vec moveTargetPos; //0x38
+	s32 moveFrames; //0x44
+	f32 moveSpeedXZ; //0x48
 	f32 fallAccel; //0x4C
-	u8 field_0x50[0x9C - 0x50]; //0x50
+	f32 moveSpeedY; //0x50
+	f32 moveAngle; //0x54
+	f32 moveDist; //0x58
+	f32 field_0x5C; //0x5C
+	s8 moveDirection; //0x60
+	u8 field_0x61[0x9C - 0x61]; //0x61
 } BattleIcon;
 
 void BattleIconInit(void);

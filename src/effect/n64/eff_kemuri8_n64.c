@@ -20,28 +20,28 @@ extern const GXColor dat_8041f420;
 
 // One 0x5C-byte element of this effect's userdata array.
 typedef struct effKemuri8Particle {
-	u16 type;       // 0x0
-	u8 pad_02[2];   // 0x2
-	Vec position;   // 0x4
+	u16 type;              // 0x0
+	u8 pad_02[2];          // 0x2
+	Vec position;          // 0x4
 	f32 distance;          // 0x10
 	f32 velocity;          // 0x14
 	f32 acceleration;      // 0x18
 	f32 accelerationStep;  // 0x1C
-	f32 field_0x20; // 0x20
-	f32 field_0x24; // 0x24
-	f32 field_0x28; // 0x28
-	f32 field_0x2C; // 0x2C
-	f32 dirX; // 0x30
-	f32 dirY; // 0x34
-	s32 field_0x38; // 0x38
-	s32 age; // 0x3C
-	s32 frameU; // 0x40
-	GXColor color;  // 0x44
-	s32 frameV; // 0x48
-	s32 lifetime; // 0x4C
-	s32 fade; // 0x50
-	s32 fadeTimer; // 0x54
-	s32 camId;      // 0x58
+	f32 field_0x20;        // 0x20
+	f32 field_0x24;        // 0x24
+	f32 field_0x28;        // 0x28
+	f32 field_0x2C;        // 0x2C
+	f32 dirX;              // 0x30
+	f32 dirY;              // 0x34
+	s32 field_0x38;        // 0x38
+	s32 age;               // 0x3C
+	s32 frame;             // 0x40: sprite-sheet frame (of 16), GX_TEXMTX0 U offset
+	GXColor color;         // 0x44
+	s32 nextFrame;         // 0x48: the following frame, GX_TEXMTX1 U offset
+	s32 lifetime;          // 0x4C
+	s32 fade;              // 0x50
+	s32 fadeTimer;         // 0x54
+	s32 camId;             // 0x58
 } effKemuri8Particle;
 
 // Local copy of system.c's inline helper so it inlines here as in the original.
@@ -104,8 +104,8 @@ EffectEntry* effKemuri8N64Entry(s32 type, f32 x, f32 y, f32 z) {
 	data->position.x = x;
 	data->position.y = y;
 	data->position.z = z;
-	data->frameU = 0;
-	data->frameV = 0;
+	data->frame = 0;
+	data->nextFrame = 0;
 	data->lifetime = 17;
 	data->camId = 4;
 
@@ -166,8 +166,8 @@ void effKemuri8Main(EffectEntry* effect) {
 		effDelete(effect);
 		return;
 	}
-	data->frameU = frame;
-	data->frameV = nextFrame;
+	data->frame = frame;
+	data->nextFrame = nextFrame;
 
 	for (i = 1, data++; i < effect->count; i++, data++) {
 		data->acceleration += data->accelerationStep;
@@ -217,10 +217,10 @@ void effKemuri8Disp(CameraId cameraId, void* param) {
 	Mtx scaleMtx;
 	Mtx rotMtx;
 	Mtx outMtx;
-	f32 uOffset;
-	f32 vOffset;
-	s32 frameU;
-	s32 frameV;
+	f32 frameOffset;
+	f32 nextFrameOffset;
+	s32 frame;
+	s32 nextFrame;
 	f32 size;
 	f32 size2;
 	s32 type;
@@ -230,8 +230,8 @@ void effKemuri8Disp(CameraId cameraId, void* param) {
 	data = effect->userdata;
 	camera = camGetPtr(cameraId);
 	type = data->type;
-	frameU = data->frameU;
-	frameV = data->frameV;
+	frame = data->frame;
+	nextFrame = data->nextFrame;
 
 	PSMTXTrans(transMtx, data->position.x, data->position.y, data->position.z);
 	PSMTXRotRad(rotMtx, 'y', 0.017453292f * -camGetPtr(cameraId)->viewYaw);
@@ -275,19 +275,19 @@ void effKemuri8Disp(CameraId cameraId, void* param) {
 	GXSetVtxAttrFmt(0, 9, 1, 4, 0);
 	GXSetVtxAttrFmt(0, 0xd, 1, 4, 0);
 
-	uOffset = 0.0625f * (f32)frameU;
-	vOffset = 0.0625f * (f32)frameV;
+	frameOffset = 0.0625f * (f32)frame;
+	nextFrameOffset = 0.0625f * (f32)nextFrame;
 
 	data++;
 	for (i = 1; i < effect->count; i++, data++) {
-		if (data->frameU > 15) {
+		if (data->frame > 15) {
 			continue;
 		}
-		PSMTXTrans(transMtx, uOffset, 0.0f, 0.0f);
+		PSMTXTrans(transMtx, frameOffset, 0.0f, 0.0f);
 		PSMTXScale(scaleMtx, 0.0625f, 1.0f, 1.0f);
 		PSMTXConcat(transMtx, scaleMtx, transMtx);
 		GXLoadTexMtxImm(transMtx, 0x1e, 1);
-		PSMTXTrans(transMtx, vOffset, 0.0f, 0.0f);
+		PSMTXTrans(transMtx, nextFrameOffset, 0.0f, 0.0f);
 		PSMTXScale(scaleMtx, 0.0625f, 1.0f, 1.0f);
 		PSMTXConcat(transMtx, scaleMtx, transMtx);
 		GXLoadTexMtxImm(transMtx, 0x21, 1);

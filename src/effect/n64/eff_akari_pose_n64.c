@@ -84,13 +84,13 @@ typedef struct effAkariPosePart {
     u8 pad_0x0C[0x4];  // 0x0C
     f32 vx;            // 0x10
     f32 vy;            // 0x14
-    f32 targetVx;    // 0x18
-    f32 targetVy;    // 0x1C
-    s32 seqIndex;    // 0x20
-    f32 angle;    // 0x24
+    f32 targetVx;      // 0x18
+    f32 targetVy;      // 0x1C
+    s32 seqIndex;      // 0x20
+    f32 angle;         // 0x24
     u8 pad_0x28[0x8];  // 0x28
-    s32 alpha;    // 0x30
-    f32 scale;    // 0x34
+    s32 alpha;         // 0x30
+    f32 scale;         // 0x34
 } effAkariPosePart;
 
 typedef struct effAkariPoseData {
@@ -99,10 +99,10 @@ typedef struct effAkariPoseData {
     f32 y;                   // 0x08
     f32 z;                   // 0x0C
     u8 pad_0x10[0x18];       // 0x10
-    s32 life;          // 0x28
-    s32 frame;          // 0x2C
-    s32 alpha;          // 0x30
-    f32 scale;          // 0x34
+    s32 life;                // 0x28
+    s32 frame;               // 0x2C
+    s32 alpha;               // 0x30
+    f32 scale;               // 0x34
     effAkariPosePart part[]; // 0x38
 } effAkariPoseData;
 

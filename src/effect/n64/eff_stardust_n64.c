@@ -16,17 +16,17 @@ typedef struct EffStardustN64Data {
     f32 x;          // 0x04
     f32 y;          // 0x08
     f32 z;          // 0x0C
-    f32 velX;      // 0x10
-    f32 velY;      // 0x14
-    f32 gravity;   // 0x18
+    f32 velX;       // 0x10
+    f32 velY;       // 0x14
+    f32 gravity;    // 0x18
     f32 scale;      // 0x1C
-    s32 frame;     // 0x20
-    s32 life;      // 0x24
+    s32 frame;      // 0x20
+    s32 life;       // 0x24
     f32 r;          // 0x28
     f32 g;          // 0x2C
     f32 b;          // 0x30
     s32 field_0x34; // 0x34
-    s32 vtxIndex;  // 0x38
+    s32 vtxIndex;   // 0x38
     s32 drawCam;    // 0x3C
 } EffStardustN64Data;
 
@@ -460,31 +460,31 @@ void effStardustDisp(CameraId camId, void* param) {
         GXSetTevColor(GX_TEVREG0, color);
 #endif
 
-        // Each effVtxArray strip is 0x38 bytes; the eight strips start at these word offsets.
+        // Eight 0x38-byte (14-word) vertex strips; strip N starts at word N * 14.
         switch (renderType & 7) {
         case 0:
-            vtx = (effVtxArray*)&size8x8_tex22x22_vtx[0xA8 / 4];
+            vtx = (effVtxArray*)&size8x8_tex22x22_vtx[3 * 14];
             break;
         case 1:
-            vtx = (effVtxArray*)&size8x8_tex22x22_vtx[0xE0 / 4];
+            vtx = (effVtxArray*)&size8x8_tex22x22_vtx[4 * 14];
             break;
         case 2:
-            vtx = (effVtxArray*)&size8x8_tex22x22_vtx[0x118 / 4];
+            vtx = (effVtxArray*)&size8x8_tex22x22_vtx[5 * 14];
             break;
         case 3:
-            vtx = (effVtxArray*)&size8x8_tex22x22_vtx[0x150 / 4];
+            vtx = (effVtxArray*)&size8x8_tex22x22_vtx[6 * 14];
             break;
         case 4:
-            vtx = (effVtxArray*)&size8x8_tex22x22_vtx[0x188 / 4];
+            vtx = (effVtxArray*)&size8x8_tex22x22_vtx[7 * 14];
             break;
         case 5:
             vtx = (effVtxArray*)size8x8_tex22x22_vtx;
             break;
         case 6:
-            vtx = (effVtxArray*)&size8x8_tex22x22_vtx[0x38 / 4];
+            vtx = (effVtxArray*)&size8x8_tex22x22_vtx[1 * 14];
             break;
         case 7:
-            vtx = (effVtxArray*)&size8x8_tex22x22_vtx[0x70 / 4];
+            vtx = (effVtxArray*)&size8x8_tex22x22_vtx[2 * 14];
             break;
         }
         effSetVtxDescN64(vtx);
