@@ -44,13 +44,14 @@ __declspec(section ".data") f32 lbl_80349DE8[2] = { -1.0f, 1.0f };
 
 // File-select state. Bits of `flags`: 0x01 option menu open (optionsFade ramps toward 1 while set);
 // 0x10 all four slots empty (delete row disabled); 0x20 no slot holds a usable save (copy row disabled);
-// 0x40 a memcard event is running (menuEvt); 0x80 delete/copy failed, so state 1 reruns the card check.
+// 0x40 a memcard event is running (menuEvt); 0x80 a delete/copy was carried out (event result 1), so state 1
+// reruns the card check.
 // `step` is the menu state; `cursor` is an index into win_dt: 0-3 save slots, 4 delete, 5 copy, 6 title,
 // 7 sound option, 8 rumble option. The sound and rumble menus keep a cursor and the committed setting:
 // soundCursor 0 mono, 1 stereo, 2 surround; rumbleCursor 0 on, 1 off.
 // prevCardCode is last frame's cardGetCode(); button input is ignored when it changes (card inserted or removed).
 // copySrc/copyDst are the copy event's source and destination (lwData[0], [1]). cursorX/Y ease toward
-// cursorTargetX/Y. printWindowId is the window id copied into the card-check event (seqLoadCardCheckFade sets it).
+// cursorTargetX/Y. printWindowId is the window id copied into the card-check event (seqLoadPrepCardRecheck sets it).
 typedef struct LoadWork {
     u16 flags; //0x0
     u8 pad_0x2[0x4 - 0x2];
@@ -262,8 +263,9 @@ EVT_BEGIN(evt_continue)
     RETURN
 EVT_END()
 
-
-s32 seqLoadCardCheckFade(EventEntry* event, BOOL isFirstCall) {
+// The last call in evt_memcard_delete/copy once the card was written (or the write missed): clears the fade and
+// keeps the message window for the card check that state 1 reruns (flags 0x80).
+s32 seqLoadPrepCardRecheck(EventEntry* event, BOOL isFirstCall) {
     fadeReset(4);
     wp->printWindowId = event->printWindowId;
     return 2;
