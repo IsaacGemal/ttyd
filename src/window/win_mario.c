@@ -7,6 +7,7 @@
 #include "driver/msgdrv.h"
 #include "manager/fontmgr.h"
 #include "pmario_sound.h"
+#include "battle/battle_database_common.h"
 #include "battle/battle_seq_end.h"
 #include "data/item_icon_view.h"
 #include <dolphin/gx.h>
@@ -40,16 +41,8 @@ typedef struct LinkDt {
     u8 next[4];           // 0x18, four 1-byte "next" indices, one per d-pad direction
 } LinkDt;
 
-typedef struct SuperActionEntry {
-    const char* label;     // 0x0, label tag
-    u8 field_4[0xC - 4];   // 0x4
-    const char* msg;       // 0xC
-    u8 field_10[2];        // 0x10
-    u8 starPower;          // 0x12, star power level
-} SuperActionEntry;
-
 extern LinkDt linkDt[];
-extern SuperActionEntry* superActionTable[];
+extern BattleWeapon* superActionTable[];
 
 // .rodata strings, before the code: their jumptable pools land after them
 const char str_802F5650[20] = "msg_menu_mario_lv\x00\x00\x00";
@@ -425,7 +418,7 @@ s32 winMarioMain(WindowWork* work) {
         work->targetX = -280.0f;
         f2 = (f32)work->superActionSel;
         work->targetY = 10.0f + ((120.0f - 26.0f * f2) - 12.0f);
-        winMsgEntry(work, 0, superActionTable[work->superActionSel]->msg, 0);
+        winMsgEntry(work, 0, superActionTable[work->superActionSel]->description, 0);
         break;
     }
     return 0;
@@ -833,8 +826,8 @@ void winMarioDisp(CameraId camId, void* param, s32 idx) {
         for (i = 0; i < work->superActionCount; i++) {
             char buf[0x20];
             f32 drop;
-            winFontSetLabelV((Vec){10.0f + (listLeft - 270.0f), (f32)(0x82 - i * 26), 0.0f}, (Vec){1.0f, 1.0f, 1.0f}, loopBlack, superActionTable[i]->label);
-            sprintf(buf, "%s", winZenkakuStr(superActionTable[i]->starPower));
+            winFontSetLabelV((Vec){10.0f + (listLeft - 270.0f), (f32)(0x82 - i * 26), 0.0f}, (Vec){1.0f, 1.0f, 1.0f}, loopBlack, superActionTable[i]->name);
+            sprintf(buf, "%s", winZenkakuStr(superActionTable[i]->baseSpCost));
             drop = (f32)(0x82 - i * 26);
             winFontSetV((Vec){(228.0f + x - 270.0f) - (f32)((u16)FontGetMessageWidth(buf) >> 1), drop, 0.0f}, (Vec){1.0f, 1.0f, 1.0f}, loopBlack, buf);
             winFontSetV((Vec){4.0f + (17.0f + colonX - 270.0f), (f32)(0x78 - i * 26), 0.0f}, (Vec){0.5f, 0.5f, 0.5f}, loopBlack, "\x82r\x82o");
