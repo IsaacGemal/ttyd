@@ -1810,13 +1810,8 @@ void L_getStick(PartyEntry* party, f32* outAngle, f32* outDist) {
             dist = 70.0f;
         }
         ang = angleABf(0.0f, 0.0f, (f32)x, (f32)-y);
-#ifdef MUST_MATCH
-        // `!dist` makes MWCC emit the original mfcr/.../srwi boolean; the
-        // natural `dist == 0.0f` test is under #else.
+        // `!dist` makes MWCC emit the original mfcr/.../srwi boolean.
         if (!dist) {
-#else
-        if (dist == 0.0f) {
-#endif
             ang = party->field_FC;
         }
         ang = revise360(ang + party->playerTargetYaw);

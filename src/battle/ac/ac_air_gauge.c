@@ -38,16 +38,11 @@ typedef struct AirGaugeDecWork {
 // 100%. The `difficulty`/`dat_80420a70` shapes are match-only (comments at their uses);
 // the natural forms are under #else.
 s32 battleAcMain_AirGauge(BattleWork* work) {
-#ifdef MUST_MATCH
-	// Match-only: addressing the gauge work through the header's named field keeps `dec` in its own
+	// Addressing the gauge work through the header's named field keeps `dec` in its own
 	// base register (r31) instead of folding it into the BattleWork base. See ac_monosiri_target.c.
 	BattleActions* ac = &work->actionCommands;
 	AirGaugeDecWork* dec = (AirGaugeDecWork*)&ac->field_0x2BC[0];
 	BattleACDispParams* disp = &ac->dispParams;
-#else
-	AirGaugeDecWork* dec = (AirGaugeDecWork*)&work->actionCommands.field_0x2BC[0];
-	BattleACDispParams* disp = &work->actionCommands.dispParams;
-#endif
 
 	switch (work->actionCommands.mAcState) {
 	case 0x63:
@@ -90,12 +85,9 @@ s32 battleAcMain_AirGauge(BattleWork* work) {
 				case 3:
 					work->actionCommands.field_0x8 = work->actionCommands.acParams[5] - 1;
 					break;
-#ifdef MUST_MATCH
-				// Match-only empty case 4: sharing the default body makes MWCC pivot the
-				// decision tree on 3 and emit the original's extra `b default`. The natural
-				// source has only `default`.
+				// The empty case 4 sharing the default body makes MWCC pivot the
+				// decision tree on 3 and emit the original's extra `b default`.
 				case 4:
-#endif
 				default:
 					work->actionCommands.field_0x8 = work->actionCommands.acParams[5] + 1;
 					break;
@@ -151,39 +143,25 @@ s32 battleAcMain_AirGauge(BattleWork* work) {
 		work->actionCommands.result = 2;
 		work->actionCommands.mResultCount++;
 		{
-#ifdef MUST_MATCH
-			// Match-only: assigning the difficulty inside the first `else if` (rather than a plain load)
+			// Assigning the difficulty inside the first `else if` (rather than a plain load)
 			// makes MWCC keep it in r4 across the chain and load it lazily, as the original does.
 			s32 difficulty;
-#endif
 			if (dec->gaugePercent < (f32)work->actionCommands.acParams[3]) {
 				work->actionCommands.outputParams[0] = 1;
 			}
-#ifdef MUST_MATCH
 			else if ((difficulty = work->actionCommands.acParams[2]) <= 2) {
-#else
-			else if (work->actionCommands.acParams[2] <= 2) {
-#endif
 				work->actionCommands.outputParams[0] = 2;
 			}
 			else if (dec->gaugePercent < (f32)work->actionCommands.acParams[4]) {
 				work->actionCommands.outputParams[0] = 2;
 			}
-#ifdef MUST_MATCH
 			else if (difficulty <= 3) {
-#else
-			else if (work->actionCommands.acParams[2] <= 3) {
-#endif
 				work->actionCommands.outputParams[0] = 3;
 			}
 			else if (dec->gaugePercent < (f32)work->actionCommands.acParams[5]) {
 				work->actionCommands.outputParams[0] = 3;
 			}
-#ifdef MUST_MATCH
 			else if (difficulty <= 4) {
-#else
-			else if (work->actionCommands.acParams[2] <= 4) {
-#endif
 				work->actionCommands.outputParams[0] = 4;
 			}
 			else if (dec->gaugePercent < (f32)work->actionCommands.acParams[6]) {
@@ -240,8 +218,7 @@ typedef struct GaugeTableEntry {
 
 // The work area is reached through BattleActions.field_0x2BC so MWCC materialises it in its own register.
 f32 _GetGaugeDecValue(void) {
-#ifdef MUST_MATCH
-	// Match-only: `ac` + field_0x2BC keeps the work area in its own base register (r6) instead of
+	// `ac` + field_0x2BC keeps the work area in its own base register (r6) instead of
 	// folding it into the BattleWork base (see ac_monosiri_target.c). Declaring base first, before `ac`,
 	// is also needed: it leaves the loaded work pointer in r3 and lets the `lis` colour base into r4,
 	// as the original does.
@@ -249,20 +226,10 @@ f32 _GetGaugeDecValue(void) {
 	BattleActions* ac = &_battleWorkPointer->actionCommands;
 	AirGaugeDecWork* dec = (AirGaugeDecWork*)&ac->field_0x2BC[0];
 	s32 type;
-#else
-	BattleWork* work = _battleWorkPointer;
-	AirGaugeDecWork* dec = (AirGaugeDecWork*)&work->actionCommands.field_0x2BC[0];
-	s32 type;
-	u8* base = lbl_803ABCE0;
-#endif
 	GaugeTableEntry* table;
 	f32 max;
 
-#ifdef MUST_MATCH
 	type = ac->acParams[7]; // BattleWork+0x1ce4
-#else
-	type = work->actionCommands.acParams[7];
-#endif
 	switch (type) {
 	case 0:
 		max = 0.3f;
@@ -360,16 +327,11 @@ void battleAcDelete_AirGauge(BattleWork* work) {
 #pragma dont_inline on
 static void actionCommandDisp(f32 f1, f32 f2) {
 	BattleWork* work = _battleWorkPointer;
-#ifdef MUST_MATCH
-	// Match-only: deriving disp before camGetPtr and dec after makes MWCC materialise them in their
+	// Deriving disp before camGetPtr and dec after makes MWCC materialise them in their
 	// own registers (work=r31, disp=r30, dec=r29) instead of folding them into the BattleWork base.
 	BattleActions* ac = &work->actionCommands;
 	BattleACDispParams* disp = &ac->dispParams;
 	AirGaugeDecWork* dec;
-#else
-	BattleACDispParams* disp = &work->actionCommands.dispParams;
-	AirGaugeDecWork* dec;
-#endif
 #ifdef MUST_MATCH
 	// Match-only: `gv` is the draw call's float argument read through a volatile lvalue. The volatile
 	// read makes MWCC load disp->value into f1 before the two (s32) parameter conversions, which then
@@ -381,24 +343,16 @@ static void actionCommandDisp(f32 f1, f32 f2) {
 	f32 target;
 
 	camGetPtr(CAMERA_2D);
-#ifdef MUST_MATCH
 	dec = (AirGaugeDecWork*)&ac->field_0x2BC[0];
-#else
-	dec = (AirGaugeDecWork*)&work->actionCommands.field_0x2BC[0];
-#endif
 
 	target = dec->gaugePercent;
 	target = target / 100.0f;
 	value = disp->value;
 	if (value <= target) {
-#ifdef MUST_MATCH
-		// Match-only: a named step keeps `value + step` as f1 + f0; the plain literal lets MWCC fold
+		// A named step keeps `value + step` as f1 + f0; the plain literal lets MWCC fold
 		// the operands the other way (`fadds f0, f0, f1`).
 		f32 step = 0.01f;
 		disp->value = value + step;
-#else
-		disp->value = value + 0.01f;
-#endif
 		if (disp->value > target) {
 			disp->value = target;
 		}
