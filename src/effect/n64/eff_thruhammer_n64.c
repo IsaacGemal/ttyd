@@ -119,14 +119,10 @@ void effThruHammerMain(EffectEntry* effect) {
 			data->position.x = 0.0f;
 			data->position.y = 0.0f;
 			data->position.z = 0.0f;
-#ifdef MUST_MATCH
 			{
 				f32 s = (f32)sin(6.2831855f * data->rotZ / 360.0f);
 				data->dirX = -s * 0.5f;
 			}
-#else
-			data->dirX = -(f32)sin(6.2831855f * data->rotZ / 360.0f) * 0.5f;
-#endif
 			data->dirY = 0.5f * (f32)cos(6.2831855f * data->rotZ / 360.0f);
 			data->dirZ = 0.0f;
 			data->texScrollA = 32.0f;

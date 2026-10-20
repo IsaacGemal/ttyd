@@ -55,12 +55,8 @@ typedef struct JabaraWork {
 #define MW_U8(m, off) (*(u8*)((u8*)(m) + (off)))
 #define MW_S32(m, off) (*(s32*)((u8*)(m) + (off)))
 
-#ifdef MUST_MATCH
 // A nonconst view keeps these named pool words from folding into duplicate literals.
 #define JABARA_F32(sym) (*(f32*)&(sym))
-#else
-#define JABARA_F32(sym) (sym)
-#endif
 
 // Local quake script table (`.sdata`), referenced by mot_jabara.
 static s32 quake_evt[8] = { 0x0005005B, (s32)evt_cam_shake, 4, (s32)0xF24A7A80,
@@ -1071,7 +1067,6 @@ BOOL marioChkJabara(void) {
     s32 out1;
     f32 out3;
 
-#ifdef MUST_MATCH
     // Chained assignment keeps `check` and wMotionTimer in the same register (r0);
     // the inverted equality makes 1 the out-of-line branch, as in the original.
     if ((mario2->flags & MARIO_FLAG_IS_8_BIT) || (mario2->flags & MARIO_FLAG_PAPER_MODE)) {
@@ -1083,16 +1078,6 @@ BOOL marioChkJabara(void) {
             check = 1;
         }
     }
-#else
-    if ((mario2->flags & MARIO_FLAG_IS_8_BIT) || (mario2->flags & MARIO_FLAG_PAPER_MODE)) {
-        mario2->wMotionTimer = 0;
-        check = 0;
-    } else if ((s32)pouchCheckItem(8) != 0) {
-        check = 1;
-    } else {
-        check = 0;
-    }
-#endif
     if (check == 0) {
         return FALSE;
     }

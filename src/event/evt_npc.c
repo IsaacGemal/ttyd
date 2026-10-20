@@ -799,14 +799,10 @@ USER_FUNC(evt_npc_jump_position_nohit) {
     s32 duration = evtGetValue(event, *args++);
     f32 arcHeight = (f32)evtGetValue(event, *args++);
     s32 sfxFlag;
-#ifdef MUST_MATCH
     // `int` instead of the codebase's `s32` (= `signed long`, but also 32-bit): the Metrowerks
     // allocator then leaves the `divwu` result in r4 (the next intplGetValue argument register)
     // and copies it to r29 later, exactly as the original does. With `s32` it is born in r29.
     int elapsed;
-#else
-    s32 elapsed;
-#endif
     f32 t;
     Vec endPos;
 
@@ -859,14 +855,12 @@ USER_FUNC(evt_npc_jump_position_nohit) {
 // The per-frame block matches with two shapes. (1) declare t/dy/delta in that order and compute
 // the second intpl quotient as one statement `delta = (dy - delta) / t;` before the calls, so both
 // divisions hoist ahead of the first `_intplGetFloat` (giving dy/t/delta = f3/f2/f4 and
-// speed/arcHeight = f31/f30). (2) MUST_MATCH: `delta = subf32(a, b);` (an inlined trivially-small
+// speed/arcHeight = f31/f30). (2) `delta = subf32(a, b);` (an inlined trivially-small
 // helper) must come before the two `dx`/`dz` subtractions; the inlined call makes MWCC keep f2
 // busy for it, so the `dx` load temp is coloured f3 as in the original (`lfs f3, 0x164` /
 // `fsubs f27, f3, f1`) while delta/dx keep f26/f27. The natural form (plain `delta = a - b;`
 // after dx/dz) compiles to the same logic but leaves the dx temp on f2 (99.97%).
-#ifdef MUST_MATCH
 static inline f32 subf32(f32 x, f32 y) { return x - y; }
-#endif
 
 USER_FUNC(evt_npc_glide_position) {
     s32* args = event->args;
@@ -946,15 +940,9 @@ USER_FUNC(evt_npc_glide_position) {
     delta = (dy - delta) / t;
     a = _intplGetFloat(intplType, dy / t);
     b = _intplGetFloat(intplType, delta);
-#ifdef MUST_MATCH
     delta = subf32(a, b);
     dx = npc->jumpTargetPos.x - npc->jumpStartPos.x;
     dz = npc->jumpTargetPos.z - npc->jumpStartPos.z;
-#else
-    dx = npc->jumpTargetPos.x - npc->jumpStartPos.x;
-    dz = npc->jumpTargetPos.z - npc->jumpStartPos.z;
-    delta = a - b;
-#endif
     npc->moveOffset.x += dx * delta;
     npc->moveOffset.z += dz * delta;
 
@@ -1849,22 +1837,13 @@ USER_FUNC(evt_npc_set_color) {
     u8 a = evtGetValue(event, args[4]);
     NpcEntry* npc = evtNpcNameToPtr(event, name);
     char* desc = npc->description;
-#ifdef MUST_MATCH
-    // The original builds the color in a temporary then copies it into `color` (the copy is one word).
     tmp = unk_80422fc0;
     tmp.r = r;
     tmp.g = g;
     tmp.b = b;
     tmp.a = a;
-    npcSetColor(desc, (color = tmp, &color));
-#else
-    color = unk_80422fc0;
-    color.r = r;
-    color.g = g;
-    color.b = b;
-    color.a = a;
+    color = tmp;
     npcSetColor(desc, &color);
-#endif
     return EVT_RETURN_DONE;
 }
 #pragma opt_propagation reset
