@@ -894,10 +894,10 @@ void mot_roll(void) {
             MarioWork* m = marioGetPtr();
 
             camFollowYOff();
-            *(f32*)((u8*)m + 0x7C) = 2.85f;
-            *(f32*)((u8*)m + 0x80) = -0.14f;
-            *(f32*)((u8*)m + 0x84) = 0.08f;
-            *(f32*)((u8*)m + 0x88) = -0.02f;
+            m->jumpVelY = 2.85f;
+            m->jumpAccelY = -0.14f;
+            m->jumpJerkY = 0.08f;
+            m->jumpJerkStepY = -0.02f;
             m->flags |= 0x00010000;
             m->airTimer = 1;
             psndSFXOn_3D((char*)0x17C, &marioGetPtr()->position);
@@ -913,16 +913,16 @@ void mot_roll(void) {
 
     if (mario->flags & 0x30000) {
         if (*(void**)((u8*)mario + 0x1F4) != NULL) {
-            if (*(f32*)((u8*)mario + 0x7C) >= 0.0f) {
-                *(f32*)((u8*)mario + 0x7C) = -0.03f;
-                *(f32*)((u8*)mario + 0x80) = -0.02f;
-                *(f32*)((u8*)mario + 0x84) = -0.02f;
-                *(f32*)((u8*)mario + 0x88) = -0.002f;
+            if (mario->jumpVelY >= 0.0f) {
+                mario->jumpVelY = -0.03f;
+                mario->jumpAccelY = -0.02f;
+                mario->jumpJerkY = -0.02f;
+                mario->jumpJerkStepY = -0.002f;
             }
             mario->flags |= 0x00020000;
         }
         if (mario->airTimer == 0) {
-            if (*(f32*)((u8*)mario + 0x7C) < 0.0f) {
+            if (mario->jumpVelY < 0.0f) {
                 *(Vec*)((u8*)mario + 0xD4) = mario->position;
                 camFollowYOn();
             }
@@ -1319,13 +1319,13 @@ void roll_upstairs_on(void) {
     mario->multiTimer = 3;
     {
         u32 t = mario->multiTimer;
-        *(f32*)((u8*)mario + 0x7C) =
+        mario->jumpVelY =
             (*(f32*)((u8*)mario + 0x1C4) - mario->position.y) / (f32)(s32)t;
     }
-    *(f32*)((u8*)mario + 0x7C) = 4.0f;
-    *(f32*)((u8*)mario + 0x80) = -0.42f;
-    *(f32*)((u8*)mario + 0x84) = 0.04f;
-    *(f32*)((u8*)mario + 0x88) = -0.01f;
+    mario->jumpVelY = 4.0f;
+    mario->jumpAccelY = -0.42f;
+    mario->jumpJerkY = 0.04f;
+    mario->jumpJerkStepY = -0.01f;
 }
 // dont_inline: original keeps roll_upstairs as a real call (bl roll_upstairs) from mot_roll;
 // MWCC's -inline auto would otherwise inline this small function.
@@ -1333,7 +1333,7 @@ void roll_upstairs_on(void) {
 void roll_upstairs(void) {
     MarioWork* mario = marioGetPtr();
 
-    mario->position.y += *(f32*)((u8*)mario + 0x7C);
+    mario->position.y += mario->jumpVelY;
     if ((s32)--mario->multiTimer <= 0) {
         mario->flags &= ~0x80;
         mario->flags &= ~0x40;

@@ -143,7 +143,10 @@ typedef struct MarioWork {
     Vec field_6C;                  // 0x6C
     u8 unk78[0x7A - 0x78];         // 0x78
     s16 field_0x7A;                // 0x7A
-    u8 field_0x7C[0x8C - 0x7C];    // 0x7C
+    f32 jumpVelY;                  // 0x7C, per-frame Y step added to position.y (evt_mario, mot_roll, mot_ship)
+    f32 jumpAccelY;                // 0x80, added to jumpVelY each frame
+    f32 jumpJerkY;                 // 0x84, added to jumpAccelY each frame
+    f32 jumpJerkStepY;             // 0x88, added to jumpJerkY each frame (0 unless a jump sets it)
     Vec position;                  // 0x8C
     u8 field_0x98[0xC8 - 0x98];    // 0x98
     Vec scale;                     // 0xC8

@@ -90,10 +90,10 @@ void mot_hip(void) {
         *(f32*)((u8*)mario + 0x19C) = toMovedir(angle);
         mario->directionView = *(f32*)((u8*)mario + 0x19C);
         marioChgPose("M_A_1A");
-        *(f32*)((u8*)mario + 0x7C) = 5.2f;
-        *(f32*)((u8*)mario + 0x80) = 0.0f;
-        *(f32*)((u8*)mario + 0x84) = 0.0f;
-        *(f32*)((u8*)mario + 0x88) = 0.0f;
+        mario->jumpVelY = 5.2f;
+        mario->jumpAccelY = 0.0f;
+        mario->jumpJerkY = 0.0f;
+        mario->jumpJerkStepY = 0.0f;
         dy = marioGetScale() * -2.0f;
         dy *= 0.5f;
         mario->position.y += dy;
@@ -121,14 +121,14 @@ void mot_hip(void) {
         if (tmp >= 360.0f) {
             *(f32*)((u8*)mario + 0x2A0) = 360.0f;
         }
-        *(f32*)((u8*)mario + 0x7C) -= 0.42f;
+        mario->jumpVelY -= 0.42f;
         if (*(void**)((u8*)mario + 0x1F4) == NULL) {
-            *(f32*)((u8*)mario + 0xA8) += *(f32*)((u8*)mario + 0x7C);
+            *(f32*)((u8*)mario + 0xA8) += mario->jumpVelY;
         }
-        if (*(f32*)((u8*)mario + 0x2A0) == 360.0f && *(f32*)((u8*)mario + 0x7C) <= 0.0f) {
+        if (*(f32*)((u8*)mario + 0x2A0) == 360.0f && mario->jumpVelY <= 0.0f) {
             mario->multiTimer = 5;
             mario->currSubMotionId = 2;
-            *(f32*)((u8*)mario + 0x7C) = 2.0f;
+            mario->jumpVelY = 2.0f;
         }
         switch (U_chkground()) {
         case 1:
@@ -151,10 +151,10 @@ void mot_hip(void) {
         }
         break;
     case 2:
-        if (*(f32*)((u8*)mario + 0x7C) >= 0.0f) {
-            *(f32*)((u8*)mario + 0x7C) -= 1.4f;
+        if (mario->jumpVelY >= 0.0f) {
+            mario->jumpVelY -= 1.4f;
             if (*(void**)((u8*)mario + 0x1F4) == NULL) {
-                *(f32*)((u8*)mario + 0xA8) += *(f32*)((u8*)mario + 0x7C);
+                *(f32*)((u8*)mario + 0xA8) += mario->jumpVelY;
             }
         }
         if ((s32)--mario->multiTimer <= 0) {
@@ -191,10 +191,10 @@ void mot_hip(void) {
             mario->flags |= 0x20000;
             *(f32*)((u8*)mario + 0x2A0) = 0.0f;
             mario->currSubMotionId = 0x14;
-            *(f32*)((u8*)mario + 0x80) = -3.4744f;
-            *(f32*)((u8*)mario + 0x84) = 0.4704f;
-            *(f32*)((u8*)mario + 0x88) = -1.1904f;
-            *(f32*)((u8*)mario + 0x7C) = *(f32*)((u8*)mario + 0x80);
+            mario->jumpAccelY = -3.4744f;
+            mario->jumpJerkY = 0.4704f;
+            mario->jumpJerkStepY = -1.1904f;
+            mario->jumpVelY = mario->jumpAccelY;
         }
         switch (U_chkground()) {
         case 1:
@@ -226,10 +226,10 @@ void mot_hip(void) {
             hit = marioSearchGround(&landY, &outX, &outZ, fallSpd, fallSpd);
             if (fallSpd < -100.0f) {
                 fallSpd = -100.0f;
-                *(f32*)((u8*)mario + 0x88) = 0.0f;
-                *(f32*)((u8*)mario + 0x84) = 0.0f;
-                *(f32*)((u8*)mario + 0x80) = 0.0f;
-                *(f32*)((u8*)mario + 0x7C) = -100.0f;
+                mario->jumpJerkStepY = 0.0f;
+                mario->jumpJerkY = 0.0f;
+                mario->jumpAccelY = 0.0f;
+                mario->jumpVelY = -100.0f;
             }
             if (hit != NULL) {
                 mario->currMotionId = MARIO_MOTION_HIP_2;
@@ -248,10 +248,10 @@ void mot_hip(void) {
                     s32 attr = hitGetAttr((HitEntry*)hit);
                     if (attr & 0x200) {
                         set_damage_root_ypos(mario->position.y);
-                        *(f32*)((u8*)mario + 0x7C) = -0.4f;
-                        *(f32*)((u8*)mario + 0x80) = -0.4f;
-                        *(f32*)((u8*)mario + 0x84) = 0.0f;
-                        *(f32*)((u8*)mario + 0x88) = 0.0f;
+                        mario->jumpVelY = -0.4f;
+                        mario->jumpAccelY = -0.4f;
+                        mario->jumpJerkY = 0.0f;
+                        mario->jumpJerkStepY = 0.0f;
                         marioChgMot(0x1F);
                         return;
                     }
@@ -311,10 +311,10 @@ void mot_hip(void) {
         break;
     case 0x32:
         marioChgPose("M_A_1A");
-        *(f32*)((u8*)mario + 0x7C) = 0.0f;
-        *(f32*)((u8*)mario + 0x80) = 0.0f;
-        *(f32*)((u8*)mario + 0x84) = 0.0f;
-        *(f32*)((u8*)mario + 0x88) = 0.0f;
+        mario->jumpVelY = 0.0f;
+        mario->jumpAccelY = 0.0f;
+        mario->jumpJerkY = 0.0f;
+        mario->jumpJerkStepY = 0.0f;
         *(f32*)((u8*)mario + 0x2A0) += (f32)keyGetSubStickY(2) / 10.0f;
         break;
     default:
@@ -353,10 +353,10 @@ s32 U_chkground(void) {
         attr = hitGetAttr((HitEntry*)hit);
         if (attr & 0x200) {
             set_damage_root_ypos(mario->position.y);
-            *(f32*)((u8*)mario + 0x7C) = -0.4f;
-            *(f32*)((u8*)mario + 0x80) = -0.4f;
-            *(f32*)((u8*)mario + 0x84) = 0.0f;
-            *(f32*)((u8*)mario + 0x88) = 0.0f;
+            mario->jumpVelY = -0.4f;
+            mario->jumpAccelY = -0.4f;
+            mario->jumpJerkY = 0.0f;
+            mario->jumpJerkStepY = 0.0f;
             marioChgMot(0x1F);
             return 1;
         }

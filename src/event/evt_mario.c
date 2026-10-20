@@ -1519,10 +1519,10 @@ USER_FUNC(evt_mario_jump_pos) {
         dy = y - mario->position.y;
         if (__fabsf(dy) < float_1_8041b8a8) {
             accel = (gravity + gravity) / (half * half - half);
-            *(f32*)((u8*)mario + 0x7C) = accel * half;
-            *(f32*)((u8*)mario + 0x80) = -accel;
-            *(f32*)((u8*)mario + 0x84) = float_0_8041b8ac;
-            *(f32*)((u8*)mario + 0x88) = float_0_8041b8ac;
+            mario->jumpVelY = accel * half;
+            mario->jumpAccelY = -accel;
+            mario->jumpJerkY = float_0_8041b8ac;
+            mario->jumpJerkStepY = float_0_8041b8ac;
         } else {
             if (dy >= float_0_8041b8ac) {
                 if (mario->characterId == 2) {
@@ -1554,10 +1554,10 @@ USER_FUNC(evt_mario_jump_pos) {
                 }
             }
             accel = (dy + dy) / (half * half - half);
-            *(f32*)((u8*)mario + 0x7C) = accel * half;
-            *(f32*)((u8*)mario + 0x80) = -accel;
-            *(f32*)((u8*)mario + 0x84) = float_0_8041b8ac;
-            *(f32*)((u8*)mario + 0x88) = float_0_8041b8ac;
+            mario->jumpVelY = accel * half;
+            mario->jumpAccelY = -accel;
+            mario->jumpJerkY = float_0_8041b8ac;
+            mario->jumpJerkStepY = float_0_8041b8ac;
         }
         if (!(mario->flags & MARIO_FLAG_TUBE_MODE)) {
             marioChgMot(8);
@@ -1576,18 +1576,18 @@ USER_FUNC(evt_mario_jump_pos) {
         } else {
             movePos(&mario->position.x, &mario->position.z, mario->baseSpeed, mario->directionView);
         }
-        mario->position.y += *(f32*)((u8*)mario + 0x7C);
+        mario->position.y += mario->jumpVelY;
         marioMakeJumpPara();
         if (--event->userdata[2] > 0) {
             break;
         }
         half = float_0p5_8041b8c8 * framesF;
         dy = y - mario->position.y;
-        *(f32*)((u8*)mario + 0x7C) = float_0_8041b8ac;
+        mario->jumpVelY = float_0_8041b8ac;
         accel = (dy + dy) / (half * half - half);
-        *(f32*)((u8*)mario + 0x80) = accel;
-        *(f32*)((u8*)mario + 0x84) = float_0_8041b8ac;
-        *(f32*)((u8*)mario + 0x88) = float_0_8041b8ac;
+        mario->jumpAccelY = accel;
+        mario->jumpJerkY = float_0_8041b8ac;
+        mario->jumpJerkStepY = float_0_8041b8ac;
         event->userdata[2] = (s32)(float_0p5_8041b8c8 + half);
         event->userdata[0] = 2;
         break;
@@ -1599,10 +1599,10 @@ USER_FUNC(evt_mario_jump_pos) {
 
         movePos(&mario->position.x, &mario->position.z, mario->baseSpeed, mario->directionView);
         marioMakeJumpPara();
-        dy = *(f32*)((u8*)mario + 0x7C);
+        dy = mario->jumpVelY;
         mario2 = marioGetPtr();
         if (mario2->flags & MARIO_FLAG_TUBE_MODE) {
-            ground = (void*)marioSearchGroundRoll(&v0, &v1, &v2, float_11_8041b8c0, *(f32*)((u8*)mario2 + 0x7C));
+            ground = (void*)marioSearchGroundRoll(&v0, &v1, &v2, float_11_8041b8c0, mario2->jumpVelY);
         } else {
             ground = (void*)marioSearchGround(&v0, &v1, &v2, dy, dy);
         }
@@ -1625,15 +1625,15 @@ USER_FUNC(evt_mario_jump_pos) {
         if (landed) {
             event->userdata[2] = 0;
         } else {
-            mario->position.y += *(f32*)((u8*)mario + 0x7C);
+            mario->position.y += mario->jumpVelY;
         }
         if (--event->userdata[2] > 0) {
             break;
         }
-        *(f32*)((u8*)mario + 0x7C) = float_0_8041b8ac;
-        *(f32*)((u8*)mario + 0x80) = float_0_8041b8ac;
-        *(f32*)((u8*)mario + 0x84) = float_0_8041b8ac;
-        *(f32*)((u8*)mario + 0x88) = float_0_8041b8ac;
+        mario->jumpVelY = float_0_8041b8ac;
+        mario->jumpAccelY = float_0_8041b8ac;
+        mario->jumpJerkY = float_0_8041b8ac;
+        mario->jumpJerkStepY = float_0_8041b8ac;
         *(f32*)((u8*)mario + 0x180) = float_0_8041b8ac;
         *(f32*)((u8*)mario + 0x180) = float_0_8041b8ac;
         camFollowYOn();
@@ -1732,9 +1732,9 @@ USER_FUNC(evt_mario_jump_jumpstand) {
             dy = float_20_8041b8cc;
         }
         tmp = (dy + dy) / (t * t - t);
-        *(f32*)((u8*)mario + 0x7C) = tmp * t;
-        *(f32*)((u8*)mario + 0x80) = -tmp;
-        *(f32*)((u8*)mario + 0x88) = *(f32*)((u8*)mario + 0x84) = float_0_8041b8ac;
+        mario->jumpVelY = tmp * t;
+        mario->jumpAccelY = -tmp;
+        mario->jumpJerkStepY = mario->jumpJerkY = float_0_8041b8ac;
         if (event->userdata[3] & 2) {
             event->userdata[0] = 0xA;
         }
@@ -1747,7 +1747,7 @@ USER_FUNC(evt_mario_jump_jumpstand) {
     }
     case 1: {
         movePos(&mario->position.x, &mario->position.z, mario->baseSpeed, mario->directionView);
-        mario->position.y += *(f32*)((u8*)mario + 0x7C);
+        mario->position.y += mario->jumpVelY;
         marioMakeJumpPara();
         if (--event->userdata[2] > 0) {
             break;
@@ -1755,9 +1755,9 @@ USER_FUNC(evt_mario_jump_jumpstand) {
         dy = ty - mario->position.y;
         t = float_0p5_8041b8c8 * (f32)event->userdata[1];
         tmp = (dy + dy) / (t * t - t);
-        *(f32*)((u8*)mario + 0x7C) = float_0_8041b8ac;
-        *(f32*)((u8*)mario + 0x80) = tmp;
-        *(f32*)((u8*)mario + 0x88) = *(f32*)((u8*)mario + 0x84) = float_0_8041b8ac;
+        mario->jumpVelY = float_0_8041b8ac;
+        mario->jumpAccelY = tmp;
+        mario->jumpJerkStepY = mario->jumpJerkY = float_0_8041b8ac;
         event->userdata[2] = (s32)(float_0p5_8041b8c8 * (f32)event->userdata[1] + float_0p5_8041b8c8);
         event->userdata[0] = 2;
         if (!(mario->flags & 0x01000000)) {
@@ -1773,10 +1773,10 @@ USER_FUNC(evt_mario_jump_jumpstand) {
 
         movePos(&mario->position.x, &mario->position.z, mario->baseSpeed, mario->directionView);
         marioMakeJumpPara();
-        dy = *(f32*)((u8*)mario + 0x7C);
+        dy = mario->jumpVelY;
         player = marioGetPtr();
         if (player->flags & 0x01000000) {
-            hit = (HitEntry*)marioSearchGroundRoll(&outY, &outX, &outZ, float_11_8041b8c0, *(f32*)((u8*)player + 0x7C));
+            hit = (HitEntry*)marioSearchGroundRoll(&outY, &outX, &outZ, float_11_8041b8c0, player->jumpVelY);
         } else {
             hit = marioSearchGround(&outY, &outX, &outZ, dy, dy);
         }
@@ -1797,7 +1797,7 @@ USER_FUNC(evt_mario_jump_jumpstand) {
         if (landed) {
             event->userdata[2] = 0;
         } else {
-            mario->position.y += *(f32*)((u8*)mario + 0x7C);
+            mario->position.y += mario->jumpVelY;
         }
         if (--event->userdata[2] <= 0) {
             event->userdata[0] = 0x14;
@@ -1814,7 +1814,7 @@ USER_FUNC(evt_mario_jump_jumpstand) {
             if (!(mode & 1)) {
                 movePos(&mario->position.x, &mario->position.z, mario->baseSpeed, mario->directionView);
             }
-            mario->position.y += *(f32*)((u8*)mario + 0x7C);
+            mario->position.y += mario->jumpVelY;
             marioMakeJumpPara();
             event->userdata[2]--;
             break;
@@ -1828,15 +1828,15 @@ USER_FUNC(evt_mario_jump_jumpstand) {
         *(f32*)((u8*)mario + 0x19C) = mario->directionView;
         t = float_0p5_8041b8c8 * (f32)event->userdata[1];
         tmp = float_20_8041b8cc / (t * t - t);
-        *(f32*)((u8*)mario + 0x7C) = tmp * t;
-        *(f32*)((u8*)mario + 0x80) = -tmp;
-        *(f32*)((u8*)mario + 0x88) = *(f32*)((u8*)mario + 0x84) = float_0_8041b8ac;
+        mario->jumpVelY = tmp * t;
+        mario->jumpAccelY = -tmp;
+        mario->jumpJerkStepY = mario->jumpJerkY = float_0_8041b8ac;
         event->userdata[2] = (s32)(float_0p5_8041b8c8 * (f32)event->userdata[1] + float_0p5_8041b8c8);
         event->userdata[0] = 0xB;
         /* fallthrough */
     case 0xB:
         movePos(&mario->position.x, &mario->position.z, mario->baseSpeed, mario->directionView);
-        mario->position.y += *(f32*)((u8*)mario + 0x7C);
+        mario->position.y += mario->jumpVelY;
         marioMakeJumpPara();
         if (--event->userdata[2] > 0) {
             break;
@@ -1844,9 +1844,9 @@ USER_FUNC(evt_mario_jump_jumpstand) {
         dy = ty - mario->position.y;
         t = float_0p5_8041b8c8 * (f32)event->userdata[1];
         tmp = (dy + dy) / (t * t - t);
-        *(f32*)((u8*)mario + 0x7C) = float_0_8041b8ac;
-        *(f32*)((u8*)mario + 0x80) = tmp;
-        *(f32*)((u8*)mario + 0x88) = *(f32*)((u8*)mario + 0x84) = float_0_8041b8ac;
+        mario->jumpVelY = float_0_8041b8ac;
+        mario->jumpAccelY = tmp;
+        mario->jumpJerkStepY = mario->jumpJerkY = float_0_8041b8ac;
         event->userdata[2] = (s32)(float_0p5_8041b8c8 * (f32)event->userdata[1] + float_0p5_8041b8c8);
         event->userdata[0] = 0xC;
         marioChgPose(str_802E5878);
@@ -1859,10 +1859,10 @@ USER_FUNC(evt_mario_jump_jumpstand) {
 
         movePos(&mario->position.x, &mario->position.z, mario->baseSpeed, mario->directionView);
         marioMakeJumpPara();
-        dy = *(f32*)((u8*)mario + 0x7C);
+        dy = mario->jumpVelY;
         player = marioGetPtr();
         if (player->flags & 0x01000000) {
-            hit = (HitEntry*)marioSearchGroundRoll(&outY, &outX, &outZ, float_11_8041b8c0, *(f32*)((u8*)player + 0x7C));
+            hit = (HitEntry*)marioSearchGroundRoll(&outY, &outX, &outZ, float_11_8041b8c0, player->jumpVelY);
         } else {
             hit = marioSearchGround(&outY, &outX, &outZ, dy, dy);
         }
@@ -1883,7 +1883,7 @@ USER_FUNC(evt_mario_jump_jumpstand) {
         if (landed) {
             event->userdata[2] = 0;
         } else {
-            mario->position.y += *(f32*)((u8*)mario + 0x7C);
+            mario->position.y += mario->jumpVelY;
         }
         if (--event->userdata[2] <= 0) {
             event->userdata[0] = 0x14;
@@ -1895,7 +1895,7 @@ USER_FUNC(evt_mario_jump_jumpstand) {
     }
 
     if (event->userdata[0] == 0x14) {
-        mario->baseSpeed = mario->baseSpeed = *(f32*)((u8*)mario + 0x88) = *(f32*)((u8*)mario + 0x84) = *(f32*)((u8*)mario + 0x80) = *(f32*)((u8*)mario + 0x7C) = float_0_8041b8ac;
+        mario->baseSpeed = mario->baseSpeed = mario->jumpJerkStepY = mario->jumpJerkY = mario->jumpAccelY = mario->jumpVelY = float_0_8041b8ac;
         marioChgMot(0);
         mario->dispFlags &= ~0x4;
         marioAdjustMoveDir();
@@ -2031,10 +2031,10 @@ USER_FUNC(evt_koopa_hip_attack) {
         dy = dy + dy;
         denom = frames * frames - frames;
         v = dy / denom;
-        *(f32*)((u8*)mario + 0x7C) = v * frames;
-        *(f32*)((u8*)mario + 0x80) = -v;
-        *(f32*)((u8*)mario + 0x84) = float_0_8041b8ac;
-        *(f32*)((u8*)mario + 0x88) = float_0_8041b8ac;
+        mario->jumpVelY = v * frames;
+        mario->jumpAccelY = -v;
+        mario->jumpJerkY = float_0_8041b8ac;
+        mario->jumpJerkStepY = float_0_8041b8ac;
         marioChgMot(8);
         event->userdata[2] = (s32)frames;
         event->userdata[0] = 1;
@@ -2042,14 +2042,14 @@ USER_FUNC(evt_koopa_hip_attack) {
         /* fallthrough */
     case 1:
         movePos(&mario->position.x, &mario->position.z, mario->baseSpeed, mario->directionView);
-        mario->position.y += *(f32*)((u8*)mario + 0x7C);
+        mario->position.y += mario->jumpVelY;
         marioMakeJumpPara();
         if (--event->userdata[2] <= 0) {
             mario->baseSpeed = float_0_8041b8ac;
-            *(f32*)((u8*)mario + 0x80) = float_neg0p4744_8041b8b4;
-            *(f32*)((u8*)mario + 0x84) = float_0p4704_8041b8b8;
-            *(f32*)((u8*)mario + 0x88) = float_neg0p1904_8041b8bc;
-            *(f32*)((u8*)mario + 0x7C) = *(f32*)((u8*)mario + 0x80);
+            mario->jumpAccelY = float_neg0p4744_8041b8b4;
+            mario->jumpJerkY = float_0p4704_8041b8b8;
+            mario->jumpJerkStepY = float_neg0p1904_8041b8bc;
+            mario->jumpVelY = mario->jumpAccelY;
             kpaChgPose("KPA_A_2D", "KPA2_J_1C");
             event->userdata[0] = 2;
         }
@@ -2069,9 +2069,9 @@ USER_FUNC(evt_koopa_hip_attack) {
         movePos(&mario->position.x, &mario->position.z, mario->baseSpeed, mario->directionView);
         marioMakeJumpPara();
 #ifdef MUST_MATCH
-        y = *(f32*)((u8*)mario + 0x7C);
+        y = mario->jumpVelY;
 #else
-        vy = *(f32*)((u8*)mario + 0x7C);
+        vy = mario->jumpVelY;
 #endif
         mario2 = marioGetPtr();
         mp = (u8*)mario2;
@@ -2105,7 +2105,7 @@ USER_FUNC(evt_koopa_hip_attack) {
             landed = 0;
         }
         if (!landed) {
-            mario->position.y += *(f32*)((u8*)mario + 0x7C);
+            mario->position.y += mario->jumpVelY;
         } else {
             quake_kpaHipAttack();
             event->userdata[0] = 3;

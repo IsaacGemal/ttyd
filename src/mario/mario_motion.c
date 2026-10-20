@@ -359,10 +359,10 @@ void marioChgSmallJumpMotion(void) {
     mario->flags |= MARIO_FLAG_STOP_AIR_MOVEMENT;
     mario->hitobjJumpFrom = mario->hitobjStandOn;
     mario->hitobjStandOn = NULL;
-    *(f32*)((u8*)mario + 0x7C) = 6.0f;
-    *(f32*)((u8*)mario + 0x80) = -0.5f;
-    *(f32*)((u8*)mario + 0x84) = 0.0f;
-    *(f32*)((u8*)mario + 0x88) = 0.0f;
+    mario->jumpVelY = 6.0f;
+    mario->jumpAccelY = -0.5f;
+    mario->jumpJerkY = 0.0f;
+    mario->jumpJerkStepY = 0.0f;
 }
 
 
@@ -560,11 +560,10 @@ void marioChgMot2(s32 motion) {
 void marioClearJumpPara(void) {
     MarioWork* mario = marioGetPtr();
 
-    // 0x7C..0x88 jump params, not named in mario.h
-    *(f32*)((u8*)mario + 0x7C) = 0.0f;
-    *(f32*)((u8*)mario + 0x80) = 0.0f;
-    *(f32*)((u8*)mario + 0x84) = 0.0f;
-    *(f32*)((u8*)mario + 0x88) = 0.0f;
+    mario->jumpVelY = 0.0f;
+    mario->jumpAccelY = 0.0f;
+    mario->jumpJerkY = 0.0f;
+    mario->jumpJerkStepY = 0.0f;
 }
 
 
@@ -578,10 +577,10 @@ void marioSetJumpPara(void) {
     switch (mario->currMotionId) {
     case MARIO_MOTION_JUMP_SW:
         p = marioJumpSwData;
-        *(f32*)((u8*)mario + 0x7C) = *p++;
-        *(f32*)((u8*)mario + 0x80) = *p++;
-        *(f32*)((u8*)mario + 0x84) = *p++;
-        *(f32*)((u8*)mario + 0x88) = *p++;
+        mario->jumpVelY = *p++;
+        mario->jumpAccelY = *p++;
+        mario->jumpJerkY = *p++;
+        mario->jumpJerkStepY = *p++;
         break;
     case MARIO_MOTION_JUMP:
     case MARIO_MOTION_UPSTAIRS:
@@ -592,38 +591,38 @@ void marioSetJumpPara(void) {
             p = marioJumpData;
             if (mario->flags & MARIO_FLAG_PRE_BATTLE_PHYSICS) {
                 s = 0.5f;
-                *(f32*)((u8*)mario + 0x7C) = s * p[0];
-                *(f32*)((u8*)mario + 0x80) = s * p[1];
-                *(f32*)((u8*)mario + 0x84) = s * p[2];
-                *(f32*)((u8*)mario + 0x88) = s * p[3];
+                mario->jumpVelY = s * p[0];
+                mario->jumpAccelY = s * p[1];
+                mario->jumpJerkY = s * p[2];
+                mario->jumpJerkStepY = s * p[3];
             }
         } else {
             p = marioJumpData;
             if (!(mario->flags & MARIO_FLAG_PRE_BATTLE_PHYSICS)) {
-                *(f32*)((u8*)mario + 0x7C) = p[0];
-                *(f32*)((u8*)mario + 0x80) = p[1];
-                *(f32*)((u8*)mario + 0x84) = p[2];
-                *(f32*)((u8*)mario + 0x88) = p[3];
+                mario->jumpVelY = p[0];
+                mario->jumpAccelY = p[1];
+                mario->jumpJerkY = p[2];
+                mario->jumpJerkStepY = p[3];
             } else {
                 s = 0.5f;
-                *(f32*)((u8*)mario + 0x7C) = s * p[0];
-                *(f32*)((u8*)mario + 0x80) = s * p[1];
-                *(f32*)((u8*)mario + 0x84) = s * p[2];
-                *(f32*)((u8*)mario + 0x88) = s * p[3];
+                mario->jumpVelY = s * p[0];
+                mario->jumpAccelY = s * p[1];
+                mario->jumpJerkY = s * p[2];
+                mario->jumpJerkStepY = s * p[3];
             }
             if (mario->playerGravity != 1.0f) {
-                *(f32*)((u8*)mario + 0x7C) = 2.0f;
-                *(f32*)((u8*)mario + 0x80) = -0.003f;
-                *(f32*)((u8*)mario + 0x84) = 0.029f;
-                *(f32*)((u8*)mario + 0x88) = -0.003f;
+                mario->jumpVelY = 2.0f;
+                mario->jumpAccelY = -0.003f;
+                mario->jumpJerkY = 0.029f;
+                mario->jumpJerkStepY = -0.003f;
             }
         }
         break;
     case MARIO_MOTION_JUMP_NPC:
-        *(f32*)((u8*)mario + 0x7C) = 2.0f;
-        *(f32*)((u8*)mario + 0x80) = -0.04f;
-        *(f32*)((u8*)mario + 0x84) = -0.01f;
-        *(f32*)((u8*)mario + 0x88) = -0.003f;
+        mario->jumpVelY = 2.0f;
+        mario->jumpAccelY = -0.04f;
+        mario->jumpJerkY = -0.01f;
+        mario->jumpJerkStepY = -0.003f;
         break;
     case MARIO_MOTION_ROLL: {
 #ifdef MUST_MATCH
@@ -632,15 +631,15 @@ void marioSetJumpPara(void) {
 #else
         f32* q = marioJumpData;
 #endif
-        *(f32*)mario->field_0x7C = q[0];
-        *(f32*)(mario->field_0x7C + 4) = q[1];
-        *(f32*)(mario->field_0x7C + 8) = q[2];
-        *(f32*)(mario->field_0x7C + 12) = q[3];
+        mario->jumpVelY = q[0];
+        mario->jumpAccelY = q[1];
+        mario->jumpJerkY = q[2];
+        mario->jumpJerkStepY = q[3];
         if (mario->playerGravity != 1.0f) {
-            *(f32*)((u8*)mario + 0x7C) = 2.7f;
-            *(f32*)((u8*)mario + 0x80) = -0.002f;
-            *(f32*)((u8*)mario + 0x84) = 0.016f;
-            *(f32*)((u8*)mario + 0x88) = -0.002f;
+            mario->jumpVelY = 2.7f;
+            mario->jumpAccelY = -0.002f;
+            mario->jumpJerkY = 0.016f;
+            mario->jumpJerkStepY = -0.002f;
         }
         break;
     }
@@ -660,15 +659,15 @@ void marioSetFallPara(void) {
     if (mario->currMotionId == MARIO_MOTION_JUMP_SW) {
         para = marioJumpSwData + 4;
     }
-    *(f32*)((u8*)mario + 0x7C) = para[0];
-    *(f32*)((u8*)mario + 0x80) = para[1];
-    *(f32*)((u8*)mario + 0x84) = para[2];
-    *(f32*)((u8*)mario + 0x88) = para[3];
+    mario->jumpVelY = para[0];
+    mario->jumpAccelY = para[1];
+    mario->jumpJerkY = para[2];
+    mario->jumpJerkStepY = para[3];
     if (mario->playerGravity != 1.0f) {
-        *(f32*)((u8*)mario + 0x7C) = 0.34f;
-        *(f32*)((u8*)mario + 0x80) = -0.002f;
-        *(f32*)((u8*)mario + 0x84) = -0.01f;
-        *(f32*)((u8*)mario + 0x88) = 0.0f;
+        mario->jumpVelY = 0.34f;
+        mario->jumpAccelY = -0.002f;
+        mario->jumpJerkY = -0.01f;
+        mario->jumpJerkStepY = 0.0f;
     }
 }
 
@@ -676,19 +675,19 @@ void marioSetFallPara(void) {
 f32 marioGetFallSpd(void) {
     MarioWork* mario = marioGetPtr();
 
-    *(f32*)((u8*)mario + 0x84) += *(f32*)((u8*)mario + 0x88);
-    if (*(f32*)((u8*)mario + 0x84) > 0.0f) {
-        *(f32*)((u8*)mario + 0x84) = 0.0f;
+    mario->jumpJerkY += mario->jumpJerkStepY;
+    if (mario->jumpJerkY > 0.0f) {
+        mario->jumpJerkY = 0.0f;
     }
-    *(f32*)((u8*)mario + 0x80) += *(f32*)((u8*)mario + 0x84);
-    *(f32*)((u8*)mario + 0x7C) += *(f32*)((u8*)mario + 0x80);
-    if (*(f32*)((u8*)mario + 0x7C) <= marioJumpData[9]) {
-        *(f32*)((u8*)mario + 0x7C) = marioJumpData[9];
-        *(f32*)((u8*)mario + 0x80) = 0.0f;
-        *(f32*)((u8*)mario + 0x84) = 0.0f;
-        *(f32*)((u8*)mario + 0x88) = 0.0f;
+    mario->jumpAccelY += mario->jumpJerkY;
+    mario->jumpVelY += mario->jumpAccelY;
+    if (mario->jumpVelY <= marioJumpData[9]) {
+        mario->jumpVelY = marioJumpData[9];
+        mario->jumpAccelY = 0.0f;
+        mario->jumpJerkY = 0.0f;
+        mario->jumpJerkStepY = 0.0f;
     }
-    return *(f32*)((u8*)mario + 0x7C);
+    return mario->jumpVelY;
 }
 
 
@@ -701,10 +700,10 @@ f32 marioMakeJumpPara(void) {
     } else {
         div = 1.0f;
     }
-    *(f32*)((u8*)mario + 0x84) += *(f32*)((u8*)mario + 0x88) / div;
-    *(f32*)((u8*)mario + 0x80) += *(f32*)((u8*)mario + 0x84) / div;
-    *(f32*)((u8*)mario + 0x7C) += *(f32*)((u8*)mario + 0x80) / div;
-    return *(f32*)((u8*)mario + 0x7C);
+    mario->jumpJerkY += mario->jumpJerkStepY / div;
+    mario->jumpAccelY += mario->jumpJerkY / div;
+    mario->jumpVelY += mario->jumpAccelY / div;
+    return mario->jumpVelY;
 }
 
 
@@ -735,20 +734,20 @@ void marioJump(void) {
     if ((s32)mario->currSubMotionId < 10) {
         return;
     }
-    oldVy = *(f32*)((u8*)mario + 0x7C);
+    oldVy = mario->jumpVelY;
 
     mario2 = marioGetPtr();
     grav = (mario2->flags & MARIO_FLAG_PRE_BATTLE_PHYSICS) ? 1.7f : 1.0f;
-    *(f32*)((u8*)mario2 + 0x84) += *(f32*)((u8*)mario2 + 0x88) / grav;
-    *(f32*)((u8*)mario2 + 0x80) += *(f32*)((u8*)mario2 + 0x84) / grav;
-    *(f32*)((u8*)mario2 + 0x7C) += *(f32*)((u8*)mario2 + 0x80) / grav;
+    mario2->jumpJerkY += mario2->jumpJerkStepY / grav;
+    mario2->jumpAccelY += mario2->jumpJerkY / grav;
+    mario2->jumpVelY += mario2->jumpAccelY / grav;
 
-    if (*(f32*)((u8*)mario + 0x7C) > 0.0f) {
+    if (mario->jumpVelY > 0.0f) {
         if (mario->airTimer >= 4 && !(*(u16*)((u8*)mario + 0x246) & (1 << 8))) {
-            *(f32*)((u8*)mario + 0x7C) += -0.526f;
+            mario->jumpVelY += -0.526f;
         }
     }
-    if (*(f32*)((u8*)mario + 0x7C) <= 0.0f) {
+    if (mario->jumpVelY <= 0.0f) {
         if (oldVy > 0.0f) {
             *(s16*)((u8*)mario + 0x52) = mario->airTimer;
         }
@@ -758,21 +757,21 @@ void marioJump(void) {
         if (mario2->currMotionId == MARIO_MOTION_JUMP_SW) {
             p = marioJumpSwData + 4;
         }
-        *(f32*)((u8*)mario2 + 0x7C) = p[0];
-        *(f32*)((u8*)mario2 + 0x80) = p[1];
-        *(f32*)((u8*)mario2 + 0x84) = p[2];
-        *(f32*)((u8*)mario2 + 0x88) = p[3];
+        mario2->jumpVelY = p[0];
+        mario2->jumpAccelY = p[1];
+        mario2->jumpJerkY = p[2];
+        mario2->jumpJerkStepY = p[3];
         if (1.0f != mario2->playerGravity) {
-            *(f32*)((u8*)mario2 + 0x7C) = 0.34f;
-            *(f32*)((u8*)mario2 + 0x80) = -0.002f;
-            *(f32*)((u8*)mario2 + 0x84) = -0.01f;
-            *(f32*)((u8*)mario2 + 0x88) = 0.0f;
+            mario2->jumpVelY = 0.34f;
+            mario2->jumpAccelY = -0.002f;
+            mario2->jumpJerkY = -0.01f;
+            mario2->jumpJerkStepY = 0.0f;
         }
         mario2 = marioGetPtr();
         grav = (mario2->flags & MARIO_FLAG_PRE_BATTLE_PHYSICS) ? 1.7f : 1.0f;
-        *(f32*)((u8*)mario2 + 0x84) += *(f32*)((u8*)mario2 + 0x88) / grav;
-        *(f32*)((u8*)mario2 + 0x80) += *(f32*)((u8*)mario2 + 0x84) / grav;
-        *(f32*)((u8*)mario2 + 0x7C) += *(f32*)((u8*)mario2 + 0x80) / grav;
+        mario2->jumpJerkY += mario2->jumpJerkStepY / grav;
+        mario2->jumpAccelY += mario2->jumpJerkY / grav;
+        mario2->jumpVelY += mario2->jumpAccelY / grav;
         if (marioChkSts(MARIO_MOTION_HIP) == 0) {
             mario3 = marioGetPtr();
             if (!(mario3->flags & MARIO_FLAG_CHG_MOT_DISABLED)) {
@@ -792,15 +791,15 @@ void marioJump(void) {
                 mario3->trigFlags |= MARIO_TRIG_FLAG_IS_STARTING_NEW_MOTION;
             }
         } else {
-            *(f32*)((u8*)mario + 0x7C) = -0.03f;
-            *(f32*)((u8*)mario + 0x80) = -0.02f;
-            *(f32*)((u8*)mario + 0x84) = -0.02f;
-            *(f32*)((u8*)mario + 0x88) = -0.002f;
+            mario->jumpVelY = -0.03f;
+            mario->jumpAccelY = -0.02f;
+            mario->jumpJerkY = -0.02f;
+            mario->jumpJerkStepY = -0.002f;
             mario->flags &= ~MARIO_FLAG_IS_JUMPING;
             mario->flags |= MARIO_FLAG_IS_FALLING;
         }
     }
-    mario->position.y += *(f32*)((u8*)mario + 0x7C);
+    mario->position.y += mario->jumpVelY;
 }
 
 
@@ -819,19 +818,19 @@ void marioFall(void) {
         mario->hitobjStandOn = NULL;
         kpaClearHitobjRide();
         mario2 = marioGetPtr();
-        *(f32*)((u8*)mario2 + 0x84) += *(f32*)((u8*)mario2 + 0x88);
-        if (*(f32*)((u8*)mario2 + 0x84) > 0.0f) {
-            *(f32*)((u8*)mario2 + 0x84) = 0.0f;
+        mario2->jumpJerkY += mario2->jumpJerkStepY;
+        if (mario2->jumpJerkY > 0.0f) {
+            mario2->jumpJerkY = 0.0f;
         }
-        *(f32*)((u8*)mario2 + 0x80) += *(f32*)((u8*)mario2 + 0x84);
-        *(f32*)((u8*)mario2 + 0x7C) += *(f32*)((u8*)mario2 + 0x80);
-        if (*(f32*)((u8*)mario2 + 0x7C) <= marioJumpData[9]) {
-            *(f32*)((u8*)mario2 + 0x7C) = marioJumpData[9];
-            *(f32*)((u8*)mario2 + 0x80) = 0.0f;
-            *(f32*)((u8*)mario2 + 0x84) = 0.0f;
-            *(f32*)((u8*)mario2 + 0x88) = 0.0f;
+        mario2->jumpAccelY += mario2->jumpJerkY;
+        mario2->jumpVelY += mario2->jumpAccelY;
+        if (mario2->jumpVelY <= marioJumpData[9]) {
+            mario2->jumpVelY = marioJumpData[9];
+            mario2->jumpAccelY = 0.0f;
+            mario2->jumpJerkY = 0.0f;
+            mario2->jumpJerkStepY = 0.0f;
         }
-        f31 = *(f32*)((u8*)mario2 + 0x7C);
+        f31 = mario2->jumpVelY;
         hit = marioChkLandon(&landY, f31);
         if (hit != NULL) {
             mario->hitobjStandOn = hit;
@@ -877,19 +876,19 @@ void marioFall(void) {
     }
     rub = marioGetRub(0x100, &unk10, &unk14, &unkC);
     mario2 = marioGetPtr();
-    *(f32*)((u8*)mario2 + 0x84) += *(f32*)((u8*)mario2 + 0x88);
-    if (*(f32*)((u8*)mario2 + 0x84) > 0.0f) {
-        *(f32*)((u8*)mario2 + 0x84) = 0.0f;
+    mario2->jumpJerkY += mario2->jumpJerkStepY;
+    if (mario2->jumpJerkY > 0.0f) {
+        mario2->jumpJerkY = 0.0f;
     }
-    *(f32*)((u8*)mario2 + 0x80) += *(f32*)((u8*)mario2 + 0x84);
-    *(f32*)((u8*)mario2 + 0x7C) += *(f32*)((u8*)mario2 + 0x80);
-    if (*(f32*)((u8*)mario2 + 0x7C) <= marioJumpData[9]) {
-        *(f32*)((u8*)mario2 + 0x7C) = marioJumpData[9];
-        *(f32*)((u8*)mario2 + 0x80) = 0.0f;
-        *(f32*)((u8*)mario2 + 0x84) = 0.0f;
-        *(f32*)((u8*)mario2 + 0x88) = 0.0f;
+    mario2->jumpAccelY += mario2->jumpJerkY;
+    mario2->jumpVelY += mario2->jumpAccelY;
+    if (mario2->jumpVelY <= marioJumpData[9]) {
+        mario2->jumpVelY = marioJumpData[9];
+        mario2->jumpAccelY = 0.0f;
+        mario2->jumpJerkY = 0.0f;
+        mario2->jumpJerkStepY = 0.0f;
     }
-    f31 = *(f32*)((u8*)mario2 + 0x7C);
+    f31 = mario2->jumpVelY;
     hit = marioChkLandon(&landY, f31);
     if (hit != NULL) {
         mario->hitobjStandOn = hit;
@@ -947,10 +946,10 @@ void marioLandOn(void) {
 
     if (!(hitGetAttr((HitEntry*)mario->hitobjStandOn) & (1 << 9))) {
         mario2 = marioGetPtr();
-        *(f32*)((u8*)mario2 + 0x7C) = 0.0f;
-        *(f32*)((u8*)mario2 + 0x80) = 0.0f;
-        *(f32*)((u8*)mario2 + 0x84) = 0.0f;
-        *(f32*)((u8*)mario2 + 0x88) = 0.0f;
+        mario2->jumpVelY = 0.0f;
+        mario2->jumpAccelY = 0.0f;
+        mario2->jumpJerkY = 0.0f;
+        mario2->jumpJerkStepY = 0.0f;
     }
     mario->flags &= ~MARIO_FLAG_STOP_AIR_MOVEMENT;
     mario->flags &= ~MARIO_FLAG_USE_FORCE_DIRECTION;
@@ -1668,35 +1667,35 @@ void mot_bottomless(void) {
             if (mario2->currMotionId == MARIO_MOTION_JUMP_SW) {
                 p = marioJumpSwData + 4;
             }
-            *(f32*)((u8*)mario2 + 0x7C) = p[0];
-            *(f32*)((u8*)mario2 + 0x80) = p[1];
-            *(f32*)((u8*)mario2 + 0x84) = p[2];
-            *(f32*)((u8*)mario2 + 0x88) = p[3];
+            mario2->jumpVelY = p[0];
+            mario2->jumpAccelY = p[1];
+            mario2->jumpJerkY = p[2];
+            mario2->jumpJerkStepY = p[3];
             if (mario2->playerGravity != 1.0f) {
-                *(f32*)((u8*)mario2 + 0x7C) = 0.34f;
-                *(f32*)((u8*)mario2 + 0x80) = -0.002f;
-                *(f32*)((u8*)mario2 + 0x84) = -0.01f;
-                *(f32*)((u8*)mario2 + 0x88) = 0.0f;
+                mario2->jumpVelY = 0.34f;
+                mario2->jumpAccelY = -0.002f;
+                mario2->jumpJerkY = -0.01f;
+                mario2->jumpJerkStepY = 0.0f;
             }
         }
         break;
     case 2:
         mario->hitobjStandOn = NULL;
         mario2 = marioGetPtr();
-        *(f32*)((u8*)mario2 + 0x84) += *(f32*)((u8*)mario2 + 0x88);
-        if (*(f32*)((u8*)mario2 + 0x84) > 0.0f) {
-            *(f32*)((u8*)mario2 + 0x84) = 0.0f;
+        mario2->jumpJerkY += mario2->jumpJerkStepY;
+        if (mario2->jumpJerkY > 0.0f) {
+            mario2->jumpJerkY = 0.0f;
         }
-        *(f32*)((u8*)mario2 + 0x80) += *(f32*)((u8*)mario2 + 0x84);
-        *(f32*)((u8*)mario2 + 0x7C) += *(f32*)((u8*)mario2 + 0x80);
-        if (*(f32*)((u8*)mario2 + 0x7C) <= marioJumpData[9]) {
-            *(f32*)((u8*)mario2 + 0x7C) = marioJumpData[9];
-            *(f32*)((u8*)mario2 + 0x80) = 0.0f;
-            *(f32*)((u8*)mario2 + 0x84) = 0.0f;
-            *(f32*)((u8*)mario2 + 0x88) = 0.0f;
+        mario2->jumpAccelY += mario2->jumpJerkY;
+        mario2->jumpVelY += mario2->jumpAccelY;
+        if (mario2->jumpVelY <= marioJumpData[9]) {
+            mario2->jumpVelY = marioJumpData[9];
+            mario2->jumpAccelY = 0.0f;
+            mario2->jumpJerkY = 0.0f;
+            mario2->jumpJerkStepY = 0.0f;
         }
         {
-            f32 x = *(f32*)((u8*)mario2 + 0x7C);
+            f32 x = mario2->jumpVelY;
             f30 = x;
             if (x < -10.0f) {
                 f30 = -10.0f;

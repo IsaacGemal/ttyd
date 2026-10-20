@@ -1429,10 +1429,10 @@ void searchGround(PartyEntry* party) {
             party->tail.yoshi.jumpAccel = 0.0f;
             party->jumpPara2 = 0.0f;
         }
-        *(f32*)((u8*)mario + 0x7C) = party->jumpPara3;
-        *(f32*)((u8*)mario + 0x80) = party->tail.yoshi.jumpVel;
-        *(f32*)((u8*)mario + 0x84) = party->tail.yoshi.jumpAccel;
-        *(f32*)((u8*)mario + 0x88) = party->jumpPara2;
+        mario->jumpVelY = party->jumpPara3;
+        mario->jumpAccelY = party->tail.yoshi.jumpVel;
+        mario->jumpJerkY = party->tail.yoshi.jumpAccel;
+        mario->jumpJerkStepY = party->jumpPara2;
         marioChgMot(0x1F);
         goto end;
     }

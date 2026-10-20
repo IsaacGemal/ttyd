@@ -710,7 +710,7 @@ void marioChkGnd2(void) {
     }
 
     if (wp->characterId != 2) {
-        hit = (HitEntry*)marioSearchGround(&outY, &outX, &outZ, 0.1f, *(f32*)((u8*)wp + 0x7C));
+        hit = (HitEntry*)marioSearchGround(&outY, &outX, &outZ, 0.1f, wp->jumpVelY);
     } else {
         hit = (HitEntry*)kpaSearchGround(&outY, &outX, &outZ, 0.1f);
     }
@@ -1379,7 +1379,7 @@ f32 marioChkOverhead(void) {
             f8 += 5.0f;
             *(void**)((u8*)wp + 0x1F4) = marioSearchHead_jabara(&v, &f8, &out, 0.0f);
             if (*(void**)((u8*)wp + 0x1F4) == NULL) {
-                *(void**)((u8*)wp + 0x1F4) = marioSearchHead(&v, &f8, (wp->flags & 0x10000) ? *(f32*)((u8*)wp + 0x7C) : 10.f);
+                *(void**)((u8*)wp + 0x1F4) = marioSearchHead(&v, &f8, (wp->flags & 0x10000) ? wp->jumpVelY : 10.f);
             }
         }
     } else if (wp->flags & 0x1000000) {
@@ -1388,7 +1388,7 @@ f32 marioChkOverhead(void) {
     } else {
         v = wp->position;
         f8 = wp->wPlayerCollisionBox.y;
-        f31 = (wp->flags & 0x10000) ? *(f32*)((u8*)wp + 0x7C) : 10.f;
+        f31 = (wp->flags & 0x10000) ? wp->jumpVelY : 10.f;
         if (wp->characterId == 2) {
             *(void**)((u8*)wp + 0x1F4) = kpaSearchHead(&v, &f8, f31);
         } else {
@@ -2096,10 +2096,10 @@ void marioCheckWall_roll(f32 a, f32 b) {
     if (*(void**)((u8*)wp + 0x1F4) != NULL) {
         wp->baseSpeed = 0.0f;
         a = 0.0f;
-        *(f32*)&wp->field_0x7C[0] = 0.0f;
-        *(f32*)&wp->field_0x7C[4] = 0.0f;
-        *(f32*)&wp->field_0x7C[8] = 0.0f;
-        *(f32*)&wp->field_0x7C[0xC] = 0.0f;
+        wp->jumpVelY = 0.0f;
+        wp->jumpAccelY = 0.0f;
+        wp->jumpJerkY = 0.0f;
+        wp->jumpJerkStepY = 0.0f;
     }
 
     v = wp->position;

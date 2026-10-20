@@ -341,8 +341,8 @@ void mot_ship(void) {
                 evt->lwData[2] = (s32)(1024.0f * mario->position.z) - 0x0DB58580;
             }
         }
-        if (*(f32*)((u8*)mario + 0x7C) > 0.0f) {
-            mario->position.y += *(f32*)((u8*)mario + 0x7C);
+        if (mario->jumpVelY > 0.0f) {
+            mario->position.y += mario->jumpVelY;
             mario->flags &= ~0x000F0000;
         }
         break;
@@ -449,14 +449,14 @@ void mot_ship(void) {
 #ifdef MUST_MATCH
             // The original doubles the distance with `d + d`, not `2.0f * d`.
             dy = SHIP_DATA->unk3C.y - mario->position.y;
-            *(f32*)((u8*)mario + 0x7C) = 0.0f;
-            *(f32*)((u8*)mario + 0x80) = (dy + dy) / 306.0f;
+            mario->jumpVelY = 0.0f;
+            mario->jumpAccelY = (dy + dy) / 306.0f;
 #else
-            *(f32*)((u8*)mario + 0x7C) = 0.0f;
-            *(f32*)((u8*)mario + 0x80) = 2.0f * (SHIP_DATA->unk3C.y - mario->position.y) / 306.0f;
+            mario->jumpVelY = 0.0f;
+            mario->jumpAccelY = 2.0f * (SHIP_DATA->unk3C.y - mario->position.y) / 306.0f;
 #endif
-            *(f32*)((u8*)mario + 0x84) = 0.0f;
-            *(f32*)((u8*)mario + 0x88) = 0.0f;
+            mario->jumpJerkY = 0.0f;
+            mario->jumpJerkStepY = 0.0f;
             mario->multiTimer = 0x24;
             mario->currSubMotionId = 0xB;
         }
@@ -465,9 +465,9 @@ void mot_ship(void) {
     case 11: {
         s32 landed;
         movePos(&mario->position.x, &mario->position.z, mario->baseSpeed, mario->directionView);
-        mario->position.y += *(f32*)((u8*)mario + 0x7C);
+        mario->position.y += mario->jumpVelY;
         marioMakeJumpPara();
-        f30 = *(f32*)((u8*)mario + 0x7C);
+        f30 = mario->jumpVelY;
         {
             MarioWork* m = marioGetPtr();
             f32 sp0C;
@@ -497,10 +497,10 @@ void mot_ship(void) {
             }
         }
         if (landed) {
-            *(f32*)((u8*)mario + 0x7C) = 0.0f;
-            *(f32*)((u8*)mario + 0x80) = 0.0f;
-            *(f32*)((u8*)mario + 0x84) = 0.0f;
-            *(f32*)((u8*)mario + 0x88) = 0.0f;
+            mario->jumpVelY = 0.0f;
+            mario->jumpAccelY = 0.0f;
+            mario->jumpJerkY = 0.0f;
+            mario->jumpJerkStepY = 0.0f;
             mario->baseSpeed = 0.0f;
             SHIP_DATA->unk1C = 0.0f;
             mario->flags &= ~0x000F0000;
@@ -568,10 +568,10 @@ void mot_ship(void) {
                 SHIP_DATA->flags = ((mario->trigFlags & 0x200) ? 1 : 0) + 1;
                 f6 = 0.5f * (f32)n;
                 f30 = 80.0f / (f6 * f6 - f6);
-                *(f32*)((u8*)mario + 0x7C) = f30 * f6;
-                *(f32*)((u8*)mario + 0x80) = -f30;
-                *(f32*)((u8*)mario + 0x84) = 0.0f;
-                *(f32*)((u8*)mario + 0x88) = 0.0f;
+                mario->jumpVelY = f30 * f6;
+                mario->jumpAccelY = -f30;
+                mario->jumpJerkY = 0.0f;
+                mario->jumpJerkStepY = 0.0f;
                 mario->multiTimer = (s16)(s32)(0.5f + f6);
                 mario->currSubMotionId = 0x29;
                 *(f32*)((u8*)mario + 0x2B0) = __fabsf(*(f32*)((u8*)mario + 0x9C) / (f32)(mario->multiTimer + 0x58));
@@ -582,7 +582,7 @@ void mot_ship(void) {
     }
     case 41: {
         movePos(&mario->position.x, &mario->position.z, mario->baseSpeed, mario->directionView);
-        mario->position.y += *(f32*)((u8*)mario + 0x7C);
+        mario->position.y += mario->jumpVelY;
         marioMakeJumpPara();
         *(f32*)((u8*)mario + 0x9C) += *(f32*)((u8*)mario + 0x2B0);
         if (*(f32*)((u8*)mario + 0x9C) > 0.0f) {
@@ -729,10 +729,10 @@ void mot_ship(void) {
             mario->dispFlags &= ~0x100;
             mario->wPlayerCollisionBox.x = 20.0f;
             mario->wPlayerCollisionBox.y = 37.0f;
-            *(f32*)((u8*)mario + 0x7C) = 0.0f;
-            *(f32*)((u8*)mario + 0x80) = 0.0f;
-            *(f32*)((u8*)mario + 0x84) = 0.0f;
-            *(f32*)((u8*)mario + 0x88) = 0.0f;
+            mario->jumpVelY = 0.0f;
+            mario->jumpAccelY = 0.0f;
+            mario->jumpJerkY = 0.0f;
+            mario->jumpJerkStepY = 0.0f;
             mario->baseSpeed = 0.0f;
             mario->flags &= ~0x000F0000;
             *(f32*)((u8*)mario + 0x9C) = 0.0f;
@@ -770,10 +770,10 @@ void mot_ship(void) {
         shipMove();
         if (mario->flags & 0x20000) {
             marioMakeJumpPara();
-            if (*(f32*)((u8*)mario + 0x7C) <= -7.0f) {
-                *(f32*)((u8*)mario + 0x7C) = -7.0f;
+            if (mario->jumpVelY <= -7.0f) {
+                mario->jumpVelY = -7.0f;
             }
-            f30 = *(f32*)((u8*)mario + 0x7C);
+            f30 = mario->jumpVelY;
             {
                 MarioWork* m = marioGetPtr();
                 f32 sp08;
@@ -803,7 +803,7 @@ void mot_ship(void) {
                     landed = 0;
                 }
                 if (!landed) {
-                    mario->position.y += *(f32*)((u8*)mario + 0x7C);
+                    mario->position.y += mario->jumpVelY;
                 }
             }
         } else {
@@ -843,10 +843,10 @@ void marioShipChgFall(void) {
 
     if (!(mario->flags & 0x20000)) {
         mario->flags |= 0x20000;
-        *(f32*)((u8*)mario + 0x7C) = -0.1f;
-        *(f32*)((u8*)mario + 0x80) = -0.2f;
-        *(f32*)((u8*)mario + 0x84) = 0.024f;
-        *(f32*)((u8*)mario + 0x88) = -0.004f;
+        mario->jumpVelY = -0.1f;
+        mario->jumpAccelY = -0.2f;
+        mario->jumpJerkY = 0.024f;
+        mario->jumpJerkStepY = -0.004f;
     }
 }
 s32 marioChkShipMoveMode(void) {
