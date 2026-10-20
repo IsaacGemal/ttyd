@@ -10585,3 +10585,9 @@ Left: the other 17 databases still declare `u32 X_btlstage_data[]` at the 0x1B4 
 Verify: the tower `ninja` recreates build/G8MJ01/ok; natural (no MUST_MATCH) compiles of battle_stage_object.c,
 battle_stage.c, battle_seq.c, seq_battle.c and battle_database_jon.c return 0. Index: 33.300 -> 33.051 per kLOC
 (23341 -> 23185 weighted).
+
+### Readability: party.c offset macros converted (2026-10-20, Claude Haiku 5.5, n9-q-o2fparty)
+- `offset_to_field.py --verify` on src/party.c converted 70 of 140 `(u8*)` sites (`P8`/`P16`/`P32`/`PF32`/`PS8` macro uses); 0 reverted, the gate passed on the first full run. The rewrites were read site by site against the PartyEntry and MarioWork comments and the consumers.
+- Names used: PartyEntry `position`, `tiltX`, `dispOffset`, `spinPivot`, `button`/`buttonNew`/`buttonRepeat`/`buttonUp`, `triggerLeft`/`triggerRight`; MarioWork `position`, `moveDir`, `dispReqDir`, `dispRot.x`, `wPlayerCollisionBox.y`. Left raw: 36 that land in padding or `field_*` (e.g. `P8(party, 0x34)`, `PF32(party, 0x124)`), 27 type mismatches, 6 non-literal offsets (`partyPoseTbl`), 1 not a base + offset.
+- Build: tower `ninja` recreates build/G8MJ01/ok. Natural (no -DMUST_MATCH) compile of src/party.c returns 0.
+- Index unchanged at 33.300 per kLOC: `tools/cleanup_index.py` counts `(u8*)` casts and does not count the `P*`/`PF32` macro uses this converts.
