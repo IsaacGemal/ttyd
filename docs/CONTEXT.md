@@ -11345,3 +11345,4 @@ Printing `%s`/`%d`/`%2d` literals gave `str__s`, `str__d`, `str__2d` (leading `_
 
 Verified: tower build recreates build/G8MJ01/ok. `tools/cleanup_index.py` address_name 3319 -> 3193 (weighted 14503 -> 14377).
 - Opus follow-up: format strings named str_fmt_s/str_fmt_d/str_fmt_2d; "toride"/"toride_" named str_toride/str_toride_ (trailing underscore kept so both get a name).
+- After rebase: evt_shop's "mario" string keeps its address name (str_8041BC10); str_mario names the evt_kinopio copy.

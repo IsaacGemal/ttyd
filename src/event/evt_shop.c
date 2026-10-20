@@ -159,7 +159,7 @@ __declspec(section ".sdata2") u32 shop_list_unit_exchanged_color = 0xF00000FF;
 __declspec(section ".sdata2") u32 shop_list_unit_color = 0x000000FF;
 __declspec(section ".sdata2") u32 shop_list_item_exchanged_color = 0xF00000FF;
 __declspec(section ".sdata2") u32 shop_list_item_color = 0x000000FF;
-__declspec(section ".sdata2") const char str_mario[8] = "mario";
+__declspec(section ".sdata2") const char str_8041BC10[8] = "mario";
 __declspec(section ".sdata2") const char str_me[4] = "me";
 __declspec(section ".sdata2") const char shop_icon_name_fmt[6] = "shp%d";
 __declspec(section ".sdata2") const f32 shop_icon_y_offset = 6.0f;
@@ -943,7 +943,7 @@ u32 buy_evt[326] = {
     0x0001005B, (u32)(void*)evt_mario_normalize, 0x00020032, 0xFE363C8A, 0xFE363C80, 0x0002005B, (u32)disp_off, 0xFE363C8A,
     0x00020018, 0xF8405B80, 0x00000000, 0x00020032, 0xF8405B80, 0x00000001, 0x0001005E, (u32)(void*)first_shopping_evt,
     0x00000002, 0x00000021, 0x0002005B, (u32)shopper_name, 0xFE363C89, 0x0003005B, (u32)(void*)evt_set_dir_to_target, 0xFE363C89,
-    (u32)(void*)str_mario, 0x0003005B, (u32)(void*)evt_win_coin_on, 0x00000000, 0xFE363C88, 0x0002005B, (u32)point_disp_onoff, 0x00000001,
+    (u32)(void*)str_8041BC10, 0x0003005B, (u32)(void*)evt_win_coin_on, 0x00000000, 0xFE363C88, 0x0002005B, (u32)point_disp_onoff, 0x00000001,
     0x0005005B, (u32)get_value, 0xFE363C8A, 0xFE363C8B, 0xFE363C8C, 0xFE363C8D, 0x0004005B, (u32)get_msg,
     0xFE363C8A, 0x00000000, 0xFE363C8E, 0x0002005B, (u32)(void*)evt_sub_get_language, 0xFE363C80, 0x00020019, 0xFE363C80,
     0x00000000, 0x0007005B, (u32)(void*)evt_msg_print_insert, 0x00000000, 0xFE363C8E, 0x00000000, 0xFE363C89, 0xFE363C8D,
@@ -1031,7 +1031,7 @@ u32 shopper_talk_evt[352] = {
 };
 
 u32 first_shopping_evt[86] = {
-    0x0002005B, (u32)shopper_name, 0xFE363C89, 0x0003005B, (u32)(void*)evt_set_dir_to_target, 0xFE363C89, (u32)(void*)str_mario, 0x0002005B,
+    0x0002005B, (u32)shopper_name, 0xFE363C89, 0x0003005B, (u32)(void*)evt_set_dir_to_target, 0xFE363C89, (u32)(void*)str_8041BC10, 0x0002005B,
     (u32)(void*)evt_mario_set_dir_npc, 0xFE363C89, 0x0004005B, (u32)get_msg, 0xFE363C8A, 0x0000001E, 0xFE363C8E, 0x00020018,
     0xFBD3E28A, 0x00000000, 0x0005005B, (u32)(void*)evt_msg_print, 0x00000000, 0xFE363C8E, 0x00000000, 0xFE363C89,
     0x00000020, 0x00020032, 0xFBD3E28A, 0x00000000, 0x0003005B, (u32)(void*)evt_msg_print_add, 0x00000001, (u32)(void*)shop_msg_scroll_once_stop,
