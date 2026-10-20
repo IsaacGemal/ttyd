@@ -263,16 +263,16 @@ EffectEntry* effStarStoneEntry(s32 idx, f32 x, f32 y, f32 z, f32 scale) {
 	data->field_0x28 = float_0_80420b54;
 	data->field_0x38 = 4;
 	data->field_0x3C = 0;
-	data->field_0x4C = float_0_80420b54;
+	data->spreadAZ = float_0_80420b54;
 	data->field_0x48 = float_0_80420b54;
-	data->field_0x54 = float_0_80420b54;
-	data->field_0x50 = float_0_80420b54;
+	data->spreadBZ = float_0_80420b54;
+	data->spreadBX = float_0_80420b54;
 	data->field_0x58 = float_90_80420b80;
-	data->field_0x5C = 0xFF;
-	data->field_0x5D = 0xFF;
-	data->field_0x5E = 0xFF;
+	data->tintR = 0xFF;
+	data->tintG = 0xFF;
+	data->tintB = 0xFF;
 	data->field_0x5F = 0xFF;
-	data->field_0x60 = 0;
+	data->sfxHandle = 0;
 
 	{
 		GXColor color = { 0, 0, 0, 0xFF };
@@ -330,7 +330,7 @@ void effStarStoneMain(EffectEntry* effect) {
 			effSoftDelete(data->field_0x34);
 		}
 		if (data->field_0x4 & 8) {
-			psndSFXOff(data->field_0x60);
+			psndSFXOff(data->sfxHandle);
 		}
 		effDelete(effect);
 		return;
@@ -339,15 +339,15 @@ void effStarStoneMain(EffectEntry* effect) {
 	if (data->field_0x4 & 4) {
 		if (!(data->field_0x4 & 8)) {
 			data->field_0x4 |= 8;
-			data->field_0x60 = psndSFXOn_3D(str_802FDD5C, &position);
+			data->sfxHandle = psndSFXOn_3D(str_802FDD5C, &position);
 		}
 		if (data->field_0x4 & 8) {
-			psndSFX_pos(data->field_0x60, &position);
+			psndSFX_pos(data->sfxHandle, &position);
 		}
 	} else {
 		if (data->field_0x4 & 8) {
 			data->field_0x4 &= ~8;
-			psndSFXOff(data->field_0x60);
+			psndSFXOff(data->sfxHandle);
 		}
 	}
 
@@ -390,7 +390,7 @@ void effStarStoneMain(EffectEntry* effect) {
 				data->field_0x3C++;
 				if (data->field_0x4 & 8) {
 					data->field_0x4 &= ~8;
-					psndSFXOff(data->field_0x60);
+					psndSFXOff(data->sfxHandle);
 					((effStarStoneData*)effect->userdata)->field_0x4 &= ~4;
 				}
 				if (!(data->field_0x4 & 0x10)) {
@@ -413,9 +413,9 @@ void effStarStoneMain(EffectEntry* effect) {
 		}
 		if (data->field_0x3C > 2) {
 			data->field_0x48 -= (f32)sin(float_6p2832_80420b7c * (float_90_80420b80 + camGetPtr(data->field_0x38)->viewYaw) / float_360_80420b84);
-			data->field_0x4C -= (f32)cos(float_6p2832_80420b7c * (float_90_80420b80 + camGetPtr(data->field_0x38)->viewYaw) / float_360_80420b84);
-			data->field_0x50 += (f32)sin(float_6p2832_80420b7c * (float_90_80420b80 + camGetPtr(data->field_0x38)->viewYaw) / float_360_80420b84);
-			data->field_0x54 += (f32)cos(float_6p2832_80420b7c * (float_90_80420b80 + camGetPtr(data->field_0x38)->viewYaw) / float_360_80420b84);
+			data->spreadAZ -= (f32)cos(float_6p2832_80420b7c * (float_90_80420b80 + camGetPtr(data->field_0x38)->viewYaw) / float_360_80420b84);
+			data->spreadBX += (f32)sin(float_6p2832_80420b7c * (float_90_80420b80 + camGetPtr(data->field_0x38)->viewYaw) / float_360_80420b84);
+			data->spreadBZ += (f32)cos(float_6p2832_80420b7c * (float_90_80420b80 + camGetPtr(data->field_0x38)->viewYaw) / float_360_80420b84);
 			data->field_0x20 = data->field_0x20 + (float_90_80420b80 - data->field_0x20) / float_10_80420b64;
 		}
 		if (data->field_0x3C > 3) {
@@ -525,9 +525,9 @@ void effStarStoneMain(EffectEntry* effect) {
 // uses; building the colour in the caller puts it 4 bytes low (same shape as effBattenDisp2).
 #ifdef MUST_MATCH
 static inline GXColor starStoneTevColor(GXColor c, effStarStoneData* data) {
-	c.r = data->field_0x5C;
-	c.g = data->field_0x5D;
-	c.b = data->field_0x5E;
+	c.r = data->tintR;
+	c.g = data->tintG;
+	c.b = data->tintB;
 	c.a = data->field_0x5F;
 	return c;
 }
@@ -564,9 +564,9 @@ void effStarStoneDisp_1(CameraId camId, void* param) {
 #else
 	{
 		GXColor color = *(GXColor*)&unk_804232e0;
-		color.r = data->field_0x5C;
-		color.g = data->field_0x5D;
-		color.b = data->field_0x5E;
+		color.r = data->tintR;
+		color.g = data->tintG;
+		color.b = data->tintB;
 		color.a = data->field_0x5F;
 		GXSetTevColor(1, color);
 	}
@@ -628,9 +628,9 @@ void effStarStoneDisp_1(CameraId camId, void* param) {
 #else
 	{
 		GXColor color = *(GXColor*)&unk_804232e4;
-		color.r = data->field_0x5C;
-		color.g = data->field_0x5D;
-		color.b = data->field_0x5E;
+		color.r = data->tintR;
+		color.g = data->tintG;
+		color.b = data->tintB;
 		color.a = data->field_0x5F;
 		GXSetTevColor(1, color);
 	}
@@ -694,9 +694,9 @@ void effStarStoneDisp_1(CameraId camId, void* param) {
 // uses; building the colour in the caller puts it 4 bytes low (same shape as effBattenDisp2).
 #ifdef MUST_MATCH
 static inline GXColor starStoneTevColor2(GXColor c, effStarStoneData* data) {
-	c.r = data->field_0x5C;
-	c.g = data->field_0x5D;
-	c.b = data->field_0x5E;
+	c.r = data->tintR;
+	c.g = data->tintG;
+	c.b = data->tintB;
 	c.a = data->field_0x5F;
 	return c;
 }
@@ -770,9 +770,9 @@ void effStarStoneDisp_2(CameraId camId, void* param) {
 #else
 	{
 		GXColor color = *(GXColor*)&unk_804232e8;
-		color.r = data->field_0x5C;
-		color.g = data->field_0x5D;
-		color.b = data->field_0x5E;
+		color.r = data->tintR;
+		color.g = data->tintG;
+		color.b = data->tintB;
 		color.a = data->field_0x5F;
 		GXSetTevColor(1, color);
 	}
@@ -783,7 +783,7 @@ void effStarStoneDisp_2(CameraId camId, void* param) {
 	GXSetZMode(1, 3, 0);
 	GXSetCullMode(2);
 
-	PSMTXTrans(mtx, data->field_0x8 + data->field_0x48, data->field_0xC, data->field_0x10 + data->field_0x4C);
+	PSMTXTrans(mtx, data->field_0x8 + data->field_0x48, data->field_0xC, data->field_0x10 + data->spreadAZ);
 	PSMTXScale(scaleMtx, float_1p1_80420b4c * data->field_0x14, float_1p1_80420b4c * data->field_0x14, float_1p1_80420b4c * data->field_0x14);
 	PSMTXConcat(mtx, scaleMtx, mtx);
 	PSMTXRotRad(rotMtx, 'y', float_deg2rad_80420b50 * data->field_0x1C);
@@ -809,7 +809,7 @@ void effStarStoneDisp_2(CameraId camId, void* param) {
 	GXSetArray(0xd, base + 0x520, 4);
 	starStoneDLLoop(base, data, 0x590, diamond_2_2_dl_0_size_tbl, 0x13);
 
-	PSMTXTrans(mtx, data->field_0x8 + data->field_0x50, data->field_0xC, data->field_0x10 + data->field_0x54);
+	PSMTXTrans(mtx, data->field_0x8 + data->spreadBX, data->field_0xC, data->field_0x10 + data->spreadBZ);
 	PSMTXScale(scaleMtx, float_1p1_80420b4c * data->field_0x14, float_1p1_80420b4c * data->field_0x14, float_1p1_80420b4c * data->field_0x14);
 	PSMTXConcat(mtx, scaleMtx, mtx);
 	PSMTXRotRad(rotMtx, 'y', float_deg2rad_80420b50 * data->field_0x1C);
@@ -856,9 +856,9 @@ void effStarStoneDisp_2(CameraId camId, void* param) {
 #else
 	{
 		GXColor color = *(GXColor*)&unk_804232ec;
-		color.r = data->field_0x5C;
-		color.g = data->field_0x5D;
-		color.b = data->field_0x5E;
+		color.r = data->tintR;
+		color.g = data->tintG;
+		color.b = data->tintB;
 		color.a = data->field_0x5F;
 		GXSetTevColor(1, color);
 	}
@@ -875,7 +875,7 @@ void effStarStoneDisp_2(CameraId camId, void* param) {
 	GXSetAlphaCompare(7, 0, 0, 7, 0);
 	GXSetZMode(1, 3, 0);
 
-	PSMTXTrans(mtx, data->field_0x8 + data->field_0x48, data->field_0xC, data->field_0x10 + data->field_0x4C);
+	PSMTXTrans(mtx, data->field_0x8 + data->field_0x48, data->field_0xC, data->field_0x10 + data->spreadAZ);
 	PSMTXScale(scaleMtx, data->field_0x14, data->field_0x14, data->field_0x14);
 	PSMTXConcat(mtx, scaleMtx, mtx);
 	PSMTXRotRad(rotMtx, 'y', float_deg2rad_80420b50 * data->field_0x1C);
@@ -901,7 +901,7 @@ void effStarStoneDisp_2(CameraId camId, void* param) {
 	GXSetArray(0xd, base + 0x520, 4);
 	starStoneDLLoop(base, data, 0x590, diamond_2_2_dl_0_size_tbl, 0x13);
 
-	PSMTXTrans(mtx, data->field_0x8 + data->field_0x50, data->field_0xC, data->field_0x10 + data->field_0x54);
+	PSMTXTrans(mtx, data->field_0x8 + data->spreadBX, data->field_0xC, data->field_0x10 + data->spreadBZ);
 	PSMTXScale(scaleMtx, data->field_0x14, data->field_0x14, data->field_0x14);
 	PSMTXConcat(mtx, scaleMtx, mtx);
 	PSMTXRotRad(rotMtx, 'y', float_deg2rad_80420b50 * data->field_0x1C);
