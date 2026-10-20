@@ -203,7 +203,7 @@ void mot_stay(void) {
     if (!flag && marioChkItemMotion()) {
         return;
     }
-    if (MWU16(mario, 0x246) & 0x200) {
+    if (mario->buttonHeld & 0x200) {
         return;
     }
     if (marioSlitAbilityChk() && marioSlitButton() == 1) {
@@ -224,12 +224,12 @@ void mot_stay(void) {
     {
         BOOL bail = FALSE;
 
-        if (MWU16(mario, 0x246) & 0x100) {
+        if (mario->buttonHeld & 0x100) {
             MWS32(mario, 0x2B8)++;
         } else {
             MWS32(mario, 0x2B8) = 0;
         }
-        if (MWU16(mario, 0x246) & 0x100) {
+        if (mario->buttonHeld & 0x100) {
             if (MWS32(mario, 0x2B8) < 0xA) {
                 bail = FALSE;
             } else {

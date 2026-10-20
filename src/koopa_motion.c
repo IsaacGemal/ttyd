@@ -207,7 +207,7 @@ void kpa_stay(void) {
     flag = 0;
     if (kpaGetStageViewType() == 1) {
         flag = 0;
-    } else if (!(MW_U16(m2, 0x248) & (1 << 8))) {
+    } else if (!(m2->buttonNew & (1 << 8))) {
         flag = 0;
     } else if (kpaGetBodyStatus() == 2) {
         marioChgMot(MARIO_MOTION_KPA_SWIM);
@@ -219,7 +219,7 @@ void kpa_stay(void) {
     if (flag != 0) {
         return;
     }
-    if (MW_U16(mario, 0x248) & (1 << 9)) {
+    if (mario->buttonNew & (1 << 9)) {
         kpaAttackStart();
         return;
     }
@@ -266,7 +266,7 @@ void kpa_walk(void) {
     flag = 0;
     if (kpaGetStageViewType() == 1) {
         flag = 0;
-    } else if (!(MW_U16(m2, 0x248) & (1 << 8))) {
+    } else if (!(m2->buttonNew & (1 << 8))) {
         flag = 0;
     } else if (kpaGetBodyStatus() == 2) {
         marioChgMot(MARIO_MOTION_KPA_SWIM);
@@ -278,7 +278,7 @@ void kpa_walk(void) {
     if (flag != 0) {
         return;
     }
-    if (MW_U16(mario, 0x248) & (1 << 9)) {
+    if (mario->buttonNew & (1 << 9)) {
         kpaAttackStart();
         marioChgMot(MARIO_MOTION_STAY);
         return;
@@ -364,7 +364,7 @@ void kpa_dash(void) {
     flag = 0;
     if (kpaGetStageViewType() == 1) {
         flag = 0;
-    } else if (!(MW_U16(m2, 0x248) & (1 << 8))) {
+    } else if (!(m2->buttonNew & (1 << 8))) {
         flag = 0;
     } else if (kpaGetBodyStatus() == 2) {
         marioChgMot(MARIO_MOTION_KPA_SWIM);
@@ -376,7 +376,7 @@ void kpa_dash(void) {
     if (flag != 0) {
         return;
     }
-    if (MW_U16(mario, 0x248) & (1 << 9)) {
+    if (mario->buttonNew & (1 << 9)) {
         kpaAttackStart();
         marioChgMot(MARIO_MOTION_STAY);
         return;
@@ -461,13 +461,13 @@ void kpa_jump(void) {
     }
     mario->airTimer++;
     if (mario->currMotionId != MARIO_MOTION_JUMP_3) {
-        f31 = MW_F32(mario, 0x7C);
+        f31 = mario->jumpVelY;
         marioMakeJumpPara();
-        f1 = MW_F32(mario, 0x7C);
-        if (f1 > float_0_80420da0 && mario->airTimer >= 4 && !(MW_U16(mario, 0x246) & (1 << 8))) {
-            MW_F32(mario, 0x7C) = f1 + float_neg0p526_80420e48;
+        f1 = mario->jumpVelY;
+        if (f1 > float_0_80420da0 && mario->airTimer >= 4 && !(mario->buttonHeld & (1 << 8))) {
+            mario->jumpVelY = f1 + float_neg0p526_80420e48;
         }
-        if (MW_F32(mario, 0x7C) <= float_0_80420da0) {
+        if (mario->jumpVelY <= float_0_80420da0) {
             if (f31 > float_0_80420da0) {
                 MW_S16(mario, 0x52) = mario->airTimer;
             }
@@ -476,7 +476,7 @@ void kpa_jump(void) {
             marioMakeJumpPara();
             marioChgMot(MARIO_MOTION_FALL);
         }
-        mario->position.y += MW_F32(mario, 0x7C);
+        mario->position.y += mario->jumpVelY;
     }
 }
 #pragma opt_common_subs reset
@@ -552,10 +552,10 @@ void kpa_hip(void) {
         marioAdjustMoveDir();
         mario->currSubMotionId = 0xA;
         mario->multiTimer = 6;
-        MW_F32(mario, 0x7C) = float_0_80420da0;
-        MW_F32(mario, 0x80) = float_0_80420da0;
-        MW_F32(mario, 0x84) = float_0_80420da0;
-        MW_F32(mario, 0x88) = float_0_80420da0;
+        mario->jumpVelY = float_0_80420da0;
+        mario->jumpAccelY = float_0_80420da0;
+        mario->jumpJerkY = float_0_80420da0;
+        mario->jumpJerkStepY = float_0_80420da0;
         mario->baseSpeed = float_0_80420da0;
         marioChgPose("KPA2_J_1C");
     }
@@ -569,20 +569,20 @@ void kpa_hip(void) {
             break;
         }
         mario->currSubMotionId = 0x14;
-        MW_F32(mario, 0x80) = float_neg0p4744_80420e34;
-        MW_F32(mario, 0x84) = float_0p4704_80420e38;
-        MW_F32(mario, 0x88) = float_neg0p1904_80420e3c;
-        MW_F32(mario, 0x7C) = MW_F32(mario, 0x80);
+        mario->jumpAccelY = float_neg0p4744_80420e34;
+        mario->jumpJerkY = float_0p4704_80420e38;
+        mario->jumpJerkStepY = float_neg0p1904_80420e3c;
+        mario->jumpVelY = mario->jumpAccelY;
         /* fallthrough */
     case 0x14:
         f31 = marioGetFallSpd();
         hit = marioChkLandon(&landY, f31);
         if (f31 < float_neg100_80420e40) {
             f31 = float_neg100_80420e40;
-            MW_F32(mario, 0x88) = float_0_80420da0;
-            MW_F32(mario, 0x84) = float_0_80420da0;
-            MW_F32(mario, 0x80) = float_0_80420da0;
-            MW_F32(mario, 0x7C) = float_neg100_80420e40;
+            mario->jumpJerkStepY = float_0_80420da0;
+            mario->jumpJerkY = float_0_80420da0;
+            mario->jumpAccelY = float_0_80420da0;
+            mario->jumpVelY = float_neg100_80420e40;
         }
         if (hit != NULL) {
             mario->hitobjStandOn = hit;
@@ -606,12 +606,12 @@ void kpa_hip(void) {
         if (mario->position.y > float_75_80420e44) {
             camFollowYOn();
         }
-        if ((MW_U16(mario, 0x246) & (1 << 8)) && mario->hitobjStandOn == NULL) {
+        if ((mario->buttonHeld & (1 << 8)) && mario->hitobjStandOn == NULL) {
             mario->currSubMotionId = 0x14;
-            MW_F32(mario, 0x80) = float_neg0p4744_80420e34;
-            MW_F32(mario, 0x84) = float_0p4704_80420e38;
-            MW_F32(mario, 0x88) = float_neg0p1904_80420e3c;
-            MW_F32(mario, 0x7C) = MW_F32(mario, 0x80);
+            mario->jumpAccelY = float_neg0p4744_80420e34;
+            mario->jumpJerkY = float_0p4704_80420e38;
+            mario->jumpJerkStepY = float_neg0p1904_80420e3c;
+            mario->jumpVelY = mario->jumpAccelY;
         } else {
             mario->flags &= ~0x80;
             marioChgMotSub(0, 0);
@@ -870,13 +870,13 @@ void kpa_swim(void) {
         MW_F32(mario, 0x2C4) = float_0_80420da0;
         KPA(marioGetPtr())->flags |= KPA_FLAG_NO_HIP;
     }
-    if (MW_U16(mario, 0x248) & (1 << 9)) {
+    if (mario->buttonNew & (1 << 9)) {
         kpaAttackStart2();
     }
     if (kpaFireAttackCheck() == 1) {
         mario->wStickDir1 = 0;
         mario->wStickDir2 = 0;
-    } else if (kpaGetBodyStatus() == 2 && (MW_U16(mario, 0x248) & (1 << 8))) {
+    } else if (kpaGetBodyStatus() == 2 && (mario->buttonNew & (1 << 8))) {
         if ((s32)mario->currSubMotionId >= 0 && (s32)mario->currSubMotionId <= 1 &&
             mario->position.y < float_280_80420da4) {
             mario->currSubMotionId = 0;
@@ -914,15 +914,15 @@ void kpa_swim(void) {
     switch (mario->currSubMotionId) {
         case 0:
             if (mario->hitobjStandOn != NULL) {
-                MW_F32(mario, 0x7C) = float_1_80420dbc;
-                MW_F32(mario, 0x80) = float_0_80420da0;
-                MW_F32(mario, 0x84) = float_0_80420da0;
-                MW_F32(mario, 0x88) = float_neg0p0001_80420dc0;
+                mario->jumpVelY = float_1_80420dbc;
+                mario->jumpAccelY = float_0_80420da0;
+                mario->jumpJerkY = float_0_80420da0;
+                mario->jumpJerkStepY = float_neg0p0001_80420dc0;
             } else {
-                MW_F32(mario, 0x7C) = float_1p52_80420dc4;
-                MW_F32(mario, 0x80) = float_0p005_80420dc8;
-                MW_F32(mario, 0x84) = float_0p006_80420dcc;
-                MW_F32(mario, 0x88) = float_neg0p0008_80420dd0;
+                mario->jumpVelY = float_1p52_80420dc4;
+                mario->jumpAccelY = float_0p005_80420dc8;
+                mario->jumpJerkY = float_0p006_80420dcc;
+                mario->jumpJerkStepY = float_neg0p0008_80420dd0;
             }
             kpaClearHitobjRide();
             mario->currSubMotionId = 1;
@@ -937,10 +937,10 @@ void kpa_swim(void) {
             hit = kpaGetHitobjHead2();
             if (hit != NULL) {
                 mario->currSubMotionId = 0x1E;
-                MW_F32(mario, 0x7C) += (float_neg2_80420dd8 - MW_F32(mario, 0x7C)) * float_0p02_80420dd4;
-                MW_F32(mario, 0x80) = float_0_80420da0;
-                MW_F32(mario, 0x84) = float_0_80420da0;
-                MW_F32(mario, 0x88) = float_0_80420da0;
+                mario->jumpVelY += (float_neg2_80420dd8 - mario->jumpVelY) * float_0p02_80420dd4;
+                mario->jumpAccelY = float_0_80420da0;
+                mario->jumpJerkY = float_0_80420da0;
+                mario->jumpJerkStepY = float_0_80420da0;
                 break;
             }
             f31 = marioMakeJumpPara();
@@ -949,20 +949,20 @@ void kpa_swim(void) {
                 if (f31 < float_0_80420da0) {
                     mario->currSubMotionId = 0x28;
                 }
-                MW_F32(mario, 0x7C) += (float_neg2_80420dd8 - MW_F32(mario, 0x7C)) * float_0p02_80420dd4;
-                MW_F32(mario, 0x80) = float_0_80420da0;
-                MW_F32(mario, 0x84) = float_0_80420da0;
-                MW_F32(mario, 0x88) = float_0_80420da0;
+                mario->jumpVelY += (float_neg2_80420dd8 - mario->jumpVelY) * float_0p02_80420dd4;
+                mario->jumpAccelY = float_0_80420da0;
+                mario->jumpJerkY = float_0_80420da0;
+                mario->jumpJerkStepY = float_0_80420da0;
             } else if (f31 < float_0_80420da0) {
                 mario->currSubMotionId = 0x1E;
             }
             break;
         case 10:
             kpaClearHitobjRide();
-            MW_F32(mario, 0x7C) = float_2_80420de0;
-            MW_F32(mario, 0x80) = float_neg0p03_80420de4;
-            MW_F32(mario, 0x84) = float_0_80420da0;
-            MW_F32(mario, 0x88) = float_0_80420da0;
+            mario->jumpVelY = float_2_80420de0;
+            mario->jumpAccelY = float_neg0p03_80420de4;
+            mario->jumpJerkY = float_0_80420da0;
+            mario->jumpJerkStepY = float_0_80420da0;
             mario->currSubMotionId = 0xB;
             mario->flags &= ~0x00020000;
             mario->flags |= 0x00010000;
@@ -974,10 +974,10 @@ void kpa_swim(void) {
             f31 = marioMakeJumpPara();
             mario->position.y += f31;
             if (kpaGetBodyStatus() == 1) {
-                MW_F32(mario, 0x7C) += (float_neg2_80420dd8 - MW_F32(mario, 0x7C)) * float_0p06_80420de8;
-                MW_F32(mario, 0x80) = float_0_80420da0;
-                MW_F32(mario, 0x84) = float_0_80420da0;
-                MW_F32(mario, 0x88) = float_0_80420da0;
+                mario->jumpVelY += (float_neg2_80420dd8 - mario->jumpVelY) * float_0p06_80420de8;
+                mario->jumpAccelY = float_0_80420da0;
+                mario->jumpJerkY = float_0_80420da0;
+                mario->jumpJerkStepY = float_0_80420da0;
                 if (f31 < float_0_80420da0) {
                     mario->currSubMotionId = 0x28;
                 }
@@ -991,10 +991,10 @@ void kpa_swim(void) {
             mario->flags |= 0x00010000;
             kpaChgPose("KPA_J_1A", "KPA2_J_1A");
             psndSFXOn_3D("SFX_KUPPA_WATER_UP1", &mario->position);
-            MW_F32(mario, 0x7C) = float_5_80420dec;
-            MW_F32(mario, 0x80) = float_neg0p13_80420df0;
-            MW_F32(mario, 0x84) = float_0_80420da0;
-            MW_F32(mario, 0x88) = float_neg0p001_80420df4;
+            mario->jumpVelY = float_5_80420dec;
+            mario->jumpAccelY = float_neg0p13_80420df0;
+            mario->jumpJerkY = float_0_80420da0;
+            mario->jumpJerkStepY = float_neg0p001_80420df4;
             mario->currSubMotionId = 0x15;
             /* fallthrough */
         case 0x15:
@@ -1023,13 +1023,13 @@ void kpa_swim(void) {
         }
         mario->flags &= ~0x00010000;
         mario->flags |= 0x00020000;
-        if (MW_F32(mario, 0x7C) < float_0_80420da0) {
+        if (mario->jumpVelY < float_0_80420da0) {
             mario->currSubMotionId = 0x1F;
         } else {
-            MW_F32(mario, 0x7C) = float_neg0p08_80420dfc;
-            MW_F32(mario, 0x80) = float_neg0p03_80420de4;
-            MW_F32(mario, 0x84) = float_0p009_80420e00;
-            MW_F32(mario, 0x88) = float_0_80420da0;
+            mario->jumpVelY = float_neg0p08_80420dfc;
+            mario->jumpAccelY = float_neg0p03_80420de4;
+            mario->jumpJerkY = float_0p009_80420e00;
+            mario->jumpJerkStepY = float_0_80420da0;
             mario->currSubMotionId = 0x20;
         }
         m2 = marioGetPtr();
@@ -1065,17 +1065,17 @@ void kpa_swim(void) {
         break;
     case 0x1F:
         {
-            f32 factor = (float_2_80420de0 - MW_F32(mario, 0x7C)) * (f32)(kpaGetBodyStatus() == 2);
+            f32 factor = (float_2_80420de0 - mario->jumpVelY) * (f32)(kpaGetBodyStatus() == 2);
             f32 delta = (factor != float_0_80420da0) ? float_2p6_80420e04 : float_0p21_80420e08;
-            MW_F32(mario, 0x7C) += delta;
-            MW_F32(mario, 0x80) = float_0_80420da0;
-            MW_F32(mario, 0x84) = float_0_80420da0;
-            MW_F32(mario, 0x88) = float_0_80420da0;
-            if (MW_F32(mario, 0x7C) >= float_0_80420da0) {
-                MW_F32(mario, 0x7C) = float_neg0p08_80420dfc;
-                MW_F32(mario, 0x80) = float_neg0p03_80420de4;
-                MW_F32(mario, 0x84) = float_0p009_80420e00;
-                MW_F32(mario, 0x88) = float_0_80420da0;
+            mario->jumpVelY += delta;
+            mario->jumpAccelY = float_0_80420da0;
+            mario->jumpJerkY = float_0_80420da0;
+            mario->jumpJerkStepY = float_0_80420da0;
+            if (mario->jumpVelY >= float_0_80420da0) {
+                mario->jumpVelY = float_neg0p08_80420dfc;
+                mario->jumpAccelY = float_neg0p03_80420de4;
+                mario->jumpJerkY = float_0p009_80420e00;
+                mario->jumpJerkStepY = float_0_80420da0;
                 mario->currSubMotionId = 0x20;
             }
         }
@@ -1122,15 +1122,15 @@ void kpa_swim(void) {
         }
         mario->flags &= ~0x00010000;
         mario->flags |= 0x00020000;
-        MW_F32(mario, 0x7C) = float_neg0p283_80420e0c;
-        MW_F32(mario, 0x80) = float_neg0p023_80420e10;
-        MW_F32(mario, 0x84) = float_0p01_80420e14;
-        MW_F32(mario, 0x88) = float_neg0p001_80420df4;
+        mario->jumpVelY = float_neg0p283_80420e0c;
+        mario->jumpAccelY = float_neg0p023_80420e10;
+        mario->jumpJerkY = float_0p01_80420e14;
+        mario->jumpJerkStepY = float_neg0p001_80420df4;
         mario->currSubMotionId = 0x29;
         mario->multiTimer = 0x18;
         /* fallthrough */
     case 0x29:
-        if ((MW_U16(mario, 0x248) & (1 << 8)) && kpaFireAttackCheck() == 0) {
+        if ((mario->buttonNew & (1 << 8)) && kpaFireAttackCheck() == 0) {
             mario->currSubMotionId = 0x14;
         } else {
             mario->multiTimer--;

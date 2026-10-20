@@ -100,33 +100,33 @@ void mot_jumpStand(void) {
         case 0:
             if (++mario->multiTimer >= 3) {
                 mario->currSubMotionId = 4;
-                MWF32(mario, 0x7C) = marioJumpStandData[0];
-                MWF32(mario, 0x80) = marioJumpStandData[1];
-                MWF32(mario, 0x84) = marioJumpStandData[2];
-                MWF32(mario, 0x88) = marioJumpStandData[3];
+                mario->jumpVelY = marioJumpStandData[0];
+                mario->jumpAccelY = marioJumpStandData[1];
+                mario->jumpJerkY = marioJumpStandData[2];
+                mario->jumpJerkStepY = marioJumpStandData[3];
                 if (!(mario->flags & 0x2000) && mario->characterId == 0) {
                     marioChgPose("M_J_1B\0");
                 }
             }
             break;
         case 4: {
-            f32 old = MWF32(mario, 0x7C);
+            f32 old = mario->jumpVelY;
 
             marioMakeJumpPara();
-            if (old >= MWF32(mario, 0x7C)) {
+            if (old >= mario->jumpVelY) {
                 mario->currSubMotionId = 6;
             }
-            mario->position.y += MWF32(mario, 0x7C);
-            MWF32(mario, 0x2B0) += MWF32(mario, 0x7C);
+            mario->position.y += mario->jumpVelY;
+            MWF32(mario, 0x2B0) += mario->jumpVelY;
             break;
         }
         case 6:
-            mario->position.y += MWF32(mario, 0x7C);
-            MWF32(mario, 0x2B0) += MWF32(mario, 0x7C);
+            mario->position.y += mario->jumpVelY;
+            MWF32(mario, 0x2B0) += mario->jumpVelY;
             if (MWF32(mario, 0x2B0) >= MWF32(mario, 0x2B8) * marioJumpStandData[9]) {
                 mario->currSubMotionId = 8;
             }
-            if (MWF32(mario, 0x7C) <= float_0_8041abb8) {
+            if (mario->jumpVelY <= float_0_8041abb8) {
                 mario->currSubMotionId = 8;
             }
             break;
@@ -136,28 +136,28 @@ void mot_jumpStand(void) {
             // puts the fsubs result in f1 and the data[8] load in f2, which the original swaps.
             {
                 f32 neg = MATCH_F32(float_neg1_8041abf8);
-                f32 v = MWF32(mario, 0x7C);
+                f32 v = mario->jumpVelY;
                 f32 diff = neg - v;
 
-                MWF32(mario, 0x7C) = diff * marioJumpStandData[8] + v;
+                mario->jumpVelY = diff * marioJumpStandData[8] + v;
             }
 #else
-            MWF32(mario, 0x7C) = (float_neg1_8041abf8 - MWF32(mario, 0x7C))
+            mario->jumpVelY = (float_neg1_8041abf8 - mario->jumpVelY)
                                      * marioJumpStandData[8]
-                                 + MWF32(mario, 0x7C);
+                                 + mario->jumpVelY;
 #endif
-            mario->position.y += MWF32(mario, 0x7C);
-            MWF32(mario, 0x2B0) += MWF32(mario, 0x7C);
-            if (MWF32(mario, 0x7C) <= float_0_8041abb8) {
+            mario->position.y += mario->jumpVelY;
+            MWF32(mario, 0x2B0) += mario->jumpVelY;
+            if (mario->jumpVelY <= float_0_8041abb8) {
                 mario->currSubMotionId = 10;
                 if (!(mario->flags & 0x2000) && mario->characterId == 0) {
                     marioChgPose("M_J_1C");
                 }
                 marioSetPeakYpos();
-                MWF32(mario, 0x7C) = marioJumpStandData[4];
-                MWF32(mario, 0x80) = marioJumpStandData[5];
-                MWF32(mario, 0x84) = marioJumpStandData[6];
-                MWF32(mario, 0x88) = marioJumpStandData[7];
+                mario->jumpVelY = marioJumpStandData[4];
+                mario->jumpAccelY = marioJumpStandData[5];
+                mario->jumpJerkY = marioJumpStandData[6];
+                mario->jumpJerkStepY = marioJumpStandData[7];
                 mario->flags &= ~0x10000;
                 mario->flags |= 0x20000;
                 mario->currSubMotionId = 0x14;
@@ -165,20 +165,20 @@ void mot_jumpStand(void) {
             break;
         case 10:
             marioMakeJumpPara();
-            if (MWF32(mario, 0x7C) <= float_0_8041abb8) {
+            if (mario->jumpVelY <= float_0_8041abb8) {
                 if (!(mario->flags & 0x2000) && mario->characterId == 0) {
                     marioChgPose("M_J_1C");
                 }
                 marioSetPeakYpos();
-                MWF32(mario, 0x7C) = marioJumpStandData[4];
-                MWF32(mario, 0x80) = marioJumpStandData[5];
-                MWF32(mario, 0x84) = marioJumpStandData[6];
-                MWF32(mario, 0x88) = marioJumpStandData[7];
+                mario->jumpVelY = marioJumpStandData[4];
+                mario->jumpAccelY = marioJumpStandData[5];
+                mario->jumpJerkY = marioJumpStandData[6];
+                mario->jumpJerkStepY = marioJumpStandData[7];
                 mario->flags &= ~0x10000;
                 mario->flags |= 0x20000;
                 mario->currSubMotionId = 0x14;
             }
-            mario->position.y += MWF32(mario, 0x7C);
+            mario->position.y += mario->jumpVelY;
             break;
         case 20:
             if ((s32)--mario->multiTimer <= 0) {
@@ -280,20 +280,20 @@ void mot_jumpSw(void) {
         case 0:
             mario->multiTimer--;
             marioMakeJumpPara();
-            if (MWF32(mario, 0x7C) <= float_0_8041abb8) {
+            if (mario->jumpVelY <= float_0_8041abb8) {
                 if (!(mario->flags & 0x2000) && mario->characterId == 0) {
                     marioChgPose("M_J_1C");
                 }
                 marioSetPeakYpos();
-                MWF32(mario, 0x7C) = marioJumpSwData[4];
-                MWF32(mario, 0x80) = marioJumpSwData[5];
-                MWF32(mario, 0x84) = marioJumpSwData[6];
-                MWF32(mario, 0x88) = marioJumpSwData[7];
+                mario->jumpVelY = marioJumpSwData[4];
+                mario->jumpAccelY = marioJumpSwData[5];
+                mario->jumpJerkY = marioJumpSwData[6];
+                mario->jumpJerkStepY = marioJumpSwData[7];
                 mario->flags &= ~0x10000;
                 mario->flags |= 0x20000;
                 mario->currSubMotionId = 0xA;
             }
-            mario->position.y += MWF32(mario, 0x7C);
+            mario->position.y += mario->jumpVelY;
             break;
         case 10:
             if ((s32)--mario->multiTimer <= 0) {
@@ -335,15 +335,15 @@ void mot_jumpNpc(void) {
         marioSetJumpPara();
         *(Vec*)((u8*)mario2 + 0x11C) = mario2->position;
         if (mario->characterId == 2) {
-            MWF32(mario, 0x7C) = MATCH_F32(float_2p6_8041abc4);
-            MWF32(mario, 0x80) = MATCH_F32(float_neg0p06_8041abc8);
-            MWF32(mario, 0x84) = MATCH_F32(float_neg0p01_8041abcc);
-            MWF32(mario, 0x88) = MATCH_F32(float_neg0p002_8041abd0);
+            mario->jumpVelY = MATCH_F32(float_2p6_8041abc4);
+            mario->jumpAccelY = MATCH_F32(float_neg0p06_8041abc8);
+            mario->jumpJerkY = MATCH_F32(float_neg0p01_8041abcc);
+            mario->jumpJerkStepY = MATCH_F32(float_neg0p002_8041abd0);
         } else {
-            MWF32(mario, 0x7C) = MATCH_F32(float_1_8041abd4);
-            MWF32(mario, 0x80) = MATCH_F32(float_neg0p04_8041abd8);
-            MWF32(mario, 0x84) = MATCH_F32(float_neg0p01_8041abcc);
-            MWF32(mario, 0x88) = MATCH_F32(float_neg0p02_8041abdc);
+            mario->jumpVelY = MATCH_F32(float_1_8041abd4);
+            mario->jumpAccelY = MATCH_F32(float_neg0p04_8041abd8);
+            mario->jumpJerkY = MATCH_F32(float_neg0p01_8041abcc);
+            mario->jumpJerkStepY = MATCH_F32(float_neg0p02_8041abdc);
         }
         if (!(mario->flags & 0x2000) && mario->characterId == 0) {
             marioChgPose("M_J_1B\0");
@@ -411,20 +411,20 @@ void mot_jumpNpc(void) {
         case 0:
             mario->multiTimer--;
             marioMakeJumpPara();
-            if (MWF32(mario, 0x7C) <= MATCH_F32(float_0_8041abb8)) {
+            if (mario->jumpVelY <= MATCH_F32(float_0_8041abb8)) {
                 if (!(mario->flags & 0x2000) && mario->characterId == 0) {
                     marioChgPose("M_J_1C");
                 }
                 marioSetPeakYpos();
-                MWF32(mario, 0x7C) = MATCH_F32(float_neg0p03_8041abf0);
-                MWF32(mario, 0x80) = MATCH_F32(float_neg0p02_8041abdc);
-                MWF32(mario, 0x84) = MATCH_F32(float_0p04_8041abf4);
-                MWF32(mario, 0x88) = MATCH_F32(float_0_8041abb8);
+                mario->jumpVelY = MATCH_F32(float_neg0p03_8041abf0);
+                mario->jumpAccelY = MATCH_F32(float_neg0p02_8041abdc);
+                mario->jumpJerkY = MATCH_F32(float_0p04_8041abf4);
+                mario->jumpJerkStepY = MATCH_F32(float_0_8041abb8);
                 mario->flags &= ~0x10000;
                 mario->flags |= 0x20000;
                 mario->currSubMotionId = 0x14;
             }
-            mario->position.y += MWF32(mario, 0x7C);
+            mario->position.y += mario->jumpVelY;
             break;
         case 0x14:
             if ((s32)--mario->multiTimer <= 0) {
@@ -586,14 +586,14 @@ void mot_upstairs(void) {
         mario->flags |= 0x80;
         marioClearJumpPara();
         mario->multiTimer = 3;
-        MWF32(mario, 0x7C) = (MWF32(mario, 0x1C4) - mario->position.y)
+        mario->jumpVelY = (MWF32(mario, 0x1C4) - mario->position.y)
                              / (f32)(s32)mario->multiTimer;
         mario->currSubMotionId = 0;
     }
 
     switch ((s32)mario->currSubMotionId) {
         case 0:
-            mario->position.y += MWF32(mario, 0x7C);
+            mario->position.y += mario->jumpVelY;
             if ((s32)--mario->multiTimer <= 0) {
                 mario->flags &= ~0x80;
                 mario->flags &= ~0x40;

@@ -135,10 +135,10 @@ static inline void kpaFireBreath(MarioWork* mp, Vec* pos) {
     }
     fireefp = effGonbabaBreathEntry(type, 0, x, y, z, escale);
     ((effGonbabaBreathData*)((EffectEntry*)fireefp)->userdata)->rotation =
-        (MW_F32(mp, 0x1AC) >= 90.0f && MW_F32(mp, 0x1AC) <= 270.0f) ? 0xB4 : 0;
+        (mp->dispReqDir >= 90.0f && mp->dispReqDir <= 270.0f) ? 0xB4 : 0;
     if (((effGonbabaBreathData*)((EffectEntry*)fireefp)->userdata)->child != NULL) {
         ((effGonbabaBreathData*)((EffectEntry*)((effGonbabaBreathData*)((EffectEntry*)fireefp)->userdata)->child)->userdata)->rotation =
-            (MW_F32(mp, 0x1AC) >= 90.0f && MW_F32(mp, 0x1AC) <= 270.0f) ? 0xB4 : 0;
+            (mp->dispReqDir >= 90.0f && mp->dispReqDir <= 270.0f) ? 0xB4 : 0;
     }
 }
 
@@ -193,10 +193,10 @@ static inline void kpaFireBreath2(MarioWork* mp, Vec* pos) {
     }
     fireefp = effGonbabaBreathEntry(type, 0, x, y, z, escale);
     ((effGonbabaBreathData*)((EffectEntry*)fireefp)->userdata)->rotation =
-        (MW_F32(mp, 0x1AC) >= 90.0f && MW_F32(mp, 0x1AC) <= 270.0f) ? 0xB4 : 0;
+        (mp->dispReqDir >= 90.0f && mp->dispReqDir <= 270.0f) ? 0xB4 : 0;
     if (((effGonbabaBreathData*)((EffectEntry*)fireefp)->userdata)->child != NULL) {
         ((effGonbabaBreathData*)((EffectEntry*)((effGonbabaBreathData*)((EffectEntry*)fireefp)->userdata)->child)->userdata)->rotation =
-            (MW_F32(mp, 0x1AC) >= 90.0f && MW_F32(mp, 0x1AC) <= 270.0f) ? 0xB4 : 0;
+            (mp->dispReqDir >= 90.0f && mp->dispReqDir <= 270.0f) ? 0xB4 : 0;
     }
 }
 #else
@@ -568,53 +568,53 @@ void kpa3DMain(void) {
 f32 kpaSetJumpPara(void) {
     f32* const jump = marioJumpData;
     MarioWork* mp = marioGetPtr();
-    MW_F32(mp, 0x7C) = jump[0];
-    MW_F32(mp, 0x80) = jump[1];
-    MW_F32(mp, 0x84) = jump[2];
-    MW_F32(mp, 0x88) = jump[3];
+    mp->jumpVelY = jump[0];
+    mp->jumpAccelY = jump[1];
+    mp->jumpJerkY = jump[2];
+    mp->jumpJerkStepY = jump[3];
     switch (KPA(mp)->level) {
         case 0:
-            MW_F32(mp, 0x7C) = float_7_804203dc;
-            MW_F32(mp, 0x80) = -0.4f;
-            MW_F32(mp, 0x84) = 0.08f;
-            MW_F32(mp, 0x88) = -0.02f;
+            mp->jumpVelY = float_7_804203dc;
+            mp->jumpAccelY = -0.4f;
+            mp->jumpJerkY = 0.08f;
+            mp->jumpJerkStepY = -0.02f;
             break;
         case 1:
-            MW_F32(mp, 0x7C) = 8.1f;
-            MW_F32(mp, 0x80) = -0.3f;
-            MW_F32(mp, 0x84) = 0.08f;
-            MW_F32(mp, 0x88) = -0.02f;
+            mp->jumpVelY = 8.1f;
+            mp->jumpAccelY = -0.3f;
+            mp->jumpJerkY = 0.08f;
+            mp->jumpJerkStepY = -0.02f;
             break;
         case 2:
-            MW_F32(mp, 0x7C) = 8.4f;
-            MW_F32(mp, 0x80) = float_neg0p1_80420400;
-            MW_F32(mp, 0x84) = 0.08f;
-            MW_F32(mp, 0x88) = -0.018f;
+            mp->jumpVelY = 8.4f;
+            mp->jumpAccelY = float_neg0p1_80420400;
+            mp->jumpJerkY = 0.08f;
+            mp->jumpJerkStepY = -0.018f;
             break;
         case 3:
-            MW_F32(mp, 0x7C) = 10.5f;
-            MW_F32(mp, 0x80) = -0.12f;
-            MW_F32(mp, 0x84) = 0.08f;
-            MW_F32(mp, 0x88) = -0.018f;
+            mp->jumpVelY = 10.5f;
+            mp->jumpAccelY = -0.12f;
+            mp->jumpJerkY = 0.08f;
+            mp->jumpJerkStepY = -0.018f;
             break;
     }
-    return MW_F32(mp, 0x7C);
+    return mp->jumpVelY;
 }
 
 // The original reserves f1 for a float return value (the float temps start at f2),
 // so the source declared this returning f32 even though it stores and returns nothing.
 f32 kpaSetFallPara(void) {
     MarioWork* mp = marioGetPtr();
-    if (MW_U16(mp, 0x246) & 0x100) {
-        MW_F32(mp, 0x7C) = float_neg0p05_804203f0;
-        MW_F32(mp, 0x80) = float_neg0p08_804203f4;
-        MW_F32(mp, 0x84) = float_neg0p006_804203f8;
-        MW_F32(mp, 0x88) = float_neg0p002_804203fc;
+    if (mp->buttonHeld & 0x100) {
+        mp->jumpVelY = float_neg0p05_804203f0;
+        mp->jumpAccelY = float_neg0p08_804203f4;
+        mp->jumpJerkY = float_neg0p006_804203f8;
+        mp->jumpJerkStepY = float_neg0p002_804203fc;
     } else {
-        MW_F32(mp, 0x7C) = float_neg0p1_80420400;
-        MW_F32(mp, 0x80) = float_neg0p2_80420404;
-        MW_F32(mp, 0x84) = float_neg0p024_80420408;
-        MW_F32(mp, 0x88) = float_neg0p01_8042040c;
+        mp->jumpVelY = float_neg0p1_80420400;
+        mp->jumpAccelY = float_neg0p2_80420404;
+        mp->jumpJerkY = float_neg0p024_80420408;
+        mp->jumpJerkStepY = float_neg0p01_8042040c;
     }
 }
 
@@ -628,10 +628,10 @@ void kpa_jumpNpc(void) {
         mp->flags &= ~0x80;
         camFollowYOff();
         marioPreJump();
-        MW_F32(mp, 0x7C) = 2.6f;
-        MW_F32(mp, 0x80) = -0.06f;
-        MW_F32(mp, 0x84) = float_neg0p01_8042040c;
-        MW_F32(mp, 0x88) = float_neg0p002_804203fc;
+        mp->jumpVelY = 2.6f;
+        mp->jumpAccelY = -0.06f;
+        mp->jumpJerkY = float_neg0p01_8042040c;
+        mp->jumpJerkStepY = float_neg0p002_804203fc;
         if (!(mp->flags & 0x2000)) {
             if (mp->characterId == 0) {
                 marioChgPose("M_J_1B");
@@ -643,22 +643,22 @@ void kpa_jumpNpc(void) {
     switch ((s32)mp->currSubMotionId) {
     case 0:
         marioMakeJumpPara();
-        if (MW_F32(mp, 0x7C) <= 0.0f) {
+        if (mp->jumpVelY <= 0.0f) {
             if (!(mp->flags & 0x2000)) {
                 if (mp->characterId == 0) {
                     marioChgPose("M_J_1C");
                 }
             }
             marioSetPeakYpos();
-            MW_F32(mp, 0x80) = -0.06f;
-            MW_F32(mp, 0x84) = -0.004f;
-            MW_F32(mp, 0x88) = float_neg0p002_804203fc;
+            mp->jumpAccelY = -0.06f;
+            mp->jumpJerkY = -0.004f;
+            mp->jumpJerkStepY = float_neg0p002_804203fc;
             mp->flags &= ~0x10000;
             mp->flags |= 0x20000;
         }
         break;
     }
-    mp->position.y += MW_F32(mp, 0x7C);
+    mp->position.y += mp->jumpVelY;
     mp->airTimer += 1;
 }
 
@@ -676,16 +676,16 @@ void kpaFall(void) {
         }
         if (!spd) {
             MarioWork* mp2 = marioGetPtr();
-            if (MW_U16(mp2, 0x246) & 0x100) {
-                MW_F32(mp2, 0x7C) = float_neg0p05_804203f0;
-                MW_F32(mp2, 0x80) = float_neg0p08_804203f4;
-                MW_F32(mp2, 0x84) = float_neg0p006_804203f8;
-                MW_F32(mp2, 0x88) = float_neg0p002_804203fc;
+            if (mp2->buttonHeld & 0x100) {
+                mp2->jumpVelY = float_neg0p05_804203f0;
+                mp2->jumpAccelY = float_neg0p08_804203f4;
+                mp2->jumpJerkY = float_neg0p006_804203f8;
+                mp2->jumpJerkStepY = float_neg0p002_804203fc;
             } else {
-                MW_F32(mp2, 0x7C) = float_neg0p1_80420400;
-                MW_F32(mp2, 0x80) = float_neg0p2_80420404;
-                MW_F32(mp2, 0x84) = float_neg0p024_80420408;
-                MW_F32(mp2, 0x88) = float_neg0p01_8042040c;
+                mp2->jumpVelY = float_neg0p1_80420400;
+                mp2->jumpAccelY = float_neg0p2_80420404;
+                mp2->jumpJerkY = float_neg0p024_80420408;
+                mp2->jumpJerkStepY = float_neg0p01_8042040c;
             }
             spd = marioGetFallSpd();
         }
@@ -716,10 +716,10 @@ void kpaFall(void) {
             }
         }
         if (mp->currMotionId != MARIO_MOTION_JUMP_NPC) {
-            if (MW_U16(mp, 0x246) & 0x100) {
-                MW_F32(mp, 0x88) = -0.001f;
+            if (mp->buttonHeld & 0x100) {
+                mp->jumpJerkStepY = -0.001f;
             } else {
-                MW_F32(mp, 0x88) = float_neg0p01_8042040c;
+                mp->jumpJerkStepY = float_neg0p01_8042040c;
             }
         }
         mp->hitobjStandOn = NULL;
@@ -838,7 +838,7 @@ void kpaFireAttack(void) {
             kpaFireBreath2(m, &pos217);
         }
         if (--KPA(mp)->attackTimer <= 0) {
-            if (!(MW_U16(mp, 0x246) & 0x200) && KPA(mp)->field_0x144 == 0) {
+            if (!(mp->buttonHeld & 0x200) && KPA(mp)->field_0x144 == 0) {
                 MarioWork* m;
                 kpaChgPose("KPA_A_1D", "KPA2_A_1D");
                 KPA(mp)->attackMode = 0x18;
@@ -918,7 +918,7 @@ void kpaFireAttack(void) {
             kpaFireBreath2(m, &pos22B);
         }
         if (--KPA(mp)->attackTimer <= 0) {
-            if (!(MW_U16(mp, 0x246) & 0x200) && KPA(mp)->field_0x144 == 0) {
+            if (!(mp->buttonHeld & 0x200) && KPA(mp)->field_0x144 == 0) {
                 MarioWork* m;
                 kpaChgPose("KPA_A_1D", "KPA2_A_1D");
                 KPA(mp)->attackMode = 0x2C;
