@@ -11228,3 +11228,11 @@ Left in npcdrv.c (8 gotos). Each form below was built and the DOL checksum faile
 - npcMain `interrupt` (3 gotos): jumps out of the blow, territory, find and move stages to `npcCheckInterrupt`. Each
   stage declares its own locals and sets its own flag, so a structured form needs nested else blocks that repeat the
   later stages or a flag variable.
+
+### Readability: win_item WW_ offsets onto a file-local overlay (2026-10-20, Claude Haiku 5.5, n9-q-ovlitem)
+
+`src/window/win_item.c`: 93 `WW_F32`/`WW_S32` sites moved from raw offsets to a file-local `WinItemWork` overlay over the same `WindowWork*` (accessed through `WINITEM(w)`, a cast macro). WindowWork and win_main.h are unchanged. Build stays MATCH; the natural compile (no `-DMUST_MATCH`) is clean.
+- Added: `WinItemWork` with the offset-named members `field_0x224`..`field_0x250` (f32, the list and book slide positions), `field_0x260`, `field_0x264` (f32, the mail slide position) and `field_0x2C8`, `field_0x2CC`, `field_0x2D0` (s32, the Luigi book state). Every member is used only in win_item.c, at the type declared here. Gaps are `pad_0xNN`. No semantic names: the book and slide roles are the existing comments in WindowWork.
+- Left raw: the 18 `((s32*)((u8*)work + 0x214))[sel]` sites (itemSel). `work->itemSel[sel]` was tried in its own batch and breaks the build (`build/G8MJ01/ok` not recreated); reverted. The `0x2C` sites (mailTpl, a `FileEntry*` read as s32, compared as u32 and cast to `FileEntry*`), so the types disagree and they stay under `WW_S32`. The `WW_F32((u8*)w + idx * 0x14, 0xC4/0xC8)` reads in winItemDisp (computed base), the `item_disp` float walk `(u8*)work + itemTab*4 + 0x224`, the `(u8*)work` byte walks over the mail pairs at 0x26E-0x26F, and the pointer walks in winItemMain are computed.
+- Removed: the unused `WW_S16` and `WW_U16` macros.
+- Index: win_item.c 310 -> 242 weighted (280.797 -> 215.111/kLOC); raw_offset tree-wide 1629 -> 1544; overall 21.570 -> 21.474 per kLOC.
