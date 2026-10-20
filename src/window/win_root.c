@@ -102,12 +102,14 @@ typedef struct WinRoot {
     s32 field_0xE98; // 0xE98
     s32 field_0xE9C; // 0xE9C
     f32 field_0xEA0; // 0xEA0
-    u8 pad_0xEA4[0xEC];
+    u8 pad_0xEA4[0x14];
+    s16 field_0xEB8[0x6C]; // 0xEB8
     s32 field_0xF90; // 0xF90
     s32 field_0xF94; // 0xF94
     s32 field_0xF98; // 0xF98
     f32 field_0xF9C; // 0xF9C
-    u8 pad_0xFA0[0x98];
+    u8 pad_0xFA0[0x14];
+    s16 field_0xFB4[0x42]; // 0xFB4
     s32 field_0x1038; // 0x1038
     u8 pad_0x103C[0x4];
     s32 field_0x1040; // 0x1040
@@ -1559,7 +1561,7 @@ void winBookGX(WindowWork* work, s32 type, f32 x, f32 y) {
         } else {
             animPoseSetAnim(pose, "HOS_E_1", 0);
         }
-        animPoseSetLocalTime(pose, gp->retraceCount % (s32)*(f32*)((u8*)anim->clip + 0x8));
+        animPoseSetLocalTime(pose, gp->retraceCount % (s32)*(f32*)(&anim->clip[2]));
         animPoseMain(pose);
         animPoseDraw(pose, 425.0f + x, y - 275.0f, 0.0f, 180.0f, 5.0f, 2);
     }
@@ -1790,12 +1792,12 @@ void winHakoGX(WindowWork* work, s32 type, f32 x, f32 y) {
                 s32 idx = page * 0x1C + row * 7 + col;
                 if (idx < count) {
                     if (texBase == 0) {
-                        s16 itemId = *(s16*)((u8*)work + 0xEB8 + idx * 2);
+                        s16 itemId = WROOT(work)->field_0xEB8[idx];
                         if (swGet(itemId + 0x80) != 0) {
                             continue;
                         }
                     } else {
-                        s16 itemId = *(s16*)((u8*)work + 0xFB4 + idx * 2);
+                        s16 itemId = WROOT(work)->field_0xFB4[idx];
                         if (swGet(itemId + 0x41) != 0) {
                             continue;
                         }
@@ -1816,16 +1818,16 @@ void winHakoGX(WindowWork* work, s32 type, f32 x, f32 y) {
                     s32 iconId;
 
                     if (texBase == 0) {
-                        if (swGet(*(s16*)((u8*)work + 0xEB8 + idx * 2) + 0x80) == 0) {
+                        if (swGet(WROOT(work)->field_0xEB8[idx] + 0x80) == 0) {
                             continue;
                         }
-                        { ItemData* it = &itemDataTable[*(s16*)((u8*)work + 0xEB8 + idx * 2)];
+                        { ItemData* it = &itemDataTable[WROOT(work)->field_0xEB8[idx]];
                         iconId = *(u16*)&it[0xF0].icon_id; }
                     } else {
-                        if (swGet(*(s16*)((u8*)work + 0xFB4 + idx * 2) + 0x41) == 0) {
+                        if (swGet(WROOT(work)->field_0xFB4[idx] + 0x41) == 0) {
                             continue;
                         }
-                        { ItemData* it = &itemDataTable[*(s16*)((u8*)work + 0xFB4 + idx * 2)];
+                        { ItemData* it = &itemDataTable[WROOT(work)->field_0xFB4[idx]];
                         iconId = *(u16*)&it[0xB3].icon_id; }
                     }
                     winMailIconV(iconId, (Vec){((x + (f32)(col * 0x38)) + 24.0f) + 4.0f, ((scroll + (y - (f32)(row * 0x38))) - (f32)(page * 0xE8)) - 28.0f, 0.0f}, (Vec){0.8f, 0.8f, 0.8f}, (GXColor){0xFF, 0xFF, 0xFF, 0xFF});
@@ -1991,8 +1993,8 @@ void sort_3_3_func(WindowWork* work) {
 int N_compare_func4_1(const void* a, const void* b) {
     u16 buf_a[64];
     u16 buf_b[64];
-    s16 id_b = (s16)*(s32*)((u8*)b + 8);
-    s16 id_a = (s16)*(s32*)((u8*)a + 8);
+    s16 id_b = (s16)((const SortRec*)b)->c;
+    s16 id_a = (s16)((const SortRec*)a)->c;
 
     pouchHiraganaToKatakana((char*)msgSearch(itemDataTable[id_a].name), (char*)buf_a);
     pouchHiraganaToKatakana((char*)msgSearch(itemDataTable[id_b].name), (char*)buf_b);
@@ -2003,8 +2005,8 @@ int N_compare_func4_1(const void* a, const void* b) {
 int N_compare_func4_1_r(const void* a, const void* b) {
     u16 buf_a[64];
     u16 buf_b[64];
-    s16 id_b = (s16)*(s32*)((u8*)b + 8);
-    s16 id_a = (s16)*(s32*)((u8*)a + 8);
+    s16 id_b = (s16)((const SortRec*)b)->c;
+    s16 id_a = (s16)((const SortRec*)a)->c;
 
     pouchHiraganaToKatakana((char*)msgSearch(itemDataTable[id_a].name), (char*)buf_a);
     pouchHiraganaToKatakana((char*)msgSearch(itemDataTable[id_b].name), (char*)buf_b);
@@ -2012,8 +2014,8 @@ int N_compare_func4_1_r(const void* a, const void* b) {
 }
 
 int N_compare_func4_2(void* a, void* b) {
-    s32 id_a = (s16)*(s32*)((u8*)a + 8);
-    s32 id_b = (s16)*(s32*)((u8*)b + 8);
+    s32 id_a = (s16)((const SortRec*)a)->c;
+    s32 id_b = (s16)((const SortRec*)b)->c;
     s16 va = itemDataTable[id_a].type_sort_order;
     s16 vb = itemDataTable[id_b].type_sort_order;
 
@@ -2027,8 +2029,8 @@ int N_compare_func4_2(void* a, void* b) {
 }
 
 int N_compare_func4_2_r(void* a, void* b) {
-    s32 id_a = (s16)*(s32*)((u8*)a + 8);
-    s32 id_b = (s16)*(s32*)((u8*)b + 8);
+    s32 id_a = (s16)((const SortRec*)a)->c;
+    s32 id_b = (s16)((const SortRec*)b)->c;
     s16 va = itemDataTable[id_a].type_sort_order;
     s16 vb = itemDataTable[id_b].type_sort_order;
 
@@ -2043,9 +2045,9 @@ int N_compare_func4_2_r(void* a, void* b) {
 
 void sort_4_1_func(WindowWork* work) {
     if (work->sortReverseNext == 0) {
-        qqsort((u8*)work + 0x404, work->equipListCount, 0xC, (int (*)(void*, void*))N_compare_func4_1);
+        qqsort(work->field_404, work->equipListCount, 0xC, (int (*)(void*, void*))N_compare_func4_1);
     } else {
-        qqsort((u8*)work + 0x404, work->equipListCount, 0xC, (int (*)(void*, void*))N_compare_func4_1_r);
+        qqsort(work->field_404, work->equipListCount, 0xC, (int (*)(void*, void*))N_compare_func4_1_r);
     }
     work->sortReverseNext = 1 - work->sortReverseNext;
     work->badgeSel[1] = 0;
@@ -2054,9 +2056,9 @@ void sort_4_1_func(WindowWork* work) {
 
 void sort_4_2_func(WindowWork* work) {
     if (work->sortReverseNext == 0) {
-        qqsort((u8*)work + 0x404, work->equipListCount, 0xC, N_compare_func4_2);
+        qqsort(work->field_404, work->equipListCount, 0xC, N_compare_func4_2);
     } else {
-        qqsort((u8*)work + 0x404, work->equipListCount, 0xC, N_compare_func4_2_r);
+        qqsort(work->field_404, work->equipListCount, 0xC, N_compare_func4_2_r);
     }
     work->sortReverseNext = 1 - work->sortReverseNext;
     work->badgeSel[1] = 0;
@@ -2187,9 +2189,9 @@ int compare_func5_2_r(void* a, void* b) {
 
 void sort_5_1_func(WindowWork* work) {
     if (work->sortReverseNext == 0) {
-        qqsort((u8*)work + 0xEB8, WROOT(work)->field_0xE94, 2, (int (*)(void*, void*))compare_func5_1);
+        qqsort(WROOT(work)->field_0xEB8, WROOT(work)->field_0xE94, 2, (int (*)(void*, void*))compare_func5_1);
     } else {
-        qqsort((u8*)work + 0xEB8, WROOT(work)->field_0xE94, 2, (int (*)(void*, void*))compare_func5_1_r);
+        qqsort(WROOT(work)->field_0xEB8, WROOT(work)->field_0xE94, 2, (int (*)(void*, void*))compare_func5_1_r);
     }
     work->sortReverseNext = 1 - work->sortReverseNext;
     WROOT(work)->field_0xE98 = 0;
@@ -2198,9 +2200,9 @@ void sort_5_1_func(WindowWork* work) {
 
 void sort_5_2_func(WindowWork* work) {
     if (work->sortReverseNext == 0) {
-        qqsort((u8*)work + 0xEB8, WROOT(work)->field_0xE94, 2, compare_func5_2);
+        qqsort(WROOT(work)->field_0xEB8, WROOT(work)->field_0xE94, 2, compare_func5_2);
     } else {
-        qqsort((u8*)work + 0xEB8, WROOT(work)->field_0xE94, 2, compare_func5_2_r);
+        qqsort(WROOT(work)->field_0xEB8, WROOT(work)->field_0xE94, 2, compare_func5_2_r);
     }
     work->sortReverseNext = 1 - work->sortReverseNext;
     WROOT(work)->field_0xE98 = 0;
@@ -2337,9 +2339,9 @@ int compare_func6_2_r(void* a, void* b) {
 
 void sort_6_1_func(WindowWork* work) {
     if (work->sortReverseNext == 0) {
-        qqsort((u8*)work + 0xFB4, WROOT(work)->field_0xF90, 2, (int (*)(void*, void*))compare_func6_1);
+        qqsort(WROOT(work)->field_0xFB4, WROOT(work)->field_0xF90, 2, (int (*)(void*, void*))compare_func6_1);
     } else {
-        qqsort((u8*)work + 0xFB4, WROOT(work)->field_0xF90, 2, (int (*)(void*, void*))compare_func6_1_r);
+        qqsort(WROOT(work)->field_0xFB4, WROOT(work)->field_0xF90, 2, (int (*)(void*, void*))compare_func6_1_r);
     }
     work->sortReverseNext = 1 - work->sortReverseNext;
     WROOT(work)->field_0xF94 = 0;
@@ -2348,9 +2350,9 @@ void sort_6_1_func(WindowWork* work) {
 
 void sort_6_2_func(WindowWork* work) {
     if (work->sortReverseNext == 0) {
-        qqsort((u8*)work + 0xFB4, WROOT(work)->field_0xF90, 2, compare_func6_2);
+        qqsort(WROOT(work)->field_0xFB4, WROOT(work)->field_0xF90, 2, compare_func6_2);
     } else {
-        qqsort((u8*)work + 0xFB4, WROOT(work)->field_0xF90, 2, compare_func6_2_r);
+        qqsort(WROOT(work)->field_0xFB4, WROOT(work)->field_0xF90, 2, compare_func6_2_r);
     }
     work->sortReverseNext = 1 - work->sortReverseNext;
     WROOT(work)->field_0xF94 = 0;
@@ -2460,20 +2462,20 @@ void sort_7_2_func(WindowWork* work) {
 int compare_func3(void* a, void* b) {
     u16 buf_a[64];
     u16 buf_b[64];
-    TattleEntry* ea = battleGetUnitMonosiriPtr(*(u8*)((u8*)a + 1));
-    TattleEntry* eb = battleGetUnitMonosiriPtr(*(u8*)((u8*)b + 1));
+    TattleEntry* ea = battleGetUnitMonosiriPtr(((u8*)a)[1]);
+    TattleEntry* eb = battleGetUnitMonosiriPtr(((u8*)b)[1]);
 
     pouchHiraganaToKatakana((char*)msgSearch(ea->enemyTag), (char*)buf_a);
     pouchHiraganaToKatakana((char*)msgSearch(eb->enemyTag), (char*)buf_b);
 
-    if (*(u8*)((u8*)a + 1) == 0x4D || *(u8*)((u8*)a + 1) == 0x87) {
+    if (((u8*)a)[1] == 0x4D || ((u8*)a)[1] == 0x87) {
         if (evtGetValue(0, 0xF5DE0180) < 0xD2) {
             pouchHiraganaToKatakana((char*)msgSearch("btl_un_hatena"), (char*)buf_a);
         } else {
             pouchHiraganaToKatakana((char*)msgSearch("btl_un_rampell"), (char*)buf_a);
         }
     }
-    if (*(u8*)((u8*)b + 1) == 0x4D || *(u8*)((u8*)b + 1) == 0x87) {
+    if (((u8*)b)[1] == 0x4D || ((u8*)b)[1] == 0x87) {
         if (evtGetValue(0, 0xF5DE0180) < 0xD2) {
             pouchHiraganaToKatakana((char*)msgSearch("btl_un_hatena"), (char*)buf_b);
         } else {
@@ -2487,20 +2489,20 @@ int compare_func3(void* a, void* b) {
 int compare_func3_r(void* a, void* b) {
     u16 buf_a[64];
     u16 buf_b[64];
-    TattleEntry* ea = battleGetUnitMonosiriPtr(*(u8*)((u8*)a + 1));
-    TattleEntry* eb = battleGetUnitMonosiriPtr(*(u8*)((u8*)b + 1));
+    TattleEntry* ea = battleGetUnitMonosiriPtr(((u8*)a)[1]);
+    TattleEntry* eb = battleGetUnitMonosiriPtr(((u8*)b)[1]);
 
     pouchHiraganaToKatakana((char*)msgSearch(ea->enemyTag), (char*)buf_a);
     pouchHiraganaToKatakana((char*)msgSearch(eb->enemyTag), (char*)buf_b);
 
-    if (*(u8*)((u8*)a + 1) == 0x4D || *(u8*)((u8*)a + 1) == 0x87) {
+    if (((u8*)a)[1] == 0x4D || ((u8*)a)[1] == 0x87) {
         if (evtGetValue(0, 0xF5DE0180) < 0xD2) {
             pouchHiraganaToKatakana((char*)msgSearch("btl_un_hatena"), (char*)buf_a);
         } else {
             pouchHiraganaToKatakana((char*)msgSearch("btl_un_rampell"), (char*)buf_a);
         }
     }
-    if (*(u8*)((u8*)b + 1) == 0x4D || *(u8*)((u8*)b + 1) == 0x87) {
+    if (((u8*)b)[1] == 0x4D || ((u8*)b)[1] == 0x87) {
         if (evtGetValue(0, 0xF5DE0180) < 0xD2) {
             pouchHiraganaToKatakana((char*)msgSearch("btl_un_hatena"), (char*)buf_b);
         } else {
@@ -2526,29 +2528,29 @@ void sort_7_3_func(WindowWork* work) {
 
 // 1:1 (the `const` parameters reproduce the target's hoisted `lbz r3,0x1(r3)` prologue load).
 int compare_func4(const void* a, const void* b) {
-    void* ma = mailGetPtr(*(u8*)((u8*)a + 1));
-    void* mb = mailGetPtr(*(u8*)((u8*)b + 1));
-    const char* sa = (const char*)msgSearch(*(const char**)((u8*)ma + 8));
-    const char* sb = (const char*)msgSearch(*(const char**)((u8*)mb + 8));
+    void* ma = mailGetPtr(((u8*)a)[1]);
+    void* mb = mailGetPtr(((u8*)b)[1]);
+    const char* sa = (const char*)msgSearch(((WinMailEntry*)ma)->name);
+    const char* sb = (const char*)msgSearch(((WinMailEntry*)mb)->name);
 
     return strcmp(sa, sb);
 }
 
 // 1:1 (same `const`-parameter prologue hoist as compare_func4).
 int compare_func4_r(const void* a, const void* b) {
-    void* ma = mailGetPtr(*(u8*)((u8*)a + 1));
-    void* mb = mailGetPtr(*(u8*)((u8*)b + 1));
-    const char* sa = (const char*)msgSearch(*(const char**)((u8*)ma + 8));
-    const char* sb = (const char*)msgSearch(*(const char**)((u8*)mb + 8));
+    void* ma = mailGetPtr(((u8*)a)[1]);
+    void* mb = mailGetPtr(((u8*)b)[1]);
+    const char* sa = (const char*)msgSearch(((WinMailEntry*)ma)->name);
+    const char* sb = (const char*)msgSearch(((WinMailEntry*)mb)->name);
 
     return strcmp(sb, sa);
 }
 
 void sort_8_1_func(WindowWork* work) {
     if (work->sortReverseNext == 0) {
-        qqsort((u8*)work + 0x26E, work->mailCount, 2, (int (*)(void*, void*))compare_func4);
+        qqsort(work->field_26E, work->mailCount, 2, (int (*)(void*, void*))compare_func4);
     } else {
-        qqsort((u8*)work + 0x26E, work->mailCount, 2, (int (*)(void*, void*))compare_func4_r);
+        qqsort(work->field_26E, work->mailCount, 2, (int (*)(void*, void*))compare_func4_r);
     }
     work->sortReverseNext = 1 - work->sortReverseNext;
     work->mailSel = 0;
@@ -2577,9 +2579,9 @@ int compare_func5_r(void* a, void* b) {
 
 void sort_8_2_func(WindowWork* work) {
     if (work->sortReverseNext == 0) {
-        qqsort((u8*)work + 0x26E, work->mailCount, 2, compare_func5);
+        qqsort(work->field_26E, work->mailCount, 2, compare_func5);
     } else {
-        qqsort((u8*)work + 0x26E, work->mailCount, 2, compare_func5_r);
+        qqsort(work->field_26E, work->mailCount, 2, compare_func5_r);
     }
     work->sortReverseNext = 1 - work->sortReverseNext;
     work->mailSel = 0;
@@ -2706,7 +2708,7 @@ void winSortGX(WindowWork* work) {
     GXSetVtxDesc(0xD, 1);
     GXSetVtxAttrFmt(0, 9, 1, 4, 0);
     GXSetVtxAttrFmt(0, 0xD, 1, 4, 0);
-    GXLoadPosMtxImm((const f32(*)[4])((u8*)camGetPtr(8) + 0x11C), 0);
+    GXLoadPosMtxImm(camGetPtr(8)->view, 0);
     GXSetCurrentMtx(0);
     if (WROOT(work)->field_0x184 == 7) {
         GXSetScissor((u32)(16.0f +
@@ -2894,8 +2896,8 @@ void winMailDisp(WindowWork* work) {
 
     if (work->itemState != 0xCA) {
         for (i = 0; i < work->mailCount; i++) {
-            s32 id = *((u8*)work + 0x26F + i * 2);
-            s32 num = *((u8*)work + 0x26E + i * 2);
+            s32 id = work->field_26E[1 + i * 2];
+            s32 num = work->field_26E[i * 2];
             WinMailEntry* mail = mailGetPtr(id);
             GXColor color;
             GXColor black = {0x00, 0x00, 0x00, 0xFF};
@@ -2931,10 +2933,10 @@ void winMailDisp(WindowWork* work) {
         GXSetScissor(0, 0, 0x260, 0x1E0);
     } else {
         s32 sel = work->mailSel;
-        s32 num = *((u8*)work + 0x26E + sel * 2);
+        s32 num = work->field_26E[sel * 2];
         GXColor white = {0xFF, 0xFF, 0xFF, 0xFF};
         GXColor black = {0x00, 0x00, 0x00, 0xFF};
-        WinMailEntry* mail = mailGetPtr(*((u8*)work + 0x26F + sel * 2));
+        WinMailEntry* mail = mailGetPtr(work->field_26E[1 + sel * 2]);
         GXColor color;
         u32 top;
 

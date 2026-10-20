@@ -11639,3 +11639,10 @@ per-animation walk in FILE_TYPE_ANIMPOSE use `AnimData`'s existing `clip`/`frame
 also compiles without -DMUST_MATCH. evt_win.c untouched: `unitwin_setpartylank`'s `(PouchPartyData*)((u8*)pouch +
 offset)` accesses rewritten as `pouch->partyData[id]` (all four, the last pair only, the first three only) each broke
 the match, and `unitwin_help_disp`'s `(u8*)list + offset` is the deliberate byte-offset form its comment describes.
+
+### Readability: win_root remaining raw offsets (2026-10-20, Claude Sonnet 5.5, n9-q-s-offroot2)
+
+win_root.c weighted 435 -> 341; raw_offset total 1014 -> 959. Build byte-identical (build/G8MJ01/ok recreated); win_root.c compiles without `-DMUST_MATCH`.
+- Existing names only: the `compare_func*` item-id reads at +8 go through `SortRec.c`; the mail `+8` reads through `WinMailEntry.name`; `camGetPtr(8)->view` (0x11C); `anim->clip[2]`; `work->field_404` and `work->field_26E` (win_main.h bands) for the qqsort bases and the mail index pairs; `((u8*)a)[1]` for the pair bytes.
+- New members, named by offset, inside existing WinRoot pads (size unchanged): `s16 field_0xEB8[0x6C]` and `s16 field_0xFB4[0x42]`; every user in the tree reads them as s16 (git grep: none outside win_root.c).
+- Left raw: the 13 `((WinRootTab*)((u8*)tabs + tabSel * 0x18))` and `recs` sites (pinned by #588, array indexing scored lower); `WW_*(work, 0x13C/0x140/0x144)` (read as s32, u32 and void* in different sites, so no single type); `qqsort((u8*)work + 0x1050, ...)` (past the end of WinRoot, `&field_40[0x1010]` base noted in win_main.h); the `base + 0x404` / `p + 0x14` computed-base loops; `WIN_*_TEX` macros' `*(u8**)((u8*)w + 0x28)` (type-punned winTpl).
