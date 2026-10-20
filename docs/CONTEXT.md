@@ -11607,3 +11607,9 @@ kamekiTornadeSetColor (GXSetTevColor inside the inline), win_main fog-colour hel
 Still guarded: kameki string padding and SetColor2 (type-punned `*(GXColor*)&dat_8041f1d8` load), win_main GXPosition3f32
 FIFO macro and winFontSetC (reconstructed function), evt_win function-pointer casts, `*(u16*)` icon_id punned loads,
 the buttons do/while(0) tail and unitwin_icon_delete. Build MATCH.
+## s-mmmix21: MUST_MATCH reduction (mixed files)
+
+- MUST_MATCH lines (before -> after): `eff_machinegun.c` 7 -> 0, `battle_disp.c` 7 -> 1, `ac_stick_keep_left.c` 7 -> 3, `ac_monosiri_target.c` 7 -> 5, `eff_toge_flush.c` 7 -> 7, `windowdrv.c` 7 -> 7. No names added; build/G8MJ01/ok recreated, objects checked against a baseline build with `tools/obj_equiv.py`.
+- The MUST_MATCH shape became the only version (comments reworded): machinegun's `Vec position` copy and `f`/`h` split of `x0` (plus an empty guard); battle_disp's switch in btlDispTexPlainGX and the one-case switches in `_pose_def` and `_pose_one_pattern` (the unused `str_*` externs went with the dead #else); stick_keep_left's `sfxName[2]` array and `stickLeftAdd25` inline; monosiri_target's `ac` local.
+- The plain `BattleActionCommandGetDifficulty(work)` call now matches (the header already says `s32`), so the function-pointer casts in `_getmaxcount` and stick_keep_left's ok_frame index are gone.
+- Left under MUST_MATCH: battle_disp's `BtlUnit_CheckStatus` cast (the prototype is shared by 139 callers); stick_keep_left's `case 0x3EB` dead `n >= 0` compare and `iconDispGx` cast; monosiri_target's `vec3_80300880[11]` rodata array and `iconDispGx` cast; toge_flush's non-const `.rodata` Vec, the `*(GXColor*)&unk_80423070` colour inlines and their switches; windowdrv's `gap_` dummy, GXWGFifo writes and `goto ret` (a plain `return` changes the code).

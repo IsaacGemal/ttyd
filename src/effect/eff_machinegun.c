@@ -4,12 +4,6 @@
 #include "memory.h"
 #include <dolphin/mtx.h>
 
-// MUST_MATCH: the original reloads these two .sdata2 constants before every FIFO store;
-// as plain `const` MWCC keeps them live and the vertex block differs.
-#ifdef MUST_MATCH
-#else
-#endif
-
 EffectEntry* effMachinegunEntry(s32 type, f32 x, f32 y, f32 z, f32 angle, f32 scale, f32 field_0x10) {
 	EffectEntry* entry;
 	effMachinegunData* data;
@@ -33,17 +27,13 @@ EffectEntry* effMachinegunEntry(s32 type, f32 x, f32 y, f32 z, f32 angle, f32 sc
 
 void effMachinegunMain(EffectEntry* effect) {
 	effMachinegunData* data = effect->userdata;
-#ifdef MUST_MATCH
 	Vec position;
-#endif
 	Vec disp = { 0.0f, 0.0f, 0.0f };
 
 	disp.x = data->position.x;
 	disp.y = data->position.y;
 	disp.z = data->position.z;
-#ifdef MUST_MATCH
 	position = disp;
-#endif
 	data->position.x += data->scale * (f32)cos(6.2831855f * data->angle / 360.f);
 	data->position.y += data->scale * (f32)sin(6.2831855f * data->angle / 360.f);
 	data->scale *= 0.9f;
@@ -52,11 +42,7 @@ void effMachinegunMain(EffectEntry* effect) {
 		effDelete(effect);
 	}
 	else {
-#ifdef MUST_MATCH
 		dispEntry(CAMERA_3D, dispCalcZ(&position), 2, effMachinegunDisp, effect);
-#else
-		dispEntry(CAMERA_3D, dispCalcZ(&disp), 2, effMachinegunDisp, effect);
-#endif
 	}
 }
 
@@ -112,18 +98,13 @@ void effMachinegunDisp(CameraId camId, void* param) {
 	GXSetCurrentMtx(0);
 
 	GXBegin(0x80, 0, 4);
-#ifdef MUST_MATCH
-	// MUST_MATCH: splitting the negation and multiply keeps x0 in f2 and x1 in f1.
+	// Splitting the negation and multiply keeps x0 in f2 and x1 in f1.
 	{
 		f32 f = 32.0f;
 		f32 h = 0.5f;
 		x0 = -f * h;
 	}
 	x1 = 16.0f;
-#else
-	x0 = -32.0f * 0.5f;
-	x1 = 16.0f;
-#endif
 	GXPosition3f32(x0, x1, 0.0f);
 	GXTexCoord2f32(0.0f, 0.0f);
 	GXPosition3f32(x1, x1, 0.0f);
