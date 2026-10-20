@@ -11700,3 +11700,11 @@ raw_offset total 876 -> 831. Build byte-identical (build/G8MJ01/ok recreated); a
 - mot_hammer: `M_S8(mario, 0x41/0x42)` -> `field_0x41/42`, `0x44` -> `currSubMotionId`, `0x48` -> `multiTimer`, `0x1FC` -> `hitobjHammer` (cast from `field_0x200`); `M_S8` removed.
 - party_yoshi: `pl+0x98/0xA4` -> `dispOfs/dispOfs2`, `extra+0x7C` -> `dispOffset`, `mario+0x18C` -> `field_0x18C`; `M_P`/`P_P` offsets -> `hitobjFront/Push/Wall/Head`, `field_0x13C`; `M_F(0x98/0xA0/0xA8)` -> `dispOfs.x/.z`, `dispOfs2.y`; the `M_P`/`P_P` macros are gone.
 - Left raw: all 0x2A0/0x2A4/0x2A8/0x2B4/0x2B8 sites (union scratch words that each motion types differently: s16/u16/s32/f32); `party->useStruct + 4` (untyped base).
+### Raw-offset cleanup: eff_starstone, evt_yuuranking (gor), unit_boss_batten_leader, evt_lect_hei/gor (2026-10-20, Claude Sonnet 5.5, n9-q-s-offmix4)
+
+No new names. eff_starstone.c reads the snow-dust effect's userdata as `effSnowDustData` (topR/topG/topB 0x4C-0x54, camId 0x68,
+x/y/z 0x04-0x0C). gor evt_yuuranking.c's `YBASE_*` macros are gone: `A14/A74/AD4` index `yuwp->rankUsed/rankScore/rankMonte`
+directly (the A14L/A74L/AD4L/A74F/A14R views stay raw: they exist to fold the add order). evt_lect_gor.c: the `effitemget*`
+helpers use `effItemGetData` (camId 0x38, scaleMode 0x20; the scripts create "itemget" effects), the balloon helper uses
+`EffMarioBalloonData.cameraId` (0x1C, effMarioBalloonEntry), the fukidashi helper `effFukidashiData.camId` (0x4C; script
+creates it with evt_eff_fukidashi). Left raw: `(u8*)b + 8` / `(u8*)ppos + 4` in evt_lect_gor.c (MUST_MATCH position bases), end_unknown.c's `off`/`offset` forms and bom_01.c's padding-landing sites (match tricks).

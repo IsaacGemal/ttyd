@@ -26,6 +26,8 @@
 #include "driver/mapdrv.h"
 #include "driver/npcdrv.h"
 #include "eff/eff_mario_balloon.h"
+#include "eff/eff_itemget.h"
+#include "eff/eff_fukidashi.h"
 #include "manager/evtmgr_cmd.h"
 #include "mario/mario_cam.h"
 #include "mario/mariost.h"
@@ -388,7 +390,7 @@ static USER_FUNC(effitemgetchange_cam) {
     s32 camId = evtGetValue(event, args[1]);
     EffectEntry* effect = effNameToPtr(name);
 
-    *(s32*)((u8*)effect->userdata + 0x38) = camId;
+    ((effItemGetData*)effect->userdata)->camId = camId;
     return EVT_RETURN_DONE;
 }
 
@@ -397,21 +399,21 @@ static USER_FUNC(effitemgetchange_cam_ptr) {
     EffectEntry* effect = (EffectEntry*)evtGetValue(event, args[0]);
     s32 camId = evtGetValue(event, args[1]);
 
-    *(s32*)((u8*)effect->userdata + 0x38) = camId;
+    ((effItemGetData*)effect->userdata)->camId = camId;
     return EVT_RETURN_DONE;
 }
 
 static USER_FUNC(effitemget_open) {
     EffectEntry* effect = effNameToPtr((const char*)evtGetValue(event, event->args[0]));
 
-    *(s32*)((u8*)effect->userdata + 0x20) = 1;
+    ((effItemGetData*)effect->userdata)->scaleMode = 1;
     return EVT_RETURN_DONE;
 }
 
 static USER_FUNC(effitemget_open_ptr) {
     EffectEntry* effect = (EffectEntry*)evtGetValue(event, event->args[0]);
 
-    *(s32*)((u8*)effect->userdata + 0x20) = 1;
+    ((effItemGetData*)effect->userdata)->scaleMode = 1;
     return EVT_RETURN_DONE;
 }
 
@@ -491,7 +493,7 @@ static USER_FUNC(lect_npc_balloon_on_off) {
 
     if (evtGetValue(event, args[1]) != 0) {
         eff = effMarioBalloonEntry(1, npc);
-        *(s32*)((u8*)eff->userdata + 0x1C) = 7;
+        ((EffMarioBalloonData*)eff->userdata)->cameraId = 7;
     } else {
         effDelete(eff);
     }
@@ -504,7 +506,7 @@ static USER_FUNC(efffukidashichange_cam) {
     s32 camId = evtGetValue(event, args[1]);
     EffectEntry* effect = effNameToPtr(name);
 
-    *(s32*)((u8*)effect->userdata + 0x4C) = camId;
+    ((effFukidashiData*)effect->userdata)->camId = camId;
     return EVT_RETURN_DONE;
 }
 

@@ -266,9 +266,9 @@ EffectEntry* effStarStoneEntry(s32 idx, f32 x, f32 y, f32 z, f32 scale) {
 		u8* clr = color_tbl[data->starType];
 		data->dustEffect = effSnowDustN64Entry(2, x, y - 10.0f * data->scale, z, 4, 0,
 		                                       20.0f * data->scale, 20.0f * data->scale, 1.0f);
-		*(s32*)((u8*)data->dustEffect->userdata + 0x4C) = clr[0];
-		*(s32*)((u8*)data->dustEffect->userdata + 0x50) = clr[1];
-		*(s32*)((u8*)data->dustEffect->userdata + 0x54) = clr[2];
+		((effSnowDustData*)data->dustEffect->userdata)->topR = clr[0];
+		((effSnowDustData*)data->dustEffect->userdata)->topG = clr[1];
+		((effSnowDustData*)data->dustEffect->userdata)->topB = clr[2];
 	}
 	((effStarStoneData*)entry->userdata)->flags |= 4;
 	if (idx >= 7) {
@@ -424,14 +424,14 @@ void effStarStoneMain(EffectEntry* effect) {
 		}
 
 		if (data->state == 0) {
-			*(s32*)((u8*)data->dustEffect->userdata + 0x68) = camId;
-			*(f32*)((u8*)data->dustEffect->userdata + 0x04) = data->x;
-			*(f32*)((u8*)data->dustEffect->userdata + 0x08) = data->y - 10.0f * data->scale;
-			*(f32*)((u8*)data->dustEffect->userdata + 0x0C) = data->z;
+			((effSnowDustData*)data->dustEffect->userdata)->camId = camId;
+			((effSnowDustData*)data->dustEffect->userdata)->x = data->x;
+			((effSnowDustData*)data->dustEffect->userdata)->y = data->y - 10.0f * data->scale;
+			((effSnowDustData*)data->dustEffect->userdata)->z = data->z;
 		} else {
-			*(f32*)((u8*)data->dustEffect->userdata + 0x04) = 0.0f;
-			*(f32*)((u8*)data->dustEffect->userdata + 0x08) = -1000.0f;
-			*(f32*)((u8*)data->dustEffect->userdata + 0x0C) = 0.0f;
+			((effSnowDustData*)data->dustEffect->userdata)->x = 0.0f;
+			((effSnowDustData*)data->dustEffect->userdata)->y = -1000.0f;
+			((effSnowDustData*)data->dustEffect->userdata)->z = 0.0f;
 		}
 
 		if (data->state < 3 && camId == CAMERA_3D) {

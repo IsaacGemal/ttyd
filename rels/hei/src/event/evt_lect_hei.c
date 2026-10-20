@@ -386,7 +386,7 @@ USER_FUNC(effitemgetchange_cam) {
     s32 camId = evtGetValue(event, args[1]);
     EffectEntry* effect = effNameToPtr((const char*)name);
 
-    ((effItemGetData*)effect->userdata)->camId = camId;
+    *(s32*)((u8*)effect->userdata + 0x38) = camId;
     return EVT_RETURN_DONE;
 }
 
@@ -395,7 +395,7 @@ USER_FUNC(effitemgetchange_cam_ptr) {
     EffectEntry* effect = (EffectEntry*)evtGetValue(event, args[0]);
     s32 camId = evtGetValue(event, args[1]);
 
-    ((effItemGetData*)effect->userdata)->camId = camId;
+    *(s32*)((u8*)effect->userdata + 0x38) = camId;
     return EVT_RETURN_DONE;
 }
 
@@ -404,7 +404,7 @@ USER_FUNC(effitemget_open) {
     s32 name = evtGetValue(event, args[0]);
     EffectEntry* effect = effNameToPtr((const char*)name);
 
-    ((effItemGetData*)effect->userdata)->scaleMode = 1;
+    *(s32*)((u8*)effect->userdata + 0x20) = 1;
     return EVT_RETURN_DONE;
 }
 
@@ -412,7 +412,7 @@ USER_FUNC(effitemget_open_ptr) {
     s32* args = event->args;
     EffectEntry* effect = (EffectEntry*)evtGetValue(event, args[0]);
 
-    ((effItemGetData*)effect->userdata)->scaleMode = 1;
+    *(s32*)((u8*)effect->userdata + 0x20) = 1;
     return EVT_RETURN_DONE;
 }
 
@@ -498,7 +498,7 @@ USER_FUNC(lect_npc_balloon_on_off) {
 
     if (evtGetValue(event, args[1])) {
         eff = effMarioBalloonEntry(1, npc);
-        ((EffMarioBalloonData*)eff->userdata)->cameraId = 7;
+        *(s32*)((u8*)eff->userdata + 0x1C) = 7;
     } else {
         effDelete(eff);
     }
@@ -511,7 +511,7 @@ USER_FUNC(efffukidashichange_cam) {
     s32 camId = evtGetValue(event, args[1]);
     EffectEntry* effect = effNameToPtr((const char*)name);
 
-    ((effFukidashiData*)effect->userdata)->camId = camId;
+    *(s32*)((u8*)effect->userdata + 0x4C) = camId;
     return EVT_RETURN_DONE;
 }
 
