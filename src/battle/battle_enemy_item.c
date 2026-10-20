@@ -81,7 +81,7 @@ void* _check_hp_recover_item(BattleUnit* unit) {
     s32 i;
 
     item = unit->heldItem;
-    sampling = wp->field_428;
+    sampling = (u8*)&wp->sampling;
     weapon = itemDataTable[item].battle_params;
 
     BattleSamplingEnemy(sampling, weapon, unit->unitId, BtlUnit_GetEnemyBelong(unit),
@@ -111,7 +111,7 @@ void* _check_fp_recover_item(BattleUnit* unit) {
     s32 i;
 
     item = unit->heldItem;
-    sampling = wp->field_428;
+    sampling = (u8*)&wp->sampling;
     weapon = itemDataTable[item].battle_params;
 
     BattleSamplingEnemy(sampling, weapon, unit->unitId, BtlUnit_GetEnemyBelong(unit),
@@ -143,7 +143,7 @@ void* _check_attack_item(BattleUnit* unit) {
     s32 i;
 
     item = unit->heldItem;
-    sampling = wp->field_428;
+    sampling = (u8*)&wp->sampling;
     weapon = itemDataTable[item].battle_params;
 
     BattleSamplingEnemy(sampling, weapon, unit->unitId, BtlUnit_GetEnemyBelong(unit),
@@ -184,7 +184,7 @@ void* _check_status_attack_item(BattleUnit* unit) {
     s32 i;
 
     item = unit->heldItem;
-    sampling = wp->field_428;
+    sampling = (u8*)&wp->sampling;
     weapon = itemDataTable[item].battle_params;
 
     BattleSamplingEnemy(sampling, weapon, unit->unitId, BtlUnit_GetEnemyBelong(unit),
@@ -241,7 +241,7 @@ void* _check_status_support_item(BattleUnit* unit) {
     s32 i;
 
     item = unit->heldItem;
-    sampling = wp->field_428;
+    sampling = (u8*)&wp->sampling;
     weapon = itemDataTable[item].battle_params;
 
     BattleSamplingEnemy(sampling, weapon, unit->unitId, BtlUnit_GetEnemyBelong(unit),
@@ -300,7 +300,7 @@ void* _check_status_recover_item(BattleUnit* unit) {
     s32 i;
 
     item = unit->heldItem;
-    sampling = wp->field_428;
+    sampling = (u8*)&wp->sampling;
     weapon = itemDataTable[item].battle_params;
 
     BattleSamplingEnemy(sampling, weapon, unit->unitId, BtlUnit_GetEnemyBelong(unit),

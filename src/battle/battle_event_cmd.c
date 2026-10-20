@@ -3582,7 +3582,7 @@ USER_FUNC(btlevtcmd_PartsFaceDirectionSub) {
 USER_FUNC(btlevtcmd_SamplingEnemy) {
     s32* args = event->args;
     BattleWork* wp = _battleWorkPointer;
-    u8* sampling = (u8*)wp + 0x428;
+    u8* sampling = (u8*)&wp->sampling;
     BattleWeapon* weapon;
     s32 id;
     s8 belong;
@@ -3604,7 +3604,7 @@ USER_FUNC(btlevtcmd_SamplingEnemy) {
 //s32* weaponIndex, s32 retIndex1, s32 retIndex2
 USER_FUNC(btlevtcmd_ChoiceSamplingEnemy) {
     s32* args = event->args;
-    u8* sampling = (u8*)_battleWorkPointer + 0x428;
+    u8* sampling = (u8*)&_battleWorkPointer->sampling;
     BattleWeapon* weapon;
     s32 index1;
     s32 index2;
@@ -3624,7 +3624,7 @@ USER_FUNC(btlevtcmd_ChoiceSamplingEnemy) {
 USER_FUNC(btlevtcmd_GetSelectEnemy) {
     s32* args = event->args;
     BattleWork* wp = _battleWorkPointer;
-    u8* sampling = wp->field_428;
+    u8* sampling = (u8*)&wp->sampling;
     s32 index1;
     s32 index2;
     s32 selectIdx;
@@ -3649,7 +3649,7 @@ USER_FUNC(btlevtcmd_GetSelectEnemy) {
 USER_FUNC(btlevtcmd_GetSelectNextEnemy) {
     s32* args = event->args;
     BattleWork* wp = _battleWorkPointer;
-    u8* sampling = wp->field_428;
+    u8* sampling = (u8*)&wp->sampling;
     s32 index1 = args[0];
     s32 index2 = args[1];
     s32 selectIdx;

@@ -1260,7 +1260,7 @@ EVT_END()
 
 static void piders_get_target(s32* outUnit, s32* outPart) {
     BattleWork* wp = _battleWorkPointer;
-    u8* sampling = wp->field_428;
+    u8* sampling = (u8*)&wp->sampling;
     s32 idx = (s8)sampling[0xAB7];
     s16* entry = (s16*)(sampling + (s8)sampling[0xA6D + idx] * 0x24 + 4);
 
@@ -1270,7 +1270,7 @@ static void piders_get_target(s32* outUnit, s32* outPart) {
 
 static void piders_get_next_target(s32* outUnit, s32* outPart) {
     BattleWork* wp = _battleWorkPointer;
-    u8* sampling = wp->field_428;
+    u8* sampling = (u8*)&wp->sampling;
     s16* entry;
 
     sampling[0xAB7]++;

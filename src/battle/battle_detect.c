@@ -26,37 +26,7 @@ static const f32 float_1_8041bf1c = 1.0f;
 static const f32 float_0p05_8041bf20 = 0.05f;
 static const f32 float_5_8041bf24 = 5.0f;
 
-typedef struct BattleSamplingEntry {
-    s16 unitId;      // 0x0
-    s16 partId;      // 0x2
-    s16 x;           // 0x4
-    s16 y;           // 0x6
-    s16 z;           // 0x8
-    u8 pad_0xA[2];   // 0xA
-    s32 field_0xC;   // 0xC
-    s32 field_0x10;  // 0x10
-    s32 field_0x14;  // 0x14
-    s32 field_0x18;  // 0x18
-    u8 field_0x1C;   // 0x1C
-    s8 field_0x1D;   // 0x1D
-    u8 pad_0x1E[2];  // 0x1E
-    s32 field_0x20;  // 0x20
-} BattleSamplingEntry;
 
-// Sampling work block lives inside BattleWork at offset 0x428 (wp->field_428).
-typedef struct BattleSampling {
-    BattleWeapon* weapon;          // 0x0
-    BattleSamplingEntry entries[74]; // 0x4
-    s8 count;                      // 0xA6C
-    s8 order[0xAB7 - 0xA6D];       // 0xA6D  (retail: lbz + extsb, so s8)
-    s8 selectIdx;                  // 0xAB7
-    s32 unitId;                    // 0xAB8
-    s8 belong;                     // 0xABC
-    u8 pad_0xABD[0xAC0 - 0xABD];  // 0xABD
-    u32 field_0xAC0;               // 0xAC0
-    u32 field_0xAC4;               // 0xAC4
-    s8 attackDirection;            // 0xAC8
-} BattleSampling;
 
 // The ac4 keep-loop is written as a chain of `if (cond) { keep = 0; goto ac4_keep_done; }`
 // followed by `keep = 1;` (the ac0 chain keeps its plain if/else-if form, which already

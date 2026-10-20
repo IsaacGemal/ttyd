@@ -883,7 +883,7 @@ static USER_FUNC(hammer_bros_nagemakuri_set_target) {
 
 static void hammer_bros_get_target(s32* unitId, s32* partId) {
     BattleWork* wp = _battleWorkPointer;
-    u8* sampling = wp->field_428;
+    u8* sampling = (u8*)&wp->sampling;
     s32 idx = (s8)sampling[0xAB7];
     s16* entry = (s16*)(sampling + (s8)sampling[0xA6D + idx] * 0x24 + 4);
 
@@ -893,7 +893,7 @@ static void hammer_bros_get_target(s32* unitId, s32* partId) {
 
 static void hammer_bros_get_next_target(s32* unitId, s32* partId) {
     BattleWork* wp = _battleWorkPointer;
-    u8* sampling = wp->field_428;
+    u8* sampling = (u8*)&wp->sampling;
     s16* entry;
 
     sampling[0xAB7]++;

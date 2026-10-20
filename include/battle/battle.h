@@ -2,6 +2,7 @@
 
 #include <dolphin/types.h>
 #include "battle/battle_ac.h"
+#include "battle/battle_detect.h"
 #include "battle/battle_audience.h"
 #include "battle/battle_camera.h"
 #include "battle/battle_database_common.h"
@@ -156,7 +157,7 @@ struct BattleWork {
     PhaseEvtEntry phaseEvtTable[64];    // 0x220, battleMakePhaseEvtTable / btlseqMove
     s32 activeUnitId;                   // 0x420
     s32 field_424;                      // 0x424
-    u8 field_428[0xEF4 - 0x428];        // 0x428
+    BattleSampling sampling;            // 0x428, enemy target sampling (battle_detect.c)
     u32 flags;                          // 0xEF4
     s32 dispFlags;                      // 0xEF8
     u8 field_EFC[0xF00 - 0xEFC];        // 0xEFC
