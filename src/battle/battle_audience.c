@@ -247,7 +247,7 @@ typedef struct BattleAudienceTexCoords {
 
 #pragma dont_inline on
 FileEntry* tplRead(const char* path) {
-	return fileAllocf(4, "%s/%s", getMarioStDvdRoot(), path);
+	return fileAllocf(FILE_TYPE_TPL, "%s/%s", getMarioStDvdRoot(), path);
 }
 #pragma dont_inline reset
 

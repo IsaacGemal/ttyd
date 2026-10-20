@@ -138,11 +138,12 @@ typedef struct AnimationPoseData {
     u16* clr0Index;                // 0x168, finished name
     u16* texIndex[8];              // 0x16C, finished name
     f32* texVtxBuffer;             // 0x18C, finished name, pointer to list of [S, T]
-    u8 field_0x190[0x194 - 0x190]; // 0x190
+    void* field_0x190;             // 0x190, a file-relative pointer (filemgr relocates it)
     AnimPoseTexEntry* texData;     // 0x194, TODO: rename
     AnimTexBind* texBinds;         // 0x198, TODO: rename
     AnimPoseShapeDraw* draws;      // 0x19C
-    u8 field_0x1A0[0x1A4 - 0x1A0]; // 0x1A0
+    void* field_0x1A0;             // 0x1A0, a file-relative pointer (filemgr relocates it)
+    void* field_0x1A4;             // 0x1A4, a file-relative pointer (filemgr relocates it)
     AnimPoseGroup* groups;         // 0x1A8
     AnimTableEntry* mpAnims;       // 0x1AC
 } AnimationPoseData;

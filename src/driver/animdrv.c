@@ -26,11 +26,6 @@ extern GXColor dat_80419a30;
 
 extern GlobalWork* gp;
 
-// The header's AnimationPoseData padding at 0x1A0 is 4 bytes short: the original
-// binary has groups at 0x1A8 and mpAnims at 0x1AC. Work around it locally.
-#define ANIM_POSE_DATA_GROUPS(data) (*(AnimPoseGroup**)((u8*)(data) + 0x1A8))
-#define ANIM_POSE_DATA_ANIMS(data) (*(AnimTableEntry**)((u8*)(data) + 0x1AC))
-
 //.data
 u32 _vivihimoData[0x300] ATTRIBUTE_ALIGN(32) = {
     0x00000000, 0x3F4CCCCD, 0x3F99999A, 0x3F4CCCCD, 0x00000000, 0x00000000, 0x3F4CCCCD, 0x3F333333,
@@ -292,14 +287,14 @@ void animInit(void) {
     for (i = 0; i < 0xB2; i++) {
         tanfTbl[i] = (f32)tan((i - 0x59) * (3.141592f / 180.0f));
     }
-    file = fileAllocf(0, "a/vivian.bin");
+    file = fileAllocf(FILE_TYPE_RAW, "a/vivian.bin");
     if (file) {
         memcpy_as4(vivihimoData[1], *file->data, sizeof(_vivihimoData));
         memcpy_as4(vivihimoTailGroupNo, (void*)((u32)*file->data + sizeof(_vivihimoData)), sizeof(vivihimoTailGroupNo));
         fileFree(file);
     }
     fileSetCurrentArchiveType(0);
-    wp->mp_ag2tg = fileAllocf(0, "a/ag2tg.bin");
+    wp->mp_ag2tg = fileAllocf(FILE_TYPE_RAW, "a/ag2tg.bin");
 }
 
 void animMain(void) {
@@ -422,7 +417,7 @@ static inline s32 animPoseLoadTexture(const char* name) {
     texId = animPoseFindFreeTexture(&texture);
     texture->active = TRUE;
     texture->references++;
-    texture->handle = fileAlloc(name, 4);
+    texture->handle = fileAlloc(name, FILE_TYPE_TPL);
     return texId;
 }
 
@@ -448,7 +443,7 @@ static inline s32 animPoseLoadFile(const char* animName) {
     fileId = animPoseFindFreeFile(&file);
     file->active = TRUE;
     file->references++;
-    file->handle = fileAllocf(5, "%s/%s", "a", animName);
+    file->handle = fileAllocf(FILE_TYPE_ANIMPOSE, "%s/%s", "a", animName);
     if (!file->handle) {
         file->active = FALSE;
         file->references--;
@@ -602,7 +597,7 @@ BOOL animEffectAsync(const char* animName, u32 group) {
             fileSetCurrentArchiveType(0);
             break;
     }
-    fileId = fileAsyncf(5, NULL, "%s/%s", "a", animName);
+    fileId = fileAsyncf(FILE_TYPE_ANIMPOSE, NULL, "%s/%s", "a", animName);
     data = wp->mp_ag2tg->data;
     size = (s32)data[1];
     entry = (u8*)data[0];
@@ -615,7 +610,7 @@ BOOL animEffectAsync(const char* animName, u32 group) {
     }
     result = (u8*)"";
 found:
-    other = fileAsyncf(4, NULL, "%s/%s-", "a", result);
+    other = fileAsyncf(FILE_TYPE_TPL, NULL, "%s/%s-", "a", result);
 
     if (fileId == -1) {
         return TRUE;
@@ -772,7 +767,7 @@ static inline s32 animPoseSearchAnimPaper(s32 poseId, const char* animName) {
 
     if (i < 0) {
         for (i = 0; i < top; i++) {
-            if (!strcmp(ANIM_POSE_DATA_ANIMS(data)[i].name, animName)) {
+            if (!strcmp(data->mpAnims[i].name, animName)) {
                 return i;
             }
         }
@@ -797,7 +792,7 @@ static inline s32 animPoseSearchAnimPaper(s32 poseId, const char* animName) {
 
     if (i < 0) {
         for (i = 0; i < top; i++) {
-            if (!strcmp(ANIM_POSE_DATA_ANIMS(data)[i].name, animName)) {
+            if (!strcmp(data->mpAnims[i].name, animName)) {
                 break;
             }
         }
@@ -903,7 +898,7 @@ void animPoseSetEffect(s32 poseId, const char* animName, BOOL someflag) {
     ((AnimationPose*)((u8*)wp->poses + poseOffset))->materialLightFlag |= 1;
 }
 
-// Searches ANIM_POSE_DATA_ANIMS(data) for animName when i is negative (i is the string's address used
+// Searches data->mpAnims for animName when i is negative (i is the string's address used
 // as a sentinel), then clamps the result into [0, top). MUST_MATCH keeps the target's exact control flow;
 // the natural form is in the #else. Computing data/top from the passed pose inside the helper (rather
 // than passing them in) is what gives the callers the target's callee-saved colouring.
@@ -915,7 +910,7 @@ static inline s32 animPoseSearchAnim(AnimationPose* pose, const char* animName) 
 
     if (i < 0) {
         for (i = 0; i < top; i++) {
-            if (!strcmp(ANIM_POSE_DATA_ANIMS(data)[i].name, animName)) {
+            if (!strcmp(data->mpAnims[i].name, animName)) {
                 return i;
             }
         }
@@ -938,7 +933,7 @@ static inline s32 animPoseSearchAnim(AnimationPose* pose, const char* animName) 
 
     if (i < 0) {
         for (i = 0; i < top; i++) {
-            if (!strcmp(ANIM_POSE_DATA_ANIMS(data)[i].name, animName)) {
+            if (!strcmp(data->mpAnims[i].name, animName)) {
                 break;
             }
         }
@@ -1234,7 +1229,7 @@ void animPoseMain(s32 poseId) {
     f32 alpha;
     s32 posNum, nrmNum, visNum, nodeNum, texNum;
 
-    anim = ANIM_POSE_DATA_ANIMS(data)[pose->animId].data;
+    anim = data->mpAnims[pose->animId].data;
 
     OSInitFastCast();
 
@@ -1817,7 +1812,7 @@ void animSetMaterial_Texture(s32 texCount, s32* texIdRemap, AnimPoseTexEntry* pT
                    "\nframeExt\224\324\215\206 %d? \202\252\226\263\202\242\202\346\202\244\202\305\202\267\201B\203\202\203f"
                    "\203\213\202\334\202\275\202\315\203A\203j\203\201\202\311\217C\220\263\202\252\225K\227v\202\305\202\267\201B"
                    "textureIdx=%d\n",
-                   poseData->fileName, ANIM_POSE_DATA_ANIMS(poseData)[pose->animId].name, frameExt, texEntry->bindId);
+                   poseData->fileName, poseData->mpAnims[pose->animId].name, frameExt, texEntry->bindId);
         }
         wrapFlags = texEntry->wrapFlags;
         bind = &texBinds[bindId];
@@ -2369,7 +2364,7 @@ void dispProc(s32 parentGroupId, s32 groupId, s32 field_0x28, s32 field_0x2c, f3
         return;
     }
     data = wp->mpCurPoseData;
-    groups = ANIM_POSE_DATA_GROUPS(data);
+    groups = data->groups;
     group = &groups[groupId];
 #ifdef MUST_MATCH
     // MWCC picks the original registers only when the sign extension is a cast on the loaded element; the
@@ -2509,7 +2504,7 @@ void _animPoseDrawMtx(AnimationPose* pose, Mtx matrix, s32 xluMode, f32 rotY, f3
     s32 useScratch;
 
     poseData = animPoseGetBaseData(pose);
-    animData = ANIM_POSE_DATA_ANIMS(poseData)[pose->animId].data;
+    animData = poseData->mpAnims[pose->animId].data;
     field_0x28 = *(s32*)((u8*)pose + 0x28);
     field_0x2c = *(s32*)((u8*)pose + 0x2C);
     field_0x30 = *(f32*)((u8*)pose + 0x30);
@@ -2649,7 +2644,7 @@ static inline s32 animPoseSearchAnimIdx(AnimationPose* pose, const char* name) {
 
     if ((s32)name < 0) {
         for (i = 0; i < top; i++) {
-            if (!strcmp(ANIM_POSE_DATA_ANIMS(data)[i].name, name)) {
+            if (!strcmp(data->mpAnims[i].name, name)) {
                 return i;
             }
         }
@@ -3056,7 +3051,7 @@ void animPaperPoseDispSub(s32 unused, AnimationPose* param) {
     }
 
     data = animPoseGetBaseData(pose);
-    animData = ANIM_POSE_DATA_ANIMS(data)[pose->animId].data;
+    animData = data->mpAnims[pose->animId].data;
 
     f31 *= 25.74f / (ANIMDATA_F54(animData) - ANIMDATA_F48(animData));
     f30 = 0.75f * (f32)DEMOGetRenderModeObj()->efbHeight;
@@ -3412,8 +3407,8 @@ BOOL animGroupBaseAsync(const char* name, s32 group, void* callback) {
             fileSetCurrentArchiveType(0);
             break;
     }
-    fileId = fileAsyncf(5, callback, "%s/%s", "a", name);
-    other = fileAsyncf(4, NULL, "%s/%s-", "a", animGetAg2tgName(name));
+    fileId = fileAsyncf(FILE_TYPE_ANIMPOSE, callback, "%s/%s", "a", name);
+    other = fileAsyncf(FILE_TYPE_TPL, NULL, "%s/%s-", "a", animGetAg2tgName(name));
 
     if (fileId == -1) {
         return TRUE;
@@ -3448,7 +3443,7 @@ AnimationPose* animPoseGetAnimPosePtr(s32 poseId) {
 
 AnimData* animPoseGetAnimDataPtr(s32 poseId) {
     AnimationPose* pose = animPoseGetAnimPosePtr(poseId);
-    return ANIM_POSE_DATA_ANIMS(animPoseGetAnimBaseDataPtr(poseId))[pose->animId].data;
+    return animPoseGetAnimBaseDataPtr(poseId)->mpAnims[pose->animId].data;
 }
 
 AnimationPoseData* animPoseGetAnimBaseDataPtr(s32 poseId) {
@@ -3458,7 +3453,7 @@ AnimationPoseData* animPoseGetAnimBaseDataPtr(s32 poseId) {
 
 AnimTableEntry* animPoseGetCurrentAnim(s32 poseId) {
     AnimationPoseData* data = animPoseGetAnimBaseDataPtr(poseId);
-    return &ANIM_POSE_DATA_ANIMS(data)[animPoseGetAnimPosePtr(poseId)->animId];
+    return &data->mpAnims[animPoseGetAnimPosePtr(poseId)->animId];
 }
 
 BOOL animPoseTestXLU(s32 poseId) {
@@ -3512,7 +3507,7 @@ void evalProc(s32 parentGroupId, s32 groupId) {
         return;
     }
     data = wp->mpCurPoseData;
-    groups = ANIM_POSE_DATA_GROUPS(data);
+    groups = data->groups;
     group = &groups[groupId];
 
 #ifdef MUST_MATCH
@@ -3672,7 +3667,7 @@ void animPoseDrawShape(s32 poseId, s32 shapeId) {
     prevDC = wp->field_0xDC;
 
     wp->mpCurPose = pose;
-    wp->mpCurAnimData = ANIM_POSE_DATA_ANIMS(animPoseGetBaseData(pose))[pose->animId].data;
+    wp->mpCurAnimData = animPoseGetBaseData(pose)->mpAnims[pose->animId].data;
     wp->mpCurPoseData = animPoseGetBaseData(pose);
 
     wp->mpTexObjs[0] = NULL;
@@ -3727,7 +3722,7 @@ s32 animPoseGetGroupIdx(s32 poseId, const char* name) {
     s32 i;
 
     data = animPoseGetAnimBaseDataPtr(poseId);
-    group = ANIM_POSE_DATA_GROUPS(data);
+    group = data->groups;
     for (i = 0; i < data->groupCount; i++, group++) {
         if (!strcmp(group->name, name)) {
             return i;
@@ -3738,7 +3733,7 @@ s32 animPoseGetGroupIdx(s32 poseId, const char* name) {
 
 const char* animPoseGetGroupName(s32 poseId, s32 group) {
     AnimationPoseData* data = animPoseGetAnimBaseDataPtr(poseId);
-    return ANIM_POSE_DATA_GROUPS(data)[group].name;
+    return data->groups[group].name;
 }
 
 // Named .sdata2 GXColor objects, defined after the code so the compiler keeps the loads.

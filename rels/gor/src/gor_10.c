@@ -260,7 +260,7 @@ USER_FUNC(tegami) {
         wp = _mapAlloc(8);
         memset(wp, 0, 8);
         wp->unk0 = 0;
-        wp->file = fileAllocf(4, "%s/mariost.tpl", getMarioStDvdRoot());
+        wp->file = fileAllocf(FILE_TYPE_TPL, "%s/mariost.tpl", getMarioStDvdRoot());
     }
     wp->unk0 += 2;
     if (wp->unk0 > 0x80) {

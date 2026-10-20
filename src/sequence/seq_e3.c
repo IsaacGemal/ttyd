@@ -67,7 +67,7 @@ void alarm_handler(OSAlarm* alarm, OSContext* context) {
 }
 
 void seq_e3Init(SequenceWork* seq) {
-    wp->handle = fileAllocf(4, "%s/monthry.tpl", getMarioStDvdRoot());
+    wp->handle = fileAllocf(FILE_TYPE_TPL, "%s/monthry.tpl", getMarioStDvdRoot());
     wp->field_4 = 0;
     wp->field_8 = 0;
     wp->scenario = 0;

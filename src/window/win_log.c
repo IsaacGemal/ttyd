@@ -793,13 +793,13 @@ s32 winLogMain(WindowWork* work) {
         case 10:
             tpl = winGetMapTplName();
             root = getMarioStDvdRoot();
-            if ((u32)fileAsyncf(4, NULL, "%s/w/jp/%s", root, tpl) != 0) {
+            if ((u32)fileAsyncf(FILE_TYPE_TPL, NULL, "%s/w/jp/%s", root, tpl) != 0) {
                 if (w->file == 0) {
                     tpl = winGetMapTplName();
                     root = getMarioStDvdRoot();
                     // (s32) add defeats the CSE with the fileAsyncf string above, so MWCC recomputes it
                     // into r4 (as the original) instead of pinning it in r28 across the call.
-                    w->file = (FileEntry*)fileAllocf(4, "%s/w/jp/%s", root, tpl);
+                    w->file = (FileEntry*)fileAllocf(FILE_TYPE_TPL, "%s/w/jp/%s", root, tpl);
                 }
                 if (w->pose == -1) {
                     if (w->flags & 0x2000) {
@@ -1921,10 +1921,10 @@ void monosiriMain(void* work) {
 
     switch (w->state) {
     case 0:
-        if ((u32)fileAsyncf(4, NULL, "%s/w/%s/win.tpl", getMarioStDvdRoot(), lang[g->language]) != 0) {
-            if ((u32)fileAsyncf(0, NULL, "%s/w/jp/mono.dat", getMarioStDvdRoot()) != 0) {
-                w->file1 = fileAllocf(4, "%s/w/%s/win.tpl", getMarioStDvdRoot(), lang[gp->language]);
-                w->file2 = fileAllocf(0, "%s/w/jp/mono.dat", getMarioStDvdRoot());
+        if ((u32)fileAsyncf(FILE_TYPE_TPL, NULL, "%s/w/%s/win.tpl", getMarioStDvdRoot(), lang[g->language]) != 0) {
+            if ((u32)fileAsyncf(FILE_TYPE_RAW, NULL, "%s/w/jp/mono.dat", getMarioStDvdRoot()) != 0) {
+                w->file1 = fileAllocf(FILE_TYPE_TPL, "%s/w/%s/win.tpl", getMarioStDvdRoot(), lang[gp->language]);
+                w->file2 = fileAllocf(FILE_TYPE_RAW, "%s/w/jp/mono.dat", getMarioStDvdRoot());
                 w->state++;
                 TEXGetGXTexObjFromPalette((TEXPalette*)w->file1->data[0], &texObj, 0x37);
                 size = GXGetTexBufferSize(GXGetTexObjWidth(&texObj), GXGetTexObjHeight(&texObj), 5, 0, 0);

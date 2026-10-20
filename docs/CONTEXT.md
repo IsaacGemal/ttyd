@@ -8852,3 +8852,30 @@ Open: the part pose block at 0x1C0 (anim handle at +0, flags at +0x44, bytes at 
 byte-indexed in battle_disp; the attack event at unit 0x29C is written both as an s32 and as a void*; and the
 byte-stepped unit regions at 0x27, 0x264 and 0x2B4 stay pads. battle_event_cmd.c's LoadSeMode/SetSeMode callers
 and _MoveSoundControlCore still pass and read raw offsets.
+### Readability: filemgr and seq_load (2026-10-19, Claude Haiku 5.5, n9-q-filemgr; reviewed by Claude Opus 5.5)
+
+FileEntry gets `type` (0x1) and `inlineData` (0x4, the slot `data` points at when arcOpen supplied the file);
+`_fileGarbage` uses the s16 `references` field instead of a cast. A new `FileType` enum (filemgr.h) names the
+relocation types: the 58 callers pass only 0, 4 and 5, which are `FILE_TYPE_RAW` (map data, a/vivian.bin,
+a/ag2tg.bin, mono.dat), `FILE_TYPE_TPL` (every .tpl) and `FILE_TYPE_ANIMPOSE` (a/<name> model files, read as
+AnimationPoseData); `FILE_TYPE_CANCELED` (11) is what dvdReadDoneCallBack stores when the read returns
+`DVD_RESULT_CANCELED`. Super Paper Mario's filemgr numbers them the same way (GENERIC/TPL/ANIMPOSE; SPM puts
+EFFDAT at 11 and moves the cancel marker to 12). Types 1-3 and 6-10 have no caller, so they stay `FILE_TYPE_<n>`
+with their pointer layout in the enum comment; type 1 relocates the same 25 words as ANIMPOSE and type 2 the
+same 8 words (0x24-0x40) that ANIMPOSE relocates in each animation's data, but neither is proven to be that
+struct. The switch cases and every caller use the enum. The ANIMPOSE cases relocate through the struct now
+(`FILE_RELOC(POSE(data)->shapes, data)` and so on, plus `mpAnims[j].data` in the animation walks), byte-identical.
+That needed a header fix: AnimationPoseData's padding at 0x1A0 was 4 bytes short, so `groups` and `mpAnims` sat
+at 0x1A4/0x1A8 instead of 0x1A8/0x1AC. 0x190, 0x1A0 and 0x1A4 are file pointers (`void* field_0x...`), and
+animdrv.c's ANIM_POSE_DATA_GROUPS/ANIMS offset macros became plain `->groups`/`->mpAnims`.
+seq_load's loadDraw reads level, star powers, GSW0 and play time through CardSaveSlot. Play time is GlobalWork's
+`retraceLocalTime` (0x20): viPostCallback adds each retrace's delta to it and clamps it, the new-game init zeroes
+it, win_mario prints it as `msg_menu_mario_num_playtime`, and cardmgr copies all of GlobalWork into the save. The
+name is misleading; `playTime` would fit, not renamed here. LoadWork's 0x2 is `pad_0x2`: true alignment padding
+between the u16 `flags` and the `file` pointer, and LoadWork is local to seq_load.c.
+Weighted cleanup: filemgr.c 245 → 175, seq_load.c 242 → 231, animdrv.c 366 → 362.
+Open: the raw-offset relocation lines for types 1-3 and 6-10 (no struct and no caller to name one from), the
+AnimData words at 0x24-0x40 (AnimData is still an opaque `u8[0x44]`), the FileEntry state values (0 free, 1
+allocated, 2 garbage, 3 async pending, as SPM's FILE_EMPTY/ALLOC_CALLED/WAITING_GARBAGE/ASYNC_CALLED), and
+seq_load's seven save-flag reads `*(u16*)((u8*)card + (cursor << 14) + 0x2000)`: as `card->saves[cursor].data.flags`
+the build fails (checked again for the three `wp->cursor` sites).

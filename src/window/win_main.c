@@ -296,10 +296,10 @@ void winMain(void) {
                             i++;
                         } while (i < 4);
                     }
-                    fileAsyncf(4, 0, "%s/w/jp/mail.tpl", getMarioStDvdRoot());
+                    fileAsyncf(FILE_TYPE_TPL, 0, "%s/w/jp/mail.tpl", getMarioStDvdRoot());
                     {
                         const char* tpl = winGetMapTplName();
-                        fileAsyncf(4, 0, "%s/w/jp/%s", getMarioStDvdRoot(), tpl);
+                        fileAsyncf(FILE_TYPE_TPL, 0, "%s/w/jp/%s", getMarioStDvdRoot(), tpl);
                     }
                     WM_S32(0x24) = 0;
                     if (strncmp(gp->currentMapName, "yuu_", 4) == 0) {
@@ -474,10 +474,10 @@ void winMain(void) {
 BOOL winTplLoad(void) {
     const char* names[2] = {"jp", "us"};
 
-    if ((u32)fileAsyncf(4, 0, "%s/w/%s/win.tpl", getMarioStDvdRoot(), names[gp->language]) == 0) {
+    if ((u32)fileAsyncf(FILE_TYPE_TPL, 0, "%s/w/%s/win.tpl", getMarioStDvdRoot(), names[gp->language]) == 0) {
         return FALSE;
     }
-    WM_PTR(0x28) = fileAllocf(4, "%s/w/%s/win.tpl", getMarioStDvdRoot(), names[gp->language]);
+    WM_PTR(0x28) = fileAllocf(FILE_TYPE_TPL, "%s/w/%s/win.tpl", getMarioStDvdRoot(), names[gp->language]);
     return TRUE;
 }
 

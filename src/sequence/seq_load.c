@@ -284,8 +284,8 @@ void seq_loadMain(SequenceWork* workArg) {
     switch (workArg->state) {
         case 0: {
             BOOL result;
-            if (fileAsyncf(4, 0, "%s/w/jp/name.tpl\0\0\0", getMarioStDvdRoot()) != 0U) {
-                wp->file = fileAllocf(4, "%s/w/jp/name.tpl\0\0\0", getMarioStDvdRoot());
+            if (fileAsyncf(FILE_TYPE_TPL, 0, "%s/w/jp/name.tpl\0\0\0", getMarioStDvdRoot()) != 0U) {
+                wp->file = fileAllocf(FILE_TYPE_TPL, "%s/w/jp/name.tpl\0\0\0", getMarioStDvdRoot());
                 result = TRUE;
             } else {
                 result = FALSE;
@@ -1067,7 +1067,7 @@ void loadDraw(void) {
         u16 flags;
         s32 level;
         OSTime playTime; // save play time: the OSTime that GlobalWork names retraceLocalTime
-        s32 mGSW0; // 0 on a new file (shows the start text instead of the play time)
+        s32 gsw0; // story progress, 0 on a new file (shows the start text instead of the play time)
         const char* name;
 
         card = cardGetFilePtr();
@@ -1076,7 +1076,7 @@ void loadDraw(void) {
         level = slot->data.pouch.level;
         playTime = slot->data.global.retraceLocalTime;
         mask = slot->data.pouch.mStarPowersObtained;
-        mGSW0 = slot->data.global.mGSW0;
+        gsw0 = slot->data.global.mGSW0;
         name = slot->data.global.playerName;
         wd = &win_dt[i];
 
@@ -1120,7 +1120,7 @@ void loadDraw(void) {
             const char* s = "\203j\203\205\201[\203Q\201[\203\200";
 
             FontDrawString(s, wd->x - (f32)FontGetMessageWidth(s) / 2.0f, 12.0f + wd->y);
-        } else if (mGSW0 == 0) {
+        } else if (gsw0 == 0) {
             const char* s = "\202\315\202\266\202\337\202\251\202\347";
 
             FontDrawString(s, wd->x - (f32)FontGetMessageWidth(s) / 2.0f, 12.0f + wd->y);

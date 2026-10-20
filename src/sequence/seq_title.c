@@ -84,7 +84,7 @@ s32 N_getDebugMode(void) {
 // .rodata objects below are in place, so the natural (non-MATCH) form is the literal one.
 void L_titleInit(SequenceWork* work) {
 	memset(wp2, 0, sizeof(TitleWork));
-	wp2->texture = fileAllocf(4, "%s/mariost.tpl", getMarioStDvdRoot());
+	wp2->texture = fileAllocf(FILE_TYPE_TPL, "%s/mariost.tpl", getMarioStDvdRoot());
 	wp2->field_0xC = 0.0f;
 	wp2->field_0x10 = 1000.0f;
 	wp2->field_0x14 = 0.0f;
@@ -238,7 +238,7 @@ void titleMain(SequenceWork* work) {
 			wp2->field_0x18 = intplGetValue(0xb, wp2->field_0x20, 0x3c, -300.0f, -170.0f);
 			wp2->field_0x20 = wp2->field_0x20 + 1;
 			if (wp2->field_0x20 > 0x3c) {
-				fileAsyncf(4, 0, TITLE_DEMO_TPL, getMarioStDvdRoot());
+				fileAsyncf(FILE_TYPE_TPL, 0, TITLE_DEMO_TPL, getMarioStDvdRoot());
 				animGroupBaseAsync(TITLE_PEACH, 0, 0);
 				animGroupBaseAsync(TITLE_NAZO, 0, 0);
 				animGroupBaseAsync(TITLE_GOLD, 0, 0);

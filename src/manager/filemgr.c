@@ -18,10 +18,10 @@ FileManagerWork fileWork;
 //.sdata
 FileManagerWork* afp = &fileWork;
 
-//local prototypes
-
-
-
+// A file stores its pointers as offsets from the file start; these add (or take away) the base address in place.
+#define FILE_RELOC(field, base) (*(u32*)&(field) += (u32)(base))
+#define FILE_UNRELOC(field, base) (*(u32*)&(field) -= (u32)(base))
+#define POSE(data) ((AnimationPoseData*)(data))
 
 void fileInit(void) {
 	FileEntry* ptr;
@@ -80,15 +80,15 @@ static inline void fileClearTpl(TEXPalette* tpl) {
 	}
 }
 
-// Cases 1,2,3,5,6,7,8,9,10 and the type-5 loop match exactly. Case 4 (TPL) goes through the
-// fileClearTpl inline above so its loop counter/byte offset take the original's r5/r6. The CLUT
-// pointer fixup's u32 view (see the MUST_MATCH below) gives the original's r4/r3 operand split.
+// Turns a file's pointers back into file offsets before it moves (fileGarbageMoveMem); the inverse of
+// fileGarbageDataAdrSet. The TPL case goes through the fileClearTpl inline above so its loop counter and
+// byte offset take the original's r5/r6. Types without a struct (see FileType) keep raw offsets.
 void fileGarbageDataAdrClear(FileEntry* entry) {
 	void* data = *entry->data;
 	u8* d = data;
 
 	switch (entry->type) {
-		case 1:
+		case FILE_TYPE_1:
 			if (*(u32*)(d + 0x14C) >= (u32)data) {
 				*(u32*)(d + 0x14C) -= (u32)data;
 				*(u32*)(d + 0x150) -= (u32)data;
@@ -118,7 +118,7 @@ void fileGarbageDataAdrClear(FileEntry* entry) {
 			}
 			break;
 
-		case 2:
+		case FILE_TYPE_2:
 			if (*(u32*)(d + 0x24) >= (u32)data) {
 				*(u32*)(d + 0x24) -= (u32)data;
 				*(u32*)(d + 0x28) -= (u32)data;
@@ -131,27 +131,27 @@ void fileGarbageDataAdrClear(FileEntry* entry) {
 			}
 			break;
 
-		case 3:
+		case FILE_TYPE_3:
 			if (*(u32*)(d + 0x48) >= (u32)data) {
 				*(u32*)(d + 0x48) -= (u32)data;
 			}
 			break;
 
-		case 4:
+		case FILE_TYPE_TPL:
 			fileClearTpl(data);
 			break;
 
-		case 5: { // AnimationPoseData
+		case FILE_TYPE_ANIMPOSE: {
 			s32 i;
 			s32 count;
 
-			if (*(u32*)(d + 0x14C) >= (u32)data) {
-				count = ((AnimationPoseData*)d)->mAnimCount;
+			if ((u32)POSE(d)->shapes >= (u32)data) {
+				count = POSE(d)->mAnimCount;
 				for (i = 0; i < count; i++) {
-					u32 elem = *(u32*)(d + 0x1AC) + i * 0x40;
-					u32 ptr = *(u32*)(elem + 0x3C);
+					AnimTableEntry* elem = &POSE(d)->mpAnims[i];
+					u32 ptr = (u32)elem->data;
 
-					*(u32*)(elem + 0x3C) = ptr - (u32)data;
+					elem->data = (AnimData*)(ptr - (u32)data);
 					if (*(u32*)(ptr + 0x24) >= ptr) {
 						*(u32*)(ptr + 0x24) -= ptr;
 						*(u32*)(ptr + 0x28) -= ptr;
@@ -163,41 +163,41 @@ void fileGarbageDataAdrClear(FileEntry* entry) {
 						*(u32*)(ptr + 0x40) -= ptr;
 					}
 				}
-				*(u32*)(d + 0x14C) -= (u32)data;
-				*(u32*)(d + 0x150) -= (u32)data;
-				*(u32*)(d + 0x154) -= (u32)data;
-				*(u32*)(d + 0x158) -= (u32)data;
-				*(u32*)(d + 0x15C) -= (u32)data;
-				*(u32*)(d + 0x160) -= (u32)data;
-				*(u32*)(d + 0x164) -= (u32)data;
-				*(u32*)(d + 0x168) -= (u32)data;
-				*(u32*)(d + 0x16C) -= (u32)data;
-				*(u32*)(d + 0x170) -= (u32)data;
-				*(u32*)(d + 0x174) -= (u32)data;
-				*(u32*)(d + 0x178) -= (u32)data;
-				*(u32*)(d + 0x17C) -= (u32)data;
-				*(u32*)(d + 0x180) -= (u32)data;
-				*(u32*)(d + 0x184) -= (u32)data;
-				*(u32*)(d + 0x188) -= (u32)data;
-				*(u32*)(d + 0x18C) -= (u32)data;
-				*(u32*)(d + 0x190) -= (u32)data;
-				*(u32*)(d + 0x194) -= (u32)data;
-				*(u32*)(d + 0x198) -= (u32)data;
-				*(u32*)(d + 0x19C) -= (u32)data;
-				*(u32*)(d + 0x1A0) -= (u32)data;
-				*(u32*)(d + 0x1A4) -= (u32)data;
-				*(u32*)(d + 0x1A8) -= (u32)data;
-				*(u32*)(d + 0x1AC) -= (u32)data;
+				FILE_UNRELOC(POSE(d)->shapes, data);
+				FILE_UNRELOC(POSE(d)->drawCalls, data);
+				FILE_UNRELOC(POSE(d)->bufferVtxPos, data);
+				FILE_UNRELOC(POSE(d)->posIndex, data);
+				FILE_UNRELOC(POSE(d)->nrmVtxBuffer, data);
+				FILE_UNRELOC(POSE(d)->nrmIndex, data);
+				FILE_UNRELOC(POSE(d)->clr0VtxBuffer, data);
+				FILE_UNRELOC(POSE(d)->clr0Index, data);
+				FILE_UNRELOC(POSE(d)->texIndex[0], data);
+				FILE_UNRELOC(POSE(d)->texIndex[1], data);
+				FILE_UNRELOC(POSE(d)->texIndex[2], data);
+				FILE_UNRELOC(POSE(d)->texIndex[3], data);
+				FILE_UNRELOC(POSE(d)->texIndex[4], data);
+				FILE_UNRELOC(POSE(d)->texIndex[5], data);
+				FILE_UNRELOC(POSE(d)->texIndex[6], data);
+				FILE_UNRELOC(POSE(d)->texIndex[7], data);
+				FILE_UNRELOC(POSE(d)->texVtxBuffer, data);
+				FILE_UNRELOC(POSE(d)->field_0x190, data);
+				FILE_UNRELOC(POSE(d)->texData, data);
+				FILE_UNRELOC(POSE(d)->texBinds, data);
+				FILE_UNRELOC(POSE(d)->draws, data);
+				FILE_UNRELOC(POSE(d)->field_0x1A0, data);
+				FILE_UNRELOC(POSE(d)->field_0x1A4, data);
+				FILE_UNRELOC(POSE(d)->groups, data);
+				FILE_UNRELOC(POSE(d)->mpAnims, data);
 			}
 			break;
 		}
-		case 6:
+		case FILE_TYPE_6:
 			if (*(u32*)(d + 0x48) >= (u32)data) {
 				*(u32*)(d + 0x48) -= (u32)data;
 			}
 			break;
 
-		case 7:
+		case FILE_TYPE_7:
 			if (*(u32*)(d + 0x64) >= (u32)data) {
 				*(u32*)(d + 0x64) -= (u32)data;
 				*(u32*)(d + 0x68) -= (u32)data;
@@ -205,7 +205,7 @@ void fileGarbageDataAdrClear(FileEntry* entry) {
 			}
 			break;
 
-		case 8:
+		case FILE_TYPE_8:
 			if (*(u32*)(d + 0xC8) >= (u32)data) {
 				*(u32*)(d + 0xC8) -= (u32)data;
 				*(u32*)(d + 0xCC) -= (u32)data;
@@ -233,7 +233,7 @@ void fileGarbageDataAdrClear(FileEntry* entry) {
 			}
 			break;
 
-		case 9:
+		case FILE_TYPE_9:
 			if (*(u32*)(d + 0x58) >= (u32)data) {
 				*(u32*)(d + 0x58) -= (u32)data;
 				*(u32*)(d + 0x5C) -= (u32)data;
@@ -242,7 +242,7 @@ void fileGarbageDataAdrClear(FileEntry* entry) {
 			}
 			break;
 
-		case 10:
+		case FILE_TYPE_10:
 			if (*(u32*)(d + 0x48) >= (u32)data) {
 				*(u32*)(d + 0x48) -= (u32)data;
 			}
@@ -252,7 +252,7 @@ void fileGarbageDataAdrClear(FileEntry* entry) {
 	}
 }
 
-// case 4's TPL walk lives in this helper: as a separate inline its loop counter
+// The FILE_TYPE_TPL walk lives in this helper: as a separate inline its loop counter
 // colours to the original's r4 (with the body inline it takes r5).
 static inline void fileUnpackTpl(TEXPalette* tpl) {
 	u16 i;
@@ -287,7 +287,7 @@ void fileGarbageDataAdrSet(void* data, s32 type) {
 	TEXPalette* tpl;
 
 	switch (type) {
-		case 1:
+		case FILE_TYPE_1:
 			if (*(u32*)((u8*)data + 0x14C) < (u32)data) {
 				*(u32*)((u8*)data + 0x14C) += (u32)data;
 				*(u32*)((u8*)data + 0x150) += (u32)data;
@@ -316,7 +316,7 @@ void fileGarbageDataAdrSet(void* data, s32 type) {
 				*(u32*)((u8*)data + 0x1AC) += (u32)data;
 			}
 			break;
-		case 2:
+		case FILE_TYPE_2:
 			if (*(u32*)((u8*)data + 0x24) < (u32)data) {
 				*(u32*)((u8*)data + 0x24) += (u32)data;
 				*(u32*)((u8*)data + 0x28) += (u32)data;
@@ -328,48 +328,48 @@ void fileGarbageDataAdrSet(void* data, s32 type) {
 				*(u32*)((u8*)data + 0x40) += (u32)data;
 			}
 			break;
-		case 3:
+		case FILE_TYPE_3:
 			if (*(u32*)((u8*)data + 0x48) < (u32)data) {
 				*(u32*)((u8*)data + 0x48) += (u32)data;
 			}
 			break;
-		case 4:
+		case FILE_TYPE_TPL:
 			tpl = (TEXPalette*)data;
 			fileUnpackTpl(tpl);
 			break;
-		case 5:
-			if (*(u32*)((u8*)data + 0x14C) < (u32)data) {
-				*(u32*)((u8*)data + 0x14C) += (u32)data;
-				*(u32*)((u8*)data + 0x150) += (u32)data;
-				*(u32*)((u8*)data + 0x154) += (u32)data;
-				*(u32*)((u8*)data + 0x158) += (u32)data;
-				*(u32*)((u8*)data + 0x15C) += (u32)data;
-				*(u32*)((u8*)data + 0x160) += (u32)data;
-				*(u32*)((u8*)data + 0x164) += (u32)data;
-				*(u32*)((u8*)data + 0x168) += (u32)data;
-				*(u32*)((u8*)data + 0x16C) += (u32)data;
-				*(u32*)((u8*)data + 0x170) += (u32)data;
-				*(u32*)((u8*)data + 0x174) += (u32)data;
-				*(u32*)((u8*)data + 0x178) += (u32)data;
-				*(u32*)((u8*)data + 0x17C) += (u32)data;
-				*(u32*)((u8*)data + 0x180) += (u32)data;
-				*(u32*)((u8*)data + 0x184) += (u32)data;
-				*(u32*)((u8*)data + 0x188) += (u32)data;
-				*(u32*)((u8*)data + 0x18C) += (u32)data;
-				*(u32*)((u8*)data + 0x190) += (u32)data;
-				*(u32*)((u8*)data + 0x194) += (u32)data;
-				*(u32*)((u8*)data + 0x198) += (u32)data;
-				*(u32*)((u8*)data + 0x19C) += (u32)data;
-				*(u32*)((u8*)data + 0x1A0) += (u32)data;
-				*(u32*)((u8*)data + 0x1A4) += (u32)data;
-				*(u32*)((u8*)data + 0x1A8) += (u32)data;
-				*(u32*)((u8*)data + 0x1AC) += (u32)data;
-				count = ((AnimationPoseData*)data)->mAnimCount;
+		case FILE_TYPE_ANIMPOSE:
+			if ((u32)POSE(data)->shapes < (u32)data) {
+				FILE_RELOC(POSE(data)->shapes, data);
+				FILE_RELOC(POSE(data)->drawCalls, data);
+				FILE_RELOC(POSE(data)->bufferVtxPos, data);
+				FILE_RELOC(POSE(data)->posIndex, data);
+				FILE_RELOC(POSE(data)->nrmVtxBuffer, data);
+				FILE_RELOC(POSE(data)->nrmIndex, data);
+				FILE_RELOC(POSE(data)->clr0VtxBuffer, data);
+				FILE_RELOC(POSE(data)->clr0Index, data);
+				FILE_RELOC(POSE(data)->texIndex[0], data);
+				FILE_RELOC(POSE(data)->texIndex[1], data);
+				FILE_RELOC(POSE(data)->texIndex[2], data);
+				FILE_RELOC(POSE(data)->texIndex[3], data);
+				FILE_RELOC(POSE(data)->texIndex[4], data);
+				FILE_RELOC(POSE(data)->texIndex[5], data);
+				FILE_RELOC(POSE(data)->texIndex[6], data);
+				FILE_RELOC(POSE(data)->texIndex[7], data);
+				FILE_RELOC(POSE(data)->texVtxBuffer, data);
+				FILE_RELOC(POSE(data)->field_0x190, data);
+				FILE_RELOC(POSE(data)->texData, data);
+				FILE_RELOC(POSE(data)->texBinds, data);
+				FILE_RELOC(POSE(data)->draws, data);
+				FILE_RELOC(POSE(data)->field_0x1A0, data);
+				FILE_RELOC(POSE(data)->field_0x1A4, data);
+				FILE_RELOC(POSE(data)->groups, data);
+				FILE_RELOC(POSE(data)->mpAnims, data);
+				count = POSE(data)->mAnimCount;
 				for (j = 0; j < count; j++) {
 					AnimData* anim;
-					u32 off = (u32)((AnimTableEntry*)*(u32*)((u8*)data + 0x1AC))[j].data;
-					((AnimTableEntry*)*(u32*)((u8*)data + 0x1AC))[j].data = (AnimData*)(off + (u32)data);
-					anim = ((AnimTableEntry*)*(u32*)((u8*)data + 0x1AC))[j].data;
+					u32 off = (u32)POSE(data)->mpAnims[j].data;
+					POSE(data)->mpAnims[j].data = (AnimData*)(off + (u32)data);
+					anim = POSE(data)->mpAnims[j].data;
 					if (*(u32*)((u8*)anim + 0x24) < (u32)anim) {
 						*(u32*)((u8*)anim + 0x24) += (u32)anim;
 						*(u32*)((u8*)anim + 0x28) += (u32)anim;
@@ -383,19 +383,19 @@ void fileGarbageDataAdrSet(void* data, s32 type) {
 				}
 			}
 			break;
-		case 6:
+		case FILE_TYPE_6:
 			if (*(u32*)((u8*)data + 0x48) < (u32)data) {
 				*(u32*)((u8*)data + 0x48) += (u32)data;
 			}
 			break;
-		case 7:
+		case FILE_TYPE_7:
 			if (*(u32*)((u8*)data + 0x64) < (u32)data) {
 				*(u32*)((u8*)data + 0x64) += (u32)data;
 				*(u32*)((u8*)data + 0x68) += (u32)data;
 				*(u32*)((u8*)data + 0x6C) += (u32)data;
 			}
 			break;
-		case 8:
+		case FILE_TYPE_8:
 			if (*(u32*)((u8*)data + 0xC8) < (u32)data) {
 				*(u32*)((u8*)data + 0xC8) += (u32)data;
 				*(u32*)((u8*)data + 0xCC) += (u32)data;
@@ -422,7 +422,7 @@ void fileGarbageDataAdrSet(void* data, s32 type) {
 				*(u32*)((u8*)data + 0x120) += (u32)data;
 			}
 			break;
-		case 9:
+		case FILE_TYPE_9:
 			if (*(u32*)((u8*)data + 0x58) < (u32)data) {
 				*(u32*)((u8*)data + 0x58) += (u32)data;
 				*(u32*)((u8*)data + 0x5C) += (u32)data;
@@ -430,7 +430,7 @@ void fileGarbageDataAdrSet(void* data, s32 type) {
 				*(u32*)((u8*)data + 0x64) += (u32)data;
 			}
 			break;
-		case 10:
+		case FILE_TYPE_10:
 			if (*(u32*)((u8*)data + 0x48) < (u32)data) {
 				*(u32*)((u8*)data + 0x48) += (u32)data;
 			}
@@ -677,10 +677,10 @@ void dvdReadDoneCallBack(s32 error, DVDFileInfo* info) {
 		}
 	}
 	entry = file->entry;
-	if (error == -3) {
+	if (error == DVD_RESULT_CANCELED) {
 		file->entry = NULL;
 		file->state = 2;
-		file->type = 0xB;
+		file->type = FILE_TYPE_CANCELED;
 		DVDMgrClose(entry);
 	} else {
 		file->entry = NULL;

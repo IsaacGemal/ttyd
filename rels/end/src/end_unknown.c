@@ -1157,11 +1157,11 @@ s32 unk_end_00000a6c(EventEntry* event, BOOL isFirstCall) {
         JUTFont_Free();
         JUTFontSetup(1);
     }
-    if ((void*)fileAsyncf(4, NULL, "%s/ending.tpl", getMarioStDvdRoot()) == NULL) {
+    if ((void*)fileAsyncf(FILE_TYPE_TPL, NULL, "%s/ending.tpl", getMarioStDvdRoot()) == NULL) {
         return EVT_RETURN_BLOCK;
     }
     if (((CreditsWork*)dat_ptr_end_00003218[0])->image == NULL) {
-        ((CreditsWork*)dat_ptr_end_00003218[0])->image = fileAllocf(4, "%s/ending.tpl", getMarioStDvdRoot());
+        ((CreditsWork*)dat_ptr_end_00003218[0])->image = fileAllocf(FILE_TYPE_TPL, "%s/ending.tpl", getMarioStDvdRoot());
     }
     for (i = 0; i < 5; i++) {
         if (animGroupBaseAsync(((CreditsNpcInfo*)R_credits_npc_info)[i].name, flag, NULL) == 0) {
