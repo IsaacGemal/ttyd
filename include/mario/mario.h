@@ -263,7 +263,9 @@ typedef struct MarioWork {
     u8 unusedInput[0x258 - 0x254]; // 0x254, cleared with the MARIO_TRIG_FLAG_DISABLE_UNUSED_INPUT case
     u32 padDirs;                   // 0x258, DemoPad[0].dirs this frame
     u32 padDirsPressed;            // 0x25C, dirs newly set since the previous frame
-    u8 field_0x260[0x278 - 0x260]; // 0x260
+    u8 field_0x260[8];             // 0x260
+    s32 slitFloorValid;            // 0x268, nonzero while slitFloorPos is set (mot_slit: cleared by marioClearSlitFloor, set in slit state 0x5A)
+    Vec slitFloorPos;              // 0x26C, floor point marioGetSlitFloorPos returns (copied from position in slit state 0x5A)
     s32 sfxIds[3];                 // 0x278, sound handles, 0xFFFFFFFF when none (mot_jump, mot_stay, peach, marioSoundInit)
     u32 inputMask;                 // 0x284, button mask set from evt_mario; 0 means unmasked (marioUpdateKeyData)
     void* motStruct;               // 0x288, motion userdata, TODO rename?
@@ -283,13 +285,17 @@ typedef struct MarioWork {
         s32 motionSfxId0;          // 0x2A4, sound handle in mot_hip (-1 when none)
         s32 paperAnimeTime;        // 0x2A4, mot_ship: marioSetPaperAnimeLocalTime argument (0x58 at reinit, counted down through the landing)
         u32 rollFlags;             // 0x2A4, mot_roll flag word (0x10, 0x20, 0x100, 0x200, 0x1000, 0x4000, 0x10000)
+        s32 slitPushCount;         // 0x2A4, mot_slit: counter of frames pressed into an attr 0x2000 hit (state 0x50 at sysMsec2Frame(0x32)); also reset on entry
     };
     union {
         f32 wCamVal1;              // 0x2A8, f32 step in mot_plane, mot_slit, mot_dokan, mot_hammer, mot_damage
         s32 motionSfxId1;          // 0x2A8, sound handle in mot_hip and mot_roll (-1 when none)
         s32 jabaraHitY;            // 0x2A8, y of the hit mot_jabara lands on (the hit-depth jump)
     };
-    f32 field_0x2AC;               // 0x2AC, f32 in mot_plane, mot_damage, mot_slit and mot_bottomless (s32 0 in mot_roll/mot_jabara resets)
+    union {
+        f32 field_0x2AC;           // 0x2AC, f32 in mot_plane, mot_damage, mot_slit and mot_bottomless (s32 0 in mot_roll/mot_jabara resets)
+        f32 slitPrevY;             // 0x2AC, mot_slit: position.y at the last slit state 10 frame (a change calls slitResetBounce)
+    };
     union {
         f32 field_0x2B0;           // 0x2B0, f32 in party_yoshi, mot_jump and mario_motion
         f32 jabaraSpeed;           // 0x2B0, mot_jabara: angle step added to dispRot.x (its state machine raises and lowers it)
@@ -297,15 +303,32 @@ typedef struct MarioWork {
     union {
         s32 peachStayTimer;        // 0x2B4, peach_stay's frame count in state 0x14 (cleared on entry, capped at sysMsec2Frame(10000)); f32 in party_yoshi
         f32 jabaraAccel;           // 0x2B4, mot_jabara: step added to jabaraSpeed each frame
+        struct {
+            s16 slitTurnTimer;     // 0x2B4, mot_slit: set to 6 when a turn starts, counts down in state 0x15
+            s16 slitStillCount;    // 0x2B6, mot_slit: frames with the stick neutral in state 0x14 (reaches 6 to leave it), cleared when the stick moves
+        };
     };
-    f32 field_0x2B8;               // 0x2B8
+    union {
+        f32 field_0x2B8;           // 0x2B8
+        struct {
+            s16 jabaraTimer;       // 0x2B8, mot_jabara: frames left in the rising swing (swingMain adds unk4 each frame, then unk8 at 0)
+            s8 jabaraState;        // 0x2BA, mot_jabara: swingMain's state switch (0 idle, up to 15)
+            u8 jabaraAnimTime;     // 0x2BB, mot_jabara: local time passed to animPoseSetLocalTime for the paper animation
+        };
+        struct {
+            s16 slitFlags;         // 0x2B8, mot_slit: bit 0 set when the walk speed reaches the dash cap (slitCapSpeed), cleared on steering
+            s16 slitTurnSide;      // 0x2BA, mot_slit: 1 or 2, the side of the turn (sets unk1A8 to 260 or 280)
+        };
+    };
     u8 field_0x2BC[4];             // 0x2BC
     s16 coinDropTimer;             // 0x2C0, frames left dropping coins after fleeing a field battle: npcdrv sets sysMsec2Frame(3000) with marioSetMutekiTime(3000) on battle result 4 (escaped); mario.c drops a coin every 30 frames while it runs
     u8 field_0x2C2[0x2C4 - 0x2C2]; // 0x2C2
     f32 kpaSpeed;                  // 0x2C4, signed walk/swim speed (koopa_motion, koopa.c reset)
     u32 reloadMapOnBottomless;     // 0x2C8, set by N_marioReloadMapOnBottomlessOn/Off
     Vec bottomlessResetPosition;   // 0x2CC JP, 0x2E4 US
-    u8 field_0x2D8[0x2E0 - 0x2D8]; // 0x2D8
+    s16 slitState;                 // 0x2D8, mot_slit state machine step (0x14 idle, 0x50-0x5E dash and drop, 0x64+ turns and slides; >= 100 ends the slit)
+    s16 slitPhaseTimer;            // 0x2DA, frames left in the 0x65, 0x6F and 0x79 phases (set to 30 on entry)
+    s32 slitTimer;                 // 0x2DC, frame counter for states 0x2, 0x50-0x51, 0x5A-0x5C (set on entry, counts down to 0)
 } MarioWork;                       // size 0x2E0 on Japan
 
 MarioWork* marioGetPtr(void);
