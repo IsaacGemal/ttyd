@@ -5699,22 +5699,22 @@ static USER_FUNC(fune_eff) {
     angle = angleABf(oldX, oldZ, pos.x, pos.z);
     sign = (angle < 180.0f) ? 1.0f : -1.0f;
 
-    ((EffFunemizuData*)e1->userdata)->field_0x44 = 3.0f;
+    ((EffFunemizuData*)e1->userdata)->scale = 3.0f;
     ((EffFunemizuData*)e1->userdata)->x = 85.0f * sign + pos.x;
     ((EffFunemizuData*)e1->userdata)->y = pos.y - 51.0f;
     ((EffFunemizuData*)e1->userdata)->z = 30.0f + pos.z;
-    ((EffFunemizuData*)e1->userdata)->field_0x10 = dist;
+    ((EffFunemizuData*)e1->userdata)->speed = dist;
     if (angle < 180.0f) {
-        ((EffFunemizuData*)e1->userdata)->field_0x14 = 135.0f + angle;
+        ((EffFunemizuData*)e1->userdata)->yaw = 135.0f + angle;
     } else {
-        ((EffFunemizuData*)e1->userdata)->field_0x14 = 45.0f + angle;
+        ((EffFunemizuData*)e1->userdata)->yaw = 45.0f + angle;
     }
 
     ((EffFunemizuData*)e2->userdata)->x = pos.x - 15.0f * sign;
     ((EffFunemizuData*)e2->userdata)->y = pos.y - 51.0f;
     ((EffFunemizuData*)e2->userdata)->z = 90.0f + pos.z;
-    ((EffFunemizuData*)e2->userdata)->field_0x10 = dist;
-    ((EffFunemizuData*)e2->userdata)->field_0x14 = 90.0f + angle;
+    ((EffFunemizuData*)e2->userdata)->speed = dist;
+    ((EffFunemizuData*)e2->userdata)->yaw = 90.0f + angle;
     if (dist > 1.0f && gp->retraceCount % 15 == 0) {
         effWaterDamageN64Entry(5, 30, pos.x - 150.0f * sign, pos.y - 50.0f, pos.z, 2.0f);
     }
