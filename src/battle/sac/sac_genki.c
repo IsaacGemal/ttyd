@@ -1050,14 +1050,14 @@ void main_star0(s32 idx) {
     }
 
     if (star->field_60 != NULL) {
-        f32* p = (f32*)star->field_60->userdata;
-        p[0x8 / 4] = star->field_C;
-        p[0xC / 4] = star->field_10;
-        p[0x10 / 4] = star->field_14;
-        p[0x18 / 4] = star->field_48;
-        p[0x1C / 4] = star->field_4C;
-        p[0x20 / 4] = star->field_50;
-        p[0x14 / 4] = 1.5f * star->field_3C;
+        effStarStoneData* p = star->field_60->userdata;
+        p->x = star->field_C;
+        p->y = star->field_10;
+        p->z = star->field_14;
+        p->tipRotY = star->field_48;
+        p->rotY = star->field_4C;
+        p->tipRotZ = star->field_50;
+        p->scale = 1.5f * star->field_3C;
     }
 }
 
@@ -1167,14 +1167,14 @@ void main_star1(void) {
     }
 
     if (star->field_60 != NULL) {
-        f32* p = (f32*)star->field_60->userdata;
-        p[0x8 / 4] = star->field_C;
-        p[0xC / 4] = star->field_10;
-        p[0x10 / 4] = star->field_14;
-        p[0x18 / 4] = star->field_48;
-        p[0x1C / 4] = star->field_4C;
-        p[0x20 / 4] = star->field_50;
-        p[0x14 / 4] = float_1p5_80421dc4 * star->field_3C;
+        effStarStoneData* p = star->field_60->userdata;
+        p->x = star->field_C;
+        p->y = star->field_10;
+        p->z = star->field_14;
+        p->tipRotY = star->field_48;
+        p->rotY = star->field_4C;
+        p->tipRotZ = star->field_50;
+        p->scale = float_1p5_80421dc4 * star->field_3C;
     }
 }
 
