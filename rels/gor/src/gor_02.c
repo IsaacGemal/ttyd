@@ -522,7 +522,7 @@ USER_FUNC(unk_gor_0000574c) {
     s32* args = event->args;
     MarioWork* mario = marioGetPtr();
 
-    evtSetFloat(event, args[0], *(f32*)mario->unk1AC);
+    evtSetFloat(event, args[0], mario->dispReqDir);
     return EVT_RETURN_DONE;
 }
 

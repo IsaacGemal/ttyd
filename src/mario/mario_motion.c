@@ -1134,11 +1134,11 @@ void mot_talk(void) {
             if (r >= 90.0f && r <= 270.0f) {
                 *(f32*)((u8*)mario + 0x19C) = toMovedir(90.0f);
                 mario->directionView = *(f32*)((u8*)mario + 0x19C);
-                *(f32*)((u8*)mario + 0x1AC) = 180.0f;
+                mario->dispReqDir = 180.0f;
             } else {
                 *(f32*)((u8*)mario + 0x19C) = toMovedir(90.0f);
                 mario->directionView = *(f32*)((u8*)mario + 0x19C);
-                *(f32*)((u8*)mario + 0x1AC) = 0.0f;
+                mario->dispReqDir = 0.0f;
             }
         }
         if (mario->characterId == 2) {
@@ -1484,31 +1484,31 @@ void mot_kaze(void) {
         mario->multiTimer = 0;
         mario->currSubMotionId = 0;
         mario->baseSpeed = 0.0f;
-        *(f32*)((u8*)mario + 0x2A0) = 0.0f;
+        mario->spinSpeed = 0.0f;
         marioChgPose("M_P_2");
     }
 
     switch (mario->currSubMotionId) {
     case 0:
-        *(f32*)((u8*)mario + 0x2A0) += 5.0f;
-        if (*(f32*)((u8*)mario + 0x2A0) > 60.0f) {
-            *(f32*)((u8*)mario + 0x2A0) = 60.0f;
+        mario->spinSpeed += 5.0f;
+        if (mario->spinSpeed > 60.0f) {
+            mario->spinSpeed = 60.0f;
         }
-        mario->unk1A8 = revise360(mario->unk1A8 + *(f32*)((u8*)mario + 0x2A0));
+        mario->unk1A8 = revise360(mario->unk1A8 + mario->spinSpeed);
         if (!(mario->buttonHeld & (1 << 4))) {
             flag = FALSE;
             if (mario->unk1A8 > 90.0f && mario->unk1A8 < 270.0f) {
                 flag = TRUE;
             }
-            *(f32*)((u8*)mario + 0x1AC) = flag ? 180.0f : 0.0f;
+            mario->dispReqDir = flag ? 180.0f : 0.0f;
             mario->currSubMotionId = 100;
             mario->multiTimer = 10;
         }
         break;
     case 100:
-        *(f32*)((u8*)mario + 0x2A0) -= 6.0f;
-        if (*(f32*)((u8*)mario + 0x2A0) < 0.0f) {
-            *(f32*)((u8*)mario + 0x2A0) = 0.0f;
+        mario->spinSpeed -= 6.0f;
+        if (mario->spinSpeed < 0.0f) {
+            mario->spinSpeed = 0.0f;
             mario->dispFlags &= ~0x100;
             mario2 = marioGetPtr();
             if (!(mario2->flags & MARIO_FLAG_CHG_MOT_DISABLED)) {
@@ -1528,12 +1528,12 @@ void mot_kaze(void) {
                 mario2->trigFlags |= MARIO_TRIG_FLAG_IS_STARTING_NEW_MOTION;
             }
         }
-        mario->unk1A8 = revise360(mario->unk1A8 + *(f32*)((u8*)mario + 0x2A0));
+        mario->unk1A8 = revise360(mario->unk1A8 + mario->spinSpeed);
         flag = FALSE;
         if (mario->unk1A8 > 90.0f && mario->unk1A8 < 270.0f) {
             flag = TRUE;
         }
-        *(f32*)((u8*)mario + 0x1AC) = flag ? 180.0f : 0.0f;
+        mario->dispReqDir = flag ? 180.0f : 0.0f;
         break;
     }
 }

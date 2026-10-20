@@ -505,7 +505,7 @@ void mot_ship(void) {
             SHIP_DATA->unk1C = 0.0f;
             mario->flags &= ~0x000F0000;
             mario->unk1A8 = revise360(mario->unk1A8);
-            *(f32*)((u8*)mario + 0x1AC) = mario->unk1A8;
+            mario->dispReqDir = mario->unk1A8;
             mario->directionView = toMovedir(mario->unk1A8);
             *(f32*)((u8*)mario + 0x19C) = mario->directionView;
             mario->dispFlags &= ~0x100;
@@ -723,7 +723,7 @@ void mot_ship(void) {
         }
         if ((s32)mario->currSubMotionId == 0x2F && r27) {
             mario->unk1A8 = revise360(mario->unk1A8);
-            *(f32*)((u8*)mario + 0x1AC) = mario->unk1A8;
+            mario->dispReqDir = mario->unk1A8;
             *(f32*)mario->unk19C = toMovedir(mario->unk1A8);
             mario->directionView = *(f32*)mario->unk19C;
             mario->dispFlags &= ~0x100;

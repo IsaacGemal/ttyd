@@ -443,7 +443,7 @@ static USER_FUNC(paper_on) {
         marioChgPose("M_S_1");
         marioChgPaper("PM_S_3A");
     }
-    *(f32*)((u8*)mario + 0x1AC) = value;
+    mario->dispReqDir = value;
     mario->unk1A8 = value;
     return EVT_RETURN_BLOCK;
 }

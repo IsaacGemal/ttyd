@@ -52,7 +52,7 @@ USER_FUNC(lect_cam_save) {
     stAt = cam->cameraAt;
     stMpos = mario->position;
     stMdir1 = mario->unk1A8;
-    stMdir2 = *(f32*)mario->unk1AC;
+    stMdir2 = mario->dispReqDir;
     stMdir3 = mario->directionView;
     stMdir4 = *(f32*)mario->unk19C;
 
@@ -92,7 +92,7 @@ USER_FUNC(lect_cam_load) {
 
     mario->position = stMpos;
     mario->unk1A8 = stMdir1;
-    *(f32*)mario->unk1AC = stMdir2;
+    mario->dispReqDir = stMdir2;
     mario->directionView = stMdir3;
     *(f32*)mario->unk19C = stMdir4;
 

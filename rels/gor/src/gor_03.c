@@ -5558,7 +5558,7 @@ USER_FUNC(get_mario_dispReqDir) {
     s32* args = event->args;
     MarioWork* mario = marioGetPtr();
 
-    evtSetValue(event, args[0], (s32) * (f32*)((u8*)mario + 0x1AC));
+    evtSetValue(event, args[0], (s32) mario->dispReqDir);
     return EVT_RETURN_DONE;
 }
 

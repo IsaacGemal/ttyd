@@ -265,7 +265,7 @@ void nokonoko_use(PartyEntry* party) {
         {
             u8* base = (u8*)party;
             movePos((f32*)(base + 0x94), (f32*)(base + 0x9c), 2.0f,
-                    toMovedirSimple(*(f32*)((u8*)mario + 0x1AC)));
+                    toMovedirSimple(mario->dispReqDir));
         }
         party->timer = 4;
         party->jumpPara1 = 0.0f;
@@ -292,8 +292,8 @@ void nokonoko_use(PartyEntry* party) {
         }
         party->position = party->targetPos;
         party->speed = 0.0f;
-        party->field_110 = *(f32*)(mario->unk1AC);
-        NKF(0x10C) = *(f32*)(mario->unk1AC);
+        party->field_110 = mario->dispReqDir;
+        NKF(0x10C) = mario->dispReqDir;
         party->useMotionId = 2;
         partyChgPose(party, NK_STR(0x20, "PNK_A_1"));
         /* fallthrough */
@@ -312,7 +312,7 @@ void nokonoko_use(PartyEntry* party) {
         party->timer = 15;
         party->speed = 0.0f;
         party->targetDist = 0.0f;
-        party->dir = toMovedir(*(f32*)(mario->unk1AC));
+        party->dir = toMovedir(mario->dispReqDir);
         psndSFXOn_3D((const char*)0x92d, &party->position);
         goto L_800CC620;
 
@@ -916,7 +916,7 @@ L_800CCD8C:
             partyGetReturnPos(&v);
         } else {
             *(Vec*)&v = mario->position;
-            f1 = *(f32*)(mario->unk1AC);
+            f1 = mario->dispReqDir;
             {
                 s32 flag = 0;
                 if (f1 >= 90.0f && f1 <= 270.0f) {
@@ -962,7 +962,7 @@ L_800CCD8C:
             party->position.y += 200.0f;
         }
         if (party->groundHit != NULL) {
-            party->field_110 = *(f32*)(mario->unk1AC);
+            party->field_110 = mario->dispReqDir;
             NKF(0x10C) = NKF(0x110);
             if (((hitGetAttr((HitEntry*)party->groundHit) >> 9) & 1) == 0) {
                 party->useMotionId = 0x72;
@@ -1236,7 +1236,7 @@ s32 lookupSafetyPos(Vec pos, Vec* out, f32 height) {
     mario = marioGetPtr();
     radius = mario->wPlayerCollisionBox.x;
 
-    angle = revise360(toMovedir(*(f32*)mario->unk1AC) - float_180);
+    angle = revise360(toMovedir(mario->dispReqDir) - float_180);
     s = sin(float_3p1416 * angle / float_180);
     x = radius * s + pos.x;
     v1.x = x;
@@ -1249,7 +1249,7 @@ s32 lookupSafetyPos(Vec pos, Vec* out, f32 height) {
     hit0 = hitCheckFilter(0, x, y, z, float_0, float_neg1, float_0, &hitX, &hitY, &hitZ, &distance, &hitNX, &hitNY,
                           &hitNZ);
 
-    angle = revise360(toMovedir(*(f32*)mario->unk1AC) - float_90);
+    angle = revise360(toMovedir(mario->dispReqDir) - float_90);
     s = sin(float_3p1416 * angle / float_180);
     x = radius * s + pos.x;
     v2.x = x;
@@ -1262,7 +1262,7 @@ s32 lookupSafetyPos(Vec pos, Vec* out, f32 height) {
     hit1 = hitCheckFilter(0, x, y, z, float_0, float_neg1, float_0, &hitX, &hitY, &hitZ, &distance, &hitNX, &hitNY,
                           &hitNZ);
 
-    angle = revise360(toMovedir(*(f32*)mario->unk1AC) + float_90);
+    angle = revise360(toMovedir(mario->dispReqDir) + float_90);
     s = sin(float_3p1416 * angle / float_180);
     x = radius * s + pos.x;
     v3.x = x;
@@ -1275,7 +1275,7 @@ s32 lookupSafetyPos(Vec pos, Vec* out, f32 height) {
     hit2 = hitCheckFilter(0, x, y, z, float_0, float_neg1, float_0, &hitX, &hitY, &hitZ, &distance, &hitNX, &hitNY,
                           &hitNZ);
 
-    angle = revise360(toMovedir(*(f32*)mario->unk1AC));
+    angle = revise360(toMovedir(mario->dispReqDir));
     s = sin(float_3p1416 * angle / float_180);
     x = radius * s + pos.x;
     v4.x = x;

@@ -80,7 +80,7 @@ void mot_hip(void) {
         mario->flags |= 0x00020000;
         mario->flags |= 0x80;
         marioAdjustMoveDir();
-        angle = *(f32*)((u8*)mario + 0x1AC);
+        angle = mario->dispReqDir;
         flag = (angle >= 90.0f) && (angle <= 270.0f);
         if (flag) {
             angle = 180.0f;
@@ -109,23 +109,23 @@ void mot_hip(void) {
     case 0:
         *(s32*)((u8*)mario + 0x2A4) = psndSFXOn_3D((char*)0x158, &mario->position);
         *(s32*)((u8*)mario + 0x2A8) = psndSFXOn_3D((char*)0xDB, &mario->position);
-        *(f32*)((u8*)mario + 0x2A0) = 0.0f;
+        mario->spinSpeed = 0.0f;
         mario->baseSpeed = 0.0f;
         mario->currSubMotionId = 1;
         // fallthrough
     case 1:
-        base = *(f32*)((u8*)mario + 0x2A0);
+        base = mario->spinSpeed;
         tmp = 20.0f;
         tmp = base + tmp;
-        *(f32*)((u8*)mario + 0x2A0) = tmp;
+        mario->spinSpeed = tmp;
         if (tmp >= 360.0f) {
-            *(f32*)((u8*)mario + 0x2A0) = 360.0f;
+            mario->spinSpeed = 360.0f;
         }
         mario->jumpVelY -= 0.42f;
         if (*(void**)((u8*)mario + 0x1F4) == NULL) {
             *(f32*)((u8*)mario + 0xA8) += mario->jumpVelY;
         }
-        if (*(f32*)((u8*)mario + 0x2A0) == 360.0f && mario->jumpVelY <= 0.0f) {
+        if (mario->spinSpeed == 360.0f && mario->jumpVelY <= 0.0f) {
             mario->multiTimer = 5;
             mario->currSubMotionId = 2;
             mario->jumpVelY = 2.0f;
@@ -182,14 +182,14 @@ void mot_hip(void) {
         break;
     case 0xA:
         marioChkLandon(&landY, 0.0f);
-        base = *(f32*)((u8*)mario + 0x2A0);
+        base = mario->spinSpeed;
         tmp = 22.5f;
         tmp = base + tmp;
-        *(f32*)((u8*)mario + 0x2A0) = tmp;
+        mario->spinSpeed = tmp;
         if (tmp >= 360.0f) {
             mario->flags &= ~0x10000;
             mario->flags |= 0x20000;
-            *(f32*)((u8*)mario + 0x2A0) = 0.0f;
+            mario->spinSpeed = 0.0f;
             mario->currSubMotionId = 0x14;
             mario->jumpAccelY = -3.4744f;
             mario->jumpJerkY = 0.4704f;
@@ -238,7 +238,7 @@ void mot_hip(void) {
                 mario->hitobjStandOn = hit;
                 mario->hitobjJumpFrom = NULL;
                 mario->position.y = landY;
-                *(f32*)((u8*)mario + 0x2A0) = 0.0f;
+                mario->spinSpeed = 0.0f;
                 *(f32*)((u8*)mario + 0xB4) = 0.0f;
                 mario->airTimer = 0;
                 *(s16*)((u8*)mario + 0x52) = 0;
@@ -315,13 +315,13 @@ void mot_hip(void) {
         mario->jumpAccelY = 0.0f;
         mario->jumpJerkY = 0.0f;
         mario->jumpJerkStepY = 0.0f;
-        *(f32*)((u8*)mario + 0x2A0) += (f32)keyGetSubStickY(2) / 10.0f;
+        mario->spinSpeed += (f32)keyGetSubStickY(2) / 10.0f;
         break;
     default:
         break;
     }
 
-    *(f32*)((u8*)mario + 0xC4) = *(f32*)((u8*)mario + 0x2A0);
+    *(f32*)((u8*)mario + 0xC4) = mario->spinSpeed;
     if (mario->airTimer != 0) {
         mario->riderDelta.x = 0.0f;
         mario->riderDelta.z = 0.0f;
@@ -342,7 +342,7 @@ s32 U_chkground(void) {
         mario->hitobjStandOn = hit;
         mario->hitobjJumpFrom = NULL;
         mario->position.y = landY;
-        *(f32*)((u8*)mario + 0x2A0) = 0.0f;
+        mario->spinSpeed = 0.0f;
         *(f32*)((u8*)mario + 0xB4) = 0.0f;
         *(f32*)((u8*)mario + 0xA8) = 0.0f;
         mario->airTimer = 0;

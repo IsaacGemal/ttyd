@@ -3088,7 +3088,7 @@ BOOL partyGetAppearPos3(PartyEntry* party, Vec* position) {
 
     targetDist = 30.0f + party->radius;
     bestDist = -1.0f;
-    unk1AC = *(f32*)player->unk1AC;
+    unk1AC = player->dispReqDir;
     position->x = player->position.x;
     position->y = player->position.y;
     position->z = player->position.z;

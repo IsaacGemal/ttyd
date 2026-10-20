@@ -241,7 +241,7 @@ static inline void vivianUseStep(PartyEntry* party) {
                 toMovedirSimple(mario->unk1A8));
         movePos(&party->targetPos.x, &party->targetPos.z, 0.0f, toMovedirSimple(mario->unk1A8));
         movePos(&party->targetPos.x, &party->targetPos.z,
-                (*(f32*)&mario->unk1AC[0] == 0.0f) ? -2.5f : 2.5f,
+                (mario->dispReqDir == 0.0f) ? -2.5f : 2.5f,
                 toMovedir(270.0f + mario->unk1A8));
     } else {
         if (party->useMotionId >= 4) {
@@ -254,7 +254,7 @@ static inline void vivianUseStep(PartyEntry* party) {
         movePos(&party->targetPos.x, &party->targetPos.z, party->tail.vivian.moveSpeed,
                 toMovedirSimple(mario->unk1A8));
         movePos(&party->targetPos.x, &party->targetPos.z,
-                (*(f32*)&mario->unk1AC[0] == 0.0f) ? -2.5f : 2.5f,
+                (mario->dispReqDir == 0.0f) ? -2.5f : 2.5f,
                 toMovedir(270.0f + mario->unk1A8));
     }
     if (strcmp(gp->currentMapName, "eki_02") == 0) {
@@ -287,7 +287,7 @@ void vivian_use(PartyEntry* party) {
         vivianUseStep(party);
         party->dir = angleABf(party->position.x, party->position.z, party->targetPos.x, party->targetPos.z);
         party->field_10C = mario->unk1A8;
-        party->field_110 = *(f32*)&mario->unk1AC[0];
+        party->field_110 = mario->dispReqDir;
         party->speed = 0.0f;
         party->jumpPara1 = 0.0f;
         party->useMotionId = 1;
@@ -304,7 +304,7 @@ void vivian_use(PartyEntry* party) {
             break;
         }
         party->flags2 |= 0x200000;
-        party->field_110 = *(f32*)&mario->unk1AC[0];
+        party->field_110 = mario->dispReqDir;
         party->field_FC = toMovedirSimple(party->field_110);
         party->field_B8 = party->position;
         mario->dispFlags |= 0x1000;

@@ -222,12 +222,12 @@ void mot_roll_post(void) {
     }
     if (revise360(mario->directionView - mario->targetYaw) >= 180.0f) {
         mario->unk1A8 = 0.0f;
-        *(f32*)((u8*)mario + 0x1AC) = 0.0f;
+        mario->dispReqDir = 0.0f;
         *(f32*)((u8*)mario + 0x19C) = 270.0f;
         mario->directionView = 270.0f;
     } else {
         mario->unk1A8 = 180.0f;
-        *(f32*)((u8*)mario + 0x1AC) = 180.0f;
+        mario->dispReqDir = 180.0f;
         *(f32*)((u8*)mario + 0x19C) = 90.0f;
         mario->directionView = 90.0f;
     }
@@ -266,12 +266,12 @@ void marioRollForceCancel(void) {
         }
         if (revise360(mario->directionView - mario->targetYaw) >= 180.0f) {
             mario->unk1A8 = 0.0f;
-            *(f32*)((u8*)mario + 0x1AC) = 0.0f;
+            mario->dispReqDir = 0.0f;
             *(f32*)((u8*)mario + 0x19C) = 270.0f;
             mario->directionView = 270.0f;
         } else {
             mario->unk1A8 = 180.0f;
-            *(f32*)((u8*)mario + 0x1AC) = 180.0f;
+            mario->dispReqDir = 180.0f;
             *(f32*)((u8*)mario + 0x19C) = 90.0f;
             mario->directionView = 90.0f;
         }
@@ -747,7 +747,7 @@ void mot_roll(void) {
                     f27 = 90.0f;
                 }
                 mario->unk1A8 = f27;
-                *(f32*)((u8*)mario + 0x1AC) = f27;
+                mario->dispReqDir = f27;
             } else {
                 f30 = 270.0f;
                 f27 = 0.1f * (f30 - mario->unk1A8);
@@ -756,17 +756,17 @@ void mot_roll(void) {
                     f27 = 270.0f;
                 }
                 mario->unk1A8 = f27;
-                *(f32*)((u8*)mario + 0x1AC) = f27;
+                mario->dispReqDir = f27;
             }
         } else {
             if (revise360(mario->directionView - mario->targetYaw) >= 180.0f) {
                 mario->unk1A8 = 0.0f;
-                *(f32*)((u8*)mario + 0x1AC) = 0.0f;
+                mario->dispReqDir = 0.0f;
                 *(f32*)((u8*)mario + 0x19C) = 270.0f;
                 mario->directionView = 270.0f;
             } else {
                 mario->unk1A8 = 180.0f;
-                *(f32*)((u8*)mario + 0x1AC) = 180.0f;
+                mario->dispReqDir = 180.0f;
                 *(f32*)((u8*)mario + 0x19C) = 90.0f;
                 mario->directionView = 90.0f;
             }

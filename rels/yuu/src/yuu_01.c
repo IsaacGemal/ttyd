@@ -1054,8 +1054,8 @@ s32 yuuminigame2_gamerule(EventEntry* event, BOOL isFirstCall, void* work, Yuumi
     }
 
 apply:
-    *(f32*)mario->unk1AC = reviseAngle(angle);
-    mario->unk1A8 = *(f32*)mario->unk1AC;
+    mario->dispReqDir = reviseAngle(angle);
+    mario->unk1A8 = mario->dispReqDir;
 end:
     return 0;
 }

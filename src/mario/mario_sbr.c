@@ -202,7 +202,7 @@ s32 marioSetDirEventMain(void) {
         dir = revise360(270.0f - *(f32*)((u8*)p + 0x294));
         t = (dir - *(f32*)((u8*)p + 0x290)) * ((f32)(*(s32*)((u8*)p + 0x29C)) / (f32)frames);
         p->unk1A8 = revise360(*(f32*)((u8*)p + 0x290) + t);
-        *(f32*)((u8*)p + 0x1AC) = p->unk1A8;
+        p->dispReqDir = p->unk1A8;
         p->directionView = toMovedirSimple(p->unk1A8);
         *(f32*)((u8*)p + 0x19C) = p->directionView;
         if (++*(s32*)((u8*)p + 0x29C) > frames) {
@@ -212,7 +212,7 @@ s32 marioSetDirEventMain(void) {
         return 0;
     } else {
         p->unk1A8 = revise360(270.0f - *(f32*)((u8*)p + 0x294));
-        *(f32*)((u8*)p + 0x1AC) = p->unk1A8;
+        p->dispReqDir = p->unk1A8;
         p->directionView = toMovedirSimple(p->unk1A8);
         *(f32*)((u8*)p + 0x19C) = p->directionView;
         p->dispFlags &= ~0x8000;
@@ -250,12 +250,12 @@ void marioAdjustMoveDir(void) {
         *(f32*)((u8*)p + 0x19C) = toMovedir(90.0f);
         p->directionView = *(f32*)((u8*)p + 0x19C);
         p->unk1A8 = 180.0f;
-        *(f32*)((u8*)p + 0x1AC) = 180.0f;
+        p->dispReqDir = 180.0f;
     } else {
         *(f32*)((u8*)p + 0x19C) = toMovedir(90.0f);
         p->directionView = *(f32*)((u8*)p + 0x19C);
         p->unk1A8 = 0.0f;
-        *(f32*)((u8*)p + 0x1AC) = 0.0f;
+        p->dispReqDir = 0.0f;
     }
 }
 

@@ -1126,7 +1126,7 @@ L_3800:
                 }
                 {
                     MarioWork* m = marioGetPtr();
-                    *(f32*)((u8*)m + 0x2A0) = *(f32*)((u8*)m + 0x2A0) + *(f32*)((u8*)m + 0x2A4);
+                    m->spinSpeed = m->spinSpeed + *(f32*)((u8*)m + 0x2A4);
                 }
             }
             if (M_F(0x2A0) <= -10.0f) {

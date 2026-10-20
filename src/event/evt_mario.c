@@ -306,9 +306,9 @@ USER_FUNC(evt_mario_paper_pose_dokan) {
         marioChgPose(str_8041B750);
         mario->dispFlags |= 0x8;
         mario->dispFlags |= 0x100;
-        mario->unk1A8 = *(f32*)((u8*)mario + 0x1AC); // 0x1AC: field not declared in MarioWork
+        mario->unk1A8 = mario->dispReqDir;
         zero = 0.0f;
-        *(f32*)((u8*)mario + 0x2A0) = zero; // 0x2A0: field not declared in MarioWork
+        mario->spinSpeed = zero;
         pos = EM_VEC(0xC0, vec3_802e57f0);
         pos.z = (mario->flags & 0x02000000) ? -16.0f : zero;
         *(Vec*)((u8*)mario + 0x98) = pos;
@@ -334,7 +334,7 @@ USER_FUNC(evt_mario_paper_pose_dokan) {
         mario->dispFlags |= 0x8;
         mario->dispFlags |= 0x100;
         *(Vec*)((u8*)mario + 0xC8) = EM_VEC(0xCC, vec3_802e57fc);
-        *(f32*)((u8*)mario + 0x2A0) = 30.0f;
+        mario->spinSpeed = 30.0f;
         event->userdata[0] = 8;
         event->userdata[1] = 3;
         ret = 2;
@@ -388,16 +388,16 @@ USER_FUNC(evt_mario_paper_pose_dokan) {
         break;
     }
     case 10:
-        *(f32*)((u8*)mario + 0x2A0) += 1.0f;
-        if (*(f32*)((u8*)mario + 0x2A0) > 30.0f) {
-            *(f32*)((u8*)mario + 0x2A0) = 30.0f;
+        mario->spinSpeed += 1.0f;
+        if (mario->spinSpeed > 30.0f) {
+            mario->spinSpeed = 30.0f;
         }
         event->userdata[0]++;
         if (event->userdata[0] > 10) {
-            *(f32*)((u8*)mario + 0x1A8) += *(f32*)((u8*)mario + 0x2A0);
-            *(f32*)((u8*)mario + 0x2A0) += 0.1f;
-            if (*(f32*)((u8*)mario + 0x2A0) > 30.0f) {
-                *(f32*)((u8*)mario + 0x2A0) = 30.0f;
+            *(f32*)((u8*)mario + 0x1A8) += mario->spinSpeed;
+            mario->spinSpeed += 0.1f;
+            if (mario->spinSpeed > 30.0f) {
+                mario->spinSpeed = 30.0f;
             }
         }
         if (event->userdata[0] < sysMsec2Frame(300)) {
@@ -682,7 +682,7 @@ USER_FUNC(evt_mario_set_dir) {
         start = event->userdataf[1];
         delta = (a - start) * ((f32)event->userdata[0] / (f32)frames);
         mario->unk1A8 = revise360(start + delta);
-        *(f32*)((u8*)mario + 0x1AC) = mario->unk1A8;
+        mario->dispReqDir = mario->unk1A8;
         mario->directionView = toMovedirSimple(mario->unk1A8);
         *(f32*)((u8*)mario + 0x19C) = mario->directionView;
         n = event->userdata[0] + 1;
@@ -696,7 +696,7 @@ USER_FUNC(evt_mario_set_dir) {
         return EVT_RETURN_BLOCK;
     }
     mario->unk1A8 = revise360(270.0f - angle);
-    *(f32*)((u8*)mario + 0x1AC) = mario->unk1A8;
+    mario->dispReqDir = mario->unk1A8;
     mario->directionView = toMovedirSimple(mario->unk1A8);
     *(f32*)((u8*)mario + 0x19C) = mario->directionView;
     return EVT_RETURN_DONE;
@@ -723,8 +723,8 @@ USER_FUNC(evt_mario_set_dispdir) {
     s32* args = event->args;
     MarioWork* mario = marioGetPtr();
 
-    *(f32*)((u8*)mario + 0x1AC) = reviseAngle(evtGetFloat(event, args[0]));
-    mario->unk1A8 = *(f32*)((u8*)mario + 0x1AC);
+    mario->dispReqDir = reviseAngle(evtGetFloat(event, args[0]));
+    mario->unk1A8 = mario->dispReqDir;
     return EVT_RETURN_DONE;
 }
 
@@ -741,8 +741,8 @@ USER_FUNC(evt_mario_set_dir_npc) {
     }
     camYaw = camGetPtr(CAMERA_3D)->viewYaw;
     angle = revise360(angleABf(mario->position.x, mario->position.z, npc->position.x, npc->position.z) - camYaw);
-    *(f32*)((u8*)mario + 0x1AC) = (angle < float_180_8041b904) ? float_180_8041b904 : float_0_8041b8ac;
-    *(f32*)((u8*)mario + 0x19C) = toMovedirSimple(*(f32*)((u8*)mario + 0x1AC));
+    mario->dispReqDir = (angle < float_180_8041b904) ? float_180_8041b904 : float_0_8041b8ac;
+    *(f32*)((u8*)mario + 0x19C) = toMovedirSimple(mario->dispReqDir);
     mario->directionView = *(f32*)((u8*)mario + 0x19C);
     return EVT_RETURN_DONE;
 }
@@ -755,7 +755,7 @@ USER_FUNC(unk_800e23e0) {
     f32 camYaw = camGetPtr(CAMERA_3D)->viewYaw;
     f32 angle = revise360(angleABf(mario->position.x, mario->position.z, x, z) - camYaw);
 
-    *(f32*)((u8*)mario + 0x1AC) = (angle < float_180_8041b904) ? float_180_8041b904 : float_0_8041b8ac;
+    mario->dispReqDir = (angle < float_180_8041b904) ? float_180_8041b904 : float_0_8041b8ac;
     mario->directionView = angle;
     *(f32*)((u8*)mario + 0x19C) = angle;
     return EVT_RETURN_DONE;
@@ -1409,11 +1409,11 @@ USER_FUNC(evt_mario_party_bero_move) {
         if (party != NULL) {
             f32 angle;
 
-            if (party->field_32 == 0) { // 0x1AC below: field not declared in MarioWork
-                angle = (*(f32*)((u8*)mario + 0x1AC) >= float_90_8041b8e8 && *(f32*)((u8*)mario + 0x1AC) <= float_270_8041b8ec) ? float_220_8041b8e0 : float_140_8041b8e4;
+            if (party->field_32 == 0) {
+                angle = (mario->dispReqDir >= float_90_8041b8e8 && mario->dispReqDir <= float_270_8041b8ec) ? float_220_8041b8e0 : float_140_8041b8e4;
                 angle = revise360(mario->targetYaw + angle);
             } else {
-                angle = (*(f32*)((u8*)mario + 0x1AC) >= float_90_8041b8e8 && *(f32*)((u8*)mario + 0x1AC) <= float_270_8041b8ec) ? float_225_8041b8f0 : float_135_8041b8f4;
+                angle = (mario->dispReqDir >= float_90_8041b8e8 && mario->dispReqDir <= float_270_8041b8ec) ? float_225_8041b8f0 : float_135_8041b8f4;
                 angle = revise360(mario->targetYaw + angle);
             }
             partyMoveBehindMario3(party, 0, angle);
@@ -1426,10 +1426,10 @@ USER_FUNC(evt_mario_party_bero_move) {
             f32 angle;
 
             if (party->field_32 == 0) {
-                angle = (*(f32*)((u8*)mario + 0x1AC) >= float_90_8041b8e8 && *(f32*)((u8*)mario + 0x1AC) <= float_270_8041b8ec) ? float_220_8041b8e0 : float_140_8041b8e4;
+                angle = (mario->dispReqDir >= float_90_8041b8e8 && mario->dispReqDir <= float_270_8041b8ec) ? float_220_8041b8e0 : float_140_8041b8e4;
                 angle = revise360(mario->targetYaw + angle);
             } else {
-                angle = (*(f32*)((u8*)mario + 0x1AC) >= float_90_8041b8e8 && *(f32*)((u8*)mario + 0x1AC) <= float_270_8041b8ec) ? float_225_8041b8f0 : float_135_8041b8f4;
+                angle = (mario->dispReqDir >= float_90_8041b8e8 && mario->dispReqDir <= float_270_8041b8ec) ? float_225_8041b8f0 : float_135_8041b8f4;
                 angle = revise360(mario->targetYaw + angle);
             }
             partyMoveBehindMario3(party, 0, angle);
@@ -1564,7 +1564,7 @@ USER_FUNC(evt_mario_jump_pos) {
         } else {
             rollEvtJumpSetup();
             mario->unk1A8 = mario->directionView;
-            *(f32*)((u8*)mario + 0x1AC) = mario->directionView;
+            mario->dispReqDir = mario->directionView;
         }
         event->userdata[2] = (s32)(float_0p5_8041b8c8 + half);
         event->userdata[0] = 1;

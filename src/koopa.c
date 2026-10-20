@@ -80,7 +80,7 @@ __declspec(section ".sdata2") extern const f32 float_neg0p01_8042040c;
 #endif
 
 // The original inlines this breath spawn into kpaFireAttack's four breath states; keep it one helper so the four
-// copies share a body. `unk1AC` is only named as bytes in mario.h but the original reads it as a float here.
+// copies share a body.
 // This copy (one declarator `scale, x`) drives the first breath block; the `#ifdef` twin below drives the
 // other three and exists only to give MWCC the declaration order it needs for the right FPR colouring.
 #ifdef MUST_MATCH

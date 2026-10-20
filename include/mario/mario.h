@@ -179,7 +179,8 @@ typedef struct MarioWork {
 	f32 directionView;             // 0x1A0
 	f32 unk1A4;                    // 0x1A4
     f32 unk1A8;                    // 0x1A8
-    u8 unk1AC[0x1B4 - 0x1AC];      // 0x1AC
+    f32 dispReqDir;                // 0x1AC, requested display direction (get_mario_dispReqDir; party moves aim by it)
+    u8 field_0x1B0[0x1B4 - 0x1B0]; // 0x1B0
     Vec wPlayerCollisionBox;       // 0x1B4 JP, 0x1B8 US
     u8 field_0x1C0[0x1D8 - 0x1C0]; // 0x1C0
     s32 field_0x1D8;               // 0x1D8
@@ -211,7 +212,9 @@ typedef struct MarioWork {
     u32 padDirsPressed;            // 0x25C, dirs newly set since the previous frame
     u8 field_0x260[0x288 - 0x260]; // 0x260
     void* motStruct;               // 0x288, motion userdata, TODO rename?
-    u8 field_0x28C[0x2A8 - 0x28C]; // 0x28C
+    u8 field_0x28C[0x2A0 - 0x28C]; // 0x28C
+    f32 spinSpeed;                 // 0x2A0, added to unk1A8 each frame (mario_motion spin, mot_hip, evt_mario)
+    u8 field_0x2A4[0x2A8 - 0x2A4]; // 0x2A4
     f32 wCamVal1;                  // 0x2A8, TODO: double check. mot_hip keeps an s32 SFX id here (per-motion scratch?)
     u8 field_0x2AC[0x2CC - 0x2AC]; // 0x2AC
     Vec bottomlessResetPosition;   // 0x2CC JP, 0x2E4 US

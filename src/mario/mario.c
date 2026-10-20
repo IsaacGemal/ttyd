@@ -950,7 +950,7 @@ void marioReInit(void) {
 	trigFlags = wp->trigFlags;
 	motionId = wp->currMotionId;
 	unk1A8 = wp->unk1A8;
-	unk1AC = *(f32*)wp->unk1AC;
+	unk1AC = wp->dispReqDir;
 	dirView = wp->directionView;
 	unk19C = *(f32*)wp->unk19C;
 	prevParty0 = wp->prevPartyMemberId[0];
@@ -980,7 +980,7 @@ void marioReInit(void) {
 	wp->trigFlags = trigFlags;
 	wp->currMotionId = motionId;
 	wp->unk1A8 = unk1A8;
-	*(f32*)wp->unk1AC = unk1AC;
+	wp->dispReqDir = unk1AC;
 	wp->directionView = dirView;
 	*(f32*)wp->unk19C = unk19C;
 	wp->prevPartyMemberId[0] = prevParty0;
