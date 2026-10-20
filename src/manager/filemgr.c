@@ -628,7 +628,7 @@ FileEntry* _fileAlloc(const char* filename, s32 type, FileCallback callback) {
 			test += 32 - (test & 31);
 		}
 		smart = smartAlloc(test, 0);
-		smart->field_0x8 = newentry;
+		smart->file = newentry;
 		DVDMgrRead(entry, smart->address, test, 0);
 		DVDMgrClose(entry);
 		newentry->data = &smart->address;
@@ -799,7 +799,7 @@ s32 fileAsync(const char* filename, s32 type, FileCallback callback) {
 			test += 32 - (test & 31);
 		}
 		smart = smartAlloc(test, 0);
-		smart->field_0x8 = newentry;
+		smart->file = newentry;
 		newentry->data = &smart->address;
 		newentry->state = FILE_STATE_ASYNC;
 		newentry->references = 0;
