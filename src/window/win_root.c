@@ -63,7 +63,9 @@ typedef struct WinRootRec {
 } WinRootRec;
 
 typedef struct WinRoot {
-    u8 pad0[0x48];
+    u8 pad0[0x40];
+    s32 tabSel;         // 0x40, index of the tab under the cursor
+    s32 tabCount;       // 0x44, tabs in use
     WinRootTab tabs[5]; // 0x48
     WinRootRec recs[5]; // 0xC0
 } WinRoot;
@@ -276,49 +278,49 @@ s32 winRootMain(WindowWork* work) {
     switch (work->rootState) {
     case 0:
         psndSFXOn((const char*)0x2002A);
-        WW_S32(work, 0x44) = 0;
-        tab = &WROOT(work)->tabs[WW_S32(work, 0x44)];
+        WROOT(work)->tabCount = 0;
+        tab = &WROOT(work)->tabs[WROOT(work)->tabCount];
         tab->id = 0;
         tab->state = 0;
         tab->y = 1000.0f;
         tab->x = 1000.0f;
         tab->str = msg_help[0];
-        WW_S32(work, 0x44)++;
+        WROOT(work)->tabCount++;
         if (swByteGet(0) >= 7 || partyChkJoin(1) != 0) {
-            tab = &WROOT(work)->tabs[WW_S32(work, 0x44)];
+            tab = &WROOT(work)->tabs[WROOT(work)->tabCount];
             tab->id = 1;
             tab->state = 0;
             tab->y = 1000.0f;
             tab->x = 1000.0f;
             tab->str = msg_help[1];
-            WW_S32(work, 0x44)++;
+            WROOT(work)->tabCount++;
         }
-        tab = &WROOT(work)->tabs[WW_S32(work, 0x44)];
+        tab = &WROOT(work)->tabs[WROOT(work)->tabCount];
         tab->id = 2;
         tab->state = 0;
         tab->y = 1000.0f;
         tab->x = 1000.0f;
         tab->str = msg_help[2];
-        WW_S32(work, 0x44)++;
+        WROOT(work)->tabCount++;
         if (swByteGet(0) >= 0x14 || pouchGetHaveBadgeCnt() != 0) {
-            tab = &WROOT(work)->tabs[WW_S32(work, 0x44)];
+            tab = &WROOT(work)->tabs[WROOT(work)->tabCount];
             tab->id = 3;
             tab->state = 0;
             tab->y = 1000.0f;
             tab->x = 1000.0f;
             tab->str = msg_help[3];
-            WW_S32(work, 0x44)++;
+            WROOT(work)->tabCount++;
         }
-        tab = &WROOT(work)->tabs[WW_S32(work, 0x44)];
+        tab = &WROOT(work)->tabs[WROOT(work)->tabCount];
         tab->id = 4;
         tab->state = 0;
         tab->y = 1000.0f;
         tab->x = 1000.0f;
         tab->str = msg_help[4];
-        WW_S32(work, 0x44)++;
-        for (j = 0; j < WW_S32(work, 0x44); j++) {
+        WROOT(work)->tabCount++;
+        for (j = 0; j < WROOT(work)->tabCount; j++) {
             if (WROOT(work)->tabs[j].id == work->openTabId) {
-                WW_S32(work, 0x40) = j;
+                WROOT(work)->tabSel = j;
             }
         }
         WW_S32(work, 0xCC) = -1;
@@ -344,7 +346,7 @@ s32 winRootMain(WindowWork* work) {
         WW_F32(work, 0xC8) = 1000.0f;
         WW_F32(work, 0xC4) = 1000.0f;
         WW_S32(work, 0xCC) = 0;
-        WW_S32(work, 0xC0) = ((WinRootTab*)((u8*)WROOT(work)->tabs + WW_S32(work, 0x40) * 0x18))->id;
+        WW_S32(work, 0xC0) = ((WinRootTab*)((u8*)WROOT(work)->tabs + WROOT(work)->tabSel * 0x18))->id;
         WW_S32(work, 0x130) = 0;
         WW_F32(work, 0x12C) = 1000.0f;
         WW_F32(work, 0x128) = 1000.0f;
@@ -357,7 +359,7 @@ s32 winRootMain(WindowWork* work) {
         winBadgeInit(work);
         winLogInit(work);
         {
-            f32 pos = (f32)(WW_S32(work, 0x40) * 0x69 - 0x10E);
+            f32 pos = (f32)(WROOT(work)->tabSel * 0x69 - 0x10E);
 
             work->targetX = pos;
             work->posX = pos;
@@ -368,7 +370,7 @@ s32 winRootMain(WindowWork* work) {
         WW_F32(work, 0x164) = -1000.0f;
         WW_F32(work, 0x170) = -1000.0f;
         WW_F32(work, 0x168) = -1000.0f;
-        str = ((WinRootTab*)((u8*)WROOT(work)->tabs + WW_S32(work, 0x40) * 0x18))->str;
+        str = ((WinRootTab*)((u8*)WROOT(work)->tabs + WROOT(work)->tabSel * 0x18))->str;
         winMsgEntry(work, 0, str, 0);
         work->rootState = 0xA;
         switch (work->openTabId) {
@@ -394,17 +396,17 @@ s32 winRootMain(WindowWork* work) {
             break;
         }
         if (gp->flags & 0x1000) {
-            WW_S32(work, 0x44) = 0;
-            tab = &WROOT(work)->tabs[WW_S32(work, 0x44)];
+            WROOT(work)->tabCount = 0;
+            tab = &WROOT(work)->tabs[WROOT(work)->tabCount];
             tab->id = 1;
             tab->state = 0;
             tab->y = 1000.0f;
             tab->x = 1000.0f;
             tab->str = msg_help[1];
-            WW_S32(work, 0x44)++;
+            WROOT(work)->tabCount++;
             winPartyInit2(work);
             work->rootState = 0xC;
-            WW_S32(work, 0x40) = 0;
+            WROOT(work)->tabSel = 0;
         }
         work->fbCopy = smartAlloc(GXGetTexBufferSize(gp->fbWidth, gp->efbHeight, 4, 0, 0), 1);
         work->fbCopyReady = 0;
@@ -418,10 +420,10 @@ s32 winRootMain(WindowWork* work) {
             break;
         }
         if (work->buttonTrg & 0x100) {
-            if (((WinRootTab*)((u8*)WROOT(work)->tabs + WW_S32(work, 0x40) * 0x18))->id != 1 || work->partyCount != 0) {
+            if (((WinRootTab*)((u8*)WROOT(work)->tabs + WROOT(work)->tabSel * 0x18))->id != 1 || work->partyCount != 0) {
                 psndSFXOn((const char*)0x20012);
-                work->rootState = ((WinRootTab*)((u8*)WROOT(work)->tabs + WW_S32(work, 0x40) * 0x18))->id + 0xB;
-                switch (((WinRootTab*)((u8*)WROOT(work)->tabs + WW_S32(work, 0x40) * 0x18))->id) {
+                work->rootState = ((WinRootTab*)((u8*)WROOT(work)->tabs + WROOT(work)->tabSel * 0x18))->id + 0xB;
+                switch (((WinRootTab*)((u8*)WROOT(work)->tabs + WROOT(work)->tabSel * 0x18))->id) {
                 case 0:
                     winMarioInit2(work);
                     break;
@@ -444,9 +446,9 @@ s32 winRootMain(WindowWork* work) {
         if (work->dirRep & 0x4000) {
             psndSFXOn((const char*)0x20032);
             psndSFXOn((const char*)0x20031);
-            WW_S32(work, 0x40)--;
-            if (WW_S32(work, 0x40) < 0) {
-                WW_S32(work, 0x40) = WW_S32(work, 0x44) - 1;
+            WROOT(work)->tabSel--;
+            if (WROOT(work)->tabSel < 0) {
+                WROOT(work)->tabSel = WROOT(work)->tabCount - 1;
             }
             for (j = 4; j > 0; j--) {
                 WROOT(work)->recs[j] = WROOT(work)->recs[j - 1];
@@ -454,16 +456,16 @@ s32 winRootMain(WindowWork* work) {
             WW_F32(work, 0xC8) = 1000.0f;
             WW_F32(work, 0xC4) = 1000.0f;
             WW_S32(work, 0xCC) = 0x1E;
-            WW_S32(work, 0xC0) = ((WinRootTab*)((u8*)WROOT(work)->tabs + WW_S32(work, 0x40) * 0x18))->id;
-            work->targetX = (f32)(WW_S32(work, 0x40) * 0x69 - 0x10E);
-            str = ((WinRootTab*)((u8*)WROOT(work)->tabs + WW_S32(work, 0x40) * 0x18))->str;
+            WW_S32(work, 0xC0) = ((WinRootTab*)((u8*)WROOT(work)->tabs + WROOT(work)->tabSel * 0x18))->id;
+            work->targetX = (f32)(WROOT(work)->tabSel * 0x69 - 0x10E);
+            str = ((WinRootTab*)((u8*)WROOT(work)->tabs + WROOT(work)->tabSel * 0x18))->str;
             winMsgEntry(work, 0, str, 0);
         } else if (work->dirRep & 0x8000) {
             psndSFXOn((const char*)0x20032);
             psndSFXOn((const char*)0x20031);
-            WW_S32(work, 0x40)++;
-            if (WW_S32(work, 0x40) >= WW_S32(work, 0x44)) {
-                WW_S32(work, 0x40) = 0;
+            WROOT(work)->tabSel++;
+            if (WROOT(work)->tabSel >= WROOT(work)->tabCount) {
+                WROOT(work)->tabSel = 0;
             }
             for (j = 4; j > 0; j--) {
                 WROOT(work)->recs[j] = WROOT(work)->recs[j - 1];
@@ -471,14 +473,14 @@ s32 winRootMain(WindowWork* work) {
             WW_F32(work, 0xC8) = 1000.0f;
             WW_F32(work, 0xC4) = 1000.0f;
             WW_S32(work, 0xCC) = 0x14;
-            WW_S32(work, 0xC0) = ((WinRootTab*)((u8*)WROOT(work)->tabs + WW_S32(work, 0x40) * 0x18))->id;
-            work->targetX = (f32)(WW_S32(work, 0x40) * 0x69 - 0x10E);
-            str = ((WinRootTab*)((u8*)WROOT(work)->tabs + WW_S32(work, 0x40) * 0x18))->str;
+            WW_S32(work, 0xC0) = ((WinRootTab*)((u8*)WROOT(work)->tabs + WROOT(work)->tabSel * 0x18))->id;
+            work->targetX = (f32)(WROOT(work)->tabSel * 0x69 - 0x10E);
+            str = ((WinRootTab*)((u8*)WROOT(work)->tabs + WROOT(work)->tabSel * 0x18))->str;
             winMsgEntry(work, 0, str, 0);
         }
         break;
     case 100:
-        if (((WinRootRec*)((u8*)WROOT(work)->recs + WW_S32(work, 0x40) * 0x14))->d == 0x64) {
+        if (((WinRootRec*)((u8*)WROOT(work)->recs + WROOT(work)->tabSel * 0x14))->d == 0x64) {
             work->rootState = 0xA;
         }
         break;
@@ -508,10 +510,10 @@ s32 winRootMain(WindowWork* work) {
             result = -2;
         }
         if (result == -1) {
-            work->targetX = (f32)(WW_S32(work, 0x40) * 0x69 - 0x10E);
+            work->targetX = (f32)(WROOT(work)->tabSel * 0x69 - 0x10E);
             work->targetY = 185.0f;
             work->rootState = 0xA;
-            str = ((WinRootTab*)((u8*)WROOT(work)->tabs + WW_S32(work, 0x40) * 0x18))->str;
+            str = ((WinRootTab*)((u8*)WROOT(work)->tabs + WROOT(work)->tabSel * 0x18))->str;
             winMsgEntry(work, 0, str, 0);
             work->flags &= ~0x4000;
         } else if (result == -2) {
@@ -521,7 +523,7 @@ s32 winRootMain(WindowWork* work) {
         break;
     case 20:
         psndSFXOn((const char*)0x2002B);
-        for (j = 0; j < WW_S32(work, 0x44); j++) {
+        for (j = 0; j < WROOT(work)->tabCount; j++) {
             WROOT(work)->tabs[j].state = 0xA;
         }
         WW_S32(work, 0xCC) = 0xA;
@@ -555,7 +557,7 @@ s32 winRootMain(WindowWork* work) {
             if (WW_S32(work, 0x19C) != 0 && work->partySel != work->lastPartySel) {
                 return -2;
             }
-            if (WW_S32(work, 0x2D4) != 0) {
+            if (work->useItemId != 0) {
                 return -3;
             }
             return -1;
@@ -578,11 +580,11 @@ s32 winRootMain(WindowWork* work) {
             work->posY += (work->targetY - work->posY) / 4.0f;
         } else {
             work->posX += (work->targetX - work->posX) / 4.0f;
-            work->posY += (work->targetY + (((WinRootTab*)((u8*)WROOT(work)->tabs + WW_S32(work, 0x40) * 0x18))->y - 185.0f) - work->posY) / 4.0f;
+            work->posY += (work->targetY + (((WinRootTab*)((u8*)WROOT(work)->tabs + WROOT(work)->tabSel * 0x18))->y - 185.0f) - work->posY) / 4.0f;
         }
     } else if (work->posY > 180.0f) {
             work->posX += (work->targetX - work->posX) / 4.0f;
-            work->posY += (work->targetY + (((WinRootTab*)((u8*)WROOT(work)->tabs + WW_S32(work, 0x40) * 0x18))->y - 185.0f) - work->posY) / 4.0f;
+            work->posY += (work->targetY + (((WinRootTab*)((u8*)WROOT(work)->tabs + WROOT(work)->tabSel * 0x18))->y - 185.0f) - work->posY) / 4.0f;
     } else {
             work->posX += (work->targetX + WW_F32(work, 0xC4) - work->posX) / 4.0f;
             work->posY += (work->targetY - work->posY) / 4.0f;
@@ -712,11 +714,11 @@ void winRootDisp(CameraId camId, WindowWork* work) {
 static inline void winRootTabDisp(WindowWork* work) {
     s32 j;
 
-    for (j = 0; j < WW_S32(work, 0x44); j++) {
+    for (j = 0; j < WROOT(work)->tabCount; j++) {
         WinRootTab* tab = &WROOT(work)->tabs[j];
         GXColor color;
 
-        if (WW_S32(work, 0x40) == j) {
+        if (WROOT(work)->tabSel == j) {
             color = (GXColor){0xFF, 0xFF, 0xFF, 0xFE};
         } else {
             color = (GXColor){0x80, 0x80, 0x80, 0xFE};
@@ -1864,55 +1866,55 @@ void winWazaGX(WindowWork* work, s32 type, f32 x, f32 y, f32 w, f32 h) {
 }
 
 void sort_1_1_func(WindowWork* work) {
-    s32 item = WW_S32(work, 0x214);
+    s32 item = work->itemSel[0];
     pouchGetHaveItemCnt();
     pouchHaveItem(item);
     {
         s32 type = 7;
-        if (WW_S32(work, 0x180) == 0) {
+        if (work->sortReversed == 0) {
             type = 0;
         }
         pouchSortItem(type);
     }
-    WW_S32(work, 0x180) = 1 - WW_S32(work, 0x180);
+    work->sortReversed = 1 - work->sortReversed;
     winMakeSkipList(work);
-    WW_S32(work, 0x214) = 0;
-    WW_S32(work, 0x21C) = WW_S32(work, 0x214) / 10;
+    work->itemSel[0] = 0;
+    work->itemScrollRow[0] = work->itemSel[0] / 10;
 }
 
 void sort_1_2_func(WindowWork* work) {
-    s32 item = WW_S32(work, 0x214);
+    s32 item = work->itemSel[0];
     pouchGetHaveItemCnt();
     pouchHaveItem(item);
-    pouchSortItem(WW_S32(work, 0x180) == 0 ? 1 : 8);
-    WW_S32(work, 0x180) = 1 - WW_S32(work, 0x180);
+    pouchSortItem(work->sortReversed == 0 ? 1 : 8);
+    work->sortReversed = 1 - work->sortReversed;
     winMakeSkipList(work);
-    WW_S32(work, 0x214) = 0;
-    WW_S32(work, 0x21C) = WW_S32(work, 0x214) / 10;
+    work->itemSel[0] = 0;
+    work->itemScrollRow[0] = work->itemSel[0] / 10;
 }
 
 void sort_2_1_func(WindowWork* work) {
-    pouchSortItem(WW_S32(work, 0x180) == 0 ? 2 : 9);
-    WW_S32(work, 0x180) = 1 - WW_S32(work, 0x180);
+    pouchSortItem(work->sortReversed == 0 ? 2 : 9);
+    work->sortReversed = 1 - work->sortReversed;
     winMakeSkipList(work);
-    WW_S32(work, 0x218) = 0;
-    WW_S32(work, 0x220) = WW_S32(work, 0x218) / 10;
+    work->itemSel[1] = 0;
+    work->itemScrollRow[1] = work->itemSel[1] / 10;
 }
 
 void sort_2_2_func(WindowWork* work) {
-    pouchSortItem(WW_S32(work, 0x180) == 0 ? 3 : 10);
-    WW_S32(work, 0x180) = 1 - WW_S32(work, 0x180);
+    pouchSortItem(work->sortReversed == 0 ? 3 : 10);
+    work->sortReversed = 1 - work->sortReversed;
     winMakeSkipList(work);
-    WW_S32(work, 0x218) = 0;
-    WW_S32(work, 0x220) = WW_S32(work, 0x218) / 10;
+    work->itemSel[1] = 0;
+    work->itemScrollRow[1] = work->itemSel[1] / 10;
 }
 
 void sort_3_1_func(WindowWork* work) {
     s32 badge = work->badgeSel[0];
     pouchGetHaveBadgeCnt();
     pouchHaveBadge(badge);
-    pouchSortItem(WW_S32(work, 0x180) == 0 ? 4 : 11);
-    WW_S32(work, 0x180) = 1 - WW_S32(work, 0x180);
+    pouchSortItem(work->sortReversed == 0 ? 4 : 11);
+    work->sortReversed = 1 - work->sortReversed;
     winMakeEquipList(work);
     work->badgeSel[0] = 0;
     work->badgeScrollRow[0] = work->badgeSel[0] / 8;
@@ -1922,8 +1924,8 @@ void sort_3_2_func(WindowWork* work) {
     s32 badge = work->badgeSel[0];
     pouchGetHaveBadgeCnt();
     pouchHaveBadge(badge);
-    pouchSortItem(WW_S32(work, 0x180) == 0 ? 5 : 12);
-    WW_S32(work, 0x180) = 1 - WW_S32(work, 0x180);
+    pouchSortItem(work->sortReversed == 0 ? 5 : 12);
+    work->sortReversed = 1 - work->sortReversed;
     winMakeEquipList(work);
     work->badgeSel[0] = 0;
     work->badgeScrollRow[0] = work->badgeSel[0] / 8;
@@ -1933,9 +1935,9 @@ void sort_3_3_func(WindowWork* work) {
     s32 badge = work->badgeSel[0];
     pouchGetHaveBadgeCnt();
     pouchHaveBadge(badge);
-    pouchSortItem(WW_S32(work, 0x180) == 0 ? 6 : 13);
-    pouchSortItem(WW_S32(work, 0x180) == 0 ? 6 : 13);
-    WW_S32(work, 0x180) = 1 - WW_S32(work, 0x180);
+    pouchSortItem(work->sortReversed == 0 ? 6 : 13);
+    pouchSortItem(work->sortReversed == 0 ? 6 : 13);
+    work->sortReversed = 1 - work->sortReversed;
     winMakeEquipList(work);
     work->badgeSel[0] = 0;
     work->badgeScrollRow[0] = work->badgeSel[0] / 8;
@@ -1996,23 +1998,23 @@ int N_compare_func4_2_r(void* a, void* b) {
 }
 
 void sort_4_1_func(WindowWork* work) {
-    if (WW_S32(work, 0x180) == 0) {
+    if (work->sortReversed == 0) {
         qqsort((u8*)work + 0x404, work->equipListCount, 0xC, (int (*)(void*, void*))N_compare_func4_1);
     } else {
         qqsort((u8*)work + 0x404, work->equipListCount, 0xC, (int (*)(void*, void*))N_compare_func4_1_r);
     }
-    WW_S32(work, 0x180) = 1 - WW_S32(work, 0x180);
+    work->sortReversed = 1 - work->sortReversed;
     work->badgeSel[1] = 0;
     work->badgeScrollRow[1] = work->badgeSel[1] / 8;
 }
 
 void sort_4_2_func(WindowWork* work) {
-    if (WW_S32(work, 0x180) == 0) {
+    if (work->sortReversed == 0) {
         qqsort((u8*)work + 0x404, work->equipListCount, 0xC, N_compare_func4_2);
     } else {
         qqsort((u8*)work + 0x404, work->equipListCount, 0xC, N_compare_func4_2_r);
     }
-    WW_S32(work, 0x180) = 1 - WW_S32(work, 0x180);
+    work->sortReversed = 1 - work->sortReversed;
     work->badgeSel[1] = 0;
     work->badgeScrollRow[1] = work->badgeSel[1] / 8;
 }
@@ -2026,7 +2028,7 @@ void sort_4_2_func(WindowWork* work) {
 // spills at 0x14/0x18/0x1c exactly.
 void sort_4_3_func(WindowWork* work) {
     u8* base = (u8*)work;
-    if (WW_S32(work, 0x180) == 0) {
+    if (work->sortReversed == 0) {
         s32 ida;
         s32 idb;
         s32 i;
@@ -2082,7 +2084,7 @@ void sort_4_3_func(WindowWork* work) {
         }
     }
 
-    WW_S32(work, 0x180) = 1 - WW_S32(work, 0x180);
+    work->sortReversed = 1 - work->sortReversed;
     work->badgeSel[1] = 0;
     work->badgeScrollRow[1] = work->badgeSel[1] / 8;
 }
@@ -2140,23 +2142,23 @@ int compare_func5_2_r(void* a, void* b) {
 }
 
 void sort_5_1_func(WindowWork* work) {
-    if (WW_S32(work, 0x180) == 0) {
+    if (work->sortReversed == 0) {
         qqsort((u8*)work + 0xEB8, WW_S32(work, 0xE94), 2, (int (*)(void*, void*))compare_func5_1);
     } else {
         qqsort((u8*)work + 0xEB8, WW_S32(work, 0xE94), 2, (int (*)(void*, void*))compare_func5_1_r);
     }
-    WW_S32(work, 0x180) = 1 - WW_S32(work, 0x180);
+    work->sortReversed = 1 - work->sortReversed;
     WW_S32(work, 0xE98) = 0;
     WW_S32(work, 0xE9C) = WW_S32(work, 0xE98) / 28;
 }
 
 void sort_5_2_func(WindowWork* work) {
-    if (WW_S32(work, 0x180) == 0) {
+    if (work->sortReversed == 0) {
         qqsort((u8*)work + 0xEB8, WW_S32(work, 0xE94), 2, compare_func5_2);
     } else {
         qqsort((u8*)work + 0xEB8, WW_S32(work, 0xE94), 2, compare_func5_2_r);
     }
-    WW_S32(work, 0x180) = 1 - WW_S32(work, 0x180);
+    work->sortReversed = 1 - work->sortReversed;
     WW_S32(work, 0xE98) = 0;
     WW_S32(work, 0xE9C) = WW_S32(work, 0xE98) / 28;
 }
@@ -2170,7 +2172,7 @@ void sort_5_2_func(WindowWork* work) {
 // branches only for that reason.
 void sort_5_3_func(WindowWork* work) {
     u8* base = (u8*)work;
-    if (WW_S32(work, 0x180) == 0) {
+    if (work->sortReversed == 0) {
         s16 la;
         s16 lb;
         s32 i;
@@ -2232,7 +2234,7 @@ void sort_5_3_func(WindowWork* work) {
         }
     }
 
-    WW_S32(work, 0x180) = 1 - WW_S32(work, 0x180);
+    work->sortReversed = 1 - work->sortReversed;
     WW_S32(work, 0xE98) = 0;
     WW_S32(work, 0xE9C) = WW_S32(work, 0xE98) / 28;
 }
@@ -2290,23 +2292,23 @@ int compare_func6_2_r(void* a, void* b) {
 }
 
 void sort_6_1_func(WindowWork* work) {
-    if (WW_S32(work, 0x180) == 0) {
+    if (work->sortReversed == 0) {
         qqsort((u8*)work + 0xFB4, WW_S32(work, 0xF90), 2, (int (*)(void*, void*))compare_func6_1);
     } else {
         qqsort((u8*)work + 0xFB4, WW_S32(work, 0xF90), 2, (int (*)(void*, void*))compare_func6_1_r);
     }
-    WW_S32(work, 0x180) = 1 - WW_S32(work, 0x180);
+    work->sortReversed = 1 - work->sortReversed;
     WW_S32(work, 0xF94) = 0;
     WW_S32(work, 0xF98) = WW_S32(work, 0xF94) / 28;
 }
 
 void sort_6_2_func(WindowWork* work) {
-    if (WW_S32(work, 0x180) == 0) {
+    if (work->sortReversed == 0) {
         qqsort((u8*)work + 0xFB4, WW_S32(work, 0xF90), 2, compare_func6_2);
     } else {
         qqsort((u8*)work + 0xFB4, WW_S32(work, 0xF90), 2, compare_func6_2_r);
     }
-    WW_S32(work, 0x180) = 1 - WW_S32(work, 0x180);
+    work->sortReversed = 1 - work->sortReversed;
     WW_S32(work, 0xF94) = 0;
     WW_S32(work, 0xF98) = WW_S32(work, 0xF94) / 28;
 }
@@ -2332,12 +2334,12 @@ int compare_func1_r(void* a, void* b) {
 }
 
 void sort_7_1_func(WindowWork* work) {
-    if (WW_S32(work, 0x180) == 0) {
+    if (work->sortReversed == 0) {
         qqsort((u8*)work + 0x1050, WW_S32(work, 0x1038), 2, compare_func1);
     } else {
         qqsort((u8*)work + 0x1050, WW_S32(work, 0x1038), 2, compare_func1_r);
     }
-    WW_S32(work, 0x180) = 1 - WW_S32(work, 0x180);
+    work->sortReversed = 1 - work->sortReversed;
     WW_S32(work, 0x1040) = 0;
     WW_S32(work, 0x1044) = WW_S32(work, 0x1040) / 16;
 }
@@ -2399,14 +2401,14 @@ int compare_func2_r(const void* a, const void* b) {
 }
 
 void sort_7_2_func(WindowWork* work) {
-    if (WW_S32(work, 0x180) == 0) {
+    if (work->sortReversed == 0) {
         qqsort(&work->field_40[0x1010], WW_S32(work, 0x1038), 2, compare_func1);
         qqsort(&work->field_40[0x1010], WW_S32(work, 0x1038), 2, (int (*)(void*, void*))compare_func2);
     } else {
         qqsort(&work->field_40[0x1010], WW_S32(work, 0x1038), 2, compare_func1_r);
         qqsort(&work->field_40[0x1010], WW_S32(work, 0x1038), 2, (int (*)(void*, void*))compare_func2_r);
     }
-    WW_S32(work, 0x180) = 1 - WW_S32(work, 0x180);
+    work->sortReversed = 1 - work->sortReversed;
     WW_S32(work, 0x1040) = 0;
     WW_S32(work, 0x1044) = WW_S32(work, 0x1040) / 16;
 }
@@ -2466,14 +2468,14 @@ int compare_func3_r(void* a, void* b) {
 }
 
 void sort_7_3_func(WindowWork* work) {
-    if (WW_S32(work, 0x180) == 0) {
+    if (work->sortReversed == 0) {
         qqsort(&work->field_40[0x1010], WW_S32(work, 0x1038), 2, compare_func1);
         qqsort(&work->field_40[0x1010], WW_S32(work, 0x1038), 2, compare_func3);
     } else {
         qqsort(&work->field_40[0x1010], WW_S32(work, 0x1038), 2, compare_func1_r);
         qqsort(&work->field_40[0x1010], WW_S32(work, 0x1038), 2, compare_func3_r);
     }
-    WW_S32(work, 0x180) = 1 - WW_S32(work, 0x180);
+    work->sortReversed = 1 - work->sortReversed;
     WW_S32(work, 0x1040) = 0;
     WW_S32(work, 0x1044) = WW_S32(work, 0x1040) / 16;
 }
@@ -2499,14 +2501,14 @@ int compare_func4_r(const void* a, const void* b) {
 }
 
 void sort_8_1_func(WindowWork* work) {
-    if (WW_S32(work, 0x180) == 0) {
-        qqsort((u8*)work + 0x26E, WW_S32(work, 0x254), 2, (int (*)(void*, void*))compare_func4);
+    if (work->sortReversed == 0) {
+        qqsort((u8*)work + 0x26E, work->mailCount, 2, (int (*)(void*, void*))compare_func4);
     } else {
-        qqsort((u8*)work + 0x26E, WW_S32(work, 0x254), 2, (int (*)(void*, void*))compare_func4_r);
+        qqsort((u8*)work + 0x26E, work->mailCount, 2, (int (*)(void*, void*))compare_func4_r);
     }
-    WW_S32(work, 0x180) = 1 - WW_S32(work, 0x180);
-    WW_S32(work, 0x258) = 0;
-    WW_S32(work, 0x25C) = WW_S32(work, 0x258) / 5;
+    work->sortReversed = 1 - work->sortReversed;
+    work->mailSel = 0;
+    work->mailPage = work->mailSel / 5;
 }
 
 int compare_func5(void* a, void* b) {
@@ -2530,14 +2532,14 @@ int compare_func5_r(void* a, void* b) {
 }
 
 void sort_8_2_func(WindowWork* work) {
-    if (WW_S32(work, 0x180) == 0) {
-        qqsort((u8*)work + 0x26E, WW_S32(work, 0x254), 2, compare_func5);
+    if (work->sortReversed == 0) {
+        qqsort((u8*)work + 0x26E, work->mailCount, 2, compare_func5);
     } else {
-        qqsort((u8*)work + 0x26E, WW_S32(work, 0x254), 2, compare_func5_r);
+        qqsort((u8*)work + 0x26E, work->mailCount, 2, compare_func5_r);
     }
-    WW_S32(work, 0x180) = 1 - WW_S32(work, 0x180);
-    WW_S32(work, 0x258) = 0;
-    WW_S32(work, 0x25C) = WW_S32(work, 0x258) / 5;
+    work->sortReversed = 1 - work->sortReversed;
+    work->mailSel = 0;
+    work->mailPage = work->mailSel / 5;
 }
 
 // The two trailing lerps use separate deltas so MWCC keeps the first fmadd's
@@ -2730,7 +2732,7 @@ void winSortEntry(WindowWork* work, s32 idx, f32 a, f32 b) {
     WW_S32(work, 0x184) = idx;
     WW_S32(work, 0x178) = count;
     WW_S32(work, 0x174) = 0;
-    WW_S32(work, 0x180) = 0;
+    work->sortReversed = 0;
     WW_F32(work, 0x164) = -1000.0f;
     WW_F32(work, 0x16C) = a;
     WW_F32(work, 0x168) = b;
@@ -2846,8 +2848,8 @@ void winMailDisp(WindowWork* work) {
     if (WW_F32(work, 0x244) < 320.0f && WW_F32(work, 0x24C) > -240.0f) {
     winMailGX(work, WW_F32(work, 0x244), WW_F32(work, 0x24C));
 
-    if (WW_S32(work, 0x20C) != 0xCA) {
-        for (i = 0; i < WW_S32(work, 0x254); i++) {
+    if (work->itemState != 0xCA) {
+        for (i = 0; i < work->mailCount; i++) {
             s32 id = *((u8*)work + 0x26F + i * 2);
             s32 num = *((u8*)work + 0x26E + i * 2);
             WinMailEntry* mail = mailGetPtr(id);
@@ -2884,7 +2886,7 @@ void winMailDisp(WindowWork* work) {
         }
         GXSetScissor(0, 0, 0x260, 0x1E0);
     } else {
-        s32 sel = WW_S32(work, 0x258);
+        s32 sel = work->mailSel;
         s32 num = *((u8*)work + 0x26E + sel * 2);
         GXColor white = {0xFF, 0xFF, 0xFF, 0xFF};
         GXColor black = {0x00, 0x00, 0x00, 0xFF};
@@ -2928,27 +2930,27 @@ void winMailDisp(WindowWork* work) {
                   (Vec){4.0f + (208.0f + WW_F32(work, 0x244)), (WW_F32(work, 0x24C) - 56.0f) - 80.0f, 0.0f},
                   (Vec){1.0f, 7.5f, 1.0f}, color);
         winFontInit();
-        winMailLabelV((Vec){80.0f + WW_F32(work, 0x244), (WW_F32(work, 0x24C) - 80.0f) + (f32)(WW_S32(work, 0x268) * 21), 0.0f},
+        winMailLabelV((Vec){80.0f + WW_F32(work, 0x244), (WW_F32(work, 0x24C) - 80.0f) + (f32)(work->mailScroll * 21), 0.0f},
                       (Vec){0.75f, 0.75f, 0.75f}, (GXColor){0x00, 0x00, 0x00, 0xFF}, mail->body);
         if (mail->flags & 0x1000) {
             winTexInit(*(TEXPalette**)work->mailTpl->data);
             winTexSet(mail->picture,
-                      (Vec){210.0f + WW_F32(work, 0x244), 7.0f + ((WW_F32(work, 0x24C) - (f32)((*(u16*)((u8*)work + 0x26C) - 1) * 21))
-                                                   + (f32)(WW_S32(work, 0x268) * 21)), 0.0f},
+                      (Vec){210.0f + WW_F32(work, 0x244), 7.0f + ((WW_F32(work, 0x24C) - (f32)((work->mailLines - 1) * 21))
+                                                   + (f32)(work->mailScroll * 21)), 0.0f},
                       (Vec){1.0f, 1.0f, 1.0f}, (GXColor){0xFF, 0xFF, 0xFF, 0xFF});
         }
         GXSetScissor(0, 0, 0x260, 0x1E0);
 
         // scroll arrows (blinking) and the scroll bar, when the body is longer than a page
-        if (*(u16*)((u8*)work + 0x26C) > 8) {
+        if (work->mailLines > 8) {
             winIconInit();
-            if (WW_S32(work, 0x268) == 0) {
+            if (work->mailScroll == 0) {
                 if ((gp->retraceCount & 0x1F) < 20) {
                     winMailIconV(0x1B6,
                                  (Vec){360.0f + WW_F32(work, 0x244), (20.0f + (WW_F32(work, 0x24C) - 230.0f)) - 24.0f, 0.0f},
                                  (Vec){0.6f, 0.6f, 0.6f}, (GXColor){0xFF, 0xFF, 0xFF, 0xFF});
                 }
-            } else if (WW_S32(work, 0x268) + 6 == *(u16*)((u8*)work + 0x26C)) {
+            } else if (work->mailScroll + 6 == work->mailLines) {
                 if ((gp->retraceCount & 0x1F) < 20) {
                     winMailIconV(0x1B5,
                                  (Vec){360.0f + WW_F32(work, 0x244), 24.0f + (20.0f + (WW_F32(work, 0x24C) - 230.0f)), 0.0f},
