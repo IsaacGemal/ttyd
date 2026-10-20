@@ -101,7 +101,7 @@ void mobjDispXLU(CameraId camId, void* param) {
 
     if (entry->flags & 0x400) {
         animSetPaperTexMtx(entry->paperTexMtx, NULL, NULL);
-        animSetPaperTexObj(&entry->paperTexObj, NULL, NULL, entry->unk208, NULL, NULL, 1, 1);
+        animSetPaperTexObj(&entry->paperTexObj, NULL, NULL, entry->paperTex, NULL, NULL, 1, 1);
     }
     animPoseDraw(entry->poseId, entry->position.x, entry->position.y, entry->position.z, entry->rotation.y,
                  float_10_8041a0cc * entry->scale.x, 1);
@@ -121,7 +121,7 @@ void mobjDisp(CameraId camId, void* param) {
 
     if (entry->flags & 0x400) {
         animSetPaperTexMtx(entry->paperTexMtx, NULL, NULL);
-        animSetPaperTexObj(&entry->paperTexObj, NULL, NULL, entry->unk208, NULL, NULL, 1, 1);
+        animSetPaperTexObj(&entry->paperTexObj, NULL, NULL, entry->paperTex, NULL, NULL, 1, 1);
     }
     disp = dispGetCurWork();
     switch (disp->renderMode) {
@@ -153,7 +153,7 @@ void mobjDisp_OffscreenXLU(CameraId camId, void* param) {
     GXClearBoundingBox();
     if (entry->flags & 0x400) {
         animSetPaperTexMtx(entry->paperTexMtx, NULL, NULL);
-        animSetPaperTexObj(&entry->paperTexObj, NULL, NULL, entry->unk208, NULL, NULL, 1, 1);
+        animSetPaperTexObj(&entry->paperTexObj, NULL, NULL, entry->paperTex, NULL, NULL, 1, 1);
     }
     animPoseDraw(entry->poseId, entry->position.x, entry->position.y, entry->position.z, entry->rotation.y,
                  float_10_8041a0cc * entry->scale.x, 1);

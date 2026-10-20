@@ -3591,15 +3591,15 @@ void kururing_capture(CameraId cameraId, void* param) {
     GXSetScissor(0, 0, texWidth, texHeight);
     test_kururing_mapdisp(cameraId);
     sysWaitDrawSync();
-    obj->unk208 = smartAlloc(GXGetTexBufferSize(texWidth / 2, texHeight / 2, 6, 0, 0), 3);
+    obj->paperTex = smartAlloc(GXGetTexBufferSize(texWidth / 2, texHeight / 2, 6, 0, 0), 3);
     GXSetTexCopySrc(0, 0, texWidth, texHeight);
     GXSetTexCopyDst(texWidth / 2, texHeight / 2, 6, 1);
     GXSetZMode(1, 3, 1);
-    GXCopyTex(((smartEntry*)obj->unk208)->address, 1);
+    GXCopyTex((obj->paperTex)->address, 1);
     GXInvalidateTexAll();
     GXPixModeSync();
     GXTexModeSync();
-    GXInitTexObj(&obj->paperTexObj, ((smartEntry*)obj->unk208)->address, texWidth / 2,
+    GXInitTexObj(&obj->paperTexObj, (obj->paperTex)->address, texWidth / 2,
                  texHeight / 2, 6, 0, 0, 0);
     GXInitTexObjLOD(&obj->paperTexObj, 0, 0, 0.0f, 0.0f, 0.0f, 0,
                     0, 0);

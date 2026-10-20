@@ -2,6 +2,7 @@
 
 typedef struct EventEntry EventEntry;
 typedef struct EffectEntry EffectEntry;
+typedef struct smartEntry smartEntry;
 
 #include "dolphin/gx/GXStruct.h"
 #include "driver/camdrv.h"
@@ -47,7 +48,7 @@ typedef struct MapObjectEntry {
     s32 triggerFlag;             // 0x1E0, the entry->flags bit that last hit Mario (0x200000, 0x1000000, ...)
     s32 flagVar;                 // 0x1E4, script variable/flag: set when activated, read by evtGetValue
     GXTexObj paperTexObj;        // 0x1E8
-    void* unk208;                // 0x208
+    smartEntry* paperTex;        // 0x208, smartAlloc buffer that GXCopyTex fills for the paper texture
     Mtx paperTexMtx;             // 0x20C
 } MapObjectEntry;
 
