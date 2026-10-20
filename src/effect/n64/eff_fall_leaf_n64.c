@@ -26,7 +26,7 @@ typedef struct effFallLeafData {
 	f32 y;                           // 0x08
 	f32 z;                           // 0x0C
 	u8 field_0x10[0x14];             // 0x10
-	s32 tevReg0A;                       // 0x24 TEVREG0 alpha, fades up over the first 10 frames and down over the last 10
+	s32 tevReg0A;                    // 0x24 TEVREG0 alpha, fades up over the first 10 frames and down over the last 10
 	s32 life;                        // 0x28
 	s32 counter;                     // 0x2C
 	effFallLeafParticle particle[4]; // 0x30
@@ -41,12 +41,12 @@ typedef struct effFallLeafMainData {
 	f32 x;           // 0x04
 	f32 y;           // 0x08
 	f32 z;           // 0x0C
-	f32 field_0x10;  // 0x10
-	f32 field_0x14;  // 0x14
-	f32 field_0x18;  // 0x18
-	f32 field_0x1C;  // 0x1C
-	f32 field_0x20;  // 0x20
-	s32 field_0x24;  // 0x24
+	f32 velX;        // 0x10
+	f32 velY;        // 0x14
+	f32 rotZ;        // 0x18
+	f32 swayAngle;   // 0x1C
+	f32 rotY;        // 0x20
+	s32 tevReg0A;    // 0x24 header only
 	s32 life;        // 0x28
 	s32 counter;     // 0x2C
 } effFallLeafMainData;
@@ -200,45 +200,45 @@ void effFallLeafMain(EffectEntry* effect) {
 	type = data->type;
 	life = data->life;
 	if (counter < 10) {
-		data->field_0x24 = (s32)(float_0p3_8041edd4 * (f32)(0xFF - data->field_0x24) + (f32)data->field_0x24);
+		data->tevReg0A = (s32)(float_0p3_8041edd4 * (f32)(0xFF - data->tevReg0A) + (f32)data->tevReg0A);
 	}
 	if (life < 10) {
-		data->field_0x24 = (s32)((f32)data->field_0x24 * float_0p8_8041edd8);
+		data->tevReg0A = (s32)((f32)data->tevReg0A * float_0p8_8041edd8);
 	}
 	idx = counter + 20;
 	i = 1;
 	data++;
 	for (; i < effect->count; idx += 20, i++, data++) {
-		s = (f32)sin(float_6p2832_8041eddc * (float_2_8041ede0 * data->field_0x18) / float_360_8041ede4);
-		data->field_0x14 += float_neg0p05_8041ede8;
+		s = (f32)sin(float_6p2832_8041eddc * (float_2_8041ede0 * data->rotZ) / float_360_8041ede4);
+		data->velY += float_neg0p05_8041ede8;
 		t = float_0p2_8041edec * s;
-		data->field_0x10 += t;
+		data->velX += t;
 		switch (type) {
 		case 0:
 		case 2:
 		case 3:
 		case 4:
-			data->field_0x10 *= float_0p94_8041edf0;
+			data->velX *= float_0p94_8041edf0;
 #ifdef MUST_MATCH
-			sn = (f32)sin(float_6p2832_8041eddc * data->field_0x18 / float_360_8041ede4);
-			data->field_0x14 *= float_0p05_8041edf8 * sn + float_0p95_8041edf4;
+			sn = (f32)sin(float_6p2832_8041eddc * data->rotZ / float_360_8041ede4);
+			data->velY *= float_0p05_8041edf8 * sn + float_0p95_8041edf4;
 #else
-			data->field_0x14 *= float_0p05_8041edf8 * (f32)sin(float_6p2832_8041eddc * data->field_0x18 / float_360_8041ede4) + float_0p95_8041edf4;
+			data->velY *= float_0p05_8041edf8 * (f32)sin(float_6p2832_8041eddc * data->rotZ / float_360_8041ede4) + float_0p95_8041edf4;
 #endif
 			break;
 		case 1:
-			data->field_0x14 += float_neg0p05_8041ede8;
-			data->field_0x10 *= float_0p92_8041edfc;
+			data->velY += float_neg0p05_8041ede8;
+			data->velX *= float_0p92_8041edfc;
 			break;
 		}
-		data->field_0x1C += (f32)(s32)(effTblRandN64(50, idx) - 25);
-		data->field_0x18 += float_10_8041ee00 * (f32)sin(float_6p2832_8041eddc * data->field_0x1C / float_360_8041ede4);
-		t = (f32)cos(float_6p2832_8041eddc * (data->field_0x1C * float_0p5_8041ee04) / float_360_8041ede4);
-		data->field_0x20 += float_10_8041ee00 * t;
-		data->x += data->field_0x10;
-		data->y += data->field_0x14;
+		data->swayAngle += (f32)(s32)(effTblRandN64(50, idx) - 25);
+		data->rotZ += float_10_8041ee00 * (f32)sin(float_6p2832_8041eddc * data->swayAngle / float_360_8041ede4);
+		t = (f32)cos(float_6p2832_8041eddc * (data->swayAngle * float_0p5_8041ee04) / float_360_8041ede4);
+		data->rotY += float_10_8041ee00 * t;
+		data->x += data->velX;
+		data->y += data->velY;
 	}
-	dispEntry(4, dispCalcZ(&position2), 2, effFallLeafDisp, effect);
+	dispEntry(CAMERA_3D, dispCalcZ(&position2), 2, effFallLeafDisp, effect);
 }
 #else
 void effFallLeafMain(EffectEntry* effect) {

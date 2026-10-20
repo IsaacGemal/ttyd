@@ -12,13 +12,13 @@ typedef struct effPokopiPipoData {
 	f32 x;              // 0x4
 	f32 y;              // 0x8
 	f32 z;              // 0xC
-	f32 startEnd[6];    // 0x10 start x,y,z then end x,y,z; written at init, never read
+	f32 field_0x10[6];  // 0x10 the entry's x,y,z then x2,y2,z2; written at init, never read
 	s32 lifetime;       // 0x28
 	s32 timer;          // 0x2C
 	s32 tevReg0R;       // 0x30 TEVREG0 red
 	s32 tevReg0G;       // 0x34 TEVREG0 green
 	s32 tevReg0B;       // 0x38 TEVREG0 blue
-	u32 tevReg0A;          // 0x3C TEVREG0 alpha (0xFF)
+	u32 tevReg0A;       // 0x3C TEVREG0 alpha (0xFF)
 	f32 scale;          // 0x40
 	f32 velX;           // 0x44
 	f32 velY;           // 0x48
@@ -28,7 +28,7 @@ typedef struct effPokopiPipoData {
 	f32 scaleX;         // 0x58 w_scale_data / 100
 	f32 scaleY;         // 0x5C h_scale_data / 100
 	s32 scaleFrame;     // 0x60 index into the scale tables: -1 in the air, 0-6 while squashing, parked at 7
-	s32 descends;       // 0x64 1 when the end point is below the start; written at init, never read
+	s32 field_0x64;     // 0x64 1 when y2 < y, else 0; written at init, never read
 	s32 flightFrames;   // 0x68 frames until the bounce (the count argument)
 } effPokopiPipoData;
 
@@ -67,12 +67,12 @@ EffectEntry* effPokopiPipoN64Entry(s32 type, s32 count, f32 x, f32 y, f32 z, f32
 	}
 	data->flightFrames = count;
 	data->tevReg0A = 0xff;
-	data->startEnd[0] = x;
-	data->startEnd[1] = y;
-	data->startEnd[2] = z;
-	data->startEnd[3] = x2;
-	data->startEnd[4] = y2;
-	data->startEnd[5] = z2;
+	data->field_0x10[0] = x;
+	data->field_0x10[1] = y;
+	data->field_0x10[2] = z;
+	data->field_0x10[3] = x2;
+	data->field_0x10[4] = y2;
+	data->field_0x10[5] = z2;
 	data->x = x;
 	data->y = y;
 	data->z = z;
@@ -80,9 +80,9 @@ EffectEntry* effPokopiPipoN64Entry(s32 type, s32 count, f32 x, f32 y, f32 z, f32
 	data->velY = (y2 - y) / (f32)count - -0.1f * (f32)count;
 	data->velZ = (z2 - z) / (f32)count;
 	if (y2 - y < 0.0f) {
-		data->descends = 1;
+		data->field_0x64 = 1;
 	} else {
-		data->descends = 0;
+		data->field_0x64 = 0;
 	}
 	data->scale = scale;
 	data->tevReg0R = 0x46;

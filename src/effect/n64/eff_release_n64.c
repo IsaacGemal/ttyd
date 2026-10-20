@@ -129,7 +129,7 @@ EffectEntry* effReleaseN64Entry(s32 type, s32 duration, f32 x, f32 y, f32 z, f32
     } else {
         data->life = duration;
     }
-    data->fade = 0xFF;
+    data->field_0x28 = 0xFF;
     data->x = x;
     data->y = y;
     data->z = z;
@@ -207,7 +207,7 @@ void effReleaseMain(EffectEntry* effect) {
     }
     counter = data->counter;
     if (data->life < 16) {
-        data->fade = data->life << 4;
+        data->field_0x28 = data->life << 4;
     }
 
     switch (data->state) {
@@ -577,7 +577,7 @@ void effReleaseDisp(CameraId camId, void* param) {
 
     if (type == 2 || type == 3) {
         alpha = 0;
-        if (data->state == 1 || data->state == 0x64) {
+        if (data->state == 1 || data->state == 100) {
             if (data->stateFrame > 2 && data->stateFrame <= 10) {
                 alpha = 0xFF - (data->stateFrame - 2) * 30;
             }

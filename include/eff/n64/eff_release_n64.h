@@ -17,7 +17,7 @@ typedef struct effReleaseN64Data {
     s32 tevReg0R;     // 0x1C TEVREG0 red
     s32 tevReg0G;     // 0x20 TEVREG0 green
     s32 tevReg0B;     // 0x24 TEVREG0 blue
-    s32 fade;         // 0x28 written by the main when life < 16, never read
+    s32 field_0x28;   // 0x28 0xFF at init, life << 4 once life < 16; never read
     s32 tevReg1R;     // 0x2C TEVREG1 red
     s32 tevReg1G;     // 0x30 TEVREG1 green
     s32 tevReg1B;     // 0x34 TEVREG1 blue

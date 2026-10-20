@@ -139,9 +139,9 @@ USER_FUNC(_binta_effect) {
     unit = BattleGetUnitPtr(wp, BattleTransID(event, value0));
     BtlUnit_GetPos(unit, &pos.x, &pos.y, &pos.z);
     effect = effWhirlwindN64Entry((u32)value1 >> 31, 0, 0x5A, unit->mSizeMultiplier);
-    *(f32*)((u8*)effect->userdata + 8) = pos.x;
-    *(f32*)((u8*)effect->userdata + 0xC) = pos.y;
-    *(f32*)((u8*)effect->userdata + 0x10) = pos.z;
+    ((EffWhirlwindData*)effect->userdata)->x = pos.x;
+    ((EffWhirlwindData*)effect->userdata)->y = pos.y;
+    ((EffWhirlwindData*)effect->userdata)->z = pos.z;
     return EVT_RETURN_DONE;
 }
 

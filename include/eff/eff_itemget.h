@@ -3,14 +3,14 @@
 typedef struct EffectEntry EffectEntry;
 
 #include <dolphin/types.h>
-EffectEntry* effItemGetEntry(s32 id, f32 x, f32 y, f32 z);
+EffectEntry* effItemGetEntry(s32 type, f32 x, f32 y, f32 z);
 #include <dolphin/mtx.h>
 #include "driver/camdrv.h"
 typedef struct effItemGetData {
-	s32 id;         //0x0 item id: indexes size_tbl and color_tbl (header only; particles leave it unused)
+	s32 type;       //0x0 glow type 0-10 (itemdrv picks it from the item kind): indexes size_tbl and color_tbl, sets the particle count; header only
 	Vec position;   //0x4
 	f32 animScale;  //0x10 scale factor, from scale_data over the first 12 frames and x1.1 / x0.9 per frame
-	f32 baseSize;   //0x14 size_tbl[id] / 10 * 0.75
+	f32 baseSize;   //0x14 size_tbl[type] / 10 * 0.75
 	s32 life;       //0x18 frames left (1000 = held until flagged; 16 once the effect is told to close)
 	s32 frame;      //0x1C frames elapsed
 	s32 scaleMode;  //0x20 header only: 0 hold, 1 grow while under 100, 2 shrink

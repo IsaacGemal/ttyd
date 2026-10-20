@@ -744,7 +744,7 @@ USER_FUNC(bg) {
     EffectEntry* entry = effItemGetEntry(0, 0.0f, 0.0f, 0.0f);
 
     ((effItemGetData*)entry->userdata)->scaleMode = 1;
-    ((effItemGetData*)entry->userdata)->camId = 5;
+    ((effItemGetData*)entry->userdata)->camId = CAMERA_3D_EFFECTA;
     return EVT_RETURN_DONE;
 }
 

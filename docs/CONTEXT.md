@@ -9371,3 +9371,26 @@ sound, 0x20 not drawn); tipRotY/tipRotZ are never initialised by effStarStoneEnt
 dust child is written through raw offsets (0x04..0x0C, 0x4C..0x54, 0x68) because eff_snow_dust_n64 has no public
 struct; sac_scissor's `starRot.x/.z` feed tipRotY/tipRotZ, so that ScissorWork field is likely misnamed;
 effStampData `scale` (0x30) is the ring radius, not a scale, and `field_0x10..0x18` stay unnamed.
+### Readability: effects, group 6 (2026-10-19, Claude Haiku 5.5, n9-q-eff6; reviewed by Claude Opus 5.5)
+
+Work structs named for eff_release_n64, eff_whirlwind_n64, eff_kemuri10_n64 (0x1C-0x4B is `Mtx orient`, the
+up/side/dir columns PSMTXConcat reads), eff_thunder_n64 (`scrollU0`/`scrollV0`/`scrollU1`/`scrollV1`, their speeds
+and update intervals, the `flare`/`charge` children), eff_itemget, eff_pokopi_pipo_n64 and eff_fall_leaf_n64;
+GX, camera and PSMTXRotRad axis literals in those files are enums or chars. TEV colour fields are named after
+the register they feed (`tevReg0R`..`tevReg0A`, `tevReg1R`..). The review checked every GX swap against
+GXEnum.h by value and enum type, and natural-compiled all 16 touched C files on the tower against the base
+revision: the `.text` and relocations of every natural object are identical, so the `#else` branches the
+checksum doesn't cover are unchanged. Review fixes: effItemGetData's 0x0 is the glow `type` (0-10, which
+itemdrv picks from the item kind), not an item id; never-read fields went back to `field_0x` with what they hold
+in the comment (release 0x28, pokopi 0x10[6] and 0x64); EffWhirlwindData moved to its header so battle_mario's
+and battle_event_subset's whirlwind spawns write `->x/y/z` instead of raw offsets, and effWhirlwindN64Entry's
+parameters are `type, mario, life, size`; EffCrystalData moved to its header so tik_05's crystal_bgmode writes
+`EffCrystalData.camId` and map_bgmode/map_bgmode_end write `EffTreasureMapData.cameraId`, where they had cast
+those effects to effItemGetData (one through `*(s32*)&...->velY`); the camera ids there and in sys.c are
+CAMERA_3D / CAMERA_3D_EFFECTA; the MUST_MATCH-only effFallLeafMainData took the particle names; the remaining
+`GXSetChanMatColor(4, ...)` under MUST_MATCH in eff_itemget use GX_COLOR0A0; thunder's `life` comment no longer
+claims a grow-in. Index 59.234 -> 58.392 (worker, after rebase onto cfbcdb84), 58.353 after the review. Open:
+eff_thunder still writes EffAkariChargeData's `field_0x18`..`field_0x30`, waiting on n9-q-eff7's names; never
+read or unused: release 0x60-0x6C (zeroed at init), kemuri10 0x0 and the second RGB copy at 0x67-0x69,
+whirlwind 0x47, fall_leaf's header 0x10-0x23 and particle 0x24-0x2F; the itemget particles reuse
+effItemGetData, so `velX`..`angle` mean nothing on the header and `type`/`scaleMode`/`camId` nothing on a particle.
