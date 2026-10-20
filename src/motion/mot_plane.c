@@ -172,23 +172,13 @@ void mot_plane(void) {
 
 	if (mario->trigFlags & 1) {
 		MotionPlaneData* data;
-#ifdef MUST_MATCH
 		s32 inactive;
-#endif
 		mario->trigFlags &= ~1;
 		mario->motStruct = __memAlloc(HEAP_DEFAULT, sizeof(MotionPlaneData));
 		memset(mario->motStruct, 0, sizeof(MotionPlaneData));
-#ifdef MUST_MATCH
 		data = marioGetPtr()->motStruct;
 		inactive = -1;
 		data->sfxId = inactive;
-#else
-		{
-			MarioWork* m2 = marioGetPtr();
-			data = m2->motStruct;
-		}
-		data->sfxId = -1;
-#endif
 		mario->currSubMotionId = 0;
 	}
 
@@ -291,30 +281,20 @@ void mot_plane(void) {
 		mario->unk1A8 += mario->field_0x2A4;
 		wrap = 0;
 		if (((MotionPlaneData*)mario->motStruct)->flags & 1) {
-#ifdef MUST_MATCH
 			f32 lim;
 			f32 value;
 			value = mario->unk1A8;
 			lim = 1260.0f;
 			if (value >= lim) {
-#else
-			f32 lim = 1260.0f;
-			if (mario->unk1A8 >= lim) {
-#endif
 				mario->unk1A8 = lim;
 				wrap = 1;
 			}
 		} else {
-#ifdef MUST_MATCH
 			f32 lim;
 			f32 value;
 			value = mario->unk1A8;
 			lim = -1080.0f;
 			if (value <= lim) {
-#else
-			f32 lim = -1080.0f;
-			if (mario->unk1A8 <= lim) {
-#endif
 				mario->unk1A8 = lim;
 				wrap = 1;
 			}
@@ -429,27 +409,16 @@ void mot_plane(void) {
 	case 0x29:
 		if (--mario->multiTimer <= 0) {
 			f32 t;
-#ifdef MUST_MATCH
 			f32 b;
 			f32 a;
 			f32 one;
-#else
-			f32 a;
-			f32 b;
-#endif
 			planeReset();
 			marioChgPose("M_J_1C");
 			a = mario->field_0x2AC;
 			b = 37.0f;
-#ifdef MUST_MATCH
 			one = 1.0f;
-#endif
 			t = a - b;
-#ifdef MUST_MATCH
 			mario->position.y = one + t;
-#else
-			mario->position.y = t + 1.0f;
-#endif
 			mario->baseSpeed = 0.0f;
 			marioSetFallPara();
 			mario->jumpVelY = 0.0f;
@@ -513,16 +482,11 @@ void mot_plane(void) {
 		mario->position.y = 1.0f + mario->field_0x2AC;
 		marioPreJump();
 		{
-#ifdef MUST_MATCH
 			f32 half;
 			f32 value;
 			value = mario->jumpVelY;
 			half = 0.5f;
 			mario->jumpVelY = value * half;
-#else
-			f32 half = 0.5f;
-			mario->jumpVelY = mario->jumpVelY * 0.5f;
-#endif
 		}
 		marioChgPose("M_J_1B");
 		mario->currSubMotionId = 0x50;
@@ -547,20 +511,12 @@ void mot_plane(void) {
 		mario->position.y += mario->jumpVelY;
 		marioChkOverhead();
 		if (mario->jumpVelY < 0.0f || mario->hitobjHead != NULL) {
-#ifdef MUST_MATCH
 			f32 value;
-#endif
 			f32 half;
 			marioSetFallPara();
-#ifdef MUST_MATCH
 			value = mario->jumpVelY;
-#endif
 			half = 0.5f;
-#ifdef MUST_MATCH
 			mario->jumpVelY = value * half;
-#else
-			mario->jumpVelY *= half;
-#endif
 			mario->jumpAccelY *= half;
 			mario->jumpJerkY *= half;
 			mario->jumpJerkStepY *= half;
@@ -589,16 +545,11 @@ void mot_plane(void) {
 		}
 		marioMakeJumpPara();
 		{
-#ifdef MUST_MATCH
 			f32 neg20;
 			f32 value;
 			value = mario->jumpVelY;
 			neg20 = -20.0f;
 			if (value <= neg20) {
-#else
-			f32 neg20 = -20.0f;
-			if (mario->jumpVelY <= neg20) {
-#endif
 				mario->jumpVelY = neg20;
 			}
 		}
@@ -647,15 +598,10 @@ void mot_plane(void) {
 		mario->multiTimer = 0x10;
 		mario->currSubMotionId = 0x47;
 		{
-#ifdef MUST_MATCH
 			f32 zero;
 			f32 neg2;
 			neg2 = -2.0f;
 			zero = 0.0f;
-#else
-			f32 neg2 = -2.0f;
-			f32 zero = 0.0f;
-#endif
 			mario->jumpVelY = neg2;
 			mario->jumpAccelY = zero;
 			mario->jumpJerkY = zero;
@@ -783,11 +729,7 @@ static void flyMain(void) {
 		u8 stick = mario->wStickDir1;
 
 		if ((s8)(stick & 0xff) != 0) {
-#ifdef MUST_MATCH
 			if (mario->baseSpeed) {
-#else
-			if (mario->baseSpeed != 0.0f) {
-#endif
 				f3 = __fabsf((f32)(s8)mario->wStickDir1);
 				if (DATA->flags & 1) {
 					if ((s8)mario->wStickDir1 < 0) {
@@ -1108,16 +1050,8 @@ void mot_plane_post(void) {
 	m->flags |= 0x80;
 	marioAdjustMoveDir();
 	m->dispFlags &= ~0x100;
-#ifdef MUST_MATCH
-	{
-		f32 zero = 0.0f;
-		mario->unk138 = zero;
-		mario->unk140 = zero;
-	}
-#else
 	mario->unk138 = 0.0f;
 	mario->unk140 = 0.0f;
-#endif
 	if (mario->motStruct != NULL) {
 		__memFree(HEAP_DEFAULT, mario->motStruct);
 		mario->motStruct = NULL;
