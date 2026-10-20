@@ -646,12 +646,12 @@ void mobjMain(void) {
                         entry->triggerFlag = 0x400000;
                         goto apply;
                     }
-                    if ((entry->flags & 0x200000) && mario->hitobjStandOn == (void*)hitObj) {
+                    if ((entry->flags & 0x200000) && mario->hitobjStandOn == hitObj) {
                         v22 = 1;
                         entry->triggerFlag = 0x200000;
                         goto apply;
                     }
-                    if ((entry->flags & 0x1000000) && mario->hitobjStandOn == (void*)hitObj &&
+                    if ((entry->flags & 0x1000000) && mario->hitobjStandOn == hitObj &&
                         marioChkHipBump() != 0) {
                         v22 = 1;
                         entry->triggerFlag = 0x1000000;
@@ -665,12 +665,12 @@ void mobjMain(void) {
                         goto apply;
                     }
                     if ((entry->flags & 0x800000) && party != NULL) {
-                        if ((void*)party->frontHit == (void*)hitObj) {
+                        if (party->frontHit == hitObj) {
                             v22 = 1;
                             entry->triggerFlag = 0x800000;
                             goto apply;
                         }
-                        if ((void*)party->frontHit != NULL && party->currentMemberId == PARTY_MEMBER_BOBBERY &&
+                        if (party->frontHit != NULL && party->currentMemberId == PARTY_MEMBER_BOBBERY &&
                             PSVECDistance(&party->position, &entry->position) < entry->hitObj[0].hitObject->radius + party->radius) {
                             v22 = 1;
                             entry->triggerFlag = 0x800000;
@@ -678,12 +678,12 @@ void mobjMain(void) {
                         }
                     }
                     if ((entry->flags & 0x2000000) && party != NULL && party->currentMemberId == PARTY_MEMBER_BOBBERY) {
-                        if ((void*)party->frontHit == (void*)hitObj) {
+                        if (party->frontHit == hitObj) {
                             v22 = 1;
                             entry->triggerFlag = 0x2000000;
                             goto apply;
                         }
-                        if ((void*)party->frontHit != NULL &&
+                        if (party->frontHit != NULL &&
                             PSVECDistance(&party->position, &entry->position) < entry->hitObj[0].hitObject->radius + party->radius) {
                             v22 = 1;
                             entry->triggerFlag = 0x800000;
@@ -728,7 +728,7 @@ void mobjMain(void) {
                         entry->triggerFlag = 0x80000;
                         goto apply;
                     }
-                    if ((entry->flags & 0x200000) && mario->hitobjStandOn == (void*)hitObj) {
+                    if ((entry->flags & 0x200000) && mario->hitobjStandOn == hitObj) {
                         v22 = 1;
                         entry->triggerFlag = 0x200000;
                     }

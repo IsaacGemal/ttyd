@@ -909,7 +909,7 @@ s32 mobj_timerswitch(MapObjectEntry* obj) {
             animPoseSetAnim(obj->poseId, "A_2", 1);
             animPoseSetAnim(child->poseId, "A_2", 1);
             obj->state++;
-            obj->timer = *(s32*)((u8*)obj + 0x1B4);
+            obj->timer = *(s32*)obj->unk1B4;
             obj->flags &= ~8;
             break;
         case 2:
@@ -1003,7 +1003,7 @@ s32 evt_mobj_timerswitch(EventEntry* event, BOOL isFirstCall) {
         obj[i]->flags |= 0xa10000;
         obj[i]->flagVar = flagVar;
         obj[i]->state = 0;
-        *(s32*)((u8*)obj[i] + 0x1B4) = unk1B4;
+        *(s32*)obj[i]->unk1B4 = unk1B4;
         if (evtGetValue(event, flagVar) != 0) {
             obj[i]->state = 0x63;
         }
@@ -1866,7 +1866,7 @@ s32 mobj_switch_float_blk(MapObjectEntry* obj) {
                             }
                         }
                     } else {
-                        *(s32*)((u8*)obj + 0x1A4) |= 0x80000000;
+                        *(s32*)&obj->unk1A0[4] |= 0x80000000;
                         animId = 0;
                     }
                 } else {
@@ -1878,7 +1878,7 @@ s32 mobj_switch_float_blk(MapObjectEntry* obj) {
                             if (c == 'A' && n[2] >= '1' && n[2] <= '2') {
                                 animId = 0;
                             } else if (c == 'A' && n[2] == '3') {
-                                *(s32*)((u8*)obj + 0x1A4) |= 0x40000000;
+                                *(s32*)&obj->unk1A0[4] |= 0x40000000;
                                 animId = 0;
                             } else if (c == 'A' && n[2] >= '4' && n[2] <= '5') {
                                 animId = 3;
@@ -1887,7 +1887,7 @@ s32 mobj_switch_float_blk(MapObjectEntry* obj) {
                             }
                         }
                     } else {
-                        *(s32*)((u8*)obj + 0x1A4) |= 0x80000000;
+                        *(s32*)&obj->unk1A0[4] |= 0x80000000;
                         animId = 3;
                     }
                 }
@@ -1907,7 +1907,7 @@ s32 mobj_switch_float_blk(MapObjectEntry* obj) {
                         animId = 0;
                     }
                 }
-                *(s32*)((u8*)obj + 0x1A4) |= 0x80000000;
+                *(s32*)&obj->unk1A0[4] |= 0x80000000;
             }
             mobjRunEvent(obj, obj->eventCode);
             if (obj->triggerFlag == 0x200000) {
@@ -1977,7 +1977,7 @@ s32 mobj_switch_float_blk(MapObjectEntry* obj) {
                 break;
             }
             obj->state = 0;
-            *(s32*)((u8*)obj + 0x1A4) = 0;
+            *(s32*)&obj->unk1A0[4] = 0;
             break;
         case 0xa:
             if (obj->flags & 8) {
@@ -2656,7 +2656,7 @@ s32 mobj_recovery_blk(MapObjectEntry* obj) {
             obj->state++;
             // fallthrough
         case 2:
-            if (pouchGetCoin() < *(s32*)((u8*)obj + 0x1A4)) {
+            if (pouchGetCoin() < *(s32*)&obj->unk1A0[4]) {
                 obj->state = 0xA;
                 break;
             }
@@ -2666,7 +2666,7 @@ s32 mobj_recovery_blk(MapObjectEntry* obj) {
             }
             psndSFXOn_3D((const char*)0x1DA, &obj->position);
             animPoseSetAnim(obj->poseId, "A_2", 1);
-            if (*(s32*)((u8*)obj + 0x1A4) == 0) {
+            if (*(s32*)&obj->unk1A0[4] == 0) {
                 obj->state = 3;
             } else {
                 obj->state = 4;
@@ -2712,7 +2712,7 @@ s32 mobj_recovery_blk(MapObjectEntry* obj) {
                 psndSFXOn_3D((const char*)0x1DB, &obj->position);
             }
             if (obj->timer == 100) {
-                s32 coin = *(s32*)((u8*)obj + 0x1A4);
+                s32 coin = *(s32*)&obj->unk1A0[4];
                 MarioWork* mario = marioGetPtr();
                 PouchData* pouch = pouchGetPtr();
                 PouchPartyData* party = pouch->partyData;
@@ -2817,7 +2817,7 @@ s32 evt_mobj_recovery_blk(EventEntry* event, BOOL isFirstCall) {
     }
     mobjEntry(name, asyncName);
     obj = mobjNameToPtr(name);
-    *(s32*)((u8*)obj + 0x1A4) = type;
+    *(s32*)&obj->unk1A0[4] = type;
     mobjSetPosition(name, f31, f30, f29);
     obj->flags |= 4;
     obj->update = mobj_recovery_blk;
@@ -2935,7 +2935,7 @@ s32 mobj_badgeblk(MapObjectEntry* obj) {
                 animPoseSetAnim(obj->poseId, "A_1", 1);
                 if (obj->eventCode != NULL) {
                     mobjRunEvent(obj, obj->eventCode);
-                } else if (*(s32*)((u8*)obj + 0x1A0) != 0x79) {
+                } else if (*(s32*)obj->unk1A0 != 0x79) {
                     ItemEntry* item;
 #ifdef MUST_MATCH
                     // Two-step sum loads the 0.04 constant into f2 (the target's register) instead of f1.
@@ -2948,10 +2948,10 @@ s32 mobj_badgeblk(MapObjectEntry* obj) {
 #ifdef MUST_MATCH
                     // Float arguments evaluate before evtId, as in mobj_kururing_floor (see the note there).
                     ((ItemEntry* (*)(const char*, ItemType, u16, f32, f32, f32, s32, s32))itemEntry)(
-                        obj->name, (ItemType)(*(s32*)((u8*)obj + 0x1A0)), 4, obj->position.x, y, obj->position.z,
+                        obj->name, (ItemType)(*(s32*)obj->unk1A0), 4, obj->position.x, y, obj->position.z,
                         obj->flagVar, 0);
 #else
-                    itemEntry(obj->name, (ItemType)(*(s32*)((u8*)obj + 0x1A0)), 4, obj->flagVar, 0,
+                    itemEntry(obj->name, (ItemType)(*(s32*)obj->unk1A0), 4, obj->flagVar, 0,
                               obj->position.x, y, obj->position.z);
 #endif
                     item = itemNameToPtr(obj->name);
@@ -3086,12 +3086,12 @@ s32 mobj_powerupblk(MapObjectEntry* obj) {
             }
             animPoseSetAnim(obj->poseId, "A_2", 1);
             obj->flags &= ~8;
-            *(s32*)((u8*)obj + 0x1A4) = 1;
+            *(s32*)&obj->unk1A0[4] = 1;
             obj->state++;
             break;
         case 2:
-            if (*(s32*)((u8*)obj + 0x1A4) != 0) {
-                (*(s32*)((u8*)obj + 0x1A4))--;
+            if (*(s32*)&obj->unk1A0[4] != 0) {
+                (*(s32*)&obj->unk1A0[4])--;
             } else {
                 itemForceGet(itemEntry(PB_BLK2, (ItemType)0x57, 0x11, -1, 0,
                                        obj->position.x, 40.0f + obj->position.y,
@@ -3404,7 +3404,7 @@ s32 evt_mobj_brick(EventEntry* event, BOOL isFirstCall) {
     obj->flags |= 0xC10000;
     obj->flagVar = evtId;
     obj->state = 0;
-    *(s32*)((u8*)obj + 0x1A0) = unk1A0;
+    *(s32*)obj->unk1A0 = unk1A0;
     mobjCalcMtx(obj);
     if (type < 0xa) {
         animPoseSetAnim(obj->poseId, "S_1", 1);
@@ -4238,9 +4238,9 @@ s32 mobj_koopa_badgeblk(MapObjectEntry* obj) {
                     if (obj->eventCode != NULL) {
                         mobjRunEvent(obj, obj->eventCode);
                     } else {
-                        if (*(s32*)((u8*)obj + 0x1A0) == 0x59) {
+                        if (*(s32*)obj->unk1A0 == 0x59) {
                             ItemEntry* item;
-                            itemEntry(obj->name, (ItemType)(*(s32*)((u8*)obj + 0x1A0)), 4, -1,
+                            itemEntry(obj->name, (ItemType)(*(s32*)obj->unk1A0), 4, -1,
                                       (s32)kpa_powerup_evt, obj->position.x,
                                       12.5f + obj->position.y, obj->position.z);
                             item = itemNameToPtr(obj->name);
@@ -4762,19 +4762,19 @@ s32 mobj_koopa_fireber_dodai_evt(MapObjectEntry* obj) {
 
     if (obj->state < 0xa) {
         if (distABf(mario->position.x, mario->position.y, obj->position.x, obj->position.y) < 150.0f) {
-            if (psndSFXChk(*(s32*)((u8*)obj + 0x1B4)) != 0) {
-                *(s32*)((u8*)obj + 0x1B4) = psndSFXOn_3D((const char*)0x1cd, &obj->position);
+            if (psndSFXChk(*(s32*)obj->unk1B4) != 0) {
+                *(s32*)obj->unk1B4 = psndSFXOn_3D((const char*)0x1cd, &obj->position);
             }
-        } else if (psndSFXChk(*(s32*)((u8*)obj + 0x1B4)) == 0) {
-            psndSFXOff(*(s32*)((u8*)obj + 0x1B4));
-            *(s32*)((u8*)obj + 0x1B4) = -1;
+        } else if (psndSFXChk(*(s32*)obj->unk1B4) == 0) {
+            psndSFXOff(*(s32*)obj->unk1B4);
+            *(s32*)obj->unk1B4 = -1;
         }
         PSMTXIdentity(mtx);
         PSMTXTransApply(mtx, mtx, -obj->position.x, -obj->position.y, -obj->position.z);
         PSMTXRotRad(rotMtx, 'Z', 0.017453292f * obj->unk1AC);
         PSMTXConcat(rotMtx, mtx, mtx);
         PSMTXTransApply(mtx, mtx, obj->position.x, obj->position.y, obj->position.z);
-        for (i = 0; i < *(s32*)((u8*)obj + 0x1A4); i++) {
+        for (i = 0; i < *(s32*)&obj->unk1A0[4]; i++) {
             sprintf(buf, "%s%2x", obj->name, i);
             npc = npcNameToPtr(buf);
             PSMTXMultVec(mtx, &npc->position, &npc->position);
@@ -4816,7 +4816,7 @@ s32 mobj_koopa_fireber_dodai_evt(MapObjectEntry* obj) {
             break;
         case 0xb:
             obj->position.y = -1000.0f;
-            for (i = 0; i < *(s32*)((u8*)obj + 0x1A4); i++) {
+            for (i = 0; i < *(s32*)&obj->unk1A0[4]; i++) {
                 sprintf(buf, "%s%2x", obj->name, i);
                 npc = npcNameToPtr(buf);
                 npc->moveElapsed = 0;
@@ -4827,14 +4827,14 @@ s32 mobj_koopa_fireber_dodai_evt(MapObjectEntry* obj) {
                 npc->moveTime = 2.0f;
                 npc->jumpFlags |= 4;
             }
-            if (psndSFXChk(*(s32*)((u8*)obj + 0x1B4)) == 0) {
-                psndSFXOff(*(s32*)((u8*)obj + 0x1B4));
-                *(s32*)((u8*)obj + 0x1B4) = -1;
+            if (psndSFXChk(*(s32*)obj->unk1B4) == 0) {
+                psndSFXOff(*(s32*)obj->unk1B4);
+                *(s32*)obj->unk1B4 = -1;
             }
             obj->state++;
             break;
         case 0xc:
-            for (i = 0; i < *(s32*)((u8*)obj + 0x1A4); i++) {
+            for (i = 0; i < *(s32*)&obj->unk1A0[4]; i++) {
                 sprintf(buf, "%s%2x", obj->name, i);
                 npc = npcNameToPtr(buf);
                 npc->moveOffset.x = npc->moveOffset.x + npc->jumpTargetPos.x;
@@ -4856,7 +4856,7 @@ s32 mobj_koopa_fireber_dodai_evt(MapObjectEntry* obj) {
             }
             break;
         case 0x63:
-            for (j = 0; j < *(s32*)((u8*)obj + 0x1A4); j++) {
+            for (j = 0; j < *(s32*)&obj->unk1A0[4]; j++) {
                 sprintf(buf2, "%s%2x", obj->name, j);
                 npcDelete(npcNameToPtr(buf2));
             }
@@ -4911,9 +4911,9 @@ s32 evt_mobj_koopa_fireber_dodai(EventEntry* event, BOOL isFirstCall) {
     if (f27 == 0.0f) {
         f27 = 1.0f;
     }
-    *(s32*)((u8*)obj + 0x1A4) = count;
+    *(s32*)&obj->unk1A0[4] = count;
     obj->unk1AC = (sign != 0) ? __fabsf(f27) : -__fabsf(f27);
-    *(s32*)((u8*)obj + 0x1B4) = 0;
+    *(s32*)obj->unk1B4 = 0;
     y = 25.0f + y;
     z = 175.0f + z;
     for (i = 0; i < count; i++) {
@@ -4948,7 +4948,7 @@ s32 kpa_get_hata_name(EventEntry* event, BOOL isFirstCall) {
     s32* args = event->args;
 
     if (event->thisMapObj != NULL) {
-        evtSetValue(event, args[0], (s32)((u8*)event->thisMapObj + 0x1B8));
+        evtSetValue(event, args[0], (s32)event->thisMapObj->childName);
     } else {
         evtSetValue(event, args[0], 0);
     }
