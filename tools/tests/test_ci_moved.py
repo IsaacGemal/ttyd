@@ -27,5 +27,29 @@ class Moved(unittest.TestCase):
         self.assertEqual(ci.moved_functions(worse, report(("A", [("fn", 90.0)]), ("B", [("fn", 100.0)]))), [])
 
 
+def changes(unit, lost, gained):
+    """objdiff `report changes` shape: (name, address, score) of a function only in the old / the new report."""
+    fns = [{"name": n, "from": {"fuzzy_match_percent": sc}, "metadata": {"virtual_address": a}} for n, a, sc in lost]
+    fns += [{"name": n, "to": {"fuzzy_match_percent": sc}, "metadata": {"virtual_address": a}} for n, a, sc in gained]
+    return {"units": [{"name": unit, "functions": fns}]}
+
+
+class Renamed(unittest.TestCase):
+    def test_renamed_in_place_is_not_a_regression(self):
+        worse = [("A:unk_80001000", "fuzzy_match_percent", 100.0, 0.0)]
+        got = ci.renamed_functions(worse, changes("A", [("unk_80001000", "1", 100.0)], [("goodName", "1", 100.0)]))
+        self.assertEqual(got, [(worse[0], "goodName", 100.0)])
+
+    def test_a_new_function_at_another_address_is_not_a_rename(self):
+        worse = [("A:unk_80001000", "fuzzy_match_percent", 100.0, 0.0)]
+        self.assertEqual(ci.renamed_functions(worse, changes("A", [("unk_80001000", "1", 100.0)],
+                                                             [("goodName", "2", 100.0)])), [])
+
+    def test_renamed_at_a_lower_score_still_fails(self):
+        worse = [("A:unk_80001000", "fuzzy_match_percent", 100.0, 0.0)]
+        self.assertEqual(ci.renamed_functions(worse, changes("A", [("unk_80001000", "1", 100.0)],
+                                                             [("goodName", "1", 90.0)])), [])
+
+
 if __name__ == "__main__":
     unittest.main()
