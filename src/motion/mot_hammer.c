@@ -67,31 +67,19 @@ s32 marioGetHammerLevel(void) {
 // Common subexpression elimination off keeps the rodata base in r31 and the mario pointer in r30; with it on
 // the two are swapped and every access thereafter shifts. Needed only for this function.
 #pragma opt_common_subs off
-#ifdef MUST_MATCH
-// These two inline helpers exist to reproduce the original's register allocation and schedule: the plain
-// expressions put `type` in r0 and `v` in r3 (the target is the other way). `minHammerTicks10` is kept for
-// reference/other matching builds; the pose-time clamp below no longer calls it. The #else holds the natural
-// expressions for --non-matching builds.
+// Inline helper for the `type == 7 ? 3 : type` clamp: through a helper the type lands in r0 and the clamped
+// value in r3, as in the target; the plain expression swaps the two.
 static inline s32 clampHammerType(s32 t) {
     return (t == 7) ? 3 : t;
 }
 
-static inline s32 minHammerTicks10(s32 b) {
-    s32 v = b;
-    if (b > 10) {
-        v = 10;
-    }
-    return v;
-}
-#endif
-
 // The `type == 7 ? 3 : type` clamp, the se_data update order, the switches, the pool and every callee-saved
 // register (base r31, mario r30, r28/r29, f30/f31) match. The pose-time clamp `b <= 10 ? b : 10` is branchy
 // in the target (`cmpwi; bgt; mr r0,r3; b end; li r0,10`); the plain ternary is if-converted to the one
-// instruction shorter `cmpwi; mr r0,r3; ble; li r0,10`. Under MUST_MATCH the clamp goes through a temp whose
-// condition and arm are syntactically different (the named field vs this file's raw accessor), which blocks
-// that if-conversion, and `opt_dead_assignments off` keeps the `r27 = t` copy so the target's `r0`/`r27`
-// split survives. Together they give the target's bytes; the #else holds the natural ternary.
+// instruction shorter `cmpwi; mr r0,r3; ble; li r0,10`. The clamp goes through a temp `t` whose condition and
+// arm are syntactically different (the named field vs this file's raw accessor), which blocks that
+// if-conversion, and `opt_dead_assignments off` keeps the `r27 = t` copy so the target's `r0`/`r27` split
+// survives. Together they give the target's bytes.
 void mot_hammer(void) {
 #pragma opt_dead_assignments off // keep the `r27 = t` pose-time copy (target splits r0/r27)
     MarioWork* mario = marioGetPtr();
@@ -211,11 +199,7 @@ void mot_hammer(void) {
             break;
         }
         if (type != 0) {
-#ifdef MUST_MATCH
             M_S32(mario, 0x2A0) = clampHammerType(type);
-#else
-            M_S32(mario, 0x2A0) = (type == 7) ? 3 : type;
-#endif
             mario->flags |= 0x800;
         } else {
             mario->flags &= ~0x800;
@@ -252,12 +236,8 @@ void mot_hammer(void) {
         }
     } else {
         s32 b = mario->multiTimer;
-#ifdef MUST_MATCH
         s32 t = (b <= 10) ? M_S32(mario, 0x48) : 10;
         r27 = t;
-#else
-        r27 = (b <= 10) ? b : 10;
-#endif
         if (b == 10) {
             rp = 1;
         }
@@ -423,7 +403,7 @@ s32 marioChkHammer2(void) {
 
 // The original keeps a dead `hitGetAttr(hit) & 0x800005` comparison in this function (its branch was
 // folded away), while the compiler eliminates it from the natural empty-body form. A no-op store to
-// `hit` (below, under MUST_MATCH) keeps the comparison alive without adding instructions.
+// `hit` (below) keeps the comparison alive without adding instructions.
 void mot_hammer2(void) {
     MarioWork* mario = marioGetPtr();
     MarioWork* m2;
@@ -442,12 +422,10 @@ void mot_hammer2(void) {
     f32 hx;
     f32 ca;
     f32 sa;
-#ifdef MUST_MATCH
     f32 px__;
     f32 py__;
     f32 pz__;
     f32 one__;
-#endif
     s32 level;
 
     if (mario->trigFlags & 1) {
@@ -699,14 +677,12 @@ void mot_hammer2(void) {
         } else if (M_S8(mario, 0x42) <= 1) {
             mario->wCamVal1 = 15.0f;
         }
-#ifdef MUST_MATCH
-        py__ = 20.f; px__ = mario->position.x; py__ += mario->position.y;
-        pz__ = mario->position.z; one__ = 1.0f;
+        py__ = 20.f;
+        px__ = mario->position.x;
+        py__ += mario->position.y;
+        pz__ = mario->position.z;
+        one__ = 1.0f;
         effUltraHammerEntry(mario->dispHalfTurn != 0, mario->multiTimer, px__, py__, pz__, one__);
-#else
-        effUltraHammerEntry(mario->dispHalfTurn != 0, mario->multiTimer, mario->position.x,
-                            mario->position.y + 20.f, mario->position.z, 1.0f);
-#endif
         break;
     case 0x14:
         f31 = mario->unk1A8;
@@ -880,11 +856,7 @@ HitEntry* hitEstimate(s32* type) {
     }
     sincosf(&sa, &ca, angle);
     boxY = mario->wPlayerCollisionBox.y;
-#ifdef MUST_MATCH
-    { f32 p = 3.1415927f; c = cos(p); } // a bare literal makes MWCC pool a double and load it with lfd
-#else
-    c = cos(3.1415927f);
-#endif
+    { f32 p = 3.1415927f; c = cos(p); } // a float local: a bare literal makes MWCC pool a double and load it with lfd
     pos = mario->position;
     pos.y = 4.0f + (mario->position.y + boxY);
     dir0 = vec3_802c5a8c;
@@ -900,19 +872,10 @@ HitEntry* hitEstimate(s32* type) {
         return hit;
     }
 
-#ifdef MUST_MATCH
     { f32 p = 1.2217306f; c = cos(p); } // a bare literal makes MWCC pool a double and load it with lfd
-#else
-    c = cos(1.2217306f);
-#endif
-#ifdef MUST_MATCH
     { f32 five = 5.0f; // local keeps the 5.0f load after the stack load (target order)
     pos.x = mario->position.x + sa * five;
     pos.z = mario->position.z + ca * five; }
-#else
-    pos.x = mario->position.x + sa * 5.0f;
-    pos.z = mario->position.z + ca * 5.0f;
-#endif
     pos.y = mario->position.y + boxY;
     dir1 = vec3_802c5a98;
     dir1.x = sa;
@@ -927,19 +890,10 @@ HitEntry* hitEstimate(s32* type) {
         return hit;
     }
 
-#ifdef MUST_MATCH
     { f32 p = 0.7853982f; c = cos(p); } // a bare literal makes MWCC pool a double and load it with lfd
-#else
-    c = cos(0.7853982f);
-#endif
-#ifdef MUST_MATCH
     { f32 five = 5.0f; // local keeps the 5.0f load after the stack load (target order)
     pos.x = mario->position.x + sa * five;
     pos.z = mario->position.z + ca * five; }
-#else
-    pos.x = mario->position.x + sa * 5.0f;
-    pos.z = mario->position.z + ca * 5.0f;
-#endif
     pos.y = mario->position.y + boxY;
     dir2 = vec3_802c5aa4;
     dir2.x = sa;
@@ -954,11 +908,7 @@ HitEntry* hitEstimate(s32* type) {
         return hit;
     }
 
-#ifdef MUST_MATCH
-    { f32 p = float_0_8041a9a8; c = cos(p); } // a bare literal makes MWCC pool a double and load it with lfd
-#else
     c = cos(float_0_8041a9a8);
-#endif
     dir3t = vec3_802c5ab0;
     dir3t.y = -c;
 #ifdef MUST_MATCH

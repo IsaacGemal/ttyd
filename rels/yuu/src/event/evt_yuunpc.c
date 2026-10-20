@@ -333,9 +333,8 @@ u32 chusan_act_tbl[8] = {
     0x00000003, 0x00000002, 0x00000001, 0x00000000,
 };
 
-// MWCC inlined yuunpc_pose_change into the three minigame*_init bodies in the original; this
-// static copy (MUST_MATCH only) reproduces that. The natural form calls yuunpc_pose_change.
-#ifdef MUST_MATCH
+// MWCC inlined yuunpc_pose_change into the minigame*_init bodies in the original; this static inline copy
+// of its body reproduces that.
 static inline void yuunpc_pose_change_sub(YuunpcEntry* entry, s16 animIndex, f32 a, f32 b) {
     YuunpcPoseEntry* cur = &yuunpc_wp->poseEntries[entry->field_54];
     YuunpcPoseEntry* pe = &yuunpc_wp->poseEntries[animIndex];
@@ -354,7 +353,7 @@ static inline void yuunpc_pose_change_sub(YuunpcEntry* entry, s16 animIndex, f32
         entry->flags &= ~4;
         if (entry->field_54 == animIndex) {
             b = entry->field_64;
-            if (b != a) {
+            if (entry->field_64 != a) {
                 if (oldflags & 4) {
                     u32 ticks = (*(u32*)0x800000F8 >> 2) / 1000;
                     f32 oldb = b;
@@ -390,7 +389,6 @@ static inline void yuunpc_pose_change_sub(YuunpcEntry* entry, s16 animIndex, f32
             break;
     }
 }
-#endif
 // Matched. The loops index `hitdata` directly (rather than through a local pointer); that keeps the
 // register allocation identical, and the third loop's outer/inner counters are `j`/`i` in that order
 // so the allocator puts the outer counter in r29 and the inner in r30, as the original does.
@@ -554,20 +552,13 @@ void yuunpc_pose_change(YuunpcEntry* entry, s16 animIndex, f32 a, f32 b) {
 
 // The `(s16)` narrowing cast has to happen *inside* an inlined helper for MWCC 2.6 to keep the
 // sign-extended index in r5 and the `yuunpc_wp` reload in r6, as the original does (casting at
-// the call site put them in r7/r5). The natural form is under #else. The `(b == a)` guard form
-// is required or the whole float pair swaps.
-#ifdef MUST_MATCH
+// the call site put them in r7/r5). The `(b == a)` guard form is required or the whole float pair swaps.
 static inline s16 yuunpc_pose_lookup(const char* name, const char* anim) {
     return (s16)yuunpc_pose_check(name, anim);
 }
-#endif
 void yuunpc_pose_change2(YuunpcEntry* entry, const char* name, const char* anim, f32 a) {
     f32 b = (f32)rand() / 32767.0f;
-#ifdef MUST_MATCH
     s16 idx = yuunpc_pose_lookup(name, anim);
-#else
-    s16 idx = (s16)yuunpc_pose_check(name, anim);
-#endif
     YuunpcPoseEntry* pe;
     YuunpcPoseEntry* cur;
     cur = &yuunpc_wp->poseEntries[entry->field_54];
@@ -641,12 +632,8 @@ f32 yuunpc_pose_sub(ExtPose* pose, YuunpcEntry* entry) {
     YuunpcPoseEntry* pe = &yuunpc_wp->poseEntries[entry->field_54];
 
     if (!(pose->flags & EXT_POSE_BILLBOARD)) {
-#ifdef MUST_MATCH
         f32 angle = pose->heading;
         angle = 450.0f - angle;
-#else
-        f32 angle = 450.0f - pose->heading;
-#endif
         if (angle >= 360.0f) {
             angle -= 360.0f;
         }
@@ -727,11 +714,7 @@ void ext_yuunpc_minigame1_init(void) {
         pose->flags |= 7;
         PSMTXIdentity((MtxPtr)pose->matrix);
 
-#ifdef MUST_MATCH
         t = 60.0f * (f32)(i % 5) + -560.0f;
-#else
-        t = 60.0f * (f32)(i % 5) - 560.0f;
-#endif
         y = 30.0f + t;
         ((MtxPtr)pose->matrix)[0][3] = 16.666666f * (f32)q - 500.0f;
         ((MtxPtr)pose->matrix)[1][3] = arr1[(s32)((y - -560.0f) / 60.0f)];
@@ -771,11 +754,7 @@ void ext_yuunpc_minigame1_init(void) {
                 break;
         }
 
-#ifdef MUST_MATCH
         yuunpc_pose_change_sub(entry, entry->field_56, 1.0f, (f32)rand() / 32767.0f);
-#else
-        yuunpc_pose_change(entry, entry->field_56, 1.0f, (f32)rand() / 32767.0f);
-#endif
     }
 }
 
@@ -862,7 +841,7 @@ static inline f32 yuunpc_minigame4_sqrt(f32 x) {
     guess = half * guess * (three - guess * guess * x);
     return (f32)(x * guess);
 }
-// Matches. MUST_MATCH shapes: the inlined yuunpc_pose_change_sub helper, writing `q = i / 4;` after
+// Matches. Shapes: the inlined yuunpc_pose_change_sub helper, writing `q = i / 4;` after
 // the field_54 store (lets the field load take r3 and the divide r0), and `+ -655.0f` (fmadds with
 // the negative constant where `- 655.0f` gives fmsubs). entry->field_64 = 1.0f before the switch is a
 // real store in the original. The dat_yuu_00014efc/dat_yuu_00014f0c block copy is byte-identical.
@@ -883,29 +862,19 @@ void ext_yuunpc_minigame2_init(void) {
     pose = extGetPosePtr();
     entry = yuunpc_wp->entries;
     for (i = 0; i < yuunpc_wp->count; i++, pose++, entry++) {
-#ifdef MUST_MATCH
         s32 q;
-#else
-        s32 q = i / 4;
-#endif
         f32 t;
         f32 y;
         s32 idx;
 
         entry->field_54 = yuunpc_wp->field_1C;
-#ifdef MUST_MATCH
         q = i / 4;
-#endif
         entry->field_0 = i;
         entry->flags |= 1;
         pose->flags |= 7;
         PSMTXIdentity((MtxPtr)pose->matrix);
 
-#ifdef MUST_MATCH
         t = 60.0f * (f32)(i % 4) + -655.0f;
-#else
-        t = 60.0f * (f32)(i % 4) - 655.0f;
-#endif
         y = 30.0f + t;
         ((MtxPtr)pose->matrix)[0][3] = 13.333333f * (f32)q - 500.0f;
         ((MtxPtr)pose->matrix)[1][3] = arr1[(s32)((y - -655.0f) / 60.0f)];
@@ -945,11 +914,7 @@ void ext_yuunpc_minigame2_init(void) {
                 break;
         }
 
-#ifdef MUST_MATCH
         yuunpc_pose_change_sub(entry, entry->field_56, 1.0f, (f32)rand() / 32767.0f);
-#else
-        yuunpc_pose_change(entry, entry->field_56, 1.0f, (f32)rand() / 32767.0f);
-#endif
     }
 }
 void yuunpc_pose_minigame2_main(void) {
@@ -1019,7 +984,7 @@ void yuunpc_pose_minigame2_main(void) {
     }
 }
 
-// Matches. MUST_MATCH shapes: the inlined yuunpc_pose_change_sub helper, writing `q = i / 4;` after
+// Matches. Shapes: the inlined yuunpc_pose_change_sub helper, writing `q = i / 4;` after
 // the field_54 store (lets the field load take r3 and the divide r0), and `+ -750.0f` (fmadds with
 // the negative constant where `- 750.0f` gives fmsubs). entry->field_64 = 1.0f before the switch is a
 // real store in the original. The dat_yuu_00014f2c/dat_yuu_00014f3c block copy is byte-identical.
@@ -1040,29 +1005,19 @@ void ext_yuunpc_minigame3_init(void) {
     pose = extGetPosePtr();
     entry = yuunpc_wp->entries;
     for (i = 0; i < yuunpc_wp->count; i++, pose++, entry++) {
-#ifdef MUST_MATCH
         s32 q;
-#else
-        s32 q = i / 4;
-#endif
         f32 t;
         f32 y;
         s32 idx;
 
         entry->field_54 = yuunpc_wp->field_1C;
-#ifdef MUST_MATCH
         q = i / 4;
-#endif
         entry->field_0 = i;
         entry->flags |= 1;
         pose->flags |= 7;
         PSMTXIdentity((MtxPtr)pose->matrix);
 
-#ifdef MUST_MATCH
         t = 60.0f * (f32)(i % 4) + -750.0f;
-#else
-        t = 60.0f * (f32)(i % 4) - 750.0f;
-#endif
         y = 30.0f + t;
         ((MtxPtr)pose->matrix)[0][3] = 13.333333f * (f32)q - 600.0f;
         ((MtxPtr)pose->matrix)[1][3] = arr1[(s32)((y - -750.0f) / 60.0f)];
@@ -1102,11 +1057,7 @@ void ext_yuunpc_minigame3_init(void) {
                 break;
         }
 
-#ifdef MUST_MATCH
         yuunpc_pose_change_sub(entry, entry->field_56, 1.0f, (f32)rand() / 32767.0f);
-#else
-        yuunpc_pose_change(entry, entry->field_56, 1.0f, (f32)rand() / 32767.0f);
-#endif
     }
 }
 
@@ -1526,11 +1477,7 @@ void ext_yuunpc_minigame4_init_sub(void) {
                     entry->field_56 = idx;
                     break;
             }
-#ifdef MUST_MATCH
             yuunpc_pose_change_sub(entry, entry->field_56, 1.0f, (f32)rand() / 32767.0f);
-#else
-            yuunpc_pose_change(entry, entry->field_56, 1.0f, (f32)rand() / 32767.0f);
-#endif
         } else {
             Vec v, v2;
             s32 r24, r25, r23;
@@ -1669,11 +1616,7 @@ void ext_yuunpc_minigame4_init_sub(void) {
                     break;
             }
             entry->field_4C = 0;
-#ifdef MUST_MATCH
             yuunpc_pose_change_sub(entry, entry->field_56, 1.0f, (f32)rand() / 32767.0f);
-#else
-            yuunpc_pose_change(entry, entry->field_56, 1.0f, (f32)rand() / 32767.0f);
-#endif
             entry->flags |= 0x20;
             errper_set_rtn((ErrPer*)entry);
         }
