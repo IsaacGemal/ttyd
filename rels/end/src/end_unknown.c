@@ -1490,7 +1490,7 @@ void unk_end_000006f8(void) {
 void unk_end_00000440(void) {
     NpcEntry* npc = npcNameToPtr("モアモア");
     AnimationPose* pose = (AnimationPose*)animPoseGetAnimPosePtr(npc->poseId);
-    Vec* positions = (Vec*)(*(smartEntry**)pose->field_0x15C)->address;
+    Vec* positions = (Vec*)pose->groupWorldPos->address;
     s32 i;
     ExtPose* extPose;
     CreditsPoseState* work;
@@ -1533,8 +1533,8 @@ void unk_end_00000440(void) {
 
     pose = (AnimationPose*)animPoseGetAnimPosePtr(npc->poseId);
     {
-        s32 count = *(s32*)(pose->field_0x15C + 4);
-        Vec* p = (Vec*)(*(smartEntry**)pose->field_0x15C)->address;
+        s32 count = pose->groupWorldPosCount;
+        Vec* p = (Vec*)pose->groupWorldPos->address;
 
         for (i = 0; i < count; i++) {
             p[i] = (Vec){0.0f, -1000.0f, 0.0f};
@@ -1586,11 +1586,11 @@ s32 unk_end_0000012c(EventEntry* event, BOOL isFirstCall) {
 
     pose = (AnimationPose*)animPoseGetAnimPosePtr(npc->poseId);
     {
-        smartEntry* entry = *(smartEntry**)pose->field_0x15C;
+        smartEntry* entry = pose->groupWorldPos;
 
         positions = (Vec*)entry->address;
     }
-    count = *(s32*)(pose->field_0x15C + 4);
+    count = pose->groupWorldPosCount;
     for (i = 0; i < count; i++) {
         positions[i] = (Vec){0.0f, -1000.0f, 0.0f};
     }

@@ -742,7 +742,7 @@ void animPoseSetPaperAnimGroup(s32 poseId, const char* animName, BOOL someflag) 
     if (pose->paperId < 0) {
         pose->paperId = animPaperPoseSearchGroup(2, animName);
     }
-    *(s32*)((u8*)pose + 0x94) = -1;
+    pose->paperAnim = (const char*)-1;
     pose->mLocalTimeInit = animTimeGetTime(pose->type);
     if (someflag) {
         pose->flags |= 2;
@@ -808,7 +808,7 @@ void animPoseSetPaperAnim(s32 poseId, const char* animName) {
     AnimationPose* pose = &wp->poses[poseId];
     s32 animId = animPoseSearchAnimPaper(poseId, animName);
 
-    *(s32*)((u8*)pose + 0x94) = animId;
+    pose->paperAnim = (const char*)animId;
     pose->mLocalTimeInit = animTimeGetTime(pose->type);
     if (pose->paperId != -1 && !(((AnimationPose*)((u8*)wp->poses + pose->paperId * 0x170))->typeFlags & 2)) {
         animPoseMain(pose->paperId);
@@ -887,7 +887,7 @@ void animPoseSetEffect(s32 poseId, const char* animName, BOOL someflag) {
         return;
     }
     pose->paperId = animEffectPoseEntry(animName, pose->type);
-    *(s32*)((u8*)pose + 0x94) = -1;
+    pose->paperAnim = (const char*)-1;
     pose->mLocalTimeInit = animTimeGetTime(pose->type);
     if (someflag) {
         pose->flags |= 2;
@@ -976,12 +976,12 @@ void animPoseSetGXFunc(s32 poseId, void (*callback)(s32 wXluStage), BOOL disable
 
 f32 animPoseGetRadius(s32 poseId) {
     AnimationPoseData* data = animPoseGetAnimBaseDataPtr(poseId);
-    return (f32)*(s32*)((u8*)data + 0xC8) * 2.0f;
+    return (f32)data->radius * 2.0f;
 }
 
 f32 animPoseGetHeight(s32 poseId) {
     AnimationPoseData* data = animPoseGetAnimBaseDataPtr(poseId);
-    return (f32)*(s32*)((u8*)data + 0xCC) * 2.0f;
+    return (f32)data->height * 2.0f;
 }
 
 f32 animPoseGetLoopTimes(s32 id) {
@@ -2382,14 +2382,14 @@ void dispProc(s32 parentGroupId, s32 groupId, s32 keyFrame1, s32 keyFrame2, f32 
 
         if (wp->mpCurPose->flags & 0x40) {
             Vec pos = vec3_802c2dc8[0];
-            Vec* buffer = (Vec*)(*(smartEntry**)((u8*)wp->mpCurPose + 0x15C))->address;
+            Vec* buffer = (Vec*)wp->mpCurPose->groupWorldPos->address;
             pos.x = (*g_modeling_mtx)[0][3];
             pos.y = (*g_modeling_mtx)[1][3];
             pos.z = (*g_modeling_mtx)[2][3];
             buffer[groupId] = pos;
         }
         if (wp->mpCurPose->flags & 0x80) {
-            Mtx* dest = (Mtx*)(*(smartEntry**)((u8*)wp->mpCurPose + 0x164))->address;
+            Mtx* dest = (Mtx*)wp->mpCurPose->groupWorldMtx->address;
             PSMTXCopy(*g_modeling_mtx, dest[groupId]);
         }
         if ((wp->mpCurPose->flags & 0x20) && groupId == *wp->mpCurPose->vivianGroupNo) {
@@ -2692,7 +2692,7 @@ static inline void animPoseEvalMtxPose(AnimationPose* pose, Mtx matrix, f32 rotY
 // dont_inline keeps animPoseDrawMtx a real bl from animPoseDraw (retail emits one).
 #pragma dont_inline on
 // The float-scratch allocation as a helper gives that block's volatile temps (wp r3, paperPoseData r5).
-// The paper animation name is read from paperAnimName for the test and again for the search: the
+// The paper animation name is read from paperAnim for the test and again for the search: the
 // CSE'd load's copy into the search's name parameter is coalesced, and that extra permanent
 // neighbour keeps pp in the graph past xluMode (pp r29, xluMode r28). The inner `pp` shadow
 // reproduces the target's non-CSEd re-materialisation of the paper pose inside that block.
@@ -2721,10 +2721,10 @@ void animPoseDrawMtx(s32 poseId, Mtx matrix, s32 xluMode, f32 rotY, f32 scale) {
 
         if (paperPose->typeFlags & 2) {
             animPoseAllocFloatScratch(paperPoseData);
-            if ((s32)pose->paperAnimName != -1) {
+            if ((s32)pose->paperAnim != -1) {
                 {
                     AnimationPose* pp = &wp->poses[pose->paperId];
-                    found = animPoseSearchAnimIdx(pp, pose->paperAnimName);
+                    found = animPoseSearchAnimIdx(pp, pose->paperAnim);
                     if (found != pp->animId) {
                         pp->animId = found;
                         if (pp->paperId != -1 && (pp->flags & 2)) {
@@ -2853,10 +2853,10 @@ void animPoseRelease(s32 poseId) {
         AnimationPoseFile* file;
         AnimationTextureFile* texture;
         if (pose->flags & 0x40) {
-            smartFree(*(smartEntry**)((u8*)pose + 0x15C));
+            smartFree(pose->groupWorldPos);
         }
         if (pose->flags & 0x80) {
-            smartFree(*(smartEntry**)((u8*)pose + 0x164));
+            smartFree(pose->groupWorldMtx);
         }
         file = &wp->files[pose->fileId];
         file->references--;
@@ -2928,10 +2928,10 @@ void animPoseAutoRelease(s32 type) {
                 AnimationPoseFile* file;
                 AnimationTextureFile* texture;
                 if (pose->flags & 0x40) {
-                    smartFree(*(smartEntry**)((u8*)pose + 0x15C));
+                    smartFree(pose->groupWorldPos);
                 }
                 if (pose->flags & 0x80) {
-                    smartFree(*(smartEntry**)((u8*)pose + 0x164));
+                    smartFree(pose->groupWorldMtx);
                 }
                 file = &wp->files[pose->fileId];
                 file->references--;
@@ -3516,10 +3516,10 @@ void evalProc(s32 parentGroupId, s32 groupId) {
             pos.x = (*g_modeling_mtx)[0][3];
             pos.y = (*g_modeling_mtx)[1][3];
             pos.z = (*g_modeling_mtx)[2][3];
-            ((Vec*)(*(smartEntry**)((u8*)wp->mpCurPose + 0x15C))->address)[groupId] = pos;
+            ((Vec*)wp->mpCurPose->groupWorldPos->address)[groupId] = pos;
         }
         if (wp->mpCurPose->flags & 0x80) {
-            PSMTXCopy(*g_modeling_mtx, ((Mtx*)(*(smartEntry**)((u8*)wp->mpCurPose + 0x164))->address)[groupId]);
+            PSMTXCopy(*g_modeling_mtx, ((Mtx*)wp->mpCurPose->groupWorldMtx->address)[groupId]);
         }
         if (!(wp->mpCurPose->flags & 0x20) || groupId != *wp->mpCurPose->vivianGroupNo) {
             evalProc(groupId, group->childGroupId);
@@ -3550,16 +3550,16 @@ void animPoseWorldPositionEvalOn(s32 poseId) {
             type = 0;
             break;
     }
-    *(s32*)((u8*)pose + 0x160) = data->groupCount;
-    *(void**)((u8*)pose + 0x15C) = smartAlloc(data->groupCount * sizeof(Vec), type);
+    pose->groupWorldPosCount = data->groupCount;
+    pose->groupWorldPos = smartAlloc(data->groupCount * sizeof(Vec), type);
 }
 
 void L_animPoseWorldPositionEvalOff(s32 poseId) {
     AnimationPose* pose = &wp->poses[poseId];
     if (pose->flags & 0x40) {
         pose->flags &= ~0x40;
-        smartFree(*(smartEntry**)((u8*)pose + 0x15C));
-        *(void**)((u8*)pose + 0x15C) = NULL;
+        smartFree(pose->groupWorldPos);
+        pose->groupWorldPos = NULL;
     }
 }
 
@@ -3583,8 +3583,8 @@ void animPoseWorldMatrixEvalOn(s32 poseId) {
             type = 0;
             break;
     }
-    *(s32*)((u8*)pose + 0x168) = data->groupCount;
-    *(void**)((u8*)pose + 0x164) = smartAlloc(data->groupCount * sizeof(Mtx), type);
+    pose->groupWorldMtxCount = data->groupCount;
+    pose->groupWorldMtx = smartAlloc(data->groupCount * sizeof(Mtx), type);
 }
 
 void animPoseVivianMain(s32 poseId, Vec* pos) {

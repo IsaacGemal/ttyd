@@ -123,7 +123,8 @@ typedef struct AnimationPoseData {
     char textureName[64];          // 0x44
     char mBuildTime[64];           // 0x84
     u32 xluFlags;                  // 0xC4, bit n: drawn at xluMode n (bit 0 also covers mode 2); bit 3: has XLU
-    u8 field_0xC8[0xD0 - 0xC8];    // 0xC8
+    s32 radius;                    // 0xC8, animPoseGetRadius returns it times 2
+    s32 height;                    // 0xCC, animPoseGetHeight returns it times 2
     Vec bboxMin;                   // 0xD0
     Vec bboxMax;                   // 0xDC
     s32 shapeCount;                // 0xE8
@@ -197,7 +198,7 @@ typedef struct AnimationPose {
     f32 loopTime;                       // 0x84
     OSTime mLocalTimeInit;              // 0x88
     s32 paperId;                        // 0x90
-    const char* paperAnimName;          // 0x94, -1 when unset
+    const char* paperAnim;              // 0x94, -1 when unset; a name (animPoseDrawMtx) or a search index (animPoseSetPaperAnim)
     struct smartEntry* paperTexData[2]; // 0x98
     GXTexObj paperTexObj[2];            // 0xA0
     void (*gxCallback)(s32 wXluStage);  // 0xE0
@@ -220,7 +221,11 @@ typedef struct AnimationPose {
     Mtx matrix;                         // 0x124
     void* dispCallback;                 // 0x154, TODO: re-type
     void* dispUserDataCallback;         // 0x158, TODO: re-type
-    u8 field_0x15C[0x170 - 0x15C];      // 0x15C
+    struct smartEntry* groupWorldPos;   // 0x15C, Vec per group, filled when flags & 0x40
+    s32 groupWorldPosCount;             // 0x160
+    struct smartEntry* groupWorldMtx;   // 0x164, Mtx per group, filled when flags & 0x80
+    s32 groupWorldMtxCount;             // 0x168
+    u8 field_0x16C[0x170 - 0x16C];      // 0x16C
 } AnimationPose;
 
 typedef struct AnimationPoseFile {
