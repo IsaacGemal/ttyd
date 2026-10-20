@@ -1328,7 +1328,7 @@ static s32 moamoa_hit_check(ExtPose* pose, MoamoaPose* entry) {
     }
 
     party = partyGetPtr(0);
-    if (party->currentMemberId == 3 && partyGetPtr(0)->useMotionId == 0x46) {
+    if (party->currentMemberId == PARTY_MEMBER_BOBBERY && partyGetPtr(0)->useMotionId == 0x46) {
         vparty = moamoa_vec((*pose->matrix)[0][3], (*pose->matrix)[1][3], (*pose->matrix)[2][3],
                                 &vec3_rsh_00013710);
 
@@ -1491,7 +1491,7 @@ static void ext_moamoa_main(void) {
     }
     wp->breathDir = -1.0f;
     wp->breathDist = -1.0f;
-    if (party->currentMemberId == 5 && (party->flags & PARTY_FLAG_IS_BEING_USED)) {
+    if (party->currentMemberId == PARTY_MEMBER_FLURRIE && (party->flags & PARTY_FLAG_IS_BEING_USED)) {
         wp->breathDir = cloudGetBreathDir();
         wp->breathDist = cloudGetBreathDist();
         wp->breathPos.x =
