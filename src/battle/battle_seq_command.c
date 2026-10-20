@@ -57,9 +57,8 @@ void BattleCommandInit(BattleWork* wp) {
 void _btlcmd_MakeActClassTable(BattleWork* wp) {
 	BattleUnit* mario = BattleGetUnitPtr(wp, wp->activeUnitId);
 	BattleCommand* cmd = &wp->commandMenu;
-	BattleWorkCommand* wcmd = (BattleWorkCommand*)cmd;
 	PouchData* pouch = pouchGetPtr();
-	BattleWorkCommandCursor* cursor;
+	BattleCursor* cursor;
 	u32 count;
 	NpcBattleInfo* setup = wp->fbatInfo->setup;
 
@@ -67,186 +66,186 @@ void _btlcmd_MakeActClassTable(BattleWork* wp) {
 		return;
 	}
 	if (mario->currentKind == 0xDE) {
-		cursor = &wcmd->mCursors[0];
+		cursor = &cmd->cursor[0];
 	} else {
-		cursor = &wcmd->mCursors[1];
+		cursor = &cmd->cursor[1];
 	}
 	count = 0;
 	if (mario->currentKind == 0xDE) {
-		wcmd->mActionTable[0].mType = 0;
-		wcmd->mActionTable[0].mEnabled = 1;
-		wcmd->mActionTable[0].field_0x10 = 0;
+		cmd->actionTable[0].mType = 0;
+		cmd->actionTable[0].mEnabled = 1;
+		cmd->actionTable[0].mDisableReason = 0;
 		if (mario->mAttributeFlags & 0x10) {
-			wcmd->mActionTable[0].mEnabled = 0;
-			wcmd->mActionTable[0].field_0x10 = 3;
+			cmd->actionTable[0].mEnabled = 0;
+			cmd->actionTable[0].mDisableReason = 3;
 		}
 		if (pouch->jumpLevel < 1) {
-			wcmd->mActionTable[0].mEnabled = 0;
+			cmd->actionTable[0].mEnabled = 0;
 		}
 		if (mario->badgesEquipped.Hammerman != 0) {
-			wcmd->mActionTable[0].mEnabled = 0;
-			wcmd->mActionTable[0].field_0x10 = 3;
+			cmd->actionTable[0].mEnabled = 0;
+			cmd->actionTable[0].mDisableReason = 3;
 		}
 		if (*(s32*)&wp->field_18FF0[0x48] /* 0x19038 */ > 0) {
-			wcmd->mActionTable[0].mEnabled = 0;
-			wcmd->mActionTable[0].field_0x10 = 3;
+			cmd->actionTable[0].mEnabled = 0;
+			cmd->actionTable[0].mDisableReason = 3;
 		}
 		if (setup->flags & NPC_BATTLE_NO_JUMP) {
-			wcmd->mActionTable[0].mEnabled = 0;
-			wcmd->mActionTable[0].field_0x10 = 3;
+			cmd->actionTable[0].mEnabled = 0;
+			cmd->actionTable[0].mDisableReason = 3;
 		}
 		if (wp->flags & 0x06800000) {
-			wcmd->mActionTable[0].mEnabled = 0;
-			wcmd->mActionTable[0].field_0x10 = 3;
+			cmd->actionTable[0].mEnabled = 0;
+			cmd->actionTable[0].mDisableReason = 3;
 		}
-		wcmd->mActionTable[0].mName = (char*)msgSearch("btl_cmd_act_jump");
+		cmd->actionTable[0].mName = (char*)msgSearch("btl_cmd_act_jump");
 		switch (pouch->jumpLevel) {
 		case 1:
-			wcmd->mActionTable[0].mIcon = 0x146;
+			cmd->actionTable[0].mIcon = 0x146;
 			break;
 		case 2:
-			wcmd->mActionTable[0].mIcon = 0x147;
+			cmd->actionTable[0].mIcon = 0x147;
 			break;
 		default:
-			wcmd->mActionTable[0].mIcon = 0x148;
+			cmd->actionTable[0].mIcon = 0x148;
 			break;
 		}
 		count = 1;
 	}
 	if (mario->currentKind >= 0xE0 && mario->currentKind < 0xE7) {
-		wcmd->mActionTable[count].mType = 6;
+		cmd->actionTable[count].mType = 6;
 		if (mario->flippedTurns) {
-			wcmd->mActionTable[count].mEnabled = 0;
-			wcmd->mActionTable[count].field_0x10 = 3;
+			cmd->actionTable[count].mEnabled = 0;
+			cmd->actionTable[count].mDisableReason = 3;
 		} else {
-			wcmd->mActionTable[count].mEnabled = 1;
-			wcmd->mActionTable[count].field_0x10 = 0;
+			cmd->actionTable[count].mEnabled = 1;
+			cmd->actionTable[count].mDisableReason = 0;
 		}
 		if (*(s32*)&wp->field_18FF0[0x54] /* 0x19044 */ > 0) {
-			wcmd->mActionTable[count].mEnabled = 0;
-			wcmd->mActionTable[count].field_0x10 = 3;
+			cmd->actionTable[count].mEnabled = 0;
+			cmd->actionTable[count].mDisableReason = 3;
 		}
 		if (wp->flags & 0x04800000) {
-			wcmd->mActionTable[count].mEnabled = 0;
-			wcmd->mActionTable[count].field_0x10 = 3;
+			cmd->actionTable[count].mEnabled = 0;
+			cmd->actionTable[count].mDisableReason = 3;
 		}
-		wcmd->mActionTable[count].mName = (char*)msgSearch("btl_cmd_act_tech_party");
-		wcmd->mActionTable[count].mIcon = 0x14F;
+		cmd->actionTable[count].mName = (char*)msgSearch("btl_cmd_act_tech_party");
+		cmd->actionTable[count].mIcon = 0x14F;
 		count++;
 	}
 	if (mario->currentKind == 0xDE && pouch->hammerLevel >= 1) {
-		wcmd->mActionTable[count].mType = 1;
-		wcmd->mActionTable[count].mEnabled = 1;
-		wcmd->mActionTable[count].field_0x10 = 0;
+		cmd->actionTable[count].mType = 1;
+		cmd->actionTable[count].mEnabled = 1;
+		cmd->actionTable[count].mDisableReason = 0;
 		if (mario->mAttributeFlags & 0x10) {
-			wcmd->mActionTable[count].mEnabled = 0;
-			wcmd->mActionTable[count].field_0x10 = 3;
+			cmd->actionTable[count].mEnabled = 0;
+			cmd->actionTable[count].mDisableReason = 3;
 		}
 		if (pouch->hammerLevel < 1) {
-			wcmd->mActionTable[count].mEnabled = 0;
+			cmd->actionTable[count].mEnabled = 0;
 		}
 		if (mario->badgesEquipped.Jumpman != 0) {
-			wcmd->mActionTable[count].mEnabled = 0;
-			wcmd->mActionTable[count].field_0x10 = 3;
+			cmd->actionTable[count].mEnabled = 0;
+			cmd->actionTable[count].mDisableReason = 3;
 		}
 		if (*(s32*)&wp->field_18FF0[0x4C] /* 0x1903C */ > 0) {
-			wcmd->mActionTable[count].mEnabled = 0;
-			wcmd->mActionTable[count].field_0x10 = 3;
+			cmd->actionTable[count].mEnabled = 0;
+			cmd->actionTable[count].mDisableReason = 3;
 		}
 		if (setup->flags & NPC_BATTLE_NO_HAMMER) {
-			wcmd->mActionTable[count].mEnabled = 0;
-			wcmd->mActionTable[count].field_0x10 = 3;
+			cmd->actionTable[count].mEnabled = 0;
+			cmd->actionTable[count].mDisableReason = 3;
 		}
 		if (wp->flags & 0x05800000) {
-			wcmd->mActionTable[count].mEnabled = 0;
-			wcmd->mActionTable[count].field_0x10 = 3;
+			cmd->actionTable[count].mEnabled = 0;
+			cmd->actionTable[count].mDisableReason = 3;
 		}
-		wcmd->mActionTable[count].mName = (char*)msgSearch("btl_cmd_act_hammer");
+		cmd->actionTable[count].mName = (char*)msgSearch("btl_cmd_act_hammer");
 		switch (pouch->hammerLevel) {
 		case 1:
-			wcmd->mActionTable[count].mIcon = 0x149;
+			cmd->actionTable[count].mIcon = 0x149;
 			break;
 		case 2:
-			wcmd->mActionTable[count].mIcon = 0x14A;
+			cmd->actionTable[count].mIcon = 0x14A;
 			break;
 		default:
-			wcmd->mActionTable[count].mIcon = 0x14B;
+			cmd->actionTable[count].mIcon = 0x14B;
 			break;
 		}
 		count++;
 	}
 	if (mario->currentKind == 0xDE || (mario->currentKind >= 0xE0 && mario->currentKind < 0xE7)) {
-		wcmd->mActionTable[count].mType = 2;
+		cmd->actionTable[count].mType = 2;
 		if (mario->flippedTurns) {
-			wcmd->mActionTable[count].mEnabled = 0;
-			wcmd->mActionTable[count].field_0x10 = 3;
+			cmd->actionTable[count].mEnabled = 0;
+			cmd->actionTable[count].mDisableReason = 3;
 		} else {
-			wcmd->mActionTable[count].mEnabled = 1;
-			wcmd->mActionTable[count].field_0x10 = 0;
+			cmd->actionTable[count].mEnabled = 1;
+			cmd->actionTable[count].mDisableReason = 0;
 		}
 		if (mario->currentKind == 0xDE) {
 			if (*(s32*)&wp->field_18FF0[0x50] /* 0x19040 */ > 0) {
-				wcmd->mActionTable[count].mEnabled = 0;
-				wcmd->mActionTable[count].field_0x10 = 3;
+				cmd->actionTable[count].mEnabled = 0;
+				cmd->actionTable[count].mDisableReason = 3;
 			}
 		} else {
 			if (*(s32*)&wp->field_18FF0[0x58] /* 0x19048 */ > 0) {
-				wcmd->mActionTable[count].mEnabled = 0;
-				wcmd->mActionTable[count].field_0x10 = 3;
+				cmd->actionTable[count].mEnabled = 0;
+				cmd->actionTable[count].mDisableReason = 3;
 			}
 		}
 		if (wp->flags & 0x1F800000) {
-			wcmd->mActionTable[count].mEnabled = 0;
-			wcmd->mActionTable[count].field_0x10 = 3;
+			cmd->actionTable[count].mEnabled = 0;
+			cmd->actionTable[count].mDisableReason = 3;
 		}
-		wcmd->mActionTable[count].mName = (char*)msgSearch("btl_cmd_act_item");
-		wcmd->mActionTable[count].mIcon = 0x14C;
+		cmd->actionTable[count].mName = (char*)msgSearch("btl_cmd_act_item");
+		cmd->actionTable[count].mIcon = 0x14C;
 		count++;
 	}
 	if (mario->currentKind == 0xDE && pouch->mStarPowersObtained != 0) {
-		wcmd->mActionTable[count].mType = 4;
-		wcmd->mActionTable[count].mEnabled = 1;
-		wcmd->mActionTable[count].field_0x10 = 0;
+		cmd->actionTable[count].mType = 4;
+		cmd->actionTable[count].mEnabled = 1;
+		cmd->actionTable[count].mDisableReason = 0;
 		if (mario->mAttributeFlags & 0x10) {
-			wcmd->mActionTable[count].mEnabled = 0;
-			wcmd->mActionTable[count].field_0x10 = 3;
+			cmd->actionTable[count].mEnabled = 0;
+			cmd->actionTable[count].mDisableReason = 3;
 		}
 		if (wp->flags & 0x1B800000) {
-			wcmd->mActionTable[count].mEnabled = 0;
-			wcmd->mActionTable[count].field_0x10 = 3;
+			cmd->actionTable[count].mEnabled = 0;
+			cmd->actionTable[count].mDisableReason = 3;
 		}
-		wcmd->mActionTable[count].mName = (char*)msgSearch("btl_cmd_act_super_action");
-		wcmd->mActionTable[count].mIcon = 0x14D;
+		cmd->actionTable[count].mName = (char*)msgSearch("btl_cmd_act_super_action");
+		cmd->actionTable[count].mIcon = 0x14D;
 		count++;
 	}
 	if (!(wp->flags & 0x08000000)) {
-		wcmd->mActionTable[count].mType = 5;
-		wcmd->mActionTable[count].mEnabled = 1;
-		wcmd->mActionTable[count].field_0x10 = 0;
+		cmd->actionTable[count].mType = 5;
+		cmd->actionTable[count].mEnabled = 1;
+		cmd->actionTable[count].mDisableReason = 0;
 		if (wp->flags & 0x1F800000) {
-			wcmd->mActionTable[count].mEnabled = 0;
-			wcmd->mActionTable[count].field_0x10 = 3;
+			cmd->actionTable[count].mEnabled = 0;
+			cmd->actionTable[count].mDisableReason = 3;
 		}
-		wcmd->mActionTable[count].mName = (char*)msgSearch("btl_cmd_act_operation");
-		wcmd->mActionTable[count].mIcon = 0x14E;
+		cmd->actionTable[count].mName = (char*)msgSearch("btl_cmd_act_operation");
+		cmd->actionTable[count].mIcon = 0x14E;
 		count++;
 	}
 	if (wp->flags & 0x08000000) {
-		wcmd->mActionTable[count].mType = 0xD;
-		wcmd->mActionTable[count].mEnabled = 1;
-		wcmd->mActionTable[count].field_0x10 = 0;
-		wcmd->mActionTable[count].mName = (char*)msgSearch("btl_cmd_act_lecture_end");
-		wcmd->mActionTable[count].mIcon = 0x14E;
+		cmd->actionTable[count].mType = 0xD;
+		cmd->actionTable[count].mEnabled = 1;
+		cmd->actionTable[count].mDisableReason = 0;
+		cmd->actionTable[count].mName = (char*)msgSearch("btl_cmd_act_lecture_end");
+		cmd->actionTable[count].mIcon = 0x14E;
 		if (wp->flags & 0x10800000) {
-			wcmd->mActionTable[count].mEnabled = 0;
-			wcmd->mActionTable[count].field_0x10 = 3;
+			cmd->actionTable[count].mEnabled = 0;
+			cmd->actionTable[count].mDisableReason = 3;
 		}
 		count++;
 	}
-	cursor->mNumOptions = count;
+	cursor->unk8 = count;
 	// The original compares these signed (cmpw), though the header declares them u32.
-	if ((s32)cursor->mAbsolutePos >= (s32)cursor->mNumOptions) {
-		cursor->mAbsolutePos = cursor->mNumOptions - 1;
+	if ((s32)cursor->field_0 >= (s32)cursor->unk8) {
+		cursor->field_0 = cursor->unk8 - 1;
 	}
 }
 
@@ -350,7 +349,7 @@ s32 _btlcmd_MakeSelectWeaponTable(BattleWork* wp, s32 arg) {
 		{0, 0, 0, 0x64},
 	};
 	BattleUnit* unit = BattleGetUnitPtr(wp, wp->activeUnitId);
-	BattleWorkCommand* wcmd = (BattleWorkCommand*)&wp->commandMenu;
+	BattleCommand* cmd = &wp->commandMenu;
 	PouchData* pouch = pouchGetPtr();
 	BattleCursor* cursor;
 	u32 i;
@@ -363,102 +362,102 @@ s32 _btlcmd_MakeSelectWeaponTable(BattleWork* wp, s32 arg) {
 	s32 field_4;
 	ItemData* item;
 
-	if (wcmd == NULL) {
+	if (cmd == NULL) {
 		return 0;
 	}
-	_btlcmd_GetCursorPtr((BattleCommand*)wcmd, arg, &cursor);
+	_btlcmd_GetCursorPtr(cmd, arg, &cursor);
 	count = 0;
 	switch (arg) {
 	case 0:
 		if (pouch->jumpLevel >= 1) {
-			wcmd->mWeaponTable[count].mIndex = -1;
-			wcmd->mWeaponTable[count].mItem = 0;
-			wcmd->mWeaponTable[count].mWeaponParams = &marioDefaultWeapon_Jump;
-			wcmd->mWeaponTable[count].field_0x4 = 0;
-			wcmd->mWeaponTable[count].field_0x18 = 0;
-			wcmd->mWeaponTable[count].mIcon = _getJumpIconId();
-			if (wcmd->mWeaponTable[count].mWeaponParams->name != NULL) {
-				wcmd->mWeaponTable[count].mName = (char*)msgSearch(wcmd->mWeaponTable[count].mWeaponParams->name);
+			cmd->weaponTable[count].mIndex = -1;
+			cmd->weaponTable[count].mItem = 0;
+			cmd->weaponTable[count].mWeaponParams = &marioDefaultWeapon_Jump;
+			cmd->weaponTable[count].field_0x4 = 0;
+			cmd->weaponTable[count].field_0x18 = 0;
+			cmd->weaponTable[count].mIcon = _getJumpIconId();
+			if (cmd->weaponTable[count].mWeaponParams->name != NULL) {
+				cmd->weaponTable[count].mName = (char*)msgSearch(cmd->weaponTable[count].mWeaponParams->name);
 			} else {
-				wcmd->mWeaponTable[count].mName = (char*)msgSearch(itemDataTable[wcmd->mWeaponTable[count].mWeaponParams->item].name);
+				cmd->weaponTable[count].mName = (char*)msgSearch(itemDataTable[cmd->weaponTable[count].mWeaponParams->item].name);
 			}
 			if ((wp->flags & 0x09000000) != 0 && wp->field_424 != -1) {
-				wcmd->mWeaponTable[count].mWeaponParams = BtlUnit_GetData(BattleGetUnitPtr(wp, wp->field_424), 0x44);
+				cmd->weaponTable[count].mWeaponParams = BtlUnit_GetData(BattleGetUnitPtr(wp, wp->field_424), 0x44);
 			}
 			count++;
 		}
 		if (pouch->jumpLevel >= 2) {
-			wcmd->mWeaponTable[count].mIndex = -1;
-			wcmd->mWeaponTable[count].mItem = 0;
-			wcmd->mWeaponTable[count].mWeaponParams = &marioWeapon_KururinJump;
-			wcmd->mWeaponTable[count].field_0x4 = 0;
-			wcmd->mWeaponTable[count].field_0x18 = 0;
-			wcmd->mWeaponTable[count].mIcon = _getJumpIconId();
-			if (wcmd->mWeaponTable[count].mWeaponParams->name != NULL) {
-				wcmd->mWeaponTable[count].mName = (char*)msgSearch(wcmd->mWeaponTable[count].mWeaponParams->name);
+			cmd->weaponTable[count].mIndex = -1;
+			cmd->weaponTable[count].mItem = 0;
+			cmd->weaponTable[count].mWeaponParams = &marioWeapon_KururinJump;
+			cmd->weaponTable[count].field_0x4 = 0;
+			cmd->weaponTable[count].field_0x18 = 0;
+			cmd->weaponTable[count].mIcon = _getJumpIconId();
+			if (cmd->weaponTable[count].mWeaponParams->name != NULL) {
+				cmd->weaponTable[count].mName = (char*)msgSearch(cmd->weaponTable[count].mWeaponParams->name);
 			} else {
-				wcmd->mWeaponTable[count].mName = (char*)msgSearch(itemDataTable[wcmd->mWeaponTable[count].mWeaponParams->item].name);
+				cmd->weaponTable[count].mName = (char*)msgSearch(itemDataTable[cmd->weaponTable[count].mWeaponParams->item].name);
 			}
 			count++;
 		}
 		if (pouch->jumpLevel >= 3) {
-			wcmd->mWeaponTable[count].mIndex = -1;
-			wcmd->mWeaponTable[count].mItem = 0;
-			wcmd->mWeaponTable[count].mWeaponParams = &marioWeapon_JyabaraJump;
-			wcmd->mWeaponTable[count].field_0x4 = 0;
-			wcmd->mWeaponTable[count].field_0x18 = 0;
-			wcmd->mWeaponTable[count].mIcon = _getJumpIconId();
-			if (wcmd->mWeaponTable[count].mWeaponParams->name != NULL) {
-				wcmd->mWeaponTable[count].mName = (char*)msgSearch(wcmd->mWeaponTable[count].mWeaponParams->name);
+			cmd->weaponTable[count].mIndex = -1;
+			cmd->weaponTable[count].mItem = 0;
+			cmd->weaponTable[count].mWeaponParams = &marioWeapon_JyabaraJump;
+			cmd->weaponTable[count].field_0x4 = 0;
+			cmd->weaponTable[count].field_0x18 = 0;
+			cmd->weaponTable[count].mIcon = _getJumpIconId();
+			if (cmd->weaponTable[count].mWeaponParams->name != NULL) {
+				cmd->weaponTable[count].mName = (char*)msgSearch(cmd->weaponTable[count].mWeaponParams->name);
 			} else {
-				wcmd->mWeaponTable[count].mName = (char*)msgSearch(itemDataTable[wcmd->mWeaponTable[count].mWeaponParams->item].name);
+				cmd->weaponTable[count].mName = (char*)msgSearch(itemDataTable[cmd->weaponTable[count].mWeaponParams->item].name);
 			}
 			count++;
 		}
 		break;
 	case 1:
 		if (pouch->hammerLevel >= 1) {
-			wcmd->mWeaponTable[count].mIndex = -1;
-			wcmd->mWeaponTable[count].mItem = 0;
-			wcmd->mWeaponTable[count].mWeaponParams = &marioDefaultWeapon_Hammer;
-			wcmd->mWeaponTable[count].field_0x4 = 0;
-			wcmd->mWeaponTable[count].field_0x18 = 0;
-			wcmd->mWeaponTable[count].mIcon = _getHammerIconId();
-			if (wcmd->mWeaponTable[count].mWeaponParams->name != NULL) {
-				wcmd->mWeaponTable[count].mName = (char*)msgSearch(wcmd->mWeaponTable[count].mWeaponParams->name);
+			cmd->weaponTable[count].mIndex = -1;
+			cmd->weaponTable[count].mItem = 0;
+			cmd->weaponTable[count].mWeaponParams = &marioDefaultWeapon_Hammer;
+			cmd->weaponTable[count].field_0x4 = 0;
+			cmd->weaponTable[count].field_0x18 = 0;
+			cmd->weaponTable[count].mIcon = _getHammerIconId();
+			if (cmd->weaponTable[count].mWeaponParams->name != NULL) {
+				cmd->weaponTable[count].mName = (char*)msgSearch(cmd->weaponTable[count].mWeaponParams->name);
 			} else {
-				wcmd->mWeaponTable[count].mName = (char*)msgSearch(itemDataTable[wcmd->mWeaponTable[count].mWeaponParams->item].name);
+				cmd->weaponTable[count].mName = (char*)msgSearch(itemDataTable[cmd->weaponTable[count].mWeaponParams->item].name);
 			}
 			if ((wp->flags & 0x0A000000) != 0 && wp->field_424 != -1) {
-				wcmd->mWeaponTable[count].mWeaponParams = BtlUnit_GetData(BattleGetUnitPtr(wp, wp->field_424), 0x45);
+				cmd->weaponTable[count].mWeaponParams = BtlUnit_GetData(BattleGetUnitPtr(wp, wp->field_424), 0x45);
 			}
 			count++;
 		}
 		if (pouch->hammerLevel >= 2) {
-			wcmd->mWeaponTable[count].mIndex = -1;
-			wcmd->mWeaponTable[count].mItem = 0;
-			wcmd->mWeaponTable[count].mWeaponParams = &marioWeapon_KaitenHammer;
-			wcmd->mWeaponTable[count].field_0x4 = 0;
-			wcmd->mWeaponTable[count].field_0x18 = 0;
-			wcmd->mWeaponTable[count].mIcon = _getHammerIconId();
-			if (wcmd->mWeaponTable[count].mWeaponParams->name != NULL) {
-				wcmd->mWeaponTable[count].mName = (char*)msgSearch(wcmd->mWeaponTable[count].mWeaponParams->name);
+			cmd->weaponTable[count].mIndex = -1;
+			cmd->weaponTable[count].mItem = 0;
+			cmd->weaponTable[count].mWeaponParams = &marioWeapon_KaitenHammer;
+			cmd->weaponTable[count].field_0x4 = 0;
+			cmd->weaponTable[count].field_0x18 = 0;
+			cmd->weaponTable[count].mIcon = _getHammerIconId();
+			if (cmd->weaponTable[count].mWeaponParams->name != NULL) {
+				cmd->weaponTable[count].mName = (char*)msgSearch(cmd->weaponTable[count].mWeaponParams->name);
 			} else {
-				wcmd->mWeaponTable[count].mName = (char*)msgSearch(itemDataTable[wcmd->mWeaponTable[count].mWeaponParams->item].name);
+				cmd->weaponTable[count].mName = (char*)msgSearch(itemDataTable[cmd->weaponTable[count].mWeaponParams->item].name);
 			}
 			count++;
 		}
 		if (pouch->hammerLevel >= 3) {
-			wcmd->mWeaponTable[count].mIndex = -1;
-			wcmd->mWeaponTable[count].mItem = 0;
-			wcmd->mWeaponTable[count].mWeaponParams = &marioWeapon_UltraHammer;
-			wcmd->mWeaponTable[count].field_0x4 = 0;
-			wcmd->mWeaponTable[count].field_0x18 = 0;
-			wcmd->mWeaponTable[count].mIcon = _getHammerIconId();
-			if (wcmd->mWeaponTable[count].mWeaponParams->name != NULL) {
-				wcmd->mWeaponTable[count].mName = (char*)msgSearch(wcmd->mWeaponTable[count].mWeaponParams->name);
+			cmd->weaponTable[count].mIndex = -1;
+			cmd->weaponTable[count].mItem = 0;
+			cmd->weaponTable[count].mWeaponParams = &marioWeapon_UltraHammer;
+			cmd->weaponTable[count].field_0x4 = 0;
+			cmd->weaponTable[count].field_0x18 = 0;
+			cmd->weaponTable[count].mIcon = _getHammerIconId();
+			if (cmd->weaponTable[count].mWeaponParams->name != NULL) {
+				cmd->weaponTable[count].mName = (char*)msgSearch(cmd->weaponTable[count].mWeaponParams->name);
 			} else {
-				wcmd->mWeaponTable[count].mName = (char*)msgSearch(itemDataTable[wcmd->mWeaponTable[count].mWeaponParams->item].name);
+				cmd->weaponTable[count].mName = (char*)msgSearch(itemDataTable[cmd->weaponTable[count].mWeaponParams->item].name);
 			}
 			count++;
 		}
@@ -469,20 +468,20 @@ s32 _btlcmd_MakeSelectWeaponTable(BattleWork* wp, s32 arg) {
 		for (i = 0; i < 8; i++) {
 			badge = _jump_badge_table[i];
 			if (pouchEquipCheckBadge(badge) > 0) {
-				wcmd->mWeaponTable[count].mIndex = i;
-				wcmd->mWeaponTable[count].mItem = badge;
-				wcmd->mWeaponTable[count].mWeaponParams = itemDataTable[badge].battle_params;
-				wcmd->mWeaponTable[count].field_0x4 = 0;
-				wcmd->mWeaponTable[count].field_0x18 = 0;
-				if (wcmd->mWeaponTable[count].mWeaponParams->item != 0) {
-					wcmd->mWeaponTable[count].mIcon = *(u16*)&itemDataTable[badge].icon_id;
+				cmd->weaponTable[count].mIndex = i;
+				cmd->weaponTable[count].mItem = badge;
+				cmd->weaponTable[count].mWeaponParams = itemDataTable[badge].battle_params;
+				cmd->weaponTable[count].field_0x4 = 0;
+				cmd->weaponTable[count].field_0x18 = 0;
+				if (cmd->weaponTable[count].mWeaponParams->item != 0) {
+					cmd->weaponTable[count].mIcon = *(u16*)&itemDataTable[badge].icon_id;
 				} else {
-					wcmd->mWeaponTable[count].mIcon = *(u16*)&wcmd->mWeaponTable[count].mWeaponParams->icon;
+					cmd->weaponTable[count].mIcon = *(u16*)&cmd->weaponTable[count].mWeaponParams->icon;
 				}
-				if (wcmd->mWeaponTable[count].mWeaponParams->name != NULL) {
-					wcmd->mWeaponTable[count].mName = (char*)msgSearch(wcmd->mWeaponTable[count].mWeaponParams->name);
+				if (cmd->weaponTable[count].mWeaponParams->name != NULL) {
+					cmd->weaponTable[count].mName = (char*)msgSearch(cmd->weaponTable[count].mWeaponParams->name);
 				} else {
-					wcmd->mWeaponTable[count].mName = (char*)msgSearch(itemDataTable[wcmd->mWeaponTable[count].mWeaponParams->item].name);
+					cmd->weaponTable[count].mName = (char*)msgSearch(itemDataTable[cmd->weaponTable[count].mWeaponParams->item].name);
 				}
 				count++;
 			}
@@ -495,20 +494,20 @@ s32 _btlcmd_MakeSelectWeaponTable(BattleWork* wp, s32 arg) {
 		for (i = 0; i < 9; i++) {
 			badge = _hammer_badge_table[i];
 			if (pouchEquipCheckBadge(badge) > 0) {
-				wcmd->mWeaponTable[count].mIndex = i;
-				wcmd->mWeaponTable[count].mItem = badge;
-				wcmd->mWeaponTable[count].mWeaponParams = itemDataTable[badge].battle_params;
-				wcmd->mWeaponTable[count].field_0x4 = 0;
-				wcmd->mWeaponTable[count].field_0x18 = 0;
-				if (wcmd->mWeaponTable[count].mWeaponParams->item != 0) {
-					wcmd->mWeaponTable[count].mIcon = *(u16*)&itemDataTable[badge].icon_id;
+				cmd->weaponTable[count].mIndex = i;
+				cmd->weaponTable[count].mItem = badge;
+				cmd->weaponTable[count].mWeaponParams = itemDataTable[badge].battle_params;
+				cmd->weaponTable[count].field_0x4 = 0;
+				cmd->weaponTable[count].field_0x18 = 0;
+				if (cmd->weaponTable[count].mWeaponParams->item != 0) {
+					cmd->weaponTable[count].mIcon = *(u16*)&itemDataTable[badge].icon_id;
 				} else {
-					wcmd->mWeaponTable[count].mIcon = *(u16*)&wcmd->mWeaponTable[count].mWeaponParams->icon;
+					cmd->weaponTable[count].mIcon = *(u16*)&cmd->weaponTable[count].mWeaponParams->icon;
 				}
-				if (wcmd->mWeaponTable[count].mWeaponParams->name != NULL) {
-					wcmd->mWeaponTable[count].mName = (char*)msgSearch(wcmd->mWeaponTable[count].mWeaponParams->name);
+				if (cmd->weaponTable[count].mWeaponParams->name != NULL) {
+					cmd->weaponTable[count].mName = (char*)msgSearch(cmd->weaponTable[count].mWeaponParams->name);
 				} else {
-					wcmd->mWeaponTable[count].mName = (char*)msgSearch(itemDataTable[wcmd->mWeaponTable[count].mWeaponParams->item].name);
+					cmd->weaponTable[count].mName = (char*)msgSearch(itemDataTable[cmd->weaponTable[count].mWeaponParams->item].name);
 				}
 				count++;
 			}
@@ -518,7 +517,7 @@ s32 _btlcmd_MakeSelectWeaponTable(BattleWork* wp, s32 arg) {
 	}
 	switch (arg) {
 	case 6:
-		{ void (*fn)(BattleWorkCommand*, void*) = (void (*)(BattleWorkCommand*, void*))BtlUnit_GetData(unit, 1); fn(wcmd, &count); }
+		{ void (*fn)(BattleCommand*, void*) = (void (*)(BattleCommand*, void*))BtlUnit_GetData(unit, 1); fn(cmd, &count); }
 		break;
 	case 2:
 		items = pouch->heldItems;
@@ -526,21 +525,21 @@ s32 _btlcmd_MakeSelectWeaponTable(BattleWork* wp, s32 arg) {
 			id = items[j];
 			item = &itemDataTable[id];
 			if (id != 0 && (item->usable_locations & 2) != 0) {
-				wcmd->mWeaponTable[count].mIndex = j;
-				wcmd->mWeaponTable[count].mItem = id;
-				wcmd->mWeaponTable[count].mWeaponParams = item->battle_params;
-				wcmd->mWeaponTable[count].field_0x4 = 0;
-				wcmd->mWeaponTable[count].field_0x18 = 0;
-				if (wcmd->mWeaponTable[count].mWeaponParams == NULL) {
-					wcmd->mWeaponTable[count].mWeaponParams = &ItemWeaponData_CookingItem;
-					wcmd->mWeaponTable[count].mName = (char*)msgSearch(item->name);
-					wcmd->mWeaponTable[count].mIcon = *(u16*)&item->icon_id;
+				cmd->weaponTable[count].mIndex = j;
+				cmd->weaponTable[count].mItem = id;
+				cmd->weaponTable[count].mWeaponParams = item->battle_params;
+				cmd->weaponTable[count].field_0x4 = 0;
+				cmd->weaponTable[count].field_0x18 = 0;
+				if (cmd->weaponTable[count].mWeaponParams == NULL) {
+					cmd->weaponTable[count].mWeaponParams = &ItemWeaponData_CookingItem;
+					cmd->weaponTable[count].mName = (char*)msgSearch(item->name);
+					cmd->weaponTable[count].mIcon = *(u16*)&item->icon_id;
 				} else {
-					wcmd->mWeaponTable[count].mIcon = *(u16*)&item->icon_id;
-					if (wcmd->mWeaponTable[count].mWeaponParams->name != NULL) {
-						wcmd->mWeaponTable[count].mName = (char*)msgSearch(wcmd->mWeaponTable[count].mWeaponParams->name);
+					cmd->weaponTable[count].mIcon = *(u16*)&item->icon_id;
+					if (cmd->weaponTable[count].mWeaponParams->name != NULL) {
+						cmd->weaponTable[count].mName = (char*)msgSearch(cmd->weaponTable[count].mWeaponParams->name);
 					} else {
-						wcmd->mWeaponTable[count].mName = (char*)msgSearch(itemDataTable[wcmd->mWeaponTable[count].mWeaponParams->item].name);
+						cmd->weaponTable[count].mName = (char*)msgSearch(itemDataTable[cmd->weaponTable[count].mWeaponParams->item].name);
 					}
 				}
 				count++;
@@ -550,17 +549,17 @@ s32 _btlcmd_MakeSelectWeaponTable(BattleWork* wp, s32 arg) {
 			}
 		}
 		if (count == 0) {
-			wcmd->mWeaponTable[count].mIndex = -1;
-			wcmd->mWeaponTable[count].mItem = 0;
-			wcmd->mWeaponTable[count].mIndex = 0;
-			wcmd->mWeaponTable[count].mWeaponParams = &defaultWeapon_Dummy_NoItem;
-			wcmd->mWeaponTable[count].field_0x4 = 0;
-			wcmd->mWeaponTable[count].field_0x18 = 0;
-			wcmd->mWeaponTable[count].mIcon = 0x162;
-			if (wcmd->mWeaponTable[count].mWeaponParams->name != NULL) {
-				wcmd->mWeaponTable[count].mName = (char*)msgSearch(wcmd->mWeaponTable[count].mWeaponParams->name);
+			cmd->weaponTable[count].mIndex = -1;
+			cmd->weaponTable[count].mItem = 0;
+			cmd->weaponTable[count].mIndex = 0;
+			cmd->weaponTable[count].mWeaponParams = &defaultWeapon_Dummy_NoItem;
+			cmd->weaponTable[count].field_0x4 = 0;
+			cmd->weaponTable[count].field_0x18 = 0;
+			cmd->weaponTable[count].mIcon = 0x162;
+			if (cmd->weaponTable[count].mWeaponParams->name != NULL) {
+				cmd->weaponTable[count].mName = (char*)msgSearch(cmd->weaponTable[count].mWeaponParams->name);
 			} else {
-				wcmd->mWeaponTable[count].mName = (char*)msgSearch(itemDataTable[wcmd->mWeaponTable[count].mWeaponParams->item].name);
+				cmd->weaponTable[count].mName = (char*)msgSearch(itemDataTable[cmd->weaponTable[count].mWeaponParams->item].name);
 			}
 			count++;
 		}
@@ -571,16 +570,16 @@ s32 _btlcmd_MakeSelectWeaponTable(BattleWork* wp, s32 arg) {
 		mask = pouch->mStarPowersObtained;
 		for (j = 0; j < 16; j++) {
 			if ((mask & (1 << j)) != 0 && ((BattleWeapon**)superActionTable)[j] != NULL) {
-				wcmd->mWeaponTable[count].mIndex = -1;
-				wcmd->mWeaponTable[count].mItem = 0;
-				wcmd->mWeaponTable[count].mWeaponParams = ((BattleWeapon**)superActionTable)[j];
-				wcmd->mWeaponTable[count].field_0x4 = 0;
-				wcmd->mWeaponTable[count].mIcon = *(u16*)&((BattleWeapon**)superActionTable)[j]->icon;
-				wcmd->mWeaponTable[count].field_0x18 = 0;
-				if (wcmd->mWeaponTable[count].mWeaponParams->name != NULL) {
-					wcmd->mWeaponTable[count].mName = (char*)msgSearch(wcmd->mWeaponTable[count].mWeaponParams->name);
+				cmd->weaponTable[count].mIndex = -1;
+				cmd->weaponTable[count].mItem = 0;
+				cmd->weaponTable[count].mWeaponParams = ((BattleWeapon**)superActionTable)[j];
+				cmd->weaponTable[count].field_0x4 = 0;
+				cmd->weaponTable[count].mIcon = *(u16*)&((BattleWeapon**)superActionTable)[j]->icon;
+				cmd->weaponTable[count].field_0x18 = 0;
+				if (cmd->weaponTable[count].mWeaponParams->name != NULL) {
+					cmd->weaponTable[count].mName = (char*)msgSearch(cmd->weaponTable[count].mWeaponParams->name);
 				} else {
-					wcmd->mWeaponTable[count].mName = (char*)msgSearch(itemDataTable[wcmd->mWeaponTable[count].mWeaponParams->item].name);
+					cmd->weaponTable[count].mName = (char*)msgSearch(itemDataTable[cmd->weaponTable[count].mWeaponParams->item].name);
 				}
 				count++;
 				if (count >= 0x15) {
@@ -611,7 +610,7 @@ s32 _btlcmd_MakeSelectWeaponTable(BattleWork* wp, s32 arg) {
 
 void _btlcmd_UpdateSelectWeaponTable(BattleWork* wp, s32 arg) {
 	BattleUnit* unit = BattleGetUnitPtr(wp, wp->activeUnitId);
-	BattleWorkCommand* wcmd = (BattleWorkCommand*)&wp->commandMenu;
+	BattleCommand* cmd = &wp->commandMenu;
 	BattleCursor* cursor;
 	s32 i;
 	s32 count;
@@ -622,9 +621,9 @@ void _btlcmd_UpdateSelectWeaponTable(BattleWork* wp, s32 arg) {
 		BattleWeapon* params;
 		s32 check;
 
-		params = wcmd->mWeaponTable[i].mWeaponParams;
-		wcmd->mWeaponTable[i].field_0x4 = 0;
-		wcmd->mWeaponTable[i].field_0x18 = 0;
+		params = cmd->weaponTable[i].mWeaponParams;
+		cmd->weaponTable[i].field_0x4 = 0;
+		cmd->weaponTable[i].field_0x18 = 0;
 		if (params == NULL) {
 			continue;
 		}
@@ -633,25 +632,25 @@ void _btlcmd_UpdateSelectWeaponTable(BattleWork* wp, s32 arg) {
 			if (check == 0) {
 				switch (arg) {
 				case 0:
-					wcmd->mWeaponTable[i].field_0x18 = 4;
+					cmd->weaponTable[i].field_0x18 = 4;
 					break;
 				case 1:
-					wcmd->mWeaponTable[i].field_0x18 = 5;
+					cmd->weaponTable[i].field_0x18 = 5;
 					break;
 				default:
-					wcmd->mWeaponTable[i].field_0x18 = 3;
+					cmd->weaponTable[i].field_0x18 = 3;
 					break;
 				}
 			} else {
 				if (arg != 4) {
-					wcmd->mWeaponTable[i].field_0x18 = 1;
+					cmd->weaponTable[i].field_0x18 = 1;
 				} else {
-					wcmd->mWeaponTable[i].field_0x18 = 2;
+					cmd->weaponTable[i].field_0x18 = 2;
 				}
 			}
 		} else {
-			wcmd->mWeaponTable[i].field_0x4 = 1;
-			wcmd->mWeaponTable[i].field_0x18 = 0;
+			cmd->weaponTable[i].field_0x4 = 1;
+			cmd->weaponTable[i].field_0x18 = 0;
 		}
 	}
 }
@@ -683,7 +682,6 @@ void _btlcmd_MakeOperationTable(BattleWork* wp) {
 	BattleUnit* mario;
 	BattleCommand* cmd;
 	PouchData* pouch;
-	BattleWorkCommand* wcmd;
 	BattleCursor* cursor;
 	BattleUnit* party;
 	u32 count;
@@ -693,7 +691,6 @@ void _btlcmd_MakeOperationTable(BattleWork* wp) {
 	cmd = &wp->commandMenu;
 	setup = wp->fbatInfo->setup;
 	pouch = pouchGetPtr();
-	wcmd = (BattleWorkCommand*)cmd;
 
 	if (cmd == NULL) {
 		return;
@@ -701,111 +698,111 @@ void _btlcmd_MakeOperationTable(BattleWork* wp) {
 	_btlcmd_GetCursorPtr(cmd, 5, &cursor);
 	count = 0;
 	if (_btlcmd_MakePartyTable(wp) >= 2) {
-		wcmd->mOperationTable[0].mType = 0;
+		cmd->operationTable[0].mType = 0;
 		if (mario->flippedTurns) {
-			wcmd->mOperationTable[0].mEnabled = 0;
-			wcmd->mOperationTable[0].field_0x8 = 3;
+			cmd->operationTable[0].mEnabled = 0;
+			cmd->operationTable[0].field_0x8 = 3;
 		} else {
-			wcmd->mOperationTable[0].mEnabled = 1;
-			wcmd->mOperationTable[0].field_0x8 = 0;
+			cmd->operationTable[0].mEnabled = 1;
+			cmd->operationTable[0].field_0x8 = 0;
 		}
-		wcmd->mOperationTable[0].mName = (char*)msgSearch("btl_cmd_op_chg_party");
+		cmd->operationTable[0].mName = (char*)msgSearch("btl_cmd_op_chg_party");
 		party = mario;
 		if (!(mario->currentKind >= 0xE0 && mario->currentKind < 0xE7)) {
 			party = BattleGetPartnerPtr(wp, mario);
 		}
 		BtlUnit_CanActStatus(party);
-		wcmd->mOperationTable[0].mIcon = _battleGetPartyIcon(party->currentKind);
-		wcmd->mOperationTable[0].mDescription = "btl_hlp_cmd_operation_changeparty";
+		cmd->operationTable[0].mIcon = _battleGetPartyIcon(party->currentKind);
+		cmd->operationTable[0].mDescription = "btl_hlp_cmd_operation_changeparty";
 		if (mario->mAttributeFlags & 0x10) {
-			wcmd->mOperationTable[0].mEnabled = 0;
-			wcmd->mOperationTable[0].field_0x8 = 3;
+			cmd->operationTable[0].mEnabled = 0;
+			cmd->operationTable[0].field_0x8 = 3;
 		}
 		if (setup->flags & NPC_BATTLE_NO_PARTY_CHANGE) {
-			wcmd->mOperationTable[0].mEnabled = 0;
-			wcmd->mOperationTable[0].field_0x8 = 3;
+			cmd->operationTable[0].mEnabled = 0;
+			cmd->operationTable[0].field_0x8 = 3;
 		}
-		wcmd->mOperationTable[0].mWeaponCost = 0;
+		cmd->operationTable[0].mWeaponCost = 0;
 		count = 1;
 	}
 	if (pouch->mStarPowersObtained != 0) {
-		wcmd->mOperationTable[count].mType = 5;
-		wcmd->mOperationTable[count].mEnabled = 1;
-		wcmd->mOperationTable[count].mName = (char*)msgSearch("btl_cmd_op_appeal");
-		wcmd->mOperationTable[count].mIcon = 0x164;
-		wcmd->mOperationTable[count].field_0x8 = 0;
-		wcmd->mOperationTable[count].mWeaponCost = 0;
-		wcmd->mOperationTable[count].mDescription = "btl_hlp_cmd_operation_appeal";
+		cmd->operationTable[count].mType = 5;
+		cmd->operationTable[count].mEnabled = 1;
+		cmd->operationTable[count].mName = (char*)msgSearch("btl_cmd_op_appeal");
+		cmd->operationTable[count].mIcon = 0x164;
+		cmd->operationTable[count].field_0x8 = 0;
+		cmd->operationTable[count].mWeaponCost = 0;
+		cmd->operationTable[count].mDescription = "btl_hlp_cmd_operation_appeal";
 		count++;
 	}
 	if (mario->badgesEquipped.Charge) {
 		weapon = mario->currentKind == 0xDE ? &badgeWeapon_Charge : &badgeWeapon_ChargeP;
-		wcmd->mOperationTable[count].mType = 1;
-		wcmd->mOperationTable[count].mEnabled = BtlUnit_CheckWeaponCost(mario, weapon);
-		wcmd->mOperationTable[count].mWeaponCost = BtlUnit_GetWeaponCost(mario, weapon);
-		if (wcmd->mOperationTable[count].mEnabled != 0) {
-			wcmd->mOperationTable[count].field_0x8 = 0;
+		cmd->operationTable[count].mType = 1;
+		cmd->operationTable[count].mEnabled = BtlUnit_CheckWeaponCost(mario, weapon);
+		cmd->operationTable[count].mWeaponCost = BtlUnit_GetWeaponCost(mario, weapon);
+		if (cmd->operationTable[count].mEnabled != 0) {
+			cmd->operationTable[count].field_0x8 = 0;
 		} else {
-			wcmd->mOperationTable[count].field_0x8 = 1;
+			cmd->operationTable[count].field_0x8 = 1;
 		}
-		wcmd->mOperationTable[count].mName = (char*)msgSearch(weapon->name);
-		wcmd->mOperationTable[count].mIcon = 0x166;
-		wcmd->mOperationTable[count].mDescription = (char*)weapon->description;
+		cmd->operationTable[count].mName = (char*)msgSearch(weapon->name);
+		cmd->operationTable[count].mIcon = 0x166;
+		cmd->operationTable[count].mDescription = (char*)weapon->description;
 		if (mario->mAttributeFlags & 0x10) {
-			wcmd->mOperationTable[count].mEnabled = 0;
-			wcmd->mOperationTable[count].field_0x8 = 3;
+			cmd->operationTable[count].mEnabled = 0;
+			cmd->operationTable[count].field_0x8 = 3;
 		}
 		count++;
 	}
 	if (mario->badgesEquipped.SuperCharge) {
 		weapon = mario->currentKind == 0xDE ? &badgeWeapon_SuperCharge : &badgeWeapon_SuperChargeP;
-		wcmd->mOperationTable[count].mType = 2;
-		wcmd->mOperationTable[count].mEnabled = BtlUnit_CheckWeaponCost(mario, weapon);
-		wcmd->mOperationTable[count].mWeaponCost = BtlUnit_GetWeaponCost(mario, weapon);
-		if (wcmd->mOperationTable[count].mEnabled != 0) {
-			wcmd->mOperationTable[count].field_0x8 = 0;
+		cmd->operationTable[count].mType = 2;
+		cmd->operationTable[count].mEnabled = BtlUnit_CheckWeaponCost(mario, weapon);
+		cmd->operationTable[count].mWeaponCost = BtlUnit_GetWeaponCost(mario, weapon);
+		if (cmd->operationTable[count].mEnabled != 0) {
+			cmd->operationTable[count].field_0x8 = 0;
 		} else {
-			wcmd->mOperationTable[count].field_0x8 = 1;
+			cmd->operationTable[count].field_0x8 = 1;
 		}
-		wcmd->mOperationTable[count].mName = (char*)msgSearch(weapon->name);
-		wcmd->mOperationTable[count].mIcon = 0x167;
-		wcmd->mOperationTable[count].mDescription = (char*)weapon->description;
+		cmd->operationTable[count].mName = (char*)msgSearch(weapon->name);
+		cmd->operationTable[count].mIcon = 0x167;
+		cmd->operationTable[count].mDescription = (char*)weapon->description;
 		if (mario->mAttributeFlags & 0x10) {
-			wcmd->mOperationTable[count].mEnabled = 0;
-			wcmd->mOperationTable[count].field_0x8 = 3;
+			cmd->operationTable[count].mEnabled = 0;
+			cmd->operationTable[count].field_0x8 = 3;
 		}
 		count++;
 	}
-	wcmd->mOperationTable[count].mType = 6;
-	wcmd->mOperationTable[count].mEnabled = 1;
-	wcmd->mOperationTable[count].mName = (char*)msgSearch("btl_cmd_op_defend");
-	wcmd->mOperationTable[count].mIcon = 0x165;
-	wcmd->mOperationTable[count].field_0x8 = 0;
-	wcmd->mOperationTable[count].mWeaponCost = 0;
-	wcmd->mOperationTable[count].mDescription = "btl_hlp_cmd_operation_defend";
+	cmd->operationTable[count].mType = 6;
+	cmd->operationTable[count].mEnabled = 1;
+	cmd->operationTable[count].mName = (char*)msgSearch("btl_cmd_op_defend");
+	cmd->operationTable[count].mIcon = 0x165;
+	cmd->operationTable[count].field_0x8 = 0;
+	cmd->operationTable[count].mWeaponCost = 0;
+	cmd->operationTable[count].mDescription = "btl_hlp_cmd_operation_defend";
 	if (mario->mAttributeFlags & 0x10) {
-		wcmd->mOperationTable[count].mEnabled = 0;
-		wcmd->mOperationTable[count].field_0x8 = 3;
+		cmd->operationTable[count].mEnabled = 0;
+		cmd->operationTable[count].field_0x8 = 3;
 	}
 	escapeIdx = count + 1;
-	wcmd->mOperationTable[escapeIdx].mType = 3;
-	wcmd->mOperationTable[escapeIdx].mEnabled = BtlUnit_CanActStatus(mario);
-	wcmd->mOperationTable[escapeIdx].mName = (char*)msgSearch("btl_cmd_op_escape");
-	wcmd->mOperationTable[escapeIdx].mIcon = 0x163;
-	wcmd->mOperationTable[escapeIdx].mWeaponCost = 0;
-	if (wcmd->mOperationTable[escapeIdx].mEnabled != 0) {
-		wcmd->mOperationTable[escapeIdx].field_0x8 = 0;
+	cmd->operationTable[escapeIdx].mType = 3;
+	cmd->operationTable[escapeIdx].mEnabled = BtlUnit_CanActStatus(mario);
+	cmd->operationTable[escapeIdx].mName = (char*)msgSearch("btl_cmd_op_escape");
+	cmd->operationTable[escapeIdx].mIcon = 0x163;
+	cmd->operationTable[escapeIdx].mWeaponCost = 0;
+	if (cmd->operationTable[escapeIdx].mEnabled != 0) {
+		cmd->operationTable[escapeIdx].field_0x8 = 0;
 	} else {
-		wcmd->mOperationTable[escapeIdx].field_0x8 = 1;
+		cmd->operationTable[escapeIdx].field_0x8 = 1;
 	}
-	wcmd->mOperationTable[escapeIdx].mDescription = "btl_hlp_cmd_operation_escape";
+	cmd->operationTable[escapeIdx].mDescription = "btl_hlp_cmd_operation_escape";
 	if (mario->mAttributeFlags & 0x10) {
-		wcmd->mOperationTable[escapeIdx].mEnabled = 0;
-		wcmd->mOperationTable[escapeIdx].field_0x8 = 3;
+		cmd->operationTable[escapeIdx].mEnabled = 0;
+		cmd->operationTable[escapeIdx].field_0x8 = 3;
 	}
 	if (wp->fbatInfo->setup->flags & NPC_BATTLE_NO_ESCAPE) {
-		wcmd->mOperationTable[escapeIdx].mEnabled = 0;
-		wcmd->mOperationTable[escapeIdx].field_0x8 = 3;
+		cmd->operationTable[escapeIdx].mEnabled = 0;
+		cmd->operationTable[escapeIdx].field_0x8 = 3;
 	}
 	cursor->unk8 = count + 2;
 	if (cursor->field_0 >= cursor->unk8) {
@@ -823,58 +820,57 @@ void _btlcmd_MakeMultiItemTable(BattleWork* wp) {
 	u32 count;
 
 	if ((cmd = &wp->commandMenu)) {
-		BattleWorkCommand* wcmd = (BattleWorkCommand*)cmd;
 		BattleCursor* cursor;
 		_btlcmd_GetCursorPtr(cmd, 3, &cursor);
 		count = 0;
-		wcmd->mMultiItemTable[count].pad_0xE[0] = 1;
-		wcmd->mMultiItemTable[count].mEnabled = 1;
-		wcmd->mMultiItemTable[count].mName = (char*)msgSearch("btl_cmd_act_item");
-		wcmd->mMultiItemTable[count].mIcon = 0x14C;
-		wcmd->mMultiItemTable[count].mDescription = NULL;
-		wcmd->mMultiItemTable[count].mWeaponCost = 0;
+		cmd->multiItemTable[count].pad_0xE[0] = 1;
+		cmd->multiItemTable[count].mEnabled = 1;
+		cmd->multiItemTable[count].mName = (char*)msgSearch("btl_cmd_act_item");
+		cmd->multiItemTable[count].mIcon = 0x14C;
+		cmd->multiItemTable[count].mDescription = NULL;
+		cmd->multiItemTable[count].mWeaponCost = 0;
 		count++;
 		if (unit->badgesEquipped.DoubleDip) {
-			wcmd->mMultiItemTable[count].pad_0xE[0] = 2;
+			cmd->multiItemTable[count].pad_0xE[0] = 2;
 			if (unit->currentKind == UNIT_MARIO) {
-				wcmd->mMultiItemTable[count].mEnabled = BtlUnit_CheckWeaponCost(unit, &badgeWeapon_2KaiItem);
-				wcmd->mMultiItemTable[count].mName = (char*)msgSearch(itemDataTable[254].name);
-				wcmd->mMultiItemTable[count].mIcon = *(u16*)&itemDataTable[254].icon_id;
-				wcmd->mMultiItemTable[count].mDescription = (char*)itemDataTable[254].description;
-				wcmd->mMultiItemTable[count].mWeaponCost = (u8)BtlUnit_GetWeaponCost(unit, &badgeWeapon_2KaiItem);
+				cmd->multiItemTable[count].mEnabled = BtlUnit_CheckWeaponCost(unit, &badgeWeapon_2KaiItem);
+				cmd->multiItemTable[count].mName = (char*)msgSearch(itemDataTable[254].name);
+				cmd->multiItemTable[count].mIcon = *(u16*)&itemDataTable[254].icon_id;
+				cmd->multiItemTable[count].mDescription = (char*)itemDataTable[254].description;
+				cmd->multiItemTable[count].mWeaponCost = (u8)BtlUnit_GetWeaponCost(unit, &badgeWeapon_2KaiItem);
 			} else {
-				wcmd->mMultiItemTable[count].mEnabled = BtlUnit_CheckWeaponCost(unit, &badgeWeapon_2KaiItem);
-				wcmd->mMultiItemTable[count].mName = (char*)msgSearch(itemDataTable[255].name);
-				wcmd->mMultiItemTable[count].mIcon = *(u16*)&itemDataTable[255].icon_id;
-				wcmd->mMultiItemTable[count].mDescription = (char*)itemDataTable[255].description;
-				wcmd->mMultiItemTable[count].mWeaponCost = (u8)BtlUnit_GetWeaponCost(unit, &badgeWeapon_2KaiItem);
+				cmd->multiItemTable[count].mEnabled = BtlUnit_CheckWeaponCost(unit, &badgeWeapon_2KaiItem);
+				cmd->multiItemTable[count].mName = (char*)msgSearch(itemDataTable[255].name);
+				cmd->multiItemTable[count].mIcon = *(u16*)&itemDataTable[255].icon_id;
+				cmd->multiItemTable[count].mDescription = (char*)itemDataTable[255].description;
+				cmd->multiItemTable[count].mWeaponCost = (u8)BtlUnit_GetWeaponCost(unit, &badgeWeapon_2KaiItem);
 			}
-			if (wcmd->mMultiItemTable[count].mEnabled == 0) {
-				wcmd->mMultiItemTable[count].field_0x14 = 1;
+			if (cmd->multiItemTable[count].mEnabled == 0) {
+				cmd->multiItemTable[count].field_0x14 = 1;
 			} else {
-				wcmd->mMultiItemTable[count].field_0x14 = 0;
+				cmd->multiItemTable[count].field_0x14 = 0;
 			}
 			count = 2;
 		}
 		if (unit->badgesEquipped.TripleDip) {
-			wcmd->mMultiItemTable[count].pad_0xE[0] = 3;
+			cmd->multiItemTable[count].pad_0xE[0] = 3;
 			if (unit->currentKind == UNIT_MARIO) {
-				wcmd->mMultiItemTable[count].mEnabled = BtlUnit_CheckWeaponCost(unit, &badgeWeapon_3KaiItem);
-				wcmd->mMultiItemTable[count].mName = (char*)msgSearch(itemDataTable[329].name);
-				wcmd->mMultiItemTable[count].mIcon = *(u16*)&itemDataTable[329].icon_id;
-				wcmd->mMultiItemTable[count].mDescription = (char*)itemDataTable[329].description;
-				wcmd->mMultiItemTable[count].mWeaponCost = (u8)BtlUnit_GetWeaponCost(unit, &badgeWeapon_3KaiItem);
+				cmd->multiItemTable[count].mEnabled = BtlUnit_CheckWeaponCost(unit, &badgeWeapon_3KaiItem);
+				cmd->multiItemTable[count].mName = (char*)msgSearch(itemDataTable[329].name);
+				cmd->multiItemTable[count].mIcon = *(u16*)&itemDataTable[329].icon_id;
+				cmd->multiItemTable[count].mDescription = (char*)itemDataTable[329].description;
+				cmd->multiItemTable[count].mWeaponCost = (u8)BtlUnit_GetWeaponCost(unit, &badgeWeapon_3KaiItem);
 			} else {
-				wcmd->mMultiItemTable[count].mEnabled = BtlUnit_CheckWeaponCost(unit, &badgeWeapon_3KaiItem);
-				wcmd->mMultiItemTable[count].mName = (char*)msgSearch("in_3kai_item_p");
-				wcmd->mMultiItemTable[count].mIcon = 0x62;
-				wcmd->mMultiItemTable[count].mDescription = "msg_3kai_item_p";
-				wcmd->mMultiItemTable[count].mWeaponCost = (u8)BtlUnit_GetWeaponCost(unit, &badgeWeapon_3KaiItem);
+				cmd->multiItemTable[count].mEnabled = BtlUnit_CheckWeaponCost(unit, &badgeWeapon_3KaiItem);
+				cmd->multiItemTable[count].mName = (char*)msgSearch("in_3kai_item_p");
+				cmd->multiItemTable[count].mIcon = 0x62;
+				cmd->multiItemTable[count].mDescription = "msg_3kai_item_p";
+				cmd->multiItemTable[count].mWeaponCost = (u8)BtlUnit_GetWeaponCost(unit, &badgeWeapon_3KaiItem);
 			}
-			if (wcmd->mMultiItemTable[count].mEnabled == 0) {
-				wcmd->mMultiItemTable[count].field_0x14 = 1;
+			if (cmd->multiItemTable[count].mEnabled == 0) {
+				cmd->multiItemTable[count].field_0x14 = 1;
 			} else {
-				wcmd->mMultiItemTable[count].field_0x14 = 0;
+				cmd->multiItemTable[count].field_0x14 = 0;
 			}
 			count++;
 		}
@@ -951,31 +947,31 @@ s32 _btlcmd_MakePartyTable(BattleWork* wp) {
 		if (!(party->flags & 1)) {
 			continue;
 		}
-		((BattleWorkCommand*)cmd)->mPartyTable[count].mPartyId = kind;
-		((BattleWorkCommand*)cmd)->mPartyTable[count].mEnabled = 1;
+		cmd->partyTable[count].mPartyId = kind;
+		cmd->partyTable[count].mEnabled = 1;
 		if (kind == 0xE2) {
 			name = pouchGetYoshiName();
 		} else {
 			name = (char*)msgSearch(entry->name);
 		}
-		((BattleWorkCommand*)cmd)->mPartyTable[count].mName = name;
-		((BattleWorkCommand*)cmd)->mPartyTable[count].mIcon = _battleGetPartyIcon(kind);
-		((BattleWorkCommand*)cmd)->mPartyTable[count].mDescription = entry->help;
-		((BattleWorkCommand*)cmd)->mPartyTable[count].mCurrentHP = party->currentHP;
-		((BattleWorkCommand*)cmd)->mPartyTable[count].mMaxHP = party->maximumHP;
+		cmd->partyTable[count].mName = name;
+		cmd->partyTable[count].mIcon = _battleGetPartyIcon(kind);
+		cmd->partyTable[count].mDescription = entry->help;
+		cmd->partyTable[count].mCurrentHP = party->currentHP;
+		cmd->partyTable[count].mMaxHP = party->maximumHP;
 		if (mario->currentKind == kind || BattleGetPartnerPtr(wp, mario)->currentKind == kind) {
-			((BattleWorkCommand*)cmd)->mPartyTable[count].mEnabled = 0;
+			cmd->partyTable[count].mEnabled = 0;
 			select = count;
 			if (mario->currentKind == kind) {
-				((BattleWorkCommand*)cmd)->mPartyTable[count].mCurrentHP = mario->currentHp;
+				cmd->partyTable[count].mCurrentHP = mario->currentHp;
 			} else {
-				((BattleWorkCommand*)cmd)->mPartyTable[count].mCurrentHP = partner->currentHp;
+				cmd->partyTable[count].mCurrentHP = partner->currentHp;
 			}
 		} else if (party->currentHP <= 0) {
-			((BattleWorkCommand*)cmd)->mPartyTable[count].mEnabled = 0;
+			cmd->partyTable[count].mEnabled = 0;
 		}
 		if (party->flags & 2) {
-			((BattleWorkCommand*)cmd)->mPartyTable[count].mEnabled = 0;
+			cmd->partyTable[count].mEnabled = 0;
 		}
 		count++;
 	}
@@ -996,7 +992,7 @@ s32 _btlcmd_SelectWeaponDecide(BattleWork* wp, s32 arg, s32 weaponIdx) {
 	s8 belong;
 
 	_btlcmd_MakeSelectWeaponTable(wp, arg);
-	weapon = ((BattleWorkCommand*)&wp->commandMenu)->mWeaponTable[weaponIdx].mWeaponParams;
+	weapon = wp->commandMenu.weaponTable[weaponIdx].mWeaponParams;
 	belong = (s8)BtlUnit_GetEnemyBelong(unit);
 #ifdef MUST_MATCH
 	// the field is already s8; the no-op cast changes the scheduling (98.75% without it)
@@ -1045,7 +1041,6 @@ s32 BattleCommandInput(BattleWork* wp) {
 	const char* sfx2;
 	BattleUnit* unit = BattleGetUnitPtr(wp, wp->activeUnitId);
 	BattleCommand* cmd = &wp->commandMenu;
-	BattleWorkCommand* wcmd = (BattleWorkCommand*)cmd;
 	s32 result;
 	s32 action;
 	BattleSampling* sampling;
@@ -1178,7 +1173,7 @@ s32 BattleCommandInput(BattleWork* wp) {
 			break;
 		case 10:
 			_btlcmd_GetCursorPtr(cmd, cmd->actKind, &cursor);
-			BattleAcHelpSetHelp(wcmd->mWeaponTable[cursor->field_0].mWeaponParams->acHelpMsg);
+			BattleAcHelpSetHelp(cmd->weaponTable[cursor->field_0].mWeaponParams->acHelpMsg);
 			BattleAcHelpSetDispType(1);
 			cmd->unk0 = 0xB;
 			break;
@@ -1204,7 +1199,7 @@ s32 BattleCommandInput(BattleWork* wp) {
 				i = 0;
 			}
 			sampling->selectIdx = i;
-			if (wcmd->mWeaponTable[cursor->field_0].mWeaponParams->targetClassFlags & 0x01000000) {
+			if (cmd->weaponTable[cursor->field_0].mWeaponParams->targetClassFlags & 0x01000000) {
 				if (BattlePadCheckRepeat(0x80000)) {
 					sampling->selectIdx++;
 					if (sampling->selectIdx >= sampling->count) {
@@ -1436,7 +1431,6 @@ void BattleCommandDisplay_ActMenuSetup(BattleWork* wp, void* arg) {
 s32 BattleCommandDisplay_ActMenuMain(BattleWork* wp) {
 	BattleCommand* cmd = &wp->commandMenu;
 	BattleUnit* unit = BattleGetUnitPtr(wp, wp->activeUnitId);
-	BattleWorkCommand* wcmd = (BattleWorkCommand*)cmd;
 	BattleCursor* cursor;
 	s32 result = 0;
 
@@ -1459,21 +1453,21 @@ s32 BattleCommandDisplay_ActMenuMain(BattleWork* wp) {
 		s32 i;
 		s32 t;
 		for (i = 0; i < cursor->unk8; i++) {
-			t = wcmd->mActionTable[i].mType;
+			t = cmd->actionTable[i].mType;
 			switch (t) {
 			case 0:
 			case 1:
 				if ((t == 0 && (wp->flags & 0x200)) || (t == 1 && (wp->flags & 0x400))) {
 					_btlcmd_MakeSelectWeaponTable(wp, t);
-					if (_btlcmd_CheckWeaponTargetNum(wp, unit, wcmd->mWeaponTable[0].mWeaponParams) > 0) {
+					if (_btlcmd_CheckWeaponTargetNum(wp, unit, cmd->weaponTable[0].mWeaponParams) > 0) {
 						continue;
 					}
-					wcmd->mActionTable[i].mEnabled = 0;
-					if ((s32)wcmd->mActionTable[i].field_0x10 == 0) {
+					cmd->actionTable[i].mEnabled = 0;
+					if ((s32)cmd->actionTable[i].mDisableReason == 0) {
 						if (t == 0) {
-							wcmd->mActionTable[i].field_0x10 = 4;
+							cmd->actionTable[i].mDisableReason = 4;
 						} else {
-							wcmd->mActionTable[i].field_0x10 = 5;
+							cmd->actionTable[i].mDisableReason = 5;
 						}
 					}
 				}
@@ -1495,16 +1489,16 @@ s32 BattleCommandDisplay_ActMenuMain(BattleWork* wp) {
 			}
 		}
 		if (wp->commandMenu.restoreState) {
-			s32 t2 = wcmd->mActionTable[cursor->field_0].mType;
+			s32 t2 = cmd->actionTable[cursor->field_0].mType;
 			if ((t2 == 0 && (wp->flags & 0x200)) || (t2 == 1 && (wp->flags & 0x400))) {
 				wp->commandMenu.restoreState = 0;
 				wp->commandMenu.restoreId = 0;
 			}
 		}
 		if (BattlePadCheckTrigger(0x100) || wp->commandMenu.restoreState != 0) {
-			if (wcmd->mActionTable[cursor->field_0].mEnabled) {
+			if (cmd->actionTable[cursor->field_0].mEnabled) {
 				psndSFXOn((char*)0x9D8);
-				cmd->actKind = wcmd->mActionTable[cursor->field_0].mType;
+				cmd->actKind = cmd->actionTable[cursor->field_0].mType;
 				switch (cmd->actKind) {
 				case 0:
 				case 1:
@@ -1541,11 +1535,11 @@ s32 BattleCommandDisplay_ActMenuMain(BattleWork* wp) {
 				psndSFXOn("SFX_NOT_CHOICE1");
 			}
 			wp->commandMenu.restoreState = 0;
-			if ((s32)wcmd->mActionTable[cursor->field_0].field_0x10 != 0) {
+			if ((s32)cmd->actionTable[cursor->field_0].mDisableReason != 0) {
 				BattleCommandDisplay_ActMenuEnd(wp);
 				cmd->unk0 = 3;
 				result = 1;
-				*(s32*)&cmd->unk560[4] = wcmd->mActionTable[cursor->field_0].field_0x10;
+				*(s32*)&cmd->unk560[4] = cmd->actionTable[cursor->field_0].mDisableReason;
 				goto end;
 			}
 		}
@@ -1660,7 +1654,6 @@ void BattleCommandDisplay_WeaponSelectMenuSetup(BattleWork* wp, s32 arg, u32 arg
 s32 BattleCommandDisplay_WeaponSelectMenuMain(BattleWork* wp, s32 arg) {
 	BattleCommand* cmd = &wp->commandMenu;
 	BattleUnit* unit = BattleGetUnitPtr(wp, wp->activeUnitId);
-	BattleWorkCommand* wcmd = (BattleWorkCommand*)cmd;
 	BattleCursor* cursor;
 	s32 result = 0;
 
@@ -1672,18 +1665,18 @@ s32 BattleCommandDisplay_WeaponSelectMenuMain(BattleWork* wp, s32 arg) {
 			wp->commandMenu.restoreId = 0;
 		}
 		if (BattlePadCheckTrigger(0x100) || wp->commandMenu.restoreState != 0) {
-			if ((s32)wcmd->mWeaponTable[cursor->field_0].field_0x4 != 0) {
+			if ((s32)cmd->weaponTable[cursor->field_0].field_0x4 != 0) {
 				psndSFXOn((char*)0x9D8);
 				BattleCommandDisplay_WeaponSelectMenuEnd(wp);
 				_btlcmd_SelectWeaponDecide(wp, arg, cursor->field_0);
 				BattleCommandDisplay_TargetSelectMenuSetup(wp);
 				cmd->unk0 = 0xA;
-				if (!(wcmd->mWeaponTable[cursor->field_0].mWeaponParams->targetClassFlags & 0x200)) {
+				if (!(cmd->weaponTable[cursor->field_0].mWeaponParams->targetClassFlags & 0x200)) {
 					BattleStageOnLightFriendInCommand();
 				}
-				if (!(wcmd->mWeaponTable[cursor->field_0].mWeaponParams->targetClassFlags & 0x4000) &&
-				    !(wcmd->mWeaponTable[cursor->field_0].mWeaponParams->targetClassFlags & 0x100) &&
-				    !(wcmd->mWeaponTable[cursor->field_0].mWeaponParams->targetClassFlags & 0x10)) {
+				if (!(cmd->weaponTable[cursor->field_0].mWeaponParams->targetClassFlags & 0x4000) &&
+				    !(cmd->weaponTable[cursor->field_0].mWeaponParams->targetClassFlags & 0x100) &&
+				    !(cmd->weaponTable[cursor->field_0].mWeaponParams->targetClassFlags & 0x10)) {
 					BattleStageOnLightEnemyInCommand();
 				}
 				result = 1;
@@ -1693,11 +1686,11 @@ s32 BattleCommandDisplay_WeaponSelectMenuMain(BattleWork* wp, s32 arg) {
 				psndSFXOn("SFX_NOT_CHOICE1");
 			}
 			wp->commandMenu.restoreState = 0;
-			if ((s32)wcmd->mWeaponTable[cursor->field_0].field_0x18 != 0) {
+			if ((s32)cmd->weaponTable[cursor->field_0].field_0x18 != 0) {
 				BattleCommandDisplay_WeaponSelectMenuEnd(wp);
 				result = 1;
 				cmd->unk0 = 8;
-				*(s32*)&cmd->unk560[4] = wcmd->mWeaponTable[cursor->field_0].field_0x18;
+				*(s32*)&cmd->unk560[4] = cmd->weaponTable[cursor->field_0].field_0x18;
 			}
 			goto end;
 		}
@@ -1884,7 +1877,6 @@ void BattleCommandDisplay_OperationMenuSetup(BattleWork* wp, void* arg) {
 // (s32) cast and the MUST_MATCH call below.
 s32 BattleCommandDisplay_OperationMenuMain(BattleWork* wp) {
 	BattleCommand* cmd = &wp->commandMenu;
-	BattleWorkCommand* wcmd = (BattleWorkCommand*)cmd;
 	BattleCursor* cursor;
 	s32 result = 0;
 
@@ -1895,9 +1887,9 @@ s32 BattleCommandDisplay_OperationMenuMain(BattleWork* wp) {
 	if (BattleMenuKeyOKInACT(wp)) {
 		_btlcmd_GetCursorPtr(cmd, 5, &cursor);
 		if (BattlePadCheckTrigger(0x100) || wp->commandMenu.restoreState != 0) {
-			if (wcmd->mOperationTable[cursor->field_0].mEnabled) {
+			if (cmd->operationTable[cursor->field_0].mEnabled) {
 				psndSFXOn((char*)0x9D8);
-				cmd->operationKind = wcmd->mOperationTable[cursor->field_0].mType;
+				cmd->operationKind = cmd->operationTable[cursor->field_0].mType;
 				switch (cmd->operationKind) {
 				case 1:
 				case 2:
@@ -1924,11 +1916,11 @@ s32 BattleCommandDisplay_OperationMenuMain(BattleWork* wp) {
 				psndSFXOn("SFX_NOT_CHOICE1");
 			}
 			wp->commandMenu.restoreState = 0;
-			if ((s32)wcmd->mOperationTable[cursor->field_0].field_0x8 != 0) {
+			if ((s32)cmd->operationTable[cursor->field_0].field_0x8 != 0) {
 				BattleCommandDisplay_OperationMenuEnd(wp);
 				cmd->unk0 = 0x16;
 				result = 1;
-				*(s32*)&cmd->unk560[4] = wcmd->mOperationTable[cursor->field_0].field_0x8;
+				*(s32*)&cmd->unk560[4] = cmd->operationTable[cursor->field_0].field_0x8;
 			}
 			goto end;
 		}
@@ -2000,16 +1992,15 @@ void BattleCommandDisplay_MultiItemMenuSetup(BattleWork* wp, void* arg) {
 // (s32) cast and the MUST_MATCH call below.
 s32 BattleCommandDisplay_MultiItemMenuMain(BattleWork* wp) {
 	BattleCommand* cmd = &wp->commandMenu;
-	BattleWorkCommand* wcmd = (BattleWorkCommand*)cmd;
 	BattleCursor* cursor;
 	s32 result = 0;
 
 	if (BattleMenuKeyOKInACT(wp)) {
 		_btlcmd_GetCursorPtr(cmd, 3, &cursor);
 		if (BattlePadCheckTrigger(0x100) || wp->commandMenu.restoreState != 0) {
-			if (wcmd->mMultiItemTable[cursor->field_0].mEnabled) {
+			if (cmd->multiItemTable[cursor->field_0].mEnabled) {
 				psndSFXOn((char*)0x9D8);
-				cmd->multiItemKind = wcmd->mMultiItemTable[cursor->field_0].pad_0xE[0];
+				cmd->multiItemKind = cmd->multiItemTable[cursor->field_0].pad_0xE[0];
 				cmd->unk0 = 5;
 				BattleCommandDisplay_MultiItemMenuEnd(wp);
 				result = 1;
@@ -2019,11 +2010,11 @@ s32 BattleCommandDisplay_MultiItemMenuMain(BattleWork* wp) {
 				psndSFXOn("SFX_NOT_CHOICE1");
 			}
 			wp->commandMenu.restoreState = 0;
-			if ((s32)wcmd->mMultiItemTable[cursor->field_0].field_0x14 != 0) {
+			if ((s32)cmd->multiItemTable[cursor->field_0].field_0x14 != 0) {
 				BattleCommandDisplay_MultiItemMenuEnd(wp);
 				cmd->unk0 = 0x11;
 				result = 1;
-				*(s32*)&cmd->unk560[4] = wcmd->mMultiItemTable[cursor->field_0].field_0x14;
+				*(s32*)&cmd->unk560[4] = cmd->multiItemTable[cursor->field_0].field_0x14;
 			}
 			goto end;
 		}
@@ -2092,17 +2083,16 @@ void BattleCommandDisplay_ChangePartySelectMenuSetup(BattleWork* wp, void* arg) 
 
 s32 BattleCommandDisplay_ChangePartySelectMenuMain(BattleWork* wp) {
 	BattleCommand* cmd = &wp->commandMenu;
-	BattleWorkCommand* wcmd = (BattleWorkCommand*)cmd;
 	BattleCursor* cursor;
 	s32 result = 0;
 
 	if (BattleMenuKeyOKInACT(wp)) {
 		_btlcmd_GetCursorPtr(cmd, 0xA, &cursor);
 		if (BattlePadCheckTrigger(0x100) || wp->commandMenu.restoreState != 0) {
-			if (wcmd->mPartyTable[cursor->field_0].mEnabled) {
+			if (cmd->partyTable[cursor->field_0].mEnabled) {
 				psndSFXOn((char*)0x9D8);
 				BattleStageOffLightInCommand(0, 1);
-				cmd->partyChangeId = wcmd->mPartyTable[cursor->field_0].mPartyId;
+				cmd->partyChangeId = cmd->partyTable[cursor->field_0].mPartyId;
 				cmd->unk0 = 0x1D;
 				BattleCommandDisplay_ChangePartySelectMenuEnd(wp);
 				result = 1;
@@ -2190,13 +2180,12 @@ void BattleCommandDisplay_TargetSelectMenuDisp(CameraId camId, BattleWork* param
 	BattleWork* wp = param;
 #endif
 	BattleCommand* cmd = &wp->commandMenu;
-	BattleWorkCommand* wcmd = (BattleWorkCommand*)cmd;
 	BattleCursor* cursor;
 	BattleWeapon* weapon;
 	Vec iconPos;
 
 	_btlcmd_GetCursorPtr(cmd, cmd->actKind, &cursor);
-	weapon = wcmd->mWeaponTable[cursor->field_0].mWeaponParams;
+	weapon = cmd->weaponTable[cursor->field_0].mWeaponParams;
 	if (weapon->targetClassFlags & 0x01000000) {
 		BattleSampling* sampling = &wp->sampling;
 		BattleUnit* unit;
@@ -2357,7 +2346,6 @@ void BattleCommandDisplay_AllEnd(BattleWork* wp) {
 
 void _btlcmd_SetAttackEvent(BattleUnit* unit, BattleCommand* cmd) {
 	BattleWork* wp = _battleWorkPointer;
-	BattleWorkCommand* wcmd = (BattleWorkCommand*)cmd;
 	s32 command = cmd->actKind;
 
 	if (cmd->cancelled) {
@@ -2461,7 +2449,7 @@ void _btlcmd_SetAttackEvent(BattleUnit* unit, BattleCommand* cmd) {
 		BattleWeapon* weapon;
 
 		_btlcmd_GetCursorPtr(cmd, command, &cursor);
-		weapon = wcmd->mWeaponTable[cursor->field_0].mWeaponParams;
+		weapon = cmd->weaponTable[cursor->field_0].mWeaponParams;
 		*(s32*)unit->field_0x29C = (s32)weapon->mAttackEvtScript;
 		*(s32*)unit->field_0x2A8 = 0;
 		if (*(u32*)unit->field_0x29C == 0) {
@@ -2571,11 +2559,11 @@ void _btlcmd_SetAttackEvent(BattleUnit* unit, BattleCommand* cmd) {
 
 
 BattleWeapon* BattleGetSelectWeapon(BattleWork* wp) {
-	BattleWorkCommand* cmd = (BattleWorkCommand*)&wp->commandMenu;
+	BattleCommand* cmd = &wp->commandMenu;
 	BattleCursor* cursor;
 
-	_btlcmd_GetCursorPtr((BattleCommand*)cmd, *(s32*)&cmd->field_0x540[0], &cursor);
-	return cmd->mWeaponTable[cursor->field_0].mWeaponParams;
+	_btlcmd_GetCursorPtr(cmd, cmd->actKind, &cursor);
+	return cmd->weaponTable[cursor->field_0].mWeaponParams;
 }
 
 CheckPartyTable _checkPartyTable[8] = {
@@ -2730,7 +2718,6 @@ void BattleDrawEnemyHPBar(Vec pos, BattleUnit* unit, GXColor color) {
 // `li r7, 0` and puts the address first, matching the original.
 void* BattleSetConfuseAct(BattleWork* wp, BattleUnit* unit) {
 	BattleCommand* cmd = &wp->commandMenu;
-	BattleWorkCommand* wcmd = (BattleWorkCommand*)cmd;
 	BattleCursor* cursor;
 	s16 candidates[24];
 	u8 count;
@@ -2751,13 +2738,13 @@ void* BattleSetConfuseAct(BattleWork* wp, BattleUnit* unit) {
 	_btlcmd_GetCursorPtr(cmd, 0xE, &cursor);
 	count = 0;
 	for (i = 0; i < cursor->unk8; i++) {
-		if (wcmd->mActionTable[i].mEnabled == 0) {
+		if (cmd->actionTable[i].mEnabled == 0) {
 			continue;
 		}
-		if ((s32)wcmd->mActionTable[i].mType == 4) {
+		if ((s32)cmd->actionTable[i].mType == 4) {
 			continue;
 		}
-		if ((s32)wcmd->mActionTable[i].mType == 2) {
+		if ((s32)cmd->actionTable[i].mType == 2) {
 			continue;
 		}
 		candidates[count++] = i;
@@ -2768,8 +2755,8 @@ void* BattleSetConfuseAct(BattleWork* wp, BattleUnit* unit) {
 	} else {
 		return subsetevt_confuse_flustered;
 	}
-	cmd->actKind = wcmd->mActionTable[cursor->field_0].mType;
-	if (wcmd->mActionTable[cursor->field_0].mEnabled == 0) {
+	cmd->actKind = cmd->actionTable[cursor->field_0].mType;
+	if (cmd->actionTable[cursor->field_0].mEnabled == 0) {
 		return subsetevt_confuse_flustered;
 	}
 	switch (cmd->actKind) {
@@ -2787,8 +2774,8 @@ void* BattleSetConfuseAct(BattleWork* wp, BattleUnit* unit) {
 			u8 n;
 
 			for (n = 0; n < cursor->unk8; n++) {
-				weapon = wcmd->mWeaponTable[n].mWeaponParams;
-				if ((s32)wcmd->mWeaponTable[n].field_0x4 == 0) {
+				weapon = cmd->weaponTable[n].mWeaponParams;
+				if ((s32)cmd->weaponTable[n].field_0x4 == 0) {
 					continue;
 				}
 				if (!(weapon->special & 0x10000)) {
@@ -2809,11 +2796,11 @@ void* BattleSetConfuseAct(BattleWork* wp, BattleUnit* unit) {
 		} else {
 			return NULL;
 		}
-		if ((s32)wcmd->mWeaponTable[cursor->field_0].field_0x4 == 0) {
+		if ((s32)cmd->weaponTable[cursor->field_0].field_0x4 == 0) {
 			return subsetevt_confuse_flustered;
 		}
 		_btlcmd_SelectWeaponDecide(wp, cmd->actKind, cursor->field_0);
-		weapon = wcmd->mWeaponTable[cursor->field_0].mWeaponParams;
+		weapon = cmd->weaponTable[cursor->field_0].mWeaponParams;
 		if (!(weapon->special & 0x10000)) {
 			return subsetevt_confuse_flustered;
 		}
@@ -2838,11 +2825,11 @@ void* BattleSetConfuseAct(BattleWork* wp, BattleUnit* unit) {
 			u8 n;
 
 			for (n = 0; n < cursor->unk8; n++) {
-				if ((s32)wcmd->mOperationTable[n].mEnabled == 0) {
+				if ((s32)cmd->operationTable[n].mEnabled == 0) {
 					continue;
 				}
-				if ((s32)wcmd->mOperationTable[n].mType != 0 && (s32)wcmd->mOperationTable[n].mType != 6 &&
-				    (s32)wcmd->mOperationTable[n].mType != 3) {
+				if ((s32)cmd->operationTable[n].mType != 0 && (s32)cmd->operationTable[n].mType != 6 &&
+				    (s32)cmd->operationTable[n].mType != 3) {
 					continue;
 				}
 				candidates[count++] = n;
@@ -2854,10 +2841,10 @@ void* BattleSetConfuseAct(BattleWork* wp, BattleUnit* unit) {
 		} else {
 			return subsetevt_confuse_flustered;
 		}
-		if ((s32)wcmd->mOperationTable[cursor->field_0].mEnabled == 0) {
+		if ((s32)cmd->operationTable[cursor->field_0].mEnabled == 0) {
 			return subsetevt_confuse_flustered;
 		}
-		cmd->operationKind = wcmd->mOperationTable[cursor->field_0].mType;
+		cmd->operationKind = cmd->operationTable[cursor->field_0].mType;
 		switch (cmd->operationKind) {
 		case 6:
 			if (unit->currentKind == 0xDE) {
@@ -2889,7 +2876,7 @@ void* BattleSetConfuseAct(BattleWork* wp, BattleUnit* unit) {
 				u8 n;
 
 				for (n = 0; n < cursor->unk8; n++) {
-					if ((s32)wcmd->mPartyTable[n].mEnabled == 0) {
+					if ((s32)cmd->partyTable[n].mEnabled == 0) {
 						continue;
 					}
 					candidates[count++] = n;
@@ -2901,11 +2888,11 @@ void* BattleSetConfuseAct(BattleWork* wp, BattleUnit* unit) {
 			} else {
 				return NULL;
 			}
-			if ((s32)wcmd->mPartyTable[cursor->field_0].mEnabled == 0) {
+			if ((s32)cmd->partyTable[cursor->field_0].mEnabled == 0) {
 				return subsetevt_confuse_flustered;
 			}
-			cmd->partyChangeId = wcmd->mPartyTable[cursor->field_0].mPartyId;
-			wcmd->mCursors[1].mAbsolutePos = 0;
+			cmd->partyChangeId = cmd->partyTable[cursor->field_0].mPartyId;
+			cmd->cursor[1].field_0 = 0;
 			return btldefaultevt_ChangeParty;
 		case 4:
 			return subsetevt_confuse_flustered;
