@@ -21,6 +21,84 @@ FileManagerWork* afp = &fileWork;
 // A file stores its pointers as offsets from the file start; these add (or take away) the base address in place.
 #define FILE_RELOC(field, base) (*(u32*)&(field) += (u32)(base))
 #define FILE_UNRELOC(field, base) (*(u32*)&(field) -= (u32)(base))
+
+// Header views of the file types that fileGarbageDataAdrSet relocates (see FileType in filemgr.h).
+typedef struct FileType1 {
+	u8 pad_0x0[0x14C];
+	u32 field_0x14C;
+	u32 field_0x150;
+	u32 field_0x154;
+	u32 field_0x158;
+	u32 field_0x15C;
+	u32 field_0x160;
+	u32 field_0x164;
+	u32 field_0x168;
+	u32 field_0x16C;
+	u32 field_0x170;
+	u32 field_0x174;
+	u32 field_0x178;
+	u32 field_0x17C;
+	u32 field_0x180;
+	u32 field_0x184;
+	u32 field_0x188;
+	u32 field_0x18C;
+	u32 field_0x190;
+	u32 field_0x194;
+	u32 field_0x198;
+	u32 field_0x19C;
+	u32 field_0x1A0;
+	u32 field_0x1A4;
+	u32 field_0x1A8;
+	u32 field_0x1AC;
+} FileType1;
+
+typedef struct FileType3 {
+	u8 pad_0x0[0x48];
+	u32 field_0x48;
+} FileType3;
+
+typedef struct FileType7 {
+	u8 pad_0x0[0x64];
+	u32 field_0x64;
+	u32 field_0x68;
+	u32 field_0x6C;
+} FileType7;
+
+typedef struct FileType8 {
+	u8 pad_0x0[0xC8];
+	u32 field_0xC8;
+	u32 field_0xCC;
+	u32 field_0xD0;
+	u32 field_0xD4;
+	u32 field_0xD8;
+	u32 field_0xDC;
+	u32 field_0xE0;
+	u32 field_0xE4;
+	u32 field_0xE8;
+	u32 field_0xEC;
+	u32 field_0xF0;
+	u32 field_0xF4;
+	u32 field_0xF8;
+	u32 field_0xFC;
+	u32 field_0x100;
+	u32 field_0x104;
+	u32 field_0x108;
+	u32 field_0x10C;
+	u32 field_0x110;
+	u32 field_0x114;
+	u32 field_0x118;
+	u32 field_0x11C;
+	u32 field_0x120;
+} FileType8;
+
+typedef struct FileType9 {
+	u8 pad_0x0[0x58];
+	u32 field_0x58;
+	u32 field_0x5C;
+	u32 field_0x60;
+	u32 field_0x64;
+} FileType9;
+
 #define POSE(data) ((AnimationPoseData*)(data))
 #define FILE_ENTRY_COUNT 0x400
 
@@ -289,49 +367,49 @@ void fileGarbageDataAdrSet(void* data, s32 type) {
 
 	switch (type) {
 		case FILE_TYPE_1:
-			if (*(u32*)((u8*)data + 0x14C) < (u32)data) {
-				*(u32*)((u8*)data + 0x14C) += (u32)data;
-				*(u32*)((u8*)data + 0x150) += (u32)data;
-				*(u32*)((u8*)data + 0x154) += (u32)data;
-				*(u32*)((u8*)data + 0x158) += (u32)data;
-				*(u32*)((u8*)data + 0x15C) += (u32)data;
-				*(u32*)((u8*)data + 0x160) += (u32)data;
-				*(u32*)((u8*)data + 0x164) += (u32)data;
-				*(u32*)((u8*)data + 0x168) += (u32)data;
-				*(u32*)((u8*)data + 0x16C) += (u32)data;
-				*(u32*)((u8*)data + 0x170) += (u32)data;
-				*(u32*)((u8*)data + 0x174) += (u32)data;
-				*(u32*)((u8*)data + 0x178) += (u32)data;
-				*(u32*)((u8*)data + 0x17C) += (u32)data;
-				*(u32*)((u8*)data + 0x180) += (u32)data;
-				*(u32*)((u8*)data + 0x184) += (u32)data;
-				*(u32*)((u8*)data + 0x188) += (u32)data;
-				*(u32*)((u8*)data + 0x18C) += (u32)data;
-				*(u32*)((u8*)data + 0x190) += (u32)data;
-				*(u32*)((u8*)data + 0x194) += (u32)data;
-				*(u32*)((u8*)data + 0x198) += (u32)data;
-				*(u32*)((u8*)data + 0x19C) += (u32)data;
-				*(u32*)((u8*)data + 0x1A0) += (u32)data;
-				*(u32*)((u8*)data + 0x1A4) += (u32)data;
-				*(u32*)((u8*)data + 0x1A8) += (u32)data;
-				*(u32*)((u8*)data + 0x1AC) += (u32)data;
+			if (((FileType1*)data)->field_0x14C < (u32)data) {
+				((FileType1*)data)->field_0x14C += (u32)data;
+				((FileType1*)data)->field_0x150 += (u32)data;
+				((FileType1*)data)->field_0x154 += (u32)data;
+				((FileType1*)data)->field_0x158 += (u32)data;
+				((FileType1*)data)->field_0x15C += (u32)data;
+				((FileType1*)data)->field_0x160 += (u32)data;
+				((FileType1*)data)->field_0x164 += (u32)data;
+				((FileType1*)data)->field_0x168 += (u32)data;
+				((FileType1*)data)->field_0x16C += (u32)data;
+				((FileType1*)data)->field_0x170 += (u32)data;
+				((FileType1*)data)->field_0x174 += (u32)data;
+				((FileType1*)data)->field_0x178 += (u32)data;
+				((FileType1*)data)->field_0x17C += (u32)data;
+				((FileType1*)data)->field_0x180 += (u32)data;
+				((FileType1*)data)->field_0x184 += (u32)data;
+				((FileType1*)data)->field_0x188 += (u32)data;
+				((FileType1*)data)->field_0x18C += (u32)data;
+				((FileType1*)data)->field_0x190 += (u32)data;
+				((FileType1*)data)->field_0x194 += (u32)data;
+				((FileType1*)data)->field_0x198 += (u32)data;
+				((FileType1*)data)->field_0x19C += (u32)data;
+				((FileType1*)data)->field_0x1A0 += (u32)data;
+				((FileType1*)data)->field_0x1A4 += (u32)data;
+				((FileType1*)data)->field_0x1A8 += (u32)data;
+				((FileType1*)data)->field_0x1AC += (u32)data;
 			}
 			break;
 		case FILE_TYPE_2:
-			if (*(u32*)((u8*)data + 0x24) < (u32)data) {
-				*(u32*)((u8*)data + 0x24) += (u32)data;
-				*(u32*)((u8*)data + 0x28) += (u32)data;
-				*(u32*)((u8*)data + 0x2C) += (u32)data;
-				*(u32*)((u8*)data + 0x30) += (u32)data;
-				*(u32*)((u8*)data + 0x34) += (u32)data;
-				*(u32*)((u8*)data + 0x38) += (u32)data;
-				*(u32*)((u8*)data + 0x3C) += (u32)data;
-				*(u32*)((u8*)data + 0x40) += (u32)data;
+			if ((u32)((AnimData*)data)->clip < (u32)data) {
+				FILE_RELOC(((AnimData*)data)->clip, data);
+				FILE_RELOC(((AnimData*)data)->frames, data);
+				FILE_RELOC(((AnimData*)data)->posData, data);
+				FILE_RELOC(((AnimData*)data)->nrmData, data);
+				FILE_RELOC(((AnimData*)data)->texData, data);
+				FILE_RELOC(((AnimData*)data)->visData, data);
+				FILE_RELOC(((AnimData*)data)->nodeData, data);
+				FILE_RELOC(((AnimData*)data)->frames2, data);
 			}
 			break;
 		case FILE_TYPE_3:
-			if (*(u32*)((u8*)data + 0x48) < (u32)data) {
-				*(u32*)((u8*)data + 0x48) += (u32)data;
+			if (((FileType3*)data)->field_0x48 < (u32)data) {
+				((FileType3*)data)->field_0x48 += (u32)data;
 			}
 			break;
 		case FILE_TYPE_TPL:
@@ -371,69 +449,69 @@ void fileGarbageDataAdrSet(void* data, s32 type) {
 					u32 off = (u32)POSE(data)->mpAnims[j].data;
 					POSE(data)->mpAnims[j].data = (AnimData*)(off + (u32)data);
 					anim = POSE(data)->mpAnims[j].data;
-					if (*(u32*)((u8*)anim + 0x24) < (u32)anim) {
-						*(u32*)((u8*)anim + 0x24) += (u32)anim;
-						*(u32*)((u8*)anim + 0x28) += (u32)anim;
-						*(u32*)((u8*)anim + 0x2C) += (u32)anim;
-						*(u32*)((u8*)anim + 0x30) += (u32)anim;
-						*(u32*)((u8*)anim + 0x34) += (u32)anim;
-						*(u32*)((u8*)anim + 0x38) += (u32)anim;
-						*(u32*)((u8*)anim + 0x3C) += (u32)anim;
-						*(u32*)((u8*)anim + 0x40) += (u32)anim;
+					if ((u32)anim->clip < (u32)anim) {
+						FILE_RELOC(anim->clip, anim);
+						FILE_RELOC(anim->frames, anim);
+						FILE_RELOC(anim->posData, anim);
+						FILE_RELOC(anim->nrmData, anim);
+						FILE_RELOC(anim->texData, anim);
+						FILE_RELOC(anim->visData, anim);
+						FILE_RELOC(anim->nodeData, anim);
+						FILE_RELOC(anim->frames2, anim);
 					}
 				}
 			}
 			break;
 		case FILE_TYPE_6:
-			if (*(u32*)((u8*)data + 0x48) < (u32)data) {
-				*(u32*)((u8*)data + 0x48) += (u32)data;
+			if (((FileType3*)data)->field_0x48 < (u32)data) {
+				((FileType3*)data)->field_0x48 += (u32)data;
 			}
 			break;
 		case FILE_TYPE_7:
-			if (*(u32*)((u8*)data + 0x64) < (u32)data) {
-				*(u32*)((u8*)data + 0x64) += (u32)data;
-				*(u32*)((u8*)data + 0x68) += (u32)data;
-				*(u32*)((u8*)data + 0x6C) += (u32)data;
+			if (((FileType7*)data)->field_0x64 < (u32)data) {
+				((FileType7*)data)->field_0x64 += (u32)data;
+				((FileType7*)data)->field_0x68 += (u32)data;
+				((FileType7*)data)->field_0x6C += (u32)data;
 			}
 			break;
 		case FILE_TYPE_8:
-			if (*(u32*)((u8*)data + 0xC8) < (u32)data) {
-				*(u32*)((u8*)data + 0xC8) += (u32)data;
-				*(u32*)((u8*)data + 0xCC) += (u32)data;
-				*(u32*)((u8*)data + 0xD0) += (u32)data;
-				*(u32*)((u8*)data + 0xD4) += (u32)data;
-				*(u32*)((u8*)data + 0xD8) += (u32)data;
-				*(u32*)((u8*)data + 0xDC) += (u32)data;
-				*(u32*)((u8*)data + 0xE0) += (u32)data;
-				*(u32*)((u8*)data + 0xE4) += (u32)data;
-				*(u32*)((u8*)data + 0xE8) += (u32)data;
-				*(u32*)((u8*)data + 0xEC) += (u32)data;
-				*(u32*)((u8*)data + 0xF0) += (u32)data;
-				*(u32*)((u8*)data + 0xF4) += (u32)data;
-				*(u32*)((u8*)data + 0xF8) += (u32)data;
-				*(u32*)((u8*)data + 0xFC) += (u32)data;
-				*(u32*)((u8*)data + 0x100) += (u32)data;
-				*(u32*)((u8*)data + 0x104) += (u32)data;
-				*(u32*)((u8*)data + 0x108) += (u32)data;
-				*(u32*)((u8*)data + 0x10C) += (u32)data;
-				*(u32*)((u8*)data + 0x110) += (u32)data;
-				*(u32*)((u8*)data + 0x114) += (u32)data;
-				*(u32*)((u8*)data + 0x118) += (u32)data;
-				*(u32*)((u8*)data + 0x11C) += (u32)data;
-				*(u32*)((u8*)data + 0x120) += (u32)data;
+			if (((FileType8*)data)->field_0xC8 < (u32)data) {
+				((FileType8*)data)->field_0xC8 += (u32)data;
+				((FileType8*)data)->field_0xCC += (u32)data;
+				((FileType8*)data)->field_0xD0 += (u32)data;
+				((FileType8*)data)->field_0xD4 += (u32)data;
+				((FileType8*)data)->field_0xD8 += (u32)data;
+				((FileType8*)data)->field_0xDC += (u32)data;
+				((FileType8*)data)->field_0xE0 += (u32)data;
+				((FileType8*)data)->field_0xE4 += (u32)data;
+				((FileType8*)data)->field_0xE8 += (u32)data;
+				((FileType8*)data)->field_0xEC += (u32)data;
+				((FileType8*)data)->field_0xF0 += (u32)data;
+				((FileType8*)data)->field_0xF4 += (u32)data;
+				((FileType8*)data)->field_0xF8 += (u32)data;
+				((FileType8*)data)->field_0xFC += (u32)data;
+				((FileType8*)data)->field_0x100 += (u32)data;
+				((FileType8*)data)->field_0x104 += (u32)data;
+				((FileType8*)data)->field_0x108 += (u32)data;
+				((FileType8*)data)->field_0x10C += (u32)data;
+				((FileType8*)data)->field_0x110 += (u32)data;
+				((FileType8*)data)->field_0x114 += (u32)data;
+				((FileType8*)data)->field_0x118 += (u32)data;
+				((FileType8*)data)->field_0x11C += (u32)data;
+				((FileType8*)data)->field_0x120 += (u32)data;
 			}
 			break;
 		case FILE_TYPE_9:
-			if (*(u32*)((u8*)data + 0x58) < (u32)data) {
-				*(u32*)((u8*)data + 0x58) += (u32)data;
-				*(u32*)((u8*)data + 0x5C) += (u32)data;
-				*(u32*)((u8*)data + 0x60) += (u32)data;
-				*(u32*)((u8*)data + 0x64) += (u32)data;
+			if (((FileType9*)data)->field_0x58 < (u32)data) {
+				((FileType9*)data)->field_0x58 += (u32)data;
+				((FileType9*)data)->field_0x5C += (u32)data;
+				((FileType9*)data)->field_0x60 += (u32)data;
+				((FileType9*)data)->field_0x64 += (u32)data;
 			}
 			break;
 		case FILE_TYPE_10:
-			if (*(u32*)((u8*)data + 0x48) < (u32)data) {
-				*(u32*)((u8*)data + 0x48) += (u32)data;
+			if (((FileType3*)data)->field_0x48 < (u32)data) {
+				((FileType3*)data)->field_0x48 += (u32)data;
 			}
 			break;
 	}

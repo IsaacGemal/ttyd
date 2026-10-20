@@ -11629,3 +11629,13 @@ build/G8MJ01/ok is recreated; romfont, sound and evt_party also compile without 
   store), the s32 pointer locals and spline_getvalue int-pointer calls; evt_party's `f32 pos` for a Vec and the
   searchUnder2 pointer cast (header returns s32; fixing it touches mario_hit.c and evt_mario.c); evt_item's pool
   constant and `rawStep` shape.
+### Readability: filemgr offsets (2026-10-20, Claude Sonnet 5.5, n9-q-s-offfilemgr)
+
+`fileGarbageDataAdrSet`'s raw `*(u32*)((u8*)data + 0xNN) += (u32)data` runs now go through file-local header views
+`FileType1`, `FileType3` (also used for types 6 and 10), `FileType7`, `FileType8` and `FileType9`: a `pad_0x0` gap then
+`u32 field_0xNN` members for exactly the relocated words, named after the `FileType` enum. FILE_TYPE_2 and the
+per-animation walk in FILE_TYPE_ANIMPOSE use `AnimData`'s existing `clip`/`frames`/`posData`/`nrmData`/`texData`/
+`visData`/`nodeData`/`frames2` through `FILE_RELOC`. No new names beyond `field_0xNN`. Build stays MATCH; filemgr.c
+also compiles without -DMUST_MATCH. evt_win.c untouched: `unitwin_setpartylank`'s `(PouchPartyData*)((u8*)pouch +
+offset)` accesses rewritten as `pouch->partyData[id]` (all four, the last pair only, the first three only) each broke
+the match, and `unitwin_help_disp`'s `(u8*)list + offset` is the deliberate byte-offset form its comment describes.
