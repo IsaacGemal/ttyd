@@ -938,7 +938,7 @@ u32 powerupya_watasu_items[2] = {
     0x0000006C, 0xFFFFFFFF,
 };
 
-EVT_BEGIN(evt_powerupya_stardust)
+EVT_BEGIN(powerupya_stardust)
     LOOP(0)
         CALL(evt_npc_get_position, STRING("me"), LW(0), LW(1), LW(2))
         ADD(LW(1), 30)
@@ -948,7 +948,7 @@ EVT_BEGIN(evt_powerupya_stardust)
     RETURN
 EVT_END()
 
-EVT_BEGIN(evt_powerupya_mario_move)
+EVT_BEGIN(powerupya_mario_move)
     WAIT_MS(200)
     CALL(evt_mario_dispflag_onoff, 0, 2)
     CALL(evt_mario_get_pos, 0, LW(0), LW(1), LW(2))
@@ -964,7 +964,7 @@ EVT_BEGIN(evt_powerupya_mario_move)
     RETURN
 EVT_END()
 
-EVT_BEGIN(evt_powerupya_party_move)
+EVT_BEGIN(powerupya_party_move)
     WAIT_MS(200)
     CALL(evt_party_get_pos, 0, LW(0), LW(1), LW(2))
     IF_INT_LESS_OR_EQUAL(LW(2), -210)
@@ -977,7 +977,7 @@ EVT_BEGIN(evt_powerupya_party_move)
     RETURN
 EVT_END()
 
-EVT_BEGIN(evt_powerupya_watasu)
+EVT_BEGIN(powerupya_watasu)
     CALL(evt_mario_dispflag_onoff, 1, 2)
     CALL(evt_mario_set_pose, STRING("M_C_3"))
     CALL(evt_mario_get_pos, 0, LW(3), LW(4), LW(5))
@@ -1020,7 +1020,7 @@ EVT_BEGIN(evt_powerupya_watasu)
             WAIT_FRAMES(1)
         END_LOOP
     END_INLINE_EVENT
-    SPAWN_EVENT_GET_ID(PTR(evt_powerupya_stardust), LW(5))
+    SPAWN_EVENT_GET_ID(PTR(powerupya_stardust), LW(5))
     CALL(evt_npc_get_position, STRING("me"), LW(7), LW(8), LW(9))
     CALL(evt_snd_sfxon_3d, STRING("SFX_EVT_STARSTONE_SHINE1"), LW(7), LW(8), LW(9), LW(6))
     CALL(evt_snd_sfxon_3d, STRING("SFX_EVT_LOTTERY_BOMB_BURST2"), LW(7), LW(8), LW(9), 0)
@@ -1093,9 +1093,9 @@ EVT_BEGIN(evt_powerupya_watasu)
     CALL(evt_npc_set_anim, STRING("me"), STRING("S_1"))
     WAIT_MS(750)
     CALL(evt_msg_print, 0, STRING("powerup_ev_06"), 0, STRING("me"))
-    SPAWN_EVENT(evt_powerupya_mario_move)
+    SPAWN_EVENT(powerupya_mario_move)
     CALL(evt_party_stop, 0)
-    SPAWN_EVENT(evt_powerupya_party_move)
+    SPAWN_EVENT(powerupya_party_move)
     CALL(evt_npc_status_onoff, 1, STRING("me"), 2)
     CALL(evt_npc_move_position, STRING("me"), -365, -115, 0, FLOAT(120.0f), 0)
     WAIT_MS(500)
@@ -1129,7 +1129,7 @@ EVT_BEGIN(evt_powerupya_watasu)
     RETURN
 EVT_END()
 
-EVT_BEGIN(evt_powerupya_talk)
+EVT_BEGIN(powerupya_talk)
     IF_INT_EQUAL(GSWF(1203), 1)
         IF_INT_EQUAL(GSWF(1204), 0)
             CALL(evt_msg_print, 0, STRING("powerup_ev_01"), 0, STRING("me"))
@@ -1158,7 +1158,7 @@ EVT_BEGIN(evt_powerupya_talk)
             IF_INT_NOT_EQUAL(LW(0), 0)
                 CALL(evt_win_item_select, 0, PTR(powerupya_watasu_items), LW(0), 0)
                 IF_INT_NOT_EQUAL(LW(0), -1)
-                    CALL_CHILD(evt_powerupya_watasu)
+                    CALL_CHILD(powerupya_watasu)
                 END_IF
             ELSE
                 CALL(evt_msg_print, 0, STRING("powerup_ev_03"), 0, STRING("me"))
@@ -2540,7 +2540,7 @@ EVT_END()
 // TODO: type
 static u32 npcEnt[368] = {
     (u32)"パワーアップ屋", 0x00080600, 0x00000000, (u32)&powerupya_init,
-    0x00000000, (u32)&evt_powerupya_talk, 0x00000000, 0x00000000,
+    0x00000000, (u32)&powerupya_talk, 0x00000000, 0x00000000,
     0x00000000, 0x00000000, 0x00000000, 0x00000000,
     0x00000000, 0x00000000, 0x00000000, 0x00000000,
     0x00000000, 0x00000000, 0x00000000, 0x00000000,

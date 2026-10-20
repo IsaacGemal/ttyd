@@ -10706,25 +10706,28 @@ Verify: tower `ninja` recreates build/G8MJ01/ok (matched build, checksum holds).
 
 Names from `tools/rename_symbol.py --rel` in the yuu and gor maps, by where each symbol is consumed.
 
-yuu_02.c: `yuu_monte_single_init` (USER_FUNC called by `evt_yuu_monte_single`, the script in the 3-roll init event),
-its dispEntry callback `monte_single_disp`, and the bss `monte_entries` (the MonteEntry table fall_rtn fills and
+yuu_02.c: `monte_single_init` (USER_FUNC called by `monte_single_event`, the script yuuminigame_init_3roll starts;
+it allocates the one-entry MonteEntry table in monte_p), its dispEntry callback `monte_single_disp`, and the bss `monte_entries` (the MonteEntry table fall_rtn fills and
 monte_disp draws). camShiftReset in minigame03_end is `minigame03_cam_reset`.
 
-yuu_03.c: `yuu4_entry_init` (USER_FUNC called by `evt_yuu4_entry`, the subEvent of yuuminigame_init_4slit), its
-dispEntry callback `yuu4_entry_disp`, and the bss `yuu4_entries`. camShiftReset in minigame04_end is
+yuu_03.c: `yuuminigame4_entry_init` (USER_FUNC called by `yuuminigame4_entry_event`, the subEvent of
+yuuminigame_init_4slit), its dispEntry callback `yuuminigame4_entry_disp`, and the bss `yuuminigame4_entries` (the
+match-only inline is `yuuminigame4_init_work`). The prefix follows the file's yuuminigame4_* functions and the
+`_event` suffix its ryushi_event. camShiftReset in minigame04_end is
 `minigame04_cam_reset`.
 
 gor.c: `inemuri_sfx_set` (stores the id from SFX_VOICE_MARIO_SLEEP1 in inemuri_snd) and `inemuri_sfx_stop` (stops it
 when mario_and_party_sleep deletes its loop), with the bss `inemuri_sfx_id`.
 
-gor_00.c: npcEnt's regularEvent slot (0x10 of NpcSetupInfo) gives `evt_mony_regular` and `evt_peton_regular`; their
-CALL_CHILD targets are `evt_mony_leave` and `evt_peton_leave`; `evt_mony_peton_restart` (SET GSW 278, then restarts
-both regular events) is called from the marco script; `evt_marco_party_move` is spawned by marco_talk;
+gor_00.c: npcEnt's regularEvent slot (0x10 of NpcSetupInfo) gives `gor_00_mony_regl` and `gor_00_peton_regl` (the
+file's <npc>_regl style; plain mony_regl/peton_regl are taken by muj_02); their CALL_CHILD targets are `mony_leave` and
+`peton_leave`; `mony_peton_restart` (SET GSW 278, then restarts both regular events) is called from the marco script;
+`marco_party_move` is spawned by marco_talk;
 `epilogue_npc_clear` (USER_FUNC) is called first in epilogue_npc_entry.
 
-gor_02.c: `evt_powerupya_talk` (the talk slot of the powerupya npc in npcEnt) and its children
-`evt_powerupya_stardust`, `evt_powerupya_mario_move`, `evt_powerupya_party_move` and `evt_powerupya_watasu`
-(CALL_CHILD'ed on a watasu pick); `powerupya_watasu_items` (the item list {108, -1} passed to evt_win_item_select);
+gor_02.c: `powerupya_talk` (the talk slot of the powerupya npc in npcEnt, beside powerupya_table_talk and
+powerupya_direct_talk) and its children `powerupya_stardust`, `powerupya_mario_move`, `powerupya_party_move` and
+`powerupya_watasu` (CALL_CHILD'ed on a watasu pick); `powerupya_watasu_items` (the item list {108, -1} passed to evt_win_item_select);
 `gor_get_mario_dir` (reads mario's dispReqDir into a variable); `evt_gor_hitobj_off` and `evt_gor_hitobj_on` (the
 A_kabe/A_saku/A_kmn/A_gomi hit objects).
 

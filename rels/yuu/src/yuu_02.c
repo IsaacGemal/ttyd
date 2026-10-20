@@ -86,8 +86,8 @@ f32 fukkipoint[45] = {
 };
 
 
-EVT_BEGIN(evt_yuu_monte_single)
-    CALL(yuu_monte_single_init)
+EVT_BEGIN(monte_single_event)
+    CALL(monte_single_init)
     RETURN
 EVT_END()
 
@@ -197,7 +197,7 @@ static inline void monte_fill(void) {
 // `#pragma opt_propagation off` above is required: with propagation on MWCC folds
 // count*sizeof(MonteEntry) (count==1) to li 0x44 and drops the target's li r28,1 /
 // mulli r29,r28,0x44 / mr r3,r29 sequence and the r28 save.
-USER_FUNC(yuu_monte_single_init) {
+USER_FUNC(monte_single_init) {
     s32 wasAllocated = 0;
     s32 entryCount;
     YuuminigameWork* work = (YuuminigameWork*)event->lwData[0];
@@ -488,7 +488,7 @@ void yuuminigame_init_3roll(EventEntry* event, BOOL isFirstCall) {
     YuuMinigame3Data* data = ((YuuminigameWork*)event->lwData[0])->data;
     EventEntry* e;
 
-    e = evtEntryType(evt_yuu_monte_single, 0, 0, 0xEF);
+    e = evtEntryType(monte_single_event, 0, 0, 0xEF);
     e->lwData[0] = (s32)event->lwData[0];
     data->viewEvent = evtEntryType(minigame_view_monte, 0, 0, 0);
     data->viewEvent->lwData[0] = (s32)event->lwData[0];
