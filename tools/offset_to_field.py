@@ -357,9 +357,20 @@ def render(base_text, segs):
 def postfix(b):
     """True when b is an identifier followed only by calls, indexes and member accesses (`f(x)[2].y`)."""
     m = re.match(r"[A-Za-z_]\w*", b)
-    if not m:
+    if m:
+        i = m.end()
+    elif b.startswith("("):
+        # a parenthesised primary expression, which must be followed by a postfix operator (else it's a cast)
+        d, i = 0, 0
+        while i < len(b):
+            d += {"(": 1, ")": -1}.get(b[i], 0)
+            i += 1
+            if d == 0:
+                break
+        if d or not re.match(r"\s*(\[|->|\.)", b[i:]):
+            return False
+    else:
         return False
-    i = m.end()
     while i < len(b):
         if b[i].isspace():
             i += 1
@@ -581,6 +592,9 @@ def analyse(rel, text=None):
             return Site(rel, line, src(use), "ok", new, (e.start.offset, e.end.offset), retyped=True)
         if use is not None and use.kind == K.UNARY_OPERATOR and usetxt == "*":
             e = use.extent
+            # (*(T*)(...))++  ->  base->field++ : a postfix expression needs no parens of its own
+            if k >= 1 and parents[k - 1].kind == K.PAREN_EXPR:
+                e = parents[k - 1].extent
             return Site(rel, line, src(use), "ok", acc, (e.start.offset, e.end.offset))
         if use is not None and use.kind == K.MEMBER_REF_EXPR:
             # ((T*)(...))->m  ->  base->field.m ; replace up to and including the arrow
@@ -600,8 +614,12 @@ def analyse(rel, text=None):
         if use is not None and use.kind == K.UNARY_OPERATOR and usetxt in ("++", "--", "postfix", "&", "-", "!", "~"):
             if usetxt != "!":
                 return skip("pointer arithmetic")
+        if use is not None and (use.kind == K.VAR_DECL or use.kind == K.BINARY_OPERATOR and is_lvalue(
+                list(use.get_children())[0], parents[:k + 1])):
+            # p = (T*)(...): later code may step through it past the field (a strided table view)
+            return skip("address stored in a variable")
         e = outer.extent
-        # keep the parens if the cast was wrapped and the use needs them; '&a->b' is a unary expression like the cast
+        # '&a->b' is a unary expression, like the cast it replaces
         return Site(rel, line, src(outer), "ok", "&" + acc, (e.start.offset, e.end.offset))
 
     visit(tu.cursor, [])
