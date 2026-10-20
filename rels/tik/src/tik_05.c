@@ -2341,16 +2341,16 @@ void tiz_broken_draw(CameraId camId, void* param) {
     s32 i;
     BrokenEntry* entry;
 
-    if (((BrokenWork*)broken_wp[0])->tex_copied == 0) {
+    if (((BrokenWork*)broken_wp[0])->texCopied == 0) {
         GXSetTexCopySrc(0, 0, 0x260, 0x1E0);
         GXSetTexCopyDst(0x130, 0xF0, 5, 1);
-        GXCopyTex(((BrokenWork*)broken_wp[0])->tex_buffer->address, 0);
+        GXCopyTex(((BrokenWork*)broken_wp[0])->texBuffer->address, 0);
         GXPixModeSync();
-        ((BrokenWork*)broken_wp[0])->tex_copied = 1;
+        ((BrokenWork*)broken_wp[0])->texCopied = 1;
     }
 
     GXSetNumChans(0);
-    GXInitTexObj(&texObj, ((BrokenWork*)broken_wp[0])->tex_buffer->address, 0x130, 0xF0, 5, 0, 0, 0);
+    GXInitTexObj(&texObj, ((BrokenWork*)broken_wp[0])->texBuffer->address, 0x130, 0xF0, 5, 0, 0, 0);
     GXLoadTexObj(&texObj, 0);
     GXSetNumTexGens(1);
     GXSetTexCoordGen2(0, 1, 4, 0x1E, 0, 0x7D);
@@ -2370,7 +2370,7 @@ void tiz_broken_draw(CameraId camId, void* param) {
     GXSetCurrentMtx(0);
     PSMTXIdentity(mtx);
 
-    entry = (BrokenEntry*)((BrokenWork*)broken_wp[0])->entry_buffer->address;
+    entry = (BrokenEntry*)((BrokenWork*)broken_wp[0])->entryBuffer->address;
     for (i = 0; i < 0x1E; i++, entry++) {
         y = 232.0f - (f32)(i * 0x10);
         for (j = 0; j < 0x26; j++, entry++) {
@@ -2398,7 +2398,7 @@ void tiz_broken_draw(CameraId camId, void* param) {
                 PSMTXConcat(m1, m2, m1);
                 PSMTXRotRad(m2, 'z', 0.017453292f * angle);
                 PSMTXConcat(m1, m2, m1);
-                PSMTXRotRad(m2, 'y', 0.017453292f * entry->spin_angle);
+                PSMTXRotRad(m2, 'y', 0.017453292f * entry->spinAngle);
                 PSMTXConcat(m1, m2, m1);
                 PSMTXRotRad(m2, 'z', 0.017453292f * -angle);
                 PSMTXConcat(m1, m2, m1);
@@ -2513,11 +2513,11 @@ USER_FUNC(tiz_broken) {
 
     if (isFirstCall) {
         memset((void*)broken_wp[0], 0, 0xC);
-        ((BrokenWork*)broken_wp[0])->tex_buffer = smartAlloc(GXGetTexBufferSize(0x130, 0xF0, 5, 0, 0), 1);
-        ((BrokenWork*)broken_wp[0])->entry_buffer = smartAlloc(0xF594, 1);
-        ((BrokenWork*)broken_wp[0])->tex_copied = 0;
+        ((BrokenWork*)broken_wp[0])->texBuffer = smartAlloc(GXGetTexBufferSize(0x130, 0xF0, 5, 0, 0), 1);
+        ((BrokenWork*)broken_wp[0])->entryBuffer = smartAlloc(0xF594, 1);
+        ((BrokenWork*)broken_wp[0])->texCopied = 0;
 
-        entry = (BrokenEntry*)((BrokenWork*)broken_wp[0])->entry_buffer->address;
+        entry = (BrokenEntry*)((BrokenWork*)broken_wp[0])->entryBuffer->address;
         for (i = 0; i < 0x1E; i++) {
             for (j = 0; j < 0x26; j++) {
                 f3 = (f32)j / 37.0f - 0.5f;
@@ -2550,23 +2550,23 @@ USER_FUNC(tiz_broken) {
                 entry->x = 0.0f;
                 entry->y = 0.0f;
                 entry->z = 0.0f;
-                entry->spin_speed = 0.0f;
-                entry->spin_angle = 0.0f;
-                entry->impulse_x = -f0 * param_tbl[1];
-                entry->impulse_y = -f2 * param_tbl[1];
-                entry->impulse_z = 10.0f;
+                entry->spinSpeed = 0.0f;
+                entry->spinAngle = 0.0f;
+                entry->impulseX = -f0 * param_tbl[1];
+                entry->impulseY = -f2 * param_tbl[1];
+                entry->impulseZ = 10.0f;
                 angle = angleABf(0.0f, 0.0f, f3, f4);
                 rad = 6.2831855f * angle / 360.0f;
                 k = param_tbl[3];
-                entry->vel_x = k * tikSinf(rad);
-                entry->vel_y = k * -tikCosf(rad);
+                entry->velX = k * tikSinf(rad);
+                entry->velY = k * -tikCosf(rad);
                 entry++;
             }
             entry++;
         }
     }
 
-    entry2 = (BrokenEntry*)((BrokenWork*)broken_wp[0])->entry_buffer->address;
+    entry2 = (BrokenEntry*)((BrokenWork*)broken_wp[0])->entryBuffer->address;
     for (i2 = 0; i2 < 0x1E; i2++) {
         for (j = 0; j < 0x26; j++) {
             switch (entry2->state) {
@@ -2574,16 +2574,16 @@ USER_FUNC(tiz_broken) {
                 if (entry2->timer != 0) {
                     entry2->timer--;
                 } else {
-                    entry2->x += entry2->vel_x;
-                    entry2->y += entry2->vel_y;
-                    entry2->x += entry2->impulse_x;
-                    entry2->y += entry2->impulse_y;
-                    entry2->z += entry2->impulse_z;
-                    entry2->impulse_x *= param_tbl[2];
-                    entry2->impulse_y *= param_tbl[2];
-                    entry2->impulse_z *= param_tbl[2];
-                    entry2->spin_speed += param_tbl[4];
-                    entry2->spin_angle += entry2->spin_speed;
+                    entry2->x += entry2->velX;
+                    entry2->y += entry2->velY;
+                    entry2->x += entry2->impulseX;
+                    entry2->y += entry2->impulseY;
+                    entry2->z += entry2->impulseZ;
+                    entry2->impulseX *= param_tbl[2];
+                    entry2->impulseY *= param_tbl[2];
+                    entry2->impulseZ *= param_tbl[2];
+                    entry2->spinSpeed += param_tbl[4];
+                    entry2->spinAngle += entry2->spinSpeed;
                     if (__fabsf(entry2->x) > 340.0 || __fabsf(entry2->y) > 260.0) {
                         entry2->state++;
                     }
@@ -2599,8 +2599,8 @@ USER_FUNC(tiz_broken) {
     }
 
     if (active >= 0x474) {
-        smartFree(((BrokenWork*)broken_wp[0])->tex_buffer);
-        smartFree(((BrokenWork*)broken_wp[0])->entry_buffer);
+        smartFree(((BrokenWork*)broken_wp[0])->texBuffer);
+        smartFree(((BrokenWork*)broken_wp[0])->entryBuffer);
         return EVT_RETURN_DONE;
     }
     dispEntry(8, 0.0f, 0, tiz_broken_draw, NULL);
@@ -2770,8 +2770,8 @@ USER_FUNC(starstone_setting) {
     effStarStoneData* d1 = e1->userdata;
 
     d1->flags |= 0x20;
-    ((MahojinWork*)e2->userdata)[index + 2].draw_arg = e1;
-    ((MahojinWork*)e2->userdata)[index + 2].draw_func = (void (*)(CameraId, void*))effStarStoneDraw;
+    ((MahojinWork*)e2->userdata)[index + 2].drawArg = e1;
+    ((MahojinWork*)e2->userdata)[index + 2].drawFunc = (void (*)(CameraId, void*))effStarStoneDraw;
     return EVT_RETURN_DONE;
 }
 

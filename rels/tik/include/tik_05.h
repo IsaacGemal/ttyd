@@ -15,25 +15,25 @@ typedef struct CamKaiten {
 } CamKaiten;
 
 typedef struct BrokenEntry {
-    s32 state;        // 0x00, 0 while flying, 1 once it has left the screen
-    s32 timer;        // 0x04, frames to wait before the piece moves and draws
-    s32 quadrant;     // 0x08, 0-3: diagonal the piece is drawn turned to
-    f32 impulse_x;    // 0x0C, decays by param_tbl[2] each frame
-    f32 impulse_y;    // 0x10, decays by param_tbl[2] each frame
-    f32 impulse_z;    // 0x14, decays by param_tbl[2] each frame
-    f32 x;            // 0x18
-    f32 y;            // 0x1C
-    f32 z;            // 0x20
-    f32 spin_angle;   // 0x24, degrees about y
-    f32 spin_speed;   // 0x28, grows by param_tbl[4] each frame
-    f32 vel_x;        // 0x2C, constant per-frame x
-    f32 vel_y;        // 0x30, constant per-frame y
+    s32 state;     // 0x00, 0 while flying, 1 once it has left the screen
+    s32 timer;     // 0x04, frames to wait before the piece moves and draws
+    s32 quadrant;  // 0x08, 0-3: diagonal the piece is drawn turned to
+    f32 impulseX;  // 0x0C, decays by param_tbl[2] each frame
+    f32 impulseY;  // 0x10, decays by param_tbl[2] each frame
+    f32 impulseZ;  // 0x14, decays by param_tbl[2] each frame
+    f32 x;         // 0x18
+    f32 y;         // 0x1C
+    f32 z;         // 0x20
+    f32 spinAngle; // 0x24, degrees about y
+    f32 spinSpeed; // 0x28, grows by param_tbl[4] each frame
+    f32 velX;      // 0x2C, constant per-frame x
+    f32 velY;      // 0x30, constant per-frame y
 } BrokenEntry;
 
 typedef struct BrokenWork {
-    s32 tex_copied;             // 0x00, set once the frame has been copied into tex_buffer
-    smartEntry* tex_buffer;     // 0x04
-    smartEntry* entry_buffer;   // 0x08, the BrokenEntry array
+    s32 texCopied;           // 0x00, set once the frame has been copied into texBuffer
+    smartEntry* texBuffer;   // 0x04
+    smartEntry* entryBuffer; // 0x08, the BrokenEntry array
 } BrokenWork;
 
 USER_FUNC(is_dol_viewer);

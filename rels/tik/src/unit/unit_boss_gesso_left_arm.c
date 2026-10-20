@@ -87,7 +87,7 @@ BattleUnitKind unit_boss_gesso_left_arm = {
     1,                          // numParts
     &parts,                     // mParts
     init_event,                 // initEvtScript
-    gesso_left_arm_counter_data_table,           // dataTable
+    gesso_left_arm_counter_data_table, // dataTable
 };
 
 static BattleUnitDefense defence = { { 0, 0, 0, 0, 0 } };
