@@ -493,7 +493,7 @@ void btlseqFirstAct(BattleWork* wp) {
 		if (BattleCheckConcluded(wp)) {
 			BattleAudience_PerAct();
 			BattleSetSeq(wp, 0, 3);
-			BattleSetSeq(wp, 7, 0x7000000);
+			BattleSetSeq(wp, SEQ_END, SEQ_END_INIT);
 			break;
 		}
 		BattleSetSeq(wp, 2, 0x2000004);
@@ -816,7 +816,7 @@ void btlseqTurn(BattleWork* wp) {
 			if (BattleWaitAllActiveEvtEnd(wp)) {
 				if (BattleCheckConcluded(wp)) {
 					BattleSetSeq(wp, SEQ_UNKNOWN, 3);
-					BattleSetSeq(wp, SEQ_END, 0x7000000);
+					BattleSetSeq(wp, SEQ_END, SEQ_END_INIT);
 				} else {
 					BattleIncSeq(wp, SEQ_TURN);
 				}
@@ -1584,7 +1584,7 @@ void btlseqTurn(BattleWork* wp) {
 					if (BattleWaitAllActiveEvtEnd(wp)) {
 						if (BattleCheckConcluded(wp)) {
 							BattleSetSeq(wp, SEQ_UNKNOWN, 3);
-							BattleSetSeq(wp, SEQ_END, 0x7000000);
+							BattleSetSeq(wp, SEQ_END, SEQ_END_INIT);
 						} else {
 							BattleIncSeq(wp, SEQ_TURN);
 						}
@@ -2007,7 +2007,7 @@ void btlseqMove(BattleWork* wp) {
 			if (BattleWaitAllActiveEvtEnd(wp)) {
 				if (BattleCheckConcluded(wp)) {
 					BattleSetSeq(wp, SEQ_UNKNOWN, 3);
-					BattleSetSeq(wp, SEQ_END, 0x7000000);
+					BattleSetSeq(wp, SEQ_END, SEQ_END_INIT);
 				}
 				else {
 					BattleSetSeq(wp, SEQ_MOVE, 0x5000006);
@@ -2110,7 +2110,7 @@ void btlseqMove(BattleWork* wp) {
 		case 0x500000A: {
 			if (BattleCheckConcluded(wp)) {
 				BattleSetSeq(wp, SEQ_UNKNOWN, 3);
-				BattleSetSeq(wp, SEQ_END, 0x7000000);
+				BattleSetSeq(wp, SEQ_END, SEQ_END_INIT);
 				break;
 			}
 			for (i = 0; i < 64; i++) {
