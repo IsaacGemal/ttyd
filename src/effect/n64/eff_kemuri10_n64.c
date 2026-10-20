@@ -226,7 +226,7 @@ EffectEntry* effKemuri10N64Entry(s32 a1, f32 x, f32 y, f32 z, f32 dirX, f32 dirY
     data->orient[1][3] = float_0_8041f4b8;
     data->orient[2][3] = float_0_8041f4b8;
     data->scale = float_0p1_8041f4e0 * scale;
-    data->camId = 4;
+    data->camId = CAMERA_3D;
 
     return effect;
 }

@@ -319,8 +319,8 @@ void effItemGetDisp(CameraId camId, void* param) {
 			}
 #endif
 		}
-		GXLoadPosMtxImm(mtxTrans, 0);
-		GXSetCurrentMtx(0);
+		GXLoadPosMtxImm(mtxTrans, GX_PNMTX0);
+		GXSetCurrentMtx(GX_PNMTX0);
 		GXBegin(GX_QUADS, GX_VTXFMT0, 4);
 		GXPosition3f32(f30, f31, 0.0f);
 		GXTexCoord2f32(0.0f, 0.0f);
@@ -405,8 +405,8 @@ void effItemGetDisp(CameraId camId, void* param) {
 #endif
 			}
 			PSMTXConcat(cam->view, mtxTex, mtxTrans);
-			GXLoadPosMtxImm(mtxTrans, 0);
-			GXSetCurrentMtx(0);
+			GXLoadPosMtxImm(mtxTrans, GX_PNMTX0);
+			GXSetCurrentMtx(GX_PNMTX0);
 			PSMTXConcat(mtxLight, mtxTex, mtxTrans);
 			GXLoadTexMtxImm(mtxTrans, GX_TEXMTX0, GX_MTX3x4);
 			GXBegin(GX_QUADS, GX_VTXFMT0, 4);
@@ -536,8 +536,8 @@ void effItemUseDisp(CameraId camId, void* param) {
 			}
 			f29 = 10.666667f;
 #endif
-			GXLoadPosMtxImm(mtx1, 0);
-			GXSetCurrentMtx(0);
+			GXLoadPosMtxImm(mtx1, GX_PNMTX0);
+			GXSetCurrentMtx(GX_PNMTX0);
 			GXBegin(GX_QUADS, GX_VTXFMT0, 4);
 			GXPosition3f32(f31, 0.0f, 0.0f);
 			GXTexCoord2f32(0.0f, 0.0f);

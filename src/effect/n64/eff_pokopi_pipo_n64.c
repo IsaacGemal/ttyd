@@ -212,8 +212,8 @@ void effPokopiPipoDisp(CameraId camId, void* param) {
 	PSMTXRotRad(rot, 'z', 0.017453292f * data->rotZ);
 	PSMTXConcat(mtx, rot, mtx);
 	PSMTXConcat(camera->view, mtx, mtx);
-	GXLoadPosMtxImm(mtx, 0);
-	GXSetCurrentMtx(0);
+	GXLoadPosMtxImm(mtx, GX_PNMTX0);
+	GXSetCurrentMtx(GX_PNMTX0);
 
 	effPokopiPipoSetColor(data, alpha);
 
