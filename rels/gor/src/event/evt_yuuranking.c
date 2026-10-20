@@ -132,9 +132,9 @@ void gor_draw_msg_fit(const char* msg, s32 width, f32 x, f32 y, f32 z) {
     FontDrawMessageMtx(out, msg);
 }
 
-#define A14(i) (*(s32*)((unsigned char*)yuwp + work->field_14 * 24 + 0x14 + (i) * 4))
-#define A74(i) (*(s32*)((unsigned char*)yuwp + work->field_14 * 24 + 0x74 + (i) * 4))
-#define AD4(i) (*(s32*)((unsigned char*)yuwp + work->field_14 * 24 + 0xd4 + (i) * 4))
+#define A14(i) ((s32)yuwp->rankUsed[work->field_14][i])
+#define A74(i) ((s32)yuwp->rankScore[work->field_14][i])
+#define AD4(i) ((s32)yuwp->rankMonte[work->field_14][i])
 
 
 
