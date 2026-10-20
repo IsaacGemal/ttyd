@@ -302,7 +302,7 @@ StatusEffectType _GetStatusPoseType(BattleUnit* unit) {
 	s32* table = _status_pose_table;
 	StatusEffectType type;
 
-	if (unit->mAttributeFlags & 0x20000) {
+	if (unit->mAttributeFlags & kInactive) {
 		return STATUS_INSTANT_KILL;
 	}
 	while (1) {
@@ -420,7 +420,7 @@ void btlDispMain(void) {
 
 		BtlUnit_HpGaugeMain(unit);
 		unit->mSizeMultiplier = 1.0f;
-		BtlUnit_GetStatus(unit, 0xB, &turns, &strength);
+		BtlUnit_GetStatus(unit, STATUS_TINY, &turns, &strength);
 		if (turns > 0 && strength < 0) {
 			f32 f = 0.5f * (f32)strength + 1.0f;
 			if (f < 0.5f) {
@@ -428,7 +428,7 @@ void btlDispMain(void) {
 			}
 			unit->mSizeMultiplier = unit->mSizeMultiplier * f;
 		}
-		BtlUnit_GetStatus(unit, 0xA, &turns, &strength);
+		BtlUnit_GetStatus(unit, STATUS_HUGE, &turns, &strength);
 		if (turns > 0 && strength > 0) {
 			f32 f = (f32)strength + 1.0f;
 			if (f > 2.0f) {
@@ -445,16 +445,16 @@ void btlDispMain(void) {
 			animName = (char*)part + 0x1C4;
 			if (!(*(s32*)(part->field_0x1C0 + 0x44) & 2)) {
 				statusPose = _GetStatusPoseType(unit);
-				if (unit->currentKind >= 1 && unit->currentKind < 0xD8) {
+				if (unit->currentKind >= UNIT_GOOMBA && unit->currentKind < UNIT_UNUSED_TREE) {
 					animName = searchPoseTbl((BattleDispPose*)part->poseTable, statusPose);
 				} else {
-					if (statusPose == 0x1C && !BtlUnit_CheckStatus(unit, 0x16) &&
+					if (statusPose == STATUS_INVALID && !BtlUnit_CheckStatus(unit, 0x16) &&
 					    (unit->mStatusFlags & 0x20000000)) {
 						animName = BtlUnit_GetPoseNameFromType(part, 0x39);
 						if (animName == NULL) {
 							animName = searchPoseTbl((BattleDispPose*)part->poseTable, 0x1C);
 						}
-					} else if (statusPose == 0x1C && !BtlUnit_CheckStatus(unit, 0x16) &&
+					} else if (statusPose == STATUS_INVALID && !BtlUnit_CheckStatus(unit, 0x16) &&
 					           (unit->mStatusFlags & 0x10000000)) {
 						animName = BtlUnit_GetPoseNameFromType(part, 0x38);
 						if (animName == NULL) {
@@ -467,9 +467,9 @@ void btlDispMain(void) {
 						animName = BtlUnit_GetPoseNameFromType(part, 0x2D);
 					}
 				}
-				if (BtlUnit_CheckStatus(unit, 0x13)) {
+				if (BtlUnit_CheckStatus(unit, STATUS_FAST)) {
 					btlDispAnimeSpeed((BattleUnit*)part, 2.0f);
-				} else if (BtlUnit_CheckStatus(unit, 0x14)) {
+				} else if (BtlUnit_CheckStatus(unit, STATUS_SLOW)) {
 					btlDispAnimeSpeed((BattleUnit*)part, 0.5f);
 				} else {
 					btlDispAnimeSpeedReset((BattleUnit*)part);
@@ -547,7 +547,7 @@ void btlDispMain(void) {
 			part->field_0x4F4[2] = part->color.b;
 
 			if (!(unit->mAttributeFlags & 0x1000000) && !(part->attributes & 0x1000000)) {
-				if (!(part->attributes & 1) || !(unit->mAttributeFlags & 0x10)) {
+				if (!(part->attributes & kMainPart) || !(unit->mAttributeFlags & kVeiled)) {
 					if (part->field_0x4F4[3] < 0xFF ||
 					    animPoseTestXLU(*(s32*)part->field_0x1C0)) {
 						if (!(*(s32*)(part->field_0x1C0 + 0x44) & 0x100)) {
@@ -611,7 +611,7 @@ void btlDispMain(void) {
 				}
 			}
 
-			if (unit->currentKind == 0xE4 || unit->currentKind == 0x8D ||
+			if (unit->currentKind == UNIT_VIVIAN || unit->currentKind == 0x8D ||
 			    unit->currentKind == 0x86 || (u32)(unit->currentKind - 0x1F) <= 2 ||
 			    (u32)(unit->currentKind - 0xBD) <= 4 || unit->currentKind == 0x85) {
 				vivian.x = (f32)unit->work[0];
