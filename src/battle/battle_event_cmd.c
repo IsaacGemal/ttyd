@@ -1939,7 +1939,7 @@ USER_FUNC(btlevtcmd_StartAvoid) {
         }
         pos.x -= 45.0f;
         entry = effNiceEntry(6, pos.x, pos.y, pos.z);
-        ((NiceEffectWork*)entry->userdata)->field_0x1C = 0.75f;
+        ((NiceEffectWork*)entry->userdata)->scale = 0.75f;
     }
     unit->damagePattern = 0;
     BattleRunHitEvent(unit, damageCode);
@@ -5334,7 +5334,7 @@ USER_FUNC(btlevtcmd_AudienceDeclareAcrobatResult) {
             pos.x = 150.0f;
         }
         entry = effNiceEntry(7, pos.x + dx, pos.y + dy, pos.z + dz);
-        ((NiceEffectWork*)entry->userdata)->field_0x1C = 0.75f;
+        ((NiceEffectWork*)entry->userdata)->scale = 0.75f;
     } else {
         BattleAudience_Case_AcrobatBad();
 #ifdef MUST_MATCH
@@ -5422,7 +5422,7 @@ USER_FUNC(btlevtcmd_ACSuccessEffect) {
     } else {
         entry = effNiceEntry(id, pos.x - angle, pos.y - 50.f, pos.z);
     }
-    ((NiceEffectWork*)entry->userdata)->field_0x1C = scale;
+    ((NiceEffectWork*)entry->userdata)->scale = scale;
     psndSFX_pit(psndSFXOn_3D(sfx, &pos), 0);
     return 2;
 }

@@ -1722,7 +1722,7 @@ s32 BattleCheckDamage(BattleUnit* unit1, BattleUnit* unit2, BattleUnitPart* part
         EffectEntry* eff;
         BtlUnit_GetHitPos(unit2, part, &pos.x, &pos.y, &pos.z);
         eff = effNiceEntry(2, pos.x - 60.0f, 45.0f + pos.y, pos.z - 10.0f);
-        ((NiceEffectWork*)eff->userdata)->field_0x1C = 0.75f;
+        ((NiceEffectWork*)eff->userdata)->scale = 0.75f;
         flags |= 0x80000;
         psndSFXOn(SFX_STR_GREAT1);
         BattleAudience_Case_GuardGood();
@@ -1781,7 +1781,7 @@ s32 BattleCheckDamage(BattleUnit* unit1, BattleUnit* unit2, BattleUnitPart* part
                 EffectEntry* eff;
                 BtlUnit_GetHitPos(unit2, part, &pos.x, &pos.y, &pos.z);
                 eff = effNiceEntry(0, pos.x - 60.0f, 45.0f + pos.y, pos.z - 10.0f);
-                ((NiceEffectWork*)eff->userdata)->field_0x1C = 0.75f;
+                ((NiceEffectWork*)eff->userdata)->scale = 0.75f;
                 flags |= 0x40000;
                 psndSFXOn(SFX_STR_NICE1);
                 BattleAudience_Case_GuardGood();
