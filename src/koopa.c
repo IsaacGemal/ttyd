@@ -222,13 +222,13 @@ s32 kpaMutekiCheck(void) {
 void kpaMutekiOn(void) {
     MarioWork* mp = marioGetPtr();
     animPoseSetMaterialFlagOn(mp->paperAnimGroupId[0], 0x80000000);
-    KPA(mp)->flags |= 0x10000;
+    KPA(mp)->flags |= KPA_FLAG_MUTEKI;
 }
 
 void kpaMutekiOff(void) {
     MarioWork* mp = marioGetPtr();
     animPoseSetMaterialFlagOff(mp->paperAnimGroupId[0], 0x80000000);
-    KPA(mp)->flags &= ~0x10000;
+    KPA(mp)->flags &= ~KPA_FLAG_MUTEKI;
 }
 
 void kpaMSetMutekiTimer(void) {
@@ -321,11 +321,11 @@ void kpaPreInit(void) {
     }
     memset(KPA(mp), 0, 0x154);
     KPA(mp)->level = 1;
-    KPA(mp)->unkD0 = 1;
+    KPA(mp)->moveRate = 1;
     KPA(mp)->unkE0 = 0;
     KPA(mp)->unkD8 = 1;
     mp = marioGetPtr();
-    KPA(mp)->sfxId = -1;
+    KPA(mp)->sfxId = KPA_SFX_NONE;
     mp = marioGetPtr();
     if (strcmp(gp->currentMapName, "kpa_02") == 0
         || strcmp(gp->currentMapName, "kpa_03") == 0
@@ -383,7 +383,7 @@ void kpa2DMain(void) {
             KPA(m)->mutekiTimer = 0;
             m2 = marioGetPtr();
             animPoseSetMaterialFlagOff(m2->paperAnimGroupId[0], 0x80000000);
-            KPA(m2)->flags &= ~0x10000;
+            KPA(m2)->flags &= ~KPA_FLAG_MUTEKI;
         }
     }
     if (mp->currMotionId == 8) {
@@ -443,7 +443,7 @@ void kpa2DMain(void) {
     } else if (mp->flags & 0x20000) {
         kpaFall();
         marioChkOverhead();
-        if (mp->currMotionId != 0x10 && mp->currMotionId != 0x11 && mp->airTimer > 5) {
+        if (mp->currMotionId != MARIO_MOTION_HIP && mp->currMotionId != MARIO_MOTION_HIP_2 && mp->airTimer > 5) {
             marioChkGnd2();
         }
     } else {
@@ -503,7 +503,7 @@ void kpa3DMain(void) {
             KPA(m)->mutekiTimer = 0;
             m2 = marioGetPtr();
             animPoseSetMaterialFlagOff(m2->paperAnimGroupId[0], 0x80000000);
-            KPA(m2)->flags &= ~0x10000;
+            KPA(m2)->flags &= ~KPA_FLAG_MUTEKI;
         }
     }
     if (mp->currMotionId == 8) {
@@ -539,7 +539,7 @@ void kpa3DMain(void) {
         kpaFall();
         kpaSearchFrontUnder();
         marioChkOverhead();
-        if (mp->currMotionId != 0x10 && mp->currMotionId != 0x11 && mp->airTimer > 5) {
+        if (mp->currMotionId != MARIO_MOTION_HIP && mp->currMotionId != MARIO_MOTION_HIP_2 && mp->airTimer > 5) {
             marioChkGnd2();
         }
     } else {
@@ -701,7 +701,7 @@ void kpaFall(void) {
             psndSFXOn_3D((const char*)0x81D, &mp->position);
         }
     } else {
-        if (mp->currMotionId == 0x10 || mp->currMotionId == 0x11) {
+        if (mp->currMotionId == MARIO_MOTION_HIP || mp->currMotionId == MARIO_MOTION_HIP_2) {
             return;
         }
         if (marioKeyOffChk() == 0 || marioCtrlOffChk() == 0) {
@@ -714,7 +714,7 @@ void kpaFall(void) {
                 mp->baseSpeed = base;
             }
         }
-        if (mp->currMotionId != 4) {
+        if (mp->currMotionId != MARIO_MOTION_JUMP_NPC) {
             if (MW_U16(mp, 0x246) & 0x100) {
                 MW_F32(mp, 0x88) = -0.001f;
             } else {
@@ -785,7 +785,7 @@ void kpaFireAttack(void) {
         mp->airTimer = 0;
         KPA(mp)->unkD8 = (KPA(mp)->level == 0) ? 0xC : 8;
         KPA(mp)->unkE0 = 0;
-        MW_S32(KPA(mp), 0x140) = 0;
+        KPA(mp)->attackTimer = 0;
         KPA(mp)->attackMode = 0x14;
         if (!(mp->flags & 0x20)) {
             mp->baseSpeed = 0.0f;
@@ -794,17 +794,17 @@ void kpaFireAttack(void) {
         // fallthrough
     case 0x14:
         kpaChgPose("KPA_A_1A", "KPA2_A_1A");
-        MW_S32(KPA(mp), 0x140) = 6;
+        KPA(mp)->attackTimer = 6;
         KPA(mp)->attackMode = 0x15;
         break;
     case 0x15:
-        if (--MW_S32(KPA(mp), 0x140) <= 0) {
+        if (--KPA(mp)->attackTimer <= 0) {
             kpaChgPose("KPA_A_1B", "KPA2_A_1B");
-            MW_S32(KPA(mp), 0x140) = 8;
+            KPA(mp)->attackTimer = 8;
             KPA(mp)->attackMode = 0x16;
             {
                 MarioWork* m = marioGetPtr();
-                if (KPA(m)->sfxId == 0xFFFFFFFFu) {
+                if (KPA(m)->sfxId == KPA_SFX_NONE) {
                     KPA(m)->sfxId = psndSFXOn_3D((const char*)0x821, &m->position);
                     psndSFXOn_3D((const char*)0x131, &m->position);
                 }
@@ -820,8 +820,8 @@ void kpaFireAttack(void) {
         if (fireefp == NULL) {
             kpaFireBreath(m, &pos216);
         }
-        if (--MW_S32(KPA(mp), 0x140) <= 0) {
-            MW_S32(KPA(mp), 0x140) = sysMsec2Frame(0x190);
+        if (--KPA(mp)->attackTimer <= 0) {
+            KPA(mp)->attackTimer = sysMsec2Frame(0x190);
             kpaChgPose("KPA_A_1C", "KPA2_A_1C");
             KPA(mp)->attackMode = 0x17;
         }
@@ -836,23 +836,23 @@ void kpaFireAttack(void) {
         if (fireefp == NULL) {
             kpaFireBreath2(m, &pos217);
         }
-        if (--MW_S32(KPA(mp), 0x140) <= 0) {
-            if (!(MW_U16(mp, 0x246) & 0x200) && MW_S32(KPA(mp), 0x144) == 0) {
+        if (--KPA(mp)->attackTimer <= 0) {
+            if (!(MW_U16(mp, 0x246) & 0x200) && KPA(mp)->unk144 == 0) {
                 MarioWork* m;
                 kpaChgPose("KPA_A_1D", "KPA2_A_1D");
                 KPA(mp)->attackMode = 0x18;
-                MW_S32(KPA(mp), 0x140) = 6;
+                KPA(mp)->attackTimer = 6;
                 m = marioGetPtr();
-                if (KPA(m)->sfxId != 0xFFFFFFFFu) {
+                if (KPA(m)->sfxId != KPA_SFX_NONE) {
                     psndSFXOff(KPA(m)->sfxId);
-                    KPA(m)->sfxId = 0xFFFFFFFFu;
+                    KPA(m)->sfxId = KPA_SFX_NONE;
                 }
             }
         }
         break;
     }
     case 0x18:
-        if (--MW_S32(KPA(mp), 0x140) <= 0) {
+        if (--KPA(mp)->attackTimer <= 0) {
             KPA(mp)->attackMode = 0;
             kpaChgPose("KPA_S_1", "KPA2_S_1");
         }
@@ -865,7 +865,7 @@ void kpaFireAttack(void) {
     case 0x1E:
         KPA(mp)->unkD8 = (KPA(mp)->level == 0) ? 0xC : 8;
         KPA(mp)->unkE0 = 0;
-        MW_S32(KPA(mp), 0x140) = 0;
+        KPA(mp)->attackTimer = 0;
         KPA(mp)->attackMode = 0x28;
         if (!(mp->flags & 0x20)) {
             mp->baseSpeed = 0.0f;
@@ -874,17 +874,17 @@ void kpaFireAttack(void) {
         // fallthrough
     case 0x28:
         kpaChgPose("KPA_A_1A", "KPA2_A_1A");
-        MW_S32(KPA(mp), 0x140) = 6;
+        KPA(mp)->attackTimer = 6;
         KPA(mp)->attackMode = 0x29;
         break;
     case 0x29:
-        if (--MW_S32(KPA(mp), 0x140) <= 0) {
+        if (--KPA(mp)->attackTimer <= 0) {
             kpaChgPose("KPA_A_1B", "KPA2_A_1B");
-            MW_S32(KPA(mp), 0x140) = 8;
+            KPA(mp)->attackTimer = 8;
             KPA(mp)->attackMode = 0x2A;
             {
                 MarioWork* m = marioGetPtr();
-                if (KPA(m)->sfxId == 0xFFFFFFFFu) {
+                if (KPA(m)->sfxId == KPA_SFX_NONE) {
                     KPA(m)->sfxId = psndSFXOn_3D((const char*)0x821, &m->position);
                     psndSFXOn_3D((const char*)0x131, &m->position);
                 }
@@ -900,8 +900,8 @@ void kpaFireAttack(void) {
         if (fireefp == NULL) {
             kpaFireBreath2(m, &pos22A);
         }
-        if (--MW_S32(KPA(mp), 0x140) <= 0) {
-            MW_S32(KPA(mp), 0x140) = sysMsec2Frame(0x190);
+        if (--KPA(mp)->attackTimer <= 0) {
+            KPA(mp)->attackTimer = sysMsec2Frame(0x190);
             kpaChgPose("KPA_A_1C", "KPA2_A_1C");
             KPA(mp)->attackMode = 0x2B;
         }
@@ -916,23 +916,23 @@ void kpaFireAttack(void) {
         if (fireefp == NULL) {
             kpaFireBreath2(m, &pos22B);
         }
-        if (--MW_S32(KPA(mp), 0x140) <= 0) {
-            if (!(MW_U16(mp, 0x246) & 0x200) && MW_S32(KPA(mp), 0x144) == 0) {
+        if (--KPA(mp)->attackTimer <= 0) {
+            if (!(MW_U16(mp, 0x246) & 0x200) && KPA(mp)->unk144 == 0) {
                 MarioWork* m;
                 kpaChgPose("KPA_A_1D", "KPA2_A_1D");
                 KPA(mp)->attackMode = 0x2C;
-                MW_S32(KPA(mp), 0x140) = 6;
+                KPA(mp)->attackTimer = 6;
                 m = marioGetPtr();
-                if (KPA(m)->sfxId != 0xFFFFFFFFu) {
+                if (KPA(m)->sfxId != KPA_SFX_NONE) {
                     psndSFXOff(KPA(m)->sfxId);
-                    KPA(m)->sfxId = 0xFFFFFFFFu;
+                    KPA(m)->sfxId = KPA_SFX_NONE;
                 }
             }
         }
         break;
     }
     case 0x2C:
-        if (--MW_S32(KPA(mp), 0x140) <= 0) {
+        if (--KPA(mp)->attackTimer <= 0) {
             KPA(mp)->attackMode = 0;
             switch (mp->currMotionId) {
             case 0:
@@ -960,9 +960,9 @@ void kpaCancelAttackMode(void) {
     mp = marioGetPtr();
     KPA(mp)->attackMode = 0;
     mp = marioGetPtr();
-    if (KPA(mp)->sfxId != 0xFFFFFFFFu) {
+    if (KPA(mp)->sfxId != KPA_SFX_NONE) {
         psndSFXOff(KPA(mp)->sfxId);
-        KPA(mp)->sfxId = 0xFFFFFFFFu;
+        KPA(mp)->sfxId = KPA_SFX_NONE;
     }
 }
 
@@ -976,9 +976,9 @@ void unk_801f8cd0(void) {
         effSoftDelete(fireefp);
         fireefp = NULL;
         mp = marioGetPtr();
-        if (KPA(mp)->sfxId != 0xFFFFFFFFu) {
+        if (KPA(mp)->sfxId != KPA_SFX_NONE) {
             psndSFXOff(KPA(mp)->sfxId);
-            KPA(mp)->sfxId = 0xFFFFFFFFu;
+            KPA(mp)->sfxId = KPA_SFX_NONE;
         }
     }
 }
@@ -1008,7 +1008,7 @@ void kpaFireMain(void) {
     MarioWork* mp2;
 #endif
 
-    KPA(mp)->unk18 = NULL;
+    KPA(mp)->hitFlame = NULL;
     if (fireefp == NULL) {
         goto cleanup;
     }
@@ -1032,10 +1032,10 @@ void kpaFireMain(void) {
     ((KpaFireNode*)((EffectEntry*)fireefp)->userdata)->pos.x = x;
     ((KpaFireNode*)((EffectEntry*)fireefp)->userdata)->pos.y = y;
     ((KpaFireNode*)((EffectEntry*)fireefp)->userdata)->pos.z = z;
-    if (((KpaFireNode*)((EffectEntry*)fireefp)->userdata)->unk4C != NULL) {
-        ((KpaFireNode*)((EffectEntry*)((KpaFireNode*)((EffectEntry*)fireefp)->userdata)->unk4C)->userdata)->pos.x = x;
-        ((KpaFireNode*)((EffectEntry*)((KpaFireNode*)((EffectEntry*)fireefp)->userdata)->unk4C)->userdata)->pos.y = y;
-        ((KpaFireNode*)((EffectEntry*)((KpaFireNode*)((EffectEntry*)fireefp)->userdata)->unk4C)->userdata)->pos.z = z;
+    if (((KpaFireNode*)((EffectEntry*)fireefp)->userdata)->nextEfp != NULL) {
+        ((KpaFireNode*)((EffectEntry*)((KpaFireNode*)((EffectEntry*)fireefp)->userdata)->nextEfp)->userdata)->pos.x = x;
+        ((KpaFireNode*)((EffectEntry*)((KpaFireNode*)((EffectEntry*)fireefp)->userdata)->nextEfp)->userdata)->pos.y = y;
+        ((KpaFireNode*)((EffectEntry*)((KpaFireNode*)((EffectEntry*)fireefp)->userdata)->nextEfp)->userdata)->pos.z = z;
     }
     level = kpaGetLevel();
     if (level == 0) {
@@ -1044,13 +1044,13 @@ void kpaFireMain(void) {
     efp = fireefp;
     camGetPtr(4);
     root = efp->userdata;
-    rootScale = root->unk40;
+    rootScale = root->radius;
     PSMTXTrans(m0, root->pos.x, root->pos.y, root->pos.z);
-    PSMTXRotRad(m1, 0x79, (root->unk48 - camGetPtr(4)->viewYaw) * float_deg2rad_804203d8);
-    if (root->unk48 > 90.0f && root->unk48 < 270.0f) {
-        PSMTXScale(m2, root->unk40, root->unk40, -root->unk40);
+    PSMTXRotRad(m1, 0x79, (root->yaw - camGetPtr(4)->viewYaw) * float_deg2rad_804203d8);
+    if (root->yaw > 90.0f && root->yaw < 270.0f) {
+        PSMTXScale(m2, root->radius, root->radius, -root->radius);
     } else {
-        PSMTXScale(m2, root->unk40, root->unk40, root->unk40);
+        PSMTXScale(m2, root->radius, root->radius, root->radius);
     }
     PSMTXConcat(m0, m1, m0);
     PSMTXConcat(m0, m2, m3);
@@ -1060,13 +1060,13 @@ void kpaFireMain(void) {
         if ((i - 1) & 3) {
             continue;
         }
-        if (root->unk44 != 0) {
+        if (root->noHit != 0) {
             continue;
         }
         if (root->unk1C <= 0x10) {
             continue;
         }
-        f30 = float_7_804203dc * root->unk40;
+        f30 = float_7_804203dc * root->radius;
         f31 = f30 * rootScale;
         if (f31 < float_7_804203dc) {
             continue;
@@ -1079,7 +1079,7 @@ void kpaFireMain(void) {
         PSMTXMultVec(m0, &v, &out);
         hit = kpaFlameHitCheck(out.x, out.y, out.z, f31);
         if (hit != NULL) {
-            KPA(mp)->unk18 = hit;
+            KPA(mp)->hitFlame = hit;
             goto cleanup;
         }
     }
@@ -1102,7 +1102,7 @@ BOOL kpaHipAttackCheck(void) {
     if (mp->characterId != 2) {
         return FALSE;
     }
-    if (mp->currMotionId == 0x11) {
+    if (mp->currMotionId == MARIO_MOTION_HIP_2) {
         result = TRUE;
     }
     return result;

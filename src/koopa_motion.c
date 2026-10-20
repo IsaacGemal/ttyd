@@ -105,7 +105,7 @@ extern const f32 float_0p002_80420e6c;
 
 s32 kpaHipAttackOk(void) {
     MarioWork* mario = marioGetPtr();
-    if (mario->currMotionId == 0x10) {
+    if (mario->currMotionId == MARIO_MOTION_HIP) {
         return 0;
     }
     return ((KPA(mario)->flags >> 4) & 1) ^ 1;
@@ -190,7 +190,7 @@ void kpa_stay(void) {
         mario->multiTimer = 0;
         mario->currSubMotionId = 0;
         if (kpaGetAttackMode() == 0) {
-            if (!(KPA(mario)->flags & 0x01000000)) {
+            if (!(KPA(mario)->flags & KPA_FLAG_ALT_POSE)) {
                 kpaChgPose("KPA_S_1", "KPA2_S_1");
             } else {
                 kpaChgPose("KPA_S_2", "KPA2_S_1");
@@ -210,7 +210,7 @@ void kpa_stay(void) {
     } else if (!(MW_U16(m2, 0x248) & (1 << 8))) {
         flag = 0;
     } else if (kpaGetBodyStatus() == 2) {
-        marioChgMot(0x25);
+        marioChgMot(MARIO_MOTION_KPA_SWIM);
         flag = 1;
     } else {
         marioChgMot(3);
@@ -252,15 +252,15 @@ void kpa_walk(void) {
         mario->flags &= ~0x000F0000;
         mario->currSubMotionId = 0;
         mario->multiTimer = 0;
-        if (!(KPA(mario)->flags & 0x01000000)) {
+        if (!(KPA(mario)->flags & KPA_FLAG_ALT_POSE)) {
             kpaChgPose("KPA_W_1", "KPA2_W_1");
         } else {
             kpaChgPose("KPA_W_2", "KPA2_W_1");
         }
         MW_U16(mario, 0x2A0) = 0;
         MW_U16(mario, 0x2A2) = 0;
-        MW_F32(KPA(mario), 0x10) = float_0p02_80420dd4;
-        MW_F32(KPA(mario), 0x14) = float_neg0p02_80420e4c;
+        KPA(mario)->unk10 = float_0p02_80420dd4;
+        KPA(mario)->unk14 = float_neg0p02_80420e4c;
     }
     m2 = marioGetPtr();
     flag = 0;
@@ -269,7 +269,7 @@ void kpa_walk(void) {
     } else if (!(MW_U16(m2, 0x248) & (1 << 8))) {
         flag = 0;
     } else if (kpaGetBodyStatus() == 2) {
-        marioChgMot(0x25);
+        marioChgMot(MARIO_MOTION_KPA_SWIM);
         flag = 1;
     } else {
         marioChgMot(3);
@@ -317,7 +317,7 @@ void kpa_walk(void) {
             level = kpaGetLevel();
             speed = _walkSpdTbl[level];
             rate = _rateTbl[level];
-            MW_S32(KPA(m2), 0xD0) = rate;
+            KPA(m2)->moveRate = rate;
             mario->baseSpeed = speed;
         }
     }
@@ -367,7 +367,7 @@ void kpa_dash(void) {
     } else if (!(MW_U16(m2, 0x248) & (1 << 8))) {
         flag = 0;
     } else if (kpaGetBodyStatus() == 2) {
-        marioChgMot(0x25);
+        marioChgMot(MARIO_MOTION_KPA_SWIM);
         flag = 1;
     } else {
         marioChgMot(3);
@@ -410,7 +410,7 @@ void kpa_dash(void) {
             m2 = marioGetPtr();
             lvl = kpaGetLevel();
             spd = _dashSpdTbl[lvl];
-            MW_S32(KPA(m2), 0xD0) = _rateTbl2[lvl];
+            KPA(m2)->moveRate = _rateTbl2[lvl];
             mario->baseSpeed = spd;
         }
     }
@@ -490,7 +490,7 @@ void kpa_fall_80213C38(void) {
         mario->flags &= ~0x00010000;
         mario->flags |= 0x00020000;
         mario->currSubMotionId = 0;
-        if (mario->currMotionId != 0xB) {
+        if (mario->currMotionId != MARIO_MOTION_FALL_2) {
             if (mario->characterId == 2) {
                 if (kpaFireAttackCheck() == 0) {
                     kpaChgPose("KPA_J_1B", "KPA2_J_1B");
@@ -524,8 +524,8 @@ void kpa_fall_80213C38(void) {
     }
     if (kpaGetBodyStatus() == 2) {
         mario = marioGetPtr();
-        if (mario->currMotionId != 0x25) {
-            marioChgMot2(0x25);
+        if (mario->currMotionId != MARIO_MOTION_KPA_SWIM) {
+            marioChgMot2(MARIO_MOTION_KPA_SWIM);
         }
         kpaClearHitobjRide();
         mario->flags &= ~0x00010000;
@@ -587,7 +587,7 @@ void kpa_hip(void) {
         if (hit != NULL) {
             mario->hitobjStandOn = hit;
             mario->hitobjJumpFrom = NULL;
-            mario->currMotionId = 0x11;
+            mario->currMotionId = MARIO_MOTION_HIP_2;
             mario->currSubMotionId = 0x15;
             mario->multiTimer = 0x14;
             mario->position.y = landY;
@@ -627,7 +627,7 @@ s32 kpaPowUp(void) {
     if (kpaGetLevel() < 3) {
         KPA(mario)->level++;
         kpaCancelAttackMode();
-        marioChgMot(0x26);
+        marioChgMot(MARIO_MOTION_KPA_POW_UP);
         return 1;
     }
     kpaMSetMutekiTimer();
@@ -641,7 +641,7 @@ s32 kpaPowDown(void) {
     if (kpaGetLevel() > 0) {
         KPA(mario)->level--;
         MW_S16(mario, 0x78) = sysMsec2Frame(3000);
-        marioChgMot(0x27);
+        marioChgMot(MARIO_MOTION_KPA_POW_DOWN);
         return 1;
     }
     KPA(mario)->flags |= 0x10000000;
@@ -886,13 +886,13 @@ void kpa_swim(void) {
     }
     kpaSwimMove();
     m2 = marioGetPtr();
-    MW_S32(KPA(m2), 0x150) += 1;
+    KPA(m2)->bubbleTimer += 1;
     if ((s32)m2->currSubMotionId == 0x1E || (s32)m2->currSubMotionId == 0x1F) {
-        if ((s32)MW_S32(KPA(m2), 0x150) > 0) {
+        if ((s32)KPA(m2)->bubbleTimer > 0) {
             f32 angle;
             f32 dx;
             f32 dy;
-            MW_S32(KPA(m2), 0x150) = 0;
+            KPA(m2)->bubbleTimer = 0;
             dx = (f32)(irand(0x28) - 0x14);
             dy = (f32)(irand(0x28) - 0x14);
             angle = (m2->directionView < float_180_80420db4) ? float_225_80420dac : float_135_80420db0;
@@ -902,9 +902,9 @@ void kpa_swim(void) {
         }
     } else {
         s32 limit = ((s32)m2->currSubMotionId >= 0 && (s32)m2->currSubMotionId < 0x14) ? 0xA : 0x1E;
-        if ((s32)MW_S32(KPA(m2), 0x150) > limit) {
+        if ((s32)KPA(m2)->bubbleTimer > limit) {
             f32 angle;
-            MW_S32(KPA(m2), 0x150) = 0;
+            KPA(m2)->bubbleTimer = 0;
             angle = (m2->directionView < float_180_80420db4) ? float_225_80420dac : float_135_80420db0;
             effMizutamaEntry(0, m2->position.x,
                              m2->position.y + m2->wPlayerCollisionBox.y / float_3_80420db8,
@@ -1033,13 +1033,13 @@ void kpa_swim(void) {
             mario->currSubMotionId = 0x20;
         }
         m2 = marioGetPtr();
-        MW_S32(KPA(m2), 0x150) += 1;
+        KPA(m2)->bubbleTimer += 1;
         if ((s32)m2->currSubMotionId == 0x1E || (s32)m2->currSubMotionId == 0x1F) {
-            if ((s32)MW_S32(KPA(m2), 0x150) > 0) {
+            if ((s32)KPA(m2)->bubbleTimer > 0) {
                 f32 angle;
                 f32 dx;
                 f32 dy;
-                MW_S32(KPA(m2), 0x150) = 0;
+                KPA(m2)->bubbleTimer = 0;
                 dx = (f32)(irand(0x28) - 0x14);
                 dy = (f32)(irand(0x28) - 0x14);
                 angle = (m2->directionView < float_180_80420db4) ? float_225_80420dac : float_135_80420db0;
@@ -1049,9 +1049,9 @@ void kpa_swim(void) {
             }
         } else {
             s32 limit = ((s32)m2->currSubMotionId >= 0 && (s32)m2->currSubMotionId < 0x14) ? 0xA : 0x1E;
-            if ((s32)MW_S32(KPA(m2), 0x150) > limit) {
+            if ((s32)KPA(m2)->bubbleTimer > limit) {
                 f32 angle;
-                MW_S32(KPA(m2), 0x150) = 0;
+                KPA(m2)->bubbleTimer = 0;
                 angle = (m2->directionView < float_180_80420db4) ? float_225_80420dac : float_135_80420db0;
                 effMizutamaEntry(0, m2->position.x,
                                  m2->position.y + m2->wPlayerCollisionBox.y / float_3_80420db8,
@@ -1084,13 +1084,13 @@ void kpa_swim(void) {
             mario->baseSpeed = float_0_80420da0;
         }
         m2 = marioGetPtr();
-        MW_S32(KPA(m2), 0x150) += 1;
+        KPA(m2)->bubbleTimer += 1;
         if ((s32)m2->currSubMotionId == 0x1E || (s32)m2->currSubMotionId == 0x1F) {
-            if ((s32)MW_S32(KPA(m2), 0x150) > 0) {
+            if ((s32)KPA(m2)->bubbleTimer > 0) {
                 f32 angle;
                 f32 dx;
                 f32 dy;
-                MW_S32(KPA(m2), 0x150) = 0;
+                KPA(m2)->bubbleTimer = 0;
                 dx = (f32)(irand(0x28) - 0x14);
                 dy = (f32)(irand(0x28) - 0x14);
                 angle = (m2->directionView < float_180_80420db4) ? float_225_80420dac : float_135_80420db0;
@@ -1100,9 +1100,9 @@ void kpa_swim(void) {
             }
         } else {
             s32 limit = ((s32)m2->currSubMotionId >= 0 && (s32)m2->currSubMotionId < 0x14) ? 0xA : 0x1E;
-            if ((s32)MW_S32(KPA(m2), 0x150) > limit) {
+            if ((s32)KPA(m2)->bubbleTimer > limit) {
                 f32 angle;
-                MW_S32(KPA(m2), 0x150) = 0;
+                KPA(m2)->bubbleTimer = 0;
                 angle = (m2->directionView < float_180_80420db4) ? float_225_80420dac : float_135_80420db0;
                 effMizutamaEntry(0, m2->position.x,
                                  m2->position.y + m2->wPlayerCollisionBox.y / float_3_80420db8,
