@@ -105,7 +105,6 @@ s32 haiti_data[4][10] = {
 };
 #pragma force_active off
 
-#ifdef MUST_MATCH
 // For the struct-copy that BattleAudience_Case_FallObject_Aud uses to load its two const offset
 // tables; MWCC only emits the paired lwzu/stwu copy loop for a struct assignment, not for memcpy.
 typedef struct BattleAudienceFallOffsetTable1 {
@@ -115,7 +114,6 @@ typedef struct BattleAudienceFallOffsetTable1 {
 typedef struct BattleAudienceFallOffsetTable2 {
     s32 v[48];
 } BattleAudienceFallOffsetTable2;
-#endif
 
 
 // LOCAL_PROTO(psndSFX_get_vol): retail battle callers consume a full-width result; sharing the u8 implementation signature adds a mask and regresses BtlUnit_snd_se_pos.
@@ -214,11 +212,6 @@ __declspec(section ".sdata") u32 unk_80423080;
 
 extern BattleWork* _battleWorkPointer;
 
-#ifdef MUST_MATCH
-#define INIT_EXIST_ARG(i) ((u32)(i))
-#else
-#define INIT_EXIST_ARG(i) (i)
-#endif
 extern u32 unk_80423080;
 typedef struct BattleAudienceTexCoords {
 	f32 v[32];
@@ -274,7 +267,7 @@ BattleAudienceSound* BattleAudienceSoundGetPtr(s32 id) {
 }
 #pragma dont_inline reset
 
-// MUST_MATCH: the retail Init passes an unsigned index to GetExist (same asm, different scheduling).
+// The retail Init passes an unsigned index to GetExist (same asm, different scheduling).
 void BattleAudience_Init(void) {
 	BattleAudience* audience;
 	BattleAudienceWindow* window;
@@ -299,7 +292,7 @@ void BattleAudience_Init(void) {
 	for (i = 0; i < 10; i++) {
 		for (j = 0; j < 10; j++) {
 			index = (i * 20) + j + 10;
-			if ((u8)BattleAudience_GetExist(INIT_EXIST_ARG(index)) == 1) {
+			if ((u8)BattleAudience_GetExist((u32)index) == 1) {
 				status = BattleAudienceGetPtr(index)->status;
 				if (status != 12 && status != 11) { //TODO: add status enum
 					audience->mCurrentAudienceIntCountRight++;
@@ -311,7 +304,7 @@ void BattleAudience_Init(void) {
 	for (i = 0; i < 10; i++) {
 		for (j = 0; j < 10; j++) {
 			index = (i * 20) + j;
-			if ((u8)BattleAudience_GetExist(INIT_EXIST_ARG(index)) == 1) {
+			if ((u8)BattleAudience_GetExist((u32)index) == 1) {
 				status = BattleAudienceGetPtr(index)->status;
 				if (status != 12 && status != 11) { //TODO: add status enum
 					audience->mCurrentAudienceIntCountLeft++;
@@ -1168,12 +1161,8 @@ void BattleAudienceSettingAudience(void) {
 	setupBase = (u8*)_battleWorkPointer->fbatInfo->setup + offsetof(NpcBattleInfo, audienceMode);
 	pouch = pouchGetPtr();
 
-#ifdef MUST_MATCH
 	*(BattleAudienceDeltaMultiplierTable*)deltaMultiplier =
 	    *(const BattleAudienceDeltaMultiplierTable*)R_audience_delta_multiplier;
-#else
-	memcpy(deltaMultiplier, R_audience_delta_multiplier, sizeof(deltaMultiplier));
-#endif
 
 	switch (pouch->rank) {
 	case 0:
@@ -1260,11 +1249,7 @@ void BattleAudienceSettingAudience(void) {
 		mode = 1;
 		break;
 	default: {
-#ifdef MUST_MATCH
 		*(BattleAudienceTypeWeights*)typeWeights = *(const BattleAudienceTypeWeights*)R_num_audience_type_weights;
-#else
-		memcpy(typeWeights, R_num_audience_type_weights, sizeof(typeWeights));
-#endif
 		sum = 0;
 		j = irand(100);
 		maxKinds = 12;
@@ -1500,11 +1485,7 @@ void BattleAudienceGuestTPLRead(s32 id, AudienceMemberType member, const char* p
 
 // 100%: writing the first loop's index as `j + i * 20 + 10` (instead of `i * 20 + 10 + j`) and
 // declaring `s32 r;` immediately after `wp` (before every other local) put `wpHigh` (wp + 0x20000)
-// in r27 and `r` in r28 as the original does. The last hold-out was the `wp->flags & 0x80` tail:
-// MWCC merged the `audience + 0x137F0` base of the increment with the compare/switch above into one
-// callee-saved register (r30, wp's dead register), while retail recomputes it in a caller-saved
-// temp. Reading the increment through `&audience->window + 0x94` (the same address) breaks the
-// merge; see the MUST_MATCH block below.
+// in r27 and `r` in r28 as the original does.
 void BattleAudienceCtrlProcess(void) {
 	BattleWork* wp = _battleWorkPointer;
 	s32 r;
@@ -1643,14 +1624,7 @@ void BattleAudienceCtrlProcess(void) {
 				}
 				for (i = 0; i < 200; i++) {
 					if (BattleAudienceItemOn(order[i], 0, 1) == 1) {
-#ifdef MUST_MATCH
-						// Match-only: the window-relative spelling of this field's address keeps MWCC
-						// from merging it with the compare/switch above into one callee-saved base
-						// (retail recomputes it in a caller-saved temp). 0x137F0 - 0x1375C == 0x94.
-						(*(s32*)((unsigned char*)&audience->window + 0x94))++;
-#else
 						(audience->itemThrowCount)++;
-#endif
 						break;
 					}
 				}
@@ -1817,27 +1791,22 @@ BattleUnit* BattleAudienceDetectTargetPlayer(void) {
 // `while`/`for` rotated the condition to the bottom). What got it to 98.46%:
 //  - every `float_*_8041e6xx` external was replaced by its literal (0.0f, 1.0f, 10.0f, …), which is what the
 //    original source used: with literals MWCC colours the FP registers as the target does;
-//  - `tbl` (lbl_80399940) is initialised first and `i` is declared right after it, so the base pointer is
-//    hoisted into r29 and the saved-GPR assignment matches the original exactly;
 //  - the outer `if (item+0x44)` was inverted so the else body is the fall-through branch;
 //  - the `case 0` vecA block is written/ordered so MWCC's scheduler reproduces the original's float
-//    load/store schedule (wrapped in MUST_MATCH; the #else order is the natural one);
+//    load/store schedule (see the statement order of the MUST_MATCH block there);
 //  - the case-0 vecA block copies the zero Vec from a compound-literal rvalue (the
 //    `battleAudienceItemZeroVec` helper above), not from a named global: MWCC then emits the
 //    template object at the helper's source position, which is the original `vec3_802f972c`
 //    .rodata slot, and schedules the arithmetic `y, z, x` like the original instead of `z, x, y`.
 //    The helper's position is load-bearing (the template's offset follows it), so it sits with
-//    the data, not above this function; the `#else` keeps the natural named-object form.
-//  - the case-3 inner `if (0x44 == 2)` jumps straight to the case-4 body like the original (MUST_MATCH
+//    the data, not above this function;
+//  - the case-3 inner `if (0x44 == 2)` jumps straight to the case-4 body like the original (a
 //    `goto`; without it MWCC falls through the `state != 4` check, 1 instruction);
 //  - the deactivate path reuses `member` for the second `BattleAudienceGetPtr` call, which is what the
 //    original did (it materialises -1 in r0, not r22).
 // 100%: every call, immediate, value, branch and the case-0 scheduling match.
 #pragma dont_inline on
 void BattleAudienceItemCtrlProcess(void) {
-#ifdef MUST_MATCH
-	u8* tbl = (u8*)lbl_80399940;
-#endif
 	s32 i;
 	BattleWork* wp = _battleWorkPointer;
 	BattleAudience* audience = BattleAudienceBaseGetPtr();
@@ -2035,35 +2004,19 @@ void BattleAudienceItemCtrlProcess(void) {
 					BattleAudience_SetPresentTargetUnitId(BtlUnit_GetUnitId(unit));
 					switch (item->mItemType) {
 					case 0xec:
-						#ifdef MUST_MATCH
-						memcpy(&audience->itemWeapon, tbl + 0x40, 0xc0);
-#else
 						memcpy(&audience->itemWeapon, weapon_data_akikan, 0xc0);
-#endif
 						audience->itemWeapon.hpDamageWork[0] += audience->itemCombo - 1;
 						break;
 					case 0xed:
-						#ifdef MUST_MATCH
-						memcpy(&audience->itemWeapon, tbl + 0x100, 0xc0);
-#else
 						memcpy(&audience->itemWeapon, weapon_data_brick, 0xc0);
-#endif
 						audience->itemWeapon.hpDamageWork[0] += audience->itemCombo - 1;
 						break;
 					case 0xee:
-						#ifdef MUST_MATCH
-						memcpy(&audience->itemWeapon, tbl + 0x1c0, 0xc0);
-#else
 						memcpy(&audience->itemWeapon, weapon_data_bone, 0xc0);
-#endif
 						audience->itemWeapon.hpDamageWork[0] += audience->itemCombo - 1;
 						break;
 					case 0xef:
-						#ifdef MUST_MATCH
-						memcpy(&audience->itemWeapon, tbl + 0x280, 0xc0);
-#else
 						memcpy(&audience->itemWeapon, weapon_data_hammer, 0xc0);
-#endif
 						audience->itemWeapon.hpDamageWork[0] += audience->itemCombo - 1;
 						break;
 					}
@@ -2409,13 +2362,7 @@ BOOL BattleAudienceApSrcEntry(void) {
 // (f32)audience->mCurrentAudienceIntCount - diff;`) gets one more instruction to match than the plain one-liner.
 // Writing the zero test constant-first (`0.0f != diff`) makes objdiff's first `fcmpu` operand order match
 // (the constant is FRA) and is worth 95.87 -> 95.91.
-#ifdef MUST_MATCH
-// Match-only: a named local for the repeated 0.0f constant hoists its load like the original, which
-// shifts the first cast and both clamp blocks into the original's FP registers.
-#define BA_ZERO zero
-#else
 #define BA_ZERO 0.0f
-#endif
 #pragma dont_inline on
 // The zero test is constant-first for the target's `(f0, diff)` operand order, the branches use
 // literal 0.0f so the target's four separate `lfs` reloads reappear, and `step` is a function-scope
@@ -2468,24 +2415,12 @@ void BattleAudienceWinCtrlProcess(void) {
 
 	window->posX =
 	    intplGetValue(4, window->slide, 0xF, -500.0f, -280.0f);
-#ifdef MUST_MATCH
-	// Match-only: the volatile read pins the -160 load ahead of the 0.0f one in the scheduled block,
-	// which is the target's order; the #else form is the natural pair of copies.
-	{
-		f32 b;
-		f32 a = -160.0f;
-		b = 0.0f;
-		window->posY = a;
-		*(f32*)((u8*)window + 0x10) = b;
-	}
-#else
 	{
 		f32 a = -160.0f;
 		f32 b = 0.0f;
 		window->posY = a;
 		*(f32*)((u8*)window + 0x10) = b;
 	}
-#endif
 }
 #pragma dont_inline reset
 #undef BA_ZERO
@@ -2594,10 +2529,9 @@ void BattleAudienceAnimProcess(void) {
 }
 #pragma dont_inline reset
 
-#ifdef MUST_MATCH
 // Same idea as BattleAudienceDispApSrc_color below: routing the colour through an inline puts the
-// named local at r1+0x8 and the hidden by-value copy at r1+0xc, matching the original. The #else
-// plain assignment puts them the other way round.
+// named local at r1+0x8 and the hidden by-value copy at r1+0xc, matching the original; a plain
+// assignment puts them the other way round.
 static inline GXColor BattleAudienceDispAudience_color(u8 r, u8 g, u8 b, u8 a) {
 	GXColor color = *(GXColor*)&unk_80423080;
 	color.r = r;
@@ -2606,7 +2540,6 @@ static inline GXColor BattleAudienceDispAudience_color(u8 r, u8 g, u8 b, u8 a) {
 	color.a = a;
 	return color;
 }
-#endif
 
 #pragma dont_inline on
 void BattleAudienceDispAudience(CameraId camId, void* param) {
@@ -2824,15 +2757,7 @@ void BattleAudienceDispAudience(CameraId camId, void* param) {
 			texBase += 4;
 		}
 
-#ifdef MUST_MATCH
 		color = BattleAudienceDispAudience_color(cr, cg, cb, ca);
-#else
-		color = *(GXColor*)&unk_80423080;
-		color.r = cr;
-		color.g = cg;
-		color.b = cb;
-		color.a = ca;
-#endif
 		GXSetChanMatColor(GX_COLOR0A0, color);
 
 		GXBegin(GX_QUADS, GX_VTXFMT0, 4);
@@ -2887,14 +2812,12 @@ void BattleAudienceDispItem(CameraId camId, void* param) {
 #pragma dont_inline reset
 
 // The inline's returned colour lands where the original keeps it: the named local at r1+0x8,
-// the hidden by-value copy at r1+0xc. The plain assignment (the #else arm) puts them the other way round.
-#ifdef MUST_MATCH
+// the hidden by-value copy at r1+0xc. A plain assignment puts them the other way round.
 static inline GXColor BattleAudienceDispApSrc_color(u8 alpha) {
 	GXColor color = *(GXColor*)&dat_8041e608;
 	color.a = alpha;
 	return color;
 }
-#endif
 
 #pragma dont_inline on
 void BattleAudienceDispApSrc(CameraId camId, void* param) {
@@ -2922,12 +2845,7 @@ void BattleAudienceDispApSrc(CameraId camId, void* param) {
 			PSMTXTrans(trans, star->pos.x, star->pos.y, 0.0f);
 			PSMTXConcat(scale, rot, mtx);
 			PSMTXConcat(trans, mtx, mtx);
-#ifdef MUST_MATCH
 			color = BattleAudienceDispApSrc_color(star->alpha);
-#else
-			color = *(GXColor*)&dat_8041e608;
-			color.a = star->alpha;
-#endif
 			iconDispGxCol(mtx, 0x10, 0x1B2, color);
 		}
 		star++;
@@ -3522,32 +3440,18 @@ s32 BattleAudience_NoUsedFCHaitiRand(void) {
 
 	BattleAudienceBaseGetPtr();
 	pouch = pouchGetPtr();
-#ifdef MUST_MATCH
 	// A named rank (read before the const-table copies) reproduces the original's
 	// `lha` placement and frees r3 for the copy loops; `pouch->rank` inline sinks.
 	pouchRank = pouch->rank;
 	count = 0;
 	total = 0;
-#else
-	count = 0;
-	total = 0;
-#endif
-#ifdef MUST_MATCH
 	{
 		*(BattleAudienceHaitiRateTable*)rate = *(const BattleAudienceHaitiRateTable*)dat_802f9884;
 	}
 	{
 		*(BattleAudienceHaitiOffsetTable*)offset = *(const BattleAudienceHaitiOffsetTable*)dat_802f98ac;
 	}
-#else
-	memcpy(rate, dat_802f9884, sizeof(rate));
-	memcpy(offset, dat_802f98ac, sizeof(offset));
-#endif
-#ifdef MUST_MATCH
 	haiti = haiti_data[pouchRank];
-#else
-	haiti = haiti_data[pouch->rank];
-#endif
 	for (i = 0; i < 10; i++) {
 		start = (20 - haiti[i]) / 2;
 		j = 0;
@@ -3636,12 +3540,8 @@ s32 BattleAudience_GetPPAudienceNum_RL_Sub(s32 offset) {
 	count = 0;
 	for (i = 0, akk = 0; i < 10; i++) {
 		for (j = 0; j < 10; j++) {
-// MUST_MATCH: this operand order makes MWCC emit `akk+offset` then `j+...`, as the original does.
-#ifdef MUST_MATCH
+// This operand order makes MWCC emit `akk+offset` then `j+...`, as the original does.
 			if (BattleAudience_GetPPAudienceNum_Sub(j + akk + offset) == 1) {
-#else
-			if (BattleAudience_GetPPAudienceNum_Sub(akk + (offset + j)) == 1) {
-#endif
 				count++;
 			}
 		}
@@ -4087,15 +3987,11 @@ void BattleAudienceJoyEnding(void) {
 	BattleAudienceJoy(3);
 }
 
-#ifdef MUST_MATCH
-// Match-only: the third bound's `(a + b) + c` must keep its operands in that order; written
+// The third bound's `(a + b) + c` must keep its operands in that order; written
 // directly MWCC commutes the final add to `c + (a + b)`. The inlined add leaves the tree alone.
 static inline s32 BattleAudienceJoyAdd2(s32 x, s32 y) {
 	return x + y;
 }
-#else
-#define BattleAudienceJoyAdd2(x, y) ((x) + (y))
-#endif
 
 #pragma opt_loop_invariants off // needed: keep a,b,c,d live and recompute the branch bounds each iteration
 #pragma opt_propagation off // needed: keep `sum = b + c;` and `sum = a + sum;` separate so the second add keeps `a` first
@@ -4573,20 +4469,14 @@ void BattleAudienceSoundHandBeat(void) {
 		sound->mForceFadeLength = 0;
 		sound->mForceFadeTimer = 0;
 		vol = 0;
-// MUST_MATCH: writing the guard as total==0 (else compute) is what makes MWCC lay the
+// Writing the guard as total==0 (else compute) is what makes MWCC lay the
 // compute block out-of-line (bne+b); the equivalent total!=0 form picks the beq layout.
-#ifdef MUST_MATCH
 		if (total == 0) {
 			vol = 0;
 		}
 		else {
 			vol = (s32)(75.0f + ((f32)total * (26.0f + (f32)irand(26))) / 200.0f);
 		}
-#else
-		if (total != 0) {
-			vol = (s32)(75.0f + ((f32)total * (26.0f + (f32)irand(26))) / 200.0f);
-		}
-#endif
 		psndSFX_vol(AUD_SOUND_ID(sound), vol);
 		sound->mCurrentBaseSfxVolume = vol;
 		sound->mBaseSfxVolume = vol;
@@ -5247,7 +5137,6 @@ void BattleAudience_Case_FallObject_Aud(s32 index, u8 type) {
 	s32 id;
 	f32 one = 1.0f;
 
-#ifdef MUST_MATCH
 	// Struct assignment gives the original's lwzu/stwu copy loop; memcpy doesn't.
 	{
 		*(BattleAudienceFallOffsetTable1*)tbl1 = *(const BattleAudienceFallOffsetTable1*)dat_802f98fc;
@@ -5255,10 +5144,6 @@ void BattleAudience_Case_FallObject_Aud(s32 index, u8 type) {
 	{
 		*(BattleAudienceFallOffsetTable2*)tbl2 = *(const BattleAudienceFallOffsetTable2*)dat_802f993c;
 	}
-#else
-	memcpy(tbl1, dat_802f98fc, sizeof(tbl1));
-	memcpy(tbl2, dat_802f993c, sizeof(tbl2));
-#endif
 
 	switch (type) {
 	case 0:
