@@ -1193,8 +1193,7 @@ vel_apply:
                                      toMovedir(mario->unk1A8), 90.0f);
 #endif
         f32 t = mario->baseSpeed * rate;
-        mario->dispRot.z = revise360(t * ((r == 1) ? -1.0f : 1.0f) +
-                                                 mario->dispRot.z);
+        mario->dispRot.z = revise360(t * ((r == 1) ? -1.0f : 1.0f) + mario->dispRot.z);
     }
 
     if (mario->forceMoveTimer != 0) {

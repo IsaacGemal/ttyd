@@ -790,7 +790,7 @@ void kpaFireAttack(void) {
         KPA(mp)->attackMode = 0x14;
         if (!(mp->flags & 0x20)) {
             mp->baseSpeed = 0.0f;
-            MW_F32(mp, 0x2C4) = 0.0f;
+            mp->kpaSpeed = 0.0f;
         }
         // fallthrough
     case 0x14:
@@ -870,7 +870,7 @@ void kpaFireAttack(void) {
         KPA(mp)->attackMode = 0x28;
         if (!(mp->flags & 0x20)) {
             mp->baseSpeed = 0.0f;
-            MW_F32(mp, 0x2C4) = 0.0f;
+            mp->kpaSpeed = 0.0f;
         }
         // fallthrough
     case 0x28:

@@ -10096,11 +10096,11 @@ Matching build OK (ok file recreated on the tower); seq_load.c, nameent.c and ev
 
 New names in `include/mario/mario.h`, each traced to its readers and writers: `rollScaleY` (0x130, f32; mot_roll's
 squash/stretch state machine writes 1.0, 1.4 and 0.4, mario.c's two `PSMTXScale` calls read it, both updated);
-`kpaSpeed` (0x2C4, f32, the signed walk/swim speed read and written by koopa_motion's kpaWalk and kpaSwimMove; koopa.c
-resets it to 0 and stays raw); `rollFlags` (0x2A4 union member, u32; mot_roll's bits 0x10, 0x20, 0x100, 0x200, 0x1000,
-0x4000, 0x10000); `jabaraHitY` (0x2A8 union member, s32; mot_jabara stores `sp3C + wPlayerCollisionBox.y` and reads it
-as an f32 for position.y); `jabaraSpeed` and `jabaraAccel` (0x2B0 and 0x2B4 union members beside `field_0x2B0` and
-`field_0x2B4`, so party_yoshi and peach.c are unchanged: each frame accel is added to speed, and speed to dispRot.x).
+`kpaSpeed` (0x2C4, f32, the signed walk/swim speed read and written by koopa_motion's kpaStickSpd and kpaSwimMove; koopa.c's
+two resets converted too); `rollFlags` (0x2A4 union member, u32; mot_roll's bits 0x10, 0x20, 0x100, 0x200, 0x1000,
+0x4000, 0x10000); `jabaraHitY` (0x2A8 union member, s32; mot_jabara stores `(s32)(sp3C + wPlayerCollisionBox.y)`,
+truncating the hit top to whole units, and converts it back with `(f32)` for position.y); `jabaraSpeed` and
+`jabaraAccel` (0x2B0 and 0x2B4 union members beside `field_0x2B0` and `field_0x2B4`, so party_yoshi and peach.c are unchanged: each frame accel is added to speed, and speed to dispRot.x).
 Existing fields now used: dispOfs/dispPivot/dispRot x/y/z (0x98-0xC4 in mot_roll and mot_jabara), moveDir (0x19C),
 airTimerPeak (0x52, koopa_motion and mot_jabara), hitobjHead (0x1F4, mot_roll), field_0x11C.y (0x120), field_0x1C4,
 motionSfxId1 (mot_roll).
@@ -10108,8 +10108,10 @@ motionSfxId1 (mot_roll).
 Left, and why:
 - mot_roll's 0x2A8 reads stay unsigned (`(u32)m->motionSfxId1`): the original tests them against 0xFFFFFFFF. Stores of
   integer 0 to 0x2AC, 0x2B0 and 0x2B4 stay raw, since an f32 field would change the store from an integer to an `lfs`.
-- 0x1F0 (a `void*` HitEntry in koopa_motion and mot_roll): the header puts hitobjPush at 0x1EC JP and 0x1F0 US, so the
-  JP name is unresolved.
+- 0x1F0 (a `void*` HitEntry in koopa_motion and mot_roll) is not hitobjPush on G8MJ01: hitobjPush is 0x1EC JP (the
+  4-byte JP/US shift that also moves hitobjStandOn and hitobjJumpFrom; casedrv and mot_walk read it there). mario_hit
+  sets 0x1F0 to every wall searchFrontWall touches, but hitobjPush only for bero walls or after 20 frames of pushing.
+  No name yet beyond the header comment; it has readers in mario_hit, party_yoshi, mot_ship and koopa.c too.
 - koopa_motion's 0x2A0 is a u16 counter over the spinSpeed/damageRootY union; no member added. 0x18C (a speed copied
   from baseSpeed), 0x78 and 0x7A have no proven name.
 - mot_jabara's 0x41, 0x42, 0x2BA and 0x2BB are per-motion state bytes with no proven names. 0x114 and 0x1F4 keep their
