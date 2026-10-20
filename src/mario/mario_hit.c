@@ -725,7 +725,7 @@ void marioChkGnd2(void) {
         wp->position.y = outY;
         wp->flags &= ~0xC0;
         wp->airTimer = 0;
-        *(s16*)wp->field_0x52 = 0;
+        wp->airTimerPeak = 0;
 
         if (wp->characterId == 2) {
             if (wp->controlStickSensitivity || kpaFireAttackCheck() == 0) {
@@ -1902,7 +1902,7 @@ void marioCheckWall(f32 a, f32 b) {
                 wp->wallYaw = b;
             }
         }
-        *(f32*)wp->unk19C = wp->wallYaw;
+        wp->moveDir = wp->wallYaw;
     } else {
         wp->wallDist = 0.0f;
     }
@@ -2056,7 +2056,7 @@ void marioCheckWall_roll(f32 a, f32 b) {
     }
 
     if (a && wp->airTimer == 0) {
-        *(f32*)&wp->unk19C[0] = wp->wallYaw;
+        wp->moveDir = wp->wallYaw;
     }
 
     if (wp->flags & 0x10000) {
@@ -2980,7 +2980,7 @@ void marioCheckWallShip(f32 a, f32 b) {
     }
 
     if (a && wp->airTimer == 0) {
-        *(f32*)wp->unk19C = wp->wallYaw;
+        wp->moveDir = wp->wallYaw;
     }
 
     if (!a) {

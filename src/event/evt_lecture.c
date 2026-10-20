@@ -54,7 +54,7 @@ USER_FUNC(lect_cam_save) {
     stMdir1 = mario->unk1A8;
     stMdir2 = mario->dispReqDir;
     stMdir3 = mario->directionView;
-    stMdir4 = *(f32*)mario->unk19C;
+    stMdir4 = mario->moveDir;
 
     if (party != NULL) {
         stPpos = party->position;
@@ -94,7 +94,7 @@ USER_FUNC(lect_cam_load) {
     mario->unk1A8 = stMdir1;
     mario->dispReqDir = stMdir2;
     mario->directionView = stMdir3;
-    *(f32*)mario->unk19C = stMdir4;
+    mario->moveDir = stMdir4;
 
     if (party != NULL) {
         party->position = stPpos;

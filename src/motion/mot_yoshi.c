@@ -43,12 +43,12 @@ void mot_yoshi_post(void) {
 #ifdef MUST_MATCH
     *(volatile s32*)&mario->dispFlags &= ~0x4;
     *(volatile s32*)&mario->dispFlags &= ~0x1000;
-    *(volatile Vec*)&mario->field_0x98[0] = *(volatile Vec*)&vec3_802f32e0;
-    *(volatile Vec*)&mario->field_0x98[0xC] = *(volatile Vec*)&vec3_802f32ec;
+    *(volatile Vec*)&mario->dispOfs = *(volatile Vec*)&vec3_802f32e0;
+    *(volatile Vec*)&mario->dispOfs2 = *(volatile Vec*)&vec3_802f32ec;
 #else
     mario->dispFlags &= ~0x4;
     mario->dispFlags &= ~0x1000;
-    *(Vec*)&mario->field_0x98[0] = vec3_802f32e0;
-    *(Vec*)&mario->field_0x98[0xC] = vec3_802f32ec;
+    mario->dispOfs = vec3_802f32e0;
+    mario->dispOfs2 = vec3_802f32ec;
 #endif
 }

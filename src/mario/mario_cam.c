@@ -173,10 +173,10 @@ void marioUpdateCam(void) {
             // The original emits the .x, .z, .y stores in this order; the natural .x, .y, .z order schedules differently.
             mario->field_EC.x = mario->position.x + sin * mario->unk13C;
             mario->field_EC.z = mario->position.z + cos * mario->unk13C;
-            mario->field_EC.y = mario->position.y + *(f32*)(mario->field_0x98 + 4) + mario->unk144;
+            mario->field_EC.y = mario->position.y + mario->dispOfs.y + mario->unk144;
 #else
             mario->field_EC.x = mario->position.x + sin * mario->unk13C;
-            mario->field_EC.y = mario->position.y + *(f32*)(mario->field_0x98 + 4) + mario->unk144;
+            mario->field_EC.y = mario->position.y + mario->dispOfs.y + mario->unk144;
             mario->field_EC.z = mario->position.z + cos * mario->unk13C;
 #endif
             if (mario->currMotionId == MARIO_MOTION_SHIP) {

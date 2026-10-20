@@ -714,7 +714,7 @@ s32 mario_set_dir(EventEntry* event, BOOL isFirstCall) {
     MarioWork* mario = marioGetPtr();
 
     if (isFirstCall) {
-        event->userdataf[1] = *(f32*)mario->unk19C;
+        event->userdataf[1] = mario->moveDir;
         event->userdataf[2] = evtGetFloat(event, args[0]) - event->userdataf[1];
         event->field_84 = evtGetValue(event, args[1]);
         mario->multiTimer = 0;
@@ -727,11 +727,11 @@ s32 mario_set_dir(EventEntry* event, BOOL isFirstCall) {
     }
     if ((s32)event->field_84 > 0) {
         mario->multiTimer++;
-        *(f32*)mario->unk19C = reviseAngle(event->userdataf[1] +
+        mario->moveDir = reviseAngle(event->userdataf[1] +
             event->userdataf[2] * (f32)mario->multiTimer / (f32)(s32)event->field_84);
         return mario->multiTimer >= (s32)event->field_84;
     }
-    *(f32*)mario->unk19C = reviseAngle(*(f32*)mario->unk19C + event->userdataf[2]);
+    mario->moveDir = reviseAngle(mario->moveDir + event->userdataf[2]);
     return EVT_RETURN_DONE;
 }
 

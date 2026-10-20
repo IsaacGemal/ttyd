@@ -1693,7 +1693,7 @@ s32 partyDokanInit(PartyEntry* party) {
             PF32(party, 0x124) = -26.0f;
             party->motionStep = 0xa;
             PF32(party, 0x8C) = 10.0f;
-            PF32(party, 0x64) = revise360(180.0f + PF32(player, 0xBC)); // 0xBC: inside MarioWork field_0x98
+            PF32(party, 0x64) = revise360(180.0f + PF32(player, 0xBC)); // 0xBC: MarioWork dispRot.x
             break;
         default:
             break;
@@ -1723,7 +1723,7 @@ s32 partyDokanInit(PartyEntry* party) {
     animPoseSetMaterialLightFlagOff(party->paperAnimGroup, 1);
     party->field_110 = revise360(180.0f + player->unk1A8);
     party->field_10C = player->unk1A8;
-    party->field_FC = PF32(player, 0x19C); // 0x19C: inside MarioWork unk19C
+    party->field_FC = PF32(player, 0x19C); // 0x19C: MarioWork moveDir
     party->position = player->position;
     L_partyVivianTailStop(party);
     return 0;
