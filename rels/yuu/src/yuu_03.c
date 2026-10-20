@@ -51,9 +51,6 @@ extern s32 yuuranking_get_monte_31_text_51C0[];
 extern s32 yuuranking_wait_button_31_text_51F8[];
 static f32 randf(f32 min, f32 max);
 static void polygon(f32 x, f32 y, f32 w, f32 h, f32 u, f32 v);
-#ifdef MUST_MATCH
-static Vec makeVecB(f32 x, f32 y, f32 z);
-#endif
 static s32 evt_nomal_cange(EventEntry* event, BOOL isFirstCall);
 
 // .bss emission order is the reverse of declaration order; reverse the four globals so the
@@ -515,7 +512,6 @@ static void polygon(f32 x, f32 y, f32 w, f32 h, f32 u, f32 v) {
     GXTexCoord2f32(0.0f, v);
 }
 
-#ifdef MUST_MATCH
 // Passing the base colour by value puts the built colour and its by-value copy in the original's stack slots.
 static inline GXColor ryushiColor0(GXColor c, u32 r, u32 g, u32 b) {
     c.r = r;
@@ -532,7 +528,6 @@ static inline GXColor ryushiColor1(u32 r, u32 g, u32 b, u32 a) {
     c.a = a;
     return c;
 }
-#endif
 
 // The colour helpers and the angle expression are written to reproduce the original's stack slots and
 // instruction schedule; the plain forms are under #else (see the comments in the body).
@@ -557,17 +552,7 @@ void ryushi_disp(CameraId cameraId, void* param) {
     PSMTXConcat(mtx, rot, mtx);
     effGetTexObj(0x1E, &texObj);
     GXLoadTexObj(&texObj, 0);
-#ifdef MUST_MATCH
     GXSetTevColor(2, ryushiColor0(*(GXColor*)&zero_yuu_00014160, entry->unk38, entry->unk3C, entry->unk40));
-#else
-    {
-        GXColor color = *(GXColor*)&zero_yuu_00014160;
-        color.r = entry->unk38;
-        color.g = entry->unk3C;
-        color.b = entry->unk40;
-        GXSetTevColor(2, color);
-    }
-#endif
     GXSetNumChans(0);
     GXSetChanCtrl(4, 0, 0, 0, 0, 0, 2);
     GXSetNumTexGens(1);
@@ -597,26 +582,11 @@ void ryushi_disp(CameraId cameraId, void* param) {
         if (entryScale == zeroScale) {
             continue;
         }
-#ifdef MUST_MATCH
         GXSetTevColor(1, ryushiColor1((s32)swayAmplitude, colorG, colorB, entry->unk20));
-#else
-        {
-            GXColor color = *(GXColor*)&zero_yuu_00014164;
-            color.r = (s32)swayAmplitude;
-            color.g = colorG;
-            color.b = colorB;
-            color.a = entry->unk20;
-            GXSetTevColor(1, color);
-        }
-#endif
         {
             // The target computes these as reciprocals of powers of two; the divisions schedule the constant
             // loads the way the original does. The result is identical to z*0.125 and 3.14*i*0.25.
-#ifdef MUST_MATCH
             f32 t = (entry->z / 8.0f + 3.14f * (f32)i / 4.0f) / 3.14f;
-#else
-            f32 t = (3.14f * (f32)i * 0.25f + entry->z * 0.125f) / 3.14f;
-#endif
             f32 d = 180.0f * t;
             s32 k = (s32)(d / 360.0f);
             if (d < 0.0f) {
@@ -680,9 +650,7 @@ USER_FUNC(evt_ryushi_clr) {
     RyushiEntry* entry = xwp;
     s32 i;
     s32 entryCount = ryuwp;
-#ifdef MUST_MATCH
     f32 half = 0.5f;
-#endif
 
     entry->unk04 = evtGetValue(event, *args++);
     entry->unk24 = 0;
@@ -706,11 +674,7 @@ USER_FUNC(evt_ryushi_clr) {
         gridX = (i - 1) % 10;
         gridY = ((i - 1) / 10) % 6;
         gridZ = (i - 1) / 60;
-#ifdef MUST_MATCH
         entry->unk08 = xwp->unk08 * half * ((gridY + gridZ) & 1) + ((f32)gridX * xwp->unk08 - xwp->unk08 * 4.5f);
-#else
-        entry->unk08 = xwp->unk08 * 0.5f * ((gridY + gridZ) & 1) + ((f32)gridX * xwp->unk08 - xwp->unk08 * 4.5f);
-#endif
         entry->unk0C = (f32)gridY * xwp->unk0C - xwp->unk0C * 2.5f;
         entry->unk10 = (f32)gridZ * xwp->unk10 - xwp->unk10 * 1.5f;
         hi = 0.3f * xwp->unk08;
@@ -719,17 +683,12 @@ USER_FUNC(evt_ryushi_clr) {
         hi = 0.3f * xwp->unk0C;
         lo = 0.3f * -xwp->unk0C;
         entry->y = entry->unk0C + randf(lo, hi);
-#ifdef MUST_MATCH
-        // Match-only dependency: folding the negation through `zSpacing` makes MWCC emit both
+        // Folding the negation through `zSpacing` makes MWCC emit both
         // 0.3f products before the rand call (the natural form defers the max product).
         zSpacing = xwp->unk10;
         hi = 0.3f * zSpacing;
         zSpacing = -zSpacing;
         lo = 0.3f * zSpacing;
-#else
-        hi = 0.3f * xwp->unk10;
-        lo = 0.3f * -xwp->unk10;
-#endif
         entry->z = entry->unk10 + randf(lo, hi);
         entry->scale = 0.5f;
     }
@@ -748,7 +707,6 @@ USER_FUNC(evt_ryushi_clr) {
 
 
 // inline Vec build reproduces the target's vec3->temp->pos copy (rule 7)
-#ifdef MUST_MATCH
 static inline Vec makeVecB(f32 x, f32 y, f32 z) {
     Vec v = vec3_yuu_00014168;
     v.x = x;
@@ -756,7 +714,6 @@ static inline Vec makeVecB(f32 x, f32 y, f32 z) {
     v.z = z;
     return v;
 }
-#endif
 
 // `opt_lifetimes off` is needed: with the default pass the persistent floats land in a
 // different callee-saved block (f28-f31 instead of f20-f23) and the frame grows by 16 bytes.
@@ -766,7 +723,6 @@ USER_FUNC(evt_ryushi) {
     Yuuminigame4Data* data;
     RyushiEntry* emitter = xwp;
     Vec emitterPos;
-#ifdef MUST_MATCH
     // Allocation-steering locals. MWCC colours callee-saved FP registers by the order
     // locals are declared, and the inlined randf scratches need names to land in
     // f24/f25. The declaration order below is load-bearing: it is what puts the
@@ -775,25 +731,16 @@ USER_FUNC(evt_ryushi) {
     f32 t2;
     f32 t0;
     f32 t3;
-#endif
     f32 entryScale;
-#ifdef MUST_MATCH
     f32 half;
     f32 t1;
-#endif
     f32 zSpeed;
     f32 alphaFactor;
     f32 cameraX;
     RyushiEntry* entry;
     s32 i;
 
-#ifdef MUST_MATCH
     emitterPos = makeVecB(emitter->x, emitter->y, emitter->z);
-#else
-    emitterPos.x = emitter->x;
-    emitterPos.y = emitter->y;
-    emitterPos.z = emitter->z;
-#endif
 
     zSpeed = 0.0f;
     alphaFactor = zSpeed;
@@ -843,12 +790,8 @@ USER_FUNC(evt_ryushi) {
             emitter->unk20 /= 2;
         }
     }
-#ifdef MUST_MATCH
     half = 0.5f;
     entryScale = half * entryScale;
-#else
-    entryScale = 0.5f * entryScale;
-#endif
 
     {
     entry = &emitter[1];
@@ -857,7 +800,6 @@ USER_FUNC(evt_ryushi) {
         case 0:
             entry->z -= zSpeed;
             if (entry->z < -200.0f) {
-#ifdef MUST_MATCH
                 t1 = 0.3f * xwp->unk08;
                 t0 = 0.3f * -xwp->unk08;
                 entry->x = entry->unk08 + randf(t0, t1);
@@ -867,17 +809,11 @@ USER_FUNC(evt_ryushi) {
                 t2 = 0.3f * xwp->unk10;
                 t3 = 0.3f * -xwp->unk10;
                 entry->z = 200.0f + randf(t3, t2);
-#else
-                entry->x = entry->unk08 + randf(0.3f * -xwp->unk08, 0.3f * xwp->unk08);
-                entry->y = entry->unk0C + randf(0.3f * -xwp->unk0C, 0.3f * xwp->unk0C);
-                entry->z = 200.0f + randf(0.3f * -xwp->unk10, 0.3f * xwp->unk10);
-#endif
             }
             break;
         case 1:
             entry->z += zSpeed;
             if (entry->z > 200.0f) {
-#ifdef MUST_MATCH
                 t0 = 0.3f * xwp->unk08;
                 t3 = 0.3f * -xwp->unk08;
                 entry->x = entry->unk08 + randf(t3, t0);
@@ -887,11 +823,6 @@ USER_FUNC(evt_ryushi) {
                 t2 = 0.3f * xwp->unk10;
                 t1 = 0.3f * -xwp->unk10;
                 entry->z = -200.0f + randf(t1, t2);
-#else
-                entry->x = entry->unk08 + randf(0.3f * -xwp->unk08, 0.3f * xwp->unk08);
-                entry->y = entry->unk0C + randf(0.3f * -xwp->unk0C, 0.3f * xwp->unk0C);
-                entry->z = -200.0f + randf(0.3f * -xwp->unk10, 0.3f * xwp->unk10);
-#endif
             }
             break;
         }
@@ -902,11 +833,7 @@ USER_FUNC(evt_ryushi) {
 #else
             f32 entryX = entry->x;
 #endif
-#ifdef MUST_MATCH
             f32 cellOffset = (entryX - cameraX) / (step * half);
-#else
-            f32 cellOffset = (entryX - cameraX) / (step * 0.5f);
-#endif
             s32 wrapOffset = (s32)cellOffset;
             if (wrapOffset != 0) {
                 if (wrapOffset > 0) {
