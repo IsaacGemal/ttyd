@@ -45,12 +45,12 @@
 const Vec vec3_802e5730 = {0.0f, 0.0f, 0.0f};
 const Vec vec3_802e573c = {0.0f, 0.0f, 0.0f};
 const Vec vec3_802e5748 = {0.0f, 0.0f, 0.0f};
-const char str_802E5754[0x14] = "DOKAN_TATE_DOWNIN";
-const char str_802E5768[0x10] = "DOKAN_TATE_UPIN";
-const char str_802E5778[0x14] = "DOKAN_TATE_DOWNOUT";
-const char str_802E578C[0x14] = "DOKAN_TATE_UPOUT";
-const char str_802E57A0[0x10] = "DOKAN_YOKO_IN";
-const char str_802E57B0[0x10] = "DOKAN_YOKO_OUT";
+const char str_DOKAN_TATE_DOWNIN[0x14] = "DOKAN_TATE_DOWNIN";
+const char str_DOKAN_TATE_UPIN[0x10] = "DOKAN_TATE_UPIN";
+const char str_DOKAN_TATE_DOWNOUT[0x14] = "DOKAN_TATE_DOWNOUT";
+const char str_DOKAN_TATE_UPOUT[0x14] = "DOKAN_TATE_UPOUT";
+const char str_DOKAN_YOKO_IN[0x10] = "DOKAN_YOKO_IN";
+const char str_DOKAN_YOKO_OUT[0x10] = "DOKAN_YOKO_OUT";
 const Vec vec3_802e57c0 = {1.0f, 1.0f, 1.0f};
 const Vec vec3_802e57cc = {0.0f, 0.0f, 0.0f};
 const Vec vec3_802e57d8 = {0.0f, 0.0f, 0.0f};
@@ -65,22 +65,22 @@ const Vec vec3_802e5838 = {0.0f, 0.0f, 0.0f};
 const Vec vec3_802e5844 = {0.0f, 0.0f, 0.0f};
 const Vec vec3_802e5850 = {0.0f, 0.0f, 0.0f};
 const Vec vec3_802e585c = {0.0f, 0.0f, 0.0f};
-const char str_802E5868[0x08] = "M_J_1A";
-const char str_802E5870[0x08] = "M_J_1B";
-const char str_802E5878[0x08] = "M_J_1C";
-const char str_802E5880[0x08] = "M_H_3A";
-const char str_802E5888[0x08] = "M_H_3B";
-const char str_802E5890[0x08] = "M_H_6A";
-const char str_802E5898[0x08] = "M_H_6B";
-const char str_802E58A0[0x08] = "M_H_9A";
-const char str_802E58A8[0x08] = "M_H_9B";
-const char str_802E58B0[0x08] = "M_A_1A";
-const char str_802E58B8[0x08] = "M_A_1B";
-const char str_802E58C0[0x08] = "M_A_2A";
-const char str_802E58C8[0x08] = "M_A_2B";
-const char str_802E58D0[0x08] = "M_A_2C";
-const char str_802E58D8[0x08] = "M_J_5A";
-const char str_802E58E0[0x08] = "M_J_5B";
+const char str_M_J_1A[0x08] = "M_J_1A";
+const char str_M_J_1B[0x08] = "M_J_1B";
+const char str_M_J_1C[0x08] = "M_J_1C";
+const char str_M_H_3A[0x08] = "M_H_3A";
+const char str_M_H_3B[0x08] = "M_H_3B";
+const char str_M_H_6A[0x08] = "M_H_6A";
+const char str_M_H_6B[0x08] = "M_H_6B";
+const char str_M_H_9A[0x08] = "M_H_9A";
+const char str_M_H_9B[0x08] = "M_H_9B";
+const char str_M_A_1A[0x08] = "M_A_1A";
+const char str_M_A_1B[0x08] = "M_A_1B";
+const char str_M_A_2A[0x08] = "M_A_2A";
+const char str_M_A_2B[0x08] = "M_A_2B";
+const char str_M_A_2C[0x08] = "M_A_2C";
+const char str_M_J_5A[0x08] = "M_J_5A";
+const char str_M_J_5B[0x08] = "M_J_5B";
 const Vec vec3_802e58e8 = {0.0f, 0.0f, 0.0f};
 #pragma force_active reset
 
@@ -94,15 +94,15 @@ static const f32 float_0p1_8041b920 = 0.1f;
 // .data
 const char* a_mario_group[60] = {
     "M_Z_1", "M_Z_9", "M_S_1", "M_S_3", "M_W_1", "M_R_1",
-    str_802E5868, str_802E5870, str_802E5878, "M_H_1", "M_H_2", "M_H_3",
-    str_802E5880, str_802E5888, "M_H_4", "M_H_5", "M_H_6", str_802E5890,
-    str_802E5898, "M_H_7", "M_H_8", "M_H_9", str_802E58A0, str_802E58A8,
+    str_M_J_1A, str_M_J_1B, str_M_J_1C, "M_H_1", "M_H_2", "M_H_3",
+    str_M_H_3A, str_M_H_3B, "M_H_4", "M_H_5", "M_H_6", str_M_H_6A,
+    str_M_H_6B, "M_H_7", "M_H_8", "M_H_9", str_M_H_9A, str_M_H_9B,
     "M_O_1", "M_O_2", "M_B_1", "M_B_2", "M_D_1", "M_D_2",
     "M_U_3", "M_D_6", "M_P_1", "M_P_2", "M_I_1", "M_I_2",
-    "M_I_S", "M_X_1", "M_I_U", str_802E58B0, str_802E58B8, "M_U_2",
+    "M_I_S", "M_X_1", "M_I_U", str_M_A_1A, str_M_A_1B, "M_U_2",
     "M_W_7", "M_C_1", "M_C_2", "M_Y_1", "M_Y_2", "M_Y_3",
-    str_802E58C0, str_802E58C8, str_802E58D0, "M_B_3", "M_B_4", str_802E58D8,
-    str_802E58E0, "M_S_4", "M_W_6", "M_V_2", "M_I_Y", NULL,
+    str_M_A_2A, str_M_A_2B, str_M_A_2C, "M_B_3", "M_B_4", str_M_J_5A,
+    str_M_J_5B, "M_S_4", "M_W_6", "M_V_2", "M_I_Y", NULL,
 };
 
 // The original's .rodata places the two strings reached as base+0x208 / base+0x214 immediately
@@ -1687,7 +1687,7 @@ USER_FUNC(evt_mario_jump_jumpstand) {
         event->userdata[2] = (s32)(0.5f * (f32)event->userdata[1] + 0.5f);
         event->userdata[0] = 2;
         if (!(mario->flags & 0x01000000)) {
-            marioChgPose(str_802E5878);
+            marioChgPose(str_M_J_1C);
         }
         break;
     }
@@ -1775,7 +1775,7 @@ USER_FUNC(evt_mario_jump_jumpstand) {
         mario->jumpJerkStepY = mario->jumpJerkY = 0.0f;
         event->userdata[2] = (s32)(0.5f * (f32)event->userdata[1] + 0.5f);
         event->userdata[0] = 0xC;
-        marioChgPose(str_802E5878);
+        marioChgPose(str_M_J_1C);
         break;
     case 0xC: {
         MarioWork* player;
