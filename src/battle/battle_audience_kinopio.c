@@ -1370,7 +1370,7 @@ void BattleAudienceCtrlProcessKinopioIntrude(s32 index) {
 		f32 dz;
 		f32 dx;
 		BattleStage_NozzleWorkCheck(1);
-		member->evtId = *(s32*)((u8*)work + 0x18298);
+		member->evtId = work->field_18298;
 		member->step = 0x4b;
 		dir = member->field_0xC;
 		t = 300.0f * dir;
