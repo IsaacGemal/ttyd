@@ -512,12 +512,12 @@ void main_cursor(void) {
                         EffectEntry* eff =
                             effStampN64Entry(2, x, 20.0f + y, 10.0f + z);
 
-                        ((u8*)eff->userdata)[0x38] = 0;
-                        ((u8*)eff->userdata)[0x39] = 0xC8;
-                        ((u8*)eff->userdata)[0x3A] = 0;
-                        ((u8*)eff->userdata)[0x3B] = 0;
-                        ((u8*)eff->userdata)[0x3C] = 0x0A;
-                        ((u8*)eff->userdata)[0x3D] = 0;
+                        ((effStampData*)eff->userdata)->field_0x38 = 0;
+                        ((effStampData*)eff->userdata)->field_0x39 = 0xC8;
+                        ((effStampData*)eff->userdata)->field_0x3A = 0;
+                        ((effStampData*)eff->userdata)->field_0x3B = 0;
+                        ((effStampData*)eff->userdata)->field_0x3C = 0x0A;
+                        ((effStampData*)eff->userdata)->field_0x3D = 0;
                     }
                     work->field_34 = 0;
                     work->field_00 |= 1;
