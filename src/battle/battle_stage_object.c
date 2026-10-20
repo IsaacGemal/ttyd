@@ -265,14 +265,14 @@ void BattleStageObjectInit(void) {
 			switch (data->mSpawnSpecialUnitType) {
 			case BSO_SPAWN_TREE:
 				unit = BtlUnit_Entry((BattleUnitSetup*)_entry_tree_data);
-				*(s32*)((u8*)unit + 0xB2C) = obj->id;
+				unit->stageObjectId = obj->id;
 				obj->mBattleUnitIdx = unit->unitId;
 				BtlUnit_SetPos(unit, obj->mPosition.x, obj->mPosition.y, obj->mPosition.z);
 				BtlUnit_SetHomePos(unit, obj->mPosition.x, obj->mPosition.y, obj->mPosition.z);
 				break;
 			case BSO_SPAWN_SWITCH:
 				unit = BtlUnit_Entry((BattleUnitSetup*)_entry_switch_data);
-				*(s32*)((u8*)unit + 0xB2C) = obj->id;
+				unit->stageObjectId = obj->id;
 				obj->mBattleUnitIdx = unit->unitId;
 				BtlUnit_SetPos(unit, obj->mPosition.x, obj->mPosition.y, obj->mPosition.z);
 				BtlUnit_SetHomePos(unit, obj->mPosition.x, obj->mPosition.y, obj->mPosition.z);
@@ -2071,12 +2071,12 @@ USER_FUNC(_fall_frame_wait_unit_ready) {
 			unit = BattleGetUnitPtr(wp, i);
 			if (unit != NULL && (unit->flags & 0x80000000) == 0
 			    && !BtlUnit_CheckStatus(unit, 0x1B)) {
-				if (*(void**)((u8*)unit + 0x2BC) != NULL) {
-					EventEntry* e = evtEntry(*(void**)((u8*)unit + 0x2BC), 10, 0);
+				if (unit->fallWaitEventCode != NULL) {
+					EventEntry* e = evtEntry(unit->fallWaitEventCode, 10, 0);
 					if (e != NULL) {
 						e->unitId = unit->unitId;
 					}
-					*(s32*)((u8*)unit + 0x2C0) = e->eventId;
+					unit->fallWaitEventId = e->eventId;
 				}
 			}
 		}
@@ -2084,10 +2084,10 @@ USER_FUNC(_fall_frame_wait_unit_ready) {
 	for (i = 0; i < 64; i++) {
 		unit = BattleGetUnitPtr(wp, i);
 		if (unit != NULL && (unit->flags & 0x80000000) == 0) {
-			if (*(s32*)((u8*)unit + 0x2C0) != 0 && !evtCheckID(*(s32*)((u8*)unit + 0x2C0))) {
-				*(s32*)((u8*)unit + 0x2C0) = 0;
+			if (unit->fallWaitEventId != 0 && !evtCheckID(unit->fallWaitEventId)) {
+				unit->fallWaitEventId = 0;
 			}
-			if (*(s32*)((u8*)unit + 0x2C0) != 0) {
+			if (unit->fallWaitEventId != 0) {
 				return EVT_RETURN_BLOCK;
 			}
 		}
@@ -2312,7 +2312,7 @@ USER_FUNC(_nozzle_work_effect) {
 					event->field_84 = *(s32*)(base - 0x7D60);
 					*(s32*)(base - 0x7D64) = 2;
 					obj = BattleSearchObjectPtr("nozzle_c");
-					*(s32*)((u8*)event + 0x8C) = psndSFXOn_3D("SFX_BTL_STAGE_DRYICE1", &obj->mPosition);
+					event->userdataEx[1] = psndSFXOn_3D("SFX_BTL_STAGE_DRYICE1", &obj->mPosition);
 					event->field_0x90[0] = -1;
 					event->field_0x90[1] = -1;
 					done = 1;
@@ -2328,8 +2328,8 @@ USER_FUNC(_nozzle_work_effect) {
 	if (event->userdata[0] > 0) {
 		event->userdata[0]--;
 		if ((s32)event->userdata[0] <= 0) {
-			if ((u32)*(s32*)((u8*)event + 0x8C) != 0xFFFFFFFFu) {
-				psndSFXOff(*(s32*)((u8*)event + 0x8C));
+			if ((u32)event->userdataEx[1] != 0xFFFFFFFFu) {
+				psndSFXOff(event->userdataEx[1]);
 			}
 			if (event->field_0x90[0] != 0xFFFFFFFFu) {
 				psndSFXOff(event->field_0x90[0]);

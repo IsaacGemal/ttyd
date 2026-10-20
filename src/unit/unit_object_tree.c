@@ -37,7 +37,7 @@ USER_FUNC(_rumble_tree) {
     if (unit == NULL) {
         return EVT_RETURN_DONE;
     }
-    obj = BattleGetObjectPtr(*(s32*)((u8*)unit + 0xB2C));
+    obj = BattleGetObjectPtr(unit->stageObjectId);
     if (isFirstCall) {
         event->userdata[0] = 0;
     }
@@ -56,7 +56,7 @@ USER_FUNC(_turn_tree) {
 
     id = BattleTransID(event, -2);
     unit = BattleGetUnitPtr(_battleWorkPointer, id);
-    obj = BattleGetObjectPtr(*(s32*)&unit->field_0xAE4[0x48]); // 0xB2C: stage-object id, in the header's padding
+    obj = BattleGetObjectPtr(unit->stageObjectId);
     if (isFirstCall) {
         event->userdata[0] = 0;
     }

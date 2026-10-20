@@ -40,7 +40,7 @@ USER_FUNC(_rumble_switch) {
     if (unit == NULL) {
         return EVT_RETURN_DONE;
     }
-    obj = BattleGetObjectPtr(*(s32*)((u8*)unit + 0xB2C));
+    obj = BattleGetObjectPtr(unit->stageObjectId);
     if (isFirstCall) {
         event->userdata[0] = 0;
     }

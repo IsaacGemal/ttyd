@@ -673,7 +673,9 @@ typedef struct BattleUnit {
     s32 damageEventId;                           // 0x2B0
     void* entryEventCode;                        // 0x2B4, btlevtcmd_SetEventEntry; battle_seq runs it at battle start
     s32 entryEventId;                            // 0x2B8, its event id, 0 once it has finished
-    u8 field_0x2BC[0x2D0 - 0x2BC];               // 0x2BC
+    void* fallWaitEventCode;                     // 0x2BC, event fall_frame_wait starts for the unit (evtEntry)
+    s32 fallWaitEventId;                         // 0x2C0, its event id; fall_frame_wait blocks while it is alive
+    u8 field_0x2C4[0x2D0 - 0x2C4];               // 0x2C4
     s32 mBodyPartsId;                            // 0x2D0
     char* mTalkPoseName;                         // 0x2D4, BtlUnit_GetPoseNameFromType of the talk pose
     char* mStayPoseName;                         // 0x2D8, BtlUnit_GetPoseNameFromType of the stay pose
@@ -699,7 +701,8 @@ typedef struct BattleUnit {
     f32 mBurnDamageFlameScale;                   // 0x33C
     EffectEntry* mBurnDamageFlameEff;            // 0x340
     BattleWorkStatusIcon mStatusIconWork;        // 0x344
-    u8 field_0xAE4[0xB30 - 0xAE4];               // 0xAE4
+    u8 field_0xAE4[0xB2C - 0xAE4];               // 0xAE4
+    s32 stageObjectId;                           // 0xB2C, BattleStageObject id of the tree or switch unit
 } BattleUnit;
 
 // A 0x14-byte pose-sound table entry; the layout BtlUnit_ControlPoseSoundMain walks.
