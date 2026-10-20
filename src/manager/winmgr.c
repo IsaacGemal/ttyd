@@ -1791,7 +1791,7 @@ void winMgrHelpDraw(WinMgrEntry* entry) {
     GXSetScissor(0, 0x180, 0x260, 0x38);
     if (strcmp(entry->message, msgSearch(str_802FFFCC)) == 0) {
         lottery = lotteryGetPtr();
-        n = *(s16*)&lottery->field_0x2[0x20 - 0x2];
+        n = lottery->mTicketNum;
         sprintf(buf, entry->message, n);
         FontDrawStart();
         FontDrawMessage(-0xd2, (s32)(28.0f * entry->scrollPos + WINMGR_F32(float_neg144_80421aa8)), buf);

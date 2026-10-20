@@ -9238,3 +9238,22 @@ the files (a dry run on this tree: another 12,128 -> 9,285 address names in the 
 about 65.1), then the full build and CI. Don't mechanically rename the float constants that must stay named (the
 ones match-only code uses, or whose removal reorders the pool): leave them to the tool's verdict, and give them real
 names only by hand where the meaning is clear.
+### Readability: battle status icons and lottery (2026-10-19, Claude Haiku 5.5, n9-q-iconlot; reviewed by Claude Opus 5.5)
+
+BattleWorkStatusIconEntry (battle_status_icon.h) gets its fields: `type` (StatusEffectType), `turnCount` (|turns|,
+drawn as a number when non-zero), `texId` (0 skips the texture), `scale`/`pivot`/`rotation`/`offset` Vecs, `color`
+and `flags` (0x1 no backing plane, 0x2 no texture; the allergy icon blinks by setting 0x2 every 16 frames).
+BattleWorkStatusIcon names `mGuruguruAngle` (0x790, +4 degrees per frame), `mAllergyCounter`, `mRegenHpCounter`,
+`mRegenFpCounter`, `mBiribiriState` and `mBiribiriDuration` (0x796-0x79E). IconDispTableEntry's columns are `texId`
+and `flags`; `_disp_table` ids and _bsi_regeneration's checks use the StatusEffectType names (`STATUS_HP_REGEN`,
+`STATUS_FP_REGEN`). lottery_info (evt_lottery.h) is fully named: `mFlags` (bits documented in the header: 0x1
+initialised, 0x2 ticket held, 0x4 clock went backwards, 0x8 bought again today, 0x10 new day for this slot,
+0x1000-0x8000 tier 0-3 won today), `mDrawTime` (0x8), `mTodayNum` (0x10, -1 while the clock is suspect),
+`mBuyTime` (0x18, the origin of `mTierDays`), `mTicketNum` (0x20), `mTierDays[4]` (0x22; tier 0 matches all four
+digits and is rescheduled every 336-395 days, tier 3 the last digit every 5-10) and `mSlotTime[2]` (0x30). The old
+`u8 field_0x2[]` byte view is gone; winmgr.c, evt_win.c and win_root.c read `mTicketNum`. Weighted cleanup:
+battle_status_icon.c 270 → 130, evt_lottery.c 225 → 7.
+Open: the `dat_804221f0`-`dat_80422210` / `float_0p10207_80422208` icon colours are GXColor words still named by
+address (and read through `*(GXColor*)&`); the IconDispTableEntry `texId` values (13-34) are not tied to an icon
+enum; evt_lottery's MUST_MATCH slot clear (`q[12]`/`q[13]` through a `(u8*)info + arg1 * 8` base) and the
+right-to-left tier-miss clause stay; lottery_info's 0x2-0x7, 0x12-0x17 and 0x2A-0x2F have no readers anywhere.

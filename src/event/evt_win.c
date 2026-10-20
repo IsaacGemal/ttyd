@@ -910,7 +910,7 @@ void evt_unitwin_disp_func(CameraId cameraId, void* param) {
 			                      float_20_8041dad8[0]);
 			PSMTXTrans(mtx, float_neg220_8041db14[0], float_neg172_8041db38[0], float_0_8041db00[0]);
 			iconDispGx2(mtx, 0x10, 0x140);
-			sprintf(buf, str_8041DB3C, *(s16*)&lotteryGetPtr()->field_0x2[0x1E]);
+			sprintf(buf, str_8041DB3C, lotteryGetPtr()->mTicketNum);
 			for (i = 0; i < 4; i++) {
 				PSMTXTrans(mtx, float_20_8041dad8[0] * (f32)i + float_neg126_8041db24[0] - float_60_8041dafc[0],
 				           float_neg168_8041db34[0], float_0_8041db00[0]);
