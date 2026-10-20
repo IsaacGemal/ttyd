@@ -182,10 +182,10 @@ void npcReleaseFieldNpc(void) {
                 if (entry->poseId >= 0) {
                     pose = animPoseGetAnimPosePtr(entry->poseId);
                     field->mFlags = pose->flags;
-                    field->wCurrentRenderRotationMinus90Y = pose->field_0x70;
+                    field->wCurrentRenderRotationMinus90Y = pose->drawRotY;
                     field->wRotationY = pose->rotationY;
-                    field->wScaleZ_flip = pose->field_0x78;
-                    field->wInitToZero4 = pose->field_0x7C;
+                    field->wScaleZ_flip = pose->facingSign;
+                    field->wInitToZero4 = pose->targetRotY;
                     strcpy(field->mModelName, animPoseGetAnimBaseDataPtr(entry->poseId)->fileName);
                     strcpy(field->mAnimName, animPoseGetCurrentAnim(entry->poseId)->name);
                     animPoseRelease(entry->poseId);
@@ -214,10 +214,10 @@ void npcRecoveryFieldNpc(void) {
                 animPoseSetAnim(entry->poseId, field->mAnimName, TRUE);
                 pose = animPoseGetAnimPosePtr(entry->poseId);
                 pose->flags = field->mFlags;
-                pose->field_0x70 = field->wCurrentRenderRotationMinus90Y;
+                pose->drawRotY = field->wCurrentRenderRotationMinus90Y;
                 pose->rotationY = field->wRotationY;
-                pose->field_0x78 = field->wScaleZ_flip;
-                pose->field_0x7C = field->wInitToZero4;
+                pose->facingSign = field->wScaleZ_flip;
+                pose->targetRotY = field->wInitToZero4;
 
                 if (pose->flags & 0x40) {
                     pose->flags &= ~0x40;
@@ -2328,22 +2328,22 @@ void fbatEncountCheck(void) {
                 if (camAngle < 0.0f) {
                     camAngle += 360.0f;
                 }
-                pose->field_0x7C = reviseAngle(180.0f + camAngle);
+                pose->targetRotY = reviseAngle(180.0f + camAngle);
             } else {
                 cam = camGetPtr(CAMERA_3D);
                 camAngle = reviseAngle(NPC_RAD2DEG((f32)atan2(-(cam->cameraAt.x - cam->cameraPos.x), -(cam->cameraAt.z - cam->cameraPos.z))));
                 if (camAngle < 0.0f) {
                     camAngle += 360.0f;
                 }
-                pose->field_0x7C = camAngle;
+                pose->targetRotY = camAngle;
             }
-            while (pose->field_0x7C - pose->rotationY > 180.0f) {
+            while (pose->targetRotY - pose->rotationY > 180.0f) {
                 pose->rotationY += 360.0f;
             }
-            while (pose->field_0x7C - pose->rotationY < (-180.0f)) {
+            while (pose->targetRotY - pose->rotationY < (-180.0f)) {
                 pose->rotationY -= 360.0f;
             }
-            pose->rotationY += 0.75f * (pose->field_0x7C - pose->rotationY);
+            pose->rotationY += 0.75f * (pose->targetRotY - pose->rotationY);
             switch (*fbatOut) {
                 case 0x200000:
                 case 0x1000000:

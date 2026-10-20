@@ -67,7 +67,8 @@ typedef struct AnimPoseTexEntry {
 } AnimPoseTexEntry;
 
 typedef struct AnimTexBind {
-    u8 field_0x0[0x8 - 0x0];  // 0x0
+    u8 field_0x0[0x4 - 0x0];  // 0x0
+    s32 palId;                // 0x4, texture palette id for TEXGet
     s32 texType;              // 0x8
     u8 field_0xC[0x40 - 0xC]; // 0xC
 } AnimTexBind;
@@ -110,7 +111,8 @@ typedef struct AnimationPoseData {
     char fileName[64];             // 0x4
     char textureName[64];          // 0x44
     char mBuildTime[64];           // 0x84
-    u8 field_0xC4[0xD0 - 0xC4];    // 0xC4
+    u32 xluFlags;                  // 0xC4, bit n: drawn at xluMode n (bit 0 also covers mode 2); bit 3: has XLU
+    u8 field_0xC8[0xD0 - 0xC8];    // 0xC8
     Vec bboxMin;                   // 0xD0
     Vec bboxMax;                   // 0xDC
     s32 shapeCount;                // 0xE8
@@ -156,7 +158,13 @@ typedef struct AnimationPose {
     s32 fileId;                         // 0x10
     s32 animId;                         // 0x14, current animation from AnimPoseData
     OSTime localTime;                   // 0x18
-    u8 field_0x20[0x3C - 0x20];         // 0x20
+    f32 animTime;                       // 0x20, elapsed frames: (now - localTime) * 60 / 1000 * localTimeRate
+    f32 clipTime;                       // 0x24, animTime after loop wrap
+    s32 keyFrame1;                      // 0x28, index of the FRAMES key before clipTime
+    s32 keyFrame2;                      // 0x2C, keyFrame1 + 1, wrapped for non-looping clips
+    f32 keyAlpha;                       // 0x30, blend factor between keyFrame1 and keyFrame2
+    s32 evtFrame1;                      // 0x34, index of the FRAMES2 event before clipTime
+    s32 evtFrame2;                      // 0x38, evtFrame1 + 1, wrapped for non-looping clips
     s32 lastFrameZero;                  // 0x3C
     f32 lastFrameTime;                  // 0x40
     f32 localTimeRate;                  // 0x44
@@ -170,25 +178,32 @@ typedef struct AnimationPose {
     AnimPoseNode* mpNodes;              // 0x64
     AnimTexMtx* mpBufferTexAnimEntries; // 0x68
     AnimTexMtx* mpTexAnimEntries;       // 0x6C
-    f32 field_0x70;                     // 0x70
-    f32 rotationY;                      // 0x74
-    f32 field_0x78;                     // 0x78
-    f32 field_0x7C;                     // 0x7C
-    s32 field_0x80;                     // 0x80
+    f32 drawRotY;                       // 0x70, draw rotY less 90 degrees; set when flags & 8 (faces the camera)
+    f32 rotationY;                      // 0x74, current facing, eased toward targetRotY
+    f32 facingSign;                     // 0x78, -1 or 1: mirrors the model when it faces away from the camera
+    f32 targetRotY;                     // 0x7C, camera-facing angle that rotationY eases toward
+    s32 evtValue;                       // 0x80, value of the FRAMES2 event at evtFrame1
     f32 loopTime;                       // 0x84
     OSTime mLocalTimeInit;              // 0x88
     s32 paperId;                        // 0x90
-    u8 field_0x94[0xE0 - 0x94];         // 0x94
+    const char* paperAnimName;          // 0x94, -1 when unset
+    struct smartEntry* paperTexData[2]; // 0x98
+    GXTexObj paperTexObj[2];            // 0xA0
     void (*gxCallback)(s32 wXluStage);  // 0xE0
     BOOL disableDraw;                   // 0xE4
     s32 materialFlag;                   // 0xE8
     s32 materialLightFlag;              // 0xEC
     GXColor materialColor;              // 0xF0
     GXColor materialColor2;             // 0xF4
-    f32 field_0xF8;                     // 0xF8
-    f32 field_0xFC;                     // 0xFC
-    f32 field_0x100;                    // 0x100
-    u8 field_0x104[0x11C - 0x104];      // 0x104
+    f32 paperScaleX;                    // 0xF8, paper width / 150, times the pose scale
+    f32 paperScaleY;                    // 0xFC, paper height / 215, times the pose scale
+    f32 paperOffsetY;                   // 0x100, bottom offset from ANIMDATA_F48
+    f32 paperTexTrans[2];               // 0x104, paper texture S/T translation
+    f32 paperTexScale[2];               // 0x10C, paper texture S/T scale
+    s16 paperLeft;                      // 0x114, screen-space bounds of the paper quad
+    s16 paperRight;                     // 0x116
+    s16 paperTop;                       // 0x118
+    s16 paperBottom;                    // 0x11A
     s32 vivianType;                     // 0x11C
     s32* vivianGroupNo;                 // 0x120
     Mtx matrix;                         // 0x124
@@ -323,11 +338,11 @@ void pushGXModelMtx_JointNode__(void* node, f32 x, f32 y, f32 z);
 void pushGXModelMtx_TransformNode__(void* node);
 void animPaperPoseDisp(CameraId camId, void* param);
 void animPaperPoseDispSub(s32 unused, AnimationPose* pose);
-void animPoseDisp_MakeExtTexture(const char* name, f32 f1, void* field_0x4, void* texObj, void* base,
+void animPoseDisp_MakeExtTexture(const char* name, f32 f1, void* animName, void* texObj, void* base,
                                         f32 f2, s32* out0, s32* out1, s32* out2, s32* out3);
 void animPoseAutoRelease(s32 type);
 void animPoseVivianMain(s32 poseId, Vec* pos);
-void materialProc(s32 shapeId, s32 field_0x28);
+void materialProc(s32 shapeId, s32 keyFrame1);
 typedef struct MoamoaChainEntry {
     char* name; // 0x0
     char* anim; // 0x4

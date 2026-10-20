@@ -108,7 +108,7 @@ USER_FUNC(bress) {
             AnimationPose* pose = animPoseGetAnimPosePtr(npc->poseId);
 
             effMistEntry(4, 30, npc->position.x, npc->position.y + npc->height / 2.0f, npc->position.z,
-                         270.0f - pose->field_0x7C);
+                         270.0f - pose->targetRotY);
             timers[i] = irand(60) + 60;
         }
     }
