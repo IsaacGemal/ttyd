@@ -50,7 +50,6 @@ extern const char str_802EDE58[];
 extern const char str_802EDE60[];
 extern const char str_802EDE68[];
 extern const char str_802EDE70[];
-typedef void (*BattleUnitPartDispCallback)(BattleUnitPart* part, s32 mode);
 
 extern ItemData itemDataTable[];
 
@@ -925,29 +924,29 @@ void btlUnitPartsDisp(CameraId camId, void* param) {
 
 	*(u32*)((char*)parts + 0x218) = *(u32*)((char*)parts + 0x4F4);
 	if (parts->partFlags & 0x10) {
-		*(u8*)((char*)parts + 0x218) = 0;
-		*(u8*)((char*)parts + 0x219) = 0;
-		*(u8*)((char*)parts + 0x21A) = 0;
+		parts->evtColor.r = 0;
+		parts->evtColor.g = 0;
+		parts->evtColor.b = 0;
 	}
 	if (parts->partFlags & 0x20) {
-		*(u8*)((char*)parts + 0x218) = 0;
-		*(u8*)((char*)parts + 0x219) = 0;
-		*(u8*)((char*)parts + 0x21A) = 0;
+		parts->evtColor.r = 0;
+		parts->evtColor.g = 0;
+		parts->evtColor.b = 0;
 	}
-	if (*(u8*)((char*)parts + 0x218) == 0xFF && *(u8*)((char*)parts + 0x219) == 0xFF &&
-	    *(u8*)((char*)parts + 0x21A) == 0xFF) {
+	if (parts->evtColor.r == 0xFF && parts->evtColor.g == 0xFF &&
+	    parts->evtColor.b == 0xFF) {
 		if (BtlUnit_CheckStatus(owner, 4)) {
-			*(u8*)((char*)parts + 0x218) = *(u8*)((char*)parts + 0x218) * 0xA0 / 0xFF;
-			*(u8*)((char*)parts + 0x21A) = *(u8*)((char*)parts + 0x218) * 0xA0 / 0xFF;
+			parts->evtColor.r = parts->evtColor.r * 0xA0 / 0xFF;
+			parts->evtColor.b = parts->evtColor.r * 0xA0 / 0xFF;
 		}
-		*(u8*)((char*)parts + 0x218) = *(u8*)((char*)parts + 0x218) * *(u8*)((char*)owner + 0x30E) / 0xFF;
-		*(u8*)((char*)parts + 0x219) = *(u8*)((char*)parts + 0x219) * *(u8*)((char*)owner + 0x30E) / 0xFF;
-		*(u8*)((char*)parts + 0x21A) = *(u8*)((char*)parts + 0x21A) * *(u8*)((char*)owner + 0x30E) / 0xFF;
+		parts->evtColor.r = parts->evtColor.r * owner->mMoveColorCur / 0xFF;
+		parts->evtColor.g = parts->evtColor.g * owner->mMoveColorCur / 0xFF;
+		parts->evtColor.b = parts->evtColor.b * owner->mMoveColorCur / 0xFF;
 	}
-	animPoseSetMaterialEvtColor(*(s32*)((char*)parts + 0x1C0), *(GXColor*)((char*)parts + 0x218));
+	animPoseSetMaterialEvtColor(*(s32*)((char*)parts + 0x1C0), parts->evtColor);
 	animPoseSetMaterialFlagOn(*(s32*)((char*)parts + 0x1C0), 0x40);
-	if (*(BattleUnitPartDispCallback*)((char*)parts + 0x210)) {
-		(*(BattleUnitPartDispCallback*)((char*)parts + 0x210))(parts, 0);
+	if (parts->dispCallback) {
+		parts->dispCallback(parts, 0);
 	}
 	if (BtlUnit_CheckStatus(owner, 0x10)) {
 		animPoseSetMaterialFlagOn(*(s32*)((char*)parts + 0x1C0), 0x800000);
@@ -957,12 +956,12 @@ void btlUnitPartsDisp(CameraId camId, void* param) {
 	animPoseDrawMtx(*(s32*)parts->field_0x1C0, m27, 1, f30, 2.0f);
 	animPoseDrawMtx(*(s32*)parts->field_0x1C0, m27, 2, f30, 2.0f);
 	animPoseDrawMtx(*(s32*)parts->field_0x1C0, m27, 3, f30, 2.0f);
-	if (*(BattleUnitPartDispCallback*)((char*)parts + 0x210)) {
-		(*(BattleUnitPartDispCallback*)((char*)parts + 0x210))(parts, 1);
+	if (parts->dispCallback) {
+		parts->dispCallback(parts, 1);
 	}
 // dont_inline: retail keeps this a real bl from btlUnitPartsDisp.
 #pragma dont_inline on
-	btlUnitPartsBlurControl(parts, 0, m25, *(GXColor*)((char*)parts + 0x218), f30);
+	btlUnitPartsBlurControl(parts, 0, m25, parts->evtColor, f30);
 }
 #pragma dont_inline reset
 #pragma dont_inline reset
@@ -1119,7 +1118,7 @@ void btlDispChangeAnime(BattleUnitPart* part, const char* animName, BOOL reset) 
 
 void btlDispChangePeraAnime(BattleUnitPart* part, const char* animName) {
 	part->partFlags |= 4;
-	*(u8*)((char*)part + 0x215) = 0;
+	part->statusPoseKind = 0;
 	animPoseSetEffectAnim(*(s32*)((char*)part + 0x1c0), animName, 1);
 }
 
@@ -1204,7 +1203,7 @@ static void btlDispAnimeSpeedReset(BattleUnit* unit) {
 
 #pragma dont_inline on // the original keeps calls to this function out of line
 void statusPoseControl(BattleUnitPart* part) {
-	switch (*(u8*)((char*)part + 0x215)) {
+	switch (part->statusPoseKind) {
 	case 0:
 		break;
 	case 2:
@@ -1229,9 +1228,9 @@ void _pose_def(BattleUnitPart* part) {
 #ifdef MUST_MATCH
 	/* MUST_MATCH: a one-case switch makes MWCC emit the original `beq body; b end` guard;
 	   the natural early-return folds to `bne end`. */
-	switch (*(u8*)((char*)part + 0x214)) {
+	switch (part->statusPoseStep) {
 	case 0:
-		*(u8*)((char*)part + 0x214) = 1;
+		part->statusPoseStep = 1;
 		animPoseSetEffect(*(s32*)((char*)part + 0x1c0), NULL, 0);
 		if (part->mOwner->flags & 0x1000000) {
 			animPoseSetMaterialLightFlagOn(*(s32*)((char*)part + 0x1c0), 8);
@@ -1239,8 +1238,8 @@ void _pose_def(BattleUnitPart* part) {
 		break;
 	}
 #else
-	if (*(u8*)((char*)part + 0x214)) return;
-	*(u8*)((char*)part + 0x214) = 1;
+	if (part->statusPoseStep) return;
+	part->statusPoseStep = 1;
 	animPoseSetEffect(*(s32*)((char*)part + 0x1c0), NULL, 0);
 	if (part->mOwner->flags & 0x1000000) {
 		animPoseSetMaterialLightFlagOn(*(s32*)((char*)part + 0x1c0), 8);
@@ -1255,10 +1254,10 @@ void _pose_def(BattleUnitPart* part) {
 void _pose_one_pattern(BattleUnitPart* part) {
 #ifdef MUST_MATCH
 	/* MUST_MATCH: one-case switch reproduces the original `beq body; b end` guard. */
-	switch (*(u8*)((char*)part + 0x214)) {
+	switch (part->statusPoseStep) {
 	case 0:
-		*(u8*)((char*)part + 0x214) = 1;
-		switch (*(u8*)((char*)part + 0x215)) {
+		part->statusPoseStep = 1;
+		switch (part->statusPoseKind) {
 		case 2:
 			animPoseSetEffect(*(s32*)((char*)part + 0x1c0), "p_b_st", 1);
 			animPoseSetEffectAnim(*(s32*)((char*)part + 0x1c0), "PM_C_1A", 1);
@@ -1275,11 +1274,11 @@ void _pose_one_pattern(BattleUnitPart* part) {
 		break;
 	}
 #else
-	s32 f = *(u8*)((char*)part + 0x214);
+	s32 f = part->statusPoseStep;
 
 	if (f) return;
-	*(u8*)((char*)part + 0x214) = 1;
-	switch (*(u8*)((char*)part + 0x215)) {
+	part->statusPoseStep = 1;
+	switch (part->statusPoseKind) {
 	case 2:
 		animPoseSetEffect(*(s32*)((char*)part + 0x1c0), str_802EDE38, 1);
 		animPoseSetEffectAnim(*(s32*)((char*)part + 0x1c0), str_802EDE48, 1);
@@ -1304,14 +1303,14 @@ void _pose_one_pattern(BattleUnitPart* part) {
 void _pose_two_pattern(BattleUnitPart* part) {
 	s32 t;
 
-	switch (*(u8*)((char*)part + 0x214)) {
+	switch (part->statusPoseStep) {
 	case 0:
-		*(u8*)((char*)part + 0x214) = 1;
-		switch (*(u8*)((char*)part + 0x215)) {
+		part->statusPoseStep = 1;
+		switch (part->statusPoseKind) {
 		case 4:
 			animPoseSetEffect(*(s32*)((char*)part + 0x1c0), "p_b_st", 1);
 			animPoseSetEffectAnim(*(s32*)((char*)part + 0x1c0), "PM_Y_1B", 1);
-			*(u16*)((char*)part + 0x216) = sysMsec2Frame(0x898);
+			part->statusPoseTimer = sysMsec2Frame(0x898);
 			break;
 		case 5:
 			animPoseSetEffect(*(s32*)((char*)part + 0x1c0), "p_b_st", 1);
@@ -1319,63 +1318,63 @@ void _pose_two_pattern(BattleUnitPart* part) {
 			t = sysMsec2Frame(0x898);
 			{
 				s32 n = irand(4) + 6;
-				*(u16*)((char*)part + 0x216) = n * t;
+				part->statusPoseTimer = n * t;
 			}
 			break;
 		case 6:
 			animPoseSetEffect(*(s32*)((char*)part + 0x1c0), "p_b_st", 1);
 			animPoseSetEffectAnim(*(s32*)((char*)part + 0x1c0), "PM_F_2", 1);
-			*(u16*)((char*)part + 0x216) = (irand(4) + 7) * 0x16;
+			part->statusPoseTimer = (irand(4) + 7) * 0x16;
 			break;
 		}
 		break;
 	case 1:
-		switch (*(u8*)((char*)part + 0x215)) {
+		switch (part->statusPoseKind) {
 		case 4:
-			*(u16*)((char*)part + 0x216) -= 1;
-			if (*(u16*)((char*)part + 0x216) == 0) {
+			part->statusPoseTimer -= 1;
+			if (part->statusPoseTimer == 0) {
 				animPoseSetEffectAnim(*(s32*)((char*)part + 0x1c0), "PM_Y_1B", 1);
-				*(u16*)((char*)part + 0x216) = sysMsec2Frame(0x898);
+				part->statusPoseTimer = sysMsec2Frame(0x898);
 			}
 			break;
 		case 5:
-			*(u16*)((char*)part + 0x216) -= 1;
-			if (*(u16*)((char*)part + 0x216) == 0) {
-				*(u8*)((char*)part + 0x214) = 2;
+			part->statusPoseTimer -= 1;
+			if (part->statusPoseTimer == 0) {
+				part->statusPoseStep = 2;
 				animPoseSetEffectAnim(*(s32*)((char*)part + 0x1c0), "PM_C_1B", 1);
-				*(u16*)((char*)part + 0x216) = 0x16;
+				part->statusPoseTimer = 0x16;
 			}
 			break;
 		case 6:
-			*(u16*)((char*)part + 0x216) -= 1;
-			if (*(u16*)((char*)part + 0x216) == 0) {
-				*(u8*)((char*)part + 0x214) = 2;
+			part->statusPoseTimer -= 1;
+			if (part->statusPoseTimer == 0) {
+				part->statusPoseStep = 2;
 				animPoseSetEffectAnim(*(s32*)((char*)part + 0x1c0), "PM_F_1B", 1);
-				*(u16*)((char*)part + 0x216) = 0x16;
+				part->statusPoseTimer = 0x16;
 			}
 			break;
 		}
 		break;
 	case 2:
-		switch (*(u8*)((char*)part + 0x215)) {
+		switch (part->statusPoseKind) {
 		case 4:
-			*(u16*)((char*)part + 0x216) -= 1;
-			if (*(u16*)((char*)part + 0x216) == 0) {
-				*(u8*)((char*)part + 0x214) = 0;
+			part->statusPoseTimer -= 1;
+			if (part->statusPoseTimer == 0) {
+				part->statusPoseStep = 0;
 				_pose_two_pattern(part);
 			}
 			break;
 		case 5:
-			*(u16*)((char*)part + 0x216) -= 1;
-			if (*(u16*)((char*)part + 0x216) == 0) {
-				*(u8*)((char*)part + 0x214) = 0;
+			part->statusPoseTimer -= 1;
+			if (part->statusPoseTimer == 0) {
+				part->statusPoseStep = 0;
 				_pose_two_pattern(part);
 			}
 			break;
 		case 6:
-			*(u16*)((char*)part + 0x216) -= 1;
-			if (*(u16*)((char*)part + 0x216) == 0) {
-				*(u8*)((char*)part + 0x214) = 0;
+			part->statusPoseTimer -= 1;
+			if (part->statusPoseTimer == 0) {
+				part->statusPoseStep = 0;
 				_pose_two_pattern(part);
 			}
 			break;
