@@ -10,13 +10,13 @@ typedef struct effGlassData {
 	Vec position;   // 0x04
 	s32 life;       // 0x10
 	s32 counter;    // 0x14
-	s32 field_0x18; // 0x18
-	s32 field_0x1C; // 0x1C
-	s32 field_0x20; // 0x20
+	s32 color1R;    // 0x18
+	s32 color1G;    // 0x1C
+	s32 color1B;    // 0x20
 	s32 alpha;      // 0x24
-	s32 field_0x28; // 0x28
-	s32 field_0x2C; // 0x2C
-	s32 field_0x30; // 0x30
+	s32 color2R;    // 0x28
+	s32 color2G;    // 0x2C
+	s32 color2B;    // 0x30
 	s32 field_0x34; // 0x34
 	f32 scale;      // 0x38
 	f32 rot;        // 0x3C
