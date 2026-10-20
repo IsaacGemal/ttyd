@@ -150,9 +150,8 @@ __declspec(section ".sdata") u32 gap_10_804231BC_sbss2;
 GXColor unk_804231b8;
 #endif
 
-// MUST_MATCH: building colour2 in an inline that returns it keeps its by-value temporary in the
-// original's stack slot (the plain field-by-field form below puts the local in the temporary's slot).
-#ifdef MUST_MATCH
+// Building the colours in inlines that return them keeps the by-value temporaries in the
+// original's stack slots (a plain field-by-field form puts the local in the temporary's slot).
 static inline GXColor makeHoraoColor2(u8 a) {
 	GXColor c = unk_804231b8;
 	c.a = a;
@@ -166,10 +165,9 @@ static inline GXColor makeHoraoColor(GXColor c, s32 counter, u8 a) {
 	c.a = a;
 	return c;
 }
-#endif
 
 // The FPR allocation (alpha in f31, the loop's 2pi/magic/360/500/200 in f26-f30) comes from the
-// named `s` temp in the vertex loop, see the MUST_MATCH block there. The vertex loop is written
+// named `s` temp in the vertex loop. The vertex loop is written
 // per index (`&vtx[i]`, `i * 400`, `counter * 10 + i * k`) and the frontend strength-reduces it,
 // which gives the original's preheader copies; the texture row `i * 2 * 0x40U` is unsigned, so the
 // backend reduces it instead, and its zero start becomes a copy of the `i * 400` one. The first colour is built by
@@ -184,10 +182,6 @@ void effMagicHoraoDisp(CameraId cameraId, void* param) {
 	s32 j;
 	s32 counter;
 	Mtx mtx2;
-	GXColor color;
-#ifndef MUST_MATCH
-	f32 angle;
-#endif
 	MagicHoraoVtx* vtx;
 	s32 i;
 	s32 angleBase;
@@ -212,16 +206,7 @@ void effMagicHoraoDisp(CameraId cameraId, void* param) {
 	GXLoadPosMtxImm(mtx1, 0);
 	GXSetCurrentMtx(0);
 
-#ifdef MUST_MATCH
 	GXSetTevColor(GX_TEVREG0, makeHoraoColor(((GXColor){ 0x00, 0x00, 0xFF, 0x00 }), counter, colorAlpha));
-#else
-	angle = (6.2831855f * (f32)(counter * 30)) / 360.0f;
-	color = ((GXColor){ 0x00, 0x00, 0xFF, 0x00 });
-	color.r = (s32)(25.0f * (f32)sin(angle) + 225.0f);
-	color.g = (s32)(25.0f * (f32)sin(angle) + 225.0f);
-	color.a = colorAlpha;
-	GXSetTevColor(GX_TEVREG0, color);
-#endif
 
 	GXSetNumChans(0);
 	GXSetNumTexGens(1);
@@ -242,12 +227,7 @@ void effMagicHoraoDisp(CameraId cameraId, void* param) {
 		GXBegin(GX_TRIANGLES, 0, 6);
 		tri2(0, 1, 2, 0, 0, 2, 3, 0);
 
-#ifdef MUST_MATCH
 		color2 = makeHoraoColor2(((0x1E - data->timer) * 0xFF) / 0x1E);
-#else
-		color2 = unk_804231b8;
-		color2.a = ((0x1E - data->timer) * 0xFF) / 0x1E;
-#endif
 		GXSetTevColor(GX_TEVREG0, color2);
 
 		GXSetNumTevStages(1);
@@ -287,18 +267,13 @@ void effMagicHoraoDisp(CameraId cameraId, void* param) {
 			s32 xOffset;
 			s32 yOffset;
 
-// MUST_MATCH: the named `s` temp (rather than reusing the sin expression inline) is what
-// makes MWCC put alpha in f31 and the loop's constants in f26-f30, as the original does.
-#ifdef MUST_MATCH
+			// The named `s` temp (rather than reusing the sin expression inline) is what
+			// makes MWCC put alpha in f31 and the loop's constants in f26-f30, as the original does.
 			f32 s;
 			s = (f32)sin((6.2831855f * (f32)(angleBase + (counter * 10 + i * 60))) / 360.0f);
 			xOffset = (s32)(alpha * (500.0f * s));
 			s = (f32)sin((6.2831855f * (f32)(angleBase + (counter * 10 + i * 6))) / 360.0f);
 			yOffset = (s32)(alpha * (200.0f * s));
-#else
-			xOffset = (s32)(500.0f * (f32)sin((6.2831855f * (f32)(angleBase + (counter * 10 + i * 60))) / 360.0f) * alpha);
-			yOffset = (s32)(200.0f * (f32)sin((6.2831855f * (f32)(angleBase + (counter * 10 + i * 6))) / 360.0f) * alpha);
-#endif
 			vp->x = xOffset - 0xC80;
 			vp->y = yOffset + i * 400;
 			vp->z = 0;

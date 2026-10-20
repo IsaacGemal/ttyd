@@ -209,12 +209,9 @@ void effFireSparkMain(EffectEntry* effect) {
 #endif
 }
 
-// MUST_MATCH: the original builds each TEV colour through a small helper.  Passing the colour
-// through a void helper (same shape as bushSetColor) makes the by-value argument copy land in
-// the stack slot directly above the helper's local, which is what the original does; the plain
-// form is under #else.  The KColor helper is needed too, so its argument temp is allocated
-// alongside the other two instead of last.
-#ifdef MUST_MATCH
+// Building each TEV colour in a small void helper (same shape as bushSetColor) makes the by-value
+// argument copy land in the stack slot directly above the helper's local, as in the original. The KColor helper is needed too, so its
+// argument temp is allocated alongside the other two instead of last.
 static inline void setFireSparkColor1(effFireSparkData* data, s32 alpha) {
     GXColor color = unk_80423100;
     color.r = data->color1R;
@@ -234,7 +231,6 @@ static inline void setFireSparkColor2(effFireSparkData* data) {
 static inline void setFireSparkKColor(GXColor color) {
     GXSetTevKColor(GX_KCOLOR0, color);
 }
-#endif
 
 void effFireSparkDisp(CameraId camId, void* param) {
     EffectEntry* effect;
@@ -260,28 +256,8 @@ void effFireSparkDisp(CameraId camId, void* param) {
     PSMTXConcat(m0, m2, m0);
     PSMTXConcat(cam->view, m0, viewMtx);
 
-#ifdef MUST_MATCH
     setFireSparkColor1(data, alpha);
     setFireSparkColor2(data);
-#else
-    {
-        GXColor color2;
-        GXColor color1;
-
-        color1 = unk_80423100;
-        color1.r = data->color1R;
-        color1.g = data->color1G;
-        color1.b = data->color1B;
-        color1.a = alpha;
-        GXSetTevColor(GX_TEVREG0, color1);
-        color2 = unk_80423104;
-        color2.r = data->color2R;
-        color2.g = data->color2G;
-        color2.b = data->color2B;
-        color2.a = data->color2A;
-        GXSetTevColor(GX_TEVREG1, color2);
-    }
-#endif
 
     GXSetNumChans(0);
     GXSetNumTevStages(2);
@@ -299,11 +275,7 @@ void effFireSparkDisp(CameraId camId, void* param) {
     GXSetNumTexGens(2);
     GXSetTexCoordGen2(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_TEXMTX0, GX_FALSE, GX_PTIDENTITY);
     GXSetTexCoordGen2(GX_TEXCOORD1, GX_TG_MTX2x4, GX_TG_TEX0, GX_TEXMTX1, GX_FALSE, GX_PTIDENTITY);
-#ifdef MUST_MATCH
     setFireSparkKColor(dat_8041ee98);
-#else
-    GXSetTevKColor(GX_KCOLOR0, dat_8041ee98);
-#endif
     effGetTexObjN64(0x8B, &texobj);
     GXLoadTexObj(&texobj, GX_TEXMAP0);
     effGetTexObjN64(0x65, &texobj);
@@ -321,13 +293,9 @@ void effFireSparkDisp(CameraId camId, void* param) {
         GXLoadPosMtxImm(m0, GX_PNMTX0);
         GXSetCurrentMtx(GX_PNMTX0);
         PSMTXScale(m2, 0.03125f, 0.0078125f, 0.0f);
-#ifdef MUST_MATCH
-        // Match-only: literal 0.0f instead of the named 0.0f makes the signed i%4*32 conversion
-        // schedule its constant loads as the original does. It adds an anonymous 0.0 to .sdata2.
+        // The literal 0.0f (not the named constant) makes the signed i%4*32 conversion schedule
+        // its constant loads as the original does.
         PSMTXTrans(m0, 0.0f, (f32)(i % 4 * 32), 0.0f);
-#else
-        PSMTXTrans(m0, 0.0f, (f32)(i % 4 * 32), 0.0f);
-#endif
         PSMTXConcat(m2, m0, m2);
         GXLoadTexMtxImm(m2, GX_TEXMTX0, GX_MTX2x4);
         PSMTXScale(m2, 0.03125f, 0.03125f, 0.0f);
