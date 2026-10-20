@@ -68,7 +68,7 @@ s32 battleAcMain_PowerGaugeLv(BattleWork* work) {
     PowerGaugeLvDecWork* dec = (PowerGaugeLvDecWork*)&ac->field_0x2BC[0];
     BattleACDispParams* disp = &ac->dispParams;
 #else
-    PowerGaugeLvDecWork* dec = (PowerGaugeLvDecWork*)((u8*)work + 0x1f4c);
+    PowerGaugeLvDecWork* dec = (PowerGaugeLvDecWork*)&work->actionCommands.field_0x2BC[0];
     BattleACDispParams* disp = &work->actionCommands.dispParams;
 #endif
 
@@ -259,7 +259,7 @@ static void actionCommandDisp(f32 f1, f32 f2) {
 #ifdef MUST_MATCH
     dec = (PowerGaugeLvDecWork*)&ac->field_0x2BC[0];
 #else
-    dec = (PowerGaugeLvDecWork*)((u8*)work + 0x1f4c);
+    dec = (PowerGaugeLvDecWork*)&work->actionCommands.field_0x2BC[0];
 #endif
 
     {

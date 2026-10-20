@@ -93,7 +93,7 @@ static void actionCommandDisp(f32 x, f32 y);
 // original's saved-register set.
 static void actionCommandDisp(f32 x, f32 y) {
 	BattleWork* work = _battleWorkPointer;
-	PendulumCraneTimingWork* dec = (PendulumCraneTimingWork*)((u8*)work + 0x1F4C);
+	PendulumCraneTimingWork* dec = (PendulumCraneTimingWork*)&work->actionCommands.field_0x2BC[0];
 	CameraEntry* cam;
 	Vec v;
 	Vec v2;
@@ -199,7 +199,7 @@ s32 battleAcResult_PendulumCraneTiming(BattleWork* work) {
 // `addis`/`cmplwi` and signed tests.
 s32 battleAcMain_PendulumCraneTiming(BattleWork* work) {
 	BattleACDispParams* disp = &work->actionCommands.dispParams;
-	PendulumCraneTimingWork* dec = (PendulumCraneTimingWork*)((u8*)work + 0x1F4C);
+	PendulumCraneTimingWork* dec = (PendulumCraneTimingWork*)&work->actionCommands.field_0x2BC[0];
 	BattleUnit* unit;
 	s32 flag = 0;
 	s32 hit;

@@ -99,7 +99,7 @@ s32 battleAcMain_TimingA(BattleWork* work) {
 // dont_inline: battleAcResult_TimingA calls this with `bl`; without it MWCC inlines the body.
 #pragma dont_inline on
 s32 battleAcTimingA_GetSuccessFrame(BattleWork* work) {
-	AcTimingADecWork* dec = (AcTimingADecWork*)((u8*)work + 0x1F4C);
+	AcTimingADecWork* dec = (AcTimingADecWork*)&work->actionCommands.field_0x2BC[0];
 	AcTimingAEntry* entry = _ac_timing_a_timing_tbl[
 #ifdef MUST_MATCH
 	    // Match-only: the header says `s8`, but the callee returns a zero-extended 4-byte value;

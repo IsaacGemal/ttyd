@@ -65,7 +65,7 @@ s32 battleAcMain_PowerGaugeLv2(BattleWork* work) {
     s32 window;
     s32 i;
 
-    dec = (PowerGaugeLv2DecWork*)((u8*)work + 0x1F4C);
+    dec = (PowerGaugeLv2DecWork*)&work->actionCommands.field_0x2BC[0];
     disp = &work->actionCommands.dispParams;
 #ifdef MUST_MATCH
     // Match-only: the callee really returns 4 bytes (no extsb in the original); the `s8` header

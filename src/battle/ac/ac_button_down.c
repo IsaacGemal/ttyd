@@ -58,7 +58,7 @@ typedef struct ButtonDownWork {
 // pushes sfx above i in the allocator's order (r31, direct `addi r31, r3, @l`) and matches exactly.
 s32 battleAcMain_ButtonDown(BattleWork* work) {
     const char* sfx;
-    ButtonDownWork* bd = (ButtonDownWork*)((u8*)work + 0x1F4C);
+    ButtonDownWork* bd = (ButtonDownWork*)&work->actionCommands.field_0x2BC[0];
     BattleACDispParams* disp = &work->actionCommands.dispParams;
     s32 cont;
     s32 i;
@@ -331,7 +331,7 @@ static void actionCommandDisp(s32 type, f32 x, f32 y) {
     iconX = baseX - float_40_804204ec;
     iconY = float_70_804204f0 + y;
     limit = work->actionCommands.acParams[2] * 3 + 2;
-    bd = (ButtonDownWork*)((u8*)work + 0x1F4C);
+    bd = (ButtonDownWork*)&work->actionCommands.field_0x2BC[0];
 
     {
         Vec t = vec3_802fd5d0;

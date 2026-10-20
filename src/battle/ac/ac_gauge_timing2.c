@@ -80,7 +80,7 @@ static void actionCommandDisp(f32 x, f32 y);
 s32 battleAcMain_GaugeTiming2(BattleWork* work) {
 	s32 triggered;
 	s32 m;
-	GaugeTiming2Work* dec = (GaugeTiming2Work*)((u8*)work + 0x1F4C);
+	GaugeTiming2Work* dec = (GaugeTiming2Work*)&work->actionCommands.field_0x2BC[0];
 	BattleACDispParams* disp = &work->actionCommands.dispParams;
 	BattleUnit* unit = work->actionCommands.mAcUnit;
 	s32 autoFlag = 0;
