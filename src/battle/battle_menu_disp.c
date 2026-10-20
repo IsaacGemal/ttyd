@@ -70,36 +70,48 @@ f32 kakutable[3][5] = {
 };
 
 typedef struct BattleMenuDispEntry {
-    s32 field_0x0;   // 0x0
-    s32 field_0x4;   // 0x4
-    void* field_0x8; // 0x8
-    u16 field_0xC;   // 0xC
-    u16 field_0xE;   // 0xE
-    s32 field_0x10;  // 0x10
-    s32 field_0x14;  // 0x14
+    s32 field_0x0;       // 0x0
+    s32 enabled;         // 0x4, 1: selectable (black label, icon at 0x10), otherwise greyed
+    const char* label;   // 0x8
+    u16 iconId;          // 0xC, 0 uses the default icon 0x18B
+    u16 field_0xE;       // 0xE
+    const char* helpMsg; // 0x10
+    s16 hp;              // 0x14
+    s16 maxHp;           // 0x16
 } BattleMenuDispEntry; // 0x18
 
+// The multi-item table uses the same 0x18 stride with its own layout.
+typedef struct BattleMenuMultiEntry {
+    s32 enabled;         // 0x0
+    const char* label;   // 0x4
+    const char* helpMsg; // 0x8
+    u16 iconId;          // 0xC
+    u16 field_0xE;       // 0xE
+    s32 fpCost;          // 0x10
+    s32 field_0x14;      // 0x14
+} BattleMenuMultiEntry; // 0x18
+
 typedef struct BattleMenuDispEntryOp {
-    s32 field_0x0;  // 0x0
-    s32 field_0x4;  // 0x4
-    s32 field_0x8;  // 0x8
-    s32 field_0xC;  // 0xC
-    u16 field_0x10; // 0x10
-    u16 field_0x12; // 0x12
-    s32 field_0x14; // 0x14
-    s32 field_0x18; // 0x18
+    s32 field_0x0;       // 0x0
+    s32 enabled;         // 0x4
+    s32 field_0x8;       // 0x8
+    const char* label;   // 0xC
+    u16 iconId;          // 0x10
+    u16 field_0x12;      // 0x12
+    const char* helpMsg; // 0x14
+    s32 fpCost;          // 0x18
 } BattleMenuDispEntryOp; // 0x1C
 
 // Per-weapon entries behind BattleMenuWork.field_8 (stride 0x1C).
 typedef struct BattleMenuWeaponEntry {
     BattleWeapon* weapon;  // 0x0
-    s32 field_0x4;         // 0x4
-    s32 field_0x8;         // 0x8
+    s32 enabled;           // 0x4
+    const char* label;     // 0x8
     s32 field_0xC;         // 0xC
     u16 field_0x10;        // 0x10
     u8 field_0x12;         // 0x12
     u8 field_0x13[0x14 - 0x13];
-    s32 field_0x14;        // 0x14
+    s32 itemId;            // 0x14
     s32 field_0x18;        // 0x18
 } BattleMenuWeaponEntry; // 0x1C
 
@@ -224,10 +236,10 @@ void DrawMainIcon(BattleMenuWork* window, void* table, Mtx* mtxA, Vec* vecB, f32
     s32 i;
     s32 j;
 
-    if (unit->currentKind == 0xDE) {
-        cursor = (BattleCursor*)((u8*)wp + 0x1bb4);
+    if (unit->currentKind == UNIT_MARIO) {
+        cursor = &wp->commandMenu.cursor[0];
     } else {
-        cursor = (BattleCursor*)((u8*)wp + 0x1bc0);
+        cursor = &wp->commandMenu.cursor[1];
     }
     for (i = 0; i < cursor->unk8; i++) {
         order[i] = i;
@@ -316,11 +328,11 @@ void DrawMainIconHukidasi(BattleMenuWork* window, void* entryPtr, Mtx* mtx, f32 
     PSMTXConcat(*mtx, rotMtx, resultMtx);
     PSMTXConcat(resultMtx, transMtx, resultMtx);
     PSMTXConcat(resultMtx, scaleMtx, resultMtx);
-    iconId = entry->field_0xC;
+    iconId = entry->iconId;
     if (iconId == 0) {
         iconId = 0x18B;
     }
-    if (entry->field_0x4 == 1) {
+    if (entry->enabled == 1) {
 #ifdef MUST_MATCH
         // iconDispGx2's header says s16 but the original reads a zero-extended u16 (no extsh).
         ((void (*)(Mtx, s16, u16))iconDispGx2)(resultMtx, 0x10, iconId);
@@ -335,7 +347,7 @@ void DrawMainIconHukidasi(BattleMenuWork* window, void* entryPtr, Mtx* mtx, f32 
 #endif
     }
 
-    msg = (const char*)entry->field_0x8;
+    msg = entry->label;
     PSMTXTrans(transMtx, float_0_8041c144, 52.5f, float_0_8041c144);
     PSMTXScale(scaleMtx, 0.9f, 0.9f, 0.9f);
     PSMTXRotRad(rotMtx, 'y', f31);
@@ -343,7 +355,7 @@ void DrawMainIconHukidasi(BattleMenuWork* window, void* entryPtr, Mtx* mtx, f32 
     PSMTXConcat(resultMtx, transMtx, resultMtx);
     PSMTXConcat(resultMtx, scaleMtx, resultMtx);
     FontDrawStart();
-    if (entry->field_0x4 == 1) {
+    if (entry->enabled == 1) {
         color = ((GXColor){ 0x00,0x00,0x00,0xFF });
     } else {
         color = ((GXColor){ 0x80,0x80,0x80,0xFF });
@@ -444,11 +456,11 @@ void DrawMainIconCircle(BattleMenuWork* window, void* entryPtr, Mtx* mtx, Vec* p
     PSMTXConcat(*mtx, rotMtx, resultMtx);
     PSMTXConcat(resultMtx, scaleMtx, resultMtx);
     PSMTXConcat(resultMtx, transMtx, resultMtx);
-    iconId = entry->field_0xC;
+    iconId = entry->iconId;
     if ((u16)iconId == 0) {
         iconId = 0x18B;
     }
-    if (entry->field_0x4 == 1) {
+    if (entry->enabled == 1) {
 #ifdef MUST_MATCH
         iconDispGxCol(resultMtx, 0x10, iconId, MainIconCircleColor(((GXColor){ 0x00,0x00,0x00,0xFF }), alpha));
 #else
@@ -724,7 +736,6 @@ void DrawSubIconSub(BattleMenuWork* window, s32 index, Mtx mtx, s32 a, u16 b, s3
     }
 
     if (table != 0) {
-        // HP and max HP are the two s16 halves of the entry's field_0x14 word.
         s32 count2;
         s16 hp;
         s16 maxHp;
@@ -738,12 +749,8 @@ void DrawSubIconSub(BattleMenuWork* window, s32 index, Mtx mtx, s32 a, u16 b, s3
         s32 o2;
         s32 rem2;
         entry = (BattleMenuDispEntry*)((u8*)table + (index + (s32)window->scrollPos) * 0x18);
-        {
-            // field_0x14 holds HP in its low half and max HP in its high half as two s16s.
-            s16* halves = (s16*)entry;
-            hp = halves[10];
-            maxHp = halves[11];
-        }
+        hp = entry->hp;
+        maxHp = entry->maxHp;
         PSMTXTrans(mtxTrans, 30.0f, 22.0f, float_0_8041c144);
         PSMTXScale(mtxScale, 0.8f, 0.8f, 0.8f);
         PSMTXConcat(mtx, mtxTrans, mtxOut);
@@ -1082,14 +1089,14 @@ void InitSubMenuCommonProcess(BattleMenuWork** window, BattleCursor** cursor, Ba
     if (wp->commandMenu.field_55C) {
         BattleFree(wp->commandMenu.field_55C);
     }
-    wp->commandMenu.field_55C = BattleAlloc(0x124);
+    wp->commandMenu.field_55C = BattleAlloc(sizeof(BattleMenuWork));
     *window = wp->commandMenu.field_55C;
     (*window)->cursor = menu;
     (*window)->phase = 0;
     (*window)->field_0x10 = 0;
     (*window)->inputReady = 0;
     (*window)->lastCursorPos = menu->field_0;
-    if (BattleGetUnitPtr(wp, wp->activeUnitId)->currentKind == 0xDE) {
+    if (BattleGetUnitPtr(wp, wp->activeUnitId)->currentKind == UNIT_MARIO) {
         *cursor = &wp->commandMenu.cursor[0];
     } else {
         *cursor = &wp->commandMenu.cursor[1];
@@ -1208,10 +1215,10 @@ void DrawSubMenuCommonProcess(f32* outX, f32* outY, Mtx* mtxA, Vec* vecB, f32* s
     Mtx transMtx;
     Mtx scaleMtx;
 
-    if (BattleGetUnitPtr(wp, wp->activeUnitId)->currentKind == 0xDE) {
-        mainCursor = (BattleCursor*)((u8*)wp + 0x1bb4);
+    if (BattleGetUnitPtr(wp, wp->activeUnitId)->currentKind == UNIT_MARIO) {
+        mainCursor = &wp->commandMenu.cursor[0];
     } else {
-        mainCursor = (BattleCursor*)((u8*)wp + 0x1bc0);
+        mainCursor = &wp->commandMenu.cursor[1];
     }
     {
         s32 n = cursor->unk8;
@@ -1411,7 +1418,7 @@ void BattleMenuDisp_ActSelect_Init(BattleWork* wp, BattleCursor* a, void* b, u32
     if (wp->commandMenu.field_55C) {
         BattleFree(wp->commandMenu.field_55C);
     }
-    wp->commandMenu.field_55C = BattleAlloc(0x124);
+    wp->commandMenu.field_55C = BattleAlloc(sizeof(BattleMenuWork));
     if (flags & 1) {
         w = (BattleMenuWork*)wp->commandMenu.field_55C;
         w->cursor = a;
@@ -1787,16 +1794,16 @@ void DrawWeaponWin(void) {
     for (i = 0; i < 7; i++) {
         s32 idx = (s32)window->scrollPos + i;
         if (idx < cursor->unk8) {
-            arr88[i] = ((BattleMenuWeaponEntry*)window->weaponEntries)[idx].field_0x4;
+            arr88[i] = ((BattleMenuWeaponEntry*)window->weaponEntries)[idx].enabled;
             arr24[i] = *(u16*)((u8*)cmd + idx * 0x1c + 0x8c);
-            arr6C[i] = ((BattleMenuWeaponEntry*)window->weaponEntries)[idx].field_0x8;
+            arr6C[i] = (s32)((BattleMenuWeaponEntry*)window->weaponEntries)[idx].label;
             if (((BattleMenuWeaponEntry*)window->weaponEntries)[idx].weapon != 0) {
                 arr50[i] = BtlUnit_GetWeaponCost(unit, ((BattleMenuWeaponEntry*)window->weaponEntries)[idx].weapon);
             } else {
                 arr50[i] = 0;
             }
             if (((BattleMenuWeaponEntry*)window->weaponEntries)[idx].weapon != 0) {
-                arr34[i] = *(u8*)((u8*)((BattleMenuWeaponEntry*)window->weaponEntries)[idx].weapon + 0x12);
+                arr34[i] = ((BattleMenuWeaponEntry*)window->weaponEntries)[idx].weapon->baseSpCost;
             } else {
                 arr34[i] = 0;
             }
@@ -1806,18 +1813,18 @@ void DrawWeaponWin(void) {
     DrawSubIcon(window, rot, arr88, arr24, arr6C, arr50, arr34, 0, 0);
     DrawMenuCursorAndScrollArrow((Vec){ -60.0f, 35.0f, 0.0f });
     if (sel != 0) {
-        s32 id = *(s32*)((u8*)sel + 0x8);
+        s32 id = sel->item;
         if (id != 0) {
             msg = itemDataTable[id].description;
         } else if (sel == &ItemWeaponData_CookingItem) {
             BattleMenuWeaponEntry* entry = (BattleMenuWeaponEntry*)window->weaponEntries;
-            msg = itemDataTable[entry[cursor->field_0].field_0x14].description;
+            msg = itemDataTable[entry[cursor->field_0].itemId].description;
         } else {
-            msg = *(const char**)((u8*)sel + 0xC);
+            msg = sel->description;
         }
     } else {
         BattleMenuWeaponEntry* entry = (BattleMenuWeaponEntry*)window->weaponEntries;
-        msg = itemDataTable[entry[cursor->field_0].field_0x14].description;
+        msg = itemDataTable[entry[cursor->field_0].itemId].description;
     }
     if (msg != 0) {
         DrawMenuHelpWin(msg, outX, outY);
@@ -1831,7 +1838,7 @@ void BattleMenuDisp_Operation_Init(BattleWork* wp, u32 flags) {
     BattleCursor* cursor;
     BattleCursor* menu;
 
-    if (unit->currentKind == 0xDE) {
+    if (unit->currentKind == UNIT_MARIO) {
         menu = &wp->commandMenu.cursor[8];
     } else {
         menu = &wp->commandMenu.cursor[9];
@@ -1886,22 +1893,22 @@ void DrawOperationWin(void) {
         s32 idx = (s32)window->scrollPos + i;
         if (idx < cursor->unk8) {
             entry = &entries[idx];
-            arr88[i] = entry->field_0x4;
-            if (entries[i].field_0x10 != 0) {
-                arr24[i] = entry->field_0x10;
+            arr88[i] = entry->enabled;
+            if (entries[i].iconId != 0) {
+                arr24[i] = entry->iconId;
             } else {
                 arr24[i] = 0x18B;
             }
-            arr6C[i] = entry->field_0xC;
-            arr50[i] = entry->field_0x18;
+            arr6C[i] = (s32)entry->label;
+            arr50[i] = entry->fpCost;
             arr34[i] = 0;
         }
     }
     DrawMainIcon(window, (void*)((u8*)wp + 0x1724), mats, centers, scales);
     DrawSubIcon(window, rot, arr88, arr24, arr6C, arr50, arr34, 0, 0);
     DrawMenuCursorAndScrollArrow((Vec){ -60.0f, 35.0f, 0.0f });
-    if ((u32)entries[cursor->field_0].field_0x14 != 0) {
-        DrawMenuHelpWin((const char*)entries[cursor->field_0].field_0x14, outX, outY);
+    if (entries[cursor->field_0].helpMsg != 0) {
+        DrawMenuHelpWin(entries[cursor->field_0].helpMsg, outX, outY);
     }
 }
 #pragma dont_inline reset
@@ -1960,13 +1967,13 @@ void DrawChangePartyWin(void) {
         s32 idx = (s32)window->scrollPos + i;
         if (idx < cursor->unk8) {
             BattleMenuDispEntry* entry = &entries[idx];
-            arr88[i] = entry->field_0x4;
-            if (entry->field_0xC != 0) {
-                arr24[i] = entry->field_0xC;
+            arr88[i] = entry->enabled;
+            if (entry->iconId != 0) {
+                arr24[i] = entry->iconId;
             } else {
                 arr24[i] = 0x18B;
             }
-            arr6C[i] = (s32)entry->field_0x8;
+            arr6C[i] = (s32)entry->label;
             arr50[i] = 0;
             arr34[i] = 0;
         }
@@ -1974,8 +1981,8 @@ void DrawChangePartyWin(void) {
     DrawMainIcon(window, (void*)((u8*)wp + 0x1724), mats, centers, scales);
     DrawSubIcon(window, rot, arr88, arr24, arr6C, arr50, arr34, (void*)entries, 1);
     DrawMenuCursorAndScrollArrow((Vec){ -60.0f, 35.0f, 0.0f });
-    if ((u32)entries[cursor->field_0].field_0x10 != 0) {
-        DrawMenuHelpWin((const char*)entries[cursor->field_0].field_0x10, outX, outY);
+    if (entries[cursor->field_0].helpMsg != 0) {
+        DrawMenuHelpWin(entries[cursor->field_0].helpMsg, outX, outY);
     }
 }
 #pragma dont_inline reset
@@ -2009,7 +2016,7 @@ void DrawMultiItemWin(void) {
     BattleWork* wp = _battleWorkPointer;
     BattleMenuWork* window = (BattleMenuWork*)wp->commandMenu.field_55C;
     BattleCursor* cursor = window->cursor;
-    BattleMenuDispEntry* entries;
+    BattleMenuMultiEntry* entries;
     f32 outX;
     f32 outY;
     u16 arr24[7];
@@ -2024,27 +2031,27 @@ void DrawMultiItemWin(void) {
     s32 i;
 
     BattleGetUnitPtr(wp, wp->activeUnitId);
-    entries = (BattleMenuDispEntry*)((u8*)wp + 0x1b6c);
+    entries = (BattleMenuMultiEntry*)((u8*)wp + 0x1b6c);
     DrawSubMenuCommonProcess(&outX, &outY, mats, centers, scales, rot);
     for (i = 0; i < 7; i++) {
         s32 idx = (s32)window->scrollPos + i;
         if (idx < cursor->unk8) {
-            arr88[i] = entries[idx].field_0x0;
-            if (entries[idx].field_0xC != 0) {
-                arr24[i] = entries[idx].field_0xC;
+            arr88[i] = entries[idx].enabled;
+            if (entries[idx].iconId != 0) {
+                arr24[i] = entries[idx].iconId;
             } else {
                 arr24[i] = 0x18B;
             }
-            arr6C[i] = entries[idx].field_0x4;
-            arr50[i] = entries[idx].field_0x10;
+            arr6C[i] = (s32)entries[idx].label;
+            arr50[i] = entries[idx].fpCost;
             arr34[i] = 0;
         }
     }
     DrawMainIcon(window, (void*)((u8*)wp + 0x1724), mats, centers, scales);
     DrawSubIcon(window, rot, arr88, arr24, arr6C, arr50, arr34, 0, 0);
     DrawMenuCursorAndScrollArrow((Vec){ -60.0f, 35.0f, 0.0f });
-    if (entries[cursor->field_0].field_0x8 != 0) {
-        DrawMenuHelpWin((const char*)entries[cursor->field_0].field_0x8, outX, outY);
+    if (entries[cursor->field_0].helpMsg != 0) {
+        DrawMenuHelpWin(entries[cursor->field_0].helpMsg, outX, outY);
     }
 }
 #pragma dont_inline reset
