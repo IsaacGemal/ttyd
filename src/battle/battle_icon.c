@@ -245,9 +245,8 @@ USER_FUNC(btlevtcmd_BtlIconSetFallAccel) {
 
 // `icon->fallAccel * (f32)count / 2.0f` (not `(f32)count * icon->fallAccel * 0.5f`)
 // is what makes MWCC pick the original's fmuls/fmadds register allocation.
-// The raw 0x20..0x60 fields are undeclared in battle_icon.h; the 0x2C/0x34 pre-move position
-// reads after btlMovePos use a fresh base pointer to keep the size optimiser from caching
-// the two argument addresses (see the MUST_MATCH note on p).
+// The 0x2C/0x34 move-position reads after btlMovePos use a fresh base pointer to keep the
+// size optimiser from caching the two argument addresses (see the MUST_MATCH note on p).
 USER_FUNC(btlevtcmd_BtlIconJumpPosition) {
 	s32* args = event->args;
 	BattleIcon* icon;
@@ -261,10 +260,10 @@ USER_FUNC(btlevtcmd_BtlIconJumpPosition) {
 	// float_0 load in f0, as the original does; writing x - vx inline swaps those two registers.
 	f32 d;
 	// Match-only: a second, separately-created base pointer for the post-btlMovePos reads. Reading
-	// through the same `(u8*)icon + off` expression used by btlMovePos' arguments makes the -O4,s
-	// size optimiser cache both argument addresses in r29/r30 across the call; the fresh pointer
-	// keeps the original's `lfs f0, 0x2c(r31)` displacement form.
-	u8* p;
+	// through the same base expression used by btlMovePos' arguments makes the -O4,s size optimiser
+	// cache both argument addresses in r29/r30 across the call; the fresh pointer keeps the
+	// original's `lfs f0, 0x2c(r31)` displacement form.
+	BattleIcon* p;
 #endif
 
 	index = evtGetValue(event, args[0]);
@@ -274,78 +273,78 @@ USER_FUNC(btlevtcmd_BtlIconJumpPosition) {
 	count = evtGetValue(event, args[4]);
 	icon = BtlIconGetPtr(index);
 #ifdef MUST_MATCH
-	p = (u8*)icon;
+	p = icon;
 #endif
 	if (isFirstCall) {
 		event->blocked = 1;
 		if (count != 0) {
-			*(s32*)((u8*)icon + 0x44) = count;
+			icon->moveFrames = count;
 		}
-		*(f32*)((u8*)icon + 0x38) = x;
-		*(f32*)((u8*)icon + 0x3C) = y;
-		*(f32*)((u8*)icon + 0x40) = z;
+		icon->moveTargetPos.x = x;
+		icon->moveTargetPos.y = y;
+		icon->moveTargetPos.z = z;
 		vx = icon->position.x;
 		vy = icon->position.y;
 		vz = icon->position.z;
-		*(f32*)((u8*)icon + 0x2C) = vx;
-		*(f32*)((u8*)icon + 0x20) = vx;
-		*(f32*)((u8*)icon + 0x30) = vy;
-		*(f32*)((u8*)icon + 0x24) = vy;
-		*(f32*)((u8*)icon + 0x34) = vz;
-		*(f32*)((u8*)icon + 0x28) = vz;
-		*(f32*)((u8*)icon + 0x54) = angleABf(vx, vz, x, z);
-		*(f32*)((u8*)icon + 0x58) = distABf(vx, vz, x, z);
+		icon->moveCurrentPos.x = vx;
+		icon->moveStartPos.x = vx;
+		icon->moveCurrentPos.y = vy;
+		icon->moveStartPos.y = vy;
+		icon->moveCurrentPos.z = vz;
+		icon->moveStartPos.z = vz;
+		icon->moveAngle = angleABf(vx, vz, x, z);
+		icon->moveDist = distABf(vx, vz, x, z);
 #ifdef MUST_MATCH
 		d = x - vx;
 		if (d > float_0_8041e7a8) {
 #else
 		if (x - vx > float_0_8041e7a8) {
 #endif
-			*(s8*)((u8*)icon + 0x60) = 1;
+			icon->moveDirection = 1;
 		}
 #ifdef MUST_MATCH
 		else if (d < float_0_8041e7a8) {
 #else
 		else if (x - vx < float_0_8041e7a8) {
 #endif
-			*(s8*)((u8*)icon + 0x60) = -1;
+			icon->moveDirection = -1;
 		}
 		dy = y - vy;
-		if (*(s32*)((u8*)icon + 0x44) == 0) {
-			*(s32*)((u8*)icon + 0x44) = (s32)(*(f32*)((u8*)icon + 0x58) / *(f32*)((u8*)icon + 0x48));
-			*(f32*)((u8*)icon + 0x58) = *(f32*)((u8*)icon + 0x58) - (f32)*(s32*)((u8*)icon + 0x44) * *(f32*)((u8*)icon + 0x48);
+		if (icon->moveFrames == 0) {
+			icon->moveFrames = (s32)(icon->moveDist / icon->moveSpeedXZ);
+			icon->moveDist = icon->moveDist - (f32)icon->moveFrames * icon->moveSpeedXZ;
 		}
 		else {
-			*(f32*)((u8*)icon + 0x48) = *(f32*)((u8*)icon + 0x58) / (f32)*(s32*)((u8*)icon + 0x44);
-			*(f32*)((u8*)icon + 0x58) = *(f32*)((u8*)icon + 0x58) - (f32)*(s32*)((u8*)icon + 0x44) * *(f32*)((u8*)icon + 0x48);
+			icon->moveSpeedXZ = icon->moveDist / (f32)icon->moveFrames;
+			icon->moveDist = icon->moveDist - (f32)icon->moveFrames * icon->moveSpeedXZ;
 		}
-		if (*(s32*)((u8*)icon + 0x44) == 0) {
+		if (icon->moveFrames == 0) {
 			return EVT_RETURN_DONE;
 		}
-		*(f32*)((u8*)icon + 0x50) = icon->fallAccel * (f32)*(s32*)((u8*)icon + 0x44) / 2.0f + dy / (f32)*(s32*)((u8*)icon + 0x44);
-		*(f32*)((u8*)icon + 0x48) = *(f32*)((u8*)icon + 0x48) + *(f32*)((u8*)icon + 0x58) / (f32)*(s32*)((u8*)icon + 0x44);
+		icon->moveSpeedY = icon->fallAccel * (f32)icon->moveFrames / 2.0f + dy / (f32)icon->moveFrames;
+		icon->moveSpeedXZ = icon->moveSpeedXZ + icon->moveDist / (f32)icon->moveFrames;
 	}
-	*(f32*)((u8*)icon + 0x30) = *(f32*)((u8*)icon + 0x30) + *(f32*)((u8*)icon + 0x50);
-	*(f32*)((u8*)icon + 0x50) = *(f32*)((u8*)icon + 0x50) - icon->fallAccel;
-	if (*(f32*)((u8*)icon + 0x50) < float_0_8041e7a8 && *(f32*)((u8*)icon + 0x30) < *(f32*)((u8*)icon + 0x3C)) {
-		*(f32*)((u8*)icon + 0x30) = *(f32*)((u8*)icon + 0x3C);
+	icon->moveCurrentPos.y = icon->moveCurrentPos.y + icon->moveSpeedY;
+	icon->moveSpeedY = icon->moveSpeedY - icon->fallAccel;
+	if (icon->moveSpeedY < float_0_8041e7a8 && icon->moveCurrentPos.y < icon->moveTargetPos.y) {
+		icon->moveCurrentPos.y = icon->moveTargetPos.y;
 	}
-	btlMovePos((f32*)((u8*)icon + 0x2C), (f32*)((u8*)icon + 0x34), *(f32*)((u8*)icon + 0x48), *(f32*)((u8*)icon + 0x54));
+	btlMovePos((f32*)((u8*)icon + 0x2C), (f32*)((u8*)icon + 0x34), icon->moveSpeedXZ, icon->moveAngle);
 #ifdef MUST_MATCH
 	// Match-only: see the fresh-base-pointer comment above p's declaration.
-	icon->position.x = *(f32*)(p + 0x2C);
-	icon->position.y = *(f32*)(p + 0x30);
-	icon->position.z = *(f32*)(p + 0x34);
+	icon->position.x = p->moveCurrentPos.x;
+	icon->position.y = p->moveCurrentPos.y;
+	icon->position.z = p->moveCurrentPos.z;
 #else
 	icon->position.x = *(f32*)((u8*)icon + 0x2C);
 	icon->position.y = *(f32*)((u8*)icon + 0x30);
 	icon->position.z = *(f32*)((u8*)icon + 0x34);
 #endif
-	*(s32*)((u8*)icon + 0x44) = *(s32*)((u8*)icon + 0x44) - 1;
-	if (*(s32*)((u8*)icon + 0x44) <= 0) {
-		icon->position.x = *(f32*)((u8*)icon + 0x38);
-		icon->position.y = *(f32*)((u8*)icon + 0x3C);
-		icon->position.z = *(f32*)((u8*)icon + 0x40);
+	icon->moveFrames = icon->moveFrames - 1;
+	if (icon->moveFrames <= 0) {
+		icon->position.x = icon->moveTargetPos.x;
+		icon->position.y = icon->moveTargetPos.y;
+		icon->position.z = icon->moveTargetPos.z;
 		return EVT_RETURN_YIELD;
 	}
 	return EVT_RETURN_BLOCK;

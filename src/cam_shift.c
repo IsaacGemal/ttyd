@@ -12,140 +12,140 @@ static CamShiftWork work;
 static CamShiftWork* wp = &work;
 
 void camShiftInit(void) {
-    wp->unk_00 = 0.0f;
-    wp->unk_04 = 0.0f;
-    wp->unk_08 = 0.0f;
-    wp->unk_0C = 0.0f;
-    wp->unk_10 = 0.0f;
-    wp->unk_20 = 300.0f;
-    wp->unk_24 = 3.0f;
-    wp->unk_28 = 0.002f;
-    wp->unk_2C = 0.0f;
-    wp->unk_30 = 0.0f;
+    wp->bank = 0.0f;
+    wp->targetBank = 0.0f;
+    wp->stepScale = 0.0f;
+    wp->stickAccum = 0.0f;
+    wp->scaleActive = 0.0f;
+    wp->stickAccumMax = 300.0f;
+    wp->maxStep = 3.0f;
+    wp->scaleRate = 0.002f;
+    wp->lastMarioX = 0.0f;
+    wp->lastMarioZ = 0.0f;
 }
 
 void camShiftMain(CameraEntry* camera, MarioWork* mario, f32* out) {
-    f32 rate;
-    f32 stick;
-    s32 flag;
+    f32 shiftXRate;
+    f32 stickInput;
+    s32 camFlag;
 
-    flag = 0;
-    rate = camRoadGetCurrentShiftXRate();
+    camFlag = 0;
+    shiftXRate = camRoadGetCurrentShiftXRate();
     if (camera->flags & 0x20) {
-        flag = 1;
+        camFlag = 1;
     }
-    if (flag) {
-        wp->unk_08 = 1.0f;
-        stick = 0.0f;
-        wp->unk_04 = 0.0f;
-        wp->unk_10 = 1.0f;
+    if (camFlag) {
+        wp->stepScale = 1.0f;
+        stickInput = 0.0f;
+        wp->targetBank = 0.0f;
+        wp->scaleActive = 1.0f;
     } else {
-        stick = (f32)(s8)mario->wStickDir1;
-        if (stick > 0.0f) {
-            stick = 25.0f;
+        stickInput = (f32)(s8)mario->wStickDir1;
+        if (stickInput > 0.0f) {
+            stickInput = 25.0f;
         }
-        if (stick < 0.0f) {
-            stick = -25.0f;
+        if (stickInput < 0.0f) {
+            stickInput = -25.0f;
         }
-        if (mario->position.x == wp->unk_2C && mario->position.z == wp->unk_30) {
-            stick = 0.0f;
+        if (mario->position.x == wp->lastMarioX && mario->position.z == wp->lastMarioZ) {
+            stickInput = 0.0f;
         }
-        wp->unk_2C = mario->position.x;
-        wp->unk_30 = mario->position.z;
+        wp->lastMarioX = mario->position.x;
+        wp->lastMarioZ = mario->position.z;
     }
-    if (stick) {
-        if (stick < 0.0f) {
-            if (wp->unk_0C > 0.0f) {
-                wp->unk_0C = getV60FPS(stick, wp->unk_18, gp->renderTime);
+    if (stickInput) {
+        if (stickInput < 0.0f) {
+            if (wp->stickAccum > 0.0f) {
+                wp->stickAccum = getV60FPS(stickInput, wp->prevTime, gp->renderTime);
             } else {
-                wp->unk_0C += getV60FPS(stick, wp->unk_18, gp->renderTime);
+                wp->stickAccum += getV60FPS(stickInput, wp->prevTime, gp->renderTime);
             }
-            if (wp->unk_0C <= -wp->unk_20) {
-                wp->unk_10 = 1.0f;
-                if (wp->unk_04 > 0.0f) {
-                    wp->unk_08 = 0.0f;
+            if (wp->stickAccum <= -wp->stickAccumMax) {
+                wp->scaleActive = 1.0f;
+                if (wp->targetBank > 0.0f) {
+                    wp->stepScale = 0.0f;
                 }
-                wp->unk_04 = -rate;
-                wp->unk_0C = -wp->unk_20;
+                wp->targetBank = -shiftXRate;
+                wp->stickAccum = -wp->stickAccumMax;
             }
         } else {
-            if (wp->unk_0C < 0.0f) {
-                wp->unk_0C = getV60FPS(stick, wp->unk_18, gp->renderTime);
+            if (wp->stickAccum < 0.0f) {
+                wp->stickAccum = getV60FPS(stickInput, wp->prevTime, gp->renderTime);
             } else {
-                wp->unk_0C += getV60FPS(stick, wp->unk_18, gp->renderTime);
+                wp->stickAccum += getV60FPS(stickInput, wp->prevTime, gp->renderTime);
             }
-            if (wp->unk_0C >= wp->unk_20) {
-                wp->unk_10 = 1.0f;
-                if (wp->unk_04 < 0.0f) {
-                    wp->unk_08 = 0.0f;
+            if (wp->stickAccum >= wp->stickAccumMax) {
+                wp->scaleActive = 1.0f;
+                if (wp->targetBank < 0.0f) {
+                    wp->stepScale = 0.0f;
                 }
-                wp->unk_04 = rate;
-                wp->unk_0C = wp->unk_20;
+                wp->targetBank = shiftXRate;
+                wp->stickAccum = wp->stickAccumMax;
             }
         }
     }
-    if (wp->unk_10) {
-        wp->unk_08 += getV60FPS(wp->unk_28, wp->unk_18, gp->renderTime);
-        if (wp->unk_08 > 1.0f) {
-            wp->unk_08 = 1.0f;
+    if (wp->scaleActive) {
+        wp->stepScale += getV60FPS(wp->scaleRate, wp->prevTime, gp->renderTime);
+        if (wp->stepScale > 1.0f) {
+            wp->stepScale = 1.0f;
         }
     }
-    if (wp->unk_04 - wp->unk_00 == 0.0f) {
-        wp->unk_08 = 0.0f;
-        wp->unk_10 = 0.0f;
+    if (wp->targetBank - wp->bank == 0.0f) {
+        wp->stepScale = 0.0f;
+        wp->scaleActive = 0.0f;
     }
     {
-        f32 dist;
-        f32 step;
+        f32 bankDelta;
+        f32 bankStep;
 
-        step = wp->unk_08 * (dist = wp->unk_04 - wp->unk_00);
+        bankStep = wp->stepScale * (bankDelta = wp->targetBank - wp->bank);
 
-        if (dist > 0.0f) {
-            if (dist < 0.0001f) {
-                step = dist;
+        if (bankDelta > 0.0f) {
+            if (bankDelta < 0.0001f) {
+                bankStep = bankDelta;
             }
-            if (step > wp->unk_24) {
-                step = wp->unk_24;
+            if (bankStep > wp->maxStep) {
+                bankStep = wp->maxStep;
             }
         } else {
-            if (dist > -0.0001f) {
-                step = dist;
+            if (bankDelta > -0.0001f) {
+                bankStep = bankDelta;
             }
-            if (step < -wp->unk_24) {
-                step = -wp->unk_24;
+            if (bankStep < -wp->maxStep) {
+                bankStep = -wp->maxStep;
             }
         }
-        if (stick || flag) {
-            wp->unk_00 += getV60FPS(step, wp->unk_18, gp->renderTime);
-            if (wp->unk_04 < 0.0f) {
-                if (wp->unk_00 < wp->unk_04) {
-                    wp->unk_00 = wp->unk_04;
+        if (stickInput || camFlag) {
+            wp->bank += getV60FPS(bankStep, wp->prevTime, gp->renderTime);
+            if (wp->targetBank < 0.0f) {
+                if (wp->bank < wp->targetBank) {
+                    wp->bank = wp->targetBank;
                 }
             } else {
-                if (wp->unk_00 > wp->unk_04) {
-                    wp->unk_00 = wp->unk_04;
+                if (wp->bank > wp->targetBank) {
+                    wp->bank = wp->targetBank;
                 }
             }
         } else {
-            wp->unk_08 = 0.0f;
+            wp->stepScale = 0.0f;
         }
     }
-    *out = wp->unk_00;
+    *out = wp->bank;
 }
 
 void camShiftPostMain(void) {
-    wp->unk_18 = gp->renderTime;
+    wp->prevTime = gp->renderTime;
 }
 
 void camShiftReset(void) {
-    wp->unk_00 = 0.0f;
-    wp->unk_04 = 0.0f;
-    wp->unk_08 = 0.0f;
-    wp->unk_0C = 0.0f;
-    wp->unk_10 = 0.0f;
-    wp->unk_20 = 300.0f;
-    wp->unk_24 = 3.0f;
-    wp->unk_28 = 0.002f;
-    wp->unk_2C = 0.0f;
-    wp->unk_30 = 0.0f;
+    wp->bank = 0.0f;
+    wp->targetBank = 0.0f;
+    wp->stepScale = 0.0f;
+    wp->stickAccum = 0.0f;
+    wp->scaleActive = 0.0f;
+    wp->stickAccumMax = 300.0f;
+    wp->maxStep = 3.0f;
+    wp->scaleRate = 0.002f;
+    wp->lastMarioX = 0.0f;
+    wp->lastMarioZ = 0.0f;
 }

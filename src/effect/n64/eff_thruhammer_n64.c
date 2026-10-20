@@ -10,6 +10,7 @@
 
 // .sbss2: the default .sbss2 is only used for compiler-generated pool templates, so pair it with a small-data section.
 #pragma section ".sdata" ".sbss2"
+// .sdata zeroed GXColor scratch the original builds its TEV colors from.
 __declspec(section ".sdata") u32 unk_804232a4;
 __declspec(section ".sdata") u32 unk_804232a0;
 __declspec(section ".sdata") u32 unk_8042329c;
@@ -57,24 +58,24 @@ EffectEntry* effThruHammerN64Entry(s32 type, f32 x, f32 y, f32 z, f32 angle) {
 	effect->userdata = data;
 	effect->callback = effThruHammerMain;
 
-	data->field_0x28 = 60;
-	data->field_0x2C = 0;
+	data->life = 60;
+	data->age = 0;
 	data->type = type;
-	data->x = x;
-	data->y = y;
-	data->z = z;
-	data->field_0x38 = 0xFF;
-	data->field_0x50 = 0;
-	data->field_0x51 = 0xFF;
-	data->field_0x52 = 0x7A;
-	data->field_0x53 = 0xF0;
-	data->field_0x54 = 0xFF;
-	data->field_0x55 = 0xFA;
+	data->position.x = x;
+	data->position.y = y;
+	data->position.z = z;
+	data->alpha = 0xFF;
+	data->tevReg0R = 0;
+	data->tevReg0G = 0xFF;
+	data->tevReg0B = 0x7A;
+	data->tevReg1R = 0xF0;
+	data->tevReg1G = 0xFF;
+	data->tevReg1B = 0xFA;
 
 	for (i = 1, data++; i < count + 1; i++, data++) {
-		data->field_0x4C = -1 - (i - 1) * 4;
-		data->field_0x34 = angle;
-		data->field_0x30 = (f32)(i * 30);
+		data->delay = -1 - (i - 1) * 4;
+		data->rotZ = angle;
+		data->rotY = (f32)(i * 30);
 	}
 
 	return effect;
@@ -98,52 +99,52 @@ void effThruHammerMain(EffectEntry* effect) {
 	Vec disp;
 	s32 i;
 
-	disp = initializeVec((Vec*)&data->x);
+	disp = initializeVec(&data->position);
 
-	data->field_0x2C++;
-	data->field_0x28--;
-	if (data->field_0x28 < 0) {
+	data->age++;
+	data->life--;
+	if (data->life < 0) {
 		effDelete(effect);
 		return;
 	}
-	if (data->field_0x2C >= 8) {
-		data->field_0x38 *= 0.8f;
+	if (data->age >= 8) {
+		data->alpha *= 0.8f;
 	}
 	for (i = 1, data++; i < effect->count; i++, data++) {
-		data->field_0x4C++;
-		if (data->field_0x4C < 0) {
+		data->delay++;
+		if (data->delay < 0) {
 			continue;
 		}
-		if (data->field_0x4C == 0) {
-			data->x = 0.0f;
-			data->y = 0.0f;
-			data->z = 0.0f;
+		if (data->delay == 0) {
+			data->position.x = 0.0f;
+			data->position.y = 0.0f;
+			data->position.z = 0.0f;
 #ifdef MUST_MATCH
 			{
-				f32 s = (f32)sin(6.2831855f * data->field_0x34 / 360.0f);
-				data->field_0x10 = -s * 0.5f;
+				f32 s = (f32)sin(6.2831855f * data->rotZ / 360.0f);
+				data->dirX = -s * 0.5f;
 			}
 #else
-			data->field_0x10 = -(f32)sin(6.2831855f * data->field_0x34 / 360.0f) * 0.5f;
+			data->dirX = -(f32)sin(6.2831855f * data->rotZ / 360.0f) * 0.5f;
 #endif
-			data->field_0x14 = 0.5f * (f32)cos(6.2831855f * data->field_0x34 / 360.0f);
-			data->field_0x18 = 0.0f;
-			data->field_0x3C = 32.0f;
-			data->field_0x40 = 32.0f;
-			data->field_0x48 = 32.0f;
-			data->field_0x20 = 10.0f;
-			data->field_0x1C = 0.5f;
-			data->field_0x24 = 0.5f;
-			data->field_0x44 = 32.0f;
+			data->dirY = 0.5f * (f32)cos(6.2831855f * data->rotZ / 360.0f);
+			data->dirZ = 0.0f;
+			data->texScrollA = 32.0f;
+			data->texSpeedA = 32.0f;
+			data->texSpeedB = 32.0f;
+			data->scaleY = 10.0f;
+			data->scaleX = 0.5f;
+			data->scaleZ = 0.5f;
+			data->texScrollB = 32.0f;
 		}
-		data->field_0x3C += data->field_0x40;
-		data->field_0x44 += data->field_0x48;
-		data->field_0x40 *= 0.9f;
-		data->field_0x1C += 0.2f;
-		data->field_0x24 += 0.2f;
-		data->field_0x20 += (0.1f - data->field_0x20) * 0.2f;
-		if (data->field_0x3C > 128.0f) {
-			data->field_0x3C = 128.0f;
+		data->texScrollA += data->texSpeedA;
+		data->texScrollB += data->texSpeedB;
+		data->texSpeedA *= 0.9f;
+		data->scaleX += 0.2f;
+		data->scaleZ += 0.2f;
+		data->scaleY += (0.1f - data->scaleY) * 0.2f;
+		if (data->texScrollA > 128.0f) {
+			data->texScrollA = 128.0f;
 		}
 	}
 	dispEntry(CAMERA_3D, dispCalcZ(&disp), 2, effThruHammerDisp, effect);
@@ -181,49 +182,49 @@ void effThruHammerDisp(CameraId camId, void* param) {
 	Mtx trans;
 	Mtx rot;
 	Mtx work;
-	s32 ca;
-	u8 cr = data->field_0x50;
-	u8 cg = data->field_0x51;
-	u8 cb = data->field_0x52;
-	u8 cr2 = data->field_0x53;
-	u8 cg2 = data->field_0x54;
-	u8 cb2 = data->field_0x55;
+	s32 alpha;
+	u8 cr = data->tevReg0R;
+	u8 cg = data->tevReg0G;
+	u8 cb = data->tevReg0B;
+	u8 cr2 = data->tevReg1R;
+	u8 cg2 = data->tevReg1G;
+	u8 cb2 = data->tevReg1B;
 
 	GXSetNumChans(0);
 	GXSetNumTexGens(2);
-	GXSetTexCoordGen2(0, 1, 4, 0x1e, 0, 0x7d);
-	GXSetTexCoordGen2(1, 1, 4, 0x21, 0, 0x7d);
-	GXSetTevOrder(0, 0, 0, 0xff);
-	GXSetTevColorOp(0, 0, 0, 0, 1, 0);
-	GXSetTevAlphaOp(0, 0, 0, 0, 1, 0);
-	GXSetTevColorIn(0, 0xf, 0xf, 0xf, 0xf);
-	GXSetTevAlphaIn(0, 7, 1, 4, 7);
-	GXSetTevOrder(1, 1, 1, 0xff);
-	GXSetTevColorOp(1, 0, 0, 0, 1, 0);
-	GXSetTevAlphaOp(1, 0, 0, 0, 1, 0);
-	GXSetTevColorIn(1, 4, 2, 8, 0xf);
-	GXSetTevAlphaIn(1, 7, 7, 7, 0);
+	GXSetTexCoordGen2(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_TEXMTX0, GX_FALSE, GX_PTIDENTITY);
+	GXSetTexCoordGen2(GX_TEXCOORD1, GX_TG_MTX2x4, GX_TG_TEX0, GX_TEXMTX1, GX_FALSE, GX_PTIDENTITY);
+	GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR_NULL);
+	GXSetTevColorOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+	GXSetTevAlphaOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+	GXSetTevColorIn(GX_TEVSTAGE0, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ZERO);
+	GXSetTevAlphaIn(GX_TEVSTAGE0, GX_CA_ZERO, GX_CA_A0, GX_CA_TEXA, GX_CA_ZERO);
+	GXSetTevOrder(GX_TEVSTAGE1, GX_TEXCOORD1, GX_TEXMAP1, GX_COLOR_NULL);
+	GXSetTevColorOp(GX_TEVSTAGE1, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+	GXSetTevAlphaOp(GX_TEVSTAGE1, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+	GXSetTevColorIn(GX_TEVSTAGE1, GX_CC_C1, GX_CC_C0, GX_CC_TEXC, GX_CC_ZERO);
+	GXSetTevAlphaIn(GX_TEVSTAGE1, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_APREV);
 	effGetTexObjN64(0x23, &texObj);
-	GXLoadTexObj(&texObj, 0);
+	GXLoadTexObj(&texObj, GX_TEXMAP0);
 	effGetTexObjN64(0x24, &texObj);
-	GXLoadTexObj(&texObj, 1);
+	GXLoadTexObj(&texObj, GX_TEXMAP1);
 	effSetVtxDescN64((effVtxArray*)stg_thruhammer_v);
 
-	PSMTXTrans(trans, data->x, data->y, data->z);
+	PSMTXTrans(trans, data->position.x, data->position.y, data->position.z);
 	PSMTXRotRad(rot, 'y', 0.017453292f * -camGetPtr(CAMERA_3D)->viewYaw);
 	PSMTXConcat(trans, rot, trans);
 	PSMTXConcat(cam->view, trans, work);
 
-	ca = data->field_0x38;
+	alpha = data->alpha;
 #ifdef MUST_MATCH
-	thruColor4(1, &unk_80423298, cr, cg, cb, ca);
+	thruColor4(1, &unk_80423298, cr, cg, cb, alpha);
 #else
 	{
 		GXColor color1 = *(GXColor*)&unk_80423298;
 		color1.r = cr;
 		color1.g = cg;
 		color1.b = cb;
-		color1.a = ca;
+		color1.a = alpha;
 		GXSetTevColor(1, color1);
 	}
 #endif
@@ -240,18 +241,18 @@ void effThruHammerDisp(CameraId camId, void* param) {
 	}
 #endif
 
-	GXSetCullMode(2);
+	GXSetCullMode(GX_CULL_BACK);
 	main_dl(effect, work);
 
 #ifdef MUST_MATCH
-	thruColor4(1, &unk_804232a0, cr, cg, cb, ca);
+	thruColor4(1, &unk_804232a0, cr, cg, cb, alpha);
 #else
 	{
 		GXColor color3 = *(GXColor*)&unk_804232a0;
 		color3.r = cr;
 		color3.g = cg;
 		color3.b = cb;
-		color3.a = ca;
+		color3.a = alpha;
 		GXSetTevColor(1, color3);
 	}
 #endif
@@ -268,7 +269,7 @@ void effThruHammerDisp(CameraId camId, void* param) {
 	}
 #endif
 
-	GXSetCullMode(1);
+	GXSetCullMode(GX_CULL_FRONT);
 	main_dl(effect, work);
 }
 
@@ -281,32 +282,32 @@ static void main_dl(EffectEntry* effect, Mtx matrix) {
 
 	data++;
 	for (i = 1; i < effect->count; i++, data++) {
-		if (data->field_0x4C < 0) {
+		if (data->delay < 0) {
 			continue;
 		}
 
-		PSMTXTrans(trans, data->x, data->y, data->z);
-		PSMTXRotRad(rot, 'z', 0.017453292f * data->field_0x34);
+		PSMTXTrans(trans, data->position.x, data->position.y, data->position.z);
+		PSMTXRotRad(rot, 'z', 0.017453292f * data->rotZ);
 		PSMTXConcat(trans, rot, trans);
-		PSMTXScale(work, 0.3f * data->field_0x1C, 0.3f * data->field_0x20, 0.3f * data->field_0x24);
+		PSMTXScale(work, 0.3f * data->scaleX, 0.3f * data->scaleY, 0.3f * data->scaleZ);
 		PSMTXConcat(trans, work, trans);
-		PSMTXRotRad(rot, 'y', 0.017453292f * data->field_0x30);
+		PSMTXRotRad(rot, 'y', 0.017453292f * data->rotY);
 		PSMTXConcat(trans, rot, trans);
 		PSMTXConcat(matrix, trans, trans);
-		GXLoadPosMtxImm(trans, 0);
-		GXSetCurrentMtx(0);
+		GXLoadPosMtxImm(trans, GX_PNMTX0);
+		GXSetCurrentMtx(GX_PNMTX0);
 
 		PSMTXScale(work, 0.015873017f, 0.032258064f, 0.0f);
-		PSMTXTrans(trans, 0.0f, data->field_0x3C / 4.0f, 0.0f);
+		PSMTXTrans(trans, 0.0f, data->texScrollA / 4.0f, 0.0f);
 		PSMTXConcat(work, trans, work);
-		GXLoadTexMtxImm(work, 0x1e, 1);
+		GXLoadTexMtxImm(work, GX_TEXMTX0, GX_MTX2x4);
 
 		PSMTXScale(work, 0.12903225f, 0.12903225f, 0.0f);
-		PSMTXTrans(trans, 0.0f, data->field_0x44 / 4.0f, 0.0f);
+		PSMTXTrans(trans, 0.0f, data->texScrollB / 4.0f, 0.0f);
 		PSMTXConcat(work, trans, work);
-		GXLoadTexMtxImm(work, 0x21, 1);
+		GXLoadTexMtxImm(work, GX_TEXMTX1, GX_MTX2x4);
 
-		GXBegin(0x90, 0, 0x36);
+		GXBegin(GX_TRIANGLES, GX_VTXFMT0, 0x36);
 		tri2(0, 1, 2, 0, 2, 3, 4, 0);
 		tri2(2, 4, 5, 0, 1, 3, 2, 0);
 		tri2(4, 6, 5, 0, 5, 6, 7, 0);

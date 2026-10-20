@@ -8,16 +8,16 @@ typedef struct effMagic1Data {
     f32 x;            // 0x04
     f32 y;            // 0x08
     f32 z;            // 0x0C
-    f32 field_0x10;   // 0x10
-    f32 field_0x14;   // 0x14
-    f32 field_0x18;   // 0x18
-    f32 field_0x1c;   // 0x1C
-    f32 field_0x20;   // 0x20
-    f32 field_0x24;   // 0x24
-    f32 field_0x28;   // 0x28
-    s32 field_0x2c;   // 0x2C
-    s32 field_0x30;   // 0x30
-    s32 field_0x34;   // 0x34
+    f32 offsetX;      // 0x10, accumulated offset from the base position
+    f32 offsetY;      // 0x14
+    f32 offsetZ;      // 0x18
+    f32 velX;         // 0x1C, per-frame offset delta
+    f32 velY;         // 0x20
+    f32 velZ;         // 0x24
+    f32 scale;        // 0x28
+    s32 age;          // 0x2C, frames since spawn
+    s32 timer;        // 0x30, remaining frames / segment count
+    s32 alpha;        // 0x34
 } effMagic1Data;
 #include "driver/camdrv.h"
 void effMagic1Disp(CameraId camId, EffectEntry* effect);

@@ -28,6 +28,11 @@ extern const f32 float_360_8041eb88;
 extern const f32 float_1_8041eb8c;
 
 // .data / .sdata
+// One 0x54-byte block of but_02_v; the table holds 30 of them (630 words).
+typedef struct butterflyVtxFrame {
+    u32 data[21];
+} butterflyVtxFrame;
+
 u32 but_02_v[630] = {
 	0x00000000, 0x00FA0000, 0x0800FFFF, 0xFFFF013E, 0x001F00FA, 0x04000800, 0xFFFFFFFF,
 	0x013E001F, 0xFF020400, 0x0000FFFF, 0xFFFF0000, 0x0000FF02, 0x00000000, 0xFFFFFFFF,
@@ -131,21 +136,21 @@ static s8 y_data[32] = {
 };
 
 typedef struct effButterflyData {
-    s32 type;       // 0x0
-    s32 field_0x4;  // 0x4
-    s32 field_0x8;  // 0x8
-    Vec position;   // 0xC
-    Vec field_0x18; // 0x18
-    s32 field_0x24; // 0x24
-    f32 field_0x28; // 0x28
-    s32 field_0x2C; // 0x2C
-    s32 field_0x30; // 0x30
-    f32 field_0x34; // 0x34
-    f32 field_0x38; // 0x38
-    Vec velocity;   // 0x3C
+    s32 type;            // 0x0, caller type
+    s32 life;            // 0x4, frames remaining
+    s32 age;             // 0x8, frames since spawn
+    Vec position;        // 0xC
+    Vec homePos;         // 0x18, center of the wander area
+    s32 alpha;           // 0x24
+    f32 heading;         // 0x28, degrees around Y
+    s32 frame;           // 0x2C, vertex/animation frame, advanced by 3
+    s32 retargetTimer;   // 0x30, frames until a new wander target
+    f32 wanderRadius;    // 0x34
+    f32 wanderHeight;    // 0x38, vertical range of a new target
+    Vec velocity;        // 0x3C
 } effButterflyData;
 
-EffectEntry* effButterflyN64Entry(s32 a, f32 x, f32 y, f32 z) {
+EffectEntry* effButterflyN64Entry(s32 type, f32 x, f32 y, f32 z) {
     EffectEntry* effect;
     effButterflyData* data;
 
@@ -156,20 +161,20 @@ EffectEntry* effButterflyN64Entry(s32 a, f32 x, f32 y, f32 z) {
     effect->userdata = data;
     effect->callback = effButterflyMain;
     effect->flags |= 2;
-    data->type = a;
-    data->field_0x4 = 0x3E8;
-    data->field_0x24 = 0xFF;
+    data->type = type;
+    data->life = 0x3E8;
+    data->alpha = 0xFF;
     data->position.x = x;
-    data->field_0x18.x = x;
+    data->homePos.x = x;
     data->position.y = y;
-    data->field_0x18.y = y;
+    data->homePos.y = y;
     data->position.z = z;
-    data->field_0x18.z = z;
-    data->field_0x8 = 0;
-    data->field_0x2C = 0;
-    data->field_0x30 = 0;
-    data->field_0x34 = float_50_8041eb90;
-    data->field_0x38 = float_30_8041eb94;
+    data->homePos.z = z;
+    data->age = 0;
+    data->frame = 0;
+    data->retargetTimer = 0;
+    data->wanderRadius = float_50_8041eb90;
+    data->wanderHeight = float_30_8041eb94;
     return effect;
 }
 
@@ -234,7 +239,7 @@ static inline Vec butterflyMakeVec(f32 x, f32 y, f32 z) {
 void effButterflyMain(EffectEntry* effect) {
     effButterflyData* data = effect->userdata;
     Vec position;
-    Vec position2;
+    Vec prevPosition;
     f32 angle;
     f32 targetX;
     f32 targetY;
@@ -248,29 +253,29 @@ void effButterflyMain(EffectEntry* effect) {
     f32 mag;
 
     position = butterflyMakeVec(data->position.x, data->position.y, data->position.z);
-    position2 = position;
+    prevPosition = position;
     if (effect->flags & 4) {
         effect->flags &= ~4;
-        data->field_0x4 = 0x384;
+        data->life = 0x384;
     }
-    if (data->field_0x4 < 1000) {
-        data->field_0x4--;
+    if (data->life < 1000) {
+        data->life--;
     }
-    data->field_0x8++;
-    if (data->field_0x4 < 0) {
+    data->age++;
+    if (data->life < 0) {
         effDelete(effect);
         return;
     }
-    if (data->field_0x4 < 0x10) {
-        data->field_0x24 = data->field_0x4 << 4;
+    if (data->life < 0x10) {
+        data->alpha = data->life << 4;
     }
-    data->field_0x30--;
-    if (data->field_0x30 <= 0) {
+    data->retargetTimer--;
+    if (data->retargetTimer <= 0) {
         angle = float_6p2832_8041eb84 * (f32)(rand() % 360) / float_360_8041eb88;
-        targetX = data->field_0x34 * (f32)sin(angle) + data->field_0x18.x;
-        targetY = data->field_0x18.y + (f32)(rand() % (s32)data->field_0x38);
-        targetZ = data->field_0x34 * (f32)cos(angle) + data->field_0x18.z;
-        data->field_0x30 = rand() % 100 + 10;
+        targetX = data->wanderRadius * (f32)sin(angle) + data->homePos.x;
+        targetY = data->homePos.y + (f32)(rand() % (s32)data->wanderHeight);
+        targetZ = data->wanderRadius * (f32)cos(angle) + data->homePos.z;
+        data->retargetTimer = rand() % 100 + 10;
         px = data->position.x;
         py = data->position.y;
         pz = data->position.z;
@@ -278,9 +283,9 @@ void effButterflyMain(EffectEntry* effect) {
         dy = targetY - py;
         dz = targetZ - pz;
         if (float_0_8041eb80 == dx && float_0_8041eb80 == dy && float_0_8041eb80 == dz) {
-            dx = data->field_0x18.x - px;
-            dy = data->field_0x18.y - py;
-            dz = data->field_0x18.z - pz;
+            dx = data->homePos.x - px;
+            dy = data->homePos.y - py;
+            dz = data->homePos.z - pz;
             if (float_0_8041eb80 == dx && float_0_8041eb80 == dy && float_0_8041eb80 == dz) {
                 dx = float_1_8041eb8c;
                 dy = float_0_8041eb80;
@@ -297,16 +302,16 @@ void effButterflyMain(EffectEntry* effect) {
         data->velocity.x = dx;
         data->velocity.y = dy;
         data->velocity.z = dz;
-        data->field_0x28 = angleABf(float_0_8041eb80, float_0_8041eb80, -data->velocity.x, data->velocity.z);
+        data->heading = angleABf(float_0_8041eb80, float_0_8041eb80, -data->velocity.x, data->velocity.z);
     }
-    data->field_0x2C += 3;
-    if (data->field_0x2C >= 0x1E) {
-        data->field_0x2C -= 0x1E;
+    data->frame += 3;
+    if (data->frame >= 0x1E) {
+        data->frame -= 0x1E;
     }
     data->position.x += data->velocity.x;
     data->position.y += data->velocity.y;
     data->position.z += data->velocity.z;
-    dispEntry(CAMERA_3D, dispCalcZ(&position2), 1, effButterflyDisp, effect);
+    dispEntry(CAMERA_3D, dispCalcZ(&prevPosition), 1, effButterflyDisp, effect);
 }
 #pragma opt_common_subs reset
 
@@ -334,12 +339,12 @@ void effButterflyDisp(CameraId camId, void* param) {
 
     cam = camGetPtr(camId);
     data = effect->userdata;
-    alpha = data->field_0x24;
+    alpha = data->alpha;
     type = data->type;
 
     PSMTXTrans(trans, data->position.x,
-               float_0p3_8041eb6c * (f32)y_data[data->field_0x2C] + data->position.y, data->position.z);
-    PSMTXRotRad(rot, 'y', float_deg2rad_8041eb70 * data->field_0x28);
+               float_0p3_8041eb6c * (f32)y_data[data->frame] + data->position.y, data->position.z);
+    PSMTXRotRad(rot, 'y', float_deg2rad_8041eb70 * data->heading);
     PSMTXConcat(trans, rot, trans);
     PSMTXScale(scale, float_0p02_8041eb74, float_0p02_8041eb74, float_0p02_8041eb74);
     PSMTXConcat(trans, scale, trans);
@@ -370,7 +375,7 @@ void effButterflyDisp(CameraId camId, void* param) {
     effGetTexObjN64(type + 0x78, &texObj);
     GXLoadTexObj(&texObj, 0);
     GXSetCullMode(0);
-    effSetVtxDescN64((effVtxArray*)((u8*)but_02_v + data->field_0x2C * 0x54));
+    effSetVtxDescN64((effVtxArray*)((butterflyVtxFrame*)but_02_v + data->frame));
     GXBegin(0x90, 0, 0xC);
     tri2(0, 1, 2, 0, 0, 2, 3, 0);
     tri2(3, 4, 0, 0, 3, 5, 4, 0);

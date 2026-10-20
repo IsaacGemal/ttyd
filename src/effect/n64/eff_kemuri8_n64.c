@@ -20,28 +20,28 @@ extern const GXColor dat_8041f420;
 
 // One 0x5C-byte element of this effect's userdata array.
 typedef struct effKemuri8Particle {
-	u16 type;       // 0x0
-	u8 pad_02[2];   // 0x2
-	Vec position;   // 0x4
-	f32 field_0x10; // 0x10
-	f32 field_0x14; // 0x14
-	f32 field_0x18; // 0x18
-	f32 field_0x1C; // 0x1C
-	f32 field_0x20; // 0x20
-	f32 field_0x24; // 0x24
-	f32 field_0x28; // 0x28
-	f32 field_0x2C; // 0x2C
-	f32 field_0x30; // 0x30
-	f32 field_0x34; // 0x34
-	s32 field_0x38; // 0x38
-	s32 field_0x3C; // 0x3C
-	s32 field_0x40; // 0x40
-	u8 pad_44[4];   // 0x44
-	s32 field_0x48; // 0x48
-	s32 field_0x4C; // 0x4C
-	s32 field_0x50; // 0x50
-	s32 field_0x54; // 0x54
-	s32 camId;      // 0x58
+	u16 type;              // 0x0
+	u8 pad_02[2];          // 0x2
+	Vec position;          // 0x4
+	f32 distance;          // 0x10
+	f32 velocity;          // 0x14
+	f32 acceleration;      // 0x18
+	f32 accelerationStep;  // 0x1C
+	f32 field_0x20;        // 0x20
+	f32 field_0x24;        // 0x24
+	f32 field_0x28;        // 0x28
+	f32 field_0x2C;        // 0x2C
+	f32 dirX;              // 0x30
+	f32 dirY;              // 0x34
+	s32 field_0x38;        // 0x38
+	s32 age;               // 0x3C
+	s32 frame;             // 0x40: sprite-sheet frame (of 16), GX_TEXMTX0 U offset
+	GXColor color;         // 0x44
+	s32 nextFrame;         // 0x48: the following frame, GX_TEXMTX1 U offset
+	s32 lifetime;          // 0x4C
+	s32 fade;              // 0x50
+	s32 fadeTimer;         // 0x54
+	s32 camId;             // 0x58
 } effKemuri8Particle;
 
 // Local copy of system.c's inline helper so it inlines here as in the original.
@@ -99,22 +99,22 @@ EffectEntry* effKemuri8N64Entry(s32 type, f32 x, f32 y, f32 z) {
 	effect->callback = effKemuri8Main;
 
 	data->field_0x38 = 0;
-	data->field_0x3C = 0;
+	data->age = 0;
 	data->type = type;
 	data->position.x = x;
 	data->position.y = y;
 	data->position.z = z;
-	data->field_0x40 = 0;
-	data->field_0x48 = 0;
-	data->field_0x4C = 17;
+	data->frame = 0;
+	data->nextFrame = 0;
+	data->lifetime = 17;
 	data->camId = 4;
 
 	p = data + 1;
 	for (i = 1; i < count; i++, p++) {
-		p->field_0x10 = -3.0f;
-		p->field_0x14 = 0.19999999f;
-		p->field_0x18 = 0.0f;
-		p->field_0x1C = 0.0f;
+		p->distance = -3.0f;
+		p->velocity = 0.19999999f;
+		p->acceleration = 0.0f;
+		p->accelerationStep = 0.0f;
 		p->field_0x20 = 1.75f;
 		p->field_0x24 = -0.16f;
 		p->field_0x28 = 0.0f;
@@ -125,20 +125,20 @@ EffectEntry* effKemuri8N64Entry(s32 type, f32 x, f32 y, f32 z) {
 		cosAngle = (f32)cos(angle);
 		p->position.y = scale * -cosAngle;
 		p->position.z = 0.0f;
-		p->field_0x30 = (f32)sin(angle);
-		p->field_0x34 = (f32)cos(angle);
-		p->field_0x50 = flag;
+		p->dirX = (f32)sin(angle);
+		p->dirY = (f32)cos(angle);
+		p->fade = flag;
 		if (flag == 0) {
-			p->pad_44[0] = 0xEE;
-			p->pad_44[1] = 0xDE;
-			p->pad_44[2] = 0xD7;
-			p->pad_44[3] = 0xA0;
+			p->color.r = 0xEE;
+			p->color.g = 0xDE;
+			p->color.b = 0xD7;
+			p->color.a = 0xA0;
 		} else {
-			p->pad_44[0] = 0xFF;
-			p->pad_44[1] = 0xFF;
-			p->pad_44[2] = 0xFF;
-			p->pad_44[3] = 0xA0;
-			p->field_0x54 = 0;
+			p->color.r = 0xFF;
+			p->color.g = 0xFF;
+			p->color.b = 0xFF;
+			p->color.a = 0xA0;
+			p->fadeTimer = 0;
 		}
 	}
 	return effect;
@@ -149,31 +149,32 @@ void effKemuri8Main(EffectEntry* effect) {
 	Vec position;
 	s32 camId;
 	s32 i;
-	// b before a: the original's register allocation (a in r4, b in r0) depends on this order.
-	s32 b;
-	s32 a;
+	// frame before nextFrame: the original's register allocation (nextFrame in r4, frame in r0)
+	// depends on this order.
+	s32 frame;
+	s32 nextFrame;
 
 	position = initializeVec(&data->position);
 	camId = data->camId;
-	b = (s32)(16.0f * (f32)data->field_0x3C / (f32)data->field_0x4C);
-	a = (s32)(16.0f * (f32)(data->field_0x3C + 1) / (f32)data->field_0x4C);
-	data->field_0x3C++;
-	if (a > 15) {
-		a = 15;
+	frame = (s32)(16.0f * (f32)data->age / (f32)data->lifetime);
+	nextFrame = (s32)(16.0f * (f32)(data->age + 1) / (f32)data->lifetime);
+	data->age++;
+	if (nextFrame > 15) {
+		nextFrame = 15;
 	}
-	if (b > 15) {
+	if (frame > 15) {
 		effDelete(effect);
 		return;
 	}
-	data->field_0x40 = b;
-	data->field_0x48 = a;
+	data->frame = frame;
+	data->nextFrame = nextFrame;
 
 	for (i = 1, data++; i < effect->count; i++, data++) {
-		data->field_0x18 += data->field_0x1C;
-		data->field_0x14 += data->field_0x18;
-		data->field_0x10 += data->field_0x14;
-		data->position.x += data->field_0x10 * data->field_0x30;
-		data->position.y += data->field_0x10 * data->field_0x34;
+		data->acceleration += data->accelerationStep;
+		data->velocity += data->acceleration;
+		data->distance += data->velocity;
+		data->position.x += data->distance * data->dirX;
+		data->position.y += data->distance * data->dirY;
 	}
 
 	dispEntry(camId, dispCalcZ(&position), 2, effKemuri8Disp, effect);
@@ -216,10 +217,10 @@ void effKemuri8Disp(CameraId cameraId, void* param) {
 	Mtx scaleMtx;
 	Mtx rotMtx;
 	Mtx outMtx;
-	f32 uOffset;
-	f32 vOffset;
-	s32 frameU;
-	s32 frameV;
+	f32 frameOffset;
+	f32 nextFrameOffset;
+	s32 frame;
+	s32 nextFrame;
 	f32 size;
 	f32 size2;
 	s32 type;
@@ -229,8 +230,8 @@ void effKemuri8Disp(CameraId cameraId, void* param) {
 	data = effect->userdata;
 	camera = camGetPtr(cameraId);
 	type = data->type;
-	frameU = data->field_0x40;
-	frameV = data->field_0x48;
+	frame = data->frame;
+	nextFrame = data->nextFrame;
 
 	PSMTXTrans(transMtx, data->position.x, data->position.y, data->position.z);
 	PSMTXRotRad(rotMtx, 'y', 0.017453292f * -camGetPtr(cameraId)->viewYaw);
@@ -274,19 +275,19 @@ void effKemuri8Disp(CameraId cameraId, void* param) {
 	GXSetVtxAttrFmt(0, 9, 1, 4, 0);
 	GXSetVtxAttrFmt(0, 0xd, 1, 4, 0);
 
-	uOffset = 0.0625f * (f32)frameU;
-	vOffset = 0.0625f * (f32)frameV;
+	frameOffset = 0.0625f * (f32)frame;
+	nextFrameOffset = 0.0625f * (f32)nextFrame;
 
 	data++;
 	for (i = 1; i < effect->count; i++, data++) {
-		if (data->field_0x40 > 15) {
+		if (data->frame > 15) {
 			continue;
 		}
-		PSMTXTrans(transMtx, uOffset, 0.0f, 0.0f);
+		PSMTXTrans(transMtx, frameOffset, 0.0f, 0.0f);
 		PSMTXScale(scaleMtx, 0.0625f, 1.0f, 1.0f);
 		PSMTXConcat(transMtx, scaleMtx, transMtx);
 		GXLoadTexMtxImm(transMtx, 0x1e, 1);
-		PSMTXTrans(transMtx, vOffset, 0.0f, 0.0f);
+		PSMTXTrans(transMtx, nextFrameOffset, 0.0f, 0.0f);
 		PSMTXScale(scaleMtx, 0.0625f, 1.0f, 1.0f);
 		PSMTXConcat(transMtx, scaleMtx, transMtx);
 		GXLoadTexMtxImm(transMtx, 0x21, 1);
@@ -294,17 +295,17 @@ void effKemuri8Disp(CameraId cameraId, void* param) {
 		for (j = 0; j < 2; j++) {
 			if (j == 0) {
 #ifdef MUST_MATCH
-				kemuri8SetChanMatColorA((data->pad_44[3] * 0x60) / 255);
+				kemuri8SetChanMatColorA((data->color.a * 0x60) / 255);
 #else
 				GXColor color = unk_80423170;
-				color.a = (data->pad_44[3] * 0x60) / 255;
+				color.a = (data->color.a * 0x60) / 255;
 				GXSetChanMatColor(4, color);
 #endif
 				PSMTXTrans(transMtx, 2.0f + data->position.x, data->position.y - 2.0f, data->position.z);
 				PSMTXConcat(outMtx, transMtx, transMtx);
 				GXLoadPosMtxImm(transMtx, 0);
 			} else {
-				if (data->field_0x50 != 0) {
+				if (data->fade != 0) {
 					s32 red;
 					s32 green;
 					s32 blue;
@@ -313,7 +314,7 @@ void effKemuri8Disp(CameraId cameraId, void* param) {
 					red = 0xff;
 					blue = 0xff;
 
-					blue = 0xff - data->field_0x54 * 60;
+					blue = 0xff - data->fadeTimer * 60;
 					if (blue < 0) {
 						green += (s32)(0.8f * (f32)blue);
 						blue = 0;
@@ -325,21 +326,21 @@ void effKemuri8Disp(CameraId cameraId, void* param) {
 							}
 						}
 					}
-					data->pad_44[0] = red;
-					data->pad_44[1] = green;
-					data->pad_44[2] = blue;
-					data->field_0x54++;
+					data->color.r = red;
+					data->color.g = green;
+					data->color.b = blue;
+					data->fadeTimer++;
 				}
 #ifdef MUST_MATCH
-				kemuri8SetChanMatColorB(data->pad_44[0], data->pad_44[1],
-					data->pad_44[2], data->pad_44[3]);
+				kemuri8SetChanMatColorB(data->color.r, data->color.g,
+					data->color.b, data->color.a);
 #else
 				{
 					GXColor color = unk_80423174;
-					color.r = data->pad_44[0];
-					color.g = data->pad_44[1];
-					color.b = data->pad_44[2];
-					color.a = data->pad_44[3];
+					color.r = data->color.r;
+					color.g = data->color.g;
+					color.b = data->color.b;
+					color.a = data->color.a;
 					GXSetChanMatColor(4, color);
 				}
 #endif

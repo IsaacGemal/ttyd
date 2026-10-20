@@ -62,37 +62,45 @@ u32 stg_hahen_v[204] = {
 };
 
 
+// Overlay for the raw vertex table at stg_hahen_v, split at the offsets the
+// switch below hands to effSetVtxDescN64.
+typedef struct rubbleVtxData {
+	u8 type2_5Verts[0x142];            // 0x000, used by types 2 and 5
+	u8 type1_4Verts[0x188 - 0x142];    // 0x142, used by types 1 and 4
+	u8 type0_3Verts[0x330 - 0x188];    // 0x188, used by types 0 and 3
+} rubbleVtxData;
+
 typedef struct effRubbleData {
 	s32 type;        // 0x00
 	f32 x;           // 0x04
 	f32 y;           // 0x08
 	f32 z;           // 0x0C
-	f32 field_0x10;  // 0x10
+	f32 groundY;     // 0x10, y at which the rubble lands
 	f32 field_0x14;  // 0x14
-	f32 field_0x18;  // 0x18
+	f32 vy;          // 0x18, velocity, advanced by gravity
 	f32 field_0x1C;  // 0x1C
-	f32 field_0x20;  // 0x20
-	f32 field_0x24;  // 0x24
-	f32 field_0x28;  // 0x28
-	f32 field_0x2C;  // 0x2C
-	f32 field_0x30;  // 0x30
-	f32 field_0x34;  // 0x34
-	f32 field_0x38;  // 0x38
-	f32 field_0x3C;  // 0x3C
+	f32 gravity;     // 0x20
+	f32 rotX;        // 0x24
+	f32 rotZ;        // 0x28
+	f32 rotY;        // 0x2C
+	f32 rotSpeedX;   // 0x30
+	f32 rotSpeedZ;   // 0x34
+	f32 rotSpeedY;   // 0x38
+	f32 scale;       // 0x3C
 	s32 field_0x40;  // 0x40
-	s32 field_0x44;  // 0x44
-	s32 field_0x48;  // 0x48
-	s32 field_0x4C;  // 0x4C
+	s32 alpha;       // 0x44
+	s32 life;        // 0x48
+	s32 frame;       // 0x4C, counts up every frame
 } effRubbleData;
 
 
-static inline void rubbleSetColor(s32 a) {
+static inline void rubbleSetColor(s32 alpha) {
 	GXColor color = (GXColor){ 0xD7, 0xD7, 0x6E, 0x00 };
-	color.a = a;
+	color.a = alpha;
 	GXSetTevColor(GX_TEVREG0, color);
 }
 
-EffectEntry* effRubbleN64Entry(s32 type, s32 life, f32 x, f32 y, f32 z, f32 a5, f32 a6, f32 a7, f32 a8) {
+EffectEntry* effRubbleN64Entry(s32 type, s32 life, f32 x, f32 y, f32 z, f32 groundY, f32 vy, f32 gravity, f32 scale) {
 	EffectEntry* effect;
 	effRubbleData* data;
 
@@ -106,21 +114,21 @@ EffectEntry* effRubbleN64Entry(s32 type, s32 life, f32 x, f32 y, f32 z, f32 a5, 
 	data->x = x;
 	data->y = y;
 	data->z = z;
-	data->field_0x10 = a5;
-	data->field_0x18 = a6;
-	data->field_0x20 = a7;
-	data->field_0x48 = life;
-	data->field_0x4C = 0;
+	data->groundY = groundY;
+	data->vy = vy;
+	data->gravity = gravity;
+	data->life = life;
+	data->frame = 0;
 	data->field_0x14 = 0.0f;
 	data->field_0x1C = 0.0f;
-	data->field_0x24 = 0.0f;
-	data->field_0x28 = (f32)(rand() % 360);
-	data->field_0x2C = (f32)(rand() % 360);
-	data->field_0x30 = 0.0f;
-	data->field_0x38 = 20.f;
-	data->field_0x34 = -20.f;
-	data->field_0x44 = 0xFF;
-	data->field_0x3C = 2.0f * a8;
+	data->rotX = 0.0f;
+	data->rotZ = (f32)(rand() % 360);
+	data->rotY = (f32)(rand() % 360);
+	data->rotSpeedX = 0.0f;
+	data->rotSpeedY = 20.f;
+	data->rotSpeedZ = -20.f;
+	data->alpha = 0xFF;
+	data->scale = 2.0f * scale;
 	data->field_0x40 = 0;
 	return effect;
 }
@@ -137,33 +145,33 @@ void effRubbleMain(EffectEntry* effect) {
 	position.y = data->y;
 	position.z = data->z;
 	position2 = position;
-	data->field_0x48--;
-	data->field_0x4C++;
-	life = data->field_0x48;
+	data->life--;
+	data->frame++;
+	life = data->life;
 	if (life < 0) {
 		effDelete(effect);
 		return;
 	}
-	if (data->y != data->field_0x10) {
-		data->field_0x18 += data->field_0x20;
-		data->y += data->field_0x18;
-		data->field_0x24 += data->field_0x30;
-		data->field_0x2C += data->field_0x38;
-		data->field_0x28 += data->field_0x34;
-		if (data->y <= data->field_0x10) {
-			data->y = data->field_0x10;
+	if (data->y != data->groundY) {
+		data->vy += data->gravity;
+		data->y += data->vy;
+		data->rotX += data->rotSpeedX;
+		data->rotY += data->rotSpeedY;
+		data->rotZ += data->rotSpeedZ;
+		if (data->y <= data->groundY) {
+			data->y = data->groundY;
 			effHokoriN64Entry(2, 0x14, data->x, data->y, data->z);
-			data->field_0x48 = 0x1e;
+			data->life = 0x1e;
 		}
 	}
 	if (life < 10) {
 		#ifdef MUST_MATCH
 	{
 		f32 k = 0.8f;
-		data->field_0x44 = (s32)((f32)data->field_0x44 * k);
+		data->alpha = (s32)((f32)data->alpha * k);
 	}
 #else
-		data->field_0x44 = (s32)((f32)data->field_0x44 * 0.8f);
+		data->alpha = (s32)((f32)data->alpha * 0.8f);
 #endif
 	}
 	dispEntry(CAMERA_3D, dispCalcZ(&position2), 2, effRubbleDisp, effect);
@@ -181,16 +189,16 @@ void effRubbleDisp(CameraId cameraId, void* param) {
 	effect = param;
 	cam = camGetPtr(cameraId);
 	data = effect->userdata;
-	alpha = data->field_0x44;
+	alpha = data->alpha;
 
 	PSMTXTrans(trans, data->x, data->y, data->z);
-	PSMTXRotRad(rot, 'x', 0.017453292f * data->field_0x24);
+	PSMTXRotRad(rot, 'x', 0.017453292f * data->rotX);
 	PSMTXConcat(trans, rot, trans);
-	PSMTXRotRad(rot, 'y', 0.017453292f * data->field_0x2C);
+	PSMTXRotRad(rot, 'y', 0.017453292f * data->rotY);
 	PSMTXConcat(trans, rot, trans);
-	PSMTXRotRad(rot, 'z', 0.017453292f * data->field_0x28);
+	PSMTXRotRad(rot, 'z', 0.017453292f * data->rotZ);
 	PSMTXConcat(trans, rot, trans);
-	PSMTXScale(scale, data->field_0x3C, data->field_0x3C, data->field_0x3C);
+	PSMTXScale(scale, data->scale, data->scale, data->scale);
 	PSMTXConcat(trans, scale, trans);
 	PSMTXConcat(cam->view, trans, trans);
 	GXLoadPosMtxImm(trans, GX_PNMTX0);
@@ -212,7 +220,7 @@ void effRubbleDisp(CameraId cameraId, void* param) {
 	switch (data->type) {
 	case 0:
 	case 3:
-		effSetVtxDescN64((effVtxArray*)((u8*)stg_hahen_v + 0x188));
+		effSetVtxDescN64((effVtxArray*)((rubbleVtxData*)stg_hahen_v)->type0_3Verts);
 		GXBegin(GX_TRIANGLES, GX_VTXFMT0, 0x1e);
 		tri2(0, 1, 2, 0, 3, 4, 5, 0);
 		tri2(6, 7, 8, 0, 9, 10, 11, 0);
@@ -222,7 +230,7 @@ void effRubbleDisp(CameraId cameraId, void* param) {
 		break;
 	case 1:
 	case 4:
-		effSetVtxDescN64((effVtxArray*)((u8*)stg_hahen_v + 0x142));
+		effSetVtxDescN64((effVtxArray*)((rubbleVtxData*)stg_hahen_v)->type1_4Verts);
 		GXBegin(GX_TRIANGLES, GX_VTXFMT0, 0x12);
 		tri2(0, 1, 2, 0, 1, 3, 2, 0);
 		tri2(1, 0, 4, 0, 1, 4, 3, 0);
@@ -230,7 +238,7 @@ void effRubbleDisp(CameraId cameraId, void* param) {
 		break;
 	case 2:
 	case 5:
-		effSetVtxDescN64((effVtxArray*)stg_hahen_v);
+		effSetVtxDescN64((effVtxArray*)((rubbleVtxData*)stg_hahen_v)->type2_5Verts);
 		GXBegin(GX_TRIANGLES, GX_VTXFMT0, 0x1e);
 		tri2(0, 1, 2, 0, 2, 3, 4, 0);
 		tri2(5, 6, 7, 0, 5, 7, 8, 0);

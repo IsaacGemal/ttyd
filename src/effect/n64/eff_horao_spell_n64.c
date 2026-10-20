@@ -11,11 +11,6 @@
 #include "math_ext.h"
 #include <string.h>
 
-extern GXColor unk_80423150;
-extern GXColor unk_80423154;
-extern GXColor unk_80423158;
-extern effHoraoSpellVtx horao_spell_vtx[];
-
 // .sdata
 static u8 colr[20] = {
 	0x78, 0x82, 0x8C, 0x96, 0xA0, 0xAA, 0xB4, 0xBE,

@@ -583,7 +583,7 @@ void btlseqFirstAct(BattleWork* wp) {
 			evt = evtEntry(nanika_luck_event, 10, 0);
 			evt->unitId = -5;
 			*(s32*)(wp->field_18FF0 + 0x5C) = evt->eventId;
-			*(u64*)(wp->field_18C70 + 0x368) |= 0xFFFFFFFFFFFFFFFFULL;
+			wp->statusChangeMsg.mAnnouncedFlags |= 0xFFFFFFFFFFFFFFFFULL;
 			BattleStatusChangeMsgAdjust(wp);
 			BattleSetSeq(wp, 2, 0x200000B);
 			*(u16*)(wp->field_18FE1 + 1) = 0;
@@ -2487,8 +2487,8 @@ void btlseqTurnFirstProcess(BattleWork* wp) { //1:1
 	if (wp->turnCount >= 2) {
 		BattleMajinaiCheck();
 	}
-	*(s32*)(wp->field_18C70 + 0x36C) = 0;
-	*(s32*)(wp->field_18C70 + 0x368) = 0;
+	*((s32*)&wp->statusChangeMsg.mAnnouncedFlags + 1) = 0; // low word, then high: two stores, as retail
+	*(s32*)&wp->statusChangeMsg.mAnnouncedFlags = 0;
 	BtlActRec_AddCount((u8*)wp + 0x16F3B);
 
 	for (i = 0; i < 64; i++) {

@@ -16,17 +16,17 @@ typedef struct EffStardustN64Data {
     f32 x;          // 0x04
     f32 y;          // 0x08
     f32 z;          // 0x0C
-    f32 field_0x10; // 0x10
-    f32 field_0x14; // 0x14
-    f32 field_0x18; // 0x18
+    f32 velX;       // 0x10
+    f32 velY;       // 0x14
+    f32 gravity;    // 0x18
     f32 scale;      // 0x1C
-    s32 field_0x20; // 0x20
-    s32 field_0x24; // 0x24
+    s32 frame;      // 0x20
+    s32 life;       // 0x24
     f32 r;          // 0x28
     f32 g;          // 0x2C
     f32 b;          // 0x30
     s32 field_0x34; // 0x34
-    s32 field_0x38; // 0x38
+    s32 vtxIndex;   // 0x38
     s32 drawCam;    // 0x3C
 } EffStardustN64Data;
 
@@ -136,9 +136,9 @@ EffectEntry* effStardustN64Entry(s32 type, f32 x, f32 y, f32 z, f32 scale) {
     data->x = x;
     data->y = y;
     data->z = z;
-    data->field_0x20 = 0;
+    data->frame = 0;
     data->type = type;
-    data->field_0x24 = 0x1e;
+    data->life = 0x1e;
     data->r = 1.0f;
     data->g = 1.0f;
     data->b = 1.0f;
@@ -154,7 +154,7 @@ EffectEntry* effStardustN64Entry(s32 type, f32 x, f32 y, f32 z, f32 scale) {
         randB = (f32)(rand() % rangeB) / 1000.f;
         switch (type) {
         case 0:
-            ptr->field_0x18 = 0.0f;
+            ptr->gravity = 0.0f;
             t = 1800.f / (f32)count;
             randB = 6.2831855f * (t * (f32)i - 90.f)
                 / 360.f;
@@ -164,13 +164,13 @@ EffectEntry* effStardustN64Entry(s32 type, f32 x, f32 y, f32 z, f32 scale) {
                 / 360.f;
             s3 = (f32)sin(randA);
             odd5 = (i & 1) * 5;
-            ptr->field_0x10 = scale
+            ptr->velX = scale
                 * (s3
                     * (85.0f - 15.0f * s - (f32)odd5)
                     / 100.f);
             s2 = (f32)sin(randB);
             c = (f32)cos(randA);
-            ptr->field_0x14 = scale
+            ptr->velY = scale
                 * (c
                     * (85.0f - 15.0f * s2 - (f32)odd5)
                     / 100.f);
@@ -194,17 +194,17 @@ EffectEntry* effStardustN64Entry(s32 type, f32 x, f32 y, f32 z, f32 scale) {
             } else {
                 vy = 0.0f;
             }
-            ptr->field_0x18 = vy;
-            ptr->field_0x10 = 0.0f;
-            ptr->field_0x14 = 0.0f;
+            ptr->gravity = vy;
+            ptr->velX = 0.0f;
+            ptr->velY = 0.0f;
             angle = 6.2831855f * angle / 360.f;
             ptr->x = randA * (f32)sin(angle);
             ptr->y = randB * (f32)cos(angle);
             ptr->z = 0.0f;
             ptr->field_0x34 = i % 3;
             ptr->scale = 1.0f;
-            ptr->field_0x24 = lifeA;
-            ptr->field_0x20 = 0;
+            ptr->life = lifeA;
+            ptr->frame = 0;
             break;
         case 3:
         case 4:
@@ -218,16 +218,16 @@ EffectEntry* effStardustN64Entry(s32 type, f32 x, f32 y, f32 z, f32 scale) {
 #endif
             vy = -((f32)(rand() % 50 / 1000) + 0.05f);
             angle = 6.2831855f * angle / 360.f;
-            ptr->field_0x18 = vy;
-            ptr->field_0x10 = 0.0f;
-            ptr->field_0x14 = 0.0f;
+            ptr->gravity = vy;
+            ptr->velX = 0.0f;
+            ptr->velY = 0.0f;
             ptr->x = randA * (f32)sin(angle);
             ptr->y = randB * (f32)cos(angle);
             ptr->z = 0.0f;
             ptr->field_0x34 = i % 3;
             ptr->scale = 1.0f;
-            ptr->field_0x24 = lifeB;
-            ptr->field_0x20 = 0;
+            ptr->life = lifeB;
+            ptr->frame = 0;
             break;
         }
         lifeA += 2;
@@ -268,26 +268,26 @@ void effStardustMain(EffectEntry* effect) {
 #endif
 
     camera = data->drawCam;
-    data->field_0x24--;
-    data->field_0x20++;
+    data->life--;
+    data->frame++;
     type = data->type;
-    counter = data->field_0x20;
-    if ((type == 0 || type == 10) && data->field_0x24 < 0) {
+    counter = data->frame;
+    if ((type == 0 || type == 10) && data->life < 0) {
         effDelete(effect);
         return;
     }
 
     data++;
     for (i = 0; i < effect->count - 1; i++, data++) {
-        data->field_0x38 = (counter + i) & 7;
+        data->vtxIndex = (counter + i) & 7;
         switch (type) {
         case 0:
-            data->field_0x18 += -0.02f;
+            data->gravity += -0.02f;
             if (counter - 1 < 7) {
                 data->x = 0.01f
-                    * (data->field_0x10 * (f32)speed_data[counter - 1]);
+                    * (data->velX * (f32)speed_data[counter - 1]);
                 data->y = 0.01f
-                    * (data->field_0x14 * (f32)speed_data[counter - 1]) + data->field_0x18;
+                    * (data->velY * (f32)speed_data[counter - 1]) + data->gravity;
                 data->scale = 0.01f * (f32)scale_data[counter - 1];
             } else {
                 s32 rnd;
@@ -307,37 +307,37 @@ void effStardustMain(EffectEntry* effect) {
                 radius = 0.5f * (f32)(i & 3) + 1.0f;
 #endif
                 data->type = 10;
-                data->field_0x10 = radius * (f32)sin(angle);
-                data->field_0x14 = radius * (f32)cos(angle);
-                data->field_0x18 = -0.05f;
+                data->velX = radius * (f32)sin(angle);
+                data->velY = radius * (f32)cos(angle);
+                data->gravity = -0.05f;
             }
             break;
         case 10:
-            data->field_0x10 *= 0.96f;
-            data->field_0x14 *= 0.96f;
-            data->field_0x14 += data->field_0x18;
-            data->x += data->field_0x10;
-            data->y += data->field_0x14;
+            data->velX *= 0.96f;
+            data->velY *= 0.96f;
+            data->velY += data->gravity;
+            data->x += data->velX;
+            data->y += data->velY;
             data->scale = 0.1f * (0.1f - data->scale) + data->scale;
             break;
         default:
-            data->field_0x10 *= 0.9f;
-            data->field_0x14 += data->field_0x18;
+            data->velX *= 0.9f;
+            data->velY += data->gravity;
             {
-                f32 vx = data->field_0x10;
-                f32 vy = data->field_0x14;
-                if (data->field_0x24 < 0) {
+                f32 vx = data->velX;
+                f32 vy = data->velY;
+                if (data->life < 0) {
                     dead++;
                 }
                 data->x += vx;
                 data->y += vy;
             }
-            data->field_0x24--;
-            if (data->field_0x24 > 0x14 || data->field_0x24 < 0) {
-                data->field_0x38 = -1;
+            data->life--;
+            if (data->life > 0x14 || data->life < 0) {
+                data->vtxIndex = -1;
             } else {
-                data->field_0x20++;
-                counter = data->field_0x20;
+                data->frame++;
+                counter = data->frame;
                 if (counter - 1 < 7) {
                     data->scale = 0.01f * (f32)scale_data[counter - 1];
                 } else {
@@ -396,7 +396,7 @@ void effStardustDisp(CameraId camId, void* param) {
 
     cam = camGetPtr(camId);
     data = entry->userdata;
-    colorIdx = (data->field_0x20 - 1) * 3;
+    colorIdx = (data->frame - 1) * 3;
     colorR = data->r;
     colorG = data->g;
     colorB = data->b;
@@ -424,7 +424,7 @@ void effStardustDisp(CameraId camId, void* param) {
     GXSetCullMode(GX_CULL_NONE);
 
     for (i = 0; i < entry->count - 1; i++, data++) {
-        renderType = data->field_0x38;
+        renderType = data->vtxIndex;
         if (renderType < 0) {
             continue;
         }
@@ -460,30 +460,31 @@ void effStardustDisp(CameraId camId, void* param) {
         GXSetTevColor(GX_TEVREG0, color);
 #endif
 
+        // Eight 0x38-byte (14-word) vertex strips; strip N starts at word N * 14.
         switch (renderType & 7) {
         case 0:
-            vtx = (effVtxArray*)((u8*)size8x8_tex22x22_vtx + 0xA8);
+            vtx = (effVtxArray*)&size8x8_tex22x22_vtx[3 * 14];
             break;
         case 1:
-            vtx = (effVtxArray*)((u8*)size8x8_tex22x22_vtx + 0xE0);
+            vtx = (effVtxArray*)&size8x8_tex22x22_vtx[4 * 14];
             break;
         case 2:
-            vtx = (effVtxArray*)((u8*)size8x8_tex22x22_vtx + 0x118);
+            vtx = (effVtxArray*)&size8x8_tex22x22_vtx[5 * 14];
             break;
         case 3:
-            vtx = (effVtxArray*)((u8*)size8x8_tex22x22_vtx + 0x150);
+            vtx = (effVtxArray*)&size8x8_tex22x22_vtx[6 * 14];
             break;
         case 4:
-            vtx = (effVtxArray*)((u8*)size8x8_tex22x22_vtx + 0x188);
+            vtx = (effVtxArray*)&size8x8_tex22x22_vtx[7 * 14];
             break;
         case 5:
             vtx = (effVtxArray*)size8x8_tex22x22_vtx;
             break;
         case 6:
-            vtx = (effVtxArray*)((u8*)size8x8_tex22x22_vtx + 0x38);
+            vtx = (effVtxArray*)&size8x8_tex22x22_vtx[1 * 14];
             break;
         case 7:
-            vtx = (effVtxArray*)((u8*)size8x8_tex22x22_vtx + 0x70);
+            vtx = (effVtxArray*)&size8x8_tex22x22_vtx[2 * 14];
             break;
         }
         effSetVtxDescN64(vtx);

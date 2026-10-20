@@ -27,7 +27,7 @@ const GXColor dat_8041e340 = { 0xFF, 0xFF, 0xFF, 0x00 };
 
 #ifdef MUST_MATCH
 // MUST_MATCH: non-const (pinned to .rodata, as kpa_act.c does) so MWCC assumes the store to
-// data->field_0x28 may alias vec3_802f8e80 and leaves its three lwz after that store, as retail
+// data->outerAlpha may alias vec3_802f8e80 and leaves its three lwz after that store, as retail
 // schedules them. A plain `const Vec` makes the scheduler hoist them above the second fctiwz.
 __declspec(section ".rodata") Vec vec3_802f8e80 = { 0.0f, 0.0f, 0.0f };
 #else
@@ -44,23 +44,23 @@ EffectEntry* effTogeFlushEntry(s32 type, f32 x, f32 y, f32 z, s32 life) {
 	data = __memAlloc(HEAP_EFFECT, 0x34);
 	entry->userdata = data;
 	entry->callback = effTogeFlushMain;
-	data->field_0x0 = type;
+	data->type = type;
 	data->x = x;
 	data->y = y;
 	data->z = z;
-	data->field_0x2C = life;
-	data->field_0x30 = 0;
-	data->field_0x24 = 0;
-	data->field_0x10 = 0.0f;
+	data->life = life;
+	data->frame = 0;
+	data->innerAlpha = 0;
+	data->angle = 0.0f;
 	if (type == 0 || type == 3) {
-		data->field_0x14 = 30.0f;
+		data->angleSpeed = 30.0f;
 	} else {
-		data->field_0x14 = 0.0f;
+		data->angleSpeed = 0.0f;
 	}
-	data->field_0x18 = 0.0f;
-	data->field_0x1C = 0.8f;
-	data->field_0x28 = 0;
-	data->field_0x20 = 0.0f;
+	data->innerScale = 0.0f;
+	data->innerScaleSpeed = 0.8f;
+	data->outerAlpha = 0;
+	data->outerScale = 0.0f;
 	return entry;
 }
 
@@ -72,32 +72,32 @@ void effTogeFlushMain(EffectEntry* effect) {
 	f32 angle;
 	f32 s;
 
-	data->field_0x2C--;
-	data->field_0x30++;
-	life = data->field_0x2C;
+	data->life--;
+	data->frame++;
+	life = data->life;
 	if (life < 0) {
 		effDelete(effect);
 		return;
 	}
 
-	frame = data->field_0x30;
+	frame = data->frame;
 	if (frame <= 6) {
-		data->field_0x24 = (s32)(0.5f * (218 - data->field_0x24) + data->field_0x24);
+		data->innerAlpha = (s32)(0.5f * (218 - data->innerAlpha) + data->innerAlpha);
 	}
 	if (frame > 6) {
-		data->field_0x24 *= 0.78f;
+		data->innerAlpha *= 0.78f;
 	}
 
-	data->field_0x18 += data->field_0x1C;
-	data->field_0x1C += 0.29f;
-	data->field_0x10 += data->field_0x14;
-	data->field_0x14 *= 0.93f;
+	data->innerScale += data->innerScaleSpeed;
+	data->innerScaleSpeed += 0.29f;
+	data->angle += data->angleSpeed;
+	data->angleSpeed *= 0.93f;
 	angle = 6.2831855f * (f32)(life * 50) / 360.0f;
 	s = (f32)sin(angle);
-	data->field_0x20 = 0.5f * s + 0.9f;
+	data->outerScale = 0.5f * s + 0.9f;
 	angle = 6.2831855f * (f32)(life * 40) / 360.0f;
 	s = (f32)sin(angle);
-	data->field_0x28 = (s32)(64.0f * s + 144.0f);
+	data->outerAlpha = (s32)(64.0f * s + 144.0f);
 
 	{
 		pos = vec3_802f8e80;
@@ -176,14 +176,14 @@ void effTogeFlushDisp(CameraId cameraId, void* param) {
 	Mtx mtxScale;
 	Mtx mtxPos;
 	Mtx mtxTmp;
-	s32 type = data->field_0x0;
+	s32 type = data->type;
 	s32 alpha;
 	s32 idx;
 	s32 colorAlpha;
 
-	if (data->field_0x2C > 10) {
+	if (data->life > 10) {
 		effGetTexObj(0x19, &texObj);
-	} else if (data->field_0x2C > 5) {
+	} else if (data->life > 5) {
 		effGetTexObj(0x1A, &texObj);
 	} else {
 		effGetTexObj(0x1B, &texObj);
@@ -208,9 +208,9 @@ void effTogeFlushDisp(CameraId cameraId, void* param) {
 	PSMTXTrans(mtxTrans, data->x, data->y, data->z);
 	PSMTXRotRad(mtxRot, 'y', 0.017453292f * -camGetPtr(cameraId)->viewYaw);
 	PSMTXConcat(mtxTrans, mtxRot, mtxTmp);
-	colorAlpha = data->field_0x28;
-	idx = data->field_0x30 * 3;
-	PSMTXScale(mtxScale, data->field_0x20, data->field_0x20, data->field_0x20);
+	colorAlpha = data->outerAlpha;
+	idx = data->frame * 3;
+	PSMTXScale(mtxScale, data->outerScale, data->outerScale, data->outerScale);
 	PSMTXConcat(mtxTmp, mtxScale, mtxPos);
 	PSMTXConcat(camGetPtr(cameraId)->view, mtxPos, mtxPos);
 	GXLoadPosMtxImm(mtxPos, 0);
@@ -279,14 +279,14 @@ void effTogeFlushDisp(CameraId cameraId, void* param) {
 	GXPosition3f32(-8.0f, -8.0f, 0.0f);
 	GXTexCoord2f32(0.0f, 2.0f);
 
-	alpha = data->field_0x24;
+	alpha = data->innerAlpha;
 	if (alpha > 0xFF) {
 		alpha = 0xFF;
 	}
 	if (alpha > 0) {
-		PSMTXScale(mtxScale, data->field_0x18, data->field_0x18, data->field_0x18);
+		PSMTXScale(mtxScale, data->innerScale, data->innerScale, data->innerScale);
 		PSMTXConcat(mtxTmp, mtxScale, mtxPos);
-		PSMTXRotRad(mtxRot, 'z', 0.017453292f * data->field_0x10);
+		PSMTXRotRad(mtxRot, 'z', 0.017453292f * data->angle);
 		PSMTXConcat(mtxPos, mtxRot, mtxPos);
 		PSMTXConcat(camGetPtr(cameraId)->view, mtxPos, mtxPos);
 		GXLoadPosMtxImm(mtxPos, 0);

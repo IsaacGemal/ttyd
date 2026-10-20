@@ -10,27 +10,27 @@
 #include "math_ext.h"
 
 typedef struct effTimestampN64Data {
-	s32 type;            // 0x0
-	f32 x;               // 0x4
-	f32 y;               // 0x8
-	f32 z;               // 0xC
-	s32 field_0x10;      // 0x10
-	s32 field_0x14;      // 0x14
-	s32 field_0x18;      // 0x18
-	s32 field_0x1c;      // 0x1C
-	s32 field_0x20;      // 0x20
-	s32 field_0x24;      // 0x24
-	f32 scale;           // 0x28
-	s32 field_0x2c;      // 0x2C
-	f32 field_0x30;      // 0x30
-	f32 posX[10];        // 0x34
-	f32 posY[10];        // 0x5C
-	f32 posZ[10];        // 0x84
-	f32 rotX[10];        // 0xAC
-	f32 rotY[10];        // 0xD4
-	f32 rotZ[10];        // 0xFC
-	s32 field_0x124[10]; // 0x124
-	s32 field_0x14c[10]; // 0x14C
+	s32 type;           // 0x0
+	f32 x;              // 0x4
+	f32 y;              // 0x8
+	f32 z;              // 0xC
+	s32 life;           // 0x10
+	s32 timer;          // 0x14
+	s32 colorR;         // 0x18, set to 70/180/120 and not read in this unit
+	s32 colorG;         // 0x1C
+	s32 colorB;         // 0x20
+	s32 alpha;          // 0x24
+	f32 scale;          // 0x28
+	s32 whiteFade;      // 0x2C, GX_TEVREG1 alpha: TEV stage 1 lerps the colour toward white by it
+	f32 waveScale;      // 0x30
+	f32 posX[10];       // 0x34
+	f32 posY[10];       // 0x5C
+	f32 posZ[10];       // 0x84
+	f32 rotX[10];       // 0xAC
+	f32 rotY[10];       // 0xD4
+	f32 rotZ[10];       // 0xFC
+	s32 pieceAlpha[10]; // 0x124, per-piece GX_TEVREG0 alpha, scaled by alpha
+	s32 delay[10];      // 0x14C, frames before the piece starts fading in
 } effTimestampN64Data;
 
 // .rodata / .sdata2 constants (float constants referenced through the linker)
@@ -92,22 +92,22 @@ EffectEntry* effTimestampN64Entry(s32 type, s32 time, f32 x, f32 y, f32 z, f32 s
 	effect->callback = effTimestampMain;
 	effect->flags |= 2;
 	data->type = type;
-	data->field_0x14 = 0;
+	data->timer = 0;
 	if (time <= 0) {
-		data->field_0x10 = 1000;
+		data->life = 1000;
 	} else {
-		data->field_0x10 = time;
+		data->life = time;
 	}
-	data->field_0x24 = 0;
+	data->alpha = 0;
 	data->x = x;
 	data->y = y;
 	data->z = z;
 	data->scale = scale;
-	data->field_0x18 = 70;
-	data->field_0x1c = 180;
-	data->field_0x20 = 120;
-	data->field_0x2c = 0;
-	data->field_0x30 = 1.0f;
+	data->colorR = 70;
+	data->colorG = 180;
+	data->colorB = 120;
+	data->whiteFade = 0;
+	data->waveScale = 1.0f;
 
 	for (i = 0; i < 10; i++) {
 		data->posX[i] = (f32)pos_data[i][0];
@@ -116,8 +116,8 @@ EffectEntry* effTimestampN64Entry(s32 type, s32 time, f32 x, f32 y, f32 z, f32 s
 		data->rotX[i] = 0.0f;
 		data->rotY[i] = 0.0f;
 		data->rotZ[i] = 0.0f;
-		data->field_0x124[i] = 0;
-		data->field_0x14c[i] = pos_data[i][2];
+		data->pieceAlpha[i] = 0;
+		data->delay[i] = pos_data[i][2];
 	}
 	return effect;
 }
@@ -143,47 +143,47 @@ void effTimestampMain(EffectEntry* effect) {
 
 	if (effect->flags & 4) {
 		effect->flags &= ~4;
-		data->field_0x10 = 64;
+		data->life = 64;
 	}
-	if (data->field_0x10 < 1000) {
-		data->field_0x10--;
+	if (data->life < 1000) {
+		data->life--;
 	}
-	data->field_0x14++;
-	life = data->field_0x10;
+	data->timer++;
+	life = data->life;
 	if (life < 0) {
 		effDelete(effect);
 		return;
 	}
-	counter = data->field_0x14;
+	counter = data->timer;
 	if (life < 64) {
-		data->field_0x30 -= 0.05f;
-		if (data->field_0x30 < 0.0f) {
-			data->field_0x30 = 0.0f;
+		data->waveScale -= 0.05f;
+		if (data->waveScale < 0.0f) {
+			data->waveScale = 0.0f;
 		}
 	}
 	if (life < 32) {
-		data->field_0x2c += 0x80;
-		if (data->field_0x2c > 255) {
-			data->field_0x2c = 255;
+		data->whiteFade += 0x80;
+		if (data->whiteFade > 255) {
+			data->whiteFade = 255;
 		}
-		data->field_0x30 = 0.0f;
+		data->waveScale = 0.0f;
 	}
 	if (life < 16) {
-		data->field_0x24 = life << 4;
+		data->alpha = life << 4;
 	}
 	if (counter < 16) {
-		data->field_0x24 = (counter << 4) + 0xf;
+		data->alpha = (counter << 4) + 0xf;
 	}
 	for (i = 0; i < 10; i++) {
-		if (data->field_0x14c[i] != 0) {
-			data->field_0x14c[i]--;
-			if (data->field_0x14c[i] != 0) {
+		if (data->delay[i] != 0) {
+			data->delay[i]--;
+			if (data->delay[i] != 0) {
 				continue;
 			}
 		}
-		data->field_0x124[i] += 8;
-		if (data->field_0x124[i] > 255) {
-			data->field_0x124[i] = 255;
+		data->pieceAlpha[i] += 8;
+		if (data->pieceAlpha[i] > 255) {
+			data->pieceAlpha[i] = 255;
 		}
 	}
 
@@ -198,7 +198,7 @@ void effTimestampMain(EffectEntry* effect) {
 // same stack slots as the original (same shape as effFireDustSetColor/effFireDustSetVtxColor).
 static inline void effTimestampSetColor(effTimestampN64Data* data) {
 	GXColor color = unk_804232b0;
-	color.a = data->field_0x2c;
+	color.a = data->whiteFade;
 	GXSetTevColor(GX_TEVREG1, color);
 }
 
@@ -207,7 +207,7 @@ static inline void effTimestampSetVtxColor(effTimestampN64Data* data, s32 counte
 	color.r = colr[i];
 	color.g = colg[i];
 	color.b = colb[i];
-	color.a = (counter * data->field_0x124[i]) / 255;
+	color.a = (counter * data->pieceAlpha[i]) / 255;
 	GXSetTevColor(GX_TEVREG0, color);
 }
 
@@ -237,8 +237,8 @@ void effTimestampDisp(CameraId camId, void* param) {
 	s32 valB;
 
 	data = effect->userdata;
-	timer = data->field_0x14;
-	counter = data->field_0x24;
+	timer = data->timer;
+	counter = data->alpha;
 	PSMTXTrans(trans, data->x, data->y, data->z);
 	scaleF = data->scale;
 	PSMTXScale(scale, scaleF, scaleF, scaleF);
@@ -274,7 +274,7 @@ void effTimestampDisp(CameraId camId, void* param) {
 	for (i = 0; i < 16; i++) {
 		effTimestampVtx* vp = &base[i * 2];
 		f32 s;
-		fieldScale = data->field_0x30;
+		fieldScale = data->waveScale;
 		s = (f32)sin(6.2831855f * (f32)(timer * 10 + i * 60) / 360.f);
 		valA = (s32)(fieldScale * (500.f * s));
 		s = (f32)sin(6.2831855f * (f32)(timer * 10 + i * 6) / 360.f);

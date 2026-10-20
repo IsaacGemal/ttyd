@@ -9766,3 +9766,39 @@ files OK; all 36 touched C files compile to objects equivalent to the pre-batch 
 (tools/obj_equiv.py, old tree with old headers). Open: DamageStarData 0x24/0x3C/0x40 (life, displayed damage,
 last retrace), effFreezeData 0x24/0x25 (vertex index, flicker timer), thunderflare `field_0x00` (written, never
 read) and EffectMayaAnimData's fields stay unnamed; agents' proposals in tools/swarm/data/c4_logs.
+
+### Readability: effects, battle icon/status and cam_shift, wave 2 of the DeepSeek cleanup swarm (2026-10-19, DeepSeek V4.1 Flash, n9-q-ds2; reviewed by Claude Opus 5.5)
+
+Twenty files, one DeepSeek V4.1 Flash agent each, then an Opus pass over every rename. Eight agents copied a header
+struct into their .c file to rename its fields; the names now sit on the header structs and the copies are gone:
+CamShiftWork (`bank` is camRoadMain's bank argument, `targetBank`, `stepScale`, `stickAccum`, `scaleActive`,
+`prevTime`, `stickAccumMax`/`maxStep`/`scaleRate`, `lastMarioX/Z`), effMagic1Data (`offsetX/Y/Z`, `velX/Y/Z`, `scale`,
+`age`, `timer`, `alpha`; unit_kamec reads `scale` and `offsetX`), effKemuri4Data (`active`, `lifetime`, `textureIndex`,
+`scaleX/Y/Z`, `rotX/Y/Z`, `matrix`, `spin`, `driftScale`, `floating`, `swirl` and its velocity/accel/jerk,
+`sinAngle`/`cosAngle`), effHokoriData (`velY`, `accelY`, `alpha`, `scaleY`/`scaleXZ` and steps, `tevReg0R/G/B` and
+`tevReg1R/G/B` for GXSetTevColor(1/2, ...)), effFlowerData (`velX/Y/Z`, `accelY`, `accelYDelta`, `angleX/Y` and
+their velocities, `life`, `age`), EffThruHammerData (`position`, `scaleX/Y/Z`, `life`, `age`, `rotY`/`rotZ`, `alpha`,
+`texScrollA/B` (V offsets loaded into GX_TEXMTX0/1) and speeds, `delay`, `tevReg0R..tevReg1B`), effTogeFlushData
+(`angle`, `angleSpeed`, `innerScale` (the +/-4 quad), `outerScale` (+/-8), `innerAlpha`, `outerAlpha`, `life`,
+`frame`) and BattleIcon (0x20..0x60: btlevtcmd_BtlIconJumpPosition's `moveStartPos`, `moveCurrentPos`,
+`moveTargetPos`, `moveFrames`, `moveSpeedXZ`, `moveSpeedY`, `moveAngle`, `moveDist`, `moveDirection`; 0x5C is never
+touched and stays `field_0x5C`). battle_status_effect's BattleWork overlay is gone too: BattleStatusChangeEntry and
+BattleStatusChangeMsgWork moved to battle_status_effect.h and BattleWork has `statusChangeMsg` at 0x18D88, so
+battle_seq.c clears and sets `statusChangeMsg.mAnnouncedFlags` by name. BattleStatusChangeMsgSetAnnouce keeps its
+byte-offset base: `&_battleWorkPointer->statusChangeMsg.entries[type]` compiles 8 bytes longer. Map names restored:
+`main_dl` (eff_magic1, scope:local), `y_data` (eff_butterfly) and the fifteen `float_*_8041f7d8..f810` .sdata2 names
+in eff_opuku_jetwrain (the swarm's `heightDamping` was the velocity field's 0.98 damping anyway). Wrong names fixed:
+eff_thruhammer 0x10/0x14/0x18 are `dirX/dirY/dirZ`, 0.5 times the rotZ-rotated up vector (-sin, cos, 0); the swarm
+called 0x14 `dirZ`. eff_kemuri8's `frameU`/`frameV` (fields and Disp locals) are `frame`/`nextFrame`: both feed U
+offsets, of GX_TEXMTX0 and GX_TEXMTX1, for a 16-frame blend. eff_timestamp's `vertexAlpha[10]` is `pieceAlpha` (one
+GX_TEVREG0 alpha per drawn piece) and `colorAlpha` is `whiteFade` (GX_TEVREG1 alpha; TEV stage 1 lerps the colour
+toward white by it). eff_rothammer_fail's three identical record structs are one effRotHammerFailRecord (head plus
+one particle). eff_hokori's GXSetNumChans(GX_FALSE) is GXSetNumChans(0). Kept as the swarm wrote them: eff_akari_pose,
+eff_bomb, eff_expbom, eff_rubble (with its rubbleVtxData overlay of stg_hahen_v), eff_stardust (strip offsets are now
+`[N * 14]`), eff_horao_spell (redundant externs dropped), battle_status_effect's field names. The checker's cam_shift
+`flag`/`step` and eff_bomb `flag` hits are locals that share a name with unrelated symbols. Matching build 32 files OK;
+all 22 changed C files (the 20 plus battle_seq.c and unit_kamec.c) natural-compile equivalent to the pre-batch
+objects. Open: effTimestampN64Data `colorR/G/B` (70/180/120) are written but not read in the unit;
+battle_status_effect's BattleStatusChangeEntry serves both the per-unit list (`mCounter` is a 10-frame stagger there,
+`mFlags` the caller's p1) and the message list (a countdown and a Mario/partner/enemy bit set), so those two names fit
+only one use each; effKemuri8Data in the header still overlaps the file-local effKemuri8Particle.

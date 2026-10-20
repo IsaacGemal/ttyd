@@ -14,16 +14,16 @@ __declspec(section ".sdata") GXColor unk_804230e4;
 __declspec(section ".sdata") GXColor unk_804230e0;
 
 typedef struct effExpBomData {
-	s16 field_0x0; //0x0
-	s16 field_0x2; //0x2
-	s16 field_0x4; //0x4
-	s16 field_0x6; //0x6
-	s32 field_0x8; //0x8
+	s16 frame; //0x0
+	s16 life; //0x2
+	s16 duration; //0x4
+	s16 dragTimer; //0x6
+	s32 dispTimer; //0x8
 	Vec position; //0xC
-	f32 field_0x18; //0x18
-	f32 field_0x1C; //0x1C
-	f32 field_0x20; //0x20
-	f32 field_0x24; //0x24
+	f32 offsetX; //0x18
+	f32 offsetY; //0x1C
+	f32 velX; //0x20
+	f32 velY; //0x24
 	u8 field_0x28[0x2C - 0x28]; //0x28
 } effExpBomData;
 
@@ -54,13 +54,13 @@ EffectEntry* effExpBomN64Entry(f32 x, f32 y, f32 z) {
 	f32 *direction, *speed;
 	effExpBomData* data;
 	s32 random;
-	// Declaration order pins the FPR/GPR allocation: sinv/v29/v28/cosv -> f23/f22/f21/f2, and
+	// Declaration order pins the FPR/GPR allocation: sinAngle/angle/velMag/cosAngle -> f23/f22/f21/f2, and
 	// effect declared last gets r31. The i=0-before-pointers and the increment order below are
 	// likewise required to reproduce the original's scheduling.
-	f32 sinv;
-	f32 v29;
-	f32 v28;
-	f32 cosv;
+	f32 sinAngle;
+	f32 angle;
+	f32 velMag;
+	f32 cosAngle;
 	int i;
 	EffectEntry* effect = effEntry();
 
@@ -73,24 +73,24 @@ EffectEntry* effExpBomN64Entry(f32 x, f32 y, f32 z) {
 	direction = bom_dir;
 	speed = bom_spd;
 	for (; i < effect->count; direction++, speed++, i++, data++) {
-		data->field_0x0 = 0;
+		data->frame = 0;
 		random = rand() % 6 + 16;
-		data->field_0x4 = random;
-		data->field_0x2 = random;
-		data->field_0x6 = 4;
-		data->field_0x8 = 0;
+		data->duration = random;
+		data->life = random;
+		data->dragTimer = 4;
+		data->dispTimer = 0;
 		data->position.x = x;
 		data->position.y = y;
 		data->position.z = z;
-		data->field_0x18 = 0.0f;
-		data->field_0x1C = 0.0f;
+		data->offsetX = 0.0f;
+		data->offsetY = 0.0f;
 
-		v28 = 2.0f * *speed;
-		v29 = ((6.2831855f * (90.0f + *direction)) / 360.0f);
-		sinv = (f32)sin(v29);
-		cosv = (f32)cos(v29);
-		data->field_0x20 = v28 * sinv;
-		data->field_0x24 = -v28 * cosv;
+		velMag = 2.0f * *speed;
+		angle = ((6.2831855f * (90.0f + *direction)) / 360.0f);
+		sinAngle = (f32)sin(angle);
+		cosAngle = (f32)cos(angle);
+		data->velX = velMag * sinAngle;
+		data->velY = -velMag * cosAngle;
 	}
 	return effect;
 }
@@ -116,19 +116,19 @@ void effExpBomMain(EffectEntry* effect) {
 	position2 = position;
 
 	for (i = 0; i < effect->count; i++, data++) {
-		if (data->field_0x2 >= 0) {
-			data->field_0x8--;
-			if (data->field_0x8 < 0) {
+		if (data->life >= 0) {
+			data->dispTimer--;
+			if (data->dispTimer < 0) {
 				disp = TRUE;
-				data->field_0x18 += data->field_0x20;
-				data->field_0x1C += data->field_0x24;
-				data->field_0x0++;
-				data->field_0x2--;
-				if (data->field_0x2 >= 0) {
-					data->field_0x6--;
-					if (data->field_0x6 < 0) {
-						data->field_0x20 /= 1.25f;
-						data->field_0x24 /= 1.25f;
+				data->offsetX += data->velX;
+				data->offsetY += data->velY;
+				data->frame++;
+				data->life--;
+				if (data->life >= 0) {
+					data->dragTimer--;
+					if (data->dragTimer < 0) {
+						data->velX /= 1.25f;
+						data->velY /= 1.25f;
 					}
 				}
 			}
@@ -169,7 +169,7 @@ void effExpBomDisp(CameraId camId, void* param) {
 	Mtx viewMtx;
 	s32 count;
 	s32 i;
-	s32 type;
+	s32 texIndex;
 
 	effect = param;
 	camera = camGetPtr(camId);
@@ -181,17 +181,17 @@ void effExpBomDisp(CameraId camId, void* param) {
 	PSMTXConcat(camera->view, viewMtx, viewMtx);
 
 	for (i = 0; i < effect->count; i++, data++) {
-		if (data->field_0x2 >= 0 && data->field_0x8 < 0) {
+		if (data->life >= 0 && data->dispTimer < 0) {
 			s32 alpha;
 			f32 frame;
-			f32 last;
+			f32 lastFrame;
 			f32 t;
 
-			count = data->field_0x2;
+			count = data->life;
 			if (count > 16) {
 				count = 16;
 			}
-			PSMTXTrans(m0, data->field_0x18, data->field_0x1C, 0.0f);
+			PSMTXTrans(m0, data->offsetX, data->offsetY, 0.0f);
 			PSMTXScale(m2, bom_scale[i], bom_scale[i], bom_scale[i]);
 			PSMTXRotRad(m1, 'z', bom_ry[i] * 0.017453292f);
 			PSMTXConcat(m0, m2, m0);
@@ -199,23 +199,23 @@ void effExpBomDisp(CameraId camId, void* param) {
 			PSMTXConcat(viewMtx, m1, m1);
 			GXLoadPosMtxImm(m1, GX_PNMTX0);
 
-			frame = (f32)data->field_0x0;
+			frame = (f32)data->frame;
 			t = frame - 1.0f;
-			last = (f32)data->field_0x4;
-			if (t >= last) {
+			lastFrame = (f32)data->duration;
+			if (t >= lastFrame) {
 				alpha = 0xFF;
-				type = 6;
+				texIndex = 6;
 			}
 			else {
-				f32 a = 7.0f * t;
-				f32 b = 90.0f * (a / last) / 7.0f;
-				f32 s = (f32)sin(6.2831855f * b / 360.0f);
-				f32 af;
+				f32 scaledT = 7.0f * t;
+				f32 angleDeg = 90.0f * (scaledT / lastFrame) / 7.0f;
+				f32 sine = (f32)sin(6.2831855f * angleDeg / 360.0f);
+				f32 alphaF;
 
-				s = 7.0f * s;
-				af = 255.0f * s;
-				alpha = (s32)af % 256;
-				type = (s32)s;
+				sine = 7.0f * sine;
+				alphaF = 255.0f * sine;
+				alpha = (s32)alphaF % 256;
+				texIndex = (s32)sine;
 			}
 
 #ifdef MUST_MATCH
@@ -261,7 +261,7 @@ void effExpBomDisp(CameraId camId, void* param) {
 			GXSetVtxAttrFmt(0, 9, 1, 4, 0);
 			GXSetVtxAttrFmt(0, 13, 1, 4, 0);
 
-			switch (type) {
+			switch (texIndex) {
 			case 0:
 				effGetTexObjN64(0, &texobj);
 				GXLoadTexObj(&texobj, 0);

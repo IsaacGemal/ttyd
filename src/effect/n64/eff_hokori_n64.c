@@ -66,34 +66,34 @@ EffectEntry* effHokoriN64Entry(s32 type, s32 count, f32 x, f32 y, f32 z) {
 	data->y = y;
 	data->z = z;
 	data->life = count;
-	data->field_0x18 = 0xff;
-	data->field_0x30 = 0xa0;
-	data->field_0x34 = 0xa0;
-	data->field_0x38 = 0x8c;
-	data->field_0x3C = 0xa0;
-	data->field_0x40 = 0xa0;
-	data->field_0x44 = 0x8c;
+	data->alpha = 0xff;
+	data->tevReg0R = 0xa0;
+	data->tevReg0G = 0xa0;
+	data->tevReg0B = 0x8c;
+	data->tevReg1R = 0xa0;
+	data->tevReg1G = 0xa0;
+	data->tevReg1B = 0x8c;
 
 	for (i = 1, p = data + 1; i < num; i++, p++) {
 		p->x = (f32)(rand() % 200 - 100);
 		p->y = (f32)(rand() % 50);
 		p->z = 0.0f;
-		p->field_0x10 = -1.0f;
-		p->field_0x14 = 0.0f;
-		p->field_0x1C = 1.0f;
-		p->field_0x20 = 1.0f;
-		p->field_0x24 = (f32)(rand() % 10) / 200.f;
+		p->velY = -1.0f;
+		p->accelY = 0.0f;
+		p->scaleY = 1.0f;
+		p->scaleXZ = 1.0f;
+		p->scaleYStep = (f32)(rand() % 10) / 200.f;
 		switch (type) {
 		case 0:
-			p->field_0x28 = 0.1f * p->field_0x24;
+			p->scaleXZStep = 0.1f * p->scaleYStep;
 			break;
 		case 1:
-			p->field_0x28 = 0.2f * p->field_0x24;
+			p->scaleXZStep = 0.2f * p->scaleYStep;
 			break;
 		default:
-			p->field_0x24 = 0.4f;
-			p->field_0x28 = 0.4f;
-			p->field_0x10 = 0.0f;
+			p->scaleYStep = 0.4f;
+			p->scaleXZStep = 0.4f;
+			p->velY = 0.0f;
 			p->x = 0.1f * (f32)(rand() % 40 - 20);
 			p->y = 0.1f * (f32)(rand() % 40 - 20);
 			break;
@@ -129,28 +129,28 @@ void effHokoriMain(EffectEntry* effect) {
 		if (data->life < 0x18) {
 #ifdef MUST_MATCH
 			f32 k = 0.9f;
-			data->field_0x18 = (s32)((f32)data->field_0x18 * k);
+			data->alpha = (s32)((f32)data->alpha * k);
 #else
-			data->field_0x18 = (s32)((f32)data->field_0x18 * 0.9f);
+			data->alpha = (s32)((f32)data->alpha * 0.9f);
 #endif
 		}
 		i = 1;
 		data++;
 		if (type <= 1) {
 			for (; i < effect->count; i++, data++) {
-				data->field_0x10 += data->field_0x14;
-				data->y += data->field_0x10;
-				data->field_0x24 += 0.005f;
-				data->field_0x1C += data->field_0x24;
-				data->field_0x20 += data->field_0x28;
+				data->velY += data->accelY;
+				data->y += data->velY;
+				data->scaleYStep += 0.005f;
+				data->scaleY += data->scaleYStep;
+				data->scaleXZ += data->scaleXZStep;
 			}
 		}
 		else {
 			for (; i < effect->count; i++, data++) {
-				data->field_0x10 += data->field_0x14;
-				data->y += data->field_0x10;
-				data->field_0x1C += data->field_0x24;
-				data->field_0x20 += data->field_0x28;
+				data->velY += data->accelY;
+				data->y += data->velY;
+				data->scaleY += data->scaleYStep;
+				data->scaleXZ += data->scaleXZStep;
 			}
 		}
 		dispEntry(CAMERA_3D, dispCalcZ(&position2), 2, effHokoriDisp, effect);
@@ -159,18 +159,18 @@ void effHokoriMain(EffectEntry* effect) {
 
 static inline void hokoriSetColor1(effHokoriData* data) {
 	GXColor color = (GXColor){ 0, 0, 0, 0 };
-	color.r = data->field_0x30;
-	color.g = data->field_0x34;
-	color.b = data->field_0x38;
-	color.a = data->field_0x18;
+	color.r = data->tevReg0R;
+	color.g = data->tevReg0G;
+	color.b = data->tevReg0B;
+	color.a = data->alpha;
 	GXSetTevColor(1, color);
 }
 
 static inline void hokoriSetColor2(effHokoriData* data) {
 	GXColor color = (GXColor){ 0, 0, 0, 0 };
-	color.r = data->field_0x3C;
-	color.g = data->field_0x40;
-	color.b = data->field_0x44;
+	color.r = data->tevReg1R;
+	color.g = data->tevReg1G;
+	color.b = data->tevReg1B;
 	GXSetTevColor(2, color);
 }
 
@@ -195,9 +195,9 @@ void effHokoriDisp(CameraId cameraId, void* param) {
 
 	GXSetNumChans(0);
 	GXSetNumTexGens(1);
-	GXSetTexCoordGen2(0, 1, 4, 0x1e, 0, 0x7d);
+	GXSetTexCoordGen2(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_TEXMTX0, GX_FALSE, GX_PTIDENTITY);
 	PSMTXScale(scale, 0.03125f, 0.010416667f, 0.0f);
-	GXLoadTexMtxImm(scale, 0x1e, 1);
+	GXLoadTexMtxImm(scale, GX_TEXMTX0, GX_MTX2x4);
 
 	hokoriSetColor1(data);
 	hokoriSetColor2(data);
@@ -205,23 +205,23 @@ void effHokoriDisp(CameraId cameraId, void* param) {
 	switch (data->type) {
 	case 0:
 		GXSetNumTevStages(1);
-		GXSetTevOrder(0, 0, 0, 0xff);
-		GXSetTevColorOp(0, 0, 0, 0, 1, 0);
-		GXSetTevAlphaOp(0, 0, 0, 0, 1, 0);
-		GXSetTevColorIn(0, 0xf, 0xf, 0xf, 2);
-		GXSetTevAlphaIn(0, 7, 1, 4, 7);
+		GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR_NULL);
+		GXSetTevColorOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+		GXSetTevAlphaOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+		GXSetTevColorIn(GX_TEVSTAGE0, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ZERO, GX_CC_C0);
+		GXSetTevAlphaIn(GX_TEVSTAGE0, GX_CA_ZERO, GX_CA_A0, GX_CA_TEXA, GX_CA_ZERO);
 		effGetTexObjN64(0x15, &texObj);
-		GXLoadTexObj(&texObj, 0);
+		GXLoadTexObj(&texObj, GX_TEXMAP0);
 		break;
 	default:
 		GXSetNumTevStages(1);
-		GXSetTevOrder(0, 0, 0, 0xff);
-		GXSetTevColorOp(0, 0, 0, 0, 1, 0);
-		GXSetTevAlphaOp(0, 0, 0, 0, 1, 0);
-		GXSetTevColorIn(0, 4, 2, 8, 0xf);
-		GXSetTevAlphaIn(0, 7, 1, 4, 7);
+		GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR_NULL);
+		GXSetTevColorOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+		GXSetTevAlphaOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+		GXSetTevColorIn(GX_TEVSTAGE0, GX_CC_C1, GX_CC_C0, GX_CC_TEXC, GX_CC_ZERO);
+		GXSetTevAlphaIn(GX_TEVSTAGE0, GX_CA_ZERO, GX_CA_A0, GX_CA_TEXA, GX_CA_ZERO);
 		effGetTexObjN64(0x16, &texObj);
-		GXLoadTexObj(&texObj, 0);
+		GXLoadTexObj(&texObj, GX_TEXMAP0);
 		break;
 	}
 
@@ -232,11 +232,11 @@ void effHokoriDisp(CameraId cameraId, void* param) {
 
 	type = data->type;
 	data++;
-	GXSetCullMode(0);
+	GXSetCullMode(GX_CULL_NONE);
 
 	for (i = 1; i < effect->count; i++, data++) {
 		PSMTXTrans(trans, data->x, data->y, data->z);
-		PSMTXScale(scale, data->field_0x20, data->field_0x1C, data->field_0x20);
+		PSMTXScale(scale, data->scaleXZ, data->scaleY, data->scaleXZ);
 		PSMTXConcat(trans, scale, trans);
 		PSMTXConcat(work, trans, trans);
 		GXLoadPosMtxImm(trans, 0);
@@ -263,7 +263,7 @@ void effHokoriDisp(CameraId cameraId, void* param) {
 #endif
 		}
 		effSetVtxDescN64(vtx);
-		GXBegin(0x90, 0, 6);
+		GXBegin(GX_TRIANGLES, GX_VTXFMT0, 6);
 		tri2(0, 1, 2, 0, 0, 2, 3, 0);
 	}
 }

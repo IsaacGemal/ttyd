@@ -14,8 +14,6 @@ static u8 anime_data[12] = {
     0x00, 0xFF, 0xD0, 0x1A, 0x78, 0x4D, 0xD0, 0xFE, 0xF0, 0xFE, 0x4C, 0x6E,
 };
 
-// Local copy of the effect's per-instance data; the fields used by
-// effMagic1Disp, effMagic1Main and effMagic1N64Entry are named.
 extern u32 dat_8041f650;
 extern GXColor unk_804231a8;
 EffectEntry* effMagic1N64Entry(s32 type, s32 count, f32 x0, f32 y0, f32 z0, f32 x1, f32 y1, f32 z1) {
@@ -26,36 +24,36 @@ EffectEntry* effMagic1N64Entry(s32 type, s32 count, f32 x0, f32 y0, f32 z0, f32 
     effect = effEntry();
     effect->type = "Magic1N64\0\0";
     effect->count = 1;
-    data = __memAlloc(HEAP_EFFECT, 0x38);
+    data = __memAlloc(HEAP_EFFECT, sizeof(effMagic1Data));
     effect->userdata = data;
     effect->callback = effMagic1Main;
     effect->flags |= 2;
-    data->field_0x2c = 0;
+    data->age = 0;
     data->type = type;
-    data->field_0x34 = 0xff;
+    data->alpha = 0xff;
     data->x = x0;
     data->y = y0;
     data->z = z0;
-    data->field_0x28 = 1.0f;
+    data->scale = 1.0f;
     switch (type) {
     case 0:
         scale = 1.0f / (f32)count;
-        data->field_0x10 = 0.0f;
-        data->field_0x14 = 0.0f;
-        data->field_0x18 = 0.0f;
-        data->field_0x1c = (x1 - x0) * scale;
-        data->field_0x20 = (y1 - y0) * scale;
-        data->field_0x24 = (z1 - z0) * scale;
-        data->field_0x30 = count;
+        data->offsetX = 0.0f;
+        data->offsetY = 0.0f;
+        data->offsetZ = 0.0f;
+        data->velX = (x1 - x0) * scale;
+        data->velY = (y1 - y0) * scale;
+        data->velZ = (z1 - z0) * scale;
+        data->timer = count;
         break;
     default:
-        data->field_0x10 = 29.0f;
-        data->field_0x14 = 0.0f;
-        data->field_0x18 = 0.0f;
-        data->field_0x1c = 6.2f;
-        data->field_0x20 = 0.0f;
-        data->field_0x24 = 0.0f;
-        data->field_0x30 = 0x18;
+        data->offsetX = 29.0f;
+        data->offsetY = 0.0f;
+        data->offsetZ = 0.0f;
+        data->velX = 6.2f;
+        data->velY = 0.0f;
+        data->velZ = 0.0f;
+        data->timer = 0x18;
         break;
     }
     return effect;
@@ -72,9 +70,9 @@ void effMagic1Main(EffectEntry* effect) {
     f32 order;
     s32 type;
 
-    disp.x = data->field_0x10;
-    disp.y = data->field_0x14;
-    disp.z = data->field_0x18;
+    disp.x = data->offsetX;
+    disp.y = data->offsetY;
+    disp.z = data->offsetZ;
 #ifdef MUST_MATCH
     position = disp;
 #endif
@@ -89,29 +87,29 @@ void effMagic1Main(EffectEntry* effect) {
     } else {
         if (effect->flags & 4) {
             effect->flags &= ~4;
-            data->field_0x30 = 0;
+            data->timer = 0;
         }
-        data->field_0x30--;
-        data->field_0x2c++;
-        if (data->field_0x30 < 0) {
+        data->timer--;
+        data->age++;
+        if (data->timer < 0) {
             effDelete(effect);
             return;
         }
         type = data->type;
-        if (type == 0 && data->field_0x30 == 0) {
-            EffectEntry* newEffect = effMagic1N64Entry(1, 0x30, data->x + data->field_0x10,
-                data->y + data->field_0x14, data->z + data->field_0x18, 0.0f, 0.0f, 0.0f);
-            ((effMagic1Data*)newEffect->userdata)->field_0x28 = data->field_0x28;
+        if (type == 0 && data->timer == 0) {
+            EffectEntry* newEffect = effMagic1N64Entry(1, 0x30, data->x + data->offsetX,
+                data->y + data->offsetY, data->z + data->offsetZ, 0.0f, 0.0f, 0.0f);
+            ((effMagic1Data*)newEffect->userdata)->scale = data->scale;
         }
         if (type == 1) {
             f32 k83 = 0.83f;
             f32 k9 = 0.9f;
-            data->field_0x1c *= k83;
-            data->field_0x34 = (s32)((f32)data->field_0x34 * k9);
+            data->velX *= k83;
+            data->alpha = (s32)((f32)data->alpha * k9);
         }
-        data->field_0x10 += data->field_0x1c;
-        data->field_0x14 += data->field_0x20;
-        data->field_0x18 += data->field_0x24;
+        data->offsetX += data->velX;
+        data->offsetY += data->velY;
+        data->offsetZ += data->velZ;
 #ifdef MUST_MATCH
         order = dispCalcZ(&position);
 #else
@@ -225,12 +223,12 @@ static void main_dl(EffectEntry* effect, Mtx mtx) {
 
     data = effect->userdata;
     type = data->type;
-    scale = data->field_0x28;
-    count = data->field_0x30;
-    alpha = data->field_0x34;
-    x = data->field_0x10;
-    y = data->field_0x14;
-    z = data->field_0x18;
+    scale = data->scale;
+    count = data->timer;
+    alpha = data->alpha;
+    x = data->offsetX;
+    y = data->offsetY;
+    z = data->offsetZ;
 
     switch (type) {
     case 0:
@@ -269,16 +267,16 @@ static void main_dl(EffectEntry* effect, Mtx mtx) {
             switch (type) {
             case 0:
                 ringAngle -= 70.0f;
-                x -= 2.0f * data->field_0x1c;
-                y -= 2.0f * data->field_0x20;
-                z -= 2.0f * data->field_0x24;
+                x -= 2.0f * data->velX;
+                y -= 2.0f * data->velY;
+                z -= 2.0f * data->velZ;
                 break;
             default:
                 ringAngle -= 50.0f;
-                x -= 2.0f * (1.2048193f * data->field_0x1c);
+                x -= 2.0f * (1.2048193f * data->velX);
                 break;
             }
-            alpha = (s32)(100.0f * (f32)data->field_0x34 / 255.0f);
+            alpha = (s32)(100.0f * (f32)data->alpha / 255.0f);
         }
 
         GXSetNumTexGens(1);
@@ -326,7 +324,7 @@ static void main_dl(EffectEntry* effect, Mtx mtx) {
             }
 #endif
             PSMTXConcat(mtxA, mtxB, mtxA);
-            GXLoadTexMtxImm(mtxA, 0x1E, 1);
+            GXLoadTexMtxImm(mtxA, GX_TEXMTX0, 1);
 
             GXBegin(GX_QUADS, GX_VTXFMT0, 4);
             GXPosition3s16(-(s16)size, size, 0);

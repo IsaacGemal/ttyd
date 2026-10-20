@@ -152,6 +152,7 @@ void effOpukuJetwrainMain(EffectEntry* effect) {
 	data->field_0x1F = alpha;
 	scale = (f32)alpha / float_255_8041f7f0;
 
+	// Seed the height field with a travelling sine wave.
 	for (j = 1; j < 18; j++) {
 		{
 			f32 s = (f32)sin(float_6p2832_8041f7f4 * (f32)((counter - j) * -20) / float_360_8041f7f8);
@@ -159,6 +160,7 @@ void effOpukuJetwrainMain(EffectEntry* effect) {
 		}
 	}
 
+	// Relax each height into the velocity field (weighted neighbour sum minus the centre), damped by 0.98.
 	for (j = 1; j < 18; j++) {
 		for (i = 1; i < 12; i++) {
 			f32 center = (f32)(s8)data->field_0x23[j][i];
@@ -176,6 +178,7 @@ void effOpukuJetwrainMain(EffectEntry* effect) {
 		}
 	}
 
+	// Integrate the velocity field back into the heights.
 	for (j = 1; j < 18; j++) {
 #ifdef MUST_MATCH
 		// `12 > i` (not `i < 12`): the reversed comparison makes mwcc hoist the loop's constants out
