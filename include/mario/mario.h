@@ -144,7 +144,7 @@ typedef struct MarioWork {
     u32 field_0x34;                // 0x34, counter bumped in mario.c, peach.c and koopa.c motions; blur capture (mario.c) tests bit 0
     s8 ctrlOffCount;               // 0x38, marioCtrlOff nesting count (flag 0x2); marioCtrlOn returns it to 0
     s8 keyOffCount;                // 0x39, marioKeyOff nesting count (flag 0x8); marioKeyOn returns it to 0
-    u8 field_0x3A;                 // 0x3A
+    s8 field_0x3A;                 // 0x3A
     s8 partyUseTimer;              // 0x3B, set to 5 when the X press starts a partner use, cleared when it ends (mario_party, mario_motion)
     s8 characterId;                // 0x3C
     s8 colorId;                    // 0x3D
@@ -233,7 +233,7 @@ typedef struct MarioWork {
     void* hitobjHead;              // 0x1F4, marioSearchHead result
     void* hitobjUnder;             // 0x1F8, marioSearchUnder result (mario_hit)
     void* hitobjHammer;            // 0x1FC, hit the hammer struck: mot_hammer copies its hitEstimate target (0x200) at impact and the case-0x14 front ray stores its hit; cleared at each marioMotion; mobjdrv and casedrv test it for hammer triggers
-    u8 field_0x200[4];             // 0x200
+    s32 field_0x200;               // 0x200
     void* hitobjDamageReturn;      // 0x204, hit whose damage return position mot_damage uses
     void* hitobjStandOnPrev;       // 0x208, hitobjStandOn copied at the end of the frame (mario.c)
     void* hitobjBalloon;           // 0x20C, balloon hit from the front-wall search
