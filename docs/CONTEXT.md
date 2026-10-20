@@ -10175,3 +10175,29 @@ them needs a real merged struct, not a substitution. animdrv.c is now as on main
 (`build/G8MJ01/ok` recreated); mapdrv/animdrv/mobjdrv compile to objects equivalent to the pre-branch ones in both
 the natural and the MUST_MATCH build (tools/obj_equiv.py, old tree with old headers), differing only in the renamed
 globals; ci lint passes with `--allow-protected` (symbols.txt; no ratchet baseline in this worktree).
+### Readability: evt_shop ShopWork fields, shop colour and map-name symbols, evt_mobj sound and prefix strings (2026-10-20, Claude Haiku 5.5, n4-q-shop2)
+
+ShopWork's `field_0x8` is `items` (the item id / price pairs: `items[i*2]` indexes itemDataTable for the name, icon
+and `items[i*2+1]` is the price drawn by name_disp's iconNumberDispGx); `field_0x2C` is `selectedItem` (set with
+`openIdx` when a shelf item opens, and the index `acquired[]` and get_value read). `field_0x30`/`field_0x34` are
+never read in evt_shop.c, so they are `pad_0x30[8]`. The twelve `dat_8041bbe0..bc0c` colours are named by the
+function that consumes them: `shop_name_color` (name_disp title), `shop_price_color` (name_disp count),
+`shop_points_color` (point_disp), `shop_title_color` (title_disp), and the list_disp pairs `shop_list_head_{left,right}_color`,
+`shop_list_price_{exchanged,}_color`, `shop_list_label_{exchanged,}_color`, `shop_list_item_{exchanged,}_color`.
+"exchanged" is the pouch bit at `pouch->field_0x5B4` that exchange_shop_point sets and chk_shop_point skips (that
+field belongs to MarioPouch and is not renamed here). The map-name strings (`str_802ECD60..` and `str_802ECDE0`,
+`str_802ECDC8`) are `shop_map_<name>` and `shop_msg_scroll_once_stop`; `float_6`, `float_12` and `float_108` are
+`shop_icon_y_offset`, `shop_count_char_width`, `shop_name_y`; `str_8041BC1C` is `shop_icon_name_fmt`.
+In evt_mobj.c, `dat_8041a134` is `kpa_pole_score_color` (kpa_disp_pole_score's only colour), `str_802C3EC8` and
+`str_802C3ED8` are `mobj_offscreen_prefix` and `mobj_image_prefix` (the "o_"/"i_" that LVB_TEMPLATE copies before
+offscreenEntry and imgEntry take the object name), and the SFX names read by evt_snd_sfxon_3d and psndSFX are
+`sfx_mobj_*` and `sfx_kuppa_*` (lowercase of their text). Left: evt_shop's script string block
+`str_802ECD50` (its `+0x10`/`+0x28`/`+0x90` offsets are how the code reaches the map names), `str_8041BC18`
+("me") and `str_8041BC10` ("mario"), the `%s`/`%d` formats, the `float_0p5`/`float_30`/`float_10` constants (each is
+used for more than one role), evt_shop_work's unused fields (only the `_wp` cast uses the type); evt_mobj's
+`dat_8041a130` (the breaking-floor colour that feeds animPoseSetMaterialEvtColor), the vec3 templates and `base + 0x230/0x690/0x8ec/0x3B8/0x3C8`,
+which are MapObjectEntry fields and belong to mobjdrv.h.
+Proposed for mobjdrv.h (MapObjectEntry, not renamed here): the raw `base + 0x230`/`0x690`/`0x8ec` script-event
+slots, which `mobjRunEvent` takes, and the `0x3B8`/`0x3C8` name slots that `animGroupBaseAsync` reads.
+Pouch bit `field_0x5B4` (MarioPouch, mario_pouch.h) proposed as `shopExchangedMask`. Matching build OK (the linked
+checksums hold); evt_shop.c and evt_mobj.c natural-compile (no MUST_MATCH) with no errors.
