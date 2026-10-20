@@ -1196,13 +1196,13 @@ BOOL marioChkJump(void) {
     if (mario->currMotionId == MARIO_MOTION_YOSHI) {
         return FALSE;
     }
-    if (*(void**)mario->field_0x1DC != NULL) {
-        if ((u32)hitGetAttr((HitEntry*)*(void**)mario->field_0x1DC) & (1 << 31)) {
-            if (mobjGetHint(mobjHitObjPtrToPtr((HitEntry*)*(void**)mario->field_0x1DC)) == 1) {
+    if (mario->actionHitObj != NULL) {
+        if ((u32)hitGetAttr((HitEntry*)mario->actionHitObj) & (1 << 31)) {
+            if (mobjGetHint(mobjHitObjPtrToPtr((HitEntry*)mario->actionHitObj)) == 1) {
                 return FALSE;
             }
         }
-        caseEntry = caseCheckHitObj(*(void**)mario->field_0x1DC);
+        caseEntry = caseCheckHitObj(mario->actionHitObj);
         if (caseEntry != NULL) {
             if (caseEntry->activeConditionId == 9 || caseEntry->activeConditionId == 4 ||
                 caseEntry->activeConditionId == 12) {

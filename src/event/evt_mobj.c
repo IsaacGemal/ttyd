@@ -5087,7 +5087,7 @@ s32 mobj_koopa_pole_evt(MapObjectEntry* obj) {
             }
             marioKeyOff();
             evtSetValue(NULL, obj->flagVar, 1);
-            *(s16*)mario->unk78 = 0;
+            mario->unk78 = 0;
             obj->state = next;
             break;
         case 0xa:

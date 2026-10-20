@@ -532,7 +532,7 @@ USER_FUNC(kpa_add_coin) {
 
 USER_FUNC(kpa_nohitenemy_ct_clear) {
     MarioWork* mario = marioGetPtr();
-    *(u16*)&mario->unk78[0] = 0;
+    mario->unk78 = 0;
     return EVT_RETURN_DONE;
 }
 

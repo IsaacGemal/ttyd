@@ -33,8 +33,6 @@ extern const f32 float_90_80420eb8;
 extern const f32 float_270_80420ebc;
 extern const f32 float_7_80420ec0;
 
-#define MW_S16(m, off) (*(s16*)((u8*)(m) + (off)))
-
 const Vec vec3_802fe320 = { 0.0f, 0.0f, 0.0f };
 const Vec vec3_802fe32c = { 0.0f, 0.0f, 0.0f };
 const Vec vec3_802fe338 = { 0.0f, 0.0f, 0.0f };
@@ -132,7 +130,7 @@ s32 kpaEnemyHitChk(f32 x, f32 y, f32 z, f32 a, f32 b) {
         if (mp->unk4C != 0) {
             return 3;
         }
-        if (MW_S16(mp, 0x78) == 0) {
+        if (mp->unk78 == 0) {
             return 4;
         }
     }

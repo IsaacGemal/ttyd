@@ -727,8 +727,8 @@ BOOL marioChkSts(s32 flags) {
 void marioResetHitObj(const char* name) {
 	MarioWork* wp = mp;
 
-	if (*(void**)wp->field_0x1DC != NULL && !strcmp(hitGetName(*(HitEntry**)wp->field_0x1DC), name)) {
-		*(void**)wp->field_0x1DC = NULL;
+	if (wp->actionHitObj != NULL && !strcmp(hitGetName(wp->actionHitObj), name)) {
+		wp->actionHitObj = NULL;
 	}
 	if (wp->hitobjFront != NULL && !strcmp(hitGetName(wp->hitobjFront), name)) {
 		wp->hitobjFront = NULL;
@@ -932,7 +932,7 @@ void marioReInit(void) {
 	partySlot0 = wp->currPartySlotId[0];
 	partySlot1 = wp->currPartySlotId[1];
 	peachFlags = wp->peachFlags;
-	field28C = *(s32*)wp->field_0x28C;
+	field28C = *(s32*)&wp->koopaWork;
 	trigFlags = wp->trigFlags;
 	motionId = wp->currMotionId;
 	unk1A8 = wp->unk1A8;
@@ -960,7 +960,7 @@ void marioReInit(void) {
 	}
 
 	wp->peachFlags = peachFlags;
-	*(s32*)wp->field_0x28C = field28C;
+	*(s32*)&wp->koopaWork = field28C;
 	wp->camId = camId;
 	wp->characterId = characterId;
 	wp->trigFlags = trigFlags;
@@ -1214,7 +1214,7 @@ void marioMain(void) {
 			marioCamMain();
 			wp->hitobjHead = NULL;
 			wp->hitobjFront = NULL;
-			*(void**)wp->field_0x1DC = NULL;
+			wp->actionHitObj = NULL;
 			wp->hitobjPush = NULL;
 			*(void**)wp->field_0x1F0 = NULL;
 			{
@@ -1653,7 +1653,7 @@ void marioMoveMain(void) {
 			wp->hitobjHead = NULL;
 		}
 		wp->hitobjFront = NULL;
-		*(void**)wp->field_0x1DC = NULL;
+		wp->actionHitObj = NULL;
 		wp->hitobjPush = NULL;
 		*(void**)wp->field_0x1F0 = NULL;
 	}

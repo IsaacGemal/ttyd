@@ -161,7 +161,7 @@ typedef struct MarioWork {
     f32 field_64;                  // 0x64
     f32 field_68;                  // 0x68
     Vec field_6C;                  // 0x6C
-    u8 unk78[0x7A - 0x78];         // 0x78
+    s16 unk78;                     // 0x78, koopa's countdown: koopa_motion sets sysMsec2Frame(3000), koopa.c decrements it, koopa_hit tests it
     s16 field_0x7A;                // 0x7A
     f32 jumpVelY;                  // 0x7C, per-frame Y step added to position.y (evt_mario, mot_roll, mot_ship)
     f32 jumpAccelY;                // 0x80, added to jumpVelY each frame
@@ -218,7 +218,7 @@ typedef struct MarioWork {
     s32 wallHoldTimer;             // 0x1D0, counts down from 14 before wallDist can drop (marioCheckWall)
     void* touchNpc;                // 0x1D4, returned by marioGetTouchNpcPtr
     s32 field_0x1D8;               // 0x1D8
-    u8 field_0x1DC[0x1E0 - 0x1DC]; // 0x1DC
+    void* actionHitObj;            // 0x1DC, front hit for an A press: mario_hit sets it on the press frame, mario_motion's action check reads it (mario_balloon, party_yoshi and mot_ship touch it raw)
     void* hitobjFront;             // 0x1E0, front-wall HitEntry from searchFrontWall (marioCheckWall, mot_roll)
 	void* hitobjStandOn;           // 0x1E4, 0x1E8 US HitEntry
 	void* hitobjJumpFrom;          // 0x1E8, 0x1EC US HitEntry
@@ -261,7 +261,7 @@ typedef struct MarioWork {
     s32 sfxIds[3];                 // 0x278, sound handles, 0xFFFFFFFF when none (mot_jump, mot_stay, peach, marioSoundInit)
     u32 inputMask;                 // 0x284, button mask set from evt_mario; 0 means unmasked (marioUpdateKeyData)
     void* motStruct;               // 0x288, motion userdata, TODO rename?
-    u8 field_0x28C[4];             // 0x28C, pointer to the koopa work (evt_koopa_*)
+    u8* koopaWork;                 // 0x28C, the koopa character's KpaWork (koopa.h); evt_mario and mario.c keep it across marioReInit
     f32 dirEventStart;             // 0x290, start yaw of marioSetDirEventMain
     f32 dirEventTarget;            // 0x294, target yaw is 270 minus this
     s32 dirEventMsec;              // 0x298

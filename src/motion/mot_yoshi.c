@@ -16,7 +16,7 @@ void mot_yoshi(void) {
         mario->airTimer = 0;
         mario->currSubMotionId = 0;
         mario->baseSpeed = 0.0f;
-        *(u32*)mario->field_0x1DC = 0;
+        mario->actionHitObj = NULL;
         mario->hitobjFront = NULL;
         mario->hitobjStandOn = NULL;
         mario->hitobjPush = NULL;

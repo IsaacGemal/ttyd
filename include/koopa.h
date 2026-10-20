@@ -3,7 +3,7 @@
 #include <dolphin/types.h>
 #include <dolphin/mtx.h>
 
-// Koopa's per-character work, allocated at mario->field_0x28C (size 0x154).
+// Koopa's per-character work, allocated at mario->koopaWork (size 0x154).
 typedef struct KpaWork {
     u32 flags;              // 0x0 (KpaFlags)
     s32 level;              // 0x4
@@ -35,7 +35,7 @@ typedef struct KpaWork {
     s32 bubbleTimer;        // 0x150 (kpa_swim frames until the next bubble)
 } KpaWork;
 
-#define KPA(m) (*(KpaWork**)((u8*)(m) + 0x28C))
+#define KPA(m) (*(KpaWork**)&(m)->koopaWork)
 
 typedef enum KpaFlags {
     KPA_FLAG_NO_HIP = 0x10,                // set on kpa_swim entry; kpaHipAttackOk returns 0 while set
