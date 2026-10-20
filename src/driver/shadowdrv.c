@@ -341,8 +341,7 @@ void shadowInit(void) { //almost 1:1, minor regalloc
     } while (0)
 #ifdef MUST_MATCH
 // MUST_MATCH: retail passes each by-value GXColor through one of the function's fixed outgoing-argument
-// slots (r1+0x8 mat, r1+0xc fog, r1+0x18 battle, and the r1+0x10 scratch/r1+0x14 argument pair for the
-// else path). Declaring the colours as function-scope locals and passing their addresses through a
+// slots (r1+0xc fog, r1+0x18 battle, and the r1+0x10 scratch/r1+0x14 argument pair for the else path). Declaring the colours as function-scope locals and passing their addresses through a
 // GXColor*-taking function-pointer cast -- MWCC passes a by-value 4-byte GXColor as a pointer either way --
 // makes the register allocator lay those locals out in exactly those slots. The plain by-value calls are
 // under #else.
@@ -574,13 +573,10 @@ void shadowCharShadowDisp_Collision(CameraId cameraId, void* param) {
 }
 #pragma opt_propagation reset
 
-// Body, control flow and the work/config register pair (r29/r30) match. The five GXColor outgoing-argument
-// slots (the macros above), the nine-word camera-basis copy and the vertex block are reproduced under
-// MUST_MATCH. `work` is `void*` with `(CharShadowWork*)` casts at each use (the natural
-// `CharShadowWork* work` makes MWCC pick r30/r29 and drops to 96.80%). The camera-basis copy reads the
-// source through a `volatile` pointer so the nine loads come out in retail's ascending order and v0/v8 get
-// r27/r0; a plain read loads them v7..v0,v8 with v0/v8 in r0/r27. The two .sdata2 `~~` pool labels vanish
-// when the unit links.
+// Body, control flow and the work/config register pair (r29/r30) match. The GXColor outgoing-argument
+// slots (the macros above) and the vertex block are reproduced under MUST_MATCH. `work` is `void*` with
+// `(CharShadowWork*)` casts at each use (the natural `CharShadowWork* work` makes MWCC pick r30/r29 and
+// drops to 96.80%). The two .sdata2 `~~` pool labels vanish when the unit links.
 // The vertex block is one straight run that MWCC cuts into scheduling blocks of about 100 initial
 // instructions, and the last cut decides where the `(float_0 + w) - we` fsubs lands. Under MUST_MATCH
 // PROJ_ZERO (every y, and v9's x) reads the zero through a cast: the front end then gives each use its own
