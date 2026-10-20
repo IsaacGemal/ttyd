@@ -35,14 +35,6 @@ s32 _status_pose_table[] = {
 };
 
 
-extern const char str_p_b_st[];
-extern const char str_PM_Y_1B[];
-extern const char str_PM_C_1A[];
-extern const char str_PM_F_2[];
-extern const char str_PM_C_1B[];
-extern const char str_PM_F_1B[];
-extern const char str_PM_F_1A[];
-extern const char str_PM_Y_1A[];
 
 extern ItemData itemDataTable[];
 
@@ -168,8 +160,7 @@ void btlDispTexPlainGX(u32 id, GXColor color0, GXColor color1, GXColor color2, G
 	
 	TEXGetGXTexObjFromPalette(*_battleWorkPointer->menuTex->data, &texobj, id);
 	GXLoadTexObj(&texobj, GX_TEXMAP0);
-#ifdef MUST_MATCH
-	/* MUST_MATCH: a switch reproduces the original `beq then; b else` layout; if/else folds to `bne`. */
+	// A switch, not if/else: it keeps the original `beq then; b else` layout (if/else folds to `bne`).
 	switch (GXGetTexObjFmt(&texobj)) {
 	case 0:
 		GXSetNumTevStages(1);
@@ -187,23 +178,6 @@ void btlDispTexPlainGX(u32 id, GXColor color0, GXColor color1, GXColor color2, G
 		GXSetTevOp(GX_TEVSTAGE0, GX_MODULATE);
 		break;
 	}
-#else
-	if (GXGetTexObjFmt(&texobj) == 0) {
-		GXSetNumTevStages(1);
-		GXSetTevColorOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
-		GXSetTevColorIn(GX_TEVSTAGE0, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ZERO, GX_CC_RASC);
-		GXSetTevAlphaOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
-		GXSetTevAlphaIn(GX_TEVSTAGE0, GX_CA_ZERO, GX_CA_RASA, GX_CA_TEXA, GX_CA_ZERO);
-		GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR0A0);
-	}
-	else {
-		GXSetNumTevStages(1);
-		GXSetTevColorOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
-		GXSetTevAlphaOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
-		GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR0A0);
-		GXSetTevOp(GX_TEVSTAGE0, GX_MODULATE);
-	}
-#endif
 
 	x = 0.5f * (f32)GXGetTexObjWidth(&texobj);
 	y = 0.5f * (f32)GXGetTexObjHeight(&texobj);
@@ -1218,9 +1192,8 @@ void statusPoseControl(BattleUnitPart* part) {
 
 #pragma dont_inline on
 void _pose_def(BattleUnitPart* part) {
-#ifdef MUST_MATCH
-	/* MUST_MATCH: a one-case switch makes MWCC emit the original `beq body; b end` guard;
-	   the natural early-return folds to `bne end`. */
+	// A one-case switch makes MWCC emit the original `beq body; b end` guard;
+	// an early return folds to `bne end`.
 	switch (part->statusPoseStep) {
 	case 0:
 		part->statusPoseStep = 1;
@@ -1230,14 +1203,6 @@ void _pose_def(BattleUnitPart* part) {
 		}
 		break;
 	}
-#else
-	if (part->statusPoseStep) return;
-	part->statusPoseStep = 1;
-	animPoseSetEffect(*(s32*)((char*)part + 0x1c0), NULL, 0);
-	if (part->mOwner->flags & 0x1000000) {
-		animPoseSetMaterialLightFlagOn(*(s32*)((char*)part + 0x1c0), 8);
-	}
-#endif
 }
 #pragma dont_inline reset
 
@@ -1245,8 +1210,7 @@ void _pose_def(BattleUnitPart* part) {
 // them and common-bases the .rodata references off its first zero Vec (retail vec3_802eddd0).
 #pragma dont_inline on
 void _pose_one_pattern(BattleUnitPart* part) {
-#ifdef MUST_MATCH
-	/* MUST_MATCH: one-case switch reproduces the original `beq body; b end` guard. */
+	// A one-case switch reproduces the original `beq body; b end` guard.
 	switch (part->statusPoseStep) {
 	case 0:
 		part->statusPoseStep = 1;
@@ -1266,26 +1230,6 @@ void _pose_one_pattern(BattleUnitPart* part) {
 		}
 		break;
 	}
-#else
-	s32 f = part->statusPoseStep;
-
-	if (f) return;
-	part->statusPoseStep = 1;
-	switch (part->statusPoseKind) {
-	case 2:
-		animPoseSetEffect(*(s32*)((char*)part + 0x1c0), str_p_b_st, 1);
-		animPoseSetEffectAnim(*(s32*)((char*)part + 0x1c0), str_PM_C_1A, 1);
-		break;
-	case 3:
-		animPoseSetEffect(*(s32*)((char*)part + 0x1c0), str_p_b_st, 1);
-		animPoseSetEffectAnim(*(s32*)((char*)part + 0x1c0), str_PM_F_1A, 1);
-		break;
-	case 7:
-		animPoseSetEffect(*(s32*)((char*)part + 0x1c0), str_p_b_st, 1);
-		animPoseSetEffectAnim(*(s32*)((char*)part + 0x1c0), str_PM_Y_1A, 1);
-		break;
-	}
-#endif
 }
 #pragma dont_inline reset
 

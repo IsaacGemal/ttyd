@@ -49,25 +49,14 @@ typedef struct StickKeepLeftWork {
     u32 sfx[12];    // 0x0C, psndSFXOn handles for the notes (u32 so `== -1` compares unsigned)
 } StickKeepLeftWork;
 
-// optimize_for_size: the original prologue uses stmw/lmw (this file's other functions do too), i.e. built
-// 100% via three match-only shapes (all under MUST_MATCH below/inside):
+// optimize_for_size: the original prologue uses stmw/lmw (this file's other functions do too).
+// Two shapes matter:
 //  - an array for the two SFX names makes MWCC materialise each address straight into its callee-saved
 //    register (`addi r31/r30, rX, @l`); two separate pointer locals give `addi rX, rX, @l` + `mr`;
-//  - case 0x3EB keeps the count in a local `n` and re-tests it, adding the original's first `blt`;
-//  - the ok_frame index casts the call through the callee's real 4-byte return type. battle_ac.h says
-//    `s8`, but the callee is `lbz r3, 0x1cbd(r3); blr` (a whole word) and the original caller emits a
-//    bare `slwi r0, r3, 2`; report: header/definition should be `s32` and `mAcDifficulty` a `u8`.
+//  - case 0x3EB (under MUST_MATCH) keeps the count in a local `n` and re-tests it, adding the original's
+//    first `blt`.
 s32 battleAcMain_StickKeepLeft(BattleWork* work) {
-#ifdef MUST_MATCH
     const char* sfxName[2];
-#define STICK_PI_NAME sfxName[0]
-#define STICK_PONE_NAME sfxName[1]
-#else
-    const char* piName;
-    const char* poneName;
-#define STICK_PI_NAME piName
-#define STICK_PONE_NAME poneName
-#endif
     StickKeepLeftWork* dec = (StickKeepLeftWork*)&work->actionCommands.field_0x2BC[0];
     BattleACDispParams* disp = &work->actionCommands.dispParams;
     s32 stateChanged;
@@ -88,8 +77,8 @@ s32 battleAcMain_StickKeepLeft(BattleWork* work) {
         }
     }
 
-    STICK_PI_NAME = "SFX_AC_PI1";
-    STICK_PONE_NAME = "SFX_AC_PONE1";
+    sfxName[0] = "SFX_AC_PI1";
+    sfxName[1] = "SFX_AC_PONE1";
 
     for (;;) {
         stateChanged = 0;
@@ -177,12 +166,12 @@ s32 battleAcMain_StickKeepLeft(BattleWork* work) {
                     s32 idx = dec->note - 2;
                     if (idx < work->actionCommands.acParams[0] - 1) {
                         if (dec->sfx[idx] == -1) {
-                            dec->sfx[idx] = psndSFXOn(STICK_PI_NAME);
+                            dec->sfx[idx] = psndSFXOn(sfxName[0]);
                         }
                     }
                     else {
                         if (dec->sfx[idx] == -1) {
-                            dec->sfx[idx] = psndSFXOn(STICK_PONE_NAME);
+                            dec->sfx[idx] = psndSFXOn(sfxName[1]);
                             work->actionCommands.acParams[4] = 1;
                         }
                     }
@@ -202,12 +191,7 @@ s32 battleAcMain_StickKeepLeft(BattleWork* work) {
                 }
                 else {
                     s32 remain = work->actionCommands.acParams[1] - dec->countdown;
-#ifdef MUST_MATCH
-                    // Match-only: the callee really returns 4 bytes; the `s8` header would emit `extsb`.
-                    if (remain > ac_stickkeepleft_ok_frame[((s32 (*)(BattleWork*))BattleActionCommandGetDifficulty)(work)]) {
-#else
                     if (remain > ac_stickkeepleft_ok_frame[BattleActionCommandGetDifficulty(work)]) {
-#endif
                         if (!(work->actionCommands.acFlag & 2)) {
                             work->actionCommands.outputParams[2] = 1;
                         }
@@ -284,8 +268,6 @@ s32 battleAcMain_StickKeepLeft(BattleWork* work) {
     return 1;
 }
 
-#undef STICK_PI_NAME
-#undef STICK_PONE_NAME
 s32 battleAcResult_StickKeepLeft(BattleWork* work) {
     return work->actionCommands.result;
 }
@@ -346,11 +328,9 @@ void battleAcDelete_StickKeepLeft(BattleWork* work) {
 
 // The original emits this last (the asm lists it first, and game code is compiled with
 // -inline auto,deferred, which emits functions in reverse source order).
-#ifdef MUST_MATCH
-// match-only: going through an inline keeps the named 25.0f in its own FPR (f31), where the plain
-// `yy = float_25 + y` reuses y's register (f30) and the whole loop body shifts one FPR down.
+// Going through an inline keeps the named 25.0f in its own FPR (f31); the plain `yy = float_25 + y`
+// reuses y's register (f30) and the whole loop body shifts one FPR down.
 static inline f32 stickLeftAdd25(f32 v) { return float_25_8041c400 + v; }
-#endif
 
 // The `ac` intermediate (`BattleActions*`, rather than spelling `work->actionCommands.` at every use)
 // is what makes MWCC colour `work` in r31 and the .rodata pool base in r30 as the original; with the
@@ -427,11 +407,7 @@ static void actionCommandDisp(f32 x, f32 y, s32 type) {
     {
         Vec v = ((Vec){0.0f, 0.0f, 0.0f});
         v.x = float_neg288_8041c3fc + x;
-#ifdef MUST_MATCH
         v.y = yy = stickLeftAdd25(y);
-#else
-        v.y = yy = float_25_8041c400 + y;
-#endif
         iconDispGx(float_1_8041c3f0, &v, 0x10, 0x8F);
     }
 

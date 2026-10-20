@@ -83,29 +83,17 @@ static void actionCommandDisp(f32 x, f32 y);
 // dont_inline: the original keeps _getmaxcount as a real call (`bl _getmaxcount`), not an inline.
 #pragma dont_inline on
 s32 _getmaxcount(void) {
-#ifdef MUST_MATCH
-	// Match-only: the header says `s8` but the callee returns a zero-extended 4-byte value.
-	return _frame_table[((s32 (*)(BattleWork*))BattleActionCommandGetDifficulty)(_battleWorkPointer)];
-#else
 	return _frame_table[BattleActionCommandGetDifficulty(_battleWorkPointer)];
-#endif
 }
 #pragma dont_inline reset
 
-// The `ac` + `field_0x2BC[0]` access below is a match-only form: addressing the work area through
-// the header's named field, rather than casting `work + 0x1F4C`, is what makes MWCC keep two
-// separate base pointers (r31=mt, r28=disp) the way the original does. The natural form is under
-// #else. The `unit`/`part` declaration order also matters: MWCC assigns `part` to r26 and `unit`
+// The `ac` local below makes MWCC keep two separate base pointers (r31=mt, r28=disp) the way the
+// original does. The `unit`/`part` declaration order also matters: MWCC assigns `part` to r26 and `unit`
 // to r27 only when `unit` is declared first.
 s32 battleAcMain_MonosiriTarget(BattleWork* work) {
-#ifdef MUST_MATCH
 	BattleActions* ac = &work->actionCommands;
 	MonosiriTargetWork* mt = (MonosiriTargetWork*)&ac->field_0x2BC[0];
 	BattleACDispParams* disp = &ac->dispParams;
-#else
-	MonosiriTargetWork* mt = (MonosiriTargetWork*)&work->actionCommands.field_0x2BC[0];
-	BattleACDispParams* disp = &work->actionCommands.dispParams;
-#endif
 	BattleUnit* unit;
 	BattleUnitPart* part;
 	s32 autoCommand = 0;
