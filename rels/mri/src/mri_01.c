@@ -2423,9 +2423,9 @@ USER_FUNC(akari_charge_entry) {
     f3 = evtGetFloat(event, args[6]);
     v3 = evtGetValue(event, args[7]);
     eff = effAkariChargeN64Entry(0, v3, f0, f1, f2, f3);
-    ((EffAkariChargeData*)eff->userdata)->field_0x18 = v0;
-    ((EffAkariChargeData*)eff->userdata)->field_0x1C = v1;
-    ((EffAkariChargeData*)eff->userdata)->field_0x20 = v2;
+    ((EffAkariChargeData*)eff->userdata)->reg0R = v0;
+    ((EffAkariChargeData*)eff->userdata)->reg0G = v1;
+    ((EffAkariChargeData*)eff->userdata)->reg0B = v2;
     return EVT_RETURN_DONE;
 }
 

@@ -95,39 +95,39 @@ static inline f32 sqrtf(f32 x) {
 // .data vertex array, local to this file.
 
 typedef struct EffAkariChargeParticle {
-	s32 field_0x0;  //0x0
-	f32 field_0x4;  //0x4
-	f32 field_0x8;  //0x8
-	f32 field_0xC;  //0xC
-	s32 life;       //0x10
-	s32 counter;    //0x14
+	s32 type;        //0x0, head only
+	f32 x;           //0x4
+	f32 y;           //0x8
+	f32 z;           //0xC
+	s32 life;        //0x10
+	s32 counter;     //0x14
 	u8 pad_0x18[0xC]; //0x18
-	s32 field_0x24;   //0x24
+	s32 alpha;       //0x24, fade times the head alpha
 	u8 pad_0x28[0xC]; //0x28
-	f32 scale;      //0x34
-	f32 field_0x38; //0x38
-	f32 angle;      //0x3C
-	s32 index;      //0x40
+	f32 scale;       //0x34
+	f32 field_0x38;  //0x38
+	f32 angle;       //0x3C, degrees
+	s32 index;       //0x40, texture column (0-15)
 } EffAkariChargeParticle; //0x44
 
 typedef struct EffAkariChargeWork {
-	s32 type;       //0x0
-	f32 x;          //0x4
-	f32 y;          //0x8
-	f32 z;          //0xC
-	s32 field_0x10; //0x10
-	s32 field_0x14; //0x14
-	s32 field_0x18; //0x18
-	s32 field_0x1C; //0x1C
-	s32 field_0x20; //0x20
-	s32 field_0x24; //0x24
-	s32 field_0x28; //0x28
-	s32 field_0x2C; //0x2C
-	s32 field_0x30; //0x30
+	s32 type;        //0x0
+	f32 x;           //0x4
+	f32 y;           //0x8
+	f32 z;           //0xC
+	s32 life;        //0x10, 1000 when the caller passes a2 <= 0
+	s32 counter;     //0x14, frames since the start; also the texture scroll in disp
+	s32 reg0R;      //0x18, TEVREG0 colour of the particles (set by the caller)
+	s32 reg0G;      //0x1C
+	s32 reg0B;      //0x20
+	s32 alpha;       //0x24, head fade in and out
+	s32 reg1R;       //0x28, TEVREG1 colour (GXSetTevColor(GX_TEVREG1))
+	s32 reg1G;       //0x2C
+	s32 reg1B;       //0x30
 	f32 field_0x34; //0x34
-	f32 field_0x38; //0x38
-	f32 field_0x3C; //0x3C
-	s32 field_0x40; //0x40
+	f32 scale;       //0x38, effect scale (k in disp)
+	s32 field_0x3C;  //0x3C
+	s32 field_0x40;  //0x40
 	// Flexible array (sizeof(work) == 0x44): the disp function reuses the work pointer as the particle
 	// cursor, so `data++` must step one 0x44-byte particle, not the whole 0x5D8 allocation.
 	EffAkariChargeParticle particles[]; //0x44
@@ -148,23 +148,23 @@ EffectEntry* effAkariChargeN64Entry(s32 type, s32 a2, f32 a3, f32 a4, f32 a5, f3
 	entry->flags |= 2;
 
 	work->type = type;
-	work->field_0x14 = 0;
+	work->counter = 0;
 	if (a2 <= 0) {
-		work->field_0x10 = 1000;
+		work->life = 1000;
 	} else {
-		work->field_0x10 = a2;
+		work->life = a2;
 	}
-	work->field_0x24 = 0;
+	work->alpha = 0;
 	work->x = a3;
 	work->y = a4;
 	work->z = a5;
-	work->field_0x38 = a6;
-	work->field_0x18 = 0xFF;
-	work->field_0x1C = 0xE6;
-	work->field_0x20 = 0;
-	work->field_0x28 = 0xFF;
-	work->field_0x2C = 0xFF;
-	work->field_0x30 = 0xFF;
+	work->scale = a6;
+	work->reg0R = 0xFF;
+	work->reg0G = 0xE6;
+	work->reg0B = 0;
+	work->reg1R = 0xFF;
+	work->reg1G = 0xFF;
+	work->reg1B = 0xFF;
 
 	n = 1;
 	p = work->particles;
@@ -172,8 +172,8 @@ EffectEntry* effAkariChargeN64Entry(s32 type, s32 a2, f32 a3, f32 a4, f32 a5, f3
 		p->life = 20;
 		p->counter = 0;
 		p->angle = (f32)((n - 1) * 360 / 21);
-		p->field_0x4 = 0.0f;
-		p->field_0x8 = 0.0f;
+		p->x = 0.0f;
+		p->y = 0.0f;
 		p->scale = 1.0f;
 		p->index = n & 0xF;
 		n++;
@@ -211,14 +211,14 @@ void effAkariChargeMain(EffectEntry* effect) {
 
 	p = effect->userdata;
 
-	disp.x = p->field_0x4;
-	disp.y = p->field_0x8;
-	disp.z = p->field_0xC;
+	disp.x = p->x;
+	disp.y = p->y;
+	disp.z = p->z;
 #ifdef MUST_MATCH
 	position = disp;
 #endif
 
-	type = p->field_0x0;
+	type = p->type;
 
 	if (effect->flags & 4) {
 		effect->flags &= ~4;
@@ -236,10 +236,10 @@ void effAkariChargeMain(EffectEntry* effect) {
 	life = p->life;
 	counter = p->counter;
 	if (life < 16) {
-		p->field_0x24 = life << 4;
+		p->alpha = life << 4;
 	}
 	if (counter < 16) {
-		p->field_0x24 = (counter << 4) + 15;
+		p->alpha = (counter << 4) + 15;
 	}
 
 	p++;
@@ -249,18 +249,18 @@ void effAkariChargeMain(EffectEntry* effect) {
 			p->life = rand() % 50 + 20;
 			p->counter = 0;
 			p->angle = (f32)(rand() % 360);
-			p->field_0x4 = 0.0f;
-			p->field_0x8 = 0.0f;
+			p->x = 0.0f;
+			p->y = 0.0f;
 		}
 		if (rand() % 100 <= 50) {
-			x = p->field_0x4;
-			y = p->field_0x8;
+			x = p->x;
+			y = p->y;
 			dx = (f32)(rand() % 17 - 8);
 			dy = (f32)(rand() % 17 - 8);
 			p[2] = p[1];
 			p[1] = p[0];
-			p->field_0x4 = x + dx;
-			p->field_0x8 = y + dy;
+			p->x = x + dx;
+			p->y = y + dy;
 			p->angle = angleABf(0.0f, 0.0f, dx, dy);
 #ifdef MUST_MATCH
 			// Match-only: comparing against a local copy of the constant makes mwcc put dx/dy first in
@@ -276,9 +276,9 @@ void effAkariChargeMain(EffectEntry* effect) {
 			}
 		}
 		s = (f32)sin(6.2831855f * (f32)((p->counter * 180) / p->life) / 360.f);
-		p->field_0x24 = (s32)(1024.0f * s);
-		if (p->field_0x24 > 255) {
-			p->field_0x24 = 255;
+		p->alpha = (s32)(1024.0f * s);
+		if (p->alpha > 255) {
+			p->alpha = 255;
 		}
 		p->counter++;
 	}
@@ -342,9 +342,9 @@ void effAkariChargeDisp(CameraId camId, void* param) {
 	Mtx rotMtx;
 	Mtx viewMtx;
 	s32 i;
-	s32 field24;
+	s32 alpha;
 	s32 type;
-	s32 field14;
+	s32 counter;
 	s32 colR;
 	s32 colG;
 	s32 colB;
@@ -355,51 +355,51 @@ void effAkariChargeDisp(CameraId camId, void* param) {
 	cam = camGetPtr(CAMERA_3D);
 	data = effect->userdata;
 	type = data->type;
-	field14 = data->field_0x14;
-	field24 = data->field_0x24;
-	colR = data->field_0x18;
-	colG = data->field_0x1C;
-	colB = data->field_0x20;
+	counter = data->counter;
+	alpha = data->alpha;
+	colR = data->reg0R;
+	colG = data->reg0G;
+	colB = data->reg0B;
 	if (type == 1) {
 		GXGetProjectionv(proj);
 		GXGetViewportv(viewport);
 		GXSetProjection(cam->projection, cam->projType);
-		GXSetZMode(0, 7, 0);
+		GXSetZMode(GX_FALSE, GX_ALWAYS, GX_FALSE);
 	}
 
 	PSMTXTrans(mtx, data->x, data->y, data->z);
 	PSMTXRotRad(rotMtx, 'y', -camGetPtr(CAMERA_3D)->viewYaw * 0.017453292f);
 	PSMTXConcat(mtx, rotMtx, mtx);
-	PSMTXScale(scaleMtx, data->field_0x38, data->field_0x38, data->field_0x38);
+	PSMTXScale(scaleMtx, data->scale, data->scale, data->scale);
 	PSMTXConcat(mtx, scaleMtx, viewMtx);
 	PSMTXConcat(cam->view, viewMtx, viewMtx);
 
 #ifdef MUST_MATCH
-	GXSetTevColor(2, akariColorProj(unk_80423090, data->field_0x28, data->field_0x2C, data->field_0x30));
+	GXSetTevColor(GX_TEVREG1, akariColorProj(unk_80423090, data->reg1R, data->reg1G, data->reg1B));
 #else
 	color = unk_80423090;
-	color.r = data->field_0x28;
-	color.g = data->field_0x2C;
-	color.b = data->field_0x30;
-	GXSetTevColor(2, color);
+	color.r = data->reg1R;
+	color.g = data->reg1G;
+	color.b = data->reg1B;
+	GXSetTevColor(GX_TEVREG1, color);
 #endif
 	GXSetNumChans(0);
 	GXSetNumTevStages(2);
-	GXSetTevOrder(0, 0, 0, 0xff);
-	GXSetTevColorOp(0, 0, 0, 0, 1, 0);
-	GXSetTevAlphaOp(0, 0, 0, 0, 1, 0);
-	GXSetTevColorIn(0, 0xf, 8, 8, 0xf);
-	GXSetTevAlphaIn(0, 7, 1, 4, 7);
-	GXSetTevOrder(1, 0xff, 0xff, 0xff);
-	GXSetTevColorOp(1, 0, 0, 0, 1, 0);
-	GXSetTevAlphaOp(1, 0, 0, 0, 1, 0);
-	GXSetTevColorIn(1, 2, 4, 0, 0xf);
-	GXSetTevAlphaIn(1, 7, 7, 7, 0);
+	GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR_NULL);
+	GXSetTevColorOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+	GXSetTevAlphaOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+	GXSetTevColorIn(GX_TEVSTAGE0, GX_CC_ZERO, GX_CC_TEXC, GX_CC_TEXC, GX_CC_ZERO);
+	GXSetTevAlphaIn(GX_TEVSTAGE0, GX_CA_ZERO, GX_CA_A0, GX_CA_TEXA, GX_CA_ZERO);
+	GXSetTevOrder(GX_TEVSTAGE1, GX_TEXCOORD_NULL, GX_TEXMAP_NULL, GX_COLOR_NULL);
+	GXSetTevColorOp(GX_TEVSTAGE1, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+	GXSetTevAlphaOp(GX_TEVSTAGE1, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+	GXSetTevColorIn(GX_TEVSTAGE1, GX_CC_C0, GX_CC_C1, GX_CC_CPREV, GX_CC_ZERO);
+	GXSetTevAlphaIn(GX_TEVSTAGE1, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_APREV);
 	effGetTexObjN64(0x70, &texObj);
-	GXLoadTexObj(&texObj, 0);
+	GXLoadTexObj(&texObj, GX_TEXMAP0);
 	GXSetNumTexGens(1);
-	GXSetTexCoordGen2(0, 1, 4, 0x1e, 0, 0x7d);
-	GXSetCullMode(0);
+	GXSetTexCoordGen2(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_TEXMTX0, GX_FALSE, GX_PTIDENTITY);
+	GXSetCullMode(GX_CULL_NONE);
 	effSetVtxDescN64((effVtxArray*)size2x8_tex8x16_vtx);
 
 	data++;
@@ -407,37 +407,37 @@ void effAkariChargeDisp(CameraId camId, void* param) {
 		EffAkariChargeParticle* part = (EffAkariChargeParticle*)data;
 		GXColor color2;
 #ifdef MUST_MATCH
-		color2 = akariColorPart(colR, colG, colB, (part->field_0x24 * field24) / 255);
+		color2 = akariColorPart(colR, colG, colB, (part->alpha * alpha) / 255);
 #else
 		color2 = unk_80423094;
 		color2.r = colR;
 		color2.g = colG;
 		color2.b = colB;
-		color2.a = (part->field_0x24 * field24) / 255;
+		color2.a = (part->alpha * alpha) / 255;
 #endif
-		GXSetTevColor(1, color2);
+		GXSetTevColor(GX_TEVREG0, color2);
 
-		PSMTXTrans(mtx, part->field_0x4, part->field_0x8, 0.0f);
+		PSMTXTrans(mtx, part->x, part->y, 0.0f);
 		PSMTXRotRad(rotMtx, 'z', 0.017453292f * part->angle);
 		PSMTXConcat(mtx, rotMtx, mtx);
 		PSMTXScale(scaleMtx, part->scale * k, part->scale * k,
 		           1.0f);
 		PSMTXConcat(mtx, scaleMtx, mtx);
 		PSMTXConcat(viewMtx, mtx, mtx);
-		GXLoadPosMtxImm(mtx, 0);
-		GXSetCurrentMtx(0);
+		GXLoadPosMtxImm(mtx, GX_PNMTX0);
+		GXSetCurrentMtx(GX_PNMTX0);
 
 		PSMTXScale(scaleMtx, 0.00390625f, 0.03125f, 0.0f);
 		PSMTXTrans(mtx, (f32)(part->index << 4), 0.0f, 0.0f);
 		PSMTXConcat(scaleMtx, mtx, scaleMtx);
-		GXLoadTexMtxImm(scaleMtx, 0x1e, 1);
+		GXLoadTexMtxImm(scaleMtx, GX_TEXMTX0, GX_MTX2x4);
 
 		PSMTXScale(scaleMtx, 0.00390625f, 0.03125f, 0.0f);
-		PSMTXTrans(mtx, (f32)(field14 * 3), 0.0f, 0.0f);
+		PSMTXTrans(mtx, (f32)(counter * 3), 0.0f, 0.0f);
 		PSMTXConcat(scaleMtx, mtx, scaleMtx);
-		GXLoadTexMtxImm(scaleMtx, 0x21, 1);
+		GXLoadTexMtxImm(scaleMtx, GX_TEXMTX1, GX_MTX2x4);
 
-		GXBegin(0x90, 0, 6);
+		GXBegin(GX_TRIANGLES, GX_VTXFMT0, 6);
 		tri2(0, 1, 2, 0, 0, 2, 3, 0);
 	}
 
