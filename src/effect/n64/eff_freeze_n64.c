@@ -121,9 +121,9 @@ void effFreezeMain(EffectEntry* effect) {
 		effVaporN64Entry(2, 30, data->x, 40.0f * data->scale + data->y, data->z, data->scale);
 	}
 
-	*(f32*)((u8*)data->snowDust->userdata + 0x4) = data->x;
-	*(f32*)((u8*)data->snowDust->userdata + 0x8) = 10.0f + data->y;
-	*(f32*)((u8*)data->snowDust->userdata + 0xC) = data->z;
+	((effSnowDustData*)data->snowDust->userdata)->x = data->x;
+	((effSnowDustData*)data->snowDust->userdata)->y = 10.0f + data->y;
+	((effSnowDustData*)data->snowDust->userdata)->z = data->z;
 
 #ifdef MUST_MATCH
 	dispEntry(CAMERA_3D, dispCalcZ(&position), 2, effFreezeDisp, effect);

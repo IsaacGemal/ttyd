@@ -29,8 +29,8 @@ EffectEntry* effMistEntry(s32 type, s32 count, f32 x, f32 y, f32 z, f32 w) {
 	MistWork* ptr;
 	s32 numEffects;
 	s32 i;
-	f32 c;
-	f32 s;
+	f32 cosYaw;
+	f32 sinYaw;
 
 	if (type == 4) {
 		numEffects = 2;
@@ -92,11 +92,11 @@ EffectEntry* effMistEntry(s32 type, s32 count, f32 x, f32 y, f32 z, f32 w) {
 			ptr->x = 0.0f;
 			ptr->y = 0.0f;
 			ptr->z = 1.0f;
-			s = (f32)sin(6.2831855f * ptr->field_0x40 / 360.0f);
-			ptr->velX = 1.1f * s;
+			sinYaw = (f32)sin(6.2831855f * ptr->field_0x40 / 360.0f);
+			ptr->velX = 1.1f * sinYaw;
 			ptr->velY = -2.0f;
-			c = (f32)cos(6.2831855f * ptr->field_0x40 / 360.0f);
-			ptr->velZ = 1.1f * -c;
+			cosYaw = (f32)cos(6.2831855f * ptr->field_0x40 / 360.0f);
+			ptr->velZ = 1.1f * -cosYaw;
 			ptr->field_0x28 = 0.95f;
 			ptr->field_0x2C = -0.04f;
 			ptr->field_0x30 = 0.94f;
@@ -139,13 +139,13 @@ static inline Vec mistMakeVec(f32 x, f32 y, f32 z) {
 void effMistMain(EffectEntry* effect) {
 	MistWork* work;
 	Vec pos;
-	Vec sp;
+	Vec origin;
 	s32 i;
 	s32 type;
 
 	work = effect->userdata;
-	sp = mistMakeVec(work->x, work->y, work->z);
-	pos = sp;
+	origin = mistMakeVec(work->x, work->y, work->z);
+	pos = origin;
 	type = work->type;
 	if (effect->flags & 4) {
 		effect->flags &= ~4;

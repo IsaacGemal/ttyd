@@ -75,6 +75,7 @@ EVT_BEGIN(inemuri_snd)
 EVT_END()
 
 EVT_BEGIN(mario_and_party_sleep)
+    // Frame countdowns: Mario dozes off (LW(1)), the partner dozes off (LW(2)), Mario's next yawn/stand toggle (LW(3)).
     SET_VALUE(LW(1), 1200)
     SET_VALUE(LW(2), 900)
     SET_VALUE(LW(3), 600)
@@ -280,6 +281,7 @@ void _epilog(void) {
 void _unresolved(void) {
 }
 
+// Frees the buffer allocated by unk_gor_0000041c.
 s32 unk_gor_0000050c(EventEntry* event, BOOL isFirstCall) {
     if (unk_gor_bss00000000[0] == NULL) {
         return EVT_RETURN_DONE;
@@ -289,70 +291,75 @@ s32 unk_gor_0000050c(EventEntry* event, BOOL isFirstCall) {
     return EVT_RETURN_DONE;
 }
 
+// Concatenates a prefix, a message looked up from the message table, and a suffix into one buffer.
 s32 unk_gor_0000041c(EventEntry* event, BOOL isFirstCall) {
     s32* args = event->args;
-    char* v0 = (char*)evtGetValue(event, args[0]);
-    const char* msg = msgSearch((const char*)evtGetValue(event, args[1]));
-    char* v2 = (char*)evtGetValue(event, args[2]);
-    s32 len = strlen(v0) + strlen(msg) + strlen(v2) + 1;
-    void* buf = _mapAlloc(len);
+    char* prefix = (char*)evtGetValue(event, args[0]);
+    const char* middle = msgSearch((const char*)evtGetValue(event, args[1]));
+    char* suffix = (char*)evtGetValue(event, args[2]);
+    s32 totalLen = strlen(prefix) + strlen(middle) + strlen(suffix) + 1;
+    void* buf = _mapAlloc(totalLen);
 
     unk_gor_bss00000000[0] = buf;
-    memset(buf, 0, len);
-    sprintf((char*)unk_gor_bss00000000[0], "%s%s%s", v0, msg, v2);
+    memset(buf, 0, totalLen);
+    sprintf((char*)unk_gor_bss00000000[0], "%s%s%s", prefix, middle, suffix);
     evtSetValue(event, args[3], (s32)unk_gor_bss00000000[0]);
     return EVT_RETURN_DONE;
 }
 
+// Resets the wander target (args 0/1, x/z variables) to the home point (args 2/3) when it lies farther
+// than args[4] from home.
 s32 evt_gor_villager_urouro_check_func(EventEntry* event, BOOL isFirstCall) {
     s32* args = event->args;
-    s32 idx0 = args[0];
-    s32 idx1 = args[1];
-    f32 f29 = evtGetFloat(event, args[2]);
-    f32 f28 = evtGetFloat(event, args[3]);
-    f32 f30 = evtGetFloat(event, args[4]);
-    f32 f31 = evtGetFloat(event, idx0);
-    f32 f1 = evtGetFloat(event, idx1);
-    Vec pos1;
-    Vec pos2;
+    s32 xVar = args[0];
+    s32 zVar = args[1];
+    f32 homeX = evtGetFloat(event, args[2]);
+    f32 homeZ = evtGetFloat(event, args[3]);
+    f32 radius = evtGetFloat(event, args[4]);
+    f32 x = evtGetFloat(event, xVar);
+    f32 z = evtGetFloat(event, zVar);
+    Vec pos;
+    Vec homePos;
     Vec tmp1;
     Vec tmp2;
 
     tmp1 = vec3_gor_00012450;
-    tmp1.x = f31;
-    tmp1.z = f1;
-    pos1 = tmp1;
+    tmp1.x = x;
+    tmp1.z = z;
+    pos = tmp1;
     tmp2 = vec3_gor_0001245c;
-    tmp2.x = f29;
-    tmp2.z = f28;
-    pos2 = tmp2;
-    if (PSVECDistance(&pos2, &pos1) <= f30) {
+    tmp2.x = homeX;
+    tmp2.z = homeZ;
+    homePos = tmp2;
+    if (PSVECDistance(&homePos, &pos) <= radius) {
         return EVT_RETURN_DONE;
     }
-    evtSetFloat(event, idx0, f29);
-    evtSetFloat(event, idx1, f28);
+    evtSetFloat(event, xVar, homeX);
+    evtSetFloat(event, zVar, homeZ);
     return EVT_RETURN_DONE;
 }
 
 s32 evt_goki_sub_intpl_init(EventEntry* event, BOOL isFirstCall) {
     s32* args = event->args;
-    s32 v0 = evtGetValue(event, args[0]);
-    s32 v1 = evtGetValue(event, args[1]);
-    s32 v2 = evtGetValue(event, args[2]);
-    s32 v3 = evtGetValue(event, args[3]);
-    s32 v4 = evtGetValue(event, args[4]);
-    s32 v5 = evtGetValue(event, args[5]);
+    s32 intplMode = evtGetValue(event, args[0]);
+    s32 startX = evtGetValue(event, args[1]);
+    s32 endX = evtGetValue(event, args[2]);
+    s32 startZ = evtGetValue(event, args[3]);
+    s32 endZ = evtGetValue(event, args[4]);
+    s32 frameCount = evtGetValue(event, args[5]);
 
-    event->lwData[9] = v0;
-    event->lwData[10] = v1;
-    event->lwData[11] = v2;
-    event->lwData[12] = v3;
-    event->lwData[13] = v4;
+    event->lwData[9] = intplMode;
+    event->lwData[10] = startX;
+    event->lwData[11] = endX;
+    event->lwData[12] = startZ;
+    event->lwData[13] = endZ;
     event->lwData[14] = 0;
-    event->lwData[15] = v5;
+    event->lwData[15] = frameCount;
     return EVT_RETURN_DONE;
 }
 
+// lwData layout from evt_goki_sub_intpl_init: 9 mode, 10/11 start/end X,
+// 12/13 start/end Z, 14 elapsed frames, 15 total frames.
 s32 evt_goki_sub_intpl_get_value(EventEntry* event, BOOL isFirstCall) {
     event->lwData[0] = (s32)intplGetValue(event->lwData[9], event->lwData[14], event->lwData[15],
                                          (f32)event->lwData[10], (f32)event->lwData[11]);
@@ -362,11 +369,13 @@ s32 evt_goki_sub_intpl_get_value(EventEntry* event, BOOL isFirstCall) {
     return EVT_RETURN_DONE;
 }
 
+// Stores the sound-effect id that unk_gor_000000cc stops later.
 s32 unk_gor_00000104(EventEntry* event, BOOL isFirstCall) {
     unk_gor_bss00000004[0] = evtGetValue(event, event->args[0]);
     return EVT_RETURN_DONE;
 }
 
+// Stops the sound effect remembered by unk_gor_00000104.
 s32 unk_gor_000000cc(EventEntry* event, BOOL isFirstCall) {
     if (unk_gor_bss00000004[0] != -1) {
         psndSFXOff(unk_gor_bss00000004[0]);

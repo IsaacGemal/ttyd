@@ -35,6 +35,21 @@ typedef struct EffectMayaAnimEntry {
     f32 field_0x30; // 0x30
 } EffectMayaAnimEntry;
 
+typedef struct EffectMayaAnimData {
+    u32 field_0x0; // 0x0
+    f32 field_0x4; // 0x4
+    s32* count;    // 0x8
+} EffectMayaAnimData;
+
+typedef struct EffectMayaAnim {
+    u16 flags;                      // 0x0
+    u8 field_0x2[0x2];              // 0x2
+    f32 field_0x4;                  // 0x4
+    OSTime startTime;               // 0x8
+    EffectMayaAnimData* animData;   // 0x10
+    EffectMayaAnimEntry entries[];  // 0x14
+} EffectMayaAnim;
+
 void effInit(void);
 void effTexSetup(void);
 void effGetTexObj(u32 id, GXTexObj* obj);

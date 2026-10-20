@@ -318,21 +318,6 @@ EffectSet* effGetSet(const char* name) {
 	return NULL;
 }
 
-typedef struct EffectMayaAnimData {
-	u32 field_0x0; // 0x0
-	f32 field_0x4; // 0x4
-	s32* count;    // 0x8
-} EffectMayaAnimData;
-
-typedef struct EffectMayaAnim {
-	u16 flags;                      // 0x0
-	u8 field_0x2[0x2];              // 0x2
-	f32 field_0x4;                  // 0x4
-	OSTime startTime;               // 0x8
-	EffectMayaAnimData* animData;   // 0x10
-	EffectMayaAnimEntry entries[];  // 0x14
-} EffectMayaAnim;
-
 typedef struct EffectMayaVtx {
 	s16 x; // 0x0
 	s16 y; // 0x2

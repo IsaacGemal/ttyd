@@ -35,7 +35,7 @@ static u8 scale_dt2[] = {
     0x47, 0x3D, 0x33, 0x28, 0x1E, 0x14, 0x0C, 0x06, 0x02, 0x00,
 };
 
-EffectEntry* effMahornEntry(BOOL unused, s32 count, f32 posX, f32 posY, f32 posZ, f32 scale, s32 unk) {
+EffectEntry* effMahornEntry(BOOL unused, s32 count, f32 posX, f32 posY, f32 posZ, f32 scale, s32 timer) {
     EffectEntry* effect;
     effMahornData* data;
     s32 i;
@@ -50,11 +50,11 @@ EffectEntry* effMahornEntry(BOOL unused, s32 count, f32 posX, f32 posY, f32 posZ
     effect->callback = effMahornMain;
     data->unused = unused;
     data->counter = 0;
-    if (unk <= 0) {
+    if (timer <= 0) {
         data->timer = 1000;
     }
     else {
-        data->timer = unk;
+        data->timer = timer;
     }
     data->position.x = posX;
     data->position.y = posY;

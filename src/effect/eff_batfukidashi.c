@@ -10,6 +10,7 @@
 #include <stdio.h>
 
 
+// RGBA white with zero alpha; the draw code supplies the fade alpha.
 const u32 dat_80420468 = 0xFFFFFF00;
 
 const Vec vec3_802fd498 = { 0.0f, 0.0f, 0.0f };
@@ -142,21 +143,21 @@ void effCoinFukidashiDisp(CameraId cameraId, void* param) {
     data = effect->userdata;
     alpha = data->alpha;
     GXSetNumTexGens(1);
-    GXSetTexCoordGen2(0, 1, 4, 0x3c, 0, 0x7d);
+    GXSetTexCoordGen2(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_IDENTITY, GX_FALSE, GX_PTIDENTITY);
     effGetTexObj(0x25, &tex);
-    GXLoadTexObj(&tex, 0);
+    GXLoadTexObj(&tex, GX_TEXMAP0);
     GXSetNumChans(1);
-    GXSetChanCtrl(4, 0, 0, 0, 0, 2, 2);
+    GXSetChanCtrl(GX_COLOR0A0, GX_FALSE, GX_SRC_REG, GX_SRC_REG, GX_LIGHT_NULL, GX_DF_CLAMP, GX_AF_NONE);
     GXSetNumTevStages(1);
-    GXSetTevOrder(0, 0, 0, 4);
-    GXSetTevOp(0, 0);
+    GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR0A0);
+    GXSetTevOp(GX_TEVSTAGE0, GX_MODULATE);
 #ifdef MUST_MATCH
     color = effCoinFukidashiColor(alpha);
 #else
     color = *(GXColor*)&dat_80420468;
     color.a = alpha;
 #endif
-    GXSetChanMatColor(4, color);
+    GXSetChanMatColor(GX_COLOR0A0, color);
 
     PSMTXTrans(m0, data->position.x, data->position.y + data->field_0x10, data->position.z);
     PSMTXScale(m1, data->scale, data->scale, data->scale);
@@ -164,16 +165,16 @@ void effCoinFukidashiDisp(CameraId cameraId, void* param) {
     PSMTXConcat(m0, m1, m0);
     PSMTXConcat(m0, m2, m0);
     PSMTXConcat(cam->view, m0, m0);
-    GXLoadPosMtxImm(m0, 0);
-    GXSetCurrentMtx(0);
-    GXSetCullMode(0);
+    GXLoadPosMtxImm(m0, GX_PNMTX0);
+    GXSetCurrentMtx(GX_PNMTX0);
+    GXSetCullMode(GX_CULL_NONE);
     GXClearVtxDesc();
-    GXSetVtxDesc(9, 1);
-    GXSetVtxDesc(0xd, 1);
-    GXSetVtxAttrFmt(0, 9, 1, 4, 0);
-    GXSetVtxAttrFmt(0, 0xd, 1, 4, 0);
+    GXSetVtxDesc(GX_VA_POS, GX_DIRECT);
+    GXSetVtxDesc(GX_VA_TEX0, GX_DIRECT);
+    GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_POS_XYZ, GX_F32, 0);
+    GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, GX_TEX_ST, GX_F32, 0);
 
-    GXBegin(0x80, 0, 4);
+    GXBegin(GX_QUADS, GX_VTXFMT0, 4);
     w = 0.4f * (f32)GXGetTexObjWidth(&tex);
     h = 0.4f * (f32)GXGetTexObjHeight(&tex);
 #ifdef MUST_MATCH
@@ -223,6 +224,6 @@ void effCoinFukidashiDisp(CameraId cameraId, void* param) {
     PSMTXConcat(m2, m0, m0);
     PSMTXConcat(m0, m1, m0);
     FontDrawStart_alpha(alpha);
-    GXSetZMode(1, 3, 0);
+    GXSetZMode(GX_TRUE, GX_LEQUAL, GX_FALSE);
     FontDrawStringMtx(m0, buf);
 }

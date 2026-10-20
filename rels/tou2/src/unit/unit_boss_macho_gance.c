@@ -219,7 +219,7 @@ static BattleUnitKindPart parts[1] = {
         255,                    // baseAlpha
         &defence,               // defense
         &defence_attr,          // defenseAttr
-        0x00000009,             // attributes
+        kMainPart | kUnknown_0x8, // attributes
         0,                      // counterAttributes
         pose_table,             // poseTable
     },
@@ -913,6 +913,7 @@ static EVT_BEGIN(init_event)
     CALL(btlevtcmd_SetEventDamage, -2, PTR(damage_event))
     CALL(btlevtcmd_SetEventConfusion, -2, PTR(btldefaultevt_Confuse))
     CALL(btlevtcmd_SetEventEntry, -2, PTR(entry_event))
+    // Unit work: 0 = attack counter, 1 = phase index, 2 = attack id, 3 (float) = size scale.
     CALL(btlevtcmd_SetUnitWork, -2, 0, 0)
     CALL(btlevtcmd_SetUnitWork, -2, 1, 0)
     CALL(btlevtcmd_SetUnitWork, -2, 2, 0)
@@ -983,6 +984,7 @@ static EVT_BEGIN(damage_event)
     RETURN
 EVT_END()
 
+// Rescales the hit/cursor offsets and HP gauge by the new size / old size ratio.
 EVT_BEGIN(base_size_change)
     CALL(btlevtcmd_GetUnitWorkFloat, -2, 3, LW(1))
     CALL(btlevtcmd_SetUnitWorkFloat, -2, 3, LW(0))
@@ -1014,6 +1016,7 @@ EVT_BEGIN(base_size_change)
     RETURN
 EVT_END()
 
+// Advances the phase index at 75%, 50%, and 25% remaining HP.
 static EVT_BEGIN(phase_event)
     CALL(btlevtcmd_CheckPhase, LW(0), 67108867)
     IF_INT_EQUAL(LW(0), 0)
@@ -1257,7 +1260,7 @@ static EVT_BEGIN(attack_event)
     CALL(btlevtcmd_GetUnitWork, -2, 0, LW(1))
     ADD(LW(1), 1)
     CALL(btlevtcmd_SetUnitWork, -2, 0, LW(1))
-    CALL(btlevtcmd_CheckStatus, -2, 19, LW(0))
+    CALL(btlevtcmd_CheckStatus, -2, STATUS_FAST, LW(0))
     IF_INT_EQUAL(LW(0), 0)
         SET_VALUE(LW(9), PTR(&weapon_gance_macho_speed))
         CALL_CHILD(gance_macho_speed_attack_event)
@@ -1457,7 +1460,7 @@ EVT_BEGIN(gance_attack_attack_event)
     CALL(btlevtcmd_SamplingEnemy, -2, LW(0), LW(9))
     CALL(btlevtcmd_ChoiceSamplingEnemy, LW(9), LW(3), LW(4))
     IF_INT_EQUAL(LW(3), -1)
-        CALL(btlevtcmd_CheckToken, -2, 16, LW(0))
+        CALL(btlevtcmd_CheckToken, -2, kConfusedAction, LW(0))
         IF_INT_NOT_EQUAL(LW(0), 0)
             CALL_CHILD(subsetevt_confuse_flustered)
         END_IF
@@ -1633,7 +1636,7 @@ EVT_BEGIN(gance_rariat_attack_attack_event)
     CALL(btlevtcmd_GetEnemyBelong, -2, LW(0))
     CALL(btlevtcmd_SamplingEnemy, -2, LW(0), LW(9))
     IF_INT_EQUAL(LW(3), -1)
-        CALL(btlevtcmd_CheckToken, -2, 16, LW(0))
+        CALL(btlevtcmd_CheckToken, -2, kConfusedAction, LW(0))
         IF_INT_NOT_EQUAL(LW(0), 0)
             CALL_CHILD(subsetevt_confuse_flustered)
         END_IF
@@ -1777,7 +1780,7 @@ EVT_BEGIN(gance_body_attack_attack_event)
     CALL(btlevtcmd_SamplingEnemy, -2, LW(0), LW(9))
     CALL(btlevtcmd_ChoiceSamplingEnemy, LW(9), LW(3), LW(4))
     IF_INT_EQUAL(LW(3), -1)
-        CALL(btlevtcmd_CheckToken, -2, 16, LW(0))
+        CALL(btlevtcmd_CheckToken, -2, kConfusedAction, LW(0))
         IF_INT_NOT_EQUAL(LW(0), 0)
             CALL_CHILD(subsetevt_confuse_flustered)
         END_IF
@@ -1884,26 +1887,29 @@ static EVT_BEGIN(wait_event)
     RETURN
 EVT_END()
 
+// Event flags: sibling events set/wait on a flag so the script can resume once they finish.
 static s32 x_flag_data[2];
+// Interpolates between start and end; event args are (remaining, steps, start, end, out). `remaining` is the
+// script's LOOP counter, which counts down, so the result moves from start to end.
 static USER_FUNC(wariai_enzan_1) {
     s32* args = event->args;
-    f32 a = evtGetFloat(event, args[0]) - 1.0f;
-    f32 b = evtGetFloat(event, args[1]);
-    f32 c = evtGetFloat(event, args[2]);
-    f32 d = evtGetFloat(event, args[3]);
+    f32 remaining = evtGetFloat(event, args[0]) - 1.0f;
+    f32 steps = evtGetFloat(event, args[1]);
+    f32 start = evtGetFloat(event, args[2]);
+    f32 end = evtGetFloat(event, args[3]);
 
-    evtSetValue(event, args[4], (s32)((a * c + d * (b - a)) / b));
+    evtSetValue(event, args[4], (s32)((remaining * start + end * (steps - remaining)) / steps));
     return EVT_RETURN_DONE;
 }
 
 static USER_FUNC(wariai_enzan_1f) {
     s32* args = event->args;
-    f32 a = evtGetFloat(event, args[0]) - 1.0f;
-    f32 b = evtGetFloat(event, args[1]);
-    f32 c = evtGetFloat(event, args[2]);
-    f32 d = evtGetFloat(event, args[3]);
+    f32 remaining = evtGetFloat(event, args[0]) - 1.0f;
+    f32 steps = evtGetFloat(event, args[1]);
+    f32 start = evtGetFloat(event, args[2]);
+    f32 end = evtGetFloat(event, args[3]);
 
-    evtSetFloat(event, args[4], (a * c + d * (b - a)) / b);
+    evtSetFloat(event, args[4], (remaining * start + end * (steps - remaining)) / steps);
     return EVT_RETURN_DONE;
 }
 
@@ -1920,87 +1926,90 @@ static inline f32 gance_intpl(s32 mode, f32 start, f32 end, s32 step, s32 steps)
     return intplGetValue(mode, step, steps, start, end);
 }
 #endif
+// args[5] is an intplGetValue mode; 14..27 run mode - 14 mirrored (1 - its curve from 1 to 0), 28 and up
+// output start.
 static USER_FUNC(wariai_enzan_1f_intpl) {
     s32* args = event->args;
-    f32 a = evtGetFloat(event, args[0]) - 1.0f;
-    f32 b = evtGetFloat(event, args[1]);
-    f32 c = evtGetFloat(event, args[2]);
-    f32 d = evtGetFloat(event, args[3]);
+    f32 remaining = evtGetFloat(event, args[0]) - 1.0f;
+    f32 steps = evtGetFloat(event, args[1]);
+    f32 start = evtGetFloat(event, args[2]);
+    f32 end = evtGetFloat(event, args[3]);
     s32 out = args[4];
-    f32 t = evtGetFloat(event, args[5]);
-    f32 r;
+    f32 mode = evtGetFloat(event, args[5]);
+    f32 ratio;
 
-    if (t >= 14.0f) {
-        t -= 14.0f;
-        if (t >= 14.0f) {
-            evtSetFloat(event, out, c);
+    if (mode >= 14.0f) {
+        mode -= 14.0f;
+        if (mode >= 14.0f) {
+            evtSetFloat(event, out, start);
             return EVT_RETURN_DONE;
         }
-        r = 1.0f - gance_intpl((s32)t, 1.0f, 0.0f, (s32)(b - a), (s32)b);
+        ratio = 1.0f - gance_intpl((s32)mode, 1.0f, 0.0f, (s32)(steps - remaining), (s32)steps);
     } else {
-        r = gance_intpl((s32)t, 0.0f, 1.0f, (s32)(b - a), (s32)b);
+        ratio = gance_intpl((s32)mode, 0.0f, 1.0f, (s32)(steps - remaining), (s32)steps);
     }
-    evtSetFloat(event, out, (1.0f - r) * c + r * d);
+    evtSetFloat(event, out, (1.0f - ratio) * start + ratio * end);
     return EVT_RETURN_DONE;
 }
 
 USER_FUNC(wariai_enzan_1f_intpl_w) {
     s32* args = event->args;
-    f32 a = evtGetFloat(event, args[0]) - 1.0f;
-    f32 b = evtGetFloat(event, args[1]);
-    f32 c = evtGetFloat(event, args[2]);
-    f32 d = evtGetFloat(event, args[3]);
+    f32 remaining = evtGetFloat(event, args[0]) - 1.0f;
+    f32 steps = evtGetFloat(event, args[1]);
+    f32 start = evtGetFloat(event, args[2]);
+    f32 end = evtGetFloat(event, args[3]);
     s32 out = args[4];
-    f32 t = evtGetFloat(event, args[5]);
-    f32 u = evtGetFloat(event, args[6]);
-    f32 r1;
-    f32 r2;
-    f32 r;
+    f32 mode = evtGetFloat(event, args[5]);
+    f32 mode2 = evtGetFloat(event, args[6]);
+    f32 ratio1;
+    f32 ratio2;
+    f32 ratio;
 
-    if (t >= 14.0f) {
-        t -= 14.0f;
-        if (t >= 14.0f) {
-            evtSetFloat(event, out, c);
+    if (mode >= 14.0f) {
+        mode -= 14.0f;
+        if (mode >= 14.0f) {
+            evtSetFloat(event, out, start);
             return EVT_RETURN_DONE;
         }
-        r1 = 1.0f - gance_intpl((s32)t, 1.0f, 0.0f, (s32)(b - a), (s32)b);
+        ratio1 = 1.0f - gance_intpl((s32)mode, 1.0f, 0.0f, (s32)(steps - remaining), (s32)steps);
     } else {
-        r1 = gance_intpl((s32)t, 0.0f, 1.0f, (s32)(b - a), (s32)b);
+        ratio1 = gance_intpl((s32)mode, 0.0f, 1.0f, (s32)(steps - remaining), (s32)steps);
     }
-    if (u >= 14.0f) {
-        f32 t2 = t - 14.0f;
-        if (t2 >= 14.0f) {
-            evtSetFloat(event, out, c);
+    if (mode2 >= 14.0f) {
+        // Retail derives this from the first mode, not mode2.
+        f32 reverseMode2 = mode - 14.0f;
+        if (reverseMode2 >= 14.0f) {
+            evtSetFloat(event, out, start);
             return EVT_RETURN_DONE;
         }
-        r2 = 1.0f - gance_intpl((s32)t2, 1.0f, 0.0f, (s32)(b - a), (s32)b);
+        ratio2 = 1.0f - gance_intpl((s32)reverseMode2, 1.0f, 0.0f, (s32)(steps - remaining), (s32)steps);
     } else {
-        r2 = gance_intpl((s32)u, 0.0f, 1.0f, (s32)(b - a), (s32)b);
+        ratio2 = gance_intpl((s32)mode2, 0.0f, 1.0f, (s32)(steps - remaining), (s32)steps);
     }
-    r = r1 * r2;
-    evtSetFloat(event, out, c * (1.0f - r) + d * r);
+    ratio = ratio1 * ratio2;
+    evtSetFloat(event, out, start * (1.0f - ratio) + end * ratio);
     return EVT_RETURN_DONE;
 }
 
 static USER_FUNC(wariai_enzan_0) {
     s32* args = event->args;
-    f32 a = evtGetFloat(event, args[0]) - 1.0f;
-    f32 b = evtGetFloat(event, args[1]) - 1.0f;
-    f32 c = evtGetFloat(event, args[2]);
-    f32 d = evtGetFloat(event, args[3]);
+    f32 remaining = evtGetFloat(event, args[0]) - 1.0f;
+    f32 lastStep = evtGetFloat(event, args[1]) - 1.0f;
+    f32 start = evtGetFloat(event, args[2]);
+    f32 end = evtGetFloat(event, args[3]);
 
-    evtSetValue(event, args[4], (s32)((a * c + d * (b - a)) / b));
+    evtSetValue(event, args[4], (s32)((remaining * start + end * (lastStep - remaining)) / lastStep));
     return EVT_RETURN_DONE;
 }
 
 static USER_FUNC(wariai_enzan_0f) {
     s32* args = event->args;
-    f32 a = evtGetFloat(event, args[0]) - 1.0f;
-    f32 b = evtGetFloat(event, args[1]) - 1.0f;
-    f32 c = evtGetFloat(event, args[2]);
-    f32 d = evtGetFloat(event, args[3]);
+    f32 remaining = evtGetFloat(event, args[0]) - 1.0f;
+    f32 lastStep = evtGetFloat(event, args[1]) - 1.0f;
+    f32 start = evtGetFloat(event, args[2]);
+    f32 end = evtGetFloat(event, args[3]);
 
-    evtSetFloat(event, args[4], (a * c + d * (b - a)) / b);
+    evtSetFloat(event, args[4], (remaining * start + end * (lastStep - remaining)) / lastStep);
     return EVT_RETURN_DONE;
 }
 

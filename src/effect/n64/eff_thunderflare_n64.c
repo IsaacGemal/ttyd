@@ -45,18 +45,18 @@ typedef struct EffThunderflareData {
 	f32 angle2;     // 0x24
 	f32 scale;      // 0x28
 	f32 radius;     // 0x2C
-	s32 colorR;     // 0x30
-	s32 colorG;     // 0x34
-	s32 colorB;     // 0x38
-	s32 field_0x3C; // 0x3C
-	s32 field_0x40; // 0x40
-	s32 field_0x44; // 0x44
+	s32 tevReg0R;   // 0x30, GX_TEVREG0: stage 1's colour where the texture is dark (alpha from `alpha`)
+	s32 tevReg0G;   // 0x34
+	s32 tevReg0B;   // 0x38
+	s32 tevReg1R;   // 0x3C, GX_TEVREG1: stage 1's colour where the texture is bright
+	s32 tevReg1G;   // 0x40
+	s32 tevReg1B;   // 0x44
 } EffThunderflareData;
 
 // The element index-to-value expression must read `i + j - 1`, not `i - 1 + j`:
 // the former lets MWCC fold the second iteration back to `i` and reuse r10, the
 // latter makes it keep a copy of the pre-increment `i` in r11.
-EffectEntry* effThunderflareN64Entry(s32 type, s32 a2, f32 x, f32 y, f32 z, f32 a6) {
+EffectEntry* effThunderflareN64Entry(s32 type, s32 timer, f32 x, f32 y, f32 z, f32 unused) {
 	EffectEntry* entry;
 	EffThunderflareData* data;
 	EffThunderflareData* elem;
@@ -71,10 +71,10 @@ EffectEntry* effThunderflareN64Entry(s32 type, s32 a2, f32 x, f32 y, f32 z, f32 
 	entry->callback = effThunderflareMain;
 	data->type = type;
 	data->counter = 0;
-	if (a2 <= 0) {
+	if (timer <= 0) {
 		data->timer = 100;
 	} else {
-		data->timer = a2;
+		data->timer = timer;
 	}
 	data->alpha = 0;
 	data->x = x;
@@ -83,52 +83,52 @@ EffectEntry* effThunderflareN64Entry(s32 type, s32 a2, f32 x, f32 y, f32 z, f32 
 
 	switch (type) {
 	case 0:
-		data->colorR = 0xff;
-		data->colorG = 0;
-		data->colorB = 0xff;
-		data->field_0x3C = 0xff;
-		data->field_0x40 = 0xff;
-		data->field_0x44 = 0xff;
+		data->tevReg0R = 0xff;
+		data->tevReg0G = 0;
+		data->tevReg0B = 0xff;
+		data->tevReg1R = 0xff;
+		data->tevReg1G = 0xff;
+		data->tevReg1B = 0xff;
 		break;
 	case 1:
 	default:
-		data->colorR = 0xff;
-		data->colorG = 0x14;
-		data->colorB = 0x21;
-		data->field_0x3C = 0x32;
-		data->field_0x40 = 0x14;
-		data->field_0x44 = 0x0a;
+		data->tevReg0R = 0xff;
+		data->tevReg0G = 0x14;
+		data->tevReg0B = 0x21;
+		data->tevReg1R = 0x32;
+		data->tevReg1G = 0x14;
+		data->tevReg1B = 0x0a;
 		break;
 	}
 
 	for (i = 1; i < 0x1f; i += 2) {
 		elem = &data[i];
 		for (j = 0; j < 2; j++, elem++) {
-			s32 n = i + j - 1;
-			elem->angle1 = (f32)(n * 0xca8 / 30);
+			s32 particle = i + j - 1;
+			elem->angle1 = (f32)(particle * 0xca8 / 30);
 			elem->angle2 = float_0_80420088;
-			elem->radius = (f32)(n * 100 / 30);
+			elem->radius = (f32)(particle * 100 / 30);
 			elem->field_0x00 = 0;
 		}
 	}
 	return entry;
 }
 
-static inline void flareSetColor1(s32 r, s32 g, s32 b) {
+static inline void flareSetTevReg1(s32 r, s32 g, s32 b) {
 	GXColor color = unk_804232a8;
 	color.r = r;
 	color.g = g;
 	color.b = b;
-	GXSetTevColor(2, color);
+	GXSetTevColor(GX_TEVREG1, color);
 }
 
-static inline void flareSetColor2(s32 r, s32 g, s32 b, s32 a) {
+static inline void flareSetTevReg0(s32 r, s32 g, s32 b, s32 a) {
 	GXColor color = unk_804232ac;
 	color.r = r;
 	color.g = g;
 	color.b = b;
 	color.a = a;
-	GXSetTevColor(1, color);
+	GXSetTevColor(GX_TEVREG0, color);
 }
 
 // Builds the effect position from a zero vector; kept as an inline so the
@@ -246,9 +246,9 @@ void effThunderflareDisp(CameraId camId, void* param) {
 
 	cam = camGetPtr(camId);
 	data = effect->userdata;
-	r = data->colorR;
-	g = data->colorG;
-	b = data->colorB;
+	r = data->tevReg0R;
+	g = data->tevReg0G;
+	b = data->tevReg0B;
 
 	PSMTXTrans(trans, data->x, data->y, data->z);
 	PSMTXRotRad(rot, 'y', float_deg2rad_80420080 * -camGetPtr(CAMERA_3D)->viewYaw);
@@ -257,33 +257,33 @@ void effThunderflareDisp(CameraId camId, void* param) {
 
 	GXSetNumChans(0);
 	GXSetNumTevStages(2);
-	GXSetTevOrder(0, 0, 0, 0xFF);
-	GXSetTevColorOp(0, 0, 0, 0, 1, 0);
-	GXSetTevAlphaOp(0, 0, 0, 0, 1, 0);
-	GXSetTevColorIn(0, 0xF, 8, 8, 0xF);
-	GXSetTevAlphaIn(0, 7, 7, 7, 4);
-	GXSetTevOrder(1, 0xFF, 0xFF, 0xFF);
-	GXSetTevColorOp(1, 0, 0, 0, 1, 0);
-	GXSetTevAlphaOp(1, 0, 0, 0, 1, 0);
-	GXSetTevColorIn(1, 2, 4, 0, 0xF);
-	GXSetTevAlphaIn(1, 7, 1, 0, 7);
+	GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR_NULL);
+	GXSetTevColorOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+	GXSetTevAlphaOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+	GXSetTevColorIn(GX_TEVSTAGE0, GX_CC_ZERO, GX_CC_TEXC, GX_CC_TEXC, GX_CC_ZERO);
+	GXSetTevAlphaIn(GX_TEVSTAGE0, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_TEXA);
+	GXSetTevOrder(GX_TEVSTAGE1, GX_TEXCOORD_NULL, GX_TEXMAP_NULL, GX_COLOR_NULL);
+	GXSetTevColorOp(GX_TEVSTAGE1, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+	GXSetTevAlphaOp(GX_TEVSTAGE1, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+	GXSetTevColorIn(GX_TEVSTAGE1, GX_CC_C0, GX_CC_C1, GX_CC_CPREV, GX_CC_ZERO);
+	GXSetTevAlphaIn(GX_TEVSTAGE1, GX_CA_ZERO, GX_CA_A0, GX_CA_APREV, GX_CA_ZERO);
 
-	flareSetColor1(data->field_0x3C, data->field_0x40, data->field_0x44);
+	flareSetTevReg1(data->tevReg1R, data->tevReg1G, data->tevReg1B);
 
 	data++;
 	effGetTexObjN64(0x55, &texObj);
 	GXLoadTexObj(&texObj, 0);
 	GXSetNumTexGens(1);
-	GXSetTexCoordGen2(0, 1, 4, 0x1E, 0, 0x7D);
+	GXSetTexCoordGen2(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_TEXMTX0, GX_FALSE, GX_PTIDENTITY);
 	PSMTXScale(work, float_0p03125_80420084, float_0p03125_80420084, float_0_80420088);
 	GXLoadTexMtxImm(work, 0x1E, 1);
-	GXSetCullMode(0);
+	GXSetCullMode(GX_CULL_NONE);
 	effSetVtxDescN64((effVtxArray*)size16x16_tex32x32_vtx);
 
 	for (i = 1; i < effect->count; i++, data++) {
 		scale = data->scale;
 		if (scale != float_0_80420088) {
-			flareSetColor2(r, g, b, data->alpha);
+			flareSetTevReg0(r, g, b, data->alpha);
 
 			PSMTXTrans(trans, data->x, data->y, data->z);
 			PSMTXScale(work, scale, scale, scale);
@@ -291,7 +291,7 @@ void effThunderflareDisp(CameraId camId, void* param) {
 			PSMTXConcat(base, trans, trans);
 			GXLoadPosMtxImm(trans, 0);
 			GXSetCurrentMtx(0);
-			GXBegin(0x90, 0, 6);
+			GXBegin(GX_TRIANGLES, GX_VTXFMT0, 6);
 			idx0 = (i & 1) * 4;
 			idx1 = idx0 + 1;
 			idx2 = idx0 + 2;

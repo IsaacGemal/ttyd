@@ -19,7 +19,7 @@ __declspec(section ".sdata") GXColor unk_80423068;
 // `s32 n = i + j - 1` (as in eff_thunderflare_n64): flat `elem[0]`/`elem[1]` writes let MWCC strength-reduce
 // `i * 100` into a running counter, which also inflates the frame to 0x80. The switch needs `case 2:` grouped
 // with `default:` so MWCC emits the target's decision tree (one extra branch to the default body).
-EffectEntry* effChargeEntry(s32 type, s32 a2, f32 x, f32 y, f32 z, f32 scale) {
+EffectEntry* effChargeEntry(s32 type, s32 timer, f32 x, f32 y, f32 z, f32 scale) {
     EffectEntry* entry;
     ChargeEffectData* data;
     ChargeEffectData* elem;
@@ -34,7 +34,7 @@ EffectEntry* effChargeEntry(s32 type, s32 a2, f32 x, f32 y, f32 z, f32 scale) {
     entry->callback = effChargeMain;
     data->type = type;
     data->counter = 0;
-    data->timer = a2;
+    data->timer = timer;
     data->alpha = 0;
     data->x = x;
     data->y = y;
@@ -84,16 +84,16 @@ EffectEntry* effChargeEntry(s32 type, s32 a2, f32 x, f32 y, f32 z, f32 scale) {
 
 // `s32 odd` declared first plus the local `counter`/`angle2` reproduce the original's register allocation. The clamp reads the 0.0f literal the original pools (not the named extern).
 void effChargeMain(EffectEntry* effect) {
-    s32 odd;
+    s32 isOdd;
     ChargeEffectData* data = effect->userdata;
     Vec position;
     Vec disp;
-    f32 s1;
-    f32 c1;
-    f32 s2;
-    f32 c2;
-    f32 a1;
-    f32 a2;
+    f32 sinAngle1;
+    f32 cosAngle1;
+    f32 sinAngle2;
+    f32 cosAngle2;
+    f32 angle1Rad;
+    f32 angle2Rad;
     f32 radius;
     s32 i;
 
@@ -112,31 +112,31 @@ void effChargeMain(EffectEntry* effect) {
         return;
     }
     {
-        s32 counter = data->counter;
-        if (counter <= 0x14) {
-            data->alpha = counter * 12;
+        s32 fadeCounter = data->counter;
+        if (fadeCounter <= 0x14) {
+            data->alpha = fadeCounter * 12;
         } else {
             data->alpha = 0xff;
         }
-        if (counter & 1) {
+        if (fadeCounter & 1) {
             data->alpha /= 2;
         }
     }
-    odd = data->counter & 1;
+    isOdd = data->counter & 1;
     data++;
     for (i = 1; i < effect->count; i++, data++) {
         f32 angle2;
         radius = data->radius;
         angle2 = data->angle2;
-        a1 = 6.2831855f * data->angle1 / 360.f;
-        s1 = (f32)sin(a1);
-        c1 = (f32)cos(a1);
-        a2 = 6.2831855f * angle2 / 360.f;
-        s2 = (f32)sin(a2);
-        c2 = (f32)cos(a2);
-        data->x = radius * s1 * c2;
-        data->y = radius * c1 * c2;
-        data->z = radius * s2;
+        angle1Rad = 6.2831855f * data->angle1 / 360.f;
+        sinAngle1 = (f32)sin(angle1Rad);
+        cosAngle1 = (f32)cos(angle1Rad);
+        angle2Rad = 6.2831855f * angle2 / 360.f;
+        sinAngle2 = (f32)sin(angle2Rad);
+        cosAngle2 = (f32)cos(angle2Rad);
+        data->x = radius * sinAngle1 * cosAngle2;
+        data->y = radius * cosAngle1 * cosAngle2;
+        data->z = radius * sinAngle2;
         data->alpha = (s32)(100.f - data->radius) * 510 / 100;
         if (data->alpha > 0xff) {
             data->alpha = 0xff;
@@ -147,8 +147,8 @@ void effChargeMain(EffectEntry* effect) {
             data->radius = 0.0f;
             data->scale = 0.0f;
         }
-        data->angle1 += (f32)(odd ? 5 : 2);
-        data->angle2 += (f32)(odd ? 2 : 5);
+        data->angle1 += (f32)(isOdd ? 5 : 2);
+        data->angle2 += (f32)(isOdd ? 2 : 5);
     }
     dispEntry(CAMERA_3D, dispCalcZ(&position), 2, effChargeDisp, effect);
 }

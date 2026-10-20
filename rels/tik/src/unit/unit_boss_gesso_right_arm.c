@@ -400,17 +400,17 @@ USER_FUNC(_check_zenei_kouei) {
     s32* args = event->args;
     BattleUnit* unit;
     s32 id;
-    s32 arg1;
+    s32 outArg;
     f32 x, y, z;
 
     id = evtGetValue(event, args[0]);
-    arg1 = args[1];
+    outArg = args[1];
     unit = BattleGetUnitPtr(work, BattleTransID(event, id));
     BtlUnit_GetPos(unit, &x, &y, &z);
     if (x >= -120.0f) {
-        evtSetValue(event, arg1, 0);
+        evtSetValue(event, outArg, 0);
     } else {
-        evtSetValue(event, arg1, 1);
+        evtSetValue(event, outArg, 1);
     }
     return 2;
 }
@@ -440,7 +440,7 @@ static EVT_BEGIN(attack_event)
     CALL(btlevtcmd_PayWeaponCost, -2, LW(12))
     SET_VALUE(LW(11), 0)
     CALL(btlevtcmd_GetUnitKind, LW(3), LW(0))
-    IF_INT_EQUAL(LW(0), 222)
+    IF_INT_EQUAL(LW(0), UNIT_MARIO)
         CALL(btlevtcmd_GetUnitWork, -2, 0, LW(9))
         CALL(btlevtcmd_GetUnitWork, LW(9), 5, LW(0))
         IF_INT_EQUAL(LW(0), 0)
@@ -512,7 +512,7 @@ EVT_END()
 
 EVT_BEGIN(gesso_arm_dead_event)
     CALL(btlevtcmd_GetUnitKind, -2, LW(0))
-    IF_INT_EQUAL(LW(0), 10)
+    IF_INT_EQUAL(LW(0), UNIT_BLOOPER_RIGHT_TENTACLE)
         CALL(btlevtcmd_snd_se, -2, STRING("SFX_BOSS_GESSO_ARM_GOOUT1"), EVTDAT_POINTER_MAX, 0, EVTDAT_POINTER_MAX)
         CALL(btlevtcmd_AnimeChangePose, -2, 1, STRING("GSO_F1_1"))
         CALL(btlevtcmd_GetUnitWork, -2, 0, LW(3))
@@ -593,8 +593,8 @@ EVT_BEGIN(gesso_fall_check)
         CALL(btlevtcmd_snd_se, LW(3), STRING("SFX_BOSS_GESSO_DOWN1"), EVTDAT_POINTER_MAX, 0, EVTDAT_POINTER_MAX)
     END_SIBLING_EVENT
     CALL(btlevtcmd_AnimeWaitPlayComplete, LW(3), 1)
-    CALL(btlevtcmd_OffAttribute, LW(3), 2)
-    CALL(btlevtcmd_OffPartsAttribute, LW(3), 1, 6291456)
+    CALL(btlevtcmd_OffAttribute, LW(3), kCeiling)
+    CALL(btlevtcmd_OffPartsAttribute, LW(3), 1, kHammerlikeCannotTarget | kShellTosslikeCannotTarget)
     CALL(btlevtcmd_AnimeSetPoseTable, LW(3), 1, PTR(gesso_pose_table_turn))
     CALL(btlevtcmd_SetHpGaugeOffset, LW(3), 0, 0)
     CALL(btlevtcmd_SetStatusIconOffset, LW(3), 46, 118)
@@ -614,10 +614,10 @@ EVT_END()
 
 EVT_BEGIN(gesso_arm_damage_pose_event)
     CALL(btlevtcmd_GetUnitKind, -2, LW(0))
-    IF_INT_EQUAL(LW(0), 10)
+    IF_INT_EQUAL(LW(0), UNIT_BLOOPER_RIGHT_TENTACLE)
         CALL(btlevtcmd_GetUnitWork, -2, 0, LW(3))
     ELSE
-        IF_INT_EQUAL(LW(0), 9)
+        IF_INT_EQUAL(LW(0), UNIT_BLOOPER_LEFT_TENTACLE)
             CALL(btlevtcmd_GetUnitWork, -2, 0, LW(3))
         ELSE
             RETURN

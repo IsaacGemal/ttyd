@@ -64,8 +64,7 @@ static BeroEntry bero_entry_data[] = {
     {NULL},
 };
 
-// 0x15C/0x160 are AnimationPose padding in include/driver/animdrv.h: 0x15C holds the smartEntry*
-// whose ->address is the group-position Vec array, 0x160 is its element count.
+// groupWorldPos holds one Vec per group; groupWorldPosCount is the count of entries.
 s32 waku(EventEntry* event, BOOL isFirstCall) {
     NpcEntry* npc;
     AnimationPose* pose;
@@ -76,9 +75,9 @@ s32 waku(EventEntry* event, BOOL isFirstCall) {
     if (npc != NULL) {
         pose = animPoseGetAnimPosePtr(npc->poseId);
         animPoseWorldPositionEvalOn(npc->poseId);
-        if (*(smartEntry**)((u8*)pose + 0x15C) != NULL) {
+        if (pose->groupWorldPos != NULL) {
             s32 i;
-            Vec* positions = (Vec*)((smartEntry*)*(void**)((u8*)pose + 0x15C))->address;
+            Vec* positions = (Vec*)pose->groupWorldPos->address;
             idx = animPoseGetGroupIdx(npc->poseId, "locator17");
             if (npc->position.y >= 0.0f) {
                 npcNameToPtr("枠")->position = positions[idx];
@@ -87,8 +86,8 @@ s32 waku(EventEntry* event, BOOL isFirstCall) {
             }
             // MUST_MATCH: the cached base (the original reloads it before the loop);
             // the natural form would index `positions` directly.
-            clear = (Vec*)((smartEntry*)*(void**)((u8*)pose + 0x15C))->address;
-            for (i = 0; i < *(s32*)((u8*)pose + 0x160); i++) {
+            clear = (Vec*)pose->groupWorldPos->address;
+            for (i = 0; i < pose->groupWorldPosCount; i++) {
                 clear[i] = (Vec){0.0f, -1000.0f, 0.0f};
             }
         }
@@ -98,9 +97,9 @@ s32 waku(EventEntry* event, BOOL isFirstCall) {
     if (npc != NULL) {
         pose = animPoseGetAnimPosePtr(npc->poseId);
         animPoseWorldPositionEvalOn(npc->poseId);
-        if (*(smartEntry**)((u8*)pose + 0x15C) != NULL) {
+        if (pose->groupWorldPos != NULL) {
             s32 i;
-            Vec* positions = (Vec*)((smartEntry*)*(void**)((u8*)pose + 0x15C))->address;
+            Vec* positions = (Vec*)pose->groupWorldPos->address;
 #ifdef MUST_MATCH
             // MUST_MATCH: block 2 needs its own base variable or MWCC reuses block 1's r7
             // for both; separate live ranges make it pick r8 here.
@@ -113,12 +112,12 @@ s32 waku(EventEntry* event, BOOL isFirstCall) {
                 npcNameToPtr("枠２")->position = (Vec){0.0f, -1000.0f, 0.0f};
             }
 #ifdef MUST_MATCH
-            clear2 = (Vec*)((smartEntry*)*(void**)((u8*)pose + 0x15C))->address;
-            for (i = 0; i < *(s32*)((u8*)pose + 0x160); i++) {
+            clear2 = (Vec*)pose->groupWorldPos->address;
+            for (i = 0; i < pose->groupWorldPosCount; i++) {
                 clear2[i] = (Vec){0.0f, -1000.0f, 0.0f};
             }
 #else
-            for (i = 0; i < *(s32*)((u8*)pose + 0x160); i++) {
+            for (i = 0; i < pose->groupWorldPosCount; i++) {
                 positions[i] = (Vec){0.0f, -1000.0f, 0.0f};
             }
 #endif

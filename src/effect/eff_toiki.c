@@ -181,7 +181,7 @@ void effToikiDisp(CameraId camId, void* param) {
 	effGetTexObj(0x5c, &texObj);
 	GXLoadTexObj(&texObj, GX_TEXMAP0);
 	GXSetNumChans(1);
-	GXSetChanCtrl(4, 0, 0, 1, 0, 0, 2);
+	GXSetChanCtrl(GX_COLOR0A0, GX_FALSE, GX_SRC_REG, GX_SRC_VTX, 0, GX_DF_NONE, GX_AF_NONE);
 #ifdef MUST_MATCH
 	toikiSetColor(data->field_0x28, color_tbl[type].b, color_tbl[type].g, color_tbl[type].r);
 #else
@@ -193,15 +193,15 @@ void effToikiDisp(CameraId camId, void* param) {
 	GXSetTevColor(1, color);
 #endif
 	GXSetNumTexGens(1);
-	GXSetTexCoordGen2(0, 1, 4, 0x1e, 0, 0x7d);
+	GXSetTexCoordGen2(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_TEXMTX0, GX_FALSE, GX_PTIDENTITY);
 	PSMTXTrans(mtx, data->field_0x24, 0.0f, 0.0f);
-	GXLoadTexMtxImm(mtx, 0x1e, 1);
+	GXLoadTexMtxImm(mtx, GX_TEXMTX0, GX_MTX2x4);
 	GXSetNumTevStages(1);
-	GXSetTevOrder(0, 0, 0, 4);
-	GXSetTevColorOp(0, 0, 0, 0, 1, 0);
-	GXSetTevAlphaOp(0, 0, 0, 0, 1, 0);
-	GXSetTevColorIn(0, 0xf, 2, 0xa, 0xf);
-	GXSetTevAlphaIn(0, 7, 4, 5, 7);
+	GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR0A0);
+	GXSetTevColorOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+	GXSetTevAlphaOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+	GXSetTevColorIn(GX_TEVSTAGE0, GX_CC_ZERO, GX_CC_C0, GX_CC_RASC, GX_CC_ZERO);
+	GXSetTevAlphaIn(GX_TEVSTAGE0, GX_CA_ZERO, GX_CA_TEXA, GX_CA_RASA, GX_CA_ZERO);
 	PSMTXTrans(mtx, data->x, data->y, data->z);
 	PSMTXRotRad(rot, 'y', -camGetPtr(camId)->viewYaw * 0.017453292f);
 	PSMTXConcat(mtx, rot, mtx);
@@ -212,20 +212,20 @@ void effToikiDisp(CameraId camId, void* param) {
 	PSMTXConcat(cam->view, mtx, mtx);
 	GXLoadPosMtxImm(mtx, 0);
 	GXSetCurrentMtx(0);
-	GXSetCullMode(0);
+	GXSetCullMode(GX_CULL_NONE);
 	GXClearVtxDesc();
-	GXSetVtxDesc(9, 2);
-	GXSetVtxAttrFmt(0, 9, 1, 3, 6);
-	GXSetArray(9, tbl + 0x40, 6);
-	GXSetVtxDesc(10, 2);
-	GXSetVtxAttrFmt(0, 10, 0, 1, 6);
-	GXSetArray(10, queen_toiki_normal_tbl, 3);
-	GXSetVtxDesc(11, 2);
-	GXSetVtxAttrFmt(0, 11, 1, 5, 0);
-	GXSetArray(11, queen_toiki_color0_tbl, 4);
-	GXSetVtxDesc(13, 2);
-	GXSetVtxAttrFmt(0, 13, 1, 3, 0xe);
-	GXSetArray(13, tbl + 0x1c0, 4);
+	GXSetVtxDesc(GX_VA_POS, GX_INDEX8);
+	GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_POS_XYZ, GX_S16, 6);
+	GXSetArray(GX_VA_POS, tbl + 0x40, 6); // queen_toiki_vertex_tbl
+	GXSetVtxDesc(GX_VA_NRM, GX_INDEX8);
+	GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_NRM, GX_NRM_XYZ, GX_S8, 6);
+	GXSetArray(GX_VA_NRM, queen_toiki_normal_tbl, 3);
+	GXSetVtxDesc(GX_VA_CLR0, GX_INDEX8);
+	GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_CLR0, GX_CLR_RGBA, GX_RGBA8, 0);
+	GXSetArray(GX_VA_CLR0, queen_toiki_color0_tbl, 4);
+	GXSetVtxDesc(GX_VA_TEX0, GX_INDEX8);
+	GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, GX_TEX_ST, GX_S16, 0xe);
+	GXSetArray(GX_VA_TEX0, tbl + 0x1c0, 4); // queen_toiki_texcoord0_tbl
 #ifdef MUST_MATCH
 	toikiDrawDL(tbl);
 #else

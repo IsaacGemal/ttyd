@@ -97,7 +97,7 @@ BattleUnitKind UNIT_DATA_SYM = {
     "SFX_BTL_DAMAGE_FIRE1",     // fireDamageSfxName
     "SFX_BTL_DAMAGE_ICE1",      // iceDamageSfxName
     "SFX_BTL_DAMAGE_BIRIBIRI1", // electricDamageSfxName
-    0x00000004,                 // attributeFlags
+    kFloating,                  // attributeFlags
     &regist,                    // vulnStatus
     2,                          // numParts
     parts,                      // mParts
@@ -176,7 +176,7 @@ static BattleUnitKindPart parts[2] = {
         &defence,              // defense
         &defence_attr,         // defenseAttr
         0x00000109,            // attributes
-        0x00000010,            // counterAttributes
+        kCounterFiery,         // counterAttributes
         pose_table,            // poseTable
     },
     {

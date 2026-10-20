@@ -135,11 +135,13 @@ static USER_FUNC(mario_kirimomi) {
     MarioWork* mario = marioGetPtr();
     PartyEntry* party = partyGetPtr(0);
 
+    // 0xB4 and 0xC4 are unnamed MarioWork fields (inside the 0x98..0xC8 pad).
     *(f32*)((u8*)mario + 0xB4) = mario->wPlayerCollisionBox.y / 2.0f;
     *(f32*)((u8*)mario + 0xC4) -= 10.0f;
     *(f32*)((u8*)mario + 0xC4) = (f32)fmod(*(f32*)((u8*)mario + 0xC4), 360.0);
 
     if (party != NULL) {
+        // 0x8C is an unnamed PartyEntry field (inside the 0x88..0x94 pad).
         if (party->currentMemberId != PARTY_MEMBER_YOSHI) {
             *(f32*)((u8*)party + 0x8C) = party->height / 2.0f;
         } else {
@@ -152,7 +154,7 @@ static USER_FUNC(mario_kirimomi) {
     return EVT_RETURN_BLOCK;
 }
 static USER_FUNC(z) {
-    f32 a = (f32)tan(0.21816612780094147);
+    f32 a = (f32)tan(0.21816612780094147); // tan(12.5 deg), half of the camera's 25 deg FOV
     event->lwData[0] = FLOAT(240.0f / a / 2);
     return EVT_RETURN_DONE;
 }

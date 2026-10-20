@@ -694,13 +694,13 @@ USER_FUNC(_ikasumi_effect) {
     pos.x -= 95.0f;
     pos.y += 75.0f;
     effect = effOpukuJetwN64Entry(0, value1, pos.x, pos.y, pos.z, 2.0f);
-    *(f32*)((u8*)effect->userdata + 0x38) = 135.0f;
-    *(s32*)((u8*)effect->userdata + 0x18) = 0;
-    *(s32*)((u8*)effect->userdata + 0x1C) = 0;
-    *(s32*)((u8*)effect->userdata + 0x20) = 0;
-    *(s32*)((u8*)effect->userdata + 0x28) = 0;
-    *(s32*)((u8*)effect->userdata + 0x2C) = 0;
-    *(s32*)((u8*)effect->userdata + 0x30) = 0;
+    ((effOpukuJetwData*)effect->userdata)->field_0x38 = 135.0f;
+    ((effOpukuJetwData*)effect->userdata)->field_0x18 = 0;
+    ((effOpukuJetwData*)effect->userdata)->field_0x1C = 0;
+    ((effOpukuJetwData*)effect->userdata)->field_0x20 = 0;
+    ((effOpukuJetwData*)effect->userdata)->field_0x28 = 0;
+    ((effOpukuJetwData*)effect->userdata)->field_0x2C = 0;
+    ((effOpukuJetwData*)effect->userdata)->field_0x30 = 0;
     return EVT_RETURN_DONE;
 }
 

@@ -146,31 +146,33 @@ s32 bottakuruComp(const void** sortA, const void** sortB) {
 }
 
 void badgeShop_bottakuruGeneration(void) {
-	s32 table[0x11][2];
-	s32 (*base)[2] = table;
+	// {item id, random rank} pairs; qqsort orders them by rank (second field). `n` is the fill count,
+	// then the index into badge_bottakuru_table.
+	s32 entries[0x11][2];
+	s32 (*base)[2] = entries;
 	s32 j;
 	s32 i;
 	u32 n;
 	s32 count;
-	for (i = 0; i < sizeof(table) / sizeof(table[0]); i++) {
-		base = &table[i];
+	for (i = 0; i < sizeof(entries) / sizeof(entries[0]); i++) {
+		base = &entries[i];
 		(*base)[1] = 200;
 		(*base)[0] = 0;
 	}
 
-	base = table;
+	base = entries;
 	n = 0;
 	for (i = 0; i < BADGE_MAX - KEY_ITEM_MIN; i++) {
 		count = badgeShop_get(bdsw->bottakuru_table, (s16)(i + KEY_ITEM_MIN)); //inline
 		for (j = 0; j < count; j++) {
-			table[n][1] = irand(100);
-			table[n++][0] = i + KEY_ITEM_MIN;
+			entries[n][1] = irand(100);
+			entries[n++][0] = i + KEY_ITEM_MIN;
 			if (n >= 0x10) break;
 		}
 		if (n >= 0x10) break;
 	}
 
-	qqsort(table, 0x11, 8, (int (*)(void*, void*))bottakuruComp);
+	qqsort(entries, 0x11, 8, (int (*)(void*, void*))bottakuruComp);
 
 	for (i = 0; i < 4; i++, base++) { //only 4 slots
 		for (n = 0; n < 0x11; n++) {
@@ -223,15 +225,15 @@ void badgeShop_bteresaGeneration(void) {
 
 #pragma inline_max_size(160) // keep badgeShop_get inlined but badgeShop_set a real `bl`
 void badgeShop_bargainGeneration(void) {
-	s16 value;
-	s16 stopcount;
-	s32 count3;
+	s16 slotValue;
+	s16 pickIndex;
+	s32 pickTarget;
 	int i;
-	u8 table[0x19];
+	u8 remaining[0x19];
 	s32 count2;
-	s16 count4;
-	s32 count;
-	s32 v7;
+	s16 presentIndex;
+	s32 totalBadges;
+	s32 bit2Count;
 	s16 badge;
 	s32* ptr;
 
@@ -285,52 +287,54 @@ void badgeShop_bargainGeneration(void) {
 		evtSetValue(NULL, GSWF(245), 1);
 	}
 
-	memset(table, 0, sizeof(table));
+	// Copy the special table into a scratch bitmap, then pull up to five distinct
+	// badges out of it into field_0xF8 (the bargain slots).
+	memset(remaining, 0, sizeof(remaining));
 	bdsw->field_0x110 = bdsw->field_0x10C = bdsw->field_0xF8[4] = bdsw->field_0xF8[3] =
 		bdsw->field_0xF8[2] = bdsw->field_0xF8[1] = bdsw->field_0xF8[0] = i = 0;
 
-	v7 = 0;
-	count = 0;
+	bit2Count = 0;
+	totalBadges = 0;
 	count2 = 0;
 	for (; i < 99; i++) {
-		value = 0;
+		slotValue = 0;
 		badge = badgeShop_get(bdsw->special_table, (s16)(i + BADGE_MIN)); //inline
 		if (badge) {
-			count++;
-			value |= 1;
+			totalBadges++;
+			slotValue |= 1;
 		}
-		if (value) {
-			badgeShop_set(table, (s16)(i + BADGE_MIN), value);
+		if (slotValue) {
+			badgeShop_set(remaining, (s16)(i + BADGE_MIN), slotValue);
 			count2++;
 		}
 	}
-	count3 = 5;
+	pickTarget = 5;
 	if (count2 <= 5) {
-		count3 = count2; //less than 5 needed
+		pickTarget = count2; //less than 5 needed
 	}
 	irand(0x100); //unused
-	while ((s32)(bdsw->field_0x10C + bdsw->field_0x110) < count3) {
-		if ((s32)bdsw->field_0x10C < 3 || !v7) {
-			stopcount = irand(count);
-			count4 = 0;
+	while ((s32)(bdsw->field_0x10C + bdsw->field_0x110) < pickTarget) {
+		if ((s32)bdsw->field_0x10C < 3 || !bit2Count) {
+			pickIndex = irand(totalBadges);
+			presentIndex = 0;
 			for (i = 0; i < 99; i++) {
-				badge = badgeShop_get(table, (s16)(i + BADGE_MIN)); //inline
+				badge = badgeShop_get(remaining, (s16)(i + BADGE_MIN)); //inline
 				if (badge & 1) {
-					if (count4 == stopcount) {
+					if (presentIndex == pickIndex) {
 						break;
 					}
-					count4++;
+					presentIndex++;
 				}
 			}
 			if (i < 99) {
 				bdsw->field_0xF8[bdsw->field_0x10C] = i + BADGE_MIN;
 				bdsw->field_0x10C++;
-				badgeShop_set(table, (s16)(i + BADGE_MIN), 0);
+				badgeShop_set(remaining, (s16)(i + BADGE_MIN), 0);
 				if (badge & 1) {
-					count--;
+					totalBadges--;
 				}
 				if (badge & 2) {
-					v7--;
+					bit2Count--;
 				}
 			}
 		}
@@ -358,7 +362,7 @@ s16 badgeShop_set(u8* table, s16 id, s16 val) {
 	s16 index;
 	u8 mask;
 	s32 shift;
-	s32 word;
+	s32 byteIndex;
 
 	if (table == bdsw->bottakuru_table || table == bdsw->bteresa_table) {
 		bound = KEY_ITEM_MIN;
@@ -386,14 +390,14 @@ s16 badgeShop_set(u8* table, s16 id, s16 val) {
 			shift = 6;
 			break;
 	}
-	word = index / 4;
+	byteIndex = index / 4;
 	if (val < 0) {
 		val = 0;
 	}
 	else if (val > 3) {
 		val = 3;
 	}
-	table[word] = (u8)((u8)(mask & table[word]) + (u8)(val << shift));
+	table[byteIndex] = (u8)((u8)(mask & table[byteIndex]) + (u8)(val << shift));
 	return val;
 }
 
@@ -433,22 +437,22 @@ s16 badgeShop_get(u8* table, s16 id) { //1:1
 }
 
 s32 badgeShop_add(u8* table, s32 id, s32 value) { // 1:1, can blow up in your face
-    s32 temp;
+    s32 itemId;
 	s32 mask;
 	s32 shift;
     s32 bound;
-    int curr;
-    int data;
+    int currentValue;
+    int newValue;
 
     if (table == bdsw->bottakuru_table || table == bdsw->bteresa_table) {
         bound = KEY_ITEM_MIN;
     } else {
         bound = BADGE_MIN;
     }
-    temp = (s16)id;
-    if (temp < bound || temp >= BADGE_MAX) return 0;
+    itemId = (s16)id;
+    if (itemId < bound || itemId >= BADGE_MAX) return 0;
 
-    id = (s16)(temp - bound);
+    id = (s16)(itemId - bound);
     switch (id & 3) {
         case 0:
             mask = 3 << 0;
@@ -467,21 +471,22 @@ s32 badgeShop_add(u8* table, s32 id, s32 value) { // 1:1, can blow up in your fa
             shift = 6;
             break;
     }
-    data = value;
+    newValue = value;
     mask &= 0xFF;
-    curr = (mask & table[id / 4]) >> shift;
-    data = (s16)((s16)curr + data);
-    if (data < 0) {
-        data = 0;
+    currentValue = (mask & table[id / 4]) >> shift;
+    newValue = (s16)((s16)currentValue + newValue);
+    if (newValue < 0) {
+        newValue = 0;
     }
-    else if (data > 3) {
-        data = 3;
+    else if (newValue > 3) {
+        newValue = 3;
     }
-    table[id / 4] = (u8)(table[id / 4] & ~mask) + (u8)((s16)data << shift);
-    return data;
+    table[id / 4] = (u8)(table[id / 4] & ~mask) + (u8)((s16)newValue << shift);
+    return newValue;
 }
 
 USER_FUNC(badgeShop_getBargainTable) {
+	// field_0xF8 holds the five selected bargain badge ids.
 	evtSetValue(event, *event->args, (s32)&bdsw->field_0xF8);
 	return EVT_RETURN_DONE;
 }
