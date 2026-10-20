@@ -277,6 +277,7 @@ typedef struct MarioWork {
     union {
         f32 field_0x2A4;           // 0x2A4, f32 in mot_plane (eased turn rate added to unk1A8), mot_hammer, mot_dokan, mot_jabara
         s32 motionSfxId0;          // 0x2A4, sound handle in mot_hip (-1 when none)
+        s32 paperAnimeTime;        // 0x2A4, mot_ship: marioSetPaperAnimeLocalTime argument (0x58 at reinit, counted down through the landing)
         u32 rollFlags;             // 0x2A4, mot_roll flag word (0x10, 0x20, 0x100, 0x200, 0x1000, 0x4000, 0x10000)
     };
     union {

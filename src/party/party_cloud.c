@@ -361,10 +361,10 @@ void N__cloud_use(PartyEntry* party) {
         memset(party->useStruct, 0, 0x48);
         cloud->unk0 = 100.0f;
         cloud->maxDist = 120.0f;
-        *(f32*)((u8*)cloud + 0x10) = 0.0f;
-        *(s32*)((u8*)cloud + 0x14) = 0;
-        *(f32*)((u8*)cloud + 0x18) = 0.0f;
-        *(s32*)((u8*)cloud + 0x1C) = 1;
+        cloud->sweepOffset1 = 0.0f;
+        cloud->sweepDown1 = 0;
+        cloud->sweepOffset2 = 0.0f;
+        cloud->sweepDown2 = 1;
         party->tail.flurrie.breathFx = NULL;
         if (party->useStruct != NULL) {
             ((PartyCloud*)party->useStruct)->sfxId = 0xFFFFFFFFu;
@@ -413,8 +413,8 @@ void N__cloud_use(PartyEntry* party) {
         mario->dispFlags |= 0x4;
         mario->dispFlags |= 0x100;
         party->flags2 |= 0x10;
-        *(f32*)((u8*)cloud + 0x8) = 0.0f;
-        *(f32*)((u8*)cloud + 0x4) = mario->unk1A8;
+        cloud->unk8 = 0.0f;
+        cloud->unk4 = mario->unk1A8;
         if ((party->flags & PARTY_FLAG_IS_EVT_USE) == 0) {
             mario->unk150.x = 0.03f;
             mario->unk138 = 70.0f * ((revise360(270.0f - mario->dispReqDir) <= 180.0f) ? -1.0f : 1.0f);
@@ -437,10 +437,10 @@ void N__cloud_use(PartyEntry* party) {
         MOVE_TO_MARIO();
         party->position = party->targetPos;
         partyUpdateKeyData(party);
-        mario->unk1A8 = *(f32*)((u8*)cloud + 0x4);
-        mario->dispReqDir = *(f32*)((u8*)cloud + 0x4);
-        party->field_10C = *(f32*)((u8*)cloud + 0x4);
-        party->field_110 = *(f32*)((u8*)cloud + 0x4);
+        mario->unk1A8 = cloud->unk4;
+        mario->dispReqDir = cloud->unk4;
+        party->field_10C = cloud->unk4;
+        party->field_110 = cloud->unk4;
         sx = mario->position.x;
         sz = mario->position.z;
         f31 = mario->unk1A8;
@@ -452,7 +452,7 @@ void N__cloud_use(PartyEntry* party) {
         party->position.z = sz;
         party->position.y = mario->position.y + 10.0f;
         party->dispOffset = (Vec){0.0f, 0.0f, 0.0f};
-        *(f32*)((u8*)cloud + 0x8) += 2.0f;
+        cloud->unk8 += 2.0f;
         RELOAD_MARIO();
 #ifdef MUST_MATCH
         // Match-only: the original loads cloud->unk8 (0x8) before cloud->maxDist; assigning mx
@@ -674,21 +674,21 @@ void getHitBreatheout2(PartyEntry* party, f32 angle) {
         f31 = -1.0f;
     }
 
-    if (*(s32*)((u8*)cloud + 0x14) == 0) {
-        *(f32*)((u8*)cloud + 0x10) += 1.0f;
-        if (*(f32*)((u8*)cloud + 0x10) >= 20.0f) {
-            *(f32*)((u8*)cloud + 0x10) = 20.0f;
-            *(s32*)((u8*)cloud + 0x14) = 1;
+    if (cloud->sweepDown1 == 0) {
+        cloud->sweepOffset1 += 1.0f;
+        if (cloud->sweepOffset1 >= 20.0f) {
+            cloud->sweepOffset1 = 20.0f;
+            cloud->sweepDown1 = 1;
         }
     } else {
-        *(f32*)((u8*)cloud + 0x10) -= 1.0f;
-        if (*(f32*)((u8*)cloud + 0x10) <= -20.0f) {
-            *(f32*)((u8*)cloud + 0x10) = -20.0f;
-            *(s32*)((u8*)cloud + 0x14) = 0;
+        cloud->sweepOffset1 -= 1.0f;
+        if (cloud->sweepOffset1 <= -20.0f) {
+            cloud->sweepOffset1 = -20.0f;
+            cloud->sweepDown1 = 0;
         }
     }
 
-    dir = toMovedir(cloud->unk4 + *(f32*)((u8*)cloud + 0x10) * f31);
+    dir = toMovedir(cloud->unk4 + cloud->sweepOffset1 * f31);
     sincosf(&sin2, &cos2, dir);
     distance = cloud->unk8;
     hit = hitCheckFilter(NULL, party->position.x, mario->position.y + f30, party->position.z, sin2, sin1, cos2, &hitX,
@@ -699,21 +699,21 @@ void getHitBreatheout2(PartyEntry* party, f32 angle) {
     }
     cloud->unk28 = (s32)hit;
 
-    if (*(s32*)((u8*)cloud + 0x1C) == 0) {
-        *(f32*)((u8*)cloud + 0x18) += 1.0f;
-        if (*(f32*)((u8*)cloud + 0x18) >= 20.0f) {
-            *(f32*)((u8*)cloud + 0x18) = 20.0f;
-            *(s32*)((u8*)cloud + 0x1C) = 1;
+    if (cloud->sweepDown2 == 0) {
+        cloud->sweepOffset2 += 1.0f;
+        if (cloud->sweepOffset2 >= 20.0f) {
+            cloud->sweepOffset2 = 20.0f;
+            cloud->sweepDown2 = 1;
         }
     } else {
-        *(f32*)((u8*)cloud + 0x18) -= 1.0f;
-        if (*(f32*)((u8*)cloud + 0x18) <= -20.0f) {
-            *(f32*)((u8*)cloud + 0x18) = -20.0f;
-            *(s32*)((u8*)cloud + 0x1C) = 0;
+        cloud->sweepOffset2 -= 1.0f;
+        if (cloud->sweepOffset2 <= -20.0f) {
+            cloud->sweepOffset2 = -20.0f;
+            cloud->sweepDown2 = 0;
         }
     }
 
-    dir = toMovedir(cloud->unk4 + *(f32*)((u8*)cloud + 0x18) * f31);
+    dir = toMovedir(cloud->unk4 + cloud->sweepOffset2 * f31);
     sincosf(&sin2, &cos2, dir);
     distance = cloud->unk8;
     hit = hitCheckFilter(NULL, party->position.x, mario->position.y + f30, party->position.z, sin2, sin1, cos2, &hitX,
