@@ -125,22 +125,12 @@ USER_FUNC(evt_mario_dokan_prepare) {
     mario->flags |= 0x100;
     type = evtGetValue(event, args[0]);
     if (type == 4) {
-#ifdef MUST_MATCH
-        // MUST_MATCH: the original copies each Vec with an unscheduled per-component load/store pair;
-        // volatile on both sides stops MWCC from hoisting the third load above the second store.
-        *(volatile Vec*)&mario->scale = *(volatile Vec*)&vecs[0];
-#else
         mario->scale = vecs[0];
-#endif
         mario->dispFlags |= 0x1000;
         party = partyGetPtr(marioGetPartyId());
         if (party != NULL) {
             partyShadowOff(party);
-#ifdef MUST_MATCH
-            *(volatile Vec*)((u8*)party + 0x70) = *(volatile Vec*)&vecs[1];
-#else
-            party->field_70 = vec3_802e573c;
-#endif
+            party->field_70 = vecs[1];
             party->flags2 |= 1;
             party->flags |= PARTY_FLAG_DISABLE_FLOORS;
             party->flags |= PARTY_FLAG_FORCE_FALL;
@@ -148,11 +138,7 @@ USER_FUNC(evt_mario_dokan_prepare) {
         party = partyGetPtr(marioGetExtraPartyId());
         if (party != NULL) {
             partyShadowOff(party);
-#ifdef MUST_MATCH
-            *(volatile Vec*)((u8*)party + 0x70) = *(volatile Vec*)&vecs[2];
-#else
-            party->field_70 = vec3_802e5748;
-#endif
+            party->field_70 = vecs[2];
             party->flags2 |= 1;
             party->flags |= PARTY_FLAG_DISABLE_FLOORS;
             party->flags |= PARTY_FLAG_FORCE_FALL;
@@ -166,7 +152,7 @@ USER_FUNC(evt_mario_dokan_prepare) {
 }
 
 #ifdef MUST_MATCH
-// MUST_MATCH: retail reaches these Vecs and the two pose strings through the vec3_802e5730 base register.
+// Retail reaches these Vecs and the two pose strings through the vec3_802e5730 base register.
 #define EM_VEC(off, sym) (*(Vec*)(base + (off)))
 #define EM_STR(off, lit) ((const char*)(base + (off)))
 #else
@@ -1076,10 +1062,9 @@ USER_FUNC(N_evt_mario_party_door_halve_hitbox) {
     return EVT_RETURN_DONE;
 }
 
-// The case-0 first argument must be built as a named float product, cast to s32, and only then is
-// `speed` divided by the framerate: this keeps the two `(f32)gp->framerate` conversions separate and
-// puts the magic double in f2 (the #else order lets MWCC coalesce the third argument into f2 and
-// land the double in f5). See evt_party_move_pos2 for the same idiom.
+// The case-0 first argument is built as an s32 local before `speed` is divided by the framerate: this keeps
+// the two `(f32)gp->framerate` conversions separate and puts the magic double in f2. See evt_party_move_pos2
+// for the same idiom.
 USER_FUNC(evt_mario_party_door_move) {
     s32* args = event->args;
     MarioWork* mario = marioGetPtr();
@@ -1087,7 +1072,6 @@ USER_FUNC(evt_mario_party_door_move) {
     f32 z = evtGetFloat(event, args[1]);
     f32 speed = evtGetFloat(event, args[2]);
     f32 dist;
-    f32 tmp;
     f32 sx;
     f32 sy;
     f32 sz;
@@ -1138,20 +1122,10 @@ USER_FUNC(evt_mario_party_door_move) {
             speed *= 0.4f;
         }
         {
-#ifdef MUST_MATCH
-            // MUST_MATCH: the named float product cast to int, then the speed division, is what
-            // separates the two framerate conversions and lands the double in f2.
-            f32 fr = (f32)gp->framerate * (dist / speed);
-            s32 n;
+            s32 n = (s32)((f32)gp->framerate * (dist / speed));
 
-            n = (s32)fr;
             speed = speed / (f32)gp->framerate;
             marioSetForceMove(n, mario->directionView, speed);
-#else
-            tmp = dist / speed;
-            speed = speed / (f32)gp->framerate;
-            marioSetForceMove((s32)((f32)gp->framerate * tmp), mario->directionView, speed);
-#endif
         }
         event->userdata[0] = 2;
         break;
@@ -1258,7 +1232,6 @@ USER_FUNC(evt_mario_party_bero_move) {
     f32 z = evtGetFloat(event, args[1]);
     f32 speed = evtGetFloat(event, args[2]);
     f32 dist;
-    f32 tmp;
     f32 sx;
     f32 sy;
     f32 sz;
@@ -1304,20 +1277,12 @@ USER_FUNC(evt_mario_party_bero_move) {
         if (mario->flags & MARIO_FLAG_BG_MODE) {
             speed *= 0.4f;
         }
-#ifdef MUST_MATCH
         {
-            f32 fr = (f32)gp->framerate * (dist / speed);
-            s32 n;
+            s32 n = (s32)((f32)gp->framerate * (dist / speed));
 
-            n = (s32)fr;
             speed = speed / (f32)gp->framerate;
             marioSetForceMove(n, mario->directionView, speed);
         }
-#else
-        tmp = dist / speed;
-        speed = speed / (f32)gp->framerate;
-        marioSetForceMove((s32)((f32)gp->framerate * tmp), mario->directionView, speed);
-#endif
         event->userdata[0] = 2;
         break;
     case 2:
@@ -1458,7 +1423,7 @@ USER_FUNC(evt_mario_jump_pos) {
                 }
             } else {
 #ifdef MUST_MATCH
-                // MUST_MATCH: the original's `Vec vec` (12 bytes at 0x14) overlaps MWCC's
+                // The original's `Vec vec` (12 bytes at 0x14) overlaps MWCC's
                 // int<->float conversion temporary, which then lives at 0x18; a full Vec pushes
                 // that temp to 0x20 (frame 0xa0 instead of 0x90). searchUnder2 only writes
                 // out->x, so a one-float home reproduces the frame (same idiom as evt_party.c).
@@ -1468,7 +1433,7 @@ USER_FUNC(evt_mario_jump_pos) {
 #endif
 
 #ifdef MUST_MATCH
-                // MUST_MATCH: the header declares searchUnder2 as s32 but it returns a pointer;
+                // The header declares searchUnder2 as s32 but it returns a pointer;
                 // the cast restores the original's unsigned (cmplwi) null test.
                 if ((void*)searchUnder2((Vec*)&vec, x, y, z)) {
 #else
@@ -1984,35 +1949,17 @@ USER_FUNC(evt_koopa_hip_attack) {
         MarioWork* mario2;
         void* ground;
         s32 landed;
-#ifdef MUST_MATCH
-        // MUST_MATCH: the original reuses the `y` argument's callee-saved register (f31) for the
-        // vertical speed; a separate local lands in f27 instead.
-#else
-        f32 vy;
-#endif
 
         movePos(&mario->position.x, &mario->position.z, mario->baseSpeed, mario->directionView);
         marioMakeJumpPara();
-#ifdef MUST_MATCH
-        y = *(f32*)((u8*)mario + 0x7C);
-#else
-        vy = mario->jumpVelY;
-#endif
+        y = mario->jumpVelY;
         mario2 = marioGetPtr();
         if (mario2->flags & MARIO_FLAG_TUBE_MODE) {
             ground = (void*)marioSearchGroundRoll(&v0, &v1, &v2, 11.0f, mario2->jumpVelY);
         } else {
-#ifdef MUST_MATCH
             ground = (void*)marioSearchGround(&v0, &v1, &v2, y, y);
-#else
-            ground = (void*)marioSearchGround(&v0, &v1, &v2, vy, vy);
-#endif
         }
-#ifdef MUST_MATCH
         if (ground != NULL && mario2->position.y + y <= v0) {
-#else
-        if (ground != NULL && mario2->position.y + vy <= v0) {
-#endif
             marioClearJumpPara();
             mario2->hitobjStandOn = ground;
             mario2->position.y = v0;
@@ -2255,7 +2202,7 @@ USER_FUNC(evt_mario_set_prev_party_dokan) {
             party = partyGetPtr(ret);
             partyChgRunMode(party, 0);
 #ifdef MUST_MATCH
-            // MUST_MATCH: volatile on both sides of the Vec copy (and on the flags updates that
+            // Volatile on both sides of the Vec copy (and on the flags updates that
             // surround it) reproduces the original's unscheduled load/store pair without hoisting.
             *(volatile u32*)&party->flags = *(volatile u32*)&party->flags | 0x04000000;
             *(volatile u32*)&party->flags = *(volatile u32*)&party->flags | 0x02000000;
