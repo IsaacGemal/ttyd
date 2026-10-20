@@ -365,11 +365,7 @@ BattleUnit* BtlUnit_Spawn(BattleUnitSetup* setup, s32 flags) {
                 break;
             }
             if (wp->unitIdTable[i] == -1) {
-#ifdef MUST_MATCH
-                { s32* pp = &((s32*)((u8*)wp + 0x120))[i]; *pp = id; }
-#else
                 wp->unitIdTable[i] = id;
-#endif
                 break;
             }
             {
@@ -387,11 +383,7 @@ BattleUnit* BtlUnit_Spawn(BattleUnitSetup* setup, s32 flags) {
                 break;
             }
             if (wp->unitIdTable[i] == -1) {
-#ifdef MUST_MATCH
-                { s32* pp = &((s32*)((u8*)wp + 0x120))[i]; *pp = id; }
-#else
                 wp->unitIdTable[i] = id;
-#endif
                 break;
             }
             {
@@ -1841,10 +1833,8 @@ s32 BtlUnit_GetExp(BattleUnit* unit) {
     FieldBattleInfo* info = wp->fbatInfo;
     f32 mult;
     f32 prod;
-#ifdef MUST_MATCH
     // A local preserves the multiply operands while letting MWCC pool the constant.
     f32 half = 0.5f;
-#endif
     s32 exp;
 
     if (pouch->level > unit->mLevel) {
@@ -1868,11 +1858,7 @@ s32 BtlUnit_GetExp(BattleUnit* unit) {
             break;
     }
     prod = mult * (f32)(unit->mLevel - pouch->level);
-#ifdef MUST_MATCH
     exp = (s32)(prod * half);
-#else
-    exp = (s32)(prod * 0.5f);
-#endif
     return exp + unit->mKindParams->mBonusExp;
 }
 
@@ -2343,16 +2329,12 @@ s32 BtlUnit_snd_se_pos(BattleUnit* unit, const char* name, s32 b, s16 c, Vec* po
         BtlUnit_GetStatus(unit, STATUS_HUGE, &turns, &strength);
         val = (s16)(((s8)strength * 2 + 1) * -341);
     }
-#ifdef MUST_MATCH
     // The s16 temporary preserves retail's add operand order and delayed narrowing.
     {
         s16 sum = c;
         sum += val;
         val = sum;
     }
-#else
-    val += c;
-#endif
     val += (irand(0x29) - 0x14);
     handle = psndSFXOn_3D(name, pos);
     psndSFX_pit(handle, val);

@@ -208,15 +208,11 @@ void effMahorn2Main(EffectEntry* effect) {
                 angle = 6.2831855f * angleABf(position.x + data->position.x, position.y + data->position.y, target.x, target.y) / 360.f;
                 data->position.x += hitDistance * (f32)sin(angle);
                 data->position.y += hitDistance * (f32)cos(angle);
-#ifdef MUST_MATCH
                 {
                     f32 k = 0.125f;
                     f32 t = 4.0f - data->scale;
                     data->scale = t * k + data->scale;
                 }
-#else
-                data->scale = (4.0f - data->scale) * 0.125f + data->scale;
-#endif
             }
             else {
                 {
@@ -257,15 +253,13 @@ void effMahorn2Main(EffectEntry* effect) {
 // The only objdiff differences left are anonymous .rodata labels for the block-local widths/texs
 // aggregate initialisers (ours @252/@253 vs retail's dat_8030196c/dat_80301984); the bytes and
 // addresses are identical, so they resolve at link time.
-#ifdef MUST_MATCH
-// MUST_MATCH: retail builds the GXColor in a 0x8-based temp and copies it to the 0xc outgoing arg;
+// Retail builds the GXColor in a 0x8-based temp and copies it to the 0xc outgoing arg;
 // assigning the field inline makes MWCC use 0xc for the temp and 0x8 for the outgoing copy.
 static inline GXColor mahorn2ChanColor(u8 a) {
     GXColor c = *(const GXColor*)&dat_80422598;
     c.a = a;
     return c;
 }
-#endif
 
 void effMahorn2Disp(CameraId camId, void* param) {
     EffectEntry* effect = param;
@@ -330,12 +324,7 @@ void effMahorn2Disp(CameraId camId, void* param) {
             GXLoadTexObj(&texObj, 0);
             break;
         }
-#ifdef MUST_MATCH
         color = mahorn2ChanColor((data->alpha * headerAlpha) / 255);
-#else
-        color = *(const GXColor*)&dat_80422598;
-        color.a = (data->alpha * headerAlpha) / 255;
-#endif
         GXSetChanMatColor(4, color);
 
         PSMTXTrans(mtxFinal, data->position.x, data->position.y, data->position.z);
@@ -348,11 +337,7 @@ void effMahorn2Disp(CameraId camId, void* param) {
         GXLoadPosMtxImm(mtxFinal, 0);
         GXSetCurrentMtx(0);
 
-#ifdef MUST_MATCH
         half = 0.5f;
-#else
-        half = 0.5f;
-#endif
         type = data->type;
         switch (type) {
         case 0:
@@ -395,13 +380,9 @@ void effMahorn2Disp(CameraId camId, void* param) {
             GXTexCoord2f32(0.0f, texH);
         }
         else {
-#ifdef MUST_MATCH
-            // MUST_MATCH: a local for the multiplier keeps the compiler from shifting the whole f24-f31
+            // A local for the multiplier keeps the compiler from shifting the whole f24-f31
             // allocation when the pool load is named; the multiply follows in the natural order.
             f32 two = 2.0f;
-#else
-            f32 two = 2.0f;
-#endif
             bottom = -h * half;
             top = h * half;
 
