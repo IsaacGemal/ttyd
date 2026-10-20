@@ -110,12 +110,12 @@ typedef struct LogWin {
     u32 dirTrg; // 0xC
     u32 dirRep; // 0x10
     u8 pad_14[0x1C];
-    FileEntry* file; // 0x30
+    FileEntry* mapTpl; // 0x30
     u8 pad_34[0xF0];
-    s32 retState; // 0x124
+    s32 savedState; // 0x124
     u8 pad_128[0x30];
-    f32 curX; // 0x158
-    f32 curY; // 0x15C
+    f32 targetX; // 0x158
+    f32 targetY; // 0x15C
     u8 pad_160[0xC08];
     s32 state; // 0xD68
     s32 sel; // 0xD6C
@@ -123,7 +123,7 @@ typedef struct LogWin {
     LogRow rows[5]; // 0xD74
     s32 mapSel; // 0xE14
     s32 mapPick; // 0xE18
-    s32 pose; // 0xE1C
+    s32 mapMarioPose; // 0xE1C
     f32 mapCx; // 0xE20
     f32 mapCy; // 0xE24
     f32 e28; // 0xE28
@@ -404,8 +404,8 @@ void winLogInit(WindowWork* work) {
         *(u16*)((u8*)e->userdata + 4) &= ~4;
         *(u16*)((u8*)e->userdata + 4) |= 0x20;
     }
-    w->file = NULL;
-    w->pose = -1;
+    w->mapTpl = NULL;
+    w->mapMarioPose = -1;
     w->mapSel = -1;
     w->mapPick = 0;
     w->mapCy = 0.0f;
@@ -647,13 +647,13 @@ void winLogInit2(WindowWork* work) {
 void winLogExit(WindowWork* work) {
     s32 i;
 
-    if (WW_PTR(work, 0x30) != NULL) {
-        fileFree(WW_PTR(work, 0x30));
-        WW_PTR(work, 0x30) = NULL;
+    if (work->mapTpl != NULL) {
+        fileFree(work->mapTpl);
+        work->mapTpl = NULL;
     }
-    if (work->poseId2 != -1) {
-        animPoseRelease(work->poseId2);
-        work->poseId2 = -1;
+    if (work->mapMarioPose != -1) {
+        animPoseRelease(work->mapMarioPose);
+        work->mapMarioPose = -1;
     }
     for (i = 0; i < 7; i++) {
         effSoftDelete(*(EffectEntry**)((u8*)work + 0xE44 + i * 4));
@@ -782,10 +782,10 @@ s32 winLogMain(WindowWork* work) {
                 }
                 SFX(0x20012);
             }
-            w->curX = -128.0f;
+            w->targetX = -128.0f;
             {
                 f32 t = 45.0f * (f32)w->count;
-                w->curY =
+                w->targetY =
                     8.0f + (t / 2.0f - 45.0f * (f32)w->sel);
             }
             winMsgEntry(work, 0, w->rows[w->sel].name, 0);
@@ -794,17 +794,17 @@ s32 winLogMain(WindowWork* work) {
             tpl = winGetMapTplName();
             root = getMarioStDvdRoot();
             if ((u32)fileAsyncf(FILE_TYPE_TPL, NULL, "%s/w/jp/%s", root, tpl) != 0) {
-                if (w->file == 0) {
+                if (w->mapTpl == 0) {
                     tpl = winGetMapTplName();
                     root = getMarioStDvdRoot();
                     // (s32) add defeats the CSE with the fileAsyncf string above, so MWCC recomputes it
                     // into r4 (as the original) instead of pinning it in r28 across the call.
-                    w->file = (FileEntry*)fileAllocf(FILE_TYPE_TPL, "%s/w/jp/%s", root, tpl);
+                    w->mapTpl = (FileEntry*)fileAllocf(FILE_TYPE_TPL, "%s/w/jp/%s", root, tpl);
                 }
-                if (w->pose == -1) {
+                if (w->mapMarioPose == -1) {
                     if (w->flags & 0x2000) {
                         const char* anim = "W_1";
-                        w->pose = animPoseEntry("d_mario", 0);
+                        w->mapMarioPose = animPoseEntry("d_mario", 0);
                         switch (marioGetColor()) {
                         case 0:
                             anim = "W_1";
@@ -819,7 +819,7 @@ s32 winLogMain(WindowWork* work) {
                             anim = "W_18";
                             break;
                         }
-                        animPoseSetAnim(w->pose, anim, 1);
+                        animPoseSetAnim(w->mapMarioPose, anim, 1);
                     } else {
                         const char* model = "a_mario";
                         switch (marioGetColor()) {
@@ -836,10 +836,10 @@ s32 winLogMain(WindowWork* work) {
                             model = "a_mario_wl";
                             break;
                         }
-                        w->pose = animPoseEntry(model, 0);
-                        animPoseSetAnim(w->pose, "M_W_1", 1);
+                        w->mapMarioPose = animPoseEntry(model, 0);
+                        animPoseSetAnim(w->mapMarioPose, "M_W_1", 1);
                     }
-                    animPoseSetMaterialFlagOn(w->pose, 0x1800);
+                    animPoseSetMaterialFlagOn(w->mapMarioPose, 0x1800);
                 }
                 if (w->buttonTrg & 0x200) {
                     SFX(0x20013);
@@ -855,12 +855,12 @@ s32 winLogMain(WindowWork* work) {
                     w->rows[w->sel].phase = 0x14;
                     w->state = 0;
                     w->e30 = -480.f;
-                    fileFree((FileEntry*)w->file);
-                    w->file = 0;
-                    if (w->pose != -1) {
-                        animPoseRelease(w->pose);
+                    fileFree((FileEntry*)w->mapTpl);
+                    w->mapTpl = 0;
+                    if (w->mapMarioPose != -1) {
+                        animPoseRelease(w->mapMarioPose);
                     }
-                    w->pose = -1;
+                    w->mapMarioPose = -1;
                 } else if (w->buttonTrg & 0x1000) {
                     return -2;
                 }
@@ -967,10 +967,10 @@ s32 winLogMain(WindowWork* work) {
                     if (w->mapScrollY < -240.f) {
                         w->mapScrollY = -240.f;
                     }
-                    w->curX = -230.f + w->mapScrollX + w->mapCx;
-                    w->curY = -120.f + w->mapScrollY + w->mapCy;
-                    w->curX -= 24.0f;
-                    w->curY += 20.f;
+                    w->targetX = -230.f + w->mapScrollX + w->mapCx;
+                    w->targetY = -120.f + w->mapScrollY + w->mapCy;
+                    w->targetX -= 24.0f;
+                    w->targetY += 20.f;
                 }
             }
             break;
@@ -1015,8 +1015,8 @@ s32 winLogMain(WindowWork* work) {
             } else if (w->buttonTrg & 0x1000) {
                 return -2;
             }
-            w->curX = -50.f;
-            w->curY = -50.f;
+            w->targetX = -50.f;
+            w->targetY = -50.f;
             if (w->stoneSel < w->stoneNum) {
                 ItemData* it = &itemDataTable[stone_tbl[w->stoneSel]];
                 winMsgEntry(work, -1, it->description, (s32)it->name);
@@ -1092,14 +1092,14 @@ s32 winLogMain(WindowWork* work) {
                 SFX(0x20035);
             } else if (trg & 0x10) {
                 winSortEntry(work, 4, -310.f, 150.f);
-                w->retState = w->state;
+                w->savedState = w->state;
                 SFX(0x20012);
                 w->state = 0x3E8;
             } else if (trg & 0x1000) {
                 return -2;
             }
-            w->curX = (f32)(((w->cardSel % 28) % 7) * 0x38 - 0x8C);
-            w->curY = (f32)(0x5A - ((w->cardSel % 28) / 7) * 0x38);
+            w->targetX = (f32)(((w->cardSel % 28) % 7) * 0x38 - 0x8C);
+            w->targetY = (f32)(0x5A - ((w->cardSel % 28) / 7) * 0x38);
             if (swGet(w->cardIcon[w->cardSel] + 0x80) != 0) {
                 ItemData* it = &itemDataTable[w->cardIcon[w->cardSel]];
                 winMsgEntry(work, -2, (it + 240)->menu_description, (s32)(it + 240)->name);
@@ -1176,14 +1176,14 @@ s32 winLogMain(WindowWork* work) {
                 SFX(0x20035);
             } else if (trg & 0x10) {
                 winSortEntry(work, 5, -310.f, 150.f);
-                w->retState = w->state;
+                w->savedState = w->state;
                 SFX(0x20012);
                 w->state = 0x3E8;
             } else if (trg & 0x1000) {
                 return -2;
             }
-            w->curX = (f32)(((w->badgeSel % 28) % 7) * 0x38 - 0x8C);
-            w->curY = (f32)(0x5A - ((w->badgeSel % 28) / 7) * 0x38);
+            w->targetX = (f32)(((w->badgeSel % 28) % 7) * 0x38 - 0x8C);
+            w->targetY = (f32)(0x5A - ((w->badgeSel % 28) / 7) * 0x38);
             if (swGet(w->badgeIcon[w->badgeSel] + 0x41) != 0) {
                 ItemData* it = &itemDataTable[w->badgeIcon[w->badgeSel]];
                 winMsgEntry(work, -2, (it + 179)->menu_description, (s32)(it + 179)->name);
@@ -1270,14 +1270,14 @@ s32 winLogMain(WindowWork* work) {
                 }
             } else if (trg & 0x10) {
                 winSortEntry(work, 6, -310.f, 150.f);
-                w->retState = w->state;
+                w->savedState = w->state;
                 SFX(0x20012);
                 w->state = 0x3E9;
             } else if (trg & 0x1000) {
                 return -2;
             }
-            w->curX = (f32)((w->charSel % 16 / 8) * 0xD8 - 0xB4);
-            w->curY = (f32)(0x6A - (w->charSel % 16 % 8) * 0x18);
+            w->targetX = (f32)((w->charSel % 16 / 8) * 0xD8 - 0xB4);
+            w->targetY = (f32)(0x6A - (w->charSel % 16 % 8) * 0x18);
             if (swGet(w->chars[w->charSel].id + 0x117A) != 0) {
                 winMsgEntry(work, 0,
                             battleGetUnitMonosiriPtr(w->chars[w->charSel].id)->tattleLogTag, 0);
@@ -1310,7 +1310,7 @@ s32 winLogMain(WindowWork* work) {
         case 0x3E8:
         case 0x3E9:
             if (winSortWait(work) == 0) {
-                w->state = w->retState;
+                w->state = w->savedState;
             }
             if (w->buttonTrg & 0x1000) {
                 return -2;
@@ -1641,11 +1641,11 @@ void mapGX(WindowWork* work, f32 x, f32 y) {
     s32 i;
 
     c0 = white;
-    if (w->file != NULL) {
+    if (w->mapTpl != NULL) {
         top = 120.f + y;
         GXSetScissor((u32)(((304.0f + x) - 230.f) - 2.0f),
                      (u32)((240.f - top) - 2.0f), 0x1D0, 0xF4);
-        winTexInit((TEXPalette*)w->file->data[0]);
+        winTexInit((TEXPalette*)w->mapTpl->data[0]);
         winTexSet(0, logMkVec((Vec){0.0f, 0.0f, 0.0f}, tx, ty), (Vec){1.0f, 1.0f, 1.0f}, c1);
         winTexInit(LOG_TEXPAL());
         for (i = 0; (u32)i < 0x5D; i++) {
@@ -1698,25 +1698,25 @@ void mapGX(WindowWork* work, f32 x, f32 y) {
                 monoIconV(icon, logMkVec((Vec){0.0f, 0.0f, 0.0f}, tx + pos_tbl[k][0], 45.0f + (ty + pos_tbl[k][1])), (Vec){1.0f, 1.0f, 1.0f}, c1);
             }
         }
-        if (w->pose != -1) {
+        if (w->mapMarioPose != -1) {
             AnimData* anim;
             f32 scale;
             Mtx m;
             s32 n;
 
-            animPoseGetAnimPosePtr(work->poseId);
-            anim = animPoseGetAnimDataPtr(work->poseId);
+            animPoseGetAnimPosePtr(work->marioPose);
+            anim = animPoseGetAnimDataPtr(work->marioPose);
             scale = 1.5f;
             if (w->flags & 0x2000) {
                 scale = 3.0f;
             }
             PSMTXTrans(m, tx + (f32)tubuDt[w->mapPick].x, ty + (f32)tubuDt[w->mapPick].y, 0.0f);
             n = (s32)*(f32*)(*(u8**)((u8*)anim + 0x24) + 8);
-            animPoseSetLocalTime(w->pose, (f32)(gp->retraceCount % n));
-            animPoseMain(w->pose);
-            animPoseDrawMtx(w->pose, m, 1, 0.0f, scale);
-            animPoseDrawMtx(w->pose, m, 2, 0.0f, scale);
-            animPoseDrawMtx(w->pose, m, 3, 0.0f, scale);
+            animPoseSetLocalTime(w->mapMarioPose, (f32)(gp->retraceCount % n));
+            animPoseMain(w->mapMarioPose);
+            animPoseDrawMtx(w->mapMarioPose, m, 1, 0.0f, scale);
+            animPoseDrawMtx(w->mapMarioPose, m, 2, 0.0f, scale);
+            animPoseDrawMtx(w->mapMarioPose, m, 3, 0.0f, scale);
         }
         GXSetScissor(0, 0, 0x260, 0x1E0);
         winTexInit(LOG_TEXPAL());

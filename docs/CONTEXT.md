@@ -9008,3 +9008,26 @@ read the star stone's child effect as `effStarStoneData.field_0x34` instead of a
 sac_muki's main_icon/main_star still write the star stone through `f32* data` indices and main_cursor writes
 the stamp effect through `u8` offsets; both wait on real names for effStarStoneData and effStampData, since
 `field_0x` member names read no better than the offsets.
+### Readability: pause-menu WindowWork (2026-10-19, Claude Haiku 5.5, n9-q-win; reviewed by Claude Opus 5.5)
+
+WindowWork (include/win/win_main.h) is one flat struct whose submenus keep their state in consecutive bands, not
+overlays: root 0x1C-0x184, win_mario 0x160-0x198, win_party 0x19C-0x208, win_item 0x20C-0x3DA (+0x1208), win_badge
+0x3DC-0xD64, win_log 0xD68-0x1204. No offset is read with two types by two files, so names stay flat (no union of
+per-menu structs). Named: `lectureStep` (0x14), `lectureEvent` (0x18, winLectureOn's evt_lecture_msg; win_main's
+old comment calling it a misplaced `currentEvent` was wrong: `currentEvent` at 0x3C is winMain's evt_item_use /
+evt_diary_read event, and both offsets are real), `openTabId` (0x1C), `rootState` (0x24), `winTpl`/`mailTpl`/
+`mapTpl` (0x28-0x30), `fbCopy`/`fbCopyReady` (0x34/0x38), `savedState` (0x124), the shared cursor `posX`/`posY`/
+`targetX`/`targetY` (0x150-0x15C), `marioPose` (0x188) and `mapMarioPose` (0xE1C; mario_change rebuilds both),
+the party block `partyPose[7]`, `partyId[7]`, `selPartyDt`, `partySel`, `partyCount` (0x1E0: partners joined,
+counted by winPartyInit and read by win_root and win_item's use-target list), `partyAngle`/`partyAngleTarget`,
+`lastPartySel`, `partyState`, `wazaCount`, `wazaSel`; the badge block `badgeState`, `badgeTab`, `badgeSel[2]`,
+`badgeScrollRow[2]`, `badgeScrollPos[2]`, `badgeScrollTarget[2]`; `equipListCount` (0xD64) and `useTargetWin[2]`
+(0x1208). WindowPartyDt: `partnerId`, `iconId`, `nameMsg`, `descMsg`, `model`, `anim`, `famicomModel`/
+`famicomAnim` (used when flags & 0x2000, famicom Mario) and `waza`. win_log's LogWin overlay follows the header
+(`mapTpl`, `savedState`, `targetX`/`targetY`, `mapMarioPose`). Index 69.877 -> 69.748 (worker, pre-rebase), then
+69.572 -> 69.550 for the review pass. Open: moving WinRoot's tab block (0x40 tab selection, 0x44 tab count,
+WinRootTab[5] at 0x48, WinRootRec[5] at 0xC0) into WindowWork broke sort_7_2_func/sort_7_3_func, which address the
+tattle list at 0x1050 as `&work->field_40[0x1010]`; only that u8-array base matches, so `field_40` must keep
+starting at 0x40 until another spelling is found. Still unnamed: 0x404 equipped-badge list (0xC-byte records),
+win_item's 0x20C-0x3DA (its ItemWorkTail overlay and `WW_*` offsets, incl. the 0x26C mail line and 0x3DA),
+win_log 0xD68-0x1204 beyond LogWin's names, win_mario 0x160-0x198 and win_root 0x164-0x184.

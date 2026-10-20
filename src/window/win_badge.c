@@ -106,17 +106,17 @@ void mario_change(WindowWork* work, s32 badgeId) {
             s1 = "S_1";
             s2 = "W_1";
         }
-        if (work->poseId != -1) {
-            animPoseRelease(work->poseId);
-            work->poseId = animPoseEntry("d_mario", 0);
-            animPoseSetAnim(work->poseId, s1, 1);
-            animPoseSetMaterialFlagOn(work->poseId, 0x1800);
+        if (work->marioPose != -1) {
+            animPoseRelease(work->marioPose);
+            work->marioPose = animPoseEntry("d_mario", 0);
+            animPoseSetAnim(work->marioPose, s1, 1);
+            animPoseSetMaterialFlagOn(work->marioPose, 0x1800);
         }
-        if (work->poseId2 != -1) {
-            animPoseRelease(work->poseId2);
-            work->poseId2 = animPoseEntry("d_mario", 0);
-            animPoseSetAnim(work->poseId2, s2, 1);
-            animPoseSetMaterialFlagOn(work->poseId2, 0x1800);
+        if (work->mapMarioPose != -1) {
+            animPoseRelease(work->mapMarioPose);
+            work->mapMarioPose = animPoseEntry("d_mario", 0);
+            animPoseSetAnim(work->mapMarioPose, s2, 1);
+            animPoseSetMaterialFlagOn(work->mapMarioPose, 0x1800);
         }
     } else {
         if (badge147 && !badge148) {
@@ -128,17 +128,17 @@ void mario_change(WindowWork* work, s32 badgeId) {
         } else {
             anim = "a_mario";
         }
-        if (work->poseId != -1) {
-            animPoseRelease(work->poseId);
-            work->poseId = animPoseEntry(anim, 0);
-            animPoseSetAnim(work->poseId, "M_S_1", 1);
-            animPoseSetMaterialFlagOn(work->poseId, 0x1800);
+        if (work->marioPose != -1) {
+            animPoseRelease(work->marioPose);
+            work->marioPose = animPoseEntry(anim, 0);
+            animPoseSetAnim(work->marioPose, "M_S_1", 1);
+            animPoseSetMaterialFlagOn(work->marioPose, 0x1800);
         }
-        if (work->poseId2 != -1) {
-            animPoseRelease(work->poseId2);
-            work->poseId2 = animPoseEntry(anim, 0);
-            animPoseSetAnim(work->poseId2, "M_W_1", 1);
-            animPoseSetMaterialFlagOn(work->poseId2, 0x1800);
+        if (work->mapMarioPose != -1) {
+            animPoseRelease(work->mapMarioPose);
+            work->mapMarioPose = animPoseEntry(anim, 0);
+            animPoseSetAnim(work->mapMarioPose, "M_W_1", 1);
+            animPoseSetMaterialFlagOn(work->mapMarioPose, 0x1800);
         }
     }
 }

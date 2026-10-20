@@ -367,10 +367,10 @@ void winItemInit(WindowWork* work) {
         }
     }
 
-    WW_S32(work, 0x1208) = winMgrEntry(&window_desc[0]);
-    WW_S32(work, 0x120C) = winMgrEntry(&window_desc[1]);
-    winMgrSetPriority(WW_S32(work, 0x1208), -0xC8);
-    winMgrSetPriority(WW_S32(work, 0x120C), -0x64);
+    work->useTargetWin[0] = winMgrEntry(&window_desc[0]);
+    work->useTargetWin[1] = winMgrEntry(&window_desc[1]);
+    winMgrSetPriority(work->useTargetWin[0], -0xC8);
+    winMgrSetPriority(work->useTargetWin[1], -0x64);
     fileAsyncf(FILE_TYPE_TPL, NULL, STR_MAIL_TPL, getMarioStDvdRoot());
 }
 
@@ -406,8 +406,8 @@ void winItemInit2(WindowWork* work) {
 }
 
 void winItemExit(WindowWork* work) {
-    winMgrDelete(WW_S32(work, 0x1208));
-    winMgrDelete(WW_S32(work, 0x120C));
+    winMgrDelete(work->useTargetWin[0]);
+    winMgrDelete(work->useTargetWin[1]);
 }
 
 // 100%: every call, branch, constant, store and control-flow edge matches.
@@ -487,11 +487,11 @@ s32 winItemMain(WindowWork* work) {
                     WW_S32(work, 0x2DC) = 0;
                     WW_S32(work, 0x2E0) = 0;
                     psndSFXOn((const char*)0x20012);
-                    entry = winMgrGetPtr(WW_S32(work, 0x1208));
-                    winMgrSetSize(WW_S32(work, 0x1208), entry->x, entry->y, entry->width,
-                                  work->listCount * 0x1C + 0x44);
-                    winMgrOpen(WW_S32(work, 0x1208));
-                    winMgrOpen(WW_S32(work, 0x120C));
+                    entry = winMgrGetPtr(work->useTargetWin[0]);
+                    winMgrSetSize(work->useTargetWin[0], entry->x, entry->y, entry->width,
+                                  work->partyCount * 0x1C + 0x44);
+                    winMgrOpen(work->useTargetWin[0]);
+                    winMgrOpen(work->useTargetWin[1]);
                 }
             } else {
                 idx = ((s32*)((u8*)work + 0x214))[sel];
@@ -775,8 +775,8 @@ s32 winItemMain(WindowWork* work) {
             psndSFXOn((const char*)0x20013);
             WW_S32(work, 0x20C) = 10;
             WW_S32(work, 0x2D4) = 0;
-            winMgrClose(WW_S32(work, 0x1208));
-            winMgrClose(WW_S32(work, 0x120C));
+            winMgrClose(work->useTargetWin[0]);
+            winMgrClose(work->useTargetWin[1]);
         } else if (work->buttonTrg & 0x100) {
             MarioWork* mario = marioGetPtr();
             s32 ok = 0;
@@ -799,8 +799,8 @@ s32 winItemMain(WindowWork* work) {
                 }
             }
             if (!ok) {
-                winMgrClose(WW_S32(work, 0x1208));
-                winMgrClose(WW_S32(work, 0x120C));
+                winMgrClose(work->useTargetWin[0]);
+                winMgrClose(work->useTargetWin[1]);
                 return -2;
             }
             if (marioBgmodeChk() == 0) {
@@ -837,7 +837,7 @@ s32 winItemMain(WindowWork* work) {
             old = WW_S32(work, 0x2DC);
             WW_S32(work, 0x2DC) = old - 1;
             if (WW_S32(work, 0x2DC) < 0) {
-                WW_S32(work, 0x2DC) = work->listCount;
+                WW_S32(work, 0x2DC) = work->partyCount;
             }
             if (old != WW_S32(work, 0x2DC)) {
                 psndSFXOn((const char*)0x20005);
@@ -845,7 +845,7 @@ s32 winItemMain(WindowWork* work) {
         } else if (work->dirRep & 0x2000) {
             old = WW_S32(work, 0x2DC);
             WW_S32(work, 0x2DC) = old + 1;
-            if (WW_S32(work, 0x2DC) >= work->listCount + 1) {
+            if (WW_S32(work, 0x2DC) >= work->partyCount + 1) {
                 WW_S32(work, 0x2DC) = 0;
             }
             if (old != WW_S32(work, 0x2DC)) {
@@ -853,8 +853,8 @@ s32 winItemMain(WindowWork* work) {
             }
         } else if (work->buttonTrg & 0x1000) {
             WW_S32(work, 0x2D4) = 0;
-            winMgrClose(WW_S32(work, 0x1208));
-            winMgrClose(WW_S32(work, 0x120C));
+            winMgrClose(work->useTargetWin[0]);
+            winMgrClose(work->useTargetWin[1]);
             return -2;
         }
         work->targetX = -80.f;
@@ -889,8 +889,8 @@ s32 winItemMain(WindowWork* work) {
             } else if (WW_S32(work, 0x214) >= pouchGetHaveItemCnt()) {
                 WW_S32(work, 0x214) = pouchGetHaveItemCnt() - 1;
             }
-            winMgrClose(WW_S32(work, 0x1208));
-            winMgrClose(WW_S32(work, 0x120C));
+            winMgrClose(work->useTargetWin[0]);
+            winMgrClose(work->useTargetWin[1]);
         }
         break;
 
@@ -1081,7 +1081,7 @@ void itemUseDisp(WinMgrEntry* entry) {
 
     white = dat_8041d484;
     iconColor = dat_8041d484;
-    if (!winMgrAction(WW_S32(work, 0x1208))) {
+    if (!winMgrAction(work->useTargetWin[0])) {
         s32 partyId;
 
         partyId = !marioBgmodeChk() ? marioGetParty() : marioGetPtr()->prevPartyMemberId[0];
@@ -1099,7 +1099,7 @@ void itemUseDisp(WinMgrEntry* entry) {
             }
         }
 
-        for (i = 0; i < work->listCount + 1; i++) {
+        for (i = 0; i < work->partyCount + 1; i++) {
             if (i == 0) {
                 f31 = 0.0f;
             } else if (i == 1) {
@@ -1203,7 +1203,7 @@ void itemUseDisp(WinMgrEntry* entry) {
             }
         }
 
-        if (work->listCount > 1) {
+        if (work->partyCount > 1) {
             winIconInit();
             for (n2 = 2; n2 < 0x1E; n2++) {
                 winIconSetV(0x1B7, (Vec){(f32)(entry->x + (entry->width / 31) * n2), (f32)(entry->y - 0x54), 0.0f},
@@ -1219,7 +1219,7 @@ void itemUseDisp(WinMgrEntry* entry) {
 
 void itemUseDisp2(WinMgrEntry* entry) {
     WindowWork* work = winGetPtr();
-    s32 id = WW_S32(work, 0x120C);
+    s32 id = work->useTargetWin[1];
     const char* msg;
     f32 width;
     GXColor color;

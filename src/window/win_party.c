@@ -81,7 +81,7 @@ void winPartyInit(WindowWork* work) {
     const char* model;
     const char* anim;
 
-    work->listCount = 0;
+    work->partyCount = 0;
 
     for (i = 0; i < 7; i++) {
         for (j = 0; j < 8; j++) {
@@ -93,7 +93,7 @@ void winPartyInit(WindowWork* work) {
                 continue;
 
             if (WW_U16(work, 0x0) & 0x2000) {
-                model = winPartyDt[i].field_0x18;
+                model = winPartyDt[i].famicomModel;
                 switch (pouchGetPartyColor(PARTNER_YOSHI)) {
                 case 0: anim = "R_5"; break;
                 case 1: anim = "R_6"; break;
@@ -117,25 +117,25 @@ void winPartyInit(WindowWork* work) {
                 }
                 anim = "W_1";
             } else {
-                model = winPartyDt[i].effModel;
-                anim = winPartyDt[i].waitAnim;
+                model = winPartyDt[i].model;
+                anim = winPartyDt[i].anim;
             }
 
             pose = animPoseEntry(model, 0);
-            work->partyPose[work->listCount] = pose;
-            animPoseSetAnim(work->partyPose[work->listCount], anim, 1);
-            animPoseSetMaterialFlagOn(work->partyPose[work->listCount], 0x1800);
-            work->partyId[work->listCount] = j;
-            work->listCount++;
+            work->partyPose[work->partyCount] = pose;
+            animPoseSetAnim(work->partyPose[work->partyCount], anim, 1);
+            animPoseSetMaterialFlagOn(work->partyPose[work->partyCount], 0x1800);
+            work->partyId[work->partyCount] = j;
+            work->partyCount++;
         }
     }
 
     i = 0;
     work->partySel = i;
 #ifdef MUST_MATCH
-    for (; i < work->listCount; i++) {
+    for (; i < work->partyCount; i++) {
 #else
-    for (p = (u8*)work; i < work->listCount; i++, p += 4) {
+    for (p = (u8*)work; i < work->partyCount; i++, p += 4) {
 #endif
         s32 party;
 
@@ -159,7 +159,7 @@ void winPartyInit(WindowWork* work) {
 
     work->lastPartySel = work->partySel;
     {
-        f32 time = 360.0f / (f32)work->listCount * (f32)work->partySel;
+        f32 time = 360.0f / (f32)work->partyCount * (f32)work->partySel;
 
         work->partyAngleTarget = time;
         work->partyAngle = time;
@@ -180,7 +180,7 @@ void winPartyInit(WindowWork* work) {
 }
 
 void winPartyInit2(WindowWork* work) {
-    f32 time = 360.0f / (f32)work->listCount * (f32)work->partySel;
+    f32 time = 360.0f / (f32)work->partyCount * (f32)work->partySel;
 
     work->partyAngleTarget = time;
     work->partyAngle = time;
@@ -194,7 +194,7 @@ void winPartyExit(WindowWork* work) {
     u8* p = (u8*)work;
     s32 i;
 
-    for (i = 0; i < work->listCount; i++) {
+    for (i = 0; i < work->partyCount; i++) {
         if (*(s32*)(p + 0x1A0) != -1) {
             animPoseRelease(*(s32*)(p + 0x1A0));
         }
@@ -205,7 +205,7 @@ void winPartyExit(WindowWork* work) {
 s32 winPartyMain(WindowWork* work) {
     s32 k;
 
-    if (work->listCount == 0) {
+    if (work->partyCount == 0) {
         return -1;
     }
 
@@ -240,9 +240,9 @@ s32 winPartyMain(WindowWork* work) {
 
             work->partySel--;
             while (work->partySel < 0) {
-                work->partySel += work->listCount;
+                work->partySel += work->partyCount;
             }
-            work->partyAngleTarget = 360.0f / (f32)work->listCount * (f32)work->partySel;
+            work->partyAngleTarget = 360.0f / (f32)work->partyCount * (f32)work->partySel;
             while (work->partyAngle < work->partyAngleTarget) {
                 work->partyAngle += 360.0f;
             }
@@ -261,10 +261,10 @@ s32 winPartyMain(WindowWork* work) {
             s32 prev = work->partySel;
 
             work->partySel++;
-            while (work->partySel > work->listCount - 1) {
-                work->partySel -= work->listCount;
+            while (work->partySel > work->partyCount - 1) {
+                work->partySel -= work->partyCount;
             }
-            work->partyAngleTarget = 360.0f / (f32)work->listCount * (f32)work->partySel;
+            work->partyAngleTarget = 360.0f / (f32)work->partyCount * (f32)work->partySel;
             while (work->partyAngle > work->partyAngleTarget) {
                 work->partyAngle -= 360.0f;
             }
@@ -415,7 +415,7 @@ void winPartyDisp(CameraId camId, void* param, s32 partyIdx) {
     y = ((f32*)((u8*)work + 0xC8))[partyIdx * 5];
 
     winBgGX(work, 1, x, y);
-    if (work->listCount == 0) {
+    if (work->partyCount == 0) {
         return;
     }
     party = &pouchGetPtr()->partyData[winPartyDt[work->selPartyDt].partnerId];
@@ -473,20 +473,20 @@ void winPartyDisp(CameraId camId, void* param, s32 partyIdx) {
     winZClear();
 
     // the party on its turntable: shadows first, then the models
-    for (i = 0; i < work->listCount; i++) {
+    for (i = 0; i < work->partyCount; i++) {
         Vec pos = {0.0f, 0.0f, 80.0f};
         Mtx tilt, turn;
 
         PSMTXRotRad(tilt, 'x', 0.5235988f);
         PSMTXRotRad(turn, 'y',
-                    0.017453292f * (360.0f / (f32)work->listCount * (f32)i - work->partyAngle));
+                    0.017453292f * (360.0f / (f32)work->partyCount * (f32)i - work->partyAngle));
         PSMTXMultVec(turn, &pos, &pos);
         PSMTXMultVec(tilt, &pos, &pos);
         winKageGX(work, (x - 140.0f) + pos.x, 20.0f + (y + pos.y), pos.z, i == work->partySel ? 0.8f : 0.6f,
                   &(GXColor){0x00, 0x00, 0x00, 0x80});
     }
 
-    for (i = 0; i < work->listCount; i++) {
+    for (i = 0; i < work->partyCount; i++) {
         Vec pos = {0.0f, 0.0f, 80.0f};
         Mtx mtx, scaleMtx, tilt, turn;
         s32 pose = WIN_PARTY_POSE(work, i);
@@ -499,7 +499,7 @@ void winPartyDisp(CameraId camId, void* param, s32 partyIdx) {
         anim = animPoseGetAnimDataPtr(pose);
         PSMTXRotRad(tilt, 'x', 0.5235988f);
         PSMTXRotRad(turn, 'y',
-                    0.017453292f * (360.0f / (f32)work->listCount * (f32)i - work->partyAngle));
+                    0.017453292f * (360.0f / (f32)work->partyCount * (f32)i - work->partyAngle));
         PSMTXMultVec(turn, &pos, &pos);
         PSMTXMultVec(tilt, &pos, &pos);
 
@@ -517,7 +517,7 @@ void winPartyDisp(CameraId camId, void* param, s32 partyIdx) {
                 }
             }
             if (work->flags & 0x2000) {
-                animName = winPartyDt[n].field_0x1C;
+                animName = winPartyDt[n].famicomAnim;
                 if (winPartyDt[n].partnerId == 4) {
                     switch (pouchGetPartyColor(PARTNER_YOSHI)) {
                     case 0: animName = "R_5"; break;
@@ -531,7 +531,7 @@ void winPartyDisp(CameraId camId, void* param, s32 partyIdx) {
                     }
                 }
             } else {
-                animName = winPartyDt[n].waitAnim;
+                animName = winPartyDt[n].anim;
             }
             animPoseSetAnim(pose, animName, 0);
             animPoseSetLocalTime(pose,
@@ -551,7 +551,7 @@ void winPartyDisp(CameraId camId, void* param, s32 partyIdx) {
                 }
             }
             if (work->flags & 0x2000) {
-                animName = winPartyDt[n].field_0x1C;
+                animName = winPartyDt[n].famicomAnim;
                 if (winPartyDt[n].partnerId == 4) {
                     switch (pouchGetPartyColor(PARTNER_YOSHI)) {
                     case 0: animName = "Z_5"; break;
@@ -565,7 +565,7 @@ void winPartyDisp(CameraId camId, void* param, s32 partyIdx) {
                     }
                 }
             } else {
-                animName = winPartyDt[n].waitAnim;
+                animName = winPartyDt[n].anim;
             }
             animPoseSetAnim(pose, animName, 0);
             animPoseSetLocalTime(pose, 0.0f);
@@ -580,7 +580,7 @@ void winPartyDisp(CameraId camId, void* param, s32 partyIdx) {
     }
 
     // the selected member's name
-    if (work->listCount != 0) {
+    if (work->partyCount != 0) {
         winNameGX(work, 0, x - 230.0f, (20.0f + (y - 50.0f)) - 10.0f, 200.0f, 32.0f);
         winFontInit();
         y2 = (20.0f + ((y - 50.0f) - 4.0f)) - 10.0f;
@@ -605,7 +605,7 @@ void winPartyDisp(CameraId camId, void* param, s32 partyIdx) {
     }
 
     // "change partner" prompt and the turntable arrows
-    if (work->listCount > 1) {
+    if (work->partyCount > 1) {
         winFontInit();
         w = 0.8f * FontGetMessageWidth(msgSearch("msg_menu_party_henkou"));
         x2 = (-230.0f - w) / 2.0f + x;

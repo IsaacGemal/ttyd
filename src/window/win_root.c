@@ -32,8 +32,7 @@
 #pragma pool_data on
 #endif
 
-// Extended fields of WindowWork used by this unit. win_main.h only declares the
-// first 0x40 bytes, so the rest are reached through raw offsets below.
+// Fields of WindowWork that win_main.h leaves as padding are reached through raw offsets.
 #define WW_S32(w, off) (*(s32*)((u8*)(w) + (off)))
 #define WW_U32(w, off) (*(u32*)((u8*)(w) + (off)))
 #define WW_PTR(w, off) (*(void**)((u8*)(w) + (off)))
@@ -274,7 +273,7 @@ s32 winRootMain(WindowWork* work) {
     s32 j;
     const char* str;
 
-    switch (WW_S32(work, 0x24)) {
+    switch (work->rootState) {
     case 0:
         psndSFXOn((const char*)0x2002A);
         WW_S32(work, 0x44) = 0;
@@ -318,7 +317,7 @@ s32 winRootMain(WindowWork* work) {
         tab->str = msg_help[4];
         WW_S32(work, 0x44)++;
         for (j = 0; j < WW_S32(work, 0x44); j++) {
-            if (WROOT(work)->tabs[j].id == WW_S32(work, 0x1C)) {
+            if (WROOT(work)->tabs[j].id == work->openTabId) {
                 WW_S32(work, 0x40) = j;
             }
         }
@@ -371,26 +370,26 @@ s32 winRootMain(WindowWork* work) {
         WW_F32(work, 0x168) = -1000.0f;
         str = ((WinRootTab*)((u8*)WROOT(work)->tabs + WW_S32(work, 0x40) * 0x18))->str;
         winMsgEntry(work, 0, str, 0);
-        WW_S32(work, 0x24) = 0xA;
-        switch (WW_S32(work, 0x1C)) {
+        work->rootState = 0xA;
+        switch (work->openTabId) {
         case 1:
             winPartyInit2(work);
-            WW_S32(work, 0x24) = 0xC;
+            work->rootState = 0xC;
             work->flags |= 0x4000;
             break;
         case 2:
             winItemInit2(work);
-            WW_S32(work, 0x24) = 0xD;
+            work->rootState = 0xD;
             work->flags |= 0x4000;
             break;
         case 3:
             winBadgeInit2(work);
-            WW_S32(work, 0x24) = 0xE;
+            work->rootState = 0xE;
             work->flags |= 0x4000;
             break;
         case 4:
             winLogInit2(work);
-            WW_S32(work, 0x24) = 0xF;
+            work->rootState = 0xF;
             work->flags |= 0x4000;
             break;
         }
@@ -404,24 +403,24 @@ s32 winRootMain(WindowWork* work) {
             tab->str = msg_help[1];
             WW_S32(work, 0x44)++;
             winPartyInit2(work);
-            WW_S32(work, 0x24) = 0xC;
+            work->rootState = 0xC;
             WW_S32(work, 0x40) = 0;
         }
-        WW_PTR(work, 0x34) = smartAlloc(GXGetTexBufferSize(gp->fbWidth, gp->efbHeight, 4, 0, 0), 1);
-        WW_S32(work, 0x38) = 0;
+        work->fbCopy = smartAlloc(GXGetTexBufferSize(gp->fbWidth, gp->efbHeight, 4, 0, 0), 1);
+        work->fbCopyReady = 0;
         dispEntry(CAMERA_2D, 1000.0f, 0, (DispCallback)unk_8014d5dc, work);
         break;
     case 10:
         if (work->buttonTrg & 0x1200) {
             if (WW_S32(work, 0xCC) == 0x64) {
-                WW_S32(work, 0x24) = 0x14;
+                work->rootState = 0x14;
             }
             break;
         }
         if (work->buttonTrg & 0x100) {
-            if (((WinRootTab*)((u8*)WROOT(work)->tabs + WW_S32(work, 0x40) * 0x18))->id != 1 || work->listCount != 0) {
+            if (((WinRootTab*)((u8*)WROOT(work)->tabs + WW_S32(work, 0x40) * 0x18))->id != 1 || work->partyCount != 0) {
                 psndSFXOn((const char*)0x20012);
-                WW_S32(work, 0x24) = ((WinRootTab*)((u8*)WROOT(work)->tabs + WW_S32(work, 0x40) * 0x18))->id + 0xB;
+                work->rootState = ((WinRootTab*)((u8*)WROOT(work)->tabs + WW_S32(work, 0x40) * 0x18))->id + 0xB;
                 switch (((WinRootTab*)((u8*)WROOT(work)->tabs + WW_S32(work, 0x40) * 0x18))->id) {
                 case 0:
                     winMarioInit2(work);
@@ -480,7 +479,7 @@ s32 winRootMain(WindowWork* work) {
         break;
     case 100:
         if (((WinRootRec*)((u8*)WROOT(work)->recs + WW_S32(work, 0x40) * 0x14))->d == 0x64) {
-            WW_S32(work, 0x24) = 0xA;
+            work->rootState = 0xA;
         }
         break;
     case 11:
@@ -488,7 +487,7 @@ s32 winRootMain(WindowWork* work) {
     case 13:
     case 14:
     case 15:
-        switch (WW_S32(work, 0x24)) {
+        switch (work->rootState) {
         case 11:
             result = winMarioMain(work);
             break;
@@ -511,12 +510,12 @@ s32 winRootMain(WindowWork* work) {
         if (result == -1) {
             work->targetX = (f32)(WW_S32(work, 0x40) * 0x69 - 0x10E);
             work->targetY = 185.0f;
-            WW_S32(work, 0x24) = 0xA;
+            work->rootState = 0xA;
             str = ((WinRootTab*)((u8*)WROOT(work)->tabs + WW_S32(work, 0x40) * 0x18))->str;
             winMsgEntry(work, 0, str, 0);
             work->flags &= ~0x4000;
         } else if (result == -2) {
-            WW_S32(work, 0x24) = 0x14;
+            work->rootState = 0x14;
             work->flags &= ~0x4000;
         }
         break;
@@ -533,16 +532,16 @@ s32 winRootMain(WindowWork* work) {
         WW_S32(work, 0x130) = 0xA;
         N_mapDispOn();
         camDispOn(CAMERA_3D);
-        WW_S32(work, 0x24)++;
+        work->rootState++;
         break;
     default:
-        if (WW_PTR(work, 0x34) != NULL) {
-            smartFree((smartEntry*)WW_PTR(work, 0x34));
-            WW_PTR(work, 0x34) = NULL;
-            WW_S32(work, 0x38) = 0;
+        if (work->fbCopy != NULL) {
+            smartFree(work->fbCopy);
+            work->fbCopy = NULL;
+            work->fbCopyReady = 0;
         }
-        WW_S32(work, 0x24)++;
-        if (WW_S32(work, 0x24) > 0x32) {
+        work->rootState++;
+        if (work->rootState > 0x32) {
             winMarioExit(work);
             winPartyExit(work);
             winItemExit(work);
@@ -573,7 +572,7 @@ s32 winRootMain(WindowWork* work) {
     winBadgeMain2(work);
     winLogMain2(work);
     winSortMain(work);
-    if (WW_S32(work, 0x24) < 0x14) {
+    if (work->rootState < 0x14) {
         if (work->flags & 0x4000) {
             work->posX += (work->targetX - work->posX) / 4.0f;
             work->posY += (work->targetY - work->posY) / 4.0f;
@@ -654,7 +653,7 @@ void winRootDisp(CameraId camId, WindowWork* work) {
     GXColor bgcolor = {0xFF, 0xFF, 0xFF, 0xFF};
     s32 i;
 
-    if (WW_S32(work, 0x24) == 0) {
+    if (work->rootState == 0) {
         return;
     }
 
@@ -2974,9 +2973,9 @@ void winMailDisp(WindowWork* work) {
 void unk_8014d5dc(s32 unused, WindowWork* work) {
     GXSetTexCopySrc(0, 0, gp->fbWidth, gp->efbHeight);
     GXSetTexCopyDst(gp->fbWidth, gp->efbHeight, GX_TF_RGB565, GX_FALSE);
-    GXCopyTex(**(void***)((u8*)work + 0x34), GX_FALSE);
+    GXCopyTex(work->fbCopy->address, GX_FALSE);
     GXTexModeSync();
-    WW_S32(work, 0x38) = 1;
+    work->fbCopyReady = 1;
     N_mapDispOff();
     camDispOff(4);
 }
@@ -2991,7 +2990,7 @@ void unk_8014d338(s32 unused, WindowWork* work) {
     f32 w;
     f32 h;
 
-    if (WW_S32(work, 0x38) != 0) {
+    if (work->fbCopyReady != 0) {
         GXSetFog(0, 0.0f, 0.0f, 0.0f, 0.0f, (GXColor){0xFF, 0xFF, 0xFF, 0xFF});
         GXSetNumChans(0);
         GXSetChanCtrl(4, 0, 0, 0, 0, 0, 2);
@@ -3006,7 +3005,7 @@ void unk_8014d338(s32 unused, WindowWork* work) {
         GXSetZMode(0, 7, 0);
         GXLoadPosMtxImm(camGetPtr(8)->view, 0);
         GXSetCurrentMtx(0);
-        GXInitTexObj(&texObj, **(void***)((u8*)work + 0x34), gp->fbWidth, gp->efbHeight, 4, 0, 0, 0);
+        GXInitTexObj(&texObj, work->fbCopy->address, gp->fbWidth, gp->efbHeight, 4, 0, 0, 0);
         GXLoadTexObj(&texObj, 0);
         GXSetCullMode(0);
         GXClearVtxDesc();

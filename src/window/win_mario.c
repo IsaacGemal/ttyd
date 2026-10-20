@@ -107,8 +107,8 @@ void winMarioInit(WindowWork* work) {
             anim = "S_4";
             break;
         }
-        work->poseId = animPoseEntry("d_mario", 0);
-        animPoseSetAnim(work->poseId, anim, 1);
+        work->marioPose = animPoseEntry("d_mario", 0);
+        animPoseSetAnim(work->marioPose, anim, 1);
     } else {
         anim = "a_mario";
         switch (marioGetColor()) {
@@ -125,13 +125,13 @@ void winMarioInit(WindowWork* work) {
             anim = "a_mario_wl";
             break;
         }
-        work->poseId = animPoseEntry(anim, 0);
-        animPoseSetAnim(work->poseId, str_8041D578, 1);
+        work->marioPose = animPoseEntry(anim, 0);
+        animPoseSetAnim(work->marioPose, str_8041D578, 1);
     }
 
-    animPoseSetMaterialFlagOn(work->poseId, 0x1800);
+    animPoseSetMaterialFlagOn(work->marioPose, 0x1800);
     if (marioGetPtr()->flags & 0x40000000) {
-        animPoseSetMaterialFlagOn(work->poseId, 0xA000000);
+        animPoseSetMaterialFlagOn(work->marioPose, 0xA000000);
     }
 
     WW_S32(work, 0x18C) = 0;
@@ -176,7 +176,7 @@ void winMarioInit2(WindowWork* work) {
 }
 
 void winMarioExit(WindowWork* work) {
-    animPoseRelease(work->poseId);
+    animPoseRelease(work->marioPose);
 }
 
 // The tail walks its own link pointer (`d2`) so MWCC colours it in r30 and the tail
@@ -245,9 +245,9 @@ s32 winMarioMain(WindowWork* work) {
                 SET_ANIM(str_8041D578);
             }
 #ifdef MUST_MATCH
-            animPoseSetAnim(work->poseId, (const char*)d2, 0);
+            animPoseSetAnim(work->marioPose, (const char*)d2, 0);
 #else
-            animPoseSetAnim(work->poseId, anim, 0);
+            animPoseSetAnim(work->marioPose, anim, 0);
 #endif
 #undef SET_ANIM
             return -1;
@@ -344,9 +344,9 @@ s32 winMarioMain(WindowWork* work) {
                 anim = hammer_pose[pouchGetHammerLv()];
             }
 
-            animPoseSetAnim(work->poseId, anim, 0);
+            animPoseSetAnim(work->marioPose, anim, 0);
             if (WW_S32(work, 0x18C) == 0) {
-                if (animPoseGetLoopTimes(work->poseId) >= 0.89f) {
+                if (animPoseGetLoopTimes(work->marioPose) >= 0.89f) {
                     WW_S32(work, 0x18C) = 30;
                 }
             } else {
@@ -393,7 +393,7 @@ s32 winMarioMain(WindowWork* work) {
             } else {
                 anim = d2->field_4;
             }
-            animPoseSetAnim(work->poseId, anim, 0);
+            animPoseSetAnim(work->marioPose, anim, 0);
                     break;
         }
 
@@ -626,7 +626,7 @@ void fukidashi(WindowWork* work, u32 type, f32 x, f32 y) {
 
 const char* hammer_pose[4] = { NULL, str_8041D584, str_8041D598, str_8041D5A0 };
 
-#define POSE (work->poseId)
+#define POSE (work->marioPose)
 
 void winMarioDisp(CameraId camId, void* param, s32 idx) {
     WindowWork* work = param;
