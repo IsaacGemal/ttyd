@@ -84,9 +84,7 @@ void effBreakMain(EffectEntry* effect) {
     Vec position;
     Vec disp;
     f32 scale;
-#ifdef MUST_MATCH
     f32 t;
-#endif
     s32 max;
     s32 i;
     s32 done;
@@ -96,14 +94,10 @@ void effBreakMain(EffectEntry* effect) {
     disp.y = data->y;
     disp.z = data->z;
     position = disp;
-#ifdef MUST_MATCH
     // The target loads scale into f1, then the constant into f0, and multiplies f0*f1. Keeping the field in a
     // temp and writing the constant first gives that allocation (the pragma above is required for it to hold).
     t = data->scale;
     scale = float_20_804210c0 * t;
-#else
-    scale = data->scale * float_20_804210c0;
-#endif
     max = data->timer;
 
     done = 0;

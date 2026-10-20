@@ -1926,11 +1926,7 @@ HitEntry* itemHitCheckSide(ItemEntry* item, f32* outX, f32* outZ, s32* angle, f3
     *outX = item->position.x;
     *outZ = item->position.z;
 
-#ifdef MUST_MATCH
-    if (0.0f == dirX && 0.0f == dirZ) {
-#else
     if (dirX == 0.0f && dirZ == 0.0f) {
-#endif
         return NULL;
     }
 
