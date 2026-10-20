@@ -1068,7 +1068,7 @@ s32 credits_record_evt(EventEntry* event, BOOL isFirstCall) {
                 }
             }
             evtSetValue(ev, GW(10), 1);
-            evtSetValue(ev, GW(11), ((CreditsEndingRecord*)((u8*)credits_ending_records + index * 0x24))->texId);
+            evtSetValue(ev, GW(11), ((CreditsEndingRecord*)credits_ending_records)[index].texId);
             evtSetValue(ev, GW(12), *pEntry);
             state++;
             break;
@@ -1096,7 +1096,7 @@ s32 credits_record_evt(EventEntry* event, BOOL isFirstCall) {
                 s32 nulls;
 
                 if ((u32)next < 0x32) {
-                    nextRec = (CreditsEndingRecord*)((u8*)credits_ending_records + next * 0x24);
+                    nextRec = &((CreditsEndingRecord*)credits_ending_records)[next];
 
                     nulls = 0;
                     for (n = 0; n < 3; n++) {

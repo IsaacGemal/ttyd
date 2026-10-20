@@ -2,6 +2,7 @@
 
 #include "evt/evt_cmd.h"
 #include "driver/dispdrv.h"
+#include "manager/filemgr.h"
 
 typedef struct ExtTableEntry {
 	const char* name;
@@ -10,7 +11,7 @@ typedef struct ExtTableEntry {
 } ExtTableEntry;
 
 typedef struct SightWork {
-	void* file;     // 0x0
+	FileEntry* file; // 0x0
 	s32 field_4[6]; // 0x4
 	s32 state;      // 0x1C
 	s32 field_20;   // 0x20
@@ -41,7 +42,8 @@ typedef struct PoseState {
 
 typedef struct PoseData {
 	u16 flags;            // 0x0
-	u8 pad_2[6];          // 0x2
+	u8 pad_2[2];          // 0x2
+	s32 field_0x4;        // 0x4
 	PoseEntry entries[8]; // 0x8
 	s32 count;            // 0xA8
 	u8 pad_AC[4];         // 0xAC

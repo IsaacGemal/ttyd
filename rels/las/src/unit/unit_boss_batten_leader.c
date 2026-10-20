@@ -2577,23 +2577,41 @@ USER_FUNC(evt_eff_pokopi_thunder) {
     return EVT_RETURN_DONE;
 }
 
+typedef struct BattenEffUserdata {
+    u8 pad_0x0[0x8];
+    f32 field_0x8;
+    f32 field_0xC;
+    f32 field_0x10;
+    u8 pad_0x14[0x4];
+    s32 field_0x18;
+    s32 field_0x1C;
+    s32 field_0x20;
+    u8 pad_0x24[0x4];
+    s32 field_0x28;
+    s32 field_0x2C;
+    s32 field_0x30;
+    u8 pad_0x34[0x4];
+    f32 field_0x38;
+    f32 field_0x3C;
+} BattenEffUserdata;
+
 USER_FUNC(evt_eff_colorchange00) {
     EffectEntry* effect = effNameToPtr((const char*)evtGetValue(event, event->args[0]));
-    *(s32*)((u8*)effect->userdata + 0x18) = 0xFF;
-    *(s32*)((u8*)effect->userdata + 0x1C) = 0xFF;
-    *(s32*)((u8*)effect->userdata + 0x20) = 0xFF;
-    *(s32*)((u8*)effect->userdata + 0x28) = 0xFF;
-    *(s32*)((u8*)effect->userdata + 0x2C) = 0xF5;
-    *(s32*)((u8*)effect->userdata + 0x30) = 0;
-    *(f32*)((u8*)effect->userdata + 0x8) = 65.0f + *(f32*)((u8*)effect->userdata + 0x8);
-    *(f32*)((u8*)effect->userdata + 0xC) = 10.0f + *(f32*)((u8*)effect->userdata + 0xC);
+    ((BattenEffUserdata*)effect->userdata)->field_0x18 = 0xFF;
+    ((BattenEffUserdata*)effect->userdata)->field_0x1C = 0xFF;
+    ((BattenEffUserdata*)effect->userdata)->field_0x20 = 0xFF;
+    ((BattenEffUserdata*)effect->userdata)->field_0x28 = 0xFF;
+    ((BattenEffUserdata*)effect->userdata)->field_0x2C = 0xF5;
+    ((BattenEffUserdata*)effect->userdata)->field_0x30 = 0;
+    ((BattenEffUserdata*)effect->userdata)->field_0x8 = 65.0f + ((BattenEffUserdata*)effect->userdata)->field_0x8;
+    ((BattenEffUserdata*)effect->userdata)->field_0xC = 10.0f + ((BattenEffUserdata*)effect->userdata)->field_0xC;
     return EVT_RETURN_DONE;
 }
 
 USER_FUNC(evt_eff_barriersizechange) {
     s32* args = event->args;
     EffectEntry* effect = effNameToPtr((const char*)evtGetValue(event, args[0]));
-    *(f32*)((u8*)effect->userdata + 0x10) = evtGetFloat(event, args[1]);
+    ((BattenEffUserdata*)effect->userdata)->field_0x10 = evtGetFloat(event, args[1]);
     return EVT_RETURN_DONE;
 }
 
@@ -2614,8 +2632,8 @@ USER_FUNC(evt_eff_firechange00) {
     target.x = (f32)evtGetValue(event, args[2]);
     target.y = (f32)evtGetValue(event, args[3]);
     target.z = 0.0f;
-    pos.x = *(f32*)((u8*)eff->userdata + 0x38);
-    pos.y = *(f32*)((u8*)eff->userdata + 0x3C);
+    pos.x = ((BattenEffUserdata*)eff->userdata)->field_0x38;
+    pos.y = ((BattenEffUserdata*)eff->userdata)->field_0x3C;
     pos.z = 0.0f;
     if (isFirstCall) {
         event->field_84 = 0;
@@ -2624,12 +2642,12 @@ USER_FUNC(evt_eff_firechange00) {
             PSVECNormalize(&nowv, &nowv);
             maer = (f32)((rand() % 60) - 30);
             maer += (f32)((maer < 0.0f) ? -30 : 31);
-            *(s32*)((u8*)eff->userdata + 0x18) = 0xFF;
-            *(s32*)((u8*)eff->userdata + 0x1C) = 0xFF;
-            *(s32*)((u8*)eff->userdata + 0x20) = 0xFF;
-            *(s32*)((u8*)eff->userdata + 0x28) = 0xFF;
-            *(s32*)((u8*)eff->userdata + 0x2C) = 0x41;
-            *(s32*)((u8*)eff->userdata + 0x30) = 0x14;
+            ((BattenEffUserdata*)eff->userdata)->field_0x18 = 0xFF;
+            ((BattenEffUserdata*)eff->userdata)->field_0x1C = 0xFF;
+            ((BattenEffUserdata*)eff->userdata)->field_0x20 = 0xFF;
+            ((BattenEffUserdata*)eff->userdata)->field_0x28 = 0xFF;
+            ((BattenEffUserdata*)eff->userdata)->field_0x2C = 0x41;
+            ((BattenEffUserdata*)eff->userdata)->field_0x30 = 0x14;
         }
     }
     switch (event->field_84) {
@@ -2668,14 +2686,14 @@ USER_FUNC(evt_eff_firechange00) {
     PSVECScale(&nowv, &v, 15.0f);
     PSVECAdd(&pos, &v, &pos);
     if (pos.y < 10.0f) {
-        if (*(f32*)((u8*)eff->userdata + 0x3C) >= 10.0f) {
+        if (((BattenEffUserdata*)eff->userdata)->field_0x3C >= 10.0f) {
             nowv.y = -nowv.y;
         } else if (nowv.y < 0.0f) {
             nowv.y = -nowv.y;
         }
     }
-    *(f32*)((u8*)eff->userdata + 0x38) = pos.x;
-    *(f32*)((u8*)eff->userdata + 0x3C) = pos.y;
+    ((BattenEffUserdata*)eff->userdata)->field_0x38 = pos.x;
+    ((BattenEffUserdata*)eff->userdata)->field_0x3C = pos.y;
     switch (event->field_84) {
         case 0:
             if (PSVECSquareDistance(&pos, &target) < 225.0f) {
@@ -2700,18 +2718,18 @@ static USER_FUNC(eff_staff) {
     s32* args = event->args;
     BattleUnit* unit;
     s32 id;
-    u8* data;
+    EffSyuryouData* data;
     f32 x, y, z;
     f32 faceDir;
     id = BattleTransID(event, evtGetValue(event, args[0]));
     unit = BattleGetUnitPtr(_battleWorkPointer, id);
-    data = (u8*)effSyuryouEntry(0, 0x5A, 0.0f, -1000.0f, 0.0f)->userdata;
+    data = effSyuryouEntry(0, 0x5A, 0.0f, -1000.0f, 0.0f)->userdata;
     BtlUnit_GetPos(unit, &x, &y, &z);
     faceDir = (f32)unit->faceDirection;
-    *(f32*)(data + 0x4) = 6.0f * (unit->mSizeMultiplier * faceDir) + x;
-    *(f32*)(data + 0x8) = 68.0f * unit->mSizeMultiplier + y;
-    *(f32*)(data + 0xC) = 5.0f + z;
-    *(f32*)(data + 0x10) = unit->mSizeMultiplier;
+    data->position.x = 6.0f * (unit->mSizeMultiplier * faceDir) + x;
+    data->position.y = 68.0f * unit->mSizeMultiplier + y;
+    data->position.z = 5.0f + z;
+    data->scale = unit->mSizeMultiplier;
     return EVT_RETURN_DONE;
 }
 
@@ -2787,12 +2805,12 @@ USER_FUNC(check_satellite) {
             unit->work[8] = (s32)effSyuryouEntry(1, 0x3E8, 0.0f, -1000.0f, 0.0f);
         }
         if (unit->work[8] != 0) {
-            u8* data = (u8*)((EffectEntry*)unit->work[8])->userdata;
+            EffSyuryouData* data = ((EffectEntry*)unit->work[8])->userdata;
             BtlUnit_GetPos(unit, &x, &y, &z);
-            *(f32*)(data + 0x4) = x;
-            *(f32*)(data + 0x8) = y - 12.5f * unit->mSizeMultiplier;
-            *(f32*)(data + 0xC) = z + 10.0f;
-            *(f32*)(data + 0x10) = 2.5f * unit->mSizeMultiplier;
+            data->position.x = x;
+            data->position.y = y - 12.5f * unit->mSizeMultiplier;
+            data->position.z = z + 10.0f;
+            data->scale = 2.5f * unit->mSizeMultiplier;
         }
         bodyPart->attributes |= 0x40000000;
         part2->attributes |= 0x20000000;
@@ -3023,44 +3041,52 @@ USER_FUNC(unk_las_0000d538) {
 
 #pragma opt_propagation reset
 
+typedef struct BattenSatelliteSpline {
+    s32 field_0x0;
+    s32 field_0x4;
+    s32 field_0x8[5];
+    s32 field_0x1C[15];
+    s32 field_0x58;
+} BattenSatelliteSpline;
+
 s32 battenSatelliteTo_Init(struct BattleUnit* unit, s32 index, s32* table) {
-    u8* data;
+    BattenSatelliteSpline* data;
     struct BattleUnit* sat;
-    data = (u8*)__memAlloc(4, 0x5C);
+    data = __memAlloc(4, 0x5C);
     if (unit->work[9 + index] == -1) {
         return 0;
     }
     unit->work[13 + index] = (s32)data;
-    *(s32*)(data + 0x0) = 5;
-    *(s32*)(data + 0x4) = (s32)table;
-    *(s32*)(data + 0x58) = 0;
-    spline_maketable(5, *(s32*)(data + 0x4), (s32*)(data + 8), (s32*)(data + 0x1C));
+    data->field_0x0 = 5;
+    data->field_0x4 = (s32)table;
+    data->field_0x58 = 0;
+    spline_maketable(5, data->field_0x4, data->field_0x8, data->field_0x1C);
     sat = BattleGetUnitPtr(_battleWorkPointer, unit->work[9 + index]);
     BtlUnit_GetPartsPtr(sat, 1)->work[1] = (s32)table;
     return 1;
 }
 
 s32 battenSatelliteTo_Main(struct BattleUnit* unit, s32 index) {
-    u8* data;
+    BattenSatelliteSpline* data;
     struct BattleUnit* sat;
     f32 pos[3];
     f32 spline[3];
     if (unit->work[9 + index] == -1) {
         return 0;
     }
-    data = (u8*)unit->work[13 + index];
+    data = (BattenSatelliteSpline*)unit->work[13 + index];
     if (data == NULL) {
         return 0;
     }
-    if (*(s32*)(data + 0x58) >= 0x3C) {
+    if (data->field_0x58 >= 0x3C) {
         if (data != NULL) {
             __memFree(4, data);
             unit->work[13 + index] = 0;
         }
         return 0;
     }
-    spline_getvalue(spline, *(s32*)(data + 0x0), *(s32*)(data + 0x4), (s32)(data + 8), (s32)(data + 0x1C),
-                    intplGetValue(4, *(s32*)(data + 0x58), 0x3C, 0.0f, 1.0f));
+    spline_getvalue(spline, data->field_0x0, data->field_0x4, (s32)data->field_0x8, (s32)data->field_0x1C,
+                    intplGetValue(4, data->field_0x58, 0x3C, 0.0f, 1.0f));
     sat = BattleGetUnitPtr(_battleWorkPointer, unit->work[9 + index]);
     if (sat == NULL) {
         return 0;
@@ -3068,7 +3094,7 @@ s32 battenSatelliteTo_Main(struct BattleUnit* unit, s32 index) {
     BtlUnit_GetPos(unit, &pos[0], &pos[1], &pos[2]);
     BtlUnit_SetPos(sat, spline[0] * (f32)unit->faceDirection + pos[0], 5.0f + (pos[1] + spline[1]), pos[2] + spline[2]);
     BtlUnit_SetHomePos(sat, spline[0] * (f32)unit->faceDirection + pos[0], 5.0f + (pos[1] + spline[1]), pos[2] + spline[2]);
-    *(s32*)(data + 0x58) += 1;
+    data->field_0x58 += 1;
     return 1;
 }
 
@@ -3078,17 +3104,17 @@ s32 battenSatelliteTo_Main(struct BattleUnit* unit, s32 index) {
 // same symbol twice is behaviourally identical (the pointer never changes) and is required to reproduce the
 // original's register allocation; a plain 3-arg call leaves both functions 80 bytes short.
 static inline s32 battenSatelliteTo_InitInline(struct BattleUnit* unit, s32 index, s32* volatile table, s32* inv) {
-    u8* data;
+    BattenSatelliteSpline* data;
     struct BattleUnit* sat;
-    data = (u8*)__memAlloc(4, 0x5C);
+    data = __memAlloc(4, 0x5C);
     if (unit->work[9 + index] == -1) {
         return 0;
     }
     unit->work[13 + index] = (s32)data;
-    *(s32*)(data + 0x0) = 5;
-    *(s32*)(data + 0x4) = (s32)table;
-    *(s32*)(data + 0x58) = 0;
-    spline_maketable(5, *(s32*)(data + 0x4), (s32*)(data + 8), (s32*)(data + 0x1C));
+    data->field_0x0 = 5;
+    data->field_0x4 = (s32)table;
+    data->field_0x58 = 0;
+    spline_maketable(5, data->field_0x4, data->field_0x8, data->field_0x1C);
     sat = BattleGetUnitPtr(_battleWorkPointer, unit->work[9 + index]);
     BtlUnit_GetPartsPtr(sat, 1)->work[1] = (s32)inv;
     return 1;

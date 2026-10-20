@@ -151,7 +151,7 @@ void unk_800cd9a0(void) {
             party->height = float_37;
             *(s32*)((u8*)party + 0x178) = 0;
             *(s32*)((u8*)party + 0x17C) = 0;
-            *(s32*)((u8*)party + 0x180) = 0;
+            party->tail.koops.field_180 = 0;
         }
         if (party->field_34 != 8 && party->field_34 != 0xD) {
             partyChgRunMode(party, 2);
@@ -179,7 +179,7 @@ void nokonoko_use_post(PartyEntry* party) {
     party->height = float_37;
     *(s32*)((u8*)party + 0x178) = 0;
     *(s32*)((u8*)party + 0x17C) = 0;
-    *(s32*)((u8*)party + 0x180) = 0;
+    party->tail.koops.field_180 = 0;
 }
 
 // The `NKF(0x10C) = revise360(50.0f * f2 + NKF(0x10C))` updates stay raw: `party->field_10C` there
@@ -231,7 +231,7 @@ void nokonoko_use(PartyEntry* party) {
         party->tail.koops.heldItem = NULL;
         NKS(0x178) = 0;
         NKS(0x17c) = 0;
-        NKS(0x180) = 0;
+        party->tail.koops.field_180 = 0;
         if (party->flags & PARTY_FLAG_IS_EVT_USE) {
             if (party->unk16C > 0) {
                 party->tail.koops.moveFlags |= 0x1;
@@ -1014,7 +1014,7 @@ void nokonoko_finish(PartyEntry* party) {
     party->height = float_37;
     *(s32*)((u8*)party + 0x178) = 0;
     *(s32*)((u8*)party + 0x17C) = 0;
-    *(s32*)((u8*)party + 0x180) = 0;
+    party->tail.koops.field_180 = 0;
     if (party->field_34 == 9) {
         return;
     }
