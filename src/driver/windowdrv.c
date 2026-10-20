@@ -115,7 +115,7 @@ void windowReInit(void) {
 	entry[6].userdata = NULL;
 }
 
-s32 windowEntry(u16 a1) {
+s32 windowEntry(u16 priority) {
 	WindowEntry* entry;
 	int i;
 
@@ -123,7 +123,7 @@ s32 windowEntry(u16 a1) {
 		if (!(entry->flags & 1)) {
 			memset(entry, 0, sizeof(WindowEntry));
 			entry->flags = 1;
-			entry->priority = a1;
+			entry->priority = priority;
 			return i;
 		}
 	}
