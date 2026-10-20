@@ -430,7 +430,7 @@ void shadowMain(void) {
 // inline puts them the other way round. The independent form is under #else.
 static inline void shadowDispMatColor(void) {
     GXColor c = cswp->color;
-    GXSetChanMatColor(4, c);
+    GXSetChanMatColor(GX_COLOR0A0, c);
 }
 #endif
 
@@ -671,7 +671,7 @@ void shadowCharShadowDisp_Projection(CameraId camId, void* param) {
     GXSetNumChans(1);
     GXSetChanCtrl(GX_COLOR0A0, GX_FALSE, GX_SRC_REG, GX_SRC_REG, GX_LIGHT_NULL, GX_DF_CLAMP, GX_AF_NONE);
 #ifdef MUST_MATCH
-    SHADOW_MAT_COLOR(4, pMatColor, cswp->color);
+    SHADOW_MAT_COLOR(GX_COLOR0A0, pMatColor, cswp->color);
 #else
     GXSetChanMatColor(GX_COLOR0A0, cswp->color);
 #endif
@@ -700,7 +700,7 @@ void shadowCharShadowDisp_Projection(CameraId camId, void* param) {
     GXSetBlendMode(GX_BM_NONE, GX_BL_SRCALPHA, GX_BL_INVSRCALPHA, GX_LO_CLEAR);
     if (gp->inBattle != 0) {
 #ifdef MUST_MATCH
-        SHADOW_MAT_COLOR(4, pBattleColor, dat_804198e4);
+        SHADOW_MAT_COLOR(GX_COLOR0A0, pBattleColor, dat_804198e4);
 #else
         GXSetChanMatColor(GX_COLOR0A0, dat_804198e4);
 #endif
@@ -823,7 +823,7 @@ void shadowCharShadowDisp_Projection(CameraId camId, void* param) {
 // colour inline puts them the other way round. The independent form is under #else.
 static inline void shadowPolyMatColor(void) {
     GXColor c = cswp->color;
-    GXSetChanMatColor(4, c);
+    GXSetChanMatColor(GX_COLOR0A0, c);
 }
 #endif
 
@@ -907,7 +907,7 @@ void shadowCharShadowDisp_Polygon(CameraId camId, void* param) {
 // colour inline puts them the other way round. The independent form is under #else.
 static inline void shadowTexMatColor(void) {
     GXColor c = cswp->color;
-    GXSetChanMatColor(4, c);
+    GXSetChanMatColor(GX_COLOR0A0, c);
 }
 #endif
 
@@ -1094,11 +1094,11 @@ void cylinder(ShadowEntry* entry) {
 static inline void shadowTevColor(u8 a) {
     GXColor c = unk_80422fa0;
     c.a = a;
-    GXSetTevColor(1, c);
+    GXSetTevColor(GX_TEVREG0, c);
 }
 
 static inline void shadowMatColor(GXColor c) {
-    GXSetChanMatColor(4, c);
+    GXSetChanMatColor(GX_COLOR0A0, c);
 }
 #endif
 
