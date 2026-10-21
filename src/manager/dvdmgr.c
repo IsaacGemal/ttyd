@@ -22,7 +22,7 @@ static DVDMgrCallback _callback;
 BOOL dvdmgr_thread_on;
 
 //local prototypes
-static s32 compare(const void** a, const void** b);
+static int compare(const void* a, const void* b);
 
 void* proc_main(void* param) { //1:1
     while (1) {
@@ -48,11 +48,11 @@ void DVDMgrDelete(void) { //1:1
     }
 }
 
-static s32 compare(const void** a, const void** b) { //1:1
+static int compare(const void* a, const void* b) { //1:1
     u8 value1, value2;
     
-    value1 = (u8)dvdq[*(u8*)a].priority;
-    value2 = (u8)dvdq[*(u8*)b].priority;
+    value1 = (u8)dvdq[*(const u8*)a].priority;
+    value2 = (u8)dvdq[*(const u8*)b].priority;
     if (value1 > value2) {
         return 1;
     }
@@ -82,7 +82,7 @@ void DVDMgrMain(void) { //1:1
         }
     }
     
-    qqsort(array, count, sizeof(u8), (int (*)(void*, void*))compare);
+    qqsort(array, count, sizeof(u8), compare);
     
     for (table = array, i = 0; i < count; table++, i++) {
         valid = FALSE;

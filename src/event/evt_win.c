@@ -17,7 +17,7 @@
 #include "mario/mariost.h"
 #include <dolphin/mtx.h>
 #include "manager/fontmgr.h"
-void FontDrawColor(GXColor* color);
+void FontDrawColor(GXColor color);
 // LOCAL_PROTO(iconDispGx): this file passes the flags and icon id as u16 (clrlwi), not s16/s32.
 void iconDispGx(f32 scale, Vec* position, u16 flags, u16 iconId);
 #include "driver/camdrv.h"
@@ -35,11 +35,6 @@ void iconDispGx(f32 scale, Vec* position, u16 flags, u16 iconId);
 #include "evt/evt_lottery.h"
 #include "mario/mario_party.h"
 #include <stdio.h>
-
-// The colour by value: these callers copy it to the stack before passing its address.
-static inline void FontDrawColorV(GXColor color) {
-	FontDrawColor(&color);
-}
 
 // evt_unitwin_disp_func is a display callback, not an event command.
 
@@ -292,7 +287,6 @@ void unitwin_selltable_disp(WinMgrEntry* entry) {
 	Mtx mtx;
 	Vec pos;
 	char buf[0x40];
-	GXColor titleColor;
 	const char* msg;
 	s32 i;
 
@@ -300,8 +294,7 @@ void unitwin_selltable_disp(WinMgrEntry* entry) {
 	if (winMgrAction(wp->winId[0]) == 0) {
 		FontDrawStart();
 		FontDrawEdge();
-		*(u32*)&titleColor = dat_8041d9b4;
-		FontDrawColor(&titleColor);
+		FontDrawColor(*(GXColor*)&dat_8041d9b4);
 		FontDrawString((f32)(-(s32)FontGetMessageWidth(msg) / 2), float_108_8041dadc[0], msg);
 		FontDrawEdgeOff();
 	}
@@ -330,16 +323,12 @@ void unitwin_help_main(WinMgrEntry* entry) {
 	winMgrHelpMain(entry);
 }
 
-// The original keeps the byte offset (index*4) in a register across winMgrAction
-// and indexes with lwzx; writing `list[wp->index]` makes the compiler defer the
-// shift past the call, so compute the byte offset explicitly.
 void unitwin_help_disp(WinMgrEntry* entry) {
 	UnitWinWork* wp = _wp;
-	s32 offset = wp->index * 4;
-	s32* list = wp->items;
+	s32* item = &wp->items[wp->index];
 
 	if (!winMgrAction(wp->winId[1])) {
-		entry->message = msgSearch(itemDataTable[*(s32*)((u8*)list + offset)].description);
+		entry->message = msgSearch(itemDataTable[*item].description);
 		winMgrHelpDraw(entry);
 	}
 }
@@ -719,7 +708,7 @@ void evt_unitwin_disp_func(CameraId cameraId, void* param) {
 		                      float_50_8041dad4[0], float_20_8041dad8[0], 0, *(GXColor*)&dat_8041d9c0);
 		FontDrawStart();
 		FontDrawEdge();
-		FontDrawColorV(*(GXColor*)&dat_8041d9c4);
+		FontDrawColor(*(GXColor*)&dat_8041d9c4);
 		len = strlen(sellName);
 		FontDrawString((f32)(s32)(((len * 0x18) >> 2) * -1), float_108_8041dadc[0], sellName);
 		FontDrawEdgeOff();
@@ -873,7 +862,7 @@ void evt_unitwin_disp_func(CameraId cameraId, void* param) {
 		                      float_8_8041daf0[0], 0, *(GXColor*)&dat_8041d9ec);
 		FontDrawStart();
 		FontDrawEdge();
-		FontDrawColorV(*(GXColor*)&dat_8041d9f0);
+		FontDrawColor(*(GXColor*)&dat_8041d9f0);
 		FontDrawString(float_81_8041db58[0], float_111_8041db5c[0], msgSearch("msg_window_title_1"));
 		FontDrawEdgeOff();
 		GXGetScissor(&scX, &scY, &scW, &scH);
@@ -969,7 +958,7 @@ void evt_unitwin_disp_func(CameraId cameraId, void* param) {
 		                      float_8_8041daf0[0], 0, *(GXColor*)&dat_8041d9fc);
 		FontDrawStart();
 		FontDrawEdge();
-		FontDrawColorV(*(GXColor*)&dat_8041da00);
+		FontDrawColor(*(GXColor*)&dat_8041da00);
 		FontDrawString((f32)(xofs + 0x33), float_111_8041db5c[0], title);
 		FontDrawEdgeOff();
 
@@ -1064,7 +1053,7 @@ void evt_unitwin_disp_func(CameraId cameraId, void* param) {
 				FontDrawStart();
 				FontDrawScale(0.800000011920929f);
 				{
-					FontDrawColorV(icolor);
+					FontDrawColor(icolor);
 				}
 				FontDrawString(36.0f, wp->listY + (f32)(0x50 - dispCnt * 0x18) - 2.0f, data->id);
 				if (wp->mode != 3) {
@@ -1109,7 +1098,7 @@ void evt_unitwin_disp_func(CameraId cameraId, void* param) {
 					FontDrawStart();
 					FontDrawScale(scale);
 					{
-						FontDrawColorV(icolor);
+						FontDrawColor(icolor);
 					}
 					FontDrawString((f32)(x + 0xE2), wp->listY + (f32)(0x50 - dispCnt * 0x18), buf);
 				}
@@ -1154,7 +1143,7 @@ void evt_unitwin_disp_func(CameraId cameraId, void* param) {
 		                      float_8_8041daf0[0], 0, *(GXColor*)&dat_8041da18);
 		FontDrawStart();
 		FontDrawEdge();
-		FontDrawColorV(*(GXColor*)&dat_8041da1c);
+		FontDrawColor(*(GXColor*)&dat_8041da1c);
 		FontDrawString(71.0f, float_111_8041db5c[0], title);
 		FontDrawEdgeOff();
 		if (wp->mode == 0x11) {
@@ -1186,13 +1175,13 @@ void evt_unitwin_disp_func(CameraId cameraId, void* param) {
 			FontDrawStart();
 			saved = ((char*)info->initEndPos)[info->tagEndPos];
 			((char*)info->initEndPos)[info->tagEndPos] = 0;
-			FontDrawColorV(tcolor);
+			FontDrawColor(tcolor);
 			FontDrawScale(0.800000011920929f);
 			FontDrawString(1.0f, wp->listY + (f32)(0x50 - i * 0x18), (char*)info->initEndPos);
 			((char*)info->initEndPos)[info->tagEndPos] = saved;
 			if (wp->mode == 0x11) {
 				FontDrawStart();
-				FontDrawColorV(tcolor);
+				FontDrawColor(tcolor);
 				FontDrawString(221.0f, wp->listY + (f32)(0x50 - i * 0x18), buf);
 			}
 		}
@@ -1218,14 +1207,14 @@ void evt_unitwin_disp_func(CameraId cameraId, void* param) {
 		                      float_8_8041daf0[0], 0, *(GXColor*)&dat_8041da30);
 		FontDrawStart();
 		FontDrawEdge();
-		FontDrawColorV(*(GXColor*)&dat_8041da34);
+		FontDrawColor(*(GXColor*)&dat_8041da34);
 		FontDrawString(41.0f, float_111_8041db5c[0], msgSearch("msg_window_title_7"));
 		FontDrawEdgeOff();
 		windowDispGX_Waku_col(167.0f, float_114_8041db50[0], 85.0f, float_28_8041db54[0], float_8_8041daf0[0], 0,
 		                      *(GXColor*)&dat_8041da38);
 		FontDrawStart();
 		FontDrawEdge();
-		FontDrawColorV(*(GXColor*)&dat_8041da3c);
+		FontDrawColor(*(GXColor*)&dat_8041da3c);
 		FontDrawString(177.0f, float_111_8041db5c[0], msgSearch("msg_window_title_8"));
 		FontDrawEdgeOff();
 		GXGetScissor(&scX, &scY, &scW, &scH);
@@ -1279,7 +1268,7 @@ void evt_unitwin_disp_func(CameraId cameraId, void* param) {
 
 			iconDispGx(0.5f, &(Vec){ 11.0f, wp->listY + (f32)(0x38 - dispCnt * 0x18), 0.0f }, flag | 0x10, unitwin_party_icon(party_icon_table[i]));
 			FontDrawStart();
-			FontDrawColorV(nameColor);
+			FontDrawColor(nameColor);
 			name = unitwin_party_name(i);
 			FontDrawString(36.0f, wp->listY + (f32)(0x50 - dispCnt * 0x18), name);
 			sprintf(buf, "%d", pouch->partyData[party_id_table[i]].techLevel);
@@ -1329,14 +1318,14 @@ void evt_unitwin_disp_func(CameraId cameraId, void* param) {
 		                      float_8_8041daf0[0], 0, *(GXColor*)&dat_8041da60);
 		FontDrawStart();
 		FontDrawEdge();
-		FontDrawColorV(*(GXColor*)&dat_8041da64);
+		FontDrawColor(*(GXColor*)&dat_8041da64);
 		FontDrawString(21.0f, float_111_8041db5c[0], msgSearch("msg_window_title_9"));
 		FontDrawEdgeOff();
 		windowDispGX_Waku_col(167.0f, float_114_8041db50[0], 85.0f, float_28_8041db54[0], float_8_8041daf0[0], 0,
 		                      *(GXColor*)&dat_8041da68);
 		FontDrawStart();
 		FontDrawEdge();
-		FontDrawColorV(*(GXColor*)&dat_8041da6c);
+		FontDrawColor(*(GXColor*)&dat_8041da6c);
 		FontDrawString(177.0f, float_111_8041db5c[0], msgSearch("msg_window_title_10"));
 		FontDrawEdgeOff();
 		GXGetScissor(&scX, &scY, &scW, &scH);
@@ -1365,7 +1354,7 @@ void evt_unitwin_disp_func(CameraId cameraId, void* param) {
 			}
 			iconDispGx(0.5f, &(Vec){ 11.0f, wp->listY + (f32)(0x38 - dispCnt * 0x18), 0.0f }, flag | 0x10, mario_status_icon_table[i]);
 			FontDrawStart();
-			FontDrawColorV(rowColor);
+			FontDrawColor(rowColor);
 			sprintf(num, "%s%3d", mario_status_name_table[i], mario_status_point_table[i][0]);
 			FontDrawString(36.0f, wp->listY + (f32)(0x50 - dispCnt * 0x18), num);
 			blink = ((gp->retraceCount & 0xF) > 7) ? 0 : 2;
@@ -1429,14 +1418,14 @@ void evt_unitwin_disp_func(CameraId cameraId, void* param) {
 		                      float_8_8041daf0[0], 0, *(GXColor*)&dat_8041da80);
 		FontDrawStart();
 		FontDrawEdge();
-		FontDrawColorV(*(GXColor*)&dat_8041da84);
+		FontDrawColor(*(GXColor*)&dat_8041da84);
 		FontDrawString(21.0f, float_111_8041db5c[0], msgSearch("msg_window_title_9"));
 		FontDrawEdgeOff();
 		windowDispGX_Waku_col(167.0f, float_114_8041db50[0], 85.0f, float_28_8041db54[0], float_8_8041daf0[0], 0,
 		                      *(GXColor*)&dat_8041da88);
 		FontDrawStart();
 		FontDrawEdge();
-		FontDrawColorV(*(GXColor*)&dat_8041da8c);
+		FontDrawColor(*(GXColor*)&dat_8041da8c);
 		FontDrawString(177.0f, float_111_8041db5c[0], msgSearch("msg_window_title_10"));
 		FontDrawEdgeOff();
 		GXGetScissor(&scX, &scY, &scW, &scH);
@@ -1465,7 +1454,7 @@ void evt_unitwin_disp_func(CameraId cameraId, void* param) {
 			}
 			iconDispGx(0.5f, &(Vec){ 11.0f, wp->listY + (f32)(0x38 - dispCnt * 0x18), 0.0f }, flag | 0x10, mario_status_icon_table[i]);
 			FontDrawStart();
-			FontDrawColorV(rowColor);
+			FontDrawColor(rowColor);
 			sprintf(num, "%s%3d", mario_status_name_table[i], mario_status_point_table[i][0]);
 			FontDrawString(36.0f, wp->listY + (f32)(0x50 - dispCnt * 0x18), num);
 			blink = ((gp->retraceCount & 0xF) > 7) ? 0 : 2;
@@ -1512,14 +1501,14 @@ void evt_unitwin_disp_func(CameraId cameraId, void* param) {
 		                      float_8_8041daf0[0], 0, *(GXColor*)&dat_8041daa0);
 		FontDrawStart();
 		FontDrawEdge();
-		FontDrawColorV(*(GXColor*)&dat_8041daa4);
+		FontDrawColor(*(GXColor*)&dat_8041daa4);
 		FontDrawString(21.0f, float_111_8041db5c[0], msgSearch("msg_window_title_9"));
 		FontDrawEdgeOff();
 		windowDispGX_Waku_col(167.0f, float_114_8041db50[0], 85.0f, float_28_8041db54[0], float_8_8041daf0[0], 0,
 		                      *(GXColor*)&dat_8041daa8);
 		FontDrawStart();
 		FontDrawEdge();
-		FontDrawColorV(*(GXColor*)&dat_8041daac);
+		FontDrawColor(*(GXColor*)&dat_8041daac);
 		FontDrawString(177.0f, float_111_8041db5c[0], msgSearch("msg_window_title_10"));
 		FontDrawEdgeOff();
 		GXGetScissor(&scX, &scY, &scW, &scH);
@@ -1542,7 +1531,7 @@ void evt_unitwin_disp_func(CameraId cameraId, void* param) {
 			}
 			iconDispGx(0.5f, &(Vec){ 11.0f, wp->listY + (f32)(0x38 - dispCnt * 0x18), 0.0f }, flag | 0x10, mario_status_icon_table[i]);
 			FontDrawStart();
-			FontDrawColorV(rowColor);
+			FontDrawColor(rowColor);
 			sprintf(num, "%s%3d", mario_status_name_table[i], mario_status_point_table[i][0]);
 			FontDrawString(36.0f, wp->listY + (f32)(0x50 - dispCnt * 0x18), num);
 			blink = ((gp->retraceCount & 0xF) > 7) ? 0 : 2;
@@ -1684,26 +1673,15 @@ USER_FUNC(unitwin_getpartylank) {
 	return EVT_RETURN_DONE;
 }
 
-// The original keeps the byte offset (id * sizeof(PouchPartyData)) in r30 and
-// recomputes the final `pouch + id * sizeof` in a volatile register after the
-// pouchRevisePartyParam call, rather than caching a single element pointer.
 USER_FUNC(unitwin_setpartylank) {
-	s32 id;
-	s32 offset;
-	s32 lank;
 	s32* args = event->args;
 	PouchData* pouch = pouchGetPtr();
+	s32 id = evtGetValue(event, args[0]);
 
-	id = evtGetValue(event, args[0]);
-	offset = id * sizeof(PouchPartyData);
-	lank = evtGetValue(event, args[1]);
-
-	((PouchPartyData*)((u8*)pouch + offset))->techLevel = lank;
-	((PouchPartyData*)((u8*)pouch + offset))->attackLevel = lank;
-	((PouchPartyData*)((u8*)pouch + offset))->HPLevel = lank;
+	pouch->partyData[id].HPLevel = pouch->partyData[id].attackLevel = pouch->partyData[id].techLevel =
+	    evtGetValue(event, args[1]);
 	pouchRevisePartyParam();
-	((PouchPartyData*)((u8*)pouch + id * sizeof(PouchPartyData)))->currentHP =
-	    ((PouchPartyData*)((u8*)pouch + id * sizeof(PouchPartyData)))->maximumHP;
+	pouch->partyData[id].currentHP = pouch->partyData[id].maximumHP;
 	return EVT_RETURN_DONE;
 }
 

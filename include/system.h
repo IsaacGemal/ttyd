@@ -13,7 +13,7 @@ f32 intplGetValue(s32 mode, f32 start, f32 end, s32 currStep, s32 steps);
 // Callers write (mode, currStep, steps, start, end). The original evaluates the two f32 arguments before the step
 // counters, which is what the argument order of the declaration above gives; the registers are the same either way.
 #define intplGetValue(mode, currStep, steps, start, end) intplGetValue(mode, start, end, currStep, steps)
-void qqsort(void* base, u32 n, u32 size, int (*compare)(void*, void*));
+void qqsort(void* base, u32 n, u32 size, int (*compare)(const void*, const void*));
 void makeKey(void);
 u32 keyGetButton(u32 chan);
 u32 keyGetButtonTrg(u32 chan);

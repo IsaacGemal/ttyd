@@ -30,6 +30,19 @@
 #define WINMGR_F32(name) (name)
 #endif
 
+// The window font and icon functions and GXSetFog take their Vecs and colours by value, which MWCC passes as a pointer
+// to a caller copy. Retail's select displays pass their own locals' addresses (GXSetFog the fog colour's own slot):
+// by value, MWCC copies each argument into a fresh temporary instead, which moves every stack slot.
+#ifdef MUST_MATCH
+#define GXSetFog(type, startz, endz, nearz, farz, color) \
+    ((void (*)(s32, f32, f32, f32, f32, GXColor*))GXSetFog)(type, startz, endz, nearz, farz, &(color))
+#define winFontSet(pos, scale, color, msg) \
+    ((void (*)(Vec*, Vec*, GXColor*, const char*, ...))winFontSet)(&(pos), &(scale), &(color), msg)
+#define winFontSetEdge(pos, scale, color, msg) \
+    ((void (*)(Vec*, Vec*, GXColor*, const char*, ...))winFontSetEdge)(&(pos), &(scale), &(color), msg)
+#define winIconSet(id, pos, scale, color) ((void (*)(s32, Vec*, Vec*, GXColor*))winIconSet)(id, &(pos), &(scale), &(color))
+#endif
+
 extern u16 menu_skip_list[]; // Keep unsized: retail forms its address with lis/addi instead of @sda21.
 extern ItemData itemDataTable[];
 
@@ -459,15 +472,7 @@ void select_disp_luigi(WinMgrEntry* entry) {
     }
 
     fogColor = dat_80421a70;
-#ifdef MUST_MATCH
-    // The original stores the fog colour in fogColor's own slot (0x18) and passes a
-    // pointer to it; with the by-value GXSetFog prototype MWCC copies it to a call temp at 0xc and
-    // the loop/edge/title colour locals move to 0x18/0x14/0x10. The cast only changes the calling
-    // convention (GXSetFog reads the colour, never writes it) and reproduces the original slots.
-    ((void (*)(s32, f32, f32, f32, f32, GXColor*))GXSetFog)(GX_FOG_NONE, 0.0f, 0.0f, 0.0f, 0.0f, &fogColor);
-#else
     GXSetFog(GX_FOG_NONE, 0.0f, 0.0f, 0.0f, 0.0f, fogColor);
-#endif
     GXGetScissor(&scissorLeft, &scissorTop, &scissorWidth, &scissorHeight);
     GXSetScissor(entry->x + 0x130, 0x112 - entry->y, entry->width, entry->height - 0x32);
 
@@ -498,7 +503,7 @@ void select_disp_luigi(WinMgrEntry* entry) {
             rowY = (f32)(entry->y - 0x20 - i * 0x18);
             tmpRow.y = select->baseY + (zero + rowY);
             posRow = tmpRow;
-            winFontSet(&posRow, &scaleRow, &color, (const char*)info->initEndPos);
+            winFontSet(posRow, scaleRow, color, (const char*)info->initEndPos);
         }
         ((char*)info->initEndPos)[info->tagEndPos] = saved;
 
@@ -515,7 +520,7 @@ void select_disp_luigi(WinMgrEntry* entry) {
             edgeY = (f32)(entry->y - 0x20 - i * 0x18);
             tmpEdge.y = select->baseY + (zero + edgeY);
             posEdge = tmpEdge;
-            winFontSet(&posEdge, &scaleEdge, &color, buf);
+            winFontSet(posEdge, scaleEdge, color, buf);
         }
     }
 
@@ -541,7 +546,7 @@ void select_disp_luigi(WinMgrEntry* entry) {
         tmpTitle.x = (f32)(entry->x + x);
         tmpTitle.y = (f32)(entry->y + 0xe);
         posTitle = tmpTitle;
-        winFontSetEdge(&posTitle, &scaleTitle, &color, msg);
+        winFontSetEdge(posTitle, scaleTitle, color, msg);
     }
 
     switch (select->kind) {
@@ -624,11 +629,7 @@ void select_disp_mario(WinMgrEntry* entry) {
     }
 
     fogColor = dat_80421a60;
-#ifdef MUST_MATCH
-    ((void (*)(s32, f32, f32, f32, f32, GXColor*))GXSetFog)(GX_FOG_NONE, 0.0f, 0.0f, 0.0f, 0.0f, &fogColor);
-#else
     GXSetFog(GX_FOG_NONE, 0.0f, 0.0f, 0.0f, 0.0f, fogColor);
-#endif
     GXGetScissor(&scissorLeft, &scissorTop, &scissorWidth, &scissorHeight);
     GXSetScissor(entry->x + 0x130, 0x112 - entry->y, entry->width, entry->height - 0x32);
 
@@ -665,7 +666,7 @@ void select_disp_mario(WinMgrEntry* entry) {
             rowY = (f32)(entry->y - 0x20 - i * 0x18);
             tmpName.y = select->baseY + (zero + rowY);
             posName = tmpName;
-            winFontSet(&posName, &scaleName, &color, mario_status_name_table[status]);
+            winFontSet(posName, scaleName, color, mario_status_name_table[status]);
         }
 
         if (select->items[i].flags & 1) {
@@ -683,7 +684,7 @@ void select_disp_mario(WinMgrEntry* entry) {
             rowY = (f32)(entry->y - 0x2c - i * 0x18);
             tmpIcon.y = select->baseY + (zero + rowY);
             posIcon = tmpIcon;
-            winIconSet(mario_status_icon_table[status], &posIcon, &scaleIcon, &color);
+            winIconSet(mario_status_icon_table[status], posIcon, scaleIcon, color);
         }
 
         sprintf(buf, "%3d", mario_status_point_table[status][0]);
@@ -699,7 +700,7 @@ void select_disp_mario(WinMgrEntry* entry) {
             rowY = (f32)(entry->y - 0x20 - i * 0x18);
             tmpPoint.y = select->baseY + (zero + rowY);
             posPoint = tmpPoint;
-            winFontSet(&posPoint, &scalePoint, &color, buf);
+            winFontSet(posPoint, scalePoint, color, buf);
         }
 
         if (!(select->items[i].flags & 2)) {
@@ -724,7 +725,7 @@ void select_disp_mario(WinMgrEntry* entry) {
                 rowY = (f32)(entry->y - 0x20 - i * 0x18);
                 tmpHenka.y = select->baseY + (zero + rowY);
                 posHenka = tmpHenka;
-                winFontSet(&posHenka, &scaleHenka, &color, buf);
+                winFontSet(posHenka, scaleHenka, color, buf);
             }
 
             winIconInit();
@@ -738,7 +739,7 @@ void select_disp_mario(WinMgrEntry* entry) {
                 rowY = (f32)(entry->y - 0x2c - i * 0x18);
                 tmpIcon2.y = select->baseY + (zero + rowY);
                 posIcon2 = tmpIcon2;
-                winIconSet(0x163, &posIcon2, &scaleIcon2, &color);
+                winIconSet(0x163, posIcon2, scaleIcon2, color);
             }
         }
     }
@@ -756,7 +757,7 @@ void select_disp_mario(WinMgrEntry* entry) {
         tmpTitle.x = (f32)(entry->x + (entry->width * 3 / 5 - 0x78) * 2 / 3 + x);
         tmpTitle.y = (f32)(entry->y + 0xe);
         posTitle = tmpTitle;
-        winFontSetEdge(&posTitle, &scaleTitle, &color, msg);
+        winFontSetEdge(posTitle, scaleTitle, color, msg);
     }
 
     msg = msgSearch("msg_window_title_10");
@@ -770,7 +771,7 @@ void select_disp_mario(WinMgrEntry* entry) {
         tmpTitle2.x = (f32)(entry->x + entry->width * 3 / 5 + (entry->width * 2 / 5 - 0x55) / 3 + x);
         tmpTitle2.y = (f32)(entry->y + 0xe);
         posTitle2 = tmpTitle2;
-        winFontSetEdge(&posTitle2, &scaleTitle2, &color, msg);
+        winFontSetEdge(posTitle2, scaleTitle2, color, msg);
     }
 
     posMain = vec3_802ffc9c;
@@ -850,13 +851,7 @@ void select_disp_party(WinMgrEntry* entry) {
     }
 
     fogColor = dat_80421a50;
-#ifdef MUST_MATCH
-    // The original stores the fog colour in fogColor's own slot and passes a pointer
-    // to it; with the by-value GXSetFog prototype MWCC copies it to a call temp. Same as select_disp.
-    ((void (*)(s32, f32, f32, f32, f32, GXColor*))GXSetFog)(GX_FOG_NONE, 0.0f, 0.0f, 0.0f, 0.0f, &fogColor);
-#else
     GXSetFog(GX_FOG_NONE, 0.0f, 0.0f, 0.0f, 0.0f, fogColor);
-#endif
     GXGetScissor(&scissorLeft, &scissorTop, &scissorWidth, &scissorHeight);
     GXSetScissor(entry->x + 0x130, 0x112 - entry->y, entry->width, entry->height - 0x32);
 
@@ -978,7 +973,7 @@ void select_disp_party(WinMgrEntry* entry) {
                 n3 = msgSearch(party_name_msg6);
                 break;
             }
-            winFontSet(&posName, &scaleName, &color, n3);
+            winFontSet(posName, scaleName, color, n3);
         }
 
         if (select->items[i].flags & 1) {
@@ -1026,7 +1021,7 @@ void select_disp_party(WinMgrEntry* entry) {
                     break;
                 }
             }
-            winIconSet(icon, &posIcon, &scaleIcon, &color);
+            winIconSet(icon, posIcon, scaleIcon, color);
         }
 
         {
@@ -1055,7 +1050,7 @@ void select_disp_party(WinMgrEntry* entry) {
                     rowY = (f32)(entry->y - 0x2c - i * 0x18);
                     tmpArrow.y = select->baseY + (zero + rowY);
                     posArrow = tmpArrow;
-                    winIconSet(0x102, &posArrow, &scaleArrow, &c);
+                    winIconSet(0x102, posArrow, scaleArrow, c);
                 }
             }
         }
@@ -1074,7 +1069,7 @@ void select_disp_party(WinMgrEntry* entry) {
         tmpTitle.x = (f32)(entry->x + (entry->width * 3 / 5 - 0x78) * 2 / 3 + x);
         tmpTitle.y = (f32)(entry->y + 0xe);
         posTitle = tmpTitle;
-        winFontSetEdge(&posTitle, &scaleTitle, &color, msg);
+        winFontSetEdge(posTitle, scaleTitle, color, msg);
     }
 
     msg = msgSearch("msg_window_title_8");
@@ -1088,7 +1083,7 @@ void select_disp_party(WinMgrEntry* entry) {
         tmpTitle2.x = (f32)(entry->x + entry->width * 3 / 5 + (entry->width * 2 / 5 - 0x55) / 3 + x);
         tmpTitle2.y = (f32)(entry->y + 0xe);
         posTitle2 = tmpTitle2;
-        winFontSetEdge(&posTitle2, &scaleTitle2, &color, msg);
+        winFontSetEdge(posTitle2, scaleTitle2, color, msg);
     }
 
     posMain = vec3_802ffbd0;
@@ -1174,13 +1169,7 @@ void select_disp(WinMgrEntry* entry) {
     }
 
     fogColor = dat_80421a34;
-#ifdef MUST_MATCH
-    // The original stores the fog colour in fogColor's own slot and passes a pointer
-    // to it; with the by-value GXSetFog prototype MWCC copies it to a call temp. Same as select_disp_luigi.
-    ((void (*)(s32, f32, f32, f32, f32, GXColor*))GXSetFog)(GX_FOG_NONE, 0.0f, 0.0f, 0.0f, 0.0f, &fogColor);
-#else
     GXSetFog(GX_FOG_NONE, 0.0f, 0.0f, 0.0f, 0.0f, fogColor);
-#endif
     GXGetScissor(&scissorLeft, &scissorTop, &scissorWidth, &scissorHeight);
     GXSetScissor(entry->x + 0x130, 0x112 - entry->y, entry->width, entry->height - 0x32);
 
@@ -1219,7 +1208,7 @@ void select_disp(WinMgrEntry* entry) {
             rowY = (f32)(entry->y - 0x2c - i * 0x18);
             tmpRow.y = select->baseY + (zero + rowY);
             posRow = tmpRow;
-            winIconSet(*(u16*)&item->icon_id, &posRow, &scaleRow, &color);
+            winIconSet(*(u16*)&item->icon_id, posRow, scaleRow, color);
         }
         winFontInit();
         {
@@ -1232,7 +1221,7 @@ void select_disp(WinMgrEntry* entry) {
             nameY = (f32)(entry->y - 0x20 - i * 0x18);
             tmpName.y = select->baseY + (zero + nameY);
             posName = tmpName;
-            winFontSet(&posName, &scaleName, &color, msgSearch(item->name));
+            winFontSet(posName, scaleName, color, msgSearch(item->name));
         }
 
         hasValue = 0;
@@ -1279,7 +1268,7 @@ void select_disp(WinMgrEntry* entry) {
             tmpEdge.x = edgeX;
             tmpEdge.y = select->baseY + (zero + edgeY);
             posEdge = tmpEdge;
-            winFontSet(&posEdge, &scaleEdge, &color, buf);
+            winFontSet(posEdge, scaleEdge, color, buf);
         }
 
     }
@@ -1298,7 +1287,7 @@ void select_disp(WinMgrEntry* entry) {
             tmpDot.x = dotX;
             tmpDot.y = dotY;
             posDot = tmpDot;
-            winIconSet(0x1b7, &posDot, &scaleDot, &color);
+            winIconSet(0x1b7, posDot, scaleDot, color);
         }
     }
 
@@ -1336,7 +1325,7 @@ void select_disp(WinMgrEntry* entry) {
         tmpTitle.x = (f32)(entry->x + x);
         tmpTitle.y = (f32)(entry->y + 0xe);
         posTitle = tmpTitle;
-        winFontSetEdge(&posTitle, &scaleTitle, &color, msg);
+        winFontSetEdge(posTitle, scaleTitle, color, msg);
     }
 
         switch (select->kind) {
@@ -1973,7 +1962,7 @@ WinMgrSelect* winMgrSelectEntry(s32 kind, s32 firstItem, BOOL canCancel) {
                 select->items[select->numItems++].id = i + BADGE_MIN;
             }
         }
-        qqsort(select->items, select->numItems, 4, (int (*)(void*, void*))winMgrSelectCmpTypeSort);
+        qqsort(select->items, select->numItems, 4, winMgrSelectCmpTypeSort);
         break;
     case 13:
         {
@@ -1998,7 +1987,7 @@ WinMgrSelect* winMgrSelectEntry(s32 kind, s32 firstItem, BOOL canCancel) {
                     select->numItems++;
                 }
             }
-            qqsort(select->items, select->numItems, 4, (int (*)(void*, void*))winMgrSelectCmpStarPrice);
+            qqsort(select->items, select->numItems, 4, winMgrSelectCmpStarPrice);
         }
         break;
     case 14:
@@ -2094,9 +2083,9 @@ WinMgrSelect* winMgrSelectEntry(s32 kind, s32 firstItem, BOOL canCancel) {
     return select;
 }
 
-s32 winMgrSelectCmpStarPrice(void* a, void* b) {
-    u32 va = itemDataTable[((WinMgrSelectItem*)a)->id].star_piece_price;
-    u32 vb = itemDataTable[((WinMgrSelectItem*)b)->id].star_piece_price;
+int winMgrSelectCmpStarPrice(const void* a, const void* b) {
+    u32 va = itemDataTable[((const WinMgrSelectItem*)a)->id].star_piece_price;
+    u32 vb = itemDataTable[((const WinMgrSelectItem*)b)->id].star_piece_price;
 
     if (va > vb) {
         return 1;
@@ -2104,9 +2093,9 @@ s32 winMgrSelectCmpStarPrice(void* a, void* b) {
     return va < vb ? -1 : 0;
 }
 
-s32 winMgrSelectCmpTypeSort(void* a, void* b) {
-    s32 va = itemDataTable[((WinMgrSelectItem*)a)->id].type_sort_order;
-    s32 vb = itemDataTable[((WinMgrSelectItem*)b)->id].type_sort_order;
+int winMgrSelectCmpTypeSort(const void* a, const void* b) {
+    s32 va = itemDataTable[((const WinMgrSelectItem*)a)->id].type_sort_order;
+    s32 vb = itemDataTable[((const WinMgrSelectItem*)b)->id].type_sort_order;
 
     if (va > vb) {
         return 1;

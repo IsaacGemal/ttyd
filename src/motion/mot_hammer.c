@@ -63,11 +63,13 @@ s32 marioGetHammerLevel(void) {
     return pouchGetPtr()->hammerLevel;
 }
 
+#ifdef MUST_MATCH
 // Inline helper for the `type == 7 ? 3 : type` clamp: through a helper the type lands in r0 and the clamped
 // value in r3, as in the target; the plain expression swaps the two.
 static inline s32 clampHammerType(s32 t) {
     return (t == 7) ? 3 : t;
 }
+#endif
 
 // The `type == 7 ? 3 : type` clamp, the se_data update order, the switches, the pool and every callee-saved
 // register (base r31, mario r30, r28/r29, f30/f31) match. The pose-time clamp `b <= 10 ? b : 10` is branchy
@@ -198,7 +200,11 @@ void mot_hammer(void) {
             break;
         }
         if (type != 0) {
+#ifdef MUST_MATCH
             M_S32(mario, 0x2A0) = clampHammerType(type);
+#else
+            M_S32(mario, 0x2A0) = (type == 7) ? 3 : type;
+#endif
             mario->flags |= 0x800;
         } else {
             mario->flags &= ~0x800;

@@ -17,7 +17,7 @@ LightEntry paperCraft;
 LightEntry booLight;
 
 //local prototypes
-static s32 _sort(const void* a, const void* b);
+static int _sort(const void* a, const void* b);
 
 #define lightGetWork() (mapGetActiveGroup() == 1 ? &work[1] : &work[0])
 
@@ -207,7 +207,7 @@ typedef struct LightNearObj {
 	f32 distance;
 } LightNearObj;
 
-s32 _sort(const void* a, const void* b) {
+int _sort(const void* a, const void* b) {
 	f32 value2, value1;
 
 	value1 = ((const LightNearObj*)a)->distance;
@@ -240,7 +240,7 @@ s32 lightGetNearObj(Vec* position, LightEntry** entries, s32 count, LightEntryFl
 				num++;
 			}
 		}
-		qqsort(near, num, sizeof(LightNearObj), (int (*)(void*, void*))_sort);
+		qqsort(near, num, sizeof(LightNearObj), _sort);
 	} else {
 		p = wp->entries;
 		num = 0;

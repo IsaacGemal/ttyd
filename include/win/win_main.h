@@ -156,7 +156,7 @@ typedef struct WindowWork {
 
 typedef struct WindowPartyDt {
     s32 partnerId;            // 0x0, PARTNER_* id (win_party, win_item)
-    s32 iconId;               // 0x4, icon drawn beside the partner (win_item winIconSetV)
+    s32 iconId;               // 0x4, icon drawn beside the partner (win_item winIconSet)
     const char* nameMsg;      // 0x8, msg key for the partner's name
     const char* descMsg;      // 0xC, msg key for the partner's description
     const char* model;        // 0x10, animPose model shown in win_party ("EFF_m_kuriko", "c_vivian", ...)
@@ -180,11 +180,11 @@ void winTexInit(TEXPalette* texture);
 void winTexSet(u32 textureId, Vec translate, Vec scale, GXColor color);
 void winIconInit(void);
 void winFontInit(void);
-void winFontSet(Vec* pos, Vec* scale, GXColor* color, const char* format, ...);
-void winFontSetLabel(Vec* pos, Vec* scale, GXColor* color, const char* tag);
-void winFontSetEdge(Vec* pos, Vec* scale, GXColor* color, const char* format, ...);
-void winFontSetR(Vec* pos, Vec* scale, GXColor* color, const char* format, ...);
-void winIconSet(s32 iconId, Vec* translate, Vec* scale, GXColor* color);
+void winFontSet(Vec pos, Vec scale, GXColor color, const char* format, ...);
+void winFontSetLabel(Vec pos, Vec scale, GXColor color, const char* tag);
+void winFontSetEdge(Vec pos, Vec scale, GXColor color, const char* format, ...);
+void winFontSetR(Vec pos, Vec scale, GXColor color, const char* format, ...);
+void winIconSet(s32 iconId, Vec translate, Vec scale, GXColor color);
 void winTexInit_x2(TEXPalette* texture);
 void unk_80177008(u32 textureId, Vec translate, Vec scale, GXColor color);
 void winTexSet_x2(u32 textureId, u32 textureId2, Vec translate, Vec scale, GXColor color);

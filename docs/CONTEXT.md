@@ -5144,3 +5144,91 @@ volatile/pun/function-pointer-cast tricks stay.
   this pass's seven were that, fixed by declaring the local wider. The others left (krb_comp_dir, winmgr case 13,
   battle_damage's `(s8)rate`) have been tried with every local width; the callee's prototype
   types (int vs s32 parameters) are the untried lever, and need a tree-wide build per change.
+
+## The six worst files by the cleanup index, deep-cleaned (2026-10-21, Claude Opus 5.5, n9-q-o-worst)
+
+Task (Isaac): take evt_win, win_root, winmgr, mot_hammer, win_item and seq_load (the worst per kLOC in
+`cleanup_index.py --top 15`) each as a whole, in every category except field naming: raw offsets, MUST_MATCH
+blocks, pragmas, gotos and function-pointer casts, with the levers from #1099-#1109. Their address names are all
+colour and Vec templates (`dat_`, `vec3_`), which stay by the naming rules, so the work was the five hack categories.
+
+- **Method.** Untracked harness in build/tow/: try.sh compiles one unit with its ninja command and runs obj_equiv
+  against objects saved from c9183558; var.py applies OLD/NEW blocks (in the unit or any header), compiles, reports
+  EQUIV or the per-function normalised asm diff, and restores; fdiff.sh diffs one function. Every commit: obj_equiv
+  EQUIV for every touched unit, `build/G8MJ01/ok` recreated, tools/ci.py PASS with its tools/tests step stubbed (the
+  same 9 environment errors: test_wave_launch's systemd scopes and no `elftools` for test_reloc_value_check),
+  fncast_lint and local_prototypes clean. After the header changes, every object was built under
+  `configure.py --non-matching` (all compile; only the link fails, as before).
+- **The window draw helpers take their Vecs and colour by value.** winFontSet, winFontSetR, winFontSetEdge,
+  winFontSetLabel, winFontSetPitch and winIconSet are now defined and declared (window/win_main.h and win/win_main.h)
+  by value; the definitions compile to the same code, since MWCC passes a by-value struct as a pointer to a caller
+  copy. Every caller in win_root, win_item, win_party, win_mario, win_badge and win_log already passed them by value,
+  through MUST_MATCH casts (`winFontSetV` and friends) or invented wrapper inlines (`winMailIconV`, `winMsgEdgeV`,
+  `monoFontV`, `winIconSetV`, the natural arms' va_list forwarders); those calls are direct now and the wrappers are
+  gone. winmgr's select displays are the one caller that passes its locals' own addresses (also for GXSetFog's fog
+  colour): by value, MWCC copies each argument into a new temporary and every stack slot moves (all five display
+  functions differ, 3-430 lines; passing the `tmp` locals directly drops retail's `pos = tmp` copy). winmgr keeps
+  those calls under one MUST_MATCH block of pointer-passing macros named after the functions, so its call sites read
+  as plain by-value calls in both builds; the four per-call GXSetFog regions went into the same block.
+- **qqsort takes `int (*)(const void*, const void*)`** (and fsort's static `comp`). win_root's comparators already
+  took `const void*` (the const reproduces a hoisted prologue load; `void*` parameters move it), and its `void*`
+  ones compile the same with const, so all twelve comparator casts went. The other users follow, each EQUIV:
+  winmgr's two select comparators, lightdrv, dispdrv, dvdmgr, evt_nannpc and evt_badgeshop return `int` from
+  `const void*` uncast; comp_kind/comp_kind_r too; extdrv/punidrv's `compare` gained const. mario_pouch's
+  comp_aiueo/_r keep their `(const s16*, s16*)` parameters (a codegen device, documented there), cast to the API
+  type.
+- **Raw offsets that became typed.** evt_win unitwin_help_disp: `s32* item = &wp->items[wp->index]` keeps base
+  and scaled index apart for retail's lwzx. unitwin_setpartylank: the three levels as one chained assignment
+  `HPLevel = attackLevel = techLevel = evtGetValue(...)` evaluates the element address before the second
+  evtGetValue, which is where retail's `mulli` sits (#1104 had listed both as "multiply on the wrong side of the
+  call"). seq_load: the four save-slot scans read `card->saves[i].data.flags`; converted together, MWCC's own
+  strength reduction gives retail's running offset, and the one difference left (the later sound-cursor copy
+  moved r25 -> r24) goes when `i`, not the old offset local, holds the previous sound cursor. win_root
+  compare_func4/_r read the mail list's byte pairs through `const u8*` locals and type mailGetPtr's result.
+- **MUST_MATCH regions that went.** win_root winMsgDisp's comma-form icon read is `itemDataTable[n].icon_id` (plain matches since the call no
+  longer goes through the wrapper). The five window-file by-value cast blocks, winmgr's four GXSetFog regions.
+  evt_win's FontDrawColorV and seq_load's loadDrawColor existed only to copy the colour under a pointer prototype:
+  both files declare FontDrawColor by value as fontmgr.c defines it (the documented exception allows it), and
+  evt_win's title colour is passed straight from its .sdata2 word, which drops a local and a u32 store pun.
+- **Counts** (tools/cleanup_index.py, c9183558 -> this branch): index 15.315 -> 15.163 per kLOC (10682 -> 10573
+  weighted); fn_ptr_cast 103 -> 66, must_match 800 -> 792, raw_offset 351 -> 338, field_0x 4627 -> 4626;
+  opt_pragma 777, goto 115, address_name 2635 unchanged. Per file (`--top`, per kLOC; raw / must_match / pragma /
+  fn_ptr_cast, gotos 0 throughout):
+  - evt_win 134.543 -> 128.076 (215 -> 203 weighted): 6/2/0/0 -> 0/2/0/0
+  - win_root 87.438 -> 74.460 (229 -> 193): 4/6/0/12 -> 0/3/0/0
+  - winmgr 82.700 -> 79.821 (185 -> 178): 0/13/3/6 -> 0/10/3/4
+  - mot_hammer 166.480 -> 169.811 (149 -> 153): 10/6/6/0 -> 11/8/6/0 (clampHammerType guarded, plain `#else`)
+  - win_item 136.531 -> 132.004 (148 -> 139): 2/2/0/4 -> 2/1/0/0
+  - seq_load 102.484 -> 97.179 (132 -> 124): 7/2/0/0 -> 3/2/0/0
+  Outside the six: win_party 14 -> 5, win_mario 61 -> 52, win_badge 23 -> 18, mario_pouch 24 -> 16, evt_nannpc,
+  evt_badgeshop, lightdrv, dispdrv and dvdmgr 2 each lower.
+- **Left, with what was tried.**
+  - evt_win: the `notCtrl || (notKey = !marioChkKey(), notKey)` comma (15 shapes; the closest, a `BOOL ng` set from
+    both calls and tested once, is 3 lines off: `srwi` + `cmpwi` for retail's `srwi.`), and the `unitwin_icon_delete`
+    stripped-function placeholder (data).
+  - win_root: winMsgDisp's `(10.0f + (x - 250.0f)) - 10.0f` (`x - 250.0f` in `#else`), the redundant `!= 0 &&`
+    before `> 0` (1 line off plain) and winHakoGX's retail uninitialised `row`.
+  - winmgr: WINMGR_F32 (pool), the by-value block above, three guarded `defer_codegen` pragmas (emission order), three
+    volatile `firstItem` dead compares, the anti-hoist Vec reloads, and case 13's `(s16)badgeShop_get`: with any local
+    type (s16, u16, s32, int) and declaration placement only `v`'s register differs (r25 for r26).
+  - mot_hammer: the M_S16/M_U16/M_S32 calls at 0x2A0, 0x2A4 and 0x2B8 need a member of a type their unions don't
+    have, and the `field_0xNN` name at each offset is already taken by a differently typed member (koopa_motion's u16
+    pair, the shared f32s), so a placeholder member can't be added. The four camera-parameter blocks' volatile stores
+    (plain or reordered: 26-30 lines; mot_jabara and mot_roll write the same setter with a `(Vec){0, 40, 0}` compound
+    literal, which here would need vec3_802c5a80 to become an anonymous .rodata entry), the dead attribute compare,
+    hitEstimate's forced `dir3` copy (143-205 lines). Pragmas: without opt_propagation only effUltraHammerEntry's
+    argument loads reorder (5 shapes tried); without opt_dead_assignments or opt_common_subs, 11 and 179 lines.
+  - win_item: winItemMain's `itemSel` byte-offset element pointer (10 shapes; only a separate `s32* sels` base local
+    matches, a steering temp) and item_disp's `entry + 0x2E8` walk (natural `work->skipList[i]` swaps r25/r26 with
+    `half`; declaration order and int types make no difference); the STR_* string macros (data layout).
+  - seq_load: the three `(wp->cursor << 14) + 0x2000` reads (retail's lhzx with the constant in the index; struct
+    indexing folds it into the displacement, 6-24 lines, five spellings) and the two volatile colour reads.
+- **For a reviewer.** winmgr's macros shadow the four function names under MUST_MATCH (the cast family, guarded,
+  moved from five files to the one caller that differs). The header changes are prototypes only: window/win_main.h
+  and win/win_main.h (six each), system.h, win_root.h, winmgr.h, evt_nannpc.h, evt_badgeshop.h; no WindowWork field
+  was touched. mot_hammer's `clampHammerType` (an invented name) is a MUST_MATCH-only register-steering inline.
+- **Leads.** seq_load's volatile colour reads might go plain if its colours were writable `.sdata2` words like
+  evt_win's (a data-definition change, out of scope here). winmgr's tmp/pos/scale copies read like compound literals
+  passed by value, which would need its vec3 templates as anonymous .rodata (data layout). Converting every site in a
+  function at once, not one at a time, is what made seq_load's loops match: a single conversion's register ripple
+  can hide a form that matches when applied throughout.

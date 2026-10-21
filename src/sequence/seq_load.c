@@ -8,7 +8,7 @@
 #include "driver/icondrv.h"
 #include "driver/windowdrv.h"
 #include "manager/fontmgr.h"
-void FontDrawColor(GXColor* color);
+void FontDrawColor(GXColor color);
 #include "sdk/texPalette.h"
 #include "win/win_main.h"
 #include "window/win_mario.h"
@@ -346,7 +346,6 @@ void loadMain(SequenceWork* workArg) {
     s32 code = cardGetCode();
     MarioWork* mario;
     s32 i;
-    s32 off;
     u16 flag;
     CardData* card;
 
@@ -366,15 +365,13 @@ void loadMain(SequenceWork* workArg) {
     wp->prevCardCode = code;
 
     i = 0;
-    off = 0;
     while (i < 4) {
         card = cardGetFilePtr();
-        flag = *(u16*)((u8*)card + off + 0x2000);
+        flag = card->saves[i].data.flags;
         if (!(flag & 1) || (flag & 2)) {
             break;
         }
         i++;
-        off += 0x4000;
     }
     if (i < 4) {
         wp->flags &= ~0x10;
@@ -382,22 +379,18 @@ void loadMain(SequenceWork* workArg) {
         wp->flags |= 0x10;
     }
 
-    // This scan counts in `off` and steps the byte offset in `i` (the first scan's roles swapped);
-    // the frontend numbers each local's later webs together, which is what gives retail's registers.
-    off = 0;
     i = 0;
     wp->flags &= ~0x20;
-    while (off < 4) {
+    while (i < 4) {
         card = cardGetFilePtr();
-        flag = *(u16*)((u8*)card + i + 0x2000);
+        flag = card->saves[i].data.flags;
         if ((flag & 1) || (flag & 2)) {
-            off++;
-            i += 0x4000;
+            i++;
         } else {
             break;
         }
     }
-    if (off >= 4) {
+    if (i >= 4) {
         wp->flags |= 0x20;
     }
 
@@ -438,15 +431,13 @@ void loadMain(SequenceWork* workArg) {
                     case 4:
                         if (!(wp->flags & 0x10)) {
                             i = 0;
-                            off = 0;
                             while (i < 4) {
                                 card = cardGetFilePtr();
-                                flag = *(u16*)((u8*)card + off + 0x2000);
+                                flag = card->saves[i].data.flags;
                                 if (!(flag & 1) || (flag & 2)) {
                                     break;
                                 }
                                 i++;
-                                off += 0x4000;
                             }
                             if (i < 4) {
                                 psndSFXOn((const char*)0x12);
@@ -460,13 +451,11 @@ void loadMain(SequenceWork* workArg) {
                     case 5:
                         if (!(wp->flags & 0x20)) {
                             i = 0;
-                            off = 0;
                             while (i < 4) {
                                 card = cardGetFilePtr();
-                                flag = *(u16*)((u8*)card + off + 0x2000);
+                                flag = card->saves[i].data.flags;
                                 if ((flag & 2) || (flag & 1)) {
                                     i++;
-                                    off += 0x4000;
                                 } else {
                                     break;
                                 }
@@ -792,15 +781,15 @@ void loadMain(SequenceWork* workArg) {
 
         case 0x64:
             wp->flags |= 1;
-            off = wp->soundCursor;
+            i = wp->soundCursor; // the cursor before this frame's input
             if (dir & 0x1000) {
-                wp->soundCursor = off - 1;
+                wp->soundCursor = i - 1;
                 psndSFXOn((const char*)5);
             } else if (dir & 0x2000) {
-                wp->soundCursor = off + 1;
+                wp->soundCursor = i + 1;
                 psndSFXOn((const char*)5);
             } else if (btn & 0x100) {
-                switch (off) {
+                switch (i) {
                     case 0:
                         OSSetSoundMode(0);
                         gp->soundSurround = 0;
@@ -847,7 +836,7 @@ void loadMain(SequenceWork* workArg) {
                 wp->soundCursor = 2;
             }
             mode = wp->soundCursor;
-            if (mode != off) {
+            if (mode != i) {
                 switch (mode) {
                     case 0:
                         SoundSetOutputMode(SND_OUTPUTMODE_MONO);
@@ -950,13 +939,6 @@ static inline Vec loadDrawVec(f32 x, f32 y, Vec base) {
 static inline Vec loadDrawVecY(f32 y, Vec base) {
     base.y = y;
     return base;
-}
-
-// Retail passes these colours by value (MWCC copies the GXColor to a stack temp and passes its
-// address to FontDrawColor); this file declares it with a pointer, so a plain FontDrawColor(&global) does
-// not copy. Taking the colour by value forces the copy in both builds.
-static inline void loadDrawColor(GXColor color) {
-    FontDrawColor(&color);
 }
 
 void loadDraw(void) {
@@ -1073,12 +1055,12 @@ void loadDraw(void) {
 
         FontDrawStart();
 #ifdef MUST_MATCH
-        loadDrawColor(*(volatile GXColor*)&dat_8041bd98); // volatile read: retail reloads the colour at each call
+        FontDrawColor(*(volatile GXColor*)&dat_8041bd98); // volatile read: retail reloads the colour at each call
 #else
-        loadDrawColor(dat_8041bd98);
+        FontDrawColor(dat_8041bd98);
 #endif
         if (i == wp->cursor) {
-            loadDrawColor(dat_8041bd9c);
+            FontDrawColor(dat_8041bd9c);
         }
         FontDrawScale(0.6f);
         FontDrawEdge();
@@ -1087,12 +1069,12 @@ void loadDraw(void) {
         FontDrawEdgeOff();
         FontDrawScale(1.0f);
 #ifdef MUST_MATCH
-        loadDrawColor(*(volatile GXColor*)&dat_8041bda0); // volatile read: retail reloads the colour at each call
+        FontDrawColor(*(volatile GXColor*)&dat_8041bda0); // volatile read: retail reloads the colour at each call
 #else
-        loadDrawColor(dat_8041bda0);
+        FontDrawColor(dat_8041bda0);
 #endif
         if (i == wp->cursor) {
-            loadDrawColor(dat_8041bda4);
+            FontDrawColor(dat_8041bda4);
         }
 
         if (flags & 2) {

@@ -635,7 +635,7 @@ void winFontInit(void) {
     FontDrawStart();
 }
 
-void winFontSet(Vec* pos, Vec* scale, GXColor* color, const char* format, ...) {
+void winFontSet(Vec pos, Vec scale, GXColor color, const char* format, ...) {
     char buf[0x400];
     Mtx mtx1;
     Mtx mtx2;
@@ -645,15 +645,15 @@ void winFontSet(Vec* pos, Vec* scale, GXColor* color, const char* format, ...) {
     va_start(args, format);
     vsprintf(buf, format, args);
     va_end(args);
-    PSMTXTrans(mtx1, pos->x, pos->y, pos->z);
-    PSMTXScale(mtx2, scale->x, scale->y, scale->z);
+    PSMTXTrans(mtx1, pos.x, pos.y, pos.z);
+    PSMTXScale(mtx2, scale.x, scale.y, scale.z);
     PSMTXConcat(mtx1, mtx2, mtx1);
-    c = *color;
+    c = color;
     FontDrawColor(&c);
     FontDrawMessageMtx(mtx1, buf);
 }
 
-void winFontSetR(Vec* pos, Vec* scale, GXColor* color, const char* format, ...) {
+void winFontSetR(Vec pos, Vec scale, GXColor color, const char* format, ...) {
     char buf[0x400];
     Mtx mtx1;
     Mtx mtx2;
@@ -665,15 +665,15 @@ void winFontSetR(Vec* pos, Vec* scale, GXColor* color, const char* format, ...) 
     vsprintf(buf, format, args);
     va_end(args);
     diff = FontGetMessageWidth("\202X\202X\202X") - FontGetMessageWidth(buf);
-    PSMTXTrans(mtx1, pos->x + scale->x * (f32)diff, pos->y, pos->z);
-    PSMTXScale(mtx2, scale->x, scale->y, scale->z);
+    PSMTXTrans(mtx1, pos.x + scale.x * (f32)diff, pos.y, pos.z);
+    PSMTXScale(mtx2, scale.x, scale.y, scale.z);
     PSMTXConcat(mtx1, mtx2, mtx1);
-    c = *color;
+    c = color;
     FontDrawColor(&c);
     FontDrawStringMtx(mtx1, buf);
 }
 
-void winFontSetEdge(Vec* pos, Vec* scale, GXColor* color, const char* format, ...) {
+void winFontSetEdge(Vec pos, Vec scale, GXColor color, const char* format, ...) {
     char buf[0x400];
     Mtx mtx1;
     Mtx mtx2;
@@ -683,10 +683,10 @@ void winFontSetEdge(Vec* pos, Vec* scale, GXColor* color, const char* format, ..
     va_start(args, format);
     vsprintf(buf, format, args);
     va_end(args);
-    PSMTXTrans(mtx1, pos->x, pos->y, pos->z);
-    PSMTXScale(mtx2, scale->x, scale->y, scale->z);
+    PSMTXTrans(mtx1, pos.x, pos.y, pos.z);
+    PSMTXScale(mtx2, scale.x, scale.y, scale.z);
     PSMTXConcat(mtx1, mtx2, mtx1);
-    c = *color;
+    c = color;
     FontDrawColor(&c);
     FontDrawEdge();
     FontDrawStringMtx(mtx1, buf);
@@ -695,22 +695,22 @@ void winFontSetEdge(Vec* pos, Vec* scale, GXColor* color, const char* format, ..
 
 // Font drawing helpers defined in manager/fontmgr.c but not declared in a header
 
-void winFontSetLabel(Vec* pos, Vec* scale, GXColor* color, const char* tag) {
+void winFontSetLabel(Vec pos, Vec scale, GXColor color, const char* tag) {
     Mtx mtx1;
     Mtx mtx2;
     GXColor c;
 
     if (tag != NULL) {
-        PSMTXTrans(mtx1, pos->x, pos->y, pos->z);
-        PSMTXScale(mtx2, scale->x, scale->y, scale->z);
+        PSMTXTrans(mtx1, pos.x, pos.y, pos.z);
+        PSMTXScale(mtx2, scale.x, scale.y, scale.z);
         PSMTXConcat(mtx1, mtx2, mtx1);
-        c = *color;
+        c = color;
         FontDrawColor(&c);
         FontDrawMessageMtx(mtx1, msgSearch(tag));
     }
 }
 
-void winFontSetPitch(Vec* pos, Vec scale, GXColor* color, f32 pitch, const char* format, ...) {
+void winFontSetPitch(Vec pos, Vec scale, GXColor color, f32 pitch, const char* format, ...) {
     char buf[0x400];
     GXColor c;
     va_list args;
@@ -719,11 +719,11 @@ void winFontSetPitch(Vec* pos, Vec scale, GXColor* color, f32 pitch, const char*
     va_start(args, format);
     vsprintf(buf, format, args);
     va_end(args);
-    c = *color;
+    c = color;
     FontDrawColor(&c);
     scaleCopy = scale;
     FontDrawScaleVec(scaleCopy);
-    FontDrawStringVecPitch(pos, buf, pitch);
+    FontDrawStringVecPitch(&pos, buf, pitch);
 }
 
 void winTexInit(TEXPalette* texture) {
@@ -1017,7 +1017,7 @@ void winIconGrayInit(void) {
     GXSetTevSwapMode(GX_TEVSTAGE3, GX_TEV_SWAP0, GX_TEV_SWAP0);
 }
 
-void winIconSet(s32 iconId, Vec* translate, Vec* scale, GXColor* color) {
+void winIconSet(s32 iconId, Vec translate, Vec scale, GXColor color) {
     GXTexObj texObj;
     Mtx mtx1;
     Mtx mtx2;
@@ -1031,7 +1031,7 @@ void winIconSet(s32 iconId, Vec* translate, Vec* scale, GXColor* color) {
     GXInitTexObjLOD(&texObj, GX_LINEAR, GX_LINEAR, 0.0f, 0.0f, 0.0f, GX_FALSE, GX_FALSE, GX_ANISO_1);
     GXLoadTexObj(&texObj, GX_TEXMAP0);
 
-    if (color->a != 0xFF) {
+    if (color.a != 0xFF) {
         GXSetBlendMode(GX_BM_BLEND, GX_BL_SRCALPHA, GX_BL_INVSRCALPHA, GX_LO_CLEAR);
         GXSetZCompLoc(GX_TRUE);
         GXSetAlphaCompare(GX_ALWAYS, 0, GX_AOP_AND, GX_ALWAYS, 0);
@@ -1043,10 +1043,10 @@ void winIconSet(s32 iconId, Vec* translate, Vec* scale, GXColor* color) {
         GXSetZMode(GX_FALSE, GX_ALWAYS, GX_FALSE);
     }
 
-    GXSetTevColor(GX_TEVREG0, *color);
-    PSMTXTrans(mtx1, translate->x, translate->y, translate->z);
-    height = scale->y * (f32)GXGetTexObjHeight(&texObj);
-    PSMTXScale(mtx2, scale->x * (f32)GXGetTexObjWidth(&texObj), height, scale->z);
+    GXSetTevColor(GX_TEVREG0, color);
+    PSMTXTrans(mtx1, translate.x, translate.y, translate.z);
+    height = scale.y * (f32)GXGetTexObjHeight(&texObj);
+    PSMTXScale(mtx2, scale.x * (f32)GXGetTexObjWidth(&texObj), height, scale.z);
     PSMTXConcat(mtx1, mtx2, mtx3);
     PSMTXConcat(camGetPtr(CAMERA_2D)->view, mtx3, mtx3);
     GXLoadPosMtxImm(mtx3, GX_PNMTX0);

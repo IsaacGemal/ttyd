@@ -318,39 +318,6 @@ void winBadgeMain2(WindowWork* work) {
     work->badgeScrollPos[1] += (work->badgeScrollTarget[1] - work->badgeScrollPos[1]) / 4.0f;
 }
 
-// The window draw functions take their Vec and GXColor arguments by value. win_main.h declares the font and
-// icon ones with pointers, which compiles to the same callee.
-#ifdef MUST_MATCH
-// Match-only: called through by-value casts (caller copies plus a pointer, ABI-identical).
-#define winFontSetV ((void (*)(Vec, Vec, GXColor, const char*, ...))winFontSet)
-#define winFontSetRV ((void (*)(Vec, Vec, GXColor, const char*, ...))winFontSetR)
-#else
-static void winBadgeFontV(void (*fn)(Vec*, Vec*, GXColor*, const char*, ...), Vec pos, Vec scale,
-                          GXColor color, const char* format, va_list args) {
-    char text[0x200];
-
-    vsprintf(text, format, args);
-    fn(&pos, &scale, &color, "%s", text);
-}
-static void winFontSetV(Vec pos, Vec scale, GXColor color, const char* format, ...) {
-    va_list args;
-
-    va_start(args, format);
-    winBadgeFontV(winFontSet, pos, scale, color, format, args);
-    va_end(args);
-}
-static void winFontSetRV(Vec pos, Vec scale, GXColor color, const char* format, ...) {
-    va_list args;
-
-    va_start(args, format);
-    winBadgeFontV(winFontSetR, pos, scale, color, format, args);
-    va_end(args);
-}
-#endif
-static inline void winIconSetV(s32 id, Vec pos, Vec scale, GXColor color) {
-    winIconSet(id, &pos, &scale, &color);
-}
-
 #define WIN_BADGE_TEX(w) (*(TEXPalette**)(w)->winTpl->data)
 
 // Draws the badge screen: the "all"/"equipped" tabs, the BP panel with one pip per BP, then the list.
@@ -393,15 +360,15 @@ void winBadgeDisp(CameraId camId, void* param, s32 idx) {
                   (f32)(0x9E - (10 - (pouch->maximumBP + 9) / 10) * 0xD));
 
     winFontInit();
-    winFontSetV((Vec){x - 220.0f, (20.0f + (40.0f + y)) - 4.0f, 0.0f}, (Vec){0.8f, 0.8f, 0.8f}, color, "\202a\202o");
-    winFontSetRV((Vec){(x - 175.0f) - 18.0f, (20.0f + (40.0f + y)) - 4.0f, 0.0f}, (Vec){0.8f, 0.8f, 0.8f}, color, "%s",
-                 winZenkakuStr(pouch->maximumBP));
-    winFontSetV((Vec){x - 180.0f,
-                      (20.0f + (y - 108.0f) - 18.0f) + (f32)((10 - (pouch->maximumBP + 9) / 10) * 0xD), 0.0f},
-                (Vec){0.5f, 0.5f, 0.5f}, color, msgSearch("msg_menu_badge_nokori"));
-    winFontSetRV((Vec){(x - 145.0f) - 16.0f,
-                       (20.0f + (y - 102.0f) - 18.0f) + (f32)((10 - (pouch->maximumBP + 9) / 10) * 0xD), 0.0f},
-                 (Vec){0.8f, 0.8f, 0.8f}, color, "%s", winZenkakuStr(pouch->availableBP));
+    winFontSet((Vec){x - 220.0f, (20.0f + (40.0f + y)) - 4.0f, 0.0f}, (Vec){0.8f, 0.8f, 0.8f}, color, "\202a\202o");
+    winFontSetR((Vec){(x - 175.0f) - 18.0f, (20.0f + (40.0f + y)) - 4.0f, 0.0f}, (Vec){0.8f, 0.8f, 0.8f}, color, "%s",
+                winZenkakuStr(pouch->maximumBP));
+    winFontSet((Vec){x - 180.0f,
+                     (20.0f + (y - 108.0f) - 18.0f) + (f32)((10 - (pouch->maximumBP + 9) / 10) * 0xD), 0.0f},
+               (Vec){0.5f, 0.5f, 0.5f}, color, msgSearch("msg_menu_badge_nokori"));
+    winFontSetR((Vec){(x - 145.0f) - 16.0f,
+                      (20.0f + (y - 102.0f) - 18.0f) + (f32)((10 - (pouch->maximumBP + 9) / 10) * 0xD), 0.0f},
+                (Vec){0.8f, 0.8f, 0.8f}, color, "%s", winZenkakuStr(pouch->availableBP));
 
     // one pip per BP, ten to a row: the available ones, then the used ones
     winTexInit(WIN_BADGE_TEX(work));
@@ -496,16 +463,16 @@ void badge_disp(WindowWork* work, f32 x, f32 y) {
         } else {
             winIconGrayInit();
         }
-        winIconSetV(*(u16*)&itemDataTable[badge].icon_id, (Vec){x - 75.0f, drawY, 0.0f}, (Vec){0.54f, 0.54f, 0.54f},
-                    iconColor);
+        winIconSet(*(u16*)&itemDataTable[badge].icon_id, (Vec){x - 75.0f, drawY, 0.0f}, (Vec){0.54f, 0.54f, 0.54f},
+                   iconColor);
         winFontInit();
-        winFontSetV((Vec){x - 55.0f, textY = scroll + (12.0f + rowY), 0.0f}, (Vec){0.9f, 0.9f, 0.9f}, color, itemDataTable[badge].id);
+        winFontSet((Vec){x - 55.0f, textY = scroll + (12.0f + rowY), 0.0f}, (Vec){0.9f, 0.9f, 0.9f}, color, itemDataTable[badge].id);
         {
             char buf[0x40];
 
             sprintf(buf, "%s", winZenkakuStr(itemDataTable[badge].bp_cost));
-            winFontSetV((Vec){costX - (f32)(FontGetMessageWidth(buf) / 2), textY, 0.0f}, (Vec){0.9f, 0.9f, 0.9f},
-                        color, buf);
+            winFontSet((Vec){costX - (f32)(FontGetMessageWidth(buf) / 2), textY, 0.0f}, (Vec){0.9f, 0.9f, 0.9f},
+                       color, buf);
         }
         winTexInit(WIN_BADGE_TEX(work));
         {
@@ -528,7 +495,7 @@ void badge_disp(WindowWork* work, f32 x, f32 y) {
         arrowX = 250.0f + x;
         winTexSet(0x17, (Vec){arrowX, 20.0f + (18.0f + top), 0.0f}, (Vec){-1.0f, -1.0f, -1.0f}, white);
         winIconInit();
-        winIconSetV(0x7E, (Vec){arrowX, 20.0f + (113.0f + y), 0.0f}, (Vec){0.6f, 0.6f, 0.6f}, white);
+        winIconSet(0x7E, (Vec){arrowX, 20.0f + (113.0f + y), 0.0f}, (Vec){0.6f, 0.6f, 0.6f}, white);
     }
     if (count > (work->badgeScrollRow[work->badgeTab] << 3) + 8) {
         f32 arrowX;
@@ -537,7 +504,7 @@ void badge_disp(WindowWork* work, f32 x, f32 y) {
         arrowX = 250.0f + x;
         winTexSet(0x17, (Vec){arrowX, 20.0f + ((y - 90.0f) - 15.0f), 0.0f}, (Vec){1.0f, 1.0f, 1.0f}, white);
         winIconInit();
-        winIconSetV(0x80, (Vec){arrowX, 20.0f + (y - 90.0f), 0.0f}, (Vec){0.6f, 0.6f, 0.6f}, white);
+        winIconSet(0x80, (Vec){arrowX, 20.0f + (y - 90.0f), 0.0f}, (Vec){0.6f, 0.6f, 0.6f}, white);
     }
     {
         f32 w = 0.7f * (f32)FontGetMessageWidth(msgSearch("msg_menu_sort_narabikae"));
@@ -545,11 +512,11 @@ void badge_disp(WindowWork* work, f32 x, f32 y) {
 
         winFontInit();
         sortX = x + (220.0f - w);
-        winFontSetV((Vec){sortX, 20.0f + ((y - 92.0f) - 10.0f), 0.0f}, (Vec){0.7f, 0.7f, 0.7f}, black,
-                    msgSearch("msg_menu_sort_narabikae"));
+        winFontSet((Vec){sortX, 20.0f + ((y - 92.0f) - 10.0f), 0.0f}, (Vec){0.7f, 0.7f, 0.7f}, black,
+                   msgSearch("msg_menu_sort_narabikae"));
         winIconInit();
-        winIconSetV(0x217, (Vec){sortX - 30.0f, 20.0f + ((y - 100.0f) - 10.0f), 0.0f}, (Vec){0.6f, 0.6f, 0.6f}, white);
+        winIconSet(0x217, (Vec){sortX - 30.0f, 20.0f + ((y - 100.0f) - 10.0f), 0.0f}, (Vec){0.6f, 0.6f, 0.6f}, white);
     }
     winFontInit();
-    winFontSetV((Vec){120.0f + x, 135.0f + y, 0.0f}, (Vec){0.5f, 0.5f, 0.5f}, black, msgSearch("msg_menu_badge_hituyou"));
+    winFontSet((Vec){120.0f + x, 135.0f + y, 0.0f}, (Vec){0.5f, 0.5f, 0.5f}, black, msgSearch("msg_menu_badge_hituyou"));
 }

@@ -253,11 +253,11 @@ void nanNPCOption(void) {
     }
 }
 
-s32 nannpc_zcompare(ExtSortEntry* a, ExtSortEntry* b) {
-    if (a->key < b->key) {
+int nannpc_zcompare(const void* a, const void* b) {
+    if (((const ExtSortEntry*)a)->key < ((const ExtSortEntry*)b)->key) {
         return 1;
     }
-    if (a->key > b->key) {
+    if (((const ExtSortEntry*)a)->key > ((const ExtSortEntry*)b)->key) {
         return -1;
     }
     return 0;
@@ -299,7 +299,7 @@ void nannpc_ext_disp(void) {
             sort->index = i;
             sort->key = entry->position.z;
         }
-        qqsort(work->sortList, work->count, 8, (int (*)(void*, void*))nannpc_zcompare);
+        qqsort(work->sortList, work->count, 8, nannpc_zcompare);
         for (i = extGetPoseNum() - 1; i >= 0; i--) {
             s32 id = work->sortList[i].index;
 

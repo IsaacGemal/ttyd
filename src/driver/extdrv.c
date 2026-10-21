@@ -20,7 +20,7 @@ static ExtWork work[2];
 
 #define extGetWork() (gp->inBattle ? &work[1] : &work[0])
 
-static int compare(void* a, void* b);
+static int compare(const void* a, const void* b);
 
 // Extended work layout (header only declares the first fields)
 // .data
@@ -353,11 +353,11 @@ void extMain(void) {
 	wp->texSize = 0;
 }
 
-static int compare(void* a, void* b) {
-	if (((ExtSortEntry*)a)->key > ((ExtSortEntry*)b)->key) {
+static int compare(const void* a, const void* b) {
+	if (((const ExtSortEntry*)a)->key > ((const ExtSortEntry*)b)->key) {
 		return 1;
 	}
-	if (((ExtSortEntry*)a)->key < ((ExtSortEntry*)b)->key) {
+	if (((const ExtSortEntry*)a)->key < ((const ExtSortEntry*)b)->key) {
 		return -1;
 	}
 	return 0;

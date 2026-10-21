@@ -44,43 +44,6 @@ extern const char str_s_w_jp_mail_tpl[];
 #endif
 
 
-// The window draw functions take their Vec and GXColor arguments by value. win_main.h declares the font and
-// icon ones with pointers, which compiles to the same callee.
-#ifdef MUST_MATCH
-// Match-only: called through by-value casts (caller copies plus a pointer, ABI-identical).
-#define winFontSetV ((void (*)(Vec, Vec, GXColor, const char*, ...))winFontSet)
-#define winFontSetRV ((void (*)(Vec, Vec, GXColor, const char*, ...))winFontSetR)
-#define winIconSetV ((void (*)(s32, Vec, Vec, GXColor))winIconSet)
-#define winFontSetPitchV ((void (*)(Vec, Vec, GXColor, f32, const char*, ...))winFontSetPitch)
-#else
-static void winItemFontV(void (*fn)(Vec*, Vec*, GXColor*, const char*, ...), Vec pos, Vec scale,
-                         GXColor color, const char* format, va_list args) {
-    char text[0x200];
-
-    vsprintf(text, format, args);
-    fn(&pos, &scale, &color, "%s", text);
-}
-static void winFontSetV(Vec pos, Vec scale, GXColor color, const char* format, ...) {
-    va_list args;
-
-    va_start(args, format);
-    winItemFontV(winFontSet, pos, scale, color, format, args);
-    va_end(args);
-}
-static void winFontSetRV(Vec pos, Vec scale, GXColor color, const char* format, ...) {
-    va_list args;
-
-    va_start(args, format);
-    winItemFontV(winFontSetR, pos, scale, color, format, args);
-    va_end(args);
-}
-static inline void winIconSetV(s32 id, Vec pos, Vec scale, GXColor color) {
-    winIconSet(id, &pos, &scale, &color);
-}
-static inline void winFontSetPitchV(Vec pos, Vec scale, GXColor color, f32 pitch, const char* text) {
-    winFontSetPitch(&pos, scale, &color, pitch, "%s", text);
-}
-#endif
 
 extern u16 menu_skip_list[18];
 extern const char** luigi_book_list[5];
@@ -986,12 +949,12 @@ void item_disp(WindowWork* work, f32 x, f32 y) {
         } else {
             winIconInit();
         }
-        winIconSetV(*(u16*)&itemDataTable[item].icon_id, (Vec){(x - 125.0f) + (f32)(colX = parity * 0xCC), drawY, 0.0f},
-                    work->itemTab == 0 ? (Vec){0.8f, 0.8f, 0.8f} : (Vec){0.6666667f, 0.6666667f, 0.6666667f},
-                    iconColor);
+        winIconSet(*(u16*)&itemDataTable[item].icon_id, (Vec){(x - 125.0f) + (f32)(colX = parity * 0xCC), drawY, 0.0f},
+                   work->itemTab == 0 ? (Vec){0.8f, 0.8f, 0.8f} : (Vec){0.6666667f, 0.6666667f, 0.6666667f},
+                   iconColor);
         winFontInit();
-        winFontSetPitchV((Vec){(x - 105.0f) + (f32)colX, scroll + (20.0f + rowY), 0.0f},
-                         (Vec){0.9f, 0.9f, 0.9f}, grayFlag ? gray : dark, 20.0f, msgSearch(itemDataTable[item].name));
+        winFontSetPitch((Vec){(x - 105.0f) + (f32)colX, scroll + (20.0f + rowY), 0.0f},
+                        (Vec){0.9f, 0.9f, 0.9f}, grayFlag ? gray : dark, 20.0f, msgSearch(itemDataTable[item].name));
     }
 
     GXSetScissor(0, 0, 0x260, 0x1E0);
@@ -1002,7 +965,7 @@ void item_disp(WindowWork* work, f32 x, f32 y) {
         arrowX = 250.0f + x;
         winTexSet(0x17, (Vec){arrowX, 20.0f + (18.0f + (110.0f + y)), 0.0f}, (Vec){-1.0f, -1.0f, -1.0f}, white);
         winIconInit();
-        winIconSetV(0x7E, (Vec){arrowX, 20.0f + (113.0f + y), 0.0f}, (Vec){0.6f, 0.6f, 0.6f}, white);
+        winIconSet(0x7E, (Vec){arrowX, 20.0f + (113.0f + y), 0.0f}, (Vec){0.6f, 0.6f, 0.6f}, white);
     }
     if (count > work->itemScrollRow[work->itemTab] * 10 + 10) {
         f32 arrowX;
@@ -1011,7 +974,7 @@ void item_disp(WindowWork* work, f32 x, f32 y) {
         arrowX = 250.0f + x;
         winTexSet(0x17, (Vec){arrowX, 20.0f + ((y - 90.0f) - 15.0f), 0.0f}, (Vec){1.0f, 1.0f, 1.0f}, white);
         winIconInit();
-        winIconSetV(0x80, (Vec){arrowX, 20.0f + (y - 90.0f), 0.0f}, (Vec){0.6f, 0.6f, 0.6f}, white);
+        winIconSet(0x80, (Vec){arrowX, 20.0f + (y - 90.0f), 0.0f}, (Vec){0.6f, 0.6f, 0.6f}, white);
     }
     {
         f32 w = 0.7f * (f32)FontGetMessageWidth(msgSearch("msg_menu_sort_narabikae"));
@@ -1019,10 +982,10 @@ void item_disp(WindowWork* work, f32 x, f32 y) {
 
         winFontInit();
         sortX = x + (220.0f - w);
-        winFontSetV((Vec){sortX, 20.0f + ((y - 92.0f) - 10.0f), 0.0f}, (Vec){0.7f, 0.7f, 0.7f}, dark,
-                    msgSearch("msg_menu_sort_narabikae"));
+        winFontSet((Vec){sortX, 20.0f + ((y - 92.0f) - 10.0f), 0.0f}, (Vec){0.7f, 0.7f, 0.7f}, dark,
+                   msgSearch("msg_menu_sort_narabikae"));
         winIconInit();
-        winIconSetV(0x217, (Vec){sortX - 30.0f, 20.0f + ((y - 100.0f) - 10.0f), 0.0f}, (Vec){0.6f, 0.6f, 0.6f}, white);
+        winIconSet(0x217, (Vec){sortX - 30.0f, 20.0f + ((y - 100.0f) - 10.0f), 0.0f}, (Vec){0.6f, 0.6f, 0.6f}, white);
     }
 
     if (work->field_0x234 < 320.0f && work->field_0x23C > -240.0f) {
@@ -1096,8 +1059,8 @@ void itemUseDisp(WinMgrEntry* entry) {
                 } else {
                     winIconInit();
                 }
-                winIconSetV(0x19E, (Vec){(f32)(entry->x + 0x1E), (f32)(entry->y - 0x14 - i * 0x16), 0.0f},
-                            (Vec){0.65f, 0.65f, 0.65f}, iconColor);
+                winIconSet(0x19E, (Vec){(f32)(entry->x + 0x1E), (f32)(entry->y - 0x14 - i * 0x16), 0.0f},
+                           (Vec){0.65f, 0.65f, 0.65f}, iconColor);
                 winTexInit(*(TEXPalette**)work->winTpl->data);
                 GXSetTevColorIn(0, 0xF, 0xF, 0xF, 2);
                 GXSetTevAlphaIn(0, 7, 1, 4, 7);
@@ -1110,16 +1073,16 @@ void itemUseDisp(WinMgrEntry* entry) {
                                 (f32)(entry->y - 0x13 - (i + 1) * 0x16), 0.0f},
                           (Vec){1.0f, 1.0f, 1.0f}, dat_8041d494);
                 winFontInit();
-                winFontSetV((Vec){(f32)(entry->x + 0x32), (f32)(entry->y - 8 - i * 0x16), 0.0f},
-                            (Vec){1.0f, 1.0f, 1.0f}, color, msgSearch("name_mario"));
-                winFontSetV((Vec){(f32)(entry->x + 0xDC), (f32)(entry->y - 8 - i * 0x16), 0.0f},
-                            (Vec){0.9f, 0.9f, 0.9f}, color, "\202g\202o");
-                winFontSetRV((Vec){(f32)(entry->x + 0xF5), (f32)(entry->y - 8 - i * 0x16), 0.0f},
-                             (Vec){0.9f, 0.9f, 0.9f}, color, "%d", pouchGetHP());
-                winFontSetRV((Vec){(f32)(entry->x + 0x10B), (f32)(entry->y - 8 - i * 0x16), 0.0f},
-                             (Vec){0.8f, 0.8f, 0.8f}, color, "\201^");
-                winFontSetV((Vec){(f32)(entry->x + 0x136), (f32)(entry->y - 0xA - i * 0x16), 0.0f},
-                            (Vec){0.8f, 0.8f, 0.8f}, color, "%d", pouchGetMaxHP());
+                winFontSet((Vec){(f32)(entry->x + 0x32), (f32)(entry->y - 8 - i * 0x16), 0.0f},
+                           (Vec){1.0f, 1.0f, 1.0f}, color, msgSearch("name_mario"));
+                winFontSet((Vec){(f32)(entry->x + 0xDC), (f32)(entry->y - 8 - i * 0x16), 0.0f},
+                           (Vec){0.9f, 0.9f, 0.9f}, color, "\202g\202o");
+                winFontSetR((Vec){(f32)(entry->x + 0xF5), (f32)(entry->y - 8 - i * 0x16), 0.0f},
+                            (Vec){0.9f, 0.9f, 0.9f}, color, "%d", pouchGetHP());
+                winFontSetR((Vec){(f32)(entry->x + 0x10B), (f32)(entry->y - 8 - i * 0x16), 0.0f},
+                            (Vec){0.8f, 0.8f, 0.8f}, color, "\201^");
+                winFontSet((Vec){(f32)(entry->x + 0x136), (f32)(entry->y - 0xA - i * 0x16), 0.0f},
+                           (Vec){0.8f, 0.8f, 0.8f}, color, "%d", pouchGetMaxHP());
                 if (itemDataTable[work->useItemId].fp_restored != 0) {
                     if (work->useTimer % 20 > 15) {
                         continue;
@@ -1127,14 +1090,14 @@ void itemUseDisp(WinMgrEntry* entry) {
                     color = dat_8041d498;
                 }
                 winFontInit();
-                winFontSetV((Vec){(f32)(entry->x + 0xDC), (f32)(entry->y - 8 - (i + 1) * 0x16), 0.0f},
-                            (Vec){0.9f, 0.9f, 0.9f}, color, "\202e\202o");
-                winFontSetRV((Vec){(f32)(entry->x + 0xF5), (f32)(entry->y - 8 - (i + 1) * 0x16), 0.0f},
-                             (Vec){0.9f, 0.9f, 0.9f}, color, "%d", pouchGetFP());
-                winFontSetRV((Vec){(f32)(entry->x + 0x10B), (f32)(entry->y - 8 - (i + 1) * 0x16), 0.0f},
-                             (Vec){0.8f, 0.8f, 0.8f}, color, "\201^");
-                winFontSetV((Vec){(f32)(entry->x + 0x136), (f32)(entry->y - 0xA - (i + 1) * 0x16), 0.0f},
-                            (Vec){0.8f, 0.8f, 0.8f}, color, "%d", pouchGetMaxFP());
+                winFontSet((Vec){(f32)(entry->x + 0xDC), (f32)(entry->y - 8 - (i + 1) * 0x16), 0.0f},
+                           (Vec){0.9f, 0.9f, 0.9f}, color, "\202e\202o");
+                winFontSetR((Vec){(f32)(entry->x + 0xF5), (f32)(entry->y - 8 - (i + 1) * 0x16), 0.0f},
+                            (Vec){0.9f, 0.9f, 0.9f}, color, "%d", pouchGetFP());
+                winFontSetR((Vec){(f32)(entry->x + 0x10B), (f32)(entry->y - 8 - (i + 1) * 0x16), 0.0f},
+                            (Vec){0.8f, 0.8f, 0.8f}, color, "\201^");
+                winFontSet((Vec){(f32)(entry->x + 0x136), (f32)(entry->y - 0xA - (i + 1) * 0x16), 0.0f},
+                           (Vec){0.8f, 0.8f, 0.8f}, color, "%d", pouchGetMaxFP());
             } else {
                 name = list[i - 1]->partnerId != 4 ? msgSearch(list[i - 1]->nameMsg) : pouchGetYoshiName();
                 if (work->useTimer % 20 > 15 && i == work->useTargetSel) {
@@ -1152,30 +1115,30 @@ void itemUseDisp(WinMgrEntry* entry) {
                 } else {
                     winIconInit();
                 }
-                winIconSetV(list[i - 1]->iconId,
-                            (Vec){(f32)(entry->x + 0x1E), f31 + (f32)(entry->y - 0x14 - i * 0x1C), 0.0f},
-                            (Vec){0.65f, 0.65f, 0.65f}, iconColor);
+                winIconSet(list[i - 1]->iconId,
+                           (Vec){(f32)(entry->x + 0x1E), f31 + (f32)(entry->y - 0x14 - i * 0x1C), 0.0f},
+                           (Vec){0.65f, 0.65f, 0.65f}, iconColor);
                 winFontInit();
-                winFontSetV((Vec){(f32)(entry->x + 0x32), f31 + (f32)(entry->y - 8 - i * 0x1C), 0.0f},
-                            (Vec){(f32)FontGetMessageWidth(name) < 160.0f ? 1.0f : 160.0f / (f32)FontGetMessageWidth(name),
-                                  1.0f, 1.0f},
-                            color, name);
-                winFontSetV((Vec){(f32)(entry->x + 0xDC), f31 + (f32)(entry->y - 8 - i * 0x1C), 0.0f},
-                            (Vec){0.9f, 0.9f, 0.9f}, color, "\202g\202o");
-                winFontSetRV((Vec){(f32)(entry->x + 0xF5), f31 + (f32)(entry->y - 8 - i * 0x1C), 0.0f},
-                             (Vec){0.9f, 0.9f, 0.9f}, color, "%d", pouchGetPtr()->partyData[list[i - 1]->partnerId].currentHP);
-                winFontSetRV((Vec){(f32)(entry->x + 0x10B), f31 + (f32)(entry->y - 8 - i * 0x1C), 0.0f},
-                             (Vec){0.8f, 0.8f, 0.8f}, color, "\201^");
-                winFontSetV((Vec){(f32)(entry->x + 0x136), f31 + (f32)(entry->y - 8 - i * 0x1C) - 2.0f, 0.0f},
-                            (Vec){0.8f, 0.8f, 0.8f}, color, "%d", pouchGetPtr()->partyData[list[i - 1]->partnerId].maximumHP);
+                winFontSet((Vec){(f32)(entry->x + 0x32), f31 + (f32)(entry->y - 8 - i * 0x1C), 0.0f},
+                           (Vec){(f32)FontGetMessageWidth(name) < 160.0f ? 1.0f : 160.0f / (f32)FontGetMessageWidth(name),
+                                 1.0f, 1.0f},
+                           color, name);
+                winFontSet((Vec){(f32)(entry->x + 0xDC), f31 + (f32)(entry->y - 8 - i * 0x1C), 0.0f},
+                           (Vec){0.9f, 0.9f, 0.9f}, color, "\202g\202o");
+                winFontSetR((Vec){(f32)(entry->x + 0xF5), f31 + (f32)(entry->y - 8 - i * 0x1C), 0.0f},
+                            (Vec){0.9f, 0.9f, 0.9f}, color, "%d", pouchGetPtr()->partyData[list[i - 1]->partnerId].currentHP);
+                winFontSetR((Vec){(f32)(entry->x + 0x10B), f31 + (f32)(entry->y - 8 - i * 0x1C), 0.0f},
+                            (Vec){0.8f, 0.8f, 0.8f}, color, "\201^");
+                winFontSet((Vec){(f32)(entry->x + 0x136), f31 + (f32)(entry->y - 8 - i * 0x1C) - 2.0f, 0.0f},
+                           (Vec){0.8f, 0.8f, 0.8f}, color, "%d", pouchGetPtr()->partyData[list[i - 1]->partnerId].maximumHP);
             }
         }
 
         if (work->partyCount > 1) {
             winIconInit();
             for (n2 = 2; n2 < 0x1E; n2++) {
-                winIconSetV(0x1B7, (Vec){(f32)(entry->x + (entry->width / 31) * n2), (f32)(entry->y - 0x54), 0.0f},
-                            (Vec){0.15f, 0.15f, 0.15f}, color);
+                winIconSet(0x1B7, (Vec){(f32)(entry->x + (entry->width / 31) * n2), (f32)(entry->y - 0x54), 0.0f},
+                           (Vec){0.15f, 0.15f, 0.15f}, color);
             }
         }
     }
@@ -1197,8 +1160,8 @@ void itemUseDisp2(WinMgrEntry* entry) {
         msg = msgSearch("msg_window_select_5");
         width = (f32)FontGetMessageWidth(msg);
         winFontInit();
-        winFontSetV((Vec){(f32)entry->x + ((f32)entry->width - width) / 2, 134.0f, 0.0f},
-                    (Vec){1.0f, 1.0f, 1.0f}, color, msg);
+        winFontSet((Vec){(f32)entry->x + ((f32)entry->width - width) / 2, 134.0f, 0.0f},
+                   (Vec){1.0f, 1.0f, 1.0f}, color, msg);
     }
 }
 

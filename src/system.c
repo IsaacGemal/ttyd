@@ -286,7 +286,7 @@ f32 intplGetValue(s32 mode, f32 start, f32 end, s32 currStep, s32 steps) {
 static void* tmp0[0xC00];
 static u8 tmp1[0x100];
 
-static int (*comp)(void*, void*);
+static int (*comp)(const void*, const void*);
 
 void fsort(void** base, u32 n) {
     static void** lo;
@@ -501,7 +501,7 @@ void fsort(void** base, u32 n) {
     } while (n > 1);
 }
 
-void qqsort(void* base, u32 n, u32 size, int (*compare)(void*, void*)) {
+void qqsort(void* base, u32 n, u32 size, int (*compare)(const void*, const void*)) {
     u8* dst;      /* r27 */
     void** idx;   /* r26 */
     u32 i;        /* r25 */

@@ -90,20 +90,6 @@ static inline Vec mail_vec(const Vec* base, f32 x, f32 y) {
     return v;
 }
 
-// winFontSetLabel and winIconSet take their Vec and GXColor arguments by value (each call copies them);
-// win_main.h declares pointers, which compiles to the same callee.
-// winFontSetLabel takes its Vecs and colour by pointer; the original passes them by value here (caller copies plus a
-// pointer, ABI-identical), and only the cast reproduces its argument scheduling.
-#ifdef MUST_MATCH
-#define winMailLabelV ((void (*)(Vec, Vec, GXColor, const char*))winFontSetLabel)
-#else
-static inline void winMailLabelV(Vec pos, Vec scale, GXColor color, const char* msg) {
-    winFontSetLabel(&pos, &scale, &color, msg);
-}
-#endif
-static inline void winMailIconV(s32 id, Vec pos, Vec scale, GXColor color) {
-    winIconSet(id, &pos, &scale, &color);
-}
 #define WIN_MAIL_TEX(w) (*(TEXPalette**)(w)->winTpl->data)
 
 // The loop both comparators run: find `tag` in the 26-entry table, formatting each
@@ -176,30 +162,8 @@ static inline void winSortPanel(WindowWork* work, s32 texId, f32 x, f32 y, f32 w
     GXTexCoord2f32(1.0f, 0.0f);
 }
 
-
-static inline void winMsgEdgeV(Vec pos, Vec scale, GXColor color, const char* msg) {
-    winFontSetEdge(&pos, &scale, &color, msg);
-}
-static inline void winMsgFontV(Vec pos, Vec scale, GXColor color, const char* msg) {
-    winFontSet(&pos, &scale, &color, msg);
-}
-
 #define WIN_BOOK_TEX(w) (*(TEXPalette**)(w)->winTpl->data)
 extern const char** luigi_book_list[];
-// winFontSetLabel takes its Vec and GXColor arguments by value (each call copies them); win_main.h declares
-// pointers, which compiles to the same callee.
-// winFontSetLabel takes its Vecs and colour by pointer; the original passes them by value here (caller copies plus a
-// pointer, ABI-identical), and only the cast reproduces its argument scheduling.
-#ifdef MUST_MATCH
-#define winFontSetLabelV ((void (*)(Vec, Vec, GXColor, const char*))winFontSetLabel)
-#else
-static inline void winFontSetLabelV(Vec pos, Vec scale, GXColor color, const char* msg) {
-    winFontSetLabel(&pos, &scale, &color, msg);
-}
-#endif
-static inline void winFontSetV(Vec pos, Vec scale, GXColor color, const char* msg) {
-    winFontSet(&pos, &scale, &color, msg);
-}
 
 // Per-tab slide-in/slide-out animation. winRootTabStep is a plain static defined after winRootMain: MWCC
 // inlines it and still generates its body first, so its 185.0f pools ahead of winRootMain's 1000.0f in
@@ -940,13 +904,12 @@ void winMsgDisp(WindowWork* work, f32 x, f32 y) {
     GXColor iconColor = (GXColor){0xFF, 0xFF, 0xFF, 0xFF};
     GXColor fontColor = (GXColor){0x00, 0x00, 0x00, 0xFF};
 #ifdef MUST_MATCH
-    // Semantically x - 250.0f; the original computes it as +10 then -10 (MUST_MATCH codegen shaping).
+    // Semantically x - 250.0f; the original computes it as +10 then -10.
     f32 fx = (10.0f + (x - 250.0f)) - 10.0f;
-    f32 fy = 40.0f + y;
 #else
     f32 fx = x - 250.0f;
-    f32 fy = 40.0f + y;
 #endif
+    f32 fy = 40.0f + y;
     f32 ty;
     f32 ix;
     f32 width;
@@ -962,12 +925,7 @@ void winMsgDisp(WindowWork* work, f32 x, f32 y) {
         winTexInit(*(TEXPalette**)work->winTpl->data);
         winTexSet(0x25, (Vec){ fx, fy, 0.0f }, (Vec){ 1.0f, 1.0f, 1.0f }, iconColor);
         winIconInit();
-#ifdef MUST_MATCH
-        // (0, x) is x; the comma only changes when the table address is materialised.
-        winMailIconV(((0, (ItemDataView*)itemDataTable)[work->field_0x138]).icon_id, (Vec){ fx, fy, 0.0f }, (Vec){ 1.0f, 1.0f, 1.0f }, iconColor);
-#else
-        winMailIconV(((ItemDataView*)itemDataTable)[work->field_0x138].icon_id, (Vec){ fx, fy, 0.0f }, (Vec){ 1.0f, 1.0f, 1.0f }, iconColor);
-#endif
+        winIconSet(itemDataTable[work->field_0x138].icon_id, (Vec){ fx, fy, 0.0f }, (Vec){ 1.0f, 1.0f, 1.0f }, iconColor);
     }
 
     if (work->field_0x140 != NULL) {
@@ -979,7 +937,7 @@ void winMsgDisp(WindowWork* work, f32 x, f32 y) {
         width = FontGetMessageWidth(msg);
         winNameGX(work, 1, (x - 120.0f) + edge, ty = 8.0f + (16.0f + fy), 240.0f, 32.0f);
         winFontInit();
-        winMsgEdgeV((Vec){ edge + ((240.0f - width) / 2.0f + (x - 120.0f)), ty - 4.0f, 0.0f }, (Vec){ 1.0f, 1.0f, 1.0f }, iconColor, msg);
+        winFontSetEdge((Vec){ edge + ((240.0f - width) / 2.0f + (x - 120.0f)), ty - 4.0f, 0.0f }, (Vec){ 1.0f, 1.0f, 1.0f }, iconColor, msg);
     }
 
     if (work->field_0x13C != NULL) {
@@ -987,10 +945,10 @@ void winMsgDisp(WindowWork* work, f32 x, f32 y) {
         if (strcmp(work->field_0x13C, "msg_lottery_number") == 0) {
             sprintf(buf, msgSearch(work->field_0x13C), lotteryGetPtr()->mTicketNum);
             winFontInit();
-            winMsgFontV((Vec){ (40.0f + (x - 250.0f)) - 10.0f, fy + (f32)(work->field_0x148 * 0x1C), 0.0f }, (Vec){ 1.0f, 1.0f, 1.0f }, fontColor, buf);
+            winFontSet((Vec){ (40.0f + (x - 250.0f)) - 10.0f, fy + (f32)(work->field_0x148 * 0x1C), 0.0f }, (Vec){ 1.0f, 1.0f, 1.0f }, fontColor, buf);
         } else {
             winFontInit();
-            winMailLabelV((Vec){ (40.0f + (x - 250.0f)) - 10.0f, fy + (f32)(work->field_0x148 * 0x1C), 0.0f }, (Vec){ 1.0f, 1.0f, 1.0f }, fontColor, work->field_0x13C);
+            winFontSetLabel((Vec){ (40.0f + (x - 250.0f)) - 10.0f, fy + (f32)(work->field_0x148 * 0x1C), 0.0f }, (Vec){ 1.0f, 1.0f, 1.0f }, fontColor, work->field_0x13C);
         }
         GXSetScissor(0, 0, 0x260, 0x1E0);
     }
@@ -1001,15 +959,15 @@ void winMsgDisp(WindowWork* work, f32 x, f32 y) {
         winIconInit();
         i = work->field_0x148;
         if (i == 0) {
-            if ((gp->retraceCount & 0x1F) < 0x14) winMailIconV(0x1B6, (Vec){ (250.0f + x) - 10.0f, (40.0f + (y - 40.0f)) - 24.0f, 0.0f }, (Vec){ 0.6f, 0.6f, 0.6f }, (GXColor){0xFF, 0xFF, 0xFF, 0xFF});
+            if ((gp->retraceCount & 0x1F) < 0x14) winIconSet(0x1B6, (Vec){ (250.0f + x) - 10.0f, (40.0f + (y - 40.0f)) - 24.0f, 0.0f }, (Vec){ 0.6f, 0.6f, 0.6f }, (GXColor){0xFF, 0xFF, 0xFF, 0xFF});
         } else if (i / 2 == (work->field_0x14C + 1) / 2 - 1) {
-            if ((gp->retraceCount & 0x1F) < 0x14) winMailIconV(0x1B5, (Vec){ (250.0f + x) - 10.0f, 24.0f + (40.0f + (y - 40.0f)), 0.0f }, (Vec){ 0.6f, 0.6f, 0.6f }, (GXColor){0xFF, 0xFF, 0xFF, 0xFF});
+            if ((gp->retraceCount & 0x1F) < 0x14) winIconSet(0x1B5, (Vec){ (250.0f + x) - 10.0f, 24.0f + (40.0f + (y - 40.0f)), 0.0f }, (Vec){ 0.6f, 0.6f, 0.6f }, (GXColor){0xFF, 0xFF, 0xFF, 0xFF});
         } else if ((gp->retraceCount & 0x1F) < 0x14) {
             ix = (250.0f + x) - 10.0f;
-            winMailIconV(0x1B5, (Vec){ ix, 24.0f + (40.0f + (y - 40.0f)), 0.0f }, (Vec){ 0.6f, 0.6f, 0.6f }, (GXColor){0xFF, 0xFF, 0xFF, 0xFF});
-            winMailIconV(0x1B6, (Vec){ ix, (40.0f + (y - 40.0f)) - 24.0f, 0.0f }, (Vec){ 0.6f, 0.6f, 0.6f }, (GXColor){0xFF, 0xFF, 0xFF, 0xFF});
+            winIconSet(0x1B5, (Vec){ ix, 24.0f + (40.0f + (y - 40.0f)), 0.0f }, (Vec){ 0.6f, 0.6f, 0.6f }, (GXColor){0xFF, 0xFF, 0xFF, 0xFF});
+            winIconSet(0x1B6, (Vec){ ix, (40.0f + (y - 40.0f)) - 24.0f, 0.0f }, (Vec){ 0.6f, 0.6f, 0.6f }, (GXColor){0xFF, 0xFF, 0xFF, 0xFF});
         }
-        winMailIconV(0x70, (Vec){ (250.0f + x) - 10.0f, 40.0f + (y - 40.0f), 0.0f }, (Vec){ 0.6f, 0.6f, 0.6f }, (GXColor){0xFF, 0xFF, 0xFF, 0xFF});
+        winIconSet(0x70, (Vec){ (250.0f + x) - 10.0f, 40.0f + (y - 40.0f), 0.0f }, (Vec){ 0.6f, 0.6f, 0.6f }, (GXColor){0xFF, 0xFF, 0xFF, 0xFF});
     }
 }
 
@@ -1450,11 +1408,11 @@ void winBookGX(WindowWork* work, s32 type, f32 x, f32 y) {
 
         winFontInit();
         labelX = 20.0f + x;
-        winFontSetLabelV((Vec){labelX, y - 14.0f, 0.0f}, (Vec){0.8f, 0.8f, 0.8f}, (GXColor){0x00, 0x00, 0x00, 0xFF},
-                         luigi_book_list[work->field_0x2C8][work->field_0x2D0 * 2]);
-        winFontSetLabelV((Vec){220.0f + labelX, y - 14.0f, 0.0f}, (Vec){0.8f, 0.8f, 0.8f},
-                         (GXColor){0x00, 0x00, 0x00, 0xFF},
-                         luigi_book_list[work->field_0x2C8][work->field_0x2D0 * 2 + 1]);
+        winFontSetLabel((Vec){labelX, y - 14.0f, 0.0f}, (Vec){0.8f, 0.8f, 0.8f}, (GXColor){0x00, 0x00, 0x00, 0xFF},
+                        luigi_book_list[work->field_0x2C8][work->field_0x2D0 * 2]);
+        winFontSetLabel((Vec){220.0f + labelX, y - 14.0f, 0.0f}, (Vec){0.8f, 0.8f, 0.8f},
+                        (GXColor){0x00, 0x00, 0x00, 0xFF},
+                        luigi_book_list[work->field_0x2C8][work->field_0x2D0 * 2 + 1]);
 
         // Luigi, reading: the closing pose on the last page
         pose = L_msgGetWork()->poseId;
@@ -1733,7 +1691,7 @@ void winHakoGX(WindowWork* work, s32 type, f32 x, f32 y) {
                         { ItemData* it = &itemDataTable[LOGWIN(work)->badgeIcon[idx]];
                         iconId = *(u16*)&it[0xB3].icon_id; }
                     }
-                    winMailIconV(iconId, (Vec){((x + (f32)(col * 0x38)) + 24.0f) + 4.0f, ((scroll + (y - (f32)(row * 0x38))) - (f32)(page * 0xE8)) - 28.0f, 0.0f}, (Vec){0.8f, 0.8f, 0.8f}, (GXColor){0xFF, 0xFF, 0xFF, 0xFF});
+                    winIconSet(iconId, (Vec){((x + (f32)(col * 0x38)) + 24.0f) + 4.0f, ((scroll + (y - (f32)(row * 0x38))) - (f32)(page * 0xE8)) - 28.0f, 0.0f}, (Vec){0.8f, 0.8f, 0.8f}, (GXColor){0xFF, 0xFF, 0xFF, 0xFF});
                 }
             }
         }
@@ -1748,7 +1706,7 @@ void winHakoGX(WindowWork* work, s32 type, f32 x, f32 y) {
         bx = 395.0f + x;
         winTexSet(0x17, (Vec){bx, 15.0f + y, 0.0f}, (Vec){-1.0f, -1.0f, -1.0f}, (GXColor){0xFF, 0xFF, 0xFF, 0xFF});
         winIconInit();
-        winMailIconV(0x7E, (Vec){bx, y, 0.0f}, (Vec){0.6f, 0.6f, 0.6f}, (GXColor){0xFF, 0xFF, 0xFF, 0xFF});
+        winIconSet(0x7E, (Vec){bx, y, 0.0f}, (Vec){0.6f, 0.6f, 0.6f}, (GXColor){0xFF, 0xFF, 0xFF, 0xFF});
     }
     if (count > cursor * 0x1C + 0x1C) {
         f32 bx;
@@ -1757,7 +1715,7 @@ void winHakoGX(WindowWork* work, s32 type, f32 x, f32 y) {
         bx = 395.0f + x;
         winTexSet(0x17, (Vec){bx, y - 235.0f, 0.0f}, (Vec){1.0f, 1.0f, 1.0f}, (GXColor){0xFF, 0xFF, 0xFF, 0xFF});
         winIconInit();
-        winMailIconV(0x80, (Vec){bx, y - 220.0f, 0.0f}, (Vec){0.6f, 0.6f, 0.6f}, (GXColor){0xFF, 0xFF, 0xFF, 0xFF});
+        winIconSet(0x80, (Vec){bx, y - 220.0f, 0.0f}, (Vec){0.6f, 0.6f, 0.6f}, (GXColor){0xFF, 0xFF, 0xFF, 0xFF});
     }
     {
         const char* msg;
@@ -1768,9 +1726,9 @@ void winHakoGX(WindowWork* work, s32 type, f32 x, f32 y) {
         w0 = 0.7f * (f32)FontGetMessageWidth(msg);
         winFontInit();
         fx = 380.0f - w0;
-        winFontSetV((Vec){x + fx, y - 228.0f, 0.0f}, (Vec){0.7f, 0.7f, 0.7f}, (GXColor){0x00, 0x00, 0x00, 0xFF}, msg);
+        winFontSet((Vec){x + fx, y - 228.0f, 0.0f}, (Vec){0.7f, 0.7f, 0.7f}, (GXColor){0x00, 0x00, 0x00, 0xFF}, msg);
         winIconInit();
-        winMailIconV(0x217, (Vec){(x + fx) - 30.0f, y - 237.0f, 0.0f}, (Vec){0.6f, 0.6f, 0.6f}, (GXColor){0xFF, 0xFF, 0xFF, 0xFF});
+        winIconSet(0x217, (Vec){(x + fx) - 30.0f, y - 237.0f, 0.0f}, (Vec){0.6f, 0.6f, 0.6f}, (GXColor){0xFF, 0xFF, 0xFF, 0xFF});
     }
 }
 
@@ -1916,7 +1874,7 @@ int N_compare_func4_1_r(const void* a, const void* b) {
     return strcmp((char*)buf_b, (char*)buf_a);
 }
 
-int N_compare_func4_2(void* a, void* b) {
+int N_compare_func4_2(const void* a, const void* b) {
     s32 id_a = (s16)((const WinEquipRec*)a)->field_0x8;
     s32 id_b = (s16)((const WinEquipRec*)b)->field_0x8;
     s16 va = itemDataTable[id_a].type_sort_order;
@@ -1931,7 +1889,7 @@ int N_compare_func4_2(void* a, void* b) {
     }
 }
 
-int N_compare_func4_2_r(void* a, void* b) {
+int N_compare_func4_2_r(const void* a, const void* b) {
     s32 id_a = (s16)((const WinEquipRec*)a)->field_0x8;
     s32 id_b = (s16)((const WinEquipRec*)b)->field_0x8;
     s16 va = itemDataTable[id_a].type_sort_order;
@@ -1948,9 +1906,9 @@ int N_compare_func4_2_r(void* a, void* b) {
 
 void sort_4_1_func(WindowWork* work) {
     if (work->sortReverseNext == 0) {
-        qqsort(work->field_404, work->equipListCount, 0xC, (int (*)(void*, void*))N_compare_func4_1);
+        qqsort(work->field_404, work->equipListCount, 0xC, N_compare_func4_1);
     } else {
-        qqsort(work->field_404, work->equipListCount, 0xC, (int (*)(void*, void*))N_compare_func4_1_r);
+        qqsort(work->field_404, work->equipListCount, 0xC, N_compare_func4_1_r);
     }
     work->sortReverseNext = 1 - work->sortReverseNext;
     work->badgeSel[1] = 0;
@@ -2058,7 +2016,7 @@ int compare_func5_1_r(const void* a, const void* b) {
     return strcmp((char*)buf_b, (char*)buf_a);
 }
 
-int compare_func5_2(void* a, void* b) {
+int compare_func5_2(const void* a, const void* b) {
     s16 id_a = (s16)(*(s16*)a + 0xF0);
     s16 id_b = (s16)(*(s16*)b + 0xF0);
     s16 va = itemDataTable[id_a].type_sort_order;
@@ -2073,7 +2031,7 @@ int compare_func5_2(void* a, void* b) {
     }
 }
 
-int compare_func5_2_r(void* a, void* b) {
+int compare_func5_2_r(const void* a, const void* b) {
     s16 id_a = (s16)(*(s16*)a + 0xF0);
     s16 id_b = (s16)(*(s16*)b + 0xF0);
     s16 va = itemDataTable[id_a].type_sort_order;
@@ -2090,9 +2048,9 @@ int compare_func5_2_r(void* a, void* b) {
 
 void sort_5_1_func(WindowWork* work) {
     if (work->sortReverseNext == 0) {
-        qqsort(LOGWIN(work)->cardIcon, LOGWIN(work)->cardCnt, 2, (int (*)(void*, void*))compare_func5_1);
+        qqsort(LOGWIN(work)->cardIcon, LOGWIN(work)->cardCnt, 2, compare_func5_1);
     } else {
-        qqsort(LOGWIN(work)->cardIcon, LOGWIN(work)->cardCnt, 2, (int (*)(void*, void*))compare_func5_1_r);
+        qqsort(LOGWIN(work)->cardIcon, LOGWIN(work)->cardCnt, 2, compare_func5_1_r);
     }
     work->sortReverseNext = 1 - work->sortReverseNext;
     LOGWIN(work)->cardSel = 0;
@@ -2207,7 +2165,7 @@ int compare_func6_1_r(const void* a, const void* b) {
     return strcmp((char*)buf_b, (char*)buf_a);
 }
 
-int compare_func6_2(void* a, void* b) {
+int compare_func6_2(const void* a, const void* b) {
     s16 id_a = (s16)(*(s16*)a + 0xB3);
     s16 id_b = (s16)(*(s16*)b + 0xB3);
     s16 va = itemDataTable[id_a].type_sort_order;
@@ -2222,7 +2180,7 @@ int compare_func6_2(void* a, void* b) {
     }
 }
 
-int compare_func6_2_r(void* a, void* b) {
+int compare_func6_2_r(const void* a, const void* b) {
     s16 id_a = (s16)(*(s16*)a + 0xB3);
     s16 id_b = (s16)(*(s16*)b + 0xB3);
     s16 va = itemDataTable[id_a].type_sort_order;
@@ -2239,9 +2197,9 @@ int compare_func6_2_r(void* a, void* b) {
 
 void sort_6_1_func(WindowWork* work) {
     if (work->sortReverseNext == 0) {
-        qqsort(LOGWIN(work)->badgeIcon, LOGWIN(work)->badgeCnt, 2, (int (*)(void*, void*))compare_func6_1);
+        qqsort(LOGWIN(work)->badgeIcon, LOGWIN(work)->badgeCnt, 2, compare_func6_1);
     } else {
-        qqsort(LOGWIN(work)->badgeIcon, LOGWIN(work)->badgeCnt, 2, (int (*)(void*, void*))compare_func6_1_r);
+        qqsort(LOGWIN(work)->badgeIcon, LOGWIN(work)->badgeCnt, 2, compare_func6_1_r);
     }
     work->sortReverseNext = 1 - work->sortReverseNext;
     LOGWIN(work)->badgeSel = 0;
@@ -2259,7 +2217,7 @@ void sort_6_2_func(WindowWork* work) {
     LOGWIN(work)->badgePage = LOGWIN(work)->badgeSel / 28;
 }
 
-int compare_func1(void* a, void* b) {
+int compare_func1(const void* a, const void* b) {
     if (*(u8*)a > *(u8*)b) {
         return 1;
     } else if (*(u8*)a < *(u8*)b) {
@@ -2269,7 +2227,7 @@ int compare_func1(void* a, void* b) {
     }
 }
 
-int compare_func1_r(void* a, void* b) {
+int compare_func1_r(const void* a, const void* b) {
     if (*(u8*)a < *(u8*)b) {
         return 1;
     } else if (*(u8*)a > *(u8*)b) {
@@ -2349,17 +2307,17 @@ int compare_func2_r(const void* a, const void* b) {
 void sort_7_2_func(WindowWork* work) {
     if (work->sortReverseNext == 0) {
         qqsort(&work->field_40[0x1010], LOGWIN(work)->charCnt, 2, compare_func1);
-        qqsort(&work->field_40[0x1010], LOGWIN(work)->charCnt, 2, (int (*)(void*, void*))compare_func2);
+        qqsort(&work->field_40[0x1010], LOGWIN(work)->charCnt, 2, compare_func2);
     } else {
         qqsort(&work->field_40[0x1010], LOGWIN(work)->charCnt, 2, compare_func1_r);
-        qqsort(&work->field_40[0x1010], LOGWIN(work)->charCnt, 2, (int (*)(void*, void*))compare_func2_r);
+        qqsort(&work->field_40[0x1010], LOGWIN(work)->charCnt, 2, compare_func2_r);
     }
     work->sortReverseNext = 1 - work->sortReverseNext;
     LOGWIN(work)->charSel = 0;
     LOGWIN(work)->charPage = LOGWIN(work)->charSel / 16;
 }
 
-int compare_func3(void* a, void* b) {
+int compare_func3(const void* a, const void* b) {
     u16 buf_a[64];
     u16 buf_b[64];
     TattleEntry* ea = battleGetUnitMonosiriPtr(((LogChar*)a)->id);
@@ -2386,7 +2344,7 @@ int compare_func3(void* a, void* b) {
     return strcmp((char*)buf_a, (char*)buf_b);
 }
 
-int compare_func3_r(void* a, void* b) {
+int compare_func3_r(const void* a, const void* b) {
     u16 buf_a[64];
     u16 buf_b[64];
     TattleEntry* ea = battleGetUnitMonosiriPtr(((LogChar*)a)->id);
@@ -2426,38 +2384,43 @@ void sort_7_3_func(WindowWork* work) {
     LOGWIN(work)->charPage = LOGWIN(work)->charSel / 16;
 }
 
+// The mail list (work->field_26E) holds byte pairs: display number, then mail id.
 // 1:1 (the `const` parameters reproduce the target's hoisted `lbz r3,0x1(r3)` prologue load).
 int compare_func4(const void* a, const void* b) {
-    void* ma = mailGetPtr(((u8*)a)[1]);
-    void* mb = mailGetPtr(((u8*)b)[1]);
-    const char* sa = (const char*)msgSearch(((WinMailEntry*)ma)->name);
-    const char* sb = (const char*)msgSearch(((WinMailEntry*)mb)->name);
+    const u8* pa = a;
+    const u8* pb = b;
+    WinMailEntry* ma = mailGetPtr(pa[1]);
+    WinMailEntry* mb = mailGetPtr(pb[1]);
+    const char* sa = msgSearch(ma->name);
+    const char* sb = msgSearch(mb->name);
 
     return strcmp(sa, sb);
 }
 
 // 1:1 (same `const`-parameter prologue hoist as compare_func4).
 int compare_func4_r(const void* a, const void* b) {
-    void* ma = mailGetPtr(((u8*)a)[1]);
-    void* mb = mailGetPtr(((u8*)b)[1]);
-    const char* sa = (const char*)msgSearch(((WinMailEntry*)ma)->name);
-    const char* sb = (const char*)msgSearch(((WinMailEntry*)mb)->name);
+    const u8* pa = a;
+    const u8* pb = b;
+    WinMailEntry* ma = mailGetPtr(pa[1]);
+    WinMailEntry* mb = mailGetPtr(pb[1]);
+    const char* sa = msgSearch(ma->name);
+    const char* sb = msgSearch(mb->name);
 
     return strcmp(sb, sa);
 }
 
 void sort_8_1_func(WindowWork* work) {
     if (work->sortReverseNext == 0) {
-        qqsort(work->field_26E, work->mailCount, 2, (int (*)(void*, void*))compare_func4);
+        qqsort(work->field_26E, work->mailCount, 2, compare_func4);
     } else {
-        qqsort(work->field_26E, work->mailCount, 2, (int (*)(void*, void*))compare_func4_r);
+        qqsort(work->field_26E, work->mailCount, 2, compare_func4_r);
     }
     work->sortReverseNext = 1 - work->sortReverseNext;
     work->mailSel = 0;
     work->mailPage = work->mailSel / 5;
 }
 
-int compare_func5(void* a, void* b) {
+int compare_func5(const void* a, const void* b) {
     if (*(u8*)a > *(u8*)b) {
         return 1;
     } else if (*(u8*)a < *(u8*)b) {
@@ -2467,7 +2430,7 @@ int compare_func5(void* a, void* b) {
     }
 }
 
-int compare_func5_r(void* a, void* b) {
+int compare_func5_r(const void* a, const void* b) {
     if (*(u8*)a < *(u8*)b) {
         return 1;
     } else if (*(u8*)a > *(u8*)b) {
@@ -2827,8 +2790,8 @@ void winMailDisp(WindowWork* work) {
                       (Vec){2.0f + (104.0f + work->field_0x244), work->field_0x260 + (((work->field_0x24C - 56.0f) - (f32)(i * 40)) - 3.0f), 0.0f},
                       (Vec){1.0f, 1.0f, 1.0f}, white);
             winFontInit();
-            winMailLabelV((Vec){120.0f + work->field_0x244, work->field_0x260 + (8.0f + ((work->field_0x24C - 56.0f) - (f32)(i * 40))), 0.0f},
-                          (Vec){0.75f, 0.75f, 0.75f}, black, mail->name);
+            winFontSetLabel((Vec){120.0f + work->field_0x244, work->field_0x260 + (8.0f + ((work->field_0x24C - 56.0f) - (f32)(i * 40))), 0.0f},
+                            (Vec){0.75f, 0.75f, 0.75f}, black, mail->name);
         }
         GXSetScissor(0, 0, 0x260, 0x1E0);
     } else {
@@ -2865,8 +2828,8 @@ void winMailDisp(WindowWork* work) {
                   (Vec){2.0f + (104.0f + work->field_0x244), (work->field_0x24C - 56.0f) - 3.0f, 0.0f},
                   (Vec){1.0f, 1.0f, 1.0f}, white);
         winFontInit();
-        winMailLabelV((Vec){120.0f + work->field_0x244, 8.0f + (work->field_0x24C - 56.0f), 0.0f},
-                      (Vec){0.75f, 0.75f, 0.75f}, black, mail->name);
+        winFontSetLabel((Vec){120.0f + work->field_0x244, 8.0f + (work->field_0x24C - 56.0f), 0.0f},
+                        (Vec){0.75f, 0.75f, 0.75f}, black, mail->name);
 
         // the body, clipped to the page and scrolled by whole lines
         top = 72.0f + (240.0f - work->field_0x24C);
@@ -2876,8 +2839,8 @@ void winMailDisp(WindowWork* work) {
                   (Vec){4.0f + (208.0f + work->field_0x244), (work->field_0x24C - 56.0f) - 80.0f, 0.0f},
                   (Vec){1.0f, 7.5f, 1.0f}, color);
         winFontInit();
-        winMailLabelV((Vec){80.0f + work->field_0x244, (work->field_0x24C - 80.0f) + (f32)(work->mailScroll * 21), 0.0f},
-                      (Vec){0.75f, 0.75f, 0.75f}, (GXColor){0x00, 0x00, 0x00, 0xFF}, mail->body);
+        winFontSetLabel((Vec){80.0f + work->field_0x244, (work->field_0x24C - 80.0f) + (f32)(work->mailScroll * 21), 0.0f},
+                        (Vec){0.75f, 0.75f, 0.75f}, (GXColor){0x00, 0x00, 0x00, 0xFF}, mail->body);
         if (mail->flags & 0x1000) {
             winTexInit(*(TEXPalette**)work->mailTpl->data);
             winTexSet(mail->picture,
@@ -2892,27 +2855,27 @@ void winMailDisp(WindowWork* work) {
             winIconInit();
             if (work->mailScroll == 0) {
                 if ((gp->retraceCount & 0x1F) < 20) {
-                    winMailIconV(0x1B6,
-                                 (Vec){360.0f + work->field_0x244, (20.0f + (work->field_0x24C - 230.0f)) - 24.0f, 0.0f},
-                                 (Vec){0.6f, 0.6f, 0.6f}, (GXColor){0xFF, 0xFF, 0xFF, 0xFF});
+                    winIconSet(0x1B6,
+                               (Vec){360.0f + work->field_0x244, (20.0f + (work->field_0x24C - 230.0f)) - 24.0f, 0.0f},
+                               (Vec){0.6f, 0.6f, 0.6f}, (GXColor){0xFF, 0xFF, 0xFF, 0xFF});
                 }
             } else if (work->mailScroll + 6 == work->mailLines) {
                 if ((gp->retraceCount & 0x1F) < 20) {
-                    winMailIconV(0x1B5,
-                                 (Vec){360.0f + work->field_0x244, 24.0f + (20.0f + (work->field_0x24C - 230.0f)), 0.0f},
-                                 (Vec){0.6f, 0.6f, 0.6f}, (GXColor){0xFF, 0xFF, 0xFF, 0xFF});
+                    winIconSet(0x1B5,
+                               (Vec){360.0f + work->field_0x244, 24.0f + (20.0f + (work->field_0x24C - 230.0f)), 0.0f},
+                               (Vec){0.6f, 0.6f, 0.6f}, (GXColor){0xFF, 0xFF, 0xFF, 0xFF});
                 }
             } else if ((gp->retraceCount & 0x1F) < 20) {
-                winMailIconV(0x1B5,
-                             (Vec){360.0f + work->field_0x244, 24.0f + (20.0f + (work->field_0x24C - 230.0f)), 0.0f},
-                             (Vec){0.6f, 0.6f, 0.6f}, (GXColor){0xFF, 0xFF, 0xFF, 0xFF});
-                winMailIconV(0x1B6,
-                             (Vec){360.0f + work->field_0x244, (20.0f + (work->field_0x24C - 230.0f)) - 24.0f, 0.0f},
-                             (Vec){0.6f, 0.6f, 0.6f}, (GXColor){0xFF, 0xFF, 0xFF, 0xFF});
+                winIconSet(0x1B5,
+                           (Vec){360.0f + work->field_0x244, 24.0f + (20.0f + (work->field_0x24C - 230.0f)), 0.0f},
+                           (Vec){0.6f, 0.6f, 0.6f}, (GXColor){0xFF, 0xFF, 0xFF, 0xFF});
+                winIconSet(0x1B6,
+                           (Vec){360.0f + work->field_0x244, (20.0f + (work->field_0x24C - 230.0f)) - 24.0f, 0.0f},
+                           (Vec){0.6f, 0.6f, 0.6f}, (GXColor){0xFF, 0xFF, 0xFF, 0xFF});
             }
-            winMailIconV(0x70,
-                         (Vec){360.0f + work->field_0x244, 20.0f + (work->field_0x24C - 230.0f), 0.0f},
-                         (Vec){0.6f, 0.6f, 0.6f}, (GXColor){0xFF, 0xFF, 0xFF, 0xFF});
+            winIconSet(0x70,
+                       (Vec){360.0f + work->field_0x244, 20.0f + (work->field_0x24C - 230.0f), 0.0f},
+                       (Vec){0.6f, 0.6f, 0.6f}, (GXColor){0xFF, 0xFF, 0xFF, 0xFF});
         }
     }    }
 }
