@@ -3061,7 +3061,7 @@ s32 battenSatelliteTo_Init(struct BattleUnit* unit, s32 index, s32* table) {
     return 1;
 }
 
-s32 battenSatelliteTo_Main(struct BattleUnit* unit, s32 index) {
+u8 battenSatelliteTo_Main(struct BattleUnit* unit, s32 index) {
     BattenSatelliteSpline* data;
     struct BattleUnit* sat;
     f32 pos[3];
@@ -3098,7 +3098,7 @@ s32 battenSatelliteTo_Main(struct BattleUnit* unit, s32 index) {
 // inlined loop iteration) while `inv` keeps a normal copy alive for the later work[1] store. Passing the
 // same symbol twice is behaviourally identical (the pointer never changes) and is required to reproduce the
 // original's register allocation; a plain 3-arg call leaves both functions 80 bytes short.
-static inline s32 battenSatelliteTo_InitInline(struct BattleUnit* unit, s32 index, s32* volatile table, s32* inv) {
+static inline u8 battenSatelliteTo_InitInline(struct BattleUnit* unit, s32 index, s32* volatile table, s32* inv) {
     BattenSatelliteSpline* data;
     struct BattleUnit* sat;
     data = __memAlloc(4, 0x5C);
@@ -3170,7 +3170,7 @@ USER_FUNC(battenSatelliteToInside) {
     }
     haveAll = 0;
     for (i = 0; i < 4; i++) {
-        if ((u8)battenSatelliteTo_Main(unit, i) == 1) {
+        if (battenSatelliteTo_Main(unit, i) == 1) {
             haveAll = 1;
         }
     }
@@ -3195,7 +3195,7 @@ USER_FUNC(battenSatelliteToOutside) {
             case 1:
                 i = 0;
                 for (;;) {
-                    if ((u8)battenSatelliteTo_InitInline(unit, i, (s32*)splineTableOut1_1, (s32*)splineTableOut1_1) == 1) {
+                    if (battenSatelliteTo_InitInline(unit, i, (s32*)splineTableOut1_1, (s32*)splineTableOut1_1) == 1) {
                         break;
                     }
                     i++;
@@ -3204,14 +3204,14 @@ USER_FUNC(battenSatelliteToOutside) {
             case 2:
                 i = 0;
                 for (;;) {
-                    if ((u8)battenSatelliteTo_InitInline(unit, i, (s32*)splineTableOut2_1, (s32*)splineTableOut2_1) == 1) {
+                    if (battenSatelliteTo_InitInline(unit, i, (s32*)splineTableOut2_1, (s32*)splineTableOut2_1) == 1) {
                         break;
                     }
                     i++;
                 }
                 i++;
                 for (;;) {
-                    if ((u8)battenSatelliteTo_InitInline(unit, i, (s32*)splineTableOut2_2, (s32*)splineTableOut2_2) == 1) {
+                    if (battenSatelliteTo_InitInline(unit, i, (s32*)splineTableOut2_2, (s32*)splineTableOut2_2) == 1) {
                         break;
                     }
                     i++;
@@ -3220,21 +3220,21 @@ USER_FUNC(battenSatelliteToOutside) {
             case 3:
                 i = 0;
                 for (;;) {
-                    if ((u8)battenSatelliteTo_InitInline(unit, i, (s32*)splineTableOut3_1, (s32*)splineTableOut3_1) == 1) {
+                    if (battenSatelliteTo_InitInline(unit, i, (s32*)splineTableOut3_1, (s32*)splineTableOut3_1) == 1) {
                         break;
                     }
                     i++;
                 }
                 i++;
                 for (;;) {
-                    if ((u8)battenSatelliteTo_InitInline(unit, i, (s32*)splineTableOut3_2, (s32*)splineTableOut3_2) == 1) {
+                    if (battenSatelliteTo_InitInline(unit, i, (s32*)splineTableOut3_2, (s32*)splineTableOut3_2) == 1) {
                         break;
                     }
                     i++;
                 }
                 i++;
                 for (;;) {
-                    if ((u8)battenSatelliteTo_InitInline(unit, i, (s32*)splineTableOut3_3, (s32*)splineTableOut3_3) == 1) {
+                    if (battenSatelliteTo_InitInline(unit, i, (s32*)splineTableOut3_3, (s32*)splineTableOut3_3) == 1) {
                         break;
                     }
                     i++;
@@ -3243,28 +3243,28 @@ USER_FUNC(battenSatelliteToOutside) {
             case 4:
                 i = 0;
                 for (;;) {
-                    if ((u8)battenSatelliteTo_InitInline(unit, i, (s32*)splineTableOut4_1, (s32*)splineTableOut4_1) == 1) {
+                    if (battenSatelliteTo_InitInline(unit, i, (s32*)splineTableOut4_1, (s32*)splineTableOut4_1) == 1) {
                         break;
                     }
                     i++;
                 }
                 i++;
                 for (;;) {
-                    if ((u8)battenSatelliteTo_InitInline(unit, i, (s32*)splineTableOut4_2, (s32*)splineTableOut4_2) == 1) {
+                    if (battenSatelliteTo_InitInline(unit, i, (s32*)splineTableOut4_2, (s32*)splineTableOut4_2) == 1) {
                         break;
                     }
                     i++;
                 }
                 i++;
                 for (;;) {
-                    if ((u8)battenSatelliteTo_InitInline(unit, i, (s32*)splineTableOut4_3, (s32*)splineTableOut4_3) == 1) {
+                    if (battenSatelliteTo_InitInline(unit, i, (s32*)splineTableOut4_3, (s32*)splineTableOut4_3) == 1) {
                         break;
                     }
                     i++;
                 }
                 i++;
                 for (;;) {
-                    if ((u8)battenSatelliteTo_InitInline(unit, i, (s32*)splineTableOut4_4, (s32*)splineTableOut4_4) == 1) {
+                    if (battenSatelliteTo_InitInline(unit, i, (s32*)splineTableOut4_4, (s32*)splineTableOut4_4) == 1) {
                         break;
                     }
                     i++;
@@ -3276,7 +3276,7 @@ USER_FUNC(battenSatelliteToOutside) {
     }
     haveAll = 0;
     for (i = 0; i < 4; i++) {
-        if ((u8)battenSatelliteTo_Main(unit, i) == 1) {
+        if (battenSatelliteTo_Main(unit, i) == 1) {
             haveAll = 1;
         }
     }
