@@ -1,4 +1,5 @@
 #include "evt_lect_gor.h"
+
 #include "rel/common/evt_lect.h"
 #include "evt/evt_cam.h"
 #include "evt/evt_cmd.h"
@@ -114,119 +115,10 @@ extend_data(85,
      f32, __local_PIO2, 1.57079632679489661923132169163975f,
      f32, one, 1.0f)
 
-
-static f32 lect_mario_ido_sub(f32 elapsed, f32 duration, f32 start, f32 end) {
-    {
-        f32 t = duration - elapsed;
-
-        return (t * start + elapsed * end) / duration;
-    }
-}
-
-static USER_FUNC(lect_mario_ido_sum) {
-    s32* args = event->args;
-    MarioWork* mario = marioGetPtr();
-    s32 duration = evtGetValue(event, args[0]);
-    s32 elapsed;
-
-    if (isFirstCall) {
-        wwstart = event->lifetime;
-        evtSetFloat(event, LW(0), mario->position.x);
-        evtSetFloat(event, LW(1), mario->position.y);
-        evtSetFloat(event, LW(2), mario->position.z);
-    }
-    elapsed = (s32)((u64)((s32)event->lifetime - (s32)wwstart) / (OS_TIMER_CLOCK / 1000));
-    if (elapsed > duration) {
-        elapsed = duration;
-    }
-    mario->position.x = lect_mario_ido_sub(elapsed, duration, evtGetFloat(event, LW(3)), evtGetFloat(event, LW(0)));
-    mario->position.y = lect_mario_ido_sub(elapsed, duration, evtGetFloat(event, LW(4)), evtGetFloat(event, LW(1)));
-    mario->position.z = lect_mario_ido_sub(elapsed, duration, evtGetFloat(event, LW(5)), evtGetFloat(event, LW(2)));
-    if (elapsed >= duration) {
-        return EVT_RETURN_DONE;
-    }
-    return EVT_RETURN_BLOCK;
-}
-
-static USER_FUNC(lect_status_off) {
-    statusWinForceClose();
-    return EVT_RETURN_DONE;
-}
-
-static USER_FUNC(lect_status_on) {
-    statusWinForceCloseClear();
-    return EVT_RETURN_DONE;
-}
-
-static USER_FUNC(x_flag_set) {
-    s32* args = event->args;
-    s32 idx = evtGetValue(event, args[0]);
-
-    x_flag_data[idx] = evtGetValue(event, args[1]);
-    return EVT_RETURN_DONE;
-}
-
-static USER_FUNC(x_flag_add) {
-    s32* args = event->args;
-    s32 idx = evtGetValue(event, args[0]);
-    s32 value = evtGetValue(event, args[1]);
-
-    x_flag_data[idx] += value;
-    return EVT_RETURN_DONE;
-}
-
-static USER_FUNC(x_flag_get) {
-    s32* args = event->args;
-    s32 idx = evtGetValue(event, args[0]);
-
-    evtSetValue(event, args[1], x_flag_data[idx]);
-    return EVT_RETURN_DONE;
-}
-
-static USER_FUNC(x_flag_wait) {
-    s32* args = event->args;
-    s32 idx = evtGetValue(event, args[0]);
-    s32 value = evtGetValue(event, args[1]);
-
-    return (value == x_flag_data[idx]) ? EVT_RETURN_DONE : EVT_RETURN_BLOCK;
-}
-
-// The iconId 0x75..0x7D range test is a switch: MWCC lowers the grouped cases to the
-// original's `cmpwi 0x7e; bge zero; cmpwi 0x75; bge neg15; b zero` chain.
-static void lecture_button_disp(CameraId cameraId, void* param) {
-    s32 i;
-
-    for (i = 0; i < 2; i++) {
-        LectureButton* b = &lbtn[i];
-#ifdef MUST_MATCH
-        Vec* ppos = (Vec*)((u8*)b + 8);
-        u8* pposb;
-#endif
-        f32 yoff;
-        Vec pos;
-
-        if (b->flags & 1) {
-            continue;
-        }
-        switch (b->iconId) {
-            case 0x75: case 0x76: case 0x77: case 0x78: case 0x79:
-            case 0x7A: case 0x7B: case 0x7C: case 0x7D:
-                yoff = -15.0f;
-                break;
-            default:
-                yoff = 0.0f;
-                break;
-        }
-#ifdef MUST_MATCH
-        pposb = (u8*)ppos + 4;
-        pos = *(Vec*)pposb;
-#else
-        pos = b->position;
-#endif
-        pos.y += yoff;
-        iconDispGxAlpha(&pos, 0x50, (u16)b->iconId, (u8)b->alpha, 1.0f);
-    }
-}
+#include "rel/common/evt_lect/lect_mario_ido.h"
+#include "rel/common/evt_lect/lect_status.h"
+#include "rel/common/x_flag.h"
+#include "rel/common/evt_lect/lecture_button_disp.h"
 
 static USER_FUNC(lecture_button_rtn) {
     s32 i;

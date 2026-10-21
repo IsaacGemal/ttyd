@@ -1,4 +1,5 @@
 #include "evt_lect_tou.h"
+
 #include "rel/common/evt_lect.h"
 #include "evt/evt_cam.h"
 #include "evt/evt_cmd.h"
@@ -700,112 +701,11 @@ EVT_BEGIN(all_juyoitem_lecture_rel_27_data_2F48C)
     RETURN
 EVT_END()
 
-static f32 lect_mario_ido_sub(f32 a, f32 b, f32 c, f32 d) {
-    f32 e = b - a;
+#include "rel/common/evt_lect/lect_mario_ido.h"
+#include "rel/common/evt_lect/lect_status.h"
+#include "rel/common/x_flag.h"
+#include "rel/common/evt_lect/lecture_button_disp.h"
 
-    return (e * c + a * d) / b;
-}
-static USER_FUNC(lect_mario_ido_sum) {
-    s32* args = event->args;
-    MarioWork* mario = marioGetPtr();
-    s32 time = evtGetValue(event, args[0]);
-    s32 elapsed;
-
-    if (isFirstCall) {
-        wwstart = event->lifetime;
-        evtSetFloat(event, LW(0), mario->position.x);
-        evtSetFloat(event, LW(1), mario->position.y);
-        evtSetFloat(event, LW(2), mario->position.z);
-    }
-    elapsed = (s32)((u64)((s32)event->lifetime - (s32)wwstart) / (OS_TIMER_CLOCK / 1000));
-    if (elapsed > time) {
-        elapsed = time;
-    }
-    mario->position.x = lect_mario_ido_sub(elapsed, time, evtGetFloat(event, LW(3)), evtGetFloat(event, LW(0)));
-    mario->position.y = lect_mario_ido_sub(elapsed, time, evtGetFloat(event, LW(4)), evtGetFloat(event, LW(1)));
-    mario->position.z = lect_mario_ido_sub(elapsed, time, evtGetFloat(event, LW(5)), evtGetFloat(event, LW(2)));
-    if (elapsed >= time) {
-        return EVT_RETURN_DONE;
-    }
-    return EVT_RETURN_BLOCK;
-}
-static USER_FUNC(lect_status_off) {
-    statusWinForceClose();
-    return EVT_RETURN_DONE;
-}
-static USER_FUNC(lect_status_on) {
-    statusWinForceCloseClear();
-    return EVT_RETURN_DONE;
-}
-static USER_FUNC(x_flag_set) {
-    s32* args = event->args;
-
-    s32 idx = evtGetValue(event, args[0]);
-    x_flag_data[idx] = evtGetValue(event, args[1]);
-    return EVT_RETURN_DONE;
-}
-static USER_FUNC(x_flag_add) {
-    s32* args = event->args;
-
-    s32 idx = evtGetValue(event, args[0]);
-    x_flag_data[idx] += evtGetValue(event, args[1]);
-    return EVT_RETURN_DONE;
-}
-static USER_FUNC(x_flag_get) {
-    s32* args = event->args;
-
-    s32 idx = evtGetValue(event, args[0]);
-    evtSetValue(event, args[1], x_flag_data[idx]);
-    return EVT_RETURN_DONE;
-}
-static USER_FUNC(x_flag_wait) {
-    s32* args = event->args;
-
-    s32 idx = evtGetValue(event, args[0]);
-    s32 value = evtGetValue(event, args[1]);
-    return (x_flag_data[idx] == value) ? EVT_RETURN_DONE : EVT_RETURN_BLOCK;
-}
-static void lecture_button_disp(CameraId cameraId, void* param) {
-    s32 i;
-
-    for (i = 0; i < 2; i++) {
-        LectureButton* btn = &lbtn[i];
-#ifdef MUST_MATCH
-        // The original addresses the button Vec off &lbtn[i] + 8 with a +4 displacement; matching MWCC's
-        // base register needs the pointer built the same way. The natural btn->position scores lower.
-        u8* ppos = (u8*)&lbtn[i] + 8;
-#endif
-
-        if (!(btn->flags & 1)) {
-            Vec pos;
-            f32 yOff;
-
-            switch (btn->iconId) {
-            case 0x75:
-            case 0x76:
-            case 0x77:
-            case 0x78:
-            case 0x79:
-            case 0x7A:
-            case 0x7B:
-            case 0x7C:
-            case 0x7D:
-                yOff = -15.0f;
-                break;
-            default:
-                yOff = 0.0f;
-                break;
-            }
-#ifdef MUST_MATCH
-            pos = *(Vec*)(ppos + 4);
-#else
-            pos = btn->position;
-#endif
-            pos.y += yOff;
-            iconDispGxAlpha(&pos, 0x50, btn->iconId, btn->alpha, 1.0f);
-        }
-    }
-}
 static USER_FUNC(lecture_button_rtn) {
     s32 i;
     LectureButton* btn;

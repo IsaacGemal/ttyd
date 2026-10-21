@@ -9,11 +9,11 @@
 // and `Vec daiv`.
 //
 // MWCC gives every included file's functions their own .text section and links the unit's own section ahead of them,
-// so a unit can take its helpers from these headers only if its own functions all come after them (before them in
-// gon and mri, which are built without deferred inlining). gon, hei, mri, tik and usu take every helper from here.
-// dou (its lect_status_on and lect_status_off swap bodies) and eki, gor, muj, tou and win (lecture_button_rtn,
-// lecture_button_set_pos and in some effitemget_busaiku copy named .rodata Vecs of their own) keep their own copies
-// and share only this header.
+// so a unit can take a helper from these headers only if all its own functions come after it (before it in gon and
+// mri, which are built without deferred inlining). gon, hei, mri, tik and usu take every helper from here. eki, gor,
+// muj, tou and win take the ones before lecture_button_rtn, which with lecture_button_set_pos and in some
+// effitemget_busaiku copies a named .rodata Vec of their own; dou takes lect_mario_ido_sub and lect_mario_ido_sum, as
+// its lect_status_on and lect_status_off swap bodies. The rest of their helpers stay in the unit.
 
 // One of the two buttons lecture_button_rtn draws through lecture_button_disp.
 typedef struct LectureButton {

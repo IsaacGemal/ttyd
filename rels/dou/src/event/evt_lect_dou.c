@@ -1,4 +1,5 @@
 #include "evt_lect_dou.h"
+
 #include "rel/common/evt_lect.h"
 #include "driver/camdrv.h"
 #include "driver/dispdrv.h"
@@ -59,50 +60,8 @@ extend_data(93,
      u64, one_negone, 0x3F800000BF800000,
      f32, __local_PIO2, 1.57079632679489661923132169163975f,
      f32, one, 1.0f)
-static f32 lect_mario_ido_sub(f32 a, f32 b, f32 c, f32 d) {
-    f32 t = b - a;
-    return (t * c + a * d) / b;
-}
 
-static USER_FUNC(lect_mario_ido_sum) {
-    EventEntry* evt = event;
-    s32* args = event->args;
-    MarioWork* mario = marioGetPtr();
-    s32 value = evtGetValue(event, args[0]);
-    s32 min;
-    if (isFirstCall) {
-        wwstart = evt->lifetime;
-        evtSetFloat(event, LW(0), mario->position.x);
-        evtSetFloat(event, LW(1), mario->position.y);
-        evtSetFloat(event, LW(2), mario->position.z);
-    }
-    min = (s32)((s64)((s32)evt->lifetime - (s32)wwstart) / (u64)OSMillisecondsToTicks(1));
-    if (min > value) {
-        min = value;
-    }
-    {
-        f32 start = evtGetFloat(event, LW(0));
-        f32 target = evtGetFloat(event, LW(3));
-        f32 t = (f32)value - (f32)min;
-        mario->position.x = (t * target + (f32)min * start) / (f32)value;
-    }
-    {
-        f32 start = evtGetFloat(event, LW(1));
-        f32 target = evtGetFloat(event, LW(4));
-        f32 t = (f32)value - (f32)min;
-        mario->position.y = (t * target + (f32)min * start) / (f32)value;
-    }
-    {
-        f32 start = evtGetFloat(event, LW(2));
-        f32 target = evtGetFloat(event, LW(5));
-        f32 t = (f32)value - (f32)min;
-        mario->position.z = (t * target + (f32)min * start) / (f32)value;
-    }
-    if (min >= value) {
-        return EVT_RETURN_DONE;
-    }
-    return EVT_RETURN_BLOCK;
-}
+#include "rel/common/evt_lect/lect_mario_ido.h"
 
 static USER_FUNC(lect_status_on) {
     statusWinForceClose();

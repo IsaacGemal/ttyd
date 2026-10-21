@@ -94,6 +94,7 @@ extend_data(149,
      u64, one_negone, 0x3F800000BF800000,
      f32, __local_PIO2, 1.57079632679489661923132169163975f,
      f32, one, 1.0f)
+
 #include "rel/common/evt_lect/lect_mario_ido.h"
 #include "rel/common/evt_lect/lect_status.h"
 #include "rel/common/x_flag.h"
