@@ -69,8 +69,8 @@ typedef struct WindowWork {
     s32 field_0x130;            // 0x130, win_root: winMsgMain state
     s32 field_0x134;            // 0x134
     s32 field_0x138;            // 0x138
-    const char* field_0x13C;    // 0x13C, win_root: winMsgEntry's str, the help message winMsgDisp shows
-    const char* field_0x140;    // 0x140, winMsgEntry's a3, a title message drawn above it (NULL for none)
+    const char* field_0x13C;    // 0x13C, win_root: winMsgEntry's str, the message winMsgDisp shows
+    const char* field_0x140;    // 0x140, winMsgEntry's a3, a second message winMsgDisp draws in a winNameGX box (NULL for none)
     const char* field_0x144;    // 0x144, the last str winMsgEntry took (it skips a repeat)
     s32 field_0x148;            // 0x148
     s32 field_0x14C;            // 0x14C
