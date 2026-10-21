@@ -11708,3 +11708,11 @@ directly (the A14L/A74L/AD4L/A74F/A14R views stay raw: they exist to fold the ad
 helpers use `effItemGetData` (camId 0x38, scaleMode 0x20; the scripts create "itemget" effects), the balloon helper uses
 `EffMarioBalloonData.cameraId` (0x1C, effMarioBalloonEntry), the fukidashi helper `effFukidashiData.camId` (0x4C; script
 creates it with evt_eff_fukidashi). Left raw: `(u8*)b + 8` / `(u8*)ppos + 4` in evt_lect_gor.c (MUST_MATCH position bases), end_unknown.c's `off`/`offset` forms and bom_01.c's padding-landing sites (match tricks).
+
+## s-mmmix24: MUST_MATCH reduction (eff_water_damage, eff_pokopi_thunder, eff_peach_dust, eff_opuku_wprotect, eff_opuku_wgun N64)
+Structural only, no names added. Made the MUST_MATCH shape the only version (guards and #else arms dropped):
+water_damage everything (the colour inlines, the hoisted data++, the unused `color` local); pokopi_thunder the named
+`zero` and the SetColor1 inline; peach_dust scaleColor/peachDustColor; wprotect everything (f14*6+f14, the three
+colour inlines); wgun opukuWgunSin and opukuWgunColor1. Still guarded: pokopi_thunder SetColor2 (`*(GXColor*)&`
+type-punned read), peach_dust scalePtr (a redundant alias pointer), wgun Color2 (type-punned read) and the dispatch
+goto pair (the switch does not match). Block counts (lines naming MUST_MATCH) 30 -> 9. Build MATCH.

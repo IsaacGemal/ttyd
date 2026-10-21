@@ -221,12 +221,8 @@ void effOpukuWprotectMain(EffectEntry* effect) {
 		}
 	}
 
-#ifdef MUST_MATCH
-	// Original emits the multiply as `f14*6 + f14` (mulli 6; add) instead of a single *7.
+	// Written as `f14*6 + f14` so it compiles to mulli 6; add instead of a single *7.
 	s = (f32)sin(float_6p2832_8041f8b8 * (f32)(f14 * 6 + f14) / float_360_8041f8bc);
-#else
-	s = (f32)sin(float_6p2832_8041f8b8 * (f32)(f14 * 7) / float_360_8041f8bc);
-#endif
 	data->colorG = (u8)(s32)(32.0f * s + 127.0f);
 	t = 0.01f * (f32)f14;
 	a1 = float_6p2832_8041f8b8 * t / float_360_8041f8bc;
@@ -273,7 +269,6 @@ void effOpukuWprotectMain(EffectEntry* effect) {
 // The display pass: build the 40-point ring from point_data, draw the four bubbles,
 // then two indexed passes over the built vertices. Every coordinate conversion is
 // integer magic (fctiwz + lfd/fsubs), so no inline asm is needed.
-#ifdef MUST_MATCH
 // Build each colour and make the GXSetTevColor call inside an inline: mwcc then places
 // each colour local and its by-value copy in the original's stack slots. Returning the
 // GXColor and calling outside packs all locals together instead.
@@ -297,7 +292,6 @@ static inline void wprotectColor3(effOpukuWprotectData* data, s32 a) {
 	c.a = a;
 	GXSetTevColor(GX_TEVREG0, c);
 }
-#endif
 
 void effOpukuWprotectDisp(CameraId camId, void* param) {
 	EffectEntry* effect = param;
@@ -312,11 +306,6 @@ void effOpukuWprotectDisp(CameraId camId, void* param) {
 	Mtx bubble;
 	Mtx scale;
 	Mtx trans;
-#ifndef MUST_MATCH
-	GXColor color1;
-	GXColor color2;
-	GXColor color3;
-#endif
 	s32 counter;
 	f32 s1;
 	f32 px;
@@ -367,20 +356,8 @@ void effOpukuWprotectDisp(CameraId camId, void* param) {
 		point++;
 	}
 
-#ifdef MUST_MATCH
 	wprotectColor1(alpha);
-#else
-	color1 = dat_8041f888;
-	color1.a = alpha;
-	GXSetTevColor(GX_TEVREG0, color1);
-#endif
-#ifdef MUST_MATCH
 	wprotectColor2(data->baseAlpha);
-#else
-	color2 = dat_8041f88c;
-	color2.a = data->baseAlpha;
-	GXSetTevColor(GX_TEVREG1, color2);
-#endif
 	GXSetNumChans(0);
 	GXSetNumTevStages(1);
 	GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR_NULL);
@@ -431,16 +408,7 @@ void effOpukuWprotectDisp(CameraId camId, void* param) {
 	GXSetTexCoordGen2(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_TEXMTX0, GX_FALSE, GX_PTIDENTITY);
 	PSMTXScale(scale, float_0p0625_8041f8a8, float_0p03125_8041f8a0, float_0_8041f890);
 	GXLoadTexMtxImm(scale, GX_TEXMTX0, GX_MTX2x4);
-#ifdef MUST_MATCH
 	wprotectColor3(data, (s32)(float_0p3_8041f8ac * (f32)alpha));
-#else
-	color3 = unk_804231f0;
-	color3.r = data->colorR;
-	color3.g = data->colorG;
-	color3.b = data->colorB;
-	color3.a = (s32)(float_0p3_8041f8ac * (f32)alpha);
-	GXSetTevColor(GX_TEVREG0, color3);
-#endif
 	GXSetCullMode(GX_CULL_FRONT);
 
 	DCFlushRange(vtx, 0x460);

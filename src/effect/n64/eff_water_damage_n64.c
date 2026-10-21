@@ -258,7 +258,6 @@ static inline Vec initializeVec(Vec* input) {
 }
 
 
-#ifdef MUST_MATCH
 // Calling GXSetTevColor inside each inline places the colour build word and its by-value argument
 // copy in the original's slots (color 0xc/0x10, color2 0x8).
 static inline void effWaterDamageSetColor0(s32 alpha) {
@@ -271,10 +270,8 @@ static inline void effWaterDamageSetColor1(void) {
 	GXColor c = { 0x00, 0x20, 0x20, 0x00 };
 	GXSetTevColor(GX_TEVREG1, c);
 }
-#endif
 
-// The two colour inlines above reproduce the original's GXColor stack slots, and the loop's initial
-// data++ is hoisted to just before GXInitTexObj to match the original's schedule.
+// The loop's initial data++ is hoisted to just before GXInitTexObj, which matches the original's schedule.
 void effWaterDamageDisp(CameraId camId, void* param) {
 	EffectEntry* effect = param;
 	CameraEntry* cam = camGetPtr(camId);
@@ -284,7 +281,6 @@ void effWaterDamageDisp(CameraId camId, void* param) {
 	Mtx rot;
 	Mtx viewMtx;
 	GXTexObj texObj;
-	GXColor color;
 	s32 i;
 	s32 alpha;
 	s32 x;
@@ -335,19 +331,12 @@ void effWaterDamageDisp(CameraId camId, void* param) {
 	effGetTexObjN64(0x89, &texObj);
 	GXLoadTexObj(&texObj, GX_TEXMAP0);
 	GXSetCullMode(GX_CULL_NONE);
-#ifdef MUST_MATCH
-	// The original's scheduler hoists the loop's initial data++ to just before GXInitTexObj.
 	data++;
-#endif
 	GXInitTexObj(&texObj, unk_803a8a00, 0x10, 0x10, 0xE, 0, 0, 0);
 	GXInitTexObjLOD(&texObj, 1, 1, 0.0f, 0.0f, 0.0f, 0, 0, 0);
 	GXLoadTexObj(&texObj, GX_TEXMAP1);
 
-#ifdef MUST_MATCH
 	for (i = 1; i < effect->count; i++, data++) {
-#else
-	for (i = 1, data++; i < effect->count; i++, data++) {
-#endif
 		s32 kind;
 
 		PSMTXScale(scale, 0.0625f, 0.0625f, 0.0f);
@@ -359,15 +348,8 @@ void effWaterDamageDisp(CameraId camId, void* param) {
 		GXLoadPosMtxImm(mtx, GX_PNMTX0);
 		GXSetCurrentMtx(GX_PNMTX0);
 
-#ifdef MUST_MATCH
 		effWaterDamageSetColor0(alpha * data->alpha / 255);
 		effWaterDamageSetColor1();
-#else
-		color = (GXColor){ 0xC8, 0xFF, 0xFF, 0x00 };
-		color.a = alpha * data->alpha / 255;
-		GXSetTevColor(GX_TEVREG0, color);
-		GXSetTevColor(GX_TEVREG1, (GXColor){ 0x00, 0x20, 0x20, 0x00 });
-#endif
 
 		kind = (i + (gp->retraceCount >> 1)) & 3;
 		switch (kind) {
@@ -388,7 +370,6 @@ void effWaterDamageDisp(CameraId camId, void* param) {
 }
 
 
-#ifdef MUST_MATCH
 // The original builds the material colour from a pooled GXColor and only overwrites .a; MWCC keeps the
 // colour in the 0x8 stack slot and the outgoing copy at 0xc (the reverse of a plain assignment here).
 static inline GXColor effWaterDamageColor(s32 alpha) {
@@ -396,7 +377,6 @@ static inline GXColor effWaterDamageColor(s32 alpha) {
 	color.a = alpha;
 	return color;
 }
-#endif
 
 // Matches: the original reuses cam's callee-saved register for the loop index, which needs the index
 // declared before the value temporaries here.
@@ -434,12 +414,7 @@ void effWaterDamageDisp2(CameraId camId, void* param) {
 	GXSetNumChans(1);
 	GXSetChanCtrl(4, 0, 0, 0, 0, 0, 2);
 
-#ifdef MUST_MATCH
 	color = effWaterDamageColor(alpha * data->alpha / 255);
-#else
-	color = (GXColor){ 0xC8, 0xFF, 0xFF, 0x00 };
-	color.a = alpha * data->alpha / 255;
-#endif
 	GXSetChanMatColor(4, color);
 
 	GXSetNumTevStages(1);
