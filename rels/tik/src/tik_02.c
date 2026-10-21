@@ -662,7 +662,7 @@ USER_FUNC(geso_set_checkpose) {
     s32 value = evtGetValue(event, event->args[0]);
     NpcEntry* npc = evtNpcNameToPtr(event, (const char*)value);
 
-    npc->field_10C = geso_checkpose;
+    npc->checkPose = geso_checkpose;
     return EVT_RETURN_DONE;
 }
 // clang-format on

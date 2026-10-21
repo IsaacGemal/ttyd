@@ -99,7 +99,7 @@ void SoundInit(void) { // 1:1, assuming sndMalloc inlines
     sound.fadeOut = 500;
     sound.dataId = 0;
     sound.slibId = 0;
-    sound.unk214 = 0;
+    sound.cover = 0;
     sound.unk224 = 0;
     sound.unkE8 = 0;
 
@@ -711,8 +711,8 @@ void SoundSetOutputMode(SND_OUTPUTMODE mode) {
 }
 
 void SoundOpenCover(void) {
-    if (!sound.unk214) {
-        sound.unk214 = 1;
+    if (!sound.cover) {
+        sound.cover = 1;
     }
 }
 
@@ -721,7 +721,7 @@ void SoundCloseCover(void) {
     BOOL close;
     int i;
 
-    if (sndIsInstalled() && sound.unk214 == 1) {
+    if (sndIsInstalled() && sound.cover == 1) {
         close = FALSE;
         for (i = 0; i < 3; i++) {
             stream = &sound.streams[i];
@@ -735,9 +735,9 @@ void SoundCloseCover(void) {
             }
         }
         if (close) {
-            sound.unk214 = 2;
+            sound.cover = 2;
         } else {
-            sound.unk214 = 0;
+            sound.cover = 0;
         }
     }
 }
@@ -927,7 +927,7 @@ s32 SoundEfxPlayEx(SND_FXID fid, u8 a2, u8 vol, u8 pan) {
     sfx->pan = pan;
     sfx->span = 0;
     sfx->fid = fid;
-    if (sound.unk214) {
+    if (sound.cover) {
         sndFXVolume(sfx->voiceId, 0);
     }
     if (!SoundEfxCheckPlay(chan)) {
@@ -977,7 +977,7 @@ void SoundEfxSetVolume(s32 chan, u8 vol) {
     if (vid != -1) {
         sfx->vol = vol;
         sndFXVolume(vid, vol);
-        if (sound.unk214) {
+        if (sound.cover) {
             sndFXVolume(vid, 0);
         }
     }
@@ -1306,11 +1306,11 @@ void _ssDVDReadAsync_activeChk(s32 result, DVDFileInfo* fileInfo) {
             stream->flags &= ~0x2000;
         }
         if (stream->count == 2) {
-            if (sound.unk214 == 2 && stream->entries[0].field_0x54 == 1 && stream->entries[1].field_0x54 == 1) {
-                sound.unk214 = 0;
+            if (sound.cover == 2 && stream->entries[0].field_0x54 == 1 && stream->entries[1].field_0x54 == 1) {
+                sound.cover = 0;
             }
-        } else if (sound.unk214 == 2 && stream->entries[0].field_0x54 == 1) {
-            sound.unk214 = 0;
+        } else if (sound.cover == 2 && stream->entries[0].field_0x54 == 1) {
+            sound.cover = 0;
         }
         break;
     }
@@ -1621,7 +1621,7 @@ u32 _sscallback(void* buffer1, u32 len1, void* buffer2, u32 len2, u32 user) {
 
     stream->field_0x24 = 0;
 
-    if ((stream->flags & 0x8006) || sound.unk214) {
+    if ((stream->flags & 0x8006) || sound.cover) {
         if (!(stream->flags & 0x100)) {
             for (i = 0; i != len1; i++) {
                 *out1++ = 0;

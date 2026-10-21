@@ -263,7 +263,7 @@ static void sun_tev(EnvironmentYami* yami) {
     s32 tevStage = yami->tevStage;
     s32 texMap = yami->texMap;
     s32 texCoord = yami->texCoord;
-    s32 indStage = yami->unk18;
+    s32 indStage = yami->numIndStage;
     u8* image;
     GXTexObj texObj;
     f32 indMtx[2][3];
@@ -312,7 +312,7 @@ static void sun_tev(EnvironmentYami* yami) {
 
     yami->tevStage = tevStage;
     yami->texCoord = texCoord;
-    yami->unk18 = indStage + 1;
+    yami->numIndStage = indStage + 1;
     yami->texMap = texMap + 1;
 }
 

@@ -23,7 +23,7 @@ typedef struct WinRootRec {
     s32 e; // 0x10
 } WinRootRec;
 
-// win_badge's equipped-badge list entry (WindowWork.field_404), built by winMakeEquipList.
+// win_badge's equipped-badge list entry (WindowWork.equipList), built by winMakeEquipList.
 typedef struct WinEquipRec {
     s32 field_0x0; // 0x0, 1 = equipped (win_badge toggles it)
     s32 field_0x4; // 0x4, pouch badge index (winMakeEquipList's i)
@@ -146,7 +146,7 @@ typedef struct WindowWork {
     s32 badgeScrollRow[2];      // 0x3EC, win_badge: first visible row per tab
     f32 badgeScrollPos[2];      // 0x3F4, animates toward badgeScrollTarget
     f32 badgeScrollTarget[2];   // 0x3FC
-    WinEquipRec field_404[200]; // 0x404, equipped-badge list (win_root sorts it)
+    WinEquipRec equipList[200]; // 0x404, winMakeEquipList; win_root sorts it
     s32 equipListCount;         // 0xD64
     u8 field_D68[0xE1C - 0xD68]; // 0xD68
     s32 mapMarioPose;           // 0xE1C, win_log map's Mario pose (LogWin.pose; mario_change rebuilds it)

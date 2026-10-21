@@ -698,7 +698,7 @@ s32 npcEntry(const char* a1, const char* animName) {
     entry->scale = (Vec){ 1.0f, 1.0f, 1.0f };
     entry->shadowScale = 1.0f;
     entry->gait = 0;
-    entry->field_10C = "M_I_2";
+    entry->checkPose = "M_I_2";
     entry->lastUpdateTick = gp->renderTime;
     entry->moveElapsed = 0;
     entry->jumpGravity = 1.0f;
@@ -2662,7 +2662,7 @@ void* fbatHitCheck(s32 flags, s32 out) {
         stomp = flags & 0x10;
         count = npcWork->total; // retail reads the total here, and only here
         npc = npcWork->entries;
-        if (!(stomp && mario->unk4C > 0) && fbatAttackEnabled(npc)) {
+        if (!(stomp && mario->mutekiTime > 0) && fbatAttackEnabled(npc)) {
             flag8 = flags & 0x1000;
             jump = flags & 0x20;
             for (i = 0; i < count; i++, npc++) {
@@ -2700,7 +2700,7 @@ void* fbatHitCheck(s32 flags, s32 out) {
                 if (dist >= info.dist) {
                     continue;
                 }
-                if (stomp && !(npc->jumpFlags & 0x10000) && mario->unk4C <= 0) {
+                if (stomp && !(npc->jumpFlags & 0x10000) && mario->mutekiTime <= 0) {
                     if (npc->attackMode == 0 || fbatNpcEventDone(npc)) {
                         if (npc->flags & 0x20000000) {
                             continue;
@@ -2770,7 +2770,7 @@ void* fbatHitCheck(s32 flags, s32 out) {
         f32 radius;
 
         while (hit == NULL) {
-            if ((flags & 0x10) && mario->unk4C > 0) {
+            if ((flags & 0x10) && mario->mutekiTime > 0) {
                 break;
             }
             if (!fbatAttackEnabled(npc)) {
@@ -2787,7 +2787,7 @@ void* fbatHitCheck(s32 flags, s32 out) {
                 }
                 radius = 1.5f * mario->wPlayerCollisionBox.x;
 
-                yaw = reviseAngle((mario->unk1A8 - 90.0f) + camGetPtr(CAMERA_3D)->viewYaw);
+                yaw = reviseAngle((mario->dispDir - 90.0f) + camGetPtr(CAMERA_3D)->viewYaw);
                 angle = yaw;
                 pose = marioGetPtr();
                 animPoseGetAnimPosePtr(pose->paperAnimGroupId[marioAnimeId()]);
@@ -2829,7 +2829,7 @@ void* fbatHitCheck(s32 flags, s32 out) {
                 }
             } else {
                 radius = 1.5f * mario->wPlayerCollisionBox.x;
-                angle = reviseAngle((mario->unk1A8 - 90.0f) + camGetPtr(CAMERA_3D)->viewYaw);
+                angle = reviseAngle((mario->dispDir - 90.0f) + camGetPtr(CAMERA_3D)->viewYaw);
                 flag8 = flags & 0x1000;
 
                 npc = npcWork->entries;
@@ -2873,7 +2873,7 @@ void* fbatHitCheck(s32 flags, s32 out) {
         f32 radius;
 
         while (hit == NULL) {
-            if ((flags & 0x10) && mario->unk4C > 0) {
+            if ((flags & 0x10) && mario->mutekiTime > 0) {
                 break;
             }
             if (!fbatAttackEnabled(npc)) {
@@ -2940,7 +2940,7 @@ void* fbatHitCheck(s32 flags, s32 out) {
                 }
             } else {
                 radius = 1.5f * mario->wPlayerCollisionBox.x;
-                angle = reviseAngle((mario->unk1A8 - 90.0f) + camGetPtr(CAMERA_3D)->viewYaw);
+                angle = reviseAngle((mario->dispDir - 90.0f) + camGetPtr(CAMERA_3D)->viewYaw);
                 flag8 = flags & 0x1000;
 
                 npc = npcWork->entries;
@@ -2999,7 +2999,7 @@ void* fbatHitCheck(s32 flags, s32 out) {
         while (hit == NULL) {
             u32 attack;
 
-            if ((flags & 0x10) && mario->unk4C > 0) {
+            if ((flags & 0x10) && mario->mutekiTime > 0) {
                 break;
             }
             if (!fbatAttackEnabled(npc)) {
@@ -3067,7 +3067,7 @@ void* fbatHitCheck(s32 flags, s32 out) {
         PartyEntry* party = partyGetPtr(marioGetPartyId());
 
         while (hit == NULL) {
-            if ((flags & 0x10) && mario->unk4C > 0) {
+            if ((flags & 0x10) && mario->mutekiTime > 0) {
                 break;
             }
             if (!fbatAttackEnabled(npc)) {
@@ -3383,7 +3383,7 @@ void npcSetBattleInfo(NpcEntry* npc, s32 battleInfoId) {
         areaName[2] = gp->currentMapName[2];
         areaName[3] = 0;
         area = areaDataPtr(areaName);
-        setup = (BattleSetupData*)area->field_8;
+        setup = (BattleSetupData*)area->btlSetupTbl;
         while (battleInfoId > 0) {
             setup++;
             battleInfoId--;

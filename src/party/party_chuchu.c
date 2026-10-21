@@ -386,8 +386,8 @@ void chuchu_use(PartyEntry* party) {
         party->field_FC = angleABf(party->position.x, party->position.z,
                                    party->targetPos.x, party->targetPos.z);
         party->dir = party->field_FC;
-        party->field_10C = player->unk1A8;
-        party->field_110 = player->unk1A8;
+        party->dispDir = player->dispDir;
+        party->field_110 = player->dispDir;
         party->speed = distABf(party->position.x, party->position.z,
                                party->targetPos.x, party->targetPos.z)
                        / (f32)party->timer;
@@ -446,7 +446,7 @@ void chuchu_use(PartyEntry* party) {
     case 0x50:
         party->flags &= ~PARTY_FLAG_IS_BEING_USED;
         partyChgRunMode(party, 2);
-        party->field_3B = 0;
+        party->moveMode = 0;
         marioChgMot(0);
         marioStSystemLevel(0);
         break;

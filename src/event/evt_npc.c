@@ -1666,7 +1666,7 @@ USER_FUNC(evt_npc_facedirection_add) {
     f32 sign;
     if (strcmp(name, "mario") == 0) {
         MarioWork* mario = marioGetPtr();
-        if (180.0f == mario->unk1A8) {
+        if (180.0f == mario->dispDir) {
             sign = 1.0f;
         } else {
             sign = -1.0f;

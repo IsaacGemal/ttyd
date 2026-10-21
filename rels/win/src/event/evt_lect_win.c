@@ -416,7 +416,7 @@ static USER_FUNC(set_dir) {
     if (party != NULL) {
         s32 d = (dir > 180) ? 270 : 90;
         f32 angle = (f32)(270 - d);
-        party->field_10C = angle;
+        party->dispDir = angle;
         party->field_110 = angle;
     }
     return EVT_RETURN_DONE;

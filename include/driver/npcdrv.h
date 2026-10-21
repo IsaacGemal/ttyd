@@ -147,7 +147,7 @@ typedef struct NpcEntry {
     Vec rotationOffset;             // 0xF8
     s32 poseId;                     // 0x104
     s32 gait;                       // 0x108, 0 unset, 1 stay, 2 walk, 3 run (picks the dust effect in _kamek_houki_kemuri)
-    const char* field_10C;          // 0x10C
+    const char* checkPose;          // 0x10C, tik_02 geso_set_checkpose (geso_checkpose)
     s32 offscreenId;                // 0x110, offscreen layer drawn into (evt_npc_set_offscreen), -1 none
     GXColor color;                  // 0x114
     s32 initEvtId;                  // 0x118

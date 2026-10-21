@@ -33,7 +33,7 @@ typedef struct IraiWork {
     s32 top;                     // 0x088
     s32 cursorX;                 // 0x08C, finger icon screen X
     s32 cursorY;                 // 0x090, finger icon screen Y
-    s32 unk_0x94;                // 0x094
+    s32 field_0x94;                // 0x094
     f32 scroll;                  // 0x098
     char clientName[30][0x15];   // 0x09C
     char contentsName[30][0x1F]; // 0x312
@@ -534,7 +534,7 @@ USER_FUNC(irai_init_func) {
     work->cursor = 0;
     work->prevCursor = work->cursor;
     work->top = 0;
-    work->unk_0x94 = 0;
+    work->field_0x94 = 0;
     work->scroll = 0.0f;
     event->lwData[10] = (s32)work;
     return EVT_RETURN_DONE;
@@ -645,7 +645,7 @@ USER_FUNC(irai_main_func) {
             psndSFXOn((const char*)5);
         }
         if (work->cursor != work->prevCursor) {
-            work->unk_0x94 = 0;
+            work->field_0x94 = 0;
         }
         work->prevCursor = work->cursor;
         work->scroll += ((f32)(work->top * 30) - work->scroll) / 6.0f;

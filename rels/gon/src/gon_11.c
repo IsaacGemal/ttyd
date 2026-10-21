@@ -696,8 +696,8 @@ static USER_FUNC(evt_cloud_main) {
             animPaperPoseEntry(cp->animName, inBattle);
             offscreenEntry(cp->offName);
             off = offscreenNameToPtr(cp->offName);
-            off->unk3C = 4;
-            off->unk40 = 4;
+            off->copyFmt = 4;
+            off->texFmt = 4;
             _mapsetofs_all(cp);
             cp->mode++;
         }

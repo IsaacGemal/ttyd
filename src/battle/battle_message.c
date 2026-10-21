@@ -12,7 +12,7 @@
 //s32 kind, s32 x, s32 y, const char* tag, s32 duration
 USER_FUNC(btlevtcmd_AnnounceMessage) {
     BattleWork* wp = _battleWorkPointer;
-    BattleWorkField18C70* announce = &wp->field_18C70;
+    BattleWorkField18C70* announce = &wp->announce;
     s32* args = event->args;
     s32 kind;
     s32 x;
@@ -52,7 +52,7 @@ USER_FUNC(btlevtcmd_AnnounceMessage) {
 
 void _disp(CameraId cameraId, void* param) {
     BattleWork* wp = _battleWorkPointer;
-    BattleWorkField18C70* announce = &wp->field_18C70;
+    BattleWorkField18C70* announce = &wp->announce;
     s16 x = announce->field_0x0;
     s16 y = announce->field_0x2;
     f32 fx = (f32)x;
@@ -85,7 +85,7 @@ void _disp(CameraId cameraId, void* param) {
 //s32 index, s32 value
 USER_FUNC(btlevtcmd_AnnounceSetParam) {
     BattleWork* wp = _battleWorkPointer;
-    BattleWorkField18C70* announce = &wp->field_18C70;
+    BattleWorkField18C70* announce = &wp->announce;
     s32* args = event->args;
     s32 index;
     s32 value;

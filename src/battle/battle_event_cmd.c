@@ -5149,18 +5149,18 @@ USER_FUNC(btlevtcmd_AudienceDeclareACResult) {
 
     weapon = (BattleWeapon*)evtGetValue(event, args[0]);
     result = evtGetValue(event, args[1]);
-    counter = &wp->field_16F1C[0x3C - 0x1C];
+    counter = &wp->marioAcSuccess;
     if (result != -1) {
         if (counter[0] < 0xC8) {
             counter[0]++;
         }
-        wp->field_19064 = 1;
+        wp->acResult = 1;
     }
     else {
         if (counter[1] < 0xC8) {
             counter[1]++;
         }
-        wp->field_19064 = 0;
+        wp->acResult = 0;
     }
     BattleActionCommandDeclareACResult(wp, weapon, result);
     return EVT_RETURN_DONE;

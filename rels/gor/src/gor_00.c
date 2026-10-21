@@ -5722,14 +5722,14 @@ static USER_FUNC(scale_func) {
         v1.x = scale;
         v1.y = scale;
         v1.z = scale;
-        party0->field_70 = v1;
+        party0->scale = v1;
     }
     if (party1 != NULL) {
         v2 = vec3_gor_00013c6c;
         v2.x = scale;
         v2.y = scale;
         v2.z = scale;
-        party1->field_70 = v2;
+        party1->scale = v2;
     }
     return EVT_RETURN_DONE;
 }

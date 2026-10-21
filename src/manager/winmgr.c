@@ -2031,7 +2031,7 @@ WinMgrSelect* winMgrSelectEntry(s32 kind, s32 firstItem, BOOL canCancel) {
     case 17:
     case 18:
         {
-            u8* unk = (type == 0x11) ? jdt->unk14.unkD : jdt->unk14.unk1A;
+            u8* unk = (type == 0x11) ? jdt->unk14.perfectNewjohoReadFlag : jdt->unk14.luigiNewjohoReadFlag;
 
             select->numItems = jdt->count;
             select->items = (WinMgrSelectItem*)__memAlloc(HEAP_DEFAULT, (select->numItems + 1) * 4);
@@ -2250,7 +2250,7 @@ s32 winMgrSelectOther(WinMgrSelect* select, EventEntry* event) {
             event->lwData[1] = (s32)jdt->infoEnd;
             event->lwData[2] = (s32)msg;
             event->lwData[3] = strlen(msg);
-            if (johoya_get(jdt->unk14.unkD, jdt->info[itemId].storyId) != 0) {
+            if (johoya_get(jdt->unk14.perfectNewjohoReadFlag, jdt->info[itemId].storyId) != 0) {
                 event->lwData[4] = 0;
             } else {
                 event->lwData[4] = jdt->info[itemId].unkA;
@@ -2262,7 +2262,7 @@ s32 winMgrSelectOther(WinMgrSelect* select, EventEntry* event) {
             event->lwData[1] = (s32)jdt->infoEnd;
             event->lwData[2] = jdt->info[itemId].initEndPos;
             event->lwData[3] = jdt->info[itemId].tagEndPos;
-            if (johoya_get(jdt->unk14.unk1A, jdt->info[itemId].storyId) != 0) {
+            if (johoya_get(jdt->unk14.luigiNewjohoReadFlag, jdt->info[itemId].storyId) != 0) {
                 event->lwData[4] = 0;
             } else {
                 event->lwData[4] = 1;

@@ -3052,7 +3052,7 @@ const Vec vec3_usu_00004f64 = {1.0f, 1.0f, 1.0f};
 #endif
 
 USER_FUNC(party_scale) {
-    partyGetPtr(0)->field_70 = vec3_usu_00004f64;
+    partyGetPtr(0)->scale = vec3_usu_00004f64;
     return EVT_RETURN_DONE;
 }
 

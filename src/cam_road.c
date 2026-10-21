@@ -27,7 +27,7 @@ typedef struct CamRoadMap {
     /* 0x044 */ char name[0x84];
     /* 0x0C8 */ s32 count;
     /* 0x0CC */ u8 pad_0CC[0x1C];
-    /* 0x0E8 */ u32 unk_E8;
+    /* 0x0E8 */ u32 field_0xE8;
     /* 0x0EC */ CamRoadMapEntry* entries;
     /* 0x0F0 */ u32 subs;
     /* 0x0F4 */ u32 lists;
@@ -35,7 +35,7 @@ typedef struct CamRoadMap {
     /* 0x0FC */ u32 verts;
     /* 0x100 */ u32 indices;
     /* 0x104 */ u32 curveRanges;
-    /* 0x108 */ u32 unk_108;
+    /* 0x108 */ u32 field_0x108;
 } CamRoadMap;
 
 // The 0xB8-byte curve entries of CamRoadMap::entries (CamRoadMapEntry is the same record seen from the name side).
@@ -122,7 +122,7 @@ void camRoadCurveOn(const char* name) {
 }
 
 void camRoadReset(void) {
-    s32 f204 = wp->unk_204;
+    s32 f204 = wp->field_0x204;
     void* map = wp->map;
     s32 f1d0 = wp->mapKind;
 
@@ -141,9 +141,9 @@ void camRoadReset(void) {
     wp->cmpRollW = 1.0f;
     wp->cmpRadiusW = 3.0f;
     wp->cmpDistW = 1.0f;
-    wp->unk_204 = -1;
-    wp->unk_208 = 0;
-    wp->unk_204 = f204;
+    wp->field_0x204 = -1;
+    wp->field_0x208 = 0;
+    wp->field_0x204 = f204;
     wp->map = map;
     wp->mapKind = f1d0;
 }
@@ -685,7 +685,7 @@ void calcCamRoad(CamRoadState* a, CamRoadState* b, f32 x, f32 y, f32 z, f32 ax, 
     }
 
     if (cur != NULL) {
-        rad = 3.141592f * (*(f32*)wp->map->unk_E8 / 2.0f / 180.0f);
+        rad = 3.141592f * (*(f32*)wp->map->field_0xE8 / 2.0f / 180.0f);
 
         if (bank && hit != NULL && b->valid != 0) {
             f32 scale = 1.0f;
@@ -1409,7 +1409,7 @@ BOOL collisionTri_simple(Vec p, Vec v0, Vec v1, Vec v2, f32* out) {
 }
 
 void calcCurrentCamState(f32* dst) {
-    Vec* src = (Vec*)wp->map->unk_E8;
+    Vec* src = (Vec*)wp->map->field_0xE8;
     f32 f31;
     f32 sx;
     f32 sy;
@@ -1491,8 +1491,8 @@ BOOL camRoadSetup(const char* filename) {
     wp->cmpRollW = 1.0f;
     wp->cmpRadiusW = 3.0f;
     wp->cmpDistW = 1.0f;
-    wp->unk_204 = -1;
-    wp->unk_208 = 0;
+    wp->field_0x204 = -1;
+    wp->field_0x208 = 0;
     camShiftInit();
     arcOpen(filename, (void**)&wp->map, &length);
     if (wp->map == NULL) {
@@ -1507,8 +1507,8 @@ BOOL camRoadSetup(const char* filename) {
             return FALSE;
         }
     }
-    if (wp->map->unk_E8 < (u32)wp->map) {
-        wp->map->unk_E8 += (u32)wp->map;
+    if (wp->map->field_0xE8 < (u32)wp->map) {
+        wp->map->field_0xE8 += (u32)wp->map;
         wp->map->entries = (CamRoadMapEntry*)((u32)wp->map->entries + (u32)wp->map);
         wp->map->subs += (u32)wp->map;
         wp->map->lists += (u32)wp->map;
@@ -1516,7 +1516,7 @@ BOOL camRoadSetup(const char* filename) {
         wp->map->verts += (u32)wp->map;
         wp->map->indices += (u32)wp->map;
         wp->map->curveRanges += (u32)wp->map;
-        wp->map->unk_108 += (u32)wp->map;
+        wp->map->field_0x108 += (u32)wp->map;
     }
     if (strcmp(wp->map->name, "1.01") == 0) {
         wp->mapKind = CAM_ROAD_MAP_101;

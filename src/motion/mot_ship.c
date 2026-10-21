@@ -237,7 +237,7 @@ static inline void shipWakeUpdate(f32 speed) {
 #endif
     ((EffFunemizuData*)SHIP_DATA->eff->userdata)->z = m->position.z;
     ((EffFunemizuData*)SHIP_DATA->eff->userdata)->speed = speed;
-    ((EffFunemizuData*)SHIP_DATA->eff->userdata)->yaw = m->unk1A8;
+    ((EffFunemizuData*)SHIP_DATA->eff->userdata)->yaw = m->dispDir;
 }
 
 // Defined after shipMove, where the original's copies sit: MWCC inlines them into mot_ship
@@ -309,14 +309,14 @@ void mot_ship(void) {
                 SHIP_DATA->unk1C = -30.0f;
             }
         }
-        mario->unk1A8 += SHIP_DATA->unk1C;
+        mario->dispDir += SHIP_DATA->unk1C;
         wrap = 0;
         if (SHIP_DATA->flags & 1) {
-            if (mario->unk1A8 >= 270.0f) {
+            if (mario->dispDir >= 270.0f) {
                 wrap = 1;
             }
         } else {
-            if (mario->unk1A8 <= -270.0f) {
+            if (mario->dispDir <= -270.0f) {
                 wrap = 1;
             }
         }
@@ -346,14 +346,14 @@ void mot_ship(void) {
 
         f31 = SHIP_DATA->unk20 * ((SHIP_DATA->flags & 1) ? 1.0f : -1.0f);
         SHIP_DATA->unk1C += 0.125f * (f31 - SHIP_DATA->unk1C);
-        mario->unk1A8 += SHIP_DATA->unk1C;
+        mario->dispDir += SHIP_DATA->unk1C;
         wrap = 0;
         if (SHIP_DATA->flags & 1) {
-            if (mario->unk1A8 >= 1260.0f) {
+            if (mario->dispDir >= 1260.0f) {
                 wrap = 1;
             }
         } else {
-            if (mario->unk1A8 <= -1080.0f) {
+            if (mario->dispDir <= -1080.0f) {
                 wrap = 1;
             }
         }
@@ -386,20 +386,20 @@ void mot_ship(void) {
 
         f31 = SHIP_DATA->unk20 * ((SHIP_DATA->flags & 1) ? 1.0f : -1.0f);
         SHIP_DATA->unk1C += 0.125f * (f31 - SHIP_DATA->unk1C);
-        mario->unk1A8 += SHIP_DATA->unk1C;
+        mario->dispDir += SHIP_DATA->unk1C;
         SHIP_DATA->unk20 -= 0.1f;
         if (SHIP_DATA->unk20 <= 1.0f) {
             SHIP_DATA->unk20 = 1.0f;
         }
         wrap = 0;
         if (SHIP_DATA->flags & 1) {
-            if (mario->unk1A8 >= 1620.0f) {
-                mario->unk1A8 = 1620.0f;
+            if (mario->dispDir >= 1620.0f) {
+                mario->dispDir = 1620.0f;
                 wrap = 1;
             }
         } else {
-            if (mario->unk1A8 <= -1440.0f) {
-                mario->unk1A8 = -1440.0f;
+            if (mario->dispDir <= -1440.0f) {
+                mario->dispDir = -1440.0f;
                 wrap = 1;
             }
         }
@@ -410,7 +410,7 @@ void mot_ship(void) {
     }
     case 10: {
         mario->dispFlags &= ~0x100;
-        mario->unk1A8 = revise360(mario->unk1A8);
+        mario->dispDir = revise360(mario->dispDir);
         mario->wPlayerCollisionBox.x = 40.0f;
         mario->wPlayerCollisionBox.y = 40.0f;
         dir = shipHarborTarget(mario->hitobjJumpFrom, &SHIP_DATA->unk3C);
@@ -489,9 +489,9 @@ void mot_ship(void) {
             mario->baseSpeed = 0.0f;
             SHIP_DATA->unk1C = 0.0f;
             mario->flags &= ~0x000F0000;
-            mario->unk1A8 = revise360(mario->unk1A8);
-            mario->dispReqDir = mario->unk1A8;
-            mario->directionView = toMovedir(mario->unk1A8);
+            mario->dispDir = revise360(mario->dispDir);
+            mario->dispReqDir = mario->dispDir;
+            mario->directionView = toMovedir(mario->dispDir);
             mario->moveDir = mario->directionView;
             mario->dispFlags &= ~0x100;
             mario->dispFlags |= 0x1000;
@@ -605,7 +605,7 @@ void mot_ship(void) {
                     SHIP_DATA->unk1C = -20.0f;
                 }
             }
-            mario->unk1A8 += SHIP_DATA->unk1C;
+            mario->dispDir += SHIP_DATA->unk1C;
             if (mario->paperAnimeTime == 0x2C) {
                 mario->currSubMotionId = 0x2C;
             }
@@ -622,12 +622,12 @@ void mot_ship(void) {
             mario->paperAnimeTime = 0;
             mario->currSubMotionId = 0x2D;
             mario->multiTimer = 6;
-            mario->unk1A8 = revise360(mario->unk1A8);
+            mario->dispDir = revise360(mario->dispDir);
             if (SHIP_DATA->flags & 2) {
-                mario->unk1A8 -= 360.0f;
+                mario->dispDir -= 360.0f;
             }
         }
-        mario->unk1A8 += SHIP_DATA->unk1C;
+        mario->dispDir += SHIP_DATA->unk1C;
         break;
     case 45:
         marioSetPaperAnimeLocalTime(mario->paperAnimeTime);
@@ -635,7 +635,7 @@ void mot_ship(void) {
         {
             SHIP_DATA->unk1C += 0.05f * (f30 - SHIP_DATA->unk1C);
         }
-        mario->unk1A8 += SHIP_DATA->unk1C;
+        mario->dispDir += SHIP_DATA->unk1C;
         SHIP_DATA->unk20 += -0.005f;
         if (SHIP_DATA->unk20 <= 10.0f) {
             SHIP_DATA->unk20 = 10.0f;
@@ -650,29 +650,29 @@ void mot_ship(void) {
         {
             SHIP_DATA->unk1C += 0.05f * (f30 - SHIP_DATA->unk1C);
         }
-        mario->unk1A8 += SHIP_DATA->unk1C;
+        mario->dispDir += SHIP_DATA->unk1C;
         SHIP_DATA->unk20 += -0.005f;
         if (SHIP_DATA->unk20 <= 10.0f) {
             SHIP_DATA->unk20 = 10.0f;
         }
         r27 = 0;
         if (SHIP_DATA->flags & 1) {
-            if (mario->unk1A8 >= 360.0f) {
-                mario->unk1A8 = revise360(mario->unk1A8);
+            if (mario->dispDir >= 360.0f) {
+                mario->dispDir = revise360(mario->dispDir);
                 r27 = 1;
             }
         } else {
-            if (mario->unk1A8 <= -360.0f) {
-                mario->unk1A8 = revise360(mario->unk1A8);
+            if (mario->dispDir <= -360.0f) {
+                mario->dispDir = revise360(mario->dispDir);
                 r27 = 1;
             }
         }
         if (!r27) {
             break;
         }
-        mario->unk1A8 = revise360(mario->unk1A8);
+        mario->dispDir = revise360(mario->dispDir);
         if (SHIP_DATA->flags & 2) {
-            mario->unk1A8 -= 360.0f;
+            mario->dispDir -= 360.0f;
         }
         marioPaperOff();
         mario->dispFlags &= ~8;
@@ -689,22 +689,22 @@ void mot_ship(void) {
         {
             SHIP_DATA->unk1C += 0.05f * (f30 - SHIP_DATA->unk1C);
         }
-        mario->unk1A8 += SHIP_DATA->unk1C;
+        mario->dispDir += SHIP_DATA->unk1C;
         if (SHIP_DATA->flags & 1) {
-            if (mario->unk1A8 >= 540.0f) {
-                mario->unk1A8 = 540.0f;
+            if (mario->dispDir >= 540.0f) {
+                mario->dispDir = 540.0f;
                 r27 = 1;
             }
         } else {
-            if (mario->unk1A8 <= -360.0f) {
-                mario->unk1A8 = -360.0f;
+            if (mario->dispDir <= -360.0f) {
+                mario->dispDir = -360.0f;
                 r27 = 1;
             }
         }
         if (mario->currSubMotionId == 0x2F && r27) {
-            mario->unk1A8 = revise360(mario->unk1A8);
-            mario->dispReqDir = mario->unk1A8;
-            mario->moveDir = toMovedir(mario->unk1A8);
+            mario->dispDir = revise360(mario->dispDir);
+            mario->dispReqDir = mario->dispDir;
+            mario->moveDir = toMovedir(mario->dispDir);
             mario->directionView = mario->moveDir;
             mario->dispFlags &= ~0x100;
             mario->wPlayerCollisionBox.x = 20.0f;
@@ -1080,7 +1080,7 @@ s32 checkHarbor(Vec* out) {
     f32 y;
     f32 z;
 
-    sincosf(&sp28, &sp24, toMovedir(mario->unk1A8));
+    sincosf(&sp28, &sp24, toMovedir(mario->dispDir));
     x = mario->position.x + 40.0f * sp28;
     z = mario->position.z + 40.0f * sp24;
     y = mario->position.y + 20.0f;
@@ -1100,7 +1100,7 @@ s32 checkHarbor(Vec* out) {
             return 1;
         }
     }
-    sincosf(&sp28, &sp24, toMovedir(mario->unk1A8 + 90.0f));
+    sincosf(&sp28, &sp24, toMovedir(mario->dispDir + 90.0f));
     x = mario->position.x + 40.0f * sp28;
     z = mario->position.z + 40.0f * sp24;
     y = mario->position.y + 20.0f;
@@ -1120,7 +1120,7 @@ s32 checkHarbor(Vec* out) {
             return 1;
         }
     }
-    sincosf(&sp28, &sp24, toMovedir(mario->unk1A8 - 90.0f));
+    sincosf(&sp28, &sp24, toMovedir(mario->dispDir - 90.0f));
     x = mario->position.x + 40.0f * sp28;
     z = mario->position.z + 40.0f * sp24;
     y = mario->position.y + 20.0f;

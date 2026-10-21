@@ -56,9 +56,9 @@ EffectEntry* effMist2Entry(s32 type, s32 lifetime, f32 x, f32 y, f32 z, f32 rang
 	data->unk30 = 0;
 	data->unk2C = float_255_80421cb0;
 	data->unk18 = 1.0f;
-	data->unk38 = 0;
-	data->unk39 = 0;
-	data->unk3A = 0;
+	data->colorR = 0;
+	data->colorG = 0;
+	data->colorB = 0;
 
 	elem = &data[1];
 	for (i = 1; i < entry->count; i++, elem++) {
@@ -183,9 +183,9 @@ void effMist2Disp(CameraId cameraId, void* param) {
 
 	cam = camGetPtr(cameraId);
 	alpha = (s32)work->unk2C;
-	cr = work->unk38;
-	cg = work->unk39;
-	cb = work->unk3A;
+	cr = work->colorR;
+	cg = work->colorG;
+	cb = work->colorB;
 	effGetTexObj(0x5E, &texObj);
 	GXLoadTexObj(&texObj, GX_TEXMAP0);
 	GXSetNumChans(1);

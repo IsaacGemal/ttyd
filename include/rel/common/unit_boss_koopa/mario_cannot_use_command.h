@@ -17,15 +17,15 @@ static USER_FUNC(mario_cannot_use_command) {
 
     switch (type) {
         case 0:
-            work->field_19038[0] = 3;
+            work->cmdDisable[0] = 3;
             value = 0x146;
             break;
         case 1:
-            work->field_19038[1] = 3;
+            work->cmdDisable[1] = 3;
             value = 0x149;
             break;
         case 2:
-            work->field_19038[2] = 3;
+            work->cmdDisable[2] = 3;
             value = 0x14C;
             break;
     }
@@ -43,11 +43,11 @@ static USER_FUNC(party_cannot_use_command) {
 
     switch (type) {
         case 0:
-            work->field_19038[3] = 3;
+            work->cmdDisable[3] = 3;
             value = 0x150;
             break;
         case 1:
-            work->field_19038[4] = 3;
+            work->cmdDisable[4] = 3;
             value = 0x14C;
             break;
     }

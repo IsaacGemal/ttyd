@@ -206,14 +206,14 @@ void mot_plane(void) {
 		dir = (((MotionPlaneData*)mario->motStruct)->flags & 1) ? 1.0f : -1.0f;
 		t = 30.0f * dir;
 		mario->field_0x2A4 += 0.125f * (t - mario->field_0x2A4);
-		mario->unk1A8 += mario->field_0x2A4;
+		mario->dispDir += mario->field_0x2A4;
 		wrap = 0;
 		if (((MotionPlaneData*)mario->motStruct)->flags & 1) {
-			if (mario->unk1A8 >= 630.0f) {
+			if (mario->dispDir >= 630.0f) {
 				wrap = 1;
 			}
 		} else {
-			if (mario->unk1A8 <= -630.0f) {
+			if (mario->dispDir <= -630.0f) {
 				wrap = 1;
 			}
 		}
@@ -246,16 +246,16 @@ void mot_plane(void) {
 		dir = (((MotionPlaneData*)mario->motStruct)->flags & 1) ? 1.0f : -1.0f;
 		t = 30.0f * dir;
 		mario->field_0x2A4 += 0.125f * (t - mario->field_0x2A4);
-		mario->unk1A8 += mario->field_0x2A4;
+		mario->dispDir += mario->field_0x2A4;
 		wrap = 0;
 		if (((MotionPlaneData*)mario->motStruct)->flags & 1) {
-			if (mario->unk1A8 >= 1260.0f) {
-				mario->unk1A8 = 1260.0f;
+			if (mario->dispDir >= 1260.0f) {
+				mario->dispDir = 1260.0f;
 				wrap = 1;
 			}
 		} else {
-			if (mario->unk1A8 <= -1080.0f) {
-				mario->unk1A8 = -1080.0f;
+			if (mario->dispDir <= -1080.0f) {
+				mario->dispDir = -1080.0f;
 				wrap = 1;
 			}
 		}
@@ -433,7 +433,7 @@ void mot_plane(void) {
 
 		dir = (((MotionPlaneData*)mario->motStruct)->flags & 1) ? 1.0f : -1.0f;
 		mario->field_0x2A4 += 0.3f * (28.0f * dir - mario->field_0x2A4);
-		mario->unk1A8 = revise360(mario->unk1A8 + mario->field_0x2A4);
+		mario->dispDir = revise360(mario->dispDir + mario->field_0x2A4);
 		marioMakeJumpPara();
 		mario->position.y += mario->jumpVelY;
 		marioChkOverhead();
@@ -455,7 +455,7 @@ void mot_plane(void) {
 		if (mario->multiTimer > 0) {
 			dir = (((MotionPlaneData*)mario->motStruct)->flags & 1) ? 1.0f : -1.0f;
 			mario->field_0x2A4 += 0.3f * (28.0f * dir - mario->field_0x2A4);
-			mario->unk1A8 = revise360(mario->unk1A8 + mario->field_0x2A4);
+			mario->dispDir = revise360(mario->dispDir + mario->field_0x2A4);
 			if (--mario->multiTimer <= 0) {
 				mario->dispFlags &= ~0x100;
 			}
@@ -621,7 +621,7 @@ static void flyMain(void) {
 		} else {
 			v = 270.0f - a;
 		}
-		mario->unk1A8 = revise360(v);
+		mario->dispDir = revise360(v);
 	}
 	{
 		u8 stick = mario->wStickDir1;

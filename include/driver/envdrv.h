@@ -58,7 +58,7 @@ typedef struct EnvironmentWork {
     u16 unk98; //0x98, some substruct
     u8 unk9A[0xB0 - 0x9A]; //0x9A
     EnvironmentGlareFilter filter; //0xB0
-    u8 unkC0[0xF0 - 0xC0]; //0xC0
+    Mtx yamiView; //0xC0, envSetYamiView
 } EnvironmentWork;
 
 typedef struct EnvironmentBlur {
@@ -76,7 +76,7 @@ typedef struct EnvironmentYami {
     s32 tevStage; //0xC
     s32 texMap; //0x10
     s32 texCoord; //0x14
-    s32 unk18; //0x18
+    s32 numIndStage; //0x18, as MapTevCallback's: the GXSetNumIndStages count (bom_01) and next ind stage
 } EnvironmentYami;
 
 void envInit(void);

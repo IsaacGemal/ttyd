@@ -17,7 +17,7 @@ extern const u32 dat_8041f2e8;
 
 typedef struct effKemuri3Data {
     s32 type;       // 0x0
-    u16 unk_04;     // 0x4
+    u16 field_0x4;  // 0x4
     s16 field_06;   // 0x6
     u8 field_08;    // 0x8
     u8 pad_09[3];   // 0x9

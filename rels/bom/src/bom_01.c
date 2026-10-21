@@ -2385,12 +2385,12 @@ void ext_disp_minnnanokoe(CameraId cameraId, void* param) {
         pyami->tevStage = 1;
         pyami->texMap = 1;
         pyami->texCoord = 1;
-        pyami->unk18 = 0;
+        pyami->numIndStage = 0;
         pyami->unk4 = (MtxPtr)pose->matrix;
         envSetYami(pyami);
         GXSetNumTexGens(pyami->texCoord);
         GXSetNumTevStages(pyami->tevStage);
-        GXSetNumIndStages(pyami->unk18);
+        GXSetNumIndStages(pyami->numIndStage);
         extPoseDraw(i);
         i++;
         pose++;

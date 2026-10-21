@@ -249,7 +249,7 @@ static inline GXColor slotColor(u8 a, GXColor c) {
 #endif
 
 BattleBreakSlot* BattleBreakSlotGetPtr(void) {
-    return &_battleWorkPointer->field_1616C;
+    return &_battleWorkPointer->breakSlot;
 }
 BattleBreakSlotReel* BattleBreakSlotReelGetPtr(s32 index) {
     return &BattleBreakSlotGetPtr()->reels[index];

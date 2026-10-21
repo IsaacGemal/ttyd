@@ -221,12 +221,12 @@ void mot_roll_post(void) {
         m3->unk150.z = 0.004f;
     }
     if (revise360(mario->directionView - mario->targetYaw) >= 180.0f) {
-        mario->unk1A8 = 0.0f;
+        mario->dispDir = 0.0f;
         mario->dispReqDir = 0.0f;
         mario->moveDir = 270.0f;
         mario->directionView = 270.0f;
     } else {
-        mario->unk1A8 = 180.0f;
+        mario->dispDir = 180.0f;
         mario->dispReqDir = 180.0f;
         mario->moveDir = 90.0f;
         mario->directionView = 90.0f;
@@ -265,12 +265,12 @@ void marioRollForceCancel(void) {
             m3->unk150.z = 0.004f;
         }
         if (revise360(mario->directionView - mario->targetYaw) >= 180.0f) {
-            mario->unk1A8 = 0.0f;
+            mario->dispDir = 0.0f;
             mario->dispReqDir = 0.0f;
             mario->moveDir = 270.0f;
             mario->directionView = 270.0f;
         } else {
-            mario->unk1A8 = 180.0f;
+            mario->dispDir = 180.0f;
             mario->dispReqDir = 180.0f;
             mario->moveDir = 90.0f;
             mario->directionView = 90.0f;
@@ -402,7 +402,7 @@ void marioSetRollDispDir(void) {
     angle = 1.2f * (view - angle) + angle;
     angle = revise360(angle);
     {
-        f32 a = toMovedir(mario->unk1A8);
+        f32 a = toMovedir(mario->dispDir);
 
         if (mario->dispHalfTurn != 0) {
             a = revise360(180.0f + a);
@@ -412,12 +412,12 @@ void marioSetRollDispDir(void) {
                 (mario->dispHalfTurn + 1) & 1;
         }
     }
-    mario->unk1A8 = rollDispCalcTarget(mario, angle);
-    if (mario->unk1A8 >= 200.0f) {
-        mario->unk1A8 = rollDispCalcTarget(mario, angle);
+    mario->dispDir = rollDispCalcTarget(mario, angle);
+    if (mario->dispDir >= 200.0f) {
+        mario->dispDir = rollDispCalcTarget(mario, angle);
     }
-    if (mario->unk1A8 < 170.0f) {
-        mario->unk1A8 = rollDispCalcTarget(mario, angle);
+    if (mario->dispDir < 170.0f) {
+        mario->dispDir = rollDispCalcTarget(mario, angle);
     }
 }
 
@@ -640,7 +640,7 @@ void mot_roll(void) {
     case 0:
         camGetPtr(CAMERA_2D)->flags |= 0x200;
         marioAdjustMoveDir();
-        if (mario->unk1A8 < 90.0f || mario->unk1A8 > 270.0f) {
+        if (mario->dispDir < 90.0f || mario->dispDir > 270.0f) {
             mario->dispHalfTurn = 1;
             mario->directionView = revise360(270.0f - mario->targetYaw);
             mario->moveDir = 270.0f;
@@ -712,7 +712,7 @@ void mot_roll(void) {
         mario->dispOfs.y = 0.0f;
         mario->multiTimer = 0x41;
         mario->currSubMotionId = 0x15;
-        mario->unk1A8 = 0.0f;
+        mario->dispDir = 0.0f;
         {
             MarioWork* m = marioGetPtr();
             u32 sfx = (u32)m->motionSfxId1;
@@ -734,31 +734,31 @@ void mot_roll(void) {
         if (--mario->multiTimer > 0) {
             if (revise360(mario->directionView - mario->targetYaw) < 180.0f) {
                 f30 = 90.0f;
-                f27 = 0.1f * (f30 - mario->unk1A8);
-                f27 = f27 + mario->unk1A8;
+                f27 = 0.1f * (f30 - mario->dispDir);
+                f27 = f27 + mario->dispDir;
                 if (fabsf(f30 - f27 < 1.0f)) {
                     f27 = 90.0f;
                 }
-                mario->unk1A8 = f27;
+                mario->dispDir = f27;
                 mario->dispReqDir = f27;
             } else {
                 f30 = 270.0f;
-                f27 = 0.1f * (f30 - mario->unk1A8);
-                f27 = f27 + mario->unk1A8;
+                f27 = 0.1f * (f30 - mario->dispDir);
+                f27 = f27 + mario->dispDir;
                 if (fabsf(f30 - f27 < 1.0f)) {
                     f27 = 270.0f;
                 }
-                mario->unk1A8 = f27;
+                mario->dispDir = f27;
                 mario->dispReqDir = f27;
             }
         } else {
             if (revise360(mario->directionView - mario->targetYaw) >= 180.0f) {
-                mario->unk1A8 = 0.0f;
+                mario->dispDir = 0.0f;
                 mario->dispReqDir = 0.0f;
                 mario->moveDir = 270.0f;
                 mario->directionView = 270.0f;
             } else {
-                mario->unk1A8 = 180.0f;
+                mario->dispDir = 180.0f;
                 mario->dispReqDir = 180.0f;
                 mario->moveDir = 90.0f;
                 mario->directionView = 90.0f;
@@ -1180,10 +1180,10 @@ void mot_roll(void) {
 #ifdef MUST_MATCH
         /* Volatile read keeps the directionView load before the inlined 10.0 load, as in the original. */
         s32 r = rollDispAngleInRange(*(volatile f32*)&mario->directionView,
-                                     toMovedir(mario->unk1A8), 90.0f);
+                                     toMovedir(mario->dispDir), 90.0f);
 #else
         s32 r = rollDispAngleInRange(mario->directionView,
-                                     toMovedir(mario->unk1A8), 90.0f);
+                                     toMovedir(mario->dispDir), 90.0f);
 #endif
         f32 t = mario->baseSpeed * rate;
         mario->dispRot.z = revise360(t * ((r == 1) ? -1.0f : 1.0f) + mario->dispRot.z);
@@ -1249,7 +1249,7 @@ void mot_roll(void) {
             }
             f28 = 1.2f * (f30 - f28) + f28;
             f28 = revise360(f28);
-            f30 = toMovedir(mario->unk1A8);
+            f30 = toMovedir(mario->dispDir);
             if (mario->dispHalfTurn != 0) {
                 f30 = revise360(180.0f + f30);
             }
@@ -1258,16 +1258,16 @@ void mot_roll(void) {
             }
             f27 = 270.0f + mario->targetYaw - f28;
             f27 = f27 + ((mario->dispHalfTurn != 0) ? -180.0f : 0.0f);
-            mario->unk1A8 = revise360(f27);
-            if (mario->unk1A8 >= 200.0f) {
+            mario->dispDir = revise360(f27);
+            if (mario->dispDir >= 200.0f) {
                 f27 = 270.0f + mario->targetYaw - f28;
                 f27 = f27 + ((mario->dispHalfTurn != 0) ? -180.0f : 0.0f);
-                mario->unk1A8 = revise360(f27);
+                mario->dispDir = revise360(f27);
             }
-            if (mario->unk1A8 < 170.0f) {
+            if (mario->dispDir < 170.0f) {
                 f27 = 270.0f + mario->targetYaw - f28;
                 f27 = f27 + ((mario->dispHalfTurn != 0) ? -180.0f : 0.0f);
-                mario->unk1A8 = revise360(f27);
+                mario->dispDir = revise360(f27);
             }
             mario->directionView = f28;
             mario->moveDir = f28;
@@ -1277,7 +1277,7 @@ void mot_roll(void) {
     if (mario->slopeTiltZ != 0.0f) {
         mario->dispRot.x =
             revise360(-mario->slopeTiltZ *
-                      (f32)sin(3.1415927f * mario->unk1A8 / 180.0f));
+                      (f32)sin(3.1415927f * mario->dispDir / 180.0f));
     } else {
         mario->dispRot.x = 0.0f;
     }

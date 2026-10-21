@@ -71,7 +71,7 @@ void mot_vivian_post(void) {
             party->tail.vivian.charge = 10.0f;
             party->dispOffset = (Vec){0.0f, 0.0f, 0.0f};
             partyChgRunMode(party, 2);
-            party->field_3B = 0;
+            party->moveMode = 0;
             partyChgPoseId(party, 1);
             if (party->currentMemberId == PARTY_MEMBER_VIVIAN) {
                 party->field_4F &= ~1;
@@ -229,11 +229,11 @@ static inline void vivianUseStep(PartyEntry* party) {
         }
         party->targetPos = mario->position;
         movePos(&party->targetPos.x, &party->targetPos.z, party->tail.vivian.moveSpeed,
-                toMovedirSimple(mario->unk1A8));
-        movePos(&party->targetPos.x, &party->targetPos.z, 0.0f, toMovedirSimple(mario->unk1A8));
+                toMovedirSimple(mario->dispDir));
+        movePos(&party->targetPos.x, &party->targetPos.z, 0.0f, toMovedirSimple(mario->dispDir));
         movePos(&party->targetPos.x, &party->targetPos.z,
                 (mario->dispReqDir == 0.0f) ? -2.5f : 2.5f,
-                toMovedir(270.0f + mario->unk1A8));
+                toMovedir(270.0f + mario->dispDir));
     } else {
         if (party->useMotionId >= 4) {
             party->tail.vivian.moveSpeed += 0.4f;
@@ -243,10 +243,10 @@ static inline void vivianUseStep(PartyEntry* party) {
         }
         party->targetPos = mario->position;
         movePos(&party->targetPos.x, &party->targetPos.z, party->tail.vivian.moveSpeed,
-                toMovedirSimple(mario->unk1A8));
+                toMovedirSimple(mario->dispDir));
         movePos(&party->targetPos.x, &party->targetPos.z,
                 (mario->dispReqDir == 0.0f) ? -2.5f : 2.5f,
-                toMovedir(270.0f + mario->unk1A8));
+                toMovedir(270.0f + mario->dispDir));
     }
     if (strcmp(gp->currentMapName, "eki_02") == 0) {
         marioChkWallAround(&mario->position, 1, 0.0f, mario->directionView,
@@ -277,7 +277,7 @@ void vivian_use(PartyEntry* party) {
         party->tail.vivian.moveSpeed = -13.0f;
         vivianUseStep(party);
         party->dir = angleABf(party->position.x, party->position.z, party->targetPos.x, party->targetPos.z);
-        party->field_10C = mario->unk1A8;
+        party->dispDir = mario->dispDir;
         party->field_110 = mario->dispReqDir;
         party->speed = 0.0f;
         party->jumpPara1 = 0.0f;
@@ -517,7 +517,7 @@ void vivian_use(PartyEntry* party) {
         party->tail.vivian.charge = 10.0f;
         party->dispOffset.y = 0.0f;
         partyChgRunMode(party, 2);
-        party->field_3B = 0;
+        party->moveMode = 0;
         partyChgPoseId(party, 1);
         party->flags &= ~PARTY_FLAG_IS_EVT_USE;
         break;

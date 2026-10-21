@@ -251,7 +251,7 @@ USER_FUNC(get_actkind) {
 }
 
 USER_FUNC(get_ac_result) {
-    evtSetValue(event, event->args[0], _battleWorkPointer->field_19064);
+    evtSetValue(event, event->args[0], _battleWorkPointer->acResult);
     return EVT_RETURN_DONE;
 }
 

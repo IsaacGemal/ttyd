@@ -651,7 +651,7 @@ void mot_fall(void) {
     }
 
     mario->airTimer++;
-    if (mario->unk16C >= 0x1AE) {
+    if (mario->screenY >= 0x1AE) {
         f32 rate;
 
         rate = marioGetCamFollowRate();

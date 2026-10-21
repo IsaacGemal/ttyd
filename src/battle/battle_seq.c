@@ -1790,8 +1790,8 @@ void btlseqTurn(BattleWork* wp) {
 			break;
 
 		case 0x3000040:
-			if (wp->field_19038[0] != 0) {
-				wp->field_19038[0] -= 1;
+			if (wp->cmdDisable[0] != 0) {
+				wp->cmdDisable[0] -= 1;
 			}
 			BattleIncSeq(wp, SEQ_TURN);
 			BattleIncSeq(wp, SEQ_TURN);
@@ -1799,8 +1799,8 @@ void btlseqTurn(BattleWork* wp) {
 			break;
 
 		case 0x3000042:
-			if (wp->field_19038[1] != 0) {
-				wp->field_19038[1] -= 1;
+			if (wp->cmdDisable[1] != 0) {
+				wp->cmdDisable[1] -= 1;
 			}
 			BattleIncSeq(wp, SEQ_TURN);
 			BattleIncSeq(wp, SEQ_TURN);
@@ -1808,8 +1808,8 @@ void btlseqTurn(BattleWork* wp) {
 			break;
 
 		case 0x3000044:
-			if (wp->field_19038[2] != 0) {
-				wp->field_19038[2] -= 1;
+			if (wp->cmdDisable[2] != 0) {
+				wp->cmdDisable[2] -= 1;
 			}
 			BattleIncSeq(wp, SEQ_TURN);
 			BattleIncSeq(wp, SEQ_TURN);
@@ -1817,8 +1817,8 @@ void btlseqTurn(BattleWork* wp) {
 			break;
 
 		case 0x3000046:
-			if (wp->field_19038[3] != 0) {
-				wp->field_19038[3] -= 1;
+			if (wp->cmdDisable[3] != 0) {
+				wp->cmdDisable[3] -= 1;
 			}
 			BattleIncSeq(wp, SEQ_TURN);
 			BattleIncSeq(wp, SEQ_TURN);
@@ -1826,8 +1826,8 @@ void btlseqTurn(BattleWork* wp) {
 			break;
 
 		case 0x3000048:
-			if (wp->field_19038[4] != 0) {
-				wp->field_19038[4] -= 1;
+			if (wp->cmdDisable[4] != 0) {
+				wp->cmdDisable[4] -= 1;
 			}
 			BattleIncSeq(wp, SEQ_TURN);
 			BattleIncSeq(wp, SEQ_TURN);

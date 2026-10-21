@@ -98,7 +98,7 @@ static inline void kpaFireBreath(MarioWork* mp, Vec* pos) {
     s32 level;
     s32 type;
 
-    sign = (mp->unk1A8 >= 90.0f && mp->unk1A8 <= 270.0f) ? 1.0f : -1.0f;
+    sign = (mp->dispDir >= 90.0f && mp->dispDir <= 270.0f) ? 1.0f : -1.0f;
     level = 0;
     {
         MarioWork* m2 = marioGetPtr();
@@ -156,7 +156,7 @@ static inline void kpaFireBreath2(MarioWork* mp, Vec* pos) {
     s32 level;
     s32 type;
 
-    sign = (mp->unk1A8 >= 90.0f && mp->unk1A8 <= 270.0f) ? 1.0f : -1.0f;
+    sign = (mp->dispDir >= 90.0f && mp->dispDir <= 270.0f) ? 1.0f : -1.0f;
     level = 0;
     {
         MarioWork* m2 = marioGetPtr();
@@ -1008,7 +1008,7 @@ void kpaFireMain(void) {
 
     KPA(mp)->hitFlame = NULL;
     if (fireefp != NULL) {
-        sign = (mp->unk1A8 >= 90.0f && mp->unk1A8 <= 270.0f) ? 1.0f : -1.0f;
+        sign = (mp->dispDir >= 90.0f && mp->dispDir <= 270.0f) ? 1.0f : -1.0f;
         level = kpaGetLevel();
         scale = baseScaleTbl[level];
         x = 40.0f * sign * scale + mp->position.x;

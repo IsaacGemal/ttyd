@@ -82,7 +82,7 @@ USER_FUNC(evt_offscreen_set_texture_fmt) {
     s32 unk = evtGetValue(event, args[2]);
     OffscreenEntry* entry = offscreenNameToPtr((const char*)name);
 
-    entry->unk3C = fmt;
-    entry->unk40 = unk;
+    entry->copyFmt = fmt;
+    entry->texFmt = unk;
     return EVT_RETURN_DONE;
 }

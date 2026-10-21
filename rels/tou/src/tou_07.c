@@ -445,7 +445,7 @@ static USER_FUNC(paper_on) {
         marioChgPaper("PM_S_3A");
     }
     mario->dispReqDir = value;
-    mario->unk1A8 = value;
+    mario->dispDir = value;
     return EVT_RETURN_BLOCK;
 }
 

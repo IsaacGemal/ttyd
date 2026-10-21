@@ -100,7 +100,7 @@ void marioCamMain(void) {
 }
 void marioUpdateCamCollision(Vec collision) {
     MarioWork* mario = marioGetPtr();
-    mario->field_F8 = collision;
+    mario->camCollision = collision;
     mario->dispFlags |= 0x40000;
 }
 void marioUpdateCam(void) {
@@ -288,16 +288,16 @@ BOOL marioCamZoomUp(void) {
 
     zoomDistance = (mario->characterId == 2) ? 750.0f : 450.0f;
 
-    xOffset = (f32)(mario->unk168 - 303) / 5.0f;
+    xOffset = (f32)(mario->screenX - 303) / 5.0f;
     yOffset = 0.0f;
 
-    if ((f32)mario->unk16C > 320.0f) {
-        yOffset = (320.0f - (f32)mario->unk16C) / 3.5f;
+    if ((f32)mario->screenY > 320.0f) {
+        yOffset = (320.0f - (f32)mario->screenY) / 3.5f;
     }
 
     if (party && party->currentMemberId == PARTY_MEMBER_FLURRIE && party->flags & PARTY_FLAG_IS_BEING_USED) {
-        angleAdjust = toMovedir(mario->unk1A8) >= 180.0f ? -70.0f : 70.0f;
-        tempX = mario->unk168;
+        angleAdjust = toMovedir(mario->dispDir) >= 180.0f ? -70.0f : 70.0f;
+        tempX = mario->screenX;
         zoomDistance = 550.0f;
         xOffset = ((f32)(tempX - 303) / 5.0f) + angleAdjust;
     }
@@ -368,11 +368,11 @@ BOOL marioCamZoomUpLevelMain(void) {
         zoomDistance = 450.0f;
     }
 
-    xOffset = (f32)(mario->unk168 - 303) / 5.0f;
+    xOffset = (f32)(mario->screenX - 303) / 5.0f;
     yOffset = 0.0f;
 
-    if ((f32)mario->unk16C > 320.0f) {
-        yOffset = (320.0f - (f32)mario->unk16C) / 3.5f;
+    if ((f32)mario->screenY > 320.0f) {
+        yOffset = (320.0f - (f32)mario->screenY) / 3.5f;
     }
 
     camera = camGetPtr(CAMERA_3D);

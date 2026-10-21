@@ -1132,10 +1132,10 @@ void evt_unitwin_disp_func(CameraId cameraId, void* param) {
 		listOff = ((m8 > 0) ? m8 : 0) * 0x18;
 		if (mode50 == 0x11) {
 			title = msgSearch("msg_window_title_5");
-			prefix = jdt->unk14.unkD;
+			prefix = jdt->unk14.perfectNewjohoReadFlag;
 		} else {
 			title = msgSearch("msg_window_title_6");
-			prefix = jdt->unk14.unk1A;
+			prefix = jdt->unk14.luigiNewjohoReadFlag;
 		}
 		windowDispGX_Waku_col(float_neg24_8041db44[0], float_100_8041db48[0], float_300_8041dad0[0],
 		                      (f32)(0xdc - listOff), float_20_8041dad8[0], 0, *(GXColor*)&dat_8041da14);

@@ -1560,7 +1560,7 @@ static s32 moamoa_hit_check(ExtPose* ep, MoamoaPose* pose) {
         f32 x;
         f32 z;
 
-        ang = reviseAngle(mario->unk1A8 - 90.0f + camGetPtr(4)->viewYaw);
+        ang = reviseAngle(mario->dispDir - 90.0f + camGetPtr(4)->viewYaw);
         rad = 6.2831855f * ang / 360.0f;
         s = moaSin(rad);
         x = 35.0f * s + mario->position.x;

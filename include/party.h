@@ -72,13 +72,13 @@ typedef struct PartyEntry {
     s32 paperAnimGroup;          // 0xC
     s32 field_10;                // 0x10
     s32 paperPoseId;             // 0x14
-    char* field_18;              // 0x18
-    u32 field_1C;                // 0x1C, unsigned
+    char* pose;                  // 0x18, partyChgPose
+    char* paper;                 // 0x1C, partyChgPaper
     u16 field_20;                // 0x20
     u8 field_22[0x24 - 0x22];    // 0x22
     s32 timer;                   // 0x24, frame countdown: `--timer <= 0` checks, reset to 0x14/0x1E/0x3C/0x41
     s16 field_28;                // 0x28
-    s16 field_2A;                // 0x2A
+    s16 mutekiTime;              // 0x2A, marioSetMutekiTime copies Mario's into it
     s8 field_2C;                 // 0x2C
     s8 field_2D;                 // 0x2D
     u8 field_2E;                 // 0x2E
@@ -87,20 +87,21 @@ typedef struct PartyEntry {
     s8 currentMemberId;          // 0x31, PartyMembers
     u8 field_32;                 // 0x32
     u8 field_33;                 // 0x33
-    u8 field_34;                 // 0x34
+    u8 runMode;                  // 0x34, partyChgRunMode
     u8 field_35;                 // 0x35
-    u8 field_36;                 // 0x36
+    u8 mot;                      // 0x36, partyChgMot
     u8 field_37;                 // 0x37
     u8 motionStep;               // 0x38, switch selector of the party_motion_* routines
     u8 useMotionId;              // 0x39
     u8 field_3A;                 // 0x3A
-    u8 field_3B;                 // 0x3B
+    u8 moveMode;                 // 0x3B, partyChgMoveMode
     u8 field_3C;                 // 0x3C
     u8 field_3D;                 // 0x3D, set to the partyMoveBehindMario/BesideMario mode, cleared by party_move and cloud
     u8 field_3E;                 // 0x3E, zeroed only (party_move)
     s8 field_3F;                 // 0x3F, compared with 1, 2 and 3 in party_move, then zeroed
-    f32 followDist;              // 0x40, distance from Mario at which a standing partner starts walking after him (party_motion_stay)
-    u32 field_44;                // 0x44, set to 0x10 beside followDist (party_move)
+    f32 homingDist;              // 0x40, evt_party_set_homing_dist; distance from Mario at which a standing partner
+                                 // starts walking after him (party_motion_stay)
+    u32 field_44;                // 0x44, set to 0x10 beside homingDist (party_move)
     u8 field_48[0x4C - 0x48];    // 0x48
     s8 field_4C;                 // 0x4C
     s8 field_4D;                 // 0x4D, party_motion: zeroed with no ground hit, counted up otherwise; past 8 it re-tests the floor ahead
@@ -112,7 +113,7 @@ typedef struct PartyEntry {
     f32 moveAngle;               // 0x54, heading passed to movePos
     Vec position;                // 0x58
     Vec dispRot;                 // 0x64, display rotation in degrees, as MarioWork's dispRot: party.c's draw matrix rotates by z then x, y is not read; z is revise360'd every frame while rolling (p_roll)
-    Vec field_70;                // 0x70
+    Vec scale;                   // 0x70, party_scale (usu_00)
     Vec dispOffset;              // 0x7C, added to position for the draw matrix (party.c), y bobbed by cloud and Vivian
     Vec spinPivot;               // 0x88, pivot of the roll spin (party.c translates by -spinPivot before the z and x rotations, +spinPivot after)
     Vec targetPos;               // 0x94, destination of the appear/jump/fly routines; distABf'd against position
@@ -134,7 +135,7 @@ typedef struct PartyEntry {
     f32 dir;                     // 0x100
     f32 speed;                   // 0x104
     f32 speed2;                  // 0x108
-    f32 field_10C;               // 0x10C
+    f32 dispDir;                 // 0x10C, evt_party_get_dispdir
     f32 field_110;               // 0x110
     f32 jumpPara1;               // 0x114
     f32 jumpPara2;               // 0x118
@@ -297,9 +298,9 @@ typedef struct PartyData {
     void (*use_func)(PartyEntry* party);   // 3
     void* post_func;  // 4
     void (*bye_func)(PartyEntry* party);   // 5
-    void* unk_6_func; // 6
-    void* unk_7_func; // 7
-    void* unk_8_func; // 8
+    void* field_0x18; // 6
+    void* field_0x1C; // 7
+    void* field_0x20; // 8
     void* exit_func;  // 9
 } PartyData;
 void partySetFamicomMode(PartyEntry* party, s32 mode);

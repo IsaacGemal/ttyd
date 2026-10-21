@@ -240,7 +240,7 @@ typedef struct BattleWorkField180C0 {
     s32 field_0x1EC;               // 0x1EC, event id of _object_fall_event (BattleStage_ObjectFallCheck)
 } BattleWorkField180C0;
 
-// BattleWork.field_18C70: the battle announce message (battle_message.c). btlevtcmd_AnnounceSetParam indexes it from
+// BattleWork.announce: the battle announce message (battle_message.c). btlevtcmd_AnnounceSetParam indexes it from
 // 0x18C70, and the original reaches all of it through one pointer.
 typedef struct BattleWorkField18C70 {
     s16 field_0x0;                 // 0x0 (BattleWork 0x18C70), btlevtcmd_AnnounceMessage's x
@@ -265,7 +265,7 @@ typedef struct BattleWorkField19068 {
     s32 forceSlotValue;            // 0x14, reel value forced under 0x80000
 } BattleWorkField19068;
 
-// BattleWork.field_18FF0: the action-command help (battle_ac_help.c). BattleAcHelpMain reads it through one pointer
+// BattleWork.acHelp: the action-command help (battle_ac_help.c). BattleAcHelpMain reads it through one pointer
 // (one addis), so the original has a struct here; it is at least these 8 bytes and starts at or before 0x18FF0.
 typedef struct BattleWorkField18FF0 {
     const char* help;              // 0x0 (BattleWork 0x18FF0), BattleAcHelpSetHelp's message
@@ -320,34 +320,39 @@ struct BattleWork {
     u8 field_2750[0x2754 - 0x2750];     // 0x2750
     BattleCameraWork cameraWork;        // 0x2754
     BattleAudience audience;            // 0x2858
-    BattleBreakSlot field_1616C;        // 0x1616C, BattleBreakSlotGetPtr
+    BattleBreakSlot breakSlot;          // 0x1616C, BattleBreakSlotGetPtr
     BattleWorkPartyInfo partyInfo[7];   // 0x162A0
     u32 tattledUnitTypeFlags[8];        // 0x163B8
     s32 badgeEquippedFlags;             // 0x163D8
     FileEntry* menuTex;                 // 0x163DC
     BattleStage stage;                  // 0x163E0
-    u8 field_16F1C[0x16F40 - 0x16F1C];  // 0x16F1C, act-record counts for battle_actrecord.c's rule checks (most
+    u8 field_16F1C[0x16F3C - 0x16F1C];  // 0x16F1C, act-record counts for battle_actrecord.c's rule checks (most
                                         // through BtlActRec_AddCount/AddPoint, capped at 100)
+    u8 marioAcSuccess;                  // 0x16F3C, _mario_ac_success_check (gor); btlevtcmd_AudienceDeclareACResult
+                                        // counts it up on success, capped at 200
+    u8 marioAcFailed;                   // 0x16F3D, _mario_ac_failed_check (gor); counted up on failure, capped at 200
+    u8 field_16F3E[0x16F40 - 0x16F3E];  // 0x16F3E
     BattleAfterReactionWork afterReaction[64]; // 0x16F40
     BattleStageObject stageObjects[32]; // 0x17140
     BattleWorkField180C0 field_180C0;   // 0x180C0
     BattleIcon icons[16];               // 0x182B0
-    BattleWorkField18C70 field_18C70;   // 0x18C70
+    BattleWorkField18C70 announce;      // 0x18C70, btlevtcmd_AnnounceMessage / btlevtcmd_AnnounceSetParam
     BattleStatusChangeMsgWork statusChangeMsg; // 0x18D88
     s8 alertTick;                       // 0x18FE0
     u8 field_18FE1;                     // 0x18FE1, Merlee's mMerleeNextCurseType once it fires: 1 +3 attack (cleared
                                         // at the end of the attack), 2 +3 defense for Mario (this phase), 3 double exp
     u16 field_18FE2;                    // 0x18FE2, frames in battle_seq's 0x200000B wait, capped at 300
     StarPowerInfo impendingBonuses;     // 0x18FE4
-    BattleWorkField18FF0 field_18FF0;   // 0x18FF0
+    BattleWorkField18FF0 acHelp;        // 0x18FF0, BattleAcHelpSetHelp / BattleAcHelpSetDispType / BattleAcHelpMain
     u8 field_18FF8[0x19038 - 0x18FF8];  // 0x18FF8
-    s32 field_19038[5];                 // 0x19038, turn counts; while one is > 0 the command menu disables Mario's
+    s32 cmdDisable[5];                  // 0x19038, turn counts; while one is > 0 the command menu disables Mario's
                                         // jump, hammer or item, or the partner's tech or item ([0]-[4]); battle_seq
                                         // counts each down, recover_cmd_disable clears all five
     s32 field_1904C;                    // 0x1904C, nanika_luck_event's event id
     u32 reserveItems[4];                // 0x19050
     s32 field_19060;                    // 0x19060, SFX_OFF_BTL_START_CURTAIN_UP1's handle (btlseqFirstAct), -1 when off
-    u8 field_19064;                     // 0x19064, 1 when the last btlevtcmd_AudienceDeclareACResult succeeded, else 0
+    u8 acResult;                        // 0x19064, get_ac_result (gor); 1 when the last
+                                        // btlevtcmd_AudienceDeclareACResult succeeded, else 0
     u8 field_19065[0x19068 - 0x19065];  // 0x19065
     BattleWorkField19068 field_19068;   // 0x19068
     u32 field_19080;                    // 0x19080, bit 0 set by the gor lecture's aud_attack_init/aud_attack_end

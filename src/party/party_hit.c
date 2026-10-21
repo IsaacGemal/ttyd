@@ -306,7 +306,7 @@ HitEntry* partySearchGround(PartyEntry* party, f32 up, f32 down) {
     if (party->speed) {
         rad = party->dir;
     } else {
-        rad = partyToMovedir(party, party->field_10C);
+        rad = partyToMovedir(party, party->dispDir);
     }
     rad = (3.1415927f * rad) / 180.0f;
     s = (f32)sin((f64)rad);
@@ -426,7 +426,7 @@ u32 partyChkFrontStep(PartyEntry* party, f32 a, f32* out1, f32* out2, f32* out3)
     if (party->speed) {
         angle = party->dir;
     } else {
-        angle = toMovedir(party->field_10C);
+        angle = toMovedir(party->dispDir);
     }
     angle = revise360((f32)(s32)(0.5f + angle));
     off = 0.265f * party->radius;

@@ -720,7 +720,7 @@ void kpa_powup(void) {
         m2->unk138 = float_20_80420e30 * (f32)(-KPA(m2)->level);
         mario->flags &= ~0x10000000;
         marioChgMot(MARIO_MOTION_STAY);
-        mario->unk4C = 0;
+        mario->mutekiTime = 0;
     }
 }
 // The currSubMotionId dispatcher is a two-case switch in the original (the target emits `beq case0; b default`);

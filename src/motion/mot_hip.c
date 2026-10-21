@@ -276,7 +276,7 @@ void mot_hip(void) {
             } else {
                 mario->position.y += fallSpd;
             }
-            if (mario->unk16C > 0x190) {
+            if (mario->screenY > 0x190) {
                 if (marioBgmodeChk() == 0) {
                     camFollowYOn();
                 }

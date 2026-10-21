@@ -130,7 +130,7 @@ USER_FUNC(evt_mario_dokan_prepare) {
         party = partyGetPtr(marioGetPartyId());
         if (party != NULL) {
             partyShadowOff(party);
-            party->field_70 = vecs[1];
+            party->scale = vecs[1];
             party->flags2 |= 1;
             party->flags |= PARTY_FLAG_DISABLE_FLOORS;
             party->flags |= PARTY_FLAG_FORCE_FALL;
@@ -138,7 +138,7 @@ USER_FUNC(evt_mario_dokan_prepare) {
         party = partyGetPtr(marioGetExtraPartyId());
         if (party != NULL) {
             partyShadowOff(party);
-            party->field_70 = vecs[2];
+            party->scale = vecs[2];
             party->flags2 |= 1;
             party->flags |= PARTY_FLAG_DISABLE_FLOORS;
             party->flags |= PARTY_FLAG_FORCE_FALL;
@@ -218,7 +218,7 @@ USER_FUNC(evt_mario_paper_pose_dokan) {
         marioChgPose("M_Z_1");
         mario->dispFlags |= 0x8;
         mario->dispFlags |= 0x100;
-        mario->unk1A8 = mario->dispReqDir;
+        mario->dispDir = mario->dispReqDir;
         zero = 0.0f;
         mario->spinSpeed = zero;
         pos = EM_VEC(0xC0, vec3_802e57f0);
@@ -277,7 +277,7 @@ USER_FUNC(evt_mario_paper_pose_dokan) {
         party = partyGetPtr(marioGetPartyId());
         if (party != NULL) {
             party->position = mario->position;
-            party->field_70 = mario->scale;
+            party->scale = mario->scale;
             party->dispOffset = EM_VEC(0xF0, vec3_802e5820);
             party->dispRot = EM_VEC(0xFC, vec3_802e582c);
             party->spinPivot = EM_VEC(0x108, vec3_802e5838);
@@ -288,7 +288,7 @@ USER_FUNC(evt_mario_paper_pose_dokan) {
         party = partyGetPtr(marioGetExtraPartyId());
         if (party != NULL) {
             party->position = mario->position;
-            party->field_70 = mario->scale;
+            party->scale = mario->scale;
             party->dispOffset = EM_VEC(0x114, vec3_802e5844);
             party->dispRot = EM_VEC(0x120, vec3_802e5850);
             party->spinPivot = EM_VEC(0x12C, vec3_802e585c);
@@ -306,7 +306,7 @@ USER_FUNC(evt_mario_paper_pose_dokan) {
         }
         event->userdata[0]++;
         if (event->userdata[0] > 10) {
-            mario->unk1A8 += mario->spinSpeed;
+            mario->dispDir += mario->spinSpeed;
             mario->spinSpeed += 0.1f;
             if (mario->spinSpeed > 30.0f) {
                 mario->spinSpeed = 30.0f;
@@ -572,7 +572,7 @@ USER_FUNC(evt_mario_set_dir) {
     if (first) {
         event->userdata[0] = 0;
         event->userdata[2] = 0;
-        event->userdataf[1] = mario->unk1A8;
+        event->userdataf[1] = mario->dispDir;
         if (angle > 270.0f) {
             angle -= 360.0f;
         }
@@ -593,9 +593,9 @@ USER_FUNC(evt_mario_set_dir) {
         }
         start = event->userdataf[1];
         delta = (a - start) * ((f32)event->userdata[0] / (f32)frames);
-        mario->unk1A8 = revise360(start + delta);
-        mario->dispReqDir = mario->unk1A8;
-        mario->directionView = toMovedirSimple(mario->unk1A8);
+        mario->dispDir = revise360(start + delta);
+        mario->dispReqDir = mario->dispDir;
+        mario->directionView = toMovedirSimple(mario->dispDir);
         mario->moveDir = mario->directionView;
         n = event->userdata[0] + 1;
         event->userdata[0] = n;
@@ -607,9 +607,9 @@ USER_FUNC(evt_mario_set_dir) {
         }
         return EVT_RETURN_BLOCK;
     }
-    mario->unk1A8 = revise360(270.0f - angle);
-    mario->dispReqDir = mario->unk1A8;
-    mario->directionView = toMovedirSimple(mario->unk1A8);
+    mario->dispDir = revise360(270.0f - angle);
+    mario->dispReqDir = mario->dispDir;
+    mario->directionView = toMovedirSimple(mario->dispDir);
     mario->moveDir = mario->directionView;
     return EVT_RETURN_DONE;
 }
@@ -627,7 +627,7 @@ USER_FUNC(evt_mario_get_dispdir) {
     s32 arg = event->args[0];
     MarioWork* mario = marioGetPtr();
 
-    evtSetFloat(event, arg, mario->unk1A8);
+    evtSetFloat(event, arg, mario->dispDir);
     return EVT_RETURN_DONE;
 }
 
@@ -636,7 +636,7 @@ USER_FUNC(evt_mario_set_dispdir) {
     MarioWork* mario = marioGetPtr();
 
     mario->dispReqDir = reviseAngle(evtGetFloat(event, args[0]));
-    mario->unk1A8 = mario->dispReqDir;
+    mario->dispDir = mario->dispReqDir;
     return EVT_RETURN_DONE;
 }
 
@@ -988,7 +988,7 @@ USER_FUNC(evt_mario_set_force_dir) {
 
     if (mario->airTimer > 0) {
         mario->flags |= MARIO_FLAG_USE_FORCE_DIRECTION;
-        mario->unk1A4 = (f32)evtGetValue(event, args[0]);
+        mario->forceDir = (f32)evtGetValue(event, args[0]);
     }
     return EVT_RETURN_DONE;
 }
@@ -1454,7 +1454,7 @@ USER_FUNC(evt_mario_jump_pos) {
             marioChgMot(8);
         } else {
             rollEvtJumpSetup();
-            mario->unk1A8 = mario->directionView;
+            mario->dispDir = mario->directionView;
             mario->dispReqDir = mario->directionView;
         }
         event->userdata[2] = (s32)(0.5f + half);
@@ -2211,12 +2211,12 @@ USER_FUNC(evt_mario_set_prev_party_dokan) {
             // surround it) reproduces the original's unscheduled load/store pair without hoisting.
             *(volatile u32*)&party->flags = *(volatile u32*)&party->flags | 0x04000000;
             *(volatile u32*)&party->flags = *(volatile u32*)&party->flags | 0x02000000;
-            pos = &party->field_70;
+            pos = &party->scale;
             *(volatile Vec*)pos = *(volatile Vec*)&vec3_802e58e8;
 #else
             party->flags |= PARTY_FLAG_DISABLE_FLOORS;
             party->flags |= PARTY_FLAG_FORCE_FALL;
-            pos = &party->field_70;
+            pos = &party->scale;
             *pos = vec3_802e58e8;
 #endif
         }
@@ -2257,7 +2257,7 @@ USER_FUNC(evt_mario_hello_party) {
         if (party == NULL) {
             return EVT_RETURN_DONE;
         }
-        if ((party->flags & PARTY_FLAG_IS_ACTIVE) == 0 || party->field_34 != 1) {
+        if ((party->flags & PARTY_FLAG_IS_ACTIVE) == 0 || party->runMode != 1) {
             return EVT_RETURN_BLOCK;
         }
         return EVT_RETURN_DONE;
@@ -2294,7 +2294,7 @@ USER_FUNC(evt_mario_hello_exparty_pos) {
         if (party == NULL) {
             return EVT_RETURN_DONE;
         }
-        if ((party->flags & PARTY_FLAG_IS_ACTIVE) == 0 || party->field_34 != 1) {
+        if ((party->flags & PARTY_FLAG_IS_ACTIVE) == 0 || party->runMode != 1) {
             return EVT_RETURN_BLOCK;
         }
         return EVT_RETURN_DONE;

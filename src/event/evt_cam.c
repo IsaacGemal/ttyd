@@ -579,7 +579,7 @@ USER_FUNC(evt_cam_road_reset) {
     cam->marioAt.z = cam->marioPos.z;
 
     mario->field_EC = mario->position;
-    mario->field_F8 = mario->position;
+    mario->camCollision = mario->position;
 
     camRoadReset();
     camShiftReset();
@@ -614,7 +614,7 @@ USER_FUNC(evt_cam_road_reset2) {
         f8.x = x;
         f8.y = y;
         f8.z = z;
-        mario->field_F8 = f8;
+        mario->camCollision = f8;
     }
 
     camRoadReset();

@@ -790,7 +790,7 @@ static void senkaron_ext_main(void) {
                 dir = 1;
             } else if (mario->dispReqDir == 180.0f) {
                 dir = 2;
-            } else if (mario->unk1A8 < 90.0f || 270.0f < mario->unk1A8) {
+            } else if (mario->dispDir < 90.0f || 270.0f < mario->dispDir) {
                 dir = 1;
             } else {
                 dir = 2;
