@@ -322,7 +322,12 @@ static u16 krb_comp_dir(f32 x, f32 y) {
     if (x >= 0.0f && y < 0.0f) {
         out = 360 - out;
     }
+#ifdef MUST_MATCH
+    // No-op cast: the value is already u16, but the cast changes the object.
     return (u16)out;
+#else
+    return out;
+#endif
 }
 
 static EVT_BEGIN(dmg_avoid_counter_thorn_head_event)

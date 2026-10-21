@@ -504,7 +504,7 @@ void badge_disp(WindowWork* work, f32 x, f32 y) {
             char buf[0x40];
 
             sprintf(buf, "%s", winZenkakuStr(itemDataTable[badge].bp_cost));
-            winFontSetV((Vec){costX - (f32)((u16)FontGetMessageWidth(buf) / 2), textY, 0.0f}, (Vec){0.9f, 0.9f, 0.9f},
+            winFontSetV((Vec){costX - (f32)(FontGetMessageWidth(buf) / 2), textY, 0.0f}, (Vec){0.9f, 0.9f, 0.9f},
                         color, buf);
         }
         winTexInit(WIN_BADGE_TEX(work));

@@ -39,7 +39,7 @@ void countDownSaveReStart(void) {
 		ticksPerMs = OS_TIMER_CLOCK / 1000;
 		ms = OSTicksToMilliseconds(work->elapsed);
 		if ((u32)(work->limit - ms) <= (u32)work->restartTime) {
-			span = (u32)(work->limit - work->restartTime);
+			span = (work->limit - work->restartTime);
 			work->elapsed = ticksPerMs * span;
 		}
 		wp->lastTime = gp->renderTime;

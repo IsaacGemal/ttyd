@@ -319,7 +319,12 @@ static u16 krb_comp_dir(f32 dx, f32 dz) {
     if (dx >= 0.0f && dz < 0.0f) {
         mid = 360 - mid;
     }
+#ifdef MUST_MATCH
+    // No-op cast: the value is already u16, but the cast changes the object.
     return (u16)mid;
+#else
+    return mid;
+#endif
 }
 
 static USER_FUNC(krb_get_dir) {

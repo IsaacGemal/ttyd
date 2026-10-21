@@ -1013,7 +1013,12 @@ void npcMain(void) {
                                 dx = entry->territoryBase.x - entry->position.x;
                                 dz = entry->territoryBase.z - entry->position.z;
                                 dist = sqrtf(dx * dx + dz * dz);
+#ifdef MUST_MATCH
+                                // Both arms are the same field; the test still changes the object.
                                 if (dist > (state == NPC_EVENT_TYPE_FIND ? entry->territoryHoming.x : entry->territoryHoming.x)) {
+#else
+                                if (dist > entry->territoryHoming.x) {
+#endif
                                     hit = TRUE;
                                 }
                             } else if (entry->territoryType == NPC_TERRITORY_TYPE_SQUARE) {
@@ -1064,9 +1069,11 @@ void npcMain(void) {
                                         hit = TRUE;
                                     } else if (dist > entry->homingRange) {
                                         hit = TRUE;
-                                    } else if (angle = angleABf(0.0f, 0.0f, dx, dz),
-                                               __fabsf(compAngle(dir, angle)) > 0.5f * entry->homingAngle) {
-                                        hit = TRUE;
+                                    } else {
+                                        angle = angleABf(0.0f, 0.0f, dx, dz);
+                                        if (__fabsf(compAngle(dir, angle)) > 0.5f * entry->homingAngle) {
+                                            hit = TRUE;
+                                        }
                                     }
                                 }
                             }

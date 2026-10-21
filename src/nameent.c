@@ -467,9 +467,7 @@ void nameEntDisp(CameraId cameraId, void* param) {
 	f32 width;
 	GXColor white;
 	GXColor white2;
-	GXColor white3;
 
-	white3 = nameent_white;
 	white2 = nameent_white;
 	white = nameent_white;
 

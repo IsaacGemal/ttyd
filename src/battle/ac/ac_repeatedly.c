@@ -185,7 +185,7 @@ s32 battleAcMain_Repeatedly(BattleWork* work) {
     case 0x64:
         if (!((ac->field_0x4 & 1) && (ac->mAcUnit->mTokenFlags & 0x10)) &&
             dec->holdMask != 0 &&
-            (s32)BattlePadCheckNow(dec->holdMask) == 0) {
+            BattlePadCheckNow(dec->holdMask) == 0) {
             break;
         }
         BattleAcGaugeSeInit();
@@ -323,7 +323,7 @@ s32 battleAcMain_Repeatedly(BattleWork* work) {
             }
 #endif
         }
-        if (dec->holdMask != 0 && (s32)BattlePadCheckNow(dec->holdMask) == 0) {
+        if (dec->holdMask != 0 && BattlePadCheckNow(dec->holdMask) == 0) {
             dec->timer = 0;
         }
         BattleAcGaugeSeUpdate(dec->power);
@@ -516,7 +516,7 @@ static void actionCommandDisp(f32 x, f32 y) {
     }
 
     flags = 0;
-    if ((s8)dec->full == 1 && disp->value >= float_1_8041c7b4) {
+    if (dec->full == 1 && disp->value >= float_1_8041c7b4) {
         flags |= 1;
         p[0xD] += disp->dg;
         p[0xE] += disp->db;
@@ -529,7 +529,7 @@ static void actionCommandDisp(f32 x, f32 y) {
             disp->dg = -0x10;
         }
     }
-    if ((s8)dec->full == -1) {
+    if (dec->full == -1) {
         flags |= 2;
     }
 

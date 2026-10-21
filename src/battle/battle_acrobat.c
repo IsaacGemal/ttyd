@@ -19,12 +19,10 @@ s32 BattleAcrobatStart(BattleWork* work, s32 unitId, s32 windowStartFrame,
 }
 
 s32 BattleAcrobatMain(BattleWork* work) {
-	BattleActions* manager;
 	BattleUnit* unit;
 	BOOL doSimplified;
 	s32 i;
 
-	manager = &work->actionCommands;
 	unit = BattleGetUnitPtr(work, work->mStylishUnitId);
 	doSimplified = FALSE;
 	work->mStylishCurFrame++;

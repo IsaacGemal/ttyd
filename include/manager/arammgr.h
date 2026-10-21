@@ -5,7 +5,7 @@
 
 // Per-request block: ARAMWork.nodes is the head of a list of these, and the callback receives &node->request.
 typedef struct ARAMWorkNode {
-	u16 flags; //0x0, 1 posted to ARAM, 2 waiting for it, 4 reached ARAM, 8 posted back, 0x10 reached MRAM, 0x20 freed
+	volatile u16 flags; //0x0, 1 posted to ARAM, 2 waiting for it, 4 reached ARAM, 8 posted back, 0x10 reached MRAM, 0x20 freed
 	ARQRequest request; //0x4
 	u32 size; //0x24
 	u32 aramAddr; //0x28
@@ -24,7 +24,7 @@ typedef struct ARAMWork {
 	ARAMWorkNode* nodes; //0x34, head of the live list
 	ARAMWorkNode* tail; //0x38
 	ARQRequest request; //0x3C, garbage collector's request
-	s32 garbageBusy; //0x5C
+	volatile s32 garbageBusy; //0x5C
 	void* garbageBuf; //0x60
 	u32 garbageChunk; //0x64
 } ARAMWork;

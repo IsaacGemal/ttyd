@@ -389,7 +389,7 @@ void peach_stay(void) {
     }
     switch (mp->currSubMotionId) {
         case 0:
-            if ((s32)(++mp->multiTimer) >= sysMsec2Frame(50000)) {
+            if ((++mp->multiTimer) >= sysMsec2Frame(50000)) {
                 marioChgPose(str_P_U_1);
                 mp->multiTimer = 0x50;
                 mp->currSubMotionId = 1;
@@ -398,14 +398,14 @@ void peach_stay(void) {
             }
             break;
         case 1:
-            if ((s32)(--mp->multiTimer) < 0) {
+            if ((--mp->multiTimer) < 0) {
                 marioChgPose(peach_pose_stay);
                 mp->multiTimer = 0x64;
                 mp->currSubMotionId = 2;
             }
             break;
         case 2:
-            if ((s32)(--mp->multiTimer) < 0) {
+            if ((--mp->multiTimer) < 0) {
                 marioChgPose(str_P_N_1);
                 mp->multiTimer = 0;
                 mp->currSubMotionId = 0x14;
@@ -413,10 +413,10 @@ void peach_stay(void) {
             }
             break;
         case 0x14:
-            if ((s32)(++mp->peachStayTimer) >= sysMsec2Frame(0x2710)) {
+            if ((++mp->peachStayTimer) >= sysMsec2Frame(0x2710)) {
                 mp->peachStayTimer = sysMsec2Frame(0x2710);
             }
-            if ((s32)(++mp->multiTimer) >= 0x64) {
+            if ((++mp->multiTimer) >= 0x64) {
                 mp->multiTimer = 0;
             }
             if (mp->flags & 0x8) {
@@ -467,7 +467,7 @@ void peach_walk(void) {
                     snd2 = 0x7e8;
                 }
                 {
-                    s32 mt = (s32)mp2->multiTimer;
+                    s32 mt = mp2->multiTimer;
                     if (mt % 40 == 0) {
                         psndSFXOn_3D((const char*)snd, &mp2->position);
                     } else if (mt % 20 == 0) {
@@ -516,7 +516,7 @@ void peach_dash(void) {
             snd2 = 0x7e8;
         }
         {
-            s32 mt = (s32)mp2->multiTimer;
+            s32 mt = mp2->multiTimer;
             if (mt % 20 == 0) {
                 psndSFXOn_3D((const char*)snd, &mp2->position);
             } else if (mt % 10 == 0) {
@@ -549,7 +549,7 @@ void peach_dash(void) {
                     snd2 = 0x7e8;
                 }
                 {
-                    s32 mt = (s32)mp2->multiTimer;
+                    s32 mt = mp2->multiTimer;
                     if (mt % 20 == 0) {
                         psndSFXOn_3D((const char*)snd, &mp2->position);
                     } else if (mt % 10 == 0) {

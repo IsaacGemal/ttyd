@@ -157,7 +157,7 @@ void mot_hip(void) {
                 mario->dispOfs2.y += mario->jumpVelY;
             }
         }
-        if ((s32)--mario->multiTimer <= 0) {
+        if (--mario->multiTimer <= 0) {
             mario->currSubMotionId = 0xA;
         }
         switch (U_chkground()) {
@@ -221,7 +221,7 @@ void mot_hip(void) {
         mario->currSubMotionId = 0x15;
         // fallthrough
     case 0x15:
-        if ((s32)--mario->multiTimer <= 0) {
+        if (--mario->multiTimer <= 0) {
             fallSpd = marioGetFallSpd();
             hit = marioSearchGround(&landY, &outX, &outZ, fallSpd, fallSpd);
             if (fallSpd < -100.0f) {
@@ -287,7 +287,7 @@ void mot_hip(void) {
         if (U_chkground() == 1) {
             return;
         }
-        if ((s32)--mario->multiTimer <= 0) {
+        if (--mario->multiTimer <= 0) {
             mario->dispFlags &= ~0x08000000;
             if (marioBgmodeChk() == 0) {
                 camFollowYOn();

@@ -54,7 +54,11 @@ typedef struct JabaraWork {
 #define MW_S32(m, off) (*(s32*)((u8*)(m) + (off)))
 
 // A nonconst view keeps these named pool words from folding into duplicate literals.
+#ifdef MUST_MATCH
 #define JABARA_F32(sym) (*(f32*)&(sym))
+#else
+#define JABARA_F32(sym) (sym)
+#endif
 
 // Local quake script table (`.sdata`), referenced by mot_jabara.
 static s32 quake_evt[8] = { 0x0005005B, (s32)evt_cam_shake, 4, (s32)0xF24A7A80,
@@ -84,7 +88,7 @@ void swingMain(void) {
     if (marioGetPtr()->motStruct == NULL) {
         return;
     }
-    if ((s32)mario->currSubMotionId < 0x5A && (mario->buttonNew & 0x300)) {
+    if (mario->currSubMotionId < 0x5A && (mario->buttonNew & 0x300)) {
         if (!(((JabaraWork*)marioGetPtr()->motStruct)->flags & 1)) {
             mario->jabaraTimer = 0;
             ((JabaraWork*)marioGetPtr()->motStruct)->flags |= 1;
@@ -405,7 +409,7 @@ s32 jabaraNoHitChk(void) {
     if (mario->currMotionId != MARIO_MOTION_JABARA) {
         return 0;
     }
-    if ((s32)mario->currSubMotionId >= 0x28 && (s32)mario->currSubMotionId < 0x32) {
+    if (mario->currSubMotionId >= 0x28 && mario->currSubMotionId < 0x32) {
         return 1;
     }
     return 0;
@@ -544,7 +548,7 @@ void mot_jabara(void) {
         if (hit != NULL) {
             if (!(mario->buttonHeld & 0x100)) {
                 ((JabaraWork*)marioGetPtr()->motStruct)->unk1C++;
-                if ((s32)((JabaraWork*)marioGetPtr()->motStruct)->unk1C > sysMsec2Frame(0x1388)) {
+                if (((JabaraWork*)marioGetPtr()->motStruct)->unk1C > sysMsec2Frame(0x1388)) {
                     var_r28 = 1;
                 }
             }
@@ -1002,7 +1006,7 @@ void mot_jabara(void) {
                             }
                             break;
                         }
-                        if ((s32)mario->currSubMotionId >= 0x46) {
+                        if (mario->currSubMotionId >= 0x46) {
                             swingMain();
                         }
             } else {

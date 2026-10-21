@@ -87,7 +87,7 @@ s32 battleAcMain_TimingWide(BattleWork* work) {
 	case 0x64:
 		if ((ac->field_0x4 & 1) &&
 		    (ac->mAcUnit->mTokenFlags & 0x10)) {
-			if ((s32)irand(100) >= 0) {
+			if (irand(100) >= 0) {
 				ac->field_0x8 = 0;
 				if (ac->acParams[2] > 0) {
 					ac->field_0x8 = irand(ac->acParams[2]);
@@ -97,7 +97,7 @@ s32 battleAcMain_TimingWide(BattleWork* work) {
 				}
 			}
 			else {
-				s32 r = (s32)irand(ac->acParams[3] -
+				s32 r = irand(ac->acParams[3] -
 				                   ac->acParams[2]);
 				ac->field_0x8 = ac->acParams[2] + r;
 			}

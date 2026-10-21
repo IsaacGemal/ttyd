@@ -815,7 +815,7 @@ u16 FontGetMessageWidthLine(const char* message, u16* lines) {
 		else {
 			switch (*(s8*)message) {
 			case '\n':
-				if ((u16)maxwidth < (u16)curwidth) {
+				if (maxwidth < curwidth) {
 					maxwidth = curwidth;
 				}
 				curwidth = 0;
@@ -868,10 +868,10 @@ u16 FontGetMessageWidthLine(const char* message, u16* lines) {
 		}
 		curwidth += FontGetWidthPtr(glyph)->width + charspace[gp->language];
 	}
-	if ((u16)maxwidth < (u16)curwidth) {
+	if (maxwidth < curwidth) {
 		maxwidth = curwidth;
 	}
-	if ((u16)maxwidth != 0) {
+	if (maxwidth != 0) {
 		maxwidth = (s32)maxwidth - charspace[gp->language];
 	}
 	if (lines) {

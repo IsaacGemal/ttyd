@@ -288,7 +288,7 @@ void demo_book(CameraId cameraId, void* param) {
     GXSetProjection(cam->projection, cam->projType);
     GXSetViewport(0.0f, 0.0f, 608.0f, 480.0f, 0.0f, 1.0f);
     TEXGetGXTexObjFromPalette((TEXPalette*)wp->tplFile->data[0], &texObj, 2);
-    w = (f32)(u16)GXGetTexObjWidth(&texObj);
+    w = (f32)GXGetTexObjWidth(&texObj);
     PSMTXTrans(m1, wp->posX, wp->posY, 0.0f);
     PSMTXScale(m2, wp->scale, wp->scale, wp->scale);
     PSMTXConcat(m1, m2, m1);
@@ -319,8 +319,8 @@ void demo_book(CameraId cameraId, void* param) {
     GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, GX_TEX_ST, GX_F32, 0);
     TEXGetGXTexObjFromPalette((TEXPalette*)wp->tplFile->data[0], &texObj, 2);
     GXLoadTexObj(&texObj, 0);
-    w = (f32)(u16)GXGetTexObjWidth(&texObj);
-    h = (f32)(u16)GXGetTexObjHeight(&texObj);
+    w = (f32)GXGetTexObjWidth(&texObj);
+    h = (f32)GXGetTexObjHeight(&texObj);
     GXLoadPosMtxImm(m1, 0);
     GXSetCurrentMtx(0);
     GXBegin(GX_QUADS, GX_VTXFMT0, 4);
@@ -332,8 +332,8 @@ void demo_book(CameraId cameraId, void* param) {
     GXTexCoord2f32(0.0f, 1.0f);
     GXPosition3f32(0.0f, -h / 2.0f, 0.0f);
     GXTexCoord2f32(1.0f, 1.0f);
-    w = (f32)(u16)GXGetTexObjWidth(&texObj);
-    h = (f32)(u16)GXGetTexObjHeight(&texObj);
+    w = (f32)GXGetTexObjWidth(&texObj);
+    h = (f32)GXGetTexObjHeight(&texObj);
     GXLoadPosMtxImm(m1, 0);
     GXSetCurrentMtx(0);
     if (wp->page >= 0) {
@@ -420,8 +420,8 @@ void demo_window(CameraId cameraId, void* param) {
     GXSetZMode(GX_FALSE, GX_LEQUAL, GX_FALSE);
     TEXGetGXTexObjFromPalette((TEXPalette*)wp->tplFile->data[0], &texObj, 0xD);
     GXLoadTexObj(&texObj, 0);
-    w = (f32)(u16)GXGetTexObjWidth(&texObj);
-    h = (f32)(u16)GXGetTexObjHeight(&texObj);
+    w = (f32)GXGetTexObjWidth(&texObj);
+    h = (f32)GXGetTexObjHeight(&texObj);
     GXSetNumChans(1);
     GXSetChanCtrl(4, 0, 0, 0, 0, 0, 2);
     GXSetChanMatColor(4, (GXColor) { 0xFF, 0xFF, 0xFF, (u8)(wp->winAlpha * 255 / 255) });

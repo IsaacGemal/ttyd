@@ -457,14 +457,14 @@ void BattleChoiceSamplingEnemy(u8* sampling, u32 flags, s32* outId, s32* outPart
     }
 
     baseUnit = BattleGetUnitPtr(wp, s->unitId);
-    n = (s8)s->order[0];
+    n = s->order[0];
     *outId = s->entries[n].unitId;
     *outPartId = s->entries[n].partId;
 
     for (i = 0; i < 74; i++) {
         weights[i] = 0;
     }
-    weights[(s8)s->order[0]] += 10;
+    weights[s->order[0]] += 10;
 
     for (n = 0; n < s->count; n++) {
         e = s->order[n];

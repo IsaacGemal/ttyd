@@ -450,7 +450,7 @@ void BattleStatusChangeInfoSetAnnouce(BattleUnit* unit, s32 type, s8 p1, s32 p2)
 			break;
 		}
 	}
-	if ((u8)pos != 0) {
+	if (pos != 0) {
 		disp = 0x50;
 	} else {
 		disp = 0x3C;

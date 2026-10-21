@@ -252,7 +252,7 @@ void effIbukiMain(EffectEntry* effect) {
 				data->positionX = 0.0f;
 				data->positionY = (f32)irand(30);
 				data->positionZ = 0.0f;
-				angle = (angle = 6.2831855f * angle, angle / 360.0f);
+				angle = angle * 6.2831855f / 360.0f;
 				data->velocityX = (f32)cos(angle);
 				data->velocityY = (f32)sin(angle);
 				data->velocityZ = 0.0f;

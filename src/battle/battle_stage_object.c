@@ -1562,7 +1562,7 @@ USER_FUNC(_set_mobj_rotate_x) {
 				}
 				event->field_84++;
 				base->field_0x4.x = (s32)intpl_sub(2, event->field_84, event->userdata[2], 0.0f, 90.0f);
-				if ((s32)event->field_84 < (s32)event->userdata[2]) {
+				if ((s32)event->field_84 < event->userdata[2]) {
 					changed = 1;
 				}
 			}
@@ -2248,7 +2248,7 @@ USER_FUNC(_nozzle_work_effect) {
 
 	if (event->userdata[0] > 0) {
 		event->userdata[0]--;
-		if ((s32)event->userdata[0] <= 0) {
+		if (event->userdata[0] <= 0) {
 			if ((u32)event->userdataEx[1] != 0xFFFFFFFFu) {
 				psndSFXOff(event->userdataEx[1]);
 			}
@@ -2327,7 +2327,7 @@ s32 _get_nozzle_attack_index(u8 index) {
 	BattleWorkField180C0* base = &_battleWorkPointer->field_180C0;
 	u8 type;
 
-	switch ((u8)index) {
+	switch (index) {
 		case 0:
 			type = base->field_0x1C4[index];
 			switch (type) {
@@ -2587,7 +2587,7 @@ USER_FUNC(_object_fall_attack) {
 				sum = irand(sum);
 				newEntry->type = 0;
 				while (newEntry->type < 8) {
-					sum -= typeTable->field_0xC0[(s8)newEntry->type];
+					sum -= typeTable->field_0xC0[newEntry->type];
 					if (sum < 0) {
 						break;
 					}
@@ -2670,7 +2670,7 @@ USER_FUNC(_object_fall_attack) {
 					FallObjectEntry* prev = &alloc->entries[k];
 					if (preEntry->unitId == prev->unitId) {
 						prev->timer = rand;
-						rand = (s16)((s32)irand(0x16) + (s32)rand + 0x14);
+						rand = (s16)(irand(0x16) + (s32)rand + 0x14);
 						if (prev->flag14 != 0) {
 							prev->flag15 = 1;
 						}

@@ -6092,7 +6092,7 @@ USER_FUNC(btlevtcmd_GetItemRecoverParam) {
     }
     if (index3 != EVTDAT_POINTER_MAX) {
         // header declares sp_restored as s8, but the original loads it with lbz (no extsb): it is u8.
-        evtSetValue(event, index3, (u8)item->sp_restored);
+        evtSetValue(event, index3, item->sp_restored);
     }
     return EVT_RETURN_DONE;
 }

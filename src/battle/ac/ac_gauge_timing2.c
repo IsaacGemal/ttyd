@@ -120,7 +120,7 @@ s32 battleAcMain_GaugeTiming2(BattleWork* work) {
 		break;
 	case 0x64:
 		if ((work->actionCommands.field_0x4 & 1) && (unit->mTokenFlags & 0x10)) {
-			if ((s32)irand(100) >= 0) {
+			if (irand(100) >= 0) {
 				work->actionCommands.field_0x8 = 0x1E;
 				dec->tokenHit = 0;
 			}

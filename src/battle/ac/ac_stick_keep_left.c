@@ -130,7 +130,7 @@ s32 battleAcMain_StickKeepLeft(BattleWork* work) {
                 }
                 return 0;
             }
-            if ((s32)BattlePadCheckNow(0x40000) == 0 && work->actionCommands.guardFrames <= 0 && !autoCommand) {
+            if (BattlePadCheckNow(0x40000) == 0 && work->actionCommands.guardFrames <= 0 && !autoCommand) {
                 if (--dec->countdown <= 0) {
                     work->actionCommands.result = 0;
                     stateChanged = 1;
@@ -182,7 +182,7 @@ s32 battleAcMain_StickKeepLeft(BattleWork* work) {
                 }
                 break;
             }
-            if ((s32)BattlePadCheckNow(0x40000) != 0 && !autoCommand) {
+            if (BattlePadCheckNow(0x40000) != 0 && !autoCommand) {
                 break;
             }
             {

@@ -239,8 +239,8 @@ void display_func(CameraId cameraId, void* param) {
     TEXGetGXTexObjFromPalette((TEXPalette*)work->handle->data[0], &tex, (u16)work->palIndex);
     GXLoadTexObj(&tex, GX_TEXMAP0);
     GXBegin(GX_QUADS, GX_VTXFMT0, 4);
-    halfW = (f32)(u16)GXGetTexObjWidth(&tex) / 2.0f;
-    halfH = (f32)(u16)GXGetTexObjHeight(&tex) / 2.0f;
+    halfW = (f32)GXGetTexObjWidth(&tex) / 2.0f;
+    halfH = (f32)GXGetTexObjHeight(&tex) / 2.0f;
     GXPosition3f32(-halfW / 2.0f, halfH / 2.0f, 0.0f);
     GXNormal3f32(0.0f, 0.0f, 1.0f);
     GXTexCoord2f32(0.0f, 0.0f);

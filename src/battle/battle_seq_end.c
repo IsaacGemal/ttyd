@@ -1222,17 +1222,9 @@ void _LvupParamConfirmDisp(CameraId camId, void* param) {
     pouchGetPtr();
     sprintf(buf, msgSearch("btl_msg_lvup_ok"));
     len = strlen(buf);
-#ifdef MUST_MATCH
-    // Retail assigns the half width inside the argument tree.
     windowDispGX_Waku_col(float_neg30_80420d00 - (halfWidth = float_6p25_80420d04 * len), float_30_80420d08,
                           float_12p5_80420d0c * len + float_65_80420ca8, float_32_80420d10, float_10_80420cd8, 0,
                           (GXColor){0xFF, 0xFF, 0xFF, 0xFF});
-#else
-    halfWidth = float_6p25_80420d04 * len;
-    windowDispGX_Waku_col(float_neg30_80420d00 - halfWidth, float_30_80420d08,
-                          float_12p5_80420d0c * len + float_65_80420ca8, float_32_80420d10, float_10_80420cd8, 0,
-                          (GXColor){0xFF, 0xFF, 0xFF, 0xFF});
-#endif
     windowDispGX_Waku_col(float_neg70_80420d14, float_neg10_80420d18, float_130_80420d1c, float_60_80420d20,
                           float_10_80420cd8, 0, (GXColor){0xFF, 0xFF, 0xFF, 0xFF});
     FontDrawStart();
@@ -1280,7 +1272,7 @@ void L__LvupParamHelpMsgDisp(CameraId camId, void* param) {
     lines++;
     zero = float_0_80420c7c;
     windowDispGX_Waku_col(zero - (f32)(width / 2) - float_20_80420c48,
-                          float_neg145_80420cf8 + (f32)(((u16)lines - 1) * 29), (f32)(width + 40),
+                          float_neg145_80420cf8 + (f32)((lines - 1) * 29), (f32)(width + 40),
                           (f32)(lines * 29 + 1), float_10_80420cd8, 0, (GXColor){ 0xFF, 0xFF, 0xFF, 0xFF });
     FontDrawStart_alpha(0xFF);
     FontDrawMessage((s32)(zero - (f32)(width / 2)), (s32)float_neg148_80420cfc + (lines - 1) * 29, msg);

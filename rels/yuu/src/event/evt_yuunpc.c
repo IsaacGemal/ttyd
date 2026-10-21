@@ -2273,9 +2273,9 @@ void yuunpc_pose_minigame4_main(void) {
                         }
                         {
                                                     s32 h1, h2;
-                            h1 = ((25.0f + entry->field_24) < -1800.0f || (25.0f + entry->field_24) >= 1800.0f || entry->field_2C < -150.0f || entry->field_2C >= 150.0f) ? -500 : (s16)yuunpc_wp->map[(s32)(((25.0f + entry->field_24) - (-1800.0f)) / 50.0f) + 0x48 * (s32)((entry->field_2C - (-150.0f)) / 50.0f)];
+                            h1 = ((25.0f + entry->field_24) < -1800.0f || (25.0f + entry->field_24) >= 1800.0f || entry->field_2C < -150.0f || entry->field_2C >= 150.0f) ? -500 : yuunpc_wp->map[(s32)(((25.0f + entry->field_24) - (-1800.0f)) / 50.0f) + 0x48 * (s32)((entry->field_2C - (-150.0f)) / 50.0f)];
                             f27 = (f32)h1;
-                            h2 = ((75.0f + entry->field_24) < -1800.0f || (75.0f + entry->field_24) >= 1800.0f || entry->field_2C < -150.0f || entry->field_2C >= 150.0f) ? -500 : (s16)yuunpc_wp->map[(s32)(((75.0f + entry->field_24) - (-1800.0f)) / 50.0f) + 0x48 * (s32)((entry->field_2C - (-150.0f)) / 50.0f)];
+                            h2 = ((75.0f + entry->field_24) < -1800.0f || (75.0f + entry->field_24) >= 1800.0f || entry->field_2C < -150.0f || entry->field_2C >= 150.0f) ? -500 : yuunpc_wp->map[(s32)(((75.0f + entry->field_24) - (-1800.0f)) / 50.0f) + 0x48 * (s32)((entry->field_2C - (-150.0f)) / 50.0f)];
                             f28 = (f32)h2;
                             if (entry->field_4 <= 3 && irand(2) != 0) {
                                 if (f27 >= entry->field_28) {

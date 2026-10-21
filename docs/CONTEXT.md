@@ -111,6 +111,15 @@ current version. Update it here when a new chapter changes one. The working deta
   `#else`. Data layout (strings, `gap_`/`force_active`, section declspecs, data definitions, `.sbss2` templates) was out
   of scope for the guard-removal passes; changes there that matched are recorded as leads, not applied. ([mmbattle][20],
   [mmsrc][4], [mmsrc review][21], [hack review][15])
+- Each trick family is decided once and applied everywhere ([guard consistency][38]). Guarded where the plain form gives
+  a different object, plain where it gives the same one: comma sequencing (`(x = f(), x)`, `(0, x)`), a cast to the
+  value's own type, const-stripping or volatile reads of named constants, round trips through another type, dead stores,
+  self-assignments, redundant tests and ternaries on a 0/1 test, `x ^ 0`, and calls of a named function through a cast
+  (a different prototype, or its own type to stop inlining). Plain C, never guarded: signedness, width and enum-to-int
+  casts that change a value or a comparison (one on an `== 0` test or re-narrowing a narrowed value is a trick), a cast to the callee's parameter type, `& 0xFFFFFFFF` on a 64-bit value, an assignment inside an argument, an
+  if/else storing 0/1, float-to-int-to-narrow conversions, float bit tests, puns forced by a field's or object's declared
+  type (typing debt: retype it instead), function-pointer casts of values or to an API's callback type, and `volatile`
+  on hardware registers or on fields a callback writes (declared in the struct).
 
 **Partial functions**
 - A function below 100% carries a marker with its score and what differs (`// NONMATCHING (95%): ...`), never has an
@@ -206,6 +215,7 @@ current version. Update it here when a new chapter changes one. The working deta
 [35]: CONTEXT-matching.md#reference-repos-and-study-them-before-building-tools-2026-09-27-isaac-written-up-by-claude-opus-55
 [36]: CONTEXT-matching.md#wave-12-the-metrowerks-runtime-libraries-2026-09-27-claude-opus-55-agents-deepseek-v41-flash-reviews-claude-opus-55-x3
 [37]: CONTEXT-matching.md#grind-63-ttyd-refs-the-shared-read-only-reference-decomps-2026-10-01-claude-sonnet-55-ttyd-claude-3
+[38]: #must_match-guarding-made-consistent-across-the-tree-2026-10-21-claude-opus-55-n9-q-o-consist
 
 ## Parked ideas
 
@@ -4843,3 +4853,87 @@ under-reporting.
   - animdrv's "no struct" for the s8 deltas;
   - battle_audience's `audlocal`;
   - gor_03's kuji callback "unknown object".
+
+## MUST_MATCH guarding made consistent across the tree (2026-10-21, Claude Opus 5.5, n9-q-o-consist)
+
+Task (Isaac): #1103 and #1104 found the same match-trick shapes guarded in some files and plain in others (`&
+0xFFFFFFFF`, the comma form, `(s32)` on motion ids, assignment inside an argument, the `(u32)x == 0` 0/1 tail,
+volatile reads, self-assignments and dead stores outside MUST_MATCH). Survey every family, decide each once, and apply
+the decision everywhere: guard a real trick with a plain `#else`, use the plain form wherever it gives the same object,
+and drop guards from families that are natural C.
+
+- Method (scratch, untracked, build/mmcons/): survey.py walks every game C file's libclang AST (parsed with
+  -DMUST_MATCH) and counts each family's sites, guarded when the line is in a MUST_MATCH-only arm or the site comes from
+  a macro defined in one. try.py compiles a file with its object's ninja flags and runs tools/obj_equiv.py against
+  objects saved from the base build (or compiles it without -DMUST_MATCH). sweep.py tried every MUST_MATCH region's
+  `#else` alone. casts.py removes redundant casts one file at a time, all together first and then cast by cast, keeping
+  only removals that stay EQUIV. edits.py tries a plain form, keeps it when EQUIV and guards the site otherwise.
+  armdiff.py token-diffs the two arms of every region, to find guards whose only difference is a family ruled natural.
+  libclang reports byte offsets; the first cast pass sliced Python strings and so skipped casts after any Japanese text
+  in a file (it failed safe; a second pass on bytes found 23 more). Every removed cast was checked to be a cast token.
+- **Decisions, one per family** (the Standing rules carry the short form):
+  - Comma sequencing, `(x = f(), x)` and `(0, x)`: a trick. Guarded; plain where the plain form matches.
+  - `& 0xFFFFFFFF`: every site masks a 64-bit time to a word, and the `and x, -1` is in the asm. Plain C; evt_env's
+    guard went.
+  - Assignment inside a call argument: plain C. battle_seq_end's guard went (its twin in battle_seq_command was plain).
+    The seven still under a guard are part of a comma form or a steering block (unit_barriern, mapdrv, eff_balloon).
+  - Signedness, width and enum-to-int casts that change a value or a comparison (`(s32)currSubMotionId >= 0xC`): plain
+    C; mot_plane's guard went. One that changes nothing in C is a cast for the compiler and stays guarded (reviewer):
+    a `(u32)`/`(s32)` on an `== 0`/`!= 0` test (animdrv's three `(u32)fileId == 0`/`(u32)other == 0`, memory.c's
+    `(s32)waitsync != 0`) and battle_damage's `s32 rate` re-narrowed by `(s8)`; none matches plain. seq_logo's stays
+    for its redundant `-1` branch.
+  - A cast to the value's own type: a no-op in C. Removed where the object is the same (375, counting the 61
+    `(s32)currSubMotionId` casts that became same-type when the field was retyped; 3 enum-to-int casts that made no
+    difference went too); guarded where it isn't (11 int, 2 float). A cast to the callee's parameter type stays as
+    written (msgdrv's `kanjiGetWidth((u16)glyph)`, himo's spline_getvalue, whose pointer locals are s32 only under
+    MUST_MATCH).
+  - Round trips through another type (`(s32)(f32)`, `(s32)(s64)`, pointer-int-pointer): guarded. Float-to-int-to-narrow
+    (`(u8)(s32)f`) is the standard conversion and stays plain.
+  - Dead stores and self-assignments: guarded, or removed with their locals where the object is the same. A write-only
+    local that holds a call result (the call is real) is plain. Unused locals whose initialiser is a .rodata template
+    (sac_bakugame's `order`/`home`, npcdrv's `zero`, party_hit's `n`) are data layout, not touched.
+  - Redundant tests and ternaries on a 0/1 test (`c ? 1 : 0`, same arms, `x != 0 && x > 0`, `x ^ 0`): guarded. An if/else
+    storing 1/0 is plain C and replaced the ternary where it matched (gor_03, eff_hit). `mask ? 1 : 0`, `!!x` and
+    `x != x` NaN tests are plain.
+  - Type puns: const-stripping and volatile reads of named constants are tricks (mot_jabara's JABARA_F32 is now guarded
+    like SHOP_F32, WINMGR_F32 and TOU_F32; eff_cloud's sqrtf test); 39 `*(GXColor*)&` casts of const GXColor objects
+    matched without the cast and went. Puns forced by a declared type (u8 arrays, s32 lwData/userdata words, u32 colour
+    data, x/y/z floats read as a Vec) are typing debt: plain until the field or object is retyped. Float bit tests are
+    the SDK's fpclassify idiom.
+  - Function-pointer casts: a call of a named function through a cast is guarded, including a cast to its own type to
+    stop inlining (rsh_05's MOAMOA_POSE_CHANGE and moamoa_pose_main, now guarded). Casting a value (evtGetValue, a void*
+    field, a module prolog) to a function type, or a function to an API's callback type (qqsort comparators,
+    OSSetErrorHandler, drawFunc fields), is plain.
+  - Volatile: guarded as a codegen device; plain on hardware registers (`*(volatile u32*)0x800000F8`) and on fields a
+    callback writes. arammgr's ARAMWorkNode.flags and ARAMWork.garbageBusy are now volatile in the header; the guarded
+    NODE_FLAGS/GARBAGE_BUSY casts and aramMgrToAram's unguarded cast of the same field went. envdrv's GXPosition3f32
+    redefinition (statement-order steering) is guarded.
+- **Survey, guarded / unguarded sites** (base 9e5a105c -> this branch, same script; SDK header-macro expansions and
+  src/sdk excluded): comma 22/17 -> 28/0; self_assign 10/1 -> 11/0; same-type cast 4/319 -> 19/8 (the eight: msgdrv's
+  five parameter casts and himo's three); redundant ternary 4/11 ->
+  11/0; redundant op (`x ^ 0`, `x | 0`, `x + 0` outside an index) 2/10 -> 6/6 (the six are index `+ 0`); int round trip
+  6/68 -> 8/51 (natural conversions); dead store (write-only local) 4/67 -> 4/55 (call results and templates); mask
+  2/18 -> 0/20; fn-ptr cast 127/56 -> 131/52; pun 176/1391 -> 236/1295 (+60 guarded are JABARA_F32's uses); volatile
+  266/14 -> 262/9 (hardware, and macros defined in both arms); assignment in argument 8/18 -> 7/18.
+- **Other forms that matched.** The `#else` sweep found three regions whose plain form now matches: win_log's `new_var`
+  base alias (all three regions), unit_party_chuchurina's lbl_8037EC10 weapon offsets (the named weapons share the base
+  register), himo's spline_getvalue call. evt_win and evt_shop trade their do/while(0) `break` tails for the guarded
+  comma form statuswindow uses. cardmgr's ten busy-wait loops, rsh_03's colour copy, npcdrv's homing test and
+  eff_ibuki's second angle step are plain. MarioWork.currSubMotionId is s32 (all 23 users EQUIV). Twelve dead stores
+  went with their locals (sac_deka, battle_acrobat, usu_00, evtmgr_cmd, winmgr, nameent, win_mario, evt_yuucounter,
+  seq_e3's shadowed `keys`).
+- **Counts** (tools/cleanup_index.py, base 9e5a105c -> this branch): index 14.122 -> 14.155 per kLOC (9852 -> 9875
+  weighted); must_match 782 -> 804 (37 regions added, 15 removed, in 35 files); field_0x 3935 -> 3938 (lines duplicated
+  into guards); address_name 2642 -> 2640; fn_ptr_cast, goto, opt_pragma, raw_offset unchanged. The rise is the 37
+  tricks that were in the code unmarked (comma forms, no-op and round-trip casts, redundant ternaries, `x ^ 0`, dead
+  stores, const-stripping reads, no-inline casts, envdrv's vertex macro), each tried plain first; the index doesn't count
+  the 378 casts and 12 dead stores removed.
+- **Left, for a reviewer.** tools/fncast_allowlist.json's two rsh_05 entries are stale (tools/ is protected; `python3
+  tools/fncast_lint.py --stale` lists them). The 11 guarded same-type int casts (four togekuri `return (u16)mid`,
+  battle_seq_command, icondrv, evt_badgeshop, winmgr x2, party.c, party_motion) may each be a mistyped local or prototype
+  in our source rather than a trick: `s32`/`int`/`u32 mid` in togekuri differ, and PartyEntry.currentMemberId as u8
+  changes ten rels. mario.c's marioDispBlur keeps its dead sinv/cosv under an unguarded `opt_dead_assignments off`
+  (pragma family, not touched). Data-template dead locals as above.
+- Verified: `ninja` recreates build/G8MJ01/ok; every game object (1,019) compiles under `configure.py --non-matching`;
+  fncast_lint and local_prototypes pass; tools/ci.py PASS before each commit with its tools/tests step stubbed (9
+  environment errors in test_wave_launch's systemd scopes, as in the chapters above).

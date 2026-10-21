@@ -1913,7 +1913,7 @@ static s32 moamoa_hit_check(ExtPose* pose, MoamoaPose* entry) {
             return 2;
     }
 
-    if (mario->currMotionId == 0x13 && (s32)mario->currSubMotionId == 0x14) {
+    if (mario->currMotionId == 0x13 && mario->currSubMotionId == 0x14) {
         v65 = moamoa_vec((*pose->matrix)[0][3], (*pose->matrix)[1][3], (*pose->matrix)[2][3],
                              &vec3_rsh_00013d34);
 

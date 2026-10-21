@@ -245,7 +245,7 @@ void mot_dokan(void) {
         mario->unk1A8 = revise360(mario->unk1A8 + mario->spinSpeed);
         break;
     case 0x0:
-        if ((s32)--mario->multiTimer > 0) {
+        if (--mario->multiTimer > 0) {
             break;
         }
         mario->dispRot.x += mario->spinSpeed;
@@ -328,7 +328,7 @@ void mot_dokan(void) {
         }
         break;
     case 0x66:
-        if ((s32)--mario->multiTimer <= 0) {
+        if (--mario->multiTimer <= 0) {
             mario->currSubMotionId = 0x67;
         }
         break;
@@ -383,7 +383,7 @@ void mot_dokan(void) {
         }
         break;
     case 0x70:
-        if ((s32)--mario->multiTimer <= 0) {
+        if (--mario->multiTimer <= 0) {
             mario->currSubMotionId = 0x71;
         }
         break;

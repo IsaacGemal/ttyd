@@ -192,7 +192,12 @@ void statusWinMain(void) {
                     BOOL notKey;
 
                     notCtrl = !marioChkCtrl();
+#ifdef MUST_MATCH
+                    // The comma stores notKey before testing it, as retail does.
                     if (notCtrl || (notKey = !marioChkKey(), notKey) || !(mario->flags & 1)) {
+#else
+                    if (notCtrl || !marioChkKey() || !(mario->flags & 1)) {
+#endif
                         if (statusWinCheck()) {
                             wp->flags |= (STATUS_WIN_CLOSED | STATUS_WIN_CLOSING);
                             wp->flags &= ~(STATUS_WIN_OPEN | STATUS_WIN_OPENING);
@@ -288,6 +293,7 @@ void statusWinMain(void) {
                 wp->flags &= ~STATUS_WIN_BADGES;
             }
         } else {
+#ifdef MUST_MATCH
             // Codegen-only: the f64 temp gives the in-place `frsp f1,f1`, `x = x;` and the
             // `a = q*cc; q = a;` copy colour the diff/product into f2/f1, and `half` keeps the
             // 0.5 load in f0 so the fmadds reads product*0.5 like the original.
@@ -308,6 +314,12 @@ void statusWinMain(void) {
             q = a;
             half = float_0p5_8041c90c;
             wp->openAmount = q * half + wp->openFrom;
+#else
+            f32 x = cos(float_3p1416_8041c908 * wp->animTime / wp->animDuration);
+
+            wp->openAmount = (wp->openTarget - wp->openFrom) * (float_1_8041c904 - x) * float_0p5_8041c90c +
+                             wp->openFrom;
+#endif
         }
 
         {

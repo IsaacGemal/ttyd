@@ -130,21 +130,21 @@ void effMagic1Main(EffectEntry* effect) {
 // constants and the f3/f4 temps land in the opposite slots.
 static inline GXColor magic1Color2(u8* anime) {
     GXColor c = *(GXColor*)&dat_8041f650;
-    { s32 a = anime[1]; f32 s = (f32)MAGIC1_SIN2(anime[0]);
+    { s32 a = anime[1]; f32 s = MAGIC1_SIN2(anime[0]);
       c.r = (u8)(s32)(a + 0.5f * ((255 - a) * (1.0f + s))); }
-    { s32 a = anime[2]; f32 s = (f32)MAGIC1_SIN2(anime[0]);
+    { s32 a = anime[2]; f32 s = MAGIC1_SIN2(anime[0]);
       c.g = (u8)(s32)(a + 0.5f * ((255 - a) * (1.0f + s))); }
-    { s32 a = anime[3]; f32 s = (f32)MAGIC1_SIN2(anime[0]);
+    { s32 a = anime[3]; f32 s = MAGIC1_SIN2(anime[0]);
       c.b = (u8)(s32)(a + 0.5f * ((255 - a) * (1.0f + s))); }
     return c;
 }
 
 static inline GXColor magic1Color1(GXColor c, u8* anime, s32 alpha) {
-    { s32 a = anime[1]; f32 s = (f32)MAGIC1_SIN(anime[0]);
+    { s32 a = anime[1]; f32 s = MAGIC1_SIN(anime[0]);
       c.r = (u8)(s32)(a + 0.5f * (-a * (1.0f + s))); }
-    { s32 a = anime[2]; f32 s = (f32)MAGIC1_SIN(anime[0]);
+    { s32 a = anime[2]; f32 s = MAGIC1_SIN(anime[0]);
       c.g = (u8)(s32)(a + 0.5f * (-a * (1.0f + s))); }
-    { s32 a = anime[3]; f32 s = (f32)MAGIC1_SIN(anime[0]);
+    { s32 a = anime[3]; f32 s = MAGIC1_SIN(anime[0]);
       c.b = (u8)(s32)(a + 0.5f * (-a * (1.0f + s))); }
     c.a = alpha;
     return c;

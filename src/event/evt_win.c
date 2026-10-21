@@ -531,20 +531,15 @@ USER_FUNC(evt_unitwin_select_func) {
 	wp->flags &= ~1;
 	buttons = keyGetButtonTrg(0);
 #ifdef MUST_MATCH
-	// The original shares one buttons=0 tail between the two checks; the natural
-	// short-circuit below materialises the second compare instead of branching on it.
+	// The comma stores notKey before testing it, as retail does; the plain short-circuit
+	// materialises the second compare instead of branching on it.
 	{
 		BOOL notCtrl = !marioChkCtrl();
+		BOOL notKey;
 
-		do {
-			if (!notCtrl) {
-				notCtrl = !marioChkKey();
-				if (!notCtrl) {
-					break;
-				}
-			}
+		if (notCtrl || (notKey = !marioChkKey(), notKey)) {
 			buttons = 0;
-		} while (0);
+		}
 	}
 #else
 	if (!marioChkCtrl() || !marioChkKey()) {
@@ -755,7 +750,7 @@ void evt_unitwin_disp_func(CameraId cameraId, void* param) {
 				{
 					s32 item = wp->items[i];
 					if (item >= BADGE_MIN && item < BADGE_MAX) {
-						price = (u16)itemDataTable[item].discount_price;
+						price = itemDataTable[item].discount_price;
 					} else {
 						price = ((ItemDataView*)&itemDataTable[item])->buy_price;
 					}
@@ -1024,14 +1019,14 @@ void evt_unitwin_disp_func(CameraId cameraId, void* param) {
 				break;
 			}
 			case 13:
-				if ((s16)badgeShop_get(bdsw->starmaniac_table, (s16)(i + BADGE_MIN)) > 0) {
+				if (badgeShop_get(bdsw->starmaniac_table, (s16)(i + BADGE_MIN)) > 0) {
 					item = i + BADGE_MIN;
 				} else {
 					item = 0;
 				}
 				break;
 			case 14:
-				if ((s16)badgeShop_get(bdsw->bottakuru_table, (s16)(i + 1)) > 0) {
+				if (badgeShop_get(bdsw->bottakuru_table, (s16)(i + 1)) > 0) {
 					item = i + 1;
 				} else {
 					item = 0;
@@ -1041,7 +1036,7 @@ void evt_unitwin_disp_func(CameraId cameraId, void* param) {
 				item = badge_bottakuru100_table[i];
 				break;
 			case 16:
-				if ((s16)badgeShop_get(bdsw->bteresa_table, (s16)(i + 1)) > 0) {
+				if (badgeShop_get(bdsw->bteresa_table, (s16)(i + 1)) > 0) {
 					item = i + 1;
 				} else {
 					item = 0;

@@ -166,7 +166,7 @@ void effStageClearMain(EffectEntry* effect) {
 						dt = shake_dt;
 					}
 					data->evt->lwData[0] = (s32)dt;
-					data->evt->lwData[1] = (i == effect->count - 1) ? 1 : 0;
+					data->evt->lwData[1] = i == effect->count - 1;
 				}
 				retired++;
 			}

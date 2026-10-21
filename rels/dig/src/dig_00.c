@@ -363,7 +363,7 @@ void movie_draw(CameraId cameraId, void* param) {
     if (type == EXI_IS_VIEWER) {
         string = "ここにムービーがながれます";
         FontDrawStart();
-        color = *(GXColor*)&dat_dig_000006e0;
+        color = dat_dig_000006e0;
         FontDrawColor(&color);
         FontDrawString((f32)(-FontGetMessageWidth(string) / 2), 0.0f, string);
         wp->frameNumber++;

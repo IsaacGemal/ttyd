@@ -172,7 +172,7 @@ void caseMain(void) {
 			break;
 		case 6:
 			if (hitStandOn != NULL && strcmp(hitGetName(hitStandOn), entry->hitObjName) == 0 &&
-			    (s8)mario->wStickDir2 > 0x1e) {
+			    mario->wStickDir2 > 0x1e) {
 				entry->flags |= 2;
 			}
 			break;

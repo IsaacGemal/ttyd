@@ -822,12 +822,9 @@ s32 evt_case_and(EventEntry* entry) { // 46
 }
 
 s32 evt_case_end(EventEntry* entry) { // 47
-    s32* args = entry->args;
     s32 depth = entry->switchDepth;
-    s32 inputValue;
     s8 state;
 
-    inputValue = entry->switchValues[depth];
     state = entry->switchStates[depth];
     
     if (state == 0) {

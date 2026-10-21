@@ -57,13 +57,13 @@ void* BattleEnemyUseItemCheck(BattleUnit* unit) {
     case 0x9e:
         return _check_fp_recover_item(unit);
     default:
-        if ((u8)itemDataTable[item].hp_restored != 0) {
+        if (itemDataTable[item].hp_restored != 0) {
             result = _check_hp_recover_item(unit);
             if (result != NULL) {
                 return result;
             }
         }
-        if ((u8)itemDataTable[item].fp_restored != 0) {
+        if (itemDataTable[item].fp_restored != 0) {
             result = _check_fp_recover_item(unit);
             if (result != NULL) {
                 return result;
@@ -86,7 +86,7 @@ void* _check_hp_recover_item(BattleUnit* unit) {
 
     BattleSamplingEnemy((u8*)sampling, weapon, unit->unitId, BtlUnit_GetEnemyBelong(unit),
                         weapon->targetClassFlags, weapon->targetPropertyFlags,
-                        (s32)(s8)wp->alliances[unit->mAlliance].attackDirection);
+                        (s32)wp->alliances[unit->mAlliance].attackDirection);
 
     for (i = 0; i < sampling->count; i++) {
         BattleUnit* target =
@@ -116,7 +116,7 @@ void* _check_fp_recover_item(BattleUnit* unit) {
 
     BattleSamplingEnemy((u8*)sampling, weapon, unit->unitId, BtlUnit_GetEnemyBelong(unit),
                         weapon->targetClassFlags, weapon->targetPropertyFlags,
-                        (s32)(s8)wp->alliances[unit->mAlliance].attackDirection);
+                        (s32)wp->alliances[unit->mAlliance].attackDirection);
 
     for (i = 0; i < sampling->count; i++) {
         BattleUnit* target =
@@ -148,7 +148,7 @@ void* _check_attack_item(BattleUnit* unit) {
 
     BattleSamplingEnemy((u8*)sampling, weapon, unit->unitId, BtlUnit_GetEnemyBelong(unit),
                         weapon->targetClassFlags, weapon->targetPropertyFlags,
-                        (s32)(s8)wp->alliances[unit->mAlliance].attackDirection);
+                        (s32)wp->alliances[unit->mAlliance].attackDirection);
 
     if (sampling->count <= 0) {
         return 0;
@@ -189,7 +189,7 @@ void* _check_status_attack_item(BattleUnit* unit) {
 
     BattleSamplingEnemy((u8*)sampling, weapon, unit->unitId, BtlUnit_GetEnemyBelong(unit),
                         weapon->targetClassFlags, weapon->targetPropertyFlags,
-                        (s32)(s8)wp->alliances[unit->mAlliance].attackDirection);
+                        (s32)wp->alliances[unit->mAlliance].attackDirection);
 
     if (sampling->count <= 0) {
         return 0;
@@ -246,7 +246,7 @@ void* _check_status_support_item(BattleUnit* unit) {
 
     BattleSamplingEnemy((u8*)sampling, weapon, unit->unitId, BtlUnit_GetEnemyBelong(unit),
                         weapon->targetClassFlags, weapon->targetPropertyFlags,
-                        (s32)(s8)wp->alliances[unit->mAlliance].attackDirection);
+                        (s32)wp->alliances[unit->mAlliance].attackDirection);
 
     if (sampling->count <= 0) {
         return 0;
@@ -305,7 +305,7 @@ void* _check_status_recover_item(BattleUnit* unit) {
 
     BattleSamplingEnemy((u8*)sampling, weapon, unit->unitId, BtlUnit_GetEnemyBelong(unit),
                         weapon->targetClassFlags, weapon->targetPropertyFlags,
-                        (s32)(s8)wp->alliances[unit->mAlliance].attackDirection);
+                        (s32)wp->alliances[unit->mAlliance].attackDirection);
 
     if (sampling->count <= 0) {
         return 0;

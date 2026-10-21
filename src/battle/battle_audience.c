@@ -498,7 +498,7 @@ BOOL check_exe_phase_evt_status(s32 index, s32 type) {
 	if ((u8)BattleAudience_GetSysCtrl(index) == 0) {
 		return FALSE;
 	}
-	if ((s32)member->type != (s32)type) {
+	if ((s32)member->type != type) {
 		return FALSE;
 	}
 	if (member->status == 13) {

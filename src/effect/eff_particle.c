@@ -364,9 +364,9 @@ void ParticleEmit(EffectEntry* effect, ParticleEntry* particle, ParticleEmitter*
 		f32 c2 = 2.0f;
 		do {
 			seed = seed * 0x5EEDF715 + 0x1B0CB173;
-			x = cd * (f32)(u32)seed * c2 - c1;
+			x = cd * (f32)seed * c2 - c1;
 			seed = seed * 0x5EEDF715 + 0x1B0CB173;
-			z = cd * (f32)(u32)seed * c2 - c1;
+			z = cd * (f32)seed * c2 - c1;
 			radius = x * x + z * z;
 		} while (radius > c1);
 		factor = particle_sqrtf(-2.0f * (f32)log(radius) / radius, &firstScratch);
@@ -386,10 +386,10 @@ void ParticleEmit(EffectEntry* effect, ParticleEntry* particle, ParticleEmitter*
 			f32 vz;
 
 			seed = seed * 0x5EEDF715 + 0x1B0CB173;
-			vx = cd * (f32)(u32)seed * c2;
+			vx = cd * (f32)seed * c2;
 			particle->velocity.x = vx - c1;
 			seed = seed * 0x5EEDF715 + 0x1B0CB173;
-			vz = cd * (f32)(u32)seed * c2;
+			vz = cd * (f32)seed * c2;
 			particle->velocity.z = vz - c1;
 			radius = particle->velocity.x * particle->velocity.x + particle->velocity.z * particle->velocity.z;
 		} while (radius > c1);

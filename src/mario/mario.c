@@ -1525,7 +1525,7 @@ void marioMove(void) {
 			}
 			else {
 				// wStickDir1 is signed in retail (lbz + extsb), but the header declares it u8.
-				stickDir = (s8)wp->wStickDir1;
+				stickDir = wp->wStickDir1;
 				if (stickDir * stickDir < 25) {
 					marioChgPose("M_Z_1");
 				}

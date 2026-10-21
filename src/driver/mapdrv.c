@@ -3445,7 +3445,12 @@ void mapSetMaterial(MapObject* obj, void* materialPtr) {
 		                              *(const char**)ref->field_0x0));
 		GXInitTexObj(&texObj, desc->textureHeader->data, desc->textureHeader->width, desc->textureHeader->height,
 		             desc->textureHeader->format, texwrap_tbl[ref->wrapS], texwrap_tbl[ref->wrapT],
+#ifdef MUST_MATCH
+		             // The ternary on a 0/1 test changes the object; the plain test is under #else.
 		             desc->textureHeader->minLOD == desc->textureHeader->maxLOD ? GX_FALSE : GX_TRUE);
+#else
+		             desc->textureHeader->minLOD != desc->textureHeader->maxLOD);
+#endif
 		GXInitTexObjLOD(&texObj, GX_LINEAR, GX_LINEAR, (f32)desc->textureHeader->minLOD,
 		                (f32)desc->textureHeader->maxLOD, desc->textureHeader->LODBias, GX_DISABLE,
 		                desc->textureHeader->edgeLODEnable, GX_ANISO_1);

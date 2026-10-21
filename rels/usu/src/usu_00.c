@@ -1939,14 +1939,12 @@ void kpaSen_ext_init(void) {
     ExtPose* pose = extGetPosePtr();
     Vec pos = vec3_usu_000049ac;
     f32 f30;
-    f32 f31;
     f32 c;
     s32 i;
     s32 offset;
 
     kpaSen = _mapAlloc(0x1c20);
     f30 = pos.x + 200.0f;
-    f31 = pos.z;
 
     for (i = 0, offset = 0; i < extGetPoseNum(); i++, offset += 0x24, pose++) {
         pose->flags |= 3;

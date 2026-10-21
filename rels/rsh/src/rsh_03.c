@@ -1268,7 +1268,8 @@ s32 unk_rsh_00002634(EventEntry* event, BOOL isFirstCall) {
         if ((entry->flags & 1) != 0 && (entry->flags & 2) != 0 && strcmp(entry->description, "店員") != 0) {
             colorTmp = g_white;
             colorTmp.a = alpha;
-            npcSetColor(entry->description, (color = colorTmp, &color));
+            color = colorTmp;
+            npcSetColor(entry->description, &color);
         }
     }
     return 2;

@@ -296,7 +296,6 @@ static void yuka_main(void) {
     Vec vN;
     Vec v8;
     f32 f;
-    f32 w = 64.0f;
 
     for (i = 0; i < 6; i++) {
         if (p->yukaActive[i] == 1) {
@@ -1227,7 +1226,6 @@ void create_timing(void) {
     s32 tidx;
     s32 tries;
     f32 f;
-    f32 w = 64.0f;
 
     memcpy(p->timingCopy, p->timing, 0x1C0);
 
@@ -1317,7 +1315,7 @@ s32 weaponGetPower_Deka(void) {
 // .text:0x224 | 0x8024321C | size: 0x38
 s32 wait_star_stone_take_on(EventEntry* event) {
     DekaWork* p = get_ptr();
-    return (u32)(p->starState - 4u) <= 0 ? 2 : 0;
+    return (p->starState - 4u) <= 0 ? 2 : 0;
 }
 
 // .text:0x1F8 | 0x802431F0 | size: 0x2C
@@ -1330,7 +1328,7 @@ static s32 start_game(EventEntry* event) {
 // .text:0x1C0 | 0x802431B8 | size: 0x38
 static s32 wait_game_end(EventEntry* event) {
     DekaWork* p = get_ptr();
-    return (u32)(p->baseState - 5u) <= 0 ? 2 : 0;
+    return (p->baseState - 5u) <= 0 ? 2 : 0;
 }
 
 // .text:0x1C0 | 0x8024318C | size: 0x24

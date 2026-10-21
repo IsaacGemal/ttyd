@@ -1250,7 +1250,7 @@ void rsh_window_tev(RshWindowTevParam* param, s32 arg1) {
     height = y1 - y0;
 
     buf = smartAlloc(GXGetTexBufferSize((u16)halfWidth, (u16)halfHeight, GX_TF_RGB5A3, GX_FALSE, GX_FALSE), HEAP_EFFECT)->address;
-    GXSetTexCopySrc((u16)x0, (u16)y0, (u16)width, (u16)height);
+    GXSetTexCopySrc(x0, y0, (u16)width, (u16)height);
     GXSetTexCopyDst((u16)halfWidth, (u16)halfHeight, GX_TF_RGB5A3, GX_TRUE);
     GXCopyTex(buf, GX_FALSE);
     GXInvalidateTexAll();

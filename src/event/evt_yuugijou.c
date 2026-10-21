@@ -184,7 +184,7 @@ void monteCountDisp(void) {
 		if (delta != 0) {
 			delta /= 10;
 			if (delta == 0) {
-				delta = ((s32)yuwp->tokens > (s32)yuwp->dispTokens) ? 1 : -1;
+				delta = (yuwp->tokens > (s32)yuwp->dispTokens) ? 1 : -1;
 			}
 			yuwp->dispTokens += delta;
 		}
@@ -248,7 +248,7 @@ USER_FUNC(yuugijou_montemedal_disp_onoff) {
 }
 
 USER_FUNC(yuugijou_montemedal_wait) {
-	if ((s32)yuwp->dispTokens != (s32)yuwp->tokens) {
+	if ((s32)yuwp->dispTokens != yuwp->tokens) {
 		return 0;
 	}
 	return 2;

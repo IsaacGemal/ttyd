@@ -100,10 +100,8 @@ void evt_yuucounter_disp_func(CameraId cameraId, void* param) {
     f32 scale;
     Mtx mtx;
     f32 xbase;
-    GXColor color;
 
     work = param;
-    color = *(GXColor*)&dat_yuu_00014dd0;
     iconColor = *(GXColor*)&dat_yuu_00014dd0;
     digitColor = *(GXColor*)&dat_yuu_00014dd0;
 

@@ -120,7 +120,7 @@ USER_FUNC(unk_8014cc24) {
 }
 
 USER_FUNC(evt_snd_bgmoff) {
-    psndBGMOff((s32)event->args[0]);
+    psndBGMOff(event->args[0]);
     return EVT_RETURN_DONE;
 }
 
@@ -276,7 +276,7 @@ USER_FUNC(evt_snd_sfx_dist) {
 }
 
 USER_FUNC(evt_snd_envon) {
-    psndENVOn((s32)event->args[0], (s32)event->args[1]);
+    psndENVOn(event->args[0], event->args[1]);
     return EVT_RETURN_DONE;
 }
 
@@ -311,7 +311,7 @@ USER_FUNC(evt_snd_env_lpf) {
 }
 
 USER_FUNC(evt_snd_set_rev_mode) {
-    psndSetReverb((s32)event->args[0]);
+    psndSetReverb(event->args[0]);
     return EVT_RETURN_DONE;
 }
 
@@ -381,13 +381,13 @@ void party_motion_stay(PartyEntry* party) {
         if (!marioKeyOffChk()) {
             if (party->field_32 == 0) {
                 f30 = 18.0f;
-            } else if ((s8)party->currentMemberId == PARTY_MEMBER_FLURRIE) {
+            } else if (party->currentMemberId == PARTY_MEMBER_FLURRIE) {
                 if (party->field_8 & 0x200000) {
                     f30 = 8.0f;
                 } else {
                     f30 = 30.0f;
                 }
-            } else if ((s8)party->currentMemberId == PARTY_MEMBER_VIVIAN) {
+            } else if (party->currentMemberId == PARTY_MEMBER_VIVIAN) {
                 if (party->field_8 & 0x200000) {
                     f30 = 8.0f;
                 } else {
@@ -401,13 +401,13 @@ void party_motion_stay(PartyEntry* party) {
     if ((party->field_8 >> 17) & 1) {
         if (party->field_32 == 0) {
             f29 = 18.0f;
-        } else if ((s8)party->currentMemberId == PARTY_MEMBER_FLURRIE) {
+        } else if (party->currentMemberId == PARTY_MEMBER_FLURRIE) {
             if (party->field_8 & 0x200000) {
                 f29 = 8.0f;
             } else {
                 f29 = 30.0f;
             }
-        } else if ((s8)party->currentMemberId == PARTY_MEMBER_VIVIAN) {
+        } else if (party->currentMemberId == PARTY_MEMBER_VIVIAN) {
             if (party->field_8 & 0x200000) {
                 f29 = 8.0f;
             } else {
@@ -467,7 +467,12 @@ void party_motion_stay(PartyEntry* party) {
                             partyChgMot(party, 1);
                         }
                     }
+#ifdef MUST_MATCH
+                // No-op cast: the value is already s8, but the cast changes the object.
                 } else if (!(other->flags & PARTY_FLAG_IS_BEING_USED) || (s8)other->currentMemberId == PARTY_MEMBER_YOSHI) {
+#else
+                } else if (!(other->flags & PARTY_FLAG_IS_BEING_USED) || other->currentMemberId == PARTY_MEMBER_YOSHI) {
+#endif
                     if (distABf(party->position.x, party->position.z, other->position.x, other->position.z) >= f31) {
                         partyChgMot(party, 1);
                     }
@@ -499,7 +504,7 @@ void party_motion_stay(PartyEntry* party) {
     }
     partyUpdateFloor(party);
     party_force_reset_outofscreen(party);
-    if ((s8)party->currentMemberId == PARTY_MEMBER_MS_MOWZ && !(party->flags2 & 0x8000) && !marioKeyOffChk() && marioChkDeepSleep() != 1 && chuchu_searchObject()) {
+    if (party->currentMemberId == PARTY_MEMBER_MS_MOWZ && !(party->flags2 & 0x8000) && !marioKeyOffChk() && marioChkDeepSleep() != 1 && chuchu_searchObject()) {
         switch (party->useMotionId) {
         case 1:
             if (--party->timer <= 0) {
@@ -1106,8 +1111,14 @@ void party_motion_homing_walk(PartyEntry* party) {
                     f32 radius;
                     angle = partyToMovedir(party, party->field_110);
                     sincosf(&s3, &c3, angle);
+#ifdef MUST_MATCH
+                    // Dead store: never read, but it changes the object.
                     party->targetPos.x = s3 * (radius = 40.0f);
                     party->targetPos.z = c3 * (radius = 40.0f);
+#else
+                    party->targetPos.x = s3 * 40.0f;
+                    party->targetPos.z = c3 * 40.0f;
+#endif
                     party->targetPos.y = fy;
                 }
                 partyChgMot(party, 2);
@@ -1341,13 +1352,13 @@ void party_motion_homing_fly(PartyEntry* party) {
         if (!marioKeyOffChk()) {
             if (party->field_32 == 0) {
                 f25 = 18.0f;
-            } else if ((s8)party->currentMemberId == PARTY_MEMBER_FLURRIE) {
+            } else if (party->currentMemberId == PARTY_MEMBER_FLURRIE) {
                 if (party->field_8 & 0x200000) {
                     f25 = 8.0f;
                 } else {
                     f25 = 30.0f;
                 }
-            } else if ((s8)party->currentMemberId == PARTY_MEMBER_VIVIAN) {
+            } else if (party->currentMemberId == PARTY_MEMBER_VIVIAN) {
                 if (party->field_8 & 0x200000) {
                     f25 = 8.0f;
                 } else {
@@ -1366,13 +1377,13 @@ void party_motion_homing_fly(PartyEntry* party) {
     if ((party->field_8 >> 17) & 1) {
         if (party->field_32 == 0) {
             f26 = 18.0f;
-        } else if ((s8)party->currentMemberId == PARTY_MEMBER_FLURRIE) {
+        } else if (party->currentMemberId == PARTY_MEMBER_FLURRIE) {
             if (party->field_8 & 0x200000) {
                 f26 = 8.0f;
             } else {
                 f26 = 30.0f;
             }
-        } else if ((s8)party->currentMemberId == PARTY_MEMBER_VIVIAN) {
+        } else if (party->currentMemberId == PARTY_MEMBER_VIVIAN) {
             if (party->field_8 & 0x200000) {
                 f26 = 8.0f;
             } else {
@@ -2624,7 +2635,12 @@ void party_motion_jump2(PartyEntry* party) {
                 party->flags = (party->flags & ~0x70);
                 party->flags = (party->flags | PARTY_FLAG_IS_GROUNDED);
                 party->jumpPara1 = 0.0f;
+#ifdef MUST_MATCH
+                // The ternary on a 0/1 test changes the object; the plain test is under #else.
                 partyChgMot(party, (distABf(party->position.x, party->position.z, party->targetPos.x, party->targetPos.z) < 5.0f) ? 0 : 1);
+#else
+                partyChgMot(party, !(distABf(party->position.x, party->position.z, party->targetPos.x, party->targetPos.z) < 5.0f));
+#endif
             }
         }
         break;
@@ -3214,13 +3230,13 @@ f32 partyGetAjiSpeed(PartyEntry* party) {
 
     if (party->field_32 == 0) {
         speed = 18.0f;
-    } else if ((s8)party->currentMemberId == PARTY_MEMBER_FLURRIE) {
+    } else if (party->currentMemberId == PARTY_MEMBER_FLURRIE) {
         if (party->field_8 & 0x200000) {
             speed = 8.0f;
         } else {
             speed = 30.0f;
         }
-    } else if ((s8)party->currentMemberId == PARTY_MEMBER_VIVIAN) {
+    } else if (party->currentMemberId == PARTY_MEMBER_VIVIAN) {
         if (party->field_8 & 0x200000) {
             speed = 8.0f;
         } else {

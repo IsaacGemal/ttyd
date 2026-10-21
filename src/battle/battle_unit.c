@@ -2262,11 +2262,11 @@ s32 BtlUnit_snd_se_pos(BattleUnit* unit, const char* name, s32 b, s16 c, Vec* po
 
     if (BtlUnit_CheckStatus(unit, STATUS_TINY)) {
         BtlUnit_GetStatus(unit, STATUS_TINY, &turns, &strength);
-        val = (s16)(((s8)strength * 2 - 1) * -341);
+        val = (s16)((strength * 2 - 1) * -341);
     }
     if (BtlUnit_CheckStatus(unit, STATUS_HUGE)) {
         BtlUnit_GetStatus(unit, STATUS_HUGE, &turns, &strength);
-        val = (s16)(((s8)strength * 2 + 1) * -341);
+        val = (s16)((strength * 2 + 1) * -341);
     }
     // The s16 temporary preserves retail's add operand order and delayed narrowing.
     {
@@ -2277,7 +2277,7 @@ s32 BtlUnit_snd_se_pos(BattleUnit* unit, const char* name, s32 b, s16 c, Vec* po
     val += (irand(0x29) - 0x14);
     handle = psndSFXOn_3D(name, pos);
     psndSFX_pit(handle, val);
-    psndSFX_vol(handle, (u32)(b - 0xF1190000) == 0x4D80 ? psndSFX_get_vol(handle) : (u8)b);
+    psndSFX_vol(handle, (b - 0xF1190000) == 0x4D80 ? psndSFX_get_vol(handle) : (u8)b);
     return handle;
 }
 

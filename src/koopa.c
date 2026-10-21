@@ -639,7 +639,7 @@ void kpa_jumpNpc(void) {
         mp->flags |= 0x10000;
         mp->currSubMotionId = 0;
     }
-    switch ((s32)mp->currSubMotionId) {
+    switch (mp->currSubMotionId) {
     case 0:
         marioMakeJumpPara();
         if (mp->jumpVelY <= 0.0f) {

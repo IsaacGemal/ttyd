@@ -1395,7 +1395,7 @@ void itemseq_GetItem(ItemEntry* item) {
         break;
 
     case 5:
-        sel = (s32)winMgrSelect(wp->getSelect);
+        sel = winMgrSelect(wp->getSelect);
         if (sel == 0) {
             break;
         }

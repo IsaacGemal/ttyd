@@ -343,7 +343,7 @@ void effKumokumoMain(EffectEntry* effect) {
 						data->lifetime = i * 15;
 						data->rotation = 0.0f;
 					}
-					data->rotation = (f32)(u32)(rz_tbl[(u32)data->frame % 31] + ((u32)data->frame * 180) / 31);
+					data->rotation = (f32)(rz_tbl[(u32)data->frame % 31] + ((u32)data->frame * 180) / 31);
 					data->rotation = (f32)fmod(data->rotation, 360.0);
 					break;
 				case 3:

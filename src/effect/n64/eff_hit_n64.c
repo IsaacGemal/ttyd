@@ -366,7 +366,11 @@ static void main_dl(EffectEntry* effect, Mtx matrix) {
 	data = effect->userdata;
 	f = float_5_8041f0e0 * data->frameProgress;
 	frame = (s32)f;
-	flag = (f >= float_4_8041f0e4) ? 1 : 0;
+	if (f >= float_4_8041f0e4) {
+		flag = 1;
+	} else {
+		flag = 0;
+	}
 
 	PSMTXScale(texMtx, float_0p03125_8041f0e8, float_0p0078125_8041f0ec, float_0_8041f0f0);
 	PSMTXTrans(temp, float_0_8041f0f0, float_96_8041f0f4, float_0_8041f0f0);

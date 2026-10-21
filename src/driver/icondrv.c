@@ -448,7 +448,12 @@ void iconDispGx2(Mtx mtx, s16 flags, u16 iconId) {
     entryp->flags = flags;
     entryp->color = *(GXColor*)&dat_80419784;
     bin = icon_bin;
+#ifdef MUST_MATCH
+    // No-op cast: the value is already u16, but the cast changes the object.
     id = (u16)iconId;
+#else
+    id = iconId;
+#endif
     entryp->iconId = id;
     if (!icon_tpl_ok || !icon_bin_ok) {
         data = NULL;
@@ -548,7 +553,7 @@ void iconGetTexObj(GXTexObj* texObj, u16 iconId) {
         if (!icon_tpl_ok || !icon_bin_ok) {
             data = NULL;
         } else {
-            data = iconBinEntry(bin, (u16)iconId);
+            data = iconBinEntry(bin, iconId);
         }
     }
     tplId = data->frames[0].tplId;

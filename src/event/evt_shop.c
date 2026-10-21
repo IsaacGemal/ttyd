@@ -217,19 +217,14 @@ USER_FUNC(evt_shop_main_func) {
 	buttons = keyGetButtonTrg(0);
 	{
 #ifdef MUST_MATCH
-		// The original shares one buttons=0 tail between the two checks; the natural
-		// short-circuit below materialises the second compare instead of branching on it.
+		// The comma stores notKey before testing it, as retail does; the plain short-circuit
+		// materialises the second compare instead of branching on it.
 		BOOL notCtrl = (marioChkCtrl() == 0);
+		BOOL notKey;
 
-		do {
-			if (!notCtrl) {
-				notCtrl = (marioChkKey() == 0);
-				if (!notCtrl) {
-					break;
-				}
-			}
+		if (notCtrl || (notKey = (marioChkKey() == 0), notKey)) {
 			buttons = 0;
-		} while (0);
+		}
 #else
 		if (!marioChkCtrl() || !marioChkKey()) {
 			buttons = 0;

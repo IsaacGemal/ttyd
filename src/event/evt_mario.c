@@ -2002,7 +2002,12 @@ USER_FUNC(evt_koopa_fire) {
 
     if (first) {
         event->userdata[0] = 0;
+#ifdef MUST_MATCH
+        // The round trip through another type changes the object; the plain form is under #else.
         event->userdata[2] = (s32)(f32)sysMsec2Frame(evtGetValue(event, args[0]));
+#else
+        event->userdata[2] = sysMsec2Frame(evtGetValue(event, args[0]));
+#endif
         kpaAttackStart();
         marioChgMot(0);
     }

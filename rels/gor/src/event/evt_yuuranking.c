@@ -105,8 +105,8 @@ void gor_draw_msg_fit(const char* msg, s32 width, f32 x, f32 y, f32 z) {
     f32 scaleX;
 
     PSMTXTrans(trans, x, y, 0.0f);
-    if ((u16)FontGetMessageWidth(msg) > width) {
-        scaleX = (f32)width * z / (f32)(u16)FontGetMessageWidth(msg);
+    if (FontGetMessageWidth(msg) > width) {
+        scaleX = (f32)width * z / (f32)FontGetMessageWidth(msg);
     } else {
         scaleX = z;
     }
@@ -873,7 +873,7 @@ USER_FUNC(evt_yuuranking_alloc_10_text_A47C) {
                     work->currentValue = work->result;
                 }
             },
-            evtSetValue(NULL, 0xF8406058, 1), 0 <= work->result, work->result >= (s32)A74F(i))
+            evtSetValue(NULL, 0xF8406058, 1), 0 <= work->result, work->result >= A74F(i))
         break;
     case 2:
     case 3:
@@ -884,7 +884,7 @@ USER_FUNC(evt_yuuranking_alloc_10_text_A47C) {
                     work->currentValue = work->result;
                 }
             },
-            if (work->field_14 == 3) { evtSetValue(NULL, 0xF8406059, 1); } else { evtSetValue(NULL, 0xF840605A, 1); }, 0 <= work->result, work->result >= (s32)A74F(i))
+            if (work->field_14 == 3) { evtSetValue(NULL, 0xF8406059, 1); } else { evtSetValue(NULL, 0xF840605A, 1); }, 0 <= work->result, work->result >= A74F(i))
         break;
     case 1:
         work->maxValue = evtGetValue(event, args[7]);
@@ -898,7 +898,7 @@ USER_FUNC(evt_yuuranking_alloc_10_text_A47C) {
                     work->currentValue = work->result;
                 }
             },
-            evtSetValue(NULL, 0xF840605B, 1), work->result < work->maxValue, work->result <= (s32)A74F(i))
+            evtSetValue(NULL, 0xF840605B, 1), work->result < work->maxValue, work->result <= A74F(i))
         break;
     }
 

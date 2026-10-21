@@ -132,7 +132,7 @@ void effSnowmanMain(EffectEntry* effect) {
 		}
 		break;
 	case 1:
-		data->hScale = (f32)(s8)jump_hscale_data[data->animIdx++] * 0.01f;
+		data->hScale = (f32)jump_hscale_data[data->animIdx++] * 0.01f;
 		data->vScale = 2.0f - data->hScale;
 		if (data->animIdx >= 18) {
 			data->state = 2;
@@ -147,7 +147,7 @@ void effSnowmanMain(EffectEntry* effect) {
 	case 3:
 		data->hScale = (f32)jump2_hscale_data[data->animIdx++] * 0.01f;
 		data->vScale = 2.0f - data->hScale;
-		data->rotY = (f32)(s8)jump2_ry_data[data->animIdx++];
+		data->rotY = (f32)jump2_ry_data[data->animIdx++];
 		if (data->animIdx >= 74) {
 			data->state = 2;
 		}
@@ -159,7 +159,7 @@ void effSnowmanMain(EffectEntry* effect) {
 		}
 		break;
 	case 2:
-		data->hScale = (f32)(s8)jump_hscale_data[17] * 0.01f;
+		data->hScale = (f32)jump_hscale_data[17] * 0.01f;
 		data->vScale = 2.0f - data->hScale;
 		data->offX += data->velX;
 		data->offY += data->velY;

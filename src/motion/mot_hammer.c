@@ -244,7 +244,7 @@ void mot_hammer(void) {
     mario->poseTime = r27;
     animPoseSetLocalTime(mario->paperAnimGroupId[marioAnimeId()], (f32)r27);
     if (rp != 0) {
-        lv = (s8)pouchGetPtr()->hammerLevel;
+        lv = pouchGetPtr()->hammerLevel;
         if (lv == 1) {
             evtEntry(lv1quake_evt, 0, 0);
         } else if (lv == 2) {
@@ -467,7 +467,7 @@ void mot_hammer2(void) {
         mario->multiTimer = 1;
         break;
     case 1:
-        if ((s32)--mario->multiTimer > 0) {
+        if (--mario->multiTimer > 0) {
             break;
         }
         if (180.f == mario->dispReqDir && mario->dispHalfTurn == 1) {
@@ -747,7 +747,7 @@ void mot_hammer2(void) {
         mario->currSubMotionId = 0x16;
         /* fallthrough to case 0x16 */
     case 0x16:
-        if ((s32)--mario->multiTimer > 0) {
+        if (--mario->multiTimer > 0) {
             break;
         }
         if (mario->field_0x42 <= 2) {
@@ -765,13 +765,13 @@ void mot_hammer2(void) {
         mario->multiTimer = 1;
         /* fallthrough to case 0x17 */
     case 0x17:
-        if ((s32)--mario->multiTimer > 0) {
+        if (--mario->multiTimer > 0) {
             break;
         }
         mario->multiTimer = 1;
         /* fallthrough to case 0x18 */
     case 0x18:
-        if ((s32)--mario->multiTimer > 0) {
+        if (--mario->multiTimer > 0) {
             break;
         }
         mario->dispFlags &= ~4;
@@ -791,7 +791,7 @@ f32 marioGetAngleKaitenHammer(void) {
     if (mario->currMotionId != MARIO_MOTION_HAMMER_2) {
         return -1.0f;
     }
-    if ((s32)mario->currSubMotionId != 0x14) {
+    if (mario->currSubMotionId != 0x14) {
         return -2.0f;
     }
     return revise360(270.f - mario->unk1A8);

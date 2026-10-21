@@ -107,7 +107,7 @@ s32 kpaHipAttackOk(void) {
 #pragma opt_common_subs off
 f32 kpaStickSpd(s32 arg) {
     MarioWork* mario = marioGetPtr();
-    f32 stick = (f32)(s8)mario->wStickDir1;
+    f32 stick = (f32)mario->wStickDir1;
     f32 f30;
     f32 f2;
     f32 f31;
@@ -326,8 +326,8 @@ void kpa_walk(void) {
     if (kpaGetStageViewType() == 1) {
         mario->directionView = mario->controlStickAngle;
     }
-    angle = (s32)(s8)mario->wStickDir1 * (s32)(s8)mario->wStickDir1 +
-            (s32)(s8)mario->wStickDir2 * (s32)(s8)mario->wStickDir2;
+    angle = (s32)mario->wStickDir1 * (s32)mario->wStickDir1 +
+            (s32)mario->wStickDir2 * (s32)mario->wStickDir2;
     if (angle > 0xBD1) {
         marioChgMot(MARIO_MOTION_DASH);
     }
@@ -419,8 +419,8 @@ void kpa_dash(void) {
     if (kpaGetStageViewType() == 1) {
         mario->directionView = mario->controlStickAngle;
     }
-    angle = (s32)(s8)mario->wStickDir1 * (s32)(s8)mario->wStickDir1 +
-            (s32)(s8)mario->wStickDir2 * (s32)(s8)mario->wStickDir2;
+    angle = (s32)mario->wStickDir1 * (s32)mario->wStickDir1 +
+            (s32)mario->wStickDir2 * (s32)mario->wStickDir2;
     if (angle <= 0xBD1) {
         marioChgMot(MARIO_MOTION_WALK);
     }
@@ -494,7 +494,7 @@ void kpa_fall_80213C38(void) {
             mario->lastGroundPos = mario->position;
         }
     }
-    switch ((s32)mario->currSubMotionId) {
+    switch (mario->currSubMotionId) {
     case 0:
         if (mario->position.y <= mario->field_0x11C.y) {
             if (mario->position.y <= float_75_80420e44) {
@@ -682,7 +682,7 @@ void kpa_powup(void) {
         marioChgMot(MARIO_MOTION_STAY);
         return;
     }
-    switch ((s32)mario->currSubMotionId) {
+    switch (mario->currSubMotionId) {
     case 0:
         mario->multiTimer = 5;
         mario->currSubMotionId = 1;
@@ -756,7 +756,7 @@ void kpa_powdown(void) {
         marioChgMot(MARIO_MOTION_STAY);
         return;
     }
-    switch ((s32)mario->currSubMotionId) {
+    switch (mario->currSubMotionId) {
     case 0:
         mario->multiTimer = 5;
         mario->currSubMotionId = 1;
@@ -800,7 +800,7 @@ void kpa_powdown(void) {
 #pragma opt_common_subs off
 void kpaSwimMove(void) {
     MarioWork* mario = marioGetPtr();
-    f32 stick = (f32)(s8)mario->wStickDir1;
+    f32 stick = (f32)mario->wStickDir1;
     f32 speed = mario->kpaSpeed;
     f32 f31;
     f32 ang;
@@ -866,18 +866,18 @@ void kpa_swim(void) {
         mario->wStickDir1 = 0;
         mario->wStickDir2 = 0;
     } else if (kpaGetBodyStatus() == 2 && (mario->buttonNew & (1 << 8))) {
-        if ((s32)mario->currSubMotionId >= 0 && (s32)mario->currSubMotionId <= 1 &&
+        if (mario->currSubMotionId >= 0 && mario->currSubMotionId <= 1 &&
             mario->position.y < float_280_80420da4) {
             mario->currSubMotionId = 0;
-        } else if ((s32)mario->currSubMotionId >= 0x1E && (s32)mario->currSubMotionId <= 0x20) {
+        } else if (mario->currSubMotionId >= 0x1E && mario->currSubMotionId <= 0x20) {
             mario->currSubMotionId = 0;
         }
     }
     kpaSwimMove();
     m2 = marioGetPtr();
     KPA(m2)->bubbleTimer += 1;
-    if ((s32)m2->currSubMotionId == 0x1E || (s32)m2->currSubMotionId == 0x1F) {
-        if ((s32)KPA(m2)->bubbleTimer > 0) {
+    if (m2->currSubMotionId == 0x1E || m2->currSubMotionId == 0x1F) {
+        if (KPA(m2)->bubbleTimer > 0) {
             f32 angle;
             f32 dx;
             f32 dy;
@@ -890,8 +890,8 @@ void kpa_swim(void) {
                              m2->position.z, angle);
         }
     } else {
-        s32 limit = ((s32)m2->currSubMotionId >= 0 && (s32)m2->currSubMotionId < 0x14) ? 0xA : 0x1E;
-        if ((s32)KPA(m2)->bubbleTimer > limit) {
+        s32 limit = (m2->currSubMotionId >= 0 && m2->currSubMotionId < 0x14) ? 0xA : 0x1E;
+        if (KPA(m2)->bubbleTimer > limit) {
             f32 angle;
             KPA(m2)->bubbleTimer = 0;
             angle = (m2->directionView < float_180_80420db4) ? float_225_80420dac : float_135_80420db0;
@@ -1023,8 +1023,8 @@ void kpa_swim(void) {
         }
         m2 = marioGetPtr();
         KPA(m2)->bubbleTimer += 1;
-        if ((s32)m2->currSubMotionId == 0x1E || (s32)m2->currSubMotionId == 0x1F) {
-            if ((s32)KPA(m2)->bubbleTimer > 0) {
+        if (m2->currSubMotionId == 0x1E || m2->currSubMotionId == 0x1F) {
+            if (KPA(m2)->bubbleTimer > 0) {
                 f32 angle;
                 f32 dx;
                 f32 dy;
@@ -1037,8 +1037,8 @@ void kpa_swim(void) {
                                  m2->position.z, angle);
             }
         } else {
-            s32 limit = ((s32)m2->currSubMotionId >= 0 && (s32)m2->currSubMotionId < 0x14) ? 0xA : 0x1E;
-            if ((s32)KPA(m2)->bubbleTimer > limit) {
+            s32 limit = (m2->currSubMotionId >= 0 && m2->currSubMotionId < 0x14) ? 0xA : 0x1E;
+            if (KPA(m2)->bubbleTimer > limit) {
                 f32 angle;
                 KPA(m2)->bubbleTimer = 0;
                 angle = (m2->directionView < float_180_80420db4) ? float_225_80420dac : float_135_80420db0;
@@ -1074,8 +1074,8 @@ void kpa_swim(void) {
         }
         m2 = marioGetPtr();
         KPA(m2)->bubbleTimer += 1;
-        if ((s32)m2->currSubMotionId == 0x1E || (s32)m2->currSubMotionId == 0x1F) {
-            if ((s32)KPA(m2)->bubbleTimer > 0) {
+        if (m2->currSubMotionId == 0x1E || m2->currSubMotionId == 0x1F) {
+            if (KPA(m2)->bubbleTimer > 0) {
                 f32 angle;
                 f32 dx;
                 f32 dy;
@@ -1088,8 +1088,8 @@ void kpa_swim(void) {
                                  m2->position.z, angle);
             }
         } else {
-            s32 limit = ((s32)m2->currSubMotionId >= 0 && (s32)m2->currSubMotionId < 0x14) ? 0xA : 0x1E;
-            if ((s32)KPA(m2)->bubbleTimer > limit) {
+            s32 limit = (m2->currSubMotionId >= 0 && m2->currSubMotionId < 0x14) ? 0xA : 0x1E;
+            if (KPA(m2)->bubbleTimer > limit) {
                 f32 angle;
                 KPA(m2)->bubbleTimer = 0;
                 angle = (m2->directionView < float_180_80420db4) ? float_225_80420dac : float_135_80420db0;

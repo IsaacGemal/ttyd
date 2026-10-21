@@ -138,7 +138,7 @@ void romFontMake(void) {
     wp->unk0 = __memAlloc(HEAP_DEFAULT, wp->uniqueChars * sizeof(RomFontChar));
     memset(wp->unk0, 0, wp->uniqueChars * sizeof(RomFontChar));
     glyph = wp->unk0;
-    for (i = 0; i < (s32)wp->uniqueChars; i++) {
+    for (i = 0; i < wp->uniqueChars; i++) {
         if (uniqueChars[i] < 0x100) {
             c[0] = (s8)uniqueChars[i];
             c[1] = '\0';

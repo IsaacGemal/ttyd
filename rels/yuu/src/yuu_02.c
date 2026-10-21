@@ -489,9 +489,9 @@ void yuuminigame_init_3roll(EventEntry* event, BOOL isFirstCall) {
     EventEntry* e;
 
     e = evtEntryType(monte_single_event, 0, 0, 0xEF);
-    e->lwData[0] = (s32)event->lwData[0];
+    e->lwData[0] = event->lwData[0];
     data->viewEvent = evtEntryType(minigame_view_monte, 0, 0, 0);
-    data->viewEvent->lwData[0] = (s32)event->lwData[0];
+    data->viewEvent->lwData[0] = event->lwData[0];
     data->flags |= 1;
     marioChgRollMotion();
 }
@@ -507,7 +507,7 @@ void yuuminigame_main_3roll(EventEntry* event, BOOL isFirstCall) {
         // fallthrough
     case 1:
         work->childEvent = evtEntry(minigame03_start, 0, 0);
-        work->childEvent->lwData[0] = (s32)event->lwData[0];
+        work->childEvent->lwData[0] = event->lwData[0];
         data->phase++;
         break;
     case 2:

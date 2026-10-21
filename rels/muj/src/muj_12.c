@@ -51,7 +51,7 @@ static USER_FUNC(evtflash) {
         }
         return EVT_RETURN_BLOCK;
     case 2:
-        if ((u32)OSTicksToMilliseconds((u32)gp->renderTime - (u32)event->savedTime) < event->userdata[0]) {
+        if (OSTicksToMilliseconds((u32)gp->renderTime - (u32)event->savedTime) < event->userdata[0]) {
             return EVT_RETURN_BLOCK;
         }
         event->userdata[2]++;
