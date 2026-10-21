@@ -46,7 +46,7 @@ OBJDIFF = ROOT / "build" / "tools" / "objdiff-cli"
 PROTECTED = ("config/", "orig/", "tools/", ".github/", "libs/", "assets/")
 UNPROTECTED = ("libs/metrowerks/src/",)  # the runtime libraries ported here are ours to decompile (their headers aren't)
 ASM_RE = re.compile(r"(^|[^\w])(asm|__asm__|__asm)\b")
-ASM_EXCEPTIONS = ROOT / "tools" / "asm_exceptions.json"  # the only game-code functions that may be asm (docs/CONTEXT.md)
+ASM_EXCEPTIONS = ROOT / "tools" / "asm_exceptions.json"  # the only game-code asm functions (docs/CONTEXT-matching.md)
 
 
 FN_HEAD_RE = re.compile(r"^(?![\s#}/])(?!(?:typedef|struct|union|enum|return|if|for|while|switch)\b)[^;=]*?\b([A-Za-z_]\w*)\s*\([^;]*$")

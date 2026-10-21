@@ -1,7 +1,9 @@
 # TTYD decomp fork: agent notes
 
-`docs/CONTEXT.md` is the ledger: every decision on this fork and why. It is long; don't read it whole. Read its
-"Current state" section at the top, then search it (grep for the unit, tool or topic) for the chapters you need.
+`docs/CONTEXT.md` is the ledger: every decision on this fork and why; the matching-era chapters (up to 2026-10-18) are
+in `docs/CONTEXT-matching.md`, which is frozen. Both are long; don't read them whole. Read the "Current state" and
+"Standing rules" sections at the top of CONTEXT.md, then search both (`grep -n PATTERN docs/CONTEXT*.md`, for the
+unit, tool or topic) for the chapters you need.
 `README.md` has the build setup.
 
 ## The ledger
