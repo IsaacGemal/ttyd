@@ -226,7 +226,7 @@ void effFireworksDisp(CameraId camId, void* param) {
 	s32 alpha;
 	s32 type;
 	s32 i;
-	void* vp;
+	s8* vp;
 	s32 count;
 	s32 mode;
 	f32 angle;
@@ -301,7 +301,7 @@ void effFireworksDisp(CameraId camId, void* param) {
 	effFireworksSetColor1(data);
 
 	if (mode == 1) {
-		vp = (void*)vtx_data[type][0];
+		vp = (s8*)vtx_data[type][0];
 		count = vtx_data[type][1];
 	}
 	else {
@@ -309,14 +309,14 @@ void effFireworksDisp(CameraId camId, void* param) {
 		count = 4;
 	}
 
-	for (i = 0; i < count; i++, vp = (u8*)vp + 3) {
+	for (i = 0; i < count; i++, vp += 3) {
 		if (mode == 1) {
 			if ((rand() % 17) < 6) {
 				continue;
 			}
-			s0 = ((s8*)vp)[0];
-			s1 = ((s8*)vp)[1];
-			s2 = ((s8*)vp)[2];
+			s0 = vp[0];
+			s1 = vp[1];
+			s2 = vp[2];
 			px = baseX + radius * ((f32)s0 * cosA + (f32)s2 * sinA);
 			py = baseY + (f32)s1 * radius;
 			pz = baseZ + radius * ((f32)(-s0) * sinA + (f32)s2 * cosA);

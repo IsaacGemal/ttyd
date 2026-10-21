@@ -418,7 +418,7 @@ USER_FUNC(evt_mri_get16bitdata) {
     s32 base = evtGetValue(event, args[0]);
     s32 index = evtGetValue(event, args[1]);
 
-    evtSetValue(event, args[2], *(s16*)(base + index * 2));
+    evtSetValue(event, args[2], ((s16*)base)[index]);
     return EVT_RETURN_DONE;
 }
 
@@ -613,16 +613,16 @@ s32 toge_searchParent(PuniData* puni, s16 id) {
     s32 i;
     s32 best = 10000;
     PuniData* parent;
-    u8* p;
+    PuniData* p;
 
     for (i = 110; i <= 209; i++) {
-        p = (u8*)&puniGetPunidat()[i];
-        if (!(*(u32*)(p + 0x4) & 0x400) || !(*(u32*)(p + 0x4) & 0x80000) || *(s16*)(p + 0x118) != id ||
-            *(void**)(p + 0x1D4) != NULL || p == (u8*)puni || (s16)best <= *(s16*)(p + 0x11A)) {
+        p = &puniGetPunidat()[i];
+        if (!(p->flags & 0x400) || !(p->flags & 0x80000) || p->treeId != id ||
+            p->leftPuni != NULL || p == puni || (s16)best <= p->depth) {
             continue;
         }
-        parent = (PuniData*)p;
-        best = *(s16*)(p + 0x11A) + 1;
+        parent = p;
+        best = p->depth + 1;
     }
     if ((s16)best == 10000) {
         return 0;
@@ -654,69 +654,64 @@ void togeMoveParent(PuniData* puni) {
 }
 
 void puniModeWinjump(PuniData* puni) {
-    u8* p = (u8*)puni;
     s32 elapsed;
     f32 t;
     f32 accel;
 
-    switch (*(u16*)(p + 0x114)) {
+    switch (puni->state) {
         case 0:
-            *(OSTime*)(p + 0x1C8) = gp->renderTime;
-            *(s32*)(p + 0x1E4) = 0;
-            *(f32*)(p + 0x1EC) = *(f32*)(p + 0x130);
-            *(f32*)(p + 0x1F0) = -72.0f;
-            *(f32*)(p + 0x1F4) = -*(f32*)(p + 0x1F0);
-            *(u16*)(p + 0x114) = 1;
-            psndSFXOn_3D("SFX_STG2_PUNI_JUMP1", (Vec*)(p + 0x12C));
+            puni->modeStartTime = gp->renderTime;
+            puni->counter = 0;
+            puni->height = puni->pos.y;
+            puni->vertVel = -72.0f;
+            puni->jumpVelStart = -puni->vertVel;
+            puni->state = 1;
+            psndSFXOn_3D("SFX_STG2_PUNI_JUMP1", &puni->pos);
             // fallthrough
         case 1:
-            elapsed = (s32)OSTicksToMilliseconds((OSTick)gp->renderTime - (OSTick)*(OSTime*)(p + 0x1C8));
-            if (elapsed > 100 && *(s32*)(p + 0x1E4) == 0) {
-                *(s32*)(p + 0x1E4) = 1;
-                *(s32*)(p + 0x124) = 0;
+            elapsed = (s32)OSTicksToMilliseconds((OSTick)gp->renderTime - (OSTick)puni->modeStartTime);
+            if (elapsed > 100 && puni->counter == 0) {
+                puni->counter = 1;
+                puni->animTime = 0;
             }
             if (elapsed < 200) {
                 t = (f32)elapsed / 200.0f;
-                accel = *(f32*)(p + 0x1F0) * t + *(f32*)(p + 0x1F4);
-                *(f32*)(p + 0x130) = t * accel + *(f32*)(p + 0x1EC);
+                accel = puni->vertVel * t + puni->jumpVelStart;
+                puni->pos.y = t * accel + puni->height;
             } else {
-                *(f32*)(p + 0x130) = *(f32*)(p + 0x1EC);
-                *(u16*)(p + 0xC) = 27;
-                *(u16*)(p + 0x11C) = 1;
-                *(u16*)(p + 0x114) = 0;
+                puni->pos.y = puni->height;
+                puni->mode = PUNI_MODE_POINT;
+                puni->animIdx = 1;
+                puni->state = 0;
             }
             break;
     }
 }
 
 void togeMakeRetsu(Vec* pos, s16 a, s16 b, s16 c) {
-    u8* parent;
-    s32 best;
-    s32 j;
-    u8* p;
+    PuniData* p;
     s32 i;
-    u8* q;
 
-    p = (u8*)&puniGetPunidat()[a];
-    *(f32*)(p + 0x12C) = pos->x;
-    *(f32*)(p + 0x130) = pos->y;
-    *(f32*)(p + 0x134) = pos->z;
-    *(void**)(p + 0x56C) = NULL;
-    *(void**)(p + 0x570) = NULL;
-    *(s16*)(p + 0x118) = *(s16*)(p + 0x116);
-    *(s16*)(p + 0x11C) = 1;
-    *(u32*)(p + 0x4) |= 0x80000;
+    p = &puniGetPunidat()[a];
+    p->pos.x = pos->x;
+    p->pos.y = pos->y;
+    p->pos.z = pos->z;
+    p->modeFunc = NULL;
+    p->moveFunc = NULL;
+    p->treeId = p->angle;
+    p->animIdx = 1;
+    p->flags |= 0x80000;
 
     for (i = b; i <= c; i++) {
-        p = (u8*)&puniGetPunidat()[i];
-        *(void**)(p + 0x56C) = togeModeParent;
-        *(void**)(p + 0x570) = togeMoveParent;
-        *(f32*)(p + 0x12C) = pos->x;
-        *(f32*)(p + 0x130) = pos->y;
-        *(f32*)(p + 0x134) = pos->z;
-        *(s16*)(p + 0x11C) = 1;
-        *(u32*)(p + 0x4) |= 0x80000;
-        toge_searchParent((PuniData*)p, a);
+        p = &puniGetPunidat()[i];
+        p->modeFunc = togeModeParent;
+        p->moveFunc = togeMoveParent;
+        p->pos.x = pos->x;
+        p->pos.y = pos->y;
+        p->pos.z = pos->z;
+        p->animIdx = 1;
+        p->flags |= 0x80000;
+        toge_searchParent(p, a);
     }
 }
 
@@ -742,36 +737,36 @@ USER_FUNC(evt_mri_toge_retsu_stop) {
     s16 a = (s16)evtGetValue(event, args[0]);
     s16 start = (s16)evtGetValue(event, args[1]);
     s16 end = (s16)evtGetValue(event, args[2]);
-    u8* p = (u8*)&puniGetPunidat()[a];
+    PuniData* p = &puniGetPunidat()[a];
     s32 i;
 
-    *(void**)(p + 0x56C) = NULL;
-    *(void**)(p + 0x570) = NULL;
-    *(s16*)(p + 0x11C) = 0;
-    *(u32*)(p + 0x4) &= ~0x80000;
+    p->modeFunc = NULL;
+    p->moveFunc = NULL;
+    p->animIdx = 0;
+    p->flags &= ~0x80000;
     for (i = start; i <= end; i++) {
-        p = (u8*)&puniGetPunidat()[i];
-        *(void**)(p + 0x56C) = NULL;
-        *(void**)(p + 0x570) = NULL;
-        *(s16*)(p + 0x11C) = 0;
-        *(u32*)(p + 0x4) &= ~0x80000;
+        p = &puniGetPunidat()[i];
+        p->modeFunc = NULL;
+        p->moveFunc = NULL;
+        p->animIdx = 0;
+        p->flags &= ~0x80000;
     }
     return EVT_RETURN_DONE;
 }
 
 USER_FUNC(evt_mri_toge_enter_init) {
     s32 i;
-    u8* p;
+    PuniData* p;
 
     for (i = 110; i <= 209; i++) {
-        p = (u8*)&puniGetPunidat()[i];
-        if (*(u32*)(p + 0x4) & 0x400) {
-            *(f32*)(p + 0x12C) = 0.0f;
-            *(f32*)(p + 0x130) = -1000.0f;
-            *(f32*)(p + 0x134) = 0.0f;
-            *(s16*)(p + 0xC) = 29;
-            *(s16*)(p + 0x11C) = 0;
-            *(u32*)(p + 0x4) &= ~0x100000;
+        p = &puniGetPunidat()[i];
+        if (p->flags & 0x400) {
+            p->pos.x = 0.0f;
+            p->pos.y = -1000.0f;
+            p->pos.z = 0.0f;
+            p->mode = PUNI_MODE_CUSTOM;
+            p->animIdx = 0;
+            p->flags &= ~0x100000;
         }
     }
     return EVT_RETURN_DONE;
@@ -779,16 +774,16 @@ USER_FUNC(evt_mri_toge_enter_init) {
 
 USER_FUNC(evt_mri_puni_win_init) {
     s32 i;
-    u8* p;
+    PuniData* p;
 
     for (i = 1; i <= 102; i++) {
-        p = (u8*)&puniGetPunidat()[i];
-        if (*(u32*)(p + 0x4) & 0x400) {
-            *(s16*)(p + 0x574) = *(s16*)(p + 0x576);
-            *(f32*)(p + 0x188) = 0.0f;
-            *(f32*)(p + 0x184) = 0.0f;
-            *(f32*)(p + 0x148) = 0.0f;
-            *(u32*)(p + 0x8) &= ~1;
+        p = &puniGetPunidat()[i];
+        if (p->flags & 0x400) {
+            p->hp = p->maxHp;
+            p->rotOffsetY = 0.0f;
+            p->rotZ = 0.0f;
+            p->dispOffset.y = 0.0f;
+            p->statusFlags &= ~PUNI_STATUS_HEAL_ICON;
         }
     }
     return EVT_RETURN_DONE;
@@ -802,33 +797,33 @@ USER_FUNC(evt_mri_puni_win_attack) {
     f32 a3 = (f32)evtGetValue(event, args[3]);
     f32 a4 = (f32)evtGetValue(event, args[4]);
     f32 a5 = (f32)evtGetValue(event, args[5]);
-    u8* w = (u8*)puniGetPunigp();
+    PuniWork* w = puniGetPunigp();
     s32 i;
-    u8* p;
+    PuniData* p;
 
-    *(s32*)(w + 0x47C) = 2;
-    *(f32*)(w + 0x480) = a0;
-    *(f32*)(w + 0x484) = a1;
-    *(f32*)(w + 0x488) = a2;
-    *(f32*)(w + 0x4B0) = 100.0f;
-    *(f32*)(w + 0x48C) = a3;
-    *(f32*)(w + 0x490) = a4;
-    *(f32*)(w + 0x494) = a5;
-    *(f32*)(w + 0x4B4) = 100.0f;
+    w->field_0x47C = 2;
+    w->arrivePos.x = a0;
+    w->arrivePos.y = a1;
+    w->arrivePos.z = a2;
+    w->arriveDistSq = 100.0f;
+    w->arrivePos2.x = a3;
+    w->arrivePos2.y = a4;
+    w->arrivePos2.z = a5;
+    w->arriveDistSq2 = 100.0f;
 
     for (i = 1; i <= 102; i++) {
-        p = (u8*)&puniGetPunidat()[i];
-        if (*(u32*)(p + 0x4) & 0x400) {
-            PuniDokuritsu((PuniData*)p);
-            *(s16*)(p + 0x11C) = 1;
-            *(s16*)(p + 0x114) = 0;
-            if (*(u32*)(p + 0x4) & 0x4000) {
-                *(u32*)(p + 0x4) &= ~0x4000;
-                *(s16*)(p + 0xC) = 29;
-                *(void**)(p + 0x56C) = puniModeWinjump;
-                *(void**)(p + 0x570) = puniMoveDecel;
+        p = &puniGetPunidat()[i];
+        if (p->flags & 0x400) {
+            PuniDokuritsu(p);
+            p->animIdx = 1;
+            p->state = 0;
+            if (p->flags & 0x4000) {
+                p->flags &= ~0x4000;
+                p->mode = PUNI_MODE_CUSTOM;
+                p->modeFunc = puniModeWinjump;
+                p->moveFunc = puniMoveDecel;
             } else {
-                *(s16*)(p + 0xC) = 27;
+                p->mode = PUNI_MODE_POINT;
             }
         }
     }
@@ -843,27 +838,27 @@ USER_FUNC(evt_mri_puni_win_end) {
     f32 a3 = (f32)evtGetValue(event, args[3]);
     f32 a4 = (f32)evtGetValue(event, args[4]);
     f32 a5 = (f32)evtGetValue(event, args[5]);
-    u8* w = (u8*)puniGetPunigp();
+    PuniWork* w = puniGetPunigp();
     s32 i;
-    u8* p;
+    PuniData* p;
     f32 r1;
     f32 r2;
 
-    *(s32*)(w + 0x43C) = 0;
+    w->phase = 0;
     for (i = 1; i <= 102; i++) {
-        p = (u8*)&puniGetPunidat()[i];
-        if (*(u32*)(p + 0x4) & 0x400) {
-            PuniDokuritsu((PuniData*)p);
+        p = &puniGetPunidat()[i];
+        if (p->flags & 0x400) {
+            PuniDokuritsu(p);
             r1 = (f32)(rand() % 21);
             r2 = (f32)(rand() % 21);
-            *(f32*)(p + 0x12C) = a0 + r1 - 10.0f;
-            *(f32*)(p + 0x130) = a1;
-            *(f32*)(p + 0x134) = a2 + r2 - 10.0f;
-            *(f32*)(p + 0x1F8) = a3 + r1 - 10.0f;
-            *(f32*)(p + 0x1FC) = a4;
-            *(f32*)(p + 0x200) = a5 + r2 - 10.0f;
-            *(s16*)(p + 0xC) = 25;
-            *(s16*)(p + 0x114) = 0;
+            p->pos.x = a0 + r1 - 10.0f;
+            p->pos.y = a1;
+            p->pos.z = a2 + r2 - 10.0f;
+            p->accel.x = a3 + r1 - 10.0f;
+            p->accel.y = a4;
+            p->accel.z = a5 + r2 - 10.0f;
+            p->mode = PUNI_MODE_ENTER;
+            p->state = 0;
         }
     }
     return EVT_RETURN_DONE;

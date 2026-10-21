@@ -572,10 +572,10 @@ void bomhei_use_main(PartyEntry* party) {
         // Natural form is (s16)10.5f; the temp stops the conversion folding to an integer.
         {
             f32 frames = 10.5f;
-            *(s32*)&party->field_22[2] = (s16)frames;
+            party->timer = (s16)frames;
         }
 #else
-        *(s32*)&party->field_22[2] = (s16)10.5f;
+        party->timer = (s16)10.5f;
 #endif
         party->flags2 &= ~0x10;
         party->flags |= PARTY_FLAG_IS_JUMPING;
@@ -594,10 +594,10 @@ void bomhei_use_main(PartyEntry* party) {
         // Natural form is (s16)10.5f; the temp stops the conversion folding to an integer.
         {
             f32 frames = 10.5f;
-            *(s32*)&party->field_22[2] = (s16)frames;
+            party->timer = (s16)frames;
         }
 #else
-        *(s32*)&party->field_22[2] = (s16)10.5f;
+        party->timer = (s16)10.5f;
 #endif
         party->flags &= ~PARTY_FLAG_IS_JUMPING;
         if (party->groundHit != NULL) {

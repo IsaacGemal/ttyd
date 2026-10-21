@@ -319,13 +319,12 @@ void mot_stay(void) {
 
 void marioChgMotAuto(void) {
     MarioWork* mario = marioGetPtr();
-    s8* stick = (s8*)&mario->wStickDir1;
 
-    if (stick[0] == 0 && stick[1] == 0) {
+    if (mario->wStickDir1 == 0 && mario->wStickDir2 == 0) {
         marioChgMot(MARIO_MOTION_STAY);
         return;
     }
-    if ((stick[0] * stick[0]) + (stick[1] * stick[1]) > 0xBD1) {
+    if ((mario->wStickDir1 * mario->wStickDir1) + (mario->wStickDir2 * mario->wStickDir2) > 0xBD1) {
         if (!pouchEquipCheckBadge(0x143)) {
             marioChgMot(MARIO_MOTION_DASH);
         } else {

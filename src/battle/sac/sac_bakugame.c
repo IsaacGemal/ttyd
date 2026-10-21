@@ -1450,7 +1450,8 @@ static inline BakuGameWorkEntry* bakuGameEntry(BakuGameWork* work, s32 i) {
 
 void bakuGameDisp2D(void) {
     BakuGameWork* baku = GetBakuGamePtr();
-    BakuGameGaugeColor* color = (BakuGameGaugeColor*)&_battleWorkPointer->actionCommands.dispParams.field_0xC;
+    BattleACDispParams* disp = &_battleWorkPointer->actionCommands.dispParams;
+    BakuGameGaugeColor* color = (BakuGameGaugeColor*)&disp->field_0xC;
     s32 i;
     s32 flag;
 
@@ -1484,15 +1485,15 @@ void bakuGameDisp2D(void) {
         flag = 1;
         color->r = 0;
         color->a = 0xFF;
-        color->g += color->dg;
-        color->b += color->db;
-        if (color->g <= 0x80 && color->dg <= 0) {
-            color->db = 0x10;
-            color->dg = 0x10;
+        color->g += disp->dg;
+        color->b += disp->db;
+        if (color->g <= 0x80 && disp->dg <= 0) {
+            disp->db = 0x10;
+            disp->dg = 0x10;
         }
-        if (color->g >= 0xF5 && color->dg >= 0) {
-            color->db = -0x10;
-            color->dg = -0x10;
+        if (color->g >= 0xF5 && disp->dg >= 0) {
+            disp->db = -0x10;
+            disp->dg = -0x10;
         }
     }
     BattleAcDrawGauge((s32)baku->field_0xDC, (s32)baku->field_0xE0, baku->gaugeFill, 0xB1, 3, 0x21, 0x42, 0x64, flag);

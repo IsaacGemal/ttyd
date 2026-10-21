@@ -254,7 +254,7 @@ EVT_END()
 
 USER_FUNC(yuka_fall_check) {
     s32 i;
-    u8* p;
+    PuniData* p;
     f32 distance;
     Vec normal;
     Vec fall;
@@ -263,18 +263,18 @@ USER_FUNC(yuka_fall_check) {
     Vec hitNormal;
 
     for (i = 1; i < 103; i++) {
-        p = (u8*)&puniGetPunidat()[i];
-        if (*(s32*)(p + 0x4) & 0x400) {
+        p = &puniGetPunidat()[i];
+        if (p->flags & 0x400) {
             normal = (Vec){ 0.0f, -1.0f, 0.0f };
             fall = (Vec){ 0.0f, -3.0f, 0.0f };
             distance = 3.0f;
-            pos = *(Vec*)(p + 0x12C);
+            pos = p->pos;
 
             if (hitCheckFilter(NULL, pos.x, pos.y, pos.z, normal.x, normal.y, normal.z,
                                &hitPos.x, &hitPos.y, &hitPos.z, &distance, &hitNormal.x, &hitNormal.y, &hitNormal.z)) {
-                *(Vec*)(p + 0x12C) = hitPos;
+                p->pos = hitPos;
             } else {
-                PSVECAdd((Vec*)(p + 0x12C), &fall, (Vec*)(p + 0x12C));
+                PSVECAdd(&p->pos, &fall, &p->pos);
             }
         }
     }
@@ -282,12 +282,12 @@ USER_FUNC(yuka_fall_check) {
 }
 
 USER_FUNC(evt_puni_force_pose) {
-    u8* p = (u8*)&puniGetPunidat()[evtGetValue(event, event->args[0])];
+    PuniData* p = &puniGetPunidat()[evtGetValue(event, event->args[0])];
 
-    *(f32*)(p + 0x188) = 0.0f;
-    *(f32*)(p + 0x184) = 0.0f;
-    *(f32*)(p + 0x148) = 0.0f;
-    *(Vec*)(p + 0x15C) = (Vec){ 0.0f, 0.0f, 0.0f };
+    p->rotOffsetY = 0.0f;
+    p->rotZ = 0.0f;
+    p->dispOffset.y = 0.0f;
+    p->vel = (Vec){ 0.0f, 0.0f, 0.0f };
     return EVT_RETURN_DONE;
 }
 

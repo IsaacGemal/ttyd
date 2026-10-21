@@ -2254,14 +2254,20 @@ static s32 get_monte_check(Vec* a, Vec* b) {
     return 0;
 }
 
+typedef struct MonteField8 {
+    f32 field_0x0;       // 0x0
+    Vec field_0x4;       // 0x4
+    f32 field_0x10;      // 0x10
+    u8 pad_0x14[0x24];   // 0x14
+} MonteField8;           // 0x38
+
 typedef struct Monte {
     u8 field_0x0;        // 0x0
     u8 field_0x1;        // 0x1
     s16 field_0x2;       // 0x2
     s16 field_0x4;       // 0x4
-    u8 pad_0x6[0x6];     // 0x6
-    Vec field_0xC;       // 0xC
-    u8 pad_0x18[0x28];   // 0x18
+    u8 pad_0x6[0x2];     // 0x6
+    MonteField8 field_0x8; // 0x8
     Vec field_0x40;      // 0x40
     SlotData* field_0x4C; // 0x4C, set on entry 0 only
 } Monte;
@@ -2272,7 +2278,7 @@ static void monte_disp(CameraId cameraId, void* param) {
 
     for (i = 0; i < p->field_0x4C->prize; i++) {
         if (p[i].field_0x0 == 0) {
-            iconDispGx(1.0f, &p[i].field_0xC, 0x40, 0x13f);
+            iconDispGx(1.0f, &p[i].field_0x8.field_0x4, 0x40, 0x13f);
         }
     }
 }
@@ -2296,16 +2302,16 @@ static USER_FUNC(fall_rtn) {
         ((Monte*)monte_p[0])->field_0x4C = data;
 
         for (i = 0; i < ((Monte*)monte_p[0])->field_0x4C->prize; i++) {
-            u8* e = (u8*)monte_p[0] + i * 0x50 + 8;
+            MonteField8* e = &((Monte*)monte_p[0])[i].field_0x8;
             f32 spd;
 
             Vec pos = {-113.0f, 70.0f, 0.0f};
             pos.z = montemedalzpos[((Monte*)monte_p[0])->field_0x4C->now];
-            *(Vec*)(e + 0x04) = pos;
+            e->field_0x4 = pos;
 
             f23 = (2.0f * (f32)(i & 1) - 1.0f) * ((f32)(rand() % 101) / 10.0f);
-            *(f32*)(e + 0x0c) += f23;
-            *(f32*)(e + 0x10) = 1.0f;
+            e->field_0x4.z += f23;
+            e->field_0x10 = 1.0f;
 
             spd = 2.0f + (f32)(rand() % 300) / 100.0f;
             moveZ = 0.0f;
@@ -2345,11 +2351,11 @@ static USER_FUNC(fall_rtn) {
             }
             break;
         case 1:
-            PSVECAdd(&e->field_0xC, &e->field_0x40, &e->field_0xC);
+            PSVECAdd(&e->field_0x8.field_0x4, &e->field_0x40, &e->field_0x8.field_0x4);
             e->field_0x40.y = e->field_0x40.y - 0.81666666f;
-            if (e->field_0xC.y <= 0.0f) {
-                e->field_0xC.y = 0.0f;
-                psndSFXOn_3D(sfx_leap, &e->field_0xC);
+            if (e->field_0x8.field_0x4.y <= 0.0f) {
+                e->field_0x8.field_0x4.y = 0.0f;
+                psndSFXOn_3D(sfx_leap, &e->field_0x8.field_0x4);
                 if (__fabsf(e->field_0x40.y) <= 4.0) {
                     e->field_0x1 = e->field_0x1 + 1;
                     e->field_0x4 = 300;
@@ -2362,8 +2368,8 @@ static USER_FUNC(fall_rtn) {
                 }
             }
 
-            if (get_monte_check(&e->field_0xC, &marioGetPtr()->position) == 1) {
-                psndSFXOn_3D(sfx_count, &e->field_0xC);
+            if (get_monte_check(&e->field_0x8.field_0x4, &marioGetPtr()->position) == 1) {
+                psndSFXOn_3D(sfx_count, &e->field_0x8.field_0x4);
                 if (yuwp->tokens < 0x1869f) {
                     yuwp->tokens++;
                 }
@@ -2379,16 +2385,16 @@ static USER_FUNC(fall_rtn) {
             }
             if (e->field_0x4 < 0x3c) {
                 if (e->field_0x4 & 2) {
-                    e->field_0xC.y = 0.0f;
+                    e->field_0x8.field_0x4.y = 0.0f;
                 } else {
-                    e->field_0xC.y = -1000.0f;
+                    e->field_0x8.field_0x4.y = -1000.0f;
                 }
             }
 
-            tmp = e->field_0xC;
+            tmp = e->field_0x8.field_0x4;
             tmp.y = 0.0f;
             if (get_monte_check(&tmp, &marioGetPtr()->position) == 1) {
-                psndSFXOn_3D(sfx_count2, &e->field_0xC);
+                psndSFXOn_3D(sfx_count2, &e->field_0x8.field_0x4);
                 if (yuwp->tokens < 0x1869f) {
                     yuwp->tokens++;
                 }
@@ -5603,21 +5609,21 @@ static USER_FUNC(viewport) {
     return EVT_RETURN_DONE;
 }
 
-void kuji_bomb_055_callback(s32 type, s32* param) {
+void kuji_bomb_055_callback(s32 type, smartEntry* smart) {
     NpcEntry* npc;
-    u8* p;
+    MessageData* p;
 
-    p = (u8*)param[0];
+    p = smart->address;
     npc = npcNameToPtr("グルメボム兵");
 
     switch (type) {
     case 3:
-        if (*(u16*)(p + 8) == 1) {
+        if (p->choiceIndex == 1) {
             evtSetValue(NULL, GF(0), 1);
         }
         break;
     case 5:
-        switch (*(s32*)(p + 0x10)) {
+        switch (p->entryPos) {
         case 0x1d:
             animPoseSetAnim(npc->poseId, "T_3", 1);
             break;

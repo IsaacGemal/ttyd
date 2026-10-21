@@ -19,7 +19,7 @@ static USER_FUNC(piders_renzoku_attack_set_target) {
     s32 i = 0;
     s32 count = 0;
 
-    ((s8*)_battleWorkPointer)[0xEDF] = 0;
+    _battleWorkPointer->sampling.selectIdx = 0;
     piders_get_target(&ids[0], &parts[0]);
     while (1) {
         if (ids[i] == -1) {

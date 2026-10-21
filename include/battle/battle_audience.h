@@ -30,7 +30,7 @@ typedef enum AudienceMemberType {
 typedef struct StarPowerInfo {
     struct BattleWeapon* mWeapon; // 0x0
     f32 mSpAcSuccessMultiplier;   // 0x4
-    s8 mStylishCommandMultiplier; // 0x8
+    u8 mStylishCommandMultiplier; // 0x8
     s8 field_0x9;                 // 0x9
     s8 mBingoSlotChance;          // 0xA
     s8 field_0xB;                 // 0xB
@@ -43,7 +43,7 @@ typedef struct BattleAudienceMember {
     f32 field_0xC;                 // 0xC, per status: repeats left (status 4), walk direction +-1, distance walked
     f32 field_0x10;                // 0x10, per status: distance per frame of the walk home
     f32 field_0x14;                // 0x14, per status: length of the walk home
-    u8 field_0x18;                 // 0x18, colorB step, +4 or -4 (kinopio)
+    s8 field_0x18;                 // 0x18, colorB step, +4 or -4 (kinopio)
     u8 status;                     // 0x19
     u8 texIndex;                   // 0x1A, texture index for the current animation frame (TEXGetGXTexObjFromPalette)
     u8 type;                       // 0x1B, AudienceMemberType

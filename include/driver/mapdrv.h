@@ -181,16 +181,120 @@ typedef struct MapError {
     s32 field_0x20;     // 0x20
 } MapError;
 
+// Animation tracks of an "animation_table" entry. Each key holds a time and Hermite channels (value and the two
+// tangents mapCalcAnimMatrix and mapMain's steps read; a nonzero flag holds the value without interpolating).
+typedef struct MapAnimChannel {
+    f32 value;  // 0x0
+    f32 unk4;   // 0x4
+    f32 unk8;   // 0x8
+    f32 unkC;   // 0xC
+    s32 flag;   // 0x10
+} MapAnimChannel;
+
+typedef struct MapAnimKey {
+    f32 time;                 // 0x0
+    MapAnimChannel chan[9];   // 0x4
+    u8 unk[0xF0];             // 0xB8
+} MapAnimKey;
+
+// A joint's matrix track (mapCalcAnimMatrix): channels 0-2 translate, 3-5 rotate, 6-8 scale.
+typedef struct MapAnimData {
+    const char* name; // 0x0, the joint (mapGetMapObj, hitNameToPtr)
+    f32 base[6];      // 0x4
+    f32 div[3];       // 0x1C
+    u8 unk28[0x30];   // 0x28
+    s32 count;        // 0x58
+    MapAnimKey key[]; // 0x5C
+} MapAnimData;
+
+// mapAnimColorObj's track: channels 0-4 go to the material's texture matrix field_0x4 (MapMatTexMtx transX..rotation).
+typedef struct MapAnimTexMtxKey {
+    f32 time;               // 0x0
+    MapAnimChannel chan[5]; // 0x4
+} MapAnimTexMtxKey;
+
+typedef struct MapAnimTexMtxItem {
+    const char* name;       // 0x0, the material (mapSearchAnimObj)
+    s32 field_0x4;          // 0x4, index into MapMaterial.entries
+    f32 field_0x8;          // 0x8, stored to that entry's field_0x14
+    f32 field_0xC;          // 0xC, stored to that entry's field_0x18
+    s32 count;              // 0x10
+    MapAnimTexMtxKey key[]; // 0x14
+} MapAnimTexMtxItem;
+
+// mapAnimAlphaObj's track: channel 0 goes to the material's field_0x10C.r.
+typedef struct MapAnimAlphaKey {
+    f32 time;                      // 0x0
+    MapAnimChannel chan[1];        // 0x4
+    u8 field_0x18[0x54 - 0x18];    // 0x18
+} MapAnimAlphaKey;
+
+typedef struct MapAnimAlphaItem {
+    const char* name;      // 0x0, the material (mapSearchAnimObj)
+    s32 count;             // 0x4
+    MapAnimAlphaKey key[]; // 0x8
+} MapAnimAlphaItem;
+
+// mapAnimLightPos's track: channels 0-2 are the light's position (x10), 3-5 its rotation.
+typedef struct MapAnimLightPosKey {
+    f32 time;               // 0x0
+    MapAnimChannel chan[9]; // 0x4
+} MapAnimLightPosKey;
+
+typedef struct MapAnimLightPosItem {
+    const char* name;         // 0x0, the light (lightNameToPtr)
+    s32 count;                // 0x4
+    MapAnimLightPosKey key[]; // 0x8
+} MapAnimLightPosItem;
+
+// mapAnimLightColor's track: channels 0-2 are the light's colour, 3 its attenAngle, 4 its spotAngle.
+typedef struct MapAnimLightColorKey {
+    f32 time;               // 0x0
+    MapAnimChannel chan[5]; // 0x4
+} MapAnimLightColorKey;
+
+typedef struct MapAnimLightColorItem {
+    const char* name;           // 0x0, the light (lightNameToPtr)
+    s32 count;                  // 0x4
+    MapAnimLightColorKey key[]; // 0x8
+} MapAnimLightColorItem;
+
+// The track lists of an "animation_table" entry: a count, then the tracks.
+typedef struct MapAnimJointList {
+    s32 count;              // 0x0
+    MapAnimData* entries[]; // 0x4
+} MapAnimJointList;
+
+typedef struct MapAnimTexMtxList {
+    s32 count;                    // 0x0
+    MapAnimTexMtxItem* entries[]; // 0x4
+} MapAnimTexMtxList;
+
+typedef struct MapAnimAlphaList {
+    s32 count;                   // 0x0
+    MapAnimAlphaItem* entries[]; // 0x4
+} MapAnimAlphaList;
+
+typedef struct MapAnimLightPosList {
+    s32 count;                      // 0x0
+    MapAnimLightPosItem* entries[]; // 0x4
+} MapAnimLightPosList;
+
+typedef struct MapAnimLightColorList {
+    s32 count;                        // 0x0
+    MapAnimLightColorItem* entries[]; // 0x4
+} MapAnimLightColorList;
+
 // An "animation_table" chunk entry in the map file.
 typedef struct MapAnimTableEntry {
-    const char* name;    // 0x0, matched against the animation name (mapSearchAnmObj)
-    u8 field_0x4[4];     // 0x4
-    f32 field_0x8;       // 0x8, in frames; the play frame wraps at it (mapMain)
-    u8* field_0xC;       // 0xC, joint list (count, then joint pointers) for mapCalcAnimMatrix (mapMain, hitdrv)
-    u8* field_0x10;      // 0x10
-    u8* field_0x14;      // 0x14
-    u8* field_0x18;      // 0x18
-    u8* field_0x1C;      // 0x1C
+    const char* name;                 // 0x0, matched against the animation name (mapSearchAnmObj)
+    u8 field_0x4[4];                  // 0x4
+    f32 field_0x8;                    // 0x8, in frames; the play frame wraps at it (mapMain)
+    MapAnimJointList* field_0xC;      // 0xC, joint tracks for mapCalcAnimMatrix (mapMain, hitdrv)
+    MapAnimTexMtxList* field_0x10;     // 0x10, mapAnimColorObj
+    MapAnimAlphaList* field_0x14;     // 0x14, mapAnimAlphaObj
+    MapAnimLightPosList* field_0x18;  // 0x18, mapAnimLightPos
+    MapAnimLightColorList* field_0x1C; // 0x1C, mapAnimLightColor
 } MapAnimTableEntry;
 
 typedef struct MapEntryAnimData {
@@ -202,6 +306,13 @@ typedef struct MapEntryAnimData {
     MapAnimTableEntry* data; // 0x18
     u8 field_0x1C[4];    // 0x1C
 } MapEntryAnimData;
+
+// The "vcd_table" chunk: vertex fraction bits for the packed position and texture coordinates.
+typedef struct MapVtxFmt {
+    u8 field_0x0[0x44]; // 0x0
+    u32 field_0x44;     // 0x44, position fraction bits (mapSetPolygonVtxDesc, hitdrv)
+    u32 field_0x48[8];  // 0x48, texture coordinate fraction bits
+} MapVtxFmt;
 
 typedef struct MapEntry {
     s32 count;                     // 0x0
@@ -225,7 +336,7 @@ typedef struct MapEntry {
     struct MapFileLightTable* lightTable; // 0x98, "light_table" chunk
     struct MapFileFog* fogTable;   // 0x9C, "fog_table" chunk
     void* materialNameTable;       // 0xA0, "material_name_table" chunk
-    void* vcdTable;                // 0xA4, "vcd_table" chunk
+    MapVtxFmt* vcdTable;           // 0xA4, "vcd_table" chunk
     MapObject* rootMapObj;         // 0xA8
     struct HitEntry* rootHitObj;     // 0xAC
     Vec bbox[8];                   // 0xB0

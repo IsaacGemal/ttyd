@@ -4699,10 +4699,10 @@ EVT_END()
                         elem->posZ = (f32)(v + 0x46);                                                     \
                     }                                                                                     \
                     pose->heading = (f32)(irand(0x14) - 0xa);                                             \
-                    ((f32*)pose->matrix)[0] = 50.0f / (50.0f + (f32)irand(0x32));                         \
-                    ((f32*)pose->matrix)[5] = 50.0f / (50.0f + (f32)irand(0x32));                         \
+                    (*pose->matrix)[0][0] = 50.0f / (50.0f + (f32)irand(0x32));                           \
+                    (*pose->matrix)[1][1] = 50.0f / (50.0f + (f32)irand(0x32));                           \
                     if (elem->mirror != 0) {                                                              \
-                        ((f32*)pose->matrix)[0] *= -1.0f;                                                 \
+                        (*pose->matrix)[0][0] *= -1.0f;                                                   \
                     }                                                                                     \
                 }                                                                                         \
                 HAND->state++;                                                                            \
@@ -4750,9 +4750,9 @@ static void pose_main(void) {
         pose->texId = hp->firstFrame + (s32)((hp->frameCount - 1) * f1);
         unitId = evtGetValue(NULL, 0xFD050F8A);
         if (unitId == -1) {
-            ((f32*)pose->matrix)[3] = elem->posX;
-            ((f32*)pose->matrix)[7] = elem->posY;
-            ((f32*)pose->matrix)[11] = elem->posZ;
+            (*pose->matrix)[0][3] = elem->posX;
+            (*pose->matrix)[1][3] = elem->posY;
+            (*pose->matrix)[2][3] = elem->posZ;
         } else {
             BattleUnit* unit;
             f32 x, y, z, hx, hy, hz;
@@ -4761,9 +4761,9 @@ static void pose_main(void) {
             BtlUnit_GetPos(unit, &x, &y, &z);
             unit = BattleGetUnitPtr(_battleWorkPointer, unitId);
             BtlUnit_GetHomePos(unit, &hx, &hy, &hz);
-            ((f32*)pose->matrix)[3] = elem->posX + x - hx;
-            ((f32*)pose->matrix)[7] = elem->posY + y - hy;
-            ((f32*)pose->matrix)[11] = elem->posZ + z - hz;
+            (*pose->matrix)[0][3] = elem->posX + x - hx;
+            (*pose->matrix)[1][3] = elem->posY + y - hy;
+            (*pose->matrix)[2][3] = elem->posZ + z - hz;
         }
     }
 }
@@ -4916,10 +4916,10 @@ USER_FUNC(peach_hand1000_dark_drag_1_evt) {
                     elem->posZ = (f32)(v + 0x46);
                 }
                 pose->heading = (f32)(irand(0x14) - 0xa);
-                ((f32*)pose->matrix)[0] = 50.0f / (50.0f + (f32)irand(0x32));
-                ((f32*)pose->matrix)[5] = 50.0f / (50.0f + (f32)irand(0x32));
+                (*pose->matrix)[0][0] = 50.0f / (50.0f + (f32)irand(0x32));
+                (*pose->matrix)[1][1] = 50.0f / (50.0f + (f32)irand(0x32));
                 if (elem->mirror != 0) {
-                    ((f32*)pose->matrix)[0] *= -1.0f;
+                    (*pose->matrix)[0][0] *= -1.0f;
                 }
             }
             HAND->state++;
@@ -5024,10 +5024,10 @@ USER_FUNC(queen_hp_drain_2_evt) {
                     elem->posZ = (f32)(v + 0x10e);
                 }
                 pose->heading = (f32)(irand(0x14) - 0xa);
-                ((f32*)pose->matrix)[0] = 50.0f / (50.0f + (f32)irand(0x32));
-                ((f32*)pose->matrix)[5] = 50.0f / (50.0f + (f32)irand(0x32));
+                (*pose->matrix)[0][0] = 50.0f / (50.0f + (f32)irand(0x32));
+                (*pose->matrix)[1][1] = 50.0f / (50.0f + (f32)irand(0x32));
                 if (elem->mirror != 0) {
-                    ((f32*)pose->matrix)[0] *= -1.0f;
+                    (*pose->matrix)[0][0] *= -1.0f;
                 }
             }
             HAND->state++;
@@ -5157,10 +5157,10 @@ USER_FUNC(queen_hand_small_drag_1_evt) {
                     elem->posZ = (f32)(v + 0x46);
                 }
                 pose->heading = (f32)(irand(0x14) - 0xa);
-                ((f32*)pose->matrix)[0] = 50.0f / (50.0f + (f32)irand(0x32));
-                ((f32*)pose->matrix)[5] = 50.0f / (50.0f + (f32)irand(0x32));
+                (*pose->matrix)[0][0] = 50.0f / (50.0f + (f32)irand(0x32));
+                (*pose->matrix)[1][1] = 50.0f / (50.0f + (f32)irand(0x32));
                 if (elem->mirror != 0) {
-                    ((f32*)pose->matrix)[0] *= -1.0f;
+                    (*pose->matrix)[0][0] *= -1.0f;
                 }
             }
             HAND->state++;

@@ -63,6 +63,13 @@ typedef struct BattleStageDark {
 	u8 pad_1E[2];         //0x1E
 } BattleStageDark;
 
+// BattleStageLight.spline: the target path BattleStageMain follows while flag 4 is set (getSpline's arguments).
+typedef struct BattleStageLightSpline {
+	s32 field_0x0;             //0x0, knot count
+	s32 field_0x4[8];          //0x4, knot frames; the path ends at the last one
+	f32 field_0x24[3][4][8];   //0x24, per axis (x, y, z), getSpline's four coefficient tables
+} BattleStageLightSpline;
+
 typedef struct BattleStageLight {
 	u32 flags;                 //0x0
 	char name[0x20];           //0x4
@@ -101,7 +108,7 @@ typedef struct BattleStageLight {
 	s32 upFramesTotal;         //0xDC
 	s8 upEase;                 //0xE0
 	u8 pad_E1[3];              //0xE1
-	void* spline;              //0xE4
+	BattleStageLightSpline* spline; //0xE4
 } BattleStageLight;
 
 typedef struct BattleStage {

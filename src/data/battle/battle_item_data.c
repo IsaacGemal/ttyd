@@ -1604,37 +1604,32 @@ BattleWeapon ItemWeaponData_Kaminari_Gorogoro = {
     { 0, 0, 0, 100, 0, 5, 5, 5, 5, 0, 0, 0 }, // field_B4
 };
 
-// The sampling entry is 0x24 bytes, so the original computes the byte offset once (`mulli 0x24`)
-// and keeps it in a callee-saved register while recomputing `base + ofs` for each read. Writing the
-// address as `*(s16*)(samp + ofs + 4)` makes MWCC fold `ofs` into the base (`samp += ofs`); indexing
-// an `s16*` view with `e * 0x12 + 2` (e = entry index) yields the original `mulli 0x24`.
 s32 _sampling_random_target(EventEntry* event, BOOL isFirstCall) {
     s32* args = event->args;
     BattleWork* wp = _battleWorkPointer;
     BattleWeapon* weapon = (BattleWeapon*)evtGetValue(event, args[0]);
-    u8 sampling[0xACC];
+    BattleSampling sampling;
     s8 belong;
     s32 id;
     s32 outIdx1 = args[1];
     s32 outIdx2 = args[2];
-    u8* samp;
+    BattleSampling* samp;
 
     belong = (s8)evtGetValue(event, args[3]);
-    samp = sampling;
+    samp = &sampling;
     id = BattleTransID(event, -2);
-    BattleSamplingEnemy(samp, weapon, id, belong, weapon->targetClassFlags,
+    BattleSamplingEnemy((u8*)samp, weapon, id, belong, weapon->targetClassFlags,
                         weapon->targetPropertyFlags,
                         -wp->alliances[belong].attackDirection);
-    if ((s8)samp[0xA6C] <= 0) {
+    if (samp->count <= 0) {
         evtSetValue(event, outIdx1, -1);
         evtSetValue(event, outIdx2, -1);
     } else {
-        s32 idx = irand((s8)samp[0xA6C]);
-        s32 e = (s8)samp[idx + 0xA6D];
-        s16* sp = (s16*)samp;
+        s32 idx = irand(samp->count);
+        s32 e = samp->order[idx];
 
-        evtSetValue(event, outIdx1, sp[e * 0x12 + 2]);
-        evtSetValue(event, outIdx2, sp[e * 0x12 + 3]);
+        evtSetValue(event, outIdx1, samp->entries[e].unitId);
+        evtSetValue(event, outIdx2, samp->entries[e].partId);
     }
     return 2;
 }
@@ -6703,8 +6698,8 @@ s32 _nancy_mirage(EventEntry* event, BOOL isFirstCall) {
         event->userdata[1] = animPoseEntry("c_cook", 1);
         event->userdata[2] = 0;
         event->field_84 = (s32)x;
-        ((s32*)&event->wInterpRelatedTime)[0] = (s32)y;
-        ((s32*)&event->wInterpRelatedTime)[1] = (s32)z;
+        event->userdataEx[0] = (s32)y;
+        event->userdataEx[1] = (s32)z;
         animPoseSetAnim(event->userdata[1], "A_2", 1);
         animPoseSetEffectAnim(event->userdata[1], "PM_Y_1A", 1);
     }
@@ -6928,8 +6923,8 @@ void _nancy_disp(CameraId camera, void* param) {
         alpha = 0x80;
     }
     PSMTXTrans(trans, (f32)(s32)event->field_84,
-               (f32)((s32*)&event->wInterpRelatedTime)[0],
-               (f32)((s32*)&event->wInterpRelatedTime)[1]);
+               (f32)event->userdataEx[0],
+               (f32)event->userdataEx[1]);
     PSMTXScale(scale, scaleValue, scaleValue, 1.0f);
     PSMTXIdentity(mtx);
     PSMTXConcat(scale, mtx, mtx);

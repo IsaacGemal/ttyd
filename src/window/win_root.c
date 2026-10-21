@@ -2304,8 +2304,8 @@ static inline s32 winRootFindTag(const char* tag, u8* buf) {
 int compare_func2(const void* a, const void* b) {
     u8 buf_a[64];
     u8 buf_b[64];
-    TattleEntry* ea = battleGetUnitMonosiriPtr(((u8*)a)[1]);
-    TattleEntry* eb = battleGetUnitMonosiriPtr(((u8*)b)[1]);
+    TattleEntry* ea = battleGetUnitMonosiriPtr(((LogChar*)a)->id);
+    TattleEntry* eb = battleGetUnitMonosiriPtr(((LogChar*)b)->id);
     s32 i = winRootFindTag(ea->locationTag, buf_a);
     s32 j = winRootFindTag(eb->locationTag, buf_b);
 
@@ -2322,8 +2322,8 @@ int compare_func2(const void* a, const void* b) {
 int compare_func2_r(const void* a, const void* b) {
     u8 buf_a[64];
     u8 buf_b[64];
-    TattleEntry* ea = battleGetUnitMonosiriPtr(((u8*)a)[1]);
-    TattleEntry* eb = battleGetUnitMonosiriPtr(((u8*)b)[1]);
+    TattleEntry* ea = battleGetUnitMonosiriPtr(((LogChar*)a)->id);
+    TattleEntry* eb = battleGetUnitMonosiriPtr(((LogChar*)b)->id);
     s32 i = winRootFindTag(ea->locationTag, buf_a);
     s32 j = winRootFindTag(eb->locationTag, buf_b);
 
@@ -2352,20 +2352,20 @@ void sort_7_2_func(WindowWork* work) {
 int compare_func3(void* a, void* b) {
     u16 buf_a[64];
     u16 buf_b[64];
-    TattleEntry* ea = battleGetUnitMonosiriPtr(((u8*)a)[1]);
-    TattleEntry* eb = battleGetUnitMonosiriPtr(((u8*)b)[1]);
+    TattleEntry* ea = battleGetUnitMonosiriPtr(((LogChar*)a)->id);
+    TattleEntry* eb = battleGetUnitMonosiriPtr(((LogChar*)b)->id);
 
     pouchHiraganaToKatakana((char*)msgSearch(ea->enemyTag), (char*)buf_a);
     pouchHiraganaToKatakana((char*)msgSearch(eb->enemyTag), (char*)buf_b);
 
-    if (((u8*)a)[1] == 0x4D || ((u8*)a)[1] == 0x87) {
+    if (((LogChar*)a)->id == 0x4D || ((LogChar*)a)->id == 0x87) {
         if (evtGetValue(0, 0xF5DE0180) < 0xD2) {
             pouchHiraganaToKatakana((char*)msgSearch("btl_un_hatena"), (char*)buf_a);
         } else {
             pouchHiraganaToKatakana((char*)msgSearch("btl_un_rampell"), (char*)buf_a);
         }
     }
-    if (((u8*)b)[1] == 0x4D || ((u8*)b)[1] == 0x87) {
+    if (((LogChar*)b)->id == 0x4D || ((LogChar*)b)->id == 0x87) {
         if (evtGetValue(0, 0xF5DE0180) < 0xD2) {
             pouchHiraganaToKatakana((char*)msgSearch("btl_un_hatena"), (char*)buf_b);
         } else {
@@ -2379,20 +2379,20 @@ int compare_func3(void* a, void* b) {
 int compare_func3_r(void* a, void* b) {
     u16 buf_a[64];
     u16 buf_b[64];
-    TattleEntry* ea = battleGetUnitMonosiriPtr(((u8*)a)[1]);
-    TattleEntry* eb = battleGetUnitMonosiriPtr(((u8*)b)[1]);
+    TattleEntry* ea = battleGetUnitMonosiriPtr(((LogChar*)a)->id);
+    TattleEntry* eb = battleGetUnitMonosiriPtr(((LogChar*)b)->id);
 
     pouchHiraganaToKatakana((char*)msgSearch(ea->enemyTag), (char*)buf_a);
     pouchHiraganaToKatakana((char*)msgSearch(eb->enemyTag), (char*)buf_b);
 
-    if (((u8*)a)[1] == 0x4D || ((u8*)a)[1] == 0x87) {
+    if (((LogChar*)a)->id == 0x4D || ((LogChar*)a)->id == 0x87) {
         if (evtGetValue(0, 0xF5DE0180) < 0xD2) {
             pouchHiraganaToKatakana((char*)msgSearch("btl_un_hatena"), (char*)buf_a);
         } else {
             pouchHiraganaToKatakana((char*)msgSearch("btl_un_rampell"), (char*)buf_a);
         }
     }
-    if (((u8*)b)[1] == 0x4D || ((u8*)b)[1] == 0x87) {
+    if (((LogChar*)b)->id == 0x4D || ((LogChar*)b)->id == 0x87) {
         if (evtGetValue(0, 0xF5DE0180) < 0xD2) {
             pouchHiraganaToKatakana((char*)msgSearch("btl_un_hatena"), (char*)buf_b);
         } else {

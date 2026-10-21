@@ -661,7 +661,7 @@ void mot_roll(void) {
         m2 = marioGetPtr();
         m2->wPlayerCollisionBox.x = 14.8f;
         m2->wPlayerCollisionBox.y = 14.8f;
-        m2->mBaseDashSpeed = ((f32*)&rollData)[0];
+        m2->mBaseDashSpeed = rollData[0];
         f28 = 0.0f;
         ((MotRoll*)marioGetPtr()->motStruct)->velX = 0.0f;
         ((MotRoll*)marioGetPtr()->motStruct)->velY = 0.0f;
@@ -957,7 +957,7 @@ void mot_roll(void) {
         f31 = angleABf(0.0f, 0.0f, f29, -f28);
         if (mario->slopeTiltZ > 0.05f) {
             f32 tmp;
-            f26 = (f31 > 180.0f) ? ((f32*)&rollData)[5] : ((f32*)&rollData)[6];
+            f26 = (f31 > 180.0f) ? rollData[5] : rollData[6];
             tmp = (f32)sin(3.1415927f * mario->slopeTiltZ / 180.0f);
             tmp = tmp * f26;
             f30 = f30 - tmp;
@@ -966,7 +966,7 @@ void mot_roll(void) {
             }
         } else if (mario->slopeTiltZ < -0.05f) {
             f32 tmp;
-            f26 = (f31 < 180.0f) ? ((f32*)&rollData)[5] : ((f32*)&rollData)[6];
+            f26 = (f31 < 180.0f) ? rollData[5] : rollData[6];
             tmp = (f32)sin(3.1415927f * mario->slopeTiltZ / 180.0f);
             tmp = tmp * f26;
             f30 = f30 - tmp;
@@ -976,7 +976,7 @@ void mot_roll(void) {
         }
         if (mario->slopeTiltX > 0.05f) {
             f32 tmp;
-            f26 = (f31 > 180.0f) ? ((f32*)&rollData)[5] : ((f32*)&rollData)[6];
+            f26 = (f31 > 180.0f) ? rollData[5] : rollData[6];
             tmp = (f32)sin(3.1415927f * mario->slopeTiltX / 180.0f);
             tmp = tmp * f26;
             ay = ay - tmp;
@@ -985,7 +985,7 @@ void mot_roll(void) {
             }
         } else if (mario->slopeTiltX < -0.05f) {
             f32 tmp;
-            f26 = (f31 < 180.0f) ? ((f32*)&rollData)[5] : ((f32*)&rollData)[6];
+            f26 = (f31 < 180.0f) ? rollData[5] : rollData[6];
             tmp = (f32)sin(3.1415927f * mario->slopeTiltX / 180.0f);
             tmp = tmp * f26;
             ay = ay - tmp;
@@ -1035,16 +1035,16 @@ void mot_roll(void) {
     if (mario->forceMoveTimer == 0 && !f30 && !ay) {
         if (mario->hitobjWall != NULL) {
             if (!marioChkBero(mario->hitobjWall)) {
-                f29 = f29 + f29 * ((f32*)&rollData)[2];
-                f28 = f28 + f28 * ((f32*)&rollData)[2];
+                f29 = f29 + f29 * rollData[2];
+                f28 = f28 + f28 * rollData[2];
             }
         } else if (mario->hitobjStandOn != NULL && mario->airTimer == 0) {
             if (fabsf(mario->slopeAngle <= 1.0f)) {
-                f29 = f29 + f29 * ((f32*)&rollData)[1];
-                f28 = f28 + f28 * ((f32*)&rollData)[1];
+                f29 = f29 + f29 * rollData[1];
+                f28 = f28 + f28 * rollData[1];
             } else {
-                f29 = f29 + 6.4f * (f29 * ((f32*)&rollData)[1]);
-                f28 = f28 + 6.4f * (f28 * ((f32*)&rollData)[1]);
+                f29 = f29 + 6.4f * (f29 * rollData[1]);
+                f28 = f28 + 6.4f * (f28 * rollData[1]);
             }
         }
         {
@@ -1078,14 +1078,14 @@ void mot_roll(void) {
         }
     }
     {
-        fmax = ((f32*)&rollData)[0] / 0.05f;
+        fmax = rollData[0] / 0.05f;
         fqm = 1.0f;
         if (mario->forceMoveTimer == 0 && fabsf(mario->slopeAngle) >= 1.0f) {
             f32 ang = angleABf(0.0f, 0.0f, f29, -f28);
             if (mario->slopeTiltZ > 0.0f) {
-                fqm = (ang > 180.0f) ? ((f32*)&rollData)[9] : 1.0f;
+                fqm = (ang > 180.0f) ? rollData[9] : 1.0f;
             } else if (mario->slopeTiltZ < 0.0f) {
-                fqm = (ang < 180.0f) ? ((f32*)&rollData)[9] : 1.0f;
+                fqm = (ang < 180.0f) ? rollData[9] : 1.0f;
             }
         }
         fmax = fmax * fqm;
@@ -1103,14 +1103,14 @@ void mot_roll(void) {
         }
     }
     {
-        fmax = ((f32*)&rollData)[0] / 0.05f;
+        fmax = rollData[0] / 0.05f;
         f31 = 1.0f;
         if (mario->forceMoveTimer == 0 && fabsf(mario->slopeAngle) >= 1.0f) {
             f32 ang = angleABf(0.0f, 0.0f, f29, -f28);
             if (mario->slopeTiltX > 0.0f) {
-                f31 = (ang > 180.0f) ? ((f32*)&rollData)[9] : 1.0f;
+                f31 = (ang > 180.0f) ? rollData[9] : 1.0f;
             } else if (mario->slopeTiltX < 0.0f) {
-                f31 = (ang < 180.0f) ? ((f32*)&rollData)[9] : 1.0f;
+                f31 = (ang < 180.0f) ? rollData[9] : 1.0f;
             }
         }
         fmax = fmax * f31;
@@ -1175,7 +1175,7 @@ void mot_roll(void) {
         }
     }
 
-    rate = ((f32*)&rollData)[4];
+    rate = rollData[4];
     {
 #ifdef MUST_MATCH
         /* Volatile read keeps the directionView load before the inlined 10.0 load, as in the original. */

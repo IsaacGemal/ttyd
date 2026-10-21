@@ -476,7 +476,7 @@ s32 _btlcmd_MakeSelectWeaponTable(BattleWork* wp, s32 arg) {
 				if (cmd->weaponTable[count].mWeaponParams->item != 0) {
 					cmd->weaponTable[count].mIcon = *(u16*)&itemDataTable[badge].icon_id;
 				} else {
-					cmd->weaponTable[count].mIcon = *(u16*)&cmd->weaponTable[count].mWeaponParams->icon;
+					cmd->weaponTable[count].mIcon = cmd->weaponTable[count].mWeaponParams->icon;
 				}
 				if (cmd->weaponTable[count].mWeaponParams->name != NULL) {
 					cmd->weaponTable[count].mName = (char*)msgSearch(cmd->weaponTable[count].mWeaponParams->name);
@@ -502,7 +502,7 @@ s32 _btlcmd_MakeSelectWeaponTable(BattleWork* wp, s32 arg) {
 				if (cmd->weaponTable[count].mWeaponParams->item != 0) {
 					cmd->weaponTable[count].mIcon = *(u16*)&itemDataTable[badge].icon_id;
 				} else {
-					cmd->weaponTable[count].mIcon = *(u16*)&cmd->weaponTable[count].mWeaponParams->icon;
+					cmd->weaponTable[count].mIcon = cmd->weaponTable[count].mWeaponParams->icon;
 				}
 				if (cmd->weaponTable[count].mWeaponParams->name != NULL) {
 					cmd->weaponTable[count].mName = (char*)msgSearch(cmd->weaponTable[count].mWeaponParams->name);
@@ -574,7 +574,7 @@ s32 _btlcmd_MakeSelectWeaponTable(BattleWork* wp, s32 arg) {
 				cmd->weaponTable[count].mItem = 0;
 				cmd->weaponTable[count].mWeaponParams = ((BattleWeapon**)superActionTable)[j];
 				cmd->weaponTable[count].mEnabled = 0;
-				cmd->weaponTable[count].mIcon = *(u16*)&((BattleWeapon**)superActionTable)[j]->icon;
+				cmd->weaponTable[count].mIcon = ((BattleWeapon**)superActionTable)[j]->icon;
 				cmd->weaponTable[count].mDisableReason = 0;
 				if (cmd->weaponTable[count].mWeaponParams->name != NULL) {
 					cmd->weaponTable[count].mName = (char*)msgSearch(cmd->weaponTable[count].mWeaponParams->name);

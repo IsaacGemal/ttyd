@@ -287,16 +287,16 @@ void vivian_use(PartyEntry* party) {
         party->speed = 0.0f;
         party->jumpPara1 = 0.0f;
         party->useMotionId = 1;
-        *(s32*)&party->field_22[2] = 6;
+        party->timer = 6;
         partyChgPose(party, "PTR_A2_1");
         // fallthrough
     case 1:
         vivianUseStep(party);
-        party->position.x += (party->targetPos.x - party->position.x) / (f32)*(s32*)&party->field_22[2];
-        party->position.y += (party->targetPos.y - party->position.y) / (f32)*(s32*)&party->field_22[2];
-        party->position.z += (party->targetPos.z - party->position.z) / (f32)*(s32*)&party->field_22[2];
+        party->position.x += (party->targetPos.x - party->position.x) / (f32)party->timer;
+        party->position.y += (party->targetPos.y - party->position.y) / (f32)party->timer;
+        party->position.z += (party->targetPos.z - party->position.z) / (f32)party->timer;
         party->field_B8 = party->position;
-        if (--*(s32*)&party->field_22[2] > 0) {
+        if (--party->timer > 0) {
             break;
         }
         party->flags2 |= 0x200000;
@@ -313,12 +313,12 @@ void vivian_use(PartyEntry* party) {
         marioChgPose("M_B_3");
         marioChgPaper("PM_B_1");
         party->useMotionId = 4;
-        *(s32*)&party->field_22[2] = 0x1e;
+        party->timer = 0x1e;
         psndSFXOn_3D((const char*)0x936, &party->position);
         // fallthrough
     case 4:
         vivianUseStep(party);
-        if (0x1e - *(s32*)&party->field_22[2] <= 0x18) {
+        if (0x1e - party->timer <= 0x18) {
             party->dispOffset.y += 0.4f;
             mario->dispOfs2.y += 0.4f;
             if (party->dispOffset.y >= 8.0f) {
@@ -333,7 +333,7 @@ void vivian_use(PartyEntry* party) {
             party->tail.vivian.charge = 20.0f;
             mario->dispFlags |= 0x1000;
         }
-        if (--*(s32*)&party->field_22[2] > 0) {
+        if (--party->timer > 0) {
             break;
         }
         {
@@ -426,20 +426,20 @@ void vivian_use(PartyEntry* party) {
         animPoseSetLocalTime(party->paperAnimGroup, 24.0f);
         party->field_20 = 0x18;
         party->useMotionId = 0x18;
-        *(s32*)&party->field_22[2] = 0x18;
+        party->timer = 0x18;
         psndSFXOn_3D((const char*)0x937, &party->position);
         // fallthrough
     case 4:
         vivianUseStep(party);
-        animPoseSetLocalTime(party->paperAnimGroup, (f32)*(s32*)&party->field_22[2]);
+        animPoseSetLocalTime(party->paperAnimGroup, (f32)party->timer);
         party->dispOffset.y -= 0.4f;
         if (party->dispOffset.y <= 2.7f) {
             party->dispOffset.y = 2.7f;
         }
-        if (--*(s32*)&party->field_22[2] <= 0) {
+        if (--party->timer <= 0) {
             break;
         }
-        if (*(s32*)&party->field_22[2] != 0x14) {
+        if (party->timer != 0x14) {
             break;
         }
         marioChgPose("M_S_1");
@@ -449,7 +449,7 @@ void vivian_use(PartyEntry* party) {
         break;
     case 5:
         vivianUseStep(party);
-        animPoseSetLocalTime(party->paperAnimGroup, (f32)*(s32*)&party->field_22[2]);
+        animPoseSetLocalTime(party->paperAnimGroup, (f32)party->timer);
         animPoseSetLocalTime(mario->paperAnimGroupId[marioAnimeId()], (f32)party->tail.vivian.poseTime);
         mario->dispOfs2.y -= 0.4f;
         if (mario->dispOfs2.y <= 2.7f) {
@@ -460,11 +460,11 @@ void vivian_use(PartyEntry* party) {
             party->dispOffset.y = 2.7f;
         }
         party->tail.vivian.poseTime -= 1;
-        if (--*(s32*)&party->field_22[2] > 0) {
+        if (--party->timer > 0) {
             break;
         }
         party->useMotionId = 0x1A;
-        *(s32*)&party->field_22[2] = 0x18;
+        party->timer = 0x18;
         // fallthrough
     case 6:
         vivianUseStep(party);
@@ -487,16 +487,16 @@ void vivian_use(PartyEntry* party) {
             }
         }
         {
-            s32 t = *(s32*)&party->field_22[2] - 1;
-            *(s32*)&party->field_22[2] = t;
+            s32 t = party->timer - 1;
+            party->timer = t;
             if (t > 0) {
-                *(s32*)&party->field_22[2] = 0;
+                party->timer = 0;
             }
         }
         if (party->tail.vivian.poseTime != 0) {
             break;
         }
-        if (*(s32*)&party->field_22[2] != 0) {
+        if (party->timer != 0) {
             break;
         }
         party->useMotionId = 0x1B;

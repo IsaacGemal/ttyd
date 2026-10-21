@@ -162,7 +162,7 @@ void monte_single_disp(CameraId cameraId, void* param) {
         for (i = 0; i < entries->count; i++) {
             f32 dir = mario->position.z >= 0.0f ? 1.0f : -1.0f;
             if (entries[i].active == 0) {
-                Vec pos = entries[i].pos;
+                Vec pos = entries[i].field_0x8.pos;
                 if ((gp->retraceCount & 0x1F) < 9) {
                     pos.x -= 5.0f * dir;
                 }
@@ -180,14 +180,14 @@ void monte_single_disp(CameraId cameraId, void* param) {
 // inline form is the single-`base` loop in the function's #else branch.
 static inline void monte_fill(void) {
     s32 i;
-    f32* base;
-    f32* base2;
+    MonteEntryField8* base;
+    MonteEntryField8* base2;
     MonteEntry* arr;
     for (i = 0; i < (arr = monte_p)->count; i++) {
-        base = (f32*)((u8*)&arr[i] + 8);
-        base2 = (f32*)((u8*)&arr[i] + 8);
-        *(Vec*)&base[1] = vec3_yuu_00014008;
-        base2[4] = 1.0f;
+        base = &arr[i].field_0x8;
+        base2 = &arr[i].field_0x8;
+        base->pos = vec3_yuu_00014008;
+        base2->scale = 1.0f;
         monte_p[i].active = 1;
     }
 }
@@ -217,9 +217,9 @@ USER_FUNC(monte_single_init) {
         monte_fill();
 #else
         for (i = 0; i < monte_p->count; i++) {
-            f32* base = (f32*)((u8*)&monte_p[i] + 8);
-            *(Vec*)&base[1] = vec3_yuu_00014008;
-            base[4] = 1.0f;
+            MonteEntryField8* base = &monte_p[i].field_0x8;
+            base->pos = vec3_yuu_00014008;
+            base->scale = 1.0f;
             monte_p[i].active = 1;
         }
 #endif
@@ -247,7 +247,7 @@ static void monte_disp(CameraId cameraId, void* param) {
     if (entries != NULL) {
         for (i = 0; i < entries->count; i++) {
             if (entries[i].active == 0) {
-                iconDispGx(1.0f, &entries[i].pos, 0, 0x13F);
+                iconDispGx(1.0f, &entries[i].field_0x8.pos, 0, 0x13F);
             }
         }
     }
@@ -291,7 +291,7 @@ USER_FUNC(fall_rtn) {
         for (i = 0; i < monte_entries->count; i++) {
             s32 k;
             s32 j;
-            f32* base = (f32*)((u8*)&monte_entries[i] + 8);
+            MonteEntryField8* base = &monte_entries[i].field_0x8;
             f32 min;
             f32 max;
             Vec delta;
@@ -300,12 +300,12 @@ USER_FUNC(fall_rtn) {
             HitCheckQuery query;
             Vec firstHit;
 
-            base[2] = 210.0f;
+            base->pos.y = 210.0f;
             j = 0;
             do {
                 j++;
                 if (j > 500) {
-                    *(Vec*)(base + 1) = (Vec){0.0f, 0.0f, 0.0f};
+                    base->pos = (Vec){0.0f, 0.0f, 0.0f};
                     break;
                 }
                 if (montetable[tableIdx].x0 < montetable[tableIdx].x1) {
@@ -315,7 +315,7 @@ USER_FUNC(fall_rtn) {
                     min = montetable[tableIdx].x1;
                     max = montetable[tableIdx].x0;
                 }
-                base[1] = monte_rand(min, max);
+                base->pos.x = monte_rand(min, max);
                 if (montetable[tableIdx].z0 < montetable[tableIdx].z1) {
                     min = montetable[tableIdx].z0;
                     max = montetable[tableIdx].z1;
@@ -324,13 +324,13 @@ USER_FUNC(fall_rtn) {
                     max = montetable[tableIdx].z0;
                 }
                 max = max - min;
-                base[3] = min + (f32)irand((s32)(100.0f * max)) / 100.0f;
+                base->pos.z = min + (f32)irand((s32)(100.0f * max)) / 100.0f;
 
-                candidatePos = *(Vec*)(base + 1);
+                candidatePos = base->pos;
                 candidatePos.y = 0.0f;
                 for (k = 0; k < pointIdx; k++) {
-                    u8* prevp = (u8*)base - (k + 1) * 0x38 + 4;
-                    prevPos = *(Vec*)prevp;
+                    // steps back by the 0x38-byte field_0x8, not by the 0x44-byte entry
+                    prevPos = (base - (k + 1))->pos;
                     prevPos.y = 0.0f;
                     PSVECSubtract(&candidatePos, &prevPos, &delta);
                     if (PSVECMag(&delta) < 20.0f) {
@@ -343,7 +343,7 @@ USER_FUNC(fall_rtn) {
 
                 {
                     HitCheckQuery* q = &query;
-                    q->targetPos = *(Vec*)(base + 1);
+                    q->targetPos = base->pos;
                     q->targetDistance = 220.0f;
                     q->targetDir = (Vec){0.0f, -1.0f, 0.0f};
                     if (hitCheckVecFilter(q, NULL) == NULL) {
@@ -356,7 +356,7 @@ USER_FUNC(fall_rtn) {
                             continue;
                         }
                     }
-                    base[2] = q->hitPos.y;
+                    base->pos.y = q->hitPos.y;
                 }
                 break;
             } while (1);
@@ -384,7 +384,7 @@ USER_FUNC(fall_rtn) {
                 pointIdx = 0;
                 tableIdx++;
             }
-            base[4] = 1.0f;
+            base->scale = 1.0f;
         }
     }
 
@@ -401,7 +401,7 @@ USER_FUNC(fall_rtn) {
             MonteEntry* p = &monte_entries[i];
             switch (p->hit) {
             case 0:
-                if (get_monte_check(&p->pos, &marioGetPtr()->position) == 1) {
+                if (get_monte_check(&p->field_0x8.pos, &marioGetPtr()->position) == 1) {
                     data->field_24++;
                     psndSFXOn_3D(
 #ifdef MUST_MATCH

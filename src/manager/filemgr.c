@@ -22,7 +22,8 @@ FileManagerWork* afp = &fileWork;
 #define FILE_RELOC(field, base) (*(u32*)&(field) += (u32)(base))
 #define FILE_UNRELOC(field, base) (*(u32*)&(field) -= (u32)(base))
 
-// Header views of the file types that fileGarbageDataAdrSet relocates (see FileType in filemgr.h).
+// Header views of the file types that fileGarbageDataAdrSet and fileGarbageDataAdrClear relocate (see FileType
+// in filemgr.h).
 typedef struct FileType1 {
 	u8 pad_0x0[0x14C];
 	u32 field_0x14C;
@@ -161,58 +162,57 @@ static inline void fileClearTpl(TEXPalette* tpl) {
 
 // Turns a file's pointers back into file offsets before it moves (fileGarbageMoveMem); the inverse of
 // fileGarbageDataAdrSet. The TPL case goes through the fileClearTpl inline above so its loop counter and
-// byte offset take the original's r5/r6. Types without a struct (see FileType) keep raw offsets.
+// byte offset take the original's r5/r6.
 void fileGarbageDataAdrClear(FileEntry* entry) {
 	void* data = *entry->data;
-	u8* d = data;
 
 	switch (entry->type) {
 		case FILE_TYPE_1:
-			if (*(u32*)(d + 0x14C) >= (u32)data) {
-				*(u32*)(d + 0x14C) -= (u32)data;
-				*(u32*)(d + 0x150) -= (u32)data;
-				*(u32*)(d + 0x154) -= (u32)data;
-				*(u32*)(d + 0x158) -= (u32)data;
-				*(u32*)(d + 0x15C) -= (u32)data;
-				*(u32*)(d + 0x160) -= (u32)data;
-				*(u32*)(d + 0x164) -= (u32)data;
-				*(u32*)(d + 0x168) -= (u32)data;
-				*(u32*)(d + 0x16C) -= (u32)data;
-				*(u32*)(d + 0x170) -= (u32)data;
-				*(u32*)(d + 0x174) -= (u32)data;
-				*(u32*)(d + 0x178) -= (u32)data;
-				*(u32*)(d + 0x17C) -= (u32)data;
-				*(u32*)(d + 0x180) -= (u32)data;
-				*(u32*)(d + 0x184) -= (u32)data;
-				*(u32*)(d + 0x188) -= (u32)data;
-				*(u32*)(d + 0x18C) -= (u32)data;
-				*(u32*)(d + 0x190) -= (u32)data;
-				*(u32*)(d + 0x194) -= (u32)data;
-				*(u32*)(d + 0x198) -= (u32)data;
-				*(u32*)(d + 0x19C) -= (u32)data;
-				*(u32*)(d + 0x1A0) -= (u32)data;
-				*(u32*)(d + 0x1A4) -= (u32)data;
-				*(u32*)(d + 0x1A8) -= (u32)data;
-				*(u32*)(d + 0x1AC) -= (u32)data;
+			if (((FileType1*)data)->field_0x14C >= (u32)data) {
+				((FileType1*)data)->field_0x14C -= (u32)data;
+				((FileType1*)data)->field_0x150 -= (u32)data;
+				((FileType1*)data)->field_0x154 -= (u32)data;
+				((FileType1*)data)->field_0x158 -= (u32)data;
+				((FileType1*)data)->field_0x15C -= (u32)data;
+				((FileType1*)data)->field_0x160 -= (u32)data;
+				((FileType1*)data)->field_0x164 -= (u32)data;
+				((FileType1*)data)->field_0x168 -= (u32)data;
+				((FileType1*)data)->field_0x16C -= (u32)data;
+				((FileType1*)data)->field_0x170 -= (u32)data;
+				((FileType1*)data)->field_0x174 -= (u32)data;
+				((FileType1*)data)->field_0x178 -= (u32)data;
+				((FileType1*)data)->field_0x17C -= (u32)data;
+				((FileType1*)data)->field_0x180 -= (u32)data;
+				((FileType1*)data)->field_0x184 -= (u32)data;
+				((FileType1*)data)->field_0x188 -= (u32)data;
+				((FileType1*)data)->field_0x18C -= (u32)data;
+				((FileType1*)data)->field_0x190 -= (u32)data;
+				((FileType1*)data)->field_0x194 -= (u32)data;
+				((FileType1*)data)->field_0x198 -= (u32)data;
+				((FileType1*)data)->field_0x19C -= (u32)data;
+				((FileType1*)data)->field_0x1A0 -= (u32)data;
+				((FileType1*)data)->field_0x1A4 -= (u32)data;
+				((FileType1*)data)->field_0x1A8 -= (u32)data;
+				((FileType1*)data)->field_0x1AC -= (u32)data;
 			}
 			break;
 
 		case FILE_TYPE_2:
-			if (*(u32*)(d + 0x24) >= (u32)data) {
-				*(u32*)(d + 0x24) -= (u32)data;
-				*(u32*)(d + 0x28) -= (u32)data;
-				*(u32*)(d + 0x2C) -= (u32)data;
-				*(u32*)(d + 0x30) -= (u32)data;
-				*(u32*)(d + 0x34) -= (u32)data;
-				*(u32*)(d + 0x38) -= (u32)data;
-				*(u32*)(d + 0x3C) -= (u32)data;
-				*(u32*)(d + 0x40) -= (u32)data;
+			if ((u32)((AnimData*)data)->clip >= (u32)data) {
+				FILE_UNRELOC(((AnimData*)data)->clip, data);
+				FILE_UNRELOC(((AnimData*)data)->frames, data);
+				FILE_UNRELOC(((AnimData*)data)->posData, data);
+				FILE_UNRELOC(((AnimData*)data)->nrmData, data);
+				FILE_UNRELOC(((AnimData*)data)->texData, data);
+				FILE_UNRELOC(((AnimData*)data)->visData, data);
+				FILE_UNRELOC(((AnimData*)data)->nodeData, data);
+				FILE_UNRELOC(((AnimData*)data)->frames2, data);
 			}
 			break;
 
 		case FILE_TYPE_3:
-			if (*(u32*)(d + 0x48) >= (u32)data) {
-				*(u32*)(d + 0x48) -= (u32)data;
+			if (((FileType3*)data)->field_0x48 >= (u32)data) {
+				((FileType3*)data)->field_0x48 -= (u32)data;
 			}
 			break;
 
@@ -224,106 +224,106 @@ void fileGarbageDataAdrClear(FileEntry* entry) {
 			s32 i;
 			s32 count;
 
-			if ((u32)POSE(d)->shapes >= (u32)data) {
-				count = POSE(d)->mAnimCount;
+			if ((u32)POSE(data)->shapes >= (u32)data) {
+				count = POSE(data)->mAnimCount;
 				for (i = 0; i < count; i++) {
-					AnimTableEntry* elem = &POSE(d)->mpAnims[i];
-					u32 ptr = (u32)elem->data;
+					AnimTableEntry* elem = &POSE(data)->mpAnims[i];
+					AnimData* anim = elem->data;
 
-					elem->data = (AnimData*)(ptr - (u32)data);
-					if (*(u32*)(ptr + 0x24) >= ptr) {
-						*(u32*)(ptr + 0x24) -= ptr;
-						*(u32*)(ptr + 0x28) -= ptr;
-						*(u32*)(ptr + 0x2C) -= ptr;
-						*(u32*)(ptr + 0x30) -= ptr;
-						*(u32*)(ptr + 0x34) -= ptr;
-						*(u32*)(ptr + 0x38) -= ptr;
-						*(u32*)(ptr + 0x3C) -= ptr;
-						*(u32*)(ptr + 0x40) -= ptr;
+					FILE_UNRELOC(elem->data, data);
+					if ((u32)anim->clip >= (u32)anim) {
+						FILE_UNRELOC(anim->clip, anim);
+						FILE_UNRELOC(anim->frames, anim);
+						FILE_UNRELOC(anim->posData, anim);
+						FILE_UNRELOC(anim->nrmData, anim);
+						FILE_UNRELOC(anim->texData, anim);
+						FILE_UNRELOC(anim->visData, anim);
+						FILE_UNRELOC(anim->nodeData, anim);
+						FILE_UNRELOC(anim->frames2, anim);
 					}
 				}
-				FILE_UNRELOC(POSE(d)->shapes, data);
-				FILE_UNRELOC(POSE(d)->drawCalls, data);
-				FILE_UNRELOC(POSE(d)->bufferVtxPos, data);
-				FILE_UNRELOC(POSE(d)->posIndex, data);
-				FILE_UNRELOC(POSE(d)->nrmVtxBuffer, data);
-				FILE_UNRELOC(POSE(d)->nrmIndex, data);
-				FILE_UNRELOC(POSE(d)->clr0VtxBuffer, data);
-				FILE_UNRELOC(POSE(d)->clr0Index, data);
-				FILE_UNRELOC(POSE(d)->texIndex[0], data);
-				FILE_UNRELOC(POSE(d)->texIndex[1], data);
-				FILE_UNRELOC(POSE(d)->texIndex[2], data);
-				FILE_UNRELOC(POSE(d)->texIndex[3], data);
-				FILE_UNRELOC(POSE(d)->texIndex[4], data);
-				FILE_UNRELOC(POSE(d)->texIndex[5], data);
-				FILE_UNRELOC(POSE(d)->texIndex[6], data);
-				FILE_UNRELOC(POSE(d)->texIndex[7], data);
-				FILE_UNRELOC(POSE(d)->texVtxBuffer, data);
-				FILE_UNRELOC(POSE(d)->mBufferTexAnim, data);
-				FILE_UNRELOC(POSE(d)->texData, data);
-				FILE_UNRELOC(POSE(d)->texBinds, data);
-				FILE_UNRELOC(POSE(d)->draws, data);
-				FILE_UNRELOC(POSE(d)->mBufferVisibility, data);
-				FILE_UNRELOC(POSE(d)->mBufferNode, data);
-				FILE_UNRELOC(POSE(d)->groups, data);
-				FILE_UNRELOC(POSE(d)->mpAnims, data);
+				FILE_UNRELOC(POSE(data)->shapes, data);
+				FILE_UNRELOC(POSE(data)->drawCalls, data);
+				FILE_UNRELOC(POSE(data)->bufferVtxPos, data);
+				FILE_UNRELOC(POSE(data)->posIndex, data);
+				FILE_UNRELOC(POSE(data)->nrmVtxBuffer, data);
+				FILE_UNRELOC(POSE(data)->nrmIndex, data);
+				FILE_UNRELOC(POSE(data)->clr0VtxBuffer, data);
+				FILE_UNRELOC(POSE(data)->clr0Index, data);
+				FILE_UNRELOC(POSE(data)->texIndex[0], data);
+				FILE_UNRELOC(POSE(data)->texIndex[1], data);
+				FILE_UNRELOC(POSE(data)->texIndex[2], data);
+				FILE_UNRELOC(POSE(data)->texIndex[3], data);
+				FILE_UNRELOC(POSE(data)->texIndex[4], data);
+				FILE_UNRELOC(POSE(data)->texIndex[5], data);
+				FILE_UNRELOC(POSE(data)->texIndex[6], data);
+				FILE_UNRELOC(POSE(data)->texIndex[7], data);
+				FILE_UNRELOC(POSE(data)->texVtxBuffer, data);
+				FILE_UNRELOC(POSE(data)->mBufferTexAnim, data);
+				FILE_UNRELOC(POSE(data)->texData, data);
+				FILE_UNRELOC(POSE(data)->texBinds, data);
+				FILE_UNRELOC(POSE(data)->draws, data);
+				FILE_UNRELOC(POSE(data)->mBufferVisibility, data);
+				FILE_UNRELOC(POSE(data)->mBufferNode, data);
+				FILE_UNRELOC(POSE(data)->groups, data);
+				FILE_UNRELOC(POSE(data)->mpAnims, data);
 			}
 			break;
 		}
 		case FILE_TYPE_6:
-			if (*(u32*)(d + 0x48) >= (u32)data) {
-				*(u32*)(d + 0x48) -= (u32)data;
+			if (((FileType3*)data)->field_0x48 >= (u32)data) {
+				((FileType3*)data)->field_0x48 -= (u32)data;
 			}
 			break;
 
 		case FILE_TYPE_7:
-			if (*(u32*)(d + 0x64) >= (u32)data) {
-				*(u32*)(d + 0x64) -= (u32)data;
-				*(u32*)(d + 0x68) -= (u32)data;
-				*(u32*)(d + 0x6C) -= (u32)data;
+			if (((FileType7*)data)->field_0x64 >= (u32)data) {
+				((FileType7*)data)->field_0x64 -= (u32)data;
+				((FileType7*)data)->field_0x68 -= (u32)data;
+				((FileType7*)data)->field_0x6C -= (u32)data;
 			}
 			break;
 
 		case FILE_TYPE_8:
-			if (*(u32*)(d + 0xC8) >= (u32)data) {
-				*(u32*)(d + 0xC8) -= (u32)data;
-				*(u32*)(d + 0xCC) -= (u32)data;
-				*(u32*)(d + 0xD0) -= (u32)data;
-				*(u32*)(d + 0xD4) -= (u32)data;
-				*(u32*)(d + 0xD8) -= (u32)data;
-				*(u32*)(d + 0xDC) -= (u32)data;
-				*(u32*)(d + 0xE0) -= (u32)data;
-				*(u32*)(d + 0xE4) -= (u32)data;
-				*(u32*)(d + 0xE8) -= (u32)data;
-				*(u32*)(d + 0xEC) -= (u32)data;
-				*(u32*)(d + 0xF0) -= (u32)data;
-				*(u32*)(d + 0xF4) -= (u32)data;
-				*(u32*)(d + 0xF8) -= (u32)data;
-				*(u32*)(d + 0xFC) -= (u32)data;
-				*(u32*)(d + 0x100) -= (u32)data;
-				*(u32*)(d + 0x104) -= (u32)data;
-				*(u32*)(d + 0x108) -= (u32)data;
-				*(u32*)(d + 0x10C) -= (u32)data;
-				*(u32*)(d + 0x110) -= (u32)data;
-				*(u32*)(d + 0x114) -= (u32)data;
-				*(u32*)(d + 0x118) -= (u32)data;
-				*(u32*)(d + 0x11C) -= (u32)data;
-				*(u32*)(d + 0x120) -= (u32)data;
+			if (((FileType8*)data)->field_0xC8 >= (u32)data) {
+				((FileType8*)data)->field_0xC8 -= (u32)data;
+				((FileType8*)data)->field_0xCC -= (u32)data;
+				((FileType8*)data)->field_0xD0 -= (u32)data;
+				((FileType8*)data)->field_0xD4 -= (u32)data;
+				((FileType8*)data)->field_0xD8 -= (u32)data;
+				((FileType8*)data)->field_0xDC -= (u32)data;
+				((FileType8*)data)->field_0xE0 -= (u32)data;
+				((FileType8*)data)->field_0xE4 -= (u32)data;
+				((FileType8*)data)->field_0xE8 -= (u32)data;
+				((FileType8*)data)->field_0xEC -= (u32)data;
+				((FileType8*)data)->field_0xF0 -= (u32)data;
+				((FileType8*)data)->field_0xF4 -= (u32)data;
+				((FileType8*)data)->field_0xF8 -= (u32)data;
+				((FileType8*)data)->field_0xFC -= (u32)data;
+				((FileType8*)data)->field_0x100 -= (u32)data;
+				((FileType8*)data)->field_0x104 -= (u32)data;
+				((FileType8*)data)->field_0x108 -= (u32)data;
+				((FileType8*)data)->field_0x10C -= (u32)data;
+				((FileType8*)data)->field_0x110 -= (u32)data;
+				((FileType8*)data)->field_0x114 -= (u32)data;
+				((FileType8*)data)->field_0x118 -= (u32)data;
+				((FileType8*)data)->field_0x11C -= (u32)data;
+				((FileType8*)data)->field_0x120 -= (u32)data;
 			}
 			break;
 
 		case FILE_TYPE_9:
-			if (*(u32*)(d + 0x58) >= (u32)data) {
-				*(u32*)(d + 0x58) -= (u32)data;
-				*(u32*)(d + 0x5C) -= (u32)data;
-				*(u32*)(d + 0x60) -= (u32)data;
-				*(u32*)(d + 0x64) -= (u32)data;
+			if (((FileType9*)data)->field_0x58 >= (u32)data) {
+				((FileType9*)data)->field_0x58 -= (u32)data;
+				((FileType9*)data)->field_0x5C -= (u32)data;
+				((FileType9*)data)->field_0x60 -= (u32)data;
+				((FileType9*)data)->field_0x64 -= (u32)data;
 			}
 			break;
 
 		case FILE_TYPE_10:
-			if (*(u32*)(d + 0x48) >= (u32)data) {
-				*(u32*)(d + 0x48) -= (u32)data;
+			if (((FileType3*)data)->field_0x48 >= (u32)data) {
+				((FileType3*)data)->field_0x48 -= (u32)data;
 			}
 			break;
 

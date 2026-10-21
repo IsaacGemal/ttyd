@@ -59,9 +59,9 @@ static s32 wait_event[6];
     cmd->mWeaponTable[*count].mWeaponParams = (BattleWeapon*)(table);                      \
     cmd->mWeaponTable[*count].field_0x4 = 0;                                               \
     cmd->mWeaponTable[*count].mIcon =                                                      \
-        *(u16*)((u8*)cmd->mWeaponTable[*count].mWeaponParams + 4);                         \
+        cmd->mWeaponTable[*count].mWeaponParams->icon;                                     \
     cmd->mWeaponTable[*count].mName =                                                      \
-        (char*)msgSearch(*(char**)((u8*)cmd->mWeaponTable[*count].mWeaponParams + 0));     \
+        (char*)msgSearch(cmd->mWeaponTable[*count].mWeaponParams->name);                   \
     (*count)++;
 
 static void __makeTechMenuFunc(BattleWorkCommand* cmd, s32* count);
@@ -92,9 +92,9 @@ static s32 wait_event[6];
     cmd->mWeaponTable[*count].mWeaponParams = (BattleWeapon*)(table);                      \
     cmd->mWeaponTable[*count].field_0x4 = 0;                                               \
     cmd->mWeaponTable[*count].mIcon =                                                      \
-        *(u16*)((u8*)cmd->mWeaponTable[*count].mWeaponParams + 4);                         \
+        cmd->mWeaponTable[*count].mWeaponParams->icon;                                     \
     cmd->mWeaponTable[*count].mName =                                                      \
-        (char*)msgSearch(*(char**)((u8*)cmd->mWeaponTable[*count].mWeaponParams + 0));     \
+        (char*)msgSearch(cmd->mWeaponTable[*count].mWeaponParams->name);                   \
     (*count)++;
 
 static s32 krb_get_dir(EventEntry* event, BOOL isFirstCall) {

@@ -58,19 +58,69 @@ typedef struct AnimDataClip {
     f32 field_0x8; // 0x8
 } AnimDataClip;
 
+// A keyframe of an animation: its time and the runs of delta records it applies.
+typedef struct AnimFrame {
+    f32 time;      // 0x0
+    s32 posOff;    // 0x4
+    s32 posCount;  // 0x8
+    s32 nrmOff;    // 0xC
+    s32 nrmCount;  // 0x10
+    s32 texOff;    // 0x14
+    s32 texCount;  // 0x18
+    s32 visOff;    // 0x1C
+    s32 visCount;  // 0x20
+    s32 nodeOff;   // 0x24
+    s32 nodeCount; // 0x28
+} AnimFrame;
+
+// An event record of an animation (frames2).
+typedef struct AnimFrame2 {
+    f32 time;       // 0x0
+    s32 field_0x4;  // 0x4, the pose's evtValue once its time is reached (animPoseMain)
+} AnimFrame2;
+
+// Per-frame delta records of an animation (animPoseMain and its animPoseAdd*Delta helpers). field_0x0 steps
+// the destination index from the previous record.
+typedef struct AnimPoseVecDelta {
+    u8 field_0x0; // 0x0
+    s8 field_0x1; // 0x1, x, y and z deltas
+    s8 field_0x2; // 0x2
+    s8 field_0x3; // 0x3
+} AnimPoseVecDelta;
+
+typedef struct AnimPoseVisDelta {
+    u8 field_0x0; // 0x0
+    u8 field_0x1; // 0x1, added to the group visibility byte
+} AnimPoseVisDelta;
+
+typedef struct AnimPoseNodeDelta {
+    u8 field_0x0; // 0x0
+    s8 field_0x1; // 0x1, value delta
+    u8 field_0x2; // 0x2, tanfTbl indices (signed) of the blend's end tangents
+    u8 field_0x3; // 0x3
+} AnimPoseNodeDelta;
+
+typedef struct AnimPoseTexDelta {
+    u8 field_0x0;    // 0x0
+    u8 field_0x1;    // 0x1, added to AnimTexMtx.mTexBindIdx
+    u8 pad_0x2[2];   // 0x2
+    f32 field_0x4;   // 0x4, added to AnimTexMtx.mTransS
+    f32 field_0x8;   // 0x8, added to AnimTexMtx.mTransT
+} AnimPoseTexDelta;
+
 struct AnimData {
     u8 field_0x0[0x8 - 0x0];   // 0x0
     s32 frameCount;            // 0x8, keyframes in frames
     u8 field_0xC[0x20 - 0xC];  // 0xC
     s32 frame2Count;           // 0x20, events in frames2
     AnimDataClip* clip;        // 0x24
-    u8* frames;                // 0x28, frame records of ANIM_FRAME_SIZE bytes
-    u8* posData;               // 0x2C
-    u8* nrmData;               // 0x30
-    u8* texData;               // 0x34
-    u8* visData;               // 0x38
-    u8* nodeData;              // 0x3C
-    u8* frames2;               // 0x40, event records of 8 bytes: f32 time, s32 value
+    AnimFrame* frames;         // 0x28
+    AnimPoseVecDelta* posData; // 0x2C
+    AnimPoseVecDelta* nrmData; // 0x30
+    AnimPoseTexDelta* texData; // 0x34
+    AnimPoseVisDelta* visData; // 0x38
+    AnimPoseNodeDelta* nodeData; // 0x3C
+    AnimFrame2* frames2;       // 0x40
     f32 field_0x44;            // 0x44
     f32 field_0x48;            // 0x48
     f32 field_0x4C;            // 0x4C

@@ -7,7 +7,7 @@ typedef enum BattleWeaponSpecialFlags { SPECIAL_UNGUARDABLE = 0x20000 } BattleWe
 
 typedef struct BattleWeapon {
     const char* name;                 // 0x0
-    s16 icon;                         // 0x4
+    u16 icon;                         // 0x4
     ItemType item;                    // 0x8
     const char* description;          // 0xC
     u8 baseAccuracy;                  // 0x10
@@ -26,7 +26,7 @@ typedef struct BattleWeapon {
     u32 targetClassFlags;             // 0x64
     u32 targetPropertyFlags;          // 0x68
     u8 element;                       // 0x6C, 1, 3 and 4 bypass the special-property check in BattleCheckDamage
-    s8 field_0x6D;                    // 0x6D, passed to BattleDamageDirect
+    u8 field_0x6D;                    // 0x6D, passed to BattleDamageDirect
     u8 actionLevel;                   // 0x6E, btlevtcmd_GetWeaponActionLv
     s8 field_0x6F;                    // 0x6F
     const char* acHelpMsg;            // 0x70

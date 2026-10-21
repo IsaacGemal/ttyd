@@ -77,9 +77,9 @@ static s32 wait_event[6];
     cmd->mWeaponTable[*count].mWeaponParams = (BattleWeapon*)(table);                 \
     cmd->mWeaponTable[*count].field_0x4 = 0;                                          \
     cmd->mWeaponTable[*count].mIcon =                                                 \
-        *(u16*)((u8*)cmd->mWeaponTable[*count].mWeaponParams + 4);                    \
+        cmd->mWeaponTable[*count].mWeaponParams->icon;                                \
     cmd->mWeaponTable[*count].mName =                                                 \
-        (char*)msgSearch(*(char**)((u8*)cmd->mWeaponTable[*count].mWeaponParams + 0)); \
+        (char*)msgSearch(cmd->mWeaponTable[*count].mWeaponParams->name);               \
     (*count)++;
 
 __declspec(section ".data") u32 lbl_80379A00[2] = {
@@ -2086,7 +2086,6 @@ USER_FUNC(_wait_yoshig_complete) {
 // `default:` case so MWCC shares the r0 `li` block instead of tail-duplicating it.
 USER_FUNC(_gundan_yoshi_run_effect) {
     Vec pos;
-    u8* cur;
     f32 scale;
     BattleUnit* unit;
     s32 active;
@@ -2095,7 +2094,6 @@ USER_FUNC(_gundan_yoshi_run_effect) {
     YoshiGundanDispWork* work;
     s32 i;
     s32 done;
-    u8* cur2;
     s32 j;
 
     val = evtGetValue(event, event->args[0]);
@@ -2118,9 +2116,8 @@ USER_FUNC(_gundan_yoshi_run_effect) {
     case 1:
         done = 1;
         area->avgPosX = 0.0f;
-        cur = (u8*)area;
-        for (i = 0; i < 256; i++, cur += 0x30) {
-            work = (YoshiGundanDispWork*)(cur + 4);
+        for (i = 0; i < 256; i++) {
+            work = &area->field_0x4[i];
             work->animTimer++;
             if (work->animTimer > 2) {
                 work->animTimer = 0;
@@ -2203,10 +2200,9 @@ USER_FUNC(_gundan_yoshi_run_effect) {
     default:
         break;
     }
-    cur2 = (u8*)area;
-    for (j = 0; j < 256; j++, cur2 += 0x30) {
+    for (j = 0; j < 256; j++) {
         dispEntry(4, dispCalcZ((Vec*)work), 2, _btlYoshiDisp,
-                  (YoshiGundanDispWork*)(cur2 + 4));
+                  &area->field_0x4[j]);
     }
     return 0;
 }

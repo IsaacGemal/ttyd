@@ -356,7 +356,7 @@ typedef struct BattleWorkUnitPartBlurEntry {
     Mtx orientation; // 0x4
     f32 rotation;    // 0x34
     GXColor base;    // 0x38
-    s8 blurColor[8]; // 0x3C, TODO: blur?
+    u8 blurColor[8]; // 0x3C, copy of BattleWorkUnitPartBlur.color: RGBA tints from the newest ([0-3]) to the oldest ([4-7]) slot
 } BattleWorkUnitPartBlurEntry;
 
 typedef struct BattleWorkUnitPartBlur {

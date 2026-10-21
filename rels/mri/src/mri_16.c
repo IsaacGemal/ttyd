@@ -47,15 +47,13 @@ static USER_FUNC(ss_set) {
 }
 
 USER_FUNC(puni_get_id) {
-    s32 offset;
     s32* args;
-    u8* puni;
+    PuniData* puni;
 
     args = event->args;
-    offset = evtGetValue(event, args[0]) * 0x5A8;
-    puni = (u8*)puniGetPunidat() + offset;
+    puni = &puniGetPunidat()[evtGetValue(event, args[0])];
 
-    evtSetValue(event, args[1], *(s16*)(puni + 0x116));
+    evtSetValue(event, args[1], puni->angle);
     return EVT_RETURN_DONE;
 }
 

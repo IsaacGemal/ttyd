@@ -25,6 +25,13 @@ records old and new values for main and the reference points):
   Every call of the name in the file counts, with no #undef scope. A macro whose parameter is only the base
   (ANIM_FRAME_TIME(f) over `(u8*)(f) + 0x0`) is a named accessor: its #define is the one raw offset, as before.
   tools/offset_to_field.py --apply converts the subset of the shape `(*(T*)((u8*)(p) + (off)))`.
+  Widened 2026-10-21 (n9-q-o-hidden), because the tree spells the same thing other ways the old pattern missed:
+  `(u8*)p + off` without the outer paren, the s8/char/unsigned char/signed char casts (a char cast's `+ 1`
+  is a string cursor and is not counted), `((u8*)p)[N]` with a constant N > 0, and `(T*)(p + N)` with N not 1,
+  which is how a byte-pointer local or a byte-array band is offset (`*(s32*)(p + 0x1E0)`, `(Footmark*)(buf +
+  0x500)`; `+ 1` there is usually a step past a header record, so it is not counted). The offset-macro rule uses
+  the same pattern, so EM_VEC(off)'s `(*(Vec*)(base + (off)))` counts per call. Main (fd6a9b00) went 230 -> 1351
+  raw offsets (index 14.203 -> 17.415) under the wider pattern.
 """
 import argparse
 import json
@@ -36,13 +43,26 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 
+# raw_offset: a pointer moved by a constant, in any of the spellings the tree uses (see the docstring).
+_BYTE = r"(?:(?:const|volatile)\s+)*(?:u8|s8|(?:un)?signed\s+char)\s*\*\s*"
+_CHAR = r"(?:(?:const|volatile)\s+)*char\s*\*\s*"
+_BASE = r"\(?\s*&?\s*[\w.\->\[\]]+\s*\)?"
+RAW_OFFSET = re.compile(
+    r"\(\s*" + _BYTE + r"\)\s*" + _BASE + r"\s*\+(?![+=])"  # (u8*)p + off, with or without an outer paren
+    r"|\(\s*" + _CHAR + r"\)\s*" + _BASE + r"\s*\+(?![+=]|\s*1\s*[;,)])"  # (char*)p + off, not a cursor's + 1
+    r"|\(\s*\(\s*(?:" + _BYTE + r"|" + _CHAR + r")\)\s*" + _BASE + r"\s*\)\s*\[\s*(?:0x0*[1-9A-Fa-f][0-9A-Fa-f]*|[1-9]\d*)\s*\]"
+    # ((u8*)p)[N] with a constant N > 0
+    r"|\(\s*(?:(?:const|volatile|struct|unsigned|signed)\s+)*\w+\s*\*+\s*\)\s*\(\s*&?\s*[\w.\->\[\]]+\s*\+"
+    r"(?=\s*(?:0x[0-9A-Fa-f]+|[2-9]|\d{2,}|\((?!\s*(?:u32|s32|int)\s*\))))"  # (T*)(p + N), N not 1
+)
+
 # category: (weight, regex over comment-stripped text). Counted once per match.
 PATTERNS = {
     "unk_name": (1, re.compile(r"\bunk_\w+")),
     "field_0x": (1, re.compile(r"\bfield_0x[0-9A-Fa-f]+\b")),
     "address_name": (1, re.compile(r"\b(?!(?:unk|float|double|zero|one|negone|half|two)_)\w+_8[0-9A-Fa-f]{7}\b")),
     "pool_constant": (0, re.compile(r"\b(?:float|double|zero|one|negone|half|two)_(?:\w*_)?8[0-9A-Fa-f]{7}\b")),
-    "raw_offset": (2, re.compile(r"\(\s*\(\s*u8\s*\*\s*\)\s*\(?\s*[\w.\->\[\]]+\s*\)?\s*\+")),
+    "raw_offset": (2, RAW_OFFSET),
     "goto": (2, re.compile(r"\bgoto\s+\w+\s*;")),
     "must_match": (1, re.compile(r"^[ \t]*#\s*(?:if|ifdef|ifndef|elif)\b.*\bMUST_MATCH\b", re.M)),
     "opt_pragma": (1, re.compile(r"^[ \t]*#\s*pragma\s+(?:opt_\w+|peephole|scheduling|optimization_level"

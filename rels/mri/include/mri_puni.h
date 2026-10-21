@@ -130,7 +130,7 @@ typedef struct PuniData {
     u16 animIdx;                        // 0x11C
     u16 prevAnimIdx;                    // 0x11E
     u8 animDebounce;                    // 0x120, frames a new animIdx waits before it sticks (puniModeParent, counts to 8)
-    u8 healIconTime;                    // 0x121, frames the heal icon (statusFlags 0x1) has been up; cleared after 30 (evt_icon_disp_func)
+    s8 healIconTime;                    // 0x121, frames the heal icon (statusFlags 0x1) has been up; cleared after 30 (evt_icon_disp_func)
     u8 unk122[0x124 - 0x122];           // 0x122
     s32 animTime;                       // 0x124
     s32 timer;                          // 0x128
@@ -168,7 +168,7 @@ typedef struct PuniData {
     struct PuniData* target;            // 0x1DC, fight opponent, or Punigp->marioPuni while blown
     s32 subState;                       // 0x1E0
     s32 counter;                        // 0x1E4, per-mode scratch: Mass push frames (to 30), Awayjump's second-animation latch, Hagure's random 5..10 repeat count
-    u8 unk1E8[0x1EC - 0x1E8];           // 0x1E8
+    s32 field_0x1E8;                    // 0x1E8
     f32 height;                         // 0x1EC
     f32 vertVel;                        // 0x1F0
     f32 jumpVelStart;                   // 0x1F4
@@ -176,8 +176,10 @@ typedef struct PuniData {
     Vec moveTarget;                     // 0x204, destination of evt_puni_move_position (x and z; y keeps the start height)
     struct HitEntry* hitVel;            // 0x210, HitEntry from puniMoveAtari's first check, along vel
     struct HitEntry* hitDir;            // 0x214, HitEntry from puniMoveAtari's second check, from the start point
-    s32 effect;                         // 0x218
-    u8 unk21C[0x560 - 0x21C];           // 0x21C
+    struct EffectEntry* effect;         // 0x218
+    u8 unk21C[0x2AC - 0x21C];           // 0x21C
+    Vec field_0x2AC;                    // 0x2AC, puniModeHagure's fukidashi reads it as the position of a MarioWork at 0x220
+    u8 unk2B8[0x560 - 0x2B8];           // 0x2B8
     Vec hitNormal;                      // 0x560, surface normal of the last puniMoveAtari hit
     void (*modeFunc)(struct PuniData*); // 0x56C, PUNI_MODE_CUSTOM handler (puniModeCustom), set by the map RELs
     void (*moveFunc)(struct PuniData*); // 0x570, per-puni move callback (puniMoveCustom), set by the map RELs

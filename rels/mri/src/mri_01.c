@@ -1914,7 +1914,7 @@ void bossrobot_batu(CameraId cameraId, void* param) {
     PSMTXConcat(mtx1, mtx2, mtx1);
     animPosePeraOff(batu->poseId);
     animPoseSetMaterialFlagOn(batu->poseId, 0x40);
-    animPoseSetMaterialEvtColor(batu->poseId, (GXColor){ 0xFF, 0xFF, 0xFF, ((u8*)param)[0] });
+    animPoseSetMaterialEvtColor(batu->poseId, (GXColor){ 0xFF, 0xFF, 0xFF, *(u8*)param });
     switch (dispGetCurWork()->renderMode) {
         case 0:
             animPoseDrawMtx(batu->poseId, mtx1, 1, 0.0f, 2.0f);

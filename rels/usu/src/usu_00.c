@@ -42,6 +42,7 @@
 #include "mario/mario_pouch.h"
 #include "mario/mariost.h"
 #include "memory.h"
+#include "driver/msgdrv.h"
 #include "party.h"
 #include "pmario_sound.h"
 #include <dolphin/mtx.h>
@@ -404,11 +405,11 @@ USER_FUNC(party_tev) {
     return EVT_RETURN_DONE;
 }
 
-void kpa_stg5_009_7_cb(s32 type, void* param) {
-    u32 data = *(u32*)param;
+void kpa_stg5_009_7_cb(s32 type, smartEntry* smart) {
+    MessageData* data = smart->address;
     switch (type) {
     case 3:
-        if (*(u16*)(data + 8) == 1) {
+        if (data->choiceIndex == 1) {
             psndBGMOn(0x201, "BGM_FF_GET_ITEM1\0\0\0");
         }
         break;

@@ -16,9 +16,6 @@ __declspec(section ".sdata") GXColor unk_804232cc;
 __declspec(section ".sdata") GXColor unk_804232c8;
 
 
-// First object of this unit's .data (the float pair that used to end the previous unit's .data).
-extern u32 lbl_803A8AA0[2];
-
 extern s32 negone_one[];
 extern s32 one_negone[];
 
@@ -46,7 +43,7 @@ static u8 a_data[32] = {
 	0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFA, 0xC8, 0x00, 0x00,
 };
 
-// The vertex tables are reached through the one base pointer, the linker would drop the others.
+// No code references these float pairs; without this the linker would drop them.
 #pragma force_active on
 // TODO: type
 __declspec(section ".data") u32 lbl_803A8AA0[2] = {
@@ -436,7 +433,6 @@ void effSnowDustDisp(CameraId camId, void* param) {
 	EffectEntry* effect = param;
 	effSnowDustData* data;
 	CameraEntry* cam;
-	u8* base;
 	GXTexObj texObj;
 	Mtx mtx;
 	Mtx scaleMtx;
@@ -448,7 +444,6 @@ void effSnowDustDisp(CameraId camId, void* param) {
 	f32 f31;
 	f32 f;
 
-	base = (u8*)lbl_803A8AA0;
 	cam = camGetPtr(camId);
 	data = effect->userdata;
 	f31 = (data->alpha / 255.0f) * data->scale;
@@ -575,18 +570,18 @@ void effSnowDustDisp(CameraId camId, void* param) {
 		switch (type) {
 			case 0:
 			case 6:
-				effSetVtxDescN64((effVtxArray*)(base + 0x78));
+				effSetVtxDescN64((effVtxArray*)size4x4_tex64x64_vtx);
 				GXBegin(GX_TRIANGLES, GX_VTXFMT0, 6);
 				tri2(0, 1, 2, 0, 0, 2, 3, 0);
 				break;
 			case 1:
-				effSetVtxDescN64((effVtxArray*)(base + 0x40));
+				effSetVtxDescN64((effVtxArray*)size8x8_tex64x64_vtx);
 				GXBegin(GX_TRIANGLES, GX_VTXFMT0, 6);
 				tri2(0, 1, 2, 0, 0, 2, 3, 0);
 				break;
 			case 2:
 			case 3:
-				effSetVtxDescN64((effVtxArray*)(base + 0xb0));
+				effSetVtxDescN64((effVtxArray*)size12x12_tex64x64_vtx);
 				GXBegin(GX_TRIANGLES, GX_VTXFMT0, 6);
 				tri2(0, 1, 2, 0, 0, 2, 3, 0);
 				break;
@@ -610,7 +605,7 @@ void effSnowDustDisp(CameraId camId, void* param) {
 				GXSetTevColorIn(GX_TEVSTAGE2, GX_CC_KONST, GX_CC_ZERO, GX_CC_ZERO, GX_CC_CPREV);
 				GXSetTevAlphaIn(GX_TEVSTAGE2, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_APREV);
 				GXSetTevKColorSel(GX_TEVSTAGE2, GX_TEV_KCSEL_K0);
-				effSetVtxDescN64((effVtxArray*)(base + 0xe8));
+				effSetVtxDescN64((effVtxArray*)size16x16_tex64x64_vtx);
 				GXBegin(GX_TRIANGLES, GX_VTXFMT0, 6);
 				tri2(0, 1, 2, 0, 0, 2, 3, 0);
 				GXSetNumChans(1);
@@ -622,7 +617,7 @@ void effSnowDustDisp(CameraId camId, void* param) {
 				GXSetTevColorIn(GX_TEVSTAGE0, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ONE);
 				GXSetTevAlphaIn(GX_TEVSTAGE0, GX_CA_ZERO, GX_CA_RASA, GX_CA_KONST, GX_CA_ZERO);
 				GXSetTevKAlphaSel(GX_TEVSTAGE0, GX_TEV_KASEL_K0_A);
-				effSetVtxDescN64((effVtxArray*)(base + 0x120));
+				effSetVtxDescN64((effVtxArray*)size32x32_tex32x32_vtx);
 				GXBegin(GX_TRIANGLES, GX_VTXFMT0, 0xc);
 				tri2(0, 1, 4, 0, 1, 2, 4, 0);
 				tri2(0, 4, 3, 0, 4, 2, 3, 0);

@@ -1014,11 +1014,10 @@ void btlUnitPartsBlurDisp(CameraId camId, BattleUnitPart* parts) {
 		work = &blur->work[i];
 		color = work->base;
 		if (work->flags & 1) {
-			// blurColor is loaded unsigned in the original (lbz); the header's s8 is wrong.
-			color.r = color.r * (u8)(((u8*)work->blurColor)[0] * (10 - i) / 10 + ((u8*)work->blurColor)[4] * i / 10) / 0xff;
-			color.g = color.g * (u8)(((u8*)work->blurColor)[1] * (10 - i) / 10 + ((u8*)work->blurColor)[5] * i / 10) / 0xff;
-			color.b = color.b * (u8)(((u8*)work->blurColor)[2] * (10 - i) / 10 + ((u8*)work->blurColor)[6] * i / 10) / 0xff;
-			color.a = color.a * (u8)(((u8*)work->blurColor)[3] * (10 - i) / 10 + ((u8*)work->blurColor)[7] * i / 10) / 0xff;
+			color.r = color.r * (u8)(work->blurColor[0] * (10 - i) / 10 + work->blurColor[4] * i / 10) / 0xff;
+			color.g = color.g * (u8)(work->blurColor[1] * (10 - i) / 10 + work->blurColor[5] * i / 10) / 0xff;
+			color.b = color.b * (u8)(work->blurColor[2] * (10 - i) / 10 + work->blurColor[6] * i / 10) / 0xff;
+			color.a = color.a * (u8)(work->blurColor[3] * (10 - i) / 10 + work->blurColor[7] * i / 10) / 0xff;
 			if (color.a == 0) continue;
 			animPoseSetMaterialEvtColor(parts->poseId, color);
 			animPoseSetMaterialFlagOn(parts->poseId, 0x40);

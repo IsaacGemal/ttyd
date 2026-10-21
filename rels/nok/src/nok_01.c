@@ -1,4 +1,5 @@
 #include "nok_01.h"
+#include "driver/msgdrv.h"
 #include "driver/envdrv.h"
 #include "evt/evt_bero.h"
 #include "evt/evt_bg.h"
@@ -359,12 +360,10 @@ static u32 iri_17_item_tbl[2] = {
     0x00000062, 0xFFFFFFFF,
 };
 
-// iri_08_msg checks the message type and a u16 at offset 0x8 of the message data; that field is
-// the choiceIndex in MessageData in driver/msgdrv.h (msgMain uses it as a u16 counter).
-void iri_08_msg(s32 type, void* param) {
-    u32 data = *(u32*)param;
+void iri_08_msg(s32 type, smartEntry* smart) {
+    MessageData* data = smart->address;
 
-    if (type == 3 && *(u16*)(data + 8) == 9) {
+    if (type == 3 && data->choiceIndex == 9) {
         evtSetValue(NULL, 0xFAA2B580, 0);
     }
 }

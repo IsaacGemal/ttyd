@@ -256,9 +256,9 @@ static inline HitEntry* partyGroundHit(PartyEntry* party, HitCheckQuery* query, 
 }
 
 static inline f32 partyGroundSlope(PartyEntry* party, Vec n) {
-    *(f32*)(party->field_C4 + 0x00) = (f32)(s32)(angleABf(0.0f, 0.0f, 100.0f * n.z, 100.0f * n.y) - 180.0f);
-    *(f32*)(party->field_C4 + 0x04) = 0.0f;
-    *(f32*)(party->field_C4 + 0x08) = (f32)(s32)(angleABf(0.0f, 0.0f, 100.0f * n.x, 100.0f * n.y) - 180.0f);
+    party->field_C4.x = (f32)(s32)(angleABf(0.0f, 0.0f, 100.0f * n.z, 100.0f * n.y) - 180.0f);
+    party->field_C4.y = 0.0f;
+    party->field_C4.z = (f32)(s32)(angleABf(0.0f, 0.0f, 100.0f * n.x, 100.0f * n.y) - 180.0f);
     return angleABf(0.0f, 0.0f, sqrtf(n.x * n.x + n.z * n.z), -n.y);
 }
 
@@ -292,7 +292,7 @@ HitEntry* partySearchGround(PartyEntry* party, f32 up, f32 down) {
     if (party->flags & PARTY_FLAG_FORCE_FALL) {
         return NULL;
     }
-    *(Vec*)party->field_C4 = (Vec){0.0f, 0.0f, 0.0f};
+    party->field_C4 = (Vec){0.0f, 0.0f, 0.0f};
     party->groundSlope = 0.0f;
     off = __fabsf(up);
     off += 0.1f;
@@ -418,7 +418,7 @@ u32 partyChkFrontStep(PartyEntry* party, f32 a, f32* out1, f32* out2, f32* out3)
     f32 pz;
 
     a += 0.01f;
-    *(Vec*)party->field_C4 = (Vec){0.0f, 0.0f, 0.0f};
+    party->field_C4 = (Vec){0.0f, 0.0f, 0.0f};
     party->groundSlope = 0.0f;
     h = partyGetHeight(party);
     *out1 = party->position.y;

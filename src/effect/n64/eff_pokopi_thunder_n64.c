@@ -388,17 +388,17 @@ void effPokopiThunderDisp(CameraId camId, void* param) {
 	t1 = timer - 1;
 	if (type != 2) {
 		if (t1 < 11) {
-			tbl = (u8*)yuragi_data_table[type] + t1 * 0x18;
+			tbl = &yuragi_data_table[type][t1 * 0x18];
 		} else {
-			tbl = (u8*)yuragi_data_table[type] + 0xF0;
+			tbl = &yuragi_data_table[type][10 * 0x18];
 		}
 	} else {
 		if (t1 < 8) {
-			tbl = (u8*)yuragi_data_table[0] + t1 * 0x18;
+			tbl = &yuragi_data_table[0][t1 * 0x18];
 		} else if (t1 < 0x24) {
-			tbl = (u8*)yuragi_data_table[0] + (t1 % 6 + 2) * 0x18;
+			tbl = &yuragi_data_table[0][(t1 % 6 + 2) * 0x18];
 		} else {
-			tbl = (u8*)yuragi_data_table[0] + 0xF0;
+			tbl = &yuragi_data_table[0][10 * 0x18];
 		}
 	}
 

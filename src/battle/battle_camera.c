@@ -117,18 +117,18 @@ void battleCameraMain(void) {
     wp->cameraWork.unk84 = 0;
   }
 
-  cam->cameraPos.x = *(f32*)((f32*)&wp->cameraWork + 11);
-  cam->cameraPos.y = *(f32*)((f32*)&wp->cameraWork + 12);
-  cam->cameraPos.z = *(f32*)((f32*)&wp->cameraWork + 13);
-  cam->cameraAt.x = *(f32*)((f32*)&wp->cameraWork + 17);
-  cam->cameraAt.y = *(f32*)((f32*)&wp->cameraWork + 18);
-  cam->cameraAt.z = *(f32*)((f32*)&wp->cameraWork + 19);
-  *(f32*)((f32*)&wp->cameraWork + 14) = cam->cameraPos.x;
-  *(f32*)((f32*)&wp->cameraWork + 15) = cam->cameraPos.y;
-  *(f32*)((f32*)&wp->cameraWork + 16) = cam->cameraPos.z;
-  *(f32*)((f32*)&wp->cameraWork + 20) = cam->cameraAt.x;
-  *(f32*)((f32*)&wp->cameraWork + 21) = cam->cameraAt.y;
-  *(f32*)((f32*)&wp->cameraWork + 22) = cam->cameraAt.z;
+  cam->cameraPos.x = wp->cameraWork.field_0x2C.x;
+  cam->cameraPos.y = wp->cameraWork.field_0x2C.y;
+  cam->cameraPos.z = wp->cameraWork.field_0x2C.z;
+  cam->cameraAt.x = wp->cameraWork.field_0x44.x;
+  cam->cameraAt.y = wp->cameraWork.field_0x44.y;
+  cam->cameraAt.z = wp->cameraWork.field_0x44.z;
+  wp->cameraWork.field_0x38.x = cam->cameraPos.x;
+  wp->cameraWork.field_0x38.y = cam->cameraPos.y;
+  wp->cameraWork.field_0x38.z = cam->cameraPos.z;
+  wp->cameraWork.field_0x50.x = cam->cameraAt.x;
+  wp->cameraWork.field_0x50.y = cam->cameraAt.y;
+  wp->cameraWork.field_0x50.z = cam->cameraAt.z;
 
   switch (wp->cameraWork.mode) {
   case 0:
@@ -612,42 +612,42 @@ void battleCameraMain(void) {
     cam->cameraPos.z = 1000.0f;
   }
   if (wp->cameraWork.flags & 4) {
-    cam->cameraPos.x = *(f32*)((f32*)&wp->cameraWork + 14);
-    cam->cameraAt.x = *(f32*)((f32*)&wp->cameraWork + 20);
+    cam->cameraPos.x = wp->cameraWork.field_0x38.x;
+    cam->cameraAt.x = wp->cameraWork.field_0x50.x;
     o1 = 0.0f;
     o4 = 0.0f;
   }
   if (wp->cameraWork.flags & 8) {
-    cam->cameraPos.y = *(f32*)((f32*)&wp->cameraWork + 15);
-    cam->cameraAt.y = *(f32*)((f32*)&wp->cameraWork + 21);
+    cam->cameraPos.y = wp->cameraWork.field_0x38.y;
+    cam->cameraAt.y = wp->cameraWork.field_0x50.y;
     o2 = 0.0f;
     o5 = 0.0f;
   }
   if (wp->cameraWork.flags & 0x10) {
-    cam->cameraPos.z = *(f32*)((f32*)&wp->cameraWork + 16);
-    cam->cameraAt.z = *(f32*)((f32*)&wp->cameraWork + 22);
+    cam->cameraPos.z = wp->cameraWork.field_0x38.z;
+    cam->cameraAt.z = wp->cameraWork.field_0x50.z;
     o3 = 0.0f;
     o6 = 0.0f;
   }
-  *(f32*)((f32*)&wp->cameraWork + 11) = cam->cameraPos.x;
-  *(f32*)((f32*)&wp->cameraWork + 12) = cam->cameraPos.y;
-  *(f32*)((f32*)&wp->cameraWork + 13) = cam->cameraPos.z;
-  *(f32*)((f32*)&wp->cameraWork + 17) = cam->cameraAt.x;
-  *(f32*)((f32*)&wp->cameraWork + 18) = cam->cameraAt.y;
-  *(f32*)((f32*)&wp->cameraWork + 19) = cam->cameraAt.z;
+  wp->cameraWork.field_0x2C.x = cam->cameraPos.x;
+  wp->cameraWork.field_0x2C.y = cam->cameraPos.y;
+  wp->cameraWork.field_0x2C.z = cam->cameraPos.z;
+  wp->cameraWork.field_0x44.x = cam->cameraAt.x;
+  wp->cameraWork.field_0x44.y = cam->cameraAt.y;
+  wp->cameraWork.field_0x44.z = cam->cameraAt.z;
   {
     Vec tmp = vec3_802efc4c;
     tmp.x = o1;
     tmp.y = o2;
     tmp.z = o3;
-    *(Vec*)((f32*)&wp->cameraWork + 26) = tmp;
+    wp->cameraWork.unk68 = tmp;
   }
   {
     Vec tmp2 = vec3_802efc58;
     tmp2.x = o4;
     tmp2.y = o5;
     tmp2.z = o6;
-    *(Vec*)((f32*)&wp->cameraWork + 29) = tmp2;
+    wp->cameraWork.field_0x74 = tmp2;
   }
   if (!(wp->cameraWork.flags & 1) && !(wp->cameraWork.flags & 2)) {
     padRumbleOff(0);

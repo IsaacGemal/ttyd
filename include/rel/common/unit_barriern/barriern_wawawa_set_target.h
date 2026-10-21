@@ -43,23 +43,23 @@ static USER_FUNC(barriern_wawawa_set_target) {
 }
 
 static void barriern_wawawa_get_target(s32* out1, s32* out2) {
-    u8* sampling = (u8*)&_battleWorkPointer->sampling;
-    u8* entry = sampling + (s8)sampling[0xa6d + (s8)sampling[0xab7]] * 0x24 + 4;
+    BattleSampling* sampling = &_battleWorkPointer->sampling;
+    BattleSamplingEntry* entry = &sampling->entries[sampling->order[sampling->selectIdx]];
 
-    *out1 = *(s16*)(entry + 0);
-    *out2 = *(s16*)(entry + 2);
+    *out1 = entry->unitId;
+    *out2 = entry->partId;
 }
 
 static void barriern_wawawa_get_next_target(s32* out1, s32* out2) {
-    u8* sampling = (u8*)&_battleWorkPointer->sampling;
+    BattleSampling* sampling = &_battleWorkPointer->sampling;
     s32 idx;
 
-    sampling[0xab7]++;
-    idx = (s8)sampling[0xab7];
-    if (idx < (s8)sampling[0xa6c]) {
-        u8* entry = sampling + (s8)sampling[0xa6d + idx] * 0x24 + 4;
-        *out1 = *(s16*)(entry + 0);
-        *out2 = *(s16*)(entry + 2);
+    sampling->selectIdx++;
+    idx = sampling->selectIdx;
+    if (idx < sampling->count) {
+        BattleSamplingEntry* entry = &sampling->entries[sampling->order[idx]];
+        *out1 = entry->unitId;
+        *out2 = entry->partId;
     } else {
         *out1 = -1;
         *out2 = 0;

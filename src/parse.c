@@ -1,4 +1,5 @@
 #include "parse.h"
+#include <dolphin/mtx.h>
 #include <string.h>
 #include <stdio.h>
 
@@ -138,9 +139,9 @@ BOOL parseGet1Next(s32 type, void* data) {
 	switch (type) {
 	case 3:
 		// Three-component (x, y, z) value: parse each part as a float.
-		result *= parseGet1Next(2, data);
-		result *= parseGet1Next(2, (s8*)data + 4);
-		result *= parseGet1Next(2, (s8*)data + 8);
+		result *= parseGet1Next(2, &((Vec*)data)->x);
+		result *= parseGet1Next(2, &((Vec*)data)->y);
+		result *= parseGet1Next(2, &((Vec*)data)->z);
 		return result;
 	default: {
 		p = &((s32*)&parse.field_0x4)[parse.field_0x54];

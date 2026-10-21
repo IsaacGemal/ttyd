@@ -61,7 +61,7 @@ static inline void rubStick(MarioWork* p, f32* outAngle, f32* outMag) {
         *outMag = p->baseSpeed;
         return;
     }
-    x = *(s8*)&p->wStickDir1;
+    x = p->wStickDir1;
     invert = 0;
     if ((p->flags & 0x02000000) || kpaGetStageViewType() == 0) {
         invert = 1;
@@ -477,7 +477,7 @@ void marioGetStick(f32* outAngle, f32* outMag) {
         *outMag = p->baseSpeed;
         return;
     }
-    x = *(s8*)&p->wStickDir1;
+    x = p->wStickDir1;
     invert = 0;
     if ((p->flags & 0x02000000) || kpaGetStageViewType() == 0) {
         invert = 1;
@@ -523,13 +523,10 @@ void marioGetStick(f32* outAngle, f32* outMag) {
 s32 N_marioGetMovementSpeed(void) {
     MarioWork* p = marioGetPtr();
 
-    // wStickDir1/2 are declared u8 in mario.h, but the original sign-extends them (`extsb`),
-    // so they are really s8. The signed lvalue is needed for mwcc to keep the raw byte in a
-    // register and extend it at each use.
-    if (*(s8*)&p->wStickDir1 == 0 && *(s8*)&p->wStickDir2 == 0) {
+    if (p->wStickDir1 == 0 && p->wStickDir2 == 0) {
         return 0;
     }
-    if (*(s8*)&p->wStickDir1 * *(s8*)&p->wStickDir1 + *(s8*)&p->wStickDir2 * *(s8*)&p->wStickDir2 > 0xBD1) {
+    if (p->wStickDir1 * p->wStickDir1 + p->wStickDir2 * p->wStickDir2 > 0xBD1) {
         return 2;
     }
     return 1;

@@ -215,14 +215,19 @@ typedef struct GaugeTableEntry {
 	s32 unk8;      // 0x8
 } GaugeTableEntry;
 
+extern GaugeTableEntry _table_0[5];
+extern GaugeTableEntry _table_1[5];
+extern GaugeTableEntry _table_2[5];
+extern GaugeTableEntry _table_3[5];
+extern GaugeTableEntry _table_4[5];
+extern GaugeTableEntry _table_5[5];
+extern GaugeTableEntry _table_6[5];
+
 
 // The work area is reached through BattleActions.field_0x2BC so MWCC materialises it in its own register.
 f32 _GetGaugeDecValue(void) {
 	// `ac` + field_0x2BC keeps the work area in its own base register (r6) instead of
-	// folding it into the BattleWork base (see ac_monosiri_target.c). Declaring base first, before `ac`,
-	// is also needed: it leaves the loaded work pointer in r3 and lets the `lis` colour base into r4,
-	// as the original does.
-	u8* base = lbl_803ABCE0;
+	// folding it into the BattleWork base (see ac_monosiri_target.c).
 	BattleActions* ac = &_battleWorkPointer->actionCommands;
 	AirGaugeDecWork* dec = (AirGaugeDecWork*)&ac->field_0x2BC[0];
 	s32 type;
@@ -233,32 +238,32 @@ f32 _GetGaugeDecValue(void) {
 	switch (type) {
 	case 0:
 		max = 0.3f;
-		table = (GaugeTableEntry*)(base + 0x40);
+		table = _table_0;
 		break;
 	case 1:
 		max = 0.33f;
-		table = (GaugeTableEntry*)(base + 0x7C);
+		table = _table_1;
 		break;
 	case 2:
 		max = 0.36f;
-		table = (GaugeTableEntry*)(base + 0xB8);
+		table = _table_2;
 		break;
 	case 3:
 		max = 0.4f;
-		table = (GaugeTableEntry*)(base + 0xF4);
+		table = _table_3;
 		break;
 	case 4:
 		max = 0.44f;
-		table = (GaugeTableEntry*)(base + 0x130);
+		table = _table_4;
 		break;
 	case 5:
 		max = 0.47f;
-		table = (GaugeTableEntry*)(base + 0x16C);
+		table = _table_5;
 		break;
 	case 6:
 	default:
 		// table before max: with max first MWCC emits `lfs` before `addi` here, unlike every other case.
-		table = (GaugeTableEntry*)(base + 0x1A8);
+		table = _table_6;
 		max = 0.5f;
 		break;
 	}
@@ -377,10 +382,10 @@ static void actionCommandDisp(f32 f1, f32 f2) {
 }
 #pragma dont_inline reset
 
-// .data: float pairs and gauge tables. The gauge tables are reached from lbl_803ABCE0 (defined in
-// nameent.c) + 0x40, so this block's layout (7 pairs, then 7 tables of 5 records) is load-bearing.
+// .data: float pairs and gauge tables. _GetGaugeDecValue addresses the gauge tables off this section's base
+// (lbl_803ABCE0 + 0x40...), so this block's layout (7 pairs, then 7 tables of 5 records) is load-bearing.
 // -sdata 48 would move these 8-byte objects to .sdata; the original has them in .data.
-// The tables are reached through lbl_803ABCE0 (nameent.c) + offsets, so the linker would drop the unreferenced ones.
+// force_active: nothing reads the float pairs, so the linker would drop them.
 #pragma force_active on
 __declspec(section ".data") f32 negone_one_374[2] = {-1.0f, 1.0f};
 __declspec(section ".data") f32 lbl_803ABCF0[2] = {1.0f, -1.0f};

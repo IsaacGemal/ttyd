@@ -353,10 +353,10 @@ static void _ac_disp_init(BattleWork* work) {
     disp->iconY = 0.0f;
     disp->counter = 0x14;
     disp->field_0xC = dat_8041e4a8;
-    disp->field_0x10[0] = 0;
-    *(s8*)&disp->field_0x10[1] = -0x10;
-    *(s8*)&disp->field_0x10[2] = -0x10;
-    disp->field_0x10[3] = 0;
+    disp->field_0x10 = 0;
+    disp->dg = -0x10;
+    disp->db = -0x10;
+    disp->field_0x13 = 0;
     disp->value = 0.0f;
 }
 #pragma dont_inline reset
@@ -407,17 +407,16 @@ static void actionCommandDisp(f32 x, f32 y) {
 
     if (disp->value >= 1.0f) {
         u8* col = (u8*)&disp->field_0xC;
-        s8* dir = (s8*)disp->field_0x10;
 
-        col[1] += dir[1];
-        col[2] += dir[2];
-        if (col[1] <= 0x80 && (s8)dir[1] < 0) {
-            dir[2] = 0x10;
-            dir[1] = 0x10;
+        col[1] += disp->dg;
+        col[2] += disp->db;
+        if (col[1] <= 0x80 && disp->dg < 0) {
+            disp->db = 0x10;
+            disp->dg = 0x10;
         }
-        if (col[1] >= 0xF5 && (s8)dir[1] > 0) {
-            dir[2] = -0x10;
-            dir[1] = -0x10;
+        if (col[1] >= 0xF5 && disp->dg > 0) {
+            disp->db = -0x10;
+            disp->dg = -0x10;
         }
     }
 
