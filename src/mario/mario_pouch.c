@@ -572,9 +572,7 @@ int comp_kind(const void* a, const void* b) {
 	return 0;
 }
 
-// NONMATCHING (90.24%): same as comp_aiueo (its callee-saved registers now match too); the
-// remaining diff is the same callee-save store placement and id_b load slot (8 instructions), and the
-// same experiments above did not move it.
+// comp_aiueo with the strcmp operands swapped; the same `const` first parameter gives its prologue.
 s32 comp_aiueo_r(const s16* a, s16* b) {
 	u16 buf_a[64];
 	u16 buf_b[64];
