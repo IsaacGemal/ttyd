@@ -53,7 +53,7 @@ USER_FUNC(evt_yuuminigame_main_func) {
     }
     if (work->childEvent != NULL) {
         if (evtCheckID(work->childEvent->eventId)) {
-            goto disp;
+            goto disp; // a running child event skips main(); a structured form repeats the call or the test
         }
         work->childEvent = NULL;
     }

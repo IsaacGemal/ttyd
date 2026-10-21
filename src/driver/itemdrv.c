@@ -1152,6 +1152,7 @@ void itemseq_GetItem(ItemEntry* item) {
         mario->baseSpeed = 0.0f;
         mario->field_0x18C = 0.0f;
         id = item->itemId;
+        // goto: as one || condition (or a switch) MWCC merges these id tests into range checks
         if (id == ITEM_SUPER_BOOTS) {
             goto itemseq_setFlag;
         }
@@ -1166,8 +1167,7 @@ void itemseq_GetItem(ItemEntry* item) {
         }
     itemseq_setFlag:
         item->status |= 0x2000;
-        goto state1;
-
+        // fallthrough
     case 1:
     state1:
         if (!(((item->flags & 0x1000) && !(item->flags & 0x4000)) || marioChkItemGetMotion())) {

@@ -431,26 +431,24 @@ USER_FUNC(irai_cancel_func) {
         swByteSet(i + EVTDAT_GSW_BASE, 0);
     }
     items = irai_item_table[val];
-load:
-    item = *items;
-    if ((s32)item == -1) {
-        goto end;
-    }
-loop:
+    for (;;) {
+        item = *items;
+        if ((s32)item == -1) {
+            break;
+        }
+        for (;;) {
 #ifdef MUST_MATCH
-    // Redundant self-cast: makes MWCC reuse item's callee-saved register for the
-    // u32 conversion at the pouchCheckItem call instead of emitting a copy.
-    item = (ItemType)item;
+            // Redundant self-cast: makes MWCC reuse item's callee-saved register for the
+            // u32 conversion at the pouchCheckItem call instead of emitting a copy.
+            item = (ItemType)item;
 #endif
-    if ((s32)pouchCheckItem(item) <= 0) {
-        goto next;
+            if ((s32)pouchCheckItem(item) <= 0) {
+                break;
+            }
+            pouchRemoveItem(item);
+        }
+        items++;
     }
-    pouchRemoveItem(item);
-    goto loop;
-next:
-    items++;
-    goto load;
-end:;
     return EVT_RETURN_DONE;
 }
 

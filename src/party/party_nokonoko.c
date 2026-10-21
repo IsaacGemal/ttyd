@@ -437,6 +437,7 @@ void nokonoko_use(PartyEntry* party) {
         }
         if (!(party->flags & PARTY_FLAG_IS_EVT_USE)) {
             u16 mot = *(u16*)&mario->currMotionId;
+            // goto: as one || condition MWCC merges the 0x18/0x19 tests into a range check
             if (mot == 0x19) { goto L_800CC4E8; }
             if (mot == 0x14) { goto L_800CC4E8; }
             if (mot == 0x18) { goto L_800CC4E8; }

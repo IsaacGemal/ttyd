@@ -179,14 +179,6 @@ s32 winMarioMain(WindowWork* work) {
 
     switch (work->marioState) {
     case 0:
-        if (work->buttonTrg & 0x100) {
-            if (work->marioLinkIdx == 0xc) {
-                work->marioState = 1;
-                work->superActionSel = 0;
-                psndSFXOn((const char*)0x20012);
-            }
-            goto tail;
-        }
 #ifdef MUST_MATCH
         // Match shape: the early name must land in the tail pointer's register
         // (r30, `d2`); the plain `anim` form under #else scores 99.90%.
@@ -194,7 +186,37 @@ s32 winMarioMain(WindowWork* work) {
 #else
 #define SET_ANIM(s) (anim = (s))
 #endif
-        if (work->buttonTrg & 0x200) {
+
+#define MARIO_TRAVERSE(off)                                                                          \
+    do {                                                                                             \
+        d = &linkDt[work->marioLinkIdx];                                                             \
+        work->marioLinkIdx = d->next[off];                                                           \
+        d = &linkDt[work->marioLinkIdx];                                                             \
+        while (1) {                                                                                  \
+            if (work->marioLinkIdx == 0xb || work->marioLinkIdx == 0xc) {                            \
+                if (work->superActionCount != 0) {                                                   \
+                    break;                                                                           \
+                }                                                                                    \
+            } else {                                                                                 \
+                if (d->reqItem == 0) {                                                               \
+                    break;                                                                           \
+                }                                                                                    \
+                if ((s32)pouchCheckItem(d->reqItem) != 0) {                                          \
+                    break;                                                                           \
+                }                                                                                    \
+            }                                                                                        \
+            work->marioLinkIdx = d->next[off];                                                       \
+            d = &linkDt[work->marioLinkIdx];                                                         \
+        }                                                                                            \
+    } while (0)
+
+        if (work->buttonTrg & 0x100) {
+            if (work->marioLinkIdx == 0xc) {
+                work->marioState = 1;
+                work->superActionSel = 0;
+                psndSFXOn((const char*)0x20012);
+            }
+        } else if (work->buttonTrg & 0x200) {
             psndSFXOn((const char*)0x20013);
             if (work->flags & 0x2000) {
                 if (strcmp(str_8041D580, str_8041D580) == 0) {
@@ -238,57 +260,24 @@ s32 winMarioMain(WindowWork* work) {
 #endif
 #undef SET_ANIM
             return -1;
-        }
-        if (work->buttonTrg & 0x1000) {
+        } else if (work->buttonTrg & 0x1000) {
             return -2;
-        }
-
-#define MARIO_TRAVERSE(off)                                                                          \
-    do {                                                                                             \
-        d = &linkDt[work->marioLinkIdx];                                                             \
-        work->marioLinkIdx = d->next[off];                                                           \
-        d = &linkDt[work->marioLinkIdx];                                                             \
-        while (1) {                                                                                  \
-            if (work->marioLinkIdx == 0xb || work->marioLinkIdx == 0xc) {                            \
-                if (work->superActionCount != 0) {                                                   \
-                    break;                                                                           \
-                }                                                                                    \
-            } else {                                                                                 \
-                if (d->reqItem == 0) {                                                               \
-                    break;                                                                           \
-                }                                                                                    \
-                if ((s32)pouchCheckItem(d->reqItem) != 0) {                                          \
-                    break;                                                                           \
-                }                                                                                    \
-            }                                                                                        \
-            work->marioLinkIdx = d->next[off];                                                       \
-            d = &linkDt[work->marioLinkIdx];                                                         \
-        }                                                                                            \
-    } while (0)
-
-        if (work->dirRep & 0x1000) {
+        } else if (work->dirRep & 0x1000) {
             MARIO_TRAVERSE(0);
             psndSFXOn((const char*)0x20005);
-            goto tail;
-        }
-        if (work->dirRep & 0x2000) {
+        } else if (work->dirRep & 0x2000) {
             MARIO_TRAVERSE(1);
             psndSFXOn((const char*)0x20005);
-            goto tail;
-        }
-        if (work->dirRep & 0x4000) {
+        } else if (work->dirRep & 0x4000) {
             MARIO_TRAVERSE(2);
             psndSFXOn((const char*)0x20005);
-            goto tail;
-        }
-        if (work->dirRep & 0x8000) {
+        } else if (work->dirRep & 0x8000) {
             MARIO_TRAVERSE(3);
             psndSFXOn((const char*)0x20005);
         }
 
 #undef MARIO_TRAVERSE
 
-    tail:
         d2 = &linkDt[work->marioLinkIdx];
         work->targetX = (f32)d2->targetX;
         work->targetY = (f32)d2->targetY;

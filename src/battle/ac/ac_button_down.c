@@ -186,7 +186,7 @@ s32 battleAcMain_ButtonDown(BattleWork* work) {
                                 if (i + 1 < work->actionCommands.acParams[2]) {
                                     allDone = 0;
                                 }
-                                goto check;
+                                break;
                             }
                         } else {
                             if (BattlePadGetTrigger() != 0) {
@@ -198,17 +198,16 @@ s32 battleAcMain_ButtonDown(BattleWork* work) {
                                     work->actionCommands.result |= 2;
                                     work->actionCommands.result &= ~1;
                                     work->actionCommands.mAcState = 1001;
-                                    goto check;
+                                    break;
                                 }
                                 return 1;
                             }
                             allDone = 0;
                             if (work->actionCommands.acParams[1] == 1) {
-                                goto check;
+                                break;
                             }
                         }
                     }
-                check:
                     if (bd->prevOutput != work->actionCommands.outputParams[0]) {
                         psndSFXOn(sfx);
                         bd->prevOutput = work->actionCommands.outputParams[0];

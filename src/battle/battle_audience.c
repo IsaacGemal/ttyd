@@ -1816,6 +1816,7 @@ void BattleAudienceItemCtrlProcess(void) {
 		}
 		member = BattleAudienceGetPtr(item->memberId);
 		kind = &audience_kind[(s32)member->type];
+		// goto: the remove and deactivate tails inside the switch are shared by these exits and case 7
 		if (member->status == 0xd || member->status == 0x13 || member->status == 0x15 || member->status == 0xc) {
 			goto deactivate;
 		}

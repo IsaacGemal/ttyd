@@ -234,33 +234,15 @@ s32 battleAcMain_GaugeTiming(BattleWork* work) {
                     break;
                 }
 #ifdef MUST_MATCH
-            } else {
-                // The natural `A && B` (see the #else form) emits a single `beq skip`.  The original
-                // tests `acFlag & 2` twice, positive then negative, so MWCC emits the first as a
-                // `bne` to the fallthrough label and the second as the `beq` skip.
-                if (work->actionCommands.acFlag & 2) {
-                    goto gaugeCheck1;
-                }
-                if (!(work->actionCommands.acFlag & 2)) {
-                    goto gaugeSkip1;
-                }
-            gaugeCheck1:
-                if ((s32)dec->gauge <= 0) {
-                    dec->laps++;
-                    dec->gauge = 0.0f;
-                    dec->inZone = 0;
-                    if (work->actionCommands.acFlag & 2) {
-                        dec->flashTimer = 0xF;
-                    } else {
-                        dec->flashTimer = 0x1E;
-                    }
-                    break;
-                }
-            }
-        gaugeSkip1:
+            // The natural `A && B` (the #else form) emits a single `beq skip`. The original tests
+            // `acFlag & 2` twice, so MWCC emits the first as a `bne` past the second and the second
+            // as the `beq` skip.
+            } else if (((work->actionCommands.acFlag & 2) || (work->actionCommands.acFlag & 2)) &&
+                       ((s32)dec->gauge <= 0)) {
 #else
             } else if ((work->actionCommands.acFlag & 2) &&
                        ((s32)dec->gauge <= 0)) {
+#endif
                 dec->laps++;
                 dec->gauge = 0.0f;
                 dec->inZone = 0;
@@ -271,7 +253,6 @@ s32 battleAcMain_GaugeTiming(BattleWork* work) {
                 }
                 break;
             }
-#endif
             if (dec->gauge >= (f32)work->actionCommands.acParams[3]) {
                 dec->inZone = 1;
             } else {
@@ -296,28 +277,12 @@ s32 battleAcMain_GaugeTiming(BattleWork* work) {
             if (work->actionCommands.acFlag & 1) {
                 s32 v = (s32)dec->gauge;
 #ifdef MUST_MATCH
-                // Same double-test trick as gaugeCheck1 above.
-                if (work->actionCommands.acFlag & 2) {
-                    goto gaugeCheck2;
-                }
-                if (!(work->actionCommands.acFlag & 2)) {
-                    goto gaugeMod2;
-                }
-            gaugeCheck2:
-                if (v / 100 > dec->laps) {
-                    dec->laps = v / 100;
-                    dec->gauge = 0.0f;
-                    dec->inZone = 0;
-                    if (work->actionCommands.acFlag & 2) {
-                        dec->flashTimer = 0xF;
-                    } else {
-                        dec->flashTimer = 0x1E;
-                    }
-                    break;
-                }
-            gaugeMod2:
+                // The same doubled `acFlag & 2` test as above.
+                if (((work->actionCommands.acFlag & 2) || (work->actionCommands.acFlag & 2)) &&
+                    (v / 100 > dec->laps)) {
 #else
                 if ((work->actionCommands.acFlag & 2) && (v / 100 > dec->laps)) {
+#endif
                     dec->laps = v / 100;
                     dec->gauge = 0.0f;
                     dec->inZone = 0;
@@ -328,7 +293,6 @@ s32 battleAcMain_GaugeTiming(BattleWork* work) {
                     }
                     break;
                 }
-#endif
                 v %= 100;
                 dec->gauge = (f32)v;
             }

@@ -1128,7 +1128,6 @@ void mot_roll(void) {
     }
     }
 
-vel_apply:
     ((MotRoll*)marioGetPtr()->motStruct)->velX = f29;
     ((MotRoll*)marioGetPtr()->motStruct)->velY = f28;
     f31 = -f28;
@@ -1190,94 +1189,91 @@ vel_apply:
         mario->dispRot.z = revise360(t * ((r == 1) ? -1.0f : 1.0f) + mario->dispRot.z);
     }
 
-    if (mario->forceMoveTimer != 0) {
-        goto roll_tail;
-    }
-    i = 0;
-    {
-        MarioWork* m = marioGetPtr();
-        if ((m->flags & 0x01000000) && (m->rollFlags & 0x100)) {
-            i = 1;
+    if (mario->forceMoveTimer == 0) {
+        i = 0;
+        {
+            MarioWork* m = marioGetPtr();
+            if ((m->flags & 0x01000000) && (m->rollFlags & 0x100)) {
+                i = 1;
+            }
         }
-    }
-    if (i != 0 || !speed) {
-        goto roll_tail;
-    }
+        if (i == 0 && speed) {
 
-    f28 = mario->moveDir;
-    m3 = marioGetPtr();
-    if (rollDispAngleInRange(f28, f30, 135.0f) == 1) {
-        f28 = revise360(180.0f + f28);
-    }
-    {
-        s32 flg;
+            f28 = mario->moveDir;
+            m3 = marioGetPtr();
+            if (rollDispAngleInRange(f28, f30, 135.0f) == 1) {
+                f28 = revise360(180.0f + f28);
+            }
+            {
+                s32 flg;
 
 #ifdef MUST_MATCH
-        /* Same schedule fix as marioSetRollDispDir: the volatile targetYaw load keeps the
-           angle*10 multiply in f0 and the targetYaw*10 in f1, as the original does. */
-        {
-            f32 a10 = (f32)(s32)(10.0f * f28) / 10.0f;
-            f32 t10 = (f32)(s32)(10.0f * *(volatile f32*)&m3->targetYaw) / 10.0f;
+                /* Same schedule fix as marioSetRollDispDir: the volatile targetYaw load keeps the
+                   angle*10 multiply in f0 and the targetYaw*10 in f1, as the original does. */
+                {
+                    f32 a10 = (f32)(s32)(10.0f * f28) / 10.0f;
+                    f32 t10 = (f32)(s32)(10.0f * *(volatile f32*)&m3->targetYaw) / 10.0f;
 
-            if (revise360(a10 - t10) < 180.0f) {
-                flg = 0;
-            } else {
-                flg = 1;
-            }
-        }
+                    if (revise360(a10 - t10) < 180.0f) {
+                        flg = 0;
+                    } else {
+                        flg = 1;
+                    }
+                }
 #else
-        if (revise360((f32)(s32)(10.0f * f28) / 10.0f -
-                      (f32)(s32)(10.0f * m3->targetYaw) / 10.0f) < 180.0f) {
-            flg = 0;
-        } else {
-            flg = 1;
-        }
+                if (revise360((f32)(s32)(10.0f * f28) / 10.0f -
+                              (f32)(s32)(10.0f * m3->targetYaw) / 10.0f) < 180.0f) {
+                    flg = 0;
+                } else {
+                    flg = 1;
+                }
 #endif
-        if (flg == 0) {
-            if (fabsf(f28 - f30) > 90.0f && f30 > f28) {
-                f28 += 360.0f;
+                if (flg == 0) {
+                    if (fabsf(f28 - f30) > 90.0f && f30 > f28) {
+                        f28 += 360.0f;
+                    }
+                } else {
+                    if (fabsf(f28 - f30) > 90.0f && f30 < f28) {
+                        f30 += 360.0f;
+                    }
+                }
             }
-        } else {
-            if (fabsf(f28 - f30) > 90.0f && f30 < f28) {
-                f30 += 360.0f;
+            if (rollDispAngleInRange(f28, f30, 90.0f) == 0) {
+                if (fabsf(f28 - f30) > 180.0f) {
+                    if (f28 > f30) {
+                        f28 -= 360.0f;
+                    } else {
+                        f30 -= 360.0f;
+                    }
+                }
             }
+            f28 = 1.2f * (f30 - f28) + f28;
+            f28 = revise360(f28);
+            f30 = toMovedir(mario->unk1A8);
+            if (mario->dispHalfTurn != 0) {
+                f30 = revise360(180.0f + f30);
+            }
+            if (rollDispAngleInRange(f28, f30, 135.0f) == 1) {
+                mario->dispHalfTurn = (mario->dispHalfTurn + 1) & 1;
+            }
+            f27 = 270.0f + mario->targetYaw - f28;
+            f27 = f27 + ((mario->dispHalfTurn != 0) ? -180.0f : 0.0f);
+            mario->unk1A8 = revise360(f27);
+            if (mario->unk1A8 >= 200.0f) {
+                f27 = 270.0f + mario->targetYaw - f28;
+                f27 = f27 + ((mario->dispHalfTurn != 0) ? -180.0f : 0.0f);
+                mario->unk1A8 = revise360(f27);
+            }
+            if (mario->unk1A8 < 170.0f) {
+                f27 = 270.0f + mario->targetYaw - f28;
+                f27 = f27 + ((mario->dispHalfTurn != 0) ? -180.0f : 0.0f);
+                mario->unk1A8 = revise360(f27);
+            }
+            mario->directionView = f28;
+            mario->moveDir = f28;
         }
     }
-    if (rollDispAngleInRange(f28, f30, 90.0f) == 0) {
-        if (fabsf(f28 - f30) > 180.0f) {
-            if (f28 > f30) {
-                f28 -= 360.0f;
-            } else {
-                f30 -= 360.0f;
-            }
-        }
-    }
-    f28 = 1.2f * (f30 - f28) + f28;
-    f28 = revise360(f28);
-    f30 = toMovedir(mario->unk1A8);
-    if (mario->dispHalfTurn != 0) {
-        f30 = revise360(180.0f + f30);
-    }
-    if (rollDispAngleInRange(f28, f30, 135.0f) == 1) {
-        mario->dispHalfTurn = (mario->dispHalfTurn + 1) & 1;
-    }
-    f27 = 270.0f + mario->targetYaw - f28;
-    f27 = f27 + ((mario->dispHalfTurn != 0) ? -180.0f : 0.0f);
-    mario->unk1A8 = revise360(f27);
-    if (mario->unk1A8 >= 200.0f) {
-        f27 = 270.0f + mario->targetYaw - f28;
-        f27 = f27 + ((mario->dispHalfTurn != 0) ? -180.0f : 0.0f);
-        mario->unk1A8 = revise360(f27);
-    }
-    if (mario->unk1A8 < 170.0f) {
-        f27 = 270.0f + mario->targetYaw - f28;
-        f27 = f27 + ((mario->dispHalfTurn != 0) ? -180.0f : 0.0f);
-        mario->unk1A8 = revise360(f27);
-    }
-    mario->directionView = f28;
-    mario->moveDir = f28;
 
-roll_tail:
     if (mario->slopeTiltZ != 0.0f) {
         mario->dispRot.x =
             revise360(-mario->slopeTiltZ *

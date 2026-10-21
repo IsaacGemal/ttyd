@@ -1200,7 +1200,7 @@ BOOL collisionCurve(s32 mode, CollisionCurveData* data, Vec p, CollisionCurveHit
             if (__fabsf(dx) > __fabsf(dz)) {
                 tl = (qx - sx) / dx;
                 if (tl < -0.0000001) {
-                    goto L_CE48;
+                    goto L_CE48; // a dead compare the original keeps; with an empty body MWCC drops it
                 }
                 // dead like the compare above; it pools the double the original has at +0x70
                 if (tl > 1.0000001) {

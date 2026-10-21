@@ -193,7 +193,7 @@ static inline void opukuWgunColor2(u8 r, u8 g, u8 b) {
 // colours are built inside the inline (the eff_opuku_wprotect pattern) so each colour local and its by-value
 // copy land in retail's stack slots (temp/arg 0x1c/0x20 and 0x14/0x18); returning the GXColor and calling
 // outside packed them differently. The f32->s16 temporaries land 4 apart (OSFastCast.h's temp is an f32).
-// The dispatch's redundant `beq` is restored by the MUST_MATCH goto pair below. The triangle loop reuses
+// The dispatch's redundant `beq` is restored by the MUST_MATCH doubled test below. The triangle loop reuses
 // `j` as its counter with `vert = j * 2` in the body: MWCC strength-reduces that multiply to an induction
 // variable initialised as `mr r23, r24` (not `li r23,0`), which is what puts the preheader in retail's
 // order `li r24,0; subi r22; mr r23,r24`.
@@ -245,23 +245,13 @@ void effOpukuWgunDisp(CameraId camId, void* param) {
 #ifdef MUST_MATCH
 		// The original lowers the dispatch as two conditional branches from one compare (`beq` to
 		// the case-0 body sitting immediately after, `bne` to the default), which a switch or an
-		// if/else does not reproduce (they emit a bare `b` for the default). The two gotos keep
-		// both comparisons, matching retail; the natural switch is under #else.
-		if (i == 0) {
-			goto opuku_then;
-		}
-		if (i != 0) {
-			goto opuku_else;
-		}
-	opuku_then:
-		angle = -angleABf(data->y[i + 1], -data->x[i + 1], data->y[i], -data->x[i]);
-		goto opuku_done;
-	opuku_else:
-		if (i != 11 && data->counter[i] == 0) {
+		// if/else does not reproduce (they emit a bare `b` for the default). The doubled `i == 0`
+		// test keeps both branches; the natural switch is under #else.
+		if (i == 0 || i == 0) {
+			angle = -angleABf(data->y[i + 1], -data->x[i + 1], data->y[i], -data->x[i]);
+		} else if (i != 11 && data->counter[i] == 0) {
 			angle = -angleABf(data->y[i + 1], -data->x[i + 1], data->y[i], -data->x[i]);
 		}
-	opuku_done:
-		;
 #else
 		switch (i) {
 		case 0:

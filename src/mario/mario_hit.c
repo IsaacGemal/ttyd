@@ -2285,49 +2285,42 @@ HitEntry* dou10_yoko_yari(f32* out) {
         return hit;
     }
     pos = wp->position;
-    if (strcmp(gp->currentMapName, "dou_10") != 0) {
-        goto out;
-    }
-    if (vivianGetStatus() == 2 || vivianGetStatus() == 1 || vivianGetStatus() == 3) {
-        goto out;
-    }
-    if (hit != NULL) {
-        goto out;
-    }
-    dist = (wp->flags & 0x100000) ? 2.0f : 8.0f;
-    tmp = pos;
-    tmp.y += 60.f;
-    dir = vec3_802c5868;
-    dist100 = 100.f;
-    hit = marioHitCheckVec(&tmp, &dir, &hitPos, &hitNormal, &dist100);
-    if (hit != NULL && (hitGetAttr(hit) & 0x800)) {
-        wp->hitobjFront = hit;
-        *out = 0.8f;
-    }
+    if (strcmp(gp->currentMapName, "dou_10") == 0 &&
+        !(vivianGetStatus() == 2 || vivianGetStatus() == 1 || vivianGetStatus() == 3) && hit == NULL) {
+        dist = (wp->flags & 0x100000) ? 2.0f : 8.0f;
+        tmp = pos;
+        tmp.y += 60.f;
+        dir = vec3_802c5868;
+        dist100 = 100.f;
+        hit = marioHitCheckVec(&tmp, &dir, &hitPos, &hitNormal, &dist100);
+        if (hit != NULL && (hitGetAttr(hit) & 0x800)) {
+            wp->hitobjFront = hit;
+            *out = 0.8f;
+        }
 
-    pos = wp->position;
-    hit = searchFrontWall(&pos, &f8, 20.f, 0.0f, 20.f);
-    if (hit != NULL && (hitGetAttr(hit) & 0x800)) {
-        wp->hitobjFront = hit;
-        *out = 0.8f;
-    }
+        pos = wp->position;
+        hit = searchFrontWall(&pos, &f8, 20.f, 0.0f, 20.f);
+        if (hit != NULL && (hitGetAttr(hit) & 0x800)) {
+            wp->hitobjFront = hit;
+            *out = 0.8f;
+        }
 
-    pos = wp->position;
-    movePos(&pos.x, &pos.z, dist, 270.f);
-    hit = searchFrontWall(&pos, &f8, 20.f, 0.0f, 20.f);
-    if (hit != NULL && (hitGetAttr(hit) & 0x800)) {
-        wp->hitobjFront = hit;
-        *out = 0.8f;
-    }
+        pos = wp->position;
+        movePos(&pos.x, &pos.z, dist, 270.f);
+        hit = searchFrontWall(&pos, &f8, 20.f, 0.0f, 20.f);
+        if (hit != NULL && (hitGetAttr(hit) & 0x800)) {
+            wp->hitobjFront = hit;
+            *out = 0.8f;
+        }
 
-    pos = wp->position;
-    movePos(&pos.x, &pos.z, dist, 90.f);
-    hit = searchFrontWall(&pos, &f8, 20.f, 0.0f, 20.f);
-    if (hit != NULL && (hitGetAttr(hit) & 0x800)) {
-        wp->hitobjFront = hit;
-        *out = 0.8f;
+        pos = wp->position;
+        movePos(&pos.x, &pos.z, dist, 90.f);
+        hit = searchFrontWall(&pos, &f8, 20.f, 0.0f, 20.f);
+        if (hit != NULL && (hitGetAttr(hit) & 0x800)) {
+            wp->hitobjFront = hit;
+            *out = 0.8f;
+        }
     }
-out:
     return hit;
 }
 

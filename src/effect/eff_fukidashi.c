@@ -375,20 +375,18 @@ void calc_pos(effFukidashiData* data, s32 index) {
 		data->position.z = mario->position.z + data->offset.z + mtx[2][1] * (16.0f + data->height);
 	} else if ((s32)data->target == -2) {
 		party = partyGetPtr(marioGetPartyId());
-		if (party == NULL) {
-			goto end;
+		if (party != NULL) {
+			data->position.x = party->position.x + data->offset.x + mtx[0][1] * (16.0f + data->height);
+			data->position.y = party->position.y + data->offset.y + mtx[1][1] * (16.0f + data->height);
+			data->position.z = party->position.z + data->offset.z + mtx[2][1] * (16.0f + data->height);
 		}
-		data->position.x = party->position.x + data->offset.x + mtx[0][1] * (16.0f + data->height);
-		data->position.y = party->position.y + data->offset.y + mtx[1][1] * (16.0f + data->height);
-		data->position.z = party->position.z + data->offset.z + mtx[2][1] * (16.0f + data->height);
 	} else if ((s32)data->target == -3) {
 		party = partyGetPtr(marioGetExtraPartyId());
-		if (party == NULL) {
-			goto end;
+		if (party != NULL) {
+			data->position.x = party->position.x + data->offset.x + mtx[0][1] * (16.0f + data->height);
+			data->position.y = party->position.y + data->offset.y + mtx[1][1] * (16.0f + data->height);
+			data->position.z = party->position.z + data->offset.z + mtx[2][1] * (16.0f + data->height);
 		}
-		data->position.x = party->position.x + data->offset.x + mtx[0][1] * (16.0f + data->height);
-		data->position.y = party->position.y + data->offset.y + mtx[1][1] * (16.0f + data->height);
-		data->position.z = party->position.z + data->offset.z + mtx[2][1] * (16.0f + data->height);
 	} else if (data->target) {
 		mario = (MarioWork*)data->target;
 		data->position.x = mario->position.x + data->offset.x + mtx[0][1] * (16.0f + data->height);
@@ -400,7 +398,6 @@ void calc_pos(effFukidashiData* data, s32 index) {
 		data->position.z = data->offset.z + mtx[2][1] * (16.0f + data->height);
 	}
 
-end:
 	data->tiltZ = data->angleBase - 20.0f + (f32)(index * 20);
 	data->field_0x2C = 0.5f * (data->height / 12.0f) + 0.5f;
 }

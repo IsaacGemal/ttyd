@@ -4206,7 +4206,7 @@ s32 _naniga_okorukana_check(EventEntry* event, BOOL isFirstCall) {
             countA = (s8*)((u8*)wp + 0x16f27);
             countB = (s8*)((u8*)wp + 0x16f28);
         } else {
-            goto done;
+            goto done; // neither Mario nor a partner: no counter to bump
         }
         switch (item) {
         case 0x80:

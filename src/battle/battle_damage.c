@@ -457,7 +457,7 @@ s32 BattleCalculateDamage(BattleUnit* unit1, BattleUnit* unit2, BattleUnitPart* 
                 damage += allOrNothing;
             } else {
                 damage = 0;
-                goto calculate_defense;
+                goto calculate_defense; // skips every later attack modifier: no structured form without a flag
             }
         }
         if (unit1->currentHp <= unit1->mKindParams->mPerilHP) {
@@ -1747,14 +1747,14 @@ s32 BattleCheckDamage(BattleUnit* unit1, BattleUnit* unit2, BattleUnitPart* part
             if (part->counterAttributes & kCounterVolatileExplosive) {
                 BattleRunHitEvent(unit2, 0x719);
                 ret = 0x12;
-                goto counter_done;
+                break;
             }
             if (part->counterAttributes & kCounterExplosive) {
                 if (weapon->element == 3 || weapon->element == 4 || weapon->element == 1 ||
                     ((weapon->special & 0x400) && BtlUnit_CheckStatus(unit1, STATUS_BURN))) {
                     BattleRunHitEvent(unit2, 0x719);
                     ret = 0x12;
-                    goto counter_done;
+                    break;
                 }
             }
         }
@@ -1822,7 +1822,7 @@ s32 BattleCheckDamage(BattleUnit* unit1, BattleUnit* unit2, BattleUnitPart* part
             _checkDamageCode_EmergencyRevival(unit2, &revCode);
             BattleRunHitEvent(unit2, revCode);
             ret = 0x12;
-            goto counter_done;
+            break;
         }
         if (((u32)flags & 0x100) && (weapon->special & 0x80) && BtlUnit_CheckStatus(unit2, STATUS_FREEZE)) {
             if (irand(100) < 0) {
@@ -1830,7 +1830,7 @@ s32 BattleCheckDamage(BattleUnit* unit1, BattleUnit* unit2, BattleUnitPart* part
                 _checkDamageCode_EmergencyRevival(unit2, &revCode);
                 BattleRunHitEvent(unit2, revCode);
                 ret = 0x12;
-                goto counter_done;
+                break;
             }
         }
         if (statusDamage == 0 && damage == 0 && fpDamage == 0 && !isCounter) {
@@ -1870,7 +1870,6 @@ s32 BattleCheckDamage(BattleUnit* unit1, BattleUnit* unit2, BattleUnitPart* part
         }
         break;
     }
-counter_done:
     unit1->field_0x27C += 1;
     unit2->field_0x26F = unit1->field_0x27C;
     if ((u32)work.damageCode != 0) {

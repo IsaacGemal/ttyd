@@ -350,7 +350,7 @@ void setupDataBase(const char* areaName, const char* mapName) {
         npc->flags &= ~2;
         for (ai = npc_ai_type_table;;) {
             if (ai->description == NULL) {
-                goto no_ai;
+                goto no_ai; // skips copying the AI's events; moving the copy into the loop changes the object
             }
             if (strcmp(ai->description, aitype) == 0) {
                 break;

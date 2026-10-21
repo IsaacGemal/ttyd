@@ -5055,7 +5055,7 @@ s32 slot_rotate_sub(void* arg0, SlotData* data, s32 index) {
                 }
             }
             if (data->wait[index] != 0) {
-                goto done;
+                goto done; // both exits skip the rotation step below; a nested form changes the object
             }
             data->count[index]--;
         } else {

@@ -73,18 +73,13 @@ USER_FUNC(keijiban_joho_makelabel) {
     s32 value = evtGetValue(event, args[0]);
     KeijibanWork* wp = &_kjdt;
 
-    if (value < 0) {
-        goto empty;
+    if (value >= 0 && value < wp->count) {
+        sprintf(wp->infoEnd, "%s_%04d", wp->prefix, wp->info[value].storyId);
+        evtSetValue(event, args[1], (s32)wp->infoEnd);
+        wp->index = value;
+        return 2;
     }
-    if (value >= wp->count) {
-        goto empty;
-    }
-    sprintf(wp->infoEnd, "%s_%04d", wp->prefix, wp->info[value].storyId);
-    evtSetValue(event, args[1], (s32)wp->infoEnd);
-    wp->index = value;
-    return 2;
 
-empty:
     wp->infoEnd[0] = '\0';
     evtSetValue(event, args[1], (s32)wp->infoEnd);
     return 2;
@@ -117,8 +112,7 @@ s32 keijiban_data_make(const char* prefix, s32 type) {
     }
 
     count = 0;
-    storyId = 0;
-    while (1) {
+    for (storyId = 0;; storyId++) {
         sprintf(label, "%s_%04d", prefix, storyId);
         msg = (const s8*)msgSearch(label);
         if (msg[0] != '<') {
@@ -176,17 +170,17 @@ s32 keijiban_data_make(const char* prefix, s32 type) {
             if (labelId != -1) {
                 if (type & 1) {
                     if (labelId != wp->maxLabel) {
-                        goto next;
+                        continue;
                     }
                     wp->info[count].labelId = (s16)labelId;
                     wp->info[count].storyId = (s16)storyId;
                 }
                 else {
                     if (labelId > maxLabel) {
-                        goto next;
+                        continue;
                     }
                     if (labelId < wp->maxLabel) {
-                        goto next;
+                        continue;
                     }
                     if (labelId > wp->maxLabel) {
                         wp->maxLabel = labelId;
@@ -196,8 +190,6 @@ s32 keijiban_data_make(const char* prefix, s32 type) {
                 count++;
             }
         }
-    next:
-        storyId++;
     }
     return count;
 }

@@ -2690,219 +2690,212 @@ USER_FUNC(_object_fall_attack) {
 			unit = BattleGetUnitPtr(wp, entry->unitId);
 			part = BattleGetUnitPartsPtr(entry->unitId, entry->partId);
 		}
-		if (entry->effect != NULL && entry->timer <= 0) {
-			goto effect_active;
-		}
-		entry->timer--;
-		if (entry->timer > 0) {
-			continue;
-		}
-		switch (entry->mode) {
-		case 0:
-			BtlUnit_GetHitPos(unit, part, &spawnPos.x, &spawnPos.y, &spawnPos.z);
-			f30 = (f32)BtlUnit_GetWidth(unit);
-			break;
-		case 1:
-			spawnPos.x = (f32)((entry->unitId % 20) * 25 - 230);
-			spawnPos.y = BattleStageGetPtr()->audienceAreaSize.y;
-			spawnPos.z = 0.1f * (f32)(entry->unitId % 20)
-			             + (f32)((entry->unitId / 20) * 30 + 115);
-			btl_camera_set_mode(0, 6);
-			btl_camera_set_moveSpeedLv(0, 2);
-			f30 = 0.0f;
-			break;
-		default:
-			spawnPos = (Vec){0.0f, 0.0f, 0.0f};
-			f30 = 0.0f;
-			break;
-		}
-		floorPos = spawnPos;
-		floorPos.y = BattleGetFloorHeight(wp, floorPos.x, floorPos.y, floorPos.z);
-		if (spawnPos.x >= 0.0f) {
-			f31 = 90.0f;
-		} else {
-			f31 = 270.0f;
-		}
-		switch (entry->index) {
-		case 2:
-		case 3:
-		case 4:
-		case 6:
-			spawnPos.y = floorPos.y;
-			break;
-		}
-		entry->sfxId = -1;
-		entry->counter = 0;
-		switch (entry->type) {
-		case 0:
-			entry->effect = effFallEntry(4, floorPos.x, floorPos.y, 1, floorPos.z, 0x5A, f30,
-			                              spawnPos.y - floorPos.y, f31);
-			break;
-		case 1:
-			entry->effect = effFallEntry(5, floorPos.x, floorPos.y, 1, floorPos.z, 0x5A, f30,
-			                              spawnPos.y - floorPos.y, f31);
-			break;
-		case 2:
-			entry->effect = effFallEntry(0, floorPos.x, floorPos.y, 0x64, floorPos.z, 0x5A, f30,
-			                              spawnPos.y - floorPos.y, f31);
-			break;
-		case 3:
-			entry->effect = effFallEntry(1, floorPos.x, floorPos.y, 1, floorPos.z, 0x5A, f30,
-			                              spawnPos.y - floorPos.y, f31);
-			break;
-		case 4:
-			entry->effect = effFallEntry(2, floorPos.x, floorPos.y, 1, 5.0f + floorPos.z,
-			                              0x5A, f30, spawnPos.y - floorPos.y, f31);
-			break;
-		case 8:
-			entry->effect = effFallEntry(8, floorPos.x, floorPos.y, 1, floorPos.z, 0x5A, f30,
-			                              spawnPos.y - floorPos.y, f31);
-			break;
-		case 5:
-			entry->effect = effFallEntry(3, floorPos.x, floorPos.y, 1, floorPos.z, 0x5A, f30,
-			                              spawnPos.y - floorPos.y, f31);
-			break;
-		case 6:
-			if (BtlUnit_GetBelong(unit) == 0) {
-				entry->effect = effFallEntry(6, -300.0f, floorPos.y, 1,
-				                              15.0f + floorPos.z, 0xB4,
-				                              0.0f, 0.0f, f31);
+		if (entry->effect == NULL || entry->timer > 0) {
+			entry->timer--;
+			if (entry->timer > 0) {
+				continue;
+			}
+			switch (entry->mode) {
+			case 0:
+				BtlUnit_GetHitPos(unit, part, &spawnPos.x, &spawnPos.y, &spawnPos.z);
+				f30 = (f32)BtlUnit_GetWidth(unit);
+				break;
+			case 1:
+				spawnPos.x = (f32)((entry->unitId % 20) * 25 - 230);
+				spawnPos.y = BattleStageGetPtr()->audienceAreaSize.y;
+				spawnPos.z = 0.1f * (f32)(entry->unitId % 20)
+				             + (f32)((entry->unitId / 20) * 30 + 115);
+				btl_camera_set_mode(0, 6);
+				btl_camera_set_moveSpeedLv(0, 2);
+				f30 = 0.0f;
+				break;
+			default:
+				spawnPos = (Vec){0.0f, 0.0f, 0.0f};
+				f30 = 0.0f;
+				break;
+			}
+			floorPos = spawnPos;
+			floorPos.y = BattleGetFloorHeight(wp, floorPos.x, floorPos.y, floorPos.z);
+			if (spawnPos.x >= 0.0f) {
+				f31 = 90.0f;
 			} else {
-				entry->effect = effFallEntry(6, 300.0f, floorPos.y, 1,
-				                              15.0f + floorPos.z, 0xB4,
-				                              0.0f, 0.0f, f31);
+				f31 = 270.0f;
 			}
-			break;
-		case 7:
-			entry->effect = effFallEntry(7, floorPos.x, floorPos.y, 1, 5.0f + floorPos.z,
-			                              0xB4, f30, spawnPos.y - floorPos.y, f31);
-			break;
-		}
-		continue;
-
-	effect_active:
-		if (entry->effect != NULL && !effFallCheckHit(entry->effect)) {
-			continue;
-		}
-		weapon = &entry->weapon;
-		if (entry->mode != 1) {
-			goto stage_hit;
-		}
-		BattleAudience_Case_FallObject_Aud(entry->unitId, entry->type);
-		psndSFXOff(entry->sfxId);
-		BattleAudience_GetHomePosition(entry->unitId, &hitPos.x, &hitPos.y, &hitPos.z);
-		switch (entry->type) {
-		case 0:
-		case 1:
-			psndSFXOn_3D(BSO_SFX("SFX_BTL_STAGE_DAMAGE_TUB1"), &hitPos);
-			break;
-		case 5:
-			break;
-		default:
-			psndSFXOn_3D(BSO_SFX("SFX_BTL_STAGE_DAMAGE_NORMAL1"), &hitPos);
-			break;
-		}
-		goto done;
-
-	stage_hit:
-		BattleAudience_Case_FallObject_Stage();
-		if (weapon->targetClassFlags & 0x01000000) {
-			BtlUnit_GetHitPos(unit, part, &hitPos.x, &hitPos.y, &hitPos.z);
-			hitFlags = 0;
-			if (entry->flag14 != 0) {
-				hitFlags |= 0x100;
-			}
-			psndSFXOff(entry->sfxId);
 			switch (entry->index) {
 			case 2:
 			case 3:
 			case 4:
 			case 6:
-				switch (entry->type) {
-				case 0:
-				case 1:
-					psndSFXOn_3D(BSO_SFX("SFX_BTL_STAGE_DAMAGE_TUB1"), &hitPos);
-					break;
-				case 5:
-					break;
-				}
+				spawnPos.y = floorPos.y;
+				break;
+			}
+			entry->sfxId = -1;
+			entry->counter = 0;
+			switch (entry->type) {
+			case 0:
+				entry->effect = effFallEntry(4, floorPos.x, floorPos.y, 1, floorPos.z, 0x5A, f30,
+				                              spawnPos.y - floorPos.y, f31);
 				break;
 			case 1:
-				switch (entry->type) {
-				case 0:
-				case 1:
-					psndSFXOn_3D(BSO_SFX("SFX_BTL_STAGE_DAMAGE_TUB1"), &hitPos);
-					break;
-				case 5:
-					psndSFXOn_3D(BSO_SFX("SFX_REST_CONDITION1"), &hitPos);
-					break;
-				default:
-					psndSFXOn_3D(BSO_SFX("SFX_BTL_STAGE_DAMAGE_NORMAL1"), &hitPos);
-					break;
+				entry->effect = effFallEntry(5, floorPos.x, floorPos.y, 1, floorPos.z, 0x5A, f30,
+				                              spawnPos.y - floorPos.y, f31);
+				break;
+			case 2:
+				entry->effect = effFallEntry(0, floorPos.x, floorPos.y, 0x64, floorPos.z, 0x5A, f30,
+				                              spawnPos.y - floorPos.y, f31);
+				break;
+			case 3:
+				entry->effect = effFallEntry(1, floorPos.x, floorPos.y, 1, floorPos.z, 0x5A, f30,
+				                              spawnPos.y - floorPos.y, f31);
+				break;
+			case 4:
+				entry->effect = effFallEntry(2, floorPos.x, floorPos.y, 1, 5.0f + floorPos.z,
+				                              0x5A, f30, spawnPos.y - floorPos.y, f31);
+				break;
+			case 8:
+				entry->effect = effFallEntry(8, floorPos.x, floorPos.y, 1, floorPos.z, 0x5A, f30,
+				                              spawnPos.y - floorPos.y, f31);
+				break;
+			case 5:
+				entry->effect = effFallEntry(3, floorPos.x, floorPos.y, 1, floorPos.z, 0x5A, f30,
+				                              spawnPos.y - floorPos.y, f31);
+				break;
+			case 6:
+				if (BtlUnit_GetBelong(unit) == 0) {
+					entry->effect = effFallEntry(6, -300.0f, floorPos.y, 1,
+					                              15.0f + floorPos.z, 0xB4,
+					                              0.0f, 0.0f, f31);
+				} else {
+					entry->effect = effFallEntry(6, 300.0f, floorPos.y, 1,
+					                              15.0f + floorPos.z, 0xB4,
+					                              0.0f, 0.0f, f31);
 				}
-				if (BtlUnit_GetACPossibility(unit) != 0) {
-					BattleActionCommandCheckDefence(unit, weapon);
-				}
-				BattleCheckDamage(BattleGetSystemPtr(wp), unit, part, weapon, hitFlags);
+				break;
+			case 7:
+				entry->effect = effFallEntry(7, floorPos.x, floorPos.y, 1, 5.0f + floorPos.z,
+				                              0xB4, f30, spawnPos.y - floorPos.y, f31);
+				break;
+			}
+			continue;
+		}
+		if (entry->effect != NULL && !effFallCheckHit(entry->effect)) {
+			continue;
+		}
+		weapon = &entry->weapon;
+		if (entry->mode == 1) {
+			BattleAudience_Case_FallObject_Aud(entry->unitId, entry->type);
+			psndSFXOff(entry->sfxId);
+			BattleAudience_GetHomePosition(entry->unitId, &hitPos.x, &hitPos.y, &hitPos.z);
+			switch (entry->type) {
+			case 0:
+			case 1:
+				psndSFXOn_3D(BSO_SFX("SFX_BTL_STAGE_DAMAGE_TUB1"), &hitPos);
+				break;
+			case 5:
+				break;
+			default:
+				psndSFXOn_3D(BSO_SFX("SFX_BTL_STAGE_DAMAGE_NORMAL1"), &hitPos);
 				break;
 			}
 		} else {
-			psndSFXOff(entry->sfxId);
-			BattleSamplingEnemy(samplingB, weapon, BattleGetSystemPtr(wp)->unitId, 1,
-			                    weapon->targetClassFlags, weapon->targetPropertyFlags,
-			                    (s8)-wp->alliances[1].attackDirection);
-			if ((s8)samplingB[0xA6C] > 0)
-			for (;;) {
-				s32 si;
-				u8* se;
-				s32 res;
-				BattleUnit* target;
-				if ((s8)samplingB[0xAB7] >= (s8)samplingB[0xA6C]) {
-					break;
+			BattleAudience_Case_FallObject_Stage();
+			if (weapon->targetClassFlags & 0x01000000) {
+				BtlUnit_GetHitPos(unit, part, &hitPos.x, &hitPos.y, &hitPos.z);
+				hitFlags = 0;
+				if (entry->flag14 != 0) {
+					hitFlags |= 0x100;
 				}
-				si = (s8)samplingB[0xA6D + (s8)samplingB[0xAB7]];
-				se = samplingB + 4 + si * 0x24;
-				target = BattleGetUnitPtr(wp, *(s16*)(se + 0));
-				res = BattlePreCheckDamage(BattleGetSystemPtr(wp), target,
-				                           BattleGetUnitPartsPtr(*(s16*)(se + 0), *(s16*)(se + 2)),
-				                           weapon, 0x100);
-				switch (res) {
+				psndSFXOff(entry->sfxId);
+				switch (entry->index) {
 				case 2:
-				case 4:
-					break;
 				case 3:
-					BtlUnit_GetPos(target, &pos.x, &pos.y, &pos.z);
-					if (pos.y < 85.0f) {
-						pos.y += 50.0f;
-					} else {
-						pos.y += -50.0f;
-					}
-					pos.x -= 45.0f;
-					{
-						EffectEntry* e = effNiceEntry(6, pos.x, pos.y, pos.z);
-						((NiceEffectWork*)e->userdata)->scale = 0.75f;
-					}
-					target->damagePattern = 0;
-					BattleRunHitEvent(target, 0x126);
-					break;
+				case 4:
 				case 6:
-					target->damagePattern = 0;
-					BattleRunHitEvent(target, 0x127);
+					switch (entry->type) {
+					case 0:
+					case 1:
+						psndSFXOn_3D(BSO_SFX("SFX_BTL_STAGE_DAMAGE_TUB1"), &hitPos);
+						break;
+					case 5:
+						break;
+					}
 					break;
 				case 1:
-					if (BtlUnit_GetACPossibility(target) != 0 && check <= 0) {
-						BattleActionCommandCheckDefence(target, weapon);
-						check++;
+					switch (entry->type) {
+					case 0:
+					case 1:
+						psndSFXOn_3D(BSO_SFX("SFX_BTL_STAGE_DAMAGE_TUB1"), &hitPos);
+						break;
+					case 5:
+						psndSFXOn_3D(BSO_SFX("SFX_REST_CONDITION1"), &hitPos);
+						break;
+					default:
+						psndSFXOn_3D(BSO_SFX("SFX_BTL_STAGE_DAMAGE_NORMAL1"), &hitPos);
+						break;
 					}
-					BattleCheckDamage(BattleGetSystemPtr(wp), target,
-					                  BattleGetUnitPartsPtr(*(s16*)(se + 0), *(s16*)(se + 2)),
-					                  weapon, 0x100);
+					if (BtlUnit_GetACPossibility(unit) != 0) {
+						BattleActionCommandCheckDefence(unit, weapon);
+					}
+					BattleCheckDamage(BattleGetSystemPtr(wp), unit, part, weapon, hitFlags);
 					break;
 				}
-				samplingB[0xAB7]++;
+			} else {
+				psndSFXOff(entry->sfxId);
+				BattleSamplingEnemy(samplingB, weapon, BattleGetSystemPtr(wp)->unitId, 1,
+				                    weapon->targetClassFlags, weapon->targetPropertyFlags,
+				                    (s8)-wp->alliances[1].attackDirection);
+				if ((s8)samplingB[0xA6C] > 0)
+				for (;;) {
+					s32 si;
+					u8* se;
+					s32 res;
+					BattleUnit* target;
+					if ((s8)samplingB[0xAB7] >= (s8)samplingB[0xA6C]) {
+						break;
+					}
+					si = (s8)samplingB[0xA6D + (s8)samplingB[0xAB7]];
+					se = samplingB + 4 + si * 0x24;
+					target = BattleGetUnitPtr(wp, *(s16*)(se + 0));
+					res = BattlePreCheckDamage(BattleGetSystemPtr(wp), target,
+					                           BattleGetUnitPartsPtr(*(s16*)(se + 0), *(s16*)(se + 2)),
+					                           weapon, 0x100);
+					switch (res) {
+					case 2:
+					case 4:
+						break;
+					case 3:
+						BtlUnit_GetPos(target, &pos.x, &pos.y, &pos.z);
+						if (pos.y < 85.0f) {
+							pos.y += 50.0f;
+						} else {
+							pos.y += -50.0f;
+						}
+						pos.x -= 45.0f;
+						{
+							EffectEntry* e = effNiceEntry(6, pos.x, pos.y, pos.z);
+							((NiceEffectWork*)e->userdata)->scale = 0.75f;
+						}
+						target->damagePattern = 0;
+						BattleRunHitEvent(target, 0x126);
+						break;
+					case 6:
+						target->damagePattern = 0;
+						BattleRunHitEvent(target, 0x127);
+						break;
+					case 1:
+						if (BtlUnit_GetACPossibility(target) != 0 && check <= 0) {
+							BattleActionCommandCheckDefence(target, weapon);
+							check++;
+						}
+						BattleCheckDamage(BattleGetSystemPtr(wp), target,
+						                  BattleGetUnitPartsPtr(*(s16*)(se + 0), *(s16*)(se + 2)),
+						                  weapon, 0x100);
+						break;
+					}
+					samplingB[0xAB7]++;
+				}
 			}
 		}
-	done:
 		entry->no = -1;
 	}
 

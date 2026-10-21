@@ -2201,7 +2201,7 @@ USER_FUNC(btn_check) {
             if (a) {
                 if (!(b | c)) {
                     result = 1;
-                    goto btn_done;
+                    break;
                 }
             }
             if (a == 0 && (b | c)) {
@@ -2212,7 +2212,7 @@ USER_FUNC(btn_check) {
             if (b) {
                 if (!(a | c)) {
                     result = 1;
-                    goto btn_done;
+                    break;
                 }
             }
             if (b == 0 && (a | c)) {
@@ -2223,7 +2223,7 @@ USER_FUNC(btn_check) {
             if (c) {
                 if (!(a | b)) {
                     result = 1;
-                    goto btn_done;
+                    break;
                 }
             }
             if (c == 0 && (a | b)) {
@@ -2236,7 +2236,6 @@ USER_FUNC(btn_check) {
             }
             break;
     }
-btn_done:
     evtSetValue(event, args[1], result);
     return EVT_RETURN_DONE;
 }

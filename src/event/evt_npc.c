@@ -687,7 +687,7 @@ USER_FUNC(evt_npc_jump_position) {
                 case 0:
                     if (moveTime == 0.0f) {
                         npc->jumpVelY = arcHeight;
-                        goto end1;
+                        break;
                     }
                     if (npc->moveSpeed > 0.1) {
                         t = dist / npc->moveSpeed;
@@ -707,12 +707,12 @@ USER_FUNC(evt_npc_jump_position) {
                     if (peak != 0.0f) {
                         npc->jumpYScale = arcWork / peak;
                     }
-                    goto end1;
+                    break;
 
                 case 1:
                     if (moveTime == 0.0f) {
                         npc->jumpVelY = arcHeight;
-                        goto end1;
+                        break;
                     }
                     halfT = 0.5f * moveTime;
                     npc->jumpVelY = -((-980.0f * npc->jumpGravity) * moveTime * moveTime) / moveTime;
@@ -720,7 +720,7 @@ USER_FUNC(evt_npc_jump_position) {
                     if (peak != 0.0f) {
                         npc->jumpYScale = arcWork / peak;
                     }
-                    goto end1;
+                    break;
                 default:
                     return EVT_RETURN_YIELD;
             }
@@ -744,14 +744,14 @@ USER_FUNC(evt_npc_jump_position) {
                     } else if (moveTime > 0.0f) {
                         npc->jumpGravity = (dy / (moveTime * moveTime)) / -980.0f;
                     }
-                    goto end1;
+                    break;
                 default:
                     return EVT_RETURN_YIELD;
                 case 1:
-                end1:
-                    return EVT_RETURN_BLOCK;
+                    break;
             }
         }
+        return EVT_RETURN_BLOCK;
     }
 
     // ---- per-frame ----
@@ -2544,14 +2544,10 @@ USER_FUNC(evt_npc_kamek_kemuri1) {
             _kamek_houki_kemuri(npc, npc->gait);
             return EVT_RETURN_BLOCK;
         }
-        goto block_7; // TODO: ???
-    }
-
-    if (npc->moveSpeed > 0.0f) {
+    } else if (npc->moveSpeed > 0.0f) {
         _kamek_houki_kemuri(npc, npc->gait);
         return EVT_RETURN_BLOCK;
     }
-block_7:
     return EVT_RETURN_DONE;
 }
 

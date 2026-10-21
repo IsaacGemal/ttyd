@@ -274,7 +274,7 @@ void effFunemizuDisp(CameraId camId, void* param) {
 		}
 		if (strcmp(p->name, gp->currentMapName) == 0) {
 			colorVal = p->value;
-			goto found;
+			goto found; // both searches skip the default store after them
 		}
 	}
 	for (dl = (u8**)unk_803b0640; dl; dl += 2) {
