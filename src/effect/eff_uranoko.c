@@ -74,17 +74,8 @@ void effUranokoMain(EffectEntry* effect) {
 		effDelete(effect);
 	}
 	else {
-		f32 t;
-#ifdef MUST_MATCH
-		f32 k = 0.125f;
-#endif
 		data->field_0x18++;
-		t = 1.0f - data->scale;
-#ifdef MUST_MATCH
-		data->scale = t * k + data->scale;
-#else
-		data->scale = t * 0.125f + data->scale;
-#endif
+		data->scale += (1.0f - data->scale) / 8.0f;
 		dispEntry(CAMERA_3D, dispCalcZ(&disp), 2, effUranokoDisp, effect);
 	}
 }
@@ -96,10 +87,7 @@ void effUranokoDisp(CameraId camId, void* param) {
 	Mtx trans;
 	Mtx scale;
 	Mtx rot;
-	f32 deg;
-#ifdef MUST_MATCH
 	f32 rad;
-#endif
 	f32 s;
 
 	if (data->animId == -1) {
@@ -110,15 +98,9 @@ void effUranokoDisp(CameraId camId, void* param) {
 	s = data->scale * data->baseScale;
 	PSMTXScale(scale, s, s, s);
 	cam = camGetPtr(camId);
-#ifdef MUST_MATCH
 	rad = -cam->viewYaw;
-	deg = 0.017453292f;
-	rad = deg * rad;
+	rad = 0.017453292f * rad;
 	PSMTXRotRad(rot, 'y', rad);
-#else
-	deg = 0.017453292f;
-	PSMTXRotRad(rot, 'y', -cam->viewYaw * deg);
-#endif
 	PSMTXConcat(trans, rot, trans);
 	PSMTXConcat(trans, scale, trans);
 	animPoseSetMaterialFlagOn(data->animId, 0x40);

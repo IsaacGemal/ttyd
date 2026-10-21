@@ -455,93 +455,74 @@ void effKissDisp(CameraId camId, void* param) {
 		}
 	}
 
-#ifdef MUST_MATCH
-	/* MUST_MATCH: the original reaches the one shared body through gotos from cases 0/1/3
-	   (a switch with a single shared body emits two fewer branches); natural form in #else. */
 	switch (type) {
 	case 0:
 	case 1:
-		goto kiss_disp_body;
 	case 3:
-		goto kiss_disp_body;
+		break;
 	default:
 		return;
 	}
-kiss_disp_body:
-	{
-#else
-	switch (type) {
-	case 0:
-	case 1:
-	case 3:
-		{
-#endif
-		heightScale = 1.15f;
-		texV = 0.5f;
-		for (i = 0; i < 2; i++) {
-			// declared per iteration: a separate offset keeps its register different from the first loop's.
-			f32 offset = 0.0f;
-			data = effect->userdata;
-			switch (type) {
-			case 0:
-			case 1:
-			case 2:
+
+	heightScale = 1.15f;
+	texV = 0.5f;
+	for (i = 0; i < 2; i++) {
+		// declared per iteration: a separate offset keeps its register different from the first loop's.
+		f32 offset = 0.0f;
+		data = effect->userdata;
+		switch (type) {
+		case 0:
+		case 1:
+		case 2:
+			effGetTexObj(0x42, &tex);
+			GXLoadTexObj(&tex, GX_TEXMAP0);
+			if (i == 0) {
+				offset = 1.5f;
+				effKissChanAlpha(&unk_80423318, alpha / 2);
+			} else {
+				effKissChanKiss(type, alpha);
+			}
+			break;
+		case 3:
+			if (i == 0) {
+				effGetTexObj(0x5a, &tex);
+				GXLoadTexObj(&tex, GX_TEXMAP0);
+				effKissChanRot(&unk_8042331c, (const u8*)color_rotation_data + frameIdx, alpha);
+			} else {
 				effGetTexObj(0x42, &tex);
 				GXLoadTexObj(&tex, GX_TEXMAP0);
-				if (i == 0) {
-					offset = 1.5f;
-					effKissChanAlpha(&unk_80423318, alpha / 2);
-				} else {
-					effKissChanKiss(type, alpha);
-				}
-				break;
-			case 3:
-				if (i == 0) {
-					effGetTexObj(0x5a, &tex);
-					GXLoadTexObj(&tex, GX_TEXMAP0);
-					effKissChanRot(&unk_8042331c, (const u8*)color_rotation_data + frameIdx, alpha);
-				} else {
-					effGetTexObj(0x42, &tex);
-					GXLoadTexObj(&tex, GX_TEXMAP0);
-					effKissChanAlpha(&str_804213F4, alpha);
-				}
-				break;
-			default:
-				break;
+				effKissChanAlpha(&str_804213F4, alpha);
 			}
-
-			PSMTXTrans(mtxA, offset, -offset, 0.0f);
-			PSMTXRotRad(rot, 'z', negAngleDeg);
-			PSMTXConcat(rot, mtxA, mtxA);
-			PSMTXConcat(view, mtxA, mtxA);
-			PSMTXConcat(camera->view, mtxA, mtxA);
-			GXLoadPosMtxImm(mtxA, GX_PNMTX0);
-			GXSetCurrentMtx(GX_PNMTX0);
-			GXBegin(GX_QUADS, GX_VTXFMT0, 4);
-			{
-				// loop-local h/w keep the vertex temps in retail's scratch FPRs and texV supplies 0.5.
-				f32 h = heightScale * data[1].y;
-				f32 w = 1.0f;
-				if (type == 3 && i == 0) {
-					w = 2.0f;
-				}
-				GXPosition3f32(-w * texV, h, 0.0f);
-				GXTexCoord2f32(0.0f, 0.0f);
-				GXPosition3f32(w * texV, h, 0.0f);
-				GXTexCoord2f32(1.0f, 0.0f);
-				GXPosition3f32(w * texV, 0.0f, 0.0f);
-				GXTexCoord2f32(1.0f, 1.0f);
-				GXPosition3f32(-w * texV, 0.0f, 0.0f);
-				GXTexCoord2f32(0.0f, 1.0f);
-			}
+			break;
+		default:
+			break;
 		}
-#ifdef MUST_MATCH
+
+		PSMTXTrans(mtxA, offset, -offset, 0.0f);
+		PSMTXRotRad(rot, 'z', negAngleDeg);
+		PSMTXConcat(rot, mtxA, mtxA);
+		PSMTXConcat(view, mtxA, mtxA);
+		PSMTXConcat(camera->view, mtxA, mtxA);
+		GXLoadPosMtxImm(mtxA, GX_PNMTX0);
+		GXSetCurrentMtx(GX_PNMTX0);
+		GXBegin(GX_QUADS, GX_VTXFMT0, 4);
+		{
+			// loop-local h/w keep the vertex temps in retail's scratch FPRs and texV supplies 0.5.
+			f32 h = heightScale * data[1].y;
+			f32 w = 1.0f;
+			if (type == 3 && i == 0) {
+				w = 2.0f;
+			}
+			GXPosition3f32(-w * texV, h, 0.0f);
+			GXTexCoord2f32(0.0f, 0.0f);
+			GXPosition3f32(w * texV, h, 0.0f);
+			GXTexCoord2f32(1.0f, 0.0f);
+			GXPosition3f32(w * texV, 0.0f, 0.0f);
+			GXTexCoord2f32(1.0f, 1.0f);
+			GXPosition3f32(-w * texV, 0.0f, 0.0f);
+			GXTexCoord2f32(0.0f, 1.0f);
+		}
 	}
-#else
-	}
-		break;
-	}
-#endif
 }
 
 // building the GXColor through an inline return puts the colour temp where retail keeps it.

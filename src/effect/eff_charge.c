@@ -152,10 +152,6 @@ void effChargeMain(EffectEntry* effect) {
     dispEntry(CAMERA_3D, dispCalcZ(&position), 2, effChargeDisp, effect);
 }
 
-#ifdef MUST_MATCH
-// The original builds each TEV colour in a helper that returns it by value; passing the base colour into the
-// first helper as a parameter (rather than reading the global inside it) is what makes mwcc place the inline
-// local and the outgoing argument copy in retail's stack slots.
 static inline GXColor effChargeColorBase(GXColor c, u8 r, u8 g, u8 b) {
     c.r = r;
     c.g = g;
@@ -170,7 +166,6 @@ static inline GXColor effChargeColorElem(u8 r, u8 g, u8 b, u8 a) {
     c.a = a;
     return c;
 }
-#endif
 // Matches. Two shapes were needed beyond the straightforward code: the -yaw angle is built from
 // `camGetPtr(cameraId)->viewYaw` inline (a cached `camera` local gives mwcc the wrong fpr and `fmuls` order),
 // and the zero-scale test is written `if (!scale) continue;` (a `scale == 0.0f` literal emits the reversed
@@ -178,7 +173,6 @@ static inline GXColor effChargeColorElem(u8 r, u8 g, u8 b, u8 a) {
 void effChargeDisp(CameraId cameraId, void* param) {
     EffectEntry* effect = param;
     ChargeEffectData* data = effect->userdata;
-    GXColor color2;
     GXColor color;
     GXTexObj tex;
     Mtx mtxF8;
@@ -203,15 +197,7 @@ void effChargeDisp(CameraId cameraId, void* param) {
     effGetTexObj(0x1e, &tex);
     GXLoadTexObj(&tex, GX_TEXMAP0);
 
-#ifdef MUST_MATCH
     GXSetTevColor(GX_TEVREG1, effChargeColorBase(unk_80423068, data->field_0x3C, data->field_0x40, data->field_0x44));
-#else
-    color = unk_80423068;
-    color.r = data->field_0x3C;
-    color.g = data->field_0x40;
-    color.b = data->field_0x44;
-    GXSetTevColor(GX_TEVREG1, color);
-#endif
 
     GXSetNumChans(0);
     GXSetChanCtrl(GX_COLOR0A0, GX_FALSE, GX_SRC_REG, GX_SRC_REG, GX_LIGHT_NULL, GX_DF_NONE, GX_AF_NONE);
@@ -242,16 +228,8 @@ void effChargeDisp(CameraId cameraId, void* param) {
             continue;
         }
 
-#ifdef MUST_MATCH
-        color2 = effChargeColorElem(colR, colG, colB, data->alpha);
-#else
-        color2 = unk_8042306c;
-        color2.r = colR;
-        color2.g = colG;
-        color2.b = colB;
-        color2.a = data->alpha;
-#endif
-        GXSetTevColor(GX_TEVREG0, color2);
+        color = effChargeColorElem(colR, colG, colB, data->alpha);
+        GXSetTevColor(GX_TEVREG0, color);
 
         PSMTXTrans(mtxF8, data->x, data->y, data->z);
         PSMTXScale(mtx98, scale, scale, scale);

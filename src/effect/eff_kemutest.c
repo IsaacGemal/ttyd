@@ -138,13 +138,6 @@ EffectEntry* effKemuTestEntry(s32 type, f32 x, f32 y, f32 z, f32 scale) {
 	data->rotX = 0.0f;
 	data->rotZ = 0.0f;
 
-#ifdef MUST_MATCH
-	/* MUST_MATCH: dead store kept only to steer MWCC's FP temp allocation. Without it `spd` is a
-	   per-case temp and every paired case gets angle=f26/spd=f25; this makes `spd` a function-lived
-	   value in f26, matching the original's angle=f25/spd=f26 in cases 7/8/9/17/20. */
-	spd = 0.0f;
-#endif
-
 	work = data;
 	work++;
 	for (i = 1; i < (count = entry->count); i++, work++) {

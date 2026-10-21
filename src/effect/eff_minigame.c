@@ -89,11 +89,7 @@ EffectEntry* effMiniGameEntry(s32 type, f32 x, f32 y, f32 z) {
 // test; the original keeps the switch value in r3. The count terms below are written as
 // `* 26.0f / 2.0f` rather than `* 26.0f * 0.5f`, which keeps the product as the first fmuls operand
 // (same idiom as effMiniGameMain).
-#ifdef MUST_MATCH
 			if (0x28 == data->state) {
-#else
-			if (data->state == 0x28) {
-#endif
 				data->posX =
 					(f32)(i - 1) * 26.0f - (f32)(entry->count - 1) * 26.0f / 2.0f;
 				data->timer = (i - 1) * 10;
@@ -388,26 +384,14 @@ void effMiniGameMain(EffectEntry* effect) {
 	}
 }
 
-#ifdef MUST_MATCH
-// Match-only: returning the colour from an inline instead of building it in the caller puts the
-// by-value temporary and its outgoing copy in the original's stack slots. The start helper takes
-// the base colour as its second parameter so the division operands stay in r0/r6 and the temporary
-// lands at 0x10; the finish helper builds its own local at 0x8.
-static inline GXColor makeMiniGameStartColor(u8 alpha, GXColor color) {
+// Returning the colour from an inline instead of building it in the caller puts the by-value
+// temporary and its outgoing copy in the original's stack slots.
+static inline GXColor makeMiniGameColor(u8 alpha, GXColor color) {
 	color.a = alpha;
 	return color;
 }
-#endif
 
-#ifdef MUST_MATCH
-static inline GXColor makeMiniGameFinishColor(u8 alpha) {
-	GXColor color = *(GXColor*)&dat_804212b0;
-	color.a = alpha;
-	return color;
-}
-#endif
-
-// Matched with the MUST_MATCH colour helpers above, by reloading `effect->userdata` into the
+// Matched with the colour helper above, by reloading `effect->userdata` into the
 // outer-loop entry pointer and holding the three texture tables as base pointers, and by keeping
 // `f29 = -f30` inside the inner loop.
 void effMiniGameDisp(CameraId camId, void* param) {
@@ -505,23 +489,11 @@ void effMiniGameDisp(CameraId camId, void* param) {
 				GXInitTexObjLOD(&tex, 0, 0, 0.0f, 0.0f, 0.0f, 0, 0, 0);
 			}
 			GXLoadTexObj(&tex, GX_TEXMAP0);
-#ifdef MUST_MATCH
 			if (i == 0) {
-				GXSetChanMatColor(GX_COLOR0A0, makeMiniGameStartColor(entry->alpha * 140 / 255, unk_80423308));
+				GXSetChanMatColor(GX_COLOR0A0, makeMiniGameColor(entry->alpha * 140 / 255, unk_80423308));
 			} else {
-				GXSetChanMatColor(GX_COLOR0A0, makeMiniGameFinishColor(entry->alpha * 255 / 255));
+				GXSetChanMatColor(GX_COLOR0A0, makeMiniGameColor(entry->alpha * 255 / 255, dat_804212b0));
 			}
-#else
-			if (i == 0) {
-				GXColor color = unk_80423308;
-				color.a = entry->alpha * 140 / 255;
-				GXSetChanMatColor(GX_COLOR0A0, color);
-			} else {
-				GXColor color = dat_804212b0;
-				color.a = entry->alpha * 255 / 255;
-				GXSetChanMatColor(GX_COLOR0A0, color);
-			}
-#endif
 			GXBegin(GX_QUADS, GX_VTXFMT0, 4);
 			f27 = 0.5f;
 			f28 = 20.0f;

@@ -44,11 +44,6 @@ static inline s32 __fpclassifyf(const f32* x) {
 
 #undef FP_BITS
 
-// The inline sqrtf and the two Vec constants share the original .rodata pool.
-#ifdef MUST_MATCH
-#pragma pool_data on
-#endif
-
 // .rodata
 // Non-const matching vectors preserve the original struct copies; const reads fold them away.
 #ifdef MUST_MATCH
@@ -412,7 +407,6 @@ void ParticleEmit(EffectEntry* effect, ParticleEntry* particle, ParticleEmitter*
 
 #ifdef MUST_MATCH
 #pragma defer_codegen reset
-#pragma pool_data reset
 #endif
 
 // Retail retains this unreferenced signed-conversion constant after the sqrt pool.

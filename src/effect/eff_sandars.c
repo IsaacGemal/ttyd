@@ -48,10 +48,6 @@ static inline GXColor effSandarsColorDisp2(u8 alpha) {
 	return color;
 }
 
-#ifndef MUST_MATCH
-const Vec vec3_80300138 = { 0.0f, 0.0f, 0.0f }; // the zero vector the natural copy reads (MUST_MATCH uses a literal)
-#endif
-
 EffectEntry* effSandarsEntry(s32 type, f32 x, f32 y, f32 z, f32 a) {
 	EffectEntry* entry;
 	effSandarsData* data;
@@ -144,19 +140,10 @@ void effSandarsMain(EffectEntry* effect) {
 	s32 type;
 	s32 i;
 
-#ifdef MUST_MATCH
-	/* MUST_MATCH: the zero literal (not the named vec3_80300138) keeps MWCC from hoisting the vec3 copy before
-	   the userdata load. It does not pool with the named vector: it adds a duplicate 12-byte Vec in .rodata. */
 	disp = (Vec){ 0.0f, 0.0f, 0.0f };
 	disp.x = data->x;
 	disp.y = data->y;
 	disp.z = data->z;
-#else
-	disp = vec3_80300138;
-	disp.x = data->x;
-	disp.y = data->y;
-	disp.z = data->z;
-#endif
 	position = disp;
 
 	inBattle = gp->inBattle != 0;

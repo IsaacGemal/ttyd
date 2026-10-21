@@ -48,11 +48,7 @@ EffectEntry* effNokotarouEntry(s32 type, s32 duration, f32 x, f32 y, f32 z, f32 
 
 void effNokotarouMain(EffectEntry* effect) {
 	BOOL inBattle;
-#ifdef MUST_MATCH
-	/* MUST_MATCH: retail builds the Vec in a scratch and copies it to a second local
-	   before dispCalcZ; a single local folds the copy away. */
 	Vec position;
-#endif
 	NokotarouWork* work = effect->userdata;
 	Vec disp = { 0 };
 	f32 t;
@@ -61,9 +57,7 @@ void effNokotarouMain(EffectEntry* effect) {
 	disp.x = work->x2;
 	disp.y = work->y2;
 	disp.z = work->z2;
-#ifdef MUST_MATCH
 	position = disp;
-#endif
 
 	inBattle = gp->inBattle != 0;
 
@@ -102,11 +96,7 @@ void effNokotarouMain(EffectEntry* effect) {
 			t = 1.0f - work->scaleAnim;
 			work->scaleAnim += t * k;
 		}
-#ifdef MUST_MATCH
 		dispEntry(CAMERA_3D, dispCalcZ(&position), 2, effNokotarouDisp, effect);
-#else
-		dispEntry(CAMERA_3D, dispCalcZ(&disp), 2, effNokotarouDisp, effect);
-#endif
 	}
 }
 

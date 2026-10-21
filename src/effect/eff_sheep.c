@@ -64,17 +64,7 @@ EffectEntry* effSheepEntry(s32 type, f32 x, f32 y, f32 z) {
 		if (p->type != 0) {
 			p->field_0x14 = (s32)((f32)(irand(50) + 50) / p->field_0x2C);
 			p->field_0x1C = 0.2f;
-#ifdef MUST_MATCH
-			// MUST_MATCH: splitting the product into a local makes MWCC allocate the
-			// divisor/0.2/0.5 to f2/f1/f0 like the original instead of f1/f0/f2.
-			{
-				f32 h = 0.5f;
-				f32 v = p->field_0x1C * p->field_0x14;
-				p->field_0x18 = v * h;
-			}
-#else
-			p->field_0x18 = p->field_0x1C * p->field_0x14 * 0.5f;
-#endif
+			p->field_0x18 = p->field_0x1C * p->field_0x14 / 2.0f;
 		}
 		if (entry->count - 1 == i) {
 			p->z = 0.0f;

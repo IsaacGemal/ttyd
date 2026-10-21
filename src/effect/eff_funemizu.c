@@ -232,36 +232,6 @@ void effFunemizuMain(EffectEntry* effect) {
 }
 #pragma opt_common_subs reset
 
-#ifdef MUST_MATCH
-// Match-only: the original walks both display-list tables with pointer induction variables, the size table
-// stepping 1 and the pointer table 4; the indexed form under #else is the natural equivalent.
-#define FUNEMIZU_DL_LOOP(n, tbl, sztbl) \
-	{ \
-		u8* sz; \
-		u8** dl; \
-		j = 0; \
-		sz = (sztbl); \
-		dl = (u8**)(tbl); \
-		for (; j < (n); j++, sz++, dl++) { \
-			GXCallDisplayList(*dl, *sz << 5); \
-		} \
-	}
-#define FUNEMIZU_DL_LOOP_H(n, tbl, sztbl) \
-	{ \
-		j = 0; \
-		sz = (sztbl); \
-		dl = (u8**)(tbl); \
-		for (; j < (n); j++, sz++, dl++) { \
-			GXCallDisplayList(*dl, *sz << 5); \
-		} \
-	}
-#else
-#define FUNEMIZU_DL_LOOP(n, tbl, sztbl) \
-	for (j = 0; j < (n); j++) { \
-		GXCallDisplayList((tbl)[j], (sztbl)[j] << 5); \
-	}
-#define FUNEMIZU_DL_LOOP_H(n, tbl, sztbl) FUNEMIZU_DL_LOOP(n, tbl, sztbl)
-#endif
 
 // The `.sdata` addressing below comes from the `__declspec(section ".sdata")` on the display-list/colour/
 // normal table externs in include/eff/eff_funemizu.h; without it MWCC emits lis/addi for them.
@@ -372,12 +342,7 @@ found:
 		oneR = float_0_80421478;
 		PSMTXTrans(mtxC0, oneR, oneR, scale);
 		PSMTXConcat(mtx30, mtxC0, mtxC0);
-#ifdef MUST_MATCH
-		// Volatile read: retail reloads 1.0 here rather than reusing a register.
-		oneR = *(volatile f32*)&float_1_80421484;
-#else
 		oneR = float_1_80421484;
-#endif
 		PSMTXScale(mtx90, oneR, oneR, scale);
 		PSMTXConcat(mtxC0, mtx90, mtxC0);
 		PSMTXScale(mtx90, data->scaleA, data->scaleAY, data->scaleA);
@@ -402,7 +367,9 @@ found:
 			GXSetVtxDesc(GX_VA_TEX0, GX_INDEX8);
 			GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, GX_TEX_ST, GX_S16, 0xc);
 			GXSetArray(GX_VA_TEX0, funemizu_texcoord0_tbl, 4);
-			FUNEMIZU_DL_LOOP_H(3, funemizu_dl_0_tbl, funemizu_dl_0_size_tbl);
+			for (j = 0, sz = funemizu_dl_0_size_tbl, dl = funemizu_dl_0_tbl; j < 3; j++, sz++, dl++) {
+				GXCallDisplayList(*dl, *sz << 5);
+			}
 		}
 		else {
 			GXClearVtxDesc();
@@ -418,7 +385,14 @@ found:
 			GXSetVtxDesc(GX_VA_TEX0, GX_INDEX8);
 			GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, GX_TEX_ST, GX_S16, 0xe);
 			GXSetArray(GX_VA_TEX0, gor_fune_texcoord0_tbl, 4);
-			FUNEMIZU_DL_LOOP(2, gor_fune_dl_0_tbl, gor_fune_dl_0_size_tbl);
+			{
+				u8* sz;
+				u8** dl;
+
+				for (j = 0, sz = gor_fune_dl_0_size_tbl, dl = gor_fune_dl_0_tbl; j < 2; j++, sz++, dl++) {
+					GXCallDisplayList(*dl, *sz << 5);
+				}
+			}
 		}
 
 		PSMTXScale(mtx90, data->scaleB, data->scaleBY, data->scaleB);
@@ -443,7 +417,14 @@ found:
 			GXSetVtxDesc(GX_VA_TEX0, GX_INDEX8);
 			GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, GX_TEX_ST, GX_S16, 0xc);
 			GXSetArray(GX_VA_TEX0, funemizu_texcoord0_tbl, 4);
-			FUNEMIZU_DL_LOOP(4, funemizu_dl_1_tbl, funemizu_dl_1_size_tbl);
+			{
+				u8* sz;
+				u8** dl;
+
+				for (j = 0, sz = funemizu_dl_1_size_tbl, dl = funemizu_dl_1_tbl; j < 4; j++, sz++, dl++) {
+					GXCallDisplayList(*dl, *sz << 5);
+				}
+			}
 		}
 		else {
 			GXClearVtxDesc();
@@ -459,7 +440,14 @@ found:
 			GXSetVtxDesc(GX_VA_TEX0, GX_INDEX8);
 			GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, GX_TEX_ST, GX_S16, 0xe);
 			GXSetArray(GX_VA_TEX0, gor_fune_texcoord0_tbl, 4);
-			FUNEMIZU_DL_LOOP(2, gor_fune_dl_1_tbl, gor_fune_dl_1_size_tbl);
+			{
+				u8* sz;
+				u8** dl;
+
+				for (j = 0, sz = gor_fune_dl_1_size_tbl, dl = gor_fune_dl_1_tbl; j < 2; j++, sz++, dl++) {
+					GXCallDisplayList(*dl, *sz << 5);
+				}
+			}
 		}
 	}
 }
