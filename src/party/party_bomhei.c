@@ -448,7 +448,6 @@ void bomhei_use(PartyEntry* party) {
     }
 }
 
-#pragma opt_common_subs off // without it MWCC CSE-hoists party+0x94 across movePos into r28/r29 (party_cloud does the same)
 void bomhei_use_main(PartyEntry* party) {
     MarioWork* mario = party->playerPtr;
     HitEntry* hit;
@@ -933,7 +932,6 @@ void bomhei_use_main(PartyEntry* party) {
         break;
     }
 }
-#pragma opt_common_subs reset
 
 
 // .text:0xD3C | 0x800BDD74 | size: 0xE4

@@ -46,9 +46,6 @@ static u8 a_data[32] = {
 	0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFA, 0xC8, 0x00, 0x00,
 };
 
-#pragma opt_common_subs reset
-#pragma opt_lifetimes reset
-
 // The vertex tables are reached through the one base pointer, the linker would drop the others.
 #pragma force_active on
 // TODO: type

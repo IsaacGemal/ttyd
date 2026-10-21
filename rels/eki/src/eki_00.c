@@ -1521,7 +1521,6 @@ static inline Vec moaVecV(f32 x, f32 y, f32 z, const Vec* base) {
 }
 #endif
 
-#pragma inline_max_size(1000)
 #pragma opt_lifetimes off // keeps the sin/cos coefficients in the target's FPRs
 #pragma opt_propagation off // hoist the sin/cos coefficient loads out of the inline branches
 static s32 moamoa_hit_check(ExtPose* ep, MoamoaPose* pose) {
@@ -1669,7 +1668,6 @@ static s32 moamoa_hit_check(ExtPose* ep, MoamoaPose* pose) {
     return 0;
 }
 
-#pragma inline_max_size reset
 #pragma opt_lifetimes reset
 #pragma opt_propagation reset
 
@@ -1692,7 +1690,6 @@ static inline void moaPlayHit(ExtPose* ep) {
 }
 
 #pragma inline_max_total_size(60000)
-#pragma inline_max_size(1000)
 // Keep the sin/cos coefficient loads hoisted instead of rematerialised per branch.
 #pragma opt_propagation off
 // Keeps the inlined sin/cos argument in a callee-saved FPR instead of rematerialising it per branch.
@@ -2272,7 +2269,6 @@ static void ext_moamoa_main(void) {
 
 #pragma opt_lifetimes reset
 #pragma opt_propagation reset
-#pragma inline_max_size reset
 #pragma inline_max_total_size reset
 
 static void ext_moamoa_dispent(void) {

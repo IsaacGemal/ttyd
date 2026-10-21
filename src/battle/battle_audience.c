@@ -358,7 +358,6 @@ void BattleAudience_ActInit(void) {
 }
 #pragma dont_inline reset
 
-#pragma opt_common_subs off // needed: with CSE on MWCC keeps audience+0x10000 in a callee-saved register
 void BattleAudience_PerAct(void) {
 	BattleAudience* audience = BattleAudienceBaseGetPtr();
 	StarPowerInfo* info;
@@ -490,7 +489,6 @@ void BattleAudience_PerAct(void) {
 	BattleAudienceAddTargetNum(audience->mAudienceDeltaMultiplier * (0.01f * delta), 0.0f);
 	BattleAudience_ActInit();
 }
-#pragma opt_common_subs reset
 
 BOOL BattleAudience_CheckReaction(void) {
 	BattleAudience* audience;
@@ -1633,9 +1631,6 @@ void BattleAudienceCtrlProcess(void) {
 	}
 }
 
-// MWCC inlines the small BattleAudienceGetPtr/_GetExist helpers here and the extra
-// address computations shift the whole body; the original keeps them as calls.
-#pragma dont_inline on
 BOOL BattleAudienceItemOn(s32 index, u16 itemId, s32 numItems) {
 	BattleAudience* audience = BattleAudienceBaseGetPtr();
 	BattleAudienceMember* member = BattleAudienceGetPtr(index);
@@ -1700,7 +1695,6 @@ BOOL BattleAudienceItemOn(s32 index, u16 itemId, s32 numItems) {
 	}
 	return FALSE;
 }
-#pragma dont_inline reset
 
 #pragma dont_inline on
 void BattleAudienceSetThrowItemMax(void) {
@@ -1723,7 +1717,6 @@ void BattleAudienceSetThrowItemMax(void) {
 }
 #pragma dont_inline reset
 
-#pragma dont_inline on
 BattleUnit* BattleAudienceDetectTargetAll(void) {
 	s32 ids[64];
 	s32 offset;
@@ -1753,7 +1746,6 @@ BattleUnit* BattleAudienceDetectTargetAll(void) {
 	sel = irand(count);
 	return BattleGetUnitPtr(wp, ids[sel]);
 }
-#pragma dont_inline reset
 
 #pragma dont_inline on
 BattleUnit* BattleAudienceDetectTargetPlayer(void) {
@@ -1805,7 +1797,6 @@ BattleUnit* BattleAudienceDetectTargetPlayer(void) {
 //  - the deactivate path reuses `member` for the second `BattleAudienceGetPtr` call, which is what the
 //    original did (it materialises -1 in r0, not r22).
 // 100%: every call, immediate, value, branch and the case-0 scheduling match.
-#pragma dont_inline on
 void BattleAudienceItemCtrlProcess(void) {
 	s32 i;
 	BattleWork* wp = _battleWorkPointer;
@@ -2119,15 +2110,10 @@ void BattleAudienceItemCtrlProcess(void) {
 		}
 	}
 }
-#pragma dont_inline reset
 
-// `opt_common_subs off` is load-bearing: with CSE on the active count lands in r29 (retail r28) and
-// the whole first block shifts.
 // Computing the case-10 `dx` before `radius` loads star+0x20 first, matching retail's register order.
 // The vec3_802f9744 copy emits retail's lis+addi only when the object is non-const (see its
 // MUST_MATCH definition).
-#pragma opt_common_subs off // needed: with CSE on the active count lands in r29 and the int->float mask in f3
-#pragma dont_inline on
 void BattleAudienceApSrcCtrlProcess(void) {
 	BattleAudience* audience = BattleAudienceBaseGetPtr();
 	BattleAudienceStar* star;
@@ -2276,14 +2262,11 @@ void BattleAudienceApSrcCtrlProcess(void) {
 		}
 	}
 }
-#pragma dont_inline reset
-#pragma opt_common_subs reset
 
 // The second loop reuses `i` (its second definition becomes a compiler object, so the backend copies the
 // shared zero into it: retail's `li r30,0 ... mr r28,r30`). Making the `star+0x44` store `volatile`
 // serialises it before the constant-Vec copy, and making the `star+0x20` store `volatile` keeps the
 // `star+0x2c` copy's loads out of the two rand blocks.
-#pragma dont_inline on
 BOOL BattleAudienceApSrcEntry(void) {
 	BattleAudience* audience;
 	BattleAudienceMember* member;
@@ -2354,7 +2337,6 @@ BOOL BattleAudienceApSrcEntry(void) {
 #endif
 	return TRUE;
 }
-#pragma dont_inline reset
 
 // The target colours the first cast's 0.0f constant f0 (window->count f1, cast temp f2, diff f3); MWCC colours
 // ours f3 instead, shifting the first block and both step clamps up a register, which also turns the positive
@@ -2363,7 +2345,6 @@ BOOL BattleAudienceApSrcEntry(void) {
 // Writing the zero test constant-first (`0.0f != diff`) makes objdiff's first `fcmpu` operand order match
 // (the constant is FRA) and is worth 95.87 -> 95.91.
 #define BA_ZERO 0.0f
-#pragma dont_inline on
 // The zero test is constant-first for the target's `(f0, diff)` operand order, the branches use
 // literal 0.0f so the target's four separate `lfs` reloads reappear, and `step` is a function-scope
 // local so the diff result takes f3.
@@ -2422,7 +2403,6 @@ void BattleAudienceWinCtrlProcess(void) {
 		window->field_0x10 = b;
 	}
 }
-#pragma dont_inline reset
 #undef BA_ZERO
 
 #pragma dont_inline on
@@ -2452,7 +2432,6 @@ void BattleAudienceGXInit(void) {
 // Runs each active member's animation command script. Opcodes are negative words; the script
 // base is 0x24, the current command 0x28, the wait timer 0x2C, and 0x34/0x40 are a 3-deep
 // loop-counter stack and its depth (none of these have named struct fields yet).
-#pragma dont_inline on
 void BattleAudienceAnimProcess(void) {
 	BattleAudienceMember* member;
 	s32 cmd;
@@ -2527,7 +2506,6 @@ void BattleAudienceAnimProcess(void) {
 		}
 	}
 }
-#pragma dont_inline reset
 
 // Same idea as BattleAudienceDispApSrc_color below: routing the colour through an inline puts the
 // named local at r1+0x8 and the hidden by-value copy at r1+0xc, matching the original; a plain
@@ -2541,7 +2519,6 @@ static inline GXColor BattleAudienceDispAudience_color(u8 r, u8 g, u8 b, u8 a) {
 	return color;
 }
 
-#pragma dont_inline on
 void BattleAudienceDispAudience(CameraId camId, void* param) {
 	BattleAudience* audience;
 	CameraEntry* cam;
@@ -2773,9 +2750,7 @@ void BattleAudienceDispAudience(CameraId camId, void* param) {
 		GXTexCoord2f32(texCoords.v[(texBase + 3) * 2], texCoords.v[(texBase + 3) * 2 + 1]);
 	}
 }
-#pragma dont_inline reset
 
-#pragma dont_inline on
 void BattleAudienceDispItem(CameraId camId, void* param) {
 	BattleAudienceItem* item;
 	Mtx mtx;
@@ -2804,7 +2779,6 @@ void BattleAudienceDispItem(CameraId camId, void* param) {
 		iconDispGx2(mtx, 0, iconId);
 	}
 }
-#pragma dont_inline reset
 
 // The inline's returned colour lands where the original keeps it: the named local at r1+0x8,
 // the hidden by-value copy at r1+0xc. A plain assignment puts them the other way round.
@@ -2814,7 +2788,6 @@ static inline GXColor BattleAudienceDispApSrc_color(u8 alpha) {
 	return color;
 }
 
-#pragma dont_inline on
 void BattleAudienceDispApSrc(CameraId camId, void* param) {
 	BattleAudience* audience;
 	BattleAudienceStar* star;
@@ -2846,9 +2819,7 @@ void BattleAudienceDispApSrc(CameraId camId, void* param) {
 		star++;
 	}
 }
-#pragma dont_inline reset
 
-#pragma dont_inline on
 void BattleAudienceDispWin(CameraId camId, void* param) {
 	BattleAudienceWindow* win;
 	GXColor color;
@@ -2874,7 +2845,6 @@ void BattleAudienceDispWin(CameraId camId, void* param) {
 	numberColor = *(GXColor*)&dat_8041e610;
 	iconNumberDispGx(mtx, (s32)win->count, FALSE, numberColor);
 }
-#pragma dont_inline reset
 
 // `audience_kind[type]` (no `(u8)` cast) is required so MWCC uses the parameter directly, and
 // `m * 0x19 - 0xeb + r` (not `m * 0x19 + r - 0xeb`) so `r` lands in r6. In the second branch the
@@ -2925,7 +2895,6 @@ BOOL BattleAudience_Entry(s32 index, AudienceMemberType type, u8 status) {
 }
 #pragma dont_inline reset
 
-#pragma dont_inline on
 void BattleAudience_Entry_Sub(s32 index, s32 type, u8 status) {
 	BattleAudienceMember* member;
 	BattleStage* stage;
@@ -2987,9 +2956,7 @@ void BattleAudience_Entry_Sub(s32 index, s32 type, u8 status) {
 		member->flags |= 8;
 	}
 }
-#pragma dont_inline reset
 
-#pragma dont_inline on
 void BattleAudience_Delete(s32 index) {
 	BattleAudienceMember* member;
 	BattleAudienceBaseGetPtr();
@@ -2999,7 +2966,6 @@ void BattleAudience_Delete(s32 index) {
 	}
 	member->flags = 0;
 }
-#pragma dont_inline reset
 
 #pragma dont_inline on
 void BattleAudience_SetAnim(s32 id, s32 animId, BOOL force) {
@@ -3359,7 +3325,6 @@ s32 BattleAudience_GetAudienceNoFromOffset(s32 index, s32 column, s32 row) {
 }
 #pragma dont_inline reset
 
-#pragma dont_inline on
 s32 BattleAudience_HaitiRandForFallObject(void) {
 	s32 r = irand(3);
 	s32 ret = 10;
@@ -3378,7 +3343,6 @@ s32 BattleAudience_HaitiRandForFallObject(void) {
 	}
 	return ret + r * 20;
 }
-#pragma dont_inline reset
 
 #pragma dont_inline on
 s32 BattleAudience_NoUsedHaitiRand(void) {
@@ -3417,7 +3381,6 @@ s32 BattleAudience_NoUsedHaitiRand(void) {
 const s32 dat_802f9884[] = { 10000, 1000, 100, 10, 5, 2, 1, 1, 1, 1 };
 const s32 dat_802f98ac[] = { 1, 1, 2, 2, 4, 4, 8, 8, 16, 16, 16, 16, 8, 8, 4, 4, 2, 2, 1, 1 };
 
-#pragma dont_inline on
 s32 BattleAudience_NoUsedFCHaitiRand(void) {
 	s32 rate[10];
 	s32 offset[20];
@@ -3479,7 +3442,6 @@ s32 BattleAudience_NoUsedFCHaitiRand(void) {
 	}
 	return -1;
 }
-#pragma dont_inline reset
 
 s32 BattleAudience_GetAudienceNum(void) {
 	return BattleAudienceBaseGetPtr()->mCurrentAudienceIntCount;
@@ -4113,7 +4075,6 @@ void BattleAudienceSoundBooing(void) {
 }
 #pragma dont_inline reset
 
-#pragma dont_inline on
 void BattleAudienceSoundBooingKind(s32 kind) {
 	BattleAudienceSound* sound;
 	s32 r;
@@ -4164,9 +4125,7 @@ void BattleAudienceSoundBooingKind(s32 kind) {
 		AUD_SOUND_TAIL(sound, vol);
 	}
 }
-#pragma dont_inline reset
 
-#pragma dont_inline on
 void BattleAudienceSoundClap(s32 a, s32 b) {
 	BattleAudienceSound* sound;
 	s32 r;
@@ -4205,11 +4164,7 @@ void BattleAudienceSoundClap(s32 a, s32 b) {
 		AUD_SOUND_TAIL(sound, vol);
 	}
 }
-#pragma dont_inline reset
 
-// Keep the call out of line: the original emits `bl BattleAudienceSoundNoiseAlways` in
-// BattleAudienceNoiseMain and BattleAudience_Init.
-#pragma dont_inline on
 void BattleAudienceSoundNoiseAlways(void) {
 	BattleAudience* audience = BattleAudienceBaseGetPtr();
 	BattleAudienceSound* sound = BattleAudienceSoundGetPtr(2);
@@ -4257,7 +4212,6 @@ void BattleAudienceSoundNoiseAlways(void) {
 		}
 	}
 }
-#pragma dont_inline reset
 
 #pragma dont_inline on
 void BattleAudienceSoundCheer(s32 a, s32 b) {
@@ -4415,7 +4369,6 @@ void BattleAudienceSoundWhistleKind(s32 kind) {
 	}
 }
 
-#pragma dont_inline on
 void BattleAudienceSoundCallKind(s32 kind) {
 	BattleAudienceSound* sound;
 	s32 r;
@@ -4440,9 +4393,7 @@ void BattleAudienceSoundCallKind(s32 kind) {
 		AUD_SOUND_TAIL(sound, vol);
 	}
 }
-#pragma dont_inline reset
 
-#pragma dont_inline on
 void BattleAudienceSoundHandBeat(void) {
 	BattleAudienceSound* sound;
 	s32 r;
@@ -4477,9 +4428,7 @@ void BattleAudienceSoundHandBeat(void) {
 		sound->mVolumeMultiplier = 100;
 	}
 }
-#pragma dont_inline reset
 
-#pragma dont_inline on
 void BattleAudienceSoundItemThrow(s32 kind, s32 index) {
 	Vec pos;
 	BattleAudienceSound* sound;
@@ -4510,9 +4459,7 @@ void BattleAudienceSoundItemThrow(s32 kind, s32 index) {
 		}
 	}
 }
-#pragma dont_inline reset
 
-#pragma dont_inline on
 void BattleAudienceSoundRun(s32 kind) {
 	BattleAudienceSound* sound = BattleAudienceSoundGetPtr(0xd);
 	s32 vol;
@@ -4531,9 +4478,7 @@ void BattleAudienceSoundRun(s32 kind) {
 		AUD_SOUND_TAIL(sound, vol);
 	}
 }
-#pragma dont_inline reset
 
-#pragma dont_inline on
 void BattleAudienceSoundSleep(s32 index) {
 	Vec pos;
 	BattleAudienceSound* sound;
@@ -4567,9 +4512,7 @@ void BattleAudienceSoundSleep(s32 index) {
 		}
 	}
 }
-#pragma dont_inline reset
 
-#pragma dont_inline on
 void BattleAudienceSoundZZZ(s32 index) {
 	BattleAudienceSound* sound = BattleAudienceSoundGetPtr(0x10);
 	s32 vol;
@@ -4581,9 +4524,7 @@ void BattleAudienceSoundZZZ(s32 index) {
 		AUD_SOUND_TAIL(sound, vol);
 	}
 }
-#pragma dont_inline reset
 
-#pragma dont_inline on
 void BattleAudienceSoundSing(s32 index) {
 	BattleAudienceSound* sound = BattleAudienceSoundGetPtr(0x11);
 	s32 vol;
@@ -4595,9 +4536,7 @@ void BattleAudienceSoundSing(s32 index) {
 		AUD_SOUND_TAIL(sound, vol);
 	}
 }
-#pragma dont_inline reset
 
-#pragma dont_inline on
 void BattleAudienceSoundShell(s32 index) {
 	Vec pos;
 	BattleAudienceSound* sound;
@@ -4621,9 +4560,7 @@ void BattleAudienceSoundShell(s32 index) {
 		}
 	}
 }
-#pragma dont_inline reset
 
-#pragma dont_inline on
 void BattleAudienceSoundBombIgnite(s32 index, s32 a, s32 b) {
 	BattleAudienceSound* sound = BattleAudienceSoundGetPtr(0x14);
 	s32 vol;
@@ -4637,9 +4574,7 @@ void BattleAudienceSoundBombIgnite(s32 index, s32 a, s32 b) {
 		AUD_SOUND_TAIL(sound, vol);
 	}
 }
-#pragma dont_inline reset
 
-#pragma dont_inline on
 void BattleAudienceSoundBombFire(s32 index) {
 	Vec pos;
 	BattleAudienceSound* sound;
@@ -4663,9 +4598,7 @@ void BattleAudienceSoundBombFire(s32 index) {
 		}
 	}
 }
-#pragma dont_inline reset
 
-#pragma dont_inline on
 void BattleAudienceSoundPakkunEat(s32 index) {
 	BattleAudienceSound* sound = BattleAudienceSoundGetPtr(0x17);
 	s32 vol;
@@ -4677,7 +4610,6 @@ void BattleAudienceSoundPakkunEat(s32 index) {
 		AUD_SOUND_TAIL(sound, vol);
 	}
 }
-#pragma dont_inline reset
 
 #pragma dont_inline on
 void BattleAudienceSoundSetVol(s32 index, u8 a2, s32 a3) {
@@ -4692,14 +4624,12 @@ void BattleAudienceSoundSetVol(s32 index, u8 a2, s32 a3) {
 }
 #pragma dont_inline reset
 
-#pragma dont_inline on
 void BattleAudienceSoundSetVolAll(u8 a2, s32 a3) {
 	s32 i;
 	for (i = 0; i < 24; i++) {
 		BattleAudienceSoundSetVol(i, a2, a3);
 	}
 }
-#pragma dont_inline reset
 
 BOOL BattleAudienceSoundCheck(s32 index) {
 	return *(s32*)BattleAudienceSoundGetPtr(index) & 1;
@@ -4861,7 +4791,6 @@ void BattleAudience_Case_KillEnemy(void) {
 	BattleAudienceBaseGetPtr()->flags |= 0x1000;
 }
 
-#pragma dont_inline on
 void BattleAudience_Case_ActionCommandGood(BattleWeapon* weapon) {
 	BattleAudience* audience = BattleAudienceBaseGetPtr();
 	s32 i;
@@ -4877,9 +4806,7 @@ void BattleAudience_Case_ActionCommandGood(BattleWeapon* weapon) {
 	}
 	audience->flags |= 0x10;
 }
-#pragma dont_inline reset
 
-#pragma dont_inline on
 void BattleAudience_Case_ActionCommandBad(BattleWeapon* weapon) {
 	BattleAudience* audience = BattleAudienceBaseGetPtr();
 	s32 count = 0;
@@ -4898,7 +4825,6 @@ void BattleAudience_Case_ActionCommandBad(BattleWeapon* weapon) {
 	}
 	audience->flags |= 0x20;
 }
-#pragma dont_inline reset
 
 void BattleAudience_Case_GuardGood(void) {
 	BattleAudienceBaseGetPtr()->flags |= 0x40;
@@ -4908,7 +4834,6 @@ void BattleAudience_Case_GuardBad(void) {
 	BattleAudienceBaseGetPtr()->flags |= 0x80;
 }
 
-#pragma dont_inline on
 void BattleAudience_Case_AcrobatGood(void) {
 	BattleAudience* audience = BattleAudienceBaseGetPtr();
 	s32 count = 0;
@@ -4929,9 +4854,7 @@ void BattleAudience_Case_AcrobatGood(void) {
 	}
 	audience->flags |= 0x100;
 }
-#pragma dont_inline reset
 
-#pragma dont_inline on
 void BattleAudience_Case_AcrobatBad(void) {
 	BattleAudience* audience = BattleAudienceBaseGetPtr();
 	s32 count = 0;
@@ -4947,7 +4870,6 @@ void BattleAudience_Case_AcrobatBad(void) {
 	}
 	audience->flags |= 0x200;
 }
-#pragma dont_inline reset
 
 void BattleAudience_Case_AcrobatNoTry(void) {
 	BattleAudienceBaseGetPtr();
@@ -5219,12 +5141,9 @@ void BattleAudience_SetPresentItemNo(s32 value) {
 }
 #pragma dont_inline reset
 
-// Keep these accessors out of line: BattleAudienceItemCtrlProcess emits a bl to each.
-#pragma dont_inline on
 s32 BattleAudience_GetPresentItemNo(void) {
 	return BattleAudienceBaseGetPtr()->presentItemNo;
 }
-#pragma dont_inline reset
 
 #pragma dont_inline on
 void BattleAudience_SetPresentTargetUnitId(s32 value) {
@@ -5232,11 +5151,9 @@ void BattleAudience_SetPresentTargetUnitId(s32 value) {
 }
 #pragma dont_inline reset
 
-#pragma dont_inline on
 s32 BattleAudience_GetPresentTargetUnitId(void) {
 	return BattleAudienceBaseGetPtr()->presentTargetUnitId;
 }
-#pragma dont_inline reset
 
 #pragma dont_inline on
 void BattleAudience_SetPresentItemType(s32 value) {

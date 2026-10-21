@@ -2851,7 +2851,6 @@ USER_FUNC(btlevtcmd_JumpSetting) {
 // literals (retail vec3_802ede88 / vec3_802ede94), which is what fixes the frame; the declaration order
 // `s32 btlId, id; s32* args; BattleUnit* unit; s32 frame, a;` fixes the args/id allocation. The tail is
 // written `if (frame <= 0) { SetPos(target); ...; return 1; } return 0;`.
-#pragma opt_common_subs off // keep the target's 0.5/3.0 literal load colouring (f4/f2) in both bodies
 USER_FUNC(btlevtcmd_JumpPosition) {
     s32 btlId, id;
     s32* args = event->args;
@@ -2951,7 +2950,6 @@ USER_FUNC(btlevtcmd_JumpPosition) {
     }
     return 0;
 }
-#pragma opt_common_subs reset
 
 //s32* battleId
 USER_FUNC(btlevtcmd_JumpContinue) {
@@ -4323,7 +4321,6 @@ USER_FUNC(btlevtcmd_MarioJumpParam) {
 // Type 1 skips the setup; 2 and 4 stretch the arc. The `h` temp holding each sin result and the two
 // `*=` forms pin the target's FPRs and load order; `pos` is the zero Vec (retail vec3_802edea0) the target reads
 // at vec3_802ede88+0x18 (0x18 is declared only as an unnamed gap in this unit's symbols).
-#pragma opt_common_subs off // without it the arc constants' FPRs and the 0x188 address colouring differ
 USER_FUNC(btlevtcmd_MarioJumpPosition) {
     s32* args = event->args;
     BattleWork* wp;
@@ -4488,7 +4485,6 @@ USER_FUNC(btlevtcmd_MarioJumpPosition) {
     }
     return 0;
 }
-#pragma opt_common_subs reset
 
 //s32* battleId, s32* targetBtlId, s32* partId, s32* x, s32* y, s32* z
 // The translated id must reuse the `btlId` variable (not a separate `id`): with a separate variable
@@ -4602,7 +4598,6 @@ USER_FUNC(btlevtcmd_SetPartsFallAccel) {
 }
 
 //s32* battleId, s32* partId, s32* tx, s32* ty, s32* tz, s32* frame, s32* a
-#pragma opt_common_subs off // keep the target's 0.5/3.0 literal load colouring (f4/f2) in both bodies
 USER_FUNC(btlevtcmd_JumpPartsPosition) {
     s32 btlId, id;
     s32* args = event->args;
@@ -4707,7 +4702,6 @@ USER_FUNC(btlevtcmd_JumpPartsPosition) {
     }
     return 0;
 }
-#pragma opt_common_subs reset
 
 //s32* battleId, s32* partId, s32 a, f32 b, f32 c
 USER_FUNC(btlevtcmd_JumpPartsSetting) {

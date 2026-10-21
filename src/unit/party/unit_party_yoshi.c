@@ -69,7 +69,6 @@ static s32 attack_event[2];
 static s32 wait_event[6];
 
 // clang-format off
-#pragma opt_propagation reset
 
 
 #define TECH_MENU_ENTRY(table)                                                        \

@@ -621,7 +621,6 @@ void main_timing(s32 idx) {
 }
 #pragma dont_inline reset
 
-#pragma dont_inline on
 // .text:0x1640 | 0x80244638 | size: 0x89C
 static void main_star(void) {
     DekaWork* p = get_ptr();
@@ -835,7 +834,6 @@ static void main_star(void) {
         d->unk5F = (u8)alpha;
     }
 }
-#pragma dont_inline reset
 
 #pragma dont_inline on
 // main_enemy is kept out of line: main_deka calls it rather than inlining it.
@@ -859,13 +857,10 @@ void main_enemy(void) {
 }
 #pragma dont_inline reset
 
-#pragma dont_inline on
 // .text:0x11A0 | 0x80244198 | size: 0x404
 // The int->float magic this function loads is the compiler's own pool entry (an anonymous
 // @NNN local), not double_to_int_80300630; objdiff ignores that relocation, so the only real
-// differences were FPR allocation. With propagation on, the final mPosition.y/mHomePosition.y
-// loads are scheduled in the other order.
-#pragma opt_propagation off
+// differences were FPR allocation.
 void main_enemy_sub(BattleUnit* unit, s32* count) {
     DekaWork* p = get_ptr();
     DekaYukaMesh* mesh = p->matEntry->address;
@@ -950,8 +945,6 @@ void main_enemy_sub(BattleUnit* unit, s32* count) {
     p->unitIds[*count] = BtlUnit_GetUnitId(unit);
     (*count)++;
 }
-#pragma opt_propagation reset
-#pragma dont_inline reset
 
 // .text:0x1158 | 0x80244150 | size: 0x48
 s32 end_deka(EventEntry* event) {

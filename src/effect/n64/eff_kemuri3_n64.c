@@ -97,7 +97,6 @@ inline Vec initializeVec(Vec* input) {
     return temp;
 }
 
-#pragma opt_common_subs off // subexpression elimination merges the field_24 decrement with the compare, changing FPR allocation
 void effKemuri3Main(EffectEntry* effect) {
     effKemuri3Data* data = effect->userdata;
     Vec position = initializeVec(&data->position);
@@ -157,7 +156,6 @@ void effKemuri3Main(EffectEntry* effect) {
         dispEntry(CAMERA_3D, dispCalcZ(&position), 2, effKemuri3Disp, effect);
     }
 }
-#pragma opt_common_subs reset
 
 static inline void kemuri3SetColor(u8 alpha) {
     GXColor color = *(GXColor*)&dat_8041f2e8;

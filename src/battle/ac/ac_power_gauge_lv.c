@@ -195,21 +195,12 @@ void battleAcDisp_PowerGaugeLv(CameraId camId, void* param) {
         break;
     }
 }
-#pragma opt_common_subs reset
-#pragma dont_inline reset
-#pragma optimize_for_size reset
 void battleAcDelete_PowerGaugeLv(BattleWork* work) {
     if (!(work->actionCommands.field_0x30 & 1)) {
         work->actionCommands.mAcState = 0x3eb;
     }
 }
 
-// don't_inline: the original keeps actionCommandDisp as its own local function.
-#pragma dont_inline on
-// opt_common_subs off: with CSE on MWCC reuses the gauge-percent value it already has in f0 and
-// emits `fdivs f0, f1, f0`; disabling common subexpression elimination gives the original operand
-// registers (numerator f2, divisor f1).
-#pragma opt_common_subs off
 // The clamp keeps `ratio` in the original's divisor register (f1: `fdivs f1, f2, f1`, `fmr f1, f0`).
 static void actionCommandDisp(f32 f1, f32 f2) {
     BattleWork* work = _battleWorkPointer;
@@ -296,8 +287,6 @@ static void actionCommandDisp(f32 f1, f32 f2) {
         break;
     }
 }
-#pragma opt_common_subs reset
-#pragma dont_inline reset
 
 // --- .sdata2 definitions (kept after the code, see note above) ---
 

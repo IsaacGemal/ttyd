@@ -209,8 +209,6 @@ void faker_mario_makkuro_set(void) {
     mapSetTevCallback(0xB, callback);
 }
 
-#pragma opt_propagation reset
-
 static s32 _mario_makkuro_set(EventEntry* event, BOOL isFirstCall) {
     BattleUnit* mario = BattleGetMarioPtr(_battleWorkPointer);
 

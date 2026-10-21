@@ -528,5 +528,4 @@ void effFlameDisp(CameraId camId, void* param) {
 		break;
 	}
 }
-#pragma opt_common_subs reset
 #pragma opt_propagation reset

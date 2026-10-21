@@ -233,10 +233,8 @@ void cloud_init(PartyEntry* party) {
     party->tail.flurrie.breathFx = NULL;
 }
 
-// `opt_common_subs off`: with CSE on MWCC hoists party+0x94 across movePos into a
-// callee-saved register (r29 + a 0x20 frame). Writing the flag as `pf = (...)` rather
-// than `if (...) pf = 1;` gives the original's r0 allocation for pf.
-#pragma opt_common_subs off // without it MWCC CSEs party+0x94 across movePos into a callee-saved register (r29)
+// Writing the flag as `pf = (...)` rather than `if (...) pf = 1;` gives the original's r0
+// allocation for pf.
 static inline void cloudMoveToMario(PartyEntry* party) {
     MarioWork* pm = party->playerPtr;
     f32 pa;
@@ -301,14 +299,9 @@ void cloud_use(PartyEntry* party) {
         }
     }
 }
-#pragma opt_common_subs reset
 
 #define cloud ((PartyCloud*)party->useStruct)
 
-// The pragma stops MWCC CSE-ing party->targetPos into a callee-saved register across the inlined movePos.
-#ifdef MUST_MATCH
-#pragma opt_common_subs off
-#endif
 static inline void cloudMoveToMarioStep(PartyEntry* party) {
     MarioWork* pm = party->playerPtr;
     f32 pa;
@@ -551,9 +544,6 @@ void N__cloud_use(PartyEntry* party) {
     }
 }
 #undef cloud
-#ifdef MUST_MATCH
-#pragma opt_common_subs reset
-#endif
 #undef MOVE_TO_MARIO
 
 void cloud_exit(PartyEntry* party) {
