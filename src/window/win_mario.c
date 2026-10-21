@@ -201,7 +201,7 @@ s32 winMarioMain(WindowWork* work) {
                 if (d->reqItem == 0) {                                                               \
                     break;                                                                           \
                 }                                                                                    \
-                if ((s32)pouchCheckItem(d->reqItem) != 0) {                                          \
+                if (pouchCheckItem(d->reqItem) != 0) {                                               \
                     break;                                                                           \
                 }                                                                                    \
             }                                                                                        \
@@ -514,7 +514,7 @@ void fukidashi(WindowWork* work, u32 type, f32 x, f32 y) {
         }
         break;
     case 7:
-        if ((s32)pouchCheckItem(2) != 0) {
+        if (pouchCheckItem(2) != 0) {
             u16 iconId = itemDataTable[2].icon_id;
             winTexInit(*(TEXPalette**)work->winTpl->data);
             GXSetTevColorIn(GX_TEVSTAGE0, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ZERO, GX_CC_C0);
@@ -523,7 +523,7 @@ void fukidashi(WindowWork* work, u32 type, f32 x, f32 y) {
         }
         break;
     case 8:
-        if ((s32)pouchCheckItem(4) != 0) {
+        if (pouchCheckItem(4) != 0) {
             u16 iconId = itemDataTable[4].icon_id;
             winTexInit(*(TEXPalette**)work->winTpl->data);
             GXSetTevColorIn(GX_TEVSTAGE0, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ZERO, GX_CC_C0);
@@ -532,7 +532,7 @@ void fukidashi(WindowWork* work, u32 type, f32 x, f32 y) {
         }
         break;
     case 9:
-        if ((s32)pouchCheckItem(5) != 0) {
+        if (pouchCheckItem(5) != 0) {
             u16 iconId = itemDataTable[5].icon_id;
             winTexInit(*(TEXPalette**)work->winTpl->data);
             GXSetTevColorIn(GX_TEVSTAGE0, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ZERO, GX_CC_C0);
@@ -541,7 +541,7 @@ void fukidashi(WindowWork* work, u32 type, f32 x, f32 y) {
         }
         break;
     case 10:
-        if ((s32)pouchCheckItem(3) != 0) {
+        if (pouchCheckItem(3) != 0) {
             u16 iconId = itemDataTable[3].icon_id;
             winTexInit(*(TEXPalette**)work->winTpl->data);
             GXSetTevColorIn(GX_TEVSTAGE0, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ZERO, GX_CC_C0);

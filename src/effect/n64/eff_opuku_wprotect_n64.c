@@ -332,10 +332,10 @@ void effOpukuWprotectDisp(CameraId camId, void* param) {
 		py = (f32)(point->y * 10);
 		pz = (f32)(point->z * 10);
 		if (float_0_8041f890 != py) {
-			s1 = (f32)sin((f32)(counter + (s32)effTblRandN64(1000, (s32)(float_100_8041f894 * pz + (float_10_8041f898 * py + px)))));
+			s1 = (f32)sin((f32)(counter + effTblRandN64(1000, (s32)(float_100_8041f894 * pz + (float_10_8041f898 * py + px)))));
 			t2 = float_100_8041f894 * py;
-			s2 = (f32)sin((f32)(counter + (s32)effTblRandN64(1000, (s32)(t2 + float_10_8041f898 * px + pz))));
-			s3 = (f32)sin((f32)(counter + (s32)effTblRandN64(1000, (s32)(float_10_8041f898 * pz + (float_100_8041f894 * px + py)))));
+			s2 = (f32)sin((f32)(counter + effTblRandN64(1000, (s32)(t2 + float_10_8041f898 * px + pz))));
+			s3 = (f32)sin((f32)(counter + effTblRandN64(1000, (s32)(float_10_8041f898 * pz + (float_100_8041f894 * px + py)))));
 			d1 = float_20_8041f89c * s1;
 			d2 = float_20_8041f89c * s2;
 			d3 = float_20_8041f89c * s3;

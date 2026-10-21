@@ -499,7 +499,7 @@ void btlseqEnd(BattleWork* wp) {
                 BattleInformationSetResult(info, 4);
             }
         }
-        switch ((s32)BattleInformationGetResult(info)) {
+        switch (BattleInformationGetResult(info)) {
         case 1:
             if (fbatGetPointer()->endEvt != 0) {
                 BattleSetSeq(wp, SEQ_END, SEQ_END_WIN_EVT);

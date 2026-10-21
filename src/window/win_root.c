@@ -2780,7 +2780,7 @@ void winMailDisp(WindowWork* work) {
                       (Vec){4.0f + (208.0f + work->field_0x244), work->field_0x260 + ((work->field_0x24C - 56.0f) - (f32)(i * 40)), 0.0f},
                       (Vec){1.0f, 1.0f, 1.0f}, color);
             white = (GXColor){0xFF, 0xFF, 0xFF, 0xFF};
-            winTexSet((s32)pouchCheckMail(id) == 2 ? WIN_TEX_MAIL_READ : WIN_TEX_MAIL_UNREAD,
+            winTexSet(pouchCheckMail(id) == 2 ? WIN_TEX_MAIL_READ : WIN_TEX_MAIL_UNREAD,
                       (Vec){72.0f + work->field_0x244, work->field_0x260 + (((work->field_0x24C - 56.0f) - (f32)(i * 40)) - 3.0f), 0.0f},
                       (Vec){1.0f, 1.0f, 1.0f}, white);
             winTexSet((num + 1) / 10 + 0x65,

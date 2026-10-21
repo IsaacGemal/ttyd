@@ -1621,14 +1621,14 @@ s32 BattlePreCheckDamage(BattleUnit* attacker, BattleUnit* target, BattleUnitPar
 #pragma dont_inline on
 s32 _checkDamageCode_EmergencyRevival(BattleUnit* unit, s32* flags) {
     if (unit->currentKind == UNIT_MARIO) {
-        if ((s32)pouchCheckItem(ITEM_LIFE_SHROOM) > 0) {
+        if (pouchCheckItem(ITEM_LIFE_SHROOM) > 0) {
             *flags |= 0x800;
             return 1;
         }
         return 0;
     }
     if (unit->currentKind >= TYPE_PARTNER_MIN && unit->currentKind < TYPE_PARTNER_MAX) {
-        if ((s32)pouchCheckItem(ITEM_LIFE_SHROOM) > 0) {
+        if (pouchCheckItem(ITEM_LIFE_SHROOM) > 0) {
             *flags |= 0x800;
             return 1;
         }

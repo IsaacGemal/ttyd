@@ -148,7 +148,7 @@ s32 pouchGetEmptyHaveItemCnt(void) {
 	s32 i, count, max;
 	s32 have;
 
-	have = (s32)pouchCheckItem(ITEM_STRANGE_SACK);
+	have = pouchCheckItem(ITEM_STRANGE_SACK);
 	max = have ? MAX_HELD_ITEMS : HELD_ITEM_COUNT_BASE;
 	for (i = 0, count = 0; i < max; i++) {
 		if (mpp->heldItems[i] == ITEM_NULL) {
@@ -183,7 +183,7 @@ static inline BOOL pouchInsertItem(ItemType type) {
 	table2 = NULL;
 	if (type >= ITEM_MIN && type < ITEM_MAX) {
 		table1 = mpp->heldItems;
-		maximum = (s32)pouchCheckItem(ITEM_STRANGE_SACK) ? MAX_HELD_ITEMS : HELD_ITEM_COUNT_BASE;
+		maximum = pouchCheckItem(ITEM_STRANGE_SACK) ? MAX_HELD_ITEMS : HELD_ITEM_COUNT_BASE;
 		valid = TRUE;
 	}
 	else if (type >= KEY_ITEM_MIN && type < KEY_ITEM_MAX) {
@@ -318,30 +318,29 @@ BOOL pouchGetItem(ItemType type) {
 
 
 
-u32 pouchCheckItem(u32 itemId) {
+s32 pouchCheckItem(s32 itemId) {
 	int i;
-	u32 itemCnt;
-	s32 id = (s32)itemId;
+	s32 itemCnt;
 
-	if (ITEM_MIN <= id && id < ITEM_MAX) {
+	if (ITEM_MIN <= itemId && itemId < ITEM_MAX) {
 		for (itemCnt = 0, i = 0; i < MAX_HELD_ITEMS; i++) {
-			if (id == mpp->heldItems[i]) {
+			if (itemId == mpp->heldItems[i]) {
 				itemCnt++;
 			}
 		}
 		return itemCnt;
 	}
-	else if (KEY_ITEM_MIN <= id && id < KEY_ITEM_MAX) {
+	else if (KEY_ITEM_MIN <= itemId && itemId < KEY_ITEM_MAX) {
 		for (itemCnt = 0, i = 0; i < MAX_KEY_ITEMS; i++) {
-			if (id == mpp->keyItems[i]) {
+			if (itemId == mpp->keyItems[i]) {
 				itemCnt++;
 			}
 		}
 		return itemCnt;
 	}
-	else if (BADGE_MIN <= id && id < BADGE_MAX) {
+	else if (BADGE_MIN <= itemId && itemId < BADGE_MAX) {
 		for (itemCnt = 0, i = 0; i < MAX_BADGES; i++) {
-			if (id == mpp->badges[i]) {
+			if (itemId == mpp->badges[i]) {
 				itemCnt++;
 			}
 		}
@@ -380,7 +379,7 @@ BOOL pouchRemoveItem(ItemType type) {
 	if (type >= ITEM_MIN && type < ITEM_MAX) {
 		table1 = mpp->heldItems;
 		table2 = NULL;
-		maximum = (s32)pouchCheckItem(ITEM_STRANGE_SACK) ? MAX_HELD_ITEMS : HELD_ITEM_COUNT_BASE;
+		maximum = pouchCheckItem(ITEM_STRANGE_SACK) ? MAX_HELD_ITEMS : HELD_ITEM_COUNT_BASE;
 		valid = TRUE;
 	}
 	else if (type >= KEY_ITEM_MIN && type < KEY_ITEM_MAX) {
@@ -423,7 +422,7 @@ s32 pouchRemoveItemIndex(s32 id, s32 index) {
 	if (id >= ITEM_MIN && id < ITEM_MAX) {
 		table1 = mpp->heldItems;
 		table2 = NULL;
-		maximum = (s32)pouchCheckItem(ITEM_STRANGE_SACK) ? MAX_HELD_ITEMS : HELD_ITEM_COUNT_BASE;
+		maximum = pouchCheckItem(ITEM_STRANGE_SACK) ? MAX_HELD_ITEMS : HELD_ITEM_COUNT_BASE;
 		valid = TRUE;
 	}
 	else if (id >= KEY_ITEM_MIN && id < KEY_ITEM_MAX) {
@@ -960,17 +959,17 @@ s32 pouchGetJumpLv(void) {
 	int level = 0;
 	s32 c;
 
-	c = (s32)pouchCheckItem(ITEM_ULTRA_BOOTS);
+	c = pouchCheckItem(ITEM_ULTRA_BOOTS);
 	if (c) {
 		level = 3;
 	}
 	else {
-		c = (s32)pouchCheckItem(ITEM_SUPER_BOOTS);
+		c = pouchCheckItem(ITEM_SUPER_BOOTS);
 		if (c) {
 			level = 2;
 		}
 		else {
-			c = (s32)pouchCheckItem(ITEM_BOOTS);
+			c = pouchCheckItem(ITEM_BOOTS);
 			if (c) {
 				level = 1;
 			}
@@ -984,17 +983,17 @@ s32 pouchGetHammerLv(void) {
 	int level = 0;
 	s32 c;
 
-	c = (s32)pouchCheckItem(ITEM_ULTRA_HAMMER);
+	c = pouchCheckItem(ITEM_ULTRA_HAMMER);
 	if (c) {
 		level = 3;
 	}
 	else {
-		c = (s32)pouchCheckItem(ITEM_SUPER_HAMMER);
+		c = pouchCheckItem(ITEM_SUPER_HAMMER);
 		if (c) {
 			level = 2;
 		}
 		else {
-			c = (s32)pouchCheckItem(ITEM_HAMMER);
+			c = pouchCheckItem(ITEM_HAMMER);
 			if (c) {
 				level = 1;
 			}
@@ -1245,7 +1244,7 @@ void pouchOpenMail(s32 mailId) {
 	mpp->mEmailReadFlags[mailId / 32] |= (1 << (mailId % 32));
 }
 
-u32 pouchCheckMail(s32 mailId) {
+s32 pouchCheckMail(s32 mailId) {
 	s32 mask = (1 << (mailId % 32));
 	if (mpp->mEmailReadFlags[mailId / 32] & mask) {
 		return 2;

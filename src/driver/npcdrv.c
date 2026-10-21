@@ -2481,7 +2481,7 @@ void fbatBattleMode(void) {
                 fbatData->mode = 1;
                 if (result == 1 || result == 2) {
                     mult = 1;
-                    if ((s32)BattleInformationGetResult(info4) == 1) {
+                    if (BattleInformationGetResult(info4) == 1) {
                         entry->btlCoinDropCount = info4->field_0x14;
                     } else if (result == 1) {
                         entry->btlCoinDropCount = entry->baseCoin;

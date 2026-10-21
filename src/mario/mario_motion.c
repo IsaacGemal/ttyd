@@ -1258,7 +1258,7 @@ BOOL marioChkTransform(void) {
     if (mario->currMotionId == MARIO_MOTION_YOSHI) {
         return FALSE;
     }
-    if ((s32)pouchCheckItem(5) > 0) {
+    if (pouchCheckItem(5) > 0) {
         if (marioChkShipPlace((HitEntry*)mario->hitobjStandOn) != 0) {
             mario = marioGetPtr();
             if (!(mario->flags & MARIO_FLAG_CHG_MOT_DISABLED)) {
@@ -1280,7 +1280,7 @@ BOOL marioChkTransform(void) {
             return FALSE;
         }
     }
-    if ((s32)pouchCheckItem(4) > 0) {
+    if (pouchCheckItem(4) > 0) {
         if (marioChkPlanePlace((HitEntry*)mario->hitobjStandOn) != 0) {
             mario = marioGetPtr();
             if (!(mario->flags & MARIO_FLAG_CHG_MOT_DISABLED)) {
@@ -1388,7 +1388,7 @@ s32 marioRollChgChk(void) {
     if (unk10 < 3) {
         return 0;
     }
-    if ((s32)pouchCheckItem(3) == 0) {
+    if (pouchCheckItem(3) == 0) {
         return 0;
     }
     {

@@ -493,7 +493,7 @@ USER_FUNC(make_kagi_tbl) {
     s32 i;
 
     for (i = 0; i < 8; i++) {
-        if ((s32)pouchCheckItem(i + 38) > 0) {
+        if (pouchCheckItem(i + 38) > 0) {
             kagi_tbl[count] = i + 38;
             count++;
         }

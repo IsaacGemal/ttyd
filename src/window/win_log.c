@@ -277,7 +277,7 @@ void winLogInit(WindowWork* work) {
     }
     w->stoneNum = 0;
     for (i = 0; i < 7; i++) {
-        if ((s32)pouchCheckItem(stone_tbl[i]) != 0) {
+        if (pouchCheckItem(stone_tbl[i]) != 0) {
             w->stoneNum++;
         }
     }

@@ -143,7 +143,7 @@ USER_FUNC(evt_win_item_maketable) {
     }
     out = (s32*)_mapAlloc((count + 1) * 4);
     for (i = 0, n = 0; i < count; i++) {
-        if ((s32)pouchCheckItem(table[i]) != 0) {
+        if (pouchCheckItem(table[i]) != 0) {
             out[n] = table[i];
             n++;
         }

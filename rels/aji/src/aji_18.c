@@ -29,13 +29,13 @@ extern GXColor zero_aji_00016d18;
 static USER_FUNC(make_list) {
     s32 i = 0;
 
-    if ((s32)pouchCheckItem(29) > 0) {
+    if (pouchCheckItem(29) > 0) {
         key_list[i++] = 29;
     }
-    if ((s32)pouchCheckItem(30) > 0) {
+    if (pouchCheckItem(30) > 0) {
         key_list[i++] = 30;
     }
-    if ((s32)pouchCheckItem(31) > 0) {
+    if (pouchCheckItem(31) > 0) {
         key_list[i++] = 31;
     }
     key_list[i] = -1;

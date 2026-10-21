@@ -258,7 +258,7 @@ typedef struct FieldBattleInfo {
     BattleUnitType party;    // 0x4
     u32 partyId;             // 0x8
     NpcBattleInfo* setup;    // 0xC
-    u32 result;              // 0x10
+    s32 result;              // 0x10
     s32 field_0x14;          // 0x14, coins added by BattleStoreCoin; npcdrv copies it to NpcEntry.btlCoinDropCount
     u8 field_0x18;           // 0x18, battleRules[0] (seq_battle), the rule kind battle_actrecord judges
     u8 ruleKeepResult;       // 0x19, written by battle_actrecord, read by evt_npc_get_battle_rule_keep_result
