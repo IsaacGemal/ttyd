@@ -303,9 +303,7 @@ s32 scissor_intersection2(f32 ax, f32 ay, f32 bx, f32 by, f32 cx, f32 cy, f32 dx
     }
     return scissor_intersection(ax, ay, bx, by, cx, cy, dx, dy, ox, oy);
 }
-#pragma dont_inline reset
 
-#pragma dont_inline on
 s32 scissor_intersection3(f32 ax, f32 ay, f32 bx, f32 by, f32 cx, f32 cy, f32 dx, f32 dy, f32* ox, f32* oy) {
     f32 diff = bx - ax;
 
@@ -333,11 +331,9 @@ s32 scissor_intersection3(f32 ax, f32 ay, f32 bx, f32 by, f32 cx, f32 cy, f32 dx
     }
     return scissor_intersection(ax, ay, bx, by, cx, cy, dx, dy, ox, oy);
 }
-#pragma dont_inline reset
 
 // Keep scissor_intersection3 out of line: the original issues a call (bl) to it
 // from scissor_intersection4 rather than inlining the body.
-#pragma dont_inline on
 s32 scissor_intersection4(f32 ax, f32 ay, f32 bx, f32 by, f32 cx, f32 cy, f32 dx, f32 dy, f32* ox, f32* oy) {
     if (ax == cx && ay == cy) {
         *ox = ax;

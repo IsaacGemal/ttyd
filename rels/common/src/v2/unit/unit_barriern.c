@@ -704,12 +704,6 @@ static u32 splineTableOut4_4[15] = {
 
 static s32 zanzou_count[3];
 
-// dont_inline keeps outSplineTableSet_Sub a real `bl` from outSplineTableSet, as in retail.
-#pragma dont_inline on
-#pragma dont_inline reset
-
-// dont_inline keeps the get_target/get_next_target helpers a real `bl` from barriern_wawawa_set_target.
-#pragma dont_inline on
 static USER_FUNC(barriern_zanzou) {
     BattleUnit* unit;
     s32 id;
@@ -1782,8 +1776,7 @@ static s32 barriernSatelliteTo_Main(BattleUnit* unit, s32 index) {
     return 1;
 }
 
-#pragma dont_inline reset // exclude this function so it inlines barriernSatelliteTo_MainI below
-// Inline copy of barriernSatelliteTo_Main used by Inside (defined outside the dont_inline region so it inlines).
+// Inline copy of barriernSatelliteTo_Main used by Inside.
 static inline u8 barriernSatelliteTo_MainI(BattleUnit* unit, s32 index) {
     BarriernSatelliteTo* work;
     BattleUnit* satellite;
@@ -1968,7 +1961,6 @@ static USER_FUNC(barriernSatelliteToInside) {
     }
     return updated == 0 ? EVT_RETURN_DONE : EVT_RETURN_BLOCK;
 }
-#pragma dont_inline reset
 // 100%: separate inline copy of barriernSatelliteTo_Init used by Outside. The table pointer is taken
 // through a `volatile` parameter (so MWCC rematerialises the address with a fresh `lis/addi` for the
 // work->unitId store) plus a normal second copy `inv` (kept live in a register for the later
@@ -2119,7 +2111,6 @@ static USER_FUNC(barriernSatelliteToOutside) {
     }
     return updated == 0 ? EVT_RETURN_DONE : EVT_RETURN_BLOCK;
 }
-// restore the file's dont_inline for the functions below
 
 static USER_FUNC(outSplineTableSet) {
     s32* args;

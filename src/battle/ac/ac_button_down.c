@@ -307,7 +307,6 @@ void battleAcDelete_ButtonDown(BattleWork* work) {
 // Using bd->buttons[i] directly in the zero test and the switch (no `button` temp) is what gives the
 // target's r3 = button / r4 = row base split through the switch.
 #pragma opt_lifetimes off // needed: the default lifetime pass assigns limit/i/work to different callee-saved GPRs than the target
-#pragma opt_propagation off // needed: with propagation on limit drops to r29 and iconX/iconY swap FPRs
 static void actionCommandDisp(s32 type, f32 x, f32 y) {
     BattleWork* work = _battleWorkPointer;
     ButtonDownWork* bd;
@@ -423,6 +422,5 @@ static void actionCommandDisp(s32 type, f32 x, f32 y) {
         }
     }
 }
-#pragma opt_propagation reset
 #pragma opt_lifetimes reset
 

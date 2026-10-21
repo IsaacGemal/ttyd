@@ -52,10 +52,8 @@ const char* searchPoseTbl(BattleDispPose* table, s32 poseId) { //TODO: fix mtctr
 	}
 	return NULL;
 }
-#pragma dont_inline reset
 
 // Keep btlDispGXInit2DSub out of line: the original calls it rather than inlining.
-#pragma dont_inline on
 void btlDispGXInit2DSub(void) {
 	GXSetCullMode(GX_CULL_NONE);
 	GXSetZCompLoc(GX_TRUE);
@@ -693,8 +691,6 @@ void btlUnitPartsDisp(CameraId camId, void* param) {
 			f27 = 90.0f;
 		}
 		f29 = parts->mPosition.x;
-// dont_inline: retail keeps these real bls from btlUnitPartsDisp.
-#pragma dont_inline on
 		f30 = parts->mPosition.y + getGravityDispOffset((BattleUnit*)parts) + getFloatDispOffset((BattleUnit*)parts);
 		f28 = parts->mPosition.z;
 		cam = camGetCurPtr();
@@ -917,12 +913,8 @@ void btlUnitPartsDisp(CameraId camId, void* param) {
 	if (parts->dispCallback) {
 		parts->dispCallback(parts, 1);
 	}
-// dont_inline: retail keeps this a real bl from btlUnitPartsDisp.
-#pragma dont_inline on
 	btlUnitPartsBlurControl(parts, 0, m25, parts->evtColor, f30);
 }
-#pragma dont_inline reset
-#pragma dont_inline reset
 
 // The original's dead int->double conversion of BtlUnit_GetHeight survives as the two `stw`s of a
 // constant double pair (frame 0x30). A bare `(f32)`/`(f64)` statement is DCE'd away; `opt_dead_assignments
@@ -990,9 +982,8 @@ void btlUnitPartsBlurControl(BattleUnitPart* part, s32 unused, Mtx orientation, 
 		_partsBlurControl(part, 0, orientation, color, rotation);
 	}
 }
-#pragma dont_inline reset
 
-#pragma dont_inline on // the original keeps calls to this function out of line
+// dont_inline: the original keeps calls to this function out of line
 void _partsBlurControl(BattleUnitPart* part, s32 flags, Mtx orientation, GXColor color, f32 rotation) {
 	BattleWorkUnitPartBlur* blur;
 	int i;
@@ -1113,15 +1104,13 @@ void gravityOffsetControl(BattleUnitPart* part) {
 		}
 	}
 }
-#pragma dont_inline reset
 
-#pragma dont_inline on // the original keeps calls to this function out of line
+// dont_inline: the original keeps calls to this function out of line
 f32 getGravityDispOffset(BattleUnit* unit) {
 	return sinfd((f32)((*(u16*)((char*)unit + 0x1a6) * 3 + 0x10e) % 360)) * 4.0f + 4.0f;
 }
-#pragma dont_inline reset
 
-#pragma dont_inline on // the original keeps calls to this function out of line
+// dont_inline: the original keeps calls to this function out of line
 void floatOffsetControl(BattleUnitPart* part) {
 	BattleUnit* owner = part->mOwner;
 	BOOL active = TRUE;
@@ -1144,10 +1133,8 @@ void floatOffsetControl(BattleUnitPart* part) {
 		}
 	}
 }
-#pragma dont_inline reset
 
-
-#pragma dont_inline on // the original keeps calls to this function out of line
+// dont_inline: the original keeps calls to this function out of line
 f32 getFloatDispOffset(BattleUnit* unit) {
 	return sinfd((f32)((*(u16*)((char*)unit + 0x1a8) * 4 + 0x10e) % 360)) * 2.0f + 2.0f;
 }
@@ -1179,9 +1166,7 @@ void statusPoseControl(BattleUnitPart* part) {
 		break;
 	}
 }
-#pragma dont_inline reset
 
-#pragma dont_inline on
 void _pose_def(BattleUnitPart* part) {
 	// A one-case switch makes MWCC emit the original `beq body; b end` guard;
 	// an early return folds to `bne end`.
@@ -1195,11 +1180,9 @@ void _pose_def(BattleUnitPart* part) {
 		break;
 	}
 }
-#pragma dont_inline reset
 
 // _pose_one_pattern matches 100% once the strings are referenced as literals: MWCC pools
 // them and common-bases the .rodata references off its first zero Vec (retail vec3_802eddd0).
-#pragma dont_inline on
 void _pose_one_pattern(BattleUnitPart* part) {
 	// A one-case switch reproduces the original `beq body; b end` guard.
 	switch (part->statusPoseStep) {
@@ -1227,7 +1210,6 @@ void _pose_one_pattern(BattleUnitPart* part) {
 // _pose_two_pattern matches 100% once the strings are referenced as literals (see
 // _pose_one_pattern). The three separate state-2 cases and the scoped `n` that fixes the
 // mullw operand order are also required.
-#pragma dont_inline on
 void _pose_two_pattern(BattleUnitPart* part) {
 	s32 t;
 
@@ -1310,7 +1292,6 @@ void _pose_two_pattern(BattleUnitPart* part) {
 		break;
 	}
 }
-#pragma dont_inline reset
 
 #pragma dont_inline on // the original keeps calls to this function out of line
 void btlDispAnimeSpeed(BattleUnit* unit, f32 speed) {
@@ -1394,10 +1375,8 @@ void _btlDispTex4(s32 id, Vec trans, Vec scale, Vec rot, Vec pos2, Vec scale2, G
 	PSMTXConcat(transM, mtx, mtx);
 	btlDispTexPlane2(mtx, id, color, 0);
 }
-#pragma dont_inline reset
 
 // Keep BattleStockExpDisp out of line: the original calls it rather than inlining it into btlDispMain.
-#pragma dont_inline on
 void BattleStockExpDisp(void) {
 	BattleWork* wp = _battleWorkPointer;
 

@@ -352,9 +352,6 @@ void mono_capture(CameraId cameraId, void* param) {
     parts->partFlags &= ~0x100;
 }
 
-// opt_common_subs on folds the repeated quad vertex constants into registers; the original reloads each.
-#pragma opt_common_subs off
-
 // Building the colour in an inline keeps the GXColor temporary in the slot the original uses.
 static inline GXColor monoColor(u8 alpha) {
     GXColor color = *(GXColor*)&dat_8041ddb8;
@@ -362,6 +359,8 @@ static inline GXColor monoColor(u8 alpha) {
     return color;
 }
 
+// opt_common_subs on folds the repeated quad vertex constants into registers; the original reloads each.
+#pragma opt_common_subs off
 void mono_disp(CameraId cameraId, void* param) {
     BattleUnit* unit = param;
     CameraEntry* camera;

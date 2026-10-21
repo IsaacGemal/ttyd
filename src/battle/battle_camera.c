@@ -76,10 +76,6 @@ void battleCameraInit(void) {
   camera->unk4 = 0;
 }
 
-// The event wrappers call these helpers as real functions in the original
-// (not inlined); keep inlining off across the small API surface.
-#pragma dont_inline on
-
 // Inlining this lookup gives case 7's live unit pointer the original register.
 static inline BattleUnit* bcam_get_unit(BattleWork* wp, s32 id) { return BattleGetUnitPtr(wp, id); }
 // The unit pointers are shared function-scope locals reused across cases; which case uses which
@@ -710,9 +706,7 @@ void battleCameraMain(void) {
     wp->cameraWork.unkE8--;
   }
 }
-#pragma dont_inline reset
 
-#pragma dont_inline on
 void battleCameraMoveTo(s32 id, s32 a, f32* p1, f32* p2, f32* p3, f32* p4,
                         f32* p5, f32* p6, f32 f1, f32 f2, f32 f3, f32 f4,
                         f32 f5, f32 f6) {
@@ -890,7 +884,6 @@ void battleCameraMoveTo(s32 id, s32 a, f32* p1, f32* p2, f32* p3, f32* p4,
     break;
   }
 }
-#pragma dont_inline reset
 
 #pragma dont_inline on
 f32 battleCameraGetPosMoveSpeed(void) {
@@ -900,21 +893,17 @@ f32 battleCameraGetPosMoveSpeed(void) {
   f32 z = camera->unk68.z;
   return (f32)sqrt((x * x) + (y * y) + (z * z));
 }
-#pragma dont_inline reset
 
-#pragma dont_inline on
 void btl_camera_set_prilimit(s32 limit) {
   _battleWorkPointer->cameraWork.priLimit = limit;
 }
 #pragma dont_inline reset
 
-#pragma dont_inline on
 USER_FUNC(evt_btl_camera_set_prilimit) {
   s32 *args = event->args;
   btl_camera_set_prilimit(evtGetValue(event, args[0]));
   return EVT_RETURN_DONE;
 }
-#pragma dont_inline reset
 
 #pragma dont_inline on
 void btl_camera_set_mode(s32 id, s32 mode) {
@@ -945,7 +934,6 @@ USER_FUNC(evt_btl_camera_set_mode) {
   return EVT_RETURN_DONE;
 }
 
-#pragma dont_inline on
 USER_FUNC(evt_btl_camera_set_homing_unit) {
   BattleWork *wp;
   BattleCameraWork *camera;
@@ -988,7 +976,6 @@ USER_FUNC(evt_btl_camera_set_homing_unit) {
   }
   return EVT_RETURN_DONE;
 }
-#pragma dont_inline reset
 
 // Wrapping the call in this inline changes MWCC's scheduling of the return-value save
 // (direct `mr r26, r3` instead of the r0 spill) without changing the emitted call.
@@ -996,7 +983,6 @@ static inline BattleUnit *getUnitPtr(BattleWork *wp, s32 id) {
   return BattleGetUnitPtr(wp, id);
 }
 
-#pragma dont_inline on
 USER_FUNC(evt_btl_camera_set_homing_unitparts) {
   BattleWork *wp;
   BattleCameraWork *camera;
@@ -1042,9 +1028,7 @@ USER_FUNC(evt_btl_camera_set_homing_unitparts) {
   }
   return EVT_RETURN_DONE;
 }
-#pragma dont_inline reset
 
-#pragma dont_inline on
 USER_FUNC(evt_btl_camera_set_homing_unit_audience) {
   s32 *args = event->args;
   s32 priority, type, partId, memberId;
@@ -1089,7 +1073,6 @@ USER_FUNC(evt_btl_camera_set_homing_unit_audience) {
   camera->unkC8 = hit;
   return EVT_RETURN_DONE;
 }
-#pragma dont_inline reset
 
 #pragma dont_inline on
 void btl_camera_set_zoom(s32 id, f32 z) {
@@ -1101,9 +1084,7 @@ void btl_camera_set_zoom(s32 id, f32 z) {
   }
   camera->zoom = z;
 }
-#pragma dont_inline reset
 
-#pragma dont_inline on
 void btl_camera_add_zoom(s32 id, f32 z) {
   BattleWork *wp = _battleWorkPointer;
   BattleCameraWork *camera = &wp->cameraWork;
@@ -1115,7 +1096,6 @@ void btl_camera_add_zoom(s32 id, f32 z) {
 }
 #pragma dont_inline reset
 
-#pragma dont_inline on
 USER_FUNC(evt_btl_camera_set_zoom) {
   s32 *args = event->args;
   s32 id = evtGetValue(event, args[0]);
@@ -1123,9 +1103,7 @@ USER_FUNC(evt_btl_camera_set_zoom) {
   btl_camera_set_zoom(id, (s32)evtGetFloat(event, args[1]));
   return EVT_RETURN_DONE;
 }
-#pragma dont_inline reset
 
-#pragma dont_inline on
 USER_FUNC(evt_btl_camera_add_zoom) {
   s32 *args = event->args;
   s32 id = evtGetValue(event, args[0]);
@@ -1133,7 +1111,6 @@ USER_FUNC(evt_btl_camera_add_zoom) {
   btl_camera_add_zoom(id, (s32)evtGetFloat(event, args[1]));
   return EVT_RETURN_DONE;
 }
-#pragma dont_inline reset
 
 #pragma dont_inline on
 void btl_camera_set_moveSpeedLv(s32 id, s32 lv) {
@@ -1150,9 +1127,7 @@ void btl_camera_set_moveSpeedLv(s32 id, s32 lv) {
   }
   camera->zoomSpeedLv = camera->moveSpeedLv;
 }
-#pragma dont_inline reset
 
-#pragma dont_inline on
 void btl_camera_set_zoomSpeedLv(s32 id, s32 lv) {
   BattleWork *wp = _battleWorkPointer;
   BattleCameraWork *camera = &wp->cameraWork;
@@ -1168,7 +1143,6 @@ void btl_camera_set_zoomSpeedLv(s32 id, s32 lv) {
 }
 #pragma dont_inline reset
 
-#pragma dont_inline on
 USER_FUNC(evt_btl_camera_set_moveSpeedLv) {
   s32 *args = event->args;
   s32 id = evtGetValue(event, args[0]);
@@ -1177,9 +1151,7 @@ USER_FUNC(evt_btl_camera_set_moveSpeedLv) {
   btl_camera_set_moveSpeedLv(id, lv);
   return EVT_RETURN_DONE;
 }
-#pragma dont_inline reset
 
-#pragma dont_inline on
 USER_FUNC(evt_btl_camera_set_zoomSpeedLv) {
   s32 *args = event->args;
   s32 id = evtGetValue(event, args[0]);
@@ -1188,7 +1160,6 @@ USER_FUNC(evt_btl_camera_set_zoomSpeedLv) {
   btl_camera_set_zoomSpeedLv(id, lv);
   return EVT_RETURN_DONE;
 }
-#pragma dont_inline reset
 
 #pragma dont_inline on
 void btl_camera_set_moveto(s32 id, s32 a, s32 b, f32 f1, f32 f2, f32 f3, f32 f4,
@@ -1218,8 +1189,6 @@ void btl_camera_set_moveto(s32 id, s32 a, s32 b, f32 f1, f32 f2, f32 f3, f32 f4,
 }
 #pragma dont_inline reset
 
-#pragma dont_inline on
-
 USER_FUNC(evt_btl_camera_set_moveto) {
   s32 *args = event->args;
   s32 id = evtGetValue(event, args[0]);
@@ -1235,7 +1204,6 @@ USER_FUNC(evt_btl_camera_set_moveto) {
   btl_camera_set_moveto(id, a, b, f1, f2, f3, f4, f5, f6);
   return EVT_RETURN_DONE;
 }
-#pragma dont_inline reset
 
 #pragma dont_inline on
 void btl_camera_shake_w(s32 id, s32 a, s32 b, f32 x, f32 y) {
@@ -1257,7 +1225,6 @@ void btl_camera_shake_w(s32 id, s32 a, s32 b, f32 x, f32 y) {
 }
 #pragma dont_inline reset
 
-#pragma dont_inline on
 USER_FUNC(evt_btl_camera_shake_w) {
   s32 *args = event->args;
   s32 id = evtGetValue(event, args[0]);
@@ -1269,7 +1236,6 @@ USER_FUNC(evt_btl_camera_shake_w) {
   btl_camera_shake_w(id, a, b, x, y);
   return EVT_RETURN_DONE;
 }
-#pragma dont_inline reset
 
 #pragma dont_inline on
 void btl_camera_shake_h(s32 id, s32 a, s32 b, f32 x, f32 y) {
@@ -1291,7 +1257,6 @@ void btl_camera_shake_h(s32 id, s32 a, s32 b, f32 x, f32 y) {
 }
 #pragma dont_inline reset
 
-#pragma dont_inline on
 USER_FUNC(evt_btl_camera_shake_h) {
   s32 *args = event->args;
   s32 id = evtGetValue(event, args[0]);
@@ -1303,7 +1268,6 @@ USER_FUNC(evt_btl_camera_shake_h) {
   btl_camera_shake_h(id, a, b, x, y);
   return EVT_RETURN_DONE;
 }
-#pragma dont_inline reset
 
 #pragma dont_inline on
 void btl_camera_noshake(s32 id) {
@@ -1318,13 +1282,11 @@ void btl_camera_noshake(s32 id) {
 }
 #pragma dont_inline reset
 
-#pragma dont_inline on
 USER_FUNC(evt_btl_camera_noshake) {
   s32 *args = event->args;
   btl_camera_noshake(evtGetValue(event, args[0]));
   return EVT_RETURN_DONE;
 }
-#pragma dont_inline reset
 
 #pragma dont_inline on
 void btl_camera_nomove_x_onoff(s32 id, s32 on) {
@@ -1342,7 +1304,6 @@ void btl_camera_nomove_x_onoff(s32 id, s32 on) {
 }
 #pragma dont_inline reset
 
-#pragma dont_inline on
 USER_FUNC(evt_btl_camera_nomove_x_onoff) {
   s32 *args = event->args;
   s32 id = evtGetValue(event, args[0]);
@@ -1351,7 +1312,6 @@ USER_FUNC(evt_btl_camera_nomove_x_onoff) {
   btl_camera_nomove_x_onoff(id, on);
   return EVT_RETURN_DONE;
 }
-#pragma dont_inline reset
 
 #pragma dont_inline on
 void btl_camera_nomove_y_onoff(s32 id, s32 on) {
@@ -1369,7 +1329,6 @@ void btl_camera_nomove_y_onoff(s32 id, s32 on) {
 }
 #pragma dont_inline reset
 
-#pragma dont_inline on
 USER_FUNC(evt_btl_camera_nomove_y_onoff) {
   s32 *args = event->args;
   s32 id = evtGetValue(event, args[0]);
@@ -1378,7 +1337,6 @@ USER_FUNC(evt_btl_camera_nomove_y_onoff) {
   btl_camera_nomove_y_onoff(id, on);
   return EVT_RETURN_DONE;
 }
-#pragma dont_inline reset
 
 #pragma dont_inline on
 void btl_camera_nomove_z_onoff(s32 id, s32 on) {
@@ -1396,7 +1354,6 @@ void btl_camera_nomove_z_onoff(s32 id, s32 on) {
 }
 #pragma dont_inline reset
 
-#pragma dont_inline on
 USER_FUNC(evt_btl_camera_nomove_z_onoff) {
   s32 *args = event->args;
   s32 id = evtGetValue(event, args[0]);
@@ -1405,7 +1362,6 @@ USER_FUNC(evt_btl_camera_nomove_z_onoff) {
   btl_camera_nomove_z_onoff(id, on);
   return EVT_RETURN_DONE;
 }
-#pragma dont_inline reset
 
 #pragma dont_inline on
 void btl_camera_set_posoffset(s32 id, f32 x, f32 y, f32 z) {
@@ -1422,7 +1378,6 @@ void btl_camera_set_posoffset(s32 id, f32 x, f32 y, f32 z) {
 }
 #pragma dont_inline reset
 
-#pragma dont_inline on
 USER_FUNC(evt_btl_camera_set_posoffset) {
   s32 *args = event->args;
   s32 id = evtGetValue(event, args[0]);
@@ -1433,7 +1388,6 @@ USER_FUNC(evt_btl_camera_set_posoffset) {
   btl_camera_set_posoffset(id, x, y, z);
   return EVT_RETURN_DONE;
 }
-#pragma dont_inline reset
 
 #pragma dont_inline on
 void btl_camera_off_posoffset_manual(s32 id) {
@@ -1450,21 +1404,17 @@ void btl_camera_off_posoffset_manual(s32 id) {
 }
 #pragma dont_inline reset
 
-#pragma dont_inline on
 USER_FUNC(evt_btl_camera_off_posoffset_manual) {
   s32 *args = event->args;
   btl_camera_off_posoffset_manual(evtGetValue(event, args[0]));
   return EVT_RETURN_DONE;
 }
-#pragma dont_inline reset
 
-#pragma dont_inline on
 USER_FUNC(evt_btl_camera_wait_move_end) {
   if (battleCameraGetPosMoveSpeed() >= float_2_8041c450) {
     return EVT_RETURN_BLOCK;
   }
   return EVT_RETURN_DONE;
 }
-#pragma dont_inline reset
 
 const f32 float_2_8041c450 = 2.0f;

@@ -39,7 +39,6 @@ extern const f32 float_10_8041ea98;
 
 // .data vertex array of this unit; the original hands a 0x46-byte slice to effSetVtxDescN64.
 
-#pragma opt_common_subs off // without it MWCC CSEs the two 0.2f pool loads across the rand call into a callee-saved FPR
 EffectEntry* effBreathFireN64Entry(s32 kind, f32 x, f32 y, s32 children, f32 z, s32 seed, f32 endX, s32 duration, f32 endY, f32 endZ) {
 	EffectEntry* entry;
 	effBreathFireData* data;
@@ -110,6 +109,7 @@ inline Vec initializeVec(Vec* input) {
 // 0.3+0x20 (the given named definitions emitted first and shifted every base+offset load). Under MUST_MATCH
 // the speed term is `float_4 * (f32)... / float_10` (rather than `(f32)... * float_4`), which makes mwcc
 // hoist the float_4 load into f3 first, matching the original's schedule.
+#pragma opt_common_subs off
 void effBreathFireMain(EffectEntry* effect) {
 	s32 life;
 	effBreathFireData* data = effect->userdata;

@@ -905,9 +905,8 @@ USER_FUNC(evt_bero_switch_on) {
 	event->lwData[1] = newId;
 	return EVT_RETURN_DONE;
 }
-#pragma opt_propagation reset
 
-#pragma opt_propagation off // needed: without it MWCC pre-colours the evtGetValue argument into r4, pushing BeroINFOARR's address temp into r5 (target uses r5 for event->args, r4 for the table)
+// `opt_propagation off` is needed: without it MWCC pre-colours the evtGetValue argument into r4, pushing BeroINFOARR's address temp into r5 (target uses r5 for event->args, r4 for the table)
 USER_FUNC(evt_bero_switch_off) {
 	BeroEntry** temp, **table = BeroINFOARR;
 	s32* args = event->args;
@@ -941,9 +940,8 @@ USER_FUNC(evt_bero_switch_off) {
 	event->lwData[1] = newId;
 	return EVT_RETURN_DONE;
 }
-#pragma opt_propagation reset
 
-#pragma opt_propagation off // needed: without it MWCC pre-colours the evtGetValue argument into r4, pushing BeroINFOARR's address temp into r5 (target uses r4 for the table, r5 for event->args)
+// `opt_propagation off` is needed: without it MWCC pre-colours the evtGetValue argument into r4, pushing BeroINFOARR's address temp into r5 (target uses r4 for the table, r5 for event->args)
 	// NONMATCHING (99.58%): register allocation / branch layout differs from the original
 USER_FUNC(evt_bero_get_number) {
 	BeroEntry** temp, **table = BeroINFOARR;

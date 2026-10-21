@@ -620,10 +620,8 @@ s32 uranaisi_data_make_starpiece(const char* prefix, s32 type) {
     }
     return count;
 }
-#pragma opt_lifetimes reset
 
 // opt_lifetimes off: see uranaisi_data_make_starpiece.
-#pragma opt_lifetimes off
 s32 uranaisi_data_make_supercoin(const char* prefix, s32 type) {
     s32 mbbpos;
     char label[64];

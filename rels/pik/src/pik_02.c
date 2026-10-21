@@ -282,9 +282,6 @@ USER_FUNC(hoshi_r) {
 // Keeping each polynomial in one helper (rather than inlining it twice) is what puts the angle^2
 // scratch in f0 and the wrapped-angle pivot in f1; with the coefficients as helper locals the seed
 // lands in f4/f3/f2 exactly as retail. See evt_sub_get_coin for the same helper structure.
-#pragma opt_propagation off // needed: without it hoshi_jump 61.42%
-// opt_lifetimes off keeps retail's FPR colouring across the first-call block and the angle wrap.
-#pragma opt_lifetimes off
 // MUST_MATCH-only: retail keeps the first-call 0.5 and 50.0 in the constant pool and reads them back
 // instead of folding them into immediates. Naming them keeps those two loads; the MATCH_F32 read
 // also forces the fma's product operand to the front, as retail has it.
@@ -364,6 +361,8 @@ static inline f32 hoshi_cos_approx(f32 angle) {
 
 // hoshi_jump: retail spills the first-call d/t/scale through 4-byte stack slots and copies them out
 // with lwz/stw, and reads the 50.0 and 0.5 from the pool; opt_lifetimes off supplies the FPR colouring.
+#pragma opt_propagation off // needed: without it hoshi_jump 61.42%
+#pragma opt_lifetimes off
 USER_FUNC(hoshi_jump) {
     EffectEntry* entry = (EffectEntry*)event->lwData[10];
     effStarStoneData* data = entry->userdata;

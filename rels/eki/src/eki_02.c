@@ -62,8 +62,6 @@ static EVT_BEGIN(evt_key)
     RETURN
 EVT_END()
 
-// The REL build flags omit -fp_contract; the original fuses the two sin/cos multiply-adds, so enable it here.
-#pragma fp_contract on
 USER_FUNC(hit_move) {
     MarioWork* mario;
     HitEntry* hit;
@@ -118,7 +116,6 @@ USER_FUNC(hit_move) {
     event->userdataf[1] = angle;
     return EVT_RETURN_BLOCK;
 }
-#pragma fp_contract reset
 
 EVT_BEGIN(eki_02_init_evt)
     SET_VALUE(LW(0), PTR(bero_data))

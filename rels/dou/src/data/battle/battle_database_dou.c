@@ -1759,8 +1759,6 @@ u32 btl_dou_setup_no_tbl[56] = {
     (u32)"BTLNO_DOU_13_99", 0x0000001A, 0x00000000, 0x00000000,
 };
 
-// The original file is built with `-fp_contract on`; this scoped pragma reproduces its fmadds fusion.
-#pragma fp_contract on
 static USER_FUNC(_wave_offset) {
     s32* args = event->args;
     s32 name = evtGetValue(event, args[0]);

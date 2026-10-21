@@ -1308,10 +1308,8 @@ void bakuGameDecideButton(s32 arg) {
         baku->cooldown = 0x3C;
     }
 }
-#pragma dont_inline reset
 
 // Keep bakuGamePartyExist out of line: callers emit bl instead of inlining the status checks.
-#pragma dont_inline on
 BOOL bakuGamePartyExist(BattleUnit* unit) {
     if (unit == NULL) {
         return 0;
@@ -1321,10 +1319,8 @@ BOOL bakuGamePartyExist(BattleUnit* unit) {
     }
     return BtlUnit_CanActStatus(unit) != 0;
 }
-#pragma dont_inline reset
 
 // Keep bakuGameAudienceCanThrowPos out of line: callers emit bl instead of inlining the loop.
-#pragma dont_inline on
 s32 bakuGameAudienceCanThrowPos(s32 id) {
     s32 i;
     s32 ofs = 0;
@@ -1337,20 +1333,16 @@ s32 bakuGameAudienceCanThrowPos(s32 id) {
     }
     return 0;
 }
-#pragma dont_inline reset
 
 // Keep bakuGameMarioSurpriseReset out of line: the original issues a call (bl) to it.
-#pragma dont_inline on
 void bakuGameMarioSurpriseReset(BattleUnit* unit, BattleUnit* party) {
     btlDispPoseAnime(BtlUnit_GetPartsPtr(unit, BtlUnit_GetBodyPartsId(unit)));
     if (bakuGamePartyExist(party)) {
         btlDispPoseAnime(BtlUnit_GetPartsPtr(party, BtlUnit_GetBodyPartsId(party)));
     }
 }
-#pragma dont_inline reset
 
 // Keep bakuGameEnemySurpriseReset out of line: the original issues a call (bl) to it.
-#pragma dont_inline on
 void bakuGameEnemySurpriseReset(void) {
     s32 i;
     BattleWork* wp = _battleWorkPointer;
@@ -1364,10 +1356,8 @@ void bakuGameEnemySurpriseReset(void) {
         }
     }
 }
-#pragma dont_inline reset
 
 // Keep bakuGameAudienceSurpriseReset out of line: the original issues a call (bl) to it.
-#pragma dont_inline on
 void bakuGameAudienceSurpriseReset(void) {
     s32 i;
 
@@ -1382,10 +1372,8 @@ void bakuGameAudienceSurpriseReset(void) {
         }
     }
 }
-#pragma dont_inline reset
 
 // Keep bakuGameMarioSurprise out of line: the original issues a call (bl) to it.
-#pragma dont_inline on
 void bakuGameMarioSurprise(BattleUnit* unit, BattleUnit* party) {
     BtlUnit_SetBodyAnim(unit, "M_N_7");
     if (bakuGamePartyExist(party)) {
@@ -1414,10 +1402,8 @@ void bakuGameMarioSurprise(BattleUnit* unit, BattleUnit* party) {
         }
     }
 }
-#pragma dont_inline reset
 
 // Keep bakuGameEnemySurprise out of line: the original issues a call (bl) to it.
-#pragma dont_inline on
 void bakuGameEnemySurprise(void) {
     s32 i;
     BattleWork* wp = _battleWorkPointer;
@@ -1431,10 +1417,8 @@ void bakuGameEnemySurprise(void) {
         }
     }
 }
-#pragma dont_inline reset
 
 // Keep bakuGameAudienceSurprise out of line: the original issues a call (bl) to it.
-#pragma dont_inline on
 void bakuGameAudienceSurprise(void) {
     s32 i;
 

@@ -594,7 +594,6 @@ void BattleAudienceCtrlProcessKinopioWaitJump(s32 index, s32 kind) {
 	}
 }
 
-#pragma dont_inline on // recursive call stays a real `bl` in the original
 void BattleAudienceCtrlProcessKinopioJoyRaiseArm(s32 index, s32 kind) {
 	BattleAudienceMember* member = BattleAudienceGetPtr(index);
 
@@ -628,7 +627,6 @@ void BattleAudienceCtrlProcessKinopioJoyRaiseArm(s32 index, s32 kind) {
 		break;
 	}
 }
-#pragma dont_inline reset
 
 void BattleAudienceCtrlProcessKinopioJoyJump(s32 index, s32 kind) {
 	BattleAudienceMember* member = BattleAudienceGetPtr(index);

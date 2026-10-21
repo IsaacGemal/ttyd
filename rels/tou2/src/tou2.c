@@ -267,8 +267,6 @@ void _unresolved(void) {
     (void)0; // bare blr; the null statement keeps lint_patch from flagging an empty stub
 }
 
-// dont_inline: rankingInit is called from _prolog and must stay a real call
-#pragma dont_inline on
 static void rankingInit(void) {
     s32 progress;
     s32 count;
@@ -341,6 +339,7 @@ static void rankingInit(void) {
     rankingControll();
 }
 
+#pragma dont_inline on
 static void rankingExit(void) {
     s32 i;
     s32 j;
@@ -1182,10 +1181,8 @@ static USER_FUNC(evt_tou_print_ranking) {
 f32 atan2f(f32 y, f32 x) {
     return atan2(y, x);
 }
-#pragma dont_inline reset
 
 // dont_inline: camGetRy is called from tou_champion_belt and must stay a real call
-#pragma dont_inline on
 static f32 camGetRy(void) {
     CameraEntry* cam = camGetPtr(CAMERA_3D);
     f32 ry =

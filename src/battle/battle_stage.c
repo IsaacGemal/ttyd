@@ -303,9 +303,8 @@ void DarkByPoint(u8 color, f32 x, f32 y, f32 z) {
 	GXPosition3f32(x, y, z);
 	GXColor4u8(0, 0, 0, color);
 }
-#pragma dont_inline reset
 
-#pragma dont_inline on // keep DarkBySquare out of line: the original calls it.
+// Keep DarkBySquare out of line: the original calls it.
 // The original declares the colour last (its caller evaluates it after the
 // floats); the ABI is identical, so this compiles to the same body either way.
 void DarkBySquare(f32 a, f32 b, f32 c, f32 d, f32 z, u8 color) {
@@ -509,7 +508,6 @@ s32 BattleStageSysLightEntry(const char* name) {
 
 // Copy propagation off: without it BattleStageLightRelease stops matching.
 #pragma opt_propagation off
-#pragma dont_inline on
 void BattleStageLightRelease(s32 idx, s32 frames, u8 ease) {
 	BattleStage* stage = &_battleWorkPointer->stage;
 	BattleStageLight* light = &stage->lights[idx];
@@ -533,12 +531,8 @@ void BattleStageLightRelease(s32 idx, s32 frames, u8 ease) {
 		}
 	}
 }
-#pragma dont_inline reset
-#pragma opt_propagation reset
 
 // Copy propagation off: without it BattleStageLightSetLightColor stops matching.
-#pragma opt_propagation off
-#pragma dont_inline on
 void BattleStageLightSetLightColor(s32 idx, u8 r, u8 g, u8 b, s32 frames, u8 ease) {
 	BattleStage* stage = &_battleWorkPointer->stage;
 	BattleStageLight* light = &stage->lights[idx];
@@ -564,12 +558,8 @@ void BattleStageLightSetLightColor(s32 idx, u8 r, u8 g, u8 b, s32 frames, u8 eas
 		light->colorCur = (BattleStageColor){light->colorCur.r, light->colorCur.g, light->colorCur.b, 0xFF};
 	}
 }
-#pragma dont_inline reset
-#pragma opt_propagation reset
 
 // Copy propagation off: without it BattleStageLightSetWidth stops matching.
-#pragma opt_propagation off
-#pragma dont_inline on
 void BattleStageLightSetWidth(s32 idx, s32 width, s32 frames, u8 ease) {
 	BattleStage* stage = &_battleWorkPointer->stage;
 	BattleStageLight* light = &stage->lights[idx];
@@ -583,12 +573,8 @@ void BattleStageLightSetWidth(s32 idx, s32 width, s32 frames, u8 ease) {
 		light->widthCur = (f32)width;
 	}
 }
-#pragma dont_inline reset
-#pragma opt_propagation reset
 
 // Copy propagation off: without it BattleStageLightSetPosition stops matching.
-#pragma opt_propagation off
-#pragma dont_inline on
 void BattleStageLightSetPosition(s32 idx, s32 frames, f32 x, f32 y, f32 z, u8 ease) {
 	BattleStage* stage = &_battleWorkPointer->stage;
 	BattleStageLight* light = &stage->lights[idx];
@@ -610,11 +596,8 @@ void BattleStageLightSetPosition(s32 idx, s32 frames, f32 x, f32 y, f32 z, u8 ea
 		light->posCur = tmp;
 	}
 }
-#pragma dont_inline reset
-#pragma opt_propagation reset
 
 // Copy propagation off: without it BattleStageLightSetTarget stops matching.
-#pragma opt_propagation off
 #pragma dont_inline on
 void BattleStageLightSetTarget(s32 idx, s32 frames, f32 x, f32 y, f32 z, u8 ease) {
 	BattleStage* stage = &_battleWorkPointer->stage;
@@ -641,7 +624,6 @@ void BattleStageLightSetTarget(s32 idx, s32 frames, f32 x, f32 y, f32 z, u8 ease
 #pragma dont_inline reset
 #pragma opt_propagation reset
 
-#pragma dont_inline on // keep the unit lookup out of its callers.
 void BattleStageLightSetTargetByUnit(s32 idx, s32 unitId, f32 x, f32 y, f32 z, s32 frames, u8 ease) {
 	BattleUnit* unit;
 	f32 ux, uy, uz;
@@ -653,7 +635,6 @@ void BattleStageLightSetTargetByUnit(s32 idx, s32 unitId, f32 x, f32 y, f32 z, s
 	uz = uz + z;
 	BattleStageLightSetTarget(idx, frames, ux, uy, uz, ease);
 }
-#pragma dont_inline reset
 
 // ------------------------------------------------------------ light setters
 #pragma opt_propagation off // needed: without it BattleStageLightSetUpVec 92.12%
@@ -691,9 +672,8 @@ void BattleStageSetDark(BattleStageDark* dark, u8 a, s32 frames, s32 ease) {
 		dark->alpha = a;
 	}
 }
-#pragma dont_inline reset
 
-#pragma dont_inline on // keep SetDarkBase out of line: the wrappers call it.
+// Keep SetDarkBase out of line: the wrappers call it.
 void BattleStageSetDarkBase(BattleStageDark* dark, u8 a, s32 frames, s32 ease) {
 	dark->baseFrom = dark->baseAlpha;
 	dark->baseTo = a;
@@ -791,7 +771,6 @@ void batSpotInit(void) {
 		entry->color = *(GXColor*)&dat_8041c7ec;
 	}
 }
-#pragma dont_inline reset
 
 // Defined here (not at the top) so the compound-literal templates batSpotInit
 // pools land at +0x30 before these named vectors; the original's .rodata is
@@ -800,7 +779,7 @@ const Vec vec3_802f31fc[] = {{0.0f, 0.0f, 0.0f}};
 const Vec vec3_802f3208[] = {{1.0f, 1.0f, 1.0f}};
 const Vec vec3_802f3214[] = {{0.0f, 0.0f, 0.0f}};
 
-#pragma dont_inline on // keep batSpotMain out of line: BattleStageMain calls it.
+// Keep batSpotMain out of line: BattleStageMain calls it.
 void batSpotMain() {
     s32 count = wp->count;
 
@@ -811,7 +790,6 @@ void batSpotMain() {
 }
 #pragma dont_inline reset
 
-#pragma dont_inline on // keep batSpotDisp out of line: batSpotMain and batSpotEntry use its address.
 void batSpotDisp(CameraId camId, void* param) {
 	s32 i;
 	BattleSpotEntry* entry;
@@ -863,10 +841,7 @@ void batSpotDisp(CameraId camId, void* param) {
 		}
 	}
 }
-#pragma dont_inline reset
 
-// Keep drawCone out of line: the original calls it rather than inlining.
-#pragma dont_inline on
 void drawCone(CameraId camId, BattleSpotEntry* entry) {
 	CameraEntry* cam = camGetPtr(camId);
 	Mtx mTrans;
@@ -922,7 +897,6 @@ void drawCone(CameraId camId, BattleSpotEntry* entry) {
 		GXColor4u8(0, 0, 0, entry->color.a / 3);
 	}
 }
-#pragma dont_inline reset
 
 //drawCone
 
@@ -947,7 +921,6 @@ BattleSpotEntry* batSpotEntry(void) {
 
 	return entry;
 }
-#pragma dont_inline reset
 
 // =====================================================================
 // New work appended below.
@@ -958,7 +931,6 @@ static ScreenWork* screen_wp;
 
 // dont_inline: without it the compiler inlines randf into tou_gamen_screen_tev
 // (the original leaves it as a call).
-#pragma dont_inline on
 f32 randf(f32 min, f32 max) {
 	f32 r = (f32)rand() / float_32767_8041c81c;
 	f32 d = max - min;

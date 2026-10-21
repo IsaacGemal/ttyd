@@ -647,12 +647,11 @@ s32 evt_mobj_floatswitch_blue(EventEntry* event, BOOL isFirstCall) {
     mobjCalcMtx(obj);
     return 2;
 }
-#pragma opt_propagation reset
 
 // mwcc folds the one-use `inBattle` local back into the call, which then builds the string
 // address before the gp load. Keeping it a real local makes the gp temp first, so the two
 // share r5/r4 as in the original.
-#pragma opt_propagation off // keep `inBattle` a real local so the gp base-load temp is created before the string temp
+// `opt_propagation off` keeps `inBattle` a real local so the gp base-load temp is created before the string temp
 s32 evt_mobj_tornadoswitch_blue(EventEntry* event, BOOL isFirstCall) {
     f32 x;
     s32* args = event->args;
@@ -4234,12 +4233,10 @@ s32 evt_mobj_koopa_badgeblk(EventEntry* event, BOOL isFirstCall) {
     }
     return 2;
 }
-#pragma opt_propagation reset
 
 // The original loads the gp pointer before the asyncName string address.  With the named
 // inBattle web kept (opt_propagation off) the assignments happen in declaration order, giving
 // the pointer register the original uses for each temp.
-#pragma opt_propagation off
 s32 evt_mobj_koopa_hidden_blk(EventEntry* event, BOOL isFirstCall) {
     s32* args = event->args;
     const char* name = (const char*)evtGetValue(event, args[0]);

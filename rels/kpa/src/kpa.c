@@ -713,7 +713,6 @@ USER_FUNC(kpa_pole_hitoff) {
     return EVT_RETURN_DONE;
 }
 
-#pragma opt_propagation off // the default propagation assigns the -140/40 address bases to the opposite registers
 void kpa_stageclear_disp(CameraId cameraId, void* param) {
     GXColor color;
     f32 x;
@@ -729,7 +728,6 @@ void kpa_stageclear_disp(CameraId cameraId, void* param) {
     FontDrawString(x, y, "ゴールイン！！");
     FontDrawEdgeOff();
 }
-#pragma opt_propagation reset
 USER_FUNC(kpa_stageclear_disp_entry) {
     dispEntry(8, 1000.0f, 0, kpa_stageclear_disp, NULL);
     return EVT_RETURN_DONE;

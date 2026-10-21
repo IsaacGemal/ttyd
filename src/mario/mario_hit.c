@@ -440,7 +440,6 @@ static inline f32 gndCentiPlain(f32 v) {
 
 // The rolling probe's inline expansion only happens with the raised limits; at the default
 // inline_max_size the helper stays a real `bl` and the whole frame shifts.
-#pragma inline_max_total_size(60000) // let the rolling probe's inlined callees expand
 #pragma inline_max_size(1000) // per-callee inline budget for the probe's callees
 static inline void marioChkGndRollProbe(MarioWork* wp) {
     HitEntry* hit;
@@ -469,7 +468,6 @@ static inline void marioChkGndRollProbe(MarioWork* wp) {
     }
 }
 
-#pragma inline_max_total_size reset // restore the file's default inline budget after marioChkGnd
 #pragma inline_max_size reset // (1000 already keeps the rest of the unit's scores)
 
 HitEntry* marioSearchUnder(void) {

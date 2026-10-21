@@ -996,7 +996,6 @@ USER_FUNC(evt_npc_return_interrupt) {
     npc->interruptFlags |= 0x10000000;
     return EVT_RETURN_YIELD;
 }
-#pragma dont_inline on
 
 USER_FUNC(evt_npc_homing_target) {
     s32* args = event->args;
@@ -1144,7 +1143,6 @@ USER_FUNC(evt_npc_homing_target) {
 
     return EVT_RETURN_BLOCK;
 }
-#pragma dont_inline reset
 #pragma opt_propagation off // needed: without it _intplGetFloat 98.29%
 
 // The file's MWCC keeps `1.0f - tt` live in f31 and hoists it across the cos() calls in cases
@@ -1743,8 +1741,6 @@ NpcEntry* evtNpcNameToPtr(EventEntry* event, const char* name) {
     }
     return npcNameToPtr(name);
 }
-#pragma dont_inline reset
-#pragma dont_inline on
 
 NpcEntry* evtNpcNameToPtr_NoAssert(EventEntry* event, const char* name) {
     if (!strcmp(name, "me")) {
@@ -2068,8 +2064,6 @@ USER_FUNC(evt_npc_get_drop_flower) {
 void _npc_check_coin(NpcEntry* npc, s32* value) {
     *value += npc->btlCoinDropCount;
 }
-#pragma dont_inline reset
-#pragma dont_inline on
 
 void _npc_check_coin_group(NpcEntry* npc, s32* value) {
     NpcEntry* next = npc->next;

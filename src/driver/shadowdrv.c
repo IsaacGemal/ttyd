@@ -970,6 +970,7 @@ void cylinder(ShadowEntry* entry) {
         GXCallDisplayList(base + 0x1C0, 0x40);
     }
 }
+#pragma opt_common_subs reset
 
 // The three material passes each draw the cube display lists for type 1 and the cylinder otherwise; the
 // original expands this identically three times, so it was a macro in the source.
@@ -982,7 +983,6 @@ static inline void shadowTevColor(u8 a) {
 }
 
 
-#pragma opt_common_subs reset
 void cylinderShadowDraw(CameraId camId, void* param) {
     ShadowEntry* entry = cswp->entries;
     f32 (*view)[4];

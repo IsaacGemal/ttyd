@@ -3640,6 +3640,7 @@ void puniModeAway(PuniData* punidat) {
         break;
     }
 }
+#pragma pop
 
 static inline PuniData* puniSearchTekiInline(PuniData* puni) {
     s32 i;
@@ -3691,8 +3692,6 @@ static inline PuniData* puniSearchMikataInline(PuniData* puni) {
     return NULL;
 }
 
-
-#pragma pop
 void puniModeAttack(PuniData* punidat) {
     s32 i;
     PuniData* p;

@@ -115,7 +115,6 @@ typedef struct FallObjectEntry {
 
 // .data: tables, event scripts and compiler constants, in the original order.
 
-#pragma dont_inline on
 BattleStageObject* BattleGetObjectPtr(s32 id) {
 	BattleWork* wp = _battleWorkPointer;
 	int i;
@@ -128,7 +127,6 @@ BattleStageObject* BattleGetObjectPtr(s32 id) {
 	}
 	return NULL; //if none of the IDs match
 }
-#pragma dont_inline reset
 
 #pragma dont_inline on
 BattleStageObject* BattleSearchObjectPtr(const char* name) {
@@ -146,7 +144,6 @@ BattleStageObject* BattleSearchObjectPtr(const char* name) {
 }
 #pragma dont_inline reset
 
-#pragma dont_inline on
 void BattleStageObjectInit(void) {
 	BattleUnit* unit;
 	BattleStageData* stage;
@@ -389,7 +386,6 @@ void BattleStageObjectInit(void) {
 		mapGrpFlagOn(BSO_STR_IF_WIRE, 1);
 	}
 }
-#pragma dont_inline reset
 
 #pragma force_active on
 __declspec(section ".data") static s32 lbl_80371490[2] = {
@@ -1490,7 +1486,6 @@ void BattleStage_DestroyB(void) {
 	}
 }
 
-#pragma dont_inline on
 #pragma opt_propagation off // needed: without it _set_mobj_rotate_x 99.88%
 USER_FUNC(_set_mobj_rotate_x) {
 	s32 layer;
@@ -1579,10 +1574,8 @@ USER_FUNC(_set_mobj_rotate_x) {
 	}
 	return changed ? EVT_RETURN_BLOCK : EVT_RETURN_DONE;
 }
-#pragma dont_inline reset
 #pragma opt_propagation reset
 
-#pragma dont_inline on
 USER_FUNC(_mobj_set_alpha) {
 	s32* args = event->args;
 	s32 which = evtGetValue(event, args[0]);
@@ -1612,7 +1605,6 @@ USER_FUNC(_mobj_set_alpha) {
 	}
 	return EVT_RETURN_DONE;
 }
-#pragma dont_inline reset
 
 USER_FUNC(_mobj_destroy) {
 	BattleWork* wp = _battleWorkPointer;
@@ -1674,7 +1666,6 @@ USER_FUNC(_get_bgset_attack_data) {
 	return EVT_RETURN_DONE;
 }
 
-#pragma dont_inline on
 #pragma opt_propagation off // needed: without it _bgset_kemuri_effect 99.80%
 // Copy propagation off is required: it keeps the `vec3_802f3ac8` base in a callee-saved register loaded
 // before the `evtGetValue` call and the three string offsets computed after it, as the target does.
@@ -1720,7 +1711,6 @@ USER_FUNC(_bgset_kemuri_effect) {
 	}
 	return EVT_RETURN_DONE;
 }
-#pragma dont_inline reset
 #pragma opt_propagation reset
 
 s32 _bgset_audience_bgset_access(void) {
@@ -1728,7 +1718,6 @@ s32 _bgset_audience_bgset_access(void) {
 	return EVT_RETURN_DONE;
 }
 
-#pragma dont_inline on
 USER_FUNC(_set_mobj_shake_init) {
 	BattleWork* wp = _battleWorkPointer;
 	int i, layer;
@@ -1755,7 +1744,6 @@ USER_FUNC(_set_mobj_shake_init) {
 	}
 	return EVT_RETURN_DONE;
 }
-#pragma dont_inline reset
 
 USER_FUNC(_set_mobj_shake) {
 	BattleWork* wp = _battleWorkPointer;
@@ -1810,7 +1798,6 @@ void BattleStage_NozzleDirChangeCheck(void) {
 	}
 }
 
-#pragma dont_inline on
 // MATCHING. Three source shapes were needed: (1) `u8 idx = index` plus `s32 typeOffset = idx + 0x1C4`
 // declared before `base` (the compiler then precomputes `base[typeOffset]` as `lbzx base,typeOffset`
 // and hands base/typeOffset r28/r29); (2) the `idx` store uses array syntax `base[idx + 0x1C7]` (a pointer
@@ -1855,7 +1842,6 @@ void _Nozzle_Change_Check(u8 index, void* nozzle) {
 		}
 	}
 }
-#pragma dont_inline reset
 
 // MATCHING. Three non-obvious requirements: (1) the two float pool symbols (0.0f,
 // -80.0f) must be declared `extern const f32`; as plain `extern f32` mwcc can't hoist the two
@@ -2397,9 +2383,7 @@ s32 _get_nozzle_attack_index(u8 index) {
 	}
 	return -1;
 }
-#pragma dont_inline reset
 
-#pragma dont_inline on
 // Keep _rate_mix/_rate_mix_3 out of the inliner: the original emits a `bl` to each from _combine_nozzle_weapon.
 void _rate_mix(u8* a, u8* b, s8* c, u8* d) {
 	if (*c > 0) {
@@ -2409,9 +2393,7 @@ void _rate_mix(u8* a, u8* b, s8* c, u8* d) {
 		*b = *b + *d;
 	}
 }
-#pragma dont_inline reset
 
-#pragma dont_inline on
 void _rate_mix_3(u8* a, u8* b, u8* c, s8* d, u8* e, u8* f) {
 	if (*d > 0) {
 		if (*d > (s8)*a) {
@@ -2427,7 +2409,6 @@ void _rate_mix_3(u8* a, u8* b, u8* c, s8* d, u8* e, u8* f) {
 }
 #pragma dont_inline reset
 
-#pragma dont_inline on
 void _combine_nozzle_weapon(s32 mode, void* dst_, void* src_) {
 	s32 i;
 
@@ -2499,7 +2480,6 @@ void _combine_nozzle_weapon(s32 mode, void* dst_, void* src_) {
 #endif
 	}
 }
-#pragma dont_inline reset
 
 USER_FUNC(_nozzle_work_get_weapon_address) {
 	BattleNozzleWork* w = (BattleNozzleWork*)((u8*)_battleWorkPointer + 0x20000 - 0x7F40);

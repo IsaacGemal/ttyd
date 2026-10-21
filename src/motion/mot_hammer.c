@@ -63,9 +63,6 @@ s32 marioGetHammerLevel(void) {
     return pouchGetPtr()->hammerLevel;
 }
 
-// Common subexpression elimination off keeps the rodata base in r31 and the mario pointer in r30; with it on
-// the two are swapped and every access thereafter shifts. Needed only for this function.
-#pragma opt_common_subs off
 // Inline helper for the `type == 7 ? 3 : type` clamp: through a helper the type lands in r0 and the clamped
 // value in r3, as in the target; the plain expression swaps the two.
 static inline s32 clampHammerType(s32 t) {
@@ -79,6 +76,9 @@ static inline s32 clampHammerType(s32 t) {
 // arm are syntactically different (the named field vs this file's raw accessor), which blocks that
 // if-conversion, and `opt_dead_assignments off` keeps the `r27 = t` copy so the target's `r0`/`r27` split
 // survives. Together they give the target's bytes.
+// Common subexpression elimination off keeps the rodata base in r31 and the mario pointer in r30; with it on
+// the two are swapped and every access thereafter shifts. Needed only for this function.
+#pragma opt_common_subs off
 void mot_hammer(void) {
 #pragma opt_dead_assignments off // keep the `r27 = t` pose-time copy (target splits r0/r27)
     MarioWork* mario = marioGetPtr();
@@ -351,7 +351,6 @@ void mot_hammer(void) {
 #pragma opt_dead_assignments reset
 #pragma opt_common_subs reset
 
-#pragma opt_propagation off // keep marioChkHammer2/mot_hammer2's f0/f1/f2 load split; removing it regresses mot_hammer2
 s32 marioChkHammer2(void) {
     MarioWork* mario;
     s32 sp10;
@@ -403,6 +402,7 @@ s32 marioChkHammer2(void) {
 // The original keeps a dead `hitGetAttr(hit) & 0x800005` comparison in this function (its branch was
 // folded away), while the compiler eliminates it from the natural empty-body form. A no-op store to
 // `hit` (below) keeps the comparison alive without adding instructions.
+#pragma opt_propagation off // keep mot_hammer2's f0/f1/f2 load split
 void mot_hammer2(void) {
     MarioWork* mario = marioGetPtr();
     MarioWork* m2;

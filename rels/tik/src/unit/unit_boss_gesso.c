@@ -21,8 +21,6 @@
 #include "battle/battle_disp.h"
 
 #pragma pool_data off
-// REL modules are built without -fp_contract on, but this function needs the target's fmadds/fnmsubs fusion.
-#pragma fp_contract on
 
 #pragma force_active on
 extern s32 btldefaultevt_Confuse[];

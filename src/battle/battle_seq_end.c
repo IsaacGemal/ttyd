@@ -431,8 +431,6 @@ extern const char str_msg_menu_mario_name_0[];
 extern s32 marioAttackEvent_MajinaiExpUp[];
 extern BattleDispPose pose_table_nokotarou_stay[];
 
-#pragma dont_inline on
-
 // The retail rank lookup is called out of line.
 #pragma dont_inline on
 RankUpData* _get_rank_data(s32 level) {
@@ -468,10 +466,6 @@ const char* BattleGetRankNameLabel(s32 level) {
 // Data tables in this unit's .data, reached as offsets from its first object,
 // and the string bank in .rodata reached from its first string.
 
-// This unit's original build inlines nothing: every callee is a real `bl` (cf. battle.c's `-inline off`).
-// Until configure.py gets that flag for this file, keep btlseqEnd and the helpers it calls out of line.
-// (Without this mwcc inlines _audience_Whistle_control, btlseqEnd_DispMain, ... into btlseqEnd.)
-#pragma dont_inline on
 #pragma opt_common_subs off // without it MWCC re-associates the BattleInformation flag masks and the callee-saved map drifts further
 #pragma opt_lifetimes off // the target keeps unit/party/setup in the registers the default lifetime pass moves; also drops the two `mr rN, r0` moves
 void btlseqEnd(BattleWork* wp) {
@@ -1145,6 +1139,10 @@ void btlseqEnd(BattleWork* wp) {
 #pragma opt_common_subs reset
 #pragma opt_lifetimes reset
 
+// This unit's original build inlines nothing: every callee is a real `bl` (cf. battle.c's `-inline off`).
+// Until configure.py gets that flag for this file, keep the helpers btlseqEnd calls out of line.
+// (Without this mwcc inlines _audience_Whistle_control, btlseqEnd_DispMain, ... into btlseqEnd.)
+#pragma dont_inline on
 void _ExecAllUnitBattleEndEvent(void) {
     BattleWork* wp;
     s32 i;
@@ -2028,6 +2026,7 @@ void _BattleMarioKouraDelete(void) {
 
     event->unitId = mario->unitId;
 }
+#pragma dont_inline reset
 
 static s32 _check_guard_koura(EventEntry* event, BOOL isFirstCall) {
     EventEntry* e = event;
@@ -2061,9 +2060,6 @@ s32 _get_rank_up_msg(EventEntry* event, BOOL isFirstCall) {
     evtSetValue(event, idx, (s32)rank->rankUpMessage);
     return 2;
 }
-
-// Reset at the end of the file: with -inline deferred the setting in force at end of file decides.
-#pragma dont_inline reset
 
 // Named .sdata2 suffix follows the compiler colour templates, in retail address order.
 // Keep unreferenced tail words: they are part of the original section layout.

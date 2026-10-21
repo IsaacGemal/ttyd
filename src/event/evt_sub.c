@@ -838,6 +838,7 @@ USER_FUNC(evt_sub_get_coin) {
 		return 2;
 	}
 }
+#pragma opt_propagation reset
 #pragma opt_lifetimes reset
 
 
@@ -963,7 +964,6 @@ USER_FUNC(evt_sub_check_intersect) {
 	evtSetValue(event, args[8], 1);
 	return 2;
 }
-#pragma opt_propagation reset
 
 
 USER_FUNC(irai_mail_check) {

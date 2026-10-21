@@ -1,6 +1,3 @@
-// dont_inline: retail calls the file's small helpers (BattleWaitAllActiveEvtEnd and others) with `bl` from
-// btlseqMove/BattleSequenceManager; without it MWCC inlines them.
-#pragma dont_inline on
 #pragma pool_data on // the original addresses its .rodata and .data through one base register
 #include "battle/battle_seq.h"
 #include "battle/battle.h"
@@ -266,6 +263,9 @@ void BattleCheckAllPinchStatus(BattleWork* wp, BOOL a2) {
 	}
 }
 
+// dont_inline: retail calls the file's small helpers (BattleWaitAllActiveEvtEnd and others) with `bl` from
+// btlseqMove/BattleSequenceManager; without it MWCC inlines them.
+#pragma dont_inline on
 void btlseqInit(BattleWork* wp) {
 	MarioWork* mario;
 	PartyEntry* party;
@@ -2786,9 +2786,6 @@ BOOL BattleCheckConcluded(BattleWork* wp) { //1:1
 
 //local prototypes
 
-// Needed: without dont_inline the compiler inlines this loop into its caller
-// _set_haikei_entry_scale, which the original calls.
-#pragma dont_inline on
 void _mapobj_data_touch_scale(s32 kind) { //1:1
 	BattleWork* wp = _battleWorkPointer;
 	s32 i;
@@ -2912,4 +2909,3 @@ s32 _set_haikei_entry_scale(EventEntry* event, BOOL isFirstCall) {
 	}
 	return ret ? 0 : 2;
 }
-#pragma dont_inline reset

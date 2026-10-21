@@ -1192,7 +1192,6 @@ static USER_FUNC(piders_get_first_pos_attr) {
     return EVT_RETURN_DONE;
 }
 
-#pragma dont_inline on // the pider target walkers are calls, not inlined, in the original
 static USER_FUNC(piders_renzoku_attack_set_target) {
     EventEntry* evt = event;
     s32* args = evt->args;
@@ -1220,6 +1219,7 @@ static USER_FUNC(piders_renzoku_attack_set_target) {
     return EVT_RETURN_DONE;
 }
 
+#pragma dont_inline on // the pider target walkers are calls, not inlined, in the original
 static void piders_get_target(s32* outUnit, s32* outPart) {
     BattleWork* wp = _battleWorkPointer;
     u8* sampling = (u8*)&wp->sampling;

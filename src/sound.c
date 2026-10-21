@@ -1259,8 +1259,6 @@ void SoundDVDMain(void) {
     }
 }
 
-// Keep _ssDVDReadAsync_activeChk out of line: the original calls it rather than inlining.
-#pragma dont_inline on
 void _ssDVDReadAsync_activeChk(s32 result, DVDFileInfo* fileInfo) {
     SoundStream* stream;
     SoundStreamEntry* entry;
@@ -1363,7 +1361,6 @@ unlock:
         OSRestoreInterrupts(sound.interrupts);
     }
 }
-#pragma dont_inline reset
 
 void cache_flush(u32 pointerToARQRequest) {
     ARQRequest* request = (ARQRequest*)pointerToARQRequest;
@@ -1556,7 +1553,6 @@ u8* ssDecodeDPCM(SoundStream* stream, SoundStreamEntry* entry, s16* out, u32 cou
 
 // SoundStream has no write-position field; it lives at +0x24 and is written raw. SoundStreamEntry at
 // +0x2c is loadBuffer[?] and +0x38..0x60 is unk38/unk4C; all accessed raw here.
-#pragma opt_propagation off // needed: with propagation on MWCC folds the /7 magic and homes n in r0
 static inline u8* ssCopyPCM8(SoundStream* stream, u8* ep, u8* out, u32 count, u8* in) {
     while (count != 0) {
         *out++ = *in++;
@@ -1619,6 +1615,7 @@ static inline u8* ssCopyPCM16(SoundStream* stream, u8* ep, s16* out, u32 count, 
     return in;
 }
 
+#pragma opt_propagation off // needed: with propagation on MWCC folds the /7 magic and homes n in r0
 u32 _sscallback(void* buffer1, u32 len1, void* buffer2, u32 len2, u32 user) {
     SoundStream* stream;
     s16* out1;
@@ -2211,9 +2208,6 @@ static inline void _ssDVDReadAsync_cache_entry_ss(SoundStream* stream, SoundStre
     e->requestLength = len;
 }
 
-// dont_inline keeps SoundSSMainInt out of SoundMainInt (the original keeps a
-// stack frame and real call sequence).
-#pragma dont_inline on
 void SoundSSMainInt(void) {
     int i;
     SoundStream* stream;
@@ -2252,7 +2246,6 @@ void SoundSSMainInt(void) {
         }
     }
 }
-#pragma dont_inline reset
 
 // The two loops share `length` as their counter; the original keeps the first
 // loop's counter in r3 and reuses r6 for the second, and `src`/`dest` both start at &sound.unk33C.

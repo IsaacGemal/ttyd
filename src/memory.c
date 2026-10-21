@@ -356,6 +356,7 @@ void smartAutoFree(u32 a1) {
 		}
 	}
 }
+#pragma dont_inline reset
 
 void smartFree(smartEntry* entry) {
 	smartEntry* prev;
@@ -585,7 +586,6 @@ void smartGarbage(void) {
 	}
 	DCFlushRange(wp->ptr, (u32)heapEnd[5] - (u32)heapStart[5] - 32);
 }
-#pragma dont_inline reset
 
 GXTexObj* smartTexObj(GXTexObj* obj, void** image_ptr) {
 	if (image_ptr) {

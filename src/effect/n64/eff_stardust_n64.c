@@ -344,6 +344,8 @@ void effStardustMain(EffectEntry* effect) {
 
     dispEntry(camera, dispCalcZ(&position), 2, effStardustDisp, effect);
 }
+#pragma opt_common_subs reset
+#pragma opt_propagation reset
 
 /* The original builds the TEV colour through a helper, so GXSetTevColor's argument
    temp is allocated next to the helper's local (0x8) instead of above it (the plain #else form

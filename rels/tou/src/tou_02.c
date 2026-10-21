@@ -1669,8 +1669,6 @@ void fan_disp(void) {
     extLoadTextureExit();
 }
 
-#pragma opt_propagation off // hoist the sin/cos coefficient loads out of the inline branches
-#pragma opt_lifetimes off // retail FPR colouring of the sin/cos inlines in the switch cases
 // Both pragmas are required: without `opt_propagation off` the function is 74.9%, without
 // `opt_lifetimes off` it is 95.5%.
 // Code-shape idioms that give retail's instructions and FPRs:
@@ -1708,6 +1706,8 @@ static inline f32 fanAngle(f32 rf, f32 min, f32 span) {
     f32 a = (rf * span + min) * TWO_PI / 360.0f;
     return a;
 }
+#pragma opt_propagation off // hoist the sin/cos coefficient loads out of the inline branches
+#pragma opt_lifetimes off // retail FPR colouring of the sin/cos inlines in the switch cases
 void ext_fan_main(void) {
     MarioWork* mario = marioGetPtr();
     ExtPose* pose;

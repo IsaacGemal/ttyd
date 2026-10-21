@@ -209,8 +209,6 @@ void faker_mario_makkuro_set(void) {
     mapSetTevCallback(0xB, callback);
 }
 
-#pragma opt_propagation reset
-
 static s32 _mario_makkuro_set(EventEntry* event, BOOL isFirstCall) {
     BattleUnit* mario = BattleGetMarioPtr(_battleWorkPointer);
 
@@ -302,6 +300,7 @@ s32 _mario_super_emblem_anim_set(EventEntry* event, s32 mode) {
 
     return 0;
 }
+#pragma opt_propagation reset
 
 USER_FUNC(_get_mario_hammer_lv) {
     s32 arg = event->args[0];

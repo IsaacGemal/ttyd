@@ -12,11 +12,6 @@
 
 #pragma pool_data off
 
-// This REL's cflags omit `-fp_contract on`, but the original was built with it (the _wave_offset
-// y term is a fused `fmadds`); without it MWCC emits separate `fmuls`/`fadds`. The proper fix is a
-// `-fp_contract on` extra_cflag for data/battle/battle_database_muj.c.
-#pragma fp_contract on
-
 #pragma force_active on
 extern s32 battle_flower_drop_param_default[];
 extern s32 battle_flower_drop_param_default2[];

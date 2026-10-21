@@ -1200,8 +1200,6 @@ static inline f32 animHermite(f32 t, f32 p, f32 m0, f32 m1) {
     return h0 * p + h1 * m0 + h2 * m1;
 }
 
-// The four inlined delta loops make each update path large; retail inlines them in both.
-#pragma inline_max_total_size(60000)
 // Reconstruction notes. The whole recursive pose evaluator is reconstructed from the assembly.
 // Source shapes that reproduce retail's operand order and register split: the
 // two `0.0f == x` compares keep the constant first in `fcmpu`; the clamped value
@@ -1507,8 +1505,6 @@ void animPoseMain(s32 poseId) {
         }
     }
 }
-#pragma inline_max_size reset
-#pragma inline_max_total_size reset
 
 // pushGXModelMtx_TransformNode__
 // Matches retail. Local declaration order (translation, scale, rotation, then the four
@@ -2692,8 +2688,6 @@ static inline void animPoseEvalMtxPose(AnimationPose* pose, Mtx matrix, f32 rotY
     wp->mpCurPoseData = poseData;
     evalProc(-1, poseData->groupCount - 1);
 }
-// dont_inline keeps animPoseDrawMtx a real bl from animPoseDraw (retail emits one).
-#pragma dont_inline on
 // The float-scratch allocation as a helper gives that block's volatile temps (wp r3, paperPoseData r5).
 // The paper animation name is read from paperAnim for the test and again for the search: the
 // CSE'd load's copy into the search's name parameter is coalesced, and that extra permanent
@@ -2816,7 +2810,6 @@ void animPoseDrawMtx(s32 poseId, Mtx matrix, s32 xluMode, f32 rotY, f32 scale) {
         _animPoseDrawMtx(pose, matrix, xluMode, rotY, scale);
     }
 }
-#pragma dont_inline reset
 
 void animSetPaperTexObj(GXTexObj* a1, GXTexObj* a2, GXTexObj* a3, void* a4, void* a5, void* a6, s32 a7, s32 a8) {
     wp->mpTexObjs[0] = a4 ? a1 : NULL;

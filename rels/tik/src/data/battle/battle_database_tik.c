@@ -10,8 +10,6 @@
 #include "driver/npcdrv.h"
 
 #pragma pool_data off
-// the original REL was compiled with fp contraction enabled (fmadds in _wave_offset)
-#pragma fp_contract on
 
 #pragma force_active on
 extern s32 battle_flower_drop_param_default[];

@@ -172,7 +172,6 @@ void monte_single_disp(CameraId cameraId, void* param) {
     }
 }
 
-#pragma opt_propagation off // keep count*sizeof(MonteEntry) from folding to li 0x44 (count==1)
 #ifdef MUST_MATCH
 // Match-only shape: the loop counter, the two base pointers and `arr` are separate locals, and `arr`
 // is assigned from monte_p inside the loop condition. MWCC colours an inlined helper's locals in
@@ -194,9 +193,10 @@ static inline void monte_fill(void) {
 }
 #endif
 
-// `#pragma opt_propagation off` above is required: with propagation on MWCC folds
+// `#pragma opt_propagation off` is required: with propagation on MWCC folds
 // count*sizeof(MonteEntry) (count==1) to li 0x44 and drops the target's li r28,1 /
 // mulli r29,r28,0x44 / mr r3,r29 sequence and the r28 save.
+#pragma opt_propagation off // keep count*sizeof(MonteEntry) from folding to li 0x44 (count==1)
 USER_FUNC(monte_single_init) {
     s32 wasAllocated = 0;
     s32 entryCount;

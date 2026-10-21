@@ -523,10 +523,8 @@ static void actionCommandDisp(f32 x, f32 y) {
             break;
     }
 }
-#pragma opt_propagation reset
 
-
-#pragma opt_propagation off // needed: with propagation on MWCC folds the StickRotateWork base (work+0x1F4C) into the BattleWork base
+// `opt_propagation off` is needed: with propagation on MWCC folds the StickRotateWork base (work+0x1F4C) into the BattleWork base
 void actionCommandDisp2(f32 x, f32 y) {
     BattleWork* work = _battleWorkPointer;
     BattleActions* ac = &work->actionCommands;

@@ -1009,12 +1009,6 @@ static USER_FUNC(evt_moamoa_kind_onoff) {
     return EVT_RETURN_DONE;
 }
 
-#pragma opt_propagation reset
-#pragma opt_lifetimes reset
-#pragma inline_max_size reset
-#pragma inline_max_size reset
-
-
 static USER_FUNC(evt_moamoa_blow) {
     s32 i;
     MoamoaPose* pose;
@@ -1083,10 +1077,6 @@ static f32 randf(f32 min, f32 max) {
 
 // Reconstructed logic: allocate/clear wp, copy both npc positions + spawn vector, build the
 // pose array, random matrix translation + ground hitCheckFilter, then 600 warm-up ext_moamoa_main.
-// MWCC would otherwise inline moamoa_pose_init (456 B) into this function, but the target emits a
-// real `bl`; moamoa_pose_change (360 B) must still inline. 200 is the highest inline size that
-// excludes the former and keeps the latter (verified against the instruction diff).
-#pragma inline_max_size(200)
 static void ext_moamoa_init(void) {
     MapObject* mapObj;
     NpcEntry* npc;
@@ -1249,7 +1239,6 @@ static void moamoa_jump(ExtPose* pose, MoamoaPose* entry, f32 x, f32 y, f32 z, f
 // The first ang/rad block matches by splitting `ang = reviseAngle(...)` from `rad = TWO_PI * ang / 360`
 // and inlining `camGetPtr(4)` (check_hammer's shape), and the two `(20+box.x)*0.5` sites match by
 // writing `(box.x + 20) / 2` (folded to the same fmuls).
-#pragma inline_max_size(1000)
 #pragma opt_lifetimes off // keeps the sin/cos coefficients in the target's FPRs
 #pragma opt_propagation off // hoist the sin/cos coefficient loads out of the inline branches
 static s32 moamoa_hit_check(ExtPose* pose, MoamoaPose* entry) {
@@ -1418,7 +1407,6 @@ static inline void moaPlayHit(ExtPose* ep) {
 }
 #endif
 #pragma inline_max_total_size(60000)
-#pragma inline_max_size(1000)
 // Per-frame update of every moamoa (the ordinary variant, no follower).
 static void ext_moamoa_main(void) {
 #ifdef MUST_MATCH
@@ -1971,7 +1959,6 @@ static void ext_moamoa_main(void) {
         mario->riderDelta.z = 2.0f * b.z;
     }
 }
-#pragma inline_max_size reset
 #pragma inline_max_total_size reset
 static void ext_moamoa_dispent(void) {
     if (wp->flags & 1) {

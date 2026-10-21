@@ -80,10 +80,6 @@ void effConfettiN64SetCamId(EffectEntry* entry, s32 camId) {
 // Declaring randCount as f32 (so its int->float conversion is the first use of the magic double)
 // and using an explicit `half` temp for radius2 makes the FPR locals land on the target's
 // f6/f21-f27, and the loop-invariant constants on f28=double, f29=0.01, f30=6p2832, f31=360.
-// `opt_common_subs off` is required for that colouring: with CSE on MWCC puts float_360 in f28
-// and double/6p2832 in f30/f31.  All GPRs, the position/velocity math and the type-3 reinit match
-// either way.
-#pragma opt_common_subs off // required for the f28-f31 preheader constant colouring above
 EffectEntry* effConfettiN64Entry(s32 type, s32 lifetime, f32 x, f32 y, f32 z, f32 scale) {
 	s32 timer;
 	s32 type10;
@@ -207,8 +203,6 @@ EffectEntry* effConfettiN64Entry(s32 type, s32 lifetime, f32 x, f32 y, f32 z, f3
 	}
 	return effect;
 }
-
-#pragma opt_common_subs reset
 
 // Retail builds the position Vec in a scratch slot and copies it into a second local
 // before dispCalcZ.  The inline starts from a literal zero vector: a named zero vector's load is

@@ -152,10 +152,8 @@ void BSE_Sleep(BattleUnit* unit) {
 		BSE_SleepDelete(unit);
 	}
 }
-#pragma dont_inline reset
 
 // Keep BSE_SleepDelete out of line: the original calls it rather than inlining.
-#pragma dont_inline on
 void BSE_SleepDelete(BattleUnit* unit) {
 	EffectEntry* effect = unit->mSleepEff;
 
@@ -165,8 +163,6 @@ void BSE_SleepDelete(BattleUnit* unit) {
 	}
 }
 
-// Keep BSE_Biribiri out of line: the original calls it rather than inlining.
-#pragma dont_inline on
 void BSE_Biribiri(BattleUnit* unit) {
 	BattleEffectPos* work;
 	BattleUnitPart* part;
@@ -196,10 +192,7 @@ void BSE_Biribiri(BattleUnit* unit) {
 		BSE_BiribiriDelete(unit);
 	}
 }
-#pragma dont_inline reset
 
-// Keep BSE_BiribiriDelete out of line: the original calls it rather than inlining.
-#pragma dont_inline on
 void BSE_BiribiriDelete(BattleUnit* unit) {
 	EffectEntry* effect = unit->mBiribiriEff;
 
@@ -209,8 +202,6 @@ void BSE_BiribiriDelete(BattleUnit* unit) {
 	}
 }
 
-// dont_inline: without it BattleStatusEffectMain inlines BSE_Fire; the original calls it.
-#pragma dont_inline on
 void BSE_Fire(BattleUnit* unit) {
 	BattleEffectPos* work;
 	BattleUnitPart* part;
@@ -244,8 +235,6 @@ void BSE_Fire(BattleUnit* unit) {
 	}
 }
 
-// Keep BSE_FireDelete out of line: the original calls it rather than inlining.
-#pragma dont_inline on
 void BSE_FireDelete(BattleUnit* unit) {
 	EffectEntry* effect = unit->mFireEff;
 
@@ -254,10 +243,7 @@ void BSE_FireDelete(BattleUnit* unit) {
 		unit->mFireEff = NULL;
 	}
 }
-#pragma dont_inline reset
 
-// Keep BSE_Freeze out of line: the original calls it rather than inlining.
-#pragma dont_inline on
 void BSE_Freeze(BattleUnit* unit) {
 	BattleEffectPosScale* work;
 	BattleUnitPart* part;
@@ -289,10 +275,7 @@ void BSE_Freeze(BattleUnit* unit) {
 		BSE_FreezeDelete(unit);
 	}
 }
-#pragma dont_inline reset
 
-// Keep BSE_FreezeDelete out of line: the original calls it rather than inlining.
-#pragma dont_inline on
 void BSE_FreezeDelete(BattleUnit* unit) {
 	EffectEntry* effect = unit->mFreezeEff;
 
@@ -302,8 +285,6 @@ void BSE_FreezeDelete(BattleUnit* unit) {
 	}
 }
 
-// Keep BSE_Kagegakure out of line: the original calls it rather than inlining.
-#pragma dont_inline on
 void BSE_Kagegakure(BattleUnit* unit) {
 	BattleUnitPart* part;
 	char name[0x14];
@@ -327,8 +308,6 @@ void BSE_Kagegakure(BattleUnit* unit) {
 	}
 }
 
-// Keep BSE_KagegakureDelete out of line: the original calls it rather than inlining.
-#pragma dont_inline on
 void BSE_KagegakureDelete(BattleUnit* unit) {
 	IconEntry* entry = unit->mKagegakureIcon;
 
@@ -337,13 +316,11 @@ void BSE_KagegakureDelete(BattleUnit* unit) {
 		unit->mKagegakureIcon = NULL;
 	}
 }
-#pragma dont_inline reset
 
 void BSE_TurnFirstProcessEffectEntry(BattleUnit* unit, s16 active) {
 	unit->mBurnDamageFlameState = 1;
 	unit->mbBurnDamageFlameActive = active;
 }
-#pragma dont_inline reset
 
 // NOTE: mBurnDamageFlameState/mbBurnDamageFlameActive are declared s16 in battle_unit.h, but the
 // original loads them with lhz and tests them unsigned (cmplwi); cast to u16 to match. Header likely wrong.
@@ -398,9 +375,7 @@ BOOL BSE_TurnFirstProcessEffectMain(BattleUnit* unit) {
 	}
 	return TRUE;
 }
-#pragma dont_inline reset
 
-#pragma dont_inline on
 void BattleStatusChangeInfoWorkInit(BattleUnit* unit) {
 	BattleStatusChangeEntry* entries = unit->mStatusChange;
 	s32 i;
@@ -414,10 +389,7 @@ void BattleStatusChangeInfoWorkInit(BattleUnit* unit) {
 		entry->mUnitId = 0;
 	}
 }
-#pragma dont_inline reset
 
-// Keep _get_pri out of line: the original calls it rather than inlining.
-#pragma dont_inline on
 s32 _get_pri(s8 type) {
 	s8* val;
 	s32 priority = 24; //TODO: #define?
@@ -432,7 +404,6 @@ s32 _get_pri(s8 type) {
 	}
 	return -1;
 }
-#pragma dont_inline reset
 
 void BattleStatusChangeInfoSetAnnouce(BattleUnit* unit, s32 type, s8 p1, s32 p2) {
 	BattleStatusChangeEntry* list = unit->mStatusChange;
@@ -493,7 +464,6 @@ void BattleStatusChangeInfoSetAnnouce(BattleUnit* unit, s32 type, s8 p1, s32 p2)
 		}
 	}
 }
-#pragma dont_inline reset
 
 BOOL BattleStatusChangeAnnouceMain(BattleWork* wp) {
 	s32 i;
@@ -507,10 +477,7 @@ BOOL BattleStatusChangeAnnouceMain(BattleWork* wp) {
 	}
 	return result;
 }
-#pragma dont_inline reset
 
-// Keep BattleStatusChangeAnnouceMain_Unit out of line: the original calls it rather than inlining.
-#pragma dont_inline on
 BOOL BattleStatusChangeAnnouceMain_Unit(BattleUnit* unit) {
 	return FALSE;
 }
@@ -525,7 +492,6 @@ void BattleStatusChangeMsgWorkInit(void) {
 		work->entries[i].type = -1;
 	}
 }
-#pragma dont_inline reset
 
 // Keep BattleStatusChangeMsgSetAnnouce out of line: the original calls it rather than inlining.
 #pragma dont_inline on

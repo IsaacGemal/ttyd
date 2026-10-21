@@ -280,11 +280,6 @@ EffectEntry* effStarStoneEntry(s32 idx, f32 x, f32 y, f32 z, f32 scale) {
 	return entry;
 }
 
-
-// `opt_common_subs off` required: with common-subexpression merging on, the two u8->f32 color
-// conversions and the scrollU update pick different FPRs than the original (the 2^52 mask and
-// the 255.0f divisor land in f3/f4 instead of f4/f3, the update's temporaries rotate).
-#pragma opt_common_subs off
 void effStarStoneMain(EffectEntry* effect) {
 	effStarStoneData* data = effect->userdata;
 	Vec position;
@@ -451,7 +446,6 @@ void effStarStoneMain(EffectEntry* effect) {
 		}
 	}
 }
-#pragma opt_common_subs reset
 
 
 #define STARSTONE_VTX_COMMON(pos, nrm, tex) \
@@ -2244,8 +2238,6 @@ static u8* color_tbl[7] = {
 	diamond_7_color0_tbl,
 };
 // clang-format on
-
-#pragma opt_lifetimes reset
 
 Vec edge_color[7] = {
 	{ 0.3310000002384186, 0.3149999976158142, 0.23199999332427979 },

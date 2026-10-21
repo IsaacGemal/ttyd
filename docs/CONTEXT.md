@@ -12100,3 +12100,63 @@ rels). The full `--non-matching` ninja compiles every object, and only the link 
     - zubastar's create_takaku volatile and b18 base
     - seq_end's in-argument `halfWidth =` assignment
     - seq_command's `(s32)(s8)` cast
+
+### Optimisation pragmas: removed where the object doesn't need them (2026-10-20, Claude Opus 5.5, n9-q-o-pragma)
+
+`tools/cleanup_index.py` before (e2103891) and after: index 16.392 -> 15.612 per kLOC (11570 -> 11011 weighted),
+**opt_pragma 1457 -> 900**, must_match 1300 -> 1298 (party_cloud's two guards held only a pragma each); every
+other category unchanged. Build byte-identical after every commit (`build/G8MJ01/ok`); all 85 changed units compile
+under `configure.py --non-matching`; `fncast_lint.py` and `local_prototypes.py` clean. `tools/ci.py` was run before
+each commit with its tools/tests step stubbed (the same 9 environment failures as the chapters above:
+test_reloc_value_check can't import elftools, test_wave_launch times out on systemd scopes); every other step passed.
+The narrowing commits needed `--allow-pragma`, because the lint reads a moved line as a new one.
+- **Method.** One script per pass, run over every file with a counted pragma. It compiles the unit's object alone,
+  with the ninja command and `-o` pointed at a temp dir, and compares it with the baseline object through
+  `tools/obj_equiv.py`'s `compare()`. Pass 1 removed each pragma, or its on/reset (off/on) pair, on top of the removals
+  already accepted in that file, keeping a removal only if the object was identical. Lines were blanked during the
+  search and deleted afterwards, then each file was re-verified (only sdk/arc.c uses `__LINE__`). A rerun, every
+  co-located group of pragmas removed together, and every file's pragmas removed at once all found nothing more. The
+  narrowing pass moved each setter down and each closer up, one function at a time, until the object changed. A
+  merge pass dropped the `reset` + setter between back-to-back regions of the same setting when no function body lay
+  between them. `defer_codegen`, `force_active`, `section` and `pool_data` were not touched.
+- **Removable (each kind with its count):**
+  - `fp_contract`: 7 of 9. The REL cflags have carried `-fp_contract on` since these were written.
+  - `dont_inline`: 266 lines in pass 1, then 188 more in merges. The function was never going to be inlined anyway:
+    too big, defined after its callers with no deferred inline taking it, or only used by address. The merges also
+    took 26 `opt_propagation`, 10 `opt_common_subs` and 10 `opt_lifetimes` lines.
+  - `opt_common_subs`: 27. `inline_max_size`: 13, including rsh_05's four orphan resets.
+  - `opt_propagation`: 9. `inline_max_total_size`: 4. `opt_lifetimes`: 3. `optimize_for_size`: 1, an orphan reset.
+  - Several comments that called a pragma "required" or "load-bearing" were wrong: eff_starstone, eff_confetti,
+    party_cloud (both pairs), kpa_stageclear_disp, battle_audience's PerAct/ApSrcCtrlProcess, among others. Those
+    comments went with their pragmas.
+- **Held, in every form tried (each one changes the object):** all of `opt_dead_assignments` (30),
+  `opt_loop_invariants` (20), `opt_strength_reduction` (4), `optimization_level 2` (npcdrv, eff_ripple),
+  `global_optimizer off` (eff_recover_heart), `inline_depth(5)` (mri_puni), sac_genki's `auto_inline off`, and all but
+  one `optimize_for_size` (the files that use it are built `-O4,p`). Also held: 371 `dont_inline`, 176
+  `opt_propagation`, 109 `opt_lifetimes`, 103 `opt_common_subs`, 6 `inline_max_size` and 6 `inline_max_total_size`
+  lines.
+- **Narrowed.** Regions in 31 files now begin and end at the functions that need them (38 pragma lines moved); most
+  just skip static inline helpers ahead of the one real function. The rest:
+  - Seven file-wide setters gained a `reset` after their last needed function: sac_genki, eff_mugi, eff_snow_dust (2),
+    eff_stardust (2), unit_mario. Those are seven new lines; the object is identical.
+  - mri_puni's push/pop moved its `pop` up. In npcdrv and eff_ripple the `push`/`pop` already scopes the region.
+  - A reset that doesn't work right after its setter is not a scope: `#pragma inline_depth reset` does nothing, so
+    mri_puni's push/pop stays.
+- **End-of-file settings (for the next pass).** With `-inline auto,deferred`, an unpaired `#pragma dont_inline on`
+  acts by being in force at the end of the file. In battle_audience_kinopio, battle_enemy_item, battle_seq_command and
+  mario_kemuri the object is identical with the setter moved after the last function. Narrowing these makes them look
+  like they wrap the last function, so they went back to their original place. eff_recover_heart's
+  `global_optimizer off` behaves the same way and already sits before the file's last function. Paired `dont_inline`
+  regions do act on the functions inside them. The opt_* settings tested (`opt_common_subs`, `opt_lifetimes`,
+  `opt_propagation`) act per function.
+- **Comment fixes found on the way:** ac_timing_wide's two `optimize_for_size` comments named each other's function.
+  The asm shows battleAcMain_TimingWide and actionCommandDisp are the stmw/lmw prologues. eff_mugi no longer says
+  effMugiKemuriMain needs CSE off. mot_hammer's propagation note no longer names marioChkHammer2. eff_breath_fire's
+  "0.2f across the rand call" note described its Entry function, which doesn't need the pragma, so the note is gone.
+- **Left for a later pass:**
+  - Merging regions that have a function body between them. It would widen a setting to functions that don't need
+    it, so it wasn't tried.
+  - Pragmas inside function bodies (mot_hammer's `opt_dead_assignments`, several others). They are kept where they
+    are; moving them outside the body was not tested.
+  - The scripts (`build/opragma/` in this worktree: try.py, narrow.py, merge.py, eoftest.py, verify.py) are not
+    committed.

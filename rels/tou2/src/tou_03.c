@@ -271,12 +271,9 @@ static void pose_init(void) {
     } while (data->name1 != NULL);
     kyaku_wp->count2++;
 }
-#pragma dont_inline reset
-
 
 
 // dont_inline keeps the real bl call in this unit's callers.
-#pragma dont_inline on
 static void pose_main(void) {
     s32 i;
     ExtPose* pose = extGetPosePtr();
@@ -1255,8 +1252,6 @@ static void pose_change(KyakuState* state, const char* name1, const char* name2)
         state->cycleStart = gp->renderTime + (s64)rand();
     }
 }
-#pragma dont_inline reset
-
 
 
 EVT_BEGIN(evt_teki_nyuujyou_default)
@@ -1309,12 +1304,9 @@ EVT_BEGIN(evt_teki_nyuujyou_default)
 EVT_END()
 
 // dont_inline keeps the real bl call in this unit's callers.
-#pragma dont_inline on
 void __tou_srand(s32 seed) {
     x[0] = seed;
 }
-#pragma dont_inline reset
-
 
 
 EVT_BEGIN(burst_chain_entry)
@@ -1413,17 +1405,13 @@ EVT_BEGIN(burst_wangwang)
 EVT_END()
 
 // dont_inline keeps the real bl call in this unit's callers.
-#pragma dont_inline on
 u32 __tou_rand(void) {
     x[0] = x[0] * 1103515245 + 12345;
     return (x[0] >> 16) & 0x7FFF;
 }
-#pragma dont_inline reset
-
 
 
 // dont_inline keeps the real bl call in this unit's callers.
-#pragma dont_inline on
 static f32 randf(f32 min, f32 max) {
     f32 t = (f32)__tou_rand() / 32767.0f;
     return t * (max - min) + min;
@@ -4397,12 +4385,9 @@ s32 confupose(EventEntry* event, BOOL isFirstCall) {
 static f32 sinf(f32 x) {
     return sin(x);
 }
-#pragma dont_inline reset
-
 
 
 // dont_inline keeps the real bl call in this unit's callers.
-#pragma dont_inline on
 static f32 cosf(f32 x) {
     return cos(x);
 }
