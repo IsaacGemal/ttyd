@@ -534,9 +534,7 @@ static void actionCommandDisp(f32 x, f32 y) {
     }
 
     v = disp->value;
-    BattleAcDrawGauge((s32)x, (s32)y, dec->gaugeWidth, 2,
-                      (ac->acFlag & 2) ? 100 : (s32)dec->goal, 100, 100,
-                      flags, v);
+    BattleAcDrawGauge((s32)x, (s32)y, v, dec->gaugeWidth, 2, (ac->acFlag & 2) ? 100 : (s32)dec->goal, 100, 100, flags);
     {
         Vec vec = (Vec){0.0f, 0.0f, 0.0f};
         vec.x = float_neg288_8041c7c4 + x + (float_176_8041c7c8 * dec->goal) / float_100_8041c7bc;

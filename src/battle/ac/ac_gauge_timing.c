@@ -512,9 +512,9 @@ static void actionCommandDisp(f32 x, f32 y) {
             ratio = float_100_80421874;
         }
         if (dec->flashTimer > 0) {
-            BattleAcDrawGauge((s32)x, (s32)y, 0xB2, 0x64, 0x64, 0x64, 0x64, 0, float_neg1_8042187c);
+            BattleAcDrawGauge((s32)x, (s32)y, float_neg1_8042187c, 0xB2, 0x64, 0x64, 0x64, 0x64, 0);
         } else {
-            BattleAcDrawGauge((s32)x, (s32)y, 0xB2, 0x64, 0x64, 0x64, 0x64, 0, ratio);
+            BattleAcDrawGauge((s32)x, (s32)y, ratio, 0xB2, 0x64, 0x64, 0x64, 0x64, 0);
         }
         {
             s32 icon =
@@ -527,7 +527,7 @@ static void actionCommandDisp(f32 x, f32 y) {
         break;
     }
     default: {
-        BattleAcDrawGauge((s32)x, (s32)y, 0xB2, 0x64, 0x64, 0x64, 0x64, 0, float_0_80421890);
+        BattleAcDrawGauge((s32)x, (s32)y, float_0_80421890, 0xB2, 0x64, 0x64, 0x64, 0x64, 0);
         if (dec->flashTimer <= 0) {
             f32 a;
             f32 px;

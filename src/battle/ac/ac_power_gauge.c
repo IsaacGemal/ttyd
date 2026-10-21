@@ -332,10 +332,10 @@ static void actionCommandDisp(f32 x, f32 y) {
     disp->value = ratio;
 
     if (ac->acFlag & 2) {
-        BattleAcDrawGauge((s32)px, (s32)py, 0xb2, 1, 100, 100, 100, 0, ratio);
+        BattleAcDrawGauge((s32)px, (s32)py, ratio, 0xb2, 1, 100, 100, 100, 0);
     }
     else {
-        BattleAcDrawGauge((s32)px, (s32)py, 0xb2, 2, ac->acParams[4], 100, 100, 0, ratio);
+        BattleAcDrawGauge((s32)px, (s32)py, ratio, 0xb2, 2, ac->acParams[4], 100, 100, 0);
     }
 
     if ((ac->acFlag & 4) == 0) {

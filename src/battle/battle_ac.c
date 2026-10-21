@@ -511,7 +511,7 @@ static inline void gaugeHighlight(CameraEntry* cam, s32 x, s32 y, s32 type, s32 
 }
 
 #pragma optimize_for_size on // keeps divw for /100 instead of a magic multiply
-void BattleAcDrawGauge(s32 x, s32 y, s32 type, s32 count, s32 t0, s32 t1, s32 t2, s32 flags, f32 ratio) {
+void BattleAcDrawGauge(s32 x, s32 y, f32 ratio, s32 type, s32 count, s32 t0, s32 t1, s32 t2, s32 flags) {
 	BattleWork* work = getWorkPointer();
 	CameraEntry* cam;
 	GXColor color = (GXColor){ 0x00, 0xE4, 0x86, 0xFF };

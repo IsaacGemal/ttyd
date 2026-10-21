@@ -389,19 +389,6 @@ void battleAcDelete_RepeatedlyLv(BattleWork* work) {
 }
 #pragma dont_inline reset
 
-// Match-only: the header declares BattleAcDrawGauge's float ratio last, but the original's prototype
-// lists it between `count` and the three thresholds: the ratio `lfs f1` is scheduled between the two
-// `fctiwz` conversions only when the float parameter is evaluated before the threshold arguments. The
-// ABI is identical (ints -> r3-r10, float -> f1). Same workaround as ac_power_gauge_lv2.c.
-#ifdef MUST_MATCH
-#define BattleAcDrawGaugeFM(x, y, type, count, ratio, t0, t1, t2, flags)                                  \
-    ((void (*)(s32, f32, s32, s32, s32, s32, s32, s32, s32))BattleAcDrawGauge)((x), (ratio), (y), (type), \
-                                                                               (count), (t0), (t1), (t2), (flags))
-#else
-#define BattleAcDrawGaugeFM(x, y, type, count, ratio, t0, t1, t2, flags) \
-    BattleAcDrawGauge((x), (y), (type), (count), (t0), (t1), (t2), (flags), (ratio))
-#endif
-
 // optimize_for_size: the original actionCommandDisp is size-optimized (the /7 is a real `divw`, not the
 // magic-multiply -O4,p emits, and the frame/allocator match only at this level). Other functions in the
 // file match at the default -O4,p, so the pragma is scoped to just this function.
@@ -570,8 +557,7 @@ static void actionCommandDisp(f32 x, f32 y) {
         }
     }
 
-    BattleAcDrawGaugeFM((s32)x, (s32)y, dec->gaugeType, count, disp->value, arr[0], arr[1],
-                        arr[2], flags);
+    BattleAcDrawGauge((s32)x, (s32)y, disp->value, dec->gaugeType, count, arr[0], arr[1], arr[2], flags);
 
     if (ac->acFlag & 2) {
         Vec vec = (Vec){0.0f, 0.0f, 0.0f};
