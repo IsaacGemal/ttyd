@@ -903,7 +903,12 @@ void winMsgDisp(WindowWork* work, f32 x, f32 y) {
     char buf[0x400];
     GXColor iconColor = (GXColor){0xFF, 0xFF, 0xFF, 0xFF};
     GXColor fontColor = (GXColor){0x00, 0x00, 0x00, 0xFF};
+#ifdef MUST_MATCH
+    // Semantically x - 250.0f; the original computes it as +10 then -10.
     f32 fx = (10.0f + (x - 250.0f)) - 10.0f;
+#else
+    f32 fx = x - 250.0f;
+#endif
     f32 fy = 40.0f + y;
     f32 ty;
     f32 ix;
