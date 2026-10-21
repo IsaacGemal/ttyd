@@ -1208,10 +1208,10 @@ void rsh_window_tev(RshWindowTevParam* param, s32 arg1) {
                 s.obj->flags |= 0x20000000;
                 return;
             }
-            x0 = *(u16*)(s.obj->field_0xEC + 0);
-            y0 = *(u16*)(s.obj->field_0xEC + 2);
-            x1 = *(u16*)(s.obj->field_0xEC + 4);
-            y1 = *(u16*)(s.obj->field_0xEC + 6);
+            x0 = s.obj->bboxLeft;
+            y0 = s.obj->bboxTop;
+            x1 = s.obj->bboxRight;
+            y1 = s.obj->bboxBottom;
             break;
         }
     }
@@ -1220,10 +1220,10 @@ void rsh_window_tev(RshWindowTevParam* param, s32 arg1) {
             s.obj->flags |= 0x20000000;
             return;
         }
-        x0 = *(u16*)(s.obj->field_0xEC + 0);
-        y0 = *(u16*)(s.obj->field_0xEC + 2);
-        x1 = *(u16*)(s.obj->field_0xEC + 4);
-        y1 = *(u16*)(s.obj->field_0xEC + 6);
+        x0 = s.obj->bboxLeft;
+        y0 = s.obj->bboxTop;
+        x1 = s.obj->bboxRight;
+        y1 = s.obj->bboxBottom;
     }
 
     if (x0 == 0x3FF || y0 == 0x3FF || x1 == 0x3FF || y1 == 0x3FF) {
@@ -1462,7 +1462,7 @@ void* _get_rnd_npc_data(s32 type, s32 group, s32 index) {
         data = rsh_01_rnd_npc_1;
         index = 0;
     }
-    return (void*)((u8*)data + index * 0xC);
+    return &data[index * 3];
 }
 #pragma dont_inline reset
 USER_FUNC(evt_rsh_get_rnd_npc_data) {

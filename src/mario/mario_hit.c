@@ -155,7 +155,6 @@ static inline HitEntry* marioHitCheckVecRound(HitCheckQuery* query, Vec* c, Vec*
 }
 
 
-#define GND_PTR(wp, type, off) (*(type*)((u8*)(wp) + (off)))
 #define GND_CENTI(v) ((f32)(s32)(100.f * (v) + 0.5f) / 100.f)
 #define LND_CENTI(v) ((f32)(s32)(100.f * (v) + 0.5f) / 100.f)
 #define ROUND_MILLI(v)                                                                        \
@@ -240,7 +239,7 @@ BOOL chkFilterAttr2(HitCheckQuery* query, HitEntry* entry) {
 
 BOOL chkfilterVec(HitCheckQuery* query, HitEntry* entry) {
     s32 attr = entry->attributes;
-    u8* obj;
+    MapObjectEntry* obj;
 
     if ((attr & 0x80080) != 0) {
         return TRUE;
@@ -251,10 +250,10 @@ BOOL chkfilterVec(HitCheckQuery* query, HitEntry* entry) {
     if ((attr & 0x80000000) == 0) {
         return TRUE;
     }
-    obj = (u8*)mobjHitObjPtrToPtr(entry);
-    if (strcmp((const char*)(obj + 0x15), "MOBJ_HiddenHatenaBlock") == 0 ||
-        strcmp((const char*)(obj + 0x15), "MOBJ_HiddenBadgeBlock") == 0 ||
-        strcmp((const char*)(obj + 0x15), "MOBJ_Hidden10CountBlock") == 0) {
+    obj = mobjHitObjPtrToPtr(entry);
+    if (strcmp(obj->animName, "MOBJ_HiddenHatenaBlock") == 0 ||
+        strcmp(obj->animName, "MOBJ_HiddenBadgeBlock") == 0 ||
+        strcmp(obj->animName, "MOBJ_Hidden10CountBlock") == 0) {
         mobjHitObjPtrToPtr(entry);
         return FALSE;
     }
@@ -263,7 +262,7 @@ BOOL chkfilterVec(HitCheckQuery* query, HitEntry* entry) {
 
 BOOL chkfilterVecRoll(HitCheckQuery* query, HitEntry* entry) {
     s32 attr = entry->attributes;
-    u8* obj;
+    MapObjectEntry* obj;
 
     if ((attr & 0x80) != 0) {
         return TRUE;
@@ -274,10 +273,10 @@ BOOL chkfilterVecRoll(HitCheckQuery* query, HitEntry* entry) {
     if ((attr & 0x80000000) == 0) {
         return TRUE;
     }
-    obj = (u8*)mobjHitObjPtrToPtr(entry);
-    if (strcmp((const char*)(obj + 0x15), "MOBJ_HiddenHatenaBlock") == 0 ||
-        strcmp((const char*)(obj + 0x15), "MOBJ_HiddenBadgeBlock") == 0 ||
-        strcmp((const char*)(obj + 0x15), "MOBJ_Hidden10CountBlock") == 0) {
+    obj = mobjHitObjPtrToPtr(entry);
+    if (strcmp(obj->animName, "MOBJ_HiddenHatenaBlock") == 0 ||
+        strcmp(obj->animName, "MOBJ_HiddenBadgeBlock") == 0 ||
+        strcmp(obj->animName, "MOBJ_Hidden10CountBlock") == 0) {
         mobjHitObjPtrToPtr(entry);
         return FALSE;
     }
@@ -286,7 +285,7 @@ BOOL chkfilterVecRoll(HitCheckQuery* query, HitEntry* entry) {
 
 BOOL chkfilterVecVivian(HitCheckQuery* query, HitEntry* entry) {
     s32 attr = entry->attributes;
-    u8* obj;
+    MapObjectEntry* obj;
 
     if ((attr & 0x80804) != 0 && (attr & 0x800000) == 0) {
         return FALSE;
@@ -294,10 +293,10 @@ BOOL chkfilterVecVivian(HitCheckQuery* query, HitEntry* entry) {
     if ((attr & 0x80000000) == 0) {
         return TRUE;
     }
-    obj = (u8*)mobjHitObjPtrToPtr(entry);
-    if (strcmp((const char*)(obj + 0x15), "MOBJ_HiddenHatenaBlock") == 0 ||
-        strcmp((const char*)(obj + 0x15), "MOBJ_HiddenBadgeBlock") == 0 ||
-        strcmp((const char*)(obj + 0x15), "MOBJ_Hidden10CountBlock") == 0) {
+    obj = mobjHitObjPtrToPtr(entry);
+    if (strcmp(obj->animName, "MOBJ_HiddenHatenaBlock") == 0 ||
+        strcmp(obj->animName, "MOBJ_HiddenBadgeBlock") == 0 ||
+        strcmp(obj->animName, "MOBJ_Hidden10CountBlock") == 0) {
         mobjHitObjPtrToPtr(entry);
         return FALSE;
     }
@@ -452,7 +451,7 @@ static inline void marioChkGndRollProbe(MarioWork* wp) {
     f32 grx;
 
     dist = 47.0f;
-    GND_PTR(wp, f32, 0x164) = wp->prevPosition.y - wp->position.y;
+    wp->field_0x164 = wp->prevPosition.y - wp->position.y;
     p = wp->position;
     p.y += 10.0f;
     dir = (Vec){ 0.0f, -1.0f, 0.0f };
@@ -1395,12 +1394,12 @@ f32 marioChkOverhead(void) {
         } else if (!(hitGetAttr(hit) & 0x80000000)) {
             ok = 0;
         } else {
-            u8* obj = (u8*)mobjHitObjPtrToPtr(hit);
+            MapObjectEntry* obj = mobjHitObjPtrToPtr(hit);
 
-            if (strcmp((const char*)(obj + 0x15), "MOBJ_PowerUpBlock") == 0 ||
-                strcmp((const char*)(obj + 0x15), "MOBJ_SaveBlock") == 0 ||
-                strcmp((const char*)(obj + 0x15), "MOBJ_RecoveryBlock") == 0 ||
-                strcmp((const char*)(obj + 0x15), "MOBJ_CoinTakenRecoveryBlock") == 0) {
+            if (strcmp(obj->animName, "MOBJ_PowerUpBlock") == 0 ||
+                strcmp(obj->animName, "MOBJ_SaveBlock") == 0 ||
+                strcmp(obj->animName, "MOBJ_RecoveryBlock") == 0 ||
+                strcmp(obj->animName, "MOBJ_CoinTakenRecoveryBlock") == 0) {
                 ok = 1;
             } else {
                 ok = 0;
@@ -1844,10 +1843,10 @@ void marioCheckWall(f32 a, f32 b) {
 
             wp->frontWallDist = f8;
             wp->hitobjWall = hit;
-            t = wp->field_0x3E[1] + 1;
-            wp->field_0x3E[1] = t;
+            t = wp->field_0x3F + 1;
+            wp->field_0x3F = t;
             if ((s8)t >= 0x14) {
-                wp->field_0x3E[1] = 0x14;
+                wp->field_0x3F = 0x14;
                 if ((hitGetAttr(hit) & 0x80) == 0) {
                     r = 1;
                 } else {
@@ -1877,7 +1876,7 @@ void marioSearchFrontWall_staying(f32 a) {
     f32 angle;
     HitEntry* hit;
 
-    wp->field_0x3E[1] = 0;
+    wp->field_0x3F = 0;
     halfx = 0.5f * wp->wPlayerCollisionBox.x;
     if (wp->flags & 0x100000) {
         halfx = 0.0f;
@@ -2034,10 +2033,10 @@ void marioCheckWall_roll(f32 a, f32 b) {
 
             wp->frontWallDist = f8;
             wp->hitobjWall = hit;
-            t = wp->field_0x3E[1] + 1;
-            wp->field_0x3E[1] = t;
+            t = wp->field_0x3F + 1;
+            wp->field_0x3F = t;
             if ((s8)t >= 0x14) {
-                wp->field_0x3E[1] = 0x14;
+                wp->field_0x3F = 0x14;
                 if ((hitGetAttr(hit) & 0x80) == 0) {
                     r = 1;
                 } else {
@@ -2888,16 +2887,16 @@ void marioCheckWallShip(f32 a, f32 b) {
             return;
         } else {
             if (!a) {
-                wp->field_0x3E[1] = 0;
+                wp->field_0x3F = 0;
             } else {
                 s32 t;
 
                 wp->frontWallDist = f8;
                 wp->hitobjWall = hit;
-                t = wp->field_0x3E[1] + 1;
-                wp->field_0x3E[1] = t;
+                t = wp->field_0x3F + 1;
+                wp->field_0x3F = t;
                 if ((s8)t >= 0x14) {
-                    wp->field_0x3E[1] = 0x14;
+                    wp->field_0x3F = 0x14;
                     if ((hitGetAttr(hit) & 0x80) == 0) {
                         r = 1;
                     } else {

@@ -235,7 +235,7 @@ void nokonoko_use(PartyEntry* party) {
 
     switch (party->useMotionId) {
     case 0:
-        if (*(u16*)&mario->currMotionId == 0x20 || *(u16*)&mario->currMotionId == 0x1f) {
+        if (mario->currMotionId == MARIO_MOTION_DAMAGE_TOGE || mario->currMotionId == MARIO_MOTION_DAMAGE) {
             party->useMotionId = 0x46;
             break;
         }
@@ -267,7 +267,7 @@ void nokonoko_use(PartyEntry* party) {
         break;
 
     case 1:
-        if (*(u16*)&mario->currMotionId == 0x20 || *(u16*)&mario->currMotionId == 0x1f) {
+        if (mario->currMotionId == MARIO_MOTION_DAMAGE_TOGE || mario->currMotionId == MARIO_MOTION_DAMAGE) {
             party->useMotionId = 0x46;
             break;
         }
@@ -286,7 +286,7 @@ void nokonoko_use(PartyEntry* party) {
         partyChgPose(party, NK_STR(0x20, "PNK_A_1"));
         /* fallthrough */
     case 2:
-        if (*(u16*)&mario->currMotionId == 0x20 || *(u16*)&mario->currMotionId == 0x1f) {
+        if (mario->currMotionId == MARIO_MOTION_DAMAGE_TOGE || mario->currMotionId == MARIO_MOTION_DAMAGE) {
             party->useMotionId = 0x46;
             break;
         }
@@ -436,7 +436,7 @@ void nokonoko_use(PartyEntry* party) {
             }
         }
         if (!(party->flags & PARTY_FLAG_IS_EVT_USE)) {
-            u16 mot = *(u16*)&mario->currMotionId;
+            MarioMotion mot = mario->currMotionId;
             // goto: as one || condition MWCC merges the 0x18/0x19 tests into a range check
             if (mot == 0x19) { goto L_800CC4E8; }
             if (mot == 0x14) { goto L_800CC4E8; }

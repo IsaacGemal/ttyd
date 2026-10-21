@@ -146,8 +146,8 @@ static USER_FUNC(mario_kirimomi) {
             party->spinPivot.y = (party->height - 10.0f) / 2.0f;
         }
         party->spinPivot.y *= party->field_70.y;
-        party->spinAngle -= 10.0f;
-        party->spinAngle = (f32)fmod(party->spinAngle, 360.0);
+        party->dispRot.z -= 10.0f;
+        party->dispRot.z = (f32)fmod(party->dispRot.z, 360.0);
     }
     return EVT_RETURN_BLOCK;
 }

@@ -18,8 +18,8 @@ void BtlActRec_AddPoint(void* p, u8 value) {
 void BtlActRec_JudgeTurnRuleKeep(void) {
     BattleWork* wp = _battleWorkPointer;
     u8* f = wp->field_16F1C;
-    u8* rec = (u8*)wp->fbatInfo;
-    u8 cond = rec[0x18];
+    FieldBattleInfo* info = wp->fbatInfo;
+    u8 cond = info->field_0x18;
 
     switch (cond) {
     case 0x3C:
@@ -62,7 +62,7 @@ void BtlActRec_JudgeTurnRuleKeep(void) {
 void BtlActRec_JudgeRuleKeep(void) {
     BattleWork* wp = _battleWorkPointer;
     u8* f = wp->field_16F1C;
-    u8* rec = (u8*)wp->fbatInfo;
+    FieldBattleInfo* info = wp->fbatInfo;
     u8 cond;
     BattleUnit* mario;
     BattleUnit* party;
@@ -70,207 +70,207 @@ void BtlActRec_JudgeRuleKeep(void) {
     mario = BattleGetMarioPtr(wp);
     party = BattleGetPartyPtr(wp);
     (void)party;
-    cond = rec[0x18];
+    cond = info->field_0x18;
 
     switch (cond) {
     case 0x00:
-        rec[0x19] = 6;
+        info->ruleKeepResult = 6;
         break;
     case 0x01:
-        rec[0x19] = _check_no_use(WP(0x1C));
+        info->ruleKeepResult = _check_no_use(WP(0x1C));
         break;
     case 0x02:
-        rec[0x19] = _check_use(WP(0x1C));
+        info->ruleKeepResult = _check_use(WP(0x1C));
         break;
     case 0x03:
-        rec[0x19] = _check_no_use(WP(0x1D));
+        info->ruleKeepResult = _check_no_use(WP(0x1D));
         break;
     case 0x04:
-        rec[0x19] = _check_use(WP(0x1D));
+        info->ruleKeepResult = _check_use(WP(0x1D));
         break;
     case 0x05:
-        rec[0x19] = _check_no_use(WP(0x1E) + WP(0x1F));
+        info->ruleKeepResult = _check_no_use(WP(0x1E) + WP(0x1F));
         break;
     case 0x06:
-        rec[0x19] = _check_use(WP(0x1E) + WP(0x1F));
+        info->ruleKeepResult = _check_use(WP(0x1E) + WP(0x1F));
         break;
     case 0x07:
-        rec[0x19] = _check_no_use(WP(0x20));
+        info->ruleKeepResult = _check_no_use(WP(0x20));
         break;
     case 0x08:
-        rec[0x19] = _check_use(WP(0x20));
+        info->ruleKeepResult = _check_use(WP(0x20));
         break;
     case 0x09:
-        rec[0x19] = _check_no_use(WP(0x21));
+        info->ruleKeepResult = _check_no_use(WP(0x21));
         break;
     case 0x0A:
-        rec[0x19] = _check_use(WP(0x21));
+        info->ruleKeepResult = _check_use(WP(0x21));
         break;
     case 0x0B:
-        rec[0x19] = _check_no_use(WP(0x20) + WP(0x21));
+        info->ruleKeepResult = _check_no_use(WP(0x20) + WP(0x21));
         break;
     case 0x0C:
-        rec[0x19] = _check_use(WP(0x20) + WP(0x21));
+        info->ruleKeepResult = _check_use(WP(0x20) + WP(0x21));
         break;
     case 0x0D:
-        rec[0x19] = _check_no_use(WP(0x22));
+        info->ruleKeepResult = _check_no_use(WP(0x22));
         break;
     case 0x0E:
-        rec[0x19] = _check_use(WP(0x22));
+        info->ruleKeepResult = _check_use(WP(0x22));
         break;
     case 0x0F:
-        rec[0x19] = _check_no_use(WP(0x23));
+        info->ruleKeepResult = _check_no_use(WP(0x23));
         break;
     case 0x10:
-        rec[0x19] = _check_use(WP(0x23));
+        info->ruleKeepResult = _check_use(WP(0x23));
         break;
     case 0x11:
-        rec[0x19] = _check_no_use(WP(0x22) + WP(0x23));
+        info->ruleKeepResult = _check_no_use(WP(0x22) + WP(0x23));
         break;
     case 0x12:
-        rec[0x19] = _check_use(WP(0x22) + WP(0x23));
+        info->ruleKeepResult = _check_use(WP(0x22) + WP(0x23));
         break;
     case 0x13:
         if (mario != NULL) {
-            rec[0x19] = _check_use(mario->currentHp);
+            info->ruleKeepResult = _check_use(mario->currentHp);
         } else {
-            rec[0x19] = 1;
+            info->ruleKeepResult = 1;
         }
         break;
     case 0x14:
         if (mario != NULL) {
-            rec[0x19] = _check_no_use(mario->currentHp);
+            info->ruleKeepResult = _check_no_use(mario->currentHp);
         } else {
-            rec[0x19] = 1;
+            info->ruleKeepResult = 1;
         }
         break;
     case 0x15:
-        rec[0x19] = _check_use(WP(0x24));
+        info->ruleKeepResult = _check_use(WP(0x24));
         break;
     case 0x16:
-        rec[0x19] = _check_no_use(WP(0x25) + WP(0x26));
+        info->ruleKeepResult = _check_no_use(WP(0x25) + WP(0x26));
         break;
     case 0x17:
-        rec[0x19] = _check_use(WP(0x25) + WP(0x26));
+        info->ruleKeepResult = _check_use(WP(0x25) + WP(0x26));
         break;
     case 0x18:
-        rec[0x19] = _check_no_use(WP(0x27) + WP(0x28));
+        info->ruleKeepResult = _check_no_use(WP(0x27) + WP(0x28));
         break;
     case 0x19:
-        rec[0x19] = _check_use(WP(0x27) + WP(0x28));
+        info->ruleKeepResult = _check_use(WP(0x27) + WP(0x28));
         break;
     case 0x1A:
-        rec[0x19] = _check_no_use(WP(0x25) + WP(0x26) + WP(0x27) + WP(0x28));
+        info->ruleKeepResult = _check_no_use(WP(0x25) + WP(0x26) + WP(0x27) + WP(0x28));
         break;
     case 0x1B:
-        rec[0x19] = _check_use(WP(0x25) + WP(0x26) + WP(0x27) + WP(0x28));
+        info->ruleKeepResult = _check_use(WP(0x25) + WP(0x26) + WP(0x27) + WP(0x28));
         break;
     case 0x1C:
-        rec[0x19] = _check_no_use(WP(0x29));
+        info->ruleKeepResult = _check_no_use(WP(0x29));
         break;
     case 0x1D:
-        rec[0x19] = _check_use(WP(0x29));
+        info->ruleKeepResult = _check_use(WP(0x29));
         break;
     case 0x1E:
-        rec[0x19] = _check_no_use(WP(0x2A));
+        info->ruleKeepResult = _check_no_use(WP(0x2A));
         break;
     case 0x1F:
-        rec[0x19] = _check_use(WP(0x2A));
+        info->ruleKeepResult = _check_use(WP(0x2A));
         break;
     case 0x20:
-        rec[0x19] = _check_no_use(WP(0x29) + WP(0x2A));
+        info->ruleKeepResult = _check_no_use(WP(0x29) + WP(0x2A));
         break;
     case 0x21:
-        rec[0x19] = _check_use(WP(0x29) + WP(0x2A));
+        info->ruleKeepResult = _check_use(WP(0x29) + WP(0x2A));
         break;
     case 0x22:
-        rec[0x19] = _check_no_use(WP(0x2B));
+        info->ruleKeepResult = _check_no_use(WP(0x2B));
         break;
     case 0x23:
-        rec[0x19] = _check_use(WP(0x2B));
+        info->ruleKeepResult = _check_use(WP(0x2B));
         break;
     case 0x24:
-        rec[0x19] = _check_no_use(WP(0x2C));
+        info->ruleKeepResult = _check_no_use(WP(0x2C));
         break;
     case 0x25:
-        rec[0x19] = _check_use(WP(0x2C));
+        info->ruleKeepResult = _check_use(WP(0x2C));
         break;
     case 0x26:
-        rec[0x19] = _check_no_use(WP(0x2D));
+        info->ruleKeepResult = _check_no_use(WP(0x2D));
         break;
     case 0x27:
-        rec[0x19] = _check_use(WP(0x2D));
+        info->ruleKeepResult = _check_use(WP(0x2D));
         break;
     case 0x28:
-        rec[0x19] = _check_no_use(WP(0x2E));
+        info->ruleKeepResult = _check_no_use(WP(0x2E));
         break;
     case 0x29:
-        rec[0x19] = _check_use(WP(0x2E));
+        info->ruleKeepResult = _check_use(WP(0x2E));
         break;
     case 0x2A:
-        rec[0x19] = _check_no_use(WP(0x2D) + WP(0x2E));
+        info->ruleKeepResult = _check_no_use(WP(0x2D) + WP(0x2E));
         break;
     case 0x2B:
-        rec[0x19] = _check_use(WP(0x2D) + WP(0x2E));
+        info->ruleKeepResult = _check_use(WP(0x2D) + WP(0x2E));
         break;
     case 0x2C:
-        rec[0x19] = _check_no_use(WP(0x2F));
+        info->ruleKeepResult = _check_no_use(WP(0x2F));
         break;
     case 0x2D:
-        rec[0x19] = _check_use(WP(0x2F));
+        info->ruleKeepResult = _check_use(WP(0x2F));
         break;
     case 0x2E:
-        rec[0x19] = _check_no_use(WP(0x31));
+        info->ruleKeepResult = _check_no_use(WP(0x31));
         break;
     case 0x2F:
-        rec[0x19] = _check_use(WP(0x31));
+        info->ruleKeepResult = _check_use(WP(0x31));
         break;
     case 0x30:
-        rec[0x19] = _check_no_use(WP(0x2F) + WP(0x31));
+        info->ruleKeepResult = _check_no_use(WP(0x2F) + WP(0x31));
         break;
     case 0x31:
-        rec[0x19] = _check_use(WP(0x2F) + WP(0x31));
+        info->ruleKeepResult = _check_use(WP(0x2F) + WP(0x31));
         break;
     case 0x32:
-        rec[0x19] = _check_no_use(WP(0x30));
+        info->ruleKeepResult = _check_no_use(WP(0x30));
         break;
     case 0x33:
-        rec[0x19] = _check_use(WP(0x30));
+        info->ruleKeepResult = _check_use(WP(0x30));
         break;
     case 0x34:
-        rec[0x19] = _check_no_use(WP(0x32));
+        info->ruleKeepResult = _check_no_use(WP(0x32));
         break;
     case 0x35:
-        rec[0x19] = _check_use(WP(0x32));
+        info->ruleKeepResult = _check_use(WP(0x32));
         break;
     case 0x36:
-        rec[0x19] = _check_no_use(WP(0x2F) + WP(0x31));
+        info->ruleKeepResult = _check_no_use(WP(0x2F) + WP(0x31));
         break;
     case 0x37:
-        rec[0x19] = _check_use(WP(0x2F) + WP(0x31));
+        info->ruleKeepResult = _check_use(WP(0x2F) + WP(0x31));
         break;
     case 0x38:
-        rec[0x19] = _check_no_use(WP(0x30) + WP(0x32));
+        info->ruleKeepResult = _check_no_use(WP(0x30) + WP(0x32));
         break;
     case 0x39:
-        rec[0x19] = _check_use(WP(0x30) + WP(0x32));
+        info->ruleKeepResult = _check_use(WP(0x30) + WP(0x32));
         break;
     case 0x3A:
-        if (WP(0x3B) > rec[0x1A]) {
-            rec[0x19] = 6;
-        } else if (WP(0x3B) > rec[0x1B]) {
-            rec[0x19] = 2;
+        if (WP(0x3B) > info->field_0x1A) {
+            info->ruleKeepResult = 6;
+        } else if (WP(0x3B) > info->field_0x1B) {
+            info->ruleKeepResult = 2;
         } else {
-            rec[0x19] = 1;
+            info->ruleKeepResult = 1;
         }
         break;
     case 0x3B:
-        if (WP(0x3B) <= rec[0x1A]) {
-            rec[0x19] = 6;
-        } else if (WP(0x3B) <= rec[0x1B]) {
-            rec[0x19] = 2;
+        if (WP(0x3B) <= info->field_0x1A) {
+            info->ruleKeepResult = 6;
+        } else if (WP(0x3B) <= info->field_0x1B) {
+            info->ruleKeepResult = 2;
         } else {
-            rec[0x19] = 1;
+            info->ruleKeepResult = 1;
         }
         break;
     case 0x3C:
@@ -305,16 +305,16 @@ void BtlActRec_JudgeRuleKeep(void) {
     }
     case 0x42:
         if ((WP(0x1D) + WP(0x1E) + WP(0x1F) + WP(0x25) + WP(0x26) + WP(0x29) + WP(0x33) + WP(0x35) + WP(0x2D) + WP(0x37)) == 0) {
-            rec[0x19] = 6;
+            info->ruleKeepResult = 6;
         } else {
-            rec[0x19] = 1;
+            info->ruleKeepResult = 1;
         }
         break;
     case 0x43:
         if ((WP(0x1C) + WP(0x1E) + WP(0x1F) + WP(0x25) + WP(0x26) + WP(0x29) + WP(0x33) + WP(0x35) + WP(0x2D) + WP(0x37)) == 0) {
-            rec[0x19] = 6;
+            info->ruleKeepResult = 6;
         } else {
-            rec[0x19] = 1;
+            info->ruleKeepResult = 1;
         }
         break;
     }
@@ -326,65 +326,65 @@ void BtlActRec_JudgeRuleKeep(void) {
 #pragma dont_inline on
 s32 _check_use(s32 arg) {
     BattleWork* wp = _battleWorkPointer;
-    u8* rec = (u8*)wp->fbatInfo;
+    FieldBattleInfo* info = wp->fbatInfo;
 
-    if (arg >= rec[0x1A]) {
+    if (arg >= info->field_0x1A) {
         return 6;
     }
-    return (arg >= rec[0x1B]) + 1;
+    return (arg >= info->field_0x1B) + 1;
 }
 
 s32 _check_no_use(s32 arg) {
     BattleWork* wp = _battleWorkPointer;
-    u8* rec = (u8*)wp->fbatInfo;
+    FieldBattleInfo* info = wp->fbatInfo;
 
-    if (arg >= rec[0x1B]) {
+    if (arg >= info->field_0x1B) {
         return 1;
     }
-    return (arg >= rec[0x1A]) ? 2 : 6;
+    return (arg >= info->field_0x1A) ? 2 : 6;
 }
 
 u8 _check_turn_count_0_turn(s32 flag) {
     BattleWork* wp = _battleWorkPointer;
-    u8* rec = (u8*)wp->fbatInfo;
+    FieldBattleInfo* info = wp->fbatInfo;
     u8* turn = &wp->field_16F1C[0x3B - 0x1C];
 
-    if (*turn <= rec[0x1B] || rec[0x1B] == 0xFF) {
+    if (*turn <= info->field_0x1B || info->field_0x1B == 0xFF) {
         if (flag == 0) {
-            rec[0x19] = 2;
+            info->ruleKeepResult = 2;
         } else {
-            rec[0x19] = 1;
+            info->ruleKeepResult = 1;
         }
     }
-    if (*turn <= rec[0x1A] || rec[0x1A] == 0xFF) {
+    if (*turn <= info->field_0x1A || info->field_0x1A == 0xFF) {
         if (flag == 0) {
-            rec[0x19] = 6;
-        } else if (!(rec[0x19] & 2)) {
-            rec[0x19] = 1;
+            info->ruleKeepResult = 6;
+        } else if (!(info->ruleKeepResult & 2)) {
+            info->ruleKeepResult = 1;
         }
     }
-    return rec[0x19];
+    return info->ruleKeepResult;
 }
 
 u8 _check_turn_count_0_end(s32 flag) {
     BattleWork* wp = _battleWorkPointer;
-    u8* rec = (u8*)wp->fbatInfo;
+    FieldBattleInfo* info = wp->fbatInfo;
     u8* turn = &wp->field_16F1C[0x3B - 0x1C];
 
-    if (*turn <= rec[0x1B] || rec[0x1B] == 0xFF) {
+    if (*turn <= info->field_0x1B || info->field_0x1B == 0xFF) {
         if (flag == 0) {
-            rec[0x19] = 2;
+            info->ruleKeepResult = 2;
         } else {
-            rec[0x19] = 1;
+            info->ruleKeepResult = 1;
         }
     }
-    if (*turn <= rec[0x1A] || rec[0x1A] == 0xFF) {
+    if (*turn <= info->field_0x1A || info->field_0x1A == 0xFF) {
         if (flag == 0) {
-            rec[0x19] = 6;
-        } else if (!(rec[0x19] & 2)) {
-            rec[0x19] = 1;
+            info->ruleKeepResult = 6;
+        } else if (!(info->ruleKeepResult & 2)) {
+            info->ruleKeepResult = 1;
         }
     }
-    return rec[0x19];
+    return info->ruleKeepResult;
 }
 #pragma dont_inline reset

@@ -556,7 +556,8 @@ s32 animPaperPoseEntry(const char* animName, s32 group) {
     s32 i = animPaperPoseSearchGroup(group, animName);
 
     if (i >= 0) {
-        ((AnimationPose*)((u8*)wp->poses + i * 0x170))->references += 1;
+        AnimationPose* pose = &wp->poses[i];
+        pose->references += 1;
         return i;
     }
     {
@@ -581,8 +582,8 @@ BOOL animEffectAsync(const char* animName, u32 group) {
     s32 fileId;
     s32 other;
     void** data;
-    u8* entry;
-    u8* result;
+    char (*entry)[0x20];
+    const char* result;
     s32 offset;
     s32 size;
 
@@ -600,15 +601,15 @@ BOOL animEffectAsync(const char* animName, u32 group) {
     fileId = fileAsyncf(FILE_TYPE_ANIMPOSE, NULL, "%s/%s", "a", animName);
     data = wp->mp_ag2tg->data;
     size = (s32)data[1];
-    entry = (u8*)data[0];
+    entry = data[0];
     for (offset = 0; offset < size; offset += 0x20) {
-        if (!strcmp((char*)entry, animName)) {
-            result = entry + 0x20;
+        if (!strcmp(*entry, animName)) {
+            result = entry[1];
             goto found;
         }
-        entry += 0x20;
+        entry++;
     }
-    result = (u8*)"";
+    result = "";
 found:
     other = fileAsyncf(FILE_TYPE_TPL, NULL, "%s/%s-", "a", result);
 
@@ -782,8 +783,11 @@ void animPoseSetPaperAnim(s32 poseId, const char* animName, BOOL unused) {
 
     pose->paperAnim = (const char*)animId;
     pose->mLocalTimeInit = animTimeGetTime(pose->type);
-    if (pose->paperId != -1 && !(((AnimationPose*)((u8*)wp->poses + pose->paperId * 0x170))->typeFlags & 2)) {
-        animPoseMain(pose->paperId);
+    if (pose->paperId != -1) {
+        AnimationPose* paper = &wp->poses[pose->paperId];
+        if (!(paper->typeFlags & 2)) {
+            animPoseMain(pose->paperId);
+        }
     }
 }
 
@@ -838,7 +842,8 @@ void animPoseSetEffect(s32 poseId, const char* animName, BOOL someflag) {
     if (pose->paperId != -1) {
         if (animName != NULL) {
             AnimationPose* paper = &wp->poses[pose->paperId];
-            FileEntry* handle = *(FileEntry**)((u8*)wp->files + paper->fileId * 0x10 + 8);
+            AnimationPoseFile* file = &wp->files[paper->fileId];
+            FileEntry* handle = file->handle;
 
             if (!strcmp((*(AnimationPoseData**)(handle->data))->fileName, animName)) {
                 s32 f = (pose->flags & 2) ? 1 : 0;
@@ -1079,7 +1084,7 @@ static inline void animPoseAddNodeDeltaRange(f32* dst, u8* src, u8* end, f32 sca
 static inline void animPoseAddTexDelta(AnimTexMtx* dst, u8* src, s32 size) {
     u8* end = src + size;
     while (src < end) {
-        dst = (AnimTexMtx*)((u8*)dst + src[0] * 0x18);
+        dst += src[0];
         dst->mTexBindIdx += src[1];
         dst->mTransS += *(f32*)(src + 4);
         dst->mTransT += *(f32*)(src + 8);
@@ -1185,22 +1190,25 @@ void animPoseMain(s32 poseId) {
         vtxNrm = pose->mpVtxArrayNrm;
     }
 
-    if (pose->paperId != -1 && !(((AnimationPose*)((u8*)wp->poses + pose->paperId * 0x170))->typeFlags & 2)) {
-        animPoseMain(pose->paperId);
+    if (pose->paperId != -1) {
+        AnimationPose* paper = &wp->poses[pose->paperId];
+        if (!(paper->typeFlags & 2)) {
+            animPoseMain(pose->paperId);
+        }
     }
 
     if (anim == NULL) {
         return;
     }
 
-    canLoop = anim->clip[0];
+    canLoop = anim->clip->field_0x0;
     now = animTimeGetTime(pose->type);
     pose->animTime = (f32)(u64)(now - pose->localTime) * 60.0f / 1000.0f;
     pose->animTime *= pose->localTimeRate;
 
     time = pose->animTime;
-    end = ((f32*)anim->clip)[2];
-    start = ((f32*)anim->clip)[1];
+    end = anim->clip->field_0x8;
+    start = anim->clip->field_0x4;
     duration = end - start;
 
     if (0.0f == duration) {
@@ -1272,7 +1280,7 @@ void animPoseMain(s32 poseId) {
         if (canLoop) {
             if (pose->keyFrame2 >= anim->frameCount) {
                 pose->keyFrame2 = 0;
-                den = ((f32*)anim->clip)[2] - *(f32*)(anim->frames + pose->keyFrame1 * ANIM_FRAME_SIZE);
+                den = anim->clip->field_0x8 - *(f32*)(anim->frames + pose->keyFrame1 * ANIM_FRAME_SIZE);
             } else {
                 den = *(f32*)(anim->frames + pose->keyFrame2 * ANIM_FRAME_SIZE)
                     - *(f32*)(anim->frames + pose->keyFrame1 * ANIM_FRAME_SIZE);
@@ -2071,7 +2079,7 @@ void renderProc(s32 shapeId, s32 keyFrame1) {
     s32 matTexCount;
 
     // stack variables
-    s32 clr0VtxSize, posVtxSize, nrmVtxSize;
+    s32 posVtxSize, nrmVtxSize;
     s32 drawCount;
     Mtx camMtx, invCamMtx;
     f32* texVtxIndices[8];
@@ -2102,17 +2110,16 @@ void renderProc(s32 shapeId, s32 keyFrame1) {
             GXSetCullMode(tbl[shape->cullMode]);
             data = wp->mpCurPoseData;
             posVtxSize = (s32)sizeof(Vec) * posFirstVtx;
-            clr0VtxSize = (s32)sizeof(GXColor) * clr0FirstVtx;
             nrmVtxSize = (s32)sizeof(Vec) * nrmFirstVtx;
             buffer = data->texVtxBuffer;
-            texVtxIndices[0] = (f32*)((u8*)buffer + (sizeof(f32) * 2) * shape->vtxTex[0].first);
-            texVtxIndices[1] = (f32*)((u8*)buffer + (sizeof(f32) * 2) * shape->vtxTex[1].first);
-            texVtxIndices[2] = (f32*)((u8*)buffer + (sizeof(f32) * 2) * shape->vtxTex[2].first);
-            texVtxIndices[3] = (f32*)((u8*)buffer + (sizeof(f32) * 2) * shape->vtxTex[3].first);
-            texVtxIndices[4] = (f32*)((u8*)buffer + (sizeof(f32) * 2) * shape->vtxTex[4].first);
-            texVtxIndices[5] = (f32*)((u8*)buffer + (sizeof(f32) * 2) * shape->vtxTex[5].first);
-            texVtxIndices[6] = (f32*)((u8*)buffer + (sizeof(f32) * 2) * shape->vtxTex[6].first);
-            texVtxIndices[7] = (f32*)((u8*)buffer + (sizeof(f32) * 2) * shape->vtxTex[7].first);
+            texVtxIndices[0] = &buffer[2 * shape->vtxTex[0].first];
+            texVtxIndices[1] = &buffer[2 * shape->vtxTex[1].first];
+            texVtxIndices[2] = &buffer[2 * shape->vtxTex[2].first];
+            texVtxIndices[3] = &buffer[2 * shape->vtxTex[3].first];
+            texVtxIndices[4] = &buffer[2 * shape->vtxTex[4].first];
+            texVtxIndices[5] = &buffer[2 * shape->vtxTex[5].first];
+            texVtxIndices[6] = &buffer[2 * shape->vtxTex[6].first];
+            texVtxIndices[7] = &buffer[2 * shape->vtxTex[7].first];
 
             for (i = 0; i < drawCount; i++, draw++) {
                 matTexCount = draw->texCount;
@@ -2193,7 +2200,7 @@ void renderProc(s32 shapeId, s32 keyFrame1) {
                 drawCall = &wp->mpCurPoseData->drawCalls[draw->firstDrawCall];
                 texCount = draw->texCount;
                 drawCallCount = draw->drawCallCount;
-                clr0VtxPtr = (GXColor*)((u8*)wp->mpCurPoseData->clr0VtxBuffer + clr0VtxSize);
+                clr0VtxPtr = &wp->mpCurPoseData->clr0VtxBuffer[clr0FirstVtx];
                 posFirstId = draw->firstIdPos;
                 nrmFirstId = draw->firstIdNrm;
                 clr0FirstId = draw->firstIdClr0;
@@ -2339,7 +2346,7 @@ void dispProc(s32 parentGroupId, s32 groupId, s32 keyFrame1, s32 keyFrame2, f32 
         if ((wp->mpCurPose->flags & 0x20) && groupId == *wp->mpCurPose->vivianGroupNo) {
             Mtx* mtx = g_modeling_mtx;
             f32 (*matrix)[4] = wp->mpCurPose->matrix;
-            f32* params = (f32*)((u8*)vivihimoData[wp->mpCurPose->vivianType] + wp->mpCurPose->animId * 8);
+            f32* params = (f32*)vivihimoData[wp->mpCurPose->vivianType] + wp->mpCurPose->animId * 2;
             f32 v1 = 0.0f;
             f32 v2 = v1;
             int i, j;
@@ -3299,13 +3306,13 @@ static const char* animGetAg2tgName(const char* name) {
     void** data = wp->mp_ag2tg->data;
     s32 size = (s32)data[1];
     s32 offset;
-    u8* entry = (u8*)data[0];
+    char (*entry)[0x20] = data[0];
 
     for (offset = 0; offset < size; offset += 0x20) {
-        if (!strcmp((char*)entry, name)) {
-            return (const char*)(entry + 0x20);
+        if (!strcmp(*entry, name)) {
+            return entry[1];
         }
-        entry += 0x20;
+        entry++;
     }
     return "";
 }

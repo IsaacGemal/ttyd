@@ -2247,7 +2247,7 @@ void marioPreDisp(void) {
 		if (wp->paperAnimName) {
 			animPoseSetPaperAnim(wp->paperAnimGroupId[0], wp->paperAnimName, 1);
 		}
-		animPoseSetLocalTime(wp->paperAnimGroupId[marioAnimeId()], (f32)*(u16*)&wp->poseTime);
+		animPoseSetLocalTime(wp->paperAnimGroupId[marioAnimeId()], (f32)wp->poseTime);
 	}
 
 	animPoseMain(wp->paperAnimGroupId[marioAnimeId()]);

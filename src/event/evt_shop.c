@@ -57,9 +57,10 @@ typedef struct ItemDbEntry {
 } ItemDbEntry;
 
 typedef struct ShopperData {
-	const char* name; //0x0
-	s32 fookEvt;      //0x4
-	s32 buyEvt;       //0x8
+	const char* name;        //0x0
+	s32 fookEvt;             //0x4
+	s32 buyEvt;              //0x8
+	const char* field_0xC[]; //0xC, message keys get_msg returns by index
 } ShopperData;
 
 typedef struct ShopWork {
@@ -420,13 +421,11 @@ USER_FUNC(get_buy_evt) {
 
 USER_FUNC(get_msg) {
 	s32* args = event->args;
-	void* p = (void*)evtGetValue(event, args[0]);
+	ShopWork* wp = (ShopWork*)evtGetValue(event, args[0]);
 	s32 idx = evtGetValue(event, args[1]);
-	u8* base = *(u8**)((u8*)p + 0xC);
 	s32 value;
 
-	base += idx * 4;
-	value = *(s32*)(base + 0xC);
+	value = (s32)wp->shopper->field_0xC[idx];
 
 	evtSetValue(event, args[2], value);
 	return EVT_RETURN_DONE;
@@ -884,7 +883,7 @@ void name_disp(WinMgrEntry* entry) {
 		pos.y *= (f32)gp->efbHeight * SHOP_F32(float_0p5_8041bc5c);
 		sprintf(buf, str_fmt_d, wp->items[i * 2 + 1]);
 		PSMTXTrans(mtx, SHOP_F32(shop_price_digit_width) * (f32)(strlen(buf) - 1) + pos.x, pos.y, pos.z);
-		iconNumberDispGx(mtx, *(s32*)((u8*)wp->items + i * 8 + 4), 0, *(GXColor*)&shop_price_color);
+		iconNumberDispGx(mtx, wp->items[i * 2 + 1], 0, *(GXColor*)&shop_price_color);
 	}
 }
 

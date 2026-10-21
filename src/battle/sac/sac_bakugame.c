@@ -1514,7 +1514,7 @@ void bakuGameDisp3D(CameraId camId, void* param) {
         animPoseDrawMtx(baku->animPose, mtx, 2, 180.0f, baku->intensity);
     }
     if (baku->flags & 1) {
-        void* file;
+        FileEntry* file;
         TEXPalette* pal;
 
         GXSetCullMode(0);
@@ -1535,7 +1535,7 @@ void bakuGameDisp3D(CameraId camId, void* param) {
         GXSetTevAlphaIn(0, 7, 5, 4, 7);
         GXSetTevOrder(0, 0, 0, 4);
         file = BattleAudienceBaseGetPtr()->normalTex;
-        pal = *(TEXPalette**)(*(u8**)((u8*)file + 0xA0));
+        pal = *(TEXPalette**)file->data;
         TEXGetGXTexObjFromPalette(pal, &texObj, baku->texIndex);
         GXLoadTexObj(&texObj, 0);
         PSMTXTrans(trans, baku->heihoPos.x, baku->heihoPos.y, baku->heihoPos.z);

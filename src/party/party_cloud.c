@@ -253,12 +253,12 @@ static inline void cloudMoveToMario(PartyEntry* party) {
 // cleanup body in its own scope (and unchanged from the base).
 void cloud_use(PartyEntry* party) {
     MarioWork* mario = party->playerPtr;
-    u16 mot;
+    MarioMotion mot;
 
     N__cloud_use(party);
 
-    mot = *(u16*)((u8*)mario + 0x2E);
-    if (mot == 0x1B) {
+    mot = mario->currMotionId;
+    if (mot == MARIO_MOTION_CLOUD) {
         return;
     }
     if (mot <= 1 || mot == 2) {
@@ -289,8 +289,8 @@ void cloud_use(PartyEntry* party) {
             party->useStruct = NULL;
         }
 
-        mot = *(u16*)((u8*)mario + 0x2E);
-        if (mot == 0x1F || mot == 0x20) {
+        mot = mario->currMotionId;
+        if (mot == MARIO_MOTION_DAMAGE || mot == MARIO_MOTION_DAMAGE_TOGE) {
             partyChgRunMode(party, 0x0D);
         } else {
             partyChgPose(party, partyChgPoseId(party, 1));
@@ -528,7 +528,7 @@ void N__cloud_use(PartyEntry* party) {
         }
         party->flags2 |= 0x10;
         partyChgRunMode(party, 2);
-        *(u8*)((u8*)party + 0x3D) = 0;
+        party->field_3D = 0;
         partyChgMoveMode(party, 2);
         partyChgMot(party, 1);
         if ((party->flags & PARTY_FLAG_IS_EVT_USE) == 0) {

@@ -19,7 +19,7 @@
 #include "math_ext.h"
 #include <string.h>
 
-// Raw accessors for MarioWork fields that are not named in mario.h yet; listed in REPORT.md.
+// Raw accessors for MarioWork scratch words this motion reads with a type no union member has.
 #define M_S16(m, off) (*(s16*)((u8*)(m) + (off)))
 #define M_U16(m, off) (*(u16*)((u8*)(m) + (off)))
 #define M_S32(m, off) (*(s32*)((u8*)(m) + (off)))
@@ -217,7 +217,7 @@ void mot_hammer(void) {
             break;
         }
         psndSFXOn_3D((const char*)sound, &mario2->position);
-        M_S32(mario, 0x2A8) = type;
+        mario->field_0x2A8 = type;
     }
     mario->unk1A8 = (mario->field_0x2A4 >= 90.f && mario->field_0x2A4 <= 270.f)
                               ? 180.f
@@ -259,7 +259,7 @@ void mot_hammer(void) {
         pz = mario->position.z;
         if (!(mario->dispFlags & 0x80000000)) {
             eff = -1;
-            switch (M_S32(mario, 0x2A8)) {            case 7:
+            switch (mario->field_0x2A8) {            case 7:
                 movePos(&px, &pz, 16.0f, toMovedir2(mario->dispReqDir, float_0_8041a9a8));
                 f31 = 53.0f;
                 eff = 0x16;
@@ -283,7 +283,7 @@ void mot_hammer(void) {
 }
         } else {
             eff = -1;
-            switch (M_S32(mario, 0x2A8)) {            case 7:
+            switch (mario->field_0x2A8) {            case 7:
                 movePos(&px, &pz, 16.0f, toMovedir2(mario->dispReqDir, -2.0f));
                 f31 = 53.0f;
                 eff = 0x16;
@@ -430,7 +430,7 @@ void mot_hammer2(void) {
     if (mario->trigFlags & 1) {
         mario->trigFlags &= ~1;
         mario->flags &= ~0x000F0000;
-        M_S16(mario, 0x2B4) = 0;
+        mario->field_0x2B4 = 0;
         mario->currSubMotionId = 0;
         M_S32(mario, 0x2B8) = -1;
     }
@@ -488,7 +488,7 @@ void mot_hammer2(void) {
         /* fallthrough to case 0xA */
     case 0xA:
         if (marioGetRub(0x200, &rub1, &rub2, &rub3) == 1) {
-            M_S16(mario, 0x2B4) = M_S16(mario, 0x2B4) & ~1;
+            mario->field_0x2B4 = mario->field_0x2B4 & ~1;
             mario->field_0x41++;
             if (mario->field_0x41 >= 0x14) {
                 mario->field_0x41 = 0x14;
@@ -512,15 +512,15 @@ void mot_hammer2(void) {
             m2->field_68 = 1.7f;
             m2->field_6C = vec3_802c5a80;
 #endif
-            M_S16(mario, 0x2B4) |= 0x1000;
+            mario->field_0x2B4 |= 0x1000;
         } else if (mario->field_0x41 >= 3) {
             marioChgPaper("P_H_1A");
-            level = M_S16(mario, 0x2B4);
+            level = mario->field_0x2B4;
             if (!(level & 1)) {
                 mario->field_0x2B0 += 6.0f;
                 if (mario->field_0x2B0 >= 54.0f) {
                     mario->field_0x2B0 = 54.0f;
-                    M_S16(mario, 0x2B4) |= 1;
+                    mario->field_0x2B4 |= 1;
                     mario->field_0x42 = 3;
                     m2 = marioGetPtr();
                     m2->unk148 = 0.4f;
@@ -532,29 +532,29 @@ void mot_hammer2(void) {
                     m2->field_68 = 1.7f;
                     m2->field_6C = vec3_802c5a80;
 #endif
-                    M_S16(mario, 0x2B4) |= 0x1000;
+                    mario->field_0x2B4 |= 0x1000;
                 }
             } else if (!(level & 0x10)) {
                 mario->field_0x2B0 += 1.0f;
                 if (mario->field_0x2B0 >= 54.0f) {
                     mario->field_0x2B0 = 54.0f;
-                    M_S16(mario, 0x2B4) |= 0x10;
+                    mario->field_0x2B4 |= 0x10;
                 }
             } else {
                 mario->field_0x2B0 -= 1.0f;
                 if (mario->field_0x2B0 <= 42.0f) {
                     mario->field_0x2B0 = 42.0f;
-                    M_S16(mario, 0x2B4) &= ~0x10;
+                    mario->field_0x2B4 &= ~0x10;
                 }
             }
         } else if (mario->field_0x41 >= 2) {
             marioChgPaper("P_H_1A");
-            level = M_S16(mario, 0x2B4);
+            level = mario->field_0x2B4;
             if (!(level & 1)) {
                 mario->field_0x2B0 += 6.0f;
                 if (mario->field_0x2B0 >= 36.0f) {
                     mario->field_0x2B0 = 36.0f;
-                    M_S16(mario, 0x2B4) |= 1;
+                    mario->field_0x2B4 |= 1;
                     mario->field_0x42 = 2;
                     m2 = marioGetPtr();
                     m2->unk148 = 0.3f;
@@ -566,29 +566,29 @@ void mot_hammer2(void) {
                     m2->field_68 = 1.6f;
                     m2->field_6C = vec3_802c5a80;
 #endif
-                    M_S16(mario, 0x2B4) |= 0x1000;
+                    mario->field_0x2B4 |= 0x1000;
                 }
             } else if (!(level & 0x10)) {
                 mario->field_0x2B0 += 1.0f;
                 if (mario->field_0x2B0 >= 36.0f) {
                     mario->field_0x2B0 = 36.0f;
-                    M_S16(mario, 0x2B4) |= 0x10;
+                    mario->field_0x2B4 |= 0x10;
                 }
             } else {
                 mario->field_0x2B0 -= 1.0f;
                 if (mario->field_0x2B0 <= 30.f) {
                     mario->field_0x2B0 = 30.f;
-                    M_S16(mario, 0x2B4) &= ~0x10;
+                    mario->field_0x2B4 &= ~0x10;
                 }
             }
         } else {
             marioChgPaper("P_H_1A");
-            level = M_S16(mario, 0x2B4);
+            level = mario->field_0x2B4;
             if (!(level & 1)) {
                 mario->field_0x2B0 += 6.0f;
                 if (mario->field_0x2B0 >= 18.0f) {
                     mario->field_0x2B0 = 18.0f;
-                    M_S16(mario, 0x2B4) |= 1;
+                    mario->field_0x2B4 |= 1;
                     mario->field_0x42 = 1;
                     m2 = marioGetPtr();
                     m2->unk148 = 0.2f;
@@ -600,26 +600,26 @@ void mot_hammer2(void) {
                     m2->field_68 = 1.5f;
                     m2->field_6C = vec3_802c5a80;
 #endif
-                    M_S16(mario, 0x2B4) |= 0x1000;
+                    mario->field_0x2B4 |= 0x1000;
                 }
             } else if (!(level & 0x10)) {
                 mario->field_0x2B0 += 1.0f;
                 if (mario->field_0x2B0 >= 24.0f) {
                     mario->field_0x2B0 = 24.0f;
-                    M_S16(mario, 0x2B4) |= 0x10;
+                    mario->field_0x2B4 |= 0x10;
                 }
             } else {
                 mario->field_0x2B0 -= 1.0f;
                 if (mario->field_0x2B0 <= 18.0f) {
                     mario->field_0x2B0 = 18.0f;
-                    M_S16(mario, 0x2B4) &= ~0x10;
+                    mario->field_0x2B4 &= ~0x10;
                 }
             }
         }
-        if (M_S16(mario, 0x2B4) & 0x1000) {
-            M_S16(mario, 0x2B4) &= ~0x1000;
-            if (!(M_S16(mario, 0x2B4) & 0x2000)) {
-                M_S16(mario, 0x2B4) |= 0x2000;
+        if (mario->field_0x2B4 & 0x1000) {
+            mario->field_0x2B4 &= ~0x1000;
+            if (!(mario->field_0x2B4 & 0x2000)) {
+                mario->field_0x2B4 |= 0x2000;
                 switch (pouchGetHammerLv()) {
                 case 1:
                     marioChgPose("M_H_3A");

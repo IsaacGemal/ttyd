@@ -27,11 +27,11 @@ void BattleInformationInit(FieldBattleInfo* info) {
 	BattleInformationSetFirstAttack(info, 0);
 	BattleInformationSetResult(info, 0);
 	info->setup = NULL;
-	*(u32*)&info->field_0x14[0] = 0;
-	info->field_0x14[4] = 0;
-	info->field_0x14[5] = 0;
-	info->field_0x14[6] = 0;
-	info->field_0x14[7] = 0;
+	info->field_0x14 = 0;
+	info->field_0x18 = 0;
+	info->ruleKeepResult = 0;
+	info->field_0x1A = 0;
+	info->field_0x1B = 0;
 }
 
 void BattleInfomationSetBattleSetupInfo(FieldBattleInfo* info, NpcBattleInfo* setup) {

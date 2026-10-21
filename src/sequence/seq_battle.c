@@ -284,7 +284,7 @@ BOOL battle_init(void) {
     evtmgrReInit();
     psndSetFlag(0x10);
 
-    info = (FieldBattleInfo*)((u8*)fbat + 0x20);
+    info = &fbat->field_20;
     BattleInformationInit(info);
     BattleInformationSetMode(info, 0);
 
@@ -299,7 +299,7 @@ BOOL battle_init(void) {
         }
     }
 
-    if (*(u32*)((u8*)fbat + 0x1C) & 1) {
+    if (fbat->field_1C & 1) {
         BattleInformationSetFirstAttack(info, 0);
     } else {
         switch (fbat->firstAttackKind) {
@@ -328,7 +328,7 @@ BOOL battle_init(void) {
                 BattleInformationSetFirstAttack(info, 8);
                 break;
             case 0x10000000:
-                BattleInformationSetFirstAttack(info, *(u32*)((u8*)fbat + 0x14));
+                BattleInformationSetFirstAttack(info, fbat->field_14);
                 break;
             default:
                 BattleInformationSetFirstAttack(info, 0);
@@ -337,9 +337,9 @@ BOOL battle_init(void) {
     }
 
     BattleInfomationSetBattleSetupInfo(info, &target->battleInfo);
-    info->field_0x14[4] = target->battleInfo.battleRules[0];
-    info->field_0x14[6] = target->battleInfo.battleRules[1];
-    info->field_0x14[7] = target->battleInfo.battleRules[2];
+    info->field_0x18 = target->battleInfo.battleRules[0];
+    info->field_0x1A = target->battleInfo.battleRules[1];
+    info->field_0x1B = target->battleInfo.battleRules[2];
     BattleInit(info);
     return 0;
 }

@@ -511,7 +511,7 @@ void winPartyDisp(CameraId camId, void* param, s32 partyIdx) {
             }
             animPoseSetAnim(pose, animName, 0);
             animPoseSetLocalTime(pose,
-                                 gp->retraceCount % (s32)((f32*)anim->clip)[2]);
+                                 gp->retraceCount % (s32)anim->clip->field_0x8);
         } else {
             // the others: smaller, greyed out, still
             PSMTXTrans(mtx, (x - 140.0f) + pos.x, 20.0f + (y + pos.y), pos.z);

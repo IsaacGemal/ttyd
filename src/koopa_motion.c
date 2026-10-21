@@ -19,7 +19,6 @@
 #include "eff/eff_mizutama.h"
 #include "math_ext.h"
 
-#define MW_U16(m, off) (*(u16*)((u8*)(m) + (off)))
 
 // .rodata: the unit's strings and the int->float magic/2^52 doubles are compiler-pooled literals
 // (used at their sites), not named objects.  MWCC pools them in function-emission order, so the
@@ -247,8 +246,8 @@ void kpa_walk(void) {
         } else {
             kpaChgPose("KPA_W_2", "KPA2_W_1");
         }
-        MW_U16(mario, 0x2A0) = 0;
-        MW_U16(mario, 0x2A2) = 0;
+        mario->field_0x2A0 = 0;
+        mario->field_0x2A2 = 0;
         KPA(mario)->field_0x10 = float_0p02_80420dd4;
         KPA(mario)->field_0x14 = float_neg0p02_80420e4c;
     }
@@ -274,12 +273,12 @@ void kpa_walk(void) {
         return;
     }
     if (kpaGetBodyStatus() == 2) {
-        MW_U16(mario, 0x2A0)++;
-        if (MW_U16(mario, 0x2A0) > 0x50) {
-            MW_U16(mario, 0x2A0) = 0;
+        mario->field_0x2A0++;
+        if (mario->field_0x2A0 > 0x50) {
+            mario->field_0x2A0 = 0;
         }
-        mario->poseTime = (MW_U16(mario, 0x2A0) >> 1) & 0xFFFF;
-        animPoseSetLocalTime(mario->paperAnimGroupId[marioAnimeId()], (f32)MW_U16(mario, 0x28));
+        mario->poseTime = (mario->field_0x2A0 >> 1) & 0xFFFF;
+        animPoseSetLocalTime(mario->paperAnimGroupId[marioAnimeId()], (f32)mario->poseTime);
         if (kpaGetBodyStatus() == 0) {
             if (mario->multiTimer % 0x28 == 0) {
                 psndSFXOn_3D((char*)0x819, &mario->position);
@@ -348,7 +347,7 @@ void kpa_dash(void) {
         kpaChgPose("KPA_R_1", "KPA2_R_1");
         mario->currSubMotionId = 0;
         mario->multiTimer = 0;
-        MW_U16(mario, 0x2A0) = 0;
+        mario->field_0x2A0 = 0;
     }
     m2 = marioGetPtr();
     flag = 0;
@@ -372,16 +371,16 @@ void kpa_dash(void) {
         return;
     }
     if (kpaGetBodyStatus() == 2) {
-        MW_U16(mario, 0x2A0)++;
-        if (MW_U16(mario, 0x2A0) > 0x50) {
-            MW_U16(mario, 0x2A0) = 0;
+        mario->field_0x2A0++;
+        if (mario->field_0x2A0 > 0x50) {
+            mario->field_0x2A0 = 0;
         }
 #ifdef MUST_MATCH
-        mario->poseTime = (MW_U16(mario, 0x2A0) >> 1) & 0xFFFF; // mask forces extrwi like the original
+        mario->poseTime = (mario->field_0x2A0 >> 1) & 0xFFFF; // mask forces extrwi like the original
 #else
-        mario->poseTime = MW_U16(mario, 0x2A0) >> 1;
+        mario->poseTime = mario->field_0x2A0 >> 1;
 #endif
-        animPoseSetLocalTime(mario->paperAnimGroupId[marioAnimeId()], (f32)MW_U16(mario, 0x28));
+        animPoseSetLocalTime(mario->paperAnimGroupId[marioAnimeId()], (f32)mario->poseTime);
     }
     if (kpaGetBodyStatus() == 0) {
         if (mario->multiTimer % 0x1E == 0) {
@@ -447,7 +446,7 @@ void kpa_jump(void) {
         if (mario->airTimer == 0) {
             mario->lastGroundPos = mario->position;
         }
-        MW_U16(mario, 0x2A0) = 0;
+        mario->field_0x2A0 = 0;
     }
     mario->airTimer++;
     if (mario->currMotionId != MARIO_MOTION_JUMP_3) {

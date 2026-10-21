@@ -2950,7 +2950,7 @@ void BattleAudience_Delete(s32 index) {
 	BattleAudienceBaseGetPtr();
 	member = BattleAudienceGetPtr(index);
 	if (member->flags & 0x80) {
-		*(s32*)((u8*)member + 0x134) = 0;
+		member[1].flags = 0;
 	}
 	member->flags = 0;
 }

@@ -176,7 +176,7 @@ USER_FUNC(map_anim_flag_off) {
     if (anim == NULL) {
         return 2;
     }
-    *(u16*)anim &= ~mask;
+    anim->flags &= ~mask;
     return 2;
 }
 

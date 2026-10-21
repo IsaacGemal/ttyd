@@ -302,7 +302,7 @@ HitEntry* partySearchGround(PartyEntry* party, f32 up, f32 down) {
         h = 0.75f * partyGetHeight(party);
     }
     party->groundY = party->position.y;
-    *(f32*)party->field_E8 = -1.0f;
+    party->field_E8 = -1.0f;
     if (party->speed) {
         rad = party->dir;
     } else {
@@ -357,7 +357,7 @@ HitEntry* partySearchGround(PartyEntry* party, f32 up, f32 down) {
             party->groundSlope = partyGroundSlope(party, n);
             if (hitY < py && __fabsf(hitY - py) >= 2.0f) {
                 if (__fabsf(hitY - py) > __fabsf(down)) {
-                    *(f32*)party->field_E8 = __fabsf(py - hitY);
+                    party->field_E8 = __fabsf(py - hitY);
                 } else {
                     if (hitY > bestY) {
                         bestY = hitY;
@@ -374,7 +374,7 @@ HitEntry* partySearchGround(PartyEntry* party, f32 up, f32 down) {
     }
     if (best != NULL) {
         party->groundY = bestY;
-        *(f32*)party->field_E8 = 0.0f;
+        party->field_E8 = 0.0f;
         return best;
     }
     return NULL;

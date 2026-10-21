@@ -322,7 +322,7 @@ void BattleStoreExp(BattleWork* wp, s32 exp) {
 }
 
 void BattleStoreCoin(BattleWork* wp, s32 coins) {
-    *(s32*)(wp->fbatInfo->field_0x14) += coins;
+    wp->fbatInfo->field_0x14 += coins;
 }
 
 void BattlePartyInfoWorkInit(BattleWork* wp) {

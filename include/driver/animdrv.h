@@ -52,12 +52,18 @@ typedef struct AnimPoseShapeDraw {
 } AnimPoseShapeDraw;
 
 // all of these fall under "AnimPoseData"
+typedef struct AnimDataClip {
+    s32 field_0x0; // 0x0, tested by animPoseMain to choose between wrapping and clamping the clip time
+    f32 field_0x4; // 0x4
+    f32 field_0x8; // 0x8
+} AnimDataClip;
+
 struct AnimData {
     u8 field_0x0[0x8 - 0x0];   // 0x0
     s32 frameCount;            // 0x8, keyframes in frames
     u8 field_0xC[0x20 - 0xC];  // 0xC
     s32 frame2Count;           // 0x20, events in frames2
-    s32* clip;                 // 0x24, [0] canLoop, [1] start and [2] end (f32)
+    AnimDataClip* clip;        // 0x24
     u8* frames;                // 0x28, frame records of ANIM_FRAME_SIZE bytes
     u8* posData;               // 0x2C
     u8* nrmData;               // 0x30

@@ -627,20 +627,20 @@ s32 toge_searchParent(PuniData* puni, s16 id) {
     if ((s16)best == 10000) {
         return 0;
     }
-    *(void**)((u8*)puni + 0x1D0) = parent;
+    puni->parentPuni = parent;
     puni->depth = best;
     puni->treeId = parent->treeId;
-    *(void**)((u8*)parent + 0x1D4) = puni;
+    parent->leftPuni = puni;
     return 1;
 }
 
 void togeModeParent(PuniData* puni) {
     Vec diff;
 
-    PSVECSubtract((Vec*)((u8*)(u8*)puni->parentPuni + 0x12C), &puni->pos, &diff);
+    PSVECSubtract(&puni->parentPuni->pos, &puni->pos, &diff);
     puni->parentDist = PSVECMag(&diff);
     if (puni->parentDist >
-        2.0f + (puni->radius + *(f32*)((u8*)(u8*)puni->parentPuni + 0x190)) + 3.0f) {
+        2.0f + (puni->radius + puni->parentPuni->radius) + 3.0f) {
         PSVECNormalize(&diff, &diff);
         diff.y = 0.0f;
         PSVECScale(&diff, &diff, 1.0f);

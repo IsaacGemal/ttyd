@@ -742,40 +742,15 @@ static s32 yuu_kesan(s32 mode, s32 value, s32 bonus, s32 mult, s32 maxValue) {
     return score;
 }
 
-#define YBASE_A ((s32(*)[6])((u8*)yuwp + 0x14))
-#define YBASE_B ((s32(*)[6])((u8*)yuwp + 0x74))
-#define YBASE_C ((s32(*)[6])((u8*)yuwp + 0xd4))
-#define A14(i) YBASE_A[work->mode][i]
-#define A74(i) YBASE_B[work->mode][i]
-#define AD4(i) YBASE_C[work->mode][i]
+#define A14(i) yuwp->rankUsed[work->mode][i]
+#define A74(i) yuwp->rankScore[work->mode][i]
+#define AD4(i) yuwp->rankMonte[work->mode][i]
 // non-array CMP read: the flat byte address reproduces the original `lwz 0x74(rX)` shape; written
 // as an index-cast rather than a raw dereference so the lint OFFSET check stays quiet.
 #define A74F(i) (((s32*)((u8*)yuwp + work->mode * 24 + 0x74 + (i) * 4))[0])
 // slot-search read: base yuwp+mode*24 keeps 0x14 as the index displacement (add+lwz), where the
 // array view would hoist yuwp+0x14 and emit addi+lwzx.
 #define A14R(i) (((s32*)((u8*)yuwp + work->mode * 24 + (i) * 4))[5])
-
-// MUST_MATCH only: reading and writing through these makes MWCC compute the row+index sum before
-// adding the base and recompute it per store, so the shift loop keeps the original's instruction
-// order and displacements. The natural form is the plain array copy under #else.
-#ifdef MUST_MATCH
-static inline s32 yuu_rank_get(s32 mode, s32 offset, s32 displacement) {
-    return ((s32*)((u8*)yuwp + mode * 24 + offset + displacement))[0];
-}
-static inline void yuu_rank_set(s32 mode, s32 offset, s32 displacement, s32 value) {
-    ((s32*)((u8*)yuwp + mode * 24 + offset + displacement))[0] = value;
-}
-#define RANK_SHIFT(j)                                                                                                    \
-    s32 o = (j) * 4;                                                                                                     \
-    yuu_rank_set(work->mode, o, 0x14, yuu_rank_get(work->mode, o, 0x10));                                                \
-    yuu_rank_set(work->mode, o, 0x74, yuu_rank_get(work->mode, o, 0x70));                                                \
-    yuu_rank_set(work->mode, o, 0xd4, yuu_rank_get(work->mode, o, 0xd0))
-#else
-#define RANK_SHIFT(j)                                                                                                    \
-    A14(j) = A14(j - 1);                                                                                                 \
-    A74(j) = A74(j - 1);                                                                                                 \
-    AD4(j) = AD4(j - 1)
-#endif
 
 #define YUU_RANK_SETUP(ELSE_CODE, SETVAL, OUTER, CMP)                                                                    \
     A14(5) = 0;                                                                                                          \
@@ -795,7 +770,9 @@ static inline void yuu_rank_set(s32 mode, s32 offset, s32 displacement, s32 valu
             }                                                                                                            \
             if (CMP) {                                                                                                   \
                 for (j = 4; j > i; j--) {                                                                                \
-                    RANK_SHIFT(j);                                                                                       \
+                    A14(j) = A14(j - 1);                                                                                 \
+                    A74(j) = A74(j - 1);                                                                                 \
+                    AD4(j) = AD4(j - 1);                                                                                 \
                 }                                                                                                        \
                 A14(i) = 1;                                                                                              \
                 A74(i) = work->result;                                                                                 \
@@ -892,9 +869,6 @@ USER_FUNC(evt_yuuranking_alloc_31_text_52F8) {
 #undef A14
 #undef A14R
 #undef A74F
-#undef YBASE_A
-#undef YBASE_B
-#undef YBASE_C
 
 USER_FUNC(evt_yuuranking_free_31_text_5274) {
     YuuRankingWork* work = _wp;

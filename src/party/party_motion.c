@@ -626,7 +626,7 @@ void partyUpdateFloor(PartyEntry* party) {
         party->flags = (party->flags & ~PARTY_FLAG_IN_SHALLOW_WATER);
     }
     if (attr & 0x40000000) {
-        *(HitEntry**)((u8*)party + 0x14C) = hit;
+        party->field_14C = hit;
     }
     if (partyHitIsBoxMobj(hit) != 0) {
         partyGetAppearPos5(party, hit, &party->targetPos);
@@ -1143,7 +1143,7 @@ void party_motion_homing_walk(PartyEntry* party) {
         groundHit = NULL;
     }
     if (groundHit == NULL) {
-        party->field_4D[0] = 0;
+        party->field_4D = 0;
         if (!(party->field_8 & 0x200000)) {
             getFrontFloor(party, &v94, party->dir);
         } else {
@@ -1200,9 +1200,9 @@ void party_motion_homing_walk(PartyEntry* party) {
 #endif
                 }
             } else {
-                party->field_4D[0]++;
-                if ((s8)party->field_4D[0] > 8) {
-                    party->field_4D[0] = 0;
+                party->field_4D++;
+                if (party->field_4D > 8) {
+                    party->field_4D = 0;
                     f = partyGetTargetDistYFrom(id, party->position.y);
                     if (f >= 1.0f) {
                         getFrontFloor(party, &v94, party->dir);
@@ -1275,7 +1275,7 @@ void party_motion_homing_walk(PartyEntry* party) {
         }
         attr = hitGetAttr(hit);
         if (attr & 0x40000000) {
-            *(HitEntry**)((u8*)party + 0x14C) = hit;
+            party->field_14C = hit;
         }
     }
     party->position.y = vA0.y;
@@ -3135,17 +3135,17 @@ s32 party_roll(PartyEntry* party) {
     case 0xA:
         party->field_10C = revise360(270.0f - party->dir);
         if (revise360(party->field_FC + party->field_10C) > 180.0f) {
-            party->spinAngle = revise360(7.0f * party->speed + party->spinAngle);
+            party->dispRot.z = revise360(7.0f * party->speed + party->dispRot.z);
         } else {
-            party->spinAngle = revise360(party->spinAngle - 7.0f * party->speed);
+            party->dispRot.z = revise360(party->dispRot.z - 7.0f * party->speed);
         }
         break;
     }
     switch (party->field_3A) {
     case 0x64:
         party->speed = 0.0f;
-        party->tiltX = 0.0f;
-        party->spinAngle = 0.0f;
+        party->dispRot.x = 0.0f;
+        party->dispRot.z = 0.0f;
         party->spinPivot.x = 0.0f;
         party->spinPivot.y = 0.0f;
         party->dispOffset.x = (party->dir < 180.0f) ? 3.0f : -3.0f;

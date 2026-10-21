@@ -557,12 +557,12 @@ USER_FUNC(iri_13_free_item_tbl) {
     return EVT_RETURN_DONE;
 }
 
-void kuragarisan_msgcb(s32 type, void* param) {
-    void* p = *(void**)param;
+void kuragarisan_msgcb(s32 type, smartEntry* smart) {
+    MessageData* data = smart->address;
 
     switch (type) {
     case 3:
-        if (((u16*)p)[4] == 1) {
+        if (data->choiceIndex == 1) {
             NpcEntry* npc = npcNameToPtr("クラガリさん");
 
             npc->direction = 90.0f;

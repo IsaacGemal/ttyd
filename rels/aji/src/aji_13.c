@@ -724,7 +724,7 @@ static USER_FUNC(mario_chk) {
             hitIsGroup((HitEntry*)mario->hitobjStandOn, hitNameToPtr("A_bel")) != 0) {
             mario->riderDelta.x = 0.6f;
         }
-        if (party != NULL && *(void**)((u8*)party + 0x144) != NULL &&
+        if (party != NULL && party->field_0x144 != NULL &&
             hitIsGroup((HitEntry*)party->groundHit, hitNameToPtr("A_bel")) != 0) {
             party->moveDelta.x = 0.6f;
         }

@@ -72,17 +72,18 @@ typedef struct BinaryFontMap {
 	u16 table[]; //0x10, unknown size
 } BinaryFontMap;
 
+typedef struct BinaryFontWidthEntry {
+	u8 unknown; //0x0
+	u8 width; //0x1
+} BinaryFontWidthEntry;
+
 typedef struct BinaryFontWidth {
 	u32 magic; //0x0, "WID1"
 	u32 size; //0x4, full size of this block
 	u16 firstcode; //0x8, first code for this block (inclusive)
 	u16 lastcode; //0xA, last code for this block (inclusive)
+	BinaryFontWidthEntry entries[]; //0xC, one per code from firstcode
 } BinaryFontWidth;
-
-typedef struct BinaryFontWidthEntry {
-	u8 unknown; //0x0
-	u8 width; //0x1
-} BinaryFontWidthEntry;
 
 void fontmgrInit(void);
 void fontmgrTexSetup(void);

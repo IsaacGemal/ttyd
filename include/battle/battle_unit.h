@@ -745,7 +745,7 @@ typedef struct BattleUnitKind {
     u8 bonusCoinRate;                  // 0x11, ...each adding a coin with this chance (%)
     u8 baseCoin;                       // 0x12
     u8 field_0x13;                     // 0x13
-    s16 field_0x14;                    // 0x14
+    u16 field_0x14;                    // 0x14, read (lhz) by mario_get_renzoku_count_max
     s16 width;                         // 0x16
     s16 height;                        // 0x18
     s16 statusIconOffset[2];           // 0x1A

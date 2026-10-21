@@ -1493,10 +1493,10 @@ void envSetWater(s32 arg0, void* arg1) {
                 obj->flags = flags | 0x20000000;
                 return;
             }
-            x0 = *(u16*)(obj->field_0xEC + 0);
-            y0 = *(u16*)(obj->field_0xEC + 2);
-            x1 = *(u16*)(obj->field_0xEC + 4);
-            y1 = *(u16*)(obj->field_0xEC + 6);
+            x0 = obj->bboxLeft;
+            y0 = obj->bboxTop;
+            x1 = obj->bboxRight;
+            y1 = obj->bboxBottom;
             break;
         }
     }
@@ -1505,10 +1505,10 @@ void envSetWater(s32 arg0, void* arg1) {
             obj->flags = flags | 0x20000000;
             return;
         }
-        x0 = *(u16*)(obj->field_0xEC + 0);
-        y0 = *(u16*)(obj->field_0xEC + 2);
-        x1 = *(u16*)(obj->field_0xEC + 4);
-        y1 = *(u16*)(obj->field_0xEC + 6);
+        x0 = obj->bboxLeft;
+        y0 = obj->bboxTop;
+        x1 = obj->bboxRight;
+        y1 = obj->bboxBottom;
     }
 
     if (x0 == 0x3FF || y0 == 0x3FF || x1 == 0x3FF || y1 == 0x3FF) {

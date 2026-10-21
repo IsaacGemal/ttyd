@@ -48,7 +48,7 @@ void fontmgrInit(void) {
 	; //stubbed in retail
 }
 
-static BinaryFontWidth* FontGetWidthPtr(u16 code) {
+static BinaryFontWidthEntry* FontGetWidthPtr(u16 code) {
 	// The two block locals' declaration order sets the temp numbering for every inlined caller.
 	u32 blockcount = pfh->blockcount;
 	BinaryFontWidth* width = (BinaryFontWidth*)(pfh + 1);
@@ -58,7 +58,7 @@ static BinaryFontWidth* FontGetWidthPtr(u16 code) {
 		switch (width->magic) {
 			case 'WID1':
 				if (code >= width->firstcode && code <= width->lastcode) {
-					return (BinaryFontWidth*)((u8*)width + (code - width->firstcode) * 2 + 0xc);
+					return &width->entries[code - width->firstcode];
 				}
 				break;
 		}
@@ -125,8 +125,8 @@ void fontmgrTexSetup(void) {
 			GX_FALSE,
 			GX_ANISO_1);
 
-		((u8*)FontGetWidthPtr(JUTFont_CodeToGlyph(0x20)))[1] = 7;
-		((u8*)FontGetWidthPtr(JUTFont_CodeToGlyph(0x8140)))[1] = 9;
+		FontGetWidthPtr(JUTFont_CodeToGlyph(0x20))->width = 7;
+		FontGetWidthPtr(JUTFont_CodeToGlyph(0x8140))->width = 9;
 	}
 }
 
@@ -294,7 +294,7 @@ void FontDrawString(f32 x, f32 y, const char* s) {
 		else {
 			glyph = JUTFont_CodeToGlyph((s8)*str++);
 		}
-		w = *(u8*)((u8*)FontGetWidthPtr(glyph) + 1);
+		w = FontGetWidthPtr(glyph)->width;
 		PSMTXTransApply(mtx, mtx2, fx, fy, fz);
 		PSMTXConcat(cam->view, mtx2, mtx2);
 		GXLoadPosMtxImm(mtx2, GX_PNMTX0);
@@ -341,7 +341,7 @@ void FontDrawStringPitch(const char* s, f32 x, f32 y, f32 pitch) {
 		else {
 			glyph = JUTFont_CodeToGlyph((s8)*str++);
 		}
-		w = *(u8*)((u8*)FontGetWidthPtr(glyph) + 1);
+		w = FontGetWidthPtr(glyph)->width;
 		tx = (pitch < 0.0f) ? fx : fx + fontScale.x * (0.5f * (pitch - (f32)w));
 		PSMTXTransApply(mtx, mtx2, tx, fy, fz);
 		PSMTXConcat(cam->view, mtx2, mtx2);
@@ -380,7 +380,7 @@ void FontDrawStringVecPitch(Vec* pos, const char* text, f32 pitch) {
 		else {
 			glyph = JUTFont_CodeToGlyph((s8)*text++);
 		}
-		w = *(u8*)((u8*)FontGetWidthPtr(glyph) + 1);
+		w = FontGetWidthPtr(glyph)->width;
 		f1 = (pitch < 0.0f) ? x : x + fontScale.x * (0.5f * (pitch - (f32)w));
 		PSMTXTransApply(mtx, mtx2, f1, pos->y, pos->z);
 		PSMTXConcat(cam->view, mtx2, mtx2);
@@ -463,7 +463,7 @@ void FontDrawStringMtx(Mtx mtx, const char* msg) {
 			FontDrawPosEdge(glyph, x, y);
 		}
 		_JUTFont_DrawPos(glyph, (s16)x, (s16)y);
-		x += (f32)(charspace[gp->language] + *(u8*)((u8*)FontGetWidthPtr(glyph) + 1));
+		x += (f32)(charspace[gp->language] + FontGetWidthPtr(glyph)->width);
 	}
 }
 
@@ -503,14 +503,14 @@ void FontDrawStringCenterMtx(Mtx mtx, const char* msg) {
 			FontDrawStringCenterMtx_Edge(glyph, offsetX);
 		}
 		_JUTFont_DrawPos(glyph, (s16)offsetX, 0);
-		offsetX += (f32)(charspace[gp->language] + *(u8*)((u8*)FontGetWidthPtr(glyph) + 1));
+		offsetX += (f32)(charspace[gp->language] + FontGetWidthPtr(glyph)->width);
 	}
 }
 
 // Reading the width byte through this inline numbers its result after the inlined
 // FontGetWidthPtr temps, which gives the glyph width retail's r27.
 static inline u16 FontDrawStringShake_Width(u16 glyph) {
-	return ((u8*)FontGetWidthPtr(glyph))[1];
+	return FontGetWidthPtr(glyph)->width;
 }
 
 void FontDrawStringShake(const char* str, f32 x, f32 y) {
@@ -668,7 +668,7 @@ void FontDrawMessage(s32 x0, s32 y, const char* msg) {
 			FontDrawMessage_Edge(glyph, x, yy);
 		}
 		_JUTFont_DrawPos(glyph, (s16)x, (s16)yy);
-		x += *(u8*)((u8*)FontGetWidthPtr(glyph) + 1) + charspace[gp->language];
+		x += FontGetWidthPtr(glyph)->width + charspace[gp->language];
 	}
 }
 
@@ -777,7 +777,7 @@ void FontDrawMessageMtx(Mtx mtx, const char* msg) {
 			FontDrawCodeEdge(glyph);
 		}
 		_JUTFont_DrawPos(glyph, 0, 0);
-		x += *(u8*)((u8*)FontGetWidthPtr(glyph) + 1) + charspace[gp->language];
+		x += FontGetWidthPtr(glyph)->width + charspace[gp->language];
 	}
 }
 
@@ -794,8 +794,8 @@ u16 kanjiSearch(u32 code) {
 }
 
 u16 kanjiGetWidth(u16 code) {
-	BinaryFontWidth* width = FontGetWidthPtr(code);
-	return *(u8*)((u8*)width + 1);
+	BinaryFontWidthEntry* width = FontGetWidthPtr(code);
+	return width->width;
 }
 
 // maxwidth and curwidth are both u16; the original truncates curwidth with a compound assignment
@@ -866,7 +866,7 @@ u16 FontGetMessageWidthLine(const char* message, u16* lines) {
 		if (glyph == 0xFFFF) {
 			continue;
 		}
-		curwidth += ((BinaryFontWidthEntry*)FontGetWidthPtr(glyph))->width + charspace[gp->language];
+		curwidth += FontGetWidthPtr(glyph)->width + charspace[gp->language];
 	}
 	if ((u16)maxwidth < (u16)curwidth) {
 		maxwidth = curwidth;
@@ -963,8 +963,8 @@ void JUTFontSetup(u16 idx) {
 			GX_FALSE,
 			GX_FALSE,
 			GX_ANISO_1);
-		((u8*)FontGetWidthPtr(JUTFont_CodeToGlyph(0x20)))[1] = 7;
-		((u8*)FontGetWidthPtr(JUTFont_CodeToGlyph(0x8140)))[1] = 9;
+		FontGetWidthPtr(JUTFont_CodeToGlyph(0x20))->width = 7;
+		FontGetWidthPtr(JUTFont_CodeToGlyph(0x8140))->width = 9;
 	}
 }
 
@@ -1104,7 +1104,7 @@ void _JUTFont_DrawPos(u16 code, s16 x, s16 y) {
 	s32 hueL;
 	u16 tx0;
 	u8 n1;
-	u8* info = (u8*)FontGetWidthPtr(code);
+	BinaryFontWidthEntry* info = FontGetWidthPtr(code);
 	u8 ny1;
 	u8 nx1;
 	u16 tx1;
@@ -1114,7 +1114,7 @@ void _JUTFont_DrawPos(u16 code, s16 x, s16 y) {
 	s32 xs;
 	s32 ty0;
 	BinaryFontGlyph* blk = blockGlyph;
-	u8 width = info[1];
+	u8 width = info->width;
 	s32 xx = (code - blk->firstcode) % blk->sheetrows;
 	f32 fheight;
 	f32 xoffs;
@@ -1129,8 +1129,8 @@ void _JUTFont_DrawPos(u16 code, s16 x, s16 y) {
 	yy = (code - blk->firstcode) / blk->sheetrows;
 	yy %= blk->sheetcolumns;
 	fheight = blk->cellheight;
-	xoffs = (f32)xx * blk->cellwidth + info[0];
-	fwidth = info[1];
+	xoffs = (f32)xx * blk->cellwidth + info->unknown;
+	fwidth = info->width;
 	fwidthS = width * scale;
 	fheightS = fheight * scale;
 

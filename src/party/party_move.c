@@ -481,10 +481,10 @@ void partyRecordFootmark(PartyEntry* party) {
             }
         }
         if (target != NULL && flag == 0) {
-            if (*(s8*)(party->field_4D + 4) == 0) {
+            if (party->field_51 == 0) {
                 u32 i;
                 Footmark* f;
-                *(s8*)(party->field_4D + 4) = 1;
+                party->field_51 = 1;
                 mp = marioGetPtr()->position;
                 f = (Footmark*)footmarkBuf;
                 for (i = 0; i < 0x50; i++) {
@@ -507,8 +507,8 @@ void partyRecordFootmark(PartyEntry* party) {
             pos2 = target->position;
             partyRecordFootmarkSub(party, &pos2, flags);
         } else {
-            if (*(s8*)(party->field_4D + 4) == 1) {
-                *(s8*)(party->field_4D + 4) = 0;
+            if (party->field_51 == 1) {
+                party->field_51 = 0;
                 partyClearFootmark2();
             }
             {
@@ -829,7 +829,7 @@ static const char* boxNames[] = {
 s32 partyHitIsBoxMobj(HitEntry* hit) {
     s32 found;
     const char** name;
-    u8* obj;
+    MapObjectEntry* obj;
 
     if (hit == NULL) {
         return 0;
@@ -838,10 +838,10 @@ s32 partyHitIsBoxMobj(HitEntry* hit) {
         return 0;
     }
     name = boxNames;
-    obj = (u8*)mobjHitObjPtrToPtr(hit);
+    obj = mobjHitObjPtrToPtr(hit);
     found = 0;
     while (*name != NULL) {
-        if (strcmp((const char*)(obj + 0x15), *name) == 0) {
+        if (strcmp(obj->animName, *name) == 0) {
             found = 1;
             break;
         }
@@ -936,7 +936,7 @@ s32 partyMoveMain(PartyEntry* party, s32 hosei) {
                 work->jumpPara1 += work->jumpPara2;
                 return 2;
             }
-            if (*(f32*)((u8*)work + 0xE8) != 0.0f) {
+            if (work->field_E8 != 0.0f) {
                 hit = NULL;
             } else {
                 party->position.y = pos.y;
@@ -1014,7 +1014,7 @@ void partyMoveBehindMario(PartyEntry* party, s32 mode) {
     if (party->currentMemberId == PARTY_MEMBER_YOSHI && party->field_34 == 3) {
         return;
     }
-    party->field_3C[1] = mode;
+    party->field_3D = mode;
     partyChgMoveMode(party, 2);
     partyChgMot(party, 1);
 }
@@ -1028,7 +1028,7 @@ void partyMoveBehindMario3(PartyEntry* party, s32 mode, f32 dir) {
     party->field_8 |= 0x100000;
     party->field_8 |= 0x40000;
     party_set_behind_dir(party, dir);
-    party->field_3C[1] = mode;
+    party->field_3D = mode;
     partyChgMoveMode(party, 2);
     if (party->field_36 == 3) {
         party->flags &= ~0x70;
@@ -1043,7 +1043,7 @@ void partyMoveBesideMario(PartyEntry* party, s32 mode) {
     if (party->currentMemberId == PARTY_MEMBER_YOSHI && party->field_34 == 3) {
         return;
     }
-    party->field_3C[1] = mode;
+    party->field_3D = mode;
     partyChgMoveMode(party, 3);
     partyChgMot(party, 1);
 }
@@ -1194,7 +1194,7 @@ void partyGetMoveDirSpd(PartyEntry* party, f32* angle, f32* speed) {
     if (hosei >= 0x1E) {
         work->touchCount = 0;
         if (!(work->currentMemberId == PARTY_MEMBER_YOSHI && work->field_34 == 3)) {
-            work->field_3C[1] = 0;
+            work->field_3D = 0;
             partyChgMoveMode(work, 2);
             if (work->field_36 == 3) {
                 work->flags &= ~(PARTY_FLAG_IS_JUMPING | PARTY_FLAG_IS_FALLING | PARTY_FLAG_IS_STEPPING);
@@ -1401,10 +1401,10 @@ void partyWalkInit(PartyEntry* party, s32 mode) {
         writeId[1] = 0;
         readId[1] = 0;
     }
-    work->field_3C[1] = 0;
-    *(u32*)((u8*)work + 0x44) = 0x10;
+    work->field_3D = 0;
+    work->field_44 = 0x10;
     work->followDist = float_50_8041b468;
-    work->field_3C[2] = 0;
+    work->field_3E = 0;
     work->jumpPara2 = 1.8f;
     work->jumpPara1 = 0.0f;
     if (!(mario->flags & 0x400000)) {
@@ -1462,10 +1462,10 @@ void partyMoveWalk(PartyEntry* party) {
             writeId[1] = 0;
             readId[1] = 0;
         }
-        work->field_3C[1] = 0;
-        *(u32*)((u8*)work + 0x44) = 0x10;
+        work->field_3D = 0;
+        work->field_44 = 0x10;
         work->followDist = float_50_8041b468;
-        work->field_3C[2] = 0;
+        work->field_3E = 0;
         work->jumpPara2 = 1.8f;
         work->jumpPara1 = 0.0f;
         if (!(mario->flags & 0x400000)) {
@@ -1966,19 +1966,19 @@ void partyMoveFlyInit(PartyEntry* party, s32 mode) {
     if (work->field_3B == 2) {
         work->followDist = float_50_8041b468;
     } else {
-        work->field_3C[1] = (mode == 0) ? 0 : 2;
+        work->field_3D = (mode == 0) ? 0 : 2;
         partyChgMoveMode(party, 0);
-        if ((s8)work->field_3C[3] == 1 || (s8)work->field_3C[3] == 3) {
-            work->field_3C[3] = 0;
-            work->field_3C[1] = 0;
+        if (work->field_3F == 1 || work->field_3F == 3) {
+            work->field_3F = 0;
+            work->field_3D = 0;
             partyChgMoveMode(party, 1);
-        } else if ((s8)work->field_3C[3] == 2) {
-            work->field_3C[1] = 0;
+        } else if (work->field_3F == 2) {
+            work->field_3D = 0;
             partyChgMoveMode(party, 0x3C);
         }
-        *(u32*)((u8*)work + 0x44) = 0x10;
+        work->field_44 = 0x10;
         work->followDist = float_50_8041b468;
-        work->field_3C[2] = 0;
+        work->field_3E = 0;
         partyChgPoseId(party, 1);
         partyChgMoveMode(party, 1);
         if (work->field_36 == 3) {
@@ -3019,9 +3019,7 @@ BOOL partyGetAppearPos3(PartyEntry* party, Vec* position) {
 // makes MWCC hoist the template stores into the prologue. `count` is a ternary (a
 // `count = 11; if (...) count = 13;` spills to a different callee-saved register), and
 // targetDistance is stored in both arms of the angle if/else to match the original's
-// duplicated store. The base angle at 0x54 is not a declared f32 field (it sits inside the
-// byte-blob `field_4D`), so it is read as `*(f32*)(party->field_4D + 7)`, the same style the
-// file already uses for that array. Like the original the fallback loop reads one entry past
+// duplicated store. Like the original the fallback loop reads one entry past
 // the end of each angle table on its last pass.
 // Matching depends on both the <math.h>->math_ext.h swap at the top of the file and the pooled
 // str_MOBJ_TreasureBox base.
@@ -3056,7 +3054,7 @@ BOOL partyGetAppearPos4(PartyEntry* party, Vec* position) {
         dist = 26.0f;
     }
     targetDist = dist + party->radius;
-    baseAngle = revise360(180.0f + *(f32*)(party->field_4D + 7));
+    baseAngle = revise360(180.0f + party->moveAngle);
 
     if (!(party->flags & PARTY_FLAG_IS_PARTNER)) {
         position->x = player->position.x;
@@ -3080,14 +3078,14 @@ BOOL partyGetAppearPos4(PartyEntry* party, Vec* position) {
     for (i = 0; i <= count; i++) {
         if (i == 0) {
             query.targetDistance = targetDist;
-            angle = *(f32*)(party->field_4D + 7);
+            angle = party->moveAngle;
         } else {
             query.targetDistance = targetDist;
             if (party->field_8 & 0x200000) {
                 if (strcmp(gp->currentMapName, "usu_00") == 0) {
-                    angle = toMovedir2(*(f32*)(party->field_4D + 7), (f32)anglesA[i]);
+                    angle = toMovedir2(party->moveAngle, (f32)anglesA[i]);
                 } else {
-                    angle = toMovedir2(*(f32*)(party->field_4D + 7), (f32)anglesB[i]);
+                    angle = toMovedir2(party->moveAngle, (f32)anglesB[i]);
                 }
             } else if (other == NULL) {
                 angle = toMovedir2(baseAngle, (f32)anglesE[i]);

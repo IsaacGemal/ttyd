@@ -130,8 +130,8 @@ USER_FUNC(party_kirimomi) {
     party->field_70.y = 1.0f;
     party->field_70.x = 1.0f;
     party->spinPivot.y = party->height / 2.0f * party->field_70.y;
-    party->spinAngle = angle;
-    party->spinAngle = (f32)fmod(party->spinAngle, 360.0);
+    party->dispRot.z = angle;
+    party->dispRot.z = (f32)fmod(party->dispRot.z, 360.0);
     return EVT_RETURN_DONE;
 }
 
@@ -151,7 +151,7 @@ USER_FUNC(party_reset) {
     party->field_70.y = 1.0f;
     party->field_70.x = 1.0f;
     party->spinPivot.y = 0.0f;
-    party->spinAngle = 0.0f;
+    party->dispRot.z = 0.0f;
     return EVT_RETURN_DONE;
 }
 

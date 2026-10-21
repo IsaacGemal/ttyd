@@ -49,7 +49,8 @@
 // reached by this file are named; the rest is the copy of the event's LW/GW
 // area that uranai_init_func stores here (0x0..0xBF).
 typedef struct UranaiWork {
-    u8 pad_0x0[0xC0];
+    s32 field_0x0[16];      // 0x0, the init event's lwData, copied back to the exit event
+    s32 field_0x40[32];     // 0x40, gwData, saved by init and restored on exit
     smartEntry* buffer;     // 0xC0, render target from smartAlloc
     GXTexObj texObj;        // 0xC4
     s32 field_0xE4;         // 0xE4, texture valid flag
@@ -158,8 +159,8 @@ USER_FUNC(uranai_init_func) {
 
     uranai_wp = _mapAlloc(0xFC);
     memset(uranai_wp, 0, 0xFC);
-    memcpy(uranai_wp, event->lwData, 0x40);
-    memcpy((u8*)uranai_wp + 0x40, evtGetWork()->gwData, 0x80);
+    memcpy(uranai_wp->field_0x0, event->lwData, 0x40);
+    memcpy(uranai_wp->field_0x40, evtGetWork()->gwData, 0x80);
     for (i = 0; i < 9; i++) {
         sprintf(name, "card_omote_%d", i + 1);
         if (mapGetMapObj(name) != NULL) {
@@ -175,8 +176,8 @@ USER_FUNC(uranai_init_func) {
 }
 
 USER_FUNC(uranai_exit_func) {
-    memcpy(event->lwData, uranai_wp, 0x40);
-    memcpy(evtGetWork()->gwData, (u8*)uranai_wp + 0x40, 0x80);
+    memcpy(event->lwData, uranai_wp->field_0x0, 0x40);
+    memcpy(evtGetWork()->gwData, uranai_wp->field_0x40, 0x80);
     evtDelete(uranai_wp->field_0xE8);
     _mapFree(uranai_wp);
     return EVT_RETURN_DONE;

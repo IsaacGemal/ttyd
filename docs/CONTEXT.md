@@ -4360,3 +4360,145 @@ The parked idea "Split this file at 100% matched", done. It read, in "Parked ide
   the only differences it allows are the frozen header, the preamble edit, the "Current state" pointer to the
   orchestrator's-role chapter, the parked idea above moving here, "Standing rules" and this chapter.
 - Search both: `grep -n PATTERN docs/CONTEXT*.md`.
+
+## The hard remaining raw offsets (2026-10-21, Claude Opus 5.5, n9-q-o-raw3)
+
+A pass over the 453 `raw_offset` sites that `tools/cleanup_index.py` counted on 66da3454: computed bases, strided
+walks, struct views at an offset, reads past a struct's end, and sites whose users disagreed on the type. The
+orchestrator (Opus 5.5) took the MarioWork motion files. Four Opus 5.5 workers took disjoint file groups (party,
+drivers, battle/window, events/rels), each in a nested worktree under `build/wt/` that owned its own headers. The
+orchestrator reviewed and cherry-picked their branches, dropped one commit and fixed three things (below). Every
+changed object was compared with a snapshot of the pre-branch objects (`tools/obj_equiv.py`, one unit at a time while
+working). After each header change the whole tree was compared (`--tree`, all 1,230 objects equivalent) and
+`build/G8MJ01/ok` was recreated. The full `configure.py --non-matching` ninja compiles every object; only the dol link
+fails, as usual. fncast_lint and local_prototypes pass. `tools/ci.py` passed before each commit, with its tests step
+stubbed (the worktree timeouts noted above), and `ci.py --base 66da3454` passes over the whole branch.
+
+- **Counts** (`tools/cleanup_index.py`, same script both sides): index 15.539 -> 15.034 per kLOC (10876 -> 10522
+  weighted); **raw_offset 453 -> 230**; field_0x 3839 -> 3933 (new placeholder members, and typed reads that now
+  spell `field_0xNN`); must_match 1111 -> 1109; everything else unchanged. Of the 230 left, 33 are the act-record
+  band (out of scope), 13 sit in data initialisers (mobjdrv's cubeDN table, unit_system's `regist + 8`,
+  eff_breath_fire's `stg_fire_breath_v + 0x46`), and most of the rest are inside MUST_MATCH arms or have a recorded
+  reason below.
+- **Recurring finding: the folded index.** Where retail computes `addi rI, rI, C` and then `lhzx`/`sthx`/`stfsx`
+  (the member offset added to a scaled index or byte offset), every typed member form gives `add` plus a load
+  displacement. That covers battle_unit's `pouch + party * 0xE + 6`, seq_load's three cursor reads, shadowdrv's
+  shadowSetSize/SetCamId, sound's SoundEfxSetPan/SetSrndPan, koopa_hit's head/ride getters and envdrv's second
+  texture-matrix read. These stay raw. A no-op cast of the array to its element pointer does give the displacement
+  back (`(s32*)work->itemSel + sel`), but it exists only for the match, so the two win_item/win_badge sites that
+  needed it were put back to their raw form.
+- **MarioWork (orchestrator).** The 0x2A0-0x2BC per-motion union can hold one `field_0xNN` per offset, so each offset
+  got the type with the most unnamed sites: koopa_motion's u16 counter pair `field_0x2A0`/`field_0x2A2`, mot_hammer's
+  s32 swing type `field_0x2A8` and its s16 flag word `field_0x2B4`. The losing views stay raw:
+  - party_yoshi's f32 at 0x2A0 (5 sites) and 0x2B4 (12), and mot_jump's f32 at 0x2B4 (2);
+  - mot_hammer's s32 at 0x2A0 and 0x2B8 and its s16 at 0x2A4;
+  - mot_stay's s32 counters at 0x2B0, 0x2B4 and 0x2B8;
+  - mot_roll's and mot_jabara's integer zero stores.
+  Other MarioWork changes:
+  - `poseTime` (0x28) is u16. Every reader loaded it unsigned (`*(u16*)&` in mario.c, party_vivian and party_yoshi;
+    koopa_motion raw), and only stores treated it as s16.
+  - `unk160` is f32 (mario_cam's `*(f32*)unk160`), and 0x164 is `f32 field_0x164` (mario_hit).
+  - party_yoshi's flutter base y uses the existing f32 view `wCamVal1`; the header comment now says so.
+  - mot_jabara reads field_0x41/42, wStickDir1/2 and jabaraState; mot_slit's MUST_MATCH arm reads buttonHeld and
+    triggerRight; mot_plane and mot_ship read field_0x18C.
+  - mot_dokan's accessors (spelt `unsigned char*`, which the index pattern misses) all land on named fields now.
+  - koopa.c's five `field_0x14` reads still change the object as u32 (the field is u32 for mario_hit), as recorded.
+  - mot_stay's 0x2B4 is the same deep-sleep timer as `peachStayTimer`: peach_stay is mot_stay's Peach branch, and
+    marioChkDeepSleep reads the slot for both characters. The name is Peach-specific, so mot_stay stays raw. A
+    neutral rename would cover both, but that would be a new name, so it was not made here.
+- **PartyEntry (party worker + orchestrator).**
+  - The 0x3C, 0x44, 0xE8 and 0x14C bands are typed members. `field_0x13C` is a HitEntry* and `field_0x144` a void*.
+  - 0x64-0x6F is one `Vec dispRot`, replacing `tiltX`/`spinAngle`. evt_mario copies it from Vec templates as it sets
+    Mario's dispRot, partyDisp rotates by z then x as marioDisp does, and the moo rels step it beside
+    `mario->dispRot.z`. **Reviewer: this reuses MarioWork's name for the partner's copy of the same display rotation.**
+  - `field_4D[1]` was indexed past its end: `[0]` is party_motion's s8 floor-recheck counter (`field_4D`), `[2]`
+    is party_vivian's s8 flag byte (`field_4F`), `+4` is party_move's footmark flag (`field_51`), and `+7` is
+    `moveAngle`, which partyGetAppearPos4 now reads by name.
+  - MarioWork `field_0x3E[2]` is split into s8 `field_0x3E` (the dokan type) and u8 `field_0x3F` (mario_hit's wall
+    counter).
+  - The five MarioWork 0x2E reads match through `MarioMotion` locals. The recorded clrlwi only appears with a u16
+    local.
+  - Left raw: party_nokonoko's twelve `NKF(0x10C) = revise360(...)` updates (24 sites; `party->field_10C` loads the
+    ternary's constants in the other order and swaps fmadds operands, in five spellings), and party_nokonoko's and
+    party_cloud's integer zero stores over the koops/flurrie f32 and s16 members (12).
+  - Dropped in review: the worker's `((char**)partyPoseTbl[id])[N]` form, a no-op cast that exists only for the
+    match. The byte-offset reads stay; partyRideYoshiMain's yoshiDotPoseTbl read is indexed.
+- **Drivers (drv worker).**
+  - `AnimData.clip` points at `AnimDataClip`: s32 `field_0x0` (animPoseMain's loop test) and f32 `field_0x4`/
+    `field_0x8` (clip start and end). Every clip user reads members now, including win_party's
+    `((f32*)anim->clip)[2]` and win_root's `&anim->clip[2]`.
+  - `MapEntryAnimData.data` is a different record, `MapAnimTableEntry` (the "animation_table" chunk): `name` is the
+    string mapSearchAnmObj strcmps, and the f32 frame length at 0x8 is `field_0x8`.
+  - mapdrv.c's private MapMatTexRef/MapMaterial moved into mapdrv.h, and the MapMaterialTex overlay folded into them.
+  - MapObject's 0xEC band is `bboxLeft/Top/Right/Bottom`, from GXReadBoundingBox's parameter names. The recorded
+    "split breaks the match" no longer holds.
+  - `PackedDisplayList.vertexCount` + padding is `u32 nbytes`, GXCallDisplayList's parameter, its only reader.
+  - FieldBattleInfo moved into npcdrv.h and is embedded at FieldBattleData 0x20. `ruleKeepResult` is its byte 0x19,
+    so the recorded overlap was just the embedded struct. battle_actrecord's `u8* rec` view of `wp->fbatInfo` now
+    reads its members.
+  - extdrv/punidrv `dlBuffer` is `u8 (*)[0x80]`; fontmgr's BinaryFontWidth has `entries[]`; npcdrv's ENC macro
+    went.
+  - Left raw:
+    - mapdrv `entry + 0x178` reads past the 0x178-byte MapEntry.
+    - The biased MapVtx walk (the vertex-typed walk is 4 bytes smaller).
+    - animdrv's five `poseOffset` sites and the pos/nrm vertex pointers; its seven low-halfword index pointers (u16
+      at +2 of 4-byte entries).
+    - npcdrv's stolenItems byte loop.
+    - icondrv/texPalette file-relative offsets.
+    - The `__OSs8tof32((s8*)src + N)` delta reads: two different record kinds, and no struct exists.
+- **Battle and windows (battle worker).**
+  - BattleCheckConcluded reads `wp->alliances[i]` directly; its alliance pointer was the part that changed the
+    object.
+  - `BattleUnitKind.field_0x14` is u16 (one reader, lhz).
+  - The partner weapon `area` copies are BattleWeapon (galeForceChance, dodgyTime, holdFastTime, burnTime).
+  - The menu icon tables are BattleCommandAction/BattleCommandParty; their HP fields are s16 in battle_seq_command.h
+    and battle.h.
+  - sac_scissor's `triBuf` is `f32 (*)[6]`; YoshiGundanArea holds its 256 particles; MoamoaWork.train is a MapObject.
+  - battle_event_cmd's sampling reads go through BattleSampling, including the GetTakeoffPosition stack buffer,
+    passed as `(u8*)&sampling` because BattleSamplingEnemy takes u8*.
+  - `member[1].flags = 0` in BattleAudience_Delete: retail's store at +0x134 is the next member's flags. A member
+    with flag 0x80 takes two slots (BattleAudience_Entry gives it flags 0x85 and the next slot 0x101), so Delete
+    clears both.
+  - rsh's `_get_rnd_npc_data` returns `&data[index * 3]` (u32 tables of three-word records).
+  - Left raw: tou2's ranking loop (`entries[i]` gives `mr` instead of `li` at loop entry); evt_win's help display
+    and setpartylank (the multiply lands on the wrong side of the calls); seq_load's four loop reads (the loops swap
+    their i/off locals); battle_stage/tou_03 `param + zero` (inside MUST_MATCH).
+- **Events and rels (events worker + orchestrator).**
+  - Both evt_yuuranking copies shift through `rankUsed/rankScore/rankMonte[mode][j]`, which removes gor's
+    A14L/A74L/AD4L, yuu's YBASE views and yuu's MUST_MATCH `yuu_rank_get/set` arm. The recorded "folds the add
+    order" no longer holds. A14R/A74F stay.
+  - evt_lottery's MUST_MATCH slot clear is the plain `mSlotTime[arg1] = 0`.
+  - evt_shop: get_msg reads `ShopperData.field_0xC[idx]`. The worker had named it `msg` after the `get_msg` symbol;
+    it was renamed to the placeholder in review. The price read is `items[i * 2 + 1]`.
+  - jon and gor_02 read `MessageData.choiceIndex`; kuragarisan_msgcb takes the smartEntry, as iri_12_msgcb does.
+  - tik_00's saved lw/gw copies are `field_0x0[16]`/`field_0x40[32]`; muj_20 indexes `&work->entries[i]`;
+    evt_lect_win stores through `&lbtn[idx]`; gor_03's monte init stores go through Monte.
+  - Reverted in review: a mixed `npc[idx].name` / `npc + off` pair in end_unknown's credits_pose_evt (typing both
+    changes the object, and one of each read as a hack).
+  - Left raw: end_unknown's other seven; evt_mobj's `vec + 0x7C/0x88/0x94` (other symbols through a shared base) and
+    MUST_MATCH jumptable reads; evt_uranaisi, eff_release and lecture_button_disp.h (inside MUST_MATCH; retested);
+    evt_nannpc (`&entries[i]` differs here, unlike muj_20); eff_opuku_jetw.
+- **Stale ledger reasons found** (each retested and now matching, so the recorded reason no longer holds):
+  - `&wp->alliances[i]` (for direct member reads);
+  - `mKindParams + 0x14`;
+  - sac_scissor's "void* buffers" and vivian's `area + 0x90`;
+  - the gor/yuu ranking views and the lottery clear;
+  - the MapObject 0xEC split;
+  - the FieldBattleInfo "overlap";
+  - itemdrv's icon_id (u16 already);
+  - the 0x2E clrlwi (it applies to a u16 local only);
+  - the PartyEntry 0x3C-0x3F and 0x64 bands;
+  - koopa_motion's "no member added" for 0x2A0;
+  - shadowdrv's `lookAt + 0x30` projection;
+  - mri_puni's strength-reduced offset comment.
+- **Not counted by the index, worth a later pass:** offsets spelt with `(char*)`, `(s8*)` or `(unsigned char*)`, and
+  `band + N` forms on byte arrays. This pass fixed the ones it met (mot_dokan, gor_03, party_move/party_vivian's
+  field_4D, mario_hit's `obj + 0x15` -> MapObjectEntry.animName, battle_event_cmd's sampling, battle_actrecord).
+  Still open:
+  - animdrv's s8 delta reads;
+  - partyRideYoshiMain's `(char*)partyPoseTbl` reads;
+  - mapMain's `u8* anim` walk;
+  - evt_shop's and evt_mobj's string-through-base reads.
+  Candidates noted but not done: PartyEntry `field_70` is the partner's scale Vec (MarioWork's `scale`); mapdrv.h's
+  unused `MapFileAnimEntry` duplicates MapEntryAnimData.
+- The worker reports are in `build/raw3/reports/` while the worktree lives (not committed).

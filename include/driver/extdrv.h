@@ -52,7 +52,7 @@ typedef struct ExtWork {
 	void* colors;          //0x1C
 	void* uvs;             //0x20
 	ExtSortEntry* sortList;//0x24
-	void* dlBuffer;        //0x28
+	u8 (*dlBuffer)[0x80];  //0x28, texCount display lists of 0x80 bytes
 	u32* dlSizes;          //0x2C
 	void (*cb0)(void);     //0x30
 	void (*cb1)(void);     //0x34

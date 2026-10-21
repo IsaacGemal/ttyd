@@ -450,8 +450,6 @@ s32 winItemMain(WindowWork* work) {
         } else {
             count = work->skipCount;
         }
-        // The remaining `((s32*)((u8*)work + 0x214))[sel]` sites index off a computed base
-        // (lwzx/stwx); `work->itemSel[sel]` doesn't reproduce them.
         sel = work->itemTab;
         rows = (count + 9) / 10;
 
@@ -461,12 +459,12 @@ s32 winItemMain(WindowWork* work) {
         }
         if (work->buttonTrg & 0x100) {
             if (work->itemTab == 0) {
-                item = pouchHaveItem(((s32*)((u8*)work + 0x214))[sel]);
+                item = pouchHaveItem(work->itemSel[sel]);
                 if (itemDataTable[item].usable_locations & 4) {
                     WinMgrEntry* entry;
 
                     work->useItemId = item;
-                    work->useItemSlot = ((s32*)((u8*)work + 0x214))[sel];
+                    work->useItemSlot = work->itemSel[sel];
                     work->itemState = 300;
                     work->useTargetSel = 0;
                     work->useTimer = 0;
@@ -524,7 +522,8 @@ s32 winItemMain(WindowWork* work) {
             psndSFXOn((const char*)0x20035);
         } else if (work->dirRep & 0xC000) {
             // A pointer to the element (rather than the array subscript repeated) is what makes
-            // MWCC colour the base r5 / value r4 as the original does.
+            // MWCC colour the base r5 / value r4 as the original does. It is built from the byte offset:
+            // `&work->itemSel[sel]` folds the 0x214 into an lwzx index instead of a load displacement.
             s32* e = &((s32*)((u8*)work + 0x214))[sel];
             idx = *e;
             if (idx % 2 != 0) {
@@ -540,26 +539,26 @@ s32 winItemMain(WindowWork* work) {
             }
             psndSFXOn((const char*)0x20035);
         } else if (work->dirRep & 0x1000) {
-            idx = ((s32*)((u8*)work + 0x214))[sel];
+            idx = work->itemSel[sel];
             {
                 s32 v = idx - 2;
                 if (v >= 0 && v < count) {
                     work->itemSel[sel] = idx - 2;
                 }
             }
-            work->itemScrollRow[sel] = ((s32*)((u8*)work + 0x214))[sel] / 10;
+            work->itemScrollRow[sel] = work->itemSel[sel] / 10;
             psndSFXOn((const char*)0x20035);
         } else if (work->dirRep & 0x2000) {
-            idx = ((s32*)((u8*)work + 0x214))[sel];
+            idx = work->itemSel[sel];
             {
                 s32 v = idx + 2;
                 if (v >= 0 && v < count) {
                     work->itemSel[sel] = idx + 2;
                 } else if (idx + (idx & 1) < count) {
-                    ((s32*)((u8*)work + 0x214))[sel] = count - 1;
+                    work->itemSel[sel] = count - 1;
                 }
             }
-            work->itemScrollRow[sel] = ((s32*)((u8*)work + 0x214))[sel] / 10;
+            work->itemScrollRow[sel] = work->itemSel[sel] / 10;
             psndSFXOn((const char*)0x20035);
         } else if (work->buttonTrg & 0x10) {
             winSortEntry(work, work->itemTab != 0, -310.f, 150.f);

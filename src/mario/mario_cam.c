@@ -89,13 +89,13 @@ void marioCamMain(void) {
     camera = camGetPtr(CAMERA_3D);
     mario2 = marioGetPtr();
     if (mario2->controlStickSensitivity) {
-        if (camera->cameraPos.x == *(f32*)mario2->unk160) {
+        if (camera->cameraPos.x == mario2->unk160) {
             mario2->dispFlags |= 0x20;
         } else {
             mario2->dispFlags &= ~0x20;
         }
     }
-    *(f32*)mario2->unk160 = camera->cameraPos.x;
+    mario2->unk160 = camera->cameraPos.x;
     mario->dispFlags &= ~0x40000;
 }
 void marioUpdateCamCollision(Vec collision) {
