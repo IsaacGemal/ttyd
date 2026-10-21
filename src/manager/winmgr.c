@@ -30,10 +30,12 @@
 #define WINMGR_F32(name) (name)
 #endif
 
-// The window font and icon functions take their Vecs and colour by value, which MWCC passes as a pointer to a caller
-// copy. Retail's select displays pass their own locals' addresses: by value, MWCC copies each argument into a fresh
-// temporary instead, which moves every stack slot.
+// The window font and icon functions and GXSetFog take their Vecs and colours by value, which MWCC passes as a pointer
+// to a caller copy. Retail's select displays pass their own locals' addresses (GXSetFog the fog colour's own slot):
+// by value, MWCC copies each argument into a fresh temporary instead, which moves every stack slot.
 #ifdef MUST_MATCH
+#define GXSetFog(type, startz, endz, nearz, farz, color) \
+    ((void (*)(s32, f32, f32, f32, f32, GXColor*))GXSetFog)(type, startz, endz, nearz, farz, &(color))
 #define winFontSet(pos, scale, color, msg) \
     ((void (*)(Vec*, Vec*, GXColor*, const char*, ...))winFontSet)(&(pos), &(scale), &(color), msg)
 #define winFontSetEdge(pos, scale, color, msg) \
@@ -470,15 +472,7 @@ void select_disp_luigi(WinMgrEntry* entry) {
     }
 
     fogColor = dat_80421a70;
-#ifdef MUST_MATCH
-    // The original stores the fog colour in fogColor's own slot (0x18) and passes a
-    // pointer to it; with the by-value GXSetFog prototype MWCC copies it to a call temp at 0xc and
-    // the loop/edge/title colour locals move to 0x18/0x14/0x10. The cast only changes the calling
-    // convention (GXSetFog reads the colour, never writes it) and reproduces the original slots.
-    ((void (*)(s32, f32, f32, f32, f32, GXColor*))GXSetFog)(GX_FOG_NONE, 0.0f, 0.0f, 0.0f, 0.0f, &fogColor);
-#else
     GXSetFog(GX_FOG_NONE, 0.0f, 0.0f, 0.0f, 0.0f, fogColor);
-#endif
     GXGetScissor(&scissorLeft, &scissorTop, &scissorWidth, &scissorHeight);
     GXSetScissor(entry->x + 0x130, 0x112 - entry->y, entry->width, entry->height - 0x32);
 
@@ -635,11 +629,7 @@ void select_disp_mario(WinMgrEntry* entry) {
     }
 
     fogColor = dat_80421a60;
-#ifdef MUST_MATCH
-    ((void (*)(s32, f32, f32, f32, f32, GXColor*))GXSetFog)(GX_FOG_NONE, 0.0f, 0.0f, 0.0f, 0.0f, &fogColor);
-#else
     GXSetFog(GX_FOG_NONE, 0.0f, 0.0f, 0.0f, 0.0f, fogColor);
-#endif
     GXGetScissor(&scissorLeft, &scissorTop, &scissorWidth, &scissorHeight);
     GXSetScissor(entry->x + 0x130, 0x112 - entry->y, entry->width, entry->height - 0x32);
 
@@ -861,13 +851,7 @@ void select_disp_party(WinMgrEntry* entry) {
     }
 
     fogColor = dat_80421a50;
-#ifdef MUST_MATCH
-    // The original stores the fog colour in fogColor's own slot and passes a pointer
-    // to it; with the by-value GXSetFog prototype MWCC copies it to a call temp. Same as select_disp.
-    ((void (*)(s32, f32, f32, f32, f32, GXColor*))GXSetFog)(GX_FOG_NONE, 0.0f, 0.0f, 0.0f, 0.0f, &fogColor);
-#else
     GXSetFog(GX_FOG_NONE, 0.0f, 0.0f, 0.0f, 0.0f, fogColor);
-#endif
     GXGetScissor(&scissorLeft, &scissorTop, &scissorWidth, &scissorHeight);
     GXSetScissor(entry->x + 0x130, 0x112 - entry->y, entry->width, entry->height - 0x32);
 
@@ -1185,13 +1169,7 @@ void select_disp(WinMgrEntry* entry) {
     }
 
     fogColor = dat_80421a34;
-#ifdef MUST_MATCH
-    // The original stores the fog colour in fogColor's own slot and passes a pointer
-    // to it; with the by-value GXSetFog prototype MWCC copies it to a call temp. Same as select_disp_luigi.
-    ((void (*)(s32, f32, f32, f32, f32, GXColor*))GXSetFog)(GX_FOG_NONE, 0.0f, 0.0f, 0.0f, 0.0f, &fogColor);
-#else
     GXSetFog(GX_FOG_NONE, 0.0f, 0.0f, 0.0f, 0.0f, fogColor);
-#endif
     GXGetScissor(&scissorLeft, &scissorTop, &scissorWidth, &scissorHeight);
     GXSetScissor(entry->x + 0x130, 0x112 - entry->y, entry->width, entry->height - 0x32);
 
