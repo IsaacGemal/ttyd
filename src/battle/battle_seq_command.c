@@ -1002,15 +1002,10 @@ s32 _btlcmd_SelectWeaponDecide(BattleWork* wp, s32 arg, s32 weaponIdx) {
 
 	work[0xAB7] = 0;
 	if (weapon->targetPropertyFlags & 0x30000000) {
-		s8 ownBelong;
+		int ownBelong;
 
 		selected = -1;
-#ifdef MUST_MATCH
-		// No-op cast: the value is already s8, but the cast changes the object.
-		ownBelong = (s8)BtlUnit_GetBelong(unit);
-#else
 		ownBelong = BtlUnit_GetBelong(unit);
-#endif
 		for (i = 0; i < *(s8*)&work[0xA6C]; i++) {
 			s32 offset = ((s8)work[0xA6D + i]) * 0x24 + 4;
 

@@ -846,23 +846,16 @@ USER_FUNC(btlevtcmd_SetAlpha) {
 
 //s32* battleId, s32* partId, u8* redIndex, u8* greenIndex, u8* blueIndex
 USER_FUNC(btlevtcmd_GetRGB) {
-#ifdef MUST_MATCH
-    // Reading args through a volatile pointer stops the scheduler from hoisting args[3]/args[4]
-    // above args[2] (it otherwise puts the caller-saved args[2] load last); the original loads
-    // them in order, so this reproduces the target's register allocation.
-    volatile s32* args = event->args;
-#else
     s32* args = event->args;
-#endif
     s32 btlId, partId, indexR, indexG, indexB;
     BattleUnitPart* part;
 
-    btlId = evtGetValue(event, args[0]);
-    partId = evtGetValue(event, args[1]);
+    btlId = evtGetValue(event, *args++);
+    partId = evtGetValue(event, *args++);
     part = BattleGetUnitPartsPtr(BattleTransID(event, btlId), partId);
-    indexR = args[2];
-    indexG = args[3];
-    indexB = args[4];
+    indexR = *args++;
+    indexG = *args++;
+    indexB = *args++;
     evtSetValue(event, indexR, part->color.r);
     evtSetValue(event, indexG, part->color.g);
     evtSetValue(event, indexB, part->color.b);
@@ -3929,22 +3922,15 @@ USER_FUNC(btlevtcmd_CheckDamage) {
     BattleWeapon* weapon;
     s32 btlId, targetId, partId, a, retIndex, result;
 
-    btlId = evtGetValue(event, args[0]);
+    btlId = evtGetValue(event, *args++);
     attacker = BattleGetUnitPtr(wp, BattleTransID(event, btlId));
-    targetId = evtGetValue(event, args[1]);
+    targetId = evtGetValue(event, *args++);
     target = BattleGetUnitPtr(wp, BattleTransID(event, targetId));
-    partId = evtGetValue(event, args[2]);
+    partId = evtGetValue(event, *args++);
     part = BtlUnit_GetPartsPtr(target, partId);
-    weapon = (BattleWeapon*)evtGetValue(event, args[3]);
-#ifdef MUST_MATCH
-    // The original materializes args[4] before args[5], so MWCC lets retIndex reuse the dying
-    // `args` register (r30); as a plain load the value is rematerialized at the call and retIndex
-    // is pushed to r26. The volatile read pins the load here without changing the instruction.
-    a = ((volatile s32*)args)[4];
-#else
-    a = args[4];
-#endif
-    retIndex = args[5];
+    weapon = (BattleWeapon*)evtGetValue(event, *args++);
+    a = *args++;
+    retIndex = *args++;
     result = BattleCheckDamage(attacker, target, part, weapon, a);
     if (result < 0) {
         return 0xFF;

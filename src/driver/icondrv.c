@@ -439,7 +439,7 @@ void iconDispGx2(Mtx mtx, s16 flags, u16 iconId) {
     IconEntry* entryp;
     Mtx view;
     IconBinary* bin;
-    u16 id;
+    s32 id;
 
     camera = camGetCurPtr();
     entryp = &entry;
@@ -448,12 +448,7 @@ void iconDispGx2(Mtx mtx, s16 flags, u16 iconId) {
     entryp->flags = flags;
     entryp->color = *(GXColor*)&dat_80419784;
     bin = icon_bin;
-#ifdef MUST_MATCH
-    // No-op cast: the value is already u16, but the cast changes the object.
-    id = (u16)iconId;
-#else
     id = iconId;
-#endif
     entryp->iconId = id;
     if (!icon_tpl_ok || !icon_bin_ok) {
         data = NULL;

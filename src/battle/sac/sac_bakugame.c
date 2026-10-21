@@ -320,11 +320,7 @@ s32 bakuGameMain(EventEntry* event, BOOL isFirstCall) {
     BattleWork* wp = _battleWorkPointer;
     BattleUnit* unit;
     BattleUnit* mario = BattleGetUnitPtr(wp, BattleTransID(event, -3));
-#ifdef MUST_MATCH
-    volatile s32* args;
-#else
     s32* args;
-#endif
     BattleUnit* party = BattleGetUnitPtr(wp, BattleTransID(event, -4));
     f32 px = 0.0f;
     f32 py = 0.0f;
@@ -478,8 +474,8 @@ s32 bakuGameMain(EventEntry* event, BOOL isFirstCall) {
         case 30:
             animPoseRelease(baku->animPose);
             baku->animPose = -1;
-            evtSetValue(event, args[0], baku->team);
-            evtSetFloat(event, args[1], baku->gauge);
+            evtSetValue(event, *args++, baku->team);
+            evtSetFloat(event, *args++, baku->gauge);
             {
                 s32 r = -1;
                 if (baku->gauge > 0.0f && baku->gauge < 33.0f) {
@@ -491,7 +487,7 @@ s32 bakuGameMain(EventEntry* event, BOOL isFirstCall) {
                 if (baku->gauge >= 66.0f) {
                     r = 4;
                 }
-                evtSetValue(event, args[2], (r < 4) ? r : 4);
+                evtSetValue(event, *args++, (r < 4) ? r : 4);
             }
             return 2;
         default:
