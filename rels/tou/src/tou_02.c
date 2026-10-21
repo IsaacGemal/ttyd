@@ -1850,13 +1850,9 @@ void ext_fan_main(void) {
                     f32 ang = angleABf(fp->position.x, fp->position.z, fp->target.x, fp->target.z);
 
                     fp->timer = (s16)(dxy / fp->field_0x3C);
-#ifdef MUST_MATCH
                     // /2.0f makes MWCC fold to the retail `* 0.5` fused-multiply-add colouring;
                     // the natural `* 0.5f` picks different FPRs.
                     fp->field_0x38 = fp->field_0x40 * (f32)fp->timer / 2.0f + dy / (f32)fp->timer;
-#else
-                    fp->field_0x38 = fp->field_0x40 * (f32)fp->timer * 0.5f + dy / (f32)fp->timer;
-#endif
                     (void)ang;
                 }
                 psndSFXOn_3D(FAN_SFX("SFX_STG3_AUDIENCE_FAN_FLY1"), &fp->position);
@@ -2111,13 +2107,8 @@ s32 check_hammer(FanPose* pose) {
         return 0;
     }
     if (mario->currMotionId == MARIO_MOTION_HAMMER && fan_wp->hammerFrames > 10) {
-#ifdef MUST_MATCH
         // one expression: the original pools TWO_PI before 90.0f
         rad = TWO_PI * reviseAngle(mario->unk1A8 - 90.0f + camGetPtr(4)->viewYaw) / 360.0f;
-#else
-        ang = reviseAngle(mario->unk1A8 - 90.0f + camGetPtr(4)->viewYaw);
-        rad = TWO_PI * ang / 360.0f;
-#endif
         s = fanSinf(rad);
         x = 35.0f * s + mario->position.x;
         c = fanCosf(rad);

@@ -2033,14 +2033,9 @@ static USER_FUNC(barriern_wawawa_set_target) {
         n = irand(count);
 
         evtSetValue(event, args[0], xs[n]);
-#ifdef MUST_MATCH
         // the original schedules the pointer bump before the second call and reads the old args[1] through it
         args += 2;
         evtSetValue(event, args[-1], ys[n]);
-#else
-        evtSetValue(event, args[1], ys[n]);
-        args += 2;
-#endif
     }
     return EVT_RETURN_DONE;
 }
