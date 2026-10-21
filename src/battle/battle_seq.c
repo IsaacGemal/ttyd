@@ -2797,6 +2797,7 @@ void _mapobj_data_touch_scale(s32 kind) { //1:1
 		}
 	}
 }
+#pragma dont_inline reset
 
 // EVT command (default_haikei_set_entry_event): 60-frame delay, then animates the A1/A2
 // background objects in over 15/20 frames. Returns 2 once both have finished (0 while animating).
@@ -2908,4 +2909,3 @@ s32 _set_haikei_entry_scale(EventEntry* event, BOOL isFirstCall) {
 	}
 	return ret ? 0 : 2;
 }
-#pragma dont_inline reset

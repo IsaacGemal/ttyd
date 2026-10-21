@@ -142,13 +142,12 @@ u32 BattlePadGetNow(void) {
 	return _battleWorkPointer->padWork[0].mButtonsHistory[0];
 }
 
-// dont_inline keeps the MultiCheck helpers real `bl`s from the Check wrappers, as in retail.
-#pragma dont_inline on
-
 s32 BattlePadCheckTrigger(s32 mask) {
 	return BattlePadMultiCheckTrigger(0, mask);
 }
 
+// dont_inline keeps the MultiCheck helpers real `bl`s from the Check wrappers, as in retail.
+#pragma dont_inline on
 s32 BattlePadMultiCheckTrigger(s32 chan, s32 mask) {
 	u32* history = _battleWorkPointer->padWork[chan].mButtonsPressedHistory;
 	return history[0] & mask;

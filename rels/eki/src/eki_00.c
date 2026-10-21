@@ -1689,13 +1689,6 @@ static inline void moaPlayHit(ExtPose* ep) {
     psndSFXOn_3D((const char*)0x6C3, &w);
 }
 
-#pragma inline_max_total_size(60000)
-// Keep the sin/cos coefficient loads hoisted instead of rematerialised per branch.
-#pragma opt_propagation off
-// Keeps the inlined sin/cos argument in a callee-saved FPR instead of rematerialising it per branch.
-#pragma opt_lifetimes off
-// Per-frame update of every moamoa: hit checks against Mario and his partner, the jump/scatter state machine
-// (MoamoaPose.state), clamping into the room, then the animation frame update and the rider-delta limit.
 static inline f32 ekiSinfM(f32 rad) {
     f32 sinv = 0.00761f;
     f32 c1 = 0.16605f, c2 = 1.0f;
@@ -1765,7 +1758,14 @@ static inline f32 ekiCosfM(f32 rad) {
 }
 
 #define MOA_TARGET(i) ((&wp->target0)[(i) % 3])
+// Per-frame update of every moamoa: hit checks against Mario and his partner, the jump/scatter state machine
+// (MoamoaPose.state), clamping into the room, then the animation frame update and the rider-delta limit.
 // voiceSfx is a union under MUST_MATCH so it is not copy-propagated (as yuu_01 fall_rtn): that puts it in r24 and `handled` in r25.
+#pragma inline_max_total_size(60000)
+// Keep the sin/cos coefficient loads hoisted instead of rematerialised per branch.
+#pragma opt_propagation off
+// Keeps the inlined sin/cos argument in a callee-saved FPR instead of rematerialising it per branch.
+#pragma opt_lifetimes off
 static void ext_moamoa_main(void) {
     MarioWork* mario;
     PartyEntry* party;

@@ -2854,6 +2854,7 @@ void _commandRestoreRec(void) {
 }
 
 
+#pragma dont_inline on // the original calls BattleCommandAttackAudienceCheck instead of inlining it into WeaponMultiItemCancelCheckMain
 BOOL BattleCommandAttackAudienceCheck(void) {
 	BattleWork* wp = _battleWorkPointer;
 	s32 pad = BattlePadCheckTrigger(0x400);
@@ -2928,7 +2929,6 @@ __declspec(section ".sdata") EVT_BEGIN(_btl_cmd_error_msg_event)
 	RETURN
 EVT_END()
 
-#pragma dont_inline on // the original calls _check_weapon_type_attack with `bl` (four sites) instead of inlining it
 s32 _check_weapon_type_attack(BattleWeapon* weapon) {
 	s8* p = (s8*)weapon;
 

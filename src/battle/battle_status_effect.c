@@ -483,6 +483,7 @@ BOOL BattleStatusChangeAnnouceMain(BattleWork* wp) {
 BOOL BattleStatusChangeAnnouceMain_Unit(BattleUnit* unit) {
 	return FALSE;
 }
+#pragma dont_inline reset
 
 void BattleStatusChangeMsgWorkInit(void) {
 	BattleStatusChangeMsgWork* work = &_battleWorkPointer->statusChangeMsg;
@@ -493,7 +494,6 @@ void BattleStatusChangeMsgWorkInit(void) {
 		work->entries[i].type = -1;
 	}
 }
-#pragma dont_inline reset
 
 // Keep BattleStatusChangeMsgSetAnnouce out of line: the original calls it rather than inlining.
 #pragma dont_inline on

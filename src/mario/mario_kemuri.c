@@ -15,6 +15,10 @@
 #include "eff/n64/eff_water_damage_n64.h"
 #include "eff/eff_ripple.h"
 
+// The original build did not inline the effects helpers into their callers
+// (kemuri_mugi/mario_kemuri_landon/kemuri are all large); force that here.
+#pragma dont_inline on
+
 // File-scope counters/state. Names are free: objdiff ignores local symbol names.
 static s32 ct481 = 8;      // .sdata
 static s32 cnt492 = 10;    // .sdata
@@ -98,9 +102,6 @@ void mario_simple_kemuri(void) {
     }
 }
 
-// The original build did not inline the effects helpers into their callers
-// (kemuri_mugi/mario_kemuri_landon/kemuri are all large); force that here.
-#pragma dont_inline on
 void unk_80130374(void) {
     MarioWork* mario = marioGetPtr();
     HitEntry* hit;
