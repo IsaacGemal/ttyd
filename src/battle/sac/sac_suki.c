@@ -624,8 +624,6 @@ static void disp_3D_alpha(CameraId camera, void* param) {
 }
 
 // .text:0x658 | 0x80249F78 | size: 0xC
-// Kept out of line: the original calls get_ptr rather than inlining it.
-#pragma dont_inline on
 static SukiWork* get_ptr(void) {
     return (SukiWork*)((u8*)_battleWorkPointer + 0x1F4C);
 }
@@ -726,7 +724,6 @@ static s32 set_weapon(EventEntry* event, BOOL isFirstCall) {
     evtSetValue(event, args[1], (s32)work->weapon);
     return EVT_RETURN_DONE;
 }
-#pragma dont_inline reset
 
 // .text:0x2F8 | 0x80249C18 | size: 0x68
 // The original loads event->args before the BattleAudienceBaseGetPtr call.

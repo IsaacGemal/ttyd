@@ -348,8 +348,6 @@ static void _ac_disp_init(BattleWork* work) {
 }
 #pragma dont_inline reset
 
-// dont_inline: the original keeps actionCommandDisp as its own local function.
-#pragma dont_inline on
 // opt_common_subs off: with it on, the last screen2 update's 4.0f lands in f2 (original uses f1).
 #pragma opt_common_subs off
 // The by-value temporaries copied into the btlDispTex4 argument slots are what the original does:
@@ -439,7 +437,6 @@ static void actionCommandDisp(f32 x, f32 y) {
     }
 }
 #pragma opt_common_subs reset
-#pragma dont_inline reset
 
 const u32 dat_804218f8 = 0xFFFFFFFF;
 const u32 dat_804218fc = 0xFFFFFFFF;

@@ -225,7 +225,6 @@ void GetRingOffset(f32* x, f32* y, f32 angle) {
 }
 #pragma dont_inline reset
 
-#pragma dont_inline on
 void DrawMainIcon(BattleMenuWork* window, void* table, Mtx* mtxA, Vec* vecB, f32* scales) {
     BattleWork* wp = _battleWorkPointer;
     BattleUnit* unit = BattleGetUnitPtr(wp, wp->activeUnitId);
@@ -270,7 +269,6 @@ void DrawMainIcon(BattleMenuWork* window, void* table, Mtx* mtxA, Vec* vecB, f32
         }
     }
 }
-#pragma dont_inline reset
 
 void DrawMainIconHukidasi(BattleMenuWork* window, void* entryPtr, Mtx* mtx, f32 scale) {
     BattleWork* wp = _battleWorkPointer;
@@ -477,7 +475,6 @@ static inline void SubIconDrawColor(GXColor c) {
     FontDrawColor(c);
 }
 
-#pragma dont_inline on
 void DrawSubIconSub(BattleMenuWork* window, s32 index, Mtx mtx, s32 a, u16 b, s32 c, s32 d, s32 e, void* table,
                     s32 flag) {
     BattleWork* wp = _battleWorkPointer;
@@ -799,7 +796,6 @@ void DrawSubIconSub(BattleMenuWork* window, s32 index, Mtx mtx, s32 a, u16 b, s3
         }
     }
 }
-#pragma dont_inline reset
 
 void DrawMenuPartyChangeButton(void) {
     BattleWork* wp = _battleWorkPointer;
@@ -1713,7 +1709,6 @@ void BattleMenuDisp_WeaponSelect_End(BattleWork* wp) {
     }
 }
 
-#pragma dont_inline on
 void DrawWeaponWin(void) {
     BattleWork* wp = _battleWorkPointer;
     BattleCommand* cmd = &wp->commandMenu;
@@ -1777,7 +1772,6 @@ void DrawWeaponWin(void) {
         DrawMenuHelpWin(msg, outX, outY);
     }
 }
-#pragma dont_inline reset
 
 void BattleMenuDisp_Operation_Init(BattleWork* wp, u32 flags) {
     BattleUnit* unit = BattleGetUnitPtr(wp, wp->activeUnitId);

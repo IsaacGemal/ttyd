@@ -142,8 +142,6 @@ const GXColor dat_804194a0 = {0xFF, 0xFF, 0xFF, 0xFF};
 const GXColor dat_804194a4 = {0x00, 0x00, 0x00, 0xFF};
 const GXColor dat_804194a8 = {0x00, 0x00, 0x00, 0xFF};
 
-// dont_inline keeps titleMain a real `bl` from seq_titleMain; retail does not inline it.
-#pragma dont_inline on
 void titleMain(SequenceWork* work) {
 // The eight animation-name strings are named objects at the base of the pool (str_demoTplPath through str_c_tyusan);
 // the three later ones are pooled literals from this function. Using the named objects here keeps
@@ -366,8 +364,6 @@ void titleMain(SequenceWork* work) {
 		}
 	}
 }
-
-#pragma dont_inline reset
 
 void disp1(CameraId cameraId, void* param) {
 	CameraEntry* camera = camGetPtr(CAMERA_2D);

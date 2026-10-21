@@ -693,8 +693,6 @@ void btlUnitPartsDisp(CameraId camId, void* param) {
 			f27 = 90.0f;
 		}
 		f29 = parts->mPosition.x;
-// dont_inline: retail keeps these real bls from btlUnitPartsDisp.
-#pragma dont_inline on
 		f30 = parts->mPosition.y + getGravityDispOffset((BattleUnit*)parts) + getFloatDispOffset((BattleUnit*)parts);
 		f28 = parts->mPosition.z;
 		cam = camGetCurPtr();
@@ -917,12 +915,8 @@ void btlUnitPartsDisp(CameraId camId, void* param) {
 	if (parts->dispCallback) {
 		parts->dispCallback(parts, 1);
 	}
-// dont_inline: retail keeps this a real bl from btlUnitPartsDisp.
-#pragma dont_inline on
 	btlUnitPartsBlurControl(parts, 0, m25, parts->evtColor, f30);
 }
-#pragma dont_inline reset
-#pragma dont_inline reset
 
 // The original's dead int->double conversion of BtlUnit_GetHeight survives as the two `stw`s of a
 // constant double pair (frame 0x30). A bare `(f32)`/`(f64)` statement is DCE'd away; `opt_dead_assignments
@@ -1227,7 +1221,6 @@ void _pose_one_pattern(BattleUnitPart* part) {
 // _pose_two_pattern matches 100% once the strings are referenced as literals (see
 // _pose_one_pattern). The three separate state-2 cases and the scoped `n` that fixes the
 // mullw operand order are also required.
-#pragma dont_inline on
 void _pose_two_pattern(BattleUnitPart* part) {
 	s32 t;
 
@@ -1310,7 +1303,6 @@ void _pose_two_pattern(BattleUnitPart* part) {
 		break;
 	}
 }
-#pragma dont_inline reset
 
 #pragma dont_inline on // the original keeps calls to this function out of line
 void btlDispAnimeSpeed(BattleUnit* unit, f32 speed) {

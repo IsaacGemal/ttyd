@@ -431,8 +431,6 @@ extern const char str_msg_menu_mario_name_0[];
 extern s32 marioAttackEvent_MajinaiExpUp[];
 extern BattleDispPose pose_table_nokotarou_stay[];
 
-#pragma dont_inline on
-
 // The retail rank lookup is called out of line.
 #pragma dont_inline on
 RankUpData* _get_rank_data(s32 level) {

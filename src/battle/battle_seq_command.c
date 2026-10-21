@@ -673,7 +673,6 @@ s32 _btlcmd_CheckWeaponTargetNum(BattleWork* wp, BattleUnit* unit, BattleWeapon*
 	return *(s8*)&work[0xa6c];
 }
 
-#pragma dont_inline on
 // Source position matters: emitted after _btlcmd_MakeMultiItemTable and before
 // _btlcmd_MakeActClassTable, so the "btl_cmd_op_*" strings pool between their blocks.
 void _btlcmd_MakeOperationTable(BattleWork* wp) {
@@ -881,7 +880,6 @@ void _btlcmd_MakeMultiItemTable(BattleWork* wp) {
 	}
 }
 
-#pragma dont_inline on // prevents _battleGetPartyIcon from being inlined into _btlcmd_MakePartyTable
 s32 _battleGetPartyIcon(s32 kind) {
 	CheckPartyTable* entry;
 	s32 i;
@@ -982,7 +980,6 @@ s32 _btlcmd_MakePartyTable(BattleWork* wp) {
 
 // Raw offsets into the enemy-sampling buffer `wp->sampling` (battle_detect owns the layout):
 // 0xA6C sample count, 0xA6D.. unit-index codes, entry size 0x24 with s16 unitId at +4, 0xAB7 result.
-#pragma dont_inline on // the original calls _btlcmd_SelectWeaponDecide out of line from BattleSetConfuseAct
 s32 _btlcmd_SelectWeaponDecide(BattleWork* wp, s32 arg, s32 weaponIdx) {
 	u8* work = (u8*)&wp->sampling;
 	BattleUnit* unit = BattleGetUnitPtr(wp, wp->activeUnitId);
@@ -1393,7 +1390,6 @@ void BattleCommandDisplay(BattleWork* wp) {
 	}
 }
 
-#pragma dont_inline on
 void _cursor_init(BattleCursor* cursor) {
 	cursor->field_0 = 0;
 	cursor->field_4 = 0;
@@ -1624,7 +1620,6 @@ void BattleCommandDisplay_ActMenuDisp(CameraId camId, void* param) {
 	BattleMenuDisp_ActSelect_Disp(wp);
 }
 
-#pragma dont_inline on // the original keeps these menu End calls out of line
 void BattleCommandDisplay_ActMenuEnd(BattleWork* wp) {
 	BattleMenuDisp_ActSelect_End(wp);
 	wp->commandMenu.menuFlags &= ~0x1;
@@ -1741,7 +1736,6 @@ void BattleCommandDisplay_WeaponSelectMenuDisp(CameraId camId, BattleWork* wp) {
 	BattleMenuDisp_WeaponSelect_Disp(wp);
 }
 
-#pragma dont_inline on // the original keeps these menu End calls out of line
 void BattleCommandDisplay_WeaponSelectMenuEnd(BattleWork* wp) {
 	BattleMenuDisp_WeaponSelect_End(wp);
 	wp->commandMenu.menuFlags &= ~0x10;
@@ -1946,7 +1940,6 @@ void BattleCommandDisplay_OperationMenuDisp(CameraId camId, BattleWork* wp) {
 	BattleMenuDisp_Operation_Disp(wp);
 }
 
-#pragma dont_inline on // the original keeps these menu End calls out of line
 void BattleCommandDisplay_OperationMenuEnd(BattleWork* wp) {
 	BattleMenuDisp_Operation_End(wp);
 	wp->commandMenu.menuFlags &= ~0x100;
@@ -2035,7 +2028,6 @@ void BattleCommandDisplay_MultiItemMenuDisp(CameraId camId, BattleWork* wp) {
 	BattleMenuDisp_MultiItem_Disp(wp);
 }
 
-#pragma dont_inline on // the original keeps these menu End calls out of line
 void BattleCommandDisplay_MultiItemMenuEnd(BattleWork* wp) {
 	BattleMenuDisp_MultiItem_End(wp);
 	wp->commandMenu.menuFlags &= ~0x20;
@@ -2115,7 +2107,6 @@ void BattleCommandDisplay_ChangePartySelectMenuDisp(CameraId camId, BattleWork* 
 	BattleMenuDisp_ChangePartySelect_Disp(wp);
 }
 
-#pragma dont_inline on // the original keeps these menu End calls out of line
 void BattleCommandDisplay_ChangePartySelectMenuEnd(BattleWork* wp) {
 	BattleMenuDisp_ChangePartySelect_End(wp);
 	wp->commandMenu.menuFlags &= ~0x1000;

@@ -1259,8 +1259,6 @@ void SoundDVDMain(void) {
     }
 }
 
-// Keep _ssDVDReadAsync_activeChk out of line: the original calls it rather than inlining.
-#pragma dont_inline on
 void _ssDVDReadAsync_activeChk(s32 result, DVDFileInfo* fileInfo) {
     SoundStream* stream;
     SoundStreamEntry* entry;
@@ -1363,7 +1361,6 @@ unlock:
         OSRestoreInterrupts(sound.interrupts);
     }
 }
-#pragma dont_inline reset
 
 void cache_flush(u32 pointerToARQRequest) {
     ARQRequest* request = (ARQRequest*)pointerToARQRequest;
@@ -2211,9 +2208,6 @@ static inline void _ssDVDReadAsync_cache_entry_ss(SoundStream* stream, SoundStre
     e->requestLength = len;
 }
 
-// dont_inline keeps SoundSSMainInt out of SoundMainInt (the original keeps a
-// stack frame and real call sequence).
-#pragma dont_inline on
 void SoundSSMainInt(void) {
     int i;
     SoundStream* stream;
@@ -2252,7 +2246,6 @@ void SoundSSMainInt(void) {
         }
     }
 }
-#pragma dont_inline reset
 
 // The two loops share `length` as their counter; the original keeps the first
 // loop's counter in r3 and reuses r6 for the second, and `src`/`dest` both start at &sound.unk33C.

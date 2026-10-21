@@ -2552,8 +2552,6 @@ void _npcGroupDead(NpcEntry* entry, u16 type) {
     _npcDead(entry, type);
 }
 
-// dont_inline keeps npcGroupDead out of line: the original bot callers emit a real `bl npcGroupDead`.
-#pragma dont_inline on
 void npcGroupDead(NpcEntry* entry, u16 type) {
     if (entry->master) {
         entry = entry->master;
@@ -2563,7 +2561,6 @@ void npcGroupDead(NpcEntry* entry, u16 type) {
     }
     _npcGroupDead(entry, type);
 }
-#pragma dont_inline reset
 
 NpcEntry* fbatNpcTalkCheck(void) {
     NpcWork* wp = gp->inBattle ? &work.battle : &work.field;
@@ -2626,14 +2623,11 @@ static inline BOOL fbatNpcEventDone(NpcEntry* npc) {
 // Finds the nearest field npc Mario's attacks hit, for each kind of attack `flags` enables in turn: jumps
 // (0x30), the hammer (0x40), the spin hammer (0x80), Koops' shell (0x100) and partner 3 (0x200). Flag 0x2000
 // only tests (no attack announce); 0x1000 looks at npcs with flag 8 instead of the others.
-// dont_inline: retail calls _npcHitCheckSphere (4 sites) and _npcHitCheckHammerAllMotion (2) from here instead
-// of inlining them; the static inline helpers are still inlined.
 // The attack flags (flag8/jump/stomp) and dryRun/mario are function-wide and declared first, one `flag8`
 // and one `npc` serve every attack kind, the hammer frame number goes straight into npcHammerPos, and both
 // hammer helpers return the head position through x/y/z pointers: together they give retail's callee-saved
 // GPR map. The hammer and spin blocks share one `angle`/`radius` pair between their two branches, and the
 // shell block declares x, y, z before radius: that gives the FPRs.
-#pragma dont_inline on
 void* fbatHitCheck(s32 flags, s32 out) {
     u32 flag8;
     u32 jump;
@@ -3123,8 +3117,6 @@ void* fbatHitCheck(s32 flags, s32 out) {
 
 #pragma force_active on
 #pragma force_active reset
-
-#pragma dont_inline reset
 
 // The spin hammer's head: `radius` out from Mario at `angle`, 15 units up.
 static void npcSpinHammerPos(f32* x, f32* y, f32* z, f32 angle, f32 radius) {

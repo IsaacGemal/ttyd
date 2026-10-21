@@ -3946,7 +3946,6 @@ void mapFlgOff(MapObject* obj, u32 flag, s32 a3) {
 	if (a3 && obj->next) mapFlgOff(obj->next, flag, 1);
 }
 
-#pragma dont_inline on
 void mapGrpFlagOn(const char* name, u32 flag) {
 	MapObject* obj = mapGetMapObjSub(name);
 
@@ -3957,10 +3956,7 @@ void mapGrpFlagOn(const char* name, u32 flag) {
 		mapFlgOn(obj, flag, 0);
 	}
 }
-#pragma dont_inline reset
 
-// Keep mapGrpFlagOff, mapGrpFlagOn out of line: the original calls them rather than inlining.
-#pragma dont_inline on
 void mapGrpFlagOff(const char* name, u32 flag) {
 	MapObject* obj = mapGetMapObjSub(name);
 
@@ -3971,7 +3967,6 @@ void mapGrpFlagOff(const char* name, u32 flag) {
 		mapFlgOff(obj, flag, 0);
 	}
 }
-#pragma dont_inline reset
 
 void _setOffScrnId(MapObject* obj, s32 id, s32 a3) {
 	obj->offScreenId = id;
@@ -4216,12 +4211,9 @@ static MapObject* mapGetMapObjSub(const char* name) {
 	return 0;
 }
 
-// Keep mapGrpSetColor out of line: the original calls it rather than inlining.
-#pragma dont_inline on
 void mapGrpSetColor(const char* name, GXColor color) {
 	setColor(mapGetMapObjSub(name), color, 0);
 }
-#pragma dont_inline reset
 
 void mapSetProjTexObj(GXTexObj* obj, void* imgRef) {
 	projTexObj = *obj;

@@ -518,8 +518,6 @@ void hitReCalcMatrix2(HitEntry* hit, Mtx mtx, BOOL recursion) {
     }
 }
 
-// dont_inline keeps hitCalcVtxPosition a real `bl` from _hitEnt/hitReCalcMatrix as in retail.
-#pragma dont_inline on
 
 #ifdef MUST_MATCH
 // Original hand-written GQR5 setup: before each packed vertex's psq_lx reads, retail loads the map file's
@@ -676,7 +674,6 @@ s32 hitCalcVtxPosition(HitEntry* hit) {
     }
     return numVectors;
 }
-#pragma dont_inline reset
 
 inline BOOL tempfunc(HitCheckQuery* query, HitVector* vector) {
     Vec sp80;

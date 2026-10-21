@@ -1732,7 +1732,6 @@ void winMgrHelpMain(WinMgrEntry* entry) {
     }
 }
 
-#pragma dont_inline on
 void winMgrHelpDraw(WinMgrEntry* entry) {
     Mtx mtx1;
     Mtx mtx2;
@@ -1795,7 +1794,6 @@ void winMgrHelpDraw(WinMgrEntry* entry) {
     }
 }
 
-#pragma dont_inline reset
 WinMgrSelect* winMgrSelectEntry(s32 kind, s32 firstItem, BOOL canCancel) {
     PouchData* pouch = pouchGetPtr();
     InformantWork* jdt = &_jdt;

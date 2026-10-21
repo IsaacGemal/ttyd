@@ -366,8 +366,6 @@ void iconDisp(CameraId camId, void* param) {
     iconGX(mtx, entry);
 }
 
-// dont_inline keeps iconDispGxAlpha out of iconDispGx (retail emits a real `bl`).
-#pragma dont_inline on
 // The zero-extended icon id and the icon_bin pointer are assigned before the entry's fields
 // (as in iconDispGxCol): that pins this block's register allocation (color r3, bin r4, id r5).
 void iconDispGxAlpha(Vec* position, s16 flags, s32 iconId, u8 alpha, f32 scale) {
@@ -429,8 +427,6 @@ void iconDispGxAlpha(Vec* position, s16 flags, s32 iconId, u8 alpha, f32 scale) 
     }
     iconGX(mtx, entryp);
 }
-
-#pragma dont_inline reset
 
 void iconDispGx(f32 scale, Vec* position, s16 flags, s32 iconId) {
     iconDispGxAlpha(position, flags, iconId, 0xFF, scale);
@@ -599,8 +595,6 @@ void iconGetWidthHight(u16* width, u16* height, u16 iconId) {
     }
 }
 
-// dont_inline keeps the iconGX call in iconDisp/iconDispGx2 (retail emits a real `bl`).
-#pragma dont_inline on
 // The zero dummy below is a function-local static the original keeps in .sdata (32-aligned), not .sbss.
 #pragma explicit_zero_data on
 void iconGX(Mtx mtx, IconEntry* entry) {
@@ -785,7 +779,6 @@ void iconGX(Mtx mtx, IconEntry* entry) {
     }
 }
 #pragma explicit_zero_data reset
-#pragma dont_inline reset
 
 // .sdata digit tables
 static u16 suuji[] = { 473, 475, 477, 479, 481, 483, 485, 487, 489, 491 };   // 0-9

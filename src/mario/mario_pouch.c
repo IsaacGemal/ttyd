@@ -318,8 +318,6 @@ BOOL pouchGetItem(ItemType type) {
 
 
 
-// keep pouchCheckItem out of line: its callers must emit `bl pouchCheckItem`, not an inlined loop
-#pragma dont_inline on
 u32 pouchCheckItem(u32 itemId) {
 	int i;
 	u32 itemCnt;
@@ -353,7 +351,6 @@ u32 pouchCheckItem(u32 itemId) {
 		return 0;
 	}
 }
-#pragma dont_inline reset
 
 
 static inline void pouchShiftItems(s16* table1, s16* table2, s32 index, s32 maximum) {

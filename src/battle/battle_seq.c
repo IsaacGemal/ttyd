@@ -2786,9 +2786,6 @@ BOOL BattleCheckConcluded(BattleWork* wp) { //1:1
 
 //local prototypes
 
-// Needed: without dont_inline the compiler inlines this loop into its caller
-// _set_haikei_entry_scale, which the original calls.
-#pragma dont_inline on
 void _mapobj_data_touch_scale(s32 kind) { //1:1
 	BattleWork* wp = _battleWorkPointer;
 	s32 i;
@@ -2800,7 +2797,6 @@ void _mapobj_data_touch_scale(s32 kind) { //1:1
 		}
 	}
 }
-#pragma dont_inline reset
 
 // EVT command (default_haikei_set_entry_event): 60-frame delay, then animates the A1/A2
 // background objects in over 15/20 frames. Returns 2 once both have finished (0 while animating).

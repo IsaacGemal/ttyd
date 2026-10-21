@@ -73,8 +73,6 @@ BOOL BtlUnit_Init(void) {
     return TRUE;
 }
 
-// Keep BtlUnit_Entry out of line: retail calls it from BtlUnit_Spawn.
-#pragma dont_inline on
 BattleUnit* BtlUnit_Entry(BattleUnitSetup* setup) {
     BattleWork* wp = _battleWorkPointer;
     BattleUnit* unit;
@@ -269,7 +267,6 @@ BattleUnit* BtlUnit_Entry(BattleUnitSetup* setup) {
 
     return unit;
 }
-#pragma dont_inline reset
 
 
 BOOL BtlUnit_Delete(BattleUnit* unit) {

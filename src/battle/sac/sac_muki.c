@@ -197,7 +197,6 @@ static void main_star(void);
 static void main_base(void);
 
 // .text:0x908 | 0x8024905C | size: 0x134
-#pragma dont_inline on
 // Prototypes for the forward references the original function order needs.
 static void main_base(void);
 static void main_star(void);
@@ -238,10 +237,8 @@ s32 main_muki(EventEntry* event, BOOL isFirstCall) {
     dispEntry(CAMERA_3D, 0.0f, 2, disp_3D_alpha, NULL);
     return 0;
 }
-#pragma dont_inline reset
 
 // .text:0x1D0C | 0x80248BD8 | size: 0x484
-#pragma dont_inline on
 static void main_base(void) {
     MukiWork* work = get_ptr();
     BattleUnit* mario = BattleGetMarioPtr(_battleWorkPointer);
@@ -411,9 +408,7 @@ static void main_base(void) {
         }
     }
 }
-#pragma dont_inline reset
 
-#pragma dont_inline on
 void main_cursor(void) {
     MukiWork* work = get_ptr();
     BattleUnit* mario = BattleGetMarioPtr(_battleWorkPointer);
@@ -604,10 +599,8 @@ void main_cursor(void) {
         break;
     }
 }
-#pragma dont_inline reset
 
 // .text:0x1528 | 0x802482F4 | size: 0x2AC
-#pragma dont_inline on
 void main_point(s32 index) {
     MukiWork* work = get_ptr();
     MukiPoint* point = &work->points[index];
@@ -690,10 +683,8 @@ void main_point(s32 index) {
         break;
     }
 }
-#pragma dont_inline reset
 
 // .text:0x12A0 | 0x8024806C | size: 0x288
-#pragma dont_inline on
 void main_icon(s32 index) {
     MukiWork* work = get_ptr();
     MukiEntry* entry = &work->entries[index];
@@ -772,9 +763,7 @@ void main_icon(s32 index) {
         data->tevReg0A = entry->alpha;
     }
 }
-#pragma dont_inline reset
 
-#pragma dont_inline on
 static void main_star(void) {
     MukiWork* work = get_ptr();
     BattleUnit* mario = BattleGetMarioPtr(_battleWorkPointer);
@@ -860,10 +849,8 @@ static void main_star(void) {
         data->scale = s * work->scale.x;
     }
 }
-#pragma dont_inline reset
 
 // .text:0xF80 | 0x80247CE0 | size: 0x6C
-#pragma dont_inline on
 s32 end_muki(EventEntry* event, BOOL isFirstCall) {
     MukiWork* work = get_ptr();
     s32 i;
@@ -875,7 +862,6 @@ s32 end_muki(EventEntry* event, BOOL isFirstCall) {
     }
     return 2;
 }
-#pragma dont_inline reset
 
 // Each gauge's screen point is built through an aggregate return, so the template copy lands in a
 // stack temp and is then copied to the caller's Vec, as the original schedules it. `y` is the
@@ -908,7 +894,6 @@ static inline Vec mukiScreenVec1(MukiWork* work) {
 // in `sx + 32` and `frac * 80` and folds `sx - 32 - 8` across the calls; the locals keep the
 // original's operand order. Block 1 reads the screen point in the first call's arguments, so `sx`
 // is loaded straight into its callee-saved register.
-#pragma dont_inline on
 static void disp_2D(CameraId cameraId, void* param) {
     MukiWork* work = get_ptr();
     f32 w = 32.0f;
@@ -1032,10 +1017,8 @@ static void disp_2D(CameraId cameraId, void* param) {
         }
     }
 }
-#pragma dont_inline reset
 
 // .text:0x530 | 0x802472FC | size: 0x2F8
-#pragma dont_inline on
 static void disp_3D(CameraId cameraId, void* param) {
     MukiWork* work = get_ptr();
     MukiPoint* point;
@@ -1075,7 +1058,6 @@ static void disp_3D(CameraId cameraId, void* param) {
         }
     }
 }
-#pragma dont_inline reset
 
 #ifdef MUST_MATCH
 // MUST_MATCH: building each colour through an inline that returns it makes MWCC keep the source
@@ -1084,8 +1066,6 @@ static void disp_3D(CameraId cameraId, void* param) {
 // `(u8 a, GXColor c)` they land in the original's r4/r0. The inline folds away.
 static inline GXColor mukiAlphaColor(u8 a, GXColor c) { c.a = a; return c; }
 #endif
-// dont_inline so the original's own helpers stay real calls and its argument copies survive
-#pragma dont_inline on
 // case 0 keeps its own rotation angle so its f30/f31 webs are not merged with cases 1 and 2
 // .text:0x1A4 | 0x80246F70 | size: 0x38C
 static void disp_3D_alpha(CameraId cameraId, void* param) {
@@ -1168,7 +1148,6 @@ static void disp_3D_alpha(CameraId cameraId, void* param) {
         }
     }
 }
-#pragma dont_inline reset
 
 // .text:0x198 | 0x80246F64 | size: 0xC
 #pragma dont_inline on
@@ -1178,7 +1157,6 @@ static MukiWork* get_ptr(void) {
 #pragma dont_inline reset
 
 // .text:0xDC | 0x80246EA8 | size: 0xBC
-#pragma dont_inline on
 static s32 set_weapon(EventEntry* event, BOOL isFirstCall) {
     MukiWork* work;
     s32* args = event->args;
@@ -1202,19 +1180,15 @@ static s32 set_weapon(EventEntry* event, BOOL isFirstCall) {
     evtSetValue(event, args[2], (s32)work->weapon);
     return 2;
 }
-#pragma dont_inline reset
 
 // .text:0xB0 | 0x80246E7C | size: 0x2C
-#pragma dont_inline on
 static s32 start_game(EventEntry* event, BOOL isFirstCall) {
     MukiWork* work = get_ptr();
     work->state = 1;
     return 2;
 }
-#pragma dont_inline reset
 
 // .text:0x2C | 0x80246DF8 | size: 0x84
-#pragma dont_inline on
 static s32 wait_game_end(EventEntry* event, BOOL isFirstCall) {
     MukiWork* work = get_ptr();
     s32* args = event->args;
@@ -1226,10 +1200,7 @@ static s32 wait_game_end(EventEntry* event, BOOL isFirstCall) {
     }
     return 0;
 }
-#pragma dont_inline reset
 
-// The original never inlines its own helpers: every call to one is a real `bl`.
-#pragma dont_inline on
 
 // .text:0x0 | 0x80246DCC | size: 0x2C
 static s32 star_stone_appear(EventEntry* event, BOOL isFirstCall) {
@@ -1237,7 +1208,6 @@ static s32 star_stone_appear(EventEntry* event, BOOL isFirstCall) {
     work->field_3B4 = 1;
     return 2;
 }
-#pragma dont_inline reset
 
 EVT_BEGIN(marioAttackEvent_Muki)
     CALL(btlevtcmd_GetUnitId, -4, LW(14))
