@@ -66,10 +66,17 @@ static inline int tik_fpclassifyf(float value) {
 static inline f32 sqrtf(f32 x) {
     if (x > 0.0f) {
         f64 guess = __frsqrte(x);
+#ifdef MUST_MATCH
         guess = 0.5 * guess * (3.0 - guess * guess * x);
         guess = 0.5 * guess * (3.0 - guess * guess * x);
         x = x * (0.5 * guess * (3.0 - guess * guess * x));
         return x;
+#else
+        guess = 0.5 * guess * (3.0 - guess * guess * x);
+        guess = 0.5 * guess * (3.0 - guess * guess * x);
+        guess = 0.5 * guess * (3.0 - guess * guess * x);
+        return x * guess;
+#endif
     } else if (x < 0.0) {
         return NAN;
     } else if (tik_fpclassifyf(x) == FP_NAN) {

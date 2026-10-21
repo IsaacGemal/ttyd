@@ -11958,9 +11958,9 @@ The battle pass's MUST_MATCH work, over the chapter and map RELs. Build byte-ide
 link fails as usual); `tools/fncast_lint.py` and `tools/local_prototypes.py` pass; `tools/ci.py` passed before each
 commit with its `tools/tests` step stubbed (the same 9 environment failures as the chapters above). No names added.
 
-- Counts (`tools/cleanup_index.py`, e2103891 -> this branch): index 16.392 -> 16.290 per kLOC (11570 -> 11492
-  weighted); must_match 1300 -> 1224, all of it in rels/ (rels/ 232 -> 156 sites, 78 -> 60 files); raw_offset 500
-  -> 499; everything else unchanged. `grep -c MUST_MATCH` over rels/ 276 -> 188 lines.
+- Counts (`tools/cleanup_index.py`, e2103891 -> this branch): index 16.392 -> 16.291 per kLOC (11570 -> 11493
+  weighted); must_match 1300 -> 1225, all of it in rels/ (rels/ 232 -> 157 sites, 78 -> 61 files); raw_offset 500
+  -> 499; everything else unchanged. `grep -c MUST_MATCH` over rels/ 276 -> 189 lines.
 - Method: every block's non-MUST_MATCH arm was compiled alone, and all of a file's at once, against the baseline
   object (`tools/obj_equiv.py`); then each remaining block was read and either its MUST_MATCH arm kept as the only
   version (when it is ordinary C) or a new natural form tried.
@@ -11980,7 +11980,7 @@ commit with its `tools/tests` step stubbed (the same 9 environment failures as t
   the `#undef sfxLanding` is unconditional now), gor_00/muj_00 `alphaColor`, gor_01, gor_10 (four), gra_00,
   unit_lecture_frankli_sac `spot_square_color`, hei_00 (two), hom_00 (`* 60 * 60`), jon (the GX quad sizes), las
   `mobjColor`, las_29, evt_shuryolight (three), unit_boss_koopa (`/ 2.0f`), punidrv (five: `k`, the while loop, `p`),
-  tik_00, tik_05 (sqrtf tail and two colour inlines), tou `monitorColor`, evt_lect_usu, usu_00 (three), yuu_00's
+  tik_00, tik_05 (two colour inlines; its sqrtf tail stays guarded, as the `#else` is MSL's sqrtf), tou `monitorColor`, evt_lect_usu, usu_00 (three), yuu_00's
   hand-expanded y-range `monte_rand`, evt_yuucounter, evt_yuutitle, and the `WAKU_BOTTOM` operand order in both
   evt_yuuranking copies (split out of the guarded fn-cast macros). las_05's `(s8)(1 - footstepToggle)` store is
   unguarded too: the dol's evt_npc.c, which the REL copies, writes it unguarded twice.
