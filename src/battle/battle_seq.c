@@ -1,6 +1,3 @@
-// dont_inline: retail calls the file's small helpers (BattleWaitAllActiveEvtEnd and others) with `bl` from
-// btlseqMove/BattleSequenceManager; without it MWCC inlines them.
-#pragma dont_inline on
 #pragma pool_data on // the original addresses its .rodata and .data through one base register
 #include "battle/battle_seq.h"
 #include "battle/battle.h"
@@ -266,6 +263,9 @@ void BattleCheckAllPinchStatus(BattleWork* wp, BOOL a2) {
 	}
 }
 
+// dont_inline: retail calls the file's small helpers (BattleWaitAllActiveEvtEnd and others) with `bl` from
+// btlseqMove/BattleSequenceManager; without it MWCC inlines them.
+#pragma dont_inline on
 void btlseqInit(BattleWork* wp) {
 	MarioWork* mario;
 	PartyEntry* party;

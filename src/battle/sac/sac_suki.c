@@ -627,6 +627,7 @@ static void disp_3D_alpha(CameraId camera, void* param) {
 static SukiWork* get_ptr(void) {
     return (SukiWork*)((u8*)_battleWorkPointer + 0x1F4C);
 }
+#pragma dont_inline reset
 
 // .text:0x62C | 0x80249F4C | size: 0x2C
 static s32 start_game(EventEntry* event, BOOL isFirstCall) {
@@ -790,7 +791,6 @@ s32 eff_crystal(EventEntry* event) {
     ((EffCrystalData*)effect->userdata)->camId = 7;
     return EVT_RETURN_DONE;
 }
-#pragma dont_inline reset
 
 // .text:0xE8 | 0x80249A08 | size: 0x5C
 s32 get_img_name(EventEntry* event) {

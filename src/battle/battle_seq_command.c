@@ -2854,7 +2854,6 @@ void _commandRestoreRec(void) {
 }
 
 
-#pragma dont_inline on // the original calls BattleCommandAttackAudienceCheck instead of inlining it into WeaponMultiItemCancelCheckMain
 BOOL BattleCommandAttackAudienceCheck(void) {
 	BattleWork* wp = _battleWorkPointer;
 	s32 pad = BattlePadCheckTrigger(0x400);
@@ -2921,6 +2920,7 @@ s32 _get_msg(EventEntry* event) {
 	evtSetValue(event, index, (s32)msg);
 	return 2;
 }
+#pragma opt_dead_assignments reset
 
 __declspec(section ".sdata") EVT_BEGIN(_btl_cmd_error_msg_event)
 	CALL(_get_msg, LW(0))
@@ -2928,6 +2928,7 @@ __declspec(section ".sdata") EVT_BEGIN(_btl_cmd_error_msg_event)
 	RETURN
 EVT_END()
 
+#pragma dont_inline on // the original calls _check_weapon_type_attack with `bl` (four sites) instead of inlining it
 s32 _check_weapon_type_attack(BattleWeapon* weapon) {
 	s8* p = (s8*)weapon;
 
@@ -2981,4 +2982,3 @@ s32 _check_weapon_type_attack(BattleWeapon* weapon) {
 	}
 	return 0;
 }
-#pragma opt_dead_assignments reset

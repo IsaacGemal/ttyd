@@ -267,8 +267,6 @@ void _unresolved(void) {
     (void)0; // bare blr; the null statement keeps lint_patch from flagging an empty stub
 }
 
-// dont_inline: rankingInit is called from _prolog and must stay a real call
-#pragma dont_inline on
 static void rankingInit(void) {
     s32 progress;
     s32 count;
@@ -341,6 +339,7 @@ static void rankingInit(void) {
     rankingControll();
 }
 
+#pragma dont_inline on
 static void rankingExit(void) {
     s32 i;
     s32 j;

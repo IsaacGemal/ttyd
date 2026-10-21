@@ -132,7 +132,6 @@ const GuardFrames N_normal_guard_frames[1] = { { 0x0A, 0x09, 0x08, 0x08, 0x07, 0
 const GuardFrames N_superguard_frames[1] = { { 0x05, 0x04, 0x03, 0x03, 0x02, 0x01, 0x01 } };
 #endif
 
-#pragma dont_inline on // retail keeps the BattleACPadCheckRecordTrigger call instead of inlining it
 // Every instruction matches. The two guard-frame tables are independent global copies, so the
 // scheduler is free to emit them in either order; the redundant pointer cast below pins the normal
 // table's `lwzu` ahead of the super table's, matching retail. It changes load order only, so it is
@@ -254,6 +253,7 @@ s32 BattleActionCommandCheckDefence(BattleUnit* unit, BattleWeapon* weapon) {
 	return work->actionCommands.mDefenseResult;
 }
 
+#pragma dont_inline on // retail keeps the BattleACPadCheckRecordTrigger call instead of inlining it
 u32 BattleACPadCheckRecordTrigger(s32 chan, s32 mask) {
 	return _battleWorkPointer->actionCommands.pad.mButtonsPressedHistory[chan] & mask;
 }

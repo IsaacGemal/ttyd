@@ -160,7 +160,6 @@ __declspec(section ".rodata") const u32 gap_04_802F8E04_rodata = 0;
 // these should move to a header).
 
 
-#pragma dont_inline on // dispatcher must emit real `bl`s, not inline the state machines
 void BattleAudienceCtrlProcessKinopio(s32 index) {
 	BattleAudienceMember* member;
 	BOOL front;
@@ -1060,6 +1059,7 @@ void BattleAudienceCtrlProcessKinopioSleep(s32 index, s32 kind) {
 	}
 }
 
+#pragma dont_inline on // dispatcher must emit real `bl`s, not inline the state machines
 void BattleAudienceCtrlProcessKinopioTransEvt(s32 index) {
 	BattleWork* work;
 	BattleAudienceMember* member;

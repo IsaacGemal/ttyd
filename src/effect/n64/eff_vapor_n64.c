@@ -49,10 +49,6 @@ EffectEntry* effVaporN64Entry(s32 type, s32 lifetime, f32 x, f32 y, f32 z, f32 s
 	return effect;
 }
 
-// opt_common_subs off required: with CSE on MWCC reuses the 0.02f result register for
-// data->velY in the y integration below (f0/f1 swapped vs the target's f2/f1).
-#pragma opt_common_subs off
-
 inline Vec makeVec(f32 x, f32 y, f32 z) {
 	Vec temp = (Vec){ 0.0f, 0.0f, 0.0f };
 	temp.x = x;
@@ -61,6 +57,9 @@ inline Vec makeVec(f32 x, f32 y, f32 z) {
 	return temp;
 }
 
+// opt_common_subs off required: with CSE on MWCC reuses the 0.02f result register for
+// data->velY in the y integration below (f0/f1 swapped vs the target's f2/f1).
+#pragma opt_common_subs off
 void effVaporMain(EffectEntry* effect) {
 	effVaporN64Data* data;
 	Vec position2;

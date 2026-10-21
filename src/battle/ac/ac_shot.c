@@ -436,9 +436,6 @@ static void actionCommandDisp(f32 x, f32 y) {
 }
 #pragma optimize_for_size reset
 
-// dont_inline: the original keeps _draw_target_mark as its own function and calls it with `bl` from
-// _disp_target_mark and _disp_target_mark_afterimage.
-#pragma dont_inline on
 // The original passes the vectors and colour by value to an inlined wrapper, which copies them
 // into the btlDispTex4 argument slots.
 static inline void _drawTargetMarkQuad(s32 id, Vec trans, Vec scale, Vec rot, GXColor color) {
@@ -467,6 +464,9 @@ static inline Vec _drawTargetMarkRot(Vec v, f32 angle) {
 #else
 #define MARK_COLOR_RESTRICT
 #endif
+// dont_inline: the original keeps _draw_target_mark as its own function and calls it with `bl` from
+// _disp_target_mark and _disp_target_mark_afterimage.
+#pragma dont_inline on
 void _draw_target_mark(GXColor* MARK_COLOR_RESTRICT color, f32 x, f32 y, f32 z, f32 angle) {
 #ifdef MUST_MATCH
     Vec* vecs = (Vec*)vec3_802f92b8;

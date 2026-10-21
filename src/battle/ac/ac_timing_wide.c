@@ -26,7 +26,7 @@ extern const Vec vec3_802fd630[12];
 
 static void actionCommandDisp(f32 x, f32 y);
 
-// optimize_for_size: the original actionCommandDisp prologue uses stmw/lmw.
+// optimize_for_size: battleAcMain_TimingWide's prologue uses stmw/lmw.
 #pragma optimize_for_size on
 static void actionCommandDisp(f32 x, f32 y);
 
@@ -236,10 +236,6 @@ s32 battleAcResult_TimingWide(BattleWork* work) {
 	return work->actionCommands.result;
 }
 
-
-// optimize_for_size: battleAcMain's prologue uses stmw/lmw.
-#pragma optimize_for_size on
-
 void battleAcDisp_TimingWide(CameraId camId, void* param) {
 	BattleActions* ac = &((BattleWork*)param)->actionCommands;
 	BattleACDispParams* disp = &ac->dispParams;
@@ -301,6 +297,8 @@ void battleAcDelete_TimingWide(BattleWork* work) {
 	work->actionCommands.mAcState = 0x3EC;
 }
 
+// optimize_for_size: actionCommandDisp's prologue uses stmw/lmw.
+#pragma optimize_for_size on
 static void actionCommandDisp(f32 x, f32 y) {
 	Vec* vecs = (Vec*)vec3_802fd630;
 	BattleWork* work = _battleWorkPointer;

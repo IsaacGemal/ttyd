@@ -284,12 +284,6 @@ static inline void envDofBlendStageReg(s32 tevStage, s32 texCoord) {
     envDofBlendStage(tevStage, texCoord, 0xC, 2);
 }
 
-// `opt_propagation off` keeps the polynomial coefficients in variables that MWCC hoists out of the
-// loop (as in envDisp_FF; with propagation on they are folded into every branch), and
-// `opt_lifetimes off` keeps the 0.00761/0.03705 seed loads inside the loop.
-#pragma opt_propagation off
-#pragma opt_lifetimes off
-#pragma inline_max_size(2000)
 static inline void envDofSinCos(f32 angle, f32* s, f32* c) {
     f32 cb;
     f32 cv;
@@ -494,6 +488,12 @@ static inline void envDofFar(EnvironmentUnk88* u, GXColor* color) {
 // neighbours are named locals declared after them: with lower vregs those leave the allocation
 // graph first, which keeps the two counters out of the late priority level that the loop's own
 // counters fall into.
+// `opt_propagation off` keeps the polynomial coefficients in variables that MWCC hoists out of the
+// loop (as in envDisp_FF; with propagation on they are folded into every branch), and
+// `opt_lifetimes off` keeps the 0.00761/0.03705 seed loads inside the loop.
+#pragma opt_propagation off
+#pragma opt_lifetimes off
+#pragma inline_max_size(2000)
 void envDisp_DepthOfField(void) {
     EnvironmentWork* wp = envGetWork();
     EnvironmentUnk88* u = &wp->unk88;
