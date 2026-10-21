@@ -197,12 +197,6 @@ typedef struct GenkiWork {
     GenkiStar stars[7];         // 0x510
 } GenkiWork;
 
-// `auto_inline off` (not `dont_inline`) is what the original needs: MWCC must not auto-inline
-// plain helpers such as get_ptr (every call is a real `bl`, and inlining get_ptr wrecks the
-// callers), but `_drawGenkiTex`/`_drawGenkiTex2` are declared `inline` and DO inline at their
-// two call sites in disp_3D, exactly as the original does.
-#pragma auto_inline off
-
 static GenkiWork* get_ptr(void);
 
 s32 main_genki(EventEntry* event, BOOL isFirstCall) {
@@ -480,6 +474,11 @@ void main_mario(void) {
     }
 }
 
+// `auto_inline off` (not `dont_inline`) is what the original needs: MWCC must not auto-inline
+// plain helpers such as get_ptr (every call is a real `bl`, and inlining get_ptr wrecks the
+// callers), but `_drawGenkiTex`/`_drawGenkiTex2` are declared `inline` and DO inline at their
+// two call sites in disp_3D, exactly as the original does.
+#pragma auto_inline off
 void main_target(void) {
     GenkiWork* genki = get_ptr();
 
@@ -1594,6 +1593,7 @@ s32 object_get_num(void) {
     }
     return count;
 }
+#pragma auto_inline reset
 
 USER_FUNC(start_game) {
     GenkiWork* genki = get_ptr();

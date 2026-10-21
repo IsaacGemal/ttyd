@@ -430,6 +430,8 @@ void effSnowDustMain(EffectEntry* effect) {
 	}
 	dispEntry(camera, dispCalcZ(&position2), 2, effSnowDustDisp, effect);
 }
+#pragma opt_lifetimes reset
+#pragma opt_common_subs reset
 
 #endif
 

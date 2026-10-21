@@ -300,6 +300,7 @@ s32 _mario_super_emblem_anim_set(EventEntry* event, s32 mode) {
 
     return 0;
 }
+#pragma opt_propagation reset
 
 USER_FUNC(_get_mario_hammer_lv) {
     s32 arg = event->args[0];

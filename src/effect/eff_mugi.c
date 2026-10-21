@@ -129,10 +129,7 @@ EffectEntry* effMugiKemuri2Entry(s32 type, f32 x, f32 y, f32 z, f32 baseAngle, f
 	return entry;
 }
 
-// opt_common_subs off, for the rest of the file (the functions after this one need it too): with it on,
-// MWCC colours the rotX update block's FPRs f1/f0/f2 instead of the original's f2/f1/f0. The volatile reads in the
-// MUST_MATCH volatile reads below pin the prologue's load order.
-#pragma opt_common_subs off
+// The MUST_MATCH volatile reads below pin the prologue's load order.
 void effMugiKemuriMain(EffectEntry* effect) {
 	MugiKemuriWork* work;
 	MugiKemuriWork* w;
@@ -225,8 +222,9 @@ void effMugiKemuriMain(EffectEntry* effect) {
 	dispEntry(CAMERA_3D, dispCalcZ(&disp), 2, effMugiKemuriDisp, effect);
 }
 
-// Same reasons as effMugiKemuriMain: opt_common_subs off for the float loop's FPR
-// colouring, and the MUST_MATCH volatile reads for the prologue order.
+// opt_common_subs off gives the float loop's FPR colouring; as in effMugiKemuriMain, the MUST_MATCH
+// volatile reads pin the prologue order.
+#pragma opt_common_subs off
 void effMugiKemuri2Main(EffectEntry* effect) {
 	MugiKemuriWork* work;
 	MugiKemuriWork* w;
@@ -331,6 +329,7 @@ void effMugiKemuri2Main(EffectEntry* effect) {
 
 	dispEntry(CAMERA_3D, dispCalcZ(&disp), 2, effMugiKemuri2Disp, effect);
 }
+#pragma opt_common_subs reset
 
 // Returning the colour from an inline makes mwcc put the local GXColor at r1+0x8 and the
 // outgoing-argument copy at r1+0xc, the way the original does; building it inline in the caller
