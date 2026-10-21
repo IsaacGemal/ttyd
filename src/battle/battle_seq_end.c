@@ -1445,17 +1445,14 @@ s32 _disable_enemy_unit_disp(EventEntry* event, BOOL isFirstCall) {
     return 2;
 }
 
-// opt_propagation off: without it MWCC hoists the _battleWorkPointer sda21 load above the event->args load.
-#pragma opt_propagation off
 s32 _set_confetti_control_evtid(EventEntry* event, BOOL isFirstCall) {
     s32* args = event->args;
     BattleSeqEndWork* work = _battleWorkPointer->seqEndWork;
-    s32 val = args[0];
+    s32 val = *args++;
 
     work->confettiEvtId = evtGetValue(event, val);
     return 2;
 }
-#pragma opt_propagation reset
 
 s32 _lvup_select_obj_disp_on(EventEntry* event, BOOL isFirstCall) {
     BattleSeqEndWork* work = _battleWorkPointer->seqEndWork;

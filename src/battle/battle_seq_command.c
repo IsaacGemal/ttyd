@@ -2898,14 +2898,11 @@ BOOL BattleCommandAttackAudienceCheck(void) {
 
 
 
-
-#pragma opt_dead_assignments off // needed: without it _get_msg 98.59%
-// `opt_dead_assignments off` keeps the overwritten first `msg` assignment so the pooled string
-// base stays in r5. The `args` local (instead of a `wp` local) is what colours wp r4 / args r6.
+// The `args` local (instead of a `wp` local) is what colours wp r4 / args r6.
 s32 _get_msg(EventEntry* event) {
 	char* msg = "btl_wn_dummy_noitem";
 	s32* args = event->args;
-	s32 index = args[0];
+	s32 index = *args++;
 
 	switch (_battleWorkPointer->commandMenu.disableReason) {
 	case 1:
@@ -2930,7 +2927,6 @@ s32 _get_msg(EventEntry* event) {
 	evtSetValue(event, index, (s32)msg);
 	return 2;
 }
-#pragma opt_dead_assignments reset
 
 __declspec(section ".sdata") EVT_BEGIN(_btl_cmd_error_msg_event)
 	CALL(_get_msg, LW(0))

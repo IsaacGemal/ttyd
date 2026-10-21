@@ -76,14 +76,11 @@ USER_FUNC(btlevtcmd_WaitEventEnd) {
 }
 
 //s32 retIndex, s32 battleFlags
-// opt_propagation off: keep wp in r4 and args in r5 as the target does (the natural propagation
-// order gives args r6/args[1] r5).
-#pragma opt_propagation off
 USER_FUNC(btlevtcmd_check_battleflag) {
     BattleWork* wp = _battleWorkPointer;
     s32* args = event->args;
-    s32 index = args[0];
-    u32 flags = args[1];
+    s32 index = *args++;
+    u32 flags = *args++;
 
     if (wp->flags & flags) {
         evtSetValue(event, index, TRUE);
@@ -93,7 +90,6 @@ USER_FUNC(btlevtcmd_check_battleflag) {
     }
     return EVT_RETURN_DONE;
 }
-#pragma opt_propagation reset
 
 //BOOL* onoff, s32 flags
 USER_FUNC(btlevtcmd_onoff_battleflag) {
@@ -3810,7 +3806,6 @@ USER_FUNC(btlevtcmd_AttackDeclareAll) {
 }
 
 //s32* attackerId, s32* targetId, s32* partId, s32* a, s32* b, s32* retIndex
-#pragma opt_propagation off // force the a=args[4] load before retIndex=args[5] so retIndex reuses the args register
 USER_FUNC(btlevtcmd_PreCheckDamage) {
     s32* args = event->args;
     BattleWork* wp = _battleWorkPointer;
@@ -3819,15 +3814,15 @@ USER_FUNC(btlevtcmd_PreCheckDamage) {
     BattleUnitPart* part;
     s32 btlId, targetId, partId, value, retIndex, a, result;
 
-    btlId = evtGetValue(event, args[0]);
+    btlId = evtGetValue(event, *args++);
     attacker = BattleGetUnitPtr(wp, BattleTransID(event, btlId));
-    targetId = evtGetValue(event, args[1]);
+    targetId = evtGetValue(event, *args++);
     target = BattleGetUnitPtr(wp, BattleTransID(event, targetId));
-    partId = evtGetValue(event, args[2]);
+    partId = evtGetValue(event, *args++);
     part = BtlUnit_GetPartsPtr(target, partId);
-    value = evtGetValue(event, args[3]);
-    a = args[4];
-    retIndex = args[5];
+    value = evtGetValue(event, *args++);
+    a = *args++;
+    retIndex = *args++;
     result = BattlePreCheckDamage(attacker, target, part, (BattleWeapon*)value, a);
     if (result < 0) {
         return 0xFF;
@@ -3838,7 +3833,6 @@ USER_FUNC(btlevtcmd_PreCheckDamage) {
     }
     return 0xFF;
 }
-#pragma opt_propagation reset
 
 //s32* attackerId, s32* targetId, s32* partId, s32* a, s32* retIndex
 USER_FUNC(btlevtcmd_CommandPreCheckDamage) {
