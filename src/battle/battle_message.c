@@ -12,7 +12,7 @@
 //s32 kind, s32 x, s32 y, const char* tag, s32 duration
 USER_FUNC(btlevtcmd_AnnounceMessage) {
     BattleWork* wp = _battleWorkPointer;
-    u8* base = (u8*)wp + 0x20000;
+    BattleWorkField18C70* announce = &wp->field_18C70;
     s32* args = event->args;
     s32 kind;
     s32 x;
@@ -31,16 +31,16 @@ USER_FUNC(btlevtcmd_AnnounceMessage) {
     }
     if (isFirstCall) {
         event->userdata[0] = duration;
-        *(s16*)(base - 0x7390) = x;
-        *(s16*)(base - 0x738e) = y;
+        announce->field_0x0 = x;
+        announce->field_0x2 = y;
         {
             const char* msg = msgSearch(tag);
             switch (kind) {
             case 1:
-                sprintf((char*)(base - 0x737c), msg, itemDataTable[*(s32*)(base - 0x738c)].id);
+                sprintf(announce->field_0x14, msg, itemDataTable[announce->field_0x4[0]].id);
                 break;
             default:
-                sprintf((char*)(base - 0x737c), msg);
+                sprintf(announce->field_0x14, msg);
                 break;
             }
         }
@@ -52,14 +52,14 @@ USER_FUNC(btlevtcmd_AnnounceMessage) {
 
 void _disp(CameraId cameraId, void* param) {
     BattleWork* wp = _battleWorkPointer;
-    u8* base = (u8*)wp + 0x20000;
-    s16 x = *(s16*)(base - 0x7390);
-    s16 y = *(s16*)(base - 0x738e);
+    BattleWorkField18C70* announce = &wp->field_18C70;
+    s16 x = announce->field_0x0;
+    s16 y = announce->field_0x2;
     f32 fx = (f32)x;
     f32 fy = (f32)(y + 0x78);
     GXColor color;
     u16 lines;
-    u16 width = FontGetMessageWidthLine((const char*)(base - 0x737c), &lines);
+    u16 width = FontGetMessageWidthLine(announce->field_0x14, &lines);
 
     lines++;
     color = (GXColor){ 0xFF, 0xFF, 0xFF, 0xFF };
@@ -79,19 +79,19 @@ void _disp(CameraId cameraId, void* param) {
                           color);
 #endif
     FontDrawStart();
-    FontDrawMessage((s32)fx, (s32)fy - 0x1d, (const char*)(base - 0x737c));
+    FontDrawMessage((s32)fx, (s32)fy - 0x1d, announce->field_0x14);
 }
 
 //s32 index, s32 value
 USER_FUNC(btlevtcmd_AnnounceSetParam) {
     BattleWork* wp = _battleWorkPointer;
-    s32* base = (s32*)((u8*)wp + 0x18C70);
+    BattleWorkField18C70* announce = &wp->field_18C70;
     s32* args = event->args;
     s32 index;
     s32 value;
 
     index = evtGetValue(event, args[0]);
     value = evtGetValue(event, args[1]);
-    base[index + 1] = value;
+    announce->field_0x4[index] = value;
     return EVT_RETURN_DONE;
 }

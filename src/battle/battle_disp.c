@@ -36,7 +36,7 @@ s32 _status_pose_table[] = {
 
 extern ItemData itemDataTable[];
 
-static void btlDispAnimeSpeedReset(BattleUnit* unit);
+static void btlDispAnimeSpeedReset(BattleUnitPart* part);
 
 // Keep searchPoseTbl out of line: the original calls it rather than inlining.
 #pragma dont_inline on
@@ -423,14 +423,14 @@ void btlDispMain(void) {
 					}
 				}
 				if (BtlUnit_CheckStatus(unit, STATUS_FAST)) {
-					btlDispAnimeSpeed((BattleUnit*)part, 2.0f);
+					btlDispAnimeSpeed(part, 2.0f);
 				} else if (BtlUnit_CheckStatus(unit, STATUS_SLOW)) {
-					btlDispAnimeSpeed((BattleUnit*)part, 0.5f);
+					btlDispAnimeSpeed(part, 0.5f);
 				} else {
-					btlDispAnimeSpeedReset((BattleUnit*)part);
+					btlDispAnimeSpeedReset(part);
 				}
 			} else {
-				btlDispAnimeSpeedReset((BattleUnit*)part);
+				btlDispAnimeSpeedReset(part);
 			}
 
 			if (part->partFlags & 1) {
@@ -487,23 +487,23 @@ void btlDispMain(void) {
 			v = (Vec){ 0.0f, 0.0f, 0.0f };
 			v.x = wx;
 			v.y = wy;
-			v.z = wz + *(f32*)(part->field_0x4F4 + 4);
+			v.z = wz + part->field_0x4F8;
 			v2 = v;
 
-			part->field_0x4F4[3] = (u8)part->mKindPartParams->baseAlpha;
+			part->field_0x4F4.a = (u8)part->mKindPartParams->baseAlpha;
 			if (BtlUnit_CheckStatus(unit, 0x12) || (unit->mAttributeFlags & 0x8)) {
-				part->field_0x4F4[3] =
-					(u8)(part->field_0x4F4[3] * 0x80 / 0xFF);
+				part->field_0x4F4.a =
+					(u8)(part->field_0x4F4.a * 0x80 / 0xFF);
 			}
-			part->field_0x4F4[3] =
-				(u8)(part->field_0x4F4[3] * part->color.a / 0xFF);
-			part->field_0x4F4[0] = part->color.r;
-			part->field_0x4F4[1] = part->color.g;
-			part->field_0x4F4[2] = part->color.b;
+			part->field_0x4F4.a =
+				(u8)(part->field_0x4F4.a * part->color.a / 0xFF);
+			part->field_0x4F4.r = part->color.r;
+			part->field_0x4F4.g = part->color.g;
+			part->field_0x4F4.b = part->color.b;
 
 			if (!(unit->mAttributeFlags & 0x1000000) && !(part->attributes & 0x1000000)) {
 				if (!(part->attributes & kMainPart) || !(unit->mAttributeFlags & kVeiled)) {
-					if (part->field_0x4F4[3] < 0xFF ||
+					if (part->field_0x4F4.a < 0xFF ||
 					    animPoseTestXLU(part->poseId)) {
 						if (!(part->partFlags & 0x100)) {
 							dispEntry(4, dispCalcZ(&v2), 2, btlUnitPartsDisp, part);
@@ -691,7 +691,7 @@ void btlUnitPartsDisp(CameraId camId, void* param) {
 			f27 = 90.0f;
 		}
 		f29 = parts->mPosition.x;
-		f30 = parts->mPosition.y + getGravityDispOffset((BattleUnit*)parts) + getFloatDispOffset((BattleUnit*)parts);
+		f30 = parts->mPosition.y + getGravityDispOffset(parts) + getFloatDispOffset(parts);
 		f28 = parts->mPosition.z;
 		cam = camGetCurPtr();
 		f31 = angleABf(cam->cameraPos.x, cam->cameraPos.z, cam->cameraAt.x, cam->cameraAt.z);
@@ -757,8 +757,8 @@ void btlUnitPartsDisp(CameraId camId, void* param) {
 			sign = (f32)wp->alliances[owner->mAlliance].attackDirection;
 		}
 		f30 = parts->mPositionOffset.x * sign + owner->mPosition.x;
-		f29 = owner->mPosition.y + parts->mPositionOffset.y + getGravityDispOffset((BattleUnit*)parts) +
-		      getFloatDispOffset((BattleUnit*)parts);
+		f29 = owner->mPosition.y + parts->mPositionOffset.y + getGravityDispOffset(parts) +
+		      getFloatDispOffset(parts);
 		f31 = owner->mPosition.z + parts->mPositionOffset.z;
 		f28 = 0.0f;
 		if (parts->mOwner->mAttributeFlags & 0x04000000) {
@@ -790,7 +790,7 @@ void btlUnitPartsDisp(CameraId camId, void* param) {
 					PSMTXIdentity(m24);
 					PSMTXConcat(m9, m24, m24);
 					PSMTXConcat(m11, m24, m24);
-					switch (*(s8*)((char*)parts + 0x4FC)) {
+					switch (parts->field_0x4FC) {
 					case 0:
 						PSMTXConcat(m13, m24, m24);
 						PSMTXConcat(m12, m24, m24);
@@ -836,7 +836,7 @@ void btlUnitPartsDisp(CameraId camId, void* param) {
 		PSMTXConcat(m28, m24, m24);
 		PSMTXConcat(m1, m24, m24);
 		PSMTXConcat(m3, m24, m24);
-		switch (*(s8*)((char*)parts + 0x4FC)) {
+		switch (parts->field_0x4FC) {
 		case 0:
 			PSMTXConcat(m5, m24, m24);
 			PSMTXConcat(m4, m24, m24);
@@ -876,7 +876,7 @@ void btlUnitPartsDisp(CameraId camId, void* param) {
 		PSMTXConcat(m0, m25, m25);
 	}
 
-	*(u32*)((char*)parts + 0x218) = *(u32*)((char*)parts + 0x4F4);
+	parts->evtColor = parts->field_0x4F4;
 	if (parts->partFlags & 0x10) {
 		parts->evtColor.r = 0;
 		parts->evtColor.g = 0;
@@ -934,9 +934,9 @@ void btlUnitItemDisp(CameraId cameraId, BattleUnit* unit) {
 	}
 	if (item != 0) {
 		BtlUnit_GetPos(unit, &v.x, &v.y, &v.z);
-		v.x += *(f32*)((char*)unit + 0xb4);
-		v.y += *(f32*)((char*)unit + 0xb8);
-		v.z += *(f32*)((char*)unit + 0xbc);
+		v.x += unit->field_0xB4.x;
+		v.y += unit->field_0xB4.y;
+		v.z += unit->field_0xB4.z;
 		v.x += unit->heldItemOffset.x;
 		v.y += unit->heldItemOffset.y;
 		v.z += unit->heldItemOffset.z;
@@ -1020,8 +1020,8 @@ void btlUnitPartsBlurDisp(CameraId camId, BattleUnitPart* parts) {
 			color.b = color.b * (u8)(((u8*)work->blurColor)[2] * (10 - i) / 10 + ((u8*)work->blurColor)[6] * i / 10) / 0xff;
 			color.a = color.a * (u8)(((u8*)work->blurColor)[3] * (10 - i) / 10 + ((u8*)work->blurColor)[7] * i / 10) / 0xff;
 			if (color.a == 0) continue;
-			animPoseSetMaterialEvtColor(*(s32*)((char*)parts + 0x1c0), color);
-			animPoseSetMaterialFlagOn(*(s32*)((char*)parts + 0x1c0), 0x40);
+			animPoseSetMaterialEvtColor(parts->poseId, color);
+			animPoseSetMaterialFlagOn(parts->poseId, 0x40);
 			animPoseDrawMtx(parts->poseId, work->orientation, 1, work->rotation, 2.0f);
 			animPoseDrawMtx(parts->poseId, work->orientation, 2, work->rotation, 2.0f);
 			animPoseDrawMtx(parts->poseId, work->orientation, 3, work->rotation, 2.0f);
@@ -1034,14 +1034,14 @@ void btlDispEntAnime(BattleUnit* unit) {
 
 	while (part) {
 		if (part->poseTable == NULL) {
-			*(s32*)((char*)part + 0x1c0) = -1;
+			part->poseId = -1;
 		} else {
 			const char* modelName = part->mKindPartParams->modelName;
 			if (modelName == NULL) {
-				*(s32*)((char*)part + 0x1c0) = -1;
+				part->poseId = -1;
 			} else {
-				strcpy((char*)part + 0x1c4, searchPoseTbl((BattleDispPose*)part->poseTable, 0x1c));
-				*(s32*)((char*)part + 0x1c0) = animPoseEntry(modelName, 1);
+				strcpy(part->poseName, searchPoseTbl((BattleDispPose*)part->poseTable, 0x1c));
+				part->poseId = animPoseEntry(modelName, 1);
 			}
 		}
 		part = part->mNextPart;
@@ -1051,7 +1051,7 @@ void btlDispEntAnime(BattleUnit* unit) {
 void btlDispChangeAnime(BattleUnitPart* part, const char* animName, BOOL reset) {
 	u32* flags;
 
-	strcpy((char*)part + 0x1c4, animName);
+	strcpy(part->poseName, animName);
 	flags = &part->partFlags;
 	*flags |= 2;
 	*flags |= 1;
@@ -1068,7 +1068,7 @@ void btlDispChangeAnime(BattleUnitPart* part, const char* animName, BOOL reset) 
 void btlDispChangePeraAnime(BattleUnitPart* part, const char* animName) {
 	part->partFlags |= 4;
 	part->statusPoseKind = 0;
-	animPoseSetEffectAnim(*(s32*)((char*)part + 0x1c0), animName, 1);
+	animPoseSetEffectAnim(part->poseId, animName, 1);
 }
 
 void btlDispPoseAnime(BattleUnitPart* part) {
@@ -1092,22 +1092,22 @@ void gravityOffsetControl(BattleUnitPart* part) {
 		active = FALSE;
 	}
 	if (active) {
-		*(u16*)((char*)part + 0x1a6) += 1;
+		part->field_0x1A6 += 1;
 		return;
 	}
-	if (*(u16*)((char*)part + 0x1a6) != 0) {
-		*(u16*)((char*)part + 0x1a6) %= 120;
-		if (*(u16*)((char*)part + 0x1a6) >= 0x3c) {
-			*(u16*)((char*)part + 0x1a6) += 1;
-		} else if (*(u16*)((char*)part + 0x1a6) != 0) {
-			*(u16*)((char*)part + 0x1a6) -= 1;
+	if (part->field_0x1A6 != 0) {
+		part->field_0x1A6 %= 120;
+		if (part->field_0x1A6 >= 0x3c) {
+			part->field_0x1A6 += 1;
+		} else if (part->field_0x1A6 != 0) {
+			part->field_0x1A6 -= 1;
 		}
 	}
 }
 
 // dont_inline: the original keeps calls to this function out of line
-f32 getGravityDispOffset(BattleUnit* unit) {
-	return sinfd((f32)((*(u16*)((char*)unit + 0x1a6) * 3 + 0x10e) % 360)) * 4.0f + 4.0f;
+f32 getGravityDispOffset(BattleUnitPart* part) {
+	return sinfd((f32)((part->field_0x1A6 * 3 + 0x10e) % 360)) * 4.0f + 4.0f;
 }
 
 // dont_inline: the original keeps calls to this function out of line
@@ -1123,27 +1123,27 @@ void floatOffsetControl(BattleUnitPart* part) {
 		active = FALSE;
 	}
 	if (active) {
-		*(u16*)((char*)part + 0x1a8) += 1;
-	} else if (*(u16*)((char*)part + 0x1a8) != 0) {
-		*(u16*)((char*)part + 0x1a8) %= 90;
-		if (*(u16*)((char*)part + 0x1a8) >= 0x2d) {
-			*(u16*)((char*)part + 0x1a8) += 1;
-		} else if (*(u16*)((char*)part + 0x1a8) != 0) {
-			*(u16*)((char*)part + 0x1a8) -= 1;
+		part->field_0x1A8 += 1;
+	} else if (part->field_0x1A8 != 0) {
+		part->field_0x1A8 %= 90;
+		if (part->field_0x1A8 >= 0x2d) {
+			part->field_0x1A8 += 1;
+		} else if (part->field_0x1A8 != 0) {
+			part->field_0x1A8 -= 1;
 		}
 	}
 }
 
 // dont_inline: the original keeps calls to this function out of line
-f32 getFloatDispOffset(BattleUnit* unit) {
-	return sinfd((f32)((*(u16*)((char*)unit + 0x1a8) * 4 + 0x10e) % 360)) * 2.0f + 2.0f;
+f32 getFloatDispOffset(BattleUnitPart* part) {
+	return sinfd((f32)((part->field_0x1A8 * 4 + 0x10e) % 360)) * 2.0f + 2.0f;
 }
 #pragma dont_inline reset
 
 // Inlined into btlDispMain, but its body is still generated here, which pools 1.0f ahead of getFloatDispOffset's
 // 2.0f as retail's .sdata2 has it.
-static void btlDispAnimeSpeedReset(BattleUnit* unit) {
-	btlDispAnimeSpeed(unit, 1.0f);
+static void btlDispAnimeSpeedReset(BattleUnitPart* part) {
+	btlDispAnimeSpeed(part, 1.0f);
 }
 
 #pragma dont_inline on // the original keeps calls to this function out of line
@@ -1173,9 +1173,9 @@ void _pose_def(BattleUnitPart* part) {
 	switch (part->statusPoseStep) {
 	case 0:
 		part->statusPoseStep = 1;
-		animPoseSetEffect(*(s32*)((char*)part + 0x1c0), NULL, 0);
+		animPoseSetEffect(part->poseId, NULL, 0);
 		if (part->mOwner->flags & 0x1000000) {
-			animPoseSetMaterialLightFlagOn(*(s32*)((char*)part + 0x1c0), 8);
+			animPoseSetMaterialLightFlagOn(part->poseId, 8);
 		}
 		break;
 	}
@@ -1190,16 +1190,16 @@ void _pose_one_pattern(BattleUnitPart* part) {
 		part->statusPoseStep = 1;
 		switch (part->statusPoseKind) {
 		case 2:
-			animPoseSetEffect(*(s32*)((char*)part + 0x1c0), "p_b_st", 1);
-			animPoseSetEffectAnim(*(s32*)((char*)part + 0x1c0), "PM_C_1A", 1);
+			animPoseSetEffect(part->poseId, "p_b_st", 1);
+			animPoseSetEffectAnim(part->poseId, "PM_C_1A", 1);
 			break;
 		case 3:
-			animPoseSetEffect(*(s32*)((char*)part + 0x1c0), "p_b_st", 1);
-			animPoseSetEffectAnim(*(s32*)((char*)part + 0x1c0), "PM_F_1A", 1);
+			animPoseSetEffect(part->poseId, "p_b_st", 1);
+			animPoseSetEffectAnim(part->poseId, "PM_F_1A", 1);
 			break;
 		case 7:
-			animPoseSetEffect(*(s32*)((char*)part + 0x1c0), "p_b_st", 1);
-			animPoseSetEffectAnim(*(s32*)((char*)part + 0x1c0), "PM_Y_1A", 1);
+			animPoseSetEffect(part->poseId, "p_b_st", 1);
+			animPoseSetEffectAnim(part->poseId, "PM_Y_1A", 1);
 			break;
 		}
 		break;
@@ -1218,13 +1218,13 @@ void _pose_two_pattern(BattleUnitPart* part) {
 		part->statusPoseStep = 1;
 		switch (part->statusPoseKind) {
 		case 4:
-			animPoseSetEffect(*(s32*)((char*)part + 0x1c0), "p_b_st", 1);
-			animPoseSetEffectAnim(*(s32*)((char*)part + 0x1c0), "PM_Y_1B", 1);
+			animPoseSetEffect(part->poseId, "p_b_st", 1);
+			animPoseSetEffectAnim(part->poseId, "PM_Y_1B", 1);
 			part->statusPoseTimer = sysMsec2Frame(0x898);
 			break;
 		case 5:
-			animPoseSetEffect(*(s32*)((char*)part + 0x1c0), "p_b_st", 1);
-			animPoseSetEffectAnim(*(s32*)((char*)part + 0x1c0), "PM_C_1A", 1);
+			animPoseSetEffect(part->poseId, "p_b_st", 1);
+			animPoseSetEffectAnim(part->poseId, "PM_C_1A", 1);
 			t = sysMsec2Frame(0x898);
 			{
 				s32 n = irand(4) + 6;
@@ -1232,8 +1232,8 @@ void _pose_two_pattern(BattleUnitPart* part) {
 			}
 			break;
 		case 6:
-			animPoseSetEffect(*(s32*)((char*)part + 0x1c0), "p_b_st", 1);
-			animPoseSetEffectAnim(*(s32*)((char*)part + 0x1c0), "PM_F_2", 1);
+			animPoseSetEffect(part->poseId, "p_b_st", 1);
+			animPoseSetEffectAnim(part->poseId, "PM_F_2", 1);
 			part->statusPoseTimer = (irand(4) + 7) * 0x16;
 			break;
 		}
@@ -1243,7 +1243,7 @@ void _pose_two_pattern(BattleUnitPart* part) {
 		case 4:
 			part->statusPoseTimer -= 1;
 			if (part->statusPoseTimer == 0) {
-				animPoseSetEffectAnim(*(s32*)((char*)part + 0x1c0), "PM_Y_1B", 1);
+				animPoseSetEffectAnim(part->poseId, "PM_Y_1B", 1);
 				part->statusPoseTimer = sysMsec2Frame(0x898);
 			}
 			break;
@@ -1251,7 +1251,7 @@ void _pose_two_pattern(BattleUnitPart* part) {
 			part->statusPoseTimer -= 1;
 			if (part->statusPoseTimer == 0) {
 				part->statusPoseStep = 2;
-				animPoseSetEffectAnim(*(s32*)((char*)part + 0x1c0), "PM_C_1B", 1);
+				animPoseSetEffectAnim(part->poseId, "PM_C_1B", 1);
 				part->statusPoseTimer = 0x16;
 			}
 			break;
@@ -1259,7 +1259,7 @@ void _pose_two_pattern(BattleUnitPart* part) {
 			part->statusPoseTimer -= 1;
 			if (part->statusPoseTimer == 0) {
 				part->statusPoseStep = 2;
-				animPoseSetEffectAnim(*(s32*)((char*)part + 0x1c0), "PM_F_1B", 1);
+				animPoseSetEffectAnim(part->poseId, "PM_F_1B", 1);
 				part->statusPoseTimer = 0x16;
 			}
 			break;
@@ -1294,9 +1294,9 @@ void _pose_two_pattern(BattleUnitPart* part) {
 }
 
 #pragma dont_inline on // the original keeps calls to this function out of line
-void btlDispAnimeSpeed(BattleUnit* unit, f32 speed) {
-	((f32*)&unit->hpGauge.field_0xC)[1] = speed;
-	animPoseSetLocalTimeRate(*(s32*)((char*)unit + 0x1c0), ((f32*)&unit->hpGauge.field_0xC)[1] * ((f32*)&unit->hpGauge.field_0xC)[2]);
+void btlDispAnimeSpeed(BattleUnitPart* part, f32 speed) {
+	part->field_0x208 = speed;
+	animPoseSetLocalTimeRate(part->poseId, part->field_0x208 * part->motionSpeed);
 }
 #pragma dont_inline reset
 
@@ -1380,10 +1380,10 @@ void _btlDispTex4(s32 id, Vec trans, Vec scale, Vec rot, Vec pos2, Vec scale2, G
 void BattleStockExpDisp(void) {
 	BattleWork* wp = _battleWorkPointer;
 
-	if (*(s32*)((char*)wp + 0xf00) > *(s32*)((char*)wp + 0xf04)) {
-		*(s32*)((char*)wp + 0xf08) += 1;
-		if (*(s32*)((char*)wp + 0xf08) >= 4) {
-			*(s32*)((char*)wp + 0xf04) += 1;
+	if (wp->stockExp > wp->field_F04) {
+		wp->field_F08 += 1;
+		if (wp->field_F08 >= 4) {
+			wp->field_F04 += 1;
 		}
 	}
 	if (wp->dispFlags & 2) {
@@ -1402,7 +1402,7 @@ void _btlStockExpDisp(CameraId cameraId, void* param) {
 	s32 ones;
 	s32 i;
 
-	exp = *(s32*)((char*)wp + 0xf04);
+	exp = wp->field_F04;
 	if (exp <= 0) {
 		return;
 	}

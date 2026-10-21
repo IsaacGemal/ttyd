@@ -136,7 +136,7 @@ s32 BattleTransID(EventEntry* evt, s32 type) {
 				unit = BattleGetSystemPtr(work);
 				return unit->unitId;
 			case -6:
-				return work->field_424;
+				return work->lectureUnitId;
 		}
 	}
 	return type;

@@ -820,7 +820,7 @@ USER_FUNC(eff_poison_breath) {
 
 USER_FUNC(pakkun_ceil_exist) {
     s32* args = event->args;
-    u8 flags = _battleWorkPointer->field_180C0[0x1C];
+    u8 flags = _battleWorkPointer->field_180C0.stageFlags;
 
     if (flags & 0x20) {
         evtSetValue(event, args[0], 0);

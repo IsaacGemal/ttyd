@@ -803,15 +803,15 @@ static USER_FUNC(mario_cannot_use_command) {
 
     switch (type) {
         case 0:
-            *(u32*)&work->field_18FF0[0x48] /* 0x19038 */ = 3;
+            work->field_19038[0] = 3;
             value = 0x146;
             break;
         case 1:
-            *(u32*)&work->field_18FF0[0x4C] /* 0x1903C */ = 3;
+            work->field_19038[1] = 3;
             value = 0x149;
             break;
         case 2:
-            *(u32*)&work->field_18FF0[0x50] /* 0x19040 */ = 3;
+            work->field_19038[2] = 3;
             value = 0x14C;
             break;
     }
@@ -829,11 +829,11 @@ static USER_FUNC(party_cannot_use_command) {
 
     switch (type) {
         case 0:
-            *(u32*)&work->field_18FF0[0x54] /* 0x19044 */ = 3;
+            work->field_19038[3] = 3;
             value = 0x150;
             break;
         case 1:
-            *(u32*)&work->field_18FF0[0x58] /* 0x19048 */ = 3;
+            work->field_19038[4] = 3;
             value = 0x14C;
             break;
     }

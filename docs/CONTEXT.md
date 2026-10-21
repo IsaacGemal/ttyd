@@ -12160,3 +12160,79 @@ The narrowing commits needed `--allow-pragma`, because the lint reads a moved li
     are; moving them outside the body was not tested.
   - The scripts (`build/opragma/` in this worktree: try.py, narrow.py, merge.py, eoftest.py, verify.py) are not
     committed.
+## BattleWork / BattleUnit / BattleWorkUnitPart layout audit (2026-10-20, Claude Opus 5.5, n9-q-o-bwork)
+
+Every opaque band of the three structs, with every access in src/ and rels/ (through the struct, raw offsets or
+`wp + 0x20000` bases), typed where the users agree; where they disagreed, the asm of each user decided. Build
+byte-identical at every commit (build/G8MJ01/ok recreated, and `tools/obj_equiv.py --tree` against a snapshot of the
+pre-branch objects shows all 1,230 compiled objects equivalent); the full `configure.py --non-matching` ninja compiles
+every object (only the dol link fails, as usual); fncast_lint and local_prototypes pass; `tools/ci.py` passed before
+each commit with its tests step stubbed (the worktree timeouts noted above). This worktree had no accepted ratchet
+baseline, so `ci.py --init` was run on the first build, whose linked modules already matched build.sha1.
+
+- **Finding: the `wp + 0x20000` bases are sub-struct pointers.** Earlier passes kept `u8* base = (u8*)wp + 0x20000`
+  with `*(s32*)(base - 0x7D68)` because `wp->field` recomputes the addis per access. A pointer to a sub-struct gives
+  the original's code: MWCC folds the sub-struct's low half into each displacement and keeps one addis, and where the
+  original indexes from the sub-struct (AnnounceSetParam, _nozzle_turn, _nozzle_work_wait) it is exactly that base.
+  So the original had structs here. The new types are named by their BattleWork field (`BattleWorkField180C0` is the
+  type of `field_180C0`), with `field_0xNN` members at sub-struct offsets and the BattleWork offset in the comments:
+  - `BattleWorkField180C0` (0x180C0-0x182B0, 0x1F0 bytes; start proven by the indexed users): the stage-object work.
+    Members: layer-2 rotation Vec and its last-applied copy (0x4/0x10), `stageFlags` (0x1C, moved in; also 0x10 wall
+    close, 0x40 blocks the iron-frame fall), the object-turn and four layer event ids (0x20-0x30), the rank's nozzle
+    and fall-object data blocks (0x34/0x38, u8*), `weaponAddr[2]` (0x3C, BattleWeapon*, the name already in the repo
+    from `_nozzle_work_get_weapon_address`) and the two combined BattleWeapons (0x44), nozzle directions (0x1C4/0x1C7,
+    u8[3]), nozzle type (0x1CA, s8), turn event ids (0x1CC, s32[3]), nozzle-work/wall/iron-frame/object-fall event ids,
+    fog frames (0x1DC) and the fog effect (0x1E0). 0x182A0 was "s32 in one user": that s32 store was
+    `effNozleEntry`'s result, so it is an `EffectEntry*` everywhere. battle_stage_object.c's local `BattleNozzleWork`
+    went. Users: battle_stage_object (all functions), battle_seq (BattleWaitAllActiveEvtEnd, btlseqFirstAct),
+    battle_audience_kinopio, battle_damage, battle_event_cmd, battle_seq_end, battle_mario, and the ceil/flag readers
+    in rels (tou2 champion, muj gundan_zako 1/2 and poison_pakkun, rsh database, common pakkun/monochrome/ice).
+    `wp->field_180C0[0x1C]` (one past the old band) was stageFlags in every reader.
+  - `BattleWorkField18C70` (0x18C70-0x18D88; start proven): battle_message's announce x/y (s16), params s32[4] and the
+    formatted message.
+  - `BattleWorkField18FF0` (8 bytes): battle_ac_help's message and display type. Start not proven by an index.
+  - `BattleWorkField19068` (0x18 bytes): `forceFlags`, `forceAudienceCount`, `forceAudienceKind`, `forceSlotValue`
+    (names kept). Start not proven by an index; battle_audience and battle_break_slot read it through one pointer.
+  Reviewer: the two unproven starts are the smallest structs the code allows; the original's may begin earlier.
+- **BattleWork, flat members:** `field_2` u16 (battle_seq's burn-effect step), `field_EFC` s32 (frame countdown),
+  `field_F04`/`field_F08` s32 (battle_disp's stock-exp display count and its frame counter; were `(char*)wp + 0xf04`),
+  `field_18FE1` u8 (Merlee's curse type once it fires: 1 attack, 2 Mario's defence, 3 double exp) and `field_18FE2`
+  u16, `field_19038[5]` (turn counts that disable jump/hammer/item and the partner's tech/item; recover_cmd_disable
+  clears all five; battle_seq, battle_seq_command, las and tou2 koopa, sac_genki), `field_1904C` (nanika_luck_event id),
+  `field_19064` u8, `field_19080` u32 / `field_19084` s32 (gor lecture's flag and window id).
+  `lectureUnitId` (0x424): set only by the three `_battle_set_lecture_unit_id` (tik and gor symbols), read as
+  `BattleTransID(-6)` and by the command menu.
+- **Act record:** field_16F1C stays an array (battle_actrecord.c walks it). The `(u8*)wp + 0x16FNN` sites in
+  battle_seq_command, battle_unit, battle_seq, battle_mario and battle_item_data, and battle_damage's
+  `field_16F1C + N`, keep their offset form. The sac get_ptr
+  functions take `actionCommands.field_0x2BC` instead of `+ 0x1F4C`; the header notes that those works run on into
+  `field_1F9C`.
+- **BattleUnit:** 0x2A0, 0x2C4 and 0x2CC are event-code pointers in every user (the s32 readings stored scripts' raw
+  values). 0x2A0 is `confusionEventCode` (setter btlevtcmd_SetEventConfusion; battle_seq starts it on a confused
+  unit's 50% roll) and 0x2C4 `actEndEventCode` (setter gor `_set_actend_event`; battle_seq runs it as the act ends,
+  id in 0x2C8), named after their setters as `ceilFallEventCode` was; 0x2CC stays `field_0x2CC` (void*, the
+  superguard type 4 event; no setter in the tree). 0x264/0x268 s32 and 0x26E/0x26F s8 (FP damage sums, FP lost,
+  the superguard count copy), 0x30C u8 (borodo coin count), `mSmartEntry` a `struct smartEntry*`,
+  `mBurnDamageFlameState`/`mbBurnDamageFlameActive` u16 (lhz/cmplwi in every read; battle_status_effect's casts and
+  its "header likely wrong" note went). `BattleWorkHpGauge.field_0x0` is u16, so battle_unit.c's `HpGaugeLocal` copy
+  went. chuchurina/yoshi/wanawana raw stores now name mSmartEntry, mExtraWork and the part's dispCallback.
+- **BattleWorkUnitPart:** 0x1A6/0x1A8 u16 (gravity/float frame counts), 0x4F4 GXColor (btlDispMain's draw colour,
+  copied to evtColor), 0x4F8 f32 (z offset; black_peach writes it), 0x4FC s8 (rotation order; the u8 reading was a
+  zero store). `getGravityDispOffset`, `getFloatDispOffset` and `btlDispAnimeSpeed` take `BattleUnitPart*`: every
+  caller passed a part cast to BattleUnit*, and their bodies read part offsets (0x1A6, 0x1A8, 0x1C0, 0x208, 0x20C)
+  through that pointer. battle_disp.c has no raw unit/part offsets left.
+- **No access anywhere in the tree** (left as bands): BattleWork 0x2750, 0x18FF8-0x19038, 0x19065, the force
+  struct's 0x4-0xC, field_180C0's 0x0/0x1D/0x1CB; BattleUnit 0x186, 0x1BC, 0x25E, 0x136, 0x30F, 0x31C; part 0xBE,
+  0xDC-0xF8, 0x1AA, 0x4FD.
+- **Left, and why:** `_Nozzle_Change_Check` walks field_180C0 by byte (`base[typeOffset]`, `slot[0x73]`; indexing the
+  members gives add + lbz instead of the original's precomputed lbzx; a comment maps the offsets).
+  `BattleWaitAllActiveEvtEnd_NoBgSetEndWait`'s `void* p` (register steering, not a layout question). Outside the three
+  structs: BattleSampling's `u8*` parameters (BattleSamplingEnemy, battle_stage_object's u8 stack arrays), the
+  BakuGameGaugeColor view of `dispParams.field_0xC` (BattleACDispParams; now spelled through that field),
+  `unit->work[i]` read as f32 by event_cmd (scripts keep ints and floats there), BattleUnitKind +0x14 read as u16 in
+  battle_mario, the UnitStatusBlock MUST_MATCH copy, and PartyEntry raw offsets in aji_13/moo_04.
+- **Index** (`tools/cleanup_index.py`, same script both sides): 16.121 -> 16.368 per kLOC (11366 -> 11540 weighted);
+  raw_offset 497 -> 463, field_0x 3641 -> 3883. The rise is spelling, not new placeholders: the index counts
+  `field_0x1D8` but not `field_18298`, and not `*(s32*)(w - 0x7D68)` or `(char*)` casts at all, so moving negative-base
+  reads onto sub-struct members and renaming HpGaugeLocal's `field_C` to BattleWorkHpGauge's `field_0xC` add counted
+  names. battle_stage_object 73 -> 157 weighted for the same reason.

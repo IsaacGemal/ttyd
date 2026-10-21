@@ -352,7 +352,7 @@ void btlseqFirstAct(BattleWork* wp) {
 	case 0x2000000:
 		switch (party) {
 		case 0:
-			*(s32*)wp->field_EFC = 0;
+			wp->field_EFC = 0;
 			evtEntry(_default_haikei_set_entry_event, 10, 0);
 			setup = wp->fbatInfo->setup;
 			for (i = 0; i < 64; i++) {
@@ -388,17 +388,17 @@ void btlseqFirstAct(BattleWork* wp) {
 		case 1:
 		case 2:
 		case 3:
-			*(s32*)wp->field_EFC = 10;
+			wp->field_EFC = 10;
 			break;
 		case 4:
 		case 5:
 		case 6:
 		case 7:
 		case 8:
-			*(s32*)wp->field_EFC = 0;
+			wp->field_EFC = 0;
 			break;
 		default:
-			*(s32*)wp->field_EFC = 0;
+			wp->field_EFC = 0;
 			break;
 		}
 		wp->flags |= 2;
@@ -458,7 +458,7 @@ void btlseqFirstAct(BattleWork* wp) {
 		break;
 
 	case 0x2000001:
-		if (--*(s32*)wp->field_EFC > 0) {
+		if (--wp->field_EFC > 0) {
 			break;
 		}
 		fadeEntry(0x17, 0xC8, dat_8041c268);
@@ -547,7 +547,7 @@ void btlseqFirstAct(BattleWork* wp) {
 		break;
 
 	case 0x2000009: {
-		s32* p = &wp->field_182A4;
+		s32* p = &wp->field_180C0.field_0x1E4;
 		if (*p) {
 			if (!evtCheckID(*p)) {
 				*p = 0;
@@ -564,7 +564,7 @@ void btlseqFirstAct(BattleWork* wp) {
 		BattleUnit* u;
 		BOOL found;
 		int j;
-		*(s32*)(wp->field_18FF0 + 0x5C) = 0;
+		wp->field_1904C = 0;
 		found = FALSE;
 		for (j = 0; j < 64; j++) {
 			u = BattleGetUnitPtr(wp, j);
@@ -582,11 +582,11 @@ void btlseqFirstAct(BattleWork* wp) {
 		if (found) {
 			evt = evtEntry(nanika_luck_event, 10, 0);
 			evt->unitId = -5;
-			*(s32*)(wp->field_18FF0 + 0x5C) = evt->eventId;
+			wp->field_1904C = evt->eventId;
 			wp->statusChangeMsg.mAnnouncedFlags |= 0xFFFFFFFFFFFFFFFFULL;
 			BattleStatusChangeMsgAdjust(wp);
 			BattleSetSeq(wp, 2, 0x200000B);
-			*(u16*)(wp->field_18FE1 + 1) = 0;
+			wp->field_18FE2 = 0;
 			break;
 		}
 		BattleSetSeq(wp, 2, 0x200000C);
@@ -596,14 +596,14 @@ void btlseqFirstAct(BattleWork* wp) {
 	case 0x200000B: {
 		BOOL result;
 		result = TRUE;
-		if (*(u16*)(wp->field_18FE1 + 1) < 0x12C) {
-			(*(u16*)(wp->field_18FE1 + 1))++;
+		if (wp->field_18FE2 < 0x12C) {
+			wp->field_18FE2++;
 		}
-		if (*(s32*)(wp->field_18FF0 + 0x5C)) {
-			if (evtCheckID(*(s32*)(wp->field_18FF0 + 0x5C))) {
+		if (wp->field_1904C) {
+			if (evtCheckID(wp->field_1904C)) {
 				result = FALSE;
 			} else {
-				*(s32*)(wp->field_18FF0 + 0x5C) = 0;
+				wp->field_1904C = 0;
 			}
 		}
 		if (!BattleWaitAllActiveEvtEnd(wp)) {
@@ -753,17 +753,17 @@ void btlseqTurn(BattleWork* wp) {
 				BattleIncSeq(wp, SEQ_TURN);
 				btlseqTurn(wp);
 			} else {
-				*(s32*)wp->field_EFC = 0x78;
+				wp->field_EFC = 0x78;
 				BattleIncSeq(wp, SEQ_TURN);
 				btlseqTurn(wp);
 			}
 			break;
 
 		case 0x3000004:
-			if (*(s32*)wp->field_EFC != 0) {
-				(*(s32*)wp->field_EFC)--;
+			if (wp->field_EFC != 0) {
+				(wp->field_EFC)--;
 			}
-			if (*(s32*)wp->field_EFC <= 0 || BattlePadCheckTrigger(0x300)) {
+			if (wp->field_EFC <= 0 || BattlePadCheckTrigger(0x300)) {
 				BattleIncSeq(wp, SEQ_TURN);
 			} else {
 				dispEntry(CAMERA_2D, 900.0f, 1, (DispCallback)_rule_disp, NULL);
@@ -1546,16 +1546,16 @@ void btlseqTurn(BattleWork* wp) {
 				BattleIncSeq(wp, SEQ_TURN);
 				btlseqTurn(wp);
 			} else {
-				*(u16*)wp->field_2 = 0;
+				wp->field_2 = 0;
 				BattleIncSeq(wp, SEQ_TURN);
 				btlseqTurn(wp);
 			}
 			break;
 
 		case 0x3000009:
-			switch (*(u16*)wp->field_2) {
+			switch (wp->field_2) {
 				case 0:
-					(*(u16*)wp->field_2)++;
+					(wp->field_2)++;
 					for (i = 0; i < 64; i++) {
 						unit = BattleGetUnitPtr(wp, i);
 						if (unit != NULL && !BtlUnit_CheckStatus(unit, STATUS_INSTANT_KILL) &&
@@ -1576,7 +1576,7 @@ void btlseqTurn(BattleWork* wp) {
 						}
 					}
 					if (done) {
-						(*(u16*)wp->field_2)++;
+						(wp->field_2)++;
 					}
 					break;
 				}
@@ -1790,8 +1790,8 @@ void btlseqTurn(BattleWork* wp) {
 			break;
 
 		case 0x3000040:
-			if (*(s32*)&wp->field_18FF0[0x48] != 0) {
-				*(s32*)&wp->field_18FF0[0x48] -= 1;
+			if (wp->field_19038[0] != 0) {
+				wp->field_19038[0] -= 1;
 			}
 			BattleIncSeq(wp, SEQ_TURN);
 			BattleIncSeq(wp, SEQ_TURN);
@@ -1799,8 +1799,8 @@ void btlseqTurn(BattleWork* wp) {
 			break;
 
 		case 0x3000042:
-			if (*(s32*)&wp->field_18FF0[0x4C] != 0) {
-				*(s32*)&wp->field_18FF0[0x4C] -= 1;
+			if (wp->field_19038[1] != 0) {
+				wp->field_19038[1] -= 1;
 			}
 			BattleIncSeq(wp, SEQ_TURN);
 			BattleIncSeq(wp, SEQ_TURN);
@@ -1808,8 +1808,8 @@ void btlseqTurn(BattleWork* wp) {
 			break;
 
 		case 0x3000044:
-			if (*(s32*)&wp->field_18FF0[0x50] != 0) {
-				*(s32*)&wp->field_18FF0[0x50] -= 1;
+			if (wp->field_19038[2] != 0) {
+				wp->field_19038[2] -= 1;
 			}
 			BattleIncSeq(wp, SEQ_TURN);
 			BattleIncSeq(wp, SEQ_TURN);
@@ -1817,8 +1817,8 @@ void btlseqTurn(BattleWork* wp) {
 			break;
 
 		case 0x3000046:
-			if (*(s32*)&wp->field_18FF0[0x54] != 0) {
-				*(s32*)&wp->field_18FF0[0x54] -= 1;
+			if (wp->field_19038[3] != 0) {
+				wp->field_19038[3] -= 1;
 			}
 			BattleIncSeq(wp, SEQ_TURN);
 			BattleIncSeq(wp, SEQ_TURN);
@@ -1826,8 +1826,8 @@ void btlseqTurn(BattleWork* wp) {
 			break;
 
 		case 0x3000048:
-			if (*(s32*)&wp->field_18FF0[0x58] != 0) {
-				*(s32*)&wp->field_18FF0[0x58] -= 1;
+			if (wp->field_19038[4] != 0) {
+				wp->field_19038[4] -= 1;
 			}
 			BattleIncSeq(wp, SEQ_TURN);
 			BattleIncSeq(wp, SEQ_TURN);
@@ -1945,7 +1945,7 @@ void btlseqMove(BattleWork* wp) {
 				changed = TRUE;
 				break;
 			}
-			wp->field_18FE1[0] = 2;
+			wp->field_18FE1 = 2;
 			BattleMajinaiDone();
 			BattleMajinaiEndCheck();
 			{
@@ -2024,11 +2024,11 @@ void btlseqMove(BattleWork* wp) {
 					unit->totalHpDamageTaken = 0;
 					unit->hpDamageTaken = 0;
 					unit->hpDamageCount = 0;
-					((s8*)unit->field_0x26E)[1] = 0;
-					*(s32*)unit->field_0x264 = 0;
+					unit->field_0x26F = 0;
+					unit->field_0x264 = 0;
 					unit->fpDamageTaken = 0;
-					*(s32*)(unit->field_0x264 + 4) = 0;
-					((s8*)unit->field_0x26E)[0] = 0;
+					unit->field_0x268 = 0;
+					unit->field_0x26E = 0;
 					unit->field_0x27C = 0;
 				}
 			}
@@ -2125,8 +2125,8 @@ void btlseqMove(BattleWork* wp) {
 				end = TRUE;
 			}
 			if (end) {
-				if (wp->field_18FE1[0] == 2) {
-					wp->field_18FE1[0] = 0;
+				if (wp->field_18FE1 == 2) {
+					wp->field_18FE1 = 0;
 				}
 				BattleAudience_PerPhase(BattleGetSeq(wp, SEQ_PHASE));
 				BattleIncSeq(wp, SEQ_MOVE);
@@ -2182,8 +2182,6 @@ BOOL BattlePhaseEndCheck(void) { //1:1
 	return FALSE;
 }
 
-// Raw offsets (fields that battle_unit.h leaves in padding, so no named member exists):
-// 0x258, 0x280, 0x2A0, 0x2A8, 0x2C, 0x2C4, 0x2C8, 0x2CC.
 // Case 0 shadows `unit` so MWCC keeps it in r29 (the outer `unit` is r31 elsewhere); the original splits
 // them the same way. The moveState switch lists case 8 before the shared case 7/case 9 so the bodies come
 // out in the target's order, and the currentKind check is a switch so the then-block lands before the else.
@@ -2198,7 +2196,7 @@ void btlseqAct(BattleWork* wp) {
 		BattleUnit* unit = BattleGetUnitPtr(wp, wp->activeUnitId);
 		effNiceAsync(1);
 		unit->field_0x280 = 0;
-		*(s32*)((u8*)unit + 0x2CC) = 0;
+		unit->field_0x2CC = NULL;
 		BattleAudience_ActInit();
 		v = TRUE;
 		switch (unit->currentKind) {
@@ -2297,7 +2295,7 @@ void btlseqAct(BattleWork* wp) {
 				event = evtEntry(btldefaultevt_BiribiriMove, 0xA, 0);
 			} else if (BtlUnit_CheckStatus(unit, 5) && irand(100) < 0x32) {
 				unit->mTokenFlags |= 0x10;
-				event = evtEntry(*(void**)((u8*)unit + 0x2A0), 0xA, 0);
+				event = evtEntry(unit->confusionEventCode, 0xA, 0);
 			} else {
 				event = evtEntry(unit->attackEventCode, 0xA, 0);
 			}
@@ -2341,8 +2339,8 @@ void btlseqAct(BattleWork* wp) {
 				BtlUnit_SetStatus(unit, 0x10, 1, -0x63);
 				unit->mTokenFlags &= ~8;
 			}
-			if (wp->field_18FE1[0] == 1) {
-				wp->field_18FE1[0] = 0;
+			if (wp->field_18FE1 == 1) {
+				wp->field_18FE1 = 0;
 			}
 			unit->field_0x258 = 0;
 			switch (unit->moveState) {
@@ -2424,8 +2422,8 @@ void btlseqAct(BattleWork* wp) {
 		unit = BattleGetUnitPtr(wp, wp->activeUnitId);
 		if (unit != NULL) {
 			unit->field_0x2C8 = 0;
-			if (*(void**)((u8*)unit + 0x2C4) != NULL) {
-				event = evtEntry(*(void**)((u8*)unit + 0x2C4), 0xA, 0);
+			if (unit->actEndEventCode != NULL) {
+				event = evtEntry(unit->actEndEventCode, 0xA, 0);
 				if (event != NULL) {
 					unit->field_0x2C8 = event->eventId;
 					event->unitId = unit->unitId;
@@ -2625,41 +2623,41 @@ void battleMakePhaseEvtTable(BattleWork* wp) { //1:1
 }
 
 BOOL BattleWaitAllActiveEvtEnd(BattleWork* wp) { //1:1
-	u8* p = (u8*)wp + 0x20000;
+	BattleWorkField180C0* p = &wp->field_180C0;
 	s32 ret = BattleWaitAllActiveEvtEnd_NoBgSetEndWait(wp);
 
 	if (!ret) {
 		return ret;
 	}
-	if (*(s32*)(p - 0x7d68)) {
-		if (evtCheckID(*(s32*)(p - 0x7d68))) {
+	if (p->field_0x1D8) {
+		if (evtCheckID(p->field_0x1D8)) {
 			return FALSE;
 		}
-		*(s32*)(p - 0x7d68) = 0;
+		p->field_0x1D8 = 0;
 	}
-	if (*(s32*)(p - 0x7d58)) {
-		if (evtCheckID(*(s32*)(p - 0x7d58))) {
+	if (p->field_0x1E8) {
+		if (evtCheckID(p->field_0x1E8)) {
 			return FALSE;
 		}
-		*(s32*)(p - 0x7d58) = 0;
+		p->field_0x1E8 = 0;
 	}
-	if (*(s32*)(p - 0x7f20)) {
-		if (evtCheckID(*(s32*)(p - 0x7f20))) {
+	if (p->field_0x20) {
+		if (evtCheckID(p->field_0x20)) {
 			return FALSE;
 		}
-		*(s32*)(p - 0x7f20) = 0;
+		p->field_0x20 = 0;
 	}
-	if (*(s32*)(p - 0x7d54)) {
-		if (evtCheckID(*(s32*)(p - 0x7d54))) {
+	if (p->field_0x1EC) {
+		if (evtCheckID(p->field_0x1EC)) {
 			return FALSE;
 		}
-		*(s32*)(p - 0x7d54) = 0;
+		p->field_0x1EC = 0;
 	}
-	if (*(s32*)(p - 0x7d5c)) {
-		if (evtCheckID(*(s32*)(p - 0x7d5c))) {
+	if (p->field_0x1E4) {
+		if (evtCheckID(p->field_0x1E4)) {
 			return FALSE;
 		}
-		*(s32*)(p - 0x7d5c) = 0;
+		p->field_0x1E4 = 0;
 	}
 	return TRUE;
 }

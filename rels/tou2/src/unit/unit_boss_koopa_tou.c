@@ -692,15 +692,15 @@ static USER_FUNC(mario_cannot_use_command) {
 
     switch (rnd) {
     case 0:
-        ((s32*)work->field_18FF0)[18] = 3;
+        work->field_19038[0] = 3;
         value = 0x146;
         break;
     case 1:
-        ((s32*)work->field_18FF0)[19] = 3;
+        work->field_19038[1] = 3;
         value = 0x149;
         break;
     case 2:
-        ((s32*)work->field_18FF0)[20] = 3;
+        work->field_19038[2] = 3;
         value = 0x14C;
         break;
     }
@@ -717,11 +717,11 @@ static USER_FUNC(party_cannot_use_command) {
 
     switch (rnd) {
     case 0:
-        ((s32*)work->field_18FF0)[21] = 3;
+        work->field_19038[3] = 3;
         value = 0x150;
         break;
     case 1:
-        ((s32*)work->field_18FF0)[22] = 3;
+        work->field_19038[4] = 3;
         value = 0x14C;
         break;
     }

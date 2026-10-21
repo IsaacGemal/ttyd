@@ -1531,7 +1531,7 @@ static void disp_3D_alpha(CameraId camera, void* param) {
 }
 
 static GenkiWork* get_ptr(void) {
-    return (GenkiWork*)((u8*)_battleWorkPointer + 0x1F4C);
+    return (GenkiWork*)&_battleWorkPointer->actionCommands.field_0x2BC[0];
 }
 
 // The trailing block scope puts mario/parts in r31 and genki in r29, matching the original;
@@ -1645,7 +1645,7 @@ USER_FUNC(star_stone_appear) {
 }
 
 USER_FUNC(recover_cmd_disable) {
-    u32* p = (u32*)((u8*)_battleWorkPointer + 0x19038);
+    s32* p = _battleWorkPointer->field_19038;
 
     p[0] = 0;
     p[1] = 0;

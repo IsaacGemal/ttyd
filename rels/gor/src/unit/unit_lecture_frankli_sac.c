@@ -166,7 +166,7 @@ USER_FUNC(_set_actend_event) {
     s32 code = evtGetValue(event, args[1]);
     BattleUnit* unit = BattleGetUnitPtr(wp, BattleTransID(event, id));
 
-    *(s32*)((u8*)unit + 0x2C4) = code;
+    unit->actEndEventCode = (void*)code;
     return EVT_RETURN_DONE;
 }
 
@@ -194,7 +194,7 @@ static USER_FUNC(_battle_set_lecture_unit_id) {
     BattleWork* wp = _battleWorkPointer;
     s32* args = event->args;
 
-    wp->field_424 = evtGetValue(event, args[0]);
+    wp->lectureUnitId = evtGetValue(event, args[0]);
     return EVT_RETURN_DONE;
 }
 
@@ -251,7 +251,7 @@ USER_FUNC(get_actkind) {
 }
 
 USER_FUNC(get_ac_result) {
-    evtSetValue(event, event->args[0], _battleWorkPointer->field_19064[0]);
+    evtSetValue(event, event->args[0], _battleWorkPointer->field_19064);
     return EVT_RETURN_DONE;
 }
 
@@ -286,13 +286,13 @@ USER_FUNC(hammer_on) {
 USER_FUNC(aud_attack_init) {
     BattleWork* wp = _battleWorkPointer;
 
-    *(s32*)&wp->field_19080[0] |= 1;
-    *(s32*)&wp->field_19080[4] = event->printWindowId;
+    wp->field_19080 |= 1;
+    wp->field_19084 = event->printWindowId;
     return EVT_RETURN_DONE;
 }
 
 USER_FUNC(aud_attack_end) {
-    *(s32*)&_battleWorkPointer->field_19080[0] |= 1;
+    _battleWorkPointer->field_19080 |= 1;
     return EVT_RETURN_DONE;
 }
 

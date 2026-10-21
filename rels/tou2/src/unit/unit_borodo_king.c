@@ -512,7 +512,7 @@ static USER_FUNC(_steal_item) {
             evtSetValue(event, indexIcon, 0x18B);
             evtSetValue(event, indexCount, n);
             unit->heldItem = ITEM_COIN;
-            unit->field_0x30C[0] = n;
+            unit->field_0x30C = n;
             pouchSetCoin(coins - n);
         }
         return EVT_RETURN_DONE;
