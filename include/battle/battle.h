@@ -310,8 +310,7 @@ struct BattleWork {
     FileEntry* menuTex;                 // 0x163DC
     BattleStage stage;                  // 0x163E0
     u8 field_16F1C[0x16F40 - 0x16F1C];  // 0x16F1C, act-record counts for battle_actrecord.c's rule checks (most
-                                        // through BtlActRec_AddCount/AddPoint, capped at 100); users write the
-                                        // index of 0x16FNN as [0xNN - 0x1C], as battle_actrecord.c's WP(0xNN) does
+                                        // through BtlActRec_AddCount/AddPoint, capped at 100)
     BattleAfterReactionWork afterReaction[64]; // 0x16F40
     BattleStageObject stageObjects[32]; // 0x17140
     BattleWorkField180C0 field_180C0;   // 0x180C0

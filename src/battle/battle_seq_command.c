@@ -2311,47 +2311,47 @@ void _btlcmd_SetAttackEvent(BattleUnit* unit, BattleCommand* cmd) {
 			unit->attackEventCode = btldefaultevt_Appeal;
 			unit->field_0x2A8 = 1;
 			if (unit->currentKind == 0xDE) {
-				BtlActRec_AddCount(&wp->field_16F1C[0x2D - 0x1C]);
+				BtlActRec_AddCount((u8*)wp + 0x16F2D);
 			} else {
-				BtlActRec_AddCount(&wp->field_16F1C[0x2E - 0x1C]);
+				BtlActRec_AddCount((u8*)wp + 0x16F2E);
 			}
 			break;
 		case 7:
 			unit->attackEventCode = btldefaultevt_Wait;
 			unit->field_0x2A8 = 1;
 			if (unit->currentKind == 0xDE) {
-				BtlActRec_AddCount(&wp->field_16F1C[0x2D - 0x1C]);
+				BtlActRec_AddCount((u8*)wp + 0x16F2D);
 			} else {
-				BtlActRec_AddCount(&wp->field_16F1C[0x2E - 0x1C]);
+				BtlActRec_AddCount((u8*)wp + 0x16F2E);
 			}
 			break;
 		case 3:
 			unit->attackEventCode = btldefaultevt_Escape;
 			unit->field_0x2A8 = 1;
 			if (unit->currentKind == 0xDE) {
-				BtlActRec_AddCount(&wp->field_16F1C[0x37 - 0x1C]);
+				BtlActRec_AddCount((u8*)wp + 0x16F37);
 			} else {
-				BtlActRec_AddCount(&wp->field_16F1C[0x38 - 0x1C]);
+				BtlActRec_AddCount((u8*)wp + 0x16F38);
 			}
 			break;
 		case 1:
 			unit->field_0x2A8 = 0;
 			if (unit->currentKind == 0xDE) {
 				unit->attackEventCode = badgeWeapon_Charge.mAttackEvtScript;
-				BtlActRec_AddCount(&wp->field_16F1C[0x33 - 0x1C]);
+				BtlActRec_AddCount((u8*)wp + 0x16F33);
 			} else {
 				unit->attackEventCode = badgeWeapon_ChargeP.mAttackEvtScript;
-				BtlActRec_AddCount(&wp->field_16F1C[0x34 - 0x1C]);
+				BtlActRec_AddCount((u8*)wp + 0x16F34);
 			}
 			break;
 		case 2:
 			unit->field_0x2A8 = 0;
 			if (unit->currentKind == 0xDE) {
 				unit->attackEventCode = badgeWeapon_SuperCharge.mAttackEvtScript;
-				BtlActRec_AddCount(&wp->field_16F1C[0x35 - 0x1C]);
+				BtlActRec_AddCount((u8*)wp + 0x16F35);
 			} else {
 				unit->attackEventCode = badgeWeapon_SuperChargeP.mAttackEvtScript;
-				BtlActRec_AddCount(&wp->field_16F1C[0x36 - 0x1C]);
+				BtlActRec_AddCount((u8*)wp + 0x16F36);
 			}
 			break;
 		case 0:
@@ -2362,9 +2362,9 @@ void _btlcmd_SetAttackEvent(BattleUnit* unit, BattleCommand* cmd) {
 				unit->moveState = 3;
 			}
 			if (unit->currentKind == 0xDE) {
-				BtlActRec_AddCount(&wp->field_16F1C[0x29 - 0x1C]);
+				BtlActRec_AddCount((u8*)wp + 0x16F29);
 			} else {
-				BtlActRec_AddCount(&wp->field_16F1C[0x2A - 0x1C]);
+				BtlActRec_AddCount((u8*)wp + 0x16F2A);
 			}
 			break;
 		case 4:
@@ -2399,40 +2399,40 @@ void _btlcmd_SetAttackEvent(BattleUnit* unit, BattleCommand* cmd) {
 
 		switch (command) {
 		case 0:
-			BtlActRec_AddCount(&wp->field_16F1C[0x1C - 0x1C]);
+			BtlActRec_AddCount((u8*)wp + 0x16F1C);
 			break;
 		case 1:
-			BtlActRec_AddCount(&wp->field_16F1C[0x1D - 0x1C]);
+			BtlActRec_AddCount((u8*)wp + 0x16F1D);
 			break;
 		case 4:
 			if (_check_weapon_type_attack(weapon)) {
-				BtlActRec_AddCount(&wp->field_16F1C[0x1E - 0x1C]);
+				BtlActRec_AddCount((u8*)wp + 0x16F1E);
 			} else {
-				BtlActRec_AddCount(&wp->field_16F1C[0x1F - 0x1C]);
+				BtlActRec_AddCount((u8*)wp + 0x16F1F);
 			}
 			break;
 		case 2:
 			if ((s32)weapon != (s32)&ItemWeaponData_Naniga_Okorukana) {
 				if (unit->currentKind == 0xDE) {
 					if (_check_weapon_type_attack(weapon)) {
-						BtlActRec_AddCount(&wp->field_16F1C[0x25 - 0x1C]);
+						BtlActRec_AddCount((u8*)wp + 0x16F25);
 					} else {
-						BtlActRec_AddCount(&wp->field_16F1C[0x26 - 0x1C]);
+						BtlActRec_AddCount((u8*)wp + 0x16F26);
 					}
 				} else {
 					if (_check_weapon_type_attack(weapon)) {
-						BtlActRec_AddCount(&wp->field_16F1C[0x27 - 0x1C]);
+						BtlActRec_AddCount((u8*)wp + 0x16F27);
 					} else {
-						BtlActRec_AddCount(&wp->field_16F1C[0x28 - 0x1C]);
+						BtlActRec_AddCount((u8*)wp + 0x16F28);
 					}
 				}
 			}
 			break;
 		case 6:
 			if (_check_weapon_type_attack(weapon)) {
-				BtlActRec_AddCount(&wp->field_16F1C[0x39 - 0x1C]);
+				BtlActRec_AddCount((u8*)wp + 0x16F39);
 			} else {
-				BtlActRec_AddCount(&wp->field_16F1C[0x3A - 0x1C]);
+				BtlActRec_AddCount((u8*)wp + 0x16F3A);
 			}
 			break;
 		}
@@ -2461,9 +2461,9 @@ void _btlcmd_SetAttackEvent(BattleUnit* unit, BattleCommand* cmd) {
 		unit->attackEventCode = btlataudGetAttackEventPtr(unit->unitId);
 		unit->field_0x2A8 = 3;
 		if (unit->currentKind == 0xDE) {
-			BtlActRec_AddCount(&wp->field_16F1C[0x2B - 0x1C]);
+			BtlActRec_AddCount((u8*)wp + 0x16F2B);
 		} else {
-			BtlActRec_AddCount(&wp->field_16F1C[0x2C - 0x1C]);
+			BtlActRec_AddCount((u8*)wp + 0x16F2C);
 		}
 		if (wp->field_19080 & 1) {
 			msgWindow_Continue(wp->field_19084);

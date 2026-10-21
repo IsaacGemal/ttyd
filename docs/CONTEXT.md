@@ -12202,10 +12202,9 @@ baseline, so `ci.py --init` was run on the first build, whose linked modules alr
   `field_19064` u8, `field_19080` u32 / `field_19084` s32 (gor lecture's flag and window id).
   `lectureUnitId` (0x424): set only by the three `_battle_set_lecture_unit_id` (tik and gor symbols), read as
   `BattleTransID(-6)` and by the command menu.
-- **Act record:** field_16F1C stays an array (battle_actrecord.c walks it). The 34 `(u8*)wp + 0x16FNN` sites in
-  battle_seq_command, battle_unit, battle_seq, battle_mario and battle_item_data, and battle_damage's four
-  `field_16F1C + N`, index it as `[0xNN - 0x1C]`, the form battle_actrecord's WP(), battle_event_cmd and gor kanbu1
-  already use. The sac get_ptr
+- **Act record:** field_16F1C stays an array (battle_actrecord.c walks it). The `(u8*)wp + 0x16FNN` sites in
+  battle_seq_command, battle_unit, battle_seq, battle_mario and battle_item_data, and battle_damage's
+  `field_16F1C + N`, keep their offset form. The sac get_ptr
   functions take `actionCommands.field_0x2BC` instead of `+ 0x1F4C`; the header notes that those works run on into
   `field_1F9C`.
 - **BattleUnit:** 0x2A0, 0x2C4 and 0x2CC are event-code pointers in every user (the s32 readings stored scripts' raw
@@ -12232,8 +12231,8 @@ baseline, so `ci.py --init` was run on the first build, whose linked modules alr
   BakuGameGaugeColor view of `dispParams.field_0xC` (BattleACDispParams; now spelled through that field),
   `unit->work[i]` read as f32 by event_cmd (scripts keep ints and floats there), BattleUnitKind +0x14 read as u16 in
   battle_mario, the UnitStatusBlock MUST_MATCH copy, and PartyEntry raw offsets in aji_13/moo_04.
-- **Index** (`tools/cleanup_index.py`, same script both sides): 16.121 -> 16.274 per kLOC (11366 -> 11474 weighted);
-  raw_offset 497 -> 430, field_0x 3641 -> 3883. The rise is spelling, not new placeholders: the index counts
+- **Index** (`tools/cleanup_index.py`, same script both sides): 16.121 -> 16.368 per kLOC (11366 -> 11540 weighted);
+  raw_offset 497 -> 463, field_0x 3641 -> 3883. The rise is spelling, not new placeholders: the index counts
   `field_0x1D8` but not `field_18298`, and not `*(s32*)(w - 0x7D68)` or `(char*)` casts at all, so moving negative-base
   reads onto sub-struct members and renaming HpGaugeLocal's `field_C` to BattleWorkHpGauge's `field_0xC` add counted
-  names. battle_seq_command 137 -> 89 weighted; battle_stage_object 73 -> 157 for the same reason.
+  names. battle_stage_object 73 -> 157 weighted for the same reason.

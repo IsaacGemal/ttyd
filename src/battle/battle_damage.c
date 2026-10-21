@@ -255,11 +255,11 @@ void BattleDamageDirect(s32 damageCode, BattleUnit* unit, s32 partArg, s32 damag
     }
     if (damage > 0) {
         if (unit->currentKind == 0xde) {
-            BtlActRec_AddCount(&wp->field_16F1C[0x22 - 0x1C]);
-            BtlActRec_AddPoint(&wp->field_16F1C[0x20 - 0x1C], (u8)damage);
+            BtlActRec_AddCount(wp->field_16F1C + 6);
+            BtlActRec_AddPoint(wp->field_16F1C + 4, (u8)damage);
         } else if (unit->currentKind >= 0xe0 && unit->currentKind < 0xe7) {
-            BtlActRec_AddCount(&wp->field_16F1C[0x23 - 0x1C]);
-            BtlActRec_AddPoint(&wp->field_16F1C[0x21 - 0x1C], (u8)damage);
+            BtlActRec_AddCount(wp->field_16F1C + 7);
+            BtlActRec_AddPoint(wp->field_16F1C + 5, (u8)damage);
         }
     }
     if (arg7 != 0 && (damage > 0 || arg4 > 0)) {

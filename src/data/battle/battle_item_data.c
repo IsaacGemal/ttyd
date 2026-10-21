@@ -4188,8 +4188,8 @@ s32 _naniga_okorukana_check(EventEntry* event, BOOL isFirstCall) {
     if (isFirstCall) {
         s32 count = 0;
         s32 item;
-        u8* countA;
-        u8* countB;
+        s8* countA;
+        s8* countB;
 
         while (((s32*)R_mystery_item_table)[count] != 0) {
             count++;
@@ -4200,11 +4200,11 @@ s32 _naniga_okorukana_check(EventEntry* event, BOOL isFirstCall) {
         effSetName((EffectEntry*)event->userdata[0], "effNaniga");
         evtSetValue(event, outIdx, item);
         if (unit->currentKind == UNIT_MARIO) {
-            countA = &wp->field_16F1C[0x25 - 0x1C];
-            countB = &wp->field_16F1C[0x26 - 0x1C];
+            countA = (s8*)((u8*)wp + 0x16f25);
+            countB = (s8*)((u8*)wp + 0x16f26);
         } else if (unit->currentKind >= TYPE_PARTNER_MIN && unit->currentKind < TYPE_PARTNER_MAX) {
-            countA = &wp->field_16F1C[0x27 - 0x1C];
-            countB = &wp->field_16F1C[0x28 - 0x1C];
+            countA = (s8*)((u8*)wp + 0x16f27);
+            countB = (s8*)((u8*)wp + 0x16f28);
         } else {
             goto done;
         }
