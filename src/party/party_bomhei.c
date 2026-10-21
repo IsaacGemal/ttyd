@@ -836,7 +836,7 @@ void bomhei_use_main(PartyEntry* party) {
             EffectEntry* eff = effSandarsEntry(pouchGetPartyAttackLv(3), party->position.x,
                                                party->position.y + party->height,
                                                party->position.z, 0.0f);
-            *(s32*)((u8*)eff->userdata + 0x40) = party->camId;
+            ((effSandarsData*)eff->userdata)->camId = party->camId;
         }
         fbatSandersBombTriggerOn();
         party->useMotionId = 0x46;

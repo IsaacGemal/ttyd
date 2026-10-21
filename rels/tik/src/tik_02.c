@@ -21,6 +21,8 @@
 #include "party/party_motion.h"
 #include "driver/effdrv.h"
 #include "driver/hitdrv.h"
+#include "eff/eff_ripple.h"
+#include "eff/n64/eff_hokori_n64.h"
 #include "mario/mario.h"
 #include "mario/mariost.h"
 #include "party.h"
@@ -643,16 +645,16 @@ USER_FUNC(ripple_scale_func) {
     f32 scale = evtGetFloat(event, args[1]);
     EffectEntry* eff = effNameToPtr((const char*)value);
 
-    *(f32*)((u8*)eff->userdata + 0x14) = scale;
+    ((EffRippleData*)eff->userdata)->field_0x14 = scale;
     return EVT_RETURN_DONE;
 }
 
 USER_FUNC(hokori_color_func) {
     EffectEntry* eff = effNameToPtr((const char*)evtGetValue(event, event->args[0]));
 
-    *(s32*)((u8*)eff->userdata + 0x30) = 0x70;
-    *(s32*)((u8*)eff->userdata + 0x34) = 0x58;
-    *(s32*)((u8*)eff->userdata + 0x38) = 0x58;
+    ((effHokoriData*)eff->userdata)->tevReg0R = 0x70;
+    ((effHokoriData*)eff->userdata)->tevReg0G = 0x58;
+    ((effHokoriData*)eff->userdata)->tevReg0B = 0x58;
     return EVT_RETURN_DONE;
 }
 

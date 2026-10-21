@@ -45,6 +45,7 @@
 #include "driver/swdrv.h"
 #include "eff/eff_fire.h"
 #include "eff/eff_kemuri.h"
+#include "eff/eff_mahojin.h"
 #include "eff/eff_starstone.h"
 #include "evt/evt_johoya.h"
 #include "pmario_sound.h"
@@ -4052,9 +4053,8 @@ static USER_FUNC(starstone_entry) {
     f32 z = evtGetFloat(event, args[2]);
     char name[16];
     s32 i;
-    s32 offset;
 
-    for (i = 0, offset = 0; i < 7; i++, offset += 0x30) {
+    for (i = 0; i < 7; i++) {
         EffectEntry* eff;
         f32 px;
         f32 pz;
@@ -4068,8 +4068,8 @@ static USER_FUNC(starstone_entry) {
         effSetName(eff, name);
         ((effStarStoneData*)eff->userdata)->flags &= ~4;
         ((effStarStoneData*)eff->userdata)->flags |= 0x20;
-        *(EffectEntry**)((u8*)effNameToPtr("mahojin")->userdata + offset + 0x88) = eff;
-        *(void**)((u8*)effNameToPtr("mahojin")->userdata + offset + 0x8C) = (void*)effStarStoneDraw;
+        ((MahojinWork*)effNameToPtr("mahojin")->userdata)[i + 2].drawArg = eff;
+        ((MahojinWork*)effNameToPtr("mahojin")->userdata)[i + 2].drawFunc = (void (*)(CameraId, void*))effStarStoneDraw;
     }
     return EVT_RETURN_DONE;
 }
@@ -4240,7 +4240,7 @@ static EVT_BEGIN(minnnanokoe_evt)
     RETURN
 EVT_END()
 USER_FUNC(wait_mahojin) {
-    s32 id = *(s32*)((u8*)effNameToPtr("mahojin")->userdata + 0x18);
+    s32 id = ((MahojinWork*)effNameToPtr("mahojin")->userdata)->animId[0];
 
     if (id != -1) {
         if (animPoseGetLoopTimes(id) != 0.0f) {

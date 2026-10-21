@@ -2414,7 +2414,7 @@ void _kamek_houki_kemuri(NpcEntry* npc, s32 arg1) {
         effect = effKemuri10N64Entry(0, a2, (18.0f * npc->scale.x) + npc->position.y, npc->position.z, a5, 0.0f, 0.0f,
                                      npc->scale.x);
         if (!strcmp(gp->currentMapName, "kpa_01")) {
-            *(u32*)((u32)effect->userdata + 0x6C) = 7;
+            ((effKemuri10Data*)effect->userdata)->camId = 7;
         }
     }
 }

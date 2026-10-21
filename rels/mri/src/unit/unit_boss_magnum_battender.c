@@ -829,12 +829,12 @@ USER_FUNC(eff_hokori) {
     s32 a = evtGetValue(event, args[3]);
     EffectEntry* effect = effHokoriN64Entry(0, a, x, y, z);
 
-    ((u32*)effect->userdata)[0xC] = 0xFF;
-    ((u32*)effect->userdata)[0xD] = 0xFF;
-    ((u32*)effect->userdata)[0xE] = 0xFF;
-    ((u32*)effect->userdata)[0xF] = 0;
-    ((u32*)effect->userdata)[0x10] = 0;
-    ((u32*)effect->userdata)[0x11] = 0;
+    ((effHokoriData*)effect->userdata)->tevReg0R = 0xFF;
+    ((effHokoriData*)effect->userdata)->tevReg0G = 0xFF;
+    ((effHokoriData*)effect->userdata)->tevReg0B = 0xFF;
+    ((effHokoriData*)effect->userdata)->tevReg1R = 0;
+    ((effHokoriData*)effect->userdata)->tevReg1G = 0;
+    ((effHokoriData*)effect->userdata)->tevReg1B = 0;
     return EVT_RETURN_DONE;
 }
 

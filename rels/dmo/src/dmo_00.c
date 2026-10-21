@@ -20,6 +20,8 @@
 #include "party/party_motion.h"
 #include "driver/dispdrv.h"
 #include "driver/effdrv.h"
+#include "eff/n64/eff_crystal_n64.h"
+#include "eff/n64/eff_radiation_n64.h"
 #include "driver/imgdrv.h"
 #include "driver/msgdrv.h"
 #include "manager/evtmgr_cmd.h"
@@ -514,13 +516,13 @@ USER_FUNC(adjust) {
 }
 
 USER_FUNC(eff_cam) {
-    *(s32*)((u8*)effNameToPtr("eff0")->userdata + 0x38) = 5;
-    *(s32*)((u8*)effNameToPtr("eff1")->userdata + 0x38) = 5;
+    ((EffCrystalData*)effNameToPtr("eff0")->userdata)->camId = 5;
+    ((EffCrystalData*)effNameToPtr("eff1")->userdata)->camId = 5;
     return EVT_RETURN_DONE;
 }
 
 USER_FUNC(eff_cam1) {
-    *(s32*)((u8*)effNameToPtr("eff2")->userdata + 0x98) = 5;
+    ((EffRadiationData*)effNameToPtr("eff2")->userdata)->camId = 5;
     return EVT_RETURN_DONE;
 }
 

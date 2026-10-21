@@ -2242,28 +2242,28 @@ USER_FUNC(effect_position) {
     c = 5.0f * (f32)cos(rad);
     entry = effNameToPtr("map_wave");
     if (entry != NULL) {
-        ((f32*)entry->userdata)[1] = item->position.x + s;
-        ((f32*)entry->userdata)[2] = item->position.y;
-        ((f32*)entry->userdata)[3] = item->position.z + c;
+        ((EffCrystalData*)entry->userdata)->x = item->position.x + s;
+        ((EffCrystalData*)entry->userdata)->y = item->position.y;
+        ((EffCrystalData*)entry->userdata)->z = item->position.z + c;
     }
     s = 10.0f * (f32)sin(rad);
     c = 10.0f * (f32)cos(rad);
     entry = effNameToPtr("map_map");
     if (entry != NULL) {
-        ((f32*)entry->userdata)[1] = item->position.x + s;
-        ((f32*)entry->userdata)[2] = item->position.y;
-        ((f32*)entry->userdata)[3] = item->position.z + c;
-        ((f32*)entry->userdata)[8] = 180.0f - camGetPtr(CAMERA_3D)->viewYaw;
-        ((s32*)entry->userdata)[5] = evtGetValue(event, GW(11));
-        ((f32*)entry->userdata)[4] = 0.9f;
+        ((EffTreasureMapData*)entry->userdata)->x = item->position.x + s;
+        ((EffTreasureMapData*)entry->userdata)->y = item->position.y;
+        ((EffTreasureMapData*)entry->userdata)->z = item->position.z + c;
+        ((EffTreasureMapData*)entry->userdata)->angle = 180.0f - camGetPtr(CAMERA_3D)->viewYaw;
+        ((EffTreasureMapData*)entry->userdata)->alpha = evtGetValue(event, GW(11));
+        ((EffTreasureMapData*)entry->userdata)->scale = 0.9f;
     }
     s = 15.0f * (f32)sin(rad);
     c = 15.0f * (f32)cos(rad);
     entry = effNameToPtr("map_ball");
     if (entry != NULL) {
-        ((f32*)entry->userdata)[1] = item->position.x + s;
-        ((f32*)entry->userdata)[2] = item->position.y;
-        ((f32*)entry->userdata)[3] = item->position.z + c;
+        ((effPokopiPchargeData*)entry->userdata)->x = item->position.x + s;
+        ((effPokopiPchargeData*)entry->userdata)->y = item->position.y;
+        ((effPokopiPchargeData*)entry->userdata)->z = item->position.z + c;
     }
     return EVT_RETURN_BLOCK;
 }

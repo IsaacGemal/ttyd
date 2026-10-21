@@ -1066,7 +1066,7 @@ static USER_FUNC(kamec_copy_status) {
 static USER_FUNC(eff_staff1) {
     BattleUnit* unit;
     EffectEntry* eff;
-    f32* data;
+    EffThunderflareData* data;
     f32 x, y, z;
     s32 id;
 
@@ -1080,11 +1080,11 @@ static USER_FUNC(eff_staff1) {
         return 2;
     }
     data = eff->userdata;
-    data[0x28 / 4] = unit->mSizeMultiplier;
+    data->scale = unit->mSizeMultiplier;
     BtlUnit_GetPos(unit, &x, &y, &z);
-    data[0x8 / 4] = x + 22.5f * unit->mSizeMultiplier * unit->faceDirection;
-    data[0xc / 4] = y + 40.0f * unit->mSizeMultiplier;
-    data[0x10 / 4] = z + 5.0f;
+    data->x = x + 22.5f * unit->mSizeMultiplier * unit->faceDirection;
+    data->y = y + 40.0f * unit->mSizeMultiplier;
+    data->z = z + 5.0f;
     return 0;
 }
 
@@ -1134,7 +1134,7 @@ static USER_FUNC(eff_magic) {
     z += 5.0f;
     eff = effMagic1N64Entry(0, duration, x, y, z, fx, fy, fz);
     unit->work[5] = (s32)eff;
-    *(f32*)((u8*)eff->userdata + 0x28) = unit->mSizeMultiplier;
+    ((effMagic1Data*)eff->userdata)->scale = unit->mSizeMultiplier;
     return 2;
 }
 
@@ -1143,13 +1143,13 @@ static USER_FUNC(eff_magic_get_posX) {
     s32 id;
     BattleUnit* unit;
     EffectEntry* eff;
-    f32* data;
+    effMagic1Data* data;
 
     id = BattleTransID(event, evtGetValue(event, args[0]));
     unit = BattleGetUnitPtr(_battleWorkPointer, id);
     eff = (EffectEntry*)unit->work[5];
     data = eff->userdata;
-    evtSetFloat(event, args[1], data[0x10 / 4]);
+    evtSetFloat(event, args[1], data->offsetX);
     return 2;
 }
 

@@ -17,6 +17,7 @@
 #include "evt/evt_snd.h"
 #include "evt/evt_sub.h"
 #include "driver/effdrv.h"
+#include "eff/eff_starstone.h"
 #include "driver/icondrv.h"
 #include "driver/itemdrv.h"
 #include "driver/npcdrv.h"
@@ -725,7 +726,7 @@ EVT_END()
 USER_FUNC(unk_tou_00006e08) {
     EffectEntry* effect = effNameToPtr("belt");
     NpcEntry* npc = npcNameToPtr("ベルト");
-    *(s32*)((u8*)effect->userdata + 0x38) = 7;
+    ((effStarStoneData*)effect->userdata)->camId = 7;
     npc->cameraId = 7;
     return EVT_RETURN_DONE;
 }

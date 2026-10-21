@@ -15,6 +15,7 @@
 #include "driver/hitdrv.h"
 #include "driver/mapdrv.h"
 #include "driver/mobjdrv.h"
+#include "eff/eff_itemget.h"
 #include "manager/evtmgr_cmd.h"
 #include "mario/mario.h"
 #include "mario/mariost.h"
@@ -377,7 +378,7 @@ static USER_FUNC(effitemgetchange_cam) {
     s32 camId = evtGetValue(event, args[1]);
     EffectEntry* eff = effNameToPtr((const char*)name);
 
-    ((s32*)eff->userdata)[0xE] = camId;
+    ((effItemGetData*)eff->userdata)->camId = camId;
     return EVT_RETURN_DONE;
 }
 
@@ -386,7 +387,7 @@ static USER_FUNC(effitemgetchange_cam_ptr) {
     EffectEntry* eff = (EffectEntry*)evtGetValue(event, args[0]);
     s32 camId = evtGetValue(event, args[1]);
 
-    ((s32*)eff->userdata)[0xE] = camId;
+    ((effItemGetData*)eff->userdata)->camId = camId;
     return EVT_RETURN_DONE;
 }
 
@@ -394,14 +395,14 @@ static USER_FUNC(effitemget_open) {
     s32 name = evtGetValue(event, event->args[0]);
     EffectEntry* eff = effNameToPtr((const char*)name);
 
-    ((s32*)eff->userdata)[8] = 1;
+    ((effItemGetData*)eff->userdata)->scaleMode = 1;
     return EVT_RETURN_DONE;
 }
 
 static USER_FUNC(effitemget_open_ptr) {
     EffectEntry* eff = (EffectEntry*)evtGetValue(event, event->args[0]);
 
-    ((s32*)eff->userdata)[8] = 1;
+    ((effItemGetData*)eff->userdata)->scaleMode = 1;
     return EVT_RETURN_DONE;
 }
 

@@ -4414,9 +4414,9 @@ void puniModeUpdraft(PuniData* punidat) {
         v.x += punidat->dispOffset.x;
         v.y += 15.0f;
         v.z += 3.0f;
-        ((f32*)((EffectEntry*)punidat->effect)->userdata)[1] = v.x;
-        ((f32*)((EffectEntry*)punidat->effect)->userdata)[2] = v.y;
-        ((f32*)((EffectEntry*)punidat->effect)->userdata)[3] = v.z;
+        ((effFukidashiData*)((EffectEntry*)punidat->effect)->userdata)->position.x = v.x;
+        ((effFukidashiData*)((EffectEntry*)punidat->effect)->userdata)->position.y = v.y;
+        ((effFukidashiData*)((EffectEntry*)punidat->effect)->userdata)->position.z = v.z;
     }
 
     {

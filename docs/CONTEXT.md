@@ -11834,3 +11834,43 @@ build, not only the changed files, since shared headers changed).
 - Index (`tools/cleanup_index.py`): 17.181 -> 16.970 per kLOC (12137 -> 11986 weighted); raw_offset 587 -> 540,
   field_0x 3701 -> 3646, opt_pragma 1459 -> 1457. win_root.c 341 -> 223 weighted (raw 20 -> 0), win_item.c 201
   -> 176, win_badge.c 41 -> 31; win_main.h 2 -> 40 (the offset-named members now in the header).
+### Effect userdata through effect data structs (2026-10-20, Claude Opus 5.5, n9-q-o-effud)
+
+`tools/cleanup_index.py` before (67430c55) and after: index 17.181 -> 17.051 per kLOC, raw_offset 587 -> 540, field_0x
+3701 -> 3702 (tik_02 now writes `EffRippleData.field_0x14`), fn_ptr_cast 253 -> 254 (gor_01's starstone draw callback
+is cast to `MahojinWork.drawFunc`'s type, as tik_05 already does). Build byte-identical after every commit; the whole
+tree also compiles without `-DMUST_MATCH` (full `--non-matching` ninja, only the link fails as usual). `tools/ci.py`'s
+own `tools/tests` step fails in this worktree for environment reasons (`elftools` not installed; the wave_launch tests
+time out on systemd scopes), so CI was run with that step stubbed out; every other step passed.
+- Rule used: a site is typed only where the effect is proven: an `effXxxEntry` in the same function, a work slot that
+  only that Entry fills, or a name the same file's scripts create with `evt_eff`/`evt_eff64` (the set name maps to the
+  Entry through `effdrv.c`/`eff_n64.c` and evt_eff's switch). No new member names.
+- Structs moved unchanged from the effect .c to its header: `effBreathFireData`, `effKemuri10Data`, `RecoveryData`
+  (with `RecoveryMayaAnim`), `effKamekiTornadeData`, `effScanningData`, `EffThunderflareData`, `effKemuri12Data`.
+- **#1078 had reverted #1075 in two files.** The hei lecture helpers (itemget camId/scaleMode, balloon cameraId,
+  fukidashi camId) and batten_leader's two Syuryou sites were back to byte offsets on main although the #1075 chapter
+  above says they were converted; both are reapplied. The #1078 merge's evt_lect_hei/batten_leader hunks are exactly
+  the reverse of #1075's.
+- Lecture helpers (hei, muj, tou, mri, usu, gon): `effitemgetchange_cam`/`effitemget_open` write `effItemGetData`
+  (`camId`, `scaleMode`), `efffukidashichange_cam` writes `effFukidashiData.camId`. The scripts that call them create
+  `sub_bg` as "itemget" and `fuki` with evt_eff_fukidashi. The `_ptr` variants get `LW(9)` of `all_juyoitem_lecture`,
+  which itemdrv sets to `wp->getEffect`, and only `effItemGetEntry` fills that. In mri, gon and muj (fukidashi) the
+  named variants have no caller in the file: they are the same local functions, by original symbol name and body, as
+  the lecture module in the other RELs.
+- dol: npc_event (fire `scaleX`/`scaleY`/`alpha`, magic1 `timer` for the kamec fire magic name), evt_eff (breath fire
+  `scale`/`baseScale`/`endScale`), evt_npc (kemuri10 `camId`), party_bomhei (sandars `camId`), win_main and sac_genki
+  (recovery `field_40` and `x/y/z`), sac_suki (crystal `camId`), battle_mario (kameki tornade `x/y/z`, fire
+  `position`), party_yoshi (sweat `position`).
+- RELs: tik_02 (ripple_n64 `field_0x14`, hokori_n64 `tevReg0R/G/B`), dmo_00 (crystal and radiation `camId`), gor_01
+  (`MahojinWork[i + 2].drawArg/drawFunc` replaces the `offset + 0x88/0x8C` counter, which is gone; `animId[0]`), muj and
+  muj_10 (`effKamekiTornadeData.alphaScale`; muj_10's `tornade_alpha_func` is uncalled, typed as muj.c's copy),
+  tou_07/tou_08 (starstone `camId`), tik_05 (crystal, treasure map and pokopi charge fields), tou_00 (kemuri12
+  `position.x`), rampell jin/las (scanning `scale`), magnum_battender (hokori TEV colours), mri_puni (fukidashi
+  `position`), kamec red/green/obaba/tik (thunderflare, pokopi charge and magic1 fields instead of `data[0xNN / 4]`
+  and `data + 0xNN`), both dokugassun copies (`effVaporN64Data` colours and scale).
+- Fix: kamec_white read its thunderflare effect through `ChargeEffectData` (same 0x48 layout, a different effect); it
+  now uses `EffThunderflareData`.
+- Left raw, not effect data: battle_stage_object's `event->userdata[2]` argument, unit_boss_koopa_tou's
+  `event->userdata[0] + 0xC` (event work word), msgdrv's `window->userdata`, sac_genki's `recover_cmd_disable` (BattleWork
+  offset). Open: `effRippleN64Data` in eff_ripple_n64.h is a partial copy of `EffRippleData` (rx/rz at 0x2C/0x30) and
+  could be dropped for it; mri_puni's `PuniData.effect` is an `s32` that every user casts to `EffectEntry*`.

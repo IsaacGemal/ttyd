@@ -1068,12 +1068,11 @@ static USER_FUNC(kamec_copy_status) {
     return EVT_RETURN_DONE;
 }
 
-// data is an effThunderflare data block; there is no header for it, so the fields are addressed by offset.
 static USER_FUNC(eff_staff1) {
     BattleWork* work;
     BattleUnit* unit;
     EffectEntry* effect;
-    u8* data;
+    EffThunderflareData* data;
     f32 x, y, z;
     s32 id;
 
@@ -1088,11 +1087,11 @@ static USER_FUNC(eff_staff1) {
         return EVT_RETURN_DONE;
     }
     data = effect->userdata;
-    *(f32*)(data + 0x28) = unit->mSizeMultiplier;
+    data->scale = unit->mSizeMultiplier;
     BtlUnit_GetPos(unit, &x, &y, &z);
-    *(f32*)(data + 0x08) = 22.5f * unit->mSizeMultiplier * unit->faceDirection + x;
-    *(f32*)(data + 0x0C) = 40.0f * unit->mSizeMultiplier + y;
-    *(f32*)(data + 0x10) = 5.0f + z;
+    data->x = 22.5f * unit->mSizeMultiplier * unit->faceDirection + x;
+    data->y = 40.0f * unit->mSizeMultiplier + y;
+    data->z = 5.0f + z;
     return EVT_RETURN_BLOCK;
 }
 
@@ -1123,7 +1122,6 @@ static USER_FUNC(eff_staff2) {
     return EVT_RETURN_BLOCK;
 }
 
-// effect->userdata is an effMagic1 data block; there is no header for it, so 0x28 is addressed by offset.
 static USER_FUNC(eff_magic) {
     s32* args = event->args;
     BattleWork* work;
