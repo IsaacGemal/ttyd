@@ -5435,8 +5435,8 @@ void goryuugijo_main_slot(EventEntry* event, BOOL isFirstCall) {
     case 11:
     {
         if (data->fallEvt != NULL) {
-            u8* p = (u8*)monte_p[0];
-            *(s32*)(*(u8**)(p + 0x4c) + 0x5c) = 0;
+            MonteMedal* p = (MonteMedal*)monte_p[0];
+            p->field_0x4C->prize = 0;
             _mapFree((void*)monte_p[0]);
             evtDeleteID(data->fallEvt->eventId);
             data->fallEvt = NULL;
@@ -5477,7 +5477,7 @@ void goryuugijo_main_slot(EventEntry* event, BOOL isFirstCall) {
 }
 
 void goryuugijo_disp_slot(CameraId cameraId, void* param) {
-    u8* p = (u8*)((void**)param)[7];
+    SlotData* p = ((GoryuugijoWork*)param)->data;
     GorSlotIconTable tbl = dat_gor_0001a46c;
     Vec pos;
     f32 projv[7];
@@ -5493,8 +5493,8 @@ void goryuugijo_disp_slot(CameraId cameraId, void* param) {
     s32 i;
 
     for (i = 0; i < 3; i++) {
-        if (*(s8*)(p + 0x30 + i) == 2 && i == *(s16*)(p + 0x74)) {
-            mapObjGetPos(drumname[*(s32*)(p + 0x60)][i], &pos);
+        if (p->state[i] == 2 && i == p->cursor) {
+            mapObjGetPos(drumname[p->now][i], &pos);
             pos.x -= 25.0f;
             pos.y += 10.0f;
             cam = camGetPtr(4);
