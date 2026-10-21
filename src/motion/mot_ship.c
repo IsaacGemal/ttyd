@@ -462,15 +462,11 @@ void mot_ship(void) {
             f32 sp0C;
             void* hit;
             f32 dist;
+            f32 height;
             m->wPlayerCollisionBox.x = 20.0f;
             hit = marioChkLandon(&sp0C, f30);
             m->wPlayerCollisionBox.x = 40.0f;
-#ifdef MUST_MATCH
-            // `- -f30` (not `+ f30`) makes MWCC emit fadds with the subtrahend result first.
-            if (hit != NULL && (m->position.y - sp0C <= 0.0f || (m->position.y - sp0C) - -f30 <= 0.0f)) {
-#else
-            if (hit != NULL && (m->position.y - sp0C <= 0.0f || (m->position.y - sp0C) + f30 <= 0.0f)) {
-#endif
+            if (hit != NULL && ((height = m->position.y - sp0C) <= 0.0f || height + f30 <= 0.0f)) {
                 m->hitobjStandOn = hit;
                 m->position.y = sp0C;
                 m->flags &= ~0x000F0000;
@@ -764,15 +760,11 @@ void mot_ship(void) {
                 s32 landed;
                 void* hit;
                 f32 dist;
+                f32 height;
                 m->wPlayerCollisionBox.x = 20.0f;
                 hit = marioChkLandon(&sp08, f30);
                 m->wPlayerCollisionBox.x = 40.0f;
-#ifdef MUST_MATCH
-                // `- -f30` (not `+ f30`) makes MWCC emit fadds with the subtrahend result first.
-                if (hit != NULL && (m->position.y - sp08 <= 0.0f || (m->position.y - sp08) - -f30 <= 0.0f)) {
-#else
-                if (hit != NULL && (m->position.y - sp08 <= 0.0f || (m->position.y - sp08) + f30 <= 0.0f)) {
-#endif
+                if (hit != NULL && ((height = m->position.y - sp08) <= 0.0f || height + f30 <= 0.0f)) {
                     m->hitobjStandOn = hit;
                     m->position.y = sp08;
                     m->flags &= ~0x000F0000;

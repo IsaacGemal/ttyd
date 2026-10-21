@@ -24,9 +24,6 @@ typedef struct AcTimingAEntry {
 extern AcTimingAEntry* _ac_timing_a_timing_tbl[7];
 
 // clang-format off
-// opt_propagation off: with copy propagation on MWCC folds the dec pointer into `work+0x1F54`
-// and never materialises it; the original keeps `dec` in r4 (`addi r4, r30, 0x1f4c`) for the
-// four `0x8(r4)` accesses.
 s32 battleAcMain_TimingA(BattleWork* work) {
 	BattleActions* ac = &work->actionCommands;
 	AcTimingADecWork* dec = (AcTimingADecWork*)&ac->field_0x2BC[0];

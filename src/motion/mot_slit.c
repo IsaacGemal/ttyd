@@ -101,63 +101,8 @@ BOOL marioSlitKeyDisable(void) {
 
 s32 U_marioSlitContinueChk(void) {
     MarioWork* mario = marioGetPtr();
-    MarioWork* mario2 = marioGetPtr();
-    s32 state;
 
-#ifdef MUST_MATCH
-    // MUST_MATCH: the original shares a single `state = 0` tail between the
-    // `!dispFlags` branch and the final else, so both jump to a common `zero`
-    // label. Written as the plain nested if/else below, MWCC emits that block
-    // twice (97.03%).
-    if (mario2->trigFlags & MARIO_TRIG_FLAG_USE_PARTNER) {
-        state = 0;
-    } else if (marioKeyOffChk()) {
-        state = 0;
-    } else if (marioBgmodeChk() == 1) {
-        state = 0;
-    } else if (!(mario2->dispFlags & (1 << 24))) {
-        if (mario2->buttonHeld & 0x20) {
-            state = 1;
-        } else {
-            goto zero;
-        }
-    } else {
-        if (mario2->buttonHeld & 0x20) {
-            state = 2;
-        } else if (mario2->triggerRight >= 0x32) {
-            state = 2;
-        } else {
-            goto zero;
-        }
-    }
-    goto done;
-zero:
-    state = 0;
-done:
-#else
-    if (mario2->trigFlags & MARIO_TRIG_FLAG_USE_PARTNER) {
-        state = 0;
-    } else if (marioKeyOffChk()) {
-        state = 0;
-    } else if (marioBgmodeChk() == 1) {
-        state = 0;
-    } else if (!(mario2->dispFlags & (1 << 24))) {
-        if (mario2->buttonHeld & 0x20) {
-            state = 1;
-        } else {
-            state = 0;
-        }
-    } else {
-        if (mario2->buttonHeld & 0x20) {
-            state = 2;
-        } else if (mario2->triggerRight >= 0x32) {
-            state = 2;
-        } else {
-            state = 0;
-        }
-    }
-#endif
-    if (state != 0) {
+    if (marioSlitButton() != 0) {
         return 1;
     }
     if (marioSlitChkWallAround()) {
@@ -354,63 +299,8 @@ s32 marioGetMotSlitCancel3(void) {
 // standalone U_ function below).
 static inline s32 slitContinueChk(void) {
     MarioWork* mario = marioGetPtr();
-    MarioWork* mario2 = marioGetPtr();
-    s32 state;
 
-#ifdef MUST_MATCH
-    // MUST_MATCH: the original shares a single `state = 0` tail between the
-    // `!dispFlags` branch and the final else, so both jump to a common `zero`
-    // label. Written as the plain nested if/else below, MWCC emits that block
-    // twice (97.03%).
-    if (mario2->trigFlags & MARIO_TRIG_FLAG_USE_PARTNER) {
-        state = 0;
-    } else if (marioKeyOffChk()) {
-        state = 0;
-    } else if (marioBgmodeChk() == 1) {
-        state = 0;
-    } else if (!(mario2->dispFlags & (1 << 24))) {
-        if (mario2->buttonHeld & 0x20) {
-            state = 1;
-        } else {
-            goto zero;
-        }
-    } else {
-        if (mario2->buttonHeld & 0x20) {
-            state = 2;
-        } else if (mario2->triggerRight >= 0x32) {
-            state = 2;
-        } else {
-            goto zero;
-        }
-    }
-    goto done;
-zero:
-    state = 0;
-done:
-#else
-    if (mario2->trigFlags & MARIO_TRIG_FLAG_USE_PARTNER) {
-        state = 0;
-    } else if (marioKeyOffChk()) {
-        state = 0;
-    } else if (marioBgmodeChk() == 1) {
-        state = 0;
-    } else if (!(mario2->dispFlags & (1 << 24))) {
-        if (mario2->buttonHeld & 0x20) {
-            state = 1;
-        } else {
-            state = 0;
-        }
-    } else {
-        if (mario2->buttonHeld & 0x20) {
-            state = 2;
-        } else if (mario2->triggerRight >= 0x32) {
-            state = 2;
-        } else {
-            state = 0;
-        }
-    }
-#endif
-    if (state != 0) {
+    if (marioSlitButton() != 0) {
         return 1;
     }
     if (marioSlitChkWallAround()) {
@@ -604,16 +494,9 @@ static inline void slitSetWalkSpeed(MarioWork* mario) {
             speed = speed;
 #endif
         } else {
-#ifdef MUST_MATCH
-            // The header declares wStickDir1/2 as u8, but the original treats them as signed
-            // (`extsb`). Reading them through an s8 lvalue is what reproduces its register
-            // allocation (`extsb r4,r4; mullw r3,r4,r4` instead of a copy to r3).
-            s8 sx = *(s8*)&m->wStickDir1;
-            s8 sy = *(s8*)&m->wStickDir2;
-#else
-            s32 sx = (s8)m->wStickDir1;
-            s32 sy = (s8)m->wStickDir2;
-#endif
+            // The header declares wStickDir1/2 as u8; the stick values are signed.
+            s8 sx = m->wStickDir1;
+            s8 sy = m->wStickDir2;
             if (sx * sx + sy * sy <= 0xBD1) {
                 speed *= 0.5f;
             }

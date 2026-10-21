@@ -384,27 +384,15 @@ USER_FUNC(evt_moving_floor_init) {
         delta = ((f32*)&work->end)[work->index] - ((f32*)&work->start)[work->index];
     }
     work->speed = delta / (f32)work->duration[work->index];
-#ifdef MUST_MATCH
     if (reverse != 0) {
-        f32 a = ((f32*)&work->start)[work->index];
-        f32 b = ((f32*)&work->end)[work->index];
-        f32 t = 1.0f - ratio;
-        work->axisPos = b * t + a * ratio;
+        f32 from = ((f32*)&work->end)[work->index];
+        f32 to = ((f32*)&work->start)[work->index];
+        work->axisPos = from * (1.0f - ratio) + to * ratio;
     } else {
-        f32 a = ((f32*)&work->end)[work->index];
-        f32 b = ((f32*)&work->start)[work->index];
-        f32 t = 1.0f - ratio;
-        work->axisPos = b * t + a * ratio;
+        f32 from = ((f32*)&work->start)[work->index];
+        f32 to = ((f32*)&work->end)[work->index];
+        work->axisPos = from * (1.0f - ratio) + to * ratio;
     }
-#else
-    if (reverse != 0) {
-        f32 t = 1.0f - ratio;
-        work->axisPos = ((f32*)&work->end)[work->index] * t + ((f32*)&work->start)[work->index] * ratio;
-    } else {
-        f32 t = 1.0f - ratio;
-        work->axisPos = ((f32*)&work->start)[work->index] * t + ((f32*)&work->end)[work->index] * ratio;
-    }
-#endif
     work->progress = (f32)work->duration[work->index] * ratio;
     return EVT_RETURN_DONE;
 }

@@ -131,8 +131,8 @@ void marioForcePlaneAnime(void) {
 
 static void flyMain(void);
 
-// Inlined reset block the original duplicates at every mot_plane exit (fields set to 20/37,
-// zero vectors, paper off). Reproduces the same scheduling as mot_plane_post.
+// Inlined reset block the original duplicates at every mot_plane exit and in mot_plane_post (fields
+// set to 20/37, zero vectors, paper off).
 static inline void planeReset(void) {
 	MarioWork* m = marioGetPtr();
 
@@ -1006,9 +1006,6 @@ static void flyMain(void) {
 	}
 }
 
-// The volatile accesses below reproduce the original's scheduling:
-// the y store must stay volatile so the volatile Vec copies do not hoist above it, and the Vec
-// copies are volatile so each loads/stores as an unscheduled pair.
 void mot_plane_post(void) {
 	MarioWork* mario = marioGetPtr();
 	MarioWork* m;
@@ -1021,32 +1018,7 @@ void mot_plane_post(void) {
 			((MotionPlaneData*)m->motStruct)->sfxId = -1;
 		}
 	}
-	m = marioGetPtr();
-#ifdef MUST_MATCH
-	// Volatile store keeps the following volatile Vec loads below it, as the original schedules them.
-	m->wPlayerCollisionBox.x = 20.0f;
-	*(volatile f32*)&m->wPlayerCollisionBox.y = 37.0f;
-#else
-	m->wPlayerCollisionBox.x = 20.0f;
-	m->wPlayerCollisionBox.y = 37.0f;
-#endif
-
-#ifdef MUST_MATCH
-	// The original copies each Vec with an unscheduled per-component load/store pair.
-	*(volatile Vec*)&m->dispRot = *(volatile Vec*)&vec3_802c5cd8;
-	*(volatile Vec*)&m->dispPivot = *(volatile Vec*)&vec3_802c5ce4;
-	*(volatile Vec*)&m->dispOfs = *(volatile Vec*)&vec3_802c5cf0;
-#else
-	m->dispRot = vec3_802c5cd8;
-	m->dispPivot = vec3_802c5ce4;
-	m->dispOfs = vec3_802c5cf0;
-#endif
-	marioPaperOff();
-	marioChgPaper(NULL);
-	m->dispFlags &= ~0x8;
-	m->flags |= 0x80;
-	marioAdjustMoveDir();
-	m->dispFlags &= ~0x100;
+	planeReset();
 	mario->unk138 = 0.0f;
 	mario->unk140 = 0.0f;
 	if (mario->motStruct != NULL) {

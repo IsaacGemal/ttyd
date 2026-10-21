@@ -4567,3 +4567,122 @@ bounds; volatile, puns, int round trips, dead stores, redundant tests, fn-ptr ca
   - Data leads (EQUIV in scratch, not applied): eff_hit/eff_magic3/eff_kumokumo_chip/eff_mobj_broken named zero Vecs
     as initialisers with the definitions deleted; eff_teresa/eff_stageclear constants defined after the code;
     eff_mahorn2's three Vec inlines go if its array is unguarded; eff_sunlight literal zero.
+
+## Second pass over MUST_MATCH blocks in src/battle, event, motion, mario, party, manager, sequence (2026-10-21, Claude Opus 5.5 orchestrating ten Claude Opus 5.5 workers, n9-q-o-mm2)
+
+Task (Isaac): retry every MUST_MATCH block left in src/battle (171 lines), src/event (90), src/motion (49),
+src/mario (36), src/party (52), src/manager (18) and src/sequence (11) after #1096/#1099, assuming some earlier verdicts
+are wrong (as #1100 and #1103 found), without repeating recorded attempts. src/effect and src/driver were #1103's.
+Data layout was out of bounds; volatile, puns, int round trips, dead stores, redundant tests, fn-ptr casts and
+steering helpers stay guarded.
+
+- Method: as #1103. Each variant compiled with its object's ninja flags and compared with the pre-branch object by
+  tools/obj_equiv.py (harness in the untracked build/mm3/: try.py, strip.py, dump.py, prag.py). Round 1: seven
+  workers over disjoint file groups (366 regions). Round 2: three workers on the near-misses, rewriting each function
+  from its asm instead of tweaking the source. Reports in build/mm3/agent1..7/REPORT.md and build/mm3/r1..3/REPORT.txt
+  (subagents can't write .md files, so most round-1 reports are the orchestrator's condensed copies of their final
+  messages). Every commit: obj_equiv EQUIV, `build/G8MJ01/ok` recreated, `configure.py --non-matching` compile clean,
+  fncast_lint and local_prototypes clean, `tools/ci.py` PASS with its tools/tests step stubbed (8 environment errors
+  in test_wave_launch's systemd scopes, as in the chapters above). prag.py removed each remaining unguarded opt_*
+  pragma pair in every changed file: all 23 still change the object.
+- **Counts.** `grep -c MUST_MATCH` 427 -> 383: battle 171 -> 156, event 90 -> 87, motion 49 -> 38, mario 36 -> 31,
+  party 52 -> 47, manager 18 -> 18, sequence 11 -> 6. Per file: battle_event_cmd 7 -> 2, battle_audience 13 -> 11,
+  battle_stage 5 -> 3, battle_seq_end 6 -> 5, ac_crane_timing 2 -> 1, sac_muki 4 -> 0, evt_npc 2 -> 0, evt_movefloor
+  1 -> 0, mario_sbr 8 -> 3, party_yoshi 10 -> 6, party_cloud 3 -> 2, mot_slit 8 -> 3, mot_plane 9 -> 7, mot_jabara
+  5 -> 3, mot_ship 5 -> 3, seq_load 6 -> 2, seq_logo 3 -> 2; the other 79 files unchanged. Index
+  (tools/cleanup_index.py) 14.203 -> 14.122 per kLOC (9913 -> 9852 weighted): must_match 817 -> 782, goto 121 -> 115
+  (mot_slit's two goto-tail chains), opt_pragma 894 -> 892, address_name 2653 -> 2642 (battle_event_cmd's natural-only
+  `str_SFX_*` externs), field_0x 3936 -> 3935.
+- **Forms that matched.**
+  - An existing function instead of a hand copy: mot_slit's U_marioSlitContinueChk and its inline twin call
+    `marioSlitButton()` (retail symbol, same file; inlined it gives the shared `state = 0` tail), and mot_plane_post
+    ends with the file's planeReset inline, whose body it repeated.
+  - The `sizeof(a) / sizeof(a[0])` loop bound (#1103's lead): mario_sbr's rubSet3C is a loop over unk3C, unrolled in
+    full as retail has it; its 21 volatile stores and marioGetRub's volatile unk04/unk08 updates go.
+  - Plain field forms once the volatile goes: JumpPosition/JumpPartsPosition clamp `mMoveCurrentPos.y` against
+    `mMoveTargetPos.y` directly (no cur/tgt locals); party_yoshi's two 6-float volatile copies are
+    `pl->dispOfs = vec[0]; pl->dispOfs2 = vec[1];`, the shape yoshi_use already had unguarded; battle_seq_end's
+    volatile zero; seq_load's two colour reads inside `if (i == wp->cursor)` (a conditional block is never hoisted).
+  - Assignment inside the condition: mot_ship's landing tests are `(height = m->position.y - sp0C) <= 0.0f ||
+    height + f30 <= 0.0f`, replacing `- -f30`.
+  - Honest types: seq_load's angle table is `f32 v[4][4]` indexed `[copySrc][copyDst]` (the byte-offset macro goes);
+    mot_slit reads wStickDir1/2 into `s8` locals instead of through `*(s8*)&`.
+  - Expressions: evt_npc_set_ry_lr is `reviseAngle((100.0f * yaw + 5.0f) / 100.0f)` with yaw read off
+    `camGetPtr(4)` (evt_sub_get_coin's expression), replacing `yaw = yaw`; evt_moving_floor_init interpolates one
+    `from`/`to` pair per arm; seq_logo is `width = 0.7f * (f32)romFontGetWidth(msg)`; sac_muki's colours are
+    `(GXColor){r, g, b, entry->alpha}` (its guarded mukiAlphaColor inline goes).
+  - Guarded arms that were already plain C: ac_crane_timing's `BattleActions* ac` (unguarded in ~10 other ac units),
+    battle_audience's `star->scale = vec3_802f9744` (the natural-only `p_vec3_802f9744` pointer goes), battle_stage's
+    function-scope buf/i/j/k (tou_03's form), battle_event_cmd's sound-name literals (the natural build had named
+    externs nothing defines), party_cloud's clamp, mot_jabara's guarded opt_common_subs pair (not needed).
+- **Not applied, for review:**
+  - EQUIV but still a hack: evt_win L533 / evt_shop L219 `notCtrl || (notKey = !marioChkKey(), notKey)` (comma; the
+    same shape is unguarded at statuswindow.c:195); mario.c L418 `notCtrl2 || (notKey = !marioChkKey())` (notKey
+    never read, a dead store); ac_timing_a `((AcTimingADecWork*)ac->field_0x2BC)->flags` (bypasses `dec` in scope);
+    battle_status_effect `(s32)list[i].type` (same as the `+ 0`); battle_unit `((PouchPartyData*)pouch)[id].currentHP`
+    and battle_damage `*(s8*)&weapon->ohkoChance` (puns, but less raw than the current arms); evt_env's `&
+    0xFFFFFFFF` masks, unguarded at evt_cam 111/114/144/151, evt_npc 2117, evtmgr_cmd 151, aji_06, aji_17 and gon_12
+    but put back under the guard by the mmsrc review: one of the two should change.
+  - mot_plane's `(s32)currSubMotionId` compare matches and is unguarded in mario_plane_cancel and ~46 other places,
+    but stays guarded here as an int cast (header lead: `s32 currSubMotionId`, untested tree-wide).
+  - battle_information's guarded `roll = irand(100); i = dropCount; if (roll < chance)` reads the count where retail
+    does, but the store is dead on the false path; kept guarded as steering, as before.
+  - battle_seq_end's halfWidth-in-argument has an unguarded twin in battle_seq_command.c:1827.
+- **New leads.**
+  - Inline names: party_cloud's RELOAD_MARIO goes if case 0xC's block is an inline that opens with its own
+    `MarioWork* mario = party->playerPtr;`, as getHitBreatheout2 does (build/mm3/agent7/v/cl_inl3.c); the name
+    `getHitBreatheout` is only inferred from the `2`, so not applied. mot_slit's `speed = speed` goes if
+    slitSetWalkSpeed returns the speed (needs a new name).
+  - mario_pouch's comparators almost certainly call pouchHiraganaToKatakana (inlined): two calls remove the r30/r31
+    base swap and the prologue difference, leaving a c/d r4/r5 swap in the inlined loop (build/mm3/r1/pouch_v3.c;
+    thousands of helper and caller orders tried). Header lead: `const char* src`.
+  - evt_uranaisi's `offset` counter is an `infoId` index, as the matched evt_johoya.c johoya_data_make keeps one; right
+    instructions, but colouring stays off (best 35 lines; build/mm3/r3/ura_*.py).
+  - Data (EQUIV in scratch, not applied): non-const same-section definitions remove the volatile Vec/GXColor copies in
+    mot_dokan, mot_damage, mot_yoshi, mot_hammer (L508-596), mot_plane's planeReset and L189, seq_load's in-loop colours
+    (build/mm3/agent6/*nc*.c); compound literals with the named definition deleted in mot_yoshi, mot_damage, sac_deka
+    (dat_80421e40/44/48, removes the volatile color), party_bomhei (dat_802ccf60 + its two angle regions); mot_hammer
+    hitEstimate's dir vectors as compound literals give identical code, only the template placement differs;
+    mario_motion's strings by name with L65 unguarded (the mmsrc review had reverted it).
+- **Left, with what was tried** (per region in the reports):
+  - battle/ac: crane MATCH_F64 (plain adds .rodata doubles); button_down/gauge_timing/gauge_timing2/signal_timing
+    volatile Vec loop copies (Vec temp, while, in-loop initialiser, increment, literal); repeatedly's volatile clamps
+    (-=, else-if, reversed compares, target reuse: constant in f1 not f0); ac_shot/button_down comma sfx (declaration
+    orders, char*, before/top of loop, at call); shot_target volatile stores (5 orders); signal_timing pool order (plain
+    assignments miss only by NG's addi landing last; initialisers, NG first, in-loop orders, literals); ICON_DISP_B u16
+    cast; stick_keep_left's `n >= 0` (13 loop shapes, each one guard short or a doubled subic.); gauge_timing's doubled
+    test (#1096's 15 shapes stand).
+  - battle: event_cmd GetRGB/CheckDamage volatile args (7 and 4 orders, sibling's order); damage `s32 rate` + (s8)
+    (s8 rate, callee returning s8/u8, decl orders) and ohkoChance; seq_end _lvup_spot_on volatiles, halfWidth (8
+    shapes); audience case-0 zero-Vec helper, goto case4_body, ApSrcEntry volatiles; unit partyData pun (9 index forms)
+    and status-block copies; kinopio's `step` (needs the unguarded opt_lifetimes off gone); stage MATCH_F32 and `+ zero`
+    (7 tev shapes); menu_disp/message/status_effect/attack_audience Waku_col and colour casts (colour placement,
+    compound literal: r6/r7 swap); seq comma initialisers and z/y/x locals; seq_command (s32)(s8); information irand
+    temps; ac_help acHelpResolve (9 shapes).
+  - sac: bakugame +/-0x80 round trip (9 shapes) and volatile args (9 select shapes); deka volatile colour; genki icon
+    by-address casts (else reverses slots; the existing _drawGenkiTex inlines fix the slots, not the Vec copies);
+    scissor_abs (__fabs/__fabsf/fabsf, swaps) and HSV2RGB cast; zubastar volatile count/Vec and b18 base.
+  - event: evt_mobj jumpstand `(u8*)jumptable + (type << 2)` (~30 shapes, a gp/slwi swap); evt_mobj/evt_cam/evt_win
+    stripped-function placeholders (no #else; dropping one changes .text); evt_win/evt_shop do/while(0) tails (~20
+    shapes); evt_shop SHOP_F32 (plain re-pools .sdata2); evt_bero names[8] copies (initialisers triple the table);
+    evt_mario EM_VEC/EM_STR base, searchUnder2 casts, volatile flags/Vec (7 shapes); uranaisi counter and table search
+    (above; the goto keeps gswf short-lived); telop `scale = scale` (12 shapes; `scale = float_1` is one volatile
+    reload off); nannpc `pos = pos` and `s64 id` (46 types and orders); evt_party f32 pos (6 positions); yuugijou
+    rankMonte (scale700 now compiles in seconds, still DIFF); evt_sub one-iteration for (16 shapes: branchless or an
+    extra b); lottery `t` reloads (loops don't unroll); evt_env masks (above).
+  - mario: pouch base pun (above); sbr switch temp `t` (13 shapes incl. rubStick); mario.c gotos and comma tail
+    (above); balloon/mario_party inline residue (no evidenced names); mario_party (s8) (6 shapes); mariost RUMBLE_MS
+    is OSDiffTick's expansion (OSTime.h not on the include path).
+  - motion: mot_roll volatile targetYaw/directionView (an f0/f1 or lis/lfs swap in every shape); mot_jump jumpVelY
+    and the cam-follow clamp (register swaps in every shape); mot_ship `+ (zero = 0.0f)` (every literal folds) and
+    the ftmp clamp (retail loads shipData[4] before SHIP_DATA's call); mot_hammer's empty attr test (dead-code
+    elimination) and dir3 copy (data lead above); mot_plane's opt_propagation pair and planeReset volatiles;
+    mot_jabara RDBL.
+  - party: chuchu SearchState (24 statement orders x 5 `i = 0` positions; li;mr vs li;li); party_hit opt_propagation +
+    volatile px/py/pz; bomhei `10.5f` temp (12 forms fold to li 10) and do/while(0) NULL retests; nokonoko double
+    store; party_motion round trip, targetDist self-assignments (f5/f6 swap) and NULL retests; party_move's hand-inlined
+    partyChgSpeedPose (a call auto-inlines with speed in f3 not f1; 240 body orders).
+  - manager: winmgr GXSetFog casts (by value moves the colour slot 0x18 -> 0xc), volatile firstItem + `zero = zero`,
+    const volatile Vec reads; cardmgr's dead timeout test (the constant stays in r30 only with it); filemgr CLUT pun (11
+    shapes); arammgr volatile node flags (header lead).
+  - Data layout regions (declspec objects, pool helpers, padded strings, force_active, defer_codegen) were skipped.

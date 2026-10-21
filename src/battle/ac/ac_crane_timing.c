@@ -42,17 +42,9 @@ typedef struct CraneTimingWork {
 } CraneTimingWork;
 
 s32 battleAcMain_CraneTiming(BattleWork* work) {
-#ifdef MUST_MATCH
-	// MWCC 2.6 folds two of the three base pointers (dec into disp) when both are derived directly
-	// from `work`; deriving both from the `ac` intermediate keeps work=r28, dec=r31 and disp=r27 in
-	// their own registers, as the original does.
 	BattleActions* ac = &work->actionCommands;
 	CraneTimingWork* dec = (CraneTimingWork*)&ac->field_0x2BC[0];
 	BattleACDispParams* disp = &ac->dispParams;
-#else
-	CraneTimingWork* dec = (CraneTimingWork*)&work->actionCommands.field_0x2BC[0];
-	BattleACDispParams* disp = &work->actionCommands.dispParams;
-#endif
 	BattleUnit* unit;
 	s32 flag;
 	s32 nearCenter;

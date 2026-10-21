@@ -435,21 +435,9 @@ void N__cloud_use(PartyEntry* party) {
         party->dispOffset = (Vec){0.0f, 0.0f, 0.0f};
         cloud->unk8 += 2.0f;
         RELOAD_MARIO();
-#ifdef MUST_MATCH
-        // Match-only: the original loads cloud->unk8 (0x8) before cloud->maxDist; assigning mx
-        // inside the comparison forces that emission order. The natural form is under #else.
-        {
-            f32 a = cloud->unk8;
-            f32 mx;
-            if (a >= (mx = cloud->maxDist)) {
-                cloud->unk8 = mx;
-            }
-        }
-#else
         if (cloud->unk8 >= cloud->maxDist) {
             cloud->unk8 = cloud->maxDist;
         }
-#endif
         angle = toMovedir(cloud->unk4);
         sincosf(&sin1, &cos1, angle);
         sincosf(&sin2, &cos2, -45.0f);
