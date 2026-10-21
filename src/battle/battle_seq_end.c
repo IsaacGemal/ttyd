@@ -137,7 +137,6 @@ extern const f32 float_900_80420d4c;
 extern const f32 float_40_80420d50;
 extern const char str_M_V_1[8];
 
-
 //.data
 RankUpData _rank_up_data[] = {
     {1, 0, "msg_menu_mario_name_0", "butai_01"},
