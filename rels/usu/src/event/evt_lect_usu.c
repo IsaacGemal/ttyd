@@ -367,15 +367,11 @@ static USER_FUNC(lecture_button_set_pos) {
     pos.x = x;
     pos.y = y;
     pos.z = z;
-#ifdef MUST_MATCH
-    // Split out so the pointer is computed after the temp is built: matches the original's register allocation.
+    // The button pointer is taken after the temp is built, as in the original.
     {
         LectureButton* btn = &lbtn[idx];
         btn->position = pos;
     }
-#else
-    lbtn[idx].position = pos;
-#endif
     return EVT_RETURN_DONE;
 }
 

@@ -61,9 +61,7 @@ USER_FUNC(camera_yure) {
     Vec vec;
     f32 s;
     f32 scale;
-#ifdef MUST_MATCH
     s32 diff;
-#endif
 
     count = evtGetValue(event, event->args[0]);
     cam = camGetPtr(CAMERA_3D);
@@ -72,14 +70,9 @@ USER_FUNC(camera_yure) {
         event->userdata[1] = count;
     }
     s = (f32)sin(18.849556f * (f32)event->userdata[0] / (f32)event->userdata[1]);
-#ifdef MUST_MATCH
-    // MUST_MATCH: a named temp for the difference is the only shape that keeps u0 out of r3,
-    // which is reserved for &cam->cameraAt below; inlined, MWCC picks r3 and the schedule shifts.
+    // A named temp for the difference keeps u0 out of r3, which &cam->cameraAt takes below.
     diff = event->userdata[1] - event->userdata[0];
     scale = (f32)diff * (0.1f * s) / (f32)event->userdata[1];
-#else
-    scale = (f32)(event->userdata[1] - event->userdata[0]) * (0.1f * s) / (f32)event->userdata[1];
-#endif
     PSVECSubtract(&cam->cameraAt, &cam->cameraPos, &vec);
     PSVECScale(&vec, &vec, scale);
     cam->viewOffset.x = vec.x;

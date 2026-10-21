@@ -591,12 +591,8 @@ USER_FUNC(kurokaron_move_position) {
             }
         }
         npc->footstepAccum = 0.0f;
-#ifdef MUST_MATCH
         // The original truncates the toggle to s8 before storing (MWCC emits extsb).
         npc->footstepToggle = (s8)(1 - npc->footstepToggle);
-#else
-        npc->footstepToggle = 1 - npc->footstepToggle;
-#endif
     }
     if (npc->footstepSfxB != NULL || npc->footstepToggle != 0) {
         npc->footstepAccum += 1000.0f * npc->moveDt;

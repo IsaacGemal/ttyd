@@ -356,14 +356,10 @@ void uranai_cap(CameraId cameraId, void* param) {
     AnimationPoseData* anim;
     NpcEntry* npc;
     f32 ratio;
-#ifdef MUST_MATCH
-    // Match-only: a named 0.5f local and an f32 tan result reproduce the original's float
+    // A named 0.5f local and an f32 tan result reproduce the original's float
     // register allocation in the tan/camPos.z block (tan in f4, 0.5f in f0).
     f32 tanValue;
     f32 half;
-#else
-    f64 tanValue;
-#endif
     u16 width;
     u16 height;
     u32 left;
@@ -386,14 +382,9 @@ void uranai_cap(CameraId cameraId, void* param) {
     camUp = vec3_tik_00008364;
     camPos = vec3_tik_00008358;
     camPos.y = camTarget.y;
-#ifdef MUST_MATCH
     half = 0.5f;
     tanValue = (f32)tan(0.21816615760326385);
     camPos.z = 0.7f * ((f32)height * half / tanValue);
-#else
-    tanValue = tan(0.21816615760326385);
-    camPos.z = 0.7f * ((f32)height * 0.5f / (f32)tanValue);
-#endif
     C_MTXLookAt(lookMtx, &camPos, &camUp, &camTarget);
     cam = *camGetPtr(cameraId);
     npc = npcNameToPtr("うらない師");

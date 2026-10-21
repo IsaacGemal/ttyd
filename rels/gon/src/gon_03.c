@@ -694,21 +694,15 @@ static void senkaron_ext_main(void) {
     f32 f30;
     s32 i;
     f32 f29;
-#ifdef MUST_MATCH
     // Naming the constant makes MWCC load the field into f1 and 0.5f into f0, as in the original.
     f32 half;
-#endif
     MarioWork* mario;
     ExtPose* pose;
 
     pose = extGetPosePtr();
     mario = marioGetPtr();
-#ifdef MUST_MATCH
     half = 0.5f;
     f29 = mario->wPlayerCollisionBox.x * half;
-#else
-    f29 = mario->wPlayerCollisionBox.x * 0.5f;
-#endif
     marioPushedFlag = 0;
     if (mario->currMotionId == MARIO_MOTION_HAMMER) {
         marioHammerFrame++;
@@ -948,9 +942,7 @@ static void senkaron_ext_main(void) {
     }
 }
 
-#ifdef MUST_MATCH
 #undef sfxLanding
-#endif
 #undef sfxFly0
 #undef sfxFly1
 

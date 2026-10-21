@@ -223,27 +223,18 @@ void puniEntry(s32 count, void* param, void (*callback)(void), void (*cb0)(void)
     }
 }
 
-// Match-only shapes inside steer MWCC to the original's register colours and instruction schedule.
 void puniMakeTexture(CameraId camId, void* param) {
     PuniDrvWork* wp = work;
     PuniTexInfo* info = param;
     PuniTexture* tex = wp->textures;
     s32 i;
-#ifdef MUST_MATCH
-    // The scale as a named local puts it in f30 and the int->float bias in f29, as the original does; the literal
-    // inline swaps the two FP registers.
+    // A named scale: as a literal it swaps FP registers with the int->float bias.
     f32 k = 0.34246576f;
-#endif
 
     anim_ext_tex_size = 0;
-#ifdef MUST_MATCH
-    // The original loop bumps i, then info, then tex; a flat `for` rotates those three adds and the running p
-    // temp chains the GX index adds (p, then p+1, p+2, p+3) the way the original does.
+    // The original bumps i, then info, then tex at the loop's end (a `for` puts i last).
     i = 0;
     while (i < wp->texCount) {
-#else
-    for (i = 0; i < wp->texCount; i++) {
-#endif
         s32 out0;
         s32 out1;
         s32 out2;
@@ -253,7 +244,6 @@ void puniMakeTexture(CameraId camId, void* param) {
 
         animPoseDisp_MakeExtTexture(info->unk0, info->unk4, info->unk8, &tex->texObj, tex, 5.84f, &out0, &out1, &out2,
                                     &out3);
-#ifdef MUST_MATCH
         wp->vertices[idx++] = (f32)out0 * k;
         wp->vertices[idx++] = (f32)(-out1) * k;
         wp->vertices[idx++] = 0.0f;
@@ -266,54 +256,26 @@ void puniMakeTexture(CameraId camId, void* param) {
         wp->vertices[idx++] = (f32)out0 * k;
         wp->vertices[idx++] = (f32)(-out3) * k;
         wp->vertices[idx++] = 0.0f;
-#else
-        wp->vertices[idx++] = (f32)out0 * 0.34246576f;
-        wp->vertices[idx++] = (f32)(-out1) * 0.34246576f;
-        wp->vertices[idx++] = 0.0f;
-        wp->vertices[idx++] = (f32)out2 * 0.34246576f;
-        wp->vertices[idx++] = (f32)(-out1) * 0.34246576f;
-        wp->vertices[idx++] = 0.0f;
-        wp->vertices[idx++] = (f32)out2 * 0.34246576f;
-        wp->vertices[idx++] = (f32)(-out3) * 0.34246576f;
-        wp->vertices[idx++] = 0.0f;
-        wp->vertices[idx++] = (f32)out0 * 0.34246576f;
-        wp->vertices[idx++] = (f32)(-out3) * 0.34246576f;
-        wp->vertices[idx++] = 0.0f;
-#endif
 
         GXBeginDisplayList((u8*)wp->dlBuffer + i * 0x80, 0x80);
         GXBegin(0x80, 0, 4);
-#ifdef MUST_MATCH
-        { s32 p = vi;
-        GXPosition1x16(p++);
-        GXTexCoord1x16(0);
-        GXPosition1x16(p++);
-        GXTexCoord1x16(1);
-        GXPosition1x16(p++);
-        GXTexCoord1x16(2);
-        GXPosition1x16(p++);
-        GXTexCoord1x16(3); }
-#else
-        GXPosition1x16(vi + 0);
-        GXTexCoord1x16(0);
-        GXPosition1x16(vi + 1);
-        GXTexCoord1x16(1);
-        GXPosition1x16(vi + 2);
-        GXTexCoord1x16(2);
-        GXPosition1x16(vi + 3);
-        GXTexCoord1x16(3);
-#endif
+        {
+            s32 p = vi;
+
+            GXPosition1x16(p++);
+            GXTexCoord1x16(0);
+            GXPosition1x16(p++);
+            GXTexCoord1x16(1);
+            GXPosition1x16(p++);
+            GXTexCoord1x16(2);
+            GXPosition1x16(p++);
+            GXTexCoord1x16(3);
+        }
         wp->dlSizes[i] = GXEndDisplayList();
-#ifdef MUST_MATCH
         i++;
         info++;
         tex++;
     }
-#else
-        info++;
-        tex++;
-    }
-#endif
 }
 
 void puniReset(void) {

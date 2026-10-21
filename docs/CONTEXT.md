@@ -11951,3 +11951,67 @@ changed C file compiles without `-DMUST_MATCH` (and a full `--non-matching` `all
   describe the s32 definition; fncast_allowlist.json pruned. `tools/ci.py`'s tests step fails in this worktree
   (test_wave_launch timeouts, no pyelftools for system python), unrelated to the source; every other ci.py step was run
   and passed before each commit (tests skipped, under `uv run --with pyelftools`).
+### Readability: MUST_MATCH blocks in rels/ (2026-10-20, Claude Opus 5.5, n9-q-o-mmrels)
+
+The battle pass's MUST_MATCH work, over the chapter and map RELs. Build byte-identical after every commit
+(build/G8MJ01/ok); every changed C file compiles without `-DMUST_MATCH` (`configure.py --non-matching`, only the dol
+link fails as usual); `tools/fncast_lint.py` and `tools/local_prototypes.py` pass; `tools/ci.py` passed before each
+commit with its `tools/tests` step stubbed (the same 9 environment failures as the chapters above). No names added.
+
+- Counts (`tools/cleanup_index.py`, e2103891 -> this branch): index 16.392 -> 16.291 per kLOC (11570 -> 11493
+  weighted); must_match 1300 -> 1226, all of it in rels/ (rels/ 232 -> 158 sites); raw_offset 500
+  -> 499; everything else unchanged. `grep -c MUST_MATCH` over rels/ 276 -> 189 lines.
+- Method: every block's non-MUST_MATCH arm was compiled alone, and all of a file's at once, against the baseline
+  object (`tools/obj_equiv.py`); then each remaining block was read and either its MUST_MATCH arm kept as the only
+  version (when it is ordinary C) or a new natural form tried.
+- Natural forms that match now (mostly because #1091 fixed intplGetValue's prototype): unit_barriern v1's
+  volatile-comma intplGetValue calls (both zanzou subs); magnum_battender_mkII aud_suikomi's volatile arguments;
+  muj_00's volatile step-count reads (the sz/ez/steps locals went too, the fields go straight into the call); one of
+  gor_00 gundan1000tai_init's two `tmp` products. kpa_status_disp's icon id is a `u16` local, which gives the clrlwi
+  with no cast. `PuniData.prevMode` (mri_puni.h) is `u16`: every read in mri_puni went through a `*(u16*)&` view, the
+  stores match either way, and it holds a PuniMode like the u16 `mode`; the puns and two blocks are gone. Dead code:
+  v1's uncalled barriernSatelliteTo_InitInline and its `#undef` guard. tou_03 screen_tev: buf/i/j/k are declared at
+  function scope in both builds, so only the `zero` alias stays guarded.
+- Same shape in every copy: unit_barriern v1 and z use the `args += 2; args[-1]` form that v2 and aji's custom copy
+  already had (barriern_wawawa_set_target).
+- MUST_MATCH arm kept as the only version (plain C: a named temp or constant local, operand order, a returning colour
+  inline, a one-case switch, split declarations): aji_14 (`clear2`, a second base as in the first block), aji_17,
+  magnum_battender_mkII aud_suikomi_fade, eki_02, end_unknown (two; its stale NONMATCHING note went), gon_03 (`half`;
+  the `#undef sfxLanding` is unconditional now), gor_00/muj_00 `alphaColor`, gor_01, gor_10 (four), gra_00,
+  unit_lecture_frankli_sac `spot_square_color`, hei_00 (two), hom_00 (`* 60 * 60`), jon (the GX quad sizes), las
+  `mobjColor`, las_29, evt_shuryolight (three), unit_boss_koopa (`/ 2.0f`), punidrv (five: `k`, the while loop, `p`),
+  tik_00, tik_05 (two colour inlines; its sqrtf tail stays guarded, as the `#else` is MSL's sqrtf), tou `monitorColor`, evt_lect_usu, usu_00 (three), evt_yuucounter, evt_yuutitle, and the `WAKU_BOTTOM` operand order in both
+  evt_yuuranking copies (split out of the guarded fn-cast macros). las_05's `(s8)(1 - footstepToggle)` store is
+  unguarded too: the dol's evt_npc.c, which the REL copies, writes it unguarded twice.
+- Left, data layout (not touched in this pass): the `"J\0\0"` strings (rsh_00, rsh_06, eki_00), tou2's AREA_TOU
+  padding, the `.rodata` declspec Vecs (rsh_06, yuu_02, usu_00, aji_13, magnum_battender_mkII), tou_02's `const
+  volatile` Vec definitions, rsh.c's Zero256 object, unit_piders' out-of-line GX helpers.
+- Left, with what was tried:
+  - moamoa pvec rebuild (rsh_05, rsh_06, eki_00) and eki_06 sw_entry: the volatile keeps the const Vec's three loads
+    below the preceding stores. Plain stores with the existing inline, and a returning inline built from the base
+    (eki_06), both hoist the loads above the stores. The original reloads the way a non-const object would, so only
+    a data-declaration change could do it. Same family: rsh_06's volatile `offset` read, muj_01's colour read.
+  - sfx string addresses (unions in rsh_05, rsh_06, eki_00, hei_10, yuu_00, yuu_01, yuu_02; `(u32)` round-trip macros
+    in las_05, bom_01, tou_02; comma folds in gor_03 and zako_group2). Tried: the literal at the call in hei_10 (the
+    address is not hoisted and the string's .rodata slot moves) and function-scope locals set before the loop in
+    las_05 (the copies get their own `mr` and the callee-saved registers shift).
+  - elapsed-time intplGetValue (value divided into r4, compared, copied to a callee-saved register at the first
+    call): mri.c (assignment inside the argument plus opt_propagation), mri_puni (opt_common_subs; its arm without
+    the pragma and the plain form both divide straight into r28), win_00 (u32 round trip), muj_12 ((s32) casts).
+  - barriern zanzou `(p = BattleGetUnitPtr(...), p)` (v1, v2, z, custom): a plain `p = ...;` statement moves the call
+    ahead of the scale struct copy; a returning inline gets the order right but drops the `mr r0,r3; mr r4,r0` temp
+    copy, with or without a local inside it. The volatile table parameters of InitInside/InitInlineOut (v1, z,
+    custom) and v2's BARRIERN_SET_UNITID were not retried.
+  - Call-site ABI casts: iconDispGx in las and tou2 boss koopa (a u16 local and a `(u16)` argument both move the
+    1.0f load ahead), iconDispGxAlpha in the eki/tik/usu lectures (a `(u16)` argument changes registers and
+    schedule), envGlareFilter (eki_03), mapGrpSetColor (mri.c), the by-pointer colour macros in both evt_yuuranking.
+  - The lecture `ppos` base (`&lbtn[i] + 8`, loads at +4) in nine lecture files: the natural form needs a nested
+    struct at 0x8, which would need invented names.
+  - Redundant or dead code that reproduces the original: gor_03's dead OR terms, usu_00's self-assignment, las_05's
+    dead sqrtf, frankli_sac's `id = 0`, gor_irai's self-cast, rsh_00's `| dm` and one-iteration loop, jin_00's f64
+    round trip, win_04's u64 temp, mri_puni's `-(s32)(u32)v`, pik_02's puns and its c50/half_sym constants, tou's
+    TOU_F32, tou2's u16 view, yuu_02/yuu_03's raw-offset fill inlines, yuu evt_yuuranking's raw-offset accessors,
+    gor evt_yuuranking's asm body, tou's `defer_codegen` pragma, muj_20's add inline (`pos.x + 85.0f` swaps f0/f1),
+    gon_03's sfx array.
+  - Contrived copy chains kept as hacks rather than promoted: eki_03, hom_00 and jon's `q = q * 32; row = q`, and
+    gor_03's `t0`/`t1` copies.

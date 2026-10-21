@@ -427,14 +427,9 @@ void noiseDisp(CameraId cameraId, void* param) {
                 s32 off, base, col;
                 base = i / 4;
                 col = i % 4;
-#ifdef MUST_MATCH
                 // Preserve the original add operand order and register allocation.
                 off = (k / 8) * 32;
                 data[(off + base * 256) + (k % 8 + col * 8)] = val;
-#else
-                off = base * 256 + (k / 8) * 32;
-                data[off + k % 8 + col * 8] = val;
-#endif
             }
         }
     }

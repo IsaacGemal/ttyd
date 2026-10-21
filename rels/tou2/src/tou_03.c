@@ -4056,21 +4056,21 @@ EVT_END()
 // sum: the frontend hoists only the divisions (shared with the sparkle loop), so the two shifts stay
 // loop-body code until the backend hoists them, which gives retail's register colouring. The sparkle
 // loop precomputes `sgrow` / `sgcol` with shifts and adds `col` last. The min-clamp matches after
-// declaring `x` before `ratio` and writing `x = (x > ratio) ? ratio : x`. The MUST_MATCH blocks are
-// the allocator levers of battle/battle_stage's tou_gamen_screen_tev (the same function): the
-// `zero` alias and the function-scope counters put `param` in r27, and declaring `sgcol` before
-// `sgrow` plus the split idx2 temporaries put `sgrow` in r25.
+// declaring `x` before `ratio` and writing `x = (x > ratio) ? ratio : x`. As in battle/battle_stage's
+// tou_gamen_screen_tev (the same function), the `zero` alias (MUST_MATCH) and the function-scope
+// counters put `param` in r27, and declaring `sgcol` before `sgrow` plus the split idx2 temporaries
+// put `sgrow` in r25.
 #pragma opt_propagation off // needed: with propagation on the second fill loop folds sgcol into a buf+sgcol pointer
 void screen_tev(MapTevCallback* param) {
     GXTexObj texObj;
     Mtx mtx;
     Mtx mtxScale;
     Mtx mtxTrans;
-#ifdef MUST_MATCH
     u8* buf;
     s32 i;
     s32 j;
     s32 k;
+#ifdef MUST_MATCH
     s32 zero = 0;
     MapTevCallback* tev = (MapTevCallback*)((u8*)param + zero);
 #else
@@ -4082,14 +4082,7 @@ void screen_tev(MapTevCallback* param) {
     }
 
     if (screen_wp->useNoise != 0) {
-#ifdef MUST_MATCH
         buf = (u8*)screen_wp->noiseBuf;
-#else
-        u8* buf = (u8*)screen_wp->noiseBuf;
-        s32 i;
-        s32 j;
-        s32 k;
-#endif
 
         for (i = 0; i < 0x40; i++) {
             for (j = 0; j < 0x40; j++) {
@@ -4106,21 +4099,15 @@ void screen_tev(MapTevCallback* param) {
             }
             {
                 s32 count = 100 + rand() % 100;
-#ifdef MUST_MATCH
                 s32 sgcol;
                 s32 sgrow;
                 sgrow = (i / 4) << 8;
                 sgcol = (i % 4) << 3;
-#else
-                s32 sgrow = (i / 4) << 8;
-                s32 sgcol = (i % 4) << 3;
-#endif
                 for (k = 0; k < count; k++) {
                     s32 len = rand() % 4 + 2;
                     s32 start = rand() % (0x41 - len);
                     u8 val = rand() % 0x100;
                     for (j = start; j < start + len; j++) {
-#ifdef MUST_MATCH
                         s32 idx;
                         s32 col;
                         s32 idx2;
@@ -4129,13 +4116,6 @@ void screen_tev(MapTevCallback* param) {
                         idx += sgrow;
                         idx2 = idx + (j % 8);
                         buf[idx2 + col] = val;
-#else
-                        s32 idx = (j / 8) * 0x20;
-                        s32 col = sgcol;
-                        idx += sgrow;
-                        idx += (j % 8);
-                        buf[idx + col] = val;
-#endif
                     }
                 }
             }

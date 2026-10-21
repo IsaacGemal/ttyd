@@ -2097,17 +2097,10 @@ USER_FUNC(aud_suikomi) {
                 count++;
                 aud->flags |= 2;
             }
-#ifdef MUST_MATCH
-            aud->position.x = intplGetValue(4, aud->interpFramesLeft, aud->interpFramesTotal, *(volatile f32*)&aud->mHomePosition.x, *(volatile f32*)&px);
-            aud->position.y = intplGetValue(2, aud->interpFramesLeft, aud->interpFramesTotal, *(volatile f32*)&aud->mHomePosition.y, *(volatile f32*)&py);
-            aud->position.z = intplGetValue(4, aud->interpFramesLeft, aud->interpFramesTotal, *(volatile f32*)&aud->mHomePosition.z, *(volatile f32*)&pz);
-            v = intplGetValue(4, aud->interpFramesLeft, aud->interpFramesTotal, 1.0f, 0.65f);
-#else
             aud->position.x = intplGetValue(4, aud->interpFramesLeft, aud->interpFramesTotal, aud->mHomePosition.x, px);
             aud->position.y = intplGetValue(2, aud->interpFramesLeft, aud->interpFramesTotal, aud->mHomePosition.y, py);
             aud->position.z = intplGetValue(4, aud->interpFramesLeft, aud->interpFramesTotal, aud->mHomePosition.z, pz);
             v = intplGetValue(4, aud->interpFramesLeft, aud->interpFramesTotal, 1.0f, 0.65f);
-#endif
             aud->baseSize.y = v;
             aud->baseSize.x = v;
             break;
@@ -2116,14 +2109,9 @@ USER_FUNC(aud_suikomi) {
     return (count < 20) ? EVT_RETURN_BLOCK : EVT_RETURN_DONE;
 }
 
-// Retail stores the truncated interpolation straight to the byte global and then passes
-// the global back by name; the compiler folds that store into the stb and reuses the
-// converted value. Storing through a `vol` local (the natural form) instead makes it
-// materialise the global's address into a temp (addi + stb 0(base)).
 USER_FUNC(aud_suikomi_fade) {
     s32 timer;
     f32 v;
-    u8 vol;
 
     if (isFirstCall) {
         scream_fade_timer[0] = 120;
@@ -2131,14 +2119,8 @@ USER_FUNC(aud_suikomi_fade) {
     }
     timer = --scream_fade_timer[0];
     v = intplGetValue(0, 120 - timer, 120, scream_start_vol, 0.0f);
-#ifdef MUST_MATCH
     scream_vol = (u8)v;
     psndSFX_vol(screamId[0], scream_vol);
-#else
-    vol = (u8)(s32)v;
-    scream_vol = vol;
-    psndSFX_vol(screamId[0], vol);
-#endif
     if (scream_fade_timer[0] <= 0) {
         return EVT_RETURN_DONE;
     }

@@ -232,25 +232,17 @@ static TegamiWork* wp;
 // Builds draw's GXColor in a returning inline: this makes the local colour take the lower
 // stack slot (0x8) and winTexSet's outgoing copy the higher one (0xc), as the original does.
 // Written inline the two copies swap slots.
-#ifdef MUST_MATCH
 static inline GXColor drawColor(u8 a) {
     GXColor c = dat_gor_0001da50;
 
     c.a = a;
     return c;
 }
-#endif
 
 static void draw(CameraId cameraId, void* param) {
     winTexInit((TEXPalette*)wp->file->data[0]);
     {
-#ifdef MUST_MATCH
         GXColor color = drawColor(wp->unk0);
-#else
-        GXColor color = dat_gor_0001da50;
-
-        color.a = wp->unk0;
-#endif
         winTexSet(4, vec3_gor_0001da38, vec3_gor_0001da44, color);
     }
 }
@@ -400,20 +392,11 @@ static void depthDisp(CameraId cameraId, void* param) {
         GXSetTevColorOp(i, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
         GXSetTevAlphaOp(i, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
         {
-#ifdef MUST_MATCH
-            // match-only: `(i == 0)` emits the same cntlzw/srwi pair but colours the boolean
-            // into r24 (target r25) and pulls the whole integer chain with it.
+            // `!i` (not `i == 0`) and computing `cc` first keep the boolean in r25, as the original has it.
             s32 zero = !i;
-#else
-            s32 zero = (i == 0);
-#endif
-#ifdef MUST_MATCH
-            s32 cc = zero ? GX_CC_ZERO : GX_CC_CPREV; // match-only: caches the boolean so it is computed first
+            s32 cc = zero ? GX_CC_ZERO : GX_CC_CPREV;
 
             GXSetTevColorIn(i, GX_CC_ZERO, GX_CC_TEXC, GX_CC_KONST, cc);
-#else
-            GXSetTevColorIn(i, GX_CC_ZERO, GX_CC_TEXC, GX_CC_KONST, zero ? GX_CC_ZERO : GX_CC_CPREV);
-#endif
             GXSetTevAlphaIn(i, GX_CA_ZERO, GX_CA_TEXA, GX_CA_KONST, zero ? GX_CA_ZERO : GX_CA_APREV);
         }
         GXSetTevSwapMode(i, GX_TEV_SWAP0, GX_TEV_SWAP0);
@@ -488,16 +471,11 @@ USER_FUNC(cam_yure) {
         view_dy = cam->viewOffset.y;
         view_trg = 0;
     }
-#ifdef MUST_MATCH
-    // match-only: the temp makes 50.0f pool before 0.3f (the target's .rodata order); the
-    // one-expression form compiles to the same instructions but pools them the other way round.
+    // The temp pools 50.0f before 0.3f, the original's .rodata order.
     {
         f32 s = (f32)sin((f32)gp->retraceCount / 50.0f);
         cam->viewOffset.y += 0.3f * s;
     }
-#else
-    cam->viewOffset.y += 0.3f * (f32)sin((f32)gp->retraceCount / 50.0f);
-#endif
     if (view_trg == 0) {
         if (cam->viewOffset.y > view_dy) {
             view_trg = 1;

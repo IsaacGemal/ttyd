@@ -951,9 +951,6 @@ typedef struct CreditsEndingRecord {
     /* 0x18 */ const char* msgB[3];
 } CreditsEndingRecord;
 
-// NONMATCHING (99.10%): register allocation only (retail colours `event` to r27, x to r29, y to r28; ours
-// r29/r24/r23). The lwzu and the rematerialised record base now match; the two `#ifdef MUST_MATCH` tricks
-// below break the pEntry/rec CSE that otherwise merges the two pointers.
 s32 credits_record_evt(EventEntry* event, BOOL isFirstCall) {
     s32 state = event->userdata[0];
     s32 index = event->userdata[1];
@@ -980,14 +977,10 @@ s32 credits_record_evt(EventEntry* event, BOOL isFirstCall) {
         evtSetValue(ev, GW(10), 0);
         ((CreditsWork*)credits_work_ptr[0])->eventId = (s32)evtEntry(evt_credits_sequence, 0, 0);
     }
-#ifdef MUST_MATCH
-    // giving `offset` a fresh value before `pEntry` stops the compiler merging pEntry with rec, which is what
-    // makes retail emit `lwzu` for `*++pEntry` and rematerialise the record base; the natural form is below.
+    // Computing `offset` before `pEntry` keeps pEntry and rec apart, so `*++pEntry` is an `lwzu` and the
+    // record base is rematerialised, as in retail.
     offset = index * 0x24;
     pEntry = (s32*)((u8*)credits_ending_records + offset);
-#else
-    pEntry = (s32*)((u8*)credits_ending_records + index * 0x24);
-#endif
     ((CreditsWork*)credits_work_ptr[0])->layout = *++pEntry;
     offset = index * 0x24;
     switch (((CreditsWork*)credits_work_ptr[0])->layout) {
@@ -1026,14 +1019,10 @@ s32 credits_record_evt(EventEntry* event, BOOL isFirstCall) {
                     s32 xoff = x;
 
                     if (x == 0) {
-#ifdef MUST_MATCH
                         // The original's .rodata pools 0.8 before 0.5; splitting the product into a local reproduces that order.
                         f32 fw = (f32)FontGetMessageWidth(msg) * 0.8f;
                         f32 half = 0.5f;
                         xoff = (s32)((f32)x - fw * half);
-#else
-                        xoff = (s32)((f32)x - 0.8f * (f32)FontGetMessageWidth(msg) * 0.5f);
-#endif
                     } else if (x > 0) {
                         xoff = (s32)((f32)x - 0.8f * (f32)FontGetMessageWidth(msg));
                     }

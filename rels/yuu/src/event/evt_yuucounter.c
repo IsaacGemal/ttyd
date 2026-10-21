@@ -110,12 +110,8 @@ void evt_yuucounter_disp_func(CameraId cameraId, void* param) {
     switch (work->mode) {
     case 0:
         if (!(work->flags2 & 2)) {
-#ifdef MUST_MATCH
             MarioWork* mario = marioGetPtr();
             f32 x = mario->position.x;
-#else
-            f32 x = marioGetPtr()->position.x;
-#endif
             work->time = (s32)(200.0f * (1300.0f + x));
         }
         scale = 2.5f;

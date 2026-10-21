@@ -331,7 +331,6 @@ USER_FUNC(spot_square) {
 
 
 
-#ifdef MUST_MATCH
 // The original keeps the colour in a temp at 0x8 and copies it to the argument slot at 0xc;
 // building it through a returning inline reproduces that extra copy.
 static inline GXColor spot_square_color(u8 a) {
@@ -339,7 +338,6 @@ static inline GXColor spot_square_color(u8 a) {
     c.a = a;
     return c;
 }
-#endif
 void Quads2D(f32 x0, f32 y0, f32 x1, f32 y1) {
     GXBegin(GX_QUADS, GX_VTXFMT0, 4);
     GXPosition3f32(x0, y0, 0.0f);
@@ -359,12 +357,7 @@ void spot_square_disp(CameraId cameraId, void* param) {
     GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_POS_XYZ, GX_F32, 0);
     GXSetNumChans(1);
     GXSetChanCtrl(GX_COLOR0A0, GX_FALSE, GX_SRC_REG, GX_SRC_REG, GX_LIGHT_NULL, GX_DF_CLAMP, GX_AF_NONE);
-#ifdef MUST_MATCH
     color = spot_square_color(dark);
-#else
-    color = (GXColor){ 0, 0, 0, 0 };
-    color.a = dark;
-#endif
     GXSetChanMatColor(GX_COLOR0A0, color);
     GXSetNumTexGens(0);
     GXSetNumTevStages(1);

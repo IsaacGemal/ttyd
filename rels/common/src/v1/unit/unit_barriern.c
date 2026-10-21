@@ -736,10 +736,6 @@ static USER_FUNC(barriern_zanzou3) {
     barriern_zanzou_sub(isFirstCall, unit, zanzou3_scale, 2);
 }
 
-// NONMATCHING (98.57%): the always-body's first intplGetValue(4, zanzou_count[0], ...) puts the
-// zanzou_count address in a scratch register and materialises the 0.8f address into a full
-// register, where the original keeps the count address in r4 and folds the 0.8f @l into the
-// load. The second loop's scheduling is fixed by the volatile-comma below in MUST_MATCH builds.
 static s32 barriern_zanzou_sub(BOOL isFirstCall, BattleUnit* unit, BarriernZanzouScale scale, s32 mode) {
     BattleUnitPart* part;
     f32 temp1[5];
@@ -804,13 +800,7 @@ static s32 barriern_zanzou_sub(BOOL isFirstCall, BattleUnit* unit, BarriernZanzo
     BtlUnit_SetPartsScale(part, s, s, 1.0f);
     for (i = 2, j = 0; i <= 6; i++, j++) {
         part = BtlUnit_GetPartsPtr(unit, i);
-#ifdef MUST_MATCH
-        // volatile-comma forces both temp float loads before the count load, as in the original.
-        s = intplGetValue(a, ((volatile f32)temp1[j], (volatile f32)temp2[j], zanzou_count[0]), num,
-                          temp1[j], temp2[j]);
-#else
         s = intplGetValue(a, zanzou_count[0], num, temp1[j], temp2[j]);
-#endif
         BtlUnit_SetPartsScale(part, s, s, 1.0f);
         part->color.a = (u8)intplGetValue(0, zanzou_count[0], num, (f32)alpha1, (f32)alpha2);
     }
@@ -875,10 +865,6 @@ static USER_FUNC(barriern_satellite_zanzou2) {
 #endif
 }
 
-// NONMATCHING (98.65%): in the always-body the compiler materialises the 0.8f address into a full
-// register and puts the zanzou_count address in a scratch register in the first intplGetValue, where
-// the original keeps the count address in r4 and folds the 0.8f @l into the load. The second loop's
-// scheduling is fixed by the volatile-comma below in MUST_MATCH builds.
 static s32 barriern_satellite_zanzou_sub(BOOL isFirstCall, BattleUnit* unit, BarriernZanzouScale scale,
                                          s32 index, s32 mode) {
     BattleUnitPart* part;
@@ -943,13 +929,7 @@ static s32 barriern_satellite_zanzou_sub(BOOL isFirstCall, BattleUnit* unit, Bar
     BtlUnit_SetPartsScale(part, s, s, 1.0f);
     for (i = 2, j = 0; i <= 6; i++, j++) {
         part = BtlUnit_GetPartsPtr(unit, i);
-#ifdef MUST_MATCH
-        // volatile-comma forces both temp float loads before the count load, as in the original.
-        s = intplGetValue(a, ((volatile f32)temp1[j], (volatile f32)temp2[j], zanzou_count[index]), num,
-                          temp1[j], temp2[j]);
-#else
         s = intplGetValue(a, zanzou_count[index], num, temp1[j], temp2[j]);
-#endif
         BtlUnit_SetPartsScale(part, s, s, 1.0f);
         part->color.a = (u8)intplGetValue(0, zanzou_count[index], num, (f32)alpha1, (f32)alpha2);
     }
@@ -966,28 +946,6 @@ static s32 barriern_satellite_zanzou_sub(BOOL isFirstCall, BattleUnit* unit, Bar
     return 0;
 }
 
-// Separate inline copy of barriernSatelliteTo_Init used by Inside/Outside. Storing unitId before
-// type changes the inliner's register allocation to match the original; the standalone Init keeps
-// its own order (see its NONMATCHING note). Natural build calls the standalone directly.
-#ifdef MUST_MATCH
-static inline u8 barriernSatelliteTo_InitInline(BattleUnit* unit, s32 index, s32 id) {
-    BarriernSatelliteTo* work;
-
-    if (unit->work[4 + index] == -1) {
-        return 0;
-    }
-    work = __memAlloc(4, 0x5c);
-    unit->work[10 + index] = (s32)work;
-    work->unitId = id;
-    work->type = 5;
-    work->field_58 = 0;
-    spline_maketable(5, work->unitId, work->points, work->field_1C);
-    BtlUnit_GetPartsPtr(BattleGetUnitPtr(_battleWorkPointer, unit->work[4 + index]), 1)->work[2] = id;
-    return 1;
-}
-#else
-#define barriernSatelliteTo_InitInline(unit, index, id) barriernSatelliteTo_Init(unit, index, id)
-#endif
 static u8 barriernSatelliteTo_Init(BattleUnit* unit, s32 index, s32 id) {
     BarriernSatelliteTo* work;
 
@@ -1124,10 +1082,6 @@ static USER_FUNC(barriernSatelliteToInside) {
     }
     return !hasSat ? EVT_RETURN_DONE : EVT_RETURN_BLOCK;
 }
-
-#ifndef MUST_MATCH
-#undef barriernSatelliteTo_InitInside
-#endif
 
 // Outside-only inline copy of barriernSatelliteTo_Init. The table pointer is taken through a
 // `volatile` parameter (so MWCC rematerialises the address with a fresh `lis/addi` for the
@@ -1337,13 +1291,8 @@ static USER_FUNC(barriern_wawawa_set_target) {
         n = irand(count);
 
         evtSetValue(event, args[0], xs[n]);
-#ifdef MUST_MATCH
         args += 2;
         evtSetValue(event, args[-1], ys[n]);
-#else
-        evtSetValue(event, args[1], ys[n]);
-        args += 2;
-#endif
         i++;
     }
     return EVT_RETURN_DONE;

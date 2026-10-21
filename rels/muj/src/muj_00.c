@@ -509,14 +509,12 @@ EVT_BEGIN(koburon_talk)
     RETURN
 EVT_END()
 
-#ifdef MUST_MATCH
 static inline GXColor alphaColor(u8 a) {
     GXColor c = zero_muj_0000db40;
 
     c.a = a;
     return c;
 }
-#endif
 
 static void alpha_tev(MapTevCallback* param) {
     s32 stage = param->tevStage;
@@ -524,12 +522,7 @@ static void alpha_tev(MapTevCallback* param) {
     GXColor color;
 
     GXSetTevOrder(stage, GX_TEXCOORD_NULL, GX_TEXMAP_NULL, GX_COLOR0A0);
-#ifdef MUST_MATCH
     color = alphaColor(*ap);
-#else
-    color = zero_muj_0000db40;
-    color.a = *ap;
-#endif
     GXSetTevColor(GX_TEVREG0, color);
     GXSetTevColorOp(stage, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
     GXSetTevAlphaOp(stage, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
@@ -953,23 +946,9 @@ void tobikakari_seq00(NanNpcEntry* entry) {
     case 20:
         elapsed = ((s32)gp->renderTime - (s32)entry->startTime) / (OS_TIMER_CLOCK / 1000);
         if (elapsed < entry->timer) {
-            f32 sz, ez;
-            s32 steps;
             f32 t = (f32)elapsed / (f32)entry->timer;
             entry->position.x = intplGetValue(0, elapsed, entry->timer, entry->hoseiPosition.x, entry->homePosition.x);
-#ifdef MUST_MATCH
-            // MUST_MATCH: reading the second call's arguments into locals through volatile pointers stops the
-            // compiler hoisting the step-count lwz ahead of the two lfs, matching the original's schedule. The
-            // plain form (below) scores 99.34%.
-            sz = *(volatile f32*)&entry->hoseiPosition.z;
-            ez = *(volatile f32*)&entry->homePosition.z;
-            steps = *(volatile s32*)&entry->timer;
-#else
-            sz = entry->hoseiPosition.z;
-            ez = entry->homePosition.z;
-            steps = entry->timer;
-#endif
-            entry->position.z = intplGetValue(0, elapsed, steps, sz, ez);
+            entry->position.z = intplGetValue(0, elapsed, entry->timer, entry->hoseiPosition.z, entry->homePosition.z);
             entry->position.y = t * (entry->jumpQuad * t + entry->jumpLinear) + entry->hoseiPosition.y;
         } else {
             entry->position = entry->homePosition;

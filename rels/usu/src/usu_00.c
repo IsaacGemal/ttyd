@@ -1963,16 +1963,10 @@ void kpaSen_ext_init(void) {
             (*pose->matrix)[0][3] = f30;
             kpaSen[i].field_C = 0.0f;
             (*pose->matrix)[1][3] = 0.0f;
-#ifdef MUST_MATCH
-            // Match-only: the local keeps the value in a register (the original stores it to both places
-            // from one register); the natural form reloads field_10.
+            // The original stores the value to both places from one register.
             c = pos.z + 20.0f * (i % 10 - 5);
             kpaSen[i].field_10 = c;
             (*pose->matrix)[2][3] = c;
-#else
-            kpaSen[i].field_10 = pos.z + 20.0f * (i % 10 - 5);
-            (*pose->matrix)[2][3] = kpaSen[i].field_10;
-#endif
             kpaSen[i].timer = (i / 10) * 3 + 1;
             kpaSen[i].field_20 = 0;
             kpaSen[i].field_21 = 5;
@@ -1981,27 +1975,17 @@ void kpaSen_ext_init(void) {
         }
         else {
             pose->heading = 270.0f;
-#ifdef MUST_MATCH
-            // Match-only: the original multiplies by the -30.0 constant and fuses; `pos.x - 30.0f * ...`
-            // makes the compiler emit fnmsubs with the +30.0 constant.
+            // The original multiplies by the -30.0 constant and fuses (`pos.x - 30.0f * ...` gives fnmsubs).
             kpaSen[i].field_14 = -30.0f * ((i - 100) / 10.0f) + pos.x - 150.0f;
-#else
-            kpaSen[i].field_14 = pos.x - 30.0f * ((i - 100) / 10.0f) - 150.0f;
-#endif
             kpaSen[i].field_18 = 0.0f;
             kpaSen[i].field_1C = pos.z + 50.0f * ((i - 100) % 10 - 5);
             kpaSen[i].field_8 = pos.x - 350.0f;
             (*pose->matrix)[0][3] = pos.x - 350.0f;
             kpaSen[i].field_C = 0.0f;
             (*pose->matrix)[1][3] = 0.0f;
-#ifdef MUST_MATCH
             c = pos.z + 20.0f * ((i - 100) % 10 - 5);
             kpaSen[i].field_10 = c;
             (*pose->matrix)[2][3] = c;
-#else
-            kpaSen[i].field_10 = pos.z + 20.0f * ((i - 100) % 10 - 5);
-            (*pose->matrix)[2][3] = kpaSen[i].field_10;
-#endif
             kpaSen[i].timer = ((i - 100) / 10) * 3 + 1;
             switch (rand() % 3) {
             case 0:

@@ -3396,7 +3396,7 @@ void puniModeMass(PuniData* punidat) {
     target = (u8*)Punigp + 0x374 + ((PuniData*)p)->nearAttractIdx * 0x14;
 
     if (idx == -1) {
-        if (*(u16*)&((PuniData*)p)->prevMode == PUNI_MODE_TRAP)
+        if (((PuniData*)p)->prevMode == PUNI_MODE_TRAP)
             punidat->mode = PUNI_MODE_TRAP;
         else
             punidat->mode = PUNI_MODE_PARENTPRE;
@@ -3832,7 +3832,7 @@ void puniModePiyori(PuniData* punidat) {
         }
         break;
     case 0xA:
-        if (*(u16*)&punidat->prevMode == PUNI_MODE_PIYORI) {  // PuniData 0xE (unsigned in the original)
+        if (punidat->prevMode == PUNI_MODE_PIYORI) {
             if (punidat->hp * 100 / punidat->maxHp <= 30) {
                 punidat->mode = PUNI_MODE_ESCAPE;
                 punidat->animIdx = 2;
@@ -3843,8 +3843,8 @@ void puniModePiyori(PuniData* punidat) {
                 punidat->state = 0;
             }
         } else {
-            punidat->mode = *(u16*)&punidat->prevMode;  // PuniData 0xE (unsigned in the original)
-            if (*(u16*)&punidat->prevMode == PUNI_MODE_PARENT) {       // PuniData 0xE (unsigned in the original)
+            punidat->mode = punidat->prevMode;
+            if (punidat->prevMode == PUNI_MODE_PARENT) {
                 punidat->mode = PUNI_MODE_PARENTPRE;
             }
             punidat->state = 0;
@@ -3853,9 +3853,6 @@ void puniModePiyori(PuniData* punidat) {
     }
 }
 
-// The `prevMode` store must be an unsigned 16-bit access so MWCC schedules `li r3, 0xd`
-// before it (the header declares `prevMode` as s16); taking the field's address as u16* is the
-// only field-based way to get the target's order.
 void puniModeEscape(PuniData* punidat) {
     s32 i;
     PuniData* p;
@@ -3866,11 +3863,7 @@ void puniModeEscape(PuniData* punidat) {
     switch (punidat->state) {
     case 0:
         if (punidat->windPower > 10.0f) {
-#ifdef MUST_MATCH
-            *(u16*)&punidat->prevMode = punidat->mode;
-#else
             punidat->prevMode = punidat->mode;
-#endif
             punidat->target = Punigp->marioPuni;
             punidat->mode = PUNI_MODE_WIND;
             punidat->state = 0;
@@ -3944,13 +3937,7 @@ void puniModeRecover(PuniData* punidat) {
             return;
         }
         if (punidat->windPower > 10.0f) {
-#ifdef MUST_MATCH
-            // An unsigned 16-bit access makes MWCC schedule `li r3, 0xd` before the store, as in
-            // the target (the header declares `prevMode` as s16).
-            *(u16*)&punidat->prevMode = punidat->mode;
-#else
             punidat->prevMode = punidat->mode;
-#endif
             punidat->target = Punigp->marioPuni;
             punidat->mode = PUNI_MODE_WIND;
             punidat->state = 0;

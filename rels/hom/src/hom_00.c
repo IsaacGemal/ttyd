@@ -611,12 +611,8 @@ s32 tokei(EventEntry* event, BOOL isFirstCall) {
     u32 total;
 
     OSTicksToCalendarTime(OSGetTime(), &td);
-#ifdef MUST_MATCH
-    // MUST_MATCH: retail folds hour*3600 (60*60) so it schedules the hour load ahead of min's; * 3600 puts min first.
+    // `* 60 * 60` (not `* 3600`) schedules the hour load ahead of min's, as retail does.
     total = td.hour * 60 * 60 + td.min * 60 + td.sec;
-#else
-    total = td.hour * 3600 + td.min * 60 + td.sec;
-#endif
     event->lwData[0] = (s32)(1024.0f * -(360.0f * ((f32)total / 3600.0f) / 12.0f)) - 0x0DB58580;
     event->lwData[1] = (s32)(1024.0f * -(360.0f * ((f32)total / 60.0f) / 60.0f)) - 0x0DB58580;
     return EVT_RETURN_DONE;

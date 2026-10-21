@@ -1128,23 +1128,16 @@ USER_FUNC(cam_test) {
     Vec tmp;
     f32 midX;
     f32 midZ;
-#ifdef MUST_MATCH
     f32 t1;
     f32 t2;
     f32 half;
-#endif
 
     camGetPtr(CAMERA_3D);
-#ifdef MUST_MATCH
     half = 0.5f;
     t1 = mario->position.x + party->position.x;
     t2 = mario->position.z + party->position.z;
     midX = t1 * half;
     midZ = t2 * half;
-#else
-    midX = (mario->position.x + party->position.x) * 0.5f;
-    midZ = (mario->position.z + party->position.z) * 0.5f;
-#endif
     camRoadMain(&work.fovY, 0.0f, 25.0f, 0.0f, 0.0f, 25.0f, 0.0f, 0.0f);
     tmp = vec3_hei_00005f8c;
     tmp.x = work.pos.x - work.at.x;
@@ -1169,23 +1162,16 @@ USER_FUNC(cam_test2) {
     Vec tmp;
     f32 midX;
     f32 midZ;
-#ifdef MUST_MATCH
     f32 t1;
     f32 t2;
     f32 half;
-#endif
 
     camGetPtr(CAMERA_3D);
-#ifdef MUST_MATCH
     half = 0.5f;
     t1 = mario->position.x + party->position.x;
     t2 = mario->position.z + party->position.z;
     midX = t1 * half;
     midZ = t2 * half;
-#else
-    midX = (mario->position.x + party->position.x) * 0.5f;
-    midZ = (mario->position.z + party->position.z) * 0.5f;
-#endif
     camRoadMain(&work.fovY, 0.0f, 75.0f, 0.0f, 0.0f, 75.0f, 0.0f, 0.0f);
     tmp = vec3_hei_00005f98;
     tmp.x = work.pos.x - work.at.x;
