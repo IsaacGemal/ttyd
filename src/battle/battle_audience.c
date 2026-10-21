@@ -2867,8 +2867,7 @@ void BattleAudienceDispWin(CameraId camId, void* param) {
 	BattleAudienceBaseGetPtr();
 	win = BattleAudienceWinGetPtr();
 	color = *(GXColor*)&dat_8041e60c;
-	windowDispGX_Waku_col(0, color, win->posX, win->posY, 90.0f,
-	                      40.0f, 10.0f);
+	windowDispGX_Waku_col(win->posX, win->posY, 90.0f, 40.0f, 10.0f, 0, color);
 
 	pos = (Vec){ 0.0f, 0.0f, 0.0f };
 	pos.x = 17.0f + win->posX;

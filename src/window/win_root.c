@@ -966,7 +966,7 @@ void winMsgDisp(WindowWork* work, f32 x, f32 y) {
     f32 ix;
     f32 width;
 
-    windowDispGX_Waku_col(0, (GXColor){0xFF, 0xFF, 0xFF, 0xFF}, fx, fy, 500.0f, 80.0f, 20.0f);
+    windowDispGX_Waku_col(fx, fy, 500.0f, 80.0f, 20.0f, 0, (GXColor){0xFF, 0xFF, 0xFF, 0xFF});
 
     if (work->field_0x138 != 0 && work->field_0x138 > 0) {
         winTexInit(*(TEXPalette**)work->winTpl->data);

@@ -95,8 +95,8 @@ void _ac_help_disp(CameraId camera, void* param) {
     color.a = alpha;
 #endif
     x = float_0_80420d64 - (f32)(width / 2);
-    windowDispGX_Waku_col(0, color, x - float_20_80420d68, float_neg145_80420d6c + (f32)((lines - 1) * 0x1D),
-                          (f32)(width + 0x28), (f32)(lines * 0x1D + 1), float_10_80420d70);
+    windowDispGX_Waku_col(x - float_20_80420d68, float_neg145_80420d6c + (f32)((lines - 1) * 0x1D), (f32)(width + 0x28),
+                          (f32)(lines * 0x1D + 1), float_10_80420d70, 0, color);
     FontDrawStart_alpha(alpha);
     FontDrawMessage((s32)x, (s32)float_neg148_80420d74 + (lines - 1) * 0x1D, msg);
 }

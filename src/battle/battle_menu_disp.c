@@ -980,7 +980,7 @@ void DrawMenuHelpWin(const char* tag, f32 x, f32 y) {
     s32 line;
     s32 i;
 
-    windowDispGX_Waku_col(0, color, x, y, 400.0f, 50.0f, 10.0f);
+    windowDispGX_Waku_col(x, y, 400.0f, 50.0f, 10.0f, 0, color);
     FontDrawStart();
     FontDrawColorIDX(0);
     FontDrawScale(0.8f);

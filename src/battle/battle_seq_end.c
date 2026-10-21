@@ -1229,15 +1229,8 @@ void _MarioExpDisp(CameraId camId, void* param) {
     if (work != NULL) {
         sprintf(buf, str_fmt_2d, work->expRemaining);
         len = strlen(buf);
-#ifdef MUST_MATCH
-        // Retail builds the white colour after the width (float args first, as in battle_message.c's cast call).
-        ((void (*)(f32, f32, f32, f32, f32, u16, GXColor))windowDispGX_Waku_col)(
-            float_180_80420cac, float_neg160_80420d40, float_12p5_80420d0c * len + float_65_80420ca8,
-            float_32_80420d10, float_10_80420cd8, 0, (GXColor){0xFF, 0xFF, 0xFF, 0xFF});
-#else
-        windowDispGX_Waku_col(0, (GXColor){0xFF, 0xFF, 0xFF, 0xFF}, float_180_80420cac, float_neg160_80420d40,
-                              float_12p5_80420d0c * len + float_65_80420ca8, float_32_80420d10, float_10_80420cd8);
-#endif
+        windowDispGX_Waku_col(float_180_80420cac, float_neg160_80420d40, float_12p5_80420d0c * len + float_65_80420ca8,
+                              float_32_80420d10, float_10_80420cd8, 0, (GXColor){0xFF, 0xFF, 0xFF, 0xFF});
         iconDispGx(float_1_80420c64, &pos, 0x10, 0x18C);
         FontDrawStart();
         FontDrawString(buf, float_225_80420d44, float_neg163_80420d48);
@@ -1257,18 +1250,18 @@ void _LvupParamConfirmDisp(CameraId camId, void* param) {
     sprintf(buf, msgSearch("btl_msg_lvup_ok"));
     len = strlen(buf);
 #ifdef MUST_MATCH
-    // Retail builds the white colour after the float arguments (as in _MarioExpDisp), and assigns the half width
-    // inside the argument tree.
-    ((void (*)(f32, f32, f32, f32, f32, u16, GXColor))windowDispGX_Waku_col)(
-        float_neg30_80420d00 - (halfWidth = float_6p25_80420d04 * len), float_30_80420d08,
-        float_12p5_80420d0c * len + float_65_80420ca8, float_32_80420d10, float_10_80420cd8, 0,
-        (GXColor){0xFF, 0xFF, 0xFF, 0xFF});
+    // Retail assigns the half width inside the argument tree.
+    windowDispGX_Waku_col(float_neg30_80420d00 - (halfWidth = float_6p25_80420d04 * len), float_30_80420d08,
+                          float_12p5_80420d0c * len + float_65_80420ca8, float_32_80420d10, float_10_80420cd8, 0,
+                          (GXColor){0xFF, 0xFF, 0xFF, 0xFF});
 #else
     halfWidth = float_6p25_80420d04 * len;
-    windowDispGX_Waku_col(0, (GXColor){0xFF, 0xFF, 0xFF, 0xFF}, float_neg30_80420d00 - halfWidth, float_30_80420d08,
-                          float_12p5_80420d0c * len + float_65_80420ca8, float_32_80420d10, float_10_80420cd8);
+    windowDispGX_Waku_col(float_neg30_80420d00 - halfWidth, float_30_80420d08,
+                          float_12p5_80420d0c * len + float_65_80420ca8, float_32_80420d10, float_10_80420cd8, 0,
+                          (GXColor){0xFF, 0xFF, 0xFF, 0xFF});
 #endif
-    windowDispGX_Waku_col(0, (GXColor){0xFF, 0xFF, 0xFF, 0xFF}, float_neg70_80420d14, float_neg10_80420d18, float_130_80420d1c, float_60_80420d20, float_10_80420cd8);
+    windowDispGX_Waku_col(float_neg70_80420d14, float_neg10_80420d18, float_130_80420d1c, float_60_80420d20,
+                          float_10_80420cd8, 0, (GXColor){0xFF, 0xFF, 0xFF, 0xFF});
     FontDrawStart();
     zero = SEQ_END_ZERO_AT_USE;
     FontDrawString(buf, zero - halfWidth, float_27_80420d24);
@@ -1314,8 +1307,9 @@ void L__LvupParamHelpMsgDisp(CameraId camId, void* param) {
     width = FontGetMessageWidthLine(msg, &lines);
     lines++;
     zero = SEQ_END_ZERO_AT_USE;
-    windowDispGX_Waku_col(0, (GXColor){ 0xFF, 0xFF, 0xFF, 0xFF }, zero - (f32)(width / 2) - float_20_80420c48, float_neg145_80420cf8 + (f32)(((u16)lines - 1) * 29),
-                          (f32)(width + 40), (f32)(lines * 29 + 1), float_10_80420cd8);
+    windowDispGX_Waku_col(zero - (f32)(width / 2) - float_20_80420c48,
+                          float_neg145_80420cf8 + (f32)(((u16)lines - 1) * 29), (f32)(width + 40),
+                          (f32)(lines * 29 + 1), float_10_80420cd8, 0, (GXColor){ 0xFF, 0xFF, 0xFF, 0xFF });
     FontDrawStart_alpha(0xFF);
     FontDrawMessage((s32)(zero - (f32)(width / 2)), (s32)float_neg148_80420cfc + (lines - 1) * 29, msg);
 }
@@ -1410,7 +1404,8 @@ void _GetExpIcon_Main(BattleWork* wp) {
 void _GetExpIcon_Disp(CameraId camId, void* param) {
     GXColor color = {0xFF, 0xFF, 0xFF, 0x80};
 
-    windowDispGX_Waku_col(0, color, float_neg76p9_80420cc8, float_21_80420ccc, float_165p8_80420cd0, float_24p2_80420cd4, float_10_80420cd8);
+    windowDispGX_Waku_col(float_neg76p9_80420cc8, float_21_80420ccc, float_165p8_80420cd0, float_24p2_80420cd4,
+                          float_10_80420cd8, 0, color);
 }
 
 // Keep named objects between the compiler colour templates, in retail order.

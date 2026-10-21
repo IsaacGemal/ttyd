@@ -1128,7 +1128,7 @@ void windowDispGX_Message(s32 type, s32 a2, u8 alpha, f32 x, f32 y, f32 height, 
 	}
 }
 
-void windowDispGX_Waku_col(u16 gxTexMapID, GXColor color, f32 x, f32 y, f32 width, f32 height, f32 curve) {
+void windowDispGX_Waku_col(f32 x, f32 y, f32 width, f32 height, f32 curve, u16 gxTexMapID, GXColor color) {
 	CameraEntry* camera = camGetCurPtr();
 	Mtx mtx;
 	f32 fVar1, fVar4, fVar2, fVar6, fVar5, fVar3; //TODO: rename

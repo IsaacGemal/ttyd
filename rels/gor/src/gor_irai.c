@@ -724,7 +724,7 @@ void irai_window_disp(CameraId cameraId, void* param) {
     f32 y;
 
     GXSetFog(GX_FOG_NONE, 0.0f, 0.0f, 0.0f, 0.0f, (GXColor){0xFF, 0xFF, 0xFF, 0xFF});
-    windowDispGX_Waku_col(0, (GXColor){0x2B, 0xA3, 0xFF, 0xFF}, -280.0f, 170.0f, 135.0f, 90.0f, 12.0f);
+    windowDispGX_Waku_col(-280.0f, 170.0f, 135.0f, 90.0f, 12.0f, 0, (GXColor){0x2B, 0xA3, 0xFF, 0xFF});
     FontDrawStart();
     FontDrawColor(&(GXColor){0xFF, 0xFF, 0xFF, 0xFF});
     FontDrawScale(0.85f);
@@ -733,9 +733,9 @@ void irai_window_disp(CameraId cameraId, void* param) {
     FontDrawString(name, -270.0f, 152.0f);
     FontDrawString(msgSearch("irai_name2_win"), -270.0f, 127.0f);
     FontDrawEdgeOff();
-    windowDispGX_Waku_col(0, (GXColor){0xFF, 0xFF, 0xFF, 0xFF}, -129.0f, 170.0f, 410.0f, 340.0f, 12.0f);
-    windowDispGX_Waku_col(0, (GXColor){0x2B, 0xA3, 0xFF, 0xFF}, -103.0f, 190.0f, 120.0f, 40.0f, 12.0f);
-    windowDispGX_Waku_col(0, (GXColor){0x2B, 0xA3, 0xFF, 0xFF}, 91.0f, 190.0f, 120.0f, 40.0f, 12.0f);
+    windowDispGX_Waku_col(-129.0f, 170.0f, 410.0f, 340.0f, 12.0f, 0, (GXColor){0xFF, 0xFF, 0xFF, 0xFF});
+    windowDispGX_Waku_col(-103.0f, 190.0f, 120.0f, 40.0f, 12.0f, 0, (GXColor){0x2B, 0xA3, 0xFF, 0xFF});
+    windowDispGX_Waku_col(91.0f, 190.0f, 120.0f, 40.0f, 12.0f, 0, (GXColor){0x2B, 0xA3, 0xFF, 0xFF});
     FontDrawStart();
     FontDrawColor(&(GXColor){0xFF, 0xFF, 0xFF, 0xFF});
     FontDrawScale(0.85f);

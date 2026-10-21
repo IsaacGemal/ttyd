@@ -167,7 +167,7 @@ void gor_draw_msg_fit(const char* msg, s32 width, f32 x, f32 y, f32 z) {
 // different fadds operand order.
 #define WAKU_BOTTOM (k + (work->field_10 + 128.0f))
 #else
-#define WAKU_COL(c, x, y, w, h, curve) windowDispGX_Waku_col(0, (c), (x), (y), (w), (h), (curve))
+#define WAKU_COL(c, x, y, w, h, curve) windowDispGX_Waku_col((x), (y), (w), (h), (curve), 0, (c))
 #define ICON_COL(mtx, flags, id, c) iconDispGxCol((mtx), (flags), (id), (c))
 #define ICON_NUM(mtx, num, small, c) iconNumberDispGx((mtx), (num), (small), (c))
 #define WAKU_BOTTOM (work->field_10 + 128.0f + k)

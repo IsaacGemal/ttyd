@@ -2072,7 +2072,7 @@ void selectWindow_Disp(CameraId camId, void* param) {
 	GXSetFog(0, 0.0f, 0.0f, 0.0f, 0.0f, unk_80422fe4);
 
 	color = selectWindowColor(window->alpha);
-	windowDispGX_Waku_col(0, color, window->x, window->y, window->height, window->width, 30.f);
+	windowDispGX_Waku_col(window->x, window->y, window->height, window->width, 30.f, 0, color);
 
 	msgDisp(window->userdata, (u8)window->alpha, 40.f + window->x, window->y - 25.0f);
 

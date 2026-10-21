@@ -75,8 +75,8 @@ void _disp(CameraId cameraId, void* param) {
                                                                              (f32)(width + 0x14),
                                                                              (f32)(lines * 0x1d + 3), 10.0f);
 #else
-    windowDispGX_Waku_col(0, color, fx - 10.0f, -29.0f + (3.0f + fy), (f32)(width + 0x14),
-                          (f32)(lines * 0x1d + 3), 10.0f);
+    windowDispGX_Waku_col(fx - 10.0f, -29.0f + (3.0f + fy), (f32)(width + 0x14), (f32)(lines * 0x1d + 3), 10.0f, 0,
+                          color);
 #endif
     FontDrawStart();
     FontDrawMessage((s32)fx, (s32)fy - 0x1d, (const char*)(base - 0x737c));

@@ -1829,17 +1829,9 @@ void BattleCommandDisplay_WeaponMultiItemCancelCheckDisp(CameraId camId, BattleW
 	pouchGetPtr();
 	sprintf(buf, msgSearch("btl_msg_multi_item_cancel_check"));
 	len = strlen(buf);
-#ifdef MUST_MATCH
-	// Retail evaluates the float arguments before the texture id and the colour (as in battle_seq_end's
-	// _MarioExpDisp), so the call goes through a float-first cast; the colour copy precedes the conversions.
-	((void (*)(f32, f32, f32, f32, f32, u16, GXColor))windowDispGX_Waku_col)(
-	    -30.0f - (xoff = 6.25f * (f32)len), 30.0f, 12.5f * (f32)len + 65.0f, 32.0f, 10.0f, 0,
-	    (GXColor){ 0xFF, 0xFF, 0xFF, 0xFF });
-#else
-	windowDispGX_Waku_col(0, (GXColor){ 0xFF, 0xFF, 0xFF, 0xFF }, -30.0f - (xoff = 6.25f * (f32)len), 30.0f,
-	                      12.5f * (f32)len + 65.0f, 32.0f, 10.0f);
-#endif
-	windowDispGX_Waku_col(0, (GXColor){ 0xFF, 0xFF, 0xFF, 0xFF }, -70.0f, -10.0f, 130.0f, 60.0f, 10.0f);
+	windowDispGX_Waku_col(-30.0f - (xoff = 6.25f * (f32)len), 30.0f, 12.5f * (f32)len + 65.0f, 32.0f, 10.0f, 0,
+	                      (GXColor){ 0xFF, 0xFF, 0xFF, 0xFF });
+	windowDispGX_Waku_col(-70.0f, -10.0f, 130.0f, 60.0f, 10.0f, 0, (GXColor){ 0xFF, 0xFF, 0xFF, 0xFF });
 	FontDrawStart();
 	FontDrawString(buf, cx - xoff, 27.0f);
 	FontDrawString("\202\315\202\242\201@", -20.0f, -13.0f);
@@ -2182,8 +2174,7 @@ void BattleCommandDisplay_TargetSelectMenuDisp(CameraId camId, BattleWork* param
 				name = (char*)msgSearch(part->partName);
 			}
 			width = (f32)FontGetMessageWidth(name);
-			windowDispGX_Waku_col(0, (GXColor){ 0xFF, 0xFF, 0xFF, 0xCF }, -240.0f, 86.0f, 16.0f + width, 32.0f,
-			                      10.0f);
+			windowDispGX_Waku_col(-240.0f, 86.0f, 16.0f + width, 32.0f, 10.0f, 0, (GXColor){ 0xFF, 0xFF, 0xFF, 0xCF });
 			FontDrawStart();
 			FontDrawString(name, -232.0f, 83.0f);
 		} else {
@@ -2198,8 +2189,7 @@ void BattleCommandDisplay_TargetSelectMenuDisp(CameraId camId, BattleWork* param
 				name = (char*)msgSearch(part->partName);
 			}
 			width = (f32)FontGetMessageWidth(name);
-			windowDispGX_Waku_col(0, (GXColor){ 0xFF, 0xFF, 0xFF, 0xCF }, -240.0f, 86.0f, 16.0f + width, 32.0f,
-			                      10.0f);
+			windowDispGX_Waku_col(-240.0f, 86.0f, 16.0f + width, 32.0f, 10.0f, 0, (GXColor){ 0xFF, 0xFF, 0xFF, 0xCF });
 			FontDrawStart();
 			FontDrawString(name, -232.0f, 83.0f);
 		}
@@ -2234,8 +2224,8 @@ void BattleCommandDisplay_TargetSelectMenuDisp(CameraId camId, BattleWork* param
 					name = (char*)msgSearch(part->partName);
 				}
 				width = (f32)FontGetMessageWidth(name);
-				windowDispGX_Waku_col(0, (GXColor){ 0xFF, 0xFF, 0xFF, 0xCF }, -240.0f,
-				                      118.0f - (f32)yoff, 16.0f + width, 32.0f, 10.0f);
+				windowDispGX_Waku_col(-240.0f, 118.0f - (f32)yoff, 16.0f + width, 32.0f, 10.0f, 0,
+				                      (GXColor){ 0xFF, 0xFF, 0xFF, 0xCF });
 				FontDrawStart();
 				FontDrawString(name, -232.0f, 115.0f - (f32)yoff);
 			} else {
@@ -2250,8 +2240,8 @@ void BattleCommandDisplay_TargetSelectMenuDisp(CameraId camId, BattleWork* param
 					name = (char*)msgSearch(part->partName);
 				}
 				width = (f32)FontGetMessageWidth(name);
-				windowDispGX_Waku_col(0, (GXColor){ 0xFF, 0xFF, 0xFF, 0xCF }, -240.0f,
-				                      118.0f - (f32)yoff, 16.0f + width, 32.0f, 10.0f);
+				windowDispGX_Waku_col(-240.0f, 118.0f - (f32)yoff, 16.0f + width, 32.0f, 10.0f, 0,
+				                      (GXColor){ 0xFF, 0xFF, 0xFF, 0xCF });
 				FontDrawStart();
 				FontDrawString(name, -232.0f, 115.0f - (f32)yoff);
 			}
@@ -2297,8 +2287,8 @@ void BattleCommandDisplay_ProtectPartnerSelectMenuDisp(CameraId camId, BattleWor
 	iconDispGx(1.0f, &iconPos, 0x10, 0x1EF);
 	len = (f32)strlen(msgSearch((char*)partner->mKindParams->name));
 	xoff = 6.25f * len;
-	windowDispGX_Waku_col(0, (GXColor){ 0xFF, 0xFF, 0xFF, 0xCF }, iconPos.x - xoff, 80.0f + iconPos.y,
-	                      12.5f * len, 32.0f, 10.0f);
+	windowDispGX_Waku_col(iconPos.x - xoff, 80.0f + iconPos.y, 12.5f * len, 32.0f, 10.0f, 0,
+	                      (GXColor){ 0xFF, 0xFF, 0xFF, 0xCF });
 	FontDrawStart();
 	FontDrawString(msgSearch((char*)partner->mKindParams->name),
 	               3.0f + iconPos.x - xoff, 77.0f + iconPos.y);
