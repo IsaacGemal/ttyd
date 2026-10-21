@@ -188,8 +188,8 @@ void effIndirectDisp(CameraId camId, void* param) {
 		break;
 	}
 #ifdef MUST_MATCH
-	// The two-step form keeps MWCC's FP allocator from folding the fneg into the
-	// constant load; the single expression still differs only in FP registers.
+	// The two locals keep MWCC from folding -32 * 0.5 into one -16.0f constant;
+	// the target loads 32 and 0.5 and does the fneg and fmuls at run time.
 	{
 		f32 w = 32.0f;
 		f32 h = 0.5f;

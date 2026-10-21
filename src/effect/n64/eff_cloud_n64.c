@@ -146,45 +146,10 @@ EffectEntry* effCloudN64Entry(s32 type, s32 lifetime, f32 x, f32 y, f32 z, f32 s
 	data->headX = x;
 	data->headY = y;
 	data->headZ = z;
-#ifdef MUST_MATCH
-	// The original unrolls this zeroing loop at the source level.
-	data->trailActive[0] = 0;
-	data->trailActive[1] = 0;
-	data->trailActive[2] = 0;
-	data->trailActive[3] = 0;
-	data->trailActive[4] = 0;
-	data->trailActive[5] = 0;
-	data->trailActive[6] = 0;
-	data->trailActive[7] = 0;
-	data->trailActive[8] = 0;
-	data->trailActive[9] = 0;
-	data->trailActive[10] = 0;
-	data->trailActive[11] = 0;
-	data->trailActive[12] = 0;
-	data->trailActive[13] = 0;
-	data->trailActive[14] = 0;
-	data->trailActive[15] = 0;
-	data->trailActive[16] = 0;
-	data->trailActive[17] = 0;
-	data->trailActive[18] = 0;
-	data->trailActive[19] = 0;
-	data->trailActive[20] = 0;
-	data->trailActive[21] = 0;
-	data->trailActive[22] = 0;
-	data->trailActive[23] = 0;
-	data->trailActive[24] = 0;
-	data->trailActive[25] = 0;
-	data->trailActive[26] = 0;
-	data->trailActive[27] = 0;
-	data->trailActive[28] = 0;
-	data->trailActive[29] = 0;
-	data->trailHead = 0;
-#else
-	for (i = 0; i < 30; i++) {
+	for (i = 0; i < sizeof(data->trailActive) / sizeof(data->trailActive[0]); i++) {
 		data->trailActive[i] = 0;
 	}
 	data->trailHead = 0;
-#endif
 	data->trailX[0] = x;
 	data->trailY[0] = y;
 	data->trailZ[0] = z;

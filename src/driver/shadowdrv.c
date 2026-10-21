@@ -819,13 +819,8 @@ void shadowCharShadowDisp_Texture(CameraId camId, void* param) {
     GXTexObj texObj;
     Mtx mtx;
     f32 zero;
-#ifdef MUST_MATCH
     f32 size;
     f32 negSize;
-#else
-    f32 size = float_2p5_80419918;
-    f32 negSize = -size;
-#endif
     s32 i;
 
     view = camGetCurPtr()->view;
@@ -854,10 +849,8 @@ void shadowCharShadowDisp_Texture(CameraId camId, void* param) {
     GXSetVtxDesc(GX_VA_TEX0, GX_DIRECT);
     GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_POS_XYZ, GX_F32, 0);
     GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, GX_TEX_ST, GX_F32, 0);
-#ifdef MUST_MATCH
     size = float_2p5_80419918;
     negSize = -size;
-#endif
     zero = float_0_804198f4;
     for (i = 0; i < cswp->entryCount; i++, entry++) {
 #ifdef MUST_MATCH

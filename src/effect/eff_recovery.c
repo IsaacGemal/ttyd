@@ -804,9 +804,6 @@ static inline GXColor rcC(s32 idx, u8 a, GXColor c) {
 }
 #endif
 
-#ifdef MUST_MATCH
-#pragma opt_loop_invariants off // keep `half = y * 0.5f` in the loop so 0.5 pools after the vertex sizes
-#endif
 void effRecoveryDisp4(CameraId camId, void* param) {
 	EffectEntry* entry = param;
 	RecoveryData* ptr = entry->userdata;
@@ -830,7 +827,6 @@ void effRecoveryDisp4(CameraId camId, void* param) {
 	f32 one = 1.0f;
 	// Naming the half-offset keeps the compiler from commuting the fadds that adds it to s.
 	f32 half;
-	f32 k05;
 	f32 k16;
 
 	cam = camGetPtr(camId);
@@ -905,22 +901,18 @@ void effRecoveryDisp4(CameraId camId, void* param) {
 		if (i != 1) {
 			t = 2.0f;
 		}
-		k05 = 0.5f;
 		k16 = 16.0f;
-		GXPosition3f32(y * k05, k16 + s, 0.0f);
+		GXPosition3f32(y / 2.0f, k16 + s, 0.0f);
 		GXTexCoord2f32(0.0f, 0.0f);
 		GXPosition3f32(k16, k16 + s, 0.0f);
 		GXTexCoord2f32(t, 0.0f);
-		half = y * k05;
+		half = y / 2.0f;
 		GXPosition3f32(k16, half + s, 0.0f);
 		GXTexCoord2f32(t, one);
 		GXPosition3f32(half, half + s, 0.0f);
 		GXTexCoord2f32(0.0f, one);
 	}
 }
-#ifdef MUST_MATCH
-#pragma opt_loop_invariants reset
-#endif
 
 // .sdata objects (0x80411BE8..0x80411C60), after the code in the original's address order.
 extern u32 recovery_effHermit_0[445];

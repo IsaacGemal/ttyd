@@ -4502,3 +4502,68 @@ stubbed (the worktree timeouts noted above), and `ci.py --base 66da3454` passes 
   Candidates noted but not done: PartyEntry `field_70` is the partner's scale Vec (MarioWork's `scale`); mapdrv.h's
   unused `MapFileAnimEntry` duplicates MapEntryAnimData.
 - The worker reports are in `build/raw3/reports/` while the worktree lives (not committed).
+
+## Second pass over src/effect and src/driver MUST_MATCH blocks (2026-10-21, Claude Opus 5.5 orchestrating six Claude Opus 5.5 workers, n9-q-o-mmeff)
+
+Task (Isaac): retry every MUST_MATCH block left in src/effect (241 lines) and src/driver (82) after #1099, assuming
+some earlier verdicts are wrong (as the goto pass found), without repeating recorded attempts. Data layout was out of
+bounds; volatile, puns, int round trips, dead stores, redundant tests, fn-ptr casts and steering helpers stay guarded.
+
+- Method: each variant compiled with its object's ninja flags and compared with the pre-branch object by
+  tools/obj_equiv.py (harness in the untracked build/mm2/: try.py, strip.py, regions.py). eff_kemuri by the
+  orchestrator, the other 85 files in six disjoint groups; per-region attempts in build/mm2/agent0..6/REPORT.md.
+  Every change: obj_equiv EQUIV, `build/G8MJ01/ok` recreated, `configure.py --non-matching` compile clean,
+  fncast_lint and local_prototypes clean, `tools/ci.py` PASS per commit with its tools/tests step stubbed (the same 9
+  environment errors as the chapters above).
+- **Counts.** `grep -c MUST_MATCH` 323 -> 296 (src/effect 241 -> 217, src/driver 82 -> 79; 3 of those lines are
+  comment-only, eff_kemuri2_n64). Per file: animdrv 3 -> 3, mapdrv 4 -> 3, shadowdrv 13 -> 11, eff_ibuki 4 -> 2,
+  eff_recovery 6 -> 4, eff_scanning 3 -> 0, eff_uranoko 2 -> 0, eff_cloud_n64 2 -> 1, eff_fall_leaf_n64 5 -> 0,
+  eff_kemuri2_n64 3 -> 0, eff_release_n64 7 -> 1; the other 75 files unchanged (eff_kemuri 33). Index
+  (tools/cleanup_index.py) 14.248 -> 14.203 per kLOC (9948 -> 9913 weighted): must_match 840 -> 817, opt_pragma
+  898 -> 894, goto 123 -> 121, field_0x 3938 -> 3936, address_name 2655 -> 2653.
+- **Forms that matched.**
+  - `x / 2.0f` for a half-size: MWCC turns it into `* 0.5f` after loop-invariant motion, so the multiply stays in
+    the loop. That replaced the guarded `opt_loop_invariants off` pairs in eff_ibuki and eff_recovery (with their
+    `half`/`k05` constant locals). Lead: the unguarded opt_loop_invariants pragmas in eff_bomb, eff_kemutest,
+    eff_pointget and eff_opuku_jetw_n64 may yield the same way.
+  - A hand-copied inline body is the inline: animEffectAsync's ag2tg search is a call to animGetAg2tgName (as
+    animGroupBaseAsync, removing an unguarded goto too), spline_maketable's Newton steps are `spline_sqrtf(...)`,
+    eff_scanning's built-and-copied Vec is system.h's `initializeVec` (file-local copy, as eff_puniballoon).
+  - animEffectAsync's goto-ret pair is one else-if chain storing a `BOOL result`, returned once (every plain-return
+    tail folds to the branchless form or merges the TRUE returns). Its last arm, the unsigned `(u32)other == 0`
+    test with explicit 0/1 stores, stays guarded with `result = other != 0` under #else.
+  - eff_scanning/eff_uranoko's `rad` steps are `0.017453292f * -camGetPtr(camId)->viewYaw`, eff_kemuri's form.
+  - eff_cloud_n64's 30 unrolled stores are a loop bounded by `sizeof(a) / sizeof(a[0])`: an unsigned bound makes
+    MWCC unroll a constant-trip loop fully (an s32 `< 30` doesn't). Lead for other hand-unrolled loops.
+  - eff_fall_leaf_n64: one 0x30 record type for the header and the leaves (Entry walks `data + 1`); the guarded
+    second type and Disp's casts go. The sin blend goes through the function's existing scratch `t`.
+  - shadowdrv size/negSize: assigned after the vertex-format setup (statement order).
+  - eff_release_n64: the five vertex arrays by name (the earlier lead), tried in the link: build ok, lbl_803A4C60
+    stays defined.
+- **Rejected in review (EQUIV, not applied).** mobjdrv's `f64 dx, dy, dz` fabs locals (the steering the mmsrc review
+  put back; agent2/mobjdrv_f64.diff); kemuri8's B colour call to the unguarded kemuri8SetChanMatColorB (widens a
+  helper without a name; A call and helpers are unguarded while B is guarded, for a reviewer); kemuri8/9 with the
+  literal assigned to both size locals; eff_indirect `half = 32; half = -half / 2`; pokopi_pipo `velY -= velY`;
+  imgdrv `== -1 ? FALSE : TRUE`; eff_fukidashi `c != 0U`.
+- **Left, with what was tried** (5-30 shapes each; details in the reports):
+  - eff_kemuri (33): FIFO 0.0/1.0 reloads need the volatile read with named constants. Without its pragma
+    effKemuriDisp only swaps f31 (0.5) and f29 (int->float magic); 13 one/left/unity orders, initialisers and
+    MATCH_F32 placements don't fix it. KEMURI_SIXP4's cast: the plain name puts 6.4 in f25 not f31; a `sixp4` local
+    in five places doesn't help. The quad temps sit inside the FIFO region anyway.
+  - Colour helpers (batten, spark, starstone, toge_flush, nozle, minigame, funemizu, energy, recovery rcC, butterfly,
+    confetti, pokopi_thunder, opuku_wgun, thruhammer, sstar, recover_heart, kumokumo, kameki, horao_spell): retail
+    builds each GXColor in the slot below its outgoing copy, per call. Caller-declared locals in any scope come
+    before compiler temps, inline locals with them, so no in-caller form gives retail's slots. In-call compound
+    literals `(GXColor){r, g, b, a}` give the code exactly; the unk_/dat_ words are MWCC's templates for them. EQUIV
+    once those definitions are deleted (thruhammer, sstar, recover_heart, kumokumo; data lead, variants in
+    build/mm2/agent4/).
+  - Register/slot steering that more orders didn't move: eff_levelup elemIdx (~20 loop shapes), eff_ibuki comma,
+    eff_kemutest dirptr, horao SetVtx2 `p`, star_power `f7`, sweat negate (all 24 decl orders), balloon `wave`,
+    bomhei, arcdrv infoPtr, icondrv frames, animdrv pose cast (29 positions), mapdrv case-8 `wave`, shadowdrv colour
+    slots, windowdrv FIFO interleave and `goto ret`, hitdrv hitFindElem (only an r26/r27 swap).
+  - Redundant tests, int round trips, puns: mobjdrv inBattle, imgdrv ternaries/arms, eff_break language test,
+    opuku_wgun `i == 0 || i == 0`, npcdrv round trips and punned stores, eff_fall/eff_nice `(s32)sfx`, eff_naniga
+    ICON_ID, itemdrv status, fadedrv `+ zero`, envdrv's natural-only init.
+  - Data leads (EQUIV in scratch, not applied): eff_hit/eff_magic3/eff_kumokumo_chip/eff_mobj_broken named zero Vecs
+    as initialisers with the definitions deleted; eff_teresa/eff_stageclear constants defined after the code;
+    eff_mahorn2's three Vec inlines go if its array is unguarded; eff_sunlight literal zero.

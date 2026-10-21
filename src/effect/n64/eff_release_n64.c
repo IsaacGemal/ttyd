@@ -23,9 +23,6 @@ extern const u32 dat_8041fb38;
 // the original's offsets; defining them by name as well only emitted duplicates after them.
 
 // .data
-// lbl_803A4C60 belongs to the previous unit (eff_recover_heart_n64); effReleaseDisp reaches
-// its own .data through it as an offset base. Declared in the header.
-// The unit reads these tables through the first .data object (lbl_803A4C60 + offset); nothing names them.
 #pragma force_active on
 __declspec(section ".data") static f32 negone_one_374[2] = {-1.0f, 1.0f};
 __declspec(section ".data") f32 lbl_803A4C70[2] = {1.0f, -1.0f};
@@ -398,9 +395,6 @@ static inline void releaseSetColor3(s32 alpha) {
 }
 
 void effReleaseDisp(CameraId camId, void* param) {
-#ifdef MUST_MATCH
-    u8* vtxBase = (u8*)lbl_803A4C60;
-#endif
     EffectEntry* effect = param;
     effReleaseN64Data* data;
     CameraEntry* cam = camGetPtr(camId);
@@ -462,22 +456,14 @@ void effReleaseDisp(CameraId camId, void* param) {
                 GXLoadTexObj(&texObj, GX_TEXMAP0);
                 PSMTXScale(scale, 0.03125f, 0.03125f, 0.0f);
                 GXLoadTexMtxImm(scale, GX_TEXMTX0, GX_MTX2x4);
-#ifdef MUST_MATCH
-                effSetVtxDescN64((effVtxArray*)(vtxBase + 0x130));
-#else
                 effSetVtxDescN64((effVtxArray*)size16x16_tex64x64_vtx);
-#endif
                 GXBegin(GX_TRIANGLES, GX_VTXFMT0, 6);
                 tri2(0, 1, 2, 0, 0, 2, 3, 0);
                 break;
             case 1:
                 effGetTexObjN64(0x45, &texObj);
                 GXLoadTexObj(&texObj, GX_TEXMAP0);
-#ifdef MUST_MATCH
-                effSetVtxDescN64((effVtxArray*)(vtxBase + 0x168));
-#else
                 effSetVtxDescN64((effVtxArray*)size16x16_tex256x32_vtx);
-#endif
                 PSMTXScale(scale, 0.00390625f, 0.00390625f, 0.0f);
                 PSMTXTrans(trans, 0.0f, 0.0f, 0.0f);
                 PSMTXConcat(scale, trans, scale);
@@ -512,11 +498,7 @@ void effReleaseDisp(CameraId camId, void* param) {
                 GXLoadTexObj(&texObj, GX_TEXMAP0);
                 PSMTXScale(scale, 0.015625f, 0.015625f, 0.0f);
                 GXLoadTexMtxImm(scale, GX_TEXMTX0, GX_MTX2x4);
-#ifdef MUST_MATCH
-                effSetVtxDescN64((effVtxArray*)(vtxBase + 0x328));
-#else
                 effSetVtxDescN64((effVtxArray*)size16x16_tex128x128_vtx);
-#endif
                 GXBegin(GX_TRIANGLES, GX_VTXFMT0, 6);
                 tri2(0, 1, 2, 0, 0, 2, 3, 0);
                 /* no break: case 2 falls through into case 3 (matches the original) */
@@ -525,11 +507,7 @@ void effReleaseDisp(CameraId camId, void* param) {
                 GXLoadTexObj(&texObj, GX_TEXMAP0);
                 PSMTXScale(scale, 0.015625f, 0.03125f, 0.0f);
                 GXLoadTexMtxImm(scale, GX_TEXMTX0, GX_MTX2x4);
-#ifdef MUST_MATCH
-                effSetVtxDescN64((effVtxArray*)(vtxBase + 0x360));
-#else
                 effSetVtxDescN64((effVtxArray*)size16x16_tex64x64_0_vtx);
-#endif
                 GXBegin(GX_TRIANGLES, GX_VTXFMT0, 0xC);
                 tri2(0, 1, 2, 0, 0, 2, 3, 0);
                 tri2(4, 5, 6, 4, 4, 6, 7, 4);
@@ -569,11 +547,7 @@ void effReleaseDisp(CameraId camId, void* param) {
             PSMTXIdentity(trans);
             GXLoadPosMtxImm(trans, GX_PNMTX0);
             GXSetCurrentMtx(GX_PNMTX0);
-#ifdef MUST_MATCH
-            effSetVtxDescN64((effVtxArray*)(vtxBase + 0x3d0));
-#else
             effSetVtxDescN64((effVtxArray*)rectangle_vtx);
-#endif
             GXBegin(GX_TRIANGLES, GX_VTXFMT0, 6);
             tri2(0, 1, 2, 0, 0, 2, 3, 0);
             GXSetProjectionv(projv);
