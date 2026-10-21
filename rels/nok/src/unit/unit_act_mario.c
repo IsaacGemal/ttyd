@@ -15,7 +15,6 @@
 #include "battle/battle_disp.h"
 
 #pragma pool_data off
-#pragma fp_contract on // the original REL object contracts a+b*c into fmadds; the REL cflags lack -fp_contract on
 
 #pragma force_active on
 extern BattleUnitKind unit_act_atmic_teresa;
