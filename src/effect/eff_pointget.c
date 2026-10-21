@@ -30,7 +30,7 @@ static u32 texid_tbl[2][4] = {
 	{ 0x98, 0x99, 0x9A, 0x9B },
 };
 
-EffectEntry* effPointGetEntry(s32 type, s32 value, s32 wait, f32 x, f32 y, f32 z) {
+EffectEntry* effPointGetEntry(s32 type, f32 x, f32 y, f32 z, s32 value, s32 wait) {
 	EffectEntry* entry;
 	PointGetWork* work;
 

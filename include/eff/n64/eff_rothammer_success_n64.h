@@ -18,6 +18,6 @@ typedef struct effRotHammerSuccessData {
     s32 lifeMax;    // 0x2C, initial life
     f32 scale;      // 0x30
 } effRotHammerSuccessData;
-EffectEntry* effRotHammerSuccessN64Entry(s32 type, s32 count, f32 x, f32 y, f32 z, s32 life);
+EffectEntry* effRotHammerSuccessN64Entry(s32 type, f32 x, f32 y, f32 z, s32 count, s32 life);
 void effRotHammerSuccessMain(EffectEntry* effect);
 void effRotHammerSuccessDisp(CameraId camId, void* param);

@@ -433,16 +433,8 @@ EffectEntry* effGonbabaBreathEntry(s32 type, s32 lifetime, f32 x, f32 y, f32 z, 
 	return entry;
 }
 
-// The original translation unit called intplGetValue through a prototype listing the two float
-// bounds before the step/steps words, so MWCC evaluates the two int->float conversions first and
-// colours them r0/r4 as retail does; the ABI is unchanged (ints r3-r5, floats f1-f2).
-static inline f32 intplGetValueFM(s32 mode, f32 start, f32 end, s32 currStep, s32 steps) {
-	return intplGetValue(mode, currStep, steps, start, end);
-}
-
 // `k`/`k2` are the named scale rates; naming them makes MWCC keep the `1.5f - scale` subtraction
 // in f1 (the literal form lands it in f0) without moving the pooled 0.25f/0.125f entries.
-// `intplGetValueFM` (above) restores retail's int->float conversion colouring.
 void effGonbabaBreathMain(EffectEntry* effect) {
 	effGonbabaBreathData* data = effect->userdata;
 	Vec position;
@@ -550,9 +542,9 @@ void effGonbabaBreathMain(EffectEntry* effect) {
 			data->velY *= 0.9f;
 			data->position.x += data->velX;
 			data->position.y += data->velY;
-			data->colorR = (s32)intplGetValueFM(0xB, (f32)data->colorR, (f32)data->targetR, 0x1E - data->lifetime, 0x1E);
-			data->colorG = (s32)intplGetValueFM(0xB, (f32)data->colorG, (f32)data->targetG, 0x1E - data->lifetime, 0x1E);
-			data->colorB = (s32)intplGetValueFM(0xB, (f32)data->colorB, (f32)data->targetB, 0x1E - data->lifetime, 0x1E);
+			data->colorR = (s32)intplGetValue(0xB, 0x1E - data->lifetime, 0x1E, (f32)data->colorR, (f32)data->targetR);
+			data->colorG = (s32)intplGetValue(0xB, 0x1E - data->lifetime, 0x1E, (f32)data->colorG, (f32)data->targetG);
+			data->colorB = (s32)intplGetValue(0xB, 0x1E - data->lifetime, 0x1E, (f32)data->colorB, (f32)data->targetB);
 			break;
 		case 17:
 			if (data->lifetime == 0) {
@@ -572,9 +564,9 @@ void effGonbabaBreathMain(EffectEntry* effect) {
 			data->velY *= 0.9f;
 			data->position.x += data->velX;
 			data->position.y += data->velY;
-			data->colorR = (s32)intplGetValueFM(0xB, (f32)data->colorR, (f32)data->targetR, 0x3C - data->lifetime, 0x3C);
-			data->colorG = (s32)intplGetValueFM(0xB, (f32)data->colorG, (f32)data->targetG, 0x3C - data->lifetime, 0x3C);
-			data->colorB = (s32)intplGetValueFM(0xB, (f32)data->colorB, (f32)data->targetB, 0x3C - data->lifetime, 0x3C);
+			data->colorR = (s32)intplGetValue(0xB, 0x3C - data->lifetime, 0x3C, (f32)data->colorR, (f32)data->targetR);
+			data->colorG = (s32)intplGetValue(0xB, 0x3C - data->lifetime, 0x3C, (f32)data->colorG, (f32)data->targetG);
+			data->colorB = (s32)intplGetValue(0xB, 0x3C - data->lifetime, 0x3C, (f32)data->colorB, (f32)data->targetB);
 			break;
 		}
 	}

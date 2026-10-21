@@ -796,14 +796,14 @@ s32 winItemMain(WindowWork* work) {
             }
             if (work->useTargetSel < 1) {
                 pouchSetHP(pouchGetHP() + itemDataTable[work->useItemId].hp_restored);
-                pouchSetFP((*(s32(*)(void))pouchGetFP)() + itemDataTable[work->useItemId].fp_restored);
-                pouchSetAP((*(s32(*)(void))pouchGetAP)() + itemDataTable[work->useItemId].sp_restored);
+                pouchSetFP(pouchGetFP() + itemDataTable[work->useItemId].fp_restored);
+                pouchSetAP(pouchGetAP() + itemDataTable[work->useItemId].sp_restored);
             } else {
                 PartyId pid = list[work->useTargetSel - 1]->partnerId;
 
-                (*(void(*)(PartyId, s32))pouchSetPartyHP)(pid, (*(s32(*)(PartyId))pouchGetPartyHP)(pid) + itemDataTable[work->useItemId].hp_restored);
-                pouchSetFP((*(s32(*)(void))pouchGetFP)() + itemDataTable[work->useItemId].fp_restored);
-                pouchSetAP((*(s32(*)(void))pouchGetAP)() + itemDataTable[work->useItemId].sp_restored);
+                pouchSetPartyHP(pid, pouchGetPartyHP(pid) + itemDataTable[work->useItemId].hp_restored);
+                pouchSetFP(pouchGetFP() + itemDataTable[work->useItemId].fp_restored);
+                pouchSetAP(pouchGetAP() + itemDataTable[work->useItemId].sp_restored);
             }
             work->useTimer = 0;
             work->itemState = 301;
@@ -1036,9 +1036,7 @@ void item_disp(WindowWork* work, f32 x, f32 y) {
 }
 
 // Draws the use-item target window: Mario's HP/FP rows, then one HP row per partner (the current
-// partner first), and the window's background textures. The `(*(s32(*)(void))pouchGetFP)()` cast
-// passes pouchGetFP's result on without the `extsh` its `s16` prototype would add (winItemMain calls
-// it the same way).
+// partner first), and the window's background textures.
 void itemUseDisp(WinMgrEntry* entry) {
     WindowWork* work = winGetPtr();
     WindowPartyDt* list[10];
@@ -1137,7 +1135,7 @@ void itemUseDisp(WinMgrEntry* entry) {
                 winFontSetV((Vec){(f32)(entry->x + 0xDC), (f32)(entry->y - 8 - (i + 1) * 0x16), 0.0f},
                             (Vec){0.9f, 0.9f, 0.9f}, color, "\202e\202o");
                 winFontSetRV((Vec){(f32)(entry->x + 0xF5), (f32)(entry->y - 8 - (i + 1) * 0x16), 0.0f},
-                             (Vec){0.9f, 0.9f, 0.9f}, color, "%d", (*(s32(*)(void))pouchGetFP)());
+                             (Vec){0.9f, 0.9f, 0.9f}, color, "%d", pouchGetFP());
                 winFontSetRV((Vec){(f32)(entry->x + 0x10B), (f32)(entry->y - 8 - (i + 1) * 0x16), 0.0f},
                              (Vec){0.8f, 0.8f, 0.8f}, color, "\201^");
                 winFontSetV((Vec){(f32)(entry->x + 0x136), (f32)(entry->y - 0xA - (i + 1) * 0x16), 0.0f},

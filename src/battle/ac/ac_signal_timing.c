@@ -119,7 +119,7 @@ s32 battleAcMain_SignalTiming(BattleWork* work) {
             bd->frame = 0;
             bd->curSignal = 0;
             bd->signalCount = 0;
-            bd->difficulty = ((s32 (*)(BattleWork*))BattleActionCommandGetDifficulty)(work);
+            bd->difficulty = BattleActionCommandGetDifficulty(work);
             bd->inWindow = 0;
             ac->outputParams[1] = 0;
             for (k = 0; k < 5; k++) {
@@ -393,15 +393,6 @@ void battleAcDelete_SignalTiming(BattleWork* work) {
     work->actionCommands.mAcState = 0x3EC;
 }
 
-// Match-only: iconDispGx declares the icon id `s16`, but the original passes the s32 value from
-// BattleACGetButtonIcon straight through (no `extsh`); a differently-typed function pointer keeps
-// the call a direct `bl iconDispGx`. Same workaround as ac_gauge_timing.c / ac_repeatedly_lv.c.
-#ifdef MUST_MATCH
-#define ICON_DISP(v, f, id, s) (((void (*)(f32, Vec*, s16, s32))iconDispGx)((s), (v), (f), (id)))
-#else
-#define ICON_DISP(v, f, id, s) iconDispGx((s), (v), (f), (id))
-#endif
-
 #ifdef MUST_MATCH
 // Match-only: passing the icon id through a u16 slot (instead of s32) makes MWCC schedule the
 // 0x92-loop's int->float conversion exactly as the original (lis/xoris/lwz hoisted, addi/clrlwi
@@ -457,12 +448,12 @@ static void actionCommandDisp(f32 x, f32 y) {
             Vec t = vec3_802fedc8;
             t.x = -200.f + x;
             t.y = 70.f + y;
-            ICON_DISP(&t, 0x10, 0x65, 1.0f);
+            iconDispGx(1.0f, &t, 0x10, 0x65);
         } else {
             Vec t = vec3_802fedd4;
             t.x = -200.f + x;
             t.y = 70.f + y;
-            ICON_DISP(&t, 0x10, 0x64, 1.0f);
+            iconDispGx(1.0f, &t, 0x10, 0x64);
         }
     }
 
@@ -490,7 +481,7 @@ static void actionCommandDisp(f32 x, f32 y) {
             t.x = -288.0f + x;
             f31 = 25.0f + y;
             t.y = f31;
-            ICON_DISP(&t, 0x10, 0x8F, 1.0f);
+            iconDispGx(1.0f, &t, 0x10, 0x8F);
         }
         for (i = 1; i < limit; i++) {
 #ifdef MUST_MATCH
@@ -501,13 +492,13 @@ static void actionCommandDisp(f32 x, f32 y) {
 #endif
             t.x = x + (f32)(i * 0x10 - 0x120);
             t.y = f31;
-            ICON_DISP(&t, 0x10, 0x8E, 1.0f);
+            iconDispGx(1.0f, &t, 0x10, 0x8E);
         }
         {
             Vec t = (Vec){0.0f, 0.0f, 0.0f};
             t.x = x + (f32)(i * 0x10 - 0x120);
             t.y = f31;
-            ICON_DISP(&t, 0x10, 0x90, 1.0f);
+            iconDispGx(1.0f, &t, 0x10, 0x90);
         }
     }
 
@@ -549,13 +540,13 @@ static void actionCommandDisp(f32 x, f32 y) {
                 Vec t = (Vec){0.0f, 0.0f, 0.0f};
                 t.y = f31;
                 t.x = x + (f32)(i * 0x21 - 0x102);
-                ICON_DISP(&t, 0x10, 0x94, 1.0f);
+                iconDispGx(1.0f, &t, 0x10, 0x94);
             }
         } else {
             Vec t = (Vec){0.0f, 0.0f, 0.0f};
             t.y = f31;
             t.x = x + (f32)(i * 0x21 - 0x102);
-            ICON_DISP(&t, 0x10, 0x91, 0.5f);
+            iconDispGx(0.5f, &t, 0x10, 0x91);
         }
     }
 
@@ -565,12 +556,12 @@ static void actionCommandDisp(f32 x, f32 y) {
                 Vec t = (Vec){0.0f, 0.0f, 0.0f};
                 t.x = x + (f32)((i * 0x30 + (ac->acParams[6] * 0x21 - 0xfa)));
                 t.y = f31;
-                ICON_DISP(&t, 0x10, 0x95, 1.0f);
+                iconDispGx(1.0f, &t, 0x10, 0x95);
             } else {
                 Vec t = (Vec){0.0f, 0.0f, 0.0f};
                 t.x = x + (f32)((i * 0x30 + (ac->acParams[6] * 0x21 - 0xfa)));
                 t.y = f31;
-                ICON_DISP(&t, 0x10, 0x91, 1.0f);
+                iconDispGx(1.0f, &t, 0x10, 0x91);
             }
         }
     } else if (!(ac->acFlag & 2)) {
@@ -589,7 +580,7 @@ static void actionCommandDisp(f32 x, f32 y) {
                 Vec t = (Vec){0.0f, 0.0f, 0.0f};
                 t.y = f28;
                 t.x = x + (f32)((i * 0x30 + (ac->acParams[6] * 0x21 - 0xfa)));
-                ICON_DISP(&t, 0x10, BattleACGetButtonIcon(bd->buttons[i], 0), 0.8f);
+                iconDispGx(0.8f, &t, 0x10, BattleACGetButtonIcon(bd->buttons[i], 0));
             } else {
                 s32 delta;
                 Vec t;
@@ -602,7 +593,7 @@ static void actionCommandDisp(f32 x, f32 y) {
                 t = (Vec){0.0f, 0.0f, 0.0f};
                 t.x = x + (f32)((i * 0x30 + (ac->acParams[6] * 0x21 - 0xfa)));
                 t.y = (f32)(delta + 0x19) + y;
-                ICON_DISP(&t, 0x10, BattleACGetButtonIcon(bd->buttons[i], 1), scale);
+                iconDispGx(scale, &t, 0x10, BattleACGetButtonIcon(bd->buttons[i], 1));
             }
         }
     } else {
@@ -618,28 +609,17 @@ static void actionCommandDisp(f32 x, f32 y) {
                 Vec t = (Vec){0.0f, 0.0f, 0.0f};
                 t.x = x + (f32)((i * 0x30 + (ac->acParams[6] * 0x21 - 0xfa)));
                 t.y = f31;
-                ICON_DISP(&t, 0x10, BattleACGetButtonIcon(bd->buttons[i], 0), 0.8f);
+                iconDispGx(0.8f, &t, 0x10, BattleACGetButtonIcon(bd->buttons[i], 0));
             } else if (bd->signalCount <= t0) {
                 if (i >= num - 1) {
-                    // Match-only: the original sets r5=0 before every btlDispTexPlane call (the
-                    // callee's GXColor is the 2nd GPR); the extra trailing s32 reproduces it, as in
-                    // battle_seq_end.c. The natural 7-argument call is under #else.
-#ifdef MUST_MATCH
-                    ((void (*)(f32, f32, f32, f32, f32, s32, GXColor, s32))btlDispTexPlane)(
-                        x + (f32)((i * 0x30 + (ac->acParams[6] * 0x21 - 0xfa))),
-                        f28, 0.0f, 0.8f, 0.8f,
-                        0x40, *(GXColor*)&dat_804216d4, 0);
-#else
-                    btlDispTexPlane(0x40, *(GXColor*)&dat_804216d4,
-                                    x + (f32)((i * 0x30 + (ac->acParams[6] * 0x21 - 0xfa))),
-                                    f28, 0.0f, 0.8f, 0.8f);
-#endif
+                    btlDispTexPlane(x + (f32)((i * 0x30 + (ac->acParams[6] * 0x21 - 0xfa))), f28, 0.0f, 0.8f, 0.8f,
+                                    0x40, *(GXColor*)&dat_804216d4, 0);
                 }
             } else {
                 Vec t = (Vec){0.0f, 0.0f, 0.0f};
                 t.x = x + (f32)((i * 0x30 + (ac->acParams[6] * 0x21 - 0xfa)));
                 t.y = f31;
-                ICON_DISP(&t, 0x10, BattleACGetButtonIcon(bd->buttons[i], 1), 0.8f);
+                iconDispGx(0.8f, &t, 0x10, BattleACGetButtonIcon(bd->buttons[i], 1));
             }
         }
     }
@@ -647,27 +627,11 @@ static void actionCommandDisp(f32 x, f32 y) {
     f28 = f31 - 25.0f;
     for (i = 0; i < num; i++) {
         if (bd->states[i] == 1) {
-#ifdef MUST_MATCH
-            ((void (*)(f32, f32, f32, f32, f32, s32, GXColor, s32))btlDispTexPlane)(
-                x + (f32)((i * 0x30 + (ac->acParams[6] * 0x21 - 0xfa))), f28,
-                0.0f, 1.0f, 1.0f,
-                0x3E, *(GXColor*)&dat_804216d8, 0);
-#else
-            btlDispTexPlane(0x3E, *(GXColor*)&dat_804216d8,
-                            x + (f32)((i * 0x30 + (ac->acParams[6] * 0x21 - 0xfa))), f28,
-                            0.0f, 1.0f, 1.0f);
-#endif
+            btlDispTexPlane(x + (f32)((i * 0x30 + (ac->acParams[6] * 0x21 - 0xfa))), f28, 0.0f, 1.0f, 1.0f, 0x3E,
+                            *(GXColor*)&dat_804216d8, 0);
         } else if (bd->states[i] == -1) {
-#ifdef MUST_MATCH
-            ((void (*)(f32, f32, f32, f32, f32, s32, GXColor, s32))btlDispTexPlane)(
-                x + (f32)((i * 0x30 + (ac->acParams[6] * 0x21 - 0xfa))), f28,
-                0.0f, 1.0f, 1.0f,
-                0x3F, *(GXColor*)&dat_804216dc, 0);
-#else
-            btlDispTexPlane(0x3F, *(GXColor*)&dat_804216dc,
-                            x + (f32)((i * 0x30 + (ac->acParams[6] * 0x21 - 0xfa))), f28,
-                            0.0f, 1.0f, 1.0f);
-#endif
+            btlDispTexPlane(x + (f32)((i * 0x30 + (ac->acParams[6] * 0x21 - 0xfa))), f28, 0.0f, 1.0f, 1.0f, 0x3F,
+                            *(GXColor*)&dat_804216dc, 0);
         }
     }
 }

@@ -366,11 +366,12 @@ static void actionCommandDisp(f32 f1, f32 f2) {
 
 #ifdef MUST_MATCH
 	gv = *(volatile f32*)&disp->value;
-	BattleAcDrawGauge((s32)f1, (s32)f2, 0xb2, work->actionCommands.acParams[2], work->actionCommands.acParams[3],
-	                  work->actionCommands.acParams[4], work->actionCommands.acParams[5], 0, gv);
+	BattleAcDrawGauge((s32)f1, (s32)f2, gv, 0xb2, work->actionCommands.acParams[2], work->actionCommands.acParams[3],
+	                  work->actionCommands.acParams[4], work->actionCommands.acParams[5], 0);
 #else
-	BattleAcDrawGauge((s32)f1, (s32)f2, 0xb2, work->actionCommands.acParams[2], work->actionCommands.acParams[3],
-	                  work->actionCommands.acParams[4], work->actionCommands.acParams[5], 0, disp->value);
+	BattleAcDrawGauge((s32)f1, (s32)f2, disp->value, 0xb2, work->actionCommands.acParams[2],
+	                  work->actionCommands.acParams[3], work->actionCommands.acParams[4],
+	                  work->actionCommands.acParams[5], 0);
 #endif
 	if (dec->flag != 0) {
 		Vec pos;

@@ -380,7 +380,7 @@ s32 msgMain(smartEntry* smart) {
 				}
 				animPoseSetPaperAnimGroup(npc->poseId, "p_b_st", TRUE);
 				animPosePaperPeraOn(npc->poseId);
-				((void (*)(s32, const char*, BOOL))animPoseSetPaperAnim)(npc->poseId, paperPoseTbl[entry->startTime], TRUE);
+				animPoseSetPaperAnim(npc->poseId, paperPoseTbl[entry->startTime], TRUE);
 			}
 			break;
 		case 0xFFF2:
@@ -588,14 +588,8 @@ BOOL msgDisp(smartEntry* smart, u8 alpha, f32 x, f32 y) {
 				pos.x = 20.f + (x + (f32)entry->x);
 				pos.y = (f32)entry->iconOffsetY + (((f32)entry->y + (y + (f32)data->scrollY)) - 40.f);
 				pos.z = 0.0f;
-				// MUST_MATCH: retail converts iconId as u16 (clrlwi, no extsh); cast the callee at the call site.
-#ifdef MUST_MATCH
-				((void (*)(Vec*, s16, u16, u8, f32))iconDispGxAlpha)(&pos, 0x10, (u16)(entry->arg),
-					(u8)((fade * alpha) / 255), entry->scale);
-#else
 				iconDispGxAlpha(&pos, 0x10, entry->arg & 0xFFFF,
 					(u8)((fade * alpha) / 255), entry->scale);
-#endif
 				FontDrawStart_alpha(alpha);
 				FontDrawColor(color);
 				break;
@@ -1415,10 +1409,7 @@ s32 msgIconStr2ID(const char* str) {
 }
 
 
-// The third parameter is really s16 (the caller in evt_msg.c sign-extends it with `extsh`), but
-// windowEntry is declared u16 in windowdrv.h and defined that way in windowdrv.c, so the plain
-// call zero-extends b. Calling through the callee's real width reproduces the original's `mr r3, r5`
-// without touching the shared header/definition; the natural call is kept under #else.
+// The caller in evt_msg.c sign-extends `b` (`extsh`) before the call; here it goes to windowEntry unchanged.
 s32 msgWindow_Entry(const char* msg, s32 a, s32 b) {
 	// Declaration order steers MWCC's callee-saved allocation to the original (msg=r28, id=r27,
 	// buf=r30); the natural order lands msg in r27/buf in r27.
@@ -1428,11 +1419,7 @@ s32 msgWindow_Entry(const char* msg, s32 a, s32 b) {
 	smartEntry* smart;
 	s32 id;
 
-#ifdef MUST_MATCH
-	id = ((s32 (*)(s32))windowEntry)(b);
-#else
 	id = windowEntry(b);
-#endif
 	window = windowGetPointer(id);
 	window->main = msgWindow_Main;
 	window->delete = msgWindow_Delete;
@@ -2078,7 +2065,7 @@ void selectWindow_Disp(CameraId camId, void* param) {
 	GXSetFog(0, 0.0f, 0.0f, 0.0f, 0.0f, unk_80422fe4);
 
 	color = selectWindowColor(window->alpha);
-	windowDispGX_Waku_col(0, color, window->x, window->y, window->height, window->width, 30.f);
+	windowDispGX_Waku_col(window->x, window->y, window->height, window->width, 30.f, 0, color);
 
 	msgDisp(window->userdata, (u8)window->alpha, 40.f + window->x, window->y - 25.0f);
 

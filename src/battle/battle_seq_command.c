@@ -1829,21 +1829,13 @@ void BattleCommandDisplay_WeaponMultiItemCancelCheckDisp(CameraId camId, BattleW
 	pouchGetPtr();
 	sprintf(buf, msgSearch("btl_msg_multi_item_cancel_check"));
 	len = strlen(buf);
-#ifdef MUST_MATCH
-	// Retail evaluates the float arguments before the texture id and the colour (as in battle_seq_end's
-	// _MarioExpDisp), so the call goes through a float-first cast; the colour copy precedes the conversions.
-	((void (*)(f32, f32, f32, f32, f32, u16, GXColor))windowDispGX_Waku_col)(
-	    -30.0f - (xoff = 6.25f * (f32)len), 30.0f, 12.5f * (f32)len + 65.0f, 32.0f, 10.0f, 0,
-	    (GXColor){ 0xFF, 0xFF, 0xFF, 0xFF });
-#else
-	windowDispGX_Waku_col(0, (GXColor){ 0xFF, 0xFF, 0xFF, 0xFF }, -30.0f - (xoff = 6.25f * (f32)len), 30.0f,
-	                      12.5f * (f32)len + 65.0f, 32.0f, 10.0f);
-#endif
-	windowDispGX_Waku_col(0, (GXColor){ 0xFF, 0xFF, 0xFF, 0xFF }, -70.0f, -10.0f, 130.0f, 60.0f, 10.0f);
+	windowDispGX_Waku_col(-30.0f - (xoff = 6.25f * (f32)len), 30.0f, 12.5f * (f32)len + 65.0f, 32.0f, 10.0f, 0,
+	                      (GXColor){ 0xFF, 0xFF, 0xFF, 0xFF });
+	windowDispGX_Waku_col(-70.0f, -10.0f, 130.0f, 60.0f, 10.0f, 0, (GXColor){ 0xFF, 0xFF, 0xFF, 0xFF });
 	FontDrawStart();
-	FontDrawString(buf, cx - xoff, 27.0f);
-	FontDrawString("\202\315\202\242\201@", -20.0f, -13.0f);
-	FontDrawString("\202\242\202\242\202\246", -20.0f, -38.0f);
+	FontDrawString(cx - xoff, 27.0f, buf);
+	FontDrawString(-20.0f, -13.0f, "\202\315\202\242\201@");
+	FontDrawString(-20.0f, -38.0f, "\202\242\202\242\202\246");
 	pos.x = -40.0f;
 	pos.y = (f32)(-42 - wp->commandMenu.cursor[13].field_0 * 25);
 	pos.z = 0.0f;
@@ -2182,10 +2174,9 @@ void BattleCommandDisplay_TargetSelectMenuDisp(CameraId camId, BattleWork* param
 				name = (char*)msgSearch(part->partName);
 			}
 			width = (f32)FontGetMessageWidth(name);
-			windowDispGX_Waku_col(0, (GXColor){ 0xFF, 0xFF, 0xFF, 0xCF }, -240.0f, 86.0f, 16.0f + width, 32.0f,
-			                      10.0f);
+			windowDispGX_Waku_col(-240.0f, 86.0f, 16.0f + width, 32.0f, 10.0f, 0, (GXColor){ 0xFF, 0xFF, 0xFF, 0xCF });
 			FontDrawStart();
-			FontDrawString(name, -232.0f, 83.0f);
+			FontDrawString(-232.0f, 83.0f, name);
 		} else {
 			btlGetScreenPoint(&pos, &screen);
 			iconPos.x = screen.x;
@@ -2198,10 +2189,9 @@ void BattleCommandDisplay_TargetSelectMenuDisp(CameraId camId, BattleWork* param
 				name = (char*)msgSearch(part->partName);
 			}
 			width = (f32)FontGetMessageWidth(name);
-			windowDispGX_Waku_col(0, (GXColor){ 0xFF, 0xFF, 0xFF, 0xCF }, -240.0f, 86.0f, 16.0f + width, 32.0f,
-			                      10.0f);
+			windowDispGX_Waku_col(-240.0f, 86.0f, 16.0f + width, 32.0f, 10.0f, 0, (GXColor){ 0xFF, 0xFF, 0xFF, 0xCF });
 			FontDrawStart();
-			FontDrawString(name, -232.0f, 83.0f);
+			FontDrawString(-232.0f, 83.0f, name);
 		}
 	} else {
 		BattleSampling* sampling = &wp->sampling;
@@ -2234,10 +2224,10 @@ void BattleCommandDisplay_TargetSelectMenuDisp(CameraId camId, BattleWork* param
 					name = (char*)msgSearch(part->partName);
 				}
 				width = (f32)FontGetMessageWidth(name);
-				windowDispGX_Waku_col(0, (GXColor){ 0xFF, 0xFF, 0xFF, 0xCF }, -240.0f,
-				                      118.0f - (f32)yoff, 16.0f + width, 32.0f, 10.0f);
+				windowDispGX_Waku_col(-240.0f, 118.0f - (f32)yoff, 16.0f + width, 32.0f, 10.0f, 0,
+				                      (GXColor){ 0xFF, 0xFF, 0xFF, 0xCF });
 				FontDrawStart();
-				FontDrawString(name, -232.0f, 115.0f - (f32)yoff);
+				FontDrawString(-232.0f, 115.0f - (f32)yoff, name);
 			} else {
 				btlGetScreenPoint(&pos, &screen);
 				iconPos.x = screen.x;
@@ -2250,10 +2240,10 @@ void BattleCommandDisplay_TargetSelectMenuDisp(CameraId camId, BattleWork* param
 					name = (char*)msgSearch(part->partName);
 				}
 				width = (f32)FontGetMessageWidth(name);
-				windowDispGX_Waku_col(0, (GXColor){ 0xFF, 0xFF, 0xFF, 0xCF }, -240.0f,
-				                      118.0f - (f32)yoff, 16.0f + width, 32.0f, 10.0f);
+				windowDispGX_Waku_col(-240.0f, 118.0f - (f32)yoff, 16.0f + width, 32.0f, 10.0f, 0,
+				                      (GXColor){ 0xFF, 0xFF, 0xFF, 0xCF });
 				FontDrawStart();
-				FontDrawString(name, -232.0f, 115.0f - (f32)yoff);
+				FontDrawString(-232.0f, 115.0f - (f32)yoff, name);
 			}
 		}
 	}
@@ -2297,11 +2287,10 @@ void BattleCommandDisplay_ProtectPartnerSelectMenuDisp(CameraId camId, BattleWor
 	iconDispGx(1.0f, &iconPos, 0x10, 0x1EF);
 	len = (f32)strlen(msgSearch((char*)partner->mKindParams->name));
 	xoff = 6.25f * len;
-	windowDispGX_Waku_col(0, (GXColor){ 0xFF, 0xFF, 0xFF, 0xCF }, iconPos.x - xoff, 80.0f + iconPos.y,
-	                      12.5f * len, 32.0f, 10.0f);
+	windowDispGX_Waku_col(iconPos.x - xoff, 80.0f + iconPos.y, 12.5f * len, 32.0f, 10.0f, 0,
+	                      (GXColor){ 0xFF, 0xFF, 0xFF, 0xCF });
 	FontDrawStart();
-	FontDrawString(msgSearch((char*)partner->mKindParams->name),
-	               3.0f + iconPos.x - xoff, 77.0f + iconPos.y);
+	FontDrawString(3.0f + iconPos.x - xoff, 77.0f + iconPos.y, msgSearch((char*)partner->mKindParams->name));
 }
 
 void BattleCommandDisplay_ProtectPartnerSelectMenuEnd(BattleWork* wp) {
@@ -2655,8 +2644,7 @@ void BattleDrawEnemyHPBar(Vec pos, BattleUnit* unit, GXColor color) {
 	btlDispGXInit2DRasta();
 	GXLoadPosMtxImm(camera->view, 0);
 	pos.x -= 10.0f;
-	((void (*)(u32, GXColor, s32, f32, f32, f32, f32, f32))btlDispTexPlane)(
-	    0xA, color, 0, 19.0f + pos.x, pos.y - 3.0f, 0.0f, 1.0f, 1.0f);
+	btlDispTexPlane(19.0f + pos.x, pos.y - 3.0f, 0.0f, 1.0f, 1.0f, 0xA, color, 0);
 	switch ((s32)*(u16*)gauge->field_0x0) {
 	case 1:
 		if (gauge->field_0x4 > 0) {
@@ -2667,14 +2655,12 @@ void BattleDrawEnemyHPBar(Vec pos, BattleUnit* unit, GXColor color) {
 			btlDispGXInit2DRasta();
 			GXLoadPosMtxImm(camera->view, 0);
 		}
-		((void (*)(u32, GXColor, s32, f32, f32, f32, f32, f32))btlDispTexPlane)(
-		    0xB, color, 0, 19.0f + pos.x - 20.0f * (1.0f - gauge->field_0x14), pos.y - 3.0f, 0.0f,
-		    gauge->field_0x14, 1.0f);
+		btlDispTexPlane(19.0f + pos.x - 20.0f * (1.0f - gauge->field_0x14), pos.y - 3.0f, 0.0f, gauge->field_0x14, 1.0f,
+		                0xB, color, 0);
 		break;
 	default: {
 		f32 w = gauge->field_0x14;
-		((void (*)(u32, GXColor, s32, f32, f32, f32, f32, f32))btlDispTexPlane)(
-		    0xB, color, 0, 19.0f + pos.x - 20.0f * (1.0f - w), pos.y - 3.0f, 0.0f, w, 1.0f);
+		btlDispTexPlane(19.0f + pos.x - 20.0f * (1.0f - w), pos.y - 3.0f, 0.0f, w, 1.0f, 0xB, color, 0);
 		break;
 	}
 	}

@@ -893,7 +893,7 @@ void name_disp(WinMgrEntry* entry) {
 		FontDrawEdge();
 		*(u32*)&titleColor = shop_item_name_color;
 		FontDrawColor(&titleColor);
-		FontDrawString(msg, (f32)(-(s32)FontGetMessageWidth(msg) / 2), SHOP_F32(shop_item_name_y));
+		FontDrawString((f32)(-(s32)FontGetMessageWidth(msg) / 2), SHOP_F32(shop_item_name_y), msg);
 		FontDrawEdgeOff();
 	}
 	for (i = 0; i < wp->numItems; i++) {

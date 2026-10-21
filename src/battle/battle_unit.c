@@ -2018,13 +2018,7 @@ BOOL BtlUnit_CheckWeaponCost(BattleUnit* unit, BattleWeapon* weapon) {
     if (fp < cost) {
         return FALSE;
     }
-#ifdef MUST_MATCH
-    /* Match-only: the header declares pouchGetAP as `s16`, but the target consumed the raw 32-bit
-       return (no extsh). Call it through an s32-returning prototype, as evt_kinopio.c does. */
-    return (*(s32(*)(void))pouchGetAP)() >= (s32)weapon->baseSpCost * 100;
-#else
     return pouchGetAP() >= (s32)weapon->baseSpCost * 100;
-#endif
 }
 
 void BtlUnit_PayWeaponCost(BattleUnit* unit, BattleWeapon* weapon) {
@@ -2042,13 +2036,7 @@ void BtlUnit_PayWeaponCost(BattleUnit* unit, BattleWeapon* weapon) {
         BtlActRec_AddPoint((u8*)wp + 0x16F31, cost);
         BtlActRec_AddCount((u8*)wp + 0x16F32);
     }
-#ifdef MUST_MATCH
-    /* Match-only: the header declares pouchAddAP as taking `s16`, but the target passed the full
-       32-bit delta (no extsh). Call it through an s32-taking prototype. */
-    (*(void(*)(s32))pouchAddAP)(-weapon->baseSpCost * 100);
-#else
     pouchAddAP(-weapon->baseSpCost * 100);
-#endif
 }
 
 BattleUnit* BtlUnit_GetGuardKouraPtr(BattleUnit* unit) {

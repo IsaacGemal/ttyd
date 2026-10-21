@@ -197,22 +197,13 @@ void nokonoko_use(PartyEntry* party) {
     Vec out;
     Vec out2;
     Vec v;
-    Vec scr;
     f32 sx, sy, sz;
     f32 a, b;
     f32 f0, f1, f2, f3, f4, f5, f6, f31;
 
     if (!(party->flags & PARTY_FLAG_IS_EVT_USE)) {
         if (marioKeyOffChk()) {
-            scr = party->position;
-
-#ifdef MUST_MATCH
-            // MUST_MATCH: the original passes the copy's address (by-value Vec is passed as a
-            // pointer in the ABI), which lets `scr` keep a fixed slot at 0x114 like the original.
-            ((void (*)(Vec*, f32*, f32*, f32*))marioGetScreenPos)(&scr, &sx, &sy, &sz);
-#else
-            marioGetScreenPos(scr, &sx, &sy, &sz);
-#endif
+            marioGetScreenPos(party->position, &sx, &sy, &sz);
             if (!marioChkInScreen((s32)sx, (s32)sy)) {
                 a = mario->position.x;
                 b = mario->position.z;

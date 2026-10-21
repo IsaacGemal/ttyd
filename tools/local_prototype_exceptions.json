@@ -87,12 +87,12 @@
  {
   "path": "*",
   "name": "iconDispGx",
-  "reason": "the definition takes the icon id as s16, but battle_disp's original passes ItemData.icon_id zero-extended (u16); icondrv_gx.h has the definition's signature, otherwise declare it with the width your file's asm uses."
+  "reason": "the definition takes the icon id as s32 and most callers pass it as is, but some of the original's callers (evt_win, the boss koopa units, the action-command icon loops) convert it as u16 or evaluate the scale last; icondrv_gx.h has the definition's signature, otherwise declare it with the width and order your file's asm uses."
  },
  {
   "path": "*",
   "name": "iconDispGxAlpha",
-  "reason": "the definition takes the icon id as s16 (icondrv's iconDispGx needs it), but the REL lecture units and fontmgr pass it zero-extended (u16), and fontmgr evaluates the scale first; icondrv_gx.h has the definition's signature, otherwise declare it with the width and order your file's asm uses."
+  "reason": "the definition takes the icon id as s32 (iconDispGx passes its own s32 id through), but the REL lecture units pass it converted as u16 at the call, and fontmgr evaluates the scale first; icondrv_gx.h has the definition's signature, otherwise declare it with the width and order your file's asm uses."
  },
  {
   "path": "src/sequence/seq_mapchange.c",

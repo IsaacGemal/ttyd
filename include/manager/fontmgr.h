@@ -90,7 +90,7 @@ void FontDrawStart(void);
 void FontDrawStart_alpha(u8 alpha);
 void FontDrawEdge(void);
 void FontDrawEdgeOff(void);
-void FontDrawString(const char* str, f32 x, f32 y);
+void FontDrawString(f32 x, f32 y, const char* str);
 void FontDrawStringShake(const char* str, f32 x, f32 y);
 
 

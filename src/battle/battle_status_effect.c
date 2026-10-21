@@ -682,8 +682,8 @@ void _st_chg_msg_disp(CameraId camera, void* param) {
 	((void (*)(s32, GXColor*, f32, f32, f32, f32, f32))windowDispGX_Waku_col)(0, &color, x - 20.0f,
 	    -117.0f + (f32)((lines - 1) * 0x1D), (f32)(width + 0x28), (f32)(lines * 0x1D + 1), 10.0f);
 #else
-	windowDispGX_Waku_col(0, color, x - 20.0f, -117.0f + (f32)((lines - 1) * 0x1D),
-	                      (f32)(width + 0x28), (f32)(lines * 0x1D + 1), 10.0f);
+	windowDispGX_Waku_col(x - 20.0f, -117.0f + (f32)((lines - 1) * 0x1D), (f32)(width + 0x28), (f32)(lines * 0x1D + 1),
+	                      10.0f, 0, color);
 #endif
 	FontDrawStart();
 	FontDrawMessage((s32)x, (s32)neg120 + (lines - 1) * 0x1D, work->message);

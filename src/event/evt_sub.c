@@ -258,10 +258,6 @@ USER_FUNC(evt_sub_spline_init) {
 }
 
 
-// The original called intplGetValue through a prototype that listed the two float bounds
-// before the step/duration words, so MWCC evaluates (and schedules) the float constants
-// before the int words. The ABI is identical (ints->r3-r5, floats->f1-f2); only the source
-// argument order differs. Same shape as battleAcMain_PowerGauge.
 USER_FUNC(evt_sub_spline_get_value) {
 	s32* args = event->args;
 	SplineWork* work = (SplineWork*)event->lwData[15];
@@ -269,15 +265,6 @@ USER_FUNC(evt_sub_spline_get_value) {
 	f32 f31;
 	f32 out[3];
 
-#ifdef MUST_MATCH
-	if (work->timeBased == 0) {
-		f1 = ((f32 (*)(s32, f32, f32, s32, s32))intplGetValue)(work->mode, 0.0f, 1.0f, work->step, work->steps);
-	} else {
-		u64 diff = (u64)event->lifetime - (u64)work->time;
-		f31 = (f32)(diff / (OS_TIMER_CLOCK / 1000));
-		f1 = ((f32 (*)(s32, f32, f32, s32, s32))intplGetValue)(work->mode, 0.0f, 1.0f, (s32)f31, work->endTime);
-	}
-#else
 	if (work->timeBased == 0) {
 		f1 = intplGetValue(work->mode, work->step, work->steps, 0.0f, 1.0f);
 	} else {
@@ -285,7 +272,6 @@ USER_FUNC(evt_sub_spline_get_value) {
 		f31 = (f32)(diff / (OS_TIMER_CLOCK / 1000));
 		f1 = intplGetValue(work->mode, (s32)f31, work->endTime, 0.0f, 1.0f);
 	}
-#endif
 	spline_getvalue(out, work->type, work->points, work->knots, work->tangents, f1);
 	evtSetValue(event, args[0], (s32)(1024.0f * out[0]) + 0xF24A7A80);
 	evtSetValue(event, args[1], (s32)(1024.0f * out[1]) + 0xF24A7A80);

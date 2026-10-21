@@ -1548,24 +1548,9 @@ USER_FUNC(_set_mobj_rotate_x) {
 								psndSFXOn_3D((char*)sfx[1], &obj->mPosition);
 							}
 						}
-#ifdef MUST_MATCH
-						// Named endpoints make MWCC hoist the two lfs into the target's slots; the cast
-						// (ABI-identical) declares the floats before the int steps so they are evaluated
-						// first, as retail does.
-						{
-							f32 end = 90.0f;
-							f32 start;
-							obj->mNumFramesFalling++;
-							start = obj->mShakeAngle;
-							obj->mRotation.x = ((f32 (*)(s32, f32, f32, s32, s32))intpl_sub)(2, start, end,
-							                                                                 obj->mNumFramesFalling,
-							                                                                 obj->data->mNumFramesToFall);
-						}
-#else
 						obj->mNumFramesFalling++;
 						obj->mRotation.x = intpl_sub(2, obj->mNumFramesFalling, obj->data->mNumFramesToFall,
 						                             obj->mShakeAngle, 90.0f);
-#endif
 						if ((u32)obj->mNumFramesFalling < (u32)obj->data->mNumFramesToFall) {
 							changed = 1;
 						}
@@ -2024,7 +2009,7 @@ void _disp_escape_wall_message(CameraId cameraId, void* param) {
 
 	windowDispGX_Waku_col(0, &color, x - 20.0f, -117.0f, (f32)(width + 0x28), 30.0f, 10.0f);
 	FontDrawStart();
-	FontDrawString(msg, x, -120.0f);
+	FontDrawString(x, -120.0f, msg);
 }
 
 void BattleStage_IronFrameFallCheck(void) {
@@ -2086,13 +2071,6 @@ USER_FUNC(_fall_frame_wait_unit_ready) {
 	return EVT_RETURN_DONE;
 }
 
-// MATCHING. The one non-obvious requirement is the `intpl_sub` call: mwcc evaluates a callee's arguments in
-// its DECLARED parameter order, and the header declares intpl_sub as (mode, currStep, steps, start, end). With
-// that order it loads currStep/steps first and spills the int->float magic as a materialised address
-// (`lis`+`addi`+`lfd`, 13 diffs). The original callee is ABI-identical but declared with the floats first
-// (mode, start, end, currStep, steps) — the same shape as `intplGetValue` — so the floats are evaluated first
-// and the magic folds (`lis`+`lfd @l(r4)`). Calling through the reordered prototype (a cast, so no local
-// declaration is needed) reproduces it exactly.
 USER_FUNC(_fall_frame) {
 	s32 layer = event->args[0];
 	BattleWork* wp = _battleWorkPointer;
@@ -2104,13 +2082,8 @@ USER_FUNC(_fall_frame) {
 		event->field_84 = (s32)obj->mPosition.y;
 	}
 	event->userdata[2]++;
-#ifdef MUST_MATCH
-	obj->mPosition.y = ((f32 (*)(s32, f32, f32, s32, s32))intpl_sub)(
-	    2, (f32)(s32)event->field_84, 0.0f, event->userdata[2] * event->userdata[2] / 0x3C, 0x3C);
-#else
 	obj->mPosition.y = intpl_sub(2, event->userdata[2] * event->userdata[2] / 0x3C, 0x3C,
 	                             (f32)(s32)event->field_84, 0.0f);
-#endif
 	if (event->userdata[2] < 0x3C) {
 		return EVT_RETURN_BLOCK;
 	}

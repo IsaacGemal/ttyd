@@ -190,8 +190,8 @@ void _get_item_announce_disp(CameraId camera, void* param) {
     ((void (*)(s32, GXColor*, f32, f32, f32, f32, f32))windowDispGX_Waku_col)(0, &color, x - float_10_8041ccd0,
         float_34_8041ccd4, (f32)(width + 20), (f32)(lines * 0x1D + 3), float_10_8041ccd0);
 #else
-    windowDispGX_Waku_col(0, color, x - float_10_8041ccd0, float_34_8041ccd4,
-                          (f32)(width + 20), (f32)(lines * 0x1D + 3), float_10_8041ccd0);
+    windowDispGX_Waku_col(x - float_10_8041ccd0, float_34_8041ccd4, (f32)(width + 20), (f32)(lines * 0x1D + 3),
+                          float_10_8041ccd0, 0, color);
 #endif
     FontDrawStart();
     FontDrawMessage((s32)x, (s32)float_60_8041ccd8 - 0x1D, buf);

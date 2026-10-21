@@ -162,7 +162,7 @@ void monteCountDisp(void) {
 		baseY = -120;
 	}
 	if ((yuwp->flags & 1) == 0 || (yuwp->flags & 2) == 0) return;
-	windowDispGX_Waku_col(0, *(GXColor*)&waku_col, -288.0f, (f32)(baseY + 44), 200.0f, 44.0f, 16.0f);
+	windowDispGX_Waku_col(-288.0f, (f32)(baseY + 44), 200.0f, 44.0f, 16.0f, 0, *(GXColor*)&waku_col);
 
 	PSMTXTrans(mtx, -260.0f, (f32)(baseY + 2), 0.0f);
 	iconDispGxCol(mtx, 0x10, 0x13F, *(GXColor*)&icon_col_left);

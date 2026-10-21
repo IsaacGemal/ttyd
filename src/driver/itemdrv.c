@@ -22,6 +22,7 @@ void FontDrawColor(GXColor* color);
 #include "eff/eff_starstone.h"
 #include "eff/eff_splash.h"
 #include "eff/eff_itemget.h"
+#include "eff/n64/eff_hagetaka_flush_n64.h"
 #include "mario/mario_motion.h"
 #include "mario/mario_cam.h"
 #include "pmario_sound.h"

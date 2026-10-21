@@ -7,6 +7,7 @@
 #include <dolphin/gx.h>
 #include <string.h>
 #include "driver/animdrv.h"
+#include "driver/icondrv_gx.h"
 #include "system.h"
 #include "battle/battle_sub.h"
 #include "math_ext.h"
@@ -16,9 +17,6 @@
 #include "battle/battle_stage.h"
 #include "battle/battle_seq_command.h"
 
-// LOCAL_PROTO(iconDispGx): this unit's original passes the icon id zero-extended (ItemData.icon_id read with `lhz`
-// and handed over with no `extsh`), so it saw the id as u16.
-void iconDispGx(f32 scale, Vec* position, s16 flags, u16 iconId);
 
 extern BattleWork* _battleWorkPointer;
 
@@ -199,7 +197,7 @@ void btlDispTexPlainGX(u32 id, GXColor color0, GXColor color1, GXColor color2, G
 	GXTexCoord2f32(0.0f, 1.0f);
 }
 
-void btlDispTexPlane(u32 id, GXColor color, f32 tX, f32 tY, f32 tZ, f32 sX, f32 sY) {
+void btlDispTexPlane(f32 tX, f32 tY, f32 tZ, f32 sX, f32 sY, u32 id, GXColor color, s32 unused) {
 	CameraEntry* camera;
 	Mtx scale, trans, mtx;
 
@@ -228,7 +226,7 @@ void btlDispTexPlane2(Mtx mtx, u32 id, GXColor color, s32 unused) {
 }
 #pragma dont_inline reset
 
-void btlDispTexPlane3(Mtx mtx, u32 id, GXColor color0, GXColor color1, GXColor color2, GXColor color3) {
+void btlDispTexPlane3(Mtx mtx, u32 id, GXColor color0, GXColor color1, GXColor color2, GXColor color3, s32 unused) {
 	CameraEntry* camera;
 	Mtx mtx2;
 

@@ -385,7 +385,7 @@ USER_FUNC(power_chk) {
             }
         }
     }
-    if (pouchGetHP() == pouchGetMaxHP() && (*(s32(*)(void))pouchGetFP)() == pouchGetMaxFP() && (*(s32(*)(void))pouchGetAP)() == pouchGetMaxAP() && full) {
+    if (pouchGetHP() == pouchGetMaxHP() && pouchGetFP() == pouchGetMaxFP() && pouchGetAP() == pouchGetMaxAP() && full) {
         evtSetValue(event, args[0], 1);
     } else {
         evtSetValue(event, args[0], 0);

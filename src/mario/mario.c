@@ -2251,8 +2251,7 @@ void marioPreDisp(void) {
 
 		animPoseSetAnim(wp->paperAnimGroupId[marioAnimeId()], wp->animName, 1);
 		if (wp->paperAnimName) {
-			// header declares this 2-arg, but the target passes r5=1 (same cast as msgdrv.c)
-			((void (*)(s32, const char*, BOOL))animPoseSetPaperAnim)(wp->paperAnimGroupId[0], wp->paperAnimName, 1);
+			animPoseSetPaperAnim(wp->paperAnimGroupId[0], wp->paperAnimName, 1);
 		}
 		animPoseSetLocalTime(wp->paperAnimGroupId[marioAnimeId()], (f32)*(u16*)&wp->poseTime);
 	}

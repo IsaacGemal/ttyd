@@ -28,10 +28,6 @@
 static EventEntry* work;
 static EventEntry** wp = &work;
 
-// mapdrv.h declares mapPreLoad(void); the original calls it with a map-name string, so reach it through a
-// matching function pointer. Report as a header bug.
-#define mapPreLoad(map) ((BOOL (*)(const char*))mapPreLoad)(map)
-
 // clang-format off
 // TODO: type
 s32 fall_data[26] = {

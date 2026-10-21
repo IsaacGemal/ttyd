@@ -84,15 +84,6 @@ TEXPalette* winTexTpl = NULL;
 
 // functions defined in this unit but not declared in any header
 
-// mario_pouch.h declares the pouch accessors with s16 parameters, but the
-// original win_main.c treated them as s32 (the callees sign-extend their own
-// s16 returns). Call through the wider signature so MWCC does not insert
-// spurious extsh conversions.
-#define POUCH_GETFP() (*(s32(*)(void))pouchGetFP)()
-#define POUCH_GETAP() (*(s32(*)(void))pouchGetAP)()
-#define POUCH_GETPARTYHP(id) (*(s32(*)(s32))pouchGetPartyHP)(id)
-#define POUCH_SETPARTYHP(id, v) (*(void(*)(s32, s32))pouchSetPartyHP)(id, v)
-
 static s32 cam_r(void);
 s32 evt_diary_read[259];
 
@@ -503,12 +494,12 @@ USER_FUNC(itemUseFunc) {
             statusWinForceOpen();
             if (event->lwData[11] == 0) {
                 pouchSetHP(pouchGetHP() + item->hp_restored);
-                pouchSetFP(POUCH_GETFP() + item->fp_restored);
-                pouchSetAP(POUCH_GETAP() + (u8)item->sp_restored);
+                pouchSetFP(pouchGetFP() + item->fp_restored);
+                pouchSetAP(pouchGetAP() + (u8)item->sp_restored);
             } else {
-                POUCH_SETPARTYHP(event->lwData[11], POUCH_GETPARTYHP(event->lwData[11]) + item->hp_restored);
-                pouchSetFP(POUCH_GETFP() + item->fp_restored);
-                pouchSetAP(POUCH_GETAP() + (u8)item->sp_restored);
+                pouchSetPartyHP(event->lwData[11], pouchGetPartyHP(event->lwData[11]) + item->hp_restored);
+                pouchSetFP(pouchGetFP() + item->fp_restored);
+                pouchSetAP(pouchGetAP() + (u8)item->sp_restored);
             }
             cnt++;
             break;

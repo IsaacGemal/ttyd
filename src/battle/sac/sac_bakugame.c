@@ -90,7 +90,7 @@ struct BakuGameWork {
     f32 field_0xDC;                   // 0xDC, first BattleAcDrawGauge argument
     f32 field_0xE0;                   // 0xE0, second BattleAcDrawGauge argument
     u8 field_0xE4[0xE8 - 0xE4];       // 0xE4
-    f32 gaugeFill;                    // 0xE8, gauge / 100 clamped to 1, last BattleAcDrawGauge argument
+    f32 gaugeFill;                    // 0xE8, gauge / 100 clamped to 1, the BattleAcDrawGauge ratio
     s32 animPose;                     // 0xEC, c_star_bom pose id, -1 when released
     s32 countdown;                    // 0xF0, frames left in the round
     s32 cooldown;                     // 0xF4, frames before the next button press counts
@@ -1482,7 +1482,7 @@ void bakuGameDisp2D(void) {
 #endif
     for (i = 0; i < 3; i++) {
         BakuGameWorkEntry* entry = bakuGameEntry(baku, i);
-        s16 icon;
+        s32 icon;
 
         switch (entry->type) {
             case 0x100:
@@ -1523,7 +1523,7 @@ void bakuGameDisp2D(void) {
             p->dg = -0x10;
         }
     }
-    BattleAcDrawGauge((s32)baku->field_0xDC, (s32)baku->field_0xE0, 0xB1, 3, 0x21, 0x42, 0x64, flag, baku->gaugeFill);
+    BattleAcDrawGauge((s32)baku->field_0xDC, (s32)baku->field_0xE0, baku->gaugeFill, 0xB1, 3, 0x21, 0x42, 0x64, flag);
 }
 
 void bakuGameDisp3D(CameraId camId, void* param) {

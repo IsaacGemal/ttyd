@@ -168,12 +168,7 @@ s32 battleAcMain_LstRcKeep(BattleWork* work) {
                 s32 flag = 0;
                 if (dec->stage == 4) {
                     s32 remaining = ac->acParams[4] - cur;
-#ifdef MUST_MATCH
-                    // Match-only: the header says `s8` but the callee returns a zero-extended 4-byte value.
-                    if (remaining <= ac_lstrckeep_ok_frame[((s32 (*)(BattleWork*))BattleActionCommandGetDifficulty)(work)]) {
-#else
                     if (remaining <= ac_lstrckeep_ok_frame[BattleActionCommandGetDifficulty(work)]) {
-#endif
                         flag = 1;
                     }
                 }

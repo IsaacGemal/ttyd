@@ -22,7 +22,7 @@ static inline Vec initializeVec(Vec* input) {
     return temp;
 }
 
-EffectEntry* effRotHammerSuccessN64Entry(s32 type, s32 count, f32 x, f32 y, f32 z, s32 life) {
+EffectEntry* effRotHammerSuccessN64Entry(s32 type, f32 x, f32 y, f32 z, s32 count, s32 life) {
     EffectEntry* effect;
     effRotHammerSuccessData* data;
     f32 angle;

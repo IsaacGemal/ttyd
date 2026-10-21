@@ -152,13 +152,7 @@ s32 battleAcMain_Repeatedly(BattleWork* work) {
     BattleActions* ac = &work->actionCommands;
     AcRepeatedlyWork* dec = (AcRepeatedlyWork*)&ac->field_0x2BC[0];
     BattleACDispParams* disp = &ac->dispParams;
-#ifdef MUST_MATCH
-    // Match-only: battle_ac.h declares the callee `s8`, but the original caller does not sign-extend
-    // (its definition returns a zero-extended `lbz`). The cast suppresses MWCC's `extsb`.
-    s32 difficulty = ((s32 (*)(BattleWork*))BattleActionCommandGetDifficulty)(work);
-#else
     s32 difficulty = BattleActionCommandGetDifficulty(work);
-#endif
     s32 stateChanged;
     s32 autoCommand = 0;
     f32 v;
@@ -455,20 +449,12 @@ static void actionCommandDisp(f32 x, f32 y) {
             Vec vec = (Vec){0.0f, 0.0f, 0.0f};
             vec.x = float_neg200_8041c7ac + x;
             vec.y = float_70_8041c7b0 + y;
-#ifdef MUST_MATCH
-            ((void (*)(Vec*, s16, s32, f32))iconDispGx)(&vec, 0x10, iconB, float_1_8041c7b4);
-#else
             iconDispGx(float_1_8041c7b4, &vec, 0x10, iconB);
-#endif
         } else {
             Vec vec = (Vec){0.0f, 0.0f, 0.0f};
             vec.x = float_neg200_8041c7ac + x;
             vec.y = float_70_8041c7b0 + y;
-#ifdef MUST_MATCH
-            ((void (*)(Vec*, s16, s32, f32))iconDispGx)(&vec, 0x10, iconA, float_1_8041c7b4);
-#else
             iconDispGx(float_1_8041c7b4, &vec, 0x10, iconA);
-#endif
         }
     } else {
         s32 alt = (*(s32*)&disp->field_0x0[0] / 7) & 1;
@@ -504,21 +490,12 @@ static void actionCommandDisp(f32 x, f32 y) {
                 Vec vec = (Vec){0.0f, 0.0f, 0.0f};
                 vec.x = baseX + (f32)off;
                 vec.y = baseY;
-#ifdef MUST_MATCH
-                // Match-only: iconDispGx's iconId is s16 but the original passes the register directly.
-                ((void (*)(Vec*, s16, s32, f32))iconDispGx)(&vec, 0x10, icon, float_1_8041c7b4);
-#else
                 iconDispGx(float_1_8041c7b4, &vec, 0x10, icon);
-#endif
             } else {
                 Vec vec = (Vec){0.0f, 0.0f, 0.0f};
                 vec.x = baseX + (f32)off;
                 vec.y = baseY;
-#ifdef MUST_MATCH
-                ((void (*)(Vec*, s16, s32, f32))iconDispGx)(&vec, 0x10, iconB, float_0p5_8041c7b8);
-#else
                 iconDispGx(float_0p5_8041c7b8, &vec, 0x10, iconB);
-#endif
             }
         }
     }
@@ -557,9 +534,7 @@ static void actionCommandDisp(f32 x, f32 y) {
     }
 
     v = disp->value;
-    BattleAcDrawGauge((s32)x, (s32)y, dec->gaugeWidth, 2,
-                      (ac->acFlag & 2) ? 100 : (s32)dec->goal, 100, 100,
-                      flags, v);
+    BattleAcDrawGauge((s32)x, (s32)y, v, dec->gaugeWidth, 2, (ac->acFlag & 2) ? 100 : (s32)dec->goal, 100, 100, flags);
     {
         Vec vec = (Vec){0.0f, 0.0f, 0.0f};
         vec.x = float_neg288_8041c7c4 + x + (float_176_8041c7c8 * dec->goal) / float_100_8041c7bc;

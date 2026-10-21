@@ -20,7 +20,7 @@ typedef struct BoobooData {
 	s8 counter[11];  // 0x13c
 } BoobooData;
 
-EffectEntry* effBoobooN64Entry(void);
+EffectEntry* effBoobooN64Entry(s32 type, s32 unused, f32 x, f32 y, f32 z, f32 scale);
 void effBoobooMain(EffectEntry* effect);
 void effBoobooDisp(CameraId camId, void* param);
 BOOL texture_dl(EffectEntry* effect, s32 index, u32 tex);

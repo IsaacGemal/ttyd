@@ -336,19 +336,8 @@ static USER_FUNC(shadow_scale_memory) {
 
 // `#pragma opt_propagation off` is needed for `shadow_scale_return`: with propagation on MWCC folds the
 // int->float magic double and rematerialises the 0.0f load, so its fp register allocation and store order
-// are lost. `shadow_scale_small` instead matches only with propagation on, via the reordered-prototype
-// helper below, so the off is applied to `return` alone.
-//
-// `intplGetValue`'s real prototype is (s32, s32, s32, f32, f32). The cast below lists the two float
-// bounds before the step/duration words, which is ABI-identical (ints->r3-r5, floats->f1-f2) but makes
-// MWCC schedule the int->float conversion as the retail bytes do (cf. teresa_intpl in unit_atmic_teresa.c).
-static inline f32 pakkun_small_intpl(s32 mode, f32 start, f32 end, s32 step, s32 steps) {
-#ifdef MUST_MATCH
-    return ((f32 (*)(s32, f32, f32, s32, s32))intplGetValue)(mode, start, end, step, steps);
-#else
-    return intplGetValue(mode, step, steps, start, end);
-#endif
-}
+// are lost. `shadow_scale_small` instead matches only with propagation on, so the off is applied to `return`
+// alone.
 
 static USER_FUNC(shadow_scale_small) {
     BattleUnit* unit;
@@ -365,7 +354,7 @@ static USER_FUNC(shadow_scale_small) {
     }
     start = (f32)unit->work[0];
     end = 0.0f;
-    part->field_0x78 = pakkun_small_intpl(0, start, end, unit->work[1], 15);
+    part->field_0x78 = intplGetValue(0, unit->work[1], 15, start, end);
     if (unit->work[1] >= 15) {
         return EVT_RETURN_DONE;
     }

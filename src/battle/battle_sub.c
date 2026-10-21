@@ -54,7 +54,8 @@ static inline f32 intplCos(float arg0) {
 	return (f32)cos(arg0);
 }
 
-f32 intpl_sub(s32 mode, s32 currStep, s32 steps, f32 start, f32 end) {
+#undef intpl_sub
+f32 intpl_sub(s32 mode, f32 start, f32 end, s32 currStep, s32 steps) {
 	switch (mode) {
 		case 0:
 			return start + (((end - start) * ((f32)currStep)) / ((f32)steps));

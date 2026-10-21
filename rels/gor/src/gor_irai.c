@@ -724,28 +724,29 @@ void irai_window_disp(CameraId cameraId, void* param) {
     f32 y;
 
     GXSetFog(GX_FOG_NONE, 0.0f, 0.0f, 0.0f, 0.0f, (GXColor){0xFF, 0xFF, 0xFF, 0xFF});
-    windowDispGX_Waku_col(0, (GXColor){0x2B, 0xA3, 0xFF, 0xFF}, -280.0f, 170.0f, 135.0f, 90.0f, 12.0f);
+    windowDispGX_Waku_col(-280.0f, 170.0f, 135.0f, 90.0f, 12.0f, 0, (GXColor){0x2B, 0xA3, 0xFF, 0xFF});
     FontDrawStart();
     FontDrawColor(&(GXColor){0xFF, 0xFF, 0xFF, 0xFF});
     FontDrawScale(0.85f);
     name = msgSearch("irai_name1_win");
     FontDrawEdge();
-    FontDrawString(name, -270.0f, 152.0f);
-    FontDrawString(msgSearch("irai_name2_win"), -270.0f, 127.0f);
+    FontDrawString(-270.0f, 152.0f, name);
+    name = msgSearch("irai_name2_win");
+    FontDrawString(-270.0f, 127.0f, name);
     FontDrawEdgeOff();
-    windowDispGX_Waku_col(0, (GXColor){0xFF, 0xFF, 0xFF, 0xFF}, -129.0f, 170.0f, 410.0f, 340.0f, 12.0f);
-    windowDispGX_Waku_col(0, (GXColor){0x2B, 0xA3, 0xFF, 0xFF}, -103.0f, 190.0f, 120.0f, 40.0f, 12.0f);
-    windowDispGX_Waku_col(0, (GXColor){0x2B, 0xA3, 0xFF, 0xFF}, 91.0f, 190.0f, 120.0f, 40.0f, 12.0f);
+    windowDispGX_Waku_col(-129.0f, 170.0f, 410.0f, 340.0f, 12.0f, 0, (GXColor){0xFF, 0xFF, 0xFF, 0xFF});
+    windowDispGX_Waku_col(-103.0f, 190.0f, 120.0f, 40.0f, 12.0f, 0, (GXColor){0x2B, 0xA3, 0xFF, 0xFF});
+    windowDispGX_Waku_col(91.0f, 190.0f, 120.0f, 40.0f, 12.0f, 0, (GXColor){0x2B, 0xA3, 0xFF, 0xFF});
     FontDrawStart();
     FontDrawColor(&(GXColor){0xFF, 0xFF, 0xFF, 0xFF});
     FontDrawScale(0.85f);
     name = msgSearch("irai_client_win");
     FontDrawEdge();
-    FontDrawString(name, -77.0f, 180.0f);
+    FontDrawString(-77.0f, 180.0f, name);
     FontDrawEdgeOff();
     name = msgSearch("irai_contents_win");
     FontDrawEdge();
-    FontDrawString(name, 115.0f, 180.0f);
+    FontDrawString(115.0f, 180.0f, name);
     FontDrawEdgeOff();
     GXGetScissor(&scissorX, &scissorY, &scissorW, &scissorH);
     GXSetScissor(0xAF, 0x62, 0x19A, 0x130);
@@ -763,9 +764,9 @@ void irai_window_disp(CameraId cameraId, void* param) {
         }
         idx = work->iraiId[i] - 1;
         y = work->scroll + (f32)(0x8C - i * 0x1E);
-        FontDrawString(work->clientName[idx], -119.0f, y);
+        FontDrawString(-119.0f, y, work->clientName[idx]);
         y = work->scroll + (f32)(0x8C - i * 0x1E);
-        FontDrawString(work->contentsName[idx], 51.0f, y);
+        FontDrawString(51.0f, y, work->contentsName[idx]);
     }
     GXSetScissor(scissorX, scissorY, scissorW, scissorH);
 }

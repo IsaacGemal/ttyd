@@ -159,10 +159,6 @@ void extEntry(s32 count, void* param, void (*callback)(void), void (*cb0)(void),
 	}
 }
 
-// The header's animPoseDisp_MakeExtTexture prototype puts f1 (the float) second, before animName/texObj/base;
-// the original call site loads it last, so its declaration is (name, animName, texObj, base, f1, f2, ...) -- the
-// integer registers are identical either way. The cast reproduces that evaluation order (MUST_MATCH); the natural
-// call with the header's order sits in the #else.
 void extMakeTexture(CameraId camId, void* param) {
 	ExtWork* wp = extGetWork();
 	void* p = param;
@@ -187,15 +183,9 @@ void extMakeTexture(CameraId camId, void* param) {
 		s32 k;
 		const ExtMakeTextureEntry* q;
 
-#ifdef MUST_MATCH
 		q = (const ExtMakeTextureEntry*)p;
-		((void (*)(const char*, void*, void*, void*, f32, f32, s32*, s32*, s32*, s32*))animPoseDisp_MakeExtTexture)(
-		    q->name, q->animName, &tex->texObj, tex, q->field_0x8, 4.0f, &out0, &out1, &out2, &out3);
-#else
-		q = (const ExtMakeTextureEntry*)p;
-		animPoseDisp_MakeExtTexture(q->name, q->field_0x8, q->animName, &tex->texObj, tex,
-		                            4.0f, &out0, &out1, &out2, &out3);
-#endif
+		animPoseDisp_MakeExtTexture(q->name, q->animName, q->field_0x8, &tex->texObj, tex, 4.0f, &out0, &out1, &out2,
+		                            &out3);
 		j = i * 12;
 		wp->vertices[j++] = (f32)out0 * half;
 		wp->vertices[j++] = (f32)(-out1) * half;

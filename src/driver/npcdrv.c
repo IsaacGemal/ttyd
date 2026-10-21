@@ -1944,8 +1944,8 @@ void _fbatFirstAttackAnnouceDisp(CameraId camId, void* param) {
     width = FontGetMessageWidth(message);
     frameX = x + (f32)(irand(10000) % 5);
     frameY = y + (f32)(irand(10000) % 5);
-    windowDispGX_Waku_col(0, firstStrike->color, 0.1f * (frameX - 10.0f - width / 2.0f), frameY * k,
-                          (20.0f + width) * k, 3.2f, 1.0f);
+    windowDispGX_Waku_col(0.1f * (frameX - 10.0f - width / 2.0f), frameY * k, (20.0f + width) * k, 3.2f, 1.0f, 0,
+                          firstStrike->color);
     FontDrawStart();
     FontDrawEdge();
     // Passing the colour as a compound literal makes MWCC place it in the original's stack slot.

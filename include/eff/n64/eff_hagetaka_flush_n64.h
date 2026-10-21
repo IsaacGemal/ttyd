@@ -16,7 +16,7 @@ typedef struct effHagetakaFlushData {
 	f32 field_0x28; //0x28
 	f32 field_0x2C; //0x2C
 } effHagetakaFlushData;
-EffectEntry* effHagetakaFlushN64Entry(s32 type, f32 x, f32 y, f32 z, f32 a5);
+EffectEntry* effHagetakaFlushN64Entry(s32 type, s32 unused, f32 x, f32 y, f32 z, f32 scale);
 void effHagetakaFlushMain(EffectEntry* effect);
 #include <dolphin/mtx.h>
 #include "driver/camdrv.h"

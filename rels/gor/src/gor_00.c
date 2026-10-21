@@ -5164,18 +5164,6 @@ void gundan1000tai_seq00(NanNpcEntry* entry) {
     }
 }
 
-// The original intplGetValue prototype orders the float ranges before the integer step. That order is
-// ABI-identical to include/system.h's declaration but makes MWCC load the float args before the integer
-// steps; the cast selects it.
-#ifdef MUST_MATCH
-static inline f32 intpl_f(s32 mode, f32 start, f32 end, s32 step, s32 steps) {
-    return ((f32 (*)(s32, f32, f32, s32, s32))intplGetValue)(mode, start, end, step, steps);
-}
-#else
-static inline f32 intpl_f(s32 mode, f32 start, f32 end, s32 step, s32 steps) {
-    return intplGetValue(mode, step, steps, start, end);
-}
-#endif
 void gundan1000tai_seq01(NanNpcEntry* entry) {
     marioGetPtr();
     switch (entry->state) {
@@ -5264,7 +5252,7 @@ void gundan1000tai_seq01(NanNpcEntry* entry) {
             f32 t = (f32)elapsed / (f32)entry->timer;
 
             entry->position.x = intplGetValue(0, elapsed, entry->timer, entry->hoseiPosition.x, entry->targetPos.x);
-            entry->position.z = intpl_f(0, entry->hoseiPosition.z, entry->targetPos.z, elapsed, entry->timer);
+            entry->position.z = intplGetValue(0, elapsed, entry->timer, entry->hoseiPosition.z, entry->targetPos.z);
             entry->position.y = entry->hoseiPosition.y + t * (entry->field_0x7C + entry->field_0x78 * t);
         } else {
             entry->position = entry->targetPos;

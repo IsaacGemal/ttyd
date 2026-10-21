@@ -37,19 +37,9 @@ typedef struct PowerGaugeDecWork {
     s32 countdown;    // 0x18
 } PowerGaugeDecWork;
 
-// The original called intplGetValue through a prototype that lists the two float bounds
-// before the step/duration words. The ABI is identical (ints->r3-r5, floats->f1-f2); only the
-// source argument order differs, and MWCC then schedules the float loads first as retail does.
-#ifdef MUST_MATCH
-#define intplGetValueFM(mode, start, end, currStep, steps) \
-    ((f32 (*)(s32, f32, f32, s32, s32))intplGetValue)(mode, start, end, currStep, steps)
-#else
-#define intplGetValueFM(mode, start, end, currStep, steps) intplGetValue(mode, currStep, steps, start, end)
-#endif
 
-// The two near-misses this function had: MWCC hoists `lwz dat_80421588` above the disp stores
-// (fixed by the mutable dat declaration above) and schedules `lwz dec->counter` before
-// intplGetValue's `lfs` pair (fixed by intplGetValueFM above).
+// The near-miss this function had: MWCC hoists `lwz dat_80421588` above the disp stores
+// (fixed by the mutable dat declaration above).
 s32 battleAcMain_PowerGauge(BattleWork* work) {
     BattleActions* ac = &work->actionCommands;
     PowerGaugeDecWork* dec = (PowerGaugeDecWork*)&ac->field_0x2BC[0];
@@ -189,7 +179,8 @@ s32 battleAcMain_PowerGauge(BattleWork* work) {
             }
         }
         if (dec->frame <= work->actionCommands.acParams[1]) {
-            dec->gaugePercent = intplGetValueFM(work->actionCommands.acParams[3], 0.0f, 100.f, dec->counter, work->actionCommands.acParams[1]);
+            dec->gaugePercent = intplGetValue(work->actionCommands.acParams[3], dec->counter,
+                                              work->actionCommands.acParams[1], 0.0f, 100.f);
         }
         else {
             dec->gaugePercent = 100.f;
@@ -299,15 +290,6 @@ void battleAcDelete_PowerGauge(BattleWork* work) {
     }
 }
 
-// Match-only: iconDispGx's header declares the icon id `s16`, but the original passes the value
-// returned by BattleACGetButtonIcon straight through (no `extsh`/`clrlwi`); a differently-typed
-// function pointer keeps the call a direct `bl iconDispGx`. Same workaround as ac_gauge_timing.
-#ifdef MUST_MATCH
-#define ICON_DISP(v, f, id, s) (((void (*)(f32, Vec*, s16, s32))iconDispGx)((s), (v), (f), (id)))
-#else
-#define ICON_DISP(v, f, id, s) iconDispGx((s), (v), (f), (id))
-#endif
-
 // The only remaining difference is the FPR colouring of the ratio clamp: the original loads
 // float_100 into f1, gaugePercent into f2 and float_1 into f0; MWCC assigns gaugePercent f0 and
 // float_1 f2. Every instruction is otherwise identical, and the float_100/float_1 symbols are still
@@ -350,10 +332,10 @@ static void actionCommandDisp(f32 x, f32 y) {
     disp->value = ratio;
 
     if (ac->acFlag & 2) {
-        BattleAcDrawGauge((s32)px, (s32)py, 0xb2, 1, 100, 100, 100, 0, ratio);
+        BattleAcDrawGauge((s32)px, (s32)py, ratio, 0xb2, 1, 100, 100, 100, 0);
     }
     else {
-        BattleAcDrawGauge((s32)px, (s32)py, 0xb2, 2, ac->acParams[4], 100, 100, 0, ratio);
+        BattleAcDrawGauge((s32)px, (s32)py, ratio, 0xb2, 2, ac->acParams[4], 100, 100, 0);
     }
 
     if ((ac->acFlag & 4) == 0) {
@@ -361,7 +343,7 @@ static void actionCommandDisp(f32 x, f32 y) {
         pos.x = -288.0f + px +
                 (f32)(ac->acParams[4] * 0xb0) / 100.f;
         pos.y = 45.0f + py;
-        ICON_DISP(&pos, 0x10, 0x96, 1.0f);
+        iconDispGx(1.0f, &pos, 0x10, 0x96);
     }
     else {
         s32 color;
@@ -377,13 +359,13 @@ static void actionCommandDisp(f32 x, f32 y) {
             Vec pos = (Vec){0.0f, 0.0f, 0.0f};
             pos.x = -200.f + px + 120.f - 12.0f;
             pos.y = 18.0f + py;
-            ICON_DISP(&pos, 0x10, color, 1.0f);
+            iconDispGx(1.0f, &pos, 0x10, color);
         }
         else {
             Vec pos = (Vec){0.0f, 0.0f, 0.0f};
             pos.x = -200.f + px + 120.f;
             pos.y = 18.0f + py;
-            ICON_DISP(&pos, 0x10, color, 1.0f);
+            iconDispGx(1.0f, &pos, 0x10, color);
         }
     }
 
@@ -427,20 +409,20 @@ static void actionCommandDisp(f32 x, f32 y) {
                 Vec pos = (Vec){0.0f, 0.0f, 0.0f};
                 pos.x = px;
                 pos.y = py;
-                ICON_DISP(&pos, 0x10, iconB, 1.0f);
+                iconDispGx(1.0f, &pos, 0x10, iconB);
             }
             {
                 Vec pos = (Vec){0.0f, 0.0f, 0.0f};
                 pos.x = 56.0f + px;
                 pos.y = py;
-                ICON_DISP(&pos, 0x10, iconD, 1.0f);
+                iconDispGx(1.0f, &pos, 0x10, iconD);
             }
         }
         else {
             Vec pos = (Vec){0.0f, 0.0f, 0.0f};
             pos.x = -225.0f + px + 28.0f;
             pos.y = 80.f + py;
-            ICON_DISP(&pos, 0x10, iconB, 1.0f);
+            iconDispGx(1.0f, &pos, 0x10, iconB);
         }
         break;
     case 0x3e8:
@@ -455,20 +437,20 @@ static void actionCommandDisp(f32 x, f32 y) {
                         Vec pos = (Vec){0.0f, 0.0f, 0.0f};
                         pos.x = px;
                         pos.y = py;
-                        ICON_DISP(&pos, 0x10, iconA, 1.0f);
+                        iconDispGx(1.0f, &pos, 0x10, iconA);
                     }
                     {
                         Vec pos = (Vec){0.0f, 0.0f, 0.0f};
                         pos.x = 56.0f + px;
                         pos.y = py;
-                        ICON_DISP(&pos, 0x10, iconC, 1.0f);
+                        iconDispGx(1.0f, &pos, 0x10, iconC);
                     }
                 }
                 else {
                     Vec pos = (Vec){0.0f, 0.0f, 0.0f};
                     pos.x = -225.0f + px + 28.0f;
                     pos.y = 80.f + py;
-                    ICON_DISP(&pos, 0x10, iconA, 1.0f);
+                    iconDispGx(1.0f, &pos, 0x10, iconA);
                 }
             }
             else {
@@ -479,20 +461,20 @@ static void actionCommandDisp(f32 x, f32 y) {
                         Vec pos = (Vec){0.0f, 0.0f, 0.0f};
                         pos.x = px;
                         pos.y = py;
-                        ICON_DISP(&pos, 0x10, iconB, 1.0f);
+                        iconDispGx(1.0f, &pos, 0x10, iconB);
                     }
                     {
                         Vec pos = (Vec){0.0f, 0.0f, 0.0f};
                         pos.x = 56.0f + px;
                         pos.y = py;
-                        ICON_DISP(&pos, 0x10, iconD, 1.0f);
+                        iconDispGx(1.0f, &pos, 0x10, iconD);
                     }
                 }
                 else {
                     Vec pos = (Vec){0.0f, 0.0f, 0.0f};
                     pos.x = -225.0f + px + 28.0f;
                     pos.y = 80.f + py;
-                    ICON_DISP(&pos, 0x10, iconB, 1.0f);
+                    iconDispGx(1.0f, &pos, 0x10, iconB);
                 }
             }
         }
@@ -506,20 +488,20 @@ static void actionCommandDisp(f32 x, f32 y) {
                     Vec pos = (Vec){0.0f, 0.0f, 0.0f};
                     pos.x = px;
                     pos.y = py;
-                    ICON_DISP(&pos, 0x10, iconB, 1.0f);
+                    iconDispGx(1.0f, &pos, 0x10, iconB);
                 }
                 {
                     Vec pos = (Vec){0.0f, 0.0f, 0.0f};
                     pos.x = 56.0f + px;
                     pos.y = py;
-                    ICON_DISP(&pos, 0x10, iconD, 1.0f);
+                    iconDispGx(1.0f, &pos, 0x10, iconD);
                 }
             }
             else {
                 Vec pos = (Vec){0.0f, 0.0f, 0.0f};
                 pos.x = -225.0f + px + 28.0f;
                 pos.y = 80.f + py;
-                ICON_DISP(&pos, 0x10, iconB, 1.0f);
+                iconDispGx(1.0f, &pos, 0x10, iconB);
             }
         }
         else {
@@ -530,20 +512,20 @@ static void actionCommandDisp(f32 x, f32 y) {
                     Vec pos = (Vec){0.0f, 0.0f, 0.0f};
                     pos.x = px;
                     pos.y = py;
-                    ICON_DISP(&pos, 0x10, iconA, 1.0f);
+                    iconDispGx(1.0f, &pos, 0x10, iconA);
                 }
                 {
                     Vec pos = (Vec){0.0f, 0.0f, 0.0f};
                     pos.x = 56.0f + px;
                     pos.y = py;
-                    ICON_DISP(&pos, 0x10, iconC, 1.0f);
+                    iconDispGx(1.0f, &pos, 0x10, iconC);
                 }
             }
             else {
                 Vec pos = (Vec){0.0f, 0.0f, 0.0f};
                 pos.x = -225.0f + px + 28.0f;
                 pos.y = 80.f + py;
-                ICON_DISP(&pos, 0x10, iconA, 1.0f);
+                iconDispGx(1.0f, &pos, 0x10, iconA);
             }
         }
         break;

@@ -79,15 +79,6 @@ static inline Vec makeVec(f32 x, f32 y, f32 z) {
     return v;
 }
 
-#ifdef MUST_MATCH
-// The original translation unit called intplGetValue through a prototype that lists the two
-// float bounds before the step/duration words. The ABI is identical (ints->r3-r5, floats->f1-f2);
-// only the source argument order differs, and MWCC then schedules the float loads first as retail does.
-#define intplGetValueFM(mode, start, end, currStep, steps) \
-    ((f32 (*)(s32, f32, f32, s32, s32))intplGetValue)(mode, start, end, currStep, steps)
-#else
-#define intplGetValueFM(mode, start, end, currStep, steps) intplGetValue(mode, currStep, steps, start, end)
-#endif
 
 void effSpiritMain(EffectEntry* effect) {
     effSpiritData* data = effect->userdata;
@@ -128,12 +119,12 @@ void effSpiritMain(EffectEntry* effect) {
     case 1:
         if (data->step < data->duration) {
             data->step++;
-            data->x = intplGetValueFM(0xB, data->startX, data->targetX, data->step, data->duration);
-            data->y = intplGetValueFM(0xB, data->startY, data->targetY, data->step, data->duration);
-            data->z = intplGetValueFM(0xB, data->startZ, data->targetZ, data->step, data->duration);
+            data->x = intplGetValue(0xB, data->step, data->duration, data->startX, data->targetX);
+            data->y = intplGetValue(0xB, data->step, data->duration, data->startY, data->targetY);
+            data->z = intplGetValue(0xB, data->step, data->duration, data->startZ, data->targetZ);
             data->y += 50.0f *
                        (f32)sin(float_3p1416_80422294 * ((f32)data->step / (f32)data->duration));
-            data->scaleBase = intplGetValueFM(0xB, 1.0f, float_0_80422284, data->step, data->duration);
+            data->scaleBase = intplGetValue(0xB, data->step, data->duration, 1.0f, float_0_80422284);
         } else {
             effDelete(effect);
             return;
@@ -143,9 +134,9 @@ void effSpiritMain(EffectEntry* effect) {
 
     switch (data->colorState) {
     case 0:
-        data->colorR = intplGetValueFM(0xB, 255.0f, 37.0f, data->colorStep, 0x20);
-        data->colorG = intplGetValueFM(0xB, 242.0f, 254.0f, data->colorStep, 0x20);
-        data->colorB = intplGetValueFM(0xB, float_0_80422284, 246.0f, data->colorStep, 0x20);
+        data->colorR = intplGetValue(0xB, data->colorStep, 0x20, 255.0f, 37.0f);
+        data->colorG = intplGetValue(0xB, data->colorStep, 0x20, 242.0f, 254.0f);
+        data->colorB = intplGetValue(0xB, data->colorStep, 0x20, float_0_80422284, 246.0f);
         data->colorStep++;
         if (data->colorStep >= 0x20) {
             data->colorState = 1;
@@ -153,9 +144,9 @@ void effSpiritMain(EffectEntry* effect) {
         }
         break;
     case 1:
-        data->colorR = intplGetValueFM(0xB, 37.0f, 226.0f, data->colorStep, 0x20);
-        data->colorG = intplGetValueFM(0xB, 254.0f, 65.0f, data->colorStep, 0x20);
-        data->colorB = intplGetValueFM(0xB, 246.0f, 255.0f, data->colorStep, 0x20);
+        data->colorR = intplGetValue(0xB, data->colorStep, 0x20, 37.0f, 226.0f);
+        data->colorG = intplGetValue(0xB, data->colorStep, 0x20, 254.0f, 65.0f);
+        data->colorB = intplGetValue(0xB, data->colorStep, 0x20, 246.0f, 255.0f);
         data->colorStep++;
         if (data->colorStep >= 0x20) {
             data->colorState = 2;
@@ -163,9 +154,9 @@ void effSpiritMain(EffectEntry* effect) {
         }
         break;
     case 2:
-        data->colorR = intplGetValueFM(0xB, 226.0f, 255.0f, data->colorStep, 0x20);
-        data->colorG = intplGetValueFM(0xB, 65.0f, 242.0f, data->colorStep, 0x20);
-        data->colorB = intplGetValueFM(0xB, 255.0f, float_0_80422284, data->colorStep, 0x20);
+        data->colorR = intplGetValue(0xB, data->colorStep, 0x20, 226.0f, 255.0f);
+        data->colorG = intplGetValue(0xB, data->colorStep, 0x20, 65.0f, 242.0f);
+        data->colorB = intplGetValue(0xB, data->colorStep, 0x20, 255.0f, float_0_80422284);
         data->colorStep++;
         if (data->colorStep >= 0x20) {
             data->colorState = 0;

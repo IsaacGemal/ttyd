@@ -333,18 +333,9 @@ void DrawMainIconHukidasi(BattleMenuWork* window, void* entryPtr, Mtx* mtx, f32 
         iconId = 0x18B;
     }
     if (entry->enabled == 1) {
-#ifdef MUST_MATCH
-        // iconDispGx2's header says s16 but the original reads a zero-extended u16 (no extsh).
-        ((void (*)(Mtx, s16, u16))iconDispGx2)(resultMtx, 0x10, iconId);
-#else
         iconDispGx2(resultMtx, 0x10, iconId);
-#endif
     } else {
-#ifdef MUST_MATCH
-        ((void (*)(Mtx, s16, u16))iconDispGx2)(resultMtx, 0x30, iconId);
-#else
         iconDispGx2(resultMtx, 0x30, iconId);
-#endif
     }
 
     msg = entry->label;
@@ -980,7 +971,7 @@ void DrawMenuHelpWin(const char* tag, f32 x, f32 y) {
     s32 line;
     s32 i;
 
-    windowDispGX_Waku_col(0, color, x, y, 400.0f, 50.0f, 10.0f);
+    windowDispGX_Waku_col(x, y, 400.0f, 50.0f, 10.0f, 0, color);
     FontDrawStart();
     FontDrawColorIDX(0);
     FontDrawScale(0.8f);
@@ -1016,17 +1007,18 @@ void DrawMenuHelpWin(const char* tag, f32 x, f32 y) {
         if (text[0][0] != 0) {
             FontDrawScale(0.8f);
         }
-        FontDrawString((char*)text[0], x + 20.0f, y - 4.0f);
+        FontDrawString(x + 20.0f, y - 4.0f, (char*)text[0]);
         if (text[1][0] != 0) {
             FontDrawScale(0.8f);
         }
-        FontDrawString((char*)text[1], x + 20.0f, y - 28.0f);
+        FontDrawString(x + 20.0f, y - 28.0f, (char*)text[1]);
         if (text[2][0] != 0) {
             FontDrawScale(0.8f);
         }
-        FontDrawString((char*)text[2], x + 20.0f, y - 52.0f);
+        FontDrawString(x + 20.0f, y - 52.0f, (char*)text[2]);
     } else {
-        FontDrawString("\x82\xB9\x82\xC2\x82\xDF\x82\xA2\x82\xCD\x81\x40\x82\xC8\x82\xA2\x82\xCC\x82\xBE\x81\x49\x81\x49", x + 10.0f, y - 4.0f);
+        FontDrawString(x + 10.0f, y - 4.0f,
+                       "\x82\xB9\x82\xC2\x82\xDF\x82\xA2\x82\xCD\x81\x40\x82\xC8\x82\xA2\x82\xCC\x82\xBE\x81\x49\x81\x49");
     }
 }
 

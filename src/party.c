@@ -539,7 +539,7 @@ s32 yoshiSetColor(void) {
     } else {
         color = 6;
     }
-    ((void (*)(s32, s32))pouchSetPartyColor)(PARTNER_YOSHI, color);
+    pouchSetPartyColor(PARTNER_YOSHI, color);
     return color;
 }
 
@@ -1228,12 +1228,11 @@ void driveParty(PartyEntry* party) {
     }
     party_kemuri(party);
     {
-        Vec scr = party->position;
         f32 scrX;
         f32 scrY;
         f32 scrZ;
 
-        ((void (*)(Vec*, f32*, f32*, f32*))marioGetScreenPos)(&scr, &scrX, &scrY, &scrZ);
+        marioGetScreenPos(party->position, &scrX, &scrY, &scrZ);
         if (marioChkInScreen((s32)scrX, (s32)scrY)) {
             party->flags2 &= ~0x00800000;
         } else {
@@ -2888,12 +2887,7 @@ void partyPreDisp(PartyEntry* party) {
         }
         animPoseSetAnim(party->paperAnimGroup, party->field_18, 1);
         if (party->field_1C != 0) {
-#ifdef MUST_MATCH
-            ((void (*)(s32, const char*, BOOL))animPoseSetPaperAnim)(party->paperAnimGroup, (const char*)party->field_1C,
-                                                                    1);
-#else
-            animPoseSetPaperAnim(party->paperAnimGroup, (const char*)party->field_1C);
-#endif
+            animPoseSetPaperAnim(party->paperAnimGroup, (const char*)party->field_1C, 1);
         }
         animPoseSetLocalTime(party->paperAnimGroup, (f32)party->field_20);
     }

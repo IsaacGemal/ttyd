@@ -48,13 +48,6 @@ const Vec vec3_802fd560[9] = {
 #define STICK_ZERO_VEC(i) ((Vec){ 0.0f, 0.0f, 0.0f })
 #endif
 
-// Match-only: the header declares s16 _get_icon_id(u8), but the original passes the s8 field with
-// sign extension (extsb); the s16(*)(s8) cast reproduces that. Same workaround as ac_gauge_timing/ac_lst_rc_keep.
-#ifdef MUST_MATCH
-#define GET_ICON_ID(id) (((s16 (*)(s8))_get_icon_id)((id)))
-#else
-#define GET_ICON_ID(id) _get_icon_id((id))
-#endif
 
 static void actionCommandDisp(f32 x, f32 y);
 
@@ -460,8 +453,8 @@ void battleAcDisp_StickRotate(CameraId camId, void* param) {
 
 // dont_inline: the original calls _get_icon_id from both display functions.
 #pragma dont_inline on
-s16 _get_icon_id(u8 id) {
-    switch ((s8)id) {
+s32 _get_icon_id(s8 id) {
+    switch (id) {
         case 1:
             return 0x7C;
         case 2:
@@ -484,10 +477,6 @@ s16 _get_icon_id(u8 id) {
 }
 #pragma dont_inline reset
 
-// The target keeps the work-area base `work + 0x1F4C` in r5 (`addi r5, r4, 0x1f4c`). The
-// `GET_ICON_ID` function-pointer cast (see the macro above) is what makes MWCC hold that base:
-// with a plain `_get_icon_id(sr->expectDir)` call it rematerialises the base per case
-// (`lbz r3, 0x1f4e(r4)`) instead of keeping it live in r5. Same workaround as actionCommandDisp2.
 #pragma opt_propagation off // needed: with propagation on MWCC folds the StickRotateWork base (work+0x1F4C) into the BattleWork base
 static void actionCommandDisp(f32 x, f32 y) {
     BattleWork* work = _battleWorkPointer;
@@ -508,7 +497,7 @@ static void actionCommandDisp(f32 x, f32 y) {
             Vec v = STICK_ZERO_VEC(1);
             v.x = -200.0f + x;
             v.y = 70.0f + y;
-            iconDispGx(1.0f, &v, 0x10, GET_ICON_ID(sr->expectDir));
+            iconDispGx(1.0f, &v, 0x10, _get_icon_id(sr->expectDir));
             break;
         }
         case 0x3E9:
@@ -519,19 +508,19 @@ static void actionCommandDisp(f32 x, f32 y) {
                     v.x = -200.0f + x;
                     v.y = 70.0f + y;
                     iconDispGx(1.0f, &v, 0x10,
-                               GET_ICON_ID(sr->expectDir));
+                               _get_icon_id(sr->expectDir));
                 } else {
                     Vec v = STICK_ZERO_VEC(3);
                     v.x = -200.0f + x;
                     v.y = 70.0f + y;
                     iconDispGx(1.0f, &v, 0x10,
-                               GET_ICON_ID(sr->prevDir));
+                               _get_icon_id(sr->prevDir));
                 }
             } else {
                 Vec v = STICK_ZERO_VEC(4);
                 v.x = -200.0f + x;
                 v.y = 70.0f + y;
-                iconDispGx(1.0f, &v, 0x10, GET_ICON_ID(sr->expectDir));
+                iconDispGx(1.0f, &v, 0x10, _get_icon_id(sr->expectDir));
             }
             break;
         case 0x3EA:
@@ -596,7 +585,7 @@ void actionCommandDisp2(f32 x, f32 y) {
             v = STICK_ZERO_VEC(7);
             v.x = -200.0f + x;
             v.y = 70.0f + y;
-            iconDispGx(1.0f, &v, 0x10, GET_ICON_ID(sr->iconDir));
+            iconDispGx(1.0f, &v, 0x10, _get_icon_id(sr->iconDir));
             break;
         }
         case 0x3EA:

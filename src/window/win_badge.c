@@ -59,7 +59,7 @@ void winBadgeInit2(WindowWork* work) {
 }
 
 // 4 B
-void winBadgeExit(void) {
+void winBadgeExit(WindowWork* work) {
 }
 
 // 516 B

@@ -304,7 +304,7 @@ void animPoseSetAnim(s32 poseId, const char* animName, BOOL reset);
 
 s32 animPaperPoseGetId(const char* animName, s32 group);
 void animPoseSetPaperAnimGroup(s32 poseId, const char* animName, BOOL someflag);
-void animPoseSetPaperAnim(s32 poseId, const char* animName);
+void animPoseSetPaperAnim(s32 poseId, const char* animName, BOOL unused);
 void animPoseSetEffect(s32 poseId, const char* animName, BOOL someflag);
 void animPoseSetEffectAnim(s32 poseId, const char* animName, BOOL reset);
 
@@ -360,7 +360,7 @@ void pushGXModelMtx_JointNode__(void* node, f32 x, f32 y, f32 z);
 void pushGXModelMtx_TransformNode__(void* node);
 void animPaperPoseDisp(CameraId camId, void* param);
 void animPaperPoseDispSub(s32 unused, AnimationPose* pose);
-void animPoseDisp_MakeExtTexture(const char* name, f32 f1, void* animName, void* texObj, void* base,
+void animPoseDisp_MakeExtTexture(const char* name, void* animName, f32 f1, void* texObj, void* base,
                                         f32 f2, s32* out0, s32* out1, s32* out2, s32* out3);
 void animPoseAutoRelease(s32 type);
 void animPoseVivianMain(s32 poseId, Vec* pos);

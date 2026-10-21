@@ -265,9 +265,6 @@ static USER_FUNC(wariai_enzan_1f) {
     return EVT_RETURN_DONE;
 }
 
-static inline f32 intpl_f(s32 mode, f32 start, f32 end, s32 step, s32 steps) {
-    return intplGetValue(mode, step, steps, start, end);
-}
 static USER_FUNC(wariai_enzan_1f_intpl) {
     s32* args = event->args;
     f32 a = evtGetFloat(event, args[0]) - 1.0f;
@@ -285,9 +282,9 @@ static USER_FUNC(wariai_enzan_1f_intpl) {
             evtSetFloat(event, out, c);
             return EVT_RETURN_DONE;
         }
-        result = 1.0f - intpl_f((s32)u, 1.0f, 0.0f, (s32)(b - a), (s32)b);
+        result = 1.0f - intplGetValue((s32)u, (s32)(b - a), (s32)b, 1.0f, 0.0f);
     } else {
-        result = intpl_f((s32)t, 0.0f, 1.0f, (s32)(b - a), (s32)b);
+        result = intplGetValue((s32)t, (s32)(b - a), (s32)b, 0.0f, 1.0f);
     }
     rd = result * d;
     evtSetFloat(event, out, rd + (1.0f - result) * c);

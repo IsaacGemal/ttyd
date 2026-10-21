@@ -270,7 +270,7 @@ USER_FUNC(evt_win_one_message) {
 void coin_disp(WinMgrEntry* entry) {
     WinCoinWork* work;
     s32 pouchCount;
-    s16 iconId;
+    u16 iconId;
     s32 diff;
     Mtx mtx1;
     Mtx mtx2;

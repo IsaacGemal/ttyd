@@ -118,19 +118,19 @@ void badgeShop_init(void) {
 	bdsw->field_0x114 = 1;
 
 	for (ptr = badge_special_table; *ptr; ++ptr) {
-		badgeShop_add(bdsw->special_table, (s16)*ptr, 1);
+		badgeShop_add(bdsw->special_table, *ptr, 1);
 	}
 	for (ptr = badge_starmaniac_table; *ptr; ++ptr) {
-		badgeShop_add(bdsw->starmaniac_table, (s16)*ptr, 1);
+		badgeShop_add(bdsw->starmaniac_table, *ptr, 1);
 	}
 	for (ptr = badge_bottakuru_table; *ptr; ++ptr) {
-		badgeShop_add(bdsw->bottakuru_table, (s16)*ptr, 1);
+		badgeShop_add(bdsw->bottakuru_table, *ptr, 1);
 	}
 
 	badgeShop_bottakuruGeneration();
 
 	for (ptr = badge_bteresa_table; *ptr; ++ptr) {
-		badgeShop_add(bdsw->bteresa_table, (s16)*ptr, 1);
+		badgeShop_add(bdsw->bteresa_table, *ptr, 1);
 	}
 }
 
@@ -190,7 +190,7 @@ void badgeShop_bteresaGeneration(void) {
 		if (!evtGetValue(NULL, GSWF(246))) {
 			evtSetValue(NULL, GSWF(246), 1);
 			for (ptr = badge_bteresa_table_card_special; *ptr; ptr++) {
-				badgeShop_add(bdsw->bteresa_table, (s16)*ptr, 1);
+				badgeShop_add(bdsw->bteresa_table, *ptr, 1);
 			}
 		}
 	}
@@ -199,7 +199,7 @@ void badgeShop_bteresaGeneration(void) {
 		if (!evtGetValue(NULL, GSWF(247))) {
 			evtSetValue(NULL, GSWF(247), 1);
 			for (ptr = badge_bteresa_table_card_silver; *ptr; ptr++) {
-				badgeShop_add(bdsw->bteresa_table, (s16)*ptr, 1);
+				badgeShop_add(bdsw->bteresa_table, *ptr, 1);
 			}
 		}
 	}
@@ -208,7 +208,7 @@ void badgeShop_bteresaGeneration(void) {
 		if (!evtGetValue(NULL, GSWF(248))) {
 			evtSetValue(NULL, GSWF(248), 1);
 			for (ptr = badge_bteresa_table_card_gold; *ptr; ptr++) {
-				badgeShop_add(bdsw->bteresa_table, (s16)*ptr, 1);
+				badgeShop_add(bdsw->bteresa_table, *ptr, 1);
 			}
 		}
 	}
@@ -217,7 +217,7 @@ void badgeShop_bteresaGeneration(void) {
 		if (!evtGetValue(NULL, GSWF(249))) {
 			evtSetValue(NULL, GSWF(249), 1);
 			for (ptr = badge_bteresa_table_card_platinum; *ptr; ptr++) {
-				badgeShop_add(bdsw->bteresa_table, (s16)*ptr, 1);
+				badgeShop_add(bdsw->bteresa_table, *ptr, 1);
 			}
 		}
 	}
@@ -240,42 +240,42 @@ void badgeShop_bargainGeneration(void) {
 	if (evtGetValue(NULL, GSW(0)) >= 55 && !evtGetValue(0, GSWF(238))) {
 		evtSetValue(NULL, GSWF(238), 1);
 		for (ptr = badge_special_table_stage_1_clear; *ptr; ptr++) {
-			badgeShop_add(bdsw->special_table, (s16)*ptr, 1);
+			badgeShop_add(bdsw->special_table, *ptr, 1);
 		}
 	}
 
 	if (evtGetValue(NULL, GSW(0)) >= 112 && !evtGetValue(0, GSWF(239))) {
 		evtSetValue(NULL, GSWF(239), 1);
 		for (ptr = badge_special_table_stage_2_clear; *ptr; ptr++) {
-			badgeShop_add(bdsw->special_table, (s16)*ptr, 1);
+			badgeShop_add(bdsw->special_table, *ptr, 1);
 		}
 	}
 
 	if (evtGetValue(NULL, GSW(0)) >= 164 && !evtGetValue(0, GSWF(240))) {
 		evtSetValue(NULL, GSWF(240), 1);
 		for (ptr = badge_special_table_stage_3_clear; *ptr; ptr++) {
-			badgeShop_add(bdsw->special_table, (s16)*ptr, 1);
+			badgeShop_add(bdsw->special_table, *ptr, 1);
 		}
 	}
 
 	if (evtGetValue(NULL, GSW(0)) >= 212 && !evtGetValue(0, GSWF(241))) {
 		evtSetValue(NULL, GSWF(241), 1);
 		for (ptr = badge_special_table_stage_4_clear; *ptr; ptr++) {
-			badgeShop_add(bdsw->special_table, (s16)*ptr, 1);
+			badgeShop_add(bdsw->special_table, *ptr, 1);
 		}
 	}
 
 	if (evtGetValue(NULL, GSW(0)) >= 253 && !evtGetValue(0, GSWF(242))) {
 		evtSetValue(NULL, GSWF(242), 1);
 		for (ptr = badge_special_table_stage_5_clear; *ptr; ptr++) {
-			badgeShop_add(bdsw->special_table, (s16)*ptr, 1);
+			badgeShop_add(bdsw->special_table, *ptr, 1);
 		}
 	}
 
 	if (evtGetValue(NULL, GSW(0)) >= 338 && !evtGetValue(0, GSWF(243))) {
 		evtSetValue(NULL, GSWF(243), 1);
 		for (ptr = badge_special_table_stage_6_clear; *ptr; ptr++) {
-			badgeShop_add(bdsw->special_table, (s16)*ptr, 1);
+			badgeShop_add(bdsw->special_table, *ptr, 1);
 		}
 	}
 
@@ -344,12 +344,7 @@ void badgeShop_bargainGeneration(void) {
 	}
 	for (i = 0; i < 5; i++) {
 		if (bdsw->field_0xF8[i]) {
-#ifdef MUST_MATCH
-			// Original badgeShop_add takes its id as s16 (see evt_badgeShop_throw_inc).
-			((s32 (*)(u8*, s16, s32))badgeShop_add)(bdsw->bargain_table, bdsw->field_0xF8[i], -1);
-#else
-			badgeShop_add(bdsw->bargain_table, (s16)bdsw->field_0xF8[i], -1);
-#endif
+			badgeShop_add(bdsw->bargain_table, bdsw->field_0xF8[i], -1);
 		}
 	}
 }
@@ -436,7 +431,7 @@ s16 badgeShop_get(u8* table, s16 id) { //1:1
 	return (mask & table[index / 4]) >> shift;
 }
 
-s32 badgeShop_add(u8* table, s32 id, s32 value) { // 1:1, can blow up in your face
+s32 badgeShop_add(u8* table, s16 id, s32 value) { // 1:1, can blow up in your face
     s32 itemId;
 	s32 mask;
 	s32 shift;
@@ -449,10 +444,10 @@ s32 badgeShop_add(u8* table, s32 id, s32 value) { // 1:1, can blow up in your fa
     } else {
         bound = BADGE_MIN;
     }
-    itemId = (s16)id;
+    itemId = id;
     if (itemId < bound || itemId >= BADGE_MAX) return 0;
 
-    id = (s16)(itemId - bound);
+    id = itemId - bound;
     switch (id & 3) {
         case 0:
             mask = 3 << 0;
@@ -495,15 +490,8 @@ USER_FUNC(evt_badgeShop_throw_inc) {
 	s32 value;
 
 	value = evtGetValue(event, *event->args);
-#ifdef MUST_MATCH
-	// Original badgeShop_add takes its id as s16, not the header's s32: the cast
-	// restores the per-call `extsh r4,r31` the target has (report notes the header).
-	((s32 (*)(u8*, s16, s32))badgeShop_add)(bdsw->bargain_table, value, 1);
-	((s32 (*)(u8*, s16, s32))badgeShop_add)(bdsw->special_table, value, 1);
-#else
-	badgeShop_add(bdsw->bargain_table, (s16)value, 1);
-	badgeShop_add(bdsw->special_table, (s16)value, 1);
-#endif
+	badgeShop_add(bdsw->bargain_table, value, 1);
+	badgeShop_add(bdsw->special_table, value, 1);
 	return EVT_RETURN_DONE;
 }
 
@@ -511,14 +499,8 @@ USER_FUNC(evt_badgeShop_throw_dec) {
 	s32 value;
 
 	value = evtGetValue(event, *event->args);
-#ifdef MUST_MATCH
-	// See evt_badgeShop_throw_inc: the original badgeShop_add id is s16.
-	((s32 (*)(u8*, s16, s32))badgeShop_add)(bdsw->bargain_table, value, -1);
-	((s32 (*)(u8*, s16, s32))badgeShop_add)(bdsw->special_table, value, -1);
-#else
-	badgeShop_add(bdsw->bargain_table, (s16)value, -1);
-	badgeShop_add(bdsw->special_table, (s16)value, -1);
-#endif
+	badgeShop_add(bdsw->bargain_table, value, -1);
+	badgeShop_add(bdsw->special_table, value, -1);
 	return EVT_RETURN_DONE;
 }
 
@@ -526,7 +508,7 @@ USER_FUNC(evt_badgeShop_special_dec) {
 	s32 value;
 
 	value = evtGetValue(event, *event->args);
-	badgeShop_add(bdsw->special_table, (s16)value, -1);
+	badgeShop_add(bdsw->special_table, value, -1);
 	return EVT_RETURN_DONE;
 }
 
@@ -534,7 +516,7 @@ USER_FUNC(evt_badgeShop_starmaniac_dec) {
 	s32 value;
 
 	value = (s16)evtGetValue(event, *event->args);
-	badgeShop_add(bdsw->starmaniac_table, (s16)value, -1);
+	badgeShop_add(bdsw->starmaniac_table, value, -1);
 	return EVT_RETURN_DONE;
 }
 
@@ -544,13 +526,7 @@ USER_FUNC(evt_badgeShop_bottakuru_dec) {
 	int i;
 
 	value = evtGetValue(event, *event->args);
-#ifdef MUST_MATCH
-	// Original badgeShop_add takes its id as s16 (see report); the cast restores the
-	// target's `extsh r4,r30` with the raw result kept in r30.
-	((s32 (*)(u8*, s16, s32))badgeShop_add)(bdsw->bottakuru_table, value, -1);
-#else
-	badgeShop_add(bdsw->bottakuru_table, (s16)value, -1);
-#endif
+	badgeShop_add(bdsw->bottakuru_table, value, -1);
 	for (i = 0; i < 4; i++) {
 		if (value == badge_bottakuru_table[evtGetValue(event, GSW(118 + i))]) {
 			evtSetValue(event, GSW(118 + i), (sizeof(badge_bottakuru_table) / sizeof(s32)) - 1); //last entry aka kNullItem

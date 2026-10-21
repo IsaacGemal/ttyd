@@ -251,16 +251,8 @@ void puniMakeTexture(CameraId camId, void* param) {
         s32 idx = i * 12;
         s32 vi = i * 4;
 
-#ifdef MUST_MATCH
-        // Match-only: the original caller saw this prototype with field_0x4 before the f32, so MWCC evaluated
-        // info->unk4 into r4 before copying tex and reading info->unk8. The ABI is unchanged (the float still
-        // lands in f1), so the reordered cast is safe; the header's real order is under #else.
-        ((void (*)(const char*, void*, f32, void*, void*, f32, s32*, s32*, s32*, s32*))animPoseDisp_MakeExtTexture)(
-            info->unk0, info->unk4, info->unk8, &tex->texObj, tex, 5.84f, &out0, &out1, &out2, &out3);
-#else
-        animPoseDisp_MakeExtTexture(info->unk0, info->unk8, info->unk4, &tex->texObj, tex, 5.84f, &out0, &out1,
-                                    &out2, &out3);
-#endif
+        animPoseDisp_MakeExtTexture(info->unk0, info->unk4, info->unk8, &tex->texObj, tex, 5.84f, &out0, &out1, &out2,
+                                    &out3);
 #ifdef MUST_MATCH
         wp->vertices[idx++] = (f32)out0 * k;
         wp->vertices[idx++] = (f32)(-out1) * k;

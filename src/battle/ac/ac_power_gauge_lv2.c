@@ -67,13 +67,7 @@ s32 battleAcMain_PowerGaugeLv2(BattleWork* work) {
 
     dec = (PowerGaugeLv2DecWork*)&work->actionCommands.field_0x2BC[0];
     disp = &work->actionCommands.dispParams;
-#ifdef MUST_MATCH
-    // Match-only: the callee really returns 4 bytes (no extsb in the original); the `s8` header
-    // would sign-extend the `slwi r0, r31, 2` index.
-    difficulty = ((s32 (*)(BattleWork*))BattleActionCommandGetDifficulty)(work);
-#else
     difficulty = BattleActionCommandGetDifficulty(work);
-#endif
     autoCommand = 0;
     if (work->actionCommands.mAcUnit->badgesEquipped.AutoCommand != 0) {
         autoCommand = 1;
@@ -287,28 +281,6 @@ void battleAcDelete_PowerGaugeLv2(BattleWork* work) {
     }
 }
 
-// Match-only: iconDispGx's header declares the icon id `s16`, but the original passes the value
-// returned by BattleACGetButtonIcon straight through (no `extsh`); a differently-typed function
-// pointer keeps the call a direct `bl iconDispGx`. Same workaround as ac_power_gauge.c.
-#ifdef MUST_MATCH
-#define ICON_DISP(v, f, id, s) (((void (*)(f32, Vec*, s16, s32))iconDispGx)((s), (v), (f), (id)))
-#else
-#define ICON_DISP(v, f, id, s) iconDispGx((s), (v), (f), (id))
-#endif
-
-// Match-only: the header declares BattleAcDrawGauge's float ratio last, but the original's
-// prototype lists it between `count` and the three thresholds: the ratio `lfs f1` is scheduled
-// between the two `fctiwz` conversions only when the float parameter is evaluated before the
-// threshold arguments. The ABI is identical (ints -> r3-r10, float -> f1).
-#ifdef MUST_MATCH
-#define BattleAcDrawGaugeFM(x, y, type, count, ratio, t0, t1, t2, flags)                                  \
-    ((void (*)(s32, s32, s32, s32, f32, s32, s32, s32, s32))BattleAcDrawGauge)((x), (y), (type), (count), \
-                                                                               (ratio), (t0), (t1), (t2), (flags))
-#else
-#define BattleAcDrawGaugeFM(x, y, type, count, ratio, t0, t1, t2, flags) \
-    BattleAcDrawGauge((x), (y), (type), (count), (t0), (t1), (t2), (flags), (ratio))
-#endif
-
 // Match-only: the original is the FP division followed by the clamp, but writing the numerator
 // through a temp (`g`) and the clamp bound as the literal 1.0f colours the three FP registers as
 // the original does (numerator f2, 100.f f1, 1.f f0); the natural form rotates them.
@@ -378,8 +350,7 @@ static void actionCommandDisp(f32 x, f32 y) {
             }
         }
 
-        BattleAcDrawGaugeFM((s32)x, (s32)y, 0xB2, count, disp->value, thresholds[0], thresholds[1],
-                            thresholds[2], flags);
+        BattleAcDrawGauge((s32)x, (s32)y, disp->value, 0xB2, count, thresholds[0], thresholds[1], thresholds[2], flags);
     }
 
     icon1 = BattleACGetButtonIcon(dec->button, 1);
@@ -395,7 +366,7 @@ static void actionCommandDisp(f32 x, f32 y) {
             Vec pos = vec[1];
             pos.x = f31;
             pos.y = 70.0f + y;
-            ICON_DISP(&pos, 0x10, icon0, 1.0f);
+            iconDispGx(1.0f, &pos, 0x10, icon0);
             break;
         }
         case 0x3E8:
@@ -403,13 +374,13 @@ static void actionCommandDisp(f32 x, f32 y) {
                 Vec pos = vec[2];
                 pos.x = f31;
                 pos.y = 70.0f + y;
-                ICON_DISP(&pos, 0x10, icon1, 1.0f);
+                iconDispGx(1.0f, &pos, 0x10, icon1);
             }
             else {
                 Vec pos = vec[3];
                 pos.x = f31;
                 pos.y = 70.0f + y;
-                ICON_DISP(&pos, 0x10, icon0, 1.0f);
+                iconDispGx(1.0f, &pos, 0x10, icon0);
             }
             break;
     }
@@ -419,7 +390,7 @@ static void actionCommandDisp(f32 x, f32 y) {
         Vec pos = vec[4];
         pos.x = 120.0f + f31;
         pos.y = f30;
-        ICON_DISP(&pos, 0x10, id, 1.0f);
+        iconDispGx(1.0f, &pos, 0x10, id);
     }
 }
 

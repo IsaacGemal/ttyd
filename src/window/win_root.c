@@ -504,12 +504,7 @@ s32 winRootMain(WindowWork* work) {
             winMarioExit(work);
             winPartyExit(work);
             winItemExit(work);
-#ifdef MUST_MATCH
-            // winBadgeExit's header says void(void), but the original passes work in r3.
-            ((void (*)(WindowWork*))winBadgeExit)(work);
-#else
-            winBadgeExit();
-#endif
+            winBadgeExit(work);
             winLogExit(work);
             if (work->field_0x19C != 0 && work->partySel != work->lastPartySel) {
                 return -2;
@@ -966,7 +961,7 @@ void winMsgDisp(WindowWork* work, f32 x, f32 y) {
     f32 ix;
     f32 width;
 
-    windowDispGX_Waku_col(0, (GXColor){0xFF, 0xFF, 0xFF, 0xFF}, fx, fy, 500.0f, 80.0f, 20.0f);
+    windowDispGX_Waku_col(fx, fy, 500.0f, 80.0f, 20.0f, 0, (GXColor){0xFF, 0xFF, 0xFF, 0xFF});
 
     if (work->field_0x138 != 0 && work->field_0x138 > 0) {
         winTexInit(*(TEXPalette**)work->winTpl->data);

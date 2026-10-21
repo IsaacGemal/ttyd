@@ -172,25 +172,12 @@ void BattleStatusIconDisp(CameraId camId, void* param) {
 		pos.z += icon->mScreenSpaceOffset.z;
 		pos.z -= (f32)(i * -2);
 
-		// btlDispTexPlane is called through a pointer type with an extra trailing s32 argument (0).
 		if (!(entry->flags & 1)) {
 			if (!(icon->mFlags & 1)) {
-#ifdef MUST_MATCH
-				((void (*)(u32, GXColor, f32, f32, f32, f32, f32, s32))btlDispTexPlane)(
-				    0x23, color, pos.x, pos.y, pos.z, 0.8f, 0.8f, 0);
-#else
-				btlDispTexPlane(
-				    0x23, color, pos.x, pos.y, pos.z, 0.8f, 0.8f);
-#endif
+				btlDispTexPlane(pos.x, pos.y, pos.z, 0.8f, 0.8f, 0x23, color, 0);
 			}
 			else {
-#ifdef MUST_MATCH
-				((void (*)(u32, GXColor, f32, f32, f32, f32, f32, s32))btlDispTexPlane)(
-				    0x23, color, pos.x, pos.y, pos.z, 0.8f, -0.8f, 0);
-#else
-				btlDispTexPlane(
-				    0x23, color, pos.x, pos.y, pos.z, 0.8f, -0.8f);
-#endif
+				btlDispTexPlane(pos.x, pos.y, pos.z, 0.8f, -0.8f, 0x23, color, 0);
 			}
 		}
 

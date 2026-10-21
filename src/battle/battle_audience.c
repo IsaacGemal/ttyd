@@ -2801,12 +2801,7 @@ void BattleAudienceDispItem(CameraId camId, void* param) {
 		PSMTXScaleApply(mtx, mtx, item->scale, item->scale, 1.0f);
 		PSMTXTransApply(mtx, mtx, item->pos.x, item->pos.y,
 		                item->pos.z);
-#ifdef MUST_MATCH
-		// iconDispGx2's header says s16 but the original reads a zero-extended u16 (no extsh).
-		((void (*)(Mtx, s16, u16))iconDispGx2)(mtx, 0, iconId);
-#else
 		iconDispGx2(mtx, 0, iconId);
-#endif
 	}
 }
 #pragma dont_inline reset
@@ -2867,8 +2862,7 @@ void BattleAudienceDispWin(CameraId camId, void* param) {
 	BattleAudienceBaseGetPtr();
 	win = BattleAudienceWinGetPtr();
 	color = *(GXColor*)&dat_8041e60c;
-	windowDispGX_Waku_col(0, color, win->posX, win->posY, 90.0f,
-	                      40.0f, 10.0f);
+	windowDispGX_Waku_col(win->posX, win->posY, 90.0f, 40.0f, 10.0f, 0, color);
 
 	pos = (Vec){ 0.0f, 0.0f, 0.0f };
 	pos.x = 17.0f + win->posX;
@@ -4868,7 +4862,7 @@ void BattleAudience_Case_KillEnemy(void) {
 }
 
 #pragma dont_inline on
-void BattleAudience_Case_ActionCommandGood(void) {
+void BattleAudience_Case_ActionCommandGood(BattleWeapon* weapon) {
 	BattleAudience* audience = BattleAudienceBaseGetPtr();
 	s32 i;
 	s32 count = 0;
@@ -5080,7 +5074,7 @@ void BattleAudience_Case_Escape_Bad(void) {
 	BattleAudienceSoundBooing();
 }
 
-void BattleAudience_Case_EnemyDamage(void) {
+void BattleAudience_Case_EnemyDamage(s32 damage) {
 	BattleAudienceBaseGetPtr()->flags |= 0x400;
 }
 

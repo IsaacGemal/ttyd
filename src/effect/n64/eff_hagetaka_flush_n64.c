@@ -45,7 +45,7 @@ static inline void hagetakaFlushSetColor(s32 colorIndex, s32 alpha) {
 	GXSetTevColor(1, color);
 }
 
-EffectEntry* effHagetakaFlushN64Entry(s32 type, f32 x, f32 y, f32 z, f32 scale) {
+EffectEntry* effHagetakaFlushN64Entry(s32 type, s32 unused, f32 x, f32 y, f32 z, f32 scale) {
 	EffectEntry* effect;
 	effHagetakaFlushData* data;
 

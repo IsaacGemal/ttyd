@@ -450,15 +450,8 @@ void disp2(CameraId cameraId, void* param) {
 		FontDrawEdge();
 		FontDrawColor(&(GXColor){ 0xFA, 0xFA, 0xFA, 0xFF });
 		FontDrawScale(0.8f);
-		// fontmgr.h declares FontDrawString(const char*, f32, f32); the original's declaration order is
-		// (f32, f32, const char*), which loads f1/f2 before the string pointer. Same ABI registers.
-#ifdef MUST_MATCH
-		((void (*)(f32, f32, const char*))FontDrawString)(60.0f, 220.0f, buildDateStr);
-		((void (*)(f32, f32, const char*))FontDrawString)(200.0f, 220.0f, buildTimeStr);
-#else
-		FontDrawString(buildDateStr, 60.0f, 220.0f);
-		FontDrawString(buildTimeStr, 200.0f, 220.0f);
-#endif
+		FontDrawString(60.0f, 220.0f, buildDateStr);
+		FontDrawString(200.0f, 220.0f, buildTimeStr);
 	}
 
 	*camGetPtr(cameraId) = camBackup;

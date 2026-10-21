@@ -735,14 +735,8 @@ void btlseqEnd(BattleWork* wp) {
                 }
             }
             if (work->effect == NULL) {
-#ifdef MUST_MATCH
-                // MUST_MATCH: source-order of the arguments is what decides which load MWCC schedules last
-                // (it emits `lfs f2` before `lha r4` here, the original's order). The prototype's register
-                // mapping is unchanged, so the natural call below still links to the same function.
-                work->effect = ((EffectEntry* (*)(s32, f32, f32, s32, s32, f32))effPointGetEntry)(0, float_0_80420c7c, float_90_80420ca0, work->stockExp, 0, float_0_80420c7c);
-#else
-                work->effect = effPointGetEntry(0, work->stockExp, 0, float_0_80420c7c, float_90_80420ca0, float_0_80420c7c);
-#endif
+                work->effect = effPointGetEntry(0, float_0_80420c7c, float_90_80420ca0, float_0_80420c7c,
+                                                work->stockExp, 0);
             }
             BattleSetSeq(wp, SEQ_END, SEQ_END_EXP_COUNT);
             break;
@@ -1229,18 +1223,11 @@ void _MarioExpDisp(CameraId camId, void* param) {
     if (work != NULL) {
         sprintf(buf, str_fmt_2d, work->expRemaining);
         len = strlen(buf);
-#ifdef MUST_MATCH
-        // Retail builds the white colour after the width (float args first, as in battle_message.c's cast call).
-        ((void (*)(f32, f32, f32, f32, f32, u16, GXColor))windowDispGX_Waku_col)(
-            float_180_80420cac, float_neg160_80420d40, float_12p5_80420d0c * len + float_65_80420ca8,
-            float_32_80420d10, float_10_80420cd8, 0, (GXColor){0xFF, 0xFF, 0xFF, 0xFF});
-#else
-        windowDispGX_Waku_col(0, (GXColor){0xFF, 0xFF, 0xFF, 0xFF}, float_180_80420cac, float_neg160_80420d40,
-                              float_12p5_80420d0c * len + float_65_80420ca8, float_32_80420d10, float_10_80420cd8);
-#endif
+        windowDispGX_Waku_col(float_180_80420cac, float_neg160_80420d40, float_12p5_80420d0c * len + float_65_80420ca8,
+                              float_32_80420d10, float_10_80420cd8, 0, (GXColor){0xFF, 0xFF, 0xFF, 0xFF});
         iconDispGx(float_1_80420c64, &pos, 0x10, 0x18C);
         FontDrawStart();
-        FontDrawString(buf, float_225_80420d44, float_neg163_80420d48);
+        FontDrawString(float_225_80420d44, float_neg163_80420d48, buf);
     }
 }
 
@@ -1257,23 +1244,23 @@ void _LvupParamConfirmDisp(CameraId camId, void* param) {
     sprintf(buf, msgSearch("btl_msg_lvup_ok"));
     len = strlen(buf);
 #ifdef MUST_MATCH
-    // Retail builds the white colour after the float arguments (as in _MarioExpDisp), and assigns the half width
-    // inside the argument tree.
-    ((void (*)(f32, f32, f32, f32, f32, u16, GXColor))windowDispGX_Waku_col)(
-        float_neg30_80420d00 - (halfWidth = float_6p25_80420d04 * len), float_30_80420d08,
-        float_12p5_80420d0c * len + float_65_80420ca8, float_32_80420d10, float_10_80420cd8, 0,
-        (GXColor){0xFF, 0xFF, 0xFF, 0xFF});
+    // Retail assigns the half width inside the argument tree.
+    windowDispGX_Waku_col(float_neg30_80420d00 - (halfWidth = float_6p25_80420d04 * len), float_30_80420d08,
+                          float_12p5_80420d0c * len + float_65_80420ca8, float_32_80420d10, float_10_80420cd8, 0,
+                          (GXColor){0xFF, 0xFF, 0xFF, 0xFF});
 #else
     halfWidth = float_6p25_80420d04 * len;
-    windowDispGX_Waku_col(0, (GXColor){0xFF, 0xFF, 0xFF, 0xFF}, float_neg30_80420d00 - halfWidth, float_30_80420d08,
-                          float_12p5_80420d0c * len + float_65_80420ca8, float_32_80420d10, float_10_80420cd8);
+    windowDispGX_Waku_col(float_neg30_80420d00 - halfWidth, float_30_80420d08,
+                          float_12p5_80420d0c * len + float_65_80420ca8, float_32_80420d10, float_10_80420cd8, 0,
+                          (GXColor){0xFF, 0xFF, 0xFF, 0xFF});
 #endif
-    windowDispGX_Waku_col(0, (GXColor){0xFF, 0xFF, 0xFF, 0xFF}, float_neg70_80420d14, float_neg10_80420d18, float_130_80420d1c, float_60_80420d20, float_10_80420cd8);
+    windowDispGX_Waku_col(float_neg70_80420d14, float_neg10_80420d18, float_130_80420d1c, float_60_80420d20,
+                          float_10_80420cd8, 0, (GXColor){0xFF, 0xFF, 0xFF, 0xFF});
     FontDrawStart();
     zero = SEQ_END_ZERO_AT_USE;
-    FontDrawString(buf, zero - halfWidth, float_27_80420d24);
-    FontDrawString(msgSearch("btl_msg_lvup_yes"), float_neg20_80420c90, float_neg13_80420d28);
-    FontDrawString(msgSearch("btl_msg_lvup_no"), float_neg20_80420c90, float_neg38_80420d2c);
+    FontDrawString(zero - halfWidth, float_27_80420d24, buf);
+    FontDrawString(float_neg20_80420c90, float_neg13_80420d28, msgSearch("btl_msg_lvup_yes"));
+    FontDrawString(float_neg20_80420c90, float_neg38_80420d2c, msgSearch("btl_msg_lvup_no"));
     pos.x = float_neg40_80420d30;
     pos.y = (f32)(-50 - *selection * 25);
     pos.z = float_0_80420c7c;
@@ -1314,8 +1301,9 @@ void L__LvupParamHelpMsgDisp(CameraId camId, void* param) {
     width = FontGetMessageWidthLine(msg, &lines);
     lines++;
     zero = SEQ_END_ZERO_AT_USE;
-    windowDispGX_Waku_col(0, (GXColor){ 0xFF, 0xFF, 0xFF, 0xFF }, zero - (f32)(width / 2) - float_20_80420c48, float_neg145_80420cf8 + (f32)(((u16)lines - 1) * 29),
-                          (f32)(width + 40), (f32)(lines * 29 + 1), float_10_80420cd8);
+    windowDispGX_Waku_col(zero - (f32)(width / 2) - float_20_80420c48,
+                          float_neg145_80420cf8 + (f32)(((u16)lines - 1) * 29), (f32)(width + 40),
+                          (f32)(lines * 29 + 1), float_10_80420cd8, 0, (GXColor){ 0xFF, 0xFF, 0xFF, 0xFF });
     FontDrawStart_alpha(0xFF);
     FontDrawMessage((s32)(zero - (f32)(width / 2)), (s32)float_neg148_80420cfc + (lines - 1) * 29, msg);
 }
@@ -1410,7 +1398,8 @@ void _GetExpIcon_Main(BattleWork* wp) {
 void _GetExpIcon_Disp(CameraId camId, void* param) {
     GXColor color = {0xFF, 0xFF, 0xFF, 0x80};
 
-    windowDispGX_Waku_col(0, color, float_neg76p9_80420cc8, float_21_80420ccc, float_165p8_80420cd0, float_24p2_80420cd4, float_10_80420cd8);
+    windowDispGX_Waku_col(float_neg76p9_80420cc8, float_21_80420ccc, float_165p8_80420cd0, float_24p2_80420cd4,
+                          float_10_80420cd8, 0, color);
 }
 
 // Keep named objects between the compiler colour templates, in retail order.
@@ -1905,16 +1894,9 @@ void _lvup_select_object_disp(CameraId camId, void* param) {
         PSMTXConcat(mtxRotY, mtxMain, mtxMain);
         PSMTXConcat(mtxTrans, mtxMain, mtxMain);
         btlDispTexPlane2(mtxMain, 0x24, work->objs[0].color, 0);
-#ifdef MUST_MATCH
-        ((void (*)(f32, f32, f32, f32, f32, s32, GXColor, s32))btlDispTexPlane)(
-            work->objs[0].pos.x - float_16_80420c44, float_20_80420c48 + work->objs[0].pos.y,
-            float_2_80420c4c + work->objs[0].pos.z, work->objs[0].scale.x, work->objs[0].scale.y,
-            0x27, work->objs[0].color, 0);
-#else
-        btlDispTexPlane(0x27, work->objs[0].color, work->objs[0].pos.x - float_16_80420c44,
-                        float_20_80420c48 + work->objs[0].pos.y, float_2_80420c4c + work->objs[0].pos.z,
-                        work->objs[0].scale.x, work->objs[0].scale.y);
-#endif
+        btlDispTexPlane(work->objs[0].pos.x - float_16_80420c44, float_20_80420c48 + work->objs[0].pos.y,
+                        float_2_80420c4c + work->objs[0].pos.z, work->objs[0].scale.x, work->objs[0].scale.y, 0x27,
+                        work->objs[0].color, 0);
     }
 
     if (work->objs[1].visible != 0) {
@@ -1930,16 +1912,9 @@ void _lvup_select_object_disp(CameraId camId, void* param) {
         PSMTXConcat(mtxRotY, mtxMain, mtxMain);
         PSMTXConcat(mtxTrans, mtxMain, mtxMain);
         btlDispTexPlane2(mtxMain, 0x25, work->objs[1].color, 0);
-#ifdef MUST_MATCH
-        ((void (*)(f32, f32, f32, f32, f32, s32, GXColor, s32))btlDispTexPlane)(
-            work->objs[1].pos.x - float_16_80420c44, float_20_80420c48 + work->objs[1].pos.y,
-            float_2_80420c4c + work->objs[1].pos.z, work->objs[1].scale.x, work->objs[1].scale.y,
-            0x28, work->objs[1].color, 0);
-#else
-        btlDispTexPlane(0x28, work->objs[1].color, work->objs[1].pos.x - float_16_80420c44,
-                        float_20_80420c48 + work->objs[1].pos.y, float_2_80420c4c + work->objs[1].pos.z,
-                        work->objs[1].scale.x, work->objs[1].scale.y);
-#endif
+        btlDispTexPlane(work->objs[1].pos.x - float_16_80420c44, float_20_80420c48 + work->objs[1].pos.y,
+                        float_2_80420c4c + work->objs[1].pos.z, work->objs[1].scale.x, work->objs[1].scale.y, 0x28,
+                        work->objs[1].color, 0);
     }
 
     if (work->objs[2].visible != 0) {
@@ -1955,16 +1930,9 @@ void _lvup_select_object_disp(CameraId camId, void* param) {
         PSMTXConcat(mtxRotY, mtxMain, mtxMain);
         PSMTXConcat(mtxTrans, mtxMain, mtxMain);
         btlDispTexPlane2(mtxMain, 0x26, work->objs[2].color, 0);
-#ifdef MUST_MATCH
-        ((void (*)(f32, f32, f32, f32, f32, s32, GXColor, s32))btlDispTexPlane)(
-            work->objs[2].pos.x - float_16_80420c44, float_20_80420c48 + work->objs[2].pos.y,
-            float_2_80420c4c + work->objs[2].pos.z, work->objs[2].scale.x, work->objs[2].scale.y,
-            0x29, work->objs[2].color, 0);
-#else
-        btlDispTexPlane(0x29, work->objs[2].color, work->objs[2].pos.x - float_16_80420c44,
-                        float_20_80420c48 + work->objs[2].pos.y, float_2_80420c4c + work->objs[2].pos.z,
-                        work->objs[2].scale.x, work->objs[2].scale.y);
-#endif
+        btlDispTexPlane(work->objs[2].pos.x - float_16_80420c44, float_20_80420c48 + work->objs[2].pos.y,
+                        float_2_80420c4c + work->objs[2].pos.z, work->objs[2].scale.x, work->objs[2].scale.y, 0x29,
+                        work->objs[2].color, 0);
     }
 
     for (i = 0; i < 3; i++) {
