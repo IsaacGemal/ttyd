@@ -244,34 +244,34 @@ EffectEntry* effSnowDustN64Entry(s32 type, f32 x, f32 y, f32 z, s32 count, s32 l
 extern const Vec vec3_802fb968;
 
 
-// MWCC's default lifetime analysis and common-subexpression elimination each pick a different
-// callee-saved / volatile FPR colouring for this function's seven live f32 values. Turning both off
-// and declaring them in reverse (f31..f25) reproduces the target's f29/f25/f28/f27/f26/f31/f30 order;
-// splitting the distABf*0.97 multiply and hoisting the 0.5f scale fix the volatile FPRs in the
-// int->float conversion block. The two compiler-generated int->float magic doubles keep anonymous
-// pool names (@307/@367) instead of the target's double_to_int_*; objdiff ignores those relocs.
-#pragma opt_lifetimes off // default lifetime analysis picks a different, worse-matching FPR assignment
-#pragma opt_common_subs off // CSE of the pooled constant loads picks different volatile FPRs
+// The f32 declaration order gives the target's callee-saved FPRs (cosYaw f31, sinYaw f30, spreadX and
+// halfSpreadX f29, baseX/Y/Z f28..f26, spreadY/offset/dist f25). The `+=` easing steps and the split
+// distABf*0.97 multiply keep the volatile FPRs. The two compiler-generated int->float magic doubles
+// keep anonymous pool names (@307/@367) instead of the target's double_to_int_*; objdiff ignores
+// those relocs.
 void effSnowDustMain(EffectEntry* effect) {
-	s32 r31;
-	s32 r30;
+	s32 rangeX;
+	s32 rangeY;
 	s32 life;
 	effSnowDustData* data;
 	s32 i;
 	s32 type;
-	s32 r25;
-	s32 r24;
-	s32 r23;
+	s32 colorR;
+	s32 colorG;
+	s32 colorB;
 	s32 camera;
 	Vec position2;
 	Vec position;
-	f32 f31;
-	f32 f30;
-	f32 f29;
-	f32 f28;
-	f32 f27;
-	f32 f26;
-	f32 f25;
+	f32 cosYaw;
+	f32 sinYaw;
+	f32 spreadX;
+	f32 baseX;
+	f32 baseY;
+	f32 baseZ;
+	f32 spreadY;
+	f32 halfSpreadX;
+	f32 offset;
+	f32 dist;
 
 	data = effect->userdata;
 	position = vec3_802fb968;
@@ -297,19 +297,19 @@ void effSnowDustMain(EffectEntry* effect) {
 	if (life < 8) {
 		data->alpha = life << 5;
 	}
-	f29 = data->spreadX;
-	f25 = data->spreadY;
-	f28 = data->x;
-	f27 = data->y;
-	f26 = data->z;
-	f31 = (f32)cos(6.2831855f * camGetPtr(CAMERA_3D)->viewYaw / 360.0f);
-	f30 = (f32)sin(6.2831855f * camGetPtr(CAMERA_3D)->viewYaw / 360.0f);
-	r25 = data->colorR;
-	r24 = data->colorG;
-	r23 = data->colorB;
-	r31 = (s32)f29;
-	f29 = f29 * 0.5f;
-	r30 = (s32)f25;
+	spreadX = data->spreadX;
+	spreadY = data->spreadY;
+	baseX = data->x;
+	baseY = data->y;
+	baseZ = data->z;
+	cosYaw = (f32)cos(6.2831855f * camGetPtr(CAMERA_3D)->viewYaw / 360.0f);
+	sinYaw = (f32)sin(6.2831855f * camGetPtr(CAMERA_3D)->viewYaw / 360.0f);
+	colorR = data->colorR;
+	colorG = data->colorG;
+	colorB = data->colorB;
+	rangeX = (s32)spreadX;
+	halfSpreadX = spreadX * 0.5f;
+	rangeY = (s32)spreadY;
 	i = 1;
 	data = data + 1;
 	for (; i < effect->count; i++, data++) {
@@ -324,13 +324,13 @@ void effSnowDustMain(EffectEntry* effect) {
 		}
 		if (data->frame >= 0) {
 			if (data->frame == 0) {
-				f25 = (f32)(rand() % r31) - f29;
-				data->x = f25 * f31 + f28 - f30;
-				data->y = f27 + (f32)(rand() % r30);
-				data->z = f31 + (f25 * f30 + f26);
-				data->colorR = r25;
-				data->colorG = r24;
-				data->colorB = r23;
+				offset = (f32)(rand() % rangeX) - halfSpreadX;
+				data->x = offset * cosYaw + baseX - sinYaw;
+				data->y = baseY + (f32)(rand() % rangeY);
+				data->z = cosYaw + (offset * sinYaw + baseZ);
+				data->colorR = colorR;
+				data->colorG = colorG;
+				data->colorB = colorB;
 			}
 			switch (type) {
 				case 0:
@@ -349,8 +349,8 @@ void effSnowDustMain(EffectEntry* effect) {
 					data->y += data->velY;
 					data->texScrollX += 0.2f;
 					data->texScrollY += 0.6f;
-					data->velX = 0.04f * (data->targetVelX - data->velX) + data->velX;
-					data->velY = 0.04f * (data->targetVelY - data->velY) + data->velY;
+					data->velX += 0.04f * (data->targetVelX - data->velX);
+					data->velY += 0.04f * (data->targetVelY - data->velY);
 					break;
 				case 2:
 				case 3:
@@ -374,8 +374,8 @@ void effSnowDustMain(EffectEntry* effect) {
 					data->y += data->velY;
 					data->texScrollX += 0.2f;
 					data->texScrollY += 0.6f;
-					data->velX = 0.04f * (data->targetVelX - data->velX) + data->velX;
-					data->velY = 0.04f * (data->targetVelY - data->velY) + data->velY;
+					data->velX += 0.04f * (data->targetVelX - data->velX);
+					data->velY += 0.04f * (data->targetVelY - data->velY);
 					break;
 				case 6:
 					if (data->frame == 0) {
@@ -393,11 +393,11 @@ void effSnowDustMain(EffectEntry* effect) {
 					data->y += data->velY;
 					data->texScrollX += 0.2f;
 					data->texScrollY += 0.6f;
-					data->velY = 0.04f * (data->targetVelY - data->velY) + data->velY;
-					f25 = distABf(position2.x, position2.z, data->x, data->z);
-					f25 *= 0.97f;
-					data->x = f25 * (f32)sin(6.2831855f * (f32)data->angle / 360.0f) + position2.x;
-					data->z = f25 * (f32)cos(6.2831855f * (f32)data->angle / 360.0f) + position2.z;
+					data->velY += 0.04f * (data->targetVelY - data->velY);
+					dist = distABf(position2.x, position2.z, data->x, data->z);
+					dist *= 0.97f;
+					data->x = dist * (f32)sin(6.2831855f * (f32)data->angle / 360.0f) + position2.x;
+					data->z = dist * (f32)cos(6.2831855f * (f32)data->angle / 360.0f) + position2.z;
 					data->angle += 4;
 					data->angle %= 360;
 					break;
@@ -423,8 +423,6 @@ void effSnowDustMain(EffectEntry* effect) {
 	}
 	dispEntry(camera, dispCalcZ(&position2), 2, effSnowDustDisp, effect);
 }
-#pragma opt_lifetimes reset
-#pragma opt_common_subs reset
 
 
 // The loop walks the single `data` pointer as the original does; the texture offset wraps every 32

@@ -236,13 +236,9 @@ static inline void recoverHeartSetColor(RecoverHeartData* d) {
 }
 #endif
 
-// Keep this the last function in the file: MWCC reads global_optimizer when the unit is finalized, so a
-// trailing `global_optimizer reset` drops the setting for this function too (95.5%).
-#pragma global_optimizer off // needed so MWCC keeps the loop-invariant tile-offset arithmetic inside the loop and emits the two independent life/10 and life%10 divisions (without it: 96.9%)
 // The int->float magic is the compiler's own pool entry.
 void effRecoverHeartDisp(CameraId camId, void* param) {
 	EffectEntry* effect = param;
-	s32 stripOffset;
 	s32 remainder;
 	s32 quotient;
 	RecoverHeartData* data;
@@ -278,10 +274,6 @@ void effRecoverHeartDisp(CameraId camId, void* param) {
 	GXSetNumTexGens(1);
 	GXSetTexCoordGen2(0, 1, 4, 0x1e, 0, 0x7d);
 	GXSetCullMode(0);
-
-	stripOffset = 0x160 - life * 32;
-	remainder = life % 10;
-	quotient = life / 10;
 
 	for (i = 1; i < effect->count; i++, data++) {
 		if (data->delay > 0) {
@@ -353,7 +345,7 @@ void effRecoverHeartDisp(CameraId camId, void* param) {
 				effGetTexObjN64(0x53, &texObj);
 				GXLoadTexObj(&texObj, 0);
 				PSMTXScale(scale, 0.03125f, 0.0026041667f, 0.0f);
-				PSMTXTrans(trans, 0.0f, (f32)stripOffset, 0.0f);
+				PSMTXTrans(trans, 0.0f, (f32)(0x160 - life * 32), 0.0f);
 				PSMTXConcat(scale, trans, scale);
 				GXLoadTexMtxImm(scale, 0x1e, 1);
 				if (type == 0) {
@@ -367,6 +359,8 @@ void effRecoverHeartDisp(CameraId camId, void* param) {
 				GXBegin(0x90, 0, 6);
 				tri2(0, 1, 2, 0, 0, 2, 3, 0);
 			} else {
+				remainder = life % 10;
+				quotient = life / 10;
 				stripe = amountNegative != 0 ? 10 : quotient;
 				effGetTexObjN64(0x53, &texObj);
 				GXLoadTexObj(&texObj, 0);

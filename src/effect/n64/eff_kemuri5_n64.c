@@ -98,9 +98,6 @@ EffectEntry* effKemuri5N64Entry(f32 x, f32 y, f32 z, f32 a4) {
     return effect;
 }
 
-// Without this the cos() result colours to f2 instead of the original's f3, swapping f2/f3 through
-// the rest of the loop; the pragma is scoped to this function only.
-#pragma opt_common_subs off
 void effKemuri5Main(EffectEntry* effect) {
     effKemuri5Data* data = effect->userdata;
     Vec position;
@@ -130,7 +127,7 @@ void effKemuri5Main(EffectEntry* effect) {
         data->accelY += data->accelStep;
         data->velY += data->accelY;
         data->position.y += data->velY;
-        data->baseScaleX = 0.006f * (7.5f - data->baseScaleX) + data->baseScaleX;
+        data->baseScaleX += 0.006f * (7.5f - data->baseScaleX);
         data->baseScaleY *= 0.98f;
         if (data->timer < 10) {
             data->baseScaleY *= 0.9f;
@@ -145,7 +142,6 @@ void effKemuri5Main(EffectEntry* effect) {
     }
     dispEntry(CAMERA_3D, dispCalcZ(&position), 2, effKemuri5Disp, effect);
 }
-#pragma opt_common_subs reset
 
 static inline void kemuri5SetColor(u8 a) {
     GXColor color = dat_8041f358;
