@@ -2194,13 +2194,11 @@ USER_FUNC(taihou_r) {
 // is written `!i` rather than `(i == 0)`. Both spell the same cntlzw/srwi, but `!i` gives the
 // loop web {mtxId, flag} the higher vreg number, which is what lands it in r25 and the
 // {texBuf, &6p2832, &zero} chain in r24 exactly as retail has them (the `==` form swaps the two).
-// opt_common_subs off: with CSE on MWCC hoists the two loop-invariant seed loads
-// (0.0076100002f/0.037050001f) into extra FPRs, which pushes the whole coefficient group
-// into f21/f22 and grows the frame; the target rematerialises them.
-#pragma opt_common_subs off // needed: CSE otherwise hoists the loop-invariant seed loads
+// `mtxId` is `u32` (the GX headers take `u32 mtx`/`u32 id`, as in gor_10's depthDisp); as `s32`
+// MWCC computes the id into r4 and copies it to the loop register instead of the reverse.
 // opt_lifetimes off: the default lifetime pass assigns the loop scratch/temp FPRs differently.
 #pragma opt_lifetimes off // needed: default lifetime analysis colours the loop scratch FPRs differently
-// opt_propagation off: with propagation on MWCC folds the loop-invariant seed loads again.
+// opt_propagation off: with propagation on MWCC folds the loop-invariant seed loads.
 #pragma opt_propagation off // needed: propagation otherwise folds the loop-invariant seed loads
 static void depthDisp(CameraId cameraId, void* param) {
     GXTexObj texObj;
@@ -2209,7 +2207,7 @@ static void depthDisp(CameraId cameraId, void* param) {
     CameraEntry* cam;
     f32 scale;
     s32 i;
-    s32 mtxId;
+    u32 mtxId;
 
     scale = (f32)evtGetValue(NULL, GW(5)) / 100.0f;
     cam = camGetPtr(cameraId);
@@ -2275,7 +2273,6 @@ static void depthDisp(CameraId cameraId, void* param) {
 }
 #pragma opt_propagation reset
 #pragma opt_lifetimes reset
-#pragma opt_common_subs reset
 
 static USER_FUNC(depth) {
     dispEntry(CAMERA_2D, 1000.0f, 0, depthDisp, NULL);

@@ -3023,23 +3023,18 @@ void _light_point_callback(struct BattleWorkUnitPart* part, s32 group, void* mtx
     }
 }
 
-// MUST_MATCH: both the named `args` temp and `opt_propagation off` are required; with propagation on MWCC
-// pre-colours the evtGetValue argument into r4, pushing the _battleWorkPointer address temp into r5,
-// but the target uses r4 for the table address and r5 for event->args.
-#pragma opt_propagation off
 USER_FUNC(unk_las_0000d538) {
     BattleWork* wp = _battleWorkPointer;
     BattleUnit* unit;
     s32* args = event->args;
-    s32 arg = evtGetValue(event, args[0]);
+    s32 arg = evtGetValue(event, *args++);
+
     unit = BattleGetUnitPtr(wp, BattleTransID(event, arg));
     if (unit != NULL) {
         unit->hpGauge.field_0x2 |= 1;
     }
     return EVT_RETURN_DONE;
 }
-
-#pragma opt_propagation reset
 
 typedef struct BattenSatelliteSpline {
     s32 field_0x0;

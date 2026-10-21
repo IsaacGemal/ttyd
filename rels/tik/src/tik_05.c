@@ -1970,7 +1970,6 @@ USER_FUNC(starstone_set_scale) {
     return EVT_RETURN_DONE;
 }
 
-#pragma opt_propagation off // keeps the modulo/angle operands in the same registers as the target
 USER_FUNC(starstone_circle_link_func) {
     s32* args = event->args;
     s32 name = evtGetValue(event, args[0]);
@@ -1981,17 +1980,20 @@ USER_FUNC(starstone_circle_link_func) {
     f32 angle = evtGetFloat(event, args[5]);
     f32 radius = evtGetFloat(event, args[6]);
     EffectEntry* entry = effNameToPtr((char*)name);
-    f32 a = angle - 360.0f * (f32)((s32)angle / 360);
-    f32 rad = 6.2831855f * (360.0f * idx / 7.0f + a) / 360.0f;
-    f32 s = (f32)sin(rad);
-    f32 c = (f32)cos(rad);
+    f32 rad;
+    f32 s;
+    f32 c;
+
+    angle = angle - 360.0f * (f32)((s32)angle / 360);
+    rad = 6.2831855f * (360.0f * idx / 7.0f + angle) / 360.0f;
+    s = (f32)sin(rad);
+    c = (f32)cos(rad);
 
     ((effStarStoneData*)entry->userdata)->x = s * radius + x;
     ((effStarStoneData*)entry->userdata)->y = y;
     ((effStarStoneData*)entry->userdata)->z = -c * radius + z;
     return EVT_RETURN_DONE;
 }
-#pragma opt_propagation reset
 
 USER_FUNC(eff_starstone_sound_off) {
     s32* args = event->args;

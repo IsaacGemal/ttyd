@@ -4980,22 +4980,24 @@ USER_FUNC(gundan1000tai_circle_pos_func) {
     return EVT_RETURN_DONE;
 }
 
-// Splitting the angle product (marked above) puts the eight pooled float constants in the original's
+// Splitting the second angle product into tmp puts the eight pooled float constants in the original's
 // registers; assigning base before field_0x60 puts the 90/-280 and 270/340 address temps in r3/r4.
-// With the lifetime optimiser on, the allocator splits the two halves' live ranges and the second half's
-// angle/s come out in f22/f21; off, and with radius/s/angle/c/c2 declared in this order, both halves keep
-// angle in f21 and s in f22. The second half's cos result needs its own temp (c2) to stay in f1.
-#pragma opt_lifetimes off
+// Each half has its own radius/angle/sine locals; this declaration order gives both halves the
+// original's f23/f21/f22.
 USER_FUNC(gundan1000tai_init) {
     s32 i;
     NanNpcEntry* entry;
     NanNpcWork* work;
+    f32 radius2;
+    f32 tmp;
     f32 radius;
-    f32 s;
-    f32 angle;
     f32 c;
-    f32 c2;
+    f32 s2;
+    f32 angle2;
+    f32 angle;
+    f32 s;
     f32 base;
+    f32 c2;
 
     work = nanNPCWork;
     for (i = 0; i < work->count; i++) {
@@ -5014,17 +5016,14 @@ USER_FUNC(gundan1000tai_init) {
             base = 340.0f;
             entry->facingAngle = 270.0f;
         }
-        radius = (f32)irand(0x64);
-        // The named product keeps the eight float constants in the original's f28-f31/f24-f27 registers.
-        {
-            f32 tmp = 6.2831855f * (f32)irand(0x168);
-            angle = tmp / 360.0f;
-        }
-        s = sin(angle);
-        c2 = cos(angle);
-        entry->position.x = radius * s + base;
+        radius2 = (f32)irand(0x64);
+        tmp = 6.2831855f * (f32)irand(0x168);
+        angle2 = tmp / 360.0f;
+        s2 = sin(angle2);
+        c2 = cos(angle2);
+        entry->position.x = radius2 * s2 + base;
         entry->position.y = 15.0f;
-        entry->position.z = radius * c2 - 300.0f;
+        entry->position.z = radius2 * c2 - 300.0f;
         entry->callback = gundan1000tai_seq00;
         entry->state = 0;
         entry->index = i;
@@ -5032,7 +5031,6 @@ USER_FUNC(gundan1000tai_init) {
     return EVT_RETURN_DONE;
 }
 
-#pragma opt_lifetimes reset
 USER_FUNC(gundan1000tai_totsugeki) {
     s32 i;
     NanNpcEntry* entry;
