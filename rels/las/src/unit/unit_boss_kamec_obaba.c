@@ -1053,7 +1053,7 @@ static USER_FUNC(eff_staff) {
     s32 id = BattleTransID(event, evtGetValue(event, args[0]));
     BattleUnit* unit = BattleGetUnitPtr(_battleWorkPointer, id);
     EffectEntry* eff;
-    f32* data;
+    EffThunderflareData* data;
     f32 x, y, z;
 
     if (isFirstCall) {
@@ -1064,11 +1064,11 @@ static USER_FUNC(eff_staff) {
         return EVT_RETURN_DONE;
     }
     data = eff->userdata;
-    data[0x28 / 4] = unit->mSizeMultiplier;
+    data->scale = unit->mSizeMultiplier;
     BtlUnit_GetPos(unit, &x, &y, &z);
-    data[0x8 / 4] = 30.0f * unit->mSizeMultiplier * unit->faceDirection + x;
-    data[0xC / 4] = 35.0f * unit->mSizeMultiplier + y;
-    data[0x10 / 4] = z + 5.0f;
+    data->x = 30.0f * unit->mSizeMultiplier * unit->faceDirection + x;
+    data->y = 35.0f * unit->mSizeMultiplier + y;
+    data->z = z + 5.0f;
     return EVT_RETURN_BLOCK;
 }
 
@@ -1081,7 +1081,7 @@ static USER_FUNC(eff_magic) {
     f32 c = evtGetFloat(event, args[3]);
     s32 type = evtGetValue(event, args[4]);
     EffectEntry* eff;
-    f32* data;
+    effMagic1Data* data;
     f32 x, y, z;
 
     BtlUnit_GetPos(unit, &x, &y, &z);
@@ -1091,7 +1091,7 @@ static USER_FUNC(eff_magic) {
     eff = effMagic1N64Entry(0, type, x, y, z, a, b, c);
     unit->work[4] = (s32)eff;
     data = eff->userdata;
-    data[0x28 / 4] = unit->mSizeMultiplier;
+    data->scale = unit->mSizeMultiplier;
     return EVT_RETURN_DONE;
 }
 
@@ -1221,9 +1221,9 @@ static USER_FUNC(eff_magic_get_posX) {
     s32 id = BattleTransID(event, evtGetValue(event, args[0]));
     BattleUnit* unit = BattleGetUnitPtr(_battleWorkPointer, id);
     EffectEntry* eff = (EffectEntry*)unit->work[4];
-    f32* data = eff->userdata;
+    effMagic1Data* data = eff->userdata;
 
-    evtSetFloat(event, args[1], data[0x10 / 4]);
+    evtSetFloat(event, args[1], data->offsetX);
     return EVT_RETURN_DONE;
 }
 

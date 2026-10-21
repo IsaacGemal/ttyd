@@ -172,9 +172,9 @@ void L_sweatMain(PartyEntry* party) {
         f32 z = party->position.z;
         f32 x = party->position.x;
 
-        ((f32*)((PartyYoshiUse*)party->useStruct)->effect->userdata)[1] = x;
-        ((f32*)((PartyYoshiUse*)party->useStruct)->effect->userdata)[2] = y;
-        ((f32*)((PartyYoshiUse*)party->useStruct)->effect->userdata)[3] = z;
+        ((effSweatData*)((PartyYoshiUse*)party->useStruct)->effect->userdata)->position.x = x;
+        ((effSweatData*)((PartyYoshiUse*)party->useStruct)->effect->userdata)->position.y = y;
+        ((effSweatData*)((PartyYoshiUse*)party->useStruct)->effect->userdata)->position.z = z;
     }
 
     if (--((PartyYoshiUse*)party->useStruct)->timer <= 0) {

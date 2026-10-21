@@ -3,7 +3,6 @@
 #include "battle/battle_event_cmd.h"
 #include "battle/battle_sub.h"
 #include "driver/effdrv.h"
-#include "eff/eff_charge.h"
 #include "eff/n64/eff_magic1_n64.h"
 #include "eff/n64/eff_pokopi_pcharge_n64.h"
 #include "eff/n64/eff_thunderflare_n64.h"
@@ -1678,7 +1677,7 @@ static USER_FUNC(eff_staff1) {
     s32* args = event->args;
     BattleUnit* unit;
     EffectEntry* effect;
-    ChargeEffectData* data;
+    EffThunderflareData* data;
     s32 id;
     f32 x;
     f32 y;
