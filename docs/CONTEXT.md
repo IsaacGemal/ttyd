@@ -12236,3 +12236,75 @@ baseline, so `ci.py --init` was run on the first build, whose linked modules alr
   `field_0x1D8` but not `field_18298`, and not `*(s32*)(w - 0x7D68)` or `(char*)` casts at all, so moving negative-base
   reads onto sub-struct members and renaming HpGaugeLocal's `field_C` to BattleWorkHpGauge's `field_0xC` add counted
   names. battle_stage_object 73 -> 157 weighted for the same reason.
+### Duplicated REL helpers: one shared definition each (2026-10-20, Claude Opus 5.5, n9-q-o-dupe)
+
+Many chapter/map RELs carry copies of the same helpers. The copies now come from one definition each, a header under
+`include/rel/common/` included by every unit that compiled the copy, so each REL still links its own copy. Build
+byte-identical after every commit (build/G8MJ01/ok); every changed C file compiles without `-DMUST_MATCH`
+(`configure.py --non-matching`, 148 affected objects); `tools/fncast_lint.py` and `tools/local_prototypes.py` pass;
+`tools/ci.py` passed before each commit with its `tools/tests` step stubbed (the same 9 environment failures as the
+chapters above; the data step needs `uv run --with pyelftools`, and that run rewrites build.ninja with uv's python, so
+rerun `python3 configure.py` after it). No configure.py change: `include/` is on every REL's include path, and the
+cleanup index counts it (`rels/common/include/` is outside its scope, so code moved there would just vanish from it).
+
+- **How the families were found:** every function's original asm (`build/G8MJ01/<rel>/asm`), instructions normalised
+  (labels, `_<rel>_<addr>` suffixes), grouped by name and hash across source files; then the section rule below
+  applied to each unit's `.text` order.
+- **The constraint that decides everything: MWCC puts the functions of every included file in a `.text` section of
+  their own, and the unit's own section links ahead of them.** With deferred inlining (every REL but gon and mri) a
+  unit can therefore take a function from a header only if all its own functions come after it in the source, that
+  is, the shared functions are the last ones of the original `.text`; gon and mri (built without deferred inlining)
+  want the shared ones last in the source. Headers keep their place in the file because definition order sets the
+  `.text` order; data (strings, pool constants, compound-literal templates, function-local statics) stays in the
+  unit's own sections, in order. Found by experiment: the first lecture pass broke six RELs whose own variants sat
+  in the middle of the run.
+- **Headers** (85; named after the first function they hold or the family's file prefix, subdirectories per unit
+  family): each comment says who includes it and that it goes where its run sits. Types shared by a family went in
+  with it: `rel/common/evt_lect.h` (LectureButton, the lecture units' u16 iconDispGxAlpha prototype),
+  `unit_barriern.h` (from `rels/common/include/unit_barriern_z.h` and three copies), `unit_piders.h` (from
+  `rels/common/include/unit_piders.h` and churantalar's header), `unit_boss_koopa.h` (IconJump),
+  `evt_shuryolight.h`, Majo3SortEntry in `majo3_sort.h`.
+- **Families shared** (units in brackets): the lecture helpers (gon, hei, mri, tik, usu take all of them; eki, gor,
+  muj, tou, win the run up to lecture_button_rtn; dou lect_mario_ido_sub/sum); the Yux/barriern functions
+  (unit_barriern_custom, unit_barriern_z and the three satellite units all of them, v1 the barriern_zanzou entry
+  points, v2 battleGetBarriernSatelliteInitPos); Piranha Plant pakkun_ceil_exist/shadow_scale_* (7); Poison Puff
+  eff_poison_breath/barrier (3); Wizzerd hand/bunsin/shuffle/eff_magic (3); Pider yarn/target functions (v1 and
+  churantalar all, v2 and v3 the ends); Bowser _icon_jump_icon and co. (las, tou2); evt_shuryolight's first three
+  (aji, las); teresa_check_* (2); krb_get_dir (10 Goomba units); and two-to-four-unit helpers: hitIsGroup, ramp_r,
+  resha_tev, honenoko_copy_status, kamec_get_live_num, make_name, setmertn, effect_stardust, wariai_enzan_1/1f,
+  majin_callback, bgm_start_wait, killer_*, get_id/yoshi_exist, chain_init/main, _set_draw_callback,
+  _fire_point_callback, npc_set_me/npc_dead, vivian_comeback, bubble_copy_status, _wave_offset, randf,
+  _space_rotate, getYoshiColor, eff_scanning, eff_aura, togezo_copy_status, _leg_smoke_effect, majo3_sort,
+  fontlenpitch, set_dir. 133 functions; rels/ lost 8,825 lines and gained 362, the headers are 3,411.
+- **Hacks folded:** the four MUST_MATCH iconDispGxAlpha function-pointer casts (eki, mri, tik, usu) are gone: the
+  shared lecture header declares the u16 prototype the other lecture units already declared (the documented
+  exception). Both Bowser units' MUST_MATCH iconDispGx casts are gone the same way: `unit_boss_koopa.h` declares it
+  with the u16 id and the scale last, as their asm passes it (the exception's "width and order your file's asm
+  uses"; register assignment is identical, so the call is direct). barriern_z's two identical volatile-table helpers
+  and custom's one are one `barriernSatelliteTo_InitInline`; lecture_button_disp's ppos hack is one copy for ten
+  units; eki's hand-expanded lect_map_cam_chg_sub recursion is the plain recursive form; giant_bomb's `(void*)` cast
+  on _fire_point_callback went (the callback takes animdrv's three arguments).
+- **Unified while sharing:** aji's shuryolight structs take las's field names; dou's LectureButton `state` is `seq`
+  (lecture_button_set_seq); barriernSatelliteTo_Init takes the `s32 id` it stores (z's form); the barriern/satellite
+  zanzou entry points `return` their sub's result (custom/v1 fell off the end); pakkun_ceil_exist reads BattleWork's
+  `stageFlags` instead of `field_180C0[0x1C]`; functions that were defined without `static` are static (all 133 are
+  `scope:local` in every symbols.txt); stale NONMATCHING notes on functions that match went with their copies.
+- Counts (`tools/cleanup_index.py`, 33e9c638 -> this branch): index 16.293 -> 16.249 per kLOC (11494 -> 11389
+  weighted over 705471 -> 700896 code lines); must_match 1226 -> 1199; field_0x 3645 -> 3601; raw_offset 499 ->
+  489; fn_ptr_cast 131 -> 125; unk_name 722 -> 720; the rest unchanged.
+- **Left, and why** (asm-identical copies that one header can't serve):
+  - The rest of the eki, gor, muj, tou and win lecture helpers: lecture_button_rtn, lecture_button_set_pos and (eki,
+    muj, tou) effitemget_busaiku copy named `.rodata` Vec templates (`vec3_<rel>_*`), so their own copies sit in the
+    middle and everything after them stays. Turning those templates into the compound literals the other five units
+    use is a data-definition change, outside this pass; it would let all eleven units share every helper. dou's
+    lect_status_on/off swap bodies against the others.
+  - evt_kagemario (gra, jin, usu): callback reads per-REL named GXColor constants and is the first function.
+    alpha_tev (dou_05, gor_00, muj_00): gor_00/muj_00 go through an alphaColor inline over a named zero template.
+    moamoa_pose_init (eki_00, rsh_06 vs rsh_05): the `"J\0\0"` string padding differs. krb_comp_dir/get_attacker
+    (the spiky Goombas): gra's and jon's SinTable is a `u32` table read through a cast, v2's an `f32` one.
+  - Everything not at the end of its unit's `.text`: tou/tou2's ranking functions (behind their own `_prolog`),
+    the yuu monte helpers, the REL `_prolog`/`_epilog`/`_unresolved` boilerplate (last in source), the shuryolight
+    and magnum_battender functions after the first differing one, and so on.
+- For a reviewer: battleGetBarriernSatelliteInitPos carries a function-local `static const Vec VecData[]`, which
+  moved into its header with the function (the bytes and their place are unchanged). gon's two `#pragma
+  dont_inline` pairs now wrap the lect_mario_ido.h and lect_map_cam_chg.h includes (same pragma lines, no new ones).
