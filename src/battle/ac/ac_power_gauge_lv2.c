@@ -97,15 +97,8 @@ s32 battleAcMain_PowerGaugeLv2(BattleWork* work) {
             work->actionCommands.result = 1;
             dec->frameLimit = sysMsec2Frame(0x1B58);
             dec->gaugePercent = 0.0f;
-#ifdef MUST_MATCH
-            // Match-only: the constant-first form is what makes the magic double land in f1
-            // and 0.01f in f2 (the natural value-first form swaps them).
-            dec->rate = 0.01f * (f32)work->actionCommands.acParams[1];
-            dec->drain = 0.01f * (f32)work->actionCommands.acParams[2];
-#else
             dec->rate = (f32)work->actionCommands.acParams[1] * 0.01f;
             dec->drain = (f32)work->actionCommands.acParams[2] * 0.01f;
-#endif
             dec->flag = 0;
             dec->flag2 = 0;
             dec->button = 0x100;

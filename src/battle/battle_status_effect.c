@@ -639,14 +639,9 @@ BOOL BattleStatusChangeMsgMain(BattleWork* wp) {
 	s8* pri;
 	s8 type;
 
-#ifdef MUST_MATCH
-	// MUST_MATCH: naming the loaded byte in a local keeps it in r4 as in retail (extsb r0, r4 both times).
+	// Naming the loaded byte in a local keeps it in r4 (extsb r0, r4 both times).
 	for (pri = _st_pri_data; (type = *pri) != -1; pri++) {
 		entry = &work->entries[type];
-#else
-	for (pri = _st_pri_data; *pri != -1; pri++) {
-		entry = &work->entries[*pri];
-#endif
 
 		if (entry->type != -1) {
 			BattleUnit* unit;

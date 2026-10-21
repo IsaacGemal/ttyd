@@ -36,19 +36,11 @@ typedef struct PowerGaugeLvDecWork {
 static void actionCommandDisp(f32, f32);
 
 // MWCC folds dec (and disp) into the BattleWork base when both are derived directly from
-// `work`; the MUST_MATCH `ac` intermediate below keeps work=r30, dec=r31 and disp=r29 as the original.
+// `work`; the `ac` intermediate below keeps work=r30, dec=r31 and disp=r29.
 s32 battleAcMain_PowerGaugeLv(BattleWork* work) {
-#ifdef MUST_MATCH
-    // MWCC folds dec (and disp) into the BattleWork base when both are derived directly from `work`;
-    // deriving both from the `ac` intermediate keeps work, dec and disp in their own registers, as the
-    // original does (same fix as battleAcMain_CraneTiming).
     BattleActions* ac = &work->actionCommands;
     PowerGaugeLvDecWork* dec = (PowerGaugeLvDecWork*)&ac->field_0x2BC[0];
     BattleACDispParams* disp = &ac->dispParams;
-#else
-    PowerGaugeLvDecWork* dec = (PowerGaugeLvDecWork*)&work->actionCommands.field_0x2BC[0];
-    BattleACDispParams* disp = &work->actionCommands.dispParams;
-#endif
 
     switch (work->actionCommands.mAcState) {
     case 0x63:
@@ -221,24 +213,13 @@ void battleAcDelete_PowerGaugeLv(BattleWork* work) {
 // The clamp keeps `ratio` in the original's divisor register (f1: `fdivs f1, f2, f1`, `fmr f1, f0`).
 static void actionCommandDisp(f32 f1, f32 f2) {
     BattleWork* work = _battleWorkPointer;
-#ifdef MUST_MATCH
-    // Deriving disp/dec through the BattleActions intermediate makes MWCC materialise them in their
-    // own registers (work=r30, disp=r29, dec=r28) instead of folding them into the BattleWork base.
     BattleActions* ac = &work->actionCommands;
     BattleACDispParams* disp = &ac->dispParams;
     PowerGaugeLvDecWork* dec;
-#else
-    BattleACDispParams* disp = &work->actionCommands.dispParams;
-    PowerGaugeLvDecWork* dec;
-#endif
     f32 ratio;
 
     camGetPtr(CAMERA_2D);
-#ifdef MUST_MATCH
     dec = (PowerGaugeLvDecWork*)&ac->field_0x2BC[0];
-#else
-    dec = (PowerGaugeLvDecWork*)&work->actionCommands.field_0x2BC[0];
-#endif
 
     {
         Vec pos = (Vec){0.0f, 0.0f, 0.0f};
