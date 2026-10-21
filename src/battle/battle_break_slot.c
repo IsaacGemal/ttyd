@@ -308,14 +308,12 @@ void BattleBreakSlot_Init(void) {
     reel->cards = BattleAlloc(reel->count * 4);
     memcpy(reel->cards, &tmp3, reel->count * 4);
 }
-// 100% (5612 B). Reaching it needed three things outside the function body:
+// 100% (5612 B). Reaching it needed two things outside the function body:
 // - the effect scripts (kinoko/flower/shine/doku_kinoko) and the .data pair padding are defined in this
 //   file's .data, so evtEntry addresses them through the lbl_803AB118 base register (r27);
 // - BattleBreakSlotDispReel is compiled before BattleBreakSlot_Main (it uses the int-to-float double
 //   first), which pools that double at 0x270, before Main's SFX strings; the file's functions must be in
-//   the original's reverse-asm order for that;
-// - pouchGetAP's raw 32-bit return (the header says s16; the target has srawi without an extsh), cast in
-//   MUST_MATCH the same way battle_unit.c does.
+//   the original's reverse-asm order for that.
 void BattleBreakSlot_Main(void) {
     static f32 updown;
     BattleWork* wp = _battleWorkPointer;
@@ -498,13 +496,7 @@ void BattleBreakSlot_Main(void) {
                 break;
             case 4:
                 evtEntry(doku_kinoko_effect, 0, 0x20);
-#ifdef MUST_MATCH
-                // Match-only: the header declares pouchGetAP as s16, but the target consumed the raw 32-bit
-                // return (srawi without an extsh); same cast battle_unit.c uses.
-                pouchSetAP((*(s32(*)(void))pouchGetAP)() / 2);
-#else
                 pouchSetAP(pouchGetAP() / 2);
-#endif
                 break;
             }
         }

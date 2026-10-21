@@ -891,11 +891,11 @@ void pouchSetMaxHP(s16 points) {
 	mpp->baseMaxHP = mpp->maximumHP;
 }
 
-s16 pouchGetPartyHP(PartyId partnerId) {
+s32 pouchGetPartyHP(PartyId partnerId) {
 	return mpp->partyData[partnerId].currentHP;
 }
 
-void pouchSetPartyHP(PartyId partnerId, s16 points) {
+void pouchSetPartyHP(PartyId partnerId, s32 points) {
 	PouchPartyData* party;
 
 	mpp->partyData[partnerId].currentHP = points;
@@ -905,7 +905,7 @@ void pouchSetPartyHP(PartyId partnerId, s16 points) {
 	}
 }
 
-s16 pouchGetFP(void) {
+s32 pouchGetFP(void) {
 	return mpp->currentFP;
 }
 
@@ -925,11 +925,11 @@ void pouchSetMaxFP(s16 points) {
 	mpp->baseMaxFP = mpp->maximumFP;
 }
 
-s16 pouchGetAP(void) {
+s32 pouchGetAP(void) {
 	return mpp->currentSP;
 }
 
-void pouchAddAP(s16 points) {
+void pouchAddAP(s32 points) {
 	mpp->currentSP += points;
 	if (mpp->currentSP < 0) {
 		mpp->currentSP = 0;
