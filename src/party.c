@@ -539,7 +539,7 @@ s32 yoshiSetColor(void) {
     } else {
         color = 6;
     }
-    ((void (*)(s32, s32))pouchSetPartyColor)(PARTNER_YOSHI, color);
+    pouchSetPartyColor(PARTNER_YOSHI, color);
     return color;
 }
 

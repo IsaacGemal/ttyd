@@ -504,12 +504,7 @@ s32 winRootMain(WindowWork* work) {
             winMarioExit(work);
             winPartyExit(work);
             winItemExit(work);
-#ifdef MUST_MATCH
-            // winBadgeExit's header says void(void), but the original passes work in r3.
-            ((void (*)(WindowWork*))winBadgeExit)(work);
-#else
-            winBadgeExit();
-#endif
+            winBadgeExit(work);
             winLogExit(work);
             if (work->field_0x19C != 0 && work->partySel != work->lastPartySel) {
                 return -2;

@@ -360,7 +360,7 @@ USER_FUNC(evt_eff64) {
 				case 33: effect = effBalloonN64Entry(int2, float3, float4, float5, float6, float7); break;
 				case 34: effect = effCoolLeafN64Entry(int2, float3, float4, float5); break;
 				case 35: effect = effBushN64Entry(int2, float3, float4, float5); break;
-				case 36: effect = effRotHammerSuccessN64Entry(int2, int6, float3, float4, float5, int7); break;
+				case 36: effect = effRotHammerSuccessN64Entry(int2, float3, float4, float5, int6, int7); break;
 				case 37: effect = effRotHammerFailN64Entry(int2, int7, float3, float4, float5, float6); break;
 				case 38: effect = effGuruguruN64Entry(int2, int7, float3, float4, float5, float6); break;
 				case 39: effect = effIceN64Entry(int2, float3, float4, float5); break;
@@ -410,14 +410,7 @@ USER_FUNC(evt_eff64) {
 				case 83: effect = effKamekiTornadeN64Entry(int2, int7, float3, float4, float5, float6); break;
 				case 84: effect = effStoneSmokeN64Entry(int2, int7, float3, float4, float5, float6); break;
 				case 85: effect = effPokopiPchargeN64Entry(float3, float4, float5, float6, int2, int7); break;
-				// eff_hagetaka_flush_n64.h declares this with 5 parameters, but the original passes six: the caller's asm
-				// loads r4 = int7 (int2 in r3, float3..float6 in f1..f4) before the bl. The callee never reads r4, so the
-				// header dropped it. Call through the real signature (the same bridge win_main.c uses for the pouch accessors).
-#ifdef MUST_MATCH
-				case 86: effect = ((EffectEntry* (*)(s32, s32, f32, f32, f32, f32))effHagetakaFlushN64Entry)(int2, int7, float3, float4, float5, float6); break;
-#else
-				case 86: effect = effHagetakaFlushN64Entry(int2, float3, float4, float5, float6); break;
-#endif
+				case 86: effect = effHagetakaFlushN64Entry(int2, int7, float3, float4, float5, float6); break;
 				case 87: effect = effKumokumoN64Entry(int2, int9, float3, float4, float5, float6, float7, float8); break;
 				case 88: effect = effVaporN64Entry(int2, int7, float3, float4, float5, float6); break;
 				case 89: effect = effFireSparkN64Entry(int2, int9, int10, float3, float4, float5, float6, float7, float8, float11, float12); break;
@@ -427,13 +420,7 @@ USER_FUNC(evt_eff64) {
 				case 93: effect = effKumokumoChipN64Entry(int2, float3, float4, float5, float6, float7, float8, float9, float10); break;
 				case 94: effect = effFireworksN64Entry(int2, int10, float3, float4, float5, float6, float7, float8, float9); break;
 				case 95: effect = effGlassN64Entry(int2, int7, float3, float4, float5, float6); break;
-				// eff_booboo_n64.h declares this (void), but the original passes the same six arguments (its prologue
-				// ignores them and calls effEntry first), so call through the real signature.
-#ifdef MUST_MATCH
-				case 96: effect = ((EffectEntry* (*)(s32, s32, f32, f32, f32, f32))effBoobooN64Entry)(int2, int7, float3, float4, float5, float6); break;
-#else
-				case 96: effect = effBoobooN64Entry(); break;
-#endif
+				case 96: effect = effBoobooN64Entry(int2, int7, float3, float4, float5, float6); break;
 				case 97: effect = effPikkyoloN64Entry(int2, int7, float3, float4, float5, float6); break;
 				case 98: effect = effFreezeN64Entry(int2, int7, float3, float4, float5, float6); break;
 				case 99: effect = effSunlightN64Entry(int2, int7, float3, float4, float5, float6); break;

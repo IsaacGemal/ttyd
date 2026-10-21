@@ -163,14 +163,7 @@ void effFireFlowerMain(EffectEntry* effect) {
 		} else {
 			spawnX = 10.0f + data->x;
 		}
-#ifdef MUST_MATCH
-		/* MUST_MATCH: the original's prototype had count declared between y and z, so the
-		   argument loads come out r3, f1, f2, r4, f3, r5.  The shared header keeps the
-		   semantically ordered prototype, so reorder only here (registers are identical). */
-		((EffectEntry* (*)(s32, f32, f32, s32, f32, s32))effRotHammerSuccessN64Entry)(0, spawnX, data->y, 7, data->z, 0x14);
-#else
-		effRotHammerSuccessN64Entry(0, 7, spawnX, data->y, data->z, 0x14);
-#endif
+		effRotHammerSuccessN64Entry(0, spawnX, data->y, data->z, 7, 0x14);
 		data->texFrame = 0;
 		data->color2A = 0;
 		data->state++;

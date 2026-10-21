@@ -80,6 +80,4 @@ void itemseq_sfxBound(ItemEntry* item, Vec* pos);
 HitEntry* itemBoundHitFloor(ItemEntry* item, f32 vy);
 HitEntry* itemBoundHitCeiling(ItemEntry* item, f32 vy);
 void itemseq_GetItem(ItemEntry* item);
-// 2nd s32 arg (unused by the callee) is required by itemMain/evt_eff call sites.
-EffectEntry* effHagetakaFlushN64Entry(s32 type, s32 unk, f32 x, f32 y, f32 z, f32 a5);
 void itemCoinDrop(Vec* pos);

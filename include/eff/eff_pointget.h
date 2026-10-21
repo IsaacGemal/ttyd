@@ -13,6 +13,6 @@ typedef struct PointGetWork {
     s32 frame;  // 0x1C
     s32 state;  // 0x20
 } PointGetWork;
-EffectEntry* effPointGetEntry(s32 type, s32 value, s32 wait, f32 x, f32 y, f32 z);
+EffectEntry* effPointGetEntry(s32 type, f32 x, f32 y, f32 z, s32 value, s32 wait);
 void effPointGetMain(EffectEntry* effect);
 void effPointGetDisp(CameraId camId, void* param);

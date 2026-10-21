@@ -1296,7 +1296,7 @@ s32 pouchGetPartyColor(PartyId partnerId) {
 	return mpp->partyData[partnerId].flags >> 13;
 }
 
-void pouchSetPartyColor(PartyId partnerId, u16 color) {
+void pouchSetPartyColor(PartyId partnerId, s32 color) {
 	mpp->partyData[partnerId].flags = (u16)((mpp->partyData[partnerId].flags & 0x1FFF) | ((color & 7) << 13));
 }
 

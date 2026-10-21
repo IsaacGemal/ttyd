@@ -1477,11 +1477,7 @@ s32 BattleSetStatusDamage(s32* work, BattleUnit* unit, BattleUnitPart* part, s32
 
 
 // The `s32 rate` plus `(s8)` casts reproduce the original `extsb r8,r3` / `cmpwi r8,0` (a plain s8
-// rate makes the GALE_FORCE test `extsb. r0,r8`). The call casts BattleSetStatusDamage to a prototype
-// whose arg8/arg9 are `s8` (the callee sign-extends both, `extsb. r0,r28`/`extsb. r0,r29`); with the
-// file-scope `u8` prototype the scheduler loads p1 (arg8) before `weapon->special` (arg4), where the
-// original loads `lwz r6,0x74(r30)` first and then `lbz r10,0x11(r1)`. The jump-table reloc name
-// differs; objdiff ignores it.
+// rate makes the GALE_FORCE test `extsb. r0,r8`). The jump-table reloc name differs; objdiff ignores it.
 // dont_inline: BattleCheckDamage calls this out of line in the original.
 #pragma dont_inline on
 s32 BattleSetStatusDamageFromWeapon(BattleUnit* unit1, BattleUnit* unit2, BattleUnitPart* part,
@@ -1529,7 +1525,7 @@ s32 BattleSetStatusDamageFromWeapon(BattleUnit* unit1, BattleUnit* unit2, Battle
                 break;
             }
 #ifdef MUST_MATCH
-            if (((s32 (*)(s32*, BattleUnit*, BattleUnitPart*, s32, s32, s32, s32, s8, s8))BattleSetStatusDamage)(&work, unit2, part, weapon->special, i, (s8)rate, levelDiff, p1, p2)) {
+            if (BattleSetStatusDamage(&work, unit2, part, weapon->special, i, (s8)rate, levelDiff, p1, p2)) {
                 if (i == STATUS_INVISIBLE) {
                     btlDispPoseAnime(part);
                 }
@@ -1857,11 +1853,7 @@ s32 BattleCheckDamage(BattleUnit* unit1, BattleUnit* unit2, BattleUnitPart* part
             ret = 0x12;
             if (unit2->currentKind >= 1 && unit2->currentKind < 0xd8) {
                 if (damage > 0 || statusDamage != 0) {
-#ifdef MUST_MATCH
-                    ((void (*)(s32))BattleAudience_Case_EnemyDamage)(damage);
-#else
-                    BattleAudience_Case_EnemyDamage();
-#endif
+                    BattleAudience_Case_EnemyDamage(damage);
                 }
             }
         }

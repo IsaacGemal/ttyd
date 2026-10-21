@@ -115,7 +115,7 @@ void windowReInit(void) {
 	entry[6].userdata = NULL;
 }
 
-s32 windowEntry(u16 priority) {
+s32 windowEntry(s32 priority) {
 	WindowEntry* entry;
 	int i;
 

@@ -66,12 +66,7 @@ void BattleActionCommandDeclareACResult(BattleWork* work, BattleWeapon* weapon, 
 		info->mSpAcSuccessMultiplier = ((f32)result * 0.25f) + 0.5f;
 		info->field_0x9 = weapon->field_0x19;
 		info->mBingoSlotChance = weapon->mBingoSlotChance;
-#ifdef MUST_MATCH
-		// retail passes weapon in r3 even though the callee ignores it
-		((void (*)(void*))BattleAudience_Case_ActionCommandGood)(weapon);
-#else
-		BattleAudience_Case_ActionCommandGood();
-#endif
+		BattleAudience_Case_ActionCommandGood(weapon);
 		break;
 	}
 }

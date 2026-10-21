@@ -1409,10 +1409,7 @@ s32 msgIconStr2ID(const char* str) {
 }
 
 
-// The third parameter is really s16 (the caller in evt_msg.c sign-extends it with `extsh`), but
-// windowEntry is declared u16 in windowdrv.h and defined that way in windowdrv.c, so the plain
-// call zero-extends b. Calling through the callee's real width reproduces the original's `mr r3, r5`
-// without touching the shared header/definition; the natural call is kept under #else.
+// The caller in evt_msg.c sign-extends `b` (`extsh`) before the call; here it goes to windowEntry unchanged.
 s32 msgWindow_Entry(const char* msg, s32 a, s32 b) {
 	// Declaration order steers MWCC's callee-saved allocation to the original (msg=r28, id=r27,
 	// buf=r30); the natural order lands msg in r27/buf in r27.
@@ -1422,11 +1419,7 @@ s32 msgWindow_Entry(const char* msg, s32 a, s32 b) {
 	smartEntry* smart;
 	s32 id;
 
-#ifdef MUST_MATCH
-	id = ((s32 (*)(s32))windowEntry)(b);
-#else
 	id = windowEntry(b);
-#endif
 	window = windowGetPointer(id);
 	window->main = msgWindow_Main;
 	window->delete = msgWindow_Delete;

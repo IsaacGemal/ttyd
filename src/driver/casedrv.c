@@ -273,13 +273,7 @@ void caseMain(void) {
 				*(s32*)entry2->field_0x94 = 0;
 			}
 			if (*(s32*)entry2->field_0x94 == 0) {
-#ifdef MUST_MATCH
-				/* evtEntry's header takes u8 priority; the original passes the s32
-				   field untruncated, so call through an s32 prototype. */
-				EventEntry* evt = ((EventEntry* (*)(void*, s32, s32))evtEntry)(entry2->evtCode, entry2->priority, 0x20);
-#else
 				EventEntry* evt = evtEntry(entry2->evtCode, entry2->priority, 0x20);
-#endif
 				evt->caseId = entry2->caseId;
 				*(s32*)entry2->field_0x94 = evt->eventId;
 				memcpy(evt->lwData, entry2->lwData, 0x40);

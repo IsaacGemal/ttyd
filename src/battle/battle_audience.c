@@ -4862,7 +4862,7 @@ void BattleAudience_Case_KillEnemy(void) {
 }
 
 #pragma dont_inline on
-void BattleAudience_Case_ActionCommandGood(void) {
+void BattleAudience_Case_ActionCommandGood(BattleWeapon* weapon) {
 	BattleAudience* audience = BattleAudienceBaseGetPtr();
 	s32 i;
 	s32 count = 0;
@@ -5074,7 +5074,7 @@ void BattleAudience_Case_Escape_Bad(void) {
 	BattleAudienceSoundBooing();
 }
 
-void BattleAudience_Case_EnemyDamage(void) {
+void BattleAudience_Case_EnemyDamage(s32 damage) {
 	BattleAudienceBaseGetPtr()->flags |= 0x400;
 }
 

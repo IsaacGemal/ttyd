@@ -7,7 +7,7 @@ void winMakeEquipList(WindowWork* work);
 void winBadgeMain2(WindowWork* work);
 s32 winBadgeMain(WindowWork* work);
 void mario_change(WindowWork* work, s32 badgeId);
-void winBadgeExit(void);
+void winBadgeExit(WindowWork* work);
 void winBadgeInit2(WindowWork* work);
 void winBadgeInit(WindowWork* work);
 #include "driver/camdrv.h"

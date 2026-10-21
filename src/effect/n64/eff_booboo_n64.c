@@ -813,7 +813,7 @@ void boo_polygon_2(void) {
 	GXCallDisplayList(boo_dl_2_31, 0x20);
 }
 
-EffectEntry* effBoobooN64Entry(void) {
+EffectEntry* effBoobooN64Entry(s32 type, s32 unused, f32 x, f32 y, f32 z, f32 scale) {
 	EffectEntry* effect;
 	BoobooData* data;
 	s32 i;

@@ -506,7 +506,7 @@ void pouchReceiveMail(s32 mailId);
 void pouchOpenMail(s32 mailId);
 u32 pouchCheckMail(s32 mailId);
 s32 pouchGetPartyColor(PartyId partnerId);
-void pouchSetPartyColor(PartyId partnerId, u16 color);
+void pouchSetPartyColor(PartyId partnerId, s32 color);
 void pouchSetYoshiName(char* name);
 char* pouchGetYoshiName(void);
 void pouchHiraganaToKatakana(char* src, char* dst);

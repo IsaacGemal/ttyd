@@ -735,14 +735,8 @@ void btlseqEnd(BattleWork* wp) {
                 }
             }
             if (work->effect == NULL) {
-#ifdef MUST_MATCH
-                // MUST_MATCH: source-order of the arguments is what decides which load MWCC schedules last
-                // (it emits `lfs f2` before `lha r4` here, the original's order). The prototype's register
-                // mapping is unchanged, so the natural call below still links to the same function.
-                work->effect = ((EffectEntry* (*)(s32, f32, f32, s32, s32, f32))effPointGetEntry)(0, float_0_80420c7c, float_90_80420ca0, work->stockExp, 0, float_0_80420c7c);
-#else
-                work->effect = effPointGetEntry(0, work->stockExp, 0, float_0_80420c7c, float_90_80420ca0, float_0_80420c7c);
-#endif
+                work->effect = effPointGetEntry(0, float_0_80420c7c, float_90_80420ca0, float_0_80420c7c,
+                                                work->stockExp, 0);
             }
             BattleSetSeq(wp, SEQ_END, SEQ_END_EXP_COUNT);
             break;
