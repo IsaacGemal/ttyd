@@ -55,6 +55,14 @@ typedef struct BattleActions {
 } BattleActions;
 // NB: 0x308 is as far as I can pin to this struct (0x1F98 in battleAcMain_PendulumCraneTiming, TODO?)
 
+// TimingA's action-command work area in BattleActions.field_0x2BC (BattleWork+0x1F4C); battle_event_cmd's
+// btlevtcmd_ac_timing_flag_onoff sets and clears its flags.
+typedef struct AcTimingADecWork {
+    s32 pad_0x00;   // 0x0, never accessed
+    u32 flags;      // 0x4
+    s32 endTimer;   // 0x8, frames the result display waits (0x3C)
+} AcTimingADecWork;
+
 void BattleActionCommandManagerInit(BattleWork* wp);
 void BattleActionCommandManager(BattleWork* wp);
 s32 BattleActionCommandResult(BattleWork* work);
