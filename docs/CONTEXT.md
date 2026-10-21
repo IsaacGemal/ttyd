@@ -5232,3 +5232,80 @@ colour and Vec templates (`dat_`, `vec3_`), which stay by the naming rules, so t
   passed by value, which would need its vec3 templates as anonymous .rodata (data layout). Converting every site in a
   function at once, not one at a time, is what made seq_load's loops match: a single conversion's register ripple
   can hide a form that matches when applied throughout.
+## Callee prototypes retyped so the casts at their call sites go (2026-10-21, Claude Opus 5.5, n9-q-o-proto)
+
+Task (Isaac): #1109 found that a guarded "no-op cast" at a call site is often a type mismatch. Try the untried
+lever: change the callee's prototype and definition (int/s32/u32 and the narrow types) and drop the casts at every
+caller, keeping a change only if the whole linked build stays byte-identical, callee included.
+
+- **Method.** Scratch in the untracked build/proto/. argcasts.py and retcasts.py (libclang, reusing #1106's
+  survey.py parser) list every integer cast written on a call argument (with the callee's declared parameter type)
+  and on a call's result (with its declared return type), marked guarded when the line is in a MUST_MATCH-only arm;
+  mmcasts.py lists every integer cast in a MUST_MATCH arm with its context. proto_try.py retypes a callee's return or
+  parameter in every declaration and definition, strips the recorded casts, and runs a full `ninja`
+  (build/G8MJ01/ok recreated, ~20 s); batch.sh runs and reverts a list of those. Population: 14 guarded argument
+  casts (BattleSetStatusDamage, BattleSamplingEnemy, badgeShop_get, envGlareFilter x4, sac_genki's float
+  conversions, evt_telop's GX_FALSE macro, yuu_00's irand float conversion), the unguarded argument casts that are
+  no-ops in C (a widening that the parameter narrows back, or a same-type cast), and every callee whose callers cast
+  its result the same way. The parameter side turned out small; the result side is where callers carried the
+  prototype's type.
+- **Counts** (tools/cleanup_index.py, c9183558 -> this branch): must_match **800 -> 796**; index 15.315 -> 15.310
+  per kLOC (10682 -> 10678 weighted); every other category unchanged. 166 call-site casts removed (the index
+  doesn't count them), plus 4 guarded return casts and 4 casts in callee bodies.
+- **Parameters changed:**
+  - kanjiGetWidth(u32 code), like its siblings kanjiSearch, hankakuSearch and JUTFont_CodeToGlyph: msgdrv's five
+    same-type `(u16)glyph` casts (left plain by #1106 as "a cast to the callee's parameter type") go. u16 with the
+    casts removed changes msgdrv; s32, int and u32 all match.
+  - BattleAudience_GetExist(u32 id): BattleAudience_Init's two `(u32)index` casts go (s32 without them changes the
+    unit).
+  - pouchCheckItem(s32 itemId): the u32 parameter's `s32 id = (s32)itemId` copy goes (with the return below).
+- **Returns changed** (every caller cast the result to the new type; casts removed per callee):
+  - u8, for 0/1 results cast `(u8)` by every caller: check_exe_phase_evt_status 26, BattleAudience_GetWaiting 8 (and
+    its own `(u8)` on the return), BattleAudience_CheckReaction 2, BattleAudience_CheckReactionPerPhase 1,
+    BattleBreakSlot_CheckReaction 2, unit_boss_batten_leader's battenSatelliteTo_InitInline 10 and
+    battenSatelliteTo_Main 2.
+  - u32: marioStGetSystemLevel 13 (GlobalWork.systemLevelFlags is u32 too; its 20 users are unchanged), fileAsyncf 13
+    (one was end_unknown's `(void*)... == NULL`), SoundSSCheck 4, SoundSongCheck 3, SoundEfxCheck 1, psndBGMChkSilent 1,
+    psndBGMStartCheck 1, itemStatus 2.
+  - void*: kpaChkHitobjRide, like kpaGetHitobjRide: four `(u32)... != 0` tests become `!= NULL`, mario_hit's
+    `(HitEntry*)` cast and the body's two `(s32)result` returns go.
+  - s32: pouchCheckItem 45 (one inside win_mario's link macro; its counter is s32 too), pouchCheckMail 2,
+    effTblRandN64 9 (the body already computes an s32 remainder), BattleACPadCheckRecordTrigger 6,
+    BattleInformationGetResult 3 (FieldBattleInfo.result and BattleInformationSetResult's parameter are s32 with it).
+  - s32 for the four static, uncalled krb_comp_dir copies (togekuri v1/v2, hyper, yami): the guarded no-op `return
+    (u16)mid` becomes a plain return (the zero-extension is the return conversion). s32, int and u32 match; u16 and s16
+    don't. These are the four MUST_MATCH regions removed.
+- **Tried and failed** (the full build differs):
+  - BattleSamplingEnemy's attackDirection (seven `(s32)` of an s8 field into an s8 parameter, one guarded): s8 without
+    the casts, s16, s32, int, u8, u32. The cast steers the caller's registers (`lbz r0` + `extsb r9,r0` instead of
+    `lbz r9` + `extsb r9,r9`); no prototype gives that.
+  - envGlareFilter's four coordinates as s16 (hom_00's guarded `(s16)` casts, eki_03's guarded function-pointer
+    call): the callee then sign-extends all four on entry; retail's definition is 32-bit.
+  - badgeShop_get: id as s32/int (14 `(s16)` casts), return as s32/int (winmgr case 13's guarded `(s16)` cast; case
+    11 matches plainly through the same prototype, so the prototype can't be the difference).
+  - battle_damage's guarded `(s8)rate` pair: BattleSetStatusDamage's rate as s8, _getSickStatusRate returning s8, the
+    local s8 or s32, in all six combinations.
+  - iconDispGxCol's id as u16, s32 (casts only), u32, int (countdown's two `(u16)` casts): callee or caller changes.
+  - hitGrpFlagOn/Off's flag as u16: the callee hands it to hitFlgOn(s32) and changes. hitObjFlagOn/Off as u16 match,
+    but each has one value-narrowing caller and the pair would split from the Grp pair; not applied.
+  - Returns: BattleAudience_GetExist, GetSysCtrl and GetEscapeChangeOK as u8 (their `return !(flags & m)` gains an
+    8-bit mask: `extrwi` instead of `srwi`), BtlUnit_GetWeaponCost u8, BtlUnit_GetEnemyBelong s8, hitGetAttr u32,
+    psndPushGroup u32, FontGetMessageWidth s32 (u16 is real: many plain callers), sysMsec2Frame s16.
+  - With fileAsyncf now u32: animdrv's guarded `(u32)fileId == 0` / `(u32)other == 0` with either local u32 (three
+    combinations), and seq_logo's `(u32)asyncResult` with a u32 local (both arms): still differ.
+- **Not tried, with why.** JUTFont_CodeToGlyph's ten `(s8)*str` casts change the value (fontmgr is `-char unsigned`)
+  and one caller passes a u16 code. _JUTFont_DrawPos's `(int)(s16)`/`(s32)(s16)` pairs are the documented CSE device,
+  not a prototype question. swByteSet stores the whole s32 for index 0, so mri_puni's `(u8)` casts are its callers'.
+  spline_getvalue's s32 pointer parameters: its callers keep the pointers in s32 fields and locals, so pointer
+  parameters would only move the casts. TEXGetGXTexObjFromPalette and GXSetScissor are SDK prototypes;
+  psndSFX_vol is a documented local-prototype exception. The function-pointer-cast leftovers #1091 lists (iconDispGx,
+  BtlUnit_CheckStatus, ...) were not redone.
+- **Lead.** A cast that every caller applies to a callee's result (`(u8)` on a 0/1 BOOL, `(u32)` on an `== 0` test of
+  an s32, `(s32)` on a u32 count) was the callee's declared type in the original more often than not: 21 of the 32
+  callees whose return was tried matched. The callee's own body is what refuses (an 8-bit mask on `!x`,
+  extension of narrow parameters). The same scan over single-caller casts (yuunpc_pose_check, puni_rnd, msgWindow_Entry)
+  wasn't run.
+- Verified before each commit: `ninja` recreates build/G8MJ01/ok; every game object (1,131) compiles under
+  `configure.py --non-matching`; fncast_lint and local_prototypes pass (tools/local_prototype_exceptions.json
+  unchanged: no entry went stale); tools/ci.py PASS with its tools/tests step stubbed (the 9 test_wave_launch
+  environment errors, as in the chapters above), ratchet baseline `--init`ed on the clean HEAD.
