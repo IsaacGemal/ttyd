@@ -11874,3 +11874,74 @@ time out on systemd scopes), so CI was run with that step stubbed out; every oth
   `event->userdata[0] + 0xC` (event work word), msgdrv's `window->userdata`, sac_genki's `recover_cmd_disable` (BattleWork
   offset). Open: `effRippleN64Data` in eff_ripple_n64.h is a partial copy of `EffRippleData` (rx/rz at 0x2C/0x30) and
   could be dropped for it; mri_puni's `PuniData.effect` is an `s32` that every user casts to `EffectEntry*`.
+### Readability: function-pointer casts removed by fixing prototypes (2026-10-20, Claude Opus 5.5, n9-q-o-fncast)
+
+Prototypes changed so callers call plainly; every change keeps the linked build byte-identical (build/G8MJ01/ok), every
+changed C file compiles without `-DMUST_MATCH` (and a full `--non-matching` `all_source` compile is clean),
+`tools/fncast_lint.py` and `tools/local_prototypes.py` pass. Header, definition and every caller changed together.
+
+- Counts, `tools/cleanup_index.py` on 67430c55 vs this branch: index 17.181 -> 16.718 per kLOC (12137 -> 11802
+  weighted); fn_ptr_cast 253 -> 132; must_match 1388 -> 1300; field_0x 3701 -> 3699; address_name 2690 -> 2687; the
+  rest unchanged. Calls through a cast of a named function (`((T (*)(...))name)`): 194 -> 80.
+  `tools/fncast_allowlist.json` 38 -> 4 entries (34 stale, about 15 of them already stale before this branch).
+- What MWCC showed while doing this (useful for the next prototype fix):
+  - Arguments are evaluated in the declared parameter order, so a cast that only moves the floats is a real
+    prototype fact. Where the callers' casts disagreed, one order usually still served every caller: test it by
+    rewriting all calls and building, not by reasoning.
+  - Widening: an s16 local or s16 return passed to an s16 parameter gets no `extsh`; passed to an s32 parameter it
+    does (ac_button_down, ac_stick_rotate). An s32 passed to a u16 parameter gets a `clrlwi`. An explicit `(u16)x`
+    argument to an s32 parameter is scheduled earlier than the conversion a u16 parameter does at the call
+    (evt_lect_mri, ac_lst_rc_keep), so it is not a substitute.
+  - A caller that copies a struct into a local and passes `&local` (a by-pointer cast) sometimes matches a plain
+    by-value call of the source (marioGetScreenPos), and sometimes the copy lands in another slot (winmgr's
+    GXSetFog, battle_seq's windowDispGX_Waku_col, sac_genki, mri's mapGrpSetColor).
+- New prototypes (old names kept; `unused` follows btlDispTexPlane2's existing parameter):
+  - iconDispGx(f32 scale, Vec* position, s16 flags, s32 iconId) and iconDispGxAlpha(..., s32 iconId, ...): iconDispGx
+    hands its id register to iconDispGxAlpha untouched and Alpha zero-extends it itself. battle_disp's local u16
+    prototype is gone. _get_icon_id(s8 id) returns s32; three s16 icon locals that only hold constants
+    (ac_button_down, ac_timing_wide, sac_bakugame) are s32 so the plain call stays unextended. iconDispGx2 takes a
+    u16 id (evt_window's icon local u16).
+  - btlDispTexPlane(f32 tX, f32 tY, f32 tZ, f32 sX, f32 sY, u32 id, GXColor color, s32 unused); btlDispTexPlane3 gains
+    a trailing `s32 unused`: every caller sets r5/r9 = 0 and the callees ignore it.
+  - windowDispGX_Waku_col(f32 x, f32 y, f32 width, f32 height, f32 curve, u16 gxTexMapID, GXColor color);
+    FontDrawString(f32 x, f32 y, const char* str); intpl_sub(mode, start, end, currStep, steps) (battle_sub.c defines
+    it behind `#undef`, like system.c's intplGetValue); BattleAcDrawGauge(x, y, ratio, type, count, t0, t1, t2,
+    flags); animPoseDisp_MakeExtTexture(name, animName, f1, texObj, base, f2, out0..3); nameWinGX(x, y, z, w, tex,
+    arg1); effPointGetEntry(type, x, y, z, value, wait); effRotHammerSuccessN64Entry(type, x, y, z, count, life). All
+    65 Waku_col and 76 FontDrawString calls were reordered; gor_irai fetches its second label into `name` first so
+    the string stays ahead of the 127.0f constant in .rodata.
+  - badgeShop_add(u8*, s16 id, s32); BtlIcon_Entry(u16 iconId, ...); SoundEfxSetPitch(s32, s16 pitch) with psndSFX_pit's
+    definition s16 too; evtEntry(void*, s32 priority, s32 flags) (all 196 calls unchanged); windowEntry(s32);
+    pouchSetPartyColor(PartyId, s32); pouchGetFP/pouchGetAP/pouchGetPartyHP return s32, pouchSetPartyHP/pouchAddAP
+    take s32 (the bodies are lha/sth either way); mapPreLoad(const char* map); winBadgeExit(WindowWork* work);
+    BattleAudience_Case_ActionCommandGood(BattleWeapon* weapon) (as ..._ActionCommandBad);
+    BattleAudience_Case_EnemyDamage(s32 damage); animPoseSetPaperAnim(..., BOOL unused); tri1(s32 x, s32 y, s32 z,
+    s32 unused) (as tri2); effHagetakaFlushN64Entry/effBoobooN64Entry(type, unused, x, y, z, scale) (itemdrv.h's
+    conflicting duplicate declaration removed).
+  - Plain already: intplGetValue's and BattleActionCommandGetDifficulty's casts named the declared type; the
+    forwarding helpers that held them (intplGetValueMain/FM, intpl_f, pakkun_small_intpl, ICON_DISP, GET_ICON_ID,
+    BattleAcDrawGaugeFM, tri1WithUnused, POUCH_*) are gone.
+- Left, with why (callers need different ABIs, or it is not a prototype question):
+  - iconDispGx (6): evt_win (`iconDispGxS`: flags and id converted as u16), both boss koopa units (u16 id and the
+    scale evaluated last; scale-last breaks kpa, statuswindow and battle_disp), ac_lst_rc_keep, ac_stick_keep_left and
+    ac_signal_timing's ICON_DISP_B (u16 conversion at the call). iconDispGxAlpha (4): the mri/eki/tik/usu lecture
+    units (u16 at the call; the other lecture units already declare a local u16 prototype, which is the
+    alternative).
+  - iconDispGxCol (6): battle_menu_disp's u16 `b` (a u16 parameter changes the callee); statuswindow, sac_genki and
+    both evt_yuuranking pass their own colour local by pointer. iconNumberDispGx/iconNumberDispGx3D (7) and
+    windowDispGX_Waku_col (6): the same by-pointer colour locals. winFontSet*/winIconSet (20): those units copy by
+    value where every other caller passes a pointer (the FontDrawColor situation).
+  - BtlUnit_CheckStatus (7), BtlUnit_GetStatus (6), BtlUnit_SetStatus (1): the definitions pass `type` on
+    unextended (an s8 parameter changes CheckStatus/GetStatus/CheckRecoveryStatus/SetStatus), battle_status_icon,
+    battle_disp and battle_damage sign-extend it; an explicit `(s8)type` argument schedules differently.
+  - btlDispGXQuads2D (3): the callee takes a u8 alpha (an s32 one adds clrlwi to it); battle_menu_disp passes it
+    unextended. envGlareFilter (1): s16 parameters change the callee.
+  - GXSetFog (5), GXSetChanMatColor (2): SDK prototypes, by-pointer colour. HSV2RGB (1): sac_scissor's cast returns a
+    struct. FontDrawColor (1): documented exception. moamoa_pose_change/main (2): the cast only stops inlining.
+    system.c's `mode` (1): an int used as a function pointer.
+  - Not calls (the rest of the index's fn_ptr_cast): qqsort comparator casts, `evtGetValue` results used as function
+    pointers, struct fields typed `void*` that hold callbacks.
+- tools/ edits (run with `--allow-protected`): local_prototype_exceptions.json's iconDispGx/iconDispGxAlpha reasons
+  describe the s32 definition; fncast_allowlist.json pruned. `tools/ci.py`'s tests step fails in this worktree
+  (test_wave_launch timeouts, no pyelftools for system python), unrelated to the source; every other ci.py step was run
+  and passed before each commit (tests skipped, under `uv run --with pyelftools`).
