@@ -1354,9 +1354,6 @@ USER_FUNC(_save_param) {
     return EVT_RETURN_DONE;
 }
 
-// Copy propagation off: with it on, _anime_load and _anime_load_wait both
-// allocate the BattleGetUnitPtr scratch register differently from the target.
-#pragma opt_propagation off
 static USER_FUNC(_anime_load) {
     BattleWork* work = _battleWorkPointer;
     BattleUnit* unit;
@@ -1364,7 +1361,7 @@ static USER_FUNC(_anime_load) {
     s32 id;
     s32 partyId;
 
-    id = evtGetValue(event, args[0]);
+    id = evtGetValue(event, *args++);
     unit = BattleGetUnitPtr(work, BattleTransID(event, id));
     switch (unit->currentKind) {
         case UNIT_GOOMBELLA_CHAPTER4:
@@ -1392,7 +1389,7 @@ static USER_FUNC(_anime_load_wait) {
     s32 id;
     s32 partyId;
 
-    id = evtGetValue(event, args[0]);
+    id = evtGetValue(event, *args++);
     unit = BattleGetUnitPtr(work, BattleTransID(event, id));
     switch (unit->currentKind) {
         case UNIT_GOOMBELLA_CHAPTER4:
@@ -1414,7 +1411,6 @@ static USER_FUNC(_anime_load_wait) {
     }
     return EVT_RETURN_BLOCK;
 }
-#pragma opt_propagation on
 
 EVT_BEGIN(party_change_event)
     ADD(GW(18), 1)

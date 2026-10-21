@@ -181,18 +181,6 @@ void effOpukuJetwMain(EffectEntry* effect) {
     }
 }
 
-// The frame size (0x180), the Mtx slots (work/rot/scale/trans at
-// 0x40/0x70/0xa0/0xd0), the switch layout, the loop's `rowOffset += columns, j++` bottom test and the
-// three GXColor call slots (0x18/0x1c, 0x10/0x14, 0x8/0xc) all match, as does every other
-// callee-saved value including the `.data` section base (r20). The one remaining difference is the
-// colouring of `rowOffset` and `colPtr`: the target keeps `rowOffset` in r19 and gives the cam
-// register r15, once cam is dead, to the shared col*10/`colPtr` web; this source does the reverse.
-// Moving either declaration (individually or together), changing their types (u32/s16/void*/s32),
-// splitting `colPtr`/`ptr`/`rowOffset` into per-block or inner-scope copies, reordering the loop
-// statements and comparisons, and opt_lifetimes / opt_propagation / opt_common_subs /
-// opt_dead_assignments / optimize_for_size / peephole / global_optimizer / pool_data pragmas were all
-// tried; each gives the same swap or worse. All candidate compilers (GC/1.3..GC/2.7) generate
-// identical code; GC/3.0 is worse. This is a permuter colouring tie.
 // Building each TEV colour and calling GXSetTevColor inside one inline makes mwcc allocate the
 // colour's build slot and its by-value argument copy together, matching the original's slots.
 static inline void effOpukuJetwSetTev1(effOpukuJetwData* data, s32 alpha) {
@@ -222,33 +210,18 @@ static inline void effOpukuJetwSetTev0b(s32 red, s32 green, s32 blue, s32 alpha)
     GXSetTevColor(GX_TEVREG0, color);
 }
 
-#pragma opt_strength_reduction off // without it MWCC strength-reduces the rowPtr induction and hoists columns*10
-#pragma opt_loop_invariants off // without it the hoisted col*10/rowPtr live across calls and spill half/rowOffset
-// The original's loop shapes: a running counterCurrent (the target computes counter + i*2 once and steps
-// it by 2), rowPtr = &table[rowOffset] built before the two `continue` tests, one col*10 byte offset
-// shared by ptr = rowPtr + colOffset and colPtr = table + colOffset, and the second test as
-// `columns - 1 - col > lifetime` off the cached local. With plain -O4 MWCC strength-reduces the rowPtr
-// induction and hoists columns*10; these two pragmas stop that.
-// The Mtx declarations keep `scale` before `rot` so the two temporaries land in the original's 0x70/0xa0
-// slots (the allocator places Mtx locals in reverse declaration order), the field assignments load
-// alpha before the other colours as the original does, `dat_ry[(j + i) & 7]` gives the original's
-// operand order in the run-angle sum, and `for (j = 0, rowOffset = 0; ...)` gives its loop-init order.
-// `rowOffset` is declared first and `colOffset` after `colPtr`: with the shared `&table[col]` CSE temp
-// MWCC colours that temp above `rowOffset` (col*10/colPtr in r19, rowOffset in r15); naming the byte
-// offset makes it a local ranked after `colPtr`, which frees r19 for `rowOffset` and puts colPtr in r15.
-// The rest of the declaration order holds the callee-saved GPR map (rowOffset r19, counterCurrent r18,
-// threshold r17, ptr r16, colPtr r15, col r21, table r22, rows r23, columns r24, blue r25,
-// green r26, red r27, alpha r28, i r29, j r30, lifetime r31; counter reuses r14).
+// The column index is computed inside the row loop: MWCC's loop-invariant motion moves the modulo out to
+// the column loop but leaves col*10, `columns - 1 - col` and the `table[col]` address in the row loop,
+// as the original has them, and strength reduction turns `counter + i * 2` and `j * columns` into
+// running sums. The Mtx declarations keep `scale` before `rot` so the two temporaries land in the
+// original's 0x70/0xa0 slots (the allocator places Mtx locals in reverse declaration order), the field
+// assignments load alpha before the other colours as the original does, and `dat_ry[(j + i) & 7]`
+// gives the original's operand order in the run-angle sum. The declaration order holds the callee-saved
+// GPR map.
 void effOpukuJetwDisp(CameraId camId, void* param) {
-    s32 rowOffset;
     s32 counter;
-    s32 counterCurrent;
-    s32 threshold;
     CameraEntry* cam;
-    effOpukuJetwPoint* ptr;
     EffectEntry* effect;
-    effOpukuJetwPoint* colPtr;
-    s32 colOffset;
     s32 lifetime;
     Mtx trans;
     s32 j;
@@ -263,7 +236,6 @@ void effOpukuJetwDisp(CameraId camId, void* param) {
     s32 rows;
     effOpukuJetwData* data;
     effOpukuJetwPoint* table;
-    s32 half;
     s32 col;
     Mtx work;
     GXTexObj texObj;
@@ -328,37 +300,28 @@ void effOpukuJetwDisp(CameraId camId, void* param) {
         tri2(0, 1, 2, 0, 0, 2, 3, 0);
     }
 
-    threshold = counter * 5;
-    half = columns / 2;
-    counterCurrent = counter;
-    for (i = 0; i < half; i++) {
-        col = counterCurrent % columns;
-        for (j = 0, rowOffset = 0; j < rows; rowOffset += columns, j++) {
-            effOpukuJetwPoint* rowPtr = &table[rowOffset];
-            if (col > threshold) {
+    for (i = 0; i < columns / 2; i++) {
+        for (j = 0; j < rows; j++) {
+            effOpukuJetwPoint* rowPtr = &table[j * columns];
+            col = (counter + i * 2) % columns;
+            if (col > counter * 5) {
                 continue;
             }
             if (columns - 1 - col > lifetime) {
                 continue;
             }
-            colOffset = col * 10;
-            ptr = (effOpukuJetwPoint*)((u8*)rowPtr + colOffset);
-            PSMTXTrans(trans, (f32)ptr->posX, 10.f + (f32)ptr->posY, 0.0f);
-            colPtr = (effOpukuJetwPoint*)((u8*)table + colOffset);
-            PSMTXScale(scale, (f32)colPtr->scaleX * 0.01f, (f32)colPtr->scaleY * 0.01f, 1.0f);
+            PSMTXTrans(trans, (f32)rowPtr[col].posX, 10.f + (f32)rowPtr[col].posY, 0.0f);
+            PSMTXScale(scale, (f32)table[col].scaleX * 0.01f, (f32)table[col].scaleY * 0.01f, 1.0f);
             PSMTXConcat(trans, scale, trans);
-            PSMTXRotRad(rot, 'z', 0.017453292f * ((f32)ptr->rot + (f32)dat_ry[(j + i) & 7]));
+            PSMTXRotRad(rot, 'z', 0.017453292f * ((f32)rowPtr[col].rot + (f32)dat_ry[(j + i) & 7]));
             PSMTXConcat(trans, rot, trans);
             PSMTXConcat(work, trans, trans);
             GXLoadPosMtxImm(trans, 0);
             GXSetCurrentMtx(0);
-            effOpukuJetwSetTev0b(red, green, blue, (alpha * colPtr->alphaScale) >> 8);
+            effOpukuJetwSetTev0b(red, green, blue, (alpha * table[col].alphaScale) >> 8);
             effSetVtxDescN64((effVtxArray*)size16x16_tex32x32_vtx);
             GXBegin(GX_TRIANGLES, GX_VTXFMT0, 6);
             tri2(0, 1, 2, 0, 0, 2, 3, 0);
         }
-        counterCurrent += 2;
     }
 }
-#pragma opt_strength_reduction reset
-#pragma opt_loop_invariants reset

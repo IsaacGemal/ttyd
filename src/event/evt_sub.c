@@ -296,31 +296,25 @@ USER_FUNC(evt_sub_spline_get_value) {
 }
 
 
-// `#pragma opt_propagation off`: with propagation on, the int->float conversion of `t`
-// is folded into each use and the fp register allocation no longer matches.
-#pragma opt_propagation off
 USER_FUNC(evt_sub_spline_get_value_manual) {
 	s32* args = event->args;
 	SplineWork* work = (SplineWork*)event->lwData[15];
-	s32 t = evtGetValue(event, args[0]);
-	f32 f2 = (f32)t;
-	f32 f0;
-	f32 f1;
+	f32 frame = evtGetValue(event, args[0]);
+	f32 t;
 	f32 out[3];
 
 	if (work->timeBased != 0) {
-		f0 = (f32)work->endTime;
+		t = work->endTime;
 	} else {
-		f0 = (f32)work->steps;
+		t = work->steps;
 	}
-	f1 = f2 / f0;
-	spline_getvalue(out, work->type, work->points, work->knots, work->tangents, f1);
+	t = frame / t;
+	spline_getvalue(out, work->type, work->points, work->knots, work->tangents, t);
 	evtSetValue(event, args[1], (s32)(1024.0f * out[0]) + 0xF24A7A80);
 	evtSetValue(event, args[2], (s32)(1024.0f * out[1]) + 0xF24A7A80);
 	evtSetValue(event, args[3], (s32)(1024.0f * out[2]) + 0xF24A7A80);
 	return EVT_RETURN_DONE;
 }
-#pragma opt_propagation reset
 
 
 USER_FUNC(evt_sub_spline_free) {

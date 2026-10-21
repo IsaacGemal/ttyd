@@ -15,17 +15,9 @@
 // MarioWork.field_0x260: EffectEntry* of the balloon effect. field_0x264: NpcEntry* the balloon is attached to.
 // Both are stored as u32.
 
-// opt_propagation off: keeps the 0 in r31 across the marioGetPtr call, as the original does,
-// instead of rematerialising it after the call.
-#pragma opt_propagation off
 void marioBaloonInit(void) {
-    MarioWork* mario;
-    u32 zero = 0;
-
-    mario = marioGetPtr();
-    mario->field_0x260 = zero;
+    marioGetPtr()->field_0x260 = 0;
 }
-#pragma opt_propagation reset
 
 void marioBalloonOn(s32 type) {
     MarioWork* mario = marioGetPtr();

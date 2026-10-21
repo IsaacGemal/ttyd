@@ -72,9 +72,8 @@ EffectEntry* effRippleN64Entry(s32 type, f32 x, f32 y, f32 z, f32 scale) {
 #pragma dont_inline reset
 
 
-// Retail keeps `timer--` before `age++` and colours `effect`/`timer`/`type` r28/r30/r29.
-// At -O4,p mwcc coalesces the two read-modify-writes the other way round and gives `effect` r30; at
-// -O2 it emits the retail order and colours with the same 0x50 frame. `position` is built from the
+// Retail colours `effect`/`timer`/`type` r28/r30/r29. At -O4,p the backend's second copy-propagation
+// round drops the copy of effRippleN64Entry's result and `effect` gets r30; -O2 keeps it, with the same 0x50 frame. `position` is built from the
 // .rodata zero vector (`vec3_802fb520`, defined above); the direct field writes
 // put the zero-vector load before the callee-save stores, as retail does.
 #pragma push

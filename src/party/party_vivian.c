@@ -161,8 +161,6 @@ s32 N_vivianDisplayTailCheck(PartyEntry* party) {
     return 1;
 }
 
-// opt_common_subs off: needed for the target FPR colouring (field_B8.x in f1, the 0.1 constant in f6).
-#pragma opt_common_subs off
 // 240 B
 void vivianShadow(PartyEntry* party) {
     if (party != NULL && party->currentMemberId == PARTY_MEMBER_VIVIAN) {
@@ -172,9 +170,9 @@ void vivianShadow(PartyEntry* party) {
         f32 mx = 0.1f * dx;
         f32 my = 0.1f * dy;
         f32 mz = 0.1f * dz;
-        party->field_B8.x = party->field_B8.x + mx;
-        party->field_B8.y = party->field_B8.y + my;
-        party->field_B8.z = party->field_B8.z + mz;
+        party->field_B8.x += mx;
+        party->field_B8.y += my;
+        party->field_B8.z += mz;
         if (distABf(party->position.x, party->position.z, party->field_B8.x, party->field_B8.z) >= 22.0f) {
             party->field_B8 = party->position;
             movePos(&party->field_B8.x, &party->field_B8.z, 22.0f, angleABf(party->position.x, party->position.z, party->field_B8.x, party->field_B8.z));
@@ -182,8 +180,6 @@ void vivianShadow(PartyEntry* party) {
     }
 }
 
-// opt_common_subs off: needed for the target FPR colouring (field_B8.x in f1, the 0.1 constant in f6).
-// Without it the first loads and the constant land one register off.
 // 280 B
 void vivian_move(PartyEntry* party) {
     if (party->field_8 & 0x8) {
@@ -201,16 +197,15 @@ void vivian_move(PartyEntry* party) {
         mx = 0.1f * dx;
         my = 0.1f * dy;
         mz = 0.1f * dz;
-        party->field_B8.x = party->field_B8.x + mx;
-        party->field_B8.y = party->field_B8.y + my;
-        party->field_B8.z = party->field_B8.z + mz;
+        party->field_B8.x += mx;
+        party->field_B8.y += my;
+        party->field_B8.z += mz;
         if (distABf(party->position.x, party->position.z, party->field_B8.x, party->field_B8.z) >= 22.0f) {
             party->field_B8 = party->position;
             movePos(&party->field_B8.x, &party->field_B8.z, 22.0f, angleABf(party->position.x, party->position.z, party->field_B8.x, party->field_B8.z));
         }
     }
 }
-#pragma opt_common_subs reset
 
 static inline void vivianUseStep(PartyEntry* party) {
     MarioWork* mario = party->playerPtr;

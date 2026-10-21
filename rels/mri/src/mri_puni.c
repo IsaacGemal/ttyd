@@ -7413,14 +7413,6 @@ USER_FUNC(evt_puni_move_position2) {
     }
 }
 
-// Match-only shaping: retail computes the unsigned divide into r4, compares it signed and copies it to r28
-// before the intplGetValue calls. With the natural `s32 elapsed = ...; if (elapsed < duration)` MWCC folds
-// the comparison into the same callee-saved register (r28), so the `mr r28, r4` never appears. Writing the
-// divide in the condition and again in the branch, with `opt_common_subs off`, reproduces retail's r4 + copy.
-// The duplicate divide is value-numbered away, so the object still emits exactly one elapsed `divwu`.
-#ifdef MUST_MATCH
-#pragma opt_common_subs off // keep the elapsed divide out of the common-subexpression pass (see above)
-#endif
 USER_FUNC(evt_puni_jump_position) {
     s32* args = event->args;
     PuniData* punidat = &Punidat[evtGetValue(event, args[0])];
@@ -7429,9 +7421,7 @@ USER_FUNC(evt_puni_jump_position) {
     f32 tz = evtGetValue(event, args[3]);
     s32 duration = evtGetValue(event, args[4]);
     f32 g = evtGetValue(event, args[5]);
-#ifndef MUST_MATCH
-    s32 elapsed;
-#endif
+    int elapsed;
 
     if (isFirstCall) {
         f32 a = -4.0f * g;
@@ -7442,20 +7432,6 @@ USER_FUNC(evt_puni_jump_position) {
         punidat->vertVel = (ty - punidat->accel.y) - punidat->height;
         psndSFXOn_3D("SFX_STG2_PUNI_JUMP1", &punidat->pos);
     }
-#ifdef MUST_MATCH
-    if ((s32)(((u32)gp->renderTime - (u32)punidat->modeStartTime) / ((__OSBusClock / 4) / 1000)) < duration) {
-        s32 elapsed = (s32)(((u32)gp->renderTime - (u32)punidat->modeStartTime) / ((__OSBusClock / 4) / 1000));
-        f32 ratio = (f32)elapsed / (f32)duration;
-
-        punidat->pos.x =
-            intplGetValue(0, elapsed, duration, punidat->accel.x, tx);
-        punidat->pos.z =
-            intplGetValue(0, elapsed, duration, punidat->accel.z, tz);
-        punidat->pos.y =
-            ratio * (punidat->height * ratio + punidat->vertVel) + punidat->accel.y;
-        return EVT_RETURN_BLOCK;
-    }
-#else
     elapsed = ((u32)gp->renderTime - (u32)punidat->modeStartTime) / ((__OSBusClock / 4) / 1000);
     if (elapsed < duration) {
         f32 ratio = (f32)elapsed / (f32)duration;
@@ -7468,16 +7444,12 @@ USER_FUNC(evt_puni_jump_position) {
             ratio * (punidat->height * ratio + punidat->vertVel) + punidat->accel.y;
         return EVT_RETURN_BLOCK;
     }
-#endif
     punidat->pos.x = tx;
     punidat->pos.y = ty;
     punidat->pos.z = tz;
     return EVT_RETURN_DONE;
 }
 
-#ifdef MUST_MATCH
-#pragma opt_common_subs reset
-#endif
 
 USER_FUNC(evt_puni_get_mode) {
     s32* args = event->args;

@@ -3879,23 +3879,6 @@ void BattleAudienceJoyEnding(void) {
 	BattleAudienceJoy(3);
 }
 
-// The third bound's `(a + b) + c` must keep its operands in that order; written
-// directly MWCC commutes the final add to `c + (a + b)`. The inlined add leaves the tree alone.
-static inline s32 BattleAudienceJoyAdd2(s32 x, s32 y) {
-	return x + y;
-}
-
-#pragma opt_loop_invariants off // needed: keep a,b,c,d live and recompute the branch bounds each iteration
-#pragma opt_propagation off // needed: keep `sum = b + c;` and `sum = a + sum;` separate so the second add keeps `a` first
-#pragma opt_lifetimes off // needed: let the two sum adds share one register instead of materialising a temp
-
-// The frame, prologue and every call match. The third branch bound's commuted `add` is fixed by
-// routing it through the inlined BattleAudienceJoyAdd2 helper above. The loop-invariant sum is
-// `sum = b + c; sum = a + sum;` under opt_propagation/opt_lifetimes off: propagation would fold the
-// first assignment into the second and reassociate the 3-term sum, while lifetimes on would give the
-// `b + c` result its own short-lived web instead of reusing the loop value's register (r29).
-// The declaration order member/i/sum is load-bearing: MWCC colours the callee-saved locals in
-// declaration order (member r31, i r30, sum r29); any other order rotates them.
 #pragma dont_inline on
 void BattleAudienceJoy_Sub(s32 a, s32 b, s32 c, s32 d) {
 	BattleAudienceMember* member;
@@ -3903,9 +3886,9 @@ void BattleAudienceJoy_Sub(s32 a, s32 b, s32 c, s32 d) {
 	s32 sum;
 	BattleAudience* audience;
 	s32 r;
+	s32 limit;
 	audience = BattleAudienceBaseGetPtr();
-	sum = b + c;
-	sum = a + sum;
+	sum = a + b + c;
 	i = 0;
 	member = BattleAudienceGetPtr(0);
 	for (; i < 200; i++, member++) {
@@ -3921,7 +3904,8 @@ void BattleAudienceJoy_Sub(s32 a, s32 b, s32 c, s32 d) {
 			}
 			else {
 				r = irand(sum);
-				if (r < a) {
+				limit = a;
+				if (r < limit) {
 					BattleAudience_ChangeStatus(i, 4);
 					if (d == 3) {
 						member->field_0xC = 3.0f;
@@ -3930,19 +3914,22 @@ void BattleAudienceJoy_Sub(s32 a, s32 b, s32 c, s32 d) {
 						member->field_0xC = 2.0f;
 					}
 				}
-				else if (r < a + b) {
-					BattleAudience_ChangeStatus(i, 5);
-				}
-				else if (r < BattleAudienceJoyAdd2(a + b, c)) {
-					BattleAudience_ChangeStatus(i, 6);
+				else {
+					limit += b;
+					if (r < limit) {
+						BattleAudience_ChangeStatus(i, 5);
+					}
+					else {
+						limit += c;
+						if (r < limit) {
+							BattleAudience_ChangeStatus(i, 6);
+						}
+					}
 				}
 			}
 		}
 	}
 }
-#pragma opt_lifetimes reset
-#pragma opt_propagation reset
-#pragma opt_loop_invariants reset
 
 s32 BattleAudienceDetectPakkunEatTargetSub2(s32 a, s32 b) {
 	s32 no;

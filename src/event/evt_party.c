@@ -428,15 +428,10 @@ USER_FUNC(evt_party_move_pos) {
     return 0;
 }
 
-// `#pragma opt_propagation off`: with propagation on MWCC folds the two `(f32)gp->framerate`
-// conversions into one and the int->float constant lands in f5 instead of f4 (same pragma as
-// evt_sub_spline_get_value_manual).
-#pragma opt_propagation off
 USER_FUNC(evt_party_move_pos2) {
     PartyEntry* party;
     s32* args = event->args;
-    f32 x, z, len, dist, spd;
-    s32 frames;
+    f32 x, z, speed, dist, frames;
     u8 breed;
 
     if (isFirstCall) {
@@ -455,26 +450,18 @@ USER_FUNC(evt_party_move_pos2) {
         event->userdata[2] = 1;
         x = evtGetFloat(event, args[1]);
         z = evtGetFloat(event, args[2]);
-        len = evtGetFloat(event, args[3]);
+        speed = evtGetFloat(event, args[3]);
         dist = distABf(party->position.x, party->position.z, x, z);
         party->dir = angleABf(party->position.x, party->position.z, x, z);
-        // The frames product is converted to s32 after `spd` is computed, not in the one expression: that
-        // places the int->float temp at 0x10 and the fctiwz slot at 0x18; the single-expression form swaps
-        // the two slots.
-        {
-            f32 fr = (f32)gp->framerate * (dist / len);
-            spd = len / (f32)gp->framerate;
-            frames = (s32)fr;
-        }
-        partySetForceMove(party, frames, party->dir, spd);
+        frames = (f32)gp->framerate * (dist / speed);
+        speed = speed / (f32)gp->framerate;
+        partySetForceMove(party, frames, party->dir, speed);
     }
     if (party->field_28 == 0) {
         return EVT_RETURN_DONE;
     }
     return 0;
 }
-
-#pragma opt_propagation reset
 
 USER_FUNC(evt_party_wait_landon) {
     s32* args = event->args;

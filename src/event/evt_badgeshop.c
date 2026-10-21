@@ -525,10 +525,9 @@ USER_FUNC(evt_badgeShop_starmaniac_dec) {
 	return EVT_RETURN_DONE;
 }
 
-#pragma opt_common_subs off // without it the GSW(118+i) index is CSE'd and the target's fresh evtSetValue index is lost
 USER_FUNC(evt_badgeShop_bottakuru_dec) {
 	s32 value;
-	int i;
+	s32 i;
 
 	value = evtGetValue(event, *event->args);
 	badgeShop_add(bdsw->bottakuru_table, value, -1);
@@ -539,7 +538,6 @@ USER_FUNC(evt_badgeShop_bottakuru_dec) {
 	}
 	return EVT_RETURN_DONE;
 }
-#pragma opt_common_subs on
 
 USER_FUNC(evt_badgeShop_throw_get_kind_cnt) {
 	s16 badge;

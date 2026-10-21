@@ -1143,14 +1143,13 @@ USER_FUNC(evt_npc_homing_target) {
 
     return EVT_RETURN_BLOCK;
 }
-#pragma opt_propagation off // needed: without it _intplGetFloat 98.29%
 
-// The file's MWCC keeps `1.0f - tt` live in f31 and hoists it across the cos() calls in cases
-// 7/8/10; the original keeps `tt` in f31 and computes `1.0f - tt` after the call. Cases 4/5/6 use
-// an explicit `f32 a = 1.0f - tt;` temporary, which lets MWCC fuse the final multiply into fnmsubs
+// The file's MWCC keeps `1.0f - t` live in f31 and hoists it across the cos() calls in cases
+// 7/8/10; the original keeps `t` in f31 and computes `1.0f - t` after the call. Cases 4/5/6 use
+// an explicit `f32 a = 1.0f - t;` temporary, which lets MWCC fuse the final multiply into fnmsubs
 // and matches those cases. Case 7/8 use `f32 v = a * (a * c); return 1.0f - v;` to keep the two
-// separate fmuls. `#pragma opt_propagation off` is needed for the clamp: with propagation on MWCC
-// forwards `tt` to `t` and emits `fcmpo f1` (the original compares the copy in f31). Case 11 must
+// separate fmuls. The clamp assigns the parameter itself: with a `tt = t` copy MWCC compares the
+// incoming f1, not the f31 copy the original compares. Case 11 must
 // be written as `(...) / 2.0f` (not `* 0.5f`): the divide-by-two becomes the original's
 // `fmuls f1, f1, f0`, while `* 0.5f` makes MWCC emit the operands the other way round.
 // dont_inline keeps this out of the other functions in the file; the original calls it with a
@@ -1160,58 +1159,56 @@ USER_FUNC(evt_npc_homing_target) {
 // case 12 emit `frsp f0, f1; fmr f1, f0` (the cast temp lands in f0 and the long-lived result
 // in f1) instead of the coalesced `frsp f1, f1`. The per-case `break` + shared return still
 // compiles to the same per-case `b epilogue` and default `lfs f1, 0.0` as the original.
-// keep tt in f31 for the clamp compare
 f32 _intplGetFloat(s32 type, f32 t) {
-    f32 tt = t;
     f32 result;
-    if (tt > 1.0f) {
-        tt = 1.0f;
+    if (t > 1.0f) {
+        t = 1.0f;
     }
     switch (type) {
         case 0:
-            result = tt;
+            result = t;
             break;
         case 1:
-            result = tt * tt;
+            result = t * t;
             break;
         case 2:
-            result = tt * tt * tt;
+            result = t * t * t;
             break;
         case 3:
-            result = tt * tt * tt * tt;
+            result = t * t * t * t;
             break;
         case 7: {
-            f32 c = (f32)cos(4.0f * (tt / 3.1415927f));
-            f32 a = 1.0f - tt;
+            f32 c = (f32)cos(4.0f * (t / 3.1415927f));
+            f32 a = 1.0f - t;
             f32 v = a * (a * c);
             result = 1.0f - v;
             break;
         }
         case 8: {
-            f32 c = (f32)cos(4.0f * (tt * tt / 3.1415927f) / 15.0f);
-            f32 a = 1.0f - tt;
+            f32 c = (f32)cos(4.0f * (t * t / 3.1415927f) / 15.0f);
+            f32 a = 1.0f - t;
             f32 v = a * (a * c);
             result = 1.0f - v;
             break;
         }
         case 4: {
-            f32 a = 1.0f - tt;
+            f32 a = 1.0f - t;
             result = 1.0f - a * a;
             break;
         }
         case 5: {
-            f32 a = 1.0f - tt;
+            f32 a = 1.0f - t;
             result = 1.0f - a * (a * a);
             break;
         }
         case 6: {
-            f32 a = 1.0f - tt;
+            f32 a = 1.0f - t;
             result = 1.0f - a * (a * (a * a));
             break;
         }
         case 10: {
-            f32 c = (f32)cos(4.0f * (tt * tt / 3.1415927f) / 40.0f);
-            f32 a = 1.0f - tt;
+            f32 c = (f32)cos(4.0f * (t * t / 3.1415927f) / 40.0f);
+            f32 a = 1.0f - t;
             f32 v = a * (a * c);
             if (v < 0.0f) {
                 v = -v;
@@ -1220,15 +1217,15 @@ f32 _intplGetFloat(s32 type, f32 t) {
             break;
         }
         case 11:
-            result = (1.0f - (f32)cos(3.1415927f * tt)) / 2.0f;
+            result = (1.0f - (f32)cos(3.1415927f * t)) / 2.0f;
             break;
         case 12: {
-            f32 temp = (f32)sin(1.5707964f * tt);
+            f32 temp = (f32)sin(1.5707964f * t);
             result = temp;
             break;
         }
         case 13:
-            result = 1.0f - (f32)cos(1.5707964f * tt);
+            result = 1.0f - (f32)cos(1.5707964f * t);
             break;
         default:
             result = 0.0f;
@@ -1236,7 +1233,6 @@ f32 _intplGetFloat(s32 type, f32 t) {
     }
     return result;
 }
-#pragma opt_propagation reset
 
 USER_FUNC(evt_npc_set_ry) {
     s32* args = event->args;

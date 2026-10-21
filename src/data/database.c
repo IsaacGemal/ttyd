@@ -239,7 +239,6 @@ static inline MapAttrData* findMapAttr(const char* name) {
     return p;
 }
 
-#pragma opt_lifetimes off // with the default live-range splitting the callee-saved colours come out swapped
 // The declaration order below gives the original's callee-saved colours: flag in r27 and npcIndex in r26
 // (the natural order splits their live ranges the other way).
 void setupDataBase(const char* areaName, const char* mapName) {
@@ -256,6 +255,7 @@ void setupDataBase(const char* areaName, const char* mapName) {
     AreaData* area;
     char* deadMap;
     s32 j;
+    s32 battleInfoId;
     MapAttrData* attr2;
     NpcAiInfo* ai;
     char name[64];
@@ -381,12 +381,12 @@ no_ai:
         npc->footstepStride = tribe->footstepStride;
         npc->footstepToggle = 1;
         npc->footstepAccum = float_0_8041a6c4;
-        j = -1;
+        battleInfoId = -1;
         area = areaDataPtr(areaName);
         if (strcmp(btlSetupNo, "BTLNO_INVALID") != 0) {
-            j = dbGetDefData(area->field_C, btlSetupNo);
+            battleInfoId = dbGetDefData(area->field_C, btlSetupNo);
         }
-        npcSetBattleInfo(npc, j);
+        npcSetBattleInfo(npc, battleInfoId);
         if (tribe->stayAnim) {
             strcpy(npc->stayAnim, tribe->stayAnim);
         }
@@ -400,7 +400,6 @@ no_ai:
     }
     parsePop();
 }
-#pragma opt_lifetimes reset
 // clang-format on
 
 // The original keeps these four .sdata2 words as named symbols; see config/G8MJ01/symbols.txt.

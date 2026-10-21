@@ -334,7 +334,6 @@ USER_FUNC(evt_item_set_alpha) {
 }
 
 
-#pragma opt_propagation off // needed: without it evt_item_move_3d_position 99.85%
 USER_FUNC(evt_item_move_3d_position) {
 	s32* args = event->args;
 	s32 name = evtGetValue(event, args[0]);
@@ -368,7 +367,7 @@ USER_FUNC(evt_item_move_3d_position) {
 	return EVT_RETURN_DONE;
 }
 
-// `opt_propagation off` is needed: without it evt_item_get_important_item 80.00%
+#pragma opt_propagation off // needed by evt_item_get_important_item: keeps the sin/cos approximation constants in registers
 #pragma opt_lifetimes off // needed: without it evt_item_get_important_item 96.10%
 USER_FUNC(evt_item_get_important_item) {
 	s32* args = event->args;

@@ -392,60 +392,51 @@ void zubastar_bunkatu(Vec* a, Vec* b) {
 }
 
 // .text:0x1990 | 0x8022FF20 | size: 0x100
-// Keep the intersection helper out of line and its select results in separate registers.
+// Keep the intersection helper out of line.
 #pragma dont_inline on
-#pragma opt_lifetimes off // keep the select results and the ct temp in f9/f10/f11/f3
-#pragma opt_propagation off // ditto for the rest of the float web
 s32 zubastar_get_kouten(f32 f1, f32 f2, f32 f3, f32 f4, f32 f5, f32 f6, f32 f7, f32 f8, f32* out1,
                         f32* out2) {
-    f32 a = f3 - f1;
-    f32 b;
-    f32 c;
-    f32 d;
-    f32 e;
-    f32 f;
+    f32 dx1 = f3 - f1;
+    f32 dx2;
+    f32 det;
+    f32 w1;
+    f32 w2;
+    f32 slope1;
+    f32 slope2;
+    f32 t;
 
-    if (a == 0.0f && f7 - f5 == 0.0f) {
+    if (dx1 == 0.0f && f7 - f5 == 0.0f) {
         return 0;
     }
-    b = (a != 0.0f) ? a : 0.00001f;
-    {
-        // Named temps: MWCC keeps the differences in f3 and the selected results in their own
-        // registers with a copy, like the original (see the comment above the function).
-        f32 ct = f7 - f5;
-        f32 c2 = (ct != 0.0f) ? ct : 0.00001f;
-
-        c = c2;
-    }
-    {
-        f32 dt = f4 - f2;
-
-        d = dt;
-    }
-    e = f8 - f6;
-    f = d / b;
-    b = e / c;
-    d = f - b;
-    if (d == 0.0f) {
-        return 0;
-    }
-    *out1 = ((f6 - f2) + (f * f1 - b * f5)) / d;
-    if (a != 0.0f) {
-        *out2 = f * (*out1 - f1) + f2;
+    if (dx1 != 0.0f) {
+        w1 = dx1;
     } else {
-        *out2 = b * (*out1 - f5) + f6;
+        w1 = 0.00001f;
     }
-    {
-        f32 sl = (*out1 - f5) / c;
-
-        if (sl >= 0.0f && sl <= 1.0f) {
-            return 1;
-        }
+    dx2 = f7 - f5;
+    if (dx2 != 0.0f) {
+        w2 = dx2;
+    } else {
+        w2 = 0.00001f;
+    }
+    slope1 = (f4 - f2) / w1;
+    slope2 = (f8 - f6) / w2;
+    det = slope1 - slope2;
+    if (det == 0.0f) {
+        return 0;
+    }
+    *out1 = ((f6 - f2) + (slope1 * f1 - slope2 * f5)) / det;
+    if (dx1 != 0.0f) {
+        *out2 = slope1 * (*out1 - f1) + f2;
+    } else {
+        *out2 = slope2 * (*out1 - f5) + f6;
+    }
+    t = (*out1 - f5) / w2;
+    if (t >= 0.0f && t <= 1.0f) {
+        return 1;
     }
     return 0;
 }
-#pragma opt_lifetimes reset
-#pragma opt_propagation reset
 #pragma dont_inline reset
 
 // MUST_MATCH: MWCC emits the original's inline 6-iteration copy loop only when `points` is copied

@@ -459,7 +459,6 @@ const char* BattleGetRankNameLabel(s32 level) {
 // Data tables in this unit's .data, reached as offsets from its first object,
 // and the string bank in .rodata reached from its first string.
 
-#pragma opt_common_subs off // without it MWCC re-associates the BattleInformation flag masks and the callee-saved map drifts further
 #pragma opt_lifetimes off // the target keeps unit/party/setup in the registers the default lifetime pass moves; also drops the two `mr rN, r0` moves
 void btlseqEnd(BattleWork* wp) {
     BattleSeqEndWork* work;
@@ -950,15 +949,12 @@ void btlseqEnd(BattleWork* wp) {
             su = wp->fbatInfo->setup;
             uu = BattleGetMarioPtr(wp);
             party = BattleGetPartyPtr(wp);
-            {
-                u32 sf = (u32)uu->mStatusFlags;
-
-                if ((sf & kStatusDanger) || (sf & kStatusPeril)) {
+            if ((uu->mStatusFlags & kStatusDanger) || (uu->mStatusFlags & kStatusPeril)) {
+                flag = 0;
+            } else if (party != NULL) {
+                if ((uu->mStatusFlags & kStatusDanger) || (uu->mStatusFlags & kStatusPeril) ||
+                    BtlUnit_CheckStatus(party, STATUS_INSTANT_KILL)) {
                     flag = 0;
-                } else if (party != NULL) {
-                    if ((sf & kStatusDanger) || (sf & kStatusPeril) || BtlUnit_CheckStatus(party, STATUS_INSTANT_KILL)) {
-                        flag = 0;
-                    }
                 }
             }
             if (flag != 0) {
@@ -1025,15 +1021,12 @@ void btlseqEnd(BattleWork* wp) {
             su = wp->fbatInfo->setup;
             uu = BattleGetMarioPtr(wp);
             party = BattleGetPartyPtr(wp);
-            {
-                u32 sf = (u32)uu->mStatusFlags;
-
-                if ((sf & kStatusDanger) || (sf & kStatusPeril)) {
+            if ((uu->mStatusFlags & kStatusDanger) || (uu->mStatusFlags & kStatusPeril)) {
+                flag = 0;
+            } else if (party != NULL) {
+                if ((uu->mStatusFlags & kStatusDanger) || (uu->mStatusFlags & kStatusPeril) ||
+                    BtlUnit_CheckStatus(party, STATUS_INSTANT_KILL)) {
                     flag = 0;
-                } else if (party != NULL) {
-                    if ((sf & kStatusDanger) || (sf & kStatusPeril) || BtlUnit_CheckStatus(party, STATUS_INSTANT_KILL)) {
-                        flag = 0;
-                    }
                 }
             }
             if (flag == 0) {
@@ -1129,7 +1122,6 @@ void btlseqEnd(BattleWork* wp) {
 
     btlseqEnd_DispMain(8, wp);
 }
-#pragma opt_common_subs reset
 #pragma opt_lifetimes reset
 
 // This unit's original build inlines nothing: every callee is a real `bl` (cf. battle.c's `-inline off`).
@@ -1453,17 +1445,14 @@ s32 _disable_enemy_unit_disp(EventEntry* event, BOOL isFirstCall) {
     return 2;
 }
 
-// opt_propagation off: without it MWCC hoists the _battleWorkPointer sda21 load above the event->args load.
-#pragma opt_propagation off
 s32 _set_confetti_control_evtid(EventEntry* event, BOOL isFirstCall) {
     s32* args = event->args;
     BattleSeqEndWork* work = _battleWorkPointer->seqEndWork;
-    s32 val = args[0];
+    s32 val = *args++;
 
     work->confettiEvtId = evtGetValue(event, val);
     return 2;
 }
-#pragma opt_propagation reset
 
 s32 _lvup_select_obj_disp_on(EventEntry* event, BOOL isFirstCall) {
     BattleSeqEndWork* work = _battleWorkPointer->seqEndWork;

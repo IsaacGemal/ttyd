@@ -1690,8 +1690,6 @@ static f32 yoshi_pool_i2f(s32 v) {
 
 // Reusing one variable for both evtGetValue and BattleTransID (`id = evtGetValue(...);
 // id = BattleTransID(event, id);`) removed the extra `mr r0` the two-variable form emitted.
-// With propagation on MWCC puts the string-pool base in r6 and event->args in r5 (original: r5/r6).
-#pragma opt_propagation off
 USER_FUNC(yoshi_original_color_anim_set) {
     s32 id;
     const char* name;
@@ -1701,7 +1699,7 @@ USER_FUNC(yoshi_original_color_anim_set) {
 
     args = event->args;
     work = _battleWorkPointer;
-    id = evtGetValue(event, args[0]);
+    id = evtGetValue(event, *args++);
     id = BattleTransID(event, id);
     BattleGetUnitPtr(work, id);
     switch (pouchGetPartyColor(4)) {
@@ -1747,8 +1745,6 @@ USER_FUNC(yoshi_original_color_anim_set) {
     return 0;
 }
 
-
-#pragma opt_propagation reset
 // .sdata2 constants used by the yoroyoro jump functions.
 
 // Matched: the `if (tx - px > 0.0f)` comparison must use the literal `0.0f` (pooled as its own

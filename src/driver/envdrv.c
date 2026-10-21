@@ -675,8 +675,6 @@ void envBlurOff(void) {
     _mapFree(wp->envBlur);
 }
 
-// envGlare was matched with opt_lifetimes off (needed: its register colouring regresses with the default pass)
-#pragma opt_lifetimes off
 void envGlare(EnvironmentGlare* glare) {
     GXTevStageID var_r23;
     u16 temp_r8;
@@ -709,6 +707,7 @@ void envGlare(EnvironmentGlare* glare) {
     s32 var_r19_3;
     void* temp_r19;
     int i;
+    int j;
     u16 temp_r0;
 
     frame_cnt += 1.0f;
@@ -761,8 +760,8 @@ void envGlare(EnvironmentGlare* glare) {
         var_r22 += 2;
     }
 
-    for (i = 0, var_r22_2 = GX_TEXMTX0; i < 8; i++, var_r22_2 += 3) {
-        GXSetTexCoordGen(i, GX_TG_MTX2x4, GX_TG_TEX0, var_r22_2);
+    for (j = 0, var_r22_2 = GX_TEXMTX0; j < 8; j++, var_r22_2 += 3) {
+        GXSetTexCoordGen(j, GX_TG_MTX2x4, GX_TG_TEX0, var_r22_2);
     }
 
     if (temp_r30->flags & 1) {
@@ -817,7 +816,6 @@ void envGlare(EnvironmentGlare* glare) {
         GXTexCoord2u16(0, 1);
     }
 }
-#pragma opt_lifetimes reset
 
 // 100%: the type store must follow the clamps (stores the type only after the sign/clamp checks) and
 // the four s16 temps need the original's declaration order for the register allocation to line up.
@@ -1633,7 +1631,6 @@ void envSetYamiView(Mtx mtx) {
     PSMTXCopy(mtx, (MtxPtr)wp->unkC0);
 }
 
-#pragma opt_common_subs off // MWCC otherwise CSE-hoists tevStage-1/+1/+2 across the GX calls into callee-saved regs
 #pragma opt_propagation off  // keep texMap*4 and the loop counters in the target's callee-saved colouring
 void envSetYami(EnvironmentYami* yami) {
     GlobalWork* g = gp;
@@ -1641,10 +1638,10 @@ void envSetYami(EnvironmentYami* yami) {
     u8* texMtx;
     // texMap*4 kept in a callee-saved register (r29); declared before the counters so it colours after them.
     s32 texMtxOff;
-    s32 tevStage = yami->tevStage;
-    s32 texMap = yami->texMap;
-    s32 texCoord = yami->texCoord;
-    s32 unk18 = yami->unk18;
+    int tevStage = yami->tevStage;
+    int texMap = yami->texMap;
+    int texCoord = yami->texCoord;
+    int unk18 = yami->unk18;
     Mtx mtx;
     GXTexObj texObj;
 
@@ -1717,5 +1714,4 @@ void envSetYami(EnvironmentYami* yami) {
     yami->unk18 = unk18;
     yami->texMap = texMap;
 }
-#pragma opt_common_subs reset
 #pragma opt_propagation reset

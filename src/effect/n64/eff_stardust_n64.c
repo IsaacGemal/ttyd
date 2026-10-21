@@ -79,12 +79,8 @@ extern const GXColor dat_8041fef0;
 // Structure matches: the switch arms (incl. `case 3: case 4:` for the >=3 default), the rand/angle math, the
 // `s`/`s2`/`s3`/`c`/`t` temporaries, the i/lifeA/lifeB init order, the default arm's vy-before-second-angle
 // ordering, and the int->float pool double (objdiff resolves the local @NNN alias by section offset).
-// opt_lifetimes off // needed: with lifetimes on the randA/randB temps coalesce into the wrong caller-saved
-// FPRs and the scale/scaleB homes swap (f26/f27); off restores the original colouring.
-#pragma opt_lifetimes off // randA/randB temps coalesce into the wrong caller-saved FPRs and scale/scaleB swap (f26/f27) otherwise
+// The f32 declaration order sets the callee-saved FPR colouring (scale f26, scaleB/randA/dirAngle f27, ...).
 EffectEntry* effStardustN64Entry(s32 type, f32 x, f32 y, f32 z, f32 scale) {
-    f32 angle;
-    f32 t2;
     s32 lifeA;
     s32 lifeB;
     EffStardustN64Data* data;
@@ -94,16 +90,19 @@ EffectEntry* effStardustN64Entry(s32 type, f32 x, f32 y, f32 z, f32 scale) {
     EffStardustN64Data* ptr;
     s32 count;
     s32 i;
-    f32 scaleB;
-    f32 randB;
-    f32 randA;
-    f32 vy;
-    f32 s;
-    f32 c;
-    f32 t;
     f32 s3;
+    f32 s;
     f32 s2;
-    s32 odd5; // explicit so the two `(i & 1) * 5` uses stay a single computation with CSE off
+    f32 scaleB;
+    f32 vy;
+    f32 pulseAngle;
+    f32 dirAngle;
+    f32 angle;
+    f32 c;
+    f32 randA;
+    f32 randB;
+    f32 t;
+    f32 t2;
 
     effect = effEntry();
     switch (type) {
@@ -156,23 +155,22 @@ EffectEntry* effStardustN64Entry(s32 type, f32 x, f32 y, f32 z, f32 scale) {
         case 0:
             ptr->gravity = 0.0f;
             t = 1800.f / (f32)count;
-            randB = 6.2831855f * (t * (f32)i - 90.f)
+            pulseAngle = 6.2831855f * (t * (f32)i - 90.f)
                 / 360.f;
-            s = (f32)sin(randB);
+            s = (f32)sin(pulseAngle);
             t2 = 360.f / (f32)count;
-            randA = 6.2831855f * (t2 * (f32)i)
+            dirAngle = 6.2831855f * (t2 * (f32)i)
                 / 360.f;
-            s3 = (f32)sin(randA);
-            odd5 = (i & 1) * 5;
+            s3 = (f32)sin(dirAngle);
             ptr->velX = scale
                 * (s3
-                    * (85.0f - 15.0f * s - (f32)odd5)
+                    * (85.0f - 15.0f * s - (f32)((i & 1) * 5))
                     / 100.f);
-            s2 = (f32)sin(randB);
-            c = (f32)cos(randA);
+            s2 = (f32)sin(pulseAngle);
+            c = (f32)cos(dirAngle);
             ptr->velY = scale
                 * (c
-                    * (85.0f - 15.0f * s2 - (f32)odd5)
+                    * (85.0f - 15.0f * s2 - (f32)((i & 1) * 5))
                     / 100.f);
             ptr->z = 0.0f;
             ptr->field_0x34 = 0;
@@ -220,15 +218,7 @@ EffectEntry* effStardustN64Entry(s32 type, f32 x, f32 y, f32 z, f32 scale) {
     }
     return effect;
 }
-#pragma opt_lifetimes reset
 
-// opt_common_subs on breaks the two fmadds contractions in the particle update; the original still
-// has them, so keep common subexpression merging off for this function.
-#pragma opt_common_subs off
-// opt_propagation off is required in the type-0 random branch: with propagation on, MWCC folds the
-// int->float conversion of `rnd` into its uses and the conversion slots/register allocation drift
-// (12 instruction diffs).
-#pragma opt_propagation off
 void effStardustMain(EffectEntry* effect) {
     EffStardustN64Data* data = effect->userdata;
     /* Retail builds the Vec in a scratch slot and copies it into a second local before
@@ -272,14 +262,10 @@ void effStardustMain(EffectEntry* effect) {
                 data->scale = 0.01f * (f32)scale_data[counter - 1];
             } else {
                 s32 rnd;
-                /* Retail materialises the signed int->float conversion of `rnd` into a
-                   temp before the multiply; writing the angle as one expression
-                   makes MWCC coalesce the conversion into the loaded double's register. */
-                f32 p;
                 rnd = effTblRandN64(0x168, i + 0xb1);
-                p = (f32)rnd;
+                angle = (f32)rnd;
                 radius = 0.5f * (f32)(i & 3) + 1.0f;
-                angle = 6.2831855f * p / 360.f;
+                angle = 6.2831855f * angle / 360.f;
                 data->type = 10;
                 data->velX = radius * (f32)sin(angle);
                 data->velY = radius * (f32)cos(angle);
@@ -292,7 +278,7 @@ void effStardustMain(EffectEntry* effect) {
             data->velY += data->gravity;
             data->x += data->velX;
             data->y += data->velY;
-            data->scale = 0.1f * (0.1f - data->scale) + data->scale;
+            data->scale += 0.1f * (0.1f - data->scale);
             break;
         default:
             data->velX *= 0.9f;
@@ -315,7 +301,7 @@ void effStardustMain(EffectEntry* effect) {
                 if (counter - 1 < 7) {
                     data->scale = 0.01f * (f32)scale_data[counter - 1];
                 } else {
-                    data->scale = 0.1f * (0.1f - data->scale) + data->scale;
+                    data->scale += 0.1f * (0.1f - data->scale);
                 }
             }
             break;
@@ -329,8 +315,6 @@ void effStardustMain(EffectEntry* effect) {
 
     dispEntry(camera, dispCalcZ(&position), 2, effStardustDisp, effect);
 }
-#pragma opt_common_subs reset
-#pragma opt_propagation reset
 
 /* The original builds the TEV colour through a helper, so GXSetTevColor's argument
    temp is allocated next to the helper's local (0x8) instead of above it (the plain #else form

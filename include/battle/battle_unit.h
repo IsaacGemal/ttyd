@@ -631,7 +631,7 @@ typedef struct BattleUnit {
     s8 mFpRegenStrength;                         // 0x134
     s8 mInstantKillStrength;                     // 0x135
     u8 pad_0x136[2];                             // 0x136, TODO remove?
-    s32 mStatusFlags;                            // 0x138
+    u32 mStatusFlags;                            // 0x138
     s32 protectId;                               // 0x13C
     BattleVulnerableStatus* vulnStatus;          // 0x140
     Vec mMoveStartPos;                           // 0x144
@@ -861,9 +861,9 @@ BOOL BtlUnit_SetStatus(BattleUnit* unit, s8 type, s8 turns, s8 strength);
 void BtlUnit_ClearStatus(BattleUnit* unit);
 BOOL BtlUnit_CheckRecoveryStatus(BattleUnit* unit, s8 type);
 BOOL BtlUnit_CheckStatus(BattleUnit* unit, s8 type);
-s32 BtlUnit_CheckStatusFlag(BattleUnit* unit, s32 flags);
-void BtlUnit_OnStatusFlag(BattleUnit* unit, s32 flags);
-void BtlUnit_OffStatusFlag(BattleUnit* unit, s32 flags);
+s32 BtlUnit_CheckStatusFlag(BattleUnit* unit, u32 flags);
+void BtlUnit_OnStatusFlag(BattleUnit* unit, u32 flags);
+void BtlUnit_OffStatusFlag(BattleUnit* unit, u32 flags);
 s32 BtlUnit_CheckUnitFlag(BattleUnit* unit, s32 flags);
 void BtlUnit_OnUnitFlag(BattleUnit* unit, s32 flags);
 void BtlUnit_OffUnitFlag(BattleUnit* unit, s32 flags);

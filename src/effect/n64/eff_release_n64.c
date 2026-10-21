@@ -169,7 +169,7 @@ static inline Vec releaseMakeVec(f32 x, f32 y, f32 z) {
     return temp;
 }
 
-#pragma opt_common_subs off // without it MWCC CSEs a shared subexpression in case 0 and picks different FPRs (94.0%)
+#pragma opt_common_subs off // without it MWCC shares the case-100 anime_data element address and the int->float constant address
 void effReleaseMain(EffectEntry* effect) {
     effReleaseN64Data* data = effect->userdata;
     Vec position2;

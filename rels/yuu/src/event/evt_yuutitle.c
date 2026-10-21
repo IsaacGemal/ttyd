@@ -35,8 +35,8 @@ const GXColor dat_yuu_00014d98 = { 0xFF, 0xFF, 0xFF, 0x00 };
 
 // The fade factor is a real local, not folded into its use: with copy propagation off it keeps its own
 // (low) variable number, so MWCC colours the `field_10 * (1 - t)` product first (f0) and the fade gets f1, as
-// in the original.  The `(f32)` on each lerp product is what the frontend's tree looks like when the product
-// went through an f32 temporary: without it MWCC picks a different fmadds shape.
+// in the original. Each lerp is written `to * t + from * (1 - t)`, so fp_contract fuses the `t` product
+// into the fmadds as retail does.
 #pragma opt_propagation off
 void evt_yuutitle_disp_func(CameraId cameraId, void* param) {
     YuuTitleWork* wp = param;
@@ -55,18 +55,10 @@ void evt_yuutitle_disp_func(CameraId cameraId, void* param) {
         }
         alphaF = (f32)wp->alpha;
         t = alphaF / 255.0f;
-#ifdef MUST_MATCH
-        // No-op casts: the products are already f32, but the casts change the object.
-        wp->field_08 = (f32)(wp->field_10 * (1.0f - t)) + wp->field_18 * t;
+        wp->field_08 = wp->field_18 * t + wp->field_10 * (1.0f - t);
         fade = 0.8f * t + 0.2f;
         scale *= fade;
-        wp->field_0c = (f32)(wp->field_14 * (1.0f - t)) + wp->field_1c * t;
-#else
-        wp->field_08 = wp->field_10 * (1.0f - t) + wp->field_18 * t;
-        fade = 0.8f * t + 0.2f;
-        scale *= fade;
-        wp->field_0c = wp->field_14 * (1.0f - t) + wp->field_1c * t;
-#endif
+        wp->field_0c = wp->field_1c * t + wp->field_14 * (1.0f - t);
     }
     // MWCC folds `/ 2.0f` into `* 0.5f` but keeps the product's operand order.
     halfWidth = scale * (f32)FontGetMessageWidth(wp->msg) / 2.0f;

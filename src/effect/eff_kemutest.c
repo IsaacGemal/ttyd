@@ -638,12 +638,7 @@ static inline GXColor kemuTestColor(effKemuTestData* data, u8 alpha) {
 	return color;
 }
 
-/* Matches using the named .sdata2 constants above (so the compiler emits the
-   `-32 * 0.5` multiply at runtime instead of folding it into -16), and a helper
-   that returns the channel-built GXColor so it lands in the original's stack slot. */
-// The original keeps dsize/dsize_half/size in FPRs but computes them where they are written: with MWCC's loop-invariant
-// hoisting on they move to the function preheader (98.1%); off, the function is 100% (the constants are still pooled).
-#pragma opt_loop_invariants off
+/* kemuTestColor returns the channel-built GXColor so it lands in the original's stack slot. */
 void effKemuTestDisp(CameraId camId, void* param) {
 	EffectEntry* effect = param;
 	effKemuTestData* data = effect->userdata;
@@ -722,8 +717,7 @@ void effKemuTestDisp(CameraId camId, void* param) {
 
 	data++;
 	{
-		f32 p32 = 32.0f;
-		f32 dsize = -p32;
+		f32 size = 32.0f;
 
 		for (i = 1; i < effect->count; i++, data++) {
 			if (data->delay != 0) {
@@ -766,25 +760,23 @@ void effKemuTestDisp(CameraId camId, void* param) {
 					GXLoadPosMtxImm(mtx, 0);
 				}
 				{
-					f32 half = 0.5f;
-					f32 dsize_half = dsize * half;
-					f32 size = 16.0f;
+					f32 min = -size / 2.0f;
+					f32 max = size / 2.0f;
 
 					GXBegin(GX_QUADS, GX_VTXFMT0, 4);
-					GXPosition3f32(dsize_half, size, 0.0f);
+					GXPosition3f32(min, max, 0.0f);
 					GXTexCoord2f32(0.0f, 0.0f);
-					GXPosition3f32(size, size, 0.0f);
+					GXPosition3f32(max, max, 0.0f);
 					GXTexCoord2f32(1.0f, 0.0f);
-					GXPosition3f32(size, dsize_half, 0.0f);
+					GXPosition3f32(max, min, 0.0f);
 					GXTexCoord2f32(1.0f, 1.0f);
-					GXPosition3f32(dsize_half, dsize_half, 0.0f);
+					GXPosition3f32(min, min, 0.0f);
 					GXTexCoord2f32(0.0f, 1.0f);
 				}
 			}
 		}
 	}
 }
-#pragma opt_loop_invariants reset
 void effKemuTestDrawCam(EffectEntry* effect, s32 camId) {
 	effKemuTestData* data = effect->userdata;
 

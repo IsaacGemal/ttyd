@@ -3615,7 +3615,6 @@ void mapSetMaterialLight(s32 flags, Vec position) {
 
 // per-mesh vtx-format block (entry->vcdTable)
 
-#pragma opt_common_subs off // stop MWCC CSEing a shared base into the wp/nrm/pos slots
 // The vertex-loop `p = &vp->x` scratch is matched by reading z as `p[2]`.
 static const GXVtxAttrFmtList attr_fmt[] = {
 	{GX_VA_POS, GX_POS_XYZ, GX_F32, 0},
@@ -3638,7 +3637,7 @@ void mapSetPolygon(MapObject* obj, MapFileMesh* mesh) {
 	void* pos = (void*)(vcd[0] + 4);
 	void* nrm = (void*)(vcd[1] + 4);
 	s32 texCount = vcd[5];
-	s32 i;
+	int i;
 
 	GXSetCullMode(culling[obj->joints->drawMode->cullMode]);
 
@@ -3718,7 +3717,6 @@ void mapSetPolygon(MapObject* obj, MapFileMesh* mesh) {
 	}
 }
 
-// `opt_common_subs off` keeps GX_VA_TEX0+i from being CSE-hoisted
 // GX setup order/constants and addressing match. `wp = mapGetWork()`, the `vcd` pointer local and the
 // pos/nrm declaration order are the rest of the matched source shape.
 void mapSetPolygonVtxDesc(MapObject* obj, MapFileMesh* mesh) {
@@ -3727,7 +3725,7 @@ void mapSetPolygonVtxDesc(MapObject* obj, MapFileMesh* mesh) {
 	void* nrm;
 	u32 mask;
 	u32* vcd;
-	s32 i;
+	int i;
 	MapVtxFmt* vcdFmt;
 	wp = mapGetWork();
 	vcd = (u32*)mesh->vcdTableOffset;
@@ -3763,7 +3761,6 @@ void mapSetPolygonVtxDesc(MapObject* obj, MapFileMesh* mesh) {
 		GXSetArray(GX_VA_TEX0 + i, (void*)(((u32*)mesh->vcdTableOffset)[6 + i] + 4), 4);
 	}
 }
-#pragma opt_common_subs reset
 
 void* mapSearchDmdJointSub(void* a, void* b) {
 	MapFileJoint* joint = (MapFileJoint*)a;

@@ -467,13 +467,10 @@ USER_FUNC(get_from_bed_evt) {
     return EVT_RETURN_DONE;
 }
 
-// opt_propagation off is required: with it on MWCC puts the string-pool base temp in r6 and
-// event->args in r5; the original has the string-pool base in r5 and event->args in r6.
-#pragma opt_propagation off
 static USER_FUNC(paper_on) {
     s32* args = event->args;
     const char* str = str_BGM_FF_GO_SLEEPING1;
-    f32 val = evtGetFloat(event, args[0]);
+    f32 val = evtGetFloat(event, *args++);
     MarioWork* mario = marioGetPtr();
 
     if (isFirstCall) {
@@ -508,7 +505,6 @@ static USER_FUNC(paper_on) {
     mario->unk1A8 = val;
     return 0;
 }
-#pragma opt_propagation reset
 
 
 static USER_FUNC(paper_off) {

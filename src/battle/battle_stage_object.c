@@ -1483,7 +1483,6 @@ void BattleStage_DestroyB(void) {
 	}
 }
 
-#pragma opt_propagation off // needed: without it _set_mobj_rotate_x 99.88%
 USER_FUNC(_set_mobj_rotate_x) {
 	s32 layer;
 	BattleWorkField180C0* base;
@@ -1496,7 +1495,7 @@ USER_FUNC(_set_mobj_rotate_x) {
 	wp = _battleWorkPointer;
 	base = &_battleWorkPointer->field_180C0;
 	args = event->args;
-	layer = evtGetValue(event, args[0]);
+	layer = evtGetValue(event, *args++);
 
 	if (isFirstCall) {
 		switch (layer) {
@@ -1570,7 +1569,6 @@ USER_FUNC(_set_mobj_rotate_x) {
 	}
 	return changed ? EVT_RETURN_BLOCK : EVT_RETURN_DONE;
 }
-#pragma opt_propagation reset
 
 USER_FUNC(_mobj_set_alpha) {
 	s32* args = event->args;

@@ -128,15 +128,12 @@ EffectEntry* effSandarsEntry(s32 type, f32 x, f32 y, f32 z, f32 a) {
 	return entry;
 }
 
-// opt_common_subs off required: with CSE on MWCC interleaves the vec3/data x and y stores in the opposite
-// order (f1/f2 and r4/r5 swapped vs retail).
-#pragma opt_common_subs off
 void effSandarsMain(EffectEntry* effect) {
 	effSandarsData* data = effect->userdata;
 	Vec position;
 	Vec disp;
 	s32 camId;
-	BOOL inBattle;
+	s32 inBattle;
 	s32 type;
 	s32 i;
 
@@ -217,8 +214,6 @@ void effSandarsMain(EffectEntry* effect) {
 		break;
 	}
 }
-
-#pragma opt_common_subs reset
 
 void effSandarsDisp(CameraId camId, void* param) {
 	EffectEntry* effect = param;

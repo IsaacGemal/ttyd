@@ -136,7 +136,6 @@ s32 evt_batstage_return_aud_dark_base(EventEntry* event, BOOL isFirstCall) {
 	return EVT_RETURN_DONE;
 }
 
-#pragma opt_dead_assignments off // keep the original's setup-copy register assignment
 s32 evt_batstage_light_set_player_on(EventEntry* event, BOOL isFirstCall) {
 	BattleWork* bw = _battleWorkPointer;
 	s32* args = event->args;
@@ -151,7 +150,7 @@ s32 evt_batstage_light_set_player_on(EventEntry* event, BOOL isFirstCall) {
 	s32 i;
 	s32 lightNo;
 
-	mode = evtGetValue(event, args[0]);
+	mode = evtGetValue(event, *args++);
 
 	*(Blob60*)name = *(const Blob60*)dat_802f32f8;
 
@@ -201,7 +200,6 @@ s32 evt_batstage_light_set_player_on(EventEntry* event, BOOL isFirstCall) {
 	BattleStageSetAudDark(0x8c, 0, 0);
 	return EVT_RETURN_DONE;
 }
-#pragma opt_dead_assignments reset
 
 s32 evt_batstage_light_set_player_off(EventEntry* event, BOOL isFirstCall) {
 	s32 lightNo;

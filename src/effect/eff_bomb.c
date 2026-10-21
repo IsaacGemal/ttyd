@@ -124,7 +124,6 @@ static void effBombMain(EffectEntry* effect) {
 	dispEntry(4, dispCalcZ(&position), 2, effBombDisp, effect);
 }
 
-#pragma opt_loop_invariants off // needed: without it effBombDisp 99.71%
 static void effBombDisp(CameraId camId, void* param) {
 	EffectEntry* effect = param;
 	effBombData* data;
@@ -140,7 +139,6 @@ static void effBombDisp(CameraId camId, void* param) {
 	f32 size;
 	f32 one;
 	f32 negHalf;
-	f32 negOne;
 	f32 half;
 
 	data = effect->userdata;
@@ -184,7 +182,6 @@ static void effBombDisp(CameraId camId, void* param) {
 	GXSetCurrentMtx(0);
 	size = 30.0f * radius;
 	one = 1.0f;
-	negOne = -one;
 	data++;
 	for (i = 1; i < effect->count; i++, data++) {
 		PSMTXTrans(mtx, 0.0625f * (f32)data->texOffset, 0.0f, 0.0f);
@@ -201,8 +198,8 @@ static void effBombDisp(CameraId camId, void* param) {
 		PSMTXConcat(work, scale, work);
 		PSMTXConcat(view, work, work);
 		GXLoadPosMtxImm(work, 0);
-		half = 0.5f;
-		negHalf = negOne * half;
+		half = one / 2.0f;
+		negHalf = -one / 2.0f;
 		GXBegin(0x80, 0, 4);
 		GXPosition3f32(negHalf, one, 0.0f);
 		GXTexCoord2f32(0.0f, 0.0f);
@@ -214,4 +211,3 @@ static void effBombDisp(CameraId camId, void* param) {
 		GXTexCoord2f32(0.0f, 1.0f);
 	}
 }
-#pragma opt_loop_invariants reset

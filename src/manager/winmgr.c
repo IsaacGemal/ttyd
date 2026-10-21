@@ -2308,7 +2308,6 @@ s32 winMgrSelectCursor(WinMgrSelect* select) {
 #pragma defer_codegen off
 #endif
 
-#pragma opt_common_subs off // needed: without it select_main 99.74%
 void select_main(WinMgrEntry* entry) {
     s32 count;
     WinMgrSelect* select = (WinMgrSelect*)entry->param;
@@ -2396,11 +2395,10 @@ void select_main(WinMgrEntry* entry) {
                 select->state++;
             }
         }
-        select->baseY = select->baseY + (WINMGR_F32(float_24_80421aa0) * select->scrollTop - select->baseY) / WINMGR_F32(float_6_80421aa4);
-        select->iconX = select->iconX + ((f32)entry->x - select->iconX) / WINMGR_F32(float_6_80421aa4);
-        select->iconY = select->iconY +
-            ((f32)(entry->y - 54) - WINMGR_F32(float_24_80421aa0) * (f32)(select->cursor - select->scrollTop) -
-             select->iconY) / WINMGR_F32(float_6_80421aa4);
+        select->baseY += (WINMGR_F32(float_24_80421aa0) * select->scrollTop - select->baseY) / WINMGR_F32(float_6_80421aa4);
+        select->iconX += ((f32)entry->x - select->iconX) / WINMGR_F32(float_6_80421aa4);
+        select->iconY += ((f32)(entry->y - 54) - WINMGR_F32(float_24_80421aa0) * (f32)(select->cursor - select->scrollTop) -
+                         select->iconY) / WINMGR_F32(float_6_80421aa4);
         break;
     case 2:
         for (i = 0; i < select->numDescriptors; i++) {
@@ -2432,7 +2430,6 @@ void select_main(WinMgrEntry* entry) {
     }
 }
 
-#pragma opt_common_subs reset
 s32 party_can_transfer_rank(EventEntry* event) {
     s32* args = event->args;
     PouchData* pouch = pouchGetPtr();

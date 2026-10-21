@@ -453,14 +453,13 @@ s32 _get_icon_id(s8 id) {
 }
 #pragma dont_inline reset
 
-#pragma opt_propagation off // needed: with propagation on MWCC folds the StickRotateWork base (work+0x1F4C) into the BattleWork base
 static void actionCommandDisp(f32 x, f32 y) {
     BattleWork* work = _battleWorkPointer;
     BattleActions* ac = &work->actionCommands;
     StickRotateWork* sr = (StickRotateWork*)&ac->field_0x2BC[0];
     STICK_VEC_BASE
 
-    switch (work->actionCommands.mAcState) {
+    switch (ac->mAcState) {
         case 0x63:
         case 0x64: {
             Vec v = STICK_ZERO_VEC(0);
@@ -477,8 +476,7 @@ static void actionCommandDisp(f32 x, f32 y) {
             break;
         }
         case 0x3E9:
-            if (sr->stepFrames <
-                work->actionCommands.acParams[4]) {
+            if (sr->stepFrames < ac->acParams[4]) {
                 if (sr->steps <= 1) {
                     Vec v = STICK_ZERO_VEC(2);
                     v.x = -200.0f + x;
@@ -515,14 +513,13 @@ static void actionCommandDisp(f32 x, f32 y) {
     }
 }
 
-// `opt_propagation off` is needed: with propagation on MWCC folds the StickRotateWork base (work+0x1F4C) into the BattleWork base
 void actionCommandDisp2(f32 x, f32 y) {
     BattleWork* work = _battleWorkPointer;
     BattleActions* ac = &work->actionCommands;
     StickRotateWork* sr = (StickRotateWork*)&ac->field_0x2BC[0];
     STICK_VEC_BASE
 
-    switch (work->actionCommands.mAcState) {
+    switch (ac->mAcState) {
         case 0x63:
         case 0x64: {
             Vec v = STICK_ZERO_VEC(6);
@@ -536,8 +533,7 @@ void actionCommandDisp2(f32 x, f32 y) {
             Vec v;
             sr->iconTimer++;
             if (sr->iconTimer >=
-                (work->actionCommands.acParams[4] +
-                 work->actionCommands.acParams[5]) /
+                (ac->acParams[4] + ac->acParams[5]) /
                     2) {
                 s32 roll;
                 sr->iconTimer = 0;
@@ -577,7 +573,6 @@ void actionCommandDisp2(f32 x, f32 y) {
             break;
     }
 }
-#pragma opt_propagation reset
 
 
 void battleAcDelete_StickRotate(BattleWork* work) {
