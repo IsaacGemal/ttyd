@@ -4937,3 +4937,98 @@ and drop guards from families that are natural C.
 - Verified: `ninja` recreates build/G8MJ01/ok; every game object (1,019) compiles under `configure.py --non-matching`;
   fncast_lint and local_prototypes pass; tools/ci.py PASS before each commit with its tools/tests step stubbed (9
   environment errors in test_wave_launch's systemd scopes, as in the chapters above).
+
+## Optimisation pragmas, second pass: natural shapes instead of pragmas (2026-10-21, Claude Opus 5.5 orchestrating eight Claude Opus 5.5 workers, n9-q-o-pragma2)
+
+Task (Isaac): the ~890 optimisation pragmas left after #1096 were each "needed", but #1103 showed some exist only
+because the C around them has the wrong shape. For each scoped pragma: delete it, read the object diff
+(tools/obj_equiv.py), look for a natural source shape that gives retail's code with the optimisation on; apply it if
+it matches, otherwise keep the pragma and record what was tried. Volatile, puns, int round trips, dead stores,
+redundant tests and steering temps stay guarded: a pragma beats an unguarded hack.
+
+- **Method.** Harness in the untracked build/pr2/ (try.py compiles a variant with its object's ninja flags, every
+  object a source builds, and compares with obj_equiv against a snapshot of the pre-branch objects; ddiff.sh prints a
+  normalised asm diff; prag.py, sweep*.py; kinds.py counts opt_pragma per kind with cleanup_index's own regex). A
+  re-run of #1096's single-removal test first: nothing new (the only hits were `on` closers whose removal just widens
+  the region). Then eight workers on disjoint file groups (433 lines in 115 files; reports in build/pr2/v1..v8/REPORT.txt),
+  the orchestrator reviewing every diff, then mechanical sweeps over every remaining region for the levers found on the
+  way (`int` locals, all at once and one at a time; compound assignment; `*args++`; `* 0.5f` <-> `/ 2.0f`), then the
+  header leads the workers couldn't touch. Every commit: obj_equiv EQUIV for each changed file, `build/G8MJ01/ok`,
+  `--natural` compile, fncast_lint and local_prototypes clean, tools/ci.py PASS with --allow-pragma and its tools/tests
+  step stubbed (the same 9 environment errors in test_wave_launch as the chapters above). After the two header
+  changes, every object was also built under `configure.py --non-matching` (all compile; only the link fails).
+- **Counts** (build/pr2/kinds.py, same regex and files as tools/cleanup_index.py; da911753 -> this branch):
+  opt_pragma **892 -> 775**. opt_propagation 176 -> 126, opt_lifetimes 109 -> 89, opt_common_subs 99 -> 71,
+  opt_dead_assignments 30 -> 26, opt_loop_invariants 16 -> 6, opt_strength_reduction 4 -> 0, global_optimizer 1 -> 0;
+  dont_inline 371, defer_codegen 37, optimize_for_size 30, inline_max_size 6, inline_max_total_size 6, fp_contract 2,
+  auto_inline 2, optimization_level 2, inline_depth 1 unchanged. Index (tools/cleanup_index.py) 15.506 -> 15.316 per
+  kLOC (10819 -> 10683 weighted): opt_pragma 892 -> 775, must_match 810 -> 803, raw_offset 357 -> 351
+  (eff_opuku_jetw_n64's byte-offset casts); address_name, field_0x, unk_name, goto, fn_ptr_cast unchanged.
+  `git grep -c MUST_MATCH` over src/rels/include 957 -> 948.
+- **Shapes that matched** (each EQUIV with the pragma gone):
+  - Half sizes as divisions: `half = one / 2.0f; negHalf = -one / 2.0f` (eff_bomb), `min = -size / 2.0f; max = size / 2.0f`
+    (eff_kemutest), replacing `0.5f` constant locals and opt_loop_invariants, as #1103's eff_ibuki/eff_recovery.
+  - A loop written plainly: eff_opuku_jetw_n64's column index computed inside the row loop, `&table[j * columns]`,
+    `rowPtr[col]`: MWCC's own strength reduction and loop-invariant motion then give the original's running sums, so
+    opt_strength_reduction, opt_loop_invariants, seven locals and the byte-offset casts go. battle_audience's
+    BattleAudienceJoy_Sub compares the roll against a running threshold (`limit = a; limit += b; limit += c`) and
+    loses three pairs and the BattleAudienceJoyAdd2 helper. eff_recover_heart_n64 computes `life % 10`/`life / 10` in
+    the branch that uses them (global_optimizer off). animdrv: `GX_TEXMTX0 + i * 3u` (opt_strength_reduction).
+  - Compound assignment `x->f += d` for `x->f = d + x->f` (and `-=`): winmgr select_main, win_log winLogInit,
+    party_vivian (two functions), party_motion behind_mario_fly, eff_kemuri5_n64, eff_snow_dust_n64, eff_stardust_n64.
+  - `int` instead of `s32` (which is `long` here): GX index counters (envdrv envSetYami, mapdrv mapSetPolygon and
+    mapSetPolygonVtxDesc: `counter + k` arguments recomputed per call as in retail), and elapsed-time locals (mri
+    evt_mri_door_naname_func `int elapsed`, as evt_npc and evt_item already had): there it also removes the guarded
+    `curStep = elapsed` argument assignment, and in mri_puni evt_puni_jump_position and muj_12
+    muj_item_move_3d_position the guarded duplicate divide / `(s32)` casts with their MUST_MATCH regions. The other
+    direction too: evt_badgeshop's `int i` -> `s32 i`, eff_sandars' `BOOL inBattle` -> `s32` (its callees' type),
+    bom_01 depthDisp `u32 mtxId` (the GX type, as gor_10's copy).
+  - Event arguments read with `evtGetValue(event, *args++)` (the tree's usual idiom): evt_bero (three functions),
+    evt_batstage, evt_kinopio, unit_faker_mario (two), unit_boss_batten_leader, unit_party_yoshi, unit_mario,
+    battle_event_cmd (btlevtcmd_check_battleflag, btlevtcmd_PreCheckDamage), battle_seq_command _get_msg, battle_seq_end
+    _set_confetti_control_evtid, battle_stage_object _set_mobj_rotate_x. In single-argument functions the last
+    increment is dead; recorded as house style, not as a dead-store trick (reviewer to confirm).
+  - One local per value, or one value per local: sac_zubastar zubastar_get_kouten (if/else for the ternaries and copy
+    blocks), database setupDataBase (battleInfoId), envdrv envGlare (a second counter), ac_button_down, gor_00
+    gundan1000tai_init and eff_stardust (split; their declaration orders came from tools/rasim.py search), and the
+    reverse in evt_npc _intplGetFloat (clamp the parameter), evt_sub (one `t`), evt_party, tik_05 (write back into
+    `angle`), party.c partyMakeDispDir and partyGoodbyeMain (reuse `angle`/`py`).
+  - An existing helper instead of its hand expansion: party.c party_damage_return calls partyChgPoseId(party, 8/9).
+    Reading through an existing local: ac_stick_rotate's two Disp functions use `ac->` (opt_propagation).
+  - Constant stores straight through the getter: mario_balloon `marioGetPtr()->field_0x260 = 0`, mot_slit.
+    evt_eff_fukidashi's case 0 written like its other cases; party_move partySetDispDirToMario's yaw read in place.
+  - Header fixes (not open to the workers): effCoinFukidashiEntry is `(type, x, y, z, coinNum, count)`, the order its
+    body stores them (ints and floats use separate registers, so no register moves); mobj_recovery_blk's pragma and
+    its y2/z2/x locals go. BattleUnit.mStatusFlags is u32 (it holds bits 28/29), with BtlUnit_Check/On/OffStatusFlag
+    taking u32: btlseqEnd's danger/peril tests read the field directly and its opt_common_subs pair goes.
+  - Also: evt_yuutitle's blends written `to * t + from * (1 - t)` drop a MUST_MATCH region of no-op casts (its pragma
+    stays). Stale comments fixed beside kept pragmas: evt_item, eff_release_n64, eff_ripple_n64.
+- **Rejected in review (EQUIV, not applied):** party_motion_homing_fly's opt_loop_invariants with `u32 id` plus a
+  `s32 sid = id` copy (a register-steering temp; its sibling homing_walk has the same unguarded `sid`, for a reviewer);
+  partyPreDisp with `(s32)party->field_2A` or an s32 local; battle_stage getSpline with a `0.0f` literal (adds a pool
+  entry); effBreakDisp only with the volatile MATCH_F32 read widened; mapSearchDmdJointSub2 returning the recursive
+  call (drops retail's result test); party_move's four target-distance functions calling the existing L_getTargetPos
+  (exact instructions, one callee-saved register too many: strong evidence the original called it).
+- **Left: 163 regions,** one line each with what was tried in [docs/PRAGMAS_KEPT.md](PRAGMAS_KEPT.md). By cause:
+  - The sin/cos polynomial (about 51 regions in some 19 files: bom_01, eki_00, gor_10, hei_10, pik_02, rsh_05, rsh_06,
+    tik_05, tou_02, envdrv, npcdrv, evt_item, evt_sub, eff_damage_star, eff_fall, eff_gonbaba_breath, eff_starpoint,
+    eff_mobj_broken): retail holds the coefficients in callee-saved FPRs (propagation off) and each Horner accumulator in
+    one register (lifetimes off). Every copy carries the same pair; literal coefficients make no difference. Needs a
+    study of its own; the original may have been built with these settings for that code.
+  - Named pool constants (about 27): a function reads a named .sdata2 constant twice and CSE keeps the first load
+    (eff_kemuri, eff_mist, eff_mugi, eff_funemizu, kemuri4, kemuri10, butterfly, blow, breath_fire, koopa_motion,
+    chuchurina mono_disp, ...). A literal gives the code but adds a pool entry; data layout, out of scope (lead).
+  - Register colouring with no natural order (about 39; rasim searched where it mattered), large functions that reshuffle
+    wholesale without the pragma (12: msgAnalize, mapMain, envDisp_DepthOfField, BattleSetStatusDamage, btlseqEnd's
+    lifetimes, ...), and 5 that a guarded MUST_MATCH trick depends on.
+  - eff_pointget effPointGetDisp: with the outer-loop invariants moved before the loop, one f25/f27 swap remains:
+    retail's `f22 * 0.5` is hoisted by the backend (ranked after the int->float magic), ours by the frontend first.
+- **Not in this pass:** dont_inline (371), defer_codegen (37), optimize_for_size (30, files built -O4,p), inline_* and
+  auto_inline. They choose inlining, emission order or size-vs-speed, which no source shape changes.
+- **Leads.** `int` elapsed/step locals for other MUST_MATCH regions: these files have both an `elapsed` local and a
+  MUST_MATCH region (not checked): evt_nannpc, evt_telop, muj_20, gor_03, evt_lect_dou, win_00, ac_crane_timing,
+  ac_gauge_timing2, itemdrv, fadedrv. The named-constant regions above, if the pool
+  layout rule ever allows a literal. tou_03 screen_tev and battle_stage tou_gamen_screen_tev are one function. A worker's
+  technique worth keeping: run tools/mwccdbg.py on the source with and without the pragma and diff the frontend dump
+  (`frontend-02-ast-final-code.txt`); the new `EASS @N` temps are the subexpressions the optimisation starts sharing,
+  which points at the line to rewrite (build/pr2/v5/fd.sh).
