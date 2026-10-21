@@ -4295,26 +4295,9 @@ void spline_maketable(s32 count, s32 a, s32* b, s32* c) {
 		f32 dy = points[i].y - points[i - 1].y;
 		f32 dz = points[i].z - points[i - 1].z;
 
-		f32 sq = dx * dx + dy * dy + dz * dz;
-#ifdef MUST_MATCH
-		// writing the Newton result back into sq reuses x's FPR (the target overwrites f5);
-		// calling spline_sqrtf forces the f32 return register f1 and leaves an extra `fmr f1,f5`
-		if (sq > 0.0f) {
-			f64 guess = __frsqrte(sq);
-			guess = 0.5 * guess * (3.0 - guess * guess * sq);
-			guess = 0.5 * guess * (3.0 - guess * guess * sq);
-			guess = 0.5 * guess * (3.0 - guess * guess * sq);
-			sq = sq * guess;
-		} else if (sq < 0.0) {
-			sq = SPLINE_NAN;
-		} else if (spline_fpclassifyf(sq) == FP_NAN) {
-			sq = SPLINE_NAN;
-		}
-#else
-		sq = spline_sqrtf(sq);
-#endif
+		f32 dist = spline_sqrtf(dx * dx + dy * dy + dz * dz);
 		knprev = knots[i - 1];
-		knots[i] = knprev + sq;
+		knots[i] = knprev + dist;
 	}
 
 	for (i = 1; i < count; i++) {

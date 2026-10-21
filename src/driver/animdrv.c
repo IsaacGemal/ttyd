@@ -581,11 +581,7 @@ s32 animPaperPoseEntry(const char* animName, s32 group) {
 BOOL animEffectAsync(const char* animName, u32 group) {
     s32 fileId;
     s32 other;
-    void** data;
-    char (*entry)[0x20];
-    const char* result;
-    s32 offset;
-    s32 size;
+    BOOL result;
 
     switch (group) {
         case 0:
@@ -599,41 +595,20 @@ BOOL animEffectAsync(const char* animName, u32 group) {
             break;
     }
     fileId = fileAsyncf(FILE_TYPE_ANIMPOSE, NULL, "%s/%s", "a", animName);
-    data = wp->mp_ag2tg->data;
-    size = (s32)data[1];
-    entry = data[0];
-    for (offset = 0; offset < size; offset += 0x20) {
-        if (!strcmp(*entry, animName)) {
-            result = entry[1];
-            goto found;
-        }
-        entry++;
-    }
-    result = "";
-found:
-    other = fileAsyncf(FILE_TYPE_TPL, NULL, "%s/%s-", "a", result);
+    other = fileAsyncf(FILE_TYPE_TPL, NULL, "%s/%s-", "a", animGetAg2tgName(animName));
 
     if (fileId == -1) {
-        return TRUE;
+        result = TRUE;
+    } else if ((u32)fileId == 0) {
+        result = FALSE;
+    } else if (other == -1) {
+        result = TRUE;
+    } else if ((u32)other == 0) {
+        result = FALSE;
+    } else {
+        result = TRUE;
     }
-    if ((u32)fileId == 0) {
-        return FALSE;
-    }
-    if (other == -1) {
-        return TRUE;
-    }
-#ifdef MUST_MATCH
-    // Natural `return other != 0;` compiles to the branchless (x | -x) >> 31 form; the
-    // original keeps the explicit 0/1 blocks, which a goto preserves.
-    if ((u32)other != 0) {
-        goto ret_true;
-    }
-    return FALSE;
-ret_true:
-    return TRUE;
-#else
-    return other != 0;
-#endif
+    return result;
 }
 
 void animPosePeraOn(s32 poseId) {
