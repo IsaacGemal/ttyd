@@ -436,11 +436,7 @@ s32 _get_pri(s8 type) {
 
 void BattleStatusChangeInfoSetAnnouce(BattleUnit* unit, s32 type, s8 p1, s32 p2) {
 	BattleStatusChangeEntry* list = unit->mStatusChange;
-#ifdef MUST_MATCH
-	s8 pri = _get_pri(type + 0);
-#else
 	s8 pri = _get_pri(type);
-#endif
 	s32 i = 0;
 	BattleStatusChangeEntry entry;
 	BattleStatusChangeEntry tmp;
@@ -466,11 +462,7 @@ void BattleStatusChangeInfoSetAnnouce(BattleUnit* unit, s32 type, s8 p1, s32 p2)
 	entry.type = type;
 	entry.mFlags = p1;
 	entry.mMsgVariant = p2;
-#ifdef MUST_MATCH
-	if (list[i].type == type + 0) {
-#else
 	if (list[i].type == type) {
-#endif
 		list[i] = entry;
 	} else {
 		for (j = i; j < 6; j++) {

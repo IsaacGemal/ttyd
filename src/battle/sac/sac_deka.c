@@ -1168,9 +1168,7 @@ void yuka_disp(CameraId cameraId, void* param) {
     GXTexObj texObj;
     DekaYukaMesh* base;
     s32 i;
-#ifdef MUST_MATCH
     s32 j;
-#endif
 
     if (p->texEntry->address == NULL) {
         return;
@@ -1197,28 +1195,20 @@ void yuka_disp(CameraId cameraId, void* param) {
     GXLoadPosMtxImm(cam->view, 0);
     GXSetCurrentMtx(0);
 
-#ifdef MUST_MATCH
-    // Match trick: standing alone, MWCC emits the GX FIFO base (lis r29,0xcc01) after the
-    // loop's induction-variable inits. Wrapping the loop in a one-iteration outer loop makes
-    // the hoisted address come first, as the original does; the outer loop folds away. The
-    // #else form is the natural single loop.
     for (j = 0; j < 1; j++) {
-#endif
-    for (i = 0; i < 0x80; i++) {
-        GXBegin(0x80, 0, 4);
-        GXPosition3f32(base->disp[0][i].x, base->disp[0][i].y, base->disp[0][i].z);
-        GXTexCoord2f32(base->texU[0][i], base->texV[0][i]);
-        GXPosition3f32(base->disp[1][i].x, base->disp[1][i].y, base->disp[1][i].z);
-        GXTexCoord2f32(base->texU[1][i], base->texV[1][i]);
-        GXPosition3f32(base->disp[1][i + 1].x, base->disp[1][i + 1].y, base->disp[1][i + 1].z);
-        GXTexCoord2f32(base->texU[1][i + 1], base->texV[1][i + 1]);
-        GXPosition3f32(base->disp[0][i + 1].x, base->disp[0][i + 1].y, base->disp[0][i + 1].z);
-        GXTexCoord2f32(base->texU[0][i + 1], base->texV[0][i + 1]);
-        GXEnd();
+        for (i = 0; i < 0x80; i++) {
+            GXBegin(0x80, 0, 4);
+            GXPosition3f32(base->disp[j][i].x, base->disp[j][i].y, base->disp[j][i].z);
+            GXTexCoord2f32(base->texU[j][i], base->texV[j][i]);
+            GXPosition3f32(base->disp[j + 1][i].x, base->disp[j + 1][i].y, base->disp[j + 1][i].z);
+            GXTexCoord2f32(base->texU[j + 1][i], base->texV[j + 1][i]);
+            GXPosition3f32(base->disp[j + 1][i + 1].x, base->disp[j + 1][i + 1].y, base->disp[j + 1][i + 1].z);
+            GXTexCoord2f32(base->texU[j + 1][i + 1], base->texV[j + 1][i + 1]);
+            GXPosition3f32(base->disp[j][i + 1].x, base->disp[j][i + 1].y, base->disp[j][i + 1].z);
+            GXTexCoord2f32(base->texU[j][i + 1], base->texV[j][i + 1]);
+            GXEnd();
+        }
     }
-#ifdef MUST_MATCH
-    }
-#endif
 }
 
 // get_ptr is kept out of line: the original callers all emit `bl get_ptr`.

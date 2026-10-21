@@ -169,25 +169,19 @@ USER_FUNC(_get_escape_rate) {
 }
 
 
-// MUST_MATCH: reading args[0] through a volatile pointer forces MWCC to emit the
-// args[0] load before the callee-saved args[1] load, as the original does.
-// event->args is plain s32*, nothing here is actually volatile.
 USER_FUNC(_get_heart_suitoru_point) {
     BattleWork* wp = _battleWorkPointer;
     BattleUnit* unit;
     s32* args = event->args;
-    s32 arg0;
+    s32 id;
     s32 arg1;
     s32 value;
 
-#ifdef MUST_MATCH
-    arg0 = *(volatile s32*)&args[0];
-#else
-    arg0 = args[0];
-#endif
+    id = args[0];
     arg1 = args[1];
 
-    unit = BattleGetUnitPtr(wp, BattleTransID(event, arg0));
+    id = BattleTransID(event, id);
+    unit = BattleGetUnitPtr(wp, id);
     value = 0;
     if (unit) {
         value = unit->badgesEquipped.HpDrain;
@@ -200,25 +194,19 @@ USER_FUNC(_get_heart_suitoru_point) {
 }
 
 
-// MUST_MATCH: reading args[0] through a volatile pointer forces MWCC to emit the
-// args[0] load before the callee-saved args[1] load, as the original does.
-// event->args is plain s32*, nothing here is actually volatile.
 USER_FUNC(_get_flower_suitoru_point) {
     BattleWork* wp = _battleWorkPointer;
     BattleUnit* unit;
     s32* args = event->args;
-    s32 arg0;
+    s32 id;
     s32 arg1;
     s32 value;
 
-#ifdef MUST_MATCH
-    arg0 = *(volatile s32*)&args[0];
-#else
-    arg0 = args[0];
-#endif
+    id = args[0];
     arg1 = args[1];
 
-    unit = BattleGetUnitPtr(wp, BattleTransID(event, arg0));
+    id = BattleTransID(event, id);
+    unit = BattleGetUnitPtr(wp, id);
     value = 0;
     if (unit) {
         value = unit->badgesEquipped.FpDrain;

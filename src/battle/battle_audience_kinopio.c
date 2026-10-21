@@ -798,31 +798,16 @@ void BattleAudienceCtrlProcessKinopioBooing(s32 index) {
 
 void BattleAudienceCtrlProcessKinopioDamage(s32 index) {
 	BattleAudienceMember* member;
-#ifdef MUST_MATCH
-	f32 v;
-	f32 w;
-	f32 a;
-#endif
 
 	BattleAudienceBaseGetPtr();
 	member = BattleAudienceGetPtr(index);
 	switch (member->step) {
 	case 0:
 		BattleAudience_SetAnim(index, 9, 0);
-#ifdef MUST_MATCH
-		v = 8.0f;
-		w = -1.0f;
-		member->jumpVelY = v;
-		a = 270.0f;
-		member->jumpAccelY = w;
-		member->motionTimer = 0;
-		member->yaw = a;
-#else
 		member->jumpVelY = 8.0f;
 		member->jumpAccelY = -1.0f;
 		member->motionTimer = 0;
 		member->yaw = 270.0f;
-#endif
 		member->step++;
 		// fallthrough
 	case 1:
@@ -1567,10 +1552,8 @@ void BattleAudienceCtrlProcessKinopioIgnite(s32 index, s32 kind) {
 			member->step++;
 		}
 		break;
-#ifdef MUST_MATCH
-	case 3: // empty case only so MWCC picks the original's compare tree
+	case 3:
 		break;
-#endif
 	}
 }
 
@@ -1580,6 +1563,7 @@ void BattleAudienceCtrlProcessKinopioFire(s32 index, s32 kind) {
 	BattleAudienceMember* member = BattleAudienceGetPtr(index);
 	s32 offsets[24][2];
 	s32 i;
+	f32 step;
 
 	if ((u8)kind == 1) {
 		BattleAudience_SetAnim(index, 0x10, 0);
@@ -1593,18 +1577,9 @@ void BattleAudienceCtrlProcessKinopioFire(s32 index, s32 kind) {
 		member->step++;
 		// fallthrough
 	case 1:
-#ifdef MUST_MATCH
-		{
-			f32 v = member->baseSize.x;
-			f32 step = 0.05f;
-			member->baseSize.x = v + step;
-			v = member->baseSize.y;
-			member->baseSize.y = v + step;
-		}
-#else
-		member->baseSize.x += 0.05f;
-		member->baseSize.y += 0.05f;
-#endif
+		step = 0.05f;
+		member->baseSize.x += step;
+		member->baseSize.y += step;
 		member->counter--;
 		if (member->counter <= 0) {
 #ifdef MUST_MATCH

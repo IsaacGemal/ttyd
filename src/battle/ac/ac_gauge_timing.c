@@ -52,14 +52,6 @@ const s32 dat_80421870 = -1;
 const Vec vec3_802ff860 = {0.0f, 0.0f, 0.0f};
 const Vec vec3_802ff86c = {0.0f, 0.0f, 0.0f};
 
-// MATCH_F64: read the constant through a volatile pointer so mwcc loads it from its own symbol.
-#ifdef MUST_MATCH
-#define MATCH_F64(x) (*(volatile const f64*)&(x))
-#else
-#define MATCH_F64(x) (x)
-#endif
-
-
 // GaugeTiming work area at BattleWork+0x1F4C (inside BattleActions.field_0x2BC). No header declares it.
 typedef struct GaugeTimingWork {
     s32 frame;      // 0x00, frames since the state started
@@ -86,16 +78,9 @@ static void actionCommandDisp(f32 x, f32 y);
 // The default-case acParams[4]/100*field_0x08+50 conversion matches r4 (not r0) once the /100
 // constant is read plainly instead of through MATCH_F32's volatile (float_50 stays volatile).
 s32 battleAcMain_GaugeTiming(BattleWork* work) {
-#ifdef MUST_MATCH
-    // MWCC folds two bases derived directly from `work` into one register; deriving both from
-    // the `ac` intermediate keeps work=r29, dec=r31 and disp=r28 as the original does.
     BattleActions* ac = &work->actionCommands;
     GaugeTimingWork* dec = (GaugeTimingWork*)&ac->field_0x2BC[0];
     BattleACDispParams* disp = &ac->dispParams;
-#else
-    GaugeTimingWork* dec = (GaugeTimingWork*)&work->actionCommands.field_0x2BC[0];
-    BattleACDispParams* disp = &work->actionCommands.dispParams;
-#endif
     s32 autoFlag = 0;
 
     if (work->actionCommands.mAcUnit->badgesEquipped.AutoCommand != 0) {
@@ -470,17 +455,9 @@ void battleAcDelete_GaugeTiming(BattleWork* work) {
 // `cmpwi; beq then; b else`.
 static void actionCommandDisp(f32 x, f32 y) {
     BattleWork* work = _battleWorkPointer;
-#ifdef MUST_MATCH
-    // Deriving disp before camGetPtr (and dec after it) keeps work=r31, vec=r30, disp=r27 and dec=r29,
-    // as the original; the BattleActions intermediate keeps them from folding into the BattleWork base.
     BattleActions* ac = &work->actionCommands;
     BattleACDispParams* disp = &ac->dispParams;
     GaugeTimingWork* dec;
-#else
-    BattleActions* ac = &work->actionCommands;
-    BattleACDispParams* disp = &ac->dispParams;
-    GaugeTimingWork* dec;
-#endif
     CameraEntry* cam;
     f32 baseX;
     f32 baseY;
@@ -493,11 +470,7 @@ static void actionCommandDisp(f32 x, f32 y) {
     s32 icon3;
 
     camGetPtr(CAMERA_2D);
-#ifdef MUST_MATCH
     dec = (GaugeTimingWork*)&ac->field_0x2BC[0];
-#else
-    dec = (GaugeTimingWork*)&ac->field_0x2BC[0];
-#endif
 
     value = dec->gauge / float_100_80421874;
     if (value > float_1_80421878) {

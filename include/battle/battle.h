@@ -175,7 +175,7 @@ typedef struct BattleWorkActRecord {
 } BattleWorkActRecord;
 
 struct BattleAlliance {
-    s16 allianceId;     // 0x0
+    u16 allianceId;     // 0x0
     s8 attackDirection; // 0x2
     // pad 1 byte
     u32 clearConditionMet; // 0x4

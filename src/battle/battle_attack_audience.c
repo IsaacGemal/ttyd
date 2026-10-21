@@ -76,32 +76,21 @@ s32 _get_attack_aud_no(EventEntry* event) {
 }
 
 s32 _attack_aud(EventEntry* event) {
-    f32 z;
-    f32 y;
-    f32 x;
+    Vec pos;
     s32* args = event->args;
     s32 memberId = evtGetValue(event, args[0]);
     s32 type = evtGetValue(event, args[1]);
-#ifdef MUST_MATCH
-    // The `(0, &y)` comma initializers make MWCC keep py/pz in r30/r29 and args in r29 (the
-    // original's registers and 0x30 frame); the plain `&y`/`&z` under #else puts args in r31.
-    f32* py = (0, &y);
-    f32* pz = (0, &z);
-#else
-#define py (&y)
-#define pz (&z)
-#endif
     char* sound = NULL;
 
-    BattleAudience_GetItemOn2(&memberId, &x, py, pz, NULL);
-    y += float_32_8041ccdc;
+    BattleAudience_GetItemOn2(&memberId, &pos.x, &pos.y, &pos.z, NULL);
+    pos.y += float_32_8041ccdc;
     if (type != 1) {
-        effHitEntry(0, 3, x, y, z, float_1_8041cce0);
+        effHitEntry(0, 3, pos.x, pos.y, pos.z, float_1_8041cce0);
         sound = "SFX_BTL_DAMAGED_PLIABLE1";
     }
-    BattleAudience_GetPosition(memberId, &x, py, pz);
+    BattleAudience_GetPosition(memberId, &pos.x, &pos.y, &pos.z);
     if (sound != NULL) {
-        psndSFX_pit(psndSFXOn_3D(sound, (Vec*)&x), 0x3FF);
+        psndSFX_pit(psndSFXOn_3D(sound, &pos), 0x3FF);
     }
     BattleAudience_Attack(memberId);
     return 2;
@@ -253,10 +242,6 @@ void* btlataudGetMoveEventPtr(s32 unitId) {
     return btlataudevtPresentItem_Get;
 }
 
-#ifndef MUST_MATCH
-#undef py
-#undef pz
-#endif
 
 // The default event script, which the original addresses as btlataudevtDummy+0x4 (its @ha/@l
 // relocation carries the +4 addend). MWCC materialises a symbol's base and then adds any offset for

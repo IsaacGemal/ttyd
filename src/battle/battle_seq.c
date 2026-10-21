@@ -2739,22 +2739,12 @@ BOOL BattleCheckConcluded(BattleWork* wp) { //1:1
 	for (i = 0; i < 3; i++) {
 		alliance = (BattleAlliance*)((u8*)wp->alliances + i * sizeof(BattleAlliance));
 		alliance->clearConditionMet = 0;
-#ifdef MUST_MATCH
-		// The original reads allianceId as an unsigned halfword (`lhz`/`cmplwi`); the header
-		// declares the field s16, whose sign-extending load compiles to `lha`. Natural form in #else.
-		if (*(u16*)&alliance->allianceId == 0) {
-#else
 		if (alliance->allianceId == 0) {
-#endif
 			count++;
 			alliance->clearConditionMet = 1;
 			continue;
 		}
-#ifdef MUST_MATCH
-		if (*(u16*)&alliance->allianceId & 1) {
-#else
 		if (alliance->allianceId & 1) {
-#endif
 			for (j = 0; j < 64; j++) {
 				unit = BattleGetUnitPtr(wp, j);
 				if (unit != NULL && unit->mAlliance == i &&
@@ -2771,11 +2761,7 @@ BOOL BattleCheckConcluded(BattleWork* wp) { //1:1
 				continue;
 			}
 		}
-#ifdef MUST_MATCH
-		if (*(u16*)&alliance->allianceId & 2) {
-#else
 		if (alliance->allianceId & 2) {
-#endif
 			for (j = 0; j < 64; j++) {
 				unit = BattleGetUnitPtr(wp, j);
 				if (unit != NULL && unit->mAlliance == i &&
@@ -2821,16 +2807,8 @@ void _mapobj_data_touch_scale(s32 kind) { //1:1
 s32 _set_haikei_entry_scale(EventEntry* event, BOOL isFirstCall) {
 	BattleWork* wp = _battleWorkPointer;
 	s32 ret = 0;
-#ifdef MUST_MATCH
-	// Declaration order and the separate obj2 reproduce the original's FPR/GPR allocation; the
-	// natural form is under #else.
 	f32 scale2, scale1, scaleDiv;
 	BattleStageObject* obj;
-	BattleStageObject* obj2;
-#else
-	f32 scale1, scale2, scaleDiv;
-	BattleStageObject* obj;
-#endif
 	s32 i;
 
 	if (isFirstCall) {
@@ -2923,19 +2901,11 @@ s32 _set_haikei_entry_scale(EventEntry* event, BOOL isFirstCall) {
 				}
 				scaleDiv = 100.0f;
 				for (i = 0; i < 32; i++) {
-#ifdef MUST_MATCH
-					obj2 = &wp->stageObjects[i];
-					if (obj2->id > 0 && obj2->data->mLayer == 1) {
-						mapObjScale(obj2->data->name, scale2 / scaleDiv, scale1 / scaleDiv, 1.0f);
-						obj2->mFlags |= BSO_FLAG_DIRTY;
-					}
-#else
 					obj = &wp->stageObjects[i];
 					if (obj->id > 0 && obj->data->mLayer == 1) {
 						mapObjScale(obj->data->name, scale2 / scaleDiv, scale1 / scaleDiv, 1.0f);
 						obj->mFlags |= BSO_FLAG_DIRTY;
 					}
-#endif
 				}
 			}
 		}

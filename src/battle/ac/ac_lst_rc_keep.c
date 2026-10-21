@@ -5,9 +5,12 @@
 #include "battle/battle_unit.h"
 #include "driver/camdrv.h"
 #include "driver/icondrv.h"
-#include "driver/icondrv_gx.h"
 #include "system.h"
 #include <string.h>
+
+// iconDispGx's definition takes the icon id as s32, but this unit's original passes it zero-extended
+// (u16); declare it with the width this file's asm passes (see tools/local_prototype_exceptions.json).
+void iconDispGx(f32 scale, Vec* position, s16 flags, u16 iconId);
 
 // LstRcKeep action-command work area at _battleWorkPointer + 0x1F4C. No header declares it.
 // It begins where BattleACDispParams ends (the header stops at 0x2BC in BattleActions).
@@ -298,10 +301,6 @@ void battleAcDelete_LstRcKeep(BattleWork* work) {
 }
 
 
-// The original emits `clrlwi r5, r0, 16` for the loop's icon id: the original iconDispGx reads a
-// zero-extended u16 (see iconDispGxAlpha's `clrlwi r5, 16`), but this header declares its iconId `s16`,
-// so a plain call emits `extsh`. The function-pointer cast (same workaround as battle_menu_disp) makes
-// the call site zero-extend instead; it still compiles to a direct `bl iconDispGx`.
 static void actionCommandDisp(f32 x, f32 y, s32 type) {
     s32 off;
     s32 i;
@@ -347,12 +346,7 @@ static void actionCommandDisp(f32 x, f32 y, s32 type) {
             Vec v = (Vec){0.0f, 0.0f, 0.0f};
             v.x = x + (f32)(off - 0x102);
             v.y = y;
-#ifdef MUST_MATCH
-            // iconDispGx's header says s16 but the original passes a zero-extended u16 (clrlwi, no extsh).
-            ((void (*)(Vec*, s16, u16, f32))iconDispGx)(&v, 0x10, (u16)(i + 0x92), float_1_8041e5e0);
-#else
-            iconDispGx(float_1_8041e5e0, &v, 0x10, (s16)(i + 0x92));
-#endif
+            iconDispGx(float_1_8041e5e0, &v, 0x10, i + 0x92);
         }
         else {
             Vec v = (Vec){0.0f, 0.0f, 0.0f};

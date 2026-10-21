@@ -205,11 +205,6 @@ typedef struct GenkiWork {
 
 static GenkiWork* get_ptr(void);
 
-// Matches: the original schedules each effRecoveryEntry's argument setup the way mwcc does for
-// known constants (x and the count are hoisted above the previous call's result store). It only
-// does that when it can treat the values as literals, so the MUST_MATCH branch passes the two
-// values inline (identical to float_0_80421d84 / float_neg1000_80421d88); the natural extern
-// form is under #else.
 s32 main_genki(EventEntry* event, BOOL isFirstCall) {
     GenkiWork* genki = get_ptr();
     s32 i;
@@ -242,15 +237,9 @@ s32 main_genki(EventEntry* event, BOOL isFirstCall) {
         } else {
             genki->field_5C = (s32*)BattleAlloc(0xC8);
         }
-#ifdef MUST_MATCH
         genki->field_34 = effRecoveryEntry(2, 0, 0.0f, -1000.0f, 0.0f);
         genki->field_38 = effRecoveryEntry(2, 0, 0.0f, -1000.0f, 0.0f);
         genki->field_3C = effRecoveryEntry(3, 0, 0.0f, -1000.0f, 0.0f);
-#else
-        genki->field_34 = effRecoveryEntry(2, 0, float_0_80421d84, float_neg1000_80421d88, float_0_80421d84);
-        genki->field_38 = effRecoveryEntry(2, 0, float_0_80421d84, float_neg1000_80421d88, float_0_80421d84);
-        genki->field_3C = effRecoveryEntry(3, 0, float_0_80421d84, float_neg1000_80421d88, float_0_80421d84);
-#endif
         for (i = 0; i < 7; i++) {
             genki->weapon[i].field_44 = effStarStoneEntry(i, float_0_80421d84, float_neg1000_80421d88,
                                                           float_0_80421d84, 1.0f);

@@ -483,13 +483,7 @@ void btlseqEnd(BattleWork* wp) {
     BattleUnit* party;
     EventEntry* event;
     s32 flag;
-#ifdef MUST_MATCH
-    // MUST_MATCH: the loop variable is a signed byte in the original; typing it s32 and casting only at the
-    // comparisons makes MWCC emit the original's `extsb` in the loop and `mr` (no extension) for the calls.
-    s32 i;
-#else
     s8 i;
-#endif
     NpcBattleInfo* setup;
 
     work = wp->seqEndWork;
@@ -613,13 +607,8 @@ void btlseqEnd(BattleWork* wp) {
             BtlUnit_GetPartsPtr(party, BtlUnit_GetBodyPartsId(party))->poseTable = pose_table_nokotarou_stay;
         }
         BattleConsumeReserveItem();
-#ifdef MUST_MATCH
-        for (i = 0; (s8)i < 0x1C; i++) {
-            if ((s8)i >= 0x1C || (s8)i < 0x19) {
-#else
         for (i = 0; i < 0x1C; i++) {
             if (i >= 0x1C || i < 0x19) {
-#endif
                 if (party != NULL) {
                     BtlUnit_SetStatus(party, i, 0, 0);
                 }

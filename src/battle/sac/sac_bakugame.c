@@ -267,9 +267,6 @@ s32 bakuGameDecideWeapon(EventEntry* event, BOOL isFirstCall) {
     s32 v;
     BakuGameWork* baku;
     s8* p;
-#ifdef MUST_MATCH
-    s32 weaponArg;
-#endif
 
     evtGetFloat(event, event->args[0]);
     v = evtGetValue(event, args[1]);
@@ -1468,18 +1465,11 @@ static inline BakuGameWorkEntry* bakuGameEntry(BakuGameWork* work, s32 i) {
 }
 
 void bakuGameDisp2D(void) {
-    BattleWork* wp;
-    BakuGameWork* baku;
+    BakuGameWork* baku = GetBakuGamePtr();
+    BakuGameGaugeColor* color = (BakuGameGaugeColor*)((u8*)_battleWorkPointer + 0x1F2C);
     s32 i;
     s32 flag;
 
-    baku = GetBakuGamePtr();
-    wp = _battleWorkPointer;
-#ifdef MUST_MATCH
-    // Match-only round trip (net value unchanged): forces MWCC to keep wp in r31 so baku lands in r30.
-    wp = (BattleWork*)((u32)wp + 0x1F2C);
-    wp = (BattleWork*)((u32)wp - 0x1F2C);
-#endif
     for (i = 0; i < 3; i++) {
         BakuGameWorkEntry* entry = bakuGameEntry(baku, i);
         s32 icon;
@@ -1507,20 +1497,18 @@ void bakuGameDisp2D(void) {
     }
     flag = 0;
     if (baku->gauge >= 100.0f) {
-        BakuGameGaugeColor* p = (BakuGameGaugeColor*)((u8*)wp + 0x1F2C);
-
         flag = 1;
-        p->r = 0;
-        p->a = 0xFF;
-        p->g += p->dg;
-        p->b += p->db;
-        if (p->g <= 0x80 && p->dg <= 0) {
-            p->db = 0x10;
-            p->dg = 0x10;
+        color->r = 0;
+        color->a = 0xFF;
+        color->g += color->dg;
+        color->b += color->db;
+        if (color->g <= 0x80 && color->dg <= 0) {
+            color->db = 0x10;
+            color->dg = 0x10;
         }
-        if (p->g >= 0xF5 && p->dg >= 0) {
-            p->db = -0x10;
-            p->dg = -0x10;
+        if (color->g >= 0xF5 && color->dg >= 0) {
+            color->db = -0x10;
+            color->dg = -0x10;
         }
     }
     BattleAcDrawGauge((s32)baku->field_0xDC, (s32)baku->field_0xE0, baku->gaugeFill, 0xB1, 3, 0x21, 0x42, 0x64, flag);

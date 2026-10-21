@@ -234,19 +234,9 @@ static void actionCommandDisp(f32 f1, f32 f2) {
     }
     disp->value = ratio;
 
-#ifdef MUST_MATCH
-    // Match-only: the volatile read keeps `ratio` live across the draw call's argument setup, which
-    // is what makes MWCC reuse the divisor register for the division (`fdivs f1, f2, f1`) instead of
-    // coalescing the result with the numerator; it also produces the original's reload of disp->value
-    // for the last argument. Plain `disp->value` (below) compiles to `fdivs f2, f2, f1`.
-    ratio = *(volatile f32*)&disp->value;
-    BattleAcDrawGauge((s32)f1, (s32)f2, ratio, 0xb2, work->actionCommands.acParams[1], work->actionCommands.acParams[2],
-                      work->actionCommands.acParams[3], work->actionCommands.acParams[4], 0);
-#else
     BattleAcDrawGauge((s32)f1, (s32)f2, disp->value, 0xb2, work->actionCommands.acParams[1],
                       work->actionCommands.acParams[2], work->actionCommands.acParams[3],
                       work->actionCommands.acParams[4], 0);
-#endif
 
     switch (work->actionCommands.mAcState) {
     case 0x63:

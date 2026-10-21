@@ -332,13 +332,6 @@ static void actionCommandDisp(f32 f1, f32 f2) {
 	BattleActions* ac = &work->actionCommands;
 	BattleACDispParams* disp = &ac->dispParams;
 	AirGaugeDecWork* dec;
-#ifdef MUST_MATCH
-	// Match-only: `gv` is the draw call's float argument read through a volatile lvalue. The volatile
-	// read makes MWCC load disp->value into f1 before the two (s32) parameter conversions, which then
-	// colour into f2/f0 as the original does; a plain `disp->value` schedules the load after them and
-	// colours the first conversion into f1.
-	f32 gv;
-#endif
 	f32 value;
 	f32 target;
 
@@ -364,15 +357,9 @@ static void actionCommandDisp(f32 f1, f32 f2) {
 		}
 	}
 
-#ifdef MUST_MATCH
-	gv = *(volatile f32*)&disp->value;
-	BattleAcDrawGauge((s32)f1, (s32)f2, gv, 0xb2, work->actionCommands.acParams[2], work->actionCommands.acParams[3],
-	                  work->actionCommands.acParams[4], work->actionCommands.acParams[5], 0);
-#else
 	BattleAcDrawGauge((s32)f1, (s32)f2, disp->value, 0xb2, work->actionCommands.acParams[2],
 	                  work->actionCommands.acParams[3], work->actionCommands.acParams[4],
 	                  work->actionCommands.acParams[5], 0);
-#endif
 	if (dec->flag != 0) {
 		Vec pos;
 		pos = (Vec){0.0f, 0.0f, 0.0f};

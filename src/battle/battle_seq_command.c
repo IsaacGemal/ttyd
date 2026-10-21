@@ -1385,7 +1385,7 @@ void BattleCommandDisplay(BattleWork* wp) {
 			dispEntry(CAMERA_2D, 500.0f, 0, (DispCallback)BattleCommandDisplay_MultiItemMenuDisp, wp);
 		}
 		if (cmd->menuFlags & 0x10000) {
-			dispEntry(CAMERA_2D, 500.0f, 0, (DispCallback)BattleCommandDisplay_TargetSelectMenuDisp, wp);
+			dispEntry(CAMERA_2D, 500.0f, 0, BattleCommandDisplay_TargetSelectMenuDisp, wp);
 		}
 		if (cmd->menuFlags & 0x100000) {
 			dispEntry(CAMERA_2D, 500.0f, 0, (DispCallback)BattleCommandDisplay_ProtectPartnerSelectMenuDisp, wp);
@@ -2130,15 +2130,8 @@ void BattleCommandDisplay_TargetSelectMenuSetup(BattleWork* wp) {
 	BtlUnit_SetAnimType(BtlUnit_GetPartsPtr(unit, BtlUnit_GetBodyPartsId(unit)), 0x28);
 }
 
-void BattleCommandDisplay_TargetSelectMenuDisp(CameraId camId, BattleWork* param) {
-#ifdef MUST_MATCH
-	// MUST_MATCH: the original's parameter is `void*`, so its typed `BattleWork*` local is not
-	// coalesced with the parameter; the cast keeps them apart and puts wp in r29 (with
-	// `BattleWork* wp = param;` MWCC uses r26 and the whole tail rotates, 99.09%).
-	BattleWork* wp = (BattleWork*)(void*)param;
-#else
+void BattleCommandDisplay_TargetSelectMenuDisp(CameraId camId, void* param) {
 	BattleWork* wp = param;
-#endif
 	BattleCommand* cmd = &wp->commandMenu;
 	BattleCursor* cursor;
 	BattleWeapon* weapon;

@@ -357,19 +357,6 @@ void DrawMainIconHukidasi(BattleMenuWork* window, void* entryPtr, Mtx* mtx, f32 
 
 // Quad corner / texture-coordinate tables used by DrawMainIconCircle (0x80 each).
 
-
-
-#ifdef MUST_MATCH
-// Passing the colour through this by-value inline helper (instead of a named local) is what
-// makes MWCC place the GXColor argument temp in the original's stack slot.
-static inline GXColor MainIconCircleColor(GXColor base, u8 a) {
-    base.r = a;
-    base.g = a;
-    base.b = a;
-    return base;
-}
-#endif
-
 void DrawMainIconCircle(BattleMenuWork* window, void* entryPtr, Mtx* mtx, Vec* pos, f32 scale) {
     BattleMenuDispEntry* entry = entryPtr;
     BattleWork* wp = _battleWorkPointer;
@@ -446,25 +433,9 @@ void DrawMainIconCircle(BattleMenuWork* window, void* entryPtr, Mtx* mtx, Vec* p
         iconId = 0x18B;
     }
     if (entry->enabled == 1) {
-#ifdef MUST_MATCH
-        iconDispGxCol(resultMtx, 0x10, iconId, MainIconCircleColor(((GXColor){ 0x00,0x00,0x00,0xFF }), alpha));
-#else
-        GXColor color = ((GXColor){ 0x00,0x00,0x00,0xFF });
-        color.r = alpha;
-        color.g = alpha;
-        color.b = alpha;
-        iconDispGxCol(resultMtx, 0x10, iconId, color);
-#endif
+        iconDispGxCol(resultMtx, 0x10, iconId, (GXColor){ alpha, alpha, alpha, 0xFF });
     } else {
-#ifdef MUST_MATCH
-        iconDispGxCol(resultMtx, 0x30, iconId, MainIconCircleColor(((GXColor){ 0x00,0x00,0x00,0xFF }), alpha));
-#else
-        GXColor color = ((GXColor){ 0x00,0x00,0x00,0xFF });
-        color.r = alpha;
-        color.g = alpha;
-        color.b = alpha;
-        iconDispGxCol(resultMtx, 0x30, iconId, color);
-#endif
+        iconDispGxCol(resultMtx, 0x30, iconId, (GXColor){ alpha, alpha, alpha, 0xFF });
     }
 }
 
@@ -1622,12 +1593,7 @@ void DrawMainMenu(void) {
                 f32 v70 = kakutable[cursor->unk8 - 3][window->iconFromSlot[i]];
                 f32 v84 = kakutable[cursor->unk8 - 3][window->iconSlot[i]];
                 f32 cur;
-#ifdef MUST_MATCH
-                // Zero on the left: the original's fcmpu has the constant first.
                 if (float_0_8041c144 == v84) {
-#else
-                if (v84 == float_0_8041c144) {
-#endif
                     v84 = 360.0f;
                 }
                 cur = (f32)window->iconFrame[i] * 0.2f + 3.1415927f * v70 / 180.0f;
@@ -1654,12 +1620,7 @@ void DrawMainMenu(void) {
                 f32 v84;
                 f32 cur;
                 v70 = kakutable[cursor->unk8 - 3][window->iconFromSlot[i]];
-#ifdef MUST_MATCH
-                // Zero on the left: the original's fcmpu has the constant first.
                 if (float_0_8041c144 == v70) {
-#else
-                if (v70 == float_0_8041c144) {
-#endif
                     v70 = 360.0f;
                 }
                 v84 = kakutable[cursor->unk8 - 3][window->iconSlot[i]];

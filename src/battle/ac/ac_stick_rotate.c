@@ -90,7 +90,7 @@ s32 _GetInputDir(void) {
     return p ? 7 : 0;
 }
 
-s32 _CalcRollDir(void) {
+s8 _CalcRollDir(void) {
     BattleWork* work = _battleWorkPointer;
     StickRotateWork* sr = (StickRotateWork*)&work->actionCommands.field_0x2BC[0];
     s8 input = sr->inputDir;
@@ -103,7 +103,7 @@ s32 _CalcRollDir(void) {
         return 0;
     }
     if (input == prev) {
-        return (u8)sr->rollDir;
+        return sr->rollDir;
     }
     if (input == 1 && prev == 8) {
         return 1;
@@ -122,17 +122,9 @@ s32 _CalcRollDir(void) {
 #pragma dont_inline reset
 
 s32 battleAcMain_StickRotate(BattleWork* work) {
-#ifdef MUST_MATCH
-    // Match-only: addressing the work area through the header's named field (via the `ac`
-    // intermediate) is what keeps work=r28, sr=r31 and disp=r30 in separate registers; the
-    // natural form below folds sr into the BattleWork base.
     BattleActions* ac = &work->actionCommands;
     StickRotateWork* sr = (StickRotateWork*)&ac->field_0x2BC[0];
     BattleACDispParams* disp = &ac->dispParams;
-#else
-    StickRotateWork* sr = (StickRotateWork*)&work->actionCommands.field_0x2BC[0];
-    BattleACDispParams* disp = &work->actionCommands.dispParams;
-#endif
     s32 cont;
 
     do {
@@ -205,14 +197,7 @@ s32 battleAcMain_StickRotate(BattleWork* work) {
                 }
                 break;
             case 0x3E9: {
-#ifdef MUST_MATCH
-                // Match-only: as an `s8` local MWCC keeps the sign-extended copy in r0 and puts the
-                // other s8 temps in different registers; the s32 local with explicit (s8) casts keeps
-                // roll in r3 and the temps in r0/r4/r5 as the original does.
-                s32 roll;
-#else
                 s8 roll;
-#endif
                 if (work->actionCommands.guardFrames > 0) {
                     (work->actionCommands.guardFrames)--;
                     work->actionCommands.result = 2;
@@ -266,10 +251,10 @@ s32 battleAcMain_StickRotate(BattleWork* work) {
                     goto L_801FD700;
                 }
                 roll = _CalcRollDir();
-                if ((s8)roll != 0) {
+                if (roll != 0) {
                 if (sr->rollDir == 0) {
                     s8 dir;
-                    sr->rollDir = (s8)roll;
+                    sr->rollDir = roll;
                     dir = sr->inputDir + sr->rollDir;
                     if (dir >= 9) {
                         dir = 1;
@@ -279,7 +264,7 @@ s32 battleAcMain_StickRotate(BattleWork* work) {
                     }
                     sr->expectDir = sr->inputDir;
                     sr->nextDir = dir;
-                } else if (sr->rollDir != (s8)roll) {
+                } else if (sr->rollDir != roll) {
                     work->actionCommands.result &= ~1;
                     work->actionCommands.mAcState = 0x3EA;
                     cont = 1;
@@ -320,7 +305,7 @@ s32 battleAcMain_StickRotate(BattleWork* work) {
                     goto L_801FD700;
                 }
                 sr->stepFrames = 0;
-                if (sr->rollDir != 0 && sr->rollDir != (s8)roll) {
+                if (sr->rollDir != 0 && sr->rollDir != roll) {
                     work->actionCommands.result &= ~1;
                     work->actionCommands.mAcState = 0x3EA;
                     cont = 1;

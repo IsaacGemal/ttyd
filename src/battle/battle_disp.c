@@ -257,9 +257,6 @@ void btlDispInit(void) {
 	wp->dispFlags |= 2;
 }
 
-// The header's BtlUnit_CheckStatus second parameter is StatusEffectType (int), but the callee
-// sign-extends it and battle_status_effect.h says it "should be an s8". Calling through a matching
-// function pointer makes MWCC coerce the argument like the original (`extsb r4,r30` after `mr r3,r29`).
 // Keep _GetStatusPoseType out of line: the original calls it rather than inlining it into btlDispMain.
 #pragma dont_inline on
 StatusEffectType _GetStatusPoseType(BattleUnit* unit) {
@@ -272,11 +269,7 @@ StatusEffectType _GetStatusPoseType(BattleUnit* unit) {
 	while (1) {
 		type = *table;
 		if (*table == -1) break;
-#ifdef MUST_MATCH
-		if (((BOOL(*)(BattleUnit*, s8))BtlUnit_CheckStatus)(unit, type)) {
-#else
 		if (BtlUnit_CheckStatus(unit, type)) {
-#endif
 			return type;
 		}
 		table++;

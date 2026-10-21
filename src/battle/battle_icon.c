@@ -25,13 +25,7 @@ BattleIcon* BtlIconGetPtr(s32 index) {
 
 	for (i = 0; i < 16; i++) {
 		icon = &_battleWorkPointer->icons[i];
-#ifdef MUST_MATCH
-		// BattleWorkIcon.flags is u16 in the original (lhz); the header declares it s16, so reinterpret
-		// to emit the unsigned load without editing the existing header line.
-		if (*(u16*)&icon->flags & 1 && icon->index == index) {
-#else
 		if (icon->flags & 1 && icon->index == index) {
-#endif
 			return icon; //TODO: redo bwp->iconWork?
 		}
 	}
@@ -53,21 +47,11 @@ void BattleIconMain(void) {
 	wp = _battleWorkPointer;
 	for (i = 0; i < 16; i++) {
 		icon = &wp->icons[i];
-#ifdef MUST_MATCH
-		// flags is u16 in the original (lhz); the header declares it s16, so reinterpret
-		// to emit the unsigned load without editing the existing header line.
-		if (*(u16*)&icon->flags & 1) { //in use
-#else
 		if (icon->flags & 1) { //in use
-#endif
 			if (icon->base) {
 				iconSetPos(icon->base->name, icon->position.x, icon->position.y, icon->position.z);
 				iconSetScale(icon->base->name, icon->field_0x14 * icon->field_0x18);
-#ifdef MUST_MATCH
-				if (*(u16*)&icon->flags & 2) {
-#else
 				if (icon->flags & 2) {
-#endif
 					iconFlagOn(icon->base->name, 2);
 				}
 				else {
@@ -99,13 +83,7 @@ BattleIcon* BtlIcon_Entry(u16 iconId, f32 x, f32 y, f32 z) {
 
 	for (i = 0; i < 16; i++) {
 		icon = &_battleWorkPointer->icons[i];
-#ifdef MUST_MATCH
-		// flags is u16 in the original (lhz); the header declares it s16, so reinterpret
-		// to emit the unsigned load without editing the existing header line.
-		if (!(*(u16*)&icon->flags & 1)) {
-#else
 		if (!(icon->flags & 1)) {
-#endif
 			break; //found one not in use
 		}
 	}
@@ -122,12 +100,7 @@ BattleIcon* BtlIcon_Entry(u16 iconId, f32 x, f32 y, f32 z) {
 	icon->position.z = z;
 	icon->iconId = iconId;
 	sprintf(name, "_biu_%02x", icon->index);
-#ifdef MUST_MATCH
-	// Same s16/u16 issue: the original loads iconId with lhz.
-	iconEntry(name, *(u16*)&icon->iconId);
-#else
 	iconEntry(name, icon->iconId);
-#endif
 	icon->base = iconNameToPtr(name);
 	iconSetPos(icon->base->name, icon->position.x, icon->position.y, icon->position.z);
 	return icon;
@@ -137,22 +110,11 @@ BattleIcon* BtlIcon_Entry(u16 iconId, f32 x, f32 y, f32 z) {
 // dont_inline keeps BtlIcon_Delete a real `bl` from the evt commands as in retail.
 #pragma dont_inline on
 
-// flags is u16 in the original (lhz); the header declares it s16, so `& 1` and `&= ~1`
-// need the sign-agnostic forms.
 void BtlIcon_Delete(BattleIcon* icon) {
-#ifdef MUST_MATCH
-	// BattleIcon.flags is u16 in the original (lhz); the header declares it s16, so reinterpret
-	// to emit the unsigned load/mask without editing the existing header line.
-	if (*(u16*)&icon->flags & 1) {
-		iconDelete(icon->base->name);
-		*(u16*)&icon->flags &= ~1;
-	}
-#else
 	if (icon->flags & 1) {
 		iconDelete(icon->base->name);
 		icon->flags &= ~1;
 	}
-#endif
 }
 #pragma dont_inline reset
 

@@ -240,7 +240,6 @@ void battleCameraMain(void) {
     break;
   }
   case 8: {
-    f32 dxc;
     f32 t;
     f32 f9;
     f32 v;
@@ -248,6 +247,7 @@ void battleCameraMain(void) {
     f32 num;
     f32 wb;
     f32 wa;
+    f32 dxc;
     f32 xv;
     f32 base;
     f32 f11;
@@ -270,13 +270,7 @@ void battleCameraMain(void) {
     if (wb < 0.0f) {
       wb = 0.0f;
     }
-    // Match-only: materialising the subtraction keeps dxc in the original register (and leaves the
-    // earlier width in f3 instead of f4).
-#ifdef MUST_MATCH
-    { f32 _t = wp->cameraWork.unkC8.x - wp->cameraWork.unkBC.x; dxc = _t; }
-#else
     dxc = wp->cameraWork.unkC8.x - wp->cameraWork.unkBC.x;
-#endif
     num = hv.x - vv.x;
     if (dxc == 0.0f) {
       t = 0.5f;
@@ -736,27 +730,15 @@ void battleCameraMoveTo(s32 id, s32 a, f32* p1, f32* p2, f32* p3, f32* p4,
 
   if (id == 1) {
     if (wp->flags & 0x100) {
-// MUST_MATCH: with the literal `+= 0.0f` below MWCC folds the two adds away and assigns
-// the temporaries to different registers; the named zero/tmp keep the original schedule.
-#ifdef MUST_MATCH
-      f32 d = mario->mHomePosition.z;
-      f32 zero = 0.0f;
-      f32 tmp = 0.25f * -d;
-      f1 += zero;
-      f3 += d;
-      f4 += zero;
-      f6 += d;
-      f2 += tmp;
-      f5 += tmp;
-#else
-      f32 d = mario->mHomePosition.z;
-      f1 += 0.0f;
-      f3 += d;
-      f4 += 0.0f;
-      f6 += d;
-      f2 += 0.25f * -d;
-      f5 += 0.25f * -d;
-#endif
+      f32 dx = 0.0f;
+      f32 dy = 0.25f * -mario->mHomePosition.z;
+      f32 dz = mario->mHomePosition.z;
+      f1 += dx;
+      f2 += dy;
+      f3 += dz;
+      f4 += dx;
+      f5 += dy;
+      f6 += dz;
     }
     f1 += wp->cameraWork.position.x;
     f2 += wp->cameraWork.position.y;
