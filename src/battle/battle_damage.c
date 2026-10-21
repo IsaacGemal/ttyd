@@ -298,7 +298,7 @@ void BattleDamageDirect(s32 damageCode, BattleUnit* unit, s32 partArg, s32 damag
                 s32 clear = 1;
 
                 if ((flags & 0x400) && !(flags & 0x800) && (flags & 0x100)) {
-                    if (((u8*)unit->vulnStatus)[0x10] != 0) {
+                    if (unit->vulnStatus->galeForceRate != 0) {
                         clear = 0;
                     }
                 }
@@ -688,60 +688,58 @@ s32 BattleCalculateFpDamage(BattleUnit* attacker, BattleUnit* target, BattleUnit
 
 
 s32 _getSickStatusRate(BattleWeapon* weapon, s32 type) {
-    u8* w = (u8*)weapon;
-
     switch (type) {
-    case STATUS_SLEEP: return w[0x80];
-    case STATUS_STOP: return w[0x82];
-    case STATUS_DIZZY: return w[0x84];
-    case STATUS_POISON: return w[0x86];
-    case STATUS_CONFUSE: return w[0x89];
-    case STATUS_ELECTRIC: return w[0x8B];
-    case STATUS_DODGY: return w[0x8D];
-    case STATUS_BURN: return w[0x8F];
-    case STATUS_FREEZE: return w[0x91];
+    case STATUS_SLEEP: return weapon->sleepChance;
+    case STATUS_STOP: return weapon->stopChance;
+    case STATUS_DIZZY: return weapon->dizzyChance;
+    case STATUS_POISON: return weapon->poisonChance;
+    case STATUS_CONFUSE: return weapon->confuseChance;
+    case STATUS_ELECTRIC: return weapon->electricChance;
+    case STATUS_DODGY: return weapon->dodgyChance;
+    case STATUS_BURN: return weapon->burnChance;
+    case STATUS_FREEZE: return weapon->freezeChance;
     case STATUS_HUGE:
-        if ((s8)w[0x95] > 0) {
-            return w[0x93];
+        if (weapon->sizeChangeStrength > 0) {
+            return weapon->sizeChangeChance;
         }
         return 0;
     case STATUS_TINY:
-        if ((s8)w[0x95] <= 0) {
-            return w[0x93];
+        if (weapon->sizeChangeStrength <= 0) {
+            return weapon->sizeChangeChance;
         }
         return 0;
     case STATUS_ATTACK_UP:
-        if ((s8)w[0x98] > 0) {
-            return w[0x96];
+        if (weapon->atkChangeStrength > 0) {
+            return weapon->atkChangeChance;
         }
         return 0;
     case STATUS_ATTACK_DOWN:
-        if ((s8)w[0x98] <= 0) {
-            return w[0x96];
+        if (weapon->atkChangeStrength <= 0) {
+            return weapon->atkChangeChance;
         }
         return 0;
     case STATUS_DEFENSE_UP:
-        if ((s8)w[0x9B] > 0) {
-            return w[0x99];
+        if (weapon->defChangeStrength > 0) {
+            return weapon->defChangeChance;
         }
         return 0;
     case STATUS_DEFENSE_DOWN:
-        if ((s8)w[0x9B] <= 0) {
-            return w[0x99];
+        if (weapon->defChangeStrength <= 0) {
+            return weapon->defChangeChance;
         }
         return 0;
-    case STATUS_ALLERGIC: return w[0x9C];
-    case STATUS_FAST: return w[0xA0];
-    case STATUS_SLOW: return w[0xA2];
-    case STATUS_FRIGHT: return w[0xA4];
-    case STATUS_GALE_FORCE: return w[0xA5];
-    case STATUS_INSTANT_KILL: return w[0x9E];
-    case STATUS_INVISIBLE: return w[0xA8];
-    case STATUS_HP_REGEN: return (s8)w[0xAA] > 0 ? 100 : 0;
-    case STATUS_FP_REGEN: return (s8)w[0xAC] > 0 ? 100 : 0;
-    case STATUS_CHARGE: return (s8)w[0x9F] != 0 ? 100 : 0;
-    case STATUS_PAYBACK: return (s8)w[0xA6] != 0 ? 100 : 0;
-    case STATUS_HOLD_FAST: return (s8)w[0xA7] > 0 ? 100 : 0;
+    case STATUS_ALLERGIC: return weapon->allergicChance;
+    case STATUS_FAST: return weapon->fastChance;
+    case STATUS_SLOW: return weapon->slowChance;
+    case STATUS_FRIGHT: return weapon->frightChance;
+    case STATUS_GALE_FORCE: return weapon->galeForceChance;
+    case STATUS_INSTANT_KILL: return weapon->ohkoChance;
+    case STATUS_INVISIBLE: return weapon->invisibleChance;
+    case STATUS_HP_REGEN: return weapon->hpRegenTime > 0 ? 100 : 0;
+    case STATUS_FP_REGEN: return weapon->fpRegenTime > 0 ? 100 : 0;
+    case STATUS_CHARGE: return weapon->chargeStrength != 0 ? 100 : 0;
+    case STATUS_PAYBACK: return weapon->paybackTime != 0 ? 100 : 0;
+    case STATUS_HOLD_FAST: return weapon->holdFastTime > 0 ? 100 : 0;
     case STATUS_FLIPPED: return 0;
     }
     return 0;
@@ -1624,7 +1622,7 @@ s32 BattlePreCheckDamage(BattleUnit* attacker, BattleUnit* target, BattleUnitPar
             }
         }
     }
-    rate = ((u8*)weapon)[0x10];
+    rate = weapon->baseAccuracy;
     if (BtlUnit_CheckStatus(attacker, 3)) {
         rate = rate * 0x32 / 100;
     }
@@ -1944,9 +1942,6 @@ counter_done:
     }
     return ret;
 }
-#define BU_S8(u, off) (*(s8*)((u8*)(u) + (off)))
-#define BU_S32(u, off) (*(s32*)((u8*)(u) + (off)))
-#define BU_U32(u, off) (*(u32*)((u8*)(u) + (off)))
 
 void BattleAttackDeclare(s32* out1, s32* out2) {
     s32 i;
@@ -2067,37 +2062,37 @@ void __declare(s32 unitId, s32 partId, s32* out1, s32* out2) {
 
 void BattleAttackDeclareAll(BattleWork* wp) {
     s32 i;
-    u8* sampling = (u8*)&wp->sampling;
+    BattleSampling* sampling = &wp->sampling;
 
-    for (i = 0; i < (s8)sampling[0xa6c]; i++) {
-        u8* entry = sampling + (s8)sampling[0xa6d + i] * 0x24 + 4;
+    for (i = 0; i < sampling->count; i++) {
+        BattleSamplingEntry* entry = &sampling->entries[sampling->order[i]];
         s32 out1;
         s32 out2;
 
-        __declare(*(s16*)(entry + 0), *(s16*)(entry + 2), &out1, &out2);
+        __declare(entry->unitId, entry->partId, &out1, &out2);
         if (out1 != -1) {
             s32 j;
 
-            for (j = 0; j < (s8)sampling[0xa6c]; j++) {
-                s16 matchId = *(s16*)(sampling + (s8)sampling[0xa6d + j] * 0x24 + 4);
+            for (j = 0; j < sampling->count; j++) {
+                s16 matchId = sampling->entries[sampling->order[j]].unitId;
                 if (matchId == out1) {
                     s32 k;
 
-                    for (k = j; k < (s8)sampling[0xa6c] - 1; k++) {
-                        sampling[0xa6d + k] = sampling[0xa6d + k + 1];
+                    for (k = j; k < sampling->count - 1; k++) {
+                        sampling->order[k] = sampling->order[k + 1];
                     }
                     if (j <= i) {
                         i--;
                     }
-                    sampling[0xa6c]--;
+                    sampling->count--;
                     break;
                 }
             }
-            *(s16*)(entry + 0) = out1;
-            *(s16*)(entry + 2) = out2;
+            entry->unitId = out1;
+            entry->partId = out2;
         }
     }
-    sampling[0xab7] = 0;
+    sampling->selectIdx = 0;
 }
 
 // dont_inline: the original calls this out of line from BattleCheckDamage.

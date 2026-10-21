@@ -2188,7 +2188,7 @@ HitEntry* searchFrontWall(Vec* pos, f32* out, f32 a, f32 b, f32 c) {
     }
     count = 2;
     if (wp->characterId == 2) {
-        if (*(u32*)wp->field_0x14 & 1) {
+        if (wp->field_0x14 & 1) {
             count = 3;
             half[0] = 0.75f * wp->wPlayerCollisionBox.y;
             half[1] = 0.5f * wp->wPlayerCollisionBox.y;

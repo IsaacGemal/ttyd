@@ -290,11 +290,11 @@ s32 kpaGetBodyStatus(void) {
 }
 
 s32 kpaGetStageType(void) {
-    return (MW_U32(marioGetPtr(), 0x14) >> 1) & 1;
+    return (marioGetPtr()->field_0x14 >> 1) & 1;
 }
 
 s32 kpaGetStageViewType(void) {
-    return !(MW_U32(marioGetPtr(), 0x14) & 1);
+    return !(marioGetPtr()->field_0x14 & 1);
 }
 
 s32 kpaCamFollow(void) {
@@ -331,21 +331,21 @@ void kpaPreInit(void) {
         || strcmp(gp->currentMapName, "kpa_04") == 0
         || strcmp(gp->currentMapName, "kpa_05") == 0
         || strcmp(gp->currentMapName, "kpa_06") == 0) {
-        MW_U32(mp, 0x14) |= 1;
+        mp->field_0x14 |= 1;
     } else {
-        MW_U32(mp, 0x14) &= ~1;
+        mp->field_0x14 &= ~1;
     }
     mp = marioGetPtr();
     if (strcmp(gp->currentMapName, "kpa_03") == 0) {
-        MW_U32(mp, 0x14) |= 2;
+        mp->field_0x14 |= 2;
     } else {
-        MW_U32(mp, 0x14) &= ~2;
+        mp->field_0x14 &= ~2;
     }
     fireefp = NULL;
 }
 
 void kpaMain(void) {
-    if (MW_U32(marioGetPtr(), 0x14) & 1) {
+    if (marioGetPtr()->field_0x14 & 1) {
         kpa2DMain();
     } else {
         kpa3DMain();

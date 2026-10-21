@@ -610,7 +610,7 @@ void main_cursor(void) {
 #pragma dont_inline on
 void main_point(s32 index) {
     MukiWork* work = get_ptr();
-    MukiPoint* point = (MukiPoint*)((u8*)work + index * 0x24 + 0x78);
+    MukiPoint* point = &work->points[index];
     MukiEntry* entry;
     s32 i;
     f32 f;
@@ -884,7 +884,7 @@ s32 end_muki(EventEntry* event, BOOL isFirstCall) {
 #ifdef MUST_MATCH
         entry = (MukiEntry*)((u8*)work + (off & mask) + 0x1BC);
 #else
-        entry = (MukiEntry*)((u8*)work + off + 0x1BC);
+        entry = &work->entries[i];
 #endif
         effDelete(entry->effect);
     }
@@ -1067,7 +1067,7 @@ static void disp_3D(CameraId cameraId, void* param) {
     s32 t;
 
     for (i = 0; i < 9; i++) {
-        point = (MukiPoint*)((u8*)work + i * 0x24 + 0x78);
+        point = &work->points[i];
         if (point->type >= 2 && point->type < 8) {
             for (t = 0; t < 4; t++) {
                 PSMTXScale(m, (f32)arr2[t * 2] * point->field_14,
@@ -1199,7 +1199,7 @@ static void disp_3D_alpha(CameraId cameraId, void* param) {
 // .text:0x198 | 0x80246F64 | size: 0xC
 #pragma dont_inline on
 static MukiWork* get_ptr(void) {
-    return (MukiWork*)((u8*)_battleWorkPointer + 0x1F4C);
+    return (MukiWork*)&_battleWorkPointer->actionCommands.field_0x2BC[0];
 }
 #pragma dont_inline reset
 

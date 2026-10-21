@@ -79,7 +79,10 @@ typedef struct BattleAudienceMember {
     f32 jumpAccelY;                // 0xE4, added to jumpVelY each frame
     f32 yaw;                       // 0xE8, degrees, the draw code flips the sprite for (0, 180]; kinopio and bakugame set
                                    //       90/270 from the x direction, evt_audience's moves 180/0; 270 after Entry_Sub
-    u8 field_0xEC[0xF8 - 0xEC];    // 0xEC
+    BattleUnit* field_0xEC;        // 0xEC
+    s16 field_0xF0;                // 0xF0
+    u8 field_0xF2[0xF4 - 0xF2];    // 0xF2
+    s32 field_0xF4;                // 0xF4
     s32 interpFramesLeft;          // 0xF8
     s32 interpFramesTotal;         // 0xFC
     f32 startPosX;                 // 0x100

@@ -164,7 +164,7 @@ USER_FUNC(_get_escape_rate) {
     FieldBattleInfo* info = wp->fbatInfo;
 
     evtSetValue(event, event->args[0],
-                *(u8*)((u8*)info->setup->groupSetup->enemyData->mUnitKindParams + 0x13));
+                info->setup->groupSetup->enemyData->mUnitKindParams->field_0x13);
     return EVT_RETURN_DONE;
 }
 
@@ -191,8 +191,8 @@ USER_FUNC(_get_heart_suitoru_point) {
     value = 0;
     if (unit) {
         value = unit->badgesEquipped.HpDrain;
-        if (value > *(s32*)((u8*)unit + 0x280)) {
-            value = *(s32*)((u8*)unit + 0x280);
+        if (value > unit->field_0x280) {
+            value = unit->field_0x280;
         }
     }
     evtSetValue(event, arg1, value);
@@ -222,8 +222,8 @@ USER_FUNC(_get_flower_suitoru_point) {
     value = 0;
     if (unit) {
         value = unit->badgesEquipped.FpDrain;
-        if (value > *(s32*)((u8*)unit + 0x280)) {
-            value = *(s32*)((u8*)unit + 0x280);
+        if (value > unit->field_0x280) {
+            value = unit->field_0x280;
         }
     }
     evtSetValue(event, arg1, value);
