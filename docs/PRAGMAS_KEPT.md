@@ -5,27 +5,70 @@ One line per scoped optimisation pragma region left in src/ and rels/ after n9-q
 tried. Line numbers are each setter's line at the end of that pass. Condensed from the workers' reports (untracked,
 build/pr2/v1..v8/REPORT.txt in that worktree).
 
+## The sin/cos polynomial family (studied as one problem, n9-q-o-sincos, 2026-10-21)
+
+The 51 regions marked "sin/cos" below wrap an inlined sine/cosine approximation, `sin x = x(1 - 0.16605x^2 +
+0.00761x^4)` and `cos x = 1 - 0.4967x^2 + 0.03705x^4` (Abramowitz and Stegun 4.3.96/4.3.98) on [0, pi/2], reduced from
+[0, 2pi) by the compares against pi, pi/2 and 3pi/2, with the Horner steps repeated in every quadrant branch. It
+appears in 30 retail functions across 19 files. All 51 stay; nothing below removed any of them. Chapter "The sin/cos
+polynomial family" in docs/CONTEXT.md has the detail.
+
+- **What the pair reproduces.** Retail loads the coefficients (0.00761/0.16605/1.0, then 0.03705/0.4967/1.0) into
+  registers once, before the quadrant compares, and every branch uses those registers (opt_propagation off). Every
+  Horner step overwrites the accumulator in place (`fmsubs f4,f4,f0,f3; fmadds f4,f4,f0,f2`), even where a lower
+  volatile FPR is free, i.e. one register per source variable (opt_lifetimes off). The pool entries are literals in
+  first-use order with the coefficients before pi, so the source assigned literal constants to locals before the
+  compares.
+- **No outside name.** No symbol in config/G8MJ01/symbols.txt, the SDK, MSL, libs/ or include/ is this polynomial.
+  `sinfd`/`cosfd`/`sincosf`/`movePos` call MSL `sin`/`cos`. The four constants are absent from SPM's main.dol
+  (~/spm-refs) and from the reference decomps in ~/ttyd-refs. So no shared inline was introduced, and the copies
+  stay where they are.
+- **Shapes tried, in isolation** (one test function, GC/2.6 with the project's flags, compared with the pair's
+  object), all giving the pragma-less code: hand-written and `static inline`, plain `inline`, and auto-inlined
+  `static` forms; a statement macro and a whole-function block macro; `register` locals; double literals; one-expression
+  Horner with literals; an inline taking the coefficients as parameters; the polynomial inside a loop with the
+  coefficients set before it; file-scope `static const`, plain `const` globals and function-local `static const`
+  coefficients (MWCC folds all three); the pragma pair placed around the inline's definition instead of the caller
+  (no effect: the caller's settings apply). A `static const` array keeps the loads but still differs, and it would
+  change the data layout. Calling MSL `sinf` emits a call that retail doesn't have.
+- **Shapes tried, in the real files.** Dropping only `opt_lifetimes` (keeping `opt_propagation off`) fails in every
+  copy tried (evt_sub_get_coin 118 lines, evt_item_get_important_item 178, effFallMain 72, effSmallStarMain 60,
+  effMObjBrokenMain 144, hoshi_jump 246, hei_10 npc_jump 194). The webs split, and the accumulator moves to the lowest
+  free FPR. `#pragma optimization_level 2` in place of the pair matches only npcCheckHitMarioSide (it is what
+  npcDisp_blur uses), not the other 17 files; an in-file `#pragma global_optimizer off` changes nothing. File-wide
+  `-pragma "opt_propagation off" -pragma "opt_lifetimes off"` matches every function of pik_02, tou_02, eff_starpoint
+  and evt_item (10 of the 51 regions). In the other 15 files it breaks functions that have no polynomial (bom_01 6,
+  npcdrv 23, mario 16, eff_fall 4, ...), so it isn't the original's build for them. Moving those 10 regions into
+  configure.py would hide the same setting rather than remove it, so it was not done (a lead for Isaac).
+- **Why two copies need only the lifetimes half.** eff_mobj_broken and eff_small_star_n64 read the coefficients
+  through named `extern const` .sdata2 objects defined later in the file, which MWCC can't fold, so no propagation
+  happens. That is part of those units' data layout, not a shape for the others (it would change their pools).
+- **A related clue.** marioDispBlur (mario.c, opt_dead_assignments) keeps only the compare skeleton of an unused copy.
+  Retail ran neither dead-assignment removal nor propagation on these functions. Retail looks like these functions
+  were built with the global optimiser's propagation and lifetime passes off. We can't tell how the original source
+  arranged that, and no plain C form found here does it.
+
 ## rels/aji/src/aji_17.c
 
 - `noiseDisp` (opt_propagation, line 394): base*256 and col*8 are hoisted once and shared by both inner loops; tried: plain index expressions; per-row base/col locals; i/4, i%4 inline in loop 2; the 4-term sum.
 
 ## rels/bom/src/bom_01.c
 
-- `ext_init` (opt_propagation, line 717): sin/cos polynomial family: coefficients (0.16605, 1.0) rematerialised per branch instead of held in f23/f24, frame changes (821 lines); only per-pair removal tried.
-- `ext_init` (opt_lifetimes, line 718): sin/cos polynomial family (309-line diff); only per-pair removal tried.
-- `ext_main` (opt_lifetimes, line 864): sin/cos polynomial family (348-line diff); only per-pair removal tried.
-- `ext_main` (opt_propagation, line 865): sin/cos polynomial family (1283-line diff); only per-pair removal tried.
-- `depthDisp` (opt_lifetimes, line 2200): sin/cos polynomial family: FPR set and frame grow (~1000 lines, with u32 mtxId); only per-pair removal tried.
-- `depthDisp` (opt_propagation, line 2202): sin/cos polynomial family, as the lifetimes pair (~1000 lines); only per-pair removal tried.
+- `ext_init` (opt_propagation, line 717): sin/cos polynomial family: coefficients (0.16605, 1.0) rematerialised per branch instead of held in f23/f24, frame changes (821 lines); family study above.
+- `ext_init` (opt_lifetimes, line 718): sin/cos polynomial family (309-line diff); family study above.
+- `ext_main` (opt_lifetimes, line 864): sin/cos polynomial family (348-line diff); family study above.
+- `ext_main` (opt_propagation, line 865): sin/cos polynomial family (1283-line diff); family study above.
+- `depthDisp` (opt_lifetimes, line 2200): sin/cos polynomial family: FPR set and frame grow (~1000 lines, with u32 mtxId); family study above.
+- `depthDisp` (opt_propagation, line 2202): sin/cos polynomial family, as the lifetimes pair (~1000 lines); family study above.
 
 ## rels/eki/src/eki_00.c
 
-- `ext_moamoa_init` (opt_lifetimes, line 1307): sin/cos polynomial family (863-line diff); only per-pair removal tried.
-- `ext_moamoa_init` (opt_propagation, line 1308): sin/cos polynomial family (902-line diff); only per-pair removal tried.
-- `moamoa_hit_check` (opt_lifetimes, line 1524): sin/cos polynomial family (336-line diff); only per-pair removal tried.
-- `moamoa_hit_check` (opt_propagation, line 1525): sin/cos polynomial family (1190-line diff); only per-pair removal tried.
-- `ext_moamoa_main` (opt_propagation, line 1766): sin/cos polynomial family (1569-line diff); only per-pair removal tried.
-- `ext_moamoa_main` (opt_lifetimes, line 1768): sin/cos polynomial family (1346-line diff); only per-pair removal tried.
+- `ext_moamoa_init` (opt_lifetimes, line 1307): sin/cos polynomial family (863-line diff); family study above.
+- `ext_moamoa_init` (opt_propagation, line 1308): sin/cos polynomial family (902-line diff); family study above.
+- `moamoa_hit_check` (opt_lifetimes, line 1524): sin/cos polynomial family (336-line diff); family study above.
+- `moamoa_hit_check` (opt_propagation, line 1525): sin/cos polynomial family (1190-line diff); family study above.
+- `ext_moamoa_main` (opt_propagation, line 1766): sin/cos polynomial family (1569-line diff); family study above.
+- `ext_moamoa_main` (opt_lifetimes, line 1768): sin/cos polynomial family (1346-line diff); family study above.
 
 ## rels/gor/src/gor_00.c
 
@@ -38,8 +81,8 @@ build/pr2/v1..v8/REPORT.txt in that worktree).
 
 ## rels/gor/src/gor_10.c
 
-- `depthDisp` (opt_propagation, line 284): sin/cos polynomial family, same function as bom_01's depthDisp (320-line diff); only per-pair removal tried.
-- `depthDisp` (opt_lifetimes, line 287): sin/cos polynomial family: two extra FPRs (f21/f22), in-loop seed loads hoisted (310 lines); only per-pair removal tried.
+- `depthDisp` (opt_propagation, line 284): sin/cos polynomial family, same function as bom_01's depthDisp (320-line diff); family study above.
+- `depthDisp` (opt_lifetimes, line 287): sin/cos polynomial family: two extra FPRs (f21/f22), in-loop seed loads hoisted (310 lines); family study above.
 
 ## rels/gor/src/unit/unit_lecture_frankli_sac.c
 
@@ -47,10 +90,10 @@ build/pr2/v1..v8/REPORT.txt in that worktree).
 
 ## rels/hei/src/hei_10.c
 
-- `ext_main` (opt_propagation, line 231): sin/cos polynomial family (260-line diff); only per-pair removal tried.
-- `ext_main` (opt_lifetimes, line 232): sin/cos polynomial family (751-line diff); only per-pair removal tried.
-- `npc_jump` (opt_lifetimes, line 394): sin/cos family: each Horner step gets its own FPR, not retail's one accumulator (132 lines); tried: per-pair removal; Horner as one expression per branch (496).
-- `npc_jump` (opt_propagation, line 395): sin/cos polynomial family, as the lifetimes pair; tried: per-pair removal; one-expression Horner (worse).
+- `ext_main` (opt_propagation, line 231): sin/cos polynomial family (260-line diff); family study above.
+- `ext_main` (opt_lifetimes, line 232): sin/cos polynomial family (751-line diff); family study above.
+- `npc_jump` (opt_lifetimes, line 394): sin/cos family: each Horner step gets its own FPR, not retail's one accumulator (132 lines); tried: per-pair removal; Horner as one expression per branch (496). Family study above.
+- `npc_jump` (opt_propagation, line 395): sin/cos polynomial family, as the lifetimes pair; tried: per-pair removal; one-expression Horner (worse). Family study above.
 
 ## rels/las/src/unit/unit_boss_black_peach.c
 
@@ -65,30 +108,30 @@ build/pr2/v1..v8/REPORT.txt in that worktree).
 
 ## rels/pik/src/pik_02.c
 
-- `hoshi_jump` (opt_propagation, line 364): sin/cos family: inlined hoshi_sin/cos angle in f0 not f5, seeds move, plus the MUST_MATCH pun stores (264 lines); only per-pair removal tried.
-- `hoshi_jump` (opt_lifetimes, line 365): sin/cos polynomial family (164-line diff); only per-pair removal tried.
+- `hoshi_jump` (opt_propagation, line 364): sin/cos family: inlined hoshi_sin/cos angle in f0 not f5, seeds move, plus the MUST_MATCH pun stores (264 lines); family study above.
+- `hoshi_jump` (opt_lifetimes, line 365): sin/cos polynomial family (164-line diff); family study above.
 
 ## rels/rsh/src/rsh_05.c
 
-- `moamoa_hit_check`, `ext_moamoa_main`, `npc_jump` (opt_lifetimes, line 1242): no closer, runs to EOF; sin/cos family (ext_moamoa_main 1650/3147, moamoa_hit_check 360/750 lines for the pair); only per-pair removal tried.
-- `moamoa_hit_check`, `ext_moamoa_main`, `npc_jump` (opt_propagation, line 1243): no closer, runs to EOF; sin/cos polynomial family, as the lifetimes pair; only per-pair removal tried.
+- `moamoa_hit_check`, `ext_moamoa_main`, `npc_jump` (opt_lifetimes, line 1242): no closer, runs to EOF; sin/cos family (ext_moamoa_main 1650/3147, moamoa_hit_check 360/750 lines for the pair); family study above.
+- `moamoa_hit_check`, `ext_moamoa_main`, `npc_jump` (opt_propagation, line 1243): no closer, runs to EOF; sin/cos polynomial family, as the lifetimes pair; family study above.
 
 ## rels/rsh/src/rsh_06.c
 
-- `moamoa_hit_check`, `ext_moamoa_main` (opt_lifetimes, line 1867): sin/cos polynomial family (ext_moamoa_main 1218/2408, moamoa_hit_check 360/750 lines for the pair); only per-pair removal tried.
-- `moamoa_hit_check`, `ext_moamoa_main` (opt_propagation, line 1868): sin/cos polynomial family, as the lifetimes pair; only per-pair removal tried.
+- `moamoa_hit_check`, `ext_moamoa_main` (opt_lifetimes, line 1867): sin/cos polynomial family (ext_moamoa_main 1218/2408, moamoa_hit_check 360/750 lines for the pair); family study above.
+- `moamoa_hit_check`, `ext_moamoa_main` (opt_propagation, line 1868): sin/cos polynomial family, as the lifetimes pair; family study above.
 
 ## rels/tik/src/tik_05.c
 
-- `tiz_broken` (opt_propagation, line 2480): sin/cos family: frame 0x110 vs 0xd0, 12 vs 9 FPRs (~460 lines); tried: pi/halfpi/threehalves non-const; as literals; coefficients as literals; all literal.
-- `tiz_broken` (opt_lifetimes, line 2481): sin/cos polynomial family (~460 lines); same literal/non-const shapes as the propagation pair, no change.
+- `tiz_broken` (opt_propagation, line 2480): sin/cos family: frame 0x110 vs 0xd0, 12 vs 9 FPRs (~460 lines); tried: pi/halfpi/threehalves non-const; as literals; coefficients as literals; all literal. Family study above.
+- `tiz_broken` (opt_lifetimes, line 2481): sin/cos polynomial family (~460 lines); same literal/non-const shapes as the propagation pair, no change. Family study above.
 
 ## rels/tou/src/tou_02.c
 
-- `ext_fan_main` (opt_propagation, line 1709): sin/cos polynomial family (983/270 lines for the pair); only per-pair removal tried.
-- `ext_fan_main` (opt_lifetimes, line 1710): sin/cos polynomial family, as the propagation pair; only per-pair removal tried.
-- `check_hammer` (opt_propagation, line 2088): sin/cos family (426/252 lines for the pair); tried: inline pi constants non-const; as literals; coefficients as literals; all literal (434).
-- `check_hammer` (opt_lifetimes, line 2089): sin/cos polynomial family; same literal/non-const shapes as the propagation pair, no change.
+- `ext_fan_main` (opt_propagation, line 1709): sin/cos polynomial family (983/270 lines for the pair); family study above.
+- `ext_fan_main` (opt_lifetimes, line 1710): sin/cos polynomial family, as the propagation pair; family study above.
+- `check_hammer` (opt_propagation, line 2088): sin/cos family (426/252 lines for the pair); tried: inline pi constants non-const; as literals; coefficients as literals; all literal (434). Family study above.
+- `check_hammer` (opt_lifetimes, line 2089): sin/cos polynomial family; same literal/non-const shapes as the propagation pair, no change. Family study above.
 
 ## rels/tou2/src/tou_03.c
 
@@ -177,10 +220,10 @@ build/pr2/v1..v8/REPORT.txt in that worktree).
 
 ## src/driver/envdrv.c
 
-- `envDisp_DepthOfField` (opt_propagation, line 496): sin/cos family: coefficients propagated into every branch, frame +0x20, two more saved FPRs (676 lines); only removal tried.
-- `envDisp_DepthOfField` (opt_lifetimes, line 497): sin/cos family: sv/cv seeds become their own webs hoisted into f22/f23; tried: the seed literal folded into each branch's first step (436 lines).
-- `envDisp_FF` (opt_propagation, line 941): sin/cos family: one/cosC1/sinC1 propagated into each branch (685 lines, frame 0xf0 -> 0xc0); tried: int counters.
-- `envDisp_FF` (opt_lifetimes, line 942): sin/cos family: cosv/sinv seed loads split and hoisted, two more FPRs (682 lines); only removal tried.
+- `envDisp_DepthOfField` (opt_propagation, line 496): sin/cos family: coefficients propagated into every branch, frame +0x20, two more saved FPRs (676 lines); family study above.
+- `envDisp_DepthOfField` (opt_lifetimes, line 497): sin/cos family: sv/cv seeds become their own webs hoisted into f22/f23; tried: the seed literal folded into each branch's first step (436 lines). Family study above.
+- `envDisp_FF` (opt_propagation, line 941): sin/cos family: one/cosC1/sinC1 propagated into each branch (685 lines, frame 0xf0 -> 0xc0); tried: int counters. Family study above.
+- `envDisp_FF` (opt_lifetimes, line 942): sin/cos family: cosv/sinv seed loads split and hoisted, two more FPRs (682 lines); family study above.
 - `envSetWater` (opt_propagation, line 1444): tail stores take fresh temps instead of addi in place, inner loop 0x4330/base*32 swap r30/r31 (26 lines); tried: increments before the stores; `x + 1`; `++x`; int locals.
 - `envSetWater` (opt_lifetimes, line 1445): flags load and obj split into separate webs (extra mr r4, r3); tried: `flags = obj->flags` instead of re-reading yami->unk0; int for every s32 local.
 - `envSetYami` (opt_propagation, line 1634): dat_802f9338 base combines with texMap*4 differently and tail stores take fresh temps (48 lines); tried: int texMtxOff; the envSetWater tail shapes.
@@ -198,9 +241,9 @@ build/pr2/v1..v8/REPORT.txt in that worktree).
 
 ## src/driver/npcdrv.c
 
-- `npcDisp_blur` (optimization_level 2, line 585): push/pop; sin/cos family: npcSinf/npcCosf coefficients loaded per branch, not once (126 lines); tried: rsh_05's moamoa_sin/cos shape; int alpha/i.
-- `npcCheckHitMarioSide` (opt_propagation, line 1580): sin/cos family: coefficients propagated into every branch (286 lines); only removal tried.
-- `npcCheckHitMarioSide` (opt_lifetimes, line 1581): sin/cos family: the seed splits from its updates, accumulator/pivot FPRs move (192 lines); only removal tried.
+- `npcDisp_blur` (optimization_level 2, line 585): push/pop; sin/cos family: npcSinf/npcCosf coefficients loaded per branch, not once (126 lines); tried: rsh_05's moamoa_sin/cos shape; int alpha/i. Family study above.
+- `npcCheckHitMarioSide` (opt_propagation, line 1580): sin/cos family: coefficients propagated into every branch (286 lines); family study above.
+- `npcCheckHitMarioSide` (opt_lifetimes, line 1581): sin/cos family: the seed splits from its updates, accumulator/pivot FPRs move (192 lines); family study above.
 
 ## src/driver/shadowdrv.c
 
@@ -214,13 +257,13 @@ build/pr2/v1..v8/REPORT.txt in that worktree).
 
 ## src/effect/eff_damage_star.c
 
-- `effDamageStarEntry` (opt_propagation, line 251): sin/cos polynomial family (259-line diff); only per-pair removal tried.
-- `effDamageStarEntry` (opt_lifetimes, line 252): sin/cos polynomial family (210-line diff); only per-pair removal tried.
+- `effDamageStarEntry` (opt_propagation, line 251): sin/cos polynomial family (259-line diff); family study above.
+- `effDamageStarEntry` (opt_lifetimes, line 252): sin/cos polynomial family (210-line diff); family study above.
 
 ## src/effect/eff_fall.c
 
-- `effFallMain` (opt_lifetimes, line 364): sin/cos family: the inlined effFallSinf/Cosf webs split into f1/f4/f0 instead of staying in f7/f6 (72 lines); only removal tried.
-- `effFallMain` (opt_propagation, line 365): sin/cos family: coefficients rematerialised per branch (290 lines); only removal tried.
+- `effFallMain` (opt_lifetimes, line 364): sin/cos family: the inlined effFallSinf/Cosf webs split into f1/f4/f0 instead of staying in f7/f6 (72 lines); family study above.
+- `effFallMain` (opt_propagation, line 365): sin/cos family: coefficients rematerialised per branch (290 lines); family study above.
 
 ## src/effect/eff_funemizu.c
 
@@ -229,8 +272,8 @@ build/pr2/v1..v8/REPORT.txt in that worktree).
 
 ## src/effect/eff_gonbaba_breath.c
 
-- `init_breath` (opt_propagation, line 101): sin/cos family: coefficients rematerialised per branch (327 lines); only removal tried.
-- `init_breath` (opt_lifetimes, line 103): sin/cos family: frame, stack homes and FPR colouring move (270 lines); only removal tried.
+- `init_breath` (opt_propagation, line 101): sin/cos family: coefficients rematerialised per branch (327 lines); family study above.
+- `init_breath` (opt_lifetimes, line 103): sin/cos family: frame, stack homes and FPR colouring move (270 lines); family study above.
 
 ## src/effect/eff_ibuki.c
 
@@ -246,7 +289,7 @@ build/pr2/v1..v8/REPORT.txt in that worktree).
 
 ## src/effect/eff_mobj_broken.c
 
-- `effMObjBrokenMain` (opt_lifetimes, line 190): sin/cos family: accumulators split, then a GPR cascade (data r31 vs r30, type, counters; 140 lines); only removal tried.
+- `effMObjBrokenMain` (opt_lifetimes, line 190): sin/cos family: accumulators split, then a GPR cascade (data r31 vs r30, type, counters; 140 lines); family study above.
 
 ## src/effect/eff_mugi.c
 
@@ -258,8 +301,8 @@ build/pr2/v1..v8/REPORT.txt in that worktree).
 
 ## src/effect/eff_starpoint.c
 
-- `effStarPointEntry` (opt_lifetimes, line 95): sin/cos polynomial family (268-line diff); only per-pair removal tried.
-- `effStarPointEntry` (opt_propagation, line 96): sin/cos polynomial family (289-line diff); tried: per-pair removal; coefficients as literals with no v/b/one locals (289).
+- `effStarPointEntry` (opt_lifetimes, line 95): sin/cos polynomial family (268-line diff); family study above.
+- `effStarPointEntry` (opt_propagation, line 96): sin/cos polynomial family (289-line diff); tried: per-pair removal; coefficients as literals with no v/b/one locals (289). Family study above.
 
 ## src/effect/eff_starstone.c
 
@@ -320,7 +363,7 @@ build/pr2/v1..v8/REPORT.txt in that worktree).
 ## src/effect/n64/eff_small_star_n64.c
 
 - `effSmallStarN64Entry` (opt_common_subs, line 105): named float_0 CSE'd across the perp branches: second `mag == float_0` reuses f2, norm/8.0 swap f0/f1; tried: statement orders and local shapes (none blocks it).
-- `effSmallStarMain` (opt_lifetimes, line 258): sin/cos family: cos wave leaves f5; tried: 24 decl orders of cosC0/cosC2/wave/sq; rasim; a file-local cos inline; block-scoped t/u/s; one-expression polynomial.
+- `effSmallStarMain` (opt_lifetimes, line 258): sin/cos family: cos wave leaves f5; tried: 24 decl orders of cosC0/cosC2/wave/sq; rasim; a file-local cos inline; block-scoped t/u/s; one-expression polynomial. Family study above.
 
 ## src/effect/n64/eff_sstar_n64.c
 
@@ -337,8 +380,8 @@ build/pr2/v1..v8/REPORT.txt in that worktree).
 
 ## src/event/evt_item.c
 
-- `evt_item_move_3d_position`, `evt_item_get_important_item` (opt_propagation, line 337): sin/cos family: get_important_item loads v/b/one per branch (+0x48 bytes); move_3d_position no longer needs it; only removal tried.
-- `evt_item_get_important_item` (opt_lifetimes, line 372): sin/cos family: each `v = v * u - b` step gets its own FPR, angle f0 not f5; tried: reusing f2 for the angle (80 lines); one-expression f5, with and without parens.
+- `evt_item_move_3d_position`, `evt_item_get_important_item` (opt_propagation, line 337): sin/cos family: get_important_item loads v/b/one per branch (+0x48 bytes); move_3d_position no longer needs it; family study above.
+- `evt_item_get_important_item` (opt_lifetimes, line 372): sin/cos family: each `v = v * u - b` step gets its own FPR, angle f0 not f5; tried: reusing f2 for the angle (80 lines); one-expression f5, with and without parens. Family study above.
 
 ## src/event/evt_lottery.c
 
@@ -358,8 +401,8 @@ build/pr2/v1..v8/REPORT.txt in that worktree).
 
 ## src/event/evt_sub.c
 
-- `evt_sub_get_coin` (opt_propagation, line 653): sin/cos family: coefficients rematerialised per branch (87.63%); tried: npcdrv's npcSinf/npcCosf static-inline form (301 lines).
-- `evt_sub_get_coin` (opt_lifetimes, line 654): sin/cos family: seed/coefficient FPRs move (98.48%); tried: the npcSinf/npcCosf static-inline form.
+- `evt_sub_get_coin` (opt_propagation, line 653): sin/cos family: coefficients rematerialised per branch (87.63%); tried: npcdrv's npcSinf/npcCosf static-inline form (301 lines). Family study above.
+- `evt_sub_get_coin` (opt_lifetimes, line 654): sin/cos family: seed/coefficient FPRs move (98.48%); tried: the npcSinf/npcCosf static-inline form. Family study above.
 
 ## src/event/evt_telop.c
 
@@ -382,7 +425,7 @@ build/pr2/v1..v8/REPORT.txt in that worktree).
 ## src/mario/mario.c
 
 - `marioCheckMenuDisable` (opt_dead_assignments, line 404): every inlined !marioChkCtrl()/!marioChkKey() folds to extsb. (363 lines); tried: `if (!marioChkCtrl())`; `== FALSE`; an `== 0` local; `!= FALSE`; a cast.
-- `marioDispBlur` (opt_dead_assignments, line 2535): the compare skeleton of an inlined sin/cos with unused results is removed (350 lines); nothing tried (keeping it needs a fake use).
+- `marioDispBlur` (opt_dead_assignments, line 2535): the compare skeleton of an inlined sin/cos with unused results is removed (350 lines); nothing tried (keeping it needs a fake use). Family study above.
 
 ## src/motion/mot_hammer.c
 
@@ -438,7 +481,7 @@ build/pr2/v1..v8/REPORT.txt in that worktree).
 
 ## Tally
 
-164 remaining regions.
+164 remaining regions (unchanged by n9-q-o-sincos, 2026-10-21: the sin/cos family study removed none).
 
 By kind:
 - opt_propagation: 64

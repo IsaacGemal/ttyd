@@ -5034,3 +5034,65 @@ redundant tests and steering temps stay guarded: a pragma beats an unguarded hac
   technique worth keeping: run tools/mwccdbg.py on the source with and without the pragma and diff the frontend dump
   (`frontend-02-ast-final-code.txt`); the new `EASS @N` temps are the subexpressions the optimisation starts sharing,
   which points at the line to rewrite (build/pr2/v5/fd.sh).
+
+## The sin/cos polynomial family: no natural shape removes its pragma pair (2026-10-21, Claude Opus 5.5, n9-q-o-sincos)
+
+The task: study the 51 kept pragma regions that wrap the inlined sine/cosine approximation as one problem, and
+remove the pair wherever a natural shape matches. Nothing matched, so no source changed. This chapter and the new
+family section at the top of [docs/PRAGMAS_KEPT.md](PRAGMAS_KEPT.md) record what was tried.
+
+- **The copies.** `sin x = x(1 - 0.16605x^2 + 0.00761x^4)` and `cos x = 1 - 0.4967x^2 + 0.03705x^4` on [0, pi/2]
+  (Abramowitz and Stegun 4.3.96/4.3.98), reduced from [0, 2pi) by compares against pi, pi/2 and 3pi/2, with the Horner
+  steps repeated in every branch. Retail has it in 30 functions in 19 files: bom_01, eki_00, gor_10, hei_10, pik_02,
+  rsh_05, rsh_06, tik_05, tou_02, envdrv, npcdrv, evt_item, evt_sub, eff_damage_star, eff_fall, eff_gonbaba_breath,
+  eff_starpoint, eff_mobj_broken and eff_small_star_n64 (cos only), plus mario.c's unused copy. The kept regions are 24
+  opt_propagation + 26 opt_lifetimes + npcDisp_blur's optimization_level 2 = 51, plus marioDispBlur's
+  opt_dead_assignments. Our source writes it in several shapes: hand-expanded with f0..f7-named locals (evt_sub,
+  eff_gonbaba_breath, gor_10), or file-local static inlines (npcSinf, effFallSinf, item_sin_approx, tikSinf,
+  marioDispBlurSinf, ...). Every shape needs the same pair, so the pair doesn't come from the shape.
+- **What the pair reproduces** (evt_sub_get_coin's asm read in full). The coefficients are loaded once before the
+  first compare and held in f2-f4 across all four branches. Each Horner step overwrites the accumulator in place
+  (`fmsubs f4,f4,f0,f3`), even in branches where f1 is free. The .sdata2 entries are unnamed literals in first-use
+  order, coefficients before pi, and sin's and cos's 1.0 share one entry. So the source assigned literals to locals
+  before the compares, and retail held each local in one register without propagating it.
+- **No outside name.** Nothing in symbols.txt, libs/, include/ or MSL is this polynomial. `sinfd`, `cosfd`, `sincosf`
+  and `movePos` call MSL `sin`/`cos`. The constants don't occur in SPM's main.dol or in ~/ttyd-refs. No shared inline
+  was introduced (it would need an invented name) and the copies were left in place. Folding them into one helper
+  wouldn't remove a pragma either.
+- **Tried in isolation** (build/sc in this worktree, untracked: a test function compiled with the project's GC/2.6
+  flags and compared with the pair's object). All of these give the pragma-less code: hand-written, `static inline`,
+  `inline` and auto-inlined `static`; a statement macro and a whole-block macro; `register` locals; double literals;
+  one-expression Horner; an inline taking the coefficients as arguments; the polynomial in a loop with the
+  coefficients set before it. File-scope `static const`, plain `const` globals and local `static const` coefficients
+  are folded like literals. The pair around the inline's definition has no effect (the caller's settings apply). A
+  const array keeps the loads but still differs, and it changes data. `#pragma optimization_level 2` reproduces the
+  pair in isolation.
+- **Tried in the real files** (each file compiled with its own ninja command, then compared function by function
+  with the built object):
+  - **Lifetimes half only.** Dropping `opt_lifetimes` while keeping `opt_propagation off` fails in every file tried
+    (60 to 246 lines). The accumulator's webs split onto the lowest free FPR, which is the opposite of retail's
+    in-place colouring.
+  - **optimization_level 2 for the pair.** Matches npcdrv (npcCheckHitMarioSide), the setting npcDisp_blur already
+    uses, but not the other 17 files.
+  - **In-file `#pragma global_optimizer off`.** Changed nothing.
+  - **File-wide `-pragma "opt_propagation off" -pragma "opt_lifetimes off"`** with the region pragmas stripped:
+    - every function matches in pik_02, tou_02, eff_starpoint and evt_item (10 regions);
+    - evt_sub, hei_10 and rsh_06 break one function, gor_10, rsh_05 and eki_00 two, envdrv three;
+    - bom_01 breaks 6, tik_05 7, npcdrv 23 and mario 16, and the four effect files break almost every other
+      function.
+    So a file-wide setting isn't the original build in general. Moving the 10 regions into configure.py would
+    hide the setting rather than remove it, and it needs `--allow-configure`. Not done; it's Isaac's call (a lead).
+- **Two copies need only the lifetimes half.** eff_mobj_broken and eff_small_star_n64 read their coefficients
+  through named `extern const` .sdata2 objects defined after the code, which MWCC can't fold. That is those units'
+  pool layout, not a shape for the others.
+- **Reading.** marioDispBlur keeps only the compare skeleton of an unused copy (dead-assignment removal didn't run).
+  The 30 retail functions look like code built with the global optimiser's propagation, lifetime and dead-assignment
+  passes off, not like a source shape. Whether the original had pragmas around these functions or something else
+  turned those passes off can't be decided from the bytes. The pair stays, with its reason, as the honest description.
+- **Counts** (tools/cleanup_index.py, 14ea64ca and this branch): 15.325 per kLOC (10689 weighted), opt_pragma 777,
+  must_match 807, raw_offset 351, unchanged; sin/cos regions 51 -> 51. `git grep` over src/rels/include: 329
+  optimisation pragma lines (`opt_*`, `optimization_level`, `global_optimizer`), unchanged.
+- **Checks.** Docs only. `build/G8MJ01/ok` recreated; fncast_lint and local_prototypes clean; tools/ci.py PASS with
+  --allow-pragma and its tools/tests step stubbed (the same 9 environment errors as the chapters above:
+  test_wave_launch's systemd scopes, and no `elftools` for test_reloc_value_check). The ratchet baseline was
+  initialised from this worktree's unchanged 14ea64ca build.
