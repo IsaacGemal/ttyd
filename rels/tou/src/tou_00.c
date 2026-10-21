@@ -1,6 +1,7 @@
 #include "tou_00.h"
 #include "driver/camdrv.h"
 #include "driver/effdrv.h"
+#include "eff/n64/eff_kemuri12_n64.h"
 #include "evt/evt_bero.h"
 #include "evt/evt_bg.h"
 #include "evt/evt_cam.h"
@@ -624,7 +625,7 @@ USER_FUNC(kemuri_move) {
     if (isFirstCall) {
         return EVT_RETURN_BLOCK;
     }
-    ((f32*)eff->userdata)[1] += offset;
+    ((effKemuri12Data*)eff->userdata)->position.x += offset;
     return EVT_RETURN_BLOCK;
 }
 // clang-format on

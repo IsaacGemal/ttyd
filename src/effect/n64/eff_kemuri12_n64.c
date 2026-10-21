@@ -20,18 +20,6 @@ __declspec(section ".sdata") GXColor unk_80423190;
 // .rodata constants (named after their original addresses).
 extern const Vec vec3_802faa28;
 
-typedef struct effKemuri12Data {
-    u16 type;        // 0x0
-    u8 pad_2[2];     // 0x2
-    Vec position;    // 0x4
-    f32 scale;  // 0x10
-    s32 life;  // 0x14
-    s32 elapsed;  // 0x18
-    s32 maxLife;  // 0x1c
-    f32 animProgress;  // 0x20
-    u8 color[4];     // 0x24
-} effKemuri12Data;
-
 // .data vertex data for the two Kemuri12 quad meshes. The original keeps the
 // first object local and the second global; kept as words and cast at the call.
 static u32 size32x32_tex32x32_vtx[0x38 / 4] = {
