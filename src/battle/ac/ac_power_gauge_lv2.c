@@ -287,15 +287,6 @@ void battleAcDelete_PowerGaugeLv2(BattleWork* work) {
     }
 }
 
-// Match-only: iconDispGx's header declares the icon id `s16`, but the original passes the value
-// returned by BattleACGetButtonIcon straight through (no `extsh`); a differently-typed function
-// pointer keeps the call a direct `bl iconDispGx`. Same workaround as ac_power_gauge.c.
-#ifdef MUST_MATCH
-#define ICON_DISP(v, f, id, s) (((void (*)(f32, Vec*, s16, s32))iconDispGx)((s), (v), (f), (id)))
-#else
-#define ICON_DISP(v, f, id, s) iconDispGx((s), (v), (f), (id))
-#endif
-
 // Match-only: the header declares BattleAcDrawGauge's float ratio last, but the original's
 // prototype lists it between `count` and the three thresholds: the ratio `lfs f1` is scheduled
 // between the two `fctiwz` conversions only when the float parameter is evaluated before the
@@ -395,7 +386,7 @@ static void actionCommandDisp(f32 x, f32 y) {
             Vec pos = vec[1];
             pos.x = f31;
             pos.y = 70.0f + y;
-            ICON_DISP(&pos, 0x10, icon0, 1.0f);
+            iconDispGx(1.0f, &pos, 0x10, icon0);
             break;
         }
         case 0x3E8:
@@ -403,13 +394,13 @@ static void actionCommandDisp(f32 x, f32 y) {
                 Vec pos = vec[2];
                 pos.x = f31;
                 pos.y = 70.0f + y;
-                ICON_DISP(&pos, 0x10, icon1, 1.0f);
+                iconDispGx(1.0f, &pos, 0x10, icon1);
             }
             else {
                 Vec pos = vec[3];
                 pos.x = f31;
                 pos.y = 70.0f + y;
-                ICON_DISP(&pos, 0x10, icon0, 1.0f);
+                iconDispGx(1.0f, &pos, 0x10, icon0);
             }
             break;
     }
@@ -419,7 +410,7 @@ static void actionCommandDisp(f32 x, f32 y) {
         Vec pos = vec[4];
         pos.x = 120.0f + f31;
         pos.y = f30;
-        ICON_DISP(&pos, 0x10, id, 1.0f);
+        iconDispGx(1.0f, &pos, 0x10, id);
     }
 }
 

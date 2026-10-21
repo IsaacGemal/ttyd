@@ -319,12 +319,7 @@ static void actionCommandDisp(f32 x, f32 y) {
 		v = RODATA_VEC(10, vec3_803008f8);
 		v.x = float_neg200_80422080 + x;
 		v.y = float_50_80422084 + y;
-#ifdef MUST_MATCH
-		// Match-only: icondrv.h says s16, but the original passes the icon unextended (no `extsh`).
-		((void (*)(Vec*, s32, s32, f32))iconDispGx)(&v, 0x10, icon, float_1_80422088);
-#else
 		iconDispGx(float_1_80422088, &v, 0x10, icon);
-#endif
 	}
 }
 #pragma opt_common_subs reset

@@ -392,12 +392,7 @@ void gaugeDisp(s32 a1, f32 x, f32 y) {
         pos.x = x + hundreds * 32;
         pos.y = y;
         pos.z = float_0_8041c900;
-#ifdef MUST_MATCH
-        // Match-only: original passes a u16 id (no extsh) and evaluates the scale before the id.
-        ((void (*)(Vec*, s16, f32, u16))iconDispGx)(&pos, 0x10, float_1_8041c904, gauge_wakka[fifteenths]);
-#else
         iconDispGx(float_1_8041c904, &pos, 0x10, gauge_wakka[fifteenths]);
-#endif
     }
     y = 12.0f + y;
     for (i = 0; i < 8u; i++) {
@@ -410,8 +405,8 @@ void gaugeDisp(s32 a1, f32 x, f32 y) {
         pos.y = y;
         pos.z = float_0_8041c900;
 #ifdef MUST_MATCH
-        // Match-only: original passes a u16 id (no extsh) and evaluates the scale before the id.
-        ((void (*)(Vec*, s16, f32, u16))iconDispGx)(&pos, 0x10, float_1_8041c904, (i < hundreds) ? gauge_back[i] : 0x1BF);
+        // Match-only: the original zero-extends the id (clrlwi) though both arms are u16 values.
+        iconDispGx(float_1_8041c904, &pos, 0x10, (u16)((i < hundreds) ? gauge_back[i] : 0x1BF));
 #else
         iconDispGx(float_1_8041c904, &pos, 0x10, (i < hundreds) ? gauge_back[i] : 0x1BF);
 #endif

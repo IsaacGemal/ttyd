@@ -389,15 +389,6 @@ void battleAcDelete_RepeatedlyLv(BattleWork* work) {
 }
 #pragma dont_inline reset
 
-// Match-only: iconDispGx declares the icon id `s16`, but the original passes the value returned by
-// BattleACGetButtonIcon straight through (no `extsh`); a differently-typed function pointer keeps
-// the call a direct `bl iconDispGx`. Same workaround as ac_repeatedly.c / ac_power_gauge.c.
-#ifdef MUST_MATCH
-#define ICON_DISP(v, f, id, s) (((void (*)(f32, Vec*, s16, s32))iconDispGx)((s), (v), (f), (id)))
-#else
-#define ICON_DISP(v, f, id, s) iconDispGx((s), (v), (f), (id))
-#endif
-
 // Match-only: the header declares BattleAcDrawGauge's float ratio last, but the original's prototype
 // lists it between `count` and the three thresholds: the ratio `lfs f1` is scheduled between the two
 // `fctiwz` conversions only when the float parameter is evaluated before the threshold arguments. The
@@ -482,12 +473,12 @@ static void actionCommandDisp(f32 x, f32 y) {
             Vec vec = (Vec){0.0f, 0.0f, 0.0f};
             vec.x = float_neg200_8041e7f8 + x;
             vec.y = float_70_8041e7fc + y;
-            ICON_DISP(&vec, 0x10, iconB, float_1_8041e800);
+            iconDispGx(float_1_8041e800, &vec, 0x10, iconB);
         } else {
             Vec vec = (Vec){0.0f, 0.0f, 0.0f};
             vec.x = float_neg200_8041e7f8 + x;
             vec.y = float_70_8041e7fc + y;
-            ICON_DISP(&vec, 0x10, iconA, float_1_8041e800);
+            iconDispGx(float_1_8041e800, &vec, 0x10, iconA);
         }
     } else {
         if ((div7 & 1) == 1) {
@@ -497,13 +488,13 @@ static void actionCommandDisp(f32 x, f32 y) {
             vec.x = x0 + (f32)offA;
             y0 = float_70_8041e7fc + y;
             vec.y = y0;
-            ICON_DISP(&vec, 0x10, iconB, float_1_8041e800);
+            iconDispGx(float_1_8041e800, &vec, 0x10, iconB);
             {
                 f32 x1 = float_neg175_8041e808 + x;
                 Vec vec2 = (Vec){0.0f, 0.0f, 0.0f};
                 vec2.x = x1 + (f32)offB;
                 vec2.y = y0;
-                ICON_DISP(&vec2, 0x10, iconC, float_1_8041e800);
+                iconDispGx(float_1_8041e800, &vec2, 0x10, iconC);
             }
         } else {
             f32 x0 = float_neg225_8041e804 + x;
@@ -512,13 +503,13 @@ static void actionCommandDisp(f32 x, f32 y) {
             vec.x = x0 + (f32)offA;
             y0 = float_70_8041e7fc + y;
             vec.y = y0;
-            ICON_DISP(&vec, 0x10, iconA, float_1_8041e800);
+            iconDispGx(float_1_8041e800, &vec, 0x10, iconA);
             {
                 f32 x1 = float_neg175_8041e808 + x;
                 Vec vec2 = (Vec){0.0f, 0.0f, 0.0f};
                 vec2.x = x1 + (f32)offB;
                 vec2.y = y0;
-                ICON_DISP(&vec2, 0x10, iconD, float_1_8041e800);
+                iconDispGx(float_1_8041e800, &vec2, 0x10, iconD);
             }
         }
     }
@@ -587,7 +578,7 @@ static void actionCommandDisp(f32 x, f32 y) {
         vec.x = float_neg288_8041e818 + x +
                 (f32)(ac->acParams[6] * 0xB0) / float_100_8041e80c;
         vec.y = float_45_8041e81c + y;
-        ICON_DISP(&vec, 0x10, 0x96, float_1_8041e800);
+        iconDispGx(float_1_8041e800, &vec, 0x10, 0x96);
     }
 
     if (ac->acFlag & 4) {

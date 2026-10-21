@@ -453,15 +453,6 @@ void battleAcDelete_GaugeTiming(BattleWork* work) {
     }
 }
 
-// Match-only: iconDispGx's header declares the icon id `s16`, but the original passes the s32
-// value returned by BattleACGetButtonIcon straight through (no `extsh`); a differently-typed
-// function pointer keeps the call a direct `bl iconDispGx`. Same workaround as ac_lst_rc_keep.
-#ifdef MUST_MATCH
-#define ICON_DISP(v, f, id, s) (((void (*)(f32, Vec*, s16, s32))iconDispGx)((s), (v), (f), (id)))
-#else
-#define ICON_DISP(v, f, id, s) iconDispGx((s), (v), (f), (id))
-#endif
-
 // 100%. The int->float magic must be MWCC's own anonymous pool entry: do not define
 // `double_to_int_802ff930` in the source, or the compiler emits a second anonymous copy after the
 // named one and the loads move to `0xe0(r28)`. The 17 zero Vecs must be separate objects (the
@@ -531,7 +522,7 @@ static void actionCommandDisp(f32 x, f32 y) {
             Vec v = vec3_802ff860;
             v.x = float_16_80421880 + (float_176_80421884 + (float_neg288_80421888 + x));
             v.y = float_18_8042188c + y;
-            ICON_DISP(&v, 0x10, icon, float_1_80421878);
+            iconDispGx(float_1_80421878, &v, 0x10, icon);
         }
         break;
     }
@@ -571,7 +562,7 @@ static void actionCommandDisp(f32 x, f32 y) {
                 bx = float_neg288_80421888 + x;
                 v.x = bx + u;
                 v.y = float_20_804218a8 + y;
-                ICON_DISP(&v, 0x10, icon, float_0p8_804218ac);
+                iconDispGx(float_0p8_804218ac, &v, 0x10, icon);
             }
         }
         break;
@@ -615,19 +606,19 @@ static void actionCommandDisp(f32 x, f32 y) {
                 Vec v = (Vec){0.0f, 0.0f, 0.0f};
                 v.x = baseX;
                 v.y = baseY;
-                ICON_DISP(&v, 0x10, icon1, float_1_80421878);
+                iconDispGx(float_1_80421878, &v, 0x10, icon1);
             }
             {
                 Vec v = (Vec){0.0f, 0.0f, 0.0f};
                 v.x = float_56_804218b8 + baseX;
                 v.y = baseY;
-                ICON_DISP(&v, 0x10, icon3, float_1_80421878);
+                iconDispGx(float_1_80421878, &v, 0x10, icon3);
             }
         } else {
             Vec v = (Vec){0.0f, 0.0f, 0.0f};
             v.x = float_28_804218bc + (float_neg228_804218b0 + x);
             v.y = float_55_804218b4 + y;
-            ICON_DISP(&v, 0x10, icon1, float_1_80421878);
+            iconDispGx(float_1_80421878, &v, 0x10, icon1);
         }
         break;
     case 0x3E8:
@@ -641,19 +632,19 @@ static void actionCommandDisp(f32 x, f32 y) {
                         Vec v = (Vec){0.0f, 0.0f, 0.0f};
                         v.x = baseX;
                         v.y = baseY;
-                        ICON_DISP(&v, 0x10, icon0, float_1_80421878);
+                        iconDispGx(float_1_80421878, &v, 0x10, icon0);
                     }
                     {
                         Vec v = (Vec){0.0f, 0.0f, 0.0f};
                         v.x = float_56_804218b8 + baseX;
                         v.y = baseY;
-                        ICON_DISP(&v, 0x10, icon2, float_1_80421878);
+                        iconDispGx(float_1_80421878, &v, 0x10, icon2);
                     }
                 } else {
                     Vec v = (Vec){0.0f, 0.0f, 0.0f};
                     v.x = float_28_804218bc + (float_neg228_804218b0 + x);
                     v.y = float_55_804218b4 + y;
-                    ICON_DISP(&v, 0x10, icon0, float_1_80421878);
+                    iconDispGx(float_1_80421878, &v, 0x10, icon0);
                 }
             } else {
                 if ((icon2 & 0xffff) != 0) {
@@ -663,19 +654,19 @@ static void actionCommandDisp(f32 x, f32 y) {
                         Vec v = (Vec){0.0f, 0.0f, 0.0f};
                         v.x = baseX;
                         v.y = baseY;
-                        ICON_DISP(&v, 0x10, icon1, float_1_80421878);
+                        iconDispGx(float_1_80421878, &v, 0x10, icon1);
                     }
                     {
                         Vec v = (Vec){0.0f, 0.0f, 0.0f};
                         v.x = float_56_804218b8 + baseX;
                         v.y = baseY;
-                        ICON_DISP(&v, 0x10, icon3, float_1_80421878);
+                        iconDispGx(float_1_80421878, &v, 0x10, icon3);
                     }
                 } else {
                     Vec v = (Vec){0.0f, 0.0f, 0.0f};
                     v.x = float_28_804218bc + (float_neg228_804218b0 + x);
                     v.y = float_55_804218b4 + y;
-                    ICON_DISP(&v, 0x10, icon1, float_1_80421878);
+                    iconDispGx(float_1_80421878, &v, 0x10, icon1);
                 }
             }
         } else {
@@ -687,19 +678,19 @@ static void actionCommandDisp(f32 x, f32 y) {
                         Vec v = (Vec){0.0f, 0.0f, 0.0f};
                         v.x = baseX;
                         v.y = baseY;
-                        ICON_DISP(&v, 0x10, icon1, float_1_80421878);
+                        iconDispGx(float_1_80421878, &v, 0x10, icon1);
                     }
                     {
                         Vec v = (Vec){0.0f, 0.0f, 0.0f};
                         v.x = float_56_804218b8 + baseX;
                         v.y = baseY;
-                        ICON_DISP(&v, 0x10, icon3, float_1_80421878);
+                        iconDispGx(float_1_80421878, &v, 0x10, icon3);
                     }
                 } else {
                     Vec v = (Vec){0.0f, 0.0f, 0.0f};
                     v.x = float_28_804218bc + (float_neg228_804218b0 + x);
                     v.y = float_55_804218b4 + y;
-                    ICON_DISP(&v, 0x10, icon1, float_1_80421878);
+                    iconDispGx(float_1_80421878, &v, 0x10, icon1);
                 }
             } else {
                 if ((icon2 & 0xffff) != 0) {
@@ -709,19 +700,19 @@ static void actionCommandDisp(f32 x, f32 y) {
                         Vec v = (Vec){0.0f, 0.0f, 0.0f};
                         v.x = baseX;
                         v.y = baseY;
-                        ICON_DISP(&v, 0x10, icon0, float_1_80421878);
+                        iconDispGx(float_1_80421878, &v, 0x10, icon0);
                     }
                     {
                         Vec v = (Vec){0.0f, 0.0f, 0.0f};
                         v.x = float_56_804218b8 + baseX;
                         v.y = baseY;
-                        ICON_DISP(&v, 0x10, icon2, float_1_80421878);
+                        iconDispGx(float_1_80421878, &v, 0x10, icon2);
                     }
                 } else {
                     Vec v = (Vec){0.0f, 0.0f, 0.0f};
                     v.x = float_28_804218bc + (float_neg228_804218b0 + x);
                     v.y = float_55_804218b4 + y;
-                    ICON_DISP(&v, 0x10, icon0, float_1_80421878);
+                    iconDispGx(float_1_80421878, &v, 0x10, icon0);
                 }
             }
         }

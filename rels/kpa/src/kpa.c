@@ -577,10 +577,6 @@ USER_FUNC(kpa_muteki_check) {
     return EVT_RETURN_DONE;
 }
 
-// kpa_status_disp: the icon id argument is u16, but icondrv.h declares iconDispGx's iconId as s16.
-// To reproduce the original's argument-evaluation order (the scale loads before the icon id) while still
-// passing a u16 id, the calls go through a local pointer typed with the f32 parameter before the u16 one;
-// both map to the same registers (f1 for the scale, r5 for the id). MUST_MATCH only, see the rules.
 void kpa_status_disp(CameraId cameraId, void* param) {
     Vec pos;
     s32 value;
@@ -590,6 +586,7 @@ void kpa_status_disp(CameraId cameraId, void* param) {
     pos.x = -210.0f;
     pos.y = 160.0f;
 #ifdef MUST_MATCH
+    // Match-only: the original zero-extends the selected id (clrlwi) after the branch.
     {
         s32 iconId;
         if ((u32)gp->language != 0) {
@@ -597,7 +594,7 @@ void kpa_status_disp(CameraId cameraId, void* param) {
         } else {
             iconId = 0x206;
         }
-        ((void (*)(Vec*, s16, f32, u16))iconDispGx)(&pos, 0x10, 1.0f, (u16)iconId);
+        iconDispGx(1.0f, &pos, 0x10, (u16)iconId);
     }
 #else
     iconDispGx(1.0f, &pos, 0x10, (u32)gp->language == 0 ? 0x206 : 0x210);
@@ -623,11 +620,7 @@ void kpa_status_disp(CameraId cameraId, void* param) {
     pos.x = -250.0f;
     pos.y = 130.0f;
     for (i = 0; i < 6; i++) {
-#ifdef MUST_MATCH
-        ((void (*)(Vec*, s16, f32, u16))iconDispGx)(&pos, 0x10, 1.0f, numeric_id[digits[i]]);
-#else
         iconDispGx(1.0f, &pos, 0x10, numeric_id[digits[i]]);
-#endif
         pos.x += 20.0f;
     }
     pos.x += 20.0f;
@@ -640,20 +633,12 @@ void kpa_status_disp(CameraId cameraId, void* param) {
     digits[0] = value / 10;
     digits[1] = value % 10;
     for (i = 0; i < 2; i++) {
-#ifdef MUST_MATCH
-        ((void (*)(Vec*, s16, f32, u16))iconDispGx)(&pos, 0x10, 1.0f, numeric_id[digits[i]]);
-#else
         iconDispGx(1.0f, &pos, 0x10, numeric_id[digits[i]]);
-#endif
         pos.x += 20.0f;
     }
 
     pos.x = 50.0f;
-#ifdef MUST_MATCH
-    ((void (*)(Vec*, s16, f32, u16))iconDispGx)(&pos, 0x10, 1.0f, numeric_id[kwp[0]]);
-#else
     iconDispGx(1.0f, &pos, 0x10, numeric_id[kwp[0]]);
-#endif
     pos.x += 20.0f;
     iconDispGx(1.0f, &pos, 0x10, 0x1EE);
 
@@ -662,11 +647,7 @@ void kpa_status_disp(CameraId cameraId, void* param) {
     digits[0] = value / 10;
     digits[1] = value % 10;
     for (i = (digits[0] == 0); i < 2; i++) {
-#ifdef MUST_MATCH
-        ((void (*)(Vec*, s16, f32, u16))iconDispGx)(&pos, 0x10, 1.0f, numeric_id[digits[i]]);
-#else
         iconDispGx(1.0f, &pos, 0x10, numeric_id[digits[i]]);
-#endif
         pos.x += 20.0f;
     }
 
@@ -677,11 +658,7 @@ void kpa_status_disp(CameraId cameraId, void* param) {
     digits[1] = value / 10;
     digits[2] = value % 10;
     for (i = 0; i < 3; i++) {
-#ifdef MUST_MATCH
-        ((void (*)(Vec*, s16, f32, u16))iconDispGx)(&pos, 0x10, 1.0f, numeric_id[digits[i]]);
-#else
         iconDispGx(1.0f, &pos, 0x10, numeric_id[digits[i]]);
-#endif
         pos.x += 20.0f;
     }
 }

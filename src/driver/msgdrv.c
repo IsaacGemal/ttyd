@@ -588,14 +588,8 @@ BOOL msgDisp(smartEntry* smart, u8 alpha, f32 x, f32 y) {
 				pos.x = 20.f + (x + (f32)entry->x);
 				pos.y = (f32)entry->iconOffsetY + (((f32)entry->y + (y + (f32)data->scrollY)) - 40.f);
 				pos.z = 0.0f;
-				// MUST_MATCH: retail converts iconId as u16 (clrlwi, no extsh); cast the callee at the call site.
-#ifdef MUST_MATCH
-				((void (*)(Vec*, s16, u16, u8, f32))iconDispGxAlpha)(&pos, 0x10, (u16)(entry->arg),
-					(u8)((fade * alpha) / 255), entry->scale);
-#else
 				iconDispGxAlpha(&pos, 0x10, entry->arg & 0xFFFF,
 					(u8)((fade * alpha) / 255), entry->scale);
-#endif
 				FontDrawStart_alpha(alpha);
 				FontDrawColor(color);
 				break;

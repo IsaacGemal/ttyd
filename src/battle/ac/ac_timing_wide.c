@@ -307,8 +307,8 @@ static void actionCommandDisp(f32 x, f32 y) {
 	BattleActions* ac = &work->actionCommands;
 	BattleACDispParams* disp = &ac->dispParams;
 	TimingWideDecWork* dec;
-	s16 up;
-	s16 down;
+	s32 up;
+	s32 down;
 
 	camGetPtr(CAMERA_2D);
 	dec = (TimingWideDecWork*)&ac->field_0x2BC[0];

@@ -369,8 +369,8 @@ static void actionCommandDisp(s32 type, f32 x, f32 y) {
     }
 
     for (i = 0; i < limit; i++) {
-        s16 pressed;
-        s16 released;
+        s32 pressed;
+        s32 released;
 
         if (bd->buttons[i] == 0) {
             continue;

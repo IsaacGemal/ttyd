@@ -70,11 +70,6 @@ static inline void twoddisp_fontColor(GXColor color) {
 	FontDrawColor(&color);
 }
 
-// The original's translation unit saw `iconDispGx` with a `u16` iconId: the call site zero-extends
-// (`clrlwi r5, r0, 16`). This repo's include/driver/icondrv.h declares the third parameter `s16`, which
-// makes the call sign-extend (`extsh r5, r0`). Cast through the signature the original used so the call
-// site emits the original's zero-extension. Reported in REPORT.md; the header itself is not changed
-// because other call sites (ac_timing_wide) rely on the `s16` declaration.
 void twoddisp_disp(CameraId cameraId, void* param) {
 	s32 i;
 	TwoDDisplayer* entry;
@@ -101,12 +96,7 @@ void twoddisp_disp(CameraId cameraId, void* param) {
 			pos.y = entry->baseY + entry->y;
 			pos.z = 0.0f;
 			GXSetFog(GX_FOG_NONE, 0.0f, 0.0f, 0.0f, 0.0f, color);
-#ifdef MUST_MATCH
-			// Match-only: original call site passes a u16 icon id (clrlwi); the header's s16 would extsh.
-			((void (*)(Vec*, s16, u16, f32))iconDispGx)(&pos, 0x10, entry->data, entry->scale);
-#else
-			iconDispGx(entry->scale, &pos, 0x10, entry->data);
-#endif
+			iconDispGx(entry->scale, &pos, 0x10, (u16)entry->data);
 		} else {
 			FontDrawStart();
 			FontDrawScale(entry->scale);

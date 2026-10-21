@@ -370,7 +370,7 @@ void iconDisp(CameraId camId, void* param) {
 #pragma dont_inline on
 // The zero-extended icon id and the icon_bin pointer are assigned before the entry's fields
 // (as in iconDispGxCol): that pins this block's register allocation (color r3, bin r4, id r5).
-void iconDispGxAlpha(Vec* position, s16 flags, s16 iconId, u8 alpha, f32 scale) {
+void iconDispGxAlpha(Vec* position, s16 flags, s32 iconId, u8 alpha, f32 scale) {
     ICON_FRAMES_DECL
     CameraEntry* camera;
     IconBinaryEntry* data;
@@ -432,7 +432,7 @@ void iconDispGxAlpha(Vec* position, s16 flags, s16 iconId, u8 alpha, f32 scale) 
 
 #pragma dont_inline reset
 
-void iconDispGx(f32 scale, Vec* position, s16 flags, s16 iconId) {
+void iconDispGx(f32 scale, Vec* position, s16 flags, s32 iconId) {
     iconDispGxAlpha(position, flags, iconId, 0xFF, scale);
 }
 

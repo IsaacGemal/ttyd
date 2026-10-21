@@ -1482,7 +1482,7 @@ void bakuGameDisp2D(void) {
 #endif
     for (i = 0; i < 3; i++) {
         BakuGameWorkEntry* entry = bakuGameEntry(baku, i);
-        s16 icon;
+        s32 icon;
 
         switch (entry->type) {
             case 0x100:

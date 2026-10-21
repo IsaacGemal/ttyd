@@ -340,15 +340,6 @@ void battleAcDelete_GaugeTiming2(BattleWork* work) {
 	}
 }
 
-#ifdef MUST_MATCH
-// Match-only: iconDispGx's header declares the icon id `s16`, but the original passes the value
-// returned by BattleACGetButtonIcon straight through (no `extsh`); a differently-typed function
-// pointer keeps the call a direct `bl iconDispGx`. Same workaround as ac_power_gauge_lv2.c.
-#define ICON_DISP(v, f, id, s) (((void (*)(f32, Vec*, s16, s32))iconDispGx)((s), (v), (f), (id)))
-#else
-#define ICON_DISP(v, f, id, s) iconDispGx((s), (v), (f), (id))
-#endif
-
 // don't_inline: the original keeps actionCommandDisp as its own local function
 // `t16` spells out `-288.0f + x` again instead of reusing `f31`: MWCC's CSE then turns it into a
 // copy of the first sum, which moves the `lfs` of -288.0 ahead of `lhz dec->total` in the first
@@ -461,7 +452,7 @@ static void actionCommandDisp(f32 x, f32 y) {
 #endif
 			t.x = f31 + (f32)dec->total * v / 100.f;
 			t.y = iy;
-			ICON_DISP(&t, 0x10, icon, 0.75f);
+			iconDispGx(0.75f, &t, 0x10, icon);
 		}
 	}
 
@@ -477,7 +468,7 @@ static void actionCommandDisp(f32 x, f32 y) {
 			Vec t = vec3_80300004;
 			t.x = -225.0f + x + 28.0f;
 			t.y = 55.0f + y;
-			ICON_DISP(&t, 0x10, icon0, 1.0f);
+			iconDispGx(1.0f, &t, 0x10, icon0);
 			break;
 		}
 		case 0x3E8:
@@ -485,13 +476,13 @@ static void actionCommandDisp(f32 x, f32 y) {
 				Vec t = vec3_80300028;
 				t.x = -225.0f + x + 28.0f;
 				t.y = 55.0f + y;
-				ICON_DISP(&t, 0x10, icon1, 1.0f);
+				iconDispGx(1.0f, &t, 0x10, icon1);
 			}
 			else {
 				Vec t = (Vec){ 0.0f, 0.0f, 0.0f };
 				t.x = -225.0f + x + 28.0f;
 				t.y = 55.0f + y;
-				ICON_DISP(&t, 0x10, icon0, 1.0f);
+				iconDispGx(1.0f, &t, 0x10, icon0);
 			}
 			break;
 		default:

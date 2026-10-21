@@ -1209,13 +1209,7 @@ void zubastar_disp2D(CameraId cameraId, void* param) {
         pos = (Vec){ 0.0f, 0.0f, 0.0f };
         pos.x = work->gaugePos.x - 200.0f;
         pos.y = 60.0f + work->gaugePos.y;
-#ifdef MUST_MATCH
-        // Cast only to drop the s32->s16 `extsh` the original does not emit: the id is 0x64/0x65,
-        // so the upper bits are already clear. The natural declared call is under #else.
-        ((void (*)(Vec*, s16, s32, f32))iconDispGx)(&pos, 0x10, icon, 1.0f);
-#else
         iconDispGx(1.0f, &pos, 0x10, icon);
-#endif
         BattleAcDrawGauge((s32)work->gaugePos.x, (s32)work->gaugePos.y, 0xB1, 4, 0x1A, 0x34, 0x4E,
                           0, 0.01f * work->gauge);
     }

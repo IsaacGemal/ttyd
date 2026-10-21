@@ -299,15 +299,6 @@ void battleAcDelete_PowerGauge(BattleWork* work) {
     }
 }
 
-// Match-only: iconDispGx's header declares the icon id `s16`, but the original passes the value
-// returned by BattleACGetButtonIcon straight through (no `extsh`/`clrlwi`); a differently-typed
-// function pointer keeps the call a direct `bl iconDispGx`. Same workaround as ac_gauge_timing.
-#ifdef MUST_MATCH
-#define ICON_DISP(v, f, id, s) (((void (*)(f32, Vec*, s16, s32))iconDispGx)((s), (v), (f), (id)))
-#else
-#define ICON_DISP(v, f, id, s) iconDispGx((s), (v), (f), (id))
-#endif
-
 // The only remaining difference is the FPR colouring of the ratio clamp: the original loads
 // float_100 into f1, gaugePercent into f2 and float_1 into f0; MWCC assigns gaugePercent f0 and
 // float_1 f2. Every instruction is otherwise identical, and the float_100/float_1 symbols are still
@@ -361,7 +352,7 @@ static void actionCommandDisp(f32 x, f32 y) {
         pos.x = -288.0f + px +
                 (f32)(ac->acParams[4] * 0xb0) / 100.f;
         pos.y = 45.0f + py;
-        ICON_DISP(&pos, 0x10, 0x96, 1.0f);
+        iconDispGx(1.0f, &pos, 0x10, 0x96);
     }
     else {
         s32 color;
@@ -377,13 +368,13 @@ static void actionCommandDisp(f32 x, f32 y) {
             Vec pos = (Vec){0.0f, 0.0f, 0.0f};
             pos.x = -200.f + px + 120.f - 12.0f;
             pos.y = 18.0f + py;
-            ICON_DISP(&pos, 0x10, color, 1.0f);
+            iconDispGx(1.0f, &pos, 0x10, color);
         }
         else {
             Vec pos = (Vec){0.0f, 0.0f, 0.0f};
             pos.x = -200.f + px + 120.f;
             pos.y = 18.0f + py;
-            ICON_DISP(&pos, 0x10, color, 1.0f);
+            iconDispGx(1.0f, &pos, 0x10, color);
         }
     }
 
@@ -427,20 +418,20 @@ static void actionCommandDisp(f32 x, f32 y) {
                 Vec pos = (Vec){0.0f, 0.0f, 0.0f};
                 pos.x = px;
                 pos.y = py;
-                ICON_DISP(&pos, 0x10, iconB, 1.0f);
+                iconDispGx(1.0f, &pos, 0x10, iconB);
             }
             {
                 Vec pos = (Vec){0.0f, 0.0f, 0.0f};
                 pos.x = 56.0f + px;
                 pos.y = py;
-                ICON_DISP(&pos, 0x10, iconD, 1.0f);
+                iconDispGx(1.0f, &pos, 0x10, iconD);
             }
         }
         else {
             Vec pos = (Vec){0.0f, 0.0f, 0.0f};
             pos.x = -225.0f + px + 28.0f;
             pos.y = 80.f + py;
-            ICON_DISP(&pos, 0x10, iconB, 1.0f);
+            iconDispGx(1.0f, &pos, 0x10, iconB);
         }
         break;
     case 0x3e8:
@@ -455,20 +446,20 @@ static void actionCommandDisp(f32 x, f32 y) {
                         Vec pos = (Vec){0.0f, 0.0f, 0.0f};
                         pos.x = px;
                         pos.y = py;
-                        ICON_DISP(&pos, 0x10, iconA, 1.0f);
+                        iconDispGx(1.0f, &pos, 0x10, iconA);
                     }
                     {
                         Vec pos = (Vec){0.0f, 0.0f, 0.0f};
                         pos.x = 56.0f + px;
                         pos.y = py;
-                        ICON_DISP(&pos, 0x10, iconC, 1.0f);
+                        iconDispGx(1.0f, &pos, 0x10, iconC);
                     }
                 }
                 else {
                     Vec pos = (Vec){0.0f, 0.0f, 0.0f};
                     pos.x = -225.0f + px + 28.0f;
                     pos.y = 80.f + py;
-                    ICON_DISP(&pos, 0x10, iconA, 1.0f);
+                    iconDispGx(1.0f, &pos, 0x10, iconA);
                 }
             }
             else {
@@ -479,20 +470,20 @@ static void actionCommandDisp(f32 x, f32 y) {
                         Vec pos = (Vec){0.0f, 0.0f, 0.0f};
                         pos.x = px;
                         pos.y = py;
-                        ICON_DISP(&pos, 0x10, iconB, 1.0f);
+                        iconDispGx(1.0f, &pos, 0x10, iconB);
                     }
                     {
                         Vec pos = (Vec){0.0f, 0.0f, 0.0f};
                         pos.x = 56.0f + px;
                         pos.y = py;
-                        ICON_DISP(&pos, 0x10, iconD, 1.0f);
+                        iconDispGx(1.0f, &pos, 0x10, iconD);
                     }
                 }
                 else {
                     Vec pos = (Vec){0.0f, 0.0f, 0.0f};
                     pos.x = -225.0f + px + 28.0f;
                     pos.y = 80.f + py;
-                    ICON_DISP(&pos, 0x10, iconB, 1.0f);
+                    iconDispGx(1.0f, &pos, 0x10, iconB);
                 }
             }
         }
@@ -506,20 +497,20 @@ static void actionCommandDisp(f32 x, f32 y) {
                     Vec pos = (Vec){0.0f, 0.0f, 0.0f};
                     pos.x = px;
                     pos.y = py;
-                    ICON_DISP(&pos, 0x10, iconB, 1.0f);
+                    iconDispGx(1.0f, &pos, 0x10, iconB);
                 }
                 {
                     Vec pos = (Vec){0.0f, 0.0f, 0.0f};
                     pos.x = 56.0f + px;
                     pos.y = py;
-                    ICON_DISP(&pos, 0x10, iconD, 1.0f);
+                    iconDispGx(1.0f, &pos, 0x10, iconD);
                 }
             }
             else {
                 Vec pos = (Vec){0.0f, 0.0f, 0.0f};
                 pos.x = -225.0f + px + 28.0f;
                 pos.y = 80.f + py;
-                ICON_DISP(&pos, 0x10, iconB, 1.0f);
+                iconDispGx(1.0f, &pos, 0x10, iconB);
             }
         }
         else {
@@ -530,20 +521,20 @@ static void actionCommandDisp(f32 x, f32 y) {
                     Vec pos = (Vec){0.0f, 0.0f, 0.0f};
                     pos.x = px;
                     pos.y = py;
-                    ICON_DISP(&pos, 0x10, iconA, 1.0f);
+                    iconDispGx(1.0f, &pos, 0x10, iconA);
                 }
                 {
                     Vec pos = (Vec){0.0f, 0.0f, 0.0f};
                     pos.x = 56.0f + px;
                     pos.y = py;
-                    ICON_DISP(&pos, 0x10, iconC, 1.0f);
+                    iconDispGx(1.0f, &pos, 0x10, iconC);
                 }
             }
             else {
                 Vec pos = (Vec){0.0f, 0.0f, 0.0f};
                 pos.x = -225.0f + px + 28.0f;
                 pos.y = 80.f + py;
-                ICON_DISP(&pos, 0x10, iconA, 1.0f);
+                iconDispGx(1.0f, &pos, 0x10, iconA);
             }
         }
         break;

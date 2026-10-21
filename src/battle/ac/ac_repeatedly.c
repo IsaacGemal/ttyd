@@ -455,20 +455,12 @@ static void actionCommandDisp(f32 x, f32 y) {
             Vec vec = (Vec){0.0f, 0.0f, 0.0f};
             vec.x = float_neg200_8041c7ac + x;
             vec.y = float_70_8041c7b0 + y;
-#ifdef MUST_MATCH
-            ((void (*)(Vec*, s16, s32, f32))iconDispGx)(&vec, 0x10, iconB, float_1_8041c7b4);
-#else
             iconDispGx(float_1_8041c7b4, &vec, 0x10, iconB);
-#endif
         } else {
             Vec vec = (Vec){0.0f, 0.0f, 0.0f};
             vec.x = float_neg200_8041c7ac + x;
             vec.y = float_70_8041c7b0 + y;
-#ifdef MUST_MATCH
-            ((void (*)(Vec*, s16, s32, f32))iconDispGx)(&vec, 0x10, iconA, float_1_8041c7b4);
-#else
             iconDispGx(float_1_8041c7b4, &vec, 0x10, iconA);
-#endif
         }
     } else {
         s32 alt = (*(s32*)&disp->field_0x0[0] / 7) & 1;
@@ -504,21 +496,12 @@ static void actionCommandDisp(f32 x, f32 y) {
                 Vec vec = (Vec){0.0f, 0.0f, 0.0f};
                 vec.x = baseX + (f32)off;
                 vec.y = baseY;
-#ifdef MUST_MATCH
-                // Match-only: iconDispGx's iconId is s16 but the original passes the register directly.
-                ((void (*)(Vec*, s16, s32, f32))iconDispGx)(&vec, 0x10, icon, float_1_8041c7b4);
-#else
                 iconDispGx(float_1_8041c7b4, &vec, 0x10, icon);
-#endif
             } else {
                 Vec vec = (Vec){0.0f, 0.0f, 0.0f};
                 vec.x = baseX + (f32)off;
                 vec.y = baseY;
-#ifdef MUST_MATCH
-                ((void (*)(Vec*, s16, s32, f32))iconDispGx)(&vec, 0x10, iconB, float_0p5_8041c7b8);
-#else
                 iconDispGx(float_0p5_8041c7b8, &vec, 0x10, iconB);
-#endif
             }
         }
     }

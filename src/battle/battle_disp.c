@@ -7,6 +7,7 @@
 #include <dolphin/gx.h>
 #include <string.h>
 #include "driver/animdrv.h"
+#include "driver/icondrv_gx.h"
 #include "system.h"
 #include "battle/battle_sub.h"
 #include "math_ext.h"
@@ -16,9 +17,6 @@
 #include "battle/battle_stage.h"
 #include "battle/battle_seq_command.h"
 
-// LOCAL_PROTO(iconDispGx): this unit's original passes the icon id zero-extended (ItemData.icon_id read with `lhz`
-// and handed over with no `extsh`), so it saw the id as u16.
-void iconDispGx(f32 scale, Vec* position, s16 flags, u16 iconId);
 
 extern BattleWork* _battleWorkPointer;
 
