@@ -2691,15 +2691,13 @@ static u32 disp_work[3];
 
 // clang-format on
 
-#ifdef MUST_MATCH
-// MUST_MATCH: retail builds the GXColor in one scratch slot and copies it to the argument slot; returning it
+// Retail builds the GXColor in one scratch slot and copies it to the argument slot; returning it
 // from an inline reproduces that instead of writing the channels in place.
 static inline GXColor monitorColor(u8 alpha) {
     GXColor c = *(GXColor*)&dat_tou_00009c38;
     c.a = alpha;
     return c;
 }
-#endif
 
 // Emit the real functions in retail order so native conversion constants share the original pool slots.
 #ifdef MUST_MATCH
@@ -2887,12 +2885,7 @@ void monitor_tev(void* param) {
         GXSetTevColorIn(GX_TEVSTAGE1, GX_CC_TEXC, GX_CC_CPREV, GX_CC_A0, GX_CC_ZERO);
         GXSetTevAlphaIn(GX_TEVSTAGE1, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_TEXA);
         GXSetTevSwapMode(GX_TEVSTAGE1, GX_TEV_SWAP0, GX_TEV_SWAP0);
-#ifdef MUST_MATCH
         color = monitorColor(((GansWork*)gans_wp[0])->alpha);
-#else
-        color = *(GXColor*)&dat_tou_00009c38;
-        color.a = ((GansWork*)gans_wp[0])->alpha;
-#endif
         GXSetTevColor(GX_TEVREG0, color);
         p->tevStage = 2;
         p->texCoord = 2;

@@ -314,16 +314,11 @@ USER_FUNC(evt_shuryolight_run_evt_17_text_10828) {
 }
 
 static USER_FUNC(evt_shuryolight_run_power_evt) {
-#ifdef MUST_MATCH
     // declaration order puts evtCode in r30 and id in r31, as the original
     s32 id;
     s32 evtCode;
     evtCode = evtGetValue(event, event->args[0]);
     id = slhp->powerEvtId;
-#else
-    s32 evtCode = evtGetValue(event, event->args[0]);
-    s32 id = slhp->powerEvtId;
-#endif
 
     if (evtCheckID(id)) {
         evtDeleteID(id);
@@ -333,15 +328,10 @@ static USER_FUNC(evt_shuryolight_run_power_evt) {
 }
 
 USER_FUNC(evt_shuryolight_run_head_evt_17_text_10718) {
-#ifdef MUST_MATCH
     s32 id;
     s32 evtCode;
     evtCode = evtGetValue(event, event->args[0]);
     id = slhp->headEvtId;
-#else
-    s32 evtCode = evtGetValue(event, event->args[0]);
-    s32 id = slhp->headEvtId;
-#endif
 
     if (evtCheckID(id)) {
         evtDeleteID(id);
@@ -351,15 +341,10 @@ USER_FUNC(evt_shuryolight_run_head_evt_17_text_10718) {
 }
 
 static USER_FUNC(evt_shuryolight_run_tue_evt) {
-#ifdef MUST_MATCH
     s32 id;
     s32 evtCode;
     evtCode = evtGetValue(event, event->args[0]);
     id = slhp->tueEvtId;
-#else
-    s32 evtCode = evtGetValue(event, event->args[0]);
-    s32 id = slhp->tueEvtId;
-#endif
 
     if (evtCheckID(id)) {
         evtDeleteID(id);

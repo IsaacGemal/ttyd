@@ -163,15 +163,13 @@ void gor_draw_msg_fit(const char* msg, s32 width, f32 x, f32 y, f32 z) {
     ((void (*)(u16, GXColor*, f32, f32, f32, f32, f32))windowDispGX_Waku_col)(0, &(c), (x), (y), (w), (h), (curve))
 #define ICON_COL(mtx, flags, id, c) ((void (*)(Mtx, s16, s32, GXColor*))iconDispGxCol)((mtx), (flags), (id), &(c))
 #define ICON_NUM(mtx, num, small, c) ((s32 (*)(Mtx, s32, BOOL, GXColor*))iconNumberDispGx)((mtx), (num), (small), &(c))
-// Match-only: retail evaluates the title frame's lower edge as k + (field_10 + 128); the natural order gives a
-// different fadds operand order.
-#define WAKU_BOTTOM (k + (work->field_10 + 128.0f))
 #else
 #define WAKU_COL(c, x, y, w, h, curve) windowDispGX_Waku_col((x), (y), (w), (h), (curve), 0, (c))
 #define ICON_COL(mtx, flags, id, c) iconDispGxCol((mtx), (flags), (id), (c))
 #define ICON_NUM(mtx, num, small, c) iconNumberDispGx((mtx), (num), (small), (c))
-#define WAKU_BOTTOM (work->field_10 + 128.0f + k)
 #endif
+// Retail evaluates the title frame's lower edge as k + (field_10 + 128), in that operand order.
+#define WAKU_BOTTOM (k + (work->field_10 + 128.0f))
 
 // The top waku/FontDrawMessage maths (a non-const `k=1.0f` keeps the `fnmadds` that negates the sum, integer-negated
 // width), the signed `cmpwi` menu test and the `A74(i)/1000` recompute now match. Passing the by-value colours by

@@ -575,7 +575,7 @@ static void monte_disp(CameraId cameraId, void* param) {
 }
 
 // Setting base[3]=0.0f before the do-while (not at its top) matched the target's store layout, and
-// expanding the y-range monte_rand with `max -= min` (MUST_MATCH) made its subtraction reuse max's
+// expanding the y-range monte_rand with `max -= min` made its subtraction reuse max's
 // register (f1), as the target does. The sfx string uses yuu_01's union shape (see the MUST_MATCH
 // blocks): a plain `const char*` adds an `mr`, and the union member alone colours it r29, not r26.
 static USER_FUNC(fall_rtn) {
@@ -640,13 +640,9 @@ static USER_FUNC(fall_rtn) {
                     min = montetable[tableIdx].yMax;
                     max = montetable[tableIdx].yMin;
                 }
-#ifdef MUST_MATCH
-                // match-only: the in-place range makes MWCC keep it in max's register (f1)
+                // The in-place range keeps it in max's register (f1).
                 max -= min;
                 base[2] = min + (f32)irand((s32)(100.0f * max)) / 100.0f;
-#else
-                base[2] = monte_rand(min, max);
-#endif
                 for (j = 0; j < pointIdx; j++) {
                     Vec diff;
                     PSVECSubtract((Vec*)(base + 1), (Vec*)((u8*)base - (j + 1) * 0x38 + 4), &diff);

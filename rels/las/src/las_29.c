@@ -2535,12 +2535,8 @@ USER_FUNC(add_vy) {
     f32 step = a ? 0.01f : -0.01f;
     NpcEntry* npc = npcNameToPtr("ブラックピーチ");
 
-#ifdef MUST_MATCH
     base = step * (f32)b + base;
     npc->moveOffset.y += base;
-#else
-    npc->moveOffset.y += (f32)b * step + base;
-#endif
     return EVT_RETURN_DONE;
 }
 

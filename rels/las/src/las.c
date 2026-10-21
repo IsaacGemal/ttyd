@@ -91,8 +91,7 @@ void _epilog(void) {
 void _unresolved(void) {
 }
 
-#ifdef MUST_MATCH
-/* MUST_MATCH: returning the colour through an inline aggregate forces MWCC to build it in the
+/* Returning the colour through an inline aggregate makes MWCC build it in the
    return temporary (r1+8) and copy it to the by-value argument slot (r1+0xC), as retail does. */
 static inline GXColor mobjColor(s32 r, s32 g, s32 b) {
     GXColor color = {0, 0, 0, 0xFF};
@@ -101,7 +100,6 @@ static inline GXColor mobjColor(s32 r, s32 g, s32 b) {
     color.b = b;
     return color;
 }
-#endif
 
 USER_FUNC(mobj_set_color) {
     s32* args = event->args;
@@ -110,15 +108,7 @@ USER_FUNC(mobj_set_color) {
     s32 g = evtGetValue(event, args[2]);
     s32 b = evtGetValue(event, args[3]);
     MapObjectEntry* mobj = mobjNameToPtr((const char*)name);
-#ifdef MUST_MATCH
     animPoseSetMaterialEvtColor(mobj->poseId, mobjColor(r, g, b));
-#else
-    GXColor color = {0, 0, 0, 0xFF};
-    color.r = r;
-    color.g = g;
-    color.b = b;
-    animPoseSetMaterialEvtColor(mobj->poseId, color);
-#endif
     animPoseSetMaterialFlagOn(mobj->poseId, 0x40);
     return EVT_RETURN_DONE;
 }

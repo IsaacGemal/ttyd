@@ -73,9 +73,7 @@ USER_FUNC(hit_move) {
     f32 dist;
     f32 angle;
     f32 diff;
-#ifdef MUST_MATCH
     f32 tmp;
-#endif
 
     mario = marioGetPtr();
     hit = mario->hitobjStandOn;
@@ -111,14 +109,9 @@ USER_FUNC(hit_move) {
 
     hitObjGetPos(hit->joint->name, &pos);
     dist = distABf(mario->position.x, mario->position.z, pos.x, pos.z);
-#ifdef MUST_MATCH
     // The temporary makes the compiler add diff into the angleABf result register, as the original does.
     tmp = angleABf(pos.x, pos.z, mario->position.x, mario->position.z);
     diff = float_6p2832_eki_00008ff4 * (tmp + diff) / float_360_eki_00008ff8;
-#else
-    diff = float_6p2832_eki_00008ff4 *
-           (angleABf(pos.x, pos.z, mario->position.x, mario->position.z) + diff) / float_360_eki_00008ff8;
-#endif
 
     mario->riderDelta.x = (dist * (f32)sin(diff) + pos.x) - mario->position.x;
     mario->riderDelta.z = (pos.z - dist * (f32)cos(diff)) - mario->position.z;

@@ -881,13 +881,9 @@ static USER_FUNC(_icon_jump_icon) {
         obj->start = pos;
         obj->fallAccel = accel;
         obj->frames = frames;
-#ifdef MUST_MATCH
         // /2.0f (not *0.5f) makes MWCC put the float constant in f3 and the
         // int->float bias in f4, matching the original's register allocation.
         obj->vy = obj->fallAccel * obj->frames / 2.0f + (obj->target.y - obj->start.y) / obj->frames;
-#else
-        obj->vy = obj->fallAccel * obj->frames * 0.5f + (obj->target.y - obj->start.y) / obj->frames;
-#endif
         obj->speed = distABf(obj->start.x, obj->start.z, obj->target.x, obj->target.z) / obj->frames;
         event->userdata[1] = icon;
         event->userdata[2] = 0;

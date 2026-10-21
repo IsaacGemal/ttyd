@@ -66,17 +66,10 @@ static inline int tik_fpclassifyf(float value) {
 static inline f32 sqrtf(f32 x) {
     if (x > 0.0f) {
         f64 guess = __frsqrte(x);
-#ifdef MUST_MATCH
         guess = 0.5 * guess * (3.0 - guess * guess * x);
         guess = 0.5 * guess * (3.0 - guess * guess * x);
         x = x * (0.5 * guess * (3.0 - guess * guess * x));
         return x;
-#else
-        guess = 0.5 * guess * (3.0 - guess * guess * x);
-        guess = 0.5 * guess * (3.0 - guess * guess * x);
-        guess = 0.5 * guess * (3.0 - guess * guess * x);
-        return x * guess;
-#endif
     } else if (x < 0.0) {
         return NAN;
     } else if (tik_fpclassifyf(x) == FP_NAN) {
@@ -2004,13 +1997,11 @@ USER_FUNC(eff_starstone_sound_off) {
 
 // The original builds the colour in one stack slot and copies it into the
 // argument slot, so the build goes through an inline that returns by value.
-#ifdef MUST_MATCH
 static inline GXColor alpha_tev_color(u8 a) {
     GXColor c = *(GXColor*)&zero_tik_00009b58;
     c.a = a;
     return c;
 }
-#endif
 
 static void alpha_tev(MapTevCallback* param) {
     u32 stage = param->tevStage;
@@ -2021,15 +2012,7 @@ static void alpha_tev(MapTevCallback* param) {
     GXSetAlphaCompare(GX_ALWAYS, 0, GX_AOP_AND, GX_ALWAYS, 0);
     GXSetZMode(GX_TRUE, GX_LEQUAL, GX_FALSE);
     GXSetTevOrder(stage, GX_TEXCOORD_NULL, GX_TEXMAP_NULL, GX_COLOR0A0);
-#ifdef MUST_MATCH
     GXSetTevColor(GX_TEVREG0, alpha_tev_color(*ap));
-#else
-    {
-        GXColor color = *(GXColor*)&zero_tik_00009b58;
-        color.a = *ap;
-        GXSetTevColor(GX_TEVREG0, color);
-    }
-#endif
     GXSetTevColorOp(stage, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
     GXSetTevAlphaOp(stage, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
     GXSetTevColorIn(stage, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ZERO, GX_CC_CPREV);
@@ -2270,13 +2253,11 @@ USER_FUNC(effect_position) {
 
 // The original builds the colour in one stack slot and copies it into the
 // argument slot, so the build goes through an inline that returns by value.
-#ifdef MUST_MATCH
 static inline GXColor img_alpha_color(u8 a) {
     GXColor c = *(GXColor*)&dat_tik_00009bb8;
     c.a = a;
     return c;
 }
-#endif
 
 USER_FUNC(img_alpha) {
     s32* args = event->args;
@@ -2287,15 +2268,7 @@ USER_FUNC(img_alpha) {
     Mtx rot;
 
     animPoseSetMaterialFlagOn(entry->poseId, 0x40);
-#ifdef MUST_MATCH
     animPoseSetMaterialEvtColor(entry->poseId, img_alpha_color(alpha));
-#else
-    {
-        GXColor color = *(GXColor*)&dat_tik_00009bb8;
-        color.a = alpha;
-        animPoseSetMaterialEvtColor(entry->poseId, color);
-    }
-#endif
     PSMTXTrans(trans, 0.0f, 1.5f, 0.0f);
     PSMTXScale(scale, 0.9f, 0.9f, 0.9f);
     PSMTXRotRad(rot, 'x', -0.5235988f);

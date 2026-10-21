@@ -3569,17 +3569,11 @@ EVT_END()
 static USER_FUNC(evt_osreport) {
     s32* args = event->args;
 
-#ifdef MUST_MATCH
     switch (evtGetValue(event, args[0])) {
         case 0:
             evtSetValue(event, args[1], (s32)search_evt_moji(evtGetValue(event, GSW(0))));
             break;
     }
-#else
-    if (evtGetValue(event, args[0]) == 0) {
-        evtSetValue(event, args[1], (s32)search_evt_moji(evtGetValue(event, GSW(0))));
-    }
-#endif
     return EVT_RETURN_DONE;
 }
 

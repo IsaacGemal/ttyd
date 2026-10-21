@@ -2498,10 +2498,8 @@ void raster_disp(CameraId camera, void* param) {
     GXSetCurrentMtx(GX_PNMTX0);
 
     GXBegin(GX_QUADS, GX_VTXFMT0, 4);
-#ifdef MUST_MATCH
     {
-        // MUST_MATCH: these temporaries pin MWCC's FPR assignment and commutative-operand order;
-        // the #else branch is the natural form and does not match.
+        // Named sizes: literal operands get other FPRs and operand order.
         f32 w = 608.0f;
         f32 h = 480.0f;
         f32 top = 240.0f;
@@ -2516,18 +2514,6 @@ void raster_disp(CameraId camera, void* param) {
         GXPosition3f32(-w * half, -h * half, 0.0f);
         GXTexCoord2f32(0.0f, 1.0f);
     }
-#else
-    {
-        GXPosition3f32(-608.0f * 0.5f, 240.0f, 0.0f);
-        GXTexCoord2f32(0.0f, 0.0f);
-        GXPosition3f32(304.0f, 240.0f, 0.0f);
-        GXTexCoord2f32(1.0f, 0.0f);
-        GXPosition3f32(304.0f, -480.0f * 0.5f, 0.0f);
-        GXTexCoord2f32(1.0f, 1.0f);
-        GXPosition3f32(-608.0f * 0.5f, -480.0f * 0.5f, 0.0f);
-        GXTexCoord2f32(0.0f, 1.0f);
-    }
-#endif
     GXSetNumIndStages(0);
     GXSetTevDirect(GX_TEVSTAGE0);
 }
