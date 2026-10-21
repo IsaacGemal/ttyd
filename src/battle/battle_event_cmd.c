@@ -2603,9 +2603,6 @@ USER_FUNC(btlevtcmd_OffToken) {
     return EVT_RETURN_DONE;
 }
 
-// The original emits `and. r0, r0, r5` (mTokenFlags in r0, args[1] in r5), so the field must stay the
-// left operand of `&`. Reading args[1] through a volatile pointer pins its load before the field load, as
-// the original does; nothing here is actually volatile (`event->args` is a plain s32*).
 USER_FUNC(btlevtcmd_CheckToken) {
     s32* args = event->args;
     BattleUnit* unit;
@@ -2613,13 +2610,10 @@ USER_FUNC(btlevtcmd_CheckToken) {
 
     btlId = evtGetValue(event, args[0]);
     unit = BattleGetUnitPtr(_battleWorkPointer, BattleTransID(event, btlId));
-#ifdef MUST_MATCH
-    mask = *(volatile s32*)&args[1];
-#else
     mask = args[1];
-#endif
     index = args[2];
-    if (unit->mTokenFlags & mask) {
+    mask = unit->mTokenFlags & mask;
+    if (mask) {
         evtSetValue(event, index, 1);
     }
     else {
