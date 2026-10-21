@@ -451,10 +451,6 @@ static inline Vec nameEntMkVec(Vec base, f32 x) {
 	return base;
 }
 
-// nameWinGX is declared (void* tex, s32 arg1, f32 x, f32 y, f32 z, f32 w) in include/nameent.h, so MWCC
-// evaluates the palette pointer first and schedules its final data[0] load one slot before the last lfs.
-// Retail evaluates the four floats first (its declaration had the pointer last). The MUST_MATCH cast
-// below calls through that order; the natural pointer-first call is under #else.
 void nameEntDisp(CameraId cameraId, void* param) {
 	CameraEntry saved;
 	f32 projv[7];
@@ -537,14 +533,8 @@ void nameEntDisp(CameraId cameraId, void* param) {
 		if (wp->type == 4) {
 			okMsg = msgSearch("msg_nameent_ok_01");
 		}
-#ifdef MUST_MATCH
-		// MUST_MATCH: floats before pointer, so the data[0] load sinks past the last lfs (see note above).
-		((void (*)(f32, f32, f32, f32, void*, s32))nameWinGX)(-180.0f, 130.0f, 360.0f, 100.0f, (TEXPalette*)wp->tpl->data[0], 1);
-		((void (*)(f32, f32, f32, f32, void*, s32))nameWinGX)(-80.0f, 10.0f, 160.0f, 120.0f, (TEXPalette*)wp->tpl->data[0], 1);
-#else
-		nameWinGX((TEXPalette*)wp->tpl->data[0], 1, -180.0f, 130.0f, 360.0f, 100.0f);
-		nameWinGX((TEXPalette*)wp->tpl->data[0], 1, -80.0f, 10.0f, 160.0f, 120.0f);
-#endif
+		nameWinGX(-180.0f, 130.0f, 360.0f, 100.0f, (TEXPalette*)wp->tpl->data[0], 1);
+		nameWinGX(-80.0f, 10.0f, 160.0f, 120.0f, (TEXPalette*)wp->tpl->data[0], 1);
 		FontDrawStart();
 		FontDrawColor(&(GXColor){ 0xFF, 0xFF, 0xFF, 0xFF });
 		FontDrawEdge();
@@ -895,7 +885,7 @@ static inline void nameWinQuad(f32 x, f32 y, f32 w, f32 h) {
 		nameWinQuad(vx, vy, W, H); \
 	}
 
-void nameWinGX(void* tex, s32 arg1, f32 x, f32 y, f32 z, f32 w) {
+void nameWinGX(f32 x, f32 y, f32 z, f32 w, void* tex, s32 arg1) {
 	GXColor color;
 	f32 yscale; // shared across the four quads like nameKirinukiGX's
 

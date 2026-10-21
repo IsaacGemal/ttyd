@@ -39,7 +39,7 @@ BOOL nameEntWait(void);
 void nameEntOn(s32 type);
 #include "driver/camdrv.h"
 BOOL nameEntIsCancel(void);
-void nameWinGX(void* tex, s32 arg1, f32 x, f32 y, f32 z, f32 w);
+void nameWinGX(f32 x, f32 y, f32 z, f32 w, void* tex, s32 arg1);
 void nameMaskGX(f32 alpha);
 void nameKirinukiGX(f32 x, f32 y, f32 z, f32 w);
 void nameBG(void);

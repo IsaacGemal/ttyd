@@ -237,7 +237,7 @@ void effSetVtxDescN64(effVtxArray* array) {
 	GXSetArray(GX_VA_TEX0, array->tex0, 0xE);
 }
 
-void tri1(u16 x, u16 y, u16 z) {
+void tri1(s32 x, s32 y, s32 z, s32 unused) {
 	GXWGFifo.u16 = x;
 	GXWGFifo.u16 = x;
 	GXWGFifo.u16 = x;

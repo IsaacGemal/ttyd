@@ -174,20 +174,9 @@ static inline void effBalloonSetVtx(BalloonVtx* dst, BalloonVtx* src, Mtx mtx) {
 #undef BALLOON_VEC
 }
 
-// The retail tri1 keeps a 4th, unused argument (eff_balloon_n64.s passes 0 for the fixed
-// triangles and 1 for the loop ones). The header declares only three u16 parameters; the
-// cast to four s32 parameters also keeps the caller from truncating i+2/i+3 with clrlwi.
-#ifdef MUST_MATCH
-static inline void tri1WithUnused(s32 x, s32 y, s32 z, s32 unused) {
-	((void (*)(s32, s32, s32, s32))tri1)(x, y, z, unused);
-}
-#endif
-
 // The control flow, constants, GX/TEV state, matrix math and the six OSInitFastCast GQR2-5
 // blocks are the original's; the psq_l/psq_st vertex conversions come from the SDK's
-// OSs16tof32/OSf32tos16 fast-cast inlines. tri1's 4-argument form is not in
-// include/eff/eff_n64.h or src/effect/n64/eff_n64.c (both declare 3 u16 args); the local
-// tri1WithUnused helper casts around that. The declaration order and the opt_dead_assignments
+// OSs16tof32/OSf32tos16 fast-cast inlines. The declaration order and the opt_dead_assignments
 // pragma below reproduce retail's callee-saved colouring (cam r28, life r31, balloon_vtx base r29).
 #pragma opt_dead_assignments off // needed: without it MWCC colours cam r31 / life r29, not retail's cam r28 / life r31
 void effBalloonDisp(CameraId camId, void* param) {
@@ -262,35 +251,18 @@ void effBalloonDisp(CameraId camId, void* param) {
 
 	if (life < 100) {
 		GXBegin(GX_TRIANGLES, GX_VTXFMT0, 3);
-#ifdef MUST_MATCH
-		tri1WithUnused(0x15, 2, 1, 0);
-#else
-		tri1(0x15, 2, 1);
-#endif
+		tri1(0x15, 2, 1, 0);
 		for (i = 0; i < 19; i++) {
 			GXBegin(GX_TRIANGLES, GX_VTXFMT0, 3);
-#ifdef MUST_MATCH
-			tri1WithUnused(1, i + 2, i + 3, 1);
-#else
-			tri1(1, i + 2, i + 3);
-#endif
+			tri1(1, i + 2, i + 3, 1);
 		}
 	} else {
 		GXBegin(GX_TRIANGLES, GX_VTXFMT0, 6);
-#ifdef MUST_MATCH
-		tri1WithUnused(0, 1, 2, 0);
-		tri1WithUnused(0, 0x15, 1, 0);
-#else
-		tri1(0, 1, 2);
-		tri1(0, 0x15, 1);
-#endif
+		tri1(0, 1, 2, 0);
+		tri1(0, 0x15, 1, 0);
 		for (i = 0; i < 19; i++) {
 			GXBegin(GX_TRIANGLES, GX_VTXFMT0, 3);
-#ifdef MUST_MATCH
-			tri1WithUnused(1, i + 2, i + 3, 1);
-#else
-			tri1(1, i + 2, i + 3);
-#endif
+			tri1(1, i + 2, i + 3, 1);
 		}
 	}
 }

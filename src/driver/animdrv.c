@@ -3174,7 +3174,7 @@ u32 anim_ext_tex_size;
 
 extern GXColor dat_80419a3c;
 extern GXColor dat_80419a40;
-void animPoseDisp_MakeExtTexture(const char* name, f32 f1, void* animName, void* texObj, void* base,
+void animPoseDisp_MakeExtTexture(const char* name, void* animName, f32 f1, void* texObj, void* base,
                                  f32 f2, s32* out0, s32* out1, s32* out2, s32* out3) {
     s32 i;
     s32 found;
