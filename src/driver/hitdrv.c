@@ -260,12 +260,18 @@ void hitDelete(const char* name) {
     }
 }
 
-// The search hitNameToPtr does, by the joint's name; retail inlines it into hitMain.
-static inline HitEntry* hitFindElem(MapFileJoint* joint) {
+#ifdef MUST_MATCH
+// The element pointer goes in as void* and the name is loaded inside the inlined search. Handing the
+// name straight to the search leaves the inlined body's name/map temporaries in r26/r27 where retail
+// has r27/r26; the extra indirection gives the name local the higher web. The natural form below
+// passes the dereferenced name to hitNameToPtr.
+static inline HitEntry* hitFindElem(void* elem) {
     MapEntry* map;
-    const char* name = joint->name;
+    const char* name = *(char**)elem;
     MapWork* wp = mapGetWork();
     int j;
+    MapEntry* new_var;
+    MapEntry* new_var2;
     int i;
     HitEntry* hit;
 
@@ -273,7 +279,9 @@ static inline HitEntry* hitFindElem(MapFileJoint* joint) {
         return NULL;
     }
     map = wp->entries;
-    for (i = 0; i < wp->entries->count; map++, i++) {
+    new_var = map;
+    new_var2 = new_var;
+    for (i = 0; i < new_var2->count; map++, i++) {
         hit = map->hitEntries;
         for (j = 0; j < map->hitNumJoints; j++, hit++) {
             if (!(hit->flags & HIT_FLAG_DELETED) && !strcmp(hit->joint->name, name)) {
@@ -283,6 +291,7 @@ static inline HitEntry* hitFindElem(MapFileJoint* joint) {
     }
     return NULL;
 }
+#endif
 
 // Main animation pass. The active-list zero-init split and the inner-loop `p += 4, k++` order are
 // retail's. The declaration order below (p, map, wp, j, k, i, anim, anyScale, then found/mtx) is what
@@ -311,7 +320,11 @@ void hitMain(void) {
             if ((animFlags & 1) && !((animFlags & 2) && (animFlags & 0x1000)) && childList != NULL) {
                 p = childList;
                 for (k = 0; k < *(s32*)childList; p += 4, k++) {
-                    found = hitFindElem(*(MapFileJoint**)(p + 4));
+#ifdef MUST_MATCH
+                    found = hitFindElem(*(void**)(p + 4));
+#else
+                    found = hitNameToPtr(*(char**)(*(void**)(p + 4)));
+#endif
                     if (found != NULL) {
                         mapCalcAnimMatrix(found->animMtx, found->localMtx, anim, *(void**)(p + 4));
                         anyScale = 1;

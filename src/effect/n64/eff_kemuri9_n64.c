@@ -141,7 +141,11 @@ void effKemuri9Main(EffectEntry* effect) {
     dispEntry(4, dispCalcZ(&position), 2, effKemuri9Disp, effect);
 }
 
-// The quad's two extents `size2` (x) and `size` (y) are separate locals set to the same value.
+// The two locals `size`/`size2` are deliberate: MWCC only emits the target's duplicate `fmr` of the
+// half-size and the four separate `size * 0.5` corners when the value is assigned to two variables in
+// each branch. The vertex coords use `0.0f`/`1.0f` literals so MWCC reloads them per store instead of
+// hoisting them into two extra FPRs (frame 0x130, f31 only, matches the target). Both quirks live under
+// MUST_MATCH, with the natural single-variable/named-constant form under #else.
 void effKemuri9Disp(CameraId camId, void* param) {
 	f32 half = 0.5f;
     EffectEntry* effect = param;
@@ -221,11 +225,17 @@ void effKemuri9Disp(CameraId camId, void* param) {
         GXLoadPosMtxImm(mtxWork, 0);
         GXSetCurrentMtx(0);
         GXBegin(0x80, 0, 4);
+#ifdef MUST_MATCH
+        // Assigned to two variables so MWCC emits the target's duplicate `fmr` and its four separate
+        // `size * 0.5` corners; the 0.0/1.0 literals make it reload them per store instead of hoisting
+        // them into two extra FPRs (the frame stays 0x130 with only f31 saved).
         if (type != 0) {
-            size2 = size = 16.0f;
+            size = 16.0f;
+            size2 = size;
         }
         else {
-            size2 = size = 32.0f;
+            size = 32.0f;
+            size2 = size;
         }
         GXPosition3f32(-size2 * half, size * half, 0.0f);
         GXTexCoord2f32(0.0f, 0.0f);
@@ -235,6 +245,17 @@ void effKemuri9Disp(CameraId camId, void* param) {
         GXTexCoord2f32(1.0f, 1.0f);
         GXPosition3f32(-size2 * half, -size * half, 0.0f);
         GXTexCoord2f32(0.0f, 1.0f);
+#else
+        size = (type != 0) ? 16.0f : 32.0f;
+        GXPosition3f32(-size * half, size * half, 0.0f);
+        GXTexCoord2f32(0.0f, 0.0f);
+        GXPosition3f32(size * half, size * half, 0.0f);
+        GXTexCoord2f32(1.0f, 0.0f);
+        GXPosition3f32(size * half, -size * half, 0.0f);
+        GXTexCoord2f32(1.0f, 1.0f);
+        GXPosition3f32(-size * half, -size * half, 0.0f);
+        GXTexCoord2f32(0.0f, 1.0f);
+#endif
     }
 }
 

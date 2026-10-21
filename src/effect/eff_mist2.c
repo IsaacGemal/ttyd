@@ -161,7 +161,7 @@ void effMist2Main(EffectEntry* effect) {
 	dispEntry(CAMERA_3D, dispCalcZ(&position), 2, effMist2Disp, effect);
 }
 
-// The GXColor build is in the MUST_MATCH inline above so the by-value argument lands in stack
+// The GXColor build is in the inline above so the by-value argument lands in stack
 // 0xc, matching retail.
 void effMist2Disp(CameraId cameraId, void* param) {
 	EffectEntry* effect = param;

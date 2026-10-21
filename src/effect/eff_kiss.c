@@ -306,8 +306,6 @@ static inline void effKissChanRot(const void* src, const u8* rgb, s32 a) {
 // Building each GXColor inside the helper that calls GXSetChanMatColor (rather than returning it and
 // letting the caller pass it by value) reproduces retail's stack layout: the helper's colour local lands
 // directly below the by-value argument copy, per call (eff_teresa.c/effThunderDisp use the same idiom).
-// The final switch's two extra branches are reproduced by the MUST_MATCH goto form below (the original
-// reaches the shared case body through gotos and a `default: return`).
 // 100% matched. The deg-to-rad factor is a 0.017453292f literal at each use: MWCC then hoists
 // `0.017453292f * angle` out of the loop itself, which gives retail's FPRs and preheader schedule.
 void effKissDisp(CameraId camId, void* param) {

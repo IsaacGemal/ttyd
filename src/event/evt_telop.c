@@ -181,10 +181,14 @@ void telop(CameraId cameraId, void* param) {
 
         PSMTXTrans(texTrans, tx, ty, float_0_8041e7c4);
     }
+#ifdef MUST_MATCH
     {
         f32 s = float_0p2_8041e7c8;
         PSMTXScale(texScale, s, s, float_1_8041e7cc);
     }
+#else
+    PSMTXScale(texScale, float_0p2_8041e7c8, float_0p2_8041e7c8, float_1_8041e7cc);
+#endif
     PSMTXConcat(texTrans, texScale, texTrans);
     GXLoadTexMtxImm(texTrans, GX_TEXMTX0, GX_MTX2x4);
 
@@ -210,10 +214,14 @@ void telop(CameraId cameraId, void* param) {
     effGetTexObj(0x81, &texObj);
     GXLoadTexObj(&texObj, GX_TEXMAP0);
     effGetTexObj(0x80, &texObj);
+#ifdef MUST_MATCH
     {
         f32 z = float_0_8041e7c4;
         GXInitTexObjLOD(&texObj, GX_NEAR, GX_NEAR, z, z, z, GX_FALSE, GX_FALSE, GX_ANISO_1);
     }
+#else
+    GXInitTexObjLOD(&texObj, GX_NEAR, GX_NEAR, float_0_8041e7c4, float_0_8041e7c4, float_0_8041e7c4, GX_FALSE, GX_FALSE, GX_ANISO_1);
+#endif
     GXLoadTexObj(&texObj, GX_TEXMAP1);
 
     GXSetCullMode(GX_CULL_NONE);
@@ -298,10 +306,14 @@ void telop(CameraId cameraId, void* param) {
                        float_neg105_8041e7d4 - b * float_0p5_8041e7dc,
                        float_0_8041e7c4);
         }
+#ifdef MUST_MATCH
         {
             f32 one = float_1_8041e7cc;
             PSMTXScale(fontScale, scale, one, one);
         }
+#else
+        PSMTXScale(fontScale, scale, float_1_8041e7cc, float_1_8041e7cc);
+#endif
         PSMTXConcat(fontTrans, fontScale, fontTrans);
         FontDrawStringMtx(fontTrans, msg);
     }

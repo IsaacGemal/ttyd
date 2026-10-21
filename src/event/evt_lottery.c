@@ -168,6 +168,9 @@ USER_FUNC(evt_lottery) {
 	evtSetValue(event, args[2], info->mTodayNum);
 	OSTicksToCalendarTime(start, &ct[0]);
 	if (info->mFlags & 2) {
+#ifdef MUST_MATCH
+		// Match only: re-reading mBuyTime through a local variable makes the allocator
+		// keep its low word in r24, as the original does.
 		OSTime t;
 
 		OSTicksToCalendarTime(info->mBuyTime, &ct[0]);
@@ -179,6 +182,13 @@ USER_FUNC(evt_lottery) {
 		OSTicksToCalendarTime(t + OSSecondsToTicks((OSTime)86400) * info->mTierDays[2], &ct[0]);
 		t = info->mBuyTime;
 		OSTicksToCalendarTime(t + OSSecondsToTicks((OSTime)86400) * info->mTierDays[3], &ct[0]);
+#else
+		OSTicksToCalendarTime(info->mBuyTime, &ct[0]);
+		OSTicksToCalendarTime(info->mBuyTime + OSSecondsToTicks((OSTime)86400) * info->mTierDays[0], &ct[0]);
+		OSTicksToCalendarTime(info->mBuyTime + OSSecondsToTicks((OSTime)86400) * info->mTierDays[1], &ct[0]);
+		OSTicksToCalendarTime(info->mBuyTime + OSSecondsToTicks((OSTime)86400) * info->mTierDays[2], &ct[0]);
+		OSTicksToCalendarTime(info->mBuyTime + OSSecondsToTicks((OSTime)86400) * info->mTierDays[3], &ct[0]);
+#endif
 	}
 	return EVT_RETURN_DONE;
 }

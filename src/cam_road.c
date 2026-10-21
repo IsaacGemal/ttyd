@@ -280,8 +280,13 @@ void calcHokanCamRoad(s32 flag, CamRoadState* a, CamRoadState* b, f32 t, CamRoad
         out->y = b->y;
         out->z = b->z;
     }
+#ifdef MUST_MATCH
+    // the original converts the first atan2 result in a scratch then copies it to angle
     t0 = (f32)atan2(a->dirX, a->dirZ);
     angle = t0;
+#else
+    angle = (f32)atan2(a->dirX, a->dirZ);
+#endif
     angleB = (f32)atan2(b->dirX, b->dirZ);
     while (angle - angleB > 3.1415927f) {
         angle -= 6.2831855f;
@@ -390,7 +395,12 @@ u32 compareCamRoad(CamRoadState* cur, CamRoadState* prev, f32* out) {
     if (cur->onRoad == 0 && prev->flags == 1) {
         flags |= 0x4;
     }
+#ifdef MUST_MATCH
+    // the compiler materialises the negated `<=` here; the natural `> 1.0` emits a plain branch.
     if (!(__fabsf(cur->segment - prev->segment) <= 1.0)) {
+#else
+    if (__fabsf(cur->segment - prev->segment) > 1.0) {
+#endif
         flags |= 0x8;
     }
     dot = cur->dirX * prev->dirX + cur->dirZ * prev->dirZ;

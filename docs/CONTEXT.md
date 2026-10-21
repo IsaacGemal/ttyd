@@ -12378,3 +12378,19 @@ Volatile, puns, int round trips, dead stores, redundant ternaries and function-p
   every step (lint, build, natural, data, ratchet: no regressions) with its tools/tests step skipped, which fails in
   this worktree for environmental reasons (test_wave_launch's systemd scopes; pyelftools missing for the system
   python, so ci ran under `uv run --with pyelftools`).
+
+## Review of n9-q-o-mmsrc: helpers and steering arms back under MUST_MATCH (2026-10-21, Claude Opus 5.5, reviewer)
+
+- The new inline names (hitHasAttr, chkTreasureBox, marioPartyKillSlot, bomhei_chkBombRock, uranai_table_search,
+  movefloorLerp, makeMiniGameColor, togeSetColor, and winLogAddTab0 renamed to winLogAddTab) had no outside evidence,
+  so those files and hunks are back to their guarded pre-branch forms. The inline shapes still match at object level
+  (see the entry above), so they can come back once each has a name with evidence.
+- win_root's `row` and mario_balloon's `balloonType` are initialised in the natural build again (`= 0` under #else).
+- Back under MUST_MATCH as register or stack steering: eff_horao_spell's `s16* p` vertex copy (with
+  makeHoraoSpellColor/2p), the `size2 = size` pair in eff_kemuri8/9, eff_star_power's embedded `f7 =`, eff_fall_leaf's
+  second record type, the `rad` steps in eff_scanning/eff_uranoko, eff_scanning's Vec copy, win_log's `f64` fabs
+  temporary, party_cloud's playerPtr reload and its pragma, cam_road's atan2 scratch and negated compare, arcdrv's
+  `infoPtr`, mobjdrv's `f64` fabs locals, evt_env's 32-bit masks, evt_lottery's `t` reloads, evt_telop's constant
+  temporaries, and hitdrv's hitFindElem copy of hitNameToPtr.
+- Result: MUST_MATCH lines outside src/battle 990 -> 656 (the branch alone reached 581); index must_match
+  1300 -> 1030.

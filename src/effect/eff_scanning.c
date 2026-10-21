@@ -35,6 +35,8 @@ EffectEntry* effScanningEntry(s32 int2, f32 float3, f32 float4, f32 float5) {
 
 void effScanningMain(EffectEntry* effect) {
 	BOOL inBattle;
+#ifdef MUST_MATCH
+	// the position is built in one Vec and copied into another
 	Vec disp;
 	Vec pos = { 0 };
 	effScanningData* data = effect->userdata;
@@ -42,6 +44,10 @@ void effScanningMain(EffectEntry* effect) {
 	pos.y = data->position.y;
 	pos.z = data->position.z;
 	disp = pos;
+#else
+	effScanningData* data = effect->userdata;
+	Vec disp = data->position;
+#endif
 
 	inBattle = gp->inBattle != 0;
 
@@ -82,7 +88,9 @@ void effScanningDisp(CameraId camId, void* param) {
 	Mtx rot;
 	CameraEntry* cam;
 	f32 deg;
+#ifdef MUST_MATCH
 	f32 rad;
+#endif
 
 	if (data->animId == -1) {
 		return;
@@ -91,10 +99,15 @@ void effScanningDisp(CameraId camId, void* param) {
 	PSMTXTrans(trans, data->position.x, data->position.y, data->position.z);
 	PSMTXScale(scale, data->scale, data->scale, data->scale);
 	cam = camGetPtr(camId);
+#ifdef MUST_MATCH
 	rad = -cam->viewYaw;
 	deg = 0.017453292f;
 	rad = deg * rad;
 	PSMTXRotRad(rot, 'y', rad);
+#else
+	deg = 0.017453292f;
+	PSMTXRotRad(rot, 'y', -cam->viewYaw * deg);
+#endif
 	PSMTXConcat(trans, rot, trans);
 	PSMTXConcat(trans, scale, trans);
 	animPoseMain(data->animId);

@@ -165,6 +165,60 @@ void effHoraoSpellMain(EffectEntry* effect) {
 // bracketed by OSInitFastCast; plain casts would lower to lha/fctiwz.
 static inline void effHoraoSpellSetVtx(effHoraoSpellVtx* vtx, effHoraoSpellVtx* src, Mtx mtx) {
 	Vec v;
+
+	memcpy(vtx, src, sizeof(effHoraoSpellVtx));
+	OSInitFastCast();
+	v.x = __OSs16tof32(&vtx->pos[0]);
+	v.y = __OSs16tof32(&vtx->pos[1]);
+	v.z = __OSs16tof32(&vtx->pos[2]);
+	PSMTXMultVec(mtx, &v, &v);
+	OSInitFastCast();
+	vtx->pos[0] = __OSf32tos16(v.x);
+	vtx->pos[1] = __OSf32tos16(v.y);
+	vtx->pos[2] = __OSf32tos16(v.z);
+}
+
+// A GXColor built field-by-field and passed by value lands in the temporary's stack slot; the original
+// builds it in an inline that takes the base colour as a parameter (as makeHoraoColor does in
+// eff_magic_horao_n64), which moves the local above the by-value copy. The two early colours use
+// makeHoraoSpellColor. The loop colour (built from the three colX tables and the alpha) must pass its
+// base colour as the *last* parameter (makeHoraoSpellColor2p): that is what puts its by-value
+// temporary in retail's 0x24 word and keeps colr/colg/colb/alpha in r7/r6/r5/r0. The
+// makeHoraoSpellColor2 form, with the base read inside the inline, places the temporary in 0x20.
+#ifdef MUST_MATCH
+static inline GXColor makeHoraoSpellColor(GXColor c, s32 r, s32 g, s32 b, s32 a) {
+	c.r = r;
+	c.g = g;
+	c.b = b;
+	c.a = a;
+	return c;
+}
+
+static inline GXColor makeHoraoSpellColor2(s32 colorIdx, u8 a) {
+	GXColor c = unk_80423158;
+	c.r = colr[colorIdx];
+	c.g = colg[colorIdx];
+	c.b = colb[colorIdx];
+	c.a = a;
+	return c;
+}
+
+static inline GXColor makeHoraoSpellColor2p(s32 colorIdx, u8 a, GXColor c) {
+	c.r = colr[colorIdx];
+	c.g = colg[colorIdx];
+	c.b = colb[colorIdx];
+	c.a = a;
+	return c;
+}
+#endif
+
+// A second copy of effHoraoSpellSetVtx whose three tail stores keep the base colour pointer in the
+// register retail uses. The original helper derives one address base for all three stores; here
+// pos[0] goes through the function parameter while pos[1]/pos[2] go through a `vtx->pos` pointer,
+// which is what makes MWCC hold the second vertex pointer in r20 for the first store.
+#ifdef MUST_MATCH
+static inline void effHoraoSpellSetVtx2(effHoraoSpellVtx* vtx, effHoraoSpellVtx* src, Mtx mtx) {
+	Vec v;
 	s16* p;
 
 	memcpy(vtx, src, sizeof(effHoraoSpellVtx));
@@ -179,24 +233,9 @@ static inline void effHoraoSpellSetVtx(effHoraoSpellVtx* vtx, effHoraoSpellVtx* 
 	vtx->pos[1] = __OSf32tos16(v.y);
 	vtx->pos[2] = __OSf32tos16(v.z);
 }
-
-// The colours are built by inlines that take the base colour as a parameter (as makeHoraoColor does in
-// eff_magic_horao_n64). The loop colour passes its base colour last (makeHoraoSpellColor2p).
-static inline GXColor makeHoraoSpellColor(GXColor c, s32 r, s32 g, s32 b, s32 a) {
-	c.r = r;
-	c.g = g;
-	c.b = b;
-	c.a = a;
-	return c;
-}
-
-static inline GXColor makeHoraoSpellColor2p(s32 colorIdx, u8 a, GXColor c) {
-	c.r = colr[colorIdx];
-	c.g = colg[colorIdx];
-	c.b = colb[colorIdx];
-	c.a = a;
-	return c;
-}
+#else
+#define effHoraoSpellSetVtx2 effHoraoSpellSetVtx
+#endif
 
 // The vertex s16<->f32 conversions use the SDK's psq_l/psq_st helpers (__OSs16tof32/__OSf32tos16
 // with OSInitFastCast). This structure matches MWCC's allocation exactly: the five Mtx objects are
@@ -239,8 +278,23 @@ void effHoraoSpellDisp(CameraId camId, void* param) {
 	PSMTXConcat(transMtx, scaleMtx, transMtx);
 	PSMTXConcat(cam->view, transMtx, resultMtx);
 
+#ifdef MUST_MATCH
 	GXSetTevColor(GX_TEVREG0, makeHoraoSpellColor(unk_80423150, data->color1R, data->color1G, data->color1B, alpha));
 	GXSetTevColor(GX_TEVREG1, makeHoraoSpellColor(unk_80423154, data->color2R, data->color2G, data->color2B, data->color2A));
+#else
+	color = unk_80423150;
+	color.r = data->color1R;
+	color.g = data->color1G;
+	color.b = data->color1B;
+	color.a = alpha;
+	GXSetTevColor(GX_TEVREG0, color);
+	color = unk_80423154;
+	color.r = data->color2R;
+	color.g = data->color2G;
+	color.b = data->color2B;
+	color.a = data->color2A;
+	GXSetTevColor(GX_TEVREG1, color);
+#endif
 	GXSetNumChans(1);
 	GXSetChanCtrl(GX_COLOR0A0, GX_FALSE, GX_SRC_REG, GX_SRC_VTX, 0, GX_DF_NONE, GX_AF_NONE);
 	GXSetNumTevStages(2);
@@ -269,7 +323,16 @@ void effHoraoSpellDisp(CameraId camId, void* param) {
 		PSMTXConcat(resultMtx, rotMtx, transMtx);
 		GXLoadPosMtxImm(transMtx, GX_PNMTX0);
 		GXSetCurrentMtx(GX_PNMTX0);
+#ifdef MUST_MATCH
 		GXSetTevColor(GX_TEVREG0, makeHoraoSpellColor2p(colorIdx, data->color1A, unk_80423158));
+#else
+		color = unk_80423158;
+		color.r = colr[colorIdx];
+		color.g = colg[colorIdx];
+		color.b = colb[colorIdx];
+		color.a = data->color1A;
+		GXSetTevColor(GX_TEVREG0, color);
+#endif
 		color = *(GXColor*)&dat_8041f158;
 		GXSetTevColor(GX_TEVREG1, color);
 		PSMTXScale(scaleMtx, 0.0078125f, 0.03125f, 0.0f);
@@ -297,7 +360,7 @@ void effHoraoSpellDisp(CameraId camId, void* param) {
 			PSMTXConcat(transMtx, scaleMtx, transMtx);
 			PSMTXConcat(baseMtx, transMtx, baseMtx);
 			effHoraoSpellSetVtx(&vtx[k], &horao_spell_vtx[k], baseMtx);
-			effHoraoSpellSetVtx(&vtx[k + 1], &horao_spell_vtx[k + 1], baseMtx);
+			effHoraoSpellSetVtx2(&vtx[k + 1], &horao_spell_vtx[k + 1], baseMtx);
 		}
 		DCFlushRange(vtx, 0x1C0);
 		GXInvalidateVtxCache();

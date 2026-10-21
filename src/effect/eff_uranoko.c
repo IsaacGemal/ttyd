@@ -87,7 +87,10 @@ void effUranokoDisp(CameraId camId, void* param) {
 	Mtx trans;
 	Mtx scale;
 	Mtx rot;
+	f32 deg;
+#ifdef MUST_MATCH
 	f32 rad;
+#endif
 	f32 s;
 
 	if (data->animId == -1) {
@@ -98,9 +101,15 @@ void effUranokoDisp(CameraId camId, void* param) {
 	s = data->scale * data->baseScale;
 	PSMTXScale(scale, s, s, s);
 	cam = camGetPtr(camId);
+#ifdef MUST_MATCH
 	rad = -cam->viewYaw;
-	rad = 0.017453292f * rad;
+	deg = 0.017453292f;
+	rad = deg * rad;
 	PSMTXRotRad(rot, 'y', rad);
+#else
+	deg = 0.017453292f;
+	PSMTXRotRad(rot, 'y', -cam->viewYaw * deg);
+#endif
 	PSMTXConcat(trans, rot, trans);
 	PSMTXConcat(trans, scale, trans);
 	animPoseSetMaterialFlagOn(data->animId, 0x40);

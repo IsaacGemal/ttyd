@@ -35,7 +35,7 @@ u32 eff_whirlwind_v[0x16C / 4] = {
 	0xFFFBFFFE, 0xFFF70255, 0x0000FFFF, 0xFFFFFFFB, 0x0002FFF7, 0x02550200, 0xFFFFFFFF,
 };
 
-// Note: under MUST_MATCH the `(f32)(i - 1) / 4.0f` is exact and compiles to a multiply by 0.25; writing it as
+// Note: the `(f32)(i - 1) / 4.0f` is exact and compiles to a multiply by 0.25; writing it as
 // `* 0.25f` makes MWCC allocate the int->float conversion to f0 instead of the original's f1.
 EffectEntry* effWhirlwindN64Entry(s32 type, s32 mario, s32 life, f32 size) {
 	s32 v31;

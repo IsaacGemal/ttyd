@@ -306,19 +306,35 @@ void effKemuri8Disp(CameraId cameraId, void* param) {
 					data->color.b = blue;
 					data->fadeTimer++;
 				}
+#ifdef MUST_MATCH
 				kemuri8SetChanMatColorB(data->color.r, data->color.g,
 					data->color.b, data->color.a);
+#else
+				{
+					GXColor color = unk_80423174;
+					color.r = data->color.r;
+					color.g = data->color.g;
+					color.b = data->color.b;
+					color.a = data->color.a;
+					GXSetChanMatColor(4, color);
+				}
+#endif
 				PSMTXTrans(transMtx, data->position.x, data->position.y, data->position.z);
 				PSMTXConcat(outMtx, transMtx, transMtx);
 				GXLoadPosMtxImm(transMtx, 0);
 			}
 
 			GXBegin(0x80, 0, 4);
+#ifdef MUST_MATCH
+			// Assigned to two variables so MWCC emits the target's duplicate `fmr` and its four separate
+			// `size * 0.5` corners instead of folding them into two products.
 			if (type != 0) {
-				size2 = size = 32.0f;
+				size = 32.0f;
+				size2 = size;
 			}
 			else {
-				size2 = size = 24.0f;
+				size = 24.0f;
+				size2 = size;
 			}
 			GXPosition3f32(-size2 * half, size * half, 0.0f);
 			GXTexCoord2f32(0.0f, 0.0f);
@@ -328,6 +344,17 @@ void effKemuri8Disp(CameraId cameraId, void* param) {
 			GXTexCoord2f32(1.0f, 1.0f);
 			GXPosition3f32(-size2 * half, -size * half, 0.0f);
 			GXTexCoord2f32(0.0f, 1.0f);
+#else
+			size = (type != 0) ? 32.0f : 24.0f;
+			GXPosition3f32(-size * half, size * half, 0.0f);
+			GXTexCoord2f32(0.0f, 0.0f);
+			GXPosition3f32(size * half, size * half, 0.0f);
+			GXTexCoord2f32(1.0f, 0.0f);
+			GXPosition3f32(size * half, -size * half, 0.0f);
+			GXTexCoord2f32(1.0f, 1.0f);
+			GXPosition3f32(-size * half, -size * half, 0.0f);
+			GXTexCoord2f32(0.0f, 1.0f);
+#endif
 		}
 	}
 }
