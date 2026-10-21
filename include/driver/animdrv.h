@@ -281,8 +281,8 @@ typedef struct AnimationPose {
     s32 vivianType;                     // 0x11C
     s32* vivianGroupNo;                 // 0x120
     Mtx matrix;                         // 0x124
-    void* dispCallback;                 // 0x154, TODO: re-type
-    void* dispUserDataCallback;         // 0x158, TODO: re-type
+    void (*dispCallback)(void* userData, s32 groupId, Mtx mtx); // 0x154, dispProc calls it before renderProc draws a group
+    void* dispUserDataCallback;         // 0x158, dispCallback's first argument
     struct smartEntry* groupWorldPos;   // 0x15C, Vec per group, filled when flags & 0x40
     s32 groupWorldPosCount;             // 0x160
     struct smartEntry* groupWorldMtx;   // 0x164, Mtx per group, filled when flags & 0x80
@@ -401,7 +401,7 @@ void animPoseSetGXFunc(s32 poseId, void (*callback)(s32 wXluStage), BOOL disable
 
 s32 animPoseGetShapeIdx(s32 poseId, const char* name);
 void animPoseDrawShape(s32 poseId, s32 shapeId);
-void animPoseSetDispCallBack(s32 poseId, void* dispCallback, void* dispUserData);
+void animPoseSetDispCallBack(s32 poseId, void (*dispCallback)(void* userData, s32 groupId, Mtx mtx), void* dispUserData);
 s32 animPoseGetGroupIdx(s32 poseId, const char* name);
 const char* animPoseGetGroupName(s32 poseId, s32 group);
 

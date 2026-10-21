@@ -3,6 +3,8 @@
 #include "driver/camdrv.h"
 
 typedef struct BattleUnit BattleUnit;
+typedef struct BattleWeapon BattleWeapon;
+typedef struct BattleWorkUnitPart BattleUnitPart;
 
 #include <dolphin/types.h>
 void main_enemy_sub(BattleUnit* unit, s32* count);
@@ -12,4 +14,5 @@ void create_timing(void);
 void main_timing(s32 idx);
 void main_enemy(void);
 void main_gauge(void);
+u32 weaponGetPower_Deka(BattleUnit* unit1, BattleWeapon* weapon, BattleUnit* unit2, BattleUnitPart* part);
 extern Vec vec3_8030051c[];

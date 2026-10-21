@@ -441,8 +441,7 @@ s32 BattleCalculateDamage(BattleUnit* unit1, BattleUnit* unit2, BattleUnitPart* 
     }
     damage = weapon->hpDamageWork[0];
     if (weapon->hpDamageFn != 0) {
-        damage = ((s32(*)(BattleUnit*, BattleWeapon*, BattleUnit*, BattleUnitPart*))weapon->hpDamageFn)(
-            unit1, weapon, unit2, part);
+        damage = weapon->hpDamageFn(unit1, weapon, unit2, part);
     }
     if (wp->field_18FE1 == 1 && (weapon->special & 2)) {
         damage += 3;
@@ -669,8 +668,7 @@ s32 BattleCalculateFpDamage(BattleUnit* attacker, BattleUnit* target, BattleUnit
         }
     }
     if (weapon->fpDamageFn != 0) {
-        damage = ((s32(*)(BattleUnit*, BattleWeapon*, BattleUnit*, BattleUnitPart*))weapon->fpDamageFn)(
-            attacker, weapon, target, part);
+        damage = weapon->fpDamageFn(attacker, weapon, target, part);
     }
     if (flags & 0x40000) {
         guardBonus = 1;

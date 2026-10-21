@@ -2328,8 +2328,7 @@ void dispProc(s32 parentGroupId, s32 groupId, s32 keyFrame1, s32 keyFrame2, f32 
             }
         } else {
             if (wp->mpCurPose->dispCallback != NULL) {
-                ((void (*)(void*, s32, Mtx))wp->mpCurPose->dispCallback)(wp->mpCurPose->dispUserDataCallback, groupId,
-                                                                          *g_modeling_mtx);
+                wp->mpCurPose->dispCallback(wp->mpCurPose->dispUserDataCallback, groupId, *g_modeling_mtx);
             }
             renderProc(group->shapeId, keyFrame1);
             dispProc(groupId, group->childGroupId, keyFrame1, keyFrame2, f1);
@@ -3458,7 +3457,7 @@ s32 animPoseGetVivianType(s32 poseId) {
     return pose->vivianType;
 }
 
-void animPoseSetDispCallBack(s32 poseId, void* dispCallback, void* dispUserData) {
+void animPoseSetDispCallBack(s32 poseId, void (*dispCallback)(void* userData, s32 groupId, Mtx mtx), void* dispUserData) {
     AnimationPose* pose = &wp->poses[poseId];
     pose->dispCallback = dispCallback;
     pose->dispUserDataCallback = dispUserData;

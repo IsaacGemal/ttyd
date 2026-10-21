@@ -2,12 +2,14 @@
 
 #include <dolphin/types.h>
 
+struct CaseEntry;
+
 typedef struct CaseSetup {
 	u16 activeConditionId; //0x0, TODO rename
 	u8 pad_2[2]; //0x2
 	const char* hitObjName; //0x4
 	u32 swFlag; //0x8
-	void* activeFunc; //0xC
+	s32 (*activeFunc)(struct CaseEntry* entry); //0xC, copied to CaseEntry.activeFunc
 	s32 lwData[16]; //0x10
 	u8 field_0x50[0x54 - 0x50]; //0x50
 	void* evtCode; //0x54, TODO re-type
@@ -21,7 +23,7 @@ typedef struct CaseEntry {
 	char hitObjName[0x40]; //0x8
 	s32 caseId; //0x48
 	u32 swFlag; //0x4C
-	void* activeFunc; //0x50
+	s32 (*activeFunc)(struct CaseEntry* entry); //0x50, activeConditionId 17: caseMain sets flags 2 when it returns nonzero
 	s32 lwData[16]; //0x54
 	u8 field_0x94[4]; //0x94
 	void* evtCode; //0x98, TODO re-type

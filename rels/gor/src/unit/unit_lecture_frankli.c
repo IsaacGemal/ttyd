@@ -14,7 +14,6 @@
 
 #pragma force_active on
 extern s32 btldefaultevt_Confuse[];
-extern s32 weaponGetPowerFromMarioJumpLv[];
 static BattleVulnerableStatus regist;
 static BattleDataEntry data_table[4];
 static BattleUnitKindPart parts[1];

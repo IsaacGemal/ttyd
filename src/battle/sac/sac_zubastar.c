@@ -241,7 +241,7 @@ ZubaStarWork* GetZubaStarPtr(void) {
 #pragma dont_inline reset
 
 // .text:0x203C | 0x802305CC | size: 0x3C
-s32 weaponGetPower_ZubaStar(BattleUnit* unit1, BattleWeapon* weapon, BattleUnit* unit2,
+u32 weaponGetPower_ZubaStar(BattleUnit* unit1, BattleWeapon* weapon, BattleUnit* unit2,
                             BattleUnitPart* part) {
     ZubaStarWork* work = GetZubaStarPtr();
 
@@ -1258,7 +1258,7 @@ BattleWeapon weapon_zubastar = {
     /* field_0x19 */ 5,
     /* mBingoSlotChance */ 100,
     /* field_0x1B */ 50,
-    /* hpDamageFn */ (void*)weaponGetPower_ZubaStar,
+    /* hpDamageFn */ weaponGetPower_ZubaStar,
     /* hpDamageWork */ { 0, 3, 6, 9, 12, 15, 0, 0 },
     /* fpDamageFn */ 0,
     /* fpDamageWork */ { 0 },

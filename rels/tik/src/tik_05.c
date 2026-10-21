@@ -2752,7 +2752,7 @@ USER_FUNC(starstone_setting) {
 
     d1->flags |= 0x20;
     ((MahojinWork*)e2->userdata)[index + 2].drawArg = e1;
-    ((MahojinWork*)e2->userdata)[index + 2].drawFunc = (void (*)(CameraId, void*))effStarStoneDraw;
+    ((MahojinWork*)e2->userdata)[index + 2].drawFunc = effStarStoneDraw;
     return EVT_RETURN_DONE;
 }
 

@@ -18,7 +18,7 @@
 #pragma pool_data off
 
 #pragma force_active on
-static void _fire_point_callback(BattleUnitPart* part, s32 group, Mtx mtx);
+static void _fire_point_callback(void* userData, s32 group, Mtx mtx);
 static USER_FUNC(_set_draw_callback);
 static BattleVulnerableStatus regist;
 static BattleDataEntry data_table[3];

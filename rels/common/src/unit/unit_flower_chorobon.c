@@ -13,7 +13,6 @@
 
 #pragma force_active on
 extern s32 btldefaultevt_Dummy[];
-extern s32 weaponGetFPPowerDefault[];
 static BattleVulnerableStatus regist;
 static BattleUnitKindPart parts[1];
 static s32 magic_attack_event[269];

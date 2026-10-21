@@ -9,11 +9,11 @@
 #include "forcedata.h"
 #include "unit/party/unit_party_yoshi.h"
 #include "battle/battle_disp.h"
+#include "battle/battle_weapon_power.h"
 
 #pragma force_active on
 extern s32 btldefaultevt_Confuse[];
 extern BattleDispPose pose_table_yoshi_stay[];
-extern s32 weaponGetPowerFromGulliblePartyAttackLv[];
 static BattleVulnerableStatus regist_yoshi;
 static BattleDataEntry data_table_yoshi[2];
 static BattleUnitKindPart parts_yoshi;

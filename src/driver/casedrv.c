@@ -241,7 +241,7 @@ void caseMain(void) {
 			}
 			break;
 		case 17:
-			if (entry->activeFunc != NULL && ((s32(*)(void*))entry->activeFunc)(entry) != 0) {
+			if (entry->activeFunc != NULL && entry->activeFunc(entry) != 0) {
 				entry->flags |= 2;
 			}
 			break;

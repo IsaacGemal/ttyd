@@ -21,6 +21,7 @@
 #include "evt/evt_eff.h"
 #include "evt/evt_msg.h"
 #include "evt/evt_snd.h"
+#include "battle/battle_weapon_power.h"
 
 
 extern s32 btldefaultevt_avoid_counter_event[];
@@ -29,7 +30,6 @@ extern s32 negone_one[];
 extern s32 one_negone[];
 extern s32 subset_attack_ready_jump_event[];
 extern s32 unk_evt_803510ec[];
-extern s32 weaponGetPowerFromPartyAttackLv[];
 static s32 krb_get_dir(EventEntry* event, BOOL isFirstCall);
 static void __makeTechMenuFunc(BattleWorkCommand* cmd, s32* count);
 static s32 init_event[51];

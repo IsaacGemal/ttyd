@@ -12,7 +12,7 @@ extern u32 xmemo[5];
 extern EventEntry* xevt[1];
 USER_FUNC(unk_las_0000d538);
 struct BattleWorkUnitPart;
-void _light_point_callback(struct BattleWorkUnitPart* part, s32 group, void* mtx);
+void _light_point_callback(void* userData, s32 group, Mtx mtx);
 USER_FUNC(btl_hitoffsetx);
 USER_FUNC(pose_check_evt_stop);
 USER_FUNC(pose_check_evt_run);

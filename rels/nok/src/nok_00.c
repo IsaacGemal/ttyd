@@ -540,7 +540,7 @@ static HitDamageReturn hitDmgRetPoints[10] = {
 // Functions are emitted in reverse source order (see docs/AGENT_BRIEF.md rule 18);
 // the source order below is the reverse of their order in the original .text.
 
-void draw_poster(void* userdata, s32 group, void* mtx) {
+void draw_poster(void* userdata, s32 group, Mtx mtx) {
     NpcEntry* npc = npcNameToPtr("poster");
 
     if (group != poster->groupIdx || !(poster->flags & 1)) {
@@ -558,7 +558,7 @@ s32 pposter_init(EventEntry* event, BOOL isFirstCall) {
     poster->shapeIdx = animPoseGetShapeIdx(npc->poseId, "pPlaneShape2");
     npc = npcNameToPtr("ノコノコA");
     poster->groupIdx = animPoseGetGroupIdx(npc->poseId, "locator7");
-    animPoseSetDispCallBack(npc->poseId, (void*)draw_poster, 0);
+    animPoseSetDispCallBack(npc->poseId, draw_poster, NULL);
     return EVT_RETURN_DONE;
 }
 

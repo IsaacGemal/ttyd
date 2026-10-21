@@ -884,7 +884,7 @@ u16 FontGetMessageWidth(const char* message) {
 	return FontGetMessageWidthLine(message, NULL);
 }
 
-u32 HSV2RGB(GXColor* hsv) {
+GXColor HSV2RGB(GXColor* hsv) {
 	f32 h = hsv->r * 360.0f / 256.0f;
 	f32 s = hsv->g / 255.0f;
 	f32 v = hsv->b / 255.0f;
@@ -911,7 +911,7 @@ u32 HSV2RGB(GXColor* hsv) {
 	out.r = 255.0f * r;
 	out.g = 255.0f * g;
 	out.b = 255.0f * b;
-	return *(u32*)&out;
+	return out;
 }
 
 void JUTFontSetup(u16 idx) {
@@ -1089,8 +1089,8 @@ void JUTFont_DrawStart(GXColor color) {
 // the `fmuls` by 1.0f survive; xr/ty0 are ints narrowed later into xr2/ty02, which gives retail's raw first use
 // and masked/sign-extended later uses; hueL/hueR are named ints so they take retail's registers. ty1 converts
 // `(u16)ty0` again: MWCC's post-allocation CSE finds ty02's mask still in r31 and copies it (retail's `mr r0, r31`).
-static inline u32 fontHSV2RGB(GXColor hsv) {
-	return HSV2RGB(&hsv);
+static inline void fontHSV2RGB(GXColor* rgb, GXColor hsv) {
+	*rgb = HSV2RGB(&hsv);
 }
 
 void _JUTFont_DrawPos(u16 code, s16 x, s16 y) {
@@ -1149,7 +1149,7 @@ void _JUTFont_DrawPos(u16 code, s16 x, s16 y) {
 	GXPosition3s16(x, ys, 0);
 	hsv.r = hueL;
 
-	*(u32*)&rgb = fontHSV2RGB(hsv);
+	fontHSV2RGB(&rgb, hsv);
 	xr2 = xr;
 	GXColor4u8(rgb.r, rgb.g, rgb.b, rgb.a);
 	tx0 = (s32)xoffs;
@@ -1160,7 +1160,7 @@ void _JUTFont_DrawPos(u16 code, s16 x, s16 y) {
 	hueR = xr2 + hueoff;
 	hsv.r = hueR;
 
-	*(u32*)&rgb = fontHSV2RGB(hsv);
+	fontHSV2RGB(&rgb, hsv);
 	GXColor4u8(rgb.r, rgb.g, rgb.b, rgb.a);
 	tx1 = (s32)(xoffs + fwidth);
 	nx1 = (s32)(n1 + fwidthS);
@@ -1171,7 +1171,7 @@ void _JUTFont_DrawPos(u16 code, s16 x, s16 y) {
 	GXPosition3s16(xr2, yb, 0);
 	hsv.r = hueR;
 
-	*(u32*)&rgb = fontHSV2RGB(hsv);
+	fontHSV2RGB(&rgb, hsv);
 	GXColor4u8(rgb.r, rgb.g, rgb.b, rgb.a);
 	ty1 = (s32)((u16)ty0 + fheight);
 	ny1 = (s32)(n2 + fheightS);
@@ -1181,7 +1181,7 @@ void _JUTFont_DrawPos(u16 code, s16 x, s16 y) {
 	GXPosition3s16(xs, yb, 0);
 	hsv.r = hueL;
 
-	*(u32*)&rgb = fontHSV2RGB(hsv);
+	fontHSV2RGB(&rgb, hsv);
 	GXColor4u8(rgb.r, rgb.g, rgb.b, rgb.a);
 	GXTexCoord2u16(tx0, ty1);
 	GXTexCoord2u8(n1, ny1);
