@@ -1,4 +1,5 @@
 #include "evt_lect_tou.h"
+#include "rel/common/evt_lect.h"
 #include "evt/evt_cam.h"
 #include "evt/evt_cmd.h"
 #include "evt/evt_eff.h"
@@ -19,6 +20,7 @@
 #include "driver/dispdrv.h"
 #include "driver/effdrv.h"
 #include "driver/hitdrv.h"
+#include "driver/icondrv.h"
 #include "driver/itemdrv.h"
 #include "driver/mapdrv.h"
 #include "driver/mobjdrv.h"
@@ -36,18 +38,6 @@
 #include "pmario_sound.h"
 #include "statuswindow.h"
 #include "system.h"
-
-// One entry per lecture button (two are on screen at a time). Only the fields
-// read/written from this file are named; the rest is the original's padding.
-typedef struct LectureButton {
-    u8 flags;        // 0x0
-    u8 seq;          // 0x1
-    u8 pad_2[0xA];   // 0x2
-    Vec position;    // 0xC
-    u8 pad_18[0x28]; // 0x18
-    s16 iconId;      // 0x40
-    s16 alpha;       // 0x42
-} LectureButton;     // 0x44
 
 const Vec vec3_tou_00010580 = {200.0f, -25.0f, 0.0f};
 const Vec vec3_tou_0001058c = {0.0f, 0.0f, 0.0f};

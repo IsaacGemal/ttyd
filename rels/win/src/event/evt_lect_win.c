@@ -1,4 +1,5 @@
 #include "evt_lect_win.h"
+#include "rel/common/evt_lect.h"
 #include "evt/evt_cam.h"
 #include "evt/evt_cmd.h"
 #include "evt/evt_eff.h"
@@ -36,17 +37,6 @@
 
 #pragma force_active on
 
-// TODO: type
-typedef struct LectureButton {
-    u8 flags;                   // 0x0
-    u8 seq;                     // 0x1
-    u8 pad_2[0xC - 0x2];        // 0x2
-    Vec position;               // 0xC
-    u8 pad_18[0x40 - 0x18];     // 0x18
-    s16 iconId;                 // 0x40
-    s16 alpha;                  // 0x42
-} LectureButton;                // 0x44
-
 extern const Vec vec3_win_00006060;
 extern const Vec vec3_win_0000606c;
 
@@ -82,10 +72,6 @@ static USER_FUNC(lecture_button_set_alpha);
 static USER_FUNC(lecture_button_set_icon_id);
 static USER_FUNC(lecture_button_rtn);
 static void lecture_button_disp(CameraId cameraId, void* param);
-// iconDispGxAlpha's definition takes the icon id as s16, but this unit's original passes it
-// zero-extended (u16); declare it with the width this file's asm passes (see
-// tools/local_prototype_exceptions.json).
-void iconDispGxAlpha(Vec* position, s16 flags, u16 iconId, u8 alpha, f32 scale);
 static USER_FUNC(x_flag_wait);
 static USER_FUNC(x_flag_get);
 static USER_FUNC(x_flag_add);

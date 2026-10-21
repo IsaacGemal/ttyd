@@ -1,4 +1,5 @@
 #include "evt_lect_dou.h"
+#include "rel/common/evt_lect.h"
 #include "driver/camdrv.h"
 #include "driver/dispdrv.h"
 #include "driver/effdrv.h"
@@ -197,23 +198,23 @@ static USER_FUNC(lecture_button_rtn) {
     count = 0;
     for (i = 0; i < 2; i++) {
         btn = &lbtn[i];
-        switch (btn->state) {
+        switch (btn->seq) {
             case 0:
                 btn->iconId = 0x68;
-                btn->state = 1;
+                btn->seq = 1;
                 break;
             case 2:
                 btn->alpha += 7;
                 if (btn->alpha >= 0xff) {
                     btn->alpha = 0xff;
-                    btn->state = 1;
+                    btn->seq = 1;
                 }
                 break;
             case 3:
                 btn->alpha -= 7;
                 if (btn->alpha <= 0) {
                     btn->alpha = 0;
-                    btn->state = 1;
+                    btn->seq = 1;
                 }
                 break;
             case 4:
@@ -263,7 +264,7 @@ static USER_FUNC(lecture_button_set_seq) {
     s32* args = event->args;
     s32 index = evtGetValue(event, args[0]);
     LectureButton* btn = &lbtn[index];
-    btn->state = evtGetValue(event, args[1]);
+    btn->seq = evtGetValue(event, args[1]);
     return EVT_RETURN_DONE;
 }
 
@@ -271,7 +272,7 @@ static USER_FUNC(lecture_button_get_icon_id) {
     s32* args = event->args;
     s32 index = evtGetValue(event, args[0]);
     LectureButton* btn = &lbtn[index];
-    evtSetValue(event, args[1], btn->state);
+    evtSetValue(event, args[1], btn->seq);
     return EVT_RETURN_DONE;
 }
 
@@ -279,7 +280,7 @@ static USER_FUNC(lecture_button_seq_wait) {
     s32* args = event->args;
     s32 index = evtGetValue(event, args[0]);
     LectureButton* btn = &lbtn[index];
-    if (btn->state != evtGetValue(event, args[1])) {
+    if (btn->seq != evtGetValue(event, args[1])) {
         return EVT_RETURN_BLOCK;
     }
     return EVT_RETURN_DONE;

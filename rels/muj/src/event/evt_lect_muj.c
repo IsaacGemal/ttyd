@@ -1,4 +1,5 @@
 #include "evt_lect_muj.h"
+#include "rel/common/evt_lect.h"
 #include "evt/evt_cam.h"
 #include "evt/evt_cmd.h"
 #include "evt/evt_eff.h"
@@ -68,16 +69,6 @@ static USER_FUNC(lect_status_on);
 static USER_FUNC(lect_status_off);
 static USER_FUNC(lect_mario_ido_sum);
 static f32 lect_mario_ido_sub(f32 a, f32 b, f32 c, f32 d);
-
-typedef struct LectureButton {
-    u8 flags;        // 0x0
-    u8 seq;          // 0x1
-    u8 pad_2[0xA];   // 0x2
-    Vec position;    // 0xC
-    u8 pad_18[0x28]; // 0x18
-    s16 iconId;      // 0x40
-    s16 alpha;       // 0x42
-} LectureButton;     // 0x44
 
 static OSTime wwstart;
 static s32 x_flag_data[2];

@@ -1,4 +1,5 @@
 #include "evt_lect_gor.h"
+#include "rel/common/evt_lect.h"
 #include "evt/evt_cam.h"
 #include "evt/evt_cmd.h"
 #include "evt/evt_eff.h"
@@ -22,6 +23,7 @@
 #include "driver/dispdrv.h"
 #include "driver/effdrv.h"
 #include "driver/hitdrv.h"
+#include "driver/icondrv.h"
 #include "driver/itemdrv.h"
 #include "driver/mapdrv.h"
 #include "driver/npcdrv.h"
@@ -39,16 +41,6 @@
 #include "party/party_motion.h"
 
 #pragma pool_data off
-
-typedef struct LectureButton {
-    u8 flags;         // 0x00
-    u8 seq;           // 0x01
-    u8 pad_02[0x0A];  // 0x02
-    Vec position;     // 0x0C
-    u8 pad_18[0x28];  // 0x18
-    s16 iconId;       // 0x40
-    s16 alpha;        // 0x42
-} LectureButton;      // 0x44
 
 
 

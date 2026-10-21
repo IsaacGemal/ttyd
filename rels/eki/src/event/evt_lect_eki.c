@@ -1,4 +1,5 @@
 #include "evt_lect_eki.h"
+#include "rel/common/evt_lect.h"
 #include "driver/animdrv.h"
 #include "driver/camdrv.h"
 #include "driver/dispdrv.h"
@@ -6,7 +7,6 @@
 #include "eff/eff_itemget.h"
 #include "driver/hitdrv.h"
 #include "driver/icondrv.h"
-#include "driver/icondrv_gx.h"
 #include "driver/itemdrv.h"
 #include "driver/mapdrv.h"
 #include "driver/mobjdrv.h"
@@ -217,13 +217,7 @@ static void lecture_button_disp(CameraId cameraId, void* param) {
             }
             pos = p->position;
             pos.y += yOff;
-#ifdef MUST_MATCH
-            // iconDispGxAlpha's header says s16 but the original passes a zero-extended u16 (clrlwi, no extsh).
-            ((void (*)(Vec*, s16, u16, u8, f32))iconDispGxAlpha)(&pos, 0x50, (u16)btn->iconId, (u8)btn->alpha,
-                                                                 1.0f);
-#else
             iconDispGxAlpha(&pos, 0x50, btn->iconId, btn->alpha, 1.0f);
-#endif
         }
     }
 }
