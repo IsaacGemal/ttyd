@@ -1059,13 +1059,6 @@ static void disp_3D(CameraId cameraId, void* param) {
     }
 }
 
-#ifdef MUST_MATCH
-// MUST_MATCH: building each colour through an inline that returns it makes MWCC keep the source
-// colour in the original's stack slot and rank the colour/alpha webs the original's way. The alpha
-// parameter must come first: with `(GXColor c, u8 a)` the case-2 word/alpha land in r0/r7, with
-// `(u8 a, GXColor c)` they land in the original's r4/r0. The inline folds away.
-static inline GXColor mukiAlphaColor(u8 a, GXColor c) { c.a = a; return c; }
-#endif
 // case 0 keeps its own rotation angle so its f30/f31 webs are not merged with cases 1 and 2
 // .text:0x1A4 | 0x80246F70 | size: 0x38C
 static void disp_3D_alpha(CameraId cameraId, void* param) {
@@ -1096,10 +1089,8 @@ static void disp_3D_alpha(CameraId cameraId, void* param) {
                 fs = (f32)sin(angle0);
                 PSMTXTransApply(mtx, mtx, 15.0f * fs,
                                 0.0f, 15.0f * fc);
-                cA = (GXColor){0xE9, 0x4A, 0x3F, 0x00};
-                cA.a = entry->alpha;
-                cB = (GXColor){0xFE, 0xE6, 0x3E, 0x00};
-                cB.a = entry->alpha;
+                cA = (GXColor){0xE9, 0x4A, 0x3F, entry->alpha};
+                cB = (GXColor){0xFE, 0xE6, 0x3E, entry->alpha};
                 // reverse-order fill, each colour's two copies written together, so MWCC emits
                 // the original's grouped colour stores; the call then takes the array in order.
                 argv[1] = cA; argv[0] = cA; argv[3] = cB; argv[2] = cB;
@@ -1115,15 +1106,8 @@ static void disp_3D_alpha(CameraId cameraId, void* param) {
                 fs = (f32)sin(f);
                 PSMTXTransApply(mtx, mtx, 15.0f * fs,
                                 0.0f, 15.0f * fc);
-#ifdef MUST_MATCH
-                cA = mukiAlphaColor(entry->alpha, (GXColor){0x3F, 0x3F, 0xE9, 0x00});
-                cB = mukiAlphaColor(entry->alpha, (GXColor){0x74, 0xC9, 0xFF, 0x00});
-#else
-                cA = (GXColor){0x3F, 0x3F, 0xE9, 0x00};
-                cA.a = entry->alpha;
-                cB = (GXColor){0x74, 0xC9, 0xFF, 0x00};
-                cB.a = entry->alpha;
-#endif
+                cA = (GXColor){0x3F, 0x3F, 0xE9, entry->alpha};
+                cB = (GXColor){0x74, 0xC9, 0xFF, entry->alpha};
                 argv[1] = cA; argv[0] = cA; argv[3] = cB; argv[2] = cB;
                 btlDispTexPlane3(mtx, 0x45, argv[0], argv[1], argv[2], argv[3], 0);
                 break;
@@ -1136,12 +1120,7 @@ static void disp_3D_alpha(CameraId cameraId, void* param) {
                 fs = (f32)sin(f);
                 PSMTXTransApply(mtx, mtx, 15.0f * fs,
                                 0.0f, 15.0f * fc);
-#ifdef MUST_MATCH
-                argv[0] = mukiAlphaColor(entry->alpha, (GXColor){0xFF, 0xFF, 0xFF, 0x00});
-#else
-                argv[0] = (GXColor){0xFF, 0xFF, 0xFF, 0x00};
-                argv[0].a = entry->alpha;
-#endif
+                argv[0] = (GXColor){0xFF, 0xFF, 0xFF, entry->alpha};
                 btlDispTexPlane2(mtx, 0x31, argv[0], 0);
                 break;
             }

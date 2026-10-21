@@ -993,20 +993,16 @@ void tou_gamen_screen_tev(void* param) {
 	Mtx mtx;
 	Mtx mtxScale;
 	Mtx mtxTrans;
-#ifdef MUST_MATCH
-	// MUST_MATCH: hoisting the first loop's counters at function scope makes the
-	// alias web below the vreg where the original's parameter (r27) sits, and the
-	// `+ zero` keeps that alias alive so it colours as a named web instead of folding
-	// back into the parameter.
 	u8* buf;
 	s32 i;
 	s32 j;
 	s32 k;
+#ifdef MUST_MATCH
+	// The `+ zero` keeps the param alias alive so it colours as a named web (the original's
+	// parameter sits in r27) instead of folding back into the parameter.
 	s32 zero = 0;
 	MapTevCallback* tev = (MapTevCallback*)((u8*)param + zero);
 #else
-	// Natural form: the counters live in the block that uses them and the pointer is
-	// the parameter itself.
 	MapTevCallback* tev = (MapTevCallback*)param;
 #endif
 
@@ -1015,14 +1011,7 @@ void tou_gamen_screen_tev(void* param) {
 	}
 
 	if (screen_wp->noiseMode != 0) {
-#ifdef MUST_MATCH
 		buf = (u8*)screen_wp->texBuffer;
-#else
-		u8* buf = (u8*)screen_wp->texBuffer;
-		s32 i;
-		s32 j;
-		s32 k;
-#endif
 
 		for (i = 0; i < 0x40; i++) {
 			for (j = 0; j < 0x40; j++) {

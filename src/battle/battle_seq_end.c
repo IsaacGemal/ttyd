@@ -137,12 +137,6 @@ extern const f32 float_900_80420d4c;
 extern const f32 float_40_80420d50;
 extern const char str_M_V_1[8];
 
-#ifdef MUST_MATCH
-// Keep zero at its point of use instead of adding a saved FP register across earlier calls.
-#define SEQ_END_ZERO_AT_USE (*(volatile const f32*)&float_0_80420c7c)
-#else
-#define SEQ_END_ZERO_AT_USE float_0_80420c7c
-#endif
 
 //.data
 RankUpData _rank_up_data[] = {
@@ -1225,7 +1219,6 @@ void _LvupParamConfirmDisp(CameraId camId, void* param) {
     char buf[0x14];
     u32 len;
     f32 halfWidth;
-    f32 zero;
 
     pouchGetPtr();
     sprintf(buf, msgSearch("btl_msg_lvup_ok"));
@@ -1244,8 +1237,7 @@ void _LvupParamConfirmDisp(CameraId camId, void* param) {
     windowDispGX_Waku_col(float_neg70_80420d14, float_neg10_80420d18, float_130_80420d1c, float_60_80420d20,
                           float_10_80420cd8, 0, (GXColor){0xFF, 0xFF, 0xFF, 0xFF});
     FontDrawStart();
-    zero = SEQ_END_ZERO_AT_USE;
-    FontDrawString(zero - halfWidth, float_27_80420d24, buf);
+    FontDrawString(float_0_80420c7c - halfWidth, float_27_80420d24, buf);
     FontDrawString(float_neg20_80420c90, float_neg13_80420d28, msgSearch("btl_msg_lvup_yes"));
     FontDrawString(float_neg20_80420c90, float_neg38_80420d2c, msgSearch("btl_msg_lvup_no"));
     pos.x = float_neg40_80420d30;
@@ -1287,7 +1279,7 @@ void L__LvupParamHelpMsgDisp(CameraId camId, void* param) {
     }
     width = FontGetMessageWidthLine(msg, &lines);
     lines++;
-    zero = SEQ_END_ZERO_AT_USE;
+    zero = float_0_80420c7c;
     windowDispGX_Waku_col(zero - (f32)(width / 2) - float_20_80420c48,
                           float_neg145_80420cf8 + (f32)(((u16)lines - 1) * 29), (f32)(width + 40),
                           (f32)(lines * 29 + 1), float_10_80420cd8, 0, (GXColor){ 0xFF, 0xFF, 0xFF, 0xFF });

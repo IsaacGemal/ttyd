@@ -47,7 +47,6 @@ s32 BattleCheckCounter(void* work, BattleUnit* attacker, BattleUnit* target, Bat
 
 extern BattleWork* _battleWorkPointer;
 extern ItemData itemDataTable[];
-extern const char str_SFX_BTL_ACROBAT_MISS1[];
 extern const double double_0p01_802ee040;
 extern const double double_to_int_802ee038;
 extern const f64 double_to_int_mask_802ee170;
@@ -63,15 +62,6 @@ extern s32 subsetevt_confuse_flustered[];
 #define FP_ZERO 3
 #define FP_NORMAL 4
 #define FP_SUBNORMAL 5
-#ifdef MUST_MATCH
-#define ACSE_STR(off, sym) (base + (off))
-#define ACSE_SYSSFX(sym, lit) (lit)
-#else
-extern const char str_SFX_SYSTEM_NICE_25PERCENT1[], str_SFX_SYSTEM_NICE_50PERCENT1[], str_SFX_SYSTEM_NICE1[], str_SFX_SYSTEM_GOOD1[], str_SFX_SYSTEM_GREAT1[], str_SFX_SYSTEM_WONDERFUL1[],
-    str_SFX_SYSTEM_EXCELLENT1[], str_SFX_ITEM_MARIO_USE1[], str_SFX_ITEM_PARTY_USE1[], str_SFX_ENM_ITEM_USE1[];
-#define ACSE_STR(off, sym) (sym)
-#define ACSE_SYSSFX(sym, lit) (sym)
-#endif
 
 //s32* eventId
 // Prototypes for the forward references the original function order needs.
@@ -2920,16 +2910,8 @@ USER_FUNC(btlevtcmd_JumpPosition) {
     unit->mMoveCurrentPos.y += unit->mMoveSpeedY;
     unit->mMoveSpeedY -= unit->mFallAccel;
     if (unit->mMoveSpeedY < 0.0f) {
-#ifdef MUST_MATCH
-        // The volatile pins the current.y load before the target.y load; a plain read lets the
-        // scheduler emit target.y first, which is the only remaining difference.
-        f32 cur = *(volatile f32*)&unit->mMoveCurrentPos.y;
-#else
-        f32 cur = unit->mMoveCurrentPos.y;
-#endif
-        f32 tgt = unit->mMoveTargetPos.y;
-        if (cur < tgt) {
-            unit->mMoveCurrentPos.y = tgt;
+        if (unit->mMoveCurrentPos.y < unit->mMoveTargetPos.y) {
+            unit->mMoveCurrentPos.y = unit->mMoveTargetPos.y;
         }
     }
     btlMovePos(&unit->mMoveCurrentPos.x, &unit->mMoveCurrentPos.z, unit->mMoveSpeedXZ,
@@ -4669,16 +4651,8 @@ USER_FUNC(btlevtcmd_JumpPartsPosition) {
     part->mMoveCurrentPos.y += part->mMoveSpeedY;
     part->mMoveSpeedY -= part->mFallAccel;
     if (part->mMoveSpeedY < 0.0f) {
-#ifdef MUST_MATCH
-        // The volatile pins the current.y load before the target.y load; a plain read lets the
-        // scheduler emit target.y first, which is the only remaining difference.
-        f32 cur = *(volatile f32*)&part->mMoveCurrentPos.y;
-#else
-        f32 cur = part->mMoveCurrentPos.y;
-#endif
-        f32 tgt = part->mMoveTargetPos.y;
-        if (cur < tgt) {
-            part->mMoveCurrentPos.y = tgt;
+        if (part->mMoveCurrentPos.y < part->mMoveTargetPos.y) {
+            part->mMoveCurrentPos.y = part->mMoveTargetPos.y;
         }
     }
     btlMovePos(&part->mMoveCurrentPos.x, &part->mMoveCurrentPos.z, part->mMoveSpeedXZ,
@@ -5251,18 +5225,10 @@ USER_FUNC(btlevtcmd_AudienceDeclareAcrobatResult) {
         ((NiceEffectWork*)entry->userdata)->scale = 0.75f;
     } else {
         BattleAudience_Case_AcrobatBad();
-#ifdef MUST_MATCH
         psndSFXOn_3D("SFX_BTL_ACROBAT_MISS1", &pos);
-#else
-        psndSFXOn_3D(str_SFX_BTL_ACROBAT_MISS1, &pos);
-#endif
     }
     return 2;
 }
-
-// The original addresses its sound names from the retail vec3_802ede88 base.
-// The SFX_SYSTEM names are pooled string literals in the original (ACSuccessEffect reads them at
-// vec3+0x1c0..0x24c), so MUST_MATCH spells them as literals and the natural build uses the symbols.
 
 //s32* type, s32* x, s32* y, s32* z
 // The angle halving is written as `angle / 2.0f` (not `angle * 0.5f`): it keeps 160 in f0, pos.x in f1 and
@@ -5285,42 +5251,42 @@ USER_FUNC(btlevtcmd_ACSuccessEffect) {
     switch (type) {
     case 0:
         id = 0;
-        sfx = ACSE_SYSSFX(str_SFX_SYSTEM_NICE_25PERCENT1, "SFX_SYSTEM_NICE_25PERCENT1");
+        sfx = "SFX_SYSTEM_NICE_25PERCENT1";
         scale *= 0.3f;
         angle = 90.f;
         break;
     case 1:
         id = 0;
-        sfx = ACSE_SYSSFX(str_SFX_SYSTEM_NICE_50PERCENT1, "SFX_SYSTEM_NICE_50PERCENT1");
+        sfx = "SFX_SYSTEM_NICE_50PERCENT1";
         scale *= 0.6f;
         angle = 90.f;
         break;
     case 2:
         id = 0;
-        sfx = ACSE_SYSSFX(str_SFX_SYSTEM_NICE1, "SFX_SYSTEM_NICE1");
+        sfx = "SFX_SYSTEM_NICE1";
         scale *= 1.2f;
         angle = 90.f;
         break;
     case 3:
         id = 1;
-        sfx = ACSE_SYSSFX(str_SFX_SYSTEM_GOOD1, "SFX_SYSTEM_GOOD1");
+        sfx = "SFX_SYSTEM_GOOD1";
         scale *= 1.2f;
         angle = 90.f;
         break;
     case 4:
         id = 2;
-        sfx = ACSE_SYSSFX(str_SFX_SYSTEM_GREAT1, "SFX_SYSTEM_GREAT1");
+        sfx = "SFX_SYSTEM_GREAT1";
         scale *= 1.2f;
         angle = 120.f;
         break;
     case 5:
         id = 3;
-        sfx = ACSE_SYSSFX(str_SFX_SYSTEM_WONDERFUL1, "SFX_SYSTEM_WONDERFUL1");
+        sfx = "SFX_SYSTEM_WONDERFUL1";
         angle = 150.0f;
         break;
     case 6:
         id = 4;
-        sfx = ACSE_SYSSFX(str_SFX_SYSTEM_EXCELLENT1, "SFX_SYSTEM_EXCELLENT1");
+        sfx = "SFX_SYSTEM_EXCELLENT1";
         angle = 180.f;
         break;
     default:

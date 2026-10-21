@@ -174,12 +174,6 @@ __declspec(section ".rodata") Vec vec3_802f9744 = { 0.9f, 0.9f, 0.9f };
 #else
 const Vec vec3_802f9744 = { 0.9f, 0.9f, 0.9f };
 #endif
-// Match-only: reading these through a near-data constant lands the loads in the original's
-// registers (a direct `vec3_802f9744` copy compiles to `lwzu`, a pooled zero schedules late, and
-// the pooled 360 in DispAudience lands in a different register).
-#ifndef MUST_MATCH
-static const Vec* const p_vec3_802f9744 = &vec3_802f9744;
-#endif
 const Vec vec3_802f9750 = { 0.75f, 0.75f, 0.75f };
 const Vec vec3_802f975c = { -96.0f, 106.0f, 0.0f };
 #ifdef MUST_MATCH
@@ -2190,11 +2184,7 @@ void BattleAudienceApSrcCtrlProcess(void) {
 			star->state = 0xA;
 			star->frame = 0;
 			star->duration = irand(0xA) + 0xF;
-#ifdef MUST_MATCH
 			star->scale = vec3_802f9744;
-#else
-			star->scale = *p_vec3_802f9744;
-#endif
 			break;
 		case 10:
 			star->frame = star->frame + 1;
