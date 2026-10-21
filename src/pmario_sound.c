@@ -1,9 +1,7 @@
-#ifdef MUST_MATCH
 // The SDK math.h declares `extern inline` float sqrtf/sqrt whose static _half/_three
 // doubles are emitted at parse time and duplicate the ones calc3D pools; skip that
 // header and take the out-of-line declarations from math_ext.h instead.
 #define _MATH_H_
-#endif
 #include "pmario_sound.h"
 #include "matching.h"
 #include "sound.h"
@@ -13,10 +11,7 @@
 #include "mario/mariost.h"
 #include <string.h>
 #include <dolphin/os.h>
-#include <math.h>
-#ifdef MUST_MATCH
 #include "math_ext.h"
-#endif
 #pragma pool_data on // the original addresses its .rodata through one base register
 //TODO: put this in a folder?
 

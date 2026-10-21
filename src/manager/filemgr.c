@@ -24,35 +24,6 @@ FileManagerWork* afp = &fileWork;
 
 // Header views of the file types that fileGarbageDataAdrSet and fileGarbageDataAdrClear relocate (see FileType
 // in filemgr.h).
-typedef struct FileType1 {
-	u8 pad_0x0[0x14C];
-	u32 field_0x14C;
-	u32 field_0x150;
-	u32 field_0x154;
-	u32 field_0x158;
-	u32 field_0x15C;
-	u32 field_0x160;
-	u32 field_0x164;
-	u32 field_0x168;
-	u32 field_0x16C;
-	u32 field_0x170;
-	u32 field_0x174;
-	u32 field_0x178;
-	u32 field_0x17C;
-	u32 field_0x180;
-	u32 field_0x184;
-	u32 field_0x188;
-	u32 field_0x18C;
-	u32 field_0x190;
-	u32 field_0x194;
-	u32 field_0x198;
-	u32 field_0x19C;
-	u32 field_0x1A0;
-	u32 field_0x1A4;
-	u32 field_0x1A8;
-	u32 field_0x1AC;
-} FileType1;
-
 typedef struct FileType3 {
 	u8 pad_0x0[0x48];
 	u32 field_0x48;
@@ -168,32 +139,32 @@ void fileGarbageDataAdrClear(FileEntry* entry) {
 
 	switch (entry->type) {
 		case FILE_TYPE_1:
-			if (((FileType1*)data)->field_0x14C >= (u32)data) {
-				((FileType1*)data)->field_0x14C -= (u32)data;
-				((FileType1*)data)->field_0x150 -= (u32)data;
-				((FileType1*)data)->field_0x154 -= (u32)data;
-				((FileType1*)data)->field_0x158 -= (u32)data;
-				((FileType1*)data)->field_0x15C -= (u32)data;
-				((FileType1*)data)->field_0x160 -= (u32)data;
-				((FileType1*)data)->field_0x164 -= (u32)data;
-				((FileType1*)data)->field_0x168 -= (u32)data;
-				((FileType1*)data)->field_0x16C -= (u32)data;
-				((FileType1*)data)->field_0x170 -= (u32)data;
-				((FileType1*)data)->field_0x174 -= (u32)data;
-				((FileType1*)data)->field_0x178 -= (u32)data;
-				((FileType1*)data)->field_0x17C -= (u32)data;
-				((FileType1*)data)->field_0x180 -= (u32)data;
-				((FileType1*)data)->field_0x184 -= (u32)data;
-				((FileType1*)data)->field_0x188 -= (u32)data;
-				((FileType1*)data)->field_0x18C -= (u32)data;
-				((FileType1*)data)->field_0x190 -= (u32)data;
-				((FileType1*)data)->field_0x194 -= (u32)data;
-				((FileType1*)data)->field_0x198 -= (u32)data;
-				((FileType1*)data)->field_0x19C -= (u32)data;
-				((FileType1*)data)->field_0x1A0 -= (u32)data;
-				((FileType1*)data)->field_0x1A4 -= (u32)data;
-				((FileType1*)data)->field_0x1A8 -= (u32)data;
-				((FileType1*)data)->field_0x1AC -= (u32)data;
+			if ((u32)POSE(data)->shapes >= (u32)data) {
+				FILE_UNRELOC(POSE(data)->shapes, data);
+				FILE_UNRELOC(POSE(data)->drawCalls, data);
+				FILE_UNRELOC(POSE(data)->bufferVtxPos, data);
+				FILE_UNRELOC(POSE(data)->posIndex, data);
+				FILE_UNRELOC(POSE(data)->nrmVtxBuffer, data);
+				FILE_UNRELOC(POSE(data)->nrmIndex, data);
+				FILE_UNRELOC(POSE(data)->clr0VtxBuffer, data);
+				FILE_UNRELOC(POSE(data)->clr0Index, data);
+				FILE_UNRELOC(POSE(data)->texIndex[0], data);
+				FILE_UNRELOC(POSE(data)->texIndex[1], data);
+				FILE_UNRELOC(POSE(data)->texIndex[2], data);
+				FILE_UNRELOC(POSE(data)->texIndex[3], data);
+				FILE_UNRELOC(POSE(data)->texIndex[4], data);
+				FILE_UNRELOC(POSE(data)->texIndex[5], data);
+				FILE_UNRELOC(POSE(data)->texIndex[6], data);
+				FILE_UNRELOC(POSE(data)->texIndex[7], data);
+				FILE_UNRELOC(POSE(data)->texVtxBuffer, data);
+				FILE_UNRELOC(POSE(data)->mBufferTexAnim, data);
+				FILE_UNRELOC(POSE(data)->texData, data);
+				FILE_UNRELOC(POSE(data)->texBinds, data);
+				FILE_UNRELOC(POSE(data)->draws, data);
+				FILE_UNRELOC(POSE(data)->mBufferVisibility, data);
+				FILE_UNRELOC(POSE(data)->mBufferNode, data);
+				FILE_UNRELOC(POSE(data)->groups, data);
+				FILE_UNRELOC(POSE(data)->mpAnims, data);
 			}
 			break;
 
@@ -367,32 +338,32 @@ void fileGarbageDataAdrSet(void* data, s32 type) {
 
 	switch (type) {
 		case FILE_TYPE_1:
-			if (((FileType1*)data)->field_0x14C < (u32)data) {
-				((FileType1*)data)->field_0x14C += (u32)data;
-				((FileType1*)data)->field_0x150 += (u32)data;
-				((FileType1*)data)->field_0x154 += (u32)data;
-				((FileType1*)data)->field_0x158 += (u32)data;
-				((FileType1*)data)->field_0x15C += (u32)data;
-				((FileType1*)data)->field_0x160 += (u32)data;
-				((FileType1*)data)->field_0x164 += (u32)data;
-				((FileType1*)data)->field_0x168 += (u32)data;
-				((FileType1*)data)->field_0x16C += (u32)data;
-				((FileType1*)data)->field_0x170 += (u32)data;
-				((FileType1*)data)->field_0x174 += (u32)data;
-				((FileType1*)data)->field_0x178 += (u32)data;
-				((FileType1*)data)->field_0x17C += (u32)data;
-				((FileType1*)data)->field_0x180 += (u32)data;
-				((FileType1*)data)->field_0x184 += (u32)data;
-				((FileType1*)data)->field_0x188 += (u32)data;
-				((FileType1*)data)->field_0x18C += (u32)data;
-				((FileType1*)data)->field_0x190 += (u32)data;
-				((FileType1*)data)->field_0x194 += (u32)data;
-				((FileType1*)data)->field_0x198 += (u32)data;
-				((FileType1*)data)->field_0x19C += (u32)data;
-				((FileType1*)data)->field_0x1A0 += (u32)data;
-				((FileType1*)data)->field_0x1A4 += (u32)data;
-				((FileType1*)data)->field_0x1A8 += (u32)data;
-				((FileType1*)data)->field_0x1AC += (u32)data;
+			if ((u32)POSE(data)->shapes < (u32)data) {
+				FILE_RELOC(POSE(data)->shapes, data);
+				FILE_RELOC(POSE(data)->drawCalls, data);
+				FILE_RELOC(POSE(data)->bufferVtxPos, data);
+				FILE_RELOC(POSE(data)->posIndex, data);
+				FILE_RELOC(POSE(data)->nrmVtxBuffer, data);
+				FILE_RELOC(POSE(data)->nrmIndex, data);
+				FILE_RELOC(POSE(data)->clr0VtxBuffer, data);
+				FILE_RELOC(POSE(data)->clr0Index, data);
+				FILE_RELOC(POSE(data)->texIndex[0], data);
+				FILE_RELOC(POSE(data)->texIndex[1], data);
+				FILE_RELOC(POSE(data)->texIndex[2], data);
+				FILE_RELOC(POSE(data)->texIndex[3], data);
+				FILE_RELOC(POSE(data)->texIndex[4], data);
+				FILE_RELOC(POSE(data)->texIndex[5], data);
+				FILE_RELOC(POSE(data)->texIndex[6], data);
+				FILE_RELOC(POSE(data)->texIndex[7], data);
+				FILE_RELOC(POSE(data)->texVtxBuffer, data);
+				FILE_RELOC(POSE(data)->mBufferTexAnim, data);
+				FILE_RELOC(POSE(data)->texData, data);
+				FILE_RELOC(POSE(data)->texBinds, data);
+				FILE_RELOC(POSE(data)->draws, data);
+				FILE_RELOC(POSE(data)->mBufferVisibility, data);
+				FILE_RELOC(POSE(data)->mBufferNode, data);
+				FILE_RELOC(POSE(data)->groups, data);
+				FILE_RELOC(POSE(data)->mpAnims, data);
 			}
 			break;
 		case FILE_TYPE_2:

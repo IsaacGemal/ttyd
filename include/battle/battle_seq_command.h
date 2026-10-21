@@ -21,56 +21,56 @@ typedef struct BattleCommandCursor {
 // BattleWorkCommand* entry in battle.h (same offsets and strides) and is named by the reader in
 // battle_seq_command.c that uses it.
 typedef struct BattleCommandAction {
-    u32 mType;          // 0x0, 0 jump, 1 hammer, 2 item, 4 super action, 5 operation, 6 tech/party, 0xD lecture end
+    s32 mType;          // 0x0, 0 jump, 1 hammer, 2 item, 4 super action, 5 operation, 6 tech/party, 0xD lecture end
     BOOL mEnabled;      // 0x4
-    char* mName;        // 0x8
+    const char* mName;  // 0x8
     u16 mIcon;          // 0xC
     u8 pad_0xE[2];      // 0xE
-    u32 mDisableReason; // 0x10, _get_msg error code: 0 none, 3 not now, 4/5 no Jump/Hammer target
+    s32 mDisableReason; // 0x10, _get_msg error code: 0 none, 3 not now, 4/5 no Jump/Hammer target
 } BattleCommandAction;  // 0x14
 
 typedef struct BattleCommandWeapon {
     BattleWeapon* mWeaponParams; // 0x0
-    u32 mEnabled;                // 0x4
-    char* mName;                 // 0x8
+    BOOL mEnabled;               // 0x4
+    const char* mName;           // 0x8
     u16 mIcon;                   // 0xC, read at commandMenu + idx * 0x1C + 0x8C by DrawWeaponWin
     u8 pad_0xE[2];               // 0xE
     u32 mIndex;                  // 0x10, -1 for the built-in Jump and Hammer weapons
     ItemType mItem;              // 0x14
-    u32 mDisableReason;          // 0x18, as BattleCommandAction.mDisableReason; also 1 no FP, 2 no AP
+    s32 mDisableReason;          // 0x18, as BattleCommandAction.mDisableReason; also 1 no FP, 2 no AP
 } BattleCommandWeapon;           // 0x1C
 
 typedef struct BattleCommandOperation {
-    u32 mType;          // 0x0
-    BOOL mEnabled;      // 0x4
-    u32 mDisableReason; // 0x8, as BattleCommandAction.mDisableReason; 1 no FP
-    char* mName;        // 0xC
-    u16 mIcon;          // 0x10
-    u8 pad_0x12[2];     // 0x12
-    char* mDescription; // 0x14
-    u32 mWeaponCost;    // 0x18
+    s32 mType;                // 0x0
+    BOOL mEnabled;            // 0x4
+    s32 mDisableReason;       // 0x8, as BattleCommandAction.mDisableReason; 1 no FP
+    const char* mName;        // 0xC
+    u16 mIcon;                // 0x10
+    u8 pad_0x12[2];           // 0x12
+    const char* mDescription; // 0x14
+    u32 mWeaponCost;          // 0x18
 } BattleCommandOperation; // 0x1C
 
 typedef struct BattleCommandParty {
-    BattleUnitType mPartyId; // 0x0
-    BOOL mEnabled;           // 0x4
-    char* mName;             // 0x8
-    u16 mIcon;               // 0xC
-    u8 pad_0xE[2];           // 0xE
-    char* mDescription;      // 0x10
-    s16 mCurrentHP;          // 0x14
-    s16 mMaxHP;              // 0x16
+    BattleUnitType mPartyId;  // 0x0
+    BOOL mEnabled;            // 0x4
+    const char* mName;        // 0x8
+    u16 mIcon;                // 0xC
+    u8 pad_0xE[2];            // 0xE
+    const char* mDescription; // 0x10
+    s16 mCurrentHP;           // 0x14
+    s16 mMaxHP;               // 0x16
 } BattleCommandParty;        // 0x18
 
 typedef struct BattleCommandMultiItem {
-    BOOL mEnabled;      // 0x0
-    char* mName;        // 0x4
-    char* mDescription; // 0x8
-    u16 mIcon;          // 0xC
-    u8 mKind;           // 0xE, 1 Item, 2 Double Dip, 3 Triple Dip
-    u8 pad_0xF;         // 0xF
-    u32 mWeaponCost;    // 0x10
-    u32 mDisableReason; // 0x14, 1 when mEnabled is 0
+    BOOL mEnabled;            // 0x0
+    const char* mName;        // 0x4
+    const char* mDescription; // 0x8
+    u16 mIcon;                // 0xC
+    u8 mKind;                 // 0xE, 1 Item, 2 Double Dip, 3 Triple Dip
+    u8 pad_0xF;               // 0xF
+    u32 mWeaponCost;          // 0x10
+    s32 mDisableReason;       // 0x14, 1 when mEnabled is 0
 } BattleCommandMultiItem; // 0x18
 
 typedef struct BattleCommand {

@@ -6,7 +6,7 @@
 #include "battle/battle_unit.h"
 
 typedef struct BattleDispPose { //for BattleWorkUnitPart
-	u32 poseId; //0x0
+	s32 poseId; //0x0
 	const char* poseName; //0x4
 } BattleDispPose;
 

@@ -58,11 +58,11 @@ typedef struct MapObjectEntry {
     Vec scale2;                  // 0x184
     Vec translation;             // 0x190
     s32 offscreenId;             // 0x19C
-    u8 unk1A0[0x1A8 - 0x1A0];    // 0x1A0, per-type data: 0x1A0 item id; 0x1A4 coin count, part count, or switch anim index | state bits
+    s32 unk1A0[2];               // 0x1A0, per-type: [0] item id (item-list pointer if bit 31 set); [1] coin count, part count, or switch anim index | state bits
     s32 msgWindowId;             // 0x1A8
     f32 unk1AC;                  // 0x1AC, jump stand: launch height for marioChgJumpStandMotion; fire bar: Z rotation in degrees
     s32 timer;                   // 0x1B0, countdown decremented each frame by the timed object types
-    u8 unk1B4[0x1B8 - 0x1B4];    // 0x1B4, sound handle or reload value, depending on the type
+    s32 unk1B4;                  // 0x1B4, sound handle or reload value, depending on the type
     char childName[0x10];        // 0x1B8, name of the child object this one spawns (strcpy'd in evt_mobj)
     EffectEntry* effect;         // 0x1C8
     s32 eventId;                 // 0x1CC

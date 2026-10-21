@@ -2467,7 +2467,7 @@ void btlseqTurnFirstProcess(BattleWork* wp) { //1:1
 	}
 	*((s32*)&wp->statusChangeMsg.mAnnouncedFlags + 1) = 0; // low word, then high: two stores, as retail
 	*(s32*)&wp->statusChangeMsg.mAnnouncedFlags = 0;
-	BtlActRec_AddCount((u8*)wp + 0x16F3B);
+	BtlActRec_AddCount(&wp->field_16F1C[0x3B - 0x1C]);
 
 	for (i = 0; i < 64; i++) {
 		unit = BattleGetUnitPtr(wp, i);

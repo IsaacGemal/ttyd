@@ -1618,7 +1618,7 @@ s32 _sampling_random_target(EventEntry* event, BOOL isFirstCall) {
     belong = (s8)evtGetValue(event, args[3]);
     samp = &sampling;
     id = BattleTransID(event, -2);
-    BattleSamplingEnemy((u8*)samp, weapon, id, belong, weapon->targetClassFlags,
+    BattleSamplingEnemy(samp, weapon, id, belong, weapon->targetClassFlags,
                         weapon->targetPropertyFlags,
                         -wp->alliances[belong].attackDirection);
     if (samp->count <= 0) {

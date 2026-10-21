@@ -45,7 +45,7 @@ const char* searchPoseTbl(BattleDispPose* table, s32 poseId) { //TODO: fix mtctr
 
 	if (!table) return NULL;
 	for (i = 0x1C; i != 0; i--) {
-		if ((s32)table->poseId == poseId || (s32)table->poseId == 0x1C) {
+		if (table->poseId == poseId || table->poseId == 0x1C) {
 			return table->poseName;
 		}
 		table++;
@@ -401,22 +401,22 @@ void btlDispMain(void) {
 			if (!(part->partFlags & 2)) {
 				statusPose = _GetStatusPoseType(unit);
 				if (unit->currentKind >= UNIT_GOOMBA && unit->currentKind < UNIT_UNUSED_TREE) {
-					animName = searchPoseTbl((BattleDispPose*)part->poseTable, statusPose);
+					animName = searchPoseTbl(part->poseTable, statusPose);
 				} else {
 					if (statusPose == STATUS_INVALID && !BtlUnit_CheckStatus(unit, STATUS_HOLD_FAST) &&
 					    (unit->mStatusFlags & 0x20000000)) {
 						animName = BtlUnit_GetPoseNameFromType(part, 0x39);
 						if (animName == NULL) {
-							animName = searchPoseTbl((BattleDispPose*)part->poseTable, 0x1C);
+							animName = searchPoseTbl(part->poseTable, 0x1C);
 						}
 					} else if (statusPose == STATUS_INVALID && !BtlUnit_CheckStatus(unit, STATUS_HOLD_FAST) &&
 					           (unit->mStatusFlags & 0x10000000)) {
 						animName = BtlUnit_GetPoseNameFromType(part, 0x38);
 						if (animName == NULL) {
-							animName = searchPoseTbl((BattleDispPose*)part->poseTable, 0x1C);
+							animName = searchPoseTbl(part->poseTable, 0x1C);
 						}
 					} else {
-						animName = searchPoseTbl((BattleDispPose*)part->poseTable, statusPose);
+						animName = searchPoseTbl(part->poseTable, statusPose);
 					}
 					if (BtlUnit_CheckStatusFlag(unit, 0x1000000) && BtlUnit_CanActStatus(unit)) {
 						animName = BtlUnit_GetPoseNameFromType(part, 0x2D);
@@ -1039,7 +1039,7 @@ void btlDispEntAnime(BattleUnit* unit) {
 			if (modelName == NULL) {
 				part->poseId = -1;
 			} else {
-				strcpy(part->poseName, searchPoseTbl((BattleDispPose*)part->poseTable, 0x1c));
+				strcpy(part->poseName, searchPoseTbl(part->poseTable, 0x1c));
 				part->poseId = animPoseEntry(modelName, 1);
 			}
 		}

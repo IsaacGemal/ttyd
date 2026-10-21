@@ -34,11 +34,11 @@ typedef struct BattleSampling {
 } BattleSampling;
 
 // The original stores `belong` and `attackDirection` with stb: both are bytes.
-s32 BattleSamplingEnemy(u8* sampling, BattleWeapon* weapon, s32 unitId, s8 belong,
+s32 BattleSamplingEnemy(BattleSampling* sampling, BattleWeapon* weapon, s32 unitId, s8 belong,
                         s32 targetClassFlags, s32 targetPropertyFlags, s8 attackDirection);
 typedef struct BattleUnit BattleUnit;
 typedef struct BattleWork BattleWork;
 void BattleGetFirstAttackUnit(BattleWork* wp, BattleUnit** outUnit1, BattleUnit** outUnit2);
-void BattleChoiceSamplingEnemy(u8* sampling, u32 flags, s32* outId, s32* outPartId);
-void BattleSamplingEnemyUpdate(u8* sampling);
-void _btlSamplingEnemy(u8* sampling);
+void BattleChoiceSamplingEnemy(BattleSampling* sampling, u32 flags, s32* outId, s32* outPartId);
+void BattleSamplingEnemyUpdate(BattleSampling* sampling);
+void _btlSamplingEnemy(BattleSampling* sampling);

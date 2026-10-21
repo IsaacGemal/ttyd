@@ -459,7 +459,7 @@ typedef struct BattleWorkUnitPart {
     PartsCounterAttribute_Flags counterAttributes; // 0x1B0
     BattleUnitDefense* defense;                    // 0x1B4
     BattleUnitDefenseAttr* defenseAttr;            // 0x1B8
-    void* poseTable;                               // 0x1BC
+    struct BattleDispPose* poseTable;              // 0x1BC
     s32 poseId;                                    // 0x1C0, animPoseEntry handle, -1 when none (animPoseRelease)
     char poseName[0x204 - 0x1C4];                  // 0x1C4, current animation name, strcpy'd and passed to animPoseSetAnim
     u32 partFlags;                                 // 0x204, bit 0x10 and 0x80 are set and cleared by battle_unit.c
