@@ -420,10 +420,6 @@ static inline f32 jabaraGetHitDepth(HitEntry* hit) {
     return (f32)(s32)((JABARA_F32(float_100_8041ab4c) * pos.z + JABARA_F32(float_0p5_8041ab48)) / JABARA_F32(float_100_8041ab4c));
 }
 
-#ifdef MUST_MATCH
-// Preserve the repeated signed state-byte comparison.
-#pragma opt_common_subs off
-#endif
 void mot_jabara(void) {
     MarioWork* mario = marioGetPtr();
     MarioWork* mario2;
@@ -1014,9 +1010,6 @@ void mot_jabara(void) {
             }
     }
 }
-#ifdef MUST_MATCH
-#pragma opt_common_subs reset
-#endif
 
 // .sdata2, after mot_jabara's pooled camera constants
 __declspec(section ".sdata2") const f32 float_480_8041ab18 = 480.0f;

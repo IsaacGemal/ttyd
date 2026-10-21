@@ -91,21 +91,12 @@ typedef struct WinDt {
     u8 navRight; //0x1B
 } WinDt;
 
-// loadDraw copies the 16-entry angle table to the stack in one 64-byte block before indexing it;
+// loadDraw copies the 4x4 angle table to the stack in one 64-byte block before indexing it;
 // a struct assignment reproduces that copy (an array typedef cannot be assigned).
 struct LoadAngleTable
 {
-    f32 v[16];
+    f32 v[4][4];
 };
-
-// The target folds the byte offset as (copySrc << 4) + (copyDst << 2); the plain element
-// expression makes MWCC scale the flattened index by four instead.
-#ifdef MUST_MATCH
-#define ANGLES_AT(a, w) (*(const f32*)((const u8*)(a).v + (w)->copySrc * 0x10 + (w)->copyDst * 4))
-#else
-#define ANGLES_AT(a, w) ((a).v[(w)->copySrc * 4 + (w)->copyDst])
-#endif
-
 
 #define LOAD_TEX_PALETTE() ((TEXPalette*)*wp->file->data)
 
@@ -117,8 +108,6 @@ extern s32 evt_memcard_start[];
 extern s32 evt_memcard_delete[];
 extern s32 evt_memcard_copy[];
 extern s32 evt_memcard_save[];
-#ifdef MUST_MATCH
-#endif
 u32 gap_80349DF0[14] = {
     0xBF800000, 0x3F800000, 0x3F800000, 0xBF800000, 0x3F800000, 0xBF800000, 0xBF800000, 0x3F800000,
     0xBF800000, 0x3F800000, 0x3F800000, 0xBF800000, 0x3F800000, 0xBF800000,
@@ -1089,11 +1078,7 @@ void loadDraw(void) {
         loadDrawColor(dat_8041bd98);
 #endif
         if (i == wp->cursor) {
-#ifdef MUST_MATCH
-            loadDrawColor(*(volatile GXColor*)&dat_8041bd9c); // volatile read: retail reloads the colour at each call
-#else
             loadDrawColor(dat_8041bd9c);
-#endif
         }
         FontDrawScale(0.6f);
         FontDrawEdge();
@@ -1107,11 +1092,7 @@ void loadDraw(void) {
         loadDrawColor(dat_8041bda0);
 #endif
         if (i == wp->cursor) {
-#ifdef MUST_MATCH
-            loadDrawColor(*(volatile GXColor*)&dat_8041bda4); // volatile read: retail reloads the colour at each call
-#else
             loadDrawColor(dat_8041bda4);
-#endif
         }
 
         if (flags & 2) {
@@ -1245,7 +1226,7 @@ void loadDraw(void) {
         f32 f29;
         f32 f30;
 
-        if (!(f32)fmod(ANGLES_AT(angles, wp), 90.0)) {
+        if (!(f32)fmod(angles.v[wp->copySrc][wp->copyDst], 90.0)) {
             f32 mod = (f32)(wp->copySrc % 2);
             f32 fa = (f32)(wp->copySrc / 2);
             f32 fb = (f32)(wp->copyDst / 2);
@@ -1266,8 +1247,8 @@ void loadDraw(void) {
             Mtx mtx;
 
             winTexInit(LOAD_TEX_PALETTE());
-            winTexSetRot(0x1d, loadDrawVec(2.0f + f29, f30 - 2.0f, vec3_802ed7e8), vec3_802ed7f4, ANGLES_AT(angles, wp), *(GXColor*)&dat_8041bdd4);
-            winTexSetRot(0x1d, loadDrawVec(f29, f30, vec3_802ed800), vec3_802ed80c, ANGLES_AT(angles, wp), white);
+            winTexSetRot(0x1d, loadDrawVec(2.0f + f29, f30 - 2.0f, vec3_802ed7e8), vec3_802ed7f4, angles.v[wp->copySrc][wp->copyDst], *(GXColor*)&dat_8041bdd4);
+            winTexSetRot(0x1d, loadDrawVec(f29, f30, vec3_802ed800), vec3_802ed80c, angles.v[wp->copySrc][wp->copyDst], white);
             (void)mtx;
         }
     }
