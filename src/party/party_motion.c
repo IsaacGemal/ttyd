@@ -1198,7 +1198,15 @@ void party_motion_homing_walk(PartyEntry* party) {
             if (!(attr & 0x200)) {
                 vA0.x = party->position.x;
                 vA0.z = party->position.z;
-                { f32* pz = &vA0.z; f32* px = &vA0.x; movePos(px, pz, party->speed, party->dir); }
+#ifdef MUST_MATCH
+                {
+                    // The z address in a temp before the call: retail computes it ahead of the x address.
+                    f32* pz = &vA0.z;
+                    movePos(&vA0.x, pz, party->speed, party->dir);
+                }
+#else
+                movePos(&vA0.x, &vA0.z, party->speed, party->dir);
+#endif
             }
         }
     } else {
@@ -1325,7 +1333,6 @@ void party_motion_homing_walk(PartyEntry* party) {
 #pragma opt_loop_invariants off
 // opt_dead_assignments: keeps MWCC from dropping the `mario`/`id` copies that keep the target's GPR colouring.
 #pragma opt_dead_assignments off
-// Initialise zero after the entry call so its later-deleted load does not reorder the parameter save.
 void party_motion_homing_fly(PartyEntry* party) {
     MarioWork* mario;
     s32 id;
@@ -1345,11 +1352,9 @@ void party_motion_homing_fly(PartyEntry* party) {
     Vec pos;
     Vec tv2;
     Vec tv;
-    f32 zero;
 
     mario = party->playerPtr;
     id = partyGetFootmarkId(&party->flags);
-    zero = 0.0f;
     if (party->field_8 & 0x2) {
         party->field_8 = (party->field_8 & ~0x2);
         party->flags = (party->flags & ~PARTY_FLAG_IS_BEHIND_MARIO);
@@ -1489,7 +1494,7 @@ void party_motion_homing_fly(PartyEntry* party) {
                         v = 4.0f;
                     }
                     if (v < 0.5f) {
-                        v = zero;
+                        v = 0.0f;
                     }
                     partySetSpeed(party, mario->baseSpeed + v);
                 }
@@ -1534,7 +1539,7 @@ void party_motion_homing_fly(PartyEntry* party) {
             } else if (party->velX == 0.0f && party->velZ == 0.0f) {
                 partySetTargetSpeed(party, party->playerPtr->baseSpeed);
             } else {
-                partySetSpeed(party, zero);
+                partySetSpeed(party, 0.0f);
                 party->dir = angleABf(party->position.x, party->position.z, mario->position.x, mario->position.z);
                 partyChgPoseId(party, 1);
             }
@@ -1586,7 +1591,7 @@ void party_motion_homing_fly(PartyEntry* party) {
         }
     }
 
-    if (party->speed != zero) {
+    if (party->speed) {
         partyChgSpeedPose(party, party->speed);
     } else {
         partyChgMot(party, 0);
@@ -1642,15 +1647,22 @@ void party_motion_homing_fly(PartyEntry* party) {
         }
         }
         party->noFloorCount = 0;
-        if (party->speed != zero) {
-            f32* pz = &p.z;
+        if (party->speed) {
             p.x = party->position.x;
             p.z = party->position.z;
-            movePos(&p.x, pz, party->speed, party->dir);
+#ifdef MUST_MATCH
+            {
+                // The z address in a temp before the call: retail computes it ahead of the x address.
+                f32* pz = &p.z;
+                movePos(&p.x, pz, party->speed, party->dir);
+            }
+#else
+            movePos(&p.x, &p.z, party->speed, party->dir);
+#endif
         }
     } else {
         party->field_12C = hit;
-        if (party->speed != zero) {
+        if (party->speed) {
             party->field_134 = hit;
             {
             s32 b = hitGetAttr(hit);
@@ -1661,11 +1673,18 @@ void party_motion_homing_fly(PartyEntry* party) {
                         party->field_37 = 1;
                     }
                 } else {
-                    if (party->speed != zero) {
-                        f32* pz = &p.z;
+                    if (party->speed) {
                         p.x = party->position.x;
                         p.z = party->position.z;
-                        movePos(&p.x, pz, party->speed, party->dir);
+#ifdef MUST_MATCH
+                        {
+                            // The z address in a temp before the call: retail computes it ahead of the x address.
+                            f32* pz = &p.z;
+                            movePos(&p.x, pz, party->speed, party->dir);
+                        }
+#else
+                        movePos(&p.x, &p.z, party->speed, party->dir);
+#endif
                     }
                 }
             } else {
@@ -1676,7 +1695,7 @@ void party_motion_homing_fly(PartyEntry* party) {
                 movePos(&move_x, &move_z, party->radius, angle);
                 v = f25 + touch_wall_ct;
                 hitDist = 1000.0f;
-                hit = hitCheckFilter(NULL, move_x, v, move_z, zero, -1.0f, 0.0f, &hitX,
+                hit = hitCheckFilter(NULL, move_x, v, move_z, 0.0f, -1.0f, 0.0f, &hitX,
                                      &hitY, &hitZ, &hitDist, &hitNX, &hitNY, &hitNZ);
                 if (hit == NULL) {
                     f25 = -2000.0f;
@@ -2329,8 +2348,7 @@ void party_motion_beside_mario(PartyEntry* party) {
 // (`tx`/`tz`), not party->position; the `if` path (dist > limit) seeds tx/tz from party->position first,
 // exactly as the target stores x/z into the 0x10/0x8 slots. Declaring the limit/step pair as
 // `f32 f31, f30, f29;` and using the early partyGetTargetDir result as the separate `f29` (declared after
-// them) is what makes MWCC colour the 50/min in f30 and the distance in f31; the `ntx`/`ntz` block temps put
-// the two `fmadds` results in f3/f2; `f32 zero` keeps `party->speed != zero` variable-first; and
+// them) is what makes MWCC colour the 50/min in f30 and the distance in f31; and
 // `party->playerPtr->playerGravity` reproduces the target's fresh `lwz r3, 0x160(r28)` (the local `mario` is
 // not reused there).
 // The rounded travel-time expression assigns its distance and scale at their point of use.
@@ -2355,14 +2373,12 @@ void party_motion_jump(PartyEntry* party) {
     f32 angle;
     f32 f31, f30, f29;
     f32 f0, f1, f3, f4, f6, h;
-    f32 zero;
     u32 id;
     s32 writeId;
     s32 readId; // holds the call result so MWCC emits the target's `cmpw r3, r27` (see comment above)
 
     mario = party->playerPtr;
     id = partyGetFootmarkId(&party->flags);
-    zero = 0.0f;
     if (party->field_8 & 0x2) {
         party->field_8 = (party->field_8 & ~0x2);
         party->motionStep = 0;
@@ -2391,9 +2407,7 @@ void party_motion_jump(PartyEntry* party) {
                 if (partyGetTargetDist(id, party->position.x, party->position.z) > 2.0f * mario->wPlayerCollisionBox.x) {
                     f29 = partyGetTargetDir(id, party->position.x, party->position.z);
                     getFrontFloor(party, &floor, f29);
-                    {
-                        floor.y += 10.0f;
-                    }
+                    floor.y += 10.0f;
                     ty = floor.y;
                     tx = party->position.x;
                     tz = party->position.z;
@@ -2438,12 +2452,8 @@ void party_motion_jump(PartyEntry* party) {
                     if (partyGetTargetDistY(id) == 0.0f) {
                         f31 = 0.0f;
                     }
-                    {
-                        f32 ntz = tz + f31 * cosV;
-                        f32 ntx = tx + f31 * sinV;
-                        tx = ntx;
-                        tz = ntz;
-                    }
+                    tx += f31 * sinV;
+                    tz += f31 * cosV;
                     {
                         Vec pos = FV(vec3_802f3e7c, ((Vec){0.0f, 0.0f, 0.0f}));
                         pos.x = tx;
@@ -2555,7 +2565,7 @@ void party_motion_jump(PartyEntry* party) {
             hit = partySearchFrontWall(party, &wall, party->speed, party->dir);
             if (hit != NULL) {
                 party->field_12C = hit;
-                if (party->speed != zero) {
+                if (party->speed) {
                     party->field_134 = hit;
                 }
             }
@@ -2976,9 +2986,6 @@ void L_partyForceSlitOff(PartyEntry* party) {
     }
 }
 
-// dont_inline: the original emits a `bl partyChgMotSlitFloor` at every call site
-// (homing_fly, homing_walk, party_slit); inlining it changes those functions.
-#pragma dont_inline on
 void partyChgMotSlitFloor(PartyEntry* party) {
     if (party->flags & PARTY_FLAG_MOT_SLIT_FLOOR) {
         return;
@@ -2989,7 +2996,6 @@ void partyChgMotSlitFloor(PartyEntry* party) {
     }
     party->flags = (party->flags | PARTY_FLAG_MOT_SLIT_FLOOR);
 }
-#pragma dont_inline reset
 
 BOOL party_slit(PartyEntry* party) {
     s32 ret = 1;
