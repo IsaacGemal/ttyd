@@ -420,13 +420,7 @@ static BattleWeapon weapon_piders_renzoku_attack = {
 // Colour word (opaque white; the alpha byte is filled in per frame by piders_draw_yarn_sub).
 const GXColor dat_jon_0000e7a8 = {0xFF, 0xFF, 0xFF, 0x00};
 
-static USER_FUNC(piders_yarn_init) {
-    s32 id = BattleTransID(event, -2);
-    BattleUnit* unit = BattleGetUnitPtr(_battleWorkPointer, id);
-
-    unit->mExtraWork = __memAlloc(HEAP_BATTLE, 0x1c);
-    return EVT_RETURN_DONE;
-}
+#include "rel/common/unit_piders/piders_yarn_init.h"
 
 static EVT_BEGIN(init_event)
     CALL(btlevtcmd_SetEventWait, -2, PTR(wait_event))
@@ -459,47 +453,7 @@ static inline GXColor piders_getMatColor(PidersYarnWork* yarn) {
     return color;
 }
 
-static void piders_draw_yarn_sub(CameraId cameraId, void* param) {
-    PidersYarnWork* yarn = param;
-    CameraEntry* camera;
-
-    camera = camGetPtr(CAMERA_3D);
-    GXSetCullMode(GX_CULL_NONE);
-    GXClearVtxDesc();
-    GXSetVtxDesc(GX_VA_POS, GX_DIRECT);
-    GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_POS_XYZ, GX_F32, 0);
-    GXSetNumChans(1);
-    GXSetChanCtrl(GX_COLOR0A0, GX_FALSE, GX_SRC_REG, GX_SRC_REG, 0, GX_DF_CLAMP, GX_AF_NONE);
-    GXSetChanMatColor(GX_COLOR0A0, piders_getMatColor(yarn));
-    GXSetNumTexGens(0);
-    GXSetNumTevStages(1);
-    GXSetTevColorOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
-    GXSetTevColorIn(GX_TEVSTAGE0, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ZERO, GX_CC_RASC);
-    GXSetTevAlphaOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
-    GXSetTevAlphaIn(GX_TEVSTAGE0, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_RASA);
-    GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD_NULL, GX_TEXMAP_NULL, GX_COLOR0A0);
-    GXLoadPosMtxImm(camera->view, 0);
-    GXBegin(GX_QUADS, GX_VTXFMT0, 4);
-    GXPosition3f32(yarn->field_0x0 - 1.0f, yarn->field_0x4, yarn->field_0x8 - 5.0f);
-    GXPosition3f32(1.0f + yarn->field_0x0, yarn->field_0x4, yarn->field_0x8 - 5.0f);
-    GXPosition3f32(1.0f + yarn->field_0xC, yarn->field_0x10, yarn->field_0x14 - 5.0f);
-    GXPosition3f32(yarn->field_0xC - 1.0f, yarn->field_0x10, yarn->field_0x14 - 5.0f);
-}
-
-static USER_FUNC(piders_draw_yarn) {
-    u8 alpha = evtGetValue(event, event->args[0]);
-    s32 id = BattleTransID(event, -2);
-    BattleUnit* unit = BattleGetUnitPtr(_battleWorkPointer, id);
-    PidersYarnWork* yarn = (PidersYarnWork*)unit->mExtraWork;
-
-    BtlUnit_GetHomePos(unit, &yarn->field_0xC, &yarn->field_0x10, &yarn->field_0x14);
-    yarn->field_0x10 = (f32)unit->work[2];
-    BtlUnit_GetHomePos(unit, &yarn->field_0x0, &yarn->field_0x4, &yarn->field_0x8);
-    yarn->field_0x4 = 400.0f;
-    yarn->field_0x18 = alpha;
-    dispEntry(CAMERA_3D, 0.0f, 2, piders_draw_yarn_sub, yarn);
-    return EVT_RETURN_DONE;
-}
+#include "rel/common/unit_piders/piders_draw_yarn_sub.h"
 
 static EVT_BEGIN(yarn_event)
     LABEL(0)
@@ -703,76 +657,7 @@ static EVT_BEGIN(move_kuuchu_event)
     RETURN
 EVT_END()
 
-static USER_FUNC(piders_get_num) {
-    s32 i;
-    s32* args = event->args;
-    s32 count = 0;
-    BattleWork* wp = _battleWorkPointer;
-    BattleUnit* unit;
-
-    for (i = 0; i < 64; i++) {
-        unit = wp->units[i];
-        if (unit != NULL && (unit->currentKind == UNIT_PIDER || unit->currentKind == UNIT_ARANTULA) &&
-            BtlUnit_CheckStatus(unit, STATUS_INSTANT_KILL) == 0) {
-            count++;
-        }
-    }
-    evtSetValue(event, args[0], count);
-    return EVT_RETURN_DONE;
-}
-
-static USER_FUNC(piders_get_zyun) {
-    s32 id;
-    s32 i;
-    s32* args = event->args;
-    s32 count = 0;
-    BattleWork* wp;
-    BattleUnit* unit;
-
-    id = evtGetValue(event, args[0]);
-    wp = _battleWorkPointer;
-    id = BattleTransID(event, id);
-    for (i = 0; i < 64; i++) {
-        unit = wp->units[i];
-        if (unit != NULL && (unit->currentKind == UNIT_PIDER || unit->currentKind == UNIT_ARANTULA)) {
-            if (BtlUnit_CheckStatus(unit, STATUS_INSTANT_KILL) == 0) {
-                count++;
-            }
-            if (unit->unitId == id) {
-                break;
-            }
-        }
-    }
-    evtSetValue(event, args[1], count);
-    return EVT_RETURN_DONE;
-}
-
-static USER_FUNC(piders_get_first_pos_attr) {
-    s32 i;
-    s32 val;
-    s32* args = event->args;
-    BattleWork* wp = _battleWorkPointer;
-    BattleUnit* unit;
-
-    for (i = 0; i < 64; i++) {
-        unit = wp->units[i];
-        if (unit != NULL && (unit->currentKind == UNIT_PIDER || unit->currentKind == UNIT_ARANTULA)) {
-            if (BtlUnit_CheckStatus(unit, STATUS_INSTANT_KILL) == 0) {
-                break;
-            }
-        }
-    }
-    val = unit->work[0];
-    if (BtlUnit_CanActStatus(unit)) {
-        if (val == 0) {
-            val = 1;
-        } else {
-            val = 0;
-        }
-    }
-    evtSetValue(event, args[0], val);
-    return EVT_RETURN_DONE;
-}
+#include "rel/common/unit_piders/piders_get_num.h"
 
 static EVT_BEGIN(unison_phase_event)
     CALL(btlevtcmd_CheckPhase, LW(0), 67108865)
@@ -1069,32 +954,7 @@ static EVT_BEGIN(normal_attack_event)
     RETURN
 EVT_END()
 
-static USER_FUNC(piders_renzoku_attack_set_target) {
-    EventEntry* evt = event;
-    s32* args = evt->args;
-    s32 ids[20];
-    s32 parts[20];
-    s32 i = 0;
-    s32 count = 0;
-
-    ((s8*)_battleWorkPointer)[0xEDF] = 0;
-    piders_get_target(&ids[0], &parts[0]);
-    while (1) {
-        if (ids[i] == -1) {
-            count = i;
-            break;
-        }
-        i++;
-        piders_get_next_target(&ids[i], &parts[i]);
-    }
-    for (i = 0; i < 3; i++) {
-        s32 idx = irand(count);
-
-        evtSetValue(evt, *(args++), ids[idx]);
-        evtSetValue(evt, *(args++), parts[idx]);
-    }
-    return EVT_RETURN_DONE;
-}
+#include "rel/common/unit_piders/piders_renzoku_attack_set_target.h"
 
 static EVT_BEGIN(renzoku_attack_event)
     CALL(btlevtcmd_GetEnemyBelong, -2, LW(0))
@@ -1258,29 +1118,6 @@ static EVT_BEGIN(wait_event)
     RETURN
 EVT_END()
 
-static void piders_get_target(s32* outUnit, s32* outPart) {
-    BattleWork* wp = _battleWorkPointer;
-    u8* sampling = (u8*)&wp->sampling;
-    s32 idx = (s8)sampling[0xAB7];
-    s16* entry = (s16*)(sampling + (s8)sampling[0xA6D + idx] * 0x24 + 4);
+#include "rel/common/unit_piders/piders_get_target.h"
 
-    *outUnit = entry[0];
-    *outPart = entry[1];
-}
-
-static void piders_get_next_target(s32* outUnit, s32* outPart) {
-    BattleWork* wp = _battleWorkPointer;
-    u8* sampling = (u8*)&wp->sampling;
-    s16* entry;
-
-    sampling[0xAB7]++;
-    if ((s8)sampling[0xAB7] < (s8)sampling[0xA6C]) {
-        entry = (s16*)(sampling + (s8)sampling[0xA6D + (s8)sampling[0xAB7]] * 0x24 + 4);
-        *outUnit = entry[0];
-        *outPart = entry[1];
-    } else {
-        *outUnit = -1;
-        *outPart = 0;
-    }
-}
 // clang-format on
