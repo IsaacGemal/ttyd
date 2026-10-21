@@ -12145,7 +12145,7 @@ The narrowing commits needed `--allow-pragma`, because the lint reads a moved li
 - **End-of-file settings (for the next pass).** With `-inline auto,deferred`, an unpaired `#pragma dont_inline on`
   acts by being in force at the end of the file. In battle_audience_kinopio, battle_enemy_item, battle_seq_command and
   mario_kemuri the object is identical with the setter moved after the last function. Narrowing these makes them look
-  like they wrap the last function, so they went back to their original place (commit 4c95d1ed). eff_recover_heart's
+  like they wrap the last function, so they went back to their original place. eff_recover_heart's
   `global_optimizer off` behaves the same way and already sits before the file's last function. Paired `dont_inline`
   regions do act on the functions inside them. The opt_* settings tested (`opt_common_subs`, `opt_lifetimes`,
   `opt_propagation`) act per function.

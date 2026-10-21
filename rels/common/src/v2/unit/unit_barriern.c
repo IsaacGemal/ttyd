@@ -2111,7 +2111,6 @@ static USER_FUNC(barriernSatelliteToOutside) {
     }
     return updated == 0 ? EVT_RETURN_DONE : EVT_RETURN_BLOCK;
 }
-// restore the file's dont_inline for the functions below
 
 static USER_FUNC(outSplineTableSet) {
     s32* args;
