@@ -2221,30 +2221,30 @@ void goryuugijo_disp_montemedal(CameraId cameraId, void* param) {
 USER_FUNC(evt_goryuugijo_set_caseid) {
     s32* args = event->args;
     GoryuugijoWork* work = (GoryuugijoWork*)evtGetValue(event, args[0]);
-    s32* data = (s32*)work->data;
+    SlotData* data = work->data;
     s32 index = evtGetValue(event, args[1]);
     s32 value = evtGetValue(event, args[2]);
 
-    data[index + 0x19] = value;
+    data->caseId[index] = value;
     return EVT_RETURN_DONE;
 }
 
 USER_FUNC(evt_goryuugijo_get_caseid) {
     s32* args = event->args;
     GoryuugijoWork* work = (GoryuugijoWork*)evtGetValue(event, args[0]);
-    s32* data = (s32*)work->data;
+    SlotData* data = work->data;
     s32 index = evtGetValue(event, args[1]);
 
-    evtSetValue(event, args[2], data[index + 0x19]);
+    evtSetValue(event, args[2], data->caseId[index]);
     return EVT_RETURN_DONE;
 }
 
 USER_FUNC(evt_goryuugijo_set_nowslot) {
     s32* args = event->args;
     GoryuugijoWork* work = (GoryuugijoWork*)evtGetValue(event, args[0]);
-    u8* data = (u8*)work->data;
+    SlotData* data = work->data;
 
-    *(s32*)(data + 0x60) = evtGetValue(event, args[1]);
+    data->now = evtGetValue(event, args[1]);
     return EVT_RETURN_DONE;
 }
 
@@ -4836,9 +4836,9 @@ EVT_END()
 USER_FUNC(goryuugijo_set_slot_phase) {
     s32* args = event->args;
     GoryuugijoWork* work = (GoryuugijoWork*)evtGetValue(event, args[0]);
-    u8* data = (u8*)work->data;
+    SlotData* data = work->data;
 
-    *(s32*)(data + 0x04) = evtGetValue(event, args[1]);
+    data->phase = evtGetValue(event, args[1]);
     return EVT_RETURN_DONE;
 }
 
@@ -4895,12 +4895,12 @@ USER_FUNC(goryuugijo_door_init_slot) {
 
 // Returns nothing: the original leaves r3 unset. evt_goryuugijo_alloc stores it in the UserFunction slot with a cast.
 void goryuugijo_init_slot(EventEntry* event, BOOL isFirstCall) {
-    u8* data = (u8*)((GoryuugijoWork*)event->lwData[0])->data;
+    SlotData* data = ((GoryuugijoWork*)event->lwData[0])->data;
 
-    *(s32*)(data + 0x54) = 0;
-    *(f32*)(data + 0x8) = 0.0f;
-    *(s32*)(data + 0x6c) = 0;
-    *(u32*)data &= ~1;
+    data->timer = 0;
+    data->rot = 0.0f;
+    data->fallEvt = NULL;
+    data->flags &= ~1;
 }
 
 // Matching: indexing the u32 table as `&upsidegara[cur * 0x18]` (0x18 elements = 0x60 bytes) gives the
