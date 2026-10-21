@@ -126,10 +126,10 @@ USER_FUNC(party_kirimomi) {
     s32* args = event->args;
     f32 angle = evtGetFloat(event, args[0]);
     PartyEntry* party = partyGetPtr(0);
-    party->field_70.z = 1.0f;
-    party->field_70.y = 1.0f;
-    party->field_70.x = 1.0f;
-    party->spinPivot.y = party->height / 2.0f * party->field_70.y;
+    party->scale.z = 1.0f;
+    party->scale.y = 1.0f;
+    party->scale.x = 1.0f;
+    party->spinPivot.y = party->height / 2.0f * party->scale.y;
     party->dispRot.z = angle;
     party->dispRot.z = (f32)fmod(party->dispRot.z, 360.0);
     return EVT_RETURN_DONE;
@@ -147,9 +147,9 @@ USER_FUNC(mario_reset) {
 
 USER_FUNC(party_reset) {
     PartyEntry* party = partyGetPtr(0);
-    party->field_70.z = 1.0f;
-    party->field_70.y = 1.0f;
-    party->field_70.x = 1.0f;
+    party->scale.z = 1.0f;
+    party->scale.y = 1.0f;
+    party->scale.x = 1.0f;
     party->spinPivot.y = 0.0f;
     party->dispRot.z = 0.0f;
     return EVT_RETURN_DONE;

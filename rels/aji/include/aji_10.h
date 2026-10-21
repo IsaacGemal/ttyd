@@ -7,19 +7,8 @@
 typedef struct MonitorWork {
     void* image;   // 0x0
     s32 field_4;   // 0x4
-    s32 field_8;   // 0x8
+    s32 kanbuFlag; // 0x8, monitor_kanbu_flag_onoff
 } MonitorWork;
-
-// param block passed to the map TEV callback registered by monitor_init
-typedef struct MonitorTevParam {
-    void* mapObj;    // 0x0
-    f32 (*mtx)[4];   // 0x4
-    s32 field_8;     // 0x8
-    s32 field_C;     // 0xC
-    s32 field_10;    // 0x10
-    s32 field_14;    // 0x14
-    s32 field_18;    // 0x18
-} MonitorTevParam;
 
 extern s32 evt_emergency[];
 extern s32 evt_shuryolight_init_2_text_B870[];

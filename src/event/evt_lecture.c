@@ -51,21 +51,21 @@ USER_FUNC(lect_cam_save) {
     stPt = cam->cameraPos;
     stAt = cam->cameraAt;
     stMpos = mario->position;
-    stMdir1 = mario->unk1A8;
+    stMdir1 = mario->dispDir;
     stMdir2 = mario->dispReqDir;
     stMdir3 = mario->directionView;
     stMdir4 = mario->moveDir;
 
     if (party != NULL) {
         stPpos = party->position;
-        stPdir1 = party->field_10C;
+        stPdir1 = party->dispDir;
         stPdir2 = party->field_110;
         stPdir3 = party->dir;
         stPdir4 = party->field_FC;
     }
     if (extraParty != NULL) {
         stXpos = extraParty->position;
-        stXdir1 = extraParty->field_10C;
+        stXdir1 = extraParty->dispDir;
         stXdir2 = extraParty->field_110;
         stXdir3 = extraParty->dir;
         stXdir4 = extraParty->field_FC;
@@ -91,21 +91,21 @@ USER_FUNC(lect_cam_load) {
     cam->curveA = 0xB;
 
     mario->position = stMpos;
-    mario->unk1A8 = stMdir1;
+    mario->dispDir = stMdir1;
     mario->dispReqDir = stMdir2;
     mario->directionView = stMdir3;
     mario->moveDir = stMdir4;
 
     if (party != NULL) {
         party->position = stPpos;
-        party->field_10C = stPdir1;
+        party->dispDir = stPdir1;
         party->field_110 = stPdir2;
         party->dir = stPdir3;
         party->field_FC = stPdir4;
     }
     if (extraParty != NULL) {
         extraParty->position = stXpos;
-        extraParty->field_10C = stXdir1;
+        extraParty->dispDir = stXdir1;
         extraParty->field_110 = stXdir2;
         extraParty->dir = stXdir3;
         extraParty->field_FC = stXdir4;

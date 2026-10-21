@@ -14,8 +14,8 @@ typedef struct OffscreenEntry {
 	u16 currRight; //0x18
 	u16 currBottom; //0x1A
 	GXTexObj texObj; //0x1C
-	s32 unk3C; //0x3C
-	s32 unk40; //0x40
+	s32 copyFmt; //0x3C, GXSetTexCopyDst fmt; set by evt_offscreen_set_texture_fmt
+	s32 texFmt; //0x40, GXInitTexObj format; set by evt_offscreen_set_texture_fmt
 	smartEntry* image; //0x44
 	u16 prevLeft; //0x48
 	u16 prevTop; //0x4A

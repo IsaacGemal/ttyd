@@ -1906,9 +1906,9 @@ int N_compare_func4_2_r(const void* a, const void* b) {
 
 void sort_4_1_func(WindowWork* work) {
     if (work->sortReverseNext == 0) {
-        qqsort(work->field_404, work->equipListCount, 0xC, N_compare_func4_1);
+        qqsort(work->equipList, work->equipListCount, 0xC, N_compare_func4_1);
     } else {
-        qqsort(work->field_404, work->equipListCount, 0xC, N_compare_func4_1_r);
+        qqsort(work->equipList, work->equipListCount, 0xC, N_compare_func4_1_r);
     }
     work->sortReverseNext = 1 - work->sortReverseNext;
     work->badgeSel[1] = 0;
@@ -1917,9 +1917,9 @@ void sort_4_1_func(WindowWork* work) {
 
 void sort_4_2_func(WindowWork* work) {
     if (work->sortReverseNext == 0) {
-        qqsort(work->field_404, work->equipListCount, 0xC, N_compare_func4_2);
+        qqsort(work->equipList, work->equipListCount, 0xC, N_compare_func4_2);
     } else {
-        qqsort(work->field_404, work->equipListCount, 0xC, N_compare_func4_2_r);
+        qqsort(work->equipList, work->equipListCount, 0xC, N_compare_func4_2_r);
     }
     work->sortReverseNext = 1 - work->sortReverseNext;
     work->badgeSel[1] = 0;
@@ -1927,7 +1927,7 @@ void sort_4_2_func(WindowWork* work) {
 }
 
 // Bubble sort of the equipped-badge list by BP cost. Indexing the records
-// (`field_404[i]`) rather than walking `pa`/`pb` pointers is what makes MWCC
+// (`equipList[i]`) rather than walking `pa`/`pb` pointers is what makes MWCC
 // strength-reduce them to the target's pa=r4/pb=r12 induction variables and colour
 // the item-table base r11; the pointer form leaves those in r9/r10/r11. The record
 // copy `t = *pa; *pa = *pb; *pb = t;` reproduces the original's interleaved
@@ -1943,8 +1943,8 @@ void sort_4_3_func(WindowWork* work) {
         for (i = 0; i < work->equipListCount - 1; i++) {
             j = i + 1;
             while (j < work->equipListCount) {
-                ida = (s16)work->field_404[i].field_0x8;
-                idb = (s16)work->field_404[j].field_0x8;
+                ida = (s16)work->equipList[i].field_0x8;
+                idb = (s16)work->equipList[j].field_0x8;
                 swap = 0;
 
                 if (itemDataTable[ida].bp_cost > itemDataTable[idb].bp_cost) {
@@ -1953,9 +1953,9 @@ void sort_4_3_func(WindowWork* work) {
                     swap = 1;
                 }
                 if (swap) {
-                    WinEquipRec t = work->field_404[i];
-                    work->field_404[i] = work->field_404[j];
-                    work->field_404[j] = t;
+                    WinEquipRec t = work->equipList[i];
+                    work->equipList[i] = work->equipList[j];
+                    work->equipList[j] = t;
                 }
                 j++;
             }
@@ -1970,8 +1970,8 @@ void sort_4_3_func(WindowWork* work) {
         for (i = 0; i < work->equipListCount - 1; i++) {
             j = i + 1;
             while (j < work->equipListCount) {
-                ida = (s16)work->field_404[i].field_0x8;
-                idb = (s16)work->field_404[j].field_0x8;
+                ida = (s16)work->equipList[i].field_0x8;
+                idb = (s16)work->equipList[j].field_0x8;
                 swap = 0;
 
                 if (itemDataTable[ida].bp_cost < itemDataTable[idb].bp_cost) {
@@ -1980,9 +1980,9 @@ void sort_4_3_func(WindowWork* work) {
                     swap = 1;
                 }
                 if (swap) {
-                    WinEquipRec t = work->field_404[i];
-                    work->field_404[i] = work->field_404[j];
-                    work->field_404[j] = t;
+                    WinEquipRec t = work->equipList[i];
+                    work->equipList[i] = work->equipList[j];
+                    work->equipList[j] = t;
                 }
                 j++;
             }

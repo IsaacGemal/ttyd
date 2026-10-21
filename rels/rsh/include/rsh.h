@@ -1,19 +1,10 @@
 #pragma once
 
 #include "evt/evt_cmd.h"
+#include "driver/mapdrv.h"
 #include "driver/npcdrv.h"
 
 typedef void (*voidfunctionptr)(void);
-
-typedef struct RshWindowTevParam {
-    void* obj;     // 0x0
-    void* field_4; // 0x4, a Mtx*
-    u8 field_8[4]; // 0x8
-    s32 field_C;   // 0xC
-    s32 field_10;  // 0x10
-    s32 field_14;  // 0x14
-    s32 field_18;  // 0x18
-} RshWindowTevParam;
 
 extern voidfunctionptr _ctors[];
 extern voidfunctionptr _dtors[];
@@ -25,7 +16,7 @@ USER_FUNC(evt_rsh_get_rnd_npc_data);
 void* _get_rnd_npc_data(s32 type, s32 group, s32 index);
 USER_FUNC(evt_rsh_set_rnd_npc);
 USER_FUNC(evt_rsh_get_rnd_npc);
-void rsh_window_tev(RshWindowTevParam* param, s32 arg1);
+void rsh_window_tev(MapTevCallback* param, s32 arg1);
 USER_FUNC(img_wait);
 void _unresolved(void);
 void _epilog(void);

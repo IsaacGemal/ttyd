@@ -106,13 +106,13 @@ void mot_hammer(void) {
         mario->trigFlags &= ~1;
         mario->flags &= ~0x000F0000;
         mario->flags |= 0x80;
-        f30 = mario->unk1A8;
+        f30 = mario->dispDir;
         {
             f32 off;
             MarioWork* m = marioGetPtr();
             off = float_0_8041a9a8;
             if (m->dispFlags & 0x80000000) {
-                f32 ang = m->unk1A8;
+                f32 ang = m->dispDir;
                 s32 facing = 0;
                 if (ang >= 90.f && ang <= 270.f) {
                     facing = 1;
@@ -134,7 +134,7 @@ void mot_hammer(void) {
         hit = hitEstimate(&type);
         mario->field_0x200 = (s32)hit;
         if (hit != NULL) {
-            f30 = mario->unk1A8;
+            f30 = mario->dispDir;
             {
                 f32 v = (marioGetPtr()->dispFlags & 0x80000000) ? -30.f : float_0_8041a9a8;
                 if (f30 >= 90.f && f30 <= 270.f) {
@@ -144,13 +144,13 @@ void mot_hammer(void) {
                 }
                 mario->directionView = ang2;
             }
-            f30 = mario->unk1A8;
+            f30 = mario->dispDir;
             {
                 f32 off;
                 MarioWork* m = marioGetPtr();
                 off = float_0_8041a9a8;
                 if (m->dispFlags & 0x80000000) {
-                    f32 ang = m->unk1A8;
+                    f32 ang = m->dispDir;
                     s32 facing = 0;
                     if (ang >= 90.f && ang <= 270.f) {
                         facing = 1;
@@ -225,10 +225,10 @@ void mot_hammer(void) {
         psndSFXOn_3D((const char*)sound, &mario2->position);
         mario->field_0x2A8 = type;
     }
-    mario->unk1A8 = (mario->field_0x2A4 >= 90.f && mario->field_0x2A4 <= 270.f)
+    mario->dispDir = (mario->field_0x2A4 >= 90.f && mario->field_0x2A4 <= 270.f)
                               ? 180.f
                               : float_0_8041a9a8;
-    mario->dispReqDir = mario->unk1A8;
+    mario->dispReqDir = mario->dispDir;
     mario->moveDir = toMovedir(mario->field_0x2A4);
     mario->directionView = mario->moveDir;
     rp = 0;
@@ -690,10 +690,10 @@ void mot_hammer2(void) {
         effUltraHammerEntry(mario->dispHalfTurn != 0, mario->multiTimer, px__, py__, pz__, one__);
         break;
     case 0x14:
-        f31 = mario->unk1A8;
+        f31 = mario->dispDir;
         M_S16(mario, 0x2A4) = 0xA;
         mario->dispFlags |= 0x100;
-        f30 = revise360(270.f - mario->unk1A8);
+        f30 = revise360(270.f - mario->dispDir);
         m2 = marioGetPtr();
         sincosf(&sa, &ca, f30);
         dist = float_2_8041a9a0 * m2->wPlayerCollisionBox.x;
@@ -724,8 +724,8 @@ void mot_hammer2(void) {
         }
 #endif
         f30 = mario->wCamVal1;
-        mario->unk1A8 += f30 * (mario->dispHalfTurn ? -1.0f : 1.0f);
-        if ((s32)f31 / 360 != (s32)mario->unk1A8 / 360) {
+        mario->dispDir += f30 * (mario->dispHalfTurn ? -1.0f : 1.0f);
+        if ((s32)f31 / 360 != (s32)mario->dispDir / 360) {
             psndSFXOn_3D((const char*)0x163, &mario->position);
         }
         if (M_S16(mario, 0x2A4) == 1) {
@@ -746,7 +746,7 @@ void mot_hammer2(void) {
         if (mario->field_0x42 <= 2) {
             mario->multiTimer = sysMsec2Frame(0x12C);
         } else {
-            mario->unk1A8 = revise360(mario->unk1A8);
+            mario->dispDir = revise360(mario->dispDir);
             marioAdjustMoveDir();
             mario->multiTimer = 0x1E;
         }
@@ -763,7 +763,7 @@ void mot_hammer2(void) {
             mario->dispFlags &= ~4;
             mario->dispFlags &= ~8;
             mario->dispFlags &= ~0x10;
-            mario->unk1A8 = revise360(mario->unk1A8);
+            mario->dispDir = revise360(mario->dispDir);
             marioAdjustMoveDir();
         }
         mario->dispFlags &= ~0x100;
@@ -800,7 +800,7 @@ f32 marioGetAngleKaitenHammer(void) {
     if (mario->currSubMotionId != 0x14) {
         return -2.0f;
     }
-    return revise360(270.f - mario->unk1A8);
+    return revise360(270.f - mario->dispDir);
 }
 
 void mot_ham2_post(void) {
@@ -848,7 +848,7 @@ HitEntry* hitEstimate(s32* type) {
 
     mario = marioGetPtr();
     *type = 0;
-    angle = mario->unk1A8;
+    angle = mario->dispDir;
     if (marioGetPtr()->dispFlags & 0x80000000) {
         off = -20.f;
     } else {

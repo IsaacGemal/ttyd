@@ -5250,7 +5250,7 @@ void psndInit(void) { //1:1
     psnd.direction = 0.0f;
     psnd.unk50 = 0;
     psnd.unk54 = 0;
-    psnd.unk56 = 0;
+    psnd.flag = 0;
     psnd.unk5C = 0;
     psnd.unk5A = 0x64;
     psnd.unk59 = 0x64;
@@ -5332,39 +5332,39 @@ void psndStopAllFadeOut(void) {
 void psndSetReverb(s32 mode) {
 	switch (mode) {
 	case 0:
-		psnd.unk52 = 0;
+		psnd.reverb = 0;
 		break;
 	case 1:
-		psnd.unk52 = 0x14;
+		psnd.reverb = 0x14;
 		break;
 	case 2:
-		psnd.unk52 = 0x28;
+		psnd.reverb = 0x28;
 		break;
 	case 3:
-		psnd.unk52 = 0x3C;
+		psnd.reverb = 0x3C;
 		break;
 	}
 }
 
 void psndSetFlag(s32 flag) { //1:1 except maybe param
-    psnd.unk56 |= flag;
-    if (psnd.unk56 & 1) {
+    psnd.flag |= flag;
+    if (psnd.flag & 1) {
         psndBGMOff_f_d(0, 0x3E8, 0);
         psndBGMOff_f_d(1, 0x3E8, 0);
     }
-    if (psnd.unk56 & 2) {
+    if (psnd.flag & 2) {
         psndENVOff(0);
         psndENVOff(1);
     }
 }
 
 void psndClearFlag(s32 flag) { //1:1 except maybe param
-	psnd.unk56 &= ~flag;
+	psnd.flag &= ~flag;
 }
 
 //functions below were not present in the placeholder file
 u16 psndGetFlag(void) {
-	return psnd.unk56;
+	return psnd.flag;
 }
 
 // The loop lives in its own inline so MWCC folds the pssfx base address straight
@@ -5384,11 +5384,11 @@ void psndMapChange(void) {
 	PaperSoundWork* p;
 
 	if (strcmp(psnd.unk40, gp->currentMapName) != 0) {
-		psnd.unk52 = 0;
+		psnd.reverb = 0;
 	}
 	strcpy(psnd.unk40, gp->currentMapName);
 	p = &psnd;
-	psnd.unk56 &= ~0x100;
+	psnd.flag &= ~0x100;
 	psndMapChangeMarkAll();
 	if (p->field_0x24.unk0 != 2) {
 		p->field_0x24.unk0 = 2;
@@ -5418,7 +5418,7 @@ void psndSFXAllOff(void) {
 void L_psndBGM_stop(void) {
 	s32 i;
 
-	psnd.unk56 &= ~0x10;
+	psnd.flag &= ~0x10;
 	for (i = 0; i < 40; i++) {
 		if ((u32)pssfx[i].unk0 == -1) continue;
 		if (!(pssfx[i].unk6 & 0x10)) continue;
@@ -5457,7 +5457,7 @@ void psndBGMMain(void) {
 	s32 i;
 
 	level = 100;
-	if ((psnd.unk56 & 0x20) && !(psnd.unk56 & 0x40)) {
+	if ((psnd.flag & 0x20) && !(psnd.flag & 0x40)) {
 		level = 0x41;
 	}
 
@@ -5657,7 +5657,7 @@ s32 psndBGMOn_f_d(s32 a, s32 name, s32 c, s32 d, s32 e) {
 	u8 vol;
 	s32 pan;
 
-	if (psnd.unk56 & 1) {
+	if (psnd.flag & 1) {
 		return 0;
 	}
 
@@ -6099,8 +6099,8 @@ void psndSFXMain(void) {
     }
 
     target = 100;
-    if (psnd.unk56 & 0x20) {
-        if (!(psnd.unk56 & 0x40)) {
+    if (psnd.flag & 0x20) {
+        if (!(psnd.flag & 0x40)) {
             target = 120;
         }
     }
@@ -6151,12 +6151,12 @@ void psndSFXMain(void) {
                     vol = (sfx->vol * sfx->baseVol) / 127 - sfx->unk10;
                     if (vol < 0) vol = 0;
                     if (vol > 0x7F) vol = 0x7F;
-                    res = calc3D(sfx->unk0, &sfx->position, (u8)vol, sfx->unk12);
+                    res = calc3D(sfx->unk0, &sfx->position, (u8)vol, sfx->dist);
                     sfx->unk18 = SoundEfxPlayEx((u16)entry->flags, 0, ((u8*)&res)[0], ((u8*)&res)[1]);
                     if ((u32)sfx->unk18 != -1) {
                         SoundEfxSetVolume(sfx->unk18, ((u8*)&res)[0]);
                         SoundEfxSetSrndPan(sfx->unk18, ((u8*)&res)[2]);
-                        SoundEfxSetPitch(sfx->unk18, sfx->unk14);
+                        SoundEfxSetPitch(sfx->unk18, sfx->pitch);
                     }
                 } else {
                     vol = (sfx->vol * sfx->baseVol) / 127 - sfx->unk10;
@@ -6164,14 +6164,14 @@ void psndSFXMain(void) {
                     if (vol > 0x7F) vol = 0x7F;
                     sfx->unk18 = SoundEfxPlayEx((u16)entry->flags, 0, (u8)vol, sfx->pan);
                     if ((u32)sfx->unk18 != -1) {
-                        SoundEfxSetPitch(sfx->unk18, sfx->unk14);
+                        SoundEfxSetPitch(sfx->unk18, sfx->pitch);
                     }
                 }
                 if (*(u32*)&sfx->unk18 != -1) {
                     s32 reverb = entry->reverb;
 
                     if (reverb > 0) {
-                        reverb += psnd.unk52;
+                        reverb += psnd.reverb;
                     }
                     if (reverb > 0x7F) reverb = 0x7F;
                     SoundEfxSetAux1(sfx->unk18, (u8)reverb);
@@ -6188,7 +6188,7 @@ void psndSFXMain(void) {
             vol = (sfx->vol * sfx->baseVol) / 127 - sfx->unk10;
             if (vol < 0) vol = 0;
             if (vol > 0x7F) vol = 0x7F;
-            res = calc3D(sfx->unk0, &sfx->position, (u8)vol, sfx->unk12);
+            res = calc3D(sfx->unk0, &sfx->position, (u8)vol, sfx->dist);
             if (entry->flags & 0x80000000) {
                 SoundSSSetPanCh(sfx->unk18, ((u8*)&res)[1]);
                 vol = ((u8*)&res)[0] * psnd.unk59 / 100;
@@ -6229,7 +6229,7 @@ void psndSFXMain(void) {
                 SoundEfxSetVolume(sfx->unk18, (u8)vol);
             }
         }
-        if (!(sfx->unk6 & 0xA30) && (psnd.unk56 & 0x80)) {
+        if (!(sfx->unk6 & 0xA30) && (psnd.flag & 0x80)) {
             if (entry->flags & 0x80000000) {
                 SoundSSSetVolCh(sfx->unk18, 0);
             } else if (entry->flags & 0x40000000) {
@@ -6259,7 +6259,7 @@ void psndSFXMain(void) {
                 if (vol == 0) psndSFXOff(i);
             }
         }
-        if ((psnd.unk56 & 0x100) && (sfx->unk6 & 0x400)) {
+        if ((psnd.flag & 0x100) && (sfx->unk6 & 0x400)) {
             if (entry->flags & 0x80000000) {
                 SoundSSSetVolCh(sfx->unk18, 0);
             } else if (entry->flags & 0x40000000) {
@@ -6293,7 +6293,7 @@ s32 __psndSFXOn(s32 name, u8 vol, u8 pan, s32 pitch, Vec* position, s32 a6, s32 
     if (entry->flags == 0) {
         return -1;
     }
-    if ((psnd.unk56 & 4) && a8 == 0) {
+    if ((psnd.flag & 4) && a8 == 0) {
         return -1;
     }
     if (sfxid == 0x5B || sfxid == 0x8CA || (u32)(sfxid - 0x1BE) <= 1 || sfxid == 0x205) {
@@ -6347,7 +6347,7 @@ s32 __psndSFXOn(s32 name, u8 vol, u8 pan, s32 pitch, Vec* position, s32 a6, s32 
         pan = entry->pan;
     }
     slot->unk6 = 0x101;
-    if (psnd.unk56 & 0x10) {
+    if (psnd.flag & 0x10) {
         slot->unk6 |= 0x10;
     }
     if (index & 0x04000000) {
@@ -6377,7 +6377,7 @@ s32 __psndSFXOn(s32 name, u8 vol, u8 pan, s32 pitch, Vec* position, s32 a6, s32 
     slot->unk10 = (u16)(prio * 5);
     slot->reverb = entry->reverb;
     slot->unkC = entry->field_0x10;
-    slot->unk14 = *(s16*)&entry->pitch;
+    slot->pitch = *(s16*)&entry->pitch;
     if (position != 0) {
         slot->position = *position;
         if ((u32)a6 == 0) {
@@ -6386,7 +6386,7 @@ s32 __psndSFXOn(s32 name, u8 vol, u8 pan, s32 pitch, Vec* position, s32 a6, s32 
             slot->unk6 |= 4;
         }
     }
-    slot->unk12 = (u16)flags;
+    slot->dist = (u16)flags;
     slot->unk16 = 0x7D00;
     psnd.unk50 += 1;
     slot->unk4 = psnd.unk50;
@@ -6439,7 +6439,7 @@ void psndSFX_pit(s32 id, s16 pitch) {
 		return;
 	}
 	if (sfx->unk6 & 1) {
-		sfx->unk14 = pitch;
+		sfx->pitch = pitch;
 	}
 	else {
 		entry = &pssfxlist[sfx->unk0 & 0x1FFF];
@@ -6474,7 +6474,7 @@ void psndSFX_dist(s32 id, u16 dist) {
 	if ((u32)sfx->unk0 == -1) {
 		return;
 	}
-	sfx->unk12 = dist;
+	sfx->dist = dist;
 }
 
 // The entry's type flags are read once into `flags`: the standalone code is the same either way, but the
@@ -6679,7 +6679,7 @@ void psndENVMain(void) {
 
 
 	target = 0x64;
-	if ((psnd.unk56 & 0x20) && !(psnd.unk56 & 0x40)) {
+	if ((psnd.flag & 0x20) && !(psnd.flag & 0x40)) {
 		target = 0x50;
 	}
 
@@ -7073,7 +7073,7 @@ s32 psndENVOn_f_d(s32 id, s32 name, s32 value, s32 flag) {
 
 	slot = id & 0xF;
 	work = &psnd.unk0[slot];
-	if (psnd.unk56 & 2) {
+	if (psnd.flag & 2) {
 		return 0;
 	}
 

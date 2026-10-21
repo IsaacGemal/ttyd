@@ -67,8 +67,8 @@ typedef struct CamRoadWork {
     /* 0x1F8 */ f32 camAx;
     /* 0x1FC */ f32 camAy;
     /* 0x200 */ f32 camAz;
-    /* 0x204 */ s32 unk_204;
-    /* 0x208 */ s32 unk_208;
+    /* 0x204 */ s32 field_0x204;
+    /* 0x208 */ s32 field_0x208;
     /* 0x20C */ u8 pad_20C[0x4];
 } CamRoadWork;
 

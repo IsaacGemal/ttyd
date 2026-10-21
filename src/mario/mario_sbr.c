@@ -169,9 +169,9 @@ s32 marioSetDirEventMain(void) {
     if (frames > 0) {
         dir = revise360(270.0f - p->dirEventTarget);
         t = (dir - p->dirEventStart) * ((f32)(p->dirEventFrame) / (f32)frames);
-        p->unk1A8 = revise360(p->dirEventStart + t);
-        p->dispReqDir = p->unk1A8;
-        p->directionView = toMovedirSimple(p->unk1A8);
+        p->dispDir = revise360(p->dirEventStart + t);
+        p->dispReqDir = p->dispDir;
+        p->directionView = toMovedirSimple(p->dispDir);
         p->moveDir = p->directionView;
         if (++p->dirEventFrame > frames) {
             p->dispFlags &= ~0x8000;
@@ -179,9 +179,9 @@ s32 marioSetDirEventMain(void) {
         }
         return 0;
     } else {
-        p->unk1A8 = revise360(270.0f - p->dirEventTarget);
-        p->dispReqDir = p->unk1A8;
-        p->directionView = toMovedirSimple(p->unk1A8);
+        p->dispDir = revise360(270.0f - p->dirEventTarget);
+        p->dispReqDir = p->dispDir;
+        p->directionView = toMovedirSimple(p->dispDir);
         p->moveDir = p->directionView;
         p->dispFlags &= ~0x8000;
         return 1;
@@ -214,22 +214,22 @@ void marioSetPeakYpos(void) {
 void marioAdjustMoveDir(void) {
     MarioWork* p = marioGetPtr();
 
-    if (p->unk1A8 >= 90.0f && p->unk1A8 <= 270.0f) {
+    if (p->dispDir >= 90.0f && p->dispDir <= 270.0f) {
         p->moveDir = toMovedir(90.0f);
         p->directionView = p->moveDir;
-        p->unk1A8 = 180.0f;
+        p->dispDir = 180.0f;
         p->dispReqDir = 180.0f;
     } else {
         p->moveDir = toMovedir(90.0f);
         p->directionView = p->moveDir;
-        p->unk1A8 = 0.0f;
+        p->dispDir = 0.0f;
         p->dispReqDir = 0.0f;
     }
 }
 
 f32 marioGetDispDir(void) {
     MarioWork* p = marioGetPtr();
-    f32 diff = p->unk1A8 - 90.0f;
+    f32 diff = p->dispDir - 90.0f;
     return revise360(diff + p->targetYaw);
 }
 
@@ -249,7 +249,7 @@ f32 toMovedir(f32 angle) {
 
     if (p->flags & MARIO_FLAG_PAPER_MODE) {
         // See partyToMovedir: fusing the load keeps the 280 constant load ahead of the field load.
-        if (280.0f == (dir = p->unk1A8) || 460.0f == dir) {
+        if (280.0f == (dir = p->dispDir) || 460.0f == dir) {
             angle = 0.0f;
         } else if (260.0f == dir || 440.0f == dir) {
             angle = 180.0f;
@@ -280,7 +280,7 @@ f32 partyToMovedir(PartyEntry* party, f32 dir) {
     if (party->flags & PARTY_FLAG_PAPER_MODE) {
         // Fusing the field load into the first comparison makes mwcc emit the 280 constant load
         // before the field load, which the original does (plain `a = ...; if (280.0f == a)` emits them swapped).
-        if (280.0f == (a = party->field_10C) || 460.0f == a) {
+        if (280.0f == (a = party->dispDir) || 460.0f == a) {
             dir = 0.0f;
         } else if (a == 260.0f || a == 440.0f) {
             dir = 180.0f;
@@ -324,7 +324,7 @@ f32 toMovedir2(f32 base, f32 adjust) {
 
     if (p->flags & MARIO_FLAG_PAPER_MODE) {
         // See partyToMovedir: fusing the load keeps the 280 constant load ahead of the field load.
-        if (280.0f == (dir = p->unk1A8) || 460.0f == dir) {
+        if (280.0f == (dir = p->dispDir) || 460.0f == dir) {
             base = 0.0f;
         } else if (260.0f == dir || 440.0f == dir) {
             base = 180.0f;

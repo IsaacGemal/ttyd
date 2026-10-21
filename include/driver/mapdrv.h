@@ -310,8 +310,8 @@ typedef struct MapEntryAnimData {
 // The "vcd_table" chunk: vertex fraction bits for the packed position and texture coordinates.
 typedef struct MapVtxFmt {
     u8 field_0x0[0x44]; // 0x0
-    u32 field_0x44;     // 0x44, position fraction bits (mapSetPolygonVtxDesc, hitdrv)
-    u32 field_0x48[8];  // 0x48, texture coordinate fraction bits
+    u32 posFrac;        // 0x44, GXSetVtxAttrFmt's frac for GX_VA_POS (mapSetPolygonVtxDesc); hitdrv scales by it
+    u32 texFrac[8];     // 0x48, GXSetVtxAttrFmt's frac for GX_VA_TEX0 + i
 } MapVtxFmt;
 
 typedef struct MapEntry {

@@ -269,8 +269,8 @@ void kuribo_use(PartyEntry* party) {
         party->field_FC = angleABf(party->position.x, party->position.z, party->targetPos.x,
                                    party->targetPos.z);
         party->dir = party->field_FC;
-        party->field_10C = mario->unk1A8;
-        party->field_110 = mario->unk1A8;
+        party->dispDir = mario->dispDir;
+        party->field_110 = mario->dispDir;
         party->speed = distABf(party->position.x, party->position.z, party->targetPos.x,
                                party->targetPos.z) /
                        (f32)party->timer;

@@ -583,7 +583,7 @@ static USER_FUNC(set_dir) {
     if (party != NULL) {
         f32 rot = 270 - (dir > 180 ? 270 : 90);
 
-        party->field_10C = rot;
+        party->dispDir = rot;
         party->field_110 = rot;
     }
     return EVT_RETURN_DONE;

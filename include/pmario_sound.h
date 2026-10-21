@@ -84,8 +84,8 @@ typedef struct PaperSoundEffect {
     u16 unkC;              // 0xC, SoundEffectEntry.field_0x10; compared when a slot is evicted
     u16 unkE;              // 0xE
     u16 unk10;             // 0x10
-    u16 unk12;             // 0x12
-    s16 unk14;             // 0x14, pitch
+    u16 dist;              // 0x12, psndSFX_dist
+    s16 pitch;             // 0x14, psndSFX_pit; SoundEfxSetPitch's pitch
     u16 unk16;             // 0x16
     s32 unk18;             // 0x18
     Vec position;          // 0x1C
@@ -119,9 +119,9 @@ typedef struct PaperSoundWork {
     f32 direction;                // 0x3C
     char unk40[0x10];             // 0x40
     u16 unk50;                    // 0x50
-    u16 unk52;                    // 0x52, added to each effect's reverb (psndSetReverb)
+    u16 reverb;                   // 0x52, psndSetReverb; added to each effect's reverb
     u16 unk54;                    // 0x54
-    u16 unk56;                    // 0x56, verified u16
+    u16 flag;                     // 0x56, psndSetFlag/psndClearFlag/psndGetFlag
     s8 unk58;                     // 0x58
     s8 unk59;                     // 0x59
     s8 unk5A;                     // 0x5A

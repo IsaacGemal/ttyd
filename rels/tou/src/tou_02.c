@@ -2108,7 +2108,7 @@ s32 check_hammer(FanPose* pose) {
     }
     if (mario->currMotionId == MARIO_MOTION_HAMMER && fan_wp->hammerFrames > 10) {
         // one expression: the original pools TWO_PI before 90.0f
-        rad = TWO_PI * reviseAngle(mario->unk1A8 - 90.0f + camGetPtr(4)->viewYaw) / 360.0f;
+        rad = TWO_PI * reviseAngle(mario->dispDir - 90.0f + camGetPtr(4)->viewYaw) / 360.0f;
         s = fanSinf(rad);
         x = 35.0f * s + mario->position.x;
         c = fanCosf(rad);

@@ -89,13 +89,13 @@ USER_FUNC(bress) {
     if (mario != NULL && event->userdata[0] == 0 && !marioChkSts(4) && !marioChkSts(0x10) && !marioChkSts(8) &&
         vivianGetStatus() != 2) {
         effMistEntry(4, 30, mario->position.x, mario->position.y + 24.0f, mario->position.z,
-                     270.0f - mario->unk1A8);
+                     270.0f - mario->dispDir);
         event->userdata[0] = irand(60) + 60;
     }
     if (party0 != NULL && event->userdata[1] == 0 && !marioChkSts(4) && !marioChkSts(0x10) && !marioChkSts(8) &&
         vivianGetStatus() != 2) {
         effMistEntry(4, 30, party0->position.x, party0->position.y + offset[party0->currentMemberId],
-                     party0->position.z, 270.0f - party0->field_10C);
+                     party0->position.z, 270.0f - party0->dispDir);
         event->userdata[1] = irand(60) + 60;
     }
     if (party1 != NULL && event->userdata[2] == 0) {

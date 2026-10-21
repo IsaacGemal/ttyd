@@ -2778,9 +2778,9 @@ USER_FUNC(kemuri_set_color) {
     u8 b = evtGetValue(event, args[3]);
     EffectEntry* entry = effNameToPtr((char*)name);
 
-    ((EffMist2Data*)entry->userdata)->unk38 = r;
-    ((EffMist2Data*)entry->userdata)->unk39 = g;
-    ((EffMist2Data*)entry->userdata)->unk3A = b;
+    ((EffMist2Data*)entry->userdata)->colorR = r;
+    ((EffMist2Data*)entry->userdata)->colorG = g;
+    ((EffMist2Data*)entry->userdata)->colorB = b;
     ((EffMist2Data*)entry->userdata)->unk18 = 1.0f + (f32)irand(0x1E) / 10.0f;
     return EVT_RETURN_DONE;
 }

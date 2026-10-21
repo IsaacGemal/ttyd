@@ -309,11 +309,11 @@ void marioSlitForceCancel(void) {
     if (mario->flags & MARIO_FLAG_PAPER_MODE) {
         mario->flags &= ~MARIO_FLAG_PAPER_MODE;
         if (mario->directionView >= 180.0f) {
-            mario->unk1A8 = 0.0f;
-            mario->dispReqDir = mario->unk1A8;
+            mario->dispDir = 0.0f;
+            mario->dispReqDir = mario->dispDir;
         } else {
-            mario->unk1A8 = 180.0f;
-            mario->dispReqDir = mario->unk1A8;
+            mario->dispDir = 180.0f;
+            mario->dispReqDir = mario->dispDir;
         }
         mario->dispFlags &= 0xFEFFF3FF;
         mario->flags &= ~MARIO_FLAG_PARTY_WALK_DISABLED;
@@ -351,11 +351,11 @@ void mot_slit_post(void) {
         }
     mario->wPlayerCollisionBox.x = 20.0f;
     if (mario->directionView >= 180.0f) {
-        mario->unk1A8 = 0.0f;
-        mario->dispReqDir = mario->unk1A8;
+        mario->dispDir = 0.0f;
+        mario->dispReqDir = mario->dispDir;
     } else {
-        mario->unk1A8 = 180.0f;
-        mario->dispReqDir = mario->unk1A8;
+        mario->dispDir = 180.0f;
+        mario->dispReqDir = mario->dispDir;
     }
     mario->flags &= ~MARIO_FLAG_PARTY_WALK_DISABLED;
     mario->flags &= ~MARIO_FLAG_GONE_THROUGH_BARS;
@@ -373,11 +373,11 @@ void mot_slit_post(void) {
         mario->flags &= ~MARIO_FLAG_PAPER_MODE;
     mario->wPlayerCollisionBox.x = 20.0f;
     if (mario->directionView >= 180.0f) {
-        mario->unk1A8 = 0.0f;
-        mario->dispReqDir = mario->unk1A8;
+        mario->dispDir = 0.0f;
+        mario->dispReqDir = mario->dispDir;
     } else {
-        mario->unk1A8 = 180.0f;
-        mario->dispReqDir = mario->unk1A8;
+        mario->dispDir = 180.0f;
+        mario->dispReqDir = mario->dispDir;
     }
     mario->flags &= ~MARIO_FLAG_PARTY_WALK_DISABLED;
     mario->flags &= ~MARIO_FLAG_GONE_THROUGH_BARS;
@@ -446,8 +446,8 @@ void marioReInit_slit(void) {
     mario->trigFlags &= ~1u;
     mario->currMotionId = MARIO_MOTION_SLIT;
     mario->slitState = 0xA;
-    mario->unk1A8 = 270.0f;
-    mario->dispReqDir = mario->unk1A8;
+    mario->dispDir = 270.0f;
+    mario->dispReqDir = mario->dispDir;
     marioChgPose("M_S_1");
     marioChgPaper("PM_S_1B");
     mario->slitState = 0xA;
@@ -560,11 +560,11 @@ void mot_slit(void) {
     }
     if (marioRollChgChk() != 0) {
         if (revise360(mario->directionView - mario->targetYaw) >= 180.0f) {
-            mario->unk1A8 = 0.0f;
-            mario->dispReqDir = mario->unk1A8;
+            mario->dispDir = 0.0f;
+            mario->dispReqDir = mario->dispDir;
         } else {
-            mario->unk1A8 = 180.0f;
-            mario->dispReqDir = mario->unk1A8;
+            mario->dispDir = 180.0f;
+            mario->dispReqDir = mario->dispDir;
         }
         mario->flags &= 0xFFBFFFFF;
         mario->flags &= 0xFFDFFFFF;
@@ -605,11 +605,11 @@ void mot_slit(void) {
                 mario->baseSpeed = 0.0f;
                 marioChgPose("M_S_1");
             }
-            mario->directionView = toMovedirSimple(mario->unk1A8);
+            mario->directionView = toMovedirSimple(mario->dispDir);
         }
         slitCapSpeed(mario);
-        mario->unk1A8 = 270.0f;
-        mario->dispReqDir = mario->unk1A8;
+        mario->dispDir = 270.0f;
+        mario->dispReqDir = mario->dispDir;
         if (mario->controlStickSensitivity == zero) {
             marioChgPose("M_S_1");
         }
@@ -629,10 +629,10 @@ void mot_slit(void) {
             marioChgPaper("PM_S_1D");
             if (revise360(mario->directionView - mario->targetYaw) <= 180.0f) {
                 mario->slitTurnSide = 1;
-                mario->unk1A8 = 260.0f;
+                mario->dispDir = 260.0f;
             } else {
                 mario->slitTurnSide = 2;
-                mario->unk1A8 = 280.0f;
+                mario->dispDir = 280.0f;
             }
             break;
         }
@@ -679,10 +679,10 @@ void mot_slit(void) {
                 marioChgPaper("PM_S_1D");
                 if (revise360(mario->directionView - mario->targetYaw) <= 180.0f) {
                     mario->slitTurnSide = 1;
-                    mario->unk1A8 = 260.0f;
+                    mario->dispDir = 260.0f;
                 } else {
                     mario->slitTurnSide = 2;
-                    mario->unk1A8 = 280.0f;
+                    mario->dispDir = 280.0f;
                 }
             }
             mario->slitState = 0x14;
@@ -699,7 +699,7 @@ void mot_slit(void) {
             } else {
                 angleGoal = 280.0f;
             }
-            mario->unk1A8 = angleGoal;
+            mario->dispDir = angleGoal;
         }
         if (marioChkKey() != 0) {
             if (slitContinueChk() != 1) {
@@ -757,7 +757,7 @@ keyOffPath:
                     } else {
                         angleGoal = 280.0f;
                     }
-                    mario->unk1A8 = angleGoal;
+                    mario->dispDir = angleGoal;
                 } else {
                     f32 diff;
 
@@ -779,7 +779,7 @@ keyOffPath:
                             mario->slitState = 0x15;
                             mario->slitTurnSide = 2;
                             slitSetWalkSpeed(mario);
-                            mario->unk1A8 = 260.0f;
+                            mario->dispDir = 260.0f;
                         }
                     } else if (mario->slitTurnSide == 2) {
                         if (diff <= 180.0f) {
@@ -788,7 +788,7 @@ keyOffPath:
                             mario->slitState = 0x15;
                             mario->slitTurnSide = 1;
                             slitSetWalkSpeed(mario);
-                            mario->unk1A8 = 280.0f;
+                            mario->dispDir = 280.0f;
                         }
                     }
                 }
@@ -806,7 +806,7 @@ keyOffPath:
             } else {
                 angleGoal = 280.0f;
             }
-            mario->unk1A8 = angleGoal;
+            mario->dispDir = angleGoal;
         }
         break;
     }
@@ -937,7 +937,7 @@ keyOffPath:
         } else {
             angleGoal = 280.0f;
         }
-        mario->unk1A8 = angleGoal;
+        mario->dispDir = angleGoal;
         count = mario->slitTimer - 1;
         mario->slitTimer = count;
         if (count <= 0) {
@@ -968,16 +968,16 @@ keyOffPath:
         mario->slitPhaseTimer = 0x1E;
         mario->slitState = 0x65;
         if (revise360(mario->directionView - mario->targetYaw) >= 180.0f) {
-            mario->unk1A8 = 0.0f;
-            mario->dispReqDir = mario->unk1A8;
+            mario->dispDir = 0.0f;
+            mario->dispReqDir = mario->dispDir;
             if (mario->controlStickSensitivity == zero) {
-                mario->directionView = toMovedirSimple(mario->unk1A8);
+                mario->directionView = toMovedirSimple(mario->dispDir);
             }
         } else {
-            mario->unk1A8 = 180.0f;
-            mario->dispReqDir = mario->unk1A8;
+            mario->dispDir = 180.0f;
+            mario->dispReqDir = mario->dispDir;
             if (mario->controlStickSensitivity == zero) {
-                mario->directionView = toMovedirSimple(mario->unk1A8);
+                mario->directionView = toMovedirSimple(mario->dispDir);
             }
         }
         psndSFXOn_3D((const char*)0x178, &mario->position);
@@ -1026,13 +1026,13 @@ keyOffPath:
         mario->slitState = 0x6F;
         mario->baseSpeed = 0.0f;
         if (revise360(mario->directionView - mario->targetYaw) >= 180.0f) {
-            mario->unk1A8 = 0.0f;
-            mario->dispReqDir = mario->unk1A8;
-            mario->directionView = toMovedirSimple(mario->unk1A8);
+            mario->dispDir = 0.0f;
+            mario->dispReqDir = mario->dispDir;
+            mario->directionView = toMovedirSimple(mario->dispDir);
         } else {
-            mario->unk1A8 = 180.0f;
-            mario->dispReqDir = mario->unk1A8;
-            mario->directionView = toMovedirSimple(mario->unk1A8);
+            mario->dispDir = 180.0f;
+            mario->dispReqDir = mario->dispDir;
+            mario->directionView = toMovedirSimple(mario->dispDir);
         }
         psndSFXOn_3D((const char*)0x178, &mario->position);
         /* fallthrough */
@@ -1069,13 +1069,13 @@ keyOffPath:
         mario->slitState = 0x79;
         mario->baseSpeed = 0.0f;
         if (revise360(mario->directionView - mario->targetYaw) >= 180.0f) {
-            mario->unk1A8 = 0.0f;
-            mario->dispReqDir = mario->unk1A8;
-            mario->directionView = toMovedirSimple(mario->unk1A8);
+            mario->dispDir = 0.0f;
+            mario->dispReqDir = mario->dispDir;
+            mario->directionView = toMovedirSimple(mario->dispDir);
         } else {
-            mario->unk1A8 = 180.0f;
-            mario->dispReqDir = mario->unk1A8;
-            mario->directionView = toMovedirSimple(mario->unk1A8);
+            mario->dispDir = 180.0f;
+            mario->dispReqDir = mario->dispDir;
+            mario->directionView = toMovedirSimple(mario->dispDir);
         }
         psndSFXOn_3D((const char*)0x178, &mario->position);
         /* fallthrough */

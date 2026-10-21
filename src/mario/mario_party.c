@@ -22,7 +22,7 @@ s32 marioUseParty(void) {
         return 0;
     }
     party = partyGetPtr(marioGetPartyId());
-    if (party != NULL && party->field_34 == 3) {
+    if (party != NULL && party->runMode == 3) {
         return 0;
     }
     if (wp->currPartySlotId[0] < 0) {

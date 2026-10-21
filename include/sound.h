@@ -166,7 +166,7 @@ typedef struct SoundWork {
     u16 unk20C;                // 0x20C
     u8 unk20E[0x210 - 0x20E];  // 0x20E
     BOOL interrupts;           // 0x210
-    u16 unk214;                // 0x214, some "mute" thing
+    u16 cover;                 // 0x214, SoundOpenCover sets 1, SoundCloseCover 2 or 0
     u8 pad216[2];              // 0x216
     SND_OUTPUTMODE outputMode; // 0x218
     u32 unk21C[2];             // 0x21C, ARAM address of each stream cache slot (unk226 marks it in use)

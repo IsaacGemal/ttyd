@@ -987,12 +987,12 @@ s32 yuuminigame2_gamerule(EventEntry* event, BOOL isFirstCall, void* work, Yuumi
     }
 
     if (data->unk10 != 0x15) {
-        angle = mario->unk1A8 + (f32)(s32)turn_tbl[data->unk10];
+        angle = mario->dispDir + (f32)(s32)turn_tbl[data->unk10];
         if (data->unk10 >= 5 && data->unk10 < 0xD) {
             if (marioChkSwirlPower() == 0) {
                 data->unk10 = 0x15;
                 mario->dispFlags &= ~0x100;
-                if (mario->unk1A8 >= -90.0f && mario->unk1A8 < 90.0f) {
+                if (mario->dispDir >= -90.0f && mario->dispDir < 90.0f) {
                     angle = 0.0f;
                 } else {
                     angle = 180.0f;
@@ -1057,7 +1057,7 @@ s32 yuuminigame2_gamerule(EventEntry* event, BOOL isFirstCall, void* work, Yuumi
         }
 
         mario->dispReqDir = reviseAngle(angle);
-        mario->unk1A8 = mario->dispReqDir;
+        mario->dispDir = mario->dispReqDir;
     }
     return 0;
 }

@@ -110,9 +110,9 @@ void bomhei_exit(PartyEntry* party) {
         return;
     }
     party->playerPtr->flags &= ~0x2000;
-    if (party->field_34 != 9) {
+    if (party->runMode != 9) {
         partyChgRunMode(party, 2);
-        party->field_3B = 0;
+        party->moveMode = 0;
     }
     party->flags2 &= ~0x10;
     party->flags &= ~PARTY_FLAG_FORCE_FALL;
@@ -146,9 +146,9 @@ void bomhei_use_cancel(void) {
         return;
     }
     party->playerPtr->flags &= ~0x2000;
-    if (party->field_34 != 9) {
+    if (party->runMode != 9) {
         partyChgRunMode(party, 2);
-        party->field_3B = 0;
+        party->moveMode = 0;
     }
     party->flags2 &= ~0x10;
     party->flags &= ~PARTY_FLAG_FORCE_FALL;
@@ -204,9 +204,9 @@ void bomhei_use_cancel2(void) {
     }
     party->playerPtr->flags &= ~0x2000;
     marioChgPose("M_S_1");
-    if (party->field_34 != 9) {
+    if (party->runMode != 9) {
         partyChgRunMode(party, 2);
-        party->field_3B = 0;
+        party->moveMode = 0;
     }
     party->flags2 &= ~0x10;
     party->flags &= ~PARTY_FLAG_FORCE_FALL;
@@ -255,8 +255,8 @@ void bomhei_use_post(PartyEntry* party) {
     party->flags &= ~PARTY_FLAG_FORCE_FALL;
     party->flags &= ~PARTY_FLAG_IS_EVT_USE;
     party->flags &= ~PARTY_FLAG_IS_BEING_USED;
-    if (party->field_34 != 9) {
-        party->field_3B = 0;
+    if (party->runMode != 9) {
+        party->moveMode = 0;
         party->field_8 |= 8;
     }
     party->playerPtr->flags &= ~0x2000;
@@ -321,9 +321,9 @@ void bomhei_use(PartyEntry* party) {
                     return;
                 }
                 p2->playerPtr->flags &= ~0x2000;
-                if (p2->field_34 != 9) {
+                if (p2->runMode != 9) {
                     partyChgRunMode(p2, 2);
-                    p2->field_3B = 0;
+                    p2->moveMode = 0;
                 }
                 p2->flags2 &= ~0x10;
                 p2->flags &= ~PARTY_FLAG_FORCE_FALL;
@@ -356,9 +356,9 @@ void bomhei_use(PartyEntry* party) {
                 return;
             }
             p2->playerPtr->flags &= ~0x2000;
-            if (p2->field_34 != 9) {
+            if (p2->runMode != 9) {
                 partyChgRunMode(p2, 2);
-                p2->field_3B = 0;
+                p2->moveMode = 0;
             }
             p2->flags2 &= ~0x10;
             p2->flags &= ~PARTY_FLAG_FORCE_FALL;
@@ -390,9 +390,9 @@ void bomhei_use(PartyEntry* party) {
                 return;
             }
             p2->playerPtr->flags &= ~0x2000;
-            if (p2->field_34 != 9) {
+            if (p2->runMode != 9) {
                 partyChgRunMode(p2, 2);
-                p2->field_3B = 0;
+                p2->moveMode = 0;
             }
             p2->flags2 &= ~0x10;
             p2->flags &= ~PARTY_FLAG_FORCE_FALL;
@@ -424,9 +424,9 @@ void bomhei_use(PartyEntry* party) {
                 return;
             }
             p2->playerPtr->flags &= ~0x2000;
-            if (p2->field_34 != 9) {
+            if (p2->runMode != 9) {
                 partyChgRunMode(p2, 2);
-                p2->field_3B = 0;
+                p2->moveMode = 0;
             }
             p2->flags2 &= ~0x10;
             p2->flags &= ~PARTY_FLAG_FORCE_FALL;
@@ -538,7 +538,7 @@ void bomhei_use_main(PartyEntry* party) {
             movePos(&party->position.x, &party->position.z, -6.0f, toMovedirSimple(pm->dispReqDir));
             party->position.z += 2.0f;
             party->field_110 = pm->dispReqDir;
-            party->field_10C = pm->unk1A8;
+            party->dispDir = pm->dispDir;
         }
         bomhei_checkHit(party);
         if ((party->flags & PARTY_FLAG_IS_EVT_USE) != 0 ||
@@ -768,7 +768,7 @@ void bomhei_use_main(PartyEntry* party) {
             movePos(&party->position.x, &party->position.z, -6.0f, toMovedirSimple(pm->dispReqDir));
             party->position.z += 2.0f;
             party->field_110 = pm->dispReqDir;
-            party->field_10C = pm->unk1A8;
+            party->dispDir = pm->dispDir;
         }
         if (--party->timer > 0) {
             bomhei_checkHit(party);
@@ -879,7 +879,7 @@ void bomhei_use_main(PartyEntry* party) {
             party->flags &= ~PARTY_FLAG_FORCE_FALL;
         }
         hit = partySearchGround(party, 11.0f, party->jumpPara1);
-        f31 = (f32)mario->unk16C - 25.0f;
+        f31 = (f32)mario->screenY - 25.0f;
         pos51 = party->position;
         marioGetScreenPos(pos51, &sx51, &sy51, &sz51);
         if (sy51 > f31) {
@@ -919,7 +919,7 @@ void bomhei_use_main(PartyEntry* party) {
         break;
     case 0x64:
         partyChgRunMode(party, 2);
-        party->field_3B = 0;
+        party->moveMode = 0;
         party->flags2 &= ~0x10;
         party->flags &= ~PARTY_FLAG_IS_EVT_USE;
         party->flags &= ~PARTY_FLAG_IS_BEING_USED;
@@ -1239,7 +1239,7 @@ HitEntry* check_front(PartyEntry* party) {
     }
 #endif
     f29 = 0.8f * party->height;
-    base = partyToMovedir(party, party->field_10C);
+    base = partyToMovedir(party, party->dispDir);
     for (i = 0; i < 8; i++) {
         sincosf(&query.targetDir.x, &query.targetDir.z, base + (f32)angles[i]);
         query.targetDir.y = 0.0f;

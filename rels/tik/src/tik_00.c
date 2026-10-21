@@ -2059,7 +2059,7 @@ static USER_FUNC(scale_func) {
         v2.x = scale;
         v2.y = scale;
         v2.z = scale;
-        party->field_70 = v2;
+        party->scale = v2;
     }
     return EVT_RETURN_DONE;
 }

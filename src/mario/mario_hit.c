@@ -790,7 +790,7 @@ HitEntry* marioSearchGround(f32* outY, f32* outX, f32* outZ, f32 a, f32 b) {
     if (wp->baseSpeed) {
         angle = revise360(wp->directionView - wp->targetYaw);
     } else {
-        angle = toMovedir(wp->unk1A8);
+        angle = toMovedir(wp->dispDir);
     }
     if (wp->flags & 0x100000) {
         rad = 3.1415927f * angle / 180.f;
@@ -1164,7 +1164,7 @@ void* marioLandonChk_old(f32* pos, f32 spd) {
     if (wp->baseSpeed) {
         angle = revise360(wp->directionView - wp->targetYaw);
     } else {
-        angle = toMovedir(wp->unk1A8);
+        angle = toMovedir(wp->dispDir);
     }
     rad = 3.1415927f * angle / 180.f;
     sn = (f32)sin(rad);
@@ -1267,7 +1267,7 @@ void* marioChkLandon2(f32* out, f32 a, f32 b) {
     if (wp->baseSpeed) {
         angle = wp->directionView;
     } else {
-        angle = toMovedir(wp->unk1A8);
+        angle = toMovedir(wp->dispDir);
     }
     rad = 3.1415927f * angle / 180.f;
     sn = (f32)sin(rad);
@@ -1544,7 +1544,7 @@ void* marioSearchHead(Vec* pos, f32* outY, f32 a) {
     if (wp->baseSpeed) {
         angle = wp->directionView;
     } else {
-        angle = toMovedir(wp->unk1A8);
+        angle = toMovedir(wp->dispDir);
     }
     rad = 3.1415927f * angle / 180.f;
     s = (f32)sin(rad);
@@ -1891,7 +1891,7 @@ void marioSearchFrontWall_staying(f32 a) {
     }
 
     if (hit == NULL) {
-        angle = toMovedir(wp->unk1A8);
+        angle = toMovedir(wp->dispDir);
         v = wp->position;
         hit = searchFrontWall(&v, &f8, halfx, angle, wp->wPlayerCollisionBox.z);
         if (wp->currMotionId != 0x13) {
@@ -1902,7 +1902,7 @@ void marioSearchFrontWall_staying(f32 a) {
     } else {
         if (strcmp(gp->currentMapName, "dou_10") == 0) {
             if (vivianGetStatus() != 2 && vivianGetStatus() != 1 && vivianGetStatus() != 3) {
-                angle = toMovedir(wp->unk1A8);
+                angle = toMovedir(wp->dispDir);
                 v = wp->position;
                 movePos(&v.x, &v.z, 0.5f * wp->wPlayerCollisionBox.x, angle);
                 angle += 180.f;
@@ -2278,7 +2278,7 @@ HitEntry* dou10_yoko_yari(f32* out) {
     if (wp->currMotionId == 0x16) {
         return NULL;
     }
-    toMovedir(wp->unk1A8);
+    toMovedir(wp->dispDir);
     hit = wp->hitobjFront;
     if (hit != NULL) {
         return hit;
@@ -2334,7 +2334,7 @@ HitEntry* dou10_yoko_yari2(f32* out) {
     f32 dist;
     f32 f8;
 
-    toMovedir(wp->unk1A8);
+    toMovedir(wp->dispDir);
     pos = wp->position;
     if (strcmp(gp->currentMapName, "dou_10") != 0) {
         return NULL;
@@ -2479,7 +2479,7 @@ HitEntry* marioChkFrontStep(f32* outY, f32* outDist, f32* outAngle) {
     if (wp->baseSpeed) {
         angle = wp->directionView;
     } else {
-        angle = toMovedir(wp->unk1A8);
+        angle = toMovedir(wp->dispDir);
     }
     angle = revise360((f32)(s32)(0.5f + angle));
     if (wp->flags & 0x1000000) {
@@ -2550,7 +2550,7 @@ HitEntry* marioChkFrontStep_old(f32* outY, f32* outDist, f32* outAngle) {
     if (wp->baseSpeed) {
         angle = wp->directionView;
     } else {
-        angle = toMovedir(wp->unk1A8);
+        angle = toMovedir(wp->dispDir);
     }
     rad = 3.1415927f * angle / 180.f;
     px = wp->position.x;

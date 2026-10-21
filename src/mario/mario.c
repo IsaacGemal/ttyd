@@ -644,12 +644,12 @@ s16 marioSetMutekiTime(s32 msec) {
 	MarioWork* wp = mp;
 	PartyEntry* party;
 
-	wp->unk4C = sysMsec2Frame(msec);
+	wp->mutekiTime = sysMsec2Frame(msec);
 	party = partyGetPtr(marioGetPartyId());
 	if (party != NULL) {
-		party->field_2A = wp->unk4C;
+		party->mutekiTime = wp->mutekiTime;
 	}
-	return wp->unk4C;
+	return wp->mutekiTime;
 }
 
 BOOL marioBgmodeChk(void) {
@@ -900,7 +900,7 @@ void marioReInit(void) {
 	s8 prevParty0;
 	s8 prevParty1;
 	struct KpaWork* koopaWork;
-	f32 unk1A8;
+	f32 dispDir;
 	f32 unk1AC;
 	f32 dirView;
 	f32 moveDir;
@@ -916,7 +916,7 @@ void marioReInit(void) {
 	koopaWork = wp->koopaWork;
 	trigFlags = wp->trigFlags;
 	motionId = wp->currMotionId;
-	unk1A8 = wp->unk1A8;
+	dispDir = wp->dispDir;
 	unk1AC = wp->dispReqDir;
 	dirView = wp->directionView;
 	moveDir = wp->moveDir;
@@ -946,7 +946,7 @@ void marioReInit(void) {
 	wp->characterId = characterId;
 	wp->trigFlags = trigFlags;
 	wp->currMotionId = motionId;
-	wp->unk1A8 = unk1A8;
+	wp->dispDir = dispDir;
 	wp->dispReqDir = unk1AC;
 	wp->directionView = dirView;
 	wp->moveDir = moveDir;
@@ -1099,8 +1099,8 @@ void marioMain(void) {
 	marioPreCamera();
 	marioHitCheckWidth();
 
-	if (wp->unk4C > 0) {
-		wp->unk4C--;
+	if (wp->mutekiTime > 0) {
+		wp->mutekiTime--;
 	}
 	if (wp->coinDropTimer > 0) {
 		wp->coinDropTimer -= 1;
@@ -1490,9 +1490,9 @@ void marioMove(void) {
 		MarioWork* wp2 = mp;
 
 		marioScreenPos(wp2->position, &x, &y, &z);
-		wp2->unk168 = x;
-		wp2->unk16C = y;
-		*(s32*)wp2->unk170 = z;
+		wp2->screenX = x;
+		wp2->screenY = y;
+		wp2->screenZ = z;
 	}
 
 	if (wp->dispFlags & 0x100000) {
@@ -1730,7 +1730,7 @@ void marioMoveMain(void) {
 	if (f31) {
 		dirRes = angleABf(0.0f, 0.0f, f30, dirRes);
 	} else {
-		dirRes = toMovedir(wp->unk1A8);
+		dirRes = toMovedir(wp->dispDir);
 	}
 
 	if (!(wp->flags & MARIO_FLAG_PAPER_MODE)) {
@@ -1750,7 +1750,7 @@ void marioMoveMain(void) {
 	wp->field_0x18C = f31;
 
 	if (wp->flags & MARIO_FLAG_USE_FORCE_DIRECTION) {
-		dirRes = wp->unk1A4;
+		dirRes = wp->forceDir;
 		wp->directionView = dirRes;
 	} else if (wp->flags & MARIO_FLAG_WALLS_DISABLED) {
 		dirRes = wp->directionView;
@@ -1999,9 +1999,9 @@ f32 marioGetScale(void) { //1:1
 	return mp->flags & 0x2000000 ? 1.2f : 2.0f;
 }
 
-// Adjusts Mario's display direction (unk1AC target, unk1A8 smoothed) from the
+// Adjusts Mario's display direction (unk1AC target, dispDir smoothed) from the
 // angle between his facing (moveDir) and the camera yaw (targetYaw), then steers
-// unk1A8 toward the target through the trigFlags 0x100/0x200/0x400 turn states.
+// dispDir toward the target through the trigFlags 0x100/0x200/0x400 turn states.
 void marioMakeDispDir(void) {
 	MarioWork* wp = mp;
 	f32* marioDir = &wp->dispReqDir;
@@ -2032,35 +2032,35 @@ void marioMakeDispDir(void) {
 			}
 			*marioDir = dir;
 			if (wp->dispFlags & 0x200) {
-				wp->unk1A8 = *marioDir;
+				wp->dispDir = *marioDir;
 			}
-			if (wp->unk1A8 == *marioDir) {
+			if (wp->dispDir == *marioDir) {
 				return;
 			}
 		}
 		if (wp->currMotionId == 0x12) {
-			if (wp->unk1A8 <= 180.0f) {
+			if (wp->dispDir <= 180.0f) {
 				if (*marioDir == 0.0f) {
-					wp->unk1A8 = 0.0f;
+					wp->dispDir = 0.0f;
 					wp->trigFlags &= ~0x100;
 				}
 				else if (*marioDir == 180.0f) {
-					wp->unk1A8 = 180.0f;
+					wp->dispDir = 180.0f;
 					wp->trigFlags &= ~0x100;
 				}
 			}
-			else if (wp->unk1A8 > 180.0f) {
+			else if (wp->dispDir > 180.0f) {
 				if (*marioDir == 0.0f) {
-					wp->unk1A8 = 0.0f;
+					wp->dispDir = 0.0f;
 					wp->trigFlags &= ~0x100;
 				}
 				else {
-					wp->unk1A8 = 180.0f;
+					wp->dispDir = 180.0f;
 					wp->trigFlags &= ~0x100;
 				}
 			}
 		}
-		else if (wp->unk1A8 <= 180.0f) {
+		else if (wp->dispDir <= 180.0f) {
 			f32 dirRounded = (s32)*marioDir;
 
 			if (dirRounded == 0.0f) {
@@ -2074,20 +2074,20 @@ void marioMakeDispDir(void) {
 				}
 				wp->trigFlags |= 0x200;
 				if (wp->trigFlags & 0x100) {
-					delta = 0.3f * (10.0f - wp->unk1A8);
+					delta = 0.3f * (10.0f - wp->dispDir);
 				}
 				else {
-					delta = 0.125f * (-lean - wp->unk1A8);
+					delta = 0.125f * (-lean - wp->dispDir);
 				}
-				wp->unk1A8 += delta;
+				wp->dispDir += delta;
 				if (!(wp->trigFlags & 0x100)) {
-					if (wp->unk1A8 < -limit) {
+					if (wp->dispDir < -limit) {
 						wp->trigFlags |= 0x100;
 					}
 				}
 				else {
-					if (wp->unk1A8 >= 0.0f) {
-						wp->unk1A8 = 0.0f;
+					if (wp->dispDir >= 0.0f) {
+						wp->dispDir = 0.0f;
 						wp->trigFlags &= ~0x100;
 					}
 				}
@@ -2101,26 +2101,26 @@ void marioMakeDispDir(void) {
 				}
 				wp->trigFlags |= 0x400;
 				if (wp->trigFlags & 0x100) {
-					delta = 0.3f * (170.0f - wp->unk1A8);
+					delta = 0.3f * (170.0f - wp->dispDir);
 				}
 				else {
-					delta = 0.125f * (210.0f - wp->unk1A8);
+					delta = 0.125f * (210.0f - wp->dispDir);
 				}
-				wp->unk1A8 += delta;
+				wp->dispDir += delta;
 				if (!(wp->trigFlags & 0x100)) {
-					if (wp->unk1A8 > 200.0f) {
+					if (wp->dispDir > 200.0f) {
 						wp->trigFlags |= 0x100;
 					}
 				}
 				else {
-					if (wp->unk1A8 <= 180.0f) {
-						wp->unk1A8 = 180.0f;
+					if (wp->dispDir <= 180.0f) {
+						wp->dispDir = 180.0f;
 						wp->trigFlags &= ~0x100;
 					}
 				}
 			}
 		}
-		else if (wp->unk1A8 > 180.0f) {
+		else if (wp->dispDir > 180.0f) {
 			if (*marioDir == 0.0f) {
 				f32 delta;
 				f32 lean = 30.0f;
@@ -2132,20 +2132,20 @@ void marioMakeDispDir(void) {
 				}
 				wp->trigFlags |= 0x200;
 				if (wp->trigFlags & 0x100) {
-					delta = 0.3f * (10.0f - wp->unk1A8);
+					delta = 0.3f * (10.0f - wp->dispDir);
 				}
 				else {
-					delta = 0.125f * (-lean - wp->unk1A8);
+					delta = 0.125f * (-lean - wp->dispDir);
 				}
-				wp->unk1A8 += delta;
+				wp->dispDir += delta;
 				if (!(wp->trigFlags & 0x100)) {
-					if (wp->unk1A8 < -limit) {
+					if (wp->dispDir < -limit) {
 						wp->trigFlags |= 0x100;
 					}
 				}
 				else {
-					if (wp->unk1A8 >= 0.0f) {
-						wp->unk1A8 = 0.0f;
+					if (wp->dispDir >= 0.0f) {
+						wp->dispDir = 0.0f;
 						wp->trigFlags &= ~0x100;
 					}
 				}
@@ -2159,18 +2159,18 @@ void marioMakeDispDir(void) {
 				}
 				wp->trigFlags |= 0x400;
 				if (wp->trigFlags & 0x100) {
-					delta = 0.3f * (170.0f - wp->unk1A8);
+					delta = 0.3f * (170.0f - wp->dispDir);
 				}
 				else {
-					delta = 0.125f * (210.0f - wp->unk1A8);
+					delta = 0.125f * (210.0f - wp->dispDir);
 				}
-				wp->unk1A8 += delta;
+				wp->dispDir += delta;
 				if (!(wp->trigFlags & 0x100)) {
-					if (wp->unk1A8 > 200.0f) {
+					if (wp->dispDir > 200.0f) {
 						wp->trigFlags |= 0x100;
 					}
-					else if (wp->unk1A8 <= 180.0f) {
-						wp->unk1A8 = 180.0f;
+					else if (wp->dispDir <= 180.0f) {
+						wp->dispDir = 180.0f;
 						wp->trigFlags &= ~0x100;
 					}
 				}
@@ -2273,7 +2273,7 @@ void marioPreDisp(void) {
 			v = kpaNoHitEnemyCheck();
 		}
 		else {
-			v = wp->unk4C;
+			v = wp->mutekiTime;
 		}
 		if (v > 0) {
 			if (!(v & 2)) {
@@ -2371,7 +2371,7 @@ void marioDispBlurSub(s32* unused, s32 blurId) {
 
 	if (!(wp->dispFlags & 0xC00)) {
 		if (!(wp->dispFlags & 0x8)) {
-			f32 angle = revise360(wp->unk1A8);
+			f32 angle = revise360(wp->dispDir);
 
 			s = (angle >= 90.0f && angle <= 270.0f) ? -1.0f : 1.0f;
 			PSMTXScale(scale, 1.0f, 1.0f, s);
@@ -2404,11 +2404,11 @@ void marioDispBlurSub(s32* unused, s32 blurId) {
 		PSMTXConcat(temp, mtx, mtx);
 	}
 
-	PSMTXRotRad(temp, 'y', 0.017453292f * revise360(wp->unk1A8 - wp->targetYaw));
+	PSMTXRotRad(temp, 'y', 0.017453292f * revise360(wp->dispDir - wp->targetYaw));
 	PSMTXConcat(temp, mtx, mtx);
 
 	if (wp->dispFlags & 0xC00) {
-		f32 angle = revise360(wp->unk1A8);
+		f32 angle = revise360(wp->dispDir);
 
 		if (angle >= 90.0f && angle <= 270.0f) {
 			PSMTXRotRad(temp, 'y', 0.017453292f * ((wp->dispFlags & 0x400) ? 180.0f : 0.0f));
@@ -2581,7 +2581,7 @@ void marioDisp(CameraId camId, void* param) {
 			PSMTXConcat(scale, mtx, mtx);
 		}
 		else if (!(wp->dispFlags & 0x8)) {
-			f32 angle = revise360(wp->unk1A8);
+			f32 angle = revise360(wp->dispDir);
 
 			s = (angle >= 90.0f && angle <= 270.0f) ? -1.0f : 1.0f;
 			PSMTXScale(scale, 1.0f, 1.0f, s);
@@ -2614,11 +2614,11 @@ void marioDisp(CameraId camId, void* param) {
 		PSMTXConcat(temp, mtx, mtx);
 	}
 
-	PSMTXRotRad(temp, 'y', 0.017453292f * revise360(wp->unk1A8 - wp->targetYaw));
+	PSMTXRotRad(temp, 'y', 0.017453292f * revise360(wp->dispDir - wp->targetYaw));
 	PSMTXConcat(temp, mtx, mtx);
 
 	if (wp->dispFlags & 0xC00) {
-		f32 angle = revise360(wp->unk1A8);
+		f32 angle = revise360(wp->dispDir);
 
 		if (angle >= 90.0f && angle <= 270.0f) {
 			PSMTXRotRad(temp, 'y', 0.017453292f * ((wp->dispFlags & 0x400) ? 180.0f : 0.0f));

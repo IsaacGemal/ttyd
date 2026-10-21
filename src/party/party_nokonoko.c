@@ -110,7 +110,7 @@ void nokonoko_move(PartyEntry* party) {
     }
     partyStepSpeed(party);
     partyRecordFootmark(party);
-    switch (party->field_3B) {
+    switch (party->moveMode) {
     case 0:
         party_move_mode_stay(party);
         break;
@@ -153,9 +153,9 @@ void unk_800cd9a0(void) {
             *(s32*)((u8*)party + 0x17C) = 0;
             party->tail.koops.field_180 = 0;
         }
-        if (party->field_34 != 8 && party->field_34 != 0xD) {
+        if (party->runMode != 8 && party->runMode != 0xD) {
             partyChgRunMode(party, 2);
-            party->field_3B = 0;
+            party->moveMode = 0;
         }
     }
 }
@@ -182,7 +182,7 @@ void nokonoko_use_post(PartyEntry* party) {
     party->tail.koops.field_180 = 0;
 }
 
-// The `NKF(0x10C) = revise360(50.0f * f2 + NKF(0x10C))` updates stay raw: `party->field_10C` there
+// The `NKF(0x10C) = revise360(50.0f * f2 + NKF(0x10C))` updates stay raw: `party->dispDir` there
 // schedules the add differently.
 #define NKF(off) (*(f32*)((u8*)party + (off)))
 #define NKS(off) (*(s32*)((u8*)party + (off)))
@@ -259,7 +259,7 @@ void nokonoko_use(PartyEntry* party) {
         party->jumpPara1 = 0.0f;
         party->dir = angleABf(party->position.x, party->position.z, party->targetPos.x, party->targetPos.z);
         party->speed = distABf(party->position.x, party->position.z, party->targetPos.x, party->targetPos.z) / (f32)party->timer;
-        party->field_10C = revise360(45.0f + party->field_10C);
+        party->dispDir = revise360(45.0f + party->dispDir);
         party->useMotionId = 1;
         marioChgSmallJumpMotion();
         mario->trigFlags |= 0x20000;
@@ -271,7 +271,7 @@ void nokonoko_use(PartyEntry* party) {
             party->useMotionId = 0x46;
             break;
         }
-        party->field_10C = revise360(45.0f + party->field_10C);
+        party->dispDir = revise360(45.0f + party->dispDir);
         party->position.x += (party->targetPos.x - party->position.x) / (f32)party->timer;
         party->position.y += (party->targetPos.y - party->position.y) / (f32)party->timer;
         party->position.z += (party->targetPos.z - party->position.z) / (f32)party->timer;
@@ -281,7 +281,7 @@ void nokonoko_use(PartyEntry* party) {
         party->position = party->targetPos;
         party->speed = 0.0f;
         party->field_110 = mario->dispReqDir;
-        party->field_10C = mario->dispReqDir;
+        party->dispDir = mario->dispReqDir;
         party->useMotionId = 2;
         partyChgPose(party, NK_STR(0x20, "PNK_A_1"));
         /* fallthrough */
@@ -940,7 +940,7 @@ void nokonoko_use(PartyEntry* party) {
         }
         if (party->groundHit != NULL) {
             party->field_110 = mario->dispReqDir;
-            party->field_10C = party->field_110;
+            party->dispDir = party->field_110;
             if (((hitGetAttr((HitEntry*)party->groundHit) >> 9) & 1) == 0) {
                 party->useMotionId = 0x72;
                 party->timer = 30;
@@ -997,12 +997,12 @@ void nokonoko_finish(PartyEntry* party) {
     *(s32*)((u8*)party + 0x178) = 0;
     *(s32*)((u8*)party + 0x17C) = 0;
     party->tail.koops.field_180 = 0;
-    if (party->field_34 == 9) {
+    if (party->runMode == 9) {
         return;
     }
     if (!(party->flags & PARTY_FLAG_IS_EVT_USE)) {
         partyChgRunMode(party, 2);
-        party->field_3B = 0;
+        party->moveMode = 0;
     } else {
         party->flags &= ~PARTY_FLAG_IS_EVT_USE;
         partyChgRunMode(party, 0);

@@ -543,10 +543,10 @@ void relSetEvtAddr(const char* mapName, s32* eventAddr) {
     }
 }
 
-void relSetBtlAddr(const char* areaName, void* field_8, void* field_C) {
+void relSetBtlAddr(const char* areaName, void* btlSetupTbl, void* btlSetupNoTbl) {
     AreaData* area = areaDataPtr(areaName);
     if (area != NULL) {
-        area->field_8 = field_8;
-        area->field_C = field_C;
+        area->btlSetupTbl = btlSetupTbl;
+        area->btlSetupNoTbl = btlSetupNoTbl;
     }
 }

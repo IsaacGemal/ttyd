@@ -1171,12 +1171,12 @@ USER_FUNC(img_wait) {
 // pointer to a local (`++*p`) so the compiler keeps the update in the callee-saved register instead of
 // folding it into a temp at the store. The `angle`/`half` temporaries below fix the pool and near block;
 // `fovY / 2.0f` gives the variable-first `fmuls` (not `fovY * 0.5f`). All three are match-only shapes.
-void rsh_window_tev(RshWindowTevParam* param, s32 arg1) {
+void rsh_window_tev(MapTevCallback* param, s32 arg1) {
     RshWindowTevObj s;
     s32 stage;
     s32 texMap;
     s32 texCoord;
-    s32 field18;
+    s32 numIndStage;
     u16 x0, y0, x1, y1;
     s32 width, height;
     s32 halfHeight, halfWidth;
@@ -1193,10 +1193,10 @@ void rsh_window_tev(RshWindowTevParam* param, s32 arg1) {
 
     s.obj = param->obj;
     s.flags = s.obj->flags;
-    stage = param->field_C;
-    texMap = param->field_10;
-    texCoord = param->field_14;
-    field18 = param->field_18;
+    stage = param->tevStage;
+    texMap = param->texMap;
+    texCoord = param->texCoord;
+    numIndStage = param->numIndStage;
 
     if (s.flags & 0x20) {
         while ((s.obj = s.obj->parent) != NULL) {
@@ -1269,7 +1269,7 @@ void rsh_window_tev(RshWindowTevParam* param, s32 arg1) {
     C_MTXLightFrustum(frustumMtx, top, bottom, left, right, near,
         half, half, 0.4f, 0.6f);
     PSMTXConcat(frustumMtx, camGetCurPtr()->view, frustumMtx);
-    PSMTXConcat(frustumMtx, *(Mtx*)param->field_4, frustumMtx);
+    PSMTXConcat(frustumMtx, *(Mtx*)param->mtx, frustumMtx);
 
     GXSetTexCoordGen2(texCoord, GX_TG_MTX3x4, GX_TG_POS, texMtx[texMap], GX_FALSE, GX_PTIDENTITY);
     GXLoadTexMtxImm(frustumMtx, texMtx[texMap], GX_MTX3x4);
@@ -1281,10 +1281,10 @@ void rsh_window_tev(RshWindowTevParam* param, s32 arg1) {
     GXSetTevAlphaIn(stage, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_APREV);
     GXSetTevSwapMode(stage, GX_TEV_SWAP0, GX_TEV_SWAP0);
     GXSetTevKColorSel(stage, GX_TEV_KCSEL_3_4);
-    { s32* p = &stage; param->field_C = ++*p; }
-    { s32* p = &texCoord; param->field_14 = ++*p; }
-    param->field_18 = field18;
-    { s32* p = &texMap; param->field_10 = ++*p; }
+    { s32* p = &stage; param->tevStage = ++*p; }
+    { s32* p = &texCoord; param->texCoord = ++*p; }
+    param->numIndStage = numIndStage;
+    { s32* p = &texMap; param->texMap = ++*p; }
 }
 
 USER_FUNC(evt_rsh_get_rnd_npc) {

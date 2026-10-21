@@ -3690,7 +3690,7 @@ void mapSetPolygon(MapObject* obj, MapFileMesh* mesh) {
 		GXClearVtxDesc();
 		GXSetVtxDesc(GX_VA_POS, GX_INDEX16);
 		fmt = wp->entries[obj->entryIdx].vcdTable;
-		GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_POS_XYZ, GX_S16, (u8)fmt->field_0x44);
+		GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_POS_XYZ, GX_S16, (u8)fmt->posFrac);
 		GXSetArray(GX_VA_POS, pos, 6);
 		GXSetVtxDesc(GX_VA_NRM, GX_INDEX16);
 		GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_NRM, GX_NRM_XYZ, GX_S8, 6);
@@ -3707,7 +3707,7 @@ void mapSetPolygon(MapObject* obj, MapFileMesh* mesh) {
 			if (!(mask & (1 << (i + 4)))) break;
 			GXSetVtxDesc(GX_VA_TEX0 + i, GX_INDEX16);
 			fmt = wp->entries[obj->entryIdx].vcdTable;
-			GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0 + i, GX_TEX_ST, GX_S16, (u8)fmt->field_0x48[i]);
+			GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0 + i, GX_TEX_ST, GX_S16, (u8)fmt->texFrac[i]);
 			GXSetArray(GX_VA_TEX0 + i, (void*)(((u32*)mesh->vcdTableOffset)[6 + i] + 4), 4);
 		}
 
@@ -3736,7 +3736,7 @@ void mapSetPolygonVtxDesc(MapObject* obj, MapFileMesh* mesh) {
 	GXClearVtxDesc();
 	GXSetVtxDesc(GX_VA_POS, GX_INDEX16);
 	vcdFmt = wp->entries[obj->entryIdx].vcdTable;
-	GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_POS_XYZ, GX_S16, (u8)vcdFmt->field_0x44);
+	GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_POS_XYZ, GX_S16, (u8)vcdFmt->posFrac);
 	GXSetArray(GX_VA_POS, pos, 6);
 	GXSetVtxDesc(GX_VA_NRM, GX_INDEX16);
 	GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_NRM, GX_NRM_XYZ, GX_S8, 6);
@@ -3757,7 +3757,7 @@ void mapSetPolygonVtxDesc(MapObject* obj, MapFileMesh* mesh) {
 		}
 		GXSetVtxDesc(GX_VA_TEX0 + i, GX_INDEX16);
 		vcdFmt = wp->entries[obj->entryIdx].vcdTable;
-		GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0 + i, GX_TEX_ST, GX_S16, (u8)vcdFmt->field_0x48[i]);
+		GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0 + i, GX_TEX_ST, GX_S16, (u8)vcdFmt->texFrac[i]);
 		GXSetArray(GX_VA_TEX0 + i, (void*)(((u32*)mesh->vcdTableOffset)[6 + i] + 4), 4);
 	}
 }

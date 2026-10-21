@@ -269,7 +269,7 @@ void kemuri(void) {
     } else {
         if (--ct552 <= 0) {
             sincosf(&sin, &cos, 6.2831855f * reviseAngle(-mario->directionView) / 360.0f);
-            sincosf(&sin, &cos, toMovedirSimple(180.0f + (kpaGetStageViewType() == 0 ? mario->dispReqDir : mario->unk1A8)));
+            sincosf(&sin, &cos, toMovedirSimple(180.0f + (kpaGetStageViewType() == 0 ? mario->dispReqDir : mario->dispDir)));
             switch (kpaGetLevel()) {
                 case 0:
                     ct552 = 4;
@@ -306,7 +306,7 @@ void party_kemuri(PartyEntry* party) {
         return;
     }
 
-    if (party->field_34 == 3 && party->currentMemberId == PARTY_MEMBER_YOSHI) {
+    if (party->runMode == 3 && party->currentMemberId == PARTY_MEMBER_YOSHI) {
         f32 cos;
         f32 sin;
         s8 count;
@@ -327,7 +327,7 @@ void party_kemuri(PartyEntry* party) {
         } else {
             party->field_2C = 4;
         }
-    } else if (party->field_36 == 1) {
+    } else if (party->mot == 1) {
         f32 cos;
         f32 sin;
         s8 count;

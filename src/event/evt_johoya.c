@@ -93,7 +93,7 @@ USER_FUNC(johoya_data_free) {
 USER_FUNC(johoya_keti_newjoho_check) {
     InformantWork* wp = &_jdt;
     s32* args = event->args;
-    u8* flag = wp->unk14.unk0;
+    u8* flag = wp->unk14.ketiNewjohoReadFlag;
     s32 count = 0;
     s32 i;
 
@@ -112,7 +112,7 @@ USER_FUNC(johoya_keti_newjoho_makelabel) {
     s32 value = evtGetValue(event, args[0]);
     InformantWork* wp = &_jdt;
     char sp[64];
-    u8* flag = wp->unk14.unk0;
+    u8* flag = wp->unk14.ketiNewjohoReadFlag;
     const char* msg;
     s32 matchCount = 0;
     s32 i;
@@ -147,8 +147,8 @@ USER_FUNC(johoya_keti_newjoho_setreadflag) {
     s32 index;
 
     index = *(s32*)wp->unk10;
-    johoya_set(wp->unk14.unk0, wp->info[index].storyId, 1);
-    *(u16*)&wp->info[index].unk0 |= 1;
+    johoya_set(wp->unk14.ketiNewjohoReadFlag, wp->info[index].storyId, 1);
+    *(u16*)&wp->info[index].readFlag |= 1;
     return 2;
 }
 
@@ -156,13 +156,13 @@ USER_FUNC(johoya_keti_newjoho_setreadflag) {
 USER_FUNC(johoya_keti_oldspeak_check) {
     InformantWork* wp = &_jdt;
     s32* args = event->args;
-    u8* flag = wp->unk14.unk0;
+    u8* flag = wp->unk14.ketiNewjohoReadFlag;
     s32 count = 0;
     s32 i;
 
     for (i = 0; i < wp->count; i++) {
         if (johoya_get(flag, wp->info[i].storyId) != 0
-            && (*(u16*)&wp->info[i].unk0 & 1) == 0) {
+            && (*(u16*)&wp->info[i].readFlag & 1) == 0) {
             count++;
         }
     }
@@ -175,13 +175,13 @@ USER_FUNC(johoya_keti_oldspeak_makelabel) {
     s32* args = event->args;
     s32 value = evtGetValue(event, args[0]);
     InformantWork* wp = &_jdt;
-    u8* flag = wp->unk14.unk0;
+    u8* flag = wp->unk14.ketiNewjohoReadFlag;
     s32 matchCount = 0;
     s32 i;
 
     for (i = 0; i < wp->count; i++) {
         if (johoya_get(flag, wp->info[i].storyId) != 0
-            && (*(u16*)&wp->info[i].unk0 & 1) == 0) {
+            && (*(u16*)&wp->info[i].readFlag & 1) == 0) {
             if (value == matchCount) {
                 sprintf((char*)wp->infoEnd, "%s_%04d", wp->prefix, wp->info[i].storyId);
                 evtSetValue(event, args[1], (s32)wp->infoEnd);
@@ -206,7 +206,7 @@ USER_FUNC(johoya_keti_oldspeak_makelabel) {
 USER_FUNC(johoya_keti_oldspeak_setreadflag) {
     InformantWork* wp = &_jdt;
 
-    *(u16*)&wp->info[*(s32*)wp->unk10].unk0 |= 1;
+    *(u16*)&wp->info[*(s32*)wp->unk10].readFlag |= 1;
     return 2;
 }
 
@@ -214,7 +214,7 @@ USER_FUNC(johoya_keti_oldspeak_setreadflag) {
 USER_FUNC(johoya_perfect_newjoho_setreadflag) {
     InformantWork* wp = &_jdt;
 
-    johoya_set(wp->unk14.unkD, wp->info[*(s32*)wp->unk10].storyId, 1);
+    johoya_set(wp->unk14.perfectNewjohoReadFlag, wp->info[*(s32*)wp->unk10].storyId, 1);
     return 2;
 }
 
@@ -222,7 +222,7 @@ USER_FUNC(johoya_perfect_newjoho_setreadflag) {
 USER_FUNC(johoya_luigi_newjoho_setreadflag) {
     InformantWork* wp = &_jdt;
 
-    johoya_set(wp->unk14.unk1A, wp->info[*(s32*)wp->unk10].storyId, 1);
+    johoya_set(wp->unk14.luigiNewjohoReadFlag, wp->info[*(s32*)wp->unk10].storyId, 1);
     return 2;
 }
 
@@ -335,9 +335,9 @@ s32 johoya_data_make(const char* prefix, s32 type) {
 void johoya_init(void) {
     InformantUnknown* unk = &_jdt.unk14;
     
-    memset(&unk->unk0, 0, 0xD);
-    memset(&unk->unkD, 0, 0xD);
-    memset(&unk->unk1A, 0, 0xD);
+    memset(&unk->ketiNewjohoReadFlag, 0, 0xD);
+    memset(&unk->perfectNewjohoReadFlag, 0, 0xD);
+    memset(&unk->luigiNewjohoReadFlag, 0, 0xD);
 }
 
 

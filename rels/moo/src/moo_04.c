@@ -91,14 +91,14 @@ static USER_FUNC(mario_kirimomi) {
     mario->dispRot.z = (f32)fmod(mario->dispRot.z, 360.0);
 
     if (party != NULL) {
-        party->field_70.y = scale;
-        party->field_70.x = scale;
+        party->scale.y = scale;
+        party->scale.x = scale;
         if (party->currentMemberId != PARTY_MEMBER_YOSHI) {
             party->spinPivot.y = party->height / 2.0f;
         } else {
             party->spinPivot.y = (party->height - 10.0f) / 2.0f;
         }
-        party->spinPivot.y *= party->field_70.y;
+        party->spinPivot.y *= party->scale.y;
         party->dispRot.z -= 10.0f;
         party->dispRot.z = (f32)fmod(party->dispRot.z, 360.0);
     }

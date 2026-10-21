@@ -632,7 +632,7 @@ USER_FUNC(firebar_entry) {
     {
         MarioWork* mario = marioGetPtr();
 
-        if (mario->currMotionId == 0x20 || mario->currMotionId == 0x1F || mario->unk4C > 0) {
+        if (mario->currMotionId == 0x20 || mario->currMotionId == 0x1F || mario->mutekiTime > 0) {
             entry->flags |= 4;
         } else {
             entry->flags &= ~4;

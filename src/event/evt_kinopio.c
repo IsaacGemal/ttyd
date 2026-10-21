@@ -502,7 +502,7 @@ static USER_FUNC(paper_on) {
         event->userdata[0]++;
     }
     mario->dispReqDir = val;
-    mario->unk1A8 = val;
+    mario->dispDir = val;
     return 0;
 }
 

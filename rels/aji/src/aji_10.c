@@ -116,12 +116,12 @@ USER_FUNC(monitor_cap_init) {
     monitor_wp = _mapAlloc(0xC);
     monitor_wp->image = _mapAlloc(size);
     monitor_wp->field_4 = 0;
-    monitor_wp->field_8 = 0;
+    monitor_wp->kanbuFlag = 0;
     return EVT_RETURN_DONE;
 }
 
 USER_FUNC(monitor_kanbu_flag_onoff) {
-    monitor_wp->field_8 = evtGetValue(event, event->args[0]);
+    monitor_wp->kanbuFlag = evtGetValue(event, event->args[0]);
     return EVT_RETURN_DONE;
 }
 
@@ -147,7 +147,7 @@ void monitor_cap_capture(CameraId cameraId, void* param) {
     C_MTXPerspective(persp, 60.0f, 1.2666667f, 1.0f, 1000.0f);
     GXSetProjection(persp, GX_PERSPECTIVE);
 
-    if (monitor_wp->field_8 != 0) {
+    if (monitor_wp->kanbuFlag != 0) {
         npc = npcNameToPtr("カンブー");
         C_MTXLookAt(lookMtx, &(Vec){0.0f, 28.0f, 46.0f}, &(Vec){0.0f, 1.0f, 0.0f}, &(Vec){0.0f, 3.0f, 0.0f});
     } else {
@@ -187,7 +187,7 @@ USER_FUNC(monitor_cap_evt) {
 static const Vec monitor_up = {0.0f, -1.0f, 0.0f};
 
 void monitor_cap_tev(void* param) {
-    MonitorTevParam* tevParam = (MonitorTevParam*)param;
+    MapTevCallback* tevParam = param;
 
     if (monitor_wp->field_4 != 0) {
         Mtx perspMtx;
@@ -218,9 +218,9 @@ void monitor_cap_tev(void* param) {
         PSMTXConcat(perspMtx, tevParam->mtx, perspMtx);
         GXLoadTexMtxImm(perspMtx, GX_TEXMTX0, GX_MTX3x4);
         GXSetTexCoordGen2(GX_TEXCOORD0, GX_TG_MTX3x4, GX_TG_POS, GX_TEXMTX0, GX_FALSE, GX_PTIDENTITY);
-        tevParam->field_C = 1;
-        tevParam->field_14 = 1;
-        tevParam->field_10 = 1;
+        tevParam->tevStage = 1;
+        tevParam->texCoord = 1;
+        tevParam->texMap = 1;
     }
 }
 

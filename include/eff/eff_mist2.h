@@ -18,9 +18,9 @@ typedef struct EffMist2Data {
 	f32 unk2C;   // 0x2C
 	s32 unk30;   // 0x30
 	s32 unk34;   // 0x34
-	u8 unk38;    // 0x38
-	u8 unk39;    // 0x39
-	u8 unk3A;    // 0x3A
+	u8 colorR;   // 0x38, tik_05 kemuri_set_color's r, g, b; the GXSetChanMatColor colour
+	u8 colorG;   // 0x39
+	u8 colorB;   // 0x3A
 	u8 pad3B;    // 0x3B
 	s32 unk3C;   // 0x3C
 	f32 unk40;   // 0x40

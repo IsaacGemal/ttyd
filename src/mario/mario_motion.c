@@ -830,7 +830,7 @@ void marioFall(void) {
         return;
     }
     if (!(mario->flags & MARIO_FLAG_FORCED_MOVEMENT)) {
-        if (marioChkInScreen(mario->unk168, mario->unk16C) == 0) {
+        if (marioChkInScreen(mario->screenX, mario->screenY) == 0) {
             mario->flags |= MARIO_FLAG_STOP_AIR_MOVEMENT;
             mario->baseSpeed += 0.1f * -mario->baseSpeed;
         }
@@ -1133,7 +1133,7 @@ void mot_talk(void) {
         {
             FieldBattleData* fbat = fbatGetPointer();
             if (fbat->talkNpc != NULL) {
-                marioChgPose(fbat->talkNpc->field_10C);
+                marioChgPose(fbat->talkNpc->checkPose);
             }
         }
         if (strcmp(mario->animName, "M_I_2") == 0) {
@@ -1467,10 +1467,10 @@ void mot_kaze(void) {
         if (mario->spinSpeed > 60.0f) {
             mario->spinSpeed = 60.0f;
         }
-        mario->unk1A8 = revise360(mario->unk1A8 + mario->spinSpeed);
+        mario->dispDir = revise360(mario->dispDir + mario->spinSpeed);
         if (!(mario->buttonHeld & (1 << 4))) {
             flag = FALSE;
-            if (mario->unk1A8 > 90.0f && mario->unk1A8 < 270.0f) {
+            if (mario->dispDir > 90.0f && mario->dispDir < 270.0f) {
                 flag = TRUE;
             }
             mario->dispReqDir = flag ? 180.0f : 0.0f;
@@ -1501,9 +1501,9 @@ void mot_kaze(void) {
                 mario2->trigFlags |= MARIO_TRIG_FLAG_IS_STARTING_NEW_MOTION;
             }
         }
-        mario->unk1A8 = revise360(mario->unk1A8 + mario->spinSpeed);
+        mario->dispDir = revise360(mario->dispDir + mario->spinSpeed);
         flag = FALSE;
-        if (mario->unk1A8 > 90.0f && mario->unk1A8 < 270.0f) {
+        if (mario->dispDir > 90.0f && mario->dispDir < 270.0f) {
             flag = TRUE;
         }
         mario->dispReqDir = flag ? 180.0f : 0.0f;

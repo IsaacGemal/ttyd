@@ -288,7 +288,7 @@ static inline void jabaraSetCamParam(f32 a, f32 b, f32 c) {
 static inline void jabaraResetMario(void) {
     MarioWork* mario = marioGetPtr();
 
-    mario->unk1A8 = mario->field_0x2A4;
+    mario->dispDir = mario->field_0x2A4;
     mario->dispReqDir = mario->field_0x2A4;
     mario->dispPivot = (Vec){ 0.0f, 0.0f, 0.0f };
     mario->dispOfs = (Vec){ 0.0f, 0.0f, 0.0f };
@@ -535,7 +535,7 @@ void mot_jabara(void) {
             mario->currSubMotionId = 0x64;
             return;
         }
-        if ((f32)mario->unk16C > JABARA_F32(float_480_8041ab18) || (f32)mario->unk16C < JABARA_F32(float_50_8041ab1c)) {
+        if ((f32)mario->screenY > JABARA_F32(float_480_8041ab18) || (f32)mario->screenY < JABARA_F32(float_50_8041ab1c)) {
             camFollowYOn();
         }
         if (mario->position.y == mario->prevPosition.y) {
@@ -628,7 +628,7 @@ void mot_jabara(void) {
                 mario->currSubMotionId = 0x1E;
             } else if (hitGetAttr((HitEntry*)mario->hitobjHead) & 0x40000) {
                 mario->field_0x2A4 = mario->dispReqDir;
-                mario->unk1A8 = mario->dispReqDir;
+                mario->dispDir = mario->dispReqDir;
                 mario->currSubMotionId = 0x46;
                 mario->multiTimer = 0xA;
                 mario->jabaraHitY = (s32)(sp3C + mario->wPlayerCollisionBox.y);
@@ -791,7 +791,7 @@ void mot_jabara(void) {
             hit = (HitEntry*)marioChkLandon2(&sp3C, dy, mario->dispOfs.y);
             if (hit == NULL) {
                 mario->position.y = mario->position.y + dy;
-                if ((f32)mario->unk16C > JABARA_F32(float_480_8041ab18)) {
+                if ((f32)mario->screenY > JABARA_F32(float_480_8041ab18)) {
                     camFollowYOn();
                 }
                 {
@@ -948,7 +948,7 @@ void mot_jabara(void) {
                                     move = move * (f32)sin((JABARA_F32(float_3p1416_8041ab80) * mario->controlStickAngle) / 180.0f);
                                     mario->position.x = mario->position.x + move;
                                     if (move > 0.0f) {
-                                        if (mario->unk1A8 >= JABARA_F32(float_90_8041aba0) && mario->unk1A8 <= JABARA_F32(float_270_8041aba4)) {
+                                        if (mario->dispDir >= JABARA_F32(float_90_8041aba0) && mario->dispDir <= JABARA_F32(float_270_8041aba4)) {
                                             mario->jabaraAnimTime = mario->jabaraAnimTime + 1;
                                             if ((s8)mario->jabaraAnimTime > 0x20) {
                                                 mario->jabaraAnimTime = 0;
@@ -960,7 +960,7 @@ void mot_jabara(void) {
                                             }
                                         }
                                     } else {
-                                        if (mario->unk1A8 >= JABARA_F32(float_90_8041aba0) && mario->unk1A8 <= JABARA_F32(float_270_8041aba4)) {
+                                        if (mario->dispDir >= JABARA_F32(float_90_8041aba0) && mario->dispDir <= JABARA_F32(float_270_8041aba4)) {
                                             mario->jabaraAnimTime = mario->jabaraAnimTime - 1;
                                             if ((s8)mario->jabaraAnimTime < 0) {
                                                 mario->jabaraAnimTime = 0x20;

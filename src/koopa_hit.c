@@ -118,7 +118,7 @@ s32 kpaEnemyHitChk(f32 x, f32 y, f32 z, f32 a, f32 b) {
     if (dy <= halfH && dx <= halfW) {
         if (mp->flags & 0x20000) {
             if (mp->position.y > y) {
-                if (kpaGetLevel() == 0 && kpaGetStageType() != 1 && mp->unk4C == 0 && z < float_50_80420eb0) {
+                if (kpaGetLevel() == 0 && kpaGetStageType() != 1 && mp->mutekiTime == 0 && z < float_50_80420eb0) {
                     marioChgMot(MARIO_MOTION_JUMP_NPC);
                 }
                 return 1;
@@ -127,7 +127,7 @@ s32 kpaEnemyHitChk(f32 x, f32 y, f32 z, f32 a, f32 b) {
         if (kpaMutekiCheck() == 1) {
             return 3;
         }
-        if (mp->unk4C != 0) {
+        if (mp->mutekiTime != 0) {
             return 3;
         }
         if (mp->noHitEnemyCt == 0) {
@@ -237,7 +237,7 @@ void* kpaSearchGround(f32* a, f32* b, f32* c, f32 d) {
     if (mp->baseSpeed != float_0_80420e80) {
         angle = mp->directionView;
     } else {
-        angle = toMovedir(mp->unk1A8);
+        angle = toMovedir(mp->dispDir);
     }
     px = mp->position.x;
     py = mp->position.y;
@@ -424,7 +424,7 @@ void* kpaSearchHead(Vec* pos, f32* outY, f32 a) {
     if (mp->baseSpeed != float_0_80420e80) {
         angle = mp->directionView;
     } else {
-        angle = toMovedir(mp->unk1A8);
+        angle = toMovedir(mp->dispDir);
     }
     dist = *outY;
     *outY = float_neg1_80420e84;

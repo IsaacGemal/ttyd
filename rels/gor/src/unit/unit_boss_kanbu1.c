@@ -259,14 +259,14 @@ EVT_END()
 USER_FUNC(_mario_ac_success_check) {
     BattleWork* wp = _battleWorkPointer;
 
-    evtSetValue(event, event->args[0], wp->field_16F1C[0x3C - 0x1C]);
+    evtSetValue(event, event->args[0], wp->marioAcSuccess);
     return EVT_RETURN_DONE;
 }
 
 USER_FUNC(_mario_ac_failed_check) {
     BattleWork* wp = _battleWorkPointer;
 
-    evtSetValue(event, event->args[0], wp->field_16F1C[0x3D - 0x1C]);
+    evtSetValue(event, event->args[0], wp->marioAcFailed);
     return EVT_RETURN_DONE;
 }
 

@@ -5701,3 +5701,100 @@ version; otherwise one line of what was tried.
   passes tried; it may apply to other abs/branch shapes in src/. Typing a word as the pointer it holds separates an
   int use from a pointer use and undoes CSE the way a volatile did; battle_stage.c's tou_gamen_screen_tev has
   tou_03's `zero` alias and was not tested.
+
+## Placeholder fields named from outside evidence, second pass: the other spellings (2026-10-21, Claude Opus 5.5, n9-q-o-names2)
+
+Second pass after #1112, over the leads its chapter listed in other placeholder spellings (`unkNN`, `field_NN`
+without 0x, `unk_*`), then the next seams: getters and setters written as `USER_FUNC(name)` (#1112's scan read only
+plain C definitions), REL overlays of a known dol struct, SDK parameters a field is passed to directly, and the data
+symbols an original setter is always called with. Candidates came from five read-only Claude Opus 5.5 searches
+(mario/party, battle, sound/driver/manager/window, effect/event, RELs) and three scans of our own; every name below
+was checked by hand against every user before it went in. The evidence rules are #1112's: "original" means a name in
+the fork-point (2df569d) symbol maps, dol or REL; names added on this fork and names inferred from behaviour don't
+count.
+
+**Renamed** (accessor = an original function that only reads or writes that field, or does so beside one flag bit;
+SDK = a parameter name in libs/dolsdk2004; same struct = the name the repo already gives that memory with outside
+evidence):
+
+| struct | off | was | now | evidence |
+|---|---|---|---|---|
+| MarioWork | 0x1A8 | unk1A8 | dispDir | accessor evt_mario_get_dispdir |
+| MarioWork | 0x4C | unk4C | mutekiTime | accessor marioSetMutekiTime (stores sysMsec2Frame(msec), returns it) |
+| MarioWork | 0xF8 | field_F8 | camCollision | accessor marioUpdateCamCollision (also sets dispFlags 0x40000) |
+| MarioWork | 0x1A4 | unk1A4 | forceDir | accessor evt_mario_set_force_dir (with MARIO_FLAG_USE_FORCE_DIRECTION) |
+| MarioWork | 0x168/0x16C/0x170 | unk168/unk16C/unk170 | screenX/screenY/screenZ | marioMove stores marioGetScreenPos's results (GXProject's sx, sy, sz) there, marioChkInScreen tests x and y; 0x170 was `u8[4]` written through an `(s32*)` pun, now s32 |
+| PartyEntry | 0x10C | field_10C | dispDir | accessor evt_party_get_dispdir |
+| PartyEntry | 0x34 | field_34 | runMode | accessor partyChgRunMode (also N_partyForceChgRunMode) |
+| PartyEntry | 0x36 | field_36 | mot | accessor partyChgMot |
+| PartyEntry | 0x3B | field_3B | moveMode | accessor partyChgMoveMode |
+| PartyEntry | 0x18 | field_18 | pose | accessor partyChgPose |
+| PartyEntry | 0x1C | field_1C | paper | accessor partyChgPaper; retyped u32 -> char*, its casts go |
+| PartyEntry | 0x2A | field_2A | mutekiTime | marioSetMutekiTime copies Mario's muteki time into it |
+| PartyEntry | 0x70 | field_70 | scale | accessor usu_00 party_scale (sets only it) |
+| PartyEntry | 0x40 | followDist | homingDist | accessor evt_party_set_homing_dist; followDist was an inferred name |
+| PartyCloud | 0x8 | unk8 | breathDist | accessor cloudGetBreathDist |
+| PartyCloud | 0x20-0x2C | unk20/24/28/2C | hitBreathout[4] | accessor cloudGetHitBreathout(n) returns slot n |
+| BattleWork | 0x1616C | field_1616C | breakSlot | accessor BattleBreakSlotGetPtr |
+| BattleWork | 0x19038 | field_19038 | cmdDisable[5] | recover_cmd_disable clears all five |
+| BattleWork | 0x19064 | field_19064 | acResult | accessor gor get_ac_result |
+| BattleWork | 0x16F3C/0x16F3D | field_16F1C[0x20/0x21] | marioAcSuccess/marioAcFailed | accessors gor _mario_ac_success_check/_mario_ac_failed_check; field_16F1C now ends at 0x16F3C |
+| BattleWork | 0x18FF0 | field_18FF0 | acHelp | its only users are BattleAcHelpSetHelp/SetDispType/Main and _ac_help_disp |
+| BattleWork | 0x18C70 | field_18C70 | announce | its only users are btlevtcmd_AnnounceMessage/AnnounceSetParam and battle_message's _disp |
+| PaperSoundWork | 0x56 | unk56 | flag | accessors psndSetFlag/psndClearFlag/psndGetFlag |
+| PaperSoundWork | 0x52 | unk52 | reverb | accessor psndSetReverb (stores the amount for its mode) |
+| PaperSoundEffect | 0x12 | unk12 | dist | accessor psndSFX_dist |
+| PaperSoundEffect | 0x14 | unk14 | pitch | accessor psndSFX_pit; read only as SoundEfxSetPitch's pitch |
+| SoundWork | 0x214 | unk214 | cover | SoundOpenCover/SoundCloseCover are its writers |
+| EnvironmentWork | 0xC0 | unkC0 | yamiView | accessor envSetYamiView; retyped u8[0x30] -> Mtx, casts gone |
+| EnvironmentYami | 0x18 | unk18 | numIndStage | same struct: the map TEV callback's parameter (eki_03 sun_tev), MapTevCallback's numIndStage; SDK GXSetNumIndStages (bom_01, mri_puni) |
+| OffscreenEntry | 0x3C/0x40 | unk3C/unk40 | copyFmt/texFmt | accessor evt_offscreen_set_texture_fmt sets both; SDK GXSetTexCopyDst fmt / GXInitTexObj format tell them apart |
+| WindowWork | 0x404 | field_404 | equipList | accessor winMakeEquipList (beside equipListCount) |
+| NpcEntry | 0x10C | field_10C | checkPose | accessor tik_02 geso_set_checkpose stores the data symbol geso_checkpose |
+| aji_10 MonitorWork | 0x8 | field_8 | kanbuFlag | accessor monitor_kanbu_flag_onoff |
+| aji_10 MonitorTevParam | 0xC-0x14 | field_C/10/14 | MapTevCallback | same struct: monitor_cap_tev is an evt_map_set_tevcallback callback; overlay gone |
+| rsh RshWindowTevParam | 0x4-0x18 | field_4/C/10/14/18 | MapTevCallback | same struct (rsh_window_tev); SDK GXSetTevOrder(stage, coord, map) from 0xC/0x14/0x10; overlay gone |
+| EffMist2Data | 0x38-0x3A | unk38/39/3A | colorR/G/B | tik_05 kemuri_set_color writes its r, g, b there (and a scale at 0x18); eff_mist2 builds the GXSetChanMatColor colour from them |
+| InformantUnknown | 0x0/0xD/0x1A | unk0/unkD/unk1A | ketiNewjohoReadFlag/perfectNewjohoReadFlag/luigiNewjohoReadFlag | accessors johoya_{keti,perfect,luigi}_newjoho_setreadflag |
+| InformantInfo | 0x0 | unk0 | readFlag | accessor johoya_keti_oldspeak_setreadflag (bit 0) |
+| AreaData | 0x8/0xC | field_8/field_C | btlSetupTbl/btlSetupNoTbl | relSetBtlAddr stores its two arguments there, and every area REL passes its original data symbols btlsetup_<area>_tbl and btl_<area>_setup_no_tbl |
+| MapVtxFmt | 0x44/0x48 | field_0x44/field_0x48[8] | posFrac/texFrac[8] | SDK: only passed as GXSetVtxAttrFmt's frac for GX_VA_POS and GX_VA_TEX0 + i |
+
+Respelled `field_0xNN` at the same offset, no evidence, for consistency: CamRoadMap `unk_E8`/`unk_108`, CamRoadWork
+`unk_204`/`unk_208`, WinLogEntry `unk_0x1C`, effKemuri3Data `unk_04`, gor_irai IraiWork `unk_0x94`, PartyData
+`unk_6/7/8_func`. The other ~640 `unk_name` hits are address-named globals (`unk_8xxxxxxx`, `unk_<rel>_<off>`); none
+of their addresses has a name in the fork-point maps, so they stay. The remaining `unkNN`/`field_NN` members have no
+evidence and keep their spelling.
+
+**Rejected or left as leads:**
+- evt_door.c DoorParam 0x24/0x28/0x40 (outside_group, door_group and get_noclip_map read only them: outsideGroup,
+  doorGroup, noclipMap). DoorParam carries two layouts: door_entry and its helpers read the nok yado_data layout,
+  while evt_door_param, door_dark_flag, npc_hide_onoff and evt_door_set_param read DoorEntry's (evt_door.h). The names
+  hold only once those four take a DoorEntry*, which adds an `(s32)` cast at each evtSetValue; not done here.
+- Computed, not stored: BattleCameraWork unk68 (battleCameraGetPosMoveSpeed returns its length), PartyCloud unk4
+  (cloudGetBreathDir returns toMovedir of it). Same reason #1112 rejected BattleUnitPart 0x1A6.
+- By difference only: MarioWork unk150 (marioResetCamShiftRate's only write that marioResetCamShift lacks) and
+  unk138/140/148 (marioResetCamShift's); both also reset field_64/68/6C.
+- Parallel or inferred: PartyEntry field_110 (evt_party_set_dispdir writes it and copies it into dispDir, as Mario's
+  dispReqDir), field_35 (the previous runMode), field_28 (partySetForceMove writes three fields).
+- A bit, not the byte: PartyEntry field_4F (L_partyVivianTailStop/Start set and clear bit 0, N_vivianDisplayTailCheck
+  tests it; no other bit is used).
+- Module names only: FieldBattleData field_20 (the FieldBattleInfo the BattleInformation* functions take), EventEntry
+  unk184/unk18C (evt_msg_toge writes them and more), KinopioData field_0-C (one function, breakfast, reads four
+  fields), yuu YuunpcPoseEntry field_20 (yuunpc_set_jump_pose stores an f32: names the action, not the field),
+  MapVtx field_0x0 (GXBegin's nverts, but MapVtx overlays the per-vertex records too).
+- No debug or format string in the source labels a placeholder; matrix-math SDK parameters (`a`, `src`, `xS`) name
+  nothing.
+
+Method: rename the declaration, then compile every user with `-maxerrors 500` with and without `-DMUST_MATCH`, and
+rename exactly the lines that report "'old' is not a struct/union/class member", until none do (a local script; the
+member's other spellings on other structs are untouched, and a wrong edit shows up as the new name's error). The
+CI ratchet baseline was `--init`ed on the clean 4ee6832b tree.
+
+- Verified at every commit: `ninja` recreates build/G8MJ01/ok; all 1,251 C files compile without MUST_MATCH;
+  fncast_lint and local_prototypes pass; tools/ci.py PASS with its tools/tests step skipped (`~/ci_notests.py`, the
+  same environment errors as the chapters above), under `uv run --with pyelftools`.
+- Index (tools/cleanup_index.py, same script both sides, 4ee6832b -> this branch): 14.478 -> 14.467 per kLOC
+  (10090 -> 10083 weighted); field_0x 4426 -> 4442 (the `unk_` respellings, less posFrac/texFrac); unk_name 684 ->
+  661. The index doesn't count the other spellings: `unkNN` tokens 3140 -> 2553, `field_NN` (no 0x) tokens
+  5205 -> 4612 (git grep over src, rels, include).

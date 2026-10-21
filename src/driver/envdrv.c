@@ -1279,7 +1279,7 @@ void envAddTev(s32 type, void* param) {
     GXTevStageID tevStage = yami->tevStage;
     GXTexMapID texMap = yami->texMap;
     GXTexCoordID texCoord = yami->texCoord;
-    s32 unk18 = yami->unk18;
+    s32 numIndStage = yami->numIndStage;
     Mtx mtx;
     GXTexObj texObj1;
     GXTexObj texObj2;
@@ -1429,7 +1429,7 @@ void envAddTev(s32 type, void* param) {
         }
         yami->tevStage = tevStage;
         yami->texCoord = texCoord;
-        yami->unk18 = unk18;
+        yami->numIndStage = numIndStage;
         yami->texMap = texMap;
     }
 }
@@ -1452,7 +1452,7 @@ void envSetWater(s32 arg0, void* arg1) {
     int texMap;
     void* capture;
     s32 texCoord;
-    s32 unk18;
+    s32 numIndStage;
     u8* water;
     MapObject* obj;
     u32 size;
@@ -1481,7 +1481,7 @@ void envSetWater(s32 arg0, void* arg1) {
     flags = ((MapObject*)yami->unk0)->flags;
     texMap = yami->texMap;
     texCoord = yami->texCoord;
-    unk18 = yami->unk18;
+    numIndStage = yami->numIndStage;
 
     if (flags & 0x20) {
         while ((obj = obj->parent) != NULL) {
@@ -1609,17 +1609,17 @@ void envSetWater(s32 arg0, void* arg1) {
     indMtx[1][1] = 0.5f;
     indMtx[1][2] = 0.0f;
     GXSetIndTexMtx(GX_ITM_0, indMtx, 1);
-    GXSetIndTexOrder(unk18, texCoord, texMap + 1);
-    GXSetIndTexCoordScale(unk18, GX_ITS_1, GX_ITS_1);
-    GXSetTevIndWarp(tevStage, unk18, GX_TRUE, GX_FALSE, GX_ITM_0);
+    GXSetIndTexOrder(numIndStage, texCoord, texMap + 1);
+    GXSetIndTexCoordScale(numIndStage, GX_ITS_1, GX_ITS_1);
+    GXSetTevIndWarp(tevStage, numIndStage, GX_TRUE, GX_FALSE, GX_ITM_0);
 
     tevStage += 1;
     texCoord += 1;
     yami->tevStage = tevStage;
-    unk18 += 1;
+    numIndStage += 1;
     texMap += 2;
     yami->texCoord = texCoord;
-    yami->unk18 = unk18;
+    yami->numIndStage = numIndStage;
     yami->texMap = texMap;
 }
 #pragma opt_lifetimes reset
@@ -1628,7 +1628,7 @@ void envSetWater(s32 arg0, void* arg1) {
 void envSetYamiView(Mtx mtx) {
     EnvironmentWork* wp = envGetWork();
 
-    PSMTXCopy(mtx, (MtxPtr)wp->unkC0);
+    PSMTXCopy(mtx, wp->yamiView);
 }
 
 #pragma opt_propagation off  // keep texMap*4 and the loop counters in the target's callee-saved colouring
@@ -1641,7 +1641,7 @@ void envSetYami(EnvironmentYami* yami) {
     int tevStage = yami->tevStage;
     int texMap = yami->texMap;
     int texCoord = yami->texCoord;
-    int unk18 = yami->unk18;
+    int numIndStage = yami->numIndStage;
     Mtx mtx;
     GXTexObj texObj;
 
@@ -1664,7 +1664,7 @@ void envSetYami(EnvironmentYami* yami) {
     GXSetTevAlphaOp(tevStage - 1, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVREG0);
 
     C_MTXLightOrtho(mtx, 72.0f, -72.0f, -96.0f, 96.0f, 0.5f, 0.5f, u1, 0.5f);
-    PSMTXConcat(mtx, (MtxPtr)wp->unkC0, mtx);
+    PSMTXConcat(mtx, wp->yamiView, mtx);
     PSMTXConcat(mtx, yami->unk4, mtx);
     texMtx = (u8*)dat_802f9338.tbl;
     texMtxOff = texMap * 4;
@@ -1672,7 +1672,7 @@ void envSetYami(EnvironmentYami* yami) {
     GXSetTexCoordGen2(texCoord, GX_TG_MTX3x4, GX_TG_POS, *(s32*)(texMtx + texMtxOff), GX_FALSE, GX_PTIDENTITY);
 
     C_MTXLightOrtho(mtx, 72.0f, -72.0f, -96.0f, 96.0f, 0.5f, 0.5f, u2, 0.5f);
-    PSMTXConcat(mtx, (MtxPtr)wp->unkC0, mtx);
+    PSMTXConcat(mtx, wp->yamiView, mtx);
     PSMTXConcat(mtx, yami->unk4, mtx);
     {
         s32* p = (s32*)((u8*)dat_802f9338.tbl + texMtxOff);
@@ -1711,7 +1711,7 @@ void envSetYami(EnvironmentYami* yami) {
     yami->tevStage = tevStage;
     texMap += 2;
     yami->texCoord = texCoord;
-    yami->unk18 = unk18;
+    yami->numIndStage = numIndStage;
     yami->texMap = texMap;
 }
 #pragma opt_propagation reset

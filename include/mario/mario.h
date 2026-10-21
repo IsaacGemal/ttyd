@@ -156,7 +156,7 @@ typedef struct MarioWork {
     s8 dispHalfTurn;               // 0x43, 0/1 half-turn flag: mot_roll adds 180 to its display target, mot_hammer sets it from marioGetRub's side
     s32 currSubMotionId;           // 0x44
     s32 multiTimer;                // 0x48, ???
-	s16 unk4C;                     // 0x4C
+	s16 mutekiTime;                // 0x4C, marioSetMutekiTime (frames)
 	s16 forceMoveTimer;            // 0x4E
     s16 airTimer;                  // 0x50
     s16 airTimerPeak;              // 0x52, airTimer when the jump peaks (marioJump, koopa_motion), cleared on landing; marioBoots and marioChkHipAttack test it
@@ -181,12 +181,12 @@ typedef struct MarioWork {
     Vec dispOfs;                   // 0x98, display offset: marioDisp draws at position + dispOfs + dispOfs2 (the blur copies use blurPos)
     Vec dispOfs2;                  // 0xA4, second display offset, summed with dispOfs (mario.c blur position)
     Vec dispPivot;                 // 0xB0, display translation: -pivot before the display rotations, +pivot after them
-    Vec dispRot;                   // 0xBC, display rotation in degrees (x, z); y is not read: the y rotation comes from unk1A8 - targetYaw
+    Vec dispRot;                   // 0xBC, display rotation in degrees (x, z); y is not read: the y rotation comes from dispDir - targetYaw
     Vec scale;                     // 0xC8
     Vec lastGroundPos;             // 0xD4, position copied whenever airTimer is 0 (mot_jump, mot_roll)
     Vec field_0xE0;                // 0xE0, bgTmp source in mot_damage
     Vec field_EC;                  // 0xEC
-    Vec field_F8;                  // 0xF8
+    Vec camCollision;              // 0xF8, marioUpdateCamCollision
     u8 unk104[0x110 - 0x104];      // 0x104
     Vec prevPosition;              // 0x110, copy of position taken each frame (mario.c, peach.c); party_vivian reads its y
     Vec field_0x11C;               // 0x11C, reference point for the landing distance (evt_mario), y is a floor clamp (mario_hit)
@@ -204,9 +204,9 @@ typedef struct MarioWork {
     f32 camFollowRate;             // 0x15C
     f32 unk160;                    // 0x160, camera x at the last marioCamMain (mario_cam sets dispFlags 0x20 while it is unchanged)
     f32 field_0x164;               // 0x164, prevPosition.y - position.y, stored by mario_hit (marioChkGndRollProbe); no reader in the tree
-    s32 unk168;                    // 0x168
-    s32 unk16C;                    // 0x16C
-    u8 unk170[0x174 - 0x170];      // 0x170
+    s32 screenX;                   // 0x168, marioGetScreenPos (GXProject sx, sy, sz) of position, each frame (marioMove);
+    s32 screenY;                   // 0x16C, marioChkInScreen tests x and y
+    s32 screenZ;                   // 0x170
     Vec riderDelta;                // 0x174, movement of the object Mario stands on (evt_mapgrp_translate2)
 	f32 baseSpeed;                 // 0x180, same on US
     f32 mBaseWalkSpeed;            // 0x184
@@ -217,8 +217,8 @@ typedef struct MarioWork {
     f32 targetYaw;                 // 0x198
     f32 moveDir;                   // 0x19C, move direction (toMovedir), set beside directionView; mario_hit sets it to wallYaw on wall contact
 	f32 directionView;             // 0x1A0
-	f32 unk1A4;                    // 0x1A4
-    f32 unk1A8;                    // 0x1A8
+	f32 forceDir;                  // 0x1A4, evt_mario_set_force_dir (with MARIO_FLAG_USE_FORCE_DIRECTION)
+    f32 dispDir;                   // 0x1A8, evt_mario_get_dispdir
     f32 dispReqDir;                // 0x1AC, requested display direction (get_mario_dispReqDir; party moves aim by it)
     u8 field_0x1B0[0x1B4 - 0x1B0]; // 0x1B0
     Vec wPlayerCollisionBox;       // 0x1B4 JP, 0x1B8 US
@@ -282,7 +282,7 @@ typedef struct MarioWork {
     s32 dirEventFrame;             // 0x29C, frames elapsed
     // 0x2A0-0x2BC: per-motion scratch words; each motion gives them its own type (the union members below).
     union {
-        f32 spinSpeed;             // 0x2A0, added to unk1A8 each frame (mario_motion spin, mot_hip, evt_mario)
+        f32 spinSpeed;             // 0x2A0, added to dispDir each frame (mario_motion spin, mot_hip, evt_mario)
         f32 damageRootY;           // 0x2A0, surface height of the damage floor fallen into: splash height, start of the return arc (set_damage_root_ypos, mot_damage)
         struct {
             u16 field_0x2A0;       // 0x2A0, koopa_motion: frame counter, wraps past 0x50; half of it is the pose time
@@ -290,7 +290,7 @@ typedef struct MarioWork {
         };
     };
     union {
-        f32 field_0x2A4;           // 0x2A4, f32 in mot_plane (eased turn rate added to unk1A8), mot_hammer, mot_dokan, mot_jabara
+        f32 field_0x2A4;           // 0x2A4, f32 in mot_plane (eased turn rate added to dispDir), mot_hammer, mot_dokan, mot_jabara
         s32 motionSfxId0;          // 0x2A4, sound handle in mot_hip (-1 when none)
         s32 paperAnimeTime;        // 0x2A4, mot_ship: marioSetPaperAnimeLocalTime argument (0x58 at reinit, counted down through the landing)
         u32 rollFlags;             // 0x2A4, mot_roll flag word (0x10, 0x20, 0x100, 0x200, 0x1000, 0x4000, 0x10000)
@@ -329,7 +329,7 @@ typedef struct MarioWork {
         };
         struct {
             s16 slitFlags;         // 0x2B8, mot_slit: bit 0 set when the walk speed reaches the dash cap (slitCapSpeed), cleared on steering
-            s16 slitTurnSide;      // 0x2BA, mot_slit: 1 or 2, the side of the turn (sets unk1A8 to 260 or 280)
+            s16 slitTurnSide;      // 0x2BA, mot_slit: 1 or 2, the side of the turn (sets dispDir to 260 or 280)
         };
     };
     u8 field_0x2BC[4];             // 0x2BC

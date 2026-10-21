@@ -253,7 +253,7 @@ USER_FUNC(evt_party_set_dir) {
             return EVT_RETURN_DONE;
         }
         event->userdata[2] = 0;
-        event->userdataf[1] = party->field_10C;
+        event->userdataf[1] = party->dispDir;
     } else {
         args += 1;
     }
@@ -272,8 +272,8 @@ USER_FUNC(evt_party_set_dir) {
         dest = revise360(270.0f - target);
         step = (dest - event->userdataf[1]) * ((f32)event->userdata[2] / (f32)frames);
         next = revise360(event->userdataf[1] + step);
-        party->field_10C = next;
-        party->field_110 = party->field_10C;
+        party->dispDir = next;
+        party->field_110 = party->dispDir;
         party->dir = toMovedirSimple(party->field_110);
         return ++event->userdata[2] > frames;
     }
@@ -283,8 +283,8 @@ USER_FUNC(evt_party_set_dir) {
         party->dir = toMovedirSimple(party->field_110);
     } else if (frames == 0) {
         next = revise360(270.0f - target);
-        party->field_10C = next;
-        party->field_110 = party->field_10C;
+        party->dispDir = next;
+        party->field_110 = party->dispDir;
         party->dir = toMovedirSimple(party->field_110);
     }
     return EVT_RETURN_DONE;
@@ -350,7 +350,7 @@ USER_FUNC(evt_party_get_dispdir) {
     if (!party) {
         evtSetFloat(event, args[1], float_0_8041bb1c);
     } else {
-        evtSetFloat(event, args[1], party->field_10C);
+        evtSetFloat(event, args[1], party->dispDir);
     }
     return EVT_RETURN_DONE;
 }
@@ -364,7 +364,7 @@ USER_FUNC(evt_party_set_dispdir) {
         return EVT_RETURN_DONE;
     }
     party->field_110 = reviseAngle(evtGetFloat(event, args[1]));
-    party->field_10C = party->field_110;
+    party->dispDir = party->field_110;
     return EVT_RETURN_DONE;
 }
 
@@ -405,7 +405,7 @@ USER_FUNC(evt_party_move_pos) {
         return EVT_RETURN_DONE;
     }
     if (event->userdata[2] == 0) {
-        breed = party->field_34;
+        breed = party->runMode;
         if (breed != 0 && (u8)(breed - 1) > 1) {
             return 0;
         }
@@ -443,7 +443,7 @@ USER_FUNC(evt_party_move_pos2) {
         return EVT_RETURN_DONE;
     }
     if (event->userdata[2] == 0) {
-        breed = party->field_34;
+        breed = party->runMode;
         if (breed != 0 && (u8)(breed - 1) > 1) {
             return 0;
         }
@@ -501,7 +501,7 @@ USER_FUNC(evt_party_jump_pos) {
         if (!p) {
             return EVT_RETURN_DONE;
         }
-        if (p->field_34 == 0xB) {
+        if (p->runMode == 0xB) {
             return EVT_RETURN_DONE;
         }
         event->userdata[3] = 0;
@@ -636,7 +636,7 @@ USER_FUNC(evt_party_set_homing_dist) {
     if (!party) {
         return EVT_RETURN_DONE;
     }
-    party->followDist = (f32)evtGetValue(event, args[1]);
+    party->homingDist = (f32)evtGetValue(event, args[1]);
     return EVT_RETURN_DONE;
 }
 
@@ -701,7 +701,7 @@ USER_FUNC(L_evt_party_dokan) {
     if (!party) {
         return EVT_RETURN_DONE;
     }
-    mode = party->field_34;
+    mode = party->runMode;
     arg = args[1];
     if (mode == 0xB || mode == 0xC) {
         value = 0;

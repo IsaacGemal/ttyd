@@ -384,7 +384,7 @@ no_ai:
         battleInfoId = -1;
         area = areaDataPtr(areaName);
         if (strcmp(btlSetupNo, "BTLNO_INVALID") != 0) {
-            battleInfoId = dbGetDefData(area->field_C, btlSetupNo);
+            battleInfoId = dbGetDefData(area->btlSetupNoTbl, btlSetupNo);
         }
         npcSetBattleInfo(npc, battleInfoId);
         if (tribe->stayAnim) {

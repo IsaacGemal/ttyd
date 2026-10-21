@@ -145,7 +145,7 @@ static USER_FUNC(mario_kirimomi) {
         } else {
             party->spinPivot.y = (party->height - 10.0f) / 2.0f;
         }
-        party->spinPivot.y *= party->field_70.y;
+        party->spinPivot.y *= party->scale.y;
         party->dispRot.z -= 10.0f;
         party->dispRot.z = (f32)fmod(party->dispRot.z, 360.0);
     }

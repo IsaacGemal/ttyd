@@ -62,7 +62,7 @@ typedef struct WinLogEntry {
     s32 state;            // 0xD88
     s32 timer;            // 0xD8C
     const char* name;     // 0xD90
-    u32 unk_0x1C;         // 0xD94
+    u32 field_0x1C;       // 0xD94
 } WinLogEntry;
 typedef struct WinLogWork {
     u8 pad_0[0xD6C];

@@ -85,7 +85,7 @@ void _partyEntry(s32 arg) {
                     party = partyGetPtr(member);
                     partyChgRunMode(party, 0xA);
                     if (arg == 0) {
-                        party->field_70 = vec3_802f3d60[0];
+                        party->scale = vec3_802f3d60[0];
                     }
                     party->flags |= PARTY_FLAG_DISABLE_FLOORS;
                     party->flags |= PARTY_FLAG_FORCE_FALL;
@@ -95,8 +95,8 @@ void _partyEntry(s32 arg) {
                         angle = 120.0f;
                     }
                     party->flags2 &= ~1;
-                    party->field_110 = revise360(mario->unk1A8 + angle);
-                    party->field_10C = mario->unk1A8;
+                    party->field_110 = revise360(mario->dispDir + angle);
+                    party->dispDir = mario->dispDir;
                     party->field_FC = mario->moveDir;
                 }
             }
@@ -104,7 +104,7 @@ void _partyEntry(s32 arg) {
             party = partyGetPtr(mario->currPartySlotId[i]);
             partyChgRunMode(party, 0xA);
             if (arg == 0) {
-                party->field_70 = vec3_802f3d6c[0];
+                party->scale = vec3_802f3d6c[0];
             }
             party->flags |= PARTY_FLAG_DISABLE_FLOORS;
             party->flags |= PARTY_FLAG_FORCE_FALL;
@@ -114,8 +114,8 @@ void _partyEntry(s32 arg) {
                 angle = -120.0f;
             }
             party->flags2 &= ~1;
-            party->field_110 = revise360(mario->unk1A8 + angle);
-            party->field_10C = mario->unk1A8;
+            party->field_110 = revise360(mario->dispDir + angle);
+            party->dispDir = mario->dispDir;
             party->field_FC = mario->moveDir;
         }
     }
@@ -154,7 +154,7 @@ void mot_dokan(void) {
             marioPaperLightOff();
             mario->dispFlags |= 8;
             mario->dispFlags |= 0x100;
-            mario->unk1A8 = mario->dispReqDir;
+            mario->dispDir = mario->dispReqDir;
             mario->currSubMotionId = 0x14;
             mario->spinSpeed = 0.0f;
             STORE_F32V(&mario->spinSpeed, 30.0f);
@@ -180,7 +180,7 @@ void mot_dokan(void) {
             marioPaperLightOff();
             marioChgPaper("PM_D_1A");
             marioChgPose("M_Z_1");
-            mario->unk1A8 = mario->dispReqDir;
+            mario->dispDir = mario->dispReqDir;
             mario->spinSpeed = 30.0f;
             mario->multiTimer = 0x14;
             mario->currSubMotionId = 0;
@@ -190,13 +190,13 @@ void mot_dokan(void) {
             COPY_VEC(&mario->dispOfs2, &vec3_802f3dcc);
             COPY_VEC(&mario->dispRot, &vec3_802f3dd8);
             COPY_VEC(&mario->dispPivot, &vec3_802f3de4);
-            mario->directionView = toMovedir(mario->unk1A8);
+            mario->directionView = toMovedir(mario->dispDir);
             mario->moveDir = mario->directionView;
             marioPaperOn("p_dokan_x");
             marioPaperLightOff();
             marioChgPaper("PM_D_1A");
             marioChgPose("M_Z_1");
-            mario->unk1A8 = mario->dispReqDir;
+            mario->dispDir = mario->dispReqDir;
             mario->spinSpeed = 30.0f;
             mario->currSubMotionId = 0x28;
             _partyEntry(1);
@@ -208,7 +208,7 @@ void mot_dokan(void) {
 
     switch (mario->currSubMotionId) {
     case 0xA:
-        mario->unk1A8 = revise360(mario->unk1A8 + mario->spinSpeed);
+        mario->dispDir = revise360(mario->dispDir + mario->spinSpeed);
         mario->scale.x += -0.005f;
         if (mario->scale.x < 0.0f) {
             mario->scale.x = 0.0f;
@@ -224,7 +224,7 @@ void mot_dokan(void) {
         }
         // fallthrough
     case 0x15:
-        mario->unk1A8 = revise360(mario->unk1A8 + mario->spinSpeed);
+        mario->dispDir = revise360(mario->dispDir + mario->spinSpeed);
         if (mario->flags & 0x02000000) {
             mario->scale.x += 0.03f;
             if (mario->scale.x >= 1.0f) {
@@ -242,7 +242,7 @@ void mot_dokan(void) {
         }
         break;
     case 0x1E:
-        mario->unk1A8 = revise360(mario->unk1A8 + mario->spinSpeed);
+        mario->dispDir = revise360(mario->dispDir + mario->spinSpeed);
         break;
     case 0x0:
         if (--mario->multiTimer > 0) {
@@ -273,9 +273,9 @@ void mot_dokan(void) {
         party = partyGetPtr(marioGetPartyId());
         if (party != NULL) {
             party->position = mario->position;
-            party->field_70.x = mario->scale.x;
-            party->field_70.y = mario->scale.y;
-            party->field_70.z = mario->scale.z;
+            party->scale.x = mario->scale.x;
+            party->scale.y = mario->scale.y;
+            party->scale.z = mario->scale.z;
             party->spinPivot.y = mario->dispPivot.y;
             party->dispOffset.y = mario->dispOfs.y;
             party->dispOffset.z = mario->dispOfs.z;
@@ -283,9 +283,9 @@ void mot_dokan(void) {
         party = partyGetPtr(marioGetExtraPartyId());
         if (party != NULL) {
             party->position = mario->position;
-            party->field_70.x = mario->scale.x;
-            party->field_70.y = mario->scale.y;
-            party->field_70.z = mario->scale.z;
+            party->scale.x = mario->scale.x;
+            party->scale.y = mario->scale.y;
+            party->scale.z = mario->scale.z;
             party->spinPivot.y = mario->dispPivot.y;
             party->dispOffset.y = mario->dispOfs.y;
             party->dispOffset.z = mario->dispOfs.z;
@@ -313,15 +313,15 @@ void mot_dokan(void) {
         }
         break;
     case 0x65:
-        mario->unk1A8 += mario->spinSpeed;
-        if (mario->unk1A8 >= 540.0f) {
+        mario->dispDir += mario->spinSpeed;
+        if (mario->dispDir >= 540.0f) {
             marioChgPaper("PM_D_1B");
             mario->multiTimer = 0x14;
             mario->currSubMotionId = 0x66;
             mario->dispRot.x = 0.0f;
             mario->dispReqDir = revise360(180.0f + mario->dispReqDir);
-            mario->unk1A8 = mario->dispReqDir;
-            mario->directionView = toMovedirSimple(mario->unk1A8);
+            mario->dispDir = mario->dispReqDir;
+            mario->directionView = toMovedirSimple(mario->dispDir);
             mario->moveDir = mario->directionView;
             partyDokanEnd(marioGetPartyId(), mario->field_0x3E);
             partyDokanEnd(marioGetExtraPartyId(), mario->field_0x3E);
@@ -341,9 +341,9 @@ void mot_dokan(void) {
         mario->dispFlags &= ~0x1000;
         marioPaperOff();
         marioChgMot(0);
-        mario->unk1A8 = revise360(mario->unk1A8);
-        mario->dispReqDir = mario->unk1A8;
-        mario->directionView = toMovedirSimple(mario->unk1A8);
+        mario->dispDir = revise360(mario->dispDir);
+        mario->dispReqDir = mario->dispDir;
+        mario->directionView = toMovedirSimple(mario->dispDir);
         mario->moveDir = mario->directionView;
         if (mario->field_0x3E == 4) {
             camFollowYOn();
@@ -365,8 +365,8 @@ void mot_dokan(void) {
         mario->currSubMotionId = 0x6F;
         // fallthrough
     case 0x6F:
-        mario->unk1A8 += mario->spinSpeed;
-        if (mario->unk1A8 >= 540.0f) {
+        mario->dispDir += mario->spinSpeed;
+        if (mario->dispDir >= 540.0f) {
             if (!(mario->flags & 0x02000000)) {
                 camFollowYOn();
             }
@@ -374,9 +374,9 @@ void mot_dokan(void) {
             mario->multiTimer = 0x14;
             mario->currSubMotionId = 0x70;
             mario->dispRot.x = 0.0f;
-            mario->dispReqDir = revise360(mario->unk1A8);
-            mario->unk1A8 = mario->dispReqDir;
-            mario->directionView = toMovedirSimple(mario->unk1A8);
+            mario->dispReqDir = revise360(mario->dispDir);
+            mario->dispDir = mario->dispReqDir;
+            mario->directionView = toMovedirSimple(mario->dispDir);
             mario->moveDir = mario->directionView;
             partyDokanEnd(marioGetPartyId(), mario->field_0x3E);
             partyDokanEnd(marioGetExtraPartyId(), mario->field_0x3E);
@@ -396,9 +396,9 @@ void mot_dokan(void) {
         mario->dispFlags &= ~0x1000;
         marioPaperOff();
         marioChgMot(0);
-        mario->unk1A8 = revise360(mario->unk1A8);
-        mario->dispReqDir = mario->unk1A8;
-        mario->directionView = toMovedirSimple(mario->unk1A8);
+        mario->dispDir = revise360(mario->dispDir);
+        mario->dispReqDir = mario->dispDir;
+        mario->directionView = toMovedirSimple(mario->dispDir);
         mario->moveDir = mario->directionView;
         if (!(mario->flags & 0x02000000)) {
             camFollowYOn();

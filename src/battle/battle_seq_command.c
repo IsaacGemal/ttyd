@@ -86,7 +86,7 @@ void _btlcmd_MakeActClassTable(BattleWork* wp) {
 			cmd->actionTable[0].mEnabled = 0;
 			cmd->actionTable[0].mDisableReason = 3;
 		}
-		if (wp->field_19038[0] > 0) {
+		if (wp->cmdDisable[0] > 0) {
 			cmd->actionTable[0].mEnabled = 0;
 			cmd->actionTable[0].mDisableReason = 3;
 		}
@@ -121,7 +121,7 @@ void _btlcmd_MakeActClassTable(BattleWork* wp) {
 			cmd->actionTable[count].mEnabled = 1;
 			cmd->actionTable[count].mDisableReason = 0;
 		}
-		if (wp->field_19038[3] > 0) {
+		if (wp->cmdDisable[3] > 0) {
 			cmd->actionTable[count].mEnabled = 0;
 			cmd->actionTable[count].mDisableReason = 3;
 		}
@@ -148,7 +148,7 @@ void _btlcmd_MakeActClassTable(BattleWork* wp) {
 			cmd->actionTable[count].mEnabled = 0;
 			cmd->actionTable[count].mDisableReason = 3;
 		}
-		if (wp->field_19038[1] > 0) {
+		if (wp->cmdDisable[1] > 0) {
 			cmd->actionTable[count].mEnabled = 0;
 			cmd->actionTable[count].mDisableReason = 3;
 		}
@@ -184,12 +184,12 @@ void _btlcmd_MakeActClassTable(BattleWork* wp) {
 			cmd->actionTable[count].mDisableReason = 0;
 		}
 		if (mario->currentKind == 0xDE) {
-			if (wp->field_19038[2] > 0) {
+			if (wp->cmdDisable[2] > 0) {
 				cmd->actionTable[count].mEnabled = 0;
 				cmd->actionTable[count].mDisableReason = 3;
 			}
 		} else {
-			if (wp->field_19038[4] > 0) {
+			if (wp->cmdDisable[4] > 0) {
 				cmd->actionTable[count].mEnabled = 0;
 				cmd->actionTable[count].mDisableReason = 3;
 			}
