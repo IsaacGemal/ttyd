@@ -15,17 +15,15 @@ extern const f32 float_0p5_80421cb4;
 #pragma section ".sdata" ".sbss2"
 __declspec(section ".sdata") GXColor unk_80423340;
 
-#ifdef MUST_MATCH
 // Build the GXColor in a helper so the by-value argument lands in stack 0xc, as retail does.
 static inline GXColor effMist2Color(u8 r, u8 g, u8 b, u8 a) {
-	GXColor c = *(GXColor*)&unk_80423340;
+	GXColor c = unk_80423340;
 	c.r = r;
 	c.g = g;
 	c.b = b;
 	c.a = a;
 	return c;
 }
-#endif
 
 EffectEntry* effMist2Entry(s32 type, s32 lifetime, f32 x, f32 y, f32 z, f32 range, f32 yOffset) {
 	EffectEntry* entry;
@@ -163,7 +161,7 @@ void effMist2Main(EffectEntry* effect) {
 	dispEntry(CAMERA_3D, dispCalcZ(&position), 2, effMist2Disp, effect);
 }
 
-// The GXColor build is in the MUST_MATCH inline above so the by-value argument lands in stack
+// The GXColor build is in the inline above so the by-value argument lands in stack
 // 0xc, matching retail.
 void effMist2Disp(CameraId cameraId, void* param) {
 	EffectEntry* effect = param;
@@ -224,15 +222,7 @@ void effMist2Disp(CameraId cameraId, void* param) {
 		PSMTXConcat(mtxView, mtxTrans, mtxTrans);
 		GXLoadPosMtxImm(mtxTrans, GX_PNMTX0);
 		GXSetCurrentMtx(GX_PNMTX0);
-#ifdef MUST_MATCH
-		color = effMist2Color(cr, cg, cb, (u8)(s32)(work->unk2C * (f32)alpha / float_255_80421cb0));
-#else
-		color = unk_80423340;
-		color.r = cr;
-		color.g = cg;
-		color.b = cb;
-		color.a = (u8)(s32)(work->unk2C * (f32)alpha / float_255_80421cb0);
-#endif
+		color = effMist2Color(cr, cg, cb, (u8)(work->unk2C * (f32)alpha / float_255_80421cb0));
 		f27 = 8.0f;
 		GXSetChanMatColor(GX_COLOR0A0, color);
 		GXBegin(GX_QUADS, GX_VTXFMT0, 4);

@@ -442,11 +442,8 @@ void FontDrawStringMtx(Mtx mtx, const char* msg) {
 				char arg1[128];
 				char arg2[128];
 				msg = msgGetCommand((char*)msg + 1, arg1, arg2);
-#ifdef MUST_MATCH
-				if ((s8)arg1[0] == 'R' || ((s8)arg1[0] == '/' && (u32)(s8)arg1[0] == 0x2f72)) {
-#else
-				if (arg1[0] == 'R') {
-#endif
+				// '/r' is a multi-character constant (0x2f72, unsigned): the second test can never be true.
+				if ((s8)arg1[0] == 'R' || ((s8)arg1[0] == '/' && (s8)arg1[0] == '/r')) {
 					break;
 				}
 				if (*(s8*)msg == '\n') {
@@ -651,12 +648,7 @@ void FontDrawMessage(s32 x0, s32 y, const char* msg) {
 					}
 					x = (s32)((f32)x + ((f32)iw * scale + (f32)offset));
 				}
-#ifdef MUST_MATCH // retail emits `cmpwi r0,0x2f / bne / cmplwi r0,0x2f72`; the second test is always
-                 // false (r0 is a sign-extended byte), so this disjunct is a no-op. Natural form is below.
-				else if ((s8)arg1[0] == 'R' || ((s8)arg1[0] == '/' && (u32)(s8)arg1[0] == 0x2f72)) {
-#else
-				else if ((s8)arg1[0] == 'R') {
-#endif
+				else if ((s8)arg1[0] == 'R' || ((s8)arg1[0] == '/' && (s8)arg1[0] == '/r')) {
 					break;
 				}
 				if ((s8)*msg == '\n') {
@@ -858,11 +850,7 @@ u16 FontGetMessageWidthLine(const char* message, u16* lines) {
 					iconGetWidthHight(&width, &height, (u16)id);
 					curwidth = (f32)width * scale + offset + (f32)curwidth;
 				}
-#ifdef MUST_MATCH // retail's second test is dead (compares a sign-extended byte against 0x2f72)
-				else if ((s8)arg1[0] == 'R' || ((s8)arg1[0] == '/' && (u32)(s8)arg1[0] == 0x2f72)) {
-#else
-				else if ((s8)arg1[0] == 'R') {
-#endif
+				else if ((s8)arg1[0] == 'R' || ((s8)arg1[0] == '/' && (s8)arg1[0] == '/r')) {
 					break;
 				}
 				if ((s8)*message == '\n') {

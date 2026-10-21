@@ -122,24 +122,20 @@ EffectEntry* effTimestampN64Entry(s32 type, s32 time, f32 x, f32 y, f32 z, f32 s
 	return effect;
 }
 
+static inline Vec makeVec(f32 x, f32 y, f32 z) {
+	Vec temp = (Vec){ 0.0f, 0.0f, 0.0f };
+	temp.x = x;
+	temp.y = y;
+	temp.z = z;
+	return temp;
+}
+
 void effTimestampMain(EffectEntry* effect) {
 	effTimestampN64Data* data = effect->userdata;
-#ifdef MUST_MATCH
-	/* MUST_MATCH: retail builds the Vec in a scratch and copies it to a second local before
-	   dispCalcZ; a single local folds the copy away. */
-	Vec position;
-#endif
-	Vec disp = { 0.0f, 0.0f, 0.0f };
+	Vec disp = makeVec(data->x, data->y, data->z);
 	s32 life;
 	s32 counter;
 	s32 i;
-
-	disp.x = data->x;
-	disp.y = data->y;
-	disp.z = data->z;
-#ifdef MUST_MATCH
-	position = disp;
-#endif
 
 	if (effect->flags & 4) {
 		effect->flags &= ~4;
@@ -187,11 +183,7 @@ void effTimestampMain(EffectEntry* effect) {
 		}
 	}
 
-#ifdef MUST_MATCH
-	dispEntry(CAMERA_3D, dispCalcZ(&position), 2, effTimestampDisp, effect);
-#else
 	dispEntry(CAMERA_3D, dispCalcZ(&disp), 2, effTimestampDisp, effect);
-#endif
 }
 
 // The two by-value GXColor builds live in helpers so the compiler gives their temporaries the

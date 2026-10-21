@@ -142,9 +142,6 @@ void effExpBomMain(EffectEntry* effect) {
 	}
 }
 
-#ifdef MUST_MATCH
-// The colours go through void helpers that call GXSetTevColor themselves: that is what makes the
-// by-value argument copy land in the stack slot adjacent to the helper's local, as in bushSetColor.
 static inline void effExpBomSetColor1(s32 alpha) {
 	GXColor color = unk_804230e0;
 	color.a = alpha;
@@ -156,7 +153,6 @@ static inline void effExpBomSetColor2(s32 count) {
 	color.a = (count * 210) >> 4;
 	GXSetTevColor(GX_TEVREG1, color);
 }
-#endif
 
 void effExpBomDisp(CameraId camId, void* param) {
 	EffectEntry* effect;
@@ -218,21 +214,9 @@ void effExpBomDisp(CameraId camId, void* param) {
 				texIndex = (s32)sine;
 			}
 
-#ifdef MUST_MATCH
 			effExpBomSetColor1(alpha);
 
 			effExpBomSetColor2(count);
-#else
-			{
-				GXColor color1 = unk_804230e0;
-				GXColor color2 = unk_804230e4;
-
-				color1.a = alpha;
-				GXSetTevColor(GX_TEVREG0, color1);
-				color2.a = (count * 210) >> 4;
-				GXSetTevColor(GX_TEVREG1, color2);
-			}
-#endif
 
 			GXSetNumChans(0);
 			GXSetNumTexGens(2);

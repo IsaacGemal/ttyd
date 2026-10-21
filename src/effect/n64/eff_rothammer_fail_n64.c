@@ -79,12 +79,10 @@ EffectEntry* effRotHammerFailN64Entry(s32 type, s32 life, f32 x, f32 y, f32 z, f
 
 void effRotHammerFailMain(EffectEntry* effect) {
 	effRotHammerFailRecord* data = effect->userdata;
-#ifdef MUST_MATCH
-	/* MUST_MATCH: retail copies a shared zero Vec into a scratch slot, overwrites it with
+	/* Retail copies a shared zero Vec into a scratch slot, overwrites it with
 	   data->x/y/z, then copies it into a second local before dispCalcZ (same idiom as
 	   effGlassMain). */
 	Vec position;
-#endif
 	Vec disp = { 0 };
 	s32 i;
 	f32 scale;
@@ -92,9 +90,7 @@ void effRotHammerFailMain(EffectEntry* effect) {
 	disp.x = data->x;
 	disp.y = data->y;
 	disp.z = data->z;
-#ifdef MUST_MATCH
 	position = disp;
-#endif
 
 	data->animFrame = 7.0f * data->frame / data->lifeMax;
 	data->frame += 1;
@@ -114,11 +110,7 @@ void effRotHammerFailMain(EffectEntry* effect) {
 		data->z = scale * data->dirZ;
 	}
 
-#ifdef MUST_MATCH
 	dispEntry(CAMERA_3D, dispCalcZ(&position), 2, effRotHammerFailDisp, effect);
-#else
-	dispEntry(CAMERA_3D, dispCalcZ(&disp), 2, effRotHammerFailDisp, effect);
-#endif
 }
 
 static inline void hammerSetColor(u8 alpha) {

@@ -129,22 +129,14 @@ USER_FUNC(evt_win_item_maketable) {
     s32 n;
 
     count = 0;
-#ifdef MUST_MATCH
-    // The for loop below compiles to different code (the linked build's checksums fail with it).
     p = table;
-loop:
-    if (*p == -1) {
-        goto loop_end;
-    }
-    p++;
-    count++;
-    goto loop;
-loop_end:
-#else
-    for (p = table; *p != -1; p++) {
+    while (TRUE) {
+        if (*p == -1) {
+            break;
+        }
+        p++;
         count++;
     }
-#endif
     if (count == 0) {
         evtSetValue(event, args[1], 0);
         return EVT_RETURN_DONE;

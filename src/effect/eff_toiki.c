@@ -159,13 +159,7 @@ void effToikiDisp(CameraId camId, void* param) {
 	GXTexObj texObj;
 	s32 type;
 
-#ifdef MUST_MATCH
-	// MUST_MATCH: the (u32) round-trip stops propagation from rematerialising lbl_803B2FA0 into each use;
-	// with the plain assignment MWCC computes the address once per use instead of keeping it in r30.
-	tbl = (u8*)(u32)lbl_803B2FA0;
-#else
 	tbl = (u8*)lbl_803B2FA0;
-#endif
 	cam = camGetPtr(camId);
 	type = data->type;
 

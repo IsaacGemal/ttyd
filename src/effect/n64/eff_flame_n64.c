@@ -215,11 +215,7 @@ EffectEntry* effFlameN64Entry(s32 type, f32 x, f32 y, f32 z, f32 scale) {
 }
 void effFlameMain(EffectEntry* effect) {
 	effFlameData* data = effect->userdata;
-#ifdef MUST_MATCH
-	/* MUST_MATCH: retail builds the Vec in a scratch and copies it to a second local before
-	   dispCalcZ; a single local folds the copy away. */
 	Vec position;
-#endif
 	Vec disp = { 0 };
 	s32 life;
 	s32 type;
@@ -228,9 +224,7 @@ void effFlameMain(EffectEntry* effect) {
 	disp.x = data->position.x;
 	disp.y = data->position.y;
 	disp.z = data->position.z;
-#ifdef MUST_MATCH
 	position = disp;
-#endif
 
 	if (effect->flags & 4) {
 		effect->flags &= ~4;
@@ -314,11 +308,7 @@ void effFlameMain(EffectEntry* effect) {
 	data->lagY += 0.1f * (data->position.y - data->lagY);
 	data->lagZ += 0.1f * (data->position.z - data->lagZ);
 
-#ifdef MUST_MATCH
 	dispEntry(CAMERA_3D, dispCalcZ(&position), 2, effFlameDisp, effect);
-#else
-	dispEntry(CAMERA_3D, dispCalcZ(&disp), 2, effFlameDisp, effect);
-#endif
 }
 
 // The 24 inlined vertex transforms convert the s16 positions with the SDK's paired-single inlines

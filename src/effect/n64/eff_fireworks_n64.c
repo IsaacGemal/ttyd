@@ -104,18 +104,6 @@ EffectEntry* effFireworksN64Entry(s32 type, s32 life, f32 x, f32 y, f32 z, f32 v
 	return entry;
 }
 
-#ifdef MUST_MATCH
-// Match-only trick: builds the position from an anonymous zero-vector literal, which schedules the field
-// stores the way the target prologue does (the same shape as eff_vapor_n64's makeVec). The original loads
-// the named vec3_802fa600 instead, so this adds a duplicate zero vector to .rodata.
-static inline Vec effFireworksMakeVec(f32 x, f32 y, f32 z) {
-	Vec temp = (Vec){ 0.0f, 0.0f, 0.0f };
-	temp.x = x;
-	temp.y = y;
-	temp.z = z;
-	return temp;
-}
-#endif
 
 void effFireworksMain(EffectEntry* effect) {
 	effFireworksData* data = effect->userdata;
@@ -127,14 +115,10 @@ void effFireworksMain(EffectEntry* effect) {
 	f32 sinAngle;
 	s32 b;
 
-#ifdef MUST_MATCH
-	position = effFireworksMakeVec(data->x, data->y, data->z);
-#else
 	position = (Vec){ 0.0f, 0.0f, 0.0f };
 	position.x = data->x;
 	position.y = data->y;
 	position.z = data->z;
-#endif
 	position2 = position;
 
 	if (effect->flags & 4) {

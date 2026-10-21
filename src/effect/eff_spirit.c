@@ -168,10 +168,8 @@ void effSpiritMain(EffectEntry* effect) {
     dispEntry(CAMERA_3D, dispCalcZ(&position), 2, effSpiritDisp, effect);
 }
 
-#ifdef MUST_MATCH
 // The original builds the material colour in a helper that returns it; the caller's local and its
-// outgoing-argument copy then land at 0x8/0xc as retail. Building the colour directly in the caller
-// (or in a void helper that calls GXSetChanMatColor) puts the local at 0xc and the copy at 0x8.
+// outgoing-argument copy then land at 0x8/0xc as retail.
 static inline GXColor effSpiritMakeColor(effSpiritData* data) {
     GXColor color = unk_80423350;
     color.r = data->colorR;
@@ -180,7 +178,6 @@ static inline GXColor effSpiritMakeColor(effSpiritData* data) {
     color.a = (u8)(float_0p8_80422274 * (f32)data->alpha);
     return color;
 }
-#endif
 
 void effSpiritDisp(CameraId camId, void* param) {
     EffectEntry* effect = param;
@@ -207,17 +204,8 @@ void effSpiritDisp(CameraId camId, void* param) {
     GXLoadTexObj(&texObj, GX_TEXMAP0);
     GXSetNumChans(1);
     GXSetChanCtrl(GX_COLOR0A0, GX_FALSE, GX_SRC_REG, GX_SRC_REG, GX_LIGHT_NULL, GX_DF_NONE, GX_AF_NONE);
-#ifdef MUST_MATCH
     color = effSpiritMakeColor(data);
     GXSetChanMatColor(GX_COLOR0A0, color);
-#else
-    color = *(GXColor*)&unk_80423350;
-    color.r = data->colorR;
-    color.g = data->colorG;
-    color.b = data->colorB;
-    color.a = (u8)(float_0p8_80422274 * (f32)data->alpha);
-    GXSetChanMatColor(GX_COLOR0A0, color);
-#endif
     GXSetNumTexGens(1);
     GXSetTexCoordGen2(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_IDENTITY, GX_FALSE, GX_PTIDENTITY);
     GXSetNumTevStages(1);

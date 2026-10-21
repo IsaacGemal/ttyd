@@ -127,11 +127,7 @@ EffectEntry* effDogabonAttackN64Entry(s32 type, s32 count, f32 x, f32 y, f32 z, 
 
 void effDogabonAttackMain(EffectEntry* effect) {
     DogabonAttackData* data = effect->userdata;
-#ifdef MUST_MATCH
-    /* MUST_MATCH: retail builds the Vec in a scratch slot and copies it into a second local before
-       dispCalcZ; a single local folds the copy away (same idiom as effGlassMain/effStoneSmokeMain). */
     Vec position;
-#endif
     Vec disp = (Vec){ 0.0f, 0.0f, 0.0f };
     s32 i;
     s32 type;
@@ -143,9 +139,7 @@ void effDogabonAttackMain(EffectEntry* effect) {
     disp.x = data->x;
     disp.y = data->y;
     disp.z = data->z;
-#ifdef MUST_MATCH
     position = disp;
-#endif
 
     type = data->type;
     if (effect->flags & 4) {
@@ -343,11 +337,7 @@ void effDogabonAttackMain(EffectEntry* effect) {
         }
     }
 
-#ifdef MUST_MATCH
-    dispEntry(4, dispCalcZ(&position), 1, effDogabonAttackDisp, effect);
-#else
-    dispEntry(CAMERA_3D, dispCalcZ(&disp), 1, effDogabonAttackDisp, effect);
-#endif
+    dispEntry(CAMERA_3D, dispCalcZ(&position), 1, effDogabonAttackDisp, effect);
 }
 
 void effDogabonAttackDisp(CameraId camId, void* param) {

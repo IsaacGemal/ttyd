@@ -556,12 +556,7 @@ void nokonoko_use(PartyEntry* party) {
         NKF(0x10C) = revise360(50.0f * f2 + NKF(0x10C));
         f3 = -2.0f - party->speed;
         f2 = (party->tail.koops.dashing != 0) ? 0.2f : 0.1f;
-#ifdef MUST_MATCH
-        // Volatile re-read of the speed, as retail reloads it after the f3/f2 setup.
-        party->speed = f3 * f2 + *(volatile f32*)&party->speed;
-#else
-        party->speed = f3 * f2 + party->speed;
-#endif
+        party->speed += f3 * f2;
         party->targetDist -= party->speed;
         if (!(party->speed <= 0.0f)) {
             break;
@@ -635,12 +630,7 @@ void nokonoko_use(PartyEntry* party) {
         }
         f3 = -2.0f - party->speed;
         f2 = (party->tail.koops.dashing != 0) ? 0.2f : 0.1f;
-#ifdef MUST_MATCH
-        // Volatile re-read of the speed, as retail reloads it after the f3/f2 setup.
-        party->speed = f3 * f2 + *(volatile f32*)&party->speed;
-#else
-        party->speed = f3 * f2 + party->speed;
-#endif
+        party->speed += f3 * f2;
         if (party->speed <= 0.0f) {
             party->useMotionId = 0x46;
             party->speed = 0.0f;

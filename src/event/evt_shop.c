@@ -538,13 +538,7 @@ USER_FUNC(reset_shop_point) {
 }
 
 USER_FUNC(add_shop_point) {
-#ifdef MUST_MATCH
-	// MUST_MATCH: holding the string base as an integer reproduces the original's base+offset
-	// addressing (addi r4, r27, off); as a const char* MWCC rematerializes the base per use.
-	u32 str = (u32)str_item_first_hit;
-#else
-	const char* str = str_item_first_hit;
-#endif
+	const char* const str = str_item_first_hit;
 	s32* args = event->args;
 	s32 v0 = evtGetValue(event, args[0]);
 	s32 v1 = evtGetValue(event, args[1]);
@@ -552,25 +546,13 @@ USER_FUNC(add_shop_point) {
 	s32 v3 = evtGetValue(event, args[3]);
 	PouchData* pouch = pouchGetPtr();
 
-#ifdef MUST_MATCH
-	if (strcmp(gp->currentMapName, (const char*)(str + 0x10)) == 0 && swGet(0xFA) && v1 < 900000) {
-#else
 	if (strcmp(gp->currentMapName, str + 0x10) == 0 && swGet(0xFA) && v1 < 900000) {
-#endif
 		v0 *= 2;
 	}
-#ifdef MUST_MATCH
-	if (strcmp(gp->currentMapName, (const char*)(str + 0x28)) == 0 && swGet(0xFB) && v2 < 900000) {
-#else
 	if (strcmp(gp->currentMapName, str + 0x28) == 0 && swGet(0xFB) && v2 < 900000) {
-#endif
 		v0 *= 2;
 	}
-#ifdef MUST_MATCH
-	if (strncmp(gp->currentMapName, (const char*)(str + 0x90), 6) == 0 && swGet(0xFC) && v3 < 900000) {
-#else
 	if (strncmp(gp->currentMapName, str + 0x90, 6) == 0 && swGet(0xFC) && v3 < 900000) {
-#endif
 		v0 *= 2;
 	}
 	pouch->mShopPoints += v0;
@@ -881,13 +863,7 @@ void name_disp(WinMgrEntry* entry) {
 	const char* msg;
 	s32 i;
 
-#ifdef MUST_MATCH
-	// MUST_MATCH: reading _wp directly here (rather than through wp) makes the compiler
-	// keep the pointer in a scratch register and copy it to wp's callee-saved register.
 	msg = msgSearch(itemDataTable[((ShopWork*)_wp)->items[((ShopWork*)_wp)->selectedItem * 2]].name);
-#else
-	msg = msgSearch(itemDataTable[wp->items[wp->selectedItem * 2]].name);
-#endif
 	if (winMgrAction(wp->nameWin) == 0) {
 		FontDrawStart();
 		FontDrawEdge();
@@ -904,15 +880,8 @@ void name_disp(WinMgrEntry* entry) {
 		pos.y += SHOP_F32(float_30_8041bc40);
 		PSMTXMultVec(camGetPtr(4)->view, &pos, &pos);
 		PSMTX44MultVec(camGetPtr(4)->projection, &pos, &pos);
-#ifdef MUST_MATCH
-		// MUST_MATCH: the array form makes the scheduler emit the x scale before the y one,
-		// which is the original's order; the named-field form emits y first.
-		((f32*)&pos)[0] *= (f32)gp->fbWidth * SHOP_F32(float_0p5_8041bc5c);
-		((f32*)&pos)[1] *= (f32)gp->efbHeight * SHOP_F32(float_0p5_8041bc5c);
-#else
 		pos.x *= (f32)gp->fbWidth * SHOP_F32(float_0p5_8041bc5c);
 		pos.y *= (f32)gp->efbHeight * SHOP_F32(float_0p5_8041bc5c);
-#endif
 		sprintf(buf, str_fmt_d, wp->items[i * 2 + 1]);
 		PSMTXTrans(mtx, SHOP_F32(shop_price_digit_width) * (f32)(strlen(buf) - 1) + pos.x, pos.y, pos.z);
 		iconNumberDispGx(mtx, *(s32*)((u8*)wp->items + i * 8 + 4), 0, *(GXColor*)&shop_price_color);

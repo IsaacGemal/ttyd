@@ -108,10 +108,6 @@ void effKemuri12Main(EffectEntry* effect) {
     dispEntry(CAMERA_3D, dispCalcZ(&position), 2, effKemuri12Disp, e);
 }
 
-// Building each GXColor *inside* the inline and calling GXSetTevColor there makes MWCC
-// allocate each colour's local+outgoing-arg pair adjacently (r1+0x10/0x14, r1+0x8/0xc),
-// as the original does.
-#ifdef MUST_MATCH
 static inline void setKemuriColor(GXTevRegID id, u8 r, u8 g, u8 b, u8 a) {
     GXColor c = unk_80423190;
     c.r = r;
@@ -126,7 +122,6 @@ static inline void setKemuriAlphaColor(GXTevRegID id, u8 a) {
     c.a = a;
     GXSetTevColor(id, c);
 }
-#endif
 
 void effKemuri12Disp(CameraId camId, void* param) {
     EffectEntry* effect;
@@ -181,24 +176,8 @@ void effKemuri12Disp(CameraId camId, void* param) {
     GXLoadPosMtxImm(m0, GX_PNMTX0);
     GXSetCurrentMtx(GX_PNMTX0);
 
-#ifdef MUST_MATCH
     setKemuriColor(GX_TEVREG0, data->color[0], data->color[1], data->color[2], data->color[3]);
     setKemuriAlphaColor(GX_TEVREG1, frameFraction);
-#else
-    {
-        GXColor color = unk_80423190;
-        color.r = data->color[0];
-        color.g = data->color[1];
-        color.b = data->color[2];
-        color.a = data->color[3];
-        GXSetTevColor(GX_TEVREG0, color);
-    }
-    {
-        GXColor color = unk_80423194;
-        color.a = frameFraction;
-        GXSetTevColor(GX_TEVREG1, color);
-    }
-#endif
 
     GXSetNumTexGens(2);
     GXSetTexCoordGen2(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_TEXMTX0, GX_FALSE, GX_PTIDENTITY);

@@ -8,11 +8,6 @@
 #include <dolphin/mtx.h>
 #include <stdlib.h>
 
-#ifndef MUST_MATCH
-// .rodata: zero vector the natural position helper starts from (MUST_MATCH builds it as an anonymous literal).
-const Vec vec3_802fb4a0 = { 0.0f, 0.0f, 0.0f };
-#endif
-
 // .sbss2: the default .sbss2 is only used for compiler-generated pool templates, so pair it with a small-data section.
 #pragma section ".sdata" ".sbss2"
 __declspec(section ".sdata") GXColor gap_10_80423234_sbss2;
@@ -38,14 +33,7 @@ static u8 color_rotation_data[40] = {
 
 // Local copy of system.c's inline helper so it inlines here (as in eff_sstar.c).
 inline Vec initializeVec(Vec* input) {
-#ifdef MUST_MATCH
-	// Match-only trick: the anonymous zero-vector literal makes MWCC schedule the userdata load before
-	// the vec words, as in the original; the named vector hoists the vec loads into the prologue slots.
-	// The original loads vec3_802fb4a0, so this adds a duplicate zero vector to .rodata.
 	Vec temp = { 0.0f, 0.0f, 0.0f };
-#else
-	Vec temp = vec3_802fb4a0;
-#endif
 	temp.x = input->x;
 	temp.y = input->y;
 	temp.z = input->z;

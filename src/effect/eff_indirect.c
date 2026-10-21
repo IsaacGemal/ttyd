@@ -97,15 +97,6 @@ static inline GXColor effIndirectMatColor(u8 alpha) {
 	return color;
 }
 
-// The original rematerialises the vertex 0.0 pool entry before every store. Naming the extern lets MWCC CSE
-// it into one FPR, which shifts the whole quad's FPR allocation; the anonymous literal keeps the per-store
-// loads (same pool entry, and it does not lower the unit's data score).
-#ifdef MUST_MATCH
-#define IND_VERT_ZERO 0.0f
-#else
-#define IND_VERT_ZERO 0.0f
-#endif
-
 void effIndirectDisp(CameraId camId, void* param) {
 	f32 sixteen;
 	EffectEntry* effect = param;
@@ -208,14 +199,14 @@ void effIndirectDisp(CameraId camId, void* param) {
 	half = -32.0f * 0.5f;
 #endif
 	sixteen = 16.0f;
-	GXPosition3f32(half, sixteen, IND_VERT_ZERO);
-	GXTexCoord2f32(IND_VERT_ZERO, IND_VERT_ZERO);
-	GXPosition3f32(sixteen, sixteen, IND_VERT_ZERO);
-	GXTexCoord2f32(u, IND_VERT_ZERO);
-	GXPosition3f32(sixteen, half, IND_VERT_ZERO);
+	GXPosition3f32(half, sixteen, 0.0f);
+	GXTexCoord2f32(0.0f, 0.0f);
+	GXPosition3f32(sixteen, sixteen, 0.0f);
+	GXTexCoord2f32(u, 0.0f);
+	GXPosition3f32(sixteen, half, 0.0f);
 	GXTexCoord2f32(u, v);
-	GXPosition3f32(half, half, IND_VERT_ZERO);
-	GXTexCoord2f32(IND_VERT_ZERO, v);
+	GXPosition3f32(half, half, 0.0f);
+	GXTexCoord2f32(0.0f, v);
 }
 
 // The pool constants the code above loads by name, defined after it (defined first, the compiler folds them).

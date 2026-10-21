@@ -10,17 +10,10 @@ USER_FUNC(evt_fade_in) {
 	if (isFirstCall) {
 		fadeEntry(FADE_IN_BLACK, duration, (GXColor){0, 0, 0, 0xFF});
 	}
-#ifdef MUST_MATCH
 	if (fadeIsFinish() != TRUE) {
 		return EVT_RETURN_BLOCK;
 	}
 	return EVT_RETURN_DONE;
-#else
-	if (fadeIsFinish() == TRUE) {
-		return EVT_RETURN_DONE;
-	}
-	return EVT_RETURN_BLOCK;
-#endif
 }
 
 USER_FUNC(evt_fade_out) {
@@ -29,18 +22,10 @@ USER_FUNC(evt_fade_out) {
 	if (isFirstCall) {
 		fadeEntry(FADE_OUT_BLACK, duration, (GXColor){0, 0, 0, 0xFF});
 	}
-#ifdef MUST_MATCH
-	// negated test makes MWCC emit the original's beq with the true block out-of-line
 	if (fadeIsFinish() != TRUE) {
 		return EVT_RETURN_BLOCK;
 	}
 	return EVT_RETURN_DONE;
-#else
-	if (fadeIsFinish() == TRUE) {
-		return EVT_RETURN_DONE;
-	}
-	return EVT_RETURN_BLOCK;
-#endif
 }
 
 USER_FUNC(evt_fade_entry) {
@@ -59,12 +44,7 @@ USER_FUNC(evt_fade_entry) {
 }
 
 USER_FUNC(evt_fade_end_wait) {
-#ifdef MUST_MATCH
-	// `!=` (not `==`) makes MWCC emit the original's or/andc select instead of nor/and
 	return fadeIsFinish() != TRUE ? EVT_RETURN_BLOCK : EVT_RETURN_DONE;
-#else
-	return fadeIsFinish() == TRUE ? EVT_RETURN_DONE : EVT_RETURN_BLOCK;
-#endif
 }
 
 USER_FUNC(evt_fade_set_spot_pos) {
@@ -85,12 +65,7 @@ USER_FUNC(evt_fade_set_spot_pos) {
 	GXGetViewportv(viewport);
 	GXProject((f32)x, (f32)y, (f32)z, cam->view, proj, viewport, &sx, &sy, &sz);
 	fadeSetSpotPos(
-#ifdef MUST_MATCH
-	    // operand order chosen so MWCC keeps the int->float magic in f4 (matches the original)
 	    (f32)(-gp->fbWidth / 2) + sx,
-#else
-	    sx - (f32)(gp->fbWidth / 2),
-#endif
 	    (f32)(gp->efbHeight / 2) - sy);
 	GXSetProjectionv(savedProj);
 	return EVT_RETURN_DONE;

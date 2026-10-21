@@ -753,11 +753,10 @@ void animPoseSetPaperAnimGroup(s32 poseId, const char* animName, BOOL someflag) 
     }
     ((AnimationPose*)((u8*)wp->poses + poseOffset))->materialLightFlag |= 1;
 }
-// Match-only: the target's search exits through an early `return`, which MWCC compiles to the
+// The search exits through an early `return`, which MWCC compiles to the target's
 // `bne <increment>; b <found>` branch pair (a plain `break` gives one `beq <found>`). Taking the poseId
 // and computing the pose/paper/data/top inside the helper is what gives the caller the target's
 // callee-saved colouring (i r30, pose r31, paper materialised so the fileId load folds).
-#ifdef MUST_MATCH
 static inline s32 animPoseSearchAnimPaper(s32 poseId, const char* animName) {
     s32 i = (s32)animName;
     AnimationPose* pose = &wp->poses[poseId];
@@ -771,38 +770,11 @@ static inline s32 animPoseSearchAnimPaper(s32 poseId, const char* animName) {
                 return i;
             }
         }
-        goto Zero;
+    } else if (i < top) {
+        return i;
     }
-    if (i >= top) {
-        goto Zero;
-    }
-    return i;
-Zero:
-    i = 0;
-Found:
-    return i;
+    return 0;
 }
-#else
-static inline s32 animPoseSearchAnimPaper(s32 poseId, const char* animName) {
-    s32 i = (s32)animName;
-    AnimationPose* pose = &wp->poses[poseId];
-    AnimationPose* paper = &wp->poses[pose->paperId];
-    AnimationPoseData* data = animPoseGetBaseData(paper);
-    s32 top = data->mAnimCount;
-
-    if (i < 0) {
-        for (i = 0; i < top; i++) {
-            if (!strcmp(data->mpAnims[i].name, animName)) {
-                break;
-            }
-        }
-    }
-    if (i >= top) {
-        i = 0;
-    }
-    return i;
-}
-#endif
 
 void animPoseSetPaperAnim(s32 poseId, const char* animName, BOOL unused) {
     AnimationPose* pose = &wp->poses[poseId];
@@ -899,10 +871,8 @@ void animPoseSetEffect(s32 poseId, const char* animName, BOOL someflag) {
 }
 
 // Searches data->mpAnims for animName when i is negative (i is the string's address used
-// as a sentinel), then clamps the result into [0, top). MUST_MATCH keeps the target's exact control flow;
-// the natural form is in the #else. Computing data/top from the passed pose inside the helper (rather
-// than passing them in) is what gives the callers the target's callee-saved colouring.
-#ifdef MUST_MATCH
+// as a sentinel); a miss or an id outside [0, top) gives 0. Computing data/top from the passed pose
+// inside the helper (rather than passing them in) is what gives the callers the target's callee-saved colouring.
 static inline s32 animPoseSearchAnim(AnimationPose* pose, const char* animName) {
     s32 i = (s32)animName;
     AnimationPoseData* data = animPoseGetBaseData(pose);
@@ -914,36 +884,11 @@ static inline s32 animPoseSearchAnim(AnimationPose* pose, const char* animName) 
                 return i;
             }
         }
-        goto Zero;
+    } else if (i < top) {
+        return i;
     }
-    if (i >= top) {
-        goto Zero;
-    }
-    return i;
-Zero:
-    i = 0;
-Found:
-    return i;
+    return 0;
 }
-#else
-static inline s32 animPoseSearchAnim(AnimationPose* pose, const char* animName) {
-    s32 i = (s32)animName;
-    AnimationPoseData* data = animPoseGetBaseData(pose);
-    s32 top = data->mAnimCount;
-
-    if (i < 0) {
-        for (i = 0; i < top; i++) {
-            if (!strcmp(data->mpAnims[i].name, animName)) {
-                break;
-            }
-        }
-    }
-    if (i >= top) {
-        i = 0;
-    }
-    return i;
-}
-#endif
 
 void animPoseSetEffectAnim(s32 poseId, const char* animName, BOOL reset) {
     AnimationPose* pose = &wp->poses[poseId];

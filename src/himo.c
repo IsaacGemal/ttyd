@@ -195,7 +195,6 @@ void vivihimoDisp(CameraId cameraId, void* data) {
     f32 cpi;
     f32 c10;
     f32 c1;
-    f32 c15;
 #endif
     Mtx mtxPrev;
     Mtx mtxCur;
@@ -260,7 +259,6 @@ void vivihimoDisp(CameraId cameraId, void* data) {
     cpi = float_3p1416_8041ded8;
     c082 = float_0p82_8041dedc;
     c12881 = float_1p2881_8041dee0;
-    c15 = float_15_8041dee4;
 #endif
     mtxp = &mtx;
     for (i = 0; i < 15; i++) {

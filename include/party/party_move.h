@@ -58,9 +58,7 @@ void L_getTargetPos(s32 id, Vec* out);
 typedef struct Footmark {
     u8 field_0; // 0x0, flags (party_motion tests 0x1 and 0x4)
     u8 pad[3];  // 0x1
-    f32 x;      // 0x4
-    f32 y;      // 0x8
-    f32 z;      // 0xC
+    Vec pos;    // 0x4, copied whole from the mario/party position (lwz/stw struct copy)
 } Footmark;
 Footmark* partyGetFootmarkPtr(u32 index);
 f32 partyGetTargetDistYFrom(s32 id, f32 y);

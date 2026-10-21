@@ -135,9 +135,6 @@ inline Vec initializeVec(Vec* input) {
 }
 
 
-#ifdef MUST_MATCH
-/* MUST_MATCH: setting each colour inside a void inline reproduces the original's by-value colour
-   slots (var/copy pairs 0x10/0x14 and 0x08/0x0c) instead of assigning a local then passing it. */
 static inline void effGarekiSetColor1(s32 a) {
     GXColor color = dat_8041f038;
     color.a = a;
@@ -239,14 +236,11 @@ void effGarekiMain(EffectEntry* effect) {
     dispEntry(CAMERA_3D, dispCalcZ(&position), 2, effGarekiDisp, effect);
 }
 
-#endif
 void effGarekiDisp(CameraId camId, void* param) {
     EffectEntry* effect = param;
     GarekiData* data;
     CameraEntry* cam;
     GXTexObj texObj;
-    GXColor color1;
-    GXColor color2;
     Mtx trans;
     Mtx scale;
     Mtx rot;
@@ -288,13 +282,7 @@ void effGarekiDisp(CameraId camId, void* param) {
         PSMTXConcat(cam->view, base, base);
         GXLoadPosMtxImm(base, 0);
         GXSetCurrentMtx(0);
-#ifdef MUST_MATCH
         effGarekiSetColor1(data->alpha);
-#else
-        color1 = dat_8041f038;
-        color1.a = data->alpha;
-        GXSetTevColor(1, color1);
-#endif
         gareki_dl(0);
     } else {
         alpha = data->alpha;
@@ -318,13 +306,7 @@ void effGarekiDisp(CameraId camId, void* param) {
             PSMTXConcat(cam->view, childMtx, childMtx);
             GXLoadPosMtxImm(childMtx, 0);
             GXSetCurrentMtx(0);
-#ifdef MUST_MATCH
             effGarekiSetColor2(alpha);
-#else
-            color2 = dat_8041f03c;
-            color2.a = alpha;
-            GXSetTevColor(1, color2);
-#endif
             gareki_dl(i);
         }
     }

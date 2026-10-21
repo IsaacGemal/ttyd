@@ -108,7 +108,6 @@ void effTeresaMain(EffectEntry* effect) {
 #define READ_RODATA(x) (x)
 #endif
 
-#ifdef MUST_MATCH
 // The original builds the alpha-patched colour inside a helper, which places its
 // local below the by-value copy (effThunderDisp/effIrekaeru do the same).
 static inline void teresaColor0(u8 alpha) {
@@ -124,14 +123,12 @@ static inline void teresaColor1(u8 alpha) {
 	color.a = alpha;
 	GXSetChanMatColor(4, color);
 }
-#endif
 
 void effTeresaDisp(CameraId camId, void* param) {
 	EffectEntry* effect = param;
 	EffTeresaData* data = effect->userdata;
 	CameraEntry* cam;
 	GXTexObj texObj;
-	GXColor color;
 	Mtx mtx98;
 	Mtx mtx68;
 	Mtx mtx38;
@@ -146,21 +143,9 @@ void effTeresaDisp(CameraId camId, void* param) {
 	GXSetNumChans(1);
 	GXSetChanCtrl(4, 0, 0, 0, 0, 0, 2);
 	if (type == 0) {
-#ifdef MUST_MATCH
 		teresaColor0(data->alpha);
-#else
-		color = dat_80421548;
-		color.a = data->alpha;
-		GXSetChanMatColor(4, color);
-#endif
 	} else {
-#ifdef MUST_MATCH
 		teresaColor1(data->alpha);
-#else
-		color = unk_80423328;
-		color.a = data->alpha;
-		GXSetChanMatColor(4, color);
-#endif
 	}
 	GXSetNumTexGens(1);
 	GXSetTexCoordGen2(0, 1, 4, 0x3C, 0, 0x7D);

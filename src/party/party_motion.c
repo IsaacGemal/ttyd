@@ -929,7 +929,7 @@ void party_motion_homing_walk(PartyEntry* party) {
     f25 = 20.0f;
     for (;;) {
         fmark = partyGetFootmarkPtr(id);
-        v94 = *(Vec*)&fmark->x;
+        v94 = fmark->pos;
         angle = angleABf(px, pz, v94.x, v94.z);
         sincosf(&s1, &c1, angle);
         q.targetDistance = f24;
@@ -1428,15 +1428,15 @@ void party_motion_homing_fly(PartyEntry* party) {
     f26 = party->position.z;
     {
         Footmark* fp = partyGetFootmarkPtr(id);
-        foot_x = fp->x;
+        foot_x = fp->pos.x;
         {
             f32 yadd = 5.0f;
             if (party->flags2 & 0x8000) {
                 yadd = 1.0f;
             }
-            foot_y = fp->y + yadd;
+            foot_y = fp->pos.y + yadd;
         }
-        foot_z = fp->z;
+        foot_z = fp->pos.z;
     }
     pos = party->position;
     if (partyGetTargetDist3D(id, &pos) >= f31) {

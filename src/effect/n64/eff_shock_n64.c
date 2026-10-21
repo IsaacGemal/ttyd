@@ -211,10 +211,6 @@ void effShockMain(EffectEntry* effect) {
 	dispEntry(CAMERA_3D, dispCalcZ(&position2), 2, effShockDisp, effect);
 }
 
-#ifdef MUST_MATCH
-/* MUST_MATCH: setting each colour inside a void inline (rather than assigning a local then passing it)
-   reproduces the original's per-call by-value colour slots, local 0x18/copy 0x1c, 0x10/0x14, 0x08/0x0c
-   (same shape as effGlassDisp). */
 static inline void effShockSetColor1(EffShockData* data) {
 	GXColor color = unk_80423258;
 	color.r = data->tev1R;
@@ -235,15 +231,11 @@ static inline void effShockSetColor3(EffShockData* data) {
 	color.a = data->field_0x14;
 	GXSetTevColor(1, color);
 }
-#endif
 void effShockDisp(CameraId cameraId, void* param) {
 	EffectEntry* effect = param;
 	EffShockData* data;
 	CameraEntry* cam;
 	GXTexObj texObj;
-	GXColor color1;
-	GXColor color2;
-	GXColor color3;
 	Mtx trans;
 	Mtx scale;
 	Mtx rot;
@@ -259,38 +251,15 @@ void effShockDisp(CameraId cameraId, void* param) {
 	PSMTXConcat(trans, rot, trans);
 	PSMTXConcat(cam->view, trans, viewMtx);
 
-#ifdef MUST_MATCH
 	effShockSetColor1(data);
 	effShockSetColor2(data);
-#else
-	color1 = unk_80423258;
-	color1.r = data->tev1R;
-	color1.g = data->tev1G;
-	color1.b = data->tev1B;
-	color1.a = data->field_0x18;
-	GXSetTevColor(1, color1);
-
-	color2 = unk_8042325c;
-	color2.r = data->tev2R;
-	color2.g = data->tev2G;
-	color2.b = data->tev2B;
-	GXSetTevColor(2, color2);
-#endif
 
 	GXSetCullMode(0);
 
 	if ((u32)(type - 1) <= 1 || type == 3) {
-#ifdef MUST_MATCH
 		if (type == 1) {
 			effShockSetColor3(data);
 		}
-#else
-		if (type == 1) {
-			color3 = dat_8041fc50;
-			color3.a = data->field_0x14;
-			GXSetTevColor(1, color3);
-		}
-#endif
 
 		PSMTXTrans(trans, 0.0f, data->field_0x2C, 0.0f);
 		PSMTXScale(scale, 0.25f * data->field_0x24, 0.25f * data->field_0x24, 1.0f);

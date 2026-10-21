@@ -176,6 +176,7 @@ static void main_dl(EffectEntry* effect, Mtx mtx) {
     f32 y;
     f32 z;
     f32 cosAngle;
+    f32 theta;
     f32 angle;
     // Naming the (3-j)*64 product first makes MWCC load 64 into f30 and
     // 1/256 into f31 as the original does (in one expression it swaps the two).
@@ -248,17 +249,9 @@ static void main_dl(EffectEntry* effect, Mtx mtx) {
         PSMTXConcat(mtxA, mtxB, mtxD);
 
         for (j = 0, anime = anime_data; j < 3; j++, anime += 4) {
-#ifdef MUST_MATCH
-            /* MUST_MATCH: naming the loop angle `cosAngle` and the cosine `angle` is what
-               puts them in the target's f15/f16; the natural assignment swaps the two. */
-            cosAngle = 6.2831855f * ringAngle / 360.0f;
-            angle = (f32)cos(cosAngle);
-            PSMTXTrans(mtxE, radius * (f32)sin(cosAngle), radius * angle, 0.0f);
-#else
-            angle = 6.2831855f * ringAngle / 360.0f;
-            cosAngle = (f32)cos(angle);
-            PSMTXTrans(mtxE, radius * (f32)sin(angle), radius * cosAngle, 0.0f);
-#endif
+            theta = 6.2831855f * ringAngle / 360.0f;
+            cosAngle = (f32)cos(theta);
+            PSMTXTrans(mtxE, radius * (f32)sin(theta), radius * cosAngle, 0.0f);
             ringAngle += 120.0f;
             PSMTXConcat(mtxD, mtxE, mtxE);
             PSMTXConcat(mtx, mtxE, mtxE);

@@ -136,11 +136,7 @@ void effFireDustMain(EffectEntry* effect) {
     s32 ival;
     effFireDustData* data;
     s32 i;
-#ifdef MUST_MATCH
-    /* MUST_MATCH: retail builds the Vec in a scratch slot and copies it into a second
-       local before dispCalcZ; a single local folds the copy away. */
     Vec position;
-#endif
     Vec disp = (Vec){ 0.0f, 0.0f, 0.0f };
     f32 half;
     f32 radius;
@@ -150,9 +146,7 @@ void effFireDustMain(EffectEntry* effect) {
     disp.x = data->x;
     disp.y = data->y;
     disp.z = data->z;
-#ifdef MUST_MATCH
     position = disp;
-#endif
 
     if (effect->flags & 4) {
         effect->flags &= ~4;
@@ -213,11 +207,7 @@ void effFireDustMain(EffectEntry* effect) {
         data->velY += 0.04f * (data->velTargetY - data->velY);
         data->velZ += 0.04f * (data->velTargetZ - data->velZ);
     }
-#ifdef MUST_MATCH
     dispEntry(CAMERA_3D, dispCalcZ(&position), 2, effFireDustDisp, effect);
-#else
-    dispEntry(CAMERA_3D, dispCalcZ(&disp), 2, effFireDustDisp, effect);
-#endif
 }
 
 void effFireDustDisp(CameraId camId, void* param) {

@@ -278,10 +278,8 @@ USER_FUNC(evt_map_blend_set_mobj_flag) {
     return EVT_RETURN_DONE;
 }
 
-#ifdef MUST_MATCH
-// Built in an inline that returns the colour: puts the by-value argument copy above the local, as retail has it.
 static inline GXColor evtMapGrpColor(u8 r, u8 g, u8 b, u8 a) {
-    GXColor color = *(GXColor*)&unk_80422fbc;
+    GXColor color = unk_80422fbc;
 
     color.r = r;
     color.g = g;
@@ -289,7 +287,6 @@ static inline GXColor evtMapGrpColor(u8 r, u8 g, u8 b, u8 a) {
     color.a = a;
     return color;
 }
-#endif
 
 USER_FUNC(evt_mapobj_color) {
     s32* args = event->args;
@@ -313,18 +310,7 @@ USER_FUNC(evt_mapobj_color) {
         mapObjSetColor((const char*)name, &c);
     }
     else {
-#ifdef MUST_MATCH
         mapGrpSetColor((const char*)name, evtMapGrpColor(r, g, b, a));
-#else
-        GXColor color;
-
-        color = *(GXColor*)&unk_80422fbc;
-        color.r = r;
-        color.g = g;
-        color.b = b;
-        color.a = a;
-        mapGrpSetColor((const char*)name, color);
-#endif
     }
     return EVT_RETURN_DONE;
 }

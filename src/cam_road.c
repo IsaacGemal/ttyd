@@ -159,10 +159,8 @@ CamRoadWork* camRoadGetWorkPtr(void) {
     return wp;
 }
 
-// The clamp's literal (see #ifdef below) restores the original's f0 constant / f2 accumulator / f1 result;
-// the named `1.0f` instead puts the constant in f2. The extra `w` alias in the final else keeps
-// the original's `wp` in r7 across the state-copy loops; without it MWCC reloads wp into r4 and the copies
-// shift registers.
+// The clamp's literal restores the original's f0 constant / f2 accumulator / f1 result;
+// the named `1.0f` instead puts the constant in f2.
 void camRoadMain(f32* dst, f32 x, f32 y, f32 z, f32 ax, f32 ay, f32 az, f32 bank) {
     u32 result;
 
@@ -238,15 +236,7 @@ void camRoadMain(f32* dst, f32 x, f32 y, f32 z, f32 ax, f32 ay, f32 az, f32 bank
             wp->hokanActive = 0;
         }
     } else {
-#ifdef MUST_MATCH
-        // Match-only: the local alias keeps wp in r7 across the copy loops (see the comment above the function).
-        CamRoadWork* w = wp;
-        w->previous = w->current;
-        wp->blended = w->previous;
-#else
-        wp->previous = wp->current;
-        wp->blended = wp->previous;
-#endif
+        wp->blended = wp->previous = wp->current;
     }
 
     calcCurrentCamState(dst);

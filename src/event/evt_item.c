@@ -335,7 +335,6 @@ USER_FUNC(evt_item_set_alpha) {
 
 
 #pragma opt_propagation off // needed: without it evt_item_move_3d_position 99.85%
-// needed: with propagation on the step value is coalesced into r27 instead of dividing into r4
 USER_FUNC(evt_item_move_3d_position) {
 	s32* args = event->args;
 	s32 name = evtGetValue(event, args[0]);
@@ -345,12 +344,7 @@ USER_FUNC(evt_item_move_3d_position) {
 	s32 steps = evtGetValue(event, args[4]);
 	s32 mode = evtGetValue(event, args[5]);
 	ItemEntry* item = itemNameToPtr((char*)name);
-#ifdef MUST_MATCH
-	// MUST_MATCH: the u32 temporary and assigning curStep inside the first call keep the division
-	// result in r4 and its callee-saved copy in r27; the natural s32 form homes it in r27 throughout.
-	u32 rawStep;
-#endif
-	s32 curStep;
+	int curStep; // int, not s32, as evt_npc.c's `int elapsed`: s32 allocates differently
 
 	if (isFirstCall) {
 		if (item == NULL) {
@@ -361,15 +355,9 @@ USER_FUNC(evt_item_move_3d_position) {
 		event->userdataf[2] = item->position.y;
 		*(f32*)&event->field_84 = item->position.z;
 	}
-#ifdef MUST_MATCH
-	rawStep = OSTicksToMilliseconds((OSTick)gp->renderTime - (OSTick)event->userdata[0]);
-	if ((s32)rawStep < steps) {
-		item->position.x = intplGetValue(mode, curStep = rawStep, steps, event->userdataf[1], targetX);
-#else
 	curStep = (s32)OSTicksToMilliseconds((OSTick)gp->renderTime - (OSTick)event->userdata[0]);
 	if (curStep < steps) {
 		item->position.x = intplGetValue(mode, curStep, steps, event->userdataf[1], targetX);
-#endif
 		item->position.y = intplGetValue(mode, curStep, steps, event->userdataf[2], targetY);
 		item->position.z = intplGetValue(mode, curStep, steps, *(f32*)&event->field_84, targetZ);
 		return EVT_RETURN_BLOCK;

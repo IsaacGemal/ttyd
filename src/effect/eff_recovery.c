@@ -453,15 +453,8 @@ void effRecoveryMain(EffectEntry* effect) {
 	}
 }
 
-// The two `volatile` reads are required for the original's instruction order: without
-// them the compiler hoists the vec3_802f3544 loads into the callee-save prologue, ahead of the
-// `effect->userdata` load. They emit the same lwz/loads, just ordered (rule 7 trick).
 void effRecoveryMain2(EffectEntry* effect) {
-#ifdef MUST_MATCH
-	RecoveryData* ptr = *(RecoveryData* volatile*)&effect->userdata;
-#else
 	RecoveryData* ptr = effect->userdata;
-#endif
 	Vec disp;
 	Vec pos;
 	s32 i;
@@ -875,12 +868,12 @@ void effRecoveryDisp4(CameraId camId, void* param) {
 		} else {
 			s32 idx = (i + gp->retraceCount) % 12;
 #ifdef MUST_MATCH
-			saved = rcC(idx, (color * ptr->color) / 255, *(GXColor*)&unk_80423044);
+			saved = rcC(idx, (color * ptr->color) / 255, unk_80423044);
 			effGetTexObj(0x14, &tex);
 			GXLoadTexObj(&tex, GX_TEXMAP0);
 			GXSetChanMatColor(GX_COLOR0A0, saved);
 #else
-			GXColor chanColor = *(GXColor*)&unk_80423044;
+			GXColor chanColor = unk_80423044;
 			chanColor.r = color_rotation_data[idx * 3 + 0];
 			chanColor.g = color_rotation_data[idx * 3 + 1];
 			chanColor.b = color_rotation_data[idx * 3 + 2];

@@ -206,15 +206,7 @@ void effBreakDisp(CameraId cameraId, void* param) {
     for (i = 1; i < effect->count; i++, data++) {
         effGetTexObj(texid_tbl[gp->language != 0][i - 1], &texObj);
         GXLoadTexObj(&texObj, 0);
-#ifdef MUST_MATCH
-        {
-            // One volatile read of the zero word, reused for both arguments (the original loads it once and fmr's).
-            f32 zero = *(volatile f32*)&float_0_804210b0;
-            PSMTXTrans(mtxB8, zero, data->texOffsetY, zero);
-        }
-#else
-        PSMTXTrans(mtxB8, 0.0f, data->texOffsetY, 0.0f);
-#endif
+        PSMTXTrans(mtxB8, float_0_804210b0, data->texOffsetY, float_0_804210b0);
         GXLoadTexMtxImm(mtxB8, 0x1e, 1);
         PSMTXTrans(mtxB8, data->x, data->y, data->z);
         PSMTXScale(mtx58, scale, scale, scale);

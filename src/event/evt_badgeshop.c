@@ -590,15 +590,10 @@ USER_FUNC(U_evt_badgeShop_get_special_zaiko) {
 
 	for (count = 0, i = 0; i < BADGE_MAX - KEY_ITEM_MIN; i++) {
 		badge = badgeShop_get(bdsw->bottakuru_table, (s16)(i + KEY_ITEM_MIN));
-#ifdef MUST_MATCH
-		// `!(badge <= 0)` is `badge > 0`, but the target keeps the compiler's
-		// cntlzw/rlwnm boolean form (see btlevtcmd_AnnounceMessage) rather than extsh./ble.
-		if (!(badge <= 0)) {
-#else
-		if (badge > 0) {
-#endif
-			count++;
+		if (badge <= 0) {
+			continue;
 		}
+		count++;
 	}
 	evtSetValue(event, *args, count);
 	return EVT_RETURN_DONE;

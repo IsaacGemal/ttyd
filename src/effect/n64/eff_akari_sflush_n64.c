@@ -61,12 +61,7 @@ EffectEntry* effAkariSflushN64Entry(s32 type, s32 count, f32 x, f32 y, f32 z, f3
 
 void effAkariSflushMain(EffectEntry* effect) {
 	EffAkariSflushData* data = effect->userdata;
-#ifdef MUST_MATCH
-	/* MUST_MATCH: retail builds the Vec in a scratch slot and copies it into a second
-	   local before dispCalcZ; a single local folds the copy away (same idiom as
-	   effGlassMain/effFlameMain). */
 	Vec position;
-#endif
 	Vec disp = { 0 };
 	s32 life;
 	s32 counter;
@@ -74,9 +69,7 @@ void effAkariSflushMain(EffectEntry* effect) {
 	disp.x = data->x;
 	disp.y = data->y;
 	disp.z = data->z;
-#ifdef MUST_MATCH
 	position = disp;
-#endif
 
 	if (effect->flags & 4) {
 		effect->flags &= ~4;
@@ -107,11 +100,7 @@ void effAkariSflushMain(EffectEntry* effect) {
 		data->alpha = life * 32 + 31;
 	}
 
-#ifdef MUST_MATCH
 	dispEntry(CAMERA_3D, dispCalcZ(&position), 2, effAkariSflushDisp, effect);
-#else
-	dispEntry(CAMERA_3D, dispCalcZ(&disp), 2, effAkariSflushDisp, effect);
-#endif
 }
 
 // effAkariSflushDisp: the TEV colour build is routed through two inlines, one per GXSetTevColor.  A plain

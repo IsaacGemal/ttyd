@@ -205,10 +205,8 @@ void effMistMain(EffectEntry* effect) {
 }
 #pragma opt_common_subs reset
 
-#ifdef MUST_MATCH
 // Build the GXColor in a helper: its return slot lands at 0x8 and the by-value argument copy at 0xc, as
-// retail. Field assignment (c.r/c.g/c.b) rather than byte-array indexing is what makes MWCC emit the
-// channel loads in address order r,g,b (r->r6/g->r5/b->r0); array indexing rotates the schedule to b,g,r.
+// retail.
 static inline GXColor mistColor(u8 r, u8 g, u8 b, u8 a) {
 	GXColor c = unk_80423320;
 	c.r = r;
@@ -217,7 +215,6 @@ static inline GXColor mistColor(u8 r, u8 g, u8 b, u8 a) {
 	c.a = a;
 	return c;
 }
-#endif
 
 // Matches the original: the colour helper above keeps retail's stack slots. The int->float magic
 // pools as its anonymous double (@261), which the linker names double_to_int_802fe918 from the map.
@@ -274,15 +271,7 @@ void effMistDisp(CameraId cameraId, void* param) {
 		PSMTXConcat(mtxView, mtxTrans, mtxTrans);
 		GXLoadPosMtxImm(mtxTrans, GX_PNMTX0);
 		GXSetCurrentMtx(GX_PNMTX0);
-#ifdef MUST_MATCH
 		color = mistColor(work->r, work->g, work->b, (u8)(work->alpha * (f32)alpha / float_255_804214e8));
-#else
-		color = unk_80423320;
-		color.r = work->r;
-		color.g = work->g;
-		color.b = work->b;
-		color.a = (s32)(work->alpha * (f32)alpha / float_255_804214e8);
-#endif
 		size = 16.0f;
 		half = -float_32_804214e4 * float_0p5_804214ec;
 		GXSetChanMatColor(GX_COLOR0A0, color);

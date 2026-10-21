@@ -57,23 +57,19 @@ EffectEntry* effEnergyEntry(s32 a, s32 b, f32 p1, f32 p2, f32 p3, f32 p4, f32 p5
     return entry;
 }
 
+static inline Vec makeVec(f32 x, f32 y, f32 z) {
+    Vec temp = { 0 };
+    temp.x = x;
+    temp.y = y;
+    temp.z = z;
+    return temp;
+}
+
 void effEnergyMain(EffectEntry* effect) {
     EnergyData* data = effect->userdata;
-#ifdef MUST_MATCH
-    /* MUST_MATCH: retail builds the Vec in a scratch slot and copies it into a second
-       local before dispCalcZ; a single local folds the copy away (same idiom as
-       effLasMonMain and effGlassMain). The { 0 } literal also reproduces the
-       original's scheduling of the zero-vector loads around the userdata load. */
     Vec position;
-#endif
-    Vec disp = { 0 };
 
-    disp.x = data->x;
-    disp.y = data->y;
-    disp.z = data->z;
-#ifdef MUST_MATCH
-    position = disp;
-#endif
+    position = makeVec(data->x, data->y, data->z);
 
     if (effect->flags & 4) {
         effect->flags &= ~4;
@@ -107,11 +103,7 @@ void effEnergyMain(EffectEntry* effect) {
         data->alphaSpeed = 0x20;
     }
 
-#ifdef MUST_MATCH
     dispEntry(CAMERA_3D, dispCalcZ(&position), 2, effEnergyDisp, effect);
-#else
-    dispEntry(CAMERA_3D, dispCalcZ(&disp), 2, effEnergyDisp, effect);
-#endif
 }
 
 static GXColor color_tbl[10] = {
@@ -128,10 +120,6 @@ static GXColor color_tbl[10] = {
 };
 
 
-// Routing both by-value GXColor calls through the MUST_MATCH void helpers below
-// makes MWCC build the colour in stack slot 0x10 and copy it to the argument temp at 0x14
-// (retail's layout); the plain form put them the other way round (0x14/0x10).
-#ifdef MUST_MATCH
 static inline void effEnergySetMatColor(EnergyData* data) {
     GXColor color = unk_80423358;
     color.r = data->alphaAnim;
@@ -140,14 +128,15 @@ static inline void effEnergySetMatColor(EnergyData* data) {
     color.a = data->alpha;
     GXSetChanMatColor(4, color);
 }
+// Routing the two by-value GXSetTevColor calls through this forwarder makes MWCC build the
+// mat colour in stack slot 0x10 and copy it to the argument temp at 0x14 (retail's layout); the plain
+// calls put them the other way round (0x14/0x10).
+#ifdef MUST_MATCH
 static inline void effEnergySetTevColor(s32 id, GXColor c) {
     GXSetTevColor(id, c);
 }
 #endif
 void effEnergyDisp(CameraId camId, void* param) {
-#ifndef MUST_MATCH
-    GXColor color;
-#endif
     EffectEntry* effect = param;
     EnergyData* data = effect->userdata;
     CameraEntry* cam;
@@ -181,16 +170,7 @@ void effEnergyDisp(CameraId camId, void* param) {
     GXSetTexCoordGen2(0, 1, 4, 0x3C, 0, 0x7D);
     GXSetNumChans(1);
     GXSetChanCtrl(4, 0, 0, 0, 0, 0, 2);
-#ifdef MUST_MATCH
     effEnergySetMatColor(data);
-#else
-    color = unk_80423358;
-    color.r = data->alphaAnim;
-    color.g = data->alphaAnim;
-    color.b = data->alphaAnim;
-    color.a = data->alpha;
-    GXSetChanMatColor(4, color);
-#endif
 #ifdef MUST_MATCH
     effEnergySetTevColor(1, color_tbl[type * 2]);
     effEnergySetTevColor(2, color_tbl[type * 2 + 1]);

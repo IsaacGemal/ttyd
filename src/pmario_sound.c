@@ -5530,28 +5530,19 @@ void psndBGMMain(void) {
 			master = psnd.unk58;
 		}
 
-		{
-			// MUST_MATCH: the integer cast keeps this pointer separate from `work`,
-			// so MWCC holds it in r6 as the target does.
-#ifdef MUST_MATCH
-			u8* w = (u8*)((u32)bgm + 0x20);
-#else
-			u8* w = (u8*)bgm + 0x20;
-#endif
+		w = (u8*)&bgm->unk20;
+		if (w[0] == 0) {
+			base = bgm->volume;
+		}
+		else {
+			base = bgm->volume * *(s16*)(w + 4) / *(s16*)(w + 2);
+		}
 
-			if (w[0] == 0) {
-				base = bgm->volume;
-			}
-			else {
-				base = bgm->volume * *(s16*)(w + 4) / *(s16*)(w + 2);
-			}
-
-			if (w[6] == 0) {
-				range = 0x7F;
-			}
-			else {
-				range = *(s16*)(w + 0xA) * 0x7F / *(s16*)(w + 8);
-			}
+		if (w[6] == 0) {
+			range = 0x7F;
+		}
+		else {
+			range = *(s16*)(w + 0xA) * 0x7F / *(s16*)(w + 8);
 		}
 
 		vol = base * range / 127;

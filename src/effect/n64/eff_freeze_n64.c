@@ -55,12 +55,7 @@ EffectEntry* effFreezeN64Entry(s32 type, s32 life, f32 x, f32 y, f32 z, f32 scal
 
 void effFreezeMain(EffectEntry* effect) {
 	effFreezeData* data = effect->userdata;
-#ifdef MUST_MATCH
-	/* MUST_MATCH: retail builds the Vec in a scratch slot and copies it into a second
-	   local before dispCalcZ; a single local folds the copy away (same idiom as
-	   effGlassMain). */
 	Vec position;
-#endif
 	Vec disp = { 0 };
 	s32 i;
 	s32 counter;
@@ -70,9 +65,7 @@ void effFreezeMain(EffectEntry* effect) {
 	disp.x = data->x;
 	disp.y = data->y;
 	disp.z = data->z;
-#ifdef MUST_MATCH
 	position = disp;
-#endif
 
 	if (effect->flags & 4) {
 		effect->flags &= ~4;
@@ -125,11 +118,7 @@ void effFreezeMain(EffectEntry* effect) {
 	((effSnowDustData*)data->snowDust->userdata)->y = 10.0f + data->y;
 	((effSnowDustData*)data->snowDust->userdata)->z = data->z;
 
-#ifdef MUST_MATCH
 	dispEntry(CAMERA_3D, dispCalcZ(&position), 2, effFreezeDisp, effect);
-#else
-	dispEntry(CAMERA_3D, dispCalcZ(&disp), 2, effFreezeDisp, effect);
-#endif
 }
 
 //.sbss2

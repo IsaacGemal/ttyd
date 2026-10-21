@@ -167,11 +167,9 @@ EffectEntry* effPacknBfireN64Entry(s32 type, s32 a1, s32 a2, f32 x, f32 y, f32 z
 }
 
 void effPacknBfireMain(EffectEntry* effect) {
-#ifdef MUST_MATCH
-	/* MUST_MATCH: retail builds the Vec in a scratch slot and copies it into a second local before
+	/* Retail builds the Vec in a scratch slot and copies it into a second local before
 	   dispCalcZ; a single local folds the copy away. */
 	Vec position;
-#endif
 	effPacknBfireData* data = effect->userdata;
 	Vec disp = { 0.0f, 0.0f, 0.0f };
 	s32 type;
@@ -181,9 +179,7 @@ void effPacknBfireMain(EffectEntry* effect) {
 	disp.x = data->x;
 	disp.y = data->y;
 	disp.z = data->z;
-#ifdef MUST_MATCH
 	position = disp;
-#endif
 	type = data->type;
 
 	if (effect->flags & 4) {
@@ -247,11 +243,7 @@ void effPacknBfireMain(EffectEntry* effect) {
 	}
 	}
 
-#ifdef MUST_MATCH
 	dispEntry(CAMERA_3D, dispCalcZ(&position), 2, effPacknBfireDisp, effect);
-#else
-	dispEntry(CAMERA_3D, dispCalcZ(&disp), 2, effPacknBfireDisp, effect);
-#endif
 }
 
 // Inlined in the original; keeping each TEV colour build in its own helper reproduces the stack

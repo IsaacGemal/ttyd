@@ -80,22 +80,23 @@ EffectEntry* effBombEntry(s32 type, f32 x, f32 y, f32 z, f32 scale) {
 	effConfettiEntry(4, 0x28, x, y, z);
 	return entry;
 }
+
+static inline Vec makeVec(f32 x, f32 y, f32 z) {
+	Vec temp = { 0 };
+	temp.x = x;
+	temp.y = y;
+	temp.z = z;
+	return temp;
+}
+
 static void effBombMain(EffectEntry* effect) {
-#ifdef MUST_MATCH
-	Vec position;
-#endif
 	effBombData* data = effect->userdata;
-	Vec disp = { 0 };
+	Vec position;
 	s32 i;
 	s32 counter;
 	s32 idx;
 
-	disp.x = data->position.x;
-	disp.y = data->position.y;
-	disp.z = data->position.z;
-#ifdef MUST_MATCH
-	position = disp;
-#endif
+	position = makeVec(data->position.x, data->position.y, data->position.z);
 	counter = data->counter;
 	data->counter = counter + 1;
 	if (data->counter > 0x24) {
@@ -120,11 +121,7 @@ static void effBombMain(EffectEntry* effect) {
 			}
 		}
 	}
-#ifdef MUST_MATCH
 	dispEntry(4, dispCalcZ(&position), 2, effBombDisp, effect);
-#else
-	dispEntry(4, dispCalcZ(&disp), 2, effBombDisp, effect);
-#endif
 }
 
 #pragma opt_loop_invariants off // needed: without it effBombDisp 99.71%

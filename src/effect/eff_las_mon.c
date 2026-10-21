@@ -82,12 +82,8 @@ void effLasMonMain(EffectEntry* effect) {
 				data->field_0x18++;
 			}
 			break;
-#ifdef MUST_MATCH
-		/* MUST_MATCH: the empty case 1 forces MWCC's switch decision tree; without it the
-		   one-case switch folds to a single compare. */
 		case 1:
 			break;
-#endif
 		}
 		dispEntry(CAMERA_3D, dispCalcZ(&position), 2, effLasMonDisp, effect);
 	}

@@ -27,11 +27,6 @@
 #include "evt/evt_lottery.h"
 #include <stdio.h>
 
-#ifdef MUST_MATCH
-// Retail shares one base register for this unit's literal and template pool.
-#pragma pool_data on
-#endif
-
 
 typedef struct SortTable {
     const char* name;                 // 0x0
@@ -197,15 +192,14 @@ extern const char** luigi_book_list[];
 // pointer, ABI-identical), and only the cast reproduces its argument scheduling.
 #ifdef MUST_MATCH
 #define winFontSetLabelV ((void (*)(Vec, Vec, GXColor, const char*))winFontSetLabel)
-#define winFontSetV ((void (*)(Vec, Vec, GXColor, const char*, ...))winFontSet)
 #else
 static inline void winFontSetLabelV(Vec pos, Vec scale, GXColor color, const char* msg) {
     winFontSetLabel(&pos, &scale, &color, msg);
 }
+#endif
 static inline void winFontSetV(Vec pos, Vec scale, GXColor color, const char* msg) {
     winFontSet(&pos, &scale, &color, msg);
 }
-#endif
 
 // Per-tab slide-in/slide-out animation. winRootTabStep is a plain static defined after winRootMain: MWCC
 // inlines it and still generates its body first, so its 185.0f pools ahead of winRootMain's 1000.0f in
@@ -758,11 +752,7 @@ void winBgMain(WindowWork* work) {
                 }
                 break;
             }
-#ifdef MUST_MATCH
-            /* MUST_MATCH: -1 is a redirect target of cases 11/41; the empty case makes
-               MWCC emit the retail search-tree pivot (0 then 2) instead of 1 then 0. */
             case -1:
-#endif
             case 100:
                 break;
             default:

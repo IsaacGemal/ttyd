@@ -64,20 +64,13 @@ EffectEntry* effMissStarEntry(s32 type, f32 x, f32 y, f32 z, s32 delay, s32 angl
         angle = -angle;
         sign = -1;
     }
-#ifdef MUST_MATCH
-    // The original tests the bound with an explicit break; a plain `while (angle > 5)`
-    // lets MWCC fold the trip count into a divwu/bdnz loop that does not match.
+    // An explicit break: `while (angle > 5)` becomes a divwu/bdnz trip-count loop.
     while (1) {
         if (angle <= 5) {
             break;
         }
         angle -= 5;
     }
-#else
-    while (angle > 5) {
-        angle -= 5;
-    }
-#endif
 
     entry->type = "SmallStar";
     entry->count = type;

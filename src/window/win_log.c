@@ -28,11 +28,6 @@
 #include "system.h"
 #include "memory.h"
 #pragma pool_data on // the original addresses its .rodata through one base register
-#ifdef MUST_MATCH
-#define RELOAD_F32(x) (*(const volatile f32*)&(x))
-#else
-#define RELOAD_F32(x) (x)
-#endif
 
 // The monosiri (tattle) viewer work struct. Not declared in any header yet;
 // fields recovered from monosiriInit / monosiriMain / monosiriExit.
@@ -1250,12 +1245,8 @@ void winLogMain2(WindowWork* work) {
         WinLogEntry* e = (WinLogEntry*)(ep + 0xD78);
 
         switch (e->state) {
-#ifdef MUST_MATCH
-        // Empty low/high cases force the jump table to span 0..0x29 (indexed
-        // from 0), as in the original; both fall through to the loop tail.
         case 0:
             break;
-#endif
         case 10:
             e->targetX = 0.0f;
             e->targetY = 140.f;
@@ -1302,10 +1293,8 @@ void winLogMain2(WindowWork* work) {
             e->timer = 0;
             e->state++;
             break;
-#ifdef MUST_MATCH
         case 41:
             break;
-#endif
         }
         {
             f32 dx, dy;
@@ -1951,10 +1940,6 @@ void capture(CameraId camId, void* param) {
     f32 dist;
     Vec q;
     Vec p;
-#ifdef MUST_MATCH
-    Vec mnScratch;
-    Vec mxScratch;
-#endif
     Mtx m;
     s32 i;
     TattleCamEntry* tbl;
@@ -1969,29 +1954,8 @@ void capture(CameraId camId, void* param) {
     u16 bb;
 
     ad = animPoseGetAnimDataPtr(w->poseId);
-#ifdef MUST_MATCH
-    // Reproduce the original's dead aggregate copy: it reads the two zero vectors at base+0x358/0x364
-    // into a scratch pair and then copies them through mn/mx; folding that copy changes the frame layout.
-    {
-        mnScratch = (Vec){0.0f, 0.0f, 0.0f};
-        mnScratch.x = ad->field_0x44;
-        mnScratch.y = ad->field_0x48;
-        mnScratch.z = ad->field_0x4C;
-        mn = mnScratch;
-        mxScratch = (Vec){0.0f, 0.0f, 0.0f};
-        mxScratch.x = ad->field_0x50;
-        mxScratch.y = ad->field_0x54;
-        mxScratch.z = ad->field_0x58;
-        mx = mxScratch;
-    }
-#else
-    mn.x = ad->field_0x44;
-    mn.y = ad->field_0x48;
-    mn.z = ad->field_0x4C;
-    mx.x = ad->field_0x50;
-    mx.y = ad->field_0x54;
-    mx.z = ad->field_0x58;
-#endif
+    mn = (Vec){ad->field_0x44, ad->field_0x48, ad->field_0x4C};
+    mx = (Vec){ad->field_0x50, ad->field_0x54, ad->field_0x58};
     cx = (mx.x + mn.x) / 2.0f;
     cy = (mx.y + mn.y) / 2.0f;
     GXGetViewportv(vp);

@@ -575,13 +575,7 @@ void effSplashDisp(enum CameraId camId, void* param) {
 			for (j = 0; j < 9; j++) {
 				f32 angle, c, s, t;
 				t = (f32)j;
-#ifdef MUST_MATCH
-				// MWCC strength-reduces / 8.0f to a * 0.125f and leaves 6.2832f*t in the scratch f0,
-				// which is the target's two fmuls; the natural form is under #else.
 				angle = 6.2831855f * t / 8.0f;
-#else
-				angle = 6.2831855f * t * 0.125f;
-#endif
 				c = (f32)cos(angle);
 				s = (f32)sin(angle);
 				GXPosition3f32(radiusA * s, 0.0f, radiusA * c);

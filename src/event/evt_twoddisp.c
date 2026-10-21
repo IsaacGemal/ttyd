@@ -11,7 +11,7 @@
 #include "driver/icondrv_gx.h"
 #include "driver/dispdrv.h"
 #include "manager/fontmgr.h"
-void FontDrawColor(GXColor* color);
+void FontDrawColor(GXColor color);
 #include "memory.h"
 #include "evt/evt_twoddisp.h"
 #include <stdio.h>
@@ -63,23 +63,12 @@ static TwoDDisplayer* twodNameToPtr(s32 name) {
 	return NULL;
 }
 
-// Match-only stack shape: passing the font colour by value makes the compiler place all four GXColor
-// argument copies in the outgoing-argument area, matching the original's 0x14/0x10/0xc/0x8 slots; the
-// natural address-taken locals below land in the other half of the frame.
-static inline void twoddisp_fontColor(GXColor color) {
-	FontDrawColor(&color);
-}
-
 void twoddisp_disp(CameraId cameraId, void* param) {
 	s32 i;
 	TwoDDisplayer* entry;
 	Vec pos;
 	GXColor color;
 	GXColor textColor;
-#ifndef MUST_MATCH
-	GXColor color1;
-	GXColor color2;
-#endif
 	char text[0x100];
 
 	for (i = 0; i < 100; i++) {
@@ -103,19 +92,9 @@ void twoddisp_disp(CameraId cameraId, void* param) {
 			textColor = unk_8042304c;
 			GXSetFog(GX_FOG_NONE, 0.0f, 0.0f, 0.0f, 0.0f, textColor);
 			sprintf(text, (char*)entry->data);
-#ifdef MUST_MATCH
-			twoddisp_fontColor(dat_8041cca8);
-#else
-			color1 = dat_8041cca8;
-			FontDrawColor(&color1);
-#endif
+			FontDrawColor(dat_8041cca8);
 			FontDrawString(entry->baseX + entry->x, entry->baseY + entry->y, text);
-#ifdef MUST_MATCH
-			twoddisp_fontColor(dat_8041ccac);
-#else
-			color2 = dat_8041ccac;
-			FontDrawColor(&color2);
-#endif
+			FontDrawColor(dat_8041ccac);
 			FontDrawString(entry->baseX + entry->x + 1.0f, entry->baseY + entry->y - 1.0f, text);
 		}
 	}

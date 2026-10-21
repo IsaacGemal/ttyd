@@ -73,20 +73,16 @@ void effSunlightMain(EffectEntry* effect) {
 	s32 i;
 	s32 counter;
 	f32 base;
-#ifdef MUST_MATCH
-	/* MUST_MATCH: retail builds the Vec in a scratch slot and copies it into a second
+	/* Retail builds the Vec in a scratch slot and copies it into a second
 	   local before dispCalcZ; a single local folds the copy away (same idiom as
 	   effFlameMain / effGlassMain). */
 	Vec position;
-#endif
 	Vec disp = { 0 };
 
 	disp.x = data->x;
 	disp.y = data->y;
 	disp.z = data->z;
-#ifdef MUST_MATCH
 	position = disp;
-#endif
 
 	if (effect->flags & 4) {
 		effect->flags &= ~4;
@@ -158,11 +154,7 @@ void effSunlightMain(EffectEntry* effect) {
 		}
 	}
 
-#ifdef MUST_MATCH
 	dispEntry(CAMERA_3D, dispCalcZ(&position), 2, effSunlightDisp, effect);
-#else
-	dispEntry(CAMERA_3D, dispCalcZ(&disp), 2, effSunlightDisp, effect);
-#endif
 }
 
 // Matched by pooling the three view Vecs as file-local consts right after effSunlightMain's zero Vec,

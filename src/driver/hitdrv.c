@@ -1148,7 +1148,6 @@ HitEntry* hitCheckAttr(s32 user0, f32* hitX, f32* hitY, f32* hitZ, f32* distance
 // The declaration order is tuned so that extra variable still leaves wp/i/var_r31 in r30/r29/r31.
 HitEntry* hitCheckSphereFilter(HitFilterCallback callback, f32 x, f32 y, f32 z,
                                f32 distance) { // 1:1
-    MapEntry* map;
     MapWork* wp;
     MapEntry* var_r31;
     int i;
@@ -1201,14 +1200,7 @@ HitEntry* hitCheckSphereFilter(HitFilterCallback callback, f32 x, f32 y, f32 z,
     if (var_f28 < (0.5f * var_f31)) {
         return &wp->entries[entryId].hitEntries[objectId];
     }
-#ifdef MUST_MATCH
-    // MUST_MATCH: in-place base update makes MWCC reuse wp's register (r30) for the map, as retail does.
-    wp = (MapWork*)&wp->entries[entryId];
-    temp_r27 = &wp->entries[0].hitEntries[objectId];
-#else
-    map = &wp->entries[entryId];
-    temp_r27 = &map->hitEntries[objectId];
-#endif
+    temp_r27 = &wp->entries[entryId].hitEntries[objectId];
     PSVECSubtract(&temp_r27->centerWorld, &sp68, &query->targetDir);
     PSVECNormalize(&query->targetDir, &query->targetDir);
     var_f30 = -1.0f;
@@ -1235,19 +1227,13 @@ HitEntry* hitCheckSphereFilter(HitFilterCallback callback, f32 x, f32 y, f32 z,
     if (var_r29 < 0) {
         return 0;
     }
-#ifdef MUST_MATCH
-    return &wp->entries[0].hitEntries[objectId];
-#else
-    return &map->hitEntries[objectId];
-#endif
+    return &wp->entries[entryId].hitEntries[objectId];
 }
 
 HitEntry* hitNameToPtr(const char* name) { // 1:1
     MapEntry* map;
     MapWork* wp = mapGetWork();
     int j;
-    MapEntry* new_var;
-    MapEntry* new_var2;
     int i;
     HitEntry* hit;
 
@@ -1255,9 +1241,7 @@ HitEntry* hitNameToPtr(const char* name) { // 1:1
         return NULL;
     }
     map = wp->entries;
-    new_var = map;
-    new_var2 = new_var;
-    for (i = 0; i < new_var2->count; map++, i++) {
+    for (i = 0; i < wp->entries->count; map++, i++) {
         hit = map->hitEntries;
         for (j = 0; j < map->hitNumJoints; j++, hit++) {
             if (!(hit->flags & HIT_FLAG_DELETED) && !strcmp(hit->joint->name, name)) {

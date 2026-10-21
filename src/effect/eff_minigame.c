@@ -89,11 +89,7 @@ EffectEntry* effMiniGameEntry(s32 type, f32 x, f32 y, f32 z) {
 // test; the original keeps the switch value in r3. The count terms below are written as
 // `* 26.0f / 2.0f` rather than `* 26.0f * 0.5f`, which keeps the product as the first fmuls operand
 // (same idiom as effMiniGameMain).
-#ifdef MUST_MATCH
 			if (0x28 == data->state) {
-#else
-			if (data->state == 0x28) {
-#endif
 				data->posX =
 					(f32)(i - 1) * 26.0f - (f32)(entry->count - 1) * 26.0f / 2.0f;
 				data->timer = (i - 1) * 10;

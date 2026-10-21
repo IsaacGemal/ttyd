@@ -11,9 +11,6 @@ __declspec(section ".sdata") GXColor unk_80423170;
 #include <dolphin/mtx.h>
 #include "math_ext.h"
 
-// .sdata2 constants (defined by this unit in the original), named after their asm addresses.
-extern const GXColor dat_8041f420;
-
 // .sbss2 zero GXColor scratch objects the original builds its material colors from.
 
 // .rodata constants of this unit.
@@ -180,17 +177,6 @@ void effKemuri8Main(EffectEntry* effect) {
 	dispEntry(camId, dispCalcZ(&position), 2, effKemuri8Disp, effect);
 }
 
-// Colour helpers that reproduce the original's by-value stack slots. The TEV colour is returned from an
-// inline (its literal 0x80808080 is what puts the unit's first .sdata2 word at offset 0, so the rest of
-// the function's pooled float literals land on the original addresses); each material colour is built and
-// its GXSetChanMatColor call made inside a void inline, which pairs the local with its outgoing copy
-// (0x8/0xc and 0x10/0x14) as the original does.
-#ifdef MUST_MATCH
-static inline GXColor kemuri8TevColor(void) {
-	GXColor c = (GXColor){ 0x80, 0x80, 0x80, 0x80 };
-	return c;
-}
-
 static inline void kemuri8SetChanMatColorA(u8 a) {
 	GXColor c = unk_80423170;
 	c.a = a;
@@ -205,7 +191,6 @@ static inline void kemuri8SetChanMatColorB(u8 r, u8 g, u8 b, u8 a) {
 	c.a = a;
 	GXSetChanMatColor(4, c);
 }
-#endif
 
 void effKemuri8Disp(CameraId cameraId, void* param) {
 	f32 half = 0.5f;
@@ -258,11 +243,7 @@ void effKemuri8Disp(CameraId cameraId, void* param) {
 	GXSetTevAlphaOp(1, 0, 0, 0, 1, 0);
 	GXSetTevColorIn(1, 0, 8, 2, 0xf);
 	GXSetTevAlphaIn(1, 0, 4, 1, 7);
-#ifdef MUST_MATCH
-	GXSetTevColor(1, kemuri8TevColor());
-#else
-	GXSetTevColor(1, dat_8041f420);
-#endif
+	GXSetTevColor(1, (GXColor){ 0x80, 0x80, 0x80, 0x80 });
 	GXSetTevOrder(2, 0xff, 0xff, 4);
 	GXSetTevColorOp(2, 0, 0, 0, 1, 0);
 	GXSetTevAlphaOp(2, 0, 0, 0, 1, 0);
@@ -294,13 +275,7 @@ void effKemuri8Disp(CameraId cameraId, void* param) {
 
 		for (j = 0; j < 2; j++) {
 			if (j == 0) {
-#ifdef MUST_MATCH
 				kemuri8SetChanMatColorA((data->color.a * 0x60) / 255);
-#else
-				GXColor color = unk_80423170;
-				color.a = (data->color.a * 0x60) / 255;
-				GXSetChanMatColor(4, color);
-#endif
 				PSMTXTrans(transMtx, 2.0f + data->position.x, data->position.y - 2.0f, data->position.z);
 				PSMTXConcat(outMtx, transMtx, transMtx);
 				GXLoadPosMtxImm(transMtx, 0);

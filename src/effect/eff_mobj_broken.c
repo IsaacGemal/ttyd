@@ -348,8 +348,8 @@ void effMObjBrokenMain(EffectEntry* effect) {
 
 // The original keeps both cube loops' axis scratch vectors in one function-wide block
 // (`axis1`/`axis2` and their `tmpAxis` copies) instead of per-loop locals; that is what gives the
-// two passes their distinct stack slots. Reproducing the loop-invariant loads also needs the two
-// MUST_MATCH quirks below.
+// two passes their distinct stack slots. Reproducing the loop-invariant loads also needs the
+// MUST_MATCH quirk below.
 void effMObjBrokenDisp(CameraId camId, void* param) {
 	EffectEntry* effect = param;
 	MobjBrokenWork* data;
@@ -411,8 +411,6 @@ void effMObjBrokenDisp(CameraId camId, void* param) {
 	data = effect->userdata;
 	data++;
 	for (i = 1; i < effect->count; i++, data++) {
-#ifdef MUST_MATCH
-		// Declaration order fixes the callee-saved FPRs; assignment order fixes the load order.
 		f32 kDegToRad;
 		f32 kOffset;
 		f32 kDeg360;
@@ -422,12 +420,6 @@ void effMObjBrokenDisp(CameraId camId, void* param) {
 		kDeg360 = float_360_804210f8;
 		kOffset = float_5_804210fc;
 		kDegToRad = float_deg2rad_804210e8;
-#else
-		f32 kTwoPi = float_6p2832_804210f4;
-		f32 kDeg360 = float_360_804210f8;
-		f32 kOffset = float_5_804210fc;
-		f32 kDegToRad = float_deg2rad_804210e8;
-#endif
 		tmpAxis1 = *zeroAxis;
 		tmpAxis1.x = (f32)cos(kTwoPi * data->field_0x1C / kDeg360);
 		tmpAxis1.z = (f32)sin(kTwoPi * data->field_0x1C / kDeg360);

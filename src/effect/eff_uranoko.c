@@ -74,17 +74,8 @@ void effUranokoMain(EffectEntry* effect) {
 		effDelete(effect);
 	}
 	else {
-		f32 t;
-#ifdef MUST_MATCH
-		f32 k = 0.125f;
-#endif
 		data->field_0x18++;
-		t = 1.0f - data->scale;
-#ifdef MUST_MATCH
-		data->scale = t * k + data->scale;
-#else
-		data->scale = t * 0.125f + data->scale;
-#endif
+		data->scale += (1.0f - data->scale) / 8.0f;
 		dispEntry(CAMERA_3D, dispCalcZ(&disp), 2, effUranokoDisp, effect);
 	}
 }

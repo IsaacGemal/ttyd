@@ -134,21 +134,13 @@ void caseMain(void) {
 			}
 			break;
 		case 1:
-#ifdef MUST_MATCH
-			/* The original keeps entry->flags live from the loop-top lhz r4 and
-			   reuses it on the null path (ori r0,r4,2), so split the || branch. */
 			if (hitStandOn != NULL) {
 				if (strcmp(hitGetName(hitStandOn), entry->hitObjName) != 0) {
 					entry->flags |= 2;
 				}
 			} else {
-				entry->flags = flags | 2;
-			}
-#else
-			if (hitStandOn == NULL || strcmp(hitGetName(hitStandOn), entry->hitObjName) != 0) {
 				entry->flags |= 2;
 			}
-#endif
 			break;
 		case 2:
 			if (hit1F8 != NULL && strcmp(hitGetName(hit1F8), entry->hitObjName) == 0) {
@@ -156,19 +148,13 @@ void caseMain(void) {
 			}
 			break;
 		case 3:
-#ifdef MUST_MATCH
 			if (hit1F8 != NULL) {
 				if (strcmp(hitGetName(hit1F8), entry->hitObjName) != 0) {
 					entry->flags |= 2;
 				}
 			} else {
-				entry->flags = flags | 2;
-			}
-#else
-			if (hit1F8 == NULL || strcmp(hitGetName(hit1F8), entry->hitObjName) != 0) {
 				entry->flags |= 2;
 			}
-#endif
 			break;
 		case 8:
 			if (hit1E0 != NULL && strcmp(hitGetName(hit1E0), entry->hitObjName) == 0) {

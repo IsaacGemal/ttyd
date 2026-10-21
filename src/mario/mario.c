@@ -1809,18 +1809,12 @@ void unk_80058374(void) {
 	MarioWork* wp = mp;
 
 	if (wp->currMotionId != MARIO_MOTION_SHIP && wp->currMotionId != MARIO_MOTION_ROLL && wp->currMotionId != MARIO_MOTION_PLANE && wp->currMotionId != MARIO_MOTION_JABARA && wp->currMotionId != MARIO_MOTION_YOSHI) {
-#ifdef MUST_MATCH
-		// original layout is a one-case switch: an `if` compiles to `bne end`, this to `beq body; b end`
+		// A one-case switch: an `if` here compiles to `bne end`, the original has `beq body; b end`.
 		switch (wp->dispFlags & 0x1000000) {
 		case 0:
 			marioChgPose("M_D_1"); //inline
 			break;
 		}
-#else
-		if (!(wp->dispFlags & 0x1000000)) {
-			marioChgPose("M_D_1"); //inline
-		}
-#endif
 	}
 }
 
