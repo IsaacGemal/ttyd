@@ -771,7 +771,7 @@ void dvdReadDoneCallBack(s32 error, DVDFileInfo* info) {
 	}
 }
 
-s32 fileAsyncf(s32 type, FileCallback callback, const char* format, ...) {
+u32 fileAsyncf(s32 type, FileCallback callback, const char* format, ...) {
 	va_list va;
 
 	va_start(va, format);

@@ -912,7 +912,7 @@ void marioFall(void) {
             marioLandOn();
         }
     } else {
-        if ((u32)kpaChkHitobjRide() != 0) {
+        if (kpaChkHitobjRide() != NULL) {
             marioLandOn();
         }
     }

@@ -5491,7 +5491,7 @@ void psndBGMMain(void) {
 			active = 0;
 		}
 		else if (psbgmlist[bgm->unk0].flags & 0x80000000) {
-			if ((u32)SoundSSCheck(bgm->streamId) != 0) {
+			if (SoundSSCheck(bgm->streamId) != 0) {
 				active = 1;
 			}
 			else {
@@ -5499,7 +5499,7 @@ void psndBGMMain(void) {
 			}
 		}
 		else {
-			if ((u32)SoundSongCheck(bgm->streamId) == 0) {
+			if (SoundSongCheck(bgm->streamId) == 0) {
 				active = 0;
 			}
 			else {
@@ -5978,7 +5978,7 @@ BOOL psndBGMChk(s32 id) {
 	return (~((val + 1) | (-1 - val))) >> 31;
 }
 
-BOOL psndBGMChkSilent(s32 id) {
+u32 psndBGMChkSilent(s32 id) {
 	PaperSoundBGM* bgm = &psbgm[id & 0xF];
 
 	if ((u32)bgm->unk0 == -1) {
@@ -6004,7 +6004,7 @@ void psndBGMScope(s32 id, s32 scope) {
 	}
 }
 
-BOOL psndBGMStartCheck(s32 id) {
+u32 psndBGMStartCheck(s32 id) {
 	PaperSoundBGM* bgm = &psbgm[id & 0xF];
 
 	if ((u32)bgm->unk0 == -1) {
@@ -6028,7 +6028,7 @@ static inline s32 psndSFXFindSSChannel(void) {
     s32 ch;
 
     for (ch = 0; (u32)ch < 3; ch++) {
-        if ((u32)SoundSSCheck(ch) == 0) return ch;
+        if (SoundSSCheck(ch) == 0) return ch;
     }
     for (ch = 0; (u32)ch < 3; ch++) {
         if (SoundSSCheck(ch) & 0x20) {
@@ -6036,7 +6036,7 @@ static inline s32 psndSFXFindSSChannel(void) {
         }
     }
     for (ch = 0; (u32)ch < 3; ch++) {
-        if ((u32)SoundSSCheck(ch) == 0) return ch;
+        if (SoundSSCheck(ch) == 0) return ch;
     }
     return -1;
 }
@@ -6045,7 +6045,7 @@ static inline s32 psndSFXFindSongChannel(void) {
     s32 ch;
 
     for (ch = 0; (u32)ch < 4; ch++) {
-        if ((u32)SoundSongCheck(ch) == 0) return ch;
+        if (SoundSongCheck(ch) == 0) return ch;
     }
     return -1;
 }
@@ -6076,19 +6076,19 @@ void psndSFXMain(void) {
         if (sfx->unk6 & 1) continue;
         entry = &pssfxlist[sfx->unk0 & 0x1FFF];
         if (entry->flags & 0x80000000) {
-            u = (u32)SoundSSCheck(sfx->unk18);
+            u = SoundSSCheck(sfx->unk18);
             if (u == 0) {
                 sfx->unk0 = -1;
                 sfx->unk18 = -1;
             }
         } else if (entry->flags & 0x40000000) {
-            u = (u32)SoundSongCheck(sfx->unk18);
+            u = SoundSongCheck(sfx->unk18);
             if (u == 0) {
                 sfx->unk0 = -1;
                 sfx->unk18 = -1;
             }
         } else {
-            u = (u32)SoundEfxCheck(sfx->unk18);
+            u = SoundEfxCheck(sfx->unk18);
             if (u == 0) {
                 sfx->unk0 = -1;
                 sfx->unk18 = -1;

@@ -45,7 +45,7 @@ void mario_kemuri_80130474(void) {
     f32 cos;
     f32 sin;
 
-    if ((u32)marioStGetSystemLevel() != 0) {
+    if (marioStGetSystemLevel() != 0) {
         return;
     }
     if ((mario->flags & 0x01000000) || mario->currMotionId == 0x1D) {

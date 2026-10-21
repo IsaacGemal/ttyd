@@ -370,7 +370,7 @@ void marioStSystemLevel(s32 level) {
 	}
 }
 
-s32 marioStGetSystemLevel(void) {
+u32 marioStGetSystemLevel(void) {
 	return gp->systemLevelFlags;
 }
 

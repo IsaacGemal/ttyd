@@ -672,7 +672,7 @@ USER_FUNC(toron_check) {
     if (marioKeyOffChk() || marioCtrlOffChk()) {
         flag = 1;
     }
-    if ((u32)marioStGetSystemLevel() != 0) {
+    if (marioStGetSystemLevel() != 0) {
         flag = 1;
     }
     if ((void*)npc == hit && flag == 0) {

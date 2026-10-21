@@ -1146,7 +1146,7 @@ s32 credits_init(EventEntry* event, BOOL isFirstCall) {
         JUTFont_Free();
         JUTFontSetup(1);
     }
-    if ((void*)fileAsyncf(FILE_TYPE_TPL, NULL, "%s/ending.tpl", getMarioStDvdRoot()) == NULL) {
+    if (fileAsyncf(FILE_TYPE_TPL, NULL, "%s/ending.tpl", getMarioStDvdRoot()) == 0) {
         return EVT_RETURN_BLOCK;
     }
     if (((CreditsWork*)credits_work_ptr[0])->image == NULL) {

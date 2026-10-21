@@ -62,7 +62,7 @@ void _fileGarbage(BOOL a1);
 FileEntry* fileAllocf(s32 type, const char* format, ...);
 FileEntry* fileAlloc(const char* filename, s32 type);
 void fileFree(FileEntry* handle);
-s32 fileAsyncf(s32 type, FileCallback callback, const char* format, ...);
+u32 fileAsyncf(s32 type, FileCallback callback, const char* format, ...);
 void fileSetCurrentArchiveType(s32 type);
 void fileGarbageDataAdrSet(void* data, s32 type);
 void fileGarbageDataAdrClear(FileEntry* entry);

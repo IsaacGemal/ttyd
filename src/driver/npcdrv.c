@@ -2006,7 +2006,7 @@ void fbatEncountCheck(void) {
     total = wk->total;
     mario = marioGetPtr();
     wk->talkCheckNpc = NULL;
-    if ((u32)marioStGetSystemLevel() != 0) {
+    if (marioStGetSystemLevel() != 0) {
         return;
     }
     if (!(wk->flags & 1)) {

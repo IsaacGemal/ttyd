@@ -631,7 +631,7 @@ USER_FUNC(unk_gon_00000374) {
     if (marioKeyOffChk() || marioCtrlOffChk()) {
         flag = TRUE;
     }
-    if ((u32)marioStGetSystemLevel() != 0) {
+    if (marioStGetSystemLevel() != 0) {
         flag = TRUE;
     }
 

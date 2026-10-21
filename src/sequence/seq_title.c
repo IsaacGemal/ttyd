@@ -174,7 +174,7 @@ void titleMain(SequenceWork* work) {
 #endif
 	switch (wp2->step) {
 		case 0: {
-			u32 bgmCheck = (u32)psndBGMStartCheck(0);
+			u32 bgmCheck = psndBGMStartCheck(0);
 			if (bgmCheck && animGroupBaseAsync(TITLE_MAKU_LR, 2, 0)
 				&& animGroupBaseAsync(TITLE_MAKU_C, 2, 0))
 			{

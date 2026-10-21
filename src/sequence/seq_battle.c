@@ -96,10 +96,10 @@ void seq_battleMain(SequenceWork* work) {
             break;
 
         case 1:
-            if ((u32)fileAsyncf(FILE_TYPE_TPL, 0, "%s/%s", getMarioStDvdRoot(), "battle/audience/audience_normal.tpl") == 0) {
+            if (fileAsyncf(FILE_TYPE_TPL, 0, "%s/%s", getMarioStDvdRoot(), "battle/audience/audience_normal.tpl") == 0) {
                 break;
             }
-            if ((u32)fileAsyncf(FILE_TYPE_TPL, 0, "%s/%s", getMarioStDvdRoot(), "battle/audience/audience_luigi.tpl") == 0) {
+            if (fileAsyncf(FILE_TYPE_TPL, 0, "%s/%s", getMarioStDvdRoot(), "battle/audience/audience_luigi.tpl") == 0) {
                 break;
             }
             work->field_0x10++;

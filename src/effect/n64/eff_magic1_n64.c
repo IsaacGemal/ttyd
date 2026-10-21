@@ -73,7 +73,7 @@ void effMagic1Main(EffectEntry* effect) {
     disp.z = data->offsetZ;
     position = disp;
 
-    if ((u32)marioStGetSystemLevel() != 0) {
+    if (marioStGetSystemLevel() != 0) {
         order = dispCalcZ(&position);
         dispEntry(CAMERA_3D, order, 2, (DispCallback)effMagic1Disp, effect);
     } else {

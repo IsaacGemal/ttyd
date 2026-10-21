@@ -568,7 +568,7 @@ static USER_FUNC(sight) {
         sight_wp->state = 5;
     }
     if (sight_wp->file == NULL) {
-        if ((u32)fileAsyncf(FILE_TYPE_TPL, 0, "%s/%s", getMarioStDvdRoot(), "taihou.tpl") == 0) {
+        if (fileAsyncf(FILE_TYPE_TPL, 0, "%s/%s", getMarioStDvdRoot(), "taihou.tpl") == 0) {
             return EVT_RETURN_BLOCK;
         }
         sight_wp->file = fileAllocf(FILE_TYPE_TPL, "%s/%s", getMarioStDvdRoot(), "taihou.tpl");

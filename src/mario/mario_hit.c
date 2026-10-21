@@ -653,7 +653,7 @@ void marioChkGnd(void) {
         }
         wp->position.y = gy;
         if (wp->characterId == 2) {
-            ride = (HitEntry*)kpaChkHitobjRide();
+            ride = kpaChkHitobjRide();
         } else {
             ride = wp->hitobjStandOn;
         }

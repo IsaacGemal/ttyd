@@ -13,7 +13,7 @@ typedef struct GlobalWork {
 	s32 field_C; //0xC
 	BOOL dvdError; //0x10
 	s32 inBattle; //0x14, verified s32
-	s32 systemLevelFlags; //0x18
+	u32 systemLevelFlags; //0x18
 	u32 retraceCount; //0x1C
 	OSTime retraceLocalTime; //0x20
 	OSTime retraceDeltaTime; //0x28
@@ -105,7 +105,7 @@ void marioStInit(void);
 void marioStMain(void);
 void marioStDisp(void);
 void marioStSystemLevel(s32 level);
-s32 marioStGetSystemLevel(void);
+u32 marioStGetSystemLevel(void);
 void viPostCallback(u32 retraceCount);
 void* gcDvdCheckThread(void* param);
 void gcRumbleCheck(void);

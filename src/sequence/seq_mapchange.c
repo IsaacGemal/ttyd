@@ -196,7 +196,7 @@ void seq_mapChangeMain(SequenceWork* work) {
             }
         }
         {
-            u32 r = (u32)fileAsyncf(FILE_TYPE_RAW, 0, str_relPathFormat, getMarioStDvdRoot(), area);
+            u32 r = fileAsyncf(FILE_TYPE_RAW, 0, str_relPathFormat, getMarioStDvdRoot(), area);
             s32 ready;
 
             if (r == 0) {

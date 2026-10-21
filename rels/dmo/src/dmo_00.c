@@ -99,7 +99,7 @@ USER_FUNC(demo_init) {
         statusWinDispOff();
         psndSetFlag(4);
     }
-    if ((u32)fileAsyncf(FILE_TYPE_TPL, 0, "%s/demo.tpl", getMarioStDvdRoot()) != 0) {
+    if (fileAsyncf(FILE_TYPE_TPL, 0, "%s/demo.tpl", getMarioStDvdRoot()) != 0) {
         wp->tplFile = fileAllocf(FILE_TYPE_TPL, "%s/demo.tpl", getMarioStDvdRoot());
         gp->areaFadeOutType = 9;
         gp->areaFadeOutDuration = 500;

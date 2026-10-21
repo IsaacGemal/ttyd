@@ -198,7 +198,7 @@ s32 itemGetCheck(ItemEntry* entry) {
 
     if (mario->characterId == 2) {
         if (!(mario->field_0x14 & 1)) {
-            if ((u32)marioStGetSystemLevel() != 0) {
+            if (marioStGetSystemLevel() != 0) {
                 return 0;
             }
             if (mario->flags & 0xa) {
@@ -207,7 +207,7 @@ s32 itemGetCheck(ItemEntry* entry) {
         }
     }
     else {
-        if ((u32)marioStGetSystemLevel() != 0) {
+        if (marioStGetSystemLevel() != 0) {
             return 0;
         }
         if (mario->flags & 0xa) {
@@ -283,7 +283,7 @@ s32 itemGetNokoCheck(ItemEntry* entry) {
     if (itemStatus(entry, 0x100000)) {
         return 0;
     }
-    if ((u32)marioStGetSystemLevel() != 0) {
+    if (marioStGetSystemLevel() != 0) {
         return 0;
     }
     if (mario->flags & 0xa) {
@@ -1232,7 +1232,7 @@ void itemseq_GetItem(ItemEntry* item) {
         }
         if (!(item->flags & 0x8000)) {
             {
-                u32 silent = (u32)psndBGMChkSilent(0);
+                u32 silent = psndBGMChkSilent(0);
 
                 if (silent != 0) {
                     item->flags |= 8;
@@ -2086,7 +2086,7 @@ void itemStatusOn(ItemEntry* item, u32 mask) {
     item->status |= mask;
 }
 
-s32 itemStatus(ItemEntry* item, u32 mask) {
+u32 itemStatus(ItemEntry* item, u32 mask) {
     return item->status & mask;
 }
 

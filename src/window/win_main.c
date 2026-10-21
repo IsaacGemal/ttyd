@@ -198,7 +198,7 @@ void winMain(void) {
         switch (wp->menuState) {
             case 0:
                 if (!(wp->flags & 0x1000)) {
-                    if (!((u32)marioStGetSystemLevel() == 0 && !marioCheckMenuDisable() && !mobjCheckExec() && fadeIsFinish())) {
+                    if (!(marioStGetSystemLevel() == 0 && !marioCheckMenuDisable() && !mobjCheckExec() && fadeIsFinish())) {
                         break;
                     }
                     if (mario->characterId == 2) {
@@ -442,7 +442,7 @@ void winMain(void) {
 BOOL winTplLoad(void) {
     const char* names[2] = {"jp", "us"};
 
-    if ((u32)fileAsyncf(FILE_TYPE_TPL, 0, "%s/w/%s/win.tpl", getMarioStDvdRoot(), names[gp->language]) == 0) {
+    if (fileAsyncf(FILE_TYPE_TPL, 0, "%s/w/%s/win.tpl", getMarioStDvdRoot(), names[gp->language]) == 0) {
         return FALSE;
     }
     wp->winTpl = fileAllocf(FILE_TYPE_TPL, "%s/w/%s/win.tpl", getMarioStDvdRoot(), names[gp->language]);

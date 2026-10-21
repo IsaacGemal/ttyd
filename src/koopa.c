@@ -739,7 +739,7 @@ void kpaFall(void) {
                 mp->position.y = landY;
             }
         }
-        if (res != NULL || (u32)kpaChkHitobjRide() != 0u) {
+        if (res != NULL || kpaChkHitobjRide() != NULL) {
             marioLandOn();
         }
     }

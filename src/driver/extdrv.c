@@ -250,7 +250,7 @@ void extMain(void) {
 	f32 angle;
 	f32 target;
 
-	if ((u32)marioStGetSystemLevel() == 0 && wp->cb0 != NULL) {
+	if (marioStGetSystemLevel() == 0 && wp->cb0 != NULL) {
 		wp->cb0();
 	}
 	if (wp->cb1 != NULL) {

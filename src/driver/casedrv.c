@@ -98,7 +98,7 @@ void caseMain(void) {
 	hit1F4 = mario->hitobjHead;
 	val = mario->buttonNew;
 
-	if ((u32)marioStGetSystemLevel() != 0) {
+	if (marioStGetSystemLevel() != 0) {
 		return;
 	}
 	if (winCheck() != 0) {
