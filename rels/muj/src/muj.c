@@ -1,6 +1,7 @@
 #include "muj.h"
 #include "data/mapdata.h"
 #include "driver/effdrv.h"
+#include "eff/n64/eff_kameki_tornade_n64.h"
 #include "evt/evt_cmd.h"
 #include "evt/evt_eff.h"
 #include "evt/evt_npc.h"
@@ -459,7 +460,7 @@ static USER_FUNC(tornade_alpha_func) {
     f32 alpha = evtGetFloat(event, args[1]);
     EffectEntry* effect = effNameToPtr((const char*)name);
 
-    *(f32*)((u8*)effect->userdata + 0x148) = alpha;
+    ((effKamekiTornadeData*)effect->userdata)->alphaScale = alpha;
     return EVT_RETURN_DONE;
 }
 

@@ -331,7 +331,7 @@ static USER_FUNC(eff_scanning) {
     f32 f29 = evtGetFloat(event, args[3]);
     BattleUnit* unit = BattleGetUnitPtr(_battleWorkPointer, id);
     EffectEntry* entry = effScanningEntry(0, f31, f30, f29);
-    *(f32*)((u8*)entry->userdata + 0x10) = unit->mSizeMultiplier;
+    ((effScanningData*)entry->userdata)->scale = unit->mSizeMultiplier;
     return EVT_RETURN_DONE;
 }
 

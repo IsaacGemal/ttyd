@@ -64,7 +64,7 @@ static USER_FUNC(eff_scanning) {
     z = evtGetFloat(event, args[3]);
     unit = BattleGetUnitPtr(_battleWorkPointer, id);
     entry = effScanningEntry(0, x, y, z);
-    *(f32*)((u8*)entry->userdata + 0x10) = unit->mSizeMultiplier;
+    ((effScanningData*)entry->userdata)->scale = unit->mSizeMultiplier;
     return EVT_RETURN_DONE;
 }
 

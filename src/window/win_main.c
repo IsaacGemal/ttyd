@@ -551,7 +551,7 @@ USER_FUNC(itemUseFunc) {
                 cnt = 0x12C;
                 break;
             }
-            target = (f32*)((u8*)effRecoveryEntry(0, item->hp_restored, party->position.x, party->position.y + party->height, party->position.z)->userdata + 0x40);
+            target = &((RecoveryData*)effRecoveryEntry(0, item->hp_restored, party->position.x, party->position.y + party->height, party->position.z)->userdata)->field_40;
             *target = (-(*(f32*)&party->field_E8[8])) * MATCH_F32(float_0p5_8041dc98);
             cnt++;
             break;
