@@ -240,23 +240,15 @@ s32 marioGetoffYoshi(void) {
     return 0;
 }
 
-// 100%: the volatile reads/writes reproduce the original's non-pipelined
-// load/store interleave in the two 6-float copies (and the playerPtr load order).
-// MUST_MATCH only: the natural form is under #else.
 void marioYoshiForceCancel(void) {
     const Vec* vec = &vec3_802cccd0;
     MarioWork* mario = marioGetPtr();
     PartyEntry* party = partyGetPtr(marioGetPartyId());
 
     if (yoshiGetStatus() != 0) {
-#ifdef MUST_MATCH
-        MarioWork* pl = *(MarioWork* volatile*)&party->playerPtr;
-        *(volatile Vec*)&pl->dispOfs = *(const volatile Vec*)&vec[0];
-        *(volatile Vec*)&pl->dispOfs2 = *(const volatile Vec*)&vec[1];
-#else
         MarioWork* pl = party->playerPtr;
-        *(YoshiZeroVec6*)&pl->dispOfs = *(YoshiZeroVec6*)vec;
-#endif
+        pl->dispOfs = vec[0];
+        pl->dispOfs2 = vec[1];
 
         {
             PartyEntry* extra = partyGetPtr(marioGetExtraPartyId());
@@ -306,8 +298,6 @@ void yoshi_bye(PartyEntry* party) {
     }
 }
 
-// 100%: same volatile-copy MUST_MATCH trick as marioYoshiForceCancel; the
-// natural form is under #else.
 void yoshi_exit(PartyEntry* arg) {
     const Vec* vec = &vec3_802cccd0;
     MarioWork* mario;
@@ -317,14 +307,9 @@ void yoshi_exit(PartyEntry* arg) {
     mario = marioGetPtr();
     party = partyGetPtr(marioGetPartyId());
     if (yoshiGetStatus() != 0) {
-#ifdef MUST_MATCH
-        MarioWork* pl = *(MarioWork* volatile*)&party->playerPtr;
-        *(volatile Vec*)&pl->dispOfs = *(const volatile Vec*)&vec[0];
-        *(volatile Vec*)&pl->dispOfs2 = *(const volatile Vec*)&vec[1];
-#else
         MarioWork* pl = party->playerPtr;
-        *(YoshiZeroVec6*)&pl->dispOfs = *(YoshiZeroVec6*)vec;
-#endif
+        pl->dispOfs = vec[0];
+        pl->dispOfs2 = vec[1];
 
         {
             PartyEntry* extra = partyGetPtr(marioGetExtraPartyId());
@@ -755,7 +740,7 @@ void yoshi_use(PartyEntry* party) {
     case 0x64:
         {
 #ifdef MUST_MATCH
-            // Volatile, as in marioYoshiForceCancel: keeps the playerPtr load ahead of the copies.
+            // Volatile: keeps the playerPtr load ahead of the copies and the copies unpipelined.
             MarioWork* pl64 = *(MarioWork* volatile*)&party->playerPtr;
             *(volatile Vec*)&pl64->dispOfs = *(const volatile Vec*)&vec3_802cccd0;
             *(volatile Vec*)&pl64->dispOfs2 = *(const volatile Vec*)&vec3_802cccdc;
@@ -1172,7 +1157,7 @@ void yoshi_use(PartyEntry* party) {
         party->field_3B = 0;
         {
 #ifdef MUST_MATCH
-            // Volatile, as in marioYoshiForceCancel: keeps the playerPtr load ahead of the copies.
+            // Volatile: keeps the playerPtr load ahead of the copies and the copies unpipelined.
             MarioWork* pl = *(MarioWork* volatile*)&party->playerPtr;
             *(volatile Vec*)&pl->dispOfs = *(const volatile Vec*)&vec3_802cccd0;
             *(volatile Vec*)&pl->dispOfs2 = *(const volatile Vec*)&vec3_802cccdc;

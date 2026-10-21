@@ -37,16 +37,6 @@ typedef struct RubWork {
 
 static RubWork rubwork;
 
-
-#define RUB_SET3C(v) do { \
-    rubwork.unk3C[0] = (v); rubwork.unk3C[1] = (v); rubwork.unk3C[2] = (v); rubwork.unk3C[3] = (v); \
-    rubwork.unk3C[4] = (v); rubwork.unk3C[5] = (v); rubwork.unk3C[6] = (v); rubwork.unk3C[7] = (v); \
-    rubwork.unk3C[8] = (v); rubwork.unk3C[9] = (v); rubwork.unk3C[10] = (v); rubwork.unk3C[11] = (v); \
-    rubwork.unk3C[12] = (v); rubwork.unk3C[13] = (v); rubwork.unk3C[14] = (v); rubwork.unk3C[15] = (v); \
-    rubwork.unk3C[16] = (v); rubwork.unk3C[17] = (v); rubwork.unk3C[18] = (v); rubwork.unk3C[19] = (v); \
-    rubwork.unk3C[20] = (v); \
-} while (0)
-
 // Folding the `w->unk0C` head load and the wrap-around loop into this helper makes MWCC give the
 // hoisted head load r10 and the idx2/diff temp r9, as the original does; expanded inline at each
 // use the two registers swap (99.31%). It computes the same ring index, so behaviour is unchanged.
@@ -98,34 +88,12 @@ static inline void rubStick(MarioWork* p, f32* outAngle, f32* outMag) {
     *outMag = mag;
 }
 
-// Match-only: the target orders the unk04/unk08 updates after the RUB_SET3C stores; with plain stores
-// MWCC hoists them into the store block (marioGetRub was 97.57%).
 static inline void rubSet3C(s32 v) {
-#ifdef MUST_MATCH
-    *(volatile s16*)&rubwork.unk3C[0] = (s16)v;
-    *(volatile s16*)&rubwork.unk3C[1] = (s16)v;
-    *(volatile s16*)&rubwork.unk3C[2] = (s16)v;
-    *(volatile s16*)&rubwork.unk3C[3] = (s16)v;
-    *(volatile s16*)&rubwork.unk3C[4] = (s16)v;
-    *(volatile s16*)&rubwork.unk3C[5] = (s16)v;
-    *(volatile s16*)&rubwork.unk3C[6] = (s16)v;
-    *(volatile s16*)&rubwork.unk3C[7] = (s16)v;
-    *(volatile s16*)&rubwork.unk3C[8] = (s16)v;
-    *(volatile s16*)&rubwork.unk3C[9] = (s16)v;
-    *(volatile s16*)&rubwork.unk3C[10] = (s16)v;
-    *(volatile s16*)&rubwork.unk3C[11] = (s16)v;
-    *(volatile s16*)&rubwork.unk3C[12] = (s16)v;
-    *(volatile s16*)&rubwork.unk3C[13] = (s16)v;
-    *(volatile s16*)&rubwork.unk3C[14] = (s16)v;
-    *(volatile s16*)&rubwork.unk3C[15] = (s16)v;
-    *(volatile s16*)&rubwork.unk3C[16] = (s16)v;
-    *(volatile s16*)&rubwork.unk3C[17] = (s16)v;
-    *(volatile s16*)&rubwork.unk3C[18] = (s16)v;
-    *(volatile s16*)&rubwork.unk3C[19] = (s16)v;
-    *(volatile s16*)&rubwork.unk3C[20] = (s16)v;
-#else
-    RUB_SET3C(v);
-#endif
+    s32 i;
+
+    for (i = 0; i < sizeof(rubwork.unk3C) / sizeof(rubwork.unk3C[0]); i++) {
+        rubwork.unk3C[i] = v;
+    }
 }
 
 void marioBottomless(void) {
@@ -686,9 +654,6 @@ s32* head; // retail reads the ring head through a pointer taken before the loop
     return result;
 }
 
-// 100%. The unk04/unk08 advances must stay after the 21-store rubSet3C block; MWCC's scheduler
-// otherwise hoists the load into the block. rubSet3C's MUST_MATCH form stores through volatile and the
-// advances are volatile read-modify-writes, which pins the order; the #else form is the natural code.
 s32 marioGetRub(u32 mask, s32* out1, s32* out2, f32* out3) {
     MarioWork* p;
     MarioWork* wp;
@@ -717,13 +682,8 @@ s32 marioGetRub(u32 mask, s32* out1, s32* out2, f32* out3) {
     r28 = (s32)angle;
     if (mag < 50.0f) {
         if (++w->unk24 > 10) {
-#ifdef MUST_MATCH
-            rubSet3C(r28);
-            *(volatile s32*)&w->unk08 = 0;
-#else
             rubSet3C(r28);
             w->unk08 = 0;
-#endif
         }
         return -1;
     }
@@ -748,16 +708,9 @@ s32 marioGetRub(u32 mask, s32* out1, s32* out2, f32* out3) {
         w->unk1C = 0;
         w->unk08++;
         if (checkOneRevolution(0) == 1) {
-#ifdef MUST_MATCH
-            // volatile so MWCC keeps the unk04 read-modify-write after the rubSet3C stores.
-            result = 1;
-            rubSet3C(w->unk14);
-            *(volatile s32*)&w->unk04 = *(volatile s32*)&w->unk04 + 1;
-#else
             result = 1;
             rubSet3C(w->unk14);
             w->unk04++;
-#endif
         }
         w->unk10 = 1;
     }
@@ -782,16 +735,9 @@ s32 marioGetRub(u32 mask, s32* out1, s32* out2, f32* out3) {
         w->unk1C = 0;
         w->unk08++;
         if (checkOneRevolution(1) == 1) {
-#ifdef MUST_MATCH
-            // volatile so MWCC keeps the unk04 read-modify-write after the rubSet3C stores.
-            result = 1;
-            rubSet3C(w->unk14);
-            *(volatile s32*)&w->unk04 = *(volatile s32*)&w->unk04 + 1;
-#else
             result = 1;
             rubSet3C(w->unk14);
             w->unk04++;
-#endif
         }
         w->unk10 = 2;
     }
