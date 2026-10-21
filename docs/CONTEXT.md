@@ -5096,3 +5096,51 @@ family section at the top of [docs/PRAGMAS_KEPT.md](PRAGMAS_KEPT.md) record what
   --allow-pragma and its tools/tests step stubbed (the same 9 environment errors as the chapters above:
   test_wave_launch's systemd scopes, and no `elftools` for test_reloc_value_check). The ratchet baseline was
   initialised from this worktree's unchanged 14ea64ca build.
+
+## Integer local types, argument walks and compound assignment on every MUST_MATCH region (2026-10-21, Claude Opus 5.5, n9-q-o-intlead)
+
+Task (Isaac): #1107 found that `int` vs `s32` (`long` here) locals, `*args++` walks over event arguments and compound
+assignment produce code some guarded forms imitate. Try those levers on every remaining MUST_MATCH region in src/
+and rels/, alone and combined; where the natural form matches, it becomes the only version. Data layout and guarded
+volatile/pun/function-pointer-cast tricks stay.
+
+- **Method.** Harness in the untracked build/il/ (regions.py lists every region with its enclosing function; try.py
+  is #1107's, comparing with obj_equiv against a snapshot of the pre-branch objects; fdiff.py counts one function's
+  normalised asm diff; combo.py runs every combination of per-line alternatives; gen*.py write the variants). Each
+  variant turns a function's regions natural (all of them, and each one alone), then applies the levers to the
+  whole function: `*args++` when its `args[N]` reads run 0, 1, 2... one per statement; `x = x op y` / `x = y op x`
+  -> `x op= y` and the reverse; s32<->int and u32<->unsigned int on each local declaration alone, in every pair and
+  all at once; s32<->u32 and int<->unsigned int; split multi-declarator lines with one variable retyped; s8/u8/s16/
+  u16/BOOL locals widened to s32 and int; parameter types; locals of static inlines the function calls. File-scope
+  regions that aren't data: natural arm with type swaps inside it and in each function that uses what it defines.
+  About 27,400 compiles, then a per-function asm-diff ranking of every DIFF variant to find near misses by hand.
+  Every commit: obj_equiv EQUIV, `build/G8MJ01/ok` recreated, `configure.py --non-matching` build of the changed
+  objects, fncast_lint and local_prototypes clean, tools/ci.py PASS with its tools/tests step stubbed (the same 8
+  test_wave_launch environment errors as the chapters above). The ratchet baseline was `--init`ed on the clean HEAD.
+- **Counts.** must_match (tools/cleanup_index.py) **807 -> 800**; index 15.325 -> 15.315 per kLOC (10689 -> 10682
+  weighted); `git grep -c MUST_MATCH` over src/rels/include 953 -> 946. Per lever:
+  - `*args++` walk: 3 regions. btlevtcmd_GetRGB and btlevtcmd_CheckDamage (their volatile `args` pointer and
+    volatile `args[4]` read; mm2 had tried 7 and 4 declaration orders), sac_bakugame bakuGameMain's volatile `args`.
+  - `int` instead of `s32`: 1. win_00 win_item_move_3d_position `int curStep` (muj_12's copy already had it); its
+    u32 copy and (s32) casts go.
+  - A wider local type: 3. icondrv iconDispGx2 `s32 id` for the u16 icon id (the guarded no-op `(u16)iconId`);
+    battle_seq_command _btlcmd_SelectWeaponDecide `int ownBelong` (no-op `(s8)BtlUnit_GetBelong`); winmgr
+    winMgrSelectEntry case 11 `s32 v` (no-op `(s16)badgeShop_get`; case 13 already declares `s32 v`).
+    battle_damage BattleSetStatusDamageFromWeapon keeps its guarded `s32 rate`: _getSickStatusRate returns u8
+    chances, so only the s8 narrowing (the natural `s8 rate`, or the guarded casts) keeps values above 127 negative.
+  - Compound assignment, either direction: 0. Unsigned and parameter types: 0.
+- **Not applied.** EQUIV results that were artefacts: a region turned natural alone while a paired region still
+  declares what it uses (party_motion homing_walk's `sid`, eff_toge_flush's unused `color`); obj_equiv EQUIVs on
+  data regions (evt_bero's padded strings, battle_damage's pooled SFX strings, ac_stick_rotate's zero Vecs).
+  mri_puni qrnd matches more closely with `u32 v`, which would make its `v < 0` test dead: rejected.
+- **Near misses** (asm lines still different in the function, best lever): unit_lecture_frankli_sac lecture_init
+  `int id` without its dead `= 0` (34 -> 7: retail loads `id` into r29 and copies it to r3 on both arms; ours loads r3
+  and saves it on one; loop-scope and in-condition forms give the same); _btlcmd_SelectWeaponDecide's other region,
+  `(s32)(s8)attackDirection` (3, any `belong` type); winmgr case 13's `(s16)` cast (4 with s32/int `v`); the four
+  krb_comp_dir copies' `(u16)out` (27 -> 11 with `int out`; all 243 u16/int/s32 combinations of its five locals
+  tried); hom_00/eki_03 sun_tev's `q` row base (78 -> 14 with `int row`; 48 combinations); unit_barriern_z's header
+  barriern_satellite_zanzou comma (3, with or without the walk and int types).
+- **Lead.** Most guarded "no-op cast" regions are a narrow local holding a value of the same narrow type; three of
+  this pass's seven were that, fixed by declaring the local wider. The others left (krb_comp_dir, winmgr case 13,
+  battle_damage's `(s8)rate`) have been tried with every local width; the callee's prototype
+  types (int vs s32 parameters) are the untried lever, and need a tree-wide build per change.

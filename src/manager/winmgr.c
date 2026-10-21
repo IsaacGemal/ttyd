@@ -1967,12 +1967,7 @@ WinMgrSelect* winMgrSelectEntry(s32 kind, s32 firstItem, BOOL canCancel) {
         memset(select->items, 0, 0x18c);
         select->numItems = 0;
         for (i = 0; i < BADGE_COUNT; i++) {
-#ifdef MUST_MATCH
-            // No-op cast: the value is already s16, but the cast changes the object.
-            s16 v = (s16)badgeShop_get(bdsw->bargain_table, (s16)(i + BADGE_MIN));
-#else
-            s16 v = badgeShop_get(bdsw->bargain_table, (s16)(i + BADGE_MIN));
-#endif
+            s32 v = badgeShop_get(bdsw->bargain_table, (s16)(i + BADGE_MIN));
 
             if (v - badgeShop_ThrowCheck(i + BADGE_MIN) > 0) {
                 select->items[select->numItems++].id = i + BADGE_MIN;
