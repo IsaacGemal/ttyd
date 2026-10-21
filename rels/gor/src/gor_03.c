@@ -2257,13 +2257,25 @@ static s32 get_monte_check(Vec* a, Vec* b) {
     return 0;
 }
 
+typedef struct MonteMedal {
+    u8 field_0x0;        // 0x0
+    u8 field_0x1;        // 0x1
+    s16 field_0x2;       // 0x2
+    s16 field_0x4;       // 0x4
+    u8 pad_0x6[0x6];     // 0x6
+    Vec field_0xC;       // 0xC
+    u8 pad_0x18[0x28];   // 0x18
+    Vec field_0x40;      // 0x40
+    SlotData* field_0x4C; // 0x4C, set on entry 0 only
+} MonteMedal;
+
 static void monte_disp(CameraId cameraId, void* param) {
-    u8* p = (u8*)param;
+    MonteMedal* p = (MonteMedal*)param;
     s32 i;
 
-    for (i = 0; i < *(s32*)(*(u32*)(p + 0x4c) + 0x5c); i++) {
-        if (p[i * 0x50] == 0) {
-            iconDispGx(1.0f, (Vec*)(p + i * 0x50 + 0xc), 0x40, 0x13f);
+    for (i = 0; i < p->field_0x4C->prize; i++) {
+        if (p[i].field_0x0 == 0) {
+            iconDispGx(1.0f, &p[i].field_0xC, 0x40, 0x13f);
         }
     }
 }
@@ -2274,7 +2286,6 @@ static void monte_disp(CameraId cameraId, void* param) {
 static USER_FUNC(fall_rtn) {
     s32 j;
     s32 i;
-    s32 off;
     s32 alive = 0;
     f32 f23;
     f32 moveX;
@@ -2282,17 +2293,17 @@ static USER_FUNC(fall_rtn) {
     Vec tmp;
 
     if (isFirstCall) {
-        u8* data = (u8*)((GoryuugijoWork*)event->lwData[0])->data;
-        monte_p[0] = (u32)_mapAlloc(*(s32*)(data + 0x5c) * 0x50);
-        memset((void*)monte_p[0], 0, *(s32*)(data + 0x5c) * 0x50);
-        *(u8**)((u8*)monte_p[0] + 0x4c) = data;
+        SlotData* data = ((GoryuugijoWork*)event->lwData[0])->data;
+        monte_p[0] = (u32)_mapAlloc(data->prize * 0x50);
+        memset((void*)monte_p[0], 0, data->prize * 0x50);
+        ((MonteMedal*)monte_p[0])->field_0x4C = data;
 
-        for (i = 0; i < *(s32*)(*(u8**)((u8*)monte_p[0] + 0x4c) + 0x5c); i++) {
+        for (i = 0; i < ((MonteMedal*)monte_p[0])->field_0x4C->prize; i++) {
             u8* e = (u8*)monte_p[0] + i * 0x50 + 8;
             f32 spd;
 
             Vec pos = {-113.0f, 70.0f, 0.0f};
-            pos.z = montemedalzpos[*(s32*)(*(u8**)((u8*)monte_p[0] + 0x4c) + 0x60)];
+            pos.z = montemedalzpos[((MonteMedal*)monte_p[0])->field_0x4C->now];
             *(Vec*)(e + 0x04) = pos;
 
             f23 = (2.0f * (f32)(i & 1) - 1.0f) * ((f32)(rand() % 101) / 10.0f);
@@ -2314,8 +2325,8 @@ static USER_FUNC(fall_rtn) {
         }
     }
 
-    for (j = 0, off = 0; j < *(s32*)(*(u8**)((u8*)monte_p[0] + 0x4c) + 0x5c); j++, off += 0x50) {
-        u8* e = (u8*)monte_p[0] + off;
+    for (j = 0; j < ((MonteMedal*)monte_p[0])->field_0x4C->prize; j++) {
+        MonteMedal* e = (MonteMedal*)monte_p[0] + j;
 #ifdef MUST_MATCH
         // match-only: folding each literal through a comma makes MWCC materialise its address
         // directly (no extra `mr`), matching the target.
@@ -2328,64 +2339,64 @@ static USER_FUNC(fall_rtn) {
         const char* sfx_count2 = "SFX_EVT_GAME_MONTE_COUNT1";
 #endif
 
-        switch (*(u8*)(e + 0x01)) {
+        switch (e->field_0x1) {
         case 0:
-            if ((s32)*(s16*)(e + 0x02) != 0) {
-                *(s16*)(e + 0x02) = *(s16*)(e + 0x02) - 1;
+            if ((s32)e->field_0x2 != 0) {
+                e->field_0x2 = e->field_0x2 - 1;
             } else {
-                *(u8*)(e + 0x01) = *(u8*)(e + 0x01) + 1;
+                e->field_0x1 = e->field_0x1 + 1;
             }
             break;
         case 1:
-            PSVECAdd((Vec*)(e + 0x0c), (Vec*)(e + 0x40), (Vec*)(e + 0x0c));
-            *(f32*)(e + 0x44) = *(f32*)(e + 0x44) - 0.81666666f;
-            if (*(f32*)(e + 0x10) <= 0.0f) {
-                *(f32*)(e + 0x10) = 0.0f;
-                psndSFXOn_3D(sfx_leap, (Vec*)(e + 0x0c));
-                if (__fabsf(*(f32*)(e + 0x44)) <= 4.0) {
-                    *(u8*)(e + 0x01) = *(u8*)(e + 0x01) + 1;
-                    *(s16*)(e + 0x04) = 300;
+            PSVECAdd(&e->field_0xC, &e->field_0x40, &e->field_0xC);
+            e->field_0x40.y = e->field_0x40.y - 0.81666666f;
+            if (e->field_0xC.y <= 0.0f) {
+                e->field_0xC.y = 0.0f;
+                psndSFXOn_3D(sfx_leap, &e->field_0xC);
+                if (__fabsf(e->field_0x40.y) <= 4.0) {
+                    e->field_0x1 = e->field_0x1 + 1;
+                    e->field_0x4 = 300;
                 } else {
                     f32 scale;
                     scale = 0.5f + (f32)(rand() % 21) / 100.0f;
-                    *(f32*)(e + 0x44) = *(f32*)(e + 0x44) * -scale;
-                    *(f32*)(e + 0x40) = 0.0f;
-                    *(f32*)(e + 0x48) = 0.0f;
+                    e->field_0x40.y = e->field_0x40.y * -scale;
+                    e->field_0x40.x = 0.0f;
+                    e->field_0x40.z = 0.0f;
                 }
             }
 
-            if (get_monte_check((Vec*)(e + 0x0c), &marioGetPtr()->position) == 1) {
-                psndSFXOn_3D(sfx_count, (Vec*)(e + 0x0c));
+            if (get_monte_check(&e->field_0xC, &marioGetPtr()->position) == 1) {
+                psndSFXOn_3D(sfx_count, &e->field_0xC);
                 if (yuwp->tokens < 0x1869f) {
                     yuwp->tokens++;
                 }
-                *(u8*)(e + 0x00) = 1;
-                *(u8*)(e + 0x01) = 3;
+                e->field_0x0 = 1;
+                e->field_0x1 = 3;
             }
             break;
         case 2:
-            *(s16*)(e + 0x04) = *(s16*)(e + 0x04) - 1;
-            if (*(s16*)(e + 0x04) == 0) {
-                *(u8*)(e + 0x00) = 1;
-                *(u8*)(e + 0x01) = *(u8*)(e + 0x01) + 1;
+            e->field_0x4 = e->field_0x4 - 1;
+            if (e->field_0x4 == 0) {
+                e->field_0x0 = 1;
+                e->field_0x1 = e->field_0x1 + 1;
             }
-            if (*(s16*)(e + 0x04) < 0x3c) {
-                if (*(s16*)(e + 0x04) & 2) {
-                    *(f32*)(e + 0x10) = 0.0f;
+            if (e->field_0x4 < 0x3c) {
+                if (e->field_0x4 & 2) {
+                    e->field_0xC.y = 0.0f;
                 } else {
-                    *(f32*)(e + 0x10) = -1000.0f;
+                    e->field_0xC.y = -1000.0f;
                 }
             }
 
-            tmp = *(Vec*)(e + 0x0c);
+            tmp = e->field_0xC;
             tmp.y = 0.0f;
             if (get_monte_check(&tmp, &marioGetPtr()->position) == 1) {
-                psndSFXOn_3D(sfx_count2, (Vec*)(e + 0x0c));
+                psndSFXOn_3D(sfx_count2, &e->field_0xC);
                 if (yuwp->tokens < 0x1869f) {
                     yuwp->tokens++;
                 }
-                *(u8*)(e + 0x00) = 1;
-                *(u8*)(e + 0x01) = 3;
+                e->field_0x0 = 1;
+                e->field_0x1 = 3;
             }
             break;
         case 3:
@@ -2394,13 +2405,13 @@ static USER_FUNC(fall_rtn) {
         }
     }
 
-    if (alive < *(s32*)(*(u8**)((u8*)monte_p[0] + 0x4c) + 0x5c)) {
+    if (alive < ((MonteMedal*)monte_p[0])->field_0x4C->prize) {
         dispEntry(4, 0.0f, 1, monte_disp, (void*)monte_p[0]);
         return 0;
     }
 
-    *(s32*)(*(u8**)((u8*)monte_p[0] + 0x4c) + 0x5c) = 0;
-    *(s32*)(*(u8**)((u8*)monte_p[0] + 0x4c) + 0x6c) = 0;
+    ((MonteMedal*)monte_p[0])->field_0x4C->prize = 0;
+    ((MonteMedal*)monte_p[0])->field_0x4C->fallEvt = NULL;
     _mapFree((void*)monte_p[0]);
     return 2;
 }
@@ -4870,13 +4881,13 @@ USER_FUNC(goryuugijo_door_init_slot) {
     f32* angle;
     s32* args = event->args;
     GoryuugijoWork* work = (GoryuugijoWork*)evtGetValue(event, args[0]);
-    u8* data = (u8*)work->data;
+    SlotData* data = work->data;
     s32 j;
     s32 i;
 
     for (i = 0; i < 2; i++) {
         for (j = 0; j < 3; j++) {
-            angle = (f32*)(data + i * 0xc + j * 4 + 0xc);
+            angle = &data->angle[i][j];
 
             *angle = 0.0f;
             if (*angle >= 360.0f) {
@@ -4884,7 +4895,7 @@ USER_FUNC(goryuugijo_door_init_slot) {
             }
             *angle = 45.0f * irand(8);
             mapObjRotate(drumname[i][j], 0.0f, 0.0f, *angle);
-            *(u8*)(data + i * 3 + j + 0x33) = *(u32*)((unsigned char*)upsidegara + i * 0x60 + j * 0x20 + irand(8) * 4);
+            data->target[i][j] = *(u32*)((unsigned char*)upsidegara + i * 0x60 + j * 0x20 + irand(8) * 4);
             mapGrpFlagOn(drumname[i][j * 3 + 5], 1);
             mapGrpFlagOn(drumname[i][j * 3 + 6], 1);
             mapGrpFlagOn(drumname[i][j * 3 + 7], 1);
@@ -4905,86 +4916,86 @@ void goryuugijo_init_slot(EventEntry* event, BOOL isFirstCall) {
 
 // Matching: indexing the u32 table as `&upsidegara[cur * 0x18]` (0x18 elements = 0x60 bytes) gives the
 // original's `add r0,r31,r5` / `add r5,r0,r27` two-step base, and `s8* d` gives the `lbzx r4` byte.
-void slot_neon_sub(void* arg0, u8* data) {
+void slot_neon_sub(void* arg0, SlotData* data) {
     s32 i;
     s32 r;
     s32 cur;
 
-    if (*(s32*)(data + 0x58) > 0x4e) {
+    if (data->timer2 > 0x4e) {
         return;
     }
-    if (*(s32*)(data + 0x58) == 0) {
+    if (data->timer2 == 0) {
         if (irand(0xa) == 0) {
-            *(u32*)data |= 2;
+            data->flags |= 2;
         }
-        *(u32*)data &= ~2;
+        data->flags &= ~2;
     }
-    if (*(s32*)(data + 0x58) < 0x1b) {
-        if (*(s32*)(data + 0x58) & 1) {
+    if (data->timer2 < 0x1b) {
+        if (data->timer2 & 1) {
             for (i = 0; i < 3; i++) {
                 u8* up;
                 s8* d;
                 r = irand(8);
-                cur = *(s32*)(data + 0x60);
+                cur = data->now;
                 up = (u8*)&upsidegara[cur * 0x18] + i * 0x20;
-                d = (s8*)(data + cur * 3 + i + 0x33);
+                d = &data->target[cur][i];
                 while (*(s32*)(up + r * 4) == *d) {
                     r = (r + 1) & 7;
                 }
                 *d = *(s32*)(up + r * 4);
-                if (*(u32*)data & 2) {
-                    int c = *(s32*)(data + 0x60);
+                if (data->flags & 2) {
+                    int c = data->now;
                     mapGrpFlagOn(drumname[c][i * 3 + 5], 1);
                     mapGrpFlagOn(drumname[c][i * 3 + 6], 1);
                     mapGrpFlagOn(drumname[c][i * 3 + 7], 1);
                 } else {
-                    int c = *(s32*)(data + 0x60);
+                    int c = data->now;
                     mapGrpFlagOn(drumname[c][i * 3 + 5], 1);
                     mapGrpFlagOn(drumname[c][i * 3 + 6], 1);
                     mapGrpFlagOn(drumname[c][i * 3 + 7], 1);
                 }
             }
         }
-    } else if (*(s32*)(data + 0x58) == 0x1b) {
+    } else if (data->timer2 == 0x1b) {
         for (i = 0; i < 3; i++) {
             s32 c;
-            cur = *(s32*)(data + 0x60);
-            *(u8*)(data + cur * 3 + i + 0x33) = i;
-            c = *(s32*)(data + 0x60);
+            cur = data->now;
+            data->target[cur][i] = i;
+            c = data->now;
             mapGrpFlagOn(drumname[c][i * 3 + 5], 1);
             mapGrpFlagOn(drumname[c][i * 3 + 6], 1);
             mapGrpFlagOn(drumname[c][i * 3 + 7], 1);
         }
-        cur = *(s32*)(data + 0x60);
-        if (*(s8*)(data + cur * 3 + 0x33) == *(s8*)(data + cur * 3 + 0x34) &&
-            *(s8*)(data + cur * 3 + 0x34) == *(s8*)(data + cur * 3 + 0x35)) {
-            *(u32*)data |= 4;
+        cur = data->now;
+        if (data->target[cur][0] == data->target[cur][1] &&
+            data->target[cur][1] == data->target[cur][2]) {
+            data->flags |= 4;
         }
-        if ((*(u32*)data & 4) && (*(u32*)data & 2)) {
-            *(f32*)(data + 0x2c) = 2.8125f;
-            *(f32*)(data + 0x28) = 2.8125f;
-            *(f32*)(data + 0x24) = 2.8125f;
+        if ((data->flags & 4) && (data->flags & 2)) {
+            data->speed[2] = 2.8125f;
+            data->speed[1] = 2.8125f;
+            data->speed[0] = 2.8125f;
         } else {
-            *(f32*)(data + 0x2c) = 11.25f;
-            *(f32*)(data + 0x28) = 11.25f;
-            *(f32*)(data + 0x24) = 11.25f;
+            data->speed[2] = 11.25f;
+            data->speed[1] = 11.25f;
+            data->speed[0] = 11.25f;
         }
-        *(s8*)(data + 0x32) = 2;
-        *(s8*)(data + 0x31) = 2;
-        *(s8*)(data + 0x30) = 2;
+        data->state[2] = 2;
+        data->state[1] = 2;
+        data->state[0] = 2;
     } else {
-        if (*(u32*)data & 4) {
-            if (*(s32*)(data + 0x58) == 0x21 || *(s32*)(data + 0x58) == 0x33 || *(s32*)(data + 0x58) == 0x45) {
+        if (data->flags & 4) {
+            if (data->timer2 == 0x21 || data->timer2 == 0x33 || data->timer2 == 0x45) {
                 for (i = 0; i < 3; i++) {
-                    cur = *(s32*)(data + 0x60);
+                    cur = data->now;
                     mapGrpFlagOn(drumname[cur][i * 3 + 5], 1);
                     mapGrpFlagOn(drumname[cur][i * 3 + 6], 1);
                     mapGrpFlagOn(drumname[cur][i * 3 + 7], 1);
                 }
             }
-            if (*(s32*)(data + 0x58) == 0x2a || *(s32*)(data + 0x58) == 0x3c || *(s32*)(data + 0x58) == 0x4e) {
+            if (data->timer2 == 0x2a || data->timer2 == 0x3c || data->timer2 == 0x4e) {
                 for (i = 0; i < 3; i++) {
-                    cur = *(s32*)(data + 0x60);
+                    cur = data->now;
                     mapGrpFlagOn(drumname[cur][i * 3 + 5], 1);
                     mapGrpFlagOn(drumname[cur][i * 3 + 6], 1);
                     mapGrpFlagOn(drumname[cur][i * 3 + 7], 1);
@@ -4992,20 +5003,20 @@ void slot_neon_sub(void* arg0, u8* data) {
             }
         }
     }
-    if (*(u32*)data & 2) {
-        if (*(s32*)(data + 0x58) == 0 || *(s32*)(data + 0x58) == 0xc || *(s32*)(data + 0x58) == 0x18) {
-            mapPlayAnimationLv(drumname[*(s32*)(data + 0x60)][14], 0, 0);
+    if (data->flags & 2) {
+        if (data->timer2 == 0 || data->timer2 == 0xc || data->timer2 == 0x18) {
+            mapPlayAnimationLv(drumname[data->now][14], 0, 0);
         }
-        if (*(s32*)(data + 0x58) == 6 || *(s32*)(data + 0x58) == 0x12) {
-            mapPlayAnimationLv(drumname[*(s32*)(data + 0x60)][15], 0, 0);
+        if (data->timer2 == 6 || data->timer2 == 0x12) {
+            mapPlayAnimationLv(drumname[data->now][15], 0, 0);
         }
     } else {
-        if (*(s32*)(data + 0x58) == 0x18) {
-            mapPlayAnimationLv(drumname[*(s32*)(data + 0x60)][14], 0, 0);
+        if (data->timer2 == 0x18) {
+            mapPlayAnimationLv(drumname[data->now][14], 0, 0);
         }
     }
-    if (*(s32*)(data + 0x58) <= 0x4e) {
-        *(s32*)(data + 0x58) = *(s32*)(data + 0x58) + 1;
+    if (data->timer2 <= 0x4e) {
+        data->timer2 = data->timer2 + 1;
     }
 }
 
@@ -5167,7 +5178,7 @@ void goryuugijo_main_slot(EventEntry* event, BOOL isFirstCall) {
         data->phase += 1;
         break;
     case 2:
-        slot_neon_sub(work, (u8*)data);
+        slot_neon_sub(work, data);
         if (data->timer >= 0xf) {
             data->timer = 0;
             data->phase += 1;
@@ -5182,7 +5193,7 @@ void goryuugijo_main_slot(EventEntry* event, BOOL isFirstCall) {
     {
         s32 changed;
         s32 stop;
-        slot_neon_sub(work, (u8*)data);
+        slot_neon_sub(work, data);
         if (data->timer <= 6) {
             if (data->timer >= 6) {
                 data->rot = 0.0f;
