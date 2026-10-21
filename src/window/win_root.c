@@ -1915,8 +1915,8 @@ void sort_3_3_func(WindowWork* work) {
 int N_compare_func4_1(const void* a, const void* b) {
     u16 buf_a[64];
     u16 buf_b[64];
-    s16 id_b = (s16)((const SortRec*)b)->c;
-    s16 id_a = (s16)((const SortRec*)a)->c;
+    s16 id_b = (s16)((const WinEquipRec*)b)->field_0x8;
+    s16 id_a = (s16)((const WinEquipRec*)a)->field_0x8;
 
     pouchHiraganaToKatakana((char*)msgSearch(itemDataTable[id_a].name), (char*)buf_a);
     pouchHiraganaToKatakana((char*)msgSearch(itemDataTable[id_b].name), (char*)buf_b);
@@ -1927,8 +1927,8 @@ int N_compare_func4_1(const void* a, const void* b) {
 int N_compare_func4_1_r(const void* a, const void* b) {
     u16 buf_a[64];
     u16 buf_b[64];
-    s16 id_b = (s16)((const SortRec*)b)->c;
-    s16 id_a = (s16)((const SortRec*)a)->c;
+    s16 id_b = (s16)((const WinEquipRec*)b)->field_0x8;
+    s16 id_a = (s16)((const WinEquipRec*)a)->field_0x8;
 
     pouchHiraganaToKatakana((char*)msgSearch(itemDataTable[id_a].name), (char*)buf_a);
     pouchHiraganaToKatakana((char*)msgSearch(itemDataTable[id_b].name), (char*)buf_b);
@@ -1936,8 +1936,8 @@ int N_compare_func4_1_r(const void* a, const void* b) {
 }
 
 int N_compare_func4_2(void* a, void* b) {
-    s32 id_a = (s16)((const SortRec*)a)->c;
-    s32 id_b = (s16)((const SortRec*)b)->c;
+    s32 id_a = (s16)((const WinEquipRec*)a)->field_0x8;
+    s32 id_b = (s16)((const WinEquipRec*)b)->field_0x8;
     s16 va = itemDataTable[id_a].type_sort_order;
     s16 vb = itemDataTable[id_b].type_sort_order;
 
@@ -1951,8 +1951,8 @@ int N_compare_func4_2(void* a, void* b) {
 }
 
 int N_compare_func4_2_r(void* a, void* b) {
-    s32 id_a = (s16)((const SortRec*)a)->c;
-    s32 id_b = (s16)((const SortRec*)b)->c;
+    s32 id_a = (s16)((const WinEquipRec*)a)->field_0x8;
+    s32 id_b = (s16)((const WinEquipRec*)b)->field_0x8;
     s16 va = itemDataTable[id_a].type_sort_order;
     s16 vb = itemDataTable[id_b].type_sort_order;
 
@@ -1987,15 +1987,13 @@ void sort_4_2_func(WindowWork* work) {
     work->badgeScrollRow[1] = work->badgeSel[1] / 8;
 }
 
-// Bubble sort of the 0xC-byte records at work+0x404 (the item id is the s16 at
-// +0x40C). Writing the two record addresses as indices (`work + i*0xC`) rather than
-// raw `pa`/`pb` pointers is what makes MWCC strength-reduce them to the target's
-// pa=r4/pb=r12 induction variables and colour the item-table base r11; the pointer
-// form leaves those in r9/r10/r11. The `SortRec` (3-word) copy `t = *pa; *pa = *pb;
-// *pb = t;` reproduces the original's interleaved load/store sequence and its stack
-// spills at 0x14/0x18/0x1c exactly.
+// Bubble sort of the equipped-badge list by BP cost. Indexing the records
+// (`field_404[i]`) rather than walking `pa`/`pb` pointers is what makes MWCC
+// strength-reduce them to the target's pa=r4/pb=r12 induction variables and colour
+// the item-table base r11; the pointer form leaves those in r9/r10/r11. The record
+// copy `t = *pa; *pa = *pb; *pb = t;` reproduces the original's interleaved
+// load/store sequence and its stack spills at 0x14/0x18/0x1c exactly.
 void sort_4_3_func(WindowWork* work) {
-    u8* base = (u8*)work;
     if (work->sortReverseNext == 0) {
         s32 ida;
         s32 idb;
@@ -2006,8 +2004,8 @@ void sort_4_3_func(WindowWork* work) {
         for (i = 0; i < work->equipListCount - 1; i++) {
             j = i + 1;
             while (j < work->equipListCount) {
-                ida = (s16)*(u32*)(base + i * 0xC + 0x40C);
-                idb = (s16)*(u32*)(base + j * 0xC + 0x40C);
+                ida = (s16)work->field_404[i].field_0x8;
+                idb = (s16)work->field_404[j].field_0x8;
                 swap = 0;
 
                 if (itemDataTable[ida].bp_cost > itemDataTable[idb].bp_cost) {
@@ -2016,9 +2014,9 @@ void sort_4_3_func(WindowWork* work) {
                     swap = 1;
                 }
                 if (swap) {
-                    SortRec t = *(SortRec*)(base + i * 0xC + 0x404);
-                    *(SortRec*)(base + i * 0xC + 0x404) = *(SortRec*)(base + j * 0xC + 0x404);
-                    *(SortRec*)(base + j * 0xC + 0x404) = t;
+                    WinEquipRec t = work->field_404[i];
+                    work->field_404[i] = work->field_404[j];
+                    work->field_404[j] = t;
                 }
                 j++;
             }
@@ -2033,8 +2031,8 @@ void sort_4_3_func(WindowWork* work) {
         for (i = 0; i < work->equipListCount - 1; i++) {
             j = i + 1;
             while (j < work->equipListCount) {
-                ida = (s16)*(u32*)(base + i * 0xC + 0x40C);
-                idb = (s16)*(u32*)(base + j * 0xC + 0x40C);
+                ida = (s16)work->field_404[i].field_0x8;
+                idb = (s16)work->field_404[j].field_0x8;
                 swap = 0;
 
                 if (itemDataTable[ida].bp_cost < itemDataTable[idb].bp_cost) {
@@ -2043,9 +2041,9 @@ void sort_4_3_func(WindowWork* work) {
                     swap = 1;
                 }
                 if (swap) {
-                    SortRec t = *(SortRec*)(base + i * 0xC + 0x404);
-                    *(SortRec*)(base + i * 0xC + 0x404) = *(SortRec*)(base + j * 0xC + 0x404);
-                    *(SortRec*)(base + j * 0xC + 0x404) = t;
+                    WinEquipRec t = work->field_404[i];
+                    work->field_404[i] = work->field_404[j];
+                    work->field_404[j] = t;
                 }
                 j++;
             }

@@ -12,12 +12,6 @@
 #include <stdio.h>
 #include <stdarg.h>
 
-// The 0xC-byte record at work+0x404 (WindowWork.field_404), one per equipped badge.
-typedef struct WinEquipRec {
-    s32 field_0x0;
-    s32 field_0x4;
-    s32 field_0x8;
-} WinEquipRec;
 // win texture ids of the BP pips
 typedef enum {
     WIN_TEX_BP_ON = 0x1C,
@@ -30,16 +24,14 @@ extern ItemData itemDataTable[];
 void winMakeEquipList(WindowWork* work) {
     s32 count = 0;
     PouchData* pouch = pouchGetPtr();
-    u8* entry = (u8*)work;
     s32 i;
 
     for (i = 0; i < MAX_BADGES; i++) {
         if (pouch->equippedBadges[i] != 0) {
-            *(s32*)(entry + 0x404) = 1;
+            work->field_404[count].field_0x0 = 1;
+            work->field_404[count].field_0x4 = i;
+            work->field_404[count].field_0x8 = pouch->equippedBadges[i];
             count++;
-            *(s32*)(entry + 0x408) = i;
-            *(s32*)(entry + 0x40C) = pouch->equippedBadges[i];
-            entry += 0xC;
         }
     }
     work->equipListCount = count;
@@ -225,16 +217,16 @@ s32 winBadgeMain(WindowWork* work) {
                 } else {
                     s32* selPtr = (s32*)((u8*)work + 0x3E4) + sel;
                     s32 entryIdx = selPtr[0];
-                    s32 idx = ((WinEquipRec*)work->field_404)[entryIdx].field_0x4;
-                    if (((WinEquipRec*)work->field_404)[entryIdx].field_0x0 != 0) {
+                    s32 idx = work->field_404[entryIdx].field_0x4;
+                    if (work->field_404[entryIdx].field_0x0 != 0) {
                         psndSFXOn((const char*)0x20039);
                         pouchUnEquipBadgeIndex(idx);
-                        ((WinEquipRec*)work->field_404)[selPtr[0]].field_0x0 = 0;
+                        work->field_404[selPtr[0]].field_0x0 = 0;
                     } else {
                         if (pouch->availableBP >= itemDataTable[pouchHaveBadge(idx)].bp_cost) {
                             psndSFXOn((const char*)0x20038);
                             pouchEquipBadgeIndex(idx);
-                            ((WinEquipRec*)work->field_404)[selPtr[0]].field_0x0 = 1;
+                            work->field_404[selPtr[0]].field_0x0 = 1;
                         }
                     }
                     pouchReviseMarioParam();
@@ -298,7 +290,7 @@ s32 winBadgeMain(WindowWork* work) {
                 if (work->badgeTab == 0) {
                     msgId = pouchHaveBadge(work->badgeSel[sel]);
                 } else {
-                    msgId = ((WinEquipRec*)work->field_404)[work->badgeSel[sel]].field_0x8;
+                    msgId = work->field_404[work->badgeSel[sel]].field_0x8;
                 }
                 winMsgEntry(work, msgId, itemDataTable[msgId].menu_description, NULL);
             }

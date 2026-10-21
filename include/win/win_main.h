@@ -23,10 +23,17 @@ typedef struct WinRootRec {
     s32 e; // 0x10
 } WinRootRec;
 
+// win_badge's equipped-badge list entry (WindowWork.field_404), built by winMakeEquipList.
+typedef struct WinEquipRec {
+    s32 field_0x0; // 0x0, 1 = equipped (win_badge toggles it)
+    s32 field_0x4; // 0x4, pouch badge index (winMakeEquipList's i)
+    s32 field_0x8; // 0x8, badge item id
+} WinEquipRec;
+
 // The pause menu's work area. Each submenu keeps its state in its own band, laid out one after another
 // rather than overlaid: root 0x1C-0x184, win_mario 0x160-0x198, win_party 0x19C-0x208, win_item
-// 0x20C-0x3DA (plus 0x1208/0x120C), win_badge 0x3DC-0xD64, win_log 0xD68-0x1204. win_root.c and
-// win_log.c also view it through their own overlay structs (WinRoot, LogWin).
+// 0x20C-0x3DA (plus 0x1208/0x120C), win_badge 0x3DC-0xD64, win_log 0xD68-0x1204. win_log's band is
+// declared in LogWin (window/win_log.h), an overlay of the whole struct that win_log and win_root use.
 typedef struct WindowWork {
     u16 flags;                  // 0x0, 0x2000 = famicom (8-bit) Mario
     u8 align_2[2];              // 0x2
@@ -139,7 +146,7 @@ typedef struct WindowWork {
     s32 badgeScrollRow[2];      // 0x3EC, win_badge: first visible row per tab
     f32 badgeScrollPos[2];      // 0x3F4, animates toward badgeScrollTarget
     f32 badgeScrollTarget[2];   // 0x3FC
-    u8 field_404[0xD64 - 0x404]; // 0x404, equipped-badge list, 0xC bytes per entry (win_root sorts it)
+    WinEquipRec field_404[200]; // 0x404, equipped-badge list (win_root sorts it)
     s32 equipListCount;         // 0xD64
     u8 field_D68[0xE1C - 0xD68]; // 0xD68
     s32 mapMarioPose;           // 0xE1C, win_log map's Mario pose (LogWin.pose; mario_change rebuilds it)
