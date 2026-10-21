@@ -3039,13 +3039,13 @@ USER_FUNC(unk_las_0000d538) {
 
 typedef struct BattenSatelliteSpline {
     s32 field_0x0;
-    s32 field_0x4;
+    u32* field_0x4; // the spline table spline_maketable builds from
     s32 field_0x8[5];
     s32 field_0x1C[15];
     s32 field_0x58;
 } BattenSatelliteSpline;
 
-s32 battenSatelliteTo_Init(struct BattleUnit* unit, s32 index, s32* table) {
+u8 battenSatelliteTo_Init(struct BattleUnit* unit, s32 index, u32* table) {
     BattenSatelliteSpline* data;
     struct BattleUnit* sat;
     data = __memAlloc(4, 0x5C);
@@ -3054,9 +3054,9 @@ s32 battenSatelliteTo_Init(struct BattleUnit* unit, s32 index, s32* table) {
     }
     unit->work[13 + index] = (s32)data;
     data->field_0x0 = 5;
-    data->field_0x4 = (s32)table;
+    data->field_0x4 = table;
     data->field_0x58 = 0;
-    spline_maketable(5, data->field_0x4, data->field_0x8, data->field_0x1C);
+    spline_maketable(5, (s32)data->field_0x4, data->field_0x8, data->field_0x1C);
     sat = BattleGetUnitPtr(_battleWorkPointer, unit->work[9 + index]);
     BtlUnit_GetPartsPtr(sat, 1)->work[1] = (s32)table;
     return 1;
@@ -3081,7 +3081,7 @@ u8 battenSatelliteTo_Main(struct BattleUnit* unit, s32 index) {
         }
         return 0;
     }
-    spline_getvalue(spline, data->field_0x0, data->field_0x4, (s32)data->field_0x8, (s32)data->field_0x1C,
+    spline_getvalue(spline, data->field_0x0, (s32)data->field_0x4, (s32)data->field_0x8, (s32)data->field_0x1C,
                     intplGetValue(4, data->field_0x58, 0x3C, 0.0f, 1.0f));
     sat = BattleGetUnitPtr(_battleWorkPointer, unit->work[9 + index]);
     if (sat == NULL) {
@@ -3091,28 +3091,6 @@ u8 battenSatelliteTo_Main(struct BattleUnit* unit, s32 index) {
     BtlUnit_SetPos(sat, spline[0] * (f32)unit->faceDirection + pos[0], 5.0f + (pos[1] + spline[1]), pos[2] + spline[2]);
     BtlUnit_SetHomePos(sat, spline[0] * (f32)unit->faceDirection + pos[0], 5.0f + (pos[1] + spline[1]), pos[2] + spline[2]);
     data->field_0x58 += 1;
-    return 1;
-}
-
-// MUST_MATCH: same body as battenSatelliteTo_Init, but the spline-table pointer is received through a
-// `volatile` parameter (forcing MWCC to re-materialise the table address for the data+4 store inside each
-// inlined loop iteration) while `inv` keeps a normal copy alive for the later work[1] store. Passing the
-// same symbol twice is behaviourally identical (the pointer never changes) and is required to reproduce the
-// original's register allocation; a plain 3-arg call leaves both functions 80 bytes short.
-static inline u8 battenSatelliteTo_InitInline(struct BattleUnit* unit, s32 index, s32* volatile table, s32* inv) {
-    BattenSatelliteSpline* data;
-    struct BattleUnit* sat;
-    data = __memAlloc(4, 0x5C);
-    if (unit->work[9 + index] == -1) {
-        return 0;
-    }
-    unit->work[13 + index] = (s32)data;
-    data->field_0x0 = 5;
-    data->field_0x4 = (s32)table;
-    data->field_0x58 = 0;
-    spline_maketable(5, data->field_0x4, data->field_0x8, data->field_0x1C);
-    sat = BattleGetUnitPtr(_battleWorkPointer, unit->work[9 + index]);
-    BtlUnit_GetPartsPtr(sat, 1)->work[1] = (s32)inv;
     return 1;
 }
 
@@ -3138,34 +3116,34 @@ USER_FUNC(battenSatelliteToInside) {
             part = BtlUnit_GetPartsPtr(BattleGetUnitPtr(_battleWorkPointer, unit->work[9 + i]), 1);
             table = part->work[1];
             if (table == (s32)splineTableOut1_1) {
-                battenSatelliteTo_InitInline(unit, i, (s32*)splineTableIn1_1, (s32*)splineTableIn1_1);
+                battenSatelliteTo_Init(unit, i, splineTableIn1_1);
             }
             if (table == (s32)splineTableOut2_1) {
-                battenSatelliteTo_InitInline(unit, i, (s32*)splineTableIn2_1, (s32*)splineTableIn2_1);
+                battenSatelliteTo_Init(unit, i, splineTableIn2_1);
             }
             if (table == (s32)splineTableOut2_2) {
-                battenSatelliteTo_InitInline(unit, i, (s32*)splineTableIn2_2, (s32*)splineTableIn2_2);
+                battenSatelliteTo_Init(unit, i, splineTableIn2_2);
             }
             if (table == (s32)splineTableOut3_1) {
-                battenSatelliteTo_InitInline(unit, i, (s32*)splineTableIn3_1, (s32*)splineTableIn3_1);
+                battenSatelliteTo_Init(unit, i, splineTableIn3_1);
             }
             if (table == (s32)splineTableOut3_2) {
-                battenSatelliteTo_InitInline(unit, i, (s32*)splineTableIn3_2, (s32*)splineTableIn3_2);
+                battenSatelliteTo_Init(unit, i, splineTableIn3_2);
             }
             if (table == (s32)splineTableOut3_3) {
-                battenSatelliteTo_InitInline(unit, i, (s32*)splineTableIn3_3, (s32*)splineTableIn3_3);
+                battenSatelliteTo_Init(unit, i, splineTableIn3_3);
             }
             if (table == (s32)splineTableOut4_1) {
-                battenSatelliteTo_InitInline(unit, i, (s32*)splineTableIn4_1, (s32*)splineTableIn4_1);
+                battenSatelliteTo_Init(unit, i, splineTableIn4_1);
             }
             if (table == (s32)splineTableOut4_2) {
-                battenSatelliteTo_InitInline(unit, i, (s32*)splineTableIn4_2, (s32*)splineTableIn4_2);
+                battenSatelliteTo_Init(unit, i, splineTableIn4_2);
             }
             if (table == (s32)splineTableOut4_3) {
-                battenSatelliteTo_InitInline(unit, i, (s32*)splineTableIn4_3, (s32*)splineTableIn4_3);
+                battenSatelliteTo_Init(unit, i, splineTableIn4_3);
             }
             if (table == (s32)splineTableOut4_4) {
-                battenSatelliteTo_InitInline(unit, i, (s32*)splineTableIn4_4, (s32*)splineTableIn4_4);
+                battenSatelliteTo_Init(unit, i, splineTableIn4_4);
             }
         }
     }
@@ -3196,7 +3174,7 @@ USER_FUNC(battenSatelliteToOutside) {
             case 1:
                 i = 0;
                 for (;;) {
-                    if (battenSatelliteTo_InitInline(unit, i, (s32*)splineTableOut1_1, (s32*)splineTableOut1_1) == 1) {
+                    if (battenSatelliteTo_Init(unit, i, splineTableOut1_1) == 1) {
                         break;
                     }
                     i++;
@@ -3205,14 +3183,14 @@ USER_FUNC(battenSatelliteToOutside) {
             case 2:
                 i = 0;
                 for (;;) {
-                    if (battenSatelliteTo_InitInline(unit, i, (s32*)splineTableOut2_1, (s32*)splineTableOut2_1) == 1) {
+                    if (battenSatelliteTo_Init(unit, i, splineTableOut2_1) == 1) {
                         break;
                     }
                     i++;
                 }
                 i++;
                 for (;;) {
-                    if (battenSatelliteTo_InitInline(unit, i, (s32*)splineTableOut2_2, (s32*)splineTableOut2_2) == 1) {
+                    if (battenSatelliteTo_Init(unit, i, splineTableOut2_2) == 1) {
                         break;
                     }
                     i++;
@@ -3221,21 +3199,21 @@ USER_FUNC(battenSatelliteToOutside) {
             case 3:
                 i = 0;
                 for (;;) {
-                    if (battenSatelliteTo_InitInline(unit, i, (s32*)splineTableOut3_1, (s32*)splineTableOut3_1) == 1) {
+                    if (battenSatelliteTo_Init(unit, i, splineTableOut3_1) == 1) {
                         break;
                     }
                     i++;
                 }
                 i++;
                 for (;;) {
-                    if (battenSatelliteTo_InitInline(unit, i, (s32*)splineTableOut3_2, (s32*)splineTableOut3_2) == 1) {
+                    if (battenSatelliteTo_Init(unit, i, splineTableOut3_2) == 1) {
                         break;
                     }
                     i++;
                 }
                 i++;
                 for (;;) {
-                    if (battenSatelliteTo_InitInline(unit, i, (s32*)splineTableOut3_3, (s32*)splineTableOut3_3) == 1) {
+                    if (battenSatelliteTo_Init(unit, i, splineTableOut3_3) == 1) {
                         break;
                     }
                     i++;
@@ -3244,28 +3222,28 @@ USER_FUNC(battenSatelliteToOutside) {
             case 4:
                 i = 0;
                 for (;;) {
-                    if (battenSatelliteTo_InitInline(unit, i, (s32*)splineTableOut4_1, (s32*)splineTableOut4_1) == 1) {
+                    if (battenSatelliteTo_Init(unit, i, splineTableOut4_1) == 1) {
                         break;
                     }
                     i++;
                 }
                 i++;
                 for (;;) {
-                    if (battenSatelliteTo_InitInline(unit, i, (s32*)splineTableOut4_2, (s32*)splineTableOut4_2) == 1) {
+                    if (battenSatelliteTo_Init(unit, i, splineTableOut4_2) == 1) {
                         break;
                     }
                     i++;
                 }
                 i++;
                 for (;;) {
-                    if (battenSatelliteTo_InitInline(unit, i, (s32*)splineTableOut4_3, (s32*)splineTableOut4_3) == 1) {
+                    if (battenSatelliteTo_Init(unit, i, splineTableOut4_3) == 1) {
                         break;
                     }
                     i++;
                 }
                 i++;
                 for (;;) {
-                    if (battenSatelliteTo_InitInline(unit, i, (s32*)splineTableOut4_4, (s32*)splineTableOut4_4) == 1) {
+                    if (battenSatelliteTo_Init(unit, i, splineTableOut4_4) == 1) {
                         break;
                     }
                     i++;
