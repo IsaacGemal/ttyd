@@ -347,24 +347,7 @@ static EVT_BEGIN(phase_event)
     RETURN
 EVT_END()
 
-static USER_FUNC(krb_get_dir) {
-    s32* args = event->args;
-    f32 x1 = evtGetFloat(event, args[0]);
-    f32 y1 = evtGetFloat(event, args[1]);
-    f32 x2 = evtGetFloat(event, args[2]);
-    f32 y2 = evtGetFloat(event, args[3]);
-    s32 out = evtGetValue(event, args[4]);
-    f32 dx = x2 - x1;
-    f32 dy = y2 - y1;
-
-    if (dx == 0.0f && dy == 0.0f) {
-        evtSetValue(event, args[4], out);
-        return 2;
-    }
-    out = (s32)angleABf(dx, dy, 0.0f, 0.0f);
-    evtSetValue(event, args[4], out);
-    return 2;
-}
+#include "rel/common/krb_get_dir.h"
 
 static EVT_BEGIN(attack_event)
     CALL(btlevtcmd_check_battleflag, LW(0), 2)

@@ -34,8 +34,8 @@
 #pragma force_active on
 extern s32 evt_emergency[];
 static USER_FUNC(mario_chk);
-static s32 hitIsGroup(HitEntry* group, HitEntry* hit);
-static s32 _hitIsGroupSub(HitEntry* group, HitEntry* hit, BOOL recurse);
+static BOOL hitIsGroup(HitEntry* group, HitEntry* hit);
+static BOOL _hitIsGroupSub(HitEntry* group, HitEntry* hit, BOOL recurse);
 
 // clang-format off
 extend_data(52,
@@ -643,22 +643,8 @@ EVT_END()
 // The original emits functions in reverse source order, so the functions below are in the reverse
 // of their order in build/G8MJ01/aji/asm/aji_13.s (_hitIsGroupSub, hitIsGroup, mario_chk,
 // unk_aji_000035a0, bg_cam_chk).
-static s32 _hitIsGroupSub(HitEntry* group, HitEntry* hit, BOOL recurse) {
-    if (strcmp(group->joint->name, hit->joint->name) == 0) {
-        return TRUE;
-    }
-    if (hit->child != NULL) {
-        return _hitIsGroupSub(group, hit->child, TRUE);
-    }
-    if (recurse && hit->sibling != NULL) {
-        return _hitIsGroupSub(group, hit->sibling, TRUE);
-    }
-    return FALSE;
-}
 
-static s32 hitIsGroup(HitEntry* group, HitEntry* hit) {
-    return _hitIsGroupSub(group, hit, FALSE);
-}
+#include "rel/common/hitIsGroup.h"
 
 typedef struct ChkEntry {
     Vec prev;
