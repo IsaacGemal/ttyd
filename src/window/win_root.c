@@ -95,15 +95,6 @@ static inline Vec mail_vec(const Vec* base, f32 x, f32 y) {
     return v;
 }
 
-// A mail entry as winMailDisp reads it (mail_data.h returns it untyped).
-typedef struct WinMailEntry {
-    u16 flags;           // 0x0: 1/2/4 pick the envelope colour, 0x1000 has a picture
-    u8 field_0x2[0x6];   // 0x2
-    const char* name;    // 0x8
-    const char* body;    // 0xC
-    s32 picture;         // 0x10
-} WinMailEntry;
-
 // winFontSetLabel and winIconSet take their Vec and GXColor arguments by value (each call copies them);
 // win_main.h declares pointers, which compiles to the same callee.
 // winFontSetLabel takes its Vecs and colour by pointer; the original passes them by value here (caller copies plus a

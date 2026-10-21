@@ -619,7 +619,7 @@ s32 winItemMain(WindowWork* work) {
 
     case 200:
         if (work->buttonTrg & 0x100) {
-            u8* mail;
+            WinMailEntry* mail;
 
             if ((s32)pouchCheckMail(work->field_26E[work->mailSel * 2 + 1]) == 1) {
                 pouchOpenMail(work->field_26E[work->mailSel * 2 + 1]);
@@ -627,11 +627,11 @@ s32 winItemMain(WindowWork* work) {
             swSet(0x26);
             psndSFXOn((const char*)0x20036);
             work->itemState = 201;
-            mail = (u8*)mailGetPtr(work->field_26E[work->mailSel * 2 + 1]);
-            FontGetMessageWidthLine(msgSearch(*(const char**)(mail + 0xC)), winItemMailLine(work));
+            mail = mailGetPtr(work->field_26E[work->mailSel * 2 + 1]);
+            FontGetMessageWidthLine(msgSearch(mail->body), winItemMailLine(work));
             work->mailLines += 1;
             work->mailScroll = 0;
-            if (*(u16*)(mail + 0) & 0x1000) {
+            if (mail->flags & 0x1000) {
                 work->mailLines += 0xA;
             }
         } else if (work->buttonTrg & 0x200) {
@@ -698,11 +698,11 @@ s32 winItemMain(WindowWork* work) {
         break;
 
     case 201: {
-        u8* mail;
+        WinMailEntry* mail;
 
-        mail = (u8*)mailGetPtr(work->field_26E[work->mailSel * 2 + 1]);
+        mail = mailGetPtr(work->field_26E[work->mailSel * 2 + 1]);
 
-        if (*(u16*)(mail + 0) & 0x1000) {
+        if (mail->flags & 0x1000) {
             work->mailTpl = (FileEntry*)fileAsyncf(FILE_TYPE_TPL, NULL, STR_MAIL_TPL, getMarioStDvdRoot());
             if ((u32)work->mailTpl != 0) {
                 work->mailTpl = fileAllocf(FILE_TYPE_TPL, STR_MAIL_TPL, getMarioStDvdRoot());
