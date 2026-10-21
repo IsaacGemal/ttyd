@@ -1088,7 +1088,7 @@ void mapUnLoad(void) {
 }
 #pragma opt_propagation reset
 
-BOOL mapPreLoad(void) {
+BOOL mapPreLoad(const char* map) {
 	return TRUE; //do nothing
 }
 

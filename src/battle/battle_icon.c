@@ -92,7 +92,7 @@ void BattleIconEnd(void) {
 
 // name[8] is what the original reserves for "_biu_%02x" (8 bytes with the null);
 // a larger buffer grows the frame past the original's 0x50.
-BattleIcon* BtlIcon_Entry(s16 iconId, f32 x, f32 y, f32 z) {
+BattleIcon* BtlIcon_Entry(u16 iconId, f32 x, f32 y, f32 z) {
 	BattleIcon* icon;
 	int i;
 	char name[8];
@@ -168,14 +168,7 @@ USER_FUNC(btlevtcmd_BtlIconEntry) {
 	y = (f32)evtGetValue(event, args[2]);
 	z = (f32)evtGetValue(event, args[3]);
 	index = args[4];
-#ifdef MUST_MATCH
-	// The header declares BtlIcon_Entry's id as s16, but retail narrows it with clrlwi (zero-extend,
-	// not extsh), so the original parameter is u16. Call through a cast pointer to emit the unsigned
-	// narrowing without editing the existing header line
-	icon = ((BattleIcon* (*)(u16, f32, f32, f32))BtlIcon_Entry)(iconId, x, y, z);
-#else
 	icon = BtlIcon_Entry(iconId, x, y, z);
-#endif
 	evtSetValue(event, index, icon->index);
 	return EVT_RETURN_DONE;
 }
@@ -192,14 +185,7 @@ USER_FUNC(btlevtcmd_BtlIconEntryItemId) {
 	y = (f32)evtGetValue(event, args[2]);
 	z = (f32)evtGetValue(event, args[3]);
 	index = args[4];
-#ifdef MUST_MATCH
-	// The header declares BtlIcon_Entry's id as s16, but the original passes the u16 field straight
-	// into r3 (lhz, no extsh); call through a u16-function pointer to avoid the sign extension.
-	// Remove when the header's first parameter becomes u16.
-	icon = ((BattleIcon* (*)(u16, f32, f32, f32))BtlIcon_Entry)(itemDataTable[itemId].icon_id, x, y, z);
-#else
 	icon = BtlIcon_Entry(itemDataTable[itemId].icon_id, x, y, z);
-#endif
 	evtSetValue(event, index, icon->index);
 	return EVT_RETURN_DONE;
 }

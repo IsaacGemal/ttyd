@@ -6179,11 +6179,7 @@ void psndSFXMain(void) {
                     if ((u32)sfx->unk18 != -1) {
                         SoundEfxSetVolume(sfx->unk18, ((u8*)&res)[0]);
                         SoundEfxSetSrndPan(sfx->unk18, ((u8*)&res)[2]);
-#ifdef MUST_MATCH
-                        ((void (*)(s32, s16))SoundEfxSetPitch)(sfx->unk18, sfx->unk14);
-#else
                         SoundEfxSetPitch(sfx->unk18, sfx->unk14);
-#endif
                     }
                 } else {
                     vol = (sfx->vol * sfx->baseVol) / 127 - sfx->unk10;
@@ -6191,11 +6187,7 @@ void psndSFXMain(void) {
                     if (vol > 0x7F) vol = 0x7F;
                     sfx->unk18 = SoundEfxPlayEx((u16)entry->flags, 0, (u8)vol, sfx->pan);
                     if ((u32)sfx->unk18 != -1) {
-#ifdef MUST_MATCH
-                        ((void (*)(s32, s16))SoundEfxSetPitch)(sfx->unk18, sfx->unk14);
-#else
                         SoundEfxSetPitch(sfx->unk18, sfx->unk14);
-#endif
                     }
                 }
                 if (*(u32*)&sfx->unk18 != -1) {
@@ -6458,7 +6450,7 @@ void psndSFX_vol(s32 id, u8 vol) {
 	sfx->unk8[0] = vol;
 }
 
-void psndSFX_pit(s32 id, u16 pitch) {
+void psndSFX_pit(s32 id, s16 pitch) {
 	PaperSoundEffect* sfx;
 	SoundEffectEntry* entry;
 

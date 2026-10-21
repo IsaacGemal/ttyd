@@ -949,7 +949,7 @@ void SoundEfxStop(s32 chan) {
     }
 }
 
-void SoundEfxSetPitch(s32 chan, u16 pitch) {
+void SoundEfxSetPitch(s32 chan, s16 pitch) {
     SoundEffect* sfx;
     SND_VOICEID vid;
 

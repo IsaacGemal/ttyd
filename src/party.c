@@ -1228,12 +1228,11 @@ void driveParty(PartyEntry* party) {
     }
     party_kemuri(party);
     {
-        Vec scr = party->position;
         f32 scrX;
         f32 scrY;
         f32 scrZ;
 
-        ((void (*)(Vec*, f32*, f32*, f32*))marioGetScreenPos)(&scr, &scrX, &scrY, &scrZ);
+        marioGetScreenPos(party->position, &scrX, &scrY, &scrZ);
         if (marioChkInScreen((s32)scrX, (s32)scrY)) {
             party->flags2 &= ~0x00800000;
         } else {

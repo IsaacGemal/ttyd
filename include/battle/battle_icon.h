@@ -30,7 +30,7 @@ typedef struct BattleWorkIcon {
 void BattleIconInit(void);
 void BattleIconMain(void);
 void BattleIconEnd(void);
-BattleIcon* BtlIcon_Entry(s16 iconId, f32 x, f32 y, f32 z);
+BattleIcon* BtlIcon_Entry(u16 iconId, f32 x, f32 y, f32 z);
 void BtlIcon_Delete(BattleIcon* icon);
 
 USER_FUNC(btlevtcmd_BtlIconDelete);

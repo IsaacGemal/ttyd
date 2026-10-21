@@ -206,7 +206,7 @@ void seq_mapChangeMain(SequenceWork* work) {
             } else {
                 ready = 1;
             }
-            if (ready != 0 && ((BOOL (*)(const char*))mapPreLoad)(_next_map) != 0) {
+            if (ready != 0 && mapPreLoad(_next_map) != 0) {
                 FileEntry* file;
 
                 area = _next_area;
