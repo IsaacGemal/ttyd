@@ -12026,8 +12026,8 @@ natural-compile, data and ratchet steps; the tests step was skipped because it t
 chapter above. Each header change was also checked with `obj_equiv.py --tree` over all 1,230 compiled objects (src and
 rels). The full `--non-matching` ninja compiles every object, and only the link fails, as usual.
 
-- **Counts:** src/battle regions 231 -> 143. `tools/cleanup_index.py` 16.392 -> 16.216 per kLOC (11570 -> 11439
-  weighted); must_match 1300 -> 1212, fn_ptr_cast 131 -> 115, field_0x 3645 -> 3640, raw_offset 500 -> 498.
+- **Counts:** src/battle regions 231 -> 145. `tools/cleanup_index.py` 16.293 -> 16.121 per kLOC on top of the rels
+  pass; must_match 1226 -> 1140, fn_ptr_cast 131 -> 115.
 - **Header types from the asm** (each field has a single reader; all callers in the tree are equivalent):
   - `BtlUnit_GetStatus`/`SetStatus`/`CheckRecoveryStatus`/`CheckStatus` take `s8 type`. The bodies switched on
     `(s8)type`, and the battle_status_icon/disp/damage callers sign-extend at the call. With all four changed together
@@ -12040,9 +12040,8 @@ rels). The full `--non-matching` ninja compiles every object, and only the link 
     cast goes too.
 - **Source shapes that matched:**
   - Several volatile reads had gone stale since the prototype fixes and the plain form now matches: ac_air_gauge,
-    ac_power_gauge_lv/lv2, crane_timing's MATCH_F64.
-  - The `BattleActions* ac` intermediate (the ac units' common opening) is now the only form in crane_timing,
-    gauge_timing, power_gauge, stick_rotate and pendulum_crane_timing.
+    ac_power_gauge_lv/lv2.
+  - The `BattleActions* ac` intermediate (the ac units' common opening) is now the only form in gauge_timing, power_gauge, stick_rotate and pendulum_crane_timing.
   - `id = BattleTransID(event, id)` (event_default) and `mask = args[1]; mask = unit->mTokenFlags & mask`
     (CheckToken, as OnToken/OffToken do).
   - _attack_aud's x/y/z are one `Vec pos` (consecutive slots, already passed as one).
@@ -12064,8 +12063,6 @@ rels). The full `--non-matching` ninja compiles every object, and only the link 
     - DrawMainMenu's zero-on-left `==`
     - timing_a's unrotated `for (;;) { if (...) break; }`
   - KinopioFire grows both axes by one `f32 step` local, the idiom of the Boo bob in the same file.
-  - ac_crane_timing's two `const f64` pool definitions became literals that MWCC pools into the same .rodata slots
-    (obj_equiv EQUIV; CLEANUP_GUIDE section 6 allows it).
   - _set_mobj_rotate_x writes through the function's existing `base = wp + 0x20000` pointer.
   - bakuGameMain's uninitialised `neg2` (retail reads it on counts 0x1B-0x1E) stays under MUST_MATCH, with a
     well-defined `#else`, like battle_camera's `yc` and break_slot's `j`.
