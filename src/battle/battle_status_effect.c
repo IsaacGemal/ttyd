@@ -85,23 +85,6 @@ BattleStatusChangeMsgData _st_chg_msg_data[] = {
 
 // additional local prototypes (targets not yet declared in shared headers)
 
-// local overlays for BattleUnit regions the shared header leaves unnamed
-typedef struct BattleUnitEffectFields {
-	u8 pad_0[0x320];
-	EffectEntry* mSleepEff;     // 0x320
-	EffectEntry* mFireEff;      // 0x324
-	EffectEntry* mFreezeEff;    // 0x328
-	EffectEntry* mBiribiriEff;  // 0x32C
-	IconEntry* mKagegakureIcon; // 0x330
-} BattleUnitEffectFields;
-
-typedef struct BattleUnitKindOffsetFields {
-	u8 pad_0[0x48];
-	f32 mBurnFlameOffsetX; // 0x48
-	f32 mBurnFlameOffsetY; // 0x4C
-	f32 mBurnFlameOffsetZ; // 0x50
-} BattleUnitKindOffsetFields;
-
 typedef struct BattleEffectPos {
 	u32 mType; // 0x0
 	Vec position;  // 0x4
@@ -114,11 +97,6 @@ typedef struct BattleEffectPosScale {
 	u8 pad_0x14[0x24 - 0x14];
 	f32 mFireScale; // 0x24
 } BattleEffectPosScale;
-
-typedef struct BattleUnitStatusChangeFields {
-	u8 pad_0[0xAE4];
-	BattleStatusChangeEntry mStatusChange[6]; // 0xAE4
-} BattleUnitStatusChangeFields;
 
 void BattleStatusEffectInit(BattleUnit* unit) {
 	; //stubbed in retail
@@ -154,10 +132,10 @@ void BSE_Sleep(BattleUnit* unit) {
 		active = TRUE;
 	}
 	if (active) {
-		if (((BattleUnitEffectFields*)unit)->mSleepEff == NULL) {
-			((BattleUnitEffectFields*)unit)->mSleepEff = effSleepEntry(0, 0, -1000.0f, -1000.0f, -1000.0f, 1.0f, 60.0f);
+		if (unit->mSleepEff == NULL) {
+			unit->mSleepEff = effSleepEntry(0, 0, -1000.0f, -1000.0f, -1000.0f, 1.0f, 60.0f);
 		}
-		work = ((BattleUnitEffectFields*)unit)->mSleepEff->userdata;
+		work = unit->mSleepEff->userdata;
 		part = BtlUnit_GetPartsPtr(unit, BtlUnit_GetBodyPartsId(unit));
 		BtlUnit_GetPartsWorldPos(part, &x, &y, &z);
 		scale = 0.5f * (unit->mSizeMultiplier * (f32)BtlUnit_GetWidth(unit));
@@ -179,12 +157,11 @@ void BSE_Sleep(BattleUnit* unit) {
 // Keep BSE_SleepDelete out of line: the original calls it rather than inlining.
 #pragma dont_inline on
 void BSE_SleepDelete(BattleUnit* unit) {
-	BattleUnitEffectFields* fields = (BattleUnitEffectFields*)unit;
-	EffectEntry* effect = fields->mSleepEff;
+	EffectEntry* effect = unit->mSleepEff;
 
 	if (effect != NULL) {
 		effDelete(effect);
-		fields->mSleepEff = NULL;
+		unit->mSleepEff = NULL;
 	}
 }
 
@@ -201,10 +178,10 @@ void BSE_Biribiri(BattleUnit* unit) {
 		active = TRUE;
 	}
 	if (active) {
-		if (((BattleUnitEffectFields*)unit)->mBiribiriEff == NULL) {
-			((BattleUnitEffectFields*)unit)->mBiribiriEff = effSparkEntry(0, 10, -1000.0f, -1000.0f, -1000.0f, (f32)(BtlUnit_GetWidth(unit) / 2));
+		if (unit->mBiribiriEff == NULL) {
+			unit->mBiribiriEff = effSparkEntry(0, 10, -1000.0f, -1000.0f, -1000.0f, (f32)(BtlUnit_GetWidth(unit) / 2));
 		}
-		work = ((BattleUnitEffectFields*)unit)->mBiribiriEff->userdata;
+		work = unit->mBiribiriEff->userdata;
 		part = BtlUnit_GetPartsPtr(unit, BtlUnit_GetBodyPartsId(unit));
 		BtlUnit_GetPartsWorldPos(part, &x, &y, &z);
 		heightScale = (f32)(BtlUnit_GetHeight(unit) / 2) * unit->mSizeMultiplier;
@@ -224,19 +201,17 @@ void BSE_Biribiri(BattleUnit* unit) {
 // Keep BSE_BiribiriDelete out of line: the original calls it rather than inlining.
 #pragma dont_inline on
 void BSE_BiribiriDelete(BattleUnit* unit) {
-	BattleUnitEffectFields* fields = (BattleUnitEffectFields*)unit;
-	EffectEntry* effect = fields->mBiribiriEff;
+	EffectEntry* effect = unit->mBiribiriEff;
 
 	if (effect != NULL) {
 		effDelete(effect);
-		fields->mBiribiriEff = NULL;
+		unit->mBiribiriEff = NULL;
 	}
 }
 
 // dont_inline: without it BattleStatusEffectMain inlines BSE_Fire; the original calls it.
 #pragma dont_inline on
 void BSE_Fire(BattleUnit* unit) {
-	BattleUnitEffectFields* fields = (BattleUnitEffectFields*)unit;
 	BattleEffectPos* work;
 	BattleUnitPart* part;
 	f32 x, y, z;
@@ -247,10 +222,10 @@ void BSE_Fire(BattleUnit* unit) {
 		active = TRUE;
 	}
 	if (active) {
-		if (fields->mFireEff == NULL) {
-			fields->mFireEff = effFireEntry(0, 0, -1000.0f, -1000.0f, -1000.0f, 1.0f);
+		if (unit->mFireEff == NULL) {
+			unit->mFireEff = effFireEntry(0, 0, -1000.0f, -1000.0f, -1000.0f, 1.0f);
 		}
-		work = fields->mFireEff->userdata;
+		work = unit->mFireEff->userdata;
 		part = BtlUnit_GetPartsPtr(unit, BtlUnit_GetBodyPartsId(unit));
 		BtlUnit_GetPartsWorldPos(part, &x, &y, &z);
 		if (unit->faceDirection >= 0) {
@@ -258,9 +233,9 @@ void BSE_Fire(BattleUnit* unit) {
 		} else {
 			direction = -1.0f;
 		}
-		x += unit->mSizeMultiplier * (((BattleUnitKindOffsetFields*)unit->mKindParams)->mBurnFlameOffsetX * direction);
-		y += ((BattleUnitKindOffsetFields*)unit->mKindParams)->mBurnFlameOffsetY * unit->mSizeMultiplier;
-		z += ((BattleUnitKindOffsetFields*)unit->mKindParams)->mBurnFlameOffsetZ * unit->mSizeMultiplier;
+		x += unit->mSizeMultiplier * (unit->mKindParams->burnFlameOffset.x * direction);
+		y += unit->mKindParams->burnFlameOffset.y * unit->mSizeMultiplier;
+		z += unit->mKindParams->burnFlameOffset.z * unit->mSizeMultiplier;
 		work->position.x = x;
 		work->position.y = y;
 		work->position.z = z + 5.0f;
@@ -272,12 +247,11 @@ void BSE_Fire(BattleUnit* unit) {
 // Keep BSE_FireDelete out of line: the original calls it rather than inlining.
 #pragma dont_inline on
 void BSE_FireDelete(BattleUnit* unit) {
-	BattleUnitEffectFields* fields = (BattleUnitEffectFields*)unit;
-	EffectEntry* effect = fields->mFireEff;
+	EffectEntry* effect = unit->mFireEff;
 
 	if (effect != NULL) {
 		effDelete(effect);
-		fields->mFireEff = NULL;
+		unit->mFireEff = NULL;
 	}
 }
 #pragma dont_inline reset
@@ -285,7 +259,6 @@ void BSE_FireDelete(BattleUnit* unit) {
 // Keep BSE_Freeze out of line: the original calls it rather than inlining.
 #pragma dont_inline on
 void BSE_Freeze(BattleUnit* unit) {
-	BattleUnitEffectFields* fields = (BattleUnitEffectFields*)unit;
 	BattleEffectPosScale* work;
 	BattleUnitPart* part;
 	f32 x, y, z;
@@ -298,10 +271,10 @@ void BSE_Freeze(BattleUnit* unit) {
 		active = TRUE;
 	}
 	if (active) {
-		if (fields->mFreezeEff == NULL) {
-			fields->mFreezeEff = effIceEntry(0, -1, -1000.0f, -1000.0f, -1000.0f, 1.0f);
+		if (unit->mFreezeEff == NULL) {
+			unit->mFreezeEff = effIceEntry(0, -1, -1000.0f, -1000.0f, -1000.0f, 1.0f);
 		}
-		work = fields->mFreezeEff->userdata;
+		work = unit->mFreezeEff->userdata;
 		part = BtlUnit_GetPartsPtr(unit, BtlUnit_GetBodyPartsId(unit));
 		widthScale = (f32)unit->mWidth / 20.0f;
 		heightScale = (f32)unit->mHeight / 36.0f;
@@ -321,19 +294,17 @@ void BSE_Freeze(BattleUnit* unit) {
 // Keep BSE_FreezeDelete out of line: the original calls it rather than inlining.
 #pragma dont_inline on
 void BSE_FreezeDelete(BattleUnit* unit) {
-	BattleUnitEffectFields* fields = (BattleUnitEffectFields*)unit;
-	EffectEntry* effect = fields->mFreezeEff;
+	EffectEntry* effect = unit->mFreezeEff;
 
 	if (effect != NULL) {
 		effSoftDelete(effect);
-		fields->mFreezeEff = NULL;
+		unit->mFreezeEff = NULL;
 	}
 }
 
 // Keep BSE_Kagegakure out of line: the original calls it rather than inlining.
 #pragma dont_inline on
 void BSE_Kagegakure(BattleUnit* unit) {
-	BattleUnitEffectFields* fields = (BattleUnitEffectFields*)unit;
 	BattleUnitPart* part;
 	char name[0x14];
 	f32 x, y, z;
@@ -343,14 +314,14 @@ void BSE_Kagegakure(BattleUnit* unit) {
 		active = TRUE;
 	}
 	if (active) {
-		if (fields->mKagegakureIcon == NULL) {
+		if (unit->mKagegakureIcon == NULL) {
 			sprintf(name, "_biK_%02x", unit->unitId);
 			iconEntry(name, 0x99);
-			fields->mKagegakureIcon = iconNameToPtr(name);
+			unit->mKagegakureIcon = iconNameToPtr(name);
 		}
 		part = BtlUnit_GetPartsPtr(unit, BtlUnit_GetBodyPartsId(unit));
 		BtlUnit_GetPartsWorldPos(part, &x, &y, &z);
-		iconSetPos(fields->mKagegakureIcon->name, x, y, z + 5.0f);
+		iconSetPos(unit->mKagegakureIcon->name, x, y, z + 5.0f);
 	} else {
 		BSE_KagegakureDelete(unit);
 	}
@@ -359,12 +330,11 @@ void BSE_Kagegakure(BattleUnit* unit) {
 // Keep BSE_KagegakureDelete out of line: the original calls it rather than inlining.
 #pragma dont_inline on
 void BSE_KagegakureDelete(BattleUnit* unit) {
-	BattleUnitEffectFields* fields = (BattleUnitEffectFields*)unit;
-	IconEntry* entry = fields->mKagegakureIcon;
+	IconEntry* entry = unit->mKagegakureIcon;
 
 	if (entry != NULL) {
 		iconDelete(entry->name);
-		fields->mKagegakureIcon = NULL;
+		unit->mKagegakureIcon = NULL;
 	}
 }
 #pragma dont_inline reset
@@ -432,7 +402,7 @@ BOOL BSE_TurnFirstProcessEffectMain(BattleUnit* unit) {
 
 #pragma dont_inline on
 void BattleStatusChangeInfoWorkInit(BattleUnit* unit) {
-	BattleStatusChangeEntry* entries = ((BattleUnitStatusChangeFields*)unit)->mStatusChange;
+	BattleStatusChangeEntry* entries = unit->mStatusChange;
 	s32 i;
 
 	for (i = 0; i < 6; i++) {
@@ -465,7 +435,7 @@ s32 _get_pri(s8 type) {
 #pragma dont_inline reset
 
 void BattleStatusChangeInfoSetAnnouce(BattleUnit* unit, s32 type, s8 p1, s32 p2) {
-	BattleStatusChangeEntry* list = ((BattleUnitStatusChangeFields*)unit)->mStatusChange;
+	BattleStatusChangeEntry* list = unit->mStatusChange;
 #ifdef MUST_MATCH
 	s8 pri = _get_pri(type + 0);
 #else
@@ -608,7 +578,7 @@ void BattleStatusChangeMsgAdjust(BattleWork* wp) {
 				if (unit != NULL && !BtlUnit_CheckStatus(unit, STATUS_INSTANT_KILL)) {
 					s32 found = 0;
 					s32 k;
-					BattleStatusChangeEntry* info = ((BattleUnitStatusChangeFields*)unit)->mStatusChange;
+					BattleStatusChangeEntry* info = unit->mStatusChange;
 
 					for (k = 0; k < 6; k++) {
 						if (i == info[k].type) {

@@ -700,14 +700,14 @@ typedef struct BattleUnit {
     EffectEntry* mFireEff;                       // 0x324
     EffectEntry* mFreezeEff;                     // 0x328
     EffectEntry* mBiribiriEff;                   // 0x32C
-    u8 field_0x330[0x334 - 0x330];               // 0x330
+    struct IconEntry* mKagegakureIcon;           // 0x330, BSE_Kagegakure's icon (iconEntry 0x99)
     s16 mBurnDamageFlameState;                   // 0x334
     s16 mbBurnDamageFlameActive;                 // 0x336
     s32 mBurnDamageFlameAnimTimer;               // 0x338
     f32 mBurnDamageFlameScale;                   // 0x33C
     EffectEntry* mBurnDamageFlameEff;            // 0x340
     BattleWorkStatusIcon mStatusIconWork;        // 0x344
-    u8 field_0xAE4[0xB2C - 0xAE4];               // 0xAE4
+    BattleStatusChangeEntry mStatusChange[6];    // 0xAE4
     s32 stageObjectId;                           // 0xB2C, BattleStageObject id of the tree or switch unit
 } BattleUnit;
 
