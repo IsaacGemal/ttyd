@@ -263,7 +263,7 @@ void FontDrawCodeMtx(Mtx mtx, u16 code) {
 // Matched: a local `str` copied from the param `s` (declared between glyph and w) reproduces retail's
 // str=r28/glyph=r29/w=r27 split; assigning fx before PSMTXScale and fz before fy after it reproduces
 // the float-load schedule; `(s8)*str++` puts the single-byte pointer increment before the sign-extend.
-void FontDrawString(const char* s, f32 x, f32 y) {
+void FontDrawString(f32 x, f32 y, const char* s) {
 	CameraEntry* cam;
 	Mtx mtx;
 	Mtx mtx2;

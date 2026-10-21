@@ -1098,7 +1098,7 @@ void loadDraw(void) {
         FontDrawScale(0.6f);
         FontDrawEdge();
         sprintf(nameBuf, "\203f\201[\203^%s", winZenkakuStr(i + 1));
-        FontDrawString(nameBuf, wd->x - 100.0f, 84.0f + wd->y);
+        FontDrawString(wd->x - 100.0f, 84.0f + wd->y, nameBuf);
         FontDrawEdgeOff();
         FontDrawScale(1.0f);
 #ifdef MUST_MATCH
@@ -1117,17 +1117,17 @@ void loadDraw(void) {
         if (flags & 2) {
             const char* s = "\202\261\202\355\202\352\202\304\202\242\202\334\202\267";
 
-            FontDrawString(s, wd->x - (f32)FontGetMessageWidth(s) / 2.0f, 12.0f + wd->y);
+            FontDrawString(wd->x - (f32)FontGetMessageWidth(s) / 2.0f, 12.0f + wd->y, s);
         } else if (flags & 1) {
             const char* s = "\203j\203\205\201[\203Q\201[\203\200";
 
-            FontDrawString(s, wd->x - (f32)FontGetMessageWidth(s) / 2.0f, 12.0f + wd->y);
+            FontDrawString(wd->x - (f32)FontGetMessageWidth(s) / 2.0f, 12.0f + wd->y, s);
         } else if (gsw0 == 0) {
             const char* s = "\202\315\202\266\202\337\202\251\202\347";
 
-            FontDrawString(s, wd->x - (f32)FontGetMessageWidth(s) / 2.0f, 12.0f + wd->y);
+            FontDrawString(wd->x - (f32)FontGetMessageWidth(s) / 2.0f, 12.0f + wd->y, s);
             if (strlen(name) != 0) {
-                FontDrawString(name, wd->x - (f32)(FontGetMessageWidth(name) >> 1), 70.0f + wd->y);
+                FontDrawString(wd->x - (f32)(FontGetMessageWidth(name) >> 1), 70.0f + wd->y, name);
             }
         } else {
             u32 hours;
@@ -1151,17 +1151,17 @@ void loadDraw(void) {
             }
 
             if (strlen(name) != 0) {
-                FontDrawString(name, wd->x - (f32)(FontGetMessageWidth(name) >> 1), 70.0f + wd->y);
+                FontDrawString(wd->x - (f32)(FontGetMessageWidth(name) >> 1), 70.0f + wd->y, name);
             }
             sprintf(timeBuf, "\203\214\203x\203\213\201@%s", winZenkakuStr(level));
-            FontDrawString(timeBuf, wd->x - (f32)FontGetMessageWidth(timeBuf) / 2.0f, 30.0f + wd->y);
+            FontDrawString(wd->x - (f32)FontGetMessageWidth(timeBuf) / 2.0f, 30.0f + wd->y, timeBuf);
             strcpy(timeBuf, "\203v\203\214\203C\202\266\202\251\202\361\201@");
             strcat(timeBuf, winZenkakuPadStr(hours, 2));
             strcat(timeBuf, " ");
             strcat(timeBuf, winZenkakuPadStr(mins, 2));
             {
                 f32 w = (f32)FontGetMessageWidth(timeBuf);
-                FontDrawString(timeBuf, wd->x - (half = w / 2.0f), wd->y);
+                FontDrawString(wd->x - (half = w / 2.0f), wd->y, timeBuf);
             }
             strcpy(timeBuf, "\203v\203\214\203C\202\266\202\251\202\361\201@");
             strcat(timeBuf, winZenkakuPadStr(hours, 2));

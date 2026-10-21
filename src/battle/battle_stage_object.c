@@ -2009,7 +2009,7 @@ void _disp_escape_wall_message(CameraId cameraId, void* param) {
 
 	windowDispGX_Waku_col(0, &color, x - 20.0f, -117.0f, (f32)(width + 0x28), 30.0f, 10.0f);
 	FontDrawStart();
-	FontDrawString(msg, x, -120.0f);
+	FontDrawString(x, -120.0f, msg);
 }
 
 void BattleStage_IronFrameFallCheck(void) {

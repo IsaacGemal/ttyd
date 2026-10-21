@@ -1833,9 +1833,9 @@ void BattleCommandDisplay_WeaponMultiItemCancelCheckDisp(CameraId camId, BattleW
 	                      (GXColor){ 0xFF, 0xFF, 0xFF, 0xFF });
 	windowDispGX_Waku_col(-70.0f, -10.0f, 130.0f, 60.0f, 10.0f, 0, (GXColor){ 0xFF, 0xFF, 0xFF, 0xFF });
 	FontDrawStart();
-	FontDrawString(buf, cx - xoff, 27.0f);
-	FontDrawString("\202\315\202\242\201@", -20.0f, -13.0f);
-	FontDrawString("\202\242\202\242\202\246", -20.0f, -38.0f);
+	FontDrawString(cx - xoff, 27.0f, buf);
+	FontDrawString(-20.0f, -13.0f, "\202\315\202\242\201@");
+	FontDrawString(-20.0f, -38.0f, "\202\242\202\242\202\246");
 	pos.x = -40.0f;
 	pos.y = (f32)(-42 - wp->commandMenu.cursor[13].field_0 * 25);
 	pos.z = 0.0f;
@@ -2176,7 +2176,7 @@ void BattleCommandDisplay_TargetSelectMenuDisp(CameraId camId, BattleWork* param
 			width = (f32)FontGetMessageWidth(name);
 			windowDispGX_Waku_col(-240.0f, 86.0f, 16.0f + width, 32.0f, 10.0f, 0, (GXColor){ 0xFF, 0xFF, 0xFF, 0xCF });
 			FontDrawStart();
-			FontDrawString(name, -232.0f, 83.0f);
+			FontDrawString(-232.0f, 83.0f, name);
 		} else {
 			btlGetScreenPoint(&pos, &screen);
 			iconPos.x = screen.x;
@@ -2191,7 +2191,7 @@ void BattleCommandDisplay_TargetSelectMenuDisp(CameraId camId, BattleWork* param
 			width = (f32)FontGetMessageWidth(name);
 			windowDispGX_Waku_col(-240.0f, 86.0f, 16.0f + width, 32.0f, 10.0f, 0, (GXColor){ 0xFF, 0xFF, 0xFF, 0xCF });
 			FontDrawStart();
-			FontDrawString(name, -232.0f, 83.0f);
+			FontDrawString(-232.0f, 83.0f, name);
 		}
 	} else {
 		BattleSampling* sampling = &wp->sampling;
@@ -2227,7 +2227,7 @@ void BattleCommandDisplay_TargetSelectMenuDisp(CameraId camId, BattleWork* param
 				windowDispGX_Waku_col(-240.0f, 118.0f - (f32)yoff, 16.0f + width, 32.0f, 10.0f, 0,
 				                      (GXColor){ 0xFF, 0xFF, 0xFF, 0xCF });
 				FontDrawStart();
-				FontDrawString(name, -232.0f, 115.0f - (f32)yoff);
+				FontDrawString(-232.0f, 115.0f - (f32)yoff, name);
 			} else {
 				btlGetScreenPoint(&pos, &screen);
 				iconPos.x = screen.x;
@@ -2243,7 +2243,7 @@ void BattleCommandDisplay_TargetSelectMenuDisp(CameraId camId, BattleWork* param
 				windowDispGX_Waku_col(-240.0f, 118.0f - (f32)yoff, 16.0f + width, 32.0f, 10.0f, 0,
 				                      (GXColor){ 0xFF, 0xFF, 0xFF, 0xCF });
 				FontDrawStart();
-				FontDrawString(name, -232.0f, 115.0f - (f32)yoff);
+				FontDrawString(-232.0f, 115.0f - (f32)yoff, name);
 			}
 		}
 	}
@@ -2290,8 +2290,7 @@ void BattleCommandDisplay_ProtectPartnerSelectMenuDisp(CameraId camId, BattleWor
 	windowDispGX_Waku_col(iconPos.x - xoff, 80.0f + iconPos.y, 12.5f * len, 32.0f, 10.0f, 0,
 	                      (GXColor){ 0xFF, 0xFF, 0xFF, 0xCF });
 	FontDrawStart();
-	FontDrawString(msgSearch((char*)partner->mKindParams->name),
-	               3.0f + iconPos.x - xoff, 77.0f + iconPos.y);
+	FontDrawString(3.0f + iconPos.x - xoff, 77.0f + iconPos.y, msgSearch((char*)partner->mKindParams->name));
 }
 
 void BattleCommandDisplay_ProtectPartnerSelectMenuEnd(BattleWork* wp) {

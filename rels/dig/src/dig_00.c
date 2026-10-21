@@ -365,7 +365,7 @@ void movie_draw(CameraId cameraId, void* param) {
         FontDrawStart();
         color = *(GXColor*)&dat_dig_000006e0;
         FontDrawColor(&color);
-        FontDrawString(string, (f32)(-FontGetMessageWidth(string) / 2), 0.0f);
+        FontDrawString((f32)(-FontGetMessageWidth(string) / 2), 0.0f, string);
         wp->frameNumber++;
     } else {
         width = gp->fbWidth;

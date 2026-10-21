@@ -731,7 +731,7 @@ void kpa_stageclear_disp(CameraId cameraId, void* param) {
     FontDrawColor(&color);
     x = -140.0f;
     y = 40.0f;
-    FontDrawString("ゴールイン！！", x, y);
+    FontDrawString(x, y, "ゴールイン！！");
     FontDrawEdgeOff();
 }
 #pragma opt_propagation reset

@@ -73,13 +73,7 @@ void evt_yuutitle_disp_func(CameraId cameraId, void* param) {
     color.a = wp->alpha;
     c = color;
     FontDrawColor(&c);
-#ifdef MUST_MATCH
-    // The original evaluates this call's arguments (x, y, then the string) as if FontDrawString were declared
-    // `(f32, f32, const char*)`; the shared header has the string first, so cast to the original's order.
-    ((void (*)(f32, f32, const char*))FontDrawString)(wp->field_08 - halfWidth, wp->field_0c, wp->msg);
-#else
-    FontDrawString(wp->msg, wp->field_08 - halfWidth, wp->field_0c);
-#endif
+    FontDrawString(wp->field_08 - halfWidth, wp->field_0c, wp->msg);
     FontDrawEdgeOff();
 }
 #pragma opt_propagation reset

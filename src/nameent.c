@@ -498,7 +498,7 @@ void nameEntDisp(CameraId cameraId, void* param) {
 				f32 x = (f32)(-190 + j * 24 + j / 5 * 30 + (24 - (s32)FontGetMessageWidth(s)) / 2);
 				f32 y = (f32)(112 - row * 28);
 
-				FontDrawString(s, x, y);
+				FontDrawString(x, y, s);
 			}
 		}
 	}
@@ -521,14 +521,14 @@ void nameEntDisp(CameraId cameraId, void* param) {
 		memset(buf, 0, 16);
 		strncpy(buf, &wp->name[i * 2], 2);
 		if (strlen(buf) != 0) {
-			{ f32 t = 28.0f - (f32)FontGetMessageWidth(buf); f32 h = 0.5f; FontDrawString(buf, t * h + (f32)(-120 + i * 32), 171.0f); }
+			{ f32 t = 28.0f - (f32)FontGetMessageWidth(buf); f32 h = 0.5f; FontDrawString(t * h + (f32)(-120 + i * 32), 171.0f, buf); }
 		}
 	}
 	msg = msg_tbl[wp->type];
 	width = (f32)FontGetMessageWidth(msgSearch(msg));
 	windowDispGX_Waku_col(-250.0f, -160.0f, 500.0f, 40.0f, 20.0f, 0, (GXColor){ 0xFF, 0xFF, 0xFF, 0xFF });
 	FontDrawStart();
-	{ f32 h = 0.5f; FontDrawString(msgSearch(msg), (240.0f - width) * h + -120.0f, -168.0f); }
+	{ f32 h = 0.5f; FontDrawString((240.0f - width) * h + -120.0f, -168.0f, msgSearch(msg)); }
 	nameMaskGX(wp->maskAlpha);
 	if (wp->step == 0x64) {
 		okMsg = msgSearch("msg_nameent_ok");
@@ -548,11 +548,11 @@ void nameEntDisp(CameraId cameraId, void* param) {
 		FontDrawStart();
 		FontDrawColor(&(GXColor){ 0xFF, 0xFF, 0xFF, 0xFF });
 		FontDrawEdge();
-		{ f32 wf = -(f32)FontGetMessageWidth(okMsg); f32 h = 0.5f; FontDrawString(okMsg, wf * h, 110.0f); }
+		{ f32 wf = -(f32)FontGetMessageWidth(okMsg); f32 h = 0.5f; FontDrawString(wf * h, 110.0f, okMsg); }
 		name = wp->name;
-		{ f32 wf = -(f32)FontGetMessageWidth(name); f32 h = 0.5f; FontDrawString(name, wf * h, 70.0f); }
-		{ f32 wf = -(f32)FontGetMessageWidth(noMsg); f32 h = 0.5f; FontDrawString(yesMsg, wf * h, -20.0f); }
-		{ f32 wf = -(f32)FontGetMessageWidth(noMsg); f32 h = 0.5f; FontDrawString(noMsg, wf * h, -60.0f); }
+		{ f32 wf = -(f32)FontGetMessageWidth(name); f32 h = 0.5f; FontDrawString(wf * h, 70.0f, name); }
+		{ f32 wf = -(f32)FontGetMessageWidth(noMsg); f32 h = 0.5f; FontDrawString(wf * h, -20.0f, yesMsg); }
+		{ f32 wf = -(f32)FontGetMessageWidth(noMsg); f32 h = 0.5f; FontDrawString(wf * h, -60.0f, noMsg); }
 		FontDrawEdgeOff();
 	}
 	winTexInit((TEXPalette*)wp->tpl->data[0]);

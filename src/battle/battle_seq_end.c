@@ -1233,7 +1233,7 @@ void _MarioExpDisp(CameraId camId, void* param) {
                               float_32_80420d10, float_10_80420cd8, 0, (GXColor){0xFF, 0xFF, 0xFF, 0xFF});
         iconDispGx(float_1_80420c64, &pos, 0x10, 0x18C);
         FontDrawStart();
-        FontDrawString(buf, float_225_80420d44, float_neg163_80420d48);
+        FontDrawString(float_225_80420d44, float_neg163_80420d48, buf);
     }
 }
 
@@ -1264,9 +1264,9 @@ void _LvupParamConfirmDisp(CameraId camId, void* param) {
                           float_10_80420cd8, 0, (GXColor){0xFF, 0xFF, 0xFF, 0xFF});
     FontDrawStart();
     zero = SEQ_END_ZERO_AT_USE;
-    FontDrawString(buf, zero - halfWidth, float_27_80420d24);
-    FontDrawString(msgSearch("btl_msg_lvup_yes"), float_neg20_80420c90, float_neg13_80420d28);
-    FontDrawString(msgSearch("btl_msg_lvup_no"), float_neg20_80420c90, float_neg38_80420d2c);
+    FontDrawString(zero - halfWidth, float_27_80420d24, buf);
+    FontDrawString(float_neg20_80420c90, float_neg13_80420d28, msgSearch("btl_msg_lvup_yes"));
+    FontDrawString(float_neg20_80420c90, float_neg38_80420d2c, msgSearch("btl_msg_lvup_no"));
     pos.x = float_neg40_80420d30;
     pos.y = (f32)(-50 - *selection * 25);
     pos.z = float_0_80420c7c;

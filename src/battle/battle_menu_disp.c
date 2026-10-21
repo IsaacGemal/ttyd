@@ -1007,17 +1007,18 @@ void DrawMenuHelpWin(const char* tag, f32 x, f32 y) {
         if (text[0][0] != 0) {
             FontDrawScale(0.8f);
         }
-        FontDrawString((char*)text[0], x + 20.0f, y - 4.0f);
+        FontDrawString(x + 20.0f, y - 4.0f, (char*)text[0]);
         if (text[1][0] != 0) {
             FontDrawScale(0.8f);
         }
-        FontDrawString((char*)text[1], x + 20.0f, y - 28.0f);
+        FontDrawString(x + 20.0f, y - 28.0f, (char*)text[1]);
         if (text[2][0] != 0) {
             FontDrawScale(0.8f);
         }
-        FontDrawString((char*)text[2], x + 20.0f, y - 52.0f);
+        FontDrawString(x + 20.0f, y - 52.0f, (char*)text[2]);
     } else {
-        FontDrawString("\x82\xB9\x82\xC2\x82\xDF\x82\xA2\x82\xCD\x81\x40\x82\xC8\x82\xA2\x82\xCC\x82\xBE\x81\x49\x81\x49", x + 10.0f, y - 4.0f);
+        FontDrawString(x + 10.0f, y - 4.0f,
+                       "\x82\xB9\x82\xC2\x82\xDF\x82\xA2\x82\xCD\x81\x40\x82\xC8\x82\xA2\x82\xCC\x82\xBE\x81\x49\x81\x49");
     }
 }
 

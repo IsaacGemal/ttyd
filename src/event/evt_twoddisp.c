@@ -109,14 +109,14 @@ void twoddisp_disp(CameraId cameraId, void* param) {
 			color1 = dat_8041cca8;
 			FontDrawColor(&color1);
 #endif
-			FontDrawString(text, entry->baseX + entry->x, entry->baseY + entry->y);
+			FontDrawString(entry->baseX + entry->x, entry->baseY + entry->y, text);
 #ifdef MUST_MATCH
 			twoddisp_fontColor(dat_8041ccac);
 #else
 			color2 = dat_8041ccac;
 			FontDrawColor(&color2);
 #endif
-			FontDrawString(text, entry->baseX + entry->x + 1.0f, entry->baseY + entry->y - 1.0f);
+			FontDrawString(entry->baseX + entry->x + 1.0f, entry->baseY + entry->y - 1.0f, text);
 		}
 	}
 }
