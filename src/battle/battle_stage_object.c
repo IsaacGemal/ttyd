@@ -1568,19 +1568,9 @@ USER_FUNC(_set_mobj_rotate_x) {
 					Vec v = {0.0f, 0.0f, -100.0f};
 					psndSFXOn_3D("SFX_BTL_STAGE_SET_FALL2", &v);
 				}
-#ifdef MUST_MATCH
-				{
-					f32 lo = 0.0f;
-					f32 hi = 90.0f;
-					event->field_84++;
-					*(f32*)(base - 0x7F3C) = (s32)intpl_sub(2, event->field_84, event->userdata[2], lo, hi);
-				}
-#else
-				// 0x180C4 is inside BattleWork.field_180C0 (padding; no named field yet).
+				// base - 0x7F3C is BattleWork+0x180C4, inside field_180C0 (padding; no named field yet).
 				event->field_84++;
-				*(f32*)((u8*)wp + 0x180C4) = (s32)intpl_sub(2, event->field_84, event->userdata[2],
-				                                             0.0f, 90.0f);
-#endif
+				*(f32*)(base - 0x7F3C) = (s32)intpl_sub(2, event->field_84, event->userdata[2], 0.0f, 90.0f);
 				if ((s32)event->field_84 < (s32)event->userdata[2]) {
 					changed = 1;
 				}
