@@ -16,9 +16,12 @@
 // first 0x40 bytes, so the rest are reached through raw offsets.
 #define WW_S32(w, off) (*(s32*)((u8*)(w) + (off)))
 #define WW_F32(w, off) (*(f32*)((u8*)(w) + (off)))
-// Indexed float-field read: the plain WW_F32 macro groups the constant first and MWCC folds 0x3F4
-// into the lfs displacement; retail emits `slwi; addi r0, idx*4, 0x3F4; lfsx f, work, r0`.
-#define WW_F32X(w, idx, off) (((f32*)((u8*)(w) + ((idx) << 2) + (off)))[0])
+// The 0xC-byte record at work+0x404 (WindowWork.field_404), one per equipped badge.
+typedef struct WinEquipRec {
+    s32 field_0x0;
+    s32 field_0x4;
+    s32 field_0x8;
+} WinEquipRec;
 // win texture ids of the BP pips
 typedef enum {
     WIN_TEX_BP_ON = 0x1C,
@@ -226,16 +229,16 @@ s32 winBadgeMain(WindowWork* work) {
                 } else {
                     s32* selPtr = (s32*)((u8*)work + 0x3E4) + sel;
                     s32 entryIdx = selPtr[0];
-                    s32 idx = ((s32*)((u8*)work))[entryIdx * 3 + 0x102];
-                    if (((s32*)((u8*)work))[entryIdx * 3 + 0x101] != 0) {
+                    s32 idx = ((WinEquipRec*)work->field_404)[entryIdx].field_0x4;
+                    if (((WinEquipRec*)work->field_404)[entryIdx].field_0x0 != 0) {
                         psndSFXOn((const char*)0x20039);
                         pouchUnEquipBadgeIndex(idx);
-                        ((s32*)((u8*)work + 0x404))[selPtr[0] * 3] = 0;
+                        ((WinEquipRec*)work->field_404)[selPtr[0]].field_0x0 = 0;
                     } else {
                         if (pouch->availableBP >= itemDataTable[pouchHaveBadge(idx)].bp_cost) {
                             psndSFXOn((const char*)0x20038);
                             pouchEquipBadgeIndex(idx);
-                            ((s32*)((u8*)work + 0x404))[selPtr[0] * 3] = 1;
+                            ((WinEquipRec*)work->field_404)[selPtr[0]].field_0x0 = 1;
                         }
                     }
                     pouchReviseMarioParam();
@@ -299,7 +302,7 @@ s32 winBadgeMain(WindowWork* work) {
                 if (work->badgeTab == 0) {
                     msgId = pouchHaveBadge(work->badgeSel[sel]);
                 } else {
-                    msgId = ((s32*)((u8*)work + 0x40C))[work->badgeSel[sel] * 3];
+                    msgId = ((WinEquipRec*)work->field_404)[work->badgeSel[sel]].field_0x8;
                 }
                 winMsgEntry(work, msgId, itemDataTable[msgId].menu_description, 0);
             }
@@ -475,7 +478,7 @@ void badge_disp(WindowWork* work, f32 x, f32 y) {
         } else {
             badge = *(s32*)(entry + 0x40C);
         }
-        scroll = WW_F32X(work, work->badgeTab, 0x3F4);
+        scroll = work->badgeScrollPos[work->badgeTab];
         if (work->badgeTab == 0) {
             equipped = pouchEquipCheckBadgeIndex(i);
         } else {
