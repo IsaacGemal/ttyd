@@ -121,7 +121,7 @@ typedef struct PuniData {
     s32 flags;                          // 0x4
     u32 statusFlags;                    // 0x8, PUNI_STATUS_*
     u16 mode;                           // 0xC, PuniMode
-    s16 prevMode;                       // 0xE, mode to return to after an interruption such as PUNI_MODE_WIND
+    u16 prevMode;                       // 0xE, PuniMode to return to after an interruption such as PUNI_MODE_WIND
     u8 unk10[0x114 - 0x10];             // 0x10
     u16 state;                          // 0x114
     s16 angle;                          // 0x116

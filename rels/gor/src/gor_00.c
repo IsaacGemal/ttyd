@@ -4777,27 +4777,20 @@ EVT_END()
 
 // clang-format on
 
-
-#ifdef MUST_MATCH
 static inline GXColor alphaColor(u8 a) {
     GXColor c = zero_gor_000126e4;
 
     c.a = a;
     return c;
 }
-#endif
+
 static void alpha_tev(MapTevCallback* param) {
     s32 stage = param->tevStage;
     u8* ap = _ap;
     GXColor color;
 
     GXSetTevOrder(stage, GX_TEXCOORD_NULL, GX_TEXMAP_NULL, GX_COLOR0A0);
-#ifdef MUST_MATCH
     color = alphaColor(*ap);
-#else
-    color = zero_gor_000126e4;
-    color.a = *ap;
-#endif
     GXSetTevColor(GX_TEVREG0, color);
     GXSetTevColorOp(stage, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
     GXSetTevAlphaOp(stage, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
@@ -5005,16 +4998,7 @@ USER_FUNC(gundan1000tai_init) {
     for (i = 0; i < work->count; i++) {
         entry = &work->entries[i];
         radius = (f32)(irand(0xB4) + 0x78);
-// Splitting the product into a named temp makes MWCC pool the eight float constants in the
-// original's f28/f29/f30/f31/f24..f27 order (same maths; marked match-only).
-#ifdef MUST_MATCH
-        {
-            f32 tmp = 6.2831855f * (f32)irand(0x168);
-            angle = tmp / 360.0f;
-        }
-#else
         angle = 6.2831855f * (f32)irand(0x168) / 360.0f;
-#endif
         s = sin(angle);
         c = cos(angle);
         entry->hoseiPosition.x = 0.9f * (radius * s);
@@ -5028,14 +5012,11 @@ USER_FUNC(gundan1000tai_init) {
             entry->facingAngle = 270.0f;
         }
         radius = (f32)irand(0x64);
-#ifdef MUST_MATCH
+        // The named product keeps the eight float constants in the original's f28-f31/f24-f27 registers.
         {
             f32 tmp = 6.2831855f * (f32)irand(0x168);
             angle = tmp / 360.0f;
         }
-#else
-        angle = 6.2831855f * (f32)irand(0x168) / 360.0f;
-#endif
         s = sin(angle);
         c2 = cos(angle);
         entry->position.x = radius * s + base;

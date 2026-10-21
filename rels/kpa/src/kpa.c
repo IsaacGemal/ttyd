@@ -585,20 +585,15 @@ void kpa_status_disp(CameraId cameraId, void* param) {
 
     pos.x = -210.0f;
     pos.y = 160.0f;
-#ifdef MUST_MATCH
-    // Match-only: the original zero-extends the selected id (clrlwi) after the branch.
     {
-        s32 iconId;
+        u16 iconId;
         if ((u32)gp->language != 0) {
             iconId = 0x210;
         } else {
             iconId = 0x206;
         }
-        iconDispGx(1.0f, &pos, 0x10, (u16)iconId);
+        iconDispGx(1.0f, &pos, 0x10, iconId);
     }
-#else
-    iconDispGx(1.0f, &pos, 0x10, (u32)gp->language == 0 ? 0x206 : 0x210);
-#endif
     pos.x = 50.0f;
     pos.y = 160.0f;
     iconDispGx(1.0f, &pos, 0x10, 0x208);
