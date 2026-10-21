@@ -194,7 +194,7 @@ static USER_FUNC(_battle_set_lecture_unit_id) {
     BattleWork* wp = _battleWorkPointer;
     s32* args = event->args;
 
-    wp->field_424 = evtGetValue(event, args[0]);
+    wp->lectureUnitId = evtGetValue(event, args[0]);
     return EVT_RETURN_DONE;
 }
 

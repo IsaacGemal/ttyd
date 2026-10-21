@@ -248,6 +248,13 @@ typedef struct BattleWorkField19068 {
     s32 forceSlotValue;            // 0x14, reel value forced under 0x80000
 } BattleWorkField19068;
 
+// BattleWork.field_18FF0: the action-command help (battle_ac_help.c). BattleAcHelpMain reads it through one pointer
+// (one addis), so the original has a struct here; it is at least these 8 bytes and starts at or before 0x18FF0.
+typedef struct BattleWorkField18FF0 {
+    const char* field_0x0;         // 0x0 (BattleWork 0x18FF0), BattleAcHelpSetHelp's message
+    s32 field_0x4;                 // 0x4, BattleAcHelpSetDispType's type; 0 hides the help
+} BattleWorkField18FF0;
+
 struct BattleWork {
     s16 turnCount;                      // 0x0
     u16 field_2;                        // 0x2, step counter of battle_seq's SEQ_TURN 0x3000009 (burn effects)
@@ -257,7 +264,8 @@ struct BattleWork {
     s32 unitIdTable[64];                // 0x120
     PhaseEvtEntry phaseEvtTable[64];    // 0x220, battleMakePhaseEvtTable / btlseqMove
     s32 activeUnitId;                   // 0x420
-    s32 field_424;                      // 0x424
+    s32 lectureUnitId;                  // 0x424, _battle_set_lecture_unit_id (tutorial battles); BattleTransID(-6)
+                                        // returns it; -1 until set
     BattleSampling sampling;            // 0x428, enemy target sampling (battle_detect.c)
     u32 flags;                          // 0xEF4
     s32 dispFlags;                      // 0xEF8
@@ -315,15 +323,14 @@ struct BattleWork {
                                         // at the end of the attack), 2 +3 defense for Mario (this phase), 3 double exp
     u16 field_18FE2;                    // 0x18FE2, frames in battle_seq's 0x200000B wait, capped at 300
     StarPowerInfo impendingBonuses;     // 0x18FE4
-    const char* field_18FF0;            // 0x18FF0, BattleAcHelpSetHelp's message
-    s32 field_18FF4;                    // 0x18FF4, BattleAcHelpSetDispType's type
+    BattleWorkField18FF0 field_18FF0;   // 0x18FF0
     u8 field_18FF8[0x19038 - 0x18FF8];  // 0x18FF8
     s32 field_19038[5];                 // 0x19038, turn counts; while one is > 0 the command menu disables Mario's
                                         // jump, hammer or item, or the partner's tech or item ([0]-[4]); battle_seq
                                         // counts each down, recover_cmd_disable clears all five
     s32 field_1904C;                    // 0x1904C, nanika_luck_event's event id
     u32 reserveItems[4];                // 0x19050
-    s32 field_19060;                    // 0x19060
+    s32 field_19060;                    // 0x19060, SFX_OFF_BTL_START_CURTAIN_UP1's handle (btlseqFirstAct), -1 when off
     u8 field_19064;                     // 0x19064, 1 when the last btlevtcmd_AudienceDeclareACResult succeeded, else 0
     u8 field_19065[0x19068 - 0x19065];  // 0x19065
     BattleWorkField19068 field_19068;   // 0x19068

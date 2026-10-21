@@ -1014,7 +1014,7 @@ void BattleInit(FieldBattleInfo* info) {
     wp = _battleWorkPointer = (BattleWork*)_mapAlloc(sizeof(BattleWork));
     memset(_battleWorkPointer, 0, sizeof(BattleWork));
     wp->field_19060 = -1;
-    wp->field_424 = -1;
+    wp->lectureUnitId = -1;
     wp->fbatInfo = info;
     BattlePadInit();
     BattleAcHelpInit();

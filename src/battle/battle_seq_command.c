@@ -381,8 +381,8 @@ s32 _btlcmd_MakeSelectWeaponTable(BattleWork* wp, s32 arg) {
 			} else {
 				cmd->weaponTable[count].mName = (char*)msgSearch(itemDataTable[cmd->weaponTable[count].mWeaponParams->item].name);
 			}
-			if ((wp->flags & 0x09000000) != 0 && wp->field_424 != -1) {
-				cmd->weaponTable[count].mWeaponParams = BtlUnit_GetData(BattleGetUnitPtr(wp, wp->field_424), 0x44);
+			if ((wp->flags & 0x09000000) != 0 && wp->lectureUnitId != -1) {
+				cmd->weaponTable[count].mWeaponParams = BtlUnit_GetData(BattleGetUnitPtr(wp, wp->lectureUnitId), 0x44);
 			}
 			count++;
 		}
@@ -428,8 +428,8 @@ s32 _btlcmd_MakeSelectWeaponTable(BattleWork* wp, s32 arg) {
 			} else {
 				cmd->weaponTable[count].mName = (char*)msgSearch(itemDataTable[cmd->weaponTable[count].mWeaponParams->item].name);
 			}
-			if ((wp->flags & 0x0A000000) != 0 && wp->field_424 != -1) {
-				cmd->weaponTable[count].mWeaponParams = BtlUnit_GetData(BattleGetUnitPtr(wp, wp->field_424), 0x45);
+			if ((wp->flags & 0x0A000000) != 0 && wp->lectureUnitId != -1) {
+				cmd->weaponTable[count].mWeaponParams = BtlUnit_GetData(BattleGetUnitPtr(wp, wp->lectureUnitId), 0x45);
 			}
 			count++;
 		}
