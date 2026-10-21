@@ -1292,13 +1292,11 @@ void party_motion_homing_walk(PartyEntry* party) {
         }
     }
 }
-#pragma opt_common_subs reset
 #pragma opt_propagation reset
 
 // opt_common_subs off: with it on, MWCC's CSE duplicates the footmark id into a
 // second callee-saved register (7 saved regs / 0x140 frame); the target keeps only
 // 6 (0x130), so the original build had this subexpression sharing disabled.
-#pragma opt_common_subs off
 // opt_loop_invariants: without it MWCC colours the footmark id r30 and mario r29 (target is the reverse),
 // which then drives the whole function's register allocation.
 #pragma opt_loop_invariants off
@@ -1889,9 +1887,8 @@ void party_motion_behind_mario(PartyEntry* party) {
         party->field_8 = (party->field_8 & ~0x40000);
     }
 }
-#pragma opt_propagation reset
 
-#pragma opt_propagation off // keep the hd = 1000.0f load after the y add (into f0, not f3)
+// `opt_propagation off` keeps the hd = 1000.0f load after the y add (into f0, not f3)
 void party_motion_behind_mario_continue(PartyEntry* party) {
     MarioWork* mario;
     MarioWork* mario2;

@@ -138,11 +138,8 @@ f32 partyGetTargetDir(s32 id, f32 x, f32 z) {
     return angleABf(x, z, mario->position.x, mario->position.z);
 }
 
-#pragma opt_common_subs reset
-#pragma opt_lifetimes reset
-
-#pragma opt_common_subs off // keeps MWCC from CSE-hoisting id != 0 across the two anotherPartyGetPtr calls
-#pragma opt_lifetimes off // needed with opt_common_subs off to keep the target's register choice
+// `opt_common_subs off` keeps MWCC from CSE-hoisting id != 0 across the two anotherPartyGetPtr calls
+// `opt_lifetimes off` is needed with opt_common_subs off to keep the target's register choice
 f32 partyGetTargetDist(s32 id, f32 x, f32 z) {
     MarioWork* mario = marioGetPtr();
     MarioWork* mario2;
@@ -186,11 +183,8 @@ f32 partyGetTargetDist(s32 id, f32 x, f32 z) {
     return distABf(x, z, mario->position.x, mario->position.z);
 }
 
-#pragma opt_common_subs reset
-#pragma opt_lifetimes reset
-
-#pragma opt_common_subs off // keeps MWCC from CSE-hoisting id != 0 across the two anotherPartyGetPtr calls
-#pragma opt_lifetimes off // needed with opt_common_subs off to keep the target's register choice
+// `opt_common_subs off` keeps MWCC from CSE-hoisting id != 0 across the two anotherPartyGetPtr calls
+// `opt_lifetimes off` is needed with opt_common_subs off to keep the target's register choice
 f32 partyGetTargetDist3D(s32 id, Vec* pos) {
     MarioWork* mario = marioGetPtr();
     MarioWork* mario2;
@@ -235,11 +229,8 @@ f32 partyGetTargetDist3D(s32 id, Vec* pos) {
     return PSVECDistance(&marioGetPtr()->position, pos);
 }
 
-#pragma opt_common_subs reset
-#pragma opt_lifetimes reset
-
-#pragma opt_common_subs off // keeps MWCC from CSE-hoisting id != 0 across the two anotherPartyGetPtr calls
-#pragma opt_lifetimes off // needed with opt_common_subs off so id (r29) and flag (r28) keep the target's registers
+// `opt_common_subs off` keeps MWCC from CSE-hoisting id != 0 across the two anotherPartyGetPtr calls
+// `opt_lifetimes off` is needed with opt_common_subs off so id (r29) and flag (r28) keep the target's registers
 f32 partyGetTargetDistYFrom(s32 id, f32 y) {
     MarioWork* mario = marioGetPtr();
     MarioWork* mario2;

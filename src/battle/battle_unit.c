@@ -415,11 +415,8 @@ BattleUnitPart* BtlUnit_GetPartsPtr(BattleUnit* unit, s32 partNum) {
     }
     return part;
 }
-#pragma dont_inline reset
-
 
 // Keep BtlUnit_GetBodyPartsId out of line, as in retail.
-#pragma dont_inline on
 s32 BtlUnit_GetBodyPartsId(BattleUnit* unit) {
     BattleUnitPart* part;
     s32 ret = -1;
@@ -434,19 +431,15 @@ s32 BtlUnit_GetBodyPartsId(BattleUnit* unit) {
     }
     return ret;
 }
-#pragma dont_inline reset
 
 // Keep BtlUnit_GetPos out of line: the original calls it rather than inlining.
-#pragma dont_inline on
 void BtlUnit_GetPos(BattleUnit* unit, f32* x, f32* y, f32* z) {
     *x = unit->mPosition.x;
     *y = unit->mPosition.y;
     *z = unit->mPosition.z;
 }
-#pragma dont_inline reset
 
 // Keep BtlUnit_SetPos out of line: the original calls it rather than inlining.
-#pragma dont_inline on
 void BtlUnit_SetPos(BattleUnit* unit, f32 x, f32 y, f32 z) {
     unit->mPosition.x = x;
     unit->mPosition.y = y;
@@ -678,11 +671,8 @@ void BtlUnit_SetRotateOffset(BattleUnit* unit, f32 x, f32 y, f32 z) {
         unit->mRotationOffset.z = z;
     }
 }
-#pragma dont_inline reset
-
 
 // Keep BtlUnit_SetPartsRotateOffset out of line: the original calls it rather than inlining.
-#pragma dont_inline on
 void BtlUnit_SetPartsRotateOffset(BattleUnitPart* part, f32 x, f32 y, f32 z) {
     f32 unchanged = -250000000.0f;
     if (unchanged != x) {
@@ -770,11 +760,8 @@ void BtlUnit_SetPartsBaseScale(BattleUnitPart* part, f32 x, f32 y, f32 z) {
         part->mBaseScale.z = z;
     }
 }
-#pragma dont_inline reset
-
 
 // Keep BtlUnit_SetPartsScale out of line: the original calls it rather than inlining.
-#pragma dont_inline on
 void BtlUnit_SetPartsScale(BattleUnitPart* part, f32 x, f32 y, f32 z) {
     f32 unchanged = -250000000.0f;
     if (unchanged != x) {
@@ -827,11 +814,8 @@ void BtlUnit_SetOffsetPos(BattleUnit* unit, f32 x, f32 y, f32 z) {
         unit->mPositionOffset.z = z;
     }
 }
-#pragma dont_inline reset
-
 
 // Keep BtlUnit_GetPartsOffsetPos out of line: the original calls it rather than inlining.
-#pragma dont_inline on
 void BtlUnit_GetPartsOffsetPos(BattleUnitPart* part, f32* x, f32* y, f32* z) {
     *x = part->mPositionOffset.x;
     *y = part->mPositionOffset.y;
@@ -1490,11 +1474,8 @@ BOOL BtlUnit_CheckStatus(BattleUnit* unit, s8 type) {
     }
     return FALSE;
 }
-#pragma dont_inline reset
-
 
 // Keep BtlUnit_CheckStatusFlag out of line: the original calls it rather than inlining.
-#pragma dont_inline on
 s32 BtlUnit_CheckStatusFlag(BattleUnit* unit, s32 flags) {
     if (unit) {
         return unit->mStatusFlags & flags;
@@ -1551,11 +1532,8 @@ char* BtlUnit_GetPoseNameFromType(BattleUnitPart* part, s32 type) {
     }
     return NULL;
 }
-#pragma dont_inline reset
-
 
 // Keep BtlUnit_SetAnimType out of line: the original calls it rather than inlining.
-#pragma dont_inline on
 void BtlUnit_SetAnimType(BattleUnitPart* part, s32 type) {
     const char* animName = BtlUnit_GetPoseNameFromType(part, type);
 
@@ -1695,11 +1673,8 @@ BOOL BtlUnit_CanActStatus(BattleUnit* unit) {
     }
     return !BtlUnit_CheckStatusFlag(unit, 1);
 }
-#pragma dont_inline reset
-
 
 // Keep BtlUnit_SetParamFromPouch out of line: the original calls it rather than inlining.
-#pragma dont_inline on
 void BtlUnit_SetParamFromPouch(BattleUnit* unit) {
     BattleWork* wp = _battleWorkPointer;
     PouchData* pouch = pouchGetPtr();
@@ -1732,11 +1707,8 @@ void BtlUnit_SetParamFromPouch(BattleUnit* unit) {
         }
     }
 }
-#pragma dont_inline reset
-
 
 // Keep BtlUnit_ReviseHpFp out of line: the original calls it rather than inlining.
-#pragma dont_inline on
 void BtlUnit_ReviseHpFp(BattleUnit* unit) {
     PouchData* pouch = pouchGetPtr();
 
@@ -1889,11 +1861,8 @@ s32 BtlUnit_GetFp(BattleUnit* unit) {
     }
     return result;
 }
-#pragma dont_inline reset
-
 
 // Keep BtlUnit_SetFp out of line, as in retail.
-#pragma dont_inline on
 void BtlUnit_SetFp(BattleUnit* unit, s32 value) {
     BattleUnitType kind = unit->currentKind;
     BattleWork* wp = _battleWorkPointer;
@@ -2297,10 +2266,8 @@ s32 BtlUnit_snd_se(BattleUnit* unit, const char* name, s32 b, s16 c) {
     BtlUnit_GetPos(unit, &pos.x, &pos.y, &pos.z);
     return BtlUnit_snd_se_pos(unit, name, b, c, &pos);
 }
-#pragma dont_inline reset
 
 // Keep the sound wrapper out of line, as in retail.
-#pragma dont_inline on
 s32 BtlUnit_snd_se_pos(BattleUnit* unit, const char* name, s32 b, s16 c, Vec* pos) {
     s32 handle;
     s16 val = 0;
@@ -2326,12 +2293,10 @@ s32 BtlUnit_snd_se_pos(BattleUnit* unit, const char* name, s32 b, s16 c, Vec* po
     psndSFX_vol(handle, (u32)(b - 0xF1190000) == 0x4D80 ? psndSFX_get_vol(handle) : (u8)b);
     return handle;
 }
-#pragma dont_inline reset
 
 // The gauge type is compared with `lhz`/`cmpwi`; a `switch` (not an if/else) reproduces the
 // original's `beq then; b else` dispatch.
 // Keep BtlUnit_HpGaugeInit out of line: the original calls it rather than inlining.
-#pragma dont_inline on
 void BtlUnit_HpGaugeInit(BattleUnit* unit) {
     HpGaugeLocal* gauge = (HpGaugeLocal*)&unit->hpGauge;
     f32 ratio;

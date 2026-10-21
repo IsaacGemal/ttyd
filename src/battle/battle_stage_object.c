@@ -2383,9 +2383,7 @@ s32 _get_nozzle_attack_index(u8 index) {
 	}
 	return -1;
 }
-#pragma dont_inline reset
 
-#pragma dont_inline on
 // Keep _rate_mix/_rate_mix_3 out of the inliner: the original emits a `bl` to each from _combine_nozzle_weapon.
 void _rate_mix(u8* a, u8* b, s8* c, u8* d) {
 	if (*c > 0) {
@@ -2395,9 +2393,7 @@ void _rate_mix(u8* a, u8* b, s8* c, u8* d) {
 		*b = *b + *d;
 	}
 }
-#pragma dont_inline reset
 
-#pragma dont_inline on
 void _rate_mix_3(u8* a, u8* b, u8* c, s8* d, u8* e, u8* f) {
 	if (*d > 0) {
 		if (*d > (s8)*a) {

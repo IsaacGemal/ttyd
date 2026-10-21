@@ -212,11 +212,9 @@ void GetRingCenter(Vec* out) {
         out->x = -180.0f;
     }
 }
-#pragma dont_inline reset
 
 // The original emits real `bl GetRingOffset`/`bl GetRingCenter` calls from
 // DrawSubMenuCommonProcess (and DrawMainMenu), so keep them out of line.
-#pragma dont_inline on
 void GetRingOffset(f32* x, f32* y, f32 angle) {
     f32 a = 4.712389f - angle;
     f32 c = 80.0f * (f32)cos(a);
@@ -1030,11 +1028,9 @@ void DrawMenuCursorAndScrollArrow(Vec pos) {
     vec.z = float_0_8041c144;
     iconDispGx(1.0f, &vec, 0x14, 0x1F0);
 }
-#pragma dont_inline reset
 
 // These are called, never inlined, in the original build. The unit's configure
 // entry still uses the default `-inline auto`, so keep them out of line here.
-#pragma dont_inline on
 void InitSubMenuCommonProcess(BattleMenuWork** window, BattleCursor** cursor, BattleCursor* menu) {
     BattleWork* wp = _battleWorkPointer;
     s32 i;
@@ -1062,9 +1058,7 @@ void InitSubMenuCommonProcess(BattleMenuWork** window, BattleCursor** cursor, Ba
         (*window)->field_0xF8[i] = 0;
     }
 }
-#pragma dont_inline reset
 
-#pragma dont_inline on
 void InitSubMenuCommonProcess2(BattleMenuWork* window, BattleCursor* cursor) {
     s32 i;
     s32 idx = cursor->field_0;
@@ -1085,9 +1079,7 @@ void InitSubMenuCommonProcess2(BattleMenuWork* window, BattleCursor* cursor) {
         }
     }
 }
-#pragma dont_inline reset
 
-#pragma dont_inline on
 void InitSubMenuCommonProcess3(BattleMenuWork* window, BattleCursor* cursor) {
     s32 i;
     s32 idx = cursor->field_0;

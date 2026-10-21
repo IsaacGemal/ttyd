@@ -78,12 +78,10 @@ s32 _get_angle_rate(f32 angle) {
 	}
 	return rate;
 }
-#pragma dont_inline reset
 
 static void actionCommandDisp(f32 x, f32 y);
 
 // don't_inline: the original keeps actionCommandDisp as its own local function (bl from battleAcDisp)
-#pragma dont_inline on
 // 100%: two Vec locals are needed -- the original keeps the first icon's temp at sp+0x14 and the second at
 // sp+0x8. The f32 declaration order below is what makes baseX land in f25 (shared with yBottom), matching the
 // original's saved-register set.

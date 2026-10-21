@@ -152,10 +152,8 @@ void BSE_Sleep(BattleUnit* unit) {
 		BSE_SleepDelete(unit);
 	}
 }
-#pragma dont_inline reset
 
 // Keep BSE_SleepDelete out of line: the original calls it rather than inlining.
-#pragma dont_inline on
 void BSE_SleepDelete(BattleUnit* unit) {
 	EffectEntry* effect = unit->mSleepEff;
 

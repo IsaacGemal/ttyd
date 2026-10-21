@@ -52,10 +52,8 @@ const char* searchPoseTbl(BattleDispPose* table, s32 poseId) { //TODO: fix mtctr
 	}
 	return NULL;
 }
-#pragma dont_inline reset
 
 // Keep btlDispGXInit2DSub out of line: the original calls it rather than inlining.
-#pragma dont_inline on
 void btlDispGXInit2DSub(void) {
 	GXSetCullMode(GX_CULL_NONE);
 	GXSetZCompLoc(GX_TRUE);
@@ -984,9 +982,8 @@ void btlUnitPartsBlurControl(BattleUnitPart* part, s32 unused, Mtx orientation, 
 		_partsBlurControl(part, 0, orientation, color, rotation);
 	}
 }
-#pragma dont_inline reset
 
-#pragma dont_inline on // the original keeps calls to this function out of line
+// dont_inline: the original keeps calls to this function out of line
 void _partsBlurControl(BattleUnitPart* part, s32 flags, Mtx orientation, GXColor color, f32 rotation) {
 	BattleWorkUnitPartBlur* blur;
 	int i;
@@ -1107,15 +1104,13 @@ void gravityOffsetControl(BattleUnitPart* part) {
 		}
 	}
 }
-#pragma dont_inline reset
 
-#pragma dont_inline on // the original keeps calls to this function out of line
+// dont_inline: the original keeps calls to this function out of line
 f32 getGravityDispOffset(BattleUnit* unit) {
 	return sinfd((f32)((*(u16*)((char*)unit + 0x1a6) * 3 + 0x10e) % 360)) * 4.0f + 4.0f;
 }
-#pragma dont_inline reset
 
-#pragma dont_inline on // the original keeps calls to this function out of line
+// dont_inline: the original keeps calls to this function out of line
 void floatOffsetControl(BattleUnitPart* part) {
 	BattleUnit* owner = part->mOwner;
 	BOOL active = TRUE;
@@ -1138,10 +1133,8 @@ void floatOffsetControl(BattleUnitPart* part) {
 		}
 	}
 }
-#pragma dont_inline reset
 
-
-#pragma dont_inline on // the original keeps calls to this function out of line
+// dont_inline: the original keeps calls to this function out of line
 f32 getFloatDispOffset(BattleUnit* unit) {
 	return sinfd((f32)((*(u16*)((char*)unit + 0x1a8) * 4 + 0x10e) % 360)) * 2.0f + 2.0f;
 }
@@ -1173,9 +1166,7 @@ void statusPoseControl(BattleUnitPart* part) {
 		break;
 	}
 }
-#pragma dont_inline reset
 
-#pragma dont_inline on
 void _pose_def(BattleUnitPart* part) {
 	// A one-case switch makes MWCC emit the original `beq body; b end` guard;
 	// an early return folds to `bne end`.
@@ -1189,11 +1180,9 @@ void _pose_def(BattleUnitPart* part) {
 		break;
 	}
 }
-#pragma dont_inline reset
 
 // _pose_one_pattern matches 100% once the strings are referenced as literals: MWCC pools
 // them and common-bases the .rodata references off its first zero Vec (retail vec3_802eddd0).
-#pragma dont_inline on
 void _pose_one_pattern(BattleUnitPart* part) {
 	// A one-case switch reproduces the original `beq body; b end` guard.
 	switch (part->statusPoseStep) {
@@ -1386,10 +1375,8 @@ void _btlDispTex4(s32 id, Vec trans, Vec scale, Vec rot, Vec pos2, Vec scale2, G
 	PSMTXConcat(transM, mtx, mtx);
 	btlDispTexPlane2(mtx, id, color, 0);
 }
-#pragma dont_inline reset
 
 // Keep BattleStockExpDisp out of line: the original calls it rather than inlining it into btlDispMain.
-#pragma dont_inline on
 void BattleStockExpDisp(void) {
 	BattleWork* wp = _battleWorkPointer;
 

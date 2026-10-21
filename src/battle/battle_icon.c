@@ -105,10 +105,8 @@ BattleIcon* BtlIcon_Entry(u16 iconId, f32 x, f32 y, f32 z) {
 	iconSetPos(icon->base->name, icon->position.x, icon->position.y, icon->position.z);
 	return icon;
 }
-#pragma dont_inline reset
 
 // dont_inline keeps BtlIcon_Delete a real `bl` from the evt commands as in retail.
-#pragma dont_inline on
 
 void BtlIcon_Delete(BattleIcon* icon) {
 	if (icon->flags & 1) {

@@ -6529,10 +6529,8 @@ void _UnitMoveSoundControl(BattleUnit* unit) {
     BtlUnit_GetPos(unit, &x, &y, &z);
     _MoveSoundControlCore(unit, &unit->seMode, NULL, x, y, z);
 }
-#pragma dont_inline reset
 
 // the original calls _PartsMoveSoundControl with `bl`, not inlined
-#pragma dont_inline on
 void _PartsMoveSoundControl(BattleUnitPart* part) {
     f32 x, y, z;
 
@@ -6596,18 +6594,14 @@ void _MoveSoundControlCore(BattleUnit* unit, BtlUnitSeMode* work, BattleUnitPart
 void _UnitMoveSoundControlEnd(BattleUnit* unit) {
     _MoveSoundControlEndCore(unit, &unit->seMode);
 }
-#pragma dont_inline reset
 
 // the original calls _PartsMoveSoundControlEnd with `bl`, not inlined
-#pragma dont_inline on
 void _PartsMoveSoundControlEnd(BattleUnitPart* part) {
     BtlUnitSeMode* work = &part->seMode;
     _MoveSoundControlEndCore(part->mOwner, work);
 }
-#pragma dont_inline reset
 
 // Keep _MoveSoundControlEndCore out of line: the original calls it rather than inlining.
-#pragma dont_inline on
 void _MoveSoundControlEndCore(BattleUnit* unit, BtlUnitSeMode* work) {
     // unsigned compare, as in retail (a signed one against -1 is an instruction shorter)
     if ((u32)work->sfxHandle != 0xFFFFFFFF) {
@@ -6734,12 +6728,10 @@ USER_FUNC(btlevtcmd_PadCheckTrigger) {
     }
     return EVT_RETURN_DONE;
 }
-#pragma opt_propagation reset
 
 //s32 chan, s32 mask, s32 retIndex
 // opt_propagation off: keep the `mask = args[1]` load before `index = args[2]` so index reuses
 // the args register (two callee-saved registers, as in the target).
-#pragma opt_propagation off
 USER_FUNC(btlevtcmd_PadCheckNow) {
     s32* args = event->args;
     s32 chan, mask, index;

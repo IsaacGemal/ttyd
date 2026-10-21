@@ -934,10 +934,8 @@ void partyChgRunMode(PartyEntry* party, s32 mode) {
     party->field_34 = mode;
     party->field_8 |= 8;
 }
-#pragma dont_inline reset
 
 // Keep N_partyForceChgRunMode out of line: the original calls it rather than inlining.
-#pragma dont_inline on
 void N_partyForceChgRunMode(PartyEntry* party, s32 mode, s32 unk) {
     if (party->field_34 != 9 && party->field_34 != 3) {
         party->field_35 = party->field_34;

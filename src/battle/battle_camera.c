@@ -893,9 +893,7 @@ f32 battleCameraGetPosMoveSpeed(void) {
   f32 z = camera->unk68.z;
   return (f32)sqrt((x * x) + (y * y) + (z * z));
 }
-#pragma dont_inline reset
 
-#pragma dont_inline on
 void btl_camera_set_prilimit(s32 limit) {
   _battleWorkPointer->cameraWork.priLimit = limit;
 }
@@ -1086,9 +1084,7 @@ void btl_camera_set_zoom(s32 id, f32 z) {
   }
   camera->zoom = z;
 }
-#pragma dont_inline reset
 
-#pragma dont_inline on
 void btl_camera_add_zoom(s32 id, f32 z) {
   BattleWork *wp = _battleWorkPointer;
   BattleCameraWork *camera = &wp->cameraWork;
@@ -1131,9 +1127,7 @@ void btl_camera_set_moveSpeedLv(s32 id, s32 lv) {
   }
   camera->zoomSpeedLv = camera->moveSpeedLv;
 }
-#pragma dont_inline reset
 
-#pragma dont_inline on
 void btl_camera_set_zoomSpeedLv(s32 id, s32 lv) {
   BattleWork *wp = _battleWorkPointer;
   BattleCameraWork *camera = &wp->cameraWork;

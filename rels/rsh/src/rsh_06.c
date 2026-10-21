@@ -2011,15 +2011,11 @@ static s32 moamoa_hit_check(ExtPose* pose, MoamoaPose* entry) {
     return 0;
 }
 
-#pragma opt_propagation reset
-#pragma opt_lifetimes reset
-
 // The original inlines every sin/cos/randf/pose-change here: raise the inliner's per-caller limits.
 #pragma inline_max_total_size(60000)
 // Keep the sin/cos coefficient loads hoisted instead of rematerialised per branch.
-#pragma opt_propagation off
 // Keeps the inlined sin/cos argument in a callee-saved FPR instead of rematerialising it per branch.
-#pragma opt_lifetimes off // needed: without it ext_moamoa_main 97.80%
+// `opt_lifetimes off` is needed: without it ext_moamoa_main 97.80%
 #define MOA_TARGET(i) (wp->targets[(i) % 3])
 // Per-frame update of every moamoa (the Great Moamoa variant: a follower pulls the swarm to a joint of "base").
 // The float temporaries follow eki_00/rsh_05 (function-scope tx/ty/tz/rad/dist/r1/f reused across the cases);

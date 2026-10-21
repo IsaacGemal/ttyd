@@ -379,9 +379,8 @@ USER_FUNC(evt_item_move_3d_position) {
 	item->position.z = targetZ;
 	return EVT_RETURN_DONE;
 }
-#pragma opt_propagation reset
 
-#pragma opt_propagation off // needed: without it evt_item_get_important_item 80.00%
+// `opt_propagation off` is needed: without it evt_item_get_important_item 80.00%
 #pragma opt_lifetimes off // needed: without it evt_item_get_important_item 96.10%
 USER_FUNC(evt_item_get_important_item) {
 	s32* args = event->args;

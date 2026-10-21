@@ -1181,10 +1181,8 @@ static USER_FUNC(evt_tou_print_ranking) {
 f32 atan2f(f32 y, f32 x) {
     return atan2(y, x);
 }
-#pragma dont_inline reset
 
 // dont_inline: camGetRy is called from tou_champion_belt and must stay a real call
-#pragma dont_inline on
 static f32 camGetRy(void) {
     CameraEntry* cam = camGetPtr(CAMERA_3D);
     f32 ry =

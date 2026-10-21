@@ -1741,8 +1741,6 @@ NpcEntry* evtNpcNameToPtr(EventEntry* event, const char* name) {
     }
     return npcNameToPtr(name);
 }
-#pragma dont_inline reset
-#pragma dont_inline on
 
 NpcEntry* evtNpcNameToPtr_NoAssert(EventEntry* event, const char* name) {
     if (!strcmp(name, "me")) {
@@ -2066,8 +2064,6 @@ USER_FUNC(evt_npc_get_drop_flower) {
 void _npc_check_coin(NpcEntry* npc, s32* value) {
     *value += npc->btlCoinDropCount;
 }
-#pragma dont_inline reset
-#pragma dont_inline on
 
 void _npc_check_coin_group(NpcEntry* npc, s32* value) {
     NpcEntry* next = npc->next;

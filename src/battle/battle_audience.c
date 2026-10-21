@@ -235,33 +235,23 @@ typedef struct BattleAudienceTexCoords {
 FileEntry* tplRead(const char* path) {
 	return fileAllocf(FILE_TYPE_TPL, "%s/%s", getMarioStDvdRoot(), path);
 }
-#pragma dont_inline reset
 
-#pragma dont_inline on
 BattleAudience* BattleAudienceBaseGetPtr(void) {
 	return &_battleWorkPointer->audience;
 }
-#pragma dont_inline reset
 
-#pragma dont_inline on
 BattleAudienceMember* BattleAudienceGetPtr(s32 id) {
 	return &BattleAudienceBaseGetPtr()->members[id];
 }
-#pragma dont_inline reset
 
-#pragma dont_inline on
 BattleAudienceItem* BattleAudienceItemGetPtr(s32 id) {
 	return &BattleAudienceBaseGetPtr()->items[id];
 }
-#pragma dont_inline reset
 
-#pragma dont_inline on
 BattleAudienceWindow* BattleAudienceWinGetPtr(void) {
 	return &BattleAudienceBaseGetPtr()->window;
 }
-#pragma dont_inline reset
 
-#pragma dont_inline on
 BattleAudienceSound* BattleAudienceSoundGetPtr(s32 id) {
 	return &BattleAudienceBaseGetPtr()->sounds[id];
 }
@@ -3178,10 +3168,8 @@ BOOL BattleAudience_GetFront(s32 index) {
 	         dz * member->normal.z >=
 	         0.0f);
 }
-#pragma dont_inline reset
 
 // dont_inline: the retail callers reach the functions up to the next reset out of line
-#pragma dont_inline on
 void BattleAudience_ChangeStatus(s32 index, s32 status) {
 	BattleAudienceMember* member;
 	s32 zero = 0;
@@ -3215,7 +3203,6 @@ void BattleAudience_ChangeStatus(s32 index, s32 status) {
 		}
 	}
 }
-#pragma dont_inline reset
 
 //breaks -inline auto,deferred
 /*
@@ -3224,7 +3211,6 @@ BOOL BattleAudience_GetExist(s32 id) {
 }
 */
 
-#pragma dont_inline on
 BOOL BattleAudience_GetExist(s32 id) {
 	BattleAudienceMember* member;
 	BattleAudienceBaseGetPtr();
@@ -3237,9 +3223,7 @@ BOOL BattleAudience_GetExist(s32 id) {
 	}
 	return !(member->flags & 2);
 }
-#pragma dont_inline reset
 
-#pragma dont_inline on
 BOOL BattleAudience_GetSysCtrl(s32 index) {
 	BattleAudienceMember* member;
 	BattleAudienceBaseGetPtr();
@@ -3249,9 +3233,7 @@ BOOL BattleAudience_GetSysCtrl(s32 index) {
 	}
 	return !(member->flags & 0x10);
 }
-#pragma dont_inline reset
 
-#pragma dont_inline on
 BOOL BattleAudience_GetWaiting(s32 index) {
 	BattleAudienceMember* member;
 	BattleAudienceBaseGetPtr();
@@ -3264,9 +3246,7 @@ BOOL BattleAudience_GetWaiting(s32 index) {
 	}
 	return (u8)(member->status <= 3);
 }
-#pragma dont_inline reset
 
-#pragma dont_inline on
 BOOL BattleAudience_GetEscapeChangeOK(s32 index) {
 	BattleAudience* audience;
 	BattleAudienceMember* member;
@@ -3305,9 +3285,7 @@ BOOL BattleAudience_GetEscapeChangeOK(s32 index) {
 	}
 	return member->status != 12;
 }
-#pragma dont_inline reset
 
-#pragma dont_inline on
 s32 BattleAudience_GetAudienceNoFromOffset(s32 index, s32 column, s32 row) {
 	s32 audienceNo;
 
@@ -3455,10 +3433,8 @@ s32 BattleAudience_GetPPAudienceNum(void) {
 	s32 right = BattleAudience_GetPPAudienceNum_R();
 	return right + left;
 }
-#pragma dont_inline reset
 
 // Keep out of line: BattleAudience_ApRecoveryBuild emits `bl BattleAudience_GetPPAudienceNumKind`.
-#pragma dont_inline on
 s32 BattleAudience_GetPPAudienceNumKind(s32 type) {
 	BattleAudience* audience = BattleAudienceBaseGetPtr();
 	s32 i, count = 0;
@@ -3472,21 +3448,15 @@ s32 BattleAudience_GetPPAudienceNumKind(s32 type) {
 	}
 	return count;
 }
-#pragma dont_inline reset
 
-#pragma dont_inline on
 s32 BattleAudience_GetPPAudienceNum_R(void) {
 	return BattleAudience_GetPPAudienceNum_RL_Sub(10);
 }
-#pragma dont_inline reset
 
-#pragma dont_inline on
 s32 BattleAudience_GetPPAudienceNum_L(void) {
 	return BattleAudience_GetPPAudienceNum_RL_Sub(0);
 }
-#pragma dont_inline reset
 
-#pragma dont_inline on
 s32 BattleAudience_GetPPAudienceNum_RL_Sub(s32 offset) {
 	BattleAudience* audience = BattleAudienceBaseGetPtr();
 	s32 akk;
@@ -3505,9 +3475,7 @@ s32 BattleAudience_GetPPAudienceNum_RL_Sub(s32 offset) {
 	}
 	return count;
 }
-#pragma dont_inline reset
 
-#pragma dont_inline on
 BOOL BattleAudience_GetPPAudienceNum_Sub(s32 id) {
 	BattleAudienceMember* member = BattleAudienceGetPtr(id);
 
@@ -3623,11 +3591,9 @@ void BattleAudience_ApRecoveryBuild(StarPowerInfo* info) {
 void BattleAudience_WinSetActive(u8 active) {
 	BattleAudienceWinGetPtr()->mActive = active;
 }
-#pragma dont_inline reset
 
 // Keep BattleAudienceNumToTarget as an out-of-line `bl`: both original callers (Main,
 // Case_TurnEnd) call it, and MWCC would otherwise inline it into them.
-#pragma dont_inline on
 void BattleAudienceNumToTarget(void) {
 	BattleAudience* audience = BattleAudienceBaseGetPtr();
 	s32 target;
@@ -3642,9 +3608,7 @@ void BattleAudienceNumToTarget(void) {
 		BattleAudienceAddAudienceNum(target - BattleAudienceNumToTargetSub());
 	}
 }
-#pragma dont_inline reset
 
-#pragma dont_inline on
 s32 BattleAudienceNumToTargetSub(void) {
 	s32 i;
 	s32 count;
@@ -3660,9 +3624,7 @@ s32 BattleAudienceNumToTargetSub(void) {
 	}
 	return count;
 }
-#pragma dont_inline reset
 
-#pragma dont_inline on
 void BattleAudienceAddTargetNum(f32 value, f32 delta) {
 	BattleAudience* audience = BattleAudienceBaseGetPtr();
 
@@ -3701,11 +3663,9 @@ void BattleAudienceAddTargetNum(f32 value, f32 delta) {
 		audience->mAddedAudienceCount = 1000.0f;
 	}
 }
-#pragma dont_inline reset
 
 //1:1
 // keep AddTargetNumSub out of AddTargetNum (original has a `bl`)
-#pragma dont_inline on
 void BattleAudienceAddTargetNumSub(f32 value) {
 	f32 subtract;
 	s32 skew;
@@ -3832,9 +3792,7 @@ void BattleAudiencePuniAllEscape(void) {
 		audience->flags |= 0x8000;
 	}
 }
-#pragma dont_inline reset
 
-#pragma dont_inline on
 void BattleAudienceAddPuni(s32 num) {
 	BattleWork* wp = _battleWorkPointer;
 	BattleAudience* audience = BattleAudienceBaseGetPtr();
@@ -3853,9 +3811,7 @@ void BattleAudienceAddPuni(s32 num) {
 		}
 	}
 }
-#pragma dont_inline reset
 
-#pragma dont_inline on
 void BattleAudienceAddPhaseEvtList(s32 evtId) {
 	BattleAudience* audience = BattleAudienceBaseGetPtr();
 	s32 count = audience->phaseEvtCount;
@@ -3868,9 +3824,7 @@ void BattleAudienceAddPhaseEvtList(s32 evtId) {
 	audience->phaseEvtList[count] = evtId;
 	audience->phaseEvtCount++;
 }
-#pragma dont_inline reset
 
-#pragma dont_inline on
 void BattleAudienceCheer(s32 a) {
 	BattleAudience* audience = BattleAudienceBaseGetPtr();
 	if (audience->apGauge > 0x320) {
@@ -3889,9 +3843,7 @@ void BattleAudienceCheer(s32 a) {
 		}
 	}
 }
-#pragma dont_inline reset
 
-#pragma dont_inline on
 void BattleAudienceJoy(s32 a) {
 	BattleAudience* audience = BattleAudienceBaseGetPtr();
 	switch (a) {
@@ -4004,12 +3956,10 @@ void BattleAudienceJoy_Sub(s32 a, s32 b, s32 c, s32 d) {
 		}
 	}
 }
-#pragma dont_inline reset
 #pragma opt_lifetimes reset
 #pragma opt_propagation reset
 #pragma opt_loop_invariants reset
 
-#pragma dont_inline on
 s32 BattleAudienceDetectPakkunEatTargetSub2(s32 a, s32 b) {
 	s32 no;
 	BattleAudienceBaseGetPtr();
@@ -4023,9 +3973,7 @@ s32 BattleAudienceDetectPakkunEatTargetSub2(s32 a, s32 b) {
 	}
 	return no;
 }
-#pragma dont_inline reset
 
-#pragma dont_inline on
 s32 BattleAudienceDetectPakkunEatTargetSub(s32 a, s32 b, s32 c) {
 	s32 x = BattleAudienceDetectPakkunEatTargetSub2(a, b);
 	s32 y = BattleAudienceDetectPakkunEatTargetSub2(a, c);
@@ -4037,18 +3985,14 @@ s32 BattleAudienceDetectPakkunEatTargetSub(s32 a, s32 b, s32 c) {
 	}
 	return y;
 }
-#pragma dont_inline reset
 
-#pragma dont_inline on
 s32 BattleAudienceDetectPakkunEatTarget(s32 a) {
 	if (irand(2) == 0) {
 		return BattleAudienceDetectPakkunEatTargetSub(a, -1, 1);
 	}
 	return BattleAudienceDetectPakkunEatTargetSub(a, 1, -1);
 }
-#pragma dont_inline reset
 
-#pragma dont_inline on
 void BattleAudienceSoundBooing(void) {
 	s32 kind;
 	s32 l;
@@ -4643,15 +4587,11 @@ void BattleAudienceSoundStop(s32 index) {
 		*(s32*)sound &= ~1;
 	}
 }
-#pragma dont_inline reset
 
-#pragma dont_inline on
 s32 BattleAudienceSound0(const char* name) {
 	return psndSFXOn(name);
 }
-#pragma dont_inline reset
 
-#pragma dont_inline on
 s32 BattleAudienceSound1(const char* name, s32 a, s32 b) {
 	u8 vol;
 	Vec pos;
@@ -4661,9 +4601,7 @@ s32 BattleAudienceSound1(const char* name, s32 a, s32 b) {
 	psndSFX_vol(handle, vol);
 	return handle;
 }
-#pragma dont_inline reset
 
-#pragma dont_inline on
 void BattleAudienceSoundGetInfo1(s32 a, s32 b, u8* c, Vec* d) {
 	s32 sum = a + b;
 
@@ -4682,27 +4620,21 @@ void BattleAudienceSoundGetInfo1(s32 a, s32 b, u8* c, Vec* d) {
 	d->y = 0.0f;
 	d->z = 0.0f;
 }
-#pragma dont_inline reset
 
-#pragma dont_inline on
 s32 BattleAudienceSound2(const char* name, s32 index) {
 	Vec pos;
 	BattleAudienceSoundGetInfo2(index, &pos);
 	return psndSFXOn_3D(name, &pos);
 }
-#pragma dont_inline reset
 
-#pragma dont_inline on
 void BattleAudienceSoundGetInfo2(s32 index, Vec* pos) {
 	BattleAudienceMember* member = BattleAudienceGetPtr(index);
 	pos->x = member->position.x;
 	pos->y = member->position.y;
 	pos->z = member->position.z;
 }
-#pragma dont_inline reset
 
 // Keep the call out of line: the original emits `bl BattleAudienceSoundMain` in BattleAudience_Main.
-#pragma dont_inline on
 void BattleAudienceSoundMain(void) {
 	BattleAudienceSound* sound;
 	s32 i;
@@ -5159,9 +5091,7 @@ s32 BattleAudience_GetPresentTargetUnitId(void) {
 void BattleAudience_SetPresentItemType(s32 value) {
 	BattleAudienceBaseGetPtr()->presentItemType = value;
 }
-#pragma dont_inline reset
 
-#pragma dont_inline on
 s32 BattleAudience_GetPresentItemType(void) {
 	return BattleAudienceBaseGetPtr()->presentItemType;
 }

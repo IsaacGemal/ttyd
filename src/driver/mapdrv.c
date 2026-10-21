@@ -3788,9 +3788,8 @@ void mapSetPolygon(MapObject* obj, MapFileMesh* mesh) {
 		}
 	}
 }
-#pragma opt_common_subs reset
 
-#pragma opt_common_subs off // keep GX_VA_TEX0+i from being CSE-hoisted
+// `opt_common_subs off` keeps GX_VA_TEX0+i from being CSE-hoisted
 // GX setup order/constants and addressing match. The `base = (u8*)wp + 0xA4` local gives the first
 // vcd_table load the original's `add r7, wp, idx` operand order (a direct `(u8*)wp->entries + off`
 // form emits the index first). `wp = mapGetWork()`, the `vcd` pointer local and the pos/nrm
