@@ -33,38 +33,6 @@ typedef struct SlotCards5 {
     s32 v[5];
 } SlotCards5;
 
-struct BattleBreakSlotReel {
-    s32 type;       // 0x00
-    u32 flags;      // 0x04
-    s32 state;      // 0x08
-    s32 stateTimer; // 0x0C
-    s32 value;      // 0x10
-    s32* cards;     // 0x14
-    s32 count;      // 0x18
-    s32 index;      // 0x1C
-    Vec pos;        // 0x20
-    Vec rot;        // 0x2C
-    Vec scale;      // 0x38
-    Vec pivot;      // 0x44
-    f32 scrollStep; // 0x50
-    f32 scrollDelta; // 0x54
-    u8 alpha;      // 0x58
-    u8 field_59[3]; // 0x59
-};
-
-struct BattleBreakSlot {
-    u32 flags;      // 0x00
-    s32 state;      // 0x04
-    s32 timer;      // 0x08
-    s32 counter;    // 0x0C
-    s32 breakTurn;  // 0x10
-    f32 field_14;   // 0x14
-    BattleBreakSlotReel reels[3]; // 0x18
-    s32 sound;      // 0x12C
-    EventEntry* event; // 0x130
-};
-
-
 // The original emits real calls to BattleBreakSlotGetPtr/ReelGetPtr.
 #pragma dont_inline on
 
@@ -300,7 +268,7 @@ static inline GXColor slotColor(u8 a, GXColor c) {
 #endif
 
 BattleBreakSlot* BattleBreakSlotGetPtr(void) {
-    return (BattleBreakSlot*)((u8*)_battleWorkPointer + 0x1616C);
+    return &_battleWorkPointer->field_1616C;
 }
 BattleBreakSlotReel* BattleBreakSlotReelGetPtr(s32 index) {
     return &BattleBreakSlotGetPtr()->reels[index];

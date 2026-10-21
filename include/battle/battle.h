@@ -4,6 +4,7 @@
 #include "battle/battle_ac.h"
 #include "battle/battle_detect.h"
 #include "battle/battle_audience.h"
+#include "battle/battle_break_slot.h"
 #include "battle/battle_camera.h"
 #include "battle/battle_database_common.h"
 #include "battle/battle_icon.h"
@@ -231,7 +232,7 @@ struct BattleWork {
     u8 field_2750[0x2754 - 0x2750];     // 0x2750
     BattleCameraWork cameraWork;        // 0x2754
     BattleAudience audience;            // 0x2858
-    u8 field_1616C[0x162A0 - 0x1616C];  // 0x1616C
+    BattleBreakSlot field_1616C;        // 0x1616C, BattleBreakSlotGetPtr
     BattleWorkPartyInfo partyInfo[7];   // 0x162A0
     u32 tattledUnitTypeFlags[8];        // 0x163B8
     s32 badgeEquippedFlags;             // 0x163D8

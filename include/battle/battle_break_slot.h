@@ -1,6 +1,7 @@
 #pragma once
 
 #include <dolphin/types.h>
+#include <dolphin/mtx.h>
 
 void BattleBreakSlot_Init(void);
 void BattleBreakSlot_Main(void);
@@ -10,6 +11,38 @@ s32 BattleBreakSlot_GetBreakTurn(void);
 #include "manager/evtmgr.h"
 typedef struct BattleBreakSlot BattleBreakSlot;
 typedef struct BattleBreakSlotReel BattleBreakSlotReel;
+
+struct BattleBreakSlotReel {
+    s32 type;       // 0x00
+    u32 flags;      // 0x04
+    s32 state;      // 0x08
+    s32 stateTimer; // 0x0C
+    s32 value;      // 0x10
+    s32* cards;     // 0x14
+    s32 count;      // 0x18
+    s32 index;      // 0x1C
+    Vec pos;        // 0x20
+    Vec rot;        // 0x2C
+    Vec scale;      // 0x38
+    Vec pivot;      // 0x44
+    f32 scrollStep; // 0x50
+    f32 scrollDelta; // 0x54
+    u8 alpha;      // 0x58
+    u8 field_59[3]; // 0x59
+};
+
+struct BattleBreakSlot {
+    u32 flags;      // 0x00
+    s32 state;      // 0x04
+    s32 timer;      // 0x08
+    s32 counter;    // 0x0C
+    s32 breakTurn;  // 0x10
+    f32 field_14;   // 0x14
+    BattleBreakSlotReel reels[3]; // 0x18
+    s32 sound;      // 0x12C
+    EventEntry* event; // 0x130
+};
+
 void BattleBreakSlot_HideReel(void);
 void BattleBreakSlot_DecBreakTurn(void);
 s32 BattleBreakSlot_CheckReaction(void);
