@@ -45,7 +45,7 @@ typedef struct WindowWork {
     s32 marioState;             // 0x190, win_mario: 0 = link cursor, 1 = super action cursor
     s32 superActionSel;         // 0x194, win_mario: cursor among the owned super actions
     s32 superActionCount;       // 0x198, win_mario: star powers owned (bit count of mStarPowersObtained)
-    u8 field_19C[0x1A0 - 0x19C]; // 0x19C
+    s32 field_0x19C;            // 0x19C
     s32 partyPose[7];           // 0x1A0, win_party: pose handle per party slot
     s32 partyId[7];             // 0x1BC, win_party: party member id per slot (PARTNER_* order)
     s32 selPartyDt;             // 0x1D8, win_party: index into winPartyDt for the selected slot

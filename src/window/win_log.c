@@ -638,7 +638,7 @@ void winLogInit2(WindowWork* work) {
     w->fa4 = -200.f;
     w->fb0 = -300.f;
     w->fac = -300.f;
-    name = ((WinLogEntry*)((u8*)work + 0xD78))[w->sel].name;
+    name = w->rows[w->sel].name;
     winMsgEntry(work, 0, name, 0);
 }
 
@@ -1710,7 +1710,7 @@ void mapGX(WindowWork* work, f32 x, f32 y) {
                 scale = 3.0f;
             }
             PSMTXTrans(m, tx + (f32)tubuDt[w->mapPick].x, ty + (f32)tubuDt[w->mapPick].y, 0.0f);
-            n = (s32)*(f32*)((u8*)anim->clip + 8);
+            n = (s32)((f32*)anim->clip)[2];
             animPoseSetLocalTime(w->mapMarioPose, (f32)(gp->retraceCount % n));
             animPoseMain(w->mapMarioPose);
             animPoseDrawMtx(w->mapMarioPose, m, 1, 0.0f, scale);
@@ -2070,22 +2070,24 @@ void capture(CameraId camId, void* param) {
     // Reproduce the original's dead aggregate copy: it reads the two zero vectors at base+0x358/0x364
     // into a scratch pair and then copies them through mn/mx; folding that copy changes the frame layout.
     {
-        u8* ap = (u8*)ad;
-
         mnScratch = (Vec){0.0f, 0.0f, 0.0f};
-        mnScratch.x = *(f32*)(ap + 0x44);
-        mnScratch.y = *(f32*)(ap + 0x48);
-        mnScratch.z = *(f32*)(ap + 0x4c);
+        mnScratch.x = ad->field_0x44;
+        mnScratch.y = ad->field_0x48;
+        mnScratch.z = ad->field_0x4C;
         mn = mnScratch;
         mxScratch = (Vec){0.0f, 0.0f, 0.0f};
-        mxScratch.x = *(f32*)(ap + 0x50);
-        mxScratch.y = *(f32*)(ap + 0x54);
-        mxScratch.z = *(f32*)(ap + 0x58);
+        mxScratch.x = ad->field_0x50;
+        mxScratch.y = ad->field_0x54;
+        mxScratch.z = ad->field_0x58;
         mx = mxScratch;
     }
 #else
-    mn = *(Vec*)((u8*)ad + 0x44);
-    mx = *(Vec*)((u8*)ad + 0x50);
+    mn.x = ad->field_0x44;
+    mn.y = ad->field_0x48;
+    mn.z = ad->field_0x4C;
+    mx.x = ad->field_0x50;
+    mx.y = ad->field_0x54;
+    mx.z = ad->field_0x58;
 #endif
     cx = (mx.x + mn.x) / 2.0f;
     cy = (mx.y + mn.y) / 2.0f;

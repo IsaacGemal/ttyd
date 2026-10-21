@@ -67,9 +67,10 @@ struct AnimData {
     u8* frames2;               // 0x40, event records of 8 bytes: f32 time, s32 value
     f32 field_0x44;            // 0x44
     f32 field_0x48;            // 0x48
-    u8 field_0x4C[0x50 - 0x4C]; // 0x4C
+    f32 field_0x4C;            // 0x4C
     f32 field_0x50;            // 0x50
     f32 field_0x54;            // 0x54
+    f32 field_0x58;            // 0x58
 };
 
 struct AnimTableEntry {
