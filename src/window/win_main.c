@@ -157,9 +157,6 @@ void winOpenDisable(void) {
     }
 }
 
-#define WM_S32(off) (*(s32*)((u8*)wp + (off)))
-#define WM_PARTY() (((s32*)((u8*)wp + 0x1BC))[WM_S32(0x1DC)])
-#define WM_PTR(off) (*(void**)((u8*)wp + (off)))
 
 extern WindowPartyDt winPartyDt[];
 extern PartyData partyDataTbl[];
@@ -282,7 +279,7 @@ void winMain(void) {
                     const char* tpl = winGetMapTplName();
                     fileAsyncf(FILE_TYPE_TPL, 0, "%s/w/jp/%s", getMarioStDvdRoot(), tpl);
                 }
-                WM_S32(0x24) = 0;
+                wp->rootState = 0;
                 if (strncmp(gp->currentMapName, "yuu_", 4) == 0) {
                     wp->menuState = 0x190;
                 } else {
@@ -352,9 +349,9 @@ void winMain(void) {
             case 0x64:
                 if (marioBgmodeChk()) {
                     mario = marioGetPtr();
-                    mario->prevPartyMemberId[0] = WM_PARTY();
+                    mario->prevPartyMemberId[0] = wp->partyId[wp->partySel];
                     wp->menuState = 3;
-                } else if (animGroupBaseAsync(partyDataTbl[WM_PARTY()].name, 2, NULL)) {
+                } else if (animGroupBaseAsync(partyDataTbl[wp->partyId[wp->partySel]].name, 2, NULL)) {
                     wp->menuState += 1;
                 }
                 break;
@@ -366,7 +363,7 @@ void winMain(void) {
 
             case 0x66:
                 if (marioGetParty() == 0) {
-                    marioPartyHello(WM_PARTY());
+                    marioPartyHello(wp->partyId[wp->partySel]);
                     wp->menuState = 3;
                 }
                 break;

@@ -4,6 +4,25 @@
 #include "evt/evt_cmd.h"
 #include "sdk/texPalette.h"
 
+// win_root's menu tabs (WindowWork.tabs).
+typedef struct WinRootTab {
+    s32 id;          // 0x0
+    f32 x;           // 0x4
+    f32 y;           // 0x8
+    s32 state;       // 0xC
+    s32 counter;     // 0x10
+    const char* str; // 0x14
+} WinRootTab;
+
+// win_root's submenu window records (WindowWork.recs).
+typedef struct WinRootRec {
+    s32 a; // 0x0
+    f32 b; // 0x4
+    f32 c; // 0x8
+    s32 d; // 0xC
+    s32 e; // 0x10
+} WinRootRec;
+
 // The pause menu's work area. Each submenu keeps its state in its own band, laid out one after another
 // rather than overlaid: root 0x1C-0x184, win_mario 0x160-0x198, win_party 0x19C-0x208, win_item
 // 0x20C-0x3DA (plus 0x1208/0x120C), win_badge 0x3DC-0xD64, win_log 0xD68-0x1204. win_root.c and
@@ -26,20 +45,42 @@ typedef struct WindowWork {
     struct smartEntry* fbCopy;  // 0x34, win_root: framebuffer copy drawn behind the menu
     s32 fbCopyReady;            // 0x38, win_root: set once fbCopy holds a frame
     EventEntry* currentEvent;   // 0x3C, winMain: the evt_item_use / evt_diary_read event it waits on
-    // win_root's tab selection (0x40), tab count (0x44), WinRootTab[5] (0x48) and WinRootRec[5] (0xC0) live
-    // here. sort_7_2_func/sort_7_3_func address the tattle list at 0x1050 as &field_40[0x1010], and only
-    // that u8-array base matches, so the array has to keep starting at 0x40.
-    u8 field_40[0x124 - 0x40];  // 0x40
+    // sort_7_2_func/sort_7_3_func address the tattle list at 0x1050 as &field_40[0x1010], and only that
+    // u8-array base matches, so the array has to keep starting at 0x40.
+    union {
+        u8 field_40[0x124 - 0x40]; // 0x40
+        struct {
+            s32 tabSel;         // 0x40, win_root: index of the tab under the cursor
+            s32 tabCount;       // 0x44, win_root: tabs in use
+            WinRootTab tabs[5]; // 0x48
+            WinRootRec recs[5]; // 0xC0, one per submenu window; b/c are its position (each submenu's Disp reads its own)
+        };
+    };
     s32 savedState;             // 0x124, win_badge/win_item/win_log: menu state to return to after help text
-    u8 field_128[0x150 - 0x128]; // 0x128
+    f32 field_0x128;            // 0x128, win_root: winMsgDisp position (winMsgMain slides it)
+    f32 field_0x12C;            // 0x12C
+    s32 field_0x130;            // 0x130, win_root: winMsgMain state
+    s32 field_0x134;            // 0x134
+    s32 field_0x138;            // 0x138
+    const char* field_0x13C;    // 0x13C, win_root: winMsgEntry's str, the help message winMsgDisp shows
+    const char* field_0x140;    // 0x140, winMsgEntry's a3, a title message drawn above it (NULL for none)
+    const char* field_0x144;    // 0x144, the last str winMsgEntry took (it skips a repeat)
+    s32 field_0x148;            // 0x148
+    s32 field_0x14C;            // 0x14C
     f32 posX;                   // 0x150, cursor position, animates toward targetX (win_root, win_item, win_badge)
     f32 posY;                   // 0x154, animates toward targetY
     f32 targetX;                // 0x158, cursor target, set by every submenu
     f32 targetY;                // 0x15C
     s32 marioLinkIdx;           // 0x160, win_mario: current linkDt entry (the cursor on the Mario page)
-    u8 field_164[0x180 - 0x164]; // 0x164
+    f32 field_0x164;            // 0x164, win_root's sort menu (winSortMain, winSortGX), to 0x17C
+    f32 field_0x168;            // 0x168
+    f32 field_0x16C;            // 0x16C
+    f32 field_0x170;            // 0x170
+    s32 field_0x174;            // 0x174
+    s32 field_0x178;            // 0x178
+    s32 field_0x17C;            // 0x17C
     s32 sortReverseNext;        // 0x180, win_root's sorts: 0 = next press uses the ascending comparator, 1 = the _r one (flipped by each press, cleared by winSortEntry)
-    u8 field_184[0x188 - 0x184]; // 0x184
+    s32 field_0x184;            // 0x184, win_root: sort_data index
     s32 marioPose;              // 0x188, win_mario's Mario pose (mario_change rebuilds it; mapGX reads its anim)
     s32 marioHoldTimer;         // 0x18C, win_mario: frames left before the pose's anim is driven again (30 after a loop)
     s32 marioState;             // 0x190, win_mario: 0 = link cursor, 1 = super action cursor
@@ -62,14 +103,29 @@ typedef struct WindowWork {
     s32 itemTab;                // 0x210, win_item: 0 = held items (STR_MOCHI_ITEM), 1 = key items (STR_MOCHI_DAIJI)
     s32 itemSel[2];             // 0x214, win_item: cursor per tab (win_root's sort_1_* and sort_2_* read [0] and [1])
     s32 itemScrollRow[2];       // 0x21C, win_item: first visible row per tab
-    u8 field_224[0x254 - 0x224]; // 0x224, win_item's float positions (book and list slide)
+    f32 field_0x224;            // 0x224, win_item's float positions (book and list slide), to 0x250
+    f32 field_0x228;            // 0x228
+    f32 field_0x22C;            // 0x22C
+    f32 field_0x230;            // 0x230
+    f32 field_0x234;            // 0x234
+    f32 field_0x238;            // 0x238
+    f32 field_0x23C;            // 0x23C
+    f32 field_0x240;            // 0x240
+    f32 field_0x244;            // 0x244
+    f32 field_0x248;            // 0x248
+    f32 field_0x24C;            // 0x24C
+    f32 field_0x250;            // 0x250
     s32 mailCount;              // 0x254, received mail (pouchReceiveMailCount)
     s32 mailSel;                // 0x258, mail cursor
     s32 mailPage;               // 0x25C, mailSel / 5
-    u8 field_260[0x268 - 0x260]; // 0x260, f32 positions
+    f32 field_0x260;            // 0x260, win_item: mail slide position
+    f32 field_0x264;            // 0x264
     s32 mailScroll;             // 0x268, first visible line of the open mail
     u16 mailLines;              // 0x26C, line count of the open mail (FontGetMessageWidthLine, +10 with a picture)
-    u8 field_26E[0x2D4 - 0x26E]; // 0x26E, mail index pairs (sort base), Luigi book state at 0x2C8-0x2D0
+    u8 field_26E[0x2C8 - 0x26E]; // 0x26E, mail index pairs (sort base)
+    s32 field_0x2C8;            // 0x2C8, win_item/win_root: Luigi book state
+    s32 field_0x2CC;            // 0x2CC
+    s32 field_0x2D0;            // 0x2D0
     s32 useItemId;              // 0x2D4, item picked for use (win_item case 300; win_main hands it to the event)
     s32 useItemSlot;            // 0x2D8, its pouch index (pouchRemoveItemIndex)
     s32 useTargetSel;           // 0x2DC, target: 0 = Mario, else index into the joined partners

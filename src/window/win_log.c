@@ -85,103 +85,6 @@ typedef struct TubuDt {
     u16 minProgress; // 0x6
     const char* id;  // 0x8
 } TubuDt;
-typedef struct LogRow {
-    s32 type;         // 0x00
-    f32 curX;         // 0x04
-    f32 curY;         // 0x08
-    f32 targetX;      // 0x0C
-    f32 targetY;      // 0x10
-    s32 phase;        // 0x14
-    s32 timer;        // 0x18
-    const char* name; // 0x1C
-} LogRow;
-typedef struct LogChar {
-    u8 pad;
-    u8 id;
-} LogChar;
-typedef struct LogWin {
-    u16 flags; // 0x0
-    u8 pad_2[0x2];
-    u32 buttonTrg; // 0x4
-    u32 buttonRep; // 0x8
-    u32 dirTrg; // 0xC
-    u32 dirRep; // 0x10
-    u8 pad_14[0x1C];
-    FileEntry* mapTpl; // 0x30
-    u8 pad_34[0xF0];
-    s32 savedState; // 0x124
-    u8 pad_128[0x30];
-    f32 targetX; // 0x158
-    f32 targetY; // 0x15C
-    u8 pad_160[0xC08];
-    s32 state; // 0xD68
-    s32 sel; // 0xD6C
-    s32 count; // 0xD70
-    LogRow rows[5]; // 0xD74
-    s32 mapSel; // 0xE14
-    s32 mapPick; // 0xE18
-    s32 mapMarioPose; // 0xE1C
-    f32 mapCx; // 0xE20
-    f32 mapCy; // 0xE24
-    f32 e28; // 0xE28
-    f32 e2c; // 0xE2C
-    f32 e30; // 0xE30
-    f32 e34; // 0xE34
-    f32 mapScrollX; // 0xE38
-    f32 mapScrollY; // 0xE3C
-    s32 stoneNum; // 0xE40
-    EffectEntry* stones[7]; // 0xE44
-    s32 stoneSel; // 0xE60
-    f32 e64; // 0xE64
-    f32 e68; // 0xE68
-    f32 e6c; // 0xE6C
-    f32 e70; // 0xE70
-    f32 e74; // 0xE74
-    f32 e78; // 0xE78
-    f32 e7c; // 0xE7C
-    f32 e80; // 0xE80
-    f32 e84; // 0xE84
-    f32 e88; // 0xE88
-    f32 e8c; // 0xE8C
-    f32 e90; // 0xE90
-    s32 cardCnt; // 0xE94
-    s32 cardSel; // 0xE98
-    s32 cardPage; // 0xE9C
-    f32 ea0; // 0xEA0
-    f32 ea4; // 0xEA4
-    f32 ea8; // 0xEA8
-    f32 eac; // 0xEAC
-    f32 eb0; // 0xEB0
-    f32 eb4; // 0xEB4
-    s16 cardIcon[100]; // 0xEB8
-    f32 f80; // 0xF80
-    f32 f84; // 0xF84
-    f32 f88; // 0xF88
-    f32 f8c; // 0xF8C
-    s32 badgeCnt; // 0xF90
-    s32 badgeSel; // 0xF94
-    s32 badgePage; // 0xF98
-    f32 f9c; // 0xF9C
-    f32 fa0; // 0xFA0
-    f32 fa4; // 0xFA4
-    f32 fa8; // 0xFA8
-    f32 fac; // 0xFAC
-    f32 fb0; // 0xFB0
-    s16 badgeIcon[58]; // 0xFB4
-    f32 x1028; // 0x1028
-    f32 x102c; // 0x102C
-    f32 x1030; // 0x1030
-    f32 x1034; // 0x1034
-    s32 charCnt; // 0x1038
-    s32 seenCnt; // 0x103C
-    s32 charSel; // 0x1040
-    s32 charPage; // 0x1044
-    f32 x1048; // 0x1048
-    f32 x104c; // 0x104C
-    LogChar chars[216]; // 0x1050
-    void* mono; // 0x1200
-    u8 pad_1204[0xC];
-} LogWin;
 #define LOGWIN_CHECK(field, off) typedef char logwin_##field##_check[(offsetof(LogWin, field) == (off)) ? 1 : -1]
 extern TubuDt tubuDt[0x5D];
 extern s32 stone_tbl[7];
@@ -639,7 +542,7 @@ void winLogInit2(WindowWork* work) {
     w->fb0 = -300.f;
     w->fac = -300.f;
     name = w->rows[w->sel].name;
-    winMsgEntry(work, 0, name, 0);
+    winMsgEntry(work, 0, name, NULL);
 }
 
 void winLogExit(WindowWork* work) {
@@ -786,7 +689,7 @@ s32 winLogMain(WindowWork* work) {
                 w->targetY =
                     8.0f + (t / 2.0f - 45.0f * (f32)w->sel);
             }
-            winMsgEntry(work, 0, w->rows[w->sel].name, 0);
+            winMsgEntry(work, 0, w->rows[w->sel].name, NULL);
             break;
         case 10:
             tpl = winGetMapTplName();
@@ -897,10 +800,10 @@ s32 winLogMain(WindowWork* work) {
                             SFX(0x20035);
                         }
                         w->mapSel = bestIdx;
-                        winMsgEntry(work, 0, help, (s32)name);
+                        winMsgEntry(work, 0, help, name);
                     } else {
                         w->mapSel = -1;
-                        winMsgEntry(work, 0, "msg_menu_kiroku_map", 0);
+                        winMsgEntry(work, 0, "msg_menu_kiroku_map", NULL);
                     }
                     sx = (f32)keyGetStickX(0) / 8.0f;
                     sy = (f32)keyGetStickY(0) / 8.0f;
@@ -1017,9 +920,9 @@ s32 winLogMain(WindowWork* work) {
             w->targetY = -50.f;
             if (w->stoneSel < w->stoneNum) {
                 ItemData* it = &itemDataTable[stone_tbl[w->stoneSel]];
-                winMsgEntry(work, -1, it->description, (s32)it->name);
+                winMsgEntry(work, -1, it->description, it->name);
             } else {
-                winMsgEntry(work, -1, "msg_menu_stone_none_help", (s32)"msg_menu_stone_none_name");
+                winMsgEntry(work, -1, "msg_menu_stone_none_help", "msg_menu_stone_none_name");
             }
             break;
         case 12: {
@@ -1100,9 +1003,9 @@ s32 winLogMain(WindowWork* work) {
             w->targetY = (f32)(0x5A - ((w->cardSel % 28) / 7) * 0x38);
             if (swGet(w->cardIcon[w->cardSel] + 0x80) != 0) {
                 ItemData* it = &itemDataTable[w->cardIcon[w->cardSel]];
-                winMsgEntry(work, -2, (it + 240)->menu_description, (s32)(it + 240)->name);
+                winMsgEntry(work, -2, (it + 240)->menu_description, (it + 240)->name);
             } else {
-                winMsgEntry(work, -2, "msg_menu_stone_none_help", (s32)"msg_menu_stone_none_name");
+                winMsgEntry(work, -2, "msg_menu_stone_none_help", "msg_menu_stone_none_name");
             }
             break;
         }
@@ -1184,9 +1087,9 @@ s32 winLogMain(WindowWork* work) {
             w->targetY = (f32)(0x5A - ((w->badgeSel % 28) / 7) * 0x38);
             if (swGet(w->badgeIcon[w->badgeSel] + 0x41) != 0) {
                 ItemData* it = &itemDataTable[w->badgeIcon[w->badgeSel]];
-                winMsgEntry(work, -2, (it + 179)->menu_description, (s32)(it + 179)->name);
+                winMsgEntry(work, -2, (it + 179)->menu_description, (it + 179)->name);
             } else {
-                winMsgEntry(work, -2, "msg_menu_stone_none_help", (s32)"msg_menu_stone_none_name");
+                winMsgEntry(work, -2, "msg_menu_stone_none_help", "msg_menu_stone_none_name");
             }
             break;
         }
@@ -1278,9 +1181,9 @@ s32 winLogMain(WindowWork* work) {
             w->targetY = (f32)(0x6A - (w->charSel % 16 % 8) * 0x18);
             if (swGet(w->chars[w->charSel].id + 0x117A) != 0) {
                 winMsgEntry(work, 0,
-                            battleGetUnitMonosiriPtr(w->chars[w->charSel].id)->tattleLogTag, 0);
+                            battleGetUnitMonosiriPtr(w->chars[w->charSel].id)->tattleLogTag, NULL);
             } else {
-                winMsgEntry(work, 0, "msg_menu_monosiri_enemy", 0);
+                winMsgEntry(work, 0, "msg_menu_monosiri_enemy", NULL);
             }
     
             break;
@@ -1515,8 +1418,8 @@ void winLogDisp(CameraId camId, WindowWork* work, s32 idx) {
     static const GXColor white0 = {0xFF, 0xFF, 0xFF, 0xFF};
     GXColor white3;
     GXColor white;
-    f32 x = ((f32*)((u8*)work + 0xC4))[idx * 5];
-    f32 y = ((f32*)((u8*)work + 0xC8))[idx * 5];
+    f32 x = work->recs[idx].b;
+    f32 y = work->recs[idx].c;
     s32 i;
 
     white = white0;

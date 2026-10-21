@@ -147,13 +147,13 @@ void winMarioInit2(WindowWork* work) {
 
     switch (work->marioLinkIdx) {
     case 2:
-        winMsgEntry(work, 0, hammer_help[pouchGetHammerLv()], 0);
+        winMsgEntry(work, 0, hammer_help[pouchGetHammerLv()], NULL);
         break;
     case 3:
-        winMsgEntry(work, 0, boots_help[pouchGetJumpLv()], 0);
+        winMsgEntry(work, 0, boots_help[pouchGetJumpLv()], NULL);
         break;
     default:
-        winMsgEntry(work, 0, linkDt[work->marioLinkIdx].helpMsg, 0);
+        winMsgEntry(work, 0, linkDt[work->marioLinkIdx].helpMsg, NULL);
         break;
     }
 
@@ -386,13 +386,13 @@ s32 winMarioMain(WindowWork* work) {
 
         switch (work->marioLinkIdx) {
         case 2:
-            winMsgEntry(work, 0, hammer_help[pouchGetHammerLv()], 0);
+            winMsgEntry(work, 0, hammer_help[pouchGetHammerLv()], NULL);
             break;
         case 3:
-            winMsgEntry(work, 0, boots_help[pouchGetJumpLv()], 0);
+            winMsgEntry(work, 0, boots_help[pouchGetJumpLv()], NULL);
             break;
         default:
-            winMsgEntry(work, 0, d2->helpMsg, 0);
+            winMsgEntry(work, 0, d2->helpMsg, NULL);
             break;
         }
         break;
@@ -418,7 +418,7 @@ s32 winMarioMain(WindowWork* work) {
         work->targetX = -280.0f;
         f2 = (f32)work->superActionSel;
         work->targetY = 10.0f + ((120.0f - 26.0f * f2) - 12.0f);
-        winMsgEntry(work, 0, superActionTable[work->superActionSel]->description, 0);
+        winMsgEntry(work, 0, superActionTable[work->superActionSel]->description, NULL);
         break;
     }
     return 0;
@@ -635,8 +635,8 @@ void winMarioDisp(CameraId camId, void* param, s32 idx) {
     unusedBlack = winBlackColor;
     black = winBlackColor;
     loopBlack = winBlackColor;
-    x = ((f32*)((u8*)work + 0xC4))[idx * 5];
-    y = ((f32*)((u8*)work + 0xC8))[idx * 5];
+    x = work->recs[idx].b;
+    y = work->recs[idx].c;
 
     winBgGX(work, 0, x, y);
     winNameGX(work, 2, x - 265.0f, 154.0f + y, 190.0f, 24.0f);

@@ -12,10 +12,6 @@
 #include <stdio.h>
 #include <stdarg.h>
 
-// Extended WindowWork fields used by this unit. win_main.h only declares the
-// first 0x40 bytes, so the rest are reached through raw offsets.
-#define WW_S32(w, off) (*(s32*)((u8*)(w) + (off)))
-#define WW_F32(w, off) (*(f32*)((u8*)(w) + (off)))
 // The 0xC-byte record at work+0x404 (WindowWork.field_404), one per equipped badge.
 typedef struct WinEquipRec {
     s32 field_0x0;
@@ -66,7 +62,7 @@ void winBadgeInit2(WindowWork* work) {
     work->targetY = (f32)(0x7D - work->badgeTab * 0x28);
     work->badgeScrollPos[0] = work->badgeScrollTarget[0] = 184.0f * (f32)work->badgeScrollRow[0];
     work->badgeScrollPos[1] = work->badgeScrollTarget[1] = 184.0f * (f32)work->badgeScrollRow[1];
-    winMsgEntry(work, 0, work->badgeTab == 0 ? "msg_menu_badge_all" : "msg_menu_badge_equip", 0);
+    winMsgEntry(work, 0, work->badgeTab == 0 ? "msg_menu_badge_all" : "msg_menu_badge_equip", NULL);
     winMakeEquipList(work);
 }
 
@@ -196,7 +192,7 @@ s32 winBadgeMain(WindowWork* work) {
         }
         work->targetX = -270.0f;
         work->targetY = (f32)(0x7D - work->badgeTab * 0x28);
-        winMsgEntry(work, 0, work->badgeTab == 0 ? "msg_menu_badge_all" : "msg_menu_badge_equip", 0);
+        winMsgEntry(work, 0, work->badgeTab == 0 ? "msg_menu_badge_all" : "msg_menu_badge_equip", NULL);
         goto end;
 
     case 10:
@@ -304,7 +300,7 @@ s32 winBadgeMain(WindowWork* work) {
                 } else {
                     msgId = ((WinEquipRec*)work->field_404)[work->badgeSel[sel]].field_0x8;
                 }
-                winMsgEntry(work, msgId, itemDataTable[msgId].menu_description, 0);
+                winMsgEntry(work, msgId, itemDataTable[msgId].menu_description, NULL);
             }
         }
         goto end;
@@ -376,9 +372,9 @@ void winBadgeDisp(CameraId camId, void* param, s32 idx) {
     f32 tabX;
     f32 tabY;
     f32 tabTop;
-    f32 x = WW_F32((u8*)work + idx * 0x14, 0xC4);
+    f32 x = work->recs[idx].b;
     s32 i;
-    f32 y = WW_F32((u8*)work + idx * 0x14, 0xC8);
+    f32 y = work->recs[idx].c;
     (void)camId;
 
     winBgGX(work, 3, x, y);
