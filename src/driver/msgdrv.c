@@ -380,7 +380,7 @@ s32 msgMain(smartEntry* smart) {
 				}
 				animPoseSetPaperAnimGroup(npc->poseId, "p_b_st", TRUE);
 				animPosePaperPeraOn(npc->poseId);
-				((void (*)(s32, const char*, BOOL))animPoseSetPaperAnim)(npc->poseId, paperPoseTbl[entry->startTime], TRUE);
+				animPoseSetPaperAnim(npc->poseId, paperPoseTbl[entry->startTime], TRUE);
 			}
 			break;
 		case 0xFFF2:

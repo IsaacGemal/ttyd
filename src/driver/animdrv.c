@@ -804,7 +804,7 @@ static inline s32 animPoseSearchAnimPaper(s32 poseId, const char* animName) {
 }
 #endif
 
-void animPoseSetPaperAnim(s32 poseId, const char* animName) {
+void animPoseSetPaperAnim(s32 poseId, const char* animName, BOOL unused) {
     AnimationPose* pose = &wp->poses[poseId];
     s32 animId = animPoseSearchAnimPaper(poseId, animName);
 

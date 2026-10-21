@@ -2888,12 +2888,7 @@ void partyPreDisp(PartyEntry* party) {
         }
         animPoseSetAnim(party->paperAnimGroup, party->field_18, 1);
         if (party->field_1C != 0) {
-#ifdef MUST_MATCH
-            ((void (*)(s32, const char*, BOOL))animPoseSetPaperAnim)(party->paperAnimGroup, (const char*)party->field_1C,
-                                                                    1);
-#else
-            animPoseSetPaperAnim(party->paperAnimGroup, (const char*)party->field_1C);
-#endif
+            animPoseSetPaperAnim(party->paperAnimGroup, (const char*)party->field_1C, 1);
         }
         animPoseSetLocalTime(party->paperAnimGroup, (f32)party->field_20);
     }

@@ -1405,7 +1405,7 @@ USER_FUNC(evt_npc_set_paper_anim) {
     const char* name = (const char*)evtGetValue(event, args[0]);
     const char* anim = (const char*)evtGetValue(event, args[1]);
     NpcEntry* npc = evtNpcNameToPtr(event, name);
-    ((void (*)(s32, const char*, BOOL))animPoseSetPaperAnim)(npc->poseId, anim, TRUE);
+    animPoseSetPaperAnim(npc->poseId, anim, TRUE);
     return EVT_RETURN_DONE;
 }
 
