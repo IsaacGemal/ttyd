@@ -56,6 +56,9 @@ extern Vec mobj_vec3_802c40a0_template[];
 extern Vec mobj_vec3_802c40ac_template[];
 extern Vec mobj_vec3_802c40c4_template[];
 static const Vec vec3_802c3fd8[1];
+extern Vec vec3_802c3e44[];
+extern Vec vec3_802c3e50[];
+extern Vec vec3_802c3e5c[];
 static const Vec vec3_802c3fe4[1];
 extern Vec vec3_802c4020[];
 extern Vec vec3_802c402c[];
@@ -71,17 +74,13 @@ extern Vec lv_block_position[];
 
 // Data objects defined later in this file or in other units, declared before their first use.
 extern Vec vec3_802c40d0[];
+extern Vec vec3_802c4168[];
+extern Vec vec3_802c4174[];
+extern const char str_MOBJ_goal_pole[];
+extern const char str_MOBJ_goal_hata[];
 
 // Prototypes for functions in other, not-yet-decompiled units (koopa / hit / etc.)
 
-// Read-only constants defined in this unit's .rodata (to be defined locally later)
-extern Vec vec3_802c3dc8[];
-extern Vec vec3_802c3dd4[];
-extern Vec vec3_802c40ac[];
-extern Vec vec3_802c40b8[];
-extern Vec vec3_802c40c4[];
-extern Vec vec3_802c4050[];
-extern Vec vec3_802c405c[];
 extern u32 kpa_pole_score_color;
 extern u32 dat_8041a130;
 
@@ -114,7 +113,7 @@ PoleWork* psw;
 u32 gap_08_80418714_sbss;
 #pragma force_active reset
 
-// Anchor for the .data addresses below (kpa_pole and friends live at fixed offsets past it).
+// Opens retail's .data; no code reads it, but kpa_pole and the objects after it sit at fixed offsets past it.
 #ifdef MUST_MATCH
 __declspec(section ".data") static f32 negone_one_374[2] = { -1.0f, 1.0f };
 #endif
@@ -131,8 +130,6 @@ static u32 evt_shake[] = {
     0xF24A7A8A, 0x000000C8, 0x00000002, 0x00000001,
 };
 extern s32 mobj_save_blk_sysevt[];
-extern Vec vec3_802c40a0[];
-extern Vec vec3_802c3ef4[];
 #define LVB_TEMPLATE(dst, src) (*(MobjNameTemplate*)(dst) = *(const MobjNameTemplate*)(src))
 s32 psndSFXOnEx_3D(const char* name, Vec* position, u8 vol, u8 pan, u16 pitch, u16 flags);
 
@@ -217,11 +214,7 @@ s32 evt_mobj_set_scale(EventEntry* event, BOOL isFirstCall) {
     x = evtGetFloat(event, args[1]);
     y = evtGetFloat(event, args[2]);
     z = evtGetFloat(event, args[3]);
-#ifdef MUST_MATCH
     scale = mobj_vec3_802c3dc8_template[0];
-#else
-    scale = vec3_802c3dc8[0];
-#endif
     scale.x = x;
     scale.y = y;
     scale.z = z;
@@ -310,11 +303,7 @@ s32 evt_mobj_set_position(EventEntry* event, BOOL isFirstCall) {
     } else {
         obj = event->thisMapObj;
     }
-#ifdef MUST_MATCH
     pos = mobj_vec3_802c3dd4_template[0];
-#else
-    pos = vec3_802c3dd4[0];
-#endif
     pos.x = x;
     pos.y = y;
     pos.z = z;
@@ -846,7 +835,7 @@ s32 evt_mobj_tornadoswitch_red(EventEntry* event, BOOL isFirstCall) {
 #endif
 
 s32 mobj_timerswitch(MapObjectEntry* obj) {
-    MapObjectEntry* child = mobjNameToPtr(&obj->childName[0]);
+    MapObjectEntry* child = mobjNameToPtr(obj->childName);
 
     switch (obj->state) {
         case 0:
@@ -878,7 +867,7 @@ s32 mobj_timerswitch(MapObjectEntry* obj) {
             animPoseSetAnim(obj->poseId, "A_2", 1);
             animPoseSetAnim(child->poseId, "A_2", 1);
             obj->state++;
-            obj->timer = *(s32*)obj->unk1B4;
+            obj->timer = obj->unk1B4;
             obj->flags &= ~MOBJ_FLAG_TRIGGERED;
             break;
         case 2:
@@ -964,7 +953,7 @@ s32 evt_mobj_timerswitch(EventEntry* event, BOOL isFirstCall) {
     for (i = 0; i < 2; i++) {
         mobjEntry(names[i], asyncName);
         obj[i] = mobjNameToPtr(names[i]);
-        strcpy(&obj[i]->childName[0], (i == 0) ? names[1] : names[0]);
+        strcpy(obj[i]->childName, (i == 0) ? names[1] : names[0]);
         mobjSetPosition(names[i], xs[i], ys[i], zs[i]);
         obj[i]->update = mobj_timerswitch;
         obj[i]->eventCode = (s32*)eventCode;
@@ -972,7 +961,7 @@ s32 evt_mobj_timerswitch(EventEntry* event, BOOL isFirstCall) {
         obj[i]->flags |= MOBJ_FLAG_TRIGGER_STAND_ON | MOBJ_FLAG_TRIGGER_PARTY | 0x10000;
         obj[i]->flagVar = flagVar;
         obj[i]->state = 0;
-        *(s32*)obj[i]->unk1B4 = unk1B4;
+        obj[i]->unk1B4 = unk1B4;
         if (evtGetValue(event, flagVar) != 0) {
             obj[i]->state = 0x63;
         }
@@ -982,12 +971,6 @@ s32 evt_mobj_timerswitch(EventEntry* event, BOOL isFirstCall) {
 }
 
 s32 mobj_rideswitch_lightblue(MapObjectEntry* obj) {
-#ifdef MUST_MATCH
-    Vec* vec = mobj_vec3_802c3dc8_template;
-#else
-    Vec* vec = vec3_802c3dc8;
-#endif
-
     switch (obj->state) {
         Vec v;
         case 0:
@@ -1011,7 +994,7 @@ s32 mobj_rideswitch_lightblue(MapObjectEntry* obj) {
                 obj->flags &= ~MOBJ_FLAG_TRIGGERED;
                 y = 0.2f;
             }
-            v = *(Vec*)((u8*)vec + 0x7C);
+            v = vec3_802c3e44[0];
             v.x = x;
             v.y = y;
             v.z = z;
@@ -1021,7 +1004,7 @@ s32 mobj_rideswitch_lightblue(MapObjectEntry* obj) {
         }
         case 2: {
             AnimationPoseData* data = animPoseGetAnimBaseDataPtr(obj->poseId);
-            Vec w = *(Vec*)((u8*)vec + 0x88);
+            Vec w = vec3_802c3e50[0];
             f32 mag;
             f32 dist;
 
@@ -1055,7 +1038,7 @@ s32 mobj_rideswitch_lightblue(MapObjectEntry* obj) {
                 obj->state = 0;
                 y = 15.0f;
             }
-            v = *(Vec*)((u8*)vec + 0x94);
+            v = vec3_802c3e5c[0];
             v.x = x;
             v.y = y;
             v.z = z;
@@ -1584,11 +1567,7 @@ s32 evt_mobj_lv_blk(EventEntry* event, BOOL isFirstCall) {
     mobjEntry(name, asyncName);
     obj = mobjNameToPtr(name);
     obj->flags |= MOBJ_FLAG_RECALC_MTX | MOBJ_FLAG_GRAVITY;
-#ifdef MUST_MATCH
     pos = mobj_vec3_802c3ef4_template[0];
-#else
-    pos = vec3_802c3ef4[0];
-#endif
     pos.x = f29;
     pos.y = f30;
     pos.z = f31;
@@ -1605,7 +1584,7 @@ s32 evt_mobj_lv_blk(EventEntry* event, BOOL isFirstCall) {
 s32 mobj_float_blk(MapObjectEntry* obj) {
     switch (obj->state) {
         case 0x63:
-            if (*(s8*)&obj->childName[0] == 0) {
+            if (*(s8*)obj->childName == 0) {
                 f32 hitNZ, hitNY, hitNX, distance, hitZ, hitY, hitX;
 
                 distance = 1.0f + (f32)__fabs(obj->velocity.y);
@@ -1623,7 +1602,7 @@ s32 mobj_float_blk(MapObjectEntry* obj) {
                     }
                 }
             } else {
-                AnimTableEntry* anim = animPoseGetCurrentAnim(mobjNameToPtr(&obj->childName[0])->poseId);
+                AnimTableEntry* anim = animPoseGetCurrentAnim(mobjNameToPtr(obj->childName)->poseId);
 
                 if ((s8)anim->name[0] == 'A' && (s8)anim->name[2] >= '1' && (s8)anim->name[2] <= '3') {
                     animPoseSetAnim(obj->poseId, "A_1", 0);
@@ -1755,10 +1734,10 @@ s32 mobj_switch_float_blk(MapObjectEntry* obj) {
             if (!(obj->flags & MOBJ_FLAG_TRIGGERED)) {
                 break;
             }
-            *(s32*)&obj->unk1A0[4] =
-                (*(s32*)&obj->unk1A0[4] & 0x40000000) | mobjSwitchAnimIndex(obj);
-            if (*(s8*)&obj->childName[0] != 0) {
-                MapObjectEntry* child = mobjNameToPtr(&obj->childName[0]);
+            obj->unk1A0[1] =
+                (obj->unk1A0[1] & 0x40000000) | mobjSwitchAnimIndex(obj);
+            if (*(s8*)obj->childName != 0) {
+                MapObjectEntry* child = mobjNameToPtr(obj->childName);
                 f32 hitNZ, hitNY, hitNX, distance, hitZ, hitY, hitX;
 
                 distance = 1.0f + (f32)__fabs(child->velocity.y);
@@ -1783,7 +1762,7 @@ s32 mobj_switch_float_blk(MapObjectEntry* obj) {
                             }
                         }
                     } else {
-                        *(s32*)&obj->unk1A0[4] |= 0x80000000;
+                        obj->unk1A0[1] |= 0x80000000;
                         animId = 0;
                     }
                 } else {
@@ -1795,7 +1774,7 @@ s32 mobj_switch_float_blk(MapObjectEntry* obj) {
                             if (c == 'A' && n[2] >= '1' && n[2] <= '2') {
                                 animId = 0;
                             } else if (c == 'A' && n[2] == '3') {
-                                *(s32*)&obj->unk1A0[4] |= 0x40000000;
+                                obj->unk1A0[1] |= 0x40000000;
                                 animId = 0;
                             } else if (c == 'A' && n[2] >= '4' && n[2] <= '5') {
                                 animId = 3;
@@ -1804,7 +1783,7 @@ s32 mobj_switch_float_blk(MapObjectEntry* obj) {
                             }
                         }
                     } else {
-                        *(s32*)&obj->unk1A0[4] |= 0x80000000;
+                        obj->unk1A0[1] |= 0x80000000;
                         animId = 3;
                     }
                 }
@@ -1824,7 +1803,7 @@ s32 mobj_switch_float_blk(MapObjectEntry* obj) {
                         animId = 0;
                     }
                 }
-                *(s32*)&obj->unk1A0[4] |= 0x80000000;
+                obj->unk1A0[1] |= 0x80000000;
             }
             mobjRunEvent(obj, obj->eventCode);
             if (obj->triggerFlag == MOBJ_FLAG_TRIGGER_STAND_ON) {
@@ -1860,8 +1839,8 @@ s32 mobj_switch_float_blk(MapObjectEntry* obj) {
             if (animPoseGetLoopTimes(obj->poseId) < 1.0f) {
                 break;
             }
-            if (*(s8*)&obj->childName[0] != 0) {
-                mobjNameToPtr(&obj->childName[0]);
+            if (*(s8*)obj->childName != 0) {
+                mobjNameToPtr(obj->childName);
             }
             {
                 const char* nm;
@@ -1894,7 +1873,7 @@ s32 mobj_switch_float_blk(MapObjectEntry* obj) {
                 break;
             }
             obj->state = 0;
-            *(s32*)&obj->unk1A0[4] = 0;
+            obj->unk1A0[1] = 0;
             break;
         case 0xa:
             if (obj->flags & MOBJ_FLAG_TRIGGERED) {
@@ -1929,8 +1908,8 @@ s32 mobj_switch_float_blk(MapObjectEntry* obj) {
             if (obj->timer != 0) {
                 break;
             }
-            if (*(s8*)&obj->childName[0] != 0) {
-                MapObjectEntry* child = mobjNameToPtr(&obj->childName[0]);
+            if (*(s8*)obj->childName != 0) {
+                MapObjectEntry* child = mobjNameToPtr(obj->childName);
                 f32 hitNZ, hitNY, hitNX, distance, hitZ, hitY, hitX;
 
                 distance = 1.0f + (f32)__fabs(child->velocity.y);
@@ -2008,12 +1987,12 @@ s32 evt_mobj_switch_float_blk(EventEntry* event, BOOL isFirstCall) {
     obj->state = 0;
     obj->timer = 0;
     mobjCalcMtx(obj);
-    strcpy(&obj->childName[0], childName);
-    if (*(s8*)&obj->childName[0] != 0) {
+    strcpy(obj->childName, childName);
+    if (*(s8*)obj->childName != 0) {
         f32 hitNZ, hitNY, hitNX, distance, hitZ, hitY, hitX;
-        MapObjectEntry* obj2 = mobjNameToPtr(&obj->childName[0]);
+        MapObjectEntry* obj2 = mobjNameToPtr(obj->childName);
         HitEntry* hit;
-        strcpy(&obj2->childName[0], obj->name);
+        strcpy(obj2->childName, obj->name);
         distance = 1.0f + (f32)__fabs(obj2->velocity.y);
         hit = hitCheckFilter(NULL, obj2->position.x, 0.5f + obj2->position.y, obj2->position.z, 0.0f, (-1.0f), 0.0f, &hitX,
                              &hitY, &hitZ,
@@ -2077,14 +2056,14 @@ s32 mobj_lock(MapObjectEntry* obj) {
         case 2: {
             s32 item;
 
-            if (*(s32*)obj->unk1A0 & 0x80000000) {
+            if (obj->unk1A0[0] & 0x80000000) {
                 s32 i;
                 s32 check;
 
                 item = 0;
                 i = 0;
                 while (1) {
-                    check = ((s32*)*(s32*)obj->unk1A0)[i];
+                    check = ((s32*)obj->unk1A0[0])[i];
                     if (check == -1) {
                         break;
                     }
@@ -2096,9 +2075,9 @@ s32 mobj_lock(MapObjectEntry* obj) {
                     i++;
                 }
             } else {
-                s32 check = pouchCheckItem(*(s32*)obj->unk1A0);
+                s32 check = pouchCheckItem(obj->unk1A0[0]);
 
-                item = (check != 0) ? *(s32*)obj->unk1A0 : 0;
+                item = (check != 0) ? obj->unk1A0[0] : 0;
             }
             if (item != 0) {
                 pouchRemoveItem(item);
@@ -2211,7 +2190,7 @@ s32 evt_mobj_lock(EventEntry* event, BOOL isFirstCall) {
     mobjEntry(name, asyncName);
     obj = mobjNameToPtr(name);
     mobjHitEntry(obj, 2);
-    *(s32*)obj->unk1A0 = unk1A0;
+    obj->unk1A0[0] = unk1A0;
     mobjSetPosition(name, f30, f29, f28);
     obj->rotation.y = f31;
     obj->update = mobj_lock;
@@ -2529,15 +2508,15 @@ s32 evt_mobj_arrow(EventEntry* event, BOOL isFirstCall) {
 }
 #endif
 
-// Recovery block (heart / coin-taken). The coin count stays in the padding and is read through the array:
-// *(s32*)&obj->unk1A0[4] (0x1A4 coinNeeded); msgWindowId, timer and effect are named fields.
+// Recovery block (heart / coin-taken). The coins it needs are obj->unk1A0[1] (0x1A4); msgWindowId, timer and effect are
+// named fields.
 s32 mobj_recovery_blk(MapObjectEntry* obj) {
     s32 i;
 
     switch (obj->state) {
         case -1:
             obj->effect = effCoinFukidashiEntry(0, obj->position.x, obj->position.y + 25.0f, obj->position.z - 10.0f,
-                                                *(s32*)&obj->unk1A0[4], 0);
+                                                obj->unk1A0[1], 0);
             obj->state++;
             break;
         case 0:
@@ -2558,7 +2537,7 @@ s32 mobj_recovery_blk(MapObjectEntry* obj) {
             obj->state++;
             // fallthrough
         case 2:
-            if (pouchGetCoin() < *(s32*)&obj->unk1A0[4]) {
+            if (pouchGetCoin() < obj->unk1A0[1]) {
                 obj->state = 0xA;
                 break;
             }
@@ -2568,7 +2547,7 @@ s32 mobj_recovery_blk(MapObjectEntry* obj) {
             }
             psndSFXOn_3D((const char*)0x1DA, &obj->position);
             animPoseSetAnim(obj->poseId, "A_2", 1);
-            if (*(s32*)&obj->unk1A0[4] == 0) {
+            if (obj->unk1A0[1] == 0) {
                 obj->state = 3;
             } else {
                 obj->state = 4;
@@ -2614,7 +2593,7 @@ s32 mobj_recovery_blk(MapObjectEntry* obj) {
                 psndSFXOn_3D((const char*)0x1DB, &obj->position);
             }
             if (obj->timer == 100) {
-                s32 coin = *(s32*)&obj->unk1A0[4];
+                s32 coin = obj->unk1A0[1];
                 MarioWork* mario = marioGetPtr();
                 PouchData* pouch = pouchGetPtr();
                 PouchPartyData* party = pouch->partyData;
@@ -2651,7 +2630,7 @@ s32 mobj_recovery_blk(MapObjectEntry* obj) {
         case 6:
             if (obj->effect == NULL) {
                 obj->effect = effCoinFukidashiEntry(0, obj->position.x, obj->position.y + 25.0f, obj->position.z - 10.0f,
-                                                    *(s32*)&obj->unk1A0[4], 0);
+                                                    obj->unk1A0[1], 0);
             }
             if (animPoseGetLoopTimes(obj->poseId) < 1.0f) {
                 break;
@@ -2709,7 +2688,7 @@ s32 evt_mobj_recovery_blk(EventEntry* event, BOOL isFirstCall) {
     }
     mobjEntry(name, asyncName);
     obj = mobjNameToPtr(name);
-    *(s32*)&obj->unk1A0[4] = type;
+    obj->unk1A0[1] = type;
     mobjSetPosition(name, f31, f30, f29);
     obj->flags |= MOBJ_FLAG_RECALC_MTX;
     obj->update = mobj_recovery_blk;
@@ -2827,10 +2806,10 @@ s32 mobj_badgeblk(MapObjectEntry* obj) {
                 animPoseSetAnim(obj->poseId, "A_1", 1);
                 if (obj->eventCode != NULL) {
                     mobjRunEvent(obj, obj->eventCode);
-                } else if (*(s32*)obj->unk1A0 != 0x79) {
+                } else if (obj->unk1A0[0] != 0x79) {
                     ItemEntry* item;
                     f32 y = 40.0f + obj->position.y;
-                    itemEntry(obj->name, (ItemType)(*(s32*)obj->unk1A0), 4,
+                    itemEntry(obj->name, (ItemType)obj->unk1A0[0], 4,
                         obj->position.x, y, obj->position.z, obj->flagVar, 0);
                     item = itemNameToPtr(obj->name);
                     itemFlagOn(item, 0x10);
@@ -2915,7 +2894,7 @@ s32 evt_mobj_badgeblk(EventEntry* event, BOOL isFirstCall) {
     obj->flags |= MOBJ_FLAG_TRIGGER_HEAD | MOBJ_FLAG_TRIGGER_PARTY | 0x10000;
     obj->flagVar = flagVar;
     obj->state = 0;
-    *(s32*)obj->unk1A0 = unk1A0;
+    obj->unk1A0[0] = unk1A0;
     mobjCalcMtx(obj);
     animPoseSetAnim(obj->poseId, "S_1", 1);
     if (evtGetValue(event, flagVar) != 0) {
@@ -2962,12 +2941,12 @@ s32 mobj_powerupblk(MapObjectEntry* obj) {
             }
             animPoseSetAnim(obj->poseId, "A_2", 1);
             obj->flags &= ~MOBJ_FLAG_TRIGGERED;
-            *(s32*)&obj->unk1A0[4] = 1;
+            obj->unk1A0[1] = 1;
             obj->state++;
             break;
         case 2:
-            if (*(s32*)&obj->unk1A0[4] != 0) {
-                (*(s32*)&obj->unk1A0[4])--;
+            if (obj->unk1A0[1] != 0) {
+                obj->unk1A0[1]--;
             } else {
                 itemForceGet(itemEntry(PB_BLK2, (ItemType)0x57, 0x11,
                     obj->position.x, 40.0f + obj->position.y, obj->position.z, -1, 0));
@@ -3277,7 +3256,7 @@ s32 evt_mobj_brick(EventEntry* event, BOOL isFirstCall) {
     obj->flags |= MOBJ_FLAG_TRIGGER_HEAD | MOBJ_FLAG_TRIGGER_PARTY | 0x10000;
     obj->flagVar = evtId;
     obj->state = 0;
-    *(s32*)obj->unk1A0 = unk1A0;
+    obj->unk1A0[0] = unk1A0;
     mobjCalcMtx(obj);
     if (type < 0xa) {
         animPoseSetAnim(obj->poseId, "S_1", 1);
@@ -3339,7 +3318,7 @@ s32 mobj_breaking_floor(MapObjectEntry* obj) {
                     mobjRunEvent(obj, obj->eventCode);
                 }
                 if (obj->hitObj[0].hitObject != NULL) {
-                    *(u16*)obj->hitObj[0].hitObject |= 1;
+                    obj->hitObj[0].hitObject->flags |= 1;
                 }
                 obj->flags |= 2;
                 evtSetValue(NULL, obj->flagVar, 1);
@@ -3669,11 +3648,7 @@ s32 evt_mobj_kururing_floor(EventEntry* event, BOOL isFirstCall) {
     }
     mobjEntry(name, asyncName);
     obj = mobjNameToPtr(name);
-#ifdef MUST_MATCH
     pos = mobj_vec3_802c4050_template[0];
-#else
-    pos = vec3_802c4050[0];
-#endif
     pos.x = f29;
     pos.y = f30 + 0.1f;
     pos.z = f31;
@@ -3684,11 +3659,7 @@ s32 evt_mobj_kururing_floor(EventEntry* event, BOOL isFirstCall) {
     obj->flags |= MOBJ_FLAG_TRIGGER_HIP_DROP | 0x10000;
     obj->flags |= 2;
     mobjCalcMtx(obj);
-#ifdef MUST_MATCH
     scale = mobj_vec3_802c405c_template[0];
-#else
-    scale = vec3_802c405c[0];
-#endif
     scale.y = obj->scale2.y;
     obj->scale2 = scale;
     mobjCalcMtx2(obj);
@@ -3817,7 +3788,7 @@ s32 mobj_koopa_ojama_blk_evt(MapObjectEntry* obj) {
                         npcKoopaModeMobjBoundDeadCheck(obj->hitObj[0].hitObject);
                     }
                     if (obj->hitObj[0].hitObject != NULL) {
-                        *(u16*)obj->hitObj[0].hitObject |= 1;
+                        obj->hitObj[0].hitObject->flags |= 1;
                     }
                     obj->flags |= 2;
                     kpaAddScore(kpaMutekiCheck() ? 500 : 400);
@@ -3872,11 +3843,7 @@ s32 evt_mobj_koopa_ojama_blk(EventEntry* event, BOOL isFirstCall) {
     mobjEntry(name, asyncName);
     obj = mobjNameToPtr(name);
     obj->flags |= MOBJ_FLAG_RECALC_MTX;
-#ifdef MUST_MATCH
     pos = mobj_vec3_802c40a0_template[0];
-#else
-    pos = vec3_802c40a0[0];
-#endif
     pos.x = f29;
     pos.y = f30;
     pos.z = f31;
@@ -3915,11 +3882,7 @@ s32 evt_mobj_koopa_stone_blk(EventEntry* event, BOOL isFirstCall) {
     mobjEntry(name, asyncName);
     obj = mobjNameToPtr(name);
     obj->flags |= MOBJ_FLAG_RECALC_MTX;
-#ifdef MUST_MATCH
     pos = mobj_vec3_802c40ac_template[0];
-#else
-    pos = vec3_802c40ac[0];
-#endif
     pos.x = x;
     pos.y = y;
     pos.z = z;
@@ -4064,7 +4027,7 @@ s32 evt_mobj_koopa_brick(EventEntry* event, BOOL isFirstCall) {
     obj->flags |= MOBJ_FLAG_TRIGGER_KPA_HEAD | MOBJ_FLAG_TRIGGER_KPA_LV3 | MOBJ_FLAG_TRIGGER_KPA_HIP | MOBJ_FLAG_TRIGGER_KPA_FLAME;
     obj->flagVar = flagVar;
     obj->state = 0;
-    *(s32*)obj->unk1A0 = unk1A0;
+    obj->unk1A0[0] = unk1A0;
     mobjCalcMtx(obj);
     animPoseSetAnim(obj->poseId, "S_1", 1);
     if (evtGetValue(event, flagVar) != 0) {
@@ -4092,9 +4055,9 @@ s32 mobj_koopa_badgeblk(MapObjectEntry* obj) {
                     if (obj->eventCode != NULL) {
                         mobjRunEvent(obj, obj->eventCode);
                     } else {
-                        if (*(s32*)obj->unk1A0 == 0x59) {
+                        if (obj->unk1A0[0] == 0x59) {
                             ItemEntry* item;
-                            itemEntry(obj->name, (ItemType)(*(s32*)obj->unk1A0), 4,
+                            itemEntry(obj->name, (ItemType)obj->unk1A0[0], 4,
                                 obj->position.x, 12.5f + obj->position.y, obj->position.z, -1, (s32)kpa_powerup_evt);
                             item = itemNameToPtr(obj->name);
                             itemStatusOn(item, 0x10);
@@ -4195,7 +4158,7 @@ s32 evt_mobj_koopa_badgeblk(EventEntry* event, BOOL isFirstCall) {
     obj->flags |= MOBJ_FLAG_TRIGGER_KPA_HEAD | MOBJ_FLAG_TRIGGER_KPA_LV3 | MOBJ_FLAG_TRIGGER_KPA_HIP | MOBJ_FLAG_TRIGGER_KPA_FLAME;
     obj->flagVar = flagVar;
     obj->state = 0;
-    *(s32*)obj->unk1A0 = unk1A0;
+    obj->unk1A0[0] = unk1A0;
     mobjCalcMtx(obj);
     animPoseSetAnim(obj->poseId, "S_1", 1);
     if (evtGetValue(event, flagVar) != 0) {
@@ -4235,7 +4198,7 @@ s32 evt_mobj_koopa_hidden_blk(EventEntry* event, BOOL isFirstCall) {
     obj->flags |= MOBJ_FLAG_TRIGGER_KPA_HEAD | MOBJ_FLAG_TRIGGER_KPA_LV3 | MOBJ_FLAG_TRIGGER_KPA_HIP | MOBJ_FLAG_TRIGGER_KPA_FLAME;
     obj->flagVar = flagVar;
     obj->state = 0;
-    *(s32*)obj->unk1A0 = unk1A0;
+    obj->unk1A0[0] = unk1A0;
     mobjCalcMtx(obj);
     animPoseSetAnim(obj->poseId, "S_1", 1);
     if (evtGetValue(event, flagVar) != 0) {
@@ -4268,7 +4231,7 @@ s32 mobj_koopa_blk(MapObjectEntry* obj) {
                         npcKoopaModeMobjBoundDeadCheck(obj->hitObj[0].hitObject);
                     }
                     if (obj->hitObj[0].hitObject != NULL) {
-                        *(u16*)obj->hitObj[0].hitObject |= 1;
+                        obj->hitObj[0].hitObject->flags |= 1;
                     }
                     obj->flags |= 2;
                     obj->state = 0xa;
@@ -4406,12 +4369,7 @@ s32 evt_mobj_koopa_dokan(EventEntry* event, BOOL isFirstCall) {
     mobjEntry(name, asyncName);
     obj = mobjNameToPtr(name);
     obj->flags |= MOBJ_FLAG_RECALC_MTX | 0x2;
-#ifdef MUST_MATCH
-    // The original addresses vec3_802c40b8 from the vec3_802c3dc8 base.
     pos = mobj_vec3_802c40b8_template[0];
-#else
-    pos = vec3_802c40b8[0];
-#endif
     pos.x = f29;
     pos.y = f30;
     pos.z = f31;
@@ -4560,11 +4518,7 @@ s32 evt_mobj_koopa_sango(EventEntry* event, BOOL isFirstCall) {
     mobjEntry(name, "MOBJ_sango");
     obj = mobjNameToPtr(name);
     obj->flags |= MOBJ_FLAG_RECALC_MTX | MOBJ_FLAG_NO_CULL;
-#ifdef MUST_MATCH
     pos = mobj_vec3_802c40c4_template[0];
-#else
-    pos = vec3_802c40c4[0];
-#endif
     pos.x = f29;
     pos.y = f30;
     pos.z = f31;
@@ -4594,19 +4548,19 @@ s32 mobj_koopa_fireber_dodai_evt(MapObjectEntry* obj) {
 
     if (obj->state < 0xa) {
         if (distABf(mario->position.x, mario->position.y, obj->position.x, obj->position.y) < 150.0f) {
-            if (psndSFXChk(*(s32*)obj->unk1B4) != 0) {
-                *(s32*)obj->unk1B4 = psndSFXOn_3D((const char*)0x1cd, &obj->position);
+            if (psndSFXChk(obj->unk1B4) != 0) {
+                obj->unk1B4 = psndSFXOn_3D((const char*)0x1cd, &obj->position);
             }
-        } else if (psndSFXChk(*(s32*)obj->unk1B4) == 0) {
-            psndSFXOff(*(s32*)obj->unk1B4);
-            *(s32*)obj->unk1B4 = -1;
+        } else if (psndSFXChk(obj->unk1B4) == 0) {
+            psndSFXOff(obj->unk1B4);
+            obj->unk1B4 = -1;
         }
         PSMTXIdentity(mtx);
         PSMTXTransApply(mtx, mtx, -obj->position.x, -obj->position.y, -obj->position.z);
         PSMTXRotRad(rotMtx, 'Z', 0.017453292f * obj->unk1AC);
         PSMTXConcat(rotMtx, mtx, mtx);
         PSMTXTransApply(mtx, mtx, obj->position.x, obj->position.y, obj->position.z);
-        for (i = 0; i < *(s32*)&obj->unk1A0[4]; i++) {
+        for (i = 0; i < obj->unk1A0[1]; i++) {
             sprintf(buf, "%s%2x", obj->name, i);
             npc = npcNameToPtr(buf);
             PSMTXMultVec(mtx, &npc->position, &npc->position);
@@ -4648,7 +4602,7 @@ s32 mobj_koopa_fireber_dodai_evt(MapObjectEntry* obj) {
             break;
         case 0xb:
             obj->position.y = -1000.0f;
-            for (i = 0; i < *(s32*)&obj->unk1A0[4]; i++) {
+            for (i = 0; i < obj->unk1A0[1]; i++) {
                 sprintf(buf, "%s%2x", obj->name, i);
                 npc = npcNameToPtr(buf);
                 npc->moveElapsed = 0;
@@ -4659,14 +4613,14 @@ s32 mobj_koopa_fireber_dodai_evt(MapObjectEntry* obj) {
                 npc->moveTime = 2.0f;
                 npc->jumpFlags |= 4;
             }
-            if (psndSFXChk(*(s32*)obj->unk1B4) == 0) {
-                psndSFXOff(*(s32*)obj->unk1B4);
-                *(s32*)obj->unk1B4 = -1;
+            if (psndSFXChk(obj->unk1B4) == 0) {
+                psndSFXOff(obj->unk1B4);
+                obj->unk1B4 = -1;
             }
             obj->state++;
             break;
         case 0xc:
-            for (i = 0; i < *(s32*)&obj->unk1A0[4]; i++) {
+            for (i = 0; i < obj->unk1A0[1]; i++) {
                 sprintf(buf, "%s%2x", obj->name, i);
                 npc = npcNameToPtr(buf);
                 npc->moveOffset.x = npc->moveOffset.x + npc->jumpTargetPos.x;
@@ -4688,7 +4642,7 @@ s32 mobj_koopa_fireber_dodai_evt(MapObjectEntry* obj) {
             }
             break;
         case 0x63:
-            for (j = 0; j < *(s32*)&obj->unk1A0[4]; j++) {
+            for (j = 0; j < obj->unk1A0[1]; j++) {
                 sprintf(buf2, "%s%2x", obj->name, j);
                 npcDelete(npcNameToPtr(buf2));
             }
@@ -4743,9 +4697,9 @@ s32 evt_mobj_koopa_fireber_dodai(EventEntry* event, BOOL isFirstCall) {
     if (f27 == 0.0f) {
         f27 = 1.0f;
     }
-    *(s32*)&obj->unk1A0[4] = count;
+    obj->unk1A0[1] = count;
     obj->unk1AC = (sign != 0) ? __fabsf(f27) : -__fabsf(f27);
-    *(s32*)obj->unk1B4 = 0;
+    obj->unk1B4 = 0;
     y = 25.0f + y;
     z = 175.0f + z;
     for (i = 0; i < count; i++) {
@@ -4882,9 +4836,6 @@ s32 kpa_clear_jump_data(EventEntry* event, BOOL isFirstCall) {
 }
 
 s32 mobj_koopa_pole_evt(MapObjectEntry* obj) {
-#ifdef MUST_MATCH
-    u8* base = (u8*)negone_one_374;
-#endif
     MarioWork* mario = marioGetPtr();
     NpcWork* wp;
     NpcEntry* entry;
@@ -4958,11 +4909,7 @@ s32 mobj_koopa_pole_evt(MapObjectEntry* obj) {
                 }
                 kpaAddScore(score);
             }
-#ifdef MUST_MATCH
-            mobjRunEvent(obj, (s32*)(base + 0x230))->lwData[0] = score;
-#else
             mobjRunEvent(obj, kpa_pole)->lwData[0] = score;
-#endif
             obj->state++;
             break;
         case 0xb:
@@ -4989,11 +4936,7 @@ s32 mobj_koopa_pole_evt(MapObjectEntry* obj) {
                 }
                 kpaAddScore(score);
             }
-#ifdef MUST_MATCH
-            mobjRunEvent(obj, (s32*)(base + 0x690));
-#else
             mobjRunEvent(obj, kpa_pole_move);
-#endif
             obj->state++;
             break;
         case 0x33:
@@ -5003,11 +4946,7 @@ s32 mobj_koopa_pole_evt(MapObjectEntry* obj) {
             obj->state = 0x5a;
             break;
         case 0x5a:
-#ifdef MUST_MATCH
-            mobjRunEvent(obj, (s32*)(base + 0x8ec));
-#else
             mobjRunEvent(obj, kpa_move_to_toride);
-#endif
             obj->state++;
             break;
         case 0x5b:
@@ -5039,14 +4978,7 @@ s32 mobj_koopa_pole_evt(MapObjectEntry* obj) {
     return 0;
 }
 
-// `obj+0x1B8` is reached as `&obj->childName[0]` (the declared field), so MWCC recomputes the
-// `addi r3, r31, 0x1b8` per use; the raw `(char*)((u8*)obj + 0x1B8)` form CSEs the address into r25.
 s32 evt_mobj_koopa_pole(EventEntry* event, BOOL isFirstCall) {
-#ifdef MUST_MATCH
-    u8* base = (u8*)mobj_vec3_802c3dc8_template;
-#else
-    u8* base = (u8*)vec3_802c3dc8;
-#endif
     s32* args = event->args;
     const char* name = (const char*)evtGetValue(event, args[0]);
     f32 x = evtGetFloat(event, args[1]);
@@ -5061,16 +4993,16 @@ s32 evt_mobj_koopa_pole(EventEntry* event, BOOL isFirstCall) {
     Vec pos;
     Vec pos2;
 
-    if (!animGroupBaseAsync((const char*)(base + 0x3B8), inBattle, NULL)) {
+    if (!animGroupBaseAsync(str_MOBJ_goal_pole, inBattle, NULL)) {
         return 0;
     }
-    if (!animGroupBaseAsync((const char*)(base + 0x3C8), inBattle, NULL)) {
+    if (!animGroupBaseAsync(str_MOBJ_goal_hata, inBattle, NULL)) {
         return 0;
     }
-    mobjEntry(name, (const char*)(base + 0x3B8));
+    mobjEntry(name, str_MOBJ_goal_pole);
     obj = mobjNameToPtr(name);
     obj->flags |= MOBJ_FLAG_RECALC_MTX | MOBJ_FLAG_NO_CULL;
-    pos = *(Vec*)(base + 0x3A0);
+    pos = vec3_802c4168[0];
     pos.x = x;
     pos.y = y;
     pos.z = z;
@@ -5084,11 +5016,11 @@ s32 evt_mobj_koopa_pole(EventEntry* event, BOOL isFirstCall) {
     if (evtGetValue(event, flagVar) != 0) {
         obj->state = 0x63;
     }
-    strcpy(&obj->childName[0], name);
-    strcat(&obj->childName[0], "_h");
-    mobjEntry(&obj->childName[0], (const char*)(base + 0x3C8));
-    child = mobjNameToPtr(&obj->childName[0]);
-    pos2 = *(Vec*)(base + 0x3AC);
+    strcpy(obj->childName, name);
+    strcat(obj->childName, "_h");
+    mobjEntry(obj->childName, str_MOBJ_goal_hata);
+    child = mobjNameToPtr(obj->childName);
+    pos2 = vec3_802c4174[0];
     pos2.x = x;
     pos2.y = 180.0f + y;
     pos2.z = z;
@@ -5098,7 +5030,7 @@ s32 evt_mobj_koopa_pole(EventEntry* event, BOOL isFirstCall) {
     child->unk1D8 = NULL;
     child->flagVar = 0;
     child->state = 0;
-    strcpy(&child->childName[0], name);
+    strcpy(child->childName, name);
     if (child->hitObj[0].hitObject != NULL) {
         child->hitObj[0].hitObject->flags |= 1;
     }

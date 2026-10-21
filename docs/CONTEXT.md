@@ -5309,6 +5309,7 @@ caller, keeping a change only if the whole linked build stays byte-identical, ca
   `configure.py --non-matching`; fncast_lint and local_prototypes pass (tools/local_prototype_exceptions.json
   unchanged: no entry went stale); tools/ci.py PASS with its tools/tests step stubbed (the 9 test_wave_launch
   environment errors, as in the chapters above), ratchet baseline `--init`ed on the clean HEAD.
+
 ## Placeholder fields named from outside evidence (2026-10-21, Claude Opus 5.5, n9-q-o-names)
 
 Pass over the ~3,800 `field_0xNN` members, renaming only those that outside evidence names. Candidates came from six
@@ -5483,3 +5484,114 @@ casts that are really needed stay, guarded where the rules say so.
 - **Lead.** A `*(u32*)&colour` pun on a function's return is often a GXColor return in the original: MWCC returns
   small structs in r3, so the callee's code doesn't change, and only callers that copy the result through an inline
   need care. The same may hold for other u32-returning colour helpers.
+
+## The next ten worst files by the cleanup index, deep-cleaned (2026-10-21, Claude Opus 5.5 orchestrating four Claude Opus 5.5 workers, n9-q-o-worst2)
+
+Task (Isaac): take sound, pmario_sound, filemgr, battle_stage_object, evt_mobj, battle_audience, animdrv,
+battle_unit, battle_seq_command and mot_plane (`cleanup_index.py --top 20` after #1110) each as a whole, as #1110 did:
+raw offsets, MUST_MATCH, pragmas, gotos and function-pointer casts, no field renames without hard evidence, no data
+layout. The orchestrator took battle_unit, battle_seq_command and filemgr; workers took sound+pmario_sound,
+evt_mobj, animdrv+mot_plane and battle_audience+battle_stage_object, editing only their own .c files.
+
+- **Method.** Untracked harness in build/tw2/: try.sh compiles one unit with its frozen matching command and runs
+  obj_equiv against objects saved from 436e5a2c (`NM=1` compiles without -DMUST_MATCH; `OVL=dir` puts a private
+  include overlay ahead of include/, so workers tried header changes without touching shared headers); var.py and
+  fdiff.sh as #1110's. The orchestrator reviewed every diff, applied the overlay headers, and ran the full build.
+  Every commit: `build/G8MJ01/ok` recreated, every object (1,230) built under `configure.py --non-matching`,
+  fncast_lint and local_prototypes clean, and tools/ci.py PASS on that commit's own tree (`--base` its parent;
+  tools/tests stubbed as in the chapters above, pyelftools supplied through `uv run` for the data step).
+- **Counts** (tools/cleanup_index.py, 436e5a2c -> this branch): index **15.158 -> 14.688** per kLOC (10569 -> 10237
+  weighted); opt_pragma 777 -> 670, field_0x 4626 -> 4549, raw_offset 338 -> 281, must_match 788 -> 768,
+  address_name 2635 -> 2625, fn_ptr_cast 66 -> 64; goto 115, unk_name 684 unchanged. Per file (`--top`, per kLOC;
+  weighted; raw / must_match / pragma / goto / fn_ptr_cast):
+  - sound 108.451 -> 107.685 (222 -> 220): 2/3/4/1/0 -> 2/3/2/1/0
+  - pmario_sound 30.113 -> 29.849 (211 -> 209): 13/8/4/8/0 -> 13/6/4/8/0
+  - filemgr 223.952 -> 136.307 (187 -> 110): 0/1/0/0/0 unchanged; field_0x 186 -> 109
+  - battle_stage_object 61.493 -> 56.743 (168 -> 154): 16/2/14/0/0 -> 16/2/0/0/0
+  - evt_mobj 26.616 -> 17.025 (133 -> 84): 14/25/10/4/0 -> 2/10/10/4/0; address_name 62 -> 52
+  - battle_audience 26.834 -> 17.916 (124 -> 82): 1/9/44/6/0 -> 1/9/2/6/0
+  - animdrv 39.272 -> 28.205 (123 -> 88): 18/4/2/0/1 -> 2/3/2/0/0
+  - battle_unit 56.667 -> 31.615 (119 -> 65): 5/7/46/0/1 -> 1/7/2/0/0
+  - battle_seq_command 40.386 -> 22.190 (113 -> 62): 24/2/3/16/1 -> 0/2/0/16/1
+  - mot_plane 99.638 -> 104.640 (110 -> 106): 0/6/2/0/0 -> 0/4/0/0/0 (per kLOC rises because ~90 code lines went)
+  Outside the ten: battle_seq 74 -> 72 (its act-record offset).
+- **Per-file `-inline noauto` (new lever).** battle_unit, battle_audience, battle_stage_object and battle_seq_command
+  lose all 99 `#pragma dont_inline` lines: built with `extra_cflags=["-O4,s", "-inline noauto"]` the four objects
+  are identical, i.e. none of their functions is auto-inlined in retail (battle.c and battle_weapon_power already
+  carry `-inline off`/`none`). battle_audience needs `noauto` rather than `off` (it has explicit inlines). The
+  comments that described the pragmas went with them. Survey, not applied: 42 other src/ files (178 dont_inline
+  lines: battle_camera 26, battle_menu_disp 14, battle_stage 12, battle_damage 10, evt_npc 8, sac_scissor 8, most
+  of src/battle) are identical the same way; battle_disp, party, party_move, mot_roll, evtmgr and mario_hit are not.
+  The list is build/tw2/noauto_survey.txt in this worktree.
+- **Typing that removed casts and offsets.**
+  - BattleSamplingEnemy, BattleChoiceSamplingEnemy, BattleSamplingEnemyUpdate and _btlSamplingEnemy take
+    `BattleSampling*`: every caller passed one through `(u8*)` and the callee cast it back (battle_detect,
+    battle_enemy_item, battle_event_cmd, battle_item_data, battle_seq_command, battle_stage_object).
+    battle_seq_command's `u8* work` views of the sampling buffer read `count`, `order`, `selectIdx` and the entries.
+  - The BattleCommand menu tables (battle_seq_command.h): names and descriptions are `const char*` (msgSearch's
+    type; 46 `(char*)` casts go), `mDisableReason` and the Action/Operation `mType` are s32 and the weapon table's
+    `mEnabled` BOOL (every reader cast them `(s32)`; 17 casts go). Every src user compiled EQUIV.
+  - BattleDispPose.poseId is s32 (every reader cast it `(s32)`) and BattleUnitPart.poseTable is a BattleDispPose*
+    (battle_disp's and battle_event_cmd's casts go). BattleUnit.mExtraWorkFree is a function pointer (#1113 typed it
+    the same way; main's declaration kept).
+  - `_check_weapon_type_attack` reads BattleWeapon's named status fields (`(s8)` on the u8 chance fields: the tests
+    are signed) instead of `s8* p` offsets; `*(u16*)&...icon_id` (already u16) and `switch ((s32)u16)` casts went.
+  - The BtlActRec_AddCount/AddPoint offsets index `wp->field_16F1C[0xNN - 0x1C]`, the form battle_actrecord.c uses.
+  - filemgr: FILE_TYPE_1's 25 relocated words at 0x14C-0x1AC are AnimationPoseData's shapes..mpAnims (the same list
+    the ANIMPOSE case relocates), so that case uses POSE()/FILE_RELOC and the FileType1 view goes.
+  - _combine_nozzle_weapon takes `BattleWeapon*`; MapObjectEntry's 0x1A0/0x1B4 bands are `s32 unk1A0[2]` and
+    `s32 unk1B4` (about 50 `*(s32*)` puns in evt_mobj go); MotionPlaneData.sfxId is u32 (five `*(u32*)&` puns go);
+    AnimationPose.dispCallback is typed (as in #1113, whose comment is kept; the call cast goes) and
+    animPaperPoseDispSub takes the DispCallback's `void*` (its MUST_MATCH cast goes).
+- **Natural shapes that matched.**
+  - animdrv: the five `poseOffset` sites are calls of the file's own animPoseSetMaterialLightFlagOn/Off (symbols),
+    which inline to retail's `addi rI, rI, 0xEC; lwzx` folded index. The vertex pointers index their arrays once
+    the byte-size locals go (raw3 had kept them); the index pointers are `&data->posIndex[n * 2] + 1`.
+  - evt_mobj: reading an in-unit global by name compiles to the same section-base addressing (`...rodata.0` +
+    offset) the `base + 0x7C` hacks spelled out (rideswitch_lightblue, koopa_pole, koopa_pole_evt); the nine template
+    guards keep the defined template (their `#else` named externs nothing defines).
+  - mot_plane: with literals instead of constant locals and `x += k * (t - x)` blends (a separate `t = 30.0f * dir`
+    where retail has fmuls + fsubs), the opt_propagation pair and both its guards go.
+  - battle_seq_command WeaponMultiItemCancelCheckMain: `cmd->` instead of `wp->commandMenu.` (opt_propagation).
+    battle_stage_object _bgset_kemuri_effect: `*args++` (opt_propagation). battle_audience ApRecoveryBuild: the
+    `delta` steering temp goes. sound SoundEfxMain: SoundEfxMuteCh/CheckCh take `u32 chan` like the file's other
+    channel helpers (optimize_for_size). pmario_sound skips math.h in both builds, as evt_sub, seq_load,
+    seq_title and two effects already do.
+- **Rejected in review (EQUIV, not applied).** Data definitions are out of scope: pmario_sound's 262 psbgmlist
+  initialisers as `u8 params[4]` (removes the six `((u8*)&entry->params)[N]` reads; .data identical), psndPushGroup's
+  .sbss `tbl` as u8, animdrv's vivihimoData initialisers as `&_vivihimoData[0x100]`. psndSFXMain's `u8* info =
+  (u8*)&res` view only respells the six byte offsets. `(s32)weapon != (s32)&ItemWeaponData_Naniga_Okorukana` in
+  battle_seq_command (the plain compare differs) is now under MUST_MATCH with the plain compare in `#else`.
+- **Left, with what was tried** (details in build/tw2/w/<worker>/ in this worktree):
+  - sound: SoundEfxSetPan/SetSrndPan's folded index (12-20 lines, every index type); SoundSSPlayChEx_getPath's
+    guarded steering inline (13 shapes, best 4); _sscallback's opt_propagation (720 declaration orders, best 228);
+    `goto unlock` (2 lines off with `break` + a test).
+  - pmario_sound: psndENVOn_f_d's `lhzu` walk (157 variants, best 5); calc3D's and psndENVMain's volatile reloads
+    (34 and 460 lines); psndSFXChk's opt_propagation (79 variants, best 10); psndENVOff's dont_inline (per-file
+    `-inline noauto` changes the unit); the gotos as recorded.
+  - evt_mobj: the jumpstand `jumptable + (type << 2)` regions (132 more shapes, all 26 lines off); five
+    opt_propagation pairs (38 shapes, best 8; a file-wide `-opt nopropagation` changes .text size); `run_event`.
+  - battle_audience: opt_lifetimes in ApRecoveryBuild (720 declaration orders and more, best 10); `goto case4_body`;
+    ApSrcEntry's volatile blocks (best 10); `setupBase` (11 lines with named fields).
+  - battle_stage_object: the `_rate_mix` block's `+ 0x80` bases (16 raw offsets under MUST_MATCH; named fields are
+    194 lines off); `BSO_SFX` (306 variants, none within 76).
+  - battle_unit: BtlUnit_SetParamToPouch's `pouch + party * 0xE + 6` and its SetParamFromPouch twin (retail's
+    folded `addi; sthx`; the only plain-looking match is a new `(s16*)` pun); the UnitStatusBlock struct-copy puns;
+    ControlPoseSoundMain's pooled 0.7 and its pragma. battle_seq_command: the `(0, "...")` commas (any order or
+    chained form: 5 lines, copies: 314); the cursor gotos and `(s32)(s8)` as recorded.
+  - animdrv: the defer_codegen pool helper and the `(u32)x == 0` pair. mot_plane: planeReset's and case 0's volatile
+    copies, the two pool-order regions.
+- **For a reviewer.** The `-inline noauto` flags are configure.py Object lines. evt_mobj's koopa_pole_evt
+  conversion is EQUIV only together with koopa_pole's: the order in which functions first use the two section bases
+  sets mobj_itembox's registers. evt_mobj's address_name drop (62 -> 52) is partly the index's: the kept
+  `mobj_vec3_802cXXXX_template` names don't end in the address, so the regex skips them. mot_plane's sfxId init is
+  a block with its own `MarioWork* m`, the shape of the file's six other sfxId sites. SoundDVDChan stays guarded,
+  now as a cast macro instead of a steering inline. battle_detect's definitions name the parameter `s` (the old
+  alias), the header `sampling`.
+- **Leads.** The 42-file `-inline noauto` list above. A folded `addi rI, rI, C; lwzx/stwx` index is often an
+  inlined one-line setter from the same unit (animdrv's was). The section-base lever for other `base + offset`
+  reads of in-unit globals (evt_shop, end_unknown, mobjdrv). The data-definition changes rejected above, if data
+  layout comes into scope; also the nine `mobj_vec3_*_template` definitions renamed to their symbols.txt names
+  (EQUIV, and MWCC no longer hangs on them, so those comments are stale). battle.h's BattleWorkCommand* mirrors and
+  the unit_party_* weapon-table macros still cast msgSearch to `char*`. A BattleWeapon status sub-record at 0x80
+  would clear battle_stage_object's 16 offsets if another version shows one.

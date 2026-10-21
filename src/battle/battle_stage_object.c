@@ -127,7 +127,6 @@ BattleStageObject* BattleGetObjectPtr(s32 id) {
 	return NULL; //if none of the IDs match
 }
 
-#pragma dont_inline on
 BattleStageObject* BattleSearchObjectPtr(const char* name) {
 	BattleWork* wp = _battleWorkPointer;
 	int i;
@@ -141,7 +140,6 @@ BattleStageObject* BattleSearchObjectPtr(const char* name) {
 	}
 	return NULL; //if name not found
 }
-#pragma dont_inline reset
 
 void BattleStageObjectInit(void) {
 	BattleUnit* unit;
@@ -1425,11 +1423,9 @@ void BattleStageObjectMain(void) {
 	BattleObjectConfig();
 }
 
-#pragma dont_inline on
 void BattleObjectConfig(void) {
 	//stubbed in retail
 }
-#pragma dont_inline reset
 
 void BattleStage_DestroyA1(void) {
 	BattleWork* wp = _battleWorkPointer;
@@ -1660,9 +1656,6 @@ USER_FUNC(_get_bgset_attack_data) {
 	return EVT_RETURN_DONE;
 }
 
-#pragma opt_propagation off // needed: without it _bgset_kemuri_effect 99.80%
-// Copy propagation off is required: it keeps the `vec3_802f3ac8` base in a callee-saved register loaded
-// before the `evtGetValue` call and the three string offsets computed after it, as the target does.
 USER_FUNC(_bgset_kemuri_effect) {
 	s32* args = event->args;
 	char* s0;
@@ -1672,7 +1665,7 @@ USER_FUNC(_bgset_kemuri_effect) {
 	s32 i;
 	BattleStageObject* obj;
 	f32 x, y, z;
-	s32 layer = evtGetValue(event, *args);
+	s32 layer = evtGetValue(event, *args++);
 	s0 = "SFX_BTL_STAGE_SET_DOWN1";
 	s1 = "SFX_BTL_STAGE_SET_DOWN3";
 	s2 = "SFX_BTL_STAGE_SET_DOWN2";
@@ -1705,7 +1698,6 @@ USER_FUNC(_bgset_kemuri_effect) {
 	}
 	return EVT_RETURN_DONE;
 }
-#pragma opt_propagation reset
 
 s32 _bgset_audience_bgset_access(void) {
 	BattleAudience_Case_HaikeiSet();
@@ -1769,8 +1761,6 @@ USER_FUNC(_set_mobj_shake) {
 	return EVT_RETURN_BLOCK;
 }
 
-#pragma dont_inline on
-// Keep _mobj_shake_main out of line: the original calls it rather than inlining.
 void _mobj_shake_main(BattleStageObject* obj) {
 	obj->mShakePeriodPosition++;
 	if (obj->mShakePeriodPosition >= obj->mShakePeriodLength) {
@@ -1779,7 +1769,6 @@ void _mobj_shake_main(BattleStageObject* obj) {
 	obj->mShakeAngle = sinfd(obj->mShakePeriodPosition * 360 / obj->mShakePeriodLength) * 5.0f;
 	obj->mRotation.x = obj->mShakeAngle;
 }
-#pragma dont_inline reset
 
 void BattleStage_NozzleDirChangeCheck(void) {
 	BattleWorkField180C0* w = &_battleWorkPointer->field_180C0;
@@ -2086,7 +2075,6 @@ void BattleStage_NozzleWorkCheck(s32 flag) {
 	}
 }
 
-#pragma dont_inline on
 void _nozzle_type_init(void) {
 	BattleWorkField180C0* w = &_battleWorkPointer->field_180C0;
 	BattleStageNozzleData* data = w->field_0x34;
@@ -2108,7 +2096,6 @@ void _nozzle_type_init(void) {
 		w->field_0x1CA = i;
 	}
 }
-#pragma dont_inline reset
 
 s32 _nozzle_work_wait(void) {
 	BattleWorkField180C0* w = &_battleWorkPointer->field_180C0;
@@ -2128,8 +2115,6 @@ s32 _nozzle_work_wait(void) {
 	return 2;
 }
 
-#pragma dont_inline on
-// Keep _get_nozzle_dir out of line: _nozzle_work_effect's original emits a `bl` to it.
 f32 _get_nozzle_dir(s32 index) {
 	BattleWorkField180C0* w = &_battleWorkPointer->field_180C0;
 	s32 dir = w->field_0x1C4[index];
@@ -2143,7 +2128,6 @@ f32 _get_nozzle_dir(s32 index) {
 			return -90.0f;
 	}
 }
-#pragma dont_inline reset
 
 #define NOZZLE_WORK_BODY(IDX, NAME, SFXLV, EFFLV)                                                       \
 	obj = BattleSearchObjectPtr(NAME);                                                                     \
@@ -2302,8 +2286,8 @@ s32 _nozzle_work_attack_set(void) {
 	base->weaponAddr[1] = NULL;
 	memset(&base->field_0x44[0], 0, sizeof(BattleWeapon));
 	memset(&base->field_0x44[1], 0, sizeof(BattleWeapon));
-	_combine_nozzle_weapon(1, &base->field_0x44[0], _nozzle_at_base_mario);
-	_combine_nozzle_weapon(1, &base->field_0x44[1], _nozzle_at_base_monster);
+	_combine_nozzle_weapon(1, &base->field_0x44[0], (BattleWeapon*)_nozzle_at_base_mario);
+	_combine_nozzle_weapon(1, &base->field_0x44[1], (BattleWeapon*)_nozzle_at_base_monster);
 	for (i = 0; i < 3; i++) {
 		s32 idx = _get_nozzle_attack_index(i);
 		if (idx >= 0) {
@@ -2316,7 +2300,6 @@ s32 _nozzle_work_attack_set(void) {
 	return 2;
 }
 
-#pragma dont_inline on
 // MATCHING. The outer `switch ((u8)index)` (rather than `switch (index)`) makes mwcc extend the
 // parameter into r0 for the dispatch and re-extend it in each case body, leaving `index` live in
 // r3; without the cast it caches the extension in r4. The three cases fall through 0 -> 2 -> 1 (no
@@ -2360,7 +2343,6 @@ s32 _get_nozzle_attack_index(u8 index) {
 	return -1;
 }
 
-// Keep _rate_mix/_rate_mix_3 out of the inliner: the original emits a `bl` to each from _combine_nozzle_weapon.
 void _rate_mix(u8* a, u8* b, s8* c, u8* d) {
 	if (*c > 0) {
 		if (*c > (s8)*a) {
@@ -2383,30 +2365,29 @@ void _rate_mix_3(u8* a, u8* b, u8* c, s8* d, u8* e, u8* f) {
 		}
 	}
 }
-#pragma dont_inline reset
 
-void _combine_nozzle_weapon(s32 mode, void* dst_, void* src_) {
+void _combine_nozzle_weapon(s32 mode, BattleWeapon* dst, BattleWeapon* src) {
 	s32 i;
 
 	if (mode != 0) {
-		*(BattleWeapon*)dst_ = *(BattleWeapon*)src_;
+		*dst = *src;
 	} else {
-		((BattleWeapon*)dst_)->baseFpCost += ((BattleWeapon*)src_)->baseFpCost;
-		((BattleWeapon*)dst_)->baseSpCost += ((BattleWeapon*)src_)->baseSpCost;
-		if (((BattleWeapon*)dst_)->hpDamageFn == NULL) {
-			((BattleWeapon*)dst_)->hpDamageFn = ((BattleWeapon*)src_)->hpDamageFn;
+		dst->baseFpCost += src->baseFpCost;
+		dst->baseSpCost += src->baseSpCost;
+		if (dst->hpDamageFn == NULL) {
+			dst->hpDamageFn = src->hpDamageFn;
 		}
 		for (i = 0; i < 8; i++) {
-			((BattleWeapon*)dst_)->hpDamageWork[i] += ((BattleWeapon*)src_)->hpDamageWork[i];
+			dst->hpDamageWork[i] += src->hpDamageWork[i];
 		}
-		((BattleWeapon*)dst_)->element = ((BattleWeapon*)src_)->element;
+		dst->element = src->element;
 #ifdef MUST_MATCH
 		// Status block: byte pointers so mwcc derives the +0x80 base once into r31 (dst) / r30 (src), matching
 		// the original. With named fields (the natural form under #else) mwcc keeps the full struct base live
 		// instead and re-adds 0x80 at every call, which no longer matches.
 		{
-			u8* d = (u8*)dst_ + 0x80;
-			u8* s = (u8*)src_ + 0x80;
+			u8* d = (u8*)dst + 0x80;
+			u8* s = (u8*)src + 0x80;
 			_rate_mix(d + 0x00, d + 0x01, (s8*)(s + 0x00), s + 0x01);
 			_rate_mix(d + 0x02, d + 0x03, (s8*)(s + 0x02), s + 0x03);
 			_rate_mix(d + 0x04, d + 0x05, (s8*)(s + 0x04), s + 0x05);
@@ -2428,31 +2409,27 @@ void _combine_nozzle_weapon(s32 mode, void* dst_, void* src_) {
 			d[0x2D] += s[0x2D];
 		}
 #else
-		{
-		BattleWeapon* d = (BattleWeapon*)dst_;
-		BattleWeapon* s = (BattleWeapon*)src_;
-		_rate_mix(&d->sleepChance, (u8*)&d->sleepTime, (s8*)&s->sleepChance, (u8*)&s->sleepTime);
-		_rate_mix(&d->stopChance, (u8*)&d->stopTime, (s8*)&s->stopChance, (u8*)&s->stopTime);
-		_rate_mix(&d->dizzyChance, (u8*)&d->dizzyTime, (s8*)&s->dizzyChance, (u8*)&s->dizzyTime);
-		_rate_mix(&d->poisonChance, (u8*)&d->poisonTime, (s8*)&s->poisonChance, (u8*)&s->poisonStrength);
-		_rate_mix(&d->confuseChance, (u8*)&d->confuseTime, (s8*)&s->confuseChance, (u8*)&s->confuseTime);
-		_rate_mix(&d->electricChance, (u8*)&d->electricTime, (s8*)&s->electricChance, (u8*)&s->electricTime);
-		_rate_mix(&d->dodgyChance, (u8*)&d->dodgyTime, (s8*)&s->dodgyChance, (u8*)&s->dodgyTime);
-		_rate_mix(&d->burnChance, (u8*)&d->burnTime, (s8*)&s->burnChance, (u8*)&s->burnTime);
-		_rate_mix(&d->freezeChance, (u8*)&d->freezeTime, (s8*)&s->freezeChance, (u8*)&s->freezeTime);
-		_rate_mix_3(&d->sizeChangeChance, (u8*)&d->sizeChangeTime, (u8*)&d->sizeChangeStrength,
-		            (s8*)&s->sizeChangeChance, (u8*)&s->sizeChangeTime, (u8*)&s->sizeChangeStrength);
-		_rate_mix_3(&d->defChangeChance, (u8*)&d->defChangeTime, (u8*)&d->defChangeStrength,
-		            (s8*)&s->defChangeChance, (u8*)&s->defChangeTime, (u8*)&s->defChangeStrength);
-		_rate_mix(&d->allergicChance, (u8*)&d->allergicTime, (s8*)&s->allergicChance, (u8*)&s->allergicTime);
-		d->chargeStrength += s->chargeStrength;
-		_rate_mix(&d->fastChance, (u8*)&d->fastTime, (s8*)&s->fastChance, (u8*)&s->fastTime);
-		_rate_mix(&d->slowChance, (u8*)&d->slowTime, (s8*)&s->slowChance, (u8*)&s->slowTime);
-		d->hpRegenTime += s->hpRegenTime;
-		d->hpRegenStrength += s->hpRegenStrength;
-		d->fpRegenTime += s->fpRegenTime;
-		d->fpRegenStrength += s->fpRegenStrength;
-		}
+		_rate_mix(&dst->sleepChance, (u8*)&dst->sleepTime, (s8*)&src->sleepChance, (u8*)&src->sleepTime);
+		_rate_mix(&dst->stopChance, (u8*)&dst->stopTime, (s8*)&src->stopChance, (u8*)&src->stopTime);
+		_rate_mix(&dst->dizzyChance, (u8*)&dst->dizzyTime, (s8*)&src->dizzyChance, (u8*)&src->dizzyTime);
+		_rate_mix(&dst->poisonChance, (u8*)&dst->poisonTime, (s8*)&src->poisonChance, (u8*)&src->poisonStrength);
+		_rate_mix(&dst->confuseChance, (u8*)&dst->confuseTime, (s8*)&src->confuseChance, (u8*)&src->confuseTime);
+		_rate_mix(&dst->electricChance, (u8*)&dst->electricTime, (s8*)&src->electricChance, (u8*)&src->electricTime);
+		_rate_mix(&dst->dodgyChance, (u8*)&dst->dodgyTime, (s8*)&src->dodgyChance, (u8*)&src->dodgyTime);
+		_rate_mix(&dst->burnChance, (u8*)&dst->burnTime, (s8*)&src->burnChance, (u8*)&src->burnTime);
+		_rate_mix(&dst->freezeChance, (u8*)&dst->freezeTime, (s8*)&src->freezeChance, (u8*)&src->freezeTime);
+		_rate_mix_3(&dst->sizeChangeChance, (u8*)&dst->sizeChangeTime, (u8*)&dst->sizeChangeStrength,
+		            (s8*)&src->sizeChangeChance, (u8*)&src->sizeChangeTime, (u8*)&src->sizeChangeStrength);
+		_rate_mix_3(&dst->defChangeChance, (u8*)&dst->defChangeTime, (u8*)&dst->defChangeStrength,
+		            (s8*)&src->defChangeChance, (u8*)&src->defChangeTime, (u8*)&src->defChangeStrength);
+		_rate_mix(&dst->allergicChance, (u8*)&dst->allergicTime, (s8*)&src->allergicChance, (u8*)&src->allergicTime);
+		dst->chargeStrength += src->chargeStrength;
+		_rate_mix(&dst->fastChance, (u8*)&dst->fastTime, (s8*)&src->fastChance, (u8*)&src->fastTime);
+		_rate_mix(&dst->slowChance, (u8*)&dst->slowTime, (s8*)&src->slowChance, (u8*)&src->slowTime);
+		dst->hpRegenTime += src->hpRegenTime;
+		dst->hpRegenStrength += src->hpRegenStrength;
+		dst->fpRegenTime += src->fpRegenTime;
+		dst->fpRegenStrength += src->fpRegenStrength;
 #endif
 	}
 }
@@ -2620,7 +2597,7 @@ USER_FUNC(_object_fall_attack) {
 			}
 			if (newEntry->mode == 0) {
 				// BattleWork.alliances[1].attackDirection (0x12).
-				BattleSamplingEnemy((u8*)&samplingA, newWeapon, BattleGetSystemPtr(wp)->unitId, 1,
+				BattleSamplingEnemy(&samplingA, newWeapon, BattleGetSystemPtr(wp)->unitId, 1,
 				                    newWeapon->targetClassFlags, newWeapon->targetPropertyFlags,
 				                    (s8)-wp->alliances[1].attackDirection);
 				if (samplingA.count <= 0) {
@@ -2628,7 +2605,7 @@ USER_FUNC(_object_fall_attack) {
 					return EVT_RETURN_DONE;
 				}
 				flag = 1;
-				BattleChoiceSamplingEnemy((u8*)&samplingA, newWeapon->targetWeightingFlags, &outId,
+				BattleChoiceSamplingEnemy(&samplingA, newWeapon->targetWeightingFlags, &outId,
 				                          &outPartId);
 				newEntry->unitId = outId;
 				newEntry->partId = outPartId;
@@ -2842,7 +2819,7 @@ USER_FUNC(_object_fall_attack) {
 				}
 			} else {
 				psndSFXOff(entry->sfxId);
-				BattleSamplingEnemy((u8*)&samplingB, weapon, BattleGetSystemPtr(wp)->unitId, 1,
+				BattleSamplingEnemy(&samplingB, weapon, BattleGetSystemPtr(wp)->unitId, 1,
 				                    weapon->targetClassFlags, weapon->targetPropertyFlags,
 				                    (s8)-wp->alliances[1].attackDirection);
 				if (samplingB.count > 0)

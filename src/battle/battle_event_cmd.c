@@ -3494,7 +3494,7 @@ USER_FUNC(btlevtcmd_PartsFaceDirectionSub) {
 USER_FUNC(btlevtcmd_SamplingEnemy) {
     s32* args = event->args;
     BattleWork* wp = _battleWorkPointer;
-    u8* sampling = (u8*)&wp->sampling;
+    BattleSampling* sampling = &wp->sampling;
     BattleWeapon* weapon;
     s32 id;
     s8 belong;
@@ -3516,7 +3516,7 @@ USER_FUNC(btlevtcmd_SamplingEnemy) {
 //s32* weaponIndex, s32 retIndex1, s32 retIndex2
 USER_FUNC(btlevtcmd_ChoiceSamplingEnemy) {
     s32* args = event->args;
-    u8* sampling = (u8*)&_battleWorkPointer->sampling;
+    BattleSampling* sampling = &_battleWorkPointer->sampling;
     BattleWeapon* weapon;
     s32 index1;
     s32 index2;
@@ -4488,9 +4488,9 @@ USER_FUNC(btlevtcmd_GetTakeoffPosition) {
     BtlUnit_GetHitPos(targetUnit, part, &x, &tmp, &z);
 
     belong = (s8)BtlUnit_GetEnemyBelong(unit);
-    result = BattleSamplingEnemy((u8*)&sampling, NULL, btlId, belong, 0x1001240, 0x1000000,
+    result = BattleSamplingEnemy(&sampling, NULL, btlId, belong, 0x1001240, 0x1000000,
                                  -wp->alliances[belong].attackDirection);
-    BattleChoiceSamplingEnemy((u8*)&sampling, 4, &outId, &outPartId);
+    BattleChoiceSamplingEnemy(&sampling, 4, &outId, &outPartId);
     if (sampling.count > 0) {
         outId = BattleTransID(event, outId);
         targetUnit2 = BattleGetUnitPtr(wp, outId);
@@ -5633,7 +5633,7 @@ USER_FUNC(btlevtcmd_AnimeSetPoseTable) {
     id = BattleTransID(event, btlId);
     partId = evtGetValue(event, args[1]);
     part = BattleGetUnitPartsPtr(id, partId);
-    part->poseTable = (void*)args[2];
+    part->poseTable = (BattleDispPose*)args[2];
     return EVT_RETURN_DONE;
 }
 
@@ -5661,7 +5661,7 @@ USER_FUNC(btlevtcmd_CheckDefinePosetype) {
     BattleUnitPart* part = BattleGetUnitPartsPtr(id, partId);
     s32 type = evtGetValue(event, args[2]);
     s32 index = args[3];
-    BattleDispPose* pose = (BattleDispPose*)part->poseTable;
+    BattleDispPose* pose = part->poseTable;
     s32 result = 0;
     s32 group;
 
@@ -5679,15 +5679,15 @@ USER_FUNC(btlevtcmd_CheckDefinePosetype) {
         return EVT_RETURN_DONE;
     }
     while (pose != NULL) {
-        if ((s32)pose->poseId >= 0x46) {
+        if (pose->poseId >= 0x46) {
             result = 0;
             break;
         }
-        if ((s32)pose->poseId == type) {
+        if (pose->poseId == type) {
             result = 1;
             break;
         }
-        if ((s32)pose->poseId == group) {
+        if (pose->poseId == group) {
             result = 0;
             break;
         }

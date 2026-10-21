@@ -839,7 +839,7 @@ u32 SoundSongCheck(s32 chan) {
     return sndSeqGetValid(sound.songs[chan].seqId) != 0;
 }
 
-inline void SoundEfxMuteCh(s32 chan) {
+inline void SoundEfxMuteCh(u32 chan) {
     SoundEffect* sfx = &sound.effects[chan];
     if (sfx->flags) {
         sndFXKeyOff(sfx->voiceId);
@@ -1092,7 +1092,7 @@ u32 SoundEfxCheck(s32 chan) {
     return TRUE;
 }
 
-inline void SoundEfxCheckCh(s32 chan) {
+inline void SoundEfxCheckCh(u32 chan) {
     SoundEffect* effect;
     SND_VOICEID vid;
 
@@ -1107,9 +1107,6 @@ inline void SoundEfxCheckCh(s32 chan) {
     }
 }
 
-// `optimize_for_size on`: nudges the allocator into the original's loop-2 register assignment
-// (channel index r29, effect pointer r30, i*0x88 byte offset r28); without it MWCC picks r28/r29/r30.
-#pragma optimize_for_size on
 void SoundEfxMain(void) {
     SoundEffect* effect;
     f32 x, y, z;
@@ -1170,7 +1167,6 @@ void SoundEfxMain(void) {
         }
     }
 }
-#pragma optimize_for_size reset
 
 inline void SoundDVDStopCh(u32 chan) {
     SoundDVD* dvd = &sound.dvds[chan];
@@ -1202,12 +1198,10 @@ inline void SoundDVDSetPanCh(u32 chan, u8 pan) { // I think this is the correct 
 }
 
 #ifdef MUST_MATCH
-// MUST_MATCH: SoundSSMain passes the channel to its inlined SOUND_SS_* macros as an unsigned value
-// (the SoundDVD*Ch helpers above take a u32 channel). Returning it through this u32 inline is a no-op
-// in the code but changes MWCC's register homes for the strength-reduced channel and the loop counter.
-static inline u32 SoundDVDChan(s32 chan) {
-    return (u32)chan;
-}
+// MUST_MATCH: SoundSSMain passes the channel to its SOUND_SS_* macros as an unsigned value (the
+// SoundDVD*Ch and SoundEfx*Ch helpers take a u32 channel). The cast is a no-op in C but changes MWCC's
+// register homes for the strength-reduced channel and the loop counter.
+#define SoundDVDChan(chan) ((u32)(chan))
 #else
 #define SoundDVDChan(chan) (chan)
 #endif

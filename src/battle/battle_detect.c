@@ -30,14 +30,13 @@ static const f32 float_0p1_8041bf0c = 0.1f;
 // order gives the original's registers in the first loop and for the dedup loop's
 // `entry`/`noDup`/`other`/`p2attr` (declared in the inner block, `other` and the `u2` copy
 // swap registers).
-void _btlSamplingEnemy(u8* sampling) {
+void _btlSamplingEnemy(BattleSampling* s) {
     BattleSamplingEntry* entry;
     BattleUnitKindPart* kindPart;
     BattleUnit* unit;
     s32 count = 0;
-    BattleSamplingEntry* entries = ((BattleSampling*)sampling)->entries;
+    BattleSamplingEntry* entries = s->entries;
     BattleSamplingEntry* esort;
-    BattleSampling* s = (BattleSampling*)sampling;
     s32 j;
     s8* order;
     BattleUnitPart* part;
@@ -406,9 +405,8 @@ void _btlSamplingEnemy(u8* sampling) {
     }
 }
 
-s32 BattleSamplingEnemy(u8* sampling, BattleWeapon* weapon, s32 unitId, s8 belong,
+s32 BattleSamplingEnemy(BattleSampling* s, BattleWeapon* weapon, s32 unitId, s8 belong,
                         s32 targetClassFlags, s32 targetPropertyFlags, s8 attackDirection) {
-    BattleSampling* s = (BattleSampling*)sampling;
     BattleUnit* unit;
     s32 ret = 0;
 
@@ -431,15 +429,15 @@ s32 BattleSamplingEnemy(u8* sampling, BattleWeapon* weapon, s32 unitId, s8 belon
             ret = 1;
         }
     }
-    _btlSamplingEnemy(sampling);
+    _btlSamplingEnemy(s);
     return ret;
 }
 
-void BattleSamplingEnemyUpdate(u8* sampling) {
-    _btlSamplingEnemy(sampling);
+void BattleSamplingEnemyUpdate(BattleSampling* s) {
+    _btlSamplingEnemy(s);
 }
 
-void BattleChoiceSamplingEnemy(u8* sampling, u32 flags, s32* outId, s32* outPartId) {
+void BattleChoiceSamplingEnemy(BattleSampling* s, u32 flags, s32* outId, s32* outPartId) {
     s32 n;
     s32 e;
     BattleUnit* unit;
@@ -447,7 +445,6 @@ void BattleChoiceSamplingEnemy(u8* sampling, u32 flags, s32* outId, s32* outPart
     BattleWork* wp = _battleWorkPointer;
     s32 weights[74];
     BattleUnit* baseUnit;
-    BattleSampling* s = (BattleSampling*)sampling;
     s32 i;
 
     *outId = -1;

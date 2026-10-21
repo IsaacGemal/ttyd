@@ -3,6 +3,8 @@
 #include <dolphin/mtx.h>
 #include "evt/evt_cmd.h"
 
+typedef struct BattleWeapon BattleWeapon;
+
 typedef struct BattleStageObjectData {
 	char* name; //0x0
 	u16 mSpawnSpecialUnitType; //0x4
@@ -66,7 +68,7 @@ void BattleStage_WallCloseCheck(void);
 void BattleObjectConfig(void);
 void _Nozzle_Change_Check(u8 index, void* nozzle);
 s32 _get_nozzle_attack_index(u8 index);
-void _combine_nozzle_weapon(s32 mode, void* dst, void* src);
+void _combine_nozzle_weapon(s32 mode, BattleWeapon* dst, BattleWeapon* src);
 void _mobj_shake_main(BattleStageObject* obj);
 void _disp_escape_wall_message(CameraId cameraId, void* param);
 s32 BattleFogEndCheck(void);

@@ -719,12 +719,11 @@ s32 animPaperPoseGetId(const char* animName, s32 group) {
 }
 
 void animPoseSetPaperAnimGroup(s32 poseId, const char* animName, BOOL someflag) {
-    s32 poseOffset = poseId * 0x170;
     AnimationPose* pose = animPoseGetAnimPosePtr(poseId);
 
     if (animName == NULL) {
         pose->paperId = -1;
-        ((AnimationPose*)((u8*)wp->poses + poseOffset))->materialLightFlag &= ~1;
+        animPoseSetMaterialLightFlagOff(poseId, 1);
         return;
     }
     pose->paperId = animPaperPoseSearchGroup(pose->type, animName);
@@ -740,7 +739,7 @@ void animPoseSetPaperAnimGroup(s32 poseId, const char* animName, BOOL someflag) 
         pose->flags &= ~2;
         pose->flags &= ~4;
     }
-    ((AnimationPose*)((u8*)wp->poses + poseOffset))->materialLightFlag |= 1;
+    animPoseSetMaterialLightFlagOn(poseId, 1);
 }
 // The search exits through an early `return`, which MWCC compiles to the target's
 // `bne <increment>; b <found>` branch pair (a plain `break` gives one `beq <found>`). Taking the poseId
@@ -818,14 +817,8 @@ static inline s32 animEffectPoseEntry(const char* animName, s32 type) {
     return id;
 }
 
-// Deriving the pose pointer from poseOffset keeps the index multiply in one named local; computing it
-// from poseId separately lets the front end make poseOffset its own temp that outranks the pose web.
 void animPoseSetEffect(s32 poseId, const char* animName, BOOL someflag) {
-    AnimationPose* pose;
-    s32 poseOffset;
-
-    poseOffset = poseId * 0x170;
-    pose = (AnimationPose*)((u8*)wp->poses + poseOffset);
+    AnimationPose* pose = animPoseGetAnimPosePtr(poseId);
 
     if (pose->paperId != -1) {
         if (animName != NULL) {
@@ -848,7 +841,7 @@ void animPoseSetEffect(s32 poseId, const char* animName, BOOL someflag) {
     }
     if (animName == NULL) {
         pose->paperId = -1;
-        ((AnimationPose*)((u8*)wp->poses + poseOffset))->materialLightFlag &= ~1;
+        animPoseSetMaterialLightFlagOff(poseId, 1);
         return;
     }
     pose->paperId = animEffectPoseEntry(animName, pose->type);
@@ -860,7 +853,7 @@ void animPoseSetEffect(s32 poseId, const char* animName, BOOL someflag) {
     } else {
         pose->flags &= ~2;
     }
-    ((AnimationPose*)((u8*)wp->poses + poseOffset))->materialLightFlag |= 1;
+    animPoseSetMaterialLightFlagOn(poseId, 1);
 }
 
 // Searches data->mpAnims for animName when i is negative (i is the string's address used
@@ -2032,7 +2025,6 @@ void renderProc(s32 shapeId, s32 keyFrame1) {
     s32 matTexCount;
 
     // stack variables
-    s32 posVtxSize, nrmVtxSize;
     s32 drawCount;
     Mtx camMtx, invCamMtx;
     f32* texVtxIndices[8];
@@ -2062,8 +2054,6 @@ void renderProc(s32 shapeId, s32 keyFrame1) {
             wp->mpCurPose->materialColor.a != 0xFF || wp->mpCurPose->materialColor2.a != 0xFF) {
             GXSetCullMode(tbl[shape->cullMode]);
             data = wp->mpCurPoseData;
-            posVtxSize = (s32)sizeof(Vec) * posFirstVtx;
-            nrmVtxSize = (s32)sizeof(Vec) * nrmFirstVtx;
             buffer = data->texVtxBuffer;
             texVtxIndices[0] = &buffer[2 * shape->vtxTex[0].first];
             texVtxIndices[1] = &buffer[2 * shape->vtxTex[1].first];
@@ -2159,12 +2149,12 @@ void renderProc(s32 shapeId, s32 keyFrame1) {
                 clr0FirstId = draw->firstIdClr0;
 
                 if ((s32)wp->mbUseFloatScratch != 0) {
-                    posVtxPtr = (Vec*)((u8*)wp->vtxArrayPos + posVtxSize);
-                    nrmVtxPtr = (Vec*)((u8*)wp->vtxArrayNrm + nrmVtxSize);
+                    posVtxPtr = &wp->vtxArrayPos[posFirstVtx];
+                    nrmVtxPtr = &wp->vtxArrayNrm[nrmFirstVtx];
                 } else {
                     pose = wp->mpCurPose;
-                    posVtxPtr = (Vec*)((u8*)pose->mpVtxArrayPos + posVtxSize);
-                    nrmVtxPtr = (Vec*)((u8*)pose->mpVtxArrayNrm + nrmVtxSize);
+                    posVtxPtr = &pose->mpVtxArrayPos[posFirstVtx];
+                    nrmVtxPtr = &pose->mpVtxArrayNrm[nrmFirstVtx];
                 }
                 GXClearVtxDesc();
                 GXSetVtxDesc(GX_VA_POS, GX_INDEX16);
@@ -2187,11 +2177,11 @@ void renderProc(s32 shapeId, s32 keyFrame1) {
 
                         data = wp->mpCurPoseData; // doubly inlined function here
                         count = drawCall->count;
-                        // indices are stored as u32, has to do math to load the lower 2 bytes
-                        posIndexPtr = (u16*)((u8*)data->posIndex + (drawCall->first + posFirstId) * 4 + 2);
-                        nrmIndexPtr = (u16*)((u8*)data->nrmIndex + (drawCall->first + nrmFirstId) * 4 + 2);
-                        clr0IndexPtr = (u16*)((u8*)data->clr0Index + (drawCall->first + clr0FirstId) * 4 + 2);
-                        texIndexPtr = (u16*)((u8*)data->texIndex[texIds[0]] + (drawCall->first + firstId[texIds[0]]) * 4 + 2);
+                        // each index entry is a 32-bit word; the index is its low half (the second u16)
+                        posIndexPtr = &data->posIndex[(drawCall->first + posFirstId) * 2] + 1;
+                        nrmIndexPtr = &data->nrmIndex[(drawCall->first + nrmFirstId) * 2] + 1;
+                        clr0IndexPtr = &data->clr0Index[(drawCall->first + clr0FirstId) * 2] + 1;
+                        texIndexPtr = &data->texIndex[texIds[0]][(drawCall->first + firstId[texIds[0]]) * 2] + 1;
                         GXBegin(GX_TRIANGLEFAN, GX_VTXFMT0, count);
                         for (k1 = count; k1 > 0; k1--) { // unrolled, warning
                             GXPosition1x16(*posIndexPtr);
@@ -2221,10 +2211,10 @@ void renderProc(s32 shapeId, s32 keyFrame1) {
                         firstDrawId = drawCall->first;
                         data = wp->mpCurPoseData; // doubly inlined function here
                         count = drawCall->count;
-                        // indices are stored as u32, has to do math to load the lower 2 bytes
-                        posIndexPtr = (u16*)((u8*)data->posIndex + (firstDrawId + posFirstId) * 4 + 2);
-                        nrmIndexPtr = (u16*)((u8*)data->nrmIndex + (firstDrawId + nrmFirstId) * 4 + 2);
-                        clr0IndexPtr = (u16*)((u8*)data->clr0Index + (firstDrawId + clr0FirstId) * 4 + 2);
+                        // each index entry is a 32-bit word; the index is its low half (the second u16)
+                        posIndexPtr = &data->posIndex[(firstDrawId + posFirstId) * 2] + 1;
+                        nrmIndexPtr = &data->nrmIndex[(firstDrawId + nrmFirstId) * 2] + 1;
+                        clr0IndexPtr = &data->clr0Index[(firstDrawId + clr0FirstId) * 2] + 1;
                         GXBegin(GX_TRIANGLEFAN, GX_VTXFMT0, count);
 
                         for (k = 0; k < count; k++, posIndexPtr += 2, nrmIndexPtr += 2, clr0IndexPtr += 2) {
@@ -2878,14 +2868,9 @@ void animPaperPoseDisp(CameraId camId, void* param) {
 extern GXColor dat_80419a34;
 extern GXColor dat_80419a38;
 
-void animPaperPoseDispSub(s32 unused, AnimationPose* param) {
+void animPaperPoseDispSub(s32 unused, void* param) {
     s32 max1; // Keeps the first bounds branch's maximum out of x's register web.
-#ifdef MUST_MATCH
-    // An explicit cast preserves the local working pointer instead of folding it into the parameter.
-    AnimationPose* pose = (AnimationPose*)param;
-#else
     AnimationPose* pose = param;
-#endif
     s32 x;
     AnimData* animData;
     s32 y;

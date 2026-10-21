@@ -84,7 +84,7 @@ void* _check_hp_recover_item(BattleUnit* unit) {
     sampling = &wp->sampling;
     weapon = itemDataTable[item].battle_params;
 
-    BattleSamplingEnemy((u8*)sampling, weapon, unit->unitId, BtlUnit_GetEnemyBelong(unit),
+    BattleSamplingEnemy(sampling, weapon, unit->unitId, BtlUnit_GetEnemyBelong(unit),
                         weapon->targetClassFlags, weapon->targetPropertyFlags,
                         (s32)wp->alliances[unit->mAlliance].attackDirection);
 
@@ -114,7 +114,7 @@ void* _check_fp_recover_item(BattleUnit* unit) {
     sampling = &wp->sampling;
     weapon = itemDataTable[item].battle_params;
 
-    BattleSamplingEnemy((u8*)sampling, weapon, unit->unitId, BtlUnit_GetEnemyBelong(unit),
+    BattleSamplingEnemy(sampling, weapon, unit->unitId, BtlUnit_GetEnemyBelong(unit),
                         weapon->targetClassFlags, weapon->targetPropertyFlags,
                         (s32)wp->alliances[unit->mAlliance].attackDirection);
 
@@ -146,7 +146,7 @@ void* _check_attack_item(BattleUnit* unit) {
     sampling = &wp->sampling;
     weapon = itemDataTable[item].battle_params;
 
-    BattleSamplingEnemy((u8*)sampling, weapon, unit->unitId, BtlUnit_GetEnemyBelong(unit),
+    BattleSamplingEnemy(sampling, weapon, unit->unitId, BtlUnit_GetEnemyBelong(unit),
                         weapon->targetClassFlags, weapon->targetPropertyFlags,
                         (s32)wp->alliances[unit->mAlliance].attackDirection);
 
@@ -187,7 +187,7 @@ void* _check_status_attack_item(BattleUnit* unit) {
     sampling = &wp->sampling;
     weapon = itemDataTable[item].battle_params;
 
-    BattleSamplingEnemy((u8*)sampling, weapon, unit->unitId, BtlUnit_GetEnemyBelong(unit),
+    BattleSamplingEnemy(sampling, weapon, unit->unitId, BtlUnit_GetEnemyBelong(unit),
                         weapon->targetClassFlags, weapon->targetPropertyFlags,
                         (s32)wp->alliances[unit->mAlliance].attackDirection);
 
@@ -244,7 +244,7 @@ void* _check_status_support_item(BattleUnit* unit) {
     sampling = &wp->sampling;
     weapon = itemDataTable[item].battle_params;
 
-    BattleSamplingEnemy((u8*)sampling, weapon, unit->unitId, BtlUnit_GetEnemyBelong(unit),
+    BattleSamplingEnemy(sampling, weapon, unit->unitId, BtlUnit_GetEnemyBelong(unit),
                         weapon->targetClassFlags, weapon->targetPropertyFlags,
                         (s32)wp->alliances[unit->mAlliance].attackDirection);
 
@@ -303,7 +303,7 @@ void* _check_status_recover_item(BattleUnit* unit) {
     sampling = &wp->sampling;
     weapon = itemDataTable[item].battle_params;
 
-    BattleSamplingEnemy((u8*)sampling, weapon, unit->unitId, BtlUnit_GetEnemyBelong(unit),
+    BattleSamplingEnemy(sampling, weapon, unit->unitId, BtlUnit_GetEnemyBelong(unit),
                         weapon->targetClassFlags, weapon->targetPropertyFlags,
                         (s32)wp->alliances[unit->mAlliance].attackDirection);
 
