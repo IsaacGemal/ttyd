@@ -18,7 +18,7 @@
 #pragma pool_data off
 
 #pragma force_active on
-static void _fire_point_callback(BattleUnitPart* part, s32 group);
+static void _fire_point_callback(BattleUnitPart* part, s32 group, Mtx mtx);
 static USER_FUNC(_set_draw_callback);
 static BattleVulnerableStatus regist;
 static BattleDataEntry data_table[3];
@@ -696,21 +696,7 @@ static BattleUnitKindPart parts[2] = {
     },
 };
 
-static USER_FUNC(_set_draw_callback) {
-    BattleWork* wp;
-    BattleUnit* unit;
-    BattleUnitPart* part;
-    s32 id;
-
-    wp = _battleWorkPointer;
-    id = BattleTransID(event, -2);
-    unit = BattleGetUnitPtr(wp, id);
-    part = BtlUnit_GetPartsPtr(unit, 1);
-    animPoseSetDispCallBack(part->poseId, _fire_point_callback, part);
-    part = BtlUnit_GetPartsPtr(unit, 2);
-    part->attributes |= 0x1000000;
-    return EVT_RETURN_DONE;
-}
+#include "rel/common/unit_heavy_bom/_set_draw_callback.h"
 
 
 static EVT_BEGIN(init_event)
@@ -953,36 +939,5 @@ static EVT_BEGIN(explosion_event)
     RETURN
 EVT_END()
 
-static void _fire_point_callback(BattleUnitPart* part, s32 group) {
-    BattleUnit* unit;
-    const char* name;
-    s32 pose;
-    s32 poseId;
-    s32 shape;
-
-    unit = part->mOwner;
-    if (unit->work[0] != 0) {
-        pose = part->poseId;
-        switch (unit->work[1]) {
-            case 0:
-                name = "locator11";
-                break;
-            case 1:
-                name = "locator10";
-                break;
-            case 2:
-                name = "locator9";
-                break;
-            case 3:
-            default:
-                name = "locator8";
-                break;
-        }
-        if (strcmp(name, animPoseGetGroupName(pose, group)) == 0) {
-            poseId = BtlUnit_GetPartsPtr(unit, 2)->poseId;
-            shape = animPoseGetShapeIdx(poseId, "pPlaneShape3");
-            animPoseDrawShape(poseId, shape);
-        }
-    }
-}
+#include "rel/common/unit_heavy_bom/_fire_point_callback.h"
 

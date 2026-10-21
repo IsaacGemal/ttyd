@@ -60,17 +60,7 @@ static BeroEntry bero_entry_data[2] = {
     {0},
 };
 
-// The compiler emits these two static functions in reverse source order; npc_set_me is written first so the
-// object lays them out as the original does (npc_dead at .text+0, npc_set_me at .text+0x34).
-static USER_FUNC(npc_set_me) {
-    event->ownerNPC = npcNameToPtr("チョロボン");
-    return 2;
-}
-
-static USER_FUNC(npc_dead) {
-    npcGroupDead(npcNameToPtr("チョロボン"), 0);
-    return 2;
-}
+#include "rel/common/npc_set_me.h"
 
 static EVT_BEGIN(evt_chorobon)
     SET_VALUE(GSWF(1774), 1)

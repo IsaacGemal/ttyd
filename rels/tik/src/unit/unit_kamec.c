@@ -960,22 +960,8 @@ EVT_END()
 
 // Native event functions. Deferred inlining emits a file's functions in reverse source order
 // (docs/AGENT_BRIEF.md rule 18), so these are written in the reverse of the asm order.
-static USER_FUNC(kamec_get_live_num) {
-    s32 i;
-    s32* args = event->args;
-    s32 count = 0;
-    BattleWork* wp = _battleWorkPointer;
-    BattleUnit* unit;
 
-    for (i = 0; i < 64; i++) {
-        unit = wp->units[i];
-        if (unit != NULL && unit->mAlliance == 1 && !BtlUnit_CheckStatus(unit, STATUS_INSTANT_KILL)) {
-            count++;
-        }
-    }
-    evtSetValue(event, args[0], count);
-    return EVT_RETURN_DONE;
-}
+#include "rel/common/kamec_get_live_num.h"
 
 static USER_FUNC(kamec_get_bunsin) {
     s32 j;

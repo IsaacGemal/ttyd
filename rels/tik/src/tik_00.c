@@ -97,12 +97,7 @@ extend_data(5,
      f32, __local_PIO2, 1.57079632679489661923132169163975f,
      f32, one, 1.0f)
 
-static USER_FUNC(setmertn) {
-    s32 name = evtGetValue(event, event->args[0]);
-
-    event->ownerNPC = npcNameToPtr((const char*)name);
-    return EVT_RETURN_DONE;
-}
+#include "rel/common/setmertn.h"
 
 #ifdef MUST_MATCH
 // Match-only: reading ssf through a volatile pointer inside an inline makes MWCC emit the target's

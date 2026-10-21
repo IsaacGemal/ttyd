@@ -253,30 +253,7 @@ static BattleDataEntry data_table[3] = {
     { 0x00, NULL },
 };
 
-// redId/greenId are deliberately left uninitialized: the original does not initialize them
-// (it never stores before the loop and no `li` precedes it in the asm).
-static USER_FUNC(get_id) {
-    s32* args = event->args;
-    BattleUnit* unit;
-    s32 i;
-    s32 redId;
-    s32 greenId;
-
-    for (i = 0; i < 64; i++) {
-        unit = BattleGetUnitPtr(_battleWorkPointer, i);
-        if (unit != NULL) {
-            if (unit->currentKind == UNIT_IRON_CLEFT_RED) {
-                redId = i;
-            }
-            if (unit->currentKind == UNIT_IRON_CLEFT_GREEN) {
-                greenId = i;
-            }
-        }
-    }
-    evtSetValue(event, args[0], redId);
-    evtSetValue(event, args[1], greenId);
-    return EVT_RETURN_DONE;
-}
+#include "rel/common/unit_iron_sinemon/get_id.h"
 
 static EVT_BEGIN(init_event1)
     CALL(btlevtcmd_SetUnitWork, -2, 0, 0)
@@ -366,17 +343,7 @@ static EVT_BEGIN(damage_event)
     RETURN
 EVT_END()
 
-static USER_FUNC(yoshi_exist) {
-    s32* args = event->args;
-    PouchData* pouch = pouchGetPtr();
-    s32 exists = 0;
-
-    if (pouch->partyData[PARTNER_YOSHI].flags & 1) {
-        exists = 1;
-    }
-    evtSetValue(event, args[0], exists);
-    return EVT_RETURN_DONE;
-}
+#include "rel/common/unit_iron_sinemon/yoshi_exist.h"
 
 static EVT_BEGIN(phase_event)
     CALL(btlevtcmd_GetUnitWork, -2, 0, LW(0))
