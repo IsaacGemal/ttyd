@@ -331,28 +331,28 @@ static void main_dl(EffectEntry* effect, Mtx matrix) {
         effFireDustSetTev0Color(c0, c1, c2, (u8)((f32)data->alpha * alphaScale));
         switch (i & 7) {
             case 0:
-                vtx = (effVtxArray*)((u8*)size8x8_tex22x22_vtx + 0xA8);
+                vtx = (effVtxArray*)&size8x8_tex22x22_vtx[3 * 14];
                 break;
             case 1:
-                vtx = (effVtxArray*)((u8*)size8x8_tex22x22_vtx + 0xE0);
+                vtx = (effVtxArray*)&size8x8_tex22x22_vtx[4 * 14];
                 break;
             case 2:
-                vtx = (effVtxArray*)((u8*)size8x8_tex22x22_vtx + 0x118);
+                vtx = (effVtxArray*)&size8x8_tex22x22_vtx[5 * 14];
                 break;
             case 3:
-                vtx = (effVtxArray*)((u8*)size8x8_tex22x22_vtx + 0x150);
+                vtx = (effVtxArray*)&size8x8_tex22x22_vtx[6 * 14];
                 break;
             case 4:
-                vtx = (effVtxArray*)((u8*)size8x8_tex22x22_vtx + 0x188);
+                vtx = (effVtxArray*)&size8x8_tex22x22_vtx[7 * 14];
                 break;
             case 5:
                 vtx = (effVtxArray*)size8x8_tex22x22_vtx;
                 break;
             case 6:
-                vtx = (effVtxArray*)((u8*)size8x8_tex22x22_vtx + 0x38);
+                vtx = (effVtxArray*)&size8x8_tex22x22_vtx[1 * 14];
                 break;
             case 7:
-                vtx = (effVtxArray*)((u8*)size8x8_tex22x22_vtx + 0x70);
+                vtx = (effVtxArray*)&size8x8_tex22x22_vtx[2 * 14];
                 break;
         }
         effSetVtxDescN64(vtx);

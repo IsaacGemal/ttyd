@@ -98,7 +98,7 @@ void mario_simple_kemuri(void) {
     EffectEntry* effect = effKemuriEntry(0, mario->position.x, mario->position.y, mario->position.z, 0.0f);
 
     if (mario->flags & 0x02000000) {
-        *(f32*)((u8*)effect->userdata + 0x74) = 0.6f;
+        ((effKemuriData*)effect->userdata)->scale = 0.6f;
     }
 }
 
@@ -124,7 +124,7 @@ void unk_80130374(void) {
     } else {
         effect = effKemuriEntry(0, mario->position.x, mario->position.y, mario->position.z, 0.0f);
         if (mario->flags & 0x02000000) {
-            *(f32*)((u8*)effect->userdata + 0x74) = 0.6f;
+            ((effKemuriData*)effect->userdata)->scale = 0.6f;
         }
     }
 }
@@ -246,7 +246,7 @@ void kemuri(void) {
         z = mario->position.z;
         if (mario->characterId == 2) {
             effect = effKemuriEntry(0, x, y, z + 10.0f, 0.0f);
-            *(f32*)((u8*)effect->userdata + 0x74) = kpaGetBaseScale(kpaGetLevel());
+            ((effKemuriData*)effect->userdata)->scale = kpaGetBaseScale(kpaGetLevel());
         } else {
             effKemuriEntry(0, x, y, z, dir551);
         }
@@ -267,7 +267,7 @@ void kemuri(void) {
             z = mario->position.z + 0.2f * (mario->wPlayerCollisionBox.x * cos);
             effect = effKemuri2Entry(0, x, y, z, sin, cos);
             if (mario->flags & 0x02000000) {
-                *(f32*)((u8*)effect->userdata + 0x74) = 0.6f;
+                ((effKemuri2Data*)effect->userdata)->scale = 0.6f;
             }
         }
     } else {
@@ -300,7 +300,7 @@ void kemuri(void) {
             y = mario->position.y + 1.5f;
             z = mario->position.z + dist * cos;
             effect = effKemuri2Entry(0, x, y, z, sin, cos);
-            *(f32*)((u8*)effect->userdata + 0x74) = fade;
+            ((effKemuri2Data*)effect->userdata)->scale = fade;
         }
     }
 }
@@ -319,7 +319,7 @@ void party_kemuri(PartyEntry* party) {
             if (party->speed < 2.0f) {
                 party->field_2C = 7;
             } else {
-                count = *(s8*)((u8*)party + 0x2C);
+                count = party->field_2C;
                 party->field_2C = count + 1;
                 if (count > 6) {
                     party->field_2C = 0;
@@ -340,7 +340,7 @@ void party_kemuri(PartyEntry* party) {
             if (party->speed < 2.0f) {
                 party->field_2C = 7;
             } else {
-                count = *(s8*)((u8*)party + 0x2C);
+                count = party->field_2C;
                 party->field_2C = count + 1;
                 if (count > 6) {
                     party->field_2C = 0;

@@ -50,3 +50,23 @@ typedef struct effKemuri2Data {
 	f32 heading; //0x78 camera-relative yaw in degrees; picks which quad faces the camera
 	u8 field_0x7C[0x8C - 0x7C]; //0x7C
 } effKemuri2Data;
+typedef struct effKemuriData {
+	s32 kind; //0x0 the int2 from effKemuriEntry: selects the scale table and texture
+	f32 x; //0x4
+	f32 y; //0x8
+	f32 z; //0xC
+	u8 field_0x10[0x40 - 0x10]; //0x10
+	s32 frame; //0x40 advanced once per main tick; indexes the scale tables
+	f32 scaleX; //0x44 puff size from touchdown_scale/heavy_scale
+	f32 scaleY; //0x48
+	f32 velX; //0x4C sideways speed, damped by 0.85 per tick (type 0)
+	u8 field_0x50[0x58 - 0x50]; //0x50
+	f32 offX; //0x58 x offset, accumulates velX
+	f32 field_0x5C; //0x5C
+	u8 field_0x60[0x74 - 0x60]; //0x60
+	f32 scale; //0x74 uniform scale of the whole puff, starts at 1
+	u8 field_0x78[0x80 - 0x78]; //0x78
+	s32 sheetU0; //0x80 texture column of this frame (16 columns over lifetime)
+	s32 sheetU1; //0x84 texture column of the next frame, clamped to 15
+	s32 lifetime; //0x88 frames before effDelete (32 or 64)
+} effKemuriData;
