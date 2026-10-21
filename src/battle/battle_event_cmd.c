@@ -4100,7 +4100,7 @@ USER_FUNC(btlevtcmd_SetEventConfusion) {
     s32 btlId = evtGetValue(event, args[0]);
     BattleUnit* unit = BattleGetUnitPtr(_battleWorkPointer, BattleTransID(event, btlId));
 
-    *(s32*)((u8*)unit + 0x2A0) = args[1];
+    unit->confusionEventCode = (void*)args[1];
     return EVT_RETURN_DONE;
 }
 

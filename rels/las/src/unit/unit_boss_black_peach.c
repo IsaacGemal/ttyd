@@ -1405,12 +1405,12 @@ USER_FUNC(shadow_queen_connect) {
     part = BattleGetUnitPartsPtr(BattleTransID(event, -2), 3);
     BtlUnit_SetPartsPos(part, verts[data->locator2Group * 3], verts[data->locator2Group * 3 + 1], verts[data->locator2Group * 3 + 2]);
     part = BattleGetUnitPartsPtr(BattleTransID(event, -2), 5);
-    *(f32*)((u8*)part + 0x4F8) = 7.0f;
+    part->field_0x4F8 = 7.0f;
     BtlUnit_SetPartsPos(part, verts[data->locator2Group * 3], verts[data->locator2Group * 3 + 1], verts[data->locator2Group * 3 + 2]);
     pose = animPoseGetAnimPosePtr(data->pose3Id);
     verts = *(f32**)((void*)pose->groupWorldPos);
     part = BattleGetUnitPartsPtr(BattleTransID(event, -2), 4);
-    *(f32*)((u8*)part + 0x4F8) = 1.0f;
+    part->field_0x4F8 = 1.0f;
     BtlUnit_SetPartsPos(part, verts[data->locator3Group * 3], verts[data->locator3Group * 3 + 1], verts[data->locator3Group * 3 + 2]);
     return EVT_RETURN_BLOCK;
 }

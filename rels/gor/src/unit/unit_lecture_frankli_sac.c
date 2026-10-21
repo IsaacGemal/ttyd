@@ -166,7 +166,7 @@ USER_FUNC(_set_actend_event) {
     s32 code = evtGetValue(event, args[1]);
     BattleUnit* unit = BattleGetUnitPtr(wp, BattleTransID(event, id));
 
-    *(s32*)((u8*)unit + 0x2C4) = code;
+    unit->actEndEventCode = (void*)code;
     return EVT_RETURN_DONE;
 }
 

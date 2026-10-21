@@ -344,10 +344,10 @@ void mono_capture(CameraId cameraId, void* param) {
     BattleUnit* unit = param;
     BattleUnitPart* parts = BtlUnit_GetPartsPtr(unit, 1);
 
-    *(smartEntry**)((u8*)unit + 0x318) = smartAlloc(GXGetTexBufferSize(0x260, 0x1E0, 1, 0, 0), 1);
+    unit->mSmartEntry = smartAlloc(GXGetTexBufferSize(0x260, 0x1E0, 1, 0, 0), 1);
     GXSetTexCopySrc(0, 0, 0x260, 0x1E0);
     GXSetTexCopyDst(0x260, 0x1E0, 1, 0);
-    GXCopyTex(((smartEntry*)unit->mSmartEntry)->address, 0);
+    GXCopyTex(unit->mSmartEntry->address, 0);
     GXPixModeSync();
     parts->partFlags &= ~0x100;
 }
@@ -372,7 +372,7 @@ void mono_disp(CameraId cameraId, void* param) {
     CameraId prev;
 
     camera = camGetPtr(cameraId);
-    entry = (smartEntry*)unit->mSmartEntry;
+    entry = unit->mSmartEntry;
     tex = NULL;
     if (entry != NULL) {
         tex = entry->address;
@@ -468,10 +468,10 @@ USER_FUNC(mono_off) {
     if (mono_alpha < 0) {
         mono_alpha = 0;
         BtlUnit_GetPartsPtr(unit, 1);
-        if ((smartEntry*)unit->mSmartEntry != NULL) {
-            smartFree((smartEntry*)unit->mSmartEntry);
+        if (unit->mSmartEntry != NULL) {
+            smartFree(unit->mSmartEntry);
         }
-        *(smartEntry**)((u8*)unit + 0x318) = NULL;
+        unit->mSmartEntry = NULL;
         return EVT_RETURN_DONE;
     }
     return EVT_RETURN_BLOCK;

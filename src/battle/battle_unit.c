@@ -50,19 +50,6 @@ typedef struct UnitStatusBlock {
 //local prototypes
 
 
-typedef struct HpGaugeLocal {
-    u16 field_0;  // 0x0
-    u16 field_2;  // 0x2
-    s16 field_4;  // 0x4
-    s16 field_6;  // 0x6
-    s16 field_8;  // 0x8
-    s16 field_A;  // 0xA
-    s32 field_C;  // 0xC
-    s32 field_10; // 0x10
-    f32 field_14; // 0x14
-    f32 field_18; // 0x18
-} HpGaugeLocal;
-
 BOOL BtlUnit_Init(void) {
     int i;
     BattleWork* wp = _battleWorkPointer;
@@ -202,7 +189,7 @@ BattleUnit* BtlUnit_Entry(BattleUnitSetup* setup) {
         BtlUnit_SetPartsRotate(part, 0.0f, 0.0f, 0.0f);
         BtlUnit_SetPartsRotateOffset(part, 0.0f, 0.0f, 0.0f);
 
-        *(u8*)((u8*)part + 0x4FC) = 0;
+        part->field_0x4FC = 0;
         part->mHitBaseOffset.x = part->mKindPartParams->hitBaseOffset.x;
         part->mHitBaseOffset.y = part->mKindPartParams->hitBaseOffset.y;
         part->mHitBaseOffset.z = part->mKindPartParams->hitBaseOffset.z;
@@ -2298,25 +2285,25 @@ s32 BtlUnit_snd_se_pos(BattleUnit* unit, const char* name, s32 b, s16 c, Vec* po
 // original's `beq then; b else` dispatch.
 // Keep BtlUnit_HpGaugeInit out of line: the original calls it rather than inlining.
 void BtlUnit_HpGaugeInit(BattleUnit* unit) {
-    HpGaugeLocal* gauge = (HpGaugeLocal*)&unit->hpGauge;
+    BattleWorkHpGauge* gauge = &unit->hpGauge;
     f32 ratio;
 
-    gauge->field_4 = 0;
-    gauge->field_8 = 0;
-    gauge->field_0 = 0;
-    gauge->field_C = unit->currentHp;
-    gauge->field_10 = unit->currentHp;
+    gauge->field_0x4 = 0;
+    gauge->field_0x8 = 0;
+    gauge->field_0x0 = 0;
+    gauge->field_0xC = unit->currentHp;
+    gauge->field_0x10 = unit->currentHp;
     ratio = (f32)unit->currentHp / (f32)unit->maxHp;
-    gauge->field_14 = ratio;
-    gauge->field_18 = ratio;
-    switch ((s32)gauge->field_0) {
+    gauge->field_0x14 = ratio;
+    gauge->field_0x18 = ratio;
+    switch ((s32)gauge->field_0x0) {
     case 1:
-        gauge->field_6 = 0x28;
-        gauge->field_A = gauge->field_6 + 0x1E;
+        gauge->field_0x6 = 0x28;
+        gauge->field_0xA = gauge->field_0x6 + 0x1E;
         break;
     default:
-        gauge->field_6 = 0x14;
-        gauge->field_A = gauge->field_6 + 0x1E;
+        gauge->field_0x6 = 0x14;
+        gauge->field_0xA = gauge->field_0x6 + 0x1E;
         break;
     }
 }
@@ -2324,42 +2311,42 @@ void BtlUnit_HpGaugeInit(BattleUnit* unit) {
 
 
 void BtlUnit_HpGaugeMain(BattleUnit* unit) {
-    HpGaugeLocal* gauge = (HpGaugeLocal*)&unit->hpGauge;
+    BattleWorkHpGauge* gauge = &unit->hpGauge;
     f32 ratio;
     s32 maxHp;
 
-    if (gauge->field_4 > 0) {
-        gauge->field_4--;
-        if (gauge->field_4 <= 0) {
-            gauge->field_C = gauge->field_10;
+    if (gauge->field_0x4 > 0) {
+        gauge->field_0x4--;
+        if (gauge->field_0x4 <= 0) {
+            gauge->field_0xC = gauge->field_0x10;
             ratio = (f32)unit->currentHp / (f32)unit->maxHp;
-            gauge->field_18 = ratio;
-            gauge->field_14 = ratio;
+            gauge->field_0x18 = ratio;
+            gauge->field_0x14 = ratio;
         } else {
-            switch ((s32)gauge->field_0) {
+            switch ((s32)gauge->field_0x0) {
             case 1:
-                gauge->field_14 = (f32)unit->currentHp / (f32)unit->maxHp;
-                gauge->field_18 = (f32)(gauge->field_C - gauge->field_10) *
-                    intplGetValue(2, gauge->field_4, gauge->field_6, 0.0f, 1.0f) /
-                    (f32)unit->maxHp + gauge->field_14;
+                gauge->field_0x14 = (f32)unit->currentHp / (f32)unit->maxHp;
+                gauge->field_0x18 = (f32)(gauge->field_0xC - gauge->field_0x10) *
+                    intplGetValue(2, gauge->field_0x4, gauge->field_0x6, 0.0f, 1.0f) /
+                    (f32)unit->maxHp + gauge->field_0x14;
                 break;
             default:
-                gauge->field_18 = 0.0f;
+                gauge->field_0x18 = 0.0f;
                 maxHp = unit->maxHp;
-                gauge->field_14 = (f32)unit->currentHp / (f32)maxHp +
-                    (f32)(gauge->field_C - gauge->field_10) *
-                    intplGetValue(0, gauge->field_4, gauge->field_6, 0.0f, 1.0f) /
+                gauge->field_0x14 = (f32)unit->currentHp / (f32)maxHp +
+                    (f32)(gauge->field_0xC - gauge->field_0x10) *
+                    intplGetValue(0, gauge->field_0x4, gauge->field_0x6, 0.0f, 1.0f) /
                     (f32)maxHp;
                 break;
             }
         }
     }
-    if (gauge->field_8 > 0) {
-        gauge->field_8--;
+    if (gauge->field_0x8 > 0) {
+        gauge->field_0x8--;
     }
-    if ((unit->flags & 1) && gauge->field_8 <= 0 && (gauge->field_2 & 1)) {
+    if ((unit->flags & 1) && gauge->field_0x8 <= 0 && (gauge->field_0x2 & 1)) {
         unit->flags &= ~1;
-        gauge->field_2 &= ~1;
+        gauge->field_0x2 &= ~1;
     }
 }
 

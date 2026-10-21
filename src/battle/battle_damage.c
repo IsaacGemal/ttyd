@@ -215,8 +215,8 @@ void BattleDamageDirect(s32 damageCode, BattleUnit* unit, s32 partArg, s32 damag
     unit->hpDamageTaken = damage;
     unit->totalHpDamageTaken += unit->hpDamageTaken;
     unit->fpDamageTaken = arg4;
-    unit->field_0x26E[0] = arg4;
-    *(s32*)unit->field_0x264 += unit->fpDamageTaken;
+    unit->field_0x26E = arg4;
+    unit->field_0x264 += unit->fpDamageTaken;
 
     if (!(unit->mAttributeFlags & 0x40000000) && !(PART->attributes & 0x800000)) {
         unit->hpGauge.field_0xC = unit->currentHp;
@@ -242,16 +242,16 @@ void BattleDamageDirect(s32 damageCode, BattleUnit* unit, s32 partArg, s32 damag
         s32 fp = BtlUnit_GetFp(unit);
 
         if (fp < arg4) {
-            unit->field_0x26E[0] = fp;
+            unit->field_0x26E = fp;
         } else {
-            unit->field_0x26E[0] = arg4;
+            unit->field_0x26E = arg4;
         }
         fp = fp - arg4;
         if (fp < 0) {
             fp = 0;
         }
         BtlUnit_SetFp(unit, fp);
-        *(s32*)(unit->field_0x264 + 4) += (s8)unit->field_0x26E[0];
+        unit->field_0x268 += unit->field_0x26E;
     }
     if (damage > 0) {
         if (unit->currentKind == 0xde) {
@@ -1710,7 +1710,7 @@ s32 BattleCheckDamage(BattleUnit* unit1, BattleUnit* unit2, BattleUnitPart* part
         psndSFXOn(SFX_STR_GREAT1);
         BattleAudience_Case_GuardGood();
         unit1->field_0x27C += 1;
-        unit2->field_0x26E[1] = unit1->field_0x27C;
+        unit2->field_0x26F = unit1->field_0x27C;
         switch (weapon->superguardType) {
         case 2:
             damageCode = flags | 0x2A;
@@ -1725,8 +1725,8 @@ s32 BattleCheckDamage(BattleUnit* unit1, BattleUnit* unit2, BattleUnitPart* part
             flags |= 0x100;
             damageCode = flags | 0x2A;
             BattleDamageDirect(unit1->unitId, unit2, (s32)part, 0, 0, damageCode, *(u8*)&weapon->field_0x6D, 0);
-            if (*(void**)((u8*)unit1 + 0x2CC) != NULL) {
-                BattleRunHitEventDirect(unit1, 0x137, *(void**)((u8*)unit1 + 0x2CC));
+            if (unit1->field_0x2CC != NULL) {
+                BattleRunHitEventDirect(unit1, 0x137, unit1->field_0x2CC);
             } else {
                 BattleDamageDirect(-5, unit1, 0, 1, 0, 0x137, 0, 1);
             }
@@ -1872,7 +1872,7 @@ s32 BattleCheckDamage(BattleUnit* unit1, BattleUnit* unit2, BattleUnitPart* part
     }
 counter_done:
     unit1->field_0x27C += 1;
-    unit2->field_0x26E[1] = unit1->field_0x27C;
+    unit2->field_0x26F = unit1->field_0x27C;
     if ((u32)work.damageCode != 0) {
     if (work.halfDamage) {
         work.counterDamage += damage * 50 / 100;

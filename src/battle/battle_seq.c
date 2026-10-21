@@ -2024,11 +2024,11 @@ void btlseqMove(BattleWork* wp) {
 					unit->totalHpDamageTaken = 0;
 					unit->hpDamageTaken = 0;
 					unit->hpDamageCount = 0;
-					((s8*)unit->field_0x26E)[1] = 0;
-					*(s32*)unit->field_0x264 = 0;
+					unit->field_0x26F = 0;
+					unit->field_0x264 = 0;
 					unit->fpDamageTaken = 0;
-					*(s32*)(unit->field_0x264 + 4) = 0;
-					((s8*)unit->field_0x26E)[0] = 0;
+					unit->field_0x268 = 0;
+					unit->field_0x26E = 0;
 					unit->field_0x27C = 0;
 				}
 			}
@@ -2182,8 +2182,6 @@ BOOL BattlePhaseEndCheck(void) { //1:1
 	return FALSE;
 }
 
-// Raw offsets (fields that battle_unit.h leaves in padding, so no named member exists):
-// 0x258, 0x280, 0x2A0, 0x2A8, 0x2C, 0x2C4, 0x2C8, 0x2CC.
 // Case 0 shadows `unit` so MWCC keeps it in r29 (the outer `unit` is r31 elsewhere); the original splits
 // them the same way. The moveState switch lists case 8 before the shared case 7/case 9 so the bodies come
 // out in the target's order, and the currentKind check is a switch so the then-block lands before the else.
@@ -2198,7 +2196,7 @@ void btlseqAct(BattleWork* wp) {
 		BattleUnit* unit = BattleGetUnitPtr(wp, wp->activeUnitId);
 		effNiceAsync(1);
 		unit->field_0x280 = 0;
-		*(s32*)((u8*)unit + 0x2CC) = 0;
+		unit->field_0x2CC = NULL;
 		BattleAudience_ActInit();
 		v = TRUE;
 		switch (unit->currentKind) {
@@ -2297,7 +2295,7 @@ void btlseqAct(BattleWork* wp) {
 				event = evtEntry(btldefaultevt_BiribiriMove, 0xA, 0);
 			} else if (BtlUnit_CheckStatus(unit, 5) && irand(100) < 0x32) {
 				unit->mTokenFlags |= 0x10;
-				event = evtEntry(*(void**)((u8*)unit + 0x2A0), 0xA, 0);
+				event = evtEntry(unit->confusionEventCode, 0xA, 0);
 			} else {
 				event = evtEntry(unit->attackEventCode, 0xA, 0);
 			}
@@ -2424,8 +2422,8 @@ void btlseqAct(BattleWork* wp) {
 		unit = BattleGetUnitPtr(wp, wp->activeUnitId);
 		if (unit != NULL) {
 			unit->field_0x2C8 = 0;
-			if (*(void**)((u8*)unit + 0x2C4) != NULL) {
-				event = evtEntry(*(void**)((u8*)unit + 0x2C4), 0xA, 0);
+			if (unit->actEndEventCode != NULL) {
+				event = evtEntry(unit->actEndEventCode, 0xA, 0);
 				if (event != NULL) {
 					unit->field_0x2C8 = event->eventId;
 					event->unitId = unit->unitId;

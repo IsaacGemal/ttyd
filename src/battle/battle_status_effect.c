@@ -322,8 +322,6 @@ void BSE_TurnFirstProcessEffectEntry(BattleUnit* unit, s16 active) {
 	unit->mbBurnDamageFlameActive = active;
 }
 
-// NOTE: mBurnDamageFlameState/mbBurnDamageFlameActive are declared s16 in battle_unit.h, but the
-// original loads them with lhz and tests them unsigned (cmplwi); cast to u16 to match. Header likely wrong.
 BOOL BSE_TurnFirstProcessEffectMain(BattleUnit* unit) {
 	BattleUnitPart* part;
 	BattleEffectPosScale* work;
@@ -331,17 +329,17 @@ BOOL BSE_TurnFirstProcessEffectMain(BattleUnit* unit) {
 	f32 scale;
 
 	part = BtlUnit_GetPartsPtr(unit, BtlUnit_GetBodyPartsId(unit));
-	if (!*(u16*)&unit->mBurnDamageFlameState) {
+	if (!unit->mBurnDamageFlameState) {
 		return FALSE;
 	}
-	if (!*(u16*)&unit->mbBurnDamageFlameActive) {
+	if (!unit->mbBurnDamageFlameActive) {
 		return FALSE;
 	}
-	switch (*(u16*)&unit->mbBurnDamageFlameActive) {
+	switch (unit->mbBurnDamageFlameActive) {
 	case 1:
-		switch (*(u16*)&unit->mBurnDamageFlameState) {
+		switch (unit->mBurnDamageFlameState) {
 		case 1:
-			*(u16*)&unit->mBurnDamageFlameState += 1;
+			unit->mBurnDamageFlameState += 1;
 			unit->mBurnDamageFlameScale = 1.0f;
 			BtlUnit_GetPartsWorldPos(part, &x, &y, &z);
 			z += 5.0f;
@@ -355,7 +353,7 @@ BOOL BSE_TurnFirstProcessEffectMain(BattleUnit* unit) {
 			unit->mBurnDamageFlameScale = scale;
 			work->mFireScale = unit->mBurnDamageFlameScale;
 			if (unit->mBurnDamageFlameAnimTimer >= 60) {
-				*(u16*)&unit->mBurnDamageFlameState += 1;
+				unit->mBurnDamageFlameState += 1;
 			}
 			break;
 		case 3:

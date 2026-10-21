@@ -260,9 +260,9 @@ USER_FUNC(replace_evt) {
     GXInitTexObjLOD(&p->texObj, GX_NEAR, GX_NEAR, 0.0f, 0.0f, 0.0f, GX_FALSE, GX_FALSE, GX_ANISO_1);
     PSMTXIdentity(p->mtx);
     animGetPtr()->poses[part->poseId].flags |= 0x10;
-    *(void (**)(BattleUnitPart*, s32))((u8*)part + 0x210) = replace_callback;
-    *(WanawanaWork**)((u8*)unit + 0x310) = p;
-    *(smartEntry**)((u8*)unit + 0x318) = p->tex;
+    part->dispCallback = replace_callback;
+    unit->mExtraWork = p;
+    unit->mSmartEntry = p->tex;
     p->field_0x00 = 0;
     dispEntry(CAMERA_SHADOW, 0.0f, 0, replace_disp, p);
     return EVT_RETURN_DONE;

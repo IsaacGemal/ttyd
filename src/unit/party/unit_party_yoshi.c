@@ -2101,7 +2101,7 @@ USER_FUNC(_gundan_yoshi_run_effect) {
     unit = BattleGetUnitPtr(_battleWorkPointer, BattleTransID(event, val));
     if (isFirstCall) {
         area = BattleAlloc(0x300C);
-        *(YoshiGundanArea**)((u8*)unit + 0x310) = area;
+        unit->mExtraWork = area;
         memset(area, 0, 0x300C);
         area->state = 0;
         area->avgPosX = 0.0f;
@@ -2197,7 +2197,7 @@ USER_FUNC(_gundan_yoshi_run_effect) {
     case 999:
         psndSFXOff(event->userdata[1]);
         BattleFree((YoshiGundanArea*)unit->mExtraWork);
-        *(YoshiGundanArea**)((u8*)unit + 0x310) = NULL;
+        unit->mExtraWork = NULL;
         return 2;
     default:
         break;
