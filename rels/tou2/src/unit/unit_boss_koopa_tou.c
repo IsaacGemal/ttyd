@@ -8,7 +8,7 @@
 #include "battle/battle_weapon_power.h"
 #include "driver/dispdrv.h"
 #include "driver/icondrv.h"
-#include "driver/icondrv_gx.h"
+#include "rel/common/unit_boss_koopa.h"
 #include "evt/evt_cmd.h"
 #include "evt/evt_eff.h"
 #include "evt/evt_msg.h"
@@ -684,115 +684,7 @@ static EVT_BEGIN(attack_event)
     RETURN
 EVT_END()
 
-static USER_FUNC(mario_cannot_use_command) {
-    BattleWork* work = _battleWorkPointer;
-    s32 rnd = irand(2);
-    s32 index = *event->args;
-    s32 value = 0;
-
-    switch (rnd) {
-    case 0:
-        work->field_19038[0] = 3;
-        value = 0x146;
-        break;
-    case 1:
-        work->field_19038[1] = 3;
-        value = 0x149;
-        break;
-    case 2:
-        work->field_19038[2] = 3;
-        value = 0x14C;
-        break;
-    }
-    event->lwData[0] = cmd_disable_string[rnd];
-    evtSetValue(event, index, value);
-    return 2;
-}
-
-static USER_FUNC(party_cannot_use_command) {
-    BattleWork* work = _battleWorkPointer;
-    s32 rnd = irand(1);
-    s32 index = *event->args;
-    s32 value = 0;
-
-    switch (rnd) {
-    case 0:
-        work->field_19038[3] = 3;
-        value = 0x150;
-        break;
-    case 1:
-        work->field_19038[4] = 3;
-        value = 0x14C;
-        break;
-    }
-    event->lwData[0] = cmd_disable_string[rnd + 3];
-    evtSetValue(event, index, value);
-    return 2;
-}
-
-static USER_FUNC(_icon_jump_icon) {
-    s32* args = event->args;
-    BossKoopaIconData* data;
-    s32 iconId;
-    f32 x;
-    f32 y;
-    f32 z;
-    f32 targetX;
-    f32 targetY;
-    f32 targetZ;
-    f32 gravity;
-    s32 count;
-
-    iconId = evtGetValue(event, args[0]);
-    x = evtGetFloat(event, args[1]);
-    y = evtGetFloat(event, args[2]);
-    z = evtGetFloat(event, args[3]);
-    targetX = evtGetFloat(event, args[4]);
-    targetY = evtGetFloat(event, args[5]);
-    targetZ = evtGetFloat(event, args[6]);
-    gravity = evtGetFloat(event, args[7]);
-    count = evtGetValue(event, args[8]);
-
-    if (isFirstCall) {
-        Vec pos;
-        event->userdata[0] = (s32)BattleAlloc(0x7C);
-        data = (BossKoopaIconData*)event->userdata[0];
-        data->targetPos.x = targetX;
-        data->targetPos.y = targetY;
-        data->targetPos.z = targetZ;
-        pos.x = x;
-        pos.y = y;
-        pos.z = z;
-        data->curPos = pos;
-        data->position = pos;
-        data->gravity = gravity;
-        data->count = count;
-        data->velocity = (data->targetPos.y - data->position.y) / (f32)data->count + data->gravity * (f32)data->count / 2.0f;
-        data->speed = distABf(data->position.x, data->position.z, data->targetPos.x, data->targetPos.z) / (f32)data->count;
-        event->userdata[1] = iconId;
-        event->userdata[2] = 0;
-    }
-
-    data = (BossKoopaIconData*)event->userdata[0];
-    if (event->userdata[2] != 0) {
-        BattleFree(data);
-        return 2;
-    }
-
-    data->curPos.y += data->velocity;
-    data->velocity -= data->gravity;
-    if (data->velocity < 0.0f && data->curPos.y < data->targetPos.y) {
-        data->curPos.y = data->targetPos.y;
-    }
-    btlMovePos(&data->curPos.x, &data->curPos.z, data->speed, angleABf(data->position.x, data->position.z, data->targetPos.x, data->targetPos.z));
-    data->count--;
-    if (data->count <= 0) {
-        event->userdata[2] = 1;
-        data->curPos = data->targetPos;
-    }
-    dispEntry(4, 900.0f, 1, _disp_icon, event);
-    return 0;
-}
+#include "rel/common/unit_boss_koopa/mario_cannot_use_command.h"
 
 static EVT_BEGIN(hip_attack_event)
     CALL(btlevtcmd_GetEnemyBelong, -2, LW(0))
@@ -1179,16 +1071,6 @@ static u32 cmd_disable_string[5] = {
     (u32)"btl_party_item_cmd_disable",
 };
 
-static void _disp_icon(CameraId camera, void* param) {
-    EventEntry* event = param;
-    Vec* position = (Vec*)(event->userdata[0] + 0xC);
+#include "rel/common/unit_boss_koopa/_disp_icon.h"
 
-#ifdef MUST_MATCH
-    // The retail prototype takes a u16 iconId; the decomp header says s16, which makes MWCC emit
-    // an extra extsh. Call through a matching function-pointer type to stay byte-exact.
-    ((void (*)(Vec*, s16, u16, f32))iconDispGx)(position, 0, (u16)event->userdata[1], 1.0f);
-#else
-    iconDispGx(1.0f, position, 0, (u16)event->userdata[1]);
-#endif
-}
 // clang-format on

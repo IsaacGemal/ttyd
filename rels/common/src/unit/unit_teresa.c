@@ -505,62 +505,8 @@ static EVT_BEGIN(damage_event)
     RETURN
 EVT_END()
 
-static USER_FUNC(teresa_check_trans) {
-    s32* args;
-    s32 id;
-    s32 count;
-    s32 i;
-    BattleUnit* unit;
-
-    count = 0;
-    args = event->args;
-    id = evtGetValue(event, args[0]);
-    id = BattleTransID(event, id);
-    for (i = 0; i < 64; i++) {
-        unit = BattleGetUnitPtr(_battleWorkPointer, i);
-        if (unit) {
-            if (unit->currentKind == UNIT_BOO && !BtlUnit_CheckStatus(unit, 0x12) && i != id) {
-                count++;
-            }
-            if (unit->currentKind == UNIT_DARK_BOO && !BtlUnit_CheckStatus(unit, 0x12) && i != id) {
-                count++;
-            }
-        }
-    }
-    if (count >= 1) {
-        evtSetValue(event, args[1], 1);
-    } else {
-        evtSetValue(event, args[1], 0);
-    }
-    return EVT_RETURN_DONE;
-}
-
-static USER_FUNC(teresa_check_move) {
-    s32* args;
-    BattleUnit* unit;
-    s32 count;
-    s32 i;
-
-    args = event->args;
-    count = 0;
-    for (i = 0; i < 64; i++) {
-        unit = BattleGetUnitPtr(_battleWorkPointer, i);
-        if (unit) {
-            if (unit->currentKind == UNIT_BOO && unit->work[0] == 0) {
-                count++;
-            }
-            if (unit->currentKind == UNIT_DARK_BOO && unit->work[0] == 0) {
-                count++;
-            }
-        }
-    }
-    if (count >= 1) {
-        evtSetValue(event, args[0], 1);
-    } else {
-        evtSetValue(event, args[0], 0);
-    }
-    return EVT_RETURN_DONE;
-}
+#include "rel/common/teresa_check/teresa_check_trans.h"
+#include "rel/common/teresa_check/teresa_check_move.h"
 
 
 
@@ -787,31 +733,7 @@ static EVT_BEGIN(trans_myself_event)
     RETURN
 EVT_END()
 
-static USER_FUNC(teresa_check_teresa) {
-    s32* args;
-    s32 id;
-    BattleUnit* unit;
-    s32 found;
-    s32 kind;
-
-    args = event->args;
-    id = evtGetValue(event, args[0]);
-    found = 0;
-    unit = BattleGetUnitPtr(_battleWorkPointer, id);
-    if (unit == NULL) {
-        evtSetValue(event, args[1], 0);
-        return EVT_RETURN_DONE;
-    }
-    kind = unit->currentKind;
-    if (kind == UNIT_BOO) {
-        found = 1;
-    }
-    if (kind == UNIT_DARK_BOO) {
-        found = 1;
-    }
-    evtSetValue(event, args[1], found);
-    return EVT_RETURN_DONE;
-}
+#include "rel/common/teresa_check/teresa_check_teresa.h"
 
 
 static EVT_BEGIN(trans_event)

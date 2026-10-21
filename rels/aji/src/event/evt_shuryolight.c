@@ -1,4 +1,5 @@
 #include "evt_shuryolight.h"
+#include "rel/common/evt_shuryolight.h"
 #include "evt/evt_cmd.h"
 #include "evt/evt_sub.h"
 #include "forcedata.h"
@@ -20,24 +21,9 @@ static USER_FUNC(evt_shuryolight_wait_anim_end);
 static USER_FUNC(evt_shuryolight_set_anim);
 static s32 shuryolightRunEvt(void* evtCode, s32 eventId);
 static void shuryolightSetAnim(s32 index, s32 anim);
-static void shuryolight_callback(void* userData, s32 group, void* mtx);
+static void shuryolight_callback(void* userData, s32 groupId, Mtx mtx);
 
-typedef struct ShuryoLightEntry {
-    NpcEntry* npc; // 0x0
-    char** anims;  // 0x4
-    s32 anim;      // 0x8
-    s32 groupIdx;  // 0xC
-    s32 shapeIdx;  // 0x10
-} ShuryoLightEntry;
-
-typedef struct ShuryoLightWork {
-    s32 evtPower;               // 0x0
-    s32 evtHead;                // 0x4
-    s32 evtTue;                 // 0x8
-    ShuryoLightEntry lights[5]; // 0xC
-} ShuryoLightWork;
-
-static ShuryoLightWork* slhp;
+static ShuryolightWork* slhp;
 
 // clang-format off
 extend_data(112,
@@ -154,39 +140,12 @@ EVT_BEGIN(shuryolight_tue_normal_2_data_37104)
     RETURN
 EVT_END()
 
-static void shuryolight_callback(void* userData, s32 group, void* mtx) {
-    ShuryoLightEntry* lights = userData;
-    s32 i;
-
-    for (i = 0; i < 5; i++) {
-        if (group == lights[i].groupIdx) {
-            break;
-        }
-    }
-    if (i != 5) {
-        animPoseMain(lights[i].npc->poseId);
-        animPoseDrawShape(lights[i].npc->poseId, lights[i].shapeIdx);
-    }
-}
-
-static void shuryolightSetAnim(s32 index, s32 anim) {
-    ShuryoLightEntry* light = &slhp->lights[index];
-
-    light->anim = anim;
-    animPoseSetAnim(light->npc->poseId, light->anims[anim], 1);
-}
-
-static s32 shuryolightRunEvt(void* evtCode, s32 eventId) {
-    if (evtCheckID(eventId)) {
-        evtDeleteID(eventId);
-    }
-    return evtEntryType(evtCode, 0, 0, 0)->eventId;
-}
+#include "rel/common/shuryolight.h"
 
 USER_FUNC(evt_shuryolight_init_2_text_B870) {
     NpcEntry* npc;
     NpcEntry* light;
-    ShuryoLightEntry* lights;
+    ShuryolightEntry* lights;
 
     npc = npcNameToPtr((const char*)evtGetValue(event, event->args[0]));
     npcEntry("light_power", "c_shuryo");
@@ -196,15 +155,15 @@ USER_FUNC(evt_shuryolight_init_2_text_B870) {
     npcEntry("light_tue_1", "c_shuryo");
 
     slhp = _mapAlloc(0x70);
-    slhp->evtPower = 0;
-    slhp->evtHead = 0;
-    slhp->evtTue = 0;
-    lights = slhp->lights;
+    slhp->powerEvtId = 0;
+    slhp->headEvtId = 0;
+    slhp->tueEvtId = 0;
+    lights = slhp->entries;
 
     light = npcNameToPtr("light_power");
     light->flags |= 0xa0;
     lights[0].npc = light;
-    lights[0].anims = green_light_anim;
+    lights[0].animTable = green_light_anim;
     lights[0].groupIdx = animPoseGetGroupIdx(npc->poseId, "locator6");
     lights[0].shapeIdx = animPoseGetShapeIdx(light->poseId, "pPlaneShape34");
     shuryolightSetAnim(0, 1);
@@ -212,7 +171,7 @@ USER_FUNC(evt_shuryolight_init_2_text_B870) {
     light = npcNameToPtr("light_head_1");
     light->flags |= 0xa0;
     lights[1].npc = light;
-    lights[1].anims = orange_light_anim;
+    lights[1].animTable = orange_light_anim;
     lights[1].groupIdx = animPoseGetGroupIdx(npc->poseId, "locator9");
     lights[1].shapeIdx = animPoseGetShapeIdx(light->poseId, "pPlaneShape37");
     shuryolightSetAnim(1, 3);
@@ -220,7 +179,7 @@ USER_FUNC(evt_shuryolight_init_2_text_B870) {
     light = npcNameToPtr("light_head_2");
     light->flags |= 0xa0;
     lights[2].npc = light;
-    lights[2].anims = red_light_anim;
+    lights[2].animTable = red_light_anim;
     lights[2].groupIdx = animPoseGetGroupIdx(npc->poseId, "locator8");
     lights[2].shapeIdx = animPoseGetShapeIdx(light->poseId, "pPlaneShape36");
     shuryolightSetAnim(2, 3);
@@ -228,7 +187,7 @@ USER_FUNC(evt_shuryolight_init_2_text_B870) {
     light = npcNameToPtr("light_head_3");
     light->flags |= 0xa0;
     lights[3].npc = light;
-    lights[3].anims = yellow_light_anim;
+    lights[3].animTable = yellow_light_anim;
     lights[3].groupIdx = animPoseGetGroupIdx(npc->poseId, "locator7");
     lights[3].shapeIdx = animPoseGetShapeIdx(light->poseId, "pPlaneShape35");
     shuryolightSetAnim(3, 3);
@@ -236,7 +195,7 @@ USER_FUNC(evt_shuryolight_init_2_text_B870) {
     light = npcNameToPtr("light_tue_1");
     light->flags |= 0xa0;
     lights[4].npc = light;
-    lights[4].anims = red_light_anim;
+    lights[4].animTable = red_light_anim;
     lights[4].groupIdx = animPoseGetGroupIdx(npc->poseId, "locator5");
     lights[4].shapeIdx = animPoseGetShapeIdx(light->poseId, "pPlaneShape36");
     shuryolightSetAnim(4, 1);
@@ -257,7 +216,7 @@ USER_FUNC(evt_shuryolight_set_anim) {
 USER_FUNC(evt_shuryolight_wait_anim_end) {
     s32* args = event->args;
     s32 idx = evtGetValue(event, args[0]);
-    NpcEntry** npc = &slhp->lights[idx].npc;
+    NpcEntry** npc = &slhp->entries[idx].npc;
     s32 poseId = (*npc)->poseId;
 
     return animPoseGetLoopTimes(poseId) < 1.0f ? 0 : 2;
@@ -266,7 +225,7 @@ USER_FUNC(evt_shuryolight_wait_anim_end) {
 USER_FUNC(evt_shuryolight_get_anim_time) {
     s32* args = event->args;
     s32 idx = evtGetValue(event, args[0]);
-    NpcEntry** npc = &slhp->lights[idx].npc;
+    NpcEntry** npc = &slhp->entries[idx].npc;
     AnimData* data = animPoseGetAnimDataPtr((*npc)->poseId);
     f32 time = 1000.0f * (*(f32*)((u8*)data->clip + 8) - *(f32*)((u8*)data->clip + 4)) / 60.0f;
 
@@ -277,7 +236,7 @@ USER_FUNC(evt_shuryolight_get_anim_time) {
 USER_FUNC(evt_shuryolight_get_status) {
     s32* args = event->args;
     s32 idx = evtGetValue(event, args[0]);
-    s32* anim = &slhp->lights[idx].anim;
+    s32* anim = &slhp->entries[idx].animIdx;
 
     evtSetValue(event, args[1], *anim);
     return 2;
@@ -290,13 +249,13 @@ USER_FUNC(evt_shuryolight_run_evt_2_text_B538) {
     void* tue = (void*)evtGetValue(event, args[2]);
 
     if (power != NULL) {
-        slhp->evtPower = shuryolightRunEvt(power, slhp->evtPower);
+        slhp->powerEvtId = shuryolightRunEvt(power, slhp->powerEvtId);
     }
     if (head != NULL) {
-        slhp->evtHead = shuryolightRunEvt(head, slhp->evtHead);
+        slhp->headEvtId = shuryolightRunEvt(head, slhp->headEvtId);
     }
     if (tue != NULL) {
-        slhp->evtTue = shuryolightRunEvt(tue, slhp->evtTue);
+        slhp->tueEvtId = shuryolightRunEvt(tue, slhp->tueEvtId);
     }
     return 2;
 }
@@ -304,41 +263,41 @@ USER_FUNC(evt_shuryolight_run_evt_2_text_B538) {
 USER_FUNC(evt_shuryolight_run_power_evt) {
     void* evt = (void*)evtGetValue(event, event->args[0]);
 
-    slhp->evtPower = shuryolightRunEvt(evt, slhp->evtPower);
+    slhp->powerEvtId = shuryolightRunEvt(evt, slhp->powerEvtId);
     return 2;
 }
 
 USER_FUNC(evt_shuryolight_run_head_evt) {
     void* evt = (void*)evtGetValue(event, event->args[0]);
 
-    slhp->evtHead = shuryolightRunEvt(evt, slhp->evtHead);
+    slhp->headEvtId = shuryolightRunEvt(evt, slhp->headEvtId);
     return 2;
 }
 
 USER_FUNC(evt_shuryolight_run_tue_evt) {
     void* evt = (void*)evtGetValue(event, event->args[0]);
 
-    slhp->evtTue = shuryolightRunEvt(evt, slhp->evtTue);
+    slhp->tueEvtId = shuryolightRunEvt(evt, slhp->tueEvtId);
     return 2;
 }
 
 USER_FUNC(evt_shuryolight_delete) {
     s32 i;
 
-    if (slhp->evtPower != 0) {
-        evtDeleteID(slhp->evtPower);
-        slhp->evtPower = 0;
+    if (slhp->powerEvtId != 0) {
+        evtDeleteID(slhp->powerEvtId);
+        slhp->powerEvtId = 0;
     }
-    if (slhp->evtHead != 0) {
-        evtDeleteID(slhp->evtHead);
-        slhp->evtHead = 0;
+    if (slhp->headEvtId != 0) {
+        evtDeleteID(slhp->headEvtId);
+        slhp->headEvtId = 0;
     }
-    if (slhp->evtTue != 0) {
-        evtDeleteID(slhp->evtTue);
-        slhp->evtTue = 0;
+    if (slhp->tueEvtId != 0) {
+        evtDeleteID(slhp->tueEvtId);
+        slhp->tueEvtId = 0;
     }
     for (i = 0; i < 5; i++) {
-        npcDeleteGroup(slhp->lights[i].npc);
+        npcDeleteGroup(slhp->entries[i].npc);
     }
     _mapFree(slhp);
     slhp = NULL;
