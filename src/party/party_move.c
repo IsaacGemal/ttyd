@@ -774,16 +774,11 @@ void partyChgSpeedPose(PartyEntry* party, f32 f1) {
     }
 }
 
-// Match note: without opt_propagation off, MWCC propagates the 270.0f literal and emits
-// `fadds f0, f1, f0`; reading the yaw into a local first makes it emit the original `fadds f0, f0, f1`.
-#pragma opt_propagation off // keep the constant load scheduling so fadds takes its operands in the original order
 void partySetDispDirToMario(PartyEntry* party) {
     PartyEntry* work = party;
     MarioWork* mario = work->playerPtr;
     f32 angle = angleABf(party->position.x, party->position.z, mario->position.x, mario->position.z);
-    CameraEntry* cam = camGetPtr(CAMERA_3D);
-    f32 viewYaw = cam->viewYaw;
-    f32 result = revise360(viewYaw + 270.0f - angle);
+    f32 result = revise360(270.0f + camGetPtr(CAMERA_3D)->viewYaw - angle);
     s32 flag = 0;
 
     if (result >= float_90_8041b470 && result <= 270.0f) {
@@ -791,7 +786,6 @@ void partySetDispDirToMario(PartyEntry* party) {
     }
     work->field_110 = flag ? 180.0f : 0.0f;
 }
-#pragma opt_propagation reset
 
 static const char* boxNames[] = {
     "MOBJ_TreasureBox",

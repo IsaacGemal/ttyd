@@ -222,10 +222,6 @@ static s32 _mario_makkuro_set(EventEntry* event, BOOL isFirstCall) {
 }
 
 
-// The named `args` temp plus opt_propagation off are both required: with propagation on (or with
-// event->args[0] used directly) MWCC puts the string-pool base temp in r6 and event->args in r5;
-// the original has the pool base in r5 and event->args in r6.
-#pragma opt_propagation off
 s32 _mario_super_emblem_anim_set(EventEntry* event, s32 mode) {
     s32* args = event->args;
     const char* anim;
@@ -234,7 +230,7 @@ s32 _mario_super_emblem_anim_set(EventEntry* event, s32 mode) {
     s32 id;
 
     work = _battleWorkPointer;
-    id = evtGetValue(event, args[0]);
+    id = evtGetValue(event, *args++);
     id = BattleTransID(event, id);
 
     BattleGetUnitPtr(work, id);
@@ -300,7 +296,6 @@ s32 _mario_super_emblem_anim_set(EventEntry* event, s32 mode) {
 
     return 0;
 }
-#pragma opt_propagation reset
 
 USER_FUNC(_get_mario_hammer_lv) {
     s32 arg = event->args[0];

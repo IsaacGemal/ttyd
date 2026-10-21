@@ -2040,7 +2040,6 @@ void party_motion_behind_mario_continue(PartyEntry* party) {
 }
 #pragma opt_propagation reset
 
-#pragma opt_common_subs off // MWCC otherwise CSEs party+0x94 across the partyGetAppearPos4 call into r29
 void party_motion_behind_mario_fly(PartyEntry* party) {
     MarioWork* mario;
     MarioWork* mario2;
@@ -2134,7 +2133,7 @@ void party_motion_behind_mario_fly(PartyEntry* party) {
         }
         party->position.x = pos.x;
         party->position.z = pos.z;
-        party->position.y = 0.05f * (party->targetPos.y - party->position.y) + party->position.y;
+        party->position.y += 0.05f * (party->targetPos.y - party->position.y);
         partyChgSpeedPose(party, party->speed);
     } else {
         party->timer = 0;
@@ -2175,12 +2174,11 @@ void party_motion_behind_mario_fly(PartyEntry* party) {
             if (f31 > party->height) {
                 hit = NULL;
             }
-            party->position.y = 0.05f * (party->groundY - party->position.y) + party->position.y;
+            party->position.y += 0.05f * (party->groundY - party->position.y);
         }
         party->groundHit = hit;
     }
 }
-#pragma opt_common_subs reset
 
 #pragma opt_propagation off // keep constant-load scheduling so hd's 1000.0f load stays after the y add
 void party_motion_beside_mario(PartyEntry* party) {

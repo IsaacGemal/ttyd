@@ -232,19 +232,10 @@ BOOL marioChkSlitThrouhEnd(void) {
     return FALSE;
 }
 
-// opt_propagation off keeps the 0x14 local in r31 across the marioGetPtr call;
-// on, MWCC rematerializes it as `li r0` after the call.
-#pragma opt_propagation off
 void motSlitContinue(void) {
-    MarioWork* mario;
-    s16 state;
-
     marioChgMot2(0x15);
-    state = 0x14;
-    mario = marioGetPtr();
-    mario->slitState = state;
+    marioGetPtr()->slitState = 0x14;
 }
-#pragma opt_propagation reset
 
 
 BOOL marioChkSlitEnd(void) {

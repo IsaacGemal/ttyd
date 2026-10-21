@@ -1508,7 +1508,6 @@ BOOL partyGoodbyeInit(PartyEntry* party) {
     return FALSE;
 }
 
-#pragma opt_propagation off // without it the case-10 drop/speed arithmetic puts drop in f1 and rotates f1-f5; off reproduces the original's f5/f4/f1/f3/f2 set
 BOOL partyGoodbyeMain(PartyEntry* party) {
     MarioWork* mario = marioGetPtr();
     char* pose;
@@ -1536,7 +1535,6 @@ BOOL partyGoodbyeMain(PartyEntry* party) {
             party->field_34 = 8;
             break;
         case 10: {
-            f32 drop;
             f32 my;
             f32 mx;
             f32 mz;
@@ -1559,9 +1557,9 @@ BOOL partyGoodbyeMain(PartyEntry* party) {
             party->targetDist = distABf(px, pz, mx, mz);
             party->dir = angleABf(px, pz, mx, mz);
             party->timer = 15;
-            drop = my - py;
+            py = my - py; // now the drop to the target height
             party->speed = party->targetDist / (f32)party->timer;
-            party->jumpPara1 = (0.5f * (party->jumpPara3 * (f32)party->timer * (f32)party->timer) + drop) /
+            party->jumpPara1 = (0.5f * (party->jumpPara3 * (f32)party->timer * (f32)party->timer) + py) /
                                (f32)party->timer;
             if (!(party->flags2 & 2)) {
                 if (party->currentMemberId < 8) {
@@ -1636,7 +1634,6 @@ BOOL partyGoodbyeMain(PartyEntry* party) {
     }
     return FALSE;
 }
-#pragma opt_propagation reset
 
 static inline void partyHelloEnd(PartyEntry* party) {
     MarioWork* player;
@@ -2363,10 +2360,8 @@ s32 partyRideYoshiMain(PartyEntry* party) {
     return 0;
 }
 
-#pragma opt_lifetimes off // without it the case-22 pose is live-range-split into r31 (mario's free register); off keeps it in r29 like the original
 void party_damage_return(PartyEntry* party) {
     MarioWork* mario = party->playerPtr;
-    char* pose;
     f32 partyX;
     f32 partyY;
     f32 partyZ;
@@ -2393,23 +2388,7 @@ void party_damage_return(PartyEntry* party) {
             }
             // fall through
         case 10:
-            if (!(party->flags2 & 2)) {
-                if (party->currentMemberId < 8) {
-                    partyGetHp(party->currentMemberId);
-                }
-                if (!(party->flags2 & 0x8000)) {
-                    pose = *(char**)((u8*)partyPoseTbl + party->currentMemberId * 0x3c + 32);
-                } else if (party->currentMemberId != PARTY_MEMBER_YOSHI) {
-                    pose = *(char**)((u8*)partyDotPoseTbl + party->currentMemberId * 0x3c + 32);
-                } else {
-                    pose = yoshiDotPoseTbl[pouchGetPartyColor(PARTNER_YOSHI)][8];
-                }
-                if (!(party->field_18 && !strcmp(party->field_18, pose))) {
-                    party->field_18 = pose;
-                    party->field_20 = 0;
-                    party->field_8 |= 0x2000;
-                }
-            }
+            partyChgPoseId(party, 8);
             party->timer = sysMsec2Frame(0xc8);
             party->motionStep = 11;
             /* fall through */
@@ -2486,23 +2465,7 @@ void party_damage_return(PartyEntry* party) {
             }
             if (party->groundHit != NULL) {
                 if ((hitGetAttr((HitEntry*)party->groundHit) >> 9 & 1) == 0) {
-                    if (!(party->flags2 & 2)) {
-                        if (party->currentMemberId < 8) {
-                            partyGetHp(party->currentMemberId);
-                        }
-                        if (!(party->flags2 & 0x8000)) {
-                            pose = *(char**)((u8*)partyPoseTbl + party->currentMemberId * 0x3c + 36);
-                        } else if (party->currentMemberId != PARTY_MEMBER_YOSHI) {
-                            pose = *(char**)((u8*)partyDotPoseTbl + party->currentMemberId * 0x3c + 36);
-                        } else {
-                            pose = yoshiDotPoseTbl[pouchGetPartyColor(PARTNER_YOSHI)][9];
-                        }
-                        if (!(party->field_18 && !strcmp(party->field_18, pose))) {
-                            party->field_18 = pose;
-                            party->field_20 = 0;
-                            party->field_8 |= 0x2000;
-                        }
-                    }
+                    partyChgPoseId(party, 9);
                     party->motionStep = 0x17;
                     party->timer = 0x1e;
                 }
@@ -2523,7 +2486,6 @@ void party_damage_return(PartyEntry* party) {
         vivianShadow(party);
     }
 }
-#pragma opt_lifetimes reset
 
 void partyInitCamId(PartyEntry* party) {
     party->camId = marioGetCamId();
@@ -2750,14 +2712,12 @@ void partySetCamId(PartyEntry* party, s32 cameraId) {
 }
 
 // A named `want` cache orders the 0.0 compare first (the plain field_110 read form scores 99.38%).
-// Caching field_10C in `old` before the outer compare (nothing writes it in between) plus
-// opt_lifetimes off gives the original arithmetic and clamp FPR allocation (field_10C in f2, field_110
-// in f3, and the clamp reloads in f1); without `old` the common-subexpression pass raises the arithmetic to f3.
-#pragma opt_lifetimes off // keep the arithmetic's field_10C in f2 and field_110 in f3
+// Caching field_10C in `angle` (reused after the facing test; nothing writes field_10C in between) gives the
+// original arithmetic and clamp FPR allocation (field_10C in f2, field_110 in f3, the clamp reloads in f1);
+// a separate local for it puts field_10C in f3, and without the cache CSE raises the arithmetic to f3.
 void partyMakeDispDir(PartyEntry* party) {
     f32 angle;
     f32 target;
-    f32 old;
     f32 want;
 
     if (party->flags2 & 0x100) {
@@ -2789,14 +2749,14 @@ void partyMakeDispDir(PartyEntry* party) {
             return;
         }
     }
-    old = party->field_10C;
-    if (old <= 180.0f) {
+    angle = party->field_10C;
+    if (angle <= 180.0f) {
         if (0.0f == (want = party->field_110)) {
             f32 t = (party->field_8 & 0x1000) ? 20.0f : -40.0f;
             f32 s;
 
-            s = 0.125f * (t - old);
-            party->field_10C = old + s;
+            s = 0.125f * (t - angle);
+            party->field_10C = angle + s;
             if (!(party->field_8 & 0x1000)) {
                 if (party->field_10C < -30.0f) {
                     party->field_8 |= 0x1000;
@@ -2809,8 +2769,8 @@ void partyMakeDispDir(PartyEntry* party) {
             f32 t = (party->field_8 & 0x1000) ? 170.0f : 220.0f;
             f32 s;
 
-            s = 0.125f * (t - old);
-            party->field_10C = old + s;
+            s = 0.125f * (t - angle);
+            party->field_10C = angle + s;
             if (!(party->field_8 & 0x1000)) {
                 if (party->field_10C > 210.0f) {
                     party->field_8 |= 0x1000;
@@ -2820,13 +2780,13 @@ void partyMakeDispDir(PartyEntry* party) {
                 party->field_8 &= ~0x1000;
             }
         }
-    } else if (old > 180.0f) {
+    } else if (angle > 180.0f) {
         if (0.0f == (want = party->field_110)) {
             f32 t = (party->field_8 & 0x1000) ? 20.0f : -40.0f;
             f32 s;
 
-            s = 0.125f * (t - old);
-            party->field_10C = old + s;
+            s = 0.125f * (t - angle);
+            party->field_10C = angle + s;
             if (!(party->field_8 & 0x1000)) {
                 if (party->field_10C < -30.0f) {
                     party->field_8 |= 0x1000;
@@ -2839,8 +2799,8 @@ void partyMakeDispDir(PartyEntry* party) {
             f32 t = (party->field_8 & 0x1000) ? 170.0f : 220.0f;
             f32 s;
 
-            s = 0.125f * (t - old);
-            party->field_10C = old + s;
+            s = 0.125f * (t - angle);
+            party->field_10C = angle + s;
             if (!(party->field_8 & 0x1000)) {
                 if (party->field_10C > 210.0f) {
                     party->field_8 |= 0x1000;
@@ -2852,7 +2812,6 @@ void partyMakeDispDir(PartyEntry* party) {
         }
     }
 }
-#pragma opt_lifetimes reset
 
 // Keep CSE off across this function: with it on the order multiply's FPRs land in f1/f0/f2
 // instead of the target's f2/f1/f0.

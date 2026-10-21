@@ -250,7 +250,6 @@ typedef struct TattleCamEntry {
 
 #define winLogI2F(v, base, scratch) ((f32)(v))
 
-#pragma opt_common_subs off // keeps MWCC from CSE-ing the map/base addresses across the load loops
 void winLogInit(WindowWork* work) {
     LogWin* w = (LogWin*)work;
     static const char* msg_help[5] = {"msg_menu_kiroku_map", "msg_menu_kiroku_stone", "msg_menu_kiroku_badge", "msg_menu_kiroku_ryori", "msg_menu_kiroku_mono"};
@@ -372,8 +371,8 @@ void winLogInit(WindowWork* work) {
         s32 ox = (s32)((w->mapCx + w->mapScrollX) - 230.f);
         s32 oy = (s32)((w->mapCy + w->mapScrollY) - 120.f);
 
-        w->mapScrollX = w->mapScrollX - (f32)ox;
-        w->mapScrollY = w->mapScrollY - (f32)oy;
+        w->mapScrollX -= (f32)ox;
+        w->mapScrollY -= (f32)oy;
     }
     if (w->mapScrollX > 0.0f) {
         w->mapScrollX = 0.0f;
@@ -492,7 +491,6 @@ void winLogInit(WindowWork* work) {
         }
     }
 }
-#pragma opt_common_subs reset
 
 // 100%: the 45.0f * (f32)a product is held in a named temp so MWCC colors the
 // long-lived int->float conversion double f7 (as the original does) instead of
@@ -1465,8 +1463,6 @@ const char* winGetMapTplName(void) {
     return "map7.tpl";
 }
 
-// opt_loop_invariants off: the target recomputes the vec3/colour loads inside the tubuDt loop, not hoisted.
-#pragma opt_loop_invariants off
 void mapGX(WindowWork* work, f32 x, f32 y) {
     static f32 pos_tbl[7][2] = {
         {165.0f, 68.0f}, {0.0f, 75.0f}, {97.0f, 150.0f}, {-139.0f, -33.0f}, {41.0f, -163.0f}, {211.0f, -91.0f}, {-209.0f, 159.0f},
@@ -1501,11 +1497,11 @@ void mapGX(WindowWork* work, f32 x, f32 y) {
             if (w->mapSel == i) {
                 GXColor c = c0;
 
-                winTexSet(((gp->retraceCount >> 4) & 1) ? WIN_LOG_TEX_PIN_SEL : WIN_LOG_TEX_PIN_ON, logMkVec((Vec){0.0f, 0.0f, 0.0f}, tx + (f32)t->x, ty + (f32)t->y), (Vec){1.0f, 1.0f, 1.0f}, c);
+                winTexSet(((gp->retraceCount >> 4) & 1) ? WIN_LOG_TEX_PIN_SEL : WIN_LOG_TEX_PIN_ON, (Vec){tx + (f32)t->x, ty + (f32)t->y, 0.0f}, (Vec){1.0f, 1.0f, 1.0f}, c);
             } else {
                 GXColor c = c0;
 
-                winTexSet((t->visible != 0) ? WIN_LOG_TEX_PIN_ON : WIN_LOG_TEX_PIN_OFF, logMkVec((Vec){0.0f, 0.0f, 0.0f}, tx + (f32)t->x, ty + (f32)t->y), (Vec){1.0f, 1.0f, 1.0f}, c);
+                winTexSet((t->visible != 0) ? WIN_LOG_TEX_PIN_ON : WIN_LOG_TEX_PIN_OFF, (Vec){tx + (f32)t->x, ty + (f32)t->y, 0.0f}, (Vec){1.0f, 1.0f, 1.0f}, c);
             }
         }
         {
@@ -1608,7 +1604,6 @@ void mapGX(WindowWork* work, f32 x, f32 y) {
         winTexSet(0xBB, logMkVec((Vec){0.0f, 0.0f, 0.0f}, (x - 220.f) - d, y), (Vec){1.0f, 1.0f, 1.0f}, c1);
     }
 }
-#pragma opt_loop_invariants reset
 
 // Behaviour complete, checked against the asm. Declaring the shared rodata base non-const and
 // disabling loop-invariant motion stopped MWCC hoisting the vec3 loads; inlining the int->float
