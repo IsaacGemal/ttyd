@@ -1602,7 +1602,7 @@ void mapGX(WindowWork* work, f32 x, f32 y) {
                 scale = 3.0f;
             }
             PSMTXTrans(m, tx + (f32)tubuDt[w->mapPick].x, ty + (f32)tubuDt[w->mapPick].y, 0.0f);
-            n = (s32)((f32*)anim->clip)[2];
+            n = (s32)anim->clip->field_0x8;
             animPoseSetLocalTime(w->mapMarioPose, (f32)(gp->retraceCount % n));
             animPoseMain(w->mapMarioPose);
             animPoseDrawMtx(w->mapMarioPose, m, 1, 0.0f, scale);

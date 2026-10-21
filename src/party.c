@@ -151,7 +151,6 @@ s32 partyCtrlNo;
 
 
 // Prototypes for the forward references the original function order needs.
-static inline Vec* partyVecAt(PartyEntry* party, u32 off);
 static inline void partyHelloEnd(PartyEntry* party);
 static inline void partyRideEnd(PartyEntry* party);
 
@@ -759,7 +758,7 @@ void partyReInit(void) {
         party->field_0x13C = NULL;
         party->field_134 = NULL;
         party->headHit = NULL;
-        party->field_0x144 = 0;
+        party->field_0x144 = NULL;
         partyChgPose(party, partyChgPoseId(party, 1));
         partyChgRunMode(party, 2);
         partyChgMot(party, 0);
@@ -798,7 +797,7 @@ void partyReInit(void) {
             party->field_0x13C = NULL;
             party->field_134 = NULL;
             party->headHit = NULL;
-            party->field_0x144 = 0;
+            party->field_0x144 = NULL;
             party->field_70 = (Vec){1.0f, 1.0f, 1.0f};
         }
         partyClearFootmark();
@@ -1485,7 +1484,7 @@ s32 partyHelloMain(PartyEntry* party) {
 }
 
 BOOL partyGoodbyeInit(PartyEntry* party) {
-    u16 v;
+    MarioMotion v;
 
     party->motionStep = 10;
     party_dp = &partyDataTbl[party->currentMemberId];
@@ -1502,8 +1501,8 @@ BOOL partyGoodbyeInit(PartyEntry* party) {
             party->motionStep = 0;
         }
     }
-    v = *(u16*)((u8*)party->playerPtr + 0x2E);
-    if (v == 0x16 || v == 0x18 || v == 0x19) {
+    v = party->playerPtr->currMotionId;
+    if (v == MARIO_MOTION_ROLL || v == MARIO_MOTION_PLANE || v == MARIO_MOTION_SHIP) {
         party->motionStep = 0x14;
     }
     return FALSE;
@@ -1658,7 +1657,7 @@ s32 partyDokanInit(PartyEntry* party) {
     char* pose;
 
     party->flags2 |= 0x10;
-    switch (PS8(player, 0x3E)) { // 0x3E: MarioWork field_0x3E, a signed byte, not named in mario.h
+    switch (player->field_0x3E) {
         case 2:
         case 3:
             partyPaperOn(party, "p_dokan_y");
@@ -1684,7 +1683,7 @@ s32 partyDokanInit(PartyEntry* party) {
             party->field_0x124 = -26.0f;
             party->motionStep = 0xa;
             party->spinPivot.y = 10.0f;
-            party->tiltX = revise360(180.0f + player->dispRot.x);
+            party->dispRot.x = revise360(180.0f + player->dispRot.x);
             break;
         default:
             break;
@@ -1736,7 +1735,7 @@ s32 partyDokanMain(PartyEntry* party) {
             party->field_70.z = party->field_70.x;
             break;
         case 10:
-            party->tiltX += party->field_0x124;
+            party->dispRot.x += party->field_0x124;
             break;
         case 100:
             switch ((s8)party->field_2E) {
@@ -1766,7 +1765,7 @@ s32 partyDokanMain(PartyEntry* party) {
             break;
         case 102:
             party->field_70 = (Vec){1.0f, 1.0f, 1.0f};
-            *partyVecAt(party, 0x64) = (Vec){0.0f, 0.0f, 0.0f};
+            party->dispRot = (Vec){0.0f, 0.0f, 0.0f};
             party->spinPivot = (Vec){0.0f, 0.0f, 0.0f};
             party->dispOffset = (Vec){0.0f, 0.0f, 0.0f};
             party->field_110 = player->dispReqDir;
@@ -1873,9 +1872,9 @@ void getRidePos(PartyEntry* party, Vec* pos) {
     f32 angle;
     f32 sn;
     f32 cs;
-    u16 id = P16(mario, 0x2E);
+    MarioMotion id = mario->currMotionId;
 
-    if (id == 0x1A) {
+    if (id == MARIO_MOTION_YOSHI) {
         angle = 3.1415927f * toMovedir(mario->dispReqDir) / 180.0f;
         if (yoshiGetStatus() != 2) {
             pos->x = mario->position.x - 10.0f * (f32)sin(angle);
@@ -1943,13 +1942,6 @@ void allPartyForceRideOn(void) {
     }
 }
 #pragma dont_inline reset
-
-// The header leaves 0x64..0x70 and 0x7C..0xB8 as unnamed padding; these Vecs live there.
-static inline Vec* partyVecAt(PartyEntry* party, u32 off) {
-    u8* base = (u8*)party;
-    return (Vec*)(base + off);
-}
-
 
 void L_allPartyRideOn(void) {
     PartyEntry* party = partyGetPtr(marioGetPartyId());
@@ -2292,7 +2284,7 @@ s32 partyRideYoshiMain(PartyEntry* party) {
                 } else if (party->currentMemberId != PARTY_MEMBER_YOSHI) {
                     pose = *(char**)((char*)partyDotPoseTbl + (s32)party->currentMemberId * 0x3c + 0x10);
                 } else {
-                    pose = *(char**)((char*)yoshiDotPoseTbl + pouchGetPartyColor(PARTNER_YOSHI) * 0x3c + 0x10);
+                    pose = yoshiDotPoseTbl[pouchGetPartyColor(PARTNER_YOSHI)][4];
                 }
                 if (!(party->field_18 && !strcmp(party->field_18, pose))) {
                     party->field_18 = pose;
@@ -2983,10 +2975,10 @@ void partyDisp(CameraId cameraId, void* param) {
         PSMTXTrans(transMtx, -party->spinPivot.x, -party->spinPivot.y, -party->spinPivot.z);
         PSMTXConcat(transMtx, scaleMtx, scaleMtx);
 
-        PSMTXRotRad(transMtx, 'z', 0.017453292f * party->spinAngle);
+        PSMTXRotRad(transMtx, 'z', 0.017453292f * party->dispRot.z);
         PSMTXConcat(transMtx, scaleMtx, scaleMtx);
 
-        PSMTXRotRad(transMtx, 'x', 0.017453292f * party->tiltX);
+        PSMTXRotRad(transMtx, 'x', 0.017453292f * party->dispRot.x);
         PSMTXConcat(transMtx, scaleMtx, scaleMtx);
 
         angle = revise360(party->field_10C - party->playerTargetYaw);

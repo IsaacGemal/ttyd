@@ -90,7 +90,7 @@ typedef struct ScissorWork {
     f32 field_0x10C;              // 0x10C
     u8 field_0x110[0x04];         // 0x110
     void* pointBuf;               // 0x114, 0x1000 bytes of ScissorPoint
-    void* triBuf;                 // 0x118, 0x3000 bytes of triangles (f32 x3, then y3 per triangle)
+    f32 (*triBuf)[6];             // 0x118, 0x3000 bytes of triangles (f32 x3, then y3 per triangle)
     s32 state;                    // 0x11C
     s32 stateFrame;               // 0x120
     Vec starPos;                  // 0x124
@@ -493,7 +493,7 @@ s32 tess(f32* points, s32 count) {
     s32 k;
 
     if (count == 3) {
-        f32* dst = (f32*)((u8*)work->triBuf + work->triCount * 0x18);
+        f32* dst = work->triBuf[work->triCount];
         for (i = 0; i < 3; i++) {
             dst[i] = points[i * 2];
             dst[i + 3] = points[i * 2 + 1];
@@ -529,7 +529,7 @@ s32 tess(f32* points, s32 count) {
             }
         }
         {
-            f32* dst = (f32*)((u8*)work->triBuf + work->triCount * 0x18);
+            f32* dst = work->triBuf[work->triCount];
             for (i = 0; i < 3; i++) {
                 dst[i] = points[i * 2];
                 dst[i + 3] = points[i * 2 + 1];
@@ -724,7 +724,7 @@ void star_disp2D(void) {
 #pragma dont_inline on
 void star_disp2D_sub(s32 index, s32 alpha) {
     ScissorWork* work = GetScissorPtr();
-    f32* points = (f32*)&work->pointCount;
+    StarTrail* star = (StarTrail*)&work->pointCount;
     Mtx mTemp;
     Mtx mTrans;
     Mtx mRotX;
@@ -746,12 +746,12 @@ void star_disp2D_sub(s32 index, s32 alpha) {
     *(u32*)&color = dat_80421718;
     color.a = alpha;
     if (index == 0) {
-        x = points[6];
-        y = points[7];
+        x = star->velX;
+        y = star->velY;
         z = 0.0f;
     } else {
-        x = *(f32*)((u8*)points + index * 4 + 0x3C);
-        y = *(f32*)((u8*)points + index * 4 + 0x4C);
+        x = star->trailX[index - 1];
+        y = star->trailY[index - 1];
         z = 0.0f;
     }
     PSMTXTrans(mTrans, x, y - 20.0f, z);
@@ -1102,7 +1102,7 @@ s32 scissor_damage_sub2(const Vec* point) {
 
     zero = 0.0f;
     for (i = 0; i < work->triCount; i++) {
-        f32* tri = (f32*)((u8*)work->triBuf + i * 0x18);
+        f32* tri = work->triBuf[i];
         for (j = 0; j < 3; j++) {
             s32 k = (j + 1) % 3;
 
@@ -1251,7 +1251,7 @@ void scissor_disp_region(CameraId cameraId, void* param) {
     GXSetTevAlphaIn(GX_TEVSTAGE0, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_KONST);
     GXSetTevKAlphaSel(GX_TEVSTAGE0, GX_TEV_KASEL_1);
     GXLoadPosMtxImm(camGetPtr(CAMERA_2D)->view, GX_PNMTX0);
-    tri = (f32*)work->triBuf;
+    tri = *work->triBuf;
     GXBegin(GX_TRIANGLES, GX_VTXFMT0, (u16)(work->triCount * 3));
     for (i = 0; i < work->triCount; i++) {
         GXPosition3f32(tri[0], tri[3], 0.0f);

@@ -130,8 +130,8 @@ struct BattleWorkCommandParty {
     u16 mIcon;               // 0xC
     u8 pad_0xE[2];           // 0xE
     char* mDescription;      // 0x10
-    u16 mCurrentHP;          // 0x14
-    u16 mMaxHP;              // 0x16
+    s16 mCurrentHP;          // 0x14
+    s16 mMaxHP;              // 0x16
 };
 
 struct BattleWorkCommandMultiItem {

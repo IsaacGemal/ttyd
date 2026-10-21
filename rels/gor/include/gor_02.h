@@ -1,6 +1,7 @@
 #pragma once
 
 #include "evt/evt_cmd.h"
+#include "memory.h"
 
 typedef struct {
     s32 unk0;
@@ -17,7 +18,7 @@ USER_FUNC(monosiri_check);
 USER_FUNC(lecture);
 USER_FUNC(evt_gor_door_out_info);
 USER_FUNC(evt_gor_door_in_info);
-void kuragarisan_msgcb(s32 type, void* param);
+void kuragarisan_msgcb(s32 type, smartEntry* smart);
 USER_FUNC(iri_13_free_item_tbl);
 USER_FUNC(iri_13_update_item_tbl);
 USER_FUNC(iri_13_make_item_tbl);

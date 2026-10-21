@@ -1454,7 +1454,7 @@ void winBookGX(WindowWork* work, s32 type, f32 x, f32 y) {
         } else {
             animPoseSetAnim(pose, "HOS_E_1", 0);
         }
-        animPoseSetLocalTime(pose, gp->retraceCount % (s32)*(f32*)(&anim->clip[2]));
+        animPoseSetLocalTime(pose, gp->retraceCount % (s32)anim->clip->field_0x8);
         animPoseMain(pose);
         animPoseDraw(pose, 425.0f + x, y - 275.0f, 0.0f, 180.0f, 5.0f, 2);
     }

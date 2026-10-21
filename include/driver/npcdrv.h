@@ -252,6 +252,20 @@ typedef struct FirstStrikeInfo {
     GXColor color;       // 0x1C
 } FirstStrikeInfo;
 
+// Battle setup and result passed to the battle (BattleInit keeps it as BattleWork.fbatInfo).
+typedef struct FieldBattleInfo {
+    u32 mode;                // 0x0, unused
+    BattleUnitType party;    // 0x4
+    u32 partyId;             // 0x8
+    NpcBattleInfo* setup;    // 0xC
+    u32 result;              // 0x10
+    s32 field_0x14;          // 0x14, coins added by BattleStoreCoin; npcdrv copies it to NpcEntry.btlCoinDropCount
+    u8 field_0x18;           // 0x18, battleRules[0] (seq_battle), the rule kind battle_actrecord judges
+    u8 ruleKeepResult;       // 0x19, written by battle_actrecord, read by evt_npc_get_battle_rule_keep_result
+    u8 field_0x1A;           // 0x1A, battleRules[1] (seq_battle)
+    u8 field_0x1B;           // 0x1B, battleRules[2] (seq_battle)
+} FieldBattleInfo;
+
 typedef struct FieldBattleData {
     s16 mode;                    // 0x0
     u8 state;                    // 0x2, step of the talk sequence in npcdrv's field battle state machine
@@ -262,9 +276,11 @@ typedef struct FieldBattleData {
     s32 firstAttackKind;         // 0x10, how the field contact was made, written by fbatHitCheck: 0x20000-0x80000
                                  // jumps, 0x100000-0x400000 hammers, 0x800000, 0x1000000; tou_03 forces 0x10000000;
                                  // seq_battle turns it into BattleInformationSetFirstAttack kinds 1-7
-    u8 field_14[0x39 - 0x14];    // 0x14
-    u8 ruleKeepResult;           // 0x39, read by evt_npc_get_battle_rule_keep_result
-    u8 field_3A[0x3C - 0x3A];    // 0x3A
+    u32 field_14;                // 0x14, BattleInformationSetFirstAttack argument for firstAttackKind 0x10000000
+                                 // (seq_battle; tou_03 sets 0x10)
+    u8 field_18[0x1C - 0x18];    // 0x18
+    u32 field_1C;                // 0x1C, bit 0: no first attack (seq_battle; tou_03 clears it)
+    FieldBattleInfo field_20;    // 0x20
     void* endEvt;                // 0x3C, script started by battle_seq_end case 0x07000003
     s32 endEvtId;                // 0x40, waited on by case 0x07000004
     s32 field_44;                // 0x44

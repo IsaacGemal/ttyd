@@ -409,29 +409,29 @@ void unk_800b45e0(PartyEntry* party) {
     MarioWork* mario = party->playerPtr;
 
     if (strcmp(party->field_18, YOSHI_S_2) == 0) {
-        s32 t = *(u16*)&mario->poseTime + 1;
-        *(u16*)&mario->poseTime = t;
+        s32 t = mario->poseTime + 1;
+        mario->poseTime = t;
         if ((u16)t >= 0x34) {
-            *(u16*)&mario->poseTime = 0;
+            mario->poseTime = 0;
         }
-        party->field_20 = *(u16*)&mario->poseTime;
-        animPoseSetLocalTime(party->paperAnimGroup, (f32)*(u16*)&mario->poseTime);
+        party->field_20 = mario->poseTime;
+        animPoseSetLocalTime(party->paperAnimGroup, (f32)mario->poseTime);
     } else if (strcmp(party->field_18, YOSHI_R_2) == 0) {
-        s32 t = *(u16*)&mario->poseTime + 1;
-        *(u16*)&mario->poseTime = t;
+        s32 t = mario->poseTime + 1;
+        mario->poseTime = t;
         if ((u16)t >= 0xA) {
-            *(u16*)&mario->poseTime = 0;
+            mario->poseTime = 0;
         }
-        party->field_20 = *(u16*)&mario->poseTime;
-        animPoseSetLocalTime(party->paperAnimGroup, (f32)*(u16*)&mario->poseTime);
+        party->field_20 = mario->poseTime;
+        animPoseSetLocalTime(party->paperAnimGroup, (f32)mario->poseTime);
     } else if (strcmp(party->field_18, YOSHI_F_1) == 0) {
-        s32 t = *(u16*)&mario->poseTime + 1;
-        *(u16*)&mario->poseTime = t;
+        s32 t = mario->poseTime + 1;
+        mario->poseTime = t;
         if ((u16)t >= 0xA) {
-            *(u16*)&mario->poseTime = 0;
+            mario->poseTime = 0;
         }
-        party->field_20 = *(u16*)&mario->poseTime;
-        animPoseSetLocalTime(party->paperAnimGroup, (f32)*(u16*)&mario->poseTime);
+        party->field_20 = mario->poseTime;
+        animPoseSetLocalTime(party->paperAnimGroup, (f32)mario->poseTime);
     }
 }
 
@@ -451,11 +451,11 @@ static inline f32 yoshiRideHeight(PartyEntry* party) {
     MarioWork* pm = party->playerPtr;
     f32 ofs = 0.0f;
     if (strcmp(party->field_18, YOSHI_S_2) == 0) {
-        ofs = 2.0f * ofs_PYS_S_2[*(u16*)&pm->poseTime] + ofs;
+        ofs = 2.0f * ofs_PYS_S_2[pm->poseTime] + ofs;
     } else if (strcmp(party->field_18, YOSHI_R_2) == 0) {
-        ofs = 2.0f * ofs_PYS_R_2[*(u16*)&pm->poseTime] + ofs;
+        ofs = 2.0f * ofs_PYS_R_2[pm->poseTime] + ofs;
     } else if (strcmp(party->field_18, YOSHI_F_1) == 0) {
-        ofs = 2.0f * ofs_PYS_F_1[*(u16*)&pm->poseTime] + ofs;
+        ofs = 2.0f * ofs_PYS_F_1[pm->poseTime] + ofs;
     }
     return ofs;
 }
@@ -853,7 +853,7 @@ void yoshi_use(PartyEntry* party) {
         ((PartyYoshiUse*)party->useStruct)->anim = 1.0f;
         M_F(0x2A0) = (f32)sin(3.1415927f * ((PartyYoshiUse*)party->useStruct)->anim / 180.0f);
         mario->field_0x2A4 = 0.0f;
-        M_F(0x2A8) = party->position.y;
+        mario->wCamVal1 = party->position.y;
         party->yoshiPsndSFXId = psndSFXOn_3D((const char*)0x941, &party->position);
         /* fallthrough */
     case 0x15:
@@ -888,7 +888,7 @@ void yoshi_use(PartyEntry* party) {
         }
         hit = partySearchGround(party, 11.0f, 11.0f);
         if (hit == NULL) {
-            party->position.y = M_F(0x2A8) + mario->field_0x2A4;
+            party->position.y = mario->wCamVal1 + mario->field_0x2A4;
         } else {
             s32 attr = hitGetAttr(hit);
             if (attr & 0x200) {
@@ -902,7 +902,7 @@ void yoshi_use(PartyEntry* party) {
                 }
             }
             L_sweatEntry(party, NULL);
-            M_F(0x2A8) = party->groundY;
+            mario->wCamVal1 = party->groundY;
             party->position.y = party->groundY + mario->field_0x2A4;
         }
         party->position.x = mario->position.x;
@@ -1271,7 +1271,7 @@ void inertia(PartyEntry* party) {
         f32 t = f4 * f4 + f5 * f5;
 
         if (t <= float_256) {
-            s32 v = *(s32*)((u8*)party->useStruct + 4);
+            s32 v = ((PartyYoshiUse*)party->useStruct)->direction;
             f4 = f3 * p01 + f4;
             if (v > 0 && f4 <= 0.0f) {
                 f4 = 0.0f;

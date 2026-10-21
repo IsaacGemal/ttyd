@@ -403,16 +403,16 @@ static inline void shadowMatColor(GXColor c) {
 
 // The viewport/scissor/look-at/projection block the original expands identically for the
 // proj, proj+depth and char shadow draw paths; it was a macro in the source.
-// The projection matrix is spelled two ways -- w->lookAt + 0x30 for `proj` (shadowDispProjMtx) and
+// The projection matrix is reached two ways -- through shadowDispProjMtx for `proj` and as
 // w->projection for the GXSetProjection argument -- so the two are not CSE'd and the block's registers
 // come out as retail's.
 // `size` is declared at function scope (not in the macro) so all three expansions share one temp,
 // which is what keeps it in retail's r27 in every branch.
 
 
-// The projection matrix as the end of lookAt (writing it through w->projection CSEs with the
+// The projection matrix through an inline (writing `&w->projection` in the block CSEs with the
 // GXSetProjection argument, and the original recomputes it).
-static inline Mtx44* shadowDispProjMtx(ProjShadowWork* w) { return (Mtx44*)((u8*)w->lookAt + 0x30); }
+static inline Mtx44* shadowDispProjMtx(ProjShadowWork* w) { return &w->projection; }
 
 // The instruction stream, calls and branches all match. shadowConfig (+0x40), testKagePosArray (+0xE0)
 // and vertex_tbl (+0x2C0) are defined in this unit's .data, so MWCC reaches them through the shared

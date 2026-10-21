@@ -7876,20 +7876,19 @@ const char* npcGetTribeName(NpcTribeInfo* tribe) {
     return tribe->nameJp;
 }
 
-// Clears target-table entries 2..9. The original seeds the strength-reduced offset at 0x28
-// (`li r3,0x28; addi r5,r3,0x374`), so index it as `i*0x14` with i starting at 2.
+// Clears target-table entries 2..9, then fills them from entry 2 on, one per matching NPC.
 USER_FUNC(puni_piders_check_func) {
     s32 i;
     NpcWork* work = npcGetWorkPtr();
     s32 total = work->total;
     NpcEntry* npc = work->entries;
-    s32 offset;
+    s32 idx;
 
     for (i = 2; i < 10; i++) {
         Punigp->targets[i].flags &= ~(PUNI_TARGET_ACTIVE | PUNI_TARGET_REPEL);
     }
 
-    offset = 0x28;
+    idx = 2;
     for (i = 0; i < total; i++, npc++) {
         s32 hit;
         Vec pos;
@@ -7925,12 +7924,12 @@ USER_FUNC(puni_piders_check_func) {
             pos.y = Punigp->levelY[3];
         }
         if (hit != 0) {
-            PuniTarget* target = (PuniTarget*)((u8*)Punigp + 0x374 + offset);
+            PuniTarget* target = &Punigp->targets[idx];
 
             target->position = pos;
             target->flags |= PUNI_TARGET_ACTIVE | PUNI_TARGET_REPEL;
         }
-        offset += 0x14;
+        idx++;
     }
     return EVT_RETURN_DONE;
 }

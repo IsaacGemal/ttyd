@@ -314,8 +314,8 @@ void hitMain(void) {
         anyScale = 0;
         for (j = 0; j < map->animCount; j++, anim++) {
             u16 animFlags = anim->flags;
-            u8* list = anim->data;
-            u8* childList = *(u8**)(list + 0xC);
+            MapAnimTableEntry* list = anim->data;
+            u8* childList = list->field_0xC;
 
             if ((animFlags & 1) && !((animFlags & 2) && (animFlags & 0x1000)) && childList != NULL) {
                 p = childList;

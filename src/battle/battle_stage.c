@@ -150,16 +150,13 @@ void BattleStageInit(void) {
 
 void BattleStageMain(void) {
 	BattleStage* stage = &_battleWorkPointer->stage;
-	s32 offset;
 	s32 i;
 	BattleStageLight* light;
 
 	batSpotMain();
 
-	i = 0;
-	offset = 0;
-	for (; i < 12; i++, offset += 0xe8) {
-		light = (BattleStageLight*)((u8*)stage + offset + 4);
+	for (i = 0; i < 12; i++) {
+		light = &stage->lights[i];
 
 		if (light->flags & 1) {
 			if (light->colorFrames > 0) {

@@ -27,7 +27,7 @@ extern const f32 float_0_8041c144;
 // are declared; the rest stay opaque.
 typedef struct BattleMenuWork {
     BattleCursor* cursor;     // 0x0
-    void* mainIconTable;      // 0x4, passed as the table to DrawMainIcon (set from the Init argument)
+    BattleCommandAction* mainIconTable; // 0x4, passed as the table to DrawMainIcon (set from the Init argument)
     void* weaponEntries;      // 0x8, BattleMenuWeaponEntry[] for the weapon menu (set from the Init argument)
     s32 phase;                // 0xC, ring/scroll state: 0, 1, 2, 0xA, 0x14, 0x1E, 0x28
     s32 field_0x10;           // 0x10
@@ -68,17 +68,6 @@ f32 kakutable[3][5] = {
     {270.0f, 180.0f, 90.0f, 0.0f, 0.0f},
     {270.0f, 203.0f, 157.0f, 90.0f, 0.0f},
 };
-
-typedef struct BattleMenuDispEntry {
-    s32 field_0x0;       // 0x0
-    s32 enabled;         // 0x4, 1: selectable (black label), otherwise greyed
-    const char* label;   // 0x8
-    u16 iconId;          // 0xC, 0 uses the default icon 0x18B
-    u16 field_0xE;       // 0xE
-    const char* helpMsg; // 0x10
-    s16 hp;              // 0x14
-    s16 maxHp;           // 0x16
-} BattleMenuDispEntry; // 0x18
 
 // The multi-item table uses the same 0x18 stride with its own layout.
 typedef struct BattleMenuMultiEntry {
@@ -223,7 +212,7 @@ void GetRingOffset(f32* x, f32* y, f32 angle) {
 }
 #pragma dont_inline reset
 
-void DrawMainIcon(BattleMenuWork* window, void* table, Mtx* mtxA, Vec* vecB, f32* scales) {
+void DrawMainIcon(BattleMenuWork* window, BattleCommandAction* table, Mtx* mtxA, Vec* vecB, f32* scales) {
     BattleWork* wp = _battleWorkPointer;
     BattleUnit* unit = BattleGetUnitPtr(wp, wp->activeUnitId);
     BattleCursor* cursor;
@@ -259,18 +248,17 @@ void DrawMainIcon(BattleMenuWork* window, void* table, Mtx* mtxA, Vec* vecB, f32
         s32 flags = window->iconFlags[idx];
         if (flags & 1) {
             if (flags & 2) {
-                DrawMainIconHukidasi(window, (void*)((u8*)table + idx * 0x14), &mtxA[idx], scales[idx]);
+                DrawMainIconHukidasi(window, &table[idx], &mtxA[idx], scales[idx]);
             } else {
                 vec = vecB[idx];
-                DrawMainIconCircle(window, (void*)((u8*)table + idx * 0x14), &mtxA[idx], &vec, scales[idx]);
+                DrawMainIconCircle(window, &table[idx], &mtxA[idx], &vec, scales[idx]);
             }
         }
     }
 }
 
-void DrawMainIconHukidasi(BattleMenuWork* window, void* entryPtr, Mtx* mtx, f32 scale) {
+void DrawMainIconHukidasi(BattleMenuWork* window, BattleCommandAction* entry, Mtx* mtx, f32 scale) {
     BattleWork* wp = _battleWorkPointer;
-    BattleMenuDispEntry* entry = entryPtr;
     CameraEntry* cam = camGetPtr(8);
     GXColor color;
     GXTexObj texObj;
@@ -324,17 +312,17 @@ void DrawMainIconHukidasi(BattleMenuWork* window, void* entryPtr, Mtx* mtx, f32 
     PSMTXConcat(*mtx, rotMtx, resultMtx);
     PSMTXConcat(resultMtx, transMtx, resultMtx);
     PSMTXConcat(resultMtx, scaleMtx, resultMtx);
-    iconId = entry->iconId;
+    iconId = entry->mIcon;
     if (iconId == 0) {
         iconId = 0x18B;
     }
-    if (entry->enabled == 1) {
+    if (entry->mEnabled == 1) {
         iconDispGx2(resultMtx, 0x10, iconId);
     } else {
         iconDispGx2(resultMtx, 0x30, iconId);
     }
 
-    msg = entry->label;
+    msg = entry->mName;
     PSMTXTrans(transMtx, float_0_8041c144, 52.5f, float_0_8041c144);
     PSMTXScale(scaleMtx, 0.9f, 0.9f, 0.9f);
     PSMTXRotRad(rotMtx, 'y', f31);
@@ -342,7 +330,7 @@ void DrawMainIconHukidasi(BattleMenuWork* window, void* entryPtr, Mtx* mtx, f32 
     PSMTXConcat(resultMtx, transMtx, resultMtx);
     PSMTXConcat(resultMtx, scaleMtx, resultMtx);
     FontDrawStart();
-    if (entry->enabled == 1) {
+    if (entry->mEnabled == 1) {
         color = ((GXColor){ 0x00,0x00,0x00,0xFF });
     } else {
         color = ((GXColor){ 0x80,0x80,0x80,0xFF });
@@ -353,8 +341,7 @@ void DrawMainIconHukidasi(BattleMenuWork* window, void* entryPtr, Mtx* mtx, f32 
 
 // Quad corner / texture-coordinate tables used by DrawMainIconCircle (0x80 each).
 
-void DrawMainIconCircle(BattleMenuWork* window, void* entryPtr, Mtx* mtx, Vec* pos, f32 scale) {
-    BattleMenuDispEntry* entry = entryPtr;
+void DrawMainIconCircle(BattleMenuWork* window, BattleCommandAction* entry, Mtx* mtx, Vec* pos, f32 scale) {
     BattleWork* wp = _battleWorkPointer;
     CameraEntry* cam;
     MainIconCircleTable posTable;
@@ -424,11 +411,11 @@ void DrawMainIconCircle(BattleMenuWork* window, void* entryPtr, Mtx* mtx, Vec* p
     PSMTXConcat(*mtx, rotMtx, resultMtx);
     PSMTXConcat(resultMtx, scaleMtx, resultMtx);
     PSMTXConcat(resultMtx, transMtx, resultMtx);
-    iconId = entry->iconId;
+    iconId = entry->mIcon;
     if ((u16)iconId == 0) {
         iconId = 0x18B;
     }
-    if (entry->enabled == 1) {
+    if (entry->mEnabled == 1) {
         iconDispGxCol(resultMtx, 0x10, iconId, (GXColor){ alpha, alpha, alpha, 0xFF });
     } else {
         iconDispGxCol(resultMtx, 0x30, iconId, (GXColor){ alpha, alpha, alpha, 0xFF });
@@ -437,7 +424,7 @@ void DrawMainIconCircle(BattleMenuWork* window, void* entryPtr, Mtx* mtx, Vec* p
 
 // dont_inline: keep deferred inlining from pulling same-TU helpers into DrawSubIcon/DrawMainIcon.
 #pragma dont_inline on
-void DrawSubIcon(BattleMenuWork* window, Mtx* mtxBase, s32* a, u16* b, s32* c, s32* d, s32* e, void* table, s32 flag) {
+void DrawSubIcon(BattleMenuWork* window, Mtx* mtxBase, s32* a, u16* b, s32* c, s32* d, s32* e, BattleCommandParty* table, s32 flag) {
     BattleWork* wp = _battleWorkPointer;
     BattleCursor* cursor;
     Mtx mtx;
@@ -473,7 +460,7 @@ static inline void SubIconDrawColor(GXColor c) {
     FontDrawColor(c);
 }
 
-void DrawSubIconSub(BattleMenuWork* window, s32 index, Mtx mtx, s32 a, u16 b, s32 c, s32 d, s32 e, void* table,
+void DrawSubIconSub(BattleMenuWork* window, s32 index, Mtx mtx, s32 a, u16 b, s32 c, s32 d, s32 e, BattleCommandParty* table,
                     s32 flag) {
     BattleWork* wp = _battleWorkPointer;
     BattleCursor* cursor = window->cursor;
@@ -690,7 +677,7 @@ void DrawSubIconSub(BattleMenuWork* window, s32 index, Mtx mtx, s32 a, u16 b, s3
         s32 count2;
         s16 hp;
         s16 maxHp;
-        BattleMenuDispEntry* entry;
+        BattleCommandParty* entry;
         s32 h;
         s32 t;
         s32 o;
@@ -699,9 +686,9 @@ void DrawSubIconSub(BattleMenuWork* window, s32 index, Mtx mtx, s32 a, u16 b, s3
         s32 t2;
         s32 o2;
         s32 rem2;
-        entry = (BattleMenuDispEntry*)((u8*)table + (index + (s32)window->scrollPos) * 0x18);
-        hp = entry->hp;
-        maxHp = entry->maxHp;
+        entry = &table[index + (s32)window->scrollPos];
+        hp = entry->mCurrentHP;
+        maxHp = entry->mMaxHP;
         PSMTXTrans(mtxTrans, 30.0f, 22.0f, float_0_8041c144);
         PSMTXScale(mtxScale, 0.8f, 0.8f, 0.8f);
         PSMTXConcat(mtx, mtxTrans, mtxOut);
@@ -1355,7 +1342,7 @@ void DrawSubMenuCommonProcess(f32* outX, f32* outY, Mtx* mtxA, Vec* vecB, f32* s
     }
 }
 
-void BattleMenuDisp_ActSelect_Init(BattleWork* wp, BattleCursor* a, void* b, u32 flags) {
+void BattleMenuDisp_ActSelect_Init(BattleWork* wp, BattleCursor* a, BattleCommandAction* b, u32 flags) {
     s32 i;
     s32 idx;
     BattleMenuWork* w;
@@ -1743,7 +1730,7 @@ void DrawWeaponWin(void) {
             }
         }
     }
-    DrawMainIcon(window, (void*)wp->commandMenu.actionTable, mats, centers, scales);
+    DrawMainIcon(window, wp->commandMenu.actionTable, mats, centers, scales);
     DrawSubIcon(window, rot, arr88, arr24, arr6C, arr50, arr34, 0, 0);
     DrawMenuCursorAndScrollArrow((Vec){ -60.0f, 35.0f, 0.0f });
     if (sel != 0) {
@@ -1837,7 +1824,7 @@ void DrawOperationWin(void) {
             arr34[i] = 0;
         }
     }
-    DrawMainIcon(window, (void*)wp->commandMenu.actionTable, mats, centers, scales);
+    DrawMainIcon(window, wp->commandMenu.actionTable, mats, centers, scales);
     DrawSubIcon(window, rot, arr88, arr24, arr6C, arr50, arr34, 0, 0);
     DrawMenuCursorAndScrollArrow((Vec){ -60.0f, 35.0f, 0.0f });
     if (entries[cursor->field_0].helpMsg != 0) {
@@ -1877,7 +1864,7 @@ void DrawChangePartyWin(void) {
     BattleWork* wp = _battleWorkPointer;
     BattleMenuWork* window;
     BattleCursor* cursor;
-    BattleMenuDispEntry* entries;
+    BattleCommandParty* entries;
     f32 outX;
     f32 outY;
     u16 arr24[7];
@@ -1894,28 +1881,28 @@ void DrawChangePartyWin(void) {
     window = (BattleMenuWork*)wp->commandMenu.field_55C;
     cursor = window->cursor;
     BattleGetUnitPtr(wp, wp->activeUnitId);
-    entries = (BattleMenuDispEntry*)wp->commandMenu.partyTable;
+    entries = wp->commandMenu.partyTable;
     DrawSubMenuCommonProcess(&outX, &outY, mats, centers, scales, rot);
     for (i = 0; i < 7; i++) {
         s32 idx = (s32)window->scrollPos + i;
         if (idx < cursor->unk8) {
-            BattleMenuDispEntry* entry = &entries[idx];
-            arr88[i] = entry->enabled;
-            if (entry->iconId != 0) {
-                arr24[i] = entry->iconId;
+            BattleCommandParty* entry = &entries[idx];
+            arr88[i] = entry->mEnabled;
+            if (entry->mIcon != 0) {
+                arr24[i] = entry->mIcon;
             } else {
                 arr24[i] = 0x18B;
             }
-            arr6C[i] = (s32)entry->label;
+            arr6C[i] = (s32)entry->mName;
             arr50[i] = 0;
             arr34[i] = 0;
         }
     }
-    DrawMainIcon(window, (void*)wp->commandMenu.actionTable, mats, centers, scales);
-    DrawSubIcon(window, rot, arr88, arr24, arr6C, arr50, arr34, (void*)entries, 1);
+    DrawMainIcon(window, wp->commandMenu.actionTable, mats, centers, scales);
+    DrawSubIcon(window, rot, arr88, arr24, arr6C, arr50, arr34, entries, 1);
     DrawMenuCursorAndScrollArrow((Vec){ -60.0f, 35.0f, 0.0f });
-    if (entries[cursor->field_0].helpMsg != 0) {
-        DrawMenuHelpWin(entries[cursor->field_0].helpMsg, outX, outY);
+    if (entries[cursor->field_0].mDescription != 0) {
+        DrawMenuHelpWin(entries[cursor->field_0].mDescription, outX, outY);
     }
 }
 #pragma dont_inline reset
@@ -1980,7 +1967,7 @@ void DrawMultiItemWin(void) {
             arr34[i] = 0;
         }
     }
-    DrawMainIcon(window, (void*)wp->commandMenu.actionTable, mats, centers, scales);
+    DrawMainIcon(window, wp->commandMenu.actionTable, mats, centers, scales);
     DrawSubIcon(window, rot, arr88, arr24, arr6C, arr50, arr34, 0, 0);
     DrawMenuCursorAndScrollArrow((Vec){ -60.0f, 35.0f, 0.0f });
     if (entries[cursor->field_0].helpMsg != 0) {

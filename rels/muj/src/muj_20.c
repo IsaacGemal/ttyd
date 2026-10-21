@@ -366,7 +366,7 @@ USER_FUNC(evt_map_anim_rate) {
 // Matching note: the loop-invariant float literals are named locals so MWCC hoists them into
 // f25-f31; `(f32)r` is computed once into `rf` before the second `irand`; the radius add is
 // one `irand` with the 330 default loaded before the `d < 70` branch; and the declaration order
-// `work, i, entry, offset, r` is what lands i/entry/offset in r29/r28/r27.
+// `work, i, entry, r` is what lands i, entry and the entry offset in r29/r28/r27.
 USER_FUNC(evt_set_fune_anim_rate) {
     mapAnimRate[1] = evtGetFloat(event, event->args[0]);
     return EVT_RETURN_DONE;
@@ -567,7 +567,6 @@ USER_FUNC(elmos1000tai_init) {
     NanNpcWork* work;
     s32 i;
     NanNpcEntry* entry;
-    s32 offset;
     s32 r;
     f32 c90 = 90.0f;
     f32 c6p2832 = 6.2831855f;
@@ -578,7 +577,7 @@ USER_FUNC(elmos1000tai_init) {
 
     work = nanNPCWork;
     work->flags |= 1;
-    for (i = 0, offset = 0; i < work->count; i++, offset += sizeof(NanNpcEntry)) {
+    for (i = 0; i < work->count; i++) {
         s32 d;
         s32 r2;
         f32 s;
@@ -586,7 +585,7 @@ USER_FUNC(elmos1000tai_init) {
         f32 v;
         f32 c;
         f32 rf;
-        entry = (NanNpcEntry*)((u8*)work->entries + offset);
+        entry = &work->entries[i];
         *(s32*)entry->pose |= 4;
         entry->color.a = 0;
         entry->facingAngle = c90;

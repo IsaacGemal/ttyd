@@ -112,7 +112,7 @@ void vivihimo(Mtx mtxA, Mtx mtxB, f32 phase, f32 spread, f32 offA, f32 offB) {
     work.pos1.z = mtxB[2][3];
 
     magA = float_0p5_8041dec0 * PSVECMag((Vec*)mtxA);
-    magB = float_0p5_8041dec0 * PSVECMag((Vec*)((u8*)mtxA + 0x20));
+    magB = float_0p5_8041dec0 * PSVECMag((Vec*)mtxA[2]);
     dist = himo_sqrtf(magA * magA + magB * magB);
 
     spread = spread * (float_0p5_8041dec0 * dist);

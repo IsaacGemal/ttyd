@@ -257,7 +257,7 @@ void puniMakeTexture(CameraId camId, void* param) {
         wp->vertices[idx++] = (f32)(-out3) * k;
         wp->vertices[idx++] = 0.0f;
 
-        GXBeginDisplayList((u8*)wp->dlBuffer + i * 0x80, 0x80);
+        GXBeginDisplayList(wp->dlBuffer[i], 0x80);
         GXBegin(0x80, 0, 4);
         {
             s32 p = vi;
@@ -433,7 +433,7 @@ void puniPoseDraw(s32 poseId) {
             PSMTXConcat(camGetCurPtr()->view, *pose->matrix, m);
             GXLoadPosMtxImm(m, 0);
             GXSetCurrentMtx(0);
-            GXCallDisplayList((u8*)wp->dlBuffer + pose->texId * 0x80, wp->dlSizes[pose->texId]);
+            GXCallDisplayList(wp->dlBuffer[pose->texId], wp->dlSizes[pose->texId]);
         }
     }
 }
@@ -470,7 +470,7 @@ void puniDraw(void) {
                 PSMTXConcat(camGetCurPtr()->view, m, m);
                 GXLoadPosMtxImm(m, 0);
                 GXSetCurrentMtx(0);
-                GXCallDisplayList((u8*)wp->dlBuffer + texId * 0x80, wp->dlSizes[texId]);
+                GXCallDisplayList(wp->dlBuffer[texId], wp->dlSizes[texId]);
             }
         }
     }

@@ -448,8 +448,8 @@ USER_FUNC(yuka_anim_reverse_play) {
         yuka_anim[1] = 0;
         ((MapEntryAnimData*)yuka_anim[0])->startTime =
             OSTicksToMilliseconds(gp->inBattle ? gp->renderTime : gp->renderFieldTime);
-        *(u16*)((u8*)(MapEntryAnimData*)yuka_anim[0]) |= 0x10;
-        *(u16*)((u8*)(MapEntryAnimData*)yuka_anim[0]) &= ~0x20;
+        ((MapEntryAnimData*)yuka_anim[0])->flags |= 0x10;
+        ((MapEntryAnimData*)yuka_anim[0])->flags &= ~0x20;
     }
     if (yuka_anim[1] & 2) {
         return EVT_RETURN_DONE;
@@ -468,7 +468,7 @@ USER_FUNC(yuka_anim_reverse_play) {
             MapEntryAnimData* anim = (MapEntryAnimData*)yuka_anim[0];
             f32 localTime = anim->frame;
             while (localTime < 0.0f) {
-                localTime += *(f32*)((u8*)anim->data + 8);
+                localTime += anim->data->field_0x8;
             }
             anim->frame = localTime;
         }

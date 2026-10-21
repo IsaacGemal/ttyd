@@ -3565,24 +3565,24 @@ USER_FUNC(btlevtcmd_ChoiceSamplingEnemy) {
 USER_FUNC(btlevtcmd_GetSelectEnemy) {
     s32* args = event->args;
     BattleWork* wp = _battleWorkPointer;
-    u8* sampling = (u8*)&wp->sampling;
+    BattleSampling* sampling = &wp->sampling;
     s32 index1;
     s32 index2;
     s32 selectIdx;
-    u8* entry;
+    BattleSamplingEntry* entry;
 
     index1 = args[0];
     index2 = args[1];
 
-    if ((s8)sampling[0xA6C] <= 0) {
+    if (sampling->count <= 0) {
         evtSetValue(event, index1, -1);
         evtSetValue(event, index2, -1);
         return EVT_RETURN_DONE;
     }
-    selectIdx = (s8)sampling[0xAB7];
-    entry = sampling + (s8)sampling[selectIdx + 0xA6D] * 0x24 + 4;
-    evtSetValue(event, index1, *(s16*)(entry + 0));
-    evtSetValue(event, index2, *(s16*)(entry + 2));
+    selectIdx = sampling->selectIdx;
+    entry = &sampling->entries[sampling->order[selectIdx]];
+    evtSetValue(event, index1, entry->unitId);
+    evtSetValue(event, index2, entry->partId);
     return EVT_RETURN_DONE;
 }
 
@@ -3590,19 +3590,19 @@ USER_FUNC(btlevtcmd_GetSelectEnemy) {
 USER_FUNC(btlevtcmd_GetSelectNextEnemy) {
     s32* args = event->args;
     BattleWork* wp = _battleWorkPointer;
-    u8* sampling = (u8*)&wp->sampling;
+    BattleSampling* sampling = &wp->sampling;
     s32 index1 = args[0];
     s32 index2 = args[1];
     s32 selectIdx;
-    u8* entry;
+    BattleSamplingEntry* entry;
 
-    selectIdx = (u8)sampling[0xAB7] + 1;
-    sampling[0xAB7] = selectIdx;
-    selectIdx = (s8)sampling[0xAB7];
-    if (selectIdx < (s8)sampling[0xA6C]) {
-        entry = sampling + (s8)sampling[selectIdx + 0xA6D] * 0x24 + 4;
-        evtSetValue(event, index1, *(s16*)(entry + 0));
-        evtSetValue(event, index2, *(s16*)(entry + 2));
+    selectIdx = (u8)sampling->selectIdx + 1;
+    sampling->selectIdx = selectIdx;
+    selectIdx = sampling->selectIdx;
+    if (selectIdx < sampling->count) {
+        entry = &sampling->entries[sampling->order[selectIdx]];
+        evtSetValue(event, index1, entry->unitId);
+        evtSetValue(event, index2, entry->partId);
     }
     else {
         evtSetValue(event, index1, -1);
@@ -3739,9 +3739,8 @@ USER_FUNC(btlevtcmd_ConsumeItem) {
     unit = BattleGetUnitPtr(wp, BattleTransID(event, btlId));
     if (unit->currentKind == UNIT_MARIO || (unit->currentKind >= TYPE_PARTNER_MIN && unit->currentKind < TYPE_PARTNER_MAX)) {
         BattleCommand* cm = &wp->commandMenu;
-        s32* cmd = (s32*)((u8*)cm + cm->cursor[11].field_0 * 0x1C);
-        itemId = cmd[0x94 / 4];
-        slot = cmd[0x90 / 4];
+        itemId = cm->weaponTable[cm->cursor[11].field_0].mItem;
+        slot = cm->weaponTable[cm->cursor[11].field_0].mIndex;
         if (itemDataTable[itemId].usable_locations & 1) {
             pouchRemoveItemIndex(itemId, slot);
         }
@@ -4508,7 +4507,7 @@ USER_FUNC(btlevtcmd_GetTakeoffPosition) {
     s32 partId;
     BattleUnit* targetUnit2;
     s8 belong;
-    u8 sampling[0xAD0];
+    BattleSampling sampling;
     f32 x, y, z;
     f32 tmp;
     f32 unitX;
@@ -4532,10 +4531,10 @@ USER_FUNC(btlevtcmd_GetTakeoffPosition) {
     BtlUnit_GetHitPos(targetUnit, part, &x, &tmp, &z);
 
     belong = (s8)BtlUnit_GetEnemyBelong(unit);
-    result = BattleSamplingEnemy(sampling, NULL, btlId, belong, 0x1001240, 0x1000000,
+    result = BattleSamplingEnemy((u8*)&sampling, NULL, btlId, belong, 0x1001240, 0x1000000,
                                  -wp->alliances[belong].attackDirection);
-    BattleChoiceSamplingEnemy(sampling, 4, &outId, &outPartId);
-    if (*(s8*)(sampling + 0xA6C) > 0) {
+    BattleChoiceSamplingEnemy((u8*)&sampling, 4, &outId, &outPartId);
+    if (sampling.count > 0) {
         outId = BattleTransID(event, outId);
         targetUnit2 = BattleGetUnitPtr(wp, outId);
         targetPart = BtlUnit_GetPartsPtr(targetUnit2, outPartId);
@@ -5222,14 +5221,15 @@ USER_FUNC(btlevtcmd_AudienceDeclareACResult) {
 USER_FUNC(btlevtcmd_AudienceDeclareAcrobatResult) {
     s32* args = event->args;
     BattleWork* wp;
-    s32 a, b;
+    BattleWeapon* weapon;
+    s32 b;
     BattleUnit* unit;
     f32 dx, dy, dz;
     Vec pos;
     EffectEntry* entry;
     StarPowerInfo* bonus;
 
-    a = evtGetValue(event, args[0]);
+    weapon = (BattleWeapon*)evtGetValue(event, args[0]);
     b = evtGetValue(event, args[1]);
     wp = _battleWorkPointer;
     unit = BattleGetUnitPtr(wp, event->unitId);
@@ -5239,8 +5239,8 @@ USER_FUNC(btlevtcmd_AudienceDeclareAcrobatResult) {
     dz = evtGetFloat(event, args[4]);
     BtlUnit_GetPos(unit, &pos.x, &pos.y, &pos.z);
     if (b != 0) {
-        bonus->mStylishCommandMultiplier = *(s8*)(a + 0x18);
-        bonus->field_0xB = *(s8*)(a + 0x1B);
+        bonus->mStylishCommandMultiplier = weapon->mStylishCommandMultiplier;
+        bonus->field_0xB = weapon->field_0x1B;
         BattleAudience_Case_AcrobatGood();
         pos.y += (f32)BtlUnit_GetHeight(unit);
         pos.x += (f32)(BtlUnit_GetWidth(unit) / 2);
@@ -5372,9 +5372,9 @@ USER_FUNC(btlevtcmd_ac_timing_get_success_frame) {
 
 //s32 acHelp
 USER_FUNC(btlevtcmd_ACHelpSet) {
-    s32 value = evtGetValue(event, *event->args);
+    BattleWeapon* weapon = (BattleWeapon*)evtGetValue(event, *event->args);
 
-    BattleAcHelpSetHelp(*(const char**)((u8*)value + 0x70));
+    BattleAcHelpSetHelp(weapon->acHelpMsg);
     BattleAcHelpSetDispType(EVT_RETURN_DONE);
     return EVT_RETURN_DONE;
 }

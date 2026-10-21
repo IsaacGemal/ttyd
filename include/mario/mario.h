@@ -136,7 +136,7 @@ typedef struct MarioWork {
     const char* paperAnimName;     // 0x1C
     u8 field_0x20[4];              // 0x20
     u8 field_0x24[0x28 - 0x24];    // 0x24
-    s16 poseTime;                  // 0x28
+    u16 poseTime;                  // 0x28, paper pose frame passed to animPoseSetLocalTime; every reader loads it unsigned
     u8 field_0x2A[0x2E - 0x2A];    // 0x2A
     MarioMotion currMotionId;      // 0x2E
     MarioMotion prevMotionId;      // 0x30, TODO check
@@ -148,7 +148,8 @@ typedef struct MarioWork {
     s8 partyUseTimer;              // 0x3B, set to 5 when the X press starts a partner use, cleared when it ends (mario_party, mario_motion)
     s8 characterId;                // 0x3C
     s8 colorId;                    // 0x3D
-    u8 field_0x3E[0x40 - 0x3E];    // 0x3E
+    s8 field_0x3E;                 // 0x3E, read as s8 (mot_dokan, partyDokanInit), set by evt_mario before marioChgMot(0x1D)
+    u8 field_0x3F;                 // 0x3F, mario_hit's wall-contact counter, capped at 0x14
 	s8 wMotionTimer;               // 0x40
     s8 field_0x41;                 // 0x41
     s8 field_0x42;                 // 0x42
@@ -201,7 +202,8 @@ typedef struct MarioWork {
     f32 unk14C;                    // 0x14C
     Vec unk150;                    // 0x150
     f32 camFollowRate;             // 0x15C
-    u8 unk160[0x168 - 0x160];      // 0x160
+    f32 unk160;                    // 0x160, camera x at the last marioCamMain (mario_cam sets dispFlags 0x20 while it is unchanged)
+    f32 field_0x164;               // 0x164, prevPosition.y - position.y, stored by mario_hit (marioChkGndRollProbe); no reader in the tree
     s32 unk168;                    // 0x168
     s32 unk16C;                    // 0x16C
     u8 unk170[0x174 - 0x170];      // 0x170
@@ -278,12 +280,15 @@ typedef struct MarioWork {
     f32 dirEventTarget;            // 0x294, target yaw is 270 minus this
     s32 dirEventMsec;              // 0x298
     s32 dirEventFrame;             // 0x29C, frames elapsed
+    // 0x2A0-0x2BC: per-motion scratch words; each motion gives them its own type (the union members below).
     union {
         f32 spinSpeed;             // 0x2A0, added to unk1A8 each frame (mario_motion spin, mot_hip, evt_mario)
         f32 damageRootY;           // 0x2A0, surface height of the damage floor fallen into: splash height, start of the return arc (set_damage_root_ypos, mot_damage)
+        struct {
+            u16 field_0x2A0;       // 0x2A0, koopa_motion: frame counter, wraps past 0x50; half of it is the pose time
+            u16 field_0x2A2;       // 0x2A2, koopa_motion: cleared beside field_0x2A0
+        };
     };
-    // 0x2A4-0x2B4: per-motion scratch words; each motion gives them its own type (mot_slit's s32 counter,
-    // mot_ship's anime frame, mot_hammer's s16 through raw offsets; the union members below for the rest).
     union {
         f32 field_0x2A4;           // 0x2A4, f32 in mot_plane (eased turn rate added to unk1A8), mot_hammer, mot_dokan, mot_jabara
         s32 motionSfxId0;          // 0x2A4, sound handle in mot_hip (-1 when none)
@@ -292,9 +297,10 @@ typedef struct MarioWork {
         s32 slitPushCount;         // 0x2A4, mot_slit: counter of frames pressed into an attr 0x2000 hit (state 0x50 at sysMsec2Frame(0x32)); also reset on entry
     };
     union {
-        f32 wCamVal1;              // 0x2A8, f32 step in mot_plane, mot_slit, mot_dokan, mot_hammer, mot_damage
+        f32 wCamVal1;              // 0x2A8, f32 step in mot_plane, mot_slit, mot_dokan, mot_hammer, mot_damage; party_yoshi keeps the flutter base y here
         s32 motionSfxId1;          // 0x2A8, sound handle in mot_hip and mot_roll (-1 when none)
         s32 jabaraHitY;            // 0x2A8, y of the hit mot_jabara lands on (the hit-depth jump)
+        s32 field_0x2A8;           // 0x2A8, mot_hammer: swing type stored at the start, switched on at impact for the effect offset
     };
     union {
         f32 field_0x2AC;           // 0x2AC, f32 in mot_plane, mot_damage, mot_slit and mot_bottomless (s32 0 in mot_roll/mot_jabara resets)
@@ -307,6 +313,7 @@ typedef struct MarioWork {
     union {
         s32 peachStayTimer;        // 0x2B4, peach_stay's frame count in state 0x14 (cleared on entry, capped at sysMsec2Frame(10000)); f32 in party_yoshi
         f32 jabaraAccel;           // 0x2B4, mot_jabara: step added to jabaraSpeed each frame
+        s16 field_0x2B4;           // 0x2B4, mot_hammer2: flag word (0x1, 0x10, 0x1000, 0x2000), cleared on entry
         struct {
             s16 slitTurnTimer;     // 0x2B4, mot_slit: set to 6 when a turn starts, counts down in state 0x15
             s16 slitStillCount;    // 0x2B6, mot_slit: frames with the stick neutral in state 0x14 (reaches 6 to leave it), cleared when the stick moves

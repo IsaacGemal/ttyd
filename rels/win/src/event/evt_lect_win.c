@@ -224,11 +224,12 @@ static USER_FUNC(lecture_button_set_pos) {
 
     {
         Vec pos = vec3_win_0000606c;
+        LectureButton* btn = &lbtn[idx];
 
         pos.x = x;
         pos.y = y;
         pos.z = z;
-        (*(LectureButton*)((u8*)lbtn + idx * sizeof(LectureButton))).position = pos;
+        btn->position = pos;
     }
     return EVT_RETURN_DONE;
 }

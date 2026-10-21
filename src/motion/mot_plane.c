@@ -21,9 +21,6 @@
 #include <string.h>
 #include "matching.h"
 
-// Raw accessor for the MarioWork word at 0x18C (MarioWork.field_0x18C).
-#define MF32(d, off) (*(f32*)((u8*)(d) + (off)))
-
 // The plane data block of mario->motStruct.
 #define DATA ((MotionPlaneData*)mario->motStruct)
 
@@ -644,7 +641,7 @@ void mot_plane(void) {
 	}
 
 	marioUpdateCamCollision(mario->position);
-	MF32(mario, 0x18C) = mario->baseSpeed;
+	mario->field_0x18C = mario->baseSpeed;
 }
 #ifdef MUST_MATCH
 

@@ -49,10 +49,8 @@ typedef struct JabaraWork {
 #define RDBL(off, sym) (sym)
 #endif
 
-// Raw accessors for MarioWork fields that are not named in include/mario/mario.h.
-// Each offset is listed in REPORT.md.
+// Raw accessors for MarioWork scratch words this motion reads with a type no union member has.
 #define MW_S8(m, off) (*(s8*)((u8*)(m) + (off)))
-#define MW_U8(m, off) (*(u8*)((u8*)(m) + (off)))
 #define MW_S32(m, off) (*(s32*)((u8*)(m) + (off)))
 
 // A nonconst view keeps these named pool words from folding into duplicate literals.
@@ -470,8 +468,8 @@ void mot_jabara(void) {
     switch (mario->currSubMotionId) {
     case 0:
         mario->dispFlags |= 0x100;
-        MW_U8(mario, 0x41) = 1;
-        MW_U8(mario, 0x42) = 0;
+        mario->field_0x41 = 1;
+        mario->field_0x42 = 0;
         mario->airTimer = 0;
         mario->airTimerPeak = 0;
         mario->baseSpeed = 0.0f;
@@ -507,20 +505,20 @@ void mot_jabara(void) {
     case 12:
         sp3C = marioChkOverheadJabara(&sp40, &sp38);
         if (marioGetRub(0x100, &sp48, &sp4C, &sp44) == 1) {
-            MW_U8(mario, 0x41) = MW_U8(mario, 0x41) + 1;
-            if ((s8)MW_U8(mario, 0x41) >= 0x14) {
-                MW_U8(mario, 0x41) = 0x14;
+            mario->field_0x41 = mario->field_0x41 + 1;
+            if (mario->field_0x41 >= 0x14) {
+                mario->field_0x41 = 0x14;
             }
         }
         {
-            s8 jt = MW_S8(mario, 0x41);
+            s8 jt = mario->field_0x41;
             if (jt == 3) {
                 if (!(((JabaraWork*)marioGetPtr()->motStruct)->flags & 0x40000)) {
                     ((JabaraWork*)marioGetPtr()->motStruct)->flags |= 0x40000;
                     psndSFXOn_3D((const char*)0x184, &mario->position);
                 }
                 marioChgPaper(RSTR(0x4C, str_PM_J_3B));
-                MW_U8(mario, 0x42) = 3;
+                mario->field_0x42 = 3;
                 jabaraSetCamParam(0.4f, 0.005f, 1.7f);
             } else if (jt == 2) {
                 if (!(((JabaraWork*)marioGetPtr()->motStruct)->flags & 0x20000)) {
@@ -528,7 +526,7 @@ void mot_jabara(void) {
                     psndSFXOn_3D((const char*)0x183, &mario->position);
                 }
                 marioChgPaper(RSTR(0x54, str_PM_J_2B));
-                MW_U8(mario, 0x42) = 2;
+                mario->field_0x42 = 2;
                 jabaraSetCamParam(0.3f, 0.005f, 1.6f);
             }
         }
@@ -568,7 +566,7 @@ void mot_jabara(void) {
             psndSFXOn_3D((const char*)0x20185, &mario->position);
             psndSFXOn_3D((const char*)0x200B5, &mario->position);
             {
-                s8 jt = MW_S8(mario, 0x42);
+                s8 jt = mario->field_0x42;
                 if (jt == 3) {
                     mario->jumpVelY = JABARA_F32(float_10p45_8041ab28);
                     mario->jumpAccelY = JABARA_F32(float_0p278_8041ab2c);
@@ -586,7 +584,7 @@ void mot_jabara(void) {
                     mario->jumpJerkStepY = JABARA_F32(float_neg0p015_8041ab40);
                 }
             }
-            if (MW_S8(mario, 0x42) == 3) {
+            if (mario->field_0x42 == 3) {
                 unk_80130374();
             }
             mario->hitobjJumpFrom = mario->hitobjStandOn;
@@ -597,7 +595,7 @@ void mot_jabara(void) {
         break;
     case 20:
         marioMakeJumpPara();
-        if (MW_S8(mario, 0x42) == 3) {
+        if (mario->field_0x42 == 3) {
             sp3C = marioChkOverheadJabara(&sp40, &sp38);
         } else {
             sp3C = marioChkOverhead();
@@ -626,7 +624,7 @@ void mot_jabara(void) {
             return;
         } else {
             mario->position.y = f31;
-            if (MW_S8(mario, 0x42) <= 2) {
+            if (mario->field_0x42 <= 2) {
                 mario->currSubMotionId = 0x1E;
             } else if (hitGetAttr((HitEntry*)mario->hitobjHead) & 0x40000) {
                 mario->field_0x2A4 = mario->dispReqDir;
@@ -866,7 +864,7 @@ void mot_jabara(void) {
                     {
                         s8 st = mario->jabaraState;
                         if ((st == 5 || st == 0xF) &&
-                            ((s8)MW_U8(mario, 0x24E) != 0 || (s8)MW_U8(mario, 0x24F) != 0)) {
+                            (mario->wStickDir1 != 0 || mario->wStickDir2 != 0)) {
                             mario->currSubMotionId = 0x50;
                             mario->dispRot.x = 0.0f;
                             mario->dispPivot.x = 0.0f;
@@ -877,8 +875,8 @@ void mot_jabara(void) {
                         }
                     }
                     {
-                        u8 st = MW_U8(mario, 0x2BA);
-                        if ((s8)st == 0 || (s8)st == 0xA) {
+                        s8 st = mario->jabaraState;
+                        if (st == 0 || st == 0xA) {
                             mario->currSubMotionId = 0x50;
                             mario->dispRot.x = 0.0f;
                             mario->dispPivot.x = 0.0f;

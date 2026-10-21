@@ -620,17 +620,15 @@ s32 tokei(EventEntry* event, BOOL isFirstCall) {
 
 static s32 test_glare(EventEntry* event, BOOL isFirstCall) {
     MapObject* obj = mapGetMapObj("sun");
-    // field_0xEC holds the four u16 screen bounds (left, top, right, bottom).
-    u16* bounds = (u16*)obj->field_0xEC;
 
     if (isFirstCall) {
         obj->flags |= MAPOBJ_FLAG_BBOX;
         return 0;
     }
-    if (bounds[0] == 0x3FF || bounds[1] == 0x3FF || bounds[2] == 0x3FF || bounds[3] == 0x3FF) {
+    if (obj->bboxLeft == 0x3FF || obj->bboxTop == 0x3FF || obj->bboxRight == 0x3FF || obj->bboxBottom == 0x3FF) {
         envGlareFilter(0, 0, 0, 0, 0);
     }
-    else if (bounds[0] == 0 && bounds[1] == 0 && bounds[2] == 0 && bounds[3] == 0) {
+    else if (obj->bboxLeft == 0 && obj->bboxTop == 0 && obj->bboxRight == 0 && obj->bboxBottom == 0) {
         envGlareFilter(0, 0, 0, 0, 0);
     }
     else if (evtGetValue(event, 0xFAA2B58F) != 0) {
@@ -640,11 +638,12 @@ static s32 test_glare(EventEntry* event, BOOL isFirstCall) {
 #ifdef MUST_MATCH
         // MUST_MATCH: the volatile pointer holds the four halfword loads in the original's order; without it
         // the scheduler moves the y0 `subi` one slot ahead of the y1 load.
-        volatile u16* p = (volatile u16*)bounds;
-        envGlareFilter(1, (s16)(p[1] - 0x32), (s16)(p[0] - 0x32), (s16)(p[3] + 0x32), (s16)(p[2] + 0x32));
+        volatile MapObject* p = obj;
+        envGlareFilter(1, (s16)(p->bboxTop - 0x32), (s16)(p->bboxLeft - 0x32), (s16)(p->bboxBottom + 0x32),
+                       (s16)(p->bboxRight + 0x32));
 #else
-        envGlareFilter(1, (s16)(bounds[1] - 0x32), (s16)(bounds[0] - 0x32),
-                       (s16)(bounds[3] + 0x32), (s16)(bounds[2] + 0x32));
+        envGlareFilter(1, (s16)(obj->bboxTop - 0x32), (s16)(obj->bboxLeft - 0x32),
+                       (s16)(obj->bboxBottom + 0x32), (s16)(obj->bboxRight + 0x32));
 #endif
     }
     return 0;

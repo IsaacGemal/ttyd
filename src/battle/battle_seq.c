@@ -748,7 +748,7 @@ void btlseqTurn(BattleWork* wp) {
 				BattleIncSeq(wp, SEQ_TURN);
 				BattleIncSeq(wp, SEQ_TURN);
 				btlseqTurn(wp);
-			} else if (wp->fbatInfo->field_0x14[4] == 0) {
+			} else if (wp->fbatInfo->field_0x18 == 0) {
 				BattleIncSeq(wp, SEQ_TURN);
 				BattleIncSeq(wp, SEQ_TURN);
 				btlseqTurn(wp);
@@ -1871,12 +1871,12 @@ void _rule_disp(void) {
 
 	if (evtGetValue(NULL, 0xF5DE0180) < 0xAC) {
 		if (evtGetValue(NULL, 0xF5DE03C4) < 0xB) {
-			sprintf(buf, msgSearch(_rule_msg_table_1bu[info->field_0x14[4]]), info->field_0x14[6]);
+			sprintf(buf, msgSearch(_rule_msg_table_1bu[info->field_0x18]), info->field_0x1A);
 		} else {
-			sprintf(buf, msgSearch(_rule_msg_table_2bu[info->field_0x14[4]]), info->field_0x14[6]);
+			sprintf(buf, msgSearch(_rule_msg_table_2bu[info->field_0x18]), info->field_0x1A);
 		}
 	} else {
-		sprintf(buf, msgSearch(_rule_msg_table_after[info->field_0x14[4]]), info->field_0x14[6]);
+		sprintf(buf, msgSearch(_rule_msg_table_after[info->field_0x18]), info->field_0x1A);
 	}
 	width = FontGetMessageWidthLine(buf, &lines);
 	lines++;
@@ -2722,27 +2722,21 @@ s32 BattleWaitAllActiveEvtEnd_NoBgSetEndWait(BattleWork* wp) { //1:1
 	return result;
 }
 
-// The field order in this declaration list is deliberate: it drives MWCC's callee-saved register
-// allocation to the original's (wp r28, offset r27, i r29, count r30, alliance r31). The loop base
-// `i * sizeof(BattleAlliance)` lets the compiler strength-reduce the byte offset into its own
-// induction register.
 BOOL BattleCheckConcluded(BattleWork* wp) { //1:1
 	BattleUnit* unit;
-	s32 j;
-	BattleAlliance* alliance;
 	s32 count;
 	s32 i;
+	s32 j;
 
 	count = 0;
 	for (i = 0; i < 3; i++) {
-		alliance = (BattleAlliance*)((u8*)wp->alliances + i * sizeof(BattleAlliance));
-		alliance->clearConditionMet = 0;
-		if (alliance->allianceId == 0) {
+		wp->alliances[i].clearConditionMet = 0;
+		if (wp->alliances[i].allianceId == 0) {
 			count++;
-			alliance->clearConditionMet = 1;
+			wp->alliances[i].clearConditionMet = 1;
 			continue;
 		}
-		if (alliance->allianceId & 1) {
+		if (wp->alliances[i].allianceId & 1) {
 			for (j = 0; j < 64; j++) {
 				unit = BattleGetUnitPtr(wp, j);
 				if (unit != NULL && unit->mAlliance == i &&
@@ -2755,11 +2749,11 @@ BOOL BattleCheckConcluded(BattleWork* wp) { //1:1
 			}
 			if (j >= 64) {
 				count++;
-				alliance->clearConditionMet = 1;
+				wp->alliances[i].clearConditionMet = 1;
 				continue;
 			}
 		}
-		if (alliance->allianceId & 2) {
+		if (wp->alliances[i].allianceId & 2) {
 			for (j = 0; j < 64; j++) {
 				unit = BattleGetUnitPtr(wp, j);
 				if (unit != NULL && unit->mAlliance == i &&
@@ -2772,7 +2766,7 @@ BOOL BattleCheckConcluded(BattleWork* wp) { //1:1
 			}
 			if (j >= 64) {
 				count++;
-				alliance->clearConditionMet = 1;
+				wp->alliances[i].clearConditionMet = 1;
 			}
 		}
 	}

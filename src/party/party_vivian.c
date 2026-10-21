@@ -32,7 +32,7 @@ void N_marioForceVivianAnime(void) {
     marioChgPose("M_B_3");
     marioChgPaper("PM_B_1");
     mario->poseTime = 0x18;
-    animPoseSetLocalTime(mario->paperAnimGroupId[marioAnimeId()], (f32)*(u16*)&mario->poseTime);
+    animPoseSetLocalTime(mario->paperAnimGroupId[marioAnimeId()], (f32)mario->poseTime);
 }
 
 // 104 B
@@ -74,7 +74,7 @@ void mot_vivian_post(void) {
             party->field_3B = 0;
             partyChgPoseId(party, 1);
             if (party->currentMemberId == PARTY_MEMBER_VIVIAN) {
-                *(s8*)&party->field_4D[2] &= ~1;
+                party->field_4F &= ~1;
             }
         }
     } else {
@@ -92,7 +92,7 @@ void vivian_init_801809C0(PartyEntry* party) {
     party->height = 35.0f;
     party->radius = 24.0f;
     party->tail.vivian.charge = 10.0f;
-    party->field_4D[2] = 0;
+    party->field_4F = 0;
     party->field_B8 = party->position;
     party->tail.vivian.ripple = NULL;
     vivian_cancel_req = 0;
@@ -133,14 +133,14 @@ void vivianUnhold(PartyEntry* party) {
 // 28 B
 void L_partyVivianTailStop(PartyEntry* party) {
     if (party->currentMemberId == PARTY_MEMBER_VIVIAN) {
-        party->field_4D[2] |= 1;
+        party->field_4F |= 1;
     }
 }
 
 // 28 B
 void L_partyVivianTailStart(PartyEntry* party) {
     if (party->currentMemberId == PARTY_MEMBER_VIVIAN) {
-        *(s8*)&party->field_4D[2] &= ~1;
+        party->field_4F &= ~1;
     }
 }
 
@@ -149,7 +149,7 @@ s32 N_vivianDisplayTailCheck(PartyEntry* party) {
     if (party->currentMemberId != PARTY_MEMBER_VIVIAN) {
         return 0;
     }
-    if (party->field_4D[2] & 1) {
+    if (party->field_4F & 1) {
         return 0;
     }
     if (party->flags2 & 0x800000) {
@@ -346,7 +346,7 @@ void vivian_use(PartyEntry* party) {
         }
         psndSFXOn_3D((const char*)0x935, &party->position);
         if (party->currentMemberId == PARTY_MEMBER_VIVIAN) {
-            party->field_4D[2] |= 1;
+            party->field_4F |= 1;
         }
         party->useMotionId = 5;
         // fallthrough
@@ -417,7 +417,7 @@ void vivian_use(PartyEntry* party) {
         partyChgPose(party, "PTR_A2_4");
         party->field_20 = 0x18;
         if (party->currentMemberId == PARTY_MEMBER_VIVIAN) {
-            *(s8*)&party->field_4D[2] &= ~1;
+            party->field_4F &= ~1;
         }
         party->useMotionId = 0x17;
         break;

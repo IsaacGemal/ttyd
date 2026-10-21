@@ -91,7 +91,7 @@ typedef struct MoamoaWork {
     u16 field_0x2;      // 0x2
     s32 poseNum;        // 0x4
     MoamoaPose* poses;  // 0x8
-    void* train;        // 0xC, the "ressha" map object the moamoa ride
+    MapObject* train;   // 0xC, the "ressha" map object the moamoa ride
     f32 prevTrainY;     // 0x10, train height last frame (the moamoa follow its change)
     Vec targets[3];     // 0x14, gathering points; moamoa i heads for targets[i % 3]
     s16 hitCount;       // 0x38, incremented on each player hit
@@ -1133,7 +1133,7 @@ static void ext_moamoa_init(void) {
     }
     mapObj = mapGetMapObj("ressha");
     wp->train = mapObj;
-    wp->prevTrainY = ((f32*)((u8*)wp->train + 0x98))[0];
+    wp->prevTrainY = wp->train->animLocalMtx[1][3];
     for (i = 0; i < 600; i++) {
         ext_moamoa_main();
     }
@@ -1931,12 +1931,12 @@ static void ext_moamoa_main(void) {
                 (*ep->matrix)[2][3] = -130.0f;
             }
         }
-        (*ep->matrix)[1][3] += *(f32*)((u8*)wp->train + 0x38) - wp->prevTrainY;
+        (*ep->matrix)[1][3] += wp->train->modelWorldMtx[1][3] - wp->prevTrainY;
         entry->savedX = (*ep->matrix)[0][3];
         entry->savedZ = (*ep->matrix)[2][3];
     }
     ((void (*)(void))moamoa_pose_main)();
-    wp->prevTrainY = *(f32*)((u8*)wp->train + 0x38);
+    wp->prevTrainY = wp->train->modelWorldMtx[1][3];
     if (wp->flags & 0x10) {
         mario->riderDelta.x = 0.0f;
         mario->riderDelta.y = 0.0f;

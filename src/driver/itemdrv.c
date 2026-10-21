@@ -197,7 +197,7 @@ s32 itemGetCheck(ItemEntry* entry) {
     }
 
     if (mario->characterId == 2) {
-        if (!(*(u32*)((u8*)mario + 0x14) & 1)) {
+        if (!(mario->field_0x14 & 1)) {
             if ((u32)marioStGetSystemLevel() != 0) {
                 return 0;
             }
@@ -1412,13 +1412,7 @@ void itemseq_GetItem(ItemEntry* item) {
             item->getScript = NULL;
             item->evtId = 0;
             item->flags &= ~0x60;
-            {
-                // ItemData.icon_id is s16 in data/item_data.h, but the target loads it with lhz. Read the
-                // same field (stride 0x28, offset 0x20) through a u16 view instead of casting the header.
-                u16* iconIds = (u16*)((u8*)itemDataTable + 0x20);
-
-                iconChange(item->name, iconIds[item->itemId * 0x14]);
-            }
+            iconChange(item->name, itemDataTable[item->itemId].icon_id);
             wp->currId++;
             {
                 IconEntry* icon = iconNameToPtr(item->name);
@@ -1987,7 +1981,7 @@ HitEntry* itemBoundHitFloor(ItemEntry* item, f32 vy) {
         return NULL;
     }
 #ifdef MUST_MATCH
-    if (*(volatile u32*)((u8*)item + 0x38) & 0x100000) {
+    if (*(volatile u32*)&item->status & 0x100000) {
 #else
     if (item->status & 0x100000) {
 #endif

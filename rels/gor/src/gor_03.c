@@ -2315,10 +2315,10 @@ static USER_FUNC(fall_rtn) {
                 Vec vel = {0.0f, 10.0f, 0.0f};
                 vel.x = moveX;
                 vel.z = moveZ;
-                *(Vec*)((unsigned char*)monte_p[0] + i * 0x50 + 0x40) = vel;
+                ((Monte*)monte_p[0])[i].field_0x40 = vel;
             }
 
-            *(u16*)((unsigned char*)monte_p[0] + i * 0x50 + 0x02) = (u16)(((rand() % 700) + 100) * 60 / 1000);
+            ((Monte*)monte_p[0])[i].field_0x2 = ((rand() % 700) + 100) * 60 / 1000;
         }
     }
 

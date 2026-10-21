@@ -279,7 +279,7 @@ USER_FUNC(evt_mario_paper_pose_dokan) {
             party->position = mario->position;
             party->field_70 = mario->scale;
             party->dispOffset = EM_VEC(0xF0, vec3_802e5820);
-            *(Vec*)((u8*)party + 0x64) = EM_VEC(0xFC, vec3_802e582c);
+            party->dispRot = EM_VEC(0xFC, vec3_802e582c);
             party->spinPivot = EM_VEC(0x108, vec3_802e5838);
             party->spinPivot.y = mario->dispPivot.y;
             party->dispOffset.y = mario->dispOfs.y;
@@ -290,7 +290,7 @@ USER_FUNC(evt_mario_paper_pose_dokan) {
             party->position = mario->position;
             party->field_70 = mario->scale;
             party->dispOffset = EM_VEC(0x114, vec3_802e5844);
-            *(Vec*)((u8*)party + 0x64) = EM_VEC(0x120, vec3_802e5850);
+            party->dispRot = EM_VEC(0x120, vec3_802e5850);
             party->spinPivot = EM_VEC(0x12C, vec3_802e585c);
             party->spinPivot.y = mario->dispPivot.y;
             party->dispOffset.y = mario->dispOfs.y;
@@ -325,7 +325,7 @@ USER_FUNC(evt_mario_paper_pose_dokan) {
     }
 
     if (ret == 2) {
-        mario->field_0x3E[0] = type;
+        mario->field_0x3E = type;
         marioChgMot(0x1d);
     }
     return ret;
@@ -2206,7 +2206,7 @@ USER_FUNC(evt_mario_set_prev_party_dokan) {
             // surround it) reproduces the original's unscheduled load/store pair without hoisting.
             *(volatile u32*)&party->flags = *(volatile u32*)&party->flags | 0x04000000;
             *(volatile u32*)&party->flags = *(volatile u32*)&party->flags | 0x02000000;
-            pos = (Vec*)((u8*)party + 0x70);
+            pos = &party->field_70;
             *(volatile Vec*)pos = *(volatile Vec*)&vec3_802e58e8;
 #else
             party->flags |= PARTY_FLAG_DISABLE_FLOORS;

@@ -2639,9 +2639,9 @@ s32 wait_landon(EventEntry* event, BOOL isFirstCall) {
 }
 
 void iri_12_msgcb(s32 type, smartEntry* smart) {
-    void* data = smart->address;
+    MessageData* data = smart->address;
 
-    if (type == 3 && *(u16*)((u8*)data + 8) == 1) {
+    if (type == 3 && data->choiceIndex == 1) {
         evtEntry(iri_12_makkino_okiru, 0, 0);
     }
 }

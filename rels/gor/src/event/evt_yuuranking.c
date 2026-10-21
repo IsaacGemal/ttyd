@@ -799,11 +799,6 @@ static s32 yuu_kesan_chk_copy(s32 mode, s32 value, s32 bonus, s32 mult, s32 maxV
 #define A14(i) yuwp->rankUsed[work->field_14][i]
 #define A74(i) yuwp->rankScore[work->field_14][i]
 #define AD4(i) yuwp->rankMonte[work->field_14][i]
-// shift-loop copies: the `yuwp + mode*24` base plus the constant index folds the offset into the add order
-// (mode*24 + running offset, then + yuwp) exactly as the target; the array view above associates it the other way.
-#define A14L(i) (((s32*)((u8*)yuwp + work->field_14 * 24))[5 + (i)])
-#define A74L(i) (((s32*)((u8*)yuwp + work->field_14 * 24))[29 + (i)])
-#define AD4L(i) (((s32*)((u8*)yuwp + work->field_14 * 24))[53 + (i)])
 #define A74F(i) (((s32*)((u8*)yuwp + work->field_14 * 24 + 0x74 + (i) * 4))[0])
 // slot-search read: row base yuwp+mode*24 keeps 0x14 as the index displacement (add+lwz), not addi+lwzx.
 #define A14R(i) (((s32*)((u8*)yuwp + work->field_14 * 24 + (i) * 4))[5])
@@ -825,9 +820,9 @@ static s32 yuu_kesan_chk_copy(s32 mode, s32 value, s32 bonus, s32 mult, s32 maxV
             }                                                                                                            \
             if (CMP) {                                                                                                   \
                 for (j = 4; j > i; j--) {                                                                                \
-                    A14L(j) = A14L(j - 1);                                                                                 \
-                    A74L(j) = A74L(j - 1);                                                                                 \
-                    AD4L(j) = AD4L(j - 1);                                                                                 \
+                    A14(j) = A14(j - 1);                                                                                   \
+                    A74(j) = A74(j - 1);                                                                                   \
+                    AD4(j) = AD4(j - 1);                                                                                   \
                 }                                                                                                        \
                 A14(i) = 1;                                                                                              \
                 A74(i) = work->result;                                                                                 \
@@ -851,7 +846,7 @@ static s32 yuu_kesan_chk_copy(s32 mode, s32 value, s32 bonus, s32 mult, s32 maxV
 
 // The slot-search/insert bookkeeping, per-mode constants, call sequence and the shift-loop addressing all match.
 // The two `>= 0` case-0/2/3 OUTER tests are written `0 <= work->result` (reversed operands) to pin result
-// into r8 like the target, and the shift-loop copies use the A14L/A74L/AD4L forms above.
+// into r8 like the target.
 USER_FUNC(evt_yuuranking_alloc_10_text_A47C) {
     s32* args = event->args;
     YuRankWork* work = _mapAlloc(sizeof(YuRankWork));
@@ -921,9 +916,6 @@ USER_FUNC(evt_yuuranking_alloc_10_text_A47C) {
 #undef A74
 #undef A14
 #undef A14R
-#undef A14L
-#undef A74L
-#undef AD4L
 #undef A74F
 USER_FUNC(evt_yuuranking_free_10_text_A3F8) {
     YuRankWork* wp = (YuRankWork*)_wp;

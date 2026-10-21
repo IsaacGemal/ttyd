@@ -333,7 +333,7 @@ static void actionCommandDisp(f32 x, f32 y) {
             thresholds[i] = 100;
         }
         for (i = 0; i < 4; i++, count++) {
-            thresholds[i] = *(s32*)((u8*)ac + 0x78 + i * 4);
+            thresholds[i] = ac->acGaugeParams[i];
             if (i != 0 && (thresholds[i] - thresholds[i - 1]) <= 0) {
                 break;
             }

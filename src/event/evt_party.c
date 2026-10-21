@@ -536,8 +536,8 @@ USER_FUNC(evt_party_jump_pos) {
     frames = (f32)sysMsec2Frame(msec);
     switch (event->userdata[3]) {
         case 0:
-            P32(party, 0x13C) = P32(party, 0x138);
-            P32(party, 0x138) = 0;
+            party->field_0x13C = party->groundHit;
+            party->groundHit = NULL;
             party->speed = distABf(party->position.x, party->position.z, tx, tz) / frames;
             party->dir = angleABf(party->position.x, party->position.z, tx, tz);
             if (flag == 0) {
@@ -587,7 +587,7 @@ USER_FUNC(evt_party_jump_pos) {
             hit = partySearchGround(party, __fabsf(frames), __fabsf(frames));
             if (hit) {
                 if (party->position.y + frames <= party->groundY) {
-                    P32(party, 0x138) = (u32)hit;
+                    party->groundHit = hit;
                     grounded = 1;
                     party->position.y = party->groundY;
                     party->flags &= ~(PARTY_FLAG_IS_JUMPING | PARTY_FLAG_IS_FALLING | PARTY_FLAG_IS_STEPPING);
@@ -754,7 +754,7 @@ USER_FUNC(evt_party_get_name_hitobj_head) {
     if (!party) {
         return EVT_RETURN_DONE;
     }
-    hit = (HitEntry*)P32(party, 0x140);
+    hit = party->headHit;
     arg = args[1];
     if (hit) {
         name = hitGetName(hit);
@@ -774,7 +774,7 @@ USER_FUNC(evt_party_get_name_hitobj_ride) {
     if (!party) {
         return EVT_RETURN_DONE;
     }
-    hit = (HitEntry*)P32(party, 0x138);
+    hit = party->groundHit;
     arg = args[1];
     if (hit) {
         name = hitGetName(hit);

@@ -18,10 +18,6 @@
 // Local declarations for functions whose headers don't exist yet. Each one is
 // listed in REPORT.md so it can move to a header later.
 
-// Raw accessors for MarioWork fields that are not named in include/mario/mario.h.
-#define MW_U8(m, off) (*(u8*)((u8*)(m) + (off)))
-#define MW_U16(m, off) (*(u16*)((u8*)(m) + (off)))
-
 // .sdata2: the base {0, 0, 0, 255} colour both mapSetPaperAmbColor callers start from.
 __declspec(section ".sdata2") const u32 dat_8041ae80 = 0x000000FF;
 
@@ -120,15 +116,15 @@ s32 U_marioSlitContinueChk(void) {
     } else if (marioBgmodeChk() == 1) {
         state = 0;
     } else if (!(mario2->dispFlags & (1 << 24))) {
-        if (MW_U16(mario2, 0x246) & 0x20) {
+        if (mario2->buttonHeld & 0x20) {
             state = 1;
         } else {
             goto zero;
         }
     } else {
-        if (MW_U16(mario2, 0x246) & 0x20) {
+        if (mario2->buttonHeld & 0x20) {
             state = 2;
-        } else if (MW_U8(mario2, 0x253) >= 0x32) {
+        } else if (mario2->triggerRight >= 0x32) {
             state = 2;
         } else {
             goto zero;
@@ -373,15 +369,15 @@ static inline s32 slitContinueChk(void) {
     } else if (marioBgmodeChk() == 1) {
         state = 0;
     } else if (!(mario2->dispFlags & (1 << 24))) {
-        if (MW_U16(mario2, 0x246) & 0x20) {
+        if (mario2->buttonHeld & 0x20) {
             state = 1;
         } else {
             goto zero;
         }
     } else {
-        if (MW_U16(mario2, 0x246) & 0x20) {
+        if (mario2->buttonHeld & 0x20) {
             state = 2;
-        } else if (MW_U8(mario2, 0x253) >= 0x32) {
+        } else if (mario2->triggerRight >= 0x32) {
             state = 2;
         } else {
             goto zero;

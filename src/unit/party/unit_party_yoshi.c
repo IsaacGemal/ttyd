@@ -1797,9 +1797,10 @@ extern u8 _yoshig_tpl_no_tbl[8];
 // The 0x300C-byte allocation `_gundan_yoshi_run_effect` keeps at unit+0x310: a state word,
 // 256 0x30-byte particles, and a trailing accumulator. No header declares it.
 typedef struct YoshiGundanArea {
-    s32 state;                // 0x0
-    u8 pad_0x4[0x3008 - 0x4]; // 0x4
-    f32 avgPosX;              // 0x3008
+    s32 state;                          // 0x0
+    YoshiGundanDispWork field_0x4[256]; // 0x4
+    u8 pad_0x3004[0x3008 - 0x3004];     // 0x3004
+    f32 avgPosX;                        // 0x3008
 } YoshiGundanArea;
 
 USER_FUNC(btl_yoshi_yoroyoro_jump_calc_param) {
@@ -2055,15 +2056,15 @@ USER_FUNC(_check_swallow_attribute) {
 USER_FUNC(_wait_yoshig_run) {
     BattleUnit* unit;
     s32 val;
-    f32* area;
+    YoshiGundanArea* area;
 
     val = evtGetValue(event, event->args[0]);
     unit = BattleGetUnitPtr(_battleWorkPointer, BattleTransID(event, val));
-    area = (f32*)unit->mExtraWork;
+    area = unit->mExtraWork;
     if (area == NULL) {
         return 0;
     }
-    if (*(f32*)((u8*)area + 0x3008) <= 0.0f) {
+    if (area->avgPosX <= 0.0f) {
         return 0;
     }
     return EVT_RETURN_DONE;
@@ -2179,7 +2180,7 @@ USER_FUNC(_gundan_yoshi_run_effect) {
         if (event->userdata[0] > 0) {
             event->userdata[0]--;
         } else {
-            work = (YoshiGundanDispWork*)((u8*)area + 4 + irand(256) * 0x30);
+            work = &area->field_0x4[irand(256)];
             scale = 1.0f + 0.05f * (f32)irand(20);
             effKemuTestEntry(0, work->posX,
                              5.0f + work->posY + (f32)irand(15),

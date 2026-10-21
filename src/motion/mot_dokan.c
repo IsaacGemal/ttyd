@@ -12,19 +12,14 @@
 
 // Local prototypes for functions whose headers don't declare them yet. Listed in REPORT.md.
 
-// Raw accessors for MarioWork and PartyEntry fields that are not named in their headers.
-#define M_S8(m, off) (*(s8*)((unsigned char*)(m) + (off)))
-#define M_F32(m, off) (*(f32*)((unsigned char*)(m) + (off)))
-#define M_VEC(m, off) (*(Vec*)((unsigned char*)(m) + (off)))
-
 // The original copies each Vec with an unscheduled per-component load/store pair; a volatile cast
 // stops MWCC's scheduler hoisting the third component's load (same shape as mot_damageToge).
 #ifdef MUST_MATCH
 #define COPY_VEC(dst, src) (*(volatile Vec*)(dst) = *(volatile Vec*)(src))
-#define STORE_F32V(m, off, v) (*(volatile f32*)((unsigned char*)(m) + (off)) = (v))
+#define STORE_F32V(p, v) (*(volatile f32*)(p) = (v))
 #else
 #define COPY_VEC(dst, src) (*(dst) = *(src))
-#define STORE_F32V(m, off, v) (M_F32(m, off) = (v))
+#define STORE_F32V(p, v) (*(p) = (v))
 #endif
 
 // .rodata named constants, in the order they appear in the original.
@@ -90,7 +85,7 @@ void _partyEntry(s32 arg) {
                     party = partyGetPtr(member);
                     partyChgRunMode(party, 0xA);
                     if (arg == 0) {
-                        M_VEC(party, 0x70) = vec3_802f3d60[0];
+                        party->field_70 = vec3_802f3d60[0];
                     }
                     party->flags |= PARTY_FLAG_DISABLE_FLOORS;
                     party->flags |= PARTY_FLAG_FORCE_FALL;
@@ -102,14 +97,14 @@ void _partyEntry(s32 arg) {
                     party->flags2 &= ~1;
                     party->field_110 = revise360(mario->unk1A8 + angle);
                     party->field_10C = mario->unk1A8;
-                    party->field_FC = M_F32(mario, 0x19C);
+                    party->field_FC = mario->moveDir;
                 }
             }
         } else {
             party = partyGetPtr(mario->currPartySlotId[i]);
             partyChgRunMode(party, 0xA);
             if (arg == 0) {
-                M_VEC(party, 0x70) = vec3_802f3d6c[0];
+                party->field_70 = vec3_802f3d6c[0];
             }
             party->flags |= PARTY_FLAG_DISABLE_FLOORS;
             party->flags |= PARTY_FLAG_FORCE_FALL;
@@ -121,7 +116,7 @@ void _partyEntry(s32 arg) {
             party->flags2 &= ~1;
             party->field_110 = revise360(mario->unk1A8 + angle);
             party->field_10C = mario->unk1A8;
-            party->field_FC = M_F32(mario, 0x19C);
+            party->field_FC = mario->moveDir;
         }
     }
 }
@@ -129,8 +124,8 @@ void _partyEntry(s32 arg) {
 // Two scheduling shapes the original's compiler emitted that MWCC only reproduces with help:
 //  - Every Vec copy is an unscheduled load x/load y/store x/store y/load z/store z, so COPY_VEC reads both
 //    sides volatile to stop the scheduler hoisting the third component's load (same shape as mot_damageToge).
-//  - In the sub-motion-1 branch the second 0x2A0 store is volatile (STORE_F32V): it keeps that branch's scale
-//    copy below both 0x2A0 stores, which also settles the f1/f2/f0 assignment.
+//  - In the sub-motion-1 branch the second spinSpeed store is volatile (STORE_F32V): it keeps that branch's scale
+//    copy below both spinSpeed stores, which also settles the f1/f2/f0 assignment.
 // The float constants still pool into anonymous @NNN .sdata2 slots (MWCC folds consts defined above the code);
 // objdiff matches those by value, so they do not affect the score.
 void mot_dokan(void) {
@@ -143,16 +138,16 @@ void mot_dokan(void) {
         mario->dispFlags |= 0x1000;
         mario->dispFlags |= 8;
         mario->dispFlags |= 0x100;
-        M_F32(mario, 0x2A4) = 0.0f;
+        mario->field_0x2A4 = 0.0f;
         mario->wCamVal1 = mario->position.z;
         mario->multiTimer = 0;
         mario->airTimer = 0;
         mario->baseSpeed = 0.0f;
-        if (M_S8(mario, 0x3E) == 2) {
+        if (mario->field_0x3E == 2) {
             mario->currSubMotionId = 0xA;
-        } else if (M_S8(mario, 0x3E) == 3) {
+        } else if (mario->field_0x3E == 3) {
             mario->currSubMotionId = 0xA;
-        } else if (M_S8(mario, 0x3E) == 1) {
+        } else if (mario->field_0x3E == 1) {
             marioPaperOn("p_dokan_y");
             marioChgPaper("PM_D_1A");
             marioChgPose("M_Z_1");
@@ -162,13 +157,13 @@ void mot_dokan(void) {
             mario->unk1A8 = mario->dispReqDir;
             mario->currSubMotionId = 0x14;
             mario->spinSpeed = 0.0f;
-            STORE_F32V(mario, 0x2A0, 30.0f);
+            STORE_F32V(&mario->spinSpeed, 30.0f);
             COPY_VEC(&mario->scale, &vec3_802f3d78);
             _partyEntry(1);
-        } else if (M_S8(mario, 0x3E) == 0) {
+        } else if (mario->field_0x3E == 0) {
             _partyEntry(0);
             mario->currSubMotionId = 0x1E;
-        } else if (M_S8(mario, 0x3E) == 5) {
+        } else if (mario->field_0x3E == 5) {
             mario->dispFlags |= 0x1000;
             if ((party = partyGetPtr(0)) != NULL) {
                 partyShadowOff(party);
@@ -176,10 +171,10 @@ void mot_dokan(void) {
             if ((party = partyGetPtr(1)) != NULL) {
                 partyShadowOff(party);
             }
-            COPY_VEC(&M_VEC(mario, 0x98), &vec3_802f3d84);
-            COPY_VEC(&M_VEC(mario, 0xA4), &vec3_802f3d90);
-            COPY_VEC(&M_VEC(mario, 0xBC), &vec3_802f3d9c);
-            COPY_VEC(&M_VEC(mario, 0xB0), &vec3_802f3da8);
+            COPY_VEC(&mario->dispOfs, &vec3_802f3d84);
+            COPY_VEC(&mario->dispOfs2, &vec3_802f3d90);
+            COPY_VEC(&mario->dispRot, &vec3_802f3d9c);
+            COPY_VEC(&mario->dispPivot, &vec3_802f3da8);
             marioSlitForceCancel();
             marioPaperOn("p_dokan_x");
             marioPaperLightOff();
@@ -189,14 +184,14 @@ void mot_dokan(void) {
             mario->spinSpeed = 30.0f;
             mario->multiTimer = 0x14;
             mario->currSubMotionId = 0;
-        } else if (M_S8(mario, 0x3E) == 4) {
+        } else if (mario->field_0x3E == 4) {
             COPY_VEC(&mario->scale, &vec3_802f3db4);
-            COPY_VEC(&M_VEC(mario, 0x98), &vec3_802f3dc0);
-            COPY_VEC(&M_VEC(mario, 0xA4), &vec3_802f3dcc);
-            COPY_VEC(&M_VEC(mario, 0xBC), &vec3_802f3dd8);
-            COPY_VEC(&M_VEC(mario, 0xB0), &vec3_802f3de4);
+            COPY_VEC(&mario->dispOfs, &vec3_802f3dc0);
+            COPY_VEC(&mario->dispOfs2, &vec3_802f3dcc);
+            COPY_VEC(&mario->dispRot, &vec3_802f3dd8);
+            COPY_VEC(&mario->dispPivot, &vec3_802f3de4);
             mario->directionView = toMovedir(mario->unk1A8);
-            M_F32(mario, 0x19C) = mario->directionView;
+            mario->moveDir = mario->directionView;
             marioPaperOn("p_dokan_x");
             marioPaperLightOff();
             marioChgPaper("PM_D_1A");
@@ -225,7 +220,7 @@ void mot_dokan(void) {
         COPY_VEC(&mario->scale, &vec3_802f3df0);
         mario->currSubMotionId = 0x15;
         if (mario->flags & 0x02000000) {
-            M_F32(mario, 0xA8) = -2.0f;
+            mario->dispOfs2.y = -2.0f;
         }
         // fallthrough
     case 0x15:
@@ -253,64 +248,64 @@ void mot_dokan(void) {
         if ((s32)--mario->multiTimer > 0) {
             break;
         }
-        M_F32(mario, 0xBC) += mario->spinSpeed;
+        mario->dispRot.x += mario->spinSpeed;
         mario->scale.x += -0.02f;
         if (mario->scale.x < 0.0f) {
             mario->scale.x = 0.0f;
         }
         mario->scale.y = mario->scale.x;
         mario->scale.z = mario->scale.x;
-        M_F32(mario, 0xB4) = 16.0f * mario->scale.x;
-        M_F32(mario, 0x9C) = 16.0f - M_F32(mario, 0xB4);
-        M_F32(mario, 0xA0) = -3.0f;
+        mario->dispPivot.y = 16.0f * mario->scale.x;
+        mario->dispOfs.y = 16.0f - mario->dispPivot.y;
+        mario->dispOfs.z = -3.0f;
         break;
     case 0x28:
-        M_F32(mario, 0xBC) += mario->spinSpeed;
+        mario->dispRot.x += mario->spinSpeed;
         mario->scale.x += 0.03f;
         if (mario->scale.x >= 1.0f) {
             mario->scale.x = 1.0f;
         }
         mario->scale.y = mario->scale.x;
         mario->scale.z = mario->scale.x;
-        M_F32(mario, 0xB4) = 16.0f * mario->scale.x;
-        M_F32(mario, 0x9C) = 16.0f - M_F32(mario, 0xB4);
-        M_F32(mario, 0xA0) = -3.0f;
+        mario->dispPivot.y = 16.0f * mario->scale.x;
+        mario->dispOfs.y = 16.0f - mario->dispPivot.y;
+        mario->dispOfs.z = -3.0f;
         party = partyGetPtr(marioGetPartyId());
         if (party != NULL) {
             party->position = mario->position;
-            M_F32(party, 0x70) = mario->scale.x;
-            M_F32(party, 0x74) = mario->scale.y;
-            M_F32(party, 0x78) = mario->scale.z;
-            M_F32(party, 0x8C) = M_F32(mario, 0xB4);
-            M_F32(party, 0x80) = M_F32(mario, 0x9C);
-            M_F32(party, 0x84) = M_F32(mario, 0xA0);
+            party->field_70.x = mario->scale.x;
+            party->field_70.y = mario->scale.y;
+            party->field_70.z = mario->scale.z;
+            party->spinPivot.y = mario->dispPivot.y;
+            party->dispOffset.y = mario->dispOfs.y;
+            party->dispOffset.z = mario->dispOfs.z;
         }
         party = partyGetPtr(marioGetExtraPartyId());
         if (party != NULL) {
             party->position = mario->position;
-            M_F32(party, 0x70) = mario->scale.x;
-            M_F32(party, 0x74) = mario->scale.y;
-            M_F32(party, 0x78) = mario->scale.z;
-            M_F32(party, 0x8C) = M_F32(mario, 0xB4);
-            M_F32(party, 0x80) = M_F32(mario, 0x9C);
-            M_F32(party, 0x84) = M_F32(mario, 0xA0);
+            party->field_70.x = mario->scale.x;
+            party->field_70.y = mario->scale.y;
+            party->field_70.z = mario->scale.z;
+            party->spinPivot.y = mario->dispPivot.y;
+            party->dispOffset.y = mario->dispOfs.y;
+            party->dispOffset.z = mario->dispOfs.z;
         }
         mario->field_EC.y = mario->position.y;
         break;
     case 0x64:
-        if (M_S8(mario, 0x3E) == 1) {
+        if (mario->field_0x3E == 1) {
             mario->currSubMotionId = 0x6E;
-        } else if (M_S8(mario, 0x3E) == 4) {
+        } else if (mario->field_0x3E == 4) {
             marioUpdateCamPos();
-            M_F32(mario, 0xBC) = 0.0f;
+            mario->dispRot.x = 0.0f;
             marioChgPaper("PM_D_1B");
             mario->multiTimer = 0x14;
             mario->currSubMotionId = 0x66;
-            partyDokanEnd(marioGetPartyId(), M_S8(mario, 0x3E));
-            partyDokanEnd(marioGetExtraPartyId(), M_S8(mario, 0x3E));
-        } else if (M_S8(mario, 0x3E) == 1) {
+            partyDokanEnd(marioGetPartyId(), mario->field_0x3E);
+            partyDokanEnd(marioGetExtraPartyId(), mario->field_0x3E);
+        } else if (mario->field_0x3E == 1) {
             mario->currSubMotionId = 0x65;
-        } else if (M_S8(mario, 0x3E) == 0) {
+        } else if (mario->field_0x3E == 0) {
             marioUpdateCamPos();
             mario->currSubMotionId = 0x65;
         } else {
@@ -323,13 +318,13 @@ void mot_dokan(void) {
             marioChgPaper("PM_D_1B");
             mario->multiTimer = 0x14;
             mario->currSubMotionId = 0x66;
-            M_F32(mario, 0xBC) = 0.0f;
+            mario->dispRot.x = 0.0f;
             mario->dispReqDir = revise360(180.0f + mario->dispReqDir);
             mario->unk1A8 = mario->dispReqDir;
             mario->directionView = toMovedirSimple(mario->unk1A8);
-            M_F32(mario, 0x19C) = mario->directionView;
-            partyDokanEnd(marioGetPartyId(), M_S8(mario, 0x3E));
-            partyDokanEnd(marioGetExtraPartyId(), M_S8(mario, 0x3E));
+            mario->moveDir = mario->directionView;
+            partyDokanEnd(marioGetPartyId(), mario->field_0x3E);
+            partyDokanEnd(marioGetExtraPartyId(), mario->field_0x3E);
         }
         break;
     case 0x66:
@@ -338,7 +333,7 @@ void mot_dokan(void) {
         }
         break;
     case 0x67:
-        COPY_VEC(&M_VEC(mario, 0xE0), &mario->position);
+        COPY_VEC(&mario->field_0xE0, &mario->position);
         COPY_VEC(&mario->scale, &vec3_802f3dfc);
         marioOfsRotReset();
         mario->dispFlags &= ~0x8;
@@ -349,8 +344,8 @@ void mot_dokan(void) {
         mario->unk1A8 = revise360(mario->unk1A8);
         mario->dispReqDir = mario->unk1A8;
         mario->directionView = toMovedirSimple(mario->unk1A8);
-        M_F32(mario, 0x19C) = mario->directionView;
-        if (M_S8(mario, 0x3E) == 4) {
+        mario->moveDir = mario->directionView;
+        if (mario->field_0x3E == 4) {
             camFollowYOn();
             mario->field_EC.y = mario->position.y;
         }
@@ -378,13 +373,13 @@ void mot_dokan(void) {
             marioChgPaper("PM_D_1B");
             mario->multiTimer = 0x14;
             mario->currSubMotionId = 0x70;
-            M_F32(mario, 0xBC) = 0.0f;
+            mario->dispRot.x = 0.0f;
             mario->dispReqDir = revise360(mario->unk1A8);
             mario->unk1A8 = mario->dispReqDir;
             mario->directionView = toMovedirSimple(mario->unk1A8);
-            M_F32(mario, 0x19C) = mario->directionView;
-            partyDokanEnd(marioGetPartyId(), M_S8(mario, 0x3E));
-            partyDokanEnd(marioGetExtraPartyId(), M_S8(mario, 0x3E));
+            mario->moveDir = mario->directionView;
+            partyDokanEnd(marioGetPartyId(), mario->field_0x3E);
+            partyDokanEnd(marioGetExtraPartyId(), mario->field_0x3E);
         }
         break;
     case 0x70:
@@ -393,7 +388,7 @@ void mot_dokan(void) {
         }
         break;
     case 0x71:
-        COPY_VEC(&M_VEC(mario, 0xE0), &mario->position);
+        COPY_VEC(&mario->field_0xE0, &mario->position);
         COPY_VEC(&mario->scale, &vec3_802f3e08);
         marioOfsRotReset();
         mario->dispFlags &= ~0x8;
@@ -404,7 +399,7 @@ void mot_dokan(void) {
         mario->unk1A8 = revise360(mario->unk1A8);
         mario->dispReqDir = mario->unk1A8;
         mario->directionView = toMovedirSimple(mario->unk1A8);
-        M_F32(mario, 0x19C) = mario->directionView;
+        mario->moveDir = mario->directionView;
         if (!(mario->flags & 0x02000000)) {
             camFollowYOn();
         }

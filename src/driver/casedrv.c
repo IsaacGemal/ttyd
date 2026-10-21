@@ -12,9 +12,6 @@
 #include "memory.h"
 #include <string.h>
 
-// Raw MarioWork offsets the header doesn't name yet (JP build).
-#define MW_PTR(m, off) (*(void**)((u8*)(m) + (off)))
-
 typedef struct CaseWork {
 	s32 count; //0x0
 	CaseEntry* entries; //0x4
@@ -221,7 +218,7 @@ void caseMain(void) {
 		case 15: {
 			PartyEntry* party = partyGetPtr(marioGetPartyId());
 			if (party != NULL && party->currentMemberId == PARTY_MEMBER_BOBBERY) {
-				HitEntry* hit = MW_PTR(party, 0x130);
+				HitEntry* hit = party->frontHit;
 				if (hit != NULL && strcmp(hitGetName(hit), entry->hitObjName) == 0) {
 					entry->flags |= 2;
 				}

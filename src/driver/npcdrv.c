@@ -147,7 +147,6 @@ BOOL dbg_battleskip;
 // TODO: inlining?
 #define npcGetWorkPtrInline() (gp->inBattle ? &work.battle : &work.field)
 
-#define ENC(p, T, off) (*(T*)((u8*)(p) + (off)))
 typedef struct FbatHitInfo {
     s32 kind;           // 0x0, the attack (the fbatSetAttackAnnounce code)
     s32 attackMode;     // 0x4, the npc's attackMode, for a stomp that becomes the enemy's first strike
@@ -2354,7 +2353,7 @@ void fbatBattleMode(void) {
 
                 fbatData->target->interruptFlags &= 0xF00;
                 evtStopID(fbatData->target->regularEvtId);
-                info0 = (FieldBattleInfo*)((u8*)fbatData + 0x20);
+                info0 = &fbatData->field_20;
                 if (!(entry->battleInfo.flags & NPC_BATTLE_NO_FIRST_STRIKE_WIN)) {
                     if (pouchEquipCheckBadge(ITEM_BUMP_ATTACK) &&
                         entry->battleInfo.groupSetup->enemyData->mUnitKindParams->mLevel < pouch->level) {
@@ -2411,7 +2410,7 @@ void fbatBattleMode(void) {
                 s32 total2;
                 s32 i2;
                 fbatData->field_0x54C = 0;
-                info2 = (FieldBattleInfo*)((u8*)fbatData + 0x20);
+                info2 = &fbatData->field_20;
                 result = BattleInformationGetResult(info2);
                 if (pouch->mMerleeNextCurseType == 4 && result == 1) {
                     fbatData->state = 3;
@@ -2463,7 +2462,7 @@ void fbatBattleMode(void) {
                 s32 hasStolen;
                 s32 mult;
 
-                info4 = (FieldBattleInfo*)((u8*)fbatData + 0x20);
+                info4 = &fbatData->field_20;
                 result = BattleInformationGetResult(info4);
                 hasStolen = FALSE;
                 for (i = 0; i < sizeof(entry->battleInfo.stolenItems); i += sizeof(ItemType)) {
@@ -2476,7 +2475,7 @@ void fbatBattleMode(void) {
                 if (result == 1 || result == 2) {
                     mult = 1;
                     if ((s32)BattleInformationGetResult(info4) == 1) {
-                        entry->btlCoinDropCount = *(u32*)&info4->field_0x14[0];
+                        entry->btlCoinDropCount = info4->field_0x14;
                     } else if (result == 1) {
                         entry->btlCoinDropCount = entry->baseCoin;
                     } else {
@@ -2918,7 +2917,7 @@ void* fbatHitCheck(s32 flags, s32 out) {
                     if (pouchGetHammerLv() < 3) {
                         info.kind = 0x200000;
                     } else {
-                        ENC(&info, s32, 0) = 0x400000;
+                        *(s32*)&info = 0x400000;
                     }
 #else
                     if (pouchGetHammerLv() < 3) {
@@ -2967,7 +2966,7 @@ void* fbatHitCheck(s32 flags, s32 out) {
                     if (pouchGetHammerLv() < 3) {
                         info.kind = 0x200000;
                     } else {
-                        ENC(&info, s32, 0) = 0x400000;
+                        *(s32*)&info = 0x400000;
                     }
 #else
                     if (pouchGetHammerLv() < 3) {

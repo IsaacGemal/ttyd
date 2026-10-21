@@ -134,7 +134,7 @@ USER_FUNC(_make_counterset_weapon) {
     s32* args = event->args;
     BattleUnit* unit;
     s32 arg0;
-    void* area;
+    BattleWeapon* area;
     s32 value;
     s32 value2;
     s32 id;
@@ -146,7 +146,7 @@ USER_FUNC(_make_counterset_weapon) {
     value = evtGetValue(event, arg0);
     value2 = evtGetValue(event, args[1]);
     memcpy(area, (void*)value, 0xC0);
-    *(u8*)((u8*)area + 0xA7) = value2;
+    area->holdFastTime = value2;
     evtSetValue(event, arg0, (s32)area);
     return EVT_RETURN_DONE;
 }

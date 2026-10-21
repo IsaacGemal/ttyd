@@ -986,7 +986,7 @@ void shipMove(void) {
     if (SHIP_DATA->sfxId != 0xFFFFFFFFu) {
         psndSFX_pos(SHIP_DATA->sfxId, &mario->position);
     }
-    *(f32*)((u8*)mario + 0x18C) = f29;
+    mario->field_0x18C = f29;
 }
 
 // Turn direction for boarding the ship: from Mario's angle to the harbor object for the first

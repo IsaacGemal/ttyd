@@ -785,13 +785,13 @@ void winMarioDisp(CameraId camId, void* param, s32 idx) {
 
     {
         AnimData* anim;
-        void* p;
+        AnimDataClip* p;
         f32 frac;
         animPoseGetAnimPosePtr(POSE);
         anim = animPoseGetAnimDataPtr(POSE);
         if (work->marioHoldTimer == 0) {
-            p = (void*)anim->clip;
-            frac = (f32)(gp->retraceCount % (s32)*(f32*)((u8*)p + 8));
+            p = anim->clip;
+            frac = (f32)(gp->retraceCount % (s32)p->field_0x8);
             animPoseSetLocalTime(POSE, frac);
         }
         animPoseMain(POSE);

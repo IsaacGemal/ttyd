@@ -1238,7 +1238,7 @@ HitEntry* check_front(PartyEntry* party) {
         *(S32x8*)angles = *(const S32x8*)dat_802ccf60;
     }
 #endif
-    f29 = 0.8f * *(f32*)&party->field_E8[0x8];
+    f29 = 0.8f * party->height;
     base = partyToMovedir(party, party->field_10C);
     for (i = 0; i < 8; i++) {
         sincosf(&query.targetDir.x, &query.targetDir.z, base + (f32)angles[i]);

@@ -95,19 +95,23 @@ typedef struct PartyEntry {
     u8 useMotionId;              // 0x39
     u8 field_3A;                 // 0x3A
     u8 field_3B;                 // 0x3B
-    u8 field_3C[0x40 - 0x3C];    // 0x3C
+    u8 field_3C;                 // 0x3C
+    u8 field_3D;                 // 0x3D, set to the partyMoveBehindMario/BesideMario mode, cleared by party_move and cloud
+    u8 field_3E;                 // 0x3E, zeroed only (party_move)
+    s8 field_3F;                 // 0x3F, compared with 1, 2 and 3 in party_move, then zeroed
     f32 followDist;              // 0x40, distance from Mario at which a standing partner starts walking after him (party_motion_stay)
-    u8 field_44[0x4C - 0x44];    // 0x44
+    u32 field_44;                // 0x44, set to 0x10 beside followDist (party_move)
+    u8 field_48[0x4C - 0x48];    // 0x48
     s8 field_4C;                 // 0x4C
-    u8 field_4D[0x4E - 0x4D];    // 0x4D
+    s8 field_4D;                 // 0x4D, party_motion: zeroed with no ground hit, counted up otherwise; past 8 it re-tests the floor ahead
     u8 noFloorCount;             // 0x4E, frames the partner walked with no floor under it; party_motion_stay turns it toward Mario past 10
-    u8 field_4F[0x52 - 0x4F];    // 0x4F
+    s8 field_4F;                 // 0x4F, party_vivian flag byte: bit 0 set and cleared around Vivian's use, zeroed at init
+    u8 field_50;                 // 0x50
+    s8 field_51;                 // 0x51, 1 while party_move follows the other partner's footmarks (set when the trail is reset, cleared with partyClearFootmark2)
     s16 touchCount;              // 0x52, contact counter partyMarioHosei returns: up to 100 while touching Mario, decays after
     f32 moveAngle;               // 0x54, heading passed to movePos
     Vec position;                // 0x58
-    f32 tiltX;                   // 0x64, x-axis tilt in degrees for the roll (party.c's draw matrix rotates by it)
-    u8 field_68[0x6C - 0x68];    // 0x68
-    f32 spinAngle;               // 0x6C, revise360'd every frame while rolling (p_roll)
+    Vec dispRot;                 // 0x64, display rotation in degrees, as MarioWork's dispRot: party.c's draw matrix rotates by z then x, y is not read; z is revise360'd every frame while rolling (p_roll)
     Vec field_70;                // 0x70
     Vec dispOffset;              // 0x7C, added to position for the draw matrix (party.c), y bobbed by cloud and Vivian
     Vec spinPivot;               // 0x88, pivot of the roll spin (party.c translates by -spinPivot before the z and x rotations, +spinPivot after)
@@ -120,7 +124,7 @@ typedef struct PartyEntry {
     u8 field_C4[0xE0 - 0xC4];    // 0xC4
     f32 groundSlope;             // 0xE0, partyGroundSlope result (party_hit.c), compared with 30.0f
     f32 groundY;                 // 0xE4, floor height saved by partySearchGround
-    u8 field_E8[0xEC - 0xE8];    // 0xE8
+    f32 field_E8;                // 0xE8, partySearchGround sets it (-1, the floor gap, or 0); party_move tests it against 0
     f32 field_EC;                // 0xEC
     f32 height;                  // 0xF0, height above position.y (partyGetHeight, Yoshi's head offset)
     f32 radius;                  // 0xF4, collision radius
@@ -141,11 +145,11 @@ typedef struct PartyEntry {
     struct HitEntry* frontHit;   // 0x130, check_front result
     void* field_134;             // 0x134
     struct HitEntry* groundHit;  // 0x138, partySearchGround result
-    void* field_0x13C;           // 0x13C, written with groundHit (party_yoshi.c)
+    struct HitEntry* field_0x13C; // 0x13C, takes the old groundHit (party_yoshi.c, evt_party_jump_pos); party.c clears it
     struct HitEntry* headHit;    // 0x140, partySearchHead result
-    u32 field_0x144;             // 0x144
+    void* field_0x144;           // 0x144, aji_13 tests it for NULL before the groundHit group check; party.c clears it
     u32 field_0x148;             // 0x148
-    u8 field_14C[0x150 - 0x14C]; // 0x14C
+    struct HitEntry* field_14C;  // 0x14C, set to the ground hit when its attribute has bit 0x40000000 (party_motion.c)
     u16 button;                  // 0x150, held buttons (partyUpdateKeyData)
     u16 buttonNew;               // 0x152, pressed this frame
     u16 buttonRepeat;            // 0x154

@@ -16,8 +16,7 @@ typedef struct DisplayList {
 
 typedef struct PackedDisplayList {
     u32 offset;      // 0x00 - Offset to packed data
-    u16 vertexCount; // 0x04 - Number of vertices
-    u8 padding[2];   // 0x06
+    u32 nbytes;      // 0x04, GXCallDisplayList's nbytes (mapdrv)
 } PackedDisplayList;
 
 typedef struct MapFileMesh {
@@ -33,15 +32,48 @@ typedef struct MapFileMesh {
 } displayLists;  // at 0x10
 } MapFileMesh;
 
+typedef struct MapMatTexRef {
+    void* field_0x0;  // 0x0, points at the texture name/info block
+    u8 field_0x4[4];  // 0x4
+    u8 wrapS;         // 0x8
+    u8 wrapT;         // 0x9
+    u8 field_0xA;     // 0xA, 1 or 2 picks the joint's render mode 1 or 2 (_mapEnt), as MapMaterial.field_0xA
+} MapMatTexRef;
+
+typedef struct MapMatTexMtx {
+    f32 transX;     // 0x0
+    f32 transY;     // 0x4, negated before the matrix is built
+    f32 scaleX;     // 0x8
+    f32 scaleY;     // 0xC
+    f32 rotation;   // 0x10, degrees, negated before the matrix is built
+    f32 field_0x14; // 0x14
+    f32 field_0x18; // 0x18
+} MapMatTexMtx;
+
+typedef struct MapMaterial {
+    u8 field_0x0[4];          // 0x0
+    GXColor color;            // 0x4
+    u8 field_0x8;             // 0x8
+    u8 field_0x9;             // 0x9
+    u8 field_0xA;             // 0xA, 1 or 2 picks the joint's render mode 1 or 2 (_mapEnt)
+    u8 texCount;              // 0xB
+    MapMatTexRef* texRefs[8]; // 0xC
+    MapMatTexMtx entries[8];  // 0x2C, texture matrices (mapSetTextureMatrix)
+    GXColor field_0x10C;      // 0x10C, last-stage blend colour (mapSetMaterialLastStageBlend)
+    u8* field_0x110;          // 0x110
+} MapMaterial;
+
 typedef struct MapFileJointPart {
-    void* material;    // 0x0
-    MapFileMesh* mesh; // 0x4
+    MapMaterial* material; // 0x0
+    MapFileMesh* mesh;     // 0x4
 } MapFileJointPart;
 
 typedef struct MapJointDrawMode {
-    u8 unk0[0x1 - 0x0];  // 0x0
+    u8 unk0;             // 0x0, picks the render mode (_mapEnt)
     u8 cullMode;         // 0x1
-    u8 unk2[0x8 - 0x2];  // 0x2
+    u8 unk2;             // 0x2, flag bits read by _mapEnt and the display-list setup
+    u8 unk3[0x4 - 0x3];  // 0x3
+    u32 unk4;            // 0x4, display lists are only built when 0
     s32 unk8;            // 0x8
     u8 unkC[0x10 - 0xC]; // 0xC
 } MapJointDrawMode;
@@ -116,7 +148,7 @@ enum MapObjectFlags {
     MAPOBJ_FLAG_FLUSH = 0x100000,      // TEV flush with color (mapObjFlushOn)
     MAPOBJ_FLAG_USER_MTX = 0x200000,   // multiply in unkAC (mapObjRotate/Translate/Scale)
     MAPOBJ_TEV_CALLBACK_MASK = 0x0F000000, // index into MapEntry tevCallback
-    MAPOBJ_FLAG_BBOX = 0x20000000,     // capture the screen bounds into field_0xEC (mapDispMapObj_bbox)
+    MAPOBJ_FLAG_BBOX = 0x20000000,     // capture the screen bounds into bboxLeft..bboxBottom (mapDispMapObj_bbox)
 };
 
 typedef struct MapObject {
@@ -136,7 +168,10 @@ typedef struct MapObject {
     struct MapObject* parent; // 0xE0
     struct MapObject* child;  // 0xE4
     struct MapObject* next;   // 0xE8
-    u8 field_0xEC[0xF4 - 0xEC];  // 0xEC, four u16 screen bounds, cleared each frame with MAPOBJ_FLAG_BBOX
+    u16 bboxLeft;             // 0xEC, screen bounds from GXReadBoundingBox (mapDispMapObj_bbox),
+    u16 bboxTop;              // 0xEE  cleared each frame with MAPOBJ_FLAG_BBOX
+    u16 bboxRight;            // 0xF0
+    u16 bboxBottom;           // 0xF2
     void* dlBuf[8];           // 0xF4, display list copies (makeDisplayList)
     u32 dlSize[8];            // 0x114, display list sizes (makeDisplayList)
 } MapObject;
@@ -146,13 +181,25 @@ typedef struct MapError {
     s32 field_0x20;     // 0x20
 } MapError;
 
+// An "animation_table" chunk entry in the map file.
+typedef struct MapAnimTableEntry {
+    const char* name;    // 0x0, matched against the animation name (mapSearchAnmObj)
+    u8 field_0x4[4];     // 0x4
+    f32 field_0x8;       // 0x8, in frames; the play frame wraps at it (mapMain)
+    u8* field_0xC;       // 0xC, joint list (count, then joint pointers) for mapCalcAnimMatrix (mapMain, hitdrv)
+    u8* field_0x10;      // 0x10
+    u8* field_0x14;      // 0x14
+    u8* field_0x18;      // 0x18
+    u8* field_0x1C;      // 0x1C
+} MapAnimTableEntry;
+
 typedef struct MapEntryAnimData {
     u16 flags;           // 0x0
     u8 field_0x2[6];     // 0x2
     OSTime startTime;    // 0x8, in milliseconds
     f32 frame;           // 0x10
     f32 rate;            // 0x14, mapSetPlayRate
-    void* data;          // 0x18, the animation_table entry
+    MapAnimTableEntry* data; // 0x18
     u8 field_0x1C[4];    // 0x1C
 } MapEntryAnimData;
 
@@ -302,22 +349,7 @@ void mapGetBlend2(GXColor* out);
 s32 mapSetLight(MapObject* obj, LightEntry** entries);
 void mapSetPolygonVtxDesc(MapObject* obj, MapFileMesh* mesh);
 void mapCalcAnimMatrix(Mtx outMtx, Mtx inMtx, MapEntryAnimData* anim, void* joint);
-typedef struct MapMatTexMtx {
-    f32 transX;     // 0x0
-    f32 transY;     // 0x4, negated before the matrix is built
-    f32 scaleX;     // 0x8
-    f32 scaleY;     // 0xC
-    f32 rotation;   // 0x10, degrees, negated before the matrix is built
-    f32 field_0x14; // 0x14
-    f32 field_0x18; // 0x18
-} MapMatTexMtx;
-typedef struct MapMaterialTex {
-    u8 field_0x0[0xB];        // 0x0
-    u8 texCount;              // 0xB
-    u8 field_0xC[0x2C - 0xC]; // 0xC
-    MapMatTexMtx entries[];   // 0x2C
-} MapMaterialTex;
-void mapSetTextureMatrix(MapMaterialTex* material);
+void mapSetTextureMatrix(MapMaterial* material);
 void mapReCalcMatrix(MapObject* obj, Mtx mtx, BOOL force);
 BOOL mapTestXLU(u32 flags, GXColor* a, GXColor* b);
 typedef struct MapTevCallback {

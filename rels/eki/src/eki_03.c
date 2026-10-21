@@ -235,12 +235,12 @@ static USER_FUNC(test_glare) {
         return 0;
     }
 
-    if (*(u16*)obj->field_0xEC == 0x3FF || *(u16*)(obj->field_0xEC + 2) == 0x3FF
-        || *(u16*)(obj->field_0xEC + 4) == 0x3FF || *(u16*)(obj->field_0xEC + 6) == 0x3FF) {
+    if (obj->bboxLeft == 0x3FF || obj->bboxTop == 0x3FF
+        || obj->bboxRight == 0x3FF || obj->bboxBottom == 0x3FF) {
         envGlareFilter(0, 0, 0, 0, 0);
     }
-    else if (*(u16*)obj->field_0xEC == 0 && *(u16*)(obj->field_0xEC + 2) == 0 && *(u16*)(obj->field_0xEC + 4) == 0
-             && *(u16*)(obj->field_0xEC + 6) == 0) {
+    else if (obj->bboxLeft == 0 && obj->bboxTop == 0 && obj->bboxRight == 0
+             && obj->bboxBottom == 0) {
         envGlareFilter(0, 0, 0, 0, 0);
     }
     else {
@@ -248,11 +248,11 @@ static USER_FUNC(test_glare) {
         // MUST_MATCH: the `s16` call-site signature is what fixes the schedule (see the comment above
         // the function); passing the same values through the header's `s32` prototype loses it.
         ((void (*)(s32, s16, s16, s16, s16))envGlareFilter)(
-            1, *(u16*)(obj->field_0xEC + 2) - 0x32, *(u16*)obj->field_0xEC - 0x32,
-            *(u16*)(obj->field_0xEC + 6) + 0x32, *(u16*)(obj->field_0xEC + 4) + 0x32);
+            1, obj->bboxTop - 0x32, obj->bboxLeft - 0x32,
+            obj->bboxBottom + 0x32, obj->bboxRight + 0x32);
 #else
-        envGlareFilter(1, (s16)(*(u16*)(obj->field_0xEC + 2) - 0x32), (s16)(*(u16*)obj->field_0xEC - 0x32),
-                       (s16)(*(u16*)(obj->field_0xEC + 6) + 0x32), (s16)(*(u16*)(obj->field_0xEC + 4) + 0x32));
+        envGlareFilter(1, (s16)(obj->bboxTop - 0x32), (s16)(obj->bboxLeft - 0x32),
+                       (s16)(obj->bboxBottom + 0x32), (s16)(obj->bboxRight + 0x32));
 #endif
         envGlareFilterZ(1.148f);
     }
