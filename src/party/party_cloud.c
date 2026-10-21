@@ -315,14 +315,6 @@ static inline void cloudMoveToMarioStep(PartyEntry* party) {
 }
 #define MOVE_TO_MARIO() cloudMoveToMarioStep(party)
 
-#ifdef MUST_MATCH
-// Match-only: the original re-reads party->playerPtr at the cloud->unk8 clamp (lwz r30, 0x160(r29));
-// the natural single load is under #else.
-#define RELOAD_MARIO() (mario = party->playerPtr)
-#else
-#define RELOAD_MARIO() ((void)0)
-#endif
-
 void N__cloud_use(PartyEntry* party) {
     MarioWork* mario = party->playerPtr;
     HitEntry* hit;
@@ -434,29 +426,19 @@ void N__cloud_use(PartyEntry* party) {
         party->position.y = mario->position.y + 10.0f;
         party->dispOffset = (Vec){0.0f, 0.0f, 0.0f};
         cloud->unk8 += 2.0f;
-        RELOAD_MARIO();
-#ifdef MUST_MATCH
-        // Match-only: the original loads cloud->unk8 (0x8) before cloud->maxDist; assigning mx
-        // inside the comparison forces that emission order. The natural form is under #else.
         {
-            f32 a = cloud->unk8;
-            f32 mx;
-            if (a >= (mx = cloud->maxDist)) {
-                cloud->unk8 = mx;
+            MarioWork* player = party->playerPtr;
+
+            if (cloud->unk8 >= cloud->maxDist) {
+                cloud->unk8 = cloud->maxDist;
             }
+            angle = toMovedir(cloud->unk4);
+            sincosf(&sin1, &cos1, angle);
+            sincosf(&sin2, &cos2, -45.0f);
+            dist = cloud->unk8;
+            hit = hitCheckFilter(NULL, party->position.x, 18.0f + player->position.y, party->position.z, sin1, sin2,
+                                 cos1, &hitX, &hitY, &hitZ, &dist, &hitNX, &hitNY, &hitNZ);
         }
-#else
-        if (cloud->unk8 >= cloud->maxDist) {
-            cloud->unk8 = cloud->maxDist;
-        }
-#endif
-        angle = toMovedir(cloud->unk4);
-        sincosf(&sin1, &cos1, angle);
-        sincosf(&sin2, &cos2, -45.0f);
-        dist = cloud->unk8;
-        hit = hitCheckFilter(NULL, party->position.x, 18.0f + mario->position.y, party->position.z, sin1, sin2, cos1, &hitX,
-                             &hitY, &hitZ, &dist,
-                             &hitNX, &hitNY, &hitNZ);
         if (hit != NULL && (hitGetAttr(hit) & 4) != 0) {
             hit = NULL;
         }

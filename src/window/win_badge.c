@@ -325,7 +325,6 @@ void winBadgeMain2(WindowWork* work) {
 // Match-only: called through by-value casts (caller copies plus a pointer, ABI-identical).
 #define winFontSetV ((void (*)(Vec, Vec, GXColor, const char*, ...))winFontSet)
 #define winFontSetRV ((void (*)(Vec, Vec, GXColor, const char*, ...))winFontSetR)
-#define winIconSetV ((void (*)(s32, Vec, Vec, GXColor))winIconSet)
 #else
 static void winBadgeFontV(void (*fn)(Vec*, Vec*, GXColor*, const char*, ...), Vec pos, Vec scale,
                           GXColor color, const char* format, va_list args) {
@@ -348,10 +347,10 @@ static void winFontSetRV(Vec pos, Vec scale, GXColor color, const char* format, 
     winBadgeFontV(winFontSetR, pos, scale, color, format, args);
     va_end(args);
 }
+#endif
 static inline void winIconSetV(s32 id, Vec pos, Vec scale, GXColor color) {
     winIconSet(id, &pos, &scale, &color);
 }
-#endif
 
 #define WIN_BADGE_TEX(w) (*(TEXPalette**)(w)->winTpl->data)
 

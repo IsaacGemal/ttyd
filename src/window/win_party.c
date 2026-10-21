@@ -322,7 +322,6 @@ void winPartyMain2(WindowWork* work) {
 #define winFontSetRV ((void (*)(Vec, Vec, GXColor, const char*, ...))winFontSetR)
 #define winFontSetEdgeV ((void (*)(Vec, Vec, GXColor, const char*, ...))winFontSetEdge)
 #define winFontSetLabelV ((void (*)(Vec, Vec, GXColor, const char*))winFontSetLabel)
-#define winIconSetV ((void (*)(s32, Vec, Vec, GXColor))winIconSet)
 #else
 static void winPartyFontV(void (*fn)(Vec*, Vec*, GXColor*, const char*, ...), Vec pos, Vec scale, GXColor color,
                           const char* format, va_list args) {
@@ -355,10 +354,10 @@ static void winFontSetEdgeV(Vec pos, Vec scale, GXColor color, const char* forma
 static inline void winFontSetLabelV(Vec pos, Vec scale, GXColor color, const char* tag) {
     winFontSetLabel(&pos, &scale, &color, tag);
 }
+#endif
 static inline void winIconSetV(s32 id, Vec pos, Vec scale, GXColor color) {
     winIconSet(id, &pos, &scale, &color);
 }
-#endif
 
 #define WIN_PARTY_TEX(w) (*(TEXPalette**)(w)->winTpl->data)
 // the party member shown in pose slot n, and its animation pose

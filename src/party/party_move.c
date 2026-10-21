@@ -350,71 +350,45 @@ void partyGetReadId(u32 index, f32* x, f32* y, f32* z) {
     Footmark* footmark;
     u32 id = readId[index];
     footmark = (Footmark*)(footmarkBuf + index * 0x500) + id;
-    *x = footmark->x;
-    *y = footmark->y;
-    *z = footmark->z;
+    *x = footmark->pos.x;
+    *y = footmark->pos.y;
+    *z = footmark->pos.z;
 }
 
 void partyGetReadId2(u32 index, Vec* out) {
     Footmark* footmark;
     u32 id = readId[index];
     footmark = (Footmark*)(footmarkBuf + index * 0x500) + id;
-    out->x = footmark->x;
-    out->y = footmark->y;
-    out->z = footmark->z;
+    out->x = footmark->pos.x;
+    out->y = footmark->pos.y;
+    out->z = footmark->pos.z;
 }
 
 // Each clears one party slot's buffer: 0x50 records (0x500 bytes) of footmarkBuf.
-#ifdef MUST_MATCH
-// The `u32` copy makes the compiler emit the original's `stw` stores; the loop counter must be
-// `u32` (not `s32`), which is what turns `for (i<0x50)` into the clean counted `mtctr 10`/`bdnz`
-// loop with no loop-entry test. The natural field-copy form under #else compiles to `lfs`/`stfs`.
 void partyClearFootmark(void) {
     MarioWork* mario = marioGetPtr();
     Vec pos = mario->position;
-    u32* src = (u32*)&pos;
     Footmark* f = (Footmark*)footmarkBuf;
     u32 i;
 
     for (i = 0; i < 0x50; i++) {
-        ((u32*)&f->x)[0] = src[0];
-        ((u32*)&f->x)[1] = src[1];
-        ((u32*)&f->x)[2] = src[2];
+        f->pos = pos;
         f->field_0 = 0;
         f++;
     }
     writeId[0] = 0;
     readId[0] = 0;
 }
-#else
-void partyClearFootmark(void) {
-    Vec pos = marioGetPtr()->position;
-    s32 i;
-
-    for (i = 0; i < 0x50; i++) {
-        ((Footmark*)footmarkBuf)[i].field_0 = 0;
-        ((Footmark*)footmarkBuf)[i].x = pos.x;
-        ((Footmark*)footmarkBuf)[i].y = pos.y;
-        ((Footmark*)footmarkBuf)[i].z = pos.z;
-    }
-    writeId[0] = 0;
-    readId[0] = 0;
-}
-#endif
 
 // dont_inline keeps this a real `bl` from partyRecordFootmark, as in retail.
 #pragma dont_inline on
 // The nested if/else is what makes the compiler emit the original's two separate mario-position
-// copies (the single short-circuit condition shares one). The MUST_MATCH block uses the same
-// u32-copy / u32-counter loop as partyClearFootmark.
+// copies (the single short-circuit condition shares one).
 void partyClearFootmark2(void) {
     MarioWork* mario = marioGetPtr();
     PartyEntry* target = partyGetPtr(marioGetPartyId());
     Vec pos;
-#ifdef MUST_MATCH
-    u32* src = (u32*)&pos;
     Footmark* f;
-#endif
     u32 i;
 
     if (target != NULL) {
@@ -427,24 +401,12 @@ void partyClearFootmark2(void) {
     } else {
         pos = mario->position;
     }
-#ifdef MUST_MATCH
-    // the u32 copy and pointer walk, as in partyClearFootmark
     f = (Footmark*)(footmarkBuf + 0x500);
     for (i = 0; i < 0x50; i++) {
-        ((u32*)&f->x)[0] = src[0];
-        ((u32*)&f->x)[1] = src[1];
-        ((u32*)&f->x)[2] = src[2];
+        f->pos = pos;
         f->field_0 = 0;
         f++;
     }
-#else
-    for (i = 0; i < 0x50; i++) {
-        ((Footmark*)footmarkBuf)[0x50 + i].field_0 = 0;
-        ((Footmark*)footmarkBuf)[0x50 + i].x = pos.x;
-        ((Footmark*)footmarkBuf)[0x50 + i].y = pos.y;
-        ((Footmark*)footmarkBuf)[0x50 + i].z = pos.z;
-    }
-#endif
     writeId[1] = 0;
     readId[1] = 0;
 }
@@ -462,14 +424,14 @@ static inline void partyRecordFootmarkSub(PartyEntry* party, Vec* pos, s32 flags
     id = writeId[slot];
     f = &f[id];
     if ((f->field_0 & 1) == 0 || (flags & 1) == 0) {
-        if (f->x != pos->x || f->y != pos->y || f->z != pos->z) {
+        if (f->pos.x != pos->x || f->pos.y != pos->y || f->pos.z != pos->z) {
             if (readId[slot] != writeId[slot] + 1) {
                 writeId[slot]++;
                 if (writeId[slot] >= 0x50) {
                     writeId[slot] = 0;
                 }
                 f = (Footmark*)(footmarkBuf + slot * 0x500 + writeId[slot] * 0x10);
-                *(Vec*)&f->x = *pos;
+                f->pos = *pos;
                 if (flags & 1) {
                     f->field_0 |= 1;
                 } else {
@@ -526,7 +488,7 @@ void partyRecordFootmark(PartyEntry* party) {
                 mp = marioGetPtr()->position;
                 f = (Footmark*)footmarkBuf;
                 for (i = 0; i < 0x50; i++) {
-                    *(Vec*)&f->x = mp;
+                    f->pos = mp;
                     f->field_0 = 0;
                     f++;
                 }
@@ -1177,17 +1139,13 @@ void partyGetMoveDirSpd(PartyEntry* party, f32* angle, f32* speed) {
 
     if (hosei != 0 && work->field_3B != 2) {
         if (!(work->flags & PARTY_FLAG_IS_PARTNER)) {
-            u32* src1;
             Footmark* f1;
             u32 i1;
 
             pos1 = marioGetPtr()->position;
-            src1 = (u32*)&pos1;
             f1 = (Footmark*)footmarkBuf;
             for (i1 = 0; i1 < 0x50; i1++) {
-                ((u32*)&f1->x)[0] = src1[0];
-                ((u32*)&f1->x)[1] = src1[1];
-                ((u32*)&f1->x)[2] = src1[2];
+                f1->pos = pos1;
                 f1->field_0 = 0;
                 f1++;
             }
@@ -1206,7 +1164,6 @@ void partyGetMoveDirSpd(PartyEntry* party, f32* angle, f32* speed) {
             if (flag != 0) {
                 MarioWork* m2 = marioGetPtr();
                 PartyEntry* target = partyGetPtr(marioGetPartyId());
-                u32* src;
                 Footmark* f;
                 u32 i;
 
@@ -1220,12 +1177,9 @@ void partyGetMoveDirSpd(PartyEntry* party, f32* angle, f32* speed) {
                 } else {
                     pos = m2->position;
                 }
-                src = (u32*)&pos;
                 f = (Footmark*)(footmarkBuf + 0x500);
                 for (i = 0; i < 0x50; i++) {
-                    ((u32*)&f->x)[0] = src[0];
-                    ((u32*)&f->x)[1] = src[1];
-                    ((u32*)&f->x)[2] = src[2];
+                    f->pos = pos;
                     f->field_0 = 0;
                     f++;
                 }
@@ -1414,12 +1368,9 @@ void partyWalkInit(PartyEntry* party, s32 mode) {
     work->flags |= PARTY_FLAG_IS_GROUNDED;
     if (!(work->flags & PARTY_FLAG_IS_PARTNER)) {
         Vec pos = marioGetPtr()->position;
-        u32* src = (u32*)&pos;
         Footmark* f = (Footmark*)footmarkBuf;
         for (i = 0; i < 0x50; i++) {
-            ((u32*)&f->x)[0] = src[0];
-            ((u32*)&f->x)[1] = src[1];
-            ((u32*)&f->x)[2] = src[2];
+            f->pos = pos;
             f->field_0 = 0;
             f++;
         }
@@ -1428,7 +1379,6 @@ void partyWalkInit(PartyEntry* party, s32 mode) {
     } else {
         PartyEntry* target;
         Vec pos;
-        u32* src = (u32*)&pos;
         Footmark* f;
         MarioWork* player = marioGetPtr();
         target = partyGetPtr(marioGetPartyId());
@@ -1444,9 +1394,7 @@ void partyWalkInit(PartyEntry* party, s32 mode) {
         }
         f = (Footmark*)(footmarkBuf + 0x500);
         for (i = 0; i < 0x50; i++) {
-            ((u32*)&f->x)[0] = src[0];
-            ((u32*)&f->x)[1] = src[1];
-            ((u32*)&f->x)[2] = src[2];
+            f->pos = pos;
             f->field_0 = 0;
             f++;
         }
@@ -1481,12 +1429,9 @@ void partyMoveWalk(PartyEntry* party) {
         party->flags |= PARTY_FLAG_IS_GROUNDED;
         if (!(party->flags & PARTY_FLAG_IS_PARTNER)) {
             Vec mp = marioGetPtr()->position;
-            u32* src = (u32*)&mp;
             Footmark* f = (Footmark*)footmarkBuf;
             for (i = 0; i < 0x50; i++) {
-                ((u32*)&f->x)[0] = src[0];
-                ((u32*)&f->x)[1] = src[1];
-                ((u32*)&f->x)[2] = src[2];
+                f->pos = mp;
                 f->field_0 = 0;
                 f++;
             }
@@ -1495,7 +1440,6 @@ void partyMoveWalk(PartyEntry* party) {
         } else {
             PartyEntry* target;
             Vec pos;
-            u32* src = (u32*)&pos;
             Footmark* f;
             MarioWork* m = marioGetPtr();
             target = partyGetPtr(marioGetPartyId());
@@ -1511,9 +1455,7 @@ void partyMoveWalk(PartyEntry* party) {
             }
             f = (Footmark*)(footmarkBuf + 0x500);
             for (i = 0; i < 0x50; i++) {
-                ((u32*)&f->x)[0] = src[0];
-                ((u32*)&f->x)[1] = src[1];
-                ((u32*)&f->x)[2] = src[2];
+                f->pos = pos;
                 f->field_0 = 0;
                 f++;
             }
@@ -1589,7 +1531,7 @@ static inline void partyWalkFootmarkSub(Vec* pos, s32 flags, s32 slot) {
     id = writeId[slot];
     f = (Footmark*)(footmarkBuf + slot * 0x500 + id * 0x10);
     if ((f->field_0 & 1) == 0 || (flags & 1) == 0) {
-        if (f->x != pos->x || f->y != pos->y || f->z != pos->z) {
+        if (f->pos.x != pos->x || f->pos.y != pos->y || f->pos.z != pos->z) {
             /* the named temp makes the compiler keep readId in r3 and id + 1 in r0 */
             s32 readIdx = readId[slot];
             if (readIdx != id + 1) {
@@ -1598,20 +1540,7 @@ static inline void partyWalkFootmarkSub(Vec* pos, s32 flags, s32 slot) {
                     writeId[slot] = 0;
                 }
                 f = (Footmark*)(footmarkBuf + slot * 0x500 + writeId[slot] * 0x10);
-#ifdef MUST_MATCH
-                /* the original copies the position a word at a time; float assignments give stfs */
-                {
-                    u32* src = (u32*)pos;
-
-                    ((u32*)&f->x)[0] = src[0];
-                    ((u32*)&f->x)[1] = src[1];
-                    ((u32*)&f->x)[2] = src[2];
-                }
-#else
-                f->x = pos->x;
-                f->y = pos->y;
-                f->z = pos->z;
-#endif
+                f->pos = *pos;
                 if (flags & 1) {
                     f->field_0 |= 1;
                 } else {
@@ -2001,12 +1930,9 @@ void partyMoveFlyInit(PartyEntry* party, s32 mode) {
     party->flags |= PARTY_FLAG_IS_GROUNDED;
     if (!(party->flags & PARTY_FLAG_IS_PARTNER)) {
         Vec mp = marioGetPtr()->position;
-        u32* src = (u32*)&mp;
         Footmark* f = (Footmark*)footmarkBuf;
         for (i = 0; i < 0x50; i++) {
-            ((u32*)&f->x)[0] = src[0];
-            ((u32*)&f->x)[1] = src[1];
-            ((u32*)&f->x)[2] = src[2];
+            f->pos = mp;
             f->field_0 = 0;
             f++;
         }
@@ -2015,7 +1941,6 @@ void partyMoveFlyInit(PartyEntry* party, s32 mode) {
     } else {
         PartyEntry* target;
         Vec pos;
-        u32* src = (u32*)&pos;
         Footmark* f;
         MarioWork* m = marioGetPtr();
         target = partyGetPtr(marioGetPartyId());
@@ -2031,9 +1956,7 @@ void partyMoveFlyInit(PartyEntry* party, s32 mode) {
         }
         f = (Footmark*)(footmarkBuf + 0x500);
         for (i = 0; i < 0x50; i++) {
-            ((u32*)&f->x)[0] = src[0];
-            ((u32*)&f->x)[1] = src[1];
-            ((u32*)&f->x)[2] = src[2];
+            f->pos = pos;
             f->field_0 = 0;
             f++;
         }
@@ -2079,7 +2002,7 @@ static inline void partyFlyFootmarkSub(Vec* pos, s32 flags, s32 slot) {
     id = writeId[slot];
     f = (Footmark*)(footmarkBuf + slot * 0x500 + id * 0x10);
     if ((f->field_0 & 1) == 0 || (flags & 1) == 0) {
-        if (f->x != pos->x || f->y != pos->y || f->z != pos->z) {
+        if (f->pos.x != pos->x || f->pos.y != pos->y || f->pos.z != pos->z) {
             /* the named temp makes the compiler keep readId in r3 and id + 1 in r0 */
             s32 readIdx = readId[slot];
             if (readIdx != id + 1) {
@@ -2088,20 +2011,7 @@ static inline void partyFlyFootmarkSub(Vec* pos, s32 flags, s32 slot) {
                     writeId[slot] = 0;
                 }
                 f = (Footmark*)(footmarkBuf + slot * 0x500 + writeId[slot] * 0x10);
-#ifdef MUST_MATCH
-                /* the original copies the position a word at a time; float assignments give stfs */
-                {
-                    u32* src = (u32*)pos;
-
-                    ((u32*)&f->x)[0] = src[0];
-                    ((u32*)&f->x)[1] = src[1];
-                    ((u32*)&f->x)[2] = src[2];
-                }
-#else
-                f->x = pos->x;
-                f->y = pos->y;
-                f->z = pos->z;
-#endif
+                f->pos = *pos;
                 if (flags & 1) {
                     f->field_0 |= 1;
                 } else {
@@ -2885,10 +2795,8 @@ BOOL partyGetAppearPos(PartyEntry* party, Vec* position) {
 // return-value instructions and made this compiler hang on the conflicting definition, so the
 // header line was corrected to `BOOL partyGetAppearPos2(PartyEntry* party, Vec* pos);` (matching
 // the neighbouring Pos3/4/5 and the only caller, party.c:1105, which ignores the result).
-// The four failing paths share the original's single `.L_800C407C` (`li r3,0`) block, so under
-// MUST_MATCH they `goto false_ret` and one `return FALSE` sits at the end: a plain `return FALSE`
-// at each site makes this compiler inline the `li r3,0` and branch over it. All other opcodes,
-// stack offsets and control flow match.
+// The four failing paths share the original's single `.L_800C407C` (`li r3,0`) block: each failed
+// probe falls through to the one `return FALSE` at the end.
 //
 // The original's Vec templates are the target's named rodata pool entries
 // (vec3_802cdeac..vec3_802cdf30) at str_MOBJ_TreasureBox+0x38c..0x41c, addressed through one base register
@@ -2903,11 +2811,6 @@ BOOL partyGetAppearPos(PartyEntry* party, Vec* position) {
 // (57.03%); one `const Vec vec3_pool[44]` array indexed as vec3_pool[32..43], with and without a
 // local pointer (58.90%/65.01%). build.ninja experiments with `-pooldata on -pool on` and with
 // `-str reuse,pool,readonly` changed nothing either.
-#ifdef MUST_MATCH
-#define PARTY_APPEARPOS2_FAIL() goto false_ret
-#else
-#define PARTY_APPEARPOS2_FAIL() return FALSE
-#endif
 BOOL partyGetAppearPos2(PartyEntry* party, Vec* position) {
     MarioWork* player = party->playerPtr;
     HitCheckQuery query;
@@ -2932,79 +2835,68 @@ BOOL partyGetAppearPos2(PartyEntry* party, Vec* position) {
         query.targetPos = (Vec){position->x, position->y + 37.0f, position->z};
         query.targetDir = (Vec){sinv, 0.0f, cosv};
         hit = hitCheckVecFilter(&query, NULL);
-        if (hit != NULL) {
-            PARTY_APPEARPOS2_FAIL();
-        }
-
-        angle = toMovedir(player->unk1A8);
-        movePos(&position->x, &position->z, -moveDist, angle);
-        query.targetDistance = 38.0f;
-        query.targetPos = (Vec){position->x, position->y + 37.0f, position->z};
-        query.targetDir = (Vec){0.0f, -1.0f, 0.0f};
-        hit = hitCheckVecFilter(&query, NULL);
         if (hit == NULL) {
-            PARTY_APPEARPOS2_FAIL();
+            angle = toMovedir(player->unk1A8);
+            movePos(&position->x, &position->z, -moveDist, angle);
+            query.targetDistance = 38.0f;
+            query.targetPos = (Vec){position->x, position->y + 37.0f, position->z};
+            query.targetDir = (Vec){0.0f, -1.0f, 0.0f};
+            hit = hitCheckVecFilter(&query, NULL);
+            if (hit != NULL) {
+                position->y = query.hitPos.y;
+                return TRUE;
+            }
         }
-        position->y = query.hitPos.y;
-        return TRUE;
-    }
-
-    position->x = player->position.x;
-    position->y = player->position.y;
-    position->z = player->position.z;
-    angle = toMovedir2(unk1A8, -90.0f);
-    sincosf(&sinv, &cosv, angle);
-    query.targetDistance = targetDist;
-    query.targetPos = (Vec){player->position.x, player->position.y + 37.0f, player->position.z};
-    query.targetDir = (Vec){sinv, 0.0f, cosv};
-    hit = hitCheckVecFilter(&query, NULL);
-    if (hit == NULL) {
+    } else {
         position->x = player->position.x;
         position->y = player->position.y;
         position->z = player->position.z;
-        angle = toMovedir2(unk1A8, party->currentSlotId == 0 ? float_20_8041b474 : -20.0f);
-        movePos(&position->x, &position->z, -moveDist, angle);
-        query.targetDistance = 38.0f;
-        query.targetPos = (Vec){position->x, position->y + 37.0f, position->z};
-        query.targetDir = (Vec){0.0f, -1.0f, 0.0f};
+        angle = toMovedir2(unk1A8, -90.0f);
+        sincosf(&sinv, &cosv, angle);
+        query.targetDistance = targetDist;
+        query.targetPos = (Vec){player->position.x, player->position.y + 37.0f, player->position.z};
+        query.targetDir = (Vec){sinv, 0.0f, cosv};
         hit = hitCheckVecFilter(&query, NULL);
-        if (hit != NULL) {
-            position->y = query.hitPos.y;
-            return TRUE;
+        if (hit == NULL) {
+            position->x = player->position.x;
+            position->y = player->position.y;
+            position->z = player->position.z;
+            angle = toMovedir2(unk1A8, party->currentSlotId == 0 ? float_20_8041b474 : -20.0f);
+            movePos(&position->x, &position->z, -moveDist, angle);
+            query.targetDistance = 38.0f;
+            query.targetPos = (Vec){position->x, position->y + 37.0f, position->z};
+            query.targetDir = (Vec){0.0f, -1.0f, 0.0f};
+            hit = hitCheckVecFilter(&query, NULL);
+            if (hit != NULL) {
+                position->y = query.hitPos.y;
+                return TRUE;
+            }
+        }
+
+        angle = toMovedir2(unk1A8, float_90_8041b470);
+        sincosf(&sinv, &cosv, angle);
+        query.targetDistance = targetDist;
+        query.targetPos = (Vec){player->position.x, player->position.y + 37.0f, player->position.z};
+        query.targetDir = (Vec){sinv, 0.0f, cosv};
+        hit = hitCheckVecFilter(&query, NULL);
+        if (hit == NULL) {
+            position->x = player->position.x;
+            position->y = player->position.y;
+            position->z = player->position.z;
+            angle = toMovedir2(unk1A8, party->currentSlotId == 0 ? -20.0f : float_20_8041b474);
+            movePos(&position->x, &position->z, -moveDist, angle);
+            query.targetDistance = 38.0f;
+            query.targetPos = (Vec){position->x, position->y + 37.0f, position->z};
+            query.targetDir = (Vec){0.0f, -1.0f, 0.0f};
+            hit = hitCheckVecFilter(&query, NULL);
+            if (hit != NULL) {
+                position->y = query.hitPos.y;
+                return TRUE;
+            }
         }
     }
-
-    angle = toMovedir2(unk1A8, float_90_8041b470);
-    sincosf(&sinv, &cosv, angle);
-    query.targetDistance = targetDist;
-    query.targetPos = (Vec){player->position.x, player->position.y + 37.0f, player->position.z};
-    query.targetDir = (Vec){sinv, 0.0f, cosv};
-    hit = hitCheckVecFilter(&query, NULL);
-    if (hit != NULL) {
-        PARTY_APPEARPOS2_FAIL();
-    }
-
-    position->x = player->position.x;
-    position->y = player->position.y;
-    position->z = player->position.z;
-    angle = toMovedir2(unk1A8, party->currentSlotId == 0 ? -20.0f : float_20_8041b474);
-    movePos(&position->x, &position->z, -moveDist, angle);
-    query.targetDistance = 38.0f;
-    query.targetPos = (Vec){position->x, position->y + 37.0f, position->z};
-    query.targetDir = (Vec){0.0f, -1.0f, 0.0f};
-    hit = hitCheckVecFilter(&query, NULL);
-    if (hit == NULL) {
-        PARTY_APPEARPOS2_FAIL();
-    }
-    position->y = query.hitPos.y;
-    return TRUE;
-
-#ifdef MUST_MATCH
-false_ret:
-#endif
     return FALSE;
 }
-#undef PARTY_APPEARPOS2_FAIL
 
 // With math_ext.h + pool_data the constants share str_MOBJ_TreasureBox, but every angle/Vec literal offset
 // still lands at 0x29c.. instead of 0x41c.. (0x180 of other functions' .rodata is missing until the

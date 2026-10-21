@@ -495,7 +495,6 @@ const GXColor winBlackColor = { 0x00, 0x00, 0x00, 0xFF };
 #define winFontSetRV ((void (*)(Vec, Vec, GXColor, const char*, ...))winFontSetR)
 #define winFontSetEdgeV ((void (*)(Vec, Vec, GXColor, const char*, ...))winFontSetEdge)
 #define winFontSetLabelV ((void (*)(Vec, Vec, GXColor, const char*))winFontSetLabel)
-#define winIconSetV ((void (*)(s32, Vec, Vec, GXColor))winIconSet)
 #else
 static void winMarioFontV(void (*fn)(Vec*, Vec*, GXColor*, const char*, ...), Vec pos, Vec scale,
                           GXColor color, const char* format, va_list args) {
@@ -528,10 +527,10 @@ static void winFontSetEdgeV(Vec pos, Vec scale, GXColor color, const char* forma
 static inline void winFontSetLabelV(Vec pos, Vec scale, GXColor color, const char* tag) {
     winFontSetLabel(&pos, &scale, &color, tag);
 }
+#endif
 static inline void winIconSetV(s32 id, Vec pos, Vec scale, GXColor color) {
     winIconSet(id, &pos, &scale, &color);
 }
-#endif
 
 // One speech bubble: the bubble texture twice (shadow, then body) and the item icon.
 // fukiDrawL is the bubble left of the item (Mail/Map/... key items), fukiDrawR the

@@ -261,11 +261,7 @@ void marioYoshiForceCancel(void) {
         {
             PartyEntry* extra = partyGetPtr(marioGetExtraPartyId());
             if (extra != NULL) {
-#ifdef MUST_MATCH
-                *(volatile Vec*)&extra->dispOffset = *(const volatile Vec*)&vec[2];
-#else
                 extra->dispOffset = vec[2];
-#endif
             }
         }
         marioChgPose("M_S_1");
@@ -336,11 +332,7 @@ void yoshi_exit(PartyEntry* arg) {
         {
             PartyEntry* extra = partyGetPtr(marioGetExtraPartyId());
             if (extra != NULL) {
-#ifdef MUST_MATCH
-                *(volatile Vec*)&extra->dispOffset = *(const volatile Vec*)&vec[2];
-#else
                 extra->dispOffset = vec[2];
-#endif
             }
         }
         marioChgPose("M_S_1");

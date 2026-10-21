@@ -27,11 +27,6 @@
 #include "evt/evt_lottery.h"
 #include <stdio.h>
 
-#ifdef MUST_MATCH
-// Retail shares one base register for this unit's literal and template pool.
-#pragma pool_data on
-#endif
-
 
 typedef struct SortTable {
     const char* name;                 // 0x0
@@ -197,15 +192,14 @@ extern const char** luigi_book_list[];
 // pointer, ABI-identical), and only the cast reproduces its argument scheduling.
 #ifdef MUST_MATCH
 #define winFontSetLabelV ((void (*)(Vec, Vec, GXColor, const char*))winFontSetLabel)
-#define winFontSetV ((void (*)(Vec, Vec, GXColor, const char*, ...))winFontSet)
 #else
 static inline void winFontSetLabelV(Vec pos, Vec scale, GXColor color, const char* msg) {
     winFontSetLabel(&pos, &scale, &color, msg);
 }
+#endif
 static inline void winFontSetV(Vec pos, Vec scale, GXColor color, const char* msg) {
     winFontSet(&pos, &scale, &color, msg);
 }
-#endif
 
 // Per-tab slide-in/slide-out animation. winRootTabStep is a plain static defined after winRootMain: MWCC
 // inlines it and still generates its body first, so its 185.0f pools ahead of winRootMain's 1000.0f in
@@ -758,11 +752,7 @@ void winBgMain(WindowWork* work) {
                 }
                 break;
             }
-#ifdef MUST_MATCH
-            /* MUST_MATCH: -1 is a redirect target of cases 11/41; the empty case makes
-               MWCC emit the retail search-tree pivot (0 then 2) instead of 1 then 0. */
             case -1:
-#endif
             case 100:
                 break;
             default:
@@ -1580,11 +1570,7 @@ void winMailGX(WindowWork* work, f32 x, f32 y) {
 // loop bound; MWCC hoists both out of the loops, which is where retail's twelve ids and page count come from.
 void winHakoGX(WindowWork* work, s32 type, f32 x, f32 y) {
     f32 scroll;
-#ifdef MUST_MATCH
-    s32 row; // the original reads it in page 0's visibility test before the row loop sets it
-#else
-    s32 row = 0;
-#endif
+    s32 row; // read uninitialised by page 0's visibility test, before the row loop sets it (as in retail)
     s32 count;
     s32 page;
     s32 cursor;
