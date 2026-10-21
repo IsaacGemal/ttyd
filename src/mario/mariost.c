@@ -422,7 +422,7 @@ void viPostCallback(u32 retraceCount) {
 			if (OSIsRestart() && !gp->restartChecked) {
 				if ((keyGetButton(0) & reset) == reset) {
 					gp->resetType = 0;
-					goto exitcheck;
+					goto exitcheck; // skips the soft-reset checks, which the restartChecked path still runs
 				}
 				else {
 					gp->restartChecked = TRUE;

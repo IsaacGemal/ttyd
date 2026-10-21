@@ -936,7 +936,7 @@ USER_FUNC(chorogun_escape) {
 
         if (u != NULL && u->initialKind == UNIT_FUZZY_HORDE) {
             unit = u;
-            goto found;
+            goto found; // skips the not-found store after the loop
         }
     }
     unit = NULL;
@@ -954,20 +954,17 @@ found:
         dx = unit->mHomePosition.x - (*pose->matrix)[0][3];
         dz = unit->mHomePosition.z - (*pose->matrix)[2][3];
         dist2 = dx * dx + dz * dz;
-        if (count < 50) {
-            goto count_store;
+        if (count >= 50) {
+            if (dist2 <= 2500.0f) {
+                dists[count] = dist2;
+                indices[count] = j;
+                count++;
+            }
+        } else {
+            dists[count] = dist2;
+            indices[count] = j;
+            count++;
         }
-        if (!(dist2 <= 2500.0f)) {
-            continue;
-        }
-        dists[count] = dist2;
-        indices[count] = j;
-        count++;
-        continue;
-count_store:
-        dists[count] = dist2;
-        indices[count] = j;
-        count++;
     }
     for (i = 0; i < count - 1; i++) {
         for (j = 1; j < count; j++) {

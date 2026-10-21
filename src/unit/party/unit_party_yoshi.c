@@ -2144,7 +2144,7 @@ USER_FUNC(_gundan_yoshi_run_effect) {
             case 1:
                 if (work->startDelay > 0) {
                     work->startDelay--;
-                    goto yoshi_active;
+                    goto yoshi_active; // shares case 2's `active = 1` tail; a second store changes the object
                 }
                 // fallthrough
             case 2:

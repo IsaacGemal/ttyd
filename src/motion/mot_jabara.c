@@ -132,7 +132,6 @@ void swingMain(void) {
     }
     break;
     }
-state2:
     switch (mario->jabaraState) {
     case 2:
         mario->jabaraSpeed += mario->jabaraAccel;

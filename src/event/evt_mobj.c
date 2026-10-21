@@ -1450,7 +1450,7 @@ s32 mobj_lv_blk_evt(MapObjectEntry* obj) {
             if (obj->flags & MOBJ_FLAG_TRIGGERED) {
                 if (strcmp(obj->animName, "MOBJ_Lv1Block") == 0 ||
                     strcmp(obj->animName, "MOBJ_Lv1BigBlock") == 0) {
-                    goto run_event;
+                    goto run_event; // the four name checks share this tail; their misses each clear the trigger
                 }
                 if (strcmp(obj->animName, "MOBJ_Lv1BigBigBlock") == 0) {
                     if (pouchGetHammerLv() >= 2 && mario->currMotionId == MARIO_MOTION_HAMMER_2) {

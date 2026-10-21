@@ -4880,19 +4880,22 @@ static USER_FUNC(make_itemsel_table) {
             table++;
             count++;
         }
-        // F3BEGIN
-        if (item == 0xAC) goto skipF3;
-        if (item < 0xAC) {
-            if (item >= 0xA6) goto bodyF3;
-            goto skipF3;
+        switch (item) {
+        case 0xA6:
+        case 0xA7:
+        case 0xA8:
+        case 0xA9:
+        case 0xAA:
+        case 0xAB:
+        case 0xAD:
+        case 0xAE:
+        case 0xAF:
+        case 0xB0:
+            *table = item;
+            table++;
+            count++;
+            break;
         }
-        if (item >= 0xB1) goto skipF3;
-    bodyF3:
-        *table = item;
-        table++;
-        count++;
-    skipF3:;
-        // F3END
     }
     *table = -1;
     evtSetValue(event, args[0], count);

@@ -1950,40 +1950,39 @@ s32 puniMoveAtari(PuniData* punidat, Vec pos, Vec vel, s32 arg3, f32 mag) {
     }
     if (punidat->hitVel == NULL) {
         PSVECAdd(&punidat->pos, &punidat->vel, &punidat->pos);
-        goto done;
-    }
-    start = punidat->pos;
-    punidat->hitNormal = normal;
-    PSVECAdd(&punidat->pos, &punidat->vel, &punidat->pos);
-    if (0.0f == punidat->vel.y) {
-        normal.y = 0.0f;
-    }
-    PSVECNormalize(&normal, &normal);
-    if (arg3 != 0) {
-        C_VECReflect(&vel, &normal, &reflect);
-        PSVECScale(&reflect, &punidat->vel, mag);
-        result = 0;
-    }
-    {
-        f32 dot = PSVECDotProduct(&vel, &normal);
+    } else {
+        start = punidat->pos;
+        punidat->hitNormal = normal;
+        PSVECAdd(&punidat->pos, &punidat->vel, &punidat->pos);
+        if (0.0f == punidat->vel.y) {
+            normal.y = 0.0f;
+        }
+        PSVECNormalize(&normal, &normal);
+        if (arg3 != 0) {
+            C_VECReflect(&vel, &normal, &reflect);
+            PSVECScale(&reflect, &punidat->vel, mag);
+            result = 0;
+        }
+        {
+            f32 dot = PSVECDotProduct(&vel, &normal);
 
-        PSVECScale(&normal, &normal, dot * -(mag - dist) + 0.1f);
-    }
-    PSVECAdd(&punidat->pos, &normal, &punidat->pos);
-    PSVECSubtract(&punidat->pos, &start, &dir);
-    dist = PSVECMag(&dir);
-    if (dist > 0.0f) {
-        PSVECNormalize(&dir, &dir);
-        pos = start;
-        pos.y += 1.0f;
-        punidat->hitDir =
-            hitCheckFilter(0, start.x, start.y + 1.0f, start.z, dir.x, dir.y, dir.z, &hit2x, &hit2y,
-                                &hit2z, &dist, &normal2x, &normal2y, &normal2z);
-        if (punidat->hitDir != NULL) {
-            punidat->pos = start;
+            PSVECScale(&normal, &normal, dot * -(mag - dist) + 0.1f);
+        }
+        PSVECAdd(&punidat->pos, &normal, &punidat->pos);
+        PSVECSubtract(&punidat->pos, &start, &dir);
+        dist = PSVECMag(&dir);
+        if (dist > 0.0f) {
+            PSVECNormalize(&dir, &dir);
+            pos = start;
+            pos.y += 1.0f;
+            punidat->hitDir =
+                hitCheckFilter(0, start.x, start.y + 1.0f, start.z, dir.x, dir.y, dir.z, &hit2x, &hit2y,
+                                    &hit2z, &dist, &normal2x, &normal2y, &normal2z);
+            if (punidat->hitDir != NULL) {
+                punidat->pos = start;
+            }
         }
     }
-done:
     return result;
 }
 
@@ -3428,24 +3427,19 @@ void puniModeMass(PuniData* punidat) {
     if (((PuniData*)p)->nearAttractDistSq > 100.0f) {
         Vec temp;
 
-        if (((PuniData*)p)->nearAttractDistSq < 3600.0f) {
-            s32 rnd = puniQrnd2(3);
-
-            if (rnd == 0) {
-                PSVECSubtract(&punidat->pos, (Vec*)(target + 4), &temp);
-                PSVECNormalize(&temp, &temp);
-                temp.y = 0.0f;
-                PSVECScale(&temp, &temp, 1.5f);
-                PSVECAdd(&((PuniData*)p)->vel, &temp, &((PuniData*)p)->vel);
-                goto mass_after_move;
-            }
+        if (((PuniData*)p)->nearAttractDistSq < 3600.0f && puniQrnd2(3) == 0) {
+            PSVECSubtract(&punidat->pos, (Vec*)(target + 4), &temp);
+            PSVECNormalize(&temp, &temp);
+            temp.y = 0.0f;
+            PSVECScale(&temp, &temp, 1.5f);
+            PSVECAdd(&((PuniData*)p)->vel, &temp, &((PuniData*)p)->vel);
+        } else {
+            PSVECSubtract((Vec*)(target + 4), &punidat->pos, &temp);
+            PSVECNormalize(&temp, &temp);
+            temp.y = 0.0f;
+            PSVECScale(&temp, &temp, 5.0f);
+            PSVECAdd(&((PuniData*)p)->vel, &temp, &((PuniData*)p)->vel);
         }
-        PSVECSubtract((Vec*)(target + 4), &punidat->pos, &temp);
-        PSVECNormalize(&temp, &temp);
-        temp.y = 0.0f;
-        PSVECScale(&temp, &temp, 5.0f);
-        PSVECAdd(&((PuniData*)p)->vel, &temp, &((PuniData*)p)->vel);
-    mass_after_move:;
     } else {
         ((PuniData*)p)->vel = (Vec){0.0f, 0.0f, 0.0f};
     }
@@ -5548,66 +5542,66 @@ void fn_19_13A90(PuniData* puni) {
     f32 t;
 
     mag = PSVECMag(&puni->vel);
-    if (!mag) goto endA;
-    if (mag > 1.0f) {
-        if ((&puni->vel)->x < 0.0f) {
-            puni->direction = 270.0f;
-        } else {
-            puni->direction = 90.0f;
-        }
-    }
-    if (mag > puni->maxSpeed) {
-        PSVECScale(&puni->vel, &puni->vel,
-                   puni->maxSpeed / mag);
-        mag = puni->maxSpeed;
-    }
-    vA = puni->pos;
-    vA.y += 1.0f;
-    PSVECNormalize(&puni->vel, &nA);
-    qA = vA;
-    rA = nA;
-    puni->hitDir = 0;
-    puni->hitVel = 0;
-    dA = mag;
-    if (puni->flags & 0x1000) {
-        puni->hitVel =
-            hitCheckFilter(NULL, qA.x, qA.y, qA.z, rA.x, rA.y, rA.z, &hitPA.x, &hitPA.y, &hitPA.z, &dA,
-                                &hitNA.x, &hitNA.y, &hitNA.z);
-    }
-    if (puni->hitVel == 0) {
-        PSVECAdd(&puni->pos, &puni->vel, &puni->pos);
-    } else {
-        svA = puni->pos;
-        *(Vec*)(puni->unk21C + 0x344) = hitNA;
-        PSVECAdd(&puni->pos, &puni->vel, &puni->pos);
-        if (puni->vel.y == 0.0f) {
-            hitNA.y = 0.0f;
-        }
-        PSVECNormalize(&hitNA, &hitNA);
-        C_VECReflect(&rA, &hitNA, &reflA);
-        PSVECScale(&reflA, &puni->vel, mag);
-        t = PSVECDotProduct(&rA, &hitNA);
-        PSVECScale(&hitNA, &hitNA, t * (-(mag - dA)) + 0.1f);
-        PSVECAdd(&puni->pos, &hitNA, &puni->pos);
-        PSVECSubtract(&puni->pos, &svA, &sepA);
-        dA = PSVECMag(&sepA);
-        if (dA > 0.0f) {
-            PSVECNormalize(&sepA, &sepA);
-            puni->hitDir = hitCheckFilter(NULL, svA.x, svA.y + 1.0f, svA.z, sepA.x, sepA.y,
-                                                             sepA.z, &hitP2Ax, &hitP2Ay, &hitP2Az, &dA, &hitN2Ax,
-                                                             &hitN2Ay, &hitN2Az);
-            if (puni->hitDir != 0) {
-                puni->pos = svA;
+    if (mag) {
+        if (mag > 1.0f) {
+            if ((&puni->vel)->x < 0.0f) {
+                puni->direction = 270.0f;
+            } else {
+                puni->direction = 90.0f;
             }
         }
+        if (mag > puni->maxSpeed) {
+            PSVECScale(&puni->vel, &puni->vel,
+                       puni->maxSpeed / mag);
+            mag = puni->maxSpeed;
+        }
+        vA = puni->pos;
+        vA.y += 1.0f;
+        PSVECNormalize(&puni->vel, &nA);
+        qA = vA;
+        rA = nA;
+        puni->hitDir = 0;
+        puni->hitVel = 0;
+        dA = mag;
+        if (puni->flags & 0x1000) {
+            puni->hitVel =
+                hitCheckFilter(NULL, qA.x, qA.y, qA.z, rA.x, rA.y, rA.z, &hitPA.x, &hitPA.y, &hitPA.z, &dA,
+                                    &hitNA.x, &hitNA.y, &hitNA.z);
+        }
+        if (puni->hitVel == 0) {
+            PSVECAdd(&puni->pos, &puni->vel, &puni->pos);
+        } else {
+            svA = puni->pos;
+            *(Vec*)(puni->unk21C + 0x344) = hitNA;
+            PSVECAdd(&puni->pos, &puni->vel, &puni->pos);
+            if (puni->vel.y == 0.0f) {
+                hitNA.y = 0.0f;
+            }
+            PSVECNormalize(&hitNA, &hitNA);
+            C_VECReflect(&rA, &hitNA, &reflA);
+            PSVECScale(&reflA, &puni->vel, mag);
+            t = PSVECDotProduct(&rA, &hitNA);
+            PSVECScale(&hitNA, &hitNA, t * (-(mag - dA)) + 0.1f);
+            PSVECAdd(&puni->pos, &hitNA, &puni->pos);
+            PSVECSubtract(&puni->pos, &svA, &sepA);
+            dA = PSVECMag(&sepA);
+            if (dA > 0.0f) {
+                PSVECNormalize(&sepA, &sepA);
+                puni->hitDir = hitCheckFilter(NULL, svA.x, svA.y + 1.0f, svA.z, sepA.x, sepA.y,
+                                                                 sepA.z, &hitP2Ax, &hitP2Ay, &hitP2Az, &dA, &hitN2Ax,
+                                                                 &hitN2Ay, &hitN2Az);
+                if (puni->hitDir != 0) {
+                    puni->pos = svA;
+                }
+            }
+        }
+        if (puni->hitVel != 0 || puni->hitDir != 0) {
+            puni->flags |= 0x400000;
+        } else {
+            PSVECScale(&puni->vel, &puni->vel, 0.6f);
+            puni->flags &= ~0x400000;
+        }
     }
-    if (puni->hitVel != 0 || puni->hitDir != 0) {
-        puni->flags |= 0x400000;
-    } else {
-        PSVECScale(&puni->vel, &puni->vel, 0.6f);
-        puni->flags &= ~0x400000;
-    }
-    endA:
     puniSetYPosition(puni);
         }
         break;
@@ -5617,54 +5611,54 @@ void fn_19_13A90(PuniData* puni) {
     f32 t;
 
     mag = PSVECMag(&puni->vel);
-    if (!mag) goto endB;
-    if (mag > puni->maxSpeed) {
-        PSVECScale(&puni->vel, &puni->vel,
-                   puni->maxSpeed / mag);
-        mag = puni->maxSpeed;
-    }
-    vB = puni->pos;
-    vB.y += 1.0f;
-    PSVECNormalize(&puni->vel, &nB);
-    rB = nB;
-    qB = vB;
-    puni->hitDir = 0;
-    puni->hitVel = 0;
-    dB = mag;
-    puni->hitVel =
-        hitCheckFilter(NULL, qB.x, qB.y, qB.z, rB.x, rB.y, rB.z, &hitPB.x, &hitPB.y, &hitPB.z, &dB,
-                            &hitNB.x, &hitNB.y, &hitNB.z);
-    if (puni->hitVel == 0) {
-        PSVECAdd(&puni->pos, &puni->vel, &puni->pos);
-    } else if (Punigp->area != 0x12) {
-        svB = puni->pos;
-        *(Vec*)(puni->unk21C + 0x344) = hitNB;
-        PSVECAdd(&puni->pos, &puni->vel, &puni->pos);
-        if (puni->vel.y == 0.0f) {
-            hitNB.y = 0.0f;
+    if (mag) {
+        if (mag > puni->maxSpeed) {
+            PSVECScale(&puni->vel, &puni->vel,
+                       puni->maxSpeed / mag);
+            mag = puni->maxSpeed;
         }
-        PSVECNormalize(&hitNB, &hitNB);
-        t = PSVECDotProduct(&rB, &hitNB);
-        PSVECScale(&hitNB, &hitNB, t * (-(mag - dB)) + 0.1f);
-        PSVECAdd(&puni->pos, &hitNB, &puni->pos);
-        PSVECSubtract(&puni->pos, &svB, &sepB);
-        dB = PSVECMag(&sepB);
-        if (dB > 0.0f) {
-            PSVECNormalize(&sepB, &sepB);
-            puni->hitDir = hitCheckFilter(NULL, svB.x, svB.y + 1.0f, svB.z, sepB.x, sepB.y,
-                                                             sepB.z, &hitP2Bx, &hitP2By, &hitP2Bz, &dB, &hitN2Bx,
-                                                             &hitN2By, &hitN2Bz);
-            if (puni->hitDir != 0) {
-                puni->pos = svB;
+        vB = puni->pos;
+        vB.y += 1.0f;
+        PSVECNormalize(&puni->vel, &nB);
+        rB = nB;
+        qB = vB;
+        puni->hitDir = 0;
+        puni->hitVel = 0;
+        dB = mag;
+        puni->hitVel =
+            hitCheckFilter(NULL, qB.x, qB.y, qB.z, rB.x, rB.y, rB.z, &hitPB.x, &hitPB.y, &hitPB.z, &dB,
+                                &hitNB.x, &hitNB.y, &hitNB.z);
+        if (puni->hitVel == 0) {
+            PSVECAdd(&puni->pos, &puni->vel, &puni->pos);
+        } else if (Punigp->area != 0x12) {
+            svB = puni->pos;
+            *(Vec*)(puni->unk21C + 0x344) = hitNB;
+            PSVECAdd(&puni->pos, &puni->vel, &puni->pos);
+            if (puni->vel.y == 0.0f) {
+                hitNB.y = 0.0f;
+            }
+            PSVECNormalize(&hitNB, &hitNB);
+            t = PSVECDotProduct(&rB, &hitNB);
+            PSVECScale(&hitNB, &hitNB, t * (-(mag - dB)) + 0.1f);
+            PSVECAdd(&puni->pos, &hitNB, &puni->pos);
+            PSVECSubtract(&puni->pos, &svB, &sepB);
+            dB = PSVECMag(&sepB);
+            if (dB > 0.0f) {
+                PSVECNormalize(&sepB, &sepB);
+                puni->hitDir = hitCheckFilter(NULL, svB.x, svB.y + 1.0f, svB.z, sepB.x, sepB.y,
+                                                                 sepB.z, &hitP2Bx, &hitP2By, &hitP2Bz, &dB, &hitN2Bx,
+                                                                 &hitN2By, &hitN2Bz);
+                if (puni->hitDir != 0) {
+                    puni->pos = svB;
+                }
             }
         }
+        if (puni->hitVel != 0 || puni->hitDir != 0) {
+            puni->flags |= 0x400000;
+        } else {
+            puni->flags &= ~0x400000;
+        }
     }
-    if (puni->hitVel != 0 || puni->hitDir != 0) {
-        puni->flags |= 0x400000;
-    } else {
-        puni->flags &= ~0x400000;
-    }
-    endB:
     puniSetYPosition(puni);
         }
         break;
@@ -5674,53 +5668,53 @@ void fn_19_13A90(PuniData* puni) {
     f32 t;
 
     mag = PSVECMag(&puni->vel);
-    if (!mag) goto endD;
-    vD = puni->pos;
-    vD.y += 1.0f;
-    PSVECNormalize(&puni->vel, &nD);
-    qD = vD;
-    rD = nD;
-    puni->hitDir = 0;
-    puni->hitVel = 0;
-    dD = mag;
-    if (puni->flags & 0x1000) {
-        puni->hitVel =
-            hitCheckFilter(NULL, qD.x, qD.y, qD.z, rD.x, rD.y, rD.z, &hitPD.x, &hitPD.y, &hitPD.z, &dD,
-                                &hitND.x, &hitND.y, &hitND.z);
-    }
-    if (puni->hitVel == 0) {
-        PSVECAdd(&puni->pos, &puni->vel, &puni->pos);
-    } else {
-        svD = puni->pos;
-        *(Vec*)(puni->unk21C + 0x344) = hitND;
-        PSVECAdd(&puni->pos, &puni->vel, &puni->pos);
-        if (puni->vel.y == 0.0f) {
-            hitND.y = 0.0f;
+    if (mag) {
+        vD = puni->pos;
+        vD.y += 1.0f;
+        PSVECNormalize(&puni->vel, &nD);
+        qD = vD;
+        rD = nD;
+        puni->hitDir = 0;
+        puni->hitVel = 0;
+        dD = mag;
+        if (puni->flags & 0x1000) {
+            puni->hitVel =
+                hitCheckFilter(NULL, qD.x, qD.y, qD.z, rD.x, rD.y, rD.z, &hitPD.x, &hitPD.y, &hitPD.z, &dD,
+                                    &hitND.x, &hitND.y, &hitND.z);
         }
-        PSVECNormalize(&hitND, &hitND);
-        C_VECReflect(&rD, &hitND, &reflD);
-        PSVECScale(&reflD, &puni->vel, mag);
-        t = PSVECDotProduct(&rD, &hitND);
-        PSVECScale(&hitND, &hitND, t * (-(mag - dD)) + 0.1f);
-        PSVECAdd(&puni->pos, &hitND, &puni->pos);
-        PSVECSubtract(&puni->pos, &svD, &sepD);
-        dD = PSVECMag(&sepD);
-        if (dD > 0.0f) {
-            PSVECNormalize(&sepD, &sepD);
-            puni->hitDir = hitCheckFilter(NULL, svD.x, svD.y + 1.0f, svD.z, sepD.x, sepD.y,
-                                                             sepD.z, &hitP2Dx, &hitP2Dy, &hitP2Dz, &dD, &hitN2Dx,
-                                                             &hitN2Dy, &hitN2Dz);
-            if (puni->hitDir != 0) {
-                puni->pos = svD;
+        if (puni->hitVel == 0) {
+            PSVECAdd(&puni->pos, &puni->vel, &puni->pos);
+        } else {
+            svD = puni->pos;
+            *(Vec*)(puni->unk21C + 0x344) = hitND;
+            PSVECAdd(&puni->pos, &puni->vel, &puni->pos);
+            if (puni->vel.y == 0.0f) {
+                hitND.y = 0.0f;
+            }
+            PSVECNormalize(&hitND, &hitND);
+            C_VECReflect(&rD, &hitND, &reflD);
+            PSVECScale(&reflD, &puni->vel, mag);
+            t = PSVECDotProduct(&rD, &hitND);
+            PSVECScale(&hitND, &hitND, t * (-(mag - dD)) + 0.1f);
+            PSVECAdd(&puni->pos, &hitND, &puni->pos);
+            PSVECSubtract(&puni->pos, &svD, &sepD);
+            dD = PSVECMag(&sepD);
+            if (dD > 0.0f) {
+                PSVECNormalize(&sepD, &sepD);
+                puni->hitDir = hitCheckFilter(NULL, svD.x, svD.y + 1.0f, svD.z, sepD.x, sepD.y,
+                                                                 sepD.z, &hitP2Dx, &hitP2Dy, &hitP2Dz, &dD, &hitN2Dx,
+                                                                 &hitN2Dy, &hitN2Dz);
+                if (puni->hitDir != 0) {
+                    puni->pos = svD;
+                }
             }
         }
+        if (puni->hitVel != 0 || puni->hitDir != 0) {
+            puni->flags |= 0x400000;
+        } else {
+            puni->flags &= ~0x400000;
+        }
     }
-    if (puni->hitVel != 0 || puni->hitDir != 0) {
-        puni->flags |= 0x400000;
-    } else {
-        puni->flags &= ~0x400000;
-    }
-    endD:
     puniSetYPosition(puni);
         }
         break;
@@ -5741,66 +5735,66 @@ void fn_19_13A90(PuniData* puni) {
     f32 t;
 
     mag = PSVECMag(&puni->vel);
-    if (!mag) goto endE;
-    if (mag > 1.0f) {
-        if ((&puni->vel)->x < 0.0f) {
-            puni->direction = 270.0f;
-        } else {
-            puni->direction = 90.0f;
-        }
-    }
-    if (mag > puni->maxSpeed) {
-        PSVECScale(&puni->vel, &puni->vel,
-                   puni->maxSpeed / mag);
-        mag = puni->maxSpeed;
-    }
-    vE = puni->pos;
-    vE.y += 1.0f;
-    PSVECNormalize(&puni->vel, &nE);
-    qE = vE;
-    rE = nE;
-    puni->hitDir = 0;
-    puni->hitVel = 0;
-    dE = mag;
-    if (puni->flags & 0x1000) {
-        puni->hitVel =
-            hitCheckFilter(NULL, qE.x, qE.y, qE.z, rE.x, rE.y, rE.z, &hitPE.x, &hitPE.y, &hitPE.z, &dE,
-                                &hitNE.x, &hitNE.y, &hitNE.z);
-    }
-    if (puni->hitVel == 0) {
-        PSVECAdd(&puni->pos, &puni->vel, &puni->pos);
-    } else {
-        svE = puni->pos;
-        *(Vec*)(puni->unk21C + 0x344) = hitNE;
-        PSVECAdd(&puni->pos, &puni->vel, &puni->pos);
-        if (puni->vel.y == 0.0f) {
-            hitNE.y = 0.0f;
-        }
-        PSVECNormalize(&hitNE, &hitNE);
-        C_VECReflect(&rE, &hitNE, &reflE);
-        PSVECScale(&reflE, &puni->vel, mag);
-        t = PSVECDotProduct(&rE, &hitNE);
-        PSVECScale(&hitNE, &hitNE, t * (-(mag - dE)) + 0.1f);
-        PSVECAdd(&puni->pos, &hitNE, &puni->pos);
-        PSVECSubtract(&puni->pos, &svE, &sepE);
-        dE = PSVECMag(&sepE);
-        if (dE > 0.0f) {
-            PSVECNormalize(&sepE, &sepE);
-            puni->hitDir = hitCheckFilter(NULL, svE.x, svE.y + 1.0f, svE.z, sepE.x, sepE.y,
-                                                             sepE.z, &hitP2Ex, &hitP2Ey, &hitP2Ez, &dE, &hitN2Ex,
-                                                             &hitN2Ey, &hitN2Ez);
-            if (puni->hitDir != 0) {
-                puni->pos = svE;
+    if (mag) {
+        if (mag > 1.0f) {
+            if ((&puni->vel)->x < 0.0f) {
+                puni->direction = 270.0f;
+            } else {
+                puni->direction = 90.0f;
             }
         }
+        if (mag > puni->maxSpeed) {
+            PSVECScale(&puni->vel, &puni->vel,
+                       puni->maxSpeed / mag);
+            mag = puni->maxSpeed;
+        }
+        vE = puni->pos;
+        vE.y += 1.0f;
+        PSVECNormalize(&puni->vel, &nE);
+        qE = vE;
+        rE = nE;
+        puni->hitDir = 0;
+        puni->hitVel = 0;
+        dE = mag;
+        if (puni->flags & 0x1000) {
+            puni->hitVel =
+                hitCheckFilter(NULL, qE.x, qE.y, qE.z, rE.x, rE.y, rE.z, &hitPE.x, &hitPE.y, &hitPE.z, &dE,
+                                    &hitNE.x, &hitNE.y, &hitNE.z);
+        }
+        if (puni->hitVel == 0) {
+            PSVECAdd(&puni->pos, &puni->vel, &puni->pos);
+        } else {
+            svE = puni->pos;
+            *(Vec*)(puni->unk21C + 0x344) = hitNE;
+            PSVECAdd(&puni->pos, &puni->vel, &puni->pos);
+            if (puni->vel.y == 0.0f) {
+                hitNE.y = 0.0f;
+            }
+            PSVECNormalize(&hitNE, &hitNE);
+            C_VECReflect(&rE, &hitNE, &reflE);
+            PSVECScale(&reflE, &puni->vel, mag);
+            t = PSVECDotProduct(&rE, &hitNE);
+            PSVECScale(&hitNE, &hitNE, t * (-(mag - dE)) + 0.1f);
+            PSVECAdd(&puni->pos, &hitNE, &puni->pos);
+            PSVECSubtract(&puni->pos, &svE, &sepE);
+            dE = PSVECMag(&sepE);
+            if (dE > 0.0f) {
+                PSVECNormalize(&sepE, &sepE);
+                puni->hitDir = hitCheckFilter(NULL, svE.x, svE.y + 1.0f, svE.z, sepE.x, sepE.y,
+                                                                 sepE.z, &hitP2Ex, &hitP2Ey, &hitP2Ez, &dE, &hitN2Ex,
+                                                                 &hitN2Ey, &hitN2Ez);
+                if (puni->hitDir != 0) {
+                    puni->pos = svE;
+                }
+            }
+        }
+        if (puni->hitVel != 0 || puni->hitDir != 0) {
+            puni->flags |= 0x400000;
+        } else {
+            PSVECScale(&puni->vel, &puni->vel, 0.6f);
+            puni->flags &= ~0x400000;
+        }
     }
-    if (puni->hitVel != 0 || puni->hitDir != 0) {
-        puni->flags |= 0x400000;
-    } else {
-        PSVECScale(&puni->vel, &puni->vel, 0.6f);
-        puni->flags &= ~0x400000;
-    }
-    endE:
     puniSetYPosition(puni);
         }
         break;

@@ -1289,7 +1289,7 @@ void _ssDVDReadAsync_activeChk(s32 result, DVDFileInfo* fileInfo) {
             continue;
         }
         if (result < 0) {
-            goto unlock;
+            goto unlock; // a read error also skips the activation loop below
         }
         entry->bytesLoaded += entry->requestLength;
         // entry->unk38[4]: the pair of u32 buffer pointers toggled by the u16 index at entry->unk4C.

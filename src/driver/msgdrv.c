@@ -894,7 +894,7 @@ void msgAnalize(smartEntry* smart, const char* msg) {
 						*pa = 0;
 					}
 					after = q + 1;
-					goto parsed;
+					goto parsed; // out of the switch and the loop, past the unterminated-tag store
 				case ' ':
 					if (mode == 0) {
 						*pn = 0;

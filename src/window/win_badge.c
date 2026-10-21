@@ -154,17 +154,17 @@ s32 winBadgeMain(WindowWork* work) {
         } else if (work->buttonTrg & 0x100) {
             if (work->badgeTab == 0) {
                 if (pouchGetHaveBadgeCnt() == 0) {
-                    goto end;
+                    break;
                 }
             }
             if (work->badgeTab == 1) {
                 if (work->equipListCount == 0) {
-                    goto end;
+                    break;
                 }
             }
             psndSFXOn((const char*)0x20012);
             work->badgeState = 10;
-            goto end;
+            break;
         } else if (work->buttonTrg & 0x10) {
 #ifdef MUST_MATCH
             void* arg0 = work; // match-only: forces `mr r3, r31` before the idx branch (schedule)
@@ -185,7 +185,7 @@ s32 winBadgeMain(WindowWork* work) {
         work->targetX = -270.0f;
         work->targetY = (f32)(0x7D - work->badgeTab * 0x28);
         winMsgEntry(work, 0, work->badgeTab == 0 ? "msg_menu_badge_all" : "msg_menu_badge_equip", NULL);
-        goto end;
+        break;
 
     case 10:
         if (work->badgeTab == 0) {
@@ -295,7 +295,7 @@ s32 winBadgeMain(WindowWork* work) {
                 winMsgEntry(work, msgId, itemDataTable[msgId].menu_description, NULL);
             }
         }
-        goto end;
+        break;
 
     case 1000:
         if (!winSortWait(work)) {
@@ -307,7 +307,6 @@ s32 winBadgeMain(WindowWork* work) {
         break;
     }
 
-end:
     return 0;
 }
 

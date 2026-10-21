@@ -245,112 +245,103 @@ s32 battleAcMain_StickRotate(BattleWork* work) {
                         cont = 1;
                         break;
                     }
-                    goto L_801FD700;
-                }
-                if (sr->prevDir == 0) {
-                    goto L_801FD700;
-                }
-                roll = _CalcRollDir();
-                if (roll != 0) {
-                if (sr->rollDir == 0) {
-                    s8 dir;
-                    sr->rollDir = roll;
-                    dir = sr->inputDir + sr->rollDir;
-                    if (dir >= 9) {
-                        dir = 1;
-                    }
-                    if (dir <= 0) {
-                        dir = 8;
-                    }
-                    sr->expectDir = sr->inputDir;
-                    sr->nextDir = dir;
-                } else if (sr->rollDir != roll) {
-                    work->actionCommands.result &= ~1;
-                    work->actionCommands.mAcState = 0x3EA;
-                    cont = 1;
-                    break;
-                }
-                if (sr->prevDir == sr->inputDir) {
-                    goto L_801FD700;
-                }
-                sr->steps++;
-                work->actionCommands.outputParams[0] = (sr->steps + 7) / 8;
-                if (work->actionCommands.outputParams[0] >
-                    work->actionCommands.acParams[0]) {
-                    work->actionCommands.outputParams[0] =
-                        work->actionCommands.acParams[0];
-                }
-                if (work->actionCommands.acFlag & 1) {
-                    if (sr->steps > 1) {
-                        if (sr->stepFrames >
-                            work->actionCommands.acParams[5]) {
+                } else if (sr->prevDir != 0) {
+                    roll = _CalcRollDir();
+                    if (roll != 0) {
+                        if (sr->rollDir == 0) {
+                            s8 dir;
+                            sr->rollDir = roll;
+                            dir = sr->inputDir + sr->rollDir;
+                            if (dir >= 9) {
+                                dir = 1;
+                            }
+                            if (dir <= 0) {
+                                dir = 8;
+                            }
+                            sr->expectDir = sr->inputDir;
+                            sr->nextDir = dir;
+                        } else if (sr->rollDir != roll) {
                             work->actionCommands.result &= ~1;
                             work->actionCommands.mAcState = 0x3EA;
                             cont = 1;
                             break;
                         }
-                        if (sr->stepFrames <
-                            work->actionCommands.acParams[4]) {
-                            sr->fastSteps++;
-                            if (sr->fastSteps >
-                                work->actionCommands.acParams[6]) {
-                                work->actionCommands.result &= ~1;
-                                work->actionCommands.mAcState = 0x3EA;
-                                cont = 1;
-                                break;
+                        if (sr->prevDir != sr->inputDir) {
+                            sr->steps++;
+                            work->actionCommands.outputParams[0] = (sr->steps + 7) / 8;
+                            if (work->actionCommands.outputParams[0] >
+                                work->actionCommands.acParams[0]) {
+                                work->actionCommands.outputParams[0] =
+                                    work->actionCommands.acParams[0];
+                            }
+                            if (work->actionCommands.acFlag & 1) {
+                                if (sr->steps > 1) {
+                                    if (sr->stepFrames >
+                                        work->actionCommands.acParams[5]) {
+                                        work->actionCommands.result &= ~1;
+                                        work->actionCommands.mAcState = 0x3EA;
+                                        cont = 1;
+                                        break;
+                                    }
+                                    if (sr->stepFrames <
+                                        work->actionCommands.acParams[4]) {
+                                        sr->fastSteps++;
+                                        if (sr->fastSteps >
+                                            work->actionCommands.acParams[6]) {
+                                            work->actionCommands.result &= ~1;
+                                            work->actionCommands.mAcState = 0x3EA;
+                                            cont = 1;
+                                            break;
+                                        }
+                                    }
+                                }
+                                sr->stepFrames = 0;
+                                if (sr->rollDir != 0 && sr->rollDir != roll) {
+                                    work->actionCommands.result &= ~1;
+                                    work->actionCommands.mAcState = 0x3EA;
+                                    cont = 1;
+                                    break;
+                                }
+                                if (sr->inputDir != sr->expectDir) {
+                                    work->actionCommands.result &= ~1;
+                                    work->actionCommands.mAcState = 0x3EA;
+                                    cont = 1;
+                                    break;
+                                }
+                                {
+                                    s8 dir = sr->nextDir + sr->rollDir;
+                                    if (dir >= 9) {
+                                        dir = 1;
+                                    }
+                                    if (dir <= 0) {
+                                        dir = 8;
+                                    }
+                                    sr->prevDir = sr->inputDir;
+                                    sr->expectDir = sr->nextDir;
+                                    sr->nextDir = dir;
+                                }
+                                if (sr->steps >=
+                                    work->actionCommands.acParams[3] * 8) {
+                                    work->actionCommands.result |= 2;
+                                    work->actionCommands.result &= ~1;
+                                    work->actionCommands.mAcState = 0x3EA;
+                                    cont = 1;
+                                    break;
+                                }
                             }
                         }
+                    } else if (work->actionCommands.acFlag & 2) {
+                        sr->rollDir = 0;
+                        if (work->actionCommands.acFlag & 2) {
+                            work->actionCommands.result &= ~1;
+                            work->actionCommands.mAcState = 0x3EA;
+                            cont = 1;
+                            break;
+                        }
+                    } else if (sr->rollDir != 0) {
+                        sr->rollDir = 0;
                     }
-                } else {
-                    goto L_801FD700;
                 }
-                sr->stepFrames = 0;
-                if (sr->rollDir != 0 && sr->rollDir != roll) {
-                    work->actionCommands.result &= ~1;
-                    work->actionCommands.mAcState = 0x3EA;
-                    cont = 1;
-                    break;
-                }
-                if (sr->inputDir != sr->expectDir) {
-                    work->actionCommands.result &= ~1;
-                    work->actionCommands.mAcState = 0x3EA;
-                    cont = 1;
-                    break;
-                }
-                {
-                    s8 dir = sr->nextDir + sr->rollDir;
-                    if (dir >= 9) {
-                        dir = 1;
-                    }
-                    if (dir <= 0) {
-                        dir = 8;
-                    }
-                    sr->prevDir = sr->inputDir;
-                    sr->expectDir = sr->nextDir;
-                    sr->nextDir = dir;
-                }
-                if (sr->steps <
-                    work->actionCommands.acParams[3] * 8) {
-                    goto L_801FD700;
-                }
-                work->actionCommands.result |= 2;
-                work->actionCommands.result &= ~1;
-                work->actionCommands.mAcState = 0x3EA;
-                cont = 1;
-                break;
-                }
-                if (work->actionCommands.acFlag & 2) {
-                    sr->rollDir = 0;
-                    if (work->actionCommands.acFlag & 2) {
-                        work->actionCommands.result &= ~1;
-                        work->actionCommands.mAcState = 0x3EA;
-                        cont = 1;
-                        break;
-                    }
-                } else if (sr->rollDir != 0) {
-                    sr->rollDir = 0;
-                }
-            L_801FD700:
                 sr->prevDir = sr->inputDir;
                 break;
             }

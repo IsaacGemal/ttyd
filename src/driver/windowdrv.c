@@ -1013,7 +1013,7 @@ void _windowDispGX_Message(s32 type, s32 a2, u8 alpha, BOOL dark, f32 x, f32 y, 
 			py = ((0.225f * pw) + py);
 			if (y2 >= pa10)
 #ifdef MUST_MATCH
-				goto ret;
+				goto ret; // a plain return here changes the object (the one in the else arm doesn't)
 #else
 				return;
 #endif
@@ -1021,12 +1021,9 @@ void _windowDispGX_Message(s32 type, s32 a2, u8 alpha, BOOL dark, f32 x, f32 y, 
 		else {
 			y2 = -((0.8f * pw) - py);
 			py = -((1.2f * pw) - py);
-			if (y2 <= pa10)
-#ifdef MUST_MATCH
-				goto ret;
-#else
+			if (y2 <= pa10) {
 				return;
-#endif
+			}
 		}
 		w = (px - (((px - pa9) * (y2 - py)) / (y2 - pa10)));
 		if (pa9 >= px) {

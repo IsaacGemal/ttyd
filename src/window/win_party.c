@@ -203,64 +203,60 @@ s32 winPartyMain(WindowWork* work) {
             work->partyState = 1;
             work->wazaSel = 0;
             psndSFXOn((const char*)0x20012);
-            goto apply;
-        }
-        if (button & 0x200) {
-            psndSFXOn((const char*)0x20013);
-            work->field_0x19C = 0;
-            return -1;
-        }
-        if (button & 0x1000) {
-            work->field_0x19C = 0;
-            return -2;
-        }
+        } else {
+            if (button & 0x200) {
+                psndSFXOn((const char*)0x20013);
+                work->field_0x19C = 0;
+                return -1;
+            }
+            if (button & 0x1000) {
+                work->field_0x19C = 0;
+                return -2;
+            }
 
-        dir = work->dirRep;
-        if (dir & 0x4000) {
-            s32 prev = work->partySel;
+            dir = work->dirRep;
+            if (dir & 0x4000) {
+                s32 prev = work->partySel;
 
-            work->partySel--;
-            while (work->partySel < 0) {
-                work->partySel += work->partyCount;
-            }
-            work->partyAngleTarget = 360.0f / (f32)work->partyCount * (f32)work->partySel;
-            while (work->partyAngle < work->partyAngleTarget) {
-                work->partyAngle += 360.0f;
-            }
-            if (prev != work->partySel) {
-                psndSFXOn((const char*)0x209D6);
-            }
-            for (k = 0; k < 8; k++) {
-                if (work->partyId[work->partySel] == winPartyDt[k].partnerId) {
-                    work->selPartyDt = k;
-                    break;
+                work->partySel--;
+                while (work->partySel < 0) {
+                    work->partySel += work->partyCount;
+                }
+                work->partyAngleTarget = 360.0f / (f32)work->partyCount * (f32)work->partySel;
+                while (work->partyAngle < work->partyAngleTarget) {
+                    work->partyAngle += 360.0f;
+                }
+                if (prev != work->partySel) {
+                    psndSFXOn((const char*)0x209D6);
+                }
+                for (k = 0; k < 8; k++) {
+                    if (work->partyId[work->partySel] == winPartyDt[k].partnerId) {
+                        work->selPartyDt = k;
+                        break;
+                    }
+                }
+            } else if (dir & 0x8000) {
+                s32 prev = work->partySel;
+
+                work->partySel++;
+                while (work->partySel > work->partyCount - 1) {
+                    work->partySel -= work->partyCount;
+                }
+                work->partyAngleTarget = 360.0f / (f32)work->partyCount * (f32)work->partySel;
+                while (work->partyAngle > work->partyAngleTarget) {
+                    work->partyAngle -= 360.0f;
+                }
+                if (prev != work->partySel) {
+                    psndSFXOn((const char*)0x209D6);
+                }
+                for (k = 0; k < 8; k++) {
+                    if (work->partyId[work->partySel] == winPartyDt[k].partnerId) {
+                        work->selPartyDt = k;
+                        break;
+                    }
                 }
             }
-            goto apply;
         }
-        if (dir & 0x8000) {
-            s32 prev = work->partySel;
-
-            work->partySel++;
-            while (work->partySel > work->partyCount - 1) {
-                work->partySel -= work->partyCount;
-            }
-            work->partyAngleTarget = 360.0f / (f32)work->partyCount * (f32)work->partySel;
-            while (work->partyAngle > work->partyAngleTarget) {
-                work->partyAngle -= 360.0f;
-            }
-            if (prev != work->partySel) {
-                psndSFXOn((const char*)0x209D6);
-            }
-            for (k = 0; k < 8; k++) {
-                if (work->partyId[work->partySel] == winPartyDt[k].partnerId) {
-                    work->selPartyDt = k;
-                    break;
-                }
-            }
-            goto apply;
-        }
-    apply:
         work->targetX = -200.0f;
         work->targetY = 20.0f;
         work->wazaCount = pouchGetPartyAttackLv(winPartyDt[work->selPartyDt].partnerId) + 2;

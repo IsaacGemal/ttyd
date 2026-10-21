@@ -508,9 +508,7 @@ s32 winItemMain(WindowWork* work) {
                     return -2;
                 }
             }
-            goto update10;
-        }
-        if (work->buttonRep & 0x40) {
+        } else if (work->buttonRep & 0x40) {
             work->itemScrollRow[sel] -= 1;
             if (work->itemScrollRow[sel] < 0) {
                 work->itemScrollRow[sel] = 0;
@@ -571,13 +569,11 @@ s32 winItemMain(WindowWork* work) {
         } else if (work->buttonTrg & 0x1000) {
             return -2;
         }
-    update10: {
         work->targetX = (f32)((work->itemSel[sel] % 10 % 2) * 0xCC - 0x9B);
         work->targetY = (f32)(0x6E - (work->itemSel[sel] % 10 / 2) * 0x26);
         item = (work->itemTab == 0) ? pouchHaveItem(work->itemSel[sel])
-                                          : (s32)work->skipList[work->itemSel[sel]];
+                                    : (s32)work->skipList[work->itemSel[sel]];
         winMsgEntry(work, item, itemDataTable[item].description, NULL);
-    }
         break;
 
     case 100:

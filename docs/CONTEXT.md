@@ -12394,3 +12394,60 @@ Volatile, puns, int round trips, dead stores, redundant ternaries and function-p
   temporaries, and hitdrv's hitFindElem copy of hitNameToPtr.
 - Result: MUST_MATCH lines outside src/battle 990 -> 656 (the branch alone reached 581); index must_match
   1300 -> 1030.
+
+### Readability: remaining gotos, natural control flow only (2026-10-21, Claude Opus 5.5, n9-q-o-goto)
+
+Every goto from the earlier passes was tried again, file by file, and each rewrite was checked with
+`tools/obj_equiv.py` against a baseline object before the full build. Build byte-identical after each commit
+(`build/G8MJ01/ok`); every changed unit compiles under `configure.py --non-matching`; `fncast_lint.py` and
+`local_prototypes.py` clean; `tools/ci.py` PASS before each commit with its tools/tests step stubbed (the same 9
+environment failures as the chapters above). No names, pragmas or flags added, and no new `do { } while (0)`
+(win_mario's existing `MARIO_TRAVERSE` macro only moved above the else-if chain). One MUST_MATCH region is new:
+evt_yuunpc's redundant condition (below), which replaced two gotos.
+- **Counts** (`tools/cleanup_index.py`, origin/main 66b9a7bf -> this branch merged with it): index 15.026 -> 14.717
+  per kLOC (10494 -> 10276 weighted); goto 229 -> 123; address_name 2661 -> 2655 (the `L_xxxx` labels); must_match
+  841 -> 841; the rest unchanged.
+- **Forms that matched.** `break` where the label sits right after the enclosing switch or loop (win_badge,
+  battle_damage's `while (work.hitLands)`, ac_button_down, aji_17, yoshi_use's `L_3588`, koopa's hit loop);
+  `continue` for evt_keijiban's story loop (as evt_uranaisi); top-tested `for (;;)` loops with `break` for the
+  label/goto loops (gor_irai); wraps and
+  if/else (mri_puni's four `if (!mag) goto end`, yuu_01, mot_roll, koopa, party_motion, battle_stage_object,
+  ac_stick_rotate's roll block, puniMoveAtari, dou10_yoko_yari, eff_fukidashi); else-if chains (win_mario, win_party,
+  win_item, battle_seq_command's confirm paths, mobjMain's first five triggers, evt_npc, unit_chorobon_gundan with
+  the store written in both arms); early returns (marioYoshiForceCancel, which ends right after; windowdrv's
+  `y2 <= pa10` exit, while its twin still needs the goto). Three less obvious ones:
+  - gor_00 make_itemsel_table: the `0xA6..0xB0 except 0xAC` goto test is MWCC's own lowering of a `switch` with
+    those ten cases sharing one body.
+  - yoshi_use: the `default: goto L_3CE4` and the jumps out of case 0x16 go away by closing the switch before the
+    L_3CE4 tail (which ran to the end of the function), so `default` and the jumps are `break`s.
+  - evt_yuunpc: the dead retests around `goto bf30` are what MWCC emits for one condition, `(flags & 0x18) == 0 ||
+    ((flags & 0x18) && (f27 >= x || (f27 < x && f28 < x)))`; the second `flags & 0x18` test reuses the CR. The
+    redundant terms are under MUST_MATCH, with `(flags & 0x18) == 0 || f27 >= x || f28 < x` in `#else` (the
+    simplified form alone is 12 bytes shorter).
+- **MUST_MATCH regions.** windowdrv's second `goto ret` region is gone (its plain `return` matches). animdrv's
+  animPoseSearchAnimIdx takes the early-return form main's #1099 gave animPoseSearchAnimPaper/animPoseSearchAnim.
+  (#1099 had also taken eff_kiss's type filter, evt_window's loop, partyGetAppearPos2's `PARTY_APPEARPOS2_FAIL` and
+  marioSearchHead_roll's region to natural code; the merge keeps main's versions of those.) Still under MUST_MATCH
+  but goto-free (for a reviewer): ac_gauge_timing's two goto pairs are `((acFlag & 2) || (acFlag & 2)) && B`, and
+  eff_opuku_wgun_n64's dispatch is `if (i == 0 || i == 0)`: the doubled test gives the original's `bne; beq` /
+  `beq; bne` pair. The natural `#else` forms are unchanged; ac_gauge_timing's regions now cover only the condition.
+- **Left (123), and why.** Each was tried; where none existed, a one-line reason was added at the goto.
+  - MWCC merges `x == a || x == b` on one variable into a range check, so chains of separate `if (x == a) goto`
+    stay: itemdrv's boot/hammer ids (a `switch` gives a compare tree), party_nokonoko case 20 (0x18/0x19).
+  - Shared tails the original has once, where the structured form needs a second copy or a flag (MWCC never merges
+    the copies): battle_seq_command's cursor-direction checks (16; an else-if chain reloads the cursor), battle_detect
+    (15, as documented), pmario_sound (8), npcdrv (7), bomhei's two `found` blocks (6; the two-copy if/else is +8
+    bytes), battle_audience (6), evt_mobj's `run_event` (4), itemdrv's bound tails, sac_deka's restart/rescan,
+    sac_bakugame, gor_03, mot_slit, mobjMain's party test (2: a miss falls through to the Bobbery test), mariost,
+    sound, hitdrv, msgdrv, database, battle_item_data, evt_yuuminigame/evt_goryuugijo, yoshi_exit (the copy of
+    marioYoshiForceCancel that continues with `marioChgMot`; calling the function instead inlines it but schedules
+    `vec` later), unit_party_yoshi's `active = 1` tail.
+  - Search loops whose hit skips the not-found store after them (party_motion, eff_funemizu, unit_chorobon_gundan,
+    animEffectAsync, evt_uranaisi's two MUST_MATCH ones): storing the default before the loop or testing the index
+    after it changes the object; the shape is an inline's early return, and no such inline is known.
+  - cam_road's two gotos to the next line keep dead compares the original has (an empty `if` body is dropped).
+  - arc.c's `goto next_hier` is the SDK's own (tww/tp/ac dvdfs.c and tp's arc.c have it).
+  - system.c fsort (6), mario.c's MUST_MATCH pair, battle_damage's All-or-Nothing skip, animdrv's `return other !=
+    0` pair, mapdrv's `CLIP_TEST`, windowdrv's first exit: as documented in their comments and the chapters above.
+- This supersedes the "left" lists in the earlier goto chapters for yoshi_use (`L_3588`, `L_3CE4`), win_mario's
+  `goto tail`, mobjdrv's trigger chain (seven of nine), the ac_gauge_timing goto pairs and evt_yuunpc's `bf30`.

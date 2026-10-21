@@ -398,7 +398,7 @@ s32 bakuGameMain(EventEntry* event, BOOL isFirstCall) {
         case 0:
             for (i = 0; i < 3; i++) {
                 BakuGameWorkEntry* entry = &baku->entries[i];
-                if (entry->state != 5) goto first_done;
+                if (entry->state != 5) goto first_done; // leaves the loop and the phase switch
             }
             if (baku->stage != 8) break;
             if ((baku->flags & 1) && baku->heihoState != 5) break;
@@ -911,7 +911,7 @@ first_done:
                     }
                     if (baku->flags & 2) {
                         baku->stage = 0x1E;
-                        goto state_done;
+                        goto state_done; // also skips the counter and key updates after this switch
                     }
                     lim = 26.0f / scale;
                     if ((f32)baku->counter == lim) {

@@ -634,60 +634,48 @@ void mobjMain(void) {
                 v22 = 0;
                 hitObj = entry->hitObj[0].hitObject;
                 if (mario->characterId != 2) {
-                    if ((entry->flags & 0x10000) && mario->hitobjHammer == (void*)hitObj) {
-                        if (marioGetPtr()->position.y <= float_5_8041a0ec + entry->position.y) {
-                            v22 = 1;
-                            entry->triggerFlag = 0x10000;
-                            goto apply;
-                        }
-                    }
-                    if ((entry->flags & MOBJ_FLAG_TRIGGER_HEAD) && v24 == (void*)hitObj) {
+                    if ((entry->flags & 0x10000) && mario->hitobjHammer == (void*)hitObj &&
+                        marioGetPtr()->position.y <= float_5_8041a0ec + entry->position.y) {
+                        v22 = 1;
+                        entry->triggerFlag = 0x10000;
+                    } else if ((entry->flags & MOBJ_FLAG_TRIGGER_HEAD) && v24 == (void*)hitObj) {
                         v22 = 1;
                         entry->triggerFlag = MOBJ_FLAG_TRIGGER_HEAD;
-                        goto apply;
-                    }
-                    if ((entry->flags & MOBJ_FLAG_TRIGGER_STAND_ON) && mario->hitobjStandOn == hitObj) {
+                    } else if ((entry->flags & MOBJ_FLAG_TRIGGER_STAND_ON) && mario->hitobjStandOn == hitObj) {
                         v22 = 1;
                         entry->triggerFlag = MOBJ_FLAG_TRIGGER_STAND_ON;
-                        goto apply;
-                    }
-                    if ((entry->flags & MOBJ_FLAG_TRIGGER_HIP_DROP) && mario->hitobjStandOn == hitObj &&
-                        marioChkHipBump() != 0) {
+                    } else if ((entry->flags & MOBJ_FLAG_TRIGGER_HIP_DROP) && mario->hitobjStandOn == hitObj &&
+                               marioChkHipBump() != 0) {
                         v22 = 1;
                         entry->triggerFlag = MOBJ_FLAG_TRIGGER_HIP_DROP;
-                        goto apply;
-                    }
-                    if (unk_8005bb80() != 0 && (entry->flags & 0x40000) &&
-                        mario->hitobjFront == (void*)hitObj && (mario->buttonNew & 0x100) &&
-                        v25 == 0) {
+                    } else if (unk_8005bb80() != 0 && (entry->flags & 0x40000) &&
+                               mario->hitobjFront == (void*)hitObj && (mario->buttonNew & 0x100) &&
+                               v25 == 0) {
                         v22 = 1;
                         entry->triggerFlag = 0x40000;
-                        goto apply;
-                    }
-                    if ((entry->flags & MOBJ_FLAG_TRIGGER_PARTY) && party != NULL) {
-                        if (party->frontHit == hitObj) {
-                            v22 = 1;
-                            entry->triggerFlag = MOBJ_FLAG_TRIGGER_PARTY;
-                            goto apply;
+                    } else {
+                        if ((entry->flags & MOBJ_FLAG_TRIGGER_PARTY) && party != NULL) {
+                            if (party->frontHit == hitObj) {
+                                v22 = 1;
+                                entry->triggerFlag = MOBJ_FLAG_TRIGGER_PARTY;
+                                goto apply; // a party miss falls through to the Bobbery test; else-ifs retest the flag
+                            }
+                            if (party->frontHit != NULL && party->currentMemberId == PARTY_MEMBER_BOBBERY &&
+                                PSVECDistance(&party->position, &entry->position) < entry->hitObj[0].hitObject->radius + party->radius) {
+                                v22 = 1;
+                                entry->triggerFlag = MOBJ_FLAG_TRIGGER_PARTY;
+                                goto apply;
+                            }
                         }
-                        if (party->frontHit != NULL && party->currentMemberId == PARTY_MEMBER_BOBBERY &&
-                            PSVECDistance(&party->position, &entry->position) < entry->hitObj[0].hitObject->radius + party->radius) {
-                            v22 = 1;
-                            entry->triggerFlag = MOBJ_FLAG_TRIGGER_PARTY;
-                            goto apply;
-                        }
-                    }
-                    if ((entry->flags & MOBJ_FLAG_TRIGGER_BOBBERY) && party != NULL && party->currentMemberId == PARTY_MEMBER_BOBBERY) {
-                        if (party->frontHit == hitObj) {
-                            v22 = 1;
-                            entry->triggerFlag = MOBJ_FLAG_TRIGGER_BOBBERY;
-                            goto apply;
-                        }
-                        if (party->frontHit != NULL &&
-                            PSVECDistance(&party->position, &entry->position) < entry->hitObj[0].hitObject->radius + party->radius) {
-                            v22 = 1;
-                            entry->triggerFlag = MOBJ_FLAG_TRIGGER_PARTY;
-                            goto apply;
+                        if ((entry->flags & MOBJ_FLAG_TRIGGER_BOBBERY) && party != NULL && party->currentMemberId == PARTY_MEMBER_BOBBERY) {
+                            if (party->frontHit == hitObj) {
+                                v22 = 1;
+                                entry->triggerFlag = MOBJ_FLAG_TRIGGER_BOBBERY;
+                            } else if (party->frontHit != NULL &&
+                                       PSVECDistance(&party->position, &entry->position) < entry->hitObj[0].hitObject->radius + party->radius) {
+                                v22 = 1;
+                                entry->triggerFlag = MOBJ_FLAG_TRIGGER_PARTY;
+                            }
                         }
                     }
                 } else {

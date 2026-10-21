@@ -1278,7 +1278,7 @@ scan:
                     tm->flag = 0;
                     goto restart;
                 }
-                goto scan;
+                goto scan; // a clash rescans from the start (redraws all after 100 tries) out of both loops
             }
         }
         tries = 0;

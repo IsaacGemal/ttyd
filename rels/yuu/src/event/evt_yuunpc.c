@@ -2290,23 +2290,15 @@ void yuunpc_pose_minigame4_main(void) {
                                     }
                                     mode = 1;
                                 }
-                            } else {
-                                if ((entry->flags & 0x18) == 0) {
-                                    goto bf30;
-                                }
-                                if ((entry->flags & 0x18) == 0) {
-                                    break;
-                                }
-                                if (f27 >= entry->field_28) {
-                                    goto bf30;
-                                }
-                                if (!(f27 < entry->field_28)) {
-                                    break;
-                                }
-                                if (!(f28 < entry->field_28)) {
-                                    break;
-                                }
-                            bf30:
+#ifdef MUST_MATCH
+                            // The redundant terms give the original's retests of `flags & 0x18` and
+                            // `f27 < field_28`; the simplified condition under #else is three instructions shorter.
+                            } else if ((entry->flags & 0x18) == 0 ||
+                                       ((entry->flags & 0x18) &&
+                                        (f27 >= entry->field_28 || (f27 < entry->field_28 && f28 < entry->field_28)))) {
+#else
+                            } else if ((entry->flags & 0x18) == 0 || f27 >= entry->field_28 || f28 < entry->field_28) {
+#endif
                                 entry->field_4C = 2;
                                 yuunpc_pose_change(entry, entry->field_5A, 1.0f, (f32)rand() / 32767.0f);
                                 if (entry->flags & 0x18) {

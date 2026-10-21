@@ -2565,7 +2565,7 @@ void _animPoseDrawMtx(AnimationPose* pose, Mtx matrix, s32 xluMode, f32 rotY, f3
 }
 
 // The search inlined into animPoseDrawMtx and animPoseDisp_MakeExtTexture (with the rest of an
-// animPoseSetAnim). It returns from inside the loop and shares one `goto zero` exit, and copies the
+// animPoseSetAnim). It returns from inside the loop and shares one `return 0` exit, and copies the
 // id into i only after the negative test. animPoseSetAnim's own animPoseSearchAnim copies it first,
 // which is the colouring those two functions have.
 static inline s32 animPoseSearchAnimIdx(AnimationPose* pose, const char* name) {
@@ -2579,14 +2579,12 @@ static inline s32 animPoseSearchAnimIdx(AnimationPose* pose, const char* name) {
                 return i;
             }
         }
-        goto zero;
+    } else {
+        i = (s32)name;
+        if (i < top) {
+            return i;
+        }
     }
-    i = (s32)name;
-    if (i >= top) {
-        goto zero;
-    }
-    return i;
-zero:
     return 0;
 }
 

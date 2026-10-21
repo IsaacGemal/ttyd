@@ -436,22 +436,21 @@ void party_motion_stay(PartyEntry* party) {
             } else {
                 flag = 1;
             }
-            if (flag == 0) {
-                goto skip_target;
-            }
-            if (party->field_32 == 0) {
-                targetPos = party->position;
-                f29 = partyGetTargetDist3D(id, &targetPos);
-                partyGetTargetDist(id, party->position.x, party->position.z);
-            } else {
-                px = party->position.x;
-                pz = party->position.z;
-                movePos(&px, &pz, 0.5f * party->radius, angleABf(party->position.x, party->position.z, mario->position.x, mario->position.z));
-                f29 = distABf(px, pz, mario->position.x, mario->position.z);
-            }
-            if (marioChkSlitThrouh() || f29 >= f31) {
-                if (!marioChkDeepSleep()) {
-                    partyChgMot(party, 1);
+            if (flag != 0) {
+                if (party->field_32 == 0) {
+                    targetPos = party->position;
+                    f29 = partyGetTargetDist3D(id, &targetPos);
+                    partyGetTargetDist(id, party->position.x, party->position.z);
+                } else {
+                    px = party->position.x;
+                    pz = party->position.z;
+                    movePos(&px, &pz, 0.5f * party->radius, angleABf(party->position.x, party->position.z, mario->position.x, mario->position.z));
+                    f29 = distABf(px, pz, mario->position.x, mario->position.z);
+                }
+                if (marioChkSlitThrouh() || f29 >= f31) {
+                    if (!marioChkDeepSleep()) {
+                        partyChgMot(party, 1);
+                    }
                 }
             }
         } else {
@@ -479,7 +478,6 @@ void party_motion_stay(PartyEntry* party) {
             }
         }
     }
-skip_target:
     pos = party->position;
     partyGetMoveDirSpd(party, &angle, &speed);
     hit = partySearchFrontWall(party, &pos, speed, angle);
@@ -2101,38 +2099,33 @@ void party_motion_behind_mario_fly(PartyEntry* party) {
     }
     f31 = distABf(party->position.x, party->position.z, party->targetPos.x, party->targetPos.z);
     party->timer = party->timer - 1;
-    if (f31 >= limit || fabsf(party->targetPos.y - party->position.y) > 2.0f) {
-        if (party->timer > 0) {
-            party->dir = angleABf(party->position.x, party->position.z, party->targetPos.x, party->targetPos.z);
-            distABf(party->position.x, party->position.z, party->targetPos.x, party->targetPos.z);
-            if (party->field_8 & 0x100000) {
-                f29 = 3.6f;
-            } else {
-                f29 = 2.0f;
-            }
-            if (f31 < limit) {
-                f29 = 0.0f;
-                partySetSpeed(party, f29);
-            }
-            partySetTargetSpeed(party, f29);
-            pos = party->position;
-            partyGetMoveDirSpd(party, &angle, &speed);
-            hit = partySearchFrontWall(party, &pos, speed, angle);
-            if (hit != NULL) {
-                party->field_12C = hit;
-                if (party->speed) {
-                    party->field_134 = hit;
-                }
-            }
-            party->position.x = pos.x;
-            party->position.z = pos.z;
-            party->position.y = 0.05f * (party->targetPos.y - party->position.y) + party->position.y;
-            partyChgSpeedPose(party, party->speed);
+    if ((f31 >= limit || fabsf(party->targetPos.y - party->position.y) > 2.0f) && party->timer > 0) {
+        party->dir = angleABf(party->position.x, party->position.z, party->targetPos.x, party->targetPos.z);
+        distABf(party->position.x, party->position.z, party->targetPos.x, party->targetPos.z);
+        if (party->field_8 & 0x100000) {
+            f29 = 3.6f;
         } else {
-            goto restore;
+            f29 = 2.0f;
         }
+        if (f31 < limit) {
+            f29 = 0.0f;
+            partySetSpeed(party, f29);
+        }
+        partySetTargetSpeed(party, f29);
+        pos = party->position;
+        partyGetMoveDirSpd(party, &angle, &speed);
+        hit = partySearchFrontWall(party, &pos, speed, angle);
+        if (hit != NULL) {
+            party->field_12C = hit;
+            if (party->speed) {
+                party->field_134 = hit;
+            }
+        }
+        party->position.x = pos.x;
+        party->position.z = pos.z;
+        party->position.y = 0.05f * (party->targetPos.y - party->position.y) + party->position.y;
+        partyChgSpeedPose(party, party->speed);
     } else {
-    restore:
         party->timer = 0;
         if (party->field_8 & 0x200000) {
             party->field_8 = (party->field_8 & ~0x20000);
@@ -3319,7 +3312,7 @@ s32 getFrontFloor(PartyEntry* party, Vec* pos, f32 angle) {
         if (hit != NULL) {
             if (pt_sqrtf(query1.hitNormal.x * query1.hitNormal.x + query1.hitNormal.z * query1.hitNormal.z) < 45.0f) {
                 floorY = query1.hitPos.y;
-                goto found;
+                goto found; // skips the not-found store below; storing it before the loop changes the object
             }
         }
     }

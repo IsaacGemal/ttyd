@@ -123,7 +123,7 @@ s32 ARCConvertPathToEntrynum(ARCHandle* handle, const char* path) {
 			stringPtr = (signed char*)handle->FSTStringStart + (fst[i].entryInfo & ~0xff000000);
 
 			if (isSame(ptr, stringPtr) == TRUE) {
-				goto next_hier;
+				goto next_hier; // as in the SDK source (other decomps' dvdfs.c/arc.c have the same goto)
 			}
 		}
 

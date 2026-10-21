@@ -46,7 +46,7 @@ USER_FUNC(evt_goryuugijo_main_func) {
     }
     if (work->field_0x04 != NULL) {
         if (evtCheckID(work->field_0x04->eventId)) {
-            goto disp;
+            goto disp; // a running child event skips main(); a structured form repeats the call or the test
         }
         work->field_0x04 = NULL;
     }

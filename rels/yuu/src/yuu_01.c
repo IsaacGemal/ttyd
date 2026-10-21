@@ -976,87 +976,79 @@ s32 yuuminigame2_gamerule(EventEntry* event, BOOL isFirstCall, void* work, Yuumi
         break;
     }
 
-    if (data->unk10 == 0x15) {
-        goto end;
-    }
-
-    angle = mario->unk1A8 + (f32)(s32)turn_tbl[data->unk10];
-    if (data->unk10 >= 5 && data->unk10 < 0xD) {
-        if (marioChkSwirlPower() != 0) {
-            goto apply;
-        }
-        data->unk10 = 0x15;
-        mario->dispFlags &= ~0x100;
-        if (mario->unk1A8 >= -90.0f && mario->unk1A8 < 90.0f) {
-            angle = 0.0f;
-        } else {
-            angle = 180.0f;
-        }
-        goto apply;
-    }
-
-    if (data->unk10 >= 1 && data->unk10 < 5) {
-        switch (data->unk14) {
-        case 0:
-            data->unk28--;
-            PSMTXRotRad(mtx, 'Y', (f32)(s32)turn_tbl[data->unk10] * 0.017453292f);
-            PSMTXMultVec(mtx, &data->unk1C, &data->unk1C);
-            data->unk1C.y = 0.0f;
-            PSVECNormalize(&data->unk1C, &data->unk1C);
-            {
-                f32 scale;
-
-                if (data->unk28 >= 0x1E) {
-                    scale = data->unk18 * ((f32)(data->unk28 - 0x1E) / 90.0f);
-                } else {
-                    scale = 0.0f;
-                }
-                PSVECScale(&data->unk1C, &vec, scale);
-            }
-            mapObjGetPos(s_nametbl[data->unk10], &pos);
-            PSVECAdd(&vec, &pos, &vec);
-            mario->position.x = vec.x;
-            mario->position.z = vec.z;
-            mario->position.y = data->unk2C - 30.0f * ((f32)(0x78 - data->unk28) / 120.0f);
-            if (data->unk28 <= 0) {
-                data->unk14++;
-                angle = 0.0f;
-                data->unk28 = 0x1E;
-                mario->dispFlags &= ~0x100;
-                data->unk30 = mario->position.x;
-            }
-            break;
-
-        case 1:
-            data->unk28--;
-            angle = 0.0f;
-            mario->position.x = data->unk30 + (-100.0f) * ((f32)(0x1E - data->unk28) / 30.0f);
-            mario->position.y = data->unk2C - 30.0f;
-            if (data->unk28 <= 0) {
-                data->unk14++;
-                data->unk28 = 0x1E;
-            }
-            break;
-
-        case 2:
-            data->unk28--;
-            angle = 0.0f;
-            mario->position.y = data->unk2C - 30.0f * ((f32)data->unk28 / 30.0f);
-            if (data->unk28 <= 0) {
+    if (data->unk10 != 0x15) {
+        angle = mario->unk1A8 + (f32)(s32)turn_tbl[data->unk10];
+        if (data->unk10 >= 5 && data->unk10 < 0xD) {
+            if (marioChkSwirlPower() == 0) {
                 data->unk10 = 0x15;
-                marioKeyOn();
-                partyKeyOn();
-                mario->flags &= ~0x200;
-                mario->flags &= ~0x100;
+                mario->dispFlags &= ~0x100;
+                if (mario->unk1A8 >= -90.0f && mario->unk1A8 < 90.0f) {
+                    angle = 0.0f;
+                } else {
+                    angle = 180.0f;
+                }
             }
-            break;
-        }
-    }
+        } else if (data->unk10 >= 1 && data->unk10 < 5) {
+            switch (data->unk14) {
+            case 0:
+                data->unk28--;
+                PSMTXRotRad(mtx, 'Y', (f32)(s32)turn_tbl[data->unk10] * 0.017453292f);
+                PSMTXMultVec(mtx, &data->unk1C, &data->unk1C);
+                data->unk1C.y = 0.0f;
+                PSVECNormalize(&data->unk1C, &data->unk1C);
+                {
+                    f32 scale;
 
-apply:
-    mario->dispReqDir = reviseAngle(angle);
-    mario->unk1A8 = mario->dispReqDir;
-end:
+                    if (data->unk28 >= 0x1E) {
+                        scale = data->unk18 * ((f32)(data->unk28 - 0x1E) / 90.0f);
+                    } else {
+                        scale = 0.0f;
+                    }
+                    PSVECScale(&data->unk1C, &vec, scale);
+                }
+                mapObjGetPos(s_nametbl[data->unk10], &pos);
+                PSVECAdd(&vec, &pos, &vec);
+                mario->position.x = vec.x;
+                mario->position.z = vec.z;
+                mario->position.y = data->unk2C - 30.0f * ((f32)(0x78 - data->unk28) / 120.0f);
+                if (data->unk28 <= 0) {
+                    data->unk14++;
+                    angle = 0.0f;
+                    data->unk28 = 0x1E;
+                    mario->dispFlags &= ~0x100;
+                    data->unk30 = mario->position.x;
+                }
+                break;
+
+            case 1:
+                data->unk28--;
+                angle = 0.0f;
+                mario->position.x = data->unk30 + (-100.0f) * ((f32)(0x1E - data->unk28) / 30.0f);
+                mario->position.y = data->unk2C - 30.0f;
+                if (data->unk28 <= 0) {
+                    data->unk14++;
+                    data->unk28 = 0x1E;
+                }
+                break;
+
+            case 2:
+                data->unk28--;
+                angle = 0.0f;
+                mario->position.y = data->unk2C - 30.0f * ((f32)data->unk28 / 30.0f);
+                if (data->unk28 <= 0) {
+                    data->unk10 = 0x15;
+                    marioKeyOn();
+                    partyKeyOn();
+                    mario->flags &= ~0x200;
+                    mario->flags &= ~0x100;
+                }
+                break;
+            }
+        }
+
+        mario->dispReqDir = reviseAngle(angle);
+        mario->unk1A8 = mario->dispReqDir;
+    }
     return 0;
 }
 

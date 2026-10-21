@@ -1007,76 +1007,73 @@ void kpaFireMain(void) {
     MarioWork* mp2;
 
     KPA(mp)->hitFlame = NULL;
-    if (fireefp == NULL) {
-        goto cleanup;
-    }
-    sign = (mp->unk1A8 >= 90.0f && mp->unk1A8 <= 270.0f) ? 1.0f : -1.0f;
-    level = kpaGetLevel();
-    scale = baseScaleTbl[level];
-    x = 40.0f * sign * scale + mp->position.x;
-    // Taking the flags pointer into a named temp and loading position.y between that call and
-    // the ternary keeps the 0x90 load and 20.0f in the pre-branch block, as the original does; the inline
-    // form pulls both after the branch.
-    mp2 = marioGetPtr();
-    py = mp->position.y;
-    off = (((MW_S32(mp2, 0x14) & 1) ^ 1) == 1) ? 6.0f : 0.0f;
-    y = py + (20.0f * scale + off);
-    z = mp->position.z;
-    ((KpaFireNode*)((EffectEntry*)fireefp)->userdata)->pos.x = x;
-    ((KpaFireNode*)((EffectEntry*)fireefp)->userdata)->pos.y = y;
-    ((KpaFireNode*)((EffectEntry*)fireefp)->userdata)->pos.z = z;
-    if (((KpaFireNode*)((EffectEntry*)fireefp)->userdata)->nextEfp != NULL) {
-        ((KpaFireNode*)((EffectEntry*)((KpaFireNode*)((EffectEntry*)fireefp)->userdata)->nextEfp)->userdata)->pos.x = x;
-        ((KpaFireNode*)((EffectEntry*)((KpaFireNode*)((EffectEntry*)fireefp)->userdata)->nextEfp)->userdata)->pos.y = y;
-        ((KpaFireNode*)((EffectEntry*)((KpaFireNode*)((EffectEntry*)fireefp)->userdata)->nextEfp)->userdata)->pos.z = z;
-    }
-    level = kpaGetLevel();
-    if (level == 0) {
-        goto cleanup;
-    }
-    efp = fireefp;
-    camGetPtr(4);
-    root = efp->userdata;
-    rootScale = root->radius;
-    PSMTXTrans(m0, root->pos.x, root->pos.y, root->pos.z);
-    PSMTXRotRad(m1, 0x79, (root->yaw - camGetPtr(4)->viewYaw) * float_deg2rad_804203d8);
-    if (root->yaw > 90.0f && root->yaw < 270.0f) {
-        PSMTXScale(m2, root->radius, root->radius, -root->radius);
-    } else {
-        PSMTXScale(m2, root->radius, root->radius, root->radius);
-    }
-    PSMTXConcat(m0, m1, m0);
-    PSMTXConcat(m0, m2, m3);
-    i = 1;
-    root++;
-    for (; i < efp->count; i++, root++) {
-        if ((i - 1) & 3) {
-            continue;
+    if (fireefp != NULL) {
+        sign = (mp->unk1A8 >= 90.0f && mp->unk1A8 <= 270.0f) ? 1.0f : -1.0f;
+        level = kpaGetLevel();
+        scale = baseScaleTbl[level];
+        x = 40.0f * sign * scale + mp->position.x;
+        // Taking the flags pointer into a named temp and loading position.y between that call and
+        // the ternary keeps the 0x90 load and 20.0f in the pre-branch block, as the original does; the inline
+        // form pulls both after the branch.
+        mp2 = marioGetPtr();
+        py = mp->position.y;
+        off = (((MW_S32(mp2, 0x14) & 1) ^ 1) == 1) ? 6.0f : 0.0f;
+        y = py + (20.0f * scale + off);
+        z = mp->position.z;
+        ((KpaFireNode*)((EffectEntry*)fireefp)->userdata)->pos.x = x;
+        ((KpaFireNode*)((EffectEntry*)fireefp)->userdata)->pos.y = y;
+        ((KpaFireNode*)((EffectEntry*)fireefp)->userdata)->pos.z = z;
+        if (((KpaFireNode*)((EffectEntry*)fireefp)->userdata)->nextEfp != NULL) {
+            ((KpaFireNode*)((EffectEntry*)((KpaFireNode*)((EffectEntry*)fireefp)->userdata)->nextEfp)->userdata)->pos.x = x;
+            ((KpaFireNode*)((EffectEntry*)((KpaFireNode*)((EffectEntry*)fireefp)->userdata)->nextEfp)->userdata)->pos.y = y;
+            ((KpaFireNode*)((EffectEntry*)((KpaFireNode*)((EffectEntry*)fireefp)->userdata)->nextEfp)->userdata)->pos.z = z;
         }
-        if (root->noHit != 0) {
-            continue;
-        }
-        if (root->unk1C <= 0x10) {
-            continue;
-        }
-        f30 = float_7_804203dc * root->radius;
-        f31 = f30 * rootScale;
-        if (f31 < float_7_804203dc) {
-            continue;
-        }
-        PSMTXTrans(m0, root->pos.x, root->pos.y, root->pos.z);
-        PSMTXScale(m2, f30, f30, f30);
-        PSMTXConcat(m0, m2, m0);
-        PSMTXConcat(m3, m0, m0);
-        v = vec3_802fc920;
-        PSMTXMultVec(m0, &v, &out);
-        hit = kpaFlameHitCheck(out.x, out.y, out.z, f31);
-        if (hit != NULL) {
-            KPA(mp)->hitFlame = hit;
-            goto cleanup;
+        level = kpaGetLevel();
+        if (level != 0) {
+            efp = fireefp;
+            camGetPtr(4);
+            root = efp->userdata;
+            rootScale = root->radius;
+            PSMTXTrans(m0, root->pos.x, root->pos.y, root->pos.z);
+            PSMTXRotRad(m1, 0x79, (root->yaw - camGetPtr(4)->viewYaw) * float_deg2rad_804203d8);
+            if (root->yaw > 90.0f && root->yaw < 270.0f) {
+                PSMTXScale(m2, root->radius, root->radius, -root->radius);
+            } else {
+                PSMTXScale(m2, root->radius, root->radius, root->radius);
+            }
+            PSMTXConcat(m0, m1, m0);
+            PSMTXConcat(m0, m2, m3);
+            i = 1;
+            root++;
+            for (; i < efp->count; i++, root++) {
+                if ((i - 1) & 3) {
+                    continue;
+                }
+                if (root->noHit != 0) {
+                    continue;
+                }
+                if (root->unk1C <= 0x10) {
+                    continue;
+                }
+                f30 = float_7_804203dc * root->radius;
+                f31 = f30 * rootScale;
+                if (f31 < float_7_804203dc) {
+                    continue;
+                }
+                PSMTXTrans(m0, root->pos.x, root->pos.y, root->pos.z);
+                PSMTXScale(m2, f30, f30, f30);
+                PSMTXConcat(m0, m2, m0);
+                PSMTXConcat(m3, m0, m0);
+                v = vec3_802fc920;
+                PSMTXMultVec(m0, &v, &out);
+                hit = kpaFlameHitCheck(out.x, out.y, out.z, f31);
+                if (hit != NULL) {
+                    KPA(mp)->hitFlame = hit;
+                    break;
+                }
+            }
         }
     }
-cleanup:
     if (!kpaFireAttackCheck()) {
         if (fireefp != NULL) {
             effSoftDelete(fireefp);

@@ -958,7 +958,7 @@ HitEntry* hitCheckVecFilter(HitCheckQuery* query, HitFilterCallback callback) { 
                 var_r29 = var_r29->nextActive;
             }
         } else {
-            goto label_235;
+            goto label_235; // a vertical ray that is neither straight down nor up takes the general path
         }
     } else {
     label_235:

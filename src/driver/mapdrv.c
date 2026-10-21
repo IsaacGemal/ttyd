@@ -2370,6 +2370,7 @@ void mapDisp(void) {
 			PSMTXConcat(cam->view, obj->modelWorldMtx, mtx);
 			if ((OBJ_FLAGS & MAPOBJ_FLAG_CLIP) && !mapClipOffFlag) {
 				joint = obj->joints;
+				// the first corner inside the view jumps past the rest of the unrolled tests (goto visible)
 #define CLIP_TEST(cx, cy, cz) \
 	clipPos.x = (cx); \
 	clipPos.y = (cy); \
