@@ -1009,10 +1009,10 @@ void _CheckMoveCount(BattleUnit* unit) {
 #pragma dont_inline reset
 
 
-void BtlUnit_GetStatus(BattleUnit* unit, StatusEffectType type, s8* turns, s8* strength) {
+void BtlUnit_GetStatus(BattleUnit* unit, s8 type, s8* turns, s8* strength) {
     s8 status_turns = 0, status_strength = 0;
 
-    switch ((s8)type) {
+    switch (type) {
         case STATUS_SLEEP:
             status_strength = unit->mSleepTurns;
             status_turns = status_strength;
@@ -1140,8 +1140,8 @@ void BtlUnit_GetStatus(BattleUnit* unit, StatusEffectType type, s8* turns, s8* s
     }
 }
 
-BOOL BtlUnit_SetStatus(BattleUnit* unit, StatusEffectType type, s8 turns, s8 strength) {
-    switch ((s8)type) {
+BOOL BtlUnit_SetStatus(BattleUnit* unit, s8 type, s8 turns, s8 strength) {
+    switch (type) {
         case STATUS_SLEEP:
             unit->mSleepTurns = turns;
             unit->mSleepStrength = 0;
@@ -1182,7 +1182,7 @@ BOOL BtlUnit_SetStatus(BattleUnit* unit, StatusEffectType type, s8 turns, s8 str
         case STATUS_HUGE:
         case STATUS_TINY:
             if (!strength) {
-                if ((s8)type == STATUS_HUGE) {
+                if (type == STATUS_HUGE) {
                     if (unit->mSizeChangeStrength >= 0) {
                         unit->mSizeChangeTurns = 0;
                         unit->mSizeChangeStrength = 0;
@@ -1234,7 +1234,7 @@ BOOL BtlUnit_SetStatus(BattleUnit* unit, StatusEffectType type, s8 turns, s8 str
             }
             else {
                 if (strength == 0) {
-                    if ((s8)type == STATUS_DEFENSE_DOWN) {
+                    if (type == STATUS_DEFENSE_DOWN) {
                         if (unit->mDefChangeStrength <= 0) {
                             unit->mDefChangeTurns = 0;
                             unit->mDefChangeStrength = 0;
@@ -1346,7 +1346,7 @@ void BtlUnit_ClearStatus(BattleUnit* unit) {
 }
 #pragma dont_inline reset
 
-BOOL BtlUnit_CheckRecoveryStatus(BattleUnit* unit, StatusEffectType type) {
+BOOL BtlUnit_CheckRecoveryStatus(BattleUnit* unit, s8 type) {
     s8 turns, strength;
 
     if (!unit) {
@@ -1362,7 +1362,7 @@ BOOL BtlUnit_CheckRecoveryStatus(BattleUnit* unit, StatusEffectType type) {
     if (!turns) {
         return FALSE;
     }
-    switch ((s8)type) {
+    switch (type) {
         case STATUS_SLEEP:
             if (turns > 1) {
                 turns--;
@@ -1478,7 +1478,7 @@ BOOL BtlUnit_CheckRecoveryStatus(BattleUnit* unit, StatusEffectType type) {
 
 // Keep BtlUnit_CheckStatus out of line: the original calls it rather than inlining.
 #pragma dont_inline on
-BOOL BtlUnit_CheckStatus(BattleUnit* unit, StatusEffectType type) {
+BOOL BtlUnit_CheckStatus(BattleUnit* unit, s8 type) {
     s8 turns, strength;
 
     if (!unit) {
@@ -1488,7 +1488,7 @@ BOOL BtlUnit_CheckStatus(BattleUnit* unit, StatusEffectType type) {
     if (turns) {
         return TRUE;
     }
-    if ((s8)type == STATUS_ELECTRIC && unit->badgesEquipped.ZapTap) {
+    if (type == STATUS_ELECTRIC && unit->badgesEquipped.ZapTap) {
         return TRUE;
     }
     return FALSE;

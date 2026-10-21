@@ -272,11 +272,7 @@ StatusEffectType _GetStatusPoseType(BattleUnit* unit) {
 	while (1) {
 		type = *table;
 		if (*table == -1) break;
-#ifdef MUST_MATCH
-		if (((BOOL(*)(BattleUnit*, s8))BtlUnit_CheckStatus)(unit, type)) {
-#else
 		if (BtlUnit_CheckStatus(unit, type)) {
-#endif
 			return type;
 		}
 		table++;

@@ -1155,14 +1155,7 @@ s32 BattleSetStatusDamage(s32* work, BattleUnit* unit, BattleUnitPart* part, s32
         if (type == STATUS_INSTANT_KILL) {
             *work |= 0x10;
         }
-        // The header declares these StatusEffectType (int), but the original callee sign-extends its type
-        // argument; calling through a matching pointer coerces it and puts the `extsb r4` after the other
-        // argument setup, like the original.
-#ifdef MUST_MATCH
-        applied = ((BOOL(*)(BattleUnit*, s8, s8, s8))BtlUnit_SetStatus)(unit, type, turns, strength);
-#else
         applied = BtlUnit_SetStatus(unit, type, turns, strength);
-#endif
     }
     switch (type) {
     case STATUS_ELECTRIC:
@@ -1338,11 +1331,7 @@ s32 BattleSetStatusDamage(s32* work, BattleUnit* unit, BattleUnitPart* part, s32
     }
     announced = 0;
     if (applied != 0) {
-#ifdef MUST_MATCH
-        ((void(*)(BattleUnit*, s8, s8*, s8*))BtlUnit_GetStatus)(unit, type, (s8*)&sp9, (s8*)&sp8);
-#else
         BtlUnit_GetStatus(unit, type, (s8*)&sp9, (s8*)&sp8);
-#endif
         switch ((s32)type) {
         case STATUS_CHARGE:
             if ((s8)sp8 > 0) {
