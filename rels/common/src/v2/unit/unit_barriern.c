@@ -19,27 +19,8 @@
 #include "eff/eff_n64.h"
 #include "eff/eff_syuryou.h"
 #include "memory.h"
+#include "rel/common/unit_barriern.h"
 #include "system.h"
-
-typedef struct BarriernZanzouScale {
-    f32 value[5];
-} BarriernZanzouScale;
-
-typedef struct BarriernSatelliteTo {
-    s32 type;         // 0x00
-    s32 unitId;       // 0x04
-    s32 points[5];    // 0x08
-    s32 field_1C[15]; // 0x1C
-    s32 field_58;     // 0x58
-} BarriernSatelliteTo;
-
-typedef struct BarriernSatelliteToData {
-    s32 field_0; // 0x00
-    f32 x;       // 0x04
-    f32 y;       // 0x08
-    f32 z;       // 0x0C
-    f32 scale;   // 0x10
-} BarriernSatelliteToData;
 
 #pragma pool_data off
 
@@ -2281,47 +2262,6 @@ static USER_FUNC(_check_satellite) {
     return EVT_RETURN_DONE;
 }
 
-static USER_FUNC(battleGetBarriernSatelliteInitPos) {
-    s32* args;
-    BattleUnit* unit;
-    s32 id;
-    s32 n;
-    s32 m;
-    s32 i;
-    s32 j;
-    s32 indexX;
-    s32 indexY;
-    s32 indexZ;
-    const Vec* p;
-    BattleWork* wp;
-    static const Vec VecData[] = {
-        { 25.f, 0.f, 0.f },   { 25.f, 0.f, 0.f },   { -25.f, 0.f, 0.f },  { 0.f, 25.f, 0.f },
-        { 25.f, -25.f, 0.f }, { -25.f, -25.f, 0.f }, { 25.f, 25.f, 0.f }, { -25.f, 25.f, 0.f },
-        { 25.f, -25.f, 0.f }, { -25.f, -25.f, 0.f },
-    };
+#include "rel/common/unit_barriern/battleGetBarriernSatelliteInitPos.h"
 
-    args = event->args;
-    wp = _battleWorkPointer;
-    id = evtGetValue(event, args[0]);
-    id = BattleTransID(event, id);
-    unit = BattleGetUnitPtr(wp, id);
-    n = evtGetValue(event, args[1]);
-    m = evtGetValue(event, args[2]);
-    indexX = args[3];
-    indexY = args[4];
-    indexZ = args[5];
-    p = VecData;
-    for (i = 0; i < n; i++) {
-        for (j = 0; j < i; j++) {
-            p++;
-        }
-    }
-    for (j = 0; j < m; j++) {
-        p++;
-    }
-    evtSetValue(event, indexX, (s32)(p->x * unit->faceDirection));
-    evtSetValue(event, indexY, (s32)p->y);
-    evtSetValue(event, indexZ, (s32)p->z);
-    return EVT_RETURN_DONE;
-}
 // clang-format on
