@@ -603,10 +603,18 @@ BOOL animEffectAsync(const char* animName, u32 group) {
         result = FALSE;
     } else if (other == -1) {
         result = TRUE;
-    } else if ((u32)other == 0) {
-        result = FALSE;
     } else {
-        result = TRUE;
+#ifdef MUST_MATCH
+        // Retail tests `other` unsigned and keeps explicit 0/1 stores; `result = other != 0`
+        // compiles to the branchless (x | -x) >> 31 form.
+        if ((u32)other == 0) {
+            result = FALSE;
+        } else {
+            result = TRUE;
+        }
+#else
+        result = other != 0;
+#endif
     }
     return result;
 }

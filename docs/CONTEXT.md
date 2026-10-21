@@ -4515,11 +4515,11 @@ bounds; volatile, puns, int round trips, dead stores, redundant tests, fn-ptr ca
   Every change: obj_equiv EQUIV, `build/G8MJ01/ok` recreated, `configure.py --non-matching` compile clean,
   fncast_lint and local_prototypes clean, `tools/ci.py` PASS per commit with its tools/tests step stubbed (the same 9
   environment errors as the chapters above).
-- **Counts.** `grep -c MUST_MATCH` 323 -> 295 (src/effect 241 -> 217, src/driver 82 -> 78; 3 of those lines are
-  comment-only, eff_kemuri2_n64). Per file: animdrv 3 -> 2, mapdrv 4 -> 3, shadowdrv 13 -> 11, eff_ibuki 4 -> 2,
+- **Counts.** `grep -c MUST_MATCH` 323 -> 296 (src/effect 241 -> 217, src/driver 82 -> 79; 3 of those lines are
+  comment-only, eff_kemuri2_n64). Per file: animdrv 3 -> 3, mapdrv 4 -> 3, shadowdrv 13 -> 11, eff_ibuki 4 -> 2,
   eff_recovery 6 -> 4, eff_scanning 3 -> 0, eff_uranoko 2 -> 0, eff_cloud_n64 2 -> 1, eff_fall_leaf_n64 5 -> 0,
   eff_kemuri2_n64 3 -> 0, eff_release_n64 7 -> 1; the other 75 files unchanged (eff_kemuri 33). Index
-  (tools/cleanup_index.py) 14.248 -> 14.201 per kLOC (9948 -> 9912 weighted): must_match 840 -> 816, opt_pragma
+  (tools/cleanup_index.py) 14.248 -> 14.203 per kLOC (9948 -> 9913 weighted): must_match 840 -> 817, opt_pragma
   898 -> 894, goto 123 -> 121, field_0x 3938 -> 3936, address_name 2655 -> 2653.
 - **Forms that matched.**
   - `x / 2.0f` for a half-size: MWCC turns it into `* 0.5f` after loop-invariant motion, so the multiply stays in
@@ -4530,7 +4530,8 @@ bounds; volatile, puns, int round trips, dead stores, redundant tests, fn-ptr ca
     animGroupBaseAsync, removing an unguarded goto too), spline_maketable's Newton steps are `spline_sqrtf(...)`,
     eff_scanning's built-and-copied Vec is system.h's `initializeVec` (file-local copy, as eff_puniballoon).
   - animEffectAsync's goto-ret pair is one else-if chain storing a `BOOL result`, returned once (every plain-return
-    tail folds to the branchless form or merges the TRUE returns).
+    tail folds to the branchless form or merges the TRUE returns). Its last arm, the unsigned `(u32)other == 0`
+    test with explicit 0/1 stores, stays guarded with `result = other != 0` under #else.
   - eff_scanning/eff_uranoko's `rad` steps are `0.017453292f * -camGetPtr(camId)->viewYaw`, eff_kemuri's form.
   - eff_cloud_n64's 30 unrolled stores are a loop bounded by `sizeof(a) / sizeof(a[0])`: an unsigned bound makes
     MWCC unroll a constant-trip loop fully (an s32 `< 30` doesn't). Lead for other hand-unrolled loops.
