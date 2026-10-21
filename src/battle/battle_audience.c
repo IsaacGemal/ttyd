@@ -251,7 +251,6 @@ BattleAudienceSound* BattleAudienceSoundGetPtr(s32 id) {
 }
 #pragma dont_inline reset
 
-// The retail Init passes an unsigned index to GetExist (same asm, different scheduling).
 void BattleAudience_Init(void) {
 	BattleAudience* audience;
 	BattleAudienceWindow* window;
@@ -276,7 +275,7 @@ void BattleAudience_Init(void) {
 	for (i = 0; i < 10; i++) {
 		for (j = 0; j < 10; j++) {
 			index = (i * 20) + j + 10;
-			if ((u8)BattleAudience_GetExist((u32)index) == 1) {
+			if ((u8)BattleAudience_GetExist(index) == 1) {
 				status = BattleAudienceGetPtr(index)->status;
 				if (status != 12 && status != 11) { //TODO: add status enum
 					audience->mCurrentAudienceIntCountRight++;
@@ -288,7 +287,7 @@ void BattleAudience_Init(void) {
 	for (i = 0; i < 10; i++) {
 		for (j = 0; j < 10; j++) {
 			index = (i * 20) + j;
-			if ((u8)BattleAudience_GetExist((u32)index) == 1) {
+			if ((u8)BattleAudience_GetExist(index) == 1) {
 				status = BattleAudienceGetPtr(index)->status;
 				if (status != 12 && status != 11) { //TODO: add status enum
 					audience->mCurrentAudienceIntCountLeft++;
@@ -3199,7 +3198,7 @@ BOOL BattleAudience_GetExist(s32 id) {
 }
 */
 
-BOOL BattleAudience_GetExist(s32 id) {
+BOOL BattleAudience_GetExist(u32 id) {
 	BattleAudienceMember* member;
 	BattleAudienceBaseGetPtr();
 	member = BattleAudienceGetPtr(id);

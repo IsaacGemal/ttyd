@@ -793,7 +793,7 @@ u16 kanjiSearch(u32 code) {
 	return JUTFont_CodeToGlyph(code);
 }
 
-u16 kanjiGetWidth(u16 code) {
+u16 kanjiGetWidth(u32 code) {
 	BinaryFontWidthEntry* width = FontGetWidthPtr(code);
 	return width->width;
 }
