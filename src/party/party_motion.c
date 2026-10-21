@@ -769,7 +769,11 @@ void party_motion_homing_walk(PartyEntry* party) {
     f32 dist;
     f32 f;
     HitEntry* groundHit = NULL; // retail inits groundHit (r28), which partyHitIsBoxMobj reads even when the flags guard skips its assignment
+#ifdef MUST_MATCH
+    // MUST_MATCH: a signed copy of the footmark id for the two partyGetTargetDist3D calls; it changes
+    // the register allocation.
     s32 sid;
+#endif
     MarioWork* mario;
     MarioWork* mm;
     u32 id;
@@ -817,7 +821,9 @@ void party_motion_homing_walk(PartyEntry* party) {
     f32 fy;
 
     id = partyGetFootmarkId(&party->flags);
+#ifdef MUST_MATCH
     sid = id;
+#endif
     mario = party->playerPtr;
     if (party->field_8 & 0x2) {
         party->field_8 &= ~0x2;
@@ -952,7 +958,11 @@ void party_motion_homing_walk(PartyEntry* party) {
             v94 = marioGetPtr()->position;
         }
         v70 = party->position;
+#ifdef MUST_MATCH
         f25 = partyGetTargetDist3D(sid, &v70);
+#else
+        f25 = partyGetTargetDist3D(id, &v70);
+#endif
         if (f25 >= f31) {
             partySetTargetSpeed(party, f29);
         }
@@ -973,7 +983,11 @@ void party_motion_homing_walk(PartyEntry* party) {
                 v58.y = py;
                 v58.z = pz;
                 v64 = v58;
+#ifdef MUST_MATCH
                 f25 = partyGetTargetDist3D(sid, &v64);
+#else
+                f25 = partyGetTargetDist3D(id, &v64);
+#endif
                 if (f25 >= f31) {
                     if (party->field_8 & 0x20000) {
                         f = 0.1f * (f25 - f30);
